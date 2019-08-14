@@ -15657,19 +15657,18 @@ test(2076.02, X[on=Y], data.table(a=2:3, b=c(2L,NA_integer_), d=2:1))
 test(2076.03, X[on=3], error="When on= is provided but not i=, on= must be a named list or data.table|frame, and a natural join")
 test(2076.04, X[on=list(3)], error="When on= is provided but not i=, on= must be a named list or data.table|frame, and a natural join")
 
-
 # gsum int64 support #1647, #3464
 if (test_bit64) {
   d = data.table(g=1:2, i32=c(2L,-1L,3L,4L), i64=as.integer64(c(2L,-1L,3L,4L)))
   int64_int32_match = function(x, y) isTRUE(all.equal(lapply(x, as.integer), lapply(y, as.integer)))
-  test(2072.01, int64_int32_match(d[, sum(i32), g], d[, sum(i64), g]))
-  test(2072.02, int64_int32_match(d[, sum(i32, na.rm=TRUE), g], d[, sum(i64, na.rm=TRUE), g]))
+  test(2077.01, int64_int32_match(d[, sum(i32), g], d[, sum(i64), g]))
+  test(2077.02, int64_int32_match(d[, sum(i32, na.rm=TRUE), g], d[, sum(i64, na.rm=TRUE), g]))
   d[3L, c("i32","i64") := list(NA_integer_, as.integer64(NA))] # some NA group
-  test(2072.03, int64_int32_match(d[, sum(i32), g], d[, sum(i64), g]))
-  test(2072.04, int64_int32_match(d[, sum(i32, na.rm=TRUE), g], d[, sum(i64, na.rm=TRUE), g]))
+  test(2077.03, int64_int32_match(d[, sum(i32), g], d[, sum(i64), g]))
+  test(2077.04, int64_int32_match(d[, sum(i32, na.rm=TRUE), g], d[, sum(i64, na.rm=TRUE), g]))
   d[1L, c("i32","i64") := list(NA_integer_, as.integer64(NA))] # all NA group
-  test(2072.05, int64_int32_match(d[, sum(i32), g], d[, sum(i64), g]))
-  test(2072.06, int64_int32_match(d[, sum(i32, na.rm=TRUE), g], d[, sum(i64, na.rm=TRUE), g]))
+  test(2077.05, int64_int32_match(d[, sum(i32), g], d[, sum(i64), g]))
+  test(2077.06, int64_int32_match(d[, sum(i32, na.rm=TRUE), g], d[, sum(i64, na.rm=TRUE), g]))
 }
 
 
