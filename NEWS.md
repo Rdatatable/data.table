@@ -226,6 +226,8 @@
 
 26. Column binding of zero column `data.table` will now work as expected, [#3334](https://github.com/Rdatatable/data.table/issues/3334). Thanks to @kzenstratus for the report.
 
+27. `integer64` sum-by-group is now properly optimized, [#1647](https://github.com/Rdatatable/data.table/issues/1647), [#3464](https://github.com/Rdatatable/data.table/issues/3464). Thanks to @mlandry22-h2o for the report.
+
 #### NOTES
 
 1. `rbindlist`'s `use.names="check"` now emits its message for automatic column names (`"V[0-9]+"`) too, [#3484](https://github.com/Rdatatable/data.table/pull/3484). See news item 5 of v1.12.2 below.
