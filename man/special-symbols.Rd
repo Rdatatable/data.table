@@ -27,7 +27,6 @@
     \code{\link{data.table}}, \code{\link{:=}}, \code{\link{set}}, \code{\link{datatable-optimize}}
 }
 \examples{
-\dontrun{
 DT = data.table(x=rep(c("b","a","c"),each=3), v=c(1,1,1,2,2,1,1,2,2), y=c(1,3,6), a=1:9, b=9:1)
 DT
 X = data.table(x=c("c","b"), v=8:7, foo=c(4,2))
@@ -46,5 +45,5 @@ DT[, c(.(y=max(y)), lapply(.SD, min)),
         by=rleid(v), .SDcols=v:b]      # compute 'j' for each consecutive runs of 'v'
 DT[, grp := .GRP, by=x]                # add a group counter
 X[, DT[.BY, y, on="x"], by=x]          # join within each group
-}}
+}
 \keyword{ data }

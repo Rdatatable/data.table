@@ -82,7 +82,7 @@
 
 9. New convenience functions `%ilike%` and `%flike%` which map to new `like()` arguments `ignore.case` and `fixed` respectively, [#3333](https://github.com/Rdatatable/data.table/issues/3333). `%ilike%` is for case-insensitive pattern matching. `%flike%` is for more efficient matching of fixed strings. Thanks to @andreasLD for providing most of the core code.
 
-10. `on=.NATURAL` (TODO: `X[on=Y]`) joins two tables on their common column names, so called _natural join_, [#629](https://github.com/Rdatatable/data.table/issues/629). Thanks to David Kulp for request. As before, when `on=` is not provided, `X` must have a key and the key columns are used to join (like rownames, but multi-column and multi-type).
+10. `on=.NATURAL` (or alternatively `X[on=Y]` [#3621](https://github.com/Rdatatable/data.table/issues/3621)) joins two tables on their common column names, so called _natural join_, [#629](https://github.com/Rdatatable/data.table/issues/629). Thanks to David Kulp for request. As before, when `on=` is not provided, `X` must have a key and the key columns are used to join (like rownames, but multi-column and multi-type).
 
 11. `as.data.table` gains `key` argument mirroring its use in `setDT` and `data.table`, [#890](https://github.com/Rdatatable/data.table/issues/890). As a byproduct, the arguments of `as.data.table.array` have changed order, which could affect code relying on positional arguments to this method. Thanks @cooldome for the suggestion and @MichaelChirico for implementation.
 
@@ -224,7 +224,11 @@
 
 25. Slight fix to the logic for auto-naming the `by` clause for using a custom function like `evaluate` to now be named `evaluate` instead of the name of the first symbolic argument, [#3758](https://github.com/Rdatatable/data.table/issues/3758).
 
-26. `integer64` defined on a subset of a new column would leave "gibberish" on the remaining rows, [#3723](https://github.com/Rdatatable/data.table/issues/3723). A bug in `rbindlist` with the same root cause was also fixed, [#1459](https://github.com/Rdatatable/data.table/issues/1459). Thanks @shrektan and @jangorecki for the reports.
+26. Column binding of zero column `data.table` will now work as expected, [#3334](https://github.com/Rdatatable/data.table/issues/3334). Thanks to @kzenstratus for the report.
+
+27. `integer64` sum-by-group is now properly optimized, [#1647](https://github.com/Rdatatable/data.table/issues/1647), [#3464](https://github.com/Rdatatable/data.table/issues/3464). Thanks to @mlandry22-h2o for the report.
+
+28. `integer64` defined on a subset of a new column would leave "gibberish" on the remaining rows, [#3723](https://github.com/Rdatatable/data.table/issues/3723). A bug in `rbindlist` with the same root cause was also fixed, [#1459](https://github.com/Rdatatable/data.table/issues/1459). Thanks @shrektan and @jangorecki for the reports.
 
 #### NOTES
 

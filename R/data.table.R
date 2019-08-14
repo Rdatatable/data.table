@@ -176,6 +176,13 @@ replace_order = function(isub, verbose, env) {
   }
   bynull = !missingby && is.null(by) #3530
   byjoin = !is.null(by) && is.symbol(bysub) && bysub==".EACHI"
+  naturaljoin = FALSE
+  if (missing(i) && !missing(on)) {
+    i = eval.parent(.massagei(substitute(on)))
+    if (!is.list(i) || !length(names(i)))
+      stop("When on= is provided but not i=, on= must be a named list or data.table|frame, and a natural join (i.e. join on common names) is invoked")
+    naturaljoin = TRUE
+  }
   if (missing(i) && missing(j)) {
     tt_isub = substitute(i)
     tt_jsub = substitute(j)
@@ -208,7 +215,6 @@ replace_order = function(isub, verbose, env) {
   if ((isTRUE(which)||is.na(which)) && !missing(j)) stop("which==",which," (meaning return row numbers) but j is also supplied. Either you need row numbers or the result of j, but only one type of result can be returned.")
   if (!is.na(nomatch) && is.na(which)) stop("which=NA with nomatch=0 would always return an empty vector. Please change or remove either which or nomatch.")
   if (!with && missing(j)) stop("j must be provided when with=FALSE")
-  if (missing(i) && !missing(on)) warning("ignoring on= because it is only relevant to i but i is not provided")
   irows = NULL  # Meaning all rows. We avoid creating 1:nrow(x) for efficiency.
   notjoin = FALSE
   rightcols = leftcols = integer()
@@ -413,13 +419,15 @@ replace_order = function(isub, verbose, env) {
       isnull_inames = is.null(names(i))
       i = as.data.table(i)
     }
+
     if (is.data.table(i)) {
-      naturaljoin = FALSE
       if (missing(on)) {
         if (!haskey(x)) {
           stop("When i is a data.table (or character vector), the columns to join by must be specified using 'on=' argument (see ?data.table), by keying x (i.e. sorted, and, marked as sorted, see ?setkey), or by sharing column names between x and i (i.e., a natural join). Keyed joins might have further speed benefits on very large data due to x being sorted in RAM.")
         }
-      } else if (identical(substitute(on), as.name(".NATURAL"))) naturaljoin = TRUE
+      } else if (identical(substitute(on), as.name(".NATURAL"))) {
+        naturaljoin = TRUE
+      }
       if (naturaljoin) { # natural join #629
         common_names = intersect(names(x), names(i))
         len_common_names = length(common_names)

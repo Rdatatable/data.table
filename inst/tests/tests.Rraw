@@ -12956,10 +12956,10 @@ test(1948.14, DT[i, on = 1L], error = "'on' argument should be a named atomic ve
 
 # helpful error when on= is provided but not i, rather than silently ignoring on=
 DT = data.table(A=1:3)
-test(1949.1, DT[,,on=A], DT, warning="i and j are both missing so ignoring the other arguments")
-test(1949.2, DT[,1,on=A], DT, warning="ignoring on= because it is only relevant to i but i is not provided")
-test(1949.3, DT[on=A], DT, warning="i and j are both missing so ignoring the other arguments")
-test(1949.4, DT[,on=A], DT, warning="i and j are both missing so ignoring the other arguments")
+test(1949.1, DT[,,on=A], error="object 'A' not found") # tests .1 to .4 amended after #3621
+test(1949.2, DT[,1,on=A], error="object 'A' not found")
+test(1949.3, DT[on=A], error="object 'A' not found")
+test(1949.4, DT[,on=A], error="object 'A' not found")
 test(1949.5, DT[1,,with=FALSE], error="j must be provided when with=FALSE")
 test(1949.6, DT[], output="A.*1.*2.*3")   # no error
 test(1949.7, DT[,], output="A.*1.*2.*3")  # no error, #3163
@@ -15646,13 +15646,37 @@ test(2074.39, fread('a,b\n"Inf,2\n'), data.table(a='"Inf', b=2L), warning="Found
 test(2074.40, fread('a\n1', na.strings=character(), verbose=TRUE), output='No NAstrings provided')
 test(2074.41, fread('a\n1', na.strings='9', verbose=TRUE), output='One or more of the NAstrings looks like a number')
 
+# cbind 0 cols, #3334
+test(2075, data.table(data.table(a=1), data.table()), data.table(data.table(a=1)))
+
+# natural join using X[on=Y], #3621
+X = data.table(a=1:2, b=1:2)
+test(2076.01, X[on=.(a=2:3, d=2:1)], data.table(a=2:3, b=c(2L,NA_integer_), d=2:1))
+Y = data.table(a=2:3, d=2:1)
+test(2076.02, X[on=Y], data.table(a=2:3, b=c(2L,NA_integer_), d=2:1))
+test(2076.03, X[on=3], error="When on= is provided but not i=, on= must be a named list or data.table|frame, and a natural join")
+test(2076.04, X[on=list(3)], error="When on= is provided but not i=, on= must be a named list or data.table|frame, and a natural join")
+
+# gsum int64 support #1647, #3464
+if (test_bit64) {
+  d = data.table(g=1:2, i32=c(2L,-1L,3L,4L), i64=as.integer64(c(2L,-1L,3L,4L)))
+  int64_int32_match = function(x, y) isTRUE(all.equal(lapply(x, as.integer), lapply(y, as.integer)))
+  test(2077.01, int64_int32_match(d[, sum(i32), g], d[, sum(i64), g]))
+  test(2077.02, int64_int32_match(d[, sum(i32, na.rm=TRUE), g], d[, sum(i64, na.rm=TRUE), g]))
+  d[3L, c("i32","i64") := list(NA_integer_, as.integer64(NA))] # some NA group
+  test(2077.03, int64_int32_match(d[, sum(i32), g], d[, sum(i64), g]))
+  test(2077.04, int64_int32_match(d[, sum(i32, na.rm=TRUE), g], d[, sum(i64, na.rm=TRUE), g]))
+  d[1L, c("i32","i64") := list(NA_integer_, as.integer64(NA))] # all NA group
+  test(2077.05, int64_int32_match(d[, sum(i32), g], d[, sum(i64), g]))
+  test(2077.06, int64_int32_match(d[, sum(i32, na.rm=TRUE), g], d[, sum(i64, na.rm=TRUE), g]))
+}
 
 # partial instantiation of integer64 column was creating NA_REAL, not INT64_MIN
 if (test_bit64) {
   # sub-assign from #3723
-  test(2072.1, data.table(x=1:2)[1, y := as.integer64(0L)]$y, as.integer64(c(0L, NA)))
+  test(2078.1, data.table(x=1:2)[1, y := as.integer64(0L)]$y, as.integer64(c(0L, NA)))
   # rbindlist(fill=TRUE) from #1459
-  test(2072.2, rbind(data.table(a=1:2, b=as.integer64(c(1,NA))), data.table(a=3L), fill=TRUE)$b, as.integer64(c(1, NA, NA)))
+  test(2078.2, rbind(data.table(a=1:2, b=as.integer64(c(1,NA))), data.table(a=3L), fill=TRUE)$b, as.integer64(c(1, NA, NA)))
 }
 
 ###################################
