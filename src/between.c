@@ -1,17 +1,5 @@
 #include "data.table.h"
 
-bool isRealReallyInt(SEXP x) {
-  if (!isReal(x)) return(false);
-  R_xlen_t n=xlength(x), i=0;
-  double *dx = REAL(x);
-  while (i<n &&
-         ( ISNA(dx[i]) ||
-         ( R_FINITE(dx[i]) && dx[i] == (int)(dx[i])))) {
-    i++;
-  }
-  return i==n;
-}
-
 SEXP between(SEXP x, SEXP lower, SEXP upper, SEXP bounds) {
 
   R_len_t nx = length(x), nl = length(lower), nu = length(upper);
@@ -175,4 +163,3 @@ SEXP between(SEXP x, SEXP lower, SEXP upper, SEXP bounds) {
   UNPROTECT(nprotect);
   return ans;
 }
-
