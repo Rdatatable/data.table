@@ -10123,6 +10123,12 @@ if (.Platform$OS.type=="unix") {
   unlink(f)
 }
 test(1703.15, fread("."), error="File '.' is a directory. Not yet implemented.")
+# tmpdir argument
+d = tempfile("dir")
+test(1703.16, fread(text=c('a,b','1,2'), tmpdir=d), error="cannot open the connection", warning="No such file or directory")
+dir.create(d)
+test(1703.17, fread(text=c('a,b','1,2'), tmpdir=d), data.table(a=1L,b=2L))
+unlink(d)
 
 # Ensure all.equal respects 'check.attributes' w.r.t. column names. As testthat::check_equivalent relies on this
 # as used by package popEpi in its tests
@@ -15671,6 +15677,8 @@ if (test_bit64) {
   test(2077.06, int64_int32_match(d[, sum(i32, na.rm=TRUE), g], d[, sum(i64, na.rm=TRUE), g]))
 }
 
+# multi-line text
+test(2078.01, fread(text=c('a,b','1,2')), data.table(a=1L, b=2L))
 
 ###################################
 #  Add new tests above this line  #
