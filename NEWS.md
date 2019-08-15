@@ -228,6 +228,8 @@
 
 27. `integer64` sum-by-group is now properly optimized, [#1647](https://github.com/Rdatatable/data.table/issues/1647), [#3464](https://github.com/Rdatatable/data.table/issues/3464). Thanks to @mlandry22-h2o for the report.
 
+28. `setkey`/`setkeyv` would mangle the ordering of tables with memory-duplicate (i.e., sharing the same `address`) columns, [#3496](https://github.com/Rdatatable/data.table/issues/3496) and [#3766](https://github.com/Rdatatable/data.table/issues/3766). This is fixed by forcing copies of duplicated columns before reordering. Relatedly, `[` could also produce such columns when subsetting. Thanks @kirillmayantsev and @alex46015 for reporting and @jaapwalhout and @Atrebas helping to debug&isolate the issue.
+
 #### NOTES
 
 1. `rbindlist`'s `use.names="check"` now emits its message for automatic column names (`"V[0-9]+"`) too, [#3484](https://github.com/Rdatatable/data.table/pull/3484). See news item 5 of v1.12.2 below.

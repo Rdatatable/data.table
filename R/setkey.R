@@ -102,12 +102,15 @@ setkeyv = function(x, cols, verbose=getOption("datatable.verbose"), physical=TRU
   }
   setattr(x,"index",NULL)   # TO DO: reorder existing indexes likely faster than rebuilding again. Allow optionally. Simpler for now to clear.
   if (length(o)) {
-    if (verbose) {
-      tt = suppressMessages(system.time(.Call(Creorder,x,o)))
-      cat("reorder took", tt["user.self"]+tt["sys.self"], "sec\n")
-    } else {
-      .Call(Creorder,x,o)
+    # table has deep-duplicate columns, e.g. #3496
+    if (any(idx <- duplicated(vapply_1c(x, address)))) {
+      if (verbose) { last.started.at=proc.time(); cat('Deep duplicate columns (identical address in memory) detected... copying', sum(idx), 'columns ...'); flush.console() }
+      for (j in which(idx)) set(x, NULL, j, copy(x[[j]]))
+      if (verbose) { cat("done in", timetaken(last.started.at), "\n"); flush.console() }
     }
+    if (verbose) { last.started.at = proc.time() }
+    .Call(Creorder,x,o)
+    if (verbose) { cat("reorder took", timetaken(last.started.at), "\n"); flush.console() }
   } else {
     if (verbose) cat("x is already ordered by these columns, no need to call reorder\n")
   } # else empty integer() from forderv means x is already ordered by those cols, nothing to do.
