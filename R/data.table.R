@@ -2655,8 +2655,14 @@ setDT = function(x, keep.rownames=FALSE, key=NULL, check.names=FALSE) {
     cname = as.character(name)
     envir = home(cname, parent.frame())
     if (bindingIsLocked(cname, envir)) {
-      stop("Can not convert '", cname, "' to data.table by reference because binding is locked. It is very likely that '", cname, "' resides within a package (or an environment) that is locked to prevent modifying its variable bindings. Try copying the object to your current environment, ex: var <- copy(var) and then using setDT again.")
+      stop("Cannot convert '", cname, "' to data.table by reference because binding is locked. It is very likely that '", cname, "' resides within a package (or an environment) that is locked to prevent modifying its variable bindings. Try copying the object to your current environment, ex: var <- copy(var) and then using setDT again.")
     }
+  }
+  # #3760 check validity of x as a data.table
+  coldim = lapply(x, dim)
+  if (!is.null(unlist(coldim))) {
+    idx = which(!vapply_1b(coldim, is.null))
+    stop("Use as.data.table for this object -- because some columns have dimensions, it cannot be converted to data.table by reference. Column indices: ", brackify(idx))
   }
   if (is.data.table(x)) {
     # fix for #1078 and #1128, see .resetclass() for explanation.
