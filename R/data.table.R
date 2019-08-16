@@ -2659,10 +2659,9 @@ setDT = function(x, keep.rownames=FALSE, key=NULL, check.names=FALSE) {
     }
   }
   # #3760 check validity of x as a data.table
-  coldim = lapply(x, dim)
-  if (!is.null(unlist(coldim))) {
-    idx = which(!vapply_1b(coldim, is.null))
-    stop("Use as.data.table for this object -- because some columns have dimensions, it cannot be converted to data.table by reference. Column indices: ", brackify(idx))
+  colndim = vapply_1i(x, function(xi) length(dim(xi)))
+  if (any(idx <- colndim > 1L)) {
+    stop("Use as.data.table for this object -- because some columns have dimensions, it cannot be converted to data.table by reference. Column indices: ", brackify(which(idx)))
   }
   if (is.data.table(x)) {
     # fix for #1078 and #1128, see .resetclass() for explanation.

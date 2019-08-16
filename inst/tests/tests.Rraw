@@ -5264,7 +5264,7 @@ test(1354, X[Y, val2 := i.val2, allow.cartesian=TRUE][, val1 := NULL][order(id)]
 # Fix for #475, setDT(CO2) should error, as it's trying to modify the object whose binding is locked.
 # CO2 is not locked in R 2.14.1 but is in R >= 3.1.0.  R NEWS isn't clear when that change happened, so just test there is an error when it is locked.
 if (bindingIsLocked("CO2",as.environment("package:datasets"))) {
-  test(1355.1, setDT(CO2), error="Can not convert 'CO2' to data.table by reference because binding is locked.")
+  test(1355.1, setDT(CO2), error="Cancnot convert 'CO2' to data.table by reference because binding is locked.")
 } else {
   test(1355.2, setDT(CO2), CO2)
 }
