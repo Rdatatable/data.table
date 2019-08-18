@@ -10,7 +10,15 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
   # Otherwise, the type of the i column is always returned.
 
   i = shallow(i)
+  # #1926 -- merge on .SD in i fails _sometimes_ because of set() being done here
+  dt_lock = '.data.table.locked'
+  if (isTRUE(attr(i, dt_lock, exact=TRUE))) setattr(i, dt_lock, NULL)
   x = shallow(x)
+  if (isTRUE(attr(x, dt_lock, exact=TRUE))) setattr(x, dt_lock, NULL)
+  if (isTRUE(attr(callersi, dt_lock, exact=TRUE))) {
+    setattr(callersi, dt_lock, NULL)
+    on.exit(setattr(callersi, dt_lock, TRUE))
+  }
   # careful to only plonk syntax (full column) on i/x from now on otherwise user's i and x would change;
   #   this is why shallow() is very importantly internal only, currently.
 

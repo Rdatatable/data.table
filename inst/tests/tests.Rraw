@@ -15671,6 +15671,15 @@ if (test_bit64) {
   test(2077.06, int64_int32_match(d[, sum(i32, na.rm=TRUE), g], d[, sum(i64, na.rm=TRUE), g]))
 }
 
+# #1926 -- unlock .SD for bmerge in j
+DT = data.table(id=1:2, v=3:4)
+DT2 = data.table(id=1, x=5)
+## DT2.i is numeric so bmerge does coercion with set()
+test(2078.1, DT[id == 1, DT2[.SD, on="id"]], data.table(id=1L, x=5, v=3L))
+df1 = data.table(a=1:5, b=c(0, 0, 1, 0, 2))
+df2 = data.table(c=c(1, 1, 2, 2, 3), d=c(3, 4, 3, 5, 4))
+test(2078.2, copy(df2)[ , s := df1[.SD, on=.(a >= c, a <= d), sum(b), by=.EACHI]$V1],
+     df2[ , s := c(1, 1, 1, 3, 1)])
 
 ###################################
 #  Add new tests above this line  #
