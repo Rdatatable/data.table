@@ -228,7 +228,7 @@
 
 27. `integer64` sum-by-group is now properly optimized, [#1647](https://github.com/Rdatatable/data.table/issues/1647), [#3464](https://github.com/Rdatatable/data.table/issues/3464). Thanks to @mlandry22-h2o for the report.
 
-28. `setkey`/`setkeyv` would mangle the ordering of tables with memory-duplicate (i.e., sharing the same `address`) columns, [#3496](https://github.com/Rdatatable/data.table/issues/3496) and [#3766](https://github.com/Rdatatable/data.table/issues/3766). This is fixed by forcing copies of duplicated columns before reordering. Relatedly, `[` could also produce such columns when subsetting. Thanks @kirillmayantsev and @alex46015 for reporting and @jaapwalhout and @Atrebas helping to debug&isolate the issue.
+28. `setkey`/`setkeyv` would mangle the ordering of tables with memory-duplicate (i.e., sharing the same `address`) columns, [#3496](https://github.com/Rdatatable/data.table/issues/3496) and [#3766](https://github.com/Rdatatable/data.table/issues/3766). This is fixed by forcing copies of duplicated columns before reordering. Relatedly, `[` could also produce such columns when subsetting. Finally, `[` might leave its output with `.data.table.locked`, preventing downstream use of `:=`, [#2245](https://github.com/Rdatatable/data.table/issues/2245). Thanks @kirillmayantsev, @alex46015, and @grayskripko for reporting and @jaapwalhout and @Atrebas helping to debug&isolate the issue.
 
 #### NOTES
 
