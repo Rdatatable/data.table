@@ -1149,7 +1149,7 @@ replace_order = function(isub, verbose, env) {
   SDenv = new.env(parent=parent.frame())
   # taking care of warnings for posixlt type, #646
   SDenv$strptime = function(x, ...) {
-    warning("POSIXlt column type detected and converted to POSIXct. We do not recommend use of POSIXlt at all because it uses 40 bytes to store one date. Use as.POSIXct to avoid this warning.")
+    warning("strptime() usage detected and wrapped with as.POSIXct(). This is to minimize the chance of assigning POSIXlt columns, which use 40+ bytes to store one date (versus 8 for POSIXct). Use as.POSIXct() (which will call strptime() as needed internally) to avoid this warning.")
     as.POSIXct(base::strptime(x, ...))
   }
 

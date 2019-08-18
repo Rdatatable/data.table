@@ -266,6 +266,8 @@
 
 15. `first` and `last` gain an explicit `n=1L` argument so that it's clear the default is 1, and their almost identical manual pages have been merged into one.
 
+16. Re-wrote the warning about `strptime` usage in `j` to be more helpful/informative/actionable, [#2068](https://github.com/Rdatatable/data.table/issues/2068). Thanks to @tdhock for the report.
+
 
 ### Changes in [v1.12.2](https://github.com/Rdatatable/data.table/milestone/14?closed=1)  (07 Apr 2019)
 
