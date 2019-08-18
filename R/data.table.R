@@ -178,10 +178,9 @@ replace_order = function(isub, verbose, env) {
   byjoin = !is.null(by) && is.symbol(bysub) && bysub==".EACHI"
   naturaljoin = FALSE
   names_x = names(x)
-  names_i = names(i)
   if (missing(i) && !missing(on)) {
     i = eval.parent(.massagei(substitute(on)))
-    if (!is.list(i) || !length(names_i))
+    if (!is.list(i) || !length(names(i)))
       stop("When on= is provided but not i=, on= must be a named list or data.table|frame, and a natural join (i.e. join on common names) is invoked")
     naturaljoin = TRUE
   }
@@ -418,7 +417,7 @@ replace_order = function(isub, verbose, env) {
     } else if (identical(class(i),"list") && length(i)==1L && is.data.frame(i[[1L]])) { i = as.data.table(i[[1L]]) }
     else if (identical(class(i),"data.frame")) { i = as.data.table(i) }   # TO DO: avoid these as.data.table() and use a flag instead
     else if (identical(class(i),"list")) {
-      isnull_inames = is.null(names_i)
+      isnull_inames = is.null(names(i))
       i = as.data.table(i)
     }
 
@@ -431,7 +430,7 @@ replace_order = function(isub, verbose, env) {
         naturaljoin = TRUE
       }
       if (naturaljoin) { # natural join #629
-        common_names = intersect(names_x, names_i)
+        common_names = intersect(names_x, names(i))
         len_common_names = length(common_names)
         if (!len_common_names) stop("Attempting to do natural join but no common columns in provided tables")
         if (verbose) {
@@ -453,7 +452,7 @@ replace_order = function(isub, verbose, env) {
         ## missing on
         rightcols = chmatch(key(x), names_x)   # NAs here (i.e. invalid data.table) checked in bmerge()
         leftcols = if (haskey(i))
-          chmatch(head(key(i),length(rightcols)), names_i)
+          chmatch(head(key(i), length(rightcols)), names(i))
         else
           seq_len(min(length(i),length(rightcols)))
         rightcols = head(rightcols,length(leftcols))
@@ -463,11 +462,11 @@ replace_order = function(isub, verbose, env) {
       if (notjoin && (byjoin || mult != "all")) { # mult != "all" needed for #1571
         notjoin = FALSE
         if (verbose) {last.started.at=proc.time();cat("not-join called with 'by=.EACHI'; Replacing !i with i=setdiff_(x,i) ...");flush.console()}
-        orignames = copy(names_i)
+        orignames = copy(names(i))
         i = setdiff_(x, i, rightcols, leftcols) # part of #547
         if (verbose) {cat("done in",timetaken(last.started.at),"\n"); flush.console()}
         setnames(i, orignames[leftcols])
-        setattr(i, 'sorted', names_i) # since 'x' has key set, this'll always be sorted
+        setattr(i, 'sorted', names(i)) # since 'x' has key set, this'll always be sorted
       }
       i = .shallow(i, retain.key = TRUE)
       ans = bmerge(i, x, leftcols, rightcols, roll, rollends, nomatch, mult, ops, verbose=verbose)
@@ -608,11 +607,16 @@ replace_order = function(isub, verbose, env) {
   } else {  # missing(i)
     i = NULL
   }
+  names_i = names(i) # value is now stable
   byval = NULL
   xnrow = nrow(x)
   xcols = xcolsAns = icols = icolsAns = integer()
   xdotcols = FALSE
-  othervars = character(0L)
+  # track which columns appear in j through ansvars, and those
+  #   that belong in .SD through sdvars. Mostly these will be the same,
+  #   except in cases like DT[ , lapply(.SD, function(x) x/V1), .SDcols = !'V1'],
+  #   see e.g. #484, #495, #1744, #1965.
+  non_sdvars = character(0L)
   if (missing(j)) {
     # missingby was already checked above before dealing with i
     if (!length(x)) return(null.data.table())
@@ -899,7 +903,8 @@ replace_order = function(isub, verbose, env) {
       if (any(c(".SD","eval","get","mget") %chin% av)) {
         if (missing(.SDcols)) {
           # here we need to use 'dupdiff' instead of 'setdiff'. Ex: setdiff(c("x", "x"), NULL) will give 'x'.
-          ansvars = dupdiff(names_x, union(bynames, allbyvars))   # TO DO: allbyvars here for vars used by 'by'. Document.
+          # slight memory efficiency boost if we only store sdvars if it differs from ansvars, but a bit tricky to examine all the uses here
+          ansvars = sdvars = dupdiff(names_x, union(bynames, allbyvars))   # TO DO: allbyvars here for vars used by 'by'. Document.
           # just using .SD in j triggers all non-by columns in the subset even if some of
           # those columns are not used. It would be tricky to detect whether the j expression
           # really does use all of the .SD columns or not, hence .SDcols for grouping
@@ -912,9 +917,9 @@ replace_order = function(isub, verbose, env) {
           colsub = substitute(.SDcols)
           # fix for #5190. colsub[[1L]] gave error when it's a symbol.
           if (is.call(colsub) && deparse(colsub[[1L]], 500L, backtick=FALSE) %chin% c("!", "-")) {
-            colm = TRUE
+            negate_sdcols = TRUE
             colsub = colsub[[2L]]
-          } else colm = FALSE
+          } else negate_sdcols = FALSE
           # fix for #1216, make sure the parentheses are peeled from expr of the form (((1:4)))
           while(is.call(colsub) && colsub[[1L]] == "(") colsub = as.list(colsub)[[-1L]]
           if (is.call(colsub) && length(colsub) == 3L && colsub[[1L]] == ":") {
@@ -931,38 +936,38 @@ replace_order = function(isub, verbose, env) {
           if (anyNA(.SDcols))
             stop(".SDcols missing at the following indices: ", brackify(which(is.na(.SDcols))))
           if (is.logical(.SDcols)) {
-            ansvals = which_(rep(.SDcols, length.out=length(x)), !colm)
-            ansvars = names_x[ansvals]
+            ansvals = which_(rep(.SDcols, length.out=length(x)), !negate_sdcols)
+            ansvars = sdvars = names_x[ansvals]
           } else if (is.numeric(.SDcols)) {
             .SDcols = as.integer(.SDcols)
             # if .SDcols is numeric, use 'dupdiff' instead of 'setdiff'
             if (length(unique(sign(.SDcols))) > 1L) stop(".SDcols is numeric but has both +ve and -ve indices")
             if (any(idx <- abs(.SDcols)>ncol(x) | abs(.SDcols)<1L))
               stop(".SDcols is numeric but out of bounds [1, ", ncol(x), "] at: ", brackify(which(idx)))
-            ansvars = if (colm) dupdiff(names_x[-.SDcols], bynames) else names_x[.SDcols]
-            ansvals = if (colm) setdiff(seq_along(names(x)), c(.SDcols, which(names(x) %chin% bynames))) else .SDcols
+            ansvars = sdvars = if (negate_sdcols) dupdiff(names_x[-.SDcols], bynames) else names_x[.SDcols]
+            ansvals = if (negate_sdcols) setdiff(seq_along(names(x)), c(.SDcols, which(names(x) %chin% bynames))) else .SDcols
           } else {
             if (!is.character(.SDcols)) stop(".SDcols should be column numbers or names")
             if (!all(idx <- .SDcols %chin% names_x))
               stop("Some items of .SDcols are not column names: ", brackify(.SDcols[!idx]))
-            ansvars = if (colm) setdiff(names_x, c(.SDcols, bynames)) else .SDcols
+            ansvars = sdvars = if (negate_sdcols) setdiff(names_x, c(.SDcols, bynames)) else .SDcols
             # dups = FALSE here. DT[, .SD, .SDcols=c("x", "x")] again doesn't really help with which 'x' to keep (and if '-' which x to remove)
             ansvals = chmatch(ansvars, names_x)
           }
         }
         # fix for long standing FR/bug, #495 and #484
         allcols = c(names_x, xdotprefix, names_i, idotprefix)
-        if ( length(othervars <- setdiff(intersect(av, allcols), c(bynames, ansvars))) ) {
+        if ( length(non_sdvars <- setdiff(intersect(av, allcols), c(bynames, ansvars))) ) {
           # we've a situation like DT[, c(sum(V1), lapply(.SD, mean)), by=., .SDcols=...] or
           # DT[, lapply(.SD, function(x) x *v1), by=, .SDcols=...] etc.,
-          ansvars = union(ansvars, othervars)
+          ansvars = union(ansvars, non_sdvars)
           ansvals = chmatch(ansvars, names_x)
         }
         # .SDcols might include grouping columns if users wants that, but normally we expect user not to include them in .SDcols
       } else {
         if (!missing(.SDcols)) warning("This j doesn't use .SD but .SDcols has been supplied. Ignoring .SDcols. See ?data.table.")
         allcols = c(names_x, xdotprefix, names_i, idotprefix)
-        ansvars = setdiff(intersect(av, allcols), bynames)
+        ansvars = sdvars = setdiff(intersect(av, allcols), bynames)
         if (verbose) cat("Detected that j uses these columns:",if (!length(ansvars)) "<none>" else paste(ansvars,collapse=","),"\n")
         # using a few named columns will be faster
         # Consider:   DT[,max(diff(date)),by=list(month=month(date))]
@@ -975,7 +980,6 @@ replace_order = function(isub, verbose, env) {
       # TODO remove as (m)get is now folded in above.
       # added 'mget' - fix for #994
       if (any(c("get", "mget") %chin% av)) {
-        #browser()
         if (verbose) {
           cat("'(m)get' found in j. ansvars being set to all columns. Use .SDcols or a single j=eval(macro) instead. Both will detect the columns used which is important for efficiency.\nOld:", paste(ansvars,collapse=","),"\n")
           # get('varname') is too difficult to detect which columns are used in general
@@ -985,16 +989,14 @@ replace_order = function(isub, verbose, env) {
         # Do not include z in .SD when dt[, z := {.SD; get("x")}, .SDcols = "y"] (#2326, #2338)
         if (is.call(jsub) && length(jsub[[1L]]) == 1L && jsub[[1L]] == ":=" && is.symbol(jsub[[2L]])) {
           jsub_lhs_symbol = as.character(jsub[[2L]])
-            if (jsub_lhs_symbol %chin% othervars) {
-            ansvars = setdiff(ansvars, jsub_lhs_symbol)
+            if (jsub_lhs_symbol %chin% non_sdvars) {
+            sdvars = setdiff(sdvars, jsub_lhs_symbol)
           }
         }
-        n_ans = length(ansvars)
         allcols = c(names_x, xdotprefix, names_i, idotprefix)
         ansvars = setdiff(allcols, bynames) # fix for bug #5443
+        non_sdvars = setdiff(ansvars, sdvars)
         ansvals = chmatch(ansvars, names_x)
-        # Fix for #1744
-        if (n_ans) othervars = setdiff(allcols, c(bynames, ansvars))
         if (verbose) cat("New:",paste(ansvars,collapse=","),"\n")
       }
 
@@ -1156,8 +1158,6 @@ replace_order = function(isub, verbose, env) {
     warning("POSIXlt column type detected and converted to POSIXct. We do not recommend use of POSIXlt at all because it uses 40 bytes to store one date. Use as.POSIXct to avoid this warning.")
     as.POSIXct(base::strptime(x, ...))
   }
-  #SDenv$mget = function(x) mget(x, envir = .SDall)
-  #SDenv$get = function(x) get(x, envir = .SDall)
 
   syms = all.vars(jsub)
   syms = syms[ substring(syms,1L,2L)==".." ]
@@ -1241,15 +1241,13 @@ replace_order = function(isub, verbose, env) {
 
       if (!with || missing(j)) return(ans)
 
-      #browser()
       SDenv$.SDall = ans
-      SDenv$.SD = if (!length(othervars)) SDenv$.SDall else shallow(SDenv$.SDall, setdiff(ansvars, othervars))
-      SDenv$.N = nrow(SDenv$.SD)
+      SDenv$.SD = if (length(non_sdvars)) shallow(SDenv$.SDall, sdvars) else SDenv$.SDall
+      SDenv$.N = nrow(ans)
 
     } else {
-      #browser()
       SDenv$.SDall = SDenv$.SD = null.data.table()   # no columns used by j so .SD can be empty. Only needs to exist so that we can rely on it being there when locking it below for example. If .SD were used by j, of course then xvars would be the columns and we wouldn't be in this leaf.
-      SDenv$.N = if (is.null(irows)) nrow(x) else length(irows) * !identical(suppressWarnings(max(irows)), 0L)
+      SDenv$.N = if (is.null(irows)) nrow(x) else if(!length(irows) || identical(max(irows), 0L)) 0L else length(irows)
       # Fix for #963.
       # When irows is integer(0L), length(irows) = 0 will result in 0 (as expected).
       # Binary search can return all 0 irows when none of the input matches. Instead of doing all(irows==0L) (previous method), which has to allocate a logical vector the size of irows, we can make use of 'max'. If max is 0, we return 0. The condition where only some irows > 0 won't occur.
@@ -1272,7 +1270,6 @@ replace_order = function(isub, verbose, env) {
       stop("j (the 2nd argument inside [...]) is a single symbol but column name '",jsubChar,"' is not found. Perhaps you intended DT[, ..",jsubChar,"]. This difference to data.frame is deliberate and explained in FAQ 1.1.")
     }
 
-    #browser()
     jval = eval(jsub, SDenv, parent.frame())
     # copy 'jval' when required
     # More speedup - only check + copy if irows is NULL
@@ -1354,10 +1351,9 @@ replace_order = function(isub, verbose, env) {
   SDenv$.iSD = NULL  # null.data.table()
   SDenv$.xSD = NULL  # null.data.table() - introducing for FR #2693 and Gabor's post on fixing for FAQ 2.8
 
-  assign("print", function(x,...){base::print(x,...);NULL}, SDenv)
+  SDenv$print = function(x, ...){ base::print(x,...); NULL}
   # Now ggplot2 returns data from print, we need a way to throw it away otherwise j accumulates the result
 
-  #browser()
   SDenv$.SDall = SDenv$.SD = null.data.table()  # e.g. test 607. Grouping still proceeds even though no .SD e.g. grouping key only tables, or where j consists of .N only
   SDenv$.N = vector("integer", 1L)    # explicit new vector (not 0L or as.integer() which might return R's internal small-integer global)
   SDenv$.GRP = vector("integer", 1L)  #   because written to by reference at C level (one write per group). TODO: move this alloc to C level
@@ -1456,8 +1452,7 @@ replace_order = function(isub, verbose, env) {
     #  TODO move down to dogroup.c, too.
     SDenv$.SDall = .Call(CsubsetDT, x, if (length(len__)) seq_len(max(len__)) else 0L, xcols)  # must be deep copy when largest group is a subset
     if (xdotcols) setattr(SDenv$.SDall, 'names', ansvars[xcolsAns]) # now that we allow 'x.' prefix in 'j', #2313 bug fix - [xcolsAns]
-    #browser()
-    SDenv$.SD = if (!length(othervars)) SDenv$.SDall else shallow(SDenv$.SDall, setdiff(ansvars, othervars))
+    SDenv$.SD = if (length(non_sdvars)) shallow(SDenv$.SDall, sdvars) else SDenv$.SDall
   }
   if (nrow(SDenv$.SDall)==0L) {
     setattr(SDenv$.SDall,"row.names",c(NA_integer_,0L))
@@ -1475,7 +1470,6 @@ replace_order = function(isub, verbose, env) {
   GForce = FALSE
   if ( getOption("datatable.optimize")>=1 && (is.call(jsub) || (is.name(jsub) && as.character(jsub)[[1L]] %chin% c(".SD",".N"))) ) {  # Ability to turn off if problems or to benchmark the benefit
     # Optimization to reduce overhead of calling lapply over and over for each group
-    ansvarsnew = setdiff(ansvars, othervars)
     oldjsub = jsub
     funi = 1L # Fix for #985
     # converted the lapply(.SD, ...) to a function and used below, easier to implement FR #2722 then.
@@ -1496,14 +1490,14 @@ replace_order = function(isub, verbose, env) {
         if (is.character(fun)) fun = as.name(fun)
         txt[[1L]] = fun
       }
-      ans = vector("list",length(ansvarsnew)+1L)
+      ans = vector("list", length(sdvars)+1L)
       ans[[1L]] = as.name("list")
-      for (ii in seq_along(ansvarsnew)) {
-        txt[[2L]] = as.name(ansvarsnew[ii])
+      for (ii in seq_along(sdvars)) {
+        txt[[2L]] = as.name(sdvars[ii])
         ans[[ii+1L]] = as.call(txt)
       }
       jsub = as.call(ans)  # important no names here
-      jvnames = ansvarsnew      # but here instead
+      jvnames = sdvars      # but here instead
       list(jsub, jvnames)
       # It may seem inefficient to construct a potentially long expression. But, consider calling
       # lapply 100000 times. The C code inside lapply does the LCONS stuff anyway, every time it
@@ -1519,8 +1513,8 @@ replace_order = function(isub, verbose, env) {
     }
     if (is.name(jsub)) {
       if (jsub == ".SD") {
-        jsub = as.call(c(quote(list), lapply(ansvarsnew, as.name)))
-        jvnames = ansvarsnew
+        jsub = as.call(c(quote(list), lapply(sdvars, as.name)))
+        jvnames = sdvars
       }
     } else if (length(as.character(jsub[[1L]])) == 1L) {  # Else expect problems with <jsub[[1L]] == >
       subopt = length(jsub) == 3L && jsub[[1L]] == "[" && (is.numeric(jsub[[3L]]) || jsub[[3L]] == ".N")
@@ -1530,8 +1524,8 @@ replace_order = function(isub, verbose, env) {
           (subopt || headopt || firstopt)) {
         if (headopt && length(jsub)==2L) jsub[["n"]] = 6L # head-tail n=6 when missing #3462
         # optimise .SD[1] or .SD[2L]. Not sure how to test .SD[a] as to whether a is numeric/integer or a data.table, yet.
-        jsub = as.call(c(quote(list), lapply(ansvarsnew, function(x) { jsub[[2L]] = as.name(x); jsub })))
-        jvnames = ansvarsnew
+        jsub = as.call(c(quote(list), lapply(sdvars, function(x) { jsub[[2L]] = as.name(x); jsub })))
+        jvnames = sdvars
       } else if (jsub[[1L]]=="lapply" && jsub[[2L]]==".SD" && length(xcols)) {
         deparse_ans = .massageSD(jsub)
         jsub = deparse_ans[[1L]]
@@ -1551,15 +1545,15 @@ replace_order = function(isub, verbose, env) {
         any_SD = FALSE
         jsubl = as.list.default(jsub)
         oldjvnames = jvnames
-        jvnames = NULL           # TODO: not let jvnames grow, maybe use (number of lapply(.SD, .))*length(ansvarsnew) + other jvars ?? not straightforward.
+        jvnames = NULL           # TODO: not let jvnames grow, maybe use (number of lapply(.SD, .))*length(sdvars) + other jvars ?? not straightforward.
         # Fix for #744. Don't use 'i' in for-loops. It masks the 'i' from the input!!
         for (i_ in 2L:length(jsubl)) {
           this = jsub[[i_]]
           if (is.name(this)) {  # no need to check length(this)==1L; is.name() returns single TRUE or FALSE (documented); can't have a vector of names
             if (this == ".SD") { # optimise '.SD' alone
               any_SD = TRUE
-              jsubl[[i_]] = lapply(ansvarsnew, as.name)
-              jvnames = c(jvnames, ansvarsnew)
+              jsubl[[i_]] = lapply(sdvars, as.name)
+              jvnames = c(jvnames, sdvars)
             } else if (this == ".N") {
               # don't optimise .I in c(.SD, .I), it's length can be > 1
               # only c(.SD, list(.I)) should be optimised!! .N is always length 1.
@@ -1592,8 +1586,8 @@ replace_order = function(isub, verbose, env) {
                     this[[2L]] == ".SD" && (is.numeric(this[[3L]]) || this[[3L]] == ".N") ) {
               # optimise .SD[1] or .SD[2L]. Not sure how to test .SD[a] as to whether a is numeric/integer or a data.table, yet.
               any_SD = TRUE
-              jsubl[[i_]] = lapply(ansvarsnew, function(x) { this[[2L]] = as.name(x); this })
-              jvnames = c(jvnames, ansvarsnew)
+              jsubl[[i_]] = lapply(sdvars, function(x) { this[[2L]] = as.name(x); this })
+              jvnames = c(jvnames, sdvars)
             } else if (any(all.vars(this) == ".SD")) {
               # TODO, TO DO: revisit complex cases (as illustrated below)
               # complex cases like DT[, c(.SD[x>1], .SD[J(.)], c(.SD), a + .SD, lapply(.SD, sum)), by=grp]

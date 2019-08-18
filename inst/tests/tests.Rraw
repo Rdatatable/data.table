@@ -15671,6 +15671,12 @@ if (test_bit64) {
   test(2077.06, int64_int32_match(d[, sum(i32, na.rm=TRUE), g], d[, sum(i64, na.rm=TRUE), g]))
 }
 
+# #1744 and #1965 -- get/mget don't restore all columns to .SD
+DT = data.table(a=1, b=2, c=3)
+test(2078.1, DT[, {list(a, get('b')); names(.SD)}, .SDcols='c'], 'c')
+# Also incidentally fixed #2036 about reordering of columns in .SD
+test(2078.2, DT[ , {get('c'); names(.SD)}, .SDcols = c('b', 'a')], c('b', 'a'))
+
 
 ###################################
 #  Add new tests above this line  #

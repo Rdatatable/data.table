@@ -228,6 +228,8 @@
 
 27. `integer64` sum-by-group is now properly optimized, [#1647](https://github.com/Rdatatable/data.table/issues/1647), [#3464](https://github.com/Rdatatable/data.table/issues/3464). Thanks to @mlandry22-h2o for the report.
 
+28. Fixed issue where using `get`/`mget` could cause `.SDcols` to be ignored or reordered, [#1744](https://github.com/Rdatatable/data.table/issues/1744), [#1965](https://github.com/Rdatatable/data.table/issues/1965), and [#2036](https://github.com/Rdatatable/data.table/issues/2036). 
+
 #### NOTES
 
 1. `rbindlist`'s `use.names="check"` now emits its message for automatic column names (`"V[0-9]+"`) too, [#3484](https://github.com/Rdatatable/data.table/pull/3484). See news item 5 of v1.12.2 below.
