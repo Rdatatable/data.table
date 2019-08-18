@@ -228,7 +228,7 @@
 
 27. `integer64` sum-by-group is now properly optimized, [#1647](https://github.com/Rdatatable/data.table/issues/1647), [#3464](https://github.com/Rdatatable/data.table/issues/3464). Thanks to @mlandry22-h2o for the report.
 
-28. Joining to `.SD` in `j` was erroring because `bmerge` uses `set` in some cases (e.g. numeric-to-integer coercion or factor joins-on-levels), but the shallow copy of `.SD` was still locked, [#1926](https://github.com/Rdatatable/data.table/issues/1926).
+28. Joining to `.SD` in `j` was erroring because `bmerge` uses `set` in some cases (e.g. numeric-to-integer coercion or factor joins-on-levels), but the shallow copy of `.SD` was still locked, [#1926](https://github.com/Rdatatable/data.table/issues/1926). Thanks @franknarf1 for the report and for diligently tracking use cases for almost 3 years!
 
 #### NOTES
 
