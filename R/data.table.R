@@ -1461,6 +1461,7 @@ replace_order = function(isub, verbose, env) {
   lockBinding(".GRP",SDenv)
   lockBinding(".iSD",SDenv)
 
+  #browser()
   GForce = FALSE
   if ( getOption("datatable.optimize")>=1 && (is.call(jsub) || (is.name(jsub) && as.character(jsub)[[1L]] %chin% c(".SD",".N"))) ) {  # Ability to turn off if problems or to benchmark the benefit
     # Optimization to reduce overhead of calling lapply over and over for each group
@@ -1612,9 +1613,9 @@ replace_order = function(isub, verbose, env) {
     }
     if (verbose) {
       if (!identical(oldjsub, jsub))
-        cat("lapply optimization changed j from '",deparse(oldjsub),"' to '",deparse(jsub,width.cutoff=200L),"'\n",sep="")
+        cat("lapply optimization changed j from '",deparse(oldjsub),"' to '",deparse(jsub,width.cutoff=200L, nlines=1L),"'\n",sep="")
       else
-        cat("lapply optimization is on, j unchanged as '",deparse(jsub,width.cutoff=200L),"'\n",sep="")
+        cat("lapply optimization is on, j unchanged as '",deparse(jsub,width.cutoff=200L, nlines=1L),"'\n",sep="")
     }
     dotN = function(x) is.name(x) && x == ".N" # For #5760
     # FR #971, GForce kicks in on all subsets, no joins yet. Although joins could work with
@@ -1644,7 +1645,7 @@ replace_order = function(isub, verbose, env) {
         }
         if (jsub[[1L]]=="list") {
           GForce = TRUE
-          for (ii in seq_along(jsub)[-1L]) if (!.ok(jsub[[ii]])) GForce = FALSE
+          for (ii in seq_along(jsub)[-1L]) if (!.ok(jsub[[ii]])) {GForce = FALSE; break}
         } else GForce = .ok(jsub)
         if (GForce) {
           if (jsub[[1L]]=="list")
@@ -1666,13 +1667,12 @@ replace_order = function(isub, verbose, env) {
       nomeanopt=FALSE  # to be set by .optmean() using <<- inside it
       oldjsub = jsub
       if (jsub[[1L]]=="list") {
-        for (ii in seq_along(jsub)[-1L]) {
-          this_jsub = jsub[[ii]]
-          if (dotN(this_jsub)) next; # For #5760
-          # Addressing #1369, #2949 and #1974. Added is.symbol() check to handle cases where expanded function definition is used instead of function names. #1369 results in (function(x) sum(x)) as jsub[[.]] from dcast.data.table.
+        # Addressing #1369, #2949 and #1974. Added is.symbol() check to handle cases where expanded function definition is used instead of function names. #1369 results in (function(x) sum(x)) as jsub[[.]] from dcast.data.table.
+        # earlier, did a for loop and replaced only as necessary but this was slow with huge (e.g. 30K elements) j, #1470
+        jsub = as.call(c(quote(list), lapply(jsub[-1L], function(this_jsub) {
           if (is.call(this_jsub) && is.symbol(this_jsub[[1L]]) && this_jsub[[1L]]=="mean")
-            jsub[[ii]] = .optmean(this_jsub)
-        }
+            .optmean(this_jsub) else this_jsub
+        })))
       } else if (jsub[[1L]]=="mean") {
         jsub = .optmean(jsub)
       }
