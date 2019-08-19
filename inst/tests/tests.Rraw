@@ -15673,7 +15673,11 @@ if (test_bit64) {
 
 # #3780 POSIXct stored as numeric means as.integer before converting
 #   to seconds can overflow
-test(2078, as.IDate(as.POSIXct("1900-01-01", tz="UTC")), as.IDate(-25567L))
+date=as.POSIXct("1900-01-01", tz="UTC")
+test(2078.1, as.IDate(date), as.IDate(-25567L))
+test(2078.2, hour(date), 0L)
+test(2078.3, minute(date), 0L)
+test(2078.4, second(date), 0L)
 
 
 ###################################
