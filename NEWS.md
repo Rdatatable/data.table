@@ -228,6 +228,8 @@
 
 27. `integer64` sum-by-group is now properly optimized, [#1647](https://github.com/Rdatatable/data.table/issues/1647), [#3464](https://github.com/Rdatatable/data.table/issues/3464). Thanks to @mlandry22-h2o for the report.
 
+28. `as.IDate.POSIXct` is correct for UTC times before Dec. 1901 or after Jan. 2038 (was returning `NA` due to integer overflow), [#3780](https://github.com/Rdatatable/data.table/issues/3780). Thanks @gschett for the report.
+
 #### NOTES
 
 1. `rbindlist`'s `use.names="check"` now emits its message for automatic column names (`"V[0-9]+"`) too, [#3484](https://github.com/Rdatatable/data.table/pull/3484). See news item 5 of v1.12.2 below.
