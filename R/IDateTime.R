@@ -302,8 +302,11 @@ as.POSIXlt.ITime = function(x, ...) {
 #   lubridate routines do not return integer values.
 ###################################################################
 
+do_fastroutine = function(x)
+  (inherits(x, 'POSIXct') && identical(attr(x, 'tzone', exact=TRUE), 'UTC')) ||
+  inherits(x, 'ITime')
 second  = function(x) {
-  if (inherits(x, 'POSIXct') && identical(attr(x, 'tzone', exact=TRUE), 'UTC')) {
+  if (do_fastroutine(x)) {
     # if we know the object is in UTC, can calculate the hour much faster
     as.integer(x) %% 60L
   } else {
@@ -311,7 +314,7 @@ second  = function(x) {
   }
 }
 minute  = function(x) {
-  if (inherits(x, 'POSIXct') && identical(attr(x, 'tzone', exact=TRUE), 'UTC')) {
+  if (do_fastroutine(x)) {
     # ever-so-slightly faster than x %% 3600L %/% 60L
     as.integer(x) %/% 60L %% 60L
   } else {
@@ -319,7 +322,7 @@ minute  = function(x) {
   }
 }
 hour = function(x) {
-  if (inherits(x, 'POSIXct') && identical(attr(x, 'tzone', exact=TRUE), 'UTC')) {
+  if (do_fastroutine(x)) {
     # ever-so-slightly faster than x %% 86400L %/% 3600L
     as.integer(x) %/% 3600L %% 24L
   } else {
