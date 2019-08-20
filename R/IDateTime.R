@@ -305,7 +305,7 @@ as.POSIXlt.ITime = function(x, ...) {
 second  = function(x) {
   if (inherits(x, 'POSIXct') && identical(attr(x, 'tzone', exact=TRUE), 'UTC')) {
     # if we know the object is in UTC, can calculate the hour much faster
-    as.numeric(x) %% 60L
+    as.integer(as.numeric(x) %% 60L)
   } else {
     as.integer(as.POSIXlt(x)$sec)
   }
@@ -313,7 +313,7 @@ second  = function(x) {
 minute  = function(x) {
   if (inherits(x, 'POSIXct') && identical(attr(x, 'tzone', exact=TRUE), 'UTC')) {
     # ever-so-slightly faster than x %% 3600L %/% 60L
-    as.numeric(x) %/% 60L %% 60L
+    as.integer(as.numeric(x) %/% 60L %% 60L)
   } else {
     as.POSIXlt(x)$min
   }
@@ -321,7 +321,7 @@ minute  = function(x) {
 hour = function(x) {
   if (inherits(x, 'POSIXct') && identical(attr(x, 'tzone', exact=TRUE), 'UTC')) {
     # ever-so-slightly faster than x %% 86400L %/% 3600L
-    as.numeric(x) %/% 3600L %% 24L
+    as.integer(as.numeric(x) %/% 3600L %% 24L)
   } else {
     as.POSIXlt(x)$hour
   }
