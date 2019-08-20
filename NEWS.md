@@ -266,6 +266,8 @@
 
 15. `first` and `last` gain an explicit `n=1L` argument so that it's clear the default is 1, and their almost identical manual pages have been merged into one.
 
+16. `setnames` exits early if the `new` names are redundant (i.e. they exactly match the old names), [#3783](https://github.com/Rdatatable/data.table/issues/3783).
+
 
 ### Changes in [v1.12.2](https://github.com/Rdatatable/data.table/milestone/14?closed=1)  (07 Apr 2019)
 
