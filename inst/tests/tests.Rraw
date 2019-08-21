@@ -15671,6 +15671,14 @@ if (test_bit64) {
   test(2077.06, int64_int32_match(d[, sum(i32, na.rm=TRUE), g], d[, sum(i64, na.rm=TRUE), g]))
 }
 
+# correct rbindlist() idcol for list elements with different length #3785
+x = 1:1000
+X = rbindlist(lapply(x, function(.) list(., 1:2, 2:3)), idcol = 'TAG')
+test(2078.01, X$TAG, rep(x, each = 2))
+
+x = setNames(x, paste0("nm_", x))
+X = rbindlist(lapply(x, function(.) list(., 1:2, 2:3)), idcol = 'TAG')
+test(2078.01, X$TAG, rep(names(x), each = 2))
 
 ###################################
 #  Add new tests above this line  #
