@@ -1,6 +1,6 @@
 # is x[i] in between lower[i] and upper[i] ?
-between = function(x,lower,upper,incbounds=TRUE,NAbounds=FALSE) {
-  if (!isTRUEorFALSE(NAbounds)) stop("NAbounds must be TRUE or FALSE")
+between = function(x, lower, upper, incbounds=TRUE, NAbounds=TRUE) {
+  if (!isTRUEorNA(NAbounds)) stop("NAbounds must be TRUE or NA")
   if (is.logical(x)) stop("between has been x of type logical")
   if (is.logical(lower)) lower = as.integer(lower)   # typically NA (which is logical type)
   if (is.logical(upper)) upper = as.integer(upper)   # typically NA (which is logical type)
@@ -42,63 +42,17 @@ between = function(x,lower,upper,incbounds=TRUE,NAbounds=FALSE) {
   } else if (is.i64(lower) || is.i64(upper)) {
     stop("'lower' and/or 'upper' are integer64 class while 'x' is not. Please align classes before passing to 'between'.")
   }
-  is.supported = function(x) is.numeric(x) || is.px(x)
-  if (!NAbounds && is.supported(x) && is.supported(lower) && is.supported(upper)) {
+  is.supported = function(x) is.numeric(x) || is.character(x) || is.px(x)
+  if (is.supported(x) && is.supported(lower) && is.supported(upper)) {
     # faster parallelised version for int/double.
     # Cbetween supports length(lower)==1 (recycled) and (from v1.12.0) length(lower)==length(x).
     # length(upper) can be 1 or length(x) independently of lower
-    .Call(Cbetween, x, lower, upper, incbounds)
+    .Call(Cbetween, x, lower, upper, incbounds, NAbounds)
   } else {
-    if (isTRUE(getOption("datatable.verbose"))) cat("optimised between not available for this data type or NAbounds argument, fallback to slow R routine\n")
-    # now just for character input. TODO: support character between in Cbetween and remove this branch
-    xlen = length(x)
-    llen = length(lower)
-    ulen = length(upper)
-    if ((llen!=1L && llen!=xlen) || (ulen!=1L && ulen!=xlen))
-      stop("lower/upper bounds recycling works only for scalar bound value")
-    # support NAs as missing bounds also for character #3667
-    lower_na = is.na(lower)
-    upper_na = is.na(upper)
-    if (NAbounds || !any(c(lower_na, upper_na))) {
-      if (incbounds) x>=lower & x<=upper
-      else x>lower & x<upper
-    } else {
-      if (llen==1L && ulen==1L) { # bounds as scalar
-        if (lower_na && upper_na) {
-          rep(TRUE, xlen)
-        } else if (lower_na) {
-          if (incbounds) x<=upper else x<upper
-        } else if (upper_na) {
-          if (incbounds) x>=lower else x>lower
-        } else {
-          stop("internal error in between, all cases of lower/upper NAs for character should be handled already, please report") # nocov
-        }
-      } else { # bounds as vector, slow
-        ans = logical(length(x))
-        if (llen==1L) {
-          lower = rep(lower, xlen)
-          lower_na = rep(lower_na, xlen)
-        }
-        if (ulen==1L) {
-          upper = rep(upper, xlen)
-          upper_na = rep(upper_na, xlen)
-        }
-        for (i in seq_len(xlen)) {
-          if (lower_na[i] && upper_na[i]) {
-            ans[i] = TRUE
-          } else if (!lower_na[i] && !upper_na[i]) {
-            ans[i] = if (incbounds) x[i]>=lower[i] & x[i]<=upper[i] else x[i]>lower[i] & x[i]<upper[i]
-          } else if (lower_na[i] && !upper_na[i]) {
-            ans[i] = if (incbounds) x[i]<=upper[i] else x[i]<upper[i]
-          } else if (!lower_na[i] && upper_na[i]) {
-            ans[i] = if (incbounds) x[i]>=lower[i] else x[i]>lower[i]
-          } else {
-            stop("internal error in between, missing bound for character, vector bounds, please report") # nocov
-          }
-        }
-        ans
-      }
-    }
+    if (isTRUE(getOption("datatable.verbose"))) cat("optimised between not available for this data type, fallback to slow R routine\n")
+    if (isTRUE(NAbounds)) stop("Not yet implemented NAbounds for this non-numeric and non-character type")
+    if (incbounds) x>=lower & x<=upper
+    else x>lower & x<upper
   }
 }
 

@@ -228,9 +228,7 @@
 
 27. `integer64` sum-by-group is now properly optimized, [#1647](https://github.com/Rdatatable/data.table/issues/1647), [#3464](https://github.com/Rdatatable/data.table/issues/3464). Thanks to @mlandry22-h2o for the report.
 
-28. `between()` and operator `%between%` now handle missing bounds for character input as documented, [#3667](https://github.com/Rdatatable/data.table/issues/3667). Thanks to @AnonymousBoba for the report.
-They also now support `nanotime` class objects. Further, starting from 1.12.0 missing value has been interpreted as missing bound and returned `TRUE`, rather than unknown bound returning `NA`, [#3522](https://github.com/Rdatatable/data.table/issues/3522). Thanks to @cguill95 for reporting.
-New argument `NAbounds` has been added to achieve the old behaviour; see `?between`.
+28. From v1.12.0, `between()` and `%between%` interpreted missing values in `lower=` or `upper=` as missing bounds and return `TRUE` rather than unknown bound returning `NA`, [#3522](https://github.com/Rdatatable/data.table/issues/3522) (thanks @cguill95). New argument `NAbound` has been added to achieve the old behaviour; see `?between`. This is now consistent for character input, [#3667](https://github.com/Rdatatable/data.table/issues/3667) (thanks @AnonymousBoba), and class `nanotime` is now supported.
 
 #### NOTES
 

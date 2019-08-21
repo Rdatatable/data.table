@@ -202,7 +202,7 @@ void nafillInteger(int32_t *x, uint_fast64_t nx, unsigned int type, int32_t fill
 SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP inplace, SEXP cols, SEXP verbose);
 
 // between.c
-SEXP between(SEXP x, SEXP lower, SEXP upper, SEXP bounds);
+SEXP between(SEXP x, SEXP lower, SEXP upper, SEXP incbounds, SEXP NAbounds);
 
 // coalesce.c
 SEXP coalesce(SEXP x, SEXP inplace);
