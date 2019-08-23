@@ -9449,7 +9449,7 @@ test(1656, nrow(dt[dt, .(x.id, x.a, x.b, x.c, x.row_id, i.id, i.a, i.b, i.c, i.r
 
 # between is vectorised, #534
 set.seed(1L)
-dt = data.table(x=sample(3,10,TRUE), y=sample(2,10,TRUE), z=sample(5,10,TRUE))
+dt = data.table(x=sample(3,10,TRUE), y=sample(2,10,TRUE), z=1L+sample(2,10,TRUE))
 test(1657, dt[x %between% list(y,z)], dt[x>=y & x<=z])
 
 # fwrite tests
@@ -15724,6 +15724,11 @@ test(2081.01, between(as.raw(1:5), as.raw(2), as.raw(4)),                  c(FAL
 test(2081.02, between(as.raw(1:5), as.raw(2), as.raw(4), incbounds=FALSE), c(FALSE, FALSE, TRUE, FALSE, FALSE), output="fallback to slow R")
 options(old)
 test(2081.03, between(3i, NA, NA), error="Not yet implemented NAbounds=TRUE for this non-numeric and non-character type")
+# check that lower<=upper
+test(2082.01, between(1:3, INT(2,3,4), 2L), error="Item 2 of lower (3) is greater than item 1 of upper (2)")
+test(2082.02, between(as.double(1:3), c(2,3,4), 2), error="Item 2 of lower [(]3.*[)] is greater than item 1 of upper [(]2.*[)]")
+if (test_bit64) test(2082.03, between(as.integer64(1:3), as.integer64(2), as.integer64(1)), error="Item 1 of lower (2) is greater than item 1 of upper (1)")
+test(2082.04, between(letters[1:2], c("foo","bar"), c("bar")), error="Item 1 of lower ('foo') is greater than item 1 of upper ('bar')")
 
 
 ###################################
