@@ -12,10 +12,10 @@ SEXP between(SEXP x, SEXP lower, SEXP upper, SEXP incbounds, SEXP NAboundsArg) {
     error("Incompatible vector lengths: length(x)==%d length(lower)==%d length(upper)==%d. Each should be either length 1 or the length of the longest.", nx, nl, nu);
   }
   if (!isLogical(incbounds) || LOGICAL(incbounds)[0]==NA_LOGICAL)
-    error("incbounds must be logical TRUE or FALSE");
+    error("incbounds must be TRUE or FALSE");
   const bool open = !LOGICAL(incbounds)[0];
   if (!isLogical(NAboundsArg) || LOGICAL(NAboundsArg)[0]==FALSE)
-    error("NAbounds must be logical TRUE or NA");
+    error("NAbounds must be TRUE or NA");
   const bool NAbounds = LOGICAL(NAboundsArg)[0]==TRUE;
   const bool verbose = GetVerbose();
 

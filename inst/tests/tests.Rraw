@@ -7159,13 +7159,13 @@ test(1529.04, between(x, 1L, 5L, TRUE), x >= 1L & x <= 5L)
 test(1529.05, x %between% c(1L, 5L), x >= 1L & x <= 5L)
 test(1529.06, between(x, 1L, 5L, FALSE), x > 1L & x < 5L)
 x = runif(15)
-test(1529.07, between(x, 0.25, 0.75, TRUE), x >= 0.25 & x <= 0.75)
+test(1529.07, between(x, 0.25, 0.75, incbounds=TRUE), x >= 0.25 & x <= 0.75)
 test(1529.08, x %between% c(0.25, 0.75), x >= 0.25 & x <= 0.75)
-test(1529.09, between(x, 0.25, 0.75, FALSE), x > 0.25 & x < 0.75)
+test(1529.09, between(x, 0.25, 0.75, incbounds=FALSE), x > 0.25 & x < 0.75)
 x = c(NA, runif(15), NA)
-test(1529.10, between(x, 0.25, 0.75, TRUE), x >= 0.25 & x <= 0.75)
+test(1529.10, between(x, 0.25, 0.75, incbounds=TRUE), x >= 0.25 & x <= 0.75)
 test(1529.11, x %between% c(0.25, 0.75), x >= 0.25 & x <= 0.75)
-test(1529.12, between(x, 0.25, 0.75, FALSE), x > 0.25 & x < 0.75)
+test(1529.12, between(x, 0.25, 0.75, incbounds=FALSE), x > 0.25 & x < 0.75)
 
 # add tests for which.first and which.last
 # which.first
@@ -14657,8 +14657,8 @@ test(2037.2, names(DT), 'a')
 test(2037.3, unname(table(unlist(strsplit(capture.output(foo(DT)), '\n|\\s+')))['ptr']), 1L)
 
 # `between` invalid args, and verbose #3516
-test(2038.01, between(1:5, 2, 4, incbounds=423), error="incbounds must be logical")
-test(2038.02, between(1:5, 2, 4, incbounds=NA), error="incbounds must be logical")
+test(2038.01, between(1:5, 2, 4, incbounds=423), error="incbounds must be TRUE or FALSE")
+test(2038.02, between(1:5, 2, 4, incbounds=NA), error="incbounds must be TRUE or FALSE")
 old = options(datatable.verbose=TRUE)
 test(2038.03, between(1:5, 2L, 4L), output="between parallel processing of integer took")
 test(2038.04, between(1:5, rep(2L,5L), rep(4L, 5L)), output="between parallel processing of integer took")
@@ -14716,34 +14716,35 @@ options(old)
 # between int64 support
 if (test_bit64) {
   as.i64 = bit64::as.integer64
-  test(2039.01, between(1:10, as.i64(3), as.i64(6)), error="x is not integer64 but.*Please align classes")
-  test(2039.02, between(1:10, 3, as.i64(6)),         error="x is not integer64 but.*Please align classes")
+  test(2039.01, between(1:10, as.i64(3), as.i64(6)),  error="x is not integer64 but.*Please align classes")
+  test(2039.02, between(1:10, 3, as.i64(6)),          error="x is not integer64 but.*Please align classes")
+  test(2039.03, between(as.i64(1:3), "2", as.i64(4)), error="x is integer64 but lower and/or upper are not")
   old = options("datatable.verbose"=TRUE)
   x = as.i64(1:10)
   ans36 = c(FALSE,FALSE,TRUE,TRUE,TRUE,TRUE,FALSE,FALSE,FALSE,FALSE)
   ans36open = c(FALSE,FALSE,FALSE,TRUE,TRUE,FALSE,FALSE,FALSE,FALSE,FALSE)
-  test(2039.03, between(x, 3, 6), ans36, output="between parallel processing of integer64 took")
-  test(2039.04, between(x, 3, 6, incbounds=FALSE), ans36open, output="between parallel processing of integer64 took")
-  test(2039.05, between(x, 3L, 6), ans36, output="between parallel processing of integer64 took")
-  test(2039.06, between(x, 3L, 6, incbounds=FALSE), ans36open, output="between parallel processing of integer64 took")
-  test(2039.07, between(x, 3, 6L), ans36, output="between parallel processing of integer64 took")
-  test(2039.08, between(x, 3, 6L, incbounds=FALSE), ans36open, output="between parallel processing of integer64 took")
-  test(2039.09, between(x, 3L, 6L), ans36, output="between parallel processing of integer64 took")
-  test(2039.10, between(x, 3L, 6L, incbounds=FALSE), ans36open, output="between parallel processing of integer64 took")
-  test(2039.11, between(x, rep(3, 10L), rep(6, 10L)), ans36, output="between parallel processing of integer64 took")
-  test(2039.12, between(x, rep(3, 10L), rep(6, 10L), incbounds=FALSE), ans36open, output="between parallel processing of integer64 took")
+  test(2039.04, between(x, 3, 6), ans36, output="between parallel processing of integer64 took")
+  test(2039.05, between(x, 3, 6, incbounds=FALSE), ans36open, output="between parallel processing of integer64 took")
+  test(2039.06, between(x, 3L, 6), ans36, output="between parallel processing of integer64 took")
+  test(2039.07, between(x, 3L, 6, incbounds=FALSE), ans36open, output="between parallel processing of integer64 took")
+  test(2039.08, between(x, 3, 6L), ans36, output="between parallel processing of integer64 took")
+  test(2039.09, between(x, 3, 6L, incbounds=FALSE), ans36open, output="between parallel processing of integer64 took")
+  test(2039.10, between(x, 3L, 6L), ans36, output="between parallel processing of integer64 took")
+  test(2039.11, between(x, 3L, 6L, incbounds=FALSE), ans36open, output="between parallel processing of integer64 took")
+  test(2039.12, between(x, rep(3, 10L), rep(6, 10L)), ans36, output="between parallel processing of integer64 took")
+  test(2039.13, between(x, rep(3, 10L), rep(6, 10L), incbounds=FALSE), ans36open, output="between parallel processing of integer64 took")
   maxint = 2147483647
-  test(2039.13, between(x+maxint, 3+maxint, 6+maxint), ans36, output="between parallel processing of integer64 took")
-  test(2039.14, between(x+maxint, 3+maxint, 6+maxint, incbounds=FALSE), ans36open, output="between parallel processing of integer64 took")
+  test(2039.14, between(x+maxint, 3+maxint, 6+maxint), ans36, output="between parallel processing of integer64 took")
+  test(2039.15, between(x+maxint, 3+maxint, 6+maxint, incbounds=FALSE), ans36open, output="between parallel processing of integer64 took")
   x[5] = NA
   ans36[5] = NA
   ans36open[5] = NA
-  test(2039.15, between(x+maxint, 3+maxint, 6+maxint), ans36, output="between parallel processing of integer64 took")
-  test(2039.16, between(x+maxint, 3+maxint, 6+maxint, incbounds=FALSE), ans36open, output="between parallel processing of integer64 took")
-  test(2039.17, between(x+maxint, NA, 6+maxint), c(TRUE, TRUE, tail(ans36, -2L)), output="between parallel processing of integer64 took")
-  test(2039.18, between(x+maxint, 3+maxint, NA, incbounds=FALSE), c(head(ans36open, -5L), rep(TRUE, 5)), output="between parallel processing of integer64 took")
-  test(2039.19, between(x+maxint, rep(NA, 10L), rep(6+maxint, 10L)), c(TRUE, TRUE, tail(ans36, -2L)), output="between parallel processing of integer64 took")
-  test(2039.20, between(x+maxint, rep(3+maxint, 10L), rep(NA, 10L), incbounds=FALSE), c(head(ans36open, -5L), rep(TRUE, 5)), output="between parallel processing of integer64 took")
+  test(2039.16, between(x+maxint, 3+maxint, 6+maxint), ans36, output="between parallel processing of integer64 took")
+  test(2039.17, between(x+maxint, 3+maxint, 6+maxint, incbounds=FALSE), ans36open, output="between parallel processing of integer64 took")
+  test(2039.18, between(x+maxint, NA, 6+maxint), c(TRUE, TRUE, tail(ans36, -2L)), output="between parallel processing of integer64 took")
+  test(2039.19, between(x+maxint, 3+maxint, NA, incbounds=FALSE), c(head(ans36open, -5L), rep(TRUE, 5)), output="between parallel processing of integer64 took")
+  test(2039.20, between(x+maxint, rep(NA, 10L), rep(6+maxint, 10L)), c(TRUE, TRUE, tail(ans36, -2L)), output="between parallel processing of integer64 took")
+  test(2039.21, between(x+maxint, rep(3+maxint, 10L), rep(NA, 10L), incbounds=FALSE), c(head(ans36open, -5L), rep(TRUE, 5)), output="between parallel processing of integer64 took")
   options(old)
 }
 
@@ -15707,6 +15708,12 @@ if (test_nanotime) {
   test(2080.04, between(1:10, nanotime(3), nanotime(6)), error="x is not integer64 but.*Please align classes")
   test(2080.05, between(1:10, 3, nanotime(6)),           error="x is not integer64 but.*Please align classes")
 }
+# use raw type to cover fallback to R in between.R
+old = options(datatable.verbose=TRUE)
+test(2081.01, between(as.raw(1:5), as.raw(2), as.raw(4)),                  c(FALSE, TRUE, TRUE, TRUE, FALSE),   output="fallback to slow R")
+test(2081.02, between(as.raw(1:5), as.raw(2), as.raw(4), incbounds=FALSE), c(FALSE, FALSE, TRUE, FALSE, FALSE), output="fallback to slow R")
+options(old)
+test(2081.03, between(3i, NA, NA), error="Not yet implemented NAbounds=TRUE for this non-numeric and non-character type")
 
 
 ###################################

@@ -1,6 +1,5 @@
 # is x[i] in between lower[i] and upper[i] ?
 between = function(x, lower, upper, incbounds=TRUE, NAbounds=TRUE) {
-  if (!isTRUEorNA(NAbounds)) stop("NAbounds must be TRUE or NA")
   if (is.logical(x)) stop("between has been x of type logical")
   if (is.logical(lower)) lower = as.integer(lower)   # typically NA (which is logical type)
   if (is.logical(upper)) upper = as.integer(upper)   # typically NA (which is logical type)
@@ -39,7 +38,7 @@ between = function(x, lower, upper, incbounds=TRUE, NAbounds=TRUE) {
     .Call(Cbetween, x, lower, upper, incbounds, NAbounds)
   } else {
     if (isTRUE(getOption("datatable.verbose"))) cat("optimised between not available for this data type, fallback to slow R routine\n")
-    if (isTRUE(NAbounds)) stop("Not yet implemented NAbounds for this non-numeric and non-character type")
+    if (isTRUE(NAbounds) && (anyNA(lower) || anyNA(upper))) stop("Not yet implemented NAbounds=TRUE for this non-numeric and non-character type")
     if (incbounds) x>=lower & x<=upper
     else x>lower & x<upper
   }
