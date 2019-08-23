@@ -7,22 +7,28 @@ between = function(x, lower, upper, incbounds=TRUE, NAbounds=TRUE) {
   is.px = function(x) inherits(x, "POSIXct")
   is.i64 = function(x) inherits(x, "integer64")   # this is true for nanotime too
   # POSIX special handling to auto coerce character
-  if (is.px(x) && !is.null(tz<-attr(x, "tzone", exact=TRUE)) && nzchar(tz) &&
-      (is.character(lower) || is.character(upper))) {
-    try_posix_cast = function(x, tz) {tryCatch(
-      list(status=0L, value=as.POSIXct(x, tz = tz)),
-      error = function(e) list(status=1L, value=NULL, message=e[["message"]])
-    )}
-    if (is.character(lower)) {
-      ans = try_posix_cast(lower, tz)
-      if (ans$status==0L) lower = ans$value
-      else stop("'between' function the 'x' argument is a POSIX class while 'lower' was not, coercion to POSIX failed with: ", ans$message)
-    }
-    if (is.character(upper)) {
-      ans = try_posix_cast(upper, tz)
-      if (ans$status==0L) upper = ans$value
-      else stop("'between' function the 'x' argument is a POSIX class while 'upper' was not, coercion to POSIX failed with: ", ans$message)
-    }
+  if (is.px(x) && (is.character(lower) || is.character(upper))) {
+    tz = attr(x, "tzone", exact=TRUE)
+    if (is.null(tz)) tz = ""
+    if (is.character(lower)) lower = tryCatch(as.POSIXct(lower, tz=tz), error=function(e)stop(
+      "'between' function the 'x' argument is a POSIX class while 'lower' was not, coercion to POSIX failed with: ", e$message))
+    if (is.character(upper)) upper = tryCatch(as.POSIXct(upper, tz=tz), error=function(e)stop(
+      "'between' function the 'x' argument is a POSIX class while 'upper' was not, coercion to POSIX failed with: ", e$message))
+
+   # try_posix_cast = function(x, tz) {tryCatch(
+   #   list(status=0L, value=as.POSIXct(x, tz = tz)),
+   #   error = function(e) list(status=1L, value=NULL, message=e[["message"]])
+   # )}
+   # if (is.character(lower)) {
+   #   ans = try_posix_cast(lower, tz)
+   #   if (ans$status==0L) lower = ans$value
+   #   else stop("'between' function the 'x' argument is a POSIX class while 'lower' was not, coercion to POSIX failed with: ", ans$message)
+   # }
+   # if (is.character(upper)) {
+   #   ans = try_posix_cast(upper, tz)
+   #   if (ans$status==0L) upper = ans$value
+   #   else stop("'between' function the 'x' argument is a POSIX class while 'upper' was not, coercion to POSIX failed with: ", ans$message)
+   # }
     stopifnot(is.px(x), is.px(lower), is.px(upper)) # nocov # internal
   }
   # POSIX check timezone match

@@ -86,7 +86,7 @@ SEXP sym_starts, char_starts;
 SEXP sym_maxgrpn;
 SEXP sym_colClassesAs;
 SEXP sym_verbose;
-bool INHERITS(SEXP x, SEXP char_);
+SEXP sym_inherits;
 long long DtoLL(double x);
 double LLtoD(long long x);
 bool GetVerbose();
@@ -213,3 +213,6 @@ SEXP isReallyReal(SEXP x);
 SEXP colnamesInt(SEXP x, SEXP cols, SEXP check_dups);
 void coerceFill(SEXP fill, double *dfill, int32_t *ifill, int64_t *i64fill);
 SEXP coerceFillR(SEXP fill);
+bool INHERITS(SEXP x, SEXP char_);
+bool Rinherits(SEXP x, SEXP char_);
+

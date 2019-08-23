@@ -14674,17 +14674,16 @@ up = as.POSIXct('2016-09-18 09:00:00')
 test(2038.09, between(x, dn, up), output="between parallel processing of double with closed bounds took")
 test(2038.10, between(x, dn, up, incbounds=FALSE), output="between parallel processing of double with open bounds took")
 
-# also handling of string lower/upper bounds _only when x has a time zone_
-x = as.POSIXct("2016-09-18 07:00:00") + 0:10*60*15
+# also handling of string lower/upper bounds
+x = as.POSIXct("2016-09-18 07:00:00") + 0:10*60*15  # local time zone
 dn = '2016-09-18 08:00:00'
 up = '2016-09-18 09:00:00'
-test(2038.11, between(x, dn, up), output = 'optimised between not available')
-attr(x, 'tzone') = 'UTC'
-test(2038.12, between(x, dn, up), output = 'between parallel processing of double')
+test(2038.11, between(x, dn, up), ans<-as.logical(c(0,0,0,0,1,1,1,1,1,0,0)), output='between parallel processing of double with closed bounds')
+attr(x, 'tzone') = 'UTC' # this conversion will result in different UTC times depending on which local time zone the test runs in
+test(2038.12, between(x, x[5], x[9]), ans, output='between parallel processing of double with closed bounds')
 
 # additional flexibility -- cast when one bound is already POSIXct
-up = as.POSIXct(up, tz="UTC")
-test(2038.13, between(x, dn, up), output = 'between parallel processing of double')
+test(2038.13, between(x, as.character(x[5]), x[9]), ans, output='between parallel processing of double')
 options(old)
 
 # exceptions in char to POSIX coercion
@@ -14710,8 +14709,8 @@ test(2038.18, between(1:5, 2, 4), output="between parallel processing of integer
 test(2038.19, between(1:5, 2L, 4), output="between parallel processing of integer")
 test(2038.20, between(1:5, 2, 4L), output="between parallel processing of integer")
 # revdep regression #3565
-test(2038.21, between(1:10, -Inf, Inf),            rep(TRUE,10), output="between parallel processing of double using closed bounds")
-test(2038.22, between(as.double(1:10), -Inf, Inf), rep(TRUE,10), output="between parallel processing of double using closed bounds")
+test(2038.21, between(1:10, -Inf, Inf),            rep(TRUE,10), output="between parallel processing of double with closed bounds")
+test(2038.22, between(as.double(1:10), -Inf, Inf), rep(TRUE,10), output="between parallel processing of double with closed bounds")
 options(old)
 
 # between int64 support
@@ -14723,26 +14722,26 @@ if (test_bit64) {
   x = as.i64(1:10)
   ans36 = c(FALSE,FALSE,TRUE,TRUE,TRUE,TRUE,FALSE,FALSE,FALSE,FALSE)
   ans36open = c(FALSE,FALSE,FALSE,TRUE,TRUE,FALSE,FALSE,FALSE,FALSE,FALSE)
-  test(2039.03, between(x, 3, 6), ans36, output="between parallel processing of integer64 with recycling")
-  test(2039.04, between(x, 3, 6, incbounds=FALSE), ans36open, output="between parallel processing of integer64 with recycling")
-  test(2039.05, between(x, 3L, 6), ans36, output="between parallel processing of integer64 with recycling")
-  test(2039.06, between(x, 3L, 6, incbounds=FALSE), ans36open, output="between parallel processing of integer64 with recycling")
-  test(2039.07, between(x, 3, 6L), ans36, output="between parallel processing of integer64 with recycling")
-  test(2039.08, between(x, 3, 6L, incbounds=FALSE), ans36open, output="between parallel processing of integer64 with recycling")
-  test(2039.09, between(x, 3L, 6L), ans36, output="between parallel processing of integer64 with recycling")
-  test(2039.10, between(x, 3L, 6L, incbounds=FALSE), ans36open, output="between parallel processing of integer64 with recycling")
+  test(2039.03, between(x, 3, 6), ans36, output="between parallel processing of integer64 took")
+  test(2039.04, between(x, 3, 6, incbounds=FALSE), ans36open, output="between parallel processing of integer64 took")
+  test(2039.05, between(x, 3L, 6), ans36, output="between parallel processing of integer64 took")
+  test(2039.06, between(x, 3L, 6, incbounds=FALSE), ans36open, output="between parallel processing of integer64 took")
+  test(2039.07, between(x, 3, 6L), ans36, output="between parallel processing of integer64 took")
+  test(2039.08, between(x, 3, 6L, incbounds=FALSE), ans36open, output="between parallel processing of integer64 took")
+  test(2039.09, between(x, 3L, 6L), ans36, output="between parallel processing of integer64 took")
+  test(2039.10, between(x, 3L, 6L, incbounds=FALSE), ans36open, output="between parallel processing of integer64 took")
   test(2039.11, between(x, rep(3, 10L), rep(6, 10L)), ans36, output="between parallel processing of integer64 took")
   test(2039.12, between(x, rep(3, 10L), rep(6, 10L), incbounds=FALSE), ans36open, output="between parallel processing of integer64 took")
   maxint = 2147483647
-  test(2039.13, between(x+maxint, 3+maxint, 6+maxint), ans36, output="between parallel processing of integer64 with recycling")
-  test(2039.14, between(x+maxint, 3+maxint, 6+maxint, incbounds=FALSE), ans36open, output="between parallel processing of integer64 with recycling")
+  test(2039.13, between(x+maxint, 3+maxint, 6+maxint), ans36, output="between parallel processing of integer64 took")
+  test(2039.14, between(x+maxint, 3+maxint, 6+maxint, incbounds=FALSE), ans36open, output="between parallel processing of integer64 took")
   x[5] = NA
   ans36[5] = NA
   ans36open[5] = NA
-  test(2039.15, between(x+maxint, 3+maxint, 6+maxint), ans36, output="between parallel processing of integer64 with recycling")
-  test(2039.16, between(x+maxint, 3+maxint, 6+maxint, incbounds=FALSE), ans36open, output="between parallel processing of integer64 with recycling")
-  test(2039.17, between(x+maxint, NA, 6+maxint), c(TRUE, TRUE, tail(ans36, -2L)), output="between parallel processing of integer64 with recycling")
-  test(2039.18, between(x+maxint, 3+maxint, NA, incbounds=FALSE), c(head(ans36open, -5L), rep(TRUE, 5)), output="between parallel processing of integer64 with recycling")
+  test(2039.15, between(x+maxint, 3+maxint, 6+maxint), ans36, output="between parallel processing of integer64 took")
+  test(2039.16, between(x+maxint, 3+maxint, 6+maxint, incbounds=FALSE), ans36open, output="between parallel processing of integer64 took")
+  test(2039.17, between(x+maxint, NA, 6+maxint), c(TRUE, TRUE, tail(ans36, -2L)), output="between parallel processing of integer64 took")
+  test(2039.18, between(x+maxint, 3+maxint, NA, incbounds=FALSE), c(head(ans36open, -5L), rep(TRUE, 5)), output="between parallel processing of integer64 took")
   test(2039.19, between(x+maxint, rep(NA, 10L), rep(6+maxint, 10L)), c(TRUE, TRUE, tail(ans36, -2L)), output="between parallel processing of integer64 took")
   test(2039.20, between(x+maxint, rep(3+maxint, 10L), rep(NA, 10L), incbounds=FALSE), c(head(ans36open, -5L), rep(TRUE, 5)), output="between parallel processing of integer64 took")
   options(old)
@@ -15679,9 +15678,9 @@ test(2078.04, between(letters, NA_character_, "m", incbounds=TRUE), c(rep(TRUE, 
 test(2078.05, between(letters, NA_character_, "m", incbounds=FALSE), c(rep(TRUE, 12L), rep(FALSE, 14L)))
 test(2078.06, between(letters, NA_character_, NA_character_, incbounds=TRUE), rep(TRUE, 26L))
 test(2078.07, between(letters, NA_character_, NA_character_, incbounds=FALSE), rep(TRUE, 26L))
-test(2078.11, between(c("a","b","c"), c("a","b"), "d"), error="bounds recycling works only for scalar")
-test(2078.12, between(c("a","b","c"), "a", c("b","d")), error="bounds recycling works only for scalar")
-test(2078.13, between(c("a","b","c"), c("a","b"), c("b","d")), error="bounds recycling works only for scalar")
+test(2078.11, between(c("a","b","c"), c("a","b"), "d"), error="Incompatible vector lengths.*3.*2.*1")
+test(2078.12, between(c("a","b","c"), "a", c("b","d")), error="Incompatible vector lengths.*3.*2.*1")
+test(2078.13, between(c("a","b","c"), c("a","b"), c("b","d")), error="Incompatible vector lengths.*3.*2.*2")
 test(2078.21, between(c("a","c","e"), c("b",NA,"d"), "e", incbounds=TRUE), c(FALSE, TRUE, TRUE))
 test(2078.22, between(c("a","c","e"), c("b",NA,"d"), "e", incbounds=FALSE), c(FALSE, TRUE, FALSE))
 test(2078.23, between(c("a","c","e"), c("b","c","d"), NA, incbounds=TRUE), c(FALSE, TRUE, TRUE))
@@ -15693,9 +15692,9 @@ test(2078.28, between(c("a","c","e"), "a", c("b",NA,"d"), incbounds=FALSE), c(FA
 test(2078.29, between(c("a","c","e"), NA, c("b",NA,"d"), incbounds=TRUE), c(TRUE, TRUE, FALSE))
 test(2078.30, between(c("a","c","e"), NA, c("b",NA,"d"), incbounds=FALSE), c(TRUE, TRUE, FALSE))
 # between NA bound as unknown rather than missing #3522
-test(2079.01, between(1:5, 3L, NA, incbounds=TRUE, NAbounds=TRUE), c(FALSE, FALSE, NA, NA, NA))
-test(2079.02, between(1:5, 3L, NA, incbounds=FALSE, NAbounds=TRUE), c(FALSE, FALSE, FALSE, NA, NA))
-test(2079.03, between(1:5, 3L, NA, incbounds=FALSE, NAbounds=NA), error="NAbounds must be TRUE or FALSE")
+test(2079.01, between(1:5, 3L, NA, incbounds=TRUE, NAbounds=NA), c(FALSE, FALSE, NA, NA, NA))
+test(2079.02, between(1:5, 3L, NA, incbounds=FALSE, NAbounds=TRUE), c(FALSE, FALSE, FALSE, TRUE, TRUE))
+test(2079.03, between(1:5, 3L, NA, incbounds=FALSE, NAbounds=FALSE), error="NAbounds must be TRUE or NA")
 # nanotime support
 if (test_nanotime) {
   n=nanotime(1:4)
@@ -15703,7 +15702,7 @@ if (test_nanotime) {
   op = options(datatable.verbose=TRUE)
   test(2080.01, between(n, nanotime(2), nanotime(10)), c(FALSE, NA, TRUE, TRUE), output="between parallel processing of integer64")
   test(2080.02, between(n, nanotime(3), nanotime(10), incbounds=FALSE), c(FALSE, NA, FALSE, TRUE), output="between parallel processing of integer64")
-  test(2080.03, between(n, nanotime(3), nanotime(NA), incbounds=FALSE, NAbounds=TRUE), c(FALSE, NA, FALSE, NA), output="optimised between not available for this data type or NAbounds argument")
+  test(2080.03, between(n, nanotime(3), nanotime(NA), incbounds=FALSE, NAbounds=NA), c(FALSE, NA, FALSE, NA), output="between parallel processing of integer64")
   options(op)
   test(2080.04, between(1:10, nanotime(3), nanotime(6)), error="are integer64 class while 'x' is not")
   test(2080.05, between(1:10, 3, nanotime(6)), error="are integer64 class while 'x' is not")
