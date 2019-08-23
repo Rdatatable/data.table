@@ -45,8 +45,6 @@ between = function(x, lower, upper, incbounds=TRUE, NAbounds=TRUE) {
     if (!requireNamespace("bit64", quietly=TRUE)) stop("trying to use integer64 class when 'bit64' package is not installed") # nocov
     if (!is.i64(lower) && is.numeric(lower)) lower = bit64::as.integer64(lower)
     if (!is.i64(upper) && is.numeric(upper)) upper = bit64::as.integer64(upper)
-  } else if (is.i64(lower) || is.i64(upper)) {
-    stop("'lower' and/or 'upper' are integer64 class while 'x' is not. Please align classes before passing to 'between'.")
   }
   is.supported = function(x) is.numeric(x) || is.character(x) || is.px(x)
   if (is.supported(x) && is.supported(lower) && is.supported(upper)) {

@@ -79,7 +79,7 @@ SEXP between(SEXP x, SEXP lower, SEXP upper, SEXP incbounds, SEXP NAboundsArg) {
   case REALSXP:
     if (Rinherits(x, char_integer64)) {
       if (!Rinherits(lower, char_integer64) || !Rinherits(upper, char_integer64))
-        error("Internal error: x is integer64 but lower and/or upper are not. Should have been caught at R level."); // # nocov
+        error("x is integer64 but lower and/or upper are not."); // e.g. between(int64, character, character)
       const int64_t *lp = (int64_t *)REAL(lower);
       const int64_t *up = (int64_t *)REAL(upper);
       const int64_t *xp = (int64_t *)REAL(x);
@@ -101,7 +101,7 @@ SEXP between(SEXP x, SEXP lower, SEXP upper, SEXP incbounds, SEXP NAboundsArg) {
       if (verbose) Rprintf("between parallel processing of integer64 took %8.3fs\n", omp_get_wtime()-tic);
     } else {
       if (Rinherits(lower, char_integer64) || Rinherits(upper, char_integer64))
-        error("Internal error: x is not integer64 but lower and/or upper is integer64. Should have been caught at R level."); // # nocov
+        error("x is not integer64 but lower and/or upper is integer64. Please align classes.");
       const double *lp = REAL(lower);
       const double *up = REAL(upper);
       const double *xp = REAL(x);
