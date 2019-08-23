@@ -299,6 +299,7 @@ replace_order = function(isub, verbose, env) {
 
   # setdiff removes duplicate entries, which'll create issues with duplicated names. Use %chin% instead.
   dupdiff = function(x, y) x[!x %chin% y]
+  dupintersect = function(x, y) x[x %chin% y]
 
   if (!missing(i)) {
     xo = NULL
@@ -868,7 +869,6 @@ replace_order = function(isub, verbose, env) {
         }
         setattr(byval, "names", bynames)  # byval is just a list not a data.table hence setattr not setnames
       }
-
       jvnames = NULL
       if (is.name(jsub)) {
         # j is a single unquoted column name
@@ -959,8 +959,13 @@ replace_order = function(isub, verbose, env) {
         # .SDcols might include grouping columns if users wants that, but normally we expect user not to include them in .SDcols
       } else {
         if (!missing(.SDcols)) warning("This j doesn't use .SD but .SDcols has been supplied. Ignoring .SDcols. See ?data.table.")
-        allcols = c(names(x), xdotprefix, names(i), idotprefix)
-        ansvars = setdiff(intersect(av,allcols), bynames)
+        ## VIOLATES TESTED BEHAVIOR WRT DUPLICATES, SEE TESTS 1290 **
+        if (anyDuplicated(used_from_x <- dupintersect(names_x, av))) {
+          dupcols = unique(used_from_x[duplicated(used_from_x)])
+          stop("Unable to disambiguate reference to duplicated columns in x: ", brackify(dupcols))
+        }
+        allcols = c(names_x, xdotprefix, names_i, idotprefix)
+        ansvars = sdvars = setdiff(intersect(allcols, av), bynames)
         if (verbose) cat("Detected that j uses these columns:",if (!length(ansvars)) "<none>" else paste(ansvars,collapse=","),"\n")
         # using a few named columns will be faster
         # Consider:   DT[,max(diff(date)),by=list(month=month(date))]
