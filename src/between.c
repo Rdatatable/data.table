@@ -147,8 +147,8 @@ SEXP between(SEXP x, SEXP lower, SEXP upper, SEXP incbounds, SEXP NAboundsArg) {
     const SEXP *lp = STRING_PTR(lower);
     const SEXP *up = STRING_PTR(upper);
     const SEXP *xp = STRING_PTR(x);
-    #define LCMP strcmp(CHAR(ENC2UTF8(l)),CHAR(ENC2UTF8(elem)))<=-open
-    #define UCMP strcmp(CHAR(ENC2UTF8(elem)),CHAR(ENC2UTF8(u)))<=-open
+    #define LCMP (strcmp(CHAR(ENC2UTF8(l)),CHAR(ENC2UTF8(elem)))<=-open)
+    #define UCMP (strcmp(CHAR(ENC2UTF8(elem)),CHAR(ENC2UTF8(u)))<=-open)
     // TODO if all ascii can be parallel, otherwise ENC2UTF8 could allocate
     if (NAbounds) {
       for (int i=0; i<longest; i++) {
@@ -166,7 +166,7 @@ SEXP between(SEXP x, SEXP lower, SEXP upper, SEXP incbounds, SEXP NAboundsArg) {
     if (verbose) Rprintf("between non-parallel processing of character took %8.3fs\n", omp_get_wtime()-tic);
   } break;
   default:
-    error("Unsupported type '%s'", type2char(TYPEOF(x)));
+    error("Internal error: between.c unsupported type '%s' should have been caught at R level", type2char(TYPEOF(x)));  // # nocov
   }
   UNPROTECT(nprotect);
   return ans;
