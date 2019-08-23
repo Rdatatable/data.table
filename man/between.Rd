@@ -16,7 +16,7 @@ This can be changed by setting \code{NAbounds} to \code{TRUE}.
 the intervals provided in \code{lower,upper}.
 }
 \usage{
-between(x, lower, upper, incbounds=TRUE, NAbounds=FALSE)
+between(x, lower, upper, incbounds=TRUE, NAbounds=TRUE)
 x \%between\% y
 
 inrange(x, lower, upper, incbounds=TRUE)
@@ -33,7 +33,7 @@ interpreted as \code{lower} and \code{y[[2]]} as \code{upper}.}
 \item{incbounds}{ \code{TRUE} means inclusive bounds, i.e., [lower,upper].
 \code{FALSE} means exclusive bounds, i.e., (lower,upper).
 It is set to \code{TRUE} by default for infix notations.}
-\item{NAbounds}{ \code{TRUE} force to treat \code{NA} bound as \code{NA} rather than missing bound.}
+\item{NAbounds}{ If \code{lower} contains an \code{NA} what should \code{lower<=x} return? By default \code{TRUE} so that a missing bound is interpreted as unlimited; e.g., the \code{NA} is treated as if it were \code{-Inf} in the case of \code{numeric}. Similarly for \code{upper}. }
 }
 \details{
 

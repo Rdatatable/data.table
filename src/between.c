@@ -149,7 +149,7 @@ SEXP between(SEXP x, SEXP lower, SEXP upper, SEXP incbounds, SEXP NAboundsArg) {
     const SEXP *xp = STRING_PTR(x);
     #define LCMP strcmp(CHAR(ENC2UTF8(l)),CHAR(ENC2UTF8(elem)))<=-open
     #define UCMP strcmp(CHAR(ENC2UTF8(elem)),CHAR(ENC2UTF8(u)))<=-open
-    // ENC2UTF8 could allocate so cannot be parallel (TODO: if all ascii, can be parallel) TODO: needs protection
+    // TODO if all ascii can be parallel, otherwise ENC2UTF8 could allocate
     if (NAbounds) {
       for (int i=0; i<longest; i++) {
         const SEXP elem=xp[i & xMask], l=lp[i & lowMask], u=up[i & uppMask];

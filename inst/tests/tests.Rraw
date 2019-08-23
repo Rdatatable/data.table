@@ -14716,8 +14716,8 @@ options(old)
 # between int64 support
 if (test_bit64) {
   as.i64 = bit64::as.integer64
-  test(2039.01, between(1:10, as.i64(3), as.i64(6)), error="are integer64 class while 'x' is not")
-  test(2039.02, between(1:10, 3, as.i64(6)), error="are integer64 class while 'x' is not")
+  test(2039.01, between(1:10, as.i64(3), as.i64(6)), error="x is not integer64 but.*Please align classes")
+  test(2039.02, between(1:10, 3, as.i64(6)),         error="x is not integer64 but.*Please align classes")
   old = options("datatable.verbose"=TRUE)
   x = as.i64(1:10)
   ans36 = c(FALSE,FALSE,TRUE,TRUE,TRUE,TRUE,FALSE,FALSE,FALSE,FALSE)
@@ -15704,8 +15704,8 @@ if (test_nanotime) {
   test(2080.02, between(n, nanotime(3), nanotime(10), incbounds=FALSE), c(FALSE, NA, FALSE, TRUE), output="between parallel processing of integer64")
   test(2080.03, between(n, nanotime(3), nanotime(NA), incbounds=FALSE, NAbounds=NA), c(FALSE, NA, FALSE, NA), output="between parallel processing of integer64")
   options(op)
-  test(2080.04, between(1:10, nanotime(3), nanotime(6)), error="are integer64 class while 'x' is not")
-  test(2080.05, between(1:10, 3, nanotime(6)), error="are integer64 class while 'x' is not")
+  test(2080.04, between(1:10, nanotime(3), nanotime(6)), error="x is not integer64 but.*Please align classes")
+  test(2080.05, between(1:10, 3, nanotime(6)),           error="x is not integer64 but.*Please align classes")
 }
 
 

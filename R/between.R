@@ -14,21 +14,6 @@ between = function(x, lower, upper, incbounds=TRUE, NAbounds=TRUE) {
       "'between' function the 'x' argument is a POSIX class while 'lower' was not, coercion to POSIX failed with: ", e$message))
     if (is.character(upper)) upper = tryCatch(as.POSIXct(upper, tz=tz), error=function(e)stop(
       "'between' function the 'x' argument is a POSIX class while 'upper' was not, coercion to POSIX failed with: ", e$message))
-
-   # try_posix_cast = function(x, tz) {tryCatch(
-   #   list(status=0L, value=as.POSIXct(x, tz = tz)),
-   #   error = function(e) list(status=1L, value=NULL, message=e[["message"]])
-   # )}
-   # if (is.character(lower)) {
-   #   ans = try_posix_cast(lower, tz)
-   #   if (ans$status==0L) lower = ans$value
-   #   else stop("'between' function the 'x' argument is a POSIX class while 'lower' was not, coercion to POSIX failed with: ", ans$message)
-   # }
-   # if (is.character(upper)) {
-   #   ans = try_posix_cast(upper, tz)
-   #   if (ans$status==0L) upper = ans$value
-   #   else stop("'between' function the 'x' argument is a POSIX class while 'upper' was not, coercion to POSIX failed with: ", ans$message)
-   # }
     stopifnot(is.px(x), is.px(lower), is.px(upper)) # nocov # internal
   }
   # POSIX check timezone match
@@ -48,7 +33,7 @@ between = function(x, lower, upper, incbounds=TRUE, NAbounds=TRUE) {
   }
   is.supported = function(x) is.numeric(x) || is.character(x) || is.px(x)
   if (is.supported(x) && is.supported(lower) && is.supported(upper)) {
-    # faster parallelised version for int/double.
+    # faster parallelised version for int/double/character
     # Cbetween supports length(lower)==1 (recycled) and (from v1.12.0) length(lower)==length(x).
     # length(upper) can be 1 or length(x) independently of lower
     .Call(Cbetween, x, lower, upper, incbounds, NAbounds)
