@@ -7981,11 +7981,10 @@ options(datatable.optimize = Inf)
 options(datatable.optimize=1L)
 test(1581.13, ans1 <- dt[x %in% letters[15:20], i1[[2]], by=x, verbose=TRUE],
               output = "(GForce FALSE)")
-options(datatable.optimize=2L)
+options(datatable.optimize=Inf)
 test(1581.14, ans2 <- dt[x %in% letters[15:20], i1[[2]], by=x, verbose=TRUE],
               output = "GForce optimized j")
 test(1581.15, ans1, ans2)
-options(datatable.optimize = Inf)
 
 # handle NULL value correctly #1429
 test(1582, uniqueN(NULL), 0L)
