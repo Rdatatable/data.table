@@ -1003,7 +1003,7 @@ void writeNA(SEXP v, const int from, const int n)
     for (int i=from; i<=to; ++i) vd[i] = NA_INTEGER;
   } break;
   case REALSXP : {
-    if (INHERITS(v, char_integer64)) {
+    if (Rinherits(v, char_integer64)) {  // Rinherits covers nanotime too which inherits from integer64 via S4 extends
       int64_t *vd = (int64_t *)REAL(v);
       for (int i=from; i<=to; ++i) vd[i] = INT64_MIN;
     } else {
@@ -1040,8 +1040,10 @@ SEXP allocNAVector(SEXPTYPE type, R_len_t n)
   UNPROTECT(1);
   return(v);
 }
-// #3723 -- build NA vector like x -- mainly used to copy attributes pass this to writeNA
+
 SEXP allocNAVectorLike(SEXP x, R_len_t n) {
+  // writeNA needs the attribute retained to write NA_INTEGER64, #3723
+  // TODO: remove allocNAVector above when usage in fastmean.c, fcast.c and fmelt.c can be adjusted
   SEXP v = PROTECT(allocVector(TYPEOF(x), n));
   copyMostAttrib(x, v);
   writeNA(v, 0, n);
