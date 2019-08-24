@@ -1043,7 +1043,7 @@ SEXP allocNAVector(SEXPTYPE type, R_len_t n)
 
 SEXP allocNAVectorLike(SEXP x, R_len_t n) {
   // writeNA needs the attribute retained to write NA_INTEGER64, #3723
-  // TODO: remove allocNAVector above when usage in fastmean.c, fcast.c and fmelt.c can be adjusted
+  // TODO: remove allocNAVector above when usage in fastmean.c, fcast.c and fmelt.c can be adjusted; see comments in PR3724
   SEXP v = PROTECT(allocVector(TYPEOF(x), n));
   copyMostAttrib(x, v);
   writeNA(v, 0, n);
