@@ -87,8 +87,9 @@ round.IDate = function (x, digits=c("weeks", "months", "quarters", "years"), ...
 `+.IDate` = function (e1, e2) {
   if (nargs() == 1L)
     return(e1)
+  # TODO: investigate Ops.IDate method a la Ops.difftime
   if (inherits(e1, "difftime") || inherits(e2, "difftime"))
-    stop("difftime objects may not be added to IDate. Use plain integer instead of difftime.")
+    stop("Internal error -- difftime objects may not be added to IDate, but Ops dispatch should have intervened to prevent this") # nocov
   if (isReallyReal(e1) || isReallyReal(e2)) {
     return(`+.Date`(e1, e2))
     # IDate doesn't support fractional days; revert to base Date
@@ -108,7 +109,7 @@ round.IDate = function (x, digits=c("weeks", "months", "quarters", "years"), ...
   if (nargs() == 1L)
     stop("unary - is not defined for \"IDate\" objects")
   if (inherits(e2, "difftime"))
-    stop("difftime objects may not be subtracted from IDate. Use plain integer instead of difftime.")
+    stop("Internal error -- difftime objects may not be subtracted from IDate, but Ops dispatch should have intervened to prevent this") # nocov
 
   if ( isReallyReal(e2) ) {
     # IDate deliberately doesn't support fractional days so revert to base Date

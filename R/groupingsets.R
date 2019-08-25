@@ -72,17 +72,9 @@ groupingsets.data.table = function(x, j, by, sets, .SDcols, id = FALSE, jj, ...)
   if (missing(.SDcols))
     .SDcols = if (".SD" %chin% av) setdiff(names(x), by) else NULL
   # 0 rows template data.table to keep colorder and type
-  if (length(by)) {
-    empty = if (length(.SDcols)) x[0L, eval(jj), by, .SDcols=.SDcols] else x[0L, eval(jj), by]
-  } else {
-    empty = if (length(.SDcols)) x[0L, eval(jj), .SDcols=.SDcols] else x[0L, eval(jj)]
-    if (!is.data.table(empty)) {
-      if (length(empty)>0) empty = empty[0L] # fix for #3173 when no grouping and j constant
-      empty = setDT(list(empty)) # improve after #648, see comment in aggregate.set
-    }
-  }
+  empty = if (length(.SDcols)) x[0L, eval(jj), by, .SDcols=.SDcols] else x[0L, eval(jj), by]
   if (id && "grouping" %chin% names(empty)) # `j` could have been evaluated to `grouping` field
-    stop("When using `id=TRUE` the 'j' expression must not evaluate to column named 'grouping'.")
+    stop("When using `id=TRUE` the 'j' expression must not evaluate to a column named 'grouping'.")
   if (anyDuplicated(names(empty)) > 0L)
     stop("There exists duplicated column names in the results, ensure the column passed/evaluated in `j` and those in `by` are not overlapping.")
   # adding grouping column to template - aggregation level identifier
@@ -98,13 +90,7 @@ groupingsets.data.table = function(x, j, by, sets, .SDcols, id = FALSE, jj, ...)
   int64.by.cols = intersect(int64.cols, by)
   # aggregate function called for each grouping set
   aggregate.set = function(by.set) {
-    if (length(by.set)) {
-      r = if (length(.SDcols)) x[, eval(jj), by.set, .SDcols=.SDcols] else x[, eval(jj), by.set]
-    } else {
-      r = if (length(.SDcols)) x[, eval(jj), .SDcols=.SDcols] else x[, eval(jj)]
-      # workaround for grand total single var as data.table too, change to drop=FALSE after #648 solved
-      if (!is.data.table(r)) r = setDT(list(r))
-    }
+    r = if (length(.SDcols)) x[, eval(jj), by.set, .SDcols=.SDcols] else x[, eval(jj), by.set]
     if (id) {
       # integer bit mask of aggregation levels: http://www.postgresql.org/docs/9.5/static/functions-aggregate.html#FUNCTIONS-GROUPING-TABLE
       # 3267: strtoi("", base = 2L) output apparently unstable across platforms
