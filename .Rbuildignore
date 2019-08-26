@@ -26,4 +26,4 @@
 ^.*\.dll$
 ^rdatatable\.png$
 ^rdatatable\.svg$
-
+^_pkgdown\.yml$

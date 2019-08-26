@@ -367,13 +367,14 @@ docker-tags: # publish only on tagged commits, we use tags for version
     IMAGE_TAG: $CI_COMMIT_TAG
   <<: *docker
 
-pages: # publish R repository, test jobs summaries, html documentation of all packages in repo
+pages: # publish R repository, test jobs summaries, html documentation of all packages in repo, pkgdown
   stage: deploy
   environment: production
   tags:
     - linux
   only:
     - master
+    - pkgdown
   image: ubuntu
   dependencies:
   - integration
