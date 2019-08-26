@@ -86,7 +86,7 @@ SEXP sym_starts, char_starts;
 SEXP sym_maxgrpn;
 SEXP sym_colClassesAs;
 SEXP sym_verbose;
-bool INHERITS(SEXP x, SEXP char_);
+SEXP sym_inherits;
 long long DtoLL(double x);
 double LLtoD(long long x);
 bool GetVerbose();
@@ -106,6 +106,7 @@ SEXP SelfRefSymbol;
 
 // assign.c
 SEXP allocNAVector(SEXPTYPE type, R_len_t n);
+SEXP allocNAVectorLike(SEXP x, R_len_t n);
 void writeNA(SEXP v, const int from, const int n);
 void savetl_init(), savetl(SEXP s), savetl_end();
 int checkOverAlloc(SEXP x);
@@ -116,7 +117,6 @@ int StrCmp(SEXP x, SEXP y);
 uint64_t dtwiddle(void *p, int i);
 SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP naArg);
 bool need2utf8(SEXP x, int n);
-SEXP isReallyReal(SEXP);
 int getNumericRounding_C();
 
 // reorder.c
@@ -198,15 +198,22 @@ void fadaptiverollsumExact(double *x, uint_fast64_t nx, ans_t *ans, int *k, doub
 SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEXP narm, SEXP hasNA, SEXP adaptive, SEXP verbose);
 
 // nafill.c
-SEXP colnamesInt(SEXP x, SEXP cols);
-SEXP coerceFillR(SEXP fill);
 void nafillDouble(double *x, uint_fast64_t nx, unsigned int type, double fill, ans_t *ans, bool verbose);
 void nafillInteger(int32_t *x, uint_fast64_t nx, unsigned int type, int32_t fill, ans_t *ans, bool verbose);
 SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP inplace, SEXP cols, SEXP verbose);
 
 // between.c
-SEXP between(SEXP x, SEXP lower, SEXP upper, SEXP bounds);
+SEXP between(SEXP x, SEXP lower, SEXP upper, SEXP incbounds, SEXP NAbounds);
 
 // coalesce.c
 SEXP coalesce(SEXP x, SEXP inplace);
+
+// utils.c
+bool isRealReallyInt(SEXP x);
+SEXP isReallyReal(SEXP x);
+SEXP colnamesInt(SEXP x, SEXP cols, SEXP check_dups);
+void coerceFill(SEXP fill, double *dfill, int32_t *ifill, int64_t *i64fill);
+SEXP coerceFillR(SEXP fill);
+bool INHERITS(SEXP x, SEXP char_);
+bool Rinherits(SEXP x, SEXP char_);
 

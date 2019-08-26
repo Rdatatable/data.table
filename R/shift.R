@@ -37,11 +37,3 @@ setnafill = function(x, type=c("const","locf","nocb"), fill=NA, cols=seq_along(x
     warning("argument 'fill' ignored, only make sense for type='const'")
   invisible(.Call(CnafillR, x, type, fill, TRUE, cols, verbose))
 }
-
-colnamesInt = function(x, cols) {
-  .Call(CcolnamesInt, x, cols)
-}
-
-coerceFill = function(x) {
-  .Call(CcoerceFillR, x)
-}

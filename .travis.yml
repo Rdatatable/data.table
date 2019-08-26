@@ -22,9 +22,11 @@ before_install:
     export CFLAGS="-I/usr/local/opt/llvm/include"; fi
 
 r_packages:
-  - covr      # used for code coverage reports in github pull requests
   - drat      # used in deploy.sh to publish tar.gz to github.io/Rdatatable/data.table
   - devtools  # explicitly named temp fix for #2801
+  # - covr    # used for code coverage reports in github pull requests
+
+r_github_packages: r-lib/covr    # remove and reinstate covr line above when 3.3.1 is released on CRAN; see covr issue #391
 
 before_script:
   - echo "Revision:" $TRAVIS_COMMIT >> ./DESCRIPTION
