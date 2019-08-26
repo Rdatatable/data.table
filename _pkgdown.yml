@@ -32,6 +32,7 @@ reference:
   - setorder
 
 - title: Subsetting and reshaping your data
+  contents:
   - dcast
   - melt
   - patterns
@@ -42,6 +43,7 @@ reference:
   - split.data.table
 
 - title: Combining and comparing multiple data sets
+  contents:
   - merge.data.table
   - fintersect
   - all.equal.data.table
