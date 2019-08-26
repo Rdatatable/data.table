@@ -228,7 +228,13 @@
 
 27. `integer64` sum-by-group is now properly optimized, [#1647](https://github.com/Rdatatable/data.table/issues/1647), [#3464](https://github.com/Rdatatable/data.table/issues/3464). Thanks to @mlandry22-h2o for the report.
 
-28. Joining to `.SD` in `j` was erroring because `bmerge` uses `set` in some cases (e.g. numeric-to-integer coercion or factor joins-on-levels), but the shallow copy of `.SD` was still locked, [#1926](https://github.com/Rdatatable/data.table/issues/1926). Thanks @franknarf1 for the report and for diligently tracking use cases for almost 3 years!
+28. From v1.12.0 `between()` and `%between%` interpret missing values in `lower=` or `upper=` as unlimited bounds. A new parameter `NAbounds` has been added to achieve the old behaviour of returning `NA`, [#3522](https://github.com/Rdatatable/data.table/issues/3522). Thanks @cguill95 for reporting. This is now consistent for character input, [#3667](https://github.com/Rdatatable/data.table/issues/3667) (thanks @AnonymousBoba), and class `nanotime` is now supported too.
+
+29. `integer64` defined on a subset of a new column would leave "gibberish" on the remaining rows, [#3723](https://github.com/Rdatatable/data.table/issues/3723). A bug in `rbindlist` with the same root cause was also fixed, [#1459](https://github.com/Rdatatable/data.table/issues/1459). Thanks @shrektan and @jangorecki for the reports.
+
+30. `groupingsets` functions now properly handle alone special symbols when using an empty set to group by, [#3653](https://github.com/Rdatatable/data.table/issues/3653). Thanks to @Henrik-P for the report.
+
+31. Joining to `.SD` in `j` was erroring because `bmerge` uses `set` in some cases (e.g. numeric-to-integer coercion or factor joins-on-levels), but the shallow copy of `.SD` was still locked, [#1926](https://github.com/Rdatatable/data.table/issues/1926). Thanks @franknarf1 for the report and for diligently tracking use cases for almost 3 years!
 
 #### NOTES
 
@@ -252,7 +258,7 @@
 
 7. Added a note to `?frank` clarifying that ranking is being done according to C sorting (i.e., like `forder`), [#2328](https://github.com/Rdatatable/data.table/issues/2328). Thanks to @cguill95 for the request.
 
-8. Historically, `dcast` and `melt` were built as enhancements to `reshape2`'s own `dcast`/`melt`. We removed dependency on `reshape2` in v1.9.6 but maintained some backward compatibility. As that package has been deprecated since December 2017, we have now formally completed the split from `reshape2` by removing some last vestiges, [#3549](https://github.com/Rdatatable/data.table/issues/3549). We thank the `reshape2` authors for their original inspiration for these functions.
+8. Historically, `dcast` and `melt` were built as enhancements to `reshape2`'s own `dcast`/`melt`. We removed dependency on `reshape2` in v1.9.6 but maintained some backward compatibility. As that package has been deprecated since December 2017, we will begin to formally complete the split from `reshape2` by removing some last vestiges. In particular we now warn when redirecting to `reshape2` methods and will later error before ultimately completing the split; see [#3549](https://github.com/Rdatatable/data.table/issues/3549) and [#3633](https://github.com/Rdatatable/data.table/issues/3633). We thank the `reshape2` authors for their original inspiration for these functions, and @ProfFancyPants for testing and reporting regressions in dev which have been fixed before release.
 
 9. `DT[col]` where `col` is a column containing row numbers of itself to select, now suggests the correct syntax (`DT[(col)]` or `DT[DT$col]`), [#697](https://github.com/Rdatatable/data.table/issues/697). This expands the message introduced in [#1884](https://github.com/Rdatatable/data.table/issues/1884) for the case where `col` is type `logical` and `DT[col==TRUE]` is suggested.
 
@@ -267,6 +273,8 @@
 14. The warning message when using `keyby=` together with `:=` is clearer, [#2763](https://github.com/Rdatatable/data.table/issues/2763). Thanks to @eliocamp.
 
 15. `first` and `last` gain an explicit `n=1L` argument so that it's clear the default is 1, and their almost identical manual pages have been merged into one.
+
+16. Rolling functions (`?froll`) coerce `logical` input to `numeric` (instead of failing) to mimic the behavior of `integer` input.
 
 
 ### Changes in [v1.12.2](https://github.com/Rdatatable/data.table/milestone/14?closed=1)  (07 Apr 2019)
