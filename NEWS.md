@@ -228,7 +228,14 @@
 
 27. `integer64` sum-by-group is now properly optimized, [#1647](https://github.com/Rdatatable/data.table/issues/1647), [#3464](https://github.com/Rdatatable/data.table/issues/3464). Thanks to @mlandry22-h2o for the report.
 
-28. `setkey`/`setkeyv` would mangle the ordering of tables with memory-duplicate (i.e., sharing the same `address`) columns, [#3496](https://github.com/Rdatatable/data.table/issues/3496) and [#3766](https://github.com/Rdatatable/data.table/issues/3766). This is fixed by forcing copies of duplicated columns before reordering. Relatedly, `[` could also produce such columns when subsetting. Finally, `[` might leave its output with `.data.table.locked`, preventing downstream use of `:=`, [#2245](https://github.com/Rdatatable/data.table/issues/2245). Thanks @kirillmayantsev, @alex46015, and @grayskripko for reporting and @jaapwalhout and @Atrebas helping to debug&isolate the issue.
+28. From v1.12.0 `between()` and `%between%` interpret missing values in `lower=` or `upper=` as unlimited bounds. A new parameter `NAbounds` has been added to achieve the old behaviour of returning `NA`, [#3522](https://github.com/Rdatatable/data.table/issues/3522). Thanks @cguill95 for reporting. This is now consistent for character input, [#3667](https://github.com/Rdatatable/data.table/issues/3667) (thanks @AnonymousBoba), and class `nanotime` is now supported too.
+
+29. `integer64` defined on a subset of a new column would leave "gibberish" on the remaining rows, [#3723](https://github.com/Rdatatable/data.table/issues/3723). A bug in `rbindlist` with the same root cause was also fixed, [#1459](https://github.com/Rdatatable/data.table/issues/1459). Thanks @shrektan and @jangorecki for the reports.
+
+30. `groupingsets` functions now properly handle alone special symbols when using an empty set to group by, [#3653](https://github.com/Rdatatable/data.table/issues/3653). Thanks to @Henrik-P for the report.
+
+31. `setkey`/`setkeyv` would mangle the ordering of tables with memory-duplicate (i.e., sharing the same `address`) columns, [#3496](https://github.com/Rdatatable/data.table/issues/3496) and [#3766](https://github.com/Rdatatable/data.table/issues/3766). This is fixed by forcing copies of duplicated columns before reordering. Relatedly, `[` could also produce such columns when subsetting. Finally, `[` might leave its output with `.data.table.locked`, preventing downstream use of `:=`, [#2245](https://github.com/Rdatatable/data.table/issues/2245). Thanks @kirillmayantsev, @alex46015, and @grayskripko for reporting and @jaapwalhout and @Atrebas helping to debug&isolate the issue.
+
 
 #### NOTES
 
