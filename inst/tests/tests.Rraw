@@ -15470,8 +15470,8 @@ test(2072.012, fifelse(0:1, rep(TRUE,2L), rep(FALSE,2L)),        error="Argument
 test(2072.013, fifelse(test_vec, TRUE, "FALSE"),                 error="'yes' is of type logical but 'no' is of type character. Please")
 test(2072.014, fifelse(test_vec, list(1),list(2,4)),             error="Length of 'no' is 2 but must be 1 or length of 'test' (11).")
 test(2072.015, fifelse(test_vec, list(1,3),list(2,4)),           error="Length of 'yes' is 2 but must be 1 or length of 'test' (11).")
-test(2072.016, fifelse(test_vec, list(1), 0), as.list(as.numeric(out_vec)))
-test(2072.017, fifelse(test_vec, 1, list(0)), as.list(as.numeric(out_vec)))
+test(2072.016, fifelse(test_vec, list(1), list(0)), as.list(as.numeric(out_vec)))
+test(2072.017, fifelse(test_vec, list(1), list(0)), as.list(as.numeric(out_vec)))
 ## Jan 1 - 5, 2011
 date_vec = as.Date(14975:14979, origin = '1970-01-01')
 test(2072.018, fifelse(date_vec == "2011-01-01", date_vec - 1L, date_vec),
@@ -15504,10 +15504,10 @@ test(2072.042, fifelse(TRUE,1L,factor(letters[1])),     error="'yes' has differe
 test(2072.043, fifelse(TRUE, list(1:5), list(5:1)), list(1:5))
 test(2072.044, fifelse(as.logical(NA), list(1:5), list(5:1)), list(NULL))
 test(2072.045, fifelse(FALSE, list(1:5), list(5:1)), list(5:1))
-test(2072.046, fifelse(TRUE, data.table(1:5), data.table(5:1)), data.table(1:5))
-test(2072.047, fifelse(FALSE, data.table(1:5), data.table(5:1)), data.table(5:1))
-test(2072.048, fifelse(TRUE, data.frame(1:5), data.frame(5:1)), data.frame(1:5))
-test(2072.049, fifelse(FALSE, data.frame(1:5), data.frame(5:1)), data.frame(5:1))
+test(2072.046, fifelse(TRUE, list(data.table(1:5)), list(data.table(5:1))), list(data.table(1:5)))
+test(2072.047, fifelse(FALSE, list(data.table(1:5)), list(data.table(5:1))), list(data.table(5:1)))
+test(2072.048, fifelse(TRUE, list(data.frame(1:5)), list(data.frame(5:1))), list(data.frame(1:5)))
+test(2072.049, fifelse(FALSE, list(data.frame(1:5)), list(data.frame(5:1))), list(data.frame(5:1)))
 test(2072.050, fifelse(c(TRUE,FALSE), list(1:5,6:10), list(10:6,5:1)), list(1:5,5:1))
 test(2072.051, fifelse(c(NA,TRUE), list(1:5,6:10), list(10:6,5:1)), list(NULL,6:10))
 test(2072.052, fifelse(c(FALSE,TRUE), list(1:5,6:10), list(10:6,5:1)), list(10:6,6:10))
@@ -15519,8 +15519,8 @@ test(2072.057, fifelse(c(FALSE,TRUE), list(factor(letters[1:5])), list(10:6,5:1)
 test(2072.058, fifelse(c(NA,FALSE), list(1:5), list(10:6,5:1)), list(NULL,5:1))
 test(2072.059, fifelse(c(NA,FALSE), list(1:5,6:10), list(5:1)), list(NULL,5:1))
 test(2072.060, fifelse(c(NA,FALSE), list(1:5), list(5:1)), list(NULL,5:1))
-test(2072.061, fifelse(c(TRUE,FALSE), list(1L), 0L), list(1L,0L))
-test(2072.062, fifelse(c(TRUE,FALSE), 1L, list(0L)), list(1L,0L))
+test(2072.061, fifelse(c(TRUE,FALSE), list(1L), list(0L)), list(1L,0L))
+test(2072.062, fifelse(c(TRUE,FALSE), list(1L), list(0L)), list(1L,0L))
 test(2072.063, fifelse(c(TRUE,FALSE), factor(c("a","b")), factor(c("a","c"))), error="'yes' and 'no' are both type factor but their levels are different")
 test(2072.064, fifelse(c(TRUE, TRUE, TRUE, FALSE, FALSE), factor(NA, levels=letters[1:5]), factor(letters[1:5])),
                factor(c(NA,NA,NA,"d","e"),levels=letters[1:5]))
@@ -15738,10 +15738,43 @@ if (test_bit64) {
   test(2083.2, rbind(data.table(a=1:2, b=as.integer64(c(1,NA))), data.table(a=3L), fill=TRUE)$b, as.integer64(c(1, NA, NA)))
 }
 
+# groupingsets j=.N by character(0) set #3653
+d = data.table(x = c("a", "a", "b"))
+test(2084.01, groupingsets(d, j = .N, by = "x", sets = list("x", character())), data.table(x=c("a","b",NA_character_), N=c(2L,1L,3L)))
+test(2084.02, groupingsets(d, j = .N, by = "x", sets = list(character())), data.table(x=NA_character_, N=3L))
+test(2084.03, groupingsets(d, j = .GRP, by = "x", sets = list("x", character())), data.table(x=c("a","b",NA_character_), GRP=c(1L,2L,1L)))
+test(2084.04, groupingsets(d, j = .GRP, by = "x", sets = list(character())), data.table(x=NA_character_, GRP=1L))
+test(2084.05, groupingsets(d, j = .I, by = "x", sets = list("x", character())), data.table(x=c("a","a","b",rep(NA_character_,3L)), I=c(1:3,1:3)))
+test(2084.06, groupingsets(d, j = .I, by = "x", sets = list(character())), data.table(x=rep(NA_character_,3L), I=1:3))
+
+# fifelse #3740
+if (test_bit64) {
+  i = as.integer64(1:4)+3e9
+  test(2085.01, fifelse(c(TRUE,FALSE,NA,TRUE), i, i+100), c(i[1L], i[2L]+100, as.integer64(NA), i[4]))
+}
+if (test_nanotime) {
+  n = nanotime(1:4)
+  test(2085.11, fifelse(c(TRUE,FALSE,NA,TRUE), n, n+100), c(n[1L], n[2L]+100, nanotime(NA), n[4]))
+}
+test(2085.21, fifelse(c(TRUE,FALSE,NA), 1:3, c(1,2,3)), c(1,2,NA))
+test(2085.22, fifelse(c(TRUE,FALSE,NA), c(1,2,3), 1:3), c(1,2,NA))
+test(2085.31, fifelse(c(a=TRUE,b=FALSE), list(m=1,n=2), list(x=11,y=12)), list(a=1, b=12))
+test(2085.32, fifelse(c(a=TRUE,b=FALSE), c(m=1,n=2), c(x=11,y=12)), c(a=1, b=12))
+test(2085.33, ifelse(c(a=TRUE,b=FALSE), c(1,2), c(11,12)), c(a=1, b=12)) # just to detect breaking change in base R
+
+# empty 'by' still valid #3270
+DT = data.table(a = 1:10)
+test(2086.01, DT[ , sum(a), by = .()], data.table(V1=55L))
+test(2086.02, DT[ , sum(a), keyby = .()], data.table(V1=55L))
+test(2086.03, DT[ , sum(a), by = list()], data.table(V1=55L))
+test(2086.04, DT[ , sum(a), keyby = list()], data.table(V1=55L))
+test(2086.05, DT[ , sum(a), by = character()], data.table(V1=55L))
+test(2086.06, DT[ , sum(a), keyby = character()], data.table(V1=55L))
+
 # #3760 validate data.table before setDT
 DF = data.frame(a=1:5)
 DF$m = matrix(6:15, ncol=2L)
-test(2084, setDT(DF), error='Use as.data.table for this object')
+test(2087, setDT(DF), error='Use as.data.table for this object')
 
 
 ###################################
