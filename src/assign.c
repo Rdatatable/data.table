@@ -489,7 +489,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
     SEXP RHS;
 
     if (coln+1 > oldncol) {  // new column
-      SET_VECTOR_ELT(dt, coln, newcol=allocNAVector(TYPEOF(thisvalue), nrow));
+      SET_VECTOR_ELT(dt, coln, newcol=allocNAVectorLike(thisvalue, nrow));
       // initialize with NAs for when 'rows' is a subset and it doesn't touch
       // do not try to save the time to NA fill (contiguous branch free assign anyway) since being
       // sure all items will be written to (isNull(rows), length(rows), vlen<1, targetlen) is not worth the risk.
@@ -943,6 +943,15 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source)
         td[w-1] = sd[i&mask];
       }
     } break;
+    case CPLXSXP: {
+      Rcomplex *td = COMPLEX(target);
+      const Rcomplex *sd = COMPLEX(source);
+      for (int i=0; i<len; i++) {
+        const int w = wd[i];
+        if (w<1) continue;
+        td[w-1] = sd[i&mask];
+      }
+    } break;
     case STRSXP : {
       const SEXP *sd = STRING_PTR(source);
       for (int i=0; i<len; i++) {
@@ -994,7 +1003,7 @@ void writeNA(SEXP v, const int from, const int n)
     for (int i=from; i<=to; ++i) vd[i] = NA_INTEGER;
   } break;
   case REALSXP : {
-    if (INHERITS(v, char_integer64)) {
+    if (Rinherits(v, char_integer64)) {  // Rinherits covers nanotime too which inherits from integer64 via S4 extends
       int64_t *vd = (int64_t *)REAL(v);
       for (int i=from; i<=to; ++i) vd[i] = INT64_MIN;
     } else {
@@ -1002,14 +1011,18 @@ void writeNA(SEXP v, const int from, const int n)
       for (int i=from; i<=to; ++i) vd[i] = NA_REAL;
     }
   } break;
+  case CPLXSXP: {
+    Rcomplex *vd = COMPLEX(v);
+    for (int i=from; i<=to; ++i) vd[i] = NA_CPLX;
+  } break;
   case STRSXP :
     // character columns are initialized with blank string (""). So replace the all-"" with all-NA_character_
     // Since "" and NA_character_ are global constants in R, it should be ok to not use SET_STRING_ELT here. But use it anyway for safety (revisit if proved slow)
     // If there's ever a way added to R API to pass NA_STRING to allocVector() to tell it to initialize with NA not "", would be great
     for (int i=from; i<=to; ++i) SET_STRING_ELT(v, i, NA_STRING);
     break;
-  case VECSXP :
-    // list columns already have each item initialized to NULL
+  case VECSXP : case EXPRSXP :
+    // list & expression columns already have each item initialized to NULL
     break;
   default :
     error("Internal error: writeNA passed a vector of type '%s'", type2char(TYPEOF(v)));  // # nocov
@@ -1023,6 +1036,16 @@ SEXP allocNAVector(SEXPTYPE type, R_len_t n)
   // We guess that author of allocVector would have liked to initialize with NA but was prevented since memset
   // is restricted to one byte.
   SEXP v = PROTECT(allocVector(type, n));
+  writeNA(v, 0, n);
+  UNPROTECT(1);
+  return(v);
+}
+
+SEXP allocNAVectorLike(SEXP x, R_len_t n) {
+  // writeNA needs the attribute retained to write NA_INTEGER64, #3723
+  // TODO: remove allocNAVector above when usage in fastmean.c, fcast.c and fmelt.c can be adjusted; see comments in PR3724
+  SEXP v = PROTECT(allocVector(TYPEOF(x), n));
+  copyMostAttrib(x, v);
   writeNA(v, 0, n);
   UNPROTECT(1);
   return(v);

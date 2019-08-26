@@ -12,9 +12,11 @@ SEXP shift(SEXP obj, SEXP k, SEXP fill, SEXP type) {
   if (isVectorAtomic(obj)) {
     x = PROTECT(allocVector(VECSXP, 1)); protecti++;
     SET_VECTOR_ELT(x, 0, obj);
-  } else x = obj;
-  if (!isNewList(x))
-    error("x must be a list, data.frame or data.table");
+  } else {
+    if (!isNewList(obj))
+      error("type '%s' passed to shift(). Must be a vector, list, data.frame or data.table", type2char(TYPEOF(obj)));
+    x = obj;
+  }
   if (length(fill) != 1)
     error("fill must be a vector of length 1");
   // the following two errors should be caught by match.arg() at the R level
@@ -81,6 +83,25 @@ SEXP shift(SEXP obj, SEXP k, SEXP fill, SEXP type) {
         } else {
           if (tailk > 0) memmove(dtmp, REAL(elem)+thisk, tailk*size);
           for (int m=tailk; m<xrows; m++) dtmp[m] = dfill;
+        }
+        copyMostAttrib(elem, tmp);
+      }
+      break;
+
+    case CPLXSXP :
+      thisfill = PROTECT(coerceVector(fill, CPLXSXP)); protecti++;
+      Rcomplex cfill = COMPLEX(thisfill)[0];
+      for (int j=0; j<nk; j++) {
+        R_xlen_t thisk = MIN(abs(kd[j]), xrows);
+        SET_VECTOR_ELT(ans, i*nk+j, tmp=allocVector(CPLXSXP, xrows) );
+        Rcomplex *ctmp = COMPLEX(tmp);
+        size_t tailk = xrows-thisk;
+        if ((stype == LAG && kd[j] >= 0) || (stype == LEAD && kd[j] < 0)) {
+          if (tailk > 0) memmove(ctmp+thisk, COMPLEX(elem), tailk*size);
+          for (int m=0; m<thisk; m++) ctmp[m] = cfill;
+        } else {
+          if (tailk > 0) memmove(ctmp, COMPLEX(elem)+thisk, tailk*size);
+          for (int m=tailk; m<xrows; m++) ctmp[m] = cfill;
         }
         copyMostAttrib(elem, tmp);
       }

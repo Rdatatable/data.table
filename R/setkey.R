@@ -43,7 +43,7 @@ setkeyv = function(x, cols, verbose=getOption("datatable.verbose"), physical=TRU
   }
   if (!is.data.table(x)) stop("x is not a data.table")
   if (!is.character(cols)) stop("cols is not a character vector. Please see further information in ?setkey.")
-  if (physical && identical(attr(x,".data.table.locked"),TRUE)) stop("Setting a physical key on .SD is reserved for possible future use; to modify the original data's order by group. Try setindex() instead. Or, set*(copy(.SD)) as a (slow) last resort.")
+  if (physical && identical(attr(x, ".data.table.locked", exact=TRUE),TRUE)) stop("Setting a physical key on .SD is reserved for possible future use; to modify the original data's order by group. Try setindex() instead. Or, set*(copy(.SD)) as a (slow) last resort.")
   if (!length(cols)) {
     warning("cols is a character vector of zero length. Removed the key, but use NULL instead, or wrap with suppressWarnings() to avoid this warning.")
     setattr(x,"sorted",NULL)
@@ -51,28 +51,23 @@ setkeyv = function(x, cols, verbose=getOption("datatable.verbose"), physical=TRU
   }
   if (identical(cols,"")) stop("cols is the empty string. Use NULL to remove the key.")
   if (!all(nzchar(cols))) stop("cols contains some blanks.")
-  if (!length(cols)) {
-    cols = colnames(x)   # All columns in the data.table, usually a few when used in this form
-  } else {
-    # remove backticks from cols
-    cols = gsub("`", "", cols, fixed = TRUE)
-    miss = !(cols %chin% colnames(x))
-    if (any(miss)) stop("some columns are not in the data.table: ", paste(cols[miss], collapse=","))
-  }
+  cols = gsub("`", "", cols, fixed = TRUE)
+  miss = !(cols %chin% colnames(x))
+  if (any(miss)) stop("some columns are not in the data.table: ", paste(cols[miss], collapse=","))
 
   ## determine, whether key is already present:
   if (identical(key(x),cols)) {
     if (!physical) {
       ## create index as integer() because already sorted by those columns
-      if (is.null(attr(x,"index",exact=TRUE))) setattr(x, "index", integer())
-      setattr(attr(x,"index",exact=TRUE), paste0("__", cols, collapse=""), integer())
+      if (is.null(attr(x, "index", exact=TRUE))) setattr(x, "index", integer())
+      setattr(attr(x, "index", exact=TRUE), paste0("__", cols, collapse=""), integer())
     }
     return(invisible(x))
   } else if(identical(head(key(x), length(cols)), cols)){
     if (!physical) {
       ## create index as integer() because already sorted by those columns
-      if (is.null(attr(x,"index",exact=TRUE))) setattr(x, "index", integer())
-      setattr(attr(x,"index",exact=TRUE), paste0("__", cols, collapse=""), integer())
+      if (is.null(attr(x, "index", exact=TRUE))) setattr(x, "index", integer())
+      setattr(attr(x, "index", exact=TRUE), paste0("__", cols, collapse=""), integer())
     } else {
       ## key is present but x has a longer key. No sorting needed, only attribute is changed to shorter key.
       setattr(x,"sorted",cols)
@@ -83,7 +78,7 @@ setkeyv = function(x, cols, verbose=getOption("datatable.verbose"), physical=TRU
   if (".xi" %chin% names(x)) stop("x contains a column called '.xi'. Conflicts with internal use by data.table.")
   for (i in cols) {
     .xi = x[[i]]  # [[ is copy on write, otherwise checking type would be copying each column
-    if (!typeof(.xi) %chin% c("integer","logical","character","double")) stop("Column '",i,"' is type '",typeof(.xi),"' which is not supported as a key column type, currently.")
+    if (!typeof(.xi) %chin% ORDERING_TYPES) stop("Column '",i,"' is type '",typeof(.xi),"' which is not supported as a key column type, currently.")
   }
   if (!is.character(cols) || length(cols)<1L) stop("Internal error. 'cols' should be character at this point in setkey; please report.") # nocov
 
@@ -101,8 +96,8 @@ setkeyv = function(x, cols, verbose=getOption("datatable.verbose"), physical=TRU
     o = getindex(x, newkey)
   }
   if (!physical) {
-    if (is.null(attr(x,"index",exact=TRUE))) setattr(x, "index", integer())
-    setattr(attr(x,"index",exact=TRUE), paste0("__", cols, collapse=""), o)
+    if (is.null(attr(x, "index", exact=TRUE))) setattr(x, "index", integer())
+    setattr(attr(x, "index", exact=TRUE), paste0("__", cols, collapse=""), o)
     return(invisible(x))
   }
   setattr(x,"index",NULL)   # TO DO: reorder existing indexes likely faster than rebuilding again. Allow optionally. Simpler for now to clear.
@@ -120,10 +115,10 @@ setkeyv = function(x, cols, verbose=getOption("datatable.verbose"), physical=TRU
   invisible(x)
 }
 
-key = function(x) attr(x,"sorted",exact=TRUE)
+key = function(x) attr(x, "sorted", exact=TRUE)
 
 indices = function(x, vectors = FALSE) {
-  ans = names(attributes(attr(x,"index",exact=TRUE)))
+  ans = names(attributes(attr(x, "index", exact=TRUE)))
   if (is.null(ans)) return(ans) # otherwise character() gets returned by next line
   ans = gsub("^__","",ans)     # the leading __ is internal only, so remove that in result
   if (isTRUE(vectors))
@@ -133,7 +128,7 @@ indices = function(x, vectors = FALSE) {
 
 getindex = function(x, name) {
   # name can be "col", or "col1__col2", or c("col1","col2")
-  ans = attr(attr(x, 'index'), paste0("__",name,collapse=""), exact=TRUE)
+  ans = attr(attr(x, 'index', exact=TRUE), paste0("__",name,collapse=""), exact=TRUE)
   if (!is.null(ans) && (!is.integer(ans) || (length(ans)!=nrow(x) && length(ans)!=0L))) {
     stop("Internal error: index '",name,"' exists but is invalid")   # nocov
   }
@@ -141,9 +136,6 @@ getindex = function(x, name) {
 }
 
 haskey = function(x) !is.null(key(x))
-
-# reverse a vector by reference (no copy)
-setrev = function(x) .Call(Csetrev, x)
 
 # reorder a vector based on 'order' (integer)
 # to be used in fastorder instead of x[o], but in general, it's better to replace vector subsetting with this..?
@@ -181,6 +173,7 @@ is.sorted = function(x, by=seq_along(x)) {
   # Important to call forder.c::fsorted here, for consistent character ordering and numeric/integer64 twiddling.
 }
 
+ORDERING_TYPES = c('logical', 'integer', 'double', 'complex', 'character')
 forderv = function(x, by=seq_along(x), retGrp=FALSE, sort=TRUE, order=1L, na.last=FALSE)
 {
   if (!(sort || retGrp)) stop("At least one of retGrp or sort must be TRUE")
@@ -199,16 +192,8 @@ forderv = function(x, by=seq_along(x), retGrp=FALSE, sort=TRUE, order=1L, na.las
   } else {
     if (!length(x)) return(integer(0L)) # to be consistent with base::order. this'll make sure forderv(NULL) will result in error
                        # (as base does) but forderv(data.table(NULL)) and forderv(list()) will return integer(0L))
-    if (is.character(by)) {
-      w = chmatch(by, names(x))
-      if (anyNA(w)) stop("'by' contains '",by[is.na(w)][1],"' which is not a column name")
-      by = w
-    }
-    else if (isReallyReal(by)) {
-      stop("'by' is type 'double' and one or more items in it are not whole integers")
-    }
-    by = as.integer(by)
-    if ( (length(order) != 1L && length(order) != length(by)) || any(!order %in% c(1L, -1L)) )
+    by = colnamesInt(x, by, check_dups=FALSE)
+    if ( (length(order) != 1L && length(order) != length(by)) || !all(order %in% c(1L, -1L)) )
       stop("x is a list, length(order) must be either =1 or =length(by) and each value should be 1 or -1 for each column in 'by', corresponding to ascending or descending order, respectively. If length(order) == 1, it will be recycled to length(by).")
     if (length(order) == 1L) order = rep(order, length(by))
   }
@@ -330,7 +315,7 @@ setorderv = function(x, cols = colnames(x), order=1L, na.last=FALSE)
   if (".xi" %chin% colnames(x)) stop("x contains a column called '.xi'. Conflicts with internal use by data.table.")
   for (i in cols) {
     .xi = x[[i]]  # [[ is copy on write, otherwise checking type would be copying each column
-    if (!typeof(.xi) %chin% c("integer","logical","character","double")) stop("Column '",i,"' is type '",typeof(.xi),"' which is not supported for ordering currently.")
+    if (!typeof(.xi) %chin% ORDERING_TYPES) stop("Column '",i,"' is type '",typeof(.xi),"' which is not supported for ordering currently.")
   }
   if (!is.character(cols) || length(cols)<1L) stop("Internal error. 'cols' should be character at this point in setkey; please report.") # nocov
 
@@ -380,11 +365,11 @@ CJ = function(..., sorted = TRUE, unique = FALSE)
     if (sorted) {
       if (!is.atomic(y)) stop("'sorted' is TRUE but element ", i, " is non-atomic, which can't be sorted; try setting sorted = FALSE")
       o = forderv(y, retGrp=TRUE)
-      thisdups = attr(o,'maxgrpn')>1L
+      thisdups = attr(o, 'maxgrpn', exact=TRUE)>1L
       if (thisdups) {
         dups = TRUE
-        if (length(o)) l[[i]] = if (unique) y[o[attr(o,"starts")]] else y[o]
-        else if (unique) l[[i]] = y[attr(o,"starts")]  # test 1525.5
+        if (length(o)) l[[i]] = if (unique) y[o[attr(o, "starts", exact=TRUE)]] else y[o]
+        else if (unique) l[[i]] = y[attr(o, "starts", exact=TRUE)]  # test 1525.5
       } else {
         if (length(o)) l[[i]] = y[o]
       }

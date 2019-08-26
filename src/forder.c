@@ -424,6 +424,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
 #endif
 
   int n_protect = 0;
+  const bool verbose = GetVerbose();
 
   if (!isNewList(DT)) {
     if (!isVectorAtomic(DT)) error("Input is not either a list of columns, or an atomic vector.");
@@ -440,13 +441,15 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
   if (!isInteger(by) || !LENGTH(by)) error("DT has %d columns but 'by' is either not integer or is length 0", length(DT));  // seq_along(x) at R level
   if (!isInteger(ascArg) || LENGTH(ascArg)!=LENGTH(by)) error("Either 'ascArg' is not integer or its length (%d) is different to 'by's length (%d)", LENGTH(ascArg), LENGTH(by));
   nrow = length(VECTOR_ELT(DT,0));
+  int n_cplx = 0;
   for (int i=0; i<LENGTH(by); i++) {
-    if (INTEGER(by)[i] < 1 || INTEGER(by)[i] > length(DT))
-      error("'by' value %d out of range [1,%d]", INTEGER(by)[i], length(DT));
-    if ( nrow != length(VECTOR_ELT(DT, INTEGER(by)[i]-1)) )
+    int by_i = INTEGER(by)[i];
+    if (by_i < 1 || by_i > length(DT))
+      error("internal error: 'by' value %d out of range [1,%d]", by_i, length(DT)); // # nocov # R forderv already catch that using C colnamesInt
+    if ( nrow != length(VECTOR_ELT(DT, by_i-1)) )
       error("Column %d is length %d which differs from length of column 1 (%d)\n", INTEGER(by)[i], length(VECTOR_ELT(DT, INTEGER(by)[i]-1)), nrow);
+    if (TYPEOF(VECTOR_ELT(DT, by_i-1)) == CPLXSXP) n_cplx++;
   }
-
   if (!isLogical(retGrpArg) || LENGTH(retGrpArg)!=1 || INTEGER(retGrpArg)[0]==NA_LOGICAL) error("retGrp must be TRUE or FALSE");
   retgrp = LOGICAL(retGrpArg)[0]==TRUE;
   if (!isLogical(sortGroupsArg) || LENGTH(sortGroupsArg)!=1 || INTEGER(sortGroupsArg)[0]==NA_LOGICAL ) error("sortGroups must be TRUE or FALSE");
@@ -476,11 +479,14 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
   savetl_init();   // from now on use Error not error
 
   int ncol=length(by);
-  key = calloc(ncol*8+1, sizeof(uint8_t *));  // needs to be before loop because part II relies on part I, column-by-column. +1 because we check NULL after last one
+  key = calloc((ncol+n_cplx)*8+1, sizeof(uint8_t *));  // needs to be before loop because part II relies on part I, column-by-column. +1 because we check NULL after last one
   // TODO: if key==NULL Error
   nradix=0; // the current byte we're writing this column to; might be squashing into it (spare>0)
   int spare=0;  // the amount of bits remaining on the right of the current nradix byte
   bool isReal=false;
+  bool complexRerun = false;   // see comments below in CPLXSXP case
+  SEXP CplxPart = R_NilValue;
+  if (n_cplx) { CplxPart=PROTECT(allocVector(REALSXP, nrow)); n_protect++; } // one alloc is reused for each part
   TEND(2);
   for (int col=0; col<ncol; col++) {
     // Rprintf("Finding range of column %d ...\n", col);
@@ -493,10 +499,31 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
     case INTSXP : case LGLSXP :  // TODO skip LGL and assume range [0,1]
       range_i32(INTEGER(x), nrow, &min, &max, &na_count);
       break;
+    case CPLXSXP : {
+      // treat as if two separate columns of double
+      const Rcomplex *xd = COMPLEX(x);
+      double *tmp = REAL(CplxPart);
+      if (!complexRerun) {
+        for (int i=0; i<nrow; ++i) tmp[i] = xd[i].r;  // extract the real part on the first time
+        complexRerun = true;
+        col--;  // cause this loop iteration to rerun; decrement now in case of early continue below
+      } else {
+        for (int i=0; i<nrow; ++i) tmp[i] = xd[i].i;
+        complexRerun = false;
+      }
+      x = CplxPart;
+    } // !no break! so as to fall through to REAL case
     case REALSXP :
-      if (inherits(x, "integer64")) {
+      if (INHERITS(x, char_integer64)) {
         range_i64((int64_t *)REAL(x), nrow, &min, &max, &na_count);
       } else {
+        if (verbose && INHERITS(x, char_Date) && INTEGER(isReallyReal(x))[0]==0) {
+          Rprintf("\n*** Column %d passed to forder is a date stored as an 8 byte double but no fractions are present. Please consider a 4 byte integer date such as IDate to save space and time.\n", col+1);
+          // Note the (slightly expensive) isReallyReal will only run when verbose is true. Prefix '***' just to make it stand out in verbose output
+          // In future this could be upgraded to option warning. But I figured that's what we use verbose to do (to trace problems and look for efficiencies).
+          // If an automatic coerce is desired (see discussion in #1738) then this is the point to do that in this file. Move the INTSXP case above to be
+          // next, do the coerce of Date to integer now to a tmp, and then let this case fall through to INTSXP in the same way as CPLXSXP falls through to REALSXP.
+        }
         range_d(REAL(x), nrow, &min, &max, &na_count, &infnan_count);
         if (min==0 && na_count<nrow) { min=3; max=4; } // column contains no finite numbers and is not-all NA; create dummies to yield positive min-2 later
         isReal = true;
@@ -1267,26 +1294,6 @@ SEXP isOrderedSubset(SEXP x, SEXP nrowArg)
     last = elem;
   }
   return(ScalarLogical(TRUE));
-}
-
-SEXP isReallyReal(SEXP x) {
-  SEXP ans = PROTECT(allocVector(INTSXP, 1));
-  INTEGER(ans)[0] = 0;
-  // return 0 (FALSE) when not type double, or is type double but contains integers
-  // used to error if not passed type double but this needed extra is.double() calls in calling R code
-  // which needed a repeat of the argument. Hence simpler and more robust to return 0 when not type double.
-  if (isReal(x)) {
-    int n=length(x), i=0;
-    double *dx = REAL(x);
-    while (i<n &&
-        ( ISNA(dx[i]) ||
-        ( R_FINITE(dx[i]) && dx[i] == (int)(dx[i])))) {
-      i++;
-    }
-    if (i<n) INTEGER(ans)[0] = i+1;  // return the location of first element which is really real; i.e. not an integer
-  }
-  UNPROTECT(1);
-  return(ans);
 }
 
 SEXP binary(SEXP x)

@@ -36,7 +36,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
     SET_STRING_ELT(bynames, i, STRING_ELT(getAttrib(groups,R_NamesSymbol), j));
     defineVar(install(CHAR(STRING_ELT(bynames,i))), VECTOR_ELT(BY,i), env);      // by vars can be used by name in j as well as via .BY
     if (SIZEOF(VECTOR_ELT(BY,i))==0)
-      error("Unsupported type '%s' in column %d of 'by'", type2char(TYPEOF(VECTOR_ELT(BY, i))), i+1);
+      error("Internal error: unsupported size-0 type '%s' in column %d of 'by' should have been caught earlier", type2char(TYPEOF(VECTOR_ELT(BY, i))), i+1); // #nocov
   }
   setAttrib(BY, R_NamesSymbol, bynames); // Fix for #5415 - BY doesn't retain names anymore
   R_LockBinding(sym_BY, env);
@@ -70,7 +70,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
   SEXP *nameSyms = (SEXP *)R_alloc(length(names), sizeof(SEXP));
   for(int i=0; i<length(SDall); ++i) {
     if (SIZEOF(VECTOR_ELT(SDall, i))==0)
-      error("Type %d in .SD column %d", TYPEOF(VECTOR_ELT(SDall, i)), i);
+      error("Internal error: size-0 type %d in .SD column %d should have been caught earlier", TYPEOF(VECTOR_ELT(SDall, i)), i); // #nocov
     nameSyms[i] = install(CHAR(STRING_ELT(names, i)));
     // fixes http://stackoverflow.com/questions/14753411/why-does-data-table-lose-class-definition-in-sd-after-group-by
     copyMostAttrib(VECTOR_ELT(dt,INTEGER(dtcols)[i]-1), VECTOR_ELT(SDall,i));  // not names, otherwise test 778 would fail
@@ -84,7 +84,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
   SEXP *xknameSyms = (SEXP *)R_alloc(length(xknames), sizeof(SEXP));
   for(int i=0; i<length(xSD); ++i) {
     if (SIZEOF(VECTOR_ELT(xSD, i))==0)
-      error("Type %d in .xSD column %d", TYPEOF(VECTOR_ELT(xSD, i)), i);
+      error("Internal error: type %d in .xSD column %d should have been caught by now", TYPEOF(VECTOR_ELT(xSD, i)), i); // #nocov
     xknameSyms[i] = install(CHAR(STRING_ELT(xknames, i)));
   }
 
@@ -143,6 +143,9 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
         case REALSXP :
           REAL(VECTOR_ELT(SDall,j))[0] = NA_REAL;
           break;
+        case CPLXSXP : {
+          COMPLEX(VECTOR_ELT(SDall, j))[0] = NA_CPLX;
+        } break;
         case STRSXP :
           SET_STRING_ELT(VECTOR_ELT(SDall,j),0,NA_STRING);
           break;
@@ -150,7 +153,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
           SET_VECTOR_ELT(VECTOR_ELT(SDall,j),0,R_NilValue);
           break;
         default:
-          error("Logical error. Type of column should have been checked by now");
+          error("Internal error. Type of column should have been checked by now"); // #nocov
         }
       }
       grpn = 1;  // it may not be 1 e.g. test 722. TODO: revisit.
@@ -167,14 +170,19 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
         case REALSXP :
           REAL(VECTOR_ELT(xSD,j))[0] = NA_REAL;
           break;
+        case CPLXSXP : {
+          // TODO: test; requires bmerge.c accomodation for CPLXSXP
+          COMPLEX(VECTOR_ELT(xSD, j))[0] = NA_CPLX;
+        }  break;
         case STRSXP :
           SET_STRING_ELT(VECTOR_ELT(xSD,j),0,NA_STRING);
           break;
         case VECSXP :
+          // TODO: test; requires ability to merge on list columns
           SET_VECTOR_ELT(VECTOR_ELT(xSD,j),0,R_NilValue);
           break;
         default:
-          error("Logical error. Type of column should have been checked by now");
+          error("Internal error. Type of column should have been checked by now"); // #nocov
         }
       }
     } else {
@@ -214,12 +222,20 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
               rownum = iI[k]-1;
               td[k] = sd[rownum];  // on 32bit copies pointers too
             }
-          } else {  // size 8
+          } else if (size==8) {
             double *td = REAL(target);
             const double *sd = REAL(source);
             for (int k=0; k<grpn; ++k) {
               rownum = iI[k]-1;
               td[k] = sd[rownum];  // on 64bit copies pointers too
+            }
+          } else { // size 16
+            // #3634 -- CPLXSXP columns have size 16
+            Rcomplex *td = COMPLEX(target);
+            const Rcomplex *sd = COMPLEX(source);
+            for (int k=0; k<grpn; ++k) {
+              rownum = iI[k]-1;
+              td[k] = sd[rownum];
             }
           }
         }
@@ -289,20 +305,20 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
         if (isNull(target)) {
           // first time adding to new column
           if (TRUELENGTH(dt) < INTEGER(lhs)[j]) error("Internal error: Trying to add new column by reference but tl is full; alloc.col should have run first at R level before getting to this point in dogroups"); // # nocov
-          tmp = PROTECT(allocNAVector(TYPEOF(RHS), LENGTH(VECTOR_ELT(dt,0))));
+          tmp = PROTECT(allocNAVectorLike(RHS, LENGTH(VECTOR_ELT(dt,0))));
           // increment length only if the allocation passes, #1676
           SETLENGTH(dtnames, LENGTH(dtnames)+1);
           SETLENGTH(dt, LENGTH(dt)+1);
           SET_VECTOR_ELT(dt, INTEGER(lhs)[j]-1, tmp);
           UNPROTECT(1);
-          // Even if we could know reliably to switch from allocNAVector to allocVector for slight speedup, user code could still contain a switched halt, and in that case we'd want the groups not yet done to have NA rather than uninitialized or 0.
+          // Even if we could know reliably to switch from allocNAVectorLike to allocVector for slight speedup, user code could still contain a switched halt, and in that case we'd want the groups not yet done to have NA rather than uninitialized or 0.
           // dtnames = getAttrib(dt, R_NamesSymbol); // commented this here and added it on the beginning to fix #4990
           SET_STRING_ELT(dtnames, INTEGER(lhs)[j]-1, STRING_ELT(newnames, INTEGER(lhs)[j]-origncol-1));
           target = VECTOR_ELT(dt,INTEGER(lhs)[j]-1);
         }
         memrecycle(target, order, INTEGER(starts)[i]-1, grpn, RHS);   // length mismatch checked above for all jval columns before starting to add any new columns
         copyMostAttrib(RHS, target);  // not names, otherwise test 778 would fail.
-        /* OLD FIX: commented now. The fix below resulted in segfault on factor columns because I dint set the "levels"
+        /* OLD FIX: commented now. The fix below resulted in segfault on factor columns because I didn't set the "levels"
            Instead of fixing that, I just removed setting class if it's factor. Not appropriate fix.
            Correct fix of copying all attributes (except names) added above. Now, everything should be alright.
            Test 1144 (#5104) will provide the right output now. Modified accordingly.
@@ -352,9 +368,9 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
             error("Column %d of j's result for the first group is NULL. We rely on the column types of the first result to decide the type expected for the remaining groups (and require consistency). NULL columns are acceptable for later groups (and those are replaced with NA of appropriate type and recycled) but not for the first. Please use a typed empty vector instead, such as integer() or numeric().", j+1);
           if (LOGICAL(verbose)[0] && !isNull(getAttrib(thiscol, R_NamesSymbol))) {
             if (wasvector) {
-              Rprintf("j appears to be a named vector. The same names will likely be created over and over again for each group and slow things down. Try and pass a named list (which data.table optimizes) or an unnamed list() instead.");
+              Rprintf("j appears to be a named vector. The same names will likely be created over and over again for each group and slow things down. Try and pass a named list (which data.table optimizes) or an unnamed list() instead.\n");
             } else {
-              Rprintf("Column %d of j is a named vector (each item down the rows is named, somehow). Please remove those names for efficiency (to save creating them over and over for each group). They are ignored anyway.", j+1);
+              Rprintf("Column %d of j is a named vector (each item down the rows is named, somehow). Please remove those names for efficiency (to save creating them over and over for each group). They are ignored anyway.\n", j+1);
             }
           }
           SET_VECTOR_ELT(ans, ngrpcols+j, allocVector(TYPEOF(thiscol), estn));
@@ -382,13 +398,19 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
     for (int j=0; j<ngrpcols; ++j) {
       target = VECTOR_ELT(ans,j);
       source = VECTOR_ELT(groups, INTEGER(grpcols)[j]-1);  // target and source the same type by construction above
-      if (SIZEOF(target)==4) {
+      int tsize = SIZEOF(target);
+      if (tsize==4) {
         int *td = INTEGER(target);
         int *sd = INTEGER(source);
         for (int r=0; r<maxn; ++r) td[ansloc+r] = sd[igrp];
-      } else {
+      } else if (tsize==8) {
         double *td = REAL(target);
         double *sd = REAL(source);
+        for (int r=0; r<maxn; ++r) td[ansloc+r] = sd[igrp];
+      } else {
+        // #3634 -- CPLXSXP columns have size 16
+        Rcomplex *td = COMPLEX(target);
+        Rcomplex *sd = COMPLEX(source);
         for (int r=0; r<maxn; ++r) td[ansloc+r] = sd[igrp];
       }
       // Shouldn't need SET_* to age objects here since groups, TO DO revisit.
@@ -415,6 +437,10 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
           double *td = REAL(target)+thisansloc;
           for (int r=0; r<maxn; ++r) td[r] = NA_REAL;
         } break;
+        case CPLXSXP : {
+          Rcomplex *td = COMPLEX(target) + thisansloc;
+          for (int r=0; r<maxn; ++r) td[r] = NA_CPLX;
+        } break;
         case STRSXP :
           for (int r=0; r<maxn; ++r) SET_STRING_ELT(target,thisansloc+r,NA_STRING);
           break;
@@ -422,7 +448,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
           for (int r=0; r<maxn; ++r) SET_VECTOR_ELT(target,thisansloc+r,R_NilValue);
           break;
         default:
-          error("Logical error. Type of column should have been checked by now");
+          error("Internal error. Type of column should have been checked by now"); // #nocov
         }
       } else {
         // thislen>0

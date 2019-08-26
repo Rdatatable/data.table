@@ -23,8 +23,8 @@ duplicated.data.table = function(x, incomparables=FALSE, fromLast=FALSE, by=seq_
     if (fromLast) f = cumsum(uniqlengths(f, nrow(x)))
   } else {
     o = forderv(x, by=query$by, sort=FALSE, retGrp=TRUE)
-    if (attr(o, 'maxgrpn') == 1L) return(rep.int(FALSE, nrow(x)))
-    f = attr(o,"starts")
+    if (attr(o, 'maxgrpn', exact=TRUE) == 1L) return(rep.int(FALSE, nrow(x)))
+    f = attr(o, "starts", exact=TRUE)
     if (fromLast) f = cumsum(uniqlengths(f, nrow(x)))
     if (length(o)) f = o[f]
   }
@@ -42,13 +42,13 @@ unique.data.table = function(x, incomparables=FALSE, fromLast=FALSE, by=seq_alon
   if (missing(by) && isTRUE(getOption("datatable.old.unique.by.key"))) {
     by = key(x)
     stop(error_oldUniqueByKey)
-  } else if (is.null(by)) by=seq_along(x)
+  }
   o = forderv(x, by=by, sort=FALSE, retGrp=TRUE)
   # if by=key(x), forderv tests for orderedness within it quickly and will short-circuit
   # there isn't any need in unique() to call uniqlist like duplicated does; uniqlist returns a new nrow(x) vector anyway and isn't
   # as efficient as forderv returning empty o when input is already ordered
-  if (attr(o, 'maxgrpn') == 1L) return(copy(x))  # return copy so that unique(x)[, col := val] doesn't affect original data.table, #3383.
-  f = attr(o,"starts")
+  if (attr(o, 'maxgrpn', exact=TRUE) == 1L) return(copy(x))  # return copy so that unique(x)[, col := val] doesn't affect original data.table, #3383.
+  f = attr(o, "starts", exact=TRUE)
   if (fromLast) f = cumsum(uniqlengths(f, nrow(x)))
   if (length(o)) f = o[f]
   if (length(o <- forderv(f))) f = f[o]  # don't sort the uniques too
@@ -84,35 +84,13 @@ unique.data.table = function(x, incomparables=FALSE, fromLast=FALSE, by=seq_alon
 ## unique.data.table has been refactored to simply call duplicated.data.table
 ## making the refactor unnecessary, but let's leave it here just in case
 .duplicated.helper = function(x, by) {
-  use.sub.cols = !is.null(by) # && !isTRUE(by) # Fixing bug #5424
-
-  if (use.sub.cols) {
-    ## Did the user specify (integer) indexes for the columns?
-    if (is.numeric(by)) {
-      if (any(as.integer(by) != by) || any(by<1L) || any(by>ncol(x))) {
-        stop("Integer values between 1 and ncol are required for 'by' when ",
-             "column indices. It's often better to use column names.")
-      }
-      by = names(x)[by]
-    }
-    if (!is.character(by)) {
-      stop("Only NULL, column indices or column names are allowed in by")
-    }
-    bad.cols = setdiff(by, names(x))
-    if (length(bad.cols)) {
-      stop("by specifies column names that do not exist: ", brackify(bad.cols))
-    }
-
-    use.keyprefix = haskey(x) &&
+  cols = colnamesInt(x, by, check_dups=FALSE)
+  use.keyprefix = if (is.null(by)) FALSE else {
+    haskey(x) &&
       length(by) <= length(key(x)) &&
       all(head(key(x), length(by)) == by)
-  } else {
-    ## by is not was explicitly set to
-    use.keyprefix = FALSE
-    by = names(x)
   }
-
-  list(use.keyprefix=use.keyprefix, by=by)
+  list(use.keyprefix=use.keyprefix, by=names(x)[cols])
 }
 
 # FR #5172 anyDuplicated.data.table
@@ -147,9 +125,8 @@ uniqueN = function(x, by = if (is.list(x)) seq_along(x) else NULL, na.rm=FALSE) 
     if (is.logical(x)) return(.Call(CuniqueNlogical, x, na.rm=na.rm))
     x = as_list(x)
   }
-  if (is.null(by)) by = seq_along(x)
   o = forderv(x, by=by, retGrp=TRUE, na.last=if (!na.rm) FALSE else NA)
-  starts = attr(o, 'starts')
+  starts = attr(o, 'starts', exact=TRUE)
   if (!na.rm) {
     length(starts)
   } else {

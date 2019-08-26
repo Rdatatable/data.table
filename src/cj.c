@@ -47,6 +47,20 @@ SEXP cj(SEXP base_list) {
         memcpy(targetP + i*blocklen, targetP, blocklen*sizeof(double));
       }
     } break;
+    case CPLXSXP: {
+      const Rcomplex *restrict sourceP = COMPLEX(source);
+      Rcomplex *restrict targetP = COMPLEX(target);
+      #pragma omp parallel for num_threads(getDTthreads())
+      for (int i=0; i<thislen; ++i) {
+        const Rcomplex item = sourceP[i];
+        const int end=(i+1)*eachrep;
+        for (int j=i*eachrep; j<end; ++j) targetP[j] = item;
+      }
+      #pragma omp parallel for num_threads(getDTthreads())
+      for (int i=1; i<ncopy; ++i) {
+        memcpy(targetP + i*blocklen, targetP, blocklen*sizeof(Rcomplex));
+      }
+    } break;
     case STRSXP: {
       const SEXP *sourceP = STRING_PTR(source);
       int start = 0;
