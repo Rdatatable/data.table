@@ -241,6 +241,7 @@ integration: # merging all artifacts to produce single R repository and summarie
     - linux
   only:
     - master
+    - pkgdown
   dependencies:
   - mirror-packages
   - build
@@ -303,6 +304,9 @@ integration: # merging all artifacts to produce single R repository and summarie
     - Rscript -e 'pdf.copy("data.table", "test-rel-lin")'
     # web/checks/check_results_$pkg.html
     - Rscript -e 'check.index("data.table", names(test.jobs))'
+    # pkgdown
+    - Rscript -e 'install.packages("remotes", repos=Sys.getenv("CRAN_MIRROR")); remotes::install_github("r-lib/pkgdown", repos=Sys.getenv("CRAN_MIRROR")); pkgdown::build_site(devel=FALSE, new_process=TRUE, override=list(destination="./pkgdown"))'
+    - mv ./pkgdown/* bus/integration/cran/
     # cleanup artifacts from other jobs
     - mkdir tmpbus
     - mv bus/$CI_BUILD_NAME tmpbus
