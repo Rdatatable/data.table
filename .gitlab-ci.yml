@@ -307,7 +307,7 @@ integration: # merging all artifacts to produce single R repository and summarie
     - Rscript -e 'check.index("data.table", names(test.jobs))'
     # pkgdown
     - apt-get update -qq && apt-get install -y libxml2-dev
-    - Rscript -e 'install.packages("remotes", repos=Sys.getenv("CRAN_MIRROR"), quiet=TRUE); remotes::install_github("r-lib/pkgdown", repos=Sys.getenv("CRAN_MIRROR"), quiet=FALSE); pkgdown::build_site(devel=FALSE, new_process=TRUE, override=list(destination="./pkgdown"))'
+    - Rscript -e 'install.packages("remotes", repos=Sys.getenv("CRAN_MIRROR"), quiet=TRUE); remotes::install_github("r-lib/pkgdown", repos=Sys.getenv("CRAN_MIRROR"), quiet=TRUE); install.packages("data.table", repos=file.path("file:",normalizePath("bus/integration/cran")), quiet=TRUE); pkgdown::build_site(devel=FALSE, new_process=TRUE, override=list(destination="./pkgdown"))'
     - mv ./pkgdown/* bus/integration/cran/
     # cleanup artifacts from other jobs
     - mkdir tmpbus
