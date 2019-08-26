@@ -1,27 +1,18 @@
 # is x[i] in between lower[i] and upper[i] ?
-between = function(x,lower,upper,incbounds=TRUE) {
+between = function(x, lower, upper, incbounds=TRUE, NAbounds=TRUE) {
   if (is.logical(x)) stop("between has been x of type logical")
   if (is.logical(lower)) lower = as.integer(lower)   # typically NA (which is logical type)
   if (is.logical(upper)) upper = as.integer(upper)   # typically NA (which is logical type)
   is.px = function(x) inherits(x, "POSIXct")
-  is.i64 = function(x) inherits(x, "integer64")
+  is.i64 = function(x) inherits(x, "integer64")   # this is true for nanotime too
   # POSIX special handling to auto coerce character
-  if (is.px(x) && !is.null(tz<-attr(x, "tzone", exact=TRUE)) && nzchar(tz) &&
-      (is.character(lower) || is.character(upper))) {
-    try_posix_cast = function(x, tz) {tryCatch(
-      list(status=0L, value=as.POSIXct(x, tz = tz)),
-      error = function(e) list(status=1L, value=NULL, message=e[["message"]])
-    )}
-    if (is.character(lower)) {
-      ans = try_posix_cast(lower, tz)
-      if (ans$status==0L) lower = ans$value
-      else stop("'between' function the 'x' argument is a POSIX class while 'lower' was not, coercion to POSIX failed with: ", ans$message)
-    }
-    if (is.character(upper)) {
-      ans = try_posix_cast(upper, tz)
-      if (ans$status==0L) upper = ans$value
-      else stop("'between' function the 'x' argument is a POSIX class while 'upper' was not, coercion to POSIX failed with: ", ans$message)
-    }
+  if (is.px(x) && (is.character(lower) || is.character(upper))) {
+    tz = attr(x, "tzone", exact=TRUE)
+    if (is.null(tz)) tz = ""
+    if (is.character(lower)) lower = tryCatch(as.POSIXct(lower, tz=tz), error=function(e)stop(
+      "'between' function the 'x' argument is a POSIX class while 'lower' was not, coercion to POSIX failed with: ", e$message))
+    if (is.character(upper)) upper = tryCatch(as.POSIXct(upper, tz=tz), error=function(e)stop(
+      "'between' function the 'x' argument is a POSIX class while 'upper' was not, coercion to POSIX failed with: ", e$message))
     stopifnot(is.px(x), is.px(lower), is.px(upper)) # nocov # internal
   }
   # POSIX check timezone match
@@ -34,23 +25,20 @@ between = function(x,lower,upper,incbounds=TRUE) {
       stop("'between' function arguments have mismatched timezone attribute, align all arguments to same timezone")
     }
   }
-  # int64
   if (is.i64(x)) {
     if (!requireNamespace("bit64", quietly=TRUE)) stop("trying to use integer64 class when 'bit64' package is not installed") # nocov
     if (!is.i64(lower) && is.numeric(lower)) lower = bit64::as.integer64(lower)
     if (!is.i64(upper) && is.numeric(upper)) upper = bit64::as.integer64(upper)
-  } else if (is.i64(lower) || is.i64(upper)) {
-    stop("'lower' and/or 'upper' are integer64 class while 'x' argument is not, align classes before passing to 'between'")
   }
-  is.supported = function(x) is.numeric(x) || is.px(x)
+  is.supported = function(x) is.numeric(x) || is.character(x) || is.px(x)
   if (is.supported(x) && is.supported(lower) && is.supported(upper)) {
-    # faster parallelised version for int/double.
+    # faster parallelised version for int/double/character
     # Cbetween supports length(lower)==1 (recycled) and (from v1.12.0) length(lower)==length(x).
     # length(upper) can be 1 or length(x) independently of lower
-    .Call(Cbetween, x, lower, upper, incbounds)
+    .Call(Cbetween, x, lower, upper, incbounds, NAbounds)
   } else {
     if (isTRUE(getOption("datatable.verbose"))) cat("optimised between not available for this data type, fallback to slow R routine\n")
-    # now just for character input. TODO: support character between in Cbetween and remove this branch
+    if (isTRUE(NAbounds) && (anyNA(lower) || anyNA(upper))) stop("Not yet implemented NAbounds=TRUE for this non-numeric and non-character type")
     if (incbounds) x>=lower & x<=upper
     else x>lower & x<upper
   }
