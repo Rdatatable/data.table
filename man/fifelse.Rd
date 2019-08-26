@@ -3,7 +3,7 @@
 \alias{ifelse}
 \title{ Fast ifelse }
 \description{
-\code{fifelse} is a faster and more robust replacement of \code{\link[base]{ifelse}}. It returns a value with the same length as \code{test} filled with corresponding values from \code{yes}, \code{no} or eventually \code{NA}, depending on \code{test}. Supports \code{bit64}'s \code{integer64} and \code{nanotime} classes.
+\code{fifelse} is a faster and more robust replacement of \code{\link[base]{ifelse}}. It is comparable to \code{dplyr::if_else} and \code{hutils::if_else}. It returns a value with the same length as \code{test} filled with corresponding values from \code{yes}, \code{no} or eventually \code{NA}, depending on \code{test}. Supports \code{bit64}'s \code{integer64} and \code{nanotime} classes.
 }
 \usage{
   fifelse(test, yes, no)
