@@ -15778,7 +15778,7 @@ test(2087.1, x[a == 1L, .(b, b2=b)][ , !identical(address(b), address(b2))])
 x = data.frame(a=paste0(2:1), stringsAsFactors=FALSE)
 x$b = x$a
 setDT(x)
-test(2078.2, setkey(x, a, verbose=TRUE), output='Deep duplicate columns')
+test(2087.2, setkey(x, a, verbose=TRUE), output='Deep duplicate columns')
 test(2087.3, x, data.table(a=paste0(1:2), b=paste0(1:2), key='a'))
 ## #2245 unset .data.table.locked even if is.null(irows)
 x <- data.table(a=c(0.85, -0.38, 1.19), b=c(0.56, 0.63, -1.30))
