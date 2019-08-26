@@ -236,6 +236,7 @@
 
 31. Joining to `.SD` in `j` was erroring because `bmerge` uses `set` in some cases (e.g. numeric-to-integer coercion or factor joins-on-levels), but the shallow copy of `.SD` was still locked, [#1926](https://github.com/Rdatatable/data.table/issues/1926). Thanks @franknarf1 for the report and for diligently tracking use cases for almost 3 years!
 
+
 #### NOTES
 
 1. `rbindlist`'s `use.names="check"` now emits its message for automatic column names (`"V[0-9]+"`) too, [#3484](https://github.com/Rdatatable/data.table/pull/3484). See news item 5 of v1.12.2 below.
