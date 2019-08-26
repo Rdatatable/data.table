@@ -1,11 +1,44 @@
 url: https://jangorecki.gitlab.io/data.table
 
-home:
-  links:
-  - text: Watch presentations
-    href: https://github.com/Rdatatable/data.table/wiki/Presentations
-  - text: Read articles
-    href: https://github.com/Rdatatable/data.table/wiki/Articles
+navbar:
+  structure:
+    left:  [home, introduction, reference, articles, news]
+    right: [github]
+  components:
+    home:
+      icon: fas fa-home fa-lg
+      href: index.html
+    introduction:
+      text: Introduction
+      href: articles/datatable-intro.html
+    reference:
+      text: Reference
+      href: reference/index.html
+    articles:
+      text: Vignettes
+      menu:
+      - text: "Introduction to data.table"
+        href: articles/datatable-intro.html
+      - text: "Reference semantics"
+        href: articles/datatable-reference-semantics.html
+      - text: "Keys and fast binary search based subset"
+        href: articles/datatable-keys-fast-subset.html
+      - text: "Secondary indices and auto indexing"
+        href: articles/datatable-secondary-indices-and-auto-indexing.html
+      - text: "Efficient reshaping using data.tables"
+        href: articles/datatable-reshape.html
+      - text: "Frequently asked questions"
+        href: articles/datatable-faq.html
+      - text: "Importing data.table"
+        href: articles/datatable-importing.html
+      - text: "Benchmarking data.table"
+        href: articles/datatable-benchmarking.html
+      news:
+        text: Changelog
+        href: news/index.html
+      github:
+        icon: fab fa-github fa-lg
+        href: https://github.com/Rdatatable/data.table
 
 reference:
 - title: Core
