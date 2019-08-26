@@ -1,97 +1,5 @@
 #include "data.table.h"
 
-SEXP colnamesInt(SEXP x, SEXP cols) {
-  if (!isNewList(x)) error("'x' argument must be data.table");
-  int protecti=0;
-  R_len_t nx = length(x);
-  SEXP ricols = R_NilValue;
-  if (isNull(cols)) { // seq_along(x)
-    ricols = PROTECT(allocVector(INTSXP, nx)); protecti++;
-    int *icols = INTEGER(ricols);
-    for (int i=0; i<nx; i++) icols[i] = i+1;
-    UNPROTECT(protecti);
-    return ricols;
-  }
-  if (length(cols)==0) { // integer(0)
-    ricols = PROTECT(allocVector(INTSXP, 0)); protecti++;
-    UNPROTECT(protecti);
-    return ricols;
-  }
-  if (isInteger(cols) || isReal(cols)) {
-    if (isInteger(cols)) {
-      ricols = cols;
-    } else if (isReal(cols)) {
-      ricols = PROTECT(coerceVector(cols, INTSXP)); protecti++;
-    }
-    int *icols = INTEGER(ricols);
-    for (int i=0; i<length(ricols); i++) if ((icols[i]>nx) || (icols[i]<1)) error("'cols' argument specify non existing column(s)"); // handles NAs also
-  } else if (isString(cols)) {
-    SEXP xnames = PROTECT(getAttrib(x, R_NamesSymbol)); protecti++;
-    if (isNull(xnames)) error("'x' argument data.table has no names");
-    ricols = PROTECT(chmatch(cols, xnames, 0)); protecti++;
-    int *icols = INTEGER(ricols);
-    for (int i=0; i<length(ricols); i++) if (icols[i]==0) error("'cols' argument specify non existing column(s)"); // handles NAs also
-  } else {
-    error("'cols' argument must be character or numeric");
-  }
-  if (any_duplicated(ricols, FALSE)) error("'cols' argument specify duplicated column(s)");
-  UNPROTECT(protecti);
-  return ricols;
-}
-void coerceFill(SEXP fill, double *dfill, int32_t *ifill, int64_t *i64fill) {
-  if (xlength(fill) != 1) error("%s: fill argument must be length 1", __func__);
-  if (isInteger(fill)) {
-    if (INTEGER(fill)[0]==NA_INTEGER) {
-      ifill[0] = NA_INTEGER; dfill[0] = NA_REAL; i64fill[0] = NA_INTEGER64;
-    } else {
-      ifill[0] = INTEGER(fill)[0];
-      dfill[0] = (double)(INTEGER(fill)[0]);
-      i64fill[0] = (int64_t)(INTEGER(fill)[0]);
-    }
-  } else if (isReal(fill)) {
-    if (INHERITS(fill,char_integer64) || INHERITS(fill,char_nanotime)) {
-      long long *llfill = (long long *)REAL(fill);
-      if (llfill[0]==NA_INT64_LL) {
-        ifill[0] = NA_INTEGER; dfill[0] = NA_REAL; i64fill[0] = NA_INTEGER64;
-      } else {
-        ifill[0] = llfill[0]>INT32_MAX ? NA_INTEGER : (int32_t)(llfill[0]);
-        dfill[0] = (double)(llfill[0]);
-        i64fill[0] = (int64_t)(llfill[0]);
-      }
-    } else {
-      if (ISNA(REAL(fill)[0])) {
-        ifill[0] = NA_INTEGER; dfill[0] = NA_REAL; i64fill[0] = NA_INTEGER64;
-      } else {
-        ifill[0] = (int32_t)(REAL(fill)[0]);
-        dfill[0] = REAL(fill)[0];
-        i64fill[0] = (int64_t)(REAL(fill)[0]);
-      }
-    }
-  } else if (isLogical(fill) && LOGICAL(fill)[0]==NA_LOGICAL) {
-    ifill[0] = NA_INTEGER; dfill[0] = NA_REAL; i64fill[0] = NA_INTEGER64;
-  } else {
-    error("%s: fill argument must be numeric", __func__);
-  }
-}
-SEXP coerceFillR(SEXP fill) {
-  int protecti=0;
-  double dfill=NA_REAL;
-  int32_t ifill=NA_INTEGER;
-  int64_t i64fill=NA_INTEGER64;
-  coerceFill(fill, &dfill, &ifill, &i64fill);
-  SEXP ans = PROTECT(allocVector(VECSXP, 3)); protecti++;
-  SET_VECTOR_ELT(ans, 0, allocVector(INTSXP, 1));
-  SET_VECTOR_ELT(ans, 1, allocVector(REALSXP, 1));
-  SET_VECTOR_ELT(ans, 2, allocVector(REALSXP, 1));
-  INTEGER(VECTOR_ELT(ans, 0))[0] = ifill;
-  REAL(VECTOR_ELT(ans, 1))[0] = dfill;
-  long long *ll = (long long *)REAL(VECTOR_ELT(ans, 2));
-  ll[0] = i64fill;
-  setAttrib(VECTOR_ELT(ans, 2), R_ClassSymbol, ScalarString(char_integer64));
-  UNPROTECT(protecti);
-  return ans;
-}
-
 void nafillDouble(double *x, uint_fast64_t nx, unsigned int type, double fill, ans_t *ans, bool verbose) {
   double tic=0.0;
   if (verbose) tic = omp_get_wtime();
@@ -169,7 +77,7 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP inplace, SEXP cols, SEXP verbo
     x = PROTECT(allocVector(VECSXP, 1)); protecti++; // wrap into list
     SET_VECTOR_ELT(x, 0, obj);
   } else {
-    SEXP ricols = PROTECT(colnamesInt(obj, cols)); protecti++; // nafill cols=NULL which turns into seq_along(obj)
+    SEXP ricols = PROTECT(colnamesInt(obj, cols, ScalarLogical(TRUE))); protecti++; // nafill cols=NULL which turns into seq_along(obj)
     x = PROTECT(allocVector(VECSXP, length(ricols))); protecti++;
     int *icols = INTEGER(ricols);
     for (int i=0; i<length(ricols); i++) {

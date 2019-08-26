@@ -434,11 +434,8 @@ if (interactive()) {
 
   # get the latest devel version
   update.dev.pkg()
-  # compiled devel binary for Windows available -- no Rtools needed
-  update.dev.pkg(repo="https://Rdatatable.github.io/data.table")
   # read more at:
   # https://github.com/Rdatatable/data.table/wiki/Installation
 }
 }}
 \keyword{ data }
-
