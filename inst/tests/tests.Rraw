@@ -15562,7 +15562,7 @@ test(2074.04, l[[c('foo', 'bar')]][ , (letters) := 16:18], error = 'under-alloca
 options(opt)
 ## alloc.col when using 0-truelength j assigning to a subset
 DT = data.table(a=1)
-### construct incorrectly to have 0 truelength
+### construct incorrectly to have 0 truelength; follow-up: https://github.com/Rdatatable/data.table/pull/3791#discussion_r318326736
 zDT = structure(list(b=2), class = c('data.table', 'data.frame'))
 test(2074.05, DT[1L, b := zDT], data.table(a=1, b=2))
 ## nested .SD in j

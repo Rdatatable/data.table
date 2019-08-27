@@ -1281,12 +1281,6 @@ replace_order = function(isub, verbose, env) {
       } else if (is.call(jsub) && jsub[[1L]] == "get") {
         jval = copy(jval) # fix for #1212
       }
-    } else {
-      if (is.data.table(jval) && !truelength(jval)) {
-        stop("just test 2074.05 (coverage) should touch this branch")
-        # will remove on next commit
-        alloc.col(jval)
-      }
     }
 
     if (!is.null(lhs)) {
