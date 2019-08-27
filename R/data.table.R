@@ -1266,19 +1266,20 @@ replace_order = function(isub, verbose, env) {
 
     jval = eval(jsub, SDenv, parent.frame())
     # copy 'jval' when required
+    # More speedup - only check + copy if irows is NULL
     # Temp fix for #921 - check address and copy *after* evaluating 'jval'
-    # need to check if copy needed regardless of irows status (#3766)
-    if (!is.list(jval)) { # performance improvement when i-arg is S4, but not list, #1438, Thanks @DCEmilberg.
-      jcpy = address(jval) %chin% vapply_1c(SDenv$.SD, address)
-      if (jcpy) jval = copy(jval)
-    } else {
-      if (address(jval) == address(SDenv$.SD)) {
+    if (is.null(irows)) {
+      if (!is.list(jval)) { # performance improvement when i-arg is S4, but not list, #1438, Thanks @DCEmilberg.
+        jcpy = address(jval) %in% vapply_1c(SDenv$.SD, address) # %chin% errors when RHS is list()
+        if (jcpy) jval = copy(jval)
+      } else if (address(jval) == address(SDenv$.SD)) {
         jval = copy(jval)
       } else if ( length(jcpy <- which(vapply_1c(jval, address) %chin% vapply_1c(SDenv, address))) ) {
         for (jidx in jcpy) jval[[jidx]] = copy(jval[[jidx]])
       } else if (is.call(jsub) && jsub[[1L]] == "get") {
         jval = copy(jval) # fix for #1212
       }
+    } else {
       if (is.data.table(jval)) {
         setattr(jval, '.data.table.locked', NULL) # fix for #1341
         if (!truelength(jval)) alloc.col(jval)

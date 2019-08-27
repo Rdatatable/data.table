@@ -234,7 +234,7 @@
 
 30. `groupingsets` functions now properly handle alone special symbols when using an empty set to group by, [#3653](https://github.com/Rdatatable/data.table/issues/3653). Thanks to @Henrik-P for the report.
 
-31. `setkey`/`setkeyv` would mangle the ordering of tables with memory-duplicate (i.e., sharing the same `address`) columns, [#3496](https://github.com/Rdatatable/data.table/issues/3496) and [#3766](https://github.com/Rdatatable/data.table/issues/3766). This is fixed by forcing copies of duplicated columns before reordering. Relatedly, `[` could also produce such columns when subsetting. Finally, `[` might leave its output with `.data.table.locked`, preventing downstream use of `:=`, [#2245](https://github.com/Rdatatable/data.table/issues/2245). Thanks @kirillmayantsev, @alex46015, and @grayskripko for reporting and @jaapwalhout and @Atrebas helping to debug&isolate the issue.
+31. `setkey`/`setkeyv` would mangle the ordering of tables with memory-duplicate (i.e., sharing the same `address`) columns, [#3496](https://github.com/Rdatatable/data.table/issues/3496) and [#3766](https://github.com/Rdatatable/data.table/issues/3766). This is fixed by forcing copies of duplicated columns before reordering. Relatedly, `[` could also produce such columns when subsetting. Thanks @kirillmayantsev and @alex46015 for reporting and @jaapwalhout and @Atrebas helping to debug&isolate the issue.
 
 #### NOTES
 
