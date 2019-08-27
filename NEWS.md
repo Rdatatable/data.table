@@ -21,6 +21,7 @@
                             integer=  8:10,
                             character="colA"))
     ```
+    * gains `tmpdir=` argument which is passed to `tempfile()` whenever a temporary file is needed. Thanks to @mschubmehl for the PR. As before, setting `TMPDIR` (to `/dev/shm` for example) before starting the R session still works too; see `?base::tempdir`.
 
 3. `fwrite()`:
     * now writes compressed `.gz` files directly, [#2016](https://github.com/Rdatatable/data.table/issues/2016). Compression, like `fwrite()`, is multithreaded and compresses each chunk on-the-fly (a full size intermediate file is not created). Use a ".gz" extension, or the new `compress=` option. Many thanks to Philippe Chataignon for the significant PR. For example:
@@ -158,8 +159,6 @@
     ```
 
 22. `transpose` gains `keep.names=` and `make.names=` arguments, [#1886](https://github.com/Rdatatable/data.table/issues/1886). Previously, column names were dropped and there was no way to keep them. `keep.names="rn"` keeps the column names and puts them in the `"rn"` column of the result. Similarly, `make.names="rn"` uses column `"rn"` as the column names of the result. Both arguments are `NULL` by default for backwards compatibility. As these new arguments are new, they are subject to change in future according to community feedback. Thanks to @ghost for the request.
-
-23. `fread` gains `tmpdir=` argument, which is passed to `tempfile` whenever a temporary file is needed. Thanks to @mschubmehl for the PR.
 
 #### BUG FIXES
 
@@ -481,7 +480,7 @@
 
 #### NEW FEATURES
 
-1. `fread()` can now read `.gz` and `.bz2` files directly: `fread("file.csv.gz")`, [#717](https://github.com/Rdatatable/data.table/issues/717) [#3058](https://github.com/Rdatatable/data.table/issues/3058). It uses `R.utils::decompressFile` to decompress to a `tempfile()` which is then read by `fread()` in the usual way. For greater speed on large-RAM servers, it is recommended to use ramdisk for temporary files by setting `TEMPDIR` to `/dev/shm`; see `?tempdir`. The decompressed temporary file is removed as soon as `fread` completes even if there is an error reading the file. Reading a remote compressed file in one step will be supported in the next version; e.g. `fread("http://domain.org/file.csv.bz2")`.
+1. `fread()` can now read `.gz` and `.bz2` files directly: `fread("file.csv.gz")`, [#717](https://github.com/Rdatatable/data.table/issues/717) [#3058](https://github.com/Rdatatable/data.table/issues/3058). It uses `R.utils::decompressFile` to decompress to a `tempfile()` which is then read by `fread()` in the usual way. For greater speed on large-RAM servers, it is recommended to use ramdisk for temporary files by setting `TMPDIR` to `/dev/shm` before starting R; see `?tempdir`. The decompressed temporary file is removed as soon as `fread` completes even if there is an error reading the file. Reading a remote compressed file in one step will be supported in the next version; e.g. `fread("http://domain.org/file.csv.bz2")`.
 
 #### BUG FIXES
 
