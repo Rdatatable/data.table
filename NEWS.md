@@ -234,6 +234,8 @@
 
 30. `groupingsets` functions now properly handle alone special symbols when using an empty set to group by, [#3653](https://github.com/Rdatatable/data.table/issues/3653). Thanks to @Henrik-P for the report.
 
+31. Some operations in `j` could leave the output with `.data.table.locked=TRUE`, preventing mutation of the table downstream, [#2245](https://github.com/Rdatatable/data.table/issues/2245). Thanks @grayskripko for raising.
+
 #### NOTES
 
 1. `rbindlist`'s `use.names="check"` now emits its message for automatic column names (`"V[0-9]+"`) too, [#3484](https://github.com/Rdatatable/data.table/pull/3484). See news item 5 of v1.12.2 below.

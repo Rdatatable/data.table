@@ -1279,11 +1279,11 @@ replace_order = function(isub, verbose, env) {
       } else if (is.call(jsub) && jsub[[1L]] == "get" && is.list(jval)) {
         jval = copy(jval) # fix for #1212
       }
-    } else {
-      if (is.data.table(jval)) {
-        setattr(jval, '.data.table.locked', NULL) # fix for #1341
-        if (!truelength(jval)) alloc.col(jval)
-      }
+    }
+    # #2245 jval can be data.table even if is.null(irows); unlock then as well
+    if (is.data.table(jval)) {
+      setattr(jval, '.data.table.locked', NULL) # fix for #1341
+      if (!truelength(jval)) alloc.col(jval)
     }
     if (!is.null(lhs)) {
       # TODO?: use set() here now that it can add new columns. Then remove newnames and alloc logic above.
