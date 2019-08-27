@@ -1,5 +1,5 @@
 
-# data.table <a href="http://r-datatable.com"><img src="man/figures/logo.png" align="right" height="140" /></a>
+# data.table <a href="http://r-datatable.com"><img src="logo.png" align="right" height="140" /></a>
 
 <!-- badges: start -->
 [![CRAN status](https://www.r-pkg.org/badges/version/data.table)](https://cran.r-project.org/web/checks/check_results_data.table.html)
@@ -81,7 +81,7 @@ DT[Petal.Width > 1.0, mean(Petal.Length), by = Species]
 
 ### Cheatsheets
 
-<a href="https://github.com/rstudio/cheatsheets/raw/master/datatable.pdf"><img src="man/figures/cheatsheet.png" width="615" height="242"/></a>
+<a href="https://github.com/rstudio/cheatsheets/raw/master/datatable.pdf"><img src="cheatsheet.png" width="615" height="242"/></a>
 
 ## Community
 
