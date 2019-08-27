@@ -1265,6 +1265,8 @@ replace_order = function(isub, verbose, env) {
     }
 
     jval = eval(jsub, SDenv, parent.frame())
+    .Call(Csetattrib, jval, '.data.table.locked', NULL) # in case jval inherits .SD's lock, #1341 #2245. Use .Call not setattr() to avoid bumping jval's MAYBE_SHARED.
+
     # copy 'jval' when required
     # More speedup - only check + copy if irows is NULL
     # Temp fix for #921 - check address and copy *after* evaluating 'jval'
@@ -1278,11 +1280,6 @@ replace_order = function(isub, verbose, env) {
         for (jidx in jcpy) jval[[jidx]] = copy(jval[[jidx]])
       } else if (is.call(jsub) && jsub[[1L]] == "get") {
         jval = copy(jval) # fix for #1212
-      }
-    } else {
-      if (is.data.table(jval)) {
-        setattr(jval, '.data.table.locked', NULL) # fix for #1341
-        if (!truelength(jval)) alloc.col(jval)
       }
     }
 
