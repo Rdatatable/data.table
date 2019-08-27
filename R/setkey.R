@@ -41,6 +41,12 @@ setkeyv = function(x, cols, verbose=getOption("datatable.verbose"), physical=TRU
     setattr(x,"index",NULL)  # setkey(DT,NULL) also clears secondary keys. setindex(DT,NULL) just clears secondary keys.
     return(invisible(x))
   }
+  if (!missing(verbose)) {
+    stopifnot(isTRUEorFALSE(verbose))
+    # set the global verbose option because that is fetched from C code without having to pass it through
+    oldverbose = options(datatable.verbose=verbose)
+    on.exit(options(oldverbose))
+  }
   if (!is.data.table(x)) stop("x is not a data.table")
   if (!is.character(cols)) stop("cols is not a character vector. Please see further information in ?setkey.")
   if (physical && identical(attr(x, ".data.table.locked", exact=TRUE),TRUE)) stop("Setting a physical key on .SD is reserved for possible future use; to modify the original data's order by group. Try setindex() instead. Or, set*(copy(.SD)) as a (slow) last resort.")
@@ -102,12 +108,6 @@ setkeyv = function(x, cols, verbose=getOption("datatable.verbose"), physical=TRU
   }
   setattr(x,"index",NULL)   # TO DO: reorder existing indexes likely faster than rebuilding again. Allow optionally. Simpler for now to clear.
   if (length(o)) {
-    # table has deep-duplicate columns, e.g. #3496
-    if (any(idx <- duplicated(vapply_1c(x, address)))) {
-      if (verbose) { last.started.at=proc.time(); cat('Deep duplicate columns (identical address in memory) detected... copying', sum(idx), 'columns ...'); flush.console() }
-      for (j in which(idx)) set(x, NULL, j, copy(x[[j]]))
-      if (verbose) { cat("done in", timetaken(last.started.at), "\n"); flush.console() }
-    }
     if (verbose) { last.started.at = proc.time() }
     .Call(Creorder,x,o)
     if (verbose) { cat("reorder took", timetaken(last.started.at), "\n"); flush.console() }
