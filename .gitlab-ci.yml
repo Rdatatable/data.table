@@ -44,7 +44,7 @@ build: # build data.table sources as tar.gz archive
   dependencies:
   - mirror-packages
   script:
-    - Rscript -e 'install.packages("knitr", repos=file.path("file:",normalizePath("bus/mirror-packages/cran")))'
+    - Rscript -e 'install.packages("knitr", repos=file.path("file:",normalizePath("bus/mirror-packages/cran")), quiet=TRUE)'
     - rm -r bus
     - echo "Revision:" $CI_BUILD_REF >> ./DESCRIPTION
     - R CMD build .
@@ -105,7 +105,7 @@ test-rel-lin: #  most comprehensive tests, force all suggests, also integration 
     - echo 'CFLAGS=-g -O3 -fopenmp -Wall -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2' > ~/.R/Makevars
     - echo 'CXXFLAGS=-g -O3 -fopenmp -Wall -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2' >> ~/.R/Makevars
   script:
-    - Rscript -e 'source("ci.R"); install.packages(dcf.dependencies(c("DESCRIPTION","inst/tests/tests-DESCRIPTION"), which="all"))'
+    - Rscript -e 'source("ci.R"); install.packages(dcf.dependencies(c("DESCRIPTION","inst/tests/tests-DESCRIPTION"), which="all"), quiet=TRUE)'
     - *copy-src
     - rm -r bus
     - *move-src
@@ -142,7 +142,7 @@ test-rel-cran-lin: # currently released R on Linux
     - echo 'CFLAGS=-g0'> ~/.R/Makevars   # No -g because -g increases datatable.so size from 0.5MB to 1.5MB and breaches 'installed package size <= 5MB' note
     - echo 'CXXFLAGS=-g0' >> ~/.R/Makevars
   script:
-    - Rscript -e 'source("ci.R"); install.packages(dcf.dependencies("DESCRIPTION", which="most"))'
+    - Rscript -e 'source("ci.R"); install.packages(dcf.dependencies("DESCRIPTION", which="most"), quiet=TRUE)'
     - *copy-src
     - rm -r bus
     - *move-src
@@ -160,7 +160,7 @@ test-dev-cran-lin: # R-devel on Linux
     _R_CHECK_CRAN_INCOMING_: "TRUE"
     _R_CHECK_CRAN_INCOMING_REMOTE_: "FALSE"
   script:
-    - Rscript -e 'source("ci.R"); install.packages(dcf.dependencies("DESCRIPTION", which="most"))'
+    - Rscript -e 'source("ci.R"); install.packages(dcf.dependencies("DESCRIPTION", which="most"), quiet=TRUE)'
     - *copy-src
     - rm -r bus
     - *move-src
@@ -175,7 +175,7 @@ test-310-cran-lin: # test stated R dependency (3.1.0) using Linux
     _R_CHECK_CRAN_INCOMING_: "TRUE"
     _R_CHECK_CRAN_INCOMING_REMOTE_: "FALSE"
   script:
-    - Rscript -e 'source("ci.R"); install.packages(dcf.dependencies("DESCRIPTION", which="most"))'
+    - Rscript -e 'source("ci.R"); install.packages(dcf.dependencies("DESCRIPTION", which="most"), quiet=TRUE)'
     - *copy-src
     - rm -r bus
     - *move-src
@@ -189,7 +189,7 @@ test-rel-win: # windows test and build binaries
     R_BIN_VERSION: "3.6"
     R_DIR: "R-3.6.0"
   script:
-    - Rscript -e "source('ci.R'); install.packages(dcf.dependencies('DESCRIPTION', which='all'))"
+    - Rscript -e "source('ci.R'); install.packages(dcf.dependencies('DESCRIPTION', which='all'), quiet=TRUE)"
     - *copy-src
     - rm -r bus
     - *move-src
@@ -208,7 +208,7 @@ test-dev-win: # R-devel on windows
     TEST_DATA_TABLE_MEMTEST: "FALSE" # disabled as described in #3147
   allow_failure: false
   script:
-    - Rscript -e "source('ci.R'); install.packages(dcf.dependencies('DESCRIPTION', which='all'))"
+    - Rscript -e "source('ci.R'); install.packages(dcf.dependencies('DESCRIPTION', which='all'), quiet=TRUE)"
     - *copy-src
     - rm -r bus
     - *move-src
@@ -224,7 +224,7 @@ test-dev-win: # R-devel on windows
   variables:
     R_BIN_VERSION: "3.6"
   script:
-    - Rscript -e 'source("ci.R"); install.packages(dcf.dependencies("DESCRIPTION", which="all"))'
+    - Rscript -e 'source("ci.R"); install.packages(dcf.dependencies("DESCRIPTION", which="all"), quiet=TRUE)'
     - *copy-src
     - rm -r bus
     - *move-src
