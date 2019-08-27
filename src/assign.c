@@ -478,7 +478,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
         }
         thisvalue = duplicate(thisvalue);   // PROTECT not needed as assigned as element to protected list below.
       } else {
-        if (verbose) Rprintf("Direct plonk of unnamed RHS, no copy. NAMED==%d, MAYBE_SHARED==%d\n", NAMED(thisvalue), MAYBE_SHARED(thisvalue));  // e.g. DT[,a:=as.character(a)] as tested by 754.3
+        if (verbose) Rprintf("Direct plonk of unnamed RHS, no copy. NAMED==%d, MAYBE_SHARED==%d\n", NAMED(thisvalue), MAYBE_SHARED(thisvalue));  // e.g. DT[,a:=as.character(a)] as tested by 754.5
       }
       SET_VECTOR_ELT(dt, coln, thisvalue);                 // plonk new column in as it's already the correct length
       setAttrib(thisvalue, R_NamesSymbol, R_NilValue);     // clear names such as  DT[,a:=mapvector[a]]
