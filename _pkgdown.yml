@@ -12,7 +12,7 @@ navbar:
       text: Introduction
       href: articles/datatable-intro.html
     reference:
-      text: Reference
+      text: Manual
       href: reference/index.html
     articles:
       text: Vignettes
