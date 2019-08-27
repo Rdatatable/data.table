@@ -7159,13 +7159,21 @@ test(1529.04, between(x, 1L, 5L, TRUE), x >= 1L & x <= 5L)
 test(1529.05, x %between% c(1L, 5L), x >= 1L & x <= 5L)
 test(1529.06, between(x, 1L, 5L, FALSE), x > 1L & x < 5L)
 x = runif(15)
-test(1529.07, between(x, 0.25, 0.75, TRUE), x >= 0.25 & x <= 0.75)
+test(1529.07, between(x, 0.25, 0.75, incbounds=TRUE), x >= 0.25 & x <= 0.75)
 test(1529.08, x %between% c(0.25, 0.75), x >= 0.25 & x <= 0.75)
-test(1529.09, between(x, 0.25, 0.75, FALSE), x > 0.25 & x < 0.75)
+test(1529.09, between(x, 0.25, 0.75, incbounds=FALSE), x > 0.25 & x < 0.75)
+test(1529.10, between(x, 0.25, NA,   NAbounds=NA),     ifelse(x<=0.25, FALSE, NA))
+test(1529.11, between(x, NA, 0.75,   NAbounds=NA),     ifelse(x>=0.75, FALSE, NA))
+test(1529.12, between(x, NA, NA,     NAbounds=NA),     rep(NA, length(x)))
+test(1529.13, between(x, NA, NA,     NAbounds=TRUE),   rep(TRUE, length(x)))
+test(1529.14, between(x, x[3], NA, incbounds=FALSE, NAbounds=NA), ifelse(x<=x[3], FALSE, NA))
+test(1529.15, between(x, x[3], NA, incbounds=TRUE, NAbounds=NA),  ifelse(x<x[3], FALSE, NA))
+test(1529.16, between(x, NA, x[9], incbounds=FALSE, NAbounds=NA), ifelse(x>=x[9], FALSE, NA))
+test(1529.17, between(x, NA, x[9], incbounds=TRUE, NAbounds=NA),  ifelse(x>x[9], FALSE, NA))
 x = c(NA, runif(15), NA)
-test(1529.10, between(x, 0.25, 0.75, TRUE), x >= 0.25 & x <= 0.75)
-test(1529.11, x %between% c(0.25, 0.75), x >= 0.25 & x <= 0.75)
-test(1529.12, between(x, 0.25, 0.75, FALSE), x > 0.25 & x < 0.75)
+test(1529.18, between(x, 0.25, 0.75, incbounds=TRUE), x >= 0.25 & x <= 0.75)
+test(1529.19, x %between% c(0.25, 0.75), x >= 0.25 & x <= 0.75)
+test(1529.20, between(x, 0.25, 0.75, incbounds=FALSE), x > 0.25 & x < 0.75)
 
 # add tests for which.first and which.last
 # which.first
@@ -9441,7 +9449,7 @@ test(1656, nrow(dt[dt, .(x.id, x.a, x.b, x.c, x.row_id, i.id, i.a, i.b, i.c, i.r
 
 # between is vectorised, #534
 set.seed(1L)
-dt = data.table(x=sample(3,10,TRUE), y=sample(2,10,TRUE), z=sample(5,10,TRUE))
+dt = data.table(x=sample(3,10,TRUE), y=sample(2,10,TRUE), z=1L+sample(2,10,TRUE))
 test(1657, dt[x %between% list(y,z)], dt[x>=y & x<=z])
 
 # fwrite tests
@@ -14663,34 +14671,33 @@ test(2037.2, names(DT), 'a')
 test(2037.3, unname(table(unlist(strsplit(capture.output(foo(DT)), '\n|\\s+')))['ptr']), 1L)
 
 # `between` invalid args, and verbose #3516
-test(2038.01, between(1:5, 2, 4, incbounds=423), error="incbounds must be logical")
-test(2038.02, between(1:5, 2, 4, incbounds=NA), error="incbounds must be logical")
+test(2038.01, between(1:5, 2, 4, incbounds=423), error="incbounds must be TRUE or FALSE")
+test(2038.02, between(1:5, 2, 4, incbounds=NA), error="incbounds must be TRUE or FALSE")
 old = options(datatable.verbose=TRUE)
-test(2038.03, between(1:5, 2L, 4L), output="between parallel processing of integer with recycling took")
+test(2038.03, between(1:5, 2L, 4L), output="between parallel processing of integer took")
 test(2038.04, between(1:5, rep(2L,5L), rep(4L, 5L)), output="between parallel processing of integer took")
-test(2038.05, between(as.double(1:5), 2, 4, incbounds=FALSE), output="between parallel processing of double using open bounds with recycling took")
-test(2038.06, between(as.double(1:5), 2, 4), output="between parallel processing of double using closed bounds with recycling took")
-test(2038.07, between(as.double(1:5), rep(2, 5L), rep(4, 5L)), output="between parallel processing of double took")
-test(2038.08, between(c("foo","bar","paz"), "bag", "fog"), output="optimised between not available for this data type, fallback to slow R routine")
+test(2038.05, between(as.double(1:5), 2, 4, incbounds=FALSE), output="between parallel processing of double with open bounds took")
+test(2038.06, between(as.double(1:5), 2, 4), output="between parallel processing of double with closed bounds took")
+test(2038.07, between(as.double(1:5), rep(2, 5L), rep(4, 5L)), output="between parallel processing of double with closed bounds took")
+test(2038.08, between(c("foo","bar","paz"), "bag", "fog"), output="between non-parallel processing of character took")
 
 # `between` handle POSIXct type
 x = as.POSIXct("2016-09-18 07:00:00") + 0:10*60*15
 dn = as.POSIXct('2016-09-18 08:00:00')
 up = as.POSIXct('2016-09-18 09:00:00')
-test(2038.09, between(x, dn, up), output="between parallel processing of double using closed bounds with recycling took")
-test(2038.10, between(x, dn, up, incbounds=FALSE), output="between parallel processing of double using open bounds with recycling took")
+test(2038.09, between(x, dn, up), output="between parallel processing of double with closed bounds took")
+test(2038.10, between(x, dn, up, incbounds=FALSE), output="between parallel processing of double with open bounds took")
 
-# also handling of string lower/upper bounds _only when x has a time zone_
-x = as.POSIXct("2016-09-18 07:00:00") + 0:10*60*15
+# also handling of string lower/upper bounds
+x = as.POSIXct("2016-09-18 07:00:00") + 0:10*60*15  # local time zone
 dn = '2016-09-18 08:00:00'
 up = '2016-09-18 09:00:00'
-test(2038.11, between(x, dn, up), output = 'optimised between not available')
-attr(x, 'tzone') = 'UTC'
-test(2038.12, between(x, dn, up), output = 'between parallel processing of double')
+test(2038.11, between(x, dn, up), ans<-as.logical(c(0,0,0,0,1,1,1,1,1,0,0)), output='between parallel processing of double with closed bounds')
+attr(x, 'tzone') = 'UTC' # this conversion will result in different UTC times depending on which local time zone the test runs in
+test(2038.12, between(x, x[5], x[9]), ans, output='between parallel processing of double with closed bounds')
 
 # additional flexibility -- cast when one bound is already POSIXct
-up = as.POSIXct(up, tz="UTC")
-test(2038.13, between(x, dn, up), output = 'between parallel processing of double')
+test(2038.13, between(x, as.character(x[5]), x[9]), ans, output='between parallel processing of double')
 options(old)
 
 # exceptions in char to POSIX coercion
@@ -14712,45 +14719,46 @@ test(2038.17, X[c %between% list(a, b)], X[c %between% .(a, b)])
 
 # between num to int coercion #3517
 old = options("datatable.verbose"=TRUE)
-test(2038.18, between(1:5, 2, 4), output="between parallel processing of integer with recycling")
-test(2038.19, between(1:5, 2L, 4), output="between parallel processing of integer with recycling")
-test(2038.20, between(1:5, 2, 4L), output="between parallel processing of integer with recycling")
+test(2038.18, between(1:5, 2, 4), output="between parallel processing of integer")
+test(2038.19, between(1:5, 2L, 4), output="between parallel processing of integer")
+test(2038.20, between(1:5, 2, 4L), output="between parallel processing of integer")
 # revdep regression #3565
-test(2038.21, between(1:10, -Inf, Inf),            rep(TRUE,10), output="between parallel processing of double using closed bounds with recycling")
-test(2038.22, between(as.double(1:10), -Inf, Inf), rep(TRUE,10), output="between parallel processing of double using closed bounds with recycling")
+test(2038.21, between(1:10, -Inf, Inf),            rep(TRUE,10), output="between parallel processing of double with closed bounds")
+test(2038.22, between(as.double(1:10), -Inf, Inf), rep(TRUE,10), output="between parallel processing of double with closed bounds")
 options(old)
 
 # between int64 support
 if (test_bit64) {
   as.i64 = bit64::as.integer64
-  test(2039.01, between(1:10, as.i64(3), as.i64(6)), error="are integer64 class while 'x' argument is not")
-  test(2039.02, between(1:10, 3, as.i64(6)), error="are integer64 class while 'x' argument is not")
+  test(2039.01, between(1:10, as.i64(3), as.i64(6)),  error="x is not integer64 but.*Please align classes")
+  test(2039.02, between(1:10, 3, as.i64(6)),          error="x is not integer64 but.*Please align classes")
+  test(2039.03, between(as.i64(1:3), "2", as.i64(4)), error="x is integer64 but lower and/or upper are not")
   old = options("datatable.verbose"=TRUE)
   x = as.i64(1:10)
   ans36 = c(FALSE,FALSE,TRUE,TRUE,TRUE,TRUE,FALSE,FALSE,FALSE,FALSE)
   ans36open = c(FALSE,FALSE,FALSE,TRUE,TRUE,FALSE,FALSE,FALSE,FALSE,FALSE)
-  test(2039.03, between(x, 3, 6), ans36, output="between parallel processing of integer64 with recycling")
-  test(2039.04, between(x, 3, 6, incbounds=FALSE), ans36open, output="between parallel processing of integer64 with recycling")
-  test(2039.05, between(x, 3L, 6), ans36, output="between parallel processing of integer64 with recycling")
-  test(2039.06, between(x, 3L, 6, incbounds=FALSE), ans36open, output="between parallel processing of integer64 with recycling")
-  test(2039.07, between(x, 3, 6L), ans36, output="between parallel processing of integer64 with recycling")
-  test(2039.08, between(x, 3, 6L, incbounds=FALSE), ans36open, output="between parallel processing of integer64 with recycling")
-  test(2039.09, between(x, 3L, 6L), ans36, output="between parallel processing of integer64 with recycling")
-  test(2039.10, between(x, 3L, 6L, incbounds=FALSE), ans36open, output="between parallel processing of integer64 with recycling")
-  test(2039.11, between(x, rep(3, 10L), rep(6, 10L)), ans36, output="between parallel processing of integer64 took")
-  test(2039.12, between(x, rep(3, 10L), rep(6, 10L), incbounds=FALSE), ans36open, output="between parallel processing of integer64 took")
+  test(2039.04, between(x, 3, 6), ans36, output="between parallel processing of integer64 took")
+  test(2039.05, between(x, 3, 6, incbounds=FALSE), ans36open, output="between parallel processing of integer64 took")
+  test(2039.06, between(x, 3L, 6), ans36, output="between parallel processing of integer64 took")
+  test(2039.07, between(x, 3L, 6, incbounds=FALSE), ans36open, output="between parallel processing of integer64 took")
+  test(2039.08, between(x, 3, 6L), ans36, output="between parallel processing of integer64 took")
+  test(2039.09, between(x, 3, 6L, incbounds=FALSE), ans36open, output="between parallel processing of integer64 took")
+  test(2039.10, between(x, 3L, 6L), ans36, output="between parallel processing of integer64 took")
+  test(2039.11, between(x, 3L, 6L, incbounds=FALSE), ans36open, output="between parallel processing of integer64 took")
+  test(2039.12, between(x, rep(3, 10L), rep(6, 10L)), ans36, output="between parallel processing of integer64 took")
+  test(2039.13, between(x, rep(3, 10L), rep(6, 10L), incbounds=FALSE), ans36open, output="between parallel processing of integer64 took")
   maxint = 2147483647
-  test(2039.13, between(x+maxint, 3+maxint, 6+maxint), ans36, output="between parallel processing of integer64 with recycling")
-  test(2039.14, between(x+maxint, 3+maxint, 6+maxint, incbounds=FALSE), ans36open, output="between parallel processing of integer64 with recycling")
+  test(2039.14, between(x+maxint, 3+maxint, 6+maxint), ans36, output="between parallel processing of integer64 took")
+  test(2039.15, between(x+maxint, 3+maxint, 6+maxint, incbounds=FALSE), ans36open, output="between parallel processing of integer64 took")
   x[5] = NA
   ans36[5] = NA
   ans36open[5] = NA
-  test(2039.15, between(x+maxint, 3+maxint, 6+maxint), ans36, output="between parallel processing of integer64 with recycling")
-  test(2039.16, between(x+maxint, 3+maxint, 6+maxint, incbounds=FALSE), ans36open, output="between parallel processing of integer64 with recycling")
-  test(2039.17, between(x+maxint, NA, 6+maxint), c(TRUE, TRUE, tail(ans36, -2L)), output="between parallel processing of integer64 with recycling")
-  test(2039.18, between(x+maxint, 3+maxint, NA, incbounds=FALSE), c(head(ans36open, -5L), rep(TRUE, 5)), output="between parallel processing of integer64 with recycling")
-  test(2039.19, between(x+maxint, rep(NA, 10L), rep(6+maxint, 10L)), c(TRUE, TRUE, tail(ans36, -2L)), output="between parallel processing of integer64 took")
-  test(2039.20, between(x+maxint, rep(3+maxint, 10L), rep(NA, 10L), incbounds=FALSE), c(head(ans36open, -5L), rep(TRUE, 5)), output="between parallel processing of integer64 took")
+  test(2039.16, between(x+maxint, 3+maxint, 6+maxint), ans36, output="between parallel processing of integer64 took")
+  test(2039.17, between(x+maxint, 3+maxint, 6+maxint, incbounds=FALSE), ans36open, output="between parallel processing of integer64 took")
+  test(2039.18, between(x+maxint, NA, 6+maxint), c(TRUE, TRUE, tail(ans36, -2L)), output="between parallel processing of integer64 took")
+  test(2039.19, between(x+maxint, 3+maxint, NA, incbounds=FALSE), c(head(ans36open, -5L), rep(TRUE, 5)), output="between parallel processing of integer64 took")
+  test(2039.20, between(x+maxint, rep(NA, 10L), rep(6+maxint, 10L)), c(TRUE, TRUE, tail(ans36, -2L)), output="between parallel processing of integer64 took")
+  test(2039.21, between(x+maxint, rep(3+maxint, 10L), rep(NA, 10L), incbounds=FALSE), c(head(ans36open, -5L), rep(TRUE, 5)), output="between parallel processing of integer64 took")
   options(old)
 }
 
@@ -15468,8 +15476,8 @@ test(2072.012, fifelse(0:1, rep(TRUE,2L), rep(FALSE,2L)),        error="Argument
 test(2072.013, fifelse(test_vec, TRUE, "FALSE"),                 error="'yes' is of type logical but 'no' is of type character. Please")
 test(2072.014, fifelse(test_vec, list(1),list(2,4)),             error="Length of 'no' is 2 but must be 1 or length of 'test' (11).")
 test(2072.015, fifelse(test_vec, list(1,3),list(2,4)),           error="Length of 'yes' is 2 but must be 1 or length of 'test' (11).")
-test(2072.016, fifelse(test_vec, list(1), 0), as.list(as.numeric(out_vec)))
-test(2072.017, fifelse(test_vec, 1, list(0)), as.list(as.numeric(out_vec)))
+test(2072.016, fifelse(test_vec, list(1), list(0)), as.list(as.numeric(out_vec)))
+test(2072.017, fifelse(test_vec, list(1), list(0)), as.list(as.numeric(out_vec)))
 ## Jan 1 - 5, 2011
 date_vec = as.Date(14975:14979, origin = '1970-01-01')
 test(2072.018, fifelse(date_vec == "2011-01-01", date_vec - 1L, date_vec),
@@ -15502,10 +15510,10 @@ test(2072.042, fifelse(TRUE,1L,factor(letters[1])),     error="'yes' has differe
 test(2072.043, fifelse(TRUE, list(1:5), list(5:1)), list(1:5))
 test(2072.044, fifelse(as.logical(NA), list(1:5), list(5:1)), list(NULL))
 test(2072.045, fifelse(FALSE, list(1:5), list(5:1)), list(5:1))
-test(2072.046, fifelse(TRUE, data.table(1:5), data.table(5:1)), data.table(1:5))
-test(2072.047, fifelse(FALSE, data.table(1:5), data.table(5:1)), data.table(5:1))
-test(2072.048, fifelse(TRUE, data.frame(1:5), data.frame(5:1)), data.frame(1:5))
-test(2072.049, fifelse(FALSE, data.frame(1:5), data.frame(5:1)), data.frame(5:1))
+test(2072.046, fifelse(TRUE, list(data.table(1:5)), list(data.table(5:1))), list(data.table(1:5)))
+test(2072.047, fifelse(FALSE, list(data.table(1:5)), list(data.table(5:1))), list(data.table(5:1)))
+test(2072.048, fifelse(TRUE, list(data.frame(1:5)), list(data.frame(5:1))), list(data.frame(1:5)))
+test(2072.049, fifelse(FALSE, list(data.frame(1:5)), list(data.frame(5:1))), list(data.frame(5:1)))
 test(2072.050, fifelse(c(TRUE,FALSE), list(1:5,6:10), list(10:6,5:1)), list(1:5,5:1))
 test(2072.051, fifelse(c(NA,TRUE), list(1:5,6:10), list(10:6,5:1)), list(NULL,6:10))
 test(2072.052, fifelse(c(FALSE,TRUE), list(1:5,6:10), list(10:6,5:1)), list(10:6,6:10))
@@ -15517,8 +15525,8 @@ test(2072.057, fifelse(c(FALSE,TRUE), list(factor(letters[1:5])), list(10:6,5:1)
 test(2072.058, fifelse(c(NA,FALSE), list(1:5), list(10:6,5:1)), list(NULL,5:1))
 test(2072.059, fifelse(c(NA,FALSE), list(1:5,6:10), list(5:1)), list(NULL,5:1))
 test(2072.060, fifelse(c(NA,FALSE), list(1:5), list(5:1)), list(NULL,5:1))
-test(2072.061, fifelse(c(TRUE,FALSE), list(1L), 0L), list(1L,0L))
-test(2072.062, fifelse(c(TRUE,FALSE), 1L, list(0L)), list(1L,0L))
+test(2072.061, fifelse(c(TRUE,FALSE), list(1L), list(0L)), list(1L,0L))
+test(2072.062, fifelse(c(TRUE,FALSE), list(1L), list(0L)), list(1L,0L))
 test(2072.063, fifelse(c(TRUE,FALSE), factor(c("a","b")), factor(c("a","c"))), error="'yes' and 'no' are both type factor but their levels are different")
 test(2072.064, fifelse(c(TRUE, TRUE, TRUE, FALSE, FALSE), factor(NA, levels=letters[1:5]), factor(letters[1:5])),
                factor(c(NA,NA,NA,"d","e"),levels=letters[1:5]))
@@ -15560,7 +15568,7 @@ test(2074.04, l[[c('foo', 'bar')]][ , (letters) := 16:18], error = 'under-alloca
 options(opt)
 ## alloc.col when using 0-truelength j assigning to a subset
 DT = data.table(a=1)
-### construct incorrectly to have 0 truelength
+### construct incorrectly to have 0 truelength; follow-up: https://github.com/Rdatatable/data.table/pull/3791#discussion_r318326736
 zDT = structure(list(b=2), class = c('data.table', 'data.frame'))
 test(2074.05, DT[1L, b := zDT], data.table(a=1, b=2))
 ## nested .SD in j
@@ -15677,8 +15685,121 @@ if (test_bit64) {
   test(2077.06, int64_int32_match(d[, sum(i32, na.rm=TRUE), g], d[, sum(i64, na.rm=TRUE), g]))
 }
 
+# between NAs in character bounds #3667
+test(2078.01, letters %between% c("m", NA_character_), c(rep(FALSE, 12L), rep(TRUE, 14L)))
+test(2078.02, between(letters, "m", NA_character_, incbounds=TRUE), c(rep(FALSE, 12L), rep(TRUE, 14L)))
+test(2078.03, between(letters, "m", NA_character_, incbounds=FALSE), c(rep(FALSE, 13L), rep(TRUE, 13L)))
+test(2078.04, between(letters, NA_character_, "m", incbounds=TRUE), c(rep(TRUE, 13L), rep(FALSE, 13L)))
+test(2078.05, between(letters, NA_character_, "m", incbounds=FALSE), c(rep(TRUE, 12L), rep(FALSE, 14L)))
+test(2078.06, between(letters, NA_character_, NA_character_, incbounds=TRUE), rep(TRUE, 26L))
+test(2078.07, between(letters, NA_character_, NA_character_, incbounds=FALSE), rep(TRUE, 26L))
+test(2078.11, between(c("a","b","c"), c("a","b"), "d"), error="Incompatible vector lengths.*3.*2.*1")
+test(2078.12, between(c("a","b","c"), "a", c("b","d")), error="Incompatible vector lengths.*3.*2.*1")
+test(2078.13, between(c("a","b","c"), c("a","b"), c("b","d")), error="Incompatible vector lengths.*3.*2.*2")
+test(2078.21, between(c("a","c","e"), c("b",NA,"d"), "e", incbounds=TRUE), c(FALSE, TRUE, TRUE))
+test(2078.22, between(c("a","c","e"), c("b",NA,"d"), "e", incbounds=FALSE), c(FALSE, TRUE, FALSE))
+test(2078.23, between(c("a","c","e"), c("b","c","d"), NA, incbounds=TRUE), c(FALSE, TRUE, TRUE))
+test(2078.24, between(c("a","c","e"), c("b","c","d"), NA, incbounds=FALSE), c(FALSE, FALSE, TRUE))
+test(2078.25, between(c("a","c","e"), c("b",NA,"d"), NA, incbounds=TRUE), c(FALSE, TRUE, TRUE))
+test(2078.26, between(c("a","c","e"), c("b",NA,"d"), NA, incbounds=FALSE), c(FALSE, TRUE, TRUE))
+test(2078.27, between(c("a","c","e"), "a", c("b",NA,"d"), incbounds=TRUE), c(TRUE, TRUE, FALSE))
+test(2078.28, between(c("a","c","e"), "a", c("b",NA,"d"), incbounds=FALSE), c(FALSE, TRUE, FALSE))
+test(2078.29, between(c("a","c","e"), NA, c("b",NA,"e"), incbounds=TRUE), c(TRUE, TRUE, TRUE))
+test(2078.30, between(c("a","c","e"), NA, c("b",NA,"e"), incbounds=FALSE), c(TRUE, TRUE, FALSE))
+test(2078.31, between(c("a","c","e"), NA, c("b",NA,"e"), incbounds=TRUE,  NAbounds=NA), c(NA, NA, NA))
+test(2078.32, between(c("a","c","e"), NA, c("b",NA,"e"), incbounds=FALSE, NAbounds=NA), c(NA, NA, FALSE))
+# between NA bound as unknown rather than unlimited, #3522
+test(2079.01, between(1:5, 3L, NA, incbounds=TRUE, NAbounds=NA), c(FALSE, FALSE, NA, NA, NA))
+test(2079.02, between(1:5, 3L, NA, incbounds=FALSE, NAbounds=TRUE), c(FALSE, FALSE, FALSE, TRUE, TRUE))
+test(2079.03, between(1:5, 3L, NA, incbounds=FALSE, NAbounds=FALSE), error="NAbounds must be TRUE or NA")
+# nanotime support
+if (test_nanotime) {
+  n=nanotime(1:4)
+  n[2L]=NA
+  op = options(datatable.verbose=TRUE)
+  test(2080.01, between(n, nanotime(2), nanotime(10)), c(FALSE, NA, TRUE, TRUE), output="between parallel processing of integer64")
+  test(2080.02, between(n, nanotime(3), nanotime(10), incbounds=FALSE), c(FALSE, NA, FALSE, TRUE), output="between parallel processing of integer64")
+  test(2080.03, between(n, nanotime(3), nanotime(NA), incbounds=FALSE, NAbounds=NA), c(FALSE, NA, FALSE, NA), output="between parallel processing of integer64")
+  options(op)
+  test(2080.04, between(1:10, nanotime(3), nanotime(6)), error="x is not integer64 but.*Please align classes")
+  test(2080.05, between(1:10, 3, nanotime(6)),           error="x is not integer64 but.*Please align classes")
+}
+# use raw type to cover fallback to R in between.R
+old = options(datatable.verbose=TRUE)
+test(2081.01, between(as.raw(1:5), as.raw(2), as.raw(4)),                  c(FALSE, TRUE, TRUE, TRUE, FALSE),   output="fallback to slow R")
+test(2081.02, between(as.raw(1:5), as.raw(2), as.raw(4), incbounds=FALSE), c(FALSE, FALSE, TRUE, FALSE, FALSE), output="fallback to slow R")
+options(old)
+test(2081.03, between(3i, NA, NA), error="Not yet implemented NAbounds=TRUE for this non-numeric and non-character type")
+# check that lower<=upper
+test(2082.01, between(1:3, INT(2,3,4), 2L), error="Item 2 of lower (3) is greater than item 1 of upper (2)")
+test(2082.02, between(as.double(1:3), c(2,3,4), 2), error="Item 2 of lower [(]3.*[)] is greater than item 1 of upper [(]2.*[)]")
+if (test_bit64) test(2082.03, between(as.integer64(1:3), as.integer64(2), as.integer64(1)), error="Item 1 of lower (2) is greater than item 1 of upper (1)")
+test(2082.04, between(letters[1:2], c("foo","bar"), c("bar")), error="Item 1 of lower ('foo') is greater than item 1 of upper ('bar')")
+
+# partial instantiation of integer64 column was creating NA_REAL, not INT64_MIN
+if (test_bit64) {
+  # sub-assign from #3723
+  test(2083.1, data.table(x=1:2)[1, y := as.integer64(0L)]$y, as.integer64(c(0L, NA)))
+  # rbindlist(fill=TRUE) from #1459
+  test(2083.2, rbind(data.table(a=1:2, b=as.integer64(c(1,NA))), data.table(a=3L), fill=TRUE)$b, as.integer64(c(1, NA, NA)))
+}
+
+# groupingsets j=.N by character(0) set #3653
+d = data.table(x = c("a", "a", "b"))
+test(2084.01, groupingsets(d, j = .N, by = "x", sets = list("x", character())), data.table(x=c("a","b",NA_character_), N=c(2L,1L,3L)))
+test(2084.02, groupingsets(d, j = .N, by = "x", sets = list(character())), data.table(x=NA_character_, N=3L))
+test(2084.03, groupingsets(d, j = .GRP, by = "x", sets = list("x", character())), data.table(x=c("a","b",NA_character_), GRP=c(1L,2L,1L)))
+test(2084.04, groupingsets(d, j = .GRP, by = "x", sets = list(character())), data.table(x=NA_character_, GRP=1L))
+test(2084.05, groupingsets(d, j = .I, by = "x", sets = list("x", character())), data.table(x=c("a","a","b",rep(NA_character_,3L)), I=c(1:3,1:3)))
+test(2084.06, groupingsets(d, j = .I, by = "x", sets = list(character())), data.table(x=rep(NA_character_,3L), I=1:3))
+
+# fifelse #3740
+if (test_bit64) {
+  i = as.integer64(1:4)+3e9
+  test(2085.01, fifelse(c(TRUE,FALSE,NA,TRUE), i, i+100), c(i[1L], i[2L]+100, as.integer64(NA), i[4]))
+}
+if (test_nanotime) {
+  n = nanotime(1:4)
+  test(2085.11, fifelse(c(TRUE,FALSE,NA,TRUE), n, n+100), c(n[1L], n[2L]+100, nanotime(NA), n[4]))
+}
+test(2085.21, fifelse(c(TRUE,FALSE,NA), 1:3, c(1,2,3)), c(1,2,NA))
+test(2085.22, fifelse(c(TRUE,FALSE,NA), c(1,2,3), 1:3), c(1,2,NA))
+test(2085.31, fifelse(c(a=TRUE,b=FALSE), list(m=1,n=2), list(x=11,y=12)), list(a=1, b=12))
+test(2085.32, fifelse(c(a=TRUE,b=FALSE), c(m=1,n=2), c(x=11,y=12)), c(a=1, b=12))
+test(2085.33, ifelse(c(a=TRUE,b=FALSE), c(1,2), c(11,12)), c(a=1, b=12)) # just to detect breaking change in base R
+
+# empty 'by' still valid #3270
+DT = data.table(a = 1:10)
+test(2086.01, DT[ , sum(a), by = .()], data.table(V1=55L))
+test(2086.02, DT[ , sum(a), keyby = .()], data.table(V1=55L))
+test(2086.03, DT[ , sum(a), by = list()], data.table(V1=55L))
+test(2086.04, DT[ , sum(a), keyby = list()], data.table(V1=55L))
+test(2086.05, DT[ , sum(a), by = character()], data.table(V1=55L))
+test(2086.06, DT[ , sum(a), keyby = character()], data.table(V1=55L))
+
+# simple queries can create tables with columns sharing the same address, #3766
+x = data.table(a=1L, b=c(1L, 4L, 2L, 3L), c=4:1)
+test(2087.1, x[a == 1L, .(b, b2=b)][ , identical(address(b), address(b2))])
+# setkey detects and copies shared address columns, #3496
+x = data.frame(a=paste0(2:1), stringsAsFactors=FALSE)
+x$b = x$a
+setDT(x)
+test(2087.2, setkey(x, a, verbose=TRUE), data.table(a=paste0(1:2), b=paste0(1:2), key="a"),
+             output='Found and copied 1 column with a shared memory address')
+x = data.frame(a=paste0(2:1), stringsAsFactors=FALSE)
+x$b = x$a
+x$c = x$a
+setDT(x)
+test(2087.3, setkey(x, a, verbose=TRUE), data.table(a=paste0(1:2), b=paste0(1:2), c=paste0(1:2), key="a"),
+             output='Found and copied 2 columns with a shared memory address')
+
+# clear '.data.table.locked' even when is.null(irows), #2245
+x = data.table(a=c(0.85, -0.38, 1.19), b=c(0.56, 0.63, -1.30))
+test(2088, x[, round(.SD, 1)][, c:=8.88], data.table(a=c(.8, -.4, 1.2), b=c(.6,.6,-1.3), c=8.88))
+
 # multi-line text
-test(2078.01, fread(text=c('a,b','1,2')), data.table(a=1L, b=2L))
+test(2089, fread(text=c('a,b','1,2')), data.table(a=1L, b=2L))
+
 
 ###################################
 #  Add new tests above this line  #
