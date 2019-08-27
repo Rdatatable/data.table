@@ -15771,6 +15771,22 @@ test(2086.04, DT[ , sum(a), keyby = list()], data.table(V1=55L))
 test(2086.05, DT[ , sum(a), by = character()], data.table(V1=55L))
 test(2086.06, DT[ , sum(a), keyby = character()], data.table(V1=55L))
 
+# simple queries can create tables with columns sharing the same address, #3766
+x = data.table(a=1L, b=c(1L, 4L, 2L, 3L), c=4:1)
+test(2087.1, x[a == 1L, .(b, b2=b)][ , identical(address(b), address(b2))])
+# setkey detects and copies shared address columns, #3496
+x = data.frame(a=paste0(2:1), stringsAsFactors=FALSE)
+x$b = x$a
+setDT(x)
+test(2087.2, setkey(x, a, verbose=TRUE), data.table(a=paste0(1:2), b=paste0(1:2), key="a"),
+             output='Found and copied 1 column with a shared memory address')
+x = data.frame(a=paste0(2:1), stringsAsFactors=FALSE)
+x$b = x$a
+x$c = x$a
+setDT(x)
+test(2087.3, setkey(x, a, verbose=TRUE), data.table(a=paste0(1:2), b=paste0(1:2), c=paste0(1:2), key="a"),
+             output='Found and copied 2 columns with a shared memory address')
+
 
 ###################################
 #  Add new tests above this line  #
