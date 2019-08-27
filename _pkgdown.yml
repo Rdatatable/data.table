@@ -21,6 +21,8 @@ navbar:
         href: articles/datatable-intro.html
       - text: "Reference semantics"
         href: articles/datatable-reference-semantics.html
+      - text: "Using .SD for Data Analysis"
+        href: articles/datatable-sd-usage.html
       - text: "Keys and fast binary search based subset"
         href: articles/datatable-keys-fast-subset.html
       - text: "Secondary indices and auto indexing"

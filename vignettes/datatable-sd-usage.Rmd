@@ -37,7 +37,7 @@ The simpler usage of `.SD` is for column subsetting (i.e., when `.SDcols` is spe
 
 To give this a more real-world feel, rather than making up data, let's load some data sets about baseball from the [Lahman database](http://www.seanlahman.com/baseball-archive/statistics/). In typical R usage, we'd simply load these data sets from the `Lahman` R package; in this vignette, we've pre-downloaded them directly from the package's GitHub page instead.
 
-```{r download_lahman }
+```{r download_lahman}
 load('Teams.RData')
 setDT(Teams)
 Teams
@@ -144,7 +144,7 @@ Varying model specification is a core feature of robust statistical analysis. Le
 
 Here's a short script leveraging the power of `.SD` which explores this question:
 
-```{r sd_for_lm, cache = FALSE}
+```{r sd_for_lm, cache = FALSE, fig.path = 'plots/figures/'}
 # this generates a list of the 2^k possible extra variables
 #   for models of the form ERA ~ G + (...)
 extra_var = c('yearID', 'teamID', 'G', 'L')
@@ -241,7 +241,7 @@ _NB_: `.SD[1L]` is currently optimized by [_`GForce`_](https://Rdatatable.gitlab
 
 Returning to the inquiry above regarding the relationship between `ERA` and `W`, suppose we expect this relationship to differ by team (i.e., there's a different slope for each team). We can easily re-run this regression to explore the heterogeneity in this relationship as follows (noting that the standard errors from this approach are generally incorrect -- the specification `ERA ~ W*teamID` will be better -- this approach is easier to read and the _coefficients_ are OK):
 
-```{r group_lm, results = 'hide'}
+```{r group_lm, results = 'hide', fig.path = 'plots/figures/'}
 # Overall coefficient for comparison
 overall_coef = Pitching[ , coef(lm(ERA ~ W))['W']]
 # use the .N > 20 filter to exclude teams with few observations
@@ -251,8 +251,13 @@ Pitching[ , if (.N > 20L) .(w_coef = coef(lm(ERA ~ W))['W']), by = teamID
                     ylab = 'Number of Teams', col = 'darkgreen',
                     main = 'Team-Level Distribution\nWin Coefficients on ERA')]
 abline(v = overall_coef, lty = 2L, col = 'red')
+
 ```
 
 While there is indeed a fair amount of heterogeneity, there's a distinct concentration around the observed overall value.
 
 The above is just a short introduction of the power of `.SD` in facilitating beautiful, efficient code in `data.table`!
+
+```{r cleanup, include=FALSE}
+unlink("plots/figures", recursive=TRUE)
+```
