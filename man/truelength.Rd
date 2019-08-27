@@ -4,7 +4,7 @@
 \alias{alloc.col}
 \title{ Over-allocation access }
 \description{
-    These functions are experimental and somewhat advanced. By \emph{experimental} we mean their names might change and perhaps the syntax, argument names and types. So if you write a lot of code using them, you have been warned! They should work and be stable, though, so please report problems with them. \code{alloc.col} is just an alias to \code{setalloccol}. We recommend to use \code{setalloccol} from now on. \code{alloc.col} is not going to be deprecated, although \code{set*} prefix in \code{setalloccol} name makes it clear that input argument is modified in-place.
+    These functions are experimental and somewhat advanced. By \emph{experimental} we mean their names might change and perhaps the syntax, argument names and types. So if you write a lot of code using them, you have been warned! They should work and be stable, though, so please report problems with them. \code{alloc.col} is just an alias to \code{setalloccol}. We recommend to use \code{setalloccol} (though \code{alloc.col} will continue to be supported) because the \code{set*} prefix in \code{setalloccol} makes it clear that its input argument is modified in-place.
 }
 \usage{
 truelength(x)
