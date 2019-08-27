@@ -15762,6 +15762,15 @@ test(2085.31, fifelse(c(a=TRUE,b=FALSE), list(m=1,n=2), list(x=11,y=12)), list(a
 test(2085.32, fifelse(c(a=TRUE,b=FALSE), c(m=1,n=2), c(x=11,y=12)), c(a=1, b=12))
 test(2085.33, ifelse(c(a=TRUE,b=FALSE), c(1,2), c(11,12)), c(a=1, b=12)) # just to detect breaking change in base R
 
+# empty 'by' still valid #3270
+DT = data.table(a = 1:10)
+test(2086.01, DT[ , sum(a), by = .()], data.table(V1=55L))
+test(2086.02, DT[ , sum(a), keyby = .()], data.table(V1=55L))
+test(2086.03, DT[ , sum(a), by = list()], data.table(V1=55L))
+test(2086.04, DT[ , sum(a), keyby = list()], data.table(V1=55L))
+test(2086.05, DT[ , sum(a), by = character()], data.table(V1=55L))
+test(2086.06, DT[ , sum(a), keyby = character()], data.table(V1=55L))
+
 
 ###################################
 #  Add new tests above this line  #
