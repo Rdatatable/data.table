@@ -7,7 +7,7 @@
 [![AppVeyor build status](https://ci.appveyor.com/api/projects/status/kayjdh5qtgymhoxr/branch/master?svg=true)](https://ci.appveyor.com/project/Rdatatable/data-table)
 [![Codecov test coverage](https://codecov.io/github/Rdatatable/data.table/coverage.svg?branch=master)](https://codecov.io/github/Rdatatable/data.table?branch=master)
 [![GitLab CI build status](https://gitlab.com/Rdatatable/data.table/badges/master/pipeline.svg)](https://gitlab.com/Rdatatable/data.table/pipelines)
-[![downloads](http://cranlogs.r-pkg.org/badges/data.table)](https://www.rdocumentation.org/trends)
+[![downloads](https://cranlogs.r-pkg.org/badges/data.table)](https://www.rdocumentation.org/trends)
 <!-- badges: end -->
 
 `data.table` provides a high-performance version of [base R](https://www.r-project.org/about.html)'s `data.frame` with syntax and feature enhancements for ease of use, convenience and programming speed.
