@@ -1,5 +1,5 @@
 ---
-title: "Importing `data.table`"
+title: "Importing data.table"
 date: "`r Sys.Date()`"
 output:
   rmarkdown::html_vignette
