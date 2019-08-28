@@ -2239,8 +2239,8 @@ DT = data.table(a=1:3,b=4:6,c=7:9)
 # old tests using with=FALSE retained.  Eventually will deprecate with=FALSE.
 test(812.1, DT[,!"b",with=FALSE], DT[,-match("b",names(DT)),with=FALSE])
 test(812.2, DT[,"foo",with=FALSE], error="column(s) not found: foo")
-test(812.3, DT[,!"foo",with=FALSE], DT, warning="column(s) not removed because not found: foo")
-test(812.4, DT[,!c("b","foo"),with=FALSE], DT[,list(a,c)], warning="column(s) not removed because not found: foo")
+test(812.3, DT[,!"foo",with=FALSE], DT, warning="column(s) not removed because not found: [foo]")
+test(812.4, DT[,!c("b","foo"),with=FALSE], DT[,list(a,c)], warning="column(s) not removed because not found: [foo]")
 test(812.5, DT[,!2:3,with=FALSE], DT[,-(2:3),with=FALSE])  # for consistency, but ! is really for character column names
 mycols = "b"
 test(812.6, DT[,!mycols,with=FALSE], DT[,list(a,c)])
@@ -2259,10 +2259,10 @@ test(813.4, rownames(DT[2,"a"]), "1")
 test(814.01, DT[,!"b"], DT[,c("a","c")])
 test(814.02, DT[,-"b"], DT[,c("a","c")])
 test(814.03, DT[,"foo"], error="column(s) not found: foo")
-test(814.04, DT[,!"foo"], DT, warning="column(s) not removed because not found: foo")
-test(814.05, DT[,-"foo"], DT, warning="column(s) not removed because not found: foo")
-test(814.06, DT[,!c("b","foo")], DT[,list(a,c)], warning="column(s) not removed because not found: foo")
-test(814.07, DT[,-c("b","foo")], DT[,list(a,c)], warning="column(s) not removed because not found: foo")
+test(814.04, DT[,!"foo"], DT, warning="column(s) not removed because not found: [foo]")
+test(814.05, DT[,-"foo"], DT, warning="column(s) not removed because not found: [foo]")
+test(814.06, DT[,!c("b","foo")], DT[,list(a,c)], warning="column(s) not removed because not found: [foo]")
+test(814.07, DT[,-c("b","foo")], DT[,list(a,c)], warning="column(s) not removed because not found: [foo]")
 test(814.08, DT[,!2:3], DT[,"a"])  # for consistency, and ! avoids needing to wrap with () as in next test
 test(814.09, DT[,-(2:3)], DT[,"a"])
 mycols = "b"
@@ -5264,7 +5264,7 @@ test(1354, X[Y, val2 := i.val2, allow.cartesian=TRUE][, val1 := NULL][order(id)]
 # Fix for #475, setDT(CO2) should error, as it's trying to modify the object whose binding is locked.
 # CO2 is not locked in R 2.14.1 but is in R >= 3.1.0.  R NEWS isn't clear when that change happened, so just test there is an error when it is locked.
 if (bindingIsLocked("CO2",as.environment("package:datasets"))) {
-  test(1355.1, setDT(CO2), error="Can not convert 'CO2' to data.table by reference because binding is locked.")
+  test(1355.1, setDT(CO2), error="Cannot convert 'CO2' to data.table by reference because binding is locked.")
 } else {
   test(1355.2, setDT(CO2), CO2)
 }
@@ -10131,6 +10131,13 @@ if (.Platform$OS.type=="unix") {
   unlink(f)
 }
 test(1703.15, fread("."), error="File '.' is a directory. Not yet implemented.")
+# tmpdir argument
+d = tempfile("dir")
+test(1703.16, fread(text=c('a,b','1,2'), tmpdir=d), error="cannot open the connection", warning="No such file or directory")
+dir.create(d)
+test(1703.17, fread(text=c('a,b','1,2'), tmpdir=d), data.table(a=1L,b=2L))
+test(1703.18, fread(text=c('a,b','1,2')), data.table(a=1L, b=2L))
+unlink(d)
 
 # Ensure all.equal respects 'check.attributes' w.r.t. column names. As testthat::check_equivalent relies on this
 # as used by package popEpi in its tests
@@ -15562,7 +15569,7 @@ test(2074.04, l[[c('foo', 'bar')]][ , (letters) := 16:18], error = 'under-alloca
 options(opt)
 ## alloc.col when using 0-truelength j assigning to a subset
 DT = data.table(a=1)
-### construct incorrectly to have 0 truelength
+### construct incorrectly to have 0 truelength; follow-up: https://github.com/Rdatatable/data.table/pull/3791#discussion_r318326736
 zDT = structure(list(b=2), class = c('data.table', 'data.frame'))
 test(2074.05, DT[1L, b := zDT], data.table(a=1, b=2))
 ## nested .SD in j
@@ -15771,10 +15778,41 @@ test(2086.04, DT[ , sum(a), keyby = list()], data.table(V1=55L))
 test(2086.05, DT[ , sum(a), by = character()], data.table(V1=55L))
 test(2086.06, DT[ , sum(a), keyby = character()], data.table(V1=55L))
 
-# #2109 binary - in !with shouldn't be interpreted as 'not'
+# simple queries can create tables with columns sharing the same address, #3766
+x = data.table(a=1L, b=c(1L, 4L, 2L, 3L), c=4:1)
+test(2087.1, x[a == 1L, .(b, b2=b)][ , identical(address(b), address(b2))])
+# setkey detects and copies shared address columns, #3496
+x = data.frame(a=paste0(2:1), stringsAsFactors=FALSE)
+x$b = x$a
+setDT(x)
+test(2087.2, setkey(x, a, verbose=TRUE), data.table(a=paste0(1:2), b=paste0(1:2), key="a"),
+             output='Found and copied 1 column with a shared memory address')
+x = data.frame(a=paste0(2:1), stringsAsFactors=FALSE)
+x$b = x$a
+x$c = x$a
+setDT(x)
+test(2087.3, setkey(x, a, verbose=TRUE), data.table(a=paste0(1:2), b=paste0(1:2), c=paste0(1:2), key="a"),
+             output='Found and copied 2 columns with a shared memory address')
+
+# clear '.data.table.locked' even when is.null(irows), #2245
+x = data.table(a=c(0.85, -0.38, 1.19), b=c(0.56, 0.63, -1.30))
+test(2088, x[, round(.SD, 1)][, c:=8.88], data.table(a=c(.8, -.4, 1.2), b=c(.6,.6,-1.3), c=8.88))
+
+# setDT should halt when it sees matrix columns, #3760
+DF = data.frame(a=1:5)
+DF$m = matrix(6:15, ncol=2L)
+test(2089, setDT(DF), error='Some columns are a multi-column type.*Please use as.data.table')
+
+# get/mget in j should restore all columns to .SD, #1744 and #1965
+DT = data.table(a=1, b=2, c=3)
+test(2090.1, DT[, {list(a, get('b')); names(.SD)}, .SDcols='c'], 'c')
+# Also incidentally fixed #2036 about reordering of columns in .SD
+test(2090.2, DT[ , {get('c'); names(.SD)}, .SDcols = c('b', 'a')], c('b', 'a'))
+
+# minus sign in j with with=FALSE shouldn't be interpreted as 'not', #2109
 DT = data.table(a=1, b=2)
 i = 2L
-test(2087, DT[ , i-1L, with=FALSE], data.table(a=1))
+test(2091, DT[ , i-1L, with=FALSE], data.table(a=1))
 
 
 ###################################
