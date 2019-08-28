@@ -1643,7 +1643,9 @@ replace_order = function(isub, verbose, env) {
         }
         if (jsub[[1L]]=="list") {
           GForce = TRUE
-          for (ii in seq_along(jsub)[-1L]) if (!.ok(jsub[[ii]])) {GForce = FALSE; break}
+          for (ii in seq.int(from=2L, length.out=length(jsub)-1L)) {
+            if (!.ok(jsub[[ii]])) {GForce = FALSE; break}
+          }
         } else GForce = .ok(jsub)
         if (GForce) {
           if (jsub[[1L]]=="list")
@@ -1667,10 +1669,13 @@ replace_order = function(isub, verbose, env) {
       if (jsub[[1L]]=="list") {
         # Addressing #1369, #2949 and #1974. Added is.symbol() check to handle cases where expanded function definition is used instead of function names. #1369 results in (function(x) sum(x)) as jsub[[.]] from dcast.data.table.
         # earlier, did a for loop and replaced only as necessary but this was slow with huge (e.g. 30K elements) j, #1470
-        jsub = as.call(c(quote(list), lapply(jsub[-1L], function(this_jsub) {
-          if (is.call(this_jsub) && is.symbol(this_jsub[[1L]]) && this_jsub[[1L]]=="mean")
-            .optmean(this_jsub) else this_jsub
-        })))
+        whichMean = which(sapply(jsub, function(x) {
+          is.call(x) && is.symbol(x[[1L]]) && x[[1L]]=="mean"
+          # jsub[[1]]=="list" so the first item will always be FALSE
+        }))
+        if (length(whichMean)) {
+          jsub[whichMean] = lapply(jsub[whichMean], .optmean)
+        }
       } else if (jsub[[1L]]=="mean") {
         jsub = .optmean(jsub)
       }
