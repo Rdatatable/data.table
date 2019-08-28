@@ -173,3 +173,39 @@ bool Rinherits(SEXP x, SEXP char_) {
  return ans;
 }
 
+void copySharedColumns(SEXP x) {
+  const int ncol = length(x);
+  if (!isNewList(x) || ncol==1) return;
+  bool *shared = (bool *)R_alloc(ncol, sizeof(bool)); // on R heap in case duplicate() fails
+  int *savetl = (int *)R_alloc(ncol, sizeof(int));  // on R heap for convenience but could be a calloc
+  int nShared = 0;
+  const SEXP *xp = VECTOR_PTR(x);
+  for (int i=0; i<ncol; ++i) {
+    SEXP thiscol = xp[i];
+    const int thistl = TRUELENGTH(thiscol);
+    if (thistl<0) {
+      shared[i] = true;
+      nShared++;
+      // do not duplicate() here as the duplicate() might fail. Careful to restore tl first to all columns.
+      // Aside: thistl is which column shares the same address as this one in case that's ever useful in future.
+    } else {
+      shared[i] = false;
+      savetl[i] = thistl;  // these are vectors which are all expected to have tl, unlike CHARSXP which often don't (savetl() has CHARSXP in mind)
+      SET_TRUELENGTH(thiscol, -i-1);
+    }
+  }
+  // now we know nShared and which ones they are (if any), restore original tl back to all columns
+  for (int i=0; i<ncol; ++i) {
+    if (!shared[i]) SET_TRUELENGTH(VECTOR_ELT(x, i), savetl[i]);
+  }
+  // now that truelength has been restored for all columns, we can finally call duplicate()
+  if (nShared) {
+    for (int i=0; i<ncol; ++i) {
+      if (shared[i])
+        SET_VECTOR_ELT(x, i, duplicate(VECTOR_ELT(x, i)));
+    }
+    if (GetVerbose()) Rprintf("Found and copied %d column%s with a shared memory address\n", nShared, nShared>1?"s":"");
+    // GetVerbose() (slightly expensive call of all options) called here only when needed
+  }
+}
+

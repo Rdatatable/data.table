@@ -1271,6 +1271,8 @@ replace_order = function(isub, verbose, env) {
     }
 
     jval = eval(jsub, SDenv, parent.frame())
+    .Call(Csetattrib, jval, '.data.table.locked', NULL) # in case jval inherits .SD's lock, #1341 #2245. Use .Call not setattr() to avoid bumping jval's MAYBE_SHARED.
+
     # copy 'jval' when required
     # More speedup - only check + copy if irows is NULL
     # Temp fix for #921 - check address and copy *after* evaluating 'jval'
@@ -1280,17 +1282,13 @@ replace_order = function(isub, verbose, env) {
         if (jcpy) jval = copy(jval)
       } else if (address(jval) == address(SDenv$.SD)) {
         jval = copy(jval)
-      } else if ( length(jcpy <- which(vapply_1c(jval, address) %in% vapply_1c(SDenv, address))) ) {
+      } else if ( length(jcpy <- which(vapply_1c(jval, address) %chin% vapply_1c(SDenv, address))) ) {
         for (jidx in jcpy) jval[[jidx]] = copy(jval[[jidx]])
-      } else if (is.call(jsub) && jsub[[1L]] == "get" && is.list(jval)) {
+      } else if (is.call(jsub) && jsub[[1L]] == "get") {
         jval = copy(jval) # fix for #1212
       }
-    } else {
-      if (is.data.table(jval)) {
-        setattr(jval, '.data.table.locked', NULL) # fix for #1341
-        if (!truelength(jval)) alloc.col(jval)
-      }
     }
+
     if (!is.null(lhs)) {
       # TODO?: use set() here now that it can add new columns. Then remove newnames and alloc logic above.
       .Call(Cassign,x,irows,cols,newnames,jval)
@@ -2660,8 +2658,13 @@ setDT = function(x, keep.rownames=FALSE, key=NULL, check.names=FALSE) {
     cname = as.character(name)
     envir = home(cname, parent.frame())
     if (bindingIsLocked(cname, envir)) {
-      stop("Can not convert '", cname, "' to data.table by reference because binding is locked. It is very likely that '", cname, "' resides within a package (or an environment) that is locked to prevent modifying its variable bindings. Try copying the object to your current environment, ex: var <- copy(var) and then using setDT again.")
+      stop("Cannot convert '", cname, "' to data.table by reference because binding is locked. It is very likely that '", cname, "' resides within a package (or an environment) that is locked to prevent modifying its variable bindings. Try copying the object to your current environment, ex: var <- copy(var) and then using setDT again.")
     }
+  }
+  # check no matrix-like columns, #3760
+  colndim = vapply_1i(x, function(xi) length(dim(xi)))
+  if (any(idx <- colndim > 1L)) {
+    stop("Some columns are a multi-column type (such as a matrix column): ", brackify(which(idx)),". These cannot be converted to data.table by reference. Please use as.data.table() instead which will create a new column for each embedded column.")
   }
   if (is.data.table(x)) {
     # fix for #1078 and #1128, see .resetclass() for explanation.
