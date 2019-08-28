@@ -1,7 +1,7 @@
 url: https://jangorecki.gitlab.io/data.table
 
 development:
-  version_tooltip: "Odd versions are in development; even are on CRAN"
+  version_tooltip: "Development version"
 
 navbar:
   structure:
