@@ -109,3 +109,9 @@ do_patterns = function(pat_sub, all_cols) {
 
   return(matched)
 }
+
+# nocov start #593 always return a data.table
+edit.data.table = function(name, ...) {
+  setDT(NextMethod('edit', name))[]
+}
+# nocov end
