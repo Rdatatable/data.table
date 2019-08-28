@@ -162,6 +162,8 @@
 
 23. Added a `data.table` method for `utils::edit` to ensure a `data.table` is returned, for convenience, [#593](https://github.com/Rdatatable/data.table/issues/593).
 
+24. More efficient optimization of as-is columns in `j`, [#1470](https://github.com/Rdatatable/data.table/issues/1470). Thanks @Jorges1000 for the report.
+
 #### BUG FIXES
 
 1. `first`, `last`, `head` and `tail` by group no longer error in some cases, [#2030](https://github.com/Rdatatable/data.table/issues/2030) [#3462](https://github.com/Rdatatable/data.table/issues/3462). Thanks to @franknarf1 for reporting.
@@ -357,8 +359,6 @@
 18. `cbind` with a null (0-column) `data.table` now works as expected, [#3445](https://github.com/Rdatatable/data.table/issues/3445). Thanks to @mb706 for reporting.
 
 19. Subsetting does a better job of catching a malformed `data.table` with error rather than segfault. A column may not be NULL, nor may a column be an object which has columns (such as a `data.frame` or `matrix`). Thanks to a comment and reproducible example in [#3369](https://github.com/Rdatatable/data.table/issues/3369) from Drew Abbot which demonstrated the issue which arose from parsing JSON. The next release will enable `as.data.table` to unpack columns which are `data.frame` to support this use case.
-
-20. `data.table` optimization much more efficient for many as-is columns in `j`, [#1470](https://github.com/Rdatatable/data.table/issues/1470). Thanks @Jorges1000 for the report.
 
 #### NOTES
 

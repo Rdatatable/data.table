@@ -1461,7 +1461,6 @@ replace_order = function(isub, verbose, env) {
   lockBinding(".GRP",SDenv)
   lockBinding(".iSD",SDenv)
 
-  #browser()
   GForce = FALSE
   if ( getOption("datatable.optimize")>=1 && (is.call(jsub) || (is.name(jsub) && as.character(jsub)[[1L]] %chin% c(".SD",".N"))) ) {  # Ability to turn off if problems or to benchmark the benefit
     # Optimization to reduce overhead of calling lapply over and over for each group
