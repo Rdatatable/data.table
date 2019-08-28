@@ -1667,13 +1667,16 @@ replace_order = function(isub, verbose, env) {
       nomeanopt=FALSE  # to be set by .optmean() using <<- inside it
       oldjsub = jsub
       if (jsub[[1L]]=="list") {
-        # Addressing #1369, #2949 and #1974. This used to be 30s (vs 0.5s) with 30K elements items in j, #1470. Could have been dotN() or the for-looped if()
-        whichMean = which(sapply(jsub, function(x) {
+        # Addressing #1369, #2949 and #1974. This used to be 30s (vs 0.5s) with 30K elements items in j, #1470. Could have been dotN() and/or the for-looped if()
+        todo = sapply(jsub, function(x) {
           is.call(x) && is.symbol(x[[1L]]) && x[[1L]]=="mean"
           # jsub[[1]]=="list" so the first item will always be FALSE
-          # is.symbol() for when expanded function definition is used instead of function names. #1369 results in (function(x) sum(x)) as jsub[[.]] from dcast.data.table.
-        }))
-        jsub[whichMean] = lapply(jsub[whichMean], .optmean)
+          # is.symbol() for when expanded function definition is used instead of function names; #1369 results in (function(x) sum(x)) as jsub[[.]] from dcast.data.table
+        })
+        if (any(todo)) {
+          w = which(todo)
+          jsub[w] = lapply(jsub[w], .optmean)
+        }
       } else if (jsub[[1L]]=="mean") {
         jsub = .optmean(jsub)
       }
