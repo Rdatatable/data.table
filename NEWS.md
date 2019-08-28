@@ -239,6 +239,8 @@
 
 32. `x[, round(.SD, 1)]` and similar operations on the whole of `.SD` could return a locked result, incorrectly preventing `:=` on the result, [#2245](https://github.com/Rdatatable/data.table/issues/2245). Thanks @grayskripko for raising.
 
+33. `setDT` now detects and halts if passed a `data.frame` containing matrix columns, [#3760](https://github.com/Rdatatable/data.table/issues/3760). Such objects cannot be converted to `data.table` by reference. The message suggests using `as.data.table` instead which will convert each matrix column to a new `data.table` column.
+
 #### NOTES
 
 1. `rbindlist`'s `use.names="check"` now emits its message for automatic column names (`"V[0-9]+"`) too, [#3484](https://github.com/Rdatatable/data.table/pull/3484). See news item 5 of v1.12.2 below.
