@@ -15801,7 +15801,7 @@ test(2088, x[, round(.SD, 1)][, c:=8.88], data.table(a=c(.8, -.4, 1.2), b=c(.6,.
 # setDT should halt when it sees matrix columns, #3760
 DF = data.frame(a=1:5)
 DF$m = matrix(6:15, ncol=2L)
-test(2087, setDT(DF), error='Use as.data.table for this object')
+test(2089, setDT(DF), error='Some columns are a multi-column type.*Please use as.data.table')
 
 
 ###################################

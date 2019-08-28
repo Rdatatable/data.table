@@ -239,6 +239,8 @@
 
 32. `x[, round(.SD, 1)]` and similar operations on the whole of `.SD` could return a locked result, incorrectly preventing `:=` on the result, [#2245](https://github.com/Rdatatable/data.table/issues/2245). Thanks @grayskripko for raising.
 
+33. `setDT` now detects and halts if passed a `data.frame` containing matrix columns, [#3760](https://github.com/Rdatatable/data.table/issues/3760). Such objects cannot be converted to `data.table` by reference. The message suggests using `as.data.table` instead which will convert each matrix column to a new `data.table` column.
+
 #### NOTES
 
 1. `rbindlist`'s `use.names="check"` now emits its message for automatic column names (`"V[0-9]+"`) too, [#3484](https://github.com/Rdatatable/data.table/pull/3484). See news item 5 of v1.12.2 below.
@@ -345,8 +347,6 @@
 18. `cbind` with a null (0-column) `data.table` now works as expected, [#3445](https://github.com/Rdatatable/data.table/issues/3445). Thanks to @mb706 for reporting.
 
 19. Subsetting does a better job of catching a malformed `data.table` with error rather than segfault. A column may not be NULL, nor may a column be an object which has columns (such as a `data.frame` or `matrix`). Thanks to a comment and reproducible example in [#3369](https://github.com/Rdatatable/data.table/issues/3369) from Drew Abbot which demonstrated the issue which arose from parsing JSON. The next release will enable `as.data.table` to unpack columns which are `data.frame` to support this use case.
-
-20. `setDT` fails for `data.frame` with matrix columns, [#3760](https://github.com/Rdatatable/data.table/issues/3760). Such objects cannot be converted to `data.table` by reference -- `as.data.table`, which will convert each matrix column to a new `data.table` column, is appropriate for this case.
 
 #### NOTES
 
