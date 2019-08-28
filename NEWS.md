@@ -245,6 +245,8 @@
 
 34. Using `get`/`mget` in `j` could cause `.SDcols` to be ignored or reordered, [#1744](https://github.com/Rdatatable/data.table/issues/1744), [#1965](https://github.com/Rdatatable/data.table/issues/1965), and [#2036](https://github.com/Rdatatable/data.table/issues/2036). Thanks @franknarf1, @MichaelChirico, and @TonyBonen, for the reports.
 
+35. `DT[, i-1L, with=FALSE]` would misinterpret the minus sign and return an incorrect result, [#2019](https://github.com/Rdatatable/data.table/issues/2109). Thanks @cguill95 for the report.
+
 #### NOTES
 
 1. `rbindlist`'s `use.names="check"` now emits its message for automatic column names (`"V[0-9]+"`) too, [#3484](https://github.com/Rdatatable/data.table/pull/3484). See news item 5 of v1.12.2 below.

@@ -663,7 +663,7 @@ replace_order = function(isub, verbose, env) {
 
     if (!with) {
       # missingby was already checked above before dealing with i
-      if (is.call(jsub) && deparse(jsub[[1L]], 500L, backtick=FALSE) %chin% c("!", "-")) {  # TODO is deparse avoidable here?
+      if (is.call(jsub) && length(jsub)==2L && as.character(jsub[[1L]]) %chin% c("!", "-")) {  # length 2 to only match unary, #2109
         notj = TRUE
         jsub = jsub[[2L]]
       } else notj = FALSE
