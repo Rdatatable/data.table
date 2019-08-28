@@ -289,6 +289,8 @@
 
 17. The warning message when using `strptime` in `j` has been improved, [#2068](https://github.com/Rdatatable/data.table/issues/2068). Thanks to @tdhock for the report.
 
+18. Means of `integer` columns with `GForce` (i.e. `gmean`) no longer warn when the numerator has overflowed since coercion to numeric always happens for means, [#986](https://github.com/Rdatatable/data.table/issues/986). Thanks @dgrtwo for his YouTube tutorial that raised this.
+
 
 ### Changes in [v1.12.2](https://github.com/Rdatatable/data.table/milestone/14?closed=1)  (07 Apr 2019)
 

@@ -15814,6 +15814,8 @@ DT = data.table(a=1, b=2)
 i = 2L
 test(2091, DT[ , i-1L, with=FALSE], data.table(a=1))
 
+# #986 gmean can overflow integers without warning
+test(2092, data.table(a=c(1L,1L), v=c(2e9L, 2e9L))[, mean(v), a], data.table(a=1L, V1=2e9))
 
 ###################################
 #  Add new tests above this line  #
