@@ -257,7 +257,3 @@ abline(v = overall_coef, lty = 2L, col = 'red')
 While there is indeed a fair amount of heterogeneity, there's a distinct concentration around the observed overall value.
 
 The above is just a short introduction of the power of `.SD` in facilitating beautiful, efficient code in `data.table`!
-
-```{r cleanup, include=FALSE}
-unlink("plots/figures", recursive=TRUE)
-```

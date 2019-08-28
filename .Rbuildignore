@@ -27,5 +27,7 @@
 ^rdatatable\.png$
 ^rdatatable\.svg$
 ^_pkgdown\.yml$
+^pkgdown$
 ^cheatsheet\.png$
 ^logo\.png$
+^vignettes/plots/figures$
