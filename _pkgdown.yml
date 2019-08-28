@@ -46,15 +46,51 @@ navbar:
         href: https://github.com/Rdatatable/data.table
 
 reference:
-- title: Core
+- title: Import/Export
   contents:
-  - data.table
-  - '`special-symbols`'
-  - as.data.table
   - fread
+  - as.data.table
+  - setDT
   - fwrite
+  - setDF
+  - copy
+
+- title: Query
+  contents:
+  - '`[.data.table`'
+  - '`special-symbols`'
+  - '`:=`'
+  - unique
+  - cube rollup groupingsets
+  - subset
+
+- title: Reshape
+  contents:
+  - dcast
+  - melt
+  - transpose
+
+- title: Convenient functions
+  contents:
+  - between '`%between`'
+  - chmatch '`%chin%`'
+  - like '`%like%`' '`%ilike%`' '`%flike%`'
+  - patterns
+  - coalesce
+  - fifelse
+  - fsort
+  - frank
+  - first last
+  - IDateTime
+
+- title: Transform and clean
+  contents:
   - rbindlist
-  - print.data.table
+  - split
+  - CJ
+  - na.omit
+  - nafill
+  - tstrsplit
 
 - title: Efficient in-place modification
   contents:
@@ -66,62 +102,42 @@ reference:
   - setcolorder
   - setnames
   - setorder
+  - setnafill
 
-- title: Subsetting and reshaping your data
+- title: Ordered observations
   contents:
-  - dcast
-  - melt
-  - patterns
-  - CJ
-  - na.omit.data.table
-  - unique.data.table
-  - subset.data.table
-  - split.data.table
-
-- title: Combining and comparing multiple data sets
-  contents:
-  - merge.data.table
-  - fintersect
-  - all.equal.data.table
-
-- title: Convenient functions for data munging
-  contents:
-  - between
-  - chmatch
-  - coalesce
-  - first
-  - foverlaps
-  - frank
-  - frollmean
-  - fsort
-  - IDateTime
-  - last
-  - like
-  - nafill
+  - setkey
   - rleid
   - rowid
   - shift
-  - transpose
-  - tstrsplit
-  - groupingsets
+  - frollsum frollmean
+  - nafill
 
-- title: data.table conversion
+- title: Combining and comparing multiple data sets
   contents:
-  - as.matrix.data.table
-  - as.xts.data.table
-  - copy
+  - merge
+  - foverlaps
+  - fintersect fsetdiff funion fsetequal
+  - all.equal
+
+- title: Optimization
+  contents:
+  - setDTthreads getDTthreads
+  - datatable.optimize
+
+- title: Maintenance
+  contents:
+  - print
+  - test.data.table
+  - update.dev.pkg
+  - tables
 
 - title: Advanced/Internal
   contents:
   - .Last.updated
   - address
   - '`data.table-class`'
-  - datatable.optimize
-  - setDTthreads
   - setNumericRounding
   - shouldPrint
-  - tables
-  - test.data.table
   - timetaken
   - truelength
-  - update.dev.pkg
