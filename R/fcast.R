@@ -112,6 +112,11 @@ dcast.data.table = function(data, formula, fun.aggregate = NULL, sep = "_", ...,
   if (!is.data.table(data)) stop("'data' must be a data.table.")
   drop = as.logical(rep(drop, length.out=2L))
   if (anyNA(drop)) stop("'drop' must be logical TRUE/FALSE")
+  # #2980 if explicitly providing fun.aggregate=length but not a value.var,
+  #   just use the last column (as guess(data) would do) because length will be
+  #   the same on all columns
+  if (missing(value.var) && !missing(fun.aggregate) && identical(fun.aggregate, length))
+    value.var = names(data)[ncol(data)]
   lvals = value_vars(value.var, names(data))
   valnames = unique(unlist(lvals))
   lvars = check_formula(formula, names(data), valnames)
