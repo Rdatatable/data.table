@@ -209,3 +209,22 @@ void copySharedColumns(SEXP x) {
   }
 }
 
+// lock, unlock and islocked at C level :
+// 1) for speed to reduce overhead
+// 2) to avoid an R level wrapper which bumps MAYBE_SHARED; see the unlock after eval(jval) in data.table.R, #1341 #2245
+SEXP lock(SEXP DT) {
+  setAttrib(DT, sym_datatable_locked, ScalarLogical(TRUE));
+  return DT;
+}
+SEXP unlock(SEXP DT) {
+  setAttrib(DT, sym_datatable_locked, R_NilValue);
+  return DT;
+}
+bool islocked(SEXP DT) {
+  SEXP att = getAttrib(DT, sym_datatable_locked);
+  return isLogical(att) && LENGTH(att)==1 && LOGICAL(att)[0]==1;
+}
+SEXP islockedR(SEXP DT) {
+  return ScalarLogical(islocked(DT));
+}
+

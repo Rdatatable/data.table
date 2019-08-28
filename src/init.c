@@ -83,6 +83,9 @@ SEXP nafillR();
 SEXP colnamesInt();
 SEXP initLastUpdated();
 SEXP cj();
+SEXP lock();
+SEXP unlock();
+SEXP islockedR();
 
 // .Externals
 SEXP fastmean();
@@ -170,9 +173,11 @@ R_CallMethodDef callMethods[] = {
 {"Ccj", (DL_FUNC) &cj, -1},
 {"Ccoalesce", (DL_FUNC) &coalesce, -1},
 {"CfifelseR", (DL_FUNC) &fifelseR, -1},
+{"C_lock", (DL_FUNC) &lock, -1},  // _ for these 3 to avoid Clock as in time
+{"C_unlock", (DL_FUNC) &unlock, -1},
+{"C_islocked", (DL_FUNC) &islockedR, -1},
 {NULL, NULL, 0}
 };
-
 
 static const
 R_ExternalMethodDef externalMethods[] = {
@@ -300,6 +305,7 @@ void attribute_visible R_init_datatable(DllInfo *info)
   sym_verbose = install("datatable.verbose");
   SelfRefSymbol = install(".internal.selfref");
   sym_inherits = install("inherits");
+  sym_datatable_locked = install(".data.table.locked");
 
   initDTthreads();
   avoid_openmp_hang_within_fork();
