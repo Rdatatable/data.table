@@ -1,7 +1,7 @@
 
 **This is OLD NEWS. Latest news is on GitHub [here](https://github.com/Rdatatable/data.table/blob/master/NEWS.md).**
 
-# Changes in v1.9.8  (on CRAN 25 Nov 2016)
+# data.table v1.9.8  (on CRAN 25 Nov 2016)
 
 ## POTENTIALLY BREAKING CHANGES
 
@@ -350,7 +350,7 @@
   42. Thanks to @rrichmond for finding and reporting a regression in dev before release with `roll` not respecting fractions in type double, [#1904](https://github.com/Rdatatable/data.table/issues/1904). For example dates like `zoo::as.yearmon("2016-11")` which is stored as `double` value 2016.833. Fixed and test added.
 
 
-# Changes in v1.9.6  (on CRAN 19 Sep 2015)
+# data.table v1.9.6  (on CRAN 19 Sep 2015)
 
 ## NEW FEATURES
 
@@ -634,7 +634,7 @@
 
   14. Fixed `allow.cartesian` documentation to `nrow(x)+nrow(i)` instead of `max(nrow(x), nrow(i))`. Closes [#1123](https://github.com/Rdatatable/data.table/issues/1123).
 
-# Changes in v1.9.4  (on CRAN 2 Oct 2014)
+# data.table v1.9.4  (on CRAN 2 Oct 2014)
 
 ## NEW FEATURES
 
@@ -928,7 +928,7 @@
 
 ---
 
-# Changes in v1.9.2 (on CRAN 27 Feb 2014)
+# data.table v1.9.2 (on CRAN 27 Feb 2014)
 
 ## NEW FEATURES
 
@@ -1234,7 +1234,7 @@
 
 ---
 
-# Changes in v1.8.10 (on CRAN 03 Sep 2013)
+# data.table v1.8.10 (on CRAN 03 Sep 2013)
 
 ## NEW FEATURES
 
@@ -1381,7 +1381,7 @@ USER VISIBLE CHANGES
      Odd numbers are development, evens on CRAN.
 
 
-# Changes in v1.8.8 (on CRAN 06 Mar 2013)
+# data.table v1.8.8 (on CRAN 06 Mar 2013)
 
 ## NEW FEATURES
 
@@ -1500,7 +1500,7 @@ USER VISIBLE CHANGES
         Odd numbers are development, evens on CRAN.
 
 
-# Changes in v1.8.6 (on CRAN 13 Nov 2012)
+# data.table v1.8.6 (on CRAN 13 Nov 2012)
 
 ## BUG FIXES
 
@@ -1531,7 +1531,7 @@ USER VISIBLE CHANGES
         Odd numbers are development, evens on CRAN.
 
 
-# Changes in v1.8.4 (on CRAN 9 Nov 2012)
+# data.table v1.8.4 (on CRAN 9 Nov 2012)
 
 ## NEW FEATURES
 
@@ -1813,7 +1813,7 @@ USER VISIBLE CHANGES
     *   v1.8.3 was an R-Forge only beta release. v1.8.4 was released to CRAN.
 
 
-# Changes in v1.8.2
+# data.table v1.8.2
 
 ## NEW FEATURES
 
@@ -2069,7 +2069,7 @@ USER VISIBLE CHANGES
     *   v1.8.1 was an R-Forge only beta release. v1.8.2 was released to CRAN.
 
 
-# Changes in v1.8.0
+# data.table v1.8.0
 
 ## NEW FEATURES
 
@@ -2219,7 +2219,7 @@ USER VISIBLE CHANGES
         This difference to data.frame has been added to FAQ 2.17.
 
 
-# Changes in v1.7.10
+# data.table v1.7.10
 
 ## NEW FEATURES
 
@@ -2260,7 +2260,7 @@ USER VISIBLE CHANGES
         obtain deprecated merge() suffixes pre v1.5.4.
 
 
-# Changes in v1.7.9
+# data.table v1.7.9
 
 ## NEW FEATURES
 
@@ -2294,7 +2294,7 @@ USER VISIBLE CHANGES
         Again, thanks to Damian Betebenner for reporting.
 
 
-# Changes in v1.7.8
+# data.table v1.7.8
 
 ## BUG FIXES
 
@@ -2375,7 +2375,7 @@ USER VISIBLE CHANGES
         of i's key are used to join.
 
 
-# Changes in v1.7.7
+# data.table v1.7.7
 
 ## BUG FIXES
 
@@ -2387,7 +2387,7 @@ USER VISIBLE CHANGES
         mac). So if they pass, this issue is fixed.
 
 
-# Changes in v1.7.6
+# data.table v1.7.6
 
 ## NEW FEATURES
 
@@ -2408,7 +2408,7 @@ USER VISIBLE CHANGES
         Betebenner for reporting.
 
 
-# Changes in v1.7.5
+# data.table v1.7.5
 
 ## BUG FIXES
 
@@ -2457,7 +2457,7 @@ USER VISIBLE CHANGES
    *    There are now 472 raw tests, plus S4 tests.
 
 
-# Changes in v1.7.4
+# data.table v1.7.4
 
 ## BUG FIXES
 
@@ -2474,7 +2474,7 @@ USER VISIBLE CHANGES
         Makevars to catch this in future before submitting to CRAN.
 
 
-# Changes in v1.7.3
+# data.table v1.7.3
 
 ## NEW FEATURES
 
@@ -2529,7 +2529,7 @@ USER VISIBLE CHANGES
         to Chris Neff for suggesting, #1642.
 
 
-# Changes in v1.7.2
+# data.table v1.7.2
 
 ## NEW FEATURES
 
@@ -2562,7 +2562,7 @@ USER VISIBLE CHANGES
         #1640. Thanks to Stavros Macrakis for reporting.
 
 
-# Changes in v1.7.1
+# data.table v1.7.1
 
 ## BUG FIXES
 
@@ -2583,7 +2583,7 @@ USER VISIBLE CHANGES
         Christoph_J for his SO question.
 
 
-# Changes in v1.7.0
+# data.table v1.7.0
 
 ## NEW FEATURES
 
@@ -2681,7 +2681,7 @@ USER VISIBLE CHANGES
         4.4 and 5.1.
 
 
-# Changes in v1.6.6
+# data.table v1.6.6
 
 ## BUG FIXES
 
@@ -2689,7 +2689,7 @@ USER VISIBLE CHANGES
         checks but failed on many (but not all) platforms. Fixed.
         Thanks to Prof Brian Ripley for investigating the issue.
 
-# Changes in v1.6.5
+# data.table v1.6.5
 
 ## NEW FEATURES
 
@@ -2762,7 +2762,7 @@ USER VISIBLE CHANGES
     *   setkey's verbose messages expanded.
 
 
-# Changes in v1.6.4
+# data.table v1.6.4
 
 ## NEW FEATURES
 
@@ -2816,7 +2816,7 @@ USER VISIBLE CHANGES
         be ignored in versions >= 2.12.0 and < 2.12.2 patched.
 
 
-# Changes in v1.6.3
+# data.table v1.6.3
 
 ## NEW FEATURES
 
@@ -2939,7 +2939,7 @@ USER VISIBLE CHANGES
         for v1.5.3, v1.4, and FAQs 2.6 and 2.7.
 
 
-# Changes in v1.6.2
+# data.table v1.6.2
 
 ## NEW FEATURES
 
@@ -2955,7 +2955,7 @@ USER VISIBLE CHANGES
         convenience generally, and for efficiency.
 
 
-# Changes in v1.6.1
+# data.table v1.6.1
 
 ## NEW FEATURES
 
@@ -3023,7 +3023,7 @@ USER VISIBLE CHANGES
 
 
 
-# Changes in v1.6
+# data.table v1.6
 
 ## NEW FEATURES
 
@@ -3074,7 +3074,7 @@ USER VISIBLE CHANGES
         IDateTime in v1.5 (see below).
 
 
-# Changes in v1.5.3
+# data.table v1.5.3
 
 ## NEW FEATURES
 
@@ -3120,7 +3120,7 @@ USER VISIBLE CHANGES
         in NEWS for v1.4, and FAQs 2.6 and 2.7.
 
 
-# Changes in v1.5.2
+# data.table v1.5.2
 
 ## NEW FEATURES
 
@@ -3150,7 +3150,7 @@ USER VISIBLE CHANGES
         Lianoglou for reporting.
 
 
-# Changes in v1.5.1
+# data.table v1.5.1
 
 ## BUG FIXES
 
@@ -3162,7 +3162,7 @@ USER VISIBLE CHANGES
         fixing bug #1131 related to inheritance from data.frame.
 
 
-# Changes in v1.5
+# data.table v1.5
 
 ## NEW FEATURES
 
@@ -3248,7 +3248,7 @@ USER VISIBLE CHANGES
         file accordingly. Thanks to Christian Hudon for reporting.
 
 
-# Changes in v1.4.1
+# data.table v1.4.1
 
 
 ## NEW FEATURES
@@ -3264,7 +3264,7 @@ USER VISIBLE CHANGES
 
 
 
-# Changes in v1.4
+# data.table v1.4
 
 
 ## NEW FEATURES
@@ -3337,7 +3337,7 @@ USER VISIBLE CHANGES
 
 
 
-# Changes in v1.3
+# data.table v1.3
 
 
 ## NEW FEATURES
@@ -3390,6 +3390,6 @@ USER VISIBLE CHANGES
 
 
 
-# v1.2 released to CRAN in Aug 2008
+# data.table v1.2 released to CRAN in Aug 2008
 
 
