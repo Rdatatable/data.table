@@ -15827,7 +15827,7 @@ df1 = data.table(a=1:5, b=c(0, 0, 1, 0, 2))
 df2 = data.table(c=c(1, 1, 2, 2, 3), d=c(3, 4, 3, 5, 4))
 test(2092.3, copy(df2)[ , s := df1[.SD, on=.(a >= c, a <= d), sum(b), by=.EACHI]$V1],
      df2[ , s := c(1, 1, 1, 3, 1)])
-     
+
 # POSIXct overflow to NA before 1901 and after 2038, #3780
 date=as.POSIXct("1900-01-01", tz="UTC")
 test(2093.1, as.IDate(date), as.IDate(-25567L))
@@ -15835,12 +15835,11 @@ test(2093.2, hour(date), 0L)
 test(2093.3, minute(date), 0L)
 test(2093.4, second(date), 0L)
 
-
 # #2478 auto-name j even in complicated expressions
 DT = data.table(a = c(1, 1, 2), b = 4:6)
-test(2093.1, DT[ , {b = b; .(a, b = b + 1)}], DT[ , .(a, b=b+1)])
-test(2093.2, DT[ , {{{b = b; .(a, b = b + 1)}}}], DT[ , .(a, b=b+1)])
-test(2093.3, DT[ , if (.N > 1L) .(b), by=a], DT[1:2])
+test(2094.1, DT[ , {b = b; .(a, b = b + 1)}], DT[ , .(a, b=b+1)])
+test(2094.2, DT[ , {{{b = b; .(a, b = b + 1)}}}], DT[ , .(a, b=b+1)])
+test(2094.3, DT[ , if (.N > 1L) .(b), by=a], DT[1:2])
 
 
 ###################################
