@@ -46,6 +46,12 @@ navbar:
         href: https://github.com/Rdatatable/data.table
 
 reference:
+- title: Query
+  contents:
+  - '`[.data.table`'
+  - '`special-symbols`'
+  - '`:=`'
+
 - title: Import/Export
   contents:
   - fread
@@ -54,15 +60,9 @@ reference:
   - fwrite
   - setDF
   - copy
-
-- title: Query
-  contents:
-  - '`[.data.table`'
-  - '`special-symbols`'
-  - '`:=`'
-  - unique
-  - groupingsets
-  - subset
+  - as.matrix
+  - as.data.table.xts
+  - as.xts.data.table
 
 - title: Reshape
   contents:
@@ -78,6 +78,9 @@ reference:
   - patterns
   - coalesce
   - fifelse
+  - unique
+  - groupingsets
+  - subset
   - fsort
   - frank
   - first
