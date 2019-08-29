@@ -78,9 +78,11 @@ data.table(\dots, keep.rownames=FALSE, check.names=FALSE, key=NULL, stringsAsFac
 
     \item{j}{When \code{with=TRUE} (default), \code{j} is evaluated within the frame of the data.table; i.e., it sees column names as if they are variables. This allows to not just \emph{select} columns in \code{j}, but also \code{compute} on them e.g., \code{x[, a]} and \code{x[, sum(a)]} returns \code{x$a} and \code{sum(x$a)} as a vector respectively. \code{x[, .(a, b)]} and \code{x[, .(sa=sum(a), sb=sum(b))]} returns a two column data.table each, the first simply \emph{selecting} columns \code{a, b} and the second \emph{computing} their sums.
 
-    The expression `.()` is a \emph{shorthand} alias to \code{list()}; they both mean the same. (An exception is made for the use of \code{.()} within a call to \code{\link{bquote}}, where \code{.()} is left unchanged.) As long as \code{j} returns a \code{list}, each element of the list becomes a column in the resulting \code{data.table}. This is the default \emph{enhanced} mode.
+    As long as \code{j} returns a \code{list}, each element of the list becomes a column in the resulting \code{data.table}. When the output of \code{j} is not a \code{list}, the output is returned as-is (e.g. \code{x[ , a]} returns the column vector \code{a}), unless \code{by} is used, in which case it is implicitly wrapped in \code{list} for convenience (e.g. \code{x[ , sum(a), by=b]} will create a column named \code{V1} with value \code{sum(a)} for each group).
 
-    When \code{j} is a vector of column names or positions to select (as in \code{data.frame}). There is no need to use \code{with=FALSE} anymore. In case of using logical vector with length \code{ncol(x)} defining columns to select \code{with=FALSE} is still necessary. Note: if a logical vector with length \code{k < ncol(x)} is passed, it will be filled to length \code{ncol(x)} with \code{FALSE}, which is different from \code{data.frame}, where the vector is recycled.
+    The expression `.()` is a \emph{shorthand} alias to \code{list()}; they both mean the same. (An exception is made for the use of \code{.()} within a call to \code{\link{bquote}}, where \code{.()} is left unchanged.)
+
+    When \code{j} is a vector of column names or positions to select (as in \code{data.frame}). There is no need to use \code{with=FALSE} anymore. Note that \code{with=FALSE} is still necessary when using a logical vector with length \code{ncol(x)} to include/exclude columns. Note: if a logical vector with length \code{k < ncol(x)} is passed, it will be filled to length \code{ncol(x)} with \code{FALSE}, which is different from \code{data.frame}, where the vector is recycled.
 
     \emph{Advanced:} \code{j} also allows the use of special \emph{read-only} symbols: \code{\link{.SD}}, \code{\link{.N}}, \code{\link{.I}}, \code{\link{.GRP}}, \code{\link{.BY}}.
 
@@ -194,7 +196,7 @@ The way to read this out loud is: "Take \code{DT}, subset rows by \code{i}, \emp
     X[, .(a)]                   # same as above, but return as a data.table.
     X[, sum(a)]                 # return sum(a) as a vector (with same scoping rules as above)
     X[, .(sum(a)), by=c]        # get sum(a) grouped by 'c'.
-    X[, sum(a), by=c]           # same as above, .() can be omitted in by on single expression for convenience
+    X[, sum(a), by=c]           # same as above, .() can be omitted in j and by on single expression for convenience
     X[, sum(a), by=c:f]         # get sum(a) grouped by all columns in between 'c' and 'f' (both inclusive)
 
     X[, sum(a), keyby=b]        # get sum(a) grouped by 'b', and sort that result by the grouping column 'b'
