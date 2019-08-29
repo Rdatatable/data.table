@@ -164,6 +164,8 @@
 
 24. More efficient optimization of many columns in `j` (e.g. from `.SD`), [#1470](https://github.com/Rdatatable/data.table/issues/1470). Thanks @Jorges1000 for the report.
 
+25. Auto-naming in `j` now handles more complicated expressions (e.g. in `{` or `if`) and is hence more consistent, [#2478](https://github.com/Rdatatable/data.table/issues/2478).
+
 #### BUG FIXES
 
 1. `first`, `last`, `head` and `tail` by group no longer error in some cases, [#2030](https://github.com/Rdatatable/data.table/issues/2030) [#3462](https://github.com/Rdatatable/data.table/issues/3462). Thanks to @franknarf1 for reporting.

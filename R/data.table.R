@@ -874,30 +874,16 @@ replace_order = function(isub, verbose, env) {
         setattr(byval, "names", bynames)  # byval is just a list not a data.table hence setattr not setnames
       }
 
+      #browser()
       jvnames = NULL
+      env = environment()
       if (is.name(jsub)) {
         # j is a single unquoted column name
         if (jsub!=".SD") {
           jvnames = gsub("^[.](N|I|GRP|BY)$","\\1",as.character(jsub))
           # jsub is list()ed after it's eval'd inside dogroups.
         }
-      } else if (is.call(jsub) && as.character(jsub[[1L]])[1L] %chin% c("list", ".")) {
-        jsub[[1L]] = quote(list)
-        jsubl = as.list.default(jsub)  # TO DO: names(jsub) and names(jsub)="" seem to work so make use of that
-        if (length(jsubl)>1L) {
-          jvnames = names(jsubl)[-1L]   # check list(a=sum(v),v)
-          if (is.null(jvnames)) jvnames = rep.int("", length(jsubl)-1L)
-          for (jj in seq.int(2L,length(jsubl))) {
-            if (jvnames[jj-1L] == "" && mode(jsubl[[jj]])=="name") {
-              if (jsubl[[jj]]=="") stop("Item ", jj-1L, " of the .() or list() passed to j is missing") #3507
-              jvnames[jj-1L] = gsub("^[.](N|I|GRP|BY)$", "\\1", deparse(jsubl[[jj]]))
-            }
-            # TO DO: if call to a[1] for example, then call it 'a' too
-          }
-          setattr(jsubl, "names", NULL)  # drops the names from the list so it's faster to eval the j for each group. We'll put them back afterwards on the result.
-          jsub = as.call(jsubl)
-        } # else empty list is needed for test 468: adding an empty list column
-      } # else maybe a call to transform or something which returns a list.
+      } else jsub = do_j_names(jsub, env) # else maybe a call to transform or something which returns a list.
       av = all.vars(jsub,TRUE)  # TRUE fixes bug #1294 which didn't see b in j=fns[[b]](c)
       use.I = ".I" %chin% av
       if (any(c(".SD","eval","get","mget") %chin% av)) {
@@ -3070,4 +3056,38 @@ isReallyReal = function(x) {
   on = iCols
   names(on) = xCols
   return(list(on = on, ops = idx_op))
+}
+
+# function to handle auto-naming of j for potentially complicated expressions, #2478
+do_j_names = function(q, env) {
+  if (!is.call(q) || !is.name(q[[1L]])) return(q)
+  if (as.character(q[[1L]]) %chin% c('list', '.')) {
+    q[[1L]] = quote(list)
+    qlen = length(q)
+    if (qlen>1L) {
+      nm = names(q[-1L])   # check list(a=sum(v),v)
+      if (is.null(nm)) nm = rep.int("", qlen-1L)
+      for (jj in seq.int(2L, qlen)) {
+        if (nm[jj-1L] == "" && is.name(q[[jj]])) {
+          if (q[[jj]] == "") stop("Item ", jj-1L, " of the .() or list() passed to j is missing") #3507
+          nm[jj-1L] = gsub("^[.](N|I|GRP|BY)$", "\\1", deparse(q[[jj]]))
+        }
+        # TO DO: if call to a[1] for example, then call it 'a' too
+      }
+      assign('jvnames', nm, envir=env) # TODO: handle if() list(a, b) else list(b, a) better
+      setattr(q, "names", NULL)  # drops the names from the list so it's faster to eval the j for each group. We'll put them back afterwards on the result.
+    }
+    return(q) # else empty list is needed for test 468: adding an empty list column
+  }
+  if (q[[1L]] == '{') {
+    q[[length(q)]] = do_j_names(q[[length(q)]], env)
+    return(q)
+  }
+  if (q[[1L]] == 'if') {
+    #explicit NULL would return NULL, assigning NULL would delete that from the expression
+    if (!is.null(q[[3L]])) q[[3L]] = do_j_names(q[[3L]], env)
+    if (length(q) == 4L && !is.null(q[[4L]])) q[[4L]] = do_j_names(q[[4L]], env)
+    return(q)
+  }
+  return(q)
 }
