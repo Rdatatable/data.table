@@ -81,7 +81,7 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
       factor = "<fctr>", POSIXct = "<POSc>", logical = "<lgcl>",
       IDate = "<IDat>", integer64 = "<i64>", raw = "<raw>",
       expression = "<expr>", ordered = "<ord>")
-    classes = vapply(x, function(col) class(col)[1L], "", USE.NAMES=FALSE)
+    classes = vapply_1c(x, function(col) class(col)[1L], use.names=FALSE)
     abbs = unname(class_abb[classes])
     if ( length(idx <- which(is.na(abbs))) ) abbs[idx] = paste0("<", classes[idx], ">")
     toprint = rbind(abbs, toprint)

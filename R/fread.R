@@ -312,9 +312,9 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir())
   if (stringsAsFactors) {
     if (is.double(stringsAsFactors)) { #2025
       should_be_factor = function(v) is.character(v) && uniqueN(v) < nr * stringsAsFactors
-      cols_to_factor = which(vapply(ans, should_be_factor, logical(1L)))
+      cols_to_factor = which(vapply_1b(ans, should_be_factor))
     } else {
-      cols_to_factor = which(vapply(ans, is.character, logical(1L)))
+      cols_to_factor = which(vapply_1b(ans, is.character))
     }
     if (verbose) cat("stringsAsFactors=", stringsAsFactors, " converted ", length(cols_to_factor), " column(s): ", brackify(names(ans)[cols_to_factor]), "\n", sep="")
     for (j in cols_to_factor) set(ans, j=j, value=as_factor(.subset2(ans, j)))

@@ -76,7 +76,7 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL, str
     }
   }
   if (isTRUE(stringsAsFactors)) {
-    for (j in which(vapply(ans, is.character, TRUE))) set(ans, NULL, j, as_factor(.subset2(ans, j)))
+    for (j in which(vapply_1b(ans, is.character))) set(ans, NULL, j, as_factor(.subset2(ans, j)))
     # as_factor is internal function in fread.R currently
   }
   alloc.col(ans)  # returns a NAMED==0 object, unlike data.frame()
@@ -881,7 +881,7 @@ replace_order = function(isub, verbose, env) {
           jvnames = gsub("^[.](N|I|GRP|BY)$","\\1",as.character(jsub))
           # jsub is list()ed after it's eval'd inside dogroups.
         }
-      } else if (is.call(jsub) && as.character(jsub[[1L]])[[1L]] %chin% c("list",".")) {
+      } else if (is.call(jsub) && as.character(jsub[[1L]])[1L] %chin% c("list", ".")) {
         jsub[[1L]] = quote(list)
         jsubl = as.list.default(jsub)  # TO DO: names(jsub) and names(jsub)="" seem to work so make use of that
         if (length(jsubl)>1L) {
@@ -1177,6 +1177,7 @@ replace_order = function(isub, verbose, env) {
     assign(sym, get(getName, parent.frame()), SDenv)
   }
   # hash=TRUE (the default) does seem better as expected using e.g. test 645.  TO DO experiment with 'size' argument
+  #browser()
   if (missingby || bynull || (!byjoin && !length(byval))) {
     # No grouping: 'by' = missing | NULL | character() | "" | list()
     # Considered passing a one-group to dogroups but it doesn't do the recycling of i within group, that's done here
@@ -1310,8 +1311,8 @@ replace_order = function(isub, verbose, env) {
         jval = data.table(jval) # TO DO: should this be setDT(list(jval)) instead?
       } else {
         if (is.null(jvnames)) jvnames=names(jval)
-        lenjval = vapply(jval, length, 0L)
-        nulljval = vapply(jval, is.null, FALSE)
+        lenjval = vapply_1i(jval, length)
+        nulljval = vapply_1b(jval, is.null)
         if (lenjval[1L]==0L || any(lenjval != lenjval[1L])) {
           jval = as.data.table.list(jval)   # does the vector expansion to create equal length vectors, and drops any NULL items
           jvnames = jvnames[!nulljval] # fix for #1477
@@ -1462,7 +1463,7 @@ replace_order = function(isub, verbose, env) {
   lockBinding(".iSD",SDenv)
 
   GForce = FALSE
-  if ( getOption("datatable.optimize")>=1 && (is.call(jsub) || (is.name(jsub) && as.character(jsub)[[1L]] %chin% c(".SD",".N"))) ) {  # Ability to turn off if problems or to benchmark the benefit
+  if ( getOption("datatable.optimize")>=1 && (is.call(jsub) || (is.name(jsub) && as.character(jsub)[1L] %chin% c(".SD", ".N"))) ) {  # Ability to turn off if problems or to benchmark the benefit
     # Optimization to reduce overhead of calling lapply over and over for each group
     oldjsub = jsub
     funi = 1L # Fix for #985
@@ -1621,7 +1622,7 @@ replace_order = function(isub, verbose, env) {
     if (getOption("datatable.optimize")>=2 && !is.data.table(i) && !byjoin && length(f__) && !length(lhs)) {
       if (!length(ansvars) && !use.I) {
         GForce = FALSE
-        if ( (is.name(jsub) && jsub == ".N") || (is.call(jsub) && length(jsub)==2L && length(as.character(jsub[[1L]])) && as.character(jsub[[1L]])[1L] == "list" && length(as.character(jsub[[2L]])) && as.character(jsub[[2L]])[1L] == ".N") ) {
+        if ( (is.name(jsub) && jsub == ".N") || (is.call(jsub) && length(jsub)==2L && jsub[[1L]]== "list" && jsub[[2L]] == ".N") ) {
           GForce = TRUE
           if (verbose) cat("GForce optimized j to '",deparse(jsub,width.cutoff=200L),"'\n",sep="")
         }
@@ -2315,7 +2316,7 @@ copy = function(x) {
   if (!is.data.table(x)) {
     # fix for #1476. TODO: find if a cleaner fix is possible..
     if (is.list(x)) {
-      anydt = vapply(x, is.data.table, TRUE, USE.NAMES=FALSE)
+      anydt = vapply_1b(x, is.data.table, use.names=FALSE)
       if (sum(anydt)) {
         newx[anydt] = lapply(newx[anydt], function(x) {
           .Call(C_unlock, x)
@@ -2618,7 +2619,7 @@ setDF = function(x, rownames=NULL) {
     }
     x
   } else {
-    n = vapply(x, length, 0L)
+    n = vapply_1i(x, length)
     mn = max(n)
     if (any(n<mn))
       stop("All elements in argument 'x' to 'setDF' must be of same length")
@@ -2694,7 +2695,7 @@ setDT = function(x, keep.rownames=FALSE, key=NULL, check.names=FALSE) {
                                   # fail for NULL columns will give helpful error at that point, #3480 and #3471
       if (inherits(x[[i]], "POSIXlt")) stop("Column ", i, " is of POSIXlt type. Please convert it to POSIXct using as.POSIXct and run setDT again. We do not recommend use of POSIXlt at all because it uses 40 bytes to store one date.")
     }
-    n = vapply(x, length, 0L)
+    n = vapply_1i(x, length)
     n_range = range(n)
     if (n_range[1L] != n_range[2L]) {
       tbl = sort(table(n))
@@ -2909,7 +2910,7 @@ isReallyReal = function(x) {
   }
   if (length(i) == 0L) stop("Internal error in .isFastSubsettable. Please report to data.table developers") # nocov
   ## convert i to data.table with all combinations in rows.
-  if(length(i) > 1L && prod(vapply(i, length, integer(1L))) > 1e4){
+  if(length(i) > 1L && prod(vapply_1i(i, length)) > 1e4){
     ## CJ would result in more than 1e4 rows. This would be inefficient, especially memory-wise #2635
     if (verbose) {cat("Subsetting optimization disabled because the cross-product of RHS values exceeds 1e4, causing memory problems.\n");flush.console()}
     return(NULL)
