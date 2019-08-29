@@ -293,6 +293,8 @@
 
 17. The warning message when using `strptime` in `j` has been improved, [#2068](https://github.com/Rdatatable/data.table/issues/2068). Thanks to @tdhock for the report.
 
+18. Added a note to `?setkey` clarifying that `setkey` always uses C-locale sorting (as has been noted in `?setorder`). Thanks @JBreidaks for the report in [#2114](https://github.com/Rdatatable/data.table/issues/2114).
+
 
 ### Changes in [v1.12.2](https://github.com/Rdatatable/data.table/milestone/14?closed=1)  (07 Apr 2019)
 
