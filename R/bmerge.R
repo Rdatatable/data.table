@@ -10,7 +10,14 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
   # Otherwise, the type of the i column is always returned.
 
   i = shallow(i)
+  # merge on .SD in i fails _sometimes_ because of set() being done here, #1926
+  .Call(C_unlock, i)
   x = shallow(x)
+  .Call(C_unlock, x)
+  if (.Call(C_islocked, callersi)) {
+    .Call(C_unlock, callersi)
+    on.exit(.Call(C_lock, callersi))
+  }
   # careful to only plonk syntax (full column) on i/x from now on otherwise user's i and x would change;
   #   this is why shallow() is very importantly internal only, currently.
 
