@@ -61,7 +61,7 @@ reference:
   - '`special-symbols`'
   - '`:=`'
   - unique
-  - cube rollup groupingsets
+  - groupingsets
   - subset
 
 - title: Reshape
@@ -72,15 +72,15 @@ reference:
 
 - title: Convenient functions
   contents:
-  - between '`%between`'
-  - chmatch '`%chin%`'
-  - like '`%like%`' '`%ilike%`' '`%flike%`'
+  - between
+  - chmatch
+  - like
   - patterns
   - coalesce
   - fifelse
   - fsort
   - frank
-  - first last
+  - first
   - IDateTime
 
 - title: Transform and clean
@@ -110,24 +110,24 @@ reference:
   - rleid
   - rowid
   - shift
-  - frollsum frollmean
+  - froll
   - nafill
 
 - title: Combining and comparing multiple data sets
   contents:
   - merge
   - foverlaps
-  - fintersect fsetdiff funion fsetequal
+  - fintersect
   - all.equal
 
 - title: Optimization
   contents:
-  - setDTthreads getDTthreads
+  - setDTthreads
   - datatable.optimize
 
 - title: Maintenance
   contents:
-  - print
+  - print.data.table
   - test.data.table
   - update.dev.pkg
   - tables
