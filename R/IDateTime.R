@@ -35,7 +35,7 @@ as.IDate.Date = function(x, ...) {
 as.IDate.POSIXct = function(x, tz = attr(x, "tzone", exact=TRUE), ...) {
   if (is.null(tz)) tz = "UTC"
   if (tz %chin% c("UTC", "GMT")) {
-    (setattr(as.integer(x) %/% 86400L, "class", c("IDate", "Date")))  # %/% returns new object so can use setattr() on it; wrap with () to return visibly
+    (setattr(as.integer(as.numeric(x) %/% 86400L), "class", c("IDate", "Date")))  # %/% returns new object so can use setattr() on it; wrap with () to return visibly
   } else
     as.IDate(as.Date(x, tz = tz, ...))
 }
@@ -305,7 +305,7 @@ as.POSIXlt.ITime = function(x, ...) {
 second  = function(x) {
   if (inherits(x, 'POSIXct') && identical(attr(x, 'tzone', exact=TRUE), 'UTC')) {
     # if we know the object is in UTC, can calculate the hour much faster
-    as.integer(x) %% 60L
+    as.integer(as.numeric(x) %% 60L)
   } else {
     as.integer(as.POSIXlt(x)$sec)
   }
@@ -313,7 +313,7 @@ second  = function(x) {
 minute  = function(x) {
   if (inherits(x, 'POSIXct') && identical(attr(x, 'tzone', exact=TRUE), 'UTC')) {
     # ever-so-slightly faster than x %% 3600L %/% 60L
-    as.integer(x) %/% 60L %% 60L
+    as.integer(as.numeric(x) %/% 60L %% 60L)
   } else {
     as.POSIXlt(x)$min
   }
@@ -321,7 +321,7 @@ minute  = function(x) {
 hour = function(x) {
   if (inherits(x, 'POSIXct') && identical(attr(x, 'tzone', exact=TRUE), 'UTC')) {
     # ever-so-slightly faster than x %% 86400L %/% 3600L
-    as.integer(x) %/% 3600L %% 24L
+    as.integer(as.numeric(x) %/% 3600L %% 24L)
   } else {
     as.POSIXlt(x)$hour
   }
