@@ -15,11 +15,10 @@ vignette: >
 require(data.table)
 knitr::opts_chunk$set(
   comment = "#",
-    error = FALSE,
-     tidy = FALSE,
-    cache = FALSE,
+  error = FALSE,
+  tidy = FALSE,
+  cache = FALSE,
   collapse = TRUE,
-  fig.path = 'plots/',
   out.width = '100%',
   dpi = 144
 )
@@ -106,7 +105,7 @@ The syntax to now convert these columns to `factor` is very similar -- simply ad
 ```{r assign_factors}
 Teams[ , (fkt) := lapply(.SD, factor), .SDcols = fkt]
 # print out the first column to demonstrate success
-head(Teams[[fkt[1L]]])
+head(unique(Teams[[fkt[1L]]]))
 ```
 
 Note that we must wrap `fkt` in parentheses `()` to force `data.table` to interpret this as column names, instead of trying to assign a column named `'fkt'`.
@@ -121,7 +120,7 @@ For example, we could do the following to convert all `factor` columns to `chara
 #   positions with which()
 fkt_idx = which(sapply(Teams, is.factor))
 Teams[ , (fkt_idx) := lapply(.SD, as.character), .SDcols = fkt_idx]
-head(Teams[[fkt_idx[1L]]])
+head(unique(Teams[[fkt_idx[1L]]]))
 ```
 
 Lastly, we can do pattern-based matching of columns in `.SDcols` to select all columns which contain `team` back to `factor`:
@@ -144,7 +143,7 @@ Varying model specification is a core feature of robust statistical analysis. Le
 
 Here's a short script leveraging the power of `.SD` which explores this question:
 
-```{r sd_for_lm, cache = FALSE, fig.path = 'plots/figures/'}
+```{r sd_for_lm, cache = FALSE}
 # this generates a list of the 2^k possible extra variables
 #   for models of the form ERA ~ G + (...)
 extra_var = c('yearID', 'teamID', 'G', 'L')
@@ -238,7 +237,7 @@ _NB_: `.SD[1L]` is currently optimized by [_`GForce`_](https://Rdatatable.gitlab
 
 Returning to the inquiry above regarding the relationship between `ERA` and `W`, suppose we expect this relationship to differ by team (i.e., there's a different slope for each team). We can easily re-run this regression to explore the heterogeneity in this relationship as follows (noting that the standard errors from this approach are generally incorrect -- the specification `ERA ~ W*teamID` will be better -- this approach is easier to read and the _coefficients_ are OK):
 
-```{r group_lm, results = 'hide', fig.path = 'plots/figures/'}
+```{r group_lm, results = 'hide'}
 # Overall coefficient for comparison
 overall_coef = Pitching[ , coef(lm(ERA ~ W))['W']]
 # use the .N > 20 filter to exclude teams with few observations
@@ -248,7 +247,6 @@ Pitching[ , if (.N > 20L) .(w_coef = coef(lm(ERA ~ W))['W']), by = teamID
                     ylab = 'Number of Teams', col = 'darkgreen',
                     main = 'Team-Level Distribution\nWin Coefficients on ERA')]
 abline(v = overall_coef, lty = 2L, col = 'red')
-
 ```
 
 While there is indeed a fair amount of heterogeneity, there's a distinct concentration around the observed overall value.
