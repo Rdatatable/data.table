@@ -162,6 +162,8 @@
 
 23. Added a `data.table` method for `utils::edit` to ensure a `data.table` is returned, for convenience, [#593](https://github.com/Rdatatable/data.table/issues/593).
 
+24. More efficient optimization of many columns in `j` (e.g. from `.SD`), [#1470](https://github.com/Rdatatable/data.table/issues/1470). Thanks @Jorges1000 for the report.
+
 ## BUG FIXES
 
 1. `first`, `last`, `head` and `tail` by group no longer error in some cases, [#2030](https://github.com/Rdatatable/data.table/issues/2030) [#3462](https://github.com/Rdatatable/data.table/issues/3462). Thanks to @franknarf1 for reporting.
@@ -246,6 +248,8 @@
 34. Using `get`/`mget` in `j` could cause `.SDcols` to be ignored or reordered, [#1744](https://github.com/Rdatatable/data.table/issues/1744), [#1965](https://github.com/Rdatatable/data.table/issues/1965), and [#2036](https://github.com/Rdatatable/data.table/issues/2036). Thanks @franknarf1, @MichaelChirico, and @TonyBonen, for the reports.
 
 35. `DT[, i-1L, with=FALSE]` would misinterpret the minus sign and return an incorrect result, [#2019](https://github.com/Rdatatable/data.table/issues/2109). Thanks @cguill95 for the report.
+
+36. `DT[id==1, DT2[.SD, on="id"]]` (i.e. joining from `.SD` in `j`) could incorrectly fail in some cases due to `.SD` being locked, [#1926](https://github.com/Rdatatable/data.table/issues/1926). Thanks @franknarf1 for the report and for diligently tracking use cases for almost 3 years!
 
 ## NOTES
 

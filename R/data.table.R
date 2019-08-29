@@ -1004,7 +1004,7 @@ replace_order = function(isub, verbose, env) {
       newnames = NULL
       suppPrint = identity
       if (length(av) && av[1L] == ":=") {
-        if (identical(attr(x, ".data.table.locked", exact=TRUE), TRUE)) stop(".SD is locked. Using := in .SD's j is reserved for possible future use; a tortuously flexible way to modify by group. Use := in j directly to modify by group by reference.")
+        if (.Call(C_islocked, x)) stop(".SD is locked. Using := in .SD's j is reserved for possible future use; a tortuously flexible way to modify by group. Use := in j directly to modify by group by reference.")
         suppPrint = function(x) { .global$print=address(x); x }
         # Suppress print when returns ok not on error, bug #2376. Thanks to: http://stackoverflow.com/a/13606880/403310
         # All appropriate returns following this point are wrapped; i.e. return(suppPrint(x)).
@@ -1255,8 +1255,8 @@ replace_order = function(isub, verbose, env) {
     # Temp fix for #921. Allocate `.I` only if j-expression uses it.
     SDenv$.I = if (!missing(j) && use.I) seq_len(SDenv$.N) else 0L
     SDenv$.GRP = 1L
-    setattr(SDenv$.SD,".data.table.locked",TRUE)   # used to stop := modifying .SD via j=f(.SD), bug#1727. The more common case of j=.SD[,subcol:=1] was already caught when jsub is inspected for :=.
-    setattr(SDenv$.SDall,".data.table.locked",TRUE)
+    .Call(C_lock, SDenv$.SD) # used to stop := modifying .SD via j=f(.SD), bug#1727. The more common case of j=.SD[,subcol:=1] was already caught when jsub is inspected for :=.
+    .Call(C_lock, SDenv$.SDall)
     lockBinding(".SD",SDenv)
     lockBinding(".SDall",SDenv)
     lockBinding(".N",SDenv)
@@ -1271,11 +1271,11 @@ replace_order = function(isub, verbose, env) {
     }
 
     jval = eval(jsub, SDenv, parent.frame())
-    .Call(Csetattrib, jval, '.data.table.locked', NULL) # in case jval inherits .SD's lock, #1341 #2245. Use .Call not setattr() to avoid bumping jval's MAYBE_SHARED.
+    .Call(C_unlock, jval) # in case jval inherits .SD's lock, #1341 #2245. .Call directly (not via an R function like setattr or unlock) to avoid bumping jval's MAYBE_SHARED.
 
     # copy 'jval' when required
     # More speedup - only check + copy if irows is NULL
-    # Temp fix for #921 - check address and copy *after* evaluating 'jval'
+    # Temp fix for #921 - check address and copy *after* evaluating 'jval'.  #5114 also related.
     if (is.null(irows)) {
       if (!is.list(jval)) { # performance improvement when i-arg is S4, but not list, #1438, Thanks @DCEmilberg.
         jcpy = address(jval) %in% vapply_1c(SDenv$.SD, address) # %chin% errors when RHS is list()
@@ -1325,10 +1325,6 @@ replace_order = function(isub, verbose, env) {
       if (any(ww)) jvnames[ww] = paste0("V",ww)
       setnames(jval, jvnames)
     }
-
-    # fix for bug #5114 from GSee's - .data.table.locked=TRUE.   # TO DO: more efficient way e.g. address==address (identical will do that but then proceed to deep compare if !=, wheras we want just to stop?)
-    # Commented as it's taken care of above, along with #921 fix. Kept here for the bug fix info and TO DO.
-    # if (identical(jval, SDenv$.SD)) return(copy(jval))
 
     if (is.data.table(jval)) {
       setattr(jval, 'class', class(x)) # fix for #5296
@@ -1457,8 +1453,8 @@ replace_order = function(isub, verbose, env) {
     setattr(SDenv$.SD,"row.names",c(NA_integer_,0L))
   }
   # .set_row_names() basically other than not integer() for 0 length, otherwise dogroups has no [1] to modify to -.N
-  setattr(SDenv$.SD,".data.table.locked",TRUE)   # used to stop := modifying .SD via j=f(.SD), bug#1727. The more common case of j=.SD[,subcol:=1] was already caught when jsub is inspected for :=.
-  setattr(SDenv$.SDall,".data.table.locked",TRUE)
+  .Call(C_lock, SDenv$.SD)  # stops := modifying .SD via j=f(.SD), bug#1727. The more common case of j=.SD[,subcol:=1] was already caught when jsub is inspected for :=.
+  .Call(C_lock, SDenv$.SDall)
   lockBinding(".SD",SDenv)
   lockBinding(".SDall",SDenv)
   lockBinding(".N",SDenv)
@@ -1615,11 +1611,11 @@ replace_order = function(isub, verbose, env) {
     }
     if (verbose) {
       if (!identical(oldjsub, jsub))
-        cat("lapply optimization changed j from '",deparse(oldjsub),"' to '",deparse(jsub,width.cutoff=200L),"'\n",sep="")
+        cat("lapply optimization changed j from '",deparse(oldjsub),"' to '",deparse(jsub,width.cutoff=200L, nlines=1L),"'\n",sep="")
       else
-        cat("lapply optimization is on, j unchanged as '",deparse(jsub,width.cutoff=200L),"'\n",sep="")
+        cat("lapply optimization is on, j unchanged as '",deparse(jsub,width.cutoff=200L, nlines=1L),"'\n",sep="")
     }
-    dotN = function(x) is.name(x) && x == ".N" # For #5760
+    dotN = function(x) is.name(x) && x==".N" # For #5760. TODO: Rprof() showed dotN() may be the culprit if iterated (#1470)?; avoid the == which converts each x to character?
     # FR #971, GForce kicks in on all subsets, no joins yet. Although joins could work with
     # nomatch=0L even now.. but not switching it on yet, will deal it separately.
     if (getOption("datatable.optimize")>=2 && !is.data.table(i) && !byjoin && length(f__) && !length(lhs)) {
@@ -1647,7 +1643,9 @@ replace_order = function(isub, verbose, env) {
         }
         if (jsub[[1L]]=="list") {
           GForce = TRUE
-          for (ii in seq_along(jsub)[-1L]) if (!.ok(jsub[[ii]])) GForce = FALSE
+          for (ii in seq.int(from=2L, length.out=length(jsub)-1L)) {
+            if (!.ok(jsub[[ii]])) {GForce = FALSE; break}
+          }
         } else GForce = .ok(jsub)
         if (GForce) {
           if (jsub[[1L]]=="list")
@@ -1669,12 +1667,15 @@ replace_order = function(isub, verbose, env) {
       nomeanopt=FALSE  # to be set by .optmean() using <<- inside it
       oldjsub = jsub
       if (jsub[[1L]]=="list") {
-        for (ii in seq_along(jsub)[-1L]) {
-          this_jsub = jsub[[ii]]
-          if (dotN(this_jsub)) next; # For #5760
-          # Addressing #1369, #2949 and #1974. Added is.symbol() check to handle cases where expanded function definition is used instead of function names. #1369 results in (function(x) sum(x)) as jsub[[.]] from dcast.data.table.
-          if (is.call(this_jsub) && is.symbol(this_jsub[[1L]]) && this_jsub[[1L]]=="mean")
-            jsub[[ii]] = .optmean(this_jsub)
+        # Addressing #1369, #2949 and #1974. This used to be 30s (vs 0.5s) with 30K elements items in j, #1470. Could have been dotN() and/or the for-looped if()
+        todo = sapply(jsub, function(x) {
+          is.call(x) && is.symbol(x[[1L]]) && x[[1L]]=="mean"
+          # jsub[[1]]=="list" so the first item will always be FALSE
+          # is.symbol() for when expanded function definition is used instead of function names; #1369 results in (function(x) sum(x)) as jsub[[.]] from dcast.data.table
+        })
+        if (any(todo)) {
+          w = which(todo)
+          jsub[w] = lapply(jsub[w], .optmean)
         }
       } else if (jsub[[1L]]=="mean") {
         jsub = .optmean(jsub)
@@ -2116,9 +2117,7 @@ transform.data.table = function (`_data`, ...)
   inx = chmatch(tags, names(`_data`))
   matched = !is.na(inx)
   if (any(matched)) {
-    if (isTRUE(attr(`_data`, ".data.table.locked", exact=TRUE))) {
-      setattr(`_data`, ".data.table.locked", NULL) # fix for #1641, now covered by test 104.2
-    }
+    .Call(C_unlock, `_data`) # fix for #1641, now covered by test 104.2
     `_data`[,inx[matched]] = e[matched]
     `_data` = as.data.table(`_data`)
   }
@@ -2299,7 +2298,8 @@ split.data.table = function(x, f, drop = FALSE, by, sorted = FALSE, keep.by = TR
       ))
   # handle nested split
   if (flatten || length(by) == 1L) {
-    lapply(lapply(ll, setattr, '.data.table.locked', NULL), setDT)
+    for (x in ll) .Call(C_unlock, x)
+    lapply(ll, setDT)
     # alloc.col could handle DT in list as done in: c9c4ff80bdd4c600b0c4eff23b207d53677176bd
   } else if (length(by) > 1L) {
     lapply(ll, split.data.table, drop=drop, by=by[-1L], sorted=sorted, keep.by=keep.by, flatten=flatten)
@@ -2318,14 +2318,14 @@ copy = function(x) {
       anydt = vapply(x, is.data.table, TRUE, USE.NAMES=FALSE)
       if (sum(anydt)) {
         newx[anydt] = lapply(newx[anydt], function(x) {
-          setattr(x, ".data.table.locked", NULL)
+          .Call(C_unlock, x)
           alloc.col(x)
         })
       }
     }
     return(newx)   # e.g. in as.data.table.list() the list is copied before changing to data.table
   }
-  setattr(newx,".data.table.locked",NULL)
+  .Call(C_unlock, newx)
   alloc.col(newx)
 }
 
@@ -2372,9 +2372,8 @@ point = function(to, to_idx, from, from_idx) {
     setattr(ans, "sorted", NULL)
     setattr(ans, "index", NULL)
   }
-  if (unlock) setattr(ans, '.data.table.locked', NULL)
+  if (unlock) .Call(C_unlock, ans)
   ans
-
 }
 
 shallow = function(x, cols=NULL) {
@@ -2834,7 +2833,7 @@ isReallyReal = function(x) {
   #'        ATTENTION: If nothing else helps, an auto-index is created on x unless options prevent this.
   if(getOption("datatable.optimize") < 3L) return(NULL) ## at least level three optimization required.
   if (!is.call(isub)) return(NULL)
-  if (!is.null(attr(x, '.data.table.locked', exact=TRUE))) return(NULL)  # fix for #958, don't create auto index on '.SD'.
+  if (.Call(C_islocked, x)) return(NULL)  # fix for #958, don't create auto index on '.SD'.
   ## a list of all possible operators with their translations into the 'on' clause
   validOps = list(op = c("==", "%in%", "%chin%"),
                    on = c("==", "==",   "=="))
