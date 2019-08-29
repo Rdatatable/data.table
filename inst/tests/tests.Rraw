@@ -15828,6 +15828,13 @@ df2 = data.table(c=c(1, 1, 2, 2, 3), d=c(3, 4, 3, 5, 4))
 test(2092.3, copy(df2)[ , s := df1[.SD, on=.(a >= c, a <= d), sum(b), by=.EACHI]$V1],
      df2[ , s := c(1, 1, 1, 3, 1)])
 
+# #2677 -- emit warnings when ifelse is used in j
+DT = data.table(a=1:10)
+test(2093.1, DT[ , ifelse(a > 5, 1, -1)], rep(c(-1, 1), each=5L),
+     warning="ifelse() usage detected and converted")
+test(2093.2, DT[1L, ifelse(a > 5, 1, -1)], -1,
+     warning="ifelse() is a vector operation")
+
 ###################################
 #  Add new tests above this line  #
 ###################################
