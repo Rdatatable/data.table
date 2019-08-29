@@ -140,3 +140,91 @@ SEXP coerceFillR(SEXP fill) {
   UNPROTECT(protecti);
   return ans;
 }
+
+inline bool INHERITS(SEXP x, SEXP char_) {
+  // Thread safe inherits() by pre-calling install() in init.c and then
+  // passing those char_* in here for simple and fast non-API pointer compare.
+  // The thread-safety aspect here is only currently actually needed for list columns in
+  // fwrite() where the class of the cell's vector is tested; the class of the column
+  // itself is pre-stored by fwrite (for example in isInteger64[] and isITime[]).
+  // Thread safe in the limited sense of correct and intended usage :
+  // i) no API call such as install() or mkChar() must be passed in.
+  // ii) no attrib writes must be possible in other threads.
+  SEXP klass;
+  if (isString(klass = getAttrib(x, R_ClassSymbol))) {
+    for (int i=0; i<LENGTH(klass); i++) {
+      if (STRING_ELT(klass, i) == char_) return true;
+    }
+  }
+  return false;
+}
+
+bool Rinherits(SEXP x, SEXP char_) {
+ // motivation was nanotime which is S4 and inherits from integer64 via S3 extends
+ // R's C API inherits() does not cover S4 and returns FALSE for nanotime, as does our own INHERITS above.
+ // R's R-level inherits() calls objects.c:inherits2 which calls attrib.c:R_data_class2 and
+ // then attrib.c:S4_extends which itself calls R level methods:::.extendsForS3 which then calls R level methods::extends.
+ // Since that chain of calls is so complicated and involves evaluating R level anyway, let's just reuse it.
+ // Rinherits prefix with 'R' to signify i) it calls R level and is not thread safe, and ii) is the R level inherits which covers S4.
+ SEXP vec = PROTECT(ScalarString(char_));
+ SEXP call = PROTECT(lang3(sym_inherits, x, vec));
+ bool ans = LOGICAL(eval(call, R_GlobalEnv))[0]==1;
+ UNPROTECT(2);
+ return ans;
+}
+
+void copySharedColumns(SEXP x) {
+  const int ncol = length(x);
+  if (!isNewList(x) || ncol==1) return;
+  bool *shared = (bool *)R_alloc(ncol, sizeof(bool)); // on R heap in case duplicate() fails
+  int *savetl = (int *)R_alloc(ncol, sizeof(int));  // on R heap for convenience but could be a calloc
+  int nShared = 0;
+  const SEXP *xp = VECTOR_PTR(x);
+  for (int i=0; i<ncol; ++i) {
+    SEXP thiscol = xp[i];
+    const int thistl = TRUELENGTH(thiscol);
+    if (thistl<0) {
+      shared[i] = true;
+      nShared++;
+      // do not duplicate() here as the duplicate() might fail. Careful to restore tl first to all columns.
+      // Aside: thistl is which column shares the same address as this one in case that's ever useful in future.
+    } else {
+      shared[i] = false;
+      savetl[i] = thistl;  // these are vectors which are all expected to have tl, unlike CHARSXP which often don't (savetl() has CHARSXP in mind)
+      SET_TRUELENGTH(thiscol, -i-1);
+    }
+  }
+  // now we know nShared and which ones they are (if any), restore original tl back to all columns
+  for (int i=0; i<ncol; ++i) {
+    if (!shared[i]) SET_TRUELENGTH(VECTOR_ELT(x, i), savetl[i]);
+  }
+  // now that truelength has been restored for all columns, we can finally call duplicate()
+  if (nShared) {
+    for (int i=0; i<ncol; ++i) {
+      if (shared[i])
+        SET_VECTOR_ELT(x, i, duplicate(VECTOR_ELT(x, i)));
+    }
+    if (GetVerbose()) Rprintf("Found and copied %d column%s with a shared memory address\n", nShared, nShared>1?"s":"");
+    // GetVerbose() (slightly expensive call of all options) called here only when needed
+  }
+}
+
+// lock, unlock and islocked at C level :
+// 1) for speed to reduce overhead
+// 2) to avoid an R level wrapper which bumps MAYBE_SHARED; see the unlock after eval(jval) in data.table.R, #1341 #2245
+SEXP lock(SEXP DT) {
+  setAttrib(DT, sym_datatable_locked, ScalarLogical(TRUE));
+  return DT;
+}
+SEXP unlock(SEXP DT) {
+  setAttrib(DT, sym_datatable_locked, R_NilValue);
+  return DT;
+}
+bool islocked(SEXP DT) {
+  SEXP att = getAttrib(DT, sym_datatable_locked);
+  return isLogical(att) && LENGTH(att)==1 && LOGICAL(att)[0]==1;
+}
+SEXP islockedR(SEXP DT) {
+  return ScalarLogical(islocked(DT));
+}
+

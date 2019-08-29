@@ -21,7 +21,7 @@ frollsum(x, n, fill=NA, algo=c("fast","exact"), align=c("right", "left",
   verbose=getOption("datatable.verbose"))
 }
 \arguments{
-  \item{x}{ vector, list, data.frame or data.table of numeric columns. }
+  \item{x}{ vector, list, data.frame or data.table of numeric or logical columns. }
   \item{n}{ integer vector, for adaptive rolling function also list of
     integer vectors, rolling window size. }
   \item{fill}{ numeric, value to pad by. Defaults to \code{NA}. }
@@ -95,7 +95,7 @@ frollsum(x, n, fill=NA, algo=c("fast","exact"), align=c("right", "left",
     \item{ \code{align} defaults to \code{"right"}. }
     \item{ \code{na.rm} is respected, and other functions are not needed
       when input contains \code{NA}. }
-    \item{ integers are always coerced to double. }
+    \item{ integers and logical are always coerced to double. }
     \item{ when \code{adaptive=FALSE} (default), then \code{n} must be a
       numeric vector. List is not accepted. }
     \item{ when \code{adaptive=TRUE}, then \code{n} must be vector of
