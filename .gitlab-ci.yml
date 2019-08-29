@@ -257,6 +257,12 @@ integration: # merging all artifacts to produce single R repository and summarie
     R_BIN_VERSION: "3.6"
     R_DEVEL_BIN_VERSION: "3.7"
   script:
+    # pkgdown installs pkgs from "." so run at start to have clean root dir
+    - apt-get update -qq && apt-get install -y libxml2-dev
+    - mkdir -p /tmp/pkgdown/library
+    - R_LIBS_USER=/tmp/pkgdown/library Rscript -e 'install.packages("remotes", repos=Sys.getenv("CRAN_MIRROR"), quiet=TRUE); remotes::install_github("r-lib/pkgdown", repos=Sys.getenv("CRAN_MIRROR"), quiet=TRUE); pkgdown::build_site(override=list(destination="./pkgdown"))'
+    - mv cheatsheet.png pkgdown
+    # html manual, vignettes, repos, cran_web, cran_checks
     - echo 'source("ci.R"); source("publish.R")' >> .Rprofile
     # list of available test-* jobs dynamically based on bus/test-* directories
     - Rscript -e 'cat("\ntest.jobs <- c(\n"); cat(paste0("  \"",list.files("bus",pattern="^test-"),"\" = \"data.table\""), sep=",\n"); cat(")\n")' >> .Rprofile
@@ -304,12 +310,9 @@ integration: # merging all artifacts to produce single R repository and summarie
     - Rscript -e 'pdf.copy("data.table", "test-rel-lin")'
     # web/checks/check_results_$pkg.html
     - Rscript -e 'check.index("data.table", names(test.jobs))'
-    # pkgdown
-    - apt-get update -qq && apt-get install -y libxml2-dev
-    - Rscript -e 'install.packages("remotes", repos=Sys.getenv("CRAN_MIRROR"), quiet=TRUE); remotes::install_github("r-lib/pkgdown", repos=Sys.getenv("CRAN_MIRROR"), quiet=TRUE); install.packages("data.table", repos=file.path("file:",normalizePath("bus/integration/cran")), quiet=TRUE); pkgdown::build_site(devel=FALSE, new_process=TRUE, override=list(destination="./pkgdown"))'
-    - mv cheatsheet.png pkgdown
-    - Rscript -e 'common_files<-function(path1, path2) intersect(list.files(path1, all.files=TRUE, no..=TRUE), list.files(path2, all.files=TRUE, no..=TRUE)); if (length(f<-common_files("./pkgdown","bus/integration/cran/"))) message(paste(c("Following artifacts will be overwritten by pkgdown artifacts:", paste0("  ", f)), collapse="\n")); q("no")'
-    - mv ./pkgdown/* bus/integration/cran/
+    # pkgdown merge
+    - Rscript -e 'common_files<-function(path1, path2) intersect(list.files(path1, all.files=TRUE, no..=TRUE), list.files(path2, all.files=TRUE, no..=TRUE)); if (length(f<-common_files("pkgdown","bus/integration/cran"))) message(paste(c("Following artifacts will be overwritten by pkgdown artifacts:", paste0("  ", f)), collapse="\n")); q("no")'
+    - mv pkgdown/* bus/integration/cran/
     # cleanup artifacts from other jobs
     - mkdir tmpbus
     - mv bus/$CI_BUILD_NAME tmpbus
