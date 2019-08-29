@@ -874,7 +874,6 @@ replace_order = function(isub, verbose, env) {
         setattr(byval, "names", bynames)  # byval is just a list not a data.table hence setattr not setnames
       }
 
-      #browser()
       jvnames = NULL
       env = environment()
       if (is.name(jsub)) {
