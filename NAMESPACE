@@ -104,7 +104,7 @@ export(dcast, melt)
 S3method(dcast, data.table)
 S3method(melt, data.table)
 
-# exported for historical reasons -- if reshape2 is higher on search path, 
+# exported for historical reasons -- if reshape2 is higher on search path,
 # dcast(DT) will not dispatch since reshape2::dcast is not generic. So users
 # and many packges on CRAN call dcast.data.table() and/or melt.data.table() directly. See #3082.
 export(melt.data.table, dcast.data.table)
@@ -165,6 +165,7 @@ S3method(seq, ITime)
 S3method(unique, IDate)
 S3method(unique, ITime)
 S3method('[<-', IDate)
+S3method(edit, data.table)
 
 # duplist
 # getdots

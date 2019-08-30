@@ -324,7 +324,7 @@ SEXP subsetDT(SEXP x, SEXP rows, SEXP cols) {
       for (int j=0; j<i; j++) SET_STRING_ELT(tmp, j, STRING_ELT(key, j));
     }
   }
-  setAttrib(ans, install(".data.table.locked"), R_NilValue);
+  unlock(ans);
   setselfref(ans);
   UNPROTECT(nprotect);
   return ans;

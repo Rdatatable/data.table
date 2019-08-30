@@ -87,6 +87,7 @@ SEXP sym_maxgrpn;
 SEXP sym_colClassesAs;
 SEXP sym_verbose;
 SEXP sym_inherits;
+SEXP sym_datatable_locked;
 long long DtoLL(double x);
 double LLtoD(long long x);
 bool GetVerbose();
@@ -217,4 +218,8 @@ SEXP coerceFillR(SEXP fill);
 bool INHERITS(SEXP x, SEXP char_);
 bool Rinherits(SEXP x, SEXP char_);
 void copySharedColumns(SEXP x);
+SEXP lock(SEXP x);
+SEXP unlock(SEXP x);
+bool islocked(SEXP x);
+SEXP islockedR(SEXP x);
 

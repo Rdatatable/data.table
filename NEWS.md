@@ -21,6 +21,7 @@
                             integer=  8:10,
                             character="colA"))
     ```
+    * gains `tmpdir=` argument which is passed to `tempfile()` whenever a temporary file is needed. Thanks to @mschubmehl for the PR. As before, setting `TMPDIR` (to `/dev/shm` for example) before starting the R session still works too; see `?base::tempdir`.
 
 3. `fwrite()`:
     * now writes compressed `.gz` files directly, [#2016](https://github.com/Rdatatable/data.table/issues/2016). Compression, like `fwrite()`, is multithreaded and compresses each chunk on-the-fly (a full size intermediate file is not created). Use a ".gz" extension, or the new `compress=` option. Many thanks to Philippe Chataignon for the significant PR. For example:
@@ -159,6 +160,14 @@
 
 22. `transpose` gains `keep.names=` and `make.names=` arguments, [#1886](https://github.com/Rdatatable/data.table/issues/1886). Previously, column names were dropped and there was no way to keep them. `keep.names="rn"` keeps the column names and puts them in the `"rn"` column of the result. Similarly, `make.names="rn"` uses column `"rn"` as the column names of the result. Both arguments are `NULL` by default for backwards compatibility. As these new arguments are new, they are subject to change in future according to community feedback. Thanks to @ghost for the request.
 
+23. Added a `data.table` method for `utils::edit` to ensure a `data.table` is returned, for convenience, [#593](https://github.com/Rdatatable/data.table/issues/593).
+
+24. More efficient optimization of many columns in `j` (e.g. from `.SD`), [#1470](https://github.com/Rdatatable/data.table/issues/1470). Thanks @Jorges1000 for the report.
+
+25. `setnames(DT, old, new)` now omits any `old==new` to save redundant key and index name updates, [#3783](https://github.com/Rdatatable/data.table/issues/3783). `setnames(DT, new)` (i.e. not providing `old`) already omitted any column name updates where `names(DT)==new`; e.g. `setnames(DT, gsub('^_', '', names(DT)))` exits early if no columns start with `_`.
+
+26. `[[` by group is now optimized for regular vectors (not type list), [#3209](https://github.com/Rdatatable/data.table/issues/3209). Thanks @renkun-ken for the suggestion. `[` by group was already optimized. Please file a feature request if you would like this optimization for list columns.
+
 #### BUG FIXES
 
 1. `first`, `last`, `head` and `tail` by group no longer error in some cases, [#2030](https://github.com/Rdatatable/data.table/issues/2030) [#3462](https://github.com/Rdatatable/data.table/issues/3462). Thanks to @franknarf1 for reporting.
@@ -236,6 +245,20 @@
 
 31. A `data.table` created using `setDT()` on a `data.frame` containing identical columns referencing each other would cause `setkey()` to return incorrect results, [#3496](https://github.com/Rdatatable/data.table/issues/3496) and [#3766](https://github.com/Rdatatable/data.table/issues/3766). Thanks @kirillmayantsev and @alex46015 for reporting, and @jaapwalhout and @Atrebas for helping to debug and isolate the issue.
 
+32. `x[, round(.SD, 1)]` and similar operations on the whole of `.SD` could return a locked result, incorrectly preventing `:=` on the result, [#2245](https://github.com/Rdatatable/data.table/issues/2245). Thanks @grayskripko for raising.
+
+33. `setDT` now detects and halts if passed a `data.frame` containing matrix columns, [#3760](https://github.com/Rdatatable/data.table/issues/3760). Such objects cannot be converted to `data.table` by reference. The message suggests using `as.data.table` instead which will convert each matrix column to a new `data.table` column.
+
+34. Using `get`/`mget` in `j` could cause `.SDcols` to be ignored or reordered, [#1744](https://github.com/Rdatatable/data.table/issues/1744), [#1965](https://github.com/Rdatatable/data.table/issues/1965), and [#2036](https://github.com/Rdatatable/data.table/issues/2036). Thanks @franknarf1, @MichaelChirico, and @TonyBonen, for the reports.
+
+35. `DT[, i-1L, with=FALSE]` would misinterpret the minus sign and return an incorrect result, [#2019](https://github.com/Rdatatable/data.table/issues/2109). Thanks @cguill95 for the report.
+
+36. `DT[id==1, DT2[.SD, on="id"]]` (i.e. joining from `.SD` in `j`) could incorrectly fail in some cases due to `.SD` being locked, [#1926](https://github.com/Rdatatable/data.table/issues/1926). Thanks @franknarf1 for the report and for diligently tracking use cases for almost 3 years!
+
+37. `as.IDate.POSIXct` returned `NA` for UTC times before Dec 1901 and after Jan 2038, [#3780](https://github.com/Rdatatable/data.table/issues/3780). Thanks @gschett for the report.
+
+38. `rbindlist` now returns correct idcols for lists with different length vectors, [#3785](https://github.com/Rdatatable/data.table/issues/3785), [#3786](https://github.com/Rdatatable/data.table/pull/3786). Thanks to @shrektan for the report and fix.
+
 #### NOTES
 
 1. `rbindlist`'s `use.names="check"` now emits its message for automatic column names (`"V[0-9]+"`) too, [#3484](https://github.com/Rdatatable/data.table/pull/3484). See news item 5 of v1.12.2 below.
@@ -276,7 +299,13 @@
 
 16. Rolling functions (`?froll`) coerce `logical` input to `numeric` (instead of failing) to mimic the behavior of `integer` input.
 
-17. New function `setalloccol` which duplicates `alloc.col` but is consistent about `set*` prefixes for functions that operate in-place (like `setkey`, `setorder`, etc.). `alloc.col` is _not_ going to be deprecated but we recommend using `setalloccol`, [#3475](https://github.com/Rdatatable/data.table/issues/3475).
+17. The warning message when using `strptime` in `j` has been improved, [#2068](https://github.com/Rdatatable/data.table/issues/2068). Thanks to @tdhock for the report.
+
+18. Added a note to `?setkey` clarifying that `setkey` always uses C-locale sorting (as has been noted in `?setorder`). Thanks @JBreidaks for the report in [#2114](https://github.com/Rdatatable/data.table/issues/2114).
+
+19. `hour()`/`minute()`/`second()` are much faster for `ITime` input, [#3518](https://github.com/Rdatatable/data.table/issues/3158).
+
+20. New alias `setalloccol` for `alloc.col`, [#3475](https://github.com/Rdatatable/data.table/issues/3475). For consistency with `set*` prefixes for functions that operate in-place (like `setkey`, `setorder`, etc.). `alloc.col` is not going to be deprecated but we recommend using `setalloccol`.
 
 
 ### Changes in [v1.12.2](https://github.com/Rdatatable/data.table/milestone/14?closed=1)  (07 Apr 2019)
@@ -479,7 +508,7 @@
 
 #### NEW FEATURES
 
-1. `fread()` can now read `.gz` and `.bz2` files directly: `fread("file.csv.gz")`, [#717](https://github.com/Rdatatable/data.table/issues/717) [#3058](https://github.com/Rdatatable/data.table/issues/3058). It uses `R.utils::decompressFile` to decompress to a `tempfile()` which is then read by `fread()` in the usual way. For greater speed on large-RAM servers, it is recommended to use ramdisk for temporary files by setting `TEMPDIR` to `/dev/shm`; see `?tempdir`. The decompressed temporary file is removed as soon as `fread` completes even if there is an error reading the file. Reading a remote compressed file in one step will be supported in the next version; e.g. `fread("http://domain.org/file.csv.bz2")`.
+1. `fread()` can now read `.gz` and `.bz2` files directly: `fread("file.csv.gz")`, [#717](https://github.com/Rdatatable/data.table/issues/717) [#3058](https://github.com/Rdatatable/data.table/issues/3058). It uses `R.utils::decompressFile` to decompress to a `tempfile()` which is then read by `fread()` in the usual way. For greater speed on large-RAM servers, it is recommended to use ramdisk for temporary files by setting `TMPDIR` to `/dev/shm` before starting R; see `?tempdir`. The decompressed temporary file is removed as soon as `fread` completes even if there is an error reading the file. Reading a remote compressed file in one step will be supported in the next version; e.g. `fread("http://domain.org/file.csv.bz2")`.
 
 #### BUG FIXES
 
