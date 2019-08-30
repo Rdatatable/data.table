@@ -251,7 +251,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
       for (int i=0,ansloc=0; i<LENGTH(l); ++i) {
         SEXP li = VECTOR_ELT(l, i);
         if (!length(li)) continue;
-        const int thisnrow = length(VECTOR_ELT(li, 0));
+        const int thisnrow = eachMax[i];
         SEXP thisname = STRING_ELT(listNames, i);
         for (int k=0; k<thisnrow; ++k) SET_STRING_ELT(idval, ansloc++, thisname);
       }
@@ -261,7 +261,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
       for (int i=0,ansloc=0; i<LENGTH(l); ++i) {
         SEXP li = VECTOR_ELT(l, i);
         if (!length(li)) continue;
-        const int thisnrow = length(VECTOR_ELT(li, 0));
+        const int thisnrow = eachMax[i];
         for (int k=0; k<thisnrow; ++k) idvald[ansloc++] = i+1;
       }
     }

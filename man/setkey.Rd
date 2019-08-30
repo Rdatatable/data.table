@@ -60,6 +60,8 @@ to base R too; see \code{\link[base]{sort}}. Generally speaking we avoid any typ
 of comparison sort (other than insert sort for very small input) preferring instead
 counting sort and forwards radix. We also avoid hash tables.
 
+Note that \code{setkey} always uses "C-locale"; see the Details in the help for \code{\link{setorder}} for more on why.
+
 The sort is \emph{stable}; i.e., the order of ties (if any) is preserved.
 
 For character vectors, \code{data.table} takes advantage of R's internal global string cache, also exported as \code{\link{chorder}}.
