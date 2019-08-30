@@ -1,5 +1,9 @@
 url: https://jangorecki.gitlab.io/data.table
 
+template:
+  params:
+    ganalytics: UA-129166154-2
+
 development:
   version_tooltip: "Development version"
 
