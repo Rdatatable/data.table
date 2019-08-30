@@ -42,7 +42,7 @@ null.data.table = function() {
   ans = list()
   setattr(ans,"class",c("data.table","data.frame"))
   setattr(ans,"row.names",.set_row_names(0L))
-  alloc.col(ans)
+  setalloccol(ans)
 }
 
 data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL, stringsAsFactors=FALSE)
@@ -79,7 +79,7 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL, str
     for (j in which(vapply(ans, is.character, TRUE))) set(ans, NULL, j, as_factor(.subset2(ans, j)))
     # as_factor is internal function in fread.R currently
   }
-  alloc.col(ans)  # returns a NAMED==0 object, unlike data.frame()
+  setalloccol(ans)  # returns a NAMED==0 object, unlike data.frame()
 }
 
 replace_dot_alias = function(e) {
@@ -1066,17 +1066,17 @@ replace_order = function(isub, verbose, env) {
           m[is.na(m)] = ncol(x)+seq_len(length(newnames))
           cols = as.integer(m)
           # don't pass verbose to selfrefok here -- only activated when
-          #   ok=-1 which will trigger alloc.col with verbose in the next
+          #   ok=-1 which will trigger setalloccol with verbose in the next
           #   branch, which again calls _selfrefok and returns the message then
           if ((ok<-selfrefok(x, verbose=FALSE))==0L)   # ok==0 so no warning when loaded from disk (-1) [-1 considered TRUE by R]
             warning("Invalid .internal.selfref detected and fixed by taking a (shallow) copy of the data.table so that := can add this new column by reference. At an earlier point, this data.table has been copied by R (or was created manually using structure() or similar). Avoid names<- and attr<- which in R currently (and oddly) may copy the whole data.table. Use set* syntax instead to avoid copying: ?set, ?setnames and ?setattr. If this message doesn't help, please report your use case to the data.table issue tracker so the root cause can be fixed or this message improved.")
           if ((ok<1L) || (truelength(x) < ncol(x)+length(newnames))) {
             DT = x  # in case getOption contains "ncol(DT)" as it used to.  TODO: warn and then remove
             n = length(newnames) + eval(getOption("datatable.alloccol"))  # TODO: warn about expressions and then drop the eval()
-            # i.e. reallocate at the size as if the new columns were added followed by alloc.col().
+            # i.e. reallocate at the size as if the new columns were added followed by setalloccol().
             name = substitute(x)
             if (is.name(name) && ok && verbose) { # && NAMED(x)>0 (TO DO)    # ok here includes -1 (loaded from disk)
-              cat("Growing vector of column pointers from truelength ", truelength(x), " to ", n, ". A shallow copy has been taken, see ?alloc.col. Only a potential issue if two variables point to the same data (we can't yet detect that well) and if not you can safely ignore this. To avoid this message you could alloc.col() first, deep copy first using copy(), wrap with suppressWarnings() or increase the 'datatable.alloccol' option.\n")
+              cat("Growing vector of column pointers from truelength ", truelength(x), " to ", n, ". A shallow copy has been taken, see ?setalloccol. Only a potential issue if two variables point to the same data (we can't yet detect that well) and if not you can safely ignore this. To avoid this message you could setalloccol() first, deep copy first using copy(), wrap with suppressWarnings() or increase the 'datatable.alloccol' option.\n")
               # #1729 -- copying to the wrong environment here can cause some confusion
               if (ok == -1L) cat("Note that the shallow copy will assign to the environment from which := was called. That means for example that if := was called within a function, the original table may be unaffected.\n")
 
@@ -1091,7 +1091,7 @@ replace_order = function(isub, verbose, env) {
               # Note also that this growing will happen for missing columns assigned NULL, too. But so rare, we
               # don't mind.
             }
-            alloc.col(x, n, verbose=verbose)   # always assigns to calling scope; i.e. this scope
+            setalloccol(x, n, verbose=verbose)   # always assigns to calling scope; i.e. this scope
             if (is.name(name)) {
               assign(as.character(name),x,parent.frame(),inherits=TRUE)
             } else if (is.call(name) && (name[[1L]] == "$" || name[[1L]] == "[[") && is.name(name[[2L]])) {
@@ -1236,7 +1236,7 @@ replace_order = function(isub, verbose, env) {
         }
         setattr(ans, "class", class(x)) # fix for #5296
         setattr(ans, "row.names", .set_row_names(nrow(ans)))
-        alloc.col(ans)
+        setalloccol(ans)
       }
 
       if (!with || missing(j)) return(ans)
@@ -1793,7 +1793,7 @@ replace_order = function(isub, verbose, env) {
   } else if (keyby || (haskey(x) && bysameorder && (byjoin || (length(allbyvars) && identical(allbyvars,head(key(x),length(allbyvars))))))) {
     setattr(ans,"sorted",names(ans)[seq_along(grpcols)])
   }
-  alloc.col(ans)   # TODO: overallocate in dogroups in the first place and remove this line
+  setalloccol(ans)   # TODO: overallocate in dogroups in the first place and remove this line
 }
 
 .optmean = function(expr) {   # called by optimization of j inside [.data.table only. Outside for a small speed advantage.
@@ -1958,7 +1958,7 @@ tail.data.table = function(x, n=6L, ...) {
   if (!cedta()) {
     x = if (nargs()<4L) `[<-.data.frame`(x, i, value=value)
         else `[<-.data.frame`(x, i, j, value)
-    return(alloc.col(x))    # over-allocate (again).   Avoid all this by using :=.
+    return(setalloccol(x))    # over-allocate (again).   Avoid all this by using :=.
   }
   # TO DO: warning("Please use DT[i,j:=value] syntax instead of DT[i,j]<-value, for efficiency. See ?':='")
   if (!missing(i)) {
@@ -1967,7 +1967,7 @@ tail.data.table = function(x, n=6L, ...) {
     if (is.matrix(i)) {
       if (!missing(j)) stop("When i is a matrix in DT[i]<-value syntax, it doesn't make sense to provide j")
       x = `[<-.data.frame`(x, i, value=value)
-      return(alloc.col(x))
+      return(setalloccol(x))
     }
     i = x[i, which=TRUE]
     # Tried adding ... after value above, and passing ... in here (e.g. for mult="first") but R CMD check
@@ -2000,17 +2000,17 @@ tail.data.table = function(x, n=6L, ...) {
     reinstatekey=key(x)
   }
   if (!selfrefok(x) || truelength(x) < ncol(x)+length(newnames)) {
-    x = alloc.col(x,length(x)+length(newnames)) # because [<- copies via *tmp* and main/duplicate.c copies at length but copies truelength over too
+    x = setalloccol(x, length(x)+length(newnames)) # because [<- copies via *tmp* and main/duplicate.c copies at length but copies truelength over too
     # search for one other .Call to assign in [.data.table to see how it differs
   }
   x = .Call(Cassign,copy(x),i,cols,newnames,value) # From 3.1.0, DF[2,"b"] = 7 no longer copies DF$a (so in this [<-.data.table method we need to copy)
-  alloc.col(x)  #  can maybe avoid this realloc, but this is (slow) [<- anyway, so just be safe.
+  setalloccol(x)  #  can maybe avoid this realloc, but this is (slow) [<- anyway, so just be safe.
   if (length(reinstatekey)) setkeyv(x,reinstatekey)
   invisible(x)
   # no copy at all if user calls directly; i.e. `[<-.data.table`(x,i,j,value)
   # or uses data.table := syntax; i.e. DT[i,j:=value]
   # but, there is one copy by R in [<- dispatch to `*tmp*`; i.e. DT[i,j]=value. *Update: not from R > 3.0.2, yay*
-  # That copy is via main/duplicate.c which preserves truelength but copies length amount. Hence alloc.col(x,length(x)).
+  # That copy is via main/duplicate.c which preserves truelength but copies length amount. Hence setalloccol(x,length(x)).
   # No warn passed to assign here because we know it'll be copied via *tmp*.
   # := allows subassign to a column with no copy of the column at all,  and by group, etc.
 }
@@ -2018,7 +2018,7 @@ tail.data.table = function(x, n=6L, ...) {
 "$<-.data.table" = function(x, name, value) {
   if (!cedta()) {
     ans = `$<-.data.frame`(x, name, value)
-    return(alloc.col(ans))           # over-allocate (again)
+    return(setalloccol(ans))           # over-allocate (again)
   }
   x = copy(x)
   set(x,j=name,value=value)  # important i is missing here
@@ -2318,14 +2318,14 @@ copy = function(x) {
       if (sum(anydt)) {
         newx[anydt] = lapply(newx[anydt], function(x) {
           .Call(C_unlock, x)
-          alloc.col(x)
+          setalloccol(x)
         })
       }
     }
     return(newx)   # e.g. in as.data.table.list() the list is copied before changing to data.table
   }
   .Call(C_unlock, newx)
-  alloc.col(newx)
+  setalloccol(newx)
 }
 
 point = function(to, to_idx, from, from_idx) {
@@ -2382,10 +2382,10 @@ shallow = function(x, cols=NULL) {
   ans
 }
 
-alloc.col = function(DT, n=getOption("datatable.alloccol"), verbose=getOption("datatable.verbose"))
+setalloccol = alloc.col = function(DT, n=getOption("datatable.alloccol"), verbose=getOption("datatable.verbose"))
 {
   name = substitute(DT)
-  if (identical(name,quote(`*tmp*`))) stop("alloc.col attempting to modify `*tmp*`")
+  if (identical(name, quote(`*tmp*`))) stop("setalloccol attempting to modify `*tmp*`")
   ans = .Call(Calloccolwrapper, DT, eval(n), verbose)
   if (is.name(name)) {
     name = as.character(name)
@@ -2399,7 +2399,7 @@ selfrefok = function(DT,verbose=getOption("datatable.verbose")) {
 }
 
 truelength = function(x) .Call(Ctruelength,x)
-# deliberately no "truelength<-" method.  alloc.col is the mechanism for that.
+# deliberately no "truelength<-" method.  setalloccol is the mechanism for that.
 # settruelength() no longer need (and so removed) now that data.table depends on R 2.14.0
 # which initializes tl to zero rather than leaving uninitialized.
 
@@ -2418,7 +2418,7 @@ setattr = function(x,name,value) {
     # For convenience so that setattr(DT,"names",allnames) works as expected without requiring a switch to setnames.
   else {
     ans = .Call(Csetattrib, x, name, value)
-    # If name=="names" and this is the first time names are assigned (e.g. in data.table()), this will be grown by alloc.col very shortly afterwards in the caller.
+    # If name=="names" and this is the first time names are assigned (e.g. in data.table()), this will be grown by setalloccol very shortly afterwards in the caller.
     if (!is.null(ans)) {
       warning("Input is a length=1 logical that points to the same address as R's global value. Therefore the attribute has not been set by reference, rather on a copy. You will need to assign the result back to a variable. See issue #1281.")
       x = ans
@@ -2673,14 +2673,14 @@ setDT = function(x, keep.rownames=FALSE, key=NULL, check.names=FALSE) {
     setattr(x, 'class', .resetclass(x, 'data.table'))
     if (!missing(key)) setkeyv(x, key) # fix for #1169
     if (check.names) setattr(x, "names", make.names(names(x), unique=TRUE))
-    if (selfrefok(x) > 0) return(invisible(x)) else alloc.col(x)
+    if (selfrefok(x) > 0) return(invisible(x)) else setalloccol(x)
   } else if (is.data.frame(x)) {
     rn = if (!identical(keep.rownames, FALSE)) rownames(x) else NULL
     setattr(x, "row.names", .set_row_names(nrow(x)))
     if (check.names) setattr(x, "names", make.names(names(x), unique=TRUE))
     # fix for #1078 and #1128, see .resetclass() for explanation.
     setattr(x, "class", .resetclass(x, 'data.frame'))
-    alloc.col(x)
+    setalloccol(x)
     if (!is.null(rn)) {
       nm = c(if (is.character(keep.rownames)) keep.rownames[1L] else "rn", names(x))
       x[, (nm[1L]) := rn]
@@ -2717,7 +2717,7 @@ setDT = function(x, keep.rownames=FALSE, key=NULL, check.names=FALSE) {
     }
     setattr(x,"row.names",.set_row_names(n_range[2L]))
     setattr(x,"class",c("data.table","data.frame"))
-    alloc.col(x)
+    setalloccol(x)
   } else {
     stop("Argument 'x' to 'setDT' should be a 'list', 'data.frame' or 'data.table'")
   }
