@@ -25,7 +25,7 @@ data.table(\dots, keep.rownames=FALSE, check.names=FALSE, key=NULL, stringsAsFac
   mult = "all",
   roll = FALSE,
   rollends = if (roll=="nearest") c(TRUE,TRUE)
-             else if (roll>=0) c(FALSE,TRUE)
+             else if (roll>=0L) c(FALSE,TRUE)
              else c(TRUE,FALSE),
   which = FALSE,
   .SDcols,

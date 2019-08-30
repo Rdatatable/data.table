@@ -66,6 +66,10 @@ grep -P "\t" ./src/*.c
 grep -n "[^A-Za-z0-9]T[^A-Za-z0-9]" ./inst/tests/tests.Rraw
 grep -n "[^A-Za-z0-9]F[^A-Za-z0-9]" ./inst/tests/tests.Rraw
 
+# All integers in R should be forced as longs with L -- this catches most common usages
+#   - tolerance=0 usages in setops.R are valid numeric 0, as are anything in strings
+grep -Er grep -Enr "^[^#]*(?:\[|==|>|<|>=|<=|,|\(|\+)\s*[-]?[0-9]+[^0-9L:.e]" R | grep -Ev "stop|warning|tolerance"
+
 # No system.time in main tests.Rraw. Timings should be in benchmark.Rraw
 grep -n "system[.]time" ./inst/tests/tests.Rraw
 

@@ -47,7 +47,7 @@ fwrite = function(x, file="", append=FALSE, quote="auto",
     isTRUEorFALSE(bom),
     length(na) == 1L, #1725, handles NULL or character(0) input
     is.character(file) && length(file)==1L && !is.na(file),
-    length(buffMB)==1L && !is.na(buffMB) && 1L<=buffMB && buffMB<=1024,
+    length(buffMB)==1L && !is.na(buffMB) && 1L<=buffMB && buffMB<=1024L,
     length(nThread)==1L && !is.na(nThread) && nThread>=1L
     )
 
