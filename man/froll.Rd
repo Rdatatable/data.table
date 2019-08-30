@@ -16,12 +16,10 @@
 }
 \usage{
 frollmean(x, n, fill=NA, algo=c("fast", "exact"), align=c("right",
-  "left", "center"), na.rm=FALSE, hasNA=NA, adaptive=FALSE,
-  verbose=getOption("datatable.verbose"))
+  "left", "center"), na.rm=FALSE, hasNA=NA, adaptive=FALSE)
 frollsum(x, n, fill=NA, algo=c("fast","exact"), align=c("right", "left",
-  "center"), na.rm=FALSE, hasNA=NA, adaptive=FALSE,
-  verbose=getOption("datatable.verbose"))
-frollapply(x, n, fun)
+  "center"), na.rm=FALSE, hasNA=NA, adaptive=FALSE)
+frollapply(x, n, FUN, ...)
 }
 \arguments{
   \item{x}{ vector, list, data.frame or data.table of numeric or logical columns. }
@@ -43,9 +41,8 @@ frollapply(x, n, fun)
     then setting to \code{TRUE} will speed up. Defaults to \code{NA}. }
   \item{adaptive}{ logical, should adaptive rolling function be
     calculated, default \code{FALSE}. See details below. }
-  \item{verbose}{ logical, default \code{getOption("datatable.verbose")},
-    \code{TRUE} turns on status and information messages to the console. }
-  \item{fun}{ function, to be used in \code{frollapply}. }
+  \item{FUN}{ function, to be used in \code{frollapply}. }
+  \item{\dots}{ extra arguments passed to \code{FUN} in \code{frollapply}. }
 }
 \details{
   \code{froll*} functions accepts vectors, lists, data.frames or

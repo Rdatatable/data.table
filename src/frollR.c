@@ -1,16 +1,9 @@
 #include "frollR.h"
 
-SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEXP narm, SEXP hasna, SEXP adaptive, SEXP verbose) {
-  int protecti = 0;
-  if (!isLogical(verbose) || length(verbose)!=1 || LOGICAL(verbose)[0]==NA_LOGICAL)
-    error("verbose must be TRUE or FALSE");
-  bool bverbose = LOGICAL(verbose)[0];
-
-  if (!xlength(obj)) return(obj);                               // empty input: NULL, list()
-  double tic = 0;
-  if (bverbose) tic = omp_get_wtime();
-  SEXP x;                                                       // holds input data as list
-  if (isVectorAtomic(obj)) {                                    // wrap atomic vector into list
+SEXP coerceToRealList(SEXP obj) { // accept atomic/list of integer/logical/real
+  int protecti=0;
+  SEXP x;
+  if (isVectorAtomic(obj)) {
     x = PROTECT(allocVector(VECSXP, 1)); protecti++;
     if (isReal(obj)) {
       SET_VECTOR_ELT(x, 0, obj);
@@ -25,13 +18,25 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
     for (R_len_t i=0; i<nobj; i++) {
       if (isReal(VECTOR_ELT(obj, i))) {
         SET_VECTOR_ELT(x, i, VECTOR_ELT(obj, i));
-      } else if (isInteger(VECTOR_ELT(obj, i)) || isLogical(VECTOR_ELT(obj, i))) { // coerce integer and logical types to double
+      } else if (isInteger(VECTOR_ELT(obj, i)) || isLogical(VECTOR_ELT(obj, i))) {
         SET_VECTOR_ELT(x, i, coerceVector(VECTOR_ELT(obj, i), REALSXP));
       } else {
         error("x must be list, data.frame or data.table of numeric or logical types");
       }
     }
   }
+  UNPROTECT(protecti);
+  return x;
+}
+
+SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEXP narm, SEXP hasna, SEXP adaptive) {
+  int protecti = 0;
+  const bool bverbose = GetVerbose();
+
+  if (!xlength(obj)) return(obj);                               // empty input: NULL, list()
+  double tic = 0;
+  if (bverbose) tic = omp_get_wtime();
+  SEXP x = PROTECT(coerceToRealList(obj)); protecti++;
   R_len_t nx=length(x);                                         // number of columns to roll on
 
   if (xlength(k) == 0)                                          // check that window is non zero length
@@ -208,33 +213,63 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
   return isVectorAtomic(obj) && length(ans) == 1 ? VECTOR_ELT(ans, 0) : ans;
 }
 
-SEXP frollapplyR(SEXP x, SEXP k, SEXP fun, SEXP env) {
-  if (!isReal(x)) error("'x' must be real");
-  if (!isInteger(k)) error("'k' must be integer");
-  if (!isFunction(fun)) error("'fun' must be a function");
-  if (!isEnvironment(env)) error("'env' should be an environment");
+void frollapplyC(double *dx, int64_t nx, double *dw, int32_t k, double *dans, SEXP call, SEXP rho) {
+  for (int32_t i=0; i<k-1; i++) dans[i] = NA_REAL;
+  for (int64_t i=k-1; i<nx; i++) {
+    memcpy(dw, dx+(i-k+1), k*sizeof(double));
+    //Rprintf("i: %llu: ", i); Rf_PrintValue(call);
+    dans[i] = REAL(eval(call, rho))[0];
+  }
+}
+SEXP frollapplyR(SEXP fun, SEXP obj, SEXP k, SEXP rho) {
+  int protecti = 0;
+  const bool verbose = GetVerbose();
 
-  int protecti=0;
-  R_xlen_t nx = xlength(x);
-  double *dx = REAL(x);
+  if (!isFunction(fun))
+    error("internal error: 'fun' must be a function"); // # nocov
+  if (!isEnvironment(rho))
+    error("internal error: 'rho' should be an environment"); // # nocov
+
+  if (!xlength(obj)) return(obj);
+  double tic = 0;
+  if (verbose) tic = omp_get_wtime();
+  SEXP x = PROTECT(coerceToRealList(obj)); protecti++;
+  R_len_t nx = length(x);
+  R_xlen_t inx = xlength(VECTOR_ELT(x, 0));
+
+  if (!isInteger(k)) {
+    if (isReal(k)) {
+      if (isRealReallyInt(k)) {
+        SEXP ik = PROTECT(coerceVector(k, INTSXP)); protecti++;
+        k = ik;
+      } else {
+        error("n must be integer");
+      }
+    } else {
+      error("n must be integer");
+    }
+  }
+  R_len_t nk = length(k);
+  if (nk == 0)
+    error("n must be non 0 length");
+  //if (nk > 1)
+  //  error("n must be length 1, TODO vectorized n");
+
+  double *dx = REAL(VECTOR_ELT(x, 0)); // TODO
+  //double *dx = REAL(x); // TODO
   int ik = INTEGER(k)[0];
 
   SEXP w = PROTECT(allocVector(REALSXP, ik)); protecti++;
   double *dw = REAL(w);
-  SEXP ans = PROTECT(allocVector(REALSXP, nx)); protecti++;
+  SEXP ans = PROTECT(allocVector(REALSXP, inx)); protecti++;
   double *dans = REAL(ans);
 
-  SEXP call = PROTECT(lang2(fun, R_NilValue)); protecti++;
-  SETCADR(call, w);
+  SEXP call = PROTECT(LCONS(fun, LCONS(w, LCONS(R_DotsSymbol, R_NilValue)))); protecti++;
 
-  for (int i=0; i<ik-1; i++) dans[i] = NA_REAL;
-  for (R_xlen_t i=ik-1; i<nx; i++) {
-    memcpy(dw, dx+(i-ik+1), ik*sizeof(double));
-    // instead of memcpy I tried below line to change pointer address but getting: lvalue required as left operand of assignment
-    //REAL(w) = dx+(i-ik);
-    // or maybe bitshift here?
-    dans[i] = REAL(eval(call, env))[0];
-  }
+  frollapplyC(dx, inx, dw, ik, dans, call, rho);
+
+  if (verbose) Rprintf("%s: processing of %d column(s) and %d window(s) took %.3fs\n", __func__, nx, nk, omp_get_wtime()-tic);
+
   UNPROTECT(protecti);
   return ans;
 }
