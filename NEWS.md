@@ -164,6 +164,8 @@
 
 24. More efficient optimization of many columns in `j` (e.g. from `.SD`), [#1470](https://github.com/Rdatatable/data.table/issues/1470). Thanks @Jorges1000 for the report.
 
+25. `setnames(DT, old, new)` now omits any `old==new` to save redundant key and index name updates, [#3783](https://github.com/Rdatatable/data.table/issues/3783). `setnames(DT, new)` (i.e. not providing `old`) already omitted any column name updates where `names(DT)==new`; e.g. `setnames(DT, gsub('^_', '', names(DT)))` exits early if no columns start with `_`.
+
 #### BUG FIXES
 
 1. `first`, `last`, `head` and `tail` by group no longer error in some cases, [#2030](https://github.com/Rdatatable/data.table/issues/2030) [#3462](https://github.com/Rdatatable/data.table/issues/3462). Thanks to @franknarf1 for reporting.
