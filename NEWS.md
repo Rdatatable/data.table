@@ -164,6 +164,10 @@
 
 24. More efficient optimization of many columns in `j` (e.g. from `.SD`), [#1470](https://github.com/Rdatatable/data.table/issues/1470). Thanks @Jorges1000 for the report.
 
+25. `setnames(DT, old, new)` now omits any `old==new` to save redundant key and index name updates, [#3783](https://github.com/Rdatatable/data.table/issues/3783). `setnames(DT, new)` (i.e. not providing `old`) already omitted any column name updates where `names(DT)==new`; e.g. `setnames(DT, gsub('^_', '', names(DT)))` exits early if no columns start with `_`.
+
+26. `[[` by group is now optimized for regular vectors (not type list), [#3209](https://github.com/Rdatatable/data.table/issues/3209). Thanks @renkun-ken for the suggestion. `[` by group was already optimized. Please file a feature request if you would like this optimization for list columns.
+
 #### BUG FIXES
 
 1. `first`, `last`, `head` and `tail` by group no longer error in some cases, [#2030](https://github.com/Rdatatable/data.table/issues/2030) [#3462](https://github.com/Rdatatable/data.table/issues/3462). Thanks to @franknarf1 for reporting.
@@ -251,6 +255,10 @@
 
 36. `DT[id==1, DT2[.SD, on="id"]]` (i.e. joining from `.SD` in `j`) could incorrectly fail in some cases due to `.SD` being locked, [#1926](https://github.com/Rdatatable/data.table/issues/1926). Thanks @franknarf1 for the report and for diligently tracking use cases for almost 3 years!
 
+37. `as.IDate.POSIXct` returned `NA` for UTC times before Dec 1901 and after Jan 2038, [#3780](https://github.com/Rdatatable/data.table/issues/3780). Thanks @gschett for the report.
+
+38. `rbindlist` now returns correct idcols for lists with different length vectors, [#3785](https://github.com/Rdatatable/data.table/issues/3785), [#3786](https://github.com/Rdatatable/data.table/pull/3786). Thanks to @shrektan for the report and fix.
+
 #### NOTES
 
 1. `rbindlist`'s `use.names="check"` now emits its message for automatic column names (`"V[0-9]+"`) too, [#3484](https://github.com/Rdatatable/data.table/pull/3484). See news item 5 of v1.12.2 below.
@@ -292,6 +300,16 @@
 16. Rolling functions (`?froll`) coerce `logical` input to `numeric` (instead of failing) to mimic the behavior of `integer` input.
 
 17. The warning message when using `strptime` in `j` has been improved, [#2068](https://github.com/Rdatatable/data.table/issues/2068). Thanks to @tdhock for the report.
+
+18. Added a note to `?setkey` clarifying that `setkey` always uses C-locale sorting (as has been noted in `?setorder`). Thanks @JBreidaks for the report in [#2114](https://github.com/Rdatatable/data.table/issues/2114).
+
+19. `hour()`/`minute()`/`second()` are much faster for `ITime` input, [#3518](https://github.com/Rdatatable/data.table/issues/3158).
+
+20. New alias `setalloccol` for `alloc.col`, [#3475](https://github.com/Rdatatable/data.table/issues/3475). For consistency with `set*` prefixes for functions that operate in-place (like `setkey`, `setorder`, etc.). `alloc.col` is not going to be deprecated but we recommend using `setalloccol`.
+
+21. `dcast` no longer emits a message when `value.var` is missing but `fun.aggregate` is explicitly set to `length` (since `value.var` is arbitrary in this case), [#2980](https://github.com/Rdatatable/data.table/issues/2980).
+
+22. Optimized `mean` of `integer` columns no longer warns about a coercion to numeric, [#986](https://github.com/Rdatatable/data.table/issues/986). Thanks @dgrtwo for his [YouTube tutorial at 3:01](https://youtu.be/AmE4LXPQErM?t=175) where the warning occurs.
 
 
 ### Changes in [v1.12.2](https://github.com/Rdatatable/data.table/milestone/14?closed=1)  (07 Apr 2019)

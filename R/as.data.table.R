@@ -220,7 +220,7 @@ as.data.table.data.frame = function(x, keep.rownames=FALSE, key=NULL, ...) {
 
   # fix for #1078 and #1128, see .resetclass() for explanation.
   setattr(ans, "class", .resetclass(x, "data.frame"))
-  alloc.col(ans)
+  setalloccol(ans)
   setkeyv(ans, key)
   ans
 }

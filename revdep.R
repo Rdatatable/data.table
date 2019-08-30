@@ -33,7 +33,7 @@ BiocManager::install(ask=FALSE, version="devel")
 BiocManager::valid()
 
 avail = available.packages(repos=BiocManager::repositories())  # includes CRAN at the end from getOption("repos"). And ensure latest Bioc version is in repo path here.
-deps = tools::package_dependencies("data.table", db=avail, which="most", reverse=TRUE, recursive=FALSE)[[1]]
+deps = tools::package_dependencies("data.table", db=avail, which="all", reverse=TRUE, recursive=FALSE)[[1]]
 exclude = c("TCGAbiolinks")  # too long (>30mins): https://github.com/BioinformaticsFMRP/TCGAbiolinks/issues/240
 deps = deps[-match(exclude, deps)]
 table(avail[deps,"Repository"])
