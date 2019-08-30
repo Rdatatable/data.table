@@ -13361,6 +13361,10 @@ z = .POSIXct(3725, 'UTC')
 test(1962.101, second(z), 5L)
 test(1962.102, minute(z), 2L)
 test(1962.103, hour(z), 1L)
+z = as.ITime(z)
+test(1962.201, second(z), 5L)
+test(1962.202, minute(z), 2L)
+test(1962.203, hour(z), 1L)
 
 # positive and negative values for shift, #1708
 DT = data.table(x = 1:10, y = 10:1)
