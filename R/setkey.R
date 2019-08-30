@@ -49,7 +49,7 @@ setkeyv = function(x, cols, verbose=getOption("datatable.verbose"), physical=TRU
   }
   if (!is.data.table(x)) stop("x is not a data.table")
   if (!is.character(cols)) stop("cols is not a character vector. Please see further information in ?setkey.")
-  if (physical && identical(attr(x, ".data.table.locked", exact=TRUE),TRUE)) stop("Setting a physical key on .SD is reserved for possible future use; to modify the original data's order by group. Try setindex() instead. Or, set*(copy(.SD)) as a (slow) last resort.")
+  if (physical && .Call(C_islocked, x)) stop("Setting a physical key on .SD is reserved for possible future use; to modify the original data's order by group. Try setindex() instead. Or, set*(copy(.SD)) as a (slow) last resort.")
   if (!length(cols)) {
     warning("cols is a character vector of zero length. Removed the key, but use NULL instead, or wrap with suppressWarnings() to avoid this warning.")
     setattr(x,"sorted",NULL)
@@ -347,7 +347,7 @@ SJ = function(...) {
 }
 # S for Sorted, usually used in i to sort the i table
 
-# TO DO?: Use the CJ list() replication method for SJ (inside as.data.table.list?, #2109) too to avoid alloc.col
+# TO DO?: Use the CJ list() replication method for SJ (inside as.data.table.list?, #2109) too to avoid setalloccol
 
 CJ = function(..., sorted = TRUE, unique = FALSE)
 {
@@ -384,7 +384,7 @@ CJ = function(..., sorted = TRUE, unique = FALSE)
   if (nrow > .Machine$integer.max) stop("Cross product of elements provided to CJ() would result in ",nrow," rows which exceeds .Machine$integer.max == ",.Machine$integer.max)
   l = .Call(Ccj, l)
   setDT(l)
-  l = alloc.col(l)  # a tiny bit wasteful to over-allocate a fixed join table (column slots only), doing it anyway for consistency since
+  l = setalloccol(l)  # a tiny bit wasteful to over-allocate a fixed join table (column slots only), doing it anyway for consistency since
                     # it's possible a user may wish to use SJ directly outside a join and would expect consistent over-allocation
   setnames(l, vnames)
   if (sorted) {

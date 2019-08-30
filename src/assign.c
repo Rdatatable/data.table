@@ -280,14 +280,13 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
   // rows : row numbers to assign
   R_len_t i, j, numToDo, targetlen, vlen, r, oldncol, oldtncol, coln, protecti=0, newcolnum, indexLength;
   SEXP targetcol, names, nullint, thisv, targetlevels, newcol, s, colnam, tmp, colorder, key, index, a, assignedNames, indexNames;
-  SEXP bindingIsLocked = getAttrib(dt, install(".data.table.locked"));
   bool verbose=GetVerbose(), anytodelete=false;
   const char *c1, *tc1, *tc2;
   int *buf, newKeyLength, indexNo;
   size_t size; // must be size_t otherwise overflow later in memcpy
   if (isNull(dt)) error("assign has been passed a NULL dt");
   if (TYPEOF(dt) != VECSXP) error("dt passed to assign isn't type VECSXP");
-  if (length(bindingIsLocked) && LOGICAL(bindingIsLocked)[0])
+  if (islocked(dt))
     error(".SD is locked. Updating .SD by reference using := or set are reserved for future use. Use := in j directly. Or use copy(.SD) as a (slow) last resort, until shallow() is exported.");
 
   // We allow set() on data.frame too; e.g. package Causata uses set() on a data.frame in tests/testTransformationReplay.R
@@ -439,7 +438,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
     oldtncol = TRUELENGTH(dt);   // TO DO: oldtncol can be just called tl now, as we won't realloc here any more.
 
     if (oldtncol<oldncol) {
-      if (oldtncol==0) error("This data.table has either been loaded from disk (e.g. using readRDS()/load()) or constructed manually (e.g. using structure()). Please run setDT() or alloc.col() on it first (to pre-allocate space for new columns) before assigning by reference to it.");   // #2996
+      if (oldtncol==0) error("This data.table has either been loaded from disk (e.g. using readRDS()/load()) or constructed manually (e.g. using structure()). Please run setDT() or setalloccol() on it first (to pre-allocate space for new columns) before assigning by reference to it.");   // #2996
       error("Internal error: oldtncol(%d) < oldncol(%d). Please report to data.table issue tracker, including result of sessionInfo().", oldtncol, oldncol); // # nocov
     }
     if (oldtncol>oldncol+10000L) warning("truelength (%d) is greater than 10,000 items over-allocated (length = %d). See ?truelength. If you didn't set the datatable.alloccol option very large, please report to data.table issue tracker including the result of sessionInfo().",oldtncol, oldncol);
