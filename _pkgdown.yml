@@ -106,6 +106,7 @@ reference:
   - setnames
   - setorder
   - setnafill
+  - copy
 
 - title: Ordered observations
   contents:
