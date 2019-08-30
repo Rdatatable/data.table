@@ -1466,7 +1466,7 @@ test(492, names(DT), c("A","B"))
 
 # Check setnames out of bounds errors
 test(493, setnames(DT,"foo","bar"), error="not found.*foo")
-test(494, setnames(DT,3,"bar"), error="outside range.*3")
+test(494, setnames(DT,3,"bar"), error="NA (or out of bounds) in 'old' at positions [1]")
 
 # Test setcolorder() and allowance of length(neworder)<length(x) in v1.10.5 (#592)
 DT = data.table(a=1:2,b=3:4,c=5:6)
@@ -2433,14 +2433,14 @@ test(869, DT[J(2,42,84),print(.SD),by=.EACHI], output="   b\n.*1.*2\n2:.*5.*Empt
 
 # Test setnames with duplicate colnames
 DT = data.table(a=1:3,b=4:6,b=7:9)
-test(870, setnames(DT,"b","foo"), error="Some items of 'old' are duplicated (ambiguous) in column names: b")
-test(871, setnames(DT,c("bar","bar"),c("x","y")), error="Some duplicates exist in 'old': bar")
+test(870, setnames(DT,"b","foo"), error="Some items of 'old' are duplicated (ambiguous) in column names: [b]")
+test(871, setnames(DT,c("bar","bar"),c("x","y")), error="Some duplicates exist in 'old': [bar]")
 test(872, setnames(DT,3,"c"), data.table(a=1:3,b=4:6,c=7:9))
-test(873, setnames(DT,"foo","bar"), error="Items of 'old' not found in column names: foo")
-test(874, setnames(DT,c(1,1),c("foo","bar")), error="Some duplicates exist in 'old': 1")
+test(873, setnames(DT,"foo","bar"), error="Items of 'old' not found in column names: [foo]")
+test(874, setnames(DT,c(1,1),c("foo","bar")), error="Some duplicates exist in 'old': [1]")
 test(875, setnames(DT,"c","b"), data.table(a=1:3,b=4:6,b=7:9))
 test(875.1, setnames(DT,"a","c"), data.table(c=1:3,b=4:6,b=7:9))  # 'a' isn't duplicated so not a problem as from v1.8.11
-test(875.2, setnames(DT,c("c","b"), c("C","B")), error="Some items of 'old' are duplicated (ambiguous) in column names: b")  # check error msg when 2nd one in old is the problem
+test(875.2, setnames(DT,c("c","b"), c("C","B")), error="Some items of 'old' are duplicated (ambiguous) in column names: [b]")  # check error msg when 2nd one in old is the problem
 
 # Test local var problem introduced in v1.8.3
 DT = data.table(a=1:3,b=1:6)
@@ -8096,7 +8096,7 @@ test(1591, rbindlist(mylist, idcol="id"), ans)
 
 # FR #1443
 DT <- data.table(x = 1:3, y = 4:6, z = 7:9)
-test(1592.1, setnames(DT, -5, "bla"), error="Items of 'old'")
+test(1592.1, setnames(DT, -5, "bla"), error="'old' is length 3 but 'new' is length 1")
 test(1592.2, names(setnames(DT, -1, c("m", "n"))), c("x", "m", "n"))
 
 # fix for #1513
@@ -13022,7 +13022,7 @@ test(1955.2, setnames(DT, old, new, skip_absent=0), error="is not")  # must be T
 test(1955.3, setnames(DT, "missing", "dummy", skip_absent=TRUE), DT)  # all missing
 test(1955.4, setnames(DT, c("D","missing","A"), c("dd","ignored","aa"), skip_absent=TRUE), data.table(aa=1, B=2, dd=3))  # different order with a missing
 test(1955.5, setnames(DT, "B", "bb", skip_absent=TRUE), data.table(aa=1, bb=2, dd=3)) # none missing so skip_absent not needed
-test(1955.6, setnames(DT, c("miss1","bb","miss2","dd"), c("A","B","C","D")), error="Items of 'old' not found in column names: miss1,miss2. Consider skip_absent=TRUE")
+test(1955.6, setnames(DT, c("miss1","bb","miss2","dd"), c("A","B","C","D")), error="Items of 'old' not found in column names: [miss1, miss2]. Consider skip_absent=TRUE")
 test(1955.7, setnames(DT, c("miss1","bb","miss2","dd"), c("A","B","C","D"), skip_absent=TRUE), data.table(aa=1, B=2, D=3))
 
 # #3116 - Better error messages for missing/unmatched .SDcols
@@ -13361,6 +13361,10 @@ z = .POSIXct(3725, 'UTC')
 test(1962.101, second(z), 5L)
 test(1962.102, minute(z), 2L)
 test(1962.103, hour(z), 1L)
+z = as.ITime(z)
+test(1962.201, second(z), 5L)
+test(1962.202, minute(z), 2L)
+test(1962.203, hour(z), 1L)
 
 # positive and negative values for shift, #1708
 DT = data.table(x = 1:10, y = 10:1)
@@ -13569,14 +13573,15 @@ x = as.list(x)
 test(1967.56, setnames(x), error = 'x is not a data.table or data.frame')
 setDT(x)
 names(x) = NULL
-test(1967.57, setnames(x), error = 'x is length 2 but its names are length 0')
+test(1967.57, setnames(x), error = 'x has 2 columns but its names are length 0')
 names(x) = c('a', 'b')
 test(1967.58, setnames(x, new = 'c'), error = "When 'new' is provided")
 test(1967.59, setnames(x, 1:2, c(8L, 9L)), error = "'new' is not a character")
-test(1967.60, setnames(x, -1:1, c('hey', 'you')), error = "both +ve and -ve")
+test(1967.60, setnames(x, -1:1, c('hey', 'you')), error = "mixed.*negative")
 test(1967.61, setnames(x, 1+3i, 'cplx'), error = "'old' is type complex")
 test(1967.62, setnames(x, 1, c('d', 'e')), error = "'old' is length 1 but 'new'")
-
+test(1967.621, setnames(x, 1:2, c("a","a")), error = "Some duplicates exist in 'new': [a]")
+test(1967.622, setnames(x, 1:2, c("a",NA)), error = "NA in 'new' at positions [2]")
 test(1967.63, setcolorder(x, c(1, 1)), error = 'specify duplicated column')
 test(1967.64, setcolorder(x, 1+3i), error = 'must be character or numeric')
 test(1967.65, setcolorder(x, 300), error = 'specify non existing column*.*300')
@@ -15827,13 +15832,21 @@ df1 = data.table(a=1:5, b=c(0, 0, 1, 0, 2))
 df2 = data.table(c=c(1, 1, 2, 2, 3), d=c(3, 4, 3, 5, 4))
 test(2092.3, copy(df2)[ , s := df1[.SD, on=.(a >= c, a <= d), sum(b), by=.EACHI]$V1],
      df2[ , s := c(1, 1, 1, 3, 1)])
-     
+
 # POSIXct overflow to NA before 1901 and after 2038, #3780
 date=as.POSIXct("1900-01-01", tz="UTC")
 test(2093.1, as.IDate(date), as.IDate(-25567L))
 test(2093.2, hour(date), 0L)
 test(2093.3, minute(date), 0L)
 test(2093.4, second(date), 0L)
+
+# correct rbindlist() idcol for list elements with different length, #3785
+x = 1:100
+X = rbindlist(lapply(x, function(.) list(., 1:2, 2:3)), idcol = 'TAG')
+test(2094.01, X$TAG, rep(x, each = 2))
+x = setNames(x, paste0("nm_", x))
+X = rbindlist(lapply(x, function(.) list(., 1:2, 2:3)), idcol = 'TAG')
+test(2094.02, X$TAG, rep(names(x), each = 2))
 
 
 ###################################
