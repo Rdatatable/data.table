@@ -276,7 +276,7 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir())
 
   if (isTRUE(data.table)) {
     setattr(ans, "class", c("data.table", "data.frame"))
-    alloc.col(ans)
+    setalloccol(ans)
   } else {
     setattr(ans, "class", "data.frame")
   }
