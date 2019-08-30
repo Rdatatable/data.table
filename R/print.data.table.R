@@ -83,8 +83,7 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
       expression = "<expr>", ordered = "<ord>")
     classes = vapply(x, function(col) class(col)[1L], "", USE.NAMES=FALSE)
     abbs = unname(class_abb[classes])
-    if ( length(idx <- which(is.na(abbs))) )
-    abbs[idx] = paste0("<", classes[idx], ">")
+    if ( length(idx <- which(is.na(abbs))) ) abbs[idx] = paste0("<", classes[idx], ">")
     toprint = rbind(abbs, toprint)
     rownames(toprint)[1L] = ""
   }
@@ -125,7 +124,7 @@ format.data.table = function (x, ..., justify="none", timezone = FALSE) {
   }
   # FR #2842 add timezone for posix timestamps
   format.timezone = function(col) { # paste timezone to a time object
-    tz = attr(col,'tzone', exact = TRUE)
+    tz = attr(col,'tzone', exact=TRUE)
     if (!is.null(tz)) { # date object with tz
       nas = is.na(col)
       col = paste0(as.character(col)," ",tz) # parse to character

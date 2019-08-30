@@ -55,14 +55,17 @@ expected = list(
 test(9999.007, ans1, expected)
 test(9999.008, ans2, expected)
 
-#### in x integer converted to double
-di = data.table(real=1:10/2, int=1:10)
+#### in x integer and logical converted to double
+di = data.table(real=1:10/2, int=1:10, lgl=c(TRUE,FALSE,TRUE,TRUE,FALSE,FALSE,FALSE,FALSE,TRUE,TRUE))
 ans = frollmean(di, 3)
 expected = list(
   c(rep(NA_real_,2), seq(1,4.5,0.5)),
-  c(rep(NA_real_,2), seq(2,9,1))
+  c(rep(NA_real_,2), seq(2,9,1)),
+  c(rep(NA_real_,2), c(2,2,2,1,0,0,1,2)/3)
 )
 test(9999.009, ans, expected)
+test(9999.0091, frollmean(di$int, 3), expected[[2L]]) # test also atomic vector input
+test(9999.0092, frollmean(di$lgl, 3), expected[[3L]])
 
 #### in n double converted to integer
 x = 1:3/2
@@ -73,15 +76,15 @@ test(9999.011, frollmean(x, n, adaptive=TRUE), list(c(NA, 1, 1.25), c(NA, 1, 1.2
 
 #### error on unsupported type
 dx = data.table(real=1:10/2, char=letters[1:10])
-test(9999.012, frollmean(dx, 3), error="x must be list, data.frame or data.table of numeric types")
+test(9999.012, frollmean(dx, 3), error="x must be list, data.frame or data.table of numeric or logical types")
 dx = data.table(real=1:10/2, fact=factor(letters[1:10]))
-test(9999.013, frollmean(dx, 3), error="x must be list, data.frame or data.table of numeric types")
-dx = data.table(real=1:10/2, logi=logical(10))
-test(9999.014, frollmean(dx, 3), error="x must be list, data.frame or data.table of numeric types")
+test(9999.013, frollmean(dx, 3), error="x must be list, data.frame or data.table of numeric or logical types")
+#dx = data.table(real=1:10/2, logi=logical(10))
+#test(9999.014, frollmean(dx, 3), error="x must be list, data.frame or data.table of numeric types") # commented out as support added in #3749, tested in .009
 dx = data.table(real=1:10/2, list=rep(list(NA), 10))
-test(9999.015, frollmean(dx, 3), error="x must be list, data.frame or data.table of numeric types")
+test(9999.015, frollmean(dx, 3), error="x must be list, data.frame or data.table of numeric or logical types")
 x = letters[1:10]
-test(9999.016, frollmean(x, 3), error="x must be of type numeric")
+test(9999.016, frollmean(x, 3), error="x must be of type numeric or logical")
 x = 1:10/2
 test(9999.017, frollmean(x, "a"), error="n must be integer")
 test(9999.018, frollmean(x, factor("a")), error="n must be integer")

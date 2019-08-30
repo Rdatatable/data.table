@@ -124,7 +124,7 @@ Teams[ , (fkt_idx) := lapply(.SD, as.character), .SDcols = fkt_idx]
 head(Teams[[fkt_idx[1L]]])
 ```
 
-Lastly, we can do pattern-pased matching of columns in `.SDcols` to select all columns which contain `team` back to `factor`:
+Lastly, we can do pattern-based matching of columns in `.SDcols` to select all columns which contain `team` back to `factor`:
 
 ```{r sd_patterns}
 Teams[ , .SD, .SDcols = patterns('team')]
@@ -191,10 +191,7 @@ The goal is to add a column `team_performance` to the `Pitching` table that reco
 #   (in general, we should put more care into the 'ties.method' of frank)
 Pitching[G > 5, rank_in_team := frank(ERA), by = .(teamID, yearID)]
 Pitching[rank_in_team == 1, team_performance :=
-           # this should work without needing copy();
-           #   that it doesn't appears to be a bug:
-           #   https://github.com/Rdatatable/data.table/issues/1926
-           Teams[copy(.SD), Rank, on = c('teamID', 'yearID')]]
+           Teams[.SD, Rank, on = c('teamID', 'yearID')]]
 ```
 
 Note that the `x[y]` syntax returns `nrow(y)` values (i.e., it's a right join), which is why `.SD` is on the right in `Teams[.SD]` (since the RHS of `:=` in this case requires `nrow(Pitching[rank_in_team == 1])` values.

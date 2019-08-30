@@ -5,7 +5,7 @@
 
 as.IDate = function(x, ...) UseMethod("as.IDate")
 
-as.IDate.default = function(x, ..., tz = attr(x, "tzone")) {
+as.IDate.default = function(x, ..., tz = attr(x, "tzone", exact=TRUE)) {
   if (is.null(tz)) tz = "UTC"
   as.IDate(as.Date(x, tz = tz, ...))
 }
@@ -16,7 +16,7 @@ as.IDate.numeric = function(x, origin = "1970-01-01", ...) {
     x = as.integer(x)
     class(x) = c("IDate", "Date")
     # We used to use structure() here because class(x)<- copied several times in R before v3.1.0
-    # Since R 3.1.0 improved class()<- and data.table's oldest oldest supportd R is now 3.1.0, we can use class<- again
+    # Since R 3.1.0 improved class()<- and data.table's oldest oldest supported R is now 3.1.0, we can use class<- again
     # structure() contains a match() and replace for specials, which we don't need.
     # class()<- ensures at least 1 shallow copy as appropriate is returned.
     x
@@ -32,10 +32,10 @@ as.IDate.Date = function(x, ...) {
   x                                 # always return a new object
 }
 
-as.IDate.POSIXct = function(x, tz = attr(x, "tzone"), ...) {
+as.IDate.POSIXct = function(x, tz = attr(x, "tzone", exact=TRUE), ...) {
   if (is.null(tz)) tz = "UTC"
   if (tz %chin% c("UTC", "GMT")) {
-    (setattr(as.integer(x) %/% 86400L, "class", c("IDate", "Date")))  # %/% returns new object so can use setattr() on it; wrap with () to return visibly
+    (setattr(as.integer(as.numeric(x) %/% 86400L), "class", c("IDate", "Date")))  # %/% returns new object so can use setattr() on it; wrap with () to return visibly
   } else
     as.IDate(as.Date(x, tz = tz, ...))
 }
@@ -49,15 +49,23 @@ as.Date.IDate = function(x, ...) {
 }
 
 mean.IDate =
-cut.IDate =
 seq.IDate =
 c.IDate =
 rep.IDate =
-split.IDate =
 unique.IDate =
   function(x, ...) {
     as.IDate(NextMethod())
   }
+
+# define this [<- method to prevent base R's internal rbind coercing integer IDate to double, #2008
+`[<-.IDate` = function(x, i, value) {
+  if (!length(value)) return(x)
+  value = as.integer(as.IDate(value))
+  setattr(x, 'class', NULL)
+  x[i] = value
+  setattr(x, 'class', c('IDate', 'Date'))
+  x
+}
 
 # fix for #1315
 as.list.IDate = function(x, ...) NextMethod()
@@ -79,8 +87,9 @@ round.IDate = function (x, digits=c("weeks", "months", "quarters", "years"), ...
 `+.IDate` = function (e1, e2) {
   if (nargs() == 1L)
     return(e1)
+  # TODO: investigate Ops.IDate method a la Ops.difftime
   if (inherits(e1, "difftime") || inherits(e2, "difftime"))
-    stop("difftime objects may not be added to IDate. Use plain integer instead of difftime.")
+    stop("Internal error -- difftime objects may not be added to IDate, but Ops dispatch should have intervened to prevent this") # nocov
   if (isReallyReal(e1) || isReallyReal(e2)) {
     return(`+.Date`(e1, e2))
     # IDate doesn't support fractional days; revert to base Date
@@ -100,7 +109,7 @@ round.IDate = function (x, digits=c("weeks", "months", "quarters", "years"), ...
   if (nargs() == 1L)
     stop("unary - is not defined for \"IDate\" objects")
   if (inherits(e2, "difftime"))
-    stop("difftime objects may not be subtracted from IDate. Use plain integer instead of difftime.")
+    stop("Internal error -- difftime objects may not be subtracted from IDate, but Ops dispatch should have intervened to prevent this") # nocov
 
   if ( isReallyReal(e2) ) {
     # IDate deliberately doesn't support fractional days so revert to base Date
@@ -127,7 +136,7 @@ as.ITime.default = function(x, ...) {
   as.ITime(as.POSIXlt(x, ...), ...)
 }
 
-as.ITime.POSIXct = function(x, tz = attr(x, "tzone"), ...) {
+as.ITime.POSIXct = function(x, tz = attr(x, "tzone", exact=TRUE), ...) {
   if (is.null(tz)) tz = "UTC"
   if (tz %chin% c("UTC", "GMT")) as.ITime(unclass(x), ...)
   else as.ITime(as.POSIXlt(x, tz = tz, ...), ...)
@@ -248,6 +257,10 @@ unique.ITime = function(x, ...) {
   ans
 }
 
+# various methods to ensure ITime class is retained, #3628
+mean.ITime = seq.ITime = c.ITime = function(x, ...) as.ITime(NextMethod())
+
+
 # create a data.table with IDate and ITime columns
 #   should work for most date/time formats like POSIXct
 
@@ -290,28 +303,22 @@ as.POSIXlt.ITime = function(x, ...) {
 ###################################################################
 
 second  = function(x) {
-  if (inherits(x,'POSIXct') && identical(attr(x,'tzone'),'UTC')) {
-    # if we know the object is in UTC, can calculate the hour much faster
-    as.integer(x) %% 60L
-  } else {
-    as.integer(as.POSIXlt(x)$sec)
-  }
+  # if we know the object is in UTC, can calculate the hour much faster
+  if (inherits(x, 'POSIXct') && identical(attr(x, 'tzone', exact=TRUE), 'UTC')) return(as.integer(as.numeric(x) %% 60L))
+  if (inherits(x, 'ITime')) return(as.integer(x) %% 60L)
+  as.integer(as.POSIXlt(x)$sec)
 }
 minute  = function(x) {
-  if (inherits(x,'POSIXct') && identical(attr(x,'tzone'),'UTC')) {
-    # ever-so-slightly faster than x %% 3600L %/% 60L
-    as.integer(x) %/% 60L %% 60L
-  } else {
-    as.POSIXlt(x)$min
-  }
+  # ever-so-slightly faster than x %% 3600L %/% 60L
+  if (inherits(x, 'POSIXct') && identical(attr(x, 'tzone', exact=TRUE), 'UTC')) return(as.integer(as.numeric(x) %/% 60L %% 60L))
+  if (inherits(x, 'ITime')) return(as.integer(x) %/% 60L %% 60L)
+  as.POSIXlt(x)$min
 }
 hour = function(x) {
-  if (inherits(x,'POSIXct') && identical(attr(x,'tzone'),'UTC')) {
-    # ever-so-slightly faster than x %% 86400L %/% 3600L
-    as.integer(x) %/% 3600L %% 24L
-  } else {
-    as.POSIXlt(x)$hour
-  }
+  # ever-so-slightly faster than x %% 86400L %/% 3600L
+  if (inherits(x, 'POSIXct') && identical(attr(x, 'tzone', exact=TRUE), 'UTC')) return(as.integer(as.numeric(x) %/% 3600L %% 24L))
+  if (inherits(x, 'ITime')) return(as.integer(x) %/% 3600L %% 24L)
+  as.POSIXlt(x)$hour
 }
 yday    = function(x) as.POSIXlt(x)$yday + 1L
 wday    = function(x) (unclass(as.IDate(x)) + 4L) %% 7L + 1L

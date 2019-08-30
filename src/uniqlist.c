@@ -196,10 +196,14 @@ SEXP rleid(SEXP l, SEXP cols) {
           break;
         case REALSXP : {
           long long *ll = (long long *)REAL(jcol);
-          same = ll[i]==ll[i-1]; }
+          same = ll[i]==ll[i-1];
           // 8 bytes of bits are identical. For real (no rounding currently) and integer64
           // long long == 8 bytes checked in init.c
-          break;
+        } break;
+        case CPLXSXP: {
+          Rcomplex *pz = COMPLEX(jcol);
+          same = memcmp(&pz[i], &pz[i-1], sizeof(Rcomplex))==0; // compiler optimization should replace library call with best 16-byte fixed method
+        } break;
         default :
           error("Type '%s' not supported", type2char(TYPEOF(jcol)));  // # nocov
         }
@@ -210,28 +214,33 @@ SEXP rleid(SEXP l, SEXP cols) {
     SEXP jcol = VECTOR_ELT(l, icols[0]-1);
     switch (TYPEOF(jcol)) {
     case INTSXP : case LGLSXP : {
-        int *ijcol = INTEGER(jcol);
-        for (R_xlen_t i=1; i<nrow; i++) {
-          bool same = ijcol[i]==ijcol[i-1];
-          ians[i] = (grp+=!same);
-        }
+      int *ijcol = INTEGER(jcol);
+      for (R_xlen_t i=1; i<nrow; i++) {
+        bool same = ijcol[i]==ijcol[i-1];
+        ians[i] = (grp+=!same);
       }
-      break;
+    } break;
     case STRSXP : {
-        for (R_xlen_t i=1; i<nrow; i++) {
-          bool same = STRING_ELT(jcol,i)==STRING_ELT(jcol,i-1);
-          ians[i] = (grp+=!same);
-        }
+      const SEXP *jd = STRING_PTR(jcol);
+      for (R_xlen_t i=1; i<nrow; i++) {
+        bool same = jd[i]==jd[i-1];
+        ians[i] = (grp+=!same);
       }
-      break;
+    } break;
     case REALSXP : {
-        long long *lljcol = (long long *)REAL(jcol);
-        for (R_xlen_t i=1; i<nrow; i++) {
-          bool same = lljcol[i]==lljcol[i-1];
-          ians[i] = (grp+=!same);
-        }
+      long long *lljcol = (long long *)REAL(jcol);
+      for (R_xlen_t i=1; i<nrow; i++) {
+        bool same = lljcol[i]==lljcol[i-1];
+        ians[i] = (grp+=!same);
       }
-      break;
+    } break;
+    case CPLXSXP: {
+      Rcomplex *pzjcol = COMPLEX(jcol);
+      for (R_xlen_t i=1; i<nrow; i++) {
+        bool same = memcmp(&pzjcol[i], &pzjcol[i-1], sizeof(Rcomplex))==0;
+        ians[i] = (grp += !same);
+      }
+    } break;
     default :
       error("Type '%s' not supported", type2char(TYPEOF(jcol)));
     }
@@ -345,16 +354,17 @@ SEXP uniqueNlogical(SEXP x, SEXP narmArg) {
     return ScalarInteger(0);  // empty vector
   Rboolean first = LOGICAL(x)[0];
   R_xlen_t i=0;
-  while (++i<n && LOGICAL(x)[i]==first);
+  const int *ix = LOGICAL(x);
+  while (++i<n && ix[i]==first);
   if (i==n)
     return ScalarInteger(first==NA_INTEGER && narm ? 0 : 1); // all one value
-  Rboolean second = LOGICAL(x)[i];
+  Rboolean second = ix[i];
   // we've found 2 different values (first and second). Which one didn't we find? Then just look for that.
   // NA_LOGICAL == INT_MIN checked in init.c
   const int third = (first+second == 1) ? NA_LOGICAL : ( first+second == INT_MIN ? TRUE : FALSE );
   if (third==NA_LOGICAL && narm)
     return ScalarInteger(2);  // TRUE and FALSE found before any NA, but na.rm=TRUE so we're done
-  while (++i<n) if (LOGICAL(x)[i]==third)
+  while (++i<n) if (ix[i]==third)
     return ScalarInteger(3-narm);
   return ScalarInteger(2-(narm && third!=NA_LOGICAL));
 }

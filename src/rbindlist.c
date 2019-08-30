@@ -251,7 +251,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
       for (int i=0,ansloc=0; i<LENGTH(l); ++i) {
         SEXP li = VECTOR_ELT(l, i);
         if (!length(li)) continue;
-        const int thisnrow = length(VECTOR_ELT(li, 0));
+        const int thisnrow = eachMax[i];
         SEXP thisname = STRING_ELT(listNames, i);
         for (int k=0; k<thisnrow; ++k) SET_STRING_ELT(idval, ansloc++, thisname);
       }
@@ -261,7 +261,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
       for (int i=0,ansloc=0; i<LENGTH(l); ++i) {
         SEXP li = VECTOR_ELT(l, i);
         if (!length(li)) continue;
-        const int thisnrow = length(VECTOR_ELT(li, 0));
+        const int thisnrow = eachMax[i];
         for (int k=0; k<thisnrow; ++k) idvald[ansloc++] = i+1;
       }
     }
@@ -304,8 +304,14 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
         int64=true;
       }
       if (firsti==-1) { firsti=i; firstw=w; firstCol=thisCol; }
-      else if (!factor && !int64 && !R_compute_identical(getAttrib(thisCol, R_ClassSymbol), getAttrib(firstCol,R_ClassSymbol), 0)) {
-        error("Class attribute on column %d of item %d does not match with column %d of item %d.", w+1, i+1, firstw+1, firsti+1);
+      else {
+        bool prot = false;
+        if (!factor && !int64 && (prot=true) && !R_compute_identical(PROTECT(getAttrib(thisCol, R_ClassSymbol)),
+                                                                     PROTECT(getAttrib(firstCol, R_ClassSymbol)),
+                                                                     0)) {
+          error("Class attribute on column %d of item %d does not match with column %d of item %d.", w+1, i+1, firstw+1, firsti+1);
+        }
+        if (prot) UNPROTECT(2);
       }
     }
 
@@ -351,7 +357,6 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
         if (!levelsRaw) { savetl_end(); error("Failed to allocate working memory for %d ordered factor levels of result column %d", nLevel, idcol+j+1); }
         for (int k=0; k<longestLen; ++k) {
           SEXP s = sd[k];
-          if (s==NA_STRING) continue;
           if (TRUELENGTH(s)>0) savetl(s);
           levelsRaw[k] = s;
           SET_TRUELENGTH(s,-k-1);

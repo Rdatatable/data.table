@@ -372,7 +372,7 @@ A key advantage of column vectors in R is that they are _ordered_, unlike SQL[^2
  - `DT[3]` refers to the 3rd _row_, but `DF[3]` refers to the 3rd _column_
  - `DT[3, ] == DT[3]`, but `DF[ , 3] == DF[3]` (somewhat confusingly in data.frame, whereas data.table is consistent)
  - For this reason we say the comma is _optional_ in `DT`, but not optional in `DF`
- - `DT[[3]] == DF[3] == DF[[3]]`
+ - `DT[[3]] == DF[, 3] == DF[[3]]`
  - `DT[i, ]`, where `i` is a single integer, returns a single row, just like `DF[i, ]`, but unlike a matrix single-row subset which returns a vector.
  - `DT[ , j]` where `j` is a single integer returns a one-column data.table, unlike `DF[, j]` which returns a vector by default
  - `DT[ , "colA"][[1]] == DF[ , "colA"]`.

@@ -69,6 +69,9 @@ grep -n "[^A-Za-z0-9]F[^A-Za-z0-9]" ./inst/tests/tests.Rraw
 # No system.time in main tests.Rraw. Timings should be in benchmark.Rraw
 grep -n "system[.]time" ./inst/tests/tests.Rraw
 
+# All % in *.Rd should be escaped otherwise text gets silently chopped
+grep -n "[^\]%" ./man/*.Rd
+
 # seal leak potential where two unprotected API calls are passed to the same
 # function call, usually involving install() or mkChar()
 # Greppable thanks to single lines and wide screens
@@ -92,14 +95,16 @@ grep mkChar *.c            # see comment in bmerge.c about passing this grep. I'
 # or ii) passed to setAttrib (which protects, providing leak-seals above are ok)
 # ScalarLogical in R now returns R's global TRUE from R 3.1.0; Apr 2014. Before that it allocated.
 # Aside: ScalarInteger may return globals for small integers in future version of R.
-grep ScalarInteger *.c   # Check all Scalar* either PROTECTed, return-ed or passed to setAttrib.
+grep ScalarInteger *.c | grep -v PROTECT | grep -v setAttrib | grep -v return  # Check all Scalar* either PROTECTed, return-ed or passed to setAttrib.
+grep ScalarString *.c  | grep -v PROTECT | grep -v setAttrib | grep -v return
 grep ScalarLogical *.c   # Now we depend on 3.1.0+, check ScalarLogical is NOT PROTECTed.
-grep ScalarString *.c
 
 # Inspect missing PROTECTs
 # To pass this grep is why we like SET_VECTOR_ELT(,,var=allocVector()) style on one line.
 # If a PROTECT is not needed then a comment is added explaining why and including "PROTECT" in the comment to pass this grep
 grep allocVector *.c | grep -v PROTECT | grep -v SET_VECTOR_ELT | grep -v setAttrib | grep -v return
+grep coerceVector *.c | grep -v PROTECT | grep -v SET_VECTOR_ELT | grep -v setAttrib | grep -v return
+grep asCharacter *.c | grep -v PROTECT | grep -v SET_VECTOR_ELT | grep -v setAttrib | grep -v return
 
 cd ..
 R
@@ -294,17 +299,22 @@ There are some things to overcome to achieve compile without USE_RINTERNALS, tho
 ########################################################################
 #  rchk : https://github.com/kalibera/rchk
 ########################################################################
+# if rebuilding, ~/build/rchk/scripts/config.inc :
+# export WLLVM=/home/mdowle/.local/bin
+# export LLVM=/usr/lib/llvm-7
+# export RCHK=/home/mdowle/build/rchk
 cd ~/build/rchk/trunk
 . ../scripts/config.inc
 . ../scripts/cmpconfig.inc
-# edit ~/.R/Makevars to set CFLAGS=-O0 -g so that rchk can provide source line numbers
+vi ~/.R/Makevars   # set CFLAGS=-O0 -g so that rchk can provide source line numbers
 echo 'install.packages("~/GitHub/data.table/data.table_1.12.3.tar.gz",repos=NULL)' | ./bin/R --slave
-../scripts/check_package.sh data.table
+# objcopy warnings (if any) can be ignored: https://github.com/kalibera/rchk/issues/17#issuecomment-497312504
+. ../scripts/check_package.sh data.table
 cat packages/lib/data.table/libs/*check
 # keep running and rerunning locally until all problems cease.
 #   rchk has an internal stack which can exhaust. Clearing the current set of problems (e.g. as displayed
 #   on CRAN) is not sufficient because new problems can be found because it didn't get that far before.
-#   Hence repeating locally until clear is necessary.
+#   Hence repeat locally until all clear is necessary.
 
 
 ###############################################

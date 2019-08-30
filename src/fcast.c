@@ -5,84 +5,81 @@
 
 // TO DO: margins
 SEXP fcast(SEXP lhs, SEXP val, SEXP nrowArg, SEXP ncolArg, SEXP idxArg, SEXP fill, SEXP fill_d, SEXP is_agg) {
-
   int nrows=INTEGER(nrowArg)[0], ncols=INTEGER(ncolArg)[0];
-  int i,j,k, nlhs=length(lhs), nval=length(val), *idx = INTEGER(idxArg), thisidx;;
-  SEXP thiscol, target, ans, thisfill;
-  Rboolean isfill = TRUE, count;
+  int nlhs=length(lhs), nval=length(val), *idx = INTEGER(idxArg);
+  SEXP target;
+  bool isfill = true;
 
-  ans = PROTECT(allocVector(VECSXP, nlhs + (nval * ncols)));
+  SEXP ans = PROTECT(allocVector(VECSXP, nlhs + (nval * ncols)));
   // set lhs cols
-  for (i=0; i < nlhs; i++) {
+  for (int i=0; i<nlhs; ++i) {
     SET_VECTOR_ELT(ans, i, VECTOR_ELT(lhs, i));
   }
   // get val cols
-  for (i=0; i<nval; i++) {
-    thiscol = VECTOR_ELT(val, i);
-    thisfill = fill;
-    count = FALSE;
+  for (int i=0; i<nval; ++i) {
+    SEXP thiscol = VECTOR_ELT(val, i);
+    SEXP thisfill = fill;
+    bool count=false;
     if (isNull(fill)) {
-      isfill = FALSE;
+      isfill = false;
       if (LOGICAL(is_agg)[0]) {
         thisfill = PROTECT(allocNAVector(TYPEOF(thiscol), 1));
-        count = TRUE;
+        count = true;
       } else thisfill = VECTOR_ELT(fill_d, i);
     }
     if (isfill && TYPEOF(fill) != TYPEOF(thiscol)) {
       thisfill = PROTECT(coerceVector(fill, TYPEOF(thiscol)));
-      count = TRUE;
+      count = true;
     }
     switch (TYPEOF(thiscol)) {
     case INTSXP:
-      for (j=0; j<ncols; j++) {
+    case LGLSXP: {
+      const int *ithiscol = INTEGER(thiscol);
+      const int *ithisfill = INTEGER(thisfill);
+      for (int j=0; j<ncols; ++j) {
         SET_VECTOR_ELT(ans, nlhs+j+i*ncols, target=allocVector(TYPEOF(thiscol), nrows) );
+        int *itarget = INTEGER(target);
         copyMostAttrib(thiscol, target);
-        for (k=0; k<nrows; k++) {
-          thisidx = idx[k*ncols + j];
-          INTEGER(target)[k] = (thisidx == NA_INTEGER) ? INTEGER(thisfill)[0] : INTEGER(thiscol)[thisidx-1];
+        for (int k=0; k<nrows; ++k) {
+          int thisidx = idx[k*ncols + j];
+          itarget[k] = (thisidx == NA_INTEGER) ? ithisfill[0] : ithiscol[thisidx-1];
         }
       }
-      break;
-    case REALSXP:
-      for (j=0; j<ncols; j++) {
+    } break;
+    case REALSXP: {
+      const double *dthiscol = REAL(thiscol);
+      const double *dthisfill = REAL(thisfill);
+      for (int j=0; j<ncols; ++j) {
         SET_VECTOR_ELT(ans, nlhs+j+i*ncols, target=allocVector(TYPEOF(thiscol), nrows) );
+        double *dtarget = REAL(target);
         copyMostAttrib(thiscol, target);
-        for (k=0; k<nrows; k++) {
-          thisidx = idx[k*ncols + j];
-          REAL(target)[k] = (thisidx == NA_INTEGER) ? REAL(thisfill)[0] : REAL(thiscol)[thisidx-1];
+        for (int k=0; k<nrows; ++k) {
+          int thisidx = idx[k*ncols + j];
+          dtarget[k] = (thisidx == NA_INTEGER) ? dthisfill[0] : dthiscol[thisidx-1];
         }
       }
-      break;
-    case LGLSXP:
-      for (j=0; j<ncols; j++) {
-        SET_VECTOR_ELT(ans, nlhs+j+i*ncols, target=allocVector(TYPEOF(thiscol), nrows) );
-        copyMostAttrib(thiscol, target);
-        for (k=0; k<nrows; k++) {
-          thisidx = idx[k*ncols + j];
-          LOGICAL(target)[k] = (thisidx == NA_INTEGER) ? LOGICAL(thisfill)[0] : LOGICAL(thiscol)[thisidx-1];
-        }
-      }
-      break;
+    } break;
     case STRSXP:
-      for (j=0; j<ncols; j++) {
+      for (int j=0; j<ncols; ++j) {
         SET_VECTOR_ELT(ans, nlhs+j+i*ncols, target=allocVector(TYPEOF(thiscol), nrows) );
         copyMostAttrib(thiscol, target);
-        for (k=0; k<nrows; k++) {
-          thisidx = idx[k*ncols + j];
+        for (int k=0; k<nrows; ++k) {
+          int thisidx = idx[k*ncols + j];
           SET_STRING_ELT(target, k, (thisidx == NA_INTEGER) ? STRING_ELT(thisfill, 0) : STRING_ELT(thiscol, thisidx-1));
         }
       }
       break;
     case VECSXP:
-      for (j=0; j<ncols; j++) {
+      for (int j=0; j<ncols; ++j) {
         SET_VECTOR_ELT(ans, nlhs+j+i*ncols, target=allocVector(TYPEOF(thiscol), nrows) );
         copyMostAttrib(thiscol, target);
-        for (k=0; k<nrows; k++) {
-          thisidx = idx[k*ncols + j];
+        for (int k=0; k<nrows; ++k) {
+          int thisidx = idx[k*ncols + j];
           SET_VECTOR_ELT(target, k, (thisidx == NA_INTEGER) ? VECTOR_ELT(thisfill, 0) : VECTOR_ELT(thiscol, thisidx-1));
         }
       }
       break;
+    default: error("Unsupported column type in fcast val: '%s'", type2char(TYPEOF(thiscol))); // #nocov
     }
     if (count) UNPROTECT(1);
   }

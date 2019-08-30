@@ -70,20 +70,16 @@ name_dots = function(...) {
   dot_sub = as.list(substitute(list(...)))[-1L]
   vnames = names(dot_sub)
   if (is.null(vnames)) {
-    vnames = rep.int("", length(dot_sub))
-    novname = rep.int(TRUE, length(dot_sub))
+    vnames = character(length(dot_sub))
   } else {
     vnames[is.na(vnames)] = ""
-    if (any(vnames==".SD")) stop("A column may not be called .SD. That has special meaning.")
-    novname = vnames==""
   }
-  for (i in which(novname)) {
+  for (i in which(vnames=="")) {
     if ((tmp <- deparse(dot_sub[[i]])[1L]) == make.names(tmp))
       vnames[i] = tmp
   }
-  still_empty = vnames==""
-  if (any(still_empty)) vnames[still_empty] = paste0("V", which(still_empty))
-  list(vnames=vnames, novname=novname)
+  if (length(w<-which(vnames==""))) vnames[w] = paste0("V", w)
+  vnames
 }
 
 # convert a vector like c(1, 4, 3, 2) into a string like [1, 4, 3, 2]
@@ -113,3 +109,9 @@ do_patterns = function(pat_sub, all_cols) {
 
   return(matched)
 }
+
+# nocov start #593 always return a data.table
+edit.data.table = function(name, ...) {
+  setDT(NextMethod('edit', name))[]
+}
+# nocov end

@@ -17,6 +17,7 @@ export(setorder, setorderv)
 export(setNumericRounding, getNumericRounding)
 export(chmatch, "%chin%", chorder, chgroup)
 export(rbindlist)
+export(fifelse)
 export(fread)
 export(fwrite)
 export(foverlaps)
@@ -54,6 +55,7 @@ export(frollapply)
 export(nafill)
 export(setnafill)
 export(.Last.updated)
+export(coalesce)
 
 S3method("[", data.table)
 S3method("[<-", data.table)
@@ -103,7 +105,7 @@ export(dcast, melt)
 S3method(dcast, data.table)
 S3method(melt, data.table)
 
-# exported for historical reasons -- if reshape2 is higher on search path, 
+# exported for historical reasons -- if reshape2 is higher on search path,
 # dcast(DT) will not dispatch since reshape2::dcast is not generic. So users
 # and many packges on CRAN call dcast.data.table() and/or melt.data.table() directly. See #3082.
 export(melt.data.table, dcast.data.table)
@@ -150,18 +152,21 @@ S3method(as.POSIXct, IDate)
 S3method(as.POSIXct, ITime)
 S3method(as.POSIXlt, ITime)
 S3method(c, IDate)
-S3method(cut, IDate)
+S3method(c, ITime)
 S3method(format, ITime)
 S3method(IDateTime, default)
 S3method(mean, IDate)
+S3method(mean, ITime)
 S3method(print, ITime)
 S3method(rep, IDate)
 S3method(rep, ITime)
 S3method(round, IDate)
 S3method(seq, IDate)
-S3method(split, IDate)
+S3method(seq, ITime)
 S3method(unique, IDate)
 S3method(unique, ITime)
+S3method('[<-', IDate)
+S3method(edit, data.table)
 
 # duplist
 # getdots

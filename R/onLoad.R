@@ -1,5 +1,18 @@
 # nocov start
 
+# used to raise message (write to STDERR but not raise warning) once per session only
+# in future this will be upgraded to warning, then error, until eventually removed after several years
+.pkg.store = new.env()
+.pkg.store$.unsafe.done = FALSE
+.unsafe.opt = function() {
+  if (.pkg.store$.unsafe.done) return(invisible())
+  val = getOption("datatable.nomatch")
+  if (is.null(val)) return(invisible())  # not set is ideal (it's no longer set in .onLoad)
+  if (identical(val, NA) || identical(val, NA_integer_)) return(invisible())  # set to default NA is ok for now; in future possible message/warning asking to remove
+  message("The option 'datatable.nomatch' is being used and is not set to the default NA. This option is still honored for now but will be deprecated in future. Please see NEWS for 1.12.4 for detailed information and motivation. To specify inner join, please specify `nomatch=NULL` explicitly in your calls rather than changing the default using this option.")
+  .pkg.store$.unsafe.done = TRUE
+}
+
 .Last.updated = vector("integer", 1L) # exported variable; number of rows updated by the last := or set(), #1885
 
 .onLoad = function(libname, pkgname) {
@@ -42,7 +55,6 @@
   # are relatively heavy functions where the overhead in getOption() would not be noticed.  It's only really [.data.table where getOption default bit.
   # Improvement to base::getOption() now submitted (100x; 5s down to 0.05s):  https://bugs.r-project.org/bugzilla/show_bug.cgi?id=17394
   opts = c("datatable.verbose"="FALSE",            # datatable.<argument name>
-       "datatable.nomatch"="NA_integer_",      # datatable.<argument name>
        "datatable.optimize"="Inf",             # datatable.<argument name>
        "datatable.print.nrows"="100L",         # datatable.<argument name>
        "datatable.print.topn"="5L",            # datatable.<argument name>
@@ -57,8 +69,7 @@
        "datatable.auto.index"="TRUE",          # DT[col=="val"] to auto add index so 2nd time faster
        "datatable.use.index"="TRUE",           # global switch to address #1422
        "datatable.prettyprint.char" = NULL,     # FR #1091
-       "datatable.old.unique.by.key" = "FALSE"  # TODO: change warnings in duplicated.R to error on or after May 2019 then remove a year after that.
-       ,"datatable.naturaljoin" = "FALSE"      # natural join, when set to TRUE then `on` defaults to `.NATURAL`
+       "datatable.old.unique.by.key" = "FALSE"  # TODO: remove in May 2020
        )
   for (i in setdiff(names(opts),names(options()))) {
     eval(parse(text=paste0("options(",i,"=",opts[i],")")))
@@ -103,7 +114,7 @@
 getRversion = function(...) stop("Reminder to data.table developers: don't use getRversion() internally. Add a behaviour test to .onLoad instead.")
 # 1) using getRversion() wasted time when R3.0.3beta was released without the changes we expected in getRversion()>"3.0.2".
 # 2) R-devel and ourselves may wish to tinker with R-devel, turning on and off features in the same version number. So it's better if data.table doesn't hard code expectations into the version number.
-# 3) The discipline of adding a feaure test here helps fully understand the change.
+# 3) The discipline of adding a feature test here helps fully understand the change.
 # 4) Defining getRversion with a stop() here helps prevent new switches on getRversion() being added in future. Easily circumvented but the point is to issue the message above.
 
 .onUnload = function(libpath) {

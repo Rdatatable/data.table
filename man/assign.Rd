@@ -114,7 +114,7 @@ DT[ , paste(c('sin', 'cos'), 'b', sep = '_') :=
 ## using lapply & .SD
 DT[ , paste0('tan_', c('b', 'd', 'e')) :=
    lapply(.SD, tan), .SDcols = c('b', 'd', 'e')]
-## using forced evaluation to disambguate a vector of names
+## using forced evaluation to disambiguate a vector of names
 ##   and overwrite existing columns with their squares
 sq_cols = c('b', 'd', 'e')
 DT[ , (sq_cols) := lapply(.SD, `^`, 2L), .SDcols = sq_cols]

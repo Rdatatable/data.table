@@ -5,7 +5,7 @@ skip="__auto__", select=NULL, drop=NULL, colClasses=NULL, integer64=getOption("d
 col.names, check.names=FALSE, encoding="unknown", strip.white=TRUE, fill=FALSE, blank.lines.skip=FALSE, key=NULL, index=NULL,
 showProgress=getOption("datatable.showProgress",interactive()), data.table=getOption("datatable.fread.datatable",TRUE),
 nThread=getDTthreads(verbose), logical01=getOption("datatable.logical01",FALSE), keepLeadingZeros=getOption("datatable.keepLeadingZeros",FALSE),
-yaml=FALSE, autostart=NA)
+yaml=FALSE, autostart=NA, tmpdir=tempdir())
 {
   if (missing(input)+is.null(file)+is.null(text)+is.null(cmd) < 3L) stop("Used more than one of the arguments input=, file=, text= and cmd=.")
   input_has_vars = length(all.vars(substitute(input)))>0L  # see news for v1.11.6
@@ -35,7 +35,7 @@ yaml=FALSE, autostart=NA)
     if (!is.character(text)) stop("'text=' is type ", typeof(text), " but must be character.")
     if (!length(text)) return(data.table())
     if (length(text) > 1L) {
-      cat(text, file=(tmpFile<-tempfile()), sep="\n")  # avoid paste0() which could create a new very long single string in R's memory
+      cat(text, file=(tmpFile<-tempfile(tmpdir=tmpdir)), sep="\n")  # avoid paste0() which could create a new very long single string in R's memory
       file = tmpFile
       on.exit(unlink(tmpFile), add=TRUE)
     } else {
@@ -60,7 +60,7 @@ yaml=FALSE, autostart=NA)
         # nocov start
         if (!requireNamespace("curl", quietly = TRUE))
           stop("Input URL requires https:// connection for which fread() requires 'curl' package which cannot be found. Please install 'curl' using 'install.packages('curl')'.") # nocov
-        tmpFile = tempfile(fileext = paste0(".",tools::file_ext(input)))  # retain .gz extension in temp filename so it knows to be decompressed further below
+        tmpFile = tempfile(fileext = paste0(".",tools::file_ext(input)), tmpdir=tmpdir)  # retain .gz extension in temp filename so it knows to be decompressed further below
         curl::curl_download(input, tmpFile, mode="wb", quiet = !showProgress)
         file = tmpFile
         on.exit(unlink(tmpFile), add=TRUE)
@@ -70,7 +70,7 @@ yaml=FALSE, autostart=NA)
         # nocov start
         method = if (str7=="file://") "internal" else getOption("download.file.method", default="auto")
         # force "auto" when file:// to ensure we don't use an invalid option (e.g. wget), #1668
-        tmpFile = tempfile(fileext = paste0(".",tools::file_ext(input)))
+        tmpFile = tempfile(fileext = paste0(".",tools::file_ext(input)), tmpdir=tmpdir)
         download.file(input, tmpFile, method=method, mode="wb", quiet=!showProgress)
         # In text mode on Windows-only, R doubles up \r to make \r\r\n line endings. mode="wb" avoids that. See ?connections:"CRLF"
         file = tmpFile
@@ -80,7 +80,7 @@ yaml=FALSE, autostart=NA)
       else if (length(grep(' ', input, fixed = TRUE)) && !file.exists(input)) {  # file name or path containing spaces is not a command
         cmd = input
         if (input_has_vars && getOption("datatable.fread.input.cmd.message", TRUE)) {
-          message("Taking input= as a system command ('",cmd,"') and a variable has been used in the expression passed to `input=`. Please use fread(cmd=...). There is a security concern if you are creating an app, and the app could have a malicious user, and the app is not running in a secure envionment; e.g. the app is running as root. Please read item 5 in the NEWS file for v1.11.6 for more information and for the option to suppress this message.")
+          message("Taking input= as a system command ('",cmd,"') and a variable has been used in the expression passed to `input=`. Please use fread(cmd=...). There is a security concern if you are creating an app, and the app could have a malicious user, and the app is not running in a secure environment; e.g. the app is running as root. Please read item 5 in the NEWS file for v1.11.6 for more information and for the option to suppress this message.")
         }
       }
       else {
@@ -89,7 +89,7 @@ yaml=FALSE, autostart=NA)
     }
   }
   if (!is.null(cmd)) {
-    (if (.Platform$OS.type == "unix") system else shell)(paste0('(', cmd, ') > ', tmpFile<-tempfile()))
+    (if (.Platform$OS.type == "unix") system else shell)(paste0('(', cmd, ') > ', tmpFile<-tempfile(tmpdir=tmpdir)))
     file = tmpFile
     on.exit(unlink(tmpFile), add=TRUE)
   }
@@ -108,7 +108,7 @@ yaml=FALSE, autostart=NA)
       if (!requireNamespace("R.utils", quietly = TRUE))
         stop("To read gz and bz2 files directly, fread() requires 'R.utils' package which cannot be found. Please install 'R.utils' using 'install.packages('R.utils')'.") # nocov
       FUN = if (ext2==".gz") gzfile else bzfile
-      R.utils::decompressFile(file, decompFile<-tempfile(), ext=NULL, FUN=FUN, remove=FALSE)   # ext is not used by decompressFile when destname is supplied, but isn't optional
+      R.utils::decompressFile(file, decompFile<-tempfile(tmpdir=tmpdir), ext=NULL, FUN=FUN, remove=FALSE)   # ext is not used by decompressFile when destname is supplied, but isn't optional
       file = decompFile   # don't use 'tmpFile' symbol again, as tmpFile might be the http://domain.org/file.csv.gz download
       on.exit(unlink(decompFile), add=TRUE)
     }
@@ -285,7 +285,7 @@ yaml=FALSE, autostart=NA)
     setattr(ans, 'names', make.names(names(ans), unique=TRUE))
   }
 
-  colClassesAs = attr(ans, "colClassesAs")   # should only be present if one or more are != ""
+  colClassesAs = attr(ans, "colClassesAs", exact=TRUE)   # should only be present if one or more are != ""
   for (j in which(colClassesAs!="")) {       # # 1634
     v = .subset2(ans, j)
     new_class = colClassesAs[j]

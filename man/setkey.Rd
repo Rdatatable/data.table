@@ -60,19 +60,26 @@ to base R too; see \code{\link[base]{sort}}. Generally speaking we avoid any typ
 of comparison sort (other than insert sort for very small input) preferring instead
 counting sort and forwards radix. We also avoid hash tables.
 
+Note that \code{setkey} always uses "C-locale"; see the Details in the help for \code{\link{setorder}} for more on why.
+
 The sort is \emph{stable}; i.e., the order of ties (if any) is preserved.
 
 For character vectors, \code{data.table} takes advantage of R's internal global string cache, also exported as \code{\link{chorder}}.
+}
 
+\section{Good practice}{
 In general, it's good practice to use column names rather than numbers. This is
-why\code{setkey} and \code{setkeyv} only accept column names.
+why \code{setkey} and \code{setkeyv} only accept column names.
 If you use column numbers then bugs (possibly silent) can more easily creep into
 your code as time progresses if changes are made elsewhere in your code; e.g., if
 you add, remove or reorder columns in a few months time, a \code{setkey} by column
 number will then refer to a different column, possibly returning incorrect results
 with no warning. (A similar concept exists in SQL, where \code{"select * from \dots"} is considered poor programming style when a robust, maintainable system is
-required.)  If you really wish to use column numbers, it is possible but
-deliberately a little harder; e.g., \code{setkeyv(DT,colnames(DT)[1:2])}.
+required.)
+
+If you really wish to use column numbers, it is possible but
+deliberately a little harder; e.g., \code{setkeyv(DT,names(DT)[1:2])}.
+
 If you wanted to use \code{\link[base]{grep}} to select key columns according to
 a pattern, note that you can just set \code{value = TRUE} to return a character vector instead of the default integer indices.
 }

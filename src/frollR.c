@@ -14,10 +14,10 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
     x = PROTECT(allocVector(VECSXP, 1)); protecti++;
     if (isReal(obj)) {
       SET_VECTOR_ELT(x, 0, obj);
-    } else if (isInteger(obj)) {
+    } else if (isInteger(obj) || isLogical(obj)) {
       SET_VECTOR_ELT(x, 0, coerceVector(obj, REALSXP));
     } else {
-      error("x must be of type numeric");
+      error("x must be of type numeric or logical");
     }
   } else {
     R_len_t nobj=length(obj);
@@ -25,10 +25,10 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
     for (R_len_t i=0; i<nobj; i++) {
       if (isReal(VECTOR_ELT(obj, i))) {
         SET_VECTOR_ELT(x, i, VECTOR_ELT(obj, i));
-      } else if (isInteger(VECTOR_ELT(obj, i))) {               // coerce integer types to double
+      } else if (isInteger(VECTOR_ELT(obj, i)) || isLogical(VECTOR_ELT(obj, i))) { // coerce integer and logical types to double
         SET_VECTOR_ELT(x, i, coerceVector(VECTOR_ELT(obj, i), REALSXP));
       } else {
-        error("x must be list, data.frame or data.table of numeric types");
+        error("x must be list, data.frame or data.table of numeric or logical types");
       }
     }
   }
@@ -188,10 +188,11 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
         if (!badaptive) frollsum(ialgo, dx[i], inx[i], &dans[i*nk+j], iik[j], ialign, dfill, bnarm, ihasna, bverbose);
         else fadaptiverollsum(ialgo, dx[i], inx[i], &dans[i*nk+j], ikl[j], dfill, bnarm, ihasna, bverbose);
         break;
+      default: error("Internal error: Unknown sfun value in froll: %d", sfun); // #nocov
       }
     }
   }
-  
+
   for (R_len_t i=0; i<nx; i++) {                                // raise errors and warnings, as of now messages are not being produced
     for (R_len_t j=0; j<nk; j++) {
       if (bverbose && (dans[i*nk+j].message[0][0] != '\0')) Rprintf("%s: %d:\n%s", __func__, i*nk+j+1, dans[i*nk+j].message[0]);
@@ -200,7 +201,7 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
       if (dans[i*nk+j].status == 3) error("%s: %d: %s", __func__, i*nk+j+1, dans[i*nk+j].message[3]); // # nocov because only caused by malloc
     }
   }
-  
+
   if (bverbose) Rprintf("%s: processing of %d column(s) and %d window(s) took %.3fs\n", __func__, nx, nk, omp_get_wtime()-tic);
 
   UNPROTECT(protecti);

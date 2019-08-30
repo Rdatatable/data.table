@@ -20,6 +20,7 @@ typedef R_xlen_t RLEN;
 #define IS_LATIN(x) (LEVELS(x) & 4)
 #define IS_TRUE(x)  (TYPEOF(x)==LGLSXP && LENGTH(x)==1 && LOGICAL(x)[0]==TRUE)
 #define IS_FALSE(x) (TYPEOF(x)==LGLSXP && LENGTH(x)==1 && LOGICAL(x)[0]==FALSE)
+#define IS_TRUE_OR_FALSE(x) (TYPEOF(x)==LGLSXP && LENGTH(x)==1 && LOGICAL(x)[0]!=NA_LOGICAL)
 
 #define SIZEOF(x) sizes[TYPEOF(x)]
 #define TYPEORDER(x) typeorder[x]
@@ -75,6 +76,7 @@ SEXP char_allLen1;
 SEXP char_allGrp1;
 SEXP char_factor;
 SEXP char_ordered;
+SEXP char_datatable;
 SEXP char_dataframe;
 SEXP char_NULL;
 SEXP sym_sorted;
@@ -84,12 +86,17 @@ SEXP sym_starts, char_starts;
 SEXP sym_maxgrpn;
 SEXP sym_colClassesAs;
 SEXP sym_verbose;
-bool INHERITS(SEXP x, SEXP char_);
+SEXP sym_inherits;
+SEXP sym_datatable_locked;
 long long DtoLL(double x);
 double LLtoD(long long x);
 bool GetVerbose();
 double NA_INT64_D;
 long long NA_INT64_LL;
+Rcomplex NA_CPLX;  // initialized in init.c; see there for comments
+
+// cj.c
+SEXP cj(SEXP base_list);
 
 // dogroups.c
 SEXP keepattr(SEXP to, SEXP from);
@@ -100,6 +107,7 @@ SEXP SelfRefSymbol;
 
 // assign.c
 SEXP allocNAVector(SEXPTYPE type, R_len_t n);
+SEXP allocNAVectorLike(SEXP x, R_len_t n);
 void writeNA(SEXP v, const int from, const int n);
 void savetl_init(), savetl(SEXP s), savetl_end();
 int checkOverAlloc(SEXP x);
@@ -110,7 +118,6 @@ int StrCmp(SEXP x, SEXP y);
 uint64_t dtwiddle(void *p, int i);
 SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP naArg);
 bool need2utf8(SEXP x, int n);
-SEXP isReallyReal(SEXP);
 int getNumericRounding_C();
 
 // reorder.c
@@ -193,10 +200,27 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
 SEXP frollapplyR(SEXP x, SEXP k, SEXP fun, SEXP env);
 
 // nafill.c
-SEXP colnamesInt(SEXP x, SEXP cols);
 void nafillDouble(double *x, uint_fast64_t nx, unsigned int type, double fill, ans_t *ans, bool verbose);
 void nafillInteger(int32_t *x, uint_fast64_t nx, unsigned int type, int32_t fill, ans_t *ans, bool verbose);
 SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP inplace, SEXP cols, SEXP verbose);
 
 // between.c
-SEXP between(SEXP x, SEXP lower, SEXP upper, SEXP bounds);
+SEXP between(SEXP x, SEXP lower, SEXP upper, SEXP incbounds, SEXP NAbounds);
+
+// coalesce.c
+SEXP coalesce(SEXP x, SEXP inplace);
+
+// utils.c
+bool isRealReallyInt(SEXP x);
+SEXP isReallyReal(SEXP x);
+SEXP colnamesInt(SEXP x, SEXP cols, SEXP check_dups);
+void coerceFill(SEXP fill, double *dfill, int32_t *ifill, int64_t *i64fill);
+SEXP coerceFillR(SEXP fill);
+bool INHERITS(SEXP x, SEXP char_);
+bool Rinherits(SEXP x, SEXP char_);
+void copySharedColumns(SEXP x);
+SEXP lock(SEXP x);
+SEXP unlock(SEXP x);
+bool islocked(SEXP x);
+SEXP islockedR(SEXP x);
+

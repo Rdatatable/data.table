@@ -18,11 +18,9 @@ frankv = function(x, cols=seq_along(x), order=1L, na.last=TRUE, ties.method=c("a
     cols = 1L
     x = as_list(x)
   } else {
+    cols = colnamesInt(x, cols, check_dups=TRUE)
     if (!length(cols))
       stop("x is a list, 'cols' can not be 0-length")
-    if (is.character(cols))
-      cols = chmatch(cols, names(x))
-    cols = as.integer(cols)
   }
   x = .shallow(x, cols) # shallow copy even if list..
   setDT(x)
@@ -43,7 +41,7 @@ frankv = function(x, cols=seq_along(x), order=1L, na.last=TRUE, ties.method=c("a
     cols = c(cols, ncol(x))
   }
   xorder  = forderv(x, by=cols, order=order, sort=TRUE, retGrp=TRUE, na.last=if (isFALSE(na.last)) na.last else TRUE)
-  xstart  = attr(xorder, 'starts')
+  xstart  = attr(xorder, 'starts', exact=TRUE)
   xsorted = FALSE
   if (!length(xorder)) {
     xsorted = TRUE

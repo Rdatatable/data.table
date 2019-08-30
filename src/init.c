@@ -18,6 +18,7 @@ SEXP setcolorder();
 SEXP chmatch_R();
 SEXP chmatchdup_R();
 SEXP chin_R();
+SEXP fifelseR();
 SEXP freadR();
 SEXP fwriteR();
 SEXP reorder();
@@ -26,13 +27,11 @@ SEXP vecseq();
 SEXP setlistelt();
 SEXP setmutable();
 SEXP address();
-SEXP copyNamedInList();
 SEXP expandAltRep();
 SEXP fmelt();
 SEXP fcast();
 SEXP uniqlist();
 SEXP uniqlengths();
-SEXP setrev();
 SEXP forder();
 SEXP fsorted();
 SEXP gforce();
@@ -83,6 +82,10 @@ SEXP dllVersion();
 SEXP nafillR();
 SEXP colnamesInt();
 SEXP initLastUpdated();
+SEXP cj();
+SEXP lock();
+SEXP unlock();
+SEXP islockedR();
 
 // .Externals
 SEXP fastmean();
@@ -111,13 +114,11 @@ R_CallMethodDef callMethods[] = {
 {"Csetlistelt", (DL_FUNC) &setlistelt, -1},
 {"Csetmutable", (DL_FUNC) &setmutable, -1},
 {"Caddress", (DL_FUNC) &address, -1},
-{"CcopyNamedInList", (DL_FUNC) &copyNamedInList, -1},
 {"CexpandAltRep", (DL_FUNC) &expandAltRep, -1},
 {"Cfmelt", (DL_FUNC) &fmelt, -1},
 {"Cfcast", (DL_FUNC) &fcast, -1},
 {"Cuniqlist", (DL_FUNC) &uniqlist, -1},
 {"Cuniqlengths", (DL_FUNC) &uniqlengths, -1},
-{"Csetrev", (DL_FUNC) &setrev, -1},
 {"Cforder", (DL_FUNC) &forder, -1},
 {"Cfsorted", (DL_FUNC) &fsorted, -1},
 {"Cgforce", (DL_FUNC) &gforce, -1},
@@ -167,11 +168,17 @@ R_CallMethodDef callMethods[] = {
 {"CdllVersion", (DL_FUNC) &dllVersion, -1},
 {"CnafillR", (DL_FUNC) &nafillR, -1},
 {"CcolnamesInt", (DL_FUNC) &colnamesInt, -1},
+{"CcoerceFillR", (DL_FUNC) &coerceFillR, -1},
 {"CinitLastUpdated", (DL_FUNC) &initLastUpdated, -1},
+{"Ccj", (DL_FUNC) &cj, -1},
+{"Ccoalesce", (DL_FUNC) &coalesce, -1},
+{"CfifelseR", (DL_FUNC) &fifelseR, -1},
+{"C_lock", (DL_FUNC) &lock, -1},  // _ for these 3 to avoid Clock as in time
+{"C_unlock", (DL_FUNC) &unlock, -1},
+{"C_islocked", (DL_FUNC) &islockedR, -1},
 {"CfrollapplyR", (DL_FUNC) &frollapplyR, -1},
 {NULL, NULL, 0}
 };
-
 
 static const
 R_ExternalMethodDef externalMethods[] = {
@@ -254,6 +261,9 @@ void attribute_visible R_init_datatable(DllInfo *info)
   if (ISNAN(NA_INT64_D)) error("ISNAN(NA_INT64_D) is TRUE but should not be");
   if (isnan(NA_INT64_D)) error("isnan(NA_INT64_D) is TRUE but should not be");
 
+  NA_CPLX.r = NA_REAL;  // NA_REAL is defined as R_NaReal which is not a strict constant and thus initializer {NA_REAL, NA_REAL} can't be used in .h
+  NA_CPLX.i = NA_REAL;  // https://github.com/Rdatatable/data.table/pull/3689/files#r304117234
+
   setNumericRounding(PROTECT(ScalarInteger(0))); // #1642, #1728, #1463, #485
   UNPROTECT(1);
 
@@ -272,6 +282,7 @@ void attribute_visible R_init_datatable(DllInfo *info)
   char_allGrp1 =   PRINTNAME(install("allGrp1"));
   char_factor =    PRINTNAME(install("factor"));
   char_ordered =   PRINTNAME(install("ordered"));
+  char_datatable = PRINTNAME(install("data.table"));
   char_dataframe = PRINTNAME(install("data.frame"));
   char_NULL =      PRINTNAME(install("NULL"));
 
@@ -294,27 +305,11 @@ void attribute_visible R_init_datatable(DllInfo *info)
   sym_colClassesAs = install("colClassesAs");
   sym_verbose = install("datatable.verbose");
   SelfRefSymbol = install(".internal.selfref");
+  sym_inherits = install("inherits");
+  sym_datatable_locked = install(".data.table.locked");
 
   initDTthreads();
   avoid_openmp_hang_within_fork();
-}
-
-inline bool INHERITS(SEXP x, SEXP char_) {
-  // Thread safe inherits() by pre-calling install() above in init first then
-  // passing those char_* in here for simple and fast non-API pointer compare.
-  // The thread-safety aspect here is only currently actually needed for list columns in
-  // fwrite() where the class of the cell's vector is tested; the class of the column
-  // itself is pre-stored by fwrite (for example in isInteger64[] and isITime[]).
-  // Thread safe in the limited sense of correct and intended usage :
-  // i) no API call such as install() or mkChar() must be passed in.
-  // ii) no attrib writes must be possible in other threads.
-  SEXP klass;
-  if (isString(klass = getAttrib(x, R_ClassSymbol))) {
-    for (int i=0; i<LENGTH(klass); i++) {
-      if (STRING_ELT(klass, i) == char_) return true;
-    }
-  }
-  return false;
 }
 
 inline long long DtoLL(double x) {

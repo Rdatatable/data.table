@@ -33,13 +33,15 @@ SEXP setattrib(SEXP x, SEXP name, SEXP value)
 // fix for #1142 - duplicated levels for factors
 SEXP setlevels(SEXP x, SEXP levels, SEXP ulevels) {
 
-  R_len_t nx = length(x), i;
+  R_len_t nx = length(x);
   SEXP xchar, newx;
   xchar = PROTECT(allocVector(STRSXP, nx));
-  for (i=0; i<nx; i++)
-    SET_STRING_ELT(xchar, i, STRING_ELT(levels, INTEGER(x)[i]-1));
+  int *ix = INTEGER(x);
+  for (int i=0; i<nx; ++i)
+    SET_STRING_ELT(xchar, i, STRING_ELT(levels, ix[i]-1));
   newx = PROTECT(chmatch(xchar, ulevels, NA_INTEGER));
-  for (i=0; i<nx; i++) INTEGER(x)[i] = INTEGER(newx)[i];
+  int *inewx = INTEGER(newx);
+  for (int i=0; i<nx; ++i) ix[i] = inewx[i];
   setAttrib(x, R_LevelsSymbol, ulevels);
   UNPROTECT(2);
   return(x);
@@ -78,32 +80,11 @@ SEXP address(SEXP x)
   return(mkString(buffer));
 }
 
-SEXP copyNamedInList(SEXP x)
-{
-  // As from R 3.1.0 list() no longer copies NAMED inputs
-  // Since data.table allows subassignment by reference, we need a way to copy NAMED inputs, still.
-  // But for many other applications (such as in j and elsewhere internally) the new non-copying list() in R 3.1.0 is very welcome.
-
-  // This is intended to be called just after list(...) in data.table().  It isn't for use on a single data.table, as
-  // member columns of a list aren't marked as NAMED when the VECSXP is.
-
-  // For now, this makes the old behaviour of list() in R<3.1.0 available for use, where we need it.
-
-  if (TYPEOF(x) != VECSXP) error("x isn't a VECSXP");
-  for (int i=0; i<LENGTH(x); i++) {
-    SEXP col = VECTOR_ELT(x, i);
-    if (MAYBE_REFERENCED(col) || ALTREP(col)) {
-      SET_VECTOR_ELT(x, i, duplicate(col));
-    }
-  }
-  return R_NilValue;
-}
-
 SEXP expandAltRep(SEXP x)
 {
   // used by setDT to ensure altrep vectors in columns are expanded. Such altrep objects typically come from tests or demos, since
   // the sequence 1:n does not occur in real-world data as a column, very often.
-  // Note that data.table() calls copyNamedInList() (above) which has the side-effect of expanding altrep vectors too.
+  // Note that data.table() calls as.data.table.list() which expands altrep vectors.
   // We need regular expanded columns in data.table because `:=` relies on that, for example.
   // At R level (for example [.data.table) we use and benefit from altrep vectors very much. It's just as columns that we expand them.
   // See extensive discussion in issue #2866
