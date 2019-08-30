@@ -15840,6 +15840,14 @@ test(2093.2, hour(date), 0L)
 test(2093.3, minute(date), 0L)
 test(2093.4, second(date), 0L)
 
+# correct rbindlist() idcol for list elements with different length, #3785
+x = 1:100
+X = rbindlist(lapply(x, function(.) list(., 1:2, 2:3)), idcol = 'TAG')
+test(2094.01, X$TAG, rep(x, each = 2))
+x = setNames(x, paste0("nm_", x))
+X = rbindlist(lapply(x, function(.) list(., 1:2, 2:3)), idcol = 'TAG')
+test(2094.02, X$TAG, rep(names(x), each = 2))
+
 
 ###################################
 #  Add new tests above this line  #
