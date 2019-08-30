@@ -15861,6 +15861,9 @@ test(2094.02, X$TAG, rep(names(x), each = 2))
 DT = data.table(a=c(3L, 3L, 2L, 9L, 5L, 10L, 3L, 2L, 9L, 8L), b=rep(1:5, 2))
 test(2095, any(grepl('override', capture.output(dcast(DT, a~b, fun.aggregate=length)), fixed=TRUE)), FALSE)
 
+# gmean intermediate can overflow integers without warning, #986
+test(2096, data.table(a=c(1L,1L), v=c(2e9L, 2e9L))[, mean(v), a], data.table(a=1L, V1=2e9))
+
 
 ###################################
 #  Add new tests above this line  #
