@@ -164,6 +164,8 @@
 
 24. More efficient optimization of many columns in `j` (e.g. from `.SD`), [#1470](https://github.com/Rdatatable/data.table/issues/1470). Thanks @Jorges1000 for the report.
 
+25. `setnames(DT, old, new)` now omits any `old==new` to save redundant key and index name updates, [#3783](https://github.com/Rdatatable/data.table/issues/3783). `setnames(DT, new)` (i.e. not providing `old`) already omitted any column name updates where `names(DT)==new`; e.g. `setnames(DT, gsub('^_', '', names(DT)))` exits early if no columns start with `_`.
+
 #### BUG FIXES
 
 1. `first`, `last`, `head` and `tail` by group no longer error in some cases, [#2030](https://github.com/Rdatatable/data.table/issues/2030) [#3462](https://github.com/Rdatatable/data.table/issues/3462). Thanks to @franknarf1 for reporting.
@@ -296,8 +298,6 @@
 17. The warning message when using `strptime` in `j` has been improved, [#2068](https://github.com/Rdatatable/data.table/issues/2068). Thanks to @tdhock for the report.
 
 18. Added a note to `?setkey` clarifying that `setkey` always uses C-locale sorting (as has been noted in `?setorder`). Thanks @JBreidaks for the report in [#2114](https://github.com/Rdatatable/data.table/issues/2114).
-
-19. `setnames` now exits early if the `new` names are redundant (i.e. they exactly match the old names), [#3783](https://github.com/Rdatatable/data.table/issues/3783).
 
 
 ### Changes in [v1.12.2](https://github.com/Rdatatable/data.table/milestone/14?closed=1)  (07 Apr 2019)
