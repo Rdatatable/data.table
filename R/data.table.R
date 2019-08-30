@@ -875,14 +875,54 @@ replace_order = function(isub, verbose, env) {
       }
 
       jvnames = NULL
-      env = environment()
+      DOT_REGEX = "^[.](N|I|GRP|BY)$"
+      # function to handle auto-naming of j for potentially complicated expressions, #2478
+      #   defined here to have [.data.table as a parent
+      #   j-ending (ends of if/else or {}) for expression like
+      #     list(a=sum(v), v)
+      #   should create columns named a, v
+      do_j_names = function(q) {
+        if (!is.call(q) || !is.name(q[[1L]])) return(q)
+        if (as.character(q[[1L]]) %chin% c('list', '.')) {
+          q[[1L]] = quote(list)
+          qlen = length(q)
+          if (qlen>1L) {
+            nm = names(q[-1L])   # check list(a=sum(v),v)
+            if (is.null(nm)) nm = rep.int("", qlen-1L)
+            # attempt to auto-name unnamed columns
+            idx = which(!nzchar(nm))
+            for (jj in idx) {
+              thisq = q[[jj + 1L]]
+              if (missing(thisq)) stop("Item ", jj, " of the .() or list() passed to j is missing") #3507
+              if (is.name(thisq)) nm[jj] = deparse(thisq, width.cutoff = 50L, backtick = FALSE, nlines = 1L)
+              # TO DO: if call to a[1] for example, then call it 'a' too
+            }
+            nm[idx] = gsub(DOT_REGEX, "\\1", nm[idx])
+            if (!is.null(jvnames) && any(idx <- nm != jvnames))
+              warning("Different branches of j expression produced different auto-named columns: ", brackify(sprintf('%s!=%s', nm[idx], jvnames[idx])), '; using the most "last" names', call. = FALSE)
+            jvnames <<- nm # TODO: handle if() list(a, b) else list(b, a) better
+            setattr(q, "names", NULL)  # drops the names from the list so it's faster to eval the j for each group. We'll put them back afterwards on the result.
+          }
+          return(q) # else empty list is needed for test 468: adding an empty list column
+        }
+        if (q[[1L]] == '{') {
+          q[[length(q)]] = do_j_names(q[[length(q)]])
+          return(q)
+        }
+        if (q[[1L]] == 'if') {
+          #explicit NULL would return NULL, assigning NULL would delete that from the expression
+          if (!is.null(q[[3L]])) q[[3L]] = do_j_names(q[[3L]])
+          if (length(q) == 4L && !is.null(q[[4L]])) q[[4L]] = do_j_names(q[[4L]])
+          return(q)
+        }
+        return(q)
+      }
+
       if (is.name(jsub)) {
         # j is a single unquoted column name
-        if (jsub!=".SD") {
-          jvnames = gsub("^[.](N|I|GRP|BY)$","\\1",as.character(jsub))
-          # jsub is list()ed after it's eval'd inside dogroups.
-        }
-      } else jsub = do_j_names(jsub, env) # else maybe a call to transform or something which returns a list.
+        if (jsub!=".SD") jvnames = gsub(DOT_REGEX, "\\1", jsub)
+        # jsub is list()ed after it's eval'd inside dogroups.
+      } else jsub = do_j_names(jsub) # else maybe a call to transform or something which returns a list.
       av = all.vars(jsub,TRUE)  # TRUE fixes bug #1294 which didn't see b in j=fns[[b]](c)
       use.I = ".I" %chin% av
       if (any(c(".SD","eval","get","mget") %chin% av)) {
@@ -3055,38 +3095,4 @@ isReallyReal = function(x) {
   on = iCols
   names(on) = xCols
   return(list(on = on, ops = idx_op))
-}
-
-# function to handle auto-naming of j for potentially complicated expressions, #2478
-do_j_names = function(q, env) {
-  if (!is.call(q) || !is.name(q[[1L]])) return(q)
-  if (as.character(q[[1L]]) %chin% c('list', '.')) {
-    q[[1L]] = quote(list)
-    qlen = length(q)
-    if (qlen>1L) {
-      nm = names(q[-1L])   # check list(a=sum(v),v)
-      if (is.null(nm)) nm = rep.int("", qlen-1L)
-      for (jj in seq.int(2L, qlen)) {
-        if (nm[jj-1L] == "" && is.name(q[[jj]])) {
-          if (q[[jj]] == "") stop("Item ", jj-1L, " of the .() or list() passed to j is missing") #3507
-          nm[jj-1L] = gsub("^[.](N|I|GRP|BY)$", "\\1", deparse(q[[jj]]))
-        }
-        # TO DO: if call to a[1] for example, then call it 'a' too
-      }
-      assign('jvnames', nm, envir=env) # TODO: handle if() list(a, b) else list(b, a) better
-      setattr(q, "names", NULL)  # drops the names from the list so it's faster to eval the j for each group. We'll put them back afterwards on the result.
-    }
-    return(q) # else empty list is needed for test 468: adding an empty list column
-  }
-  if (q[[1L]] == '{') {
-    q[[length(q)]] = do_j_names(q[[length(q)]], env)
-    return(q)
-  }
-  if (q[[1L]] == 'if') {
-    #explicit NULL would return NULL, assigning NULL would delete that from the expression
-    if (!is.null(q[[3L]])) q[[3L]] = do_j_names(q[[3L]], env)
-    if (length(q) == 4L && !is.null(q[[4L]])) q[[4L]] = do_j_names(q[[4L]], env)
-    return(q)
-  }
-  return(q)
 }

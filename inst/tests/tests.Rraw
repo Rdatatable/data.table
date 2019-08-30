@@ -15840,6 +15840,8 @@ DT = data.table(a = c(1, 1, 2), b = 4:6)
 test(2094.1, DT[ , {b = b; .(a, b = b + 1)}], DT[ , .(a, b=b+1)])
 test(2094.2, DT[ , {{{b = b; .(a, b = b + 1)}}}], DT[ , .(a, b=b+1)])
 test(2094.3, DT[ , if (.N > 1L) .(b), by=a], DT[1:2])
+test(2094.4, DT[ , if (.N > 1L) .(b) else .(c=b), by=a], DT[ , .(a, c=b)],
+     warning="Different branches of j expression produced different auto-named columns")
 
 
 ###################################
