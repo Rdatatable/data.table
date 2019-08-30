@@ -166,7 +166,7 @@
 
 25. `setnames(DT, old, new)` now omits any `old==new` to save redundant key and index name updates, [#3783](https://github.com/Rdatatable/data.table/issues/3783). `setnames(DT, new)` (i.e. not providing `old`) already omitted any column name updates where `names(DT)==new`; e.g. `setnames(DT, gsub('^_', '', names(DT)))` exits early if no columns start with `_`.
 
-26. `[[` by group is now optimized, [#3209](https://github.com/Rdatatable/data.table/issues/3209). Thanks @renkun-ken for the suggestion. `[` by group was already optimized.
+26. `[[` by group is now optimized for regular vectors (not type list), [#3209](https://github.com/Rdatatable/data.table/issues/3209). Thanks @renkun-ken for the suggestion. `[` by group was already optimized. Please file a feature request if you would like this optimization for list columns.
 
 #### BUG FIXES
 
