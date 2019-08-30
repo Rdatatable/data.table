@@ -353,7 +353,7 @@ replace_order = function(isub, verbose, env) {
     # optimize here so that we can switch it off if needed
     check_eval_env = environment()
     check_eval_env$eval_forder = FALSE
-    if (getOption("datatable.optimize") >= 1) {
+    if (getOption("datatable.optimize") >= 1L) {
       isub = replace_order(isub, verbose, check_eval_env)
     }
     if (check_eval_env$eval_forder) {
@@ -543,13 +543,13 @@ replace_order = function(isub, verbose, env) {
           ## restore original order. This is a very expensive operation.
           ## benchmarks have shown that starting with 1e6 irows, a tweak can significantly reduce time
           ## (see #2366)
-          if (verbose) {last.started.at=proc.time()[3];cat("Reordering", length(irows), "rows after bmerge done in ... ");flush.console()}
+          if (verbose) {last.started.at=proc.time()[3L];cat("Reordering", length(irows), "rows after bmerge done in ... ");flush.console()}
           if(length(irows) < 1e6){
             irows = fsort(irows, internal=TRUE) ## internally, fsort on integer falls back to forderv
             } else {
               irows = as.integer(fsort(as.numeric(irows))) ## nocov; parallelized for numeric, but overhead of type conversion
             }
-          if (verbose) {cat(round(proc.time()[3]-last.started.at,3),"secs\n");flush.console()}
+          if (verbose) {cat(round(proc.time()[3L]-last.started.at,3L),"secs\n");flush.console()}
         }
         ## make sure, all columns are taken from x and not from i.
         ## This is done by simply telling data.table to continue as if there was a simple subset
@@ -595,9 +595,9 @@ replace_order = function(isub, verbose, env) {
     if (notjoin) {
       if (byjoin || !is.integer(irows) || is.na(nomatch)) stop("Internal error: notjoin but byjoin or !integer or nomatch==NA") # nocov
       irows = irows[irows!=0L]
-      if (verbose) {last.started.at=proc.time()[3];cat("Inverting irows for notjoin done in ... ");flush.console()}
+      if (verbose) {last.started.at=proc.time()[3L];cat("Inverting irows for notjoin done in ... ");flush.console()}
       i = irows = if (length(irows)) seq_len(nrow(x))[-irows] else NULL  # NULL meaning all rows i.e. seq_len(nrow(x))
-      if (verbose) cat(round(proc.time()[3]-last.started.at, 3), "sec\n")
+      if (verbose) cat(round(proc.time()[3L]-last.started.at, 3L), "sec\n")
       leftcols = integer()  # proceed as if row subset from now on, length(leftcols) is switched on later
       rightcols = integer()
       # Doing this once here, helps speed later when repeatedly subsetting each column. R's [irows] would do this for each
@@ -1462,7 +1462,7 @@ replace_order = function(isub, verbose, env) {
   lockBinding(".iSD",SDenv)
 
   GForce = FALSE
-  if ( getOption("datatable.optimize")>=1 && (is.call(jsub) || (is.name(jsub) && as.character(jsub)[[1L]] %chin% c(".SD",".N"))) ) {  # Ability to turn off if problems or to benchmark the benefit
+  if ( getOption("datatable.optimize")>=1L && (is.call(jsub) || (is.name(jsub) && as.character(jsub)[[1L]] %chin% c(".SD",".N"))) ) {  # Ability to turn off if problems or to benchmark the benefit
     # Optimization to reduce overhead of calling lapply over and over for each group
     oldjsub = jsub
     funi = 1L # Fix for #985
@@ -1618,12 +1618,12 @@ replace_order = function(isub, verbose, env) {
     dotN = function(x) is.name(x) && x==".N" # For #5760. TODO: Rprof() showed dotN() may be the culprit if iterated (#1470)?; avoid the == which converts each x to character?
     # FR #971, GForce kicks in on all subsets, no joins yet. Although joins could work with
     # nomatch=0L even now.. but not switching it on yet, will deal it separately.
-    if (getOption("datatable.optimize")>=2 && !is.data.table(i) && !byjoin && length(f__) && !length(lhs)) {
+    if (getOption("datatable.optimize")>=2L && !is.data.table(i) && !byjoin && length(f__) && !length(lhs)) {
       if (!length(ansvars) && !use.I) {
         GForce = FALSE
         if ( (is.name(jsub) && jsub == ".N") || (is.call(jsub) && length(jsub)==2L && length(as.character(jsub[[1L]])) && as.character(jsub[[1L]])[1L] == "list" && length(as.character(jsub[[2L]])) && as.character(jsub[[2L]])[1L] == ".N") ) {
           GForce = TRUE
-          if (verbose) cat("GForce optimized j to '",deparse(jsub,width.cutoff=200L),"'\n",sep="")
+          if (verbose) cat("GForce optimized j to '",deparse(jsub, width.cutoff=200L, nlines=1L),"'\n",sep="")
         }
       } else {
         # Apply GForce
@@ -1657,7 +1657,7 @@ replace_order = function(isub, verbose, env) {
             jsub[[1L]] = as.name(paste0("g", jsub[[1L]]))
             if (length(jsub)==3L) jsub[[3L]] = eval(jsub[[3L]], parent.frame())   # tests 1187.3 & 1187.5
           }
-          if (verbose) cat("GForce optimized j to '",deparse(jsub,width.cutoff=200L),"'\n",sep="")
+          if (verbose) cat("GForce optimized j to '",deparse(jsub, width.cutoff=200L, nlines=1L),"'\n",sep="")
         } else if (verbose) cat("GForce is on, left j unchanged\n");
       }
     }
@@ -1684,7 +1684,7 @@ replace_order = function(isub, verbose, env) {
       }
       if (verbose) {
         if (!identical(oldjsub, jsub))
-          cat("Old mean optimization changed j from '",deparse(oldjsub),"' to '",deparse(jsub,width.cutoff=200),"'\n",sep="")
+          cat("Old mean optimization changed j from '",deparse(oldjsub),"' to '",deparse(jsub, width.cutoff=200L, nlines=1L),"'\n",sep="")
         else
           cat("Old mean optimization is on, left j unchanged.\n")
       }
@@ -1696,8 +1696,8 @@ replace_order = function(isub, verbose, env) {
       # when fastmean can do trim.
     }
   } else if (verbose) {
-    if (getOption("datatable.optimize")<1) cat("All optimizations are turned off\n")
-    else cat("Optimization is on but left j unchanged (single plain symbol): '",deparse(jsub,width.cutoff=200),"'\n",sep="")
+    if (getOption("datatable.optimize")<1L) cat("All optimizations are turned off\n")
+    else cat("Optimization is on but left j unchanged (single plain symbol): '",deparse(jsub, width.cutoff=200L, nlines=1L),"'\n",sep="")
   }
   if (byjoin) {
     groups = i
@@ -1876,7 +1876,7 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
   if (!is.null(rownames)) {
     # extract that column and drop it.
     rownames.value = x[[rownames]]
-    dm = dim(x) - c(0, 1)
+    dm = dim(x) - 0:1
     cn = names(x)[-rownames]
     X = x[, .SD, .SDcols = cn]
   } else {
@@ -2673,7 +2673,7 @@ setDT = function(x, keep.rownames=FALSE, key=NULL, check.names=FALSE) {
     setattr(x, 'class', .resetclass(x, 'data.table'))
     if (!missing(key)) setkeyv(x, key) # fix for #1169
     if (check.names) setattr(x, "names", make.names(names(x), unique=TRUE))
-    if (selfrefok(x) > 0) return(invisible(x)) else setalloccol(x)
+    if (selfrefok(x) > 0L) return(invisible(x)) else setalloccol(x)
   } else if (is.data.frame(x)) {
     rn = if (!identical(keep.rownames, FALSE)) rownames(x) else NULL
     setattr(x, "row.names", .set_row_names(nrow(x)))
@@ -2850,7 +2850,7 @@ isReallyReal = function(x) {
   ## Determine, whether the nature of isub in general supports fast binary search
   remainingIsub = isub
   i = list()
-  on = character(0)
+  on = character(0L)
   nonEqui = FALSE
   while(length(remainingIsub)){
     if(is.call(remainingIsub)){
@@ -3015,14 +3015,14 @@ isReallyReal = function(x) {
   operators = character(length(on))
   ## loop over the elements and extract operators and column names.
   for(i in seq_along(pieces)){
-    thisCols      = character(0)
-    thisOperators = character(0)
-    j = 1
+    thisCols      = character(0L)
+    thisOperators = character(0L)
+    j = 1L
     while(j <= length(pieces[[i]])){
       if(pieces[[i]][j] == "`"){
         ## start of a variable name with backtick.
-        thisCols = c(thisCols, pieces[[i]][j+1])
-        j = j+3 # +1 is the column name, +2 is delimiting "`", +3 is next relevant entry.`
+        thisCols = c(thisCols, pieces[[i]][j+1L])
+        j = j+3L # +1 is the column name, +2 is delimiting "`", +3 is next relevant entry.`
       } else {
         ## no backtick
         ## search for operators
@@ -3030,42 +3030,42 @@ isReallyReal = function(x) {
                            unlist(regmatches(pieces[[i]][j], gregexpr(pat, pieces[[i]][j])),
                                   use.names = FALSE))
         ## search for column names
-        thisCols = c(thisCols, trimws(strsplit(pieces[[i]][j], pat)[[1]]))
+        thisCols = c(thisCols, trimws(strsplit(pieces[[i]][j], pat)[[1L]]))
         ## there can be empty string column names because of trimws, remove them
         thisCols = thisCols[thisCols != ""]
-        j = j+1
+        j = j+1L
       }
     }
-    if (length(thisOperators) == 0) {
+    if (length(thisOperators) == 0L) {
       ## if no operator is given, it must be ==
       operators[i] = "=="
-    } else if (length(thisOperators) == 1) {
+    } else if (length(thisOperators) == 1L) {
       operators[i] = thisOperators
     } else {
       ## multiple operators found in one 'on' part. Something is wrong.
       stop("Found more than one operator in one 'on' statement: ", on[i], ". Please specify a single operator.")
     }
-    if (length(thisCols) == 2){
+    if (length(thisCols) == 2L){
       ## two column names found, first is xCol, second is iCol for sure
-      xCols[i] = thisCols[1]
-      iCols[i] = thisCols[2]
-    } else if (length(thisCols) == 1){
+      xCols[i] = thisCols[1L]
+      iCols[i] = thisCols[2L]
+    } else if (length(thisCols) == 1L){
       ## a single column name found. Can mean different things
       if(xCols[i] != ""){
         ## xCol is given by names(on). thisCols must be iCol
-        iCols[i] = thisCols[1]
+        iCols[i] = thisCols[1L]
       } else if (isnull_inames){
         ## i has no names. It will be given the names V1, V2, ... automatically.
         ## The single column name is the x column. It will match to the ith column in i.
-        xCols[i] = thisCols[1]
+        xCols[i] = thisCols[1L]
         iCols[i] = paste0("V", i)
       } else {
         ## i has names and one single column name is given by on.
         ## This means that xCol and iCol have the same name.
-        xCols[i] = thisCols[1]
-        iCols[i] = thisCols[1]
+        xCols[i] = thisCols[1L]
+        iCols[i] = thisCols[1L]
       }
-    } else if (length(thisCols) == 0){
+    } else if (length(thisCols) == 0L){
       stop("'on' contains no column name: ", on[i], ". Each 'on' clause must contain one or two column names.")
     } else {
       stop("'on' contains more than 2 column names: ", on[i], ". Each 'on' clause must contain one or two column names.")

@@ -33,7 +33,7 @@
   prefix = if (!missing(pkgname)) "data.table::" else ""  # R provides the arguments when it calls .onLoad, I don't in dev/test
   if (!length(grep("data.table", ss[[2L]], fixed = TRUE))) {
     ss = ss[c(1L, NA, 2L:length(ss))]
-    ss[[2L]] = parse(text=paste0("if (!identical(class(..1),'data.frame')) for (x in list(...)) { if (inherits(x,'data.table')) return(",prefix,"data.table(...)) }"))[[1]]
+    ss[[2L]] = parse(text=paste0("if (!identical(class(..1),'data.frame')) for (x in list(...)) { if (inherits(x,'data.table')) return(",prefix,"data.table(...)) }"))[[1L]]
     body(tt)=ss
     (unlockBinding)("cbind.data.frame",baseenv())
     assign("cbind.data.frame",tt,envir=asNamespace("base"),inherits=FALSE)
