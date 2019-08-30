@@ -1511,7 +1511,7 @@ replace_order = function(isub, verbose, env) {
         jvnames = sdvars
       }
     } else if (length(as.character(jsub[[1L]])) == 1L) {  # Else expect problems with <jsub[[1L]] == >
-      subopt = length(jsub) == 3L && jsub[[1L]] == "[" && (is.numeric(jsub[[3L]]) || jsub[[3L]] == ".N")
+      subopt = length(jsub) == 3L && (jsub[[1L]] == "[" || jsub[[1L]] == "[[") && (is.numeric(jsub[[3L]]) || jsub[[3L]] == ".N")
       headopt = jsub[[1L]] == "head" || jsub[[1L]] == "tail"
       firstopt = jsub[[1L]] == "first" || jsub[[1L]] == "last" # fix for #2030
       if ((length(jsub) >= 2L && jsub[[2L]] == ".SD") &&
@@ -1627,8 +1627,7 @@ replace_order = function(isub, verbose, env) {
         }
       } else {
         # Apply GForce
-        gfuns = c("sum", "prod", "mean", "median", "var", "sd", ".N", "min", "max", "head", "last", "first", "tail", "[") # added .N for #5760
-        .ok = function(q) {
+        .gforce_ok = function(q) {
           if (dotN(q)) return(TRUE) # For #5760
           # run GForce for simple f(x) calls and f(x, na.rm = TRUE)-like calls where x is a column of .SD
           # is.symbol() is for #1369, #1974 and #2949
@@ -1639,14 +1638,14 @@ replace_order = function(isub, verbose, env) {
           # otherwise there must be three arguments, and only in two cases:
           #   1) head/tail(x, 1) or 2) x[n], n>0
           length(q)==3L && length(q3 <- q[[3L]])==1L && is.numeric(q3) &&
-            ( (q1c %chin% c("head", "tail") && q3==1L) || (q1c == "[" && q3>0L) )
+            ( (q1c %chin% c("head", "tail") && q3==1L) || ((q1c == "[" || q1c == "[[") && q3>0L) )
         }
         if (jsub[[1L]]=="list") {
           GForce = TRUE
           for (ii in seq.int(from=2L, length.out=length(jsub)-1L)) {
-            if (!.ok(jsub[[ii]])) {GForce = FALSE; break}
+            if (!.gforce_ok(jsub[[ii]])) {GForce = FALSE; break}
           }
-        } else GForce = .ok(jsub)
+        } else GForce = .gforce_ok(jsub)
         if (GForce) {
           if (jsub[[1L]]=="list")
             for (ii in seq_along(jsub)[-1L]) {
@@ -2801,7 +2800,13 @@ rleidv = function(x, cols=seq_along(x), prefix=NULL) {
 }
 
 # GForce functions
-`g[` = function(x, n) .Call(Cgnthvalue, x, as.integer(n)) # n is of length=1 here.
+#   to add a new function to GForce (from the R side -- the easy part!):
+#     (1) add it to gfuns
+#     (2) edit .gforce_ok (defined within `[`) to catch which j will apply the new function
+#     (3) define the gfun = function() R wrapper
+gfuns = c("[", "[[", "head", "tail", "first", "last", "sum", "mean", "prod",
+          "median", "min", "max", "var", "sd", ".N") # added .N for #5760
+`g[` = `g[[` = function(x, n) .Call(Cgnthvalue, x, as.integer(n)) # n is of length=1 here.
 ghead = function(x, n) .Call(Cghead, x, as.integer(n)) # n is not used at the moment
 gtail = function(x, n) .Call(Cgtail, x, as.integer(n)) # n is not used at the moment
 gfirst = function(x) .Call(Cgfirst, x)
