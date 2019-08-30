@@ -347,7 +347,7 @@ SJ = function(...) {
 }
 # S for Sorted, usually used in i to sort the i table
 
-# TO DO?: Use the CJ list() replication method for SJ (inside as.data.table.list?, #2109) too to avoid alloc.col
+# TO DO?: Use the CJ list() replication method for SJ (inside as.data.table.list?, #2109) too to avoid setalloccol
 
 CJ = function(..., sorted = TRUE, unique = FALSE)
 {
@@ -384,7 +384,7 @@ CJ = function(..., sorted = TRUE, unique = FALSE)
   if (nrow > .Machine$integer.max) stop("Cross product of elements provided to CJ() would result in ",nrow," rows which exceeds .Machine$integer.max == ",.Machine$integer.max)
   l = .Call(Ccj, l)
   setDT(l)
-  l = alloc.col(l)  # a tiny bit wasteful to over-allocate a fixed join table (column slots only), doing it anyway for consistency since
+  l = setalloccol(l)  # a tiny bit wasteful to over-allocate a fixed join table (column slots only), doing it anyway for consistency since
                     # it's possible a user may wish to use SJ directly outside a join and would expect consistent over-allocation
   setnames(l, vnames)
   if (sorted) {

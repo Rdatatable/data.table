@@ -80,7 +80,7 @@ Since \code{[.data.table} incurs overhead to check the existence and type of arg
 \value{
 \code{DT} is modified by reference and returned invisibly. If you require a copy, take a \code{\link{copy}} first (using \code{DT2 = copy(DT)}).
 }
-\seealso{ \code{\link{data.table}}, \code{\link{copy}}, \code{\link{alloc.col}}, \code{\link{truelength}}, \code{\link{set}}, \code{\link{.Last.updated}}
+\seealso{ \code{\link{data.table}}, \code{\link{copy}}, \code{\link{setalloccol}}, \code{\link{truelength}}, \code{\link{set}}, \code{\link{.Last.updated}}
 }
 \examples{
 DT = data.table(a = LETTERS[c(3L,1:3)], b = 4:7)

@@ -166,6 +166,8 @@
 
 25. `setnames(DT, old, new)` now omits any `old==new` to save redundant key and index name updates, [#3783](https://github.com/Rdatatable/data.table/issues/3783). `setnames(DT, new)` (i.e. not providing `old`) already omitted any column name updates where `names(DT)==new`; e.g. `setnames(DT, gsub('^_', '', names(DT)))` exits early if no columns start with `_`.
 
+26. `[[` by group is now optimized for regular vectors (not type list), [#3209](https://github.com/Rdatatable/data.table/issues/3209). Thanks @renkun-ken for the suggestion. `[` by group was already optimized. Please file a feature request if you would like this optimization for list columns.
+
 #### BUG FIXES
 
 1. `first`, `last`, `head` and `tail` by group no longer error in some cases, [#2030](https://github.com/Rdatatable/data.table/issues/2030) [#3462](https://github.com/Rdatatable/data.table/issues/3462). Thanks to @franknarf1 for reporting.
@@ -302,6 +304,12 @@
 18. Added a note to `?setkey` clarifying that `setkey` always uses C-locale sorting (as has been noted in `?setorder`). Thanks @JBreidaks for the report in [#2114](https://github.com/Rdatatable/data.table/issues/2114).
 
 19. `hour()`/`minute()`/`second()` are much faster for `ITime` input, [#3518](https://github.com/Rdatatable/data.table/issues/3158).
+
+20. New alias `setalloccol` for `alloc.col`, [#3475](https://github.com/Rdatatable/data.table/issues/3475). For consistency with `set*` prefixes for functions that operate in-place (like `setkey`, `setorder`, etc.). `alloc.col` is not going to be deprecated but we recommend using `setalloccol`.
+
+21. `dcast` no longer emits a message when `value.var` is missing but `fun.aggregate` is explicitly set to `length` (since `value.var` is arbitrary in this case), [#2980](https://github.com/Rdatatable/data.table/issues/2980).
+
+22. Optimized `mean` of `integer` columns no longer warns about a coercion to numeric, [#986](https://github.com/Rdatatable/data.table/issues/986). Thanks @dgrtwo for his [YouTube tutorial at 3:01](https://youtu.be/AmE4LXPQErM?t=175) where the warning occurs.
 
 
 ### Changes in [v1.12.2](https://github.com/Rdatatable/data.table/milestone/14?closed=1)  (07 Apr 2019)

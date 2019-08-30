@@ -7977,6 +7977,15 @@ test(1581.11, ans2 <- dt[x %in% letters[15:20], .SD[2], by=x, verbose=TRUE],
 test(1581.12, ans1, ans2)
 options(datatable.optimize = Inf)
 
+# #3209 g[[
+options(datatable.optimize=1L)
+test(1581.13, ans1 <- dt[x %in% letters[15:20], d1[[2]], by=x, verbose=TRUE],
+              output = "(GForce FALSE)")
+options(datatable.optimize=Inf)
+test(1581.14, ans2 <- dt[x %in% letters[15:20], d1[[2]], by=x, verbose=TRUE],
+              output = "GForce optimized j")
+test(1581.15, ans1, ans2)
+
 # handle NULL value correctly #1429
 test(1582, uniqueN(NULL), 0L)
 
@@ -13822,7 +13831,7 @@ test(1984.23, na.omit(DT, cols = 'b'), error="specify non existing column*.*b")
 #test(1984.24, na.omit(DT, cols = c('b', 'c')), error="Columns [b, c] don't") # only first non-existing col is now reported for efficiency
 ### idcol = TRUE behavior of rbindlist
 test(1984.25, rbindlist(list(DT[1L], DT[2L]), idcol = TRUE), data.table(.id=1:2, a=1:2))
-test(1984.26, alloc.col(`*tmp*`), error='alloc.col attempting to modify `*tmp*`')
+test(1984.26, setalloccol(`*tmp*`), error='setalloccol attempting to modify `*tmp*`')
 DF = as.data.frame(DT)
 test(1984.27, shallow(DF), error='x is not a data.table')
 test(1984.28, split.data.table(DF), error='argument must be a data.table')
@@ -14250,7 +14259,7 @@ test(2016.1, name, "DT")
 test(2016.2, DT, data.table(a=1:3))
 test(2016.3, DT[2,a:=4L], data.table(a=INT(1,4,3)))        # no error for := when existing column
 test(2016.4, set(DT,3L,1L,5L), data.table(a=INT(1,4,5)))   # no error for set() when existing column
-test(2016.5, set(DT,2L,"newCol",5L), error="either been loaded from disk.*or constructed manually.*Please run setDT.*alloc.col.*on it first")   # just set()
+test(2016.5, set(DT,2L,"newCol",5L), error="either been loaded from disk.*or constructed manually.*Please run setDT.*setalloccol.*on it first")   # just set()
 test(2016.6, DT[2,newCol:=6L], data.table(a=INT(1,4,5), newCol=INT(NA,6L,NA)))  # := ok (it changes DT in caller)
 unlink(tt)
 
@@ -15847,6 +15856,13 @@ test(2094.01, X$TAG, rep(x, each = 2))
 x = setNames(x, paste0("nm_", x))
 X = rbindlist(lapply(x, function(.) list(., 1:2, 2:3)), idcol = 'TAG')
 test(2094.02, X$TAG, rep(names(x), each = 2))
+
+# use arbitrary column without message when fun.aggregate=length, #2980
+DT = data.table(a=c(3L, 3L, 2L, 9L, 5L, 10L, 3L, 2L, 9L, 8L), b=rep(1:5, 2))
+test(2095, any(grepl('override', capture.output(dcast(DT, a~b, fun.aggregate=length)), fixed=TRUE)), FALSE)
+
+# gmean intermediate can overflow integers without warning, #986
+test(2096, data.table(a=c(1L,1L), v=c(2e9L, 2e9L))[, mean(v), a], data.table(a=1L, V1=2e9))
 
 
 ###################################
