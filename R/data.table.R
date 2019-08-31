@@ -343,7 +343,7 @@ replace_dot_alias = function(e) {
           if (isub_el == '::') break
           if (isub_el == 'order') {
             if (verbose) cat("order optimisation is on, changed 'order(...)' in i to 'forder(x, ...)'.\n")
-            eval_forder = TRUE
+            eval_forder <<- TRUE
             return(as.call(c(list(quote(forder), quote(x)), as.list(isub)[-1L])))
           }
         }
