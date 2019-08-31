@@ -304,7 +304,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
         RHS = VECTOR_ELT(jval,j%LENGTH(jval));
         if (isNull(target)) {
           // first time adding to new column
-          if (TRUELENGTH(dt) < INTEGER(lhs)[j]) error("Internal error: Trying to add new column by reference but tl is full; alloc.col should have run first at R level before getting to this point in dogroups"); // # nocov
+          if (TRUELENGTH(dt) < INTEGER(lhs)[j]) error("Internal error: Trying to add new column by reference but tl is full; setalloccol should have run first at R level before getting to this point in dogroups"); // # nocov
           tmp = PROTECT(allocNAVectorLike(RHS, LENGTH(VECTOR_ELT(dt,0))));
           // increment length only if the allocation passes, #1676
           SETLENGTH(dtnames, LENGTH(dtnames)+1);

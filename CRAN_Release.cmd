@@ -66,6 +66,12 @@ grep -P "\t" ./src/*.c
 grep -n "[^A-Za-z0-9]T[^A-Za-z0-9]" ./inst/tests/tests.Rraw
 grep -n "[^A-Za-z0-9]F[^A-Za-z0-9]" ./inst/tests/tests.Rraw
 
+# All integers internally should have L suffix to avoid lots of one-item coercions
+# Where 0 numeric is intended we should perhaps use 0.0 for clarity and make the grep easier
+# 1) tolerance=0 usages in setops.R are valid numeric 0, as are anything in strings
+# 2) leave the rollends default using roll>=0 though; comments in PR #3803
+grep -Enr "^[^#]*(?:\[|==|>|<|>=|<=|,|\(|\+)\s*[-]?[0-9]+[^0-9L:.e]" R | grep -Ev "stop|warning|tolerance"
+
 # No system.time in main tests.Rraw. Timings should be in benchmark.Rraw
 grep -n "system[.]time" ./inst/tests/tests.Rraw
 
