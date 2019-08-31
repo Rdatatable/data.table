@@ -134,11 +134,11 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
       }
     }
     ## these variables are only needed for non-equi joins. Set them to default.
-    nqgrp = integer(0)
+    nqgrp = integer(0L)
     nqmaxgrp = 1L
   } else {
     # non-equi operators present.. investigate groups..
-    nqgrp = integer(0)
+    nqgrp = integer(0L)
     nqmaxgrp = 1L
     if (verbose) cat("Non-equi join operators detected ... \n")
     if (roll != FALSE) stop("roll is not implemented for non-equi joins yet.")

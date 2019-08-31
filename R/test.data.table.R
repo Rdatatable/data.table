@@ -75,7 +75,7 @@ test.data.table = function(verbose=FALSE, pkg="pkg", silent=FALSE, with.other.pa
   assign("foreign", foreign, envir=env)
   assign("nfail", 0L, envir=env)
   assign("ntest", 0L, envir=env)
-  assign("prevtest", -1, envir=env)
+  assign("prevtest", -1L, envir=env)
   assign("whichfail", NULL, envir=env)
   assign("started.at", proc.time(), envir=env)
   assign("lasttime", proc.time()[3L], envir=env)  # used by test() to attribute time inbetween tests to the next test
@@ -118,7 +118,7 @@ test.data.table = function(verbose=FALSE, pkg="pkg", silent=FALSE, with.other.pa
                 ", locale='", Sys.getlocale(), "'",
                 ", l10n_info()='", paste0(names(l10n_info()), "=", l10n_info(), collapse="; "), "'",
                 ", getDTthreads()='", paste0(gsub("[ ][ ]+","==",gsub("^[ ]+","",capture.output(invisible(getDTthreads(verbose=TRUE))))), collapse="; "), "'")
-  DT = head(timings[-1L][order(-time)],10)   # exclude id 1 as in dev that includes JIT
+  DT = head(timings[-1L][order(-time)], 10L)   # exclude id 1 as in dev that includes JIT
   if ((x<-sum(timings[["nTest"]])) != ntest) {
     warning("Timings count mismatch:",x,"vs",ntest)  # nocov
   }
@@ -151,8 +151,8 @@ test.data.table = function(verbose=FALSE, pkg="pkg", silent=FALSE, with.other.pa
   #if (memtest<-get("memtest", envir=env)) memtest.plot(get("inittime", envir=env))
 
   # nocov start
-  if (nfail > 0) {
-    if (nfail>1) {s1="s";s2="s: "} else {s1="";s2=" "}
+  if (nfail > 0L) {
+    if (nfail > 1L) {s1="s";s2="s: "} else {s1="";s2=" "}
     cat("\r")
     stop(nfail," error",s1," out of ",ntest," in ",timetaken(started.at)," on ",date(),". [",plat,"].",
          " Search ",names(fn)," for test number",s2,paste(whichfail,collapse=", "),".")
@@ -194,7 +194,7 @@ ps_mem = function() {
   ans = tryCatch(as.numeric(system(cmd, intern=TRUE, ignore.stderr=TRUE)), warning=function(w) NA_real_, error=function(e) NA_real_)
   stopifnot(length(ans)==1L) # extra check if other OSes would not handle 'tail -1' properly for some reason
   # returns RSS memory occupied by current R process in MB rounded to 1 decimal places (as in gc), ps already returns KB
-  c("PS_rss"=round(ans / 1024, 1))
+  c("PS_rss"=round(ans / 1024, 1L))
   # nocov end
 }
 
@@ -237,7 +237,7 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,output=NULL,message=NULL) {
     foreign = get("foreign", parent.frame())
     time = nTest = NULL  # to avoid 'no visible binding' note
     on.exit( {
-       now = proc.time()[3]
+       now = proc.time()[3L]
        took = now-lasttime  # so that prep time between tests is attributed to the following test
        assign("lasttime", now, parent.frame(), inherits=TRUE)
        timings[ as.integer(num), `:=`(time=time+took, nTest=nTest+1L), verbose=FALSE ]

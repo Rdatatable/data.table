@@ -337,10 +337,11 @@ void *gather(SEXP x, bool *anyNA)
   return gx;
 }
 
-SEXP gsum(SEXP x, SEXP narmArg)
+SEXP gsum(SEXP x, SEXP narmArg, SEXP warnOverflowArg)
 {
   if (!isLogical(narmArg) || LENGTH(narmArg)!=1 || LOGICAL(narmArg)[0]==NA_LOGICAL) error("na.rm must be TRUE or FALSE");
   const bool narm = LOGICAL(narmArg)[0];
+  const bool warnOverflow = LOGICAL(warnOverflowArg)[0];
   if (inherits(x, "factor")) error("sum is not meaningful for factors.");
   const int n = (irowslen == -1) ? length(x) : irowslen;
   double started = wallclock();
@@ -400,7 +401,7 @@ SEXP gsum(SEXP x, SEXP narmArg)
     //Rprintf("gsum int took %.3f\n", wallclock()-started);
     if (overflow) {
       UNPROTECT(1); // discard the result with overflow
-      warning("The sum of an integer column for a group was more than type 'integer' can hold so the result has been coerced to 'numeric' automatically for convenience.");
+      if (warnOverflow) warning("The sum of an integer column for a group was more than type 'integer' can hold so the result has been coerced to 'numeric' automatically for convenience.");
       ans = PROTECT(allocVector(REALSXP, ngrp));
       double *restrict ansp = REAL(ans);
       memset(ansp, 0, ngrp*sizeof(double));
@@ -578,7 +579,7 @@ SEXP gmean(SEXP x, SEXP narm)
   if (inherits(x, "factor")) error("mean is not meaningful for factors.");
   if (!LOGICAL(narm)[0]) {
     int protecti=0;
-    ans = PROTECT(gsum(x,narm)); protecti++;
+    ans = PROTECT(gsum(x, narm, /*#986, warnOverflow=*/ScalarLogical(FALSE))); protecti++;
     switch(TYPEOF(ans)) {
     case LGLSXP: case INTSXP:
       ans = PROTECT(coerceVector(ans, REALSXP)); protecti++;
