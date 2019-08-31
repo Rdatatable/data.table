@@ -301,6 +301,7 @@ replace_order = function(isub, verbose, env) {
   # setdiff removes duplicate entries, which'll create issues with duplicated names. Use %chin% instead.
   dupdiff = function(x, y) x[!x %chin% y]
 
+  current_optim = getOption('datatable.optimize')
   if (!missing(i)) {
     xo = NULL
     isub = substitute(i)
@@ -353,7 +354,7 @@ replace_order = function(isub, verbose, env) {
     # optimize here so that we can switch it off if needed
     check_eval_env = environment()
     check_eval_env$eval_forder = FALSE
-    if (getOption("datatable.optimize") >= 1L) {
+    if (current_optim >= 1L) {
       isub = replace_order(isub, verbose, check_eval_env)
     }
     if (check_eval_env$eval_forder) {
@@ -1160,13 +1161,16 @@ replace_order = function(isub, verbose, env) {
   }
 
   # 2677 -- browbeat about ifelse usage in j
-  SDenv$ifelse = function(test, yes, no) {
-    if (length(test) == 1L) {
-      warning("ifelse() is a vector operation, but input has length(test)=1; if (test) yes else no is the more efficient syntax for this case; replacing")
-      return(if (test) yes else no)
+  # TODO: phase this in to be the default (i.e., regardless of optimization level)
+  if ( current_optim >= 3L) {
+    SDenv$ifelse = function(test, yes, no) {
+      if (length(test) == 1L) {
+        warning("ifelse() is a vector operation, but input has length(test)=1; if (test) yes else no is the more efficient syntax for this case; replacing")
+        return(if (test) yes else no)
+      }
+      warning("ifelse() usage detected and converted to data.table's fifelse() which is more efficient and won't strip attributes. If you have a use case for ifelse that is not handled well by fifelse, please let us know; in the meantime, you can call base::ifelse explicitly. Please also be wary of nested ifelse constructs like ifelse(ifelse(ifelse(l1, a, ifelse(l2, b)), c, d), e) which are in general quite expensive and almost always better formulated as a join.")
+      fifelse(test, yes, no)
     }
-    warning("ifelse() usage detected and converted to data.table's fifelse() which is more efficient and won't strip attributes. If you have a use case for ifelse that is not handled well by fifelse, please let us know; in the meantime, you can call base::ifelse explicitly. Please also be wary of nested ifelse constructs like ifelse(ifelse(ifelse(l1, a, ifelse(l2, b)), c, d), e) which are in general quite expensive and almost always better formulated as a join.")
-    fifelse(test, yes, no)
   }
 
   syms = all.vars(jsub)
@@ -1472,7 +1476,7 @@ replace_order = function(isub, verbose, env) {
   lockBinding(".iSD",SDenv)
 
   GForce = FALSE
-  if ( getOption("datatable.optimize")>=1L && (is.call(jsub) || (is.name(jsub) && as.character(jsub)[[1L]] %chin% c(".SD",".N"))) ) {  # Ability to turn off if problems or to benchmark the benefit
+  if ( current_optim>=1L && (is.call(jsub) || (is.name(jsub) && as.character(jsub)[[1L]] %chin% c(".SD",".N"))) ) {  # Ability to turn off if problems or to benchmark the benefit
     # Optimization to reduce overhead of calling lapply over and over for each group
     oldjsub = jsub
     funi = 1L # Fix for #985
@@ -1628,7 +1632,7 @@ replace_order = function(isub, verbose, env) {
     dotN = function(x) is.name(x) && x==".N" # For #5760. TODO: Rprof() showed dotN() may be the culprit if iterated (#1470)?; avoid the == which converts each x to character?
     # FR #971, GForce kicks in on all subsets, no joins yet. Although joins could work with
     # nomatch=0L even now.. but not switching it on yet, will deal it separately.
-    if (getOption("datatable.optimize")>=2L && !is.data.table(i) && !byjoin && length(f__) && !length(lhs)) {
+    if (current_optim>=2L && !is.data.table(i) && !byjoin && length(f__) && !length(lhs)) {
       if (!length(ansvars) && !use.I) {
         GForce = FALSE
         if ( (is.name(jsub) && jsub == ".N") || (is.call(jsub) && length(jsub)==2L && length(as.character(jsub[[1L]])) && as.character(jsub[[1L]])[1L] == "list" && length(as.character(jsub[[2L]])) && as.character(jsub[[2L]])[1L] == ".N") ) {
@@ -1706,7 +1710,7 @@ replace_order = function(isub, verbose, env) {
       # when fastmean can do trim.
     }
   } else if (verbose) {
-    if (getOption("datatable.optimize")<1L) cat("All optimizations are turned off\n")
+    if (current_optim<1L) cat("All optimizations are turned off\n")
     else cat("Optimization is on but left j unchanged (single plain symbol): '",deparse(jsub, width.cutoff=200L, nlines=1L),"'\n",sep="")
   }
   if (byjoin) {

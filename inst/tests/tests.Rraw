@@ -15864,12 +15864,17 @@ test(2095, any(grepl('override', capture.output(dcast(DT, a~b, fun.aggregate=len
 # gmean intermediate can overflow integers without warning, #986
 test(2096, data.table(a=c(1L,1L), v=c(2e9L, 2e9L))[, mean(v), a], data.table(a=1L, V1=2e9))
 
-# #2677 -- emit warnings when ifelse is used in j
+# #2677 -- emit warnings when ifelse is used in j (only for high optim _for now_)
+optim = options(datatable.optimize=0L)
 DT = data.table(a=1:10)
-test(2097.1, DT[ , ifelse(a > 5, 1, -1)], rep(c(-1, 1), each=5L),
+test(2097.1, DT[ , ifelse(a > 5, 1, -1)], rep(c(-1, 1), each=5L))
+test(2097.2, DT[1L, ifelse(a > 5, 1, -1)], -1)
+options(datatable.optimize=3L)
+test(2097.3, DT[ , ifelse(a > 5, 1, -1)], rep(c(-1, 1), each=5L),
      warning="ifelse() usage detected and converted")
-test(2097.2, DT[1L, ifelse(a > 5, 1, -1)], -1,
+test(2097.4, DT[1L, ifelse(a > 5, 1, -1)], -1,
      warning="ifelse() is a vector operation")
+options(optim)
 
 ###################################
 #  Add new tests above this line  #
