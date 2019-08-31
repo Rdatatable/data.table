@@ -1047,7 +1047,7 @@ if (FALSE) {
   system.time(ans3<-rollfun(x, n, sum))
   all.equal(ans1, ans2) && all.equal(ans1, ans3)
 
-           rollfun rollapply R
+  #        rollfun rollapply R
   # mean:  0.006   5.723     9.150
   # sum:   0.007   1.430     5.409
 }
