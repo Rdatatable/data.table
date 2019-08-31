@@ -43,8 +43,7 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b, SEXP na) {
   SEXP ans = PROTECT(allocVector(TYPEOF(a), len0)); nprotect++;
   copyMostAttrib(a, ans);
   
-  if(!isNull(na))
-  {
+  if(!isNull(na)) {
     if(TYPEOF(na) != TYPEOF(a)) error("'yes' is of type %s but 'na' is of type %s. Please make sure that both arguments have the same type.", type2char(ta), type2char(TYPEOF(na)));
     if(xlength(na) != 1)         error("Length of 'na' is %lld but must be 1",xlength(na));
     if (!R_compute_identical(PROTECT(getAttrib(a,R_ClassSymbol)), PROTECT(getAttrib(na,R_ClassSymbol)), 0))
@@ -113,7 +112,10 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b, SEXP na) {
     const SEXP *restrict pb = VECTOR_PTR(b);
     const SEXP *restrict pna = VECTOR_PTR(na);
     for (int64_t i=0; i<len0; ++i) {
-      if (pl[i]==NA_INTEGER) { SET_VECTOR_ELT(ans, i, pna[0]); continue; }  // allocVector already initialized with R_NilValue
+      if (pl[i]==NA_INTEGER) {
+        if(!isNull(na)) SET_VECTOR_ELT(ans, i, pna[0]);
+        continue;
+      } // allocVector already initialized with R_NilValue
       SET_VECTOR_ELT(ans, i, pl[i]==0 ? pb[i & bmask] : pa[i & amask]);
     }
   } break;

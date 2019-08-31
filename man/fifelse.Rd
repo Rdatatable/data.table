@@ -31,5 +31,8 @@ yes = factor(c("a","b","c"))
 no = yes[1L]
 ifelse(c(TRUE,FALSE,TRUE), yes, no)
 fifelse(c(TRUE,FALSE,TRUE), yes, no)
+
+# Example of using the 'na' argument
+fifelse(test = c(-5L:5L < 0L, NA), yes = 1L, no = 0L, na = 2L)
 }
 \keyword{ data }
