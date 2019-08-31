@@ -19,7 +19,7 @@ frollmean(x, n, fill=NA, algo=c("fast", "exact"), align=c("right",
   "left", "center"), na.rm=FALSE, hasNA=NA, adaptive=FALSE)
 frollsum(x, n, fill=NA, algo=c("fast","exact"), align=c("right", "left",
   "center"), na.rm=FALSE, hasNA=NA, adaptive=FALSE)
-frollapply(x, n, FUN, ...)
+frollapply(x, n, FUN, ..., fill=NA, align=c("right", "left", "center"))
 }
 \arguments{
   \item{x}{ vector, list, data.frame or data.table of numeric or logical columns. }
@@ -78,6 +78,12 @@ frollapply(x, n, FUN, ...)
   When multiple columns or multiple windows width are provided, then they
   are run in parallel. Except for the \code{algo="exact"} which runs in
   parallel already.
+
+  \code{frollapply} computes arbitrary R function. A function has to return
+  scalar \emph{double} value. Input to function is coerced to \emph{double}
+  beforehand. Any R function is supported but it is not optimized using our
+  own C implementation. It is also always single-threaded because there is
+  no thread-safe API to R's C \code{eval}.
 }
 \value{
   A list except when the input is a \code{vector} and
@@ -127,6 +133,13 @@ an = function(n, len) c(seq.int(n), rep(n, len-n))
 n = an(3, nrow(d))
 frollmean(d, n, adaptive=TRUE)
 
+# frollsum
+frollsum(d, 3:4)
+
+# frollapply
+frollapply(d, 3:4, sum)
+frollapply(d, 3:4, function(x, ...) if (sum(x, ...)>5) min(x, ...) else max(x, ...), na.rm=TRUE)
+
 # performance vs exactness
 set.seed(108)
 x = sample(c(rnorm(1e3, 1e6, 5e5), 5e9, 5e-9))
@@ -147,10 +160,12 @@ system.time(ans1<-ma(x, n))
 system.time(ans2<-fastma(x, n))
 system.time(ans3<-frollmean(x, n))
 system.time(ans4<-frollmean(x, n, algo="exact"))
+system.time(ans5<-frollapply(x, n, mean))
 anserr = list(
   fastma = ans2-ans1,
   froll_fast = ans3-ans1,
-  froll_exact = ans4-ans1
+  froll_exact = ans4-ans1,
+  frollapply = ans5-ans1
 )
 errs = sapply(lapply(anserr, abs), sum, na.rm=TRUE)
 sapply(errs, format, scientific=FALSE) # roundoff

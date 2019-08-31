@@ -1019,6 +1019,12 @@ x = 1:10
 test(6010.001, frollsum(x, 3), frollapply(x, 3, sum))
 test(6010.002, frollsum(x, 6), frollapply(x, 6, sum))
 test(6010.003, frollmean(x, 3), frollapply(x, 3, mean))
+d = as.data.table(list(1:6/2, 3:8/4))
+test(6010.004, frollsum(d, 3:4), frollapply(d, 3:4, sum))
+test(6010.005, frollmean(d, 3:4), frollapply(d, 3:4, mean))
+d = rbind(d, list(NA,NA))
+ans = list(c(NA,NA,1.5,2,1.5,2,2.5), c(NA,NA,NA,2,1,1.5,2), c(NA,NA,1.25,1.5,1.75,1.5,2), c(NA,NA,NA,1.5,1,1.25,1.5))
+test(6010.006, frollapply(d, 3:4, function(x, ...) if (sum(x, ...)>5) min(x, ...) else max(x, ...), na.rm=TRUE), ans)
 
 ## frollapply benchmark
 if (FALSE) {
@@ -1041,7 +1047,7 @@ if (FALSE) {
   system.time(ans3<-rollfun(x, n, sum))
   all.equal(ans1, ans2) && all.equal(ans1, ans3)
 
-  # memcpy
-  # mean:  0.006 vs 8.772 vs 9.563
-  # sum:   0.001 vs 1.344 vs 5.466
+           rollfun rollapply R
+  # mean:  0.006   5.723     9.150
+  # sum:   0.007   1.430     5.409
 }
