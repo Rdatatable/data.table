@@ -331,7 +331,6 @@ replace_dot_alias = function(e) {
     if (is.null(isub)) return( null.data.table() )
 
     # optimize here so that we can switch it off if needed
-<<<<<<< HEAD
     # replace order -> forder wherever it appears in i
     #   replace_order defined here to have right env inheritance
     replace_order = function(isub, verbose) {
