@@ -1199,7 +1199,6 @@ replace_dot_alias = function(e) {
     assign(sym, get(getName, parent.frame()), SDenv)
   }
   # hash=TRUE (the default) does seem better as expected using e.g. test 645.  TO DO experiment with 'size' argument
-  #browser()
   if (missingby || bynull || (!byjoin && !length(byval))) {
     # No grouping: 'by' = missing | NULL | character() | "" | list()
     # Considered passing a one-group to dogroups but it doesn't do the recycling of i within group, that's done here
