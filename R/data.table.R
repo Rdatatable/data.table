@@ -1164,10 +1164,6 @@ replace_order = function(isub, verbose, env) {
   # TODO: phase this in to be the default (i.e., regardless of optimization level)
   if ( current_optim >= 3L) {
     SDenv$ifelse = function(test, yes, no) {
-      if (length(test) == 1L) {
-        warning("ifelse() is a vector operation, but input has length(test)=1; if (test) yes else no is the more efficient syntax for this case; replacing")
-        return(if (test) yes else no)
-      }
       warning("ifelse() usage detected and converted to data.table's fifelse() which is more efficient and won't strip attributes. If you have a use case for ifelse that is not handled well by fifelse, please let us know; in the meantime, you can call base::ifelse explicitly. Please also be wary of nested ifelse constructs like ifelse(ifelse(ifelse(l1, a, ifelse(l2, b)), c, d), e) which are in general quite expensive and almost always better formulated as a join.")
       fifelse(test, yes, no)
     }
