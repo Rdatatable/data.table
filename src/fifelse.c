@@ -1,6 +1,6 @@
 #include "data.table.h"
 
-SEXP fifelseR(SEXP l, SEXP a, SEXP b) {
+SEXP fifelseR(SEXP l, SEXP a, SEXP b, SEXP na) {
 
   if (!isLogical(l)) error("Argument 'test' must be logical.");
   const int64_t len0 = xlength(l);
@@ -42,24 +42,41 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b) {
   const int *restrict pl = LOGICAL(l);
   SEXP ans = PROTECT(allocVector(TYPEOF(a), len0)); nprotect++;
   copyMostAttrib(a, ans);
+  
+  if(!isNull(na))
+  {
+    if(TYPEOF(na) != TYPEOF(a)) error("'yes' is of type %s but 'na' is of type %s. Please make sure that both arguments have the same type.", type2char(ta), type2char(TYPEOF(na)));
+    if(xlength(na) != 1)         error("Length of 'na' is %lld but must be 1",xlength(na));
+    if (!R_compute_identical(PROTECT(getAttrib(a,R_ClassSymbol)), PROTECT(getAttrib(na,R_ClassSymbol)), 0))
+      error("'yes' has different class than 'na'. Please make sure that both arguments have the same class.");
+    UNPROTECT(2);
+    
+    if (isFactor(a)) {
+      if (!R_compute_identical(PROTECT(getAttrib(a,R_LevelsSymbol)), PROTECT(getAttrib(na,R_LevelsSymbol)), 0))
+        error("'yes' and 'na' are both type factor but their levels are different.");
+      UNPROTECT(2);
+    }
+  }
 
   switch(TYPEOF(a)) {
   case LGLSXP: {
     int *restrict pans = LOGICAL(ans);
     const int *restrict pa   = LOGICAL(a);
     const int *restrict pb   = LOGICAL(b);
+    const int pna = !isNull(na) ? LOGICAL(na)[0] : NA_LOGICAL;
     #pragma omp parallel for num_threads(getDTthreads())
     for (int64_t i=0; i<len0; ++i) {
-      pans[i] = pl[i]==0 ? pb[i & bmask] : (pl[i]==1 ? pa[i & amask] : NA_LOGICAL);
+      pans[i] = pl[i]==0 ? pb[i & bmask] : (pl[i]==1 ? pa[i & amask] : pna);
     }
   } break;
   case INTSXP: {
     int *restrict pans = INTEGER(ans);
     const int *restrict pa   = INTEGER(a);
     const int *restrict pb   = INTEGER(b);
+    const int pna = !isNull(na) ? INTEGER(na)[0] : NA_INTEGER;
     #pragma omp parallel for num_threads(getDTthreads())
     for (int64_t i=0; i<len0; ++i) {
-      pans[i] = pl[i]==0 ? pb[i & bmask] : (pl[i]==1 ? pa[i & amask] : NA_INTEGER);
+      pans[i] = pl[i]==0 ? pb[i & bmask] : (pl[i]==1 ? pa[i & amask] : pna);
     }
   } break;
   case REALSXP: {
@@ -67,32 +84,36 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b) {
     const double *restrict pa   = REAL(a);
     const double *restrict pb   = REAL(b);
     const double na_double = (INHERITS(a, char_integer64) || INHERITS(a, char_nanotime)) ? NA_INT64_D : NA_REAL; // integer64 and nanotime support
+    const double pna = !isNull(na) ? REAL(na)[0] : na_double;
     #pragma omp parallel for num_threads(getDTthreads())
     for (int64_t i=0; i<len0; ++i) {
-      pans[i] = pl[i]==0 ? pb[i & bmask] : (pl[i]==1 ? pa[i & amask] : na_double);
+      pans[i] = pl[i]==0 ? pb[i & bmask] : (pl[i]==1 ? pa[i & amask] : pna);
     }
   } break;
   case STRSXP : {
     const SEXP *restrict pa = STRING_PTR(a);
     const SEXP *restrict pb = STRING_PTR(b);
+    const SEXP pna = !isNull(na) ? STRING_PTR(na)[0] : NA_STRING;
     for (int64_t i=0; i<len0; ++i) {
-      SET_STRING_ELT(ans, i, pl[i]==0 ? pb[i & bmask] : (pl[i]==1 ? pa[i & amask] : NA_STRING));
+      SET_STRING_ELT(ans, i, pl[i]==0 ? pb[i & bmask] : (pl[i]==1 ? pa[i & amask] : pna));
     }
   } break;
   case CPLXSXP : {
     Rcomplex *restrict pans = COMPLEX(ans);
     const Rcomplex *restrict pa   = COMPLEX(a);
     const Rcomplex *restrict pb   = COMPLEX(b);
+    const Rcomplex pna = !isNull(na) ? COMPLEX(na)[0] : NA_CPLX;
     #pragma omp parallel for num_threads(getDTthreads())
     for (int64_t i=0; i<len0; ++i) {
-      pans[i] = pl[i]==0 ? pb[i & bmask] : (pl[i]==1 ? pa[i & amask] : NA_CPLX);
+      pans[i] = pl[i]==0 ? pb[i & bmask] : (pl[i]==1 ? pa[i & amask] : pna);
     }
   } break;
   case VECSXP : {
     const SEXP *restrict pa = VECTOR_PTR(a);
     const SEXP *restrict pb = VECTOR_PTR(b);
+    const SEXP *restrict pna = VECTOR_PTR(na);
     for (int64_t i=0; i<len0; ++i) {
-      if (pl[i]==NA_INTEGER) continue;  // allocVector already initialized with R_NilValue
+      if (pl[i]==NA_INTEGER) { SET_VECTOR_ELT(ans, i, pna[0]); continue; }  // allocVector already initialized with R_NilValue
       SET_VECTOR_ELT(ans, i, pl[i]==0 ? pb[i & bmask] : pa[i & amask]);
     }
   } break;

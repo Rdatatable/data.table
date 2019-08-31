@@ -15864,6 +15864,22 @@ test(2095, any(grepl('override', capture.output(dcast(DT, a~b, fun.aggregate=len
 # gmean intermediate can overflow integers without warning, #986
 test(2096, data.table(a=c(1L,1L), v=c(2e9L, 2e9L))[, mean(v), a], data.table(a=1L, V1=2e9))
 
+# fifelse, #3753, add argument na for missing values
+test_vec_na = c(-5L:5L < 0L, NA)
+out_vec_na = c(rep(1:0, 5:6), 2L)
+date_vec_na = as.logical(c(as.Date(14975:14979, origin = '1970-01-01') == "2011-01-01", as.Date(NA)))
+test(2097.001, fifelse(test_vec_na, 1L, 0L, 2L), out_vec_na)
+test(2097.002, fifelse(test_vec_na, 1, 0, 2), as.numeric(out_vec_na))
+test(2097.003, fifelse(test_vec_na, TRUE, FALSE, TRUE), as.logical(out_vec_na))
+test(2097.004, fifelse(test_vec_na, "1", "0","2"), as.character(out_vec_na))
+test(2097.005, fifelse(test_vec_na, 1+0i, 0+0i, 2+0i), as.complex(out_vec_na))
+test(2097.006, fifelse(c(TRUE,FALSE,NA), list(1:5), list(5:1), list(15:11)), list(1:5,5:1,15:11))
+test(2097.007, fifelse(test_vec_na, 1, 0, 2L), error = "'yes' is of type double but 'na' is of type integer. Please make sure that both arguments have the same type.")
+test(2097.008, fifelse(test_vec_na, 1, 0, c(2,3)), error = "Length of 'na' is 2 but must be 1")
+test(2097.009, fifelse(date_vec_na, as.Date("2019-08-31"), as.Date("2019-08-30"), as.Date("2019-08-29")), as.Date(c(18139, 18138, 18138, 18138, 18138, 18137), origin = '1970-01-01'))
+test(2097.010, fifelse(date_vec_na, as.Date("2019-08-31"), as.Date("2019-08-30"), 18137), error = "'yes' has different class than 'na'. Please make sure that both arguments have the same class.")
+test(2097.011, fifelse(c(TRUE,FALSE,TRUE,TRUE,FALSE,NA), factor(letters[1:6]), factor("a", levels=letters[1:6]), factor("f", levels=letters[1:6])), factor(c("a","a","c","d","a","f"), levels=letters[1:6]))
+test(2097.012, fifelse(c(TRUE,FALSE,TRUE,TRUE,FALSE,NA), factor(letters[1:6]), factor("a", levels=letters[1:6]), factor("f", levels=letters[1:7])), error = "'yes' and 'na' are both type factor but their levels are different.")
 
 ###################################
 #  Add new tests above this line  #
