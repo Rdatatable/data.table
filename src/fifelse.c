@@ -42,10 +42,10 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b, SEXP na) {
   const int64_t bmask = len2>1 ? INT64_MAX : 0;
 
   const int *restrict pl = LOGICAL(l);
-  SEXP ans = PROTECT(allocVector(TYPEOF(a), len0)); nprotect++;
+  SEXP ans = PROTECT(allocVector(ta, len0)); nprotect++;
   copyMostAttrib(a, ans);
 
-  bool nonna = na!=R_MissingArg;
+  bool nonna = !isNull(na);
   if (nonna) {
     SEXPTYPE tn = TYPEOF(na);
     if (tn != ta)
