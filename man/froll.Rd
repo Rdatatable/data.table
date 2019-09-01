@@ -19,7 +19,7 @@ frollmean(x, n, fill=NA, algo=c("fast", "exact"), align=c("right",
   "left", "center"), na.rm=FALSE, hasNA=NA, adaptive=FALSE)
 frollsum(x, n, fill=NA, algo=c("fast","exact"), align=c("right", "left",
   "center"), na.rm=FALSE, hasNA=NA, adaptive=FALSE)
-frollapply(x, n, FUN, ..., fill=NA, align=c("right", "left", "center"))
+frollapply(x, n, FUN, \dots, fill=NA, align=c("right", "left", "center"))
 }
 \arguments{
   \item{x}{ vector, list, data.frame or data.table of numeric or logical columns. }
