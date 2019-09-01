@@ -1076,29 +1076,3 @@ x[6] = -Inf
 test(6010.604, frollapply(x, n, mean), ma(x, n))
 x[5:7] = c(NA, Inf, -Inf)
 test(6010.605, frollapply(x, n, mean), ma(x, n))
-
-## frollapply benchmark
-if (FALSE) {
-  set.seed(108)
-  x = rnorm(1e6)
-  n = 1e3
-  rollfun = function(x, n, FUN, fill=NA_real_, na.rm=FALSE, nf.rm=FALSE) {
-    ans = rep(fill, nx<-length(x))
-    f = match.fun(FUN)
-    if (nf.rm) x[is.infinite(x)] = NA_real_
-    for (i in n:nx) ans[i] = f(x[(i-n+1):i], na.rm=na.rm)
-    ans
-  }
-  system.time(ans1<-frollmean(x, n))
-  system.time(ans2<-frollapply(x, n, mean))
-  system.time(ans3<-rollfun(x, n, mean))
-  all.equal(ans1, ans2) && all.equal(ans1, ans3)
-  system.time(ans1<-frollsum(x, n))
-  system.time(ans2<-frollapply(x, n, sum))
-  system.time(ans3<-rollfun(x, n, sum))
-  all.equal(ans1, ans2) && all.equal(ans1, ans3)
-
-  #        rollfun rollapply R
-  # mean:  0.006   5.723     9.150
-  # sum:   0.007   1.430     5.409
-}

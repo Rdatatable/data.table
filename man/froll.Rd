@@ -79,11 +79,13 @@ frollapply(x, n, FUN, \dots, fill=NA, align=c("right", "left", "center"))
   are run in parallel. Except for the \code{algo="exact"} which runs in
   parallel already.
 
-  \code{frollapply} computes arbitrary R function. A function has to return
-  scalar \emph{double} value. Input to function is coerced to \emph{double}
-  beforehand. Any R function is supported but it is not optimized using our
-  own C implementation. It is also always single-threaded because there is
-  no thread-safe API to R's C \code{eval}.
+  \code{frollapply} computes arbitrary R function. Input to function \code{FUN}
+  provided in \code{x} argument is coerced to \emph{double} beforehand.
+  A function has to return scalar \emph{double} value. Any R function is
+  supported but it is not optimized using our own C implementation. It is
+  also always single-threaded because there is no thread-safe API to R's
+  C \code{eval}. Nevertheless speed up comparing to R implementated
+  function can be observed.
 }
 \value{
   A list except when the input is a \code{vector} and
