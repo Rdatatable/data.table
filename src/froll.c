@@ -329,8 +329,10 @@ void frollapply(double *x, int64_t nx, double *w, int k, ans_t *ans, int align, 
   if (verbose)
     tic = omp_get_wtime();
   for (int i=0; i<k-1; i++) ans->dbl_v[i] = fill;
+  // for each row it copies expected window data into w
+  // evaluate call which has been prepared to point into w
   for (int64_t i=k-1; i<nx; i++) {
-    memcpy(w, x+(i-k+1), k*sizeof(double)); //Rprintf("i: %llu: ", i); Rf_PrintValue(call);
+    memcpy(w, x+(i-k+1), k*sizeof(double));
     ans->dbl_v[i] = REAL(eval(call, rho))[0];
   }
   if (ans->status < 3 && align < 1) {

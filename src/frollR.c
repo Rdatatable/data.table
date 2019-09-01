@@ -316,12 +316,13 @@ SEXP frollapplyR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP align, SEXP rho) {
     dx[i] = REAL(VECTOR_ELT(x, i));
   }
 
-  SEXP w = PROTECT(allocVector(VECSXP, nk)); protecti++;
-  double* dw[nk];
+  double *dw[nk];
   SEXP pw[nk], pc[nk];
+  // in the following loop we handle vectorized k argument
+  // for each k we need to allocate own width window object: pw
+  // we also need to construct distinct R call pointing to that window
   for (R_len_t j=0; j<nk; j++) {
-    SET_VECTOR_ELT(w, j, allocVector(REALSXP, ik[j]));
-    pw[j] = VECTOR_ELT(w, j);
+    pw[j] = PROTECT(allocVector(REALSXP, ik[j])); protecti++;
     dw[j] = REAL(pw[j]);
     pc[j] = PROTECT(LCONS(fun, LCONS(pw[j], LCONS(R_DotsSymbol, R_NilValue)))); protecti++;
   }
