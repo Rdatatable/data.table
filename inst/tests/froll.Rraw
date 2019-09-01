@@ -1016,7 +1016,7 @@ rm(num)
 
 ## frollapply
 x = 1:10
-test(6010.001, frollsum(x, 3), frollapply(x, 3, sum))
+test(6010.001, frollsum(x, 3L), frollapply(x, 3L, sum))
 test(6010.002, frollsum(x, 6), frollapply(x, 6, sum))
 test(6010.003, frollmean(x, 3), frollapply(x, 3, mean))
 d = as.data.table(list(1:6/2, 3:8/4))
@@ -1025,6 +1025,57 @@ test(6010.005, frollmean(d, 3:4), frollapply(d, 3:4, mean))
 d = rbind(d, list(NA,NA))
 ans = list(c(NA,NA,1.5,2,1.5,2,2.5), c(NA,NA,NA,2,1,1.5,2), c(NA,NA,1.25,1.5,1.75,1.5,2), c(NA,NA,NA,1.5,1,1.25,1.5))
 test(6010.006, frollapply(d, 3:4, function(x, ...) if (sum(x, ...)>5) min(x, ...) else max(x, ...), na.rm=TRUE), ans)
+test(6010.500, frollapply(numeric(), 3L, sum), numeric())
+test(6010.501, frollapply(1:3, "b", sum), error="n must be integer")
+test(6010.502, frollapply(1:3, 2.5, sum), error="n must be integer")
+test(6010.503, frollapply(1:3, integer(), sum), error="n must be non 0 length")
+test(6010.504, frollapply(1:3, 2L, sum, fill=1:2), error="fill must be a vector of length 1")
+test(6010.505, frollapply(1:3, 2L, sum, fill=NA_integer_), c(NA,3,5))
+test(6010.506, frollapply(1:3, 2L, sum, fill=-1L), c(-1,3,5))
+test(6010.507, frollapply(1:3, 2L, sum, fill=-2), c(-2,3,5))
+test(6010.508, frollapply(1:3, 2L, sum, fill="z"), error="fill must be numeric")
+test(6010.509, frollapply(1:3, 4L, sum), c(NA_real_,NA_real_,NA_real_))
+test(6010.510, frollapply(1:5, 3L, sum), c(NA,NA,6,9,12))
+test(6010.511, frollapply(1:5, 3L, sum, align="center"), c(NA,6,9,12,NA))
+test(6010.512, frollapply(1:5, 3L, sum, align="left"), c(6,9,12,NA,NA))
+test(6010.513, frollapply(1:5, 4L, sum), c(NA,NA,NA,10,14))
+test(6010.514, frollapply(1:5, 4L, sum, align="center"), c(NA,10,14,NA,NA))
+test(6010.515, frollapply(1:5, 4L, sum, align="left"), c(10,14,NA,NA,NA))
+test(6010.516, frollapply(1:6, 3L, sum), c(NA,NA,6,9,12,15))
+test(6010.517, frollapply(1:6, 3L, sum, align="center"), c(NA,6,9,12,15,NA))
+test(6010.518, frollapply(1:6, 3L, sum, align="left"), c(6,9,12,15,NA,NA))
+test(6010.519, frollapply(1:6, 4L, sum), c(NA,NA,NA,10,14,18))
+test(6010.520, frollapply(1:6, 4L, sum, align="center"), c(NA,10,14,18,NA,NA))
+test(6010.521, frollapply(1:6, 4L, sum, align="left"), c(10,14,18,NA,NA,NA))
+test(6010.522, frollapply(c(1:3,NA,5:6), 4L, sum), rep(NA_real_,6))
+test(6010.523, frollapply(c(1:3,NA,5:6), 4L, sum, na.rm=TRUE), c(NA,NA,NA,6,10,14))
+test(6010.524, frollapply(c(1,2,3,NA,NA,NA,NA), 3L, mean), c(NA,NA,2,NA,NA,NA,NA))
+test(6010.525, frollapply(c(1,2,3,NA,NA,NA,NA), 3L, mean, na.rm=TRUE), c(NA,NA,2,2.5,3,NaN,NaN))
+options(datatable.verbose=TRUE)
+test(6010.526, frollapply(1:3, 4L, sum), c(NA_real_,NA_real_,NA_real_), output=c("frollapplyR: allocating memory.*","frollapply: window width longer than input vector.*","frollapplyR: processing.*took.*"))
+test(6010.527, frollapply(1:5, 3L, sum), c(NA,NA,6,9,12), output=c("frollapplyR: allocating memory.*","frollapply: took.*","frollapplyR: processing.*took.*"))
+test(6010.528, frollapply(1:5, 3L, sum, align="center"), c(NA,6,9,12,NA), output=c("frollapplyR: allocating memory.*","frollapply: align 0, shift.*","frollapply: took.*","frollapplyR: processing.*took.*"))
+options(datatable.verbose=FALSE)
+ma = function(x, n, na.rm=FALSE) {
+  ans = rep(NA_real_, nx<-length(x))
+  for (i in n:nx) ans[i]=mean(x[(i-n+1):i], na.rm=na.rm)
+  ans
+}
+n = 4L
+x = as.double(1:16)
+x[5] = NaN
+test(6010.600, frollapply(x, n, mean), ma(x, n))
+x[6] = NA
+test(6010.601, frollapply(x, n, mean), ma(x, n))
+x[5] = NA
+x[6] = NaN
+test(6010.602, frollapply(x, n, mean), ma(x, n))
+x[5] = Inf
+test(6010.603, frollapply(x, n, mean), ma(x, n))
+x[6] = -Inf
+test(6010.604, frollapply(x, n, mean), ma(x, n))
+x[5:7] = c(NA, Inf, -Inf)
+test(6010.605, frollapply(x, n, mean), ma(x, n))
 
 ## frollapply benchmark
 if (FALSE) {
