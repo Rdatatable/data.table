@@ -194,19 +194,28 @@ SEXP copyAsPlain(SEXP x) {
   SEXP ans = PROTECT(allocVector(TYPEOF(x), XLENGTH(x)));
   switch (TYPEOF(ans)) {
   case RAWSXP:
-    memcpy(RAW(ans),     RAW(x),     n*sizeof(Rbyte));    break;
+    memcpy(RAW(ans),     RAW(x),     n*sizeof(Rbyte));           // # nocov; add coverage when ALTREP is turned on for all types
+    break;                                                       // # nocov
   case LGLSXP:
-    memcpy(LOGICAL(ans), LOGICAL(x), n*sizeof(Rboolean)); break;
+    memcpy(LOGICAL(ans), LOGICAL(x), n*sizeof(Rboolean));        // # nocov
+    break;                                                       // # nocov
   case INTSXP:
-    memcpy(INTEGER(ans), INTEGER(x), n*sizeof(int));      break;
+    memcpy(INTEGER(ans), INTEGER(x), n*sizeof(int));             // covered by 10:1 after test 178
+    break;
   case REALSXP:
-    memcpy(REAL(ans),    REAL(x),    n*sizeof(double));   break;
+    memcpy(REAL(ans),    REAL(x),    n*sizeof(double));          // covered by as.Date("2013-01-01")+seq(1,1000,by=10) after test 1075
+    break;
   case CPLXSXP:
-    memcpy(COMPLEX(ans), COMPLEX(x), n*sizeof(Rcomplex)); break;
-  case STRSXP:
-  { const SEXP *xp=STRING_PTR(x); for (R_xlen_t i=0; i<n; ++i) SET_STRING_ELT(ans, i, xp[i]); break; }
-  case VECSXP:
-  { const SEXP *xp=VECTOR_PTR(x); for (R_xlen_t i=0; i<n; ++i) SET_VECTOR_ELT(ans, i, xp[i]); break; }
+    memcpy(COMPLEX(ans), COMPLEX(x), n*sizeof(Rcomplex));        // # nocov
+    break;                                                       // # nocov
+  case STRSXP: {
+    const SEXP *xp=STRING_PTR(x);                                // covered by as.character(as.hexmode(1:500)) after test 642
+    for (R_xlen_t i=0; i<n; ++i) SET_STRING_ELT(ans, i, xp[i]);
+  } break;
+  case VECSXP: {
+    const SEXP *xp=VECTOR_PTR(x);                                // # nocov
+    for (R_xlen_t i=0; i<n; ++i) SET_VECTOR_ELT(ans, i, xp[i]);  // # nocov
+  } break;                                                       // # nocov
   default:
     error("Internal error: unsupported type '%s' passed to copyAsPlain()", type2char(TYPEOF(x))); // # nocov
   }
