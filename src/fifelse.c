@@ -1,8 +1,8 @@
 #include "data.table.h"
 
 SEXP fifelseR(SEXP l, SEXP a, SEXP b, SEXP na) {
-
-  if (!isLogical(l)) error("Argument 'test' must be logical.");
+  if (!isLogical(l))
+    error("Argument 'test' must be logical.");
   const int64_t len0 = xlength(l);
   const int64_t len1 = xlength(a);
   const int64_t len2 = xlength(b);
@@ -34,18 +34,24 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b, SEXP na) {
     UNPROTECT(2);
   }
 
-  if (len1!=1 && len1!=len0) error("Length of 'yes' is %lld but must be 1 or length of 'test' (%lld).", len1, len0);
-  if (len2!=1 && len2!=len0) error("Length of 'no' is %lld but must be 1 or length of 'test' (%lld).", len2, len0);
+  if (len1!=1 && len1!=len0)
+    error("Length of 'yes' is %lld but must be 1 or length of 'test' (%lld).", len1, len0);
+  if (len2!=1 && len2!=len0)
+    error("Length of 'no' is %lld but must be 1 or length of 'test' (%lld).", len2, len0);
   const int64_t amask = len1>1 ? INT64_MAX : 0; // for scalar 'a' bitwise AND will reset iterator to first element: pa[i & amask] -> pa[0]
   const int64_t bmask = len2>1 ? INT64_MAX : 0;
 
   const int *restrict pl = LOGICAL(l);
   SEXP ans = PROTECT(allocVector(TYPEOF(a), len0)); nprotect++;
   copyMostAttrib(a, ans);
-  
-  if(!isNull(na)) {
-    if(TYPEOF(na) != TYPEOF(a)) error("'yes' is of type %s but 'na' is of type %s. Please make sure that both arguments have the same type.", type2char(ta), type2char(TYPEOF(na)));
-    if(xlength(na) != 1)         error("Length of 'na' is %lld but must be 1",xlength(na));
+
+  bool nonna = na!=R_MissingArg;
+  if (nonna) {
+    SEXPTYPE tn = TYPEOF(na);
+    if (tn != ta)
+      error("'yes' is of type %s but 'na' is of type %s. Please make sure that both arguments have the same type.", type2char(ta), type2char(tn));
+    if (xlength(na) != 1)
+      error("Length of 'na' is %lld but must be 1", xlength(na));
     if (!R_compute_identical(PROTECT(getAttrib(a,R_ClassSymbol)), PROTECT(getAttrib(na,R_ClassSymbol)), 0))
       error("'yes' has different class than 'na'. Please make sure that both arguments have the same class.");
     UNPROTECT(2);
@@ -57,12 +63,12 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b, SEXP na) {
     }
   }
 
-  switch(TYPEOF(a)) {
+  switch(ta) {
   case LGLSXP: {
     int *restrict pans = LOGICAL(ans);
     const int *restrict pa   = LOGICAL(a);
     const int *restrict pb   = LOGICAL(b);
-    const int pna = !isNull(na) ? LOGICAL(na)[0] : NA_LOGICAL;
+    const int pna = nonna ? LOGICAL(na)[0] : NA_LOGICAL;
     #pragma omp parallel for num_threads(getDTthreads())
     for (int64_t i=0; i<len0; ++i) {
       pans[i] = pl[i]==0 ? pb[i & bmask] : (pl[i]==1 ? pa[i & amask] : pna);
@@ -72,7 +78,7 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b, SEXP na) {
     int *restrict pans = INTEGER(ans);
     const int *restrict pa   = INTEGER(a);
     const int *restrict pb   = INTEGER(b);
-    const int pna = !isNull(na) ? INTEGER(na)[0] : NA_INTEGER;
+    const int pna = nonna ? INTEGER(na)[0] : NA_INTEGER;
     #pragma omp parallel for num_threads(getDTthreads())
     for (int64_t i=0; i<len0; ++i) {
       pans[i] = pl[i]==0 ? pb[i & bmask] : (pl[i]==1 ? pa[i & amask] : pna);
@@ -83,7 +89,7 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b, SEXP na) {
     const double *restrict pa   = REAL(a);
     const double *restrict pb   = REAL(b);
     const double na_double = (INHERITS(a, char_integer64) || INHERITS(a, char_nanotime)) ? NA_INT64_D : NA_REAL; // integer64 and nanotime support
-    const double pna = !isNull(na) ? REAL(na)[0] : na_double;
+    const double pna = nonna ? REAL(na)[0] : na_double;
     #pragma omp parallel for num_threads(getDTthreads())
     for (int64_t i=0; i<len0; ++i) {
       pans[i] = pl[i]==0 ? pb[i & bmask] : (pl[i]==1 ? pa[i & amask] : pna);
@@ -92,7 +98,7 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b, SEXP na) {
   case STRSXP : {
     const SEXP *restrict pa = STRING_PTR(a);
     const SEXP *restrict pb = STRING_PTR(b);
-    const SEXP pna = !isNull(na) ? STRING_PTR(na)[0] : NA_STRING;
+    const SEXP pna = nonna ? STRING_PTR(na)[0] : NA_STRING;
     for (int64_t i=0; i<len0; ++i) {
       SET_STRING_ELT(ans, i, pl[i]==0 ? pb[i & bmask] : (pl[i]==1 ? pa[i & amask] : pna));
     }
@@ -101,7 +107,7 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b, SEXP na) {
     Rcomplex *restrict pans = COMPLEX(ans);
     const Rcomplex *restrict pa   = COMPLEX(a);
     const Rcomplex *restrict pb   = COMPLEX(b);
-    const Rcomplex pna = !isNull(na) ? COMPLEX(na)[0] : NA_CPLX;
+    const Rcomplex pna = nonna ? COMPLEX(na)[0] : NA_CPLX;
     #pragma omp parallel for num_threads(getDTthreads())
     for (int64_t i=0; i<len0; ++i) {
       pans[i] = pl[i]==0 ? pb[i & bmask] : (pl[i]==1 ? pa[i & amask] : pna);
@@ -112,15 +118,16 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b, SEXP na) {
     const SEXP *restrict pb = VECTOR_PTR(b);
     const SEXP *restrict pna = VECTOR_PTR(na);
     for (int64_t i=0; i<len0; ++i) {
-      if (pl[i]==NA_INTEGER) {
-        if(!isNull(na)) SET_VECTOR_ELT(ans, i, pna[0]);
-        continue;
-      } // allocVector already initialized with R_NilValue
+      if (pl[i]==NA_LOGICAL) {
+        if (nonna)
+          SET_VECTOR_ELT(ans, i, pna[0]);
+        continue; // allocVector already initialized with R_NilValue
+      }
       SET_VECTOR_ELT(ans, i, pl[i]==0 ? pb[i & bmask] : pa[i & amask]);
     }
   } break;
   default:
-    error("Type %s is not supported.",type2char(TYPEOF(a)));
+    error("Type %s is not supported.", type2char(ta));
   }
 
   SEXP l_names = PROTECT(getAttrib(l, R_NamesSymbol)); nprotect++;
