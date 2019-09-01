@@ -313,3 +313,35 @@ void frollsumExact(double *x, uint_fast64_t nx, ans_t *ans, int k, double fill, 
     }
   }
 }
+
+/* fast rolling any R function
+ * not plain C, not thread safe
+ * R eval() allocates
+ */
+void frollapply(double *x, int64_t nx, double *w, int k, ans_t *ans, int align, double fill, SEXP call, SEXP rho, bool verbose) {
+  if (nx < k) {
+    if (verbose)
+      Rprintf("%s: window width longer than input vector, returning all NA vector\n", __func__);
+    for (int i=0; i<nx; i++) ans->dbl_v[i] = fill;
+    return;
+  }
+  double tic = 0;
+  if (verbose)
+    tic = omp_get_wtime();
+  for (int i=0; i<k-1; i++) ans->dbl_v[i] = fill;
+  // for each row it copies expected window data into w
+  // evaluate call which has been prepared to point into w
+  for (int64_t i=k-1; i<nx; i++) {
+    memcpy(w, x+(i-k+1), k*sizeof(double));
+    ans->dbl_v[i] = REAL(eval(call, rho))[0];
+  }
+  if (ans->status < 3 && align < 1) {
+    int k_ = align==-1 ? k-1 : floor(k/2);
+    if (verbose)
+      Rprintf("%s: align %d, shift answer by %d\n", __func__, align, -k_);
+    memmove((char *)ans->dbl_v, (char *)ans->dbl_v + (k_*sizeof(double)), (nx-k_)*sizeof(double));
+    for (int64_t i=nx-k_; i<nx; i++) ans->dbl_v[i] = fill;
+  }
+  if (verbose)
+    Rprintf("%s: took %.3fs\n", __func__, omp_get_wtime()-tic);
+}

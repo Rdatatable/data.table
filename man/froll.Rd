@@ -8,17 +8,18 @@
 \alias{frollmean}
 \alias{rollsum}
 \alias{frollsum}
+\alias{rollapply}
+\alias{frollapply}
 \title{Rolling functions}
 \description{
   Fast rolling functions to calculate aggregates on sliding window. Function name and arguments are experimental.
 }
 \usage{
 frollmean(x, n, fill=NA, algo=c("fast", "exact"), align=c("right",
-  "left", "center"), na.rm=FALSE, hasNA=NA, adaptive=FALSE,
-  verbose=getOption("datatable.verbose"))
+  "left", "center"), na.rm=FALSE, hasNA=NA, adaptive=FALSE)
 frollsum(x, n, fill=NA, algo=c("fast","exact"), align=c("right", "left",
-  "center"), na.rm=FALSE, hasNA=NA, adaptive=FALSE,
-  verbose=getOption("datatable.verbose"))
+  "center"), na.rm=FALSE, hasNA=NA, adaptive=FALSE)
+frollapply(x, n, FUN, \dots, fill=NA, align=c("right", "left", "center"))
 }
 \arguments{
   \item{x}{ vector, list, data.frame or data.table of numeric or logical columns. }
@@ -40,8 +41,8 @@ frollsum(x, n, fill=NA, algo=c("fast","exact"), align=c("right", "left",
     then setting to \code{TRUE} will speed up. Defaults to \code{NA}. }
   \item{adaptive}{ logical, should adaptive rolling function be
     calculated, default \code{FALSE}. See details below. }
-  \item{verbose}{ logical, default \code{getOption("datatable.verbose")},
-    \code{TRUE} turns on status and information messages to the console. }
+  \item{FUN}{ function, to be used in \code{frollapply}. }
+  \item{\dots}{ extra arguments passed to \code{FUN} in \code{frollapply}. }
 }
 \details{
   \code{froll*} functions accepts vectors, lists, data.frames or
@@ -77,6 +78,14 @@ frollsum(x, n, fill=NA, algo=c("fast","exact"), align=c("right", "left",
   When multiple columns or multiple windows width are provided, then they
   are run in parallel. Except for the \code{algo="exact"} which runs in
   parallel already.
+
+  \code{frollapply} computes arbitrary R function. Input to function \code{FUN}
+  provided in \code{x} argument is coerced to \emph{double} beforehand.
+  A function has to return scalar \emph{double} value. Any R function is
+  supported but it is not optimized using our own C implementation. It is
+  also always single-threaded because there is no thread-safe API to R's
+  C \code{eval}. Nevertheless speed up comparing to R implementated
+  function can be observed.
 }
 \value{
   A list except when the input is a \code{vector} and
@@ -126,6 +135,13 @@ an = function(n, len) c(seq.int(n), rep(n, len-n))
 n = an(3, nrow(d))
 frollmean(d, n, adaptive=TRUE)
 
+# frollsum
+frollsum(d, 3:4)
+
+# frollapply
+frollapply(d, 3:4, sum)
+frollapply(d, 3:4, function(x, ...) if (sum(x, ...)>5) min(x, ...) else max(x, ...), na.rm=TRUE)
+
 # performance vs exactness
 set.seed(108)
 x = sample(c(rnorm(1e3, 1e6, 5e5), 5e9, 5e-9))
@@ -146,10 +162,12 @@ system.time(ans1<-ma(x, n))
 system.time(ans2<-fastma(x, n))
 system.time(ans3<-frollmean(x, n))
 system.time(ans4<-frollmean(x, n, algo="exact"))
+system.time(ans5<-frollapply(x, n, mean))
 anserr = list(
   fastma = ans2-ans1,
   froll_fast = ans3-ans1,
-  froll_exact = ans4-ans1
+  froll_exact = ans4-ans1,
+  frollapply = ans5-ans1
 )
 errs = sapply(lapply(anserr, abs), sum, na.rm=TRUE)
 sapply(errs, format, scientific=FALSE) # roundoff

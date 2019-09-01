@@ -168,6 +168,49 @@
 
 26. `[[` by group is now optimized for regular vectors (not type list), [#3209](https://github.com/Rdatatable/data.table/issues/3209). Thanks @renkun-ken for the suggestion. `[` by group was already optimized. Please file a feature request if you would like this optimization for list columns.
 
+27. New `frollapply` function for rolling computation of arbitrary R function. Input to function `FUN` provided in `x` argument is coerced to _double_ beforehand. A function has to return
+  scalar _double_ value. API is consistent to already existing rolling functions (`frollmean`, `frollsum`). Any R function is supported but it is not optimized using our own C implementation. It is also always single-threaded because there is no thread-safe API to R's C `eval`. Nevertheless speed up comparing to R implementated function can be observed.
+
+    ```R
+    library(data.table)
+    set.seed(108)
+    x = rnorm(1e6)
+    n = 1e3
+    rollfun = function(x, n, FUN) {
+      ans = rep(NA_real_, nx<-length(x))
+      for (i in n:nx) ans[i] = FUN(x[(i-n+1):i])
+      ans
+    }
+    # mean
+    system.time(ans1<-rollfun(x, n, mean))
+    system.time(ans2<-zoo::rollapplyr(x, n, function(x) mean(x), fill=NA))
+    system.time(ans3<-zoo::rollmeanr(x, n, fill=NA))
+    system.time(ans4<-frollapply(x, n, mean))
+    system.time(ans5<-frollmean(x, n))
+    sapply(list(ans2,ans3,ans4,ans5), all.equal, ans1)
+    # sum
+    system.time(ans1<-rollfun(x, n, sum))
+    system.time(ans2<-zoo::rollapplyr(x, n, function(x) sum(x), fill=NA))
+    system.time(ans3<-zoo::rollsumr(x, n, fill=NA))
+    system.time(ans4<-frollapply(x, n, sum))
+    system.time(ans5<-frollsum(x, n))
+    sapply(list(ans2,ans3,ans4,ans5), all.equal, ans1)
+    # median
+    system.time(ans1<-rollfun(x, n, median))
+    system.time(ans2<-zoo::rollapplyr(x, n, function(x) median(x), fill=NA))
+    #system.time(ans3<-zoo::rollmedianr(x, n, fill=NA)) ## no support for even k
+    system.time(ans4<-frollapply(x, n, median))
+    #system.time(ans5<-frollmedian(x, n)) ## not yet implemented, see #2778
+    sapply(list(ans2,ans4), all.equal, ans1)
+  
+    ### fun             mean     sum  median
+    # rollfun          8.815   5.151  60.175
+    # zoo::rollapply  34.373  27.837  88.552
+    # zoo::roll[fun]   0.215   0.185      NA
+    # frollapply       5.404   1.419  56.475
+    # froll[fun]       0.003   0.002      NA
+    ```
+
 #### BUG FIXES
 
 1. `first`, `last`, `head` and `tail` by group no longer error in some cases, [#2030](https://github.com/Rdatatable/data.table/issues/2030) [#3462](https://github.com/Rdatatable/data.table/issues/3462). Thanks to @franknarf1 for reporting.
