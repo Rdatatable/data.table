@@ -475,7 +475,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
           Rprintf("RHS for item %d has been duplicated because NAMED==%d MAYBE_SHARED==%d, but then is being plonked. length(values)==%d; length(cols)==%d)\n",
                   i+1, NAMED(thisvalue), MAYBE_SHARED(thisvalue), length(values), length(cols));
         }
-        thisvalue = copyAsPlain(thisvalue);   // PROTECT not needed as assigned as element to protected list below.
+        thisvalue = duplicate(thisvalue);   // PROTECT not needed as assigned as element to protected list below.
       } else {
         if (verbose) Rprintf("Direct plonk of unnamed RHS, no copy. NAMED==%d, MAYBE_SHARED==%d\n", NAMED(thisvalue), MAYBE_SHARED(thisvalue));  // e.g. DT[,a:=as.character(a)] as tested by 754.5
       }
@@ -564,7 +564,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
             if (iRHS[0] != NA_INTEGER) warning("Coerced '%s' RHS to 'integer' to match the factor column's underlying type. Character columns are now recommended (can be in keys), or coerce RHS to integer or character first.", type2char(TYPEOF(thisvalue)));
           } else { // thisvalue is integer
             // make sure to copy thisvalue. May be modified below. See #2984
-            RHS = PROTECT(copyAsPlain(thisvalue)); thisprotecti++;
+            RHS = PROTECT(duplicate(thisvalue)); thisprotecti++;
             iRHS = INTEGER(RHS);
           }
           for (int j=0; j<length(RHS); j++) {
@@ -735,7 +735,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
   if (anytodelete) {
     // Delete any columns assigned NULL (there was a 'continue' earlier in loop above)
     // In reverse order to make repeated memmove easy. Otherwise cols would need to be updated as well after each delete.
-    PROTECT(colorder = copyAsPlain(cols)); protecti++;
+    PROTECT(colorder = duplicate(cols)); protecti++;
     R_isort(INTEGER(colorder),LENGTH(cols));
     PROTECT(colorder = match(cols, colorder, 0)); protecti++;  // actually matches colorder to cols (oddly, arguments are that way around)
     // Can't find a visible R entry point to return ordering of cols, above is only way I could find.
@@ -809,9 +809,9 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source)
     // SEXP pointed to.
     // If source is already not named (because j already created a fresh unnamed vector within a list()) we don't want to
     // duplicate unnecessarily, hence checking for named rather than duplicating always.
-    // See #481, #1270 and tests 1341.* fail without this copy.
+    // See #481, #1270 and tests 1341.* fail without this duplicate().
     if (anyNamed(source)) {
-      source = PROTECT(copyAsPlain(source)); protecti++;
+      source = PROTECT(duplicate(source)); protecti++;
     }
   }
   if (!length(where)) {  // e.g. called from rbindlist with where=R_NilValue

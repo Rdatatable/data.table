@@ -112,12 +112,12 @@ foverlaps = function(x, y, by.x=if (!is.null(key(x))) key(x) else key(y), by.y=k
     if (type %chin% c("within", "any")) {
       mcall[[3L]] = substitute(
         # datetimes before 1970-01-01 are represented as -ve numerics, #3349
-        if (isposix) unclass(val)*(1L + sign(unclass(val))*dt_eps())
+        if (isposix) unclass(val)*(1 + sign(unclass(val))*dt_eps())
         else if (isdouble) {
           # fix for #1006 - 0.0 occurs in both start and end
           # better fix for 0.0, and other -ves. can't use 'incr'
           # hopefully this doesn't open another can of worms
-          (val+dt_eps())*(1L + sign(val)*dt_eps())
+          (val+dt_eps())*(1 + sign(val)*dt_eps())
         }
         else val+1L, # +1L is for integer/IDate/Date class, for examples
         list(val = mcall[[3L]]))
