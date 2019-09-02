@@ -47,19 +47,22 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b, SEXP na) {
 
   bool nonna = !isNull(na);
   if (nonna) {
-    SEXPTYPE tn = TYPEOF(na);
-    if (tn != ta)
-      error("'yes' is of type %s but 'na' is of type %s. Please make sure that both arguments have the same type.", type2char(ta), type2char(tn));
     if (xlength(na) != 1)
       error("Length of 'na' is %lld but must be 1", xlength(na));
-    if (!R_compute_identical(PROTECT(getAttrib(a,R_ClassSymbol)), PROTECT(getAttrib(na,R_ClassSymbol)), 0))
-      error("'yes' has different class than 'na'. Please make sure that both arguments have the same class.");
-    UNPROTECT(2);
-    
-    if (isFactor(a)) {
-      if (!R_compute_identical(PROTECT(getAttrib(a,R_LevelsSymbol)), PROTECT(getAttrib(na,R_LevelsSymbol)), 0))
-        error("'yes' and 'na' are both type factor but their levels are different.");
+    SEXPTYPE tn = TYPEOF(na);
+    if (tn == LGLSXP && LOGICAL(na)[0]==NA_LOGICAL) {
+      nonna = false;
+    } else {
+      if (tn != ta)
+        error("'yes' is of type %s but 'na' is of type %s. Please make sure that both arguments have the same type.", type2char(ta), type2char(tn));
+      if (!R_compute_identical(PROTECT(getAttrib(a,R_ClassSymbol)), PROTECT(getAttrib(na,R_ClassSymbol)), 0))
+        error("'yes' has different class than 'na'. Please make sure that both arguments have the same class.");
       UNPROTECT(2);
+      if (isFactor(a)) {
+        if (!R_compute_identical(PROTECT(getAttrib(a,R_LevelsSymbol)), PROTECT(getAttrib(na,R_LevelsSymbol)), 0))
+          error("'yes' and 'na' are both type factor but their levels are different.");
+        UNPROTECT(2);
+      }
     }
   }
 

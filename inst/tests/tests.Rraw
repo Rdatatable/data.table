@@ -15881,6 +15881,7 @@ test(2097.010, fifelse(date_vec_na, as.Date("2019-08-31"), as.Date("2019-08-30")
 test(2097.011, fifelse(c(TRUE,FALSE,TRUE,TRUE,FALSE,NA), factor(letters[1:6]), factor("a", levels=letters[1:6]), factor("f", levels=letters[1:6])), factor(c("a","a","c","d","a","f"), levels=letters[1:6]))
 test(2097.012, fifelse(c(TRUE,FALSE,TRUE,TRUE,FALSE,NA), factor(letters[1:6]), factor("a", levels=letters[1:6]), factor("f", levels=letters[1:7])), error = "'yes' and 'na' are both type factor but their levels are different.")
 test(2097.013, lapply(list(list(yes = 1, no = 2, na = 3), list(yes = 2, no = 4)), function(el) fifelse(c(TRUE, FALSE, NA), el$yes, el$no, el$na)), list(c(1,2,3),c(2,4,NA)))
+test(2097.014, fifelse(c(T,F,NA),c(1,1,1),c(2,2,2),NA), c(1,2,NA))
 
 
 ###################################
