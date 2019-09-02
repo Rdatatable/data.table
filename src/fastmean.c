@@ -48,10 +48,11 @@ SEXP fastmean(SEXP args)
   if (narm) {
     switch(TYPEOF(x)) {
     case LGLSXP:
-    case INTSXP:
+    case INTSXP: {
+      int *pi = INTEGER(x);
       for (i = 0; i<l; i++) {
-        if(INTEGER(x)[i] == NA_INTEGER) continue;
-        s += INTEGER(x)[i];   // no under/overflow here, s is long double not integer
+        if(pi[i] == NA_INTEGER) continue;
+        s += pi[i];   // no under/overflow here, s is long double not integer
         n++;
       }
       if (n>0)
@@ -59,10 +60,12 @@ SEXP fastmean(SEXP args)
       else
         REAL(ans)[0] = R_NaN;  // consistent with base: mean(NA,na.rm=TRUE)==NaN==mean(numeric(),na.rm=TRUE)
       break;
-    case REALSXP:
+    }
+    case REALSXP: {
+      double *pr = REAL(x);
       for (i = 0; i<l; i++) {
-        if(ISNAN(REAL(x)[i])) continue;  // TO DO: could drop this line and let NA propogate?
-        s += REAL(x)[i];
+        if(ISNAN(pr[i])) continue;  // TO DO: could drop this line and let NA propogate?
+        s += pr[i];
         n++;
       }
       if (n==0) {
@@ -72,41 +75,46 @@ SEXP fastmean(SEXP args)
       s /= n;
       if(R_FINITE((double)s)) {
         for (i = 0; i<l; i++) {
-          if(ISNAN(REAL(x)[i])) continue;
-          t += (REAL(x)[i] - s);
+          if(ISNAN(pr[i])) continue;
+          t += (pr[i] - s);
         }
         s += t/n;
       }
       REAL(ans)[0] = (double) s;
       break;
+    }
     default:
       error("Internal error: type '%s' not caught earlier in fastmean", type2char(TYPEOF(x)));  // # nocov
     }
   } else {  // narm==FALSE
     switch(TYPEOF(x)) {
     case LGLSXP:
-    case INTSXP:
+    case INTSXP: {
+      int *pi = INTEGER(x);
       for (i = 0; i<l; i++) {
-        if(INTEGER(x)[i] == NA_INTEGER) {UNPROTECT(1); return(ans);}
-        s += INTEGER(x)[i];
+        if(pi[i] == NA_INTEGER) {UNPROTECT(1); return(ans);}
+        s += pi[i];
       }
       REAL(ans)[0] = (double) (s/l);
       break;
-    case REALSXP:
+    }
+    case REALSXP: {
+      double *pr = REAL(x);
       for (i = 0; i<l; i++) {
-        if(ISNAN(REAL(x)[i])) {UNPROTECT(1); return(ans);}
-        s += REAL(x)[i];
+        if(ISNAN(pr[i])) {UNPROTECT(1); return(ans);}
+        s += pr[i];
       }
       s /= l;
       if(R_FINITE((double)s)) {
         for (i = 0; i<l; i++) {
           // no NA if got this far
-          t += (REAL(x)[i] - s);
+          t += (pr[i] - s);
         }
         s += t/LENGTH(x);
       }
       REAL(ans)[0] = (double) s;
       break;
+    }
     default:
       error("Internal error: type '%s' not caught earlier in fastmean", type2char(TYPEOF(x)));  // # nocov
     }

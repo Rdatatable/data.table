@@ -1800,7 +1800,7 @@ replace_order = function(isub, verbose, env) {
   if (length(expr)==2L)  # no parameters passed to mean, so defaults of trim=0 and na.rm=FALSE
     return(call(".External",quote(Cfastmean),expr[[2L]], FALSE))
     # return(call(".Internal",expr))  # slightly faster than .External, but R now blocks .Internal in coerce.c from apx Sep 2012
-  if (length(expr)==3L && identical("na",substring(names(expr)[3L], 1L, 2L)))   # one parameter passed to mean()
+  if (length(expr)==3L && identical("n", substring(names(expr)[3L], 1L, 1L)))   # one parameter passed to mean()
     return(call(".External",quote(Cfastmean),expr[[2L]], expr[[3L]]))  # faster than .Call
   assign("nomeanopt",TRUE,parent.frame())
   expr  # e.g. trim is not optimized, just na.rm
