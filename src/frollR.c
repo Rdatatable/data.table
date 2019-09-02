@@ -1,6 +1,6 @@
 #include "frollR.h"
 
-SEXP coerceToRealList(SEXP obj) {
+SEXP coerceToRealListR(SEXP obj) {
   // accept atomic/list of integer/logical/real returns list of real
   int protecti = 0;
   SEXP x = R_NilValue;
@@ -39,7 +39,7 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
   double tic = 0;
   if (verbose)
     tic = omp_get_wtime();
-  SEXP x = PROTECT(coerceToRealList(obj)); protecti++;
+  SEXP x = PROTECT(coerceToRealListR(obj)); protecti++;
   R_len_t nx=length(x);                                         // number of columns to roll on
 
   if (xlength(k) == 0)                                          // check that window is non zero length
@@ -252,7 +252,7 @@ SEXP frollapplyR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP align, SEXP rho) {
   double tic = 0;
   if (verbose)
     tic = omp_get_wtime();
-  SEXP x = PROTECT(coerceToRealList(obj)); protecti++;
+  SEXP x = PROTECT(coerceToRealListR(obj)); protecti++;
   R_len_t nx = length(x);
 
   if (!isInteger(k)) {

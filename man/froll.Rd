@@ -82,12 +82,13 @@ frollapply(x, n, FUN, \dots, fill=NA, align=c("right", "left", "center"))
   \code{frollapply} computes rolling aggregate on arbitrary R functions.
   The input \code{x} (first argument) to the function \code{FUN}
   is coerced to \emph{numeric} beforehand and \code{FUN}
-  has to return a scalar \emph{numeric} value. Any R function is
-  supported, but it is not optimized using our own C implementation -- hence,
-  for example, using \code{frollapply} to compute a rolling average is inefficient.
-  It is also always single-threaded because there is no thread-safe API to R's
-  C \code{eval}. Nevertheless we've seen the computation speed up vis-a-vis
-  versions implemented in base R.
+  has to return a scalar \emph{numeric} value. Checks for that are made only
+  during the first iteration when \code{FUN} is evaluated. Edge cases can be
+  found in examples below. Any R function is supported, but it is not optimized
+  using our own C implementation -- hence, for example, using \code{frollapply}
+  to compute a rolling average is inefficient. It is also always single-threaded
+  because there is no thread-safe API to R's C \code{eval}. Nevertheless we've
+  seen the computation speed up vis-a-vis versions implemented in base R.
 }
 \value{
   A list except when the input is a \code{vector} and
@@ -142,7 +143,8 @@ frollsum(d, 3:4)
 
 # frollapply
 frollapply(d, 3:4, sum)
-frollapply(d, 3:4, function(x, ...) if (sum(x, ...)>5) min(x, ...) else max(x, ...), na.rm=TRUE)
+f = function(x, ...) if (sum(x, ...)>5) min(x, ...) else max(x, ...)
+frollapply(d, 3:4, f, na.rm=TRUE)
 
 # performance vs exactness
 set.seed(108)
@@ -173,6 +175,35 @@ anserr = list(
 )
 errs = sapply(lapply(anserr, abs), sum, na.rm=TRUE)
 sapply(errs, format, scientific=FALSE) # roundoff
+
+# frollapply corner cases
+f = function(x) head(x, 2)     ## FUN returns non length 1
+try(frollapply(1:5, 3, f))
+f = function(x) {              ## FUN sometimes returns non length 1
+  n = length(x)
+  # length 1 will be returned only for first iteration where we check length
+  if (n==x[n]) x[1L] else range(x) # range(x)[2L] is silently ignored!
+}
+frollapply(1:5, 3, f)
+options(datatable.verbose=TRUE)
+x = c(1,2,1,1,1,2,3,2)
+frollapply(x, 3, uniqueN)     ## FUN returns integer
+numUniqueN = function(x) as.numeric(uniqueN(x))
+frollapply(x, 3, numUniqueN)
+x = c(1,2,1,1,NA,2,NA,2)
+frollapply(x, 3, anyNA)       ## FUN returns logical
+as.logical(frollapply(x, 3, anyNA))
+options(datatable.verbose=FALSE)
+f = function(x) {             ## FUN returns character
+  if (sum(x)>5) "big" else "small"
+}
+try(frollapply(1:5, 3, f))
+f = function(x) {             ## FUN is not type-stable
+  n = length(x)
+  # double type will be returned only for first iteration where we check type
+  if (n==x[n]) 1 else NA # NA logical turns into garbage without coercion to double
+}
+frollapply(1:5, 3, f)
 }
 \seealso{
   \code{\link{shift}}, \code{\link{data.table}}

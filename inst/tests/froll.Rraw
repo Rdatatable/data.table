@@ -1,10 +1,6 @@
 require(methods)
 
 if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
-  if (!identical(suppressWarnings(packageDescription("data.table")), NA)) {
-    remove.packages("data.table")
-    stop("This is dev mode but data.table was installed. Uninstalled it. Please q() this R session and try cc() again. The installed namespace causes problems in dev mode for the S4 tests.\n")
-  }
   if ((tt<-compiler::enableJIT(-1))>0)
     cat("This is dev mode and JIT is enabled (level ", tt, ") so there will be a brief pause around the first test.\n", sep="")
 } else {
@@ -1025,6 +1021,29 @@ test(6010.005, frollmean(d, 3:4), frollapply(d, 3:4, mean))
 d = rbind(d, list(NA,NA))
 ans = list(c(NA,NA,1.5,2,1.5,2,2.5), c(NA,NA,NA,2,1,1.5,2), c(NA,NA,1.25,1.5,1.75,1.5,2), c(NA,NA,NA,1.5,1,1.25,1.5))
 test(6010.006, frollapply(d, 3:4, function(x, ...) if (sum(x, ...)>5) min(x, ...) else max(x, ...), na.rm=TRUE), ans)
+#### corner cases from examples
+test(6010.101, frollapply(1:5, 3, function(x) head(x, 2)), error="frollapply: result from provided FUN are not length 1")
+f = function(x) {
+  n = length(x)
+  # length 1 will be returned only for first iteration where we check length
+  if (n==x[n]) x[1L] else range(x) # range(x)[2L] is silently ignored
+}
+test(6010.102, frollapply(1:5, 3, f), c(NA,NA,1,2,3))
+options(datatable.verbose=TRUE)
+x = c(1,2,1,1,1,2,3,2)
+ans = c(NA,NA,2,2,1,2,3,2)
+numUniqueN = function(x) as.numeric(uniqueN(x))
+test(6010.103, frollapply(x, 3, uniqueN), ans, output=c("frollapplyR: allocating memory.*","frollapply: result from provided FUN are not of type double, coerction from integer or logical will be applied on each iteration","frollapply: took.*","frollapplyR: processing.*took.*"))
+test(6010.104, frollapply(x, 3, numUniqueN), ans, output=c("frollapplyR: allocating memory.*","frollapply: took.*","frollapplyR: processing.*took.*"))
+test(6010.105, as.logical(frollapply(c(1,2,1,1,NA,2,NA,2), 3, anyNA)), c(NA,NA,FALSE,FALSE,TRUE,TRUE,TRUE,TRUE), output=c("frollapplyR: allocating memory.*","frollapply: result from provided FUN are not of type double, coerction from integer or logical will be applied on each iteration","frollapply: took.*","frollapplyR: processing.*took.*"))
+f = function(x) {
+  n = length(x)
+  # double type will be returned only for first iteration where we check type
+  if (n==x[n]) 1 else NA # NA logical turns into garbage without coercion to double
+}
+test(6010.106, head(frollapply(1:5, 3, f), 3L), c(NA_real_,NA_real_,1), output=c("frollapplyR: allocating memory.*","frollapply: took.*","frollapplyR: processing.*took.*")) # testing only head 3 because rest is garbage
+options(datatable.verbose=FALSE)
+#### test coverage
 test(6010.500, frollapply(numeric(), 3L, sum), numeric())
 test(6010.501, frollapply(1:3, "b", sum), error="n must be integer")
 test(6010.502, frollapply(1:3, 2.5, sum), error="n must be integer")
