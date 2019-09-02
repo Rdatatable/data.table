@@ -907,14 +907,17 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source)
         for (int i=0; i<len; i++) SET_STRING_ELT(target, start+i, val[i]);
       }
       break;
-    case VECSXP :
-      if (TYPEOF(source)==VECSXP && len==slen) {
+    // #546 -- expression columns can be handled as list columns
+    case VECSXP : case EXPRSXP : {
+      bool source_match=TYPEOF(source)==TYPEOF(target);
+      if (source_match && len==slen) {
         for (int i=0; i<len; i++) SET_VECTOR_ELT(target, start+i, VECTOR_ELT(source, i));
       } else {
-        const SEXP val = TYPEOF(source)==VECSXP ? VECTOR_ELT(source, 0) : source;
+        const SEXP val = source_match ? VECTOR_ELT(source, 0) : source;
         for (int i=0; i<len; i++) SET_VECTOR_ELT(target, start+i, val);
       }
       break;
+    }
     default :
       error("Unsupported type in assign.c:memrecycle '%s' (no where)", type2char(TYPEOF(target)));  // # nocov
     }
