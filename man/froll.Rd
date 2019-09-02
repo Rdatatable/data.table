@@ -41,7 +41,7 @@ frollapply(x, n, FUN, \dots, fill=NA, align=c("right", "left", "center"))
     then setting to \code{TRUE} will speed up. Defaults to \code{NA}. }
   \item{adaptive}{ logical, should adaptive rolling function be
     calculated, default \code{FALSE}. See details below. }
-  \item{FUN}{ function, to be used in \code{frollapply}. }
+  \item{FUN}{ the function to be applied in rolling fashion; see Details for restrictions }
   \item{\dots}{ extra arguments passed to \code{FUN} in \code{frollapply}. }
 }
 \details{
@@ -79,13 +79,15 @@ frollapply(x, n, FUN, \dots, fill=NA, align=c("right", "left", "center"))
   are run in parallel. Except for the \code{algo="exact"} which runs in
   parallel already.
 
-  \code{frollapply} computes arbitrary R function. Input to function \code{FUN}
-  provided in \code{x} argument is coerced to \emph{double} beforehand.
-  A function has to return scalar \emph{double} value. Any R function is
-  supported but it is not optimized using our own C implementation. It is
-  also always single-threaded because there is no thread-safe API to R's
-  C \code{eval}. Nevertheless speed up comparing to R implementated
-  function can be observed.
+  \code{frollapply} computes rolling aggregate on arbitrary R functions.
+  The input \code{x} (first argument) to the function \code{FUN}
+  is coerced to \emph{numeric} beforehand and \code{FUN}
+  has to return a scalar \emph{numeric} value. Any R function is
+  supported, but it is not optimized using our own C implementation -- hence,
+  for example, using \code{frollapply} to compute a rolling average is inefficient.
+  It is also always single-threaded because there is no thread-safe API to R's
+  C \code{eval}. Nevertheless we've seen the computation speed up vis-a-vis
+  versions implemented in base R.
 }
 \value{
   A list except when the input is a \code{vector} and
@@ -112,7 +114,7 @@ frollapply(x, n, FUN, \dots, fill=NA, align=c("right", "left", "center"))
     \item{ \code{partial} window feature is not supported, although it can
       be accomplished by using \code{adaptive=TRUE}, see examples. }
   }
-  
+
   Be aware that rolling functions operates on the physical order of input.
   If the intent is to roll values in a vector by a logical window, for
   example an hour, or a day, one has to ensure that there are no gaps in
