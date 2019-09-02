@@ -168,8 +168,7 @@
 
 26. `[[` by group is now optimized for regular vectors (not type list), [#3209](https://github.com/Rdatatable/data.table/issues/3209). Thanks @renkun-ken for the suggestion. `[` by group was already optimized. Please file a feature request if you would like this optimization for list columns.
 
-27. New `frollapply` function for rolling computation of arbitrary R function. Input to function `FUN` provided in `x` argument is coerced to _double_ beforehand. A function has to return
-  scalar _double_ value. API is consistent to already existing rolling functions (`frollmean`, `frollsum`). Any R function is supported but it is not optimized using our own C implementation. It is also always single-threaded because there is no thread-safe API to R's C `eval`. Nevertheless speed up comparing to R implementated function can be observed.
+27. New function `frollapply` for rolling computation of arbitrary R functions (caveat: input `x` is coerced to numeric beforehand, and the function must return a scalar numeric value). The API is consistent to extant rolling functions `frollmean` and `frollsum`; note that it will generally be slower than those functions because (1) the known functions use our optimized internal C implementation and (2) there is no thread-safe API to R's C `eval`. Nevertheless `frollapply` is faster than corresponding `base`-only and `zoo` versions:
 
     ```R
     library(data.table)
