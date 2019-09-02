@@ -15864,6 +15864,12 @@ test(2095, any(grepl('override', capture.output(dcast(DT, a~b, fun.aggregate=len
 # gmean intermediate can overflow integers without warning, #986
 test(2096, data.table(a=c(1L,1L), v=c(2e9L, 2e9L))[, mean(v), a], data.table(a=1L, V1=2e9))
 
+# NA_character joining to NA factor, #3809
+DT = data.table(fac = as.factor(c("a",NA,"b")), v=1:3, key="fac")
+test(2097.1, DT[.(NA_character_)], data.table(fac=NA_character_, v=2L, key="fac"))
+test(2097.2, DT[J(NA)],          error="Factor columns must join to factor or character columns")
+test(2097.3, DT[J(NA_integer_)], error="Factor columns must join to factor or character columns")
+
 
 ###################################
 #  Add new tests above this line  #
