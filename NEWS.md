@@ -171,39 +171,22 @@
 27. New function `frollapply` for rolling computation of arbitrary R functions (caveat: input `x` is coerced to numeric beforehand, and the function must return a scalar numeric value). The API is consistent to extant rolling functions `frollmean` and `frollsum`; note that it will generally be slower than those functions because (1) the known functions use our optimized internal C implementation and (2) there is no thread-safe API to R's C `eval`. Nevertheless `frollapply` is faster than corresponding `base`-only and `zoo` versions:
 
     ```R
-    library(data.table)
     set.seed(108)
-    x = rnorm(1e6)
-    n = 1e3
+    x = rnorm(1e6); n = 1e3
     rollfun = function(x, n, FUN) {
       ans = rep(NA_real_, nx<-length(x))
       for (i in n:nx) ans[i] = FUN(x[(i-n+1):i])
       ans
     }
-    # mean
     system.time(ans1<-rollfun(x, n, mean))
     system.time(ans2<-zoo::rollapplyr(x, n, function(x) mean(x), fill=NA))
     system.time(ans3<-zoo::rollmeanr(x, n, fill=NA))
     system.time(ans4<-frollapply(x, n, mean))
     system.time(ans5<-frollmean(x, n))
     sapply(list(ans2,ans3,ans4,ans5), all.equal, ans1)
-    # sum
-    system.time(ans1<-rollfun(x, n, sum))
-    system.time(ans2<-zoo::rollapplyr(x, n, function(x) sum(x), fill=NA))
-    system.time(ans3<-zoo::rollsumr(x, n, fill=NA))
-    system.time(ans4<-frollapply(x, n, sum))
-    system.time(ans5<-frollsum(x, n))
-    sapply(list(ans2,ans3,ans4,ans5), all.equal, ans1)
-    # median
-    system.time(ans1<-rollfun(x, n, median))
-    system.time(ans2<-zoo::rollapplyr(x, n, function(x) median(x), fill=NA))
-    #system.time(ans3<-zoo::rollmedianr(x, n, fill=NA)) ## no support for even k
-    system.time(ans4<-frollapply(x, n, median))
-    #system.time(ans5<-frollmedian(x, n)) ## not yet implemented, see #2778
-    sapply(list(ans2,ans4), all.equal, ans1)
-  
+
     ### fun             mean     sum  median
-    # rollfun          8.815   5.151  60.175
+    # base rollfun     8.815   5.151  60.175
     # zoo::rollapply  34.373  27.837  88.552
     # zoo::roll[fun]   0.215   0.185      NA
     # frollapply       5.404   1.419  56.475
