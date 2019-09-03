@@ -15870,6 +15870,10 @@ test(2097.1, DT[.(NA_character_)], data.table(fac=NA_character_, v=2L, key="fac"
 test(2097.2, DT[J(NA)],          error="Factor columns must join to factor or character columns")
 test(2097.3, DT[J(NA_integer_)], error="Factor columns must join to factor or character columns")
 
+# bug in autonaming by #3156
+library(data.table)
+DT = data.table(State=c("ERROR", "COMPLETED", "ERROR"), ExitCode=c(1, 0, 2))
+test(2098, DT[ , list(count=.N), by={list(State, ExitCode)}], DT[ , count := 1L])
 
 ###################################
 #  Add new tests above this line  #
