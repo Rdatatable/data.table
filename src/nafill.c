@@ -134,7 +134,7 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP inplace, SEXP cols, SEXP verbo
     SEXP this_x = VECTOR_ELT(x, i);
     switch (TYPEOF(this_x)) {
     case REALSXP : {
-      if (INHERITS(this_x, char_integer64) || INHERITS(this_x, char_nanotime)) {
+      if (INHERITS(this_x, char_integer64) || INHERITS(this_x, char_nanotime)) {  // inside parallel region so can't call Rinherits()
         nafillInteger64(i64x[i], inx[i], itype, i64fill, &vans[i], bverbose);
       } else {
         nafillDouble(dx[i], inx[i], itype, dfill, &vans[i], bverbose);
