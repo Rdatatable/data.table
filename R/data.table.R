@@ -351,20 +351,24 @@ replace_order = function(isub, verbose, env) {
     if (is.null(isub)) return( null.data.table() )
 
     # optimize here so that we can switch it off if needed
-    check_eval_env = environment()
-    check_eval_env$eval_forder = FALSE
-    if (getOption("datatable.optimize") >= 1L) {
-      isub = replace_order(isub, verbose, check_eval_env)
-    }
-    if (check_eval_env$eval_forder) {
-      order_env = new.env(parent=parent.frame())            # until 'forder' is exported
-      assign("forder", forder, order_env)
-      assign("x", x, order_env)
-      i = eval(.massagei(isub), order_env, parent.frame())             # for optimisation of 'order' to 'forder'
+    # check_eval_env = environment()
+    # check_eval_env$eval_forder = FALSE
+    # browser()
+    # if (getOption("datatable.optimize") >= 1L) {
+    #   isub = replace_order(isub, verbose, check_eval_env)
+    #}
+    #if (check_eval_env$eval_forder) {
+    #  order_env = new.env(parent=parent.frame())            # until 'forder' is exported
+    #  #browser()
+    #  assign("forder", forder, order_env)
+    #  assign("x", x, order_env)
+      #browser()
+    #  i = eval(.massagei(isub), order_env, parent.frame())             # for optimisation of 'order' to 'forder'
       # that forder returns empty integer() is taken care of internally within forder
-    } else if (length(o <- .prepareFastSubset(isub = isub, x = x,
+    #} else
+    if (length(o <- .prepareFastSubset(isub = isub, x = x,
                                               enclos =  parent.frame(),
-                                              notjoin = notjoin, verbose = verbose))){
+                                              notjoin = notjoin, verbose = verbose))) {
       ## redirect to the is.data.table(x) == TRUE branch.
       ## Additional flag to adapt things after bmerge:
       optimizedSubset = TRUE
@@ -377,8 +381,9 @@ replace_order = function(isub, verbose, env) {
       mult = "all"
     }
     else if (!is.name(isub)) {
-      i = tryCatch(eval(.massagei(isub), x, parent.frame()),
-                   error = function(e) .checkTypos(e, names_x))
+      ienv = new.env(parent=parent.frame())
+      if (getOption("datatable.optimize")>=1L) assign("order", forder, ienv)
+      i = tryCatch(eval(.massagei(isub), x, ienv), error=function(e) .checkTypos(e, names_x))
     } else {
       # isub is a single symbol name such as B in DT[B]
       i = try(eval(isub, parent.frame(), parent.frame()), silent=TRUE)

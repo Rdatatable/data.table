@@ -430,13 +430,15 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
     if (!isVectorAtomic(DT)) error("Input is not either a list of columns, or an atomic vector.");
     if (!isNull(by)) error("Input is an atomic vector (not a list of columns) but by= is not NULL");
     if (!isInteger(ascArg) || LENGTH(ascArg)!=1) error("Input is an atomic vector (not a list of columns) but ascArg= is not a length 1 integer");
+    if (verbose) Rprintf("forder.c received a vector type '%s' length %d\n", type2char(TYPEOF(DT)), length(DT));
     SEXP tt = PROTECT(allocVector(VECSXP, 1)); n_protect++;
     SET_VECTOR_ELT(tt, 0, DT);
     DT = tt;
     by = PROTECT(allocVector(INTSXP, 1)); n_protect++;
     INTEGER(by)[0] = 1;
+  } else {
+    if (verbose) Rprintf("forder.c received %d rows and %d columns\n", length(VECTOR_ELT(DT,0)), length(DT));
   }
-
   if (!length(DT)) error("DT is an empty list() of 0 columns");
   if (!isInteger(by) || !LENGTH(by)) error("DT has %d columns but 'by' is either not integer or is length 0", length(DT));  // seq_along(x) at R level
   if (!isInteger(ascArg) || LENGTH(ascArg)!=LENGTH(by)) error("Either 'ascArg' is not integer or its length (%d) is different to 'by's length (%d)", LENGTH(ascArg), LENGTH(by));

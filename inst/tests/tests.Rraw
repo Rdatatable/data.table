@@ -4450,7 +4450,7 @@ test(1251.09, DT[base::order(x, list(-y), decreasing=TRUE)],
 # more "edge cases" to ensure we're consistent with base
 test(1251.10, DT[order("a")], DT[1L])
 test(1251.11, DT[order("b", "a")], DT[1L])
-test(1251.12, DT[order(list("b", "a"))], error = "Column 1 of by= [(]1[)] is type 'list', not yet supported. Please use the by=.*that are supported")
+test(1251.12, DT[order(list("b", "a"))], DT[1L])
 test(1251.13, DT[order(list("b"), list("a"))], DT[1L])
 
 ##############################################################
@@ -5061,13 +5061,14 @@ test(1318.3, DT[, list(mySum = eval(sumExpr), myMean = eval(meanExpr)), by = aa]
 DT <- data.table(a = 1:4, b = 8:5, c=letters[4:1])
 test(1319.1, DT[order(DT[, "b", with=FALSE])], DT[base::order(DT[, "b", with=FALSE])])
 test(1319.2, DT[order(DT[, "c", with=FALSE])], DT[base::order(DT[, "c", with=FALSE])])
-test(1319.3, DT[order(DT[, c("b","c"), with=FALSE])], DT[base::order(DT[, c("b","c"), with=FALSE])])
-test(1319.4, DT[order(DT[, c("c","b"), with=FALSE])], DT[base::order(DT[, c("c","b"), with=FALSE])])
-test(1319.5, DT[order(DT[, "b", with=FALSE], DT[, "a", with=FALSE])], DT[base::order(DT[, "b", with=FALSE], DT[, "a", with=FALSE])])
+test(1319.3, DT[order(DT[, c("b","c"), with=FALSE])], DT[4:1])    #  DT[base::order(DT[, c("b","c"), with=FALSE])])
+test(1319.4, DT[order(DT[, c("c","b"), with=FALSE])], DT[4:1])    #  DT[base::order(DT[, c("c","b"), with=FALSE])])
+test(1319.5, DT[order(DT[, "b", with=FALSE], DT[, "a", with=FALSE])], error="The first item passed to [f]order is a plain list but there are more items")
+   # list.*not supported")  # DT[base::order(DT[, "b", with=FALSE], DT[, "a", with=FALSE])])
 # test to make sure old things are not modified (ridiculous, but "consistency" demands it!)
 test(1319.6, DT[order(list(DT$a))], DT[1])
 test(1319.7, DT[order(list(DT$a), list(DT$b))], DT[1])
-test(1319.8, DT[order(list(DT$a, DT$b))], error="Column 1 of by= (1) is type 'list', not yet supported")
+test(1319.8, DT[order(list(DT$a, DT$b))], DT)    # error="Column 1 of by= (1) is type 'list', not yet supported")
 
 # FR #703. Not so extensive testing because test 1223 already tests for everything else extensively. Only integer64 here.
 # this'll be the test for both DT[order(.)] and setorder(.) as both internally uses forder/forderv
@@ -13243,14 +13244,16 @@ test(1962.047, forderv(DT, order = 2L),
      error = 'x is a list, length(order)')
 
 setDF(DT)
-test(1962.048, forder(DT), error = 'x must be a data.table')
+test(1962.0481, forder(DT), 3:1)
+L = as.list(DT)
+test(1962.0482, forder(L), 3:1)
 setDT(DT)
 test(1962.049, forder(DT[ , 0L]), error = 'Attempting to order a 0-column')
-test(1962.050, forder(DT, decreasing = NA), error = 'must be logical TRUE')
-test(1962.051, forder(DT, decreasing = 1.4), error = 'must be logical TRUE')
-test(1962.052, forder(DT, NULL), NULL)
-test(1962.053, forder(DT), NULL)
-test(1962.054, forder(DT, ), NULL)
+test(1962.050, forder(DT, decreasing = NA), error = 'isTRUEorFALSE(decreasing) is not TRUE')
+test(1962.051, forder(DT, decreasing = 1.4), error = 'isTRUEorFALSE(decreasing) is not TRUE')
+test(1962.052, forder(DT, NULL), 3:1)
+test(1962.053, forder(DT), 3:1)
+test(1962.054, forder(DT, ), 3:1)
 
 test(1962.055, fsort(as.double(DT$a), internal = TRUE),
      error = 'Internal code should not be being called on type double')
@@ -13606,11 +13609,11 @@ test(1967.68, setDT(`___data.table_internal_test_1967.68___`), error = 'Cannot f
 ### [.data.table verbosity & non-equi-join tests
 options(datatable.optimize = 0L)
 verbose_output = capture.output(x[order(a), .N, verbose = TRUE])
-test(1967.69, !any(grepl('order optimization', verbose_output, fixed = TRUE)))
+test(1967.69, !any(grepl('forder.c', verbose_output, fixed = TRUE)))
 test(1967.70, any(grepl('[1] 5', verbose_output, fixed = TRUE)))
 options('datatable.optimize' = 1L)
 test(1967.71, x[order(a), .N, verbose = TRUE], 5L,
-     output = "changed 'order(...)' in i to 'forder(")
+     output = "forder.c received 5 rows and 1 column")
 setkey(x)
 test(1967.72, x[x, .N, on = 'a', verbose = TRUE], 5L,
      output = "on= matches existing key")
@@ -15073,7 +15076,7 @@ DT = data.table(
   C = c(2L, 3L, 5L, 8L, 6L, 1L, 4L, 9L, 10L, 7L)
 )
 test(2054, DT[order(C)[1:5], B, verbose=TRUE], c('b', 'b', 'c', 'c', 'a'),
-           output = 'order optimisation is on')
+           output = "forder.c received 10 rows and 1 column")
 
 # ITime class should be retained for same methods as IDate, #3628
 test(2055.1, seq(from = as.ITime('00:00:00'), to = as.ITime('00:00:05'), by = 5L), as.ITime(c(0, 5L)))
@@ -15869,6 +15872,14 @@ DT = data.table(fac = as.factor(c("a",NA,"b")), v=1:3, key="fac")
 test(2097.1, DT[.(NA_character_)], data.table(fac=NA_character_, v=2L, key="fac"))
 test(2097.2, DT[J(NA)],          error="Factor columns must join to factor or character columns")
 test(2097.3, DT[J(NA_integer_)], error="Factor columns must join to factor or character columns")
+
+# forder optimization 'Column 2 is length 3 which differs' or 'argument x is missing with no default' for revdep e.g. neatRanges, PR#XXXX
+DT = data.table(id=INT(3,5,2,4,2), rating=LETTERS[5:1])
+groups = c("id", "rating")
+test(2098.1, DT[do.call(order, mget(groups)), verbose=TRUE], ans<-data.table(id=INT(2,2,3,4,5), rating=c("A","C","E","B","D")),
+             output="forder.c received 5 rows and 2 columns")
+test(2098.2, DT[with(DT, do.call(order, mget(groups))), verbose=TRUE], ans,
+             output="forder.c received 5 rows and 2 columns")
 
 
 ###################################
