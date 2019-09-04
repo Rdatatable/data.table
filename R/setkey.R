@@ -187,20 +187,15 @@ forderv = function(x, by=seq_along(x), retGrp=FALSE, sort=TRUE, order=1L, na.las
     na.last = na.last[1L]
   }
   # TO DO: export and document forder
-  if (is.atomic(x)) {
+  if (is.atomic(x)) {  # including forderv(NULL) which, consistent with base::order(NULL), returns error
     if (!missing(by) && !is.null(by)) stop("x is a single vector, non-NULL 'by' doesn't make sense")
     by = NULL
-    if ( !missing(order) && (length(order) != 1L || !(order %in% c(1L, -1L))) )
-      stop("x is a single vector, length(order) must be =1 and it's value should be 1 (ascending) or -1 (descending).")
   } else {
-    if (!length(x)) return(integer(0L)) # to be consistent with base::order. this'll make sure forderv(NULL) will result in error
-                       # (as base does) but forderv(data.table(NULL)) and forderv(list()) will return integer(0L))
+    if (!length(x)) return(integer(0L)) # e.g. forderv(data.table(NULL)) and forderv(list()) return integer(0L))
     by = colnamesInt(x, by, check_dups=FALSE)
-    if ( (length(order) != 1L && length(order) != length(by)) || !all(order %in% c(1L, -1L)) )
-      stop("x is a list, length(order) must be either =1 or =length(by) and each value should be 1 or -1 for each column in 'by', corresponding to ascending or descending order, respectively. If length(order) == 1, it will be recycled to length(by).")
     if (length(order) == 1L) order = rep(order, length(by))
   }
-  order = as.integer(order)
+  order = as.integer(order) # length and contents of order being +1/-1 is checked at C level
   .Call(Cforder, x, by, retGrp, sort, order, na.last)  # returns integer() if already sorted, regardless of sort=TRUE|FALSE
 }
 

@@ -432,7 +432,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
     if (!isNull(by))
       error("Input is an atomic vector (not a list of columns) but by= is not NULL");
     if (!isInteger(ascArg) || LENGTH(ascArg)!=1)
-      error("Input is an atomic vector (not a list of columns) but ascArg= is not a length 1 integer");
+      error("Input is an atomic vector (not a list of columns) but order= is not a length 1 integer");
     if (verbose)
       Rprintf("forder.c received a vector type '%s' length %d\n", type2char(TYPEOF(DT)), length(DT));
     SEXP tt = PROTECT(allocVector(VECSXP, 1)); n_protect++;
@@ -445,11 +445,11 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
       Rprintf("forder.c received %d rows and %d columns\n", length(VECTOR_ELT(DT,0)), length(DT));
   }
   if (!length(DT))
-    error("DT is an empty list() of 0 columns");
+    error("Internal error: DT is an empty list() of 0 columns");  // # nocov  should have been caught be colnamesInt, test 2099.1
   if (!isInteger(by) || !LENGTH(by))
-    error("DT has %d columns but 'by' is either not integer or is length 0", length(DT));  // seq_along(x) at R level
+    error("Internal error: DT has %d columns but 'by' is either not integer or is length 0", length(DT));  // # nocov  colnamesInt catches, 2099.2
   if (!isInteger(ascArg) || LENGTH(ascArg)!=LENGTH(by))
-    error("Either 'ascArg' is not integer or its length (%d) is different to 'by's length (%d)", LENGTH(ascArg), LENGTH(by));
+    error("Either order= is not integer or its length (%d) is different to by='s length (%d)", LENGTH(ascArg), LENGTH(by));
   nrow = length(VECTOR_ELT(DT,0));
   int n_cplx = 0;
   for (int i=0; i<LENGTH(by); i++) {
@@ -506,7 +506,11 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
     SEXP x = VECTOR_ELT(DT,INTEGER(by)[col]-1);
     uint64_t min=0, max=0;     // min and max of non-NA finite values
     int na_count=0, infnan_count=0;
-    if (sortType) sortType=INTEGER(ascArg)[col];  // if sortType!=0 (not first-appearance) then +1/-1 comes from ascArg.
+    if (sortType) {
+      sortType=INTEGER(ascArg)[col];  // if sortType!=0 (not first-appearance) then +1/-1 comes from ascArg.
+      if (sortType!=1 && sortType!=-1)
+        Error("Item %d of order (ascending/descending) is %d. Must be +1 or -1.", col+1, sortType);
+    }
     //Rprintf("sortType = %d\n", sortType);
     switch(TYPEOF(x)) {
     case INTSXP : case LGLSXP :  // TODO skip LGL and assume range [0,1]
