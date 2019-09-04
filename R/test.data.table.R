@@ -207,7 +207,7 @@ gc_mem = function() {
   # nocov end
 }
 
-test = function(num,x,y=TRUE,error=NULL,warning=NULL,output=NULL,message=NULL) {
+test = function(num,x,y=TRUE,error=NULL,warning=NULL,output=NULL,notOutput=NULL,message=NULL) {
   # Usage:
   # i) tests that x equals y when both x and y are supplied, the most common usage
   # ii) tests that x is TRUE when y isn't supplied
@@ -281,7 +281,7 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,output=NULL,message=NULL) {
   if (memtest) {
     timestamp = as.numeric(Sys.time())   # nocov
   }
-  if (is.null(output)) {
+  if (is.null(output) && is.null(notOutput)) {
     x = suppressMessages(withCallingHandlers(tryCatch(x, error=eHandler), warning=wHandler, message=mHandler))
     # save the overhead of capture.output() since there are a lot of tests, often called in loops
     # Thanks to tryCatch2 by Jan here : https://github.com/jangorecki/logR/blob/master/R/logR.R#L21
@@ -326,14 +326,22 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,output=NULL,message=NULL) {
       }
     }
   }
-  if (!fail && !length(error) && length(output)) {
+  if (!fail && !length(error) && (length(output) || length(notOutput))) {
     if (out[length(out)] == "NULL") out = out[-length(out)]
     out = paste(out, collapse="\n")
     output = paste(output, collapse="\n")  # so that output= can be either a \n separated string, or a vector of strings.
-    if (!string_match(output, out)) {
+    if (length(output) && !string_match(output, out)) {
       # nocov start
-      cat("Test",numStr,"didn't produce correct output:\n")
+      cat("Test",numStr,"did not produce correct output:\n")
       cat("Expected: <<",gsub("\n","\\\\n",output),">>\n",sep="")  # \n printed as '\\n' so the two lines of output can be compared vertically
+      cat("Observed: <<",gsub("\n","\\\\n",out),">>\n",sep="")
+      fail = TRUE
+      # nocov end
+    }
+    if (length(notOutput) && string_match(notOutput, out)) {
+      # nocov start
+      cat("Test",numStr,"produced output but should not have:\n")
+      cat("Expected absent: <<",gsub("\n","\\\\n",notOutput),">>\n",sep="")
       cat("Observed: <<",gsub("\n","\\\\n",out),">>\n",sep="")
       fail = TRUE
       # nocov end

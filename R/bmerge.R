@@ -48,7 +48,7 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
         stop("Attempting roll join on factor column when joining x.",names(x)[xc]," to i.",names(i)[ic],". Only integer, double or character columns may be roll joined.")
       if (xclass=="factor" && iclass=="factor") {
         if (verbose) cat("Matching i.",names(i)[ic]," factor levels to x.",names(x)[xc]," factor levels.\n",sep="")
-        set(i, j=ic, value=chmatch(levels(i[[ic]]), levels(x[[xc]]), nomatch=0L)[i[[ic]]])
+        set(i, j=ic, value=chmatch(levels(i[[ic]]), levels(x[[xc]]), nomatch=0L)[i[[ic]]])  # nomatch=0L otherwise a level that is missing would match to NA values
         next
       } else {
         if (xclass=="character") {
@@ -57,11 +57,13 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
           next
         } else if (iclass=="character") {
           if (verbose) cat("Matching character column i.",names(i)[ic]," to factor levels in x.",names(x)[xc],".\n",sep="")
-          set(i, j=ic, value=chmatch(i[[ic]], levels(x[[xc]]), nomatch=0L))
+          newvalue = chmatch(i[[ic]], levels(x[[xc]]), nomatch=0L)
+          if (anyNA(i[[ic]])) newvalue[is.na(i[[ic]])] = NA_integer_  # NA_character_ should match to NA in factor, #3809
+          set(i, j=ic, value=newvalue)
           next
         }
-        # else incompatible join type error below (factors can only join to factors or character)
       }
+      stop("Incompatible join types: x.", names(x)[xc], " (",xclass,") and i.", names(i)[ic], " (",iclass,"). Factor columns must join to factor or character columns.")
     }
     if (xclass == iclass) {
       if (verbose) cat("i.",names(i)[ic]," has same type (",xclass,") as x.",names(x)[xc],". No coercion needed.\n", sep="")
