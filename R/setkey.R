@@ -211,15 +211,16 @@ forder = function(..., na.last=TRUE, decreasing=FALSE)
   if (any(tt)) sub[tt] = NULL  # remove any NULL or empty arguments; e.g. test 1962.052: forder(DT, NULL) and forder(DT, )
   if (length(sub)<2L) return(NULL)  # forder() with no arguments returns NULL consistent with base::order
   asc = rep.int(1L, length(sub)-1L)  # ascending (1) or descending (-1) per column
-  # the idea here is to intercept - before vectors so that :
-  # i) we can pass the decreasing argument for that column through to C to avoid what normally happens in R (allocate a new vector and apply - to every element first)
-  # ii) - on character vector works; ordinarily in R that fails with type error
+  # the idea here is to intercept - (and unusual --+ deriving from built expressions) before vectors in forder(DT, -colA, colB) so that :
+  # 1) - on character vector works; ordinarily in R that fails with type error
+  # 2) each column/expression can have its own +/- more easily that having to use a separate decreasing=TRUE/FALSE
+  # 3) we can pass the decreasing (-) flag to C and avoid what normally happens in R; i.e. allocate a new vector and apply - to every element first
   # We intercept the unevaluated expressions and massage them before evaluating in with(DT) scope or not depending on the first item.
   for (i in seq.int(2L, length(sub))) {
     v = sub[[i]]
     while (is.call(v) && length(v)==2L && ((s<-v[[1L]])=="-" || s=="+")) {
       if (s=="-") asc[i-1L] = -asc[i-1L]
-      sub[[i]] = v = v[[-1L]]  # remove the leading - (most commonly, or possibly +, --, +-- etc) to avoid the R level allocation upon eval
+      sub[[i]] = v = v[[2L]]  # remove the leading +/- which is the 2nd item since length(v)==2; i.e. monadic +/-
     }
   }
   x = eval(sub[[2L]], parent.frame(), parent.frame())
