@@ -179,74 +179,54 @@ is.sorted = function(x, by=seq_along(x)) {
 ORDERING_TYPES = c('logical', 'integer', 'double', 'complex', 'character')
 forderv = function(x, by=seq_along(x), retGrp=FALSE, sort=TRUE, order=1L, na.last=FALSE)
 {
-  if (!(sort || retGrp)) stop("At least one of retGrp or sort must be TRUE")
-  na.last = as.logical(na.last)
-  if (!length(na.last)) stop('length(na.last) = 0')
-  if (length(na.last) != 1L) {
-    warning("length(na.last) > 1, only the first element will be used")
-    na.last = na.last[1L]
-  }
-  # TO DO: export and document forder
-  if (is.atomic(x)) {
+  if (is.atomic(x)) {  # including forderv(NULL) which returns error consistent with base::order(NULL),
     if (!missing(by) && !is.null(by)) stop("x is a single vector, non-NULL 'by' doesn't make sense")
     by = NULL
-    if ( !missing(order) && (length(order) != 1L || !(order %in% c(1L, -1L))) )
-      stop("x is a single vector, length(order) must be =1 and it's value should be 1 (ascending) or -1 (descending).")
   } else {
-    if (!length(x)) return(integer(0L)) # to be consistent with base::order. this'll make sure forderv(NULL) will result in error
-                       # (as base does) but forderv(data.table(NULL)) and forderv(list()) will return integer(0L))
+    if (!length(x)) return(integer(0L)) # e.g. forderv(data.table(NULL)) and forderv(list()) return integer(0L))
     by = colnamesInt(x, by, check_dups=FALSE)
-    if ( (length(order) != 1L && length(order) != length(by)) || !all(order %in% c(1L, -1L)) )
-      stop("x is a list, length(order) must be either =1 or =length(by) and each value should be 1 or -1 for each column in 'by', corresponding to ascending or descending order, respectively. If length(order) == 1, it will be recycled to length(by).")
     if (length(order) == 1L) order = rep(order, length(by))
   }
-  order = as.integer(order)
+  order = as.integer(order) # length and contents of order being +1/-1 is checked at C level
   .Call(Cforder, x, by, retGrp, sort, order, na.last)  # returns integer() if already sorted, regardless of sort=TRUE|FALSE
 }
 
-forder = function(x, ..., na.last=TRUE, decreasing=FALSE)
+forder = function(..., na.last=TRUE, decreasing=FALSE)
 {
-  if (!is.data.table(x)) stop("x must be a data.table.")
-  if (ncol(x) == 0L) stop("Attempting to order a 0-column data.table.")
-  if (is.na(decreasing) || !is.logical(decreasing)) stop("'decreasing' must be logical TRUE or FALSE")
-  cols = substitute(list(...))[-1L]
-  if (identical(as.character(cols),"NULL") || !length(cols) || (length(cols) == 1L && !nzchar(cols))) return(NULL) # to provide the same output as base::order
-  ans = x
-  order = rep(1L, length(cols))
-  if (length(cols)) {
-    ans = vector("list", length(cols))
-    cols = as.list(cols)
-    xcols = names(x)
-    for (i in seq_along(cols)) {
-      v=cols[[i]]
-      if (i == 1L && is.call(v) && length(v) == 2L && v[[1L]] == "list") return(1L) # to be consistent with base, see comment below under while loop
-      while (is.call(v) && length(v) == 2L && v[[1L]] != "list") {
-        # take care of "--x", "{-x}", "(---+x)" etc., cases and also "list(y)". 'list(y)' is ambiguous though. In base, with(DT, order(x, list(y))) will error
-        # that 'arguments are not of same lengths'. But with(DT, order(list(x), list(y))) will return 1L, which is very strange. On top of that, with(DT,
-        # order(x, as.list(10:1)) would return 'unimplemented type list'. It's all very inconsistent. But we HAVE to be consistent with base HERE.
-        if (!as.character(v[[1L]]) %chin% c("+", "-")) break   # FIX for bug #5583
-        if (v[[1L]] == "-") order[i] = -order[i]
-        v = v[[-1L]]
-      }
-      if (is.name(v)) {
-        ix = chmatch(as.character(v), xcols, nomatch=0L)
-        if (ix != 0L) ans = point(ans, i, x, ix) # see 'point' in data.table.R and C-version pointWrapper in assign.c - avoid copies
-        else {
-          v = as.call(list(as.name("list"), v))
-          ans = point(ans, i, eval(v, x, parent.frame()), 1L)
-        }
-      } else {
-        if (!is.object(eval(v, x, parent.frame()))) {
-          v   = as.call(list(as.name("list"), v))
-          ans = point(ans, i, eval(v, x, parent.frame()), 1L) # eval has to make a copy here (not due to list(.), but due to ex: "4-5*y"), unavoidable.
-        } else ans = point(ans, i, list(unlist(eval(v, x, parent.frame()))), 1L)
-      } # else stop("Column arguments to order by in 'forder' should be of type name/symbol (ex: quote(x)) or call (ex: quote(-x), quote(x+5*y))")
+  sub = substitute(list(...))
+  tt = sapply(sub, function(x) is.null(x) || (is.symbol(x) && !nzchar(x)))
+  if (any(tt)) sub[tt] = NULL  # remove any NULL or empty arguments; e.g. test 1962.052: forder(DT, NULL) and forder(DT, )
+  if (length(sub)<2L) return(NULL)  # forder() with no arguments returns NULL consistent with base::order
+  asc = rep.int(1L, length(sub)-1L)  # ascending (1) or descending (-1) per column
+  # the idea here is to intercept - (and unusual --+ deriving from built expressions) before vectors in forder(DT, -colA, colB) so that :
+  # 1) - on character vector works; ordinarily in R that fails with type error
+  # 2) each column/expression can have its own +/- more easily that having to use a separate decreasing=TRUE/FALSE
+  # 3) we can pass the decreasing (-) flag to C and avoid what normally happens in R; i.e. allocate a new vector and apply - to every element first
+  # We intercept the unevaluated expressions and massage them before evaluating in with(DT) scope or not depending on the first item.
+  for (i in seq.int(2L, length(sub))) {
+    v = sub[[i]]
+    while (is.call(v) && length(v)==2L && ((s<-v[[1L]])=="-" || s=="+")) {
+      if (s=="-") asc[i-1L] = -asc[i-1L]
+      sub[[i]] = v = v[[2L]]  # remove the leading +/- which is the 2nd item since length(v)==2; i.e. monadic +/-
     }
   }
-  cols = seq_along(ans)
-  # Supported column types are checked at C level
-  o = forderv(ans, cols, sort=TRUE, retGrp=FALSE, order= if (decreasing) -order else order, na.last)
-  if (!length(o)) o = seq_along(ans[[1L]]) else o
+  x = eval(sub[[2L]], parent.frame(), parent.frame())
+  if (is.list(x)) {
+    if (length(x)==0L && is.data.frame(x)) stop("Attempting to order a 0-column data.table or data.frame.")
+    sub[2L] = NULL  # change list(DT, ...) to list(...)
+    if (length(sub)==1L) {
+      data = x
+    } else {
+      if (!is.data.frame(x)) stop("The first item passed to [f]order is a plain list but there are more items. It should be a data.table or data.frame.")
+      asc = asc[-1L]
+      data = eval(sub, x, parent.frame())
+    }
+  } else {
+    data = eval(sub, parent.frame(), parent.frame())
+  }
+  stopifnot(isTRUEorFALSE(decreasing))
+  o = forderv(data, seq_along(data), sort=TRUE, retGrp=FALSE, order= if (decreasing) -asc else asc, na.last)
+  if (!length(o) && length(data)>=1L) o = seq_along(data[[1L]]) else o
   o
 }
 

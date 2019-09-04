@@ -4450,8 +4450,8 @@ test(1251.09, DT[base::order(x, list(-y), decreasing=TRUE)],
 # more "edge cases" to ensure we're consistent with base
 test(1251.10, DT[order("a")], DT[1L])
 test(1251.11, DT[order("b", "a")], DT[1L])
-test(1251.12, DT[order(list("b", "a"))], error = "Column 1 of by= [(]1[)] is type 'list', not yet supported. Please use the by=.*that are supported")
-test(1251.13, DT[order(list("b"), list("a"))], DT[1L])
+test(1251.12, DT[order(list("b", "a"))], DT[1L])
+test(1251.13, DT[order(list("b"), list("a"))], error="The first item passed to [f]order is a plain list but there are more items. It should be a data.table or data.frame.")
 
 ##############################################################
 # extensive tests for order optimisation within `[.data.table`
@@ -5056,18 +5056,17 @@ test(1318.1, DT[, eval(sumExpr), by = aa], DT[, sum(bb, na.rm=TRUE), by=aa])
 test(1318.2, DT[, eval(meanExpr), by = aa], DT[, mean(bb, na.rm=TRUE), by=aa])
 test(1318.3, DT[, list(mySum = eval(sumExpr), myMean = eval(meanExpr)), by = aa], DT[, list(mySum=sum(bb, na.rm=TRUE), myMean=mean(bb, na.rm=TRUE)), by=aa])
 
-# get DT[order(.)] to be 100% consistent with base, even though the way base does some things is *utterly ridiculous*, inconsistent.
-# closes #696.
+# get DT[order(.)] to make sense. In v1.12.4 these tests were changed to not be 100% consistent with base in
+# cases where the base R behaviour doesn't make sense, #696
 DT <- data.table(a = 1:4, b = 8:5, c=letters[4:1])
 test(1319.1, DT[order(DT[, "b", with=FALSE])], DT[base::order(DT[, "b", with=FALSE])])
 test(1319.2, DT[order(DT[, "c", with=FALSE])], DT[base::order(DT[, "c", with=FALSE])])
-test(1319.3, DT[order(DT[, c("b","c"), with=FALSE])], DT[base::order(DT[, c("b","c"), with=FALSE])])
-test(1319.4, DT[order(DT[, c("c","b"), with=FALSE])], DT[base::order(DT[, c("c","b"), with=FALSE])])
-test(1319.5, DT[order(DT[, "b", with=FALSE], DT[, "a", with=FALSE])], DT[base::order(DT[, "b", with=FALSE], DT[, "a", with=FALSE])])
-# test to make sure old things are not modified (ridiculous, but "consistency" demands it!)
-test(1319.6, DT[order(list(DT$a))], DT[1])
-test(1319.7, DT[order(list(DT$a), list(DT$b))], DT[1])
-test(1319.8, DT[order(list(DT$a, DT$b))], error="Column 1 of by= (1) is type 'list', not yet supported")
+test(1319.3, DT[order(DT[, c("b","c"), with=FALSE])], DT[4:1])    #  DT[base::order(DT[, c("b","c"), with=FALSE])])
+test(1319.4, DT[order(DT[, c("c","b"), with=FALSE])], DT[4:1])    #  DT[base::order(DT[, c("c","b"), with=FALSE])])
+test(1319.5, DT[order(DT[, "b", with=FALSE], DT[, "a", with=FALSE])], error="Column 1 passed to [f]order is type 'list', not yet supported")
+test(1319.6, DT[order(list(DT$a))], DT)
+test(1319.7, DT[order(list(DT$a), list(DT$b))], error="The first item passed to [f]order is a plain list but there are more items. It should be a data.table or data.frame.")
+test(1319.8, DT[order(list(DT$a, DT$b))], DT)    # error="Column 1 of by= (1) is type 'list', not yet supported")
 
 # FR #703. Not so extensive testing because test 1223 already tests for everything else extensively. Only integer64 here.
 # this'll be the test for both DT[order(.)] and setorder(.) as both internally uses forder/forderv
@@ -11761,10 +11760,10 @@ test(1844.2, forder(DT,V1,V2,na.last=NA), INT(2,1,3,0,4))  # prior to v1.12.0 th
 DT = data.table(c("a","a","a","b","b"),c(2,1,3,NA,NA))
 test(1844.3, forder(DT,V1,V2,na.last=NA), INT(2,1,3,0,0))
 DT = data.table(as.raw(0:6), 7:1)
-test(1844.4, forder(DT,V1,V2), error="Column 1 of by= (1) is type 'raw', not yet supported")
-test(1844.5, forder(DT,V2,V1), error="Column 2 of by= (2) is type 'raw', not yet supported")
+test(1844.4, forder(DT,V1,V2), error="Column 1 passed to [f]order is type 'raw', not yet supported")
+test(1844.5, forder(DT,V2,V1), error="Column 2 passed to [f]order is type 'raw', not yet supported")
 DT = data.table(as.raw(0:6), c(5L,5L,1L,2L,2L,2L,2L))
-test(1844.6, forder(DT,V2,V1), error="Column 2 of by= (2) is type 'raw', not yet supported")
+test(1844.6, forder(DT,V2,V1), error="Column 2 passed to [f]order is type 'raw', not yet supported")
 
 # fix for non-equi joins issue #1991. Thanks to Henrik for the nice minimal example.
 d1 <- data.table(x = c(rep(c("b", "a", "c"), each = 3), c("a", "b")), y = c(rep(c(1, 3, 6), 3), 6, 6), id = 1:11)
@@ -13225,32 +13224,32 @@ test(1962.039, is.sorted(3:1, by = 'x'),
      error = 'x is vector but')
 
 DT = data.table(a = 3:1)
-test(1962.040, forderv(DT, sort = FALSE, retGrp = FALSE),
-     error = 'At least one of retGrp or sort must be TRUE')
-test(1962.041, forderv(DT, na.last = logical(0L)),
-     error = 'length(na.last) = 0')
-test(1962.042, forderv(DT, na.last = c(TRUE, FALSE)), 3:1,
-     warning = 'length(na.last) > 1, only')
-test(1962.043, forderv(DT$a, by = 'a'),
-     error = 'x is a single vector, non-NULL')
-test(1962.044, forderv(DT$a, order = 2L),
-     error = 'x is a single vector, length(order)')
-test(1962.045, forderv(DT$a, order = c(1L, -1L)),
-     error = 'x is a single vector, length(order)')
-test(1962.046, forderv(DT, order = c(1L, -1L)),
-     error = 'x is a list, length(order)')
-test(1962.047, forderv(DT, order = 2L),
-     error = 'x is a list, length(order)')
+test(1962.0401, forderv(DT, sort=FALSE, retGrp=FALSE), error='At least one of retGrp= or sort= must be TRUE')
+test(1962.0402, forderv(DT, sort=0),                   error='sort= must be TRUE or FALSE')
+test(1962.0403, forderv(DT, retGrp=0),                 error='retGrp= must be TRUE or FALSE')
+test(1962.041, forderv(DT, na.last = logical(0L)),     error='na.last must be logical TRUE, FALSE or NA of length 1')
+test(1962.042, forderv(DT, na.last = c(TRUE, FALSE)),  error='na.last must be logical TRUE, FALSE or NA of length 1')
+test(1962.043, forderv(DT$a, by = 'a'),                error='x is a single vector, non-NULL')
+test(1962.044, forderv(DT$a, order = 2L),              error='Item 1 of order (ascending/descending) is 2. Must be +1 or -1')
+test(1962.045, forderv(DT$a, order = c(1L, -1L)),      error='Input is an atomic vector (not a list of columns) but order= is not a length 1 integer')
+test(1962.0461, forderv(DT, order = c(1L, -1L)),       error="Either order= is not integer or its length (2) is different to by='s length (1)")
+test(1962.0462, forderv(DT, order = 2L),               error='Item 1 of order (ascending/descending) is 2. Must be +1 or -1')
+test(1962.0471, forderv(mean),                         error="'x' argument must be data.table compatible")
+test(1962.0472, forderv(DT, by=mean),                  error="argument specifying columns must be character or numeric")
+test(1962.0473, forderv(NULL),                         error="DT is an empty list() of 0 columns")
 
 setDF(DT)
-test(1962.048, forder(DT), error = 'x must be a data.table')
+test(1962.0481, forder(DT), 3:1)
+L = as.list(DT)
+test(1962.0482, forder(L), 3:1)
+test(1962.0483, forder(), NULL)
 setDT(DT)
 test(1962.049, forder(DT[ , 0L]), error = 'Attempting to order a 0-column')
-test(1962.050, forder(DT, decreasing = NA), error = 'must be logical TRUE')
-test(1962.051, forder(DT, decreasing = 1.4), error = 'must be logical TRUE')
-test(1962.052, forder(DT, NULL), NULL)
-test(1962.053, forder(DT), NULL)
-test(1962.054, forder(DT, ), NULL)
+test(1962.050, forder(DT, decreasing = NA), error = 'isTRUEorFALSE(decreasing) is not TRUE')
+test(1962.051, forder(DT, decreasing = 1.4), error = 'isTRUEorFALSE(decreasing) is not TRUE')
+test(1962.052, forder(DT, NULL), 3:1)
+test(1962.053, forder(DT), 3:1)
+test(1962.054, forder(DT, ), 3:1)
 
 test(1962.055, fsort(as.double(DT$a), internal = TRUE),
      error = 'Internal code should not be being called on type double')
@@ -13606,11 +13605,11 @@ test(1967.68, setDT(`___data.table_internal_test_1967.68___`), error = 'Cannot f
 ### [.data.table verbosity & non-equi-join tests
 options(datatable.optimize = 0L)
 verbose_output = capture.output(x[order(a), .N, verbose = TRUE])
-test(1967.69, !any(grepl('order optimization', verbose_output, fixed = TRUE)))
+test(1967.69, !any(grepl('forder.c', verbose_output, fixed = TRUE)))
 test(1967.70, any(grepl('[1] 5', verbose_output, fixed = TRUE)))
 options('datatable.optimize' = 1L)
 test(1967.71, x[order(a), .N, verbose = TRUE], 5L,
-     output = "changed 'order(...)' in i to 'forder(")
+     output = "forder.c received 5 rows and 1 column")
 setkey(x)
 test(1967.72, x[x, .N, on = 'a', verbose = TRUE], 5L,
      output = "on= matches existing key")
@@ -15073,7 +15072,7 @@ DT = data.table(
   C = c(2L, 3L, 5L, 8L, 6L, 1L, 4L, 9L, 10L, 7L)
 )
 test(2054, DT[order(C)[1:5], B, verbose=TRUE], c('b', 'b', 'c', 'c', 'a'),
-           output = 'order optimisation is on')
+           output = "forder.c received 10 rows and 1 column")
 
 # ITime class should be retained for same methods as IDate, #3628
 test(2055.1, seq(from = as.ITime('00:00:00'), to = as.ITime('00:00:05'), by = 5L), as.ITime(c(0, 5L)))
@@ -15870,24 +15869,45 @@ test(2097.1, DT[.(NA_character_)], data.table(fac=NA_character_, v=2L, key="fac"
 test(2097.2, DT[J(NA)],          error="Factor columns must join to factor or character columns")
 test(2097.3, DT[J(NA_integer_)], error="Factor columns must join to factor or character columns")
 
-# fifelse, #3753, add argument na for missing values
+# Optimized order=>forder within do.call as done by neatRanges and rbi.helpers, PR#3817
+# Fixes: 'Column 2 is length 3 which differs' and 'argument x is missing with no default'
+DT = data.table(id=INT(3,5,2,4,2), rating=LETTERS[5:1])
+groups = c("id", "rating")
+test(2098.1, DT[do.call(order, mget(groups)), verbose=TRUE], ans<-data.table(id=INT(2,2,3,4,5), rating=c("A","C","E","B","D")),
+             output=out<-"forder.c received 5 rows and 2 columns")
+test(2098.2, DT[with(DT, do.call(order, mget(groups))), verbose=TRUE],  ans, output=out)
+test(2098.3, DT[do.call(forder, mget(groups)), verbose=TRUE],           ans, output=out)
+test(2098.4, DT[with(DT, do.call(forder, mget(groups))), verbose=TRUE], ans, output=out)
+old = options(datatable.optimize=0L)
+test(2098.5, DT[do.call(order, mget(groups)), verbose=TRUE],            ans, notOutput="forder.c")
+test(2098.6, DT[with(DT, do.call(order, mget(groups))), verbose=TRUE],  ans, notOutput="forder.c")
+test(2098.7, DT[do.call(forder, mget(groups)), verbose=TRUE],           ans, output=out)
+test(2098.8, DT[with(DT, do.call(forder, mget(groups))), verbose=TRUE], ans, output=out)
+options(old)
+
+# Error in update join when joining on factor, #3559
+d1 <- data.table(fac = factor(letters[1:4]), char = letters[1:4], val = c(1L, NA, 3L, NA))
+d2 <- data.table(fac = factor(letters[1:4]), char = letters[1:4], val = 1:4)
+test(2099, d1[is.na(val), val := d2[.SD, x.val, on = .(fac)]], data.table(fac=factor(letters[1:4]), char=letters[1:4], val=1:4))
+
+# fifelse gains na= for missing value, #3753
 test_vec_na = c(-5L:5L < 0L, NA)
 out_vec_na = c(rep(1:0, 5:6), 2L)
 date_vec_na = as.logical(c(as.Date(14975:14979, origin = '1970-01-01') == "2011-01-01", as.Date(NA)))
-test(2098.001, fifelse(test_vec_na, 1L, 0L, 2L), out_vec_na)
-test(2098.002, fifelse(test_vec_na, 1, 0, 2), as.numeric(out_vec_na))
-test(2098.003, fifelse(test_vec_na, TRUE, FALSE, TRUE), as.logical(out_vec_na))
-test(2098.004, fifelse(test_vec_na, "1", "0","2"), as.character(out_vec_na))
-test(2098.005, fifelse(test_vec_na, 1+0i, 0+0i, 2+0i), as.complex(out_vec_na))
-test(2098.006, fifelse(c(TRUE,FALSE,NA), list(1:5), list(5:1), list(15:11)), list(1:5,5:1,15:11))
-test(2098.007, fifelse(test_vec_na, 1, 0, 2L), error = "'yes' is of type double but 'na' is of type integer. Please make sure that both arguments have the same type.")
-test(2098.008, fifelse(test_vec_na, 1, 0, c(2,3)), error = "Length of 'na' is 2 but must be 1")
-test(2098.009, fifelse(date_vec_na, as.Date("2019-08-31"), as.Date("2019-08-30"), as.Date("2019-08-29")), as.Date(c(18139, 18138, 18138, 18138, 18138, 18137), origin = '1970-01-01'))
-test(2098.010, fifelse(date_vec_na, as.Date("2019-08-31"), as.Date("2019-08-30"), 18137), error = "'yes' has different class than 'na'. Please make sure that both arguments have the same class.")
-test(2098.011, fifelse(c(TRUE,FALSE,TRUE,TRUE,FALSE,NA), factor(letters[1:6]), factor("a", levels=letters[1:6]), factor("f", levels=letters[1:6])), factor(c("a","a","c","d","a","f"), levels=letters[1:6]))
-test(2098.012, fifelse(c(TRUE,FALSE,TRUE,TRUE,FALSE,NA), factor(letters[1:6]), factor("a", levels=letters[1:6]), factor("f", levels=letters[1:7])), error = "'yes' and 'na' are both type factor but their levels are different.")
-test(2098.013, lapply(list(list(yes = 1, no = 2, na = 3), list(yes = 2, no = 4)), function(el) fifelse(c(TRUE, FALSE, NA), el$yes, el$no, el$na)), list(c(1,2,3),c(2,4,NA)))
-test(2098.014, fifelse(c(T,F,NA),c(1,1,1),c(2,2,2),NA), c(1,2,NA))
+test(2100.01, fifelse(test_vec_na, 1L, 0L, 2L), out_vec_na)
+test(2100.02, fifelse(test_vec_na, 1, 0, 2), as.numeric(out_vec_na))
+test(2100.03, fifelse(test_vec_na, TRUE, FALSE, TRUE), as.logical(out_vec_na))
+test(2100.04, fifelse(test_vec_na, "1", "0","2"), as.character(out_vec_na))
+test(2100.05, fifelse(test_vec_na, 1+0i, 0+0i, 2+0i), as.complex(out_vec_na))
+test(2100.06, fifelse(c(TRUE,FALSE,NA), list(1:5), list(5:1), list(15:11)), list(1:5,5:1,15:11))
+test(2100.07, fifelse(test_vec_na, 1, 0, 2L), error = "'yes' is of type double but 'na' is of type integer. Please make sure that both arguments have the same type.")
+test(2100.08, fifelse(test_vec_na, 1, 0, c(2,3)), error = "Length of 'na' is 2 but must be 1")
+test(2100.09, fifelse(date_vec_na, as.Date("2019-08-31"), as.Date("2019-08-30"), as.Date("2019-08-29")), as.Date(c(18139, 18138, 18138, 18138, 18138, 18137), origin = '1970-01-01'))
+test(2100.10, fifelse(date_vec_na, as.Date("2019-08-31"), as.Date("2019-08-30"), 18137), error = "'yes' has different class than 'na'. Please make sure that both arguments have the same class.")
+test(2100.11, fifelse(c(TRUE,FALSE,TRUE,TRUE,FALSE,NA), factor(letters[1:6]), factor("a", levels=letters[1:6]), factor("f", levels=letters[1:6])), factor(c("a","a","c","d","a","f"), levels=letters[1:6]))
+test(2100.12, fifelse(c(TRUE,FALSE,TRUE,TRUE,FALSE,NA), factor(letters[1:6]), factor("a", levels=letters[1:6]), factor("f", levels=letters[1:7])), error = "'yes' and 'na' are both type factor but their levels are different.")
+test(2100.13, lapply(list(list(yes = 1, no = 2, na = 3), list(yes = 2, no = 4)), function(el) fifelse(c(TRUE, FALSE, NA), el$yes, el$no, el$na)), list(c(1,2,3),c(2,4,NA)))
+test(2100.14, fifelse(c(T,F,NA),c(1,1,1),c(2,2,2),NA), c(1,2,NA))
 
 
 ###################################
