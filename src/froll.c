@@ -341,7 +341,7 @@ void frollapply(double *x, int64_t nx, double *w, int k, ans_t *ans, int align, 
   } else {
     if (teval0==INTSXP || teval0==LGLSXP) {
       if (verbose)
-        Rprintf("%s: results from provided FUN are not of type double, coerction from integer or logical will be applied on each iteration\n", __func__);
+        Rprintf("%s: results from provided FUN are not of type double, coercion from integer or logical will be applied on each iteration\n", __func__);
       ans->dbl_v[k-1] = REAL(coerceVector(eval0, REALSXP))[0];
     } else {
       error("%s: results from provided FUN are not of type double", __func__);

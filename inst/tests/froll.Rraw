@@ -1033,9 +1033,9 @@ options(datatable.verbose=TRUE)
 x = c(1,2,1,1,1,2,3,2)
 ans = c(NA,NA,2,2,1,2,3,2)
 numUniqueN = function(x) as.numeric(uniqueN(x))
-test(6010.103, frollapply(x, 3, uniqueN), ans, output=c("frollapplyR: allocating memory.*","frollapply: results from provided FUN are not of type double, coerction from integer or logical will be applied on each iteration","frollapply: took.*","frollapplyR: processing.*took.*"))
+test(6010.103, frollapply(x, 3, uniqueN), ans, output=c("frollapplyR: allocating memory.*","frollapply: results from provided FUN are not of type double, coercion from integer or logical will be applied on each iteration.*","frollapply: took.*","frollapplyR: processing.*took.*"))
 test(6010.104, frollapply(x, 3, numUniqueN), ans, output=c("frollapplyR: allocating memory.*","frollapply: took.*","frollapplyR: processing.*took.*"))
-test(6010.105, as.logical(frollapply(c(1,2,1,1,NA,2,NA,2), 3, anyNA)), c(NA,NA,FALSE,FALSE,TRUE,TRUE,TRUE,TRUE), output=c("frollapplyR: allocating memory.*","frollapply: results from provided FUN are not of type double, coerction from integer or logical will be applied on each iteration","frollapply: took.*","frollapplyR: processing.*took.*"))
+test(6010.105, as.logical(frollapply(c(1,2,1,1,NA,2,NA,2), 3, anyNA)), c(NA,NA,FALSE,FALSE,TRUE,TRUE,TRUE,TRUE), output=c("frollapplyR: allocating memory.*","frollapply: results from provided FUN are not of type double, coercion from integer or logical will be applied on each iteration","frollapply: took.*","frollapplyR: processing.*took.*"))
 f = function(x) {
   n = length(x)
   # double type will be returned only for first iteration where we check type
