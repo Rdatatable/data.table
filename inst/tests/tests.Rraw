@@ -4451,7 +4451,7 @@ test(1251.09, DT[base::order(x, list(-y), decreasing=TRUE)],
 test(1251.10, DT[order("a")], DT[1L])
 test(1251.11, DT[order("b", "a")], DT[1L])
 test(1251.12, DT[order(list("b", "a"))], DT[1L])
-test(1251.13, DT[order(list("b"), list("a"))], DT[1L])
+test(1251.13, DT[order(list("b"), list("a"))], error="The first item passed to [f]order is a plain list but there are more items. It should be a data.table or data.frame.")
 
 ##############################################################
 # extensive tests for order optimisation within `[.data.table`
@@ -5056,17 +5056,16 @@ test(1318.1, DT[, eval(sumExpr), by = aa], DT[, sum(bb, na.rm=TRUE), by=aa])
 test(1318.2, DT[, eval(meanExpr), by = aa], DT[, mean(bb, na.rm=TRUE), by=aa])
 test(1318.3, DT[, list(mySum = eval(sumExpr), myMean = eval(meanExpr)), by = aa], DT[, list(mySum=sum(bb, na.rm=TRUE), myMean=mean(bb, na.rm=TRUE)), by=aa])
 
-# get DT[order(.)] to be 100% consistent with base, even though the way base does some things is *utterly ridiculous*, inconsistent.
-# closes #696.
+# get DT[order(.)] to make sense. In v1.12.4 these tests were changed to not be 100% consistent with base in
+# cases where the base R behaviour doesn't make sense, #696
 DT <- data.table(a = 1:4, b = 8:5, c=letters[4:1])
 test(1319.1, DT[order(DT[, "b", with=FALSE])], DT[base::order(DT[, "b", with=FALSE])])
 test(1319.2, DT[order(DT[, "c", with=FALSE])], DT[base::order(DT[, "c", with=FALSE])])
 test(1319.3, DT[order(DT[, c("b","c"), with=FALSE])], DT[4:1])    #  DT[base::order(DT[, c("b","c"), with=FALSE])])
 test(1319.4, DT[order(DT[, c("c","b"), with=FALSE])], DT[4:1])    #  DT[base::order(DT[, c("c","b"), with=FALSE])])
 test(1319.5, DT[order(DT[, "b", with=FALSE], DT[, "a", with=FALSE])], error="Column 1 passed to [f]order is type 'list', not yet supported")
-# test to make sure old things are not modified (ridiculous, but "consistency" demands it!)
-test(1319.6, DT[order(list(DT$a))], DT[1])
-test(1319.7, DT[order(list(DT$a), list(DT$b))], DT[1])
+test(1319.6, DT[order(list(DT$a))], DT)
+test(1319.7, DT[order(list(DT$a), list(DT$b))], error="The first item passed to [f]order is a plain list but there are more items. It should be a data.table or data.frame.")
 test(1319.8, DT[order(list(DT$a, DT$b))], DT)    # error="Column 1 of by= (1) is type 'list', not yet supported")
 
 # FR #703. Not so extensive testing because test 1223 already tests for everything else extensively. Only integer64 here.
@@ -15872,13 +15871,21 @@ test(2097.1, DT[.(NA_character_)], data.table(fac=NA_character_, v=2L, key="fac"
 test(2097.2, DT[J(NA)],          error="Factor columns must join to factor or character columns")
 test(2097.3, DT[J(NA_integer_)], error="Factor columns must join to factor or character columns")
 
-# forder optimization 'Column 2 is length 3 which differs' or 'argument x is missing with no default' for revdep e.g. neatRanges, PR#XXXX
+# Optimized order=>forder within do.call as done by neatRanges and rbi.helpers, PR#XXXX.
+# Fixes: 'Column 2 is length 3 which differs' and 'argument x is missing with no default'
 DT = data.table(id=INT(3,5,2,4,2), rating=LETTERS[5:1])
 groups = c("id", "rating")
 test(2098.1, DT[do.call(order, mget(groups)), verbose=TRUE], ans<-data.table(id=INT(2,2,3,4,5), rating=c("A","C","E","B","D")),
-             output="forder.c received 5 rows and 2 columns")
-test(2098.2, DT[with(DT, do.call(order, mget(groups))), verbose=TRUE], ans,
-             output="forder.c received 5 rows and 2 columns")
+             output=out<-"forder.c received 5 rows and 2 columns")
+test(2098.2, DT[with(DT, do.call(order, mget(groups))), verbose=TRUE],  ans, output=out)
+test(2098.3, DT[do.call(forder, mget(groups)), verbose=TRUE],           ans, output=out)
+test(2098.4, DT[with(DT, do.call(forder, mget(groups))), verbose=TRUE], ans, output=out)
+old = options(datatable.optimize=0L)
+test(2098.5, DT[do.call(order, mget(groups)), verbose=TRUE],            ans, notOutput="forder.c")
+test(2098.6, DT[with(DT, do.call(order, mget(groups))), verbose=TRUE],  ans, notOutput="forder.c")
+test(2098.7, DT[do.call(forder, mget(groups)), verbose=TRUE],           ans, output=out)
+test(2098.8, DT[with(DT, do.call(forder, mget(groups))), verbose=TRUE], ans, output=out)
+options(old)
 
 
 ###################################
