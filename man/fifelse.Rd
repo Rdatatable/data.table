@@ -6,12 +6,12 @@
 \code{fifelse} is a faster and more robust replacement of \code{\link[base]{ifelse}}. It is comparable to \code{dplyr::if_else} and \code{hutils::if_else}. It returns a value with the same length as \code{test} filled with corresponding values from \code{yes}, \code{no} or eventually \code{na}, depending on \code{test}. Supports \code{bit64}'s \code{integer64} and \code{nanotime} classes.
 }
 \usage{
-  fifelse(test, yes, no, na=NULL)
+  fifelse(test, yes, no, na=NA)
 }
 \arguments{
   \item{test}{ A logical vector. }
   \item{yes, no}{ Values to return depending on \code{TRUE}/\code{FALSE} element of \code{test}. They must be the same type and be either length \code{1} or the same length of \code{test}. }
-  \item{na}{ Value to return if an element of \code{test} is \code{NA}. It must be the same type as \code{yes} and \code{no} and length \code{1}. Default value \code{NULL} is treated as \code{NA}. }
+  \item{na}{ Value to return if an element of \code{test} is \code{NA}. It must be the same type as \code{yes} and \code{no} and length \code{1}. Default value \code{NA}. \code{NULL} is treated as \code{NA}. }
 }
 \details{
 In contrast to \code{\link[base]{ifelse}} attributes are copied from \code{yes} to the output. This is useful when returning \code{Date}, \code{factor} or other classes.
