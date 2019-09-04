@@ -51,7 +51,8 @@ SEXP fastmean(SEXP args)
     case INTSXP: {
       int *pi = INTEGER(x);
       for (i = 0; i<l; i++) {
-        if(pi[i] == NA_INTEGER) continue;
+        if (pi[i] == NA_INTEGER)
+          continue;
         s += pi[i];   // no under/overflow here, s is long double not integer
         n++;
       }
@@ -64,7 +65,8 @@ SEXP fastmean(SEXP args)
     case REALSXP: {
       double *pr = REAL(x);
       for (i = 0; i<l; i++) {
-        if(ISNAN(pr[i])) continue;  // TO DO: could drop this line and let NA propogate?
+        if (ISNAN(pr[i]))
+          continue;
         s += pr[i];
         n++;
       }
@@ -75,7 +77,7 @@ SEXP fastmean(SEXP args)
       s /= n;
       if(R_FINITE((double)s)) {
         for (i = 0; i<l; i++) {
-          if(ISNAN(pr[i])) continue;
+          if (ISNAN(pr[i])) continue;
           t += (pr[i] - s);
         }
         s += t/n;
@@ -92,7 +94,10 @@ SEXP fastmean(SEXP args)
     case INTSXP: {
       int *pi = INTEGER(x);
       for (i = 0; i<l; i++) {
-        if(pi[i] == NA_INTEGER) {UNPROTECT(1); return(ans);}
+        if (pi[i] == NA_INTEGER) {
+          UNPROTECT(1);
+          return(ans);
+        }
         s += pi[i];
       }
       REAL(ans)[0] = (double) (s/l);
@@ -101,7 +106,10 @@ SEXP fastmean(SEXP args)
     case REALSXP: {
       double *pr = REAL(x);
       for (i = 0; i<l; i++) {
-        if(ISNAN(pr[i])) {UNPROTECT(1); return(ans);}
+        if (ISNAN(pr[i])) {
+          UNPROTECT(1);
+          return(ans);
+        }
         s += pr[i];
       }
       s /= l;
