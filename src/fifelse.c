@@ -91,7 +91,7 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b, SEXP na) {
     double *restrict pans = REAL(ans);
     const double *restrict pa   = REAL(a);
     const double *restrict pb   = REAL(b);
-    const double na_double = (INHERITS(a, char_integer64) || INHERITS(a, char_nanotime)) ? NA_INT64_D : NA_REAL; // integer64 and nanotime support
+    const double na_double = Rinherits(a, char_integer64) ? NA_INT64_D : NA_REAL; // Rinherits() is true for nanotime
     const double pna = nonna ? REAL(na)[0] : na_double;
     #pragma omp parallel for num_threads(getDTthreads())
     for (int64_t i=0; i<len0; ++i) {
