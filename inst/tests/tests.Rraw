@@ -15890,6 +15890,25 @@ d1 <- data.table(fac = factor(letters[1:4]), char = letters[1:4], val = c(1L, NA
 d2 <- data.table(fac = factor(letters[1:4]), char = letters[1:4], val = 1:4)
 test(2099, d1[is.na(val), val := d2[.SD, x.val, on = .(fac)]], data.table(fac=factor(letters[1:4]), char=letters[1:4], val=1:4))
 
+# fifelse gains na= for missing value, #3753
+test_vec_na = c(-5L:5L < 0L, NA)
+out_vec_na = c(rep(1:0, 5:6), 2L)
+date_vec_na = as.logical(c(as.Date(14975:14979, origin = '1970-01-01') == "2011-01-01", as.Date(NA)))
+test(2100.01, fifelse(test_vec_na, 1L, 0L, 2L), out_vec_na)
+test(2100.02, fifelse(test_vec_na, 1, 0, 2), as.numeric(out_vec_na))
+test(2100.03, fifelse(test_vec_na, TRUE, FALSE, TRUE), as.logical(out_vec_na))
+test(2100.04, fifelse(test_vec_na, "1", "0","2"), as.character(out_vec_na))
+test(2100.05, fifelse(test_vec_na, 1+0i, 0+0i, 2+0i), as.complex(out_vec_na))
+test(2100.06, fifelse(c(TRUE,FALSE,NA), list(1:5), list(5:1), list(15:11)), list(1:5,5:1,15:11))
+test(2100.07, fifelse(test_vec_na, 1, 0, 2L), error = "'yes' is of type double but 'na' is of type integer. Please make sure that both arguments have the same type.")
+test(2100.08, fifelse(test_vec_na, 1, 0, c(2,3)), error = "Length of 'na' is 2 but must be 1")
+test(2100.09, fifelse(date_vec_na, as.Date("2019-08-31"), as.Date("2019-08-30"), as.Date("2019-08-29")), as.Date(c(18139, 18138, 18138, 18138, 18138, 18137), origin = '1970-01-01'))
+test(2100.10, fifelse(date_vec_na, as.Date("2019-08-31"), as.Date("2019-08-30"), 18137), error = "'yes' has different class than 'na'. Please make sure that both arguments have the same class.")
+test(2100.11, fifelse(c(TRUE,FALSE,TRUE,TRUE,FALSE,NA), factor(letters[1:6]), factor("a", levels=letters[1:6]), factor("f", levels=letters[1:6])), factor(c("a","a","c","d","a","f"), levels=letters[1:6]))
+test(2100.12, fifelse(c(TRUE,FALSE,TRUE,TRUE,FALSE,NA), factor(letters[1:6]), factor("a", levels=letters[1:6]), factor("f", levels=letters[1:7])), error = "'yes' and 'na' are both type factor but their levels are different.")
+test(2100.13, lapply(list(list(yes = 1, no = 2, na = 3), list(yes = 2, no = 4)), function(el) fifelse(c(TRUE, FALSE, NA), el$yes, el$no, el$na)), list(c(1,2,3),c(2,4,NA)))
+test(2100.14, fifelse(c(T,F,NA),c(1,1,1),c(2,2,2),NA), c(1,2,NA))
+
 
 ###################################
 #  Add new tests above this line  #
