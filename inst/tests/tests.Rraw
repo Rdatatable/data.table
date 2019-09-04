@@ -15885,6 +15885,11 @@ test(2098.7, DT[do.call(forder, mget(groups)), verbose=TRUE],           ans, out
 test(2098.8, DT[with(DT, do.call(forder, mget(groups))), verbose=TRUE], ans, output=out)
 options(old)
 
+# Error in update join when joining on factor, #3559
+d1 <- data.table(fac = factor(letters[1:4]), char = letters[1:4], val = c(1L, NA, 3L, NA))
+d2 <- data.table(fac = factor(letters[1:4]), char = letters[1:4], val = 1:4)
+test(2099, d1[is.na(val), val := d2[.SD, x.val, on = .(fac)]], data.table(fac=factor(letters[1:4]), char=letters[1:4], val=1:4))
+
 
 ###################################
 #  Add new tests above this line  #
