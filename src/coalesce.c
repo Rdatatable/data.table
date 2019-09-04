@@ -46,7 +46,7 @@ SEXP coalesce(SEXP x, SEXP inplaceArg) {
       error("Item %d is length %d but the first item is length %d. Only singletons are recycled.", i+2, length(item), nrow);
   }
   if (!inplace) {
-    first = PROTECT(duplicate(first)); nprotect++;
+    first = PROTECT(copyAsPlain(first)); nprotect++;
     if (verbose) Rprintf("coalesce copied first item (inplace=FALSE)\n");
   }
   void **valP = (void **)R_alloc(nval, sizeof(void *));
