@@ -13224,25 +13224,17 @@ test(1962.039, is.sorted(3:1, by = 'x'),
      error = 'x is vector but')
 
 DT = data.table(a = 3:1)
-test(1962.040, forderv(DT, sort = FALSE, retGrp = FALSE),
-     error = 'At least one of retGrp or sort must be TRUE')
-test(1962.041, forderv(DT, na.last = logical(0L)),
-     error = 'length(na.last) = 0')
-test(1962.042, forderv(DT, na.last = c(TRUE, FALSE)), 3:1,
-     warning = 'length(na.last) > 1, only')
-test(1962.043, forderv(DT$a, by = 'a'),
-     error = 'x is a single vector, non-NULL')
-test(1962.044, forderv(DT$a, order = 2L),
-     error = 'Item 1 of order (ascending/descending) is 2. Must be +1 or -1')
-test(1962.045, forderv(DT$a, order = c(1L, -1L)),
-     error = 'Input is an atomic vector (not a list of columns) but order= is not a length 1 integer')
-test(1962.046, forderv(DT, order = c(1L, -1L)),
-     error = "Either order= is not integer or its length (2) is different to by='s length (1)")
-test(1962.0471, forderv(DT, order = 2L),
-     error = 'Item 1 of order (ascending/descending) is 2. Must be +1 or -1')
-test(1962.0472, forderv(mean), error="'x' argument must be data.table compatible")
-test(1962.0473, forderv(DT, by=mean), error="argument specifying columns must be character or numeric")
-test(1962.0474, forderv(NULL), error="DT is an empty list() of 0 columns")
+test(1962.040, forderv(DT, sort = FALSE, retGrp = FALSE), error='At least one of retGrp= or sort= must be TRUE')
+test(1962.041, forderv(DT, na.last = logical(0L)),        error='na.last must be logical TRUE, FALSE or NA of length 1')
+test(1962.042, forderv(DT, na.last = c(TRUE, FALSE)),     error='na.last must be logical TRUE, FALSE or NA of length 1')
+test(1962.043, forderv(DT$a, by = 'a'),                   error='x is a single vector, non-NULL')
+test(1962.044, forderv(DT$a, order = 2L),                 error='Item 1 of order (ascending/descending) is 2. Must be +1 or -1')
+test(1962.045, forderv(DT$a, order = c(1L, -1L)),         error='Input is an atomic vector (not a list of columns) but order= is not a length 1 integer')
+test(1962.046, forderv(DT, order = c(1L, -1L)),           error="Either order= is not integer or its length (2) is different to by='s length (1)")
+test(1962.0471, forderv(DT, order = 2L),                  error='Item 1 of order (ascending/descending) is 2. Must be +1 or -1')
+test(1962.0472, forderv(mean),                            error="'x' argument must be data.table compatible")
+test(1962.0473, forderv(DT, by=mean),                     error="argument specifying columns must be character or numeric")
+test(1962.0474, forderv(NULL),                            error="DT is an empty list() of 0 columns")
 
 setDF(DT)
 test(1962.0481, forder(DT), 3:1)

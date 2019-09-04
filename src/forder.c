@@ -428,9 +428,9 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
 
   if (!isNewList(DT)) {
     if (!isVectorAtomic(DT))
-      error("Input is not either a list of columns, or an atomic vector.");
+      error("Internal error: input is not either a list of columns, or an atomic vector.");  // # nocov; caught by colnamesInt at R level, test 1962.0472
     if (!isNull(by))
-      error("Input is an atomic vector (not a list of columns) but by= is not NULL");
+      error("Internal error: input is an atomic vector (not a list of columns) but by= is not NULL");  // # nocov; caught at R level, test 1962.043
     if (!isInteger(ascArg) || LENGTH(ascArg)!=1)
       error("Input is an atomic vector (not a list of columns) but order= is not a length 1 integer");
     if (verbose)
@@ -465,9 +465,11 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
   retgrp = LOGICAL(retGrpArg)[0]==TRUE;
   if (!isLogical(sortGroupsArg) || LENGTH(sortGroupsArg)!=1 || INTEGER(sortGroupsArg)[0]==NA_LOGICAL )
     error("sortGroups must be TRUE or FALSE");
+  sortType = LOGICAL(sortGroupsArg)[0]==TRUE;   // if sortType is 1, it is later flipped between +1/-1 according to ascArg. Otherwise ascArg is ignored when sortType==0
+  if (!retgrp && !sortType)
+    error("At least one of retGrp= or sort= must be TRUE");
   if (!isLogical(naArg) || LENGTH(naArg) != 1)
     error("na.last must be logical TRUE, FALSE or NA of length 1");
-  sortType = LOGICAL(sortGroupsArg)[0]==TRUE;   // if sortType is 1, it is later flipped between +1/-1 according to ascArg. Otherwise ascArg is ignored when sortType==0
   nalast = (LOGICAL(naArg)[0] == NA_LOGICAL) ? -1 : LOGICAL(naArg)[0]; // 1=na last, 0=na first (default), -1=remove na
 
   if (nrow==0) {

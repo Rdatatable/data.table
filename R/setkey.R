@@ -179,15 +179,7 @@ is.sorted = function(x, by=seq_along(x)) {
 ORDERING_TYPES = c('logical', 'integer', 'double', 'complex', 'character')
 forderv = function(x, by=seq_along(x), retGrp=FALSE, sort=TRUE, order=1L, na.last=FALSE)
 {
-  if (!(sort || retGrp)) stop("At least one of retGrp or sort must be TRUE")
-  na.last = as.logical(na.last)
-  if (!length(na.last)) stop('length(na.last) = 0')
-  if (length(na.last) != 1L) {
-    warning("length(na.last) > 1, only the first element will be used")
-    na.last = na.last[1L]
-  }
-  # TO DO: export and document forder
-  if (is.atomic(x)) {  # including forderv(NULL) which, consistent with base::order(NULL), returns error
+  if (is.atomic(x)) {  # including forderv(NULL) which returns error consistent with base::order(NULL),
     if (!missing(by) && !is.null(by)) stop("x is a single vector, non-NULL 'by' doesn't make sense")
     by = NULL
   } else {
