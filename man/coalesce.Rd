@@ -18,6 +18,9 @@ Factor type is supported only when the factor levels of each item are equal.
 \value{
 Atomic vector of the same type and length as the first vector, having \code{NA} values replaced by corresponding non-\code{NA} values from the other vectors.
 }
+\seealso{
+  \code{\link{fifelse}}
+}
 \examples{
 x = c(11L, NA, 13L, NA, 15L, NA)
 y = c(NA, 12L, 5L, NA, NA, NA)

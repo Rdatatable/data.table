@@ -136,7 +136,7 @@
 
 20. `setkey`, `[key]by=` and `on=` in verbose mode (`options(datatable.verbose=TRUE)`) now detect any columns inheriting from `Date` which are stored as 8 byte double, test if any fractions are present, and if not suggest using a 4 byte integer instead (such as `data.table::IDate`) to save space and time, [#1738](https://github.com/Rdatatable/data.table/issues/1738). In future this could be upgraded to `message` or `warning` depending on feedback.
 
-21. New function `fifelse(test, yes, no)` has been implemented in C by Morgan Jacob, [#3657](https://github.com/Rdatatable/data.table/issues/3657). It is comparable to `base::ifelse`, `dplyr::if_else`, `hutils::if_else`, and (forthcoming) [`vctrs::if_else()`](https://vctrs.r-lib.org/articles/stability.html#ifelse). It returns a vector of the same length as `test` but unlike `base::ifelse` the output type is consistent with those of `yes` and `no`. Please see `?data.table::fifelse` for more details.
+21. New function `fifelse(test, yes, no, na)` has been implemented in C by Morgan Jacob, [#3657](https://github.com/Rdatatable/data.table/issues/3657) and [#3753](https://github.com/Rdatatable/data.table/issues/3753). It is comparable to `base::ifelse`, `dplyr::if_else`, `hutils::if_else`, and (forthcoming) [`vctrs::if_else()`](https://vctrs.r-lib.org/articles/stability.html#ifelse). It returns a vector of the same length as `test` but unlike `base::ifelse` the output type is consistent with those of `yes` and `no`. Please see `?data.table::fifelse` for more details.
 
     ```R
     # default 4 threads on a laptop with 16GB RAM and 8 logical CPU
@@ -167,6 +167,31 @@
 25. `setnames(DT, old, new)` now omits any `old==new` to save redundant key and index name updates, [#3783](https://github.com/Rdatatable/data.table/issues/3783). `setnames(DT, new)` (i.e. not providing `old`) already omitted any column name updates where `names(DT)==new`; e.g. `setnames(DT, gsub('^_', '', names(DT)))` exits early if no columns start with `_`.
 
 26. `[[` by group is now optimized for regular vectors (not type list), [#3209](https://github.com/Rdatatable/data.table/issues/3209). Thanks @renkun-ken for the suggestion. `[` by group was already optimized. Please file a feature request if you would like this optimization for list columns.
+
+27. New function `frollapply` for rolling computation of arbitrary R functions (caveat: input `x` is coerced to numeric beforehand, and the function must return a scalar numeric value). The API is consistent to extant rolling functions `frollmean` and `frollsum`; note that it will generally be slower than those functions because (1) the known functions use our optimized internal C implementation and (2) there is no thread-safe API to R's C `eval`. Nevertheless `frollapply` is faster than corresponding `base`-only and `zoo` versions:
+
+    ```R
+    set.seed(108)
+    x = rnorm(1e6); n = 1e3
+    rollfun = function(x, n, FUN) {
+      ans = rep(NA_real_, nx<-length(x))
+      for (i in n:nx) ans[i] = FUN(x[(i-n+1):i])
+      ans
+    }
+    system.time(ans1<-rollfun(x, n, mean))
+    system.time(ans2<-zoo::rollapplyr(x, n, function(x) mean(x), fill=NA))
+    system.time(ans3<-zoo::rollmeanr(x, n, fill=NA))
+    system.time(ans4<-frollapply(x, n, mean))
+    system.time(ans5<-frollmean(x, n))
+    sapply(list(ans2,ans3,ans4,ans5), all.equal, ans1)
+
+    ### fun             mean     sum  median
+    # base rollfun     8.815   5.151  60.175
+    # zoo::rollapply  34.373  27.837  88.552
+    # zoo::roll[fun]   0.215   0.185      NA
+    # frollapply       5.404   1.419  56.475
+    # froll[fun]       0.003   0.002      NA
+    ```
 
 ## BUG FIXES
 
@@ -253,7 +278,7 @@
 
 35. `DT[, i-1L, with=FALSE]` would misinterpret the minus sign and return an incorrect result, [#2019](https://github.com/Rdatatable/data.table/issues/2109). Thanks @cguill95 for the report.
 
-36. `DT[id==1, DT2[.SD, on="id"]]` (i.e. joining from `.SD` in `j`) could incorrectly fail in some cases due to `.SD` being locked, [#1926](https://github.com/Rdatatable/data.table/issues/1926). Thanks @franknarf1 for the report and for diligently tracking use cases for almost 3 years!
+36. `DT[id==1, DT2[.SD, on="id"]]` (i.e. joining from `.SD` in `j`) could incorrectly fail in some cases due to `.SD` being locked, [#1926](https://github.com/Rdatatable/data.table/issues/1926), and when updating-on-join with factors [#3559](https://github.com/Rdatatable/data.table/issues/3559) [#2099](https://github.com/Rdatatable/data.table/issues/2099). Thanks @franknarf1 and @Henrik-P for the reports and for diligently tracking use cases for almost 3 years!
 
 37. `as.IDate.POSIXct` returned `NA` for UTC times before Dec 1901 and after Jan 2038, [#3780](https://github.com/Rdatatable/data.table/issues/3780). Thanks @gschett for the report.
 

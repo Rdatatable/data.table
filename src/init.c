@@ -40,7 +40,6 @@ SEXP gmean();
 SEXP gmin();
 SEXP gmax();
 SEXP isOrderedSubset();
-SEXP pointWrapper();
 SEXP setNumericRounding();
 SEXP getNumericRounding();
 SEXP binary();
@@ -127,7 +126,6 @@ R_CallMethodDef callMethods[] = {
 {"Cgmin", (DL_FUNC) &gmin, -1},
 {"Cgmax", (DL_FUNC) &gmax, -1},
 {"CisOrderedSubset", (DL_FUNC) &isOrderedSubset, -1},
-{"CpointWrapper", (DL_FUNC) &pointWrapper, -1},
 {"CsetNumericRounding", (DL_FUNC) &setNumericRounding, -1},
 {"CgetNumericRounding", (DL_FUNC) &getNumericRounding, -1},
 {"Cbinary", (DL_FUNC) &binary, -1},
@@ -176,6 +174,7 @@ R_CallMethodDef callMethods[] = {
 {"C_lock", (DL_FUNC) &lock, -1},  // _ for these 3 to avoid Clock as in time
 {"C_unlock", (DL_FUNC) &unlock, -1},
 {"C_islocked", (DL_FUNC) &islockedR, -1},
+{"CfrollapplyR", (DL_FUNC) &frollapplyR, -1},
 {NULL, NULL, 0}
 };
 

@@ -120,26 +120,6 @@ replace_dot_alias = function(e) {
   }
 }
 
-# replace order -> forder wherever it appears in i
-replace_order = function(isub, verbose, env) {
-  if (length(isub) == 1L) return(isub)
-  for (ii in seq_along(isub)) {
-    isub_el = isub[[ii]]
-    if (missing(isub_el)) break
-    if (is.name(isub_el)) {
-      # stop base::order from becoming forder(x, base, order)
-      if (isub_el == '::') break
-      if (isub_el == 'order') {
-        if (verbose) cat("order optimisation is on, changed 'order(...)' in i to 'forder(x, ...)'.\n")
-        env$eval_forder = TRUE
-        return(as.call(c(list(quote(forder), quote(x)), as.list(isub)[-1L])))
-      }
-    }
-    if (is.call(isub_el)) isub[[ii]] = replace_order(isub_el, verbose, env)
-  }
-  return(isub)
-}
-
 "[.data.table" = function (x, i, j, by, keyby, with=TRUE, nomatch=getOption("datatable.nomatch", NA), mult="all", roll=FALSE, rollends=if (roll=="nearest") c(TRUE,TRUE) else if (roll>=0) c(FALSE,TRUE) else c(TRUE,FALSE), which=FALSE, .SDcols, verbose=getOption("datatable.verbose"), allow.cartesian=getOption("datatable.allow.cartesian"), drop=NULL, on=NULL)
 {
   # ..selfcount <<- ..selfcount+1  # in dev, we check no self calls, each of which doubles overhead, or could
@@ -350,19 +330,7 @@ replace_order = function(isub, verbose, env) {
 
     if (is.null(isub)) return( null.data.table() )
 
-    # optimize here so that we can switch it off if needed
-    check_eval_env = environment()
-    check_eval_env$eval_forder = FALSE
-    if (getOption("datatable.optimize") >= 1L) {
-      isub = replace_order(isub, verbose, check_eval_env)
-    }
-    if (check_eval_env$eval_forder) {
-      order_env = new.env(parent=parent.frame())            # until 'forder' is exported
-      assign("forder", forder, order_env)
-      assign("x", x, order_env)
-      i = eval(.massagei(isub), order_env, parent.frame())             # for optimisation of 'order' to 'forder'
-      # that forder returns empty integer() is taken care of internally within forder
-    } else if (length(o <- .prepareFastSubset(isub = isub, x = x,
+    if (length(o <- .prepareFastSubset(isub = isub, x = x,
                                               enclos =  parent.frame(),
                                               notjoin = notjoin, verbose = verbose))){
       ## redirect to the is.data.table(x) == TRUE branch.
@@ -377,8 +345,9 @@ replace_order = function(isub, verbose, env) {
       mult = "all"
     }
     else if (!is.name(isub)) {
-      i = tryCatch(eval(.massagei(isub), x, parent.frame()),
-                   error = function(e) .checkTypos(e, names_x))
+      ienv = new.env(parent=parent.frame())
+      if (getOption("datatable.optimize")>=1L) assign("order", forder, ienv)
+      i = tryCatch(eval(.massagei(isub), x, ienv), error=function(e) .checkTypos(e, names_x))
     } else {
       # isub is a single symbol name such as B in DT[B]
       i = try(eval(isub, parent.frame(), parent.frame()), silent=TRUE)
@@ -2326,10 +2295,6 @@ copy = function(x) {
   }
   .Call(C_unlock, newx)
   setalloccol(newx)
-}
-
-point = function(to, to_idx, from, from_idx) {
-  .Call(CpointWrapper, to, to_idx, from, from_idx)
 }
 
 .shallow = function(x, cols = NULL, retain.key = FALSE, unlock = FALSE) {

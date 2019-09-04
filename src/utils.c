@@ -98,7 +98,7 @@ void coerceFill(SEXP fill, double *dfill, int32_t *ifill, int64_t *i64fill) {
       i64fill[0] = (int64_t)(INTEGER(fill)[0]);
     }
   } else if (isReal(fill)) {
-    if (INHERITS(fill,char_integer64) || INHERITS(fill,char_nanotime)) {
+    if (Rinherits(fill,char_integer64)) {  // Rinherits true for nanotime
       long long *llfill = (long long *)REAL(fill);
       if (llfill[0]==NA_INT64_LL) {
         ifill[0] = NA_INTEGER; dfill[0] = NA_REAL; i64fill[0] = NA_INTEGER64;
