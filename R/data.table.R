@@ -2297,10 +2297,6 @@ copy = function(x) {
   setalloccol(newx)
 }
 
-point = function(to, to_idx, from, from_idx) {
-  .Call(CpointWrapper, to, to_idx, from, from_idx)
-}
-
 .shallow = function(x, cols = NULL, retain.key = FALSE, unlock = FALSE) {
   wasnull = is.null(cols)
   cols = colnamesInt(x, cols, check_dups=FALSE)

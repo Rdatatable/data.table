@@ -13245,6 +13245,7 @@ setDF(DT)
 test(1962.0481, forder(DT), 3:1)
 L = as.list(DT)
 test(1962.0482, forder(L), 3:1)
+test(1962.0483, forder(), NULL)
 setDT(DT)
 test(1962.049, forder(DT[ , 0L]), error = 'Attempting to order a 0-column')
 test(1962.050, forder(DT, decreasing = NA), error = 'isTRUEorFALSE(decreasing) is not TRUE')
@@ -15871,7 +15872,7 @@ test(2097.1, DT[.(NA_character_)], data.table(fac=NA_character_, v=2L, key="fac"
 test(2097.2, DT[J(NA)],          error="Factor columns must join to factor or character columns")
 test(2097.3, DT[J(NA_integer_)], error="Factor columns must join to factor or character columns")
 
-# Optimized order=>forder within do.call as done by neatRanges and rbi.helpers, PR#XXXX.
+# Optimized order=>forder within do.call as done by neatRanges and rbi.helpers, PR#3817
 # Fixes: 'Column 2 is length 3 which differs' and 'argument x is missing with no default'
 DT = data.table(id=INT(3,5,2,4,2), rating=LETTERS[5:1])
 groups = c("id", "rating")
