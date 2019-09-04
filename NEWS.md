@@ -168,6 +168,31 @@
 
 26. `[[` by group is now optimized for regular vectors (not type list), [#3209](https://github.com/Rdatatable/data.table/issues/3209). Thanks @renkun-ken for the suggestion. `[` by group was already optimized. Please file a feature request if you would like this optimization for list columns.
 
+27. New function `frollapply` for rolling computation of arbitrary R functions (caveat: input `x` is coerced to numeric beforehand, and the function must return a scalar numeric value). The API is consistent to extant rolling functions `frollmean` and `frollsum`; note that it will generally be slower than those functions because (1) the known functions use our optimized internal C implementation and (2) there is no thread-safe API to R's C `eval`. Nevertheless `frollapply` is faster than corresponding `base`-only and `zoo` versions:
+
+    ```R
+    set.seed(108)
+    x = rnorm(1e6); n = 1e3
+    rollfun = function(x, n, FUN) {
+      ans = rep(NA_real_, nx<-length(x))
+      for (i in n:nx) ans[i] = FUN(x[(i-n+1):i])
+      ans
+    }
+    system.time(ans1<-rollfun(x, n, mean))
+    system.time(ans2<-zoo::rollapplyr(x, n, function(x) mean(x), fill=NA))
+    system.time(ans3<-zoo::rollmeanr(x, n, fill=NA))
+    system.time(ans4<-frollapply(x, n, mean))
+    system.time(ans5<-frollmean(x, n))
+    sapply(list(ans2,ans3,ans4,ans5), all.equal, ans1)
+
+    ### fun             mean     sum  median
+    # base rollfun     8.815   5.151  60.175
+    # zoo::rollapply  34.373  27.837  88.552
+    # zoo::roll[fun]   0.215   0.185      NA
+    # frollapply       5.404   1.419  56.475
+    # froll[fun]       0.003   0.002      NA
+    ```
+
 #### BUG FIXES
 
 1. `first`, `last`, `head` and `tail` by group no longer error in some cases, [#2030](https://github.com/Rdatatable/data.table/issues/2030) [#3462](https://github.com/Rdatatable/data.table/issues/3462). Thanks to @franknarf1 for reporting.

@@ -174,6 +174,7 @@ R_CallMethodDef callMethods[] = {
 {"C_lock", (DL_FUNC) &lock, -1},  // _ for these 3 to avoid Clock as in time
 {"C_unlock", (DL_FUNC) &unlock, -1},
 {"C_islocked", (DL_FUNC) &islockedR, -1},
+{"CfrollapplyR", (DL_FUNC) &frollapplyR, -1},
 {NULL, NULL, 0}
 };
 
