@@ -15139,6 +15139,13 @@ test(2058.11, cbind(data.table(1:2), list(c("a","b"),"a")),               ans)  
 DT = data.table(a=1)
 test(2059.1, rbindlist(list(DT,1)), error="Item 2 of input is not a data.frame, data.table or list")
 test(2059.2, rbindlist(DT), error="Input is data.table but should be a plain list of items to be stacked")
+# rbindlist a list of data.frame which has a class though; e.g. trackdf::example(conversions)
+# trackdf does inherit from 'list (i.e. c("ltraj","list")), we just require is.list() to be true.
+L = structure(list(data.frame(A=1:3, B=7:9), data.frame(A=4:6, B=10:12)),
+              class="customClass") # don't inherit from list as a stronger test
+test(2059.3, is.list(L))
+test(2059.4, rbindlist(L), data.table(A=1:6, B=7:12))
+# does not retain customClass consistent with v1.12.2; for safety as its attributes likely aren't appropriate for the new object
 
 # coalesce, #3424
 bool = c(TRUE, NA, FALSE)
