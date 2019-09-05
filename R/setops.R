@@ -46,17 +46,13 @@ funique = function(x) {
   if (any(found)) stop("unsupported column type", if (sum(found) > 1L) "s" else "",
                        " found in x or y: ", brackify(bad_types[found]))
   super = function(x) {
-    # allow character/factor and integer/numeric through because from v1.12.4 i's type is retained by joins
+    # allow character->factor and integer->numeric because from v1.12.4 i's type is retained by joins, #3820
     ans = class(x)[1L]
-    if (ans=="factor") ans = "character"
-    else if (ans=="integer") ans = "numeric"
-    ans
+    switch(ans, factor="character", integer="numeric", ans)
   }
-  sx = sapply(x, super)
-  sy = sapply(y, super)
-  if (!identical(sx, sy)) {
+  if (!identical(sx<-sapply(x, super), sy<-sapply(y, super))) {
     w = which.first(sx!=sy)
-    stop("Item ",w," of x is '",sx[w],"' but the corresponding item of y is '", sy[w], "'.")
+    stop("Item ",w," of x is '",class(x[[w]])[1L],"' but the corresponding item of y is '", class(y[[w]])[1L], "'.")
   }
   if (.seqn && ".seqn" %chin% names(x)) stop("None of the datasets should contain a column named '.seqn'")
 }
