@@ -8680,7 +8680,7 @@ setcolorder(x, 2:1)
 test(1626.87, fintersect(x, y), error = 'x and y must have the same column order')
 setcolorder(x, 2:1)
 x[ , b := .POSIXct(b)]
-test(1626.88, fintersect(x, y), error = 'x and y must have the same column classes')
+test(1626.88, fintersect(x, y), error = "Item 2 of x is 'POSIXct' but the corresponding item of y is 'numeric'")
 x[ , b := NULL]
 y[ , b := NULL]
 setnames(x, '.seqn')
@@ -8691,6 +8691,10 @@ test(1626.89, fintersect(x, y), error = "column named '.seqn'")
 x = y = data.table(a = 1)
 test(1626.90, fsetdiff(x[0L], y), x[0L])
 
+# slightly relaxed .set_ops_arg_check.
+# Since v1.12.4, i's type is retained which caused corpustools to fail via this fsetdiff.
+DT = data.table(id=factor(c("a","b","b","c")), v=1:4, key="id")
+test(1626.91, fsetdiff(DT, DT["b"]), DT[c(1,4)])
 
 # fix for #1087 and #1465
 test(1627.1, charToRaw(names(fread(testDir("issue_1087_utf8_bom.csv")))[1L]), as.raw(97L))

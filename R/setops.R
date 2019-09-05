@@ -45,7 +45,19 @@ funique = function(x) {
                              vapply(y, typeof, FUN.VALUE = ""))
   if (any(found)) stop("unsupported column type", if (sum(found) > 1L) "s" else "",
                        " found in x or y: ", brackify(bad_types[found]))
-  if (!identical(lapply(x, class), lapply(y, class))) stop("x and y must have the same column classes")
+  super = function(x) {
+    # allow character/factor and integer/numeric through because from v1.12.4 i's type is retained by joins
+    ans = class(x)[1L]
+    if (ans=="factor") ans = "character"
+    else if (ans=="integer") ans = "numeric"
+    ans
+  }
+  sx = sapply(x, super)
+  sy = sapply(y, super)
+  if (!identical(sx, sy)) {
+    w = which.first(sx!=sy)
+    stop("Item ",w," of x is '",sx[w],"' but the corresponding item of y is '", sy[w], "'.")
+  }
   if (.seqn && ".seqn" %chin% names(x)) stop("None of the datasets should contain a column named '.seqn'")
 }
 
