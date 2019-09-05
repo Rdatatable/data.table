@@ -20,7 +20,7 @@ In contrast to \code{\link[base]{ifelse}} attributes are copied from \code{yes} 
 A vector of the same length as \code{test} and attributes as \code{yes}. Data values are taken from the values of \code{yes} and \code{no}, eventually \code{na}.
 }
 \seealso{
-  \code{\link{coalesce}}
+  \code{\link{fcoalesce}}
 }
 \examples{
 x = c(1:4, 3:2, 1:4)
