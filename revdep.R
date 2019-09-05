@@ -189,7 +189,8 @@ inst = function() {
   system(paste("R CMD INSTALL", last))
 }
 
-log = function(x=c(.fail.cran, .fail.bioc), fnam="~/fail.log") {
+log = function(bioc=FALSE, fnam="~/fail.log") {
+  x = c(.fail.cran, if (bioc) .fail.bioc)
   cat("Writing 00check.log for",length(x),"packages to",fnam,":\n")
   cat(paste(x,collapse=" "), "\n")
   cat(capture.output(sessionInfo()), "\n", file=fnam, sep="\n")
