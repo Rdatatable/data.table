@@ -32,7 +32,7 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
     ans
   }
 
-  for (a in seq_along(icols)) {
+  if (nrow(i)) for (a in seq_along(icols)) {
     # - check that join columns have compatible types
     # - do type coercions if necessary on just the shallow local copies for the purpose of join
     # - handle factor columns appropriately
