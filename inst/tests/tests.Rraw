@@ -15291,6 +15291,7 @@ z_addr = address(z1)
 setcoalesce(z1, z2, z3)
 test(2060.603, address(z1), z_addr)
 test(2060.604, z1, `[<-`(z1, na_idx, c(4-2i, 5-1i, NA)))
+test(2060.605, coalesce(NULL, "foo"), NULL) # as seen in mlr using BBmisc::coalesce from example(getHyperPars), #3581
 
 # #3650 -- ensure max nrow check on CJ is applied after unique
 l = replicate(ceiling(log10(.Machine$integer.max)), rep(1L, 10L), simplify = FALSE)
