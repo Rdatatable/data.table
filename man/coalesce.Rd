@@ -17,6 +17,7 @@ Factor type is supported only when the factor levels of each item are equal.
 }
 \value{
 Atomic vector of the same type and length as the first vector, having \code{NA} values replaced by corresponding non-\code{NA} values from the other vectors.
+If the first item is \code{NULL}, the result is \code{NULL}.
 }
 \seealso{
   \code{\link{fifelse}}
