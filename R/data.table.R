@@ -645,7 +645,7 @@ replace_dot_alias = function(e) {
         j = eval(jsub, lapply(substring(..syms,3L), get, pos=parent.frame()), parent.frame())
       }
       if (is.logical(j)) j <- which(j)
-      if (!length(j)) return( null.data.table() )
+      if (!length(j) && !notj) return( null.data.table() )
       if (is.factor(j)) j = as.character(j)  # fix for FR: #4867
       if (is.character(j)) {
         if (notj) {
@@ -675,7 +675,8 @@ replace_dot_alias = function(e) {
           if (any(j>0L)) stop("j mixes positives and negatives")
           j = seq_along(x)[j]  # all j are <0 here
         }
-        if (notj && length(j)) j = seq_along(x)[-j]
+        # 3013 -- handle !FALSE in column subset in j via logical+with
+        if (notj) j = seq_along(x)[if (length(j)) -j else TRUE]
         if (!length(j)) return(null.data.table())
         return(.Call(CsubsetDT, x, irows, j))
       } else {
