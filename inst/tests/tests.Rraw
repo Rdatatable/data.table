@@ -14729,20 +14729,26 @@ test(2038.15, between(x, dn, up), error="coercion to POSIX failed")
 x = as.POSIXct("2016-09-18 07:00:00", tz="UTC") + 0:10*60*15
 dn = as.POSIXct('2016-09-18 08:00:00')
 up = '2016-09-18 09:00:00'
-test(2038.16, between(x, dn, up), error="mismatched timezone attribute")
+test(2038.16, between(x, dn, up),
+     error="'between' lower= and upper= are both POSIXct but have different tzone attributes: ['', 'UTC']. Please align their time zones.")
+up = as.POSIXct('2016-09-18 09:00:00')
+if (attr(dn,"tzone",exact=TRUE)!="UTC") {  # normally the case on laptops (local time zone) but may be UTC on CRAN test machine for example
+  test(2038.17, length(between(x, dn, up)), 11L,  # true/false may depend on the local time zone so just test length
+     message="'between' arguments are all POSIXct but have mismatched tzone attributes: ['UTC', '', '']. The UTC times will be compared.")
+}
 
 # `between` support `.` in RHS #2315
 X = data.table(a = 1:5, b = 6:10, c = c(5:1))
-test(2038.17, X[c %between% list(a, b)], X[c %between% .(a, b)])
+test(2038.20, X[c %between% list(a, b)], X[c %between% .(a, b)])
 
 # between num to int coercion #3517
 old = options("datatable.verbose"=TRUE)
-test(2038.18, between(1:5, 2, 4), output="between parallel processing of integer")
-test(2038.19, between(1:5, 2L, 4), output="between parallel processing of integer")
-test(2038.20, between(1:5, 2, 4L), output="between parallel processing of integer")
+test(2038.31, between(1:5, 2, 4), output="between parallel processing of integer")
+test(2038.32, between(1:5, 2L, 4), output="between parallel processing of integer")
+test(2038.33, between(1:5, 2, 4L), output="between parallel processing of integer")
 # revdep regression #3565
-test(2038.21, between(1:10, -Inf, Inf),            rep(TRUE,10), output="between parallel processing of double with closed bounds")
-test(2038.22, between(as.double(1:10), -Inf, Inf), rep(TRUE,10), output="between parallel processing of double with closed bounds")
+test(2038.34, between(1:10, -Inf, Inf),            rep(TRUE,10), output="between parallel processing of double with closed bounds")
+test(2038.35, between(as.double(1:10), -Inf, Inf), rep(TRUE,10), output="between parallel processing of double with closed bounds")
 options(old)
 
 # between int64 support
