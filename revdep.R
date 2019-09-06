@@ -1,6 +1,6 @@
 # Run by package maintainer via these entries in ~/.bash_aliases :
 #   alias revdepr='cd ~/build/revdeplib/ && R_LIBS_SITE=none R_LIBS=~/build/revdeplib/ _R_CHECK_FORCE_SUGGESTS_=false R_PROFILE_USER=~/GitHub/data.table/revdep.R R'
-#   alias revdepsh='cd ~/build/revdeplib/ && export R_LIBS_SITE=none && export R_LIBS=~/build/revdeplib/ && export _R_CHECK_FORCE_SUGGESTS_=false'
+#   alias revdepsh='cd ~/build/revdeplib/ && export TZ=UTC && export R_LIBS_SITE=none && export R_LIBS=~/build/revdeplib/ && export _R_CHECK_FORCE_SUGGESTS_=false'
 # revdep = reverse first-order dependency; i.e. the CRAN and Bioconductor packages which directly use data.table (765 at the time of writing)
 
 # Check that env variables have been set correctly:
