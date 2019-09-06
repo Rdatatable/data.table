@@ -2536,7 +2536,7 @@ chgroup = function(x) {
 
 rbindlist = function(l, use.names="check", fill=FALSE, idcol=NULL) {
   if (is.null(l)) return(null.data.table())
-  if (class(l)[1L]!="list") stop("Input is ", class(l)[1L]," but should be a plain list of items to be stacked")
+  if (!is.list(l) || is.data.frame(l)) stop("Input is ", class(l)[1L]," but should be a plain list of items to be stacked")
   if (isFALSE(idcol)) { idcol = NULL }
   else if (!is.null(idcol)) {
     if (isTRUE(idcol)) idcol = ".id"

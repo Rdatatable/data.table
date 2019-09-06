@@ -8680,7 +8680,7 @@ setcolorder(x, 2:1)
 test(1626.87, fintersect(x, y), error = 'x and y must have the same column order')
 setcolorder(x, 2:1)
 x[ , b := .POSIXct(b)]
-test(1626.88, fintersect(x, y), error = 'x and y must have the same column classes')
+test(1626.88, fintersect(x, y), error = "Item 2 of x is 'POSIXct' but the corresponding item of y is 'numeric'")
 x[ , b := NULL]
 y[ , b := NULL]
 setnames(x, '.seqn')
@@ -8691,6 +8691,10 @@ test(1626.89, fintersect(x, y), error = "column named '.seqn'")
 x = y = data.table(a = 1)
 test(1626.90, fsetdiff(x[0L], y), x[0L])
 
+# slightly relaxed .set_ops_arg_check.
+# Since v1.12.4, i's type is retained which caused corpustools to fail via this fsetdiff.
+DT = data.table(id=factor(c("a","b","b","c")), v=1:4, key="id")
+test(1626.91, fsetdiff(DT, DT["b"]), DT[c(1,4)])
 
 # fix for #1087 and #1465
 test(1627.1, charToRaw(names(fread(testDir("issue_1087_utf8_bom.csv")))[1L]), as.raw(97L))
@@ -14725,20 +14729,26 @@ test(2038.15, between(x, dn, up), error="coercion to POSIX failed")
 x = as.POSIXct("2016-09-18 07:00:00", tz="UTC") + 0:10*60*15
 dn = as.POSIXct('2016-09-18 08:00:00')
 up = '2016-09-18 09:00:00'
-test(2038.16, between(x, dn, up), error="mismatched timezone attribute")
+test(2038.16, between(x, dn, up),
+     error="'between' lower= and upper= are both POSIXct but have different tzone attributes: ['', 'UTC']. Please align their time zones.")
+up = as.POSIXct('2016-09-18 09:00:00')
+if (attr(dn,"tzone",exact=TRUE)!="UTC") {  # normally the case on laptops (local time zone) but may be UTC on CRAN test machine for example
+  test(2038.17, length(between(x, dn, up)), 11L,  # true/false may depend on the local time zone so just test length
+     message="'between' arguments are all POSIXct but have mismatched tzone attributes: ['UTC', '', '']. The UTC times will be compared.")
+}
 
 # `between` support `.` in RHS #2315
 X = data.table(a = 1:5, b = 6:10, c = c(5:1))
-test(2038.17, X[c %between% list(a, b)], X[c %between% .(a, b)])
+test(2038.20, X[c %between% list(a, b)], X[c %between% .(a, b)])
 
 # between num to int coercion #3517
 old = options("datatable.verbose"=TRUE)
-test(2038.18, between(1:5, 2, 4), output="between parallel processing of integer")
-test(2038.19, between(1:5, 2L, 4), output="between parallel processing of integer")
-test(2038.20, between(1:5, 2, 4L), output="between parallel processing of integer")
+test(2038.31, between(1:5, 2, 4), output="between parallel processing of integer")
+test(2038.32, between(1:5, 2L, 4), output="between parallel processing of integer")
+test(2038.33, between(1:5, 2, 4L), output="between parallel processing of integer")
 # revdep regression #3565
-test(2038.21, between(1:10, -Inf, Inf),            rep(TRUE,10), output="between parallel processing of double with closed bounds")
-test(2038.22, between(as.double(1:10), -Inf, Inf), rep(TRUE,10), output="between parallel processing of double with closed bounds")
+test(2038.34, between(1:10, -Inf, Inf),            rep(TRUE,10), output="between parallel processing of double with closed bounds")
+test(2038.35, between(as.double(1:10), -Inf, Inf), rep(TRUE,10), output="between parallel processing of double with closed bounds")
 options(old)
 
 # between int64 support
@@ -15135,8 +15145,15 @@ test(2058.11, cbind(data.table(1:2), list(c("a","b"),"a")),               ans)  
 DT = data.table(a=1)
 test(2059.1, rbindlist(list(DT,1)), error="Item 2 of input is not a data.frame, data.table or list")
 test(2059.2, rbindlist(DT), error="Input is data.table but should be a plain list of items to be stacked")
+# rbindlist a list of data.frame which has a class though; e.g. trackdf::example(conversions)
+# trackdf does inherit from 'list (i.e. c("ltraj","list")), we just require is.list() to be true.
+L = structure(list(data.frame(A=1:3, B=7:9), data.frame(A=4:6, B=10:12)),
+              class="customClass") # don't inherit from list as a stronger test
+test(2059.3, is.list(L))
+test(2059.4, rbindlist(L), data.table(A=1:6, B=7:12))
+# does not retain customClass consistent with v1.12.2; for safety as its attributes likely aren't appropriate for the new object
 
-# coalesce, #3424
+# fcoalesce, #3424
 bool = c(TRUE, NA, FALSE)
 bool_val = c(TRUE, TRUE, FALSE)
 int = c(1L, 2L, NA_integer_, 4L)
@@ -15156,52 +15173,52 @@ itime_val = as.ITime(int_val)
 posix = as.POSIXct(int, origin="1970-01-01")
 posix_val = as.POSIXct(int_val, origin="1970-01-01")
 # singleton replacements
-test(2060.001, coalesce(bool, TRUE), bool_val)
-test(2060.002, coalesce(bool, NA, TRUE), bool_val)
-test(2060.003, coalesce(int, 3L), int_val)
-test(2060.004, coalesce(int, NA_integer_, 3L), int_val)
-test(2060.005, coalesce(num, 3), num_val)
-test(2060.006, coalesce(num, NA_real_, 3), num_val)
-test(2060.007, coalesce(str, 'b'), str_val)
-test(2060.008, coalesce(str, NA_character_, 'b'), str_val)
-test(2060.009, coalesce(fkt, factor('b', levels = c('a', 'b'))), fkt_val)
-test(2060.010, coalesce(fkt, factor(NA_integer_, levels=c("a","b")), factor('b', levels = c('a', 'b'))), fkt_val)
-test(2060.011, coalesce(date, as.Date("1970-01-04")), date_val)
-test(2060.012, coalesce(date, as.Date(NA), as.Date("1970-01-04")), date_val)
-test(2060.013, coalesce(idate, as.IDate("1970-01-04")), idate_val)
-test(2060.014, coalesce(idate, as.IDate(NA), as.IDate("1970-01-04")), idate_val)
-test(2060.015, coalesce(itime, as.ITime(3L)), itime_val)
-test(2060.016, coalesce(itime, as.ITime(NA), as.ITime(3L)), itime_val)
-test(2060.017, coalesce(posix, as.POSIXct(3L, origin="1970-01-01")), posix_val)
-test(2060.018, coalesce(posix, as.POSIXct(NA_integer_, origin="1970-01-01"), as.POSIXct(3L, origin="1970-01-01")), posix_val)
+test(2060.001, fcoalesce(bool, TRUE), bool_val)
+test(2060.002, fcoalesce(bool, NA, TRUE), bool_val)
+test(2060.003, fcoalesce(int, 3L), int_val)
+test(2060.004, fcoalesce(int, NA_integer_, 3L), int_val)
+test(2060.005, fcoalesce(num, 3), num_val)
+test(2060.006, fcoalesce(num, NA_real_, 3), num_val)
+test(2060.007, fcoalesce(str, 'b'), str_val)
+test(2060.008, fcoalesce(str, NA_character_, 'b'), str_val)
+test(2060.009, fcoalesce(fkt, factor('b', levels = c('a', 'b'))), fkt_val)
+test(2060.010, fcoalesce(fkt, factor(NA_integer_, levels=c("a","b")), factor('b', levels = c('a', 'b'))), fkt_val)
+test(2060.011, fcoalesce(date, as.Date("1970-01-04")), date_val)
+test(2060.012, fcoalesce(date, as.Date(NA), as.Date("1970-01-04")), date_val)
+test(2060.013, fcoalesce(idate, as.IDate("1970-01-04")), idate_val)
+test(2060.014, fcoalesce(idate, as.IDate(NA), as.IDate("1970-01-04")), idate_val)
+test(2060.015, fcoalesce(itime, as.ITime(3L)), itime_val)
+test(2060.016, fcoalesce(itime, as.ITime(NA), as.ITime(3L)), itime_val)
+test(2060.017, fcoalesce(posix, as.POSIXct(3L, origin="1970-01-01")), posix_val)
+test(2060.018, fcoalesce(posix, as.POSIXct(NA_integer_, origin="1970-01-01"), as.POSIXct(3L, origin="1970-01-01")), posix_val)
 # vector replacements
-test(2060.051, coalesce(bool, rep(TRUE, 3L)), bool_val)
-test(2060.052, coalesce(bool, rep(NA, 3L), rep(TRUE, 3L)), bool_val)
-test(2060.053, coalesce(int, rep(3L, 4L)), int_val)
-test(2060.054, coalesce(int, rep(NA_integer_, 4L), rep(3L, 4L)), int_val)
-test(2060.055, coalesce(num, rep(3, 4L)), num_val)
-test(2060.056, coalesce(num, rep(NA_real_, 4L), rep(3, 4L)), num_val)
-test(2060.057, coalesce(str, rep('b', 4L)), str_val)
-test(2060.058, coalesce(str, rep(NA_character_, 4L), rep('b', 4L)), str_val)
-test(2060.059, coalesce(fkt, factor(rep('b', 4L), levels=c('a', 'b'))), fkt_val)
-test(2060.060, coalesce(fkt, factor(rep(NA_integer_, 4L), levels=c("a","b")), factor(rep('b', 4L), levels=c('a', 'b'))), fkt_val)
-test(2060.061, coalesce(date, rep(as.Date("1970-01-04"), 4L)), date_val)
-test(2060.062, coalesce(date, rep(as.Date(NA), 4L), rep(as.Date("1970-01-04"), 4L)), date_val)
-test(2060.063, coalesce(idate, rep(as.IDate("1970-01-04"), 4L)), idate_val)
-test(2060.064, coalesce(idate, rep(as.IDate(NA), 4L), rep(as.IDate("1970-01-04"), 4L)), idate_val)
-test(2060.065, coalesce(itime, rep(as.ITime(3L), 4L)), itime_val)
-test(2060.066, coalesce(itime, rep(as.ITime(NA), 4L), rep(as.ITime(3L), 4L)), itime_val)
-test(2060.067, coalesce(posix, as.POSIXct(rep(3L, 4L), origin="1970-01-01")), posix_val)
-test(2060.068, coalesce(posix, as.POSIXct(rep(NA_integer_, 4L), origin="1970-01-01"), as.POSIXct(rep(3L, 4L), origin="1970-01-01")), posix_val)
-test(2060.101, coalesce(bool, list(NA, TRUE)), bool_val)
+test(2060.051, fcoalesce(bool, rep(TRUE, 3L)), bool_val)
+test(2060.052, fcoalesce(bool, rep(NA, 3L), rep(TRUE, 3L)), bool_val)
+test(2060.053, fcoalesce(int, rep(3L, 4L)), int_val)
+test(2060.054, fcoalesce(int, rep(NA_integer_, 4L), rep(3L, 4L)), int_val)
+test(2060.055, fcoalesce(num, rep(3, 4L)), num_val)
+test(2060.056, fcoalesce(num, rep(NA_real_, 4L), rep(3, 4L)), num_val)
+test(2060.057, fcoalesce(str, rep('b', 4L)), str_val)
+test(2060.058, fcoalesce(str, rep(NA_character_, 4L), rep('b', 4L)), str_val)
+test(2060.059, fcoalesce(fkt, factor(rep('b', 4L), levels=c('a', 'b'))), fkt_val)
+test(2060.060, fcoalesce(fkt, factor(rep(NA_integer_, 4L), levels=c("a","b")), factor(rep('b', 4L), levels=c('a', 'b'))), fkt_val)
+test(2060.061, fcoalesce(date, rep(as.Date("1970-01-04"), 4L)), date_val)
+test(2060.062, fcoalesce(date, rep(as.Date(NA), 4L), rep(as.Date("1970-01-04"), 4L)), date_val)
+test(2060.063, fcoalesce(idate, rep(as.IDate("1970-01-04"), 4L)), idate_val)
+test(2060.064, fcoalesce(idate, rep(as.IDate(NA), 4L), rep(as.IDate("1970-01-04"), 4L)), idate_val)
+test(2060.065, fcoalesce(itime, rep(as.ITime(3L), 4L)), itime_val)
+test(2060.066, fcoalesce(itime, rep(as.ITime(NA), 4L), rep(as.ITime(3L), 4L)), itime_val)
+test(2060.067, fcoalesce(posix, as.POSIXct(rep(3L, 4L), origin="1970-01-01")), posix_val)
+test(2060.068, fcoalesce(posix, as.POSIXct(rep(NA_integer_, 4L), origin="1970-01-01"), as.POSIXct(rep(3L, 4L), origin="1970-01-01")), posix_val)
+test(2060.101, fcoalesce(bool, list(NA, TRUE)), bool_val)
 # floating point extras
 x = c(11L, NA, 13L, NA, 15L, NaN, NA, NA, NA)+0.1
 y = c(NA, 12L, 5L, NA, NA, 16L, NaN, Inf, NA)+0.1
 z = c(11L, NA, 1L, 14L, NA, 16L, 1L, 2L, NA)+0.1
-test(2060.151, coalesce(x, y, z),       ans<-c(11:15,NaN,NaN,Inf,NA)+0.1)
-test(2060.152, coalesce(list(x, y, z)), ans)
-test(2060.153, coalesce(x, list(y,z)),  ans)
-test(2060.154, coalesce(list(x)), x)
+test(2060.151, fcoalesce(x, y, z),       ans<-c(11:15,NaN,NaN,Inf,NA)+0.1)
+test(2060.152, fcoalesce(list(x, y, z)), ans)
+test(2060.153, fcoalesce(x, list(y,z)),  ans)
+test(2060.154, fcoalesce(list(x)), x)
 test(2060.155, setcoalesce(list(x)), x)
 test(2060.156, setcoalesce(list(x,y,z)), ans)
 test(2060.157, x, ans)  # setcoalesce updated the first item (x) by reference
@@ -15209,49 +15226,49 @@ test(2060.157, x, ans)  # setcoalesce updated the first item (x) by reference
 x = factor(c('a','b',NA,NA,'b'))
 y = factor(c('b','b','a',NA,'b'))
 z = factor(c('a',NA,NA,'d','a'))
-test(2060.180, coalesce(x, y, z), error="Item 3 is a factor but its levels are not identical to the first item's levels")
+test(2060.180, fcoalesce(x, y, z), error="Item 3 is a factor but its levels are not identical to the first item's levels")
 # edge cases/checks
-test(2060.201, coalesce(bool), bool)
-test(2060.202, coalesce(fkt), fkt)
-test(2060.203, coalesce(bool, 1L), error='Item 2 is type integer but the first item is type logical. Please coerce before coalescing')
-test(2060.204, coalesce(bool, NA_integer_), error='Item 2 is type integer but the first item is type logical.')
-test(2060.205, coalesce(fkt, 1L), error='Item 1 is a factor but item 2 is not a factor. When factors are involved, all items must be factor')
-test(2060.206, coalesce(num, 3L), error='Item 2 is type integer but the first item is type double')
-test(2060.207, coalesce(int, 3), error='Item 2 is type double but the first item is type integer')
-test(2060.208, coalesce(fkt, 'b'), error='Item 1 is a factor but item 2 is not a factor. When factors are involved, all items must be factor.')
-test(2060.209, coalesce(str, factor('b')), error='Item 2 is a factor but item 1 is not a factor. When factors are involved, all items must be factor')
-test(2060.212, coalesce(list(1), list(2)), error="The first argument is a list, data.table or data.frame. In this case there should be no other arguments provided.")
-test(2060.213, coalesce(bool, c(TRUE, FALSE)), error="Item 2 is length 2 but the first item is length 3. Only singletons are recycled")
-test(2060.214, coalesce(as.raw(0), as.raw(1)), error="Unsupported type: raw")
-test(2060.215, coalesce(bool, list()), bool)
-test(2060.216, coalesce(structure(c(1:2,NA,4L), class=c("a")), c(NA,NA,3L,4L)),, error="Item 2 has a different class than item 1")
+test(2060.201, fcoalesce(bool), bool)
+test(2060.202, fcoalesce(fkt), fkt)
+test(2060.203, fcoalesce(bool, 1L), error='Item 2 is type integer but the first item is type logical. Please coerce before coalescing')
+test(2060.204, fcoalesce(bool, NA_integer_), error='Item 2 is type integer but the first item is type logical.')
+test(2060.205, fcoalesce(fkt, 1L), error='Item 1 is a factor but item 2 is not a factor. When factors are involved, all items must be factor')
+test(2060.206, fcoalesce(num, 3L), error='Item 2 is type integer but the first item is type double')
+test(2060.207, fcoalesce(int, 3), error='Item 2 is type double but the first item is type integer')
+test(2060.208, fcoalesce(fkt, 'b'), error='Item 1 is a factor but item 2 is not a factor. When factors are involved, all items must be factor.')
+test(2060.209, fcoalesce(str, factor('b')), error='Item 2 is a factor but item 1 is not a factor. When factors are involved, all items must be factor')
+test(2060.212, fcoalesce(list(1), list(2)), error="The first argument is a list, data.table or data.frame. In this case there should be no other arguments provided.")
+test(2060.213, fcoalesce(bool, c(TRUE, FALSE)), error="Item 2 is length 2 but the first item is length 3. Only singletons are recycled")
+test(2060.214, fcoalesce(as.raw(0), as.raw(1)), error="Unsupported type: raw")
+test(2060.215, fcoalesce(bool, list()), bool)
+test(2060.216, fcoalesce(structure(c(1:2,NA,4L), class=c("a")), c(NA,NA,3L,4L)),, error="Item 2 has a different class than item 1")
 # different classes of x arg #3660
 x = c(11L, NA, 13L, NA, 15L, NA)
 y = c(NA, 12L, 5L, NA, NA, NA)
 z = c(11L, NA, 1L, 14L, NA, NA)
 ans = c(11L,12L,13L,14L,15L,NA_integer_)
-test(2060.250, coalesce(list(x, y, z)), ans)
-test(2060.251, coalesce(data.frame(x, y, z)), ans)
-test(2060.252, coalesce(data.table(x, y, z)), ans)
+test(2060.250, fcoalesce(list(x, y, z)), ans)
+test(2060.251, fcoalesce(data.frame(x, y, z)), ans)
+test(2060.252, fcoalesce(data.table(x, y, z)), ans)
 # integer64 tests
 if (test_bit64) {
   int64 = as.integer64(int)
   int64_val = as.integer64(1:4)
-  test(2060.301, as.character(coalesce(int64, as.integer64(3))), as.character(int64_val)) # why as.character see nanotime tests below
-  test(2060.302, as.character(coalesce(int64, as.integer64(NA), as.integer64(3))), as.character(int64_val))
-  test(2060.303, as.character(coalesce(int64, as.integer64(rep(3, 4L)))), as.character(int64_val))
-  test(2060.304, coalesce(int64, 1), error='Item 2 has a different class than item 1')
-  test(2060.305, coalesce(int64, 1L), error = 'Item 2 is type integer but the first item is type double')
+  test(2060.301, as.character(fcoalesce(int64, as.integer64(3))), as.character(int64_val)) # why as.character see nanotime tests below
+  test(2060.302, as.character(fcoalesce(int64, as.integer64(NA), as.integer64(3))), as.character(int64_val))
+  test(2060.303, as.character(fcoalesce(int64, as.integer64(rep(3, 4L)))), as.character(int64_val))
+  test(2060.304, fcoalesce(int64, 1), error='Item 2 has a different class than item 1')
+  test(2060.305, fcoalesce(int64, 1L), error = 'Item 2 is type integer but the first item is type double')
 }
 # nanotime tests
 if (test_nanotime) {
   nt = nanotime(int)
   nt_val = nanotime(1:4)
-  test(2060.401, as.character(coalesce(nt, nanotime(3L))), as.character(nt_val)) # as.character due to eddelbuettel/nanotime#46
-  test(2060.402, as.character(coalesce(nt, nanotime(NA), nanotime(3L))), as.character(nt_val))
-  test(2060.403, as.character(coalesce(nt, nanotime(rep(3, 4L)))), as.character(nt_val))
-  test(2060.404, coalesce(nt, 1), error='Item 2 has a different class than item 1')
-  test(2060.405, coalesce(nt, 1L), error = 'Item 2 is type integer but the first item is type double')
+  test(2060.401, as.character(fcoalesce(nt, nanotime(3L))), as.character(nt_val)) # as.character due to eddelbuettel/nanotime#46
+  test(2060.402, as.character(fcoalesce(nt, nanotime(NA), nanotime(3L))), as.character(nt_val))
+  test(2060.403, as.character(fcoalesce(nt, nanotime(rep(3, 4L)))), as.character(nt_val))
+  test(2060.404, fcoalesce(nt, 1), error='Item 2 has a different class than item 1')
+  test(2060.405, fcoalesce(nt, 1L), error = 'Item 2 is type integer but the first item is type double')
 }
 # setcoalesce
 x = c(11L, NA, 13L, NA, 15L, NA)
@@ -15268,18 +15285,19 @@ setcoalesce(xx, list())
 test(2060.503, xx_addr, address(xx))
 test(2060.504, xx, x)
 test(2060.505, address(setcoalesce(xx)), xx_addr)
-# complex support for coalesce
+# complex support for fcoalesce
 z1 = c(1i, NA, 1-1i, NA, 0+3i, NA)
 z2 = c(NA, 4-2i, 0+0i, NA, NA, NA)
 z3 = c(2, NA, 3+6i, 5-1i, NA, NA)
 na_idx = c(2L, 4L, 6L)
-test(2060.600, coalesce(z1, 0+0i), `[<-`(z1, na_idx, 0+0i))
-test(2060.601, coalesce(z1, z2), `[<-`(z1, na_idx, c(4-2i, NA, NA)))
-test(2060.602, coalesce(z1, z2, z3), `[<-`(z1, na_idx, c(4-2i, 5-1i, NA)))
+test(2060.600, fcoalesce(z1, 0+0i), `[<-`(z1, na_idx, 0+0i))
+test(2060.601, fcoalesce(z1, z2), `[<-`(z1, na_idx, c(4-2i, NA, NA)))
+test(2060.602, fcoalesce(z1, z2, z3), `[<-`(z1, na_idx, c(4-2i, 5-1i, NA)))
 z_addr = address(z1)
 setcoalesce(z1, z2, z3)
 test(2060.603, address(z1), z_addr)
 test(2060.604, z1, `[<-`(z1, na_idx, c(4-2i, 5-1i, NA)))
+test(2060.605, fcoalesce(NULL, "foo"), NULL) # as seen in mlr using BBmisc::coalesce from example(getHyperPars), #3581
 
 # #3650 -- ensure max nrow check on CJ is applied after unique
 l = replicate(ceiling(log10(.Machine$integer.max)), rep(1L, 10L), simplify = FALSE)
@@ -15908,6 +15926,10 @@ test(2100.11, fifelse(c(TRUE,FALSE,TRUE,TRUE,FALSE,NA), factor(letters[1:6]), fa
 test(2100.12, fifelse(c(TRUE,FALSE,TRUE,TRUE,FALSE,NA), factor(letters[1:6]), factor("a", levels=letters[1:6]), factor("f", levels=letters[1:7])), error = "'yes' and 'na' are both type factor but their levels are different.")
 test(2100.13, lapply(list(list(yes = 1, no = 2, na = 3), list(yes = 2, no = 4)), function(el) fifelse(c(TRUE, FALSE, NA), el$yes, el$no, el$na)), list(c(1,2,3),c(2,4,NA)))
 test(2100.14, fifelse(c(T,F,NA),c(1,1,1),c(2,2,2),NA), c(1,2,NA))
+
+# join 0-row i type mismatch ok to coerce, tcpl #3581
+DT = data.table(id=1:3, v=4:6, key="id")
+test(2101, DT[.(logical())], data.table(id=logical(), v=integer(), key="id"))
 
 
 ###################################

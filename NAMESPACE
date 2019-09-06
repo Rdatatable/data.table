@@ -55,7 +55,7 @@ export(frollapply)
 export(nafill)
 export(setnafill)
 export(.Last.updated)
-export(coalesce)
+export(fcoalesce)
 
 S3method("[", data.table)
 S3method("[<-", data.table)
