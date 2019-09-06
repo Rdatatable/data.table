@@ -85,9 +85,11 @@ name_dots = function(...) {
 # convert a vector like c(1, 4, 3, 2) into a string like [1, 4, 3, 2]
 #   (common aggregation method for error messages)
 brackify = function(x, quote=FALSE) {
-  # arbitrary cutoff
-  if (quote && is.character(x)) x = paste0("'",head(x,11),"'")
-  if (length(x) > 10L) x = c(x[1:10], '...')
+  # arbitrary
+  CUTOFF = 10L
+  # keep one more than needed to trigger dots if needed
+  if (quote && is.character(x)) x = paste0("'",head(x,CUTOFF+1L),"'")
+  if (length(x) > CUTOFF) x = c(x[1:CUTOFF], '...')
   sprintf('[%s]', paste(x, collapse = ', '))
 }
 

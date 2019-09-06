@@ -21,8 +21,10 @@ between = function(x, lower, upper, incbounds=TRUE, NAbounds=TRUE) {
       tt = attr(x,"tzone",exact=TRUE)
       if (is.null(tt)) "" else tt
     })
+    # lower/upper should be more tightly linked than x/lower, so error
+    #   if the former don't match but only inform if they latter don't
     if (tzs[2L]!=tzs[3L]) {
-      stop("'between' lower= and upper= are both POSIXct but have different tzone attributes: ", brackify(tzs[2:3],quote=TRUE), ". Please align their tzone.")
+      stop("'between' lower= and upper= are both POSIXct but have different tzone attributes: ", brackify(tzs[2:3],quote=TRUE), ". Please align their time zones.")
       # otherwise the check in between.c that lower<=upper can (correctly) fail for this reason
     }
     if (tzs[1L]!=tzs[2L]) {
