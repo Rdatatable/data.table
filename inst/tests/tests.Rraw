@@ -15102,11 +15102,11 @@ test(2056, as.data.table(a), ans)
 DF = structure(list(a=1:3, b=data.frame(foo=4:6, bar=7:9)), row.names=1:3, class="data.frame")
 DT = as.data.table(DF)
 test(2057.1, ncol(DT), 3L)
-test(2057.2, DT[2], data.table(a=2L, foo=5L, bar=8L))
+test(2057.2, DT[2], data.table(a=2L, b.foo=5L, b.bar=8L))
 DF = structure(list(a=list(c("a","b"), c("a","b"), c("a","b")), b=data.frame(foo=1:3, bar=4:6)), row.names=1:3, class="data.frame")
 #  A list being first is needed to mimic the jsonlite case. With this passing, test.R works from https://github.com/Rdatatable/data.table/issues/3369#issuecomment-462662752
 DT = as.data.table(DF)
-test(2057.3, DT, data.table(a=list(c("a","b"), c("a","b"), c("a","b")), foo=1:3, bar=4:6))
+test(2057.3, DT, data.table(a=list(c("a","b"), c("a","b"), c("a","b")), b.foo=1:3, b.bar=4:6))
 
 # one and two+ row cases of data.table, as.data.table and cbind involving list columns, given
 # the change to tests 1613.571-3 in PR#3471 in v1.12.4
@@ -15140,6 +15140,11 @@ test(2058.08, sapply(ans, class), c(V1="integer", V2="list"))                   
 test(2058.09, data.table( data.table(1:2), list(c("a","b"),"a") ),        ans)  # yes
 test(2058.10, as.data.table(list(data.table(1:2), list(c("a","b"),"a"))), ans)  # yes
 test(2058.11, cbind(data.table(1:2), list(c("a","b"),"a")),               ans)  # yes
+test(2058.12, cbind(first=data.table(A=1:3), second=data.table(A=4, B=5:7)),
+              data.table(first.A=1:3, second.A=4, second.B=5:7))                # no
+test(2058.13, cbind(data.table(A=1:3), second=data.table(A=4, B=5:7)),
+              data.table(A=1:3, second.A=4, second.B=5:7))                      # no
+test(2058.14, cbind(data.table(A=1,B=2),3), data.table(A=1,B=2,V2=3))           # no
 
 # rbindlist improved error message, #3638
 DT = data.table(a=1)

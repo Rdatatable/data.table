@@ -50,10 +50,11 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL, str
   # NOTE: It may be faster in some circumstances for users to create a data.table by creating a list l
   #       first, and then setattr(l,"class",c("data.table","data.frame")) and forgo checking.
   x = list(...)   # list() doesn't copy named inputs as from R >= 3.1.0 (a very welcome change)
-  names(x) = name_dots(...)
+  nd = name_dots(...)
+  names(x) = nd$vnames
   if (length(x)==0L) return( null.data.table() )
   if (length(x)==1L && (is.null(x[[1L]]) || (is.list(x[[1L]]) && length(x[[1L]])==0L))) return( null.data.table() ) #5377
-  ans = as.data.table.list(x, keep.rownames=keep.rownames, check.names=check.names)  # see comments inside as.data.table.list re copies
+  ans = as.data.table.list(x, keep.rownames=keep.rownames, check.names=check.names, .named=nd$.named)  # see comments inside as.data.table.list re copies
   if (!is.null(key)) {
     if (!is.character(key)) stop("key argument of data.table() must be character")
     if (length(key)==1L) {

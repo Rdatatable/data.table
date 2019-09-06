@@ -115,7 +115,14 @@ as.data.table.array = function(x, keep.rownames=FALSE, key=NULL, sorted=TRUE, va
   ans[]
 }
 
-as.data.table.list = function(x, keep.rownames=FALSE, key=NULL, check.names=FALSE, ...) {
+as.data.table.list = function(x,
+  keep.rownames=FALSE,
+  key=NULL,
+  check.names=FALSE,
+  .named=NULL,  # (internal) whether the argument was named in the data.table() or cbind() call calling this as.data.table.list()
+                # e.g. cbind(foo=DF1, bar=DF2) have .named=c(TRUE,TRUE) due to the foo= and bar= and trigger "prefix." for non-vector items
+  ...)
+{
   n = length(x)
   eachnrow = integer(n)          # vector of lengths of each column. may not be equal if silent repetition is required.
   eachncol = integer(n)
@@ -166,15 +173,15 @@ as.data.table.list = function(x, keep.rownames=FALSE, key=NULL, check.names=FALS
     if (eachnrow[i]==0L && nrow>0L && is.atomic(xi))   # is.atomic to ignore list() since list() is a common way to initialize; let's not insist on list(NULL)
       warning("Item ", i, " has 0 rows but longest item has ", nrow, "; filled with NA")  # the rep() in recycle() above creates the NA vector
     if (is.data.table(xi)) {   # matrix and data.frame were coerced to data.table above
-      # vnames[[i]] = names(xi)  #if (nm!="" && n>1L) paste(nm, names(xi), sep=".") else names(xi)
+      prefix = if (!isFALSE(.named[i]) && isTRUE(nchar(names(x)[i])>0L)) paste0(names(x)[i],".") else ""  # test 2058.12
       for (j in seq_along(xi)) {
         ans[[k]] = recycle(xi[[j]], nrow)
-        vnames[k] = names(xi)[j]
+        vnames[k] = paste0(prefix, names(xi)[j])
         k = k+1L
       }
     } else {
       nm = names(x)[i]
-      vnames[k] = if (length(nm) && !is.na(nm) && nm!="") nm else paste0("V",i)
+      vnames[k] = if (length(nm) && !is.na(nm) && nm!="") nm else paste0("V",i)  # i (not k) tested by 2058.14 to be the same as the past for now
       ans[[k]] = recycle(xi, nrow)
       k = k+1L
     }
