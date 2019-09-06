@@ -80,7 +80,7 @@ reference:
   - chmatch
   - like
   - patterns
-  - coalesce
+  - fcoalesce
   - fifelse
   - unique
   - groupingsets
