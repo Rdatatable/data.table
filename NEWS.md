@@ -284,6 +284,8 @@
 
 38. `rbindlist` now returns correct idcols for lists with different length vectors, [#3785](https://github.com/Rdatatable/data.table/issues/3785), [#3786](https://github.com/Rdatatable/data.table/pull/3786). Thanks to @shrektan for the report and fix.
 
+39. Subtracting two `POSIXt` objects by group could lead to incorrect results because the `base` method internally calls `difftime` with `units='auto'`; `data.table` does not notice if the chosen units differ by group and only the last group's `units` attribute was retained, [#3694](https://github.com/Rdatatable/data.table/issues/3694) and [#761](https://github.com/Rdatatable/data.table/issues/761). To surmount this, we now internally force `units='secs'` on all `POSIXt-POSIXt` calls (reported when `verbose=TRUE`); generally we recommend calling `difftime` directly instead. Thanks @oliver-oliver and @boethian for the reports.
+
 #### NOTES
 
 1. `rbindlist`'s `use.names="check"` now emits its message for automatic column names (`"V[0-9]+"`) too, [#3484](https://github.com/Rdatatable/data.table/pull/3484). See news item 5 of v1.12.2 below.

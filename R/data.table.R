@@ -1322,6 +1322,19 @@ replace_dot_alias = function(e) {
   SDenv$.N = vector("integer", 1L)    # explicit new vector (not 0L or as.integer() which might return R's internal small-integer global)
   SDenv$.GRP = vector("integer", 1L)  #   because written to by reference at C level (one write per group). TODO: move this alloc to C level
 
+  # #3694/#761 common gotcha -- doing t1-t0 by group, but -.POSIXt uses units='auto'
+  #   independently by group & attr mismatch among groups is ignored. The latter
+  #   is a more general issue but the former can be fixed by forcing units='secs'
+  SDenv$`-.POSIXt` = function(e1, e2) {
+    if (inherits(e2, 'POSIXt')) {
+      if (verbose && !exists('done_units_report', parent.frame())) {
+        cat('\nNote: forcing units="secs" on implicit difftime by group; call difftime explicitly to choose custom units')
+        assign('done_units_report', TRUE, parent.frame())
+      }
+      return(difftime(e1, e2, units='secs'))
+    } else return(base::`-.POSIXt`(e1, e2))
+  }
+
   if (byjoin) {
     # The groupings come instead from each row of the i data.table.
     # Much faster for a few known groups vs a 'by' for all followed by a subset
