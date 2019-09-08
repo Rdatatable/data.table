@@ -113,7 +113,7 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
       }
     }
   }
-  # browser()
+
   ## after all modifications of i, check if i has a proper key on all icols
   io = identical(icols, head(chmatch(key(i), names(i)), length(icols)))
 
