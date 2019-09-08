@@ -15941,7 +15941,7 @@ del = c(0, 60, 3600, 86400)
 DT = data.table(ID=1:4, t0=.POSIXct(0), t1=.POSIXct(del))
 test(2102.1, DT[ , t1-t0, by=ID], data.table(ID=1:4, V1=as.difftime(del, units='secs')))
 test(2102.2, DT[ , t1-t0, by=ID, verbose=TRUE], output='Note: forcing units="secs"')
-test(2102.3, DT[ , t1-5, by=ID], data.table(ID, V1=.POSIXct(del-5)))
+test(2102.3, DT[ , t1-5, by=ID], data.table(ID=1:4, V1=.POSIXct(del-5)))
 
 
 ###################################
