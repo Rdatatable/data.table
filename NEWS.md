@@ -274,7 +274,7 @@
 
 33. `setDT` now detects and halts if passed a `data.frame` containing matrix columns, [#3760](https://github.com/Rdatatable/data.table/issues/3760). Such objects cannot be converted to `data.table` by reference. The message suggests using `as.data.table` instead which will convert each matrix column to a new `data.table` column.
 
-34. Using `get`/`mget` in `j` could cause `.SDcols` to be ignored or reordered, [#1744](https://github.com/Rdatatable/data.table/issues/1744), [#1965](https://github.com/Rdatatable/data.table/issues/1965), and [#2036](https://github.com/Rdatatable/data.table/issues/2036). Thanks @franknarf1, @MichaelChirico, and @TonyBonen, for the reports.
+34. Using `get`/`mget` in `j` could cause `.SDcols` to be ignored or reordered, [#1744](https://github.com/Rdatatable/data.table/issues/1744), [#1965](https://github.com/Rdatatable/data.table/issues/1965), [#2036](https://github.com/Rdatatable/data.table/issues/2036), and [#2946](https://github.com/Rdatatable/data.table/issues/2946). Thanks @franknarf1, @MichaelChirico, @TonyBonen, and Steffen J. (StackOverflow) for the reports.
 
 35. `DT[, i-1L, with=FALSE]` would misinterpret the minus sign and return an incorrect result, [#2019](https://github.com/Rdatatable/data.table/issues/2109). Thanks @cguill95 for the report.
 
