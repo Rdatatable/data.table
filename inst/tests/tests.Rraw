@@ -15949,7 +15949,7 @@ test(2102.1, DT[eDT, on=.(date >= e_date), {
 test(2102.2, DT[eDT, on=.(date >= e_date), {
     target_date = as.IDate(if (e_date[1L] %in% x.date) e_date[1L] else max(x.date))
     target_date
-}, by=.EACHI], date.table(date = as.IDate(18147L), V1 = as.IDate(18147L)))
+}, by=.EACHI], data.table(date = as.IDate(18147L), V1 = as.IDate(18147L)))
 
 ###################################
 #  Add new tests above this line  #
