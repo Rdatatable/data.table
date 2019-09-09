@@ -15936,6 +15936,14 @@ test(2100.14, fifelse(c(T,F,NA),c(1,1,1),c(2,2,2),NA), c(1,2,NA))
 DT = data.table(id=1:3, v=4:6, key="id")
 test(2101, DT[.(logical())], data.table(id=logical(), v=integer(), key="id"))
 
+# chmatchdup now handles non-ascii strings correctly, #3844
+utf8 = c("\u00e7ile", "\u00de")
+latin1 = iconv(utf8, from = "UTF-8", to = "latin1")
+out = c(1L, 2L, NA, NA)
+test(2102.1, chmatchdup(c(latin1, latin1), utf8), out)
+test(2102.2, chmatchdup(c(utf8, utf8), latin1), out)
+test(2102.3, chmatchdup(c(latin1, latin1), latin1), out)
+test(2102.4, chmatchdup(c(utf8, utf8), utf8), out)
 
 ###################################
 #  Add new tests above this line  #

@@ -24,26 +24,18 @@ static SEXP chmatchMain(SEXP x, SEXP table, int nomatch, bool chin, bool chmatch
   int *ansd = INTEGER(ans);
   if (!length(table)) { const int val=(chin?0:nomatch), n=LENGTH(x); for (int i=0; i<n; ++i) ansd[i]=val; UNPROTECT(1); return ans; }
   savetl_init();
-  const SEXP *xd = STRING_PTR(x);
   const int xlen = length(x);
+  int nprotect = 1;
+  SEXP ux = x;
   for (int i=0; i<xlen; i++) {
-    SEXP s = xd[i];
-    if (s != NA_STRING && ENC_KNOWN(s) != 64) { // PREV: s != NA_STRING && !ENC_KNOWN(s) - changed to fix for bug #5159. The previous fix
-                       // dealt with UNKNOWN encodings. But we could have the same string, where both are in different
-                       // encodings than ASCII (ex: UTF8 and Latin1). To fix this, we'll to resort to 'match' if not ASCII.
-                       // This takes care of all anomalies. It's unfortunate the 'chmatch' can't be used in these cases...
-                       // // fix for the 2nd part of bug #5159
-
-      // explanation for PREV case: (still useful to keep it here)
-      // symbols (i.e. as.name() or as.symbol()) containing non-ascii characters (>127) seem to be 'unknown' encoding in R.
-      // The same string in different encodings (where unknown encoding is different to known, too) are different
-      // CHARSXP pointers; this chmatch relies on pointer equality only. We tried mkChar(CHAR(s)) [ what install() does ]
-      // but this impacted the fastest cases too much. Hence fall back to match() on the first unknown encoding detected
-      // since match() considers the same string in different encodings as equal (but slower). See #2538 and #4818.
-      savetl_end();
-      UNPROTECT(1);
-      return (chin ? match_logical(table, x) : match(table, x, nomatch));
+    if (NEED2UTF8(STRING_ELT(x, i))) {
+      ux = PROTECT(allocVector(STRSXP, xlen)); ++nprotect;
+      for (int i=0; i<xlen; i++) SET_STRING_ELT(ux, i, ENC2UTF8(STRING_ELT(x, i)));
+      break;
     }
+  }
+  for (int i=0; i<xlen; i++) {
+    SEXP s = STRING_ELT(ux, i);
     if (TRUELENGTH(s)>0) savetl(s);
     // as from v1.8.0 we assume R's internal hash is positive. So in R < 2.14.0 we
     // don't save the uninitialised truelengths that by chance are negative, but
@@ -52,19 +44,17 @@ static SEXP chmatchMain(SEXP x, SEXP table, int nomatch, bool chin, bool chmatch
     SET_TRUELENGTH(s,0);   // TODO: do we need to set to zero first (we can rely on R 3.1.0 now)?
   }
   const int tablelen = length(table);
-  const SEXP *td = STRING_PTR(table);
+  SEXP utable = table;
+  for (int i=0; i<tablelen; i++) {
+    if (NEED2UTF8(STRING_ELT(table, i))) {
+      utable = PROTECT(allocVector(STRSXP, tablelen)); ++nprotect;
+      for (int i=0; i<tablelen; i++) SET_STRING_ELT(utable, i, ENC2UTF8(STRING_ELT(table, i)));
+      break;
+    }
+  }
   int nuniq=0;
   for (int i=0; i<tablelen; ++i) {
-    SEXP s = td[i];
-    if (s != NA_STRING && ENC_KNOWN(s) != 64) { // changed !ENC_KNOWN(s) to !ASCII(s) - check above for explanation
-      // This branch is now covered by tests 2004.*. However, is this branch redundant? It means there were no non-ascii encodings
-      // in x since the fallback above to match() didn't happen when x was checked. If that was the case in x, then it means none of the
-      // x values can match to table anyway. Can't we just drop this branch then? (TODO)
-      for (int j=0; j<i; ++j) SET_TRUELENGTH(td[j],0);  // reinstate 0 rather than leave the -i-1
-      savetl_end();
-      UNPROTECT(1);
-      return (chin ? match_logical(table, x) : match(table, x, nomatch));
-    }
+    SEXP s = STRING_ELT(utable, i);
     int tl = TRUELENGTH(s);
     if (tl>0) { savetl(s); tl=0; }
     if (tl==0) SET_TRUELENGTH(s, chmatchdup ? -(++nuniq) : -i-1); // first time seen this string in table
@@ -85,21 +75,21 @@ static SEXP chmatchMain(SEXP x, SEXP table, int nomatch, bool chin, bool chmatch
     int *map =    (int *)calloc(tablelen+nuniq, sizeof(int));  // +nuniq to store a 0 at the end of each group
     if (!counts || !map) {
       // # nocov start
-      for (int i=0; i<tablelen; i++) SET_TRUELENGTH(td[i], 0);
+      for (int i=0; i<tablelen; i++) SET_TRUELENGTH(STRING_ELT(utable, i), 0);
       savetl_end();
       error("Failed to allocate %lld bytes working memory in chmatchdup: length(table)=%d length(unique(table))=%d", (tablelen*2+nuniq)*sizeof(int), tablelen, nuniq);
       // # nocov end
     }
-    for (int i=0; i<tablelen; ++i) counts[-TRUELENGTH(td[i])-1]++;
+    for (int i=0; i<tablelen; ++i) counts[-TRUELENGTH(STRING_ELT(utable, i))-1]++;
     for (int i=0, sum=0; i<nuniq; ++i) { int tt=counts[i]; counts[i]=sum; sum+=tt+1; }
-    for (int i=0; i<tablelen; ++i) map[counts[-TRUELENGTH(td[i])-1]++] = i+1;           // 0 is left ending each group thanks to the calloc
+    for (int i=0; i<tablelen; ++i) map[counts[-TRUELENGTH(STRING_ELT(utable, i))-1]++] = i+1;           // 0 is left ending each group thanks to the calloc
     for (int i=0, last=0; i<nuniq; ++i) {int tt=counts[i]+1; counts[i]=last; last=tt;}  // rewind counts to the beginning of each group
     for (int i=0; i<xlen; ++i) {
-      int u = TRUELENGTH(xd[i]);
+      int u = TRUELENGTH(STRING_ELT(ux, i));
       if (u<0) {
         int w = counts[-u-1]++;
         if (map[w]) { ansd[i]=map[w]; continue; }
-        SET_TRUELENGTH(xd[i],0); // w falls on ending 0 marker: dups used up; any more dups should return nomatch
+        SET_TRUELENGTH(STRING_ELT(ux, i),0); // w falls on ending 0 marker: dups used up; any more dups should return nomatch
         // we still need the 0-setting loop at the end of this function because often there will be some values in table that are not matched to at all.
       }
       ansd[i] = nomatch;
@@ -108,18 +98,18 @@ static SEXP chmatchMain(SEXP x, SEXP table, int nomatch, bool chin, bool chmatch
     free(map);
   } else if (chin) {
     for (int i=0; i<xlen; i++) {
-      ansd[i] = TRUELENGTH(xd[i])<0;
+      ansd[i] = TRUELENGTH(STRING_ELT(ux, i))<0;
     }
   } else {
     for (int i=0; i<xlen; i++) {
-      int m = TRUELENGTH(xd[i]);
+      int m = TRUELENGTH(STRING_ELT(ux, i));
       ansd[i] = (m<0) ? -m : nomatch;
     }
   }
   for (int i=0; i<tablelen; i++)
-    SET_TRUELENGTH(td[i], 0);  // reinstate 0 rather than leave the -i-1
+    SET_TRUELENGTH(STRING_ELT(utable, i), 0);  // reinstate 0 rather than leave the -i-1
   savetl_end();
-  UNPROTECT(1);
+  UNPROTECT(nprotect);
   return(ans);
 }
 
