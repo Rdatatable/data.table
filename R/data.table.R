@@ -2400,6 +2400,7 @@ setnames = function(x,old,new,skip_absent=FALSE) {
   # Sets by reference, maintains truelength, no copy of table at all.
   # But also more convenient than names(DT)[i]="newname"  because we can also do setnames(DT,"oldname","newname")
   # without an onerous match() ourselves. old can be positions, too, but we encourage by name for robustness.
+  # duplicates are permitted to be created without warning; e.g. in revdeps and for example, and setting spacer columns all with ""
   if (!is.data.frame(x)) stop("x is not a data.table or data.frame")
   ncol = length(x)
   if (length(names(x)) != ncol) stop("x has ",ncol," columns but its names are length ",length(names(x)))
@@ -2408,7 +2409,6 @@ setnames = function(x,old,new,skip_absent=FALSE) {
     # for setnames(DT,new); e.g., setnames(DT,c("A","B")) where ncol(DT)==2
     if (!is.character(old)) stop("Passed a vector of type '",typeof(old),"'. Needs to be type 'character'.")
     if (length(old) != ncol) stop("Can't assign ",length(old)," names to a ",ncol," column data.table")
-    # note that duplicate names are permitted to be created in this usage only
     if (anyNA(names(x))) {
       # if x somehow has some NA names, which() needs help to return them, #2475
       w = which((names(x) != old) | (is.na(names(x)) & !is.na(old)))
@@ -2421,7 +2421,7 @@ setnames = function(x,old,new,skip_absent=FALSE) {
   } else {
     if (missing(old)) stop("When 'new' is provided, 'old' must be provided too")
     if (!is.character(new)) stop("'new' is not a character vector")
-    if (anyDuplicated(new)) stop("Some duplicates exist in 'new': ", brackify(new[duplicated(new)]))
+    #  if (anyDuplicated(new)) warning("Some duplicates exist in 'new': ", brackify(new[duplicated(new)]))  # dups allowed without warning; warn if and when the dup causes an ambiguity
     if (anyNA(new)) stop("NA in 'new' at positions ", brackify(which(is.na(new))))
     if (anyDuplicated(old)) stop("Some duplicates exist in 'old': ", brackify(old[duplicated(old)]))
     if (is.numeric(old)) i = old = seq_along(x)[old]  # leave it to standard R to manipulate bounds and negative numbers
