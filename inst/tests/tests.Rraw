@@ -15937,19 +15937,19 @@ DT = data.table(id=1:3, v=4:6, key="id")
 test(2101, DT[.(logical())], data.table(id=logical(), v=integer(), key="id"))
 
 # test to prevent regression on #1983
-DT = data.table(date = as.IDate(Sys.Date()) + 0:2)
-eDT = data.table(e_date = as.IDate(Sys.Date()))
-
+DT = data.table(date = as.IDate(18148L) + 0:2)
+eDT = data.table(e_date = as.IDate(18148L))
+out = DT[1L][ , V1 := date]
 # code from issue doesn't quite work as expected since setattr returns NULL; test this anyway
 test(2102.1, DT[eDT, on=.(date >= e_date), {
     target_date = setattr(if (e_date[1L] %in% x.date) e_date[1L] else max(x.date), "class", c("IDate", "Date"))
     target_date
-}, by=.EACHI], data.table(date=as.IDate(integer())))
+}, by=.EACHI], out)
 # also test version closer to the intended code
 test(2102.2, DT[eDT, on=.(date >= e_date), {
     target_date = as.IDate(if (e_date[1L] %in% x.date) e_date[1L] else max(x.date))
     target_date
-}, by=.EACHI], data.table(date = as.IDate(18147L), V1 = as.IDate(18147L)))
+}, by=.EACHI], out)
 
 ###################################
 #  Add new tests above this line  #
