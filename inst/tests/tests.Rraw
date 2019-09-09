@@ -14890,7 +14890,7 @@ cols = c("x.bool","x.int","x.doubleInt","i.bool","i.int","i.doubleInt","i.char")
 test(2044.60, dt1[dt2, ..cols, on="int==doubleInt", verbose=TRUE],
               data.table(x.bool=FALSE, x.int=1:5, x.doubleInt=as.double(1:5), i.bool=TRUE, i.int=1:5, i.doubleInt=1:5, i.char=letters[1:5]),
               output="Coercing double column i.doubleInt (which contains no fractions) to type integer to match type of x.int")
-test(2044.61, dt1[dt2, ..cols, on="int==realDouble", verbose=TRUE],
+test(2044.61, dt1[dt2, ..cols, on="int==realDouble", verbose=TRUE],  # this was wrong in v1.12.2 (the fractions were truncated and joined to next lowest int)
               data.table(x.bool=c(NA,FALSE,NA,FALSE,NA), x.int=INT(NA,1,NA,2,NA), x.doubleInt=c(NA,1,NA,2,NA),
                          i.bool=TRUE, i.int=1:5, i.doubleInt=as.double(1:5), i.char=letters[1:5]),
               output="Coercing integer column x.int to type double to match type of i.realDouble which contains fractions")
