@@ -14890,14 +14890,16 @@ cols = c("x.bool","x.int","x.doubleInt","i.bool","i.int","i.doubleInt","i.char")
 test(2044.60, dt1[dt2, ..cols, on="int==doubleInt", verbose=TRUE],
               data.table(x.bool=FALSE, x.int=1:5, x.doubleInt=as.double(1:5), i.bool=TRUE, i.int=1:5, i.doubleInt=1:5, i.char=letters[1:5]),
               output="Coercing double column i.doubleInt (which contains no fractions) to type integer to match type of x.int")
-test(2044.61, dt1[dt2, ..cols, on="int==realDouble"],
-              error="Incompatible join types: x.int is type integer but i.realDouble is type double and contains fractions")
+test(2044.61, dt1[dt2, ..cols, on="int==realDouble", verbose=TRUE],
+              data.table(x.bool=c(NA,FALSE,NA,FALSE,NA), x.int=INT(NA,1,NA,2,NA), x.doubleInt=c(NA,1,NA,2,NA),
+                         i.bool=TRUE, i.int=1:5, i.doubleInt=as.double(1:5), i.char=letters[1:5]),
+              output="Coercing integer column x.int to type double to match type of i.realDouble which contains fractions")
 test(2044.62, dt1[dt2, ..cols, on="doubleInt==int", verbose=TRUE],
               data.table(x.bool=FALSE, x.int=1:5, x.doubleInt=as.double(1:5), i.bool=TRUE, i.int=1:5, i.doubleInt=as.double(1:5), i.char=letters[1:5]),
-              output="Coerced integer column i.int to type double for join to match type of x.doubleInt")
+              output="Coercing integer column i.int to type double for join to match type of x.doubleInt")
 test(2044.63, dt1[dt2, ..cols, on="realDouble==int", verbose=TRUE],
               data.table(x.bool=c(rep(FALSE,4),TRUE), x.int=INT(2,4,6,8,10), x.doubleInt=c(2,4,6,8,10), i.bool=TRUE, i.int=1:5, i.doubleInt=as.double(1:5), i.char=letters[1:5]),
-              output="Coerced integer column i.int to type double for join to match type of x.realDouble")
+              output="Coercing integer column i.int to type double for join to match type of x.realDouble")
 cols = c("x.int","x.char","x.fact","i.int","i.char","i.char")
 test(2044.64, dt1[dt2, ..cols, on="char==fact", verbose=TRUE],
               ans<-data.table(x.int=1:5, x.char=letters[1:5], x.fact=factor(letters[1:5]), i.int=1:5, i.char=letters[1:5], i.char=letters[1:5]),
@@ -14932,15 +14934,15 @@ if (test_bit64) {
 dt1 = data.table(a=1,  b=NA_character_)
 dt2 = data.table(a=2L, b=NA)
 test(2044.80, dt1[dt2, on="a==b",             verbose=TRUE], data.table(a=NA, b=NA_character_, i.a=2L),
-              output=msg<-"Coerced all-NA i.b (logical) to type double to match type of x.a")
+              output=msg<-"Coercing all-NA i.b (logical) to type double to match type of x.a")
 test(2044.81, dt1[dt2, on="a==b", nomatch=0L, verbose=TRUE], data.table(a=logical(), b=character(), i.a=integer()),
               output=msg)
 test(2044.82, dt1[dt2, on="b==b",             verbose=TRUE], data.table(a=1, b=NA, i.a=2L),
-              output=msg<-"Coerced all-NA i.b (logical) to type character to match type of x.b")
+              output=msg<-"Coercing all-NA i.b (logical) to type character to match type of x.b")
 test(2044.83, dt1[dt2, on="b==b", nomatch=0L, verbose=TRUE], data.table(a=1, b=NA, i.a=2L),
               output=msg)
 test(2044.84, dt1[dt2, on="b==a",             verbose=TRUE], data.table(a=NA_real_, b=2L, i.b=NA),
-              output=msg<-"Coerced all-NA x.b (character) to type integer to match type of i.a")
+              output=msg<-"Coercing all-NA x.b (character) to type integer to match type of i.a")
 test(2044.85, dt1[dt2, on="b==a", nomatch=0L, verbose=TRUE], data.table(a=double(), b=integer(), i.b=logical()),
               output=msg)
 
@@ -15348,7 +15350,7 @@ i = data.table(date = dbl_date, key = 'date')
 test(2064.1, x[i, class(date), verbose=TRUE], 'Date',
              output="Coercing double column i.date (which contains no fractions) to type integer to match type of x.date")
 test(2064.2, i[x, class(date), verbose=TRUE], 'Date',
-             output="Coerced integer column i.date to type double for join to match type of x.date")
+             output="Coercing integer column i.date to type double for join to match type of x.date")
 
 # complex values in grouping, #3639
 set.seed(42)
