@@ -2411,9 +2411,9 @@ setnames = function(x,old,new,skip_absent=FALSE) {
     if (length(old) != ncol) stop("Can't assign ",length(old)," names to a ",ncol," column data.table")
     if (anyNA(names(x))) {
       # if x somehow has some NA names, which() needs help to return them, #2475
-      w = which((names(x) != old) | (is.na(names(x)) & !is.na(old)))
+      w = which((names(x) != old) | (Encoding(names(x)) != Encoding(old)) | (is.na(names(x)) & !is.na(old)))
     } else {
-      w = which(names(x) != old)
+      w = which(names(x) != old | (Encoding(names(x)) != Encoding(old)))
     }
     if (!length(w)) return(invisible(x))  # no changes
     new = old[w]
@@ -2442,7 +2442,7 @@ setnames = function(x,old,new,skip_absent=FALSE) {
         }
       }
     }
-    if (any(w <- new==names(x)[i])) {
+    if (any(w <- new==names(x)[i] & Encoding(new)==Encoding(names(x)[i]))) {
       w = which(!w)
       new = new[w]
       i = i[w]
