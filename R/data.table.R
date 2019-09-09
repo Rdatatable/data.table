@@ -2632,7 +2632,7 @@ setDT = function(x, keep.rownames=FALSE, key=NULL, check.names=FALSE) {
   # check no matrix-like columns, #3760
   colndim = vapply_1i(x, function(xi) length(dim(xi)))
   if (any(idx <- colndim > 1L)) {
-    stop("Some columns are a multi-column type (such as a matrix column): ", brackify(which(idx)),". These cannot be converted to data.table by reference. Please use as.data.table() instead which will create a new column for each embedded column.")
+    warning("Some columns are a multi-column type (such as a matrix column): ", brackify(which(idx)),". setDT will retain these columns as-is but subsequent operations like grouping and joining may fail. Please consider as.data.table() instead which will unpack these columns; i.e. create a new column for each embedded column.")
   }
   if (is.data.table(x)) {
     # fix for #1078 and #1128, see .resetclass() for explanation.
