@@ -15851,6 +15851,12 @@ test(2089.4, colnames(DF), c("a","m"))
 test(2089.5, colnames(DF$m), c("foo","bar"))
 test(2089.6, as.data.table(DF), data.table(a=1:5, m.foo=6:10, m.bar=11:15))
 
+# a single matrix item is unambiguous and different to a matrix embedded alongside other items
+M = list(matrix(1:6,ncol=1L))
+test(2089.7, setDT(M), data.table(V1=1:6))  # worked in 1.12.2 and miceFast relies on, #3581
+M = list(matrix(1:6,ncol=2L))
+test(2089.8, setDT(M), data.table(V1=1:3, V2=4:6))  # returned a single column in v1.12.2, now from 1.12.4 returns 2 columns as expected
+
 # get/mget in j should restore all columns to .SD, #1744 and #1965
 DT = data.table(a=1, b=2, c=3)
 test(2090.1, DT[, {list(a, get('b')); names(.SD)}, .SDcols='c'], 'c')
