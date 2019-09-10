@@ -34,8 +34,9 @@ static SEXP chmatchMain(SEXP x, SEXP table, int nomatch, bool chin, bool chmatch
       break;
     }
   }
+  SEXP *xd = STRING_PTR(ux);
   for (int i=0; i<xlen; i++) {
-    SEXP s = STRING_ELT(ux, i);
+    SEXP s = xd[i];
     if (TRUELENGTH(s)>0) savetl(s);
     // as from v1.8.0 we assume R's internal hash is positive. So in R < 2.14.0 we
     // don't save the uninitialised truelengths that by chance are negative, but
@@ -52,9 +53,10 @@ static SEXP chmatchMain(SEXP x, SEXP table, int nomatch, bool chin, bool chmatch
       break;
     }
   }
+  SEXP *td = STRING_PTR(utable);
   int nuniq=0;
   for (int i=0; i<tablelen; ++i) {
-    SEXP s = STRING_ELT(utable, i);
+    SEXP s = td[i];
     int tl = TRUELENGTH(s);
     if (tl>0) { savetl(s); tl=0; }
     if (tl==0) SET_TRUELENGTH(s, chmatchdup ? -(++nuniq) : -i-1); // first time seen this string in table
@@ -75,21 +77,21 @@ static SEXP chmatchMain(SEXP x, SEXP table, int nomatch, bool chin, bool chmatch
     int *map =    (int *)calloc(tablelen+nuniq, sizeof(int));  // +nuniq to store a 0 at the end of each group
     if (!counts || !map) {
       // # nocov start
-      for (int i=0; i<tablelen; i++) SET_TRUELENGTH(STRING_ELT(utable, i), 0);
+      for (int i=0; i<tablelen; i++) SET_TRUELENGTH(td[i], 0);
       savetl_end();
       error("Failed to allocate %lld bytes working memory in chmatchdup: length(table)=%d length(unique(table))=%d", (tablelen*2+nuniq)*sizeof(int), tablelen, nuniq);
       // # nocov end
     }
-    for (int i=0; i<tablelen; ++i) counts[-TRUELENGTH(STRING_ELT(utable, i))-1]++;
+    for (int i=0; i<tablelen; ++i) counts[-TRUELENGTH(td[i])-1]++;
     for (int i=0, sum=0; i<nuniq; ++i) { int tt=counts[i]; counts[i]=sum; sum+=tt+1; }
-    for (int i=0; i<tablelen; ++i) map[counts[-TRUELENGTH(STRING_ELT(utable, i))-1]++] = i+1;           // 0 is left ending each group thanks to the calloc
+    for (int i=0; i<tablelen; ++i) map[counts[-TRUELENGTH(td[i])-1]++] = i+1;           // 0 is left ending each group thanks to the calloc
     for (int i=0, last=0; i<nuniq; ++i) {int tt=counts[i]+1; counts[i]=last; last=tt;}  // rewind counts to the beginning of each group
     for (int i=0; i<xlen; ++i) {
-      int u = TRUELENGTH(STRING_ELT(ux, i));
+      int u = TRUELENGTH(xd[i]);
       if (u<0) {
         int w = counts[-u-1]++;
         if (map[w]) { ansd[i]=map[w]; continue; }
-        SET_TRUELENGTH(STRING_ELT(ux, i),0); // w falls on ending 0 marker: dups used up; any more dups should return nomatch
+        SET_TRUELENGTH(xd[i],0); // w falls on ending 0 marker: dups used up; any more dups should return nomatch
         // we still need the 0-setting loop at the end of this function because often there will be some values in table that are not matched to at all.
       }
       ansd[i] = nomatch;
@@ -98,16 +100,16 @@ static SEXP chmatchMain(SEXP x, SEXP table, int nomatch, bool chin, bool chmatch
     free(map);
   } else if (chin) {
     for (int i=0; i<xlen; i++) {
-      ansd[i] = TRUELENGTH(STRING_ELT(ux, i))<0;
+      ansd[i] = TRUELENGTH(xd[i])<0;
     }
   } else {
     for (int i=0; i<xlen; i++) {
-      int m = TRUELENGTH(STRING_ELT(ux, i));
+      int m = TRUELENGTH(xd[i]);
       ansd[i] = (m<0) ? -m : nomatch;
     }
   }
   for (int i=0; i<tablelen; i++)
-    SET_TRUELENGTH(STRING_ELT(utable, i), 0);  // reinstate 0 rather than leave the -i-1
+    SET_TRUELENGTH(td[i], 0);  // reinstate 0 rather than leave the -i-1
   savetl_end();
   UNPROTECT(nprotect);
   return(ans);
