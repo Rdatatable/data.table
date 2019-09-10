@@ -1,4 +1,5 @@
-as.data.table = function(x, keep.rownames=FALSE, key=NULL, ...)
+as.data.table = function(x, keep.rownames=FALSE, ...)
+# cannot add new args before dots otherwise revdeps which implement their methods will start to warn; e.g. riskRegression in #3581
 {
   if (is.null(x))
     return(null.data.table())
