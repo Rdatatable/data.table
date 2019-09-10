@@ -280,3 +280,25 @@ SEXP islockedR(SEXP DT) {
   return ScalarLogical(islocked(DT));
 }
 
+
+// To see if the character vector contains non-ASCII strings not encoded in UTF-8
+bool need2utf8(SEXP x) {
+  const int xlen = length(x);
+  for (int i=0; i<xlen; i++)
+    if (NEED2UTF8(STRING_ELT(x, i))) 
+      return(true);
+    return(false);
+}
+// coerce to UTF-8 encoded string if need2utf8() is true
+SEXP coerceUtf8IfNeeded(SEXP x) { 
+  const bool need = need2utf8(x);
+  if (!need) return(x);
+  const int xlen = length(x);
+  SEXP ans = PROTECT(allocVector(STRSXP, xlen));
+  for (int i=0; i<xlen; i++)
+    SET_STRING_ELT(ans, i, ENC2UTF8(STRING_ELT(x, i)));
+  UNPROTECT(1);
+  return(ans);
+}
+
+

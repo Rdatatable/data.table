@@ -25,16 +25,7 @@ static SEXP chmatchMain(SEXP x, SEXP table, int nomatch, bool chin, bool chmatch
   if (!length(table)) { const int val=(chin?0:nomatch), n=LENGTH(x); for (int i=0; i<n; ++i) ansd[i]=val; UNPROTECT(1); return ans; }
   savetl_init();
   const int xlen = length(x);
-  int nprotect = 1;
-  SEXP ux = x;
-  for (int i=0; i<xlen; i++) {
-    if (NEED2UTF8(STRING_ELT(x, i))) {
-      ux = PROTECT(allocVector(STRSXP, xlen)); ++nprotect;
-      for (int i=0; i<xlen; i++) SET_STRING_ELT(ux, i, ENC2UTF8(STRING_ELT(x, i)));
-      break;
-    }
-  }
-  SEXP *xd = STRING_PTR(ux);
+  SEXP *xd = STRING_PTR(coerceUtf8IfNeeded(x));
   for (int i=0; i<xlen; i++) {
     SEXP s = xd[i];
     if (TRUELENGTH(s)>0) savetl(s);
@@ -45,15 +36,7 @@ static SEXP chmatchMain(SEXP x, SEXP table, int nomatch, bool chin, bool chmatch
     SET_TRUELENGTH(s,0);   // TODO: do we need to set to zero first (we can rely on R 3.1.0 now)?
   }
   const int tablelen = length(table);
-  SEXP utable = table;
-  for (int i=0; i<tablelen; i++) {
-    if (NEED2UTF8(STRING_ELT(table, i))) {
-      utable = PROTECT(allocVector(STRSXP, tablelen)); ++nprotect;
-      for (int i=0; i<tablelen; i++) SET_STRING_ELT(utable, i, ENC2UTF8(STRING_ELT(table, i)));
-      break;
-    }
-  }
-  SEXP *td = STRING_PTR(utable);
+  SEXP *td = STRING_PTR(coerceUtf8IfNeeded(table));
   int nuniq=0;
   for (int i=0; i<tablelen; ++i) {
     SEXP s = td[i];
@@ -111,7 +94,7 @@ static SEXP chmatchMain(SEXP x, SEXP table, int nomatch, bool chin, bool chmatch
   for (int i=0; i<tablelen; i++)
     SET_TRUELENGTH(td[i], 0);  // reinstate 0 rather than leave the -i-1
   savetl_end();
-  UNPROTECT(nprotect);
+  UNPROTECT(1);
   return(ans);
 }
 
