@@ -15850,6 +15850,11 @@ DF$m = matrix(6:15, ncol=2L, dimnames=list(NULL, c("foo","bar")))
 test(2089.4, colnames(DF), c("a","m"))
 test(2089.5, colnames(DF$m), c("foo","bar"))
 test(2089.6, as.data.table(DF), data.table(a=1:5, m.foo=6:10, m.bar=11:15))
+# only block when the dimensionality of the input is non-trivial (i.e. we can't just drop() & move on)
+x = structure(c(1, 2, 3), .Dim = c(3L, 1L, 1L))
+y = c(0.9, 0.8, 0.7)
+z = structure(c(0.9, -0.05, -0.05), .Dim = c(3L, 1L, 1L))
+test(2089.7, data.table(x, y, z), data.table(x = drop(x), y, z = drop(z)))
 
 # get/mget in j should restore all columns to .SD, #1744 and #1965
 DT = data.table(a=1, b=2, c=3)

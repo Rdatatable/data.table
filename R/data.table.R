@@ -2630,10 +2630,7 @@ setDT = function(x, keep.rownames=FALSE, key=NULL, check.names=FALSE) {
     }
   }
   # check no matrix-like columns, #3760
-  colndim = vapply_1i(x, function(xi) length(dim(xi)))
-  if (any(idx <- colndim > 1L)) {
-    warning("Some columns are a multi-column type (such as a matrix column): ", brackify(which(idx)),". setDT will retain these columns as-is but subsequent operations like grouping and joining may fail. Please consider as.data.table() instead which will unpack these columns; i.e. create a new column for each embedded column.")
-  }
+  col_w_dim = which(vapply_1i(x, function(xi) length(dim(xi))) > 1L)
   if (is.data.table(x)) {
     # fix for #1078 and #1128, see .resetclass() for explanation.
     setattr(x, 'class', .resetclass(x, 'data.table'))
@@ -2647,6 +2644,14 @@ setDT = function(x, keep.rownames=FALSE, key=NULL, check.names=FALSE) {
     # fix for #1078 and #1128, see .resetclass() for explanation.
     setattr(x, "class", .resetclass(x, 'data.frame'))
     setalloccol(x)
+    if (length(col_w_dim)) {
+      n = vapply_1i(col_w_dim, function(col) length(x[[col]]))
+      if (any(idx <- n != nrow(x))) {
+        warning("Some columns are a multi-column type (such as a matrix column): ", brackify(col_w_dim[idx]),". setDT will retain these columns as-is but subsequent operations like grouping and joining may fail. Please consider as.data.table() instead which will unpack these columns; i.e. create a new column for each embedded column.")
+      }
+      drop_cols = col_w_dim[!idx]
+      if (length(drop_cols)) x[ , (drop_cols) := lapply(.SD, drop), .SDcols = drop_cols]
+    }
     if (!is.null(rn)) {
       nm = c(if (is.character(keep.rownames)) keep.rownames[1L] else "rn", names(x))
       x[, (nm[1L]) := rn]
@@ -2681,6 +2686,8 @@ setDT = function(x, keep.rownames=FALSE, key=NULL, check.names=FALSE) {
       }
       if (check.names) setattr(x, "names", make.names(xn, unique=TRUE))
     }
+    # already passed length check, so just drop
+    for(idx in col_w_dim) x[[idx]] = drop(x[[idx]])
     setattr(x,"row.names",.set_row_names(n_range[2L]))
     setattr(x,"class",c("data.table","data.frame"))
     setalloccol(x)
