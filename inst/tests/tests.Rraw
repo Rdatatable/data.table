@@ -15991,6 +15991,13 @@ test(2102.3, cut(ID, breaks = '6 months'), as.IDate(cut(D, breaks = '6 months'))
 # DT[ , !rep(FALSE, ncol(DT)), with=FALSE] would exit before doing !, #3013
 test(2103, DT[ , !rep(FALSE, 2L), with=FALSE], DT)
 
+# implicit difftime by group can choose different units but are later ignored, #3694 & #761 (among others)
+del = c(0, 60, 3600, 86400)
+DT = data.table(ID=1:4, t0=.POSIXct(0), t1=.POSIXct(del))
+test(2104.1, DT[ , t1-t0, by=ID], data.table(ID=1:4, V1=as.difftime(del, units='secs')))
+test(2104.2, DT[ , t1-t0, by=ID, verbose=TRUE], output='Note: forcing units="secs"')
+test(2104.3, DT[ , t1-5, by=ID], data.table(ID=1:4, V1=.POSIXct(del-5)))
+
 
 ###################################
 #  Add new tests above this line  #
