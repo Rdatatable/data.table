@@ -141,8 +141,8 @@ format.data.table = function (x, ..., justify="none", timezone = FALSE) {
     x[idx] = paste0(substr(x[idx], 1L, as.integer(trunc.char)), "...")
     x
   }
-  do.call("cbind",lapply(x,function(col,...){
-    if (!is.null(dim(col))) stop("Invalid column: it has dimensions. Can't format it. If it's the result of data.table(table()), use as.data.table(table()) instead.")
+  do.call("cbind",lapply(x,function(col,...) {
+    if (!is.null(dim(col))) return("<multi-column>")
     if(timezone) col = format.timezone(col)
     if (is.list(col)) col = vapply_1c(col, format.item)
     else col = format(char.trunc(col), justify=justify, ...) # added an else here to fix #5435
