@@ -160,10 +160,14 @@ replace_dot_alias = function(e) {
   naturaljoin = FALSE
   names_x = names(x)
   if (missing(i) && !missing(on)) {
-    i = eval.parent(.massagei(substitute(on)))
-    if (!is.list(i) || !length(names(i)))
-      stop("When on= is provided but not i=, on= must be a named list or data.table|frame, and a natural join (i.e. join on common names) is invoked")
-    naturaljoin = TRUE
+    tt = eval.parent(.massagei(substitute(on)))
+    if (!is.list(tt) || !length(names(tt))) {
+      warning("When on= is provided but not i=, on= must be a named list or data.table|frame, and a natural join (i.e. join on common names) is invoked. Ignoring on= which is '",class(tt)[1L],"'.")
+      on = NULL
+    } else {
+      i = tt
+      naturaljoin = TRUE
+    }
   }
   if (missing(i) && missing(j)) {
     tt_isub = substitute(i)

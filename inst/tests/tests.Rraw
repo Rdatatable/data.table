@@ -15154,6 +15154,16 @@ test(2058.12, cbind(first=data.table(A=1:3), second=data.table(A=4, B=5:7)),
 test(2058.13, cbind(data.table(A=1:3), second=data.table(A=4, B=5:7)),
               data.table(A=1:3, second.A=4, second.B=5:7))                      # no
 test(2058.14, cbind(data.table(A=1,B=2),3), data.table(A=1,B=2,V2=3))           # no
+L = list(1:3, 4:6)
+test(2058.15, as.data.table(L), data.table(V1=1:3, V2=4:6))                     # no
+# retain all-blank list names as batchtools relies on in reg$defs[1,job.pars], #3581
+names(L) = c("","")
+test(2058.16, as.data.table(L), setnames(data.table(1:3, 4:6),c("","")))        # no
+# retain existing duplicate and blank names of a plain-list, just as 1.12.2 did
+L = list(1:3, 4:6, 7:9, 10:12)
+names(L) = c("","foo","","foo")
+test(2058.17, as.data.table(L),
+              setnames(data.table(1:3, 4:6, 7:9, 10:12),c("","foo","","foo")))  # no
 
 # rbindlist improved error message, #3638
 DT = data.table(a=1)
@@ -15316,7 +15326,7 @@ test(2060.605, fcoalesce(NULL, "foo"), NULL) # as seen in mlr using BBmisc::coal
 # #3650 -- ensure max nrow check on CJ is applied after unique
 l = replicate(ceiling(log10(.Machine$integer.max)), rep(1L, 10L), simplify = FALSE)
 l$unique = TRUE
-test(2061, do.call(CJ, l), setkey(unique(as.data.table(head(l, -1L)))))
+test(2061, do.call(CJ, l), data.table(V1=1L, V2=1L, V3=1L, V4=1L, V5=1L, V6=1L, V7=1L, V8=1L, V9=1L, V10=1L, key=paste0("V",1:10)))
 
 # #3635, not specific to non-equi joins, but only occurs in non-equi cases.
 d1 = data.table(a = c(1L, 6L), b = c(11L, 16L))
@@ -15714,8 +15724,12 @@ X = data.table(a=1:2, b=1:2)
 test(2076.01, X[on=.(a=2:3, d=2:1)], data.table(a=2:3, b=c(2L,NA_integer_), d=2:1))
 Y = data.table(a=2:3, d=2:1)
 test(2076.02, X[on=Y], data.table(a=2:3, b=c(2L,NA_integer_), d=2:1))
-test(2076.03, X[on=3], error="When on= is provided but not i=, on= must be a named list or data.table|frame, and a natural join")
-test(2076.04, X[on=list(3)], error="When on= is provided but not i=, on= must be a named list or data.table|frame, and a natural join")
+test(2076.03, X[on=3], X,
+  warning=c("When on= is provided but not i=, on= must be a named list or data.table|frame, and a natural join.*Ignoring on= which is 'numeric'",
+            "i and j are both missing so ignoring the other arguments. This warning will be upgraded to error in future."))
+test(2076.04, X[on=list(3)], X,
+  warning=c("When on= is provided but not i=, on= must be a named list or data.table|frame, and a natural join.*Ignoring on= which is 'list'",
+            "i and j are both missing so ignoring the other arguments. This warning will be upgraded to error in future."))
 
 # gsum int64 support #1647, #3464
 if (test_bit64) {
