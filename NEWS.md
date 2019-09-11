@@ -192,6 +192,7 @@
     # frollapply       5.404   1.419  56.475
     # froll[fun]       0.003   0.002      NA
     ```
+28. `setnames()` now allows function for arguments `old=` or `new=`, [#3703](https://github.com/Rdatatable/data.table/issues/3703). Thanks @smingerson for the feature request and @shrektan for the PR.
 
 #### BUG FIXES
 
