@@ -15321,7 +15321,7 @@ test(2060.605, fcoalesce(NULL, "foo"), NULL) # as seen in mlr using BBmisc::coal
 # #3650 -- ensure max nrow check on CJ is applied after unique
 l = replicate(ceiling(log10(.Machine$integer.max)), rep(1L, 10L), simplify = FALSE)
 l$unique = TRUE
-test(2061, do.call(CJ, l), setkey(unique(as.data.table(head(l, -1L)))))
+test(2061, do.call(CJ, l), data.table(V1=1L, V2=1L, V3=1L, V4=1L, V5=1L, V6=1L, V7=1L, V8=1L, V9=1L, V10=1L, key=paste0("V",1:10)))
 
 # #3635, not specific to non-equi joins, but only occurs in non-equi cases.
 d1 = data.table(a = c(1L, 6L), b = c(11L, 16L))
