@@ -191,6 +191,7 @@ as.data.table.list = function(x,
   if (check.names) vnames = make.names(vnames, unique=TRUE)
   setattr(ans, "names", vnames)
   setDT(ans, key=key) # copy ensured above; also, setDT handles naming
+  if (!is.null(names(x)) && length(ans)==length(x) && all(names(x)=="")) setattr(ans, "names", names(x))
   ans
 }
 
