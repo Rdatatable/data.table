@@ -15885,6 +15885,13 @@ DT = data.table(a=1, b=2, c=3)
 test(2090.1, DT[, {list(a, get('b')); names(.SD)}, .SDcols='c'], 'c')
 # Also incidentally fixed #2036 about reordering of columns in .SD
 test(2090.2, DT[ , {get('c'); names(.SD)}, .SDcols = c('b', 'a')], c('b', 'a'))
+# ditto for #2946
+DT <- data.table(v1=1:2, v2 = 3:4, type = c('A', 'B'))
+col_in <- c('v2', 'v1')
+col_out <- paste0(col_in, '.new')
+test(2090.3, DT[, (col_out) := lapply(.SD, function(x){x * min(x[get('type') == 'A'])}), .SDcols = col_in],
+     data.table(v1=1:2, v2=3:4, type=c('A', 'B'), v2.new=c(9L, 12L), v1.new=1:2))
+
 
 # minus sign in j with with=FALSE shouldn't be interpreted as 'not', #2109
 DT = data.table(a=1, b=2)
