@@ -15936,6 +15936,25 @@ test(2100.14, fifelse(c(T,F,NA),c(1,1,1),c(2,2,2),NA), c(1,2,NA))
 DT = data.table(id=1:3, v=4:6, key="id")
 test(2101, DT[.(logical())], data.table(id=logical(), v=integer(), key="id"))
 
+# first and last not loading xts namespace anymore
+x = as.POSIXct("2019-09-09")+0:1
+options(datatable.verbose=TRUE)
+test(2102.01, last(x), x[length(x)], notOutput="last: using xts::last")
+test(2102.02, first(x), x[1L], notOutput="first: using xts::first")
+if (test_xts) {
+  xt = xts(1:2, x)
+  test(2102.03, last(xt, 2L), xt, output="last: using xts::last")
+  test(2102.04, first(xt, 2L), xt, output="first: using xts::first")
+  xt = xts(matrix(1:4, 2L, 2L), x)
+  test(2102.05, last(xt, 2L), xt, output="last: using xts::last")
+  test(2102.06, first(xt, 2L), xt, output="first: using xts::first")
+}
+# first on empty df now match head(df, n=1L)
+df = data.frame(a=integer(), b=integer())
+test(2102.11, first(df), df, notOutput="first: using xts::first")
+test(2102.12, tail(df), df, notOutput="tail: using xts::tail")
+options(datatable.verbose=FALSE)
+
 
 ###################################
 #  Add new tests above this line  #
