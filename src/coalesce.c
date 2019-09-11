@@ -8,7 +8,7 @@ SEXP coalesce(SEXP x, SEXP inplaceArg) {
   const bool inplace = LOGICAL(inplaceArg)[0];
   const bool verbose = GetVerbose();
   int nprotect = 0;
-  if (length(x)==0) return R_NilValue;
+  if (length(x)==0 || isNull(VECTOR_ELT(x,0))) return R_NilValue;  // coalesce(NULL, "foo") return NULL even though character type mismatches type NULL
   SEXP first;  // the first vector (it might be the first argument, or it might be the first column of a data.table|frame
   int off = 1; // when x has been pointed to the list of replacement candidates, is the first candidate in position 0 or 1 in the list
   if (TYPEOF(VECTOR_ELT(x,0)) == VECSXP) {

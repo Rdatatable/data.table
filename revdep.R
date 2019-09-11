@@ -1,6 +1,6 @@
 # Run by package maintainer via these entries in ~/.bash_aliases :
 #   alias revdepr='cd ~/build/revdeplib/ && R_LIBS_SITE=none R_LIBS=~/build/revdeplib/ _R_CHECK_FORCE_SUGGESTS_=false R_PROFILE_USER=~/GitHub/data.table/revdep.R R'
-#   alias revdepsh='cd ~/build/revdeplib/ && export R_LIBS_SITE=none && export R_LIBS=~/build/revdeplib/ && export _R_CHECK_FORCE_SUGGESTS_=false'
+#   alias revdepsh='cd ~/build/revdeplib/ && export TZ=UTC && export R_LIBS_SITE=none && export R_LIBS=~/build/revdeplib/ && export _R_CHECK_FORCE_SUGGESTS_=false'
 # revdep = reverse first-order dependency; i.e. the CRAN and Bioconductor packages which directly use data.table (765 at the time of writing)
 
 # Check that env variables have been set correctly:
@@ -189,11 +189,12 @@ inst = function() {
   system(paste("R CMD INSTALL", last))
 }
 
-log = function(x=c(.fail.cran, .fail.bioc), fnam="~/fail.log") {
+log = function(bioc=FALSE, fnam="~/fail.log") {
+  x = c(.fail.cran, if (bioc) .fail.bioc)
   cat("Writing 00check.log for",length(x),"packages to",fnam,":\n")
   cat(paste(x,collapse=" "), "\n")
+  require(BiocManager)  # to ensure Bioc version is included in attached packages sessionInfo. It includes the minor version this way; e.g. 1.30.4
   cat(capture.output(sessionInfo()), "\n", file=fnam, sep="\n")
-  cat(capture.output(BiocManager::install(), type="message"), "\n", file=fnam, sep="\n", append=TRUE)
   for (i in x) {
     system(paste0("ls | grep '",i,".*tar.gz' >> ",fnam))
     system(paste0("grep -H . ./",i,".Rcheck/00check.log >> ",fnam))
