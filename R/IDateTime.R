@@ -51,6 +51,7 @@ as.Date.IDate = function(x, ...) {
 mean.IDate =
 seq.IDate =
 c.IDate =
+cut.IDate =
 rep.IDate =
 unique.IDate =
   function(x, ...) {

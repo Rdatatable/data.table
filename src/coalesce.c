@@ -102,19 +102,19 @@ SEXP coalesce(SEXP x, SEXP inplaceArg) {
         SEXP item = VECTOR_ELT(x, j+off);
         if (length(item)==1) {
           double tt = REAL(item)[0];
-          if (ISNA(tt)) continue;
+          if (ISNAN(tt)) continue;
           finalVal = tt;
           break;
         }
         valP[k++] = REAL(item);
       }
-      const bool final = !ISNA(finalVal);
+      const bool final = !ISNAN(finalVal);
       #pragma omp parallel for num_threads(getDTthreads())
       for (int i=0; i<nrow; ++i) {
         double val=xP[i];
-        if (!ISNA(val)) continue;
-        int j=0; while (ISNA(val) && j<k) val=((double *)valP[j++])[i];
-        if (!ISNA(val)) xP[i]=val; else if (final) xP[i]=finalVal;
+        if (!ISNAN(val)) continue;
+        int j=0; while (ISNAN(val) && j<k) val=((double *)valP[j++])[i];
+        if (!ISNAN(val)) xP[i]=val; else if (final) xP[i]=finalVal;
       }
     }
   } break;
