@@ -16020,6 +16020,14 @@ test(2105.2, DT[eDT, on=.(date >= e_date), {
     target_date
 }, by=.EACHI], out)
 
+# test to prevent regression on #2041
+# UTF-8 Hex representations of Chinese codepoints, see issue or use cat() in UTF locale to see
+a1 <- data.table(
+  a = c("\U4E2D\U6587\U4E00", "\U4E2D\U6587\U4E8C", "\U4E2D\U6587\U4E09", "\U4E2D\U6587\U56DB"),
+  b = 1:12
+)
+test(2106, a1[a == "\U4E2D\U6587\U4E00"], data.table(a = "\U4E2D\U6587\U4E00", b = c(1L, 5L, 9L)))
+
 
 ###################################
 #  Add new tests above this line  #
