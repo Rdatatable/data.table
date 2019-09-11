@@ -160,10 +160,14 @@ replace_dot_alias = function(e) {
   naturaljoin = FALSE
   names_x = names(x)
   if (missing(i) && !missing(on)) {
-    i = eval.parent(.massagei(substitute(on)))
-    if (!is.list(i) || !length(names(i)))
-      stop("When on= is provided but not i=, on= must be a named list or data.table|frame, and a natural join (i.e. join on common names) is invoked")
-    naturaljoin = TRUE
+    tt = eval.parent(.massagei(substitute(on)))
+    if (!is.list(tt) || !length(names(tt))) {
+      warning("When on= is provided but not i=, on= must be a named list or data.table|frame, and a natural join (i.e. join on common names) is invoked. Ignoring on= which is '",class(tt)[1L],"'.")
+      on = NULL
+    } else {
+      i = tt
+      naturaljoin = TRUE
+    }
   }
   if (missing(i) && missing(j)) {
     tt_isub = substitute(i)
@@ -646,7 +650,7 @@ replace_dot_alias = function(e) {
         j = eval(jsub, lapply(substring(..syms,3L), get, pos=parent.frame()), parent.frame())
       }
       if (is.logical(j)) j <- which(j)
-      if (!length(j)) return( null.data.table() )
+      if (!length(j) && !notj) return( null.data.table() )
       if (is.factor(j)) j = as.character(j)  # fix for FR: #4867
       if (is.character(j)) {
         if (notj) {
@@ -676,7 +680,8 @@ replace_dot_alias = function(e) {
           if (any(j>0L)) stop("j mixes positives and negatives")
           j = seq_along(x)[j]  # all j are <0 here
         }
-        if (notj && length(j)) j = seq_along(x)[-j]
+        # 3013 -- handle !FALSE in column subset in j via logical+with
+        if (notj) j = seq_along(x)[if (length(j)) -j else TRUE]
         if (!length(j)) return(null.data.table())
         return(.Call(CsubsetDT, x, irows, j))
       } else {
@@ -2413,6 +2418,7 @@ setnames = function(x,old,new,skip_absent=FALSE) {
   # Sets by reference, maintains truelength, no copy of table at all.
   # But also more convenient than names(DT)[i]="newname"  because we can also do setnames(DT,"oldname","newname")
   # without an onerous match() ourselves. old can be positions, too, but we encourage by name for robustness.
+  # duplicates are permitted to be created without warning; e.g. in revdeps and for example, and setting spacer columns all with ""
   if (!is.data.frame(x)) stop("x is not a data.table or data.frame")
   ncol = length(x)
   if (length(names(x)) != ncol) stop("x has ",ncol," columns but its names are length ",length(names(x)))
@@ -2421,7 +2427,6 @@ setnames = function(x,old,new,skip_absent=FALSE) {
     # for setnames(DT,new); e.g., setnames(DT,c("A","B")) where ncol(DT)==2
     if (!is.character(old)) stop("Passed a vector of type '",typeof(old),"'. Needs to be type 'character'.")
     if (length(old) != ncol) stop("Can't assign ",length(old)," names to a ",ncol," column data.table")
-    # note that duplicate names are permitted to be created in this usage only
     if (anyNA(names(x))) {
       # if x somehow has some NA names, which() needs help to return them, #2475
       w = which((names(x) != old) | (is.na(names(x)) & !is.na(old)))
@@ -2434,7 +2439,7 @@ setnames = function(x,old,new,skip_absent=FALSE) {
   } else {
     if (missing(old)) stop("When 'new' is provided, 'old' must be provided too")
     if (!is.character(new)) stop("'new' is not a character vector")
-    if (anyDuplicated(new)) stop("Some duplicates exist in 'new': ", brackify(new[duplicated(new)]))
+    #  if (anyDuplicated(new)) warning("Some duplicates exist in 'new': ", brackify(new[duplicated(new)]))  # dups allowed without warning; warn if and when the dup causes an ambiguity
     if (anyNA(new)) stop("NA in 'new' at positions ", brackify(which(is.na(new))))
     if (anyDuplicated(old)) stop("Some duplicates exist in 'old': ", brackify(old[duplicated(old)]))
     if (is.numeric(old)) i = old = seq_along(x)[old]  # leave it to standard R to manipulate bounds and negative numbers
@@ -2443,7 +2448,7 @@ setnames = function(x,old,new,skip_absent=FALSE) {
     if (anyNA(old)) stop("NA (or out of bounds) in 'old' at positions ", brackify(which(is.na(old))))
     if (is.character(old)) {
       i = chmatchdup(c(old,old), names(x))  # chmatchdup returns the second of any duplicates matched to in names(x) (if any)
-      if (!all(tt<-is.na(tail(i,length(old))))) stop("Some items of 'old' are duplicated (ambiguous) in column names: ", brackify(old[!tt]))
+      if (!all(tt<-is.na(tail(i,length(old))))) warning("Item ",w<-which.first(!tt)," of 'old' is '", old[w],"' which appears several times in column names. Just the first will be changed. There are ", sum(!tt)-1L," other items in old that are also duplicated in column names.")
       i = head(i,length(old))
       if (anyNA(i)) {
         if (isTRUE(skip_absent)) {
@@ -2642,10 +2647,11 @@ setDT = function(x, keep.rownames=FALSE, key=NULL, check.names=FALSE) {
       stop("Cannot convert '", cname, "' to data.table by reference because binding is locked. It is very likely that '", cname, "' resides within a package (or an environment) that is locked to prevent modifying its variable bindings. Try copying the object to your current environment, ex: var <- copy(var) and then using setDT again.")
     }
   }
-  # check no matrix-like columns, #3760
-  colndim = vapply_1i(x, function(xi) length(dim(xi)))
-  if (any(idx <- colndim > 1L)) {
-    stop("Some columns are a multi-column type (such as a matrix column): ", brackify(which(idx)),". These cannot be converted to data.table by reference. Please use as.data.table() instead which will create a new column for each embedded column.")
+  # check no matrix-like columns, #3760. Other than a single list(matrix) is unambiguous and depended on by some revdeps, #3581
+  if (length(x)>1L) {
+    idx = vapply_1i(x, function(xi) length(dim(xi)))>1L
+    if (any(idx))
+      warning("Some columns are a multi-column type (such as a matrix column): ", brackify(which(idx)),". setDT will retain these columns as-is but subsequent operations like grouping and joining may fail. Please consider as.data.table() instead which will create a new column for each embedded column.")
   }
   if (is.data.table(x)) {
     # fix for #1078 and #1128, see .resetclass() for explanation.
@@ -2665,6 +2671,9 @@ setDT = function(x, keep.rownames=FALSE, key=NULL, check.names=FALSE) {
       x[, (nm[1L]) := rn]
       setcolorder(x, nm)
     }
+  } else if (is.list(x) && length(x)==1L && is.matrix(x[[1L]])) {
+    # a single list(matrix) is unambiguous and depended on by some revdeps, #3581
+    x = as.data.table.matrix(x[[1L]])
   } else if (is.null(x) || (is.list(x) && !length(x))) {
     x = null.data.table()
   } else if (is.list(x)) {
