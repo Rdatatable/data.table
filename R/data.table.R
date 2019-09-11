@@ -2421,7 +2421,12 @@ setnames = function(x,old,new,skip_absent=FALSE) {
     i = w
   } else {
     if (missing(old)) stop("When 'new' is provided, 'old' must be provided too")
-    if (is.function(new)) new = new(old)
+    if (is.function(new)) {
+      if (is.numeric(old))
+        new = new(names(x)[old])
+      else
+        new = new(old)
+    }
     if (!is.character(new)) stop("'new' is not a character vector or a function")
     #  if (anyDuplicated(new)) warning("Some duplicates exist in 'new': ", brackify(new[duplicated(new)]))  # dups allowed without warning; warn if and when the dup causes an ambiguity
     if (anyNA(new)) stop("NA in 'new' at positions ", brackify(which(is.na(new))))
