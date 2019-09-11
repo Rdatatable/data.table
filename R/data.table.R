@@ -2437,7 +2437,7 @@ setnames = function(x,old,new,skip_absent=FALSE) {
     if (anyNA(old)) stop("NA (or out of bounds) in 'old' at positions ", brackify(which(is.na(old))))
     if (is.character(old)) {
       i = chmatchdup(c(old,old), names(x))  # chmatchdup returns the second of any duplicates matched to in names(x) (if any)
-      if (!all(tt<-is.na(tail(i,length(old))))) stop("Some items of 'old' are duplicated (ambiguous) in column names: ", brackify(old[!tt]))
+      if (!all(tt<-is.na(tail(i,length(old))))) warning("Item ",w<-which.first(!tt)," of 'old' is '", old[w],"' which appears several times in column names. Just the first will be changed. There are ", sum(!tt)-1L," other items in old that are also duplicated in column names.")
       i = head(i,length(old))
       if (anyNA(i)) {
         if (isTRUE(skip_absent)) {
@@ -2636,10 +2636,11 @@ setDT = function(x, keep.rownames=FALSE, key=NULL, check.names=FALSE) {
       stop("Cannot convert '", cname, "' to data.table by reference because binding is locked. It is very likely that '", cname, "' resides within a package (or an environment) that is locked to prevent modifying its variable bindings. Try copying the object to your current environment, ex: var <- copy(var) and then using setDT again.")
     }
   }
-  # check no matrix-like columns, #3760
-  colndim = vapply_1i(x, function(xi) length(dim(xi)))
-  if (any(idx <- colndim > 1L)) {
-    stop("Some columns are a multi-column type (such as a matrix column): ", brackify(which(idx)),". These cannot be converted to data.table by reference. Please use as.data.table() instead which will create a new column for each embedded column.")
+  # check no matrix-like columns, #3760. Other than a single list(matrix) is unambiguous and depended on by some revdeps, #3581
+  if (length(x)>1L) {
+    idx = vapply_1i(x, function(xi) length(dim(xi)))>1L
+    if (any(idx))
+      warning("Some columns are a multi-column type (such as a matrix column): ", brackify(which(idx)),". setDT will retain these columns as-is but subsequent operations like grouping and joining may fail. Please consider as.data.table() instead which will create a new column for each embedded column.")
   }
   if (is.data.table(x)) {
     # fix for #1078 and #1128, see .resetclass() for explanation.
@@ -2659,6 +2660,9 @@ setDT = function(x, keep.rownames=FALSE, key=NULL, check.names=FALSE) {
       x[, (nm[1L]) := rn]
       setcolorder(x, nm)
     }
+  } else if (is.list(x) && length(x)==1L && is.matrix(x[[1L]])) {
+    # a single list(matrix) is unambiguous and depended on by some revdeps, #3581
+    x = as.data.table.matrix(x[[1L]])
   } else if (is.null(x) || (is.list(x) && !length(x))) {
     x = null.data.table()
   } else if (is.list(x)) {
