@@ -128,9 +128,7 @@ as.data.table.list = function(x,
   eachnrow = integer(n)          # vector of lengths of each column. may not be equal if silent repetition is required.
   eachncol = integer(n)
   missing.check.names = missing(check.names)
-  allBlankListNames = missing(.named) &&    # as.data.table called directly, not from inside data.table()
-                      !is.data.frame(x) &&  # just a plain list passed in, not data.frame or data.table
-                      !is.null(names(x)) && all(names(x)=="")  # all names already set to ""; caller has deliberate intent to achieve this
+  origListNames = if (missing(.named)) names(x) else NULL  # as.data.table called directly, not from inside data.table() which provides .named, #3854
   for (i in seq_len(n)) {
     xi = x[[i]]
     if (is.null(xi)) next    # eachncol already initialized to 0 by integer() above
@@ -194,7 +192,7 @@ as.data.table.list = function(x,
   if (check.names) vnames = make.names(vnames, unique=TRUE)
   setattr(ans, "names", vnames)
   setDT(ans, key=key) # copy ensured above; also, setDT handles naming
-  if (allBlankListNames) setattr(ans, "names", character(ncol(ans)))
+  if (length(origListNames)==length(ans)) setattr(ans, "names", origListNames)  # PR 3854 and tests 2058.15-17
   ans
 }
 
