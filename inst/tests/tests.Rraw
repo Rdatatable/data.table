@@ -15968,6 +15968,16 @@ test(2100.14, fifelse(c(T,F,NA),c(1,1,1),c(2,2,2),NA), c(1,2,NA))
 DT = data.table(id=1:3, v=4:6, key="id")
 test(2101, DT[.(logical())], data.table(id=logical(), v=integer(), key="id"))
 
+# basic test of cut.IDate to match cut.Date
+ID = as.IDate(INT(
+  0, 192, 384, 576, 768, 961, 1153, 1345, 1537, 1729, 1921,
+  2113, 2305, 2497, 2689, 2882, 3074, 3266, 3458, 3650
+))
+D = as.Date(ID)
+br = as.IDate(INT(c(0, 151, 243)))
+test(2102.1, cut(ID, breaks = br), as.IDate(cut(D, breaks=br)))
+test(2102.2, cut(ID, breaks = '1 year'), as.IDate(cut(D, breaks = '1 year')))
+test(2102.3, cut(ID, breaks = '6 months'), as.IDate(cut(D, breaks = '6 months')))
 
 ###################################
 #  Add new tests above this line  #
