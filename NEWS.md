@@ -282,6 +282,8 @@
 
 37. `rbindlist` now returns correct idcols for lists with different length vectors, [#3785](https://github.com/Rdatatable/data.table/issues/3785), [#3786](https://github.com/Rdatatable/data.table/pull/3786). Thanks to @shrektan for the report and fix.
 
+39. `DT[ , !rep(FALSE, ncol(DT)), with=FALSE]` correctly returns the full table, [#3013](https://github.com/Rdatatable/data.table/issues/3013) and [#2917](https://github.com/Rdatatable/data.table/issues/2917). Thanks @alexnss and @DavidArenburg for the reports.
+
 #### NOTES
 
 1. `rbindlist`'s `use.names="check"` now emits its message for automatic column names (`"V[0-9]+"`) too, [#3484](https://github.com/Rdatatable/data.table/pull/3484). See news item 5 of v1.12.2 below.

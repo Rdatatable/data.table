@@ -15984,6 +15984,10 @@ test(2102.1, cut(ID, breaks = br), as.IDate(cut(D, breaks=br)))
 test(2102.2, cut(ID, breaks = '1 year'), as.IDate(cut(D, breaks = '1 year')))
 test(2102.3, cut(ID, breaks = '6 months'), as.IDate(cut(D, breaks = '6 months')))
 
+# DT[ , !rep(FALSE, ncol(DT)), with=FALSE] would exit before doing !, #3013
+test(2103, DT[ , !rep(FALSE, 2L), with=FALSE], DT)
+
+
 ###################################
 #  Add new tests above this line  #
 ###################################
