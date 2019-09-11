@@ -13,8 +13,8 @@ setnames(x,old,new,skip_absent=FALSE)
   \item{x}{ \code{setnames} accepts \code{data.frame} and \code{data.table}. \code{setattr} accepts any input; e.g, list, columns of a \code{data.frame} or \code{data.table}. }
   \item{name}{ The character attribute name. }
   \item{value}{ The value to assign to the attribute or \code{NULL} removes the attribute, if present. }
-  \item{old}{ When \code{new} is provided, character names or numeric positions of column names to change. When \code{new} is not provided, the new column names, which must be the same length as the number of columns. See examples. }
-  \item{new}{ Optional. New column names, must be the same length as columns provided to \code{old} argument. }
+  \item{old}{ When \code{new} is provided, character names or numeric positions of column names to change. When \code{new} is not provided, a function or the new column names. If a function, it will be called with the current column names and is supposed to return the new column names. The new column names must be the same length as the number of columns. See examples. }
+  \item{new}{ Optional. It can be a function or the new column names. If a function, it will be called with \code{old} and expected to return the new column names. The new column names must be the same length as columns provided to \code{old} argument. }
   \item{skip_absent}{ Skip items in \code{old} that are missing (i.e. absent) in `names(x)`. Default \code{FALSE} halts with error if any are missing. }
 }
 
@@ -59,6 +59,8 @@ setnames(DT,3,"C")                 # by position with warning if 3 > ncol(DT)
 setnames(DT,2:3,c("D","E"))        # multiple
 setnames(DT,c("a","E"),c("A","F")) # multiple by name (warning if either "a" or "E" is missing)
 setnames(DT,c("X","Y","Z"))        # replace all (length of names must be == ncol(DT))
+setnames(DT,tolower)               # replace all names with their lower case
+setnames(DT,2:3,toupper)           # replace the 2nd and 3rd names with their upper case
 
 DT <- data.table(x = 1:3, y = 4:6, z = 7:9)
 setnames(DT, -2, c("a", "b"))      # NEW FR #1443, allows -ve indices in 'old' argument
