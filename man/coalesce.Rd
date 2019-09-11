@@ -14,6 +14,8 @@ Written in C, and multithreaded for numeric and factor types.
 }
 \details{
 Factor type is supported only when the factor levels of each item are equal.
+
+\code{NaN} is considered missing (note \code{is.na(NaN)} and \code{all.equal(NA_real_, NaN)} are both \code{TRUE}).
 }
 \value{
 Atomic vector of the same type and length as the first vector, having \code{NA} values replaced by corresponding non-\code{NA} values from the other vectors.
