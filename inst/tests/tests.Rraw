@@ -15998,6 +15998,21 @@ test(2104.1, DT[ , t1-t0, by=ID], data.table(ID=1:4, V1=as.difftime(del, units='
 test(2104.2, DT[ , t1-t0, by=ID, verbose=TRUE], output='Note: forcing units="secs"')
 test(2104.3, DT[ , t1-5, by=ID], data.table(ID=1:4, V1=.POSIXct(del-5)))
 
+# test to prevent regression on #1983
+DT = data.table(date = as.IDate(18148L) + 0:2)
+eDT = data.table(e_date = as.IDate(18148L))
+out = DT[1L][ , V1 := date]
+# code from issue doesn't quite work as expected since setattr returns NULL; test this anyway
+test(2105.1, DT[eDT, on=.(date >= e_date), {
+    target_date = setattr(if (e_date[1L] %in% x.date) e_date[1L] else max(x.date), "class", c("IDate", "Date"))
+    target_date
+}, by=.EACHI], out)
+# also test version closer to the intended code
+test(2105.2, DT[eDT, on=.(date >= e_date), {
+    target_date = as.IDate(if (e_date[1L] %in% x.date) e_date[1L] else max(x.date))
+    target_date
+}, by=.EACHI], out)
+
 
 ###################################
 #  Add new tests above this line  #
