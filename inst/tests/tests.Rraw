@@ -15239,7 +15239,7 @@ test(2060.101, fcoalesce(bool, list(NA, TRUE)), bool_val)
 x = c(11L, NA, 13L, NA, 15L, NaN, NA, NA, NA)+0.1
 y = c(NA, 12L, 5L, NA, NA, 16L, NaN, Inf, NA)+0.1
 z = c(11L, NA, 1L, 14L, NA, 16L, 1L, 2L, NA)+0.1
-test(2060.151, fcoalesce(x, y, z),       ans<-c(11:15,NaN,NaN,Inf,NA)+0.1)
+test(2060.151, fcoalesce(x, y, z),       ans<-c(11:16,1,Inf,NA)+0.1)
 test(2060.152, fcoalesce(list(x, y, z)), ans)
 test(2060.153, fcoalesce(x, list(y,z)),  ans)
 test(2060.154, fcoalesce(list(x)), x)
