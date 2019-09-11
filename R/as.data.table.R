@@ -166,8 +166,6 @@ as.data.table.list = function(x,
   }
   vnames = character(ncol)
   k = 1L
-  x_names = names(x)
-  all_blank = !is.null(x_names) && all(x_names=="") # all empty columns is special case to retain all-blank names if list(), as v1.12.2 and before did, for batchtools #3581
   for(i in seq_len(n)) {
     xi = x[[i]]
     if (is.null(xi)) next
@@ -176,21 +174,21 @@ as.data.table.list = function(x,
     if (eachnrow[i]==0L && nrow>0L && is.atomic(xi))   # is.atomic to ignore list() since list() is a common way to initialize; let's not insist on list(NULL)
       warning("Item ", i, " has 0 rows but longest item has ", nrow, "; filled with NA")  # the rep() in recycle() above creates the NA vector
     if (is.data.table(xi)) {   # matrix and data.frame were coerced to data.table above
-      prefix = if (!isFALSE(.named[i]) && isTRUE(nchar(x_names[i])>0L)) paste0(x_names[i],".") else ""  # test 2058.12
+      prefix = if (!isFALSE(.named[i]) && isTRUE(nchar(names(x)[i])>0L)) paste0(names(x)[i],".") else ""  # test 2058.12
       for (j in seq_along(xi)) {
         ans[[k]] = recycle(xi[[j]], nrow)
         vnames[k] = paste0(prefix, names(xi)[j])
         k = k+1L
       }
     } else {
-      vnames[k] = if (length(nm<-x_names[i]) && !is.na(nm) && nm!="") nm else paste0("V",i)  # i (not k) tested by 2058.14 to be the same as the past for now
+      nm = names(x)[i]
+      vnames[k] = if (length(nm) && !is.na(nm) && nm!="") nm else paste0("V",i)  # i (not k) tested by 2058.14 to be the same as the past for now
       ans[[k]] = recycle(xi, nrow)
       k = k+1L
     }
   }
   if (any(vnames==".SD")) stop("A column may not be called .SD. That has special meaning.")
   if (check.names) vnames = make.names(vnames, unique=TRUE)
-  if (all_blank) vnames = character(ncol)
   setattr(ans, "names", vnames)
   setDT(ans, key=key) # copy ensured above; also, setDT handles naming
   ans

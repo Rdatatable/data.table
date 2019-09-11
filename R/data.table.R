@@ -2679,17 +2679,16 @@ setDT = function(x, keep.rownames=FALSE, key=NULL, check.names=FALSE) {
            brackify(sprintf('%s:%d', names(tbl), tbl)), "\nThe first entry with fewer than ", n_range[2L], " entries is ", which.max(n<n_range[2L]))
     }
     xn = names(x)
-    if (is.null(xn)) setattr(x, "names", xn<-character(length(x)))
-
-    #  setattr(x, "names", paste0("V",seq_len(length(x))))
-    # } else {
-    #  idx = xn %chin% "" # names can be NA - test 1006 caught that!
-    #  if (any(idx)) {
-    #    xn[idx] = paste0("V", seq_along(which(idx)))
-    #    setattr(x, "names", xn)
-    #  }
-    if (check.names) setattr(x, "names", make.names(xn, unique=TRUE))
-    #}
+    if (is.null(xn)) {
+      setattr(x, "names", paste0("V",seq_len(length(x))))
+    } else {
+      idx = xn %chin% "" # names can be NA - test 1006 caught that!
+      if (any(idx)) {
+        xn[idx] = paste0("V", seq_along(which(idx)))
+        setattr(x, "names", xn)
+      }
+      if (check.names) setattr(x, "names", make.names(xn, unique=TRUE))
+    }
     setattr(x,"row.names",.set_row_names(n_range[2L]))
     setattr(x,"class",c("data.table","data.frame"))
     setalloccol(x)
