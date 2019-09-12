@@ -830,14 +830,14 @@ replace_dot_alias = function(e) {
               tt = grep("^eval$|^[^[:alpha:]. ]", byvars, invert=TRUE, value=TRUE)
               # byvars but exclude functions or `0`+`1` becomes `+`
               tt = if (length(tt)) tt[1L] else all.vars(bysubl[[jj+1L]])[1L]
-            } # dummy comment to help visual diff show just indent changes; can delete this dummy comment
+            }
             # fix for #497
             if (length(byvars) > 1L && tt %chin% all.vars(jsub, FALSE)) {
               bynames[jj] = deparse(bysubl[[jj+1L]])
               if (verbose)
                 cat("by-expression '", bynames[jj], "' is not named, and the auto-generated name '", tt,
                     "' clashed with variable(s) in j. Therefore assigning the entire by-expression as name.\n", sep="")
-            } # dummy comment to help visual diff show just indent changes; can delete this dummy comment
+            }
             else bynames[jj] = tt
             # if user doesn't like this inferred name, user has to use by=list() to name the column
           }
