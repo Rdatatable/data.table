@@ -177,9 +177,9 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
     if (verbose) cat("  Found", nqmaxgrp, "non-equi group(s) ...\n")
   }
 
-  if (verbose) {last.started.at=proc.time();cat("Starting bmerge ...");flush.console()}
+  if (verbose) {last.started.at=proc.time();cat("Starting bmerge ...\n");flush.console()}
   ans = .Call(Cbmerge, i, x, as.integer(icols), as.integer(xcols), io, xo, roll, rollends, nomatch, mult, ops, nqgrp, nqmaxgrp)
-  if (verbose) {cat("done in",timetaken(last.started.at),"\n"); flush.console()}
+  if (verbose) {cat("bmerge done in",timetaken(last.started.at),"\n"); flush.console()}
   # TO DO: xo could be moved inside Cbmerge
 
   ans$xo = xo  # for further use by [.data.table

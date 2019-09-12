@@ -160,10 +160,14 @@ replace_dot_alias = function(e) {
   naturaljoin = FALSE
   names_x = names(x)
   if (missing(i) && !missing(on)) {
-    i = eval.parent(.massagei(substitute(on)))
-    if (!is.list(i) || !length(names(i)))
-      stop("When on= is provided but not i=, on= must be a named list or data.table|frame, and a natural join (i.e. join on common names) is invoked")
-    naturaljoin = TRUE
+    tt = eval.parent(.massagei(substitute(on)))
+    if (!is.list(tt) || !length(names(tt))) {
+      warning("When on= is provided but not i=, on= must be a named list or data.table|frame, and a natural join (i.e. join on common names) is invoked. Ignoring on= which is '",class(tt)[1L],"'.")
+      on = NULL
+    } else {
+      i = tt
+      naturaljoin = TRUE
+    }
   }
   if (missing(i) && missing(j)) {
     tt_isub = substitute(i)
@@ -646,7 +650,7 @@ replace_dot_alias = function(e) {
         j = eval(jsub, lapply(substring(..syms,3L), get, pos=parent.frame()), parent.frame())
       }
       if (is.logical(j)) j <- which(j)
-      if (!length(j)) return( null.data.table() )
+      if (!length(j) && !notj) return( null.data.table() )
       if (is.factor(j)) j = as.character(j)  # fix for FR: #4867
       if (is.character(j)) {
         if (notj) {
@@ -676,7 +680,8 @@ replace_dot_alias = function(e) {
           if (any(j>0L)) stop("j mixes positives and negatives")
           j = seq_along(x)[j]  # all j are <0 here
         }
-        if (notj && length(j)) j = seq_along(x)[-j]
+        # 3013 -- handle !FALSE in column subset in j via logical+with
+        if (notj) j = seq_along(x)[if (length(j)) -j else TRUE]
         if (!length(j)) return(null.data.table())
         return(.Call(CsubsetDT, x, irows, j))
       } else {
@@ -1321,6 +1326,19 @@ replace_dot_alias = function(e) {
   SDenv$.SDall = SDenv$.SD = null.data.table()  # e.g. test 607. Grouping still proceeds even though no .SD e.g. grouping key only tables, or where j consists of .N only
   SDenv$.N = vector("integer", 1L)    # explicit new vector (not 0L or as.integer() which might return R's internal small-integer global)
   SDenv$.GRP = vector("integer", 1L)  #   because written to by reference at C level (one write per group). TODO: move this alloc to C level
+
+  # #3694/#761 common gotcha -- doing t1-t0 by group, but -.POSIXt uses units='auto'
+  #   independently by group & attr mismatch among groups is ignored. The latter
+  #   is a more general issue but the former can be fixed by forcing units='secs'
+  SDenv$`-.POSIXt` = function(e1, e2) {
+    if (inherits(e2, 'POSIXt')) {
+      if (verbose && !exists('done_units_report', parent.frame())) {
+        cat('\nNote: forcing units="secs" on implicit difftime by group; call difftime explicitly to choose custom units')
+        assign('done_units_report', TRUE, parent.frame())
+      }
+      return(difftime(e1, e2, units='secs'))
+    } else return(base::`-.POSIXt`(e1, e2))
+  }
 
   if (byjoin) {
     # The groupings come instead from each row of the i data.table.
@@ -2421,12 +2439,7 @@ setnames = function(x,old,new,skip_absent=FALSE) {
     i = w
   } else {
     if (missing(old)) stop("When 'new' is provided, 'old' must be provided too")
-    if (is.function(new)) {
-      if (is.numeric(old))
-        new = new(names(x)[old])
-      else
-        new = new(old)
-    }
+    if (is.function(new)) new = if (is.numeric(old)) new(names(x)[old]) else new(old)
     if (!is.character(new)) stop("'new' is not a character vector or a function")
     #  if (anyDuplicated(new)) warning("Some duplicates exist in 'new': ", brackify(new[duplicated(new)]))  # dups allowed without warning; warn if and when the dup causes an ambiguity
     if (anyNA(new)) stop("NA in 'new' at positions ", brackify(which(is.na(new))))
