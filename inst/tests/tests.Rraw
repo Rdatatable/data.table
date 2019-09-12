@@ -16028,6 +16028,19 @@ a1 <- data.table(
 )
 test(2106, a1[a == "\U4E2D\U6587\U4E00"], data.table(a = "\U4E2D\U6587\U4E00", b = c(1L, 5L, 9L)))
 
+# setnames() allows function arguments, #3703
+DT = data.table(a=1:3, b=4:6, c=7:9)
+setnames(DT, base::toupper)
+test(2107.1, names(DT), c('A','B','C'))
+setnames(DT, c('B','C'), function(x) sprintf('W_%s_W', x))
+test(2107.2, names(DT), c('A','W_B_W','W_C_W'))
+DT = data.table(a=1:3, b=4:6, c=7:9)
+# support numeric old as well
+setnames(DT, 1.0, toupper)
+test(2107.3, names(DT), c('A','b','c'))
+setnames(DT, -(1:2), toupper)
+test(2107.4, names(DT), c('A','b','C'))
+
 
 ###################################
 #  Add new tests above this line  #

@@ -2425,6 +2425,7 @@ setnames = function(x,old,new,skip_absent=FALSE) {
   stopifnot(isTRUEorFALSE(skip_absent))
   if (missing(new)) {
     # for setnames(DT,new); e.g., setnames(DT,c("A","B")) where ncol(DT)==2
+    if (is.function(old)) old = old(names(x))
     if (!is.character(old)) stop("Passed a vector of type '",typeof(old),"'. Needs to be type 'character'.")
     if (length(old) != ncol) stop("Can't assign ",length(old)," names to a ",ncol," column data.table")
     if (anyNA(names(x))) {
@@ -2438,7 +2439,8 @@ setnames = function(x,old,new,skip_absent=FALSE) {
     i = w
   } else {
     if (missing(old)) stop("When 'new' is provided, 'old' must be provided too")
-    if (!is.character(new)) stop("'new' is not a character vector")
+    if (is.function(new)) new = if (is.numeric(old)) new(names(x)[old]) else new(old)
+    if (!is.character(new)) stop("'new' is not a character vector or a function")
     #  if (anyDuplicated(new)) warning("Some duplicates exist in 'new': ", brackify(new[duplicated(new)]))  # dups allowed without warning; warn if and when the dup causes an ambiguity
     if (anyNA(new)) stop("NA in 'new' at positions ", brackify(which(is.na(new))))
     if (anyDuplicated(old)) stop("Some duplicates exist in 'old': ", brackify(old[duplicated(old)]))
