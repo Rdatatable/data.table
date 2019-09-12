@@ -2,15 +2,19 @@
 bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbose)
 {
   callersi = i
-  # Just so that when a double in i which contains integers stored as double, is joined to an integer column
-  # in x, the i column is returned as integer in the result. Just before the call to bmerge() in [.data.table
-  # there is a shallow() copy of i to prevent this change of type affecting the user's object by reference.
-  # There is only one use of callersi here.
-  # Useful for ad hoc joins when the L postfix is often forgotten.
-  # Otherwise, the type of the i column is always returned.
-
   i = shallow(i)
-  # merge on .SD in i fails _sometimes_ because of set() being done here, #1926
+  # Just before the call to bmerge() in [.data.table there is a shallow() copy of i to prevent coercions here
+  # by bmerge changing the type of the user's input object by reference. We now shallow copy i again. If we then
+  # coerce a column in i only, we are just changing the temporary coercion used for the merge operation. If we
+  # set callersi too then we are keeping that coerced i column in the merge result returned to user.
+  # The type of the i column is always returned (i.e. just i set not callersi too), other than:
+  #   i) to convert int-as-double to int, useful for ad hoc joins when the L postfix is often forgotten.
+  #  ii) to coerce i.factor to character when joining to x.character
+  # So those are the only two uses of callersi below.
+  # Careful to only use plonk syntax (full column) on i and x from now on, otherwise user's i and x would
+  # change. This is why shallow() is very importantly internal only, currently.
+
+  # Using .SD in j to join could fail due to being locked and set() being used here, #1926
   .Call(C_unlock, i)
   x = shallow(x)
   .Call(C_unlock, x)
@@ -18,8 +22,6 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
     .Call(C_unlock, callersi)
     on.exit(.Call(C_lock, callersi))
   }
-  # careful to only plonk syntax (full column) on i/x from now on otherwise user's i and x would change;
-  #   this is why shallow() is very importantly internal only, currently.
 
   supported = c(ORDERING_TYPES, "factor", "integer64")
 
@@ -32,7 +34,7 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
     ans
   }
 
-  for (a in seq_along(icols)) {
+  if (nrow(i)) for (a in seq_along(icols)) {
     # - check that join columns have compatible types
     # - do type coercions if necessary on just the shallow local copies for the purpose of join
     # - handle factor columns appropriately
@@ -53,7 +55,8 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
       } else {
         if (xclass=="character") {
           if (verbose) cat("Coercing factor column i.",names(i)[ic]," to type character to match type of x.",names(x)[xc],".\n",sep="")
-          set(i, j=ic, value=as.character(i[[ic]]))
+          set(i, j=ic, value=val<-as.character(i[[ic]]))
+          set(callersi, j=ic, value=val)  # factor in i joining to character in x will return character and not keep x's factor; e.g. for antaresRead #3581
           next
         } else if (iclass=="character") {
           if (verbose) cat("Matching character column i.",names(i)[ic]," to factor levels in x.",names(x)[xc],".\n",sep="")
@@ -73,12 +76,12 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
         xclass=="logical" || iclass=="logical" ||
         xclass=="factor" || iclass=="factor") {
       if (anyNA(i[[ic]]) && all(is.na(i[[ic]]))) { # TODO: allNA function in C
-        if (verbose) cat("Coerced all-NA i.",names(i)[ic]," (",iclass,") to type ",xclass," to match type of x.",names(x)[xc],".\n",sep="")
+        if (verbose) cat("Coercing all-NA i.",names(i)[ic]," (",iclass,") to type ",xclass," to match type of x.",names(x)[xc],".\n",sep="")
         set(i, j=ic, value=match.fun(paste0("as.", xclass))(i[[ic]]))
         next
       }
       else if (anyNA(x[[xc]]) && all(is.na(x[[xc]]))) {
-        if (verbose) cat("Coerced all-NA x.",names(x)[xc]," (",xclass,") to type ",iclass," to match type of i.",names(i)[ic],".\n",sep="")
+        if (verbose) cat("Coercing all-NA x.",names(x)[xc]," (",xclass,") to type ",iclass," to match type of i.",names(i)[ic],".\n",sep="")
         set(x, j=xc, value=match.fun(paste0("as.", iclass))(x[[xc]]))
         next
       }
@@ -102,10 +105,12 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
           if (!is.null(attributes(i[[ic]]))) attributes(val) = attributes(i[[ic]])  # to retain Date for example; 3679
           set(i, j=ic, value=val)
           set(callersi, j=ic, value=val)       # change the shallow copy of i up in [.data.table to reflect in the result, too.
+        } else {
+          if (verbose) cat("Coercing integer column x.",names(x)[xc]," to type double to match type of i.",names(i)[ic]," which contains fractions.\n",sep="")
+          set(x, j=xc, value=as.double(x[[xc]]))
         }
-        else stop("Incompatible join types: x.",names(x)[xc]," is type integer but i.",names(i)[ic]," is type double and contains fractions")
       } else {
-        if (verbose) cat("Coerced integer column i.",names(i)[ic]," to type double for join to match type of x.",names(x)[xc],".\n",sep="")
+        if (verbose) cat("Coercing integer column i.",names(i)[ic]," to type double for join to match type of x.",names(x)[xc],".\n",sep="")
         set(i, j=ic, value=as.double(i[[ic]]))
       }
     }
@@ -172,9 +177,9 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
     if (verbose) cat("  Found", nqmaxgrp, "non-equi group(s) ...\n")
   }
 
-  if (verbose) {last.started.at=proc.time();cat("Starting bmerge ...");flush.console()}
+  if (verbose) {last.started.at=proc.time();cat("Starting bmerge ...\n");flush.console()}
   ans = .Call(Cbmerge, i, x, as.integer(icols), as.integer(xcols), io, xo, roll, rollends, nomatch, mult, ops, nqgrp, nqmaxgrp)
-  if (verbose) {cat("done in",timetaken(last.started.at),"\n"); flush.console()}
+  if (verbose) {cat("bmerge done in",timetaken(last.started.at),"\n"); flush.console()}
   # TO DO: xo could be moved inside Cbmerge
 
   ans$xo = xo  # for further use by [.data.table

@@ -243,11 +243,13 @@ SEXP alloccolwrapper(SEXP dt, SEXP overAllocArg, SEXP verbose) {
   SEXP ans = PROTECT(alloccol(dt, length(dt)+overAlloc, LOGICAL(verbose)[0]));
 
   for(R_len_t i = 0; i < LENGTH(ans); i++) {
-    // clear the same excluded by copyMostAttrib(). Primarily for data.table and as.data.table, but added here centrally (see #4890).
-
+    // clear names; also excluded by copyMostAttrib(). Primarily for data.table and as.data.table, but added here centrally (see #4890).
     setAttrib(VECTOR_ELT(ans, i), R_NamesSymbol, R_NilValue);
-    setAttrib(VECTOR_ELT(ans, i), R_DimSymbol, R_NilValue);
-    setAttrib(VECTOR_ELT(ans, i), R_DimNamesSymbol, R_NilValue);
+
+    // But don't clear dim and dimnames. Because as from 1.12.4 we keep the matrix column as-is and ask user to use as.data.table to
+    // unpack matrix columns when they really need to; test 2089.2
+    // setAttrib(VECTOR_ELT(ans, i), R_DimSymbol, R_NilValue);
+    // setAttrib(VECTOR_ELT(ans, i), R_DimNamesSymbol, R_NilValue);
   }
 
   UNPROTECT(1);
@@ -1149,20 +1151,5 @@ SEXP setcolorder(SEXP x, SEXP o)
   // No need to change key (if any); sorted attribute is column names not positions
   Free(tmp);
   return(R_NilValue);
-}
-
-SEXP pointWrapper(SEXP to, SEXP to_idx, SEXP from, SEXP from_idx) {
-
-  R_len_t i, fidx, tidx, l_to=length(to), l_from=length(from), l_idx=length(from_idx);
-  if (!isNewList(to) || !isNewList(from)) error("'to' and 'from' must be of type list");
-  if (length(from_idx) != length(to_idx) || l_idx == 0) error("'from_idx' and 'to_idx' must be non-empty integer vectors of same length.");
-  for (i=0; i<l_idx; i++) {
-    fidx = INTEGER(from_idx)[i]-1; // 1-based to 0-based
-    tidx = INTEGER(to_idx)[i]-1;   // 1-based to 0-based
-    if (fidx < 0 || fidx > l_from-1) error("invalid from_idx[%d]=%d, falls outside 1 and length(from)=%d.", i+1, fidx, l_from);
-    if (tidx < 0 || tidx > l_to-1) error("invalid to_idx[%d]=%d, falls outside 1 and length(to)=%d.", i+1, tidx, l_to);
-    SET_VECTOR_ELT(to, tidx, VECTOR_ELT(from, fidx));
-  }
-  return(to);
 }
 

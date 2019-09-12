@@ -17,12 +17,19 @@ between = function(x, lower, upper, incbounds=TRUE, NAbounds=TRUE) {
   }
   # POSIX check timezone match
   if (is.px(x) && is.px(lower) && is.px(upper)) {
-    tz_match = function(x, y, z) { # NULL match "", else all identical
-      ((is.null(x) || !nzchar(x)) && (is.null(y) || !nzchar(y)) && (is.null(z) || !nzchar(z))) ||
-        (identical(x, y) && identical(x, z))
+    tzs = sapply(list(x,lower,upper), function(x) {
+      tt = attr(x,"tzone",exact=TRUE)
+      if (is.null(tt)) "" else tt
+    })
+    # lower/upper should be more tightly linked than x/lower, so error
+    #   if the former don't match but only inform if they latter don't
+    if (tzs[2L]!=tzs[3L]) {
+      stop("'between' lower= and upper= are both POSIXct but have different tzone attributes: ", brackify(tzs[2:3],quote=TRUE), ". Please align their time zones.")
+      # otherwise the check in between.c that lower<=upper can (correctly) fail for this reason
     }
-    if (!tz_match(attr(x, "tzone", exact=TRUE), attr(lower, "tzone", exact=TRUE), attr(upper, "tzone", exact=TRUE))) {
-      stop("'between' function arguments have mismatched timezone attribute, align all arguments to same timezone")
+    if (tzs[1L]!=tzs[2L]) {
+      message("'between' arguments are all POSIXct but have mismatched tzone attributes: ", brackify(tzs,quote=TRUE),". The UTC times will be compared.")
+      # the underlying numeric is always UTC anyway in POSIXct so no coerce is needed; just compare as-is. As done by CoSMoS::example(analyzeTS), #3581
     }
   }
   if (is.i64(x)) {

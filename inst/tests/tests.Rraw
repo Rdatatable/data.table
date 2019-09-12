@@ -1675,8 +1675,8 @@ test(577, CJ(x=c(1L,2L), c("a","b")), data.table(x=c(1L,1L,2L,2L),V2=c("a","b","
 # Test factor to character join when factor contains unused and reverse order levels :
 X = data.table(a=LETTERS[1:4],v=1:4,key="a")
 Y = data.table(a=factor(c("D","B"),levels=rev(LETTERS)),key="a")
-test(578, X[Y,verbose=TRUE], output="Coercing factor column i.a to type character to match type of x.a")
-test(579, X[Y], data.table(a=Y$a, v=c(4L,2L), key="a"))
+test(578, X[Y,verbose=TRUE], data.table(a=c("D","B"), v=c(4L,2L)),  # no key because "D">"B", consistent with v1.12.2 and before
+          output="Coercing factor column i.a to type character to match type of x.a")
 
 # Test that logical i in set() returns helpful error
 DT = data.table(a=1:3,b=4:6)
@@ -2433,14 +2433,19 @@ test(869, DT[J(2,42,84),print(.SD),by=.EACHI], output="   b\n.*1.*2\n2:.*5.*Empt
 
 # Test setnames with duplicate colnames
 DT = data.table(a=1:3,b=4:6,b=7:9)
-test(870, setnames(DT,"b","foo"), error="Some items of 'old' are duplicated (ambiguous) in column names: [b]")
+test(870, setnames(copy(DT),"b","foo"), data.table(a=1:3, foo=4:6, b=7:9),
+          warning="Item 1 of 'old' is 'b' which appears several times in column names.*There are 0 other")
 test(871, setnames(DT,c("bar","bar"),c("x","y")), error="Some duplicates exist in 'old': [bar]")
 test(872, setnames(DT,3,"c"), data.table(a=1:3,b=4:6,c=7:9))
 test(873, setnames(DT,"foo","bar"), error="Items of 'old' not found in column names: [foo]")
 test(874, setnames(DT,c(1,1),c("foo","bar")), error="Some duplicates exist in 'old': [1]")
 test(875, setnames(DT,"c","b"), data.table(a=1:3,b=4:6,b=7:9))
 test(875.1, setnames(DT,"a","c"), data.table(c=1:3,b=4:6,b=7:9))  # 'a' isn't duplicated so not a problem as from v1.8.11
-test(875.2, setnames(DT,c("c","b"), c("C","B")), error="Some items of 'old' are duplicated (ambiguous) in column names: [b]")  # check error msg when 2nd one in old is the problem
+test(875.2, setnames(DT,c("c","b"), c("C","B")), data.table(C=1:3, B=4:6, b=7:9),
+          warning="Item 2 of 'old' is 'b' which.*There are 0 other")
+DT = data.table(a=1:3,b=4:6,b=7:9,a=10:12)
+test(875.3, setnames(DT,c("a","b"),c("A","B")), data.table(A=1:3, B=4:6, b=7:9, a=10:12),
+          warning="Item 1 of 'old' is 'a' which.*There are 1 other")
 
 # Test local var problem introduced in v1.8.3
 DT = data.table(a=1:3,b=1:6)
@@ -2949,12 +2954,14 @@ tab2 <- as.data.table(as.data.frame(table(DF$x, DF$y), stringsAsFactors=FALSE));
 tab3 <- as.data.table(as.data.frame(table(DF$x, DF$y, DF$z), stringsAsFactors=FALSE)); setattr(tab3, 'names', c("V1", "V2", "V3", "N"))
 test(1025, as.data.table(table(DF$x)), tab1)
 test(1026, as.data.table(table(DF$x, DF$y)), tab2)
-test(1027, as.data.table(table(DF$x, DF$y, DF$z)), tab3)
+test(1027.1, as.data.table(table(DF$x, DF$y, DF$z)), tab3)
 # catch printing of data.table(table()), #4847 (as.data.table should be used instead)
 # new, updated 14th Feb, 2015. data.table(table) now redirects to as.data.table
-test(1027.1, data.table(table(1:99)), as.data.table(table(1:99)))
-# data.table() and rbindlist() in v1.8.11 now catch and removes the dim attribute. For it on to test print catches it :
-test(1027.2, {DT<-data.table(table(1:99));setattr(DT[[1]],"dim",99L);print(DT,nrows=100)}, error="Invalid column: it has dimensions. Can't format it. If it's the result of data.table(table()), use as.data.table(table()) instead.")
+test(1027.2, data.table(table(1:99)), as.data.table(table(1:99)))
+# data.table() and rbindlist() in v1.8.11 caught and removed the dim attribute.
+# from 1.12.4 the dim attribute is preserved and the print method outputs "multi-column" for such columns (better than error)
+test(1027.3, {DT<-data.table(table(1:99));setattr(DT[[1]],"dim",99L);print(DT,nrows=100)},
+             output="<multi-column>")
 
 # as.data.table.x where x is integer, numeric, etc...
 set.seed(45)
@@ -4450,8 +4457,8 @@ test(1251.09, DT[base::order(x, list(-y), decreasing=TRUE)],
 # more "edge cases" to ensure we're consistent with base
 test(1251.10, DT[order("a")], DT[1L])
 test(1251.11, DT[order("b", "a")], DT[1L])
-test(1251.12, DT[order(list("b", "a"))], error = "Column 1 of by= [(]1[)] is type 'list', not yet supported. Please use the by=.*that are supported")
-test(1251.13, DT[order(list("b"), list("a"))], DT[1L])
+test(1251.12, DT[order(list("b", "a"))], DT[1L])
+test(1251.13, DT[order(list("b"), list("a"))], error="The first item passed to [f]order is a plain list but there are more items. It should be a data.table or data.frame.")
 
 ##############################################################
 # extensive tests for order optimisation within `[.data.table`
@@ -5056,18 +5063,17 @@ test(1318.1, DT[, eval(sumExpr), by = aa], DT[, sum(bb, na.rm=TRUE), by=aa])
 test(1318.2, DT[, eval(meanExpr), by = aa], DT[, mean(bb, na.rm=TRUE), by=aa])
 test(1318.3, DT[, list(mySum = eval(sumExpr), myMean = eval(meanExpr)), by = aa], DT[, list(mySum=sum(bb, na.rm=TRUE), myMean=mean(bb, na.rm=TRUE)), by=aa])
 
-# get DT[order(.)] to be 100% consistent with base, even though the way base does some things is *utterly ridiculous*, inconsistent.
-# closes #696.
+# get DT[order(.)] to make sense. In v1.12.4 these tests were changed to not be 100% consistent with base in
+# cases where the base R behaviour doesn't make sense, #696
 DT <- data.table(a = 1:4, b = 8:5, c=letters[4:1])
 test(1319.1, DT[order(DT[, "b", with=FALSE])], DT[base::order(DT[, "b", with=FALSE])])
 test(1319.2, DT[order(DT[, "c", with=FALSE])], DT[base::order(DT[, "c", with=FALSE])])
-test(1319.3, DT[order(DT[, c("b","c"), with=FALSE])], DT[base::order(DT[, c("b","c"), with=FALSE])])
-test(1319.4, DT[order(DT[, c("c","b"), with=FALSE])], DT[base::order(DT[, c("c","b"), with=FALSE])])
-test(1319.5, DT[order(DT[, "b", with=FALSE], DT[, "a", with=FALSE])], DT[base::order(DT[, "b", with=FALSE], DT[, "a", with=FALSE])])
-# test to make sure old things are not modified (ridiculous, but "consistency" demands it!)
-test(1319.6, DT[order(list(DT$a))], DT[1])
-test(1319.7, DT[order(list(DT$a), list(DT$b))], DT[1])
-test(1319.8, DT[order(list(DT$a, DT$b))], error="Column 1 of by= (1) is type 'list', not yet supported")
+test(1319.3, DT[order(DT[, c("b","c"), with=FALSE])], DT[4:1])    #  DT[base::order(DT[, c("b","c"), with=FALSE])])
+test(1319.4, DT[order(DT[, c("c","b"), with=FALSE])], DT[4:1])    #  DT[base::order(DT[, c("c","b"), with=FALSE])])
+test(1319.5, DT[order(DT[, "b", with=FALSE], DT[, "a", with=FALSE])], error="Column 1 passed to [f]order is type 'list', not yet supported")
+test(1319.6, DT[order(list(DT$a))], DT)
+test(1319.7, DT[order(list(DT$a), list(DT$b))], error="The first item passed to [f]order is a plain list but there are more items. It should be a data.table or data.frame.")
+test(1319.8, DT[order(list(DT$a, DT$b))], DT)    # error="Column 1 of by= (1) is type 'list', not yet supported")
 
 # FR #703. Not so extensive testing because test 1223 already tests for everything else extensively. Only integer64 here.
 # this'll be the test for both DT[order(.)] and setorder(.) as both internally uses forder/forderv
@@ -8681,7 +8687,7 @@ setcolorder(x, 2:1)
 test(1626.87, fintersect(x, y), error = 'x and y must have the same column order')
 setcolorder(x, 2:1)
 x[ , b := .POSIXct(b)]
-test(1626.88, fintersect(x, y), error = 'x and y must have the same column classes')
+test(1626.88, fintersect(x, y), error = "Item 2 of x is 'POSIXct' but the corresponding item of y is 'numeric'")
 x[ , b := NULL]
 y[ , b := NULL]
 setnames(x, '.seqn')
@@ -8692,6 +8698,10 @@ test(1626.89, fintersect(x, y), error = "column named '.seqn'")
 x = y = data.table(a = 1)
 test(1626.90, fsetdiff(x[0L], y), x[0L])
 
+# slightly relaxed .set_ops_arg_check.
+# Since v1.12.4, i's type is retained which caused corpustools to fail via this fsetdiff.
+DT = data.table(id=factor(c("a","b","b","c")), v=1:4, key="id")
+test(1626.91, fsetdiff(DT, DT["b"]), DT[c(1,4)])
 
 # fix for #1087 and #1465
 test(1627.1, charToRaw(names(fread(testDir("issue_1087_utf8_bom.csv")))[1L]), as.raw(97L))
@@ -11761,10 +11771,10 @@ test(1844.2, forder(DT,V1,V2,na.last=NA), INT(2,1,3,0,4))  # prior to v1.12.0 th
 DT = data.table(c("a","a","a","b","b"),c(2,1,3,NA,NA))
 test(1844.3, forder(DT,V1,V2,na.last=NA), INT(2,1,3,0,0))
 DT = data.table(as.raw(0:6), 7:1)
-test(1844.4, forder(DT,V1,V2), error="Column 1 of by= (1) is type 'raw', not yet supported")
-test(1844.5, forder(DT,V2,V1), error="Column 2 of by= (2) is type 'raw', not yet supported")
+test(1844.4, forder(DT,V1,V2), error="Column 1 passed to [f]order is type 'raw', not yet supported")
+test(1844.5, forder(DT,V2,V1), error="Column 2 passed to [f]order is type 'raw', not yet supported")
 DT = data.table(as.raw(0:6), c(5L,5L,1L,2L,2L,2L,2L))
-test(1844.6, forder(DT,V2,V1), error="Column 2 of by= (2) is type 'raw', not yet supported")
+test(1844.6, forder(DT,V2,V1), error="Column 2 passed to [f]order is type 'raw', not yet supported")
 
 # fix for non-equi joins issue #1991. Thanks to Henrik for the nice minimal example.
 d1 <- data.table(x = c(rep(c("b", "a", "c"), each = 3), c("a", "b")), y = c(rep(c(1, 3, 6), 3), 6, 6), id = 1:11)
@@ -13225,32 +13235,32 @@ test(1962.039, is.sorted(3:1, by = 'x'),
      error = 'x is vector but')
 
 DT = data.table(a = 3:1)
-test(1962.040, forderv(DT, sort = FALSE, retGrp = FALSE),
-     error = 'At least one of retGrp or sort must be TRUE')
-test(1962.041, forderv(DT, na.last = logical(0L)),
-     error = 'length(na.last) = 0')
-test(1962.042, forderv(DT, na.last = c(TRUE, FALSE)), 3:1,
-     warning = 'length(na.last) > 1, only')
-test(1962.043, forderv(DT$a, by = 'a'),
-     error = 'x is a single vector, non-NULL')
-test(1962.044, forderv(DT$a, order = 2L),
-     error = 'x is a single vector, length(order)')
-test(1962.045, forderv(DT$a, order = c(1L, -1L)),
-     error = 'x is a single vector, length(order)')
-test(1962.046, forderv(DT, order = c(1L, -1L)),
-     error = 'x is a list, length(order)')
-test(1962.047, forderv(DT, order = 2L),
-     error = 'x is a list, length(order)')
+test(1962.0401, forderv(DT, sort=FALSE, retGrp=FALSE), error='At least one of retGrp= or sort= must be TRUE')
+test(1962.0402, forderv(DT, sort=0),                   error='sort= must be TRUE or FALSE')
+test(1962.0403, forderv(DT, retGrp=0),                 error='retGrp= must be TRUE or FALSE')
+test(1962.041, forderv(DT, na.last = logical(0L)),     error='na.last must be logical TRUE, FALSE or NA of length 1')
+test(1962.042, forderv(DT, na.last = c(TRUE, FALSE)),  error='na.last must be logical TRUE, FALSE or NA of length 1')
+test(1962.043, forderv(DT$a, by = 'a'),                error='x is a single vector, non-NULL')
+test(1962.044, forderv(DT$a, order = 2L),              error='Item 1 of order (ascending/descending) is 2. Must be +1 or -1')
+test(1962.045, forderv(DT$a, order = c(1L, -1L)),      error='Input is an atomic vector (not a list of columns) but order= is not a length 1 integer')
+test(1962.0461, forderv(DT, order = c(1L, -1L)),       error="Either order= is not integer or its length (2) is different to by='s length (1)")
+test(1962.0462, forderv(DT, order = 2L),               error='Item 1 of order (ascending/descending) is 2. Must be +1 or -1')
+test(1962.0471, forderv(mean),                         error="'x' argument must be data.table compatible")
+test(1962.0472, forderv(DT, by=mean),                  error="argument specifying columns must be character or numeric")
+test(1962.0473, forderv(NULL),                         error="DT is an empty list() of 0 columns")
 
 setDF(DT)
-test(1962.048, forder(DT), error = 'x must be a data.table')
+test(1962.0481, forder(DT), 3:1)
+L = as.list(DT)
+test(1962.0482, forder(L), 3:1)
+test(1962.0483, forder(), NULL)
 setDT(DT)
 test(1962.049, forder(DT[ , 0L]), error = 'Attempting to order a 0-column')
-test(1962.050, forder(DT, decreasing = NA), error = 'must be logical TRUE')
-test(1962.051, forder(DT, decreasing = 1.4), error = 'must be logical TRUE')
-test(1962.052, forder(DT, NULL), NULL)
-test(1962.053, forder(DT), NULL)
-test(1962.054, forder(DT, ), NULL)
+test(1962.050, forder(DT, decreasing = NA), error = 'isTRUEorFALSE(decreasing) is not TRUE')
+test(1962.051, forder(DT, decreasing = 1.4), error = 'isTRUEorFALSE(decreasing) is not TRUE')
+test(1962.052, forder(DT, NULL), 3:1)
+test(1962.053, forder(DT), 3:1)
+test(1962.054, forder(DT, ), 3:1)
 
 test(1962.055, fsort(as.double(DT$a), internal = TRUE),
      error = 'Internal code should not be being called on type double')
@@ -13415,6 +13425,10 @@ test(1963.13, shift(DT, 1L, type="lag"), shift(DT, -1L, type="lead"))
 test(1963.14, shift(DT, 3L, type="lag"), shift(DT, -3L, type="lead"))
 test(1963.15, shift(DT, -1L, type="lag"), shift(DT, 1L, type="lead"))
 test(1963.16, shift(DT, -3L, type="lag"), shift(DT, 3L, type="lead"))
+# #3832 consistency rule for renaming lead_0 -> lag_0 doesn't apply unless mixing signs of n
+DT <- data.table(a = 1:3, b = 2:4)
+test(1963.17, DT[ , shift(.SD, 0:1, give.names = TRUE, type = "lead")],
+     data.table(a_lead_0 = 1:3, a_lead_1 = c(2L, 3L, NA), b_lead_0 = 2:4, b_lead_1 = c(3L, 4L, NA)))
 
 # 0 column data.table should not have rownames, #3149
 M0 = matrix(1:6, nrow=3, ncol=2, dimnames=list(rows=paste0("id",1:3), cols=c("v1","v2")))
@@ -13589,7 +13603,7 @@ test(1967.59, setnames(x, 1:2, c(8L, 9L)), error = "'new' is not a character")
 test(1967.60, setnames(x, -1:1, c('hey', 'you')), error = "mixed.*negative")
 test(1967.61, setnames(x, 1+3i, 'cplx'), error = "'old' is type complex")
 test(1967.62, setnames(x, 1, c('d', 'e')), error = "'old' is length 1 but 'new'")
-test(1967.621, setnames(x, 1:2, c("a","a")), error = "Some duplicates exist in 'new': [a]")
+test(1967.621, setnames(x, 1:2, c("a","a")), data.table(a=1:5, a=6:10))
 test(1967.622, setnames(x, 1:2, c("a",NA)), error = "NA in 'new' at positions [2]")
 test(1967.63, setcolorder(x, c(1, 1)), error = 'specify duplicated column')
 test(1967.64, setcolorder(x, 1+3i), error = 'must be character or numeric')
@@ -13606,11 +13620,11 @@ test(1967.68, setDT(`___data.table_internal_test_1967.68___`), error = 'Cannot f
 ### [.data.table verbosity & non-equi-join tests
 options(datatable.optimize = 0L)
 verbose_output = capture.output(x[order(a), .N, verbose = TRUE])
-test(1967.69, !any(grepl('order optimization', verbose_output, fixed = TRUE)))
+test(1967.69, !any(grepl('forder.c', verbose_output, fixed = TRUE)))
 test(1967.70, any(grepl('[1] 5', verbose_output, fixed = TRUE)))
 options('datatable.optimize' = 1L)
 test(1967.71, x[order(a), .N, verbose = TRUE], 5L,
-     output = "changed 'order(...)' in i to 'forder(")
+     output = "forder.c received 5 rows and 1 column")
 setkey(x)
 test(1967.72, x[x, .N, on = 'a', verbose = TRUE], 5L,
      output = "on= matches existing key")
@@ -14726,20 +14740,26 @@ test(2038.15, between(x, dn, up), error="coercion to POSIX failed")
 x = as.POSIXct("2016-09-18 07:00:00", tz="UTC") + 0:10*60*15
 dn = as.POSIXct('2016-09-18 08:00:00')
 up = '2016-09-18 09:00:00'
-test(2038.16, between(x, dn, up), error="mismatched timezone attribute")
+test(2038.16, between(x, dn, up),
+     error="'between' lower= and upper= are both POSIXct but have different tzone attributes: ['', 'UTC']. Please align their time zones.")
+up = as.POSIXct('2016-09-18 09:00:00')
+if (attr(dn,"tzone",exact=TRUE)!="UTC") {  # normally the case on laptops (local time zone) but may be UTC on CRAN test machine for example
+  test(2038.17, length(between(x, dn, up)), 11L,  # true/false may depend on the local time zone so just test length
+     message="'between' arguments are all POSIXct but have mismatched tzone attributes: ['UTC', '', '']. The UTC times will be compared.")
+}
 
 # `between` support `.` in RHS #2315
 X = data.table(a = 1:5, b = 6:10, c = c(5:1))
-test(2038.17, X[c %between% list(a, b)], X[c %between% .(a, b)])
+test(2038.20, X[c %between% list(a, b)], X[c %between% .(a, b)])
 
 # between num to int coercion #3517
 old = options("datatable.verbose"=TRUE)
-test(2038.18, between(1:5, 2, 4), output="between parallel processing of integer")
-test(2038.19, between(1:5, 2L, 4), output="between parallel processing of integer")
-test(2038.20, between(1:5, 2, 4L), output="between parallel processing of integer")
+test(2038.31, between(1:5, 2, 4), output="between parallel processing of integer")
+test(2038.32, between(1:5, 2L, 4), output="between parallel processing of integer")
+test(2038.33, between(1:5, 2, 4L), output="between parallel processing of integer")
 # revdep regression #3565
-test(2038.21, between(1:10, -Inf, Inf),            rep(TRUE,10), output="between parallel processing of double with closed bounds")
-test(2038.22, between(as.double(1:10), -Inf, Inf), rep(TRUE,10), output="between parallel processing of double with closed bounds")
+test(2038.34, between(1:10, -Inf, Inf),            rep(TRUE,10), output="between parallel processing of double with closed bounds")
+test(2038.35, between(as.double(1:10), -Inf, Inf), rep(TRUE,10), output="between parallel processing of double with closed bounds")
 options(old)
 
 # between int64 support
@@ -14881,17 +14901,19 @@ cols = c("x.bool","x.int","x.doubleInt","i.bool","i.int","i.doubleInt","i.char")
 test(2044.60, dt1[dt2, ..cols, on="int==doubleInt", verbose=TRUE],
               data.table(x.bool=FALSE, x.int=1:5, x.doubleInt=as.double(1:5), i.bool=TRUE, i.int=1:5, i.doubleInt=1:5, i.char=letters[1:5]),
               output="Coercing double column i.doubleInt (which contains no fractions) to type integer to match type of x.int")
-test(2044.61, dt1[dt2, ..cols, on="int==realDouble"],
-              error="Incompatible join types: x.int is type integer but i.realDouble is type double and contains fractions")
+test(2044.61, dt1[dt2, ..cols, on="int==realDouble", verbose=TRUE],  # this was wrong in v1.12.2 (the fractions were truncated and joined to next lowest int)
+              data.table(x.bool=c(NA,FALSE,NA,FALSE,NA), x.int=INT(NA,1,NA,2,NA), x.doubleInt=c(NA,1,NA,2,NA),
+                         i.bool=TRUE, i.int=1:5, i.doubleInt=as.double(1:5), i.char=letters[1:5]),
+              output="Coercing integer column x.int to type double to match type of i.realDouble which contains fractions")
 test(2044.62, dt1[dt2, ..cols, on="doubleInt==int", verbose=TRUE],
               data.table(x.bool=FALSE, x.int=1:5, x.doubleInt=as.double(1:5), i.bool=TRUE, i.int=1:5, i.doubleInt=as.double(1:5), i.char=letters[1:5]),
-              output="Coerced integer column i.int to type double for join to match type of x.doubleInt")
+              output="Coercing integer column i.int to type double for join to match type of x.doubleInt")
 test(2044.63, dt1[dt2, ..cols, on="realDouble==int", verbose=TRUE],
               data.table(x.bool=c(rep(FALSE,4),TRUE), x.int=INT(2,4,6,8,10), x.doubleInt=c(2,4,6,8,10), i.bool=TRUE, i.int=1:5, i.doubleInt=as.double(1:5), i.char=letters[1:5]),
-              output="Coerced integer column i.int to type double for join to match type of x.realDouble")
-cols = c("x.int","x.char","x.fact","i.int","i.char","i.fact")
+              output="Coercing integer column i.int to type double for join to match type of x.realDouble")
+cols = c("x.int","x.char","x.fact","i.int","i.char","i.char")
 test(2044.64, dt1[dt2, ..cols, on="char==fact", verbose=TRUE],
-              ans<-data.table(x.int=1:5, x.char=letters[1:5], x.fact=factor(letters[1:5]), i.int=1:5, i.char=letters[1:5], i.fact=factor(letters[1:5])),
+              ans<-data.table(x.int=1:5, x.char=letters[1:5], x.fact=factor(letters[1:5]), i.int=1:5, i.char=letters[1:5], i.char=letters[1:5]),
               output="Coercing factor column i.fact to type character to match type of x.char")
 test(2044.65, dt1[dt2, ..cols, on="fact==char", verbose=TRUE],
               ans,
@@ -14923,15 +14945,15 @@ if (test_bit64) {
 dt1 = data.table(a=1,  b=NA_character_)
 dt2 = data.table(a=2L, b=NA)
 test(2044.80, dt1[dt2, on="a==b",             verbose=TRUE], data.table(a=NA, b=NA_character_, i.a=2L),
-              output=msg<-"Coerced all-NA i.b (logical) to type double to match type of x.a")
+              output=msg<-"Coercing all-NA i.b (logical) to type double to match type of x.a")
 test(2044.81, dt1[dt2, on="a==b", nomatch=0L, verbose=TRUE], data.table(a=logical(), b=character(), i.a=integer()),
               output=msg)
 test(2044.82, dt1[dt2, on="b==b",             verbose=TRUE], data.table(a=1, b=NA, i.a=2L),
-              output=msg<-"Coerced all-NA i.b (logical) to type character to match type of x.b")
+              output=msg<-"Coercing all-NA i.b (logical) to type character to match type of x.b")
 test(2044.83, dt1[dt2, on="b==b", nomatch=0L, verbose=TRUE], data.table(a=1, b=NA, i.a=2L),
               output=msg)
 test(2044.84, dt1[dt2, on="b==a",             verbose=TRUE], data.table(a=NA_real_, b=2L, i.b=NA),
-              output=msg<-"Coerced all-NA x.b (character) to type integer to match type of i.a")
+              output=msg<-"Coercing all-NA x.b (character) to type integer to match type of i.a")
 test(2044.85, dt1[dt2, on="b==a", nomatch=0L, verbose=TRUE], data.table(a=double(), b=integer(), i.b=logical()),
               output=msg)
 
@@ -15073,7 +15095,7 @@ DT = data.table(
   C = c(2L, 3L, 5L, 8L, 6L, 1L, 4L, 9L, 10L, 7L)
 )
 test(2054, DT[order(C)[1:5], B, verbose=TRUE], c('b', 'b', 'c', 'c', 'a'),
-           output = 'order optimisation is on')
+           output = "forder.c received 10 rows and 1 column")
 
 # ITime class should be retained for same methods as IDate, #3628
 test(2055.1, seq(from = as.ITime('00:00:00'), to = as.ITime('00:00:05'), by = 5L), as.ITime(c(0, 5L)))
@@ -15093,11 +15115,11 @@ test(2056, as.data.table(a), ans)
 DF = structure(list(a=1:3, b=data.frame(foo=4:6, bar=7:9)), row.names=1:3, class="data.frame")
 DT = as.data.table(DF)
 test(2057.1, ncol(DT), 3L)
-test(2057.2, DT[2], data.table(a=2L, foo=5L, bar=8L))
+test(2057.2, DT[2], data.table(a=2L, b.foo=5L, b.bar=8L))
 DF = structure(list(a=list(c("a","b"), c("a","b"), c("a","b")), b=data.frame(foo=1:3, bar=4:6)), row.names=1:3, class="data.frame")
 #  A list being first is needed to mimic the jsonlite case. With this passing, test.R works from https://github.com/Rdatatable/data.table/issues/3369#issuecomment-462662752
 DT = as.data.table(DF)
-test(2057.3, DT, data.table(a=list(c("a","b"), c("a","b"), c("a","b")), foo=1:3, bar=4:6))
+test(2057.3, DT, data.table(a=list(c("a","b"), c("a","b"), c("a","b")), b.foo=1:3, b.bar=4:6))
 
 # one and two+ row cases of data.table, as.data.table and cbind involving list columns, given
 # the change to tests 1613.571-3 in PR#3471 in v1.12.4
@@ -15131,13 +15153,35 @@ test(2058.08, sapply(ans, class), c(V1="integer", V2="list"))                   
 test(2058.09, data.table( data.table(1:2), list(c("a","b"),"a") ),        ans)  # yes
 test(2058.10, as.data.table(list(data.table(1:2), list(c("a","b"),"a"))), ans)  # yes
 test(2058.11, cbind(data.table(1:2), list(c("a","b"),"a")),               ans)  # yes
+test(2058.12, cbind(first=data.table(A=1:3), second=data.table(A=4, B=5:7)),
+              data.table(first.A=1:3, second.A=4, second.B=5:7))                # no
+test(2058.13, cbind(data.table(A=1:3), second=data.table(A=4, B=5:7)),
+              data.table(A=1:3, second.A=4, second.B=5:7))                      # no
+test(2058.14, cbind(data.table(A=1,B=2),3), data.table(A=1,B=2,V2=3))           # no
+L = list(1:3, 4:6)
+test(2058.15, as.data.table(L), data.table(V1=1:3, V2=4:6))                     # no
+# retain all-blank list names as batchtools relies on in reg$defs[1,job.pars], #3581
+names(L) = c("","")
+test(2058.16, as.data.table(L), setnames(data.table(1:3, 4:6),c("","")))        # no
+# retain existing duplicate and blank names of a plain-list, just as 1.12.2 did
+L = list(1:3, 4:6, 7:9, 10:12)
+names(L) = c("","foo","","foo")
+test(2058.17, as.data.table(L),
+              setnames(data.table(1:3, 4:6, 7:9, 10:12),c("","foo","","foo")))  # no
 
 # rbindlist improved error message, #3638
 DT = data.table(a=1)
 test(2059.1, rbindlist(list(DT,1)), error="Item 2 of input is not a data.frame, data.table or list")
 test(2059.2, rbindlist(DT), error="Input is data.table but should be a plain list of items to be stacked")
+# rbindlist a list of data.frame which has a class though; e.g. trackdf::example(conversions)
+# trackdf does inherit from 'list (i.e. c("ltraj","list")), we just require is.list() to be true.
+L = structure(list(data.frame(A=1:3, B=7:9), data.frame(A=4:6, B=10:12)),
+              class="customClass") # don't inherit from list as a stronger test
+test(2059.3, is.list(L))
+test(2059.4, rbindlist(L), data.table(A=1:6, B=7:12))
+# does not retain customClass consistent with v1.12.2; for safety as its attributes likely aren't appropriate for the new object
 
-# coalesce, #3424
+# fcoalesce, #3424
 bool = c(TRUE, NA, FALSE)
 bool_val = c(TRUE, TRUE, FALSE)
 int = c(1L, 2L, NA_integer_, 4L)
@@ -15157,52 +15201,52 @@ itime_val = as.ITime(int_val)
 posix = as.POSIXct(int, origin="1970-01-01")
 posix_val = as.POSIXct(int_val, origin="1970-01-01")
 # singleton replacements
-test(2060.001, coalesce(bool, TRUE), bool_val)
-test(2060.002, coalesce(bool, NA, TRUE), bool_val)
-test(2060.003, coalesce(int, 3L), int_val)
-test(2060.004, coalesce(int, NA_integer_, 3L), int_val)
-test(2060.005, coalesce(num, 3), num_val)
-test(2060.006, coalesce(num, NA_real_, 3), num_val)
-test(2060.007, coalesce(str, 'b'), str_val)
-test(2060.008, coalesce(str, NA_character_, 'b'), str_val)
-test(2060.009, coalesce(fkt, factor('b', levels = c('a', 'b'))), fkt_val)
-test(2060.010, coalesce(fkt, factor(NA_integer_, levels=c("a","b")), factor('b', levels = c('a', 'b'))), fkt_val)
-test(2060.011, coalesce(date, as.Date("1970-01-04")), date_val)
-test(2060.012, coalesce(date, as.Date(NA), as.Date("1970-01-04")), date_val)
-test(2060.013, coalesce(idate, as.IDate("1970-01-04")), idate_val)
-test(2060.014, coalesce(idate, as.IDate(NA), as.IDate("1970-01-04")), idate_val)
-test(2060.015, coalesce(itime, as.ITime(3L)), itime_val)
-test(2060.016, coalesce(itime, as.ITime(NA), as.ITime(3L)), itime_val)
-test(2060.017, coalesce(posix, as.POSIXct(3L, origin="1970-01-01")), posix_val)
-test(2060.018, coalesce(posix, as.POSIXct(NA_integer_, origin="1970-01-01"), as.POSIXct(3L, origin="1970-01-01")), posix_val)
+test(2060.001, fcoalesce(bool, TRUE), bool_val)
+test(2060.002, fcoalesce(bool, NA, TRUE), bool_val)
+test(2060.003, fcoalesce(int, 3L), int_val)
+test(2060.004, fcoalesce(int, NA_integer_, 3L), int_val)
+test(2060.005, fcoalesce(num, 3), num_val)
+test(2060.006, fcoalesce(num, NA_real_, 3), num_val)
+test(2060.007, fcoalesce(str, 'b'), str_val)
+test(2060.008, fcoalesce(str, NA_character_, 'b'), str_val)
+test(2060.009, fcoalesce(fkt, factor('b', levels = c('a', 'b'))), fkt_val)
+test(2060.010, fcoalesce(fkt, factor(NA_integer_, levels=c("a","b")), factor('b', levels = c('a', 'b'))), fkt_val)
+test(2060.011, fcoalesce(date, as.Date("1970-01-04")), date_val)
+test(2060.012, fcoalesce(date, as.Date(NA), as.Date("1970-01-04")), date_val)
+test(2060.013, fcoalesce(idate, as.IDate("1970-01-04")), idate_val)
+test(2060.014, fcoalesce(idate, as.IDate(NA), as.IDate("1970-01-04")), idate_val)
+test(2060.015, fcoalesce(itime, as.ITime(3L)), itime_val)
+test(2060.016, fcoalesce(itime, as.ITime(NA), as.ITime(3L)), itime_val)
+test(2060.017, fcoalesce(posix, as.POSIXct(3L, origin="1970-01-01")), posix_val)
+test(2060.018, fcoalesce(posix, as.POSIXct(NA_integer_, origin="1970-01-01"), as.POSIXct(3L, origin="1970-01-01")), posix_val)
 # vector replacements
-test(2060.051, coalesce(bool, rep(TRUE, 3L)), bool_val)
-test(2060.052, coalesce(bool, rep(NA, 3L), rep(TRUE, 3L)), bool_val)
-test(2060.053, coalesce(int, rep(3L, 4L)), int_val)
-test(2060.054, coalesce(int, rep(NA_integer_, 4L), rep(3L, 4L)), int_val)
-test(2060.055, coalesce(num, rep(3, 4L)), num_val)
-test(2060.056, coalesce(num, rep(NA_real_, 4L), rep(3, 4L)), num_val)
-test(2060.057, coalesce(str, rep('b', 4L)), str_val)
-test(2060.058, coalesce(str, rep(NA_character_, 4L), rep('b', 4L)), str_val)
-test(2060.059, coalesce(fkt, factor(rep('b', 4L), levels=c('a', 'b'))), fkt_val)
-test(2060.060, coalesce(fkt, factor(rep(NA_integer_, 4L), levels=c("a","b")), factor(rep('b', 4L), levels=c('a', 'b'))), fkt_val)
-test(2060.061, coalesce(date, rep(as.Date("1970-01-04"), 4L)), date_val)
-test(2060.062, coalesce(date, rep(as.Date(NA), 4L), rep(as.Date("1970-01-04"), 4L)), date_val)
-test(2060.063, coalesce(idate, rep(as.IDate("1970-01-04"), 4L)), idate_val)
-test(2060.064, coalesce(idate, rep(as.IDate(NA), 4L), rep(as.IDate("1970-01-04"), 4L)), idate_val)
-test(2060.065, coalesce(itime, rep(as.ITime(3L), 4L)), itime_val)
-test(2060.066, coalesce(itime, rep(as.ITime(NA), 4L), rep(as.ITime(3L), 4L)), itime_val)
-test(2060.067, coalesce(posix, as.POSIXct(rep(3L, 4L), origin="1970-01-01")), posix_val)
-test(2060.068, coalesce(posix, as.POSIXct(rep(NA_integer_, 4L), origin="1970-01-01"), as.POSIXct(rep(3L, 4L), origin="1970-01-01")), posix_val)
-test(2060.101, coalesce(bool, list(NA, TRUE)), bool_val)
+test(2060.051, fcoalesce(bool, rep(TRUE, 3L)), bool_val)
+test(2060.052, fcoalesce(bool, rep(NA, 3L), rep(TRUE, 3L)), bool_val)
+test(2060.053, fcoalesce(int, rep(3L, 4L)), int_val)
+test(2060.054, fcoalesce(int, rep(NA_integer_, 4L), rep(3L, 4L)), int_val)
+test(2060.055, fcoalesce(num, rep(3, 4L)), num_val)
+test(2060.056, fcoalesce(num, rep(NA_real_, 4L), rep(3, 4L)), num_val)
+test(2060.057, fcoalesce(str, rep('b', 4L)), str_val)
+test(2060.058, fcoalesce(str, rep(NA_character_, 4L), rep('b', 4L)), str_val)
+test(2060.059, fcoalesce(fkt, factor(rep('b', 4L), levels=c('a', 'b'))), fkt_val)
+test(2060.060, fcoalesce(fkt, factor(rep(NA_integer_, 4L), levels=c("a","b")), factor(rep('b', 4L), levels=c('a', 'b'))), fkt_val)
+test(2060.061, fcoalesce(date, rep(as.Date("1970-01-04"), 4L)), date_val)
+test(2060.062, fcoalesce(date, rep(as.Date(NA), 4L), rep(as.Date("1970-01-04"), 4L)), date_val)
+test(2060.063, fcoalesce(idate, rep(as.IDate("1970-01-04"), 4L)), idate_val)
+test(2060.064, fcoalesce(idate, rep(as.IDate(NA), 4L), rep(as.IDate("1970-01-04"), 4L)), idate_val)
+test(2060.065, fcoalesce(itime, rep(as.ITime(3L), 4L)), itime_val)
+test(2060.066, fcoalesce(itime, rep(as.ITime(NA), 4L), rep(as.ITime(3L), 4L)), itime_val)
+test(2060.067, fcoalesce(posix, as.POSIXct(rep(3L, 4L), origin="1970-01-01")), posix_val)
+test(2060.068, fcoalesce(posix, as.POSIXct(rep(NA_integer_, 4L), origin="1970-01-01"), as.POSIXct(rep(3L, 4L), origin="1970-01-01")), posix_val)
+test(2060.101, fcoalesce(bool, list(NA, TRUE)), bool_val)
 # floating point extras
 x = c(11L, NA, 13L, NA, 15L, NaN, NA, NA, NA)+0.1
 y = c(NA, 12L, 5L, NA, NA, 16L, NaN, Inf, NA)+0.1
 z = c(11L, NA, 1L, 14L, NA, 16L, 1L, 2L, NA)+0.1
-test(2060.151, coalesce(x, y, z),       ans<-c(11:15,NaN,NaN,Inf,NA)+0.1)
-test(2060.152, coalesce(list(x, y, z)), ans)
-test(2060.153, coalesce(x, list(y,z)),  ans)
-test(2060.154, coalesce(list(x)), x)
+test(2060.151, fcoalesce(x, y, z),       ans<-c(11:16,1,Inf,NA)+0.1)
+test(2060.152, fcoalesce(list(x, y, z)), ans)
+test(2060.153, fcoalesce(x, list(y,z)),  ans)
+test(2060.154, fcoalesce(list(x)), x)
 test(2060.155, setcoalesce(list(x)), x)
 test(2060.156, setcoalesce(list(x,y,z)), ans)
 test(2060.157, x, ans)  # setcoalesce updated the first item (x) by reference
@@ -15210,49 +15254,49 @@ test(2060.157, x, ans)  # setcoalesce updated the first item (x) by reference
 x = factor(c('a','b',NA,NA,'b'))
 y = factor(c('b','b','a',NA,'b'))
 z = factor(c('a',NA,NA,'d','a'))
-test(2060.180, coalesce(x, y, z), error="Item 3 is a factor but its levels are not identical to the first item's levels")
+test(2060.180, fcoalesce(x, y, z), error="Item 3 is a factor but its levels are not identical to the first item's levels")
 # edge cases/checks
-test(2060.201, coalesce(bool), bool)
-test(2060.202, coalesce(fkt), fkt)
-test(2060.203, coalesce(bool, 1L), error='Item 2 is type integer but the first item is type logical. Please coerce before coalescing')
-test(2060.204, coalesce(bool, NA_integer_), error='Item 2 is type integer but the first item is type logical.')
-test(2060.205, coalesce(fkt, 1L), error='Item 1 is a factor but item 2 is not a factor. When factors are involved, all items must be factor')
-test(2060.206, coalesce(num, 3L), error='Item 2 is type integer but the first item is type double')
-test(2060.207, coalesce(int, 3), error='Item 2 is type double but the first item is type integer')
-test(2060.208, coalesce(fkt, 'b'), error='Item 1 is a factor but item 2 is not a factor. When factors are involved, all items must be factor.')
-test(2060.209, coalesce(str, factor('b')), error='Item 2 is a factor but item 1 is not a factor. When factors are involved, all items must be factor')
-test(2060.212, coalesce(list(1), list(2)), error="The first argument is a list, data.table or data.frame. In this case there should be no other arguments provided.")
-test(2060.213, coalesce(bool, c(TRUE, FALSE)), error="Item 2 is length 2 but the first item is length 3. Only singletons are recycled")
-test(2060.214, coalesce(as.raw(0), as.raw(1)), error="Unsupported type: raw")
-test(2060.215, coalesce(bool, list()), bool)
-test(2060.216, coalesce(structure(c(1:2,NA,4L), class=c("a")), c(NA,NA,3L,4L)),, error="Item 2 has a different class than item 1")
+test(2060.201, fcoalesce(bool), bool)
+test(2060.202, fcoalesce(fkt), fkt)
+test(2060.203, fcoalesce(bool, 1L), error='Item 2 is type integer but the first item is type logical. Please coerce before coalescing')
+test(2060.204, fcoalesce(bool, NA_integer_), error='Item 2 is type integer but the first item is type logical.')
+test(2060.205, fcoalesce(fkt, 1L), error='Item 1 is a factor but item 2 is not a factor. When factors are involved, all items must be factor')
+test(2060.206, fcoalesce(num, 3L), error='Item 2 is type integer but the first item is type double')
+test(2060.207, fcoalesce(int, 3), error='Item 2 is type double but the first item is type integer')
+test(2060.208, fcoalesce(fkt, 'b'), error='Item 1 is a factor but item 2 is not a factor. When factors are involved, all items must be factor.')
+test(2060.209, fcoalesce(str, factor('b')), error='Item 2 is a factor but item 1 is not a factor. When factors are involved, all items must be factor')
+test(2060.212, fcoalesce(list(1), list(2)), error="The first argument is a list, data.table or data.frame. In this case there should be no other arguments provided.")
+test(2060.213, fcoalesce(bool, c(TRUE, FALSE)), error="Item 2 is length 2 but the first item is length 3. Only singletons are recycled")
+test(2060.214, fcoalesce(as.raw(0), as.raw(1)), error="Unsupported type: raw")
+test(2060.215, fcoalesce(bool, list()), bool)
+test(2060.216, fcoalesce(structure(c(1:2,NA,4L), class=c("a")), c(NA,NA,3L,4L)),, error="Item 2 has a different class than item 1")
 # different classes of x arg #3660
 x = c(11L, NA, 13L, NA, 15L, NA)
 y = c(NA, 12L, 5L, NA, NA, NA)
 z = c(11L, NA, 1L, 14L, NA, NA)
 ans = c(11L,12L,13L,14L,15L,NA_integer_)
-test(2060.250, coalesce(list(x, y, z)), ans)
-test(2060.251, coalesce(data.frame(x, y, z)), ans)
-test(2060.252, coalesce(data.table(x, y, z)), ans)
+test(2060.250, fcoalesce(list(x, y, z)), ans)
+test(2060.251, fcoalesce(data.frame(x, y, z)), ans)
+test(2060.252, fcoalesce(data.table(x, y, z)), ans)
 # integer64 tests
 if (test_bit64) {
   int64 = as.integer64(int)
   int64_val = as.integer64(1:4)
-  test(2060.301, as.character(coalesce(int64, as.integer64(3))), as.character(int64_val)) # why as.character see nanotime tests below
-  test(2060.302, as.character(coalesce(int64, as.integer64(NA), as.integer64(3))), as.character(int64_val))
-  test(2060.303, as.character(coalesce(int64, as.integer64(rep(3, 4L)))), as.character(int64_val))
-  test(2060.304, coalesce(int64, 1), error='Item 2 has a different class than item 1')
-  test(2060.305, coalesce(int64, 1L), error = 'Item 2 is type integer but the first item is type double')
+  test(2060.301, as.character(fcoalesce(int64, as.integer64(3))), as.character(int64_val)) # why as.character see nanotime tests below
+  test(2060.302, as.character(fcoalesce(int64, as.integer64(NA), as.integer64(3))), as.character(int64_val))
+  test(2060.303, as.character(fcoalesce(int64, as.integer64(rep(3, 4L)))), as.character(int64_val))
+  test(2060.304, fcoalesce(int64, 1), error='Item 2 has a different class than item 1')
+  test(2060.305, fcoalesce(int64, 1L), error = 'Item 2 is type integer but the first item is type double')
 }
 # nanotime tests
 if (test_nanotime) {
   nt = nanotime(int)
   nt_val = nanotime(1:4)
-  test(2060.401, as.character(coalesce(nt, nanotime(3L))), as.character(nt_val)) # as.character due to eddelbuettel/nanotime#46
-  test(2060.402, as.character(coalesce(nt, nanotime(NA), nanotime(3L))), as.character(nt_val))
-  test(2060.403, as.character(coalesce(nt, nanotime(rep(3, 4L)))), as.character(nt_val))
-  test(2060.404, coalesce(nt, 1), error='Item 2 has a different class than item 1')
-  test(2060.405, coalesce(nt, 1L), error = 'Item 2 is type integer but the first item is type double')
+  test(2060.401, as.character(fcoalesce(nt, nanotime(3L))), as.character(nt_val)) # as.character due to eddelbuettel/nanotime#46
+  test(2060.402, as.character(fcoalesce(nt, nanotime(NA), nanotime(3L))), as.character(nt_val))
+  test(2060.403, as.character(fcoalesce(nt, nanotime(rep(3, 4L)))), as.character(nt_val))
+  test(2060.404, fcoalesce(nt, 1), error='Item 2 has a different class than item 1')
+  test(2060.405, fcoalesce(nt, 1L), error = 'Item 2 is type integer but the first item is type double')
 }
 # setcoalesce
 x = c(11L, NA, 13L, NA, 15L, NA)
@@ -15269,23 +15313,24 @@ setcoalesce(xx, list())
 test(2060.503, xx_addr, address(xx))
 test(2060.504, xx, x)
 test(2060.505, address(setcoalesce(xx)), xx_addr)
-# complex support for coalesce
+# complex support for fcoalesce
 z1 = c(1i, NA, 1-1i, NA, 0+3i, NA)
 z2 = c(NA, 4-2i, 0+0i, NA, NA, NA)
 z3 = c(2, NA, 3+6i, 5-1i, NA, NA)
 na_idx = c(2L, 4L, 6L)
-test(2060.600, coalesce(z1, 0+0i), `[<-`(z1, na_idx, 0+0i))
-test(2060.601, coalesce(z1, z2), `[<-`(z1, na_idx, c(4-2i, NA, NA)))
-test(2060.602, coalesce(z1, z2, z3), `[<-`(z1, na_idx, c(4-2i, 5-1i, NA)))
+test(2060.600, fcoalesce(z1, 0+0i), `[<-`(z1, na_idx, 0+0i))
+test(2060.601, fcoalesce(z1, z2), `[<-`(z1, na_idx, c(4-2i, NA, NA)))
+test(2060.602, fcoalesce(z1, z2, z3), `[<-`(z1, na_idx, c(4-2i, 5-1i, NA)))
 z_addr = address(z1)
 setcoalesce(z1, z2, z3)
 test(2060.603, address(z1), z_addr)
 test(2060.604, z1, `[<-`(z1, na_idx, c(4-2i, 5-1i, NA)))
+test(2060.605, fcoalesce(NULL, "foo"), NULL) # as seen in mlr using BBmisc::coalesce from example(getHyperPars), #3581
 
 # #3650 -- ensure max nrow check on CJ is applied after unique
 l = replicate(ceiling(log10(.Machine$integer.max)), rep(1L, 10L), simplify = FALSE)
 l$unique = TRUE
-test(2061, do.call(CJ, l), setkey(unique(as.data.table(head(l, -1L)))))
+test(2061, do.call(CJ, l), data.table(V1=1L, V2=1L, V3=1L, V4=1L, V5=1L, V6=1L, V7=1L, V8=1L, V9=1L, V10=1L, key=paste0("V",1:10)))
 
 # #3635, not specific to non-equi joins, but only occurs in non-equi cases.
 d1 = data.table(a = c(1L, 6L), b = c(11L, 16L))
@@ -15326,7 +15371,7 @@ i = data.table(date = dbl_date, key = 'date')
 test(2064.1, x[i, class(date), verbose=TRUE], 'Date',
              output="Coercing double column i.date (which contains no fractions) to type integer to match type of x.date")
 test(2064.2, i[x, class(date), verbose=TRUE], 'Date',
-             output="Coerced integer column i.date to type double for join to match type of x.date")
+             output="Coercing integer column i.date to type double for join to match type of x.date")
 
 # complex values in grouping, #3639
 set.seed(42)
@@ -15683,8 +15728,12 @@ X = data.table(a=1:2, b=1:2)
 test(2076.01, X[on=.(a=2:3, d=2:1)], data.table(a=2:3, b=c(2L,NA_integer_), d=2:1))
 Y = data.table(a=2:3, d=2:1)
 test(2076.02, X[on=Y], data.table(a=2:3, b=c(2L,NA_integer_), d=2:1))
-test(2076.03, X[on=3], error="When on= is provided but not i=, on= must be a named list or data.table|frame, and a natural join")
-test(2076.04, X[on=list(3)], error="When on= is provided but not i=, on= must be a named list or data.table|frame, and a natural join")
+test(2076.03, X[on=3], X,
+  warning=c("When on= is provided but not i=, on= must be a named list or data.table|frame, and a natural join.*Ignoring on= which is 'numeric'",
+            "i and j are both missing so ignoring the other arguments. This warning will be upgraded to error in future."))
+test(2076.04, X[on=list(3)], X,
+  warning=c("When on= is provided but not i=, on= must be a named list or data.table|frame, and a natural join.*Ignoring on= which is 'list'",
+            "i and j are both missing so ignoring the other arguments. This warning will be upgraded to error in future."))
 
 # gsum int64 support #1647, #3464
 if (test_bit64) {
@@ -15812,16 +15861,37 @@ test(2087.3, setkey(x, a, verbose=TRUE), data.table(a=paste0(1:2), b=paste0(1:2)
 x = data.table(a=c(0.85, -0.38, 1.19), b=c(0.56, 0.63, -1.30))
 test(2088, x[, round(.SD, 1)][, c:=8.88], data.table(a=c(.8, -.4, 1.2), b=c(.6,.6,-1.3), c=8.88))
 
-# setDT should halt when it sees matrix columns, #3760
+# setDT should warn when it sees matrix columns, #3760
 DF = data.frame(a=1:5)
 DF$m = matrix(6:15, ncol=2L)
-test(2089, setDT(DF), error='Some columns are a multi-column type.*Please use as.data.table')
+test(2089.1, names(setDT(DF)), c("a","m"),
+             warning="Some columns are a multi-column type.*[[]2[]].*setDT will retain these columns as-is but.*Please consider as.data.table")
+test(2089.2, as.data.table(DF), data.table(a=1:5, m.V1=6:10, m.V2=11:15))  # the DF here is now a data.table, so as.data.table.data.table() is matrix-column-aware
+test(2089.3, print(DF), output="<multi-column>")
+DF = data.frame(a=1:5)
+DF$m = matrix(6:15, ncol=2L, dimnames=list(NULL, c("foo","bar")))
+test(2089.4, colnames(DF), c("a","m"))
+test(2089.5, colnames(DF$m), c("foo","bar"))
+test(2089.6, as.data.table(DF), data.table(a=1:5, m.foo=6:10, m.bar=11:15))
+
+# a single matrix item is unambiguous and different to a matrix embedded alongside other items
+M = list(matrix(1:6,ncol=1L))
+test(2089.7, setDT(M), data.table(V1=1:6))  # worked in 1.12.2 and miceFast relies on, #3581
+M = list(matrix(1:6,ncol=2L))
+test(2089.8, setDT(M), data.table(V1=1:3, V2=4:6))  # returned a single column in v1.12.2, now from 1.12.4 returns 2 columns as expected
 
 # get/mget in j should restore all columns to .SD, #1744 and #1965
 DT = data.table(a=1, b=2, c=3)
 test(2090.1, DT[, {list(a, get('b')); names(.SD)}, .SDcols='c'], 'c')
 # Also incidentally fixed #2036 about reordering of columns in .SD
 test(2090.2, DT[ , {get('c'); names(.SD)}, .SDcols = c('b', 'a')], c('b', 'a'))
+# ditto for #2946
+DT <- data.table(v1=1:2, v2 = 3:4, type = c('A', 'B'))
+col_in <- c('v2', 'v1')
+col_out <- paste0(col_in, '.new')
+test(2090.3, DT[, (col_out) := lapply(.SD, function(x){x * min(x[get('type') == 'A'])}), .SDcols = col_in],
+     data.table(v1=1:2, v2=3:4, type=c('A', 'B'), v2.new=c(9L, 12L), v1.new=1:2))
+
 
 # minus sign in j with with=FALSE shouldn't be interpreted as 'not', #2109
 DT = data.table(a=1, b=2)
@@ -15870,10 +15940,130 @@ test(2097.1, DT[.(NA_character_)], data.table(fac=NA_character_, v=2L, key="fac"
 test(2097.2, DT[J(NA)],          error="Factor columns must join to factor or character columns")
 test(2097.3, DT[J(NA_integer_)], error="Factor columns must join to factor or character columns")
 
-# bug in autonaming by #3156
-library(data.table)
+# Optimized order=>forder within do.call as done by neatRanges and rbi.helpers, PR#3817
+# Fixes: 'Column 2 is length 3 which differs' and 'argument x is missing with no default'
+DT = data.table(id=INT(3,5,2,4,2), rating=LETTERS[5:1])
+groups = c("id", "rating")
+test(2098.1, DT[do.call(order, mget(groups)), verbose=TRUE], ans<-data.table(id=INT(2,2,3,4,5), rating=c("A","C","E","B","D")),
+             output=out<-"forder.c received 5 rows and 2 columns")
+test(2098.2, DT[with(DT, do.call(order, mget(groups))), verbose=TRUE],  ans, output=out)
+test(2098.3, DT[do.call(forder, mget(groups)), verbose=TRUE],           ans, output=out)
+test(2098.4, DT[with(DT, do.call(forder, mget(groups))), verbose=TRUE], ans, output=out)
+old = options(datatable.optimize=0L)
+test(2098.5, DT[do.call(order, mget(groups)), verbose=TRUE],            ans, notOutput="forder.c")
+test(2098.6, DT[with(DT, do.call(order, mget(groups))), verbose=TRUE],  ans, notOutput="forder.c")
+test(2098.7, DT[do.call(forder, mget(groups)), verbose=TRUE],           ans, output=out)
+test(2098.8, DT[with(DT, do.call(forder, mget(groups))), verbose=TRUE], ans, output=out)
+options(old)
+
+# Error in update join when joining on factor, #3559
+d1 <- data.table(fac = factor(letters[1:4]), char = letters[1:4], val = c(1L, NA, 3L, NA))
+d2 <- data.table(fac = factor(letters[1:4]), char = letters[1:4], val = 1:4)
+test(2099, d1[is.na(val), val := d2[.SD, x.val, on = .(fac)]], data.table(fac=factor(letters[1:4]), char=letters[1:4], val=1:4))
+
+# fifelse gains na= for missing value, #3753
+test_vec_na = c(-5L:5L < 0L, NA)
+out_vec_na = c(rep(1:0, 5:6), 2L)
+date_vec_na = as.logical(c(as.Date(14975:14979, origin = '1970-01-01') == "2011-01-01", as.Date(NA)))
+test(2100.01, fifelse(test_vec_na, 1L, 0L, 2L), out_vec_na)
+test(2100.02, fifelse(test_vec_na, 1, 0, 2), as.numeric(out_vec_na))
+test(2100.03, fifelse(test_vec_na, TRUE, FALSE, TRUE), as.logical(out_vec_na))
+test(2100.04, fifelse(test_vec_na, "1", "0","2"), as.character(out_vec_na))
+test(2100.05, fifelse(test_vec_na, 1+0i, 0+0i, 2+0i), as.complex(out_vec_na))
+test(2100.06, fifelse(c(TRUE,FALSE,NA), list(1:5), list(5:1), list(15:11)), list(1:5,5:1,15:11))
+test(2100.07, fifelse(test_vec_na, 1, 0, 2L), error = "'yes' is of type double but 'na' is of type integer. Please make sure that both arguments have the same type.")
+test(2100.08, fifelse(test_vec_na, 1, 0, c(2,3)), error = "Length of 'na' is 2 but must be 1")
+test(2100.09, fifelse(date_vec_na, as.Date("2019-08-31"), as.Date("2019-08-30"), as.Date("2019-08-29")), as.Date(c(18139, 18138, 18138, 18138, 18138, 18137), origin = '1970-01-01'))
+test(2100.10, fifelse(date_vec_na, as.Date("2019-08-31"), as.Date("2019-08-30"), 18137), error = "'yes' has different class than 'na'. Please make sure that both arguments have the same class.")
+test(2100.11, fifelse(c(TRUE,FALSE,TRUE,TRUE,FALSE,NA), factor(letters[1:6]), factor("a", levels=letters[1:6]), factor("f", levels=letters[1:6])), factor(c("a","a","c","d","a","f"), levels=letters[1:6]))
+test(2100.12, fifelse(c(TRUE,FALSE,TRUE,TRUE,FALSE,NA), factor(letters[1:6]), factor("a", levels=letters[1:6]), factor("f", levels=letters[1:7])), error = "'yes' and 'na' are both type factor but their levels are different.")
+test(2100.13, lapply(list(list(yes = 1, no = 2, na = 3), list(yes = 2, no = 4)), function(el) fifelse(c(TRUE, FALSE, NA), el$yes, el$no, el$na)), list(c(1,2,3),c(2,4,NA)))
+test(2100.14, fifelse(c(T,F,NA),c(1,1,1),c(2,2,2),NA), c(1,2,NA))
+
+# join 0-row i type mismatch ok to coerce, tcpl #3581
+DT = data.table(id=1:3, v=4:6, key="id")
+test(2101, DT[.(logical())], data.table(id=logical(), v=integer(), key="id"))
+
+# basic test of cut.IDate to match cut.Date
+ID = as.IDate(INT(
+  0, 192, 384, 576, 768, 961, 1153, 1345, 1537, 1729, 1921,
+  2113, 2305, 2497, 2689, 2882, 3074, 3266, 3458, 3650
+))
+D = as.Date(ID)
+br = as.IDate(INT(c(0, 151, 243)))
+test(2102.1, cut(ID, breaks = br), as.IDate(cut(D, breaks=br)))
+test(2102.2, cut(ID, breaks = '1 year'), as.IDate(cut(D, breaks = '1 year')))
+test(2102.3, cut(ID, breaks = '6 months'), as.IDate(cut(D, breaks = '6 months')))
+
+# DT[ , !rep(FALSE, ncol(DT)), with=FALSE] would exit before doing !, #3013
+test(2103, DT[ , !rep(FALSE, 2L), with=FALSE], DT)
+
+# implicit difftime by group can choose different units but are later ignored, #3694 & #761 (among others)
+del = c(0, 60, 3600, 86400)
+DT = data.table(ID=1:4, t0=.POSIXct(0), t1=.POSIXct(del))
+test(2104.1, DT[ , t1-t0, by=ID], data.table(ID=1:4, V1=as.difftime(del, units='secs')))
+test(2104.2, DT[ , t1-t0, by=ID, verbose=TRUE], output='Note: forcing units="secs"')
+test(2104.3, DT[ , t1-5, by=ID], data.table(ID=1:4, V1=.POSIXct(del-5)))
+
+# test to prevent regression on #1983
+DT = data.table(date = as.IDate(18148L) + 0:2)
+eDT = data.table(e_date = as.IDate(18148L))
+out = DT[1L][ , V1 := date]
+# code from issue doesn't quite work as expected since setattr returns NULL; test this anyway
+test(2105.1, DT[eDT, on=.(date >= e_date), {
+    target_date = setattr(if (e_date[1L] %in% x.date) e_date[1L] else max(x.date), "class", c("IDate", "Date"))
+    target_date
+}, by=.EACHI], out)
+# also test version closer to the intended code
+test(2105.2, DT[eDT, on=.(date >= e_date), {
+    target_date = as.IDate(if (e_date[1L] %in% x.date) e_date[1L] else max(x.date))
+    target_date
+}, by=.EACHI], out)
+
+# test to prevent regression on #2041
+# UTF-8 Hex representations of Chinese codepoints, see issue or use cat() in UTF locale to see
+a1 <- data.table(
+  a = c("\U4E2D\U6587\U4E00", "\U4E2D\U6587\U4E8C", "\U4E2D\U6587\U4E09", "\U4E2D\U6587\U56DB"),
+  b = 1:12
+)
+test(2106, a1[a == "\U4E2D\U6587\U4E00"], data.table(a = "\U4E2D\U6587\U4E00", b = c(1L, 5L, 9L)))
+
+# setnames() allows function arguments, #3703
+DT = data.table(a=1:3, b=4:6, c=7:9)
+setnames(DT, base::toupper)
+test(2107.1, names(DT), c('A','B','C'))
+setnames(DT, c('B','C'), function(x) sprintf('W_%s_W', x))
+test(2107.2, names(DT), c('A','W_B_W','W_C_W'))
+DT = data.table(a=1:3, b=4:6, c=7:9)
+# support numeric old as well
+setnames(DT, 1.0, toupper)
+test(2107.3, names(DT), c('A','b','c'))
+setnames(DT, -(1:2), toupper)
+test(2107.4, names(DT), c('A','b','C'))
+
+# first and last should no longer load xts namespace, #3857
+x = as.POSIXct("2019-09-09")+0:1
+old = options(datatable.verbose=TRUE)
+test(2108.01, last(x), x[length(x)], notOutput="xts")
+test(2108.02, first(x), x[1L], notOutput="xts")
+if (test_xts) {
+  xt = xts(1:2, x)
+  test(2108.03, last(xt, 2L), xt, output="last: using xts::last")
+  test(2108.04, first(xt, 2L), xt, output="first: using xts::first")
+  xt = xts(matrix(1:4, 2L, 2L), x)
+  test(2108.05, last(xt, 2L), xt, output="last: using xts::last")
+  test(2108.06, first(xt, 2L), xt, output="first: using xts::first")
+}
+# first on empty df now match head(df, n=1L), #3858
+df = data.frame(a=integer(), b=integer())
+test(2108.11, first(df), df, notOutput="xts")
+test(2108.12, tail(df), df, notOutput="xts")
+options(old)
+
+# error in autonaming by={...}, #3156
 DT = data.table(State=c("ERROR", "COMPLETED", "ERROR"), ExitCode=c(1, 0, 2))
-test(2098, DT[ , list(count=.N), by={list(State, ExitCode)}], DT[ , count := 1L])
+test(2109, DT[ , list(count=.N), by={list(State, ExitCode)}], DT[ , count := 1L])
+
 
 ###################################
 #  Add new tests above this line  #
