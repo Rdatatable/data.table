@@ -302,6 +302,8 @@
 
 41. Using `get`/`mget` in `j` could cause `.SDcols` to be ignored or reordered, [#1744](https://github.com/Rdatatable/data.table/issues/1744), [#1965](https://github.com/Rdatatable/data.table/issues/1965), [#2036](https://github.com/Rdatatable/data.table/issues/2036), and [#2946](https://github.com/Rdatatable/data.table/issues/2946). Thanks @franknarf1, @MichaelChirico, @TonyBonen, and Steffen J. (StackOverflow) for the reports.
 
+42. `DT[...,by={...}]` now handles expressions in `{`, [#3156](https://github.com/Rdatatable/data.table/issues/3156). Thanks to @tdhock for the report.
+
 #### NOTES
 
 1. `rbindlist`'s `use.names="check"` now emits its message for automatic column names (`"V[0-9]+"`) too, [#3484](https://github.com/Rdatatable/data.table/pull/3484). See news item 5 of v1.12.2 below.

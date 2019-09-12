@@ -818,28 +818,28 @@ replace_dot_alias = function(e) {
         tt = vapply_1i(byval,length)
         if (any(tt!=xnrow)) stop("The items in the 'by' or 'keyby' list are length (",paste(tt,collapse=","),"). Each must be length ", xnrow, "; the same length as there are rows in x (after subsetting if i is provided).")
         if (is.null(bynames)) bynames = rep.int("",length(byval))
-        if (any(bynames=="") && !bynull) {
-          for (jj in seq_along(bynames)) {
-            if (bynames[jj]=="") {
-              # Best guess. Use "month" in the case of by=month(date), use "a" in the case of by=a%%2
-              byvars = all.vars(bysubl[[jj+1L]], functions = TRUE)
-              if (length(byvars) == 1L) tt = byvars
-              else {
-                # take the first variable that is (1) not eval (#3758) and (2) starts with a character that can't start a variable name
-                tt = grep("^eval$|^[^[:alpha:]. ]", byvars, invert=TRUE, value=TRUE)
-                # byvars but exclude functions or `0`+`1` becomes `+`
-                tt = if (length(tt)) tt[1L] else all.vars(bysubl[[jj+1L]])[1L]
-              }
-              # fix for #497
-              if (length(byvars) > 1L && tt %chin% all.vars(jsub, FALSE)) {
-                bynames[jj] = deparse(bysubl[[jj+1L]])
-                if (verbose)
-                  cat("by-expression '", bynames[jj], "' is not named, and the auto-generated name '", tt,
-                      "' clashed with variable(s) in j. Therefore assigning the entire by-expression as name.\n", sep="")
-              }
-              else bynames[jj] = tt
-              # if user doesn't like this inferred name, user has to use by=list() to name the column
+        if (length(idx <- which(!nzchar(bynames))) && !bynull) {
+          # TODO: improve this and unify auto-naming of jsub and bysub
+          if (is.name(bysubl[[1L]]) && bysubl[[1L]] == '{') bysubl = bysubl[[length(bysubl)]] # fix for #3156
+          for (jj in idx) {
+            # Best guess. Use "month" in the case of by=month(date), use "a" in the case of by=a%%2
+            byvars = all.vars(bysubl[[jj+1L]], functions = TRUE)
+            if (length(byvars) == 1L) tt = byvars
+            else {
+              # take the first variable that is (1) not eval (#3758) and (2) starts with a character that can't start a variable name
+              tt = grep("^eval$|^[^[:alpha:]. ]", byvars, invert=TRUE, value=TRUE)
+              # byvars but exclude functions or `0`+`1` becomes `+`
+              tt = if (length(tt)) tt[1L] else all.vars(bysubl[[jj+1L]])[1L]
             }
+            # fix for #497
+            if (length(byvars) > 1L && tt %chin% all.vars(jsub, FALSE)) {
+              bynames[jj] = deparse(bysubl[[jj+1L]])
+              if (verbose)
+                cat("by-expression '", bynames[jj], "' is not named, and the auto-generated name '", tt,
+                    "' clashed with variable(s) in j. Therefore assigning the entire by-expression as name.\n", sep="")
+            }
+            else bynames[jj] = tt
+            # if user doesn't like this inferred name, user has to use by=list() to name the column
           }
           # Fix for #1334
           if (any(duplicated(bynames))) {

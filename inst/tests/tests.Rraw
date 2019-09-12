@@ -16060,6 +16060,10 @@ test(2108.11, first(df), df, notOutput="xts")
 test(2108.12, tail(df), df, notOutput="xts")
 options(old)
 
+# error in autonaming by={...}, #3156
+DT = data.table(State=c("ERROR", "COMPLETED", "ERROR"), ExitCode=c(1, 0, 2))
+test(2109, DT[ , list(count=.N), by={list(State, ExitCode)}], DT[ , count := 1L])
+
 
 ###################################
 #  Add new tests above this line  #
