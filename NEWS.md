@@ -193,6 +193,18 @@
     # froll[fun]       0.003   0.002      NA
     ```
 
+28. `setnames()` now accepts functions in `old=` and `new=`, [#3703](https://github.com/Rdatatable/data.table/issues/3703). Thanks @smingerson for the feature request and @shrektan for the PR.
+
+    ```R
+    DT = data.table(a=1:3, b=4:6, c=7:9)
+    setnames(DT, toupper)
+    names(DT)
+    # [1] "A" "B" "C"
+    setnames(DT, 2:3, tolower)
+    names(DT)
+    # [1] "A" "b" "c"
+    ```
+
 #### BUG FIXES
 
 1. `first`, `last`, `head` and `tail` by group no longer error in some cases, [#2030](https://github.com/Rdatatable/data.table/issues/2030) [#3462](https://github.com/Rdatatable/data.table/issues/3462). Thanks to @franknarf1 for reporting.
@@ -281,6 +293,14 @@
 36. `as.IDate.POSIXct` returned `NA` for UTC times before Dec 1901 and after Jan 2038, [#3780](https://github.com/Rdatatable/data.table/issues/3780). Thanks @gschett for the report.
 
 37. `rbindlist` now returns correct idcols for lists with different length vectors, [#3785](https://github.com/Rdatatable/data.table/issues/3785), [#3786](https://github.com/Rdatatable/data.table/pull/3786). Thanks to @shrektan for the report and fix.
+
+38. `DT[ , !rep(FALSE, ncol(DT)), with=FALSE]` correctly returns the full table, [#3013](https://github.com/Rdatatable/data.table/issues/3013) and [#2917](https://github.com/Rdatatable/data.table/issues/2917). Thanks @alexnss and @DavidArenburg for the reports.
+
+39. `shift(x, 0:1, type='lead', give.names=TRUE)` uses `lead` in all returned column names, [#3832](https://github.com/Rdatatable/data.table/issues/3832). Thanks @daynefiler for the report.
+
+40. Subtracting two `POSIXt` objects by group could lead to incorrect results because the `base` method internally calls `difftime` with `units='auto'`; `data.table` does not notice if the chosen units differ by group and only the last group's `units` attribute was retained, [#3694](https://github.com/Rdatatable/data.table/issues/3694) and [#761](https://github.com/Rdatatable/data.table/issues/761). To surmount this, we now internally force `units='secs'` on all `POSIXt-POSIXt` calls (reported when `verbose=TRUE`); generally we recommend calling `difftime` directly instead. Thanks @oliver-oliver and @boethian for the reports.
+
+41. Using `get`/`mget` in `j` could cause `.SDcols` to be ignored or reordered, [#1744](https://github.com/Rdatatable/data.table/issues/1744), [#1965](https://github.com/Rdatatable/data.table/issues/1965), [#2036](https://github.com/Rdatatable/data.table/issues/2036), and [#2946](https://github.com/Rdatatable/data.table/issues/2946). Thanks @franknarf1, @MichaelChirico, @TonyBonen, and Steffen J. (StackOverflow) for the reports.
 
 #### NOTES
 
