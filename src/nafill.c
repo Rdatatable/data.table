@@ -162,7 +162,7 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP inplace, SEXP cols, SEXP verbo
     if (vans[i].message[2][0] != '\0')
       warning("%s: %d: %s", __func__, i+1, vans[i].message[2]);
     if (vans[i].status == 3) {
-      char err_msg = vans[i].message[3]; // # nocov
+      char err_msg[4096] = vans[i].message[3]; // # nocov
       free(vans); // # nocov
       error("%s: %d: %s", __func__, i+1, err_msg); // # nocov end
     }
