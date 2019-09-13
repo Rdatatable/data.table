@@ -141,12 +141,11 @@ q("no")
 R
 remove.packages("xml2")    # we checked the URLs; don't need to do it again (many minutes)
 require(data.table)
-test.data.table()
 test.data.table(script="other.Rraw")
 test.data.table(script="*.Rraw")
 test.data.table(verbose=TRUE)   # since main.R no longer tests verbose mode
 gctorture2(step=50)
-system.time(test.data.table())  # apx 4hrs
+system.time(test.data.table(script="*.Rraw"))  # apx 4hrs for tests.Rraw only
 
 # Upload to win-builder: release, dev & old-release
 
