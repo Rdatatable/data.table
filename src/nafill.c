@@ -155,10 +155,17 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP inplace, SEXP cols, SEXP verbo
   }
 
   for (R_len_t i=0; i<nx; i++) {
-    if (bverbose && (vans[i].message[0][0] != '\0')) Rprintf("%s: %d: %s", __func__, i+1, vans[i].message[0]);
-    if (vans[i].message[1][0] != '\0') REprintf("%s: %d: %s", __func__, i+1, vans[i].message[1]); // # nocov start
-    if (vans[i].message[2][0] != '\0') warning("%s: %d: %s", __func__, i+1, vans[i].message[2]);
-    if (vans[i].status == 3) error("%s: %d: %s", __func__, i+1, vans[i].message[3]); // # nocov end
+    if (bverbose && (vans[i].message[0][0] != '\0'))
+      Rprintf("%s: %d: %s", __func__, i+1, vans[i].message[0]);
+    if (vans[i].message[1][0] != '\0')
+      REprintf("%s: %d: %s", __func__, i+1, vans[i].message[1]); // # nocov start
+    if (vans[i].message[2][0] != '\0')
+      warning("%s: %d: %s", __func__, i+1, vans[i].message[2]);
+    if (vans[i].status == 3) {
+      char err_msg = vans[i].message[3]; // # nocov
+      free(vans); // # nocov
+      error("%s: %d: %s", __func__, i+1, err_msg); // # nocov end
+    }
   }
 
   if (bverbose) Rprintf("%s: parallel processing of %d column(s) took %.3fs\n", __func__, nx, toc-tic);
