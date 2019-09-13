@@ -1,4 +1,5 @@
-#include "frollR.h"
+#include <Rdefines.h>
+#include "data.table.h"
 
 SEXP coerceToRealListR(SEXP obj) {
   // accept atomic/list of integer/logical/real returns list of real
@@ -95,10 +96,11 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
     }
   }
   int* ikl[nk];                                                 // pointers to adaptive window width
-  if (badaptive)
+  if (badaptive) {
     for (int j=0; j<nk; j++) ikl[j] = INTEGER(VECTOR_ELT(kl, j));
+  }
 
-  if (!isLogical(narm) || length(narm)!=1 || LOGICAL(narm)[0]==NA_LOGICAL)
+  if (!IS_TRUE_OR_FALSE(narm))
     error("na.rm must be TRUE or FALSE");
 
   if (!isLogical(hasna) || length(hasna)!=1)
@@ -226,13 +228,12 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
         REprintf("%s: %d:\n%s", __func__, i*nk+j+1, dans[i*nk+j].message[1]); // # nocov because no messages yet // change REprintf according to comments in #3483 when ready
       if (dans[i*nk+j].message[2][0] != '\0')
         warning("%s: %d:\n%s", __func__, i*nk+j+1, dans[i*nk+j].message[2]);
-      if (dans[i*nk+j].status == 3) {
-        char err_msg[ANST_MSG_SIZE]; // # nocov
-        int k=0; // # nocov
-        while (dans[i*nk+j].message[3][k++] != '\0') err_msg[k] = dans[i*nk+j].message[3][k]; // # nocov
-        free(dans); // # nocov
+      if (dans[i*nk+j].status == 3) { // # nocov start
+        char err_msg[ANS_MSG_SIZE];
+        strncpy(err_msg, dans[i*nk+j].message[3], ANS_MSG_SIZE);
+        free(dans);
         error("%s: %d: %s", __func__, i*nk+j+1, err_msg); // # nocov because only caused by malloc
-      }
+      } // # nocov end
     }
   }
 

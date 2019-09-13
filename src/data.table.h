@@ -226,3 +226,5 @@ SEXP unlock(SEXP x);
 bool islocked(SEXP x);
 SEXP islockedR(SEXP x);
 
+// types.c
+char *end(char *start);

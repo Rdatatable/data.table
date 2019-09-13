@@ -18,7 +18,7 @@ some:
 
 .PHONY: clean
 clean:
-	rm -f data.table_1.12.3.tar.gz
+	rm -f data.table_1.12.3.tar.gz && rm -f src/*.o
 
 .PHONY: build
 build:
