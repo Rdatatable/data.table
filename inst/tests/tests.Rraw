@@ -96,6 +96,15 @@ for (s in sugg) {
 if (is.null(options()$warnPartialMatchArgs))   options(warnPartialMatchArgs=FALSE)
 if (is.null(options()$warnPartialMatchAttr))   options(warnPartialMatchAttr=FALSE)
 if (is.null(options()$warnPartialMatchDollar)) options(warnPartialMatchDollar=FALSE)
+# R 3.5.{0,1,2,3} use seq(along=x) in base::order, which should be seq(along.with=x);
+#   detect this specific issue and skip the PartialMatchArgs check if so; see #3865
+old = options(warnPartialMatchArgs=TRUE, warn=0L)
+skip_partial_match_args = inherits(tryCatch(base::order(1:10), warning = identity), 'warning')
+if (skip_partial_match_args)
+  cat('\n**** This version of R (',  R.version$major, '.', R.version$minor, ') ',
+      'uses partial argument matching in base::order, so skipping to set options(warnPartialMatchArgs=TRUE) ',
+      'during this test run. This is a known issue in R 3.5.0, 3.5.1, 3.5.2, and 3.5.3; please report ',
+      'if you receive this message in a different R version.', sep='')
 oldOptions = options(
   datatable.optimize = Inf,
   datatable.verbose = FALSE,
@@ -103,7 +112,7 @@ oldOptions = options(
   datatable.print.class = FALSE,  # this is TRUE in cc.R and we like TRUE. But output= tests need to be updated (they assume FALSE currently)
   datatable.rbindlist.check = NULL,
   datatable.integer64 = "integer64",
-  warnPartialMatchArgs = TRUE,    # ensure we don't rely on partial argument matching in internal code, #3664
+  warnPartialMatchArgs = !skip_partial_match_args,    # ensure we don't rely on partial argument matching in internal code, #3664
   warnPartialMatchAttr = TRUE,
   warnPartialMatchDollar = TRUE
 )
