@@ -180,11 +180,13 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
     ialgo = 0;                                                  // fast = 0
   else if (!strcmp(CHAR(STRING_ELT(algo, 0)), "exact"))
     ialgo = 1;                                                  // exact = 1
-  else error("Internal error: invalid algo argument in rolling function, should have been caught before. please report to data.table issue tracker."); // # nocov
+  else
+    error("Internal error: invalid algo argument in rolling function, should have been caught before. please report to data.table issue tracker."); // # nocov
 
   int* iik = NULL;
   if (!badaptive) {
-    if (!isInteger(ik)) error("Internal error: badaptive=%d but ik is not integer", badaptive);    // # nocov
+    if (!isInteger(ik))
+      error("Internal error: badaptive=%d but ik is not integer", badaptive); // # nocov
     iik = INTEGER(ik);                                          // pointer to non-adaptive window width, still can be vector when doing multiple windows
   } else {
     // ik is still R_NilValue from initialization. But that's ok as it's only needed below when !badaptive.
@@ -218,19 +220,7 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
     }
   }
 
-  for (R_len_t i=0; i<nx; i++) {                                // raise errors and warnings, as of now messages are not being produced
-    for (R_len_t j=0; j<nk; j++) {
-      if (verbose && (dans[i*nk+j].message[0][0] != '\0'))
-        Rprintf("%s: %d:\n%s", __func__, i*nk+j+1, dans[i*nk+j].message[0]);
-      if (dans[i*nk+j].message[1][0] != '\0')
-        REprintf("%s: %d:\n%s", __func__, i*nk+j+1, dans[i*nk+j].message[1]); // # nocov because no messages yet // change REprintf according to comments in #3483 when ready
-      if (dans[i*nk+j].message[2][0] != '\0')
-        warning("%s: %d:\n%s", __func__, i*nk+j+1, dans[i*nk+j].message[2]);
-      if (dans[i*nk+j].status == 3) {
-        error("%s: %d: %s", __func__, i*nk+j+1, dans[i*nk+j].message[3]); // # nocov because only caused by malloc
-      }
-    }
-  }
+  ansMsg(dans, nx*nk, verbose, __func__);                       // raise errors and warnings, as of now messages are not being produced
 
   if (verbose)
     Rprintf("%s: processing of %d column(s) and %d window(s) took %.3fs\n", __func__, nx, nk, omp_get_wtime()-tic);
