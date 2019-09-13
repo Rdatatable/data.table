@@ -227,7 +227,10 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
       if (dans[i*nk+j].message[2][0] != '\0')
         warning("%s: %d:\n%s", __func__, i*nk+j+1, dans[i*nk+j].message[2]);
       if (dans[i*nk+j].status == 3) {
-        char err_msg[4096] = dans[i*nk+j].message[3]; // # nocov
+        char err_msg[ANST_MSG_SIZE]; // # nocov
+        int k=0; // # nocov
+        while (dans[i*nk+j].message[3][k++] != '\0') err_msg[k] = dans[i*nk+j].message[3][k]; // # nocov
+        //strcopy(err_msg, dans[i*nk+j].message[3]); // # nocov
         free(dans); // # nocov
         error("%s: %d: %s", __func__, i*nk+j+1, err_msg); // # nocov because only caused by malloc
       }
