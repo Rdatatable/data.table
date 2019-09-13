@@ -91,35 +91,6 @@ for (s in sugg) {
   if (!loaded) cat("\n**** Suggested package",s,"is not installed. Tests using it will be skipped.\n\n")
 }
 
-# Control options in case user set them. The user's values are restored at the end of this file.
-# R 3.1.0 had a NULL default for these 3. Set to FALSE now for R 3.1.0, otherwise the options(oldOptions) fails at the end of this file.
-if (is.null(options()$warnPartialMatchArgs))   options(warnPartialMatchArgs=FALSE)
-if (is.null(options()$warnPartialMatchAttr))   options(warnPartialMatchAttr=FALSE)
-if (is.null(options()$warnPartialMatchDollar)) options(warnPartialMatchDollar=FALSE)
-# R 3.5.{0,1,2,3} use seq(along=x) in base::order, which should be seq(along.with=x);
-#   detect this specific issue and skip the PartialMatchArgs check if so; see #3865
-old = options(warnPartialMatchArgs=TRUE, warn=0L)
-skip_partial_match_args = inherits(tryCatch(base::order(1:10), warning = identity), 'warning')
-options(old)
-if (skip_partial_match_args)
-  cat('\n**** This version of R (',  R.version$major, '.', R.version$minor, ') ',
-      'uses partial argument matching in base::order, so skipping to set options(warnPartialMatchArgs=TRUE) ',
-      'during this test run. This is a known issue in R 3.5.0, 3.5.1, 3.5.2, and 3.5.3; please report ',
-      'if you receive this message in a different R version.', sep='')
-oldOptions = options(
-  datatable.optimize = Inf,
-  datatable.verbose = FALSE,
-  datatable.alloccol = 1024L,
-  datatable.print.class = FALSE,  # this is TRUE in cc.R and we like TRUE. But output= tests need to be updated (they assume FALSE currently)
-  datatable.rbindlist.check = NULL,
-  datatable.integer64 = "integer64",
-  warnPartialMatchArgs = !skip_partial_match_args,    # ensure we don't rely on partial argument matching in internal code, #3664
-  warnPartialMatchAttr = TRUE,
-  warnPartialMatchDollar = TRUE
-)
-# some tests (e.g. 1066, 1293) rely on capturing output that will be garbled with small width
-if (getOption('width') < 80L) options(width = 80L)
-
 ##########################
 
 test(1.1, tables(env=new.env()), null.data.table(), output = "No objects of class")
@@ -16079,4 +16050,3 @@ test(2109, DT[ , list(count=.N), by={list(State, ExitCode)}], DT[ , count := 1L]
 #  Add new tests above this line  #
 ###################################
 
-options(oldOptions)  # set at top of this file
