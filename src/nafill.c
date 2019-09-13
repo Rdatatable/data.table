@@ -176,10 +176,10 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP inplace, SEXP cols, SEXP verbo
   for (R_len_t i=0; i<nx; i++) {
     if (bverbose && (vans[i].message[0][0] != '\0'))
       Rprintf("%s: %d: %s", __func__, i+1, vans[i].message[0]);
-    if (vans[i].message[1][0] != '\0') // # nocov start
-      REprintf("%s: %d: %s", __func__, i+1, vans[i].message[1]);
+    if (vans[i].message[1][0] != '\0')
+      REprintf("%s: %d: %s", __func__, i+1, vans[i].message[1]); // # nocov
     if (vans[i].message[2][0] != '\0')
-      warning("%s: %d: %s", __func__, i+1, vans[i].message[2]);
+      warning("%s: %d: %s", __func__, i+1, vans[i].message[2]); // # nocov
     if (vans[i].status == 3)  { // # nocov start
       char err_msg[ANS_MSG_SIZE];
       strncpy(err_msg, vans[i].message[3], ANS_MSG_SIZE);
