@@ -121,7 +121,7 @@ replace_dot_alias = function(e) {
   }
 }
 
-"[.data.table" = function (x, i, j, by=NULL, keyby, with=TRUE, nomatch=getOption("datatable.nomatch", NA), mult="all", roll=FALSE, rollends=if (roll=="nearest") c(TRUE,TRUE) else if (roll>=0) c(FALSE,TRUE) else c(TRUE,FALSE), which=FALSE, .SDcols, verbose=getOption("datatable.verbose"), allow.cartesian=getOption("datatable.allow.cartesian"), drop=NULL, on=NULL)
+"[.data.table" = function (x, i, j, by, keyby, with=TRUE, nomatch=getOption("datatable.nomatch", NA), mult="all", roll=FALSE, rollends=if (roll=="nearest") c(TRUE,TRUE) else if (roll>=0) c(FALSE,TRUE) else c(TRUE,FALSE), which=FALSE, .SDcols, verbose=getOption("datatable.verbose"), allow.cartesian=getOption("datatable.allow.cartesian"), drop=NULL, on=NULL)
 {
   # ..selfcount <<- ..selfcount+1  # in dev, we check no self calls, each of which doubles overhead, or could
   # test explicitly if the caller is [.data.table (even stronger test. TO DO.)
@@ -143,16 +143,16 @@ replace_dot_alias = function(e) {
     on.exit(options(oldverbose))
   }
   .global$print=""
-  missingby = is.null(by) && missing(keyby)  # for tests 359 & 590 where passing by=NULL results in data.table not vector
+  missingby = missing(by) && missing(keyby)  # for tests 359 & 590 where passing by=NULL results in data.table not vector
   if (!missing(keyby)) {
-    if (!is.null(by)) stop("Provide either by= or keyby= but not both")
+    if (!missing(by)) stop("Provide either by= or keyby= but not both")
     if (missing(j)) { warning("Ignoring keyby= because j= is not supplied"); keyby=NULL; }
     by=bysub=substitute(keyby)
     keyby=TRUE
     # Assign to 'by' so that by is no longer missing and we can proceed as if there were one by
   } else {
-    if (!is.null(by) && missing(j)) { warning("Ignoring by= because j= is not supplied"); by=NULL; }
-    by=bysub= if (is.null(by)) NULL else substitute(by)
+    if (!missing(by) && missing(j)) { warning("Ignoring by= because j= is not supplied"); by=NULL; }
+    by=bysub= if (missing(by)) NULL else substitute(by)
     keyby=FALSE
   }
   bynull = !missingby && is.null(by) #3530
@@ -2220,12 +2220,12 @@ split.data.table = function(x, f, drop = FALSE, by, sorted = FALSE, keep.by = TR
   if (!missing(f)) {
     if (!length(f) && nrow(x))
       stop("group length is 0 but data nrow > 0")
-    if (!is.null(by))
+    if (!missing(by))
       stop("passing 'f' argument together with 'by' is not allowed, use 'by' when split by column in data.table and 'f' when split by external factor")
     # same as split.data.frame - handling all exceptions, factor orders etc, in a single stream of processing was a nightmare in factor and drop consistency
     return(lapply(split(x = seq_len(nrow(x)), f = f, drop = drop, ...), function(ind) x[ind]))
   }
-  if (is.null(by)) stop("Either 'by' or 'f' argument must be supplied")
+  if (missing(by)) stop("Either 'by' or 'f' argument must be supplied")
   # check reserved column names during processing
   if (".ll.tech.split" %chin% names(x)) stop("Column '.ll.tech.split' is reserved for split.data.table processing")
   if (".nm.tech.split" %chin% by) stop("Column '.nm.tech.split' is reserved for split.data.table processing")
