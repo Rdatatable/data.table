@@ -143,7 +143,7 @@ remove.packages("xml2")    # we checked the URLs; don't need to do it again (man
 require(data.table)
 test.data.table()
 test.data.table(script="other.Rraw")
-test.data.table(script="froll.Rraw")
+test.data.table(script="*.Rraw")
 test.data.table(verbose=TRUE)   # since main.R no longer tests verbose mode
 gctorture2(step=50)
 system.time(test.data.table())  # apx 4hrs
@@ -170,7 +170,7 @@ cd ~/GitHub/data.table
 R310 CMD INSTALL ./data.table_1.12.3.tar.gz
 R310
 require(data.table)
-test.data.table()
+test.data.table(script="*.Rraw")
 
 
 ############################################
@@ -228,8 +228,8 @@ options(repos = "http://cloud.r-project.org")
 install.packages(c("bit64","xts","nanotime","R.utils","yaml")) # minimum packages needed to not skip any tests in test.data.table()
 # install.packages(c("curl","knitr"))                          # for `R CMD check` when not strict. Too slow to install when strict
 require(data.table)
-test.data.table()      # 7 mins (vs 1min normally) under UBSAN, ASAN and --strict-barrier
-test.data.table(script="froll.Rraw")  # without the fix in PR#3515, the --disable-long-double lumped into this build does now work and correctly reproduces the noLD problem
+test.data.table(script="*.Rraw") # 7 mins (vs 1min normally) under UBSAN, ASAN and --strict-barrier
+                                 # without the fix in PR#3515, the --disable-long-double lumped into this build does now work and correctly reproduces the noLD problem
 # If any problems, edit ~/.R/Makevars and activate "CFLAGS=-O0 -g" to trace. Rerun 'Rdevel-strict CMD INSTALL' and rerun tests.
 for (i in 1:10) if (!test.data.table()) break  # try several runs maybe even 100; e.g a few tests generate data with a non-fixed random seed
 # gctorture(TRUE)      # very slow, many days
