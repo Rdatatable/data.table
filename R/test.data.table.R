@@ -13,6 +13,15 @@ test.data.table = function(verbose=FALSE, pkg="pkg", silent=FALSE, with.other.pa
   }
   fulldir = file.path(rootdir, subdir)
 
+  if (identical(script,"*.Rraw")) {
+    # nocov start
+    scripts = dir(fulldir, "*.Rraw")
+    scripts = scripts[!scripts %in% c("benchmark.Rraw","other.Rraw")]
+    for (fn in scripts) {test.data.table(verbose=verbose, pkg=pkg, silent=silent, script=fn); cat("\n");}
+    return(invisible())
+    # nocov end
+  }
+
   # nocov start
   if (isTRUE(benchmark)) {
     warning("'benchmark' argument is deprecated, use script='benchmark.Rraw' instead")
