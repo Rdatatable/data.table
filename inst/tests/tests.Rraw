@@ -100,6 +100,7 @@ if (is.null(options()$warnPartialMatchDollar)) options(warnPartialMatchDollar=FA
 #   detect this specific issue and skip the PartialMatchArgs check if so; see #3865
 old = options(warnPartialMatchArgs=TRUE, warn=0L)
 skip_partial_match_args = inherits(tryCatch(base::order(1:10), warning = identity), 'warning')
+options(old)
 if (skip_partial_match_args)
   cat('\n**** This version of R (',  R.version$major, '.', R.version$minor, ') ',
       'uses partial argument matching in base::order, so skipping to set options(warnPartialMatchArgs=TRUE) ',
