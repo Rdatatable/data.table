@@ -143,6 +143,7 @@ remove.packages("xml2")    # we checked the URLs; don't need to do it again (man
 require(data.table)
 test.data.table()
 test.data.table(script="other.Rraw")
+test.data.table(script="froll.Rraw")
 test.data.table(verbose=TRUE)   # since main.R no longer tests verbose mode
 gctorture2(step=50)
 system.time(test.data.table())  # apx 4hrs
