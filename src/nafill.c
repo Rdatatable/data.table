@@ -164,6 +164,7 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP inplace, SEXP cols, SEXP verbo
   if (bverbose) Rprintf("%s: parallel processing of %d column(s) took %.3fs\n", __func__, nx, toc-tic);
 
   UNPROTECT(protecti);
+  free(vans);
   if (binplace) {
     return obj;
   } else {
