@@ -29,10 +29,10 @@ For other types, or if any argument is supplied in addition to \code{x} (such as
 \examples{
 first(1:5) # [1] 1
 x = data.table(x=1:5, y=6:10)
-first(x) # same as x[1]
+first(x) # same as head(x, 1)
 
 last(1:5) # [1] 5
 x = data.table(x=1:5, y=6:10)
-last(x) # same as x[5]
+last(x) # same as tail(x, 1)
 }
 \keyword{ data }
