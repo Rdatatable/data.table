@@ -19,17 +19,15 @@ SEXP fcast(SEXP lhs, SEXP val, SEXP nrowArg, SEXP ncolArg, SEXP idxArg, SEXP fil
   for (int i=0; i<nval; ++i) {
     SEXP thiscol = VECTOR_ELT(val, i);
     SEXP thisfill = fill;
-    bool count=false;
+    int nprotect = 0;
     if (isNull(fill)) {
       isfill = false;
       if (LOGICAL(is_agg)[0]) {
-        thisfill = PROTECT(allocNAVector(TYPEOF(thiscol), 1));
-        count = true;
+        thisfill = PROTECT(allocNAVector(TYPEOF(thiscol), 1)); nprotect++;
       } else thisfill = VECTOR_ELT(fill_d, i);
     }
     if (isfill && TYPEOF(fill) != TYPEOF(thiscol)) {
-      thisfill = PROTECT(coerceVector(fill, TYPEOF(thiscol)));
-      count = true;
+      thisfill = PROTECT(coerceVector(fill, TYPEOF(thiscol))); nprotect++;
     }
     switch (TYPEOF(thiscol)) {
     case INTSXP:
@@ -81,7 +79,7 @@ SEXP fcast(SEXP lhs, SEXP val, SEXP nrowArg, SEXP ncolArg, SEXP idxArg, SEXP fil
       break;
     default: error("Unsupported column type in fcast val: '%s'", type2char(TYPEOF(thiscol))); // #nocov
     }
-    if (count) UNPROTECT(1);
+    UNPROTECT(nprotect);
   }
   UNPROTECT(1);
   return(ans);

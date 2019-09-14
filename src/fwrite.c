@@ -35,12 +35,12 @@ static int8_t doQuote=INT8_MIN;        // whether to surround fields with double
 static bool qmethodEscape=false;       // when quoting fields, how to escape double quotes in the field contents (default false means to add another double quote)
 static bool squashDateTime=false;      // 0=ISO(yyyy-mm-dd) 1=squash(yyyymmdd)
 
-extern const char *getString(void *, int);
-extern const int getStringLen(void *, int);
+extern const char *getString(void *, int64_t);
+extern const int getStringLen(void *, int64_t);
 extern const int getMaxStringLen(void *, int64_t);
 extern const int getMaxCategLen(void *);
 extern const int getMaxListItemLen(void *, int64_t);
-extern const char *getCategString(void *, int);
+extern const char *getCategString(void *, int64_t);
 extern double wallclock(void);
 
 inline void write_chars(const char *x, char **pch)

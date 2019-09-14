@@ -13,6 +13,15 @@ test.data.table = function(verbose=FALSE, pkg="pkg", silent=FALSE, with.other.pa
   }
   fulldir = file.path(rootdir, subdir)
 
+  if (identical(script,"*.Rraw")) {
+    # nocov start
+    scripts = dir(fulldir, "*.Rraw")
+    scripts = scripts[!scripts %in% c("benchmark.Rraw","other.Rraw")]
+    for (fn in scripts) {test.data.table(verbose=verbose, pkg=pkg, silent=silent, script=fn); cat("\n");}
+    return(invisible())
+    # nocov end
+  }
+
   # nocov start
   if (isTRUE(benchmark)) {
     warning("'benchmark' argument is deprecated, use script='benchmark.Rraw' instead")
@@ -51,11 +60,27 @@ test.data.table = function(verbose=FALSE, pkg="pkg", silent=FALSE, with.other.pa
   # sample method changed in R 3.6 to remove bias; see #3431 for links and notes
   # This can be removed (and over 120 tests updated) if and when the oldest R version we test and support is moved to R 3.6
 
-  oldverbose = options(datatable.verbose=verbose)
-  oldenc = options(encoding="UTF-8")[[1L]]  # just for tests 708-712 on Windows
   # TO DO: reinstate solution for C locale of CRAN's Mac (R-Forge's Mac is ok)
   # oldlocale = Sys.getlocale("LC_CTYPE")
   # Sys.setlocale("LC_CTYPE", "")   # just for CRAN's Mac to get it off C locale (post to r-devel on 16 Jul 2012)
+
+  # Control options in case user set them. The user's values are restored after the sys.source() below.
+  if (is.null(options()$warnPartialMatchArgs))   options(warnPartialMatchArgs=FALSE)   # R 3.1.0 had a NULL default for these 3. Set to FALSE
+  if (is.null(options()$warnPartialMatchAttr))   options(warnPartialMatchAttr=FALSE)   # now otherwise options(oldOptions) fails later.
+  if (is.null(options()$warnPartialMatchDollar)) options(warnPartialMatchDollar=FALSE)
+  oldOptions = options(
+    datatable.verbose = verbose,
+    encoding = "UTF-8",  # just for tests 708-712 on Windows
+    datatable.optimize = Inf,
+    datatable.alloccol = 1024L,
+    datatable.print.class = FALSE,  # this is TRUE in cc.R and we like TRUE. But output= tests need to be updated (they assume FALSE currently)
+    datatable.rbindlist.check = NULL,
+    datatable.integer64 = "integer64",
+    warnPartialMatchArgs = base::getRversion()>="3.6.0", # ensure we don't rely on partial argument matching in internal code, #3664; >=3.6.0 for #3865
+    warnPartialMatchAttr = TRUE,
+    warnPartialMatchDollar = TRUE,
+    width = max(getOption('width'), 80L) # some tests (e.g. 1066, 1293) rely on capturing output that will be garbled with small width
+  )
 
   cat("getDTthreads(verbose=TRUE):\n")         # for tracing on CRAN; output to log before anything is attempted
   getDTthreads(verbose=TRUE)                   # includes the returned value in the verbose output (rather than dangling '[1] 4'); e.g. "data.table is using 4 threads"
@@ -89,8 +114,8 @@ test.data.table = function(verbose=FALSE, pkg="pkg", silent=FALSE, with.other.pa
   } else {
     sys.source(fn, envir=env)
   }
-  options(oldverbose)
-  options(oldenc)
+  options(oldOptions)
+
   # Sys.setlocale("LC_CTYPE", oldlocale)
   ans = env$nfail==0
 
