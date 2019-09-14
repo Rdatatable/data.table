@@ -145,7 +145,7 @@ test.data.table(script="other.Rraw")
 test.data.table(script="*.Rraw")
 test.data.table(verbose=TRUE)   # since main.R no longer tests verbose mode
 gctorture2(step=50)
-system.time(test.data.table(script="*.Rraw"))  # apx 4hrs for tests.Rraw only
+system.time(test.data.table(script="*.Rraw"))  # apx 8h = froll 3h + nafill 1m + main 5h
 
 # Upload to win-builder: release, dev & old-release
 
