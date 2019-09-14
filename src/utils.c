@@ -105,15 +105,16 @@ void coerceFill(SEXP fill, double *dfill, int32_t *ifill, int64_t *i64fill) {
       } else {
         ifill[0] = llfill[0]>INT32_MAX ? NA_INTEGER : (int32_t)(llfill[0]);
         dfill[0] = (double)(llfill[0]);
-        i64fill[0] = (int64_t)(llfill[0]);
+        i64fill[0] = llfill[0]>INT64_MAX ? NA_INTEGER64 : (int64_t)(llfill[0]);
       }
     } else {
-      if (ISNA(REAL(fill)[0])) {
+      double rfill = REAL(fill)[0];
+      if (ISNA(rfill)) {
         ifill[0] = NA_INTEGER; dfill[0] = NA_REAL; i64fill[0] = NA_INTEGER64;
       } else {
-        ifill[0] = (int32_t)(REAL(fill)[0]);
-        dfill[0] = REAL(fill)[0];
-        i64fill[0] = (int64_t)(REAL(fill)[0]);
+        ifill[0] = rfill>INT32_MAX ? NA_INTEGER : (int32_t)(rfill);
+        dfill[0] = rfill;
+        i64fill[0] = rfill>INT64_MAX ? NA_INTEGER64 : (int64_t)(rfill);
       }
     }
   } else if (isLogical(fill) && LOGICAL(fill)[0]==NA_LOGICAL) {
