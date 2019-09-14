@@ -109,7 +109,7 @@ void coerceFill(SEXP fill, double *dfill, int32_t *ifill, int64_t *i64fill) {
       }
     } else {
       double rfill = REAL(fill)[0];
-      if (ISNA(rfill)) {
+      if (ISNAN(rfill)) {
         ifill[0] = NA_INTEGER; dfill[0] = NA_REAL; i64fill[0] = NA_INTEGER64;
       } else {
         ifill[0] = rfill>INT32_MAX ? NA_INTEGER : (int32_t)(rfill);
