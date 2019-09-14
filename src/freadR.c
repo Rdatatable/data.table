@@ -273,17 +273,17 @@ bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, int ncol)
   }
   selectRank = NULL;
   const int *selectInts = NULL; // if select is provided this will point to 1-based ints of the column numbers (which might already be the input as-is)
-  bool selectProtected = false;
+  int nprotect = 0;  // just used for select; other protects are specifically balanced within loops to save the protection stack, whereas select is long-lived or no-alloc.
   if (length(selectSxp)) {
     const int n = length(selectSxp);
     if (isString(selectSxp)) {
-      selectInts = INTEGER(PROTECT(chmatch(selectSxp, colNamesSxp, NA_INTEGER)));
+      selectInts = INTEGER(PROTECT(chmatch(selectSxp, colNamesSxp, NA_INTEGER))); nprotect++;
       for (int i=0; i<n; ++i) if (selectInts[i]==NA_INTEGER)
         DTWARN("Column name '%s' not found in column name header (case sensitive), skipping.", CHAR(STRING_ELT(selectSxp, i)));
     } else {
-      selectInts = INTEGER(PROTECT(coerceVector(selectSxp, INTSXP))); // coerces numeric to int, otherwise harmless superfluous PROTECT for ease of balancing
+      if (!isInteger(selectSxp)) { selectSxp=PROTECT(coerceVector(selectSxp, INTSXP)); nprotect++; }  // coerce numeric to int
+      selectInts = INTEGER(selectSxp);
     }
-    selectProtected = true;
     SET_VECTOR_ELT(RCHK, 3, selectRank=allocVector(INTSXP, ncol));
     int *selectRankD = INTEGER(selectRank), rank = 1;
     for (int i=0; i<n; ++i) {
@@ -360,7 +360,7 @@ bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, int ncol)
         SEXP itemsInt;
         if (isString(items)) itemsInt = PROTECT(chmatch(items, colNamesSxp, NA_INTEGER));
         else                 itemsInt = PROTECT(coerceVector(items, INTSXP));
-        // UNPROTECTed directly just after this for loop. No protecti++ here is correct.
+        // UNPROTECTed directly just after this for loop. No nprotect++ here is correct.
         for (int j=0; j<LENGTH(items); j++) {
           int k = INTEGER(itemsInt)[j];
           if (k==NA_INTEGER) {
@@ -392,7 +392,7 @@ bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, int ncol)
     }
     UNPROTECT(1);  // typeRName_sxp
   }
-  if (selectProtected) UNPROTECT(1);
+  UNPROTECT(nprotect);
   if (readInt64As != CT_INT64) {
     for (int i=0; i<ncol; i++) if (type[i]==CT_INT64) type[i] = readInt64As;
   }
@@ -413,19 +413,17 @@ size_t allocateDT(int8_t *typeArg, int8_t *sizeArg, int ncolArg, int ndrop, size
       setAttrib(DT, R_NamesSymbol, colNamesSxp);  // colNames mkChar'd in userOverride step
       if (colClassesAs) setAttrib(DT, sym_colClassesAs, colClassesAs);
     } else {
-      SEXP tt = PROTECT(allocVector(STRSXP, ncol-ndrop));
-      setAttrib(DT, R_NamesSymbol, tt);
-      UNPROTECT(1); // tt; now that it's safely a member of protected object (for rchk)
-      SEXP ss = R_NilValue;
+      int nprotect = 0;
+      SEXP tt, ss=R_NilValue;
+      setAttrib(DT, R_NamesSymbol, tt=PROTECT(allocVector(STRSXP, ncol-ndrop))); nprotect++;
       if (colClassesAs) {
-        ss = PROTECT(allocVector(STRSXP, ncol-ndrop));
-        setAttrib(DT, sym_colClassesAs, ss);
-        UNPROTECT(1); // ss
+        setAttrib(DT, sym_colClassesAs, ss=PROTECT(allocVector(STRSXP, ncol-ndrop))); nprotect++;
       }
       for (int i=0,resi=0; i<ncol; i++) if (type[i]!=CT_DROP) {
         if (colClassesAs) SET_STRING_ELT(ss, resi, STRING_ELT(colClassesAs,i));
         SET_STRING_ELT(tt, resi++, STRING_ELT(colNamesSxp,i));
       }
+      UNPROTECT(nprotect);
     }
     if (selectRank) {
       SEXP tt = PROTECT(allocVector(INTSXP, ncol-ndrop));

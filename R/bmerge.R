@@ -76,12 +76,12 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
         xclass=="logical" || iclass=="logical" ||
         xclass=="factor" || iclass=="factor") {
       if (anyNA(i[[ic]]) && all(is.na(i[[ic]]))) { # TODO: allNA function in C
-        if (verbose) cat("Coerced all-NA i.",names(i)[ic]," (",iclass,") to type ",xclass," to match type of x.",names(x)[xc],".\n",sep="")
+        if (verbose) cat("Coercing all-NA i.",names(i)[ic]," (",iclass,") to type ",xclass," to match type of x.",names(x)[xc],".\n",sep="")
         set(i, j=ic, value=match.fun(paste0("as.", xclass))(i[[ic]]))
         next
       }
       else if (anyNA(x[[xc]]) && all(is.na(x[[xc]]))) {
-        if (verbose) cat("Coerced all-NA x.",names(x)[xc]," (",xclass,") to type ",iclass," to match type of i.",names(i)[ic],".\n",sep="")
+        if (verbose) cat("Coercing all-NA x.",names(x)[xc]," (",xclass,") to type ",iclass," to match type of i.",names(i)[ic],".\n",sep="")
         set(x, j=xc, value=match.fun(paste0("as.", iclass))(x[[xc]]))
         next
       }
@@ -105,10 +105,12 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
           if (!is.null(attributes(i[[ic]]))) attributes(val) = attributes(i[[ic]])  # to retain Date for example; 3679
           set(i, j=ic, value=val)
           set(callersi, j=ic, value=val)       # change the shallow copy of i up in [.data.table to reflect in the result, too.
+        } else {
+          if (verbose) cat("Coercing integer column x.",names(x)[xc]," to type double to match type of i.",names(i)[ic]," which contains fractions.\n",sep="")
+          set(x, j=xc, value=as.double(x[[xc]]))
         }
-        else stop("Incompatible join types: x.",names(x)[xc]," is type integer but i.",names(i)[ic]," is type double and contains fractions")
       } else {
-        if (verbose) cat("Coerced integer column i.",names(i)[ic]," to type double for join to match type of x.",names(x)[xc],".\n",sep="")
+        if (verbose) cat("Coercing integer column i.",names(i)[ic]," to type double for join to match type of x.",names(x)[xc],".\n",sep="")
         set(i, j=ic, value=as.double(i[[ic]]))
       }
     }
@@ -175,9 +177,9 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
     if (verbose) cat("  Found", nqmaxgrp, "non-equi group(s) ...\n")
   }
 
-  if (verbose) {last.started.at=proc.time();cat("Starting bmerge ...");flush.console()}
+  if (verbose) {last.started.at=proc.time();cat("Starting bmerge ...\n");flush.console()}
   ans = .Call(Cbmerge, i, x, as.integer(icols), as.integer(xcols), io, xo, roll, rollends, nomatch, mult, ops, nqgrp, nqmaxgrp)
-  if (verbose) {cat("done in",timetaken(last.started.at),"\n"); flush.console()}
+  if (verbose) {cat("bmerge done in",timetaken(last.started.at),"\n"); flush.console()}
   # TO DO: xo could be moved inside Cbmerge
 
   ans$xo = xo  # for further use by [.data.table
