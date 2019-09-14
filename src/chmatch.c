@@ -11,8 +11,8 @@ static SEXP chmatchMain(SEXP x, SEXP table, int nomatch, bool chin, bool chmatch
   if (!length(table)) { const int val=(chin?0:nomatch), n=LENGTH(x); for (int i=0; i<n; ++i) ansd[i]=val; UNPROTECT(1); return ans; }
   // Since non-ASCII strings may be marked with different encodings, it only make sense to compare
   // the bytes under a same encoding (UTF-8) #3844 #3850
-  SEXP *xd = STRING_PTR(PROTECT(coerceUtf8IfNeeded(x)));
-  SEXP *td = STRING_PTR(PROTECT(coerceUtf8IfNeeded(table)));
+  const SEXP *xd = STRING_PTR(PROTECT(coerceUtf8IfNeeded(x)));
+  const SEXP *td = STRING_PTR(PROTECT(coerceUtf8IfNeeded(table)));
   savetl_init();
   const int xlen = length(x);
   for (int i=0; i<xlen; i++) {
