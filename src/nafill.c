@@ -103,9 +103,7 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP inplace, SEXP cols, SEXP verbo
   int64_t* i64x[nx];
   uint_fast64_t inx[nx];
   SEXP ans = R_NilValue;
-  ans_t *vans = malloc(sizeof(ans_t)*nx);
-  if (!vans)
-    error("%s: Unable to allocate memory answer", __func__); // # nocov
+  ans_t *vans = (ans_t *)R_alloc(nx, sizeof(ans_t));
   for (R_len_t i=0; i<nx; i++) {
     inx[i] = xlength(VECTOR_ELT(x, i));
     dx[i] = REAL(VECTOR_ELT(x, i));
@@ -180,19 +178,15 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP inplace, SEXP cols, SEXP verbo
       REprintf("%s: %d: %s", __func__, i+1, vans[i].message[1]); // # nocov
     if (vans[i].message[2][0] != '\0')
       warning("%s: %d: %s", __func__, i+1, vans[i].message[2]); // # nocov
-    if (vans[i].status == 3)  { // # nocov start
-      char err_msg[ANS_MSG_SIZE];
-      strncpy(err_msg, vans[i].message[3], ANS_MSG_SIZE);
-      free(vans);
-      error("%s: %d: %s", __func__, i+1, err_msg); // # nocov because only caused by malloc
-    } // # nocov end
+    if (vans[i].status == 3)  {
+      error("%s: %d: %s", __func__, i+1, vans[i].message[3]); // # nocov because only caused by malloc
+    }
   }
 
   if (bverbose)
     Rprintf("%s: parallel processing of %d column(s) took %.3fs\n", __func__, nx, toc-tic);
 
   UNPROTECT(protecti);
-  free(vans);
   if (binplace) {
     return obj;
   } else {
