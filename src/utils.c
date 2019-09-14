@@ -280,7 +280,6 @@ SEXP islockedR(SEXP DT) {
   return ScalarLogical(islocked(DT));
 }
 
-// To see if the character vector contains non-ASCII strings not encoded in UTF-8
 bool need2utf8(SEXP x) {
   const int xlen = length(x);
   SEXP *xd = STRING_PTR(x);
@@ -288,10 +287,9 @@ bool need2utf8(SEXP x) {
     if (NEED2UTF8(xd[i])) 
       return(true);
   }
-  // if not exit early, it means no need2utf8 thus returns false.
   return(false);
 }
-// coerce to UTF-8 encoded string if need2utf8() is true
+
 SEXP coerceUtf8IfNeeded(SEXP x) { 
   if (!need2utf8(x)) 
     return(x);

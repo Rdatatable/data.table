@@ -25,8 +25,10 @@ static SEXP chmatchMain(SEXP x, SEXP table, int nomatch, bool chin, bool chmatch
       // R 2.14.0+ initializes truelength to 0 (before that it was uninitialized/random).
       // Now that data.table depends on R 3.1.0+, that is after 2.14.0 too.
       // We rely on that 0-initialization, and that R's internal hash is positive.
+      // # nocov start
       savetl_end();
       error("Internal error: CHARSXP '%s' has a negative truelength (%d). Please file an issue on the data.table tracker.", CHAR(s), tl);
+      // # nocov end
     }
   }
   const int tablelen = length(table);
