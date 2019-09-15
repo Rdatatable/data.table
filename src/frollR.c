@@ -1,4 +1,5 @@
-#include "frollR.h"
+#include <Rdefines.h>
+#include "data.table.h"
 
 SEXP coerceToRealListR(SEXP obj) {
   // accept atomic/list of integer/logical/real returns list of real
@@ -95,10 +96,11 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
     }
   }
   int* ikl[nk];                                                 // pointers to adaptive window width
-  if (badaptive)
+  if (badaptive) {
     for (int j=0; j<nk; j++) ikl[j] = INTEGER(VECTOR_ELT(kl, j));
+  }
 
-  if (!isLogical(narm) || length(narm)!=1 || LOGICAL(narm)[0]==NA_LOGICAL)
+  if (!IS_TRUE_OR_FALSE(narm))
     error("na.rm must be TRUE or FALSE");
 
   if (!isLogical(hasna) || length(hasna)!=1)
@@ -120,13 +122,11 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
     error("using adaptive TRUE and align argument different than 'right' is not implemented");
 
   SEXP ans = PROTECT(allocVector(VECSXP, nk * nx)); protecti++; // allocate list to keep results
-  ans_t *dans = malloc(sizeof(ans_t)*nx*nk);                    // answer columns as array of ans_t struct
-  if (!dans)
-    error("%s: Unable to allocate memory answer", __func__); // # nocov
-  double* dx[nx];                                               // pointers to source columns
-  uint_fast64_t inx[nx];                                        // to not recalculate `length(x[[i]])` we store it in extra array
   if (verbose)
     Rprintf("%s: allocating memory for results %dx%d\n", __func__, nx, nk);
+  ans_t *dans = (ans_t *)R_alloc(nx*nk, sizeof(ans_t));         // answer columns as array of ans_t struct
+  double* dx[nx];                                               // pointers to source columns
+  uint_fast64_t inx[nx];                                        // to not recalculate `length(x[[i]])` we store it in extra array
   for (R_len_t i=0; i<nx; i++) {
     inx[i] = xlength(VECTOR_ELT(x, i));                         // for list input each vector can have different length
     for (R_len_t j=0; j<nk; j++) {
@@ -226,8 +226,9 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
         REprintf("%s: %d:\n%s", __func__, i*nk+j+1, dans[i*nk+j].message[1]); // # nocov because no messages yet // change REprintf according to comments in #3483 when ready
       if (dans[i*nk+j].message[2][0] != '\0')
         warning("%s: %d:\n%s", __func__, i*nk+j+1, dans[i*nk+j].message[2]);
-      if (dans[i*nk+j].status == 3)
+      if (dans[i*nk+j].status == 3) {
         error("%s: %d: %s", __func__, i*nk+j+1, dans[i*nk+j].message[3]); // # nocov because only caused by malloc
+      }
     }
   }
 
@@ -300,13 +301,11 @@ SEXP frollapplyR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP align, SEXP rho) {
   }
 
   SEXP ans = PROTECT(allocVector(VECSXP, nk * nx)); protecti++;
-  ans_t *dans = malloc(sizeof(ans_t)*nx*nk);
-  if (!dans)
-    error("%s: Unable to allocate memory answer", __func__); // # nocov
-  double* dx[nx];
-  uint_fast64_t inx[nx];
   if (verbose)
     Rprintf("%s: allocating memory for results %dx%d\n", __func__, nx, nk);
+  ans_t *dans = (ans_t *)R_alloc(nx*nk, sizeof(ans_t));
+  double* dx[nx];
+  uint_fast64_t inx[nx];
   for (R_len_t i=0; i<nx; i++) {
     inx[i] = xlength(VECTOR_ELT(x, i));
     for (R_len_t j=0; j<nk; j++) {
