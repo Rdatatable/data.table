@@ -1,19 +1,5 @@
 #include "data.table.h"
 
-#define ENC_KNOWN(x) (LEVELS(x) & 76)
-// LATIN1_MASK (1<<2) | UTF8_MASK (1<<3) | ASCII_MASK (1<<6)
-
-static SEXP match_logical(SEXP table, SEXP x) {
-  SEXP ans = PROTECT(allocVector(LGLSXP, length(x)));
-  int *ians = INTEGER(ans);
-  SEXP m = PROTECT(match(table, x, 0)); // nomatch=0
-  const int *im = INTEGER(m), n = length(x);
-  for (int i=0; i<n; ++i)
-    ians[i] = im[i] > 0;
-  UNPROTECT(2);
-  return(ans);
-}
-
 static SEXP chmatchMain(SEXP x, SEXP table, int nomatch, bool chin, bool chmatchdup) {
   if (!isString(x) && !isNull(x)) error("x is type '%s' (must be 'character' or NULL)", type2char(TYPEOF(x)));
   if (!isString(table) && !isNull(table)) error("table is type '%s' (must be 'character' or NULL)", type2char(TYPEOF(table)));
@@ -23,48 +9,32 @@ static SEXP chmatchMain(SEXP x, SEXP table, int nomatch, bool chin, bool chmatch
   if (!length(x)) { UNPROTECT(1); return ans; }  // no need to look at table when x is empty
   int *ansd = INTEGER(ans);
   if (!length(table)) { const int val=(chin?0:nomatch), n=LENGTH(x); for (int i=0; i<n; ++i) ansd[i]=val; UNPROTECT(1); return ans; }
+  // Since non-ASCII strings may be marked with different encodings, it only make sense to compare
+  // the bytes under a same encoding (UTF-8) #3844 #3850
+  const SEXP *xd = STRING_PTR(PROTECT(coerceUtf8IfNeeded(x)));
+  const SEXP *td = STRING_PTR(PROTECT(coerceUtf8IfNeeded(table)));
   savetl_init();
-  const SEXP *xd = STRING_PTR(x);
   const int xlen = length(x);
   for (int i=0; i<xlen; i++) {
     SEXP s = xd[i];
-    if (s != NA_STRING && ENC_KNOWN(s) != 64) { // PREV: s != NA_STRING && !ENC_KNOWN(s) - changed to fix for bug #5159. The previous fix
-                       // dealt with UNKNOWN encodings. But we could have the same string, where both are in different
-                       // encodings than ASCII (ex: UTF8 and Latin1). To fix this, we'll to resort to 'match' if not ASCII.
-                       // This takes care of all anomalies. It's unfortunate the 'chmatch' can't be used in these cases...
-                       // // fix for the 2nd part of bug #5159
-
-      // explanation for PREV case: (still useful to keep it here)
-      // symbols (i.e. as.name() or as.symbol()) containing non-ascii characters (>127) seem to be 'unknown' encoding in R.
-      // The same string in different encodings (where unknown encoding is different to known, too) are different
-      // CHARSXP pointers; this chmatch relies on pointer equality only. We tried mkChar(CHAR(s)) [ what install() does ]
-      // but this impacted the fastest cases too much. Hence fall back to match() on the first unknown encoding detected
-      // since match() considers the same string in different encodings as equal (but slower). See #2538 and #4818.
+    const int tl = TRUELENGTH(s);
+    if (tl>0) {
+      savetl(s);  // R's internal hash (which is positive); save it
+      SET_TRUELENGTH(s,0);
+    } else if (tl<0) {
+      // R 2.14.0+ initializes truelength to 0 (before that it was uninitialized/random).
+      // Now that data.table depends on R 3.1.0+, that is after 2.14.0 too.
+      // We rely on that 0-initialization, and that R's internal hash is positive.
+      // # nocov start
       savetl_end();
-      UNPROTECT(1);
-      return (chin ? match_logical(table, x) : match(table, x, nomatch));
+      error("Internal error: CHARSXP '%s' has a negative truelength (%d). Please file an issue on the data.table tracker.", CHAR(s), tl);
+      // # nocov end
     }
-    if (TRUELENGTH(s)>0) savetl(s);
-    // as from v1.8.0 we assume R's internal hash is positive. So in R < 2.14.0 we
-    // don't save the uninitialised truelengths that by chance are negative, but
-    // will save if positive. Hence R >= 2.14.0 may be faster and preferred now that R
-    // initializes truelength to 0 from R 2.14.0.
-    SET_TRUELENGTH(s,0);   // TODO: do we need to set to zero first (we can rely on R 3.1.0 now)?
   }
   const int tablelen = length(table);
-  const SEXP *td = STRING_PTR(table);
   int nuniq=0;
   for (int i=0; i<tablelen; ++i) {
     SEXP s = td[i];
-    if (s != NA_STRING && ENC_KNOWN(s) != 64) { // changed !ENC_KNOWN(s) to !ASCII(s) - check above for explanation
-      // This branch is now covered by tests 2004.*. However, is this branch redundant? It means there were no non-ascii encodings
-      // in x since the fallback above to match() didn't happen when x was checked. If that was the case in x, then it means none of the
-      // x values can match to table anyway. Can't we just drop this branch then? (TODO)
-      for (int j=0; j<i; ++j) SET_TRUELENGTH(td[j],0);  // reinstate 0 rather than leave the -i-1
-      savetl_end();
-      UNPROTECT(1);
-      return (chin ? match_logical(table, x) : match(table, x, nomatch));
-    }
     int tl = TRUELENGTH(s);
     if (tl>0) { savetl(s); tl=0; }
     if (tl==0) SET_TRUELENGTH(s, chmatchdup ? -(++nuniq) : -i-1); // first time seen this string in table
@@ -119,7 +89,7 @@ static SEXP chmatchMain(SEXP x, SEXP table, int nomatch, bool chin, bool chmatch
   for (int i=0; i<tablelen; i++)
     SET_TRUELENGTH(td[i], 0);  // reinstate 0 rather than leave the -i-1
   savetl_end();
-  UNPROTECT(1);
+  UNPROTECT(3);  // ans, xd, td
   return(ans);
 }
 

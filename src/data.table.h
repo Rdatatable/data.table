@@ -117,7 +117,6 @@ SEXP setcolorder(SEXP x, SEXP o);
 int StrCmp(SEXP x, SEXP y);
 uint64_t dtwiddle(void *p, int i);
 SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP naArg);
-bool need2utf8(SEXP x, int n);
 int getNumericRounding_C();
 
 // reorder.c
@@ -225,4 +224,5 @@ SEXP lock(SEXP x);
 SEXP unlock(SEXP x);
 bool islocked(SEXP x);
 SEXP islockedR(SEXP x);
-
+bool need2utf8(SEXP x);
+SEXP coerceUtf8IfNeeded(SEXP x);
