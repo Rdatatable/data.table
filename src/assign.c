@@ -281,7 +281,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
   // cols : column names or numbers corresponding to the values to set
   // rows : row numbers to assign
   R_len_t i, j, numToDo, targetlen, vlen, r, oldncol, oldtncol, coln, protecti=0, newcolnum, indexLength;
-  SEXP targetcol, names, nullint, thisv, targetlevels, newcol, s, colnam, tmp, colorder, key, index, a, assignedNames, indexNames;
+  SEXP targetcol, nullint, thisv, targetlevels, newcol, s, colnam, tmp, colorder, key, index, a, assignedNames, indexNames;
   bool verbose=GetVerbose(), anytodelete=false;
   const char *c1, *tc1, *tc2;
   int *buf, newKeyLength, indexNo;
@@ -300,7 +300,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
     error("Internal error: dt passed to Cassign is not a data.table or data.frame");  // # nocov
 
   oldncol = LENGTH(dt);
-  names = getAttrib(dt, R_NamesSymbol);
+  SEXP names = PROTECT(getAttrib(dt, R_NamesSymbol)); protecti++;
   if (isNull(names)) error("dt passed to assign has no names");
   if (length(names)!=oldncol)
     error("Internal error in assign: length of names (%d) is not length of dt (%d)",length(names),oldncol); // # nocov
@@ -336,6 +336,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
     if (numToDo==0) {
       if (!length(newcolnames)) {
         *_Last_updated = 0;
+        UNPROTECT(protecti);
         return(dt); // all items of rows either 0 or NA. !length(newcolnames) for #759
       }
       if (verbose) Rprintf("Added %d new column%s initialized with all-NA\n",
@@ -345,6 +346,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
   if (!length(cols)) {
     warning("length(LHS)==0; no columns to delete or assign RHS to.");   // test 1295 covers
     *_Last_updated = 0;
+    UNPROTECT(protecti);
     return(dt);
   }
   // FR #2077 - set able to add new cols by reference
@@ -711,23 +713,23 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
         if (verbose) {
           Rprintf("Dropping index '%s' due to an update on a key column\n", c1+2);
         }
-      } else if(newKeyLength < strlen(c1)){
+      } else if(newKeyLength < strlen(c1)) {
+        SEXP s4Str = PROTECT(mkString(s4));
         if(indexLength == 0 && // shortened index can be kept since it is just information on the order (see #2372)
-           LOGICAL(chin(mkString(s4), indexNames))[0] == 0) {// index with shortened name not present yet
+           LOGICAL(chin(s4Str, indexNames))[0] == 0) {// index with shortened name not present yet
           SET_TAG(s, install(s4));
           SET_STRING_ELT(indexNames, indexNo, mkChar(s4));
-          if (verbose) {
+          if (verbose)
             Rprintf("Shortening index '%s' to '%s' due to an update on a key column\n", c1+2, s4 + 2);
-          }
-        } else{ // indexLength > 0 || shortened name present already
+        } else { // indexLength > 0 || shortened name present already
           // indexLength > 0 indicates reordering. Drop it to avoid spurious reordering in non-indexed columns (#2372)
           // shortened anme already present indicates that index needs to be dropped to avoid duplicate indices.
           setAttrib(index, a, R_NilValue);
           SET_STRING_ELT(indexNames, indexNo, NA_STRING);
-          if (verbose) {
+          if (verbose)
             Rprintf("Dropping index '%s' due to an update on a key column\n", c1+2);
-          }
         }
+        UNPROTECT(1); // s4Str
       } //else: index is not affected by assign: nothing to be done
       free(s4);
       indexNo ++;

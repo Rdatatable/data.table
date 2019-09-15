@@ -282,3 +282,25 @@ SEXP islockedR(SEXP DT) {
   return ScalarLogical(islocked(DT));
 }
 
+bool need2utf8(SEXP x) {
+  const int xlen = length(x);
+  SEXP *xd = STRING_PTR(x);
+  for (int i=0; i<xlen; i++) {
+    if (NEED2UTF8(xd[i]))
+      return(true);
+  }
+  return(false);
+}
+
+SEXP coerceUtf8IfNeeded(SEXP x) {
+  if (!need2utf8(x))
+    return(x);
+  const int xlen = length(x);
+  SEXP ans = PROTECT(allocVector(STRSXP, xlen));
+  SEXP *xd = STRING_PTR(x);
+  for (int i=0; i<xlen; i++) {
+    SET_STRING_ELT(ans, i, ENC2UTF8(xd[i]));
+  }
+  UNPROTECT(1);
+  return(ans);
+}

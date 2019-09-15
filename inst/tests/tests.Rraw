@@ -91,25 +91,6 @@ for (s in sugg) {
   if (!loaded) cat("\n**** Suggested package",s,"is not installed. Tests using it will be skipped.\n\n")
 }
 
-# Control options in case user set them. The user's values are restored at the end of this file.
-# R 3.1.0 had a NULL default for these 3. Set to FALSE now for R 3.1.0, otherwise the options(oldOptions) fails at the end of this file.
-if (is.null(options()$warnPartialMatchArgs))   options(warnPartialMatchArgs=FALSE)
-if (is.null(options()$warnPartialMatchAttr))   options(warnPartialMatchAttr=FALSE)
-if (is.null(options()$warnPartialMatchDollar)) options(warnPartialMatchDollar=FALSE)
-oldOptions = options(
-  datatable.optimize = Inf,
-  datatable.verbose = FALSE,
-  datatable.alloccol = 1024L,
-  datatable.print.class = FALSE,  # this is TRUE in cc.R and we like TRUE. But output= tests need to be updated (they assume FALSE currently)
-  datatable.rbindlist.check = NULL,
-  datatable.integer64 = "integer64",
-  warnPartialMatchArgs = TRUE,    # ensure we don't rely on partial argument matching in internal code, #3664
-  warnPartialMatchAttr = TRUE,
-  warnPartialMatchDollar = TRUE
-)
-# some tests (e.g. 1066, 1293) rely on capturing output that will be garbled with small width
-if (getOption('width') < 80L) options(width = 80L)
-
 ##########################
 
 test(1.1, tables(env=new.env()), null.data.table(), output = "No objects of class")
@@ -16064,9 +16045,15 @@ options(old)
 DT = data.table(State=c("ERROR", "COMPLETED", "ERROR"), ExitCode=c(1, 0, 2))
 test(2109, DT[ , list(count=.N), by={list(State, ExitCode)}], DT[ , count := 1L])
 
+# chmatchdup non-ascii, #3844
+utf8 = c("\u00e7ile", "\u00de")
+latin1 = iconv(utf8, from = "UTF-8", to = "latin1")
+out = c(1L, 2L, NA, NA)
+test(2110.1, chmatchdup(c(latin1, latin1), utf8), out)
+test(2110.2, chmatchdup(c(utf8, utf8), latin1), out)
+test(2110.3, chmatchdup(c(latin1, latin1), latin1), out)
+test(2110.4, chmatchdup(c(utf8, utf8), utf8), out)
 
 ###################################
 #  Add new tests above this line  #
 ###################################
-
-options(oldOptions)  # set at top of this file

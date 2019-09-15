@@ -35,9 +35,9 @@ grep omp_set_nested ./src/*.c
 grep --exclude="./src/openmp-utils.c" omp_get_max_threads ./src/*
 
 # Ensure all #pragama omp parallel directives include a num_threads() clause
-grep "pragma omp parallel" ./src/*.c
+grep "pragma omp parallel" ./src/*.c | grep -v getDTthreads
 
-# Ensure all .Call's first argument are unquoted.  TODO - change to use INHERITS()
+# Ensure all .Call's first argument are unquoted.
 grep "[.]Call(\"" ./R/*.R
 
 # Ensure no Rprintf in init.c
@@ -114,7 +114,7 @@ grep asCharacter *.c | grep -v PROTECT | grep -v SET_VECTOR_ELT | grep -v setAtt
 
 cd ..
 R
-cc(clean=TRUE)  # to compile with -pedandic. Also use very latest gcc (currently gcc-7) as CRAN does
+cc(clean=TRUE)  # to compile with -pedandic -Wall -flto. Also uses very latest gcc (currently gcc-7) as CRAN does
 saf = options()$stringsAsFactors
 options(stringsAsFactors=!saf)    # check tests (that might be run by user) are insensitive to option, #2718
 test.data.table()
@@ -136,15 +136,16 @@ rm ~/.Renviron
 LANGUAGE=de R
 require(data.table)
 test.data.table()
+q("no")
 
 R
 remove.packages("xml2")    # we checked the URLs; don't need to do it again (many minutes)
 require(data.table)
-test.data.table()
-test.data.table(with.other.packages=TRUE)
+test.data.table(script="other.Rraw")
+test.data.table(script="*.Rraw")
 test.data.table(verbose=TRUE)   # since main.R no longer tests verbose mode
 gctorture2(step=50)
-system.time(test.data.table())  # apx 4hrs
+system.time(test.data.table(script="*.Rraw"))  # apx 8h = froll 3h + nafill 1m + main 5h
 
 # Upload to win-builder: release, dev & old-release
 
@@ -168,7 +169,7 @@ cd ~/GitHub/data.table
 R310 CMD INSTALL ./data.table_1.12.3.tar.gz
 R310
 require(data.table)
-test.data.table()
+test.data.table(script="*.Rraw")
 
 
 ############################################
@@ -187,8 +188,9 @@ vi ~/.R/Makevars
 R CMD build .
 R CMD check data.table_1.12.3.tar.gz
 
+
 #####################################################
-#  R-devel with UBSAN, ASAN and strict-barrier on too
+#  R-devel with UBSAN, ASAN, strict-barrier, and noLD
 #####################################################
 
 cd ~/build
@@ -200,7 +202,10 @@ mv R-devel R-devel-strict
 cd R-devel-strict    # important to change directory name before building not after because the path is baked into the build, iiuc
 # Following R-exts#4.3.3
 
-./configure --without-recommended-packages --disable-byte-compiled-packages --disable-openmp --enable-strict-barrier CC="gcc -fsanitize=undefined,address -fno-sanitize=float-divide-by-zero -fno-omit-frame-pointer" CFLAGS="-O0 -g -Wall -pedantic" LIBS="-lpthread"
+./configure --without-recommended-packages --disable-byte-compiled-packages --disable-openmp --enable-strict-barrier --disable-long-double CC="gcc -fsanitize=undefined,address -fno-sanitize=float-divide-by-zero -fno-omit-frame-pointer"
+# CFLAGS an LIBS seem to be ignored now by latest R-devel/gcc, and it works without : CFLAGS="-O0 -g -Wall -pedantic" LIBS="-lpthread"
+# Adding --disable-long-double (see R-exts) in the same configure as ASAN/UBSAN used to fail, but now works. So now noLD is included in this strict build.
+# Other flags used in the past: CC="gcc -std=gnu99" CFLAGS="-O0 -g -Wall -pedantic -ffloat-store -fexcess-precision=standard"
 # For ubsan, disabled openmp otherwise gcc fails in R's distance.c:256 error: ‘*.Lubsan_data0’ not specified in enclosing parallel
 # UBSAN gives direct line number under gcc but not clang it seems. clang-5.0 has been helpful too, though.
 # If use later gcc-8, add F77=gfortran-8
@@ -217,11 +222,13 @@ cd ~/GitHub/data.table
 Rdevel-strict CMD INSTALL data.table_1.12.3.tar.gz
 # Check UBSAN and ASAN flags appear in compiler output above. Rdevel was compiled with them so should be passed through to here
 Rdevel-strict
+isTRUE(.Machine$sizeof.longdouble==0)  # check noLD is being tested
 options(repos = "http://cloud.r-project.org")
-install.packages(c("bit64","xts","nanotime","R.utils"))  # minimum packages needed to not skip any tests in test.data.table()
-install.packages(c("curl","knitr"))                      # for `R CMD check` too (when not strict). Too slow to install when strict
+install.packages(c("bit64","xts","nanotime","R.utils","yaml")) # minimum packages needed to not skip any tests in test.data.table()
+# install.packages(c("curl","knitr"))                          # for `R CMD check` when not strict. Too slow to install when strict
 require(data.table)
-test.data.table()      # 7 mins (vs 1min normally) under UBSAN, ASAN and --strict-barrier
+test.data.table(script="*.Rraw") # 7 mins (vs 1min normally) under UBSAN, ASAN and --strict-barrier
+                                 # without the fix in PR#3515, the --disable-long-double lumped into this build does now work and correctly reproduces the noLD problem
 # If any problems, edit ~/.R/Makevars and activate "CFLAGS=-O0 -g" to trace. Rerun 'Rdevel-strict CMD INSTALL' and rerun tests.
 for (i in 1:10) if (!test.data.table()) break  # try several runs maybe even 100; e.g a few tests generate data with a non-fixed random seed
 # gctorture(TRUE)      # very slow, many days
@@ -278,29 +285,6 @@ vi ~/.R/Makevars  # make the -O3 line active again
 #############################################################################
 There are some things to overcome to achieve compile without USE_RINTERNALS, though.
 
-
-########################################################################
-#  Single precision e.g. CRAN's Solaris-Sparc when it was alive on CRAN.
-#  Not Solaris-x86 which is still on CRAN and easier.
-########################################################################
-#
-# Adding --disable-long-double (see R-exts) in the same configure as ASAN/UBSAN fails.  Hence separately.
-## cd ~/build
-## rm -rf R-devel    # 'make clean' isn't enough: results in link error, oddly.
-## tar xvf R-devel.tar.gz
-## cd R-devel
-## ./configure CC="gcc -std=gnu99" CFLAGS="-O0 -g -Wall -pedantic -ffloat-store -fexcess-precision=standard" --without-recommended-packages --disable-byte-compiled-packages --disable-long-double
-## make
-## Rdevel
-## install.packages("bit64")
-## q("no")
-## Rdevel CMD INSTALL ~/data.table_1.12.3.tar.gz
-## Rdevel
-## .Machine$sizeof.longdouble   # check 0
-## require(data.table)
-## require(bit64)
-## test.data.table()
-## q("no")
 
 ########################################################################
 #  rchk : https://github.com/kalibera/rchk
