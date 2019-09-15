@@ -16054,6 +16054,19 @@ test(2110.2, chmatchdup(c(utf8, utf8), latin1), out)
 test(2110.3, chmatchdup(c(latin1, latin1), latin1), out)
 test(2110.4, chmatchdup(c(utf8, utf8), utf8), out)
 
+# setnames: names with same content but different encoding is considered as non-equal, #3845
+utf8 = c("\u00e7ile", "\u00de")
+latin1 = iconv(utf8, from = "UTF-8", to = "latin1")
+tbl = as.data.table(setNames(list(1, 2), latin1))
+test(2111.01, Encoding(names(tbl)), c('latin1', 'latin1'))
+setnames(tbl, utf8)
+test(2111.02, Encoding(names(tbl)), c('UTF-8', 'UTF-8'))
+setnames(tbl, 1:2, latin1)
+test(2111.03, Encoding(names(tbl)), c('latin1', 'latin1'))
+setnames(tbl, latin1, utf8)
+test(2111.04, Encoding(names(tbl)), c('UTF-8', 'UTF-8'))
+
+
 ###################################
 #  Add new tests above this line  #
 ###################################
