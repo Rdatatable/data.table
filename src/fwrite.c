@@ -19,10 +19,6 @@
 #define CLOSE close
 #endif
 
-// normally this variable (or an equivalent) will be set or unset by configure script
-// for now, it's defined here
-#define HAVE_LIBZ
-
 #ifdef HAVE_LIBZ
 #include "zlib.h"      // for writing gzip file
 #endif
