@@ -2,7 +2,7 @@
 
 ## Utilities
 
-### [`cc.R`](./.dev/cc.R)
+### [`cc.R`](./cc.R)
 
 Developer helper script providing `cc` function. If one start R session in `data.table` project root directory `.dev/cc.R` file should be automatically sourced (due to local `.Rprofile` file) making `cc()` (and `dd()`) function available straightaway.
 
@@ -57,11 +57,11 @@ make build && make install && make test
 ```
 To speed up testing of changes one can use `cc()` function instead of `make` commands.
 
-### [`CRAN_Release.cmd`](./.dev/CRAN_Release.cmd)
+### [`CRAN_Release.cmd`](./CRAN_Release.cmd)
 
 Procedure of multiple different checks that has to be performed as a CRAN release process.
 
-### [`revdep.R`](./.dev/revdep.R)
+### [`revdep.R`](./revdep.R)
 
 Script used to check breaking changes in `data.table` on reverse dependencies from CRAN and BioC.
 
