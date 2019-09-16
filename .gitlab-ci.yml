@@ -111,7 +111,7 @@ test-rel-lin: #  most comprehensive tests, force all suggests, also integration 
     - cd bus/$CI_BUILD_NAME
     - R CMD check $(ls -1t data.table_*.tar.gz | head -n 1)
     - *cleanup-src
-    - ! grep "warning:" data.table.Rcheck/00install.out
+    - (! grep "warning:" data.table.Rcheck/00install.out)
 
 test-rel-vanilla-lin: # minimal installation, no suggested deps, no vignettes or manuals, measure memory, using gcc -O0 -fno-openmp
   <<: *test-lin
