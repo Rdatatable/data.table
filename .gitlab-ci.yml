@@ -44,7 +44,7 @@ build: # build data.table sources as tar.gz archive
   dependencies:
   - mirror-packages
   script:
-    - Rscript -e 'install.packages("knitr", repos=file.path("file:",normalizePath("bus/mirror-packages/cran")))'
+    - Rscript -e 'install.packages("knitr", repos=file.path("file:",normalizePath("bus/mirror-packages/cran")), quiet=TRUE)'
     - rm -r bus
     - echo "Revision:" $CI_BUILD_REF >> ./DESCRIPTION
     - R CMD build .
@@ -101,7 +101,7 @@ test-rel-lin: #  most comprehensive tests, force all suggests, also integration 
     OPENBLAS_MAIN_FREE: "1"
     TEST_DATA_TABLE_WITH_OTHER_PACKAGES: "TRUE"
   script:
-    - Rscript -e 'source("ci.R"); install.packages(dcf.dependencies(c("DESCRIPTION","inst/tests/tests-DESCRIPTION"), which="all"))'
+    - Rscript -e 'source("ci.R"); install.packages(dcf.dependencies(c("DESCRIPTION","inst/tests/tests-DESCRIPTION"), which="all"), quiet=TRUE)'
     - *copy-src
     - rm -r bus
     - *move-src
@@ -141,7 +141,7 @@ test-rel-cran-lin: # currently released R on Linux
     - echo 'CFLAGS=-g0 -O2 -fopenmp -Wall -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2'> ~/.R/Makevars # -g0 because -g increases datatable.so size from 0.5MB to 1.5MB and breaches 'installed package size <= 5MB' note
     - echo 'CXXFLAGS=-g0 -O2 -fopenmp -Wall -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2' >> ~/.R/Makevars
   script:
-    - Rscript -e 'source("ci.R"); install.packages(dcf.dependencies("DESCRIPTION", which="most"))'
+    - Rscript -e 'source("ci.R"); install.packages(dcf.dependencies("DESCRIPTION", which="most"), quiet=TRUE)'
     - *copy-src
     - rm -r bus
     - *move-src
@@ -159,7 +159,7 @@ test-dev-cran-lin: # R-devel on Linux
     _R_CHECK_CRAN_INCOMING_: "TRUE"
     _R_CHECK_CRAN_INCOMING_REMOTE_: "FALSE"
   script:
-    - Rscript -e 'source("ci.R"); install.packages(dcf.dependencies("DESCRIPTION", which="most"))'
+    - Rscript -e 'source("ci.R"); install.packages(dcf.dependencies("DESCRIPTION", which="most"), quiet=TRUE)'
     - *copy-src
     - rm -r bus
     - *move-src
@@ -174,7 +174,7 @@ test-310-cran-lin: # test stated R dependency (3.1.0) using Linux
     _R_CHECK_CRAN_INCOMING_: "TRUE"
     _R_CHECK_CRAN_INCOMING_REMOTE_: "FALSE"
   script:
-    - Rscript -e 'source("ci.R"); install.packages(dcf.dependencies("DESCRIPTION", which="most"))'
+    - Rscript -e 'source("ci.R"); install.packages(dcf.dependencies("DESCRIPTION", which="most"), quiet=TRUE)'
     - *copy-src
     - rm -r bus
     - *move-src
@@ -188,7 +188,7 @@ test-rel-win: # windows test and build binaries
     R_BIN_VERSION: "3.6"
     R_DIR: "R-3.6.0"
   script:
-    - Rscript -e "source('ci.R'); install.packages(dcf.dependencies('DESCRIPTION', which='all'))"
+    - Rscript -e "source('ci.R'); install.packages(dcf.dependencies('DESCRIPTION', which='all'), quiet=TRUE)"
     - *copy-src
     - rm -r bus
     - *move-src
@@ -207,7 +207,7 @@ test-dev-win: # R-devel on windows
     TEST_DATA_TABLE_MEMTEST: "FALSE" # disabled as described in #3147
   allow_failure: false
   script:
-    - Rscript -e "source('ci.R'); install.packages(dcf.dependencies('DESCRIPTION', which='all'))"
+    - Rscript -e "source('ci.R'); install.packages(dcf.dependencies('DESCRIPTION', which='all'), quiet=TRUE)"
     - *copy-src
     - rm -r bus
     - *move-src
@@ -223,7 +223,7 @@ test-dev-win: # R-devel on windows
   variables:
     R_BIN_VERSION: "3.6"
   script:
-    - Rscript -e 'source("ci.R"); install.packages(dcf.dependencies("DESCRIPTION", which="all"))'
+    - Rscript -e 'source("ci.R"); install.packages(dcf.dependencies("DESCRIPTION", which="all"), quiet=TRUE)'
     - *copy-src
     - rm -r bus
     - *move-src
@@ -241,6 +241,7 @@ integration: # merging all artifacts to produce single R repository and summarie
     - linux
   only:
     - master
+    - pkgdown
   dependencies:
   - mirror-packages
   - build
@@ -256,6 +257,12 @@ integration: # merging all artifacts to produce single R repository and summarie
     R_BIN_VERSION: "3.6"
     R_DEVEL_BIN_VERSION: "3.7"
   script:
+    # pkgdown installs pkgs from "." so run at start to have clean root dir
+    - apt-get update -qq && apt-get install -y libxml2-dev
+    - mkdir -p /tmp/pkgdown/library
+    - R_LIBS_USER=/tmp/pkgdown/library Rscript -e 'install.packages("remotes", repos=Sys.getenv("CRAN_MIRROR"), quiet=TRUE); remotes::install_github("r-lib/pkgdown", repos=Sys.getenv("CRAN_MIRROR"), quiet=TRUE); pkgdown::build_site(override=list(destination="./pkgdown"))'
+    - mv cheatsheet.png pkgdown
+    # html manual, vignettes, repos, cran_web, cran_checks
     - echo 'source("ci.R"); source("publish.R")' >> .Rprofile
     # list of available test-* jobs dynamically based on bus/test-* directories
     - Rscript -e 'cat("\ntest.jobs <- c(\n"); cat(paste0("  \"",list.files("bus",pattern="^test-"),"\" = \"data.table\""), sep=",\n"); cat(")\n")' >> .Rprofile
@@ -303,6 +310,9 @@ integration: # merging all artifacts to produce single R repository and summarie
     - Rscript -e 'pdf.copy("data.table", "test-rel-lin")'
     # web/checks/check_results_$pkg.html
     - Rscript -e 'check.index("data.table", names(test.jobs))'
+    # pkgdown merge
+    - Rscript -e 'common_files<-function(path1, path2) intersect(list.files(path1, all.files=TRUE, no..=TRUE), list.files(path2, all.files=TRUE, no..=TRUE)); if (length(f<-common_files("pkgdown","bus/integration/cran"))) message(paste(c("Following artifacts will be overwritten by pkgdown artifacts:", paste0("  ", f)), collapse="\n")); q("no")'
+    - mv pkgdown/* bus/integration/cran/
     # cleanup artifacts from other jobs
     - mkdir tmpbus
     - mv bus/$CI_BUILD_NAME tmpbus
@@ -363,13 +373,14 @@ docker-tags: # publish only on tagged commits, we use tags for version
     IMAGE_TAG: $CI_COMMIT_TAG
   <<: *docker
 
-pages: # publish R repository, test jobs summaries, html documentation of all packages in repo
+pages: # publish R repository, test jobs summaries, html documentation of all packages in repo, pkgdown
   stage: deploy
   environment: production
   tags:
     - linux
   only:
     - master
+    - pkgdown
   image: ubuntu
   dependencies:
   - integration
