@@ -1,5 +1,5 @@
-PKG_CFLAGS=@cflags@
-PKG_LIBS=@libs@
+PKG_CFLAGS=@cflags@ $(SHLIB_OPENMP_CFLAGS) -std=c99 -O3 -pipe -Wall -pedantic -flto
+PKG_LIBS=@libs@ $(SHLIB_OPENMP_CFLAGS)
 
 all: $(SHLIB)
 	mv $(SHLIB) datatable$(SHLIB_EXT)
