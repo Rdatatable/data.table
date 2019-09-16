@@ -457,7 +457,7 @@ NoLD 'additional issue' resolved
 Requests from Luke Tierney and Tomas Kalibera included, noted and thanked in NEWS.
 Best, Matt
 ------------------------------------------------------------
-DO NOT commit or push to GitHub. Leave 4 files (CRAN_Release.cmd, DESCRIPTION, NEWS and init.c) edited and not committed. Include these in a single and final bump commit below.
+DO NOT commit or push to GitHub. Leave 4 files (.dev/CRAN_Release.cmd, DESCRIPTION, NEWS and init.c) edited and not committed. Include these in a single and final bump commit below.
 DO NOT even use a PR. Because PRs build binaries and we don't want any binary versions of even release numbers available from anywhere other than CRAN.
 Leave milestone open with a 'final checks' issue open. Keep updating status there.
 ** If on EC2, shutdown instance. Otherwise get charged for potentially many days/weeks idle time with no alerts **
@@ -467,12 +467,12 @@ CRAN's first check is automatic and usually received within an hour. WAIT FOR TH
 When CRAN's email contains "Pretest results OK pending a manual inspection" (or similar), or if not then it is known why not and ok, then bump dev.
 ###### Bump dev
 0. Close milestone to prevent new issues being tagged with it. The final 'release checks' issue can be left open in a closed milestone.
-1. Check that 'git status' shows 4 files in modified and uncommitted state: DESCRIPTION, NEWS.md, init.c and this CRAN_Release.cmd
+1. Check that 'git status' shows 4 files in modified and uncommitted state: DESCRIPTION, NEWS.md, init.c and this .dev/CRAN_Release.cmd
 2. Bump version in DESCRIPTION to next odd number. Note that DESCRIPTION was in edited and uncommitted state so even number never appears in git.
 3. Add new heading in NEWS for the next dev version. Add "(submitted to CRAN on <today>)" on the released heading.
 4. Bump dllVersion() in init.c
 5. Bump 3 version numbers in Makefile
-6. Search and replace this CRAN_Release.cmd to update 1.12.1 to 1.12.3, and 1.12.0 to 1.12.2 (e.g. in step 8 and 9 below)
+6. Search and replace this .dev/CRAN_Release.cmd to update 1.12.1 to 1.12.3, and 1.12.0 to 1.12.2 (e.g. in step 8 and 9 below)
 7. Another final gd to view all diffs using meld. (I have `alias gd='git difftool &> /dev/null'` and difftool meld: http://meldmerge.org/)
 8. Push to master with this consistent commit message: "1.12.2 on CRAN. Bump to 1.12.3"
 9. Take sha from step 8 and run `git tag 1.12.2 34796cd1524828df9bf13a174265cb68a09fcd77` then `git push origin 1.12.2` (not `git push --tags` according to https://stackoverflow.com/a/5195913/403310)
