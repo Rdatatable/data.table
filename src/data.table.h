@@ -229,3 +229,5 @@ SEXP coerceUtf8IfNeeded(SEXP x);
 
 // types.c
 char *end(char *start);
+void ansMsg(ans_t *ans, int n, bool verbose, const char *func);
+SEXP testMsgR(SEXP status, SEXP x, SEXP k);
