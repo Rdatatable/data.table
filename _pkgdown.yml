@@ -1,0 +1,151 @@
+url: https://Rdatatable.gitlab.io/data.table
+
+template:
+  params:
+    ganalytics: UA-129166154-2
+
+development:
+  version_tooltip: "Development version"
+
+navbar:
+  structure:
+    left:  [home, introduction, reference, articles, news]
+    right: [github]
+  components:
+    home:
+      icon: fas fa-home fa-lg
+      href: index.html
+    introduction:
+      text: Introduction
+      href: articles/datatable-intro.html
+    reference:
+      text: Manual
+      href: reference/index.html
+    articles:
+      text: Vignettes
+      menu:
+      - text: "Introduction to data.table"
+        href: articles/datatable-intro.html
+      - text: "Reference semantics"
+        href: articles/datatable-reference-semantics.html
+      - text: "Using .SD for Data Analysis"
+        href: articles/datatable-sd-usage.html
+      - text: "Keys and fast binary search based subset"
+        href: articles/datatable-keys-fast-subset.html
+      - text: "Secondary indices and auto indexing"
+        href: articles/datatable-secondary-indices-and-auto-indexing.html
+      - text: "Efficient reshaping using data.tables"
+        href: articles/datatable-reshape.html
+      - text: "Frequently asked questions"
+        href: articles/datatable-faq.html
+      - text: "Importing data.table"
+        href: articles/datatable-importing.html
+      - text: "Benchmarking data.table"
+        href: articles/datatable-benchmarking.html
+      news:
+        text: Changelog
+        href: news/index.html
+      github:
+        icon: fab fa-github fa-lg
+        href: https://github.com/Rdatatable/data.table
+
+reference:
+- title: Query
+  contents:
+  - '`[.data.table`'
+  - '`special-symbols`'
+  - '`:=`'
+
+- title: Import/Export
+  contents:
+  - fread
+  - as.data.table
+  - setDT
+  - fwrite
+  - setDF
+  - copy
+  - as.matrix
+  - as.data.table.xts
+  - as.xts.data.table
+
+- title: Reshape
+  contents:
+  - dcast
+  - melt
+  - transpose
+
+- title: Convenient functions
+  contents:
+  - between
+  - chmatch
+  - like
+  - patterns
+  - fcoalesce
+  - fifelse
+  - unique
+  - groupingsets
+  - subset
+  - fsort
+  - frank
+  - first
+  - IDateTime
+
+- title: Transform and clean
+  contents:
+  - rbindlist
+  - split
+  - CJ
+  - na.omit
+  - nafill
+  - tstrsplit
+
+- title: Efficient in-place modification
+  contents:
+  - set
+  - setkey
+  - setattr
+  - setDF
+  - setDT
+  - setcolorder
+  - setnames
+  - setorder
+  - setnafill
+  - copy
+
+- title: Ordered observations
+  contents:
+  - setkey
+  - rleid
+  - rowid
+  - shift
+  - froll
+  - nafill
+
+- title: Combining and comparing multiple data sets
+  contents:
+  - merge
+  - foverlaps
+  - fintersect
+  - all.equal
+
+- title: Optimization
+  contents:
+  - setDTthreads
+  - datatable.optimize
+
+- title: Maintenance
+  contents:
+  - print.data.table
+  - test.data.table
+  - update.dev.pkg
+  - tables
+
+- title: Advanced/Internal
+  contents:
+  - .Last.updated
+  - address
+  - '`data.table-class`'
+  - setNumericRounding
+  - shouldPrint
+  - timetaken
+  - truelength

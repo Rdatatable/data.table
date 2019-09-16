@@ -74,19 +74,25 @@ name_dots = function(...) {
   } else {
     vnames[is.na(vnames)] = ""
   }
-  for (i in which(vnames=="")) {
-    if ((tmp <- deparse(dot_sub[[i]])[1L]) == make.names(tmp))
-      vnames[i] = tmp
+  notnamed = vnames==""
+  if (any(notnamed)) {
+    syms = sapply(dot_sub, is.symbol)  # save the deparse() in most cases of plain symbol
+    for (i in which(notnamed)) {
+      tmp = if (syms[i]) as.character(dot_sub[[i]]) else deparse(dot_sub[[i]])[1L]
+      if (tmp == make.names(tmp)) vnames[i]=tmp
+    }
   }
-  if (length(w<-which(vnames==""))) vnames[w] = paste0("V", w)
-  vnames
+  list(vnames=vnames, .named=!notnamed)
 }
 
 # convert a vector like c(1, 4, 3, 2) into a string like [1, 4, 3, 2]
 #   (common aggregation method for error messages)
-brackify = function(x) {
-  # arbitrary cutoff
-  if (length(x) > 10L) x = c(x[1:10], '...')
+brackify = function(x, quote=FALSE) {
+  # arbitrary
+  CUTOFF = 10L
+  # keep one more than needed to trigger dots if needed
+  if (quote && is.character(x)) x = paste0("'",head(x,CUTOFF+1L),"'")
+  if (length(x) > CUTOFF) x = c(x[1:CUTOFF], '...')
   sprintf('[%s]', paste(x, collapse = ', '))
 }
 
@@ -109,3 +115,9 @@ do_patterns = function(pat_sub, all_cols) {
 
   return(matched)
 }
+
+# nocov start #593 always return a data.table
+edit.data.table = function(name, ...) {
+  setDT(NextMethod('edit', name))[]
+}
+# nocov end

@@ -35,7 +35,7 @@ as.IDate.Date = function(x, ...) {
 as.IDate.POSIXct = function(x, tz = attr(x, "tzone", exact=TRUE), ...) {
   if (is.null(tz)) tz = "UTC"
   if (tz %chin% c("UTC", "GMT")) {
-    (setattr(as.integer(x) %/% 86400L, "class", c("IDate", "Date")))  # %/% returns new object so can use setattr() on it; wrap with () to return visibly
+    (setattr(as.integer(as.numeric(x) %/% 86400L), "class", c("IDate", "Date")))  # %/% returns new object so can use setattr() on it; wrap with () to return visibly
   } else
     as.IDate(as.Date(x, tz = tz, ...))
 }
@@ -51,6 +51,7 @@ as.Date.IDate = function(x, ...) {
 mean.IDate =
 seq.IDate =
 c.IDate =
+cut.IDate =
 rep.IDate =
 unique.IDate =
   function(x, ...) {
@@ -87,8 +88,9 @@ round.IDate = function (x, digits=c("weeks", "months", "quarters", "years"), ...
 `+.IDate` = function (e1, e2) {
   if (nargs() == 1L)
     return(e1)
+  # TODO: investigate Ops.IDate method a la Ops.difftime
   if (inherits(e1, "difftime") || inherits(e2, "difftime"))
-    stop("difftime objects may not be added to IDate. Use plain integer instead of difftime.")
+    stop("Internal error -- difftime objects may not be added to IDate, but Ops dispatch should have intervened to prevent this") # nocov
   if (isReallyReal(e1) || isReallyReal(e2)) {
     return(`+.Date`(e1, e2))
     # IDate doesn't support fractional days; revert to base Date
@@ -108,7 +110,7 @@ round.IDate = function (x, digits=c("weeks", "months", "quarters", "years"), ...
   if (nargs() == 1L)
     stop("unary - is not defined for \"IDate\" objects")
   if (inherits(e2, "difftime"))
-    stop("difftime objects may not be subtracted from IDate. Use plain integer instead of difftime.")
+    stop("Internal error -- difftime objects may not be subtracted from IDate, but Ops dispatch should have intervened to prevent this") # nocov
 
   if ( isReallyReal(e2) ) {
     # IDate deliberately doesn't support fractional days so revert to base Date
@@ -302,28 +304,22 @@ as.POSIXlt.ITime = function(x, ...) {
 ###################################################################
 
 second  = function(x) {
-  if (inherits(x, 'POSIXct') && identical(attr(x, 'tzone', exact=TRUE), 'UTC')) {
-    # if we know the object is in UTC, can calculate the hour much faster
-    as.integer(x) %% 60L
-  } else {
-    as.integer(as.POSIXlt(x)$sec)
-  }
+  # if we know the object is in UTC, can calculate the hour much faster
+  if (inherits(x, 'POSIXct') && identical(attr(x, 'tzone', exact=TRUE), 'UTC')) return(as.integer(as.numeric(x) %% 60L))
+  if (inherits(x, 'ITime')) return(as.integer(x) %% 60L)
+  as.integer(as.POSIXlt(x)$sec)
 }
 minute  = function(x) {
-  if (inherits(x, 'POSIXct') && identical(attr(x, 'tzone', exact=TRUE), 'UTC')) {
-    # ever-so-slightly faster than x %% 3600L %/% 60L
-    as.integer(x) %/% 60L %% 60L
-  } else {
-    as.POSIXlt(x)$min
-  }
+  # ever-so-slightly faster than x %% 3600L %/% 60L
+  if (inherits(x, 'POSIXct') && identical(attr(x, 'tzone', exact=TRUE), 'UTC')) return(as.integer(as.numeric(x) %/% 60L %% 60L))
+  if (inherits(x, 'ITime')) return(as.integer(x) %/% 60L %% 60L)
+  as.POSIXlt(x)$min
 }
 hour = function(x) {
-  if (inherits(x, 'POSIXct') && identical(attr(x, 'tzone', exact=TRUE), 'UTC')) {
-    # ever-so-slightly faster than x %% 86400L %/% 3600L
-    as.integer(x) %/% 3600L %% 24L
-  } else {
-    as.POSIXlt(x)$hour
-  }
+  # ever-so-slightly faster than x %% 86400L %/% 3600L
+  if (inherits(x, 'POSIXct') && identical(attr(x, 'tzone', exact=TRUE), 'UTC')) return(as.integer(as.numeric(x) %/% 3600L %% 24L))
+  if (inherits(x, 'ITime')) return(as.integer(x) %/% 3600L %% 24L)
+  as.POSIXlt(x)$hour
 }
 yday    = function(x) as.POSIXlt(x)$yday + 1L
 wday    = function(x) (unclass(as.IDate(x)) + 4L) %% 7L + 1L

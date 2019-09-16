@@ -243,11 +243,13 @@ SEXP alloccolwrapper(SEXP dt, SEXP overAllocArg, SEXP verbose) {
   SEXP ans = PROTECT(alloccol(dt, length(dt)+overAlloc, LOGICAL(verbose)[0]));
 
   for(R_len_t i = 0; i < LENGTH(ans); i++) {
-    // clear the same excluded by copyMostAttrib(). Primarily for data.table and as.data.table, but added here centrally (see #4890).
-
+    // clear names; also excluded by copyMostAttrib(). Primarily for data.table and as.data.table, but added here centrally (see #4890).
     setAttrib(VECTOR_ELT(ans, i), R_NamesSymbol, R_NilValue);
-    setAttrib(VECTOR_ELT(ans, i), R_DimSymbol, R_NilValue);
-    setAttrib(VECTOR_ELT(ans, i), R_DimNamesSymbol, R_NilValue);
+
+    // But don't clear dim and dimnames. Because as from 1.12.4 we keep the matrix column as-is and ask user to use as.data.table to
+    // unpack matrix columns when they really need to; test 2089.2
+    // setAttrib(VECTOR_ELT(ans, i), R_DimSymbol, R_NilValue);
+    // setAttrib(VECTOR_ELT(ans, i), R_DimNamesSymbol, R_NilValue);
   }
 
   UNPROTECT(1);
@@ -279,15 +281,14 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
   // cols : column names or numbers corresponding to the values to set
   // rows : row numbers to assign
   R_len_t i, j, numToDo, targetlen, vlen, r, oldncol, oldtncol, coln, protecti=0, newcolnum, indexLength;
-  SEXP targetcol, names, nullint, thisv, targetlevels, newcol, s, colnam, tmp, colorder, key, index, a, assignedNames, indexNames;
-  SEXP bindingIsLocked = getAttrib(dt, install(".data.table.locked"));
+  SEXP targetcol, nullint, thisv, targetlevels, newcol, s, colnam, tmp, colorder, key, index, a, assignedNames, indexNames;
   bool verbose=GetVerbose(), anytodelete=false;
   const char *c1, *tc1, *tc2;
   int *buf, newKeyLength, indexNo;
   size_t size; // must be size_t otherwise overflow later in memcpy
   if (isNull(dt)) error("assign has been passed a NULL dt");
   if (TYPEOF(dt) != VECSXP) error("dt passed to assign isn't type VECSXP");
-  if (length(bindingIsLocked) && LOGICAL(bindingIsLocked)[0])
+  if (islocked(dt))
     error(".SD is locked. Updating .SD by reference using := or set are reserved for future use. Use := in j directly. Or use copy(.SD) as a (slow) last resort, until shallow() is exported.");
 
   // We allow set() on data.frame too; e.g. package Causata uses set() on a data.frame in tests/testTransformationReplay.R
@@ -299,7 +300,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
     error("Internal error: dt passed to Cassign is not a data.table or data.frame");  // # nocov
 
   oldncol = LENGTH(dt);
-  names = getAttrib(dt, R_NamesSymbol);
+  SEXP names = PROTECT(getAttrib(dt, R_NamesSymbol)); protecti++;
   if (isNull(names)) error("dt passed to assign has no names");
   if (length(names)!=oldncol)
     error("Internal error in assign: length of names (%d) is not length of dt (%d)",length(names),oldncol); // # nocov
@@ -335,6 +336,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
     if (numToDo==0) {
       if (!length(newcolnames)) {
         *_Last_updated = 0;
+        UNPROTECT(protecti);
         return(dt); // all items of rows either 0 or NA. !length(newcolnames) for #759
       }
       if (verbose) Rprintf("Added %d new column%s initialized with all-NA\n",
@@ -344,6 +346,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
   if (!length(cols)) {
     warning("length(LHS)==0; no columns to delete or assign RHS to.");   // test 1295 covers
     *_Last_updated = 0;
+    UNPROTECT(protecti);
     return(dt);
   }
   // FR #2077 - set able to add new cols by reference
@@ -439,7 +442,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
     oldtncol = TRUELENGTH(dt);   // TO DO: oldtncol can be just called tl now, as we won't realloc here any more.
 
     if (oldtncol<oldncol) {
-      if (oldtncol==0) error("This data.table has either been loaded from disk (e.g. using readRDS()/load()) or constructed manually (e.g. using structure()). Please run setDT() or alloc.col() on it first (to pre-allocate space for new columns) before assigning by reference to it.");   // #2996
+      if (oldtncol==0) error("This data.table has either been loaded from disk (e.g. using readRDS()/load()) or constructed manually (e.g. using structure()). Please run setDT() or setalloccol() on it first (to pre-allocate space for new columns) before assigning by reference to it.");   // #2996
       error("Internal error: oldtncol(%d) < oldncol(%d). Please report to data.table issue tracker, including result of sessionInfo().", oldtncol, oldncol); // # nocov
     }
     if (oldtncol>oldncol+10000L) warning("truelength (%d) is greater than 10,000 items over-allocated (length = %d). See ?truelength. If you didn't set the datatable.alloccol option very large, please report to data.table issue tracker including the result of sessionInfo().",oldtncol, oldncol);
@@ -473,12 +476,12 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
          (TYPEOF(values)!=VECSXP && i>0) // assigning the same values to a second column. Have to ensure a copy #2540
          ) {
         if (verbose) {
-          Rprintf("RHS for item %d has been duplicated because NAMED is %d, but then is being plonked. length(values)==%d; length(cols)==%d)\n",
-                  i+1, NAMED(thisvalue), length(values), length(cols));
+          Rprintf("RHS for item %d has been duplicated because NAMED==%d MAYBE_SHARED==%d, but then is being plonked. length(values)==%d; length(cols)==%d)\n",
+                  i+1, NAMED(thisvalue), MAYBE_SHARED(thisvalue), length(values), length(cols));
         }
-        thisvalue = duplicate(thisvalue);   // PROTECT not needed as assigned as element to protected list below.
+        thisvalue = copyAsPlain(thisvalue);   // PROTECT not needed as assigned as element to protected list below.
       } else {
-        if (verbose) Rprintf("Direct plonk of unnamed RHS, no copy.\n");  // e.g. DT[,a:=as.character(a)] as tested by 754.3
+        if (verbose) Rprintf("Direct plonk of unnamed RHS, no copy. NAMED==%d, MAYBE_SHARED==%d\n", NAMED(thisvalue), MAYBE_SHARED(thisvalue));  // e.g. DT[,a:=as.character(a)] as tested by 754.5
       }
       SET_VECTOR_ELT(dt, coln, thisvalue);                 // plonk new column in as it's already the correct length
       setAttrib(thisvalue, R_NamesSymbol, R_NilValue);     // clear names such as  DT[,a:=mapvector[a]]
@@ -489,7 +492,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
     SEXP RHS;
 
     if (coln+1 > oldncol) {  // new column
-      SET_VECTOR_ELT(dt, coln, newcol=allocNAVector(TYPEOF(thisvalue), nrow));
+      SET_VECTOR_ELT(dt, coln, newcol=allocNAVectorLike(thisvalue, nrow));
       // initialize with NAs for when 'rows' is a subset and it doesn't touch
       // do not try to save the time to NA fill (contiguous branch free assign anyway) since being
       // sure all items will be written to (isNull(rows), length(rows), vlen<1, targetlen) is not worth the risk.
@@ -565,7 +568,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
             if (iRHS[0] != NA_INTEGER) warning("Coerced '%s' RHS to 'integer' to match the factor column's underlying type. Character columns are now recommended (can be in keys), or coerce RHS to integer or character first.", type2char(TYPEOF(thisvalue)));
           } else { // thisvalue is integer
             // make sure to copy thisvalue. May be modified below. See #2984
-            RHS = PROTECT(duplicate(thisvalue)); thisprotecti++;
+            RHS = PROTECT(copyAsPlain(thisvalue)); thisprotecti++;
             iRHS = INTEGER(RHS);
           }
           for (int j=0; j<length(RHS); j++) {
@@ -710,23 +713,23 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
         if (verbose) {
           Rprintf("Dropping index '%s' due to an update on a key column\n", c1+2);
         }
-      } else if(newKeyLength < strlen(c1)){
+      } else if(newKeyLength < strlen(c1)) {
+        SEXP s4Str = PROTECT(mkString(s4));
         if(indexLength == 0 && // shortened index can be kept since it is just information on the order (see #2372)
-           LOGICAL(chin(mkString(s4), indexNames))[0] == 0) {// index with shortened name not present yet
+           LOGICAL(chin(s4Str, indexNames))[0] == 0) {// index with shortened name not present yet
           SET_TAG(s, install(s4));
           SET_STRING_ELT(indexNames, indexNo, mkChar(s4));
-          if (verbose) {
+          if (verbose)
             Rprintf("Shortening index '%s' to '%s' due to an update on a key column\n", c1+2, s4 + 2);
-          }
-        } else{ // indexLength > 0 || shortened name present already
+        } else { // indexLength > 0 || shortened name present already
           // indexLength > 0 indicates reordering. Drop it to avoid spurious reordering in non-indexed columns (#2372)
           // shortened anme already present indicates that index needs to be dropped to avoid duplicate indices.
           setAttrib(index, a, R_NilValue);
           SET_STRING_ELT(indexNames, indexNo, NA_STRING);
-          if (verbose) {
+          if (verbose)
             Rprintf("Dropping index '%s' due to an update on a key column\n", c1+2);
-          }
         }
+        UNPROTECT(1); // s4Str
       } //else: index is not affected by assign: nothing to be done
       free(s4);
       indexNo ++;
@@ -736,7 +739,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
   if (anytodelete) {
     // Delete any columns assigned NULL (there was a 'continue' earlier in loop above)
     // In reverse order to make repeated memmove easy. Otherwise cols would need to be updated as well after each delete.
-    PROTECT(colorder = duplicate(cols)); protecti++;
+    PROTECT(colorder = copyAsPlain(cols)); protecti++;
     R_isort(INTEGER(colorder),LENGTH(cols));
     PROTECT(colorder = match(cols, colorder, 0)); protecti++;  // actually matches colorder to cols (oddly, arguments are that way around)
     // Can't find a visible R entry point to return ordering of cols, above is only way I could find.
@@ -810,9 +813,9 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source)
     // SEXP pointed to.
     // If source is already not named (because j already created a fresh unnamed vector within a list()) we don't want to
     // duplicate unnecessarily, hence checking for named rather than duplicating always.
-    // See #481, #1270 and tests 1341.* fail without this duplicate().
+    // See #481, #1270 and tests 1341.* fail without this copy.
     if (anyNamed(source)) {
-      source = PROTECT(duplicate(source)); protecti++;
+      source = PROTECT(copyAsPlain(source)); protecti++;
     }
   }
   if (!length(where)) {  // e.g. called from rbindlist with where=R_NilValue
@@ -1003,7 +1006,7 @@ void writeNA(SEXP v, const int from, const int n)
     for (int i=from; i<=to; ++i) vd[i] = NA_INTEGER;
   } break;
   case REALSXP : {
-    if (INHERITS(v, char_integer64)) {
+    if (Rinherits(v, char_integer64)) {  // Rinherits covers nanotime too which inherits from integer64 via S4 extends
       int64_t *vd = (int64_t *)REAL(v);
       for (int i=from; i<=to; ++i) vd[i] = INT64_MIN;
     } else {
@@ -1036,6 +1039,16 @@ SEXP allocNAVector(SEXPTYPE type, R_len_t n)
   // We guess that author of allocVector would have liked to initialize with NA but was prevented since memset
   // is restricted to one byte.
   SEXP v = PROTECT(allocVector(type, n));
+  writeNA(v, 0, n);
+  UNPROTECT(1);
+  return(v);
+}
+
+SEXP allocNAVectorLike(SEXP x, R_len_t n) {
+  // writeNA needs the attribute retained to write NA_INTEGER64, #3723
+  // TODO: remove allocNAVector above when usage in fastmean.c, fcast.c and fmelt.c can be adjusted; see comments in PR3724
+  SEXP v = PROTECT(allocVector(TYPEOF(x), n));
+  copyMostAttrib(x, v);
   writeNA(v, 0, n);
   UNPROTECT(1);
   return(v);
@@ -1140,20 +1153,5 @@ SEXP setcolorder(SEXP x, SEXP o)
   // No need to change key (if any); sorted attribute is column names not positions
   Free(tmp);
   return(R_NilValue);
-}
-
-SEXP pointWrapper(SEXP to, SEXP to_idx, SEXP from, SEXP from_idx) {
-
-  R_len_t i, fidx, tidx, l_to=length(to), l_from=length(from), l_idx=length(from_idx);
-  if (!isNewList(to) || !isNewList(from)) error("'to' and 'from' must be of type list");
-  if (length(from_idx) != length(to_idx) || l_idx == 0) error("'from_idx' and 'to_idx' must be non-empty integer vectors of same length.");
-  for (i=0; i<l_idx; i++) {
-    fidx = INTEGER(from_idx)[i]-1; // 1-based to 0-based
-    tidx = INTEGER(to_idx)[i]-1;   // 1-based to 0-based
-    if (fidx < 0 || fidx > l_from-1) error("invalid from_idx[%d]=%d, falls outside 1 and length(from)=%d.", i+1, fidx, l_from);
-    if (tidx < 0 || tidx > l_to-1) error("invalid to_idx[%d]=%d, falls outside 1 and length(to)=%d.", i+1, tidx, l_to);
-    SET_VECTOR_ELT(to, tidx, VECTOR_ELT(from, fidx));
-  }
-  return(to);
 }
 

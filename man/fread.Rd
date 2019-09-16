@@ -24,7 +24,7 @@ data.table=getOption("datatable.fread.datatable", TRUE),
 nThread=getDTthreads(verbose),
 logical01=getOption("datatable.logical01", FALSE),  # due to change to TRUE; see NEWS
 keepLeadingZeros = getOption("datatable.keepLeadingZeros", FALSE),
-yaml=FALSE, autostart=NA
+yaml=FALSE, autostart=NA, tmpdir=tempdir()
 )
 }
 \arguments{
@@ -63,6 +63,7 @@ yaml=FALSE, autostart=NA
   \item{keepLeadingZeros}{If TRUE a column containing numeric data with leading zeros will be read as character, otherwise leading zeros will be removed and converted to numeric.}
   \item{yaml}{ If \code{TRUE}, \code{fread} will attempt to parse (using \code{\link[yaml]{yaml.load}}) the top of the input as YAML, and further to glean parameters relevant to improving the performance of \code{fread} on the data itself. The entire YAML section is returned as parsed into a \code{list} in the \code{yaml_metadata} attribute. See \code{Details}. }
   \item{autostart}{ Deprecated and ignored with warning. Please use \code{skip} instead. }
+  \item{tmpdir}{ Directory to use as the \code{tmpdir} argument for any \code{tempfile} calls. The default is \code{tempdir()} which can be controlled by setting \code{TMPDIR} before starting the R session; see \code{\link[base]{tempdir}}. }
 }
 \details{
 
@@ -141,117 +142,6 @@ On YAML, see \url{http://yaml.org/}; on csvy, see \url{http://csvy.org/}.
   \code{\link[utils:read.table]{read.csv}}, \code{\link[base:connections]{url}}, \code{\link[base:locales]{Sys.setlocale}}, \code{\link{setDTthreads}}, \code{\link{fwrite}}, \href{https://CRAN.R-project.org/package=bit64}{\code{bit64::integer64}}
 }
 \examples{
-\dontrun{
-
-# Demo speed-up
-n = 1e6
-DT = data.table( a=sample(1:1000,n,replace=TRUE),
-                 b=sample(1:1000,n,replace=TRUE),
-                 c=rnorm(n),
-                 d=sample(c("foo","bar","baz","qux","quux"),n,replace=TRUE),
-                 e=rnorm(n),
-                 f=sample(1:1000,n,replace=TRUE) )
-DT[2,b:=NA_integer_]
-DT[4,c:=NA_real_]
-DT[3,d:=NA_character_]
-DT[5,d:=""]
-DT[2,e:=+Inf]
-DT[3,e:=-Inf]
-
-write.table(DT,"test.csv",sep=",",row.names=FALSE,quote=FALSE)
-cat("File size (MB):", round(file.info("test.csv")$size/1024^2),"\n")
-# 50 MB (1e6 rows x 6 columns)
-
-system.time(DF1 <-read.csv("test.csv",stringsAsFactors=FALSE))
-# 60 sec (first time in fresh R session)
-
-system.time(DF1 <- read.csv("test.csv",stringsAsFactors=FALSE))
-# 30 sec (immediate repeat is faster, varies)
-
-system.time(DF2 <- read.table("test.csv",header=TRUE,sep=",",quote="",
-    stringsAsFactors=FALSE,comment.char="",nrows=n,
-    colClasses=c("integer","integer","numeric",
-                 "character","numeric","integer")))
-# 10 sec (consistently). All known tricks and known nrows, see references.
-
-require(data.table)
-if(all(sapply(c("sqldf", "ff"), requireNamespace, quietly = TRUE))) {
-  require(sqldf)
-  require(ff)
-
-  system.time(DT <- fread("test.csv"))
-  #  3 sec (faster and friendlier)
-
-  system.time(SQLDF <- read.csv.sql("test.csv",dbname=NULL))
-  # 20 sec (friendly too, good defaults)
-
-  system.time(FFDF <- read.csv.ffdf(file="test.csv",nrows=n))
-  # 20 sec (friendly too, good defaults)
-
-  identical(DF1,DF2)
-  all.equal(as.data.table(DF1), DT)
-  identical(DF1,within(SQLDF,{b<-as.integer(b);c<-as.numeric(c)}))
-  identical(DF1,within(as.data.frame(FFDF),d<-as.character(d)))
-}
-
-# Scaling up ...
-l = vector("list",10)
-for (i in 1:10) l[[i]] = DT
-DTbig = rbindlist(l)
-tables()
-write.table(DTbig,"testbig.csv",sep=",",row.names=FALSE,quote=FALSE)
-# 500MB (10 million rows x 6 columns)
-
-system.time(DF <- read.table("testbig.csv",header=TRUE,sep=",",
-    quote="",stringsAsFactors=FALSE,comment.char="",nrows=1e7,
-    colClasses=c("integer","integer","numeric",
-                 "character","numeric","integer")))
-# 100-200 sec (varies)
-
-system.time(DT <- fread("testbig.csv"))
-# 30-40 sec
-
-all(mapply(all.equal, DF, DT))
-
-
-# Real data example (Airline data)
-# http://stat-computing.org/dataexpo/2009/the-data.html
-
-download.file("http://stat-computing.org/dataexpo/2009/2008.csv.bz2",
-              destfile="2008.csv.bz2")
-# 109MB (compressed)
-
-system("bunzip2 2008.csv.bz2")
-# 658MB (7,009,728 rows x 29 columns)
-
-colClasses = sapply(read.csv("2008.csv",nrows=100),class)
-# 4 character, 24 integer, 1 logical. Incorrect.
-
-colClasses = sapply(read.csv("2008.csv",nrows=200),class)
-# 5 character, 24 integer. Correct. Might have missed data only using 100 rows
-# since read.table assumes colClasses is correct.
-
-system.time(DF <- read.table("2008.csv", header=TRUE, sep=",",
-    quote="",stringsAsFactors=FALSE,comment.char="",nrows=7009730,
-    colClasses=colClasses))
-# 360 secs
-
-system.time(DT <- fread("2008.csv"))
-#  40 secs
-
-table(sapply(DT,class))
-# 5 character and 24 integer columns. Correct without needing to worry about colClasses
-# issue above.
-
-
-# Reads URLs directly :
-fread("http://www.stats.ox.ac.uk/pub/datasets/csb/ch11b.dat")
-
-# Decompresses .gz and .bz2 automatically :
-fread("http://stat-computing.org/dataexpo/2009/2008.csv.bz2")
-
-}
-
 # Reads text input directly :
 fread("A,B\n1,2\n3,4")
 
@@ -318,6 +208,102 @@ fread("a,b\n\n1,a\n2\n\n3,c\n\n", fill=TRUE, blank.lines.skip=TRUE)
 # check.names usage
 fread("a b,a b\n1,2\n")
 fread("a b,a b\n1,2\n", check.names=TRUE) # no duplicates + syntactically valid names
+
+\dontrun{
+# Demo speed-up
+n = 1e6
+DT = data.table( a=sample(1:1000,n,replace=TRUE),
+                 b=sample(1:1000,n,replace=TRUE),
+                 c=rnorm(n),
+                 d=sample(c("foo","bar","baz","qux","quux"),n,replace=TRUE),
+                 e=rnorm(n),
+                 f=sample(1:1000,n,replace=TRUE) )
+DT[2,b:=NA_integer_]
+DT[4,c:=NA_real_]
+DT[3,d:=NA_character_]
+DT[5,d:=""]
+DT[2,e:=+Inf]
+DT[3,e:=-Inf]
+
+write.table(DT,"test.csv",sep=",",row.names=FALSE,quote=FALSE)
+cat("File size (MB):", round(file.info("test.csv")$size/1024^2),"\n")
+# 50 MB (1e6 rows x 6 columns)
+
+system.time(DF1 <-read.csv("test.csv",stringsAsFactors=FALSE))
+# 5.4 sec (first time in fresh R session)
+
+system.time(DF1 <- read.csv("test.csv",stringsAsFactors=FALSE))
+# 3.9 sec (immediate repeat is faster, varies)
+
+system.time(DF2 <- read.table("test.csv",header=TRUE,sep=",",quote="",
+    stringsAsFactors=FALSE,comment.char="",nrows=n,
+    colClasses=c("integer","integer","numeric",
+                 "character","numeric","integer")))
+# 1.2 sec (consistently). All known tricks and known nrows, see references.
+
+system.time(DT <- fread("test.csv"))
+# 0.1 sec (faster and friendlier)
+
+identical(DF1, DF2)
+all.equal(as.data.table(DF1), DT)
+
+# Scaling up ...
+l = vector("list",10)
+for (i in 1:10) l[[i]] = DT
+DTbig = rbindlist(l)
+tables()
+write.table(DTbig,"testbig.csv",sep=",",row.names=FALSE,quote=FALSE)
+# 500MB csv (10 million rows x 6 columns)
+
+system.time(DF <- read.table("testbig.csv",header=TRUE,sep=",",
+    quote="",stringsAsFactors=FALSE,comment.char="",nrows=1e7,
+    colClasses=c("integer","integer","numeric",
+                 "character","numeric","integer")))
+# 17.0 sec (varies)
+
+system.time(DT <- fread("testbig.csv"))
+#  0.8 sec
+
+all(mapply(all.equal, DF, DT))
+
+
+# Real data example (Airline data)
+# http://stat-computing.org/dataexpo/2009/the-data.html
+
+download.file("http://stat-computing.org/dataexpo/2009/2008.csv.bz2",
+              destfile="2008.csv.bz2")
+# 109MB (compressed)
+
+system("bunzip2 2008.csv.bz2")
+# 658MB (7,009,728 rows x 29 columns)
+
+colClasses = sapply(read.csv("2008.csv",nrows=100,stringsAsFactors=FALSE),class)
+# 4 character, 24 integer, 1 logical. Incorrect.
+
+colClasses = sapply(read.csv("2008.csv",nrows=200,stringsAsFactors=FALSE),class)
+# 5 character, 24 integer. Correct. Might have missed data only using 100 rows
+# since read.table assumes colClasses is correct.
+
+system.time(DF <- read.table("2008.csv", header=TRUE, sep=",",
+    quote="",stringsAsFactors=FALSE,comment.char="",nrows=7009730,
+    colClasses=colClasses))
+# 24.4 secs
+
+system.time(DT <- fread("2008.csv"))
+#  1.9 secs
+
+table(sapply(DT,class))
+# 5 character and 24 integer columns. Correct without needing to worry about colClasses
+# issue above.
+
+
+# Reads URLs directly :
+fread("http://www.stats.ox.ac.uk/pub/datasets/csb/ch11b.dat")
+
+# Decompresses .gz and .bz2 automatically :
+fread("http://stat-computing.org/dataexpo/2009/1987.csv.bz2")
+
+}
 }
 \keyword{ data }
 

@@ -11,7 +11,7 @@
 
    It is inspired by \code{A[B]} syntax in \R where \code{A} is a matrix and \code{B} is a 2-column matrix. Since a \code{data.table} \emph{is} a \code{data.frame}, it is compatible with \R functions and packages that accept \emph{only} \code{data.frame}s.
 
-   Type \code{vignette(package="data.table")} to get started. The \href{vignettes/datatable-intro.html}{Introduction to data.table} vignette introduces \code{data.table}'s \code{x[i, j, by]} syntax and is a good place to start. If you have read the vignettes and the help page below, please read the \href{https://github.com/Rdatatable/data.table/wiki/Support}{data.table support guide}.
+   Type \code{vignette(package="data.table")} to get started. The \href{../doc/datatable-intro.html}{Introduction to data.table} vignette introduces \code{data.table}'s \code{x[i, j, by]} syntax and is a good place to start. If you have read the vignettes and the help page below, please read the \href{https://github.com/Rdatatable/data.table/wiki/Support}{data.table support guide}.
 
    Please check the \href{https://github.com/Rdatatable/data.table/wiki}{homepage} for up to the minute live NEWS.
 
@@ -71,16 +71,18 @@ data.table(\dots, keep.rownames=FALSE, check.names=FALSE, key=NULL, stringsAsFac
 
         Support for \emph{non-equi} join was recently implemented, which allows for other binary operators \code{>=, >, <= and <}.
 
-        See \href{vignettes/datatable-keys-fast-subset.html}{Keys and fast binary search based subset} and \href{vignettes/datatable-secondary-indices-and-auto-indexing.html}{Secondary indices and auto indexing}.
+        See \href{../doc/datatable-keys-fast-subset.html}{\code{vignette("datatable-keys-fast-subset")}} and \href{../doc/datatable-secondary-indices-and-auto-indexing.html}{\code{vignette("datatable-secondary-indices-and-auto-indexing")}}.
 
         \emph{Advanced:} When \code{i} is a single variable name, it is not considered an expression of column names and is instead evaluated in calling scope.
     }
 
     \item{j}{When \code{with=TRUE} (default), \code{j} is evaluated within the frame of the data.table; i.e., it sees column names as if they are variables. This allows to not just \emph{select} columns in \code{j}, but also \code{compute} on them e.g., \code{x[, a]} and \code{x[, sum(a)]} returns \code{x$a} and \code{sum(x$a)} as a vector respectively. \code{x[, .(a, b)]} and \code{x[, .(sa=sum(a), sb=sum(b))]} returns a two column data.table each, the first simply \emph{selecting} columns \code{a, b} and the second \emph{computing} their sums.
 
-    The expression `.()` is a \emph{shorthand} alias to \code{list()}; they both mean the same. (An exception is made for the use of \code{.()} within a call to \code{\link{bquote}}, where \code{.()} is left unchanged.) As long as \code{j} returns a \code{list}, each element of the list becomes a column in the resulting \code{data.table}. This is the default \emph{enhanced} mode.
+    As long as \code{j} returns a \code{list}, each element of the list becomes a column in the resulting \code{data.table}. When the output of \code{j} is not a \code{list}, the output is returned as-is (e.g. \code{x[ , a]} returns the column vector \code{a}), unless \code{by} is used, in which case it is implicitly wrapped in \code{list} for convenience (e.g. \code{x[ , sum(a), by=b]} will create a column named \code{V1} with value \code{sum(a)} for each group).
 
-    When \code{j} is a vector of column names or positions to select (as in \code{data.frame}). There is no need to use \code{with=FALSE} anymore. In case of using logical vector with length \code{ncol(x)} defining columns to select \code{with=FALSE} is still necessary. Note: if a logical vector with length \code{k < ncol(x)} is passed, it will be filled to length \code{ncol(x)} with \code{FALSE}, which is different from \code{data.frame}, where the vector is recycled.
+    The expression `.()` is a \emph{shorthand} alias to \code{list()}; they both mean the same. (An exception is made for the use of \code{.()} within a call to \code{\link{bquote}}, where \code{.()} is left unchanged.)
+
+    When \code{j} is a vector of column names or positions to select (as in \code{data.frame}). There is no need to use \code{with=FALSE} anymore. Note that \code{with=FALSE} is still necessary when using a logical vector with length \code{ncol(x)} to include/exclude columns. Note: if a logical vector with length \code{k < ncol(x)} is passed, it will be filled to length \code{ncol(x)} with \code{FALSE}, which is different from \code{data.frame}, where the vector is recycled.
 
     \emph{Advanced:} \code{j} also allows the use of special \emph{read-only} symbols: \code{\link{.SD}}, \code{\link{.N}}, \code{\link{.I}}, \code{\link{.GRP}}, \code{\link{.BY}}.
 
@@ -88,7 +90,7 @@ data.table(\dots, keep.rownames=FALSE, check.names=FALSE, key=NULL, stringsAsFac
 
     \emph{Advanced:} Columns of \code{x} can now be referred to using the prefix \code{x.} and is particularly useful during joining to refer to \code{x}'s \emph{join} columns as they are otherwise masked by \code{i}'s. For example, \code{X[Y, .(x.a-i.a, b), on="a"]}.
 
-    See \href{vignettes/datatable-intro.html}{Introduction to data.table} vignette and examples.}
+    See \href{../doc/datatable-intro.html}{\code{vignette("datatable-intro")}} and \code{example(data.table)}.}
 
     \item{by}{ Column names are seen as if they are variables (as in \code{j} when \code{with=TRUE}). The \code{data.table} is then grouped by the \code{by} and \code{j} is evaluated within each group. The order of the rows within each group is preserved, as is the order of the groups. \code{by} accepts:
 
@@ -152,7 +154,7 @@ data.table(\dots, keep.rownames=FALSE, check.names=FALSE, key=NULL, stringsAsFac
 }
   \item{allow.cartesian}{ \code{FALSE} prevents joins that would result in more than \code{nrow(x)+nrow(i)} rows. This is usually caused by duplicate values in \code{i}'s join columns, each of which join to the same group in `x` over and over again: a \emph{misspecified} join. Usually this was not intended and the join needs to be changed. The word 'cartesian' is used loosely in this context. The traditional cartesian join is (deliberately) difficult to achieve in \code{data.table}: where every row in \code{i} joins to every row in \code{x} (a \code{nrow(x)*nrow(i)} row result). 'cartesian' is just meant in a 'large multiplicative' sense, so FALSE does not always prevent a traditional cartesian join. }
 
-  \item{drop}{ Never used by \code{data.table}. Do not use. It needs to be here because \code{data.table} inherits from \code{data.frame}. See \href{vignettes/datatable-faq.html}{datatable-faq}.}
+  \item{drop}{ Never used by \code{data.table}. Do not use. It needs to be here because \code{data.table} inherits from \code{data.frame}. See \href{../doc/datatable-faq.html}{\code{vignette("datatable-faq")}}.}
 
   \item{on}{ Indicate which columns in \code{x} should be joined with which columns in \code{i} along with the type of binary operator to join with (see non-equi joins below on this). When specified, this overrides the keys set on \code{x} and \code{i}. When \code{.NATURAL} keyword provided then \emph{natural join} is made (join on common columns). There are multiple ways of specifying the \code{on} argument:
         \itemize{
@@ -166,7 +168,7 @@ data.table(\dots, keep.rownames=FALSE, check.names=FALSE, key=NULL, stringsAsFac
             \item{For convenience during interactive scenarios, it is also possible to use \code{.()} syntax as \code{X[Y, on=.(a, b)]}.}
             \item{From v1.9.8, (non-equi) joins using binary operators \code{>=, >, <=, <} are also possible, e.g., \code{X[Y, on=c("x>=a", "y<=b")]}, or for interactive use as \code{X[Y, on=.(x>=a, y<=b)]}.}
         }
-        See examples as well as \href{vignettes/datatable-secondary-indices-and-auto-indexing.html}{Secondary indices and auto indexing}.
+        See examples as well as \href{../doc/datatable-secondary-indices-and-auto-indexing.html}{\code{vignette("datatable-secondary-indices-and-auto-indexing")}}.
     }
 }
 \details{
@@ -194,7 +196,7 @@ The way to read this out loud is: "Take \code{DT}, subset rows by \code{i}, \emp
     X[, .(a)]                   # same as above, but return as a data.table.
     X[, sum(a)]                 # return sum(a) as a vector (with same scoping rules as above)
     X[, .(sum(a)), by=c]        # get sum(a) grouped by 'c'.
-    X[, sum(a), by=c]           # same as above, .() can be omitted in by on single expression for convenience
+    X[, sum(a), by=c]           # same as above, .() can be omitted in j and by on single expression for convenience
     X[, sum(a), by=c:f]         # get sum(a) grouped by all columns in between 'c' and 'f' (both inclusive)
 
     X[, sum(a), keyby=b]        # get sum(a) grouped by 'b', and sort that result by the grouping column 'b'
@@ -226,7 +228,7 @@ column called \code{"keep"} containing \code{TRUE} and this is correct behaviour
 
 \code{POSIXlt} is not supported as a column type because it uses 40 bytes to store a single datetime. They are implicitly converted to \code{POSIXct} type with \emph{warning}. You may also be interested in \code{\link{IDateTime}} instead; it has methods to convert to and from \code{POSIXlt}.
 }
-\seealso{ \code{\link{special-symbols}}, \code{\link{data.frame}}, \code{\link{[.data.frame}}, \code{\link{as.data.table}}, \code{\link{setkey}}, \code{\link{setorder}}, \code{\link{setDT}}, \code{\link{setDF}}, \code{\link{J}}, \code{\link{SJ}}, \code{\link{CJ}}, \code{\link{merge.data.table}}, \code{\link{tables}}, \code{\link{test.data.table}}, \code{\link{IDateTime}}, \code{\link{unique.data.table}}, \code{\link{copy}}, \code{\link{:=}}, \code{\link{alloc.col}}, \code{\link{truelength}}, \code{\link{rbindlist}}, \code{\link{setNumericRounding}}, \code{\link{datatable-optimize}}, \code{\link{fsetdiff}}, \code{\link{funion}}, \code{\link{fintersect}}, \code{\link{fsetequal}}, \code{\link{anyDuplicated}}, \code{\link{uniqueN}}, \code{\link{rowid}}, \code{\link{rleid}}, \code{\link{na.omit}}, \code{\link{frank}} }
+\seealso{ \code{\link{special-symbols}}, \code{\link{data.frame}}, \code{\link{[.data.frame}}, \code{\link{as.data.table}}, \code{\link{setkey}}, \code{\link{setorder}}, \code{\link{setDT}}, \code{\link{setDF}}, \code{\link{J}}, \code{\link{SJ}}, \code{\link{CJ}}, \code{\link{merge.data.table}}, \code{\link{tables}}, \code{\link{test.data.table}}, \code{\link{IDateTime}}, \code{\link{unique.data.table}}, \code{\link{copy}}, \code{\link{:=}}, \code{\link{setalloccol}}, \code{\link{truelength}}, \code{\link{rbindlist}}, \code{\link{setNumericRounding}}, \code{\link{datatable-optimize}}, \code{\link{fsetdiff}}, \code{\link{funion}}, \code{\link{fintersect}}, \code{\link{fsetequal}}, \code{\link{anyDuplicated}}, \code{\link{uniqueN}}, \code{\link{rowid}}, \code{\link{rleid}}, \code{\link{na.omit}}, \code{\link{frank}} }
 \examples{
 \dontrun{
 example(data.table)  # to run these examples at the prompt
@@ -420,25 +422,17 @@ DT[, c(.(y=max(y)), lapply(.SD, min)), by=rleid(v), .SDcols=v:b]
 
 \dontrun{
 if (interactive()) {
-  vignette("datatable-intro")
-  vignette("datatable-reference-semantics")
-  vignette("datatable-keys-fast-subset")
-  vignette("datatable-secondary-indices-and-auto-indexing")
-  vignette("datatable-reshape")
-  vignette("datatable-faq")
+  vignette(package="data.table")  # 9 vignettes
 
-  test.data.table()          # over 6,000 low level tests
+  test.data.table()               # 6,000 tests
 
   # keep up to date with latest stable version on CRAN
   update.packages()
 
   # get the latest devel version
   update.dev.pkg()
-  # compiled devel binary for Windows available -- no Rtools needed
-  update.dev.pkg(repo="https://Rdatatable.github.io/data.table")
   # read more at:
   # https://github.com/Rdatatable/data.table/wiki/Installation
 }
 }}
 \keyword{ data }
-

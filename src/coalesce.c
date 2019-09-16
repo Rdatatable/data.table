@@ -8,7 +8,7 @@ SEXP coalesce(SEXP x, SEXP inplaceArg) {
   const bool inplace = LOGICAL(inplaceArg)[0];
   const bool verbose = GetVerbose();
   int nprotect = 0;
-  if (length(x)==0) return R_NilValue;
+  if (length(x)==0 || isNull(VECTOR_ELT(x,0))) return R_NilValue;  // coalesce(NULL, "foo") return NULL even though character type mismatches type NULL
   SEXP first;  // the first vector (it might be the first argument, or it might be the first column of a data.table|frame
   int off = 1; // when x has been pointed to the list of replacement candidates, is the first candidate in position 0 or 1 in the list
   if (TYPEOF(VECTOR_ELT(x,0)) == VECSXP) {
@@ -46,7 +46,7 @@ SEXP coalesce(SEXP x, SEXP inplaceArg) {
       error("Item %d is length %d but the first item is length %d. Only singletons are recycled.", i+2, length(item), nrow);
   }
   if (!inplace) {
-    first = PROTECT(duplicate(first)); nprotect++;
+    first = PROTECT(copyAsPlain(first)); nprotect++;
     if (verbose) Rprintf("coalesce copied first item (inplace=FALSE)\n");
   }
   void **valP = (void **)R_alloc(nval, sizeof(void *));
@@ -74,7 +74,7 @@ SEXP coalesce(SEXP x, SEXP inplaceArg) {
     }
   } break;
   case REALSXP: {
-    if (INHERITS(first, char_integer64) || INHERITS(first, char_nanotime)) { // integer64 and nanotime (it seem nanotime does not inherit from integer64)
+    if (Rinherits(first, char_integer64)) { // Rinherits() is true for nanotime
       int64_t *xP=(int64_t *)REAL(first), finalVal=NA_INTEGER64;
       int k=0;
       for (int j=0; j<nval; ++j) {
@@ -102,19 +102,19 @@ SEXP coalesce(SEXP x, SEXP inplaceArg) {
         SEXP item = VECTOR_ELT(x, j+off);
         if (length(item)==1) {
           double tt = REAL(item)[0];
-          if (ISNA(tt)) continue;
+          if (ISNAN(tt)) continue;
           finalVal = tt;
           break;
         }
         valP[k++] = REAL(item);
       }
-      const bool final = !ISNA(finalVal);
+      const bool final = !ISNAN(finalVal);
       #pragma omp parallel for num_threads(getDTthreads())
       for (int i=0; i<nrow; ++i) {
         double val=xP[i];
-        if (!ISNA(val)) continue;
-        int j=0; while (ISNA(val) && j<k) val=((double *)valP[j++])[i];
-        if (!ISNA(val)) xP[i]=val; else if (final) xP[i]=finalVal;
+        if (!ISNAN(val)) continue;
+        int j=0; while (ISNAN(val) && j<k) val=((double *)valP[j++])[i];
+        if (!ISNAN(val)) xP[i]=val; else if (final) xP[i]=finalVal;
       }
     }
   } break;

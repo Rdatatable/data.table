@@ -6,8 +6,8 @@
 SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEXP xjiscols, SEXP grporder, SEXP order, SEXP starts, SEXP lens, SEXP jexp, SEXP env, SEXP lhs, SEXP newnames, SEXP on, SEXP verbose)
 {
   R_len_t rownum, ngrp, nrowgroups, njval=0, ngrpcols, ansloc=0, maxn, estn=-1, thisansloc, grpn, thislen, igrp, origIlen=0, origSDnrow=0;
-  int protecti=0;
-  SEXP names, names2, xknames, bynames, dtnames, ans=NULL, jval, thiscol, BY, N, I, GRP, iSD, xSD, rownames, s, RHS, listwrap, target, source, tmp;
+  int nprotect=0;
+  SEXP ans=NULL, jval, thiscol, BY, N, I, GRP, iSD, xSD, rownames, s, RHS, target, source, tmp;
   Rboolean wasvector, firstalloc=FALSE, NullWarnDone=FALSE;
   clock_t tstart=0, tblock[10]={0}; int nblock[10]={0};
 
@@ -22,11 +22,11 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
   ngrpcols = length(grpcols);
   nrowgroups = length(VECTOR_ELT(groups,0));
   // fix for longstanding FR/bug, #495. E.g., DT[, c(sum(v1), lapply(.SD, mean)), by=grp, .SDcols=v2:v3] resulted in error.. the idea is, 1) we create .SDall, which is normally == .SD. But if extra vars are detected in jexp other than .SD, then .SD becomes a shallow copy of .SDall with only .SDcols in .SD. Since internally, we don't make a copy, changing .SDall will reflect in .SD. Hopefully this'll workout :-).
-  SEXP SDall = PROTECT(findVar(install(".SDall"), env)); protecti++;  // PROTECT for rchk
-  SEXP SD = PROTECT(findVar(install(".SD"), env)); protecti++;
+  SEXP SDall = PROTECT(findVar(install(".SDall"), env)); nprotect++;  // PROTECT for rchk
+  SEXP SD = PROTECT(findVar(install(".SD"), env)); nprotect++;
 
-  defineVar(sym_BY, BY = PROTECT(allocVector(VECSXP, ngrpcols)), env); protecti++;  // PROTECT for rchk
-  bynames = PROTECT(allocVector(STRSXP, ngrpcols));  protecti++;   // TO DO: do we really need bynames, can we assign names afterwards in one step?
+  defineVar(sym_BY, BY = PROTECT(allocVector(VECSXP, ngrpcols)), env); nprotect++;  // PROTECT for rchk
+  SEXP bynames = PROTECT(allocVector(STRSXP, ngrpcols));  nprotect++;   // TO DO: do we really need bynames, can we assign names afterwards in one step?
   for (int i=0; i<ngrpcols; ++i) {
     int j = INTEGER(grpcols)[i]-1;
     SET_VECTOR_ELT(BY, i, allocVector(TYPEOF(VECTOR_ELT(groups, j)),
@@ -43,19 +43,19 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
   if (isNull(jiscols) && (length(bynames)!=length(groups) || length(bynames)!=length(grpcols))) error("!length(bynames)[%d]==length(groups)[%d]==length(grpcols)[%d]",length(bynames),length(groups),length(grpcols));
   // TO DO: check this check above.
 
-  N =   PROTECT(findVar(install(".N"), env));   protecti++; // PROTECT for rchk
-  GRP = PROTECT(findVar(install(".GRP"), env)); protecti++;
-  iSD = PROTECT(findVar(install(".iSD"), env)); protecti++; // 1-row and possibly no cols (if no i variables are used via JIS)
-  xSD = PROTECT(findVar(install(".xSD"), env)); protecti++;
+  N =   PROTECT(findVar(install(".N"), env));   nprotect++; // PROTECT for rchk
+  GRP = PROTECT(findVar(install(".GRP"), env)); nprotect++;
+  iSD = PROTECT(findVar(install(".iSD"), env)); nprotect++; // 1-row and possibly no cols (if no i variables are used via JIS)
+  xSD = PROTECT(findVar(install(".xSD"), env)); nprotect++;
   R_len_t maxGrpSize = 0;
   const int *ilens = INTEGER(lens), n=LENGTH(lens);
   for (R_len_t i=0; i<n; ++i) {
     if (ilens[i] > maxGrpSize) maxGrpSize = ilens[i];
   }
-  defineVar(install(".I"), I = PROTECT(allocVector(INTSXP, maxGrpSize)), env); protecti++;
+  defineVar(install(".I"), I = PROTECT(allocVector(INTSXP, maxGrpSize)), env); nprotect++;
   R_LockBinding(install(".I"), env);
 
-  dtnames = PROTECT(getAttrib(dt, R_NamesSymbol)); protecti++; // added here to fix #4990 - `:=` did not issue recycling warning during "by"
+  SEXP dtnames = PROTECT(getAttrib(dt, R_NamesSymbol)); nprotect++; // added here to fix #4990 - `:=` did not issue recycling warning during "by"
   // fetch rownames of .SD.  rownames[1] is set to -thislen for each group, in case .SD is passed to
   // non data.table aware package that uses rownames
   for (s = ATTRIB(SD); s != R_NilValue && TAG(s)!=R_RowNamesSymbol; s = CDR(s));  // getAttrib0 basically but that's hidden in attrib.c
@@ -65,7 +65,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
 
   // fetch names of .SD and prepare symbols. In case they are copied-on-write by user assigning to those variables
   // using <- in j (which is valid, useful and tested), they are repointed to the .SD cols for each group.
-  names = PROTECT(getAttrib(SDall, R_NamesSymbol)); protecti++;
+  SEXP names = PROTECT(getAttrib(SDall, R_NamesSymbol)); nprotect++;
   if (length(names) != length(SDall)) error("length(names)!=length(SD)");
   SEXP *nameSyms = (SEXP *)R_alloc(length(names), sizeof(SEXP));
   for(int i=0; i<length(SDall); ++i) {
@@ -79,7 +79,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
   origIlen = length(I);  // test 762 has length(I)==1 but nrow(SD)==0
   if (length(SDall)) origSDnrow = length(VECTOR_ELT(SDall, 0));
 
-  xknames = getAttrib(xSD, R_NamesSymbol);
+  SEXP xknames = PROTECT(getAttrib(xSD, R_NamesSymbol)); nprotect++;
   if (length(xknames) != length(xSD)) error("length(xknames)!=length(xSD)");
   SEXP *xknameSyms = (SEXP *)R_alloc(length(xknames), sizeof(SEXP));
   for(int i=0; i<length(xSD); ++i) {
@@ -91,8 +91,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
   if (length(iSD)!=length(jiscols)) error("length(iSD)[%d] != length(jiscols)[%d]",length(iSD),length(jiscols));
   if (length(xSD)!=length(xjiscols)) error("length(xSD)[%d] != length(xjiscols)[%d]",length(xSD),length(xjiscols));
 
-  PROTECT(listwrap = allocVector(VECSXP, 1));
-  protecti++;
+  SEXP listwrap = PROTECT(allocVector(VECSXP, 1)); nprotect++;
   Rboolean jexpIsSymbolOtherThanSD = (isSymbol(jexp) && strcmp(CHAR(PRINTNAME(jexp)),".SD")!=0);  // test 559
 
   ansloc = 0;
@@ -304,14 +303,14 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
         RHS = VECTOR_ELT(jval,j%LENGTH(jval));
         if (isNull(target)) {
           // first time adding to new column
-          if (TRUELENGTH(dt) < INTEGER(lhs)[j]) error("Internal error: Trying to add new column by reference but tl is full; alloc.col should have run first at R level before getting to this point in dogroups"); // # nocov
-          tmp = PROTECT(allocNAVector(TYPEOF(RHS), LENGTH(VECTOR_ELT(dt,0))));
+          if (TRUELENGTH(dt) < INTEGER(lhs)[j]) error("Internal error: Trying to add new column by reference but tl is full; setalloccol should have run first at R level before getting to this point in dogroups"); // # nocov
+          tmp = PROTECT(allocNAVectorLike(RHS, LENGTH(VECTOR_ELT(dt,0))));
           // increment length only if the allocation passes, #1676
           SETLENGTH(dtnames, LENGTH(dtnames)+1);
           SETLENGTH(dt, LENGTH(dt)+1);
           SET_VECTOR_ELT(dt, INTEGER(lhs)[j]-1, tmp);
           UNPROTECT(1);
-          // Even if we could know reliably to switch from allocNAVector to allocVector for slight speedup, user code could still contain a switched halt, and in that case we'd want the groups not yet done to have NA rather than uninitialized or 0.
+          // Even if we could know reliably to switch from allocNAVectorLike to allocVector for slight speedup, user code could still contain a switched halt, and in that case we'd want the groups not yet done to have NA rather than uninitialized or 0.
           // dtnames = getAttrib(dt, R_NamesSymbol); // commented this here and added it on the beginning to fix #4990
           SET_STRING_ELT(dtnames, INTEGER(lhs)[j]-1, STRING_ELT(newnames, INTEGER(lhs)[j]-origncol-1));
           target = VECTOR_ELT(dt,INTEGER(lhs)[j]-1);
@@ -355,7 +354,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
           // Common case 3 : head or tail of .SD perhaps
         if (estn<maxn) estn=maxn;  // if the result for the first group is larger than the table itself(!) Unusual case where a join is being done in j via .SD and the 1-row table is an edge case of bigger picture.
         PROTECT(ans = allocVector(VECSXP, ngrpcols + njval));
-        protecti++;
+        nprotect++;
         firstalloc=TRUE;
         for(int j=0; j<ngrpcols; ++j) {
           thiscol = VECTOR_ELT(groups, INTEGER(grpcols)[j]-1);
@@ -368,25 +367,26 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
             error("Column %d of j's result for the first group is NULL. We rely on the column types of the first result to decide the type expected for the remaining groups (and require consistency). NULL columns are acceptable for later groups (and those are replaced with NA of appropriate type and recycled) but not for the first. Please use a typed empty vector instead, such as integer() or numeric().", j+1);
           if (LOGICAL(verbose)[0] && !isNull(getAttrib(thiscol, R_NamesSymbol))) {
             if (wasvector) {
-              Rprintf("j appears to be a named vector. The same names will likely be created over and over again for each group and slow things down. Try and pass a named list (which data.table optimizes) or an unnamed list() instead.");
+              Rprintf("j appears to be a named vector. The same names will likely be created over and over again for each group and slow things down. Try and pass a named list (which data.table optimizes) or an unnamed list() instead.\n");
             } else {
-              Rprintf("Column %d of j is a named vector (each item down the rows is named, somehow). Please remove those names for efficiency (to save creating them over and over for each group). They are ignored anyway.", j+1);
+              Rprintf("Column %d of j is a named vector (each item down the rows is named, somehow). Please remove those names for efficiency (to save creating them over and over for each group). They are ignored anyway.\n", j+1);
             }
           }
           SET_VECTOR_ELT(ans, ngrpcols+j, allocVector(TYPEOF(thiscol), estn));
           copyMostAttrib(thiscol, VECTOR_ELT(ans,ngrpcols+j));  // not names, otherwise test 276 would fail
         }
-        names = getAttrib(jval, R_NamesSymbol);
-        if (!isNull(names)) {
+        SEXP jvalnames = PROTECT(getAttrib(jval, R_NamesSymbol));
+        if (!isNull(jvalnames)) {
           if (LOGICAL(verbose)[0]) Rprintf("The result of j is a named list. It's very inefficient to create the same names over and over again for each group. When j=list(...), any names are detected, removed and put back after grouping has completed, for efficiency. Using j=transform(), for example, prevents that speedup (consider changing to :=). This message may be upgraded to warning in future.\n");  // e.g. test 104 has j=transform().
           // names of result come from the first group and the names of remaining groups are ignored (all that matters for them is that the number of columns (and their types) match the first group.
-          names2 = PROTECT(allocVector(STRSXP,ngrpcols+njval));
-          protecti++;
+          SEXP names2 = PROTECT(allocVector(STRSXP,ngrpcols+njval));
           //  for (j=0; j<ngrpcols; j++) SET_STRING_ELT(names2, j, STRING_ELT(bynames,j));  // These get set back up in R
-          for (int j=0; j<njval; ++j) SET_STRING_ELT(names2, ngrpcols+j, STRING_ELT(names,j));
+          for (int j=0; j<njval; ++j) SET_STRING_ELT(names2, ngrpcols+j, STRING_ELT(jvalnames,j));
           setAttrib(ans, R_NamesSymbol, names2);
+          UNPROTECT(1); // names2
           // setAttrib(SD, R_NamesSymbol, R_NilValue); // so that lapply(.SD,mean) is unnamed from 2nd group on
         }
+        UNPROTECT(1); // jvalnames
       } else {
         estn = ((double)ngrp/i)*1.1*(ansloc+maxn);
         if (LOGICAL(verbose)[0]) Rprintf("dogroups: growing from %d to %d rows\n", length(VECTOR_ELT(ans,0)), estn);
@@ -462,7 +462,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
     }
     ansloc += maxn;
     if (firstalloc) {
-      protecti++;          //  remember the first jval. If we UNPROTECTed now, we'd unprotect
+      nprotect++;          //  remember the first jval. If we UNPROTECTed now, we'd unprotect
       firstalloc = FALSE;  //  ans. The first jval is needed to create the right size and type of ans.
       // TO DO: could avoid this last 'if' by adding a dummy PROTECT after first alloc for this UNPROTECT(1) to do.
     }
@@ -486,7 +486,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
                           1.0*tblock[w]/CLOCKS_PER_SEC, nblock[w]);
     Rprintf("  eval(j) took %.3fs for %d calls\n", 1.0*tblock[2]/CLOCKS_PER_SEC, nblock[2]);
   }
-  UNPROTECT(protecti);
+  UNPROTECT(nprotect);
   return(ans);
 }
 

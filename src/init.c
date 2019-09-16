@@ -18,6 +18,7 @@ SEXP setcolorder();
 SEXP chmatch_R();
 SEXP chmatchdup_R();
 SEXP chin_R();
+SEXP fifelseR();
 SEXP freadR();
 SEXP fwriteR();
 SEXP reorder();
@@ -39,7 +40,6 @@ SEXP gmean();
 SEXP gmin();
 SEXP gmax();
 SEXP isOrderedSubset();
-SEXP pointWrapper();
 SEXP setNumericRounding();
 SEXP getNumericRounding();
 SEXP binary();
@@ -82,6 +82,9 @@ SEXP nafillR();
 SEXP colnamesInt();
 SEXP initLastUpdated();
 SEXP cj();
+SEXP lock();
+SEXP unlock();
+SEXP islockedR();
 
 // .Externals
 SEXP fastmean();
@@ -123,7 +126,6 @@ R_CallMethodDef callMethods[] = {
 {"Cgmin", (DL_FUNC) &gmin, -1},
 {"Cgmax", (DL_FUNC) &gmax, -1},
 {"CisOrderedSubset", (DL_FUNC) &isOrderedSubset, -1},
-{"CpointWrapper", (DL_FUNC) &pointWrapper, -1},
 {"CsetNumericRounding", (DL_FUNC) &setNumericRounding, -1},
 {"CgetNumericRounding", (DL_FUNC) &getNumericRounding, -1},
 {"Cbinary", (DL_FUNC) &binary, -1},
@@ -168,9 +170,14 @@ R_CallMethodDef callMethods[] = {
 {"CinitLastUpdated", (DL_FUNC) &initLastUpdated, -1},
 {"Ccj", (DL_FUNC) &cj, -1},
 {"Ccoalesce", (DL_FUNC) &coalesce, -1},
+{"CfifelseR", (DL_FUNC) &fifelseR, -1},
+{"C_lock", (DL_FUNC) &lock, -1},  // _ for these 3 to avoid Clock as in time
+{"C_unlock", (DL_FUNC) &unlock, -1},
+{"C_islocked", (DL_FUNC) &islockedR, -1},
+{"CfrollapplyR", (DL_FUNC) &frollapplyR, -1},
+{"CtestMsgR", (DL_FUNC) &testMsgR, -1},
 {NULL, NULL, 0}
 };
-
 
 static const
 R_ExternalMethodDef externalMethods[] = {
@@ -297,27 +304,11 @@ void attribute_visible R_init_datatable(DllInfo *info)
   sym_colClassesAs = install("colClassesAs");
   sym_verbose = install("datatable.verbose");
   SelfRefSymbol = install(".internal.selfref");
+  sym_inherits = install("inherits");
+  sym_datatable_locked = install(".data.table.locked");
 
   initDTthreads();
   avoid_openmp_hang_within_fork();
-}
-
-inline bool INHERITS(SEXP x, SEXP char_) {
-  // Thread safe inherits() by pre-calling install() above in init first then
-  // passing those char_* in here for simple and fast non-API pointer compare.
-  // The thread-safety aspect here is only currently actually needed for list columns in
-  // fwrite() where the class of the cell's vector is tested; the class of the column
-  // itself is pre-stored by fwrite (for example in isInteger64[] and isITime[]).
-  // Thread safe in the limited sense of correct and intended usage :
-  // i) no API call such as install() or mkChar() must be passed in.
-  // ii) no attrib writes must be possible in other threads.
-  SEXP klass;
-  if (isString(klass = getAttrib(x, R_ClassSymbol))) {
-    for (int i=0; i<LENGTH(klass); i++) {
-      if (STRING_ELT(klass, i) == char_) return true;
-    }
-  }
-  return false;
 }
 
 inline long long DtoLL(double x) {

@@ -12,7 +12,7 @@ shift = function(x, n=1L, fill=NA, type=c("lag", "lead", "shift"), give.names=FA
     if (type!="shift") {
       # flip type for negative n, #3223
       neg = (n<0L)
-      if (type=="lead") neg[ n==0L ] = TRUE   # lead_0 should be named lag_0 for consistency
+      if (type=="lead" && length(unique(sign(n))) == 3L) neg[ n==0L ] = TRUE   # lead_0 should be named lag_0 for consistency (if mixing signs of n, #3832)
       if (any(neg)) {
         type = rep(type,length(n))
         type[neg] = if (type[1L]=="lead") "lag" else "lead"
@@ -36,12 +36,4 @@ setnafill = function(x, type=c("const","locf","nocb"), fill=NA, cols=seq_along(x
   if (type!="const" && !missing(fill))
     warning("argument 'fill' ignored, only make sense for type='const'")
   invisible(.Call(CnafillR, x, type, fill, TRUE, cols, verbose))
-}
-
-colnamesInt = function(x, cols) {
-  .Call(CcolnamesInt, x, cols)
-}
-
-coerceFill = function(x) {
-  .Call(CcoerceFillR, x)
 }

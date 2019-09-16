@@ -57,7 +57,7 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
     }
     return(invisible(x))
   }
-  if ((topn*2+1)<nrow(x) && (nrow(x)>nrows || !topnmiss)) {
+  if ((topn*2L+1L)<nrow(x) && (nrow(x)>nrows || !topnmiss)) {
     toprint = rbindlist(list(head(x, topn), tail(x, topn)), use.names=FALSE)  # no need to match names because head and tail of same x, and #3306
     rn = c(seq_len(topn), seq.int(to=nrow(x), length.out=topn))
     printdots = TRUE
@@ -83,8 +83,7 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
       expression = "<expr>", ordered = "<ord>")
     classes = vapply(x, function(col) class(col)[1L], "", USE.NAMES=FALSE)
     abbs = unname(class_abb[classes])
-    if ( length(idx <- which(is.na(abbs))) )
-    abbs[idx] = paste0("<", classes[idx], ">")
+    if ( length(idx <- which(is.na(abbs))) ) abbs[idx] = paste0("<", classes[idx], ">")
     toprint = rbind(abbs, toprint)
     rownames(toprint)[1L] = ""
   }
@@ -142,8 +141,8 @@ format.data.table = function (x, ..., justify="none", timezone = FALSE) {
     x[idx] = paste0(substr(x[idx], 1L, as.integer(trunc.char)), "...")
     x
   }
-  do.call("cbind",lapply(x,function(col,...){
-    if (!is.null(dim(col))) stop("Invalid column: it has dimensions. Can't format it. If it's the result of data.table(table()), use as.data.table(table()) instead.")
+  do.call("cbind",lapply(x,function(col,...) {
+    if (!is.null(dim(col))) return("<multi-column>")
     if(timezone) col = format.timezone(col)
     if (is.list(col)) col = vapply_1c(col, format.item)
     else col = format(char.trunc(col), justify=justify, ...) # added an else here to fix #5435

@@ -1,29 +1,11 @@
-# For internal use only (input symbol requirement is not checked)
-#   cols [symbol] - columns provided to function argument
-#   dt   [symbol] - a data.table
-# Iff all of 'cols' is present in 'x' return col indices
-# is.data.table(dt) check should be performed in the calling function
-validate = function(cols, dt) {
-  argcols = deparse(substitute(cols))
-  argdt = deparse(substitute(dt))
-  origcols = cols
-  if (is.character(cols)) cols = chmatch(cols, names(dt))
-  cols = as.integer(cols)
-  isna = which(!cols %in% seq_along(dt))
-  if (length(isna))
-    stop(argcols, " value", if (length(isna) > 1L) 's ' else ' ',
-         brackify(origcols[isna]), " not present (or out of range) in ", argdt)
-  cols
-}
-
 # setdiff for data.tables, internal at the moment #547, used in not-join
 setdiff_ = function(x, y, by.x=seq_along(x), by.y=seq_along(y), use.names=FALSE) {
   if (!is.data.table(x) || !is.data.table(y)) stop("x and y must both be data.tables")
   # !ncol redundant since all 0-column data.tables have 0 rows
   if (!nrow(x)) return(x)
-  by.x = validate(by.x, x)
+  by.x = colnamesInt(x, by.x, check_dups=TRUE)
   if (!nrow(y)) return(unique(x, by=by.x))
-  by.y = validate(by.y, y)
+  by.y = colnamesInt(y, by.y, check_dups=TRUE)
   if (length(by.x) != length(by.y)) stop("length(by.x) != length(by.y)")
   # factor in x should've factor/character in y, and viceversa
   for (a in seq_along(by.x)) {
@@ -63,7 +45,15 @@ funique = function(x) {
                              vapply(y, typeof, FUN.VALUE = ""))
   if (any(found)) stop("unsupported column type", if (sum(found) > 1L) "s" else "",
                        " found in x or y: ", brackify(bad_types[found]))
-  if (!identical(lapply(x, class), lapply(y, class))) stop("x and y must have the same column classes")
+  super = function(x) {
+    # allow character->factor and integer->numeric because from v1.12.4 i's type is retained by joins, #3820
+    ans = class(x)[1L]
+    switch(ans, factor="character", integer="numeric", ans)
+  }
+  if (!identical(sx<-sapply(x, super), sy<-sapply(y, super))) {
+    w = which.first(sx!=sy)
+    stop("Item ",w," of x is '",class(x[[w]])[1L],"' but the corresponding item of y is '", class(y[[w]])[1L], "'.")
+  }
   if (.seqn && ".seqn" %chin% names(x)) stop("None of the datasets should contain a column named '.seqn'")
 }
 
@@ -154,7 +144,7 @@ all.equal.data.table = function(target, current, trim.levels=TRUE, check.attribu
      paste0(names(targetTypes)[w],"(",paste(targetTypes[w],currentTypes[w],sep="!="),")")
             ,collapse=" ")))
     }
-    
+
     # check key
     k1 = key(target)
     k2 = key(current)

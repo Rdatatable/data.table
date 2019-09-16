@@ -13,6 +13,15 @@ test.data.table = function(verbose=FALSE, pkg="pkg", silent=FALSE, with.other.pa
   }
   fulldir = file.path(rootdir, subdir)
 
+  if (identical(script,"*.Rraw")) {
+    # nocov start
+    scripts = dir(fulldir, "*.Rraw")
+    scripts = scripts[!scripts %in% c("benchmark.Rraw","other.Rraw")]
+    for (fn in scripts) {test.data.table(verbose=verbose, pkg=pkg, silent=silent, script=fn); cat("\n");}
+    return(invisible())
+    # nocov end
+  }
+
   # nocov start
   if (isTRUE(benchmark)) {
     warning("'benchmark' argument is deprecated, use script='benchmark.Rraw' instead")
@@ -51,13 +60,31 @@ test.data.table = function(verbose=FALSE, pkg="pkg", silent=FALSE, with.other.pa
   # sample method changed in R 3.6 to remove bias; see #3431 for links and notes
   # This can be removed (and over 120 tests updated) if and when the oldest R version we test and support is moved to R 3.6
 
-  oldverbose = options(datatable.verbose=verbose)
-  oldenc = options(encoding="UTF-8")[[1L]]  # just for tests 708-712 on Windows
   # TO DO: reinstate solution for C locale of CRAN's Mac (R-Forge's Mac is ok)
   # oldlocale = Sys.getlocale("LC_CTYPE")
   # Sys.setlocale("LC_CTYPE", "")   # just for CRAN's Mac to get it off C locale (post to r-devel on 16 Jul 2012)
 
-  cat("Running", fn, "\n")
+  # Control options in case user set them. The user's values are restored after the sys.source() below.
+  if (is.null(options()$warnPartialMatchArgs))   options(warnPartialMatchArgs=FALSE)   # R 3.1.0 had a NULL default for these 3. Set to FALSE
+  if (is.null(options()$warnPartialMatchAttr))   options(warnPartialMatchAttr=FALSE)   # now otherwise options(oldOptions) fails later.
+  if (is.null(options()$warnPartialMatchDollar)) options(warnPartialMatchDollar=FALSE)
+  oldOptions = options(
+    datatable.verbose = verbose,
+    encoding = "UTF-8",  # just for tests 708-712 on Windows
+    datatable.optimize = Inf,
+    datatable.alloccol = 1024L,
+    datatable.print.class = FALSE,  # this is TRUE in cc.R and we like TRUE. But output= tests need to be updated (they assume FALSE currently)
+    datatable.rbindlist.check = NULL,
+    datatable.integer64 = "integer64",
+    warnPartialMatchArgs = base::getRversion()>="3.6.0", # ensure we don't rely on partial argument matching in internal code, #3664; >=3.6.0 for #3865
+    warnPartialMatchAttr = TRUE,
+    warnPartialMatchDollar = TRUE,
+    width = max(getOption('width'), 80L) # some tests (e.g. 1066, 1293) rely on capturing output that will be garbled with small width
+  )
+
+  cat("getDTthreads(verbose=TRUE):\n")         # for tracing on CRAN; output to log before anything is attempted
+  getDTthreads(verbose=TRUE)                   # includes the returned value in the verbose output (rather than dangling '[1] 4'); e.g. "data.table is using 4 threads"
+  cat("test.data.table() running:", fn, "\n")  # print fn to log before attempting anything on it (in case it is missing); on same line for slightly easier grep
   env = new.env(parent=.GlobalEnv)
   assign("testDir", function(x) file.path(fulldir, x), envir=env)
 
@@ -73,7 +100,7 @@ test.data.table = function(verbose=FALSE, pkg="pkg", silent=FALSE, with.other.pa
   assign("foreign", foreign, envir=env)
   assign("nfail", 0L, envir=env)
   assign("ntest", 0L, envir=env)
-  assign("prevtest", -1, envir=env)
+  assign("prevtest", -1L, envir=env)
   assign("whichfail", NULL, envir=env)
   assign("started.at", proc.time(), envir=env)
   assign("lasttime", proc.time()[3L], envir=env)  # used by test() to attribute time inbetween tests to the next test
@@ -82,13 +109,13 @@ test.data.table = function(verbose=FALSE, pkg="pkg", silent=FALSE, with.other.pa
   assign("filename", fn, envir=env)
   assign("inittime", as.integer(Sys.time()), envir=env) # keep measures from various test.data.table runs
   # It doesn't matter that 3000L is far larger than needed for other and benchmark.
-  if(isTRUE(silent)){
+  if (isTRUE(silent)){
     try(sys.source(fn, envir=env), silent=silent)  # nocov
   } else {
     sys.source(fn, envir=env)
   }
-  options(oldverbose)
-  options(oldenc)
+  options(oldOptions)
+
   # Sys.setlocale("LC_CTYPE", oldlocale)
   ans = env$nfail==0
 
@@ -115,8 +142,8 @@ test.data.table = function(verbose=FALSE, pkg="pkg", silent=FALSE, with.other.pa
                 ", TZ=", suppressWarnings(Sys.timezone()),
                 ", locale='", Sys.getlocale(), "'",
                 ", l10n_info()='", paste0(names(l10n_info()), "=", l10n_info(), collapse="; "), "'",
-                ", getDTthreads()='", paste0(capture.output(invisible(getDTthreads(verbose=TRUE))), collapse="; "), "'")
-  DT = head(timings[-1L][order(-time)],10)   # exclude id 1 as in dev that includes JIT
+                ", getDTthreads()='", paste0(gsub("[ ][ ]+","==",gsub("^[ ]+","",capture.output(invisible(getDTthreads(verbose=TRUE))))), collapse="; "), "'")
+  DT = head(timings[-1L][order(-time)], 10L)   # exclude id 1 as in dev that includes JIT
   if ((x<-sum(timings[["nTest"]])) != ntest) {
     warning("Timings count mismatch:",x,"vs",ntest)  # nocov
   }
@@ -149,8 +176,8 @@ test.data.table = function(verbose=FALSE, pkg="pkg", silent=FALSE, with.other.pa
   #if (memtest<-get("memtest", envir=env)) memtest.plot(get("inittime", envir=env))
 
   # nocov start
-  if (nfail > 0) {
-    if (nfail>1) {s1="s";s2="s: "} else {s1="";s2=" "}
+  if (nfail > 0L) {
+    if (nfail > 1L) {s1="s";s2="s: "} else {s1="";s2=" "}
     cat("\r")
     stop(nfail," error",s1," out of ",ntest," in ",timetaken(started.at)," on ",date(),". [",plat,"].",
          " Search ",names(fn)," for test number",s2,paste(whichfail,collapse=", "),".")
@@ -192,7 +219,7 @@ ps_mem = function() {
   ans = tryCatch(as.numeric(system(cmd, intern=TRUE, ignore.stderr=TRUE)), warning=function(w) NA_real_, error=function(e) NA_real_)
   stopifnot(length(ans)==1L) # extra check if other OSes would not handle 'tail -1' properly for some reason
   # returns RSS memory occupied by current R process in MB rounded to 1 decimal places (as in gc), ps already returns KB
-  c("PS_rss"=round(ans / 1024, 1))
+  c("PS_rss"=round(ans / 1024, 1L))
   # nocov end
 }
 
@@ -205,7 +232,7 @@ gc_mem = function() {
   # nocov end
 }
 
-test = function(num,x,y=TRUE,error=NULL,warning=NULL,output=NULL,message=NULL) {
+test = function(num,x,y=TRUE,error=NULL,warning=NULL,output=NULL,notOutput=NULL,message=NULL) {
   # Usage:
   # i) tests that x equals y when both x and y are supplied, the most common usage
   # ii) tests that x is TRUE when y isn't supplied
@@ -235,7 +262,7 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,output=NULL,message=NULL) {
     foreign = get("foreign", parent.frame())
     time = nTest = NULL  # to avoid 'no visible binding' note
     on.exit( {
-       now = proc.time()[3]
+       now = proc.time()[3L]
        took = now-lasttime  # so that prep time between tests is attributed to the following test
        assign("lasttime", now, parent.frame(), inherits=TRUE)
        timings[ as.integer(num), `:=`(time=time+took, nTest=nTest+1L), verbose=FALSE ]
@@ -279,7 +306,7 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,output=NULL,message=NULL) {
   if (memtest) {
     timestamp = as.numeric(Sys.time())   # nocov
   }
-  if (is.null(output)) {
+  if (is.null(output) && is.null(notOutput)) {
     x = suppressMessages(withCallingHandlers(tryCatch(x, error=eHandler), warning=wHandler, message=mHandler))
     # save the overhead of capture.output() since there are a lot of tests, often called in loops
     # Thanks to tryCatch2 by Jan here : https://github.com/jangorecki/logR/blob/master/R/logR.R#L21
@@ -324,14 +351,22 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,output=NULL,message=NULL) {
       }
     }
   }
-  if (!fail && !length(error) && length(output)) {
+  if (!fail && !length(error) && (length(output) || length(notOutput))) {
     if (out[length(out)] == "NULL") out = out[-length(out)]
     out = paste(out, collapse="\n")
     output = paste(output, collapse="\n")  # so that output= can be either a \n separated string, or a vector of strings.
-    if (!string_match(output, out)) {
+    if (length(output) && !string_match(output, out)) {
       # nocov start
-      cat("Test",numStr,"didn't produce correct output:\n")
+      cat("Test",numStr,"did not produce correct output:\n")
       cat("Expected: <<",gsub("\n","\\\\n",output),">>\n",sep="")  # \n printed as '\\n' so the two lines of output can be compared vertically
+      cat("Observed: <<",gsub("\n","\\\\n",out),">>\n",sep="")
+      fail = TRUE
+      # nocov end
+    }
+    if (length(notOutput) && string_match(notOutput, out)) {
+      # nocov start
+      cat("Test",numStr,"produced output but should not have:\n")
+      cat("Expected absent: <<",gsub("\n","\\\\n",notOutput),">>\n",sep="")
       cat("Observed: <<",gsub("\n","\\\\n",out),">>\n",sep="")
       fail = TRUE
       # nocov end
@@ -366,12 +401,20 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,output=NULL,message=NULL) {
     # For test 617 on r-prerel-solaris-sparc on 7 Mar 2013
     # nocov start
     if (!fail) {
-      cat("Test",numStr,"ran without errors but failed check that x equals y:\n")
-      cat("> x =",deparse(xsub),"\n")
-      if (is.data.table(x)) compactprint(x) else {cat("First 6 of ", length(x)," (type '", typeof(x), "'): ", sep=""); print(head(x))}
-      cat("> y =",deparse(ysub),"\n")
-      if (is.data.table(y)) compactprint(y) else {cat("First 6 of ", length(y)," (type '", typeof(y), "'): ", sep=""); print(head(y))}
-      if (!isTRUE(all.equal.result)) cat(all.equal.result,sep="\n")
+      cat("Test", numStr, "ran without errors but failed check that x equals y:\n")
+      failPrint = function(x, xsub) {
+        cat(">", substitute(x), "=", xsub, "\n")
+        if (is.data.table(x)) compactprint(x) else {
+          nn = length(x)
+          cat(sprintf("First %d of %d (type '%s'): \n", min(nn, 6L), length(x), typeof(x)))
+          # head.matrix doesn't restrict columns
+          if (length(d <- dim(x))) do.call(`[`, c(list(x, drop = FALSE), lapply(pmin(d, 6L), seq_len)))
+          else print(head(x))
+        }
+      }
+      failPrint(x, deparse(xsub))
+      failPrint(y, deparse(ysub))
+      if (!isTRUE(all.equal.result)) cat(all.equal.result, sep="\n")
       fail = TRUE
     }
     # nocov end

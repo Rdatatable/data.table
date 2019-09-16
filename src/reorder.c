@@ -19,8 +19,9 @@ SEXP reorder(SEXP x, SEXP order)
         error("Column %d is length %d which differs from length of column 1 (%d). Invalid data.table.", i+1, length(v), nrow);
       if (SIZEOF(v) > maxSize)
         maxSize=SIZEOF(v);
-      if (ALTREP(v)) SET_VECTOR_ELT(x,i,duplicate(v));  // expand compact vector in place ready for reordering by reference
+      if (ALTREP(v)) SET_VECTOR_ELT(x, i, copyAsPlain(v));
     }
+    copySharedColumns(x); // otherwise two columns which point to the same vector would be reordered and then re-reordered, issues linked in PR#3768
   } else {
     if (SIZEOF(x)!=4 && SIZEOF(x)!=8 && SIZEOF(x)!=16)
       error("reorder accepts vectors but this non-VECSXP is type '%s' which isn't yet supported (SIZEOF=%d)", type2char(TYPEOF(x)), SIZEOF(x));
@@ -32,8 +33,7 @@ SEXP reorder(SEXP x, SEXP order)
   if (!isInteger(order)) error("order must be an integer vector");
   if (length(order) != nrow) error("nrow(x)[%d]!=length(order)[%d]",nrow,length(order));
   int nprotect = 0;
-  if (ALTREP(order)) { order=PROTECT(duplicate(order)); nprotect++; }  // TODO: how to fetch range of ALTREP compact vector
-
+  if (ALTREP(order)) { order=PROTECT(copyAsPlain(order)); nprotect++; }  // TODO: if it's an ALTREP sequence some optimizations are possible rather than expand
 
   const int *restrict idx = INTEGER(order);
   int i=0;

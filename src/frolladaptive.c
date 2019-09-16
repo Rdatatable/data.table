@@ -1,9 +1,8 @@
-#include "froll.h"
-
-// helper used to append verbose message or warnings
-static char *end(char *start) {
-  return strchr(start, 0);
-}
+#include <stdio.h>
+#include <stdint.h>
+#include <stdbool.h>
+#include <Rdefines.h>
+#include "data.table.h"
 
 /* fast adaptive rolling mean - router
  * algo = 0: fadaptiverollmeanFast

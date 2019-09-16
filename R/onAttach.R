@@ -20,7 +20,7 @@
   if (!isTRUE(getOption("datatable.quiet"))) {   # new option in v1.12.4, #3489
     packageStartupMessage("data.table ", v, if(dev)paste0(" IN DEVELOPMENT built ",d,g),
                           " using ", getDTthreads(verbose=FALSE), " threads (see ?getDTthreads).  Latest news: r-datatable.com")
-    if (dev && (Sys.Date() - as.Date(d))>28)
+    if (dev && (Sys.Date() - as.Date(d))>28L)
       packageStartupMessage("**********\nThis development version of data.table was built more than 4 weeks ago. Please update: data.table::update.dev.pkg()\n**********")
     if (!.Call(ChasOpenMP))
       packageStartupMessage("**********\nThis installation of data.table has not detected OpenMP support. It should still work but in single-threaded mode.",

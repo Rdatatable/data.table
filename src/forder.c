@@ -427,34 +427,49 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
   const bool verbose = GetVerbose();
 
   if (!isNewList(DT)) {
-    if (!isVectorAtomic(DT)) error("Input is not either a list of columns, or an atomic vector.");
-    if (!isNull(by)) error("Input is an atomic vector (not a list of columns) but by= is not NULL");
-    if (!isInteger(ascArg) || LENGTH(ascArg)!=1) error("Input is an atomic vector (not a list of columns) but ascArg= is not a length 1 integer");
+    if (!isVectorAtomic(DT))
+      error("Internal error: input is not either a list of columns, or an atomic vector.");  // # nocov; caught by colnamesInt at R level, test 1962.0472
+    if (!isNull(by))
+      error("Internal error: input is an atomic vector (not a list of columns) but by= is not NULL");  // # nocov; caught at R level, test 1962.043
+    if (!isInteger(ascArg) || LENGTH(ascArg)!=1)
+      error("Input is an atomic vector (not a list of columns) but order= is not a length 1 integer");
+    if (verbose)
+      Rprintf("forder.c received a vector type '%s' length %d\n", type2char(TYPEOF(DT)), length(DT));
     SEXP tt = PROTECT(allocVector(VECSXP, 1)); n_protect++;
     SET_VECTOR_ELT(tt, 0, DT);
     DT = tt;
     by = PROTECT(allocVector(INTSXP, 1)); n_protect++;
     INTEGER(by)[0] = 1;
+  } else {
+    if (verbose)
+      Rprintf("forder.c received %d rows and %d columns\n", length(VECTOR_ELT(DT,0)), length(DT));
   }
-
-  if (!length(DT)) error("DT is an empty list() of 0 columns");
-  if (!isInteger(by) || !LENGTH(by)) error("DT has %d columns but 'by' is either not integer or is length 0", length(DT));  // seq_along(x) at R level
-  if (!isInteger(ascArg) || LENGTH(ascArg)!=LENGTH(by)) error("Either 'ascArg' is not integer or its length (%d) is different to 'by's length (%d)", LENGTH(ascArg), LENGTH(by));
+  if (!length(DT))
+    error("Internal error: DT is an empty list() of 0 columns");  // # nocov  should have been caught be colnamesInt, test 2099.1
+  if (!isInteger(by) || !LENGTH(by))
+    error("Internal error: DT has %d columns but 'by' is either not integer or is length 0", length(DT));  // # nocov  colnamesInt catches, 2099.2
+  if (!isInteger(ascArg) || LENGTH(ascArg)!=LENGTH(by))
+    error("Either order= is not integer or its length (%d) is different to by='s length (%d)", LENGTH(ascArg), LENGTH(by));
   nrow = length(VECTOR_ELT(DT,0));
   int n_cplx = 0;
   for (int i=0; i<LENGTH(by); i++) {
     int by_i = INTEGER(by)[i];
     if (by_i < 1 || by_i > length(DT))
-      error("'by' value %d out of range [1,%d]", by_i, length(DT));
+      error("internal error: 'by' value %d out of range [1,%d]", by_i, length(DT)); // # nocov # R forderv already catch that using C colnamesInt
     if ( nrow != length(VECTOR_ELT(DT, by_i-1)) )
       error("Column %d is length %d which differs from length of column 1 (%d)\n", INTEGER(by)[i], length(VECTOR_ELT(DT, INTEGER(by)[i]-1)), nrow);
     if (TYPEOF(VECTOR_ELT(DT, by_i-1)) == CPLXSXP) n_cplx++;
   }
-  if (!isLogical(retGrpArg) || LENGTH(retGrpArg)!=1 || INTEGER(retGrpArg)[0]==NA_LOGICAL) error("retGrp must be TRUE or FALSE");
+  if (!isLogical(retGrpArg) || LENGTH(retGrpArg)!=1 || INTEGER(retGrpArg)[0]==NA_LOGICAL)
+    error("retGrp= must be TRUE or FALSE");
   retgrp = LOGICAL(retGrpArg)[0]==TRUE;
-  if (!isLogical(sortGroupsArg) || LENGTH(sortGroupsArg)!=1 || INTEGER(sortGroupsArg)[0]==NA_LOGICAL ) error("sortGroups must be TRUE or FALSE");
-  if (!isLogical(naArg) || LENGTH(naArg) != 1) error("na.last must be logical TRUE, FALSE or NA of length 1");
+  if (!isLogical(sortGroupsArg) || LENGTH(sortGroupsArg)!=1 || INTEGER(sortGroupsArg)[0]==NA_LOGICAL )
+    error("sort= must be TRUE or FALSE");
   sortType = LOGICAL(sortGroupsArg)[0]==TRUE;   // if sortType is 1, it is later flipped between +1/-1 according to ascArg. Otherwise ascArg is ignored when sortType==0
+  if (!retgrp && !sortType)
+    error("At least one of retGrp= or sort= must be TRUE");
+  if (!isLogical(naArg) || LENGTH(naArg) != 1)
+    error("na.last must be logical TRUE, FALSE or NA of length 1");
   nalast = (LOGICAL(naArg)[0] == NA_LOGICAL) ? -1 : LOGICAL(naArg)[0]; // 1=na last, 0=na first (default), -1=remove na
 
   if (nrow==0) {
@@ -493,7 +508,11 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
     SEXP x = VECTOR_ELT(DT,INTEGER(by)[col]-1);
     uint64_t min=0, max=0;     // min and max of non-NA finite values
     int na_count=0, infnan_count=0;
-    if (sortType) sortType=INTEGER(ascArg)[col];  // if sortType!=0 (not first-appearance) then +1/-1 comes from ascArg.
+    if (sortType) {
+      sortType=INTEGER(ascArg)[col];  // if sortType!=0 (not first-appearance) then +1/-1 comes from ascArg.
+      if (sortType!=1 && sortType!=-1)
+        Error("Item %d of order (ascending/descending) is %d. Must be +1 or -1.", col+1, sortType);
+    }
     //Rprintf("sortType = %d\n", sortType);
     switch(TYPEOF(x)) {
     case INTSXP : case LGLSXP :  // TODO skip LGL and assume range [0,1]
@@ -534,8 +553,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
       range_str(STRING_PTR(x), nrow, &min, &max, &na_count);
       break;
     default:
-      Error("Column %d of by= (%d) is type '%s', not yet supported. Please use the by= argument to specify columns with types that are supported. See NEWS item in v1.12.2 for more information.",
-            col+1, INTEGER(by)[col], type2char(TYPEOF(x)));
+      Error("Column %d passed to [f]order is type '%s', not yet supported.", col+1, type2char(TYPEOF(x)));
     }
     TEND(3);
     if (na_count==nrow || (min>0 && min==max && na_count==0 && infnan_count==0)) {
@@ -1294,26 +1312,6 @@ SEXP isOrderedSubset(SEXP x, SEXP nrowArg)
     last = elem;
   }
   return(ScalarLogical(TRUE));
-}
-
-SEXP isReallyReal(SEXP x) {
-  SEXP ans = PROTECT(allocVector(INTSXP, 1));
-  INTEGER(ans)[0] = 0;
-  // return 0 (FALSE) when not type double, or is type double but contains integers
-  // used to error if not passed type double but this needed extra is.double() calls in calling R code
-  // which needed a repeat of the argument. Hence simpler and more robust to return 0 when not type double.
-  if (isReal(x)) {
-    int n=length(x), i=0;
-    double *dx = REAL(x);
-    while (i<n &&
-        ( ISNA(dx[i]) ||
-        ( R_FINITE(dx[i]) && dx[i] == (int)(dx[i])))) {
-      i++;
-    }
-    if (i<n) INTEGER(ans)[0] = i+1;  // return the location of first element which is really real; i.e. not an integer
-  }
-  UNPROTECT(1);
-  return(ans);
 }
 
 SEXP binary(SEXP x)

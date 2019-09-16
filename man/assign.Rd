@@ -31,7 +31,7 @@ set(x, i = NULL, j, value)
 \item{value}{ A list of replacement values to assign by reference to \code{x[i, j]}. }
 }
 \details{
-\code{:=} is defined for use in \code{j} only. It \emph{adds} or \emph{updates} or \emph{removes} column(s) by reference. It makes no copies of any part of memory at all. Read the \href{vignettes/datatable-reference-semantics.html}{Reference Semantics HTML vignette} to follow with examples. Some typical usages are:
+\code{:=} is defined for use in \code{j} only. It \emph{adds} or \emph{updates} or \emph{removes} column(s) by reference. It makes no copies of any part of memory at all. Please read \href{../doc/datatable-reference-semantics.html}{\code{vignette("datatable-reference-semantics")}} and follow with examples. Some typical usages are:
 
 \preformatted{
     DT[, col := val]                              # update (or add at the end if doesn't exist) a column called "col" with value "val" (recycled if necessary).
@@ -57,9 +57,9 @@ All of the following result in a friendly error (by design) :
     DT[, {col1 := 1L; col2 := 2L}]                # Use the functional form, `:=`(), instead (see above).
 }
 
-For additional resources, check the \href{vignettes/datatable-faq.html}{FAQs vignette}. Also have a look at StackOverflow's \href{http://stackoverflow.com/search?q=\%5Bdata.table\%5D+reference}{data.table tag}.
+For additional resources, please read \href{../doc/datatable-faq.html}{\code{vignette("datatable-faq")}}. Also have a look at StackOverflow's \href{http://stackoverflow.com/search?q=\%5Bdata.table\%5D+reference}{data.table tag}.
 
-\code{:=} in \code{j} can be combined with all types of \code{i} (such as binary search), and all types of \code{by}. This a one reason why \code{:=} has been implemented in \code{j}. See the \href{vignettes/datatable-reference-semantics}{Reference Semantics HTML vignette} and also \code{FAQ 2.16} for analogies to SQL.
+\code{:=} in \code{j} can be combined with all types of \code{i} (such as binary search), and all types of \code{by}. This a one reason why \code{:=} has been implemented in \code{j}. Please see \href{../doc/datatable-reference-semantics}{\code{vignette("datatable-reference-semantics")}} and also \code{FAQ 2.16} for analogies to SQL.
 
 When \code{LHS} is a factor column and \code{RHS} is a character vector with items missing from the factor levels, the new level(s) are automatically added (by reference, efficiently), unlike base methods.
 
@@ -80,7 +80,7 @@ Since \code{[.data.table} incurs overhead to check the existence and type of arg
 \value{
 \code{DT} is modified by reference and returned invisibly. If you require a copy, take a \code{\link{copy}} first (using \code{DT2 = copy(DT)}).
 }
-\seealso{ \code{\link{data.table}}, \code{\link{copy}}, \code{\link{alloc.col}}, \code{\link{truelength}}, \code{\link{set}}, \code{\link{.Last.updated}}
+\seealso{ \code{\link{data.table}}, \code{\link{copy}}, \code{\link{setalloccol}}, \code{\link{truelength}}, \code{\link{set}}, \code{\link{.Last.updated}}
 }
 \examples{
 DT = data.table(a = LETTERS[c(3L,1:3)], b = 4:7)
@@ -149,5 +149,4 @@ system.time(for (i in 1:1000) set(DT, i, 1L, i))
 
 }
 \keyword{ data }
-
 

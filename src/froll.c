@@ -1,9 +1,8 @@
-#include "froll.h"
-
-// helper used to append verbose message or warnings
-static char *end(char *start) {
-  return strchr(start, 0);
-}
+#include <stdio.h>
+#include <stdint.h>
+#include <stdbool.h>
+#include <Rdefines.h>
+#include "data.table.h"
 
 /* fast rolling mean - router
  * early stopping for window bigger than input
@@ -312,4 +311,64 @@ void frollsumExact(double *x, uint_fast64_t nx, ans_t *ans, int k, double fill, 
       }
     }
   }
+}
+
+/* fast rolling any R function
+ * not plain C, not thread safe
+ * R eval() allocates
+ */
+void frollapply(double *x, int64_t nx, double *w, int k, ans_t *ans, int align, double fill, SEXP call, SEXP rho, bool verbose) {
+  if (nx < k) {
+    if (verbose)
+      Rprintf("%s: window width longer than input vector, returning all NA vector\n", __func__);
+    for (int i=0; i<nx; i++) ans->dbl_v[i] = fill;
+    return;
+  }
+  double tic = 0;
+  if (verbose)
+    tic = omp_get_wtime();
+  for (int i=0; i<k-1; i++) ans->dbl_v[i] = fill;
+  // this is i=k-1 iteration - first full window - taken out from the loop
+  // we use it to add extra check that results of a FUN are length 1 numeric
+  memcpy(w, x, k*sizeof(double));
+  SEXP eval0 = PROTECT(eval(call, rho));
+  if (xlength(eval0) != 1)
+    error("%s: results from provided FUN are not length 1", __func__);
+  SEXPTYPE teval0 = TYPEOF(eval0);
+  if (teval0 == REALSXP) {
+    ans->dbl_v[k-1] = REAL(eval0)[0];
+  } else {
+    if (teval0==INTSXP || teval0==LGLSXP) {
+      if (verbose)
+        Rprintf("%s: results from provided FUN are not of type double, coercion from integer or logical will be applied on each iteration\n", __func__);
+      ans->dbl_v[k-1] = REAL(coerceVector(eval0, REALSXP))[0];
+    } else {
+      error("%s: results from provided FUN are not of type double", __func__);
+    }
+  }
+  UNPROTECT(1); // eval0
+  // for each row it copies expected window data into w
+  // evaluate call which has been prepared to point into w
+  if (teval0 == REALSXP) {
+    for (int64_t i=k; i<nx; i++) {
+      memcpy(w, x+(i-k+1), k*sizeof(double));
+      ans->dbl_v[i] = REAL(eval(call, rho))[0]; // this may fail with for a not type-stable fun
+    }
+  } else {
+    for (int64_t i=k; i<nx; i++) {
+      memcpy(w, x+(i-k+1), k*sizeof(double));
+      SEXP evali = PROTECT(eval(call, rho));
+      ans->dbl_v[i] = REAL(coerceVector(evali, REALSXP))[0];
+      UNPROTECT(1); // evali
+    }
+  }
+  if (ans->status < 3 && align < 1) {
+    int k_ = align==-1 ? k-1 : floor(k/2);
+    if (verbose)
+      Rprintf("%s: align %d, shift answer by %d\n", __func__, align, -k_);
+    memmove((char *)ans->dbl_v, (char *)ans->dbl_v + (k_*sizeof(double)), (nx-k_)*sizeof(double));
+    for (int64_t i=nx-k_; i<nx; i++) ans->dbl_v[i] = fill;
+  }
+  if (verbose)
+    Rprintf("%s: took %.3fs\n", __func__, omp_get_wtime()-tic);
 }

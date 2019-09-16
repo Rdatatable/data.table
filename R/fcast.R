@@ -8,9 +8,21 @@ guess = function(x) {
   return(var)
 }
 
-dcast = function(data, formula, fun.aggregate = NULL, ..., margins = NULL,
-                  subset = NULL, fill = NULL, value.var = guess(data)) {
-  UseMethod("dcast", data)
+dcast <- function(
+  data, formula, fun.aggregate = NULL, ..., margins = NULL,
+  subset = NULL, fill = NULL, value.var = guess(data)
+) {
+  if (is.data.table(data)) UseMethod("dcast", data)
+  # nocov start
+  else {
+    data_name = deparse(substitute(data))
+    ns = tryCatch(getNamespace("reshape2"), error=function(e)
+      stop("The dcast generic in data.table has been passed a ",class(data)[1L],", but data.table::dcast currently only has a method for data.tables. Please confirm your input is a data.table, with setDT(", data_name, ") or as.data.table(", data_name, "). If you intend to use a reshape2::dcast, try installing that package first, but do note that reshape2 is deprecated and you should be migrating your code away from using it."))
+    warning("The dcast generic in data.table has been passed a ", class(data)[1L], " and will attempt to redirect to the reshape2::dcast; please note that reshape2 is deprecated, and this redirection is now deprecated as well. Please do this redirection yourself like reshape2::dcast(", data_name, "). In the next version, this warning will become an error.")
+    ns$dcast(data, formula, fun.aggregate = fun.aggregate, ..., margins = margins,
+             subset = subset, fill = fill, value.var = value.var)
+  }
+  # nocov end
 }
 
 check_formula = function(formula, varnames, valnames) {
@@ -100,6 +112,11 @@ dcast.data.table = function(data, formula, fun.aggregate = NULL, sep = "_", ...,
   if (!is.data.table(data)) stop("'data' must be a data.table.")
   drop = as.logical(rep(drop, length.out=2L))
   if (anyNA(drop)) stop("'drop' must be logical TRUE/FALSE")
+  # #2980 if explicitly providing fun.aggregate=length but not a value.var,
+  #   just use the last column (as guess(data) would do) because length will be
+  #   the same on all columns
+  if (missing(value.var) && !missing(fun.aggregate) && identical(fun.aggregate, length))
+    value.var = names(data)[ncol(data)]
   lvals = value_vars(value.var, names(data))
   valnames = unique(unlist(lvals))
   lvars = check_formula(formula, names(data), valnames)

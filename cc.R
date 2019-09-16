@@ -61,9 +61,9 @@ cc = function(test=TRUE, clean=FALSE, debug=FALSE, omp=!debug, cc_dir=Sys.getenv
   if (clean) system("rm *.o *.so")
   OMP = if (omp) "" else "no-"
   if (debug) {
-    ret = system(sprintf("MAKEFLAGS='-j CC=%s PKG_CFLAGS=-f%sopenmp CFLAGS=-std=c99\\ -O0\\ -ggdb\\ -pedantic' R CMD SHLIB -d -o data.table.so *.c", CC, OMP))
+    ret = system(sprintf("MAKEFLAGS='-j CC=%s PKG_CFLAGS=-f%sopenmp CFLAGS=-std=c99\\ -O0\\ -ggdb\\ -pedantic\\ -flto' R CMD SHLIB -d -o data.table.so *.c", CC, OMP))
   } else {
-    ret = system(sprintf("MAKEFLAGS='-j CC=%s CFLAGS=-f%sopenmp\\ -std=c99\\ -O3\\ -pipe\\ -Wall\\ -pedantic' R CMD SHLIB -o data.table.so *.c", CC, OMP))
+    ret = system(sprintf("MAKEFLAGS='-j CC=%s CFLAGS=-f%sopenmp\\ -std=c99\\ -O3\\ -pipe\\ -Wall\\ -pedantic\\ -flto' R CMD SHLIB -o data.table.so *.c", CC, OMP))
     # TODO add -Wextra too?
   }
   if (ret) return()
@@ -76,9 +76,9 @@ cc = function(test=TRUE, clean=FALSE, debug=FALSE, omp=!debug, cc_dir=Sys.getenv
   setwd(old)
   xx = getDLLRegisteredRoutines("datatable",TRUE)
   for (i in seq_along(xx$.Call))
-    assign(xx$.Call[[i]]$name,  xx$.Call[[i]]$address, env=.GlobalEnv)
+    assign(xx$.Call[[i]]$name,  xx$.Call[[i]]$address, envir=.GlobalEnv)
   for (i in seq_along(xx$.External))
-    assign(xx$.External[[i]]$name,  xx$.External[[i]]$address, env=.GlobalEnv)
+    assign(xx$.External[[i]]$name,  xx$.External[[i]]$address, envir=.GlobalEnv)
   sourceDir(paste0(cc_dir,"/R"))
   assign("testDir", function(x)paste0(cc_dir,"/inst/tests/",x), envir=.GlobalEnv)
   .onLoad()

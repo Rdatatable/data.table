@@ -337,10 +337,11 @@ void *gather(SEXP x, bool *anyNA)
   return gx;
 }
 
-SEXP gsum(SEXP x, SEXP narmArg)
+SEXP gsum(SEXP x, SEXP narmArg, SEXP warnOverflowArg)
 {
   if (!isLogical(narmArg) || LENGTH(narmArg)!=1 || LOGICAL(narmArg)[0]==NA_LOGICAL) error("na.rm must be TRUE or FALSE");
   const bool narm = LOGICAL(narmArg)[0];
+  const bool warnOverflow = LOGICAL(warnOverflowArg)[0];
   if (inherits(x, "factor")) error("sum is not meaningful for factors.");
   const int n = (irowslen == -1) ? length(x) : irowslen;
   double started = wallclock();
@@ -400,7 +401,7 @@ SEXP gsum(SEXP x, SEXP narmArg)
     //Rprintf("gsum int took %.3f\n", wallclock()-started);
     if (overflow) {
       UNPROTECT(1); // discard the result with overflow
-      warning("The sum of an integer column for a group was more than type 'integer' can hold so the result has been coerced to 'numeric' automatically for convenience.");
+      if (warnOverflow) warning("The sum of an integer column for a group was more than type 'integer' can hold so the result has been coerced to 'numeric' automatically for convenience.");
       ans = PROTECT(allocVector(REALSXP, ngrp));
       double *restrict ansp = REAL(ans);
       memset(ansp, 0, ngrp*sizeof(double));
@@ -426,37 +427,96 @@ SEXP gsum(SEXP x, SEXP narmArg)
     }
   } break;
   case REALSXP: {
-    const double *restrict gx = gather(x, &anyNA);
-    ans = PROTECT(allocVector(REALSXP, ngrp));
-    double *restrict ansp = REAL(ans);
-    memset(ansp, 0, ngrp*sizeof(double));
-    if (!narm || !anyNA) {
-      #pragma omp parallel for num_threads(getDTthreads())
-      for (int h=0; h<highSize; h++) {
-        double *restrict _ans = ansp + (h<<shift);
-        for (int b=0; b<nBatch; b++) {
-          const int pos = counts[ b*highSize + h ];
-          const int howMany = ((h==highSize-1) ? (b==nBatch-1?lastBatchSize:batchSize) : counts[ b*highSize + h + 1 ]) - pos;
-          const double *my_gx = gx + b*batchSize + pos;
-          const uint16_t *my_low = low + b*batchSize + pos;
-          for (int i=0; i<howMany; i++) {
-            _ans[my_low[i]] += my_gx[i];  // let NA propagate when !narm
+    if (!INHERITS(x, char_integer64)) {
+      const double *restrict gx = gather(x, &anyNA);
+      ans = PROTECT(allocVector(REALSXP, ngrp));
+      double *restrict ansp = REAL(ans);
+      memset(ansp, 0, ngrp*sizeof(double));
+      if (!narm || !anyNA) {
+        #pragma omp parallel for num_threads(getDTthreads())
+        for (int h=0; h<highSize; h++) {
+          double *restrict _ans = ansp + (h<<shift);
+          for (int b=0; b<nBatch; b++) {
+            const int pos = counts[ b*highSize + h ];
+            const int howMany = ((h==highSize-1) ? (b==nBatch-1?lastBatchSize:batchSize) : counts[ b*highSize + h + 1 ]) - pos;
+            const double *my_gx = gx + b*batchSize + pos;
+            const uint16_t *my_low = low + b*batchSize + pos;
+            for (int i=0; i<howMany; i++) {
+              _ans[my_low[i]] += my_gx[i];  // let NA propagate when !narm
+            }
+          }
+        }
+      } else {
+        // narm==true and anyNA==true
+        #pragma omp parallel for num_threads(getDTthreads())
+        for (int h=0; h<highSize; h++) {
+          double *restrict _ans = ansp + (h<<shift);
+          for (int b=0; b<nBatch; b++) {
+            const int pos = counts[ b*highSize + h ];
+            const int howMany = ((h==highSize-1) ? (b==nBatch-1?lastBatchSize:batchSize) : counts[ b*highSize + h + 1 ]) - pos;
+            const double *my_gx = gx + b*batchSize + pos;
+            const uint16_t *my_low = low + b*batchSize + pos;
+            for (int i=0; i<howMany; i++) {
+              const double elem = my_gx[i];
+              if (!ISNAN(elem)) _ans[my_low[i]] += elem;
+            }
           }
         }
       }
-    } else {
-      // narm==true and anyNA==true
-      #pragma omp parallel for num_threads(getDTthreads())
-      for (int h=0; h<highSize; h++) {
-        double *restrict _ans = ansp + (h<<shift);
-        for (int b=0; b<nBatch; b++) {
-          const int pos = counts[ b*highSize + h ];
-          const int howMany = ((h==highSize-1) ? (b==nBatch-1?lastBatchSize:batchSize) : counts[ b*highSize + h + 1 ]) - pos;
-          const double *my_gx = gx + b*batchSize + pos;
-          const uint16_t *my_low = low + b*batchSize + pos;
-          for (int i=0; i<howMany; i++) {
-            const double elem = my_gx[i];
-            if (!ISNAN(elem)) _ans[my_low[i]] += elem;
+    } else { // int64
+      const int64_t *restrict gx = gather(x, &anyNA);
+      ans = PROTECT(allocVector(REALSXP, ngrp));
+      int64_t *restrict ansp = (int64_t *)REAL(ans);
+      memset(ansp, 0, ngrp*sizeof(int64_t));
+      if (!anyNA) {
+        #pragma omp parallel for num_threads(getDTthreads())
+        for (int h=0; h<highSize; h++) {
+          int64_t *restrict _ans = ansp + (h<<shift);
+          for (int b=0; b<nBatch; b++) {
+            const int pos = counts[ b*highSize + h ];
+            const int howMany = ((h==highSize-1) ? (b==nBatch-1?lastBatchSize:batchSize) : counts[ b*highSize + h + 1 ]) - pos;
+            const int64_t *my_gx = gx + b*batchSize + pos;
+            const uint16_t *my_low = low + b*batchSize + pos;
+            for (int i=0; i<howMany; i++) {
+              _ans[my_low[i]] += my_gx[i]; // does not propagate INT64 for !narm
+            }
+          }
+        }
+      } else { // narm==true/false and anyNA==true
+        if (!narm) {
+          #pragma omp parallel for num_threads(getDTthreads())
+          for (int h=0; h<highSize; h++) {
+            int64_t *restrict _ans = ansp + (h<<shift);
+            for (int b=0; b<nBatch; b++) {
+              const int pos = counts[ b*highSize + h ];
+              const int howMany = ((h==highSize-1) ? (b==nBatch-1?lastBatchSize:batchSize) : counts[ b*highSize + h + 1 ]) - pos;
+              const int64_t *my_gx = gx + b*batchSize + pos;
+              const uint16_t *my_low = low + b*batchSize + pos;
+              for (int i=0; i<howMany; i++) {
+                const int64_t elem = my_gx[i];
+                if (elem!=INT64_MIN) {
+                  _ans[my_low[i]] += elem;
+                } else {
+                  _ans[my_low[i]] = INT64_MIN;
+                  break;
+                }
+              }
+            }
+          }
+        } else {
+          #pragma omp parallel for num_threads(getDTthreads())
+          for (int h=0; h<highSize; h++) {
+            int64_t *restrict _ans = ansp + (h<<shift);
+            for (int b=0; b<nBatch; b++) {
+              const int pos = counts[ b*highSize + h ];
+              const int howMany = ((h==highSize-1) ? (b==nBatch-1?lastBatchSize:batchSize) : counts[ b*highSize + h + 1 ]) - pos;
+              const int64_t *my_gx = gx + b*batchSize + pos;
+              const uint16_t *my_low = low + b*batchSize + pos;
+              for (int i=0; i<howMany; i++) {
+                const int64_t elem = my_gx[i];
+                if (elem!=INT64_MIN) _ans[my_low[i]] += elem;
+              }
+            }
           }
         }
       }
@@ -519,7 +579,7 @@ SEXP gmean(SEXP x, SEXP narm)
   if (inherits(x, "factor")) error("mean is not meaningful for factors.");
   if (!LOGICAL(narm)[0]) {
     int protecti=0;
-    ans = PROTECT(gsum(x,narm)); protecti++;
+    ans = PROTECT(gsum(x, narm, /*#986, warnOverflow=*/ScalarLogical(FALSE))); protecti++;
     switch(TYPEOF(ans)) {
     case LGLSXP: case INTSXP:
       ans = PROTECT(coerceVector(ans, REALSXP)); protecti++;
