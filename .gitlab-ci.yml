@@ -91,7 +91,7 @@ build: # build data.table sources as tar.gz archive
   tags:
     - macosx
 
-test-rel-lin: #  most comprehensive tests, force all suggests, also integration tests, using gcc -O3
+test-rel-lin: #  most comprehensive tests, force all suggests, also integration tests, using gcc -O3 -flto
   <<: *test-lin
   image: registry.gitlab.com/jangorecki/dockerfiles/r-builder
   variables: # unlike CRAN
@@ -102,8 +102,8 @@ test-rel-lin: #  most comprehensive tests, force all suggests, also integration 
     TEST_DATA_TABLE_WITH_OTHER_PACKAGES: "TRUE"
   before_script:
     - mkdir -p ~/.R
-    - echo 'CFLAGS=-g -O3 -fopenmp -Wall -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2' > ~/.R/Makevars
-    - echo 'CXXFLAGS=-g -O3 -fopenmp -Wall -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2' >> ~/.R/Makevars
+    - echo 'CFLAGS=-g -O3 -flto -fopenmp -Wall -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2' > ~/.R/Makevars
+    - echo 'CXXFLAGS=-g -O3 -flto -fopenmp -Wall -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2' >> ~/.R/Makevars
   script:
     - Rscript -e 'source("ci.R"); install.packages(dcf.dependencies(c("DESCRIPTION","inst/tests/tests-DESCRIPTION"), which="all"))'
     - *copy-src
@@ -112,6 +112,7 @@ test-rel-lin: #  most comprehensive tests, force all suggests, also integration 
     - cd bus/$CI_BUILD_NAME
     - R CMD check $(ls -1t data.table_*.tar.gz | head -n 1)
     - *cleanup-src
+    - ! grep "warning:" data.table.Rcheck/00install.out
 
 test-rel-vanilla-lin: # minimal installation, no suggested deps, no vignettes or manuals, measure memory, using gcc -O0 -fno-openmp
   <<: *test-lin
