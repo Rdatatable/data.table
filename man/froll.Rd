@@ -203,7 +203,7 @@ f = function(x) {             ## FUN is not type-stable
   # double type will be returned only for first iteration where we check type
   if (n==x[n]) 1 else NA # NA logical turns into garbage without coercion to double
 }
-frollapply(1:5, 3, f)
+try(frollapply(1:5, 3, f))
 }
 \seealso{
   \code{\link{shift}}, \code{\link{data.table}}

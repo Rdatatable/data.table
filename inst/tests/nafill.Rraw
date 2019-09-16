@@ -1,9 +1,5 @@
 require(methods)
 if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
-  if (!identical(suppressWarnings(packageDescription("data.table")), NA)) {
-    remove.packages("data.table")
-    stop("This is dev mode but data.table was installed. Uninstalled it. Please q() this R session and try cc() again. The installed namespace causes problems in dev mode for the S4 tests.\n")
-  }
   if ((tt<-compiler::enableJIT(-1))>0)
     cat("This is dev mode and JIT is enabled (level ", tt, ") so there will be a brief pause around the first test.\n", sep="")
 } else {
@@ -64,6 +60,7 @@ test(1.45, nafill(l, "nocb"), list(c(1:2,4L,4:5), structure(c(1,2,4,4,5), class=
 test(1.46, nafill(l, fill=0), list(c(1:2,0L,4:5), structure(c(1,2,0,4,5), class="Date"), c(0L,2L,0L,4L,0L), structure(c(0,2,0,4,0), class="Date")))
 test(1.47, nafill(l, fill=as.Date(0, origin="1970-01-01")), list(c(1:2,0L,4:5), structure(c(1,2,0,4,5), class="Date"), c(0L,2L,0L,4L,0L), structure(c(0,2,0,4,0), class="Date")))
 test(1.48, nafill(l, fill=as.Date("2019-06-05")), list(c(1:2,18052L,4:5), structure(c(1,2,18052,4,5), class="Date"), c(18052L,2L,18052L,4L,18052L), structure(c(18052,2,18052,4,18052), class="Date")))
+test(1.49, nafill(numeric()), numeric())
 if (test_bit64) {
   l = list(a=as.integer64(c(1:2,NA,4:5)), b=as.integer64(c(NA,2L,NA,4L,NA)))
   test(1.61, lapply(nafill(l, "locf"), as.character), lapply(list(c(1:2,2L,4:5), c(NA,2L,2L,4L,4L)), as.character))
@@ -158,6 +155,9 @@ dt = data.table(a=c(1L, 2L, NA_integer_), b=c(1, 2, NA_real_))
 test(5.01, nafill(dt, "locf", verbose=TRUE), output="nafillInteger: took.*nafillDouble: took.*nafillR.*took")
 test(5.02, setnafill(dt, "locf", verbose=TRUE), output="nafillInteger: took.*nafillDouble: took.*nafillR.*took")
 test(5.03, nafill(dt, "locf", verbose=NA), error="verbose must be TRUE or FALSE")
+if (test_bit64) {
+  test(5.04, nafill(as.integer64(c(NA,2,NA,3)), "locf", verbose=TRUE), as.integer64(c(NA,2,2,3)), output="nafillInteger64: took.*nafillR.*took")
+}
 
 # coerceFill
 if (test_bit64) {

@@ -91,7 +91,7 @@ build: # build data.table sources as tar.gz archive
   tags:
     - macosx
 
-test-rel-lin: #  most comprehensive tests, force all suggests, also integration tests, using gcc -O3
+test-rel-lin: #  most comprehensive tests, force all suggests, also integration tests, using gcc -O3 -flto
   <<: *test-lin
   image: registry.gitlab.com/jangorecki/dockerfiles/r-builder
   variables: # unlike CRAN
@@ -100,18 +100,18 @@ test-rel-lin: #  most comprehensive tests, force all suggests, also integration 
     _R_CHECK_FORCE_SUGGESTS_: "TRUE"
     OPENBLAS_MAIN_FREE: "1"
     TEST_DATA_TABLE_WITH_OTHER_PACKAGES: "TRUE"
-  before_script:
-    - mkdir -p ~/.R
-    - echo 'CFLAGS=-g -O3 -fopenmp -Wall -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2' > ~/.R/Makevars
-    - echo 'CXXFLAGS=-g -O3 -fopenmp -Wall -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2' >> ~/.R/Makevars
   script:
     - Rscript -e 'source("ci.R"); install.packages(dcf.dependencies(c("DESCRIPTION","inst/tests/tests-DESCRIPTION"), which="all"), quiet=TRUE)'
     - *copy-src
     - rm -r bus
     - *move-src
+    - mkdir -p ~/.R
+    - echo 'CFLAGS=-g -O3 -flto -fopenmp -Wall -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2' > ~/.R/Makevars
+    - echo 'CXXFLAGS=-g -O3 -flto -fopenmp -Wall -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2' >> ~/.R/Makevars
     - cd bus/$CI_BUILD_NAME
     - R CMD check $(ls -1t data.table_*.tar.gz | head -n 1)
     - *cleanup-src
+    - ! grep "warning:" data.table.Rcheck/00install.out
 
 test-rel-vanilla-lin: # minimal installation, no suggested deps, no vignettes or manuals, measure memory, using gcc -O0 -fno-openmp
   <<: *test-lin
@@ -138,8 +138,8 @@ test-rel-cran-lin: # currently released R on Linux
     _R_CHECK_CRAN_INCOMING_REMOTE_: "FALSE"   # Other than no URL checking (takes many minutes) or 'Days since last update 0' NOTEs needed, #3284
   before_script:
     - mkdir -p ~/.R
-    - echo 'CFLAGS=-g0'> ~/.R/Makevars   # No -g because -g increases datatable.so size from 0.5MB to 1.5MB and breaches 'installed package size <= 5MB' note
-    - echo 'CXXFLAGS=-g0' >> ~/.R/Makevars
+    - echo 'CFLAGS=-g0 -O2 -fopenmp -Wall -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2'> ~/.R/Makevars # -g0 because -g increases datatable.so size from 0.5MB to 1.5MB and breaches 'installed package size <= 5MB' note
+    - echo 'CXXFLAGS=-g0 -O2 -fopenmp -Wall -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2' >> ~/.R/Makevars
   script:
     - Rscript -e 'source("ci.R"); install.packages(dcf.dependencies("DESCRIPTION", which="most"), quiet=TRUE)'
     - *copy-src

@@ -82,6 +82,8 @@ test_that("generate dt", { expect_true(nrow(gen()) == 100) })
 test_that("aggregate dt", { expect_true(nrow(aggr(gen())) < 100) })
 ```
 
+If `data.table` is in Suggests (but not Imports) then you need to declare `.datatable.aware=TRUE` in one of the R/* files to avoid "object not found" errors when testing via `testthat::test_package` or `testthat::test_check`.
+
 ## Dealing with "undefined global functions or variables"
 
 `data.table`'s use of R's deferred evaluation (especially on the left-hand side of `:=`) is not well-recognised by `R CMD check`. This results in `NOTE`s like the following during package check:
@@ -167,7 +169,9 @@ my.write = function (x) {
 }
 ```
 
-When using a package as a suggested dependency, you should not `import` it in the `NAMESPACE` file. Just mention it in the `DESCRIPTION` file. You also _must_ use the `data.table::` prefix when calling `data.table` functions because none of them are imported.
+When using a package as a suggested dependency, you should not `import` it in the `NAMESPACE` file. Just mention it in the `DESCRIPTION` file. 
+When using `data.table` functions in package code (R/* files) you need to use the `data.table::` prefix because none of them are imported. 
+When using `data.table` in package tests (e.g. tests/testthat/test* files), you need to declare `.datatable.aware=TRUE` in one of the R/* files.
 
 ## `data.table` in `Imports` but nothing imported
 

@@ -30,7 +30,7 @@ provides.
 \code{setindex} creates an index for the provided columns. This index is simply an
 ordering vector of the dataset's rows according to the provided columns. This order vector
 is stored as an attribute of the \code{data.table} and the dataset retains the original order
-of rows in memory. See the \href{vignettes/datatable-secondary-indices-and-auto-indexing.html}{Secondary indices and auto indexing} vignette for more details.
+of rows in memory. See the \href{../doc/datatable-secondary-indices-and-auto-indexing.html}{\code{vignette("datatable-secondary-indices-and-auto-indexing")}} for more details.
 
 \code{key} returns the \code{data.table}'s key if it exists; \code{NULL} if none exists.
 

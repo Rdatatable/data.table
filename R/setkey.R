@@ -339,7 +339,8 @@ CJ = function(..., sorted = TRUE, unique = FALSE)
     if (is.null(vnames <- names(l))) vnames = paste0("V", seq_len(length(l)))
     else if (any(tt <- vnames=="")) vnames[tt] = paste0("V", which(tt))
   } else {
-    vnames = name_dots(...)
+    vnames = name_dots(...)$vnames
+    if (any(tt <- vnames=="")) vnames[tt] = paste0("V", which(tt))
   }
   dups = FALSE # fix for #1513
   for (i in seq_along(l)) {

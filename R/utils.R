@@ -74,12 +74,15 @@ name_dots = function(...) {
   } else {
     vnames[is.na(vnames)] = ""
   }
-  for (i in which(vnames=="")) {
-    if ((tmp <- deparse(dot_sub[[i]])[1L]) == make.names(tmp))
-      vnames[i] = tmp
+  notnamed = vnames==""
+  if (any(notnamed)) {
+    syms = sapply(dot_sub, is.symbol)  # save the deparse() in most cases of plain symbol
+    for (i in which(notnamed)) {
+      tmp = if (syms[i]) as.character(dot_sub[[i]]) else deparse(dot_sub[[i]])[1L]
+      if (tmp == make.names(tmp)) vnames[i]=tmp
+    }
   }
-  if (length(w<-which(vnames==""))) vnames[w] = paste0("V", w)
-  vnames
+  list(vnames=vnames, .named=!notnamed)
 }
 
 # convert a vector like c(1, 4, 3, 2) into a string like [1, 4, 3, 2]

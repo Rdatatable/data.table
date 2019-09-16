@@ -193,8 +193,8 @@ log = function(bioc=FALSE, fnam="~/fail.log") {
   x = c(.fail.cran, if (bioc) .fail.bioc)
   cat("Writing 00check.log for",length(x),"packages to",fnam,":\n")
   cat(paste(x,collapse=" "), "\n")
+  require(BiocManager)  # to ensure Bioc version is included in attached packages sessionInfo. It includes the minor version this way; e.g. 1.30.4
   cat(capture.output(sessionInfo()), "\n", file=fnam, sep="\n")
-  cat(capture.output(BiocManager::install(), type="message"), "\n", file=fnam, sep="\n", append=TRUE)
   for (i in x) {
     system(paste0("ls | grep '",i,".*tar.gz' >> ",fnam))
     system(paste0("grep -H . ./",i,".Rcheck/00check.log >> ",fnam))

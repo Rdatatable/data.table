@@ -1,9 +1,8 @@
-#include "froll.h"
-
-// helper used to append verbose message or warnings
-static char *end(char *start) {
-  return strchr(start, 0);
-}
+#include <stdio.h>
+#include <stdint.h>
+#include <stdbool.h>
+#include <Rdefines.h>
+#include "data.table.h"
 
 /* fast rolling mean - router
  * early stopping for window bigger than input
@@ -353,7 +352,7 @@ void frollapply(double *x, int64_t nx, double *w, int k, ans_t *ans, int align, 
   if (teval0 == REALSXP) {
     for (int64_t i=k; i<nx; i++) {
       memcpy(w, x+(i-k+1), k*sizeof(double));
-      ans->dbl_v[i] = REAL(eval(call, rho))[0];
+      ans->dbl_v[i] = REAL(eval(call, rho))[0]; // this may fail with for a not type-stable fun
     }
   } else {
     for (int64_t i=k; i<nx; i++) {

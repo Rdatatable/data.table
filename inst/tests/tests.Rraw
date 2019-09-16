@@ -91,25 +91,6 @@ for (s in sugg) {
   if (!loaded) cat("\n**** Suggested package",s,"is not installed. Tests using it will be skipped.\n\n")
 }
 
-# Control options in case user set them. The user's values are restored at the end of this file.
-# R 3.1.0 had a NULL default for these 3. Set to FALSE now for R 3.1.0, otherwise the options(oldOptions) fails at the end of this file.
-if (is.null(options()$warnPartialMatchArgs))   options(warnPartialMatchArgs=FALSE)
-if (is.null(options()$warnPartialMatchAttr))   options(warnPartialMatchAttr=FALSE)
-if (is.null(options()$warnPartialMatchDollar)) options(warnPartialMatchDollar=FALSE)
-oldOptions = options(
-  datatable.optimize = Inf,
-  datatable.verbose = FALSE,
-  datatable.alloccol = 1024L,
-  datatable.print.class = FALSE,  # this is TRUE in cc.R and we like TRUE. But output= tests need to be updated (they assume FALSE currently)
-  datatable.rbindlist.check = NULL,
-  datatable.integer64 = "integer64",
-  warnPartialMatchArgs = TRUE,    # ensure we don't rely on partial argument matching in internal code, #3664
-  warnPartialMatchAttr = TRUE,
-  warnPartialMatchDollar = TRUE
-)
-# some tests (e.g. 1066, 1293) rely on capturing output that will be garbled with small width
-if (getOption('width') < 80L) options(width = 80L)
-
 ##########################
 
 test(1.1, tables(env=new.env()), null.data.table(), output = "No objects of class")
@@ -1675,8 +1656,8 @@ test(577, CJ(x=c(1L,2L), c("a","b")), data.table(x=c(1L,1L,2L,2L),V2=c("a","b","
 # Test factor to character join when factor contains unused and reverse order levels :
 X = data.table(a=LETTERS[1:4],v=1:4,key="a")
 Y = data.table(a=factor(c("D","B"),levels=rev(LETTERS)),key="a")
-test(578, X[Y,verbose=TRUE], output="Coercing factor column i.a to type character to match type of x.a")
-test(579, X[Y], data.table(a=Y$a, v=c(4L,2L), key="a"))
+test(578, X[Y,verbose=TRUE], data.table(a=c("D","B"), v=c(4L,2L)),  # no key because "D">"B", consistent with v1.12.2 and before
+          output="Coercing factor column i.a to type character to match type of x.a")
 
 # Test that logical i in set() returns helpful error
 DT = data.table(a=1:3,b=4:6)
@@ -2433,14 +2414,19 @@ test(869, DT[J(2,42,84),print(.SD),by=.EACHI], output="   b\n.*1.*2\n2:.*5.*Empt
 
 # Test setnames with duplicate colnames
 DT = data.table(a=1:3,b=4:6,b=7:9)
-test(870, setnames(DT,"b","foo"), error="Some items of 'old' are duplicated (ambiguous) in column names: [b]")
+test(870, setnames(copy(DT),"b","foo"), data.table(a=1:3, foo=4:6, b=7:9),
+          warning="Item 1 of 'old' is 'b' which appears several times in column names.*There are 0 other")
 test(871, setnames(DT,c("bar","bar"),c("x","y")), error="Some duplicates exist in 'old': [bar]")
 test(872, setnames(DT,3,"c"), data.table(a=1:3,b=4:6,c=7:9))
 test(873, setnames(DT,"foo","bar"), error="Items of 'old' not found in column names: [foo]")
 test(874, setnames(DT,c(1,1),c("foo","bar")), error="Some duplicates exist in 'old': [1]")
 test(875, setnames(DT,"c","b"), data.table(a=1:3,b=4:6,b=7:9))
 test(875.1, setnames(DT,"a","c"), data.table(c=1:3,b=4:6,b=7:9))  # 'a' isn't duplicated so not a problem as from v1.8.11
-test(875.2, setnames(DT,c("c","b"), c("C","B")), error="Some items of 'old' are duplicated (ambiguous) in column names: [b]")  # check error msg when 2nd one in old is the problem
+test(875.2, setnames(DT,c("c","b"), c("C","B")), data.table(C=1:3, B=4:6, b=7:9),
+          warning="Item 2 of 'old' is 'b' which.*There are 0 other")
+DT = data.table(a=1:3,b=4:6,b=7:9,a=10:12)
+test(875.3, setnames(DT,c("a","b"),c("A","B")), data.table(A=1:3, B=4:6, b=7:9, a=10:12),
+          warning="Item 1 of 'old' is 'a' which.*There are 1 other")
 
 # Test local var problem introduced in v1.8.3
 DT = data.table(a=1:3,b=1:6)
@@ -2949,12 +2935,14 @@ tab2 <- as.data.table(as.data.frame(table(DF$x, DF$y), stringsAsFactors=FALSE));
 tab3 <- as.data.table(as.data.frame(table(DF$x, DF$y, DF$z), stringsAsFactors=FALSE)); setattr(tab3, 'names', c("V1", "V2", "V3", "N"))
 test(1025, as.data.table(table(DF$x)), tab1)
 test(1026, as.data.table(table(DF$x, DF$y)), tab2)
-test(1027, as.data.table(table(DF$x, DF$y, DF$z)), tab3)
+test(1027.1, as.data.table(table(DF$x, DF$y, DF$z)), tab3)
 # catch printing of data.table(table()), #4847 (as.data.table should be used instead)
 # new, updated 14th Feb, 2015. data.table(table) now redirects to as.data.table
-test(1027.1, data.table(table(1:99)), as.data.table(table(1:99)))
-# data.table() and rbindlist() in v1.8.11 now catch and removes the dim attribute. For it on to test print catches it :
-test(1027.2, {DT<-data.table(table(1:99));setattr(DT[[1]],"dim",99L);print(DT,nrows=100)}, error="Invalid column: it has dimensions. Can't format it. If it's the result of data.table(table()), use as.data.table(table()) instead.")
+test(1027.2, data.table(table(1:99)), as.data.table(table(1:99)))
+# data.table() and rbindlist() in v1.8.11 caught and removed the dim attribute.
+# from 1.12.4 the dim attribute is preserved and the print method outputs "multi-column" for such columns (better than error)
+test(1027.3, {DT<-data.table(table(1:99));setattr(DT[[1]],"dim",99L);print(DT,nrows=100)},
+             output="<multi-column>")
 
 # as.data.table.x where x is integer, numeric, etc...
 set.seed(45)
@@ -13418,6 +13406,10 @@ test(1963.13, shift(DT, 1L, type="lag"), shift(DT, -1L, type="lead"))
 test(1963.14, shift(DT, 3L, type="lag"), shift(DT, -3L, type="lead"))
 test(1963.15, shift(DT, -1L, type="lag"), shift(DT, 1L, type="lead"))
 test(1963.16, shift(DT, -3L, type="lag"), shift(DT, 3L, type="lead"))
+# #3832 consistency rule for renaming lead_0 -> lag_0 doesn't apply unless mixing signs of n
+DT <- data.table(a = 1:3, b = 2:4)
+test(1963.17, DT[ , shift(.SD, 0:1, give.names = TRUE, type = "lead")],
+     data.table(a_lead_0 = 1:3, a_lead_1 = c(2L, 3L, NA), b_lead_0 = 2:4, b_lead_1 = c(3L, 4L, NA)))
 
 # 0 column data.table should not have rownames, #3149
 M0 = matrix(1:6, nrow=3, ncol=2, dimnames=list(rows=paste0("id",1:3), cols=c("v1","v2")))
@@ -13592,7 +13584,7 @@ test(1967.59, setnames(x, 1:2, c(8L, 9L)), error = "'new' is not a character")
 test(1967.60, setnames(x, -1:1, c('hey', 'you')), error = "mixed.*negative")
 test(1967.61, setnames(x, 1+3i, 'cplx'), error = "'old' is type complex")
 test(1967.62, setnames(x, 1, c('d', 'e')), error = "'old' is length 1 but 'new'")
-test(1967.621, setnames(x, 1:2, c("a","a")), error = "Some duplicates exist in 'new': [a]")
+test(1967.621, setnames(x, 1:2, c("a","a")), data.table(a=1:5, a=6:10))
 test(1967.622, setnames(x, 1:2, c("a",NA)), error = "NA in 'new' at positions [2]")
 test(1967.63, setcolorder(x, c(1, 1)), error = 'specify duplicated column')
 test(1967.64, setcolorder(x, 1+3i), error = 'must be character or numeric')
@@ -14890,17 +14882,19 @@ cols = c("x.bool","x.int","x.doubleInt","i.bool","i.int","i.doubleInt","i.char")
 test(2044.60, dt1[dt2, ..cols, on="int==doubleInt", verbose=TRUE],
               data.table(x.bool=FALSE, x.int=1:5, x.doubleInt=as.double(1:5), i.bool=TRUE, i.int=1:5, i.doubleInt=1:5, i.char=letters[1:5]),
               output="Coercing double column i.doubleInt (which contains no fractions) to type integer to match type of x.int")
-test(2044.61, dt1[dt2, ..cols, on="int==realDouble"],
-              error="Incompatible join types: x.int is type integer but i.realDouble is type double and contains fractions")
+test(2044.61, dt1[dt2, ..cols, on="int==realDouble", verbose=TRUE],  # this was wrong in v1.12.2 (the fractions were truncated and joined to next lowest int)
+              data.table(x.bool=c(NA,FALSE,NA,FALSE,NA), x.int=INT(NA,1,NA,2,NA), x.doubleInt=c(NA,1,NA,2,NA),
+                         i.bool=TRUE, i.int=1:5, i.doubleInt=as.double(1:5), i.char=letters[1:5]),
+              output="Coercing integer column x.int to type double to match type of i.realDouble which contains fractions")
 test(2044.62, dt1[dt2, ..cols, on="doubleInt==int", verbose=TRUE],
               data.table(x.bool=FALSE, x.int=1:5, x.doubleInt=as.double(1:5), i.bool=TRUE, i.int=1:5, i.doubleInt=as.double(1:5), i.char=letters[1:5]),
-              output="Coerced integer column i.int to type double for join to match type of x.doubleInt")
+              output="Coercing integer column i.int to type double for join to match type of x.doubleInt")
 test(2044.63, dt1[dt2, ..cols, on="realDouble==int", verbose=TRUE],
               data.table(x.bool=c(rep(FALSE,4),TRUE), x.int=INT(2,4,6,8,10), x.doubleInt=c(2,4,6,8,10), i.bool=TRUE, i.int=1:5, i.doubleInt=as.double(1:5), i.char=letters[1:5]),
-              output="Coerced integer column i.int to type double for join to match type of x.realDouble")
-cols = c("x.int","x.char","x.fact","i.int","i.char","i.fact")
+              output="Coercing integer column i.int to type double for join to match type of x.realDouble")
+cols = c("x.int","x.char","x.fact","i.int","i.char","i.char")
 test(2044.64, dt1[dt2, ..cols, on="char==fact", verbose=TRUE],
-              ans<-data.table(x.int=1:5, x.char=letters[1:5], x.fact=factor(letters[1:5]), i.int=1:5, i.char=letters[1:5], i.fact=factor(letters[1:5])),
+              ans<-data.table(x.int=1:5, x.char=letters[1:5], x.fact=factor(letters[1:5]), i.int=1:5, i.char=letters[1:5], i.char=letters[1:5]),
               output="Coercing factor column i.fact to type character to match type of x.char")
 test(2044.65, dt1[dt2, ..cols, on="fact==char", verbose=TRUE],
               ans,
@@ -14932,15 +14926,15 @@ if (test_bit64) {
 dt1 = data.table(a=1,  b=NA_character_)
 dt2 = data.table(a=2L, b=NA)
 test(2044.80, dt1[dt2, on="a==b",             verbose=TRUE], data.table(a=NA, b=NA_character_, i.a=2L),
-              output=msg<-"Coerced all-NA i.b (logical) to type double to match type of x.a")
+              output=msg<-"Coercing all-NA i.b (logical) to type double to match type of x.a")
 test(2044.81, dt1[dt2, on="a==b", nomatch=0L, verbose=TRUE], data.table(a=logical(), b=character(), i.a=integer()),
               output=msg)
 test(2044.82, dt1[dt2, on="b==b",             verbose=TRUE], data.table(a=1, b=NA, i.a=2L),
-              output=msg<-"Coerced all-NA i.b (logical) to type character to match type of x.b")
+              output=msg<-"Coercing all-NA i.b (logical) to type character to match type of x.b")
 test(2044.83, dt1[dt2, on="b==b", nomatch=0L, verbose=TRUE], data.table(a=1, b=NA, i.a=2L),
               output=msg)
 test(2044.84, dt1[dt2, on="b==a",             verbose=TRUE], data.table(a=NA_real_, b=2L, i.b=NA),
-              output=msg<-"Coerced all-NA x.b (character) to type integer to match type of i.a")
+              output=msg<-"Coercing all-NA x.b (character) to type integer to match type of i.a")
 test(2044.85, dt1[dt2, on="b==a", nomatch=0L, verbose=TRUE], data.table(a=double(), b=integer(), i.b=logical()),
               output=msg)
 
@@ -15102,11 +15096,11 @@ test(2056, as.data.table(a), ans)
 DF = structure(list(a=1:3, b=data.frame(foo=4:6, bar=7:9)), row.names=1:3, class="data.frame")
 DT = as.data.table(DF)
 test(2057.1, ncol(DT), 3L)
-test(2057.2, DT[2], data.table(a=2L, foo=5L, bar=8L))
+test(2057.2, DT[2], data.table(a=2L, b.foo=5L, b.bar=8L))
 DF = structure(list(a=list(c("a","b"), c("a","b"), c("a","b")), b=data.frame(foo=1:3, bar=4:6)), row.names=1:3, class="data.frame")
 #  A list being first is needed to mimic the jsonlite case. With this passing, test.R works from https://github.com/Rdatatable/data.table/issues/3369#issuecomment-462662752
 DT = as.data.table(DF)
-test(2057.3, DT, data.table(a=list(c("a","b"), c("a","b"), c("a","b")), foo=1:3, bar=4:6))
+test(2057.3, DT, data.table(a=list(c("a","b"), c("a","b"), c("a","b")), b.foo=1:3, b.bar=4:6))
 
 # one and two+ row cases of data.table, as.data.table and cbind involving list columns, given
 # the change to tests 1613.571-3 in PR#3471 in v1.12.4
@@ -15140,6 +15134,21 @@ test(2058.08, sapply(ans, class), c(V1="integer", V2="list"))                   
 test(2058.09, data.table( data.table(1:2), list(c("a","b"),"a") ),        ans)  # yes
 test(2058.10, as.data.table(list(data.table(1:2), list(c("a","b"),"a"))), ans)  # yes
 test(2058.11, cbind(data.table(1:2), list(c("a","b"),"a")),               ans)  # yes
+test(2058.12, cbind(first=data.table(A=1:3), second=data.table(A=4, B=5:7)),
+              data.table(first.A=1:3, second.A=4, second.B=5:7))                # no
+test(2058.13, cbind(data.table(A=1:3), second=data.table(A=4, B=5:7)),
+              data.table(A=1:3, second.A=4, second.B=5:7))                      # no
+test(2058.14, cbind(data.table(A=1,B=2),3), data.table(A=1,B=2,V2=3))           # no
+L = list(1:3, 4:6)
+test(2058.15, as.data.table(L), data.table(V1=1:3, V2=4:6))                     # no
+# retain all-blank list names as batchtools relies on in reg$defs[1,job.pars], #3581
+names(L) = c("","")
+test(2058.16, as.data.table(L), setnames(data.table(1:3, 4:6),c("","")))        # no
+# retain existing duplicate and blank names of a plain-list, just as 1.12.2 did
+L = list(1:3, 4:6, 7:9, 10:12)
+names(L) = c("","foo","","foo")
+test(2058.17, as.data.table(L),
+              setnames(data.table(1:3, 4:6, 7:9, 10:12),c("","foo","","foo")))  # no
 
 # rbindlist improved error message, #3638
 DT = data.table(a=1)
@@ -15215,7 +15224,7 @@ test(2060.101, fcoalesce(bool, list(NA, TRUE)), bool_val)
 x = c(11L, NA, 13L, NA, 15L, NaN, NA, NA, NA)+0.1
 y = c(NA, 12L, 5L, NA, NA, 16L, NaN, Inf, NA)+0.1
 z = c(11L, NA, 1L, 14L, NA, 16L, 1L, 2L, NA)+0.1
-test(2060.151, fcoalesce(x, y, z),       ans<-c(11:15,NaN,NaN,Inf,NA)+0.1)
+test(2060.151, fcoalesce(x, y, z),       ans<-c(11:16,1,Inf,NA)+0.1)
 test(2060.152, fcoalesce(list(x, y, z)), ans)
 test(2060.153, fcoalesce(x, list(y,z)),  ans)
 test(2060.154, fcoalesce(list(x)), x)
@@ -15302,7 +15311,7 @@ test(2060.605, fcoalesce(NULL, "foo"), NULL) # as seen in mlr using BBmisc::coal
 # #3650 -- ensure max nrow check on CJ is applied after unique
 l = replicate(ceiling(log10(.Machine$integer.max)), rep(1L, 10L), simplify = FALSE)
 l$unique = TRUE
-test(2061, do.call(CJ, l), setkey(unique(as.data.table(head(l, -1L)))))
+test(2061, do.call(CJ, l), data.table(V1=1L, V2=1L, V3=1L, V4=1L, V5=1L, V6=1L, V7=1L, V8=1L, V9=1L, V10=1L, key=paste0("V",1:10)))
 
 # #3635, not specific to non-equi joins, but only occurs in non-equi cases.
 d1 = data.table(a = c(1L, 6L), b = c(11L, 16L))
@@ -15343,7 +15352,7 @@ i = data.table(date = dbl_date, key = 'date')
 test(2064.1, x[i, class(date), verbose=TRUE], 'Date',
              output="Coercing double column i.date (which contains no fractions) to type integer to match type of x.date")
 test(2064.2, i[x, class(date), verbose=TRUE], 'Date',
-             output="Coerced integer column i.date to type double for join to match type of x.date")
+             output="Coercing integer column i.date to type double for join to match type of x.date")
 
 # complex values in grouping, #3639
 set.seed(42)
@@ -15700,8 +15709,12 @@ X = data.table(a=1:2, b=1:2)
 test(2076.01, X[on=.(a=2:3, d=2:1)], data.table(a=2:3, b=c(2L,NA_integer_), d=2:1))
 Y = data.table(a=2:3, d=2:1)
 test(2076.02, X[on=Y], data.table(a=2:3, b=c(2L,NA_integer_), d=2:1))
-test(2076.03, X[on=3], error="When on= is provided but not i=, on= must be a named list or data.table|frame, and a natural join")
-test(2076.04, X[on=list(3)], error="When on= is provided but not i=, on= must be a named list or data.table|frame, and a natural join")
+test(2076.03, X[on=3], X,
+  warning=c("When on= is provided but not i=, on= must be a named list or data.table|frame, and a natural join.*Ignoring on= which is 'numeric'",
+            "i and j are both missing so ignoring the other arguments. This warning will be upgraded to error in future."))
+test(2076.04, X[on=list(3)], X,
+  warning=c("When on= is provided but not i=, on= must be a named list or data.table|frame, and a natural join.*Ignoring on= which is 'list'",
+            "i and j are both missing so ignoring the other arguments. This warning will be upgraded to error in future."))
 
 # gsum int64 support #1647, #3464
 if (test_bit64) {
@@ -15829,16 +15842,37 @@ test(2087.3, setkey(x, a, verbose=TRUE), data.table(a=paste0(1:2), b=paste0(1:2)
 x = data.table(a=c(0.85, -0.38, 1.19), b=c(0.56, 0.63, -1.30))
 test(2088, x[, round(.SD, 1)][, c:=8.88], data.table(a=c(.8, -.4, 1.2), b=c(.6,.6,-1.3), c=8.88))
 
-# setDT should halt when it sees matrix columns, #3760
+# setDT should warn when it sees matrix columns, #3760
 DF = data.frame(a=1:5)
 DF$m = matrix(6:15, ncol=2L)
-test(2089, setDT(DF), error='Some columns are a multi-column type.*Please use as.data.table')
+test(2089.1, names(setDT(DF)), c("a","m"),
+             warning="Some columns are a multi-column type.*[[]2[]].*setDT will retain these columns as-is but.*Please consider as.data.table")
+test(2089.2, as.data.table(DF), data.table(a=1:5, m.V1=6:10, m.V2=11:15))  # the DF here is now a data.table, so as.data.table.data.table() is matrix-column-aware
+test(2089.3, print(DF), output="<multi-column>")
+DF = data.frame(a=1:5)
+DF$m = matrix(6:15, ncol=2L, dimnames=list(NULL, c("foo","bar")))
+test(2089.4, colnames(DF), c("a","m"))
+test(2089.5, colnames(DF$m), c("foo","bar"))
+test(2089.6, as.data.table(DF), data.table(a=1:5, m.foo=6:10, m.bar=11:15))
+
+# a single matrix item is unambiguous and different to a matrix embedded alongside other items
+M = list(matrix(1:6,ncol=1L))
+test(2089.7, setDT(M), data.table(V1=1:6))  # worked in 1.12.2 and miceFast relies on, #3581
+M = list(matrix(1:6,ncol=2L))
+test(2089.8, setDT(M), data.table(V1=1:3, V2=4:6))  # returned a single column in v1.12.2, now from 1.12.4 returns 2 columns as expected
 
 # get/mget in j should restore all columns to .SD, #1744 and #1965
 DT = data.table(a=1, b=2, c=3)
 test(2090.1, DT[, {list(a, get('b')); names(.SD)}, .SDcols='c'], 'c')
 # Also incidentally fixed #2036 about reordering of columns in .SD
 test(2090.2, DT[ , {get('c'); names(.SD)}, .SDcols = c('b', 'a')], c('b', 'a'))
+# ditto for #2946
+DT <- data.table(v1=1:2, v2 = 3:4, type = c('A', 'B'))
+col_in <- c('v2', 'v1')
+col_out <- paste0(col_in, '.new')
+test(2090.3, DT[, (col_out) := lapply(.SD, function(x){x * min(x[get('type') == 'A'])}), .SDcols = col_in],
+     data.table(v1=1:2, v2=3:4, type=c('A', 'B'), v2.new=c(9L, 12L), v1.new=1:2))
+
 
 # minus sign in j with with=FALSE shouldn't be interpreted as 'not', #2109
 DT = data.table(a=1, b=2)
@@ -15931,9 +15965,108 @@ test(2100.14, fifelse(c(T,F,NA),c(1,1,1),c(2,2,2),NA), c(1,2,NA))
 DT = data.table(id=1:3, v=4:6, key="id")
 test(2101, DT[.(logical())], data.table(id=logical(), v=integer(), key="id"))
 
+# basic test of cut.IDate to match cut.Date
+ID = as.IDate(INT(
+  0, 192, 384, 576, 768, 961, 1153, 1345, 1537, 1729, 1921,
+  2113, 2305, 2497, 2689, 2882, 3074, 3266, 3458, 3650
+))
+D = as.Date(ID)
+br = as.IDate(INT(c(0, 151, 243)))
+test(2102.1, cut(ID, breaks = br), as.IDate(cut(D, breaks=br)))
+test(2102.2, cut(ID, breaks = '1 year'), as.IDate(cut(D, breaks = '1 year')))
+test(2102.3, cut(ID, breaks = '6 months'), as.IDate(cut(D, breaks = '6 months')))
+
+# DT[ , !rep(FALSE, ncol(DT)), with=FALSE] would exit before doing !, #3013
+test(2103, DT[ , !rep(FALSE, 2L), with=FALSE], DT)
+
+# implicit difftime by group can choose different units but are later ignored, #3694 & #761 (among others)
+del = c(0, 60, 3600, 86400)
+DT = data.table(ID=1:4, t0=.POSIXct(0), t1=.POSIXct(del))
+test(2104.1, DT[ , t1-t0, by=ID], data.table(ID=1:4, V1=as.difftime(del, units='secs')))
+test(2104.2, DT[ , t1-t0, by=ID, verbose=TRUE], output='Note: forcing units="secs"')
+test(2104.3, DT[ , t1-5, by=ID], data.table(ID=1:4, V1=.POSIXct(del-5)))
+
+# test to prevent regression on #1983
+DT = data.table(date = as.IDate(18148L) + 0:2)
+eDT = data.table(e_date = as.IDate(18148L))
+out = DT[1L][ , V1 := date]
+# code from issue doesn't quite work as expected since setattr returns NULL; test this anyway
+test(2105.1, DT[eDT, on=.(date >= e_date), {
+    target_date = setattr(if (e_date[1L] %in% x.date) e_date[1L] else max(x.date), "class", c("IDate", "Date"))
+    target_date
+}, by=.EACHI], out)
+# also test version closer to the intended code
+test(2105.2, DT[eDT, on=.(date >= e_date), {
+    target_date = as.IDate(if (e_date[1L] %in% x.date) e_date[1L] else max(x.date))
+    target_date
+}, by=.EACHI], out)
+
+# test to prevent regression on #2041
+# UTF-8 Hex representations of Chinese codepoints, see issue or use cat() in UTF locale to see
+a1 <- data.table(
+  a = c("\U4E2D\U6587\U4E00", "\U4E2D\U6587\U4E8C", "\U4E2D\U6587\U4E09", "\U4E2D\U6587\U56DB"),
+  b = 1:12
+)
+test(2106, a1[a == "\U4E2D\U6587\U4E00"], data.table(a = "\U4E2D\U6587\U4E00", b = c(1L, 5L, 9L)))
+
+# setnames() allows function arguments, #3703
+DT = data.table(a=1:3, b=4:6, c=7:9)
+setnames(DT, base::toupper)
+test(2107.1, names(DT), c('A','B','C'))
+setnames(DT, c('B','C'), function(x) sprintf('W_%s_W', x))
+test(2107.2, names(DT), c('A','W_B_W','W_C_W'))
+DT = data.table(a=1:3, b=4:6, c=7:9)
+# support numeric old as well
+setnames(DT, 1.0, toupper)
+test(2107.3, names(DT), c('A','b','c'))
+setnames(DT, -(1:2), toupper)
+test(2107.4, names(DT), c('A','b','C'))
+
+# first and last should no longer load xts namespace, #3857
+x = as.POSIXct("2019-09-09")+0:1
+old = options(datatable.verbose=TRUE)
+test(2108.01, last(x), x[length(x)], notOutput="xts")
+test(2108.02, first(x), x[1L], notOutput="xts")
+if (test_xts) {
+  xt = xts(1:2, x)
+  test(2108.03, last(xt, 2L), xt, output="last: using xts::last")
+  test(2108.04, first(xt, 2L), xt, output="first: using xts::first")
+  xt = xts(matrix(1:4, 2L, 2L), x)
+  test(2108.05, last(xt, 2L), xt, output="last: using xts::last")
+  test(2108.06, first(xt, 2L), xt, output="first: using xts::first")
+}
+# first on empty df now match head(df, n=1L), #3858
+df = data.frame(a=integer(), b=integer())
+test(2108.11, first(df), df, notOutput="xts")
+test(2108.12, tail(df), df, notOutput="xts")
+options(old)
+
+# error in autonaming by={...}, #3156
+DT = data.table(State=c("ERROR", "COMPLETED", "ERROR"), ExitCode=c(1, 0, 2))
+test(2109, DT[ , list(count=.N), by={list(State, ExitCode)}], DT[ , count := 1L])
+
+# chmatchdup non-ascii, #3844
+utf8 = c("\u00e7ile", "\u00de")
+latin1 = iconv(utf8, from = "UTF-8", to = "latin1")
+out = c(1L, 2L, NA, NA)
+test(2110.1, chmatchdup(c(latin1, latin1), utf8), out)
+test(2110.2, chmatchdup(c(utf8, utf8), latin1), out)
+test(2110.3, chmatchdup(c(latin1, latin1), latin1), out)
+test(2110.4, chmatchdup(c(utf8, utf8), utf8), out)
+
+# setnames: names with same content but different encoding is considered as non-equal, #3845
+utf8 = c("\u00e7ile", "\u00de")
+latin1 = iconv(utf8, from = "UTF-8", to = "latin1")
+tbl = as.data.table(setNames(list(1, 2), latin1))
+test(2111.01, Encoding(names(tbl)), c('latin1', 'latin1'))
+setnames(tbl, utf8)
+test(2111.02, Encoding(names(tbl)), c('UTF-8', 'UTF-8'))
+setnames(tbl, 1:2, latin1)
+test(2111.03, Encoding(names(tbl)), c('latin1', 'latin1'))
+setnames(tbl, latin1, utf8)
+test(2111.04, Encoding(names(tbl)), c('UTF-8', 'UTF-8'))
+
 
 ###################################
 #  Add new tests above this line  #
 ###################################
-
-options(oldOptions)  # set at top of this file
