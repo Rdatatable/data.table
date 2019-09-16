@@ -241,7 +241,6 @@ integration: # merging all artifacts to produce single R repository and summarie
     - linux
   only:
     - master
-    - pkgdown
   dependencies:
   - mirror-packages
   - build
@@ -380,7 +379,6 @@ pages: # publish R repository, test jobs summaries, html documentation of all pa
     - linux
   only:
     - master
-    - pkgdown
   image: ubuntu
   dependencies:
   - integration
