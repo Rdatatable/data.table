@@ -19,7 +19,13 @@
 #define CLOSE close
 #endif
 
+// normally this variable (or an equivalent) will be set or unset by configure script
+// for now, it's defined here
+#define HAVE_LIBZ
+
+#ifdef HAVE_LIBZ
 #include "zlib.h"      // for writing gzip file
+#endif
 #include "myomp.h"
 #include "fwrite.h"
 
@@ -546,6 +552,7 @@ void writeCategString(void *col, int64_t row, char **pch)
   write_string(getCategString(col, row), pch);
 }
 
+#ifdef HAVE_LIBZ
 int init_stream(z_stream *stream) {
   stream->zalloc = Z_NULL;
   stream->zfree = Z_NULL;
@@ -573,6 +580,7 @@ int compressbuff(z_stream *stream, void* dest, size_t *destLen, const void* sour
   *destLen = stream->total_out;
   return err == Z_STREAM_END ? Z_OK : err;
 }
+#endif
 
 static int failed = 0;
 static int rowsPerBatch;
@@ -654,6 +662,13 @@ void fwriteMain(fwriteMainArgs args)
   }
   if (args.verbose) DTPRINT("maxLineLen=%zd. Found in %.3fs\n", maxLineLen, 1.0*(wallclock()-t0));
 
+#ifndef HAVE_LIBZ
+    if (args.is_gzip) {
+        warning("compression='gzip' in fwrite but data.table is compiled without gzip support. File is written without compression.");
+    }
+    args.is_gzip = false; // force no gzip
+#endif
+
   int f=0;
   if (*args.filename=='\0') {
     f=-1;  // file="" means write to standard output
@@ -718,6 +733,7 @@ void fwriteMain(fwriteMainArgs args)
       free(buff);
     } else {
       int ret1=0, ret2=0;
+#ifdef HAVE_LIBZ
       if (args.is_gzip) {
         z_stream stream;
         if(init_stream(&stream)) {
@@ -735,7 +751,9 @@ void fwriteMain(fwriteMainArgs args)
         if (ret1==Z_OK) ret2 = WRITE(f, zbuff, (int)zbuffUsed);
         deflateEnd(&stream);
         free(zbuff);
-      } else {
+      }
+#endif
+      if (!args.is_gzip) {
         ret2 = WRITE(f,  buff, (int)(ch-buff));
       }
       free(buff);
@@ -781,6 +799,7 @@ void fwriteMain(fwriteMainArgs args)
 
   // compute zbuffSize which is the same for each thread
   size_t zbuffSize = 0;
+#ifdef HAVE_LIBZ
   if(args.is_gzip){
     z_stream stream;
     if(init_stream(&stream))
@@ -788,6 +807,7 @@ void fwriteMain(fwriteMainArgs args)
     zbuffSize = deflateBound(&stream, buffSize);
     deflateEnd(&stream);
   }
+#endif
 
   #pragma omp parallel num_threads(nth)
   {
@@ -800,6 +820,7 @@ void fwriteMain(fwriteMainArgs args)
     ch = myBuff = malloc(buffSize);
     if (myBuff==NULL) failed=-errno;
     // each thread has its own zbuffer
+#ifdef HAVE_LIBZ
     z_stream mystream;
     if (args.is_gzip && !failed) {
       myzBuff = malloc(zbuffSize);
@@ -808,6 +829,7 @@ void fwriteMain(fwriteMainArgs args)
           failed = -998; // # nocov
       }
     }
+#endif
 
     // Do not rely on availability of '#omp cancel' new in OpenMP v4.0 (July 2013).
     // OpenMP v4.0 is in gcc 4.9+ (https://gcc.gnu.org/wiki/openmp) but
@@ -848,6 +870,7 @@ void fwriteMain(fwriteMainArgs args)
         write_chars(args.eol, &ch);  // overwrite last sep with eol instead
         if (failed) break; // this thread stop writing rows; fall through to clear up and STOP() below
       }
+#ifdef HAVE_LIBZ
       // compress buffer if gzip
       if (args.is_gzip && !failed) {
         if (!failed) {
@@ -856,6 +879,7 @@ void fwriteMain(fwriteMainArgs args)
         }
         deflateReset(&mystream);
       }
+#endif
       #pragma omp ordered
       {
         if (!failed) { // a thread ahead of me could have failed below while I was working or waiting above
@@ -912,9 +936,11 @@ void fwriteMain(fwriteMainArgs args)
     }
     // all threads will call this free on their buffer, even if one or more threads had malloc
     // or realloc fail. If the initial malloc failed, free(NULL) is ok and does nothing.
+#ifdef HAVE_LIBZ
     if (args.is_gzip) {
       deflateEnd(&mystream);
     }
+#endif
     free(myBuff);
     free(myzBuff);
   }
