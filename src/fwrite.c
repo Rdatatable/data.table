@@ -26,6 +26,9 @@
 #define NUM_SF   15
 #define SIZE_SF  1000000000000000ULL  // 10^NUM_SF
 
+#define MIN(a,b) (((a)<(b))?(a):(b))
+#define MAX(a,b) (((a)>(b))?(a):(b))
+
 // Globals for this file only. Written once to hold parameters passed from R level.
 static const char *na;                 // by default "" or if set (not recommended) then usually "NA"
 static char sep;                       // comma in .csv files
@@ -651,7 +654,7 @@ void fwriteMain(fwriteMainArgs args)
         STOP("Internal error: type %d has no max length method implemented", args.whichFun[j]);  // # nocov
       }
     }
-    if (args.whichFun[j] == WF_Float64 && args.scipen > 0) width += args.scipen;
+    if (args.whichFun[j]==WF_Float64 && args.scipen>0) width+=MIN(args.scipen,350); // clamp width to IEEE754 max to avoid scipen=99999 allocating buffer larger than can ever be written
     if (width<naLen) width = naLen;
     maxLineLen += width*2;  // *2 in case the longest string is all quotes and they all need to be escaped
   }
