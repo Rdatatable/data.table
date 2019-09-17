@@ -197,7 +197,20 @@ log = function(bioc=FALSE, fnam="~/fail.log") {
   cat(capture.output(sessionInfo()), "\n", file=fnam, sep="\n")
   for (i in x) {
     system(paste0("ls | grep '",i,".*tar.gz' >> ",fnam))
-    system(paste0("grep -H . ./",i,".Rcheck/00check.log >> ",fnam))
+    if (i %in% .fail.bioc) {
+      # for Bioconductor only, now include the git commit and date. Although Bioc dev check status online may show OK :
+      #   https://bioconductor.org/checkResults/devel/bioc-LATEST/
+      # the Bioc package maintainer has to remember to bump the version number otherwise Bioc will not propogate it,
+      # and BiocManager::install(version="devel") will not update to the latest version, even though the Bioc dev
+      # status online does update. For packages which fail/warn locally but state OK on Bioc check page, compare the
+      # output here to the commit hash and date displayed by Bioc-dev check results. If there's a mismatch, contact
+      # the maintainer and ask them to bump their version number.
+      M = as.matrix(unclass(packageDescription(i)))
+      mode(M) = "character"
+      out = capture.output(print(M[grep("commit|Date|Packaged",rownames(M),ignore.case=TRUE),,drop=FALSE]))
+      cat(out[-1], sep="\n", file=fnam, append=TRUE)
+    }
+    system(paste0("grep -H . ./",i,".Rcheck/00check.log >> ",fnam))  # the fail messages
     cat("\n\n", file=fnam, append=TRUE)
   }
 }
