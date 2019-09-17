@@ -1,9 +1,4 @@
-
-# For data.table dev
-#
-# In ~/.Rprofile add 2 lines :
-# Sys.setenv(CC_DIR=path.expand("~/git/data.table"))
-# source(file.path(Sys.getenv("CC_DIR"), "cc.R"))
+# data.table dev
 #
 # Normal usage :
 # $ R
@@ -37,7 +32,11 @@ sourceDir <- function(path=getwd(), trace = TRUE, ...) {
   if(trace) cat("\n")
 }
 
-cc = function(test=TRUE, clean=FALSE, debug=FALSE, omp=!debug, cc_dir=Sys.getenv("CC_DIR"), CC="gcc") {
+cc = function(test=TRUE, clean=FALSE, debug=FALSE, omp=!debug, cc_dir, path=Sys.getenv("PROJ_PATH"), CC="gcc") {
+  if (!missing(cc_dir)) {
+    warning("'cc_dir' arg is deprecated, use 'path' argument or 'PROJ_PATH' env var instead")
+    path = cc_dir
+  }
   stopifnot(is.character(CC), length(CC)==1L, !is.na(CC), nzchar(CC))
   gc()
 
@@ -56,7 +55,7 @@ cc = function(test=TRUE, clean=FALSE, debug=FALSE, omp=!debug, cc_dir=Sys.getenv
 
   old = getwd()
   on.exit(setwd(old))
-  setwd(file.path(cc_dir,"src"))
+  setwd(file.path(path,"src"))
   cat(getwd(),"\n")
   if (clean) system("rm *.o *.so")
   OMP = if (omp) "" else "no-"
@@ -79,8 +78,8 @@ cc = function(test=TRUE, clean=FALSE, debug=FALSE, omp=!debug, cc_dir=Sys.getenv
     assign(xx$.Call[[i]]$name,  xx$.Call[[i]]$address, envir=.GlobalEnv)
   for (i in seq_along(xx$.External))
     assign(xx$.External[[i]]$name,  xx$.External[[i]]$address, envir=.GlobalEnv)
-  sourceDir(paste0(cc_dir,"/R"))
-  assign("testDir", function(x)paste0(cc_dir,"/inst/tests/",x), envir=.GlobalEnv)
+  sourceDir(paste0(path,"/R"))
+  assign("testDir", function(x)paste0(path,"/inst/tests/",x), envir=.GlobalEnv)
   .onLoad()
   if (is.logical(test) && isTRUE(test)) test.data.table() else if (is.character(test)) test.data.table(script=test)
   gc()

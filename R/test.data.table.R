@@ -3,7 +3,7 @@ test.data.table = function(verbose=FALSE, pkg="pkg", silent=FALSE, with.other.pa
     # package developer
     # nocov start
     if ("package:data.table" %chin% search()) stop("data.table package is loaded. Unload or start a fresh R session.")
-    rootdir = if (pkg %chin% dir()) file.path(getwd(), pkg) else Sys.getenv("CC_DIR")
+    rootdir = if (pkg %chin% dir()) file.path(getwd(), pkg) else Sys.getenv("PROJ_PATH")
     subdir = file.path("inst","tests")
     # nocov end
   } else {

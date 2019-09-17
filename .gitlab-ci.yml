@@ -29,7 +29,7 @@ mirror-packages: # download all recursive dependencies of data.table suggests an
     R_BIN_VERSION: "3.6"
     R_DEVEL_BIN_VERSION: "3.7"
   script:
-    - echo 'source("ci.R")' >> .Rprofile
+    - echo 'source(".ci/ci.R")' >> .Rprofile
     - mkdir -p bus/$CI_BUILD_NAME/cran/src/contrib
     # mirror R dependencies: source, win.binary
     - Rscript -e 'mirror.packages(dcf.dependencies(c("DESCRIPTION","inst/tests/tests-DESCRIPTION"), "all"), repos=c(Sys.getenv("CRAN_MIRROR"), dcf.repos("inst/tests/tests-DESCRIPTION")), repodir="bus/mirror-packages/cran")'
@@ -101,7 +101,7 @@ test-rel-lin: #  most comprehensive tests, force all suggests, also integration 
     OPENBLAS_MAIN_FREE: "1"
     TEST_DATA_TABLE_WITH_OTHER_PACKAGES: "TRUE"
   script:
-    - Rscript -e 'source("ci.R"); install.packages(dcf.dependencies(c("DESCRIPTION","inst/tests/tests-DESCRIPTION"), which="all"), quiet=TRUE)'
+    - Rscript -e 'source(".ci/ci.R"); install.packages(dcf.dependencies(c("DESCRIPTION","inst/tests/tests-DESCRIPTION"), which="all"), quiet=TRUE)'
     - *copy-src
     - rm -r bus
     - *move-src
@@ -141,7 +141,7 @@ test-rel-cran-lin: # currently released R on Linux
     - echo 'CFLAGS=-g0 -O2 -fopenmp -Wall -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2'> ~/.R/Makevars # -g0 because -g increases datatable.so size from 0.5MB to 1.5MB and breaches 'installed package size <= 5MB' note
     - echo 'CXXFLAGS=-g0 -O2 -fopenmp -Wall -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2' >> ~/.R/Makevars
   script:
-    - Rscript -e 'source("ci.R"); install.packages(dcf.dependencies("DESCRIPTION", which="most"), quiet=TRUE)'
+    - Rscript -e 'source(".ci/ci.R"); install.packages(dcf.dependencies("DESCRIPTION", which="most"), quiet=TRUE)'
     - *copy-src
     - rm -r bus
     - *move-src
@@ -151,7 +151,7 @@ test-rel-cran-lin: # currently released R on Linux
     - >-
         Rscript -e 'l<-readLines("data.table.Rcheck/00check.log"); if (!identical(l[length(l)], "Status: OK")) stop("Last line of ", shQuote("00check.log"), " is not ", shQuote("Status: OK"), " but ", shQuote(toString(l[length(l)]))) else q("no")'
 
-test-dev-cran-lin: # R-devel on Linux
+test-dev-cran-lin: # R-devel on Linux, --enable-strict-barrier --disable-long-double
   <<: *test-lin
   image: registry.gitlab.com/jangorecki/dockerfiles/r-devel
   allow_failure: false
@@ -159,7 +159,7 @@ test-dev-cran-lin: # R-devel on Linux
     _R_CHECK_CRAN_INCOMING_: "TRUE"
     _R_CHECK_CRAN_INCOMING_REMOTE_: "FALSE"
   script:
-    - Rscript -e 'source("ci.R"); install.packages(dcf.dependencies("DESCRIPTION", which="most"), quiet=TRUE)'
+    - Rscript -e 'source(".ci/ci.R"); install.packages(dcf.dependencies("DESCRIPTION", which="most"), quiet=TRUE)'
     - *copy-src
     - rm -r bus
     - *move-src
@@ -174,7 +174,7 @@ test-310-cran-lin: # test stated R dependency (3.1.0) using Linux
     _R_CHECK_CRAN_INCOMING_: "TRUE"
     _R_CHECK_CRAN_INCOMING_REMOTE_: "FALSE"
   script:
-    - Rscript -e 'source("ci.R"); install.packages(dcf.dependencies("DESCRIPTION", which="most"), quiet=TRUE)'
+    - Rscript -e 'source(".ci/ci.R"); install.packages(dcf.dependencies("DESCRIPTION", which="most"), quiet=TRUE)'
     - *copy-src
     - rm -r bus
     - *move-src
@@ -188,7 +188,7 @@ test-rel-win: # windows test and build binaries
     R_BIN_VERSION: "3.6"
     R_DIR: "R-3.6.0"
   script:
-    - Rscript -e "source('ci.R'); install.packages(dcf.dependencies('DESCRIPTION', which='all'), quiet=TRUE)"
+    - Rscript -e "source('.ci/ci.R'); install.packages(dcf.dependencies('DESCRIPTION', which='all'), quiet=TRUE)"
     - *copy-src
     - rm -r bus
     - *move-src
@@ -207,7 +207,7 @@ test-dev-win: # R-devel on windows
     TEST_DATA_TABLE_MEMTEST: "FALSE" # disabled as described in #3147
   allow_failure: false
   script:
-    - Rscript -e "source('ci.R'); install.packages(dcf.dependencies('DESCRIPTION', which='all'), quiet=TRUE)"
+    - Rscript -e "source('.ci/ci.R'); install.packages(dcf.dependencies('DESCRIPTION', which='all'), quiet=TRUE)"
     - *copy-src
     - rm -r bus
     - *move-src
@@ -223,7 +223,7 @@ test-dev-win: # R-devel on windows
   variables:
     R_BIN_VERSION: "3.6"
   script:
-    - Rscript -e 'source("ci.R"); install.packages(dcf.dependencies("DESCRIPTION", which="all"), quiet=TRUE)'
+    - Rscript -e 'source(".ci/ci.R"); install.packages(dcf.dependencies("DESCRIPTION", which="all"), quiet=TRUE)'
     - *copy-src
     - rm -r bus
     - *move-src
@@ -260,9 +260,10 @@ integration: # merging all artifacts to produce single R repository and summarie
     - apt-get update -qq && apt-get install -y libxml2-dev
     - mkdir -p /tmp/pkgdown/library
     - R_LIBS_USER=/tmp/pkgdown/library Rscript -e 'install.packages("remotes", repos=Sys.getenv("CRAN_MIRROR"), quiet=TRUE); remotes::install_github("r-lib/pkgdown", repos=Sys.getenv("CRAN_MIRROR"), quiet=TRUE); pkgdown::build_site(override=list(destination="./pkgdown"))'
-    - mv cheatsheet.png pkgdown
+    - mkdir -p ./pkgdown/.graphics
+    - mv ./.graphics/cheatsheet.png ./pkgdown/.graphics
     # html manual, vignettes, repos, cran_web, cran_checks
-    - echo 'source("ci.R"); source("publish.R")' >> .Rprofile
+    - echo 'source(".ci/ci.R"); source(".ci/publish.R")' >> .Rprofile
     # list of available test-* jobs dynamically based on bus/test-* directories
     - Rscript -e 'cat("\ntest.jobs <- c(\n"); cat(paste0("  \"",list.files("bus",pattern="^test-"),"\" = \"data.table\""), sep=",\n"); cat(")\n")' >> .Rprofile
     - Rscript -e 'sapply(names(test.jobs), check.test, pkg="data.table", simplify=FALSE)'
@@ -329,7 +330,7 @@ integration: # merging all artifacts to produce single R repository and summarie
   dependencies:
   - build
   before_script:
-    - sed "s/SRC_IMAGE_NAME/$SRC_IMAGE_NAME/" < Dockerfile.in > Dockerfile
+    - sed "s/SRC_IMAGE_NAME/$SRC_IMAGE_NAME/" < .ci/Dockerfile.in > Dockerfile
     - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY
   script:
     - docker build --pull -t "$CI_REGISTRY_IMAGE/$IMAGE_NAME:$IMAGE_TAG" -f Dockerfile .
