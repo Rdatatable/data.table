@@ -5,6 +5,7 @@
 ^\.ci$
 ^\.dev$
 ^\.graphics$
+^\.github$
 
 ^\.travis\.yml$
 ^\.appveyor\.yml$
