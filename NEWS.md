@@ -2,7 +2,7 @@
 
 **Benchmarks are regularly upated: [here](https://h2oai.github.io/db-benchmark/)**
 
-# Changes in v1.12.3  (in development)
+# data.table v1.12.3  (in development)
 
 ## NEW FEATURES
 
