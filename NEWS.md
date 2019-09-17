@@ -41,6 +41,21 @@
 
     * Now supports type `complex`, [#3690](https://github.com/Rdatatable/data.table/issues/3690).
 
+    * Gains `scipen` [#2020](https://github.com/Rdatatable/data.table/issues/2020), the number 1 most-requested feature [#3189](https://github.com/Rdatatable/data.table/issues/3189). The default is `getOption("scipen")` so that `fwrite` will now respect this R option in the same way as `base::write.csv` and `base::format`, as expected. The parameter and option name have been kept the same as base R's `scipen` for consistency and to aid online search. It stands for 'scientific penalty'; the number of characters to add to the width within which non-scientific number format is used if it will fit. A high penalty essentially turns off scientific format.
+
+    ```R
+    DT = data.table(a=0.0001, b=1000000)
+    fwrite(DT)
+    # a,b
+    # 1e-04,1e+06
+    fwrite(DT,scipen=1)
+    # a,b
+    # 0.0001,1e+06
+    fwrite(DT,scipen=2)
+    # a,b
+    # 0.0001,1000000
+    ```
+
 4. Assigning to one item of a list column no longer requires the RHS to be wrapped with `list` or `.()`, [#950](https://github.com/Rdatatable/data.table/issues/950).
 
     ```R

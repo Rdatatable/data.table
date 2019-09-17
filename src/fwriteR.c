@@ -156,6 +156,7 @@ SEXP fwriteR(
   SEXP rowNames_Arg,       // TRUE|FALSE
   SEXP colNames_Arg,       // TRUE|FALSE
   SEXP logical01_Arg,      // TRUE|FALSE
+  SEXP scipen_Arg,
   SEXP dateTimeAs_Arg,     // 0=ISO(yyyy-mm-dd),1=squash(yyyymmdd),2=epoch,3=write.csv
   SEXP buffMB_Arg,         // [1-1024] default 8MB
   SEXP nThread_Arg,
@@ -224,6 +225,7 @@ SEXP fwriteR(
   // when called later for cell items of list columns (if any)
   dateTimeAs = INTEGER(dateTimeAs_Arg)[0];
   logical01 = LOGICAL(logical01_Arg)[0];
+  args.scipen = INTEGER(scipen_Arg)[0];
 
   int firstListColumn = 0;
   for (int j=0; j<args.ncol; j++) {
