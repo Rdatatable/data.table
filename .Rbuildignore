@@ -12,12 +12,9 @@
 ^\.gitlab-ci\.yml$
 
 ^Makefile$
-^NEWS.0.md$
-^README.md$
+^NEWS\.0\.md$
+^README\.md$
 ^_pkgdown\.yml$
-
-^CONTRIBUTING\.md$
-^ISSUE_TEMPLATE\.md$
 
 ^\.RData$
 ^\.Rhistory$
@@ -32,4 +29,3 @@
 
 ^bus$
 ^pkgdown$
-^logo\.png

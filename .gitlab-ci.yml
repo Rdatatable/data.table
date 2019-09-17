@@ -260,8 +260,6 @@ integration: # merging all artifacts to produce single R repository and summarie
     - apt-get update -qq && apt-get install -y libxml2-dev
     - mkdir -p /tmp/pkgdown/library
     - R_LIBS_USER=/tmp/pkgdown/library Rscript -e 'install.packages("remotes", repos=Sys.getenv("CRAN_MIRROR"), quiet=TRUE); remotes::install_github("r-lib/pkgdown", repos=Sys.getenv("CRAN_MIRROR"), quiet=TRUE); pkgdown::build_site(override=list(destination="./pkgdown"))'
-    - mkdir -p ./pkgdown/.graphics
-    - mv ./.graphics/cheatsheet.png ./pkgdown/.graphics
     # html manual, vignettes, repos, cran_web, cran_checks
     - echo 'source(".ci/ci.R"); source(".ci/publish.R")' >> .Rprofile
     # list of available test-* jobs dynamically based on bus/test-* directories
