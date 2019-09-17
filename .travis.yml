@@ -22,7 +22,7 @@ before_install:
     export CFLAGS="-I/usr/local/opt/llvm/include"; fi
 
 r_packages:
-  - drat      # used in deploy.sh to publish tar.gz to github.io/Rdatatable/data.table
+  - drat      # used in .ci/deploy.sh to publish tar.gz to github.io/Rdatatable/data.table
   - devtools  # explicitly named temp fix for #2801
   # - covr    # used for code coverage reports in github pull requests
 
@@ -38,7 +38,7 @@ after_success:
     test $TRAVIS_REPO_SLUG == "Rdatatable/data.table" &&
     test $TRAVIS_PULL_REQUEST == "false" &&
     test $TRAVIS_BRANCH == "master" &&
-    bash deploy.sh
+    bash .ci/deploy.sh
 
 notifications:
   email:
