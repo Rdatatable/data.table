@@ -7,7 +7,7 @@
 ^\.graphics$
 
 ^\.travis\.yml$
-^appveyor\.yml$
+^\.appveyor\.yml$
 ^\.gitlab-ci\.yml$
 
 ^Makefile$
