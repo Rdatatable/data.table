@@ -16067,21 +16067,15 @@ setnames(tbl, latin1, utf8)
 test(2111.04, Encoding(names(tbl)), c('UTF-8', 'UTF-8'))
 
 # fwrite scipen, #2020
-oldSciPen = options('scipen')
-testNo = 2112
-dec = 0L
-for (i in -3:3) {
-  for (j in -3:3) {
-    options(scipen=j)  # influence the value of base::format() being tested against
-    # use format to assure the output is the same as in R
-    v = (-1)^(i+j)
-    test(testNo+(dec<-dec+1L)/100, fwrite(data.table(v)), output=format(v))
-  }
-}
-# non-numeric scipen defaults to 0
-options(scipen = NULL)
-test(testNo+(dec<-dec+1L)/100, fwrite(data.table(10^5)), output='1e+05')
-options(oldSciPen)
+DT = data.table(a=0.0001, b=10^6, c=-20L)
+test(2112.01, fwrite(DT), output=out<-c("a,b,c","1e-04,1e+06,-20"))  # default scipen=0 is ensured in test.data.table()
+test(2112.02, fwrite(DT, scipen=NULL), output=out)
+test(2112.03, fwrite(DT, scipen=999), output=c("a,b,c","0.0001,1000000,-20"))
+test(2112.04, fwrite(DT, scipen=1),   output=c("a,b,c","0.0001,1e+06,-20"))
+test(2112.05, fwrite(DT, scipen=2),   output=c("a,b,c","0.0001,1000000,-20"))
+test(2112.06, fwrite(DT, scipen=-3),  output=c("a,b,c","1e-04,1e+06,-20"))
+# pending ... test(2112.07, fwrite(DT, scipen=-4),  output=c("a,b,c","1e-04,1e+06,-2e+01"))
+
 
 ###################################
 #  Add new tests above this line  #
