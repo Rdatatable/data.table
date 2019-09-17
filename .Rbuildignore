@@ -16,9 +16,6 @@
 ^README.md$
 ^_pkgdown\.yml$
 
-^CONTRIBUTING\.md$
-^ISSUE_TEMPLATE\.md$
-
 ^\.RData$
 ^\.Rhistory$
 

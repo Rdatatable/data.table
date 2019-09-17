@@ -85,7 +85,7 @@ DT[Petal.Width > 1.0, mean(Petal.Length), by = Species]
 
 ### Cheatsheets
 
-<a href="https://github.com/rstudio/cheatsheets/raw/master/datatable.pdf"><img src=".graphics/cheatsheet.png" width="615" height="242"/></a>
+<a href="https://raw.githubusercontent.com/rstudio/cheatsheets/master/datatable.pdf"><img src="https://raw.githubusercontent.com/rstudio/cheatsheets/master/pngs/datatable.png" width="615" height="242"/></a>
 
 ## Community
 
