@@ -15791,6 +15791,7 @@ if (test_bit64) {
 test(2082.07, between(letters[1:2], c("foo","bar"), c("bar")), c(FALSE,FALSE))
 test(2082.08, between(letters[1:2], c("foo","bar"), c("bar"), check=TRUE), error="Item 1 of lower ('foo') is greater than item 1 of upper ('bar')")
 test(2082.09, between(as.raw(1:5), as.raw(3), as.raw(2), check=TRUE), error="Some lower>upper for this non-numeric and non-character type")
+test(2082.10, between(1:3, 2, 4, check=NA), error="check must be TRUE or FALSE")
 
 # partial instantiation of integer64 column was creating NA_REAL, not INT64_MIN
 if (test_bit64) {
