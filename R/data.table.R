@@ -1289,7 +1289,7 @@ replace_dot_alias = function(e) {
         if (any(ww)) jvnames[ww] = paste0("V",ww)
         setnames(jval, jvnames)
       } else {
-        #browser()
+        # browser()
         #if (!is.null(jvnames)) jvnames=names(jval)
         #nulljval = vapply(jval, is.null, FALSE)
         if (!is.null(jvnames) && !all(jvnames=="")) setattr(jval, 'names', jvnames)
