@@ -1283,11 +1283,19 @@ replace_dot_alias = function(e) {
       if (is.atomic(jval)) {
         setattr(jval,"names",NULL)
         jval = data.table(jval) # TO DO: should this be setDT(list(jval)) instead?
+        # setnames(jval, if (is.null(jvnames) || jnames=="") "V1" else jvnames)
+        if (is.null(jvnames)) jvnames = character(length(jval)-length(bynames))
+        ww = which(jvnames=="")
+        if (any(ww)) jvnames[ww] = paste0("V",ww)
+        setnames(jval, jvnames)
       } else {
-        #if (is.null(jvnames)) jvnames=names(jval)
+        #browser()
+        #if (!is.null(jvnames)) jvnames=names(jval)
         #nulljval = vapply(jval, is.null, FALSE)
-        jval = as.data.table.list(jval)
-        jvnames = names(jval)
+        if (!is.null(jvnames) && !all(jvnames=="")) setattr(jval, 'names', jvnames)
+        jval = as.data.table.list(jval, .named=NULL)
+        #jval = as.data.table.list(jval)
+        #jvnames = names(jval)
         #jvnames = jvnames[!nulljval] # fix for #1477
       }
       #  if (is.null(jvnames)) jvnames=names(jval)
@@ -1303,10 +1311,10 @@ replace_dot_alias = function(e) {
       #    setDT(jval)
       #  }
       #}
-      if (is.null(jvnames)) jvnames = character(length(jval)-length(bynames))
-      ww = which(jvnames=="")
-      if (any(ww)) jvnames[ww] = paste0("V",ww)
-      setnames(jval, jvnames)
+      #if (is.null(jvnames)) jvnames = character(length(jval)-length(bynames))
+      #ww = which(jvnames=="")
+      #if (any(ww)) jvnames[ww] = paste0("V",ww)
+      #setnames(jval, jvnames)
     }
 
     if (is.data.table(jval)) {
