@@ -1282,12 +1282,10 @@ replace_dot_alias = function(e) {
         jval = lapply(jval, `[`, 0L)
       if (is.atomic(jval)) {
         setattr(jval,"names",NULL)  # discard names of named vectors otherwise each cell in the column would have a name
-        jval = data.table(jval) # TO DO: should this be setDT(list(jval)) instead?
-        setnames(jval, if (is.null(jvnames) || jvnames=="") "V1" else jvnames)  # e.g. jvnames=="N" for DT[,.N,]
-      } else {
-        if (!is.null(jvnames) && !all(jvnames=="")) setattr(jval, 'names', jvnames)
-        jval = as.data.table.list(jval, .named=NULL)
+        jval = list(jval)
       }
+      if (!is.null(jvnames) && !all(jvnames=="")) setattr(jval, 'names', jvnames)  # e.g. jvnames=="N" for DT[,.N,]
+      jval = as.data.table.list(jval, .named=NULL)
     }
 
     if (is.data.table(jval)) {
