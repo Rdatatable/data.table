@@ -4,7 +4,7 @@
 
 ### [`cc.R`](./cc.R)
 
-Developer helper script providing `cc` function. If one start R session in `data.table` project root directory `.dev/cc.R` file should be automatically sourced (due to local `.Rprofile` file) making `cc()` (and `dd()`) function available straightaway.
+Developer helper script providing `cc` function. If one starts R session in `data.table` project root directory `.dev/cc.R` file should be automatically sourced (due to local `.Rprofile` file) making `cc()` (and `dd()`) function available straightaway.
 
 ```r
 cc(test=TRUE, clean=FALSE, debug=FALSE, omp=!debug, cc_dir, path=Sys.getenv("PROJ_PATH"), CC="gcc")

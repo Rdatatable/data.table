@@ -11,7 +11,7 @@
 [![depsy](http://depsy.org/api/package/cran/data.table/badge.svg)](http://depsy.org/package/r/data.table)
 [![CRAN usage](https://jangorecki.gitlab.io/rdeps/data.table/CRAN_usage.svg?sanitize=true)](https://gitlab.com/jangorecki/rdeps)
 [![BioC usage](https://jangorecki.gitlab.io/rdeps/data.table/BioC_usage.svg?sanitize=true)](https://gitlab.com/jangorecki/rdeps)
-[![indirect depends](https://jangorecki.gitlab.io/rdeps/data.table/indirect_depends.svg?sanitize=true)](https://gitlab.com/jangorecki/rdeps)
+[![indirect usage](https://jangorecki.gitlab.io/rdeps/data.table/indirect_usage.svg?sanitize=true)](https://gitlab.com/jangorecki/rdeps)
 <!-- badges: end -->
 
 `data.table` provides a high-performance version of [base R](https://www.r-project.org/about.html)'s `data.frame` with syntax and feature enhancements for ease of use, convenience and programming speed.
