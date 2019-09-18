@@ -8,7 +8,7 @@ On each Pull Request opened in GitHub we run Travis CI and Appveyor to provide p
 
 Test jobs:
 - `test-rel-lin` - `r-release` on Linux, most comprehensive test environment, `-O3 -flto`, extra check for no compilation warnings, includes testing [_with other packages_](./../inst/tests/other.Rraw) ([extended suggests](./../inst/tests/tests-DESCRIPTION))
-- `test-rel-cran-lin` - `--as-cran` on Linux, `-g0`, extra check for `Status: OK` `R CMD check` result
+- `test-rel-cran-lin` - `--as-cran` on Linux, `-g0`, extra check for `Status: OK` in `R CMD check`
 - `test-dev-cran-lin` - `r-devel` and `--as-cran` on Linux, `--enable-strict-barrier --disable-long-double`
 - `test-rel-vanilla-lin` - `r-release` on Linux, no suggested deps, no OpenMP, `-O0`, tracks memory usage during tests
 - `test-310-cran-lin` - R 3.1.0 on Linux
