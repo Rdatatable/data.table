@@ -1284,37 +1284,10 @@ replace_dot_alias = function(e) {
         setattr(jval,"names",NULL)  # discard names of named vectors otherwise each cell in the column would have a name
         jval = data.table(jval) # TO DO: should this be setDT(list(jval)) instead?
         setnames(jval, if (is.null(jvnames) || jvnames=="") "V1" else jvnames)  # e.g. jvnames=="N" for DT[,.N,]
-        #if (is.null(jvnames)) jvnames = character(length(jval)-length(bynames))
-        #ww = which(jvnames=="")
-        #if (any(ww)) jvnames[ww] = paste0("V",ww)
-        #setnames(jval, jvnames)
       } else {
-        # browser()
-        #if (!is.null(jvnames)) jvnames=names(jval)
-        #nulljval = vapply(jval, is.null, FALSE)
         if (!is.null(jvnames) && !all(jvnames=="")) setattr(jval, 'names', jvnames)
         jval = as.data.table.list(jval, .named=NULL)
-        #jval = as.data.table.list(jval)
-        #jvnames = names(jval)
-        #jvnames = jvnames[!nulljval] # fix for #1477
       }
-      #  if (is.null(jvnames)) jvnames=names(jval)
-      #  lenjval = vapply(jval, length, 0L)
-      #  nulljval = vapply(jval, is.null, FALSE)
-      #  if (lenjval[1L]==0L || any(lenjval != lenjval[1L])) {
-      #    cat("CALLING as.data.table.list(jval)\n")
-      #    jval = as.data.table.list(jval)   # does the vector expansion to create equal length vectors, and drops any NULL items
-      #    jvnames = jvnames[!nulljval] # fix for #1477
-      #  } else {
-      #    cat("CALLING setDT(jval)\n")
-      #    # all columns same length and at least 1 row; avoid copy. TODO: remove when as.data.table.list is ported to C
-      #    setDT(jval)
-      #  }
-      #}
-      #if (is.null(jvnames)) jvnames = character(length(jval)-length(bynames))
-      #ww = which(jvnames=="")
-      #if (any(ww)) jvnames[ww] = paste0("V",ww)
-      #setnames(jval, jvnames)
     }
 
     if (is.data.table(jval)) {
