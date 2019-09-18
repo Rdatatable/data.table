@@ -60,9 +60,9 @@ cc = function(test=TRUE, clean=FALSE, debug=FALSE, omp=!debug, cc_dir, path=Sys.
   if (clean) system("rm *.o *.so")
   OMP = if (omp) "" else "no-"
   if (debug) {
-    ret = system(sprintf("MAKEFLAGS='-j CC=%s PKG_CFLAGS=-f%sopenmp CFLAGS=-std=c99\\ -O0\\ -ggdb\\ -pedantic\\ -flto' R CMD SHLIB -d -o data.table.so *.c", CC, OMP))
+    ret = system(sprintf("MAKEFLAGS='-j CC=%s PKG_CFLAGS=-f%sopenmp CFLAGS=-std=c99\\ -O0\\ -ggdb\\ -pedantic' R CMD SHLIB -d -o data.table.so *.c", CC, OMP))
   } else {
-    ret = system(sprintf("MAKEFLAGS='-j CC=%s CFLAGS=-f%sopenmp\\ -std=c99\\ -O3\\ -pipe\\ -Wall\\ -pedantic\\ -flto' R CMD SHLIB -o data.table.so *.c", CC, OMP))
+    ret = system(sprintf("MAKEFLAGS='-j CC=%s CFLAGS=-f%sopenmp\\ -std=c99\\ -O3\\ -pipe\\ -Wall\\ -pedantic' R CMD SHLIB -o data.table.so *.c", CC, OMP))
     # TODO add -Wextra too?
   }
   if (ret) return()
