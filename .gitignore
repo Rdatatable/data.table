@@ -33,3 +33,6 @@ vignettes/*.pdf
 .DS_Store
 .idea
 *.sw[op]
+
+# created from src/Makevars.in
+src/Makevars
