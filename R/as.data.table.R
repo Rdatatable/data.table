@@ -161,15 +161,16 @@ as.data.table.list = function(x,
       # TODO: port this as.data.table.list() to C and use MAYBE_REFERENCED(x) || ALTREP(x) to save some copies.
       #       That saving used to be done by CcopyNamedInList but the copies happened again as well, so removing CcopyNamedInList is
       #       not worse than before, and gets us in a better centralized place to port as.data.table.list to C and use MAYBE_REFERENCED
-      #       again in future.
+      #       again in future, for #617.
     }
     if (identical(x,list())) vector("list", nrow) else rep(x, length.out=nrow)   # new objects don't need copy
   }
   vnames = character(ncol)
   k = 1L
+  n_null = 0L
   for(i in seq_len(n)) {
     xi = x[[i]]
-    if (is.null(xi)) next
+    if (is.null(xi)) { n_null = n_null+1L; next }
     if (eachnrow[i]>1L && nrow%%eachnrow[i]!=0L)   # in future: eachnrow[i]!=nrow
       warning("Item ", i, " has ", eachnrow[i], " rows but longest item has ", nrow, "; recycled with remainder.")
     if (eachnrow[i]==0L && nrow>0L && is.atomic(xi))   # is.atomic to ignore list() since list() is a common way to initialize; let's not insist on list(NULL)
@@ -183,7 +184,7 @@ as.data.table.list = function(x,
       }
     } else {
       nm = names(x)[i]
-      vnames[k] = if (length(nm) && !is.na(nm) && nm!="") nm else paste0("V",i)  # i (not k) tested by 2058.14 to be the same as the past for now
+      vnames[k] = if (length(nm) && !is.na(nm) && nm!="") nm else paste0("V",i-n_null)  # i (not k) tested by 2058.14 to be the same as the past for now
       ans[[k]] = recycle(xi, nrow)
       k = k+1L
     }
