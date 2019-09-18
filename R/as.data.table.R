@@ -161,7 +161,7 @@ as.data.table.list = function(x,
       # TODO: port this as.data.table.list() to C and use MAYBE_REFERENCED(x) || ALTREP(x) to save some copies.
       #       That saving used to be done by CcopyNamedInList but the copies happened again as well, so removing CcopyNamedInList is
       #       not worse than before, and gets us in a better centralized place to port as.data.table.list to C and use MAYBE_REFERENCED
-      #       again in future.
+      #       again in future, for #617.
     }
     if (identical(x,list())) vector("list", nrow) else rep(x, length.out=nrow)   # new objects don't need copy
   }
