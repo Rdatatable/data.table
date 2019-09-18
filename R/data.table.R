@@ -1284,17 +1284,25 @@ replace_dot_alias = function(e) {
         setattr(jval,"names",NULL)
         jval = data.table(jval) # TO DO: should this be setDT(list(jval)) instead?
       } else {
-        if (is.null(jvnames)) jvnames=names(jval)
-        lenjval = vapply(jval, length, 0L)
-        nulljval = vapply(jval, is.null, FALSE)
-        if (lenjval[1L]==0L || any(lenjval != lenjval[1L])) {
-          jval = as.data.table.list(jval)   # does the vector expansion to create equal length vectors, and drops any NULL items
-          jvnames = jvnames[!nulljval] # fix for #1477
-        } else {
-          # all columns same length and at least 1 row; avoid copy. TODO: remove when as.data.table.list is ported to C
-          setDT(jval)
-        }
+        #if (is.null(jvnames)) jvnames=names(jval)
+        #nulljval = vapply(jval, is.null, FALSE)
+        jval = as.data.table.list(jval)
+        jvnames = names(jval)
+        #jvnames = jvnames[!nulljval] # fix for #1477
       }
+      #  if (is.null(jvnames)) jvnames=names(jval)
+      #  lenjval = vapply(jval, length, 0L)
+      #  nulljval = vapply(jval, is.null, FALSE)
+      #  if (lenjval[1L]==0L || any(lenjval != lenjval[1L])) {
+      #    cat("CALLING as.data.table.list(jval)\n")
+      #    jval = as.data.table.list(jval)   # does the vector expansion to create equal length vectors, and drops any NULL items
+      #    jvnames = jvnames[!nulljval] # fix for #1477
+      #  } else {
+      #    cat("CALLING setDT(jval)\n")
+      #    # all columns same length and at least 1 row; avoid copy. TODO: remove when as.data.table.list is ported to C
+      #    setDT(jval)
+      #  }
+      #}
       if (is.null(jvnames)) jvnames = character(length(jval)-length(bynames))
       ww = which(jvnames=="")
       if (any(ww)) jvnames[ww] = paste0("V",ww)
