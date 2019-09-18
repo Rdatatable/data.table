@@ -1,6 +1,6 @@
 #include "data.table.h"
 
-SEXP between(SEXP x, SEXP lower, SEXP upper, SEXP incbounds, SEXP NAboundsArg) {
+SEXP between(SEXP x, SEXP lower, SEXP upper, SEXP incbounds, SEXP NAboundsArg, SEXP checkArg) {
   int nprotect = 0;
   R_len_t nx = length(x), nl = length(lower), nu = length(upper);
   if (!nx || !nl || !nu)
@@ -11,13 +11,16 @@ SEXP between(SEXP x, SEXP lower, SEXP upper, SEXP incbounds, SEXP NAboundsArg) {
       (nx!=1 && nx!=longest)) {
     error("Incompatible vector lengths: length(x)==%d length(lower)==%d length(upper)==%d. Each should be either length 1 or the length of the longest.", nx, nl, nu);
   }
-  const int longestBound = MAX(nl, nu);
+  const int longestBound = MAX(nl, nu);  // just for when check=TRUE
   if (!isLogical(incbounds) || LOGICAL(incbounds)[0]==NA_LOGICAL)
     error("incbounds must be TRUE or FALSE");
   const bool open = !LOGICAL(incbounds)[0];
   if (!isLogical(NAboundsArg) || LOGICAL(NAboundsArg)[0]==FALSE)
     error("NAbounds must be TRUE or NA");
   const bool NAbounds = LOGICAL(NAboundsArg)[0]==TRUE;
+  if (!isLogical(checkArg) || LOGICAL(checkArg)[0]==NA_LOGICAL)
+    error("check must be TRUE or FALSE");
+  const bool check = LOGICAL(checkArg)[0];
   const bool verbose = GetVerbose();
 
   if (isInteger(x)) {
@@ -55,7 +58,7 @@ SEXP between(SEXP x, SEXP lower, SEXP upper, SEXP incbounds, SEXP NAboundsArg) {
     const int *lp = INTEGER(lower);
     const int *up = INTEGER(upper);
     const int *xp = INTEGER(x);
-    for (int i=0; i<longestBound; ++i) {
+    if (check) for (int i=0; i<longestBound; ++i) {
       const int l=lp[i & lowMask], u=up[i & uppMask];
       if (l!=NA_INTEGER && u!=NA_INTEGER && l>u)
         error("Item %d of lower (%d) is greater than item %d of upper (%d)", (i&lowMask)+1, l, (i&uppMask)+1, u);
@@ -86,7 +89,7 @@ SEXP between(SEXP x, SEXP lower, SEXP upper, SEXP incbounds, SEXP NAboundsArg) {
       const int64_t *lp = (int64_t *)REAL(lower);
       const int64_t *up = (int64_t *)REAL(upper);
       const int64_t *xp = (int64_t *)REAL(x);
-      for (int i=0; i<longestBound; ++i) {
+      if (check) for (int i=0; i<longestBound; ++i) {
         const int64_t l=lp[i & lowMask], u=up[i & uppMask];
         if (l!=NA_INTEGER64 && u!=NA_INTEGER64 && l>u)
           error("Item %d of lower (%lld) is greater than item %d of upper (%lld)", (i&lowMask)+1, l, (i&uppMask)+1, u);
@@ -113,7 +116,7 @@ SEXP between(SEXP x, SEXP lower, SEXP upper, SEXP incbounds, SEXP NAboundsArg) {
       const double *lp = REAL(lower);
       const double *up = REAL(upper);
       const double *xp = REAL(x);
-      for (int i=0; i<longestBound; ++i) {
+      if (check) for (int i=0; i<longestBound; ++i) {
         const double l=lp[i & lowMask], u=up[i & uppMask];
         if (!isnan(l) && !isnan(u) && l>u)
           error("Item %d of lower (%f) is greater than item %d of upper (%f)", (i&lowMask)+1, l, (i&uppMask)+1, u);
@@ -163,7 +166,7 @@ SEXP between(SEXP x, SEXP lower, SEXP upper, SEXP incbounds, SEXP NAboundsArg) {
     #define LCMP (strcmp(CHAR(ENC2UTF8(l)),CHAR(ENC2UTF8(elem)))<=-open)
     #define UCMP (strcmp(CHAR(ENC2UTF8(elem)),CHAR(ENC2UTF8(u)))<=-open)
     // TODO if all ascii can be parallel, otherwise ENC2UTF8 could allocate
-    for (int i=0; i<longestBound; ++i) {
+    if (check) for (int i=0; i<longestBound; ++i) {
       const SEXP l=lp[i & lowMask], u=up[i & uppMask];
       if (l!=NA_STRING && u!=NA_STRING && l!=u && strcmp(CHAR(ENC2UTF8(l)), CHAR(ENC2UTF8(u)))>0)
         error("Item %d of lower ('%s') is greater than item %d of upper ('%s')", (i&lowMask)+1, CHAR(l), (i&uppMask)+1, CHAR(u));
