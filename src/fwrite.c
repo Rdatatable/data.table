@@ -660,9 +660,8 @@ void fwriteMain(fwriteMainArgs args)
 
 #ifndef HAVE_LIBZ
     if (args.is_gzip) {
-        warning("compression='gzip' in fwrite but data.table is compiled without gzip support. File is written without compression.");
+        STOP("data.table is compiled without gzip support: remove compression ='gzip' in fwrite")
     }
-    args.is_gzip = false; // force no gzip
 #endif
 
   int f=0;
