@@ -16124,6 +16124,11 @@ test(2112.13, fwrite(DT, scipen=999), output=c(
 "3.14159265358979"
 ))
 
+# rbindlist segfault / malformed factor when recycling length-1 factor columns, #3662
+test(2113.1, rbindlist(list(data.table(a=as.factor(1:2), b=as.factor(2:3)),
+                           list(a=as.factor(3L), b=as.factor(4:5)))),
+             data.table(a=as.factor(INT(1,2,3,3)), b=as.factor(2:5)))
+
 
 ###################################
 #  Add new tests above this line  #
