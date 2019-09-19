@@ -35,6 +35,8 @@
     identical(fread("data.csv.gz"), DT)
     ```
 
+    Note that compression is handled using `zlib` library. In the unlikely event of missing `zlib.h`, on a machine that is compiling `data.table` from sources, one may get `fwrite.c` compilation error `zlib.h: No such file or directory`. As of now, the easiest solution is to install missing library using `sudo apt install zlib1g-dev` (Debian/Ubuntu). Installing R (`r-base-dev`) depends on `zlib1g-dev` so this should be rather uncommon. If it happens to you please upvote related issue [#3872](https://github.com/Rdatatable/data.table/issues/3872).
+
     * Gains `yaml` argument matching that of `fread`, [#3534](https://github.com/Rdatatable/data.table/issues/3534). See the item in `fread` for a bit more detail; here, we'd like to reiterate that feedback is appreciated in the initial phase of rollout for this feature.
 
     * Gains `bom` argument to add a *byte order mark* (BOM) at the beginning of the file to signal that the file is encoded in UTF-8, [#3488](https://github.com/Rdatatable/data.table/issues/3488). Thanks to Stefan Fleck for requesting and Philippe Chataignon for implementing.
