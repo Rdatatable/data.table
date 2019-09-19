@@ -25,7 +25,6 @@ SEXP reorder();
 SEXP rbindlist();
 SEXP vecseq();
 SEXP setlistelt();
-SEXP setmutable();
 SEXP address();
 SEXP expandAltRep();
 SEXP fmelt();
@@ -111,7 +110,6 @@ R_CallMethodDef callMethods[] = {
 {"Crbindlist", (DL_FUNC) &rbindlist, -1},
 {"Cvecseq", (DL_FUNC) &vecseq, -1},
 {"Csetlistelt", (DL_FUNC) &setlistelt, -1},
-{"Csetmutable", (DL_FUNC) &setmutable, -1},
 {"Caddress", (DL_FUNC) &address, -1},
 {"CexpandAltRep", (DL_FUNC) &expandAltRep, -1},
 {"Cfmelt", (DL_FUNC) &fmelt, -1},
