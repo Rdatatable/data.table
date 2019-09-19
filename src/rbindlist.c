@@ -439,21 +439,34 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
           }
           int *targetd = INTEGER(target);
           if (isFactor(thisCol)) {
-            // loop through levels. If all i == truelength(i) then just do a memcpy. Otherwise hop via the integer map.
-            bool nohop = true;
-            for (int k=0; k<n; ++k) {
-              SEXP s = thisColStrD[k];
-              if (s!=NA_STRING && -TRUELENGTH(s)!=k+1) { nohop=false; break; }
-            }
-            if (nohop) memcpy(targetd+ansloc, INTEGER(thisCol), thisnrow*SIZEOF(thisCol));
-            else {
-              int *id = INTEGER(thisCol);
-              for (int r=0; r<thisnrow; r++)
-                targetd[ansloc+r] = id[r]==NA_INTEGER ? NA_INTEGER : -TRUELENGTH(thisColStrD[id[r]-1]);
+            const int *id = INTEGER(thisCol);
+            if (length(thisCol)<=1) {
+              // recycle length-1, or NA-fill length-0
+              const int val = (length(thisCol)==1 && id[0]!=NA_INTEGER) ? -TRUELENGTH(thisColStrD[id[0]-1]) : NA_INTEGER;
+              for (int r=0; r<thisnrow; ++r) targetd[ansloc+r] = val;
+            } else {
+              // length(thisCol)==thisnrow alreay checked before this truelength-clobber region
+              // If all i==truelength(i) then just do a memcpy since hop is identity. Otherwise hop via the integer map.
+              bool hop = false;
+              for (int k=0; k<n; ++k) {
+                SEXP s = thisColStrD[k];
+                if (s!=NA_STRING && -TRUELENGTH(s)!=k+1) { hop=true; break; }
+              }
+              if (hop) {
+                for (int r=0; r<thisnrow; ++r)
+                  targetd[ansloc+r] = id[r]==NA_INTEGER ? NA_INTEGER : -TRUELENGTH(thisColStrD[id[r]-1]);
+              } else {
+                memcpy(targetd+ansloc, id, thisnrow*SIZEOF(thisCol));
+              }
             }
           } else {
-            SEXP *sd = STRING_PTR(thisColStr);
-            for (int r=0; r<thisnrow; r++) targetd[ansloc+r] = sd[r]==NA_STRING ? NA_INTEGER : -TRUELENGTH(sd[r]);
+            const SEXP *sd = STRING_PTR(thisColStr);
+            if (length(thisCol)<=1) {
+              const int val = (length(thisCol)==1 && sd[0]!=NA_STRING) ? -TRUELENGTH(sd[0]) : NA_INTEGER;
+              for (int r=0; r<thisnrow; ++r) targetd[ansloc+r] = val;
+            } else {
+              for (int r=0; r<thisnrow; ++r) targetd[ansloc+r] = sd[r]==NA_STRING ? NA_INTEGER : -TRUELENGTH(sd[r]);
+            }
           }
         }
         ansloc += thisnrow;
