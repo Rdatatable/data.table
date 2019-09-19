@@ -2362,7 +2362,7 @@ setalloccol = alloc.col = function(DT, n=getOption("datatable.alloccol"), verbos
     name = as.character(name)
     assign(name,ans,parent.frame(),inherits=TRUE)
   }
-  .Call(Csetmutable,ans)
+  ans
 }
 
 selfrefok = function(DT,verbose=getOption("datatable.verbose")) {
