@@ -403,6 +403,7 @@ sudo apt-get -y install libtesseract-dev libleptonica-dev tesseract-ocr-eng   # 
 sudo apt-get -y install libssl-dev libsasl2-dev
 sudo apt-get -y install biber   # for ctsem
 sudo apt-get -y install libopenblas-dev  # for ivmte (+ local R build with default ./configure to pick up shared openblas)
+sudo apt-get -y install libhiredis-dev  # for redux used by nodbi
 sudo R CMD javareconf
 # ENDIF
 
