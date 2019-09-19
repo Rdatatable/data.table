@@ -301,7 +301,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
           int thisLen = length(getAttrib(thisCol, R_LevelsSymbol));
           if (thisLen>longestLen) { longestLen=thisLen; longestLevels=getAttrib(thisCol, R_LevelsSymbol); /*for warnings later ...*/longestW=w; longestI=i; }
         }
-      } else if (!isString(thisCol) && length(thisCol)) anyNotStringOrFactor=true;
+      } else if (!isString(thisCol)) anyNotStringOrFactor=true;  // even for length 0 columns for consistency; test 2113.3
       if (INHERITS(thisCol, char_integer64)) {
         if (firsti>=0 && !length(getAttrib(firstCol, R_ClassSymbol))) { firsti=i; firstw=w; firstCol=thisCol; } // so the integer64 attribute gets copied to target below
         int64=true;
