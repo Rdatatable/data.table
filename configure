@@ -52,7 +52,6 @@ if [ $R_CONFIG_ERROR ]; then
   echo "is unavailable you can set INCLUDE_DIR and LIB_DIR manually via:"
   echo "R CMD INSTALL --configure-vars='INCLUDE_DIR=... LIB_DIR=...'"
   echo "--------------------------------------------------------------------"
-  exit 1;
 else
   PKG_CFLAGS="$PKG_CFLAGS -DHAVE_LIBZ"
 fi
