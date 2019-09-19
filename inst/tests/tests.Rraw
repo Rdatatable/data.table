@@ -16132,6 +16132,9 @@ test(2113.2, rbindlist(list(list(a=as.factor(1:2), b=factor(),      c=as.factor(
                             list(a="3",            b=as.factor(3L), c=c("4","5"),   d=character()))),
              data.table(a=as.factor(c(1,2,3,3)), b=as.factor(c(NA,NA,3L,3L)), c=as.factor(c(3L,3:5)), d=as.factor(c(4L,4L,NA,NA))),
              warning="Column 2 ['b'] of item 1 is length 0. This (and 1 other like it) has been filled with NA")
+test(2113.3, rbindlist(list(list(a=numeric(), b=numeric()),
+                            list(a=as.factor(1L), b=as.factor(2:4)))),
+             data.table(a=as.factor(1L), b=as.factor(2:4)))
 
 
 ###################################
