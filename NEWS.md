@@ -379,6 +379,14 @@
 
 23. Using `first` and `last` function on `POSIXct` object no longer loads `xts` namespace, [#3857](https://github.com/Rdatatable/data.table/issues/3857). `first` on empty `data.table` returns empty `data.table` now [#3858](https://github.com/Rdatatable/data.table/issues/3858).
 
+24. We continue to encourage packages to `Import` rather than `Depend` on `data.table`, [#3076](https://github.com/Rdatatable/data.table/issues/3076). To prevent the growth rate in new packages using `Depend`, from 1st Nov 2019 submissions using Depend (both new packages, and updates to existing) may receive the following error. We will continue to email a reminder every 6 months to the maintainers of the remaining 73 packages which have not yet updated. Otherwise they will continue to work as before.
+
+    ```
+    Package <x> (published <date>) depends on data.table. It should import data.table instead; please contact its
+    maintainer. This error is issued for revisions published on or after 2019-11-01. For further details and prior
+    communication please see https://github.com/Rdatatable/data.table/issues/3076.
+    ```
+
 
 # data.table [v1.12.2](https://github.com/Rdatatable/data.table/milestone/14?closed=1)  (07 Apr 2019)
 
