@@ -2,7 +2,7 @@
 \alias{test}
 \title{ Test assertions for equality, exceptions and console output }
 \description{
-  An internal function used to tests equality, errors, warnings, messages, console output.
+  An internal testing function used in \code{data.table} test scripts that are run by \code{\link{test.data.table}}.
 }
 \usage{
 test(num, x, y = TRUE,
@@ -19,8 +19,8 @@ test(num, x, y = TRUE,
 \item{output}{ If you are testing the printing/console output behaviour of some feature. Again, regex-compatible. }
 \item{notOutput}{ Or if you are testing that a feature does not print particular console output. }
 }
-\details{
-   The atomic testing function used in \code{data.table} test scripts that are run by \code{\link{test.data.table}}.
+\note{
+   \code{NA_real_} and \code{NaN} treated as equal, use \code{identical} if distinction is needed. See examples below.
 }
 \value{
 Logical \code{TRUE} when test passes, \code{FALSE} when test fails. Invisibly.
@@ -35,5 +35,9 @@ test(3, sum("a"), error="invalid.*character")
 stopifnot(
   test(4, TRUE, FALSE) == FALSE
 )
+# NA_real_ vs NaN
+test(5.01, NA_real_, NaN)
+test(5.03, all.equal(NaN, NA_real_))
+test(5.02, identical(NaN, NA_real_), FALSE)
 }
 \keyword{ data }
