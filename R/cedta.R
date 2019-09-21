@@ -53,6 +53,7 @@ dependsNotImports = function(pkg)
   # When a Depend package reaches here from its R CMD check, the call quite often looks like it come
   # from a different package; e.g. VIM passes data.table to ranger, batchtools passes to future.batchtools.
   # We want to catch all Depends-on-data.table anyway, hence use search().
+  # Base packages: base, utils and stats reach here in our test suite (they don't have .Depends)
   s = search()
   s = s[sapply(s, function(x) any(
     tryCatch(get(".Depends",x,inherits=FALSE), error=function(e)NULL)
@@ -60,7 +61,8 @@ dependsNotImports = function(pkg)
     # another way may be packageDescription(pkg,fields="Depends") but we're avoiding that for speed to avoid the file open
     == "data.table"))]
   for (this in s) {
-    if (substring(this,1L,8L)!="package:") next
+    # nocov start
+    if (substring(this,1L,8L)!="package:") next  # internal error really, but 'next' so as not to break package if it does ever happen
     this = substring(this,9L)
     if (isTRUE((d<-publishDate(this))>="2019-11-01")) {
       stop("Package ",this," (published ",d,") depends on data.table. It should import data.table instead; please contact its maintainer. This error is issued for revisions published on or after 2019-11-01. For further details and prior communication please see https://github.com/Rdatatable/data.table/issues/3076.")
@@ -72,6 +74,7 @@ dependsNotImports = function(pkg)
       # may be that they are not using DT[...] (e.g. just using fread/fwrite), or if they are then their tests/examples/vignettes aren't
       # covering those calls. In future we could call this dependsNotImports() from data.table(), fread() and fwrite(), perhaps.
     }
+    # nocov end
   }
   # use exactly the same command as v1.12.2 and before, just in case the Depends package is somehow not on search()
   # Otherwise, we could return this: paste0("package:",pkg) %chin% s
@@ -88,8 +91,10 @@ publishDate = function(pkg) {
   # Our goal here is to work on all versions of R >= 3.1.0, and only warn if we're sure.
   # If all date fields are somehow missing or wrong format (neither possible on CRAN) then return NA
   # which will allow the Depend to continue to work without warning or message.
+  # nocov start
   ans = as.character(packageDescription(pkg, fields=c("Date","Packaged","Date/Publication")))
   ans = as.Date(ans, format="%Y-%m-%d")
   ans[!is.na(ans)][1L] # take the first non-NA of those 3, just like base::packageDate()
+  # nocov end
 }
 
