@@ -1,9 +1,9 @@
-test.data.table = function(verbose=FALSE, pkg="pkg", silent=FALSE, with.other.packages=FALSE, benchmark=FALSE, script="tests.Rraw") {
+test.data.table = function(verbose=FALSE, pkg=".", silent=FALSE, script="tests.Rraw") {
   if (exists("test.data.table", .GlobalEnv,inherits=FALSE)) {
     # package developer
     # nocov start
     if ("package:data.table" %chin% search()) stop("data.table package is loaded. Unload or start a fresh R session.")
-    rootdir = if (pkg %chin% dir()) file.path(getwd(), pkg) else Sys.getenv("PROJ_PATH")
+    rootdir = if (pkg!="." && pkg %chin% dir()) file.path(getwd(), pkg) else Sys.getenv("PROJ_PATH")
     subdir = file.path("inst","tests")
     # nocov end
   } else {
@@ -21,17 +21,6 @@ test.data.table = function(verbose=FALSE, pkg="pkg", silent=FALSE, with.other.pa
     return(invisible())
     # nocov end
   }
-
-  # nocov start
-  if (isTRUE(benchmark)) {
-    warning("'benchmark' argument is deprecated, use script='benchmark.Rraw' instead")
-    script = "benchmark.Rraw"
-  }
-  if (isTRUE(with.other.packages)) {
-    warning("'with.other.packages' argument is deprecated, use script='other.Rraw' instead")
-    script = "other.Rraw"
-  }
-  # nocov end
 
   if (!is.null(script)) {
     stopifnot(is.character(script), length(script)==1L, !is.na(script), nzchar(script))
@@ -233,7 +222,7 @@ gc_mem = function() {
   # nocov end
 }
 
-test = function(num,x,y=TRUE,error=NULL,warning=NULL,output=NULL,notOutput=NULL,message=NULL) {
+test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,notOutput=NULL) {
   # Usage:
   # i) tests that x equals y when both x and y are supplied, the most common usage
   # ii) tests that x is TRUE when y isn't supplied
