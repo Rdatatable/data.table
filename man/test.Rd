@@ -20,7 +20,7 @@ test(num, x, y = TRUE,
 \item{notOutput}{ Or if you are testing that a feature does not print particular console output. }
 }
 \note{
-   \code{NA_real_} and \code{NaN} treated as equal, use \code{identical} if distinction is needed. See examples below.
+   \code{NA_real_} and \code{NaN} are treated as equal, use \code{identical} if distinction is needed. See examples below.
 }
 \value{
 Logical \code{TRUE} when test passes, \code{FALSE} when test fails. Invisibly.
