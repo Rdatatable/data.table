@@ -21,7 +21,7 @@
   \item{x}{ A \code{data.table}. }
   \item{topn}{ The number of rows to be printed from the beginning and end of tables with more than \code{nrows} rows. }
   \item{nrows}{ The number of rows which will be printed before truncation is enforced. }
-  \item{class}{ If \code{TRUE}, the resulting output will include above each column its storage class (or a self-evident abbreviation thereof). }
+  \item{class}{ If \code{TRUE}, the resulting output will include above each column its (first) class (or a self-evident abbreviation thereof); when the storage class (via \code{\link{typeof}}) differs (e.g. \code{Date} is stored as \code{double}), this will also be printed after a subset equality symbol. }
   \item{row.names}{ If \code{TRUE}, row indices will be printed alongside \code{x}. }
   \item{col.names}{ One of three flavours for controlling the display of column names in output. \code{"auto"} includes column names above the data, as well as below the table if \code{nrow(x) > 20}. \code{"top"} excludes this lower register when applicable, and \code{"none"} suppresses column names altogether (as well as column classes if \code{class = TRUE}. }
   \item{print.keys}{ If \code{TRUE}, any \code{\link{key}} and/or \code{\link[=indices]{index}} currently assigned to \code{x} will be printed prior to the preview of the data. }

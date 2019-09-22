@@ -76,14 +76,21 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
     colnames(toprint)=rep("", ncol(toprint))
   if (isTRUE(class) && col.names != "none") {
     #Matching table for most common types & their abbreviations
-    class_abb = c(list = "<list>", integer = "<int>", numeric = "<num>",
-      character = "<char>", Date = "<Date>", complex = "<cplx>",
-      factor = "<fctr>", POSIXct = "<POSc>", logical = "<lgcl>",
-      IDate = "<IDat>", integer64 = "<i64>", raw = "<raw>",
-      expression = "<expr>", ordered = "<ord>")
-    classes = vapply(x, function(col) class(col)[1L], "", USE.NAMES=FALSE)
+    class_abb = c(
+      list = "list", integer = "int", numeric = "num", double = "dbl",
+      character = "char", Date = "Date", complex = "cplx",
+      factor = "fctr", POSIXct = "POSc", logical = "lgcl",
+      IDate = "IDat", integer64 = "i64", raw = "raw",
+      expression = "expr", ordered = "ord"
+    )
+    classes = vapply_1c(x, function(col) class(col)[1L], use.names=FALSE)
+    types = vapply_1c(x, typeof, use.names=FALSE)
     abbs = unname(class_abb[classes])
-    if ( length(idx <- which(is.na(abbs))) ) abbs[idx] = paste0("<", classes[idx], ">")
+    if ( length(idx <- which(is.na(abbs))) ) abbs[idx] = classes[idx]
+    # \U2286: subset equality symbol to indicate subclasses
+    if ( any(idx <- types != classes & classes != 'numeric') )
+      abbs[idx] = paste0(abbs[idx], '\U2286', unname(class_abb[types[idx]]))
+    abbs = paste0('<', abbs, '>')
     toprint = rbind(abbs, toprint)
     rownames(toprint)[1L] = ""
   }

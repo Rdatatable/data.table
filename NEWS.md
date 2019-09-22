@@ -224,6 +224,8 @@
     # [1] "A" "b" "c"
     ```
 
+29. The `class` argument to `data.table`'s `print` method now includes the `typeof` the column as well, [#2998](https://github.com/Rdatatable/data.table/issues/2998). `typeof` is quite important in R since it reveals the fundamental storage type of a given object, which is immutable without making copies, whereas the `class` of an object is closer to a decoration -- `setattr` can change the `class` without copies. As such, objects in R with the same `typeof` but different class are easier to combine than when `typeof` differs.
+
 ## BUG FIXES
 
 1. `first`, `last`, `head` and `tail` by group no longer error in some cases, [#2030](https://github.com/Rdatatable/data.table/issues/2030) [#3462](https://github.com/Rdatatable/data.table/issues/3462). Thanks to @franknarf1 for reporting.
@@ -1118,4 +1120,3 @@ When `j` is a symbol (as in the quanteda and xgboost examples above) it will con
 
 
 # data.table v1.9.8 (Nov 2016) back to v1.2 (Aug 2008) has been moved to [NEWS.0.md](https://github.com/Rdatatable/data.table/blob/master/NEWS.0.md)
-
