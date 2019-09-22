@@ -8220,7 +8220,7 @@ DT2 = data.table(
 )
 test(1610.2, print(DT2, class=TRUE),
      output = c("         Dcol                Pcol   gcol       Icol       ucol",
-                "   <Date\U2286dbl>          <POSc\U2286dbl> <lgcl> <IDat\U2286int> <asdf\U2286int>",
+                "   <Date\U{2286}dbl>          <POSc\U{2286}dbl> <lgcl> <IDat\U2286int> <asdf\U2286int>",
                 "1: 2016-01-01 2016-01-01 01:00:00   TRUE 2016-01-01          1",
                 "2: 2016-01-02 2016-01-02 01:00:00   TRUE 2016-01-02          2",
                 "3: 2016-01-03 2016-01-03 01:00:00   TRUE 2016-01-03          3"))
