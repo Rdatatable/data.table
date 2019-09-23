@@ -37,7 +37,7 @@ The next thing is to define what content of `data.table` your package is using. 
 
 You may also want to use just a subset of `data.table` functions; for example, some packages may simply make use of `data.table`'s high-performance CSV reader and writer, for which you can add `importFrom(data.table, fread, fwrite)` in your `NAMESPACE` file. It is also possible to import all functions from a package _excluding_ particular ones using `import(data.table, except=c(fread, fwrite))`.
 
-Be sure to read also the note about non-standard evaluation in `data.table` [below](#globals)
+Be sure to read also the note about non-standard evaluation in `data.table` in [the section on "undefined globals"](#globals)
 
 ## Usage
 
@@ -118,17 +118,13 @@ aggr = function (x) {
 }
 ```
 
-The case for `:=` is slightly different, because `:=` is interpreted as a function in the above code; so instead of registering `:=` as `NULL`, you must register it as a function, e.g.:
-
-```
-`:=` = function(...) NULL
-```
-
-The case for `data.table`'s special symbols (`.SD`, `.BY`, `.N`, `.I`, `.GRP`, and `.EACHI`; see `?.N`) is slightly different. We recommend you import whichever of these values you use from `data.table`'s namespace to protect against any issues arising from the unlikely scenario that we change the exported value of these in the future, e.g. if you want to use both `.N` and `.I`, a minimal `NAMESPACE` would have:
+The case for `data.table`'s special symbols (`.SD`, `.BY`, `.N`, `.I`, `.GRP`, and `.EACHI`; see `?.N`) and assignment operator (`:=`) is slightly different. You should import whichever of these values you use from `data.table`'s namespace to protect against any issues arising from the unlikely scenario that we change the exported value of these in the future, e.g. if you want to use `.N`, `.I`, and `:=`, a minimal `NAMESPACE` would have:
 
 ```r
-importFrom(data.table, .N, .I)
+importFrom(data.table, .N, .I, ':=')
 ```
+
+Much simpler is to just use `import(data.table)` which will greedily allow usage in your package's code of any object exported from `data.table`.
 
 If you don't mind having `id` and `grp` registered as variables globally in your package namespace you can use `?globalVariables`. Be aware that these notes do not have any impact on the code or its functionality; if you are not going to publish your package, you may simply choose to ignore them.
 
