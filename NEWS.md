@@ -325,6 +325,8 @@
 
 43. `:=` could change a `data.table` creation statement in the body of the function calling it, or a variable in calling scope, [#3890](https://github.com/Rdatatable/data.table/issues/3890). Many thanks to @kirillmayantsev for the detailed reports.
 
+44. Grouping could create a `malformed factor` and/or segfault when the factors returned by each group did not have identical levels, [#2199](https://github.com/Rdatatable/data.table/issues/2199) and [#2522](https://github.com/Rdatatable/data.table/issues/2522). Thanks to Václav Hausenblas, @franknarf1, @ben519, and @Henrik-P for reporting.
+
 ## NOTES
 
 1. `rbindlist`'s `use.names="check"` now emits its message for automatic column names (`"V[0-9]+"`) too, [#3484](https://github.com/Rdatatable/data.table/pull/3484). See news item 5 of v1.12.2 below.
