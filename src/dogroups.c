@@ -7,7 +7,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
 {
   R_len_t rownum, ngrp, nrowgroups, njval=0, ngrpcols, ansloc=0, maxn, estn=-1, thisansloc, grpn, thislen, igrp, origIlen=0, origSDnrow=0;
   int nprotect=0;
-  SEXP ans=NULL, jval, thiscol, BY, N, I, GRP, iSD, xSD, rownames, s, RHS, target, source, tmp;
+  SEXP ans=NULL, jval, thiscol, BY, N, I, GRP, iSD, xSD, rownames, s, RHS, target, source;
   Rboolean wasvector, firstalloc=FALSE, NullWarnDone=FALSE;
   clock_t tstart=0, tblock[10]={0}; int nblock[10]={0};
 
@@ -304,28 +304,21 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
         if (isNull(target)) {
           // first time adding to new column
           if (TRUELENGTH(dt) < INTEGER(lhs)[j]) error("Internal error: Trying to add new column by reference but tl is full; setalloccol should have run first at R level before getting to this point in dogroups"); // # nocov
-          tmp = PROTECT(allocNAVectorLike(RHS, LENGTH(VECTOR_ELT(dt,0))));
-          // increment length only if the allocation passes, #1676
+          target = PROTECT(allocNAVectorLike(RHS, LENGTH(VECTOR_ELT(dt,0))));
+          // Even if we could know reliably to switch from allocNAVectorLike to allocVector for slight speedup, user code could still
+          // contain a switched halt, and in that case we'd want the groups not yet done to have NA rather than 0 or uninitialized.
+          // Increment length only if the allocation passes, #1676. But before SET_VECTOR_ELT otherwise attempt-to-set-index-n/n R error
           SETLENGTH(dtnames, LENGTH(dtnames)+1);
           SETLENGTH(dt, LENGTH(dt)+1);
-          SET_VECTOR_ELT(dt, INTEGER(lhs)[j]-1, tmp);
+          SET_VECTOR_ELT(dt, INTEGER(lhs)[j]-1, target);
           UNPROTECT(1);
-          // Even if we could know reliably to switch from allocNAVectorLike to allocVector for slight speedup, user code could still contain a switched halt, and in that case we'd want the groups not yet done to have NA rather than uninitialized or 0.
-          // dtnames = getAttrib(dt, R_NamesSymbol); // commented this here and added it on the beginning to fix #4990
           SET_STRING_ELT(dtnames, INTEGER(lhs)[j]-1, STRING_ELT(newnames, INTEGER(lhs)[j]-origncol-1));
-          target = VECTOR_ELT(dt,INTEGER(lhs)[j]-1);
+          copyMostAttrib(RHS, target); // attributes of first group dominate; e.g. initial factor levels come from first group
         }
-        memrecycle(target, order, INTEGER(starts)[i]-1, grpn, RHS);   // length mismatch checked above for all jval columns before starting to add any new columns
-        copyMostAttrib(RHS, target);  // not names, otherwise test 778 would fail.
-        /* OLD FIX: commented now. The fix below resulted in segfault on factor columns because I didn't set the "levels"
-           Instead of fixing that, I just removed setting class if it's factor. Not appropriate fix.
-           Correct fix of copying all attributes (except names) added above. Now, everything should be alright.
-           Test 1144 (#5104) will provide the right output now. Modified accordingly.
-        OUTDATED: if (!isFactor(RHS)) setAttrib(target, R_ClassSymbol, getAttrib(RHS, R_ClassSymbol));
-        OUTDATED: // added !isFactor(RHS) to fix #5104 (side-effect of fixing #2531)
-           See also #155 and #36 */
+        memrecycle(target, order, INTEGER(starts)[i]-1, grpn, RHS);
+        // can't error here because length mismatch already checked for all jval columns before starting to add any new columns
       }
-      UNPROTECT(1);
+      UNPROTECT(1); // jval
       continue;
     }
     maxn = 0;
