@@ -114,7 +114,7 @@ grep asCharacter *.c | grep -v PROTECT | grep -v SET_VECTOR_ELT | grep -v setAtt
 
 cd ..
 R
-cc(clean=TRUE)  # to compile with -pedandic -Wall -flto. Also uses very latest gcc (currently gcc-7) as CRAN does
+cc(clean=TRUE, CC="gcc-9")  # to compile with -pedandic -Wall, latest gcc as CRAN: https://cran.r-project.org/web/checks/check_flavors.html
 saf = options()$stringsAsFactors
 options(stringsAsFactors=!saf)    # check tests (that might be run by user) are insensitive to option, #2718
 test.data.table()
