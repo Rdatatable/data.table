@@ -839,14 +839,12 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source)
         const int tl = TRUELENGTH(s);
         if (tl>0) {
           savetl(s);
-        } else {
-          if (tl<0) {
-            // # nocov start
-            for (int j=0; j<k; ++j) SET_TRUELENGTH(s, 0);  // wipe our negative usage and restore 0
-            savetl_end();                                  // then restore R's own usage (if any)
-            error("Internal error: levels of target are either not unique or have truelength<0");
-            // # nocov end
-          }
+        } else if (tl<0) {
+          // # nocov start
+          for (int j=0; j<k; ++j) SET_TRUELENGTH(s, 0);  // wipe our negative usage and restore 0
+          savetl_end();                                  // then restore R's own usage (if any)
+          error("Internal error: levels of target are either not unique or have truelength<0");
+          // # nocov end
         }
         SET_TRUELENGTH(s, -k-1);
       }

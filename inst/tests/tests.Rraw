@@ -16138,8 +16138,8 @@ test(2113.3, rbindlist(list(list(a=numeric(), b=numeric()),
 
 # dogroups combine factor levels, #2199 & #2522
 DT = data.table(A=1:2)
-g = function(x) { if (x==1L) factor(c("a","b")) else factor(c("b","c")) }
-test(2114.1, DT[,g(.GRP),by=A], data.table(A=INT(1,1,2,2), V1=as.factor(c("a","b","b","c"))))
+g = function(x) { if (x==1L) factor(c("a","b888")) else factor(c("b888","c")) }  # b888 to cover tl==0 in memrecycle
+test(2114.1, DT[,g(.GRP),by=A], data.table(A=INT(1,1,2,2), V1=as.factor(c("a","b888","b888","c"))))
 g = function(x) { if (x==1L) factor(c("a","b")) else factor(c("a","b","c")) }
 test(2114.2, DT[,g(.GRP),by=A], data.table(A=INT(1,1,2,2,2), V1=as.factor(c("a","b","a","b","c"))))
 # original test verbatim from the same issue #2199
