@@ -835,22 +835,25 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source)
       SEXP newSource = PROTECT(allocVector(INTSXP, length(source))); protecti++;
       savetl_init();
       for (int k=0; k<nTargetLevels; ++k) {
-        SEXP s = targetLevelsD[k];
-        if (TRUELENGTH(s)>0) {
+        const SEXP s = targetLevelsD[k];
+        const int tl = TRUELENGTH(s);
+        if (tl>0) {
           savetl(s);
-        } else if (TRUELENGTH(s)<0) {
-          // # nocov start
-          for (int j=0; j<k; ++j) SET_TRUELENGTH(s, 0);  // restore our own negative usage back to 0
-          savetl_end();                                  // then restore R's own usage
-          error("Internal error: levels of target are either not unique or have truelength<0");
-          // # nocov end
+        } else {
+          if (tl<0) {
+            // # nocov start
+            for (int j=0; j<k; ++j) SET_TRUELENGTH(s, 0);  // wipe our negative usage and restore 0
+            savetl_end();                                  // then restore R's own usage (if any)
+            error("Internal error: levels of target are either not unique or have truelength<0");
+            // # nocov end
+          }
         }
         SET_TRUELENGTH(s, -k-1);
       }
       int nAdd = 0;
       for (int k=0; k<nSourceLevels; ++k) {
-        SEXP s = sourceLevelsD[k];
-        int tl = TRUELENGTH(s);
+        const SEXP s = sourceLevelsD[k];
+        const int tl = TRUELENGTH(s);
         if (tl>=0) {
           if (tl>0) savetl(s);
           SET_TRUELENGTH(s, -nTargetLevels-(++nAdd));
@@ -869,9 +872,11 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source)
         // cannot grow the levels yet as that would be R call which could fail to alloc and we have no hook to clear up
         SEXP *temp = (SEXP *)malloc(nAdd * sizeof(SEXP *));
         if (!temp) {
+          // # nocov start
           for (int k=0; k<nSourceLevels; ++k) SET_TRUELENGTH(sourceLevelsD[k], 0);
           savetl_end();
           error("Unable to allocate working memory of %d bytes to combine factor levels", nAdd*sizeof(SEXP *));
+          // # nocov end
         }
         for (int k=0, thisAdd=0; k<nSourceLevels; ++k) {
           SEXP s = sourceLevelsD[k];
