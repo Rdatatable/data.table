@@ -16136,6 +16136,36 @@ test(2113.3, rbindlist(list(list(a=numeric(), b=numeric()),
                             list(a=as.factor(1L), b=as.factor(2:4)))),
              data.table(a=as.factor(1L), b=as.factor(2:4)))
 
+# dogroups combine factor levels, #2199 & #2522
+DT = data.table(A=1:2)
+g = function(x) { if (x==1L) factor(c("a","b888")) else factor(c("b888","c")) }  # b888 to cover tl==0 in memrecycle
+test(2114.1, DT[,g(.GRP),by=A], data.table(A=INT(1,1,2,2), V1=as.factor(c("a","b888","b888","c"))))
+g = function(x) { if (x==1L) factor(c("a","b")) else factor(c("a","b","c")) }
+test(2114.2, DT[,g(.GRP),by=A], data.table(A=INT(1,1,2,2,2), V1=as.factor(c("a","b","a","b","c"))))
+# original test verbatim from the same issue #2199
+set.seed(2)
+ids   = sample(letters, 20)
+dates = 1:40
+dt = data.table(CJ(dates, ids, ids))
+setnames(dt, c("date", "id1", "id2"))
+dt[, value := rnorm(length(date))]
+dt = dt[!(date == 1 & (id1 == "a" | id2 == "a"))]
+dt = dt[!(date == 4 & (id1 == "e" | id2 == "e"))]
+f1 = function(sdt) {
+  dt1 <- dcast.data.table(sdt, id1 ~ id2)
+  melt.data.table(dt1, id.vars = "id1")
+}
+res = dt[, f1(.SD), by=date]
+test(2114.3, setnames(res[c(1,.N)],"variable","id2")[,id2:=as.character(id2)][], dt[c(1,.N)])
+test(2114.4, print(res), output="date.*0.433")
+# and from #2522
+DT = data.table(id=1:9, grp=rep(1:3,each=3), val=c("a","b","c", "a","b","c", "a","b","c"))
+test(2114.5, as.character(DT[, valfactor1 := factor(val), by = grp]$valfactor1), ans<-rep(c("a","b","c"),3))
+test(2114.6, as.character(DT[, valfactor2 := factor(val), by = id]$valfactor2), ans)
+DT = data.table(x = rep(letters[c(3, 1, 2)], each = 2))
+test(2114.7, DT[, `:=`(g=.GRP, f=factor(.GRP)), by = x],
+             data.table(x=rep(c("c","a","b"),each=2), g=rep(1:3,each=2), f=factor(rep(as.character(1:3),each=2))))
+
 
 ###################################
 #  Add new tests above this line  #
