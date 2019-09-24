@@ -325,6 +325,8 @@
 
 43. `:=` could change a `data.table` creation statement in the body of the function calling it, or a variable in calling scope, [#3890](https://github.com/Rdatatable/data.table/issues/3890). Many thanks to @kirillmayantsev for the detailed reports.
 
+44. Grouping could create a `malformed factor` and/or segfault when the factors returned by each group did not have identical levels, [#2199](https://github.com/Rdatatable/data.table/issues/2199) and [#2522](https://github.com/Rdatatable/data.table/issues/2522). Thanks to Václav Hausenblas, @franknarf1, @ben519, and @Henrik-P for reporting.
+
 ## NOTES
 
 1. `rbindlist`'s `use.names="check"` now emits its message for automatic column names (`"V[0-9]+"`) too, [#3484](https://github.com/Rdatatable/data.table/pull/3484). See news item 5 of v1.12.2 below.
@@ -380,6 +382,17 @@
 23. Using `first` and `last` function on `POSIXct` object no longer loads `xts` namespace, [#3857](https://github.com/Rdatatable/data.table/issues/3857). `first` on empty `data.table` returns empty `data.table` now [#3858](https://github.com/Rdatatable/data.table/issues/3858).
 
 24. Added some clarifying details about what happens when a shell command is used in `fread`, [#3877](https://github.com/Rdatatable/data.table/issues/3877). Thanks Brian for the StackOverflow question which highlighted the lack of explanation here.
+
+25. We continue to encourage packages to `Import` rather than `Depend` on `data.table`, [#3076](https://github.com/Rdatatable/data.table/issues/3076). To prevent the growth rate in new packages using `Depend`, we have requested that CRAN apply a small patch we provided to prevent new submissions using `Depend`. If this is accepted, the error under `--as-cran` will be as follows. The existing 73 packages using `Depend` will continue to pass OK until they next update, at which point they will be required to change from `Depend` to `Import`.
+
+    ```
+    R CMD check <pkg> --as-cran
+    ...
+    * checking package dependencies ... ERROR
+
+    data.table should be in Imports not Depends. Please contact its
+    maintainer for more information.
+    ```
 
 
 # data.table [v1.12.2](https://github.com/Rdatatable/data.table/milestone/14?closed=1)  (07 Apr 2019)

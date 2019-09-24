@@ -818,6 +818,86 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source)
       source = PROTECT(copyAsPlain(source)); protecti++;
     }
   }
+  const bool sourceIsFactor=isFactor(source), targetIsFactor=isFactor(target);
+  if (sourceIsFactor && targetIsFactor) {
+    // TODO:         ^^ could be || in future; assign is already handling that so leave that for now. Then move more of assign to call here.
+    if (!sourceIsFactor || !targetIsFactor) {
+      // # nocov start
+      error("Internal error: memrecycle source_is_factor=%d but target_is_factor=%d. They both must be factor or both not factor.",
+            sourceIsFactor, targetIsFactor);
+      // # nocov end
+    }
+    SEXP sourceLevels = PROTECT(getAttrib(source, R_LevelsSymbol)); protecti++;
+    SEXP targetLevels = PROTECT(getAttrib(target, R_LevelsSymbol)); protecti++;
+    if (!R_compute_identical(sourceLevels, targetLevels, 0)) {
+      const int nTargetLevels=length(targetLevels), nSourceLevels=length(sourceLevels);
+      const SEXP *targetLevelsD=STRING_PTR(targetLevels), *sourceLevelsD=STRING_PTR(sourceLevels);
+      SEXP newSource = PROTECT(allocVector(INTSXP, length(source))); protecti++;
+      savetl_init();
+      for (int k=0; k<nTargetLevels; ++k) {
+        const SEXP s = targetLevelsD[k];
+        const int tl = TRUELENGTH(s);
+        if (tl>0) {
+          savetl(s);
+        } else if (tl<0) {
+          // # nocov start
+          for (int j=0; j<k; ++j) SET_TRUELENGTH(s, 0);  // wipe our negative usage and restore 0
+          savetl_end();                                  // then restore R's own usage (if any)
+          error("Internal error: levels of target are either not unique or have truelength<0");
+          // # nocov end
+        }
+        SET_TRUELENGTH(s, -k-1);
+      }
+      int nAdd = 0;
+      for (int k=0; k<nSourceLevels; ++k) {
+        const SEXP s = sourceLevelsD[k];
+        const int tl = TRUELENGTH(s);
+        if (tl>=0) {
+          if (tl>0) savetl(s);
+          SET_TRUELENGTH(s, -nTargetLevels-(++nAdd));
+        }
+      }
+      const int nSource = length(source);
+      const int *sourceD = INTEGER(source);
+      int *newSourceD = INTEGER(newSource);
+      for (int i=0; i<nSource; ++i) {  // convert source integers to refer to target levels
+        const int val = sourceD[i];
+        newSourceD[i] = val==NA_INTEGER ? NA_INTEGER : -TRUELENGTH(sourceLevelsD[val-1]);
+      }
+      source = newSource;
+      for (int k=0; k<nTargetLevels; ++k) SET_TRUELENGTH(targetLevelsD[k], 0);  // don't need those anymore
+      if (nAdd) {
+        // cannot grow the levels yet as that would be R call which could fail to alloc and we have no hook to clear up
+        SEXP *temp = (SEXP *)malloc(nAdd * sizeof(SEXP *));
+        if (!temp) {
+          // # nocov start
+          for (int k=0; k<nSourceLevels; ++k) SET_TRUELENGTH(sourceLevelsD[k], 0);
+          savetl_end();
+          error("Unable to allocate working memory of %d bytes to combine factor levels", nAdd*sizeof(SEXP *));
+          // # nocov end
+        }
+        for (int k=0, thisAdd=0; k<nSourceLevels; ++k) {
+          SEXP s = sourceLevelsD[k];
+          int tl = TRUELENGTH(s);
+          if (tl) {
+            if (tl != -nTargetLevels-thisAdd-1) error("Internal error: extra level check sum failed"); // # nocov
+            temp[thisAdd++] = s;
+            SET_TRUELENGTH(s,0);
+          }
+        }
+        savetl_end();
+        setAttrib(target, R_LevelsSymbol, targetLevels=growVector(targetLevels, nTargetLevels + nAdd));
+        for (int k=0; k<nAdd; ++k) {
+          SET_STRING_ELT(targetLevels, nTargetLevels+k, temp[k]);
+        }
+        free(temp);
+      } else {
+        // all source levels were already in target levels, but not with the same integers; we're done
+        savetl_end();
+      }
+      // now continue, but with the mapped integers in the (new) source
+    }
+  }
   if (!length(where)) {  // e.g. called from rbindlist with where=R_NilValue
     switch (TYPEOF(target)) {
     case RAWSXP:
@@ -842,8 +922,8 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source)
       }
       break;
     case REALSXP : {
-      bool si64 = INHERITS(source, char_integer64);
-      bool ti64 = INHERITS(target, char_integer64);
+      bool si64 = Rinherits(source, char_integer64);
+      bool ti64 = Rinherits(target, char_integer64);
       if (si64 && TYPEOF(source)!=REALSXP)
         error("Internal error: source has integer64 attribute but is type '%s' not REALSXP", type2char(TYPEOF(source))); // # nocov
       if (si64 == ti64) {
