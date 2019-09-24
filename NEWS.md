@@ -381,7 +381,9 @@
 
 23. Using `first` and `last` function on `POSIXct` object no longer loads `xts` namespace, [#3857](https://github.com/Rdatatable/data.table/issues/3857). `first` on empty `data.table` returns empty `data.table` now [#3858](https://github.com/Rdatatable/data.table/issues/3858).
 
-24. We continue to encourage packages to `Import` rather than `Depend` on `data.table`, [#3076](https://github.com/Rdatatable/data.table/issues/3076). To prevent the growth rate in new packages using `Depend`, we have requested that CRAN apply a small patch we provided to prevent new submissions using `Depend`. If this is accepted, the error under `--as-cran` will be as follows. The existing 73 packages using `Depend` will continue to pass OK until they next update, at which point they will be required to change from `Depend` to `Import`.
+24. Added some clarifying details about what happens when a shell command is used in `fread`, [#3877](https://github.com/Rdatatable/data.table/issues/3877). Thanks Brian for the StackOverflow question which highlighted the lack of explanation here.
+
+25. We continue to encourage packages to `Import` rather than `Depend` on `data.table`, [#3076](https://github.com/Rdatatable/data.table/issues/3076). To prevent the growth rate in new packages using `Depend`, we have requested that CRAN apply a small patch we provided to prevent new submissions using `Depend`. If this is accepted, the error under `--as-cran` will be as follows. The existing 73 packages using `Depend` will continue to pass OK until they next update, at which point they will be required to change from `Depend` to `Import`.
 
     ```
     R CMD check <pkg> --as-cran
