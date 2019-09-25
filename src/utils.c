@@ -32,6 +32,27 @@ SEXP isReallyReal(SEXP x) {
   return(ans);
 }
 
+bool allNA(SEXP x) {
+  const int n = length(x);
+  switch(TYPEOF(x)) {
+  case LGLSXP:
+  case INTSXP: {
+    const int *xd = INTEGER(x);
+    for (int i=0; i<n; ++i) {
+      if (xd[i]!=NA_INTEGER) return false;
+    }
+    return true;
+  } break;
+  case REALSXP: {
+    const double *xd = REAL(x);
+    for (int i=0; i<n; ++i) {
+      if (!ISNAN(xd[i])) return false;
+    }
+    return true;
+  }}
+  return false;
+}
+
 /* colnamesInt
  * for provided data.table (or a list-like) and a subset of its columns, it returns integer positions of those columns in DT
  * handle columns input as: integer, double, character and NULL (handled as seq_along(x))

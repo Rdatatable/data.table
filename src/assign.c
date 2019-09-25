@@ -943,7 +943,7 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source,
     }
   } else if (TYPEOF(target)!=TYPEOF(source)) {
     // checks up front, otherwise we'd need checks twice in the two branches that cater for 'where' or not
-    bool ok = false;
+    bool pun = false;
     switch(TYPEOF(target)) {
     case LGLSXP:
       if (isInteger(source)) {
@@ -952,14 +952,15 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source,
           const int val = sD[i];
           if (val!=0 && val!=1 && val!=NA_INTEGER) error("Cannot assign %d to a logical column.", val);
         }
+        pun = true;
       } else if (isReal(source)) {   // TODO: cater for integer64 here
         const double *sD = REAL(source);
         for (int i=0; i<slen; ++i) {
           const double d = sD[i];
           if (!ISNAN(d) && d!=0.0 && d!=1.0) error("Cannot assign %f to a logical column.", d);
         }
+        pun = true;
       }
-      ok = true;
       break;
     case INTSXP:
       if (isReal(source)) {
@@ -967,24 +968,34 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source,
         if (w>0) {
           warning("Coerced double RHS to integer to match the type of the target column (column %d named '%s'). One or more RHS values contain fractions which have been lost; e.g. item %d with value %f has been truncated to %d.", colnum, colname, w, REAL(source)[w-1], (int)REAL(source)[w-1]);
         }
+        pun = true;
+      } else if (isLogical(source)) {
+        pun = true;
       }
-      ok = true;
       break;
     case REALSXP:
-      ok = isLogical(source) || isInteger(source);
+      pun = isLogical(source) || isInteger(source);
       break;
-    case RAWSXP:
-    case STRSXP:
-    case CPLXSXP:
-      source = PROTECT(coerceVector(source, TYPEOF(target))); protecti++;
-      ok = true;
-      break;
+    //case RAWSXP:
+    //case STRSXP:
+    //case CPLXSXP:
+    //  source = PROTECT(coerceVector(source, TYPEOF(target))); protecti++;
+    //  ok = true;
+    //  break;
     case VECSXP:
-      ok = true;
+      pun = true;
       break;
     }
-    if (!ok)
-      error("Cannot assign type '%s' to '%s' column", type2char(TYPEOF(source)), type2char(TYPEOF(target)));
+    if (!pun) {
+      SEXP tt = PROTECT(coerceVector(source, TYPEOF(target))); protecti++;
+      if (!isString(target) && !allNA(source)) {
+        warning("Coerced %s RHS to %s to match the type of the target column (column %d named '%s').",
+                type2char(TYPEOF(source)), type2char(TYPEOF(target)), colnum, colname);
+      }
+      source = tt;
+    }
+ //     If the target column's type %s is correct, it's best for efficiency to avoid the coercion and create the RHS as type %s. To achieve that consider R's type postfix: typeof(0L) vs typeof(0), and typeof(NA) vs typeof(NA_integer_) vs typeof(NA_real_). You can wrap the RHS with as.%s() to avoid this warning, but that will still perform the coercion. If the target column's type is not correct, it's best to revisit where the DT was created and fix the column type there; e.g., by using colClasses= in fread(). Otherwise, you can change the column type now by plonking a new column (of the desired type) over the top of it; e.g. DT[, `%s`:=as.%s(`%s`)]. If the RHS of := has nrow(DT) elements then the assignment is called a column plonk and is the way to change a column's type. Column types can be observed with sapply(DT,typeof).",
+    //  error("Cannot assign type '%s' to '%s' column", type2char(TYPEOF(source)), type2char(TYPEOF(target)));
   }
   if (!length(where)) {  // e.g. called from rbindlist with where=R_NilValue
     switch (TYPEOF(target)) {
@@ -1006,8 +1017,6 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source,
         int val;
         switch (TYPEOF(source)) {
         case LGLSXP:
-          val = LOGICAL(source)[0];
-          break;
         case INTSXP:
           val = INTEGER(source)[0];
           break;

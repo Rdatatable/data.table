@@ -4846,7 +4846,7 @@ test(1294.02, dt[, a := 1.5]$a, rep(1L, 3L), warning="Coerced double RHS to inte
 test(1294.03, dt[, a := NA]$a, rep(NA_integer_, 3L))
 test(1294.04, dt[, a := "a"]$a, rep(NA_integer_, 3L),
               warning=c("NAs introduced by coercion",
-                        "Coerced character RHS to integer.*create the RHS as type integer.*with as.integer.. to avoid this warning.*DT., `a`:=as.character.`a`.*"))
+                        "Coerced character RHS to integer.*column 1 named 'a'"))
 test(1294.05, dt[, a := list(list(1))]$a, rep(1L, 3L), warning="Coerced list RHS to integer to match.*column 1 named 'a'")
 test(1294.06, dt[, a := list(1L)]$a, rep(1L, 3L))
 test(1294.07, dt[, a := list(1)]$a, rep(1L, 3L))
