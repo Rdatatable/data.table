@@ -501,7 +501,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
             thisCol = PROTECT(coerceVector(thisCol, VECSXP)); nprotect++;
           }
           // else coerces if needed within memrecycle; possibly with a no-alloc direct coerce
-          const char *ret = memrecycle(target, R_NilValue, ansloc, thisnrow, thisCol);
+          const char *ret = memrecycle(target, R_NilValue, ansloc, thisnrow, thisCol, 0, "");
           if (ret) warning("Column %d of item %d: %s", w+1, i+1, ret);  // currently just one warning when precision is lost; e.g. assigning 3.4 to integer64
         }
         ansloc += thisnrow;

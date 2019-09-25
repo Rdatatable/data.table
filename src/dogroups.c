@@ -315,7 +315,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
           SET_STRING_ELT(dtnames, INTEGER(lhs)[j]-1, STRING_ELT(newnames, INTEGER(lhs)[j]-origncol-1));
           copyMostAttrib(RHS, target); // attributes of first group dominate; e.g. initial factor levels come from first group
         }
-        memrecycle(target, order, INTEGER(starts)[i]-1, grpn, RHS);
+        memrecycle(target, order, INTEGER(starts)[i]-1, grpn, RHS, 0, "");
         // can't error here because length mismatch already checked for all jval columns before starting to add any new columns
       }
       UNPROTECT(1); // jval
@@ -450,7 +450,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
         if (thislen>1 && thislen!=maxn && grpn>0) {  // grpn>0 for grouping empty tables; test 1986
           error("Supplied %d items for column %d of group %d which has %d rows. The RHS length must either be 1 (single values are ok) or match the LHS length exactly. If you wish to 'recycle' the RHS please use rep() explicitly to make this intent clear to readers of your code.", thislen, j+1, i+1, maxn);
         }
-        memrecycle(target, R_NilValue, thisansloc, maxn, source);
+        memrecycle(target, R_NilValue, thisansloc, maxn, source, 0, "");
       }
     }
     ansloc += maxn;

@@ -193,16 +193,16 @@
     set.seed(108)
     x = rnorm(1e6); n = 1e3
     rollfun = function(x, n, FUN) {
-      ans = rep(NA_real_, nx<-length(x))
+      nx = nx = length(x)
+      ans = rep(NA_real_, nx)
       for (i in n:nx) ans[i] = FUN(x[(i-n+1):i])
       ans
     }
-    system.time(ans1<-rollfun(x, n, mean))
-    system.time(ans2<-zoo::rollapplyr(x, n, function(x) mean(x), fill=NA))
-    system.time(ans3<-zoo::rollmeanr(x, n, fill=NA))
-    system.time(ans4<-frollapply(x, n, mean))
-    system.time(ans5<-frollmean(x, n))
-    sapply(list(ans2,ans3,ans4,ans5), all.equal, ans1)
+    system.time(rollfun(x, n, mean))
+    system.time(zoo::rollapplyr(x, n, function(x) mean(x), fill=NA))
+    system.time(zoo::rollmeanr(x, n, fill=NA))
+    system.time(frollapply(x, n, mean))
+    system.time(frollmean(x, n))
 
     ### fun             mean     sum  median
     # base rollfun     8.815   5.151  60.175
@@ -223,6 +223,8 @@
     names(DT)
     # [1] "A" "b" "c"
     ```
+
+29. `DT[<condition>, integerColumn:=0]` and `set(DT,i,j,0)` no longer warns about the `0` being the wrong type (`numeric` instead of `integer`). The long warning was focussed on efficiency to help the user avoid the necessary coercion from `0` to `0L`. Although the time and space for this coercion in a single call is unmeasurably small, when placed in a loop the small overhead of any allocation on R's heap could start to become noticeable (more so for `set()` whose purpose it be low-overhead for looping). The coercion warning and its advice could be too much for new users ("what and why L?"), but advanced users appreciate the warning. Further, when assigning a value across many columns, it could be inconvenient to supply the correct type (where the columns vary in type) and frustating if a simple `0` would be clear. To balance these requirements from different types of users, the coercion is now avoided by doing the coercion ourselves in internal code without allocating an object on R's heap: an internal optimization that we will now refer to as a "punned-coercion". As there is no time or space penalty for a punned-coerce, advanced users don't need to worry about it either. Where a punned-coerce discards fractional data (e.g. 3.14 assigned to an integer column) there will still be a warning. Punned-coerce applies to length>1 vectors as well as length-1 vectors including recycling, in all cases of `:=` and `set()`.
 
 ## BUG FIXES
 

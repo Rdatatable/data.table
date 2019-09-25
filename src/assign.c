@@ -281,7 +281,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
   // cols : column names or numbers corresponding to the values to set
   // rows : row numbers to assign
   R_len_t i, j, numToDo, targetlen, vlen, r, oldncol, oldtncol, coln, protecti=0, newcolnum, indexLength;
-  SEXP targetcol, nullint, thisv, targetlevels, newcol, s, colnam, tmp, colorder, key, index, a, assignedNames, indexNames;
+  SEXP targetcol, nullint, s, colnam, tmp, colorder, key, index, a, assignedNames, indexNames;
   bool verbose=GetVerbose(), anytodelete=false;
   const char *c1, *tc1, *tc2;
   int *buf, newKeyLength, indexNo;
@@ -461,7 +461,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
     // truelengths of both already set by alloccol
   }
   for (i=0; i<length(cols); i++) {
-    int thisprotecti = 0;  // UNPROTECT(thisprotecti) at the end of this loop to save protection stack
+    //int thisprotecti = 0;  // UNPROTECT(thisprotecti) at the end of this loop to save protection stack
     coln = INTEGER(cols)[i]-1;
     SEXP thisvalue = RHS_list_of_columns ? VECTOR_ELT(values, i) : values;
     if (TYPEOF(thisvalue)==NILSXP) {
@@ -489,20 +489,28 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
       setAttrib(thisvalue, R_DimNamesSymbol, R_NilValue);  // the 3rd of the 3 attribs not copied by copyMostAttrib, for consistency.
       continue;
     }
-    SEXP RHS;
+    // SEXP RHS;
 
     if (coln+1 > oldncol) {  // new column
-      SET_VECTOR_ELT(dt, coln, newcol=allocNAVectorLike(thisvalue, nrow));
+      SET_VECTOR_ELT(dt, coln, targetcol=allocNAVectorLike(thisvalue, nrow));
       // initialize with NAs for when 'rows' is a subset and it doesn't touch
       // do not try to save the time to NA fill (contiguous branch free assign anyway) since being
       // sure all items will be written to (isNull(rows), length(rows), vlen<1, targetlen) is not worth the risk.
-      if (isVectorAtomic(thisvalue)) copyMostAttrib(thisvalue,newcol);  // class etc but not names
+      if (isVectorAtomic(thisvalue)) copyMostAttrib(thisvalue,targetcol);  // class etc but not names
       // else for lists (such as data.frame and data.table) treat them as raw lists and drop attribs
       if (vlen<1) continue;   // e.g. DT[,newcol:=integer()] (adding new empty column)
-      targetcol = newcol;
-      RHS = thisvalue;
+      // delete ... targetcol = newcol;
+      // RHS = thisvalue;
     } else {                 // existing column
       targetcol = VECTOR_ELT(dt,coln);
+    }
+    memrecycle(targetcol, rows, 0, targetlen, thisvalue, coln+1, CHAR(STRING_ELT(names, coln)));
+    // memrecycle is also called from dogroups;          ^^ last 2 arguments just for messages
+
+    // delete ... UNPROTECT(thisprotecti); // unprotect inside loop through columns to save protection stack
+  }
+  /*
+  // !! START DELETE !!
       if (isFactor(targetcol)) {
         // Coerce RHS to appropriate levels of LHS, adding new levels as necessary (unlike base)
         // If it's the same RHS being assigned to several columns, we have to recoerce for each
@@ -557,7 +565,8 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
           for (int j=0; j<length(targetlevels); j++) SET_TRUELENGTH(STRING_ELT(targetlevels,j),0);  // important to reinstate 0 for countingcharacterorder and HASHPRI (if any) as done by savetl_end().
           savetl_end();
         } else {
-          // value is either integer or numeric vector
+          // value is either integer or numeric vector.  TODO:  Should we allow this? Seems odd. What breaks if we stop this? We only
+          //   allow character/factor elsewhere.
           if (TYPEOF(thisvalue)!=INTSXP && TYPEOF(thisvalue)!=LGLSXP && !isReal(thisvalue))
             error("Internal error: up front checks (before starting to modify DT) didn't catch type of RHS ('%s') assigning to factor column '%s'. please report to data.table issue tracker.", type2char(TYPEOF(thisvalue)), CHAR(STRING_ELT(names,coln))); // # nocov
           int *iRHS;
@@ -580,7 +589,9 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
           }
         }
       } else {
-        if (TYPEOF(targetcol)==TYPEOF(thisvalue) || TYPEOF(targetcol)==VECSXP)
+        if (TYPEOF(targetcol)==TYPEOF(thisvalue) ||
+            TYPEOF(targetcol)==VECSXP ||
+            (isLogical(targetcol) && isIntegerReallyLogical(thisvalue)))
           RHS = thisvalue;
         else {
           // coerce the RHS to match the type of the column, unlike [<-.data.frame, for efficiency.
@@ -621,6 +632,8 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
     memrecycle(targetcol, rows, 0, targetlen, RHS);  // also called from dogroups where these arguments are used more
     UNPROTECT(thisprotecti); // unprotect inside loop through columns to save protection stack
   }
+  // !! END DELETE !!
+  */
   *_Last_updated = numToDo;  // the updates have taken place with no error, so update .Last.updated now
   assignedNames = PROTECT(allocVector(STRSXP, LENGTH(cols))); protecti++;
   for (i=0;i<LENGTH(cols);i++) SET_STRING_ELT(assignedNames,i,STRING_ELT(names,INTEGER(cols)[i]-1));
@@ -787,7 +800,7 @@ static bool anyNamed(SEXP x) {
 
 static char memrecycle_message[1000];
 
-const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source)
+const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source, int colnum, const char *colname)
 // like memcpy but recycles single-item source
 // 'where' a 1-based INTEGER vector subset of target to assign to, or NULL or integer()
 // assigns to target[start:start+len-1] or target[where[start:start+len-1]] where start is 0-based
@@ -819,83 +832,130 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source)
     }
   }
   const bool sourceIsFactor=isFactor(source), targetIsFactor=isFactor(target);
-  if (sourceIsFactor && targetIsFactor) {
-    // TODO:         ^^ could be || in future; assign is already handling that so leave that for now. Then move more of assign to call here.
-    if (!sourceIsFactor || !targetIsFactor) {
-      // # nocov start
-      error("Internal error: memrecycle source_is_factor=%d but target_is_factor=%d. They both must be factor or both not factor.",
-            sourceIsFactor, targetIsFactor);
-      // # nocov end
+  if (sourceIsFactor || targetIsFactor) {
+    if ((!sourceIsFactor && !isString(source)) ||
+        (!targetIsFactor && !isString(target))) {
+      error("Cannot assign '%s' to '%s'. Factors can only be assigned factor or character.",
+            sourceIsFactor?"factor":type2char(TYPEOF(source)),
+            targetIsFactor?"factor":type2char(TYPEOF(target)));
     }
-    SEXP sourceLevels = PROTECT(getAttrib(source, R_LevelsSymbol)); protecti++;
-    SEXP targetLevels = PROTECT(getAttrib(target, R_LevelsSymbol)); protecti++;
-    if (!R_compute_identical(sourceLevels, targetLevels, 0)) {
-      const int nTargetLevels=length(targetLevels), nSourceLevels=length(sourceLevels);
-      const SEXP *targetLevelsD=STRING_PTR(targetLevels), *sourceLevelsD=STRING_PTR(sourceLevels);
-      SEXP newSource = PROTECT(allocVector(INTSXP, length(source))); protecti++;
-      savetl_init();
-      for (int k=0; k<nTargetLevels; ++k) {
-        const SEXP s = targetLevelsD[k];
-        const int tl = TRUELENGTH(s);
-        if (tl>0) {
-          savetl(s);
-        } else if (tl<0) {
-          // # nocov start
-          for (int j=0; j<k; ++j) SET_TRUELENGTH(s, 0);  // wipe our negative usage and restore 0
-          savetl_end();                                  // then restore R's own usage (if any)
-          error("Internal error: levels of target are either not unique or have truelength<0");
-          // # nocov end
+    if (!targetIsFactor) {
+      // source must be factor
+      // assigning factor to character is left to later below, avoiding wasteful asCharacterFactor from v1.12.4
+    } else {
+      SEXP targetLevels = PROTECT(getAttrib(target, R_LevelsSymbol)); protecti++;
+      SEXP sourceLevels = source;  // character source
+      if (sourceIsFactor) { sourceLevels=PROTECT(getAttrib(source, R_LevelsSymbol)); protecti++; }
+      if (!R_compute_identical(sourceLevels, targetLevels, 0)) {
+        const int nTargetLevels=length(targetLevels), nSourceLevels=length(sourceLevels);
+        const SEXP *targetLevelsD=STRING_PTR(targetLevels), *sourceLevelsD=STRING_PTR(sourceLevels);
+        SEXP newSource = PROTECT(allocVector(INTSXP, length(source))); protecti++;
+        savetl_init();
+        for (int k=0; k<nTargetLevels; ++k) {
+          const SEXP s = targetLevelsD[k];
+          const int tl = TRUELENGTH(s);
+          if (tl>0) {
+            savetl(s);
+          } else if (tl<0) {
+            // # nocov start
+            for (int j=0; j<k; ++j) SET_TRUELENGTH(s, 0);  // wipe our negative usage and restore 0
+            savetl_end();                                  // then restore R's own usage (if any)
+            error("Internal error: levels of target are either not unique or have truelength<0");
+            // # nocov end
+          }
+          SET_TRUELENGTH(s, -k-1);
         }
-        SET_TRUELENGTH(s, -k-1);
-      }
-      int nAdd = 0;
-      for (int k=0; k<nSourceLevels; ++k) {
-        const SEXP s = sourceLevelsD[k];
-        const int tl = TRUELENGTH(s);
-        if (tl>=0) {
-          if (tl>0) savetl(s);
-          SET_TRUELENGTH(s, -nTargetLevels-(++nAdd));
+        int nAdd = 0;
+        for (int k=0; k<nSourceLevels; ++k) {
+          const SEXP s = sourceLevelsD[k];
+          const int tl = TRUELENGTH(s);
+          if (tl>=0) {
+            if (tl>0) savetl(s);
+            SET_TRUELENGTH(s, -nTargetLevels-(++nAdd));
+          } // else, when sourceIsString, it's normal for there to be duplicates here
         }
-      }
-      const int nSource = length(source);
-      const int *sourceD = INTEGER(source);
-      int *newSourceD = INTEGER(newSource);
-      for (int i=0; i<nSource; ++i) {  // convert source integers to refer to target levels
-        const int val = sourceD[i];
-        newSourceD[i] = val==NA_INTEGER ? NA_INTEGER : -TRUELENGTH(sourceLevelsD[val-1]);
-      }
-      source = newSource;
-      for (int k=0; k<nTargetLevels; ++k) SET_TRUELENGTH(targetLevelsD[k], 0);  // don't need those anymore
-      if (nAdd) {
-        // cannot grow the levels yet as that would be R call which could fail to alloc and we have no hook to clear up
-        SEXP *temp = (SEXP *)malloc(nAdd * sizeof(SEXP *));
-        if (!temp) {
-          // # nocov start
-          for (int k=0; k<nSourceLevels; ++k) SET_TRUELENGTH(sourceLevelsD[k], 0);
-          savetl_end();
-          error("Unable to allocate working memory of %d bytes to combine factor levels", nAdd*sizeof(SEXP *));
-          // # nocov end
-        }
-        for (int k=0, thisAdd=0; k<nSourceLevels; ++k) {
-          SEXP s = sourceLevelsD[k];
-          int tl = TRUELENGTH(s);
-          if (tl) {
-            if (tl != -nTargetLevels-thisAdd-1) error("Internal error: extra level check sum failed"); // # nocov
-            temp[thisAdd++] = s;
-            SET_TRUELENGTH(s,0);
+        const int nSource = length(source);
+        int *newSourceD = INTEGER(newSource);
+        if (sourceIsFactor) {
+          const int *sourceD = INTEGER(source);
+          for (int i=0; i<nSource; ++i) {  // convert source integers to refer to target levels
+            const int val = sourceD[i];
+            newSourceD[i] = val==NA_INTEGER ? NA_INTEGER : -TRUELENGTH(sourceLevelsD[val-1]);
+          }
+        } else {
+          const SEXP *sourceD = STRING_PTR(source);
+          for (int i=0; i<nSource; ++i) {  // convert source integers to refer to target levels
+            const SEXP val = sourceD[i];
+            newSourceD[i] = val==NA_STRING ? NA_INTEGER : -TRUELENGTH(val);
           }
         }
-        savetl_end();
-        setAttrib(target, R_LevelsSymbol, targetLevels=growVector(targetLevels, nTargetLevels + nAdd));
-        for (int k=0; k<nAdd; ++k) {
-          SET_STRING_ELT(targetLevels, nTargetLevels+k, temp[k]);
+        source = newSource;
+        for (int k=0; k<nTargetLevels; ++k) SET_TRUELENGTH(targetLevelsD[k], 0);  // don't need those anymore
+        if (nAdd) {
+          // cannot grow the levels yet as that would be R call which could fail to alloc and we have no hook to clear up
+          SEXP *temp = (SEXP *)malloc(nAdd * sizeof(SEXP *));
+          if (!temp) {
+            // # nocov start
+            for (int k=0; k<nSourceLevels; ++k) SET_TRUELENGTH(sourceLevelsD[k], 0);
+            savetl_end();
+            error("Unable to allocate working memory of %d bytes to combine factor levels", nAdd*sizeof(SEXP *));
+            // # nocov end
+          }
+          for (int k=0, thisAdd=0; thisAdd<nAdd; ++k) {   // thisAdd<nAdd to stop early when the added ones are all reached
+            SEXP s = sourceLevelsD[k];
+            int tl = TRUELENGTH(s);
+            if (tl) {  // tl negative here
+              if (tl != -nTargetLevels-thisAdd-1) error("Internal error: extra level check sum failed"); // # nocov
+              temp[thisAdd++] = s;
+              SET_TRUELENGTH(s,0);
+            }
+          }
+          savetl_end();
+          setAttrib(target, R_LevelsSymbol, targetLevels=growVector(targetLevels, nTargetLevels + nAdd));
+          for (int k=0; k<nAdd; ++k) {
+            SET_STRING_ELT(targetLevels, nTargetLevels+k, temp[k]);
+          }
+          free(temp);
+        } else {
+          // all source levels were already in target levels, but not with the same integers; we're done
+          savetl_end();
         }
-        free(temp);
-      } else {
-        // all source levels were already in target levels, but not with the same integers; we're done
-        savetl_end();
+        // now continue, but with the mapped integers in the (new) source
       }
-      // now continue, but with the mapped integers in the (new) source
+    }
+  } else if (TYPEOF(target)!=TYPEOF(source)) {
+    // checks up front, otherwise we'd need checks twice in the two branches that cater for 'where' or not
+    switch(TYPEOF(target)) {
+    case LGLSXP:
+      if (isInteger(source)) {
+        const int *sD = INTEGER(source);
+        for (int i=0; i<slen; ++i) {
+          const int val = sD[i];
+          if (val!=0 && val!=1 && val!=NA_INTEGER) error("Cannot assign %d to a logical column.", val);
+        }
+      } else if (isReal(source)) {   // TODO: cater for integer64 here
+        const double *sD = REAL(source);
+        for (int i=0; i<slen; ++i) {
+          const double d = sD[i];
+          if (!ISNAN(d) && d!=0.0 && d!=1.0) error("Cannot assign %f to a logical column.", d);
+        }
+      }
+      break;
+    case INTSXP:
+      if (isReal(source)) {
+        int w = INTEGER(isReallyReal(source))[0];  // first fraction present (1-based), 0 if none
+        if (w>0) {
+          warning("%f has been truncated to %d because column %d ('%s') is type integer", REAL(source)[w-1], colnum, colname);
+        }
+      }
+      break;
+    case REALSXP:
+      break;
+    case STRSXP:
+      source = PROTECT(coerceVector(source, STRSXP)); protecti++;
+      break;
+    default:
+      error("Cannot assign type '%s' to '%s' column", type2char(TYPEOF(source)), type2char(TYPEOF(target)));
     }
   }
   if (!length(where)) {  // e.g. called from rbindlist with where=R_NilValue
@@ -911,16 +971,43 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source)
         memcpy(RAW(target)+start, RAW(source), slen*SIZEOF(target));
       }
       break;
-    case LGLSXP: case INTSXP :
-      if (TYPEOF(source)!=LGLSXP && TYPEOF(source)!=INTSXP) { source = PROTECT(coerceVector(source, TYPEOF(target))); protecti++; }
+    case LGLSXP:
+    case INTSXP: {
+      int *td = INTEGER(target)+start;
       if (slen==1) {
-        int *td = INTEGER(target)+start;
-        const int val = INTEGER(source)[0];
-        for (int i=0; i<len; i++) td[i] = val;
+        // punned-coerce; i.e. avoid the small overhead of allocating via coerceVector
+        int val;
+        switch (TYPEOF(source)) {
+        case LGLSXP:
+          val = LOGICAL(source)[0];
+          break;
+        case INTSXP:
+          val = INTEGER(source)[0];
+          break;
+        case REALSXP: {   // allowed real 0/1/NA for logical, and no float for integer, was checked up front above
+          double d = REAL(source)[0];
+          val = ISNAN(d) ? NA_INTEGER : (int)d;
+        } break;
+        default:
+          error("Internal error"); // # nocov
+        }
+        for (int i=0; i<len; ++i) td[i] = val;  // recycle length-1
       } else {
-        memcpy(INTEGER(target)+start, INTEGER(source), slen*SIZEOF(target));
+        switch (TYPEOF(source)) {
+        case LGLSXP:
+        case INTSXP:
+          memcpy(td, INTEGER(source), slen*SIZEOF(target));  // correct type ideal length>1 case
+          break;
+        case REALSXP: {
+          const double *sourceD = REAL(source);
+          for (int i=0; i<len; ++i) {
+            double d = sourceD[i];
+            td[i] = ISNAN(d) ? NA_INTEGER : (int)d;  // punned-coerce length>1. Truncation when INTSXP, or invalid LGLSXP was caught earlier above.
+          }
+        }
+        }
       }
-      break;
+    } break;
     case REALSXP : {
       bool si64 = Rinherits(source, char_integer64);
       bool ti64 = Rinherits(target, char_integer64);
@@ -982,13 +1069,27 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source)
       }
       break;
     case STRSXP :
-      if (TYPEOF(source)!=STRSXP) { source = PROTECT(coerceVector(source, STRSXP)); protecti++; }
-      if (slen==1) {
-        const SEXP val = STRING_ELT(source, 0);
-        for (int i=0; i<len; i++) SET_STRING_ELT(target, start+i, val);
+      if (sourceIsFactor) {
+        const int *sd = INTEGER(source);
+        const SEXP *ld = STRING_PTR(PROTECT(getAttrib(source, R_LevelsSymbol))); protecti++;
+        if (slen==1) {
+          const SEXP val = sd[0]==NA_INTEGER ? NA_STRING : ld[sd[0]-1];
+          for (int i=0; i<len; ++i) SET_STRING_ELT(target, start+i, val);
+        } else {
+          for (int i=0; i<len; ++i) {
+            const int val = sd[i];
+            SET_STRING_ELT(target, start+i, val==NA_INTEGER ? NA_STRING : ld[val-1]);
+          }
+        }
       } else {
-        const SEXP *val = STRING_PTR(source);
-        for (int i=0; i<len; i++) SET_STRING_ELT(target, start+i, val[i]);
+        if (TYPEOF(source)!=STRSXP) error("Internal error. Not coerced earlier.");
+        if (slen==1) {
+          const SEXP val = STRING_ELT(source, 0);
+          for (int i=0; i<len; i++) SET_STRING_ELT(target, start+i, val);
+        } else {
+          const SEXP *val = STRING_PTR(source);
+          for (int i=0; i<len; i++) SET_STRING_ELT(target, start+i, val[i]);
+        }
       }
       break;
     case VECSXP :
@@ -1003,27 +1104,73 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source)
       error("Unsupported type in assign.c:memrecycle '%s' (no where)", type2char(TYPEOF(target)));  // # nocov
     }
   } else {
-    if (TYPEOF(target)!=TYPEOF(source) && TYPEOF(target)!=VECSXP)
-      error("Internal error: TYPEOF(target)['%s']!=TYPEOF(source)['%s'] in memrecycle (where)", type2char(TYPEOF(target)),type2char(TYPEOF(source))); // # nocov
     const int *wd = INTEGER(where)+start;
     const int mask = slen==1 ? 0 : INT_MAX;
     switch (TYPEOF(target)) {
     case LGLSXP: case INTSXP : {
       int *td = INTEGER(target);
-      const int *sd = INTEGER(source);
-      for (int i=0; i<len; i++) {
-        const int w = wd[i];
-        if (w<1) continue;  // 0 or NA
-        td[w-1] = sd[i&mask];  // i&mask is for branchless recyle when slen==1
+      switch (TYPEOF(source)) {
+      case LGLSXP: case INTSXP: {
+        const int *sd = INTEGER(source);
+        for (int i=0; i<len; i++) {
+          const int w = wd[i];
+          if (w<1) continue;  // 0 or NA
+          td[w-1] = sd[i&mask];  // i&mask is for branchless recyle when slen==1
+        }
+      } break;
+      case REALSXP: {
+        const double *sd = REAL(source);
+        if (slen==1) {
+          int val = ISNAN(sd[0]) ? NA_INTEGER : (int)sd[0];
+          for (int i=0; i<len; ++i) {
+            const int w = wd[i];
+            if (w<1) continue;  // 0 or NA
+            td[w-1] = val;
+          }
+        } else {
+          for (int i=0; i<len; ++i) {
+            const int w = wd[i];
+            if (w<1) continue;  // 0 or NA
+            double d = sd[i];
+            td[w-1] = ISNAN(d) ? NA_INTEGER : (int)d;
+          }
+        }
+      } break;
+      default:
+        error("Internal error");
       }
     } break;
     case REALSXP : {
       double *td = REAL(target);
-      const double *sd = REAL(source);
-      for (int i=0; i<len; i++) {
-        const int w = wd[i];
-        if (w<1) continue;
-        td[w-1] = sd[i&mask];
+      switch (TYPEOF(source)) {
+      case LGLSXP: case INTSXP: {
+        const int *sd = INTEGER(source);
+        if (slen==1) {
+          double val = sd[0]==NA_INTEGER ? NA_REAL : (double)sd[0];
+          for (int i=0; i<len; ++i) {
+            const int w = wd[i];
+            if (w<1) continue;  // 0 or NA
+            td[w-1] = val;
+          }
+        } else {
+          for (int i=0; i<len; ++i) {
+            const int w = wd[i];
+            if (w<1) continue;  // 0 or NA
+            int val = sd[i];
+            td[w-1] = val==NA_INTEGER ? NA_REAL : (double)val;
+          }
+        }
+      } break;
+      case REALSXP: {
+        const double *sd = REAL(source);
+        for (int i=0; i<len; i++) {
+          const int w = wd[i];
+          if (w<1) continue;
+          td[w-1] = sd[i&mask];
+        }
+      } break;
+      default:
+        error("Internal error");
       }
     } break;
     case CPLXSXP: {
@@ -1035,14 +1182,26 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source)
         td[w-1] = sd[i&mask];
       }
     } break;
-    case STRSXP : {
-      const SEXP *sd = STRING_PTR(source);
-      for (int i=0; i<len; i++) {
-        const int w = wd[i];
-        if (w<1) continue;
-        SET_STRING_ELT(target, w-1, sd[i&mask]);
+    case STRSXP :
+      if (sourceIsFactor) {
+        const int *sd = INTEGER(source);
+        const SEXP *ld = STRING_PTR(PROTECT(getAttrib(source, R_LevelsSymbol))); protecti++;
+        for (int i=0; i<len; i++) {
+          const int w = wd[i];
+          if (w<1) continue;
+          const int val = sd[i&mask];
+          SET_STRING_ELT(target, w-1, val==NA_INTEGER ? NA_STRING : ld[val-1]);
+        }
+      } else {
+        if (!isString(source)) error("Internal error. Not coerced earlier with standard verbose message");
+        const SEXP *sd = STRING_PTR(source);
+        for (int i=0; i<len; i++) {
+          const int w = wd[i];
+          if (w<1) continue;
+          SET_STRING_ELT(target, w-1, sd[i&mask]);
+        }
       }
-    } break;
+      break;
     case VECSXP : {
       if (TYPEOF(source)==VECSXP) {
         const SEXP *sd = VECTOR_PTR(source);

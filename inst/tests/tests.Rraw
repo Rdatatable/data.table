@@ -869,17 +869,17 @@ test(299.03, truelength(DT)>length(DT))   # the := over-allocated, by 100 by def
 # FR #2551 - old 299.3 and 299.5 are changed to include length(RHS) > 1 to issue the warning
 DT[,c:=rep(42L,.N)] # plonk
 test(299.04, DT, data.table(a=1:3, c=42L))
-test(299.05, DT[2:3,c:=c(42, 42)], data.table(a=1:3,c=42L), warning="Coerced double RHS to integer.*column 2 named 'c'.*RHS.*no fractions.*more efficiently.*integer.*Consider.*L")
+test(299.05, DT[2:3,c:=c(43, 44)], data.table(a=1:3,c=42:44))
 # FR #2551 - length(RHS) = 1 - no warning for type conversion
-test(299.06, DT[2,c:=42], data.table(a=1:3,c=42L))
+test(299.06, DT[2,c:=42], data.table(a=1:3,c=INT(42,42,44)))
 # also see tests 302 and 303.  (Ok, new test file for fast assign would be tidier).
 test(299.07, DT[,c:=rep(FALSE,nrow(DT))], data.table(a=1:3,c=FALSE))  # replace c column with logical
-test(299.08, DT[2:3,c:=c(42,0)], data.table(a=1:3,c=c(FALSE,TRUE,FALSE)), warning="Coerced double RHS to logical.*column 2 named 'c'.*If the target column's type logical is correct")
+test(299.08, DT[2:3,c:=c(42,0)], error="Cannot assign 42.0.* to a logical column")
+test(299.09, DT[2:3,c:=c(1,0)], data.table(a=1:3,c=c(FALSE,TRUE,FALSE)))
 # FR #2551 is now changed to fit in / fix bug #5442. Stricter warnings are in place now. Check tests 1294.1-34 below.
-test(299.09, DT[2,c:=42], data.table(a=1:3,c=c(FALSE,TRUE,FALSE)), warning="Coerced double RHS to logical to match")
-test(299.11, DT[2,c:=42L], data.table(a=1:3,c=c(FALSE,TRUE,FALSE)), warning="Coerced integer RHS to logical to match")
-test(299.12, DT[2:3,c:=c(0L, 0L)], data.table(a=1:3,c=FALSE), warning="Coerced integer RHS to logical to match the type of the target column.*If the target column's type logical is correct")
-
+test(299.10, DT[2,c:=42], error="Cannot assign 42.0.* to a logical column")
+test(299.11, DT[2,c:=42L], error="Cannot assign 42 to a logical column")
+test(299.12, DT[2:3,c:=c(0L, 0L)], data.table(a=1:3,c=FALSE))
 
 # Test bug fix #1468, combining i and by.
 DT = data.table(a=1:3,b=1:9,v=1:9,key="a,b")
@@ -969,8 +969,7 @@ test(335, DT[,2:1]<-NULL, error="Attempt to assign to column")
 
 DT = data.table(a=1:2, b=1:6)
 test(336, DT[,z:=a/b], data.table(a=1:2,b=1:6,z=(1:2)/(1:6)))
-test(337, DT[3:4,z:=a*b], data.table(a=1:2,b=1:6,z=c(1,1,3,8,1/5,2/6)), warning="Coerced integer RHS to double to match")
-
+test(337, DT[3:4,z:=a*b], data.table(a=1:2,b=1:6,z=c(1,1,3,8,1/5,2/6)))
 
 # test eval of LHS of := (using with=FALSE gives a warning here from v1.9.3)
 DT = data.table(a=1:3, b=4:6)
@@ -1024,8 +1023,7 @@ test(355, DT[11:2010,f:=newlevels], data.table(f=factor(c(rep("000",10),newlevel
 DT = data.table(f=c("a","b"),x=1:4)
 # Test coercing factor to character column
 test(355.5, DT[3,f:=factor("foo")], data.table(f=c("a","b","foo","b"),x=1:4))
-test(355.6, DT[4,f:=factor("bar"),verbose=TRUE], data.table(f=c("a","b","foo","bar"),x=1:4), output="Coerced factor RHS to character to match the column")
-
+test(355.6, DT[4,f:=factor("bar"),verbose=TRUE], data.table(f=c("a","b","foo","bar"),x=1:4), notOutput="coerce")
 
 # See datatable-help post and NEWS item for 1.6.7
 DT = data.table(X=factor(letters[1:10]), Y=1:10)
@@ -1218,16 +1216,14 @@ test(423, truelength(DT), 1028L)
 DT <- data.table(a = factor(c("A", "Z")), b = 1:4)
 DT[1,1] <- "Z"
 test(424, DT, data.table(a=factor(c("Z","Z","A","Z")),b=1:4))
-test(425, DT[1,1] <- 1, 1, warning="Coerced 'double' RHS to 'integer'")
-test(426, DT, data.table(a=factor(c("A","Z")),b=1:4))
-DT[1,1] <- 2L
+test(425, DT[1,1] <- 1, error="Cannot assign 'double' to 'factor'")
+test(426, DT[1,1] <- 2L, error="Cannot assign 'integer' to 'factor'")
 test(427, DT, data.table(a=factor(c("Z","Z","A","Z")),b=1:4))
 DT[1,a:="A"]
 test(428, DT, data.table(a=factor(c("A","Z","A","Z")),b=1:4))
-DT[1,a:=2L]
-test(429, DT, data.table(a=factor(c("Z","Z","A","Z")),b=1:4))
-test(430, DT[1,1]<- 3L, 3L, warning="RHS contains 3 which is outside the levels range.*1,2.*of column 1, NAs generated")
-test(431, DT[1,1:=4L], data.table(a=factor(c(NA,"Z","A","Z")),b=1:4), warning="RHS contains 4 which is outside the levels range.*1,2.*of column 1, NAs generated")
+test(429, DT[1,a:=2L], error="Cannot assign 'integer' to 'factor'. Factors can only be assigned factor or character.")
+test(430, DT, data.table(a=factor(c("A","Z","A","Z")),b=1:4))
+test(431, DT[1,1:=NA], data.table(a=factor(c(NA,"Z","A","Z")),b=1:4))
 
 old = getOption("datatable.alloccol")  # Test that unsetting datatable.alloccol is caught, #2014
 options(datatable.alloccol=NULL) # In this =NULL case, options() in R 3.0.0 returned TRUE rather than the old value. This R bug was fixed in R 3.1.1.
