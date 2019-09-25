@@ -461,7 +461,6 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
     // truelengths of both already set by alloccol
   }
   for (i=0; i<length(cols); i++) {
-    //int thisprotecti = 0;  // UNPROTECT(thisprotecti) at the end of this loop to save protection stack
     coln = INTEGER(cols)[i]-1;
     SEXP thisvalue = RHS_list_of_columns ? VECTOR_ELT(values, i) : values;
     if (TYPEOF(thisvalue)==NILSXP) {
@@ -489,7 +488,6 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
       setAttrib(thisvalue, R_DimNamesSymbol, R_NilValue);  // the 3rd of the 3 attribs not copied by copyMostAttrib, for consistency.
       continue;
     }
-    // SEXP RHS;
 
     if (coln+1 > oldncol) {  // new column
       SET_VECTOR_ELT(dt, coln, targetcol=allocNAVectorLike(thisvalue, nrow));
@@ -499,141 +497,13 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
       if (isVectorAtomic(thisvalue)) copyMostAttrib(thisvalue,targetcol);  // class etc but not names
       // else for lists (such as data.frame and data.table) treat them as raw lists and drop attribs
       if (vlen<1) continue;   // e.g. DT[,newcol:=integer()] (adding new empty column)
-      // delete ... targetcol = newcol;
-      // RHS = thisvalue;
     } else {                 // existing column
       targetcol = VECTOR_ELT(dt,coln);
     }
     memrecycle(targetcol, rows, 0, targetlen, thisvalue, coln+1, CHAR(STRING_ELT(names, coln)));
     // memrecycle is also called from dogroups;          ^^ last 2 arguments just for messages
+  }
 
-    // delete ... UNPROTECT(thisprotecti); // unprotect inside loop through columns to save protection stack
-  }
-  /*
-  // !! START DELETE !!
-      if (isFactor(targetcol)) {
-        // Coerce RHS to appropriate levels of LHS, adding new levels as necessary (unlike base)
-        // If it's the same RHS being assigned to several columns, we have to recoerce for each
-        // one because the levels of each target are likely different
-        if (isFactor(thisvalue)) {
-          thisvalue = PROTECT(asCharacterFactor(thisvalue)); thisprotecti++;
-        }
-        targetlevels = getAttrib(targetcol, R_LevelsSymbol);
-        if (isNull(targetlevels)) error("somehow this factor column has no levels");
-        if (isString(thisvalue)) {
-          savetl_init();  // ** TO DO **: remove allocs that could fail between here and _end, or different way
-          for (j=0; j<length(thisvalue); j++) {
-            s = STRING_ELT(thisvalue,j);
-            if (TRUELENGTH(s)>0) {
-              savetl(s);  // pre-2.14.0 this will save all the uninitialised truelengths
-                    // so 2.14.0+ may be faster, but isn't required.
-                    // as from v1.8.0 we assume R's internal hash is positive, so don't
-                    // save the uninitialised truelengths that by chance are negative
-            }
-            SET_TRUELENGTH(s,0);
-          }
-          for (j=0; j<length(targetlevels); j++) {
-            s = STRING_ELT(targetlevels,j);
-            if (TRUELENGTH(s)>0) savetl(s);
-            SET_TRUELENGTH(s,j+1);
-          }
-          R_len_t addi = 0;
-          SEXP addlevels=NULL;
-          RHS = PROTECT(allocVector(INTSXP, length(thisvalue))); thisprotecti++;
-          int *iRHS = INTEGER(RHS);
-          for (j=0; j<length(thisvalue); j++) {
-            thisv = STRING_ELT(thisvalue,j);
-            if (TRUELENGTH(thisv)==0) {
-              if (addi==0) {
-                addlevels = PROTECT(allocVector(STRSXP, 100)); thisprotecti++;
-              } else if (addi >= length(addlevels)) {
-                addlevels = PROTECT(growVector(addlevels, length(addlevels)+1000)); thisprotecti++;
-              }
-              SET_STRING_ELT(addlevels,addi++,thisv);
-              // if-else for #1718 fix
-              SET_TRUELENGTH(thisv, (thisv != NA_STRING) ? (addi+length(targetlevels)) : NA_INTEGER);
-            }
-            iRHS[j] = TRUELENGTH(thisv);
-          }
-          if (addi > 0) {
-            R_len_t oldlen = length(targetlevels);
-            targetlevels = PROTECT(growVector(targetlevels, oldlen+addi)); thisprotecti++;
-            for (j=0; j<addi; j++)
-              SET_STRING_ELT(targetlevels, oldlen+j, STRING_ELT(addlevels, j));
-            setAttrib(targetcol, R_LevelsSymbol, targetlevels);
-          }
-          for (int j=0; j<length(targetlevels); j++) SET_TRUELENGTH(STRING_ELT(targetlevels,j),0);  // important to reinstate 0 for countingcharacterorder and HASHPRI (if any) as done by savetl_end().
-          savetl_end();
-        } else {
-          // value is either integer or numeric vector.  TODO:  Should we allow this? Seems odd. What breaks if we stop this? We only
-          //   allow character/factor elsewhere.
-          if (TYPEOF(thisvalue)!=INTSXP && TYPEOF(thisvalue)!=LGLSXP && !isReal(thisvalue))
-            error("Internal error: up front checks (before starting to modify DT) didn't catch type of RHS ('%s') assigning to factor column '%s'. please report to data.table issue tracker.", type2char(TYPEOF(thisvalue)), CHAR(STRING_ELT(names,coln))); // # nocov
-          int *iRHS;
-          if (isReal(thisvalue) || TYPEOF(thisvalue)==LGLSXP) {
-            RHS = PROTECT(coerceVector(thisvalue,INTSXP)); thisprotecti++;
-            iRHS = INTEGER(RHS);
-            // silence warning on singleton NAs
-            if (iRHS[0] != NA_INTEGER) warning("Coerced '%s' RHS to 'integer' to match the factor column's underlying type. Character columns are now recommended (can be in keys), or coerce RHS to integer or character first.", type2char(TYPEOF(thisvalue)));
-          } else { // thisvalue is integer
-            // make sure to copy thisvalue. May be modified below. See #2984
-            RHS = PROTECT(copyAsPlain(thisvalue)); thisprotecti++;
-            iRHS = INTEGER(RHS);
-          }
-          for (int j=0; j<length(RHS); j++) {
-            if ( (iRHS[j]<1 || iRHS[j]>LENGTH(targetlevels))
-                 && iRHS[j] != NA_INTEGER) {
-              warning("RHS contains %d which is outside the levels range ([1,%d]) of column %d, NAs generated", iRHS[j], LENGTH(targetlevels), i+1);
-              iRHS[j] = NA_INTEGER;
-            }
-          }
-        }
-      } else {
-        if (TYPEOF(targetcol)==TYPEOF(thisvalue) ||
-            TYPEOF(targetcol)==VECSXP ||
-            (isLogical(targetcol) && isIntegerReallyLogical(thisvalue)))
-          RHS = thisvalue;
-        else {
-          // coerce the RHS to match the type of the column, unlike [<-.data.frame, for efficiency.
-          if (isString(targetcol) && isFactor(thisvalue)) {
-            RHS = PROTECT(asCharacterFactor(thisvalue)); thisprotecti++;
-            if (verbose) Rprintf("Coerced factor RHS to character to match the column's type. Avoid this coercion if possible, for efficiency, by creating RHS as type character.\n");
-            // TO DO: datatable.pedantic could turn this into warning
-          } else {
-            RHS = PROTECT(coerceVector(thisvalue,TYPEOF(targetcol))); thisprotecti++;
-            char *s1 = (char *)type2char(TYPEOF(targetcol));
-            char *s2 = (char *)type2char(TYPEOF(thisvalue));
-            // FR #2551, added test for equality between RHS and thisvalue to not provide the warning when length(thisvalue) == 1
-            if ( length(thisvalue)==1 && TYPEOF(RHS)!=VECSXP && (
-                 ( isReal(thisvalue) && isInteger(targetcol) && REAL(thisvalue)[0]==INTEGER(RHS)[0] ) ||   // DT[,intCol:=4] rather than DT[,intCol:=4L]
-                 ( isLogical(thisvalue) && LOGICAL(thisvalue)[0] == NA_LOGICAL ) ||                        // DT[,intCol:=NA]
-                 ( isInteger(thisvalue) && isReal(targetcol) ) )) {
-              if (verbose) Rprintf("Coerced length-1 RHS from %s to %s to match column's type.%s If this assign is happening a lot inside a loop, in particular via set(), then it may be worth avoiding this coercion by using R's type postfix on the value being assigned; e.g. typeof(0) vs typeof(0L), and typeof(NA) vs typeof(NA_integer_) vs typeof(NA_real_).\n", s2, s1,
-                                    isInteger(targetcol) && isReal(thisvalue) ? " No precision was lost." : "");
-              // TO DO: datatable.pedantic could turn this into warning. Or we could catch and avoid the coerceVector allocation ourselves using a single int.
-            } else {
-              if (isReal(thisvalue) && isInteger(targetcol)) {
-                int w = INTEGER(isReallyReal(thisvalue))[0];  // first fraction present (1-based), 0 if none
-                if (w>0) {
-                  warning("Coerced double RHS to integer to match the type of the target column (column %d named '%s'). One or more RHS values contain fractions which have been lost; e.g. item %d with value %f has been truncated to %d.",
-                          coln+1, CHAR(STRING_ELT(names, coln)), w, REAL(thisvalue)[w-1], INTEGER(RHS)[w-1]);
-                } else {
-                  warning("Coerced double RHS to integer to match the type of the target column (column %d named '%s'). The RHS values contain no fractions so would be more efficiently created as integer. Consider using R's 'L' postfix (typeof(0L) vs typeof(0)) to create constants as integer and avoid this warning. Wrapping the RHS with as.integer() will avoid this warning too but it's better if possible to create the RHS as integer in the first place so that the cost of the coercion can be avoided.", coln+1, CHAR(STRING_ELT(names, coln)));
-                }
-              } else {
-                warning("Coerced %s RHS to %s to match the type of the target column (column %d named '%s'). If the target column's type %s is correct, it's best for efficiency to avoid the coercion and create the RHS as type %s. To achieve that consider R's type postfix: typeof(0L) vs typeof(0), and typeof(NA) vs typeof(NA_integer_) vs typeof(NA_real_). You can wrap the RHS with as.%s() to avoid this warning, but that will still perform the coercion. If the target column's type is not correct, it's best to revisit where the DT was created and fix the column type there; e.g., by using colClasses= in fread(). Otherwise, you can change the column type now by plonking a new column (of the desired type) over the top of it; e.g. DT[, `%s`:=as.%s(`%s`)]. If the RHS of := has nrow(DT) elements then the assignment is called a column plonk and is the way to change a column's type. Column types can be observed with sapply(DT,typeof).",
-                s2, s1, coln+1, CHAR(STRING_ELT(names, coln)), s1, s1, s1, CHAR(STRING_ELT(names, coln)), s2, CHAR(STRING_ELT(names, coln)));
-              }
-            }
-          }
-        }
-      }
-    }
-    memrecycle(targetcol, rows, 0, targetlen, RHS);  // also called from dogroups where these arguments are used more
-    UNPROTECT(thisprotecti); // unprotect inside loop through columns to save protection stack
-  }
-  // !! END DELETE !!
-  */
   *_Last_updated = numToDo;  // the updates have taken place with no error, so update .Last.updated now
   assignedNames = PROTECT(allocVector(STRSXP, LENGTH(cols))); protecti++;
   for (i=0;i<LENGTH(cols);i++) SET_STRING_ELT(assignedNames,i,STRING_ELT(names,INTEGER(cols)[i]-1));

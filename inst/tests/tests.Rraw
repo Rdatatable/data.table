@@ -16162,6 +16162,13 @@ DT = data.table(x = rep(letters[c(3, 1, 2)], each = 2))
 test(2114.7, DT[, `:=`(g=.GRP, f=factor(.GRP)), by = x],
              data.table(x=rep(c("c","a","b"),each=2), g=rep(1:3,each=2), f=factor(rep(as.character(1:3),each=2))))
 
+# extra tests from #996 for completeness; no warning no-alloc coerce here of 0 and 1 numerics
+DT = data.table(a=1:4, b=c(FALSE, TRUE, NA, FALSE))
+test(2115.1, set(DT,3L,1L,0), data.table(a=INT(1,2,0,4), b=c(FALSE, TRUE, NA, FALSE)))
+test(2115.2, set(DT,3L,2L,0), data.table(a=INT(1,2,0,4), b=c(FALSE, TRUE, FALSE, FALSE)))
+DT = data.table(code=c("c","b","c","a"), val=10:13)
+test(2115.3, DT[code=="c", val := val+1], data.table(code=c("c","b","c","a"), val=INT(11,11,13,13)))
+
 
 ###################################
 #  Add new tests above this line  #
