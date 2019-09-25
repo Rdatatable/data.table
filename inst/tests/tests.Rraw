@@ -1221,7 +1221,7 @@ test(426, DT[1,1] <- 2L, error="Cannot assign 'integer' to 'factor'")
 test(427, DT, data.table(a=factor(c("Z","Z","A","Z")),b=1:4))
 DT[1,a:="A"]
 test(428, DT, data.table(a=factor(c("A","Z","A","Z")),b=1:4))
-test(429, DT[1,a:=2L], error="Cannot assign 'integer' to 'factor'. Factors can only be assigned factor or character.")
+test(429, DT[1,a:=2L], error="Cannot assign 'integer' to 'factor'. Factor columns can only be assigned factor or character values, or NA in any type")
 test(430, DT, data.table(a=factor(c("A","Z","A","Z")),b=1:4))
 test(431, DT[1,1:=NA], data.table(a=factor(c(NA,"Z","A","Z")),b=1:4))
 

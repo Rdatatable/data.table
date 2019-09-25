@@ -833,16 +833,34 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source,
   }
   const bool sourceIsFactor=isFactor(source), targetIsFactor=isFactor(target);
   if (sourceIsFactor || targetIsFactor) {
-    if ((!sourceIsFactor && !isString(source)) ||
-        (!targetIsFactor && !isString(target))) {
-      error("Cannot assign '%s' to '%s'. Factors can only be assigned factor or character.",
-            sourceIsFactor?"factor":type2char(TYPEOF(source)),
-            targetIsFactor?"factor":type2char(TYPEOF(target)));
-    }
     if (!targetIsFactor) {
-      // source must be factor
-      // assigning factor to character is left to later below, avoiding wasteful asCharacterFactor from v1.12.4
+      if (!isString(target))
+        error("Cannot assign 'factor' to '%s'. Factors can only be assigned to factor or character columns.", type2char(TYPEOF(target)));
+      // else assigning factor to character is left to later below, avoiding wasteful asCharacterFactor
+    } else if (!sourceIsFactor && !isString(source)) {
+      // source is not character or factor.  If it's all-NA in another type, let it fall through
+      // to assign the NA later as-is without any coerce.  Otherwise, error.
+      bool ok = true;
+      switch(TYPEOF(source)) {
+      case LGLSXP: case INTSXP: {
+        const int *sd = INTEGER(source);
+        for (int k=0; k<slen; ++k) {
+          if (sd[k]!=NA_INTEGER) { ok=false; break; }
+        }
+      } break;
+      case REALSXP: {
+        const double *sd = REAL(source);
+        for (int k=0; k<slen; ++k) {
+          if (!ISNAN(sd[k])) { ok=false; break; }
+        }
+      } break;
+      default:
+        ok = false;
+      }
+      if (!ok)
+        error("Cannot assign '%s' to 'factor'. Factor columns can only be assigned factor or character values, or NA in any type.", type2char(TYPEOF(source)));
     } else {
+      // either factor or character being assigned to factor column
       SEXP targetLevels = PROTECT(getAttrib(target, R_LevelsSymbol)); protecti++;
       SEXP sourceLevels = source;  // character source
       if (sourceIsFactor) { sourceLevels=PROTECT(getAttrib(source, R_LevelsSymbol)); protecti++; }
@@ -925,6 +943,7 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source,
     }
   } else if (TYPEOF(target)!=TYPEOF(source)) {
     // checks up front, otherwise we'd need checks twice in the two branches that cater for 'where' or not
+    bool ok = false;
     switch(TYPEOF(target)) {
     case LGLSXP:
       if (isInteger(source)) {
@@ -940,23 +959,27 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source,
           if (!ISNAN(d) && d!=0.0 && d!=1.0) error("Cannot assign %f to a logical column.", d);
         }
       }
+      ok = true;
       break;
     case INTSXP:
       if (isReal(source)) {
         int w = INTEGER(isReallyReal(source))[0];  // first fraction present (1-based), 0 if none
         if (w>0) {
-          warning("%f has been truncated to %d because column %d ('%s') is type integer", REAL(source)[w-1], colnum, colname);
+          warning("Coerced double RHS to integer to match the type of the target column (column %d named '%s'). One or more RHS values contain fractions which have been lost; e.g. item %d with value %f has been truncated to %d.", colnum, colname, w, REAL(source)[w-1], (int)REAL(source)[w-1]);
         }
       }
+      ok = true;
       break;
     case REALSXP:
+      ok = isLogical(source) || isInteger(source);
       break;
     case STRSXP:
       source = PROTECT(coerceVector(source, STRSXP)); protecti++;
+      ok = true;
       break;
-    default:
-      error("Cannot assign type '%s' to '%s' column", type2char(TYPEOF(source)), type2char(TYPEOF(target)));
     }
+    if (!ok)
+      error("Cannot assign type '%s' to '%s' column", type2char(TYPEOF(source)), type2char(TYPEOF(target)));
   }
   if (!length(where)) {  // e.g. called from rbindlist with where=R_NilValue
     switch (TYPEOF(target)) {
