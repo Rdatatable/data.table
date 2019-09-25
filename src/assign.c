@@ -974,28 +974,20 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source,
       }
       break;
     case REALSXP:
-      pun = isLogical(source) || isInteger(source);
+      pun = isLogical(source) || isInteger(source) || TYPEOF(source)==RAWSXP;
       break;
-    //case RAWSXP:
-    //case STRSXP:
-    //case CPLXSXP:
-    //  source = PROTECT(coerceVector(source, TYPEOF(target))); protecti++;
-    //  ok = true;
-    //  break;
     case VECSXP:
       pun = true;
       break;
     }
     if (!pun) {
-      SEXP tt = PROTECT(coerceVector(source, TYPEOF(target))); protecti++;
+      SEXP tt = PROTECT(coerceVector(source, TYPEOF(target))); protecti++; // e.g. RAWSXP, STRSXP and CPLXSXP
       if (!isString(target) && !allNA(source)) {
         warning("Coerced %s RHS to %s to match the type of the target column (column %d named '%s').",
                 type2char(TYPEOF(source)), type2char(TYPEOF(target)), colnum, colname);
       }
       source = tt;
     }
- //     If the target column's type %s is correct, it's best for efficiency to avoid the coercion and create the RHS as type %s. To achieve that consider R's type postfix: typeof(0L) vs typeof(0), and typeof(NA) vs typeof(NA_integer_) vs typeof(NA_real_). You can wrap the RHS with as.%s() to avoid this warning, but that will still perform the coercion. If the target column's type is not correct, it's best to revisit where the DT was created and fix the column type there; e.g., by using colClasses= in fread(). Otherwise, you can change the column type now by plonking a new column (of the desired type) over the top of it; e.g. DT[, `%s`:=as.%s(`%s`)]. If the RHS of := has nrow(DT) elements then the assignment is called a column plonk and is the way to change a column's type. Column types can be observed with sapply(DT,typeof).",
-    //  error("Cannot assign type '%s' to '%s' column", type2char(TYPEOF(source)), type2char(TYPEOF(target)));
   }
   if (!length(where)) {  // e.g. called from rbindlist with where=R_NilValue
     switch (TYPEOF(target)) {
@@ -1160,13 +1152,13 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source,
           int val = ISNAN(sd[0]) ? NA_INTEGER : (int)sd[0];
           for (int i=0; i<len; ++i) {
             const int w = wd[i];
-            if (w<1) continue;  // 0 or NA
+            if (w<1) continue;
             td[w-1] = val;
           }
         } else {
           for (int i=0; i<len; ++i) {
             const int w = wd[i];
-            if (w<1) continue;  // 0 or NA
+            if (w<1) continue;
             double d = sd[i];
             td[w-1] = ISNAN(d) ? NA_INTEGER : (int)d;
           }
@@ -1179,19 +1171,27 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source,
     case REALSXP : {
       double *td = REAL(target);
       switch (TYPEOF(source)) {
+      case RAWSXP: {
+        const Rbyte *sd = RAW(source);
+        for (int i=0; i<len; ++i) {
+          const int w = wd[i];
+          if (w<1) continue;
+          td[w-1] = (double)sd[i&mask];
+        }
+      } break;
       case LGLSXP: case INTSXP: {
         const int *sd = INTEGER(source);
         if (slen==1) {
           double val = sd[0]==NA_INTEGER ? NA_REAL : (double)sd[0];
           for (int i=0; i<len; ++i) {
             const int w = wd[i];
-            if (w<1) continue;  // 0 or NA
+            if (w<1) continue;
             td[w-1] = val;
           }
         } else {
           for (int i=0; i<len; ++i) {
             const int w = wd[i];
-            if (w<1) continue;  // 0 or NA
+            if (w<1) continue;
             int val = sd[i];
             td[w-1] = val==NA_INTEGER ? NA_REAL : (double)val;
           }
@@ -1229,7 +1229,7 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source,
           SET_STRING_ELT(target, w-1, val==NA_INTEGER ? NA_STRING : ld[val-1]);
         }
       } else {
-        if (!isString(source)) error("Internal error. Not coerced earlier with standard verbose message");
+        if (!isString(source)) error("Internal error. Not coerced earlier.");
         const SEXP *sd = STRING_PTR(source);
         for (int i=0; i<len; i++) {
           const int w = wd[i];
