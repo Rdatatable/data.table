@@ -834,8 +834,8 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source,
   const bool sourceIsFactor=isFactor(source), targetIsFactor=isFactor(target);
   if (sourceIsFactor || targetIsFactor) {
     if (!targetIsFactor) {
-      if (!isString(target))
-        error("Cannot assign 'factor' to '%s'. Factors can only be assigned to factor or character columns.", type2char(TYPEOF(target)));
+      if (!isString(target) && !isNewList(target))
+        error("Cannot assign 'factor' to '%s'. Factors can only be assigned to factor, character or list columns.", type2char(TYPEOF(target)));
       // else assigning factor to character is left to later below, avoiding wasteful asCharacterFactor
     } else if (!sourceIsFactor && !isString(source)) {
       // source is not character or factor.  If it's all-NA in another type, let it fall through
@@ -973,8 +973,13 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source,
     case REALSXP:
       ok = isLogical(source) || isInteger(source);
       break;
+    case RAWSXP:
     case STRSXP:
-      source = PROTECT(coerceVector(source, STRSXP)); protecti++;
+    case CPLXSXP:
+      source = PROTECT(coerceVector(source, TYPEOF(target))); protecti++;
+      ok = true;
+      break;
+    case VECSXP:
       ok = true;
       break;
     }
@@ -984,7 +989,6 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source,
   if (!length(where)) {  // e.g. called from rbindlist with where=R_NilValue
     switch (TYPEOF(target)) {
     case RAWSXP:
-      if (TYPEOF(source)!=RAWSXP) { source = PROTECT(coerceVector(source, RAWSXP)); protecti++; }
       if (slen==1) {
         // recycle single items
         Rbyte *td = RAW(target)+start;
