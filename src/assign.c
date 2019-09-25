@@ -813,6 +813,8 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source,
     }
   } else if (TYPEOF(target)!=TYPEOF(source)) {
     // checks up front, otherwise we'd need checks twice in the two branches that cater for 'where' or not
+    // TODO:  verbose message and/or strict option for advanced users to ensure types match
+    //        only call getOption (small cost in finding the option value) at this point when there is a type mismatch
     bool pun = false;
     switch(TYPEOF(target)) {
     case LGLSXP:
@@ -820,14 +822,23 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source,
         const int *sD = INTEGER(source);
         for (int i=0; i<slen; ++i) {
           const int val = sD[i];
-          if (val!=0 && val!=1 && val!=NA_INTEGER) error("Cannot assign %d to a logical column.", val);
+          if (val!=0 && val!=1 && val!=NA_INTEGER) {
+            warning("Non-zero %d taken as TRUE when assigning to logical column. Please use as.logical() to avoid this warning"
+                    " and to express the intent to help those reading this code in future.", val);
+            // was warning too in v1.12.2 but it was much longer and less helpful/specific
+            break; // just warn on the first
+          }
         }
         pun = true;
       } else if (isReal(source)) {   // TODO: cater for integer64 here
         const double *sD = REAL(source);
         for (int i=0; i<slen; ++i) {
           const double d = sD[i];
-          if (!ISNAN(d) && d!=0.0 && d!=1.0) error("Cannot assign %f to a logical column.", d);
+          if (!ISNAN(d) && d!=0.0 && d!=1.0) {
+            warning("Non-zero %f taken as TRUE when assigning to a logical column. Please use as.logical() to avoid this warning"
+                    " and to express the intent to help those reading this code in future.", d);
+            break;
+          }
         }
         pun = true;
       }
@@ -837,6 +848,7 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source,
         int w = INTEGER(isReallyReal(source))[0];  // first fraction present (1-based), 0 if none
         if (w>0) {
           warning("Coerced double RHS to integer to match the type of the target column (column %d named '%s'). One or more RHS values contain fractions which have been lost; e.g. item %d with value %f has been truncated to %d.", colnum, colname, w, REAL(source)[w-1], (int)REAL(source)[w-1]);
+          // same warning text as v1.12.2 so as to reduce diff in tests. TODO: shorten text in future to put truncated %f at the begnning of the message.
         }
         pun = true;
       } else if (isLogical(source)) {
@@ -871,7 +883,46 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source,
         memcpy(RAW(target)+start, RAW(source), slen*SIZEOF(target));
       }
       break;
-    case LGLSXP:
+    case LGLSXP: {
+      int *td = LOGICAL(target)+start;
+      if (slen==1) {
+        int val;
+        switch (TYPEOF(source)) {
+        case LGLSXP:
+          val = LOGICAL(source)[0];
+          break;
+        case INTSXP:
+          val = INTEGER(source)[0];
+          val = val==NA_INTEGER ? NA_LOGICAL : val!=0;  // zero-alloc recycle length-1
+          break;
+        case REALSXP: {
+          double d = REAL(source)[0];
+          val = ISNAN(d) ? NA_LOGICAL : d!=0.0;
+        } break;
+        default:
+          error("Internal error"); // # nocov
+        }
+        for (int i=0; i<len; ++i) td[i] = val;  // recycle length-1
+      } else {
+        switch (TYPEOF(source)) {
+        case LGLSXP:
+          memcpy(td, LOGICAL(source), slen*SIZEOF(target));
+          break;
+        case INTSXP: {
+          const int *sd = INTEGER(source);
+          for (int i=0; i<len; ++i) {
+            td[i] = sd[i]==NA_INTEGER ? NA_LOGICAL : sd[i]!=0;  // zero-alloc coerce length>1
+          }
+        } break;
+        case REALSXP: {
+          const double *sd = REAL(source);
+          for (int i=0; i<len; ++i) {
+            td[i] = ISNAN(sd[i]) ? NA_LOGICAL : sd[i]!=0.0;
+          }
+        }
+        }
+      }
+    } break;
     case INTSXP: {
       int *td = INTEGER(target)+start;
       if (slen==1) {
@@ -1003,9 +1054,117 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source,
     }
   } else {
     const int *wd = INTEGER(where)+start;
-    const int mask = slen==1 ? 0 : INT_MAX;
+    // const int mask = slen==1 ? 0 : INT_MAX;
+
+    if (!length(where) && slen==len &&
+        TYPEOF(target)==TYPEOF(source) &&
+        !isNewList(target) &&
+        !isString(target) &&
+        targetI64 == sourceI64 &&
+        targetFactor == sourceFactor) {
+      switch(TYPEOF(target)) {
+      case RAWSXP: memcpy(RAW(td),      RAW(sd),     slen*SIZEOF(target)); break;
+      case LGLSXP: memcpy(LOGICAL(td),  LOGICAL(td), slen*SIZEOF(target)); break;
+      case INTSXP: memcpy(INTEGER(td),  INTEGER(td), slen*SIZEOF(target)); break;
+      case REALSXP: memcpy(REAL(td),    REAL(td),    slen*SIZEOF(target)); break;
+      case CPLXSXP: memcpy(COMPLEX(td), COMPLEX(td), slen*SIZEOF(target)); break;
+      default:
+        error("Internal error");
+    } else {
+
+                          sd[0]   sd[i]
+#define BODY(CTYPE, RFUN, SINGLE, MULT)  \
+{                                        \
+  const CTYPE *sd = RFUN(source);        \
+  if (length(where)) {                   \
+    if (slen==1) {                       \
+      const CTYPE val = SINGLE;          \
+      for (int i=0; i<len; ++i) {        \
+        const int w = wd[i];             \
+        if (w<1) continue; /*0 or NA*/   \
+        td[w-1] = val;                   \
+      }                                  \
+    } else {                             \
+      for (int i=0; i<len; ++i) {        \
+        const int w = wd[i];             \
+        if (w<1) continue;               \
+        td[w-1] = MULT;                  \
+      }                                  \
+    }                                    \
+  } else {                               \
+    if (slen==1) {                       \
+      const int val = SINGLE;            \
+      for (int i=0; i<len; ++i)          \
+        td[i] = val;                     \
+    } else {                             \
+      for (int i=0; i<len; i++) {        \
+        td[i] = MULT;                    \
+      }                                  \
+    }                                    \
+  }                                      \
+} break
+
     switch (TYPEOF(target)) {
-    case LGLSXP: case INTSXP : {
+    case LGLSXP: {
+      int *td = LOGICAL(target);
+      switch (TYPEOF(source)) {
+      case LGLSXP: BODY(int, LOGICAL, sd[0], sd[i]);
+
+
+        const int *sd = LOGICAL(source);
+        if (length(where)) {
+          if (slen==1) {
+            const int val = sd[0];
+            for (int i=0; i<len; i++) {
+              const int w = wd[i];
+              if (w<1) continue;  // 0 or NA
+              td[w-1] = val;
+            }
+          } else {
+            for (int i=0; i<len; i++) {
+              const int w = wd[i];
+              if (w<1) continue;  // 0 or NA
+              td[w-1] = sd[i];
+            }
+          }
+        } else {
+          if (slen==1) {
+            const int val = sd[0];
+            for (int i=0; i<len; ++i) td[i] = val;  // recycle length-1
+
+          } else {
+            for (int i=0; i<len; i++) {
+              td[i] = sd[i];
+            }
+            // or just
+          }
+
+
+
+        }
+        case INTSXP:
+          val = INTEGER(source)[0];
+          val = val==NA_INTEGER ? NA_LOGICAL : val!=0;  // zero-alloc recycle length-1
+          break;
+        case REALSXP: {
+          double d = REAL(source)[0];
+          val = ISNAN(d) ? NA_LOGICAL : d!=0.0;
+        } break;
+
+
+
+
+
+
+      case INTSXP:
+
+
+      case REALSXP:
+
+
+
+
+    case INTSXP : {
       int *td = INTEGER(target);
       switch (TYPEOF(source)) {
       case LGLSXP: case INTSXP: {

@@ -16166,8 +16166,12 @@ test(2114.7, DT[, `:=`(g=.GRP, f=factor(.GRP)), by = x],
 DT = data.table(a=1:4, b=c(FALSE, TRUE, NA, FALSE))
 test(2115.1, set(DT,3L,1L,0), data.table(a=INT(1,2,0,4), b=c(FALSE, TRUE, NA, FALSE)))
 test(2115.2, set(DT,3L,2L,0), data.table(a=INT(1,2,0,4), b=c(FALSE, TRUE, FALSE, FALSE)))
+test(2115.3, set(DT,3L,2L,-2L), data.table(a=INT(1,2,0,4), b=c(FALSE, TRUE, TRUE, FALSE)),  # see also test 299
+             warning="Non-zero -2 taken as TRUE.*Please use.*")
+test(2115.4, set(DT,4L,2L,3.14), data.table(a=INT(1,2,0,4), b=c(FALSE, TRUE, TRUE, TRUE)),
+             warning="Non-zero 3.14.* taken as TRUE.*Please use.*")
 DT = data.table(code=c("c","b","c","a"), val=10:13)
-test(2115.3, DT[code=="c", val := val+1], data.table(code=c("c","b","c","a"), val=INT(11,11,13,13)))
+test(2115.5, DT[code=="c", val := val+1], data.table(code=c("c","b","c","a"), val=INT(11,11,13,13)))
 
 
 ###################################
