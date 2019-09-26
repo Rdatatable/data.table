@@ -853,8 +853,6 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source,
       source = tt;
     }
   }
-
-  const bool sourceIsI64 = isReal(source) && Rinherits(source, char_integer64);
 /*
   if (!length(where)) {  // e.g. called from rbindlist with where=R_NilValue
     switch (TYPEOF(target)) {
@@ -1063,7 +1061,7 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source,
 
 #undef BODY
 #define BODY(STYPE, RFUN, CTYPE, CAST, ASSIGN) \
-  { const STYPE *sd = RFUN(source);            \
+  { const STYPE *sd = (const STYPE *)RFUN(source);   \
   if (length(where)) {                         \
     const int *wd = INTEGER(where)+start;      \
     if (slen==1) {                             \
@@ -1107,7 +1105,6 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source,
   //memcpy(REAL(target)+start, REAL(source), slen*SIZEOF(target));
   //memcpy(COMPLEX(target)+start, COMPLEX(source), slen*SIZEOF(target));
 
-
   const int off = (length(where)?0:start); // off = target offset; e.g. called from rbindlist with where=R_NilValue and start!=0
   switch (TYPEOF(target)) {
   case RAWSXP: {
@@ -1141,15 +1138,34 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source,
     }
   } break;
   case REALSXP : {
-    if (Rinherits(target, char_integer64)) {
-    double *td = REAL(target) + off;
-    switch (TYPEOF(source)) {
-    case RAWSXP:  BODY(Rbyte, RAW, double, (double)val,                               td[i]=cval) break;
-    case LGLSXP:  // same as INTSXP
-    case INTSXP:  BODY(int, INTEGER, double, val==NA_INTEGER ? NA_REAL : (double)val, td[i]=cval) break;
-    case REALSXP: BODY(double, REAL, double, val,                                     td[i]=cval) break;
-    // ****** TODO: ******** integer64!!
-    default: error("Internal error");
+    if (!Rinherits(target, char_integer64)) {
+      double *td = REAL(target) + off;
+      switch (TYPEOF(source)) {
+      case RAWSXP:  BODY(Rbyte, RAW, double, (double)val,                             td[i]=cval) break;
+      case LGLSXP:  // same as INTSXP
+      case INTSXP:  BODY(int, INTEGER, double, val==NA_INTEGER ? NA_REAL : val,       td[i]=cval) break;
+      case REALSXP:
+        if (Rinherits(source, char_integer64))
+          BODY(int64_t, REAL, double, val==NA_INTEGER64 ? NA_REAL : val,              td[i]=cval)
+        else
+          BODY(double, REAL, double, val,                                             td[i]=cval)
+        break;
+      default: error("Internal error");
+      }
+    } else {
+      int64_t *td = (int64_t *)REAL(target) + off;
+      switch (TYPEOF(source)) {
+      case RAWSXP:  BODY(Rbyte, RAW, int64_t, (int64_t)val,                           td[i]=cval) break;
+      case LGLSXP:  // same as INTSXP
+      case INTSXP:  BODY(int, INTEGER, int64_t, val==NA_INTEGER ? NA_INTEGER64 : (int64_t)val, td[i]=cval) break;
+      case REALSXP:
+        if (Rinherits(source, char_integer64))
+          BODY(int64_t, REAL, int64_t, val,                                           td[i]=cval)
+        else
+          BODY(double, REAL, int64_t, !R_FINITE(val) ? NA_INTEGER64 : val,            td[i]=cval)
+        break;
+      default: error("Internal error");
+      }
     }
   } break;
   case CPLXSXP: {
