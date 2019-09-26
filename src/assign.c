@@ -702,6 +702,8 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source,
     }
   }
   const bool sourceIsFactor=isFactor(source), targetIsFactor=isFactor(target);
+  const bool sourceIsI64=isReal(source) && Rinherits(source, char_integer64);
+  const bool targetIsI64=isReal(target) && Rinherits(target, char_integer64);
   if (sourceIsFactor || targetIsFactor) {
     if (!targetIsFactor) {
       if (!isString(target) && !isNewList(target))
@@ -793,7 +795,7 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source,
         // now continue, but with the mapped integers in the (new) source
       }
     }
-  } else if (TYPEOF(target)!=TYPEOF(source)) {
+  } else if (TYPEOF(target)!=TYPEOF(source) || targetIsI64!=sourceIsI64) {
     // checks up front, otherwise we'd need checks twice in the two branches that cater for 'where' or not
     // TODO:  verbose message and/or strict option for advanced users to ensure types match
     //        only call getOption (small cost in finding the option value) at this point when there is a type mismatch
@@ -838,7 +840,13 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source,
       }
       break;
     case REALSXP:
-      pun = isLogical(source) || isInteger(source) || TYPEOF(source)==RAWSXP;
+      if (targetIsI64 && isReal(source) && !sourceIsI64) {
+        int firstReal=0;
+        if ((firstReal=INTEGER(isReallyReal(source))[0])) {
+          sprintf(memrecycle_message, "coerced to integer64 but contains a non-integer value (%f at position %d); precision lost.", REAL(source)[firstReal-1], firstReal);
+        }
+      }
+      pun = isLogical(source) || isInteger(source) || isReal(source) || TYPEOF(source)==RAWSXP;
       break;
     case VECSXP:
       pun = true;
@@ -1157,12 +1165,12 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source,
       switch (TYPEOF(source)) {
       case RAWSXP:  BODY(Rbyte, RAW, int64_t, (int64_t)val,                           td[i]=cval) break;
       case LGLSXP:  // same as INTSXP
-      case INTSXP:  BODY(int, INTEGER, int64_t, val==NA_INTEGER ? NA_INTEGER64 : (int64_t)val, td[i]=cval) break;
+      case INTSXP:  BODY(int, INTEGER, int64_t, val==NA_INTEGER ? NA_INTEGER64 : val, td[i]=cval) break;
       case REALSXP:
         if (Rinherits(source, char_integer64))
           BODY(int64_t, REAL, int64_t, val,                                           td[i]=cval)
         else
-          BODY(double, REAL, int64_t, !R_FINITE(val) ? NA_INTEGER64 : val,            td[i]=cval)
+          BODY(double, REAL, int64_t, R_FINITE(val) ? val : NA_INTEGER64,            td[i]=cval)
         break;
       default: error("Internal error");
       }
@@ -1180,7 +1188,7 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source,
       const SEXP *ld = STRING_PTR(PROTECT(getAttrib(source, R_LevelsSymbol))); protecti++;
       BODY(int, INTEGER, SEXP, val==NA_INTEGER ? NA_STRING : ld[val-1],               SET_STRING_ELT(target, off+i, cval))
     } else {
-      if (!isString(source)) error("Internal error. Not coerced earlier.");
+      if (!isString(source)) { source = PROTECT(coerceVector(source, STRSXP)); protecti++; }
       BODY(SEXP, STRING_PTR, SEXP, val,                                               SET_STRING_ELT(target, off+i, cval))
     }
     break;
