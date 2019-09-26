@@ -710,6 +710,8 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source,
         error("Cannot assign 'factor' to '%s'. Factors can only be assigned to factor, character or list columns.", type2char(TYPEOF(target)));
       // else assigning factor to character is left to later below, avoiding wasteful asCharacterFactor
     } else if (!sourceIsFactor && !isString(source)) {
+      // target is factor
+      // TODO allow integer in the range [NA,1,nlevel] again, with error outside range
       if (!allNA(source))
         error("Cannot assign '%s' to 'factor'. Factor columns can only be assigned factor or character values, or NA in any type.", type2char(TYPEOF(source)));
       // else let the all-NA (most likely just one NA) fall through to regular assign below without any coerce
@@ -799,7 +801,7 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source,
     // checks up front, otherwise we'd need checks twice in the two branches that cater for 'where' or not
     // TODO:  verbose message and/or strict option for advanced users to ensure types match
     //        only call getOption (small cost in finding the option value) at this point when there is a type mismatch
-    bool pun = false;
+    //bool pun = false;
     switch(TYPEOF(target)) {
     case LGLSXP:
       if (isInteger(source)) {
@@ -813,7 +815,7 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source,
             break; // just warn on the first
           }
         }
-        pun = true;
+      //  pun = true;
       } else if (isReal(source)) {   // TODO: cater for integer64 here
         const double *sD = REAL(source);
         for (int i=0; i<slen; ++i) {
@@ -824,7 +826,7 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source,
             break;
           }
         }
-        pun = true;
+    //    pun = true;
       }
       break;
     case INTSXP:
@@ -834,10 +836,11 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source,
           warning("Coerced double RHS to integer to match the type of the target column (column %d named '%s'). One or more RHS values contain fractions which have been lost; e.g. item %d with value %f has been truncated to %d.", colnum, colname, w, REAL(source)[w-1], (int)REAL(source)[w-1]);
           // same warning text as v1.12.2 so as to reduce diff in tests. TODO: shorten text in future to put truncated %f at the begnning of the message.
         }
-        pun = true;
-      } else if (isLogical(source)) {
-        pun = true;
+     //   pun = true;
       }
+  //     else if (isLogical(source)) {
+  //      pun = true;
+  //    }
       break;
     case REALSXP:
       if (targetIsI64 && isReal(source) && !sourceIsI64) {
@@ -846,15 +849,15 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source,
           sprintf(memrecycle_message, "coerced to integer64 but contains a non-integer value (%f at position %d); precision lost.", REAL(source)[firstReal-1], firstReal);
         }
       }
-      pun = isLogical(source) || isInteger(source) || isReal(source) || TYPEOF(source)==RAWSXP;
+      // pun = isLogical(source) || isInteger(source) || isReal(source) || TYPEOF(source)==RAWSXP;
       break;
-    case VECSXP:
-      pun = true;
-      break;
+    //case VECSXP:
+    //  pun = true;
+    //  break;
     }
-    if (!pun) {
-      SEXP tt = PROTECT(coerceVector(source, TYPEOF(target))); protecti++; // e.g. RAWSXP, STRSXP and CPLXSXP
-      if (!isString(target) && !allNA(source)) {
+    if (isString(target) || isString(source) || isComplex(target) || isComplex(source) || isNewList(source)) {
+      SEXP tt = PROTECT(coerceVector(source, TYPEOF(target))); protecti++;
+      if (!isString(target) && !isNewList(target) && !allNA(source)) {
         warning("Coerced %s RHS to %s to match the type of the target column (column %d named '%s').",
                 type2char(TYPEOF(source)), type2char(TYPEOF(target)), colnum, colname);
       }
@@ -1106,7 +1109,7 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source,
     }                                          \
   }}
 
-  // !! TODO !! : reinstate the memcpy for when types match, aren't STR or VEC, and length(where)==0; e.g. mainly rbindlist
+  // !! TODO !! : reinstate the memcpy for when types match, are not STR or VEC, and length(where)==0; e.g. mainly rbindlist
   //memcpy(RAW(target)+start, RAW(source), slen*SIZEOF(target));
   //memcpy(LOGICAL(target)+start, LOGICAL(source), slen*SIZEOF(target));
   //memcpy(INTEGER(target)+start, INTEGER(source), slen*SIZEOF(target));  // correct type ideal length>1 case
@@ -1142,7 +1145,7 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source,
     case LGLSXP:  // same as INTSXP ...
     case INTSXP:  BODY(int, INTEGER, int, val,                                        td[i]=cval) break;
     case REALSXP: BODY(double, REAL, int, ISNAN(val) ? NA_INTEGER : (int)val,         td[i]=cval) break;
-    default: error("Internal error");
+    default: error("type '%s' cannot be coerced to 'integer'", type2char(TYPEOF(source)));  // test 2005.4
     }
   } break;
   case REALSXP : {
@@ -1170,7 +1173,7 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source,
         if (Rinherits(source, char_integer64))
           BODY(int64_t, REAL, int64_t, val,                                           td[i]=cval)
         else
-          BODY(double, REAL, int64_t, R_FINITE(val) ? val : NA_INTEGER64,            td[i]=cval)
+          BODY(double, REAL, int64_t, R_FINITE(val) ? val : NA_INTEGER64,             td[i]=cval)
         break;
       default: error("Internal error");
       }
@@ -1188,7 +1191,7 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source,
       const SEXP *ld = STRING_PTR(PROTECT(getAttrib(source, R_LevelsSymbol))); protecti++;
       BODY(int, INTEGER, SEXP, val==NA_INTEGER ? NA_STRING : ld[val-1],               SET_STRING_ELT(target, off+i, cval))
     } else {
-      if (!isString(source)) { source = PROTECT(coerceVector(source, STRSXP)); protecti++; }
+      if (!isString(source)) error("Internal error");
       BODY(SEXP, STRING_PTR, SEXP, val,                                               SET_STRING_ELT(target, off+i, cval))
     }
     break;
