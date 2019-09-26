@@ -193,7 +193,7 @@
     set.seed(108)
     x = rnorm(1e6); n = 1e3
     rollfun = function(x, n, FUN) {
-      nx = nx = length(x)
+      nx = length(x)
       ans = rep(NA_real_, nx)
       for (i in n:nx) ans[i] = FUN(x[(i-n+1):i])
       ans
