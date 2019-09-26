@@ -36,6 +36,7 @@ bool allNA(SEXP x) {
   // less space and time than any(is.na(x)) at R level because that creates full size is.na(x) first before any()
   // whereas this allNA can often return early on testing the first value without reading the rest
   const int n = length(x);
+  if (n==0) return true; // for empty raw, and NULL, to match R's all(is.na(raw())) true result, test 2116.13-14
   switch (TYPEOF(x)) {
   case LGLSXP:
   case INTSXP: {
