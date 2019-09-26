@@ -17,6 +17,7 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
   #      other than here inside this branch.
 
   all.equal.data.table = data.table:::all.equal.data.table
+  allNA = data.table:::allNA
   any_na = data.table:::any_na
   as.data.table.array = data.table:::as.data.table.array
   as.IDate.default = data.table:::as.IDate.default
@@ -16181,6 +16182,19 @@ DT = data.table(code=c("c","b","c","a"), val=10:13)
 test(2115.5, DT[code=="c", val := val+1], data.table(code=c("c","b","c","a"), val=INT(11,11,13,13)))
 DT = data.table(x=factor(LETTERS[1:3]), y=1:6)
 test(2115.6, copy(DT)[4:6, x:=LETTERS[1:3]], DT)  # identical(RHS, levels)
+
+# allNA(); an aside in PR#3909
+test(2116.1, allNA(c("",NA)), FALSE)
+test(2116.2, allNA(NA_character_), TRUE)
+test(2116.3, allNA(as.character(c(NA,NA))), TRUE)
+test(2116.4, allNA(c(Inf,NA)), FALSE)
+test(2116.5, allNA(as.double(c(NA,NA))), TRUE)
+if (test_bit64) {
+  test(2116.6, allNA(as.integer64(c(NA,0))), FALSE)
+  test(2116.7, allNA(as.integer64(c(NA,NA))), TRUE)
+}
+test(2116.8, allNA(as.raw(c(0,0))), FALSE)
+test(2116.9, allNA(as.raw(c(0,255))), FALSE)
 
 
 ###################################

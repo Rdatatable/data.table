@@ -84,6 +84,7 @@ SEXP cj();
 SEXP lock();
 SEXP unlock();
 SEXP islockedR();
+SEXP allNAR();
 
 // .Externals
 SEXP fastmean();
@@ -174,6 +175,7 @@ R_CallMethodDef callMethods[] = {
 {"C_islocked", (DL_FUNC) &islockedR, -1},
 {"CfrollapplyR", (DL_FUNC) &frollapplyR, -1},
 {"CtestMsgR", (DL_FUNC) &testMsgR, -1},
+{"C_allNAR", (DL_FUNC) &allNAR, -1},
 {NULL, NULL, 0}
 };
 

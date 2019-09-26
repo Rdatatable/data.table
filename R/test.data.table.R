@@ -157,7 +157,7 @@ test.data.table = function(verbose=FALSE, pkg="pkg", silent=FALSE, with.other.pa
   #  inittime=PS_rss=GC_used=GC_max_used=NULL
   #  m = fread("memtest.csv")[inittime==.inittime]
   #  if (nrow(m)) {
-  #    ps_na = all(is.na(m[["PS_rss"]])) # OS with no 'ps -o rss R' support
+  #    ps_na = allNA(m[["PS_rss"]]) # OS with no 'ps -o rss R' support
   #    grDevices::png("memtest.png")
   #    p = graphics::par(mfrow=c(if (ps_na) 2 else 3, 2))
   #    if (!ps_na) {
