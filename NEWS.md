@@ -329,6 +329,8 @@
 
 44. Grouping could create a `malformed factor` and/or segfault when the factors returned by each group did not have identical levels, [#2199](https://github.com/Rdatatable/data.table/issues/2199) and [#2522](https://github.com/Rdatatable/data.table/issues/2522). Thanks to Václav Hausenblas, @franknarf1, @ben519, and @Henrik-P for reporting.
 
+45. `rbindlist` (and printing a `data.table` with over 100 rows because that uses `rbindlist(head, tail)`) could error with `malformed factor` for unordered factor columns containing a used `NA_character_` level, [#3915](https://github.com/Rdatatable/data.table/issues/3915). This is an unusual input for unordered factors because NA_integer_ is recommended by default in R. Thanks to @sindribaldur for reporting.
+
 ## NOTES
 
 1. `rbindlist`'s `use.names="check"` now emits its message for automatic column names (`"V[0-9]+"`) too, [#3484](https://github.com/Rdatatable/data.table/pull/3484). See news item 5 of v1.12.2 below.

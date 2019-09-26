@@ -14256,7 +14256,15 @@ test(2014.4, class(fread(test_data_mult, keepLeadingZeros = TRUE)[[1]]), "charac
 test(2014.5, class(fread(test_data_mult, keepLeadingZeros = FALSE)[[1]]), "integer")
 
 # rbindlist should drop NA from levels of source factors, relied on by package emil
-test(2015, levels(rbindlist( list( data.frame(a=factor("a",levels=c("a",NA),exclude=NULL)) ))$a), "a")  # the NA level should not be retained
+test(2015.1, levels(rbindlist( list( data.frame(a=factor("a",levels=c("a",NA),exclude=NULL)) ))$a), "a")  # the NA level (unused in this case) should not be retained
+# follow-up from #3915;  since this was malformed factor (so not relied on); lets just drop the used NA level too in v1.12.4 for these regular (not ordered) factors
+DT = data.table(V1 = factor(as.character(c(NA, 1:3, NA)), exclude = NULL))
+test(2015.2, list(levels(DT$V1), as.integer(DT$V1)), list(as.character(c(1:3,NA)), INT(4,1,2,3,4)))  # the 4's are now moved to NA_integer_ by rbindlist
+test(2015.3, unclass(rbindlist(list(DT), use.names=FALSE)$V1), setattr(INT(NA,1,2,3,NA), "levels", as.character(1:3)))
+DT = data.table(V1 = factor(as.character(c(NA, 1:100, NA)), exclude = NULL))
+test(2015.4, print(DT), output="V1.*1:[ ]+<NA>.*2:[ ]+1.*101:[ ]+100.*102:[ ]+<NA>")
+DT = data.table(V1 = factor(as.character(c(NA, 1:3, NA)), exclude = NULL))
+test(2015.5, print(DT), output="V1.*1:[ ]+<NA>.*2:[ ]+1.*4:[ ]+3.*5:[ ]+<NA>")
 
 # better save->load->set(<new column>) message, #2996
 DT = data.table(a=1:3)
