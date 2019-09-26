@@ -720,7 +720,7 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source,
       SEXP targetLevels = PROTECT(getAttrib(target, R_LevelsSymbol)); protecti++;
       SEXP sourceLevels = source;  // character source
       if (sourceIsFactor) { sourceLevels=PROTECT(getAttrib(source, R_LevelsSymbol)); protecti++; }
-      if (!R_compute_identical(sourceLevels, targetLevels, 0)) {
+      if (!sourceIsFactor || !R_compute_identical(sourceLevels, targetLevels, 0)) {  // !sourceIsFactor for test 2115.6
         const int nTargetLevels=length(targetLevels), nSourceLevels=length(sourceLevels);
         const SEXP *targetLevelsD=STRING_PTR(targetLevels), *sourceLevelsD=STRING_PTR(sourceLevels);
         SEXP newSource = PROTECT(allocVector(INTSXP, length(source))); protecti++;
