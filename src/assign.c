@@ -1163,7 +1163,7 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source,
       const SEXP *ld = STRING_PTR(PROTECT(getAttrib(source, R_LevelsSymbol))); protecti++;
       BODY(int, INTEGER, SEXP, val==NA_INTEGER ? NA_STRING : ld[val-1],               SET_STRING_ELT(target, off+i, cval))
     } else {
-      if (!isString(source)) error("Internal error. Not coercedd earlier.");
+      if (!isString(source)) error("Internal error. Not coerced earlier.");
       BODY(SEXP, STRING_PTR, SEXP, val,                                               SET_STRING_ELT(target, off+i, cval))
     }
     break;

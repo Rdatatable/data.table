@@ -874,12 +874,12 @@ test(299.05, DT[2:3,c:=c(43, 44)], data.table(a=1:3,c=42:44))
 test(299.06, DT[2,c:=42], data.table(a=1:3,c=INT(42,42,44)))
 # also see tests 302 and 303.  (Ok, new test file for fast assign would be tidier).
 test(299.07, DT[,c:=rep(FALSE,nrow(DT))], data.table(a=1:3,c=FALSE))  # replace c column with logical
-test(299.08, DT[2:3,c:=c(42,0)], error="Cannot assign 42.0.* to a logical column")
-test(299.09, DT[2:3,c:=c(1,0)], data.table(a=1:3,c=c(FALSE,TRUE,FALSE)))
+test(299.08, DT[2:3,c:=c(3.14,0)], data.table(a=1:3, c=c(FALSE,TRUE,FALSE)), warning="Non-zero 3.14.* taken as TRUE.*Please use")
+test(299.09, DT[2:3,c:=c(0,1)], data.table(a=1:3,c=c(FALSE,FALSE,TRUE))) # no warning
 # FR #2551 is now changed to fit in / fix bug #5442. Stricter warnings are in place now. Check tests 1294.1-34 below.
-test(299.10, DT[2,c:=42], error="Cannot assign 42.0.* to a logical column")
-test(299.11, DT[2,c:=42L], error="Cannot assign 42 to a logical column")
-test(299.12, DT[2:3,c:=c(0L, 0L)], data.table(a=1:3,c=FALSE))
+test(299.10, DT[2,c:=42], data.table(a=1:3, c=c(FALSE,TRUE,TRUE)), warning="Non-zero 42.0.* taken as TRUE.*Please use")
+test(299.11, DT[1,c:=42L], data.table(a=1:3, c=TRUE), warning="Non-zero 42 taken as TRUE.*Please use")
+test(299.12, DT[2:3,c:=c(0L, 0L)], data.table(a=1:3,c=c(TRUE,FALSE,FALSE)))
 
 # Test bug fix #1468, combining i and by.
 DT = data.table(a=1:3,b=1:9,v=1:9,key="a,b")
