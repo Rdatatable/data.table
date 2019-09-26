@@ -1168,22 +1168,8 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source,
     }
     break;
   case VECSXP :
-    // TODO: use BODY here.
-    if (!length(where)) {
-      if (TYPEOF(source)==VECSXP && len==slen) {
-        for (int i=0; i<len; ++i) SET_VECTOR_ELT(target, off+i, VECTOR_ELT(source, i));
-      } else {
-        const SEXP val = TYPEOF(source)==VECSXP ? VECTOR_ELT(source, 0) : source;
-        for (int i=0; i<len; ++i) SET_VECTOR_ELT(target, off+i, val);
-      }
-    } else {
-      const int *wd = INTEGER(where)+start;
-      for (int i=0; i<len; i++) {
-        const int w = wd[i];
-        if (w<1) continue;
-        SET_VECTOR_ELT(target, w-1, source);
-      }
-    }
+    if (TYPEOF(source)!=VECSXP) BODY(SEXP, &, SEXP, val,                              SET_VECTOR_ELT(target, off+i, cval))
+    else                        BODY(SEXP, VECTOR_PTR, SEXP, val,                     SET_VECTOR_ELT(target, off+i, cval))
     break;
   default :
     error("Unsupported type in assign.c:memrecycle '%s' (where)", type2char(TYPEOF(target)));  // # nocov
