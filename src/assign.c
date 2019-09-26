@@ -708,27 +708,9 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source,
         error("Cannot assign 'factor' to '%s'. Factors can only be assigned to factor, character or list columns.", type2char(TYPEOF(target)));
       // else assigning factor to character is left to later below, avoiding wasteful asCharacterFactor
     } else if (!sourceIsFactor && !isString(source)) {
-      // source is not character or factor.  If it's all-NA in another type, let it fall through
-      // to assign the NA later as-is without any coerce.  Otherwise, error.
-      bool ok = true;
-      switch(TYPEOF(source)) {
-      case LGLSXP: case INTSXP: {
-        const int *sd = INTEGER(source);
-        for (int k=0; k<slen; ++k) {
-          if (sd[k]!=NA_INTEGER) { ok=false; break; }
-        }
-      } break;
-      case REALSXP: {
-        const double *sd = REAL(source);
-        for (int k=0; k<slen; ++k) {
-          if (!ISNAN(sd[k])) { ok=false; break; }
-        }
-      } break;
-      default:
-        ok = false;
-      }
-      if (!ok)
+      if (!allNA(source))
         error("Cannot assign '%s' to 'factor'. Factor columns can only be assigned factor or character values, or NA in any type.", type2char(TYPEOF(source)));
+      // else let the all-NA (most likely just one NA) fall through to regular assign below without any coerce
     } else {
       // either factor or character being assigned to factor column
       SEXP targetLevels = PROTECT(getAttrib(target, R_LevelsSymbol)); protecti++;
@@ -1117,13 +1099,22 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source,
     }                                          \
   }}
 
-  const int off = (length(where)?0:start);
+  const int off = (length(where)?0:start); // off = target offset
   switch (TYPEOF(target)) {
-  //case RAWSXP: ...
+  case RAWSXP: {
+    Rbyte *td = RAW(target) + off;
+    switch (TYPEOF(source)) {
+    case RAWSXP:  BODY(Rbyte, RAW,   Rbyte, val,                                      td[i]=cval) break;
+    case LGLSXP:  BODY(int, LOGICAL, Rbyte, val==1,                                   td[i]=cval) break;
+    case INTSXP:  BODY(int, INTEGER, Rbyte, (val>255 || val<0) ? 0 : val,             td[i]=cval) break;
+    case REALSXP: BODY(double, REAL, Rbyte, (ISNAN(val)||val>256||val<0) ? 0 : val,   td[i]=cval) break;
+    default: error("Internal error");
+    }
+  } break;
   case LGLSXP: {
     int *td = LOGICAL(target) + off;
     switch (TYPEOF(source)) {
-    //case RAWSXP: ...
+    case RAWSXP:  BODY(Rbyte, RAW, int, val!=0,                                       td[i]=cval) break;
     case LGLSXP:  BODY(int, LOGICAL, int, val,                                        td[i]=cval) break;
     case INTSXP:  BODY(int, INTEGER, int, val==NA_INTEGER ? NA_LOGICAL : val!=0,      td[i]=cval) break;
     case REALSXP: BODY(double, REAL, int, ISNAN(val) ? NA_LOGICAL : val!=0.0,         td[i]=cval) break;
@@ -1133,8 +1124,8 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source,
   case INTSXP : {
     int *td = INTEGER(target) + off;
     switch (TYPEOF(source)) {
-    //case RAWSXP: ...
-    case LGLSXP: // same as INTSXP
+    case RAWSXP:  BODY(Rbyte, RAW, int, (int)val,                                     td[i]=cval) break;
+    case LGLSXP:  // same as INTSXP ...
     case INTSXP:  BODY(int, INTEGER, int, val,                                        td[i]=cval) break;
     case REALSXP: BODY(double, REAL, int, ISNAN(val) ? NA_INTEGER : (int)val,         td[i]=cval) break;
     default: error("Internal error");
