@@ -846,10 +846,10 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source,
       }
       break;
     }
-    if (isString(target) || isString(source) || isComplex(target) || isComplex(source) || isNewList(source)) {
+    if (isString(target) || isString(source) || isNewList(source)) {
       // TODO if (allNA(source)) {
       //  // e.g. to save coercing NA to NA_character_;  if types match then leave it to the regular assign and the call to allNA is saved
-      //  point to fixed NA of the target type
+      //  point to fixed ScalarLogical(NA_LOGICAL) and fall through to standard cases below
       //} else {
       SEXP tt = PROTECT(coerceVector(source, TYPEOF(target))); protecti++;
       if (!isString(target) && !isNewList(target) && !allNA(source)) {
@@ -862,42 +862,42 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source,
   }
 
 #undef BODY
-#define BODY(STYPE, RFUN, CTYPE, CAST, ASSIGN) \
+#define BODY(STYPE, RFUN, CTYPE, CAST, ASSIGN)       \
   { const STYPE *sd = (const STYPE *)RFUN(source);   \
-  if (length(where)) {                         \
-    const int *wd = INTEGER(where)+start;      \
-    if (slen==1) {                             \
-      const STYPE val = sd[0];                 \
-      const CTYPE cval = CAST;                 \
-      for (int wi=0; wi<len; ++wi) {           \
-        const int w = wd[wi];                  \
-        if (w<1) continue; /*0 or NA*/         \
-        const int i = w-1;                     \
-        ASSIGN;                                \
-      }                                        \
-    } else {                                   \
-      for (int wi=0; wi<len; ++wi) {           \
-        const int w = wd[wi];                  \
-        if (w<1) continue;                     \
-        const STYPE val = sd[wi];              \
-        const CTYPE cval = CAST;               \
-        const int i = w-1;                     \
-        ASSIGN;                                \
-      }                                        \
-    }                                          \
-  } else {                                     \
-    if (slen==1) {                             \
-      const STYPE val = sd[0];                 \
-      const CTYPE cval = CAST;                 \
-      for (int i=0; i<len; ++i)                \
-        ASSIGN;                                \
-    } else {                                   \
-      for (int i=0; i<len; i++) {              \
-        const STYPE val = sd[i];               \
-        const CTYPE cval = CAST;               \
-        ASSIGN;                                \
-      }                                        \
-    }                                          \
+  if (length(where)) {                               \
+    const int *wd = INTEGER(where)+start;            \
+    if (slen==1) {                                   \
+      const STYPE val = sd[0];                       \
+      const CTYPE cval = CAST;                       \
+      for (int wi=0; wi<len; ++wi) {                 \
+        const int w = wd[wi];                        \
+        if (w<1) continue; /*0 or NA*/               \
+        const int i = w-1;                           \
+        ASSIGN;                                      \
+      }                                              \
+    } else {                                         \
+      for (int wi=0; wi<len; ++wi) {                 \
+        const int w = wd[wi];                        \
+        if (w<1) continue;                           \
+        const STYPE val = sd[wi];                    \
+        const CTYPE cval = CAST;                     \
+        const int i = w-1;                           \
+        ASSIGN;                                      \
+      }                                              \
+    }                                                \
+  } else {                                           \
+    if (slen==1) {                                   \
+      const STYPE val = sd[0];                       \
+      const CTYPE cval = CAST;                       \
+      for (int i=0; i<len; ++i)                      \
+        ASSIGN;                                      \
+    } else {                                         \
+      for (int i=0; i<len; i++) {                    \
+        const STYPE val = sd[i];                     \
+        const CTYPE cval = CAST;                     \
+        ASSIGN;                                      \
+      }                                              \
+    }                                                \
   }}
 
 #define COERCE_ERROR(targetType) error("type '%s' cannot be coerced to '%s'", type2char(TYPEOF(source)), targetType); // 'targetType' for integer64 vs double
@@ -974,7 +974,12 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source,
   } break;
   case CPLXSXP: {
     Rcomplex *td = COMPLEX(target) + off;
+    double im = 0.0;
     switch (TYPEOF(source)) {
+    //TODO case RAWSXP
+    case LGLSXP:  // same as INTSXP
+    case INTSXP:  BODY(int, INTEGER, double, val==NA_INTEGER ? (im=NA_REAL,NA_REAL) : (im=0.0,val),  {td[i].r=cval; td[i].i=im;} ) break;
+    //TODO case REALSXP:
     case CPLXSXP: BODY(Rcomplex, COMPLEX, Rcomplex, val,                              td[i]=cval) break;
     default: COERCE_ERROR("complex");
     }
