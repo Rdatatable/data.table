@@ -16210,6 +16210,11 @@ test(2116.12, !allNA(as.raw(c(0,255))))
 test(2116.13, allNA(raw()))         # same as all(is.na(raw()))
 test(2116.14, allNA(NULL))          # same as all(is.na(NULL))
 
+# don't create NA factor level when assigning to factor from character; bug in v1.12.2 noticed in dev part of PR#3909
+DT = data.table(a=factor(LETTERS[1:3]))
+test(2117.1, levels(DT[2:3,a:=c("",NA_character_)]$a), c("A","B","C",""))
+test(2117.2, DT[1,a:=NA_character_]$a, factor(c(NA,"",NA), levels=c("A","B","C","")))
+
 
 ###################################
 #  Add new tests above this line  #

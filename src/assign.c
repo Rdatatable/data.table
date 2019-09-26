@@ -746,6 +746,7 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source,
           const SEXP s = sourceLevelsD[k];
           const int tl = TRUELENGTH(s);
           if (tl>=0) {
+            if (!sourceIsFactor && s==NA_STRING) continue; // don't create NA factor level when assigning character to factor; test 2117
             if (tl>0) savetl(s);
             SET_TRUELENGTH(s, -nTargetLevels-(++nAdd));
           } // else, when sourceIsString, it's normal for there to be duplicates here
@@ -756,7 +757,7 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source,
           const int *sourceD = INTEGER(source);
           for (int i=0; i<nSource; ++i) {  // convert source integers to refer to target levels
             const int val = sourceD[i];
-            newSourceD[i] = val==NA_INTEGER ? NA_INTEGER : -TRUELENGTH(sourceLevelsD[val-1]);
+            newSourceD[i] = val==NA_INTEGER ? NA_INTEGER : -TRUELENGTH(sourceLevelsD[val-1]); // retains NA factor levels here via TL(NA_STRING); e.g. ordered factor
           }
         } else {
           const SEXP *sourceD = STRING_PTR(source);
