@@ -668,7 +668,8 @@ static bool anyNamed(SEXP x) {
   return false;
 }
 
-static char memrecycle_message[1000];
+#define MSGSIZE 1000
+static char memrecycle_message[MSGSIZE+1];
 
 const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source, int colnum, const char *colname)
 // like memcpy but recycles single-item source
@@ -842,7 +843,7 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source,
       if (targetIsI64 && isReal(source) && !sourceIsI64) {
         int firstReal=0;
         if ((firstReal=INTEGER(isReallyReal(source))[0])) {
-          sprintf(memrecycle_message, "coerced to integer64 but contains a non-integer value (%f at position %d); precision lost.", REAL(source)[firstReal-1], firstReal);
+          snprintf(memrecycle_message, MSGSIZE, "coerced to integer64 but contains a non-integer value (%f at position %d); precision lost.", REAL(source)[firstReal-1], firstReal);
         }
       }
       break;
