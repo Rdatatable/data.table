@@ -871,6 +871,8 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source,
       source = tt;
     }
   }
+
+/*
   if (!length(where)) {  // e.g. called from rbindlist with where=R_NilValue
     switch (TYPEOF(target)) {
     case RAWSXP:
@@ -973,7 +975,7 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source,
         }
       } else if (si64) {
         error("Internal error: memrecycle source is integer64 but target is real and not integer64; target should be type integer64");  // # nocov
-        /*
+ */       /*
         double *td = REAL(target)+start;
         if (slen==1) {
           const double val = (double)(((int64_t *)REAL(source))[0]);
@@ -982,6 +984,7 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source,
           const int64_t *val = (int64_t *)REAL(source);
           for (int i=0; i<len; i++) td[i] = (double)(val[i]);
         }*/
+/*
       } else {
         int64_t *td = (int64_t *)REAL(target)+start;
         const int mask = slen==1 ? 0 : INT_MAX;
@@ -1053,9 +1056,11 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source,
       error("Unsupported type in assign.c:memrecycle '%s' (no where)", type2char(TYPEOF(target)));  // # nocov
     }
   } else {
-    const int *wd = INTEGER(where)+start;
-    // const int mask = slen==1 ? 0 : INT_MAX;
 
+*/
+    // const int *wd = INTEGER(where)+start;
+    // const int mask = slen==1 ? 0 : INT_MAX;
+/*
     if (!length(where) && slen==len &&
         TYPEOF(target)==TYPEOF(source) &&
         !isNewList(target) &&
@@ -1071,221 +1076,117 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source,
       default:
         error("Internal error");
     } else {
+*/
 
-                          sd[0]   sd[i]
-#define BODY(CTYPE, RFUN, SINGLE, MULT)  \
-{                                        \
-  const CTYPE *sd = RFUN(source);        \
-  if (length(where)) {                   \
-    if (slen==1) {                       \
-      const CTYPE val = SINGLE;          \
-      for (int i=0; i<len; ++i) {        \
-        const int w = wd[i];             \
-        if (w<1) continue; /*0 or NA*/   \
-        td[w-1] = val;                   \
-      }                                  \
-    } else {                             \
-      for (int i=0; i<len; ++i) {        \
-        const int w = wd[i];             \
-        if (w<1) continue;               \
-        td[w-1] = MULT;                  \
-      }                                  \
-    }                                    \
-  } else {                               \
-    if (slen==1) {                       \
-      const int val = SINGLE;            \
-      for (int i=0; i<len; ++i)          \
-        td[i] = val;                     \
-    } else {                             \
-      for (int i=0; i<len; i++) {        \
-        td[i] = MULT;                    \
-      }                                  \
-    }                                    \
-  }                                      \
-} break
+#undef BODY
+#define BODY(STYPE, RFUN, CTYPE, CAST, ASSIGN) \
+  { const STYPE *sd = RFUN(source);            \
+  if (length(where)) {                         \
+    const int *wd = INTEGER(where)+start;      \
+    if (slen==1) {                             \
+      const STYPE val = sd[0];                 \
+      const CTYPE cval = CAST;                 \
+      for (int wi=0; wi<len; ++wi) {           \
+        const int w = wd[wi];                  \
+        if (w<1) continue; /*0 or NA*/         \
+        const int i = w-1;                     \
+        ASSIGN;                                \
+      }                                        \
+    } else {                                   \
+      for (int wi=0; wi<len; ++wi) {           \
+        const int w = wd[wi];                  \
+        if (w<1) continue;                     \
+        const STYPE val = sd[wi];              \
+        const CTYPE cval = CAST;               \
+        const int i = w-1;                     \
+        ASSIGN;                                \
+      }                                        \
+    }                                          \
+  } else {                                     \
+    if (slen==1) {                             \
+      const STYPE val = sd[0];                 \
+      const CTYPE cval = CAST;                 \
+      for (int i=0; i<len; ++i)                \
+        ASSIGN;                                \
+    } else {                                   \
+      for (int i=0; i<len; i++) {              \
+        const STYPE val = sd[i];               \
+        const CTYPE cval = CAST;               \
+        ASSIGN;                                \
+      }                                        \
+    }                                          \
+  }}
 
-    switch (TYPEOF(target)) {
-    case LGLSXP: {
-      int *td = LOGICAL(target);
-      switch (TYPEOF(source)) {
-      case LGLSXP: BODY(int, LOGICAL, sd[0], sd[i]);
-
-
-        const int *sd = LOGICAL(source);
-        if (length(where)) {
-          if (slen==1) {
-            const int val = sd[0];
-            for (int i=0; i<len; i++) {
-              const int w = wd[i];
-              if (w<1) continue;  // 0 or NA
-              td[w-1] = val;
-            }
-          } else {
-            for (int i=0; i<len; i++) {
-              const int w = wd[i];
-              if (w<1) continue;  // 0 or NA
-              td[w-1] = sd[i];
-            }
-          }
-        } else {
-          if (slen==1) {
-            const int val = sd[0];
-            for (int i=0; i<len; ++i) td[i] = val;  // recycle length-1
-
-          } else {
-            for (int i=0; i<len; i++) {
-              td[i] = sd[i];
-            }
-            // or just
-          }
-
-
-
-        }
-        case INTSXP:
-          val = INTEGER(source)[0];
-          val = val==NA_INTEGER ? NA_LOGICAL : val!=0;  // zero-alloc recycle length-1
-          break;
-        case REALSXP: {
-          double d = REAL(source)[0];
-          val = ISNAN(d) ? NA_LOGICAL : d!=0.0;
-        } break;
-
-
-
-
-
-
-      case INTSXP:
-
-
-      case REALSXP:
-
-
-
-
-    case INTSXP : {
-      int *td = INTEGER(target);
-      switch (TYPEOF(source)) {
-      case LGLSXP: case INTSXP: {
-        const int *sd = INTEGER(source);
-        for (int i=0; i<len; i++) {
-          const int w = wd[i];
-          if (w<1) continue;  // 0 or NA
-          td[w-1] = sd[i&mask];  // i&mask is for branchless recyle when slen==1
-        }
-      } break;
-      case REALSXP: {
-        const double *sd = REAL(source);
-        if (slen==1) {
-          int val = ISNAN(sd[0]) ? NA_INTEGER : (int)sd[0];
-          for (int i=0; i<len; ++i) {
-            const int w = wd[i];
-            if (w<1) continue;
-            td[w-1] = val;
-          }
-        } else {
-          for (int i=0; i<len; ++i) {
-            const int w = wd[i];
-            if (w<1) continue;
-            double d = sd[i];
-            td[w-1] = ISNAN(d) ? NA_INTEGER : (int)d;
-          }
-        }
-      } break;
-      default:
-        error("Internal error");
+  const int off = (length(where)?0:start);
+  switch (TYPEOF(target)) {
+  //case RAWSXP: ...
+  case LGLSXP: {
+    int *td = LOGICAL(target) + off;
+    switch (TYPEOF(source)) {
+    //case RAWSXP: ...
+    case LGLSXP:  BODY(int, LOGICAL, int, val,                                        td[i]=cval) break;
+    case INTSXP:  BODY(int, INTEGER, int, val==NA_INTEGER ? NA_LOGICAL : val!=0,      td[i]=cval) break;
+    case REALSXP: BODY(double, REAL, int, ISNAN(val) ? NA_LOGICAL : val!=0.0,         td[i]=cval) break;
+    default: error("Internal error");
+    }
+  } break;
+  case INTSXP : {
+    int *td = INTEGER(target) + off;
+    switch (TYPEOF(source)) {
+    //case RAWSXP: ...
+    case LGLSXP: // same as INTSXP
+    case INTSXP:  BODY(int, INTEGER, int, val,                                        td[i]=cval) break;
+    case REALSXP: BODY(double, REAL, int, ISNAN(val) ? NA_INTEGER : (int)val,         td[i]=cval) break;
+    default: error("Internal error");
+    }
+  } break;
+  case REALSXP : {
+    double *td = REAL(target) + off;
+    switch (TYPEOF(source)) {
+    case RAWSXP:  BODY(Rbyte, RAW, double, (double)val,                               td[i]=cval) break;
+    case LGLSXP:  // same as INTSXP
+    case INTSXP:  BODY(int, INTEGER, double, val==NA_INTEGER ? NA_REAL : (double)val, td[i]=cval) break;
+    case REALSXP: BODY(double, REAL, double, val,                                     td[i]=cval) break;
+    // ****** TODO: ******** integer64!!
+    default: error("Internal error");
+    }
+  } break;
+  case CPLXSXP: {
+    Rcomplex *td = COMPLEX(target) + off;
+    switch (TYPEOF(source)) {
+    case CPLXSXP: BODY(Rcomplex, COMPLEX, Rcomplex, val,                              td[i]=cval) break;
+    default: error("Internal error");
+    }
+  } break;
+  case STRSXP :
+    if (sourceIsFactor) {
+      const SEXP *ld = STRING_PTR(PROTECT(getAttrib(source, R_LevelsSymbol))); protecti++;
+      BODY(int, INTEGER, SEXP, val==NA_INTEGER ? NA_STRING : ld[val-1],               SET_STRING_ELT(target, off+i, cval))
+    } else {
+      if (!isString(source)) error("Internal error. Not coercedd earlier.");
+      BODY(SEXP, STRING_PTR, SEXP, val,                                               SET_STRING_ELT(target, off+i, cval))
+    }
+    break;
+  case VECSXP :
+    // TODO: use BODY here.
+    if (!length(where)) {
+      if (TYPEOF(source)==VECSXP && len==slen) {
+        for (int i=0; i<len; ++i) SET_VECTOR_ELT(target, off+i, VECTOR_ELT(source, i));
+      } else {
+        const SEXP val = TYPEOF(source)==VECSXP ? VECTOR_ELT(source, 0) : source;
+        for (int i=0; i<len; ++i) SET_VECTOR_ELT(target, off+i, val);
       }
-    } break;
-    case REALSXP : {
-      double *td = REAL(target);
-      switch (TYPEOF(source)) {
-      case RAWSXP: {
-        const Rbyte *sd = RAW(source);
-        for (int i=0; i<len; ++i) {
-          const int w = wd[i];
-          if (w<1) continue;
-          td[w-1] = (double)sd[i&mask];
-        }
-      } break;
-      case LGLSXP: case INTSXP: {
-        const int *sd = INTEGER(source);
-        if (slen==1) {
-          double val = sd[0]==NA_INTEGER ? NA_REAL : (double)sd[0];
-          for (int i=0; i<len; ++i) {
-            const int w = wd[i];
-            if (w<1) continue;
-            td[w-1] = val;
-          }
-        } else {
-          for (int i=0; i<len; ++i) {
-            const int w = wd[i];
-            if (w<1) continue;
-            int val = sd[i];
-            td[w-1] = val==NA_INTEGER ? NA_REAL : (double)val;
-          }
-        }
-      } break;
-      case REALSXP: {
-        const double *sd = REAL(source);
-        for (int i=0; i<len; i++) {
-          const int w = wd[i];
-          if (w<1) continue;
-          td[w-1] = sd[i&mask];
-        }
-      } break;
-      default:
-        error("Internal error");
-      }
-    } break;
-    case CPLXSXP: {
-      Rcomplex *td = COMPLEX(target);
-      const Rcomplex *sd = COMPLEX(source);
+    } else {
+      const int *wd = INTEGER(where)+start;
       for (int i=0; i<len; i++) {
         const int w = wd[i];
         if (w<1) continue;
-        td[w-1] = sd[i&mask];
+        SET_VECTOR_ELT(target, w-1, source);
       }
-    } break;
-    case STRSXP :
-      if (sourceIsFactor) {
-        const int *sd = INTEGER(source);
-        const SEXP *ld = STRING_PTR(PROTECT(getAttrib(source, R_LevelsSymbol))); protecti++;
-        for (int i=0; i<len; i++) {
-          const int w = wd[i];
-          if (w<1) continue;
-          const int val = sd[i&mask];
-          SET_STRING_ELT(target, w-1, val==NA_INTEGER ? NA_STRING : ld[val-1]);
-        }
-      } else {
-        if (!isString(source)) error("Internal error. Not coerced earlier.");
-        const SEXP *sd = STRING_PTR(source);
-        for (int i=0; i<len; i++) {
-          const int w = wd[i];
-          if (w<1) continue;
-          SET_STRING_ELT(target, w-1, sd[i&mask]);
-        }
-      }
-      break;
-    case VECSXP : {
-      if (TYPEOF(source)==VECSXP) {
-        const SEXP *sd = VECTOR_PTR(source);
-        for (int i=0; i<len; i++) {
-          const int w = wd[i];
-          if (w<1) continue;
-          SET_VECTOR_ELT(target, w-1, sd[i&mask]);
-        }
-      } else {
-        for (int i=0; i<len; i++) {
-          const int w = wd[i];
-          if (w<1) continue;
-          SET_VECTOR_ELT(target, w-1, source);
-        }
-      }
-    } break;
-    default :
-      error("Unsupported type in assign.c:memrecycle '%s' (where)", type2char(TYPEOF(target)));  // # nocov
     }
+    break;
+  default :
+    error("Unsupported type in assign.c:memrecycle '%s' (where)", type2char(TYPEOF(target)));  // # nocov
   }
   UNPROTECT(protecti);
   return memrecycle_message[0] ? memrecycle_message : NULL;
