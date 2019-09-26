@@ -14135,7 +14135,17 @@ test(2005.12, set(DT, 1L, "f", expression(x+2)), error="type 'expression' cannot
 if (test_bit64) {
   DT[,g:=as.integer64(c(-9,0,NA))]
   test(2005.13, set(DT, 1L, "g", expression(x+2)), error="type 'expression' cannot be coerced to 'integer64'")
+  test(2005.14, DT[1:2,e:=as.integer64(c(NA,-200))]$e, c(NA_real_, -200, pi*3))
 }
+test(2005.15, DT[2:3,c:=c(TRUE,FALSE)]$c, as.raw(INT(7,1,0)))
+test(2005.16, set(DT,1L,"c",NA)$c, as.raw(INT(0,1,0)))
+test(2005.17, set(DT,1:2,"c",INT(-1,255))$c, as.raw(INT(0,255,0)))
+test(2005.18, DT[2:3,c:=INT(NA,256)]$c, as.raw(INT(0,0,0)))
+test(2005.19, set(DT,2:3,"c",c(NA,3.14))$c, as.raw(INT(0,0,3)))
+test(2005.20, DT[1:2,c:=c(Inf,0.78)]$c, as.raw(INT(0,0,3)))
+test(2005.21, DT[1:2,d:=as.raw(c(0,255))]$d, c(FALSE,TRUE,TRUE))
+test(2005.22, DT[2:3,b:=as.raw(c(0,255))]$b, INT(4,0,255))
+test(2005.23, DT[1:2,e:=as.raw(c(0,255))]$e, c(0,255,pi*3))
 
 # rbindlist raw type, #2819
 test(2006.1, rbindlist(list(data.table(x = as.raw(1), y=as.raw(3)), data.table(x = as.raw(2))), fill=TRUE), data.table(x=as.raw(1:2), y=as.raw(c(3,0))))
