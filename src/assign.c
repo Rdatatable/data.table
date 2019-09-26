@@ -854,6 +854,7 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source,
     }
   }
 
+  const bool sourceIsI64 = isReal(source) && Rinherits(source, char_integer64);
 /*
   if (!length(where)) {  // e.g. called from rbindlist with where=R_NilValue
     switch (TYPEOF(target)) {
@@ -864,7 +865,7 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source,
         const Rbyte val = RAW(source)[0];
         for (int i=0; i<len; i++) td[i] = val;  // no R API inside loop as RAW()/INTEGER() etc have overhead even when inline functions
       } else {
-        memcpy(RAW(target)+start, RAW(source), slen*SIZEOF(target));
+
       }
       break;
     case LGLSXP: {
@@ -890,7 +891,7 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source,
       } else {
         switch (TYPEOF(source)) {
         case LGLSXP:
-          memcpy(td, LOGICAL(source), slen*SIZEOF(target));
+
           break;
         case INTSXP: {
           const int *sd = INTEGER(source);
@@ -929,7 +930,7 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source,
         switch (TYPEOF(source)) {
         case LGLSXP:
         case INTSXP:
-          memcpy(td, INTEGER(source), slen*SIZEOF(target));  // correct type ideal length>1 case
+
           break;
         case REALSXP: {
           const double *sourceD = REAL(source);
@@ -953,7 +954,7 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source,
           const double val = REAL(source)[0];
           for (int i=0; i<len; i++) td[i] = val;
         } else {
-          memcpy(REAL(target)+start, REAL(source), slen*SIZEOF(target));
+
         }
       } else if (si64) {
         error("Internal error: memrecycle source is integer64 but target is real and not integer64; target should be type integer64");  // # nocov
@@ -999,7 +1000,7 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source,
         const Rcomplex val = COMPLEX(source)[0];
         for (int i=0; i<len; ++i) td[i] = val;
       } else {
-        memcpy(COMPLEX(target)+start, COMPLEX(source), slen*SIZEOF(target));
+
       }
       break;
     case STRSXP :
@@ -1099,7 +1100,15 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source,
     }                                          \
   }}
 
-  const int off = (length(where)?0:start); // off = target offset
+  // !! TODO !! : reinstate the memcpy for when types match, aren't STR or VEC, and length(where)==0; e.g. mainly rbindlist
+  //memcpy(RAW(target)+start, RAW(source), slen*SIZEOF(target));
+  //memcpy(LOGICAL(target)+start, LOGICAL(source), slen*SIZEOF(target));
+  //memcpy(INTEGER(target)+start, INTEGER(source), slen*SIZEOF(target));  // correct type ideal length>1 case
+  //memcpy(REAL(target)+start, REAL(source), slen*SIZEOF(target));
+  //memcpy(COMPLEX(target)+start, COMPLEX(source), slen*SIZEOF(target));
+
+
+  const int off = (length(where)?0:start); // off = target offset; e.g. called from rbindlist with where=R_NilValue and start!=0
   switch (TYPEOF(target)) {
   case RAWSXP: {
     Rbyte *td = RAW(target) + off;
@@ -1132,6 +1141,7 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source,
     }
   } break;
   case REALSXP : {
+    if (Rinherits(target, char_integer64)) {
     double *td = REAL(target) + off;
     switch (TYPEOF(source)) {
     case RAWSXP:  BODY(Rbyte, RAW, double, (double)val,                               td[i]=cval) break;
