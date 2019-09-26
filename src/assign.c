@@ -712,9 +712,11 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source,
     } else if (!sourceIsFactor && !isString(source)) {
       // target is factor
       // TODO allow integer in the range [NA,1,nlevel] again, with error outside range
-      if (!allNA(source))
+      if (!allNA(source)) {
         error("Cannot assign '%s' to 'factor'. Factor columns can only be assigned factor or character values, or NA in any type.", type2char(TYPEOF(source)));
-      // else let the all-NA (most likely just one NA) fall through to regular assign below without any coerce
+      } else {
+        source = ScalarLogical(NA_LOGICAL); // a global constant in R and won't allocate; fall through to regular zero-copy coerce of logical to integer
+      }
     } else {
       // either factor or character being assigned to factor column
       SEXP targetLevels = PROTECT(getAttrib(target, R_LevelsSymbol)); protecti++;
