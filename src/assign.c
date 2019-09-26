@@ -501,7 +501,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
       targetcol = VECTOR_ELT(dt,coln);
     }
     memrecycle(targetcol, rows, 0, targetlen, thisvalue, coln+1, CHAR(STRING_ELT(names, coln)));
-    // memrecycle is also called from dogroups;          ^^ last 2 arguments just for messages
+    //                                                   ^^ last 2 arguments just for messages
   }
 
   *_Last_updated = numToDo;  // the updates have taken place with no error, so update .Last.updated now
@@ -801,7 +801,6 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source,
     // checks up front, otherwise we'd need checks twice in the two branches that cater for 'where' or not
     // TODO:  verbose message and/or strict option for advanced users to ensure types match
     //        only call getOption (small cost in finding the option value) at this point when there is a type mismatch
-    //bool pun = false;
     switch(TYPEOF(target)) {
     case LGLSXP:
       if (isInteger(source)) {
@@ -815,7 +814,6 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source,
             break; // just warn on the first
           }
         }
-      //  pun = true;
       } else if (isReal(source)) {   // TODO: cater for integer64 here
         const double *sD = REAL(source);
         for (int i=0; i<slen; ++i) {
@@ -826,7 +824,6 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source,
             break;
           }
         }
-    //    pun = true;
       }
       break;
     case INTSXP:
@@ -836,11 +833,7 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source,
           warning("Coerced double RHS to integer to match the type of the target column (column %d named '%s'). One or more RHS values contain fractions which have been lost; e.g. item %d with value %f has been truncated to %d.", colnum, colname, w, REAL(source)[w-1], (int)REAL(source)[w-1]);
           // same warning text as v1.12.2 so as to reduce diff in tests. TODO: shorten text in future to put truncated %f at the begnning of the message.
         }
-     //   pun = true;
       }
-  //     else if (isLogical(source)) {
-  //      pun = true;
-  //    }
       break;
     case REALSXP:
       if (targetIsI64 && isReal(source) && !sourceIsI64) {
@@ -849,226 +842,22 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source,
           sprintf(memrecycle_message, "coerced to integer64 but contains a non-integer value (%f at position %d); precision lost.", REAL(source)[firstReal-1], firstReal);
         }
       }
-      // pun = isLogical(source) || isInteger(source) || isReal(source) || TYPEOF(source)==RAWSXP;
       break;
-    //case VECSXP:
-    //  pun = true;
-    //  break;
     }
     if (isString(target) || isString(source) || isComplex(target) || isComplex(source) || isNewList(source)) {
+      // TODO if (allNA(source)) {
+      //  // e.g. to save coercing NA to NA_character_;  if types match then leave it to the regular assign and the call to allNA is saved
+      //  point to fixed NA of the target type
+      //} else {
       SEXP tt = PROTECT(coerceVector(source, TYPEOF(target))); protecti++;
       if (!isString(target) && !isNewList(target) && !allNA(source)) {
         warning("Coerced %s RHS to %s to match the type of the target column (column %d named '%s').",
                 type2char(TYPEOF(source)), type2char(TYPEOF(target)), colnum, colname);
       }
       source = tt;
+      // }
     }
   }
-/*
-  if (!length(where)) {  // e.g. called from rbindlist with where=R_NilValue
-    switch (TYPEOF(target)) {
-    case RAWSXP:
-      if (slen==1) {
-        // recycle single items
-        Rbyte *td = RAW(target)+start;
-        const Rbyte val = RAW(source)[0];
-        for (int i=0; i<len; i++) td[i] = val;  // no R API inside loop as RAW()/INTEGER() etc have overhead even when inline functions
-      } else {
-
-      }
-      break;
-    case LGLSXP: {
-      int *td = LOGICAL(target)+start;
-      if (slen==1) {
-        int val;
-        switch (TYPEOF(source)) {
-        case LGLSXP:
-          val = LOGICAL(source)[0];
-          break;
-        case INTSXP:
-          val = INTEGER(source)[0];
-          val = val==NA_INTEGER ? NA_LOGICAL : val!=0;  // zero-alloc recycle length-1
-          break;
-        case REALSXP: {
-          double d = REAL(source)[0];
-          val = ISNAN(d) ? NA_LOGICAL : d!=0.0;
-        } break;
-        default:
-          error("Internal error"); // # nocov
-        }
-        for (int i=0; i<len; ++i) td[i] = val;  // recycle length-1
-      } else {
-        switch (TYPEOF(source)) {
-        case LGLSXP:
-
-          break;
-        case INTSXP: {
-          const int *sd = INTEGER(source);
-          for (int i=0; i<len; ++i) {
-            td[i] = sd[i]==NA_INTEGER ? NA_LOGICAL : sd[i]!=0;  // zero-alloc coerce length>1
-          }
-        } break;
-        case REALSXP: {
-          const double *sd = REAL(source);
-          for (int i=0; i<len; ++i) {
-            td[i] = ISNAN(sd[i]) ? NA_LOGICAL : sd[i]!=0.0;
-          }
-        }
-        }
-      }
-    } break;
-    case INTSXP: {
-      int *td = INTEGER(target)+start;
-      if (slen==1) {
-        // punned-coerce; i.e. avoid the small overhead of allocating via coerceVector
-        int val;
-        switch (TYPEOF(source)) {
-        case LGLSXP:
-        case INTSXP:
-          val = INTEGER(source)[0];
-          break;
-        case REALSXP: {   // allowed real 0/1/NA for logical, and no float for integer, was checked up front above
-          double d = REAL(source)[0];
-          val = ISNAN(d) ? NA_INTEGER : (int)d;
-        } break;
-        default:
-          error("Internal error"); // # nocov
-        }
-        for (int i=0; i<len; ++i) td[i] = val;  // recycle length-1
-      } else {
-        switch (TYPEOF(source)) {
-        case LGLSXP:
-        case INTSXP:
-
-          break;
-        case REALSXP: {
-          const double *sourceD = REAL(source);
-          for (int i=0; i<len; ++i) {
-            double d = sourceD[i];
-            td[i] = ISNAN(d) ? NA_INTEGER : (int)d;  // punned-coerce length>1. Truncation when INTSXP, or invalid LGLSXP was caught earlier above.
-          }
-        }
-        }
-      }
-    } break;
-    case REALSXP : {
-      bool si64 = Rinherits(source, char_integer64);
-      bool ti64 = Rinherits(target, char_integer64);
-      if (si64 && TYPEOF(source)!=REALSXP)
-        error("Internal error: source has integer64 attribute but is type '%s' not REALSXP", type2char(TYPEOF(source))); // # nocov
-      if (si64 == ti64) {
-        if (TYPEOF(source)!=REALSXP) { source = PROTECT(coerceVector(source, REALSXP)); protecti++; }
-        if (slen==1) {
-          double *td = REAL(target)+start;
-          const double val = REAL(source)[0];
-          for (int i=0; i<len; i++) td[i] = val;
-        } else {
-
-        }
-      } else if (si64) {
-        error("Internal error: memrecycle source is integer64 but target is real and not integer64; target should be type integer64");  // # nocov
- */       /*
-        double *td = REAL(target)+start;
-        if (slen==1) {
-          const double val = (double)(((int64_t *)REAL(source))[0]);
-          for (int i=0; i<len; i++) td[i] = val;
-        } else {
-          const int64_t *val = (int64_t *)REAL(source);
-          for (int i=0; i<len; i++) td[i] = (double)(val[i]);
-        }*/
-/*
-      } else {
-        int64_t *td = (int64_t *)REAL(target)+start;
-        const int mask = slen==1 ? 0 : INT_MAX;
-        switch (TYPEOF(source)) {
-        case RAWSXP: {
-          const Rbyte *sd = RAW(source);  // sd = source data
-          for (int i=0; i<len; ++i) td[i] = (int64_t)(sd[i&mask]);  // raw has no NA
-        } break;
-        case LGLSXP : case INTSXP : {
-          const int *sd = INTEGER(source);
-          for (int i=0; i<len; ++i) td[i] = sd[i]==NA_INTEGER ? INT64_MIN : (int64_t)(sd[i]);
-        } break;
-        case REALSXP : {
-          int firstReal=0;
-          if ((firstReal=INTEGER(isReallyReal(source))[0])) {
-            sprintf(memrecycle_message, "coerced to integer64 but contains a non-integer value (%f at position %d); precision lost.", REAL(source)[firstReal-1], firstReal);
-          }
-          double *sd = REAL(source);
-          for (int i=0; i<len; ++i) td[i] = R_FINITE(sd[i]) ? (int)(sd[i]) : NA_INTEGER;
-        } break;
-        default :
-          error("Internal error: memrecycle integer64 column source is type '%s'", type2char(TYPEOF(source)));  // # nocov
-        }
-      }
-    } break;
-    case CPLXSXP :
-      if (TYPEOF(source)!=CPLXSXP) { source = PROTECT(coerceVector(source, CPLXSXP)); protecti++; }
-      if (slen==1) {
-        Rcomplex *td = COMPLEX(target)+start;
-        const Rcomplex val = COMPLEX(source)[0];
-        for (int i=0; i<len; ++i) td[i] = val;
-      } else {
-
-      }
-      break;
-    case STRSXP :
-      if (sourceIsFactor) {
-        const int *sd = INTEGER(source);
-        const SEXP *ld = STRING_PTR(PROTECT(getAttrib(source, R_LevelsSymbol))); protecti++;
-        if (slen==1) {
-          const SEXP val = sd[0]==NA_INTEGER ? NA_STRING : ld[sd[0]-1];
-          for (int i=0; i<len; ++i) SET_STRING_ELT(target, start+i, val);
-        } else {
-          for (int i=0; i<len; ++i) {
-            const int val = sd[i];
-            SET_STRING_ELT(target, start+i, val==NA_INTEGER ? NA_STRING : ld[val-1]);
-          }
-        }
-      } else {
-        if (TYPEOF(source)!=STRSXP) error("Internal error. Not coerced earlier.");
-        if (slen==1) {
-          const SEXP val = STRING_ELT(source, 0);
-          for (int i=0; i<len; i++) SET_STRING_ELT(target, start+i, val);
-        } else {
-          const SEXP *val = STRING_PTR(source);
-          for (int i=0; i<len; i++) SET_STRING_ELT(target, start+i, val[i]);
-        }
-      }
-      break;
-    case VECSXP :
-      if (TYPEOF(source)==VECSXP && len==slen) {
-        for (int i=0; i<len; i++) SET_VECTOR_ELT(target, start+i, VECTOR_ELT(source, i));
-      } else {
-        const SEXP val = TYPEOF(source)==VECSXP ? VECTOR_ELT(source, 0) : source;
-        for (int i=0; i<len; i++) SET_VECTOR_ELT(target, start+i, val);
-      }
-      break;
-    default :
-      error("Unsupported type in assign.c:memrecycle '%s' (no where)", type2char(TYPEOF(target)));  // # nocov
-    }
-  } else {
-
-*/
-    // const int *wd = INTEGER(where)+start;
-    // const int mask = slen==1 ? 0 : INT_MAX;
-/*
-    if (!length(where) && slen==len &&
-        TYPEOF(target)==TYPEOF(source) &&
-        !isNewList(target) &&
-        !isString(target) &&
-        targetI64 == sourceI64 &&
-        targetFactor == sourceFactor) {
-      switch(TYPEOF(target)) {
-      case RAWSXP: memcpy(RAW(td),      RAW(sd),     slen*SIZEOF(target)); break;
-      case LGLSXP: memcpy(LOGICAL(td),  LOGICAL(td), slen*SIZEOF(target)); break;
-      case INTSXP: memcpy(INTEGER(td),  INTEGER(td), slen*SIZEOF(target)); break;
-      case REALSXP: memcpy(REAL(td),    REAL(td),    slen*SIZEOF(target)); break;
-      case CPLXSXP: memcpy(COMPLEX(td), COMPLEX(td), slen*SIZEOF(target)); break;
-      default:
-        error("Internal error");
-    } else {
-*/
 
 #undef BODY
 #define BODY(STYPE, RFUN, CTYPE, CAST, ASSIGN) \
@@ -1109,7 +898,9 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source,
     }                                          \
   }}
 
-  // !! TODO !! : reinstate the memcpy for when types match, are not STR or VEC, and length(where)==0; e.g. mainly rbindlist
+#define COERCE_ERROR(targetType) error("type '%s' cannot be coerced to '%s'", type2char(TYPEOF(source)), targetType); // 'targetType' for integer64 vs double
+
+  // !! TODO !! : reinstate the memcpy for when types match (including i64), are not STR or VEC, length(where)==0, and slen==len; e.g. mainly rbindlist
   //memcpy(RAW(target)+start, RAW(source), slen*SIZEOF(target));
   //memcpy(LOGICAL(target)+start, LOGICAL(source), slen*SIZEOF(target));
   //memcpy(INTEGER(target)+start, INTEGER(source), slen*SIZEOF(target));  // correct type ideal length>1 case
@@ -1125,7 +916,7 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source,
     case LGLSXP:  BODY(int, LOGICAL, Rbyte, val==1,                                   td[i]=cval) break;
     case INTSXP:  BODY(int, INTEGER, Rbyte, (val>255 || val<0) ? 0 : val,             td[i]=cval) break;
     case REALSXP: BODY(double, REAL, Rbyte, (ISNAN(val)||val>256||val<0) ? 0 : val,   td[i]=cval) break;
-    default: error("Internal error");
+    default: COERCE_ERROR("raw");
     }
   } break;
   case LGLSXP: {
@@ -1135,7 +926,7 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source,
     case LGLSXP:  BODY(int, LOGICAL, int, val,                                        td[i]=cval) break;
     case INTSXP:  BODY(int, INTEGER, int, val==NA_INTEGER ? NA_LOGICAL : val!=0,      td[i]=cval) break;
     case REALSXP: BODY(double, REAL, int, ISNAN(val) ? NA_LOGICAL : val!=0.0,         td[i]=cval) break;
-    default: error("Internal error");
+    default: COERCE_ERROR("logical");
     }
   } break;
   case INTSXP : {
@@ -1145,25 +936,11 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source,
     case LGLSXP:  // same as INTSXP ...
     case INTSXP:  BODY(int, INTEGER, int, val,                                        td[i]=cval) break;
     case REALSXP: BODY(double, REAL, int, ISNAN(val) ? NA_INTEGER : (int)val,         td[i]=cval) break;
-    default: error("type '%s' cannot be coerced to 'integer'", type2char(TYPEOF(source)));  // test 2005.4
+    default: COERCE_ERROR("integer"); // test 2005.4
     }
   } break;
   case REALSXP : {
-    if (!Rinherits(target, char_integer64)) {
-      double *td = REAL(target) + off;
-      switch (TYPEOF(source)) {
-      case RAWSXP:  BODY(Rbyte, RAW, double, (double)val,                             td[i]=cval) break;
-      case LGLSXP:  // same as INTSXP
-      case INTSXP:  BODY(int, INTEGER, double, val==NA_INTEGER ? NA_REAL : val,       td[i]=cval) break;
-      case REALSXP:
-        if (Rinherits(source, char_integer64))
-          BODY(int64_t, REAL, double, val==NA_INTEGER64 ? NA_REAL : val,              td[i]=cval)
-        else
-          BODY(double, REAL, double, val,                                             td[i]=cval)
-        break;
-      default: error("Internal error");
-      }
-    } else {
+    if (Rinherits(target, char_integer64)) {
       int64_t *td = (int64_t *)REAL(target) + off;
       switch (TYPEOF(source)) {
       case RAWSXP:  BODY(Rbyte, RAW, int64_t, (int64_t)val,                           td[i]=cval) break;
@@ -1175,7 +952,21 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source,
         else
           BODY(double, REAL, int64_t, R_FINITE(val) ? val : NA_INTEGER64,             td[i]=cval)
         break;
-      default: error("Internal error");
+      default: COERCE_ERROR("integer64");
+      }
+    } else {
+      double *td = REAL(target) + off;
+      switch (TYPEOF(source)) {
+      case RAWSXP:  BODY(Rbyte, RAW, double, (double)val,                             td[i]=cval) break;
+      case LGLSXP:  // same as INTSXP
+      case INTSXP:  BODY(int, INTEGER, double, val==NA_INTEGER ? NA_REAL : val,       td[i]=cval) break;
+      case REALSXP:
+        if (Rinherits(source, char_integer64))
+          BODY(int64_t, REAL, double, val==NA_INTEGER64 ? NA_REAL : val,              td[i]=cval)
+        else
+          BODY(double, REAL, double, val,                                             td[i]=cval)
+        break;
+      default: COERCE_ERROR("double");
       }
     }
   } break;
@@ -1183,7 +974,7 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source,
     Rcomplex *td = COMPLEX(target) + off;
     switch (TYPEOF(source)) {
     case CPLXSXP: BODY(Rcomplex, COMPLEX, Rcomplex, val,                              td[i]=cval) break;
-    default: error("Internal error");
+    default: COERCE_ERROR("complex");
     }
   } break;
   case STRSXP :
@@ -1191,7 +982,7 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source,
       const SEXP *ld = STRING_PTR(PROTECT(getAttrib(source, R_LevelsSymbol))); protecti++;
       BODY(int, INTEGER, SEXP, val==NA_INTEGER ? NA_STRING : ld[val-1],               SET_STRING_ELT(target, off+i, cval))
     } else {
-      if (!isString(source)) error("Internal error");
+      if (!isString(source)) error("Internal error: type %s should have been coerced to character earlier", type2char(TYPEOF(source))); // # nocov
       BODY(SEXP, STRING_PTR, SEXP, val,                                               SET_STRING_ELT(target, off+i, cval))
     }
     break;
@@ -1200,7 +991,7 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source,
     else                        BODY(SEXP, VECTOR_PTR, SEXP, val,                     SET_VECTOR_ELT(target, off+i, cval))
     break;
   default :
-    error("Unsupported type in assign.c:memrecycle '%s' (where)", type2char(TYPEOF(target)));  // # nocov
+    error("Unsupported column type in assign.c:memrecycle '%s'", type2char(TYPEOF(target)));  // # nocov
   }
   UNPROTECT(protecti);
   return memrecycle_message[0] ? memrecycle_message : NULL;
@@ -1227,7 +1018,7 @@ void writeNA(SEXP v, const int from, const int n)
   case REALSXP : {
     if (Rinherits(v, char_integer64)) {  // Rinherits covers nanotime too which inherits from integer64 via S4 extends
       int64_t *vd = (int64_t *)REAL(v);
-      for (int i=from; i<=to; ++i) vd[i] = INT64_MIN;
+      for (int i=from; i<=to; ++i) vd[i] = NA_INTEGER64;
     } else {
       double *vd = REAL(v);
       for (int i=from; i<=to; ++i) vd[i] = NA_REAL;

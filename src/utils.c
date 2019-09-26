@@ -34,20 +34,25 @@ SEXP isReallyReal(SEXP x) {
 
 bool allNA(SEXP x) {
   const int n = length(x);
-  switch(TYPEOF(x)) {
+  switch (TYPEOF(x)) {
   case LGLSXP:
   case INTSXP: {
     const int *xd = INTEGER(x);
-    for (int i=0; i<n; ++i) {
-      if (xd[i]!=NA_INTEGER) return false;
+    for (int i=0; i<n; ++i)   if (xd[i]!=NA_INTEGER)   return false;
+    return true;
+  }
+  case REALSXP:
+    if (Rinherits(x,char_integer64)) {
+      const int64_t *xd = (int64_t *)REAL(x);
+      for (int i=0; i<n; ++i) if (xd[i]!=NA_INTEGER64) return false;
+    } else {
+      const double *xd = REAL(x);
+      for (int i=0; i<n; ++i) if (!ISNAN(xd[i]))       return false;
     }
     return true;
-  } break;
-  case REALSXP: {
-    const double *xd = REAL(x);
-    for (int i=0; i<n; ++i) {
-      if (!ISNAN(xd[i])) return false;
-    }
+  case STRSXP: {
+    const SEXP *xd = STRING_PTR(x);
+    for (int i=0; i<n; ++i)   if (xd[i]!=NA_STRING)    return false;
     return true;
   }}
   return false;
