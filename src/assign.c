@@ -801,10 +801,14 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source,
         // now continue, but with the mapped integers in the (new) source
       }
     }
-  } else if (TYPEOF(target)!=TYPEOF(source) || targetIsI64!=sourceIsI64) {
+  } else if ((TYPEOF(target)!=TYPEOF(source) || targetIsI64!=sourceIsI64) && !isNewList(target)) {
     // checks up front, otherwise we'd need checks twice in the two branches that cater for 'where' or not
     // TODO:  verbose message and/or strict option for advanced users to ensure types match
     //        only call getOption (small cost in finding the option value) at this point when there is a type mismatch
+    if (isNewList(source)) {
+      error("Cannot coerce 'list' RHS to '%s' to match the type of the target column (column %d named '%s').",
+            type2char(TYPEOF(target)), colnum, colname);
+    }
     switch(TYPEOF(target)) {
     case LGLSXP:
       if (isInteger(source)) {
@@ -848,13 +852,13 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source,
       }
       break;
     }
-    if (isString(target) || isString(source) || isNewList(source)) {
+    if (isString(target) || isString(source)) {
       // TODO if (allNA(source)) {
       //  // e.g. to save coercing NA to NA_character_;  if types match then leave it to the regular assign and the call to allNA is saved
       //  point to fixed ScalarLogical(NA_LOGICAL) and fall through to standard cases below
       //} else {
       SEXP tt = PROTECT(coerceVector(source, TYPEOF(target))); protecti++;
-      if (!isString(target) && !isNewList(target) && !allNA(source)) {
+      if (!isString(target) /*&& !isNewList(target)*/ && !allNA(source)) {
         warning("Coerced %s RHS to %s to match the type of the target column (column %d named '%s').",
                 type2char(TYPEOF(source)), type2char(TYPEOF(target)), colnum, colname);
       }

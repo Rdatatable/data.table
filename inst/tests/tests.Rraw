@@ -4856,7 +4856,7 @@ test(1294.03, dt[, a := NA]$a, rep(NA_integer_, 3L))
 test(1294.04, dt[, a := "a"]$a, rep(NA_integer_, 3L),
               warning=c("NAs introduced by coercion",
                         "Coerced character RHS to integer.*column 1 named 'a'"))
-test(1294.05, dt[, a := list(list(1))]$a, rep(1L, 3L), warning="Coerced list RHS to integer to match.*column 1 named 'a'")
+test(1294.05, dt[, a := list(list(1))]$a, error="Cannot coerce 'list' RHS to 'integer' to match.*column 1 named 'a'")
 test(1294.06, dt[, a := list(1L)]$a, rep(1L, 3L))
 test(1294.07, dt[, a := list(1)]$a, rep(1L, 3L))
 test(1294.08, dt[, a := TRUE]$a, rep(1L, 3L))
@@ -4865,14 +4865,14 @@ test(1294.10, dt[, b := NA]$b, rep(NA_real_,3))
 test(1294.11, dt[, b := "bla"]$b, rep(NA_real_, 3),
               warning=c("NAs introduced by coercion",
                         "Coerced character RHS to double to match.*column 2 named 'b'"))
-test(1294.12, dt[, b := list(list(1))]$b, rep(1,3), warning="Coerced list RHS to double")
+test(1294.12, dt[, b := list(list(1))]$b, error="Cannot coerce 'list' RHS to 'double' to match.*column 2 named 'b'")
 test(1294.13, dt[, b := TRUE]$b, rep(1,3))
 test(1294.14, dt[, b := list(1)]$b, rep(1,3))
 test(1294.15, dt[, c := 1]$c, rep(TRUE, 3))
 test(1294.16, dt[, c := 1L]$c, rep(TRUE, 3))
 test(1294.17, dt[, c := NA]$c, rep(NA, 3))
 test(1294.18, dt[, c := list(1)]$c, rep(TRUE, 3))
-test(1294.19, dt[, c := list(list(1))]$c, rep(TRUE, 3), warning="Coerced list RHS to logical")
+test(1294.19, dt[, c := list(list(1))]$c, error="Cannot coerce 'list' RHS to 'logical' to match.*column 3 named 'c'")
 test(1294.20, dt[, c := "bla"]$c, rep(NA, 3), warning="Coerced character RHS to logical")
 test(1294.21, dt[, d := 1]$d, rep(list(1), 3))
 test(1294.22, dt[, d := 1L]$d, rep(list(1L), 3))
@@ -16228,6 +16228,12 @@ test(2116.11, !allNA(as.raw(c(0,0))))
 test(2116.12, !allNA(as.raw(c(0,255))))
 test(2116.13, allNA(raw()))         # same as all(is.na(raw()))
 test(2116.14, allNA(NULL))          # same as all(is.na(NULL))
+test(2116.15, allNA(list()))        # same as all(is.na(list()))
+# turned off allNA list support for now to avoid accidentally using it internally where we did not intend; allNA not yet exported
+#   https://github.com/Rdatatable/data.table/pull/3909#discussion_r329065950
+test(2116.16, allNA(list(NA, NA_character_)), error="Unsupported type 'list' passed to allNA")  # base R returns true
+test(2116.17, allNA(list(NA, NA)),            error="Unsupported type 'list' passed to allNA")  # base R returns true
+test(2116.18, allNA(list(NA, c(NA,NA))),      error="Unsupported type 'list' passed to allNA")  # base R returns false
 
 # don't create NA factor level when assigning to factor from character; bug in v1.12.2 noticed in dev part of PR#3909
 DT = data.table(a=factor(LETTERS[1:3]))

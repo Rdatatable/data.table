@@ -36,49 +36,41 @@ bool allNA(SEXP x) {
   // less space and time than any(is.na(x)) at R level because that creates full size is.na(x) first before any()
   // whereas this allNA can often return early on testing the first value without reading the rest
   const int n = length(x);
-  if (n==0) // for empty raw, and NULL, to match R's all(is.na(raw())) true result, test 2116.13-14
+  if (n==0) // empty vectors (including raw(), NULL, and list()) same as R's all(is.na()) true result; tests 2116.*
     return true;
   switch (TYPEOF(x)) {
+  case RAWSXP: // raw doesn't support NA so always false (other than length 0 case above)
+    return false;
   case LGLSXP:
   case INTSXP: {
     const int *xd = INTEGER(x);
-    for (int i=0; i<n; ++i) {
-      if (xd[i]!=NA_INTEGER)
-        return false;
+    for (int i=0; i<n; ++i)    if (xd[i]!=NA_INTEGER) {
+      return false;
     }
     return true;
   }
   case REALSXP:
     if (Rinherits(x,char_integer64)) {
       const int64_t *xd = (int64_t *)REAL(x);
-      for (int i=0; i<n; ++i) {
-        if (xd[i]!=NA_INTEGER64)
-          return false;
+      for (int i=0; i<n; ++i)  if (xd[i]!=NA_INTEGER64) {
+        return false;
       }
     } else {
       const double *xd = REAL(x);
-      for (int i=0; i<n; ++i) {
-        if (!ISNAN(xd[i]))
-          return false;
+      for (int i=0; i<n; ++i)  if (!ISNAN(xd[i])) {
+        return false;
       }
     }
     return true;
   case STRSXP: {
     const SEXP *xd = STRING_PTR(x);
-    for (int i=0; i<n; ++i) {
-      if (xd[i]!=NA_STRING)
-        return false;
+    for (int i=0; i<n; ++i)    if (xd[i]!=NA_STRING) {
+      return false;
     }
     return true;
   }
-  case VECSXP: {
-    return false;
-  }
-  case RAWSXP: {
-    return false;
-  }
   default:
-    error("Internal error: unsupported type '%s' passed to allNA()", type2char(TYPEOF(x))); // # nocov
+    error("Unsupported type '%s' passed to allNA()", type2char(TYPEOF(x)));  // e.g. VECSXP; tests 2116.16-18
   }
 }
 
