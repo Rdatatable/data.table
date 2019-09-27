@@ -12,7 +12,7 @@
  * algo = 1: frollmeanExact
  *   recalculate whole mean for each observation, roundoff correction is adjusted, also support for NaN and Inf
  */
-void frollmean(unsigned int algo, double *x, uint_fast64_t nx, ans_t *ans, int k, int align, double fill, bool narm, int hasna, bool verbose) {
+void frollmean(unsigned int algo, double *x, uint64_t nx, ans_t *ans, int k, int align, double fill, bool narm, int hasna, bool verbose) {
   if (nx < k) {                                                 // if window width bigger than input just return vector of fill values
     if (verbose)
       snprintf(end(ans->message[0]), 500, "%s: window width longer than input vector, returning all NA vector\n", __func__);
@@ -35,7 +35,7 @@ void frollmean(unsigned int algo, double *x, uint_fast64_t nx, ans_t *ans, int k
     if (verbose)
       snprintf(end(ans->message[0]), 500, "%s: align %d, shift answer by %d\n", __func__, align, -k_);
     memmove((char *)ans->dbl_v, (char *)ans->dbl_v + (k_*sizeof(double)), (nx-k_)*sizeof(double)); // apply shift to achieve expected align
-    for (uint_fast64_t i=nx-k_; i<nx; i++) {                    // fill from right side
+    for (uint64_t i=nx-k_; i<nx; i++) {                         // fill from right side
       ans->dbl_v[i] = fill;
     }
   }
@@ -47,7 +47,7 @@ void frollmean(unsigned int algo, double *x, uint_fast64_t nx, ans_t *ans, int k
  * rollmean implemented as single pass sliding window for align="right"
  * if NAs detected re-run rollmean implemented as single pass sliding window with NA support
  */
-void frollmeanFast(double *x, uint_fast64_t nx, ans_t *ans, int k, double fill, bool narm, int hasna, bool verbose) {
+void frollmeanFast(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasna, bool verbose) {
   if (verbose)
     snprintf(end(ans->message[0]), 500, "%s: running for input length %llu, window %d, hasna %d, narm %d\n", __func__, (unsigned long long int)nx, k, hasna, (int)narm);
   long double w = 0.0;                                          // sliding window aggregate
@@ -61,7 +61,7 @@ void frollmeanFast(double *x, uint_fast64_t nx, ans_t *ans, int k, double fill, 
     w += x[i];                                                  // i==k-1
     ans->dbl_v[i] = (double) (w / k);                           // first full sliding window, non-fill rollfun answer
     if (R_FINITE((double) w)) {                                 // proceed only if no NAs detected in first k obs, otherwise early stopping
-      for (uint_fast64_t i=k; i<nx; i++) {                      // loop over obs, complete window, all remaining after partial window
+      for (uint64_t i=k; i<nx; i++) {                           // loop over obs, complete window, all remaining after partial window
         w -= x[i-k];                                            // remove leaving row from sliding window
         w += x[i];                                              // add current row to sliding window
         ans->dbl_v[i] = (double) (w / k);                       // rollfun to answer vector
@@ -110,7 +110,7 @@ void frollmeanFast(double *x, uint_fast64_t nx, ans_t *ans, int k, double fill, 
     } else {
       ans->dbl_v[i] = narm ? (double) (w / (k - nc)) : NA_REAL; // some values in window are NA
     }
-    for (uint_fast64_t i=k; i<nx; i++) {                        // loop over obs, complete window, all remaining after partial window
+    for (uint64_t i=k; i<nx; i++) {                             // loop over obs, complete window, all remaining after partial window
       if (R_FINITE(x[i])) {
         w += x[i];                                              // add only finite to window aggregate
       } else {
@@ -136,7 +136,7 @@ void frollmeanFast(double *x, uint_fast64_t nx, ans_t *ans, int k, double fill, 
  * rollmean implemented as mean of k obs for each observation for align="right"
  * if NAs detected and na.rm=TRUE then re-run rollmean implemented as mean of k bos for each observation with NA support
  */
-void frollmeanExact(double *x, uint_fast64_t nx, ans_t *ans, int k, double fill, bool narm, int hasna, bool verbose) {
+void frollmeanExact(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasna, bool verbose) {
   if (verbose)
     snprintf(end(ans->message[0]), 500, "%s: running in parallel for input length %llu, window %d, hasna %d, narm %d\n", __func__, (unsigned long long int)nx, k, hasna, (int)narm);
   for (int i=0; i<k-1; i++) {                                   // fill partial window only
@@ -145,7 +145,7 @@ void frollmeanExact(double *x, uint_fast64_t nx, ans_t *ans, int k, double fill,
   bool truehasna = hasna>0;                                     // flag to re-run with NA support if NAs detected
   if (!truehasna || !narm) {
     #pragma omp parallel for num_threads(getDTthreads())
-    for (uint_fast64_t i=k-1; i<nx; i++) {                      // loop on every observation with complete window, partial already filled in single threaded section
+    for (uint64_t i=k-1; i<nx; i++) {                           // loop on every observation with complete window, partial already filled in single threaded section
       if (narm && truehasna) {
         continue;                                               // if NAs detected no point to continue
       }
@@ -183,7 +183,7 @@ void frollmeanExact(double *x, uint_fast64_t nx, ans_t *ans, int k, double fill,
   }
   if (truehasna && narm) {
     #pragma omp parallel for num_threads(getDTthreads())
-    for (uint_fast64_t i=k-1; i<nx; i++) {                      // loop on every observation with complete window, partial already filled in single threaded section
+    for (uint64_t i=k-1; i<nx; i++) {                           // loop on every observation with complete window, partial already filled in single threaded section
       long double w = 0.0;
       int nc = 0;                                               // NA counter within sliding window
       for (int j=-k+1; j<=0; j++) {                             // nested loop on window width
@@ -211,9 +211,9 @@ void frollmeanExact(double *x, uint_fast64_t nx, ans_t *ans, int k, double fill,
               err += x[i+j] - res;                              // measure roundoff for each non-NA obs in window
             }
           }
-          ans->dbl_v[i] = (double) (res + (err / (k - nc)));  // adjust calculated fun with roundoff correction
-        } else {                                              // nc == k
-          ans->dbl_v[i] = R_NaN;                              // all values NAs and narm so produce expected values
+          ans->dbl_v[i] = (double) (res + (err / (k - nc)));    // adjust calculated fun with roundoff correction
+        } else {                                                // nc == k
+          ans->dbl_v[i] = R_NaN;                                // all values NAs and narm so produce expected values
         }
       }
     }
@@ -221,7 +221,7 @@ void frollmeanExact(double *x, uint_fast64_t nx, ans_t *ans, int k, double fill,
 }
 
 /* fast rolling sum */
-void frollsum(unsigned int algo, double *x, uint_fast64_t nx, ans_t *ans, int k, int align, double fill, bool narm, int hasna, bool verbose) {
+void frollsum(unsigned int algo, double *x, uint64_t nx, ans_t *ans, int k, int align, double fill, bool narm, int hasna, bool verbose) {
   if (nx < k) {
     if (verbose)
       snprintf(end(ans->message[0]), 500, "%s: window width longer than input vector, returning all NA vector\n", __func__);
@@ -243,14 +243,14 @@ void frollsum(unsigned int algo, double *x, uint_fast64_t nx, ans_t *ans, int k,
     if (verbose)
       snprintf(end(ans->message[0]), 500, "%s: align %d, shift answer by %d\n", __func__, align, -k_);
     memmove((char *)ans->dbl_v, (char *)ans->dbl_v + (k_*sizeof(double)), (nx-k_)*sizeof(double));
-    for (uint_fast64_t i=nx-k_; i<nx; i++) {
+    for (uint64_t i=nx-k_; i<nx; i++) {
       ans->dbl_v[i] = fill;
     }
   }
   if (verbose)
     snprintf(end(ans->message[0]), 500, "%s: processing algo %u took %.3fs\n", __func__, algo, omp_get_wtime()-tic);
 }
-void frollsumFast(double *x, uint_fast64_t nx, ans_t *ans, int k, double fill, bool narm, int hasna, bool verbose) {
+void frollsumFast(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasna, bool verbose) {
   if (verbose)
     snprintf(end(ans->message[0]), 500, "%s: running for input length %llu, window %d, hasna %d, narm %d\n", __func__, (unsigned long long int)nx, k, hasna, (int)narm);
   long double w = 0.0;
@@ -264,7 +264,7 @@ void frollsumFast(double *x, uint_fast64_t nx, ans_t *ans, int k, double fill, b
     w += x[i];
     ans->dbl_v[i] = (double) w;
     if (R_FINITE((double) w)) {
-      for (uint_fast64_t i=k; i<nx; i++) {
+      for (uint64_t i=k; i<nx; i++) {
         w -= x[i-k];
         w += x[i];
         ans->dbl_v[i] = (double) w;
@@ -313,7 +313,7 @@ void frollsumFast(double *x, uint_fast64_t nx, ans_t *ans, int k, double fill, b
     } else {
       ans->dbl_v[i] = narm ? (double) w : NA_REAL;
     }
-    for (uint_fast64_t i=k; i<nx; i++) {
+    for (uint64_t i=k; i<nx; i++) {
       if (R_FINITE(x[i])) {
         w += x[i];
       } else {
@@ -334,7 +334,7 @@ void frollsumFast(double *x, uint_fast64_t nx, ans_t *ans, int k, double fill, b
     }
   }
 }
-void frollsumExact(double *x, uint_fast64_t nx, ans_t *ans, int k, double fill, bool narm, int hasna, bool verbose) {
+void frollsumExact(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasna, bool verbose) {
   if (verbose)
     snprintf(end(ans->message[0]), 500, "%s: running in parallel for input length %llu, window %d, hasna %d, narm %d\n", __func__, (unsigned long long int)nx, k, hasna, (int)narm);
   for (int i=0; i<k-1; i++) {
@@ -343,7 +343,7 @@ void frollsumExact(double *x, uint_fast64_t nx, ans_t *ans, int k, double fill, 
   bool truehasna = hasna>0;
   if (!truehasna || !narm) {
     #pragma omp parallel for num_threads(getDTthreads())
-    for (uint_fast64_t i=k-1; i<nx; i++) {
+    for (uint64_t i=k-1; i<nx; i++) {
       if (narm && truehasna) {
         continue;
       }
@@ -376,7 +376,7 @@ void frollsumExact(double *x, uint_fast64_t nx, ans_t *ans, int k, double fill, 
   }
   if (truehasna && narm) {
     #pragma omp parallel for num_threads(getDTthreads())
-    for (uint_fast64_t i=k-1; i<nx; i++) {
+    for (uint64_t i=k-1; i<nx; i++) {
       long double w = 0.0;
       int nc = 0;
       for (int j=-k+1; j<=0; j++) {

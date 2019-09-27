@@ -179,21 +179,21 @@ int getDTthreads();
 void avoid_openmp_hang_within_fork();
 
 // froll.c
-void frollmean(unsigned int algo, double *x, uint_fast64_t nx, ans_t *ans, int k, int align, double fill, bool narm, int hasna, bool verbose);
-void frollmeanFast(double *x, uint_fast64_t nx, ans_t *ans, int k, double fill, bool narm, int hasna, bool verbose);
-void frollmeanExact(double *x, uint_fast64_t nx, ans_t *ans, int k, double fill, bool narm, int hasna, bool verbose);
-void frollsum(unsigned int algo, double *x, uint_fast64_t nx, ans_t *ans, int k, int align, double fill, bool narm, int hasna, bool verbose);
-void frollsumFast(double *x, uint_fast64_t nx, ans_t *ans, int k, double fill, bool narm, int hasna, bool verbose);
-void frollsumExact(double *x, uint_fast64_t nx, ans_t *ans, int k, double fill, bool narm, int hasna, bool verbose);
+void frollmean(unsigned int algo, double *x, uint64_t nx, ans_t *ans, int k, int align, double fill, bool narm, int hasna, bool verbose);
+void frollmeanFast(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasna, bool verbose);
+void frollmeanExact(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasna, bool verbose);
+void frollsum(unsigned int algo, double *x, uint64_t nx, ans_t *ans, int k, int align, double fill, bool narm, int hasna, bool verbose);
+void frollsumFast(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasna, bool verbose);
+void frollsumExact(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasna, bool verbose);
 void frollapply(double *x, int64_t nx, double *w, int k, ans_t *ans, int align, double fill, SEXP call, SEXP rho, bool verbose);
 
 // frolladaptive.c
-void fadaptiverollmean(unsigned int algo, double *x, uint_fast64_t nx, ans_t *ans, int *k, double fill, bool narm, int hasna, bool verbose);
-void fadaptiverollmeanFast(double *x, uint_fast64_t nx, ans_t *ans, int *k, double fill, bool narm, int hasna, bool verbose);
-void fadaptiverollmeanExact(double *x, uint_fast64_t nx, ans_t *ans, int *k, double fill, bool narm, int hasna, bool verbose);
-void fadaptiverollsum(unsigned int algo, double *x, uint_fast64_t nx, ans_t *ans, int *k, double fill, bool narm, int hasna, bool verbose);
-void fadaptiverollsumFast(double *x, uint_fast64_t nx, ans_t *ans, int *k, double fill, bool narm, int hasna, bool verbose);
-void fadaptiverollsumExact(double *x, uint_fast64_t nx, ans_t *ans, int *k, double fill, bool narm, int hasna, bool verbose);
+void fadaptiverollmean(unsigned int algo, double *x, uint64_t nx, ans_t *ans, int *k, double fill, bool narm, int hasna, bool verbose);
+void fadaptiverollmeanFast(double *x, uint64_t nx, ans_t *ans, int *k, double fill, bool narm, int hasna, bool verbose);
+void fadaptiverollmeanExact(double *x, uint64_t nx, ans_t *ans, int *k, double fill, bool narm, int hasna, bool verbose);
+void fadaptiverollsum(unsigned int algo, double *x, uint64_t nx, ans_t *ans, int *k, double fill, bool narm, int hasna, bool verbose);
+void fadaptiverollsumFast(double *x, uint64_t nx, ans_t *ans, int *k, double fill, bool narm, int hasna, bool verbose);
+void fadaptiverollsumExact(double *x, uint64_t nx, ans_t *ans, int *k, double fill, bool narm, int hasna, bool verbose);
 
 // frollR.c
 SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEXP narm, SEXP hasNA, SEXP adaptive);
