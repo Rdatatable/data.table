@@ -1215,16 +1215,21 @@ test(423, truelength(DT), 1028L)
 
 # Test crash bug fixed, #1656, introduced with the 1.7.0 feature
 DT = data.table(a = factor(c("A", "Z")), b = 1:4)
-DT[1,1] <- "Z"
-test(424, DT, data.table(a=factor(c("Z","Z","A","Z")),b=1:4))
-test(425, DT[1,1] <- 1, error="Cannot assign 'double' to 'factor'")
-test(426, DT[1,1] <- 2L, error="Cannot assign 'integer' to 'factor'")
-test(427, DT, data.table(a=factor(c("Z","Z","A","Z")),b=1:4))
-DT[1,a:="A"]
-test(428, DT, data.table(a=factor(c("A","Z","A","Z")),b=1:4))
-test(429.1, DT[1,a:=2L], error="Cannot assign 'integer' to 'factor'. Factor columns can only be assigned factor or character values, or NA in any type")
-test(429.2, DT[2,b:=factor("A")], error="Cannot assign 'factor' to 'integer'. Factors can only be assigned to factor, character or list columns.")
-test(430, DT, data.table(a=factor(c("A","Z","A","Z")),b=1:4))
+test(424.1, DT[1,1] <- "Z", "Z")
+test(424.2, DT, data.table(a=factor(c("Z","Z","A","Z")),b=1:4))
+test(425, DT[1,1] <- 1, 1)
+test(426, DT, data.table(a=factor(c("A","Z")),b=1:4))
+test(427.1, DT[1,1] <- 2L, 2L)
+test(427.2, DT, data.table(a=factor(c("Z","Z","A","Z")),b=1:4))
+test(428, DT[1,a:="A"], data.table(a=factor(c("A","Z","A","Z")),b=1:4))
+test(429, DT[1,a:=2L],  data.table(a=factor(c("Z","Z","A","Z")),b=1:4))
+
+test(430.1, DT[1,1]<-3, error="Assigning factor numbers to column 1 named 'a'. But 3.0.* is outside the level range [[]1,2[]], or is not a whole number")
+test(430.2, DT[1,1]<-1.3, error="Assigning factor numbers to column 1 named 'a'. But 1.3.* is outside the level range [[]1,2[]], or is not a whole number")
+test(430.3, DT[1,1:=4L], error="Assigning factor numbers.*1 named 'a'. But 4 is outside.*1,2.*")
+test(430.4, DT[1,a:=TRUE], error="Cannot assign 'logical' to 'factor'. Factor columns can be assigned")
+test(430.5, DT[2,b:=factor("A")], error="Cannot assign 'factor' to 'integer'. Factors can only be assigned to")
+
 DT = data.table(a=factor(c("A","B","A","C","B")), b=1:5)
 test(431.1, DT[1,1:=NA],                 data.table(a=factor(c(NA,"B","A","C","B")), b=1:5))
 test(431.2, DT[2,1:=NA_integer_],        data.table(a=factor(c(NA,NA,"A","C","B"), levels=LETTERS[1:3]), b=1:5))
@@ -4855,7 +4860,7 @@ test(1294.02, dt[, a := 1.5]$a, rep(1L, 3L), warning="Coerced double RHS to inte
 test(1294.03, dt[, a := NA]$a, rep(NA_integer_, 3L))
 test(1294.04, dt[, a := "a"]$a, rep(NA_integer_, 3L),
               warning=c("NAs introduced by coercion",
-                        "Coerced character RHS to integer.*column 1 named 'a'"))
+                        "Coerced 'character' RHS to 'integer'.*column 1 named 'a'"))
 test(1294.05, dt[, a := list(list(1))]$a, error="Cannot coerce 'list' RHS to 'integer' to match.*column 1 named 'a'")
 test(1294.06, dt[, a := list(1L)]$a, rep(1L, 3L))
 test(1294.07, dt[, a := list(1)]$a, rep(1L, 3L))
@@ -4864,7 +4869,7 @@ test(1294.09, dt[, b := 1L]$b, rep(1,3))
 test(1294.10, dt[, b := NA]$b, rep(NA_real_,3))
 test(1294.11, dt[, b := "bla"]$b, rep(NA_real_, 3),
               warning=c("NAs introduced by coercion",
-                        "Coerced character RHS to double to match.*column 2 named 'b'"))
+                        "Coerced 'character' RHS to 'double' to match.*column 2 named 'b'"))
 test(1294.12, dt[, b := list(list(1))]$b, error="Cannot coerce 'list' RHS to 'double' to match.*column 2 named 'b'")
 test(1294.13, dt[, b := TRUE]$b, rep(1,3))
 test(1294.14, dt[, b := list(1)]$b, rep(1,3))
@@ -4873,7 +4878,7 @@ test(1294.16, dt[, c := 1L]$c, rep(TRUE, 3))
 test(1294.17, dt[, c := NA]$c, rep(NA, 3))
 test(1294.18, dt[, c := list(1)]$c, rep(TRUE, 3))
 test(1294.19, dt[, c := list(list(1))]$c, error="Cannot coerce 'list' RHS to 'logical' to match.*column 3 named 'c'")
-test(1294.20, dt[, c := "bla"]$c, rep(NA, 3), warning="Coerced character RHS to logical")
+test(1294.20, dt[, c := "bla"]$c, rep(NA, 3), warning="Coerced 'character' RHS to 'logical'")
 test(1294.21, dt[, d := 1]$d, rep(list(1), 3))
 test(1294.22, dt[, d := 1L]$d, rep(list(1L), 3))
 test(1294.23, dt[, d := TRUE]$d, rep(list(TRUE), 3))
@@ -12937,9 +12942,9 @@ test(1944.6, DT[flag == 1, sum(x), keyby = group], data.table(group=1:4, V1=INT(
 # assigning an int greater than length(levels) corruption of int, #2984
 DT <- data.table(a = factor(c("A", "Z")), b = 1:4)
 c <- 3L
-test(1945.1, DT[1, a:=c],  error="Cannot assign 'integer' to 'factor'")  # [1,a], factor(NA, levels=c("A","Z")), warning="RHS.*outside the levels range.*NAs generated")
+test(1945.1, DT[1, a:=c], error=err<-"Assigning factor numbers to column 1 named 'a'. But 3 is outside the level range [1,2]")
 test(1945.2, c, 3L)
-test(1945.3, DT[2,1] <- c, error="Cannot assign 'integer' to 'factor'")  # 3L, warning="RHS.*outside the levels range.*NAs generated")
+test(1945.3, DT[2,1] <- c, error=err)
 test(1945.4, c, 3L)
 
 # subset a data.table containing an altrep derived from ]<-, ]]<- etc, #3051

@@ -712,11 +712,31 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source,
       // else assigning factor to character is left to later below, avoiding wasteful asCharacterFactor
     } else if (!sourceIsFactor && !isString(source)) {
       // target is factor
-      // TODO allow integer in the range [NA,1,nlevel] again, with error outside range
-      if (!allNA(source)) {
-        error("Cannot assign '%s' to 'factor'. Factor columns can only be assigned factor or character values, or NA in any type.", type2char(TYPEOF(source)));
+      if (allNA(source, false)) {  // return false for list and other types that allNA does not support
+        source = ScalarLogical(NA_LOGICAL); // a global constant in R and won't allocate; fall through to regular zero-copy coerce
+      } else if (isInteger(source) || isReal(source)) {
+        // allow assigning level numbers to factor columns; test 425, 426, 429 and 1945
+        const int nlevel = length(getAttrib(target, R_LevelsSymbol));
+        if (isInteger(source)) {
+          const int *sd = INTEGER(source);
+          for (int i=0; i<slen; ++i) {
+            const int val = sd[i];
+            if ((val<1 && val!=NA_INTEGER) || val>nlevel) {
+              error("Assigning factor numbers to column %d named '%s'. But %d is outside the level range [1,%d]", colnum, colname, val, nlevel);
+            }
+          }
+        } else {
+          const double *sd = REAL(source);
+          for (int i=0; i<slen; ++i) {
+            const double val = sd[i];
+            if (!ISNAN(val) && (!R_FINITE(val) || val!=(int)val || (int)val<1 || (int)val>nlevel)) {
+              error("Assigning factor numbers to column %d named '%s'. But %f is outside the level range [1,%d], or is not a whole number.", colnum, colname, val, nlevel);
+            }
+          }
+        }
+        // Now just let the valid level numbers fall through to regular assign by BODY below
       } else {
-        source = ScalarLogical(NA_LOGICAL); // a global constant in R and won't allocate; fall through to regular zero-copy coerce of logical to integer
+        error("Cannot assign '%s' to 'factor'. Factor columns can be assigned factor, character, NA in any type, or level numbers.", type2char(TYPEOF(source)));
       }
     } else {
       // either factor or character being assigned to factor column
@@ -853,10 +873,9 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source,
       break;
     }
     if (isString(source)) {
-      SEXP tt = PROTECT(coerceVector(source, TYPEOF(target))); protecti++;
-      warning("Coerced %s RHS to %s to match the type of the target column (column %d named '%s').",
-              type2char(TYPEOF(source)), type2char(TYPEOF(target)), colnum, colname);
-      source = tt;
+      source = PROTECT(coerceVector(source, TYPEOF(target))); protecti++;
+      warning("Coerced 'character' RHS to '%s' to match the type of the target column (column %d named '%s').",
+              type2char(TYPEOF(target)), colnum, colname);
     }
   }
 
@@ -991,10 +1010,12 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source,
       BODY(int, INTEGER, SEXP, val==NA_INTEGER ? NA_STRING : ld[val-1],               SET_STRING_ELT(target, off+i, cval))
     } else {
       if (!isString(source)) {
-        if (allNA(source)) {  // saves common coercion of NA (logical) to NA_character_; if source is 'list' that was an error above
+        if (allNA(source, true)) {  // saves common coercion of NA (logical) to NA_character_
+          //              ^^ =errorForBadType; if type list, that was already an error earlier so we
+          //                 want to be strict now otherwise list would get to coerceVector below
           source = ScalarLogical(FALSE);  // dummy input that BODY requires; a no alloc internal R constant that is a SEXP
           // we're using BODY here for its case that hops via 'where', otherwise we could just do a trivial loop here
-          BODY(int, LOGICAL, SEXP, NA_STRING+val,                                    SET_STRING_ELT(target, off+i, cval))
+          BODY(int, LOGICAL, SEXP, NA_STRING+val,                                     SET_STRING_ELT(target, off+i, cval))
           //                                ^^ dummy +0 on address to avoid C warning about not using val; hence why dummy is FALSE (0)
           // BODY has built-in break
         }

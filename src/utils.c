@@ -32,7 +32,7 @@ SEXP isReallyReal(SEXP x) {
   return(ans);
 }
 
-bool allNA(SEXP x) {
+bool allNA(SEXP x, bool errorForBadType) {
   // less space and time than any(is.na(x)) at R level because that creates full size is.na(x) first before any()
   // whereas this allNA can often return early on testing the first value without reading the rest
   const int n = length(x);
@@ -68,16 +68,15 @@ bool allNA(SEXP x) {
       return false;
     }
     return true;
-  }
-  default:
-    error("Unsupported type '%s' passed to allNA()", type2char(TYPEOF(x)));  // e.g. VECSXP; tests 2116.16-18
+  }}
+  if (!errorForBadType) return false;
+  error("Unsupported type '%s' passed to allNA()", type2char(TYPEOF(x)));  // e.g. VECSXP; tests 2116.16-18
   // turned off allNA list support for now to avoid accidentally using it internally where we did not intend; allNA not yet exported
   //   https://github.com/Rdatatable/data.table/pull/3909#discussion_r329065950
-  }
 }
 
 SEXP allNAR(SEXP x) {
-  return ScalarLogical(allNA(x));
+  return ScalarLogical(allNA(x, /*errorForBadType=*/true));
 }
 
 /* colnamesInt
