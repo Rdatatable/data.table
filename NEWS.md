@@ -207,9 +207,9 @@
     ### fun             mean     sum  median
     # base_rollapply   8.815   5.151  60.175
     # zoo::rollapply  34.373  27.837  88.552
-    # zoo::roll[fun]   0.215   0.185      NA  ## not fully supported
+    # zoo::roll[fun]   0.215   0.185      NA   ## median not fully supported
     # frollapply       5.404   1.419  56.475
-    # froll[fun]       0.003   0.002      NA  ## not yet supported
+    # froll[fun]       0.003   0.002      NA   ## median not yet supported
     ```
 
 28. `setnames()` now accepts functions in `old=` and `new=`, [#3703](https://github.com/Rdatatable/data.table/issues/3703). Thanks @smingerson for the feature request and @shrektan for the PR.
