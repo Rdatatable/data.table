@@ -14157,6 +14157,10 @@ test(2005.21, DT[1:2,d:=as.raw(c(0,255))]$d, c(FALSE,TRUE,TRUE))
 test(2005.22, DT[2:3,b:=as.raw(c(0,255))]$b, INT(4,0,255))
 test(2005.23, DT[1:2,e:=as.raw(c(0,255))]$e, c(0,255,pi*3))
 test(2005.24, DT[c(1,3,2), c:=as.raw(c(0,100,255))]$c, as.raw(c(0,255,100)))
+test(2005.25, DT[c(3,1), f:=as.raw(c(20,42))]$f, c(42+0i, 11, 20+0i))
+test(2005.26, DT[2:3, f:=c(NA,FALSE)]$f, c(42+0i, NA, 0+0i))
+test(2005.27, DT[c(1,3), f:=c(-42L,NA)]$f, c(-42+0i, NA, NA))
+test(2005.28, DT[3:2, f:=c(pi,-Inf)]$f, c(-42+0i, -Inf+0i, pi+0i))
 
 # rbindlist raw type, #2819
 test(2006.1, rbindlist(list(data.table(x = as.raw(1), y=as.raw(3)), data.table(x = as.raw(2))), fill=TRUE), data.table(x=as.raw(1:2), y=as.raw(c(3,0))))
@@ -15432,11 +15436,11 @@ test(2066.05, DT[, v[2], by=id], data.table(id = 1:2, V1=c(2i, NA)))
 DT = data.table(A=1:5, B=-3i, C=2147483647L)
 test(2066.06, DT[,    .(sum(B), mean(B)), by=A%%2L], data.table(A=1:0, V1=c(-9i, -6i), V2=-3i))
 test(2066.07, DT[2:4, .(sum(B), mean(B)), by=A%%2L], data.table(A=0:1, V1=c(-6i, -3i), V2=-3i))
-DT[4, B:=NA]
-test(2066.08, DT[,    .(sum(B), mean(B)), by=A%%2L], data.table(A=1:0, V1=c(-9i, NA), V2=c(-3i, NA)))
-test(2066.09, DT[2:4, .(sum(B), mean(B)), by=A%%2L], data.table(A=0:1, V1=c(NA, -3i), V2=c(NA, -3i)))
-test(2066.10, DT[,    .(sum(B, na.rm=TRUE), mean(B, na.rm=TRUE)), by=A%%2L], data.table(A=1:0, V1=c(-9i, -3i), V2=-3i))
-test(2066.11, DT[2:4, .(sum(B, na.rm=TRUE), mean(B, na.rm=TRUE)), by=A%%2L], data.table(A=0:1, V1=c(-3i, -3i), V2=-3i))
+test(2066.08, DT[4, B:=NA]$B, c(-3i,-3i,-3i,NA,-3i))
+test(2066.09, DT[,    .(sum(B), mean(B)), by=A%%2L], data.table(A=1:0, V1=c(-9i, NA), V2=c(-3i, NA)))
+test(2066.10, DT[2:4, .(sum(B), mean(B)), by=A%%2L], data.table(A=0:1, V1=c(NA, -3i), V2=c(NA, -3i)))
+test(2066.11, DT[,    .(sum(B, na.rm=TRUE), mean(B, na.rm=TRUE)), by=A%%2L], data.table(A=1:0, V1=c(-9i, -3i), V2=-3i))
+test(2066.12, DT[2:4, .(sum(B, na.rm=TRUE), mean(B, na.rm=TRUE)), by=A%%2L], data.table(A=0:1, V1=c(-3i, -3i), V2=-3i))
 
 # Shift complex values, part of #3690
 z = c(1:3) + c(3:1)*1i

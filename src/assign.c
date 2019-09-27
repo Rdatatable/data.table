@@ -994,10 +994,10 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source,
     Rcomplex *td = COMPLEX(target) + off;
     double im = 0.0;
     switch (TYPEOF(source)) {
-    //TODO case RAWSXP
+    case RAWSXP:  BODY(Rbyte, RAW, double, (im=0.0,val),                                        td[i].r=cval;td[i].i=im)
     case LGLSXP:  // same as INTSXP
     case INTSXP:  BODY(int, INTEGER, double, val==NA_INTEGER?(im=NA_REAL,NA_REAL):(im=0.0,val), td[i].r=cval;td[i].i=im)
-    //TODO case REALSXP:
+    case REALSXP: BODY(double, REAL, double, val==ISNAN(val)?(im=NA_REAL,NA_REAL):(im=0.0,val), td[i].r=cval;td[i].i=im)
     case CPLXSXP: if (mem) {
                   memcpy(td, COMPLEX(source), slen*sizeof(Rcomplex)); break;
       } else      BODY(Rcomplex, COMPLEX, Rcomplex, val,                              td[i]=cval)
