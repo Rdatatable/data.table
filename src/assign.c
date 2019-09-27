@@ -852,18 +852,11 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source,
       }
       break;
     }
-    if (isString(target) || isString(source)) {
-      // TODO if (allNA(source)) {
-      //  // e.g. to save coercing NA to NA_character_;  if types match then leave it to the regular assign and the call to allNA is saved
-      //  point to fixed ScalarLogical(NA_LOGICAL) and fall through to standard cases below
-      //} else {
+    if (isString(source)) {
       SEXP tt = PROTECT(coerceVector(source, TYPEOF(target))); protecti++;
-      if (!isString(target) /*&& !isNewList(target)*/ && !allNA(source)) {
-        warning("Coerced %s RHS to %s to match the type of the target column (column %d named '%s').",
-                type2char(TYPEOF(source)), type2char(TYPEOF(target)), colnum, colname);
-      }
+      warning("Coerced %s RHS to %s to match the type of the target column (column %d named '%s').",
+              type2char(TYPEOF(source)), type2char(TYPEOF(target)), colnum, colname);
       source = tt;
-      // }
     }
   }
 
@@ -997,7 +990,16 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source,
       const SEXP *ld = STRING_PTR(PROTECT(getAttrib(source, R_LevelsSymbol))); protecti++;
       BODY(int, INTEGER, SEXP, val==NA_INTEGER ? NA_STRING : ld[val-1],               SET_STRING_ELT(target, off+i, cval))
     } else {
-      if (!isString(source)) error("Internal error: type %s should have been coerced to character earlier", type2char(TYPEOF(source))); // # nocov
+      if (!isString(source)) {
+        if (allNA(source)) {  // saves common coercion of NA (logical) to NA_character_; if source is 'list' that was an error above
+          source = ScalarLogical(FALSE);  // dummy input that BODY requires; a no alloc internal R constant that is a SEXP
+          // we're using BODY here for its case that hops via 'where', otherwise we could just do a trivial loop here
+          BODY(int, LOGICAL, SEXP, NA_STRING+val,                                    SET_STRING_ELT(target, off+i, cval))
+          //                                ^^ dummy +0 on address to avoid C warning about not using val; hence why dummy is FALSE (0)
+          // BODY has built-in break
+        }
+        source = PROTECT(coerceVector(source, STRSXP)); protecti++;
+      }
       BODY(SEXP, STRING_PTR, SEXP, val,                                               SET_STRING_ELT(target, off+i, cval))
     }
   case VECSXP :

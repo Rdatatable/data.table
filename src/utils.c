@@ -71,6 +71,8 @@ bool allNA(SEXP x) {
   }
   default:
     error("Unsupported type '%s' passed to allNA()", type2char(TYPEOF(x)));  // e.g. VECSXP; tests 2116.16-18
+  // turned off allNA list support for now to avoid accidentally using it internally where we did not intend; allNA not yet exported
+  //   https://github.com/Rdatatable/data.table/pull/3909#discussion_r329065950
   }
 }
 
