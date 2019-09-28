@@ -822,60 +822,79 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source,
       }
     }
   } else if ((TYPEOF(target)!=TYPEOF(source) || targetIsI64!=sourceIsI64) && !isNewList(target)) {
-    // checks up front, otherwise we'd need checks twice in the two branches that cater for 'where' or not
-    // TODO:  verbose message and/or strict option for advanced users to ensure types match
-    //        only call getOption (small cost in finding the option value) at this point when there is a type mismatch
     if (isNewList(source)) {
       error("Cannot coerce 'list' RHS to '%s' to match the type of the target column (column %d named '%s').",
             type2char(TYPEOF(target)), colnum, colname);
-    }
-    switch(TYPEOF(target)) {
-    case LGLSXP:
-      if (isInteger(source)) {
-        const int *sD = INTEGER(source);
-        for (int i=0; i<slen; ++i) {
-          const int val = sD[i];
-          if (val!=0 && val!=1 && val!=NA_INTEGER) {
-            warning("Non-zero %d taken as TRUE when assigning to logical column. Please use as.logical() to avoid this warning"
-                    " and to express the intent to help those reading this code in future.", val);
-            // was warning too in v1.12.2 but it was much longer and less helpful/specific
-            break; // just warn on the first
-          }
-        }
-      } else if (isReal(source)) {   // TODO: cater for integer64 here
-        const double *sD = REAL(source);
-        for (int i=0; i<slen; ++i) {
-          const double d = sD[i];
-          if (!ISNAN(d) && d!=0.0 && d!=1.0) {
-            warning("Non-zero %f taken as TRUE when assigning to a logical column. Please use as.logical() to avoid this warning"
-                    " and to express the intent to help those reading this code in future.", d);
-            break;
-          }
-        }
-      }
-      break;
-    case INTSXP:
-      if (isReal(source)) {
-        int w = INTEGER(isReallyReal(source))[0];  // first fraction present (1-based), 0 if none
-        if (w>0) {
-          warning("Coerced double RHS to integer to match the type of the target column (column %d named '%s'). One or more RHS values contain fractions which have been lost; e.g. item %d with value %f has been truncated to %d.", colnum, colname, w, REAL(source)[w-1], (int)REAL(source)[w-1]);
-          // same warning text as v1.12.2 so as to reduce diff in tests. TODO: shorten text in future to put truncated %f at the begnning of the message.
-        }
-      }
-      break;
-    case REALSXP:
-      if (targetIsI64 && isReal(source) && !sourceIsI64) {
-        int firstReal=0;
-        if ((firstReal=INTEGER(isReallyReal(source))[0])) {
-          snprintf(memrecycle_message, MSGSIZE, "coerced to integer64 but contains a non-integer value (%f at position %d); precision lost.", REAL(source)[firstReal-1], firstReal);
-        }
-      }
-      break;
     }
     if (isString(source)) {
       source = PROTECT(coerceVector(source, TYPEOF(target))); protecti++;
       warning("Coerced 'character' RHS to '%s' to match the type of the target column (column %d named '%s').",
               type2char(TYPEOF(target)), colnum, colname);
+    } else {
+      if (GetVerbose()) {
+        // only take the (small) cost of GetVerbose() (search of options() list) when types don't match
+        Rprintf("Zero-copy coerce when assigning '%s' to '%s' column %d named '%s'.\n",
+                sourceIsI64 ? "integer64" : type2char(TYPEOF(source)),
+                targetIsI64 ? "integer64" : type2char(TYPEOF(target)),
+                colnum, colname);
+      }
+      // The following checks are up front here once, otherwise we'd need them twice in the two branches
+      //   inside BODY that cater for 'where' or not.
+      switch(TYPEOF(target)) {
+      case LGLSXP:
+        if (isInteger(source)) {
+          const int *sd = INTEGER(source);
+          for (int i=0; i<slen; ++i) {
+            const int val = sd[i];
+            if (val!=0 && val!=1 && val!=NA_INTEGER) {
+              warning("Non-zero %d taken as TRUE when assigning to logical column. Please use as.logical() to avoid this warning"
+                      " and to express the intent to help those reading this code in future.", val);
+              // was warning too in v1.12.2 but it was much longer and less helpful/specific
+              break; // just warn on the first
+            }
+          }
+        } else if (isReal(source)) {
+          if (!sourceIsI64) {
+            const double *sd = REAL(source);
+            for (int i=0; i<slen; ++i) {
+              const double val = sd[i];
+              if (!ISNAN(val) && val!=0.0 && val!=1.0) {
+                warning("Non-zero %f taken as TRUE when assigning to a logical column. Please use as.logical() to avoid this warning"
+                        " and to express the intent to help those reading this code in future.", val);
+                break;
+              }
+            }
+          } else {
+            const int64_t *sd = (int64_t *)REAL(source);
+            for (int i=0; i<slen; ++i) {
+              const int64_t val = sd[i];
+              if (val!=0 && val!=1 && val!=NA_INTEGER) {
+                warning("Non-zero %zd taken as TRUE when assigning to a logical column. Please use as.logical() to avoid this warning"
+                        " and to express the intent to help those reading this code in future.", val);
+                break;
+              }
+            }
+          }
+        }
+        break;
+      case INTSXP:
+        if (isReal(source) && !sourceIsI64) {
+          int w = INTEGER(isReallyReal(source))[0];  // first fraction present (1-based), 0 if none
+          if (w>0) {
+            warning("Coerced double RHS to integer to match the type of the target column (column %d named '%s'). One or more RHS values contain fractions which have been lost; e.g. item %d with value %f has been truncated to %d.", colnum, colname, w, REAL(source)[w-1], (int)REAL(source)[w-1]);
+            // same warning text as v1.12.2 so as to reduce diff in tests. TODO: shorten text in future to put truncated %f at the begnning of the message.
+          }
+        }
+        break;
+      case REALSXP:
+        if (targetIsI64 && isReal(source) && !sourceIsI64) {
+          int firstReal=0;
+          if ((firstReal=INTEGER(isReallyReal(source))[0])) {
+            snprintf(memrecycle_message, MSGSIZE, "coerced to integer64 but contains a non-integer value (%f at position %d); precision lost.", REAL(source)[firstReal-1], firstReal);
+          }
+        }
+        break;
+      }
     }
   }
 
@@ -945,7 +964,9 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source,
                   memcpy(td, LOGICAL(source), slen*sizeof(Rboolean)); break;
       } else      BODY(int, LOGICAL, int, val,                                        td[i]=cval)
     case INTSXP:  BODY(int, INTEGER, int, val==NA_INTEGER ? NA_LOGICAL : val!=0,      td[i]=cval)
-    case REALSXP: BODY(double, REAL, int, ISNAN(val) ? NA_LOGICAL : val!=0.0,         td[i]=cval)
+    case REALSXP: if (sourceIsI64)
+                  BODY(int64_t, REAL, int, val==NA_INTEGER64 ? NA_LOGICAL : val!=0,   td[i]=cval)
+            else  BODY(double,  REAL, int, ISNAN(val) ? NA_LOGICAL : val!=0.0,        td[i]=cval)
     default: COERCE_ERROR("logical");
     }
   } break;
@@ -962,14 +983,14 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source,
     }
   } break;
   case REALSXP : {
-    if (Rinherits(target, char_integer64)) {
+    if (targetIsI64) {
       int64_t *td = (int64_t *)REAL(target) + off;
       switch (TYPEOF(source)) {
       case RAWSXP:  BODY(Rbyte, RAW, int64_t, (int64_t)val,                           td[i]=cval)
       case LGLSXP:  // same as INTSXP
       case INTSXP:  BODY(int, INTEGER, int64_t, val==NA_INTEGER ? NA_INTEGER64 : val, td[i]=cval)
       case REALSXP:
-        if (Rinherits(source, char_integer64)) {
+        if (sourceIsI64) {
           if(mem) { memcpy(td, (int64_t *)REAL(source), slen*sizeof(int64_t)); break; }
           else      BODY(int64_t, REAL, int64_t, val,                                 td[i]=cval)
         } else      BODY(double, REAL, int64_t, R_FINITE(val) ? val : NA_INTEGER64,   td[i]=cval)
@@ -982,7 +1003,7 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source,
       case LGLSXP:  // same as INTSXP
       case INTSXP:  BODY(int, INTEGER, double, val==NA_INTEGER ? NA_REAL : val,       td[i]=cval)
       case REALSXP:
-        if (!Rinherits(source, char_integer64)) {
+        if (!sourceIsI64) {
           if(mem) { memcpy(td, (double *)REAL(source), slen*sizeof(double)); break; }
           else      BODY(double, REAL, double, val,                                   td[i]=cval)
         } else      BODY(int64_t, REAL, double, val==NA_INTEGER64 ? NA_REAL : val,    td[i]=cval)
