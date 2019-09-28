@@ -32,6 +32,53 @@ SEXP isReallyReal(SEXP x) {
   return(ans);
 }
 
+bool allNA(SEXP x, bool errorForBadType) {
+  // less space and time than all(is.na(x)) at R level because that creates full size is.na(x) first before all()
+  // whereas this allNA can often return early on testing the first value without reading the rest
+  const int n = length(x);
+  if (n==0) // empty vectors (including raw(), NULL, and list()) same as R's all(is.na()) true result; tests 2116.*
+    return true;
+  switch (TYPEOF(x)) {
+  case RAWSXP: // raw doesn't support NA so always false (other than length 0 case above)
+    return false;
+  case LGLSXP:
+  case INTSXP: {
+    const int *xd = INTEGER(x);
+    for (int i=0; i<n; ++i)    if (xd[i]!=NA_INTEGER) {
+      return false;
+    }
+    return true;
+  }
+  case REALSXP:
+    if (Rinherits(x,char_integer64)) {
+      const int64_t *xd = (int64_t *)REAL(x);
+      for (int i=0; i<n; ++i)  if (xd[i]!=NA_INTEGER64) {
+        return false;
+      }
+    } else {
+      const double *xd = REAL(x);
+      for (int i=0; i<n; ++i)  if (!ISNAN(xd[i])) {
+        return false;
+      }
+    }
+    return true;
+  case STRSXP: {
+    const SEXP *xd = STRING_PTR(x);
+    for (int i=0; i<n; ++i)    if (xd[i]!=NA_STRING) {
+      return false;
+    }
+    return true;
+  }}
+  if (!errorForBadType) return false;
+  error("Unsupported type '%s' passed to allNA()", type2char(TYPEOF(x)));  // e.g. VECSXP; tests 2116.16-18
+  // turned off allNA list support for now to avoid accidentally using it internally where we did not intend; allNA not yet exported
+  //   https://github.com/Rdatatable/data.table/pull/3909#discussion_r329065950
+}
+
+SEXP allNAR(SEXP x) {
+  return ScalarLogical(allNA(x, /*errorForBadType=*/true));
+}
+
 /* colnamesInt
  * for provided data.table (or a list-like) and a subset of its columns, it returns integer positions of those columns in DT
  * handle columns input as: integer, double, character and NULL (handled as seq_along(x))

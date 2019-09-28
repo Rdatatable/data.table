@@ -75,12 +75,12 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
     if (xclass=="character" || iclass=="character" ||
         xclass=="logical" || iclass=="logical" ||
         xclass=="factor" || iclass=="factor") {
-      if (anyNA(i[[ic]]) && all(is.na(i[[ic]]))) { # TODO: allNA function in C
+      if (anyNA(i[[ic]]) && allNA(i[[ic]])) {
         if (verbose) cat("Coercing all-NA i.",names(i)[ic]," (",iclass,") to type ",xclass," to match type of x.",names(x)[xc],".\n",sep="")
         set(i, j=ic, value=match.fun(paste0("as.", xclass))(i[[ic]]))
         next
       }
-      else if (anyNA(x[[xc]]) && all(is.na(x[[xc]]))) {
+      else if (anyNA(x[[xc]]) && allNA(x[[xc]])) {
         if (verbose) cat("Coercing all-NA x.",names(x)[xc]," (",xclass,") to type ",iclass," to match type of i.",names(i)[ic],".\n",sep="")
         set(x, j=xc, value=match.fun(paste0("as.", iclass))(x[[xc]]))
         next

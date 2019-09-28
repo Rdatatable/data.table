@@ -192,24 +192,24 @@
     ```R
     set.seed(108)
     x = rnorm(1e6); n = 1e3
-    rollfun = function(x, n, FUN) {
-      ans = rep(NA_real_, nx<-length(x))
+    base_rollapply = function(x, n, FUN) {
+      nx = length(x)
+      ans = rep(NA_real_, nx)
       for (i in n:nx) ans[i] = FUN(x[(i-n+1):i])
       ans
     }
-    system.time(ans1<-rollfun(x, n, mean))
-    system.time(ans2<-zoo::rollapplyr(x, n, function(x) mean(x), fill=NA))
-    system.time(ans3<-zoo::rollmeanr(x, n, fill=NA))
-    system.time(ans4<-frollapply(x, n, mean))
-    system.time(ans5<-frollmean(x, n))
-    sapply(list(ans2,ans3,ans4,ans5), all.equal, ans1)
+    system.time(base_rollapply(x, n, mean))
+    system.time(zoo::rollapplyr(x, n, function(x) mean(x), fill=NA))
+    system.time(zoo::rollmeanr(x, n, fill=NA))
+    system.time(frollapply(x, n, mean))
+    system.time(frollmean(x, n))
 
     ### fun             mean     sum  median
-    # base rollfun     8.815   5.151  60.175
+    # base_rollapply   8.815   5.151  60.175
     # zoo::rollapply  34.373  27.837  88.552
-    # zoo::roll[fun]   0.215   0.185      NA
+    # zoo::roll[fun]   0.215   0.185      NA   ## median not fully supported
     # frollapply       5.404   1.419  56.475
-    # froll[fun]       0.003   0.002      NA
+    # froll[fun]       0.003   0.002      NA   ## median not yet supported
     ```
 
 28. `setnames()` now accepts functions in `old=` and `new=`, [#3703](https://github.com/Rdatatable/data.table/issues/3703). Thanks @smingerson for the feature request and @shrektan for the PR.
@@ -219,10 +219,12 @@
     setnames(DT, toupper)
     names(DT)
     # [1] "A" "B" "C"
-    setnames(DT, 2:3, tolower)
+    setnames(DT, c(1,3), tolower)
     names(DT)
-    # [1] "A" "b" "c"
+    # [1] "a" "B" "c"
     ```
+
+29. `:=` and `set()` now use zero-copy type coercion. Accordingly, `DT[..., integerColumn:=0]` and `set(DT,i,j,0)` no longer warn about the `0` ('numeric') needing to be `0L` ('integer') because there is no longer any time or space used for this coercion. The old long warning was off-putting to new users ("what and why L?"), whereas advanced users appreciated the old warning so they could avoid the coercion. Although the time and space for one coercion in a single call is unmeasurably small, when placed in a loop the small overhead of any allocation on R's heap could start to become noticeable (more so for `set()` whose purpose is low-overhead looping). Further, when assigning a value across columns of varying types, it could be inconvenient to supply the correct type for every column. Hence, zero-copy coercion was introduced to satisfy all these requirements. A warning is still issued, as before, when fractional data is discarded; e.g. when 3.14 is assigned to an integer column. Zero-copy coercion applies to length>1 vectors as well as length-1 vectors.
 
 ## BUG FIXES
 
@@ -326,6 +328,8 @@
 43. `:=` could change a `data.table` creation statement in the body of the function calling it, or a variable in calling scope, [#3890](https://github.com/Rdatatable/data.table/issues/3890). Many thanks to @kirillmayantsev for the detailed reports.
 
 44. Grouping could create a `malformed factor` and/or segfault when the factors returned by each group did not have identical levels, [#2199](https://github.com/Rdatatable/data.table/issues/2199) and [#2522](https://github.com/Rdatatable/data.table/issues/2522). Thanks to Václav Hausenblas, @franknarf1, @ben519, and @Henrik-P for reporting.
+
+45. `rbindlist` (and printing a `data.table` with over 100 rows because that uses `rbindlist(head, tail)`) could error with `malformed factor` for unordered factor columns containing a used `NA_character_` level, [#3915](https://github.com/Rdatatable/data.table/issues/3915). This is an unusual input for unordered factors because NA_integer_ is recommended by default in R. Thanks to @sindribaldur for reporting.
 
 ## NOTES
 

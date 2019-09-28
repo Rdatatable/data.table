@@ -12,6 +12,7 @@ if (base::getRversion() < "3.5.0") {
 }
 isTRUEorNA    = function(x) is.logical(x) && length(x)==1L && (is.na(x) || x)
 isTRUEorFALSE = function(x) is.logical(x) && length(x)==1L && !is.na(x)
+allNA = function(x) .Call(C_allNAR, x)
 
 if (base::getRversion() < "3.2.0") {  # Apr 2015
   isNamespaceLoaded = function(x) x %chin% loadedNamespaces()

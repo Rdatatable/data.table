@@ -118,7 +118,7 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir())
   }
   if (!missing(autostart)) warning("'autostart' is now deprecated and ignored. Consider skip='string' or skip=n");
   if (is.logical(colClasses)) {
-    if (!all(is.na(colClasses))) stop("colClasses is type 'logical' which is ok if all NA but it has some TRUE or FALSE values in it which is not allowed. Please consider the drop= or select= argument instead. See ?fread.")
+    if (!allNA(colClasses)) stop("colClasses is type 'logical' which is ok if all NA but it has some TRUE or FALSE values in it which is not allowed. Please consider the drop= or select= argument instead. See ?fread.")
     colClasses = NULL
   }
   if (!is.null(colClasses) && is.atomic(colClasses)) {

@@ -281,7 +281,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
   // cols : column names or numbers corresponding to the values to set
   // rows : row numbers to assign
   R_len_t i, j, numToDo, targetlen, vlen, r, oldncol, oldtncol, coln, protecti=0, newcolnum, indexLength;
-  SEXP targetcol, nullint, thisv, targetlevels, newcol, s, colnam, tmp, colorder, key, index, a, assignedNames, indexNames;
+  SEXP targetcol, nullint, s, colnam, tmp, colorder, key, index, a, assignedNames, indexNames;
   bool verbose=GetVerbose(), anytodelete=false;
   const char *c1, *tc1, *tc2;
   int *buf, newKeyLength, indexNo;
@@ -461,7 +461,6 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
     // truelengths of both already set by alloccol
   }
   for (i=0; i<length(cols); i++) {
-    int thisprotecti = 0;  // UNPROTECT(thisprotecti) at the end of this loop to save protection stack
     coln = INTEGER(cols)[i]-1;
     SEXP thisvalue = RHS_list_of_columns ? VECTOR_ELT(values, i) : values;
     if (TYPEOF(thisvalue)==NILSXP) {
@@ -489,138 +488,22 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
       setAttrib(thisvalue, R_DimNamesSymbol, R_NilValue);  // the 3rd of the 3 attribs not copied by copyMostAttrib, for consistency.
       continue;
     }
-    SEXP RHS;
 
     if (coln+1 > oldncol) {  // new column
-      SET_VECTOR_ELT(dt, coln, newcol=allocNAVectorLike(thisvalue, nrow));
+      SET_VECTOR_ELT(dt, coln, targetcol=allocNAVectorLike(thisvalue, nrow));
       // initialize with NAs for when 'rows' is a subset and it doesn't touch
       // do not try to save the time to NA fill (contiguous branch free assign anyway) since being
       // sure all items will be written to (isNull(rows), length(rows), vlen<1, targetlen) is not worth the risk.
-      if (isVectorAtomic(thisvalue)) copyMostAttrib(thisvalue,newcol);  // class etc but not names
+      if (isVectorAtomic(thisvalue)) copyMostAttrib(thisvalue,targetcol);  // class etc but not names
       // else for lists (such as data.frame and data.table) treat them as raw lists and drop attribs
       if (vlen<1) continue;   // e.g. DT[,newcol:=integer()] (adding new empty column)
-      targetcol = newcol;
-      RHS = thisvalue;
     } else {                 // existing column
       targetcol = VECTOR_ELT(dt,coln);
-      if (isFactor(targetcol)) {
-        // Coerce RHS to appropriate levels of LHS, adding new levels as necessary (unlike base)
-        // If it's the same RHS being assigned to several columns, we have to recoerce for each
-        // one because the levels of each target are likely different
-        if (isFactor(thisvalue)) {
-          thisvalue = PROTECT(asCharacterFactor(thisvalue)); thisprotecti++;
-        }
-        targetlevels = getAttrib(targetcol, R_LevelsSymbol);
-        if (isNull(targetlevels)) error("somehow this factor column has no levels");
-        if (isString(thisvalue)) {
-          savetl_init();  // ** TO DO **: remove allocs that could fail between here and _end, or different way
-          for (j=0; j<length(thisvalue); j++) {
-            s = STRING_ELT(thisvalue,j);
-            if (TRUELENGTH(s)>0) {
-              savetl(s);  // pre-2.14.0 this will save all the uninitialised truelengths
-                    // so 2.14.0+ may be faster, but isn't required.
-                    // as from v1.8.0 we assume R's internal hash is positive, so don't
-                    // save the uninitialised truelengths that by chance are negative
-            }
-            SET_TRUELENGTH(s,0);
-          }
-          for (j=0; j<length(targetlevels); j++) {
-            s = STRING_ELT(targetlevels,j);
-            if (TRUELENGTH(s)>0) savetl(s);
-            SET_TRUELENGTH(s,j+1);
-          }
-          R_len_t addi = 0;
-          SEXP addlevels=NULL;
-          RHS = PROTECT(allocVector(INTSXP, length(thisvalue))); thisprotecti++;
-          int *iRHS = INTEGER(RHS);
-          for (j=0; j<length(thisvalue); j++) {
-            thisv = STRING_ELT(thisvalue,j);
-            if (TRUELENGTH(thisv)==0) {
-              if (addi==0) {
-                addlevels = PROTECT(allocVector(STRSXP, 100)); thisprotecti++;
-              } else if (addi >= length(addlevels)) {
-                addlevels = PROTECT(growVector(addlevels, length(addlevels)+1000)); thisprotecti++;
-              }
-              SET_STRING_ELT(addlevels,addi++,thisv);
-              // if-else for #1718 fix
-              SET_TRUELENGTH(thisv, (thisv != NA_STRING) ? (addi+length(targetlevels)) : NA_INTEGER);
-            }
-            iRHS[j] = TRUELENGTH(thisv);
-          }
-          if (addi > 0) {
-            R_len_t oldlen = length(targetlevels);
-            targetlevels = PROTECT(growVector(targetlevels, oldlen+addi)); thisprotecti++;
-            for (j=0; j<addi; j++)
-              SET_STRING_ELT(targetlevels, oldlen+j, STRING_ELT(addlevels, j));
-            setAttrib(targetcol, R_LevelsSymbol, targetlevels);
-          }
-          for (int j=0; j<length(targetlevels); j++) SET_TRUELENGTH(STRING_ELT(targetlevels,j),0);  // important to reinstate 0 for countingcharacterorder and HASHPRI (if any) as done by savetl_end().
-          savetl_end();
-        } else {
-          // value is either integer or numeric vector
-          if (TYPEOF(thisvalue)!=INTSXP && TYPEOF(thisvalue)!=LGLSXP && !isReal(thisvalue))
-            error("Internal error: up front checks (before starting to modify DT) didn't catch type of RHS ('%s') assigning to factor column '%s'. please report to data.table issue tracker.", type2char(TYPEOF(thisvalue)), CHAR(STRING_ELT(names,coln))); // # nocov
-          int *iRHS;
-          if (isReal(thisvalue) || TYPEOF(thisvalue)==LGLSXP) {
-            RHS = PROTECT(coerceVector(thisvalue,INTSXP)); thisprotecti++;
-            iRHS = INTEGER(RHS);
-            // silence warning on singleton NAs
-            if (iRHS[0] != NA_INTEGER) warning("Coerced '%s' RHS to 'integer' to match the factor column's underlying type. Character columns are now recommended (can be in keys), or coerce RHS to integer or character first.", type2char(TYPEOF(thisvalue)));
-          } else { // thisvalue is integer
-            // make sure to copy thisvalue. May be modified below. See #2984
-            RHS = PROTECT(copyAsPlain(thisvalue)); thisprotecti++;
-            iRHS = INTEGER(RHS);
-          }
-          for (int j=0; j<length(RHS); j++) {
-            if ( (iRHS[j]<1 || iRHS[j]>LENGTH(targetlevels))
-                 && iRHS[j] != NA_INTEGER) {
-              warning("RHS contains %d which is outside the levels range ([1,%d]) of column %d, NAs generated", iRHS[j], LENGTH(targetlevels), i+1);
-              iRHS[j] = NA_INTEGER;
-            }
-          }
-        }
-      } else {
-        if (TYPEOF(targetcol)==TYPEOF(thisvalue) || TYPEOF(targetcol)==VECSXP)
-          RHS = thisvalue;
-        else {
-          // coerce the RHS to match the type of the column, unlike [<-.data.frame, for efficiency.
-          if (isString(targetcol) && isFactor(thisvalue)) {
-            RHS = PROTECT(asCharacterFactor(thisvalue)); thisprotecti++;
-            if (verbose) Rprintf("Coerced factor RHS to character to match the column's type. Avoid this coercion if possible, for efficiency, by creating RHS as type character.\n");
-            // TO DO: datatable.pedantic could turn this into warning
-          } else {
-            RHS = PROTECT(coerceVector(thisvalue,TYPEOF(targetcol))); thisprotecti++;
-            char *s1 = (char *)type2char(TYPEOF(targetcol));
-            char *s2 = (char *)type2char(TYPEOF(thisvalue));
-            // FR #2551, added test for equality between RHS and thisvalue to not provide the warning when length(thisvalue) == 1
-            if ( length(thisvalue)==1 && TYPEOF(RHS)!=VECSXP && (
-                 ( isReal(thisvalue) && isInteger(targetcol) && REAL(thisvalue)[0]==INTEGER(RHS)[0] ) ||   // DT[,intCol:=4] rather than DT[,intCol:=4L]
-                 ( isLogical(thisvalue) && LOGICAL(thisvalue)[0] == NA_LOGICAL ) ||                        // DT[,intCol:=NA]
-                 ( isInteger(thisvalue) && isReal(targetcol) ) )) {
-              if (verbose) Rprintf("Coerced length-1 RHS from %s to %s to match column's type.%s If this assign is happening a lot inside a loop, in particular via set(), then it may be worth avoiding this coercion by using R's type postfix on the value being assigned; e.g. typeof(0) vs typeof(0L), and typeof(NA) vs typeof(NA_integer_) vs typeof(NA_real_).\n", s2, s1,
-                                    isInteger(targetcol) && isReal(thisvalue) ? " No precision was lost." : "");
-              // TO DO: datatable.pedantic could turn this into warning. Or we could catch and avoid the coerceVector allocation ourselves using a single int.
-            } else {
-              if (isReal(thisvalue) && isInteger(targetcol)) {
-                int w = INTEGER(isReallyReal(thisvalue))[0];  // first fraction present (1-based), 0 if none
-                if (w>0) {
-                  warning("Coerced double RHS to integer to match the type of the target column (column %d named '%s'). One or more RHS values contain fractions which have been lost; e.g. item %d with value %f has been truncated to %d.",
-                          coln+1, CHAR(STRING_ELT(names, coln)), w, REAL(thisvalue)[w-1], INTEGER(RHS)[w-1]);
-                } else {
-                  warning("Coerced double RHS to integer to match the type of the target column (column %d named '%s'). The RHS values contain no fractions so would be more efficiently created as integer. Consider using R's 'L' postfix (typeof(0L) vs typeof(0)) to create constants as integer and avoid this warning. Wrapping the RHS with as.integer() will avoid this warning too but it's better if possible to create the RHS as integer in the first place so that the cost of the coercion can be avoided.", coln+1, CHAR(STRING_ELT(names, coln)));
-                }
-              } else {
-                warning("Coerced %s RHS to %s to match the type of the target column (column %d named '%s'). If the target column's type %s is correct, it's best for efficiency to avoid the coercion and create the RHS as type %s. To achieve that consider R's type postfix: typeof(0L) vs typeof(0), and typeof(NA) vs typeof(NA_integer_) vs typeof(NA_real_). You can wrap the RHS with as.%s() to avoid this warning, but that will still perform the coercion. If the target column's type is not correct, it's best to revisit where the DT was created and fix the column type there; e.g., by using colClasses= in fread(). Otherwise, you can change the column type now by plonking a new column (of the desired type) over the top of it; e.g. DT[, `%s`:=as.%s(`%s`)]. If the RHS of := has nrow(DT) elements then the assignment is called a column plonk and is the way to change a column's type. Column types can be observed with sapply(DT,typeof).",
-                s2, s1, coln+1, CHAR(STRING_ELT(names, coln)), s1, s1, s1, CHAR(STRING_ELT(names, coln)), s2, CHAR(STRING_ELT(names, coln)));
-              }
-            }
-          }
-        }
-      }
     }
-    memrecycle(targetcol, rows, 0, targetlen, RHS);  // also called from dogroups where these arguments are used more
-    UNPROTECT(thisprotecti); // unprotect inside loop through columns to save protection stack
+    const char *ret = memrecycle(targetcol, rows, 0, targetlen, thisvalue, coln+1, CHAR(STRING_ELT(names, coln)));
+    if (ret) warning(ret);
   }
+
   *_Last_updated = numToDo;  // the updates have taken place with no error, so update .Last.updated now
   assignedNames = PROTECT(allocVector(STRSXP, LENGTH(cols))); protecti++;
   for (i=0;i<LENGTH(cols);i++) SET_STRING_ELT(assignedNames,i,STRING_ELT(names,INTEGER(cols)[i]-1));
@@ -785,9 +668,10 @@ static bool anyNamed(SEXP x) {
   return false;
 }
 
-static char memrecycle_message[1000];
+#define MSGSIZE 1000
+static char memrecycle_message[MSGSIZE+1]; // returned to rbindlist so it can prefix with which one of the list of data.table-like objects
 
-const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source)
+const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source, int colnum, const char *colname)
 // like memcpy but recycles single-item source
 // 'where' a 1-based INTEGER vector subset of target to assign to, or NULL or integer()
 // assigns to target[start:start+len-1] or target[where[start:start+len-1]] where start is 0-based
@@ -819,249 +703,349 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source)
     }
   }
   const bool sourceIsFactor=isFactor(source), targetIsFactor=isFactor(target);
-  if (sourceIsFactor && targetIsFactor) {
-    // TODO:         ^^ could be || in future; assign is already handling that so leave that for now. Then move more of assign to call here.
-    if (!sourceIsFactor || !targetIsFactor) {
-      // # nocov start
-      error("Internal error: memrecycle source_is_factor=%d but target_is_factor=%d. They both must be factor or both not factor.",
-            sourceIsFactor, targetIsFactor);
-      // # nocov end
-    }
-    SEXP sourceLevels = PROTECT(getAttrib(source, R_LevelsSymbol)); protecti++;
-    SEXP targetLevels = PROTECT(getAttrib(target, R_LevelsSymbol)); protecti++;
-    if (!R_compute_identical(sourceLevels, targetLevels, 0)) {
-      const int nTargetLevels=length(targetLevels), nSourceLevels=length(sourceLevels);
-      const SEXP *targetLevelsD=STRING_PTR(targetLevels), *sourceLevelsD=STRING_PTR(sourceLevels);
-      SEXP newSource = PROTECT(allocVector(INTSXP, length(source))); protecti++;
-      savetl_init();
-      for (int k=0; k<nTargetLevels; ++k) {
-        const SEXP s = targetLevelsD[k];
-        const int tl = TRUELENGTH(s);
-        if (tl>0) {
-          savetl(s);
-        } else if (tl<0) {
-          // # nocov start
-          for (int j=0; j<k; ++j) SET_TRUELENGTH(s, 0);  // wipe our negative usage and restore 0
-          savetl_end();                                  // then restore R's own usage (if any)
-          error("Internal error: levels of target are either not unique or have truelength<0");
-          // # nocov end
-        }
-        SET_TRUELENGTH(s, -k-1);
-      }
-      int nAdd = 0;
-      for (int k=0; k<nSourceLevels; ++k) {
-        const SEXP s = sourceLevelsD[k];
-        const int tl = TRUELENGTH(s);
-        if (tl>=0) {
-          if (tl>0) savetl(s);
-          SET_TRUELENGTH(s, -nTargetLevels-(++nAdd));
-        }
-      }
-      const int nSource = length(source);
-      const int *sourceD = INTEGER(source);
-      int *newSourceD = INTEGER(newSource);
-      for (int i=0; i<nSource; ++i) {  // convert source integers to refer to target levels
-        const int val = sourceD[i];
-        newSourceD[i] = val==NA_INTEGER ? NA_INTEGER : -TRUELENGTH(sourceLevelsD[val-1]);
-      }
-      source = newSource;
-      for (int k=0; k<nTargetLevels; ++k) SET_TRUELENGTH(targetLevelsD[k], 0);  // don't need those anymore
-      if (nAdd) {
-        // cannot grow the levels yet as that would be R call which could fail to alloc and we have no hook to clear up
-        SEXP *temp = (SEXP *)malloc(nAdd * sizeof(SEXP *));
-        if (!temp) {
-          // # nocov start
-          for (int k=0; k<nSourceLevels; ++k) SET_TRUELENGTH(sourceLevelsD[k], 0);
-          savetl_end();
-          error("Unable to allocate working memory of %d bytes to combine factor levels", nAdd*sizeof(SEXP *));
-          // # nocov end
-        }
-        for (int k=0, thisAdd=0; k<nSourceLevels; ++k) {
-          SEXP s = sourceLevelsD[k];
-          int tl = TRUELENGTH(s);
-          if (tl) {
-            if (tl != -nTargetLevels-thisAdd-1) error("Internal error: extra level check sum failed"); // # nocov
-            temp[thisAdd++] = s;
-            SET_TRUELENGTH(s,0);
+  const bool sourceIsI64=isReal(source) && Rinherits(source, char_integer64);
+  const bool targetIsI64=isReal(target) && Rinherits(target, char_integer64);
+  if (sourceIsFactor || targetIsFactor) {
+    if (!targetIsFactor) {
+      if (!isString(target) && !isNewList(target))
+        error("Cannot assign 'factor' to '%s'. Factors can only be assigned to factor, character or list columns.", type2char(TYPEOF(target)));
+      // else assigning factor to character is left to later below, avoiding wasteful asCharacterFactor
+    } else if (!sourceIsFactor && !isString(source)) {
+      // target is factor
+      if (allNA(source, false)) {  // return false for list and other types that allNA does not support
+        source = ScalarLogical(NA_LOGICAL); // a global constant in R and won't allocate; fall through to regular zero-copy coerce
+      } else if (isInteger(source) || isReal(source)) {
+        // allow assigning level numbers to factor columns; test 425, 426, 429 and 1945
+        const int nlevel = length(getAttrib(target, R_LevelsSymbol));
+        if (isInteger(source)) {
+          const int *sd = INTEGER(source);
+          for (int i=0; i<slen; ++i) {
+            const int val = sd[i];
+            if ((val<1 && val!=NA_INTEGER) || val>nlevel) {
+              error("Assigning factor numbers to column %d named '%s'. But %d is outside the level range [1,%d]", colnum, colname, val, nlevel);
+            }
+          }
+        } else {
+          const double *sd = REAL(source);
+          for (int i=0; i<slen; ++i) {
+            const double val = sd[i];
+            if (!ISNAN(val) && (!R_FINITE(val) || val!=(int)val || (int)val<1 || (int)val>nlevel)) {
+              error("Assigning factor numbers to column %d named '%s'. But %f is outside the level range [1,%d], or is not a whole number.", colnum, colname, val, nlevel);
+            }
           }
         }
-        savetl_end();
-        setAttrib(target, R_LevelsSymbol, targetLevels=growVector(targetLevels, nTargetLevels + nAdd));
-        for (int k=0; k<nAdd; ++k) {
-          SET_STRING_ELT(targetLevels, nTargetLevels+k, temp[k]);
-        }
-        free(temp);
+        // Now just let the valid level numbers fall through to regular assign by BODY below
       } else {
-        // all source levels were already in target levels, but not with the same integers; we're done
-        savetl_end();
+        error("Cannot assign '%s' to 'factor'. Factor columns can be assigned factor, character, NA in any type, or level numbers.", type2char(TYPEOF(source)));
       }
-      // now continue, but with the mapped integers in the (new) source
+    } else {
+      // either factor or character being assigned to factor column
+      SEXP targetLevels = PROTECT(getAttrib(target, R_LevelsSymbol)); protecti++;
+      SEXP sourceLevels = source;  // character source
+      if (sourceIsFactor) { sourceLevels=PROTECT(getAttrib(source, R_LevelsSymbol)); protecti++; }
+      if (!sourceIsFactor || !R_compute_identical(sourceLevels, targetLevels, 0)) {  // !sourceIsFactor for test 2115.6
+        const int nTargetLevels=length(targetLevels), nSourceLevels=length(sourceLevels);
+        const SEXP *targetLevelsD=STRING_PTR(targetLevels), *sourceLevelsD=STRING_PTR(sourceLevels);
+        SEXP newSource = PROTECT(allocVector(INTSXP, length(source))); protecti++;
+        savetl_init();
+        for (int k=0; k<nTargetLevels; ++k) {
+          const SEXP s = targetLevelsD[k];
+          const int tl = TRUELENGTH(s);
+          if (tl>0) {
+            savetl(s);
+          } else if (tl<0) {
+            // # nocov start
+            for (int j=0; j<k; ++j) SET_TRUELENGTH(s, 0);  // wipe our negative usage and restore 0
+            savetl_end();                                  // then restore R's own usage (if any)
+            error("Internal error: levels of target are either not unique or have truelength<0");
+            // # nocov end
+          }
+          SET_TRUELENGTH(s, -k-1);
+        }
+        int nAdd = 0;
+        for (int k=0; k<nSourceLevels; ++k) {
+          const SEXP s = sourceLevelsD[k];
+          const int tl = TRUELENGTH(s);
+          if (tl>=0) {
+            if (!sourceIsFactor && s==NA_STRING) continue; // don't create NA factor level when assigning character to factor; test 2117
+            if (tl>0) savetl(s);
+            SET_TRUELENGTH(s, -nTargetLevels-(++nAdd));
+          } // else, when sourceIsString, it's normal for there to be duplicates here
+        }
+        const int nSource = length(source);
+        int *newSourceD = INTEGER(newSource);
+        if (sourceIsFactor) {
+          const int *sourceD = INTEGER(source);
+          for (int i=0; i<nSource; ++i) {  // convert source integers to refer to target levels
+            const int val = sourceD[i];
+            newSourceD[i] = val==NA_INTEGER ? NA_INTEGER : -TRUELENGTH(sourceLevelsD[val-1]); // retains NA factor levels here via TL(NA_STRING); e.g. ordered factor
+          }
+        } else {
+          const SEXP *sourceD = STRING_PTR(source);
+          for (int i=0; i<nSource; ++i) {  // convert source integers to refer to target levels
+            const SEXP val = sourceD[i];
+            newSourceD[i] = val==NA_STRING ? NA_INTEGER : -TRUELENGTH(val);
+          }
+        }
+        source = newSource;
+        for (int k=0; k<nTargetLevels; ++k) SET_TRUELENGTH(targetLevelsD[k], 0);  // don't need those anymore
+        if (nAdd) {
+          // cannot grow the levels yet as that would be R call which could fail to alloc and we have no hook to clear up
+          SEXP *temp = (SEXP *)malloc(nAdd * sizeof(SEXP *));
+          if (!temp) {
+            // # nocov start
+            for (int k=0; k<nSourceLevels; ++k) SET_TRUELENGTH(sourceLevelsD[k], 0);
+            savetl_end();
+            error("Unable to allocate working memory of %d bytes to combine factor levels", nAdd*sizeof(SEXP *));
+            // # nocov end
+          }
+          for (int k=0, thisAdd=0; thisAdd<nAdd; ++k) {   // thisAdd<nAdd to stop early when the added ones are all reached
+            SEXP s = sourceLevelsD[k];
+            int tl = TRUELENGTH(s);
+            if (tl) {  // tl negative here
+              if (tl != -nTargetLevels-thisAdd-1) error("Internal error: extra level check sum failed"); // # nocov
+              temp[thisAdd++] = s;
+              SET_TRUELENGTH(s,0);
+            }
+          }
+          savetl_end();
+          setAttrib(target, R_LevelsSymbol, targetLevels=growVector(targetLevels, nTargetLevels + nAdd));
+          for (int k=0; k<nAdd; ++k) {
+            SET_STRING_ELT(targetLevels, nTargetLevels+k, temp[k]);
+          }
+          free(temp);
+        } else {
+          // all source levels were already in target levels, but not with the same integers; we're done
+          savetl_end();
+        }
+        // now continue, but with the mapped integers in the (new) source
+      }
+    }
+  } else if (isString(source) && !isString(target) && !isNewList(target)) {
+    source = PROTECT(coerceVector(source, TYPEOF(target))); protecti++;
+    warning("Coerced 'character' RHS to '%s' to match the type of the target column (column %d named '%s').",
+            type2char(TYPEOF(target)), colnum, colname);
+  } else if ((TYPEOF(target)!=TYPEOF(source) || targetIsI64!=sourceIsI64) && !isNewList(target)) {
+    if (isNewList(source)) {
+      error("Cannot coerce 'list' RHS to '%s' to match the type of the target column (column %d named '%s').",
+            type2char(TYPEOF(target)), colnum, colname);
+    }
+
+    if (GetVerbose()) {
+      // only take the (small) cost of GetVerbose() (search of options() list) when types don't match
+      Rprintf("Zero-copy coerce when assigning '%s' to '%s' column %d named '%s'.\n",
+              sourceIsI64 ? "integer64" : type2char(TYPEOF(source)),
+              targetIsI64 ? "integer64" : type2char(TYPEOF(target)),
+              colnum, colname);
+    }
+    // The following checks are up front here, otherwise we'd need them twice in the two branches
+    //   inside BODY that cater for 'where' or not. Maybe there's a way to merge the two macros in future.
+    // The idea is to do these range checks without calling coerceVector() (which allocates)
+
+#define CHECK_RANGE(STYPE, RFUN, COND, FMT, TO) {{                                                                      \
+  const STYPE *sd = (const STYPE *)RFUN(source);                                                                        \
+  for (int i=0; i<slen; ++i) {                                                                                          \
+    const STYPE val = sd[i];                                                                                            \
+    if (COND) {                                                                                                         \
+      const char *sType = sourceIsI64 ? "integer64" : type2char(TYPEOF(source));                                        \
+      const char *tType = targetIsI64 ? "integer64" : type2char(TYPEOF(target));                                        \
+      snprintf(memrecycle_message, MSGSIZE,                                                                             \
+               FMT" (type '%s') at RHS position %d "TO" when assigning to column %d named '%s' (type '%s')",            \
+               val, sType, i+1, colnum, colname, tType);                                                                \
+      /* string returned like this so that rbindlist can prefix it with which item of its list this refers to  */       \
+      break;                                                                                                            \
+    }                                                                                                                   \
+  }                                                                                                                     \
+} break; }
+
+    switch(TYPEOF(target)) {
+    case LGLSXP:
+      switch (TYPEOF(source)) {
+      case RAWSXP:  CHECK_RANGE(Rbyte, RAW,      val!=0 && val!=1,                                        "%d",   "taken as TRUE")
+      case INTSXP:  CHECK_RANGE(int, INTEGER,    val!=0 && val!=1 && val!=NA_INTEGER,                     "%d",   "taken as TRUE")
+      case REALSXP: if (sourceIsI64)
+                    CHECK_RANGE(long long, REAL, val!=0 && val!=1 && val!=NA_INTEGER64,                   "%lld", "taken as TRUE")
+              else  CHECK_RANGE(double, REAL,    !ISNAN(val) && val!=0.0 && val!=1.0,                     "%f",   "taken as TRUE")
+      } break;
+    case RAWSXP:
+      switch (TYPEOF(source)) {
+      case INTSXP:  CHECK_RANGE(int, INTEGER,    val<0 || val>255,                                        "%d",   "taken as 0")
+      case REALSXP: if (sourceIsI64)
+                    CHECK_RANGE(long long, REAL, val<0 || val>255,                                        "%lld", "taken as 0")
+              else  CHECK_RANGE(double, REAL,    !R_FINITE(val) || val<0.0 || val>256.0 || (int)val!=val, "%f",   "either truncated (precision lost) or taken as 0")
+      } break;
+    case INTSXP:
+      if (TYPEOF(source)==REALSXP) {
+        if (sourceIsI64)
+                    CHECK_RANGE(long long, REAL, val!=NA_INTEGER64 && (val<=NA_INTEGER || val>INT_MAX),   "%lld",  "out-of-range (NA)")
+        else        CHECK_RANGE(double, REAL,    !ISNAN(val) && (!R_FINITE(val) || (int)val!=val),        "%f",    "truncated (precision lost)")
+      } break;
+    case REALSXP:
+      if (targetIsI64 && isReal(source) && !sourceIsI64) {
+                    CHECK_RANGE(double, REAL,    !ISNAN(val) && (!R_FINITE(val) || (int)val!=val),        "%f",    "truncated (precision lost)")
+      }
     }
   }
-  if (!length(where)) {  // e.g. called from rbindlist with where=R_NilValue
-    switch (TYPEOF(target)) {
-    case RAWSXP:
-      if (TYPEOF(source)!=RAWSXP) { source = PROTECT(coerceVector(source, RAWSXP)); protecti++; }
-      if (slen==1) {
-        // recycle single items
-        Rbyte *td = RAW(target)+start;
-        const Rbyte val = RAW(source)[0];
-        for (int i=0; i<len; i++) td[i] = val;  // no R API inside loop as RAW()/INTEGER() etc have overhead even when inline functions
-      } else {
-        memcpy(RAW(target)+start, RAW(source), slen*SIZEOF(target));
-      }
-      break;
-    case LGLSXP: case INTSXP :
-      if (TYPEOF(source)!=LGLSXP && TYPEOF(source)!=INTSXP) { source = PROTECT(coerceVector(source, TYPEOF(target))); protecti++; }
-      if (slen==1) {
-        int *td = INTEGER(target)+start;
-        const int val = INTEGER(source)[0];
-        for (int i=0; i<len; i++) td[i] = val;
-      } else {
-        memcpy(INTEGER(target)+start, INTEGER(source), slen*SIZEOF(target));
-      }
-      break;
-    case REALSXP : {
-      bool si64 = Rinherits(source, char_integer64);
-      bool ti64 = Rinherits(target, char_integer64);
-      if (si64 && TYPEOF(source)!=REALSXP)
-        error("Internal error: source has integer64 attribute but is type '%s' not REALSXP", type2char(TYPEOF(source))); // # nocov
-      if (si64 == ti64) {
-        if (TYPEOF(source)!=REALSXP) { source = PROTECT(coerceVector(source, REALSXP)); protecti++; }
-        if (slen==1) {
-          double *td = REAL(target)+start;
-          const double val = REAL(source)[0];
-          for (int i=0; i<len; i++) td[i] = val;
-        } else {
-          memcpy(REAL(target)+start, REAL(source), slen*SIZEOF(target));
-        }
-      } else if (si64) {
-        error("Internal error: memrecycle source is integer64 but target is real and not integer64; target should be type integer64");  // # nocov
-        /*
-        double *td = REAL(target)+start;
-        if (slen==1) {
-          const double val = (double)(((int64_t *)REAL(source))[0]);
-          for (int i=0; i<len; i++) td[i] = val;
-        } else {
-          const int64_t *val = (int64_t *)REAL(source);
-          for (int i=0; i<len; i++) td[i] = (double)(val[i]);
-        }*/
-      } else {
-        int64_t *td = (int64_t *)REAL(target)+start;
-        const int mask = slen==1 ? 0 : INT_MAX;
-        switch (TYPEOF(source)) {
-        case RAWSXP: {
-          const Rbyte *sd = RAW(source);  // sd = source data
-          for (int i=0; i<len; ++i) td[i] = (int64_t)(sd[i&mask]);  // raw has no NA
-        } break;
-        case LGLSXP : case INTSXP : {
-          const int *sd = INTEGER(source);
-          for (int i=0; i<len; ++i) td[i] = sd[i]==NA_INTEGER ? INT64_MIN : (int64_t)(sd[i]);
-        } break;
-        case REALSXP : {
-          int firstReal=0;
-          if ((firstReal=INTEGER(isReallyReal(source))[0])) {
-            sprintf(memrecycle_message, "coerced to integer64 but contains a non-integer value (%f at position %d); precision lost.", REAL(source)[firstReal-1], firstReal);
-          }
-          double *sd = REAL(source);
-          for (int i=0; i<len; ++i) td[i] = R_FINITE(sd[i]) ? (int)(sd[i]) : NA_INTEGER;
-        } break;
-        default :
-          error("Internal error: memrecycle integer64 column source is type '%s'", type2char(TYPEOF(source)));  // # nocov
-        }
-      }
-    } break;
-    case CPLXSXP :
-      if (TYPEOF(source)!=CPLXSXP) { source = PROTECT(coerceVector(source, CPLXSXP)); protecti++; }
-      if (slen==1) {
-        Rcomplex *td = COMPLEX(target)+start;
-        const Rcomplex val = COMPLEX(source)[0];
-        for (int i=0; i<len; ++i) td[i] = val;
-      } else {
-        memcpy(COMPLEX(target)+start, COMPLEX(source), slen*SIZEOF(target));
-      }
-      break;
-    case STRSXP :
-      if (TYPEOF(source)!=STRSXP) { source = PROTECT(coerceVector(source, STRSXP)); protecti++; }
-      if (slen==1) {
-        const SEXP val = STRING_ELT(source, 0);
-        for (int i=0; i<len; i++) SET_STRING_ELT(target, start+i, val);
-      } else {
-        const SEXP *val = STRING_PTR(source);
-        for (int i=0; i<len; i++) SET_STRING_ELT(target, start+i, val[i]);
-      }
-      break;
-    case VECSXP :
-      if (TYPEOF(source)==VECSXP && len==slen) {
-        for (int i=0; i<len; i++) SET_VECTOR_ELT(target, start+i, VECTOR_ELT(source, i));
-      } else {
-        const SEXP val = TYPEOF(source)==VECSXP ? VECTOR_ELT(source, 0) : source;
-        for (int i=0; i<len; i++) SET_VECTOR_ELT(target, start+i, val);
-      }
-      break;
-    default :
-      error("Unsupported type in assign.c:memrecycle '%s' (no where)", type2char(TYPEOF(target)));  // # nocov
+
+#undef BODY
+#define BODY(STYPE, RFUN, CTYPE, CAST, ASSIGN) {{    \
+  const STYPE *sd = (const STYPE *)RFUN(source);     \
+  if (length(where)) {                               \
+    const int *wd = INTEGER(where)+start;            \
+    if (slen==1) {                                   \
+      const STYPE val = sd[0];                       \
+      const CTYPE cval = CAST;                       \
+      for (int wi=0; wi<len; ++wi) {                 \
+        const int w = wd[wi];                        \
+        if (w<1) continue; /*0 or NA*/               \
+        const int i = w-1;                           \
+        ASSIGN;                                      \
+      }                                              \
+    } else {                                         \
+      for (int wi=0; wi<len; ++wi) {                 \
+        const int w = wd[wi];                        \
+        if (w<1) continue;                           \
+        const STYPE val = sd[wi];                    \
+        const CTYPE cval = CAST;                     \
+        const int i = w-1;                           \
+        ASSIGN;                                      \
+      }                                              \
+    }                                                \
+  } else {                                           \
+    if (slen==1) {                                   \
+      const STYPE val = sd[0];                       \
+      const CTYPE cval = CAST;                       \
+      for (int i=0; i<len; ++i) {                    \
+        ASSIGN;                                      \
+      }                                              \
+    } else {                                         \
+      for (int i=0; i<len; i++) {                    \
+        const STYPE val = sd[i];                     \
+        const CTYPE cval = CAST;                     \
+        ASSIGN;                                      \
+      }                                              \
+    }                                                \
+  }                                                  \
+} break; }
+
+#define COERCE_ERROR(targetType) error("type '%s' cannot be coerced to '%s'", type2char(TYPEOF(source)), targetType); // 'targetType' for integer64 vs double
+
+  const int off = (length(where)?0:start); // off = target offset; e.g. called from rbindlist with where=R_NilValue and start!=0
+  const bool mem = length(where)==0 && slen==len;  // only used if types match too
+  switch (TYPEOF(target)) {
+  case RAWSXP: {
+    Rbyte *td = RAW(target) + off;
+    switch (TYPEOF(source)) {
+    case RAWSXP:  if (mem) {
+                    memcpy(td, RAW(source), slen*sizeof(Rbyte)); break;
+          } else    BODY(Rbyte, RAW,    Rbyte, val,                                     td[i]=cval)
+    case LGLSXP:    BODY(int, LOGICAL,  Rbyte, val==1,                                  td[i]=cval)
+    case INTSXP:    BODY(int, INTEGER,  Rbyte, (val>255 || val<0) ? 0 : val,            td[i]=cval)
+    case REALSXP: if (sourceIsI64)
+                    BODY(int64_t, REAL, Rbyte, (val>255 || val<0) ? 0 : val,            td[i]=cval)
+            else    BODY(double, REAL,  Rbyte, (ISNAN(val)||val>255||val<0) ? 0 : val,  td[i]=cval)
+    default: COERCE_ERROR("raw");
     }
-  } else {
-    if (TYPEOF(target)!=TYPEOF(source) && TYPEOF(target)!=VECSXP)
-      error("Internal error: TYPEOF(target)['%s']!=TYPEOF(source)['%s'] in memrecycle (where)", type2char(TYPEOF(target)),type2char(TYPEOF(source))); // # nocov
-    const int *wd = INTEGER(where)+start;
-    const int mask = slen==1 ? 0 : INT_MAX;
-    switch (TYPEOF(target)) {
-    case LGLSXP: case INTSXP : {
-      int *td = INTEGER(target);
-      const int *sd = INTEGER(source);
-      for (int i=0; i<len; i++) {
-        const int w = wd[i];
-        if (w<1) continue;  // 0 or NA
-        td[w-1] = sd[i&mask];  // i&mask is for branchless recyle when slen==1
-      }
-    } break;
-    case REALSXP : {
-      double *td = REAL(target);
-      const double *sd = REAL(source);
-      for (int i=0; i<len; i++) {
-        const int w = wd[i];
-        if (w<1) continue;
-        td[w-1] = sd[i&mask];
-      }
-    } break;
-    case CPLXSXP: {
-      Rcomplex *td = COMPLEX(target);
-      const Rcomplex *sd = COMPLEX(source);
-      for (int i=0; i<len; i++) {
-        const int w = wd[i];
-        if (w<1) continue;
-        td[w-1] = sd[i&mask];
-      }
-    } break;
-    case STRSXP : {
-      const SEXP *sd = STRING_PTR(source);
-      for (int i=0; i<len; i++) {
-        const int w = wd[i];
-        if (w<1) continue;
-        SET_STRING_ELT(target, w-1, sd[i&mask]);
-      }
-    } break;
-    case VECSXP : {
-      if (TYPEOF(source)==VECSXP) {
-        const SEXP *sd = VECTOR_PTR(source);
-        for (int i=0; i<len; i++) {
-          const int w = wd[i];
-          if (w<1) continue;
-          SET_VECTOR_ELT(target, w-1, sd[i&mask]);
-        }
-      } else {
-        for (int i=0; i<len; i++) {
-          const int w = wd[i];
-          if (w<1) continue;
-          SET_VECTOR_ELT(target, w-1, source);
-        }
-      }
-    } break;
-    default :
-      error("Unsupported type in assign.c:memrecycle '%s' (where)", type2char(TYPEOF(target)));  // # nocov
+  } break;
+  case LGLSXP: {
+    int *td = LOGICAL(target) + off;
+    switch (TYPEOF(source)) {
+    case RAWSXP:    BODY(Rbyte, RAW,    int, val!=0,                                    td[i]=cval)
+    case LGLSXP:  if (mem) {
+                    memcpy(td, LOGICAL(source), slen*sizeof(Rboolean)); break;
+          } else    BODY(int, LOGICAL,  int, val,                                       td[i]=cval)
+    case INTSXP:    BODY(int, INTEGER,  int, val==NA_INTEGER ? NA_LOGICAL : val!=0,     td[i]=cval)
+    case REALSXP: if (sourceIsI64)
+                    BODY(int64_t, REAL, int, val==NA_INTEGER64 ? NA_LOGICAL : val!=0,   td[i]=cval)
+            else    BODY(double,  REAL, int, ISNAN(val) ? NA_LOGICAL : val!=0.0,        td[i]=cval)
+    default: COERCE_ERROR("logical");
     }
+  } break;
+  case INTSXP : {
+    int *td = INTEGER(target) + off;
+    switch (TYPEOF(source)) {
+    case  RAWSXP:   BODY(Rbyte, RAW,    int, (int)val,                                  td[i]=cval)
+    case  LGLSXP:   // same as INTSXP ...
+    case  INTSXP: if (mem) {
+                    memcpy(td, INTEGER(source), slen*sizeof(int)); break;
+           } else   BODY(int, INTEGER,  int, val,                                       td[i]=cval)
+    case REALSXP: if (sourceIsI64)
+                    BODY(int64_t, REAL, int, (val==NA_INTEGER64||val>INT_MAX||val<=NA_INTEGER) ? NA_INTEGER : (int)val,  td[i]=cval)
+             else   BODY(double, REAL,  int, ISNAN(val) ? NA_INTEGER : (int)val,        td[i]=cval)
+    default:        COERCE_ERROR("integer"); // test 2005.4
+    }
+  } break;
+  case REALSXP : {
+    if (targetIsI64) {
+      int64_t *td = (int64_t *)REAL(target) + off;
+      switch (TYPEOF(source)) {
+      case RAWSXP:  BODY(Rbyte, RAW,    int64_t, (int64_t)val,                          td[i]=cval)
+      case LGLSXP:  // same as INTSXP
+      case INTSXP:  BODY(int, INTEGER,  int64_t, val==NA_INTEGER ? NA_INTEGER64 : val,  td[i]=cval)
+      case REALSXP:
+        if (sourceIsI64) {
+          if(mem) { memcpy(td, (int64_t *)REAL(source), slen*sizeof(int64_t)); break; }
+          else      BODY(int64_t, REAL, int64_t, val,                                   td[i]=cval)
+        } else      BODY(double, REAL,  int64_t, R_FINITE(val) ? val : NA_INTEGER64,    td[i]=cval)
+      default: COERCE_ERROR("integer64");
+      }
+    } else {
+      double *td = REAL(target) + off;
+      switch (TYPEOF(source)) {
+      case  RAWSXP: BODY(Rbyte, RAW,    double, (double)val,                            td[i]=cval)
+      case  LGLSXP: // same as INTSXP
+      case  INTSXP: BODY(int, INTEGER,  double, val==NA_INTEGER ? NA_REAL : val,        td[i]=cval)
+      case REALSXP:
+        if (!sourceIsI64) {
+          if(mem) { memcpy(td, (double *)REAL(source), slen*sizeof(double)); break; }
+          else      BODY(double, REAL,  double, val,                                    td[i]=cval)
+        } else      BODY(int64_t, REAL, double, val==NA_INTEGER64 ? NA_REAL : val,      td[i]=cval)
+      default: COERCE_ERROR("double");
+      }
+    }
+  } break;
+  case CPLXSXP: {
+    Rcomplex *td = COMPLEX(target) + off;
+    double im = 0.0;
+    switch (TYPEOF(source)) {
+    case  RAWSXP:   BODY(Rbyte, RAW,    double, (im=0.0,val),                                         td[i].r=cval;td[i].i=im)
+    case  LGLSXP:   // same as INTSXP
+    case  INTSXP:   BODY(int, INTEGER,  double, val==NA_INTEGER?(im=NA_REAL,NA_REAL):(im=0.0,val),    td[i].r=cval;td[i].i=im)
+    case REALSXP: if (sourceIsI64)
+                    BODY(int64_t, REAL, double, val==NA_INTEGER64?(im=NA_REAL,NA_REAL):(im=0.0,val),  td[i].r=cval;td[i].i=im)
+             else   BODY(double,  REAL, double, ISNAN(val)?(im=NA_REAL,NA_REAL):(im=0.0,val),         td[i].r=cval;td[i].i=im)
+    case CPLXSXP:   if (mem) {
+                    memcpy(td, COMPLEX(source), slen*sizeof(Rcomplex)); break;
+           } else   BODY(Rcomplex, COMPLEX, Rcomplex, val,                                            td[i]=cval)
+    default: COERCE_ERROR("complex");
+    }
+  } break;
+  case STRSXP :
+    if (sourceIsFactor) {
+      const SEXP *ld = STRING_PTR(PROTECT(getAttrib(source, R_LevelsSymbol))); protecti++;
+      BODY(int, INTEGER, SEXP, val==NA_INTEGER ? NA_STRING : ld[val-1],  SET_STRING_ELT(target, off+i, cval))
+    } else {
+      if (!isString(source)) {
+        if (allNA(source, true)) {  // saves common coercion of NA (logical) to NA_character_
+          //              ^^ =errorForBadType; if type list, that was already an error earlier so we
+          //                 want to be strict now otherwise list would get to coerceVector below
+          source = ScalarLogical(FALSE);  // dummy input that BODY requires; a no alloc internal R constant that is a SEXP
+          // we're using BODY here for its case that hops via 'where', otherwise we could just do a trivial loop here
+          BODY(int, LOGICAL, SEXP, NA_STRING+val,                        SET_STRING_ELT(target, off+i, cval))
+          //                                ^^ dummy +0 on address to avoid C warning about not using val; hence why dummy is FALSE (0)
+          // BODY has built-in break
+        }
+        if (sourceIsI64)
+          error("To assign integer64 to a character column, please use as.character() for clarity.");
+        source = PROTECT(coerceVector(source, STRSXP)); protecti++;
+      }
+      BODY(SEXP, STRING_PTR, SEXP, val,                                  SET_STRING_ELT(target, off+i, cval))
+    }
+  case VECSXP :
+    if (TYPEOF(source)!=VECSXP) BODY(SEXP, &, SEXP, val,                 SET_VECTOR_ELT(target, off+i, cval))
+    else                        BODY(SEXP, VECTOR_PTR, SEXP, val,        SET_VECTOR_ELT(target, off+i, cval))
+  default :
+    error("Unsupported column type in assign.c:memrecycle '%s'", type2char(TYPEOF(target)));  // # nocov
   }
   UNPROTECT(protecti);
   return memrecycle_message[0] ? memrecycle_message : NULL;
@@ -1088,7 +1072,7 @@ void writeNA(SEXP v, const int from, const int n)
   case REALSXP : {
     if (Rinherits(v, char_integer64)) {  // Rinherits covers nanotime too which inherits from integer64 via S4 extends
       int64_t *vd = (int64_t *)REAL(v);
-      for (int i=from; i<=to; ++i) vd[i] = INT64_MIN;
+      for (int i=from; i<=to; ++i) vd[i] = NA_INTEGER64;
     } else {
       double *vd = REAL(v);
       for (int i=from; i<=to; ++i) vd[i] = NA_REAL;

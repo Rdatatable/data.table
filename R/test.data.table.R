@@ -157,7 +157,7 @@ test.data.table = function(verbose=FALSE, pkg="pkg", silent=FALSE, with.other.pa
   #  inittime=PS_rss=GC_used=GC_max_used=NULL
   #  m = fread("memtest.csv")[inittime==.inittime]
   #  if (nrow(m)) {
-  #    ps_na = all(is.na(m[["PS_rss"]])) # OS with no 'ps -o rss R' support
+  #    ps_na = allNA(m[["PS_rss"]]) # OS with no 'ps -o rss R' support
   #    grDevices::png("memtest.png")
   #    p = graphics::par(mfrow=c(if (ps_na) 2 else 3, 2))
   #    if (!ps_na) {
@@ -282,9 +282,9 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,output=NULL,notOutput=NULL,
   if (!missing(error) && !missing(y))
     stop("Test ",numStr," is invalid: when error= is provided it does not make sense to pass y as well")  # nocov
 
-  string_match = function(x, y) {
-    length(grep(x,y,fixed=TRUE)) ||                    # try treating x as literal first; useful for most messages containing ()[]+ characters
-    length(tryCatch(grep(x,y), error=function(e)NULL)) # otherwise try x as regexp
+  string_match = function(x, y, ignore.case=FALSE) {
+    length(grep(x, y, fixed=TRUE)) ||  # try treating x as literal first; useful for most messages containing ()[]+ characters
+    length(tryCatch(grep(x, y, ignore.case=ignore.case), error=function(e)NULL))  # otherwise try x as regexp
   }
 
   xsub = substitute(x)
@@ -364,10 +364,10 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,output=NULL,notOutput=NULL,
       fail = TRUE
       # nocov end
     }
-    if (length(notOutput) && string_match(notOutput, out)) {
+    if (length(notOutput) && string_match(notOutput, out, ignore.case=TRUE)) {
       # nocov start
       cat("Test",numStr,"produced output but should not have:\n")
-      cat("Expected absent: <<",gsub("\n","\\\\n",notOutput),">>\n",sep="")
+      cat("Expected absent (case insensitive): <<",gsub("\n","\\\\n",notOutput),">>\n",sep="")
       cat("Observed: <<",gsub("\n","\\\\n",out),">>\n",sep="")
       fail = TRUE
       # nocov end
