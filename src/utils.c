@@ -33,7 +33,7 @@ SEXP isReallyReal(SEXP x) {
 }
 
 bool allNA(SEXP x, bool errorForBadType) {
-  // less space and time than any(is.na(x)) at R level because that creates full size is.na(x) first before any()
+  // less space and time than all(is.na(x)) at R level because that creates full size is.na(x) first before all()
   // whereas this allNA can often return early on testing the first value without reading the rest
   const int n = length(x);
   if (n==0) // empty vectors (including raw(), NULL, and list()) same as R's all(is.na()) true result; tests 2116.*
