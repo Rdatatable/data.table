@@ -875,11 +875,11 @@ test(299.05, DT[2:3,c:=c(43, 44)], data.table(a=1:3,c=42:44))
 test(299.06, DT[2,c:=42], data.table(a=1:3,c=INT(42,42,44)))
 # also see tests 302 and 303.  (Ok, new test file for fast assign would be tidier).
 test(299.07, DT[,c:=rep(FALSE,nrow(DT))], data.table(a=1:3,c=FALSE))  # replace c column with logical
-test(299.08, DT[2:3,c:=c(3.14,0)], data.table(a=1:3, c=c(FALSE,TRUE,FALSE)), warning="Non-zero 3.14.* taken as TRUE.*Please use")
+test(299.08, DT[2:3,c:=c(3.14,0)], data.table(a=1:3, c=c(FALSE,TRUE,FALSE)), warning="3.14.*double.*at RHS position 1 taken as TRUE.*column 2 named 'c'.*logical")
 test(299.09, DT[2:3,c:=c(0,1)], data.table(a=1:3,c=c(FALSE,FALSE,TRUE))) # no warning
 # FR #2551 is now changed to fit in / fix bug #5442. Stricter warnings are in place now. Check tests 1294.1-34 below.
-test(299.10, DT[2,c:=42], data.table(a=1:3, c=c(FALSE,TRUE,TRUE)), warning="Non-zero 42.0.* taken as TRUE.*Please use")
-test(299.11, DT[1,c:=42L], data.table(a=1:3, c=TRUE), warning="Non-zero 42 taken as TRUE.*Please use")
+test(299.10, DT[2,c:=42], data.table(a=1:3, c=c(FALSE,TRUE,TRUE)), warning="42.0.*double.*at RHS position 1.*TRUE")
+test(299.11, DT[1,c:=42L], data.table(a=1:3, c=TRUE), warning="42.*integer.*at RHS position 1.*TRUE.*column 2 named 'c'.*logical")
 test(299.12, DT[2:3,c:=c(0L, 0L)], data.table(a=1:3,c=c(TRUE,FALSE,FALSE)))
 
 # Test bug fix #1468, combining i and by.
@@ -4856,7 +4856,7 @@ test(1293, ans1, ans2)
 dt <- data.table(a=1:3, b=c(7,8,9), c=c(TRUE, NA, FALSE), d=as.list(4:6), e=c("a", "b", "c"))
 
 test(1294.01, dt[, a := 1]$a, rep(1L, 3L))
-test(1294.02, dt[, a := 1.5]$a, rep(1L, 3L), warning="Coerced double RHS to integer.*column 1 named 'a'.*fractions which have been lost; e.g. item 1 with value 1.5.* truncated to 1.")
+test(1294.02, dt[, a := 1.5]$a, rep(1L, 3L), warning="1.5.*double.*position 1 truncated.*column 1 named 'a'.*integer")
 test(1294.03, dt[, a := NA]$a, rep(NA_integer_, 3L))
 test(1294.04, dt[, a := "a"]$a, rep(NA_integer_, 3L),
               warning=c("NAs introduced by coercion",
@@ -14137,7 +14137,7 @@ DT[,foo:=factor(c("a","b","c"))]
 test(2005.05, DT[2, foo:=8i], error="Can't assign to column 'foo' (type 'factor') a value of type 'complex' (not character, factor, integer or numeric)")
 test(2005.06, DT[2, a:=9, verbose=TRUE], notOutput="Coerced")
 test(2005.07, DT[2, a:=NA, verbose=TRUE], notOutput="Coerced")
-test(2005.08, DT[2, a:=9.9]$a, INT(1,9,3), warning="Coerced double RHS to integer.*One or more RHS values contain fractions which have been lost.*9.9.*has been truncated to 9")
+test(2005.08, DT[2, a:=9.9]$a, INT(1,9,3), warning="9.9.*double.*position 1 truncated.*column 1 named 'a'.*integer")
 test(2005.09, set(DT, 1L, "c", expression(x+2)), error="type 'expression' cannot be coerced to 'raw'")
 test(2005.10, set(DT, 1L, "d", expression(x+2)), error="type 'expression' cannot be coerced to 'logical'")
 test(2005.11, set(DT, 1L, "e", expression(x+2)), error="type 'expression' cannot be coerced to 'double'")
@@ -14145,11 +14145,16 @@ test(2005.12, set(DT, 1L, "f", expression(x+2)), error="type 'expression' cannot
 test(2005.30, DT[2:3,c:=c(TRUE,FALSE), verbose=TRUE]$c, as.raw(INT(7,1,0)),
               output="Zero-copy coerce when assigning 'logical' to 'raw' column 3 named 'c'")
 test(2005.31, set(DT,1L,"c",NA)$c, as.raw(INT(0,1,0)))
-test(2005.32, set(DT,1:2,"c",INT(-1,255))$c, as.raw(INT(0,255,0)))
-test(2005.33, DT[2:3,c:=INT(NA,256)]$c, as.raw(INT(0,0,0)))
-test(2005.34, set(DT,2:3,"c",c(NA,3.14))$c, as.raw(INT(0,0,3)))
-test(2005.35, DT[1:2,c:=c(Inf,0.78)]$c, as.raw(INT(0,0,3)))
-test(2005.36, DT[1:2,d:=as.raw(c(0,255))]$d, c(FALSE,TRUE,TRUE))
+test(2005.32, set(DT,1:2,"c",INT(-1,255))$c, as.raw(INT(0,255,0)),
+              warning="-1.*integer.*position 1 taken as 0 when assigning to column 3 named 'c'.*raw")
+test(2005.33, DT[2:3,c:=INT(NA,256)]$c, as.raw(INT(0,0,0)),
+              warning="-2147483648.*integer.*position 1 taken as 0 when assigning to column 3 named 'c'.*raw")
+test(2005.34, set(DT,2:3,"c",c(NA,3.14))$c, as.raw(INT(0,0,3)),
+              warning="[nN].*double.*position 1 either truncated.*or taken as 0 when assigning to column 3 named 'c'.*raw") # 'nan' for me but might vary hence [nN]
+test(2005.35, DT[1:2,c:=c(Inf,0.78)]$c, as.raw(INT(0,0,3)),
+              warning="[iI].*double.*position 1 either truncated.*or taken as 0 when assigning to column 3 named 'c'.*raw'") # 'inf' for me but might vary hence [iI]
+test(2005.36, DT[1:2,d:=as.raw(c(0,255))]$d, c(FALSE,TRUE,TRUE),
+              warning="255.*raw.*position 2 taken as TRUE when assigning to column 4 named 'd'.*logical")
 test(2005.37, DT[2:3,b:=as.raw(c(0,255))]$b, INT(4,0,255))
 test(2005.38, DT[1:2,e:=as.raw(c(0,255))]$e, c(0,255,pi*3))
 test(2005.39, DT[c(1,3,2), c:=as.raw(c(0,100,255)), verbose=TRUE]$c, as.raw(c(0,255,100)),
@@ -14162,7 +14167,18 @@ if (test_bit64) {
   DT[,g:=as.integer64(c(-9,0,NA))]
   test(2005.60, set(DT, 1L, "g", expression(x+2)), error="type 'expression' cannot be coerced to 'integer64'")
   test(2005.61, DT[1:2,e:=as.integer64(c(NA,-200))]$e, c(NA_real_, -200, pi*3))
-  test(2005.62, DT[2:3, d:=as.integer64(c(2,NA))]$d, c(FALSE,TRUE,NA), warning="Non-zero 2 taken as TRUE")
+  test(2005.62, DT[2:3, d:=as.integer64(c(2,NA))]$d, c(FALSE,TRUE,NA),
+                warning="2.*integer64.*position 1 taken as TRUE when assigning to column 4 named 'd'.*logical")
+  DT[,b:=4:6]
+  test(2005.63, DT[2:3, b:=as.integer64(c("2147483647","2147483648"))]$b, INT(4,2147483647,NA),
+                warning="2147483648.*integer64.*position 2 out-of-range [(]NA[)] when assigning to column 2 named 'b'.*integer")
+  test(2005.64, DT[2:3, b:=as.integer64(c("-2147483648","-2147483647"))]$b, INT(4,NA,-2147483647),
+                warning="-2147483648.*integer64.*position 1 out-of-range [(]NA[)].*column 2 named 'b'.*integer")
+  test(2005.65, DT[c(2,1,3), c:=as.integer64(c(-1,255,256))]$c, as.raw(c(255,0,0)),
+                warning="-1.*integer64.*position 1 taken as 0 when assigning to column 3 named 'c'.*raw")
+  test(2005.66, DT[2:3, f:=as.integer64(c(NA,"2147483648"))]$f, as.complex(c(-42,NA,2147483648)))
+  DT[,h:=LETTERS[1:3]]
+  test(2005.67, DT[2:3, h:=as.integer64(1:2)], error="To assign integer64 to a character column, please use as.character.")
 }
 
 # rbindlist raw type, #2819
@@ -14173,7 +14189,7 @@ test(2006.2, rbindlist(list(data.table(x = as.raw(1:2), y=as.raw(5:6)), data.tab
 if (test_bit64) {
   test(2007.1, rbindlist(list( list(a=as.integer64(1), b=3L),  list(a=2L, b=4L) )), data.table(a=as.integer64(1:2), b=3:4))
   test(2007.2, rbindlist(list( list(a=3.4, b=5L),  list(a=as.integer64(4), b=6L) )), data.table(a=as.integer64(3:4), b=5:6),
-               warning="Column 1 of item 1: coerced to integer64 but contains a non-integer value [(]3.40.* at position 1[)]; precision lost")
+               warning="Column 1 of item 1: 3.4.*double.*position 1 truncated.*precision lost.*when assigning to column 1 named 'a'.*integer64'")
   test(2007.3, rbindlist(list( list(a=3.0, b=5L),  list(a=as.integer64(4), b=6L) )), data.table(a=as.integer64(3:4), b=5:6))
   test(2007.4, rbindlist(list( list(b=5:6),  list(a=as.integer64(4), b=7L)), fill=TRUE), data.table(b=5:7, a=as.integer64(c(NA,NA,4))))  # tests writeNA of integer64
   test(2007.5, rbindlist(list( list(a=INT(1,NA,-2)),  list(a=as.integer64(c(3,NA))) )), data.table(a=as.integer64(c(1,NA,-2,3,NA))))   # int NAs combined with int64 NA
@@ -16220,9 +16236,9 @@ DT = data.table(a=1:4, b=c(FALSE, TRUE, NA, FALSE))
 test(2115.1, set(DT,3L,1L,0), data.table(a=INT(1,2,0,4), b=c(FALSE, TRUE, NA, FALSE)))
 test(2115.2, set(DT,3L,2L,0), data.table(a=INT(1,2,0,4), b=c(FALSE, TRUE, FALSE, FALSE)))
 test(2115.3, set(DT,3L,2L,-2L), data.table(a=INT(1,2,0,4), b=c(FALSE, TRUE, TRUE, FALSE)),  # see also test 299
-             warning="Non-zero -2 taken as TRUE.*Please use.*")
+             warning="-2.*integer.*position 1 taken as TRUE.*column 2 named 'b'.*logical")
 test(2115.4, set(DT,4L,2L,3.14), data.table(a=INT(1,2,0,4), b=c(FALSE, TRUE, TRUE, TRUE)),
-             warning="Non-zero 3.14.* taken as TRUE.*Please use.*")
+             warning="3.14.*double.*position 1 taken as TRUE.*column 2 named 'b'.*logical")
 DT = data.table(code=c("c","b","c","a"), val=10:13)
 test(2115.5, DT[code=="c", val := val+1], data.table(code=c("c","b","c","a"), val=INT(11,11,13,13)))
 DT = data.table(x=factor(LETTERS[1:3]), y=1:6)

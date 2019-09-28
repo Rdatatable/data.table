@@ -500,8 +500,8 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
     } else {                 // existing column
       targetcol = VECTOR_ELT(dt,coln);
     }
-    memrecycle(targetcol, rows, 0, targetlen, thisvalue, coln+1, CHAR(STRING_ELT(names, coln)));
-    //                                                   ^^ last 2 arguments just for messages
+    const char *ret = memrecycle(targetcol, rows, 0, targetlen, thisvalue, coln+1, CHAR(STRING_ELT(names, coln)));
+    if (ret) warning(ret);
   }
 
   *_Last_updated = numToDo;  // the updates have taken place with no error, so update .Last.updated now
@@ -669,7 +669,7 @@ static bool anyNamed(SEXP x) {
 }
 
 #define MSGSIZE 1000
-static char memrecycle_message[MSGSIZE+1];
+static char memrecycle_message[MSGSIZE+1]; // returned to rbindlist so it can prefix with which one of the list of data.table-like objects
 
 const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source, int colnum, const char *colname)
 // like memcpy but recycles single-item source
@@ -821,93 +821,68 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source,
         // now continue, but with the mapped integers in the (new) source
       }
     }
+  } else if (isString(source) && !isString(target) && !isNewList(target)) {
+    source = PROTECT(coerceVector(source, TYPEOF(target))); protecti++;
+    warning("Coerced 'character' RHS to '%s' to match the type of the target column (column %d named '%s').",
+            type2char(TYPEOF(target)), colnum, colname);
   } else if ((TYPEOF(target)!=TYPEOF(source) || targetIsI64!=sourceIsI64) && !isNewList(target)) {
     if (isNewList(source)) {
       error("Cannot coerce 'list' RHS to '%s' to match the type of the target column (column %d named '%s').",
             type2char(TYPEOF(target)), colnum, colname);
     }
-    if (isString(source)) {
-      source = PROTECT(coerceVector(source, TYPEOF(target))); protecti++;
-      warning("Coerced 'character' RHS to '%s' to match the type of the target column (column %d named '%s').",
-              type2char(TYPEOF(target)), colnum, colname);
-    } else {
-      if (GetVerbose()) {
-        // only take the (small) cost of GetVerbose() (search of options() list) when types don't match
-        Rprintf("Zero-copy coerce when assigning '%s' to '%s' column %d named '%s'.\n",
-                sourceIsI64 ? "integer64" : type2char(TYPEOF(source)),
-                targetIsI64 ? "integer64" : type2char(TYPEOF(target)),
-                colnum, colname);
-      }
-      // The following checks are up front here once, otherwise we'd need them twice in the two branches
-      //   inside BODY that cater for 'where' or not.
-      // The idea is to do them without a coerceVector() which allocates; zero-copy coerce
-      // TODO: these can be condensed into a macro similar to BODY further below
-      switch(TYPEOF(target)) {
-      //TODO case RAWSXP:
-      case LGLSXP:
-        if (isInteger(source)) {
-          const int *sd = INTEGER(source);
-          for (int i=0; i<slen; ++i) {
-            const int val = sd[i];
-            if (val!=0 && val!=1 && val!=NA_INTEGER) {
-              warning("Non-zero %d taken as TRUE when assigning to logical column. Please use as.logical() to avoid this warning"
-                      " and to express the intent to help those reading this code in future.", val);
-              // was warning too in v1.12.2 but it was much longer and less helpful/specific
-              break; // just warn on the first
-            }
-          }
-        } else if (isReal(source)) {
-          if (!sourceIsI64) {
-            const double *sd = REAL(source);
-            for (int i=0; i<slen; ++i) {
-              const double val = sd[i];
-              if (!ISNAN(val) && val!=0.0 && val!=1.0) {
-                warning("Non-zero %f taken as TRUE when assigning to a logical column. Please use as.logical() to avoid this warning"
-                        " and to express the intent to help those reading this code in future.", val);
-                break;
-              }
-            }
-          } else {
-            const int64_t *sd = (int64_t *)REAL(source);
-            for (int i=0; i<slen; ++i) {
-              const int64_t val = sd[i];
-              if (val!=0 && val!=1 && val!=NA_INTEGER) {
-                warning("Non-zero %lld taken as TRUE when assigning to a logical column. Please use as.logical() to avoid this warning"
-                        " and to express the intent to help those reading this code in future.", (long long)val);
-                break;
-              }
-            }
-          }
-        }
-        break;
-      case INTSXP:
-        if (isReal(source)) {
-          if (!sourceIsI64) {
-            int w = INTEGER(isReallyReal(source))[0];  // first fraction present (1-based), 0 if none
-            if (w>0) {
-              warning("Coerced double RHS to integer to match the type of the target column (column %d named '%s'). One or more RHS values contain fractions which have been lost; e.g. item %d with value %f has been truncated to %d.", colnum, colname, w, REAL(source)[w-1], (int)REAL(source)[w-1]);
-              // same warning text as v1.12.2 so as to reduce diff in tests. TODO: shorten text in future to put truncated %f at the begnning of the message.
-            }
-          } else {
-            const int64_t *sd = (int64_t *)REAL(source);
-            for (int i=0; i<slen; ++i) {
-              const int64_t val = sd[i];
-              if (val!=NA_INTEGER64 && (val<=NA_INTEGER || val>INT_MAX)) {
-                warning("Assigning integer64 to integer but %lld is outside range of integer and will be converted to NA.", (long long)val);
-                break;
-              }
-            }
-          }
-        }
-        break;
-      case REALSXP:
-        if (targetIsI64 && isReal(source) && !sourceIsI64) {
-          int firstReal=0;
-          if ((firstReal=INTEGER(isReallyReal(source))[0])) {
-            snprintf(memrecycle_message, MSGSIZE, "coerced to integer64 but contains a non-integer value (%f at position %d); precision lost.", REAL(source)[firstReal-1], firstReal);
-          }
-        }
-        break;
+
+    if (GetVerbose()) {
+      // only take the (small) cost of GetVerbose() (search of options() list) when types don't match
+      Rprintf("Zero-copy coerce when assigning '%s' to '%s' column %d named '%s'.\n",
+              sourceIsI64 ? "integer64" : type2char(TYPEOF(source)),
+              targetIsI64 ? "integer64" : type2char(TYPEOF(target)),
+              colnum, colname);
+    }
+    // The following checks are up front here, otherwise we'd need them twice in the two branches
+    //   inside BODY that cater for 'where' or not. Maybe there's a way to merge the two macros in future.
+    // The idea is to do these range checks without calling coerceVector() (which allocates)
+
+#define CHECK_RANGE(STYPE, RFUN, COND, FMT, TO) {{                                                                      \
+  const STYPE *sd = (const STYPE *)RFUN(source);                                                                        \
+  for (int i=0; i<slen; ++i) {                                                                                          \
+    const STYPE val = sd[i];                                                                                            \
+    if (COND) {                                                                                                         \
+      const char *sType = sourceIsI64 ? "integer64" : type2char(TYPEOF(source));                                        \
+      const char *tType = targetIsI64 ? "integer64" : type2char(TYPEOF(target));                                        \
+      snprintf(memrecycle_message, MSGSIZE,                                                                             \
+               FMT" (type '%s') at RHS position %d "TO" when assigning to column %d named '%s' (type '%s')",            \
+              val, sType, i+1, colnum, colname, tType);                                                                 \
+      /* string returned like this so that rbindlist can prefix it with which item of its list this refers to  */       \
+      break;                                                                                                            \
+    }                                                                                                                   \
+  }                                                                                                                     \
+} break; }
+
+    switch(TYPEOF(target)) {
+    case LGLSXP:
+      switch (TYPEOF(source)) {
+      case RAWSXP:  CHECK_RANGE(Rbyte, RAW,      val!=0 && val!=1,                                       "%d",   "taken as TRUE")
+      case INTSXP:  CHECK_RANGE(int, INTEGER,    val!=0 && val!=1 && val!=NA_INTEGER,                    "%d",   "taken as TRUE")
+      case REALSXP: if (sourceIsI64)
+                    CHECK_RANGE(long long, REAL, val!=0 && val!=1 && val!=NA_INTEGER64,                  "%lld", "taken as TRUE")
+              else  CHECK_RANGE(double, REAL,    !ISNAN(val) && val!=0.0 && val!=1.0,                    "%f",   "taken as TRUE")
+      } break;
+    case RAWSXP:
+      switch (TYPEOF(source)) {
+      case INTSXP:  CHECK_RANGE(int, INTEGER,    val<0 || val>255,                                       "%d",   "taken as 0")
+      case REALSXP: if (sourceIsI64)
+                    CHECK_RANGE(long long, REAL, val<0 || val>255,                                       "%lld", "taken as 0")
+              else  CHECK_RANGE(double, REAL,    !R_FINITE(val) || val<0.0 || val>256.0 || (int)val!=val,"%f",   "either truncated (precision lost) or taken as 0")
+      } break;
+    case INTSXP:
+      if (TYPEOF(source)==REALSXP) {
+        if (sourceIsI64)
+                    CHECK_RANGE(long long, REAL, val!=NA_INTEGER64 && (val<=NA_INTEGER || val>INT_MAX), "%lld",  "out-of-range (NA)")
+        else        CHECK_RANGE(double, REAL,    !ISNAN(val) && (!R_FINITE(val) || (int)val!=val),      "%f",    "truncated (precision lost)")
+      } break;
+    case REALSXP:
+      if (targetIsI64 && isReal(source) && !sourceIsI64) {
+                    CHECK_RANGE(double, REAL,    !ISNAN(val) && (!R_FINITE(val) || (int)val!=val),      "%f",    "truncated (precision lost)")
       }
     }
   }
@@ -1061,7 +1036,7 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source,
           // BODY has built-in break
         }
         if (sourceIsI64)
-          error("Cannot assign integer64 to a character column. Please use as.character at R level.");
+          error("To assign integer64 to a character column, please use as.character() for clarity.");
         source = PROTECT(coerceVector(source, STRSXP)); protecti++;
       }
       BODY(SEXP, STRING_PTR, SEXP, val,                                  SET_STRING_ELT(target, off+i, cval))
