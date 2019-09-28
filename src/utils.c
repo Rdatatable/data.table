@@ -209,17 +209,22 @@ inline bool INHERITS(SEXP x, SEXP char_) {
 }
 
 bool Rinherits(SEXP x, SEXP char_) {
- // motivation was nanotime which is S4 and inherits from integer64 via S3 extends
- // R's C API inherits() does not cover S4 and returns FALSE for nanotime, as does our own INHERITS above.
- // R's R-level inherits() calls objects.c:inherits2 which calls attrib.c:R_data_class2 and
- // then attrib.c:S4_extends which itself calls R level methods:::.extendsForS3 which then calls R level methods::extends.
- // Since that chain of calls is so complicated and involves evaluating R level anyway, let's just reuse it.
- // Rinherits prefix with 'R' to signify i) it calls R level and is not thread safe, and ii) is the R level inherits which covers S4.
- SEXP vec = PROTECT(ScalarString(char_));
- SEXP call = PROTECT(lang3(sym_inherits, x, vec));
- bool ans = LOGICAL(eval(call, R_GlobalEnv))[0]==1;
- UNPROTECT(2);
- return ans;
+  // motivation was nanotime which is S4 and inherits from integer64 via S3 extends
+  // R's C API inherits() does not cover S4 and returns FALSE for nanotime, as does our own INHERITS above.
+  // R's R-level inherits() calls objects.c:inherits2 which calls attrib.c:R_data_class2 and
+  // then attrib.c:S4_extends which itself calls R level methods:::.extendsForS3 which then calls R level methods::extends.
+  // Since that chain of calls is so complicated and involves evaluating R level anyway, let's just reuse it.
+  // Rinherits prefix with 'R' to signify i) it may call R level and is therefore not thread safe, and ii) includes R level inherits which covers S4.
+  bool ans = INHERITS(x, char_);        // try standard S3 class character vector first
+  if (!ans && char_==char_integer64)    // save the eval() for known S4 classes that inherit from integer64
+    ans = INHERITS(x, char_nanotime);   // comment this out to test the eval() works for nanotime
+  if (!ans && IS_S4_OBJECT(x)) {        // if it's not S4 we can save the overhead of R eval()
+    SEXP vec = PROTECT(ScalarString(char_));           // TODO: cover this branch by making two new test S4 classes: one that
+    SEXP call = PROTECT(lang3(sym_inherits, x, vec));  //       does inherit from integer64 and one that doesn't
+    ans = LOGICAL(eval(call, R_GlobalEnv))[0]==1;
+    UNPROTECT(2);
+  }
+  return ans;
 }
 
 SEXP copyAsPlain(SEXP x) {
