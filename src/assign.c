@@ -840,7 +840,10 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source,
       }
       // The following checks are up front here once, otherwise we'd need them twice in the two branches
       //   inside BODY that cater for 'where' or not.
+      // The idea is to do them without a coerceVector() which allocates; zero-copy coerce
+      // TODO: these can be condensed into a macro similar to BODY further below
       switch(TYPEOF(target)) {
+      //TODO case RAWSXP:
       case LGLSXP:
         if (isInteger(source)) {
           const int *sd = INTEGER(source);
@@ -869,8 +872,8 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source,
             for (int i=0; i<slen; ++i) {
               const int64_t val = sd[i];
               if (val!=0 && val!=1 && val!=NA_INTEGER) {
-                warning("Non-zero %zd taken as TRUE when assigning to a logical column. Please use as.logical() to avoid this warning"
-                        " and to express the intent to help those reading this code in future.", val);
+                warning("Non-zero %lld taken as TRUE when assigning to a logical column. Please use as.logical() to avoid this warning"
+                        " and to express the intent to help those reading this code in future.", (long long)val);
                 break;
               }
             }
@@ -878,11 +881,22 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source,
         }
         break;
       case INTSXP:
-        if (isReal(source) && !sourceIsI64) {
-          int w = INTEGER(isReallyReal(source))[0];  // first fraction present (1-based), 0 if none
-          if (w>0) {
-            warning("Coerced double RHS to integer to match the type of the target column (column %d named '%s'). One or more RHS values contain fractions which have been lost; e.g. item %d with value %f has been truncated to %d.", colnum, colname, w, REAL(source)[w-1], (int)REAL(source)[w-1]);
-            // same warning text as v1.12.2 so as to reduce diff in tests. TODO: shorten text in future to put truncated %f at the begnning of the message.
+        if (isReal(source)) {
+          if (!sourceIsI64) {
+            int w = INTEGER(isReallyReal(source))[0];  // first fraction present (1-based), 0 if none
+            if (w>0) {
+              warning("Coerced double RHS to integer to match the type of the target column (column %d named '%s'). One or more RHS values contain fractions which have been lost; e.g. item %d with value %f has been truncated to %d.", colnum, colname, w, REAL(source)[w-1], (int)REAL(source)[w-1]);
+              // same warning text as v1.12.2 so as to reduce diff in tests. TODO: shorten text in future to put truncated %f at the begnning of the message.
+            }
+          } else {
+            const int64_t *sd = (int64_t *)REAL(source);
+            for (int i=0; i<slen; ++i) {
+              const int64_t val = sd[i];
+              if (val!=NA_INTEGER64 && (val<=NA_INTEGER || val>INT_MAX)) {
+                warning("Assigning integer64 to integer but %lld is outside range of integer and will be converted to NA.", (long long)val);
+                break;
+              }
+            }
           }
         }
         break;
@@ -947,66 +961,70 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source,
   case RAWSXP: {
     Rbyte *td = RAW(target) + off;
     switch (TYPEOF(source)) {
-    case RAWSXP: if (mem) {
-                  memcpy(td, RAW(source), slen*sizeof(Rbyte)); break;
-      } else      BODY(Rbyte, RAW,   Rbyte, val,                                      td[i]=cval)
-    case LGLSXP:  BODY(int, LOGICAL, Rbyte, val==1,                                   td[i]=cval)
-    case INTSXP:  BODY(int, INTEGER, Rbyte, (val>255 || val<0) ? 0 : val,             td[i]=cval)
-    case REALSXP: BODY(double, REAL, Rbyte, (ISNAN(val)||val>256||val<0) ? 0 : val,   td[i]=cval)
+    case RAWSXP:  if (mem) {
+                    memcpy(td, RAW(source), slen*sizeof(Rbyte)); break;
+          } else    BODY(Rbyte, RAW,    Rbyte, val,                                     td[i]=cval)
+    case LGLSXP:    BODY(int, LOGICAL,  Rbyte, val==1,                                  td[i]=cval)
+    case INTSXP:    BODY(int, INTEGER,  Rbyte, (val>255 || val<0) ? 0 : val,            td[i]=cval)
+    case REALSXP: if (sourceIsI64)
+                    BODY(int64_t, REAL, Rbyte, (val>255 || val<0) ? 0 : val,            td[i]=cval)
+            else    BODY(double, REAL,  Rbyte, (ISNAN(val)||val>255||val<0) ? 0 : val,  td[i]=cval)
     default: COERCE_ERROR("raw");
     }
   } break;
   case LGLSXP: {
     int *td = LOGICAL(target) + off;
     switch (TYPEOF(source)) {
-    case RAWSXP:  BODY(Rbyte, RAW, int, val!=0,                                       td[i]=cval)
+    case RAWSXP:    BODY(Rbyte, RAW,    int, val!=0,                                    td[i]=cval)
     case LGLSXP:  if (mem) {
-                  memcpy(td, LOGICAL(source), slen*sizeof(Rboolean)); break;
-      } else      BODY(int, LOGICAL, int, val,                                        td[i]=cval)
-    case INTSXP:  BODY(int, INTEGER, int, val==NA_INTEGER ? NA_LOGICAL : val!=0,      td[i]=cval)
+                    memcpy(td, LOGICAL(source), slen*sizeof(Rboolean)); break;
+          } else    BODY(int, LOGICAL,  int, val,                                       td[i]=cval)
+    case INTSXP:    BODY(int, INTEGER,  int, val==NA_INTEGER ? NA_LOGICAL : val!=0,     td[i]=cval)
     case REALSXP: if (sourceIsI64)
-                  BODY(int64_t, REAL, int, val==NA_INTEGER64 ? NA_LOGICAL : val!=0,   td[i]=cval)
-            else  BODY(double,  REAL, int, ISNAN(val) ? NA_LOGICAL : val!=0.0,        td[i]=cval)
+                    BODY(int64_t, REAL, int, val==NA_INTEGER64 ? NA_LOGICAL : val!=0,   td[i]=cval)
+            else    BODY(double,  REAL, int, ISNAN(val) ? NA_LOGICAL : val!=0.0,        td[i]=cval)
     default: COERCE_ERROR("logical");
     }
   } break;
   case INTSXP : {
     int *td = INTEGER(target) + off;
     switch (TYPEOF(source)) {
-    case RAWSXP:  BODY(Rbyte, RAW, int, (int)val,                                     td[i]=cval)
-    case LGLSXP:  // same as INTSXP ...
-    case INTSXP:  if (mem) {
-                  memcpy(td, INTEGER(source), slen*sizeof(int)); break;
-      } else      BODY(int, INTEGER, int, val,                                        td[i]=cval)
-    case REALSXP: BODY(double, REAL, int, ISNAN(val) ? NA_INTEGER : (int)val,         td[i]=cval)
-    default: COERCE_ERROR("integer"); // test 2005.4
+    case  RAWSXP:   BODY(Rbyte, RAW,    int, (int)val,                                  td[i]=cval)
+    case  LGLSXP:   // same as INTSXP ...
+    case  INTSXP: if (mem) {
+                    memcpy(td, INTEGER(source), slen*sizeof(int)); break;
+           } else   BODY(int, INTEGER,  int, val,                                       td[i]=cval)
+    case REALSXP: if (sourceIsI64)
+                    BODY(int64_t, REAL, int, (val==NA_INTEGER64||val>INT_MAX||val<=NA_INTEGER) ? NA_INTEGER : (int)val,  td[i]=cval)
+             else   BODY(double, REAL,  int, ISNAN(val) ? NA_INTEGER : (int)val,        td[i]=cval)
+    default:        COERCE_ERROR("integer"); // test 2005.4
     }
   } break;
   case REALSXP : {
     if (targetIsI64) {
       int64_t *td = (int64_t *)REAL(target) + off;
       switch (TYPEOF(source)) {
-      case RAWSXP:  BODY(Rbyte, RAW, int64_t, (int64_t)val,                           td[i]=cval)
+      case RAWSXP:  BODY(Rbyte, RAW,    int64_t, (int64_t)val,                          td[i]=cval)
       case LGLSXP:  // same as INTSXP
-      case INTSXP:  BODY(int, INTEGER, int64_t, val==NA_INTEGER ? NA_INTEGER64 : val, td[i]=cval)
+      case INTSXP:  BODY(int, INTEGER,  int64_t, val==NA_INTEGER ? NA_INTEGER64 : val,  td[i]=cval)
       case REALSXP:
         if (sourceIsI64) {
           if(mem) { memcpy(td, (int64_t *)REAL(source), slen*sizeof(int64_t)); break; }
-          else      BODY(int64_t, REAL, int64_t, val,                                 td[i]=cval)
-        } else      BODY(double, REAL, int64_t, R_FINITE(val) ? val : NA_INTEGER64,   td[i]=cval)
+          else      BODY(int64_t, REAL, int64_t, val,                                   td[i]=cval)
+        } else      BODY(double, REAL,  int64_t, R_FINITE(val) ? val : NA_INTEGER64,    td[i]=cval)
       default: COERCE_ERROR("integer64");
       }
     } else {
       double *td = REAL(target) + off;
       switch (TYPEOF(source)) {
-      case RAWSXP:  BODY(Rbyte, RAW, double, (double)val,                             td[i]=cval)
-      case LGLSXP:  // same as INTSXP
-      case INTSXP:  BODY(int, INTEGER, double, val==NA_INTEGER ? NA_REAL : val,       td[i]=cval)
+      case  RAWSXP: BODY(Rbyte, RAW,    double, (double)val,                            td[i]=cval)
+      case  LGLSXP: // same as INTSXP
+      case  INTSXP: BODY(int, INTEGER,  double, val==NA_INTEGER ? NA_REAL : val,        td[i]=cval)
       case REALSXP:
         if (!sourceIsI64) {
           if(mem) { memcpy(td, (double *)REAL(source), slen*sizeof(double)); break; }
-          else      BODY(double, REAL, double, val,                                   td[i]=cval)
-        } else      BODY(int64_t, REAL, double, val==NA_INTEGER64 ? NA_REAL : val,    td[i]=cval)
+          else      BODY(double, REAL,  double, val,                                    td[i]=cval)
+        } else      BODY(int64_t, REAL, double, val==NA_INTEGER64 ? NA_REAL : val,      td[i]=cval)
       default: COERCE_ERROR("double");
       }
     }
@@ -1015,20 +1033,22 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source,
     Rcomplex *td = COMPLEX(target) + off;
     double im = 0.0;
     switch (TYPEOF(source)) {
-    case RAWSXP:  BODY(Rbyte, RAW, double, (im=0.0,val),                                        td[i].r=cval;td[i].i=im)
-    case LGLSXP:  // same as INTSXP
-    case INTSXP:  BODY(int, INTEGER, double, val==NA_INTEGER?(im=NA_REAL,NA_REAL):(im=0.0,val), td[i].r=cval;td[i].i=im)
-    case REALSXP: BODY(double, REAL, double, val==ISNAN(val)?(im=NA_REAL,NA_REAL):(im=0.0,val), td[i].r=cval;td[i].i=im)
-    case CPLXSXP: if (mem) {
-                  memcpy(td, COMPLEX(source), slen*sizeof(Rcomplex)); break;
-      } else      BODY(Rcomplex, COMPLEX, Rcomplex, val,                              td[i]=cval)
+    case  RAWSXP:   BODY(Rbyte, RAW,    double, (im=0.0,val),                                         td[i].r=cval;td[i].i=im)
+    case  LGLSXP:   // same as INTSXP
+    case  INTSXP:   BODY(int, INTEGER,  double, val==NA_INTEGER?(im=NA_REAL,NA_REAL):(im=0.0,val),    td[i].r=cval;td[i].i=im)
+    case REALSXP: if (sourceIsI64)
+                    BODY(int64_t, REAL, double, val==NA_INTEGER64?(im=NA_REAL,NA_REAL):(im=0.0,val),  td[i].r=cval;td[i].i=im)
+             else   BODY(double,  REAL, double, ISNAN(val)?(im=NA_REAL,NA_REAL):(im=0.0,val),         td[i].r=cval;td[i].i=im)
+    case CPLXSXP:   if (mem) {
+                    memcpy(td, COMPLEX(source), slen*sizeof(Rcomplex)); break;
+           } else   BODY(Rcomplex, COMPLEX, Rcomplex, val,                                            td[i]=cval)
     default: COERCE_ERROR("complex");
     }
   } break;
   case STRSXP :
     if (sourceIsFactor) {
       const SEXP *ld = STRING_PTR(PROTECT(getAttrib(source, R_LevelsSymbol))); protecti++;
-      BODY(int, INTEGER, SEXP, val==NA_INTEGER ? NA_STRING : ld[val-1],               SET_STRING_ELT(target, off+i, cval))
+      BODY(int, INTEGER, SEXP, val==NA_INTEGER ? NA_STRING : ld[val-1],  SET_STRING_ELT(target, off+i, cval))
     } else {
       if (!isString(source)) {
         if (allNA(source, true)) {  // saves common coercion of NA (logical) to NA_character_
@@ -1036,17 +1056,19 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source,
           //                 want to be strict now otherwise list would get to coerceVector below
           source = ScalarLogical(FALSE);  // dummy input that BODY requires; a no alloc internal R constant that is a SEXP
           // we're using BODY here for its case that hops via 'where', otherwise we could just do a trivial loop here
-          BODY(int, LOGICAL, SEXP, NA_STRING+val,                                     SET_STRING_ELT(target, off+i, cval))
+          BODY(int, LOGICAL, SEXP, NA_STRING+val,                        SET_STRING_ELT(target, off+i, cval))
           //                                ^^ dummy +0 on address to avoid C warning about not using val; hence why dummy is FALSE (0)
           // BODY has built-in break
         }
+        if (sourceIsI64)
+          error("Cannot assign integer64 to a character column. Please use as.character at R level.");
         source = PROTECT(coerceVector(source, STRSXP)); protecti++;
       }
-      BODY(SEXP, STRING_PTR, SEXP, val,                                               SET_STRING_ELT(target, off+i, cval))
+      BODY(SEXP, STRING_PTR, SEXP, val,                                  SET_STRING_ELT(target, off+i, cval))
     }
   case VECSXP :
-    if (TYPEOF(source)!=VECSXP) BODY(SEXP, &, SEXP, val,                              SET_VECTOR_ELT(target, off+i, cval))
-    else                        BODY(SEXP, VECTOR_PTR, SEXP, val,                     SET_VECTOR_ELT(target, off+i, cval))
+    if (TYPEOF(source)!=VECSXP) BODY(SEXP, &, SEXP, val,                 SET_VECTOR_ELT(target, off+i, cval))
+    else                        BODY(SEXP, VECTOR_PTR, SEXP, val,        SET_VECTOR_ELT(target, off+i, cval))
   default :
     error("Unsupported column type in assign.c:memrecycle '%s'", type2char(TYPEOF(target)));  // # nocov
   }
