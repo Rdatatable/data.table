@@ -79,6 +79,98 @@ SEXP allNAR(SEXP x) {
   return ScalarLogical(allNA(x, /*errorForBadType=*/true));
 }
 
+/* fast R_IsNA and R_IsNaN for testing double type
+ * explained in https://stat.ethz.ch/pipermail/r-devel/2019-September/078497.html
+ * added openmp
+ */
+typedef union {
+  double value;
+  unsigned int word[2];
+} ieee_double;
+void fIsNA(const double *x, int64_t nx, int *ans) {
+  ieee_double y;
+  #pragma omp parallel for private(y) num_threads(getDTthreads())
+  for (int64_t i=0; i<nx; i++) {
+    if (!isnan(x[i])) {
+      ans[i] = 0;
+    } else {
+      y.value = x[i];
+      ans[i] = y.word[0]==1954;
+    }
+  }
+}
+void fIsNaN(const double *x, int64_t nx, int *ans) {
+  ieee_double y;
+  #pragma omp parallel for private(y) num_threads(getDTthreads())
+  for (int64_t i=0; i<nx; i++) {
+    if (!isnan(x[i])) {
+      ans[i] = 0;
+    } else {
+      y.value = x[i];
+      ans[i] = y.word[0]!=1954;
+    }
+  }
+}
+/* parallel is.na
+ * support for NA/NaN via faster version of R_IsNA R_IsNaN
+ */
+SEXP isnaR(SEXP x, SEXP nanArg) {
+  R_xlen_t nx = xlength(x);
+  SEXP ans = PROTECT(allocVector(LGLSXP, nx));
+  int *ansp = LOGICAL(ans);
+  switch (TYPEOF(x)) {
+  case RAWSXP: {
+    #pragma omp parallel for num_threads(getDTthreads())
+    for (int64_t i=0; i<nx; ++i) {
+      ansp[i] = 0;
+    }
+  } break;
+  case LGLSXP:
+  case INTSXP: {
+    const int *xd = INTEGER(x);
+    #pragma omp parallel for num_threads(getDTthreads())
+    for (int64_t i=0; i<nx; ++i) {
+      ansp[i] = xd[i] == NA_INTEGER;
+    }
+  } break;
+  case REALSXP: {
+    if (Rinherits(x, char_integer64)) {
+      const int64_t *xd = (int64_t *)REAL(x);
+      #pragma omp parallel for num_threads(getDTthreads())
+      for (int i=0; i<nx; ++i) {
+        ansp[i] = xd[i] == NA_INTEGER64;
+      }
+    } else {
+      const double *xd = REAL(x);
+      if (length(nanArg) == 0) {
+        #pragma omp parallel for num_threads(getDTthreads())
+        for (int i=0; i<nx; ++i) {
+          ansp[i] = ISNAN(xd[i]);
+        }
+      } else {
+        if (length(nanArg)==1 && ((isLogical(nanArg) && LOGICAL(nanArg)[0]==NA_LOGICAL) || (isReal(nanArg) && R_IsNA(REAL(nanArg)[0])))) {
+          fIsNA(xd, nx, ansp);
+        } else if (length(nanArg)==1 && (isReal(nanArg) && R_IsNaN(REAL(nanArg)[0]))) {
+          fIsNaN(xd, nx, ansp);
+        } else {
+          error("'nan' argument to 'fis.na' function must be either NA or NaN");
+        }
+      }
+    }
+  } break;
+  case STRSXP: {
+    const SEXP *xd = STRING_PTR(x);
+    for (int64_t i=0; i<nx; ++i) {
+      ansp[i] = xd[i] == NA_STRING;
+    }
+  } break;
+  default:
+    error("type '%s' not supported in isnaR", type2char(TYPEOF(x)));
+  }
+  UNPROTECT(1);
+  return ans;
+}
+
 /* colnamesInt
  * for provided data.table (or a list-like) and a subset of its columns, it returns integer positions of those columns in DT
  * handle columns input as: integer, double, character and NULL (handled as seq_along(x))
