@@ -519,7 +519,9 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
           }
           // else coerces if needed within memrecycle; with a no-alloc direct coerce from 1.12.4 (PR #3909)
           const char *ret = memrecycle(target, R_NilValue, ansloc, thisnrow, thisCol, idcol+j+1, foundName);
-          if (ret) warning("Column %d of item %d: %s", w+1, i+1, ret);  // e.g. when precision is lost like assigning 3.4 to integer64
+          if (ret) warning("Column %d of item %d: %s", w+1, i+1, ret);
+          // e.g. when precision is lost like assigning 3.4 to integer64; test 2007.2
+          // TODO: but maxType should handle that and this should never warn
         }
         ansloc += thisnrow;
       }
