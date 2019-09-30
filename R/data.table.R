@@ -2498,12 +2498,12 @@ setcolorder = function(x, neworder=key(x))
 
 set = function(x,i=NULL,j,value)  # low overhead, loopable
 {
-  if (is.atomic(value)) {
-    # protect NAMED of atomic value from .Call's NAMED=2 by wrapping with list()
-    l = vector("list", 1L)
-    .Call(Csetlistelt,l,1L,value)  # to avoid the copy by list() in R < 3.1.0
-    value = l
-  }
+  #if (is.atomic(value)) {
+  #  # protect NAMED of atomic value from .Call's NAMED=2 by wrapping with list()
+  #  l = vector("list", 1L)
+  #  .Call(Csetlistelt,l,1L,value)  # to avoid the copy by list() in R < 3.1.0
+  #  value = l
+  #}
   .Call(Cassign,x,i,j,NULL,value)
   invisible(x)
 }
