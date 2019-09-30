@@ -289,8 +289,6 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
         RHS = VECTOR_ELT(jval,j%LENGTH(jval));
         if (isNull(RHS))
           error("RHS is NULL when grouping :=. Makes no sense to delete a column by group. Perhaps use an empty vector instead.");
-        if (TYPEOF(target)!=TYPEOF(RHS) && !isNull(target))
-          error("Type of RHS ('%s') must match LHS ('%s'). To check and coerce would impact performance too much for the fastest cases. Either change the type of the target column, or coerce the RHS of := yourself (e.g. by using 1L instead of 1)", type2char(TYPEOF(RHS)), type2char(TYPEOF(target)));
         int vlen = length(RHS);
         if (vlen>1 && vlen!=grpn) {
           SEXP colname = isNull(target) ? STRING_ELT(newnames, INTEGER(lhs)[j]-origncol-1) : STRING_ELT(dtnames,INTEGER(lhs)[j]-1);
@@ -315,8 +313,10 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
           SET_STRING_ELT(dtnames, INTEGER(lhs)[j]-1, STRING_ELT(newnames, INTEGER(lhs)[j]-origncol-1));
           copyMostAttrib(RHS, target); // attributes of first group dominate; e.g. initial factor levels come from first group
         }
-        memrecycle(target, order, INTEGER(starts)[i]-1, grpn, RHS, 0, "");
+        const char *warn = memrecycle(target, order, INTEGER(starts)[i]-1, grpn, RHS, 0, "");
         // can't error here because length mismatch already checked for all jval columns before starting to add any new columns
+        if (warn)
+          warning("Group %d column '%s': %s", i+1, CHAR(STRING_ELT(dtnames,INTEGER(lhs)[j]-1)), warn);
       }
       UNPROTECT(1); // jval
       continue;
@@ -395,8 +395,8 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
       if (tsize==4) {
         int *td = INTEGER(target);
         int *sd = INTEGER(source);
-        for (int r=0; r<maxn; ++r) td[ansloc+r] = sd[igrp];
-      } else if (tsize==8) {
+        for (int r=0; r<maxn; ++r) td[ansloc+r] = sd[igrp];  // TODO: replace this section with memrecycle; igrp source offset needs adding
+      } else if (tsize==8) {                                 //       would resolve past comment too: 'shouldn't need SET_* to age objects here since groups. revisit'
         double *td = REAL(target);
         double *sd = REAL(source);
         for (int r=0; r<maxn; ++r) td[ansloc+r] = sd[igrp];
@@ -406,7 +406,6 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
         Rcomplex *sd = COMPLEX(source);
         for (int r=0; r<maxn; ++r) td[ansloc+r] = sd[igrp];
       }
-      // Shouldn't need SET_* to age objects here since groups, TO DO revisit.
     }
     for (int j=0; j<njval; ++j) {
       thisansloc = ansloc;
@@ -420,29 +419,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
           warning("Item %d of j's result for group %d is zero length. This will be filled with %d NAs to match the longest column in this result. Later groups may have a similar problem but only the first is reported to save filling the warning buffer.", j+1, i+1, maxn);
           NullWarnDone = TRUE;
         }
-        switch (TYPEOF(target)) {     // rarely called so no need to optimize this switch
-        case LGLSXP :
-        case INTSXP : {
-          int *td = INTEGER(target)+thisansloc;
-          for (int r=0; r<maxn; ++r) td[r] = NA_INTEGER;
-        } break;
-        case REALSXP : {
-          double *td = REAL(target)+thisansloc;
-          for (int r=0; r<maxn; ++r) td[r] = NA_REAL;
-        } break;
-        case CPLXSXP : {
-          Rcomplex *td = COMPLEX(target) + thisansloc;
-          for (int r=0; r<maxn; ++r) td[r] = NA_CPLX;
-        } break;
-        case STRSXP :
-          for (int r=0; r<maxn; ++r) SET_STRING_ELT(target,thisansloc+r,NA_STRING);
-          break;
-        case VECSXP :
-          for (int r=0; r<maxn; ++r) SET_VECTOR_ELT(target,thisansloc+r,R_NilValue);
-          break;
-        default:
-          error("Internal error. Type of column should have been checked by now"); // #nocov
-        }
+        writeNA(target, thisansloc, maxn);
       } else {
         // thislen>0
         if (TYPEOF(source) != TYPEOF(target))

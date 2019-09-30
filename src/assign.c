@@ -683,6 +683,8 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source,
     error("Internal error: recycle length error not caught earlier. slen=%d len=%d", slen, len); // # nocov
   // Internal error because the column has already been added to the DT, so length mismatch should have been caught before adding the column.
   // for 5647 this used to limit slen to len, but no longer
+  if (colname==NULL)
+    error("Internal error: memrecycle has received NULL colname"); // # nocov
   *memrecycle_message = '\0';
   int protecti=0;
   if (isNewList(source)) {
@@ -849,10 +851,11 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source,
     if (COND) {                                                                                                         \
       const char *sType = sourceIsI64 ? "integer64" : type2char(TYPEOF(source));                                        \
       const char *tType = targetIsI64 ? "integer64" : type2char(TYPEOF(target));                                        \
-      snprintf(memrecycle_message, MSGSIZE,                                                                             \
-               FMT" (type '%s') at RHS position %d "TO" when assigning to column %d named '%s' (type '%s')",            \
-               val, sType, i+1, colnum, colname, tType);                                                                \
-      /* string returned like this so that rbindlist can prefix it with which item of its list this refers to  */       \
+      int n = snprintf(memrecycle_message, MSGSIZE,                                                                     \
+               FMT" (type '%s') at RHS position %d "TO" when assigning to type '%s'", val, sType, i+1, tType);          \
+      if (colnum>0 && n>0 && n<MSGSIZE)                                                                                 \
+        snprintf(memrecycle_message+n, MSGSIZE-n, " (column %d named '%s')", colnum, colname);                          \
+      /* string returned so that rbindlist/dogroups can prefix it with which item of its list this refers to  */        \
       break;                                                                                                            \
     }                                                                                                                   \
   }                                                                                                                     \
@@ -1039,10 +1042,11 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source,
         if (allNA(source, true)) {  // saves common coercion of NA (logical) to NA_character_
           //              ^^ =errorForBadType; if type list, that was already an error earlier so we
           //                 want to be strict now otherwise list would get to coerceVector below
-          if (length(where))
-            for (int i=0; i<len; ++i) if (wd[i]>0) SET_STRING_ELT(target, start+wd[i]-1, NA_STRING);
-          else
+          if (length(where)) {
+            for (int i=0; i<len; ++i) if (wd[i]>0) SET_STRING_ELT(target, wd[i]-1, NA_STRING);
+          } else {
             for (int i=0; i<len; ++i) SET_STRING_ELT(target, start+i, NA_STRING);
+          }
           break;
         }
         if (sourceIsI64)
@@ -1064,24 +1068,23 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source,
 }
 
 void writeNA(SEXP v, const int from, const int n)
-// this is for use after allocVector() which does not initialize its result. It does write NA as you'd
-// think, other than for VECSXP which allocVector() already initializes with NULL.
+// e.g. for use after allocVector() which does not initialize its result.
 {
-  const int to = from-1+n;  // together with <=to below with writing NA to position 2147483647 in mind
+  const int to = from-1+n;  // writing to position 2147483647 in mind, 'i<=to' in loop conditions
   switch(TYPEOF(v)) {
   case RAWSXP:
-    memset(RAW(v)+from, 0, n*SIZEOF(v));
+    memset(RAW(v)+from, 0, n*sizeof(Rbyte));
     break;
-  case LGLSXP : {
+  case LGLSXP: {
     Rboolean *vd = (Rboolean *)LOGICAL(v);
     for (int i=from; i<=to; ++i) vd[i] = NA_LOGICAL;
   } break;
-  case INTSXP : {
+  case INTSXP: {
     // same whether factor or not
     int *vd = INTEGER(v);
     for (int i=from; i<=to; ++i) vd[i] = NA_INTEGER;
   } break;
-  case REALSXP : {
+  case REALSXP: {
     if (Rinherits(v, char_integer64)) {  // Rinherits covers nanotime too which inherits from integer64 via S4 extends
       int64_t *vd = (int64_t *)REAL(v);
       for (int i=from; i<=to; ++i) vd[i] = NA_INTEGER64;
@@ -1094,14 +1097,15 @@ void writeNA(SEXP v, const int from, const int n)
     Rcomplex *vd = COMPLEX(v);
     for (int i=from; i<=to; ++i) vd[i] = NA_CPLX;
   } break;
-  case STRSXP :
+  case STRSXP:
     // character columns are initialized with blank string (""). So replace the all-"" with all-NA_character_
     // Since "" and NA_character_ are global constants in R, it should be ok to not use SET_STRING_ELT here. But use it anyway for safety (revisit if proved slow)
     // If there's ever a way added to R API to pass NA_STRING to allocVector() to tell it to initialize with NA not "", would be great
     for (int i=from; i<=to; ++i) SET_STRING_ELT(v, i, NA_STRING);
     break;
-  case VECSXP : case EXPRSXP :
-    // list & expression columns already have each item initialized to NULL
+  case VECSXP: case EXPRSXP :
+    // although allocVector already initializes to R_NilValue, we use writeNA() in other places too, so we shouldn't skip this assign
+    for (int i=from; i<=to; ++i) SET_VECTOR_ELT(v, i, R_NilValue);
     break;
   default :
     error("Internal error: writeNA passed a vector of type '%s'", type2char(TYPEOF(v)));  // # nocov
