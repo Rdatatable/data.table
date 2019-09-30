@@ -16278,8 +16278,10 @@ test(2117.1, levels(DT[2:3,a:=c("",NA_character_)]$a), c("A","B","C",""))
 test(2117.2, DT[1,a:=NA_character_]$a, factor(c(NA,"",NA), levels=c("A","B","C","")))
 
 # assigning NA (non-character) to character column by group to trigger zero-copy-coerce case in memrecycle
+# used to be inconvenient error ('Type of RHS must match LHS') in v1.12.2 and before, and user had to use NA_character_
 DT = data.table(A=rep(1:2,each=3), B=3:4, v=letters[1:6])
-test(2118, DT[B==3L,v:=NA,by=A]$v, c(NA,"b",NA,"d",NA,"f"))
+test(2118.1, DT[B==3L,v:=NA,by=A]$v, c(NA,"b",NA,"d",NA,"f"))
+test(2118.2, DT[,v:=NA,by=A]$v, rep(NA_character_,6L))
 
 
 ###################################
