@@ -381,8 +381,8 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
   if (TYPEOF(values)==VECSXP && length(cols)==1 && length(values)==1) {
     SEXP item = VECTOR_ELT(values,0);
     if (length(item)==1 || length(item)==targetlen) {
-      if (verbose) Rprintf("RHS_list_of_columns revised to true because RHS list has 1 item whose length %d is either 1 or targetlen (%d). Please unwrap RHS.\n", length(item), targetlen);
       RHS_list_of_columns=true;
+      if (verbose) Rprintf("RHS_list_of_columns revised to true because RHS list has 1 item whose length %d is either 1 or targetlen (%d). Please unwrap RHS.\n", length(item), targetlen);
     }
   }
   if (RHS_list_of_columns) {
@@ -393,6 +393,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
       if (length(values)==1) {   // test 351.1; c("colA","colB"):=list(13:15) uses 13:15 for both columns
         values = VECTOR_ELT(values,0);
         RHS_list_of_columns = false;
+        if (verbose) Rprintf("Recycling single RHS list item across %d columns. Please unwrap RHS.\n", length(cols));
       } else {
         error("Supplied %d columns to be assigned %d items. Please see NEWS for v1.12.2.", length(cols), length(values));
       }
