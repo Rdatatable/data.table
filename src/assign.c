@@ -380,9 +380,9 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
   if (verbose) Rprintf("RHS_list_of_columns == %s\n", RHS_list_of_columns ? "true" : "false");
   if (TYPEOF(values)==VECSXP && length(cols)==1 && length(values)==1) {
     SEXP item = VECTOR_ELT(values,0);
-    if (length(item)==1 || length(item)==targetlen) {
+    if (isNull(item) || length(item)==1 || length(item)==targetlen) {
       RHS_list_of_columns=true;
-      if (verbose) Rprintf("RHS_list_of_columns revised to true because RHS list has 1 item whose length %d is either 1 or targetlen (%d). Please unwrap RHS.\n", length(item), targetlen);
+      if (verbose) Rprintf("RHS_list_of_columns revised to true because RHS list has 1 item which is NULL, or whose length %d is either 1 or targetlen (%d). Please unwrap RHS.\n", length(item), targetlen);
     }
   }
   if (RHS_list_of_columns) {
@@ -830,15 +830,21 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source,
       }
     }
   } else if (isString(source) && !isString(target) && !isNewList(target)) {
+    warning("Coercing 'character' RHS to '%s' to match the type of the target column (column %d named '%s').",
+            type2char(TYPEOF(target)), colnum, colname);
+    // this "Coercing ..." warning first to give context in case coerceVector warns 'NAs introduced by coercion'
     source = PROTECT(coerceVector(source, TYPEOF(target))); protecti++;
-    warning("Coerced 'character' RHS to '%s' to match the type of the target column (column %d named '%s').",
-            type2char(TYPEOF(target)), colnum, colname);
-  } else if ((TYPEOF(target)!=TYPEOF(source) || targetIsI64!=sourceIsI64) && !isNewList(target)) {
-    if (isNewList(source)) {
-      error("Cannot coerce 'list' RHS to '%s' to match the type of the target column (column %d named '%s').",
-            type2char(TYPEOF(target)), colnum, colname);
+  } else if (isNewList(source) && !isNewList(target)) {
+    if (targetIsI64) {
+      error("Cannot coerce 'list' RHS to 'integer64' to match the type of the target column (column %d named '%s').", colnum, colname);
+      // because R's coerceVector doesn't know about integer64
     }
-
+    // as in base R; e.g. let as.double(list(1,2,3)) work but not as.double(list(1,c(2,4),3))
+    // relied on by NNS, simstudy and table.express; tests 1294.*
+    warning("Coercing 'list' RHS to '%s' to match the type of the target column (column %d named '%s').",
+            type2char(TYPEOF(target)), colnum, colname);
+    source = PROTECT(coerceVector(source, TYPEOF(target))); protecti++;
+  } else if ((TYPEOF(target)!=TYPEOF(source) || targetIsI64!=sourceIsI64) && !isNewList(target)) {
     if (GetVerbose()) {
       // only take the (small) cost of GetVerbose() (search of options() list) when types don't match
       Rprintf("Zero-copy coerce when assigning '%s' to '%s' column %d named '%s'.\n",
