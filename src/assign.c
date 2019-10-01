@@ -376,42 +376,27 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
   }
   if (any_duplicated(cols,FALSE)) error("Can't assign to the same column twice in the same query (duplicates detected).");
   if (!isNull(newcolnames) && !isString(newcolnames)) error("newcolnames is supplied but isn't a character vector");
-  bool RHS_list_of_columns = TYPEOF(values)==VECSXP && length(cols)>1;    // || LENGTH(values)==1);  // initial value; may be revised below
+  bool RHS_list_of_columns = TYPEOF(values)==VECSXP && length(cols)>1;  // initial value; may be revised below
   if (verbose) Rprintf("RHS_list_of_columns == %s\n", RHS_list_of_columns ? "true" : "false");
-  if (TYPEOF(values)==VECSXP && length(cols)==1) {   //!RHS_list_of_columns && ) {
-    //if (length(values)==0)
-    //  error("Supplied %d columns to be assigned an empty list (which may be an empty data.table or data.frame since they are lists too). "
-    //        "To delete multiple columns use NULL instead. To add multiple empty list columns, use list(list()).", length(cols));
-
-    //if (length(values)==1 && !isNewList(VECTOR_ELT(values,0))) {
-    //  RHS_list_of_columns = true;
-    //}
-
-
-    if (length(values)==1) { // TODO move this into if() above
-      // c("colA","colB"):=list(13:15) should use 13:15 for both columns (recycle 1 item ok). So just change RHS so we don't have to deal with recycling-length-1 later
-      SEXP item = VECTOR_ELT(values,0);
-      //if (isNewList(item) ||
-      if (length(item)==1 || length(item)==targetlen) {
-        if (verbose) Rprintf("RHS_list_of_columns revised to true because RHS list has 1 item and that item is length %d which is either 1 or targetlen\n", targetlen);
-        RHS_list_of_columns=true;
-        // in future, we could require .() be used for a set of columns, and deprecate this length 1 list case.
-      }
+  if (TYPEOF(values)==VECSXP && length(cols)==1 && length(values)==1) {
+    SEXP item = VECTOR_ELT(values,0);
+    if (length(item)==1 || length(item)==targetlen) {
+      if (verbose) Rprintf("RHS_list_of_columns revised to true because RHS list has 1 item whose length %d is either 1 or targetlen (%d). Please unwrap RHS.\n", length(item), targetlen);
+      RHS_list_of_columns=true;
     }
-
-    //  bool df;
-    //  if (!(df=INHERITS(item, char_dataframe))) values = item;   // if() for #3474
-    //  RHS_list_of_columns = false;
-    //  if (verbose) Rprintf("RHS_list_of_columns revised to false (df=%d)\n", df);
-    //}
   }
   if (RHS_list_of_columns) {
     if (length(values)==0)
       error("Supplied %d columns to be assigned an empty list (which may be an empty data.table or data.frame since they are lists too). "
             "To delete multiple columns use NULL instead. To add multiple empty list columns, use list(list()).", length(cols));
-    if (length(values)!=length(cols))
-      error("Supplied %d columns to be assigned %d items. Please see NEWS for v1.12.2.%s", length(cols), length(values),
-            (length(values)==1)?" Try removing the list() or .() wrapper around the RHS.":"");
+    if (length(values)!=length(cols)) {
+      if (length(values)==1) {   // test 351.1; c("colA","colB"):=list(13:15) uses 13:15 for both columns
+        values = VECTOR_ELT(values,0);
+        RHS_list_of_columns = false;
+      } else {
+        error("Supplied %d columns to be assigned %d items. Please see NEWS for v1.12.2.", length(cols), length(values));
+      }
+    }
   }
   // Check all inputs :
   for (i=0; i<length(cols); i++) {

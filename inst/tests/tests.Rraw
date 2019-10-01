@@ -1006,8 +1006,7 @@ test(350.6, DT[c(0,0,0), .N], 0L)
 
 # Test recycling list() on RHS of :=
 DT = data.table(a=1:3,b=4:6,c=7:9,d=10:12)
-test(351.1, DT[,c("a","b"):=list(13:15)], error="Supplied 2 columns to be assigned 1 items.*Try removing the list[(][)] or .[(][)] wrapper around the RHS")
-ans = data.table(a=13:15,b=13:15,c=7:9,d=10:12)
+test(351.1, DT[,c("a","b"):=list(13:15)], ans<-data.table(a=13:15,b=13:15,c=7:9,d=10:12))
 test(351.2, DT[,c("a","b"):=13:15],       ans)
 test(352.1, DT[,letters[1:4]:=list(1L,NULL)], error="Supplied 4 columns to be assigned 2 items. Please see NEWS for v1.12.2")
 test(352.2, DT[,letters[1:4]:=list(1L,NULL,2L,NULL)], data.table(a=c(1L,1L,1L),c=c(2L,2L,2L)))
