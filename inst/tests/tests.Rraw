@@ -1006,8 +1006,10 @@ test(350.6, DT[c(0,0,0), .N], 0L)
 
 # Test recycling list() on RHS of :=
 DT = data.table(a=1:3,b=4:6,c=7:9,d=10:12)
-test(351.1, DT[,c("a","b"):=list(13:15)], ans<-data.table(a=13:15,b=13:15,c=7:9,d=10:12))
-test(351.2, DT[,c("a","b"):=13:15],       ans)
+test(351.1, DT[, c("a","b"):=list(13:15), verbose=TRUE], ans<-data.table(a=13:15,b=13:15,c=7:9,d=10:12),
+            output="RHS_list_of_columns == true.*Recycling single RHS list item across 2 columns")
+test(351.2, DT[, c("a","b"):=13:15, verbose=TRUE],       ans,
+            notOutput="revised")
 test(352.1, DT[,letters[1:4]:=list(1L,NULL)], error="Supplied 4 columns to be assigned 2 items. Please see NEWS for v1.12.2")
 test(352.2, DT[,letters[1:4]:=list(1L,NULL,2L,NULL)], data.table(a=c(1L,1L,1L),c=c(2L,2L,2L)))
 
@@ -4860,29 +4862,34 @@ test(1293, ans1, ans2)
 dt <- data.table(a=1:3, b=c(7,8,9), c=c(TRUE, NA, FALSE), d=as.list(4:6), e=c("a", "b", "c"))
 
 test(1294.01, dt[, a := 1]$a, rep(1L, 3L))
-test(1294.02, dt[, a := 1.5]$a, rep(1L, 3L), warning="1.5.*double.*position 1 truncated.*integer.*column 1 named 'a'")
+test(1294.02, dt[, a := 1.5]$a, rep(1L, 3L),
+              warning="1.5.*double.*position 1 truncated.*integer.*column 1 named 'a'")
 test(1294.03, dt[, a := NA]$a, rep(NA_integer_, 3L))
 test(1294.04, dt[, a := "a"]$a, rep(NA_integer_, 3L),
-              warning=c("NAs introduced by coercion",
-                        "Coerced 'character' RHS to 'integer'.*column 1 named 'a'"))
-test(1294.05, dt[, a := list(list(1))]$a, error="Cannot coerce 'list' RHS to 'integer' to match.*column 1 named 'a'")
+              warning=c("Coercing 'character' RHS to 'integer'.*column 1 named 'a'",
+                        "NAs introduced by coercion"))
+test(1294.05, dt[, a := list(list(1))]$a, rep(1L, 3L),
+              warning="Coercing 'list' RHS to 'integer' to match.*column 1 named 'a'")
 test(1294.06, dt[, a := list(1L)]$a, rep(1L, 3L))
 test(1294.07, dt[, a := list(1)]$a, rep(1L, 3L))
 test(1294.08, dt[, a := TRUE]$a, rep(1L, 3L))
 test(1294.09, dt[, b := 1L]$b, rep(1,3))
 test(1294.10, dt[, b := NA]$b, rep(NA_real_,3))
 test(1294.11, dt[, b := "bla"]$b, rep(NA_real_, 3),
-              warning=c("NAs introduced by coercion",
-                        "Coerced 'character' RHS to 'double' to match.*column 2 named 'b'"))
-test(1294.12, dt[, b := list(list(1))]$b, error="Cannot coerce 'list' RHS to 'double' to match.*column 2 named 'b'")
+              warning=c("Coercing 'character' RHS to 'double' to match.*column 2 named 'b'",
+                        "NAs introduced by coercion"))
+test(1294.12, dt[, b := list(list(1))]$b, rep(1,3),
+              warning="Coercing 'list' RHS to 'double' to match.*column 2 named 'b'")
 test(1294.13, dt[, b := TRUE]$b, rep(1,3))
 test(1294.14, dt[, b := list(1)]$b, rep(1,3))
 test(1294.15, dt[, c := 1]$c, rep(TRUE, 3))
 test(1294.16, dt[, c := 1L]$c, rep(TRUE, 3))
 test(1294.17, dt[, c := NA]$c, rep(NA, 3))
 test(1294.18, dt[, c := list(1)]$c, rep(TRUE, 3))
-test(1294.19, dt[, c := list(list(1))]$c, error="Cannot coerce 'list' RHS to 'logical' to match.*column 3 named 'c'")
-test(1294.20, dt[, c := "bla"]$c, rep(NA, 3), warning="Coerced 'character' RHS to 'logical'")
+test(1294.19, dt[, c := list(list(1))]$c, rep(TRUE, 3),
+              warning="Coercing 'list' RHS to 'logical' to match.*column 3 named 'c'")
+test(1294.20, dt[, c := "bla"]$c, rep(NA, 3),
+              warning="Coercing 'character' RHS to 'logical'")
 test(1294.21, dt[, d := 1]$d, rep(list(1), 3))
 test(1294.22, dt[, d := 1L]$d, rep(list(1L), 3))
 test(1294.23, dt[, d := TRUE]$d, rep(list(TRUE), 3))
@@ -4891,14 +4898,17 @@ test(1294.25, dt[, d := list(list(1))]$d, rep(list(1), 3))
 test(1294.26, dt[, e := 1]$e, rep("1", 3))
 test(1294.27, dt[, e := 1L]$e, rep("1", 3))
 test(1294.28, dt[, e := TRUE]$e, rep("TRUE", 3))
-###
-### TEMPORARILY OFF IN DEV.  TO BE ADDRESSED BEFORE v1.12.4 RELEASE
-### REVISIT IN #3909 or #3626
-###
-### test(1294.29, dt[, e := list(list(1))]$e, rep("1", 3))
-###
+test(1294.29, dt[, e := list(list(1))]$e, rep("1", 3),  # e.g. revdep NNS does this; PR #3925
+              warning="Coercing 'list' RHS to 'character' to match.*column 5 named 'e'")
 test(1294.30, dt[, e := "bla"]$e, rep("bla", 3))
 test(1294.31, dt[, e := list("bla2")]$e, rep("bla2", 3))
+if (test_bit64) {
+  dt[, f:=as.integer64(10:12)]
+  test(1294.50, dt[, f:=1]$f, as.integer64(rep(1,3)))
+  test(1294.51, dt[, f:=NA]$f, as.integer64(rep(NA,3)))
+  test(1294.52, dt[, f:=list(list(1))]$f,
+                error="Cannot coerce 'list' RHS to 'integer64' to match.*column 6 named 'f'")
+}
 
 # FR #5357, when LHS evaluates to integer(0), provide warning and return dt, not an error.
 dt = data.table(a = 1:5, b1 = 1:5, b2 = 1:5)
@@ -15096,7 +15106,7 @@ inner = data.table(a=1:3, b=1:3)
 outer = data.table(aa=1, ab=list(inner))
 old = options(datatable.verbose=TRUE)
 test(2049.1, outer$ab[[1]]$b <- 4L, 4L,    # also tests the incorrect warning has gone
-             output="RHS_list_of_columns revised to false .df=0.*RHS_list_of_columns revised to false .df=1")
+             notOutput="revised")
 options(old)
 test(2049.2, outer$ab, list(data.table(a=1:3, b=4L)))
 test(2049.3, outer$ab[[1]][, b := 5L], data.table(a=1:3, b=5L))
@@ -15221,6 +15231,8 @@ test(2058.17, as.data.table(L),
 L = list(1:3, NULL, 4:6)
 test(2058.18, length(L), 3L)
 test(2058.19, as.data.table(L), data.table(V1=1:3, V2=4:6))  # V2 not V3        # no
+DT = data.table(a=1:3, b=c(4,5,6))
+test(2058.20, DT[,b:=list(NULL)], data.table(a=1:3))                            # no
 
 # rbindlist improved error message, #3638
 DT = data.table(a=1)
@@ -16282,6 +16294,25 @@ test(2117.2, DT[1,a:=NA_character_]$a, factor(c(NA,"",NA), levels=c("A","B","C",
 DT = data.table(A=rep(1:2,each=3), B=3:4, v=letters[1:6])
 test(2118.1, DT[B==3L,v:=NA,by=A]$v, c(NA,"b",NA,"d",NA,"f"))
 test(2118.2, DT[,v:=NA,by=A]$v, rep(NA_character_,6L))
+
+# adding list column containing lists to a one-row data.table, #3626
+# tests 01-04 used to fail, now work
+DT = data.table(a = 1)
+list_column = list(list(a = 1, b = 2))
+test(2119.01, DT$b <- list_column, list_column)
+test(2119.02, DT, ans<-data.table(a=1, b=list(list(a=1, b=2))))
+DT = data.table(a = 1)
+test(2119.03, DT[, b:=list_column], ans)
+test(2119.04, data.table(a=1L)[,  newcol := list(list(2L, 3L))], data.table(a=1L, newcol=list(list(2L,3L))))
+# extra tests 10-17 from Jan in the issue, all no change from 1.12.2
+test(2119.10, data.table(a=1L)[,  newcol := list(2L)],           ans<-data.table(a=1L, newcol=2L))
+test(2119.11, data.table(a=1L)[,  newcol := 2L],                 ans)
+test(2119.12, data.table(a=1:2)[, newcol := list(2L)],           ans<-data.table(a=1:2, newcol=2L))
+test(2119.13, data.table(a=1:2)[, newcol := 2L],                 ans)
+test(2119.14, data.table(a=1L)[,  newcol := list(list(2L))],     data.table(a=1L, newcol=list(2L)))
+test(2119.15, data.table(a=1L)[,  newcol := list(2L, 3L)],       error="Supplied 2 items to be assigned to 1 item")
+test(2119.16, data.table(a=1:2)[, newcol := list(list(2L, 3L))], ans<-data.table(a=1:2, newcol=list(2L,3L)))
+test(2119.17, data.table(a=1:2)[, newcol := list(2L, 3L)],       ans)
 
 
 ###################################

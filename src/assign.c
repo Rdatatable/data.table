@@ -376,21 +376,27 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
   }
   if (any_duplicated(cols,FALSE)) error("Can't assign to the same column twice in the same query (duplicates detected).");
   if (!isNull(newcolnames) && !isString(newcolnames)) error("newcolnames is supplied but isn't a character vector");
-  bool RHS_list_of_columns = TYPEOF(values)==VECSXP && (length(cols)>1 || LENGTH(values)==1);  // initial value; may be revised below
+  bool RHS_list_of_columns = TYPEOF(values)==VECSXP && length(cols)>1;  // initial value; may be revised below
   if (verbose) Rprintf("RHS_list_of_columns == %s\n", RHS_list_of_columns ? "true" : "false");
+  if (TYPEOF(values)==VECSXP && length(cols)==1 && length(values)==1) {
+    SEXP item = VECTOR_ELT(values,0);
+    if (isNull(item) || length(item)==1 || length(item)==targetlen) {
+      RHS_list_of_columns=true;
+      if (verbose) Rprintf("RHS_list_of_columns revised to true because RHS list has 1 item which is NULL, or whose length %d is either 1 or targetlen (%d). Please unwrap RHS.\n", length(item), targetlen);
+    }
+  }
   if (RHS_list_of_columns) {
     if (length(values)==0)
       error("Supplied %d columns to be assigned an empty list (which may be an empty data.table or data.frame since they are lists too). "
             "To delete multiple columns use NULL instead. To add multiple empty list columns, use list(list()).", length(cols));
-    if (length(values)>1 && length(values)!=length(cols))
-      error("Supplied %d columns to be assigned %d items. Please see NEWS for v1.12.2. Try adding/removing a list() or .() wrapper around the RHS.", length(cols), length(values));
-    if (length(values)==1) {
-      // c("colA","colB"):=list(13:15) should use 13:15 for both columns (recycle 1 item ok). So just change RHS so we don't have to deal with recycling-length-1 later
-      SEXP item = VECTOR_ELT(values,0);
-      bool df;
-      if (!(df=INHERITS(item, char_dataframe))) values = item;   // if() for #3474
-      RHS_list_of_columns = false;
-      if (verbose) Rprintf("RHS_list_of_columns revised to false (df=%d)\n", df);
+    if (length(values)!=length(cols)) {
+      if (length(values)==1) {   // test 351.1; c("colA","colB"):=list(13:15) uses 13:15 for both columns
+        values = VECTOR_ELT(values,0);
+        RHS_list_of_columns = false;
+        if (verbose) Rprintf("Recycling single RHS list item across %d columns. Please unwrap RHS.\n", length(cols));
+      } else {
+        error("Supplied %d columns to be assigned %d items. Please see NEWS for v1.12.2.", length(cols), length(values));
+      }
     }
   }
   // Check all inputs :
@@ -824,15 +830,21 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source,
       }
     }
   } else if (isString(source) && !isString(target) && !isNewList(target)) {
+    warning("Coercing 'character' RHS to '%s' to match the type of the target column (column %d named '%s').",
+            type2char(TYPEOF(target)), colnum, colname);
+    // this "Coercing ..." warning first to give context in case coerceVector warns 'NAs introduced by coercion'
     source = PROTECT(coerceVector(source, TYPEOF(target))); protecti++;
-    warning("Coerced 'character' RHS to '%s' to match the type of the target column (column %d named '%s').",
-            type2char(TYPEOF(target)), colnum, colname);
-  } else if ((TYPEOF(target)!=TYPEOF(source) || targetIsI64!=sourceIsI64) && !isNewList(target)) {
-    if (isNewList(source)) {
-      error("Cannot coerce 'list' RHS to '%s' to match the type of the target column (column %d named '%s').",
-            type2char(TYPEOF(target)), colnum, colname);
+  } else if (isNewList(source) && !isNewList(target)) {
+    if (targetIsI64) {
+      error("Cannot coerce 'list' RHS to 'integer64' to match the type of the target column (column %d named '%s').", colnum, colname);
+      // because R's coerceVector doesn't know about integer64
     }
-
+    // as in base R; e.g. let as.double(list(1,2,3)) work but not as.double(list(1,c(2,4),3))
+    // relied on by NNS, simstudy and table.express; tests 1294.*
+    warning("Coercing 'list' RHS to '%s' to match the type of the target column (column %d named '%s').",
+            type2char(TYPEOF(target)), colnum, colname);
+    source = PROTECT(coerceVector(source, TYPEOF(target))); protecti++;
+  } else if ((TYPEOF(target)!=TYPEOF(source) || targetIsI64!=sourceIsI64) && !isNewList(target)) {
     if (GetVerbose()) {
       // only take the (small) cost of GetVerbose() (search of options() list) when types don't match
       Rprintf("Zero-copy coerce when assigning '%s' to '%s' column %d named '%s'.\n",
