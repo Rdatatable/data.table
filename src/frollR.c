@@ -126,7 +126,7 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
     Rprintf("%s: allocating memory for results %dx%d\n", __func__, nx, nk);
   ans_t *dans = (ans_t *)R_alloc(nx*nk, sizeof(ans_t));         // answer columns as array of ans_t struct
   double* dx[nx];                                               // pointers to source columns
-  uint_fast64_t inx[nx];                                        // to not recalculate `length(x[[i]])` we store it in extra array
+  uint64_t inx[nx];                                             // to not recalculate `length(x[[i]])` we store it in extra array
   for (R_len_t i=0; i<nx; i++) {
     inx[i] = xlength(VECTOR_ELT(x, i));                         // for list input each vector can have different length
     for (R_len_t j=0; j<nk; j++) {
@@ -143,12 +143,13 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
   }
 
   enum {MEAN, SUM} sfun;
-  if (!strcmp(CHAR(STRING_ELT(fun, 0)), "mean"))
+  if (!strcmp(CHAR(STRING_ELT(fun, 0)), "mean")) {
     sfun = MEAN;
-  else if (!strcmp(CHAR(STRING_ELT(fun, 0)), "sum"))
+  } else if (!strcmp(CHAR(STRING_ELT(fun, 0)), "sum")) {
     sfun = SUM;
-  else
+  } else {
     error("Internal error: invalid fun argument in rolling function, should have been caught before. please report to data.table issue tracker."); // # nocov
+  }
 
   if (length(fill) != 1)
     error("fill must be a vector of length 1");
@@ -264,14 +265,15 @@ SEXP frollapplyR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP align, SEXP rho) {
   int *ik = INTEGER(k);
 
   int ialign;
-  if (!strcmp(CHAR(STRING_ELT(align, 0)), "right"))
+  if (!strcmp(CHAR(STRING_ELT(align, 0)), "right")) {
     ialign = 1;
-  else if (!strcmp(CHAR(STRING_ELT(align, 0)), "center"))
+  } else if (!strcmp(CHAR(STRING_ELT(align, 0)), "center")) {
     ialign = 0;
-  else if (!strcmp(CHAR(STRING_ELT(align, 0)), "left"))
+  } else if (!strcmp(CHAR(STRING_ELT(align, 0)), "left")) {
     ialign = -1;
-  else
+  } else {
     error("Internal error: invalid align argument in rolling function, should have been caught before. please report to data.table issue tracker."); // # nocov
+  }
 
   if (length(fill) != 1)
     error("fill must be a vector of length 1");
@@ -295,7 +297,7 @@ SEXP frollapplyR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP align, SEXP rho) {
     Rprintf("%s: allocating memory for results %dx%d\n", __func__, nx, nk);
   ans_t *dans = (ans_t *)R_alloc(nx*nk, sizeof(ans_t));
   double* dx[nx];
-  uint_fast64_t inx[nx];
+  uint64_t inx[nx];
   for (R_len_t i=0; i<nx; i++) {
     inx[i] = xlength(VECTOR_ELT(x, i));
     for (R_len_t j=0; j<nk; j++) {
