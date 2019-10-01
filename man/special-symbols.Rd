@@ -9,12 +9,13 @@
 \alias{.EACHI}
 \title{ Special symbols }
 \description{
-    \code{.SD}, \code{.BY}, \code{.N}, \code{.I}, \code{.GRP}, and \code{.EACHI} are \emph{read-only} symbols for use in \code{j}. \code{.N} can be used in \code{i} as well. See the vignettes and examples here and in \code{\link{data.table}}.
+    \code{.SD}, \code{.BY}, \code{.N}, \code{.I}, and \code{.GRP} are \emph{read-only} symbols for use in \code{j}. \code{.N} can be used in \code{i} as well. See the vignettes and examples here and in \code{\link{data.table}}.
+    \code{.EACHI} is a symbol passed to \code{by}; i.e. \code{by=.EACHI}.
 }
 \details{
     The bindings of these variables are locked and attempting to assign to them will generate an error. If you wish to manipulate \code{.SD} before returning it, take a \code{copy(.SD)} first (see FAQ 4.5). Using \code{:=} in the \code{j} of \code{.SD} is reserved for future use as a (tortuously) flexible way to update \code{DT} by reference by group (even when groups are not contiguous in an ad hoc by).
 
-    These symbols are used in \code{j} and defined as follows.
+    These symbols used in \code{j} are defined as follows.
 
     \itemize{
         \item{\code{.SD} is a \code{data.table} containing the \bold{S}ubset of \code{x}'s \bold{D}ata for each group, excluding any columns used in \code{by} (or \code{keyby}).}
@@ -22,8 +23,9 @@
         \item{\code{.N} is an integer, length 1, containing the number of rows in the group. This may be useful when the column names are not known in advance and for convenience generally. When grouping by \code{i}, \code{.N} is the number of rows in \code{x} matched to, for each row of \code{i}, regardless of whether \code{nomatch} is \code{NA} or \code{NULL}. It is renamed to \code{N} (no dot) in the result (otherwise a column called \code{".N"} could conflict with the \code{.N} variable, see FAQ 4.6 for more details and example), unless it is explicitly named; e.g., \code{DT[,list(total=.N),by=a]}.}
         \item{\code{.I} is an integer vector equal to \code{seq_len(nrow(x))}. While grouping, it holds for each item in the group, its row location in \code{x}. This is useful to subset in \code{j}; e.g. \code{DT[, .I[which.max(somecol)], by=grp]}.}
         \item{\code{.GRP} is an integer, length 1, containing a simple group counter. 1 for the 1st group, 2 for the 2nd, etc.}
-        \item{\code{.EACHI} is \code{NULL} but triggers a by-join; see \code{\link{data.table}}'s \code{by} argument for more details. }
     }
+
+    \code{.EACHI} is defined as \code{NULL} but its value is not used. Its usage is \code{by=.EACHI} (or \code{keyby=.EACHI}) which invokes grouping-by-each-row-of-i; see \code{\link{data.table}}'s \code{by} argument for more details.
 }
 \seealso{
     \code{\link{data.table}}, \code{\link{:=}}, \code{\link{set}}, \code{\link{datatable-optimize}}
