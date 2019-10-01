@@ -4893,12 +4893,7 @@ test(1294.25, dt[, d := list(list(1))]$d, rep(list(1), 3))
 test(1294.26, dt[, e := 1]$e, rep("1", 3))
 test(1294.27, dt[, e := 1L]$e, rep("1", 3))
 test(1294.28, dt[, e := TRUE]$e, rep("TRUE", 3))
-###
-### TEMPORARILY OFF IN DEV.  TO BE ADDRESSED BEFORE v1.12.4 RELEASE
-### REVISIT IN #3909 or #3626
-###
-### test(1294.29, dt[, e := list(list(1))]$e, rep("1", 3))
-###
+test(1294.29, dt[, e := list(list(1))]$e, error="Cannot coerce 'list' RHS to 'character' to match.*column 5 named 'e'")
 test(1294.30, dt[, e := "bla"]$e, rep("bla", 3))
 test(1294.31, dt[, e := list("bla2")]$e, rep("bla2", 3))
 
