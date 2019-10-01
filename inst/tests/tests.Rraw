@@ -16314,6 +16314,30 @@ test(2119.15, data.table(a=1L)[,  newcol := list(2L, 3L)],       error="Supplied
 test(2119.16, data.table(a=1:2)[, newcol := list(list(2L, 3L))], ans<-data.table(a=1:2, newcol=list(2L,3L)))
 test(2119.17, data.table(a=1:2)[, newcol := list(2L, 3L)],       ans)
 
+# i symbol fetch from calling scope; #3669
+iDT = data.table(key = "i_id",
+    i_id = c("A", "B", "C", "D"),
+    g = state.name[c(1,1,2,3)],
+    e_date = as.IDate(c("2019-01-20", "2019-01-20", "2019-01-01", "2019-01-01")),
+    e_time = as.ITime(c("14:00", "20:00", "20:00", "20:00"))
+)
+set.seed(1)
+vDT = data.table(i_id = unique(iDT$i_id))[, .(v = runif(5,0,10), p = sample(c(5,5,10,10,10))), by=i_id]
+test(2120.01, !exists("i_id"))                             # quick verify in case there's an i_id in .GlobalEnv when testing in dev
+test(2120.02, iDT[i_id, order(e_date, e_time)],            # first of all, the correct error
+              error="i_id is not found in calling scope but it is a column of type character")
+tmp = vDT[c("B","C","A"), on=.(i_id), .N, by=.EACHI]       # split long statement in 2120.05 up as per demo in #3669
+test(2120.03, tmp, data.table(i_id=c("B","C","A"), N=5L))  # just make sure the helper tmp is correct
+test(2120.04, tmp[iDT[i_id, order(e_date, e_time)]],       # i_id obtained from tmp; this is what broke in dev 1.12.3
+              ans<-data.table(i_id=c("C","A","B"), N=5L))
+test(2120.05, tmp[iDT[tmp$i_id, order(e_date, e_time)]],   # same but explicit tmp$i_id
+              ans)
+test(2120.06, vDT[c("B","C","A"), on=.(i_id), .N, by=.EACHI][iDT[i_id, order(e_date, e_time)]],
+              ans)                                         # the original compound statement where i_id was the prior scope
+test(2120.07, iDT[(i_id), order(e_date, e_time)], c(3L,4L,1L,2L))  # wrapping with () is different; uses character column to self-join
+test(2120.08, tmp[iDT[(i_id), order(e_date, e_time)]],             # different result with the NA
+              data.table(i_id=c("A",NA,"B","C"), N=c(5L,NA,5L,5L)))
+
 
 ###################################
 #  Add new tests above this line  #
