@@ -15,6 +15,10 @@ dim.data.table = function(x)
 setPackageName("data.table",.global)
 .global$print = ""
 
+# NB: if adding to/editing this list, be sure to do the following:
+#   (1) add to man/special-symbols.Rd
+#   (2) export() in NAMESPACE
+#   (3) add to vignettes/datatable-importing.Rmd#globals section
 .SD = .N = .I = .GRP = .BY = .EACHI = NULL
 # These are exported to prevent NOTEs from R CMD check, and checkUsage via compiler.
 # But also exporting them makes it clear (to users and other packages) that data.table uses these as symbols.

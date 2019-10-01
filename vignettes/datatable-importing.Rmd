@@ -33,9 +33,11 @@ The first place to define a dependency in a package is the `DESCRIPTION` file. M
 
 ## `NAMESPACE` file {NAMESPACE}
 
-The next thing is to define what content of `data.table` your package is using. This needs to be done in the `NAMESPACE` file. Most commonly, package authors will want to use `import(data.table)` which will import all (exported, i.e., listed in `data.table`'s own `NAMESPACE` file) functions from `data.table`.
+The next thing is to define what content of `data.table` your package is using. This needs to be done in the `NAMESPACE` file. Most commonly, package authors will want to use `import(data.table)` which will import all exported (i.e., listed in `data.table`'s own `NAMESPACE` file) functions from `data.table`.
 
 You may also want to use just a subset of `data.table` functions; for example, some packages may simply make use of `data.table`'s high-performance CSV reader and writer, for which you can add `importFrom(data.table, fread, fwrite)` in your `NAMESPACE` file. It is also possible to import all functions from a package _excluding_ particular ones using `import(data.table, except=c(fread, fwrite))`.
+
+Be sure to read also the note about non-standard evaluation in `data.table` in [the section on "undefined globals"](#globals)
 
 ## Usage
 
@@ -84,7 +86,7 @@ test_that("aggregate dt", { expect_true(nrow(aggr(gen())) < 100) })
 
 If `data.table` is in Suggests (but not Imports) then you need to declare `.datatable.aware=TRUE` in one of the R/* files to avoid "object not found" errors when testing via `testthat::test_package` or `testthat::test_check`.
 
-## Dealing with "undefined global functions or variables"
+## Dealing with "undefined global functions or variables" {#globals}
 
 `data.table`'s use of R's deferred evaluation (especially on the left-hand side of `:=`) is not well-recognised by `R CMD check`. This results in `NOTE`s like the following during package check:
 
@@ -116,11 +118,13 @@ aggr = function (x) {
 }
 ```
 
-The case for `:=` is slightly different, because `:=` is interpreted as a function in the above code; so instead of registering `:=` as `NULL`, you must register it as a function, e.g.:
+The case for `data.table`'s special symbols (`.SD`, `.BY`, `.N`, `.I`, `.GRP`, and `.EACHI`; see `?.N`) and assignment operator (`:=`) is slightly different. You should import whichever of these values you use from `data.table`'s namespace to protect against any issues arising from the unlikely scenario that we change the exported value of these in the future, e.g. if you want to use `.N`, `.I`, and `:=`, a minimal `NAMESPACE` would have:
 
+```r
+importFrom(data.table, .N, .I, ':=')
 ```
-`:=` = function(...) NULL
-```
+
+Much simpler is to just use `import(data.table)` which will greedily allow usage in your package's code of any object exported from `data.table`.
 
 If you don't mind having `id` and `grp` registered as variables globally in your package namespace you can use `?globalVariables`. Be aware that these notes do not have any impact on the code or its functionality; if you are not going to publish your package, you may simply choose to ignore them.
 
