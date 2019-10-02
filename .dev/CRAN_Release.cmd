@@ -121,15 +121,15 @@ test.data.table()
 install.packages("xml2")   # to check the 150 URLs in NEWS.md under --as-cran below
 q("no")
 R CMD build .
-R CMD check data.table_1.12.3.tar.gz --as-cran
-R CMD INSTALL data.table_1.12.3.tar.gz
+R CMD check data.table_1.12.5.tar.gz --as-cran
+R CMD INSTALL data.table_1.12.5.tar.gz
 
 # Test C locale doesn't break test suite (#2771)
 echo LC_ALL=C > ~/.Renviron
 R
 Sys.getlocale()=="C"
 q("no")
-R CMD check data.table_1.12.3.tar.gz
+R CMD check data.table_1.12.5.tar.gz
 rm ~/.Renviron
 
 # Test non-English does not break test.data.table() due to translation of messages; #3039, #630
@@ -166,7 +166,7 @@ alias R310=~/build/R-3.1.0/bin/R
 ### END ONE TIME BUILD
 
 cd ~/GitHub/data.table
-R310 CMD INSTALL ./data.table_1.12.3.tar.gz
+R310 CMD INSTALL ./data.table_1.12.5.tar.gz
 R310
 require(data.table)
 test.data.table(script="*.Rraw")
@@ -178,7 +178,7 @@ test.data.table(script="*.Rraw")
 vi ~/.R/Makevars
 # Make line SHLIB_OPENMP_CFLAGS= active to remove -fopenmp
 R CMD build .
-R CMD INSTALL data.table_1.12.3.tar.gz   # ensure that -fopenmp is missing and there are no warnings
+R CMD INSTALL data.table_1.12.5.tar.gz   # ensure that -fopenmp is missing and there are no warnings
 R
 require(data.table)   # observe startup message about no OpenMP detected
 test.data.table()
@@ -186,7 +186,7 @@ q("no")
 vi ~/.R/Makevars
 # revert change above
 R CMD build .
-R CMD check data.table_1.12.3.tar.gz
+R CMD check data.table_1.12.5.tar.gz
 
 
 #####################################################
@@ -219,7 +219,7 @@ cd R-devel-strict    # important to change directory name before building not af
 make
 alias Rdevel-strict='~/build/R-devel-strict/bin/R --vanilla'
 cd ~/GitHub/data.table
-Rdevel-strict CMD INSTALL data.table_1.12.3.tar.gz
+Rdevel-strict CMD INSTALL data.table_1.12.5.tar.gz
 # Check UBSAN and ASAN flags appear in compiler output above. Rdevel was compiled with them so should be passed through to here
 Rdevel-strict
 isTRUE(.Machine$sizeof.longdouble==0)  # check noLD is being tested
@@ -259,7 +259,7 @@ cd R-devel
 make
 cd ~/GitHub/data.table
 vi ~/.R/Makevars  # make the -O0 -g line active, for info on source lines with any problems
-Rdevel CMD INSTALL data.table_1.12.3.tar.gz
+Rdevel CMD INSTALL data.table_1.12.5.tar.gz
 Rdevel -d "valgrind --tool=memcheck --leak-check=full --track-origins=yes --show-leak-kinds=definite"
 # gctorture(TRUE)      # very slow, many days
 # gctorture2(step=100)
@@ -297,7 +297,7 @@ cd ~/build/rchk/trunk
 . ../scripts/config.inc
 . ../scripts/cmpconfig.inc
 vi ~/.R/Makevars   # set CFLAGS=-O0 -g so that rchk can provide source line numbers
-echo 'install.packages("~/GitHub/data.table/data.table_1.12.3.tar.gz",repos=NULL)' | ./bin/R --slave
+echo 'install.packages("~/GitHub/data.table/data.table_1.12.5.tar.gz",repos=NULL)' | ./bin/R --slave
 # objcopy warnings (if any) can be ignored: https://github.com/kalibera/rchk/issues/17#issuecomment-497312504
 . ../scripts/check_package.sh data.table
 cat packages/lib/data.table/libs/*check
@@ -444,18 +444,15 @@ Bump version to even release number in 3 places :
   3) dllVersion() at the end of init.c
 DO NOT push to GitHub. Prevents even a slim possibility of user getting premature version. Even release numbers must have been obtained from CRAN and only CRAN. There were too many support problems in the past before this procedure was brought in.
 R CMD build .
-R CMD check --as-cran data.table_1.12.2.tar.gz
+R CMD check --as-cran data.table_1.12.4.tar.gz
 Resubmit to winbuilder (R-release, R-devel and R-oldrelease)
 Submit to CRAN. Message template :
 ------------------------------------------------------------
 Hello,
-Happy New Year and thanks for everything!
-595 CRAN + 135 BIOC rev deps checked ok
-2 already updated on CRAN in advance and should not break: behavr, maditr
-3 will break: checkmate, rENA and SpaDES.core. Maintainers aware and standing ready.
-3 newly in error/warning status on CRAN in the last day or so for non-data.table reasons: segregation, xlm, prediction
-NoLD 'additional issue' resolved
-Requests from Luke Tierney and Tomas Kalibera included, noted and thanked in NEWS.
+744 CRAN revdeps checked. No status changes. (pmpp and optiSel
+already in error/warning status unrelated to data.table.)
+All 'additional issues' resolved: LTO noLD rchk
+Many thanks!
 Best, Matt
 ------------------------------------------------------------
 DO NOT commit or push to GitHub. Leave 4 files (.dev/CRAN_Release.cmd, DESCRIPTION, NEWS and init.c) edited and not committed. Include these in a single and final bump commit below.
@@ -465,7 +462,7 @@ Leave milestone open with a 'final checks' issue open. Keep updating status ther
 If it's evening, SLEEP.
 It can take a few days for CRAN's checks to run. If any issues arise, backport locally. Resubmit the same even version to CRAN.
 CRAN's first check is automatic and usually received within an hour. WAIT FOR THAT EMAIL.
-When CRAN's email contains "Pretest results OK pending a manual inspection" (or similar), or if not then it is known why not and ok, then bump dev.
+When CRAN's email contains "Pretest results OK pending a manual inspection" (or similar), or if not and it is known why not and ok, then bump dev.
 ###### Bump dev
 0. Close milestone to prevent new issues being tagged with it. The final 'release checks' issue can be left open in a closed milestone.
 1. Check that 'git status' shows 4 files in modified and uncommitted state: DESCRIPTION, NEWS.md, init.c and this .dev/CRAN_Release.cmd
@@ -473,9 +470,9 @@ When CRAN's email contains "Pretest results OK pending a manual inspection" (or 
 3. Add new heading in NEWS for the next dev version. Add "(submitted to CRAN on <today>)" on the released heading.
 4. Bump dllVersion() in init.c
 5. Bump 3 version numbers in Makefile
-6. Search and replace this .dev/CRAN_Release.cmd to update 1.12.1 to 1.12.3, and 1.12.0 to 1.12.2 (e.g. in step 8 and 9 below)
+6. Search and replace this .dev/CRAN_Release.cmd to update 1.12.3 to 1.12.5, and 1.12.2 to 1.12.4 (e.g. in step 8 and 9 below)
 7. Another final gd to view all diffs using meld. (I have `alias gd='git difftool &> /dev/null'` and difftool meld: http://meldmerge.org/)
-8. Push to master with this consistent commit message: "1.12.2 on CRAN. Bump to 1.12.3"
-9. Take sha from step 8 and run `git tag 1.12.2 34796cd1524828df9bf13a174265cb68a09fcd77` then `git push origin 1.12.2` (not `git push --tags` according to https://stackoverflow.com/a/5195913/403310)
+8. Push to master with this consistent commit message: "1.12.4 on CRAN. Bump to 1.12.5"
+9. Take sha from step 8 and run `git tag 1.12.4 34796cd1524828df9bf13a174265cb68a09fcd77` then `git push origin 1.12.4` (not `git push --tags` according to https://stackoverflow.com/a/5195913/403310)
 ######
 
