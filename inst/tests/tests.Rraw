@@ -6571,11 +6571,13 @@ if (test_xts) {
 
   # 890 -- key argument for as.data.table.xts
   x = xts(1:10, as.Date(1:10, origin = "1970-01-01"))
+  old = options(datatable.verbose=FALSE)
   test(1465.18, capture.output(as.data.table(x, key="index")),
        c("         index V1", " 1: 1970-01-02  1", " 2: 1970-01-03  2",
          " 3: 1970-01-04  3", " 4: 1970-01-05  4", " 5: 1970-01-06  5",
          " 6: 1970-01-07  6", " 7: 1970-01-08  7", " 8: 1970-01-09  8",
          " 9: 1970-01-10  9", "10: 1970-01-11 10"))
+  options(old)
 
   Sys.setenv("_R_CHECK_LENGTH_1_LOGIC2_" = TRUE)
 }
@@ -9481,7 +9483,9 @@ set.seed(1L)
 dt = data.table(x=sample(3,10,TRUE), y=sample(2,10,TRUE), z=1L+sample(2,10,TRUE))
 test(1657, dt[x %between% list(y,z)], dt[x>=y & x<=z])
 
-# fwrite tests
+## fwrite tests
+oldverbose = options(datatable.verbose=FALSE) # using output= for these tests so turn off verbose mode
+
 # without quoting
 test(1658.01, fwrite(data.table(a=c(NA, 2, 3.01), b=c('foo', NA, 'bar'))),
              output=c("a,b", ",foo", "2,", "3.01,bar"))
@@ -9673,6 +9677,7 @@ test(1658.59, fwrite(data.table(a=list('a')), verbose=TRUE),
      output='fields will be quoted if the field contains either sep.*sep2.*list column')
 test(1658.60, fwrite(data.table(r=as.raw(0))), error = "'raw' - not yet implemented")
 
+options(oldverbose)
 ## End fwrite tests
 
 # tests for #679, inrange(), FR #707
@@ -9930,7 +9935,9 @@ foo <- function(annot=c("a", "b")) {
   suppressWarnings(ro$dt[, flag := TRUE])
   ro
 }
+old = options(datatable.verbose=FALSE)
 test(1685, grep("dtu", capture.output(foo())), 7L)
+options(old)
 
 # fix for #1771
 test(1685.1, uniqueN(1L), 1L)
