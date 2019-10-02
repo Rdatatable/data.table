@@ -43,7 +43,7 @@
 
     * Now supports type `complex`, [#3690](https://github.com/Rdatatable/data.table/issues/3690).
 
-    * Gains `scipen` [#2020](https://github.com/Rdatatable/data.table/issues/2020), the number 1 most-requested feature [#3189](https://github.com/Rdatatable/data.table/issues/3189). The default is `getOption("scipen")` so that `fwrite` will now respect this R option in the same way as `base::write.csv` and `base::format`, as expected. The parameter and option name have been kept the same as base R's `scipen` for consistency and to aid online search. It stands for 'scientific penalty'; the number of characters to add to the width within which non-scientific number format is used if it will fit. A high penalty essentially turns off scientific format; inputs are capped at 350 per IEEE 754 maximal width. In memory constrained environments assigning a large `scipen` even when not required could result in out-of-memory errors where smaller `scipen` would succeed, so do be economical with `scipen` in such situations.
+    * Gains `scipen` [#2020](https://github.com/Rdatatable/data.table/issues/2020), the number 1 most-requested feature [#3189](https://github.com/Rdatatable/data.table/issues/3189). The default is `getOption("scipen")` so that `fwrite` will now respect R's option in the same way as `base::write.csv` and `base::format`, as expected. The parameter and option name have been kept the same as base R's `scipen` for consistency and to aid online search. It stands for 'scientific penalty'; i.e., the number of characters to add to the width within which non-scientific number format is used if it will fit. A high penalty essentially turns off scientific format. We believe that common practice is to use a value of 999, however, if you do use 999, because your data _might_ include very long numbers such as `10^300`, `fwrite` needs to account for the worst case field width in its buffer allocation per thread. This may impact space or time. If you experience slowdowns or unacceptable memory usage, please pass `verbose=TRUE` to `fwrite`, inspect the output, and report the issue. A workaround, until we can determine the best strategy, may be to pass a smaller value to `scipen`, such as 50. We have observed that `fwrite(DT, scipen=50)` appears to write `10^50` accurately, unlike base R. However, this may be a happy accident and not apply generally. Further work may be needed in this area.
 
     ```R
     DT = data.table(a=0.0001, b=1000000)
@@ -56,6 +56,15 @@
     fwrite(DT,scipen=2)
     # a,b
     # 0.0001,1000000
+
+    10^50
+    # [1] 1e+50
+    options(scipen=50)
+    10^50
+    # [1] 100000000000000007629769841091887003294964970946560
+    fwrite(data.table(A=10^50))
+    # A
+    # 100000000000000000000000000000000000000000000000000
     ```
 
 4. Assigning to one item of a list column no longer requires the RHS to be wrapped with `list` or `.()`, [#950](https://github.com/Rdatatable/data.table/issues/950).
