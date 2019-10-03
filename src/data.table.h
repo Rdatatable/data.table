@@ -63,6 +63,13 @@ typedef R_xlen_t RLEN;
 #define ALTREP(x) 0  // for R<3.5.0, see issue #2866 and grep for "ALTREP" to see comments where it's used
 #endif
 
+#ifdef ENABLE_NLS
+#include <libintl.h>
+#define _(String) dgettext ("data.table", String)
+#else
+#define _(String) (String)
+#endif
+
 // init.c
 SEXP char_integer64;
 SEXP char_ITime;

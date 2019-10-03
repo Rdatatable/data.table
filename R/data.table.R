@@ -183,7 +183,7 @@ replace_dot_alias = function(e) {
     }
     return(x)
   }
-  if (!mult %chin% c("first","last","all")) stop("mult argument can only be 'first','last' or 'all'")
+  if (!mult %chin% c("first","last","all")) stop("mult argument can only be 'first', 'last' or 'all'")
   missingroll = missing(roll)
   if (length(roll)!=1L || is.na(roll)) stop("roll must be a single TRUE, FALSE, positive/negative integer/double including +Inf and -Inf or 'nearest'")
   if (is.character(roll)) {
