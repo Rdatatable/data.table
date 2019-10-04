@@ -443,8 +443,14 @@ Bump version to even release number in 3 places :
   2) NEWS (without 'on CRAN date' text as that's not yet known)
   3) dllVersion() at the end of init.c
 DO NOT push to GitHub. Prevents even a slim possibility of user getting premature version. Even release numbers must have been obtained from CRAN and only CRAN. There were too many support problems in the past before this procedure was brought in.
+du -k inst/tests                # 1.5MB before
+bzip2 inst/tests/*.Rraw         # compress *.Rraw just for release to CRAN; do not commit compressed *.Rraw to git
+du -k inst/tests                # 0.75MB after
 R CMD build .
-R CMD check --as-cran data.table_1.12.4.tar.gz
+R CMD check data.table_1.12.4.tar.gz --as-cran
+#
+bunzip2 inst/tests/*.Rraw.bz2  # decompress *.Rraw again so as not to commit compressed *.Rraw to git
+#
 Resubmit to winbuilder (R-release, R-devel and R-oldrelease)
 Submit to CRAN. Message template :
 ------------------------------------------------------------
