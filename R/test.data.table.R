@@ -39,11 +39,14 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
   }
 
   if (!file.exists(file.path(fulldir, fn))) {
+    # see end of CRAN_Release.cmd where *.Rraw are compressed just for CRAN release; #3937
+    # nocov start
     fn2 = paste0(fn,".bz2")
     if (!file.exists(file.path(fulldir, fn2)))
-      stop("Neither ",fn," or ",fn2," exist in ",fulldir) # nocov
+      stop("Neither ",fn," or ",fn2," exist in ",fulldir)
     fn = fn2
-    # sys.source() below accepts .bz2 directly
+    # nocov end
+    # sys.source() below accepts .bz2 directly.
   }
   fn = setNames(file.path(fulldir, fn), file.path(subdir, fn))
 
