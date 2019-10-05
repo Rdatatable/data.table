@@ -5,7 +5,7 @@
 #define DATETIMEAS_EPOCH     2
 #define DATETIMEAS_WRITECSV  3
 
-static char sep2;                // '\0' if there are no list columns. Otherwise, the within-column separator.
+static char  sep2;                // '\0' if there are no list columns. Otherwise, the within-column separator.
 static bool logical01=true;      // should logicals be written as 0|1 or true|false. Needed by list column writer too in case a cell is a logical vector.
 static int dateTimeAs=0;         // 0=ISO(yyyy-mm-dd), 1=squash(yyyymmdd), 2=epoch, 3=write.csv
 static const char *sep2start, *sep2end;
@@ -179,7 +179,6 @@ SEXP fwriteR(
     warning("fwrite was passed an empty list of no columns. Nothing to write.");
     return R_NilValue;
   }
-  args.nrow = length(VECTOR_ELT(DF, 0));
 
   SEXP DFcoerced = DF;
   int protecti = 0;
@@ -196,19 +195,26 @@ SEXP fwriteR(
       // no protecti++ needed here as one-off UNPROTECT(1) a few lines below
       SET_TYPEOF(s, LANGSXP);
       SETCAR(s, install("format.POSIXct"));
-      for (int j=0; j<args.ncol; j++) {
-        SEXP column = VECTOR_ELT(DF, j);
+      for (int jj=j; jj<args.ncol; jj++) {
+        SEXP column = VECTOR_ELT(DF, jj);
         if (INHERITS(column, char_POSIXct)) {
           SETCAR(CDR(s), column);
-          SET_VECTOR_ELT(DFcoerced, j, eval(s, R_GlobalEnv));
+          SET_VECTOR_ELT(DFcoerced, jj, eval(s, R_GlobalEnv));
         } else {
-          SET_VECTOR_ELT(DFcoerced, j, column);
+          SET_VECTOR_ELT(DFcoerced, jj, column);
         }
       }
       UNPROTECT(1);  // s, not DFcoerced
     }
   }
 
+  SEXP jval;
+  for (int j=0; j<length(DF); j++) {
+    jval=VECTOR_ELT(DF, j);
+    if (isMatrix(jval)) {
+      args.ncol+=INTEGER(getAttrib(jval, R_DimSymbol))[1]-1;
+    }
+  }
   // allocate new `columns` vector. Although this could be DATAPTR(DFcoerced) directly, it can't
   // because there's an offset on each column that points to (DATAPTR for each column) which fread.c
   // would need to know. Rather than have the complication of a new offset variable, we just alloc a
@@ -228,18 +234,62 @@ SEXP fwriteR(
   args.scipen = INTEGER(scipen_Arg)[0];
 
   int firstListColumn = 0;
-  for (int j=0; j<args.ncol; j++) {
+  args.nrow = -1;
+  for (int j=0, k=0; j<args.ncol; j++) {
     SEXP column = VECTOR_ELT(DFcoerced, j);
-    if (args.nrow != length(column))
-      error("Column %d's length (%d) is not the same as column 1's length (%d)", j+1, length(column), args.nrow);
-    int32_t wf = whichWriter(column);
-    if (wf<0) {
-      error("Column %d's type is '%s' - not yet implemented in fwrite.", j+1, type2char(TYPEOF(column)));
+    if (isMatrix(column)) {
+      SEXP dim = PROTECT(getAttrib(jval, R_DimSymbol));
+      if (args.nrow < 0) {
+        args.nrow = INTEGER(dim)[0];
+      } else if (args.nrow != INTEGER(dim)[0])
+        error("Column %d is a matrix with %d rows which differs from column 1's implied count (%d)", j+1, INTEGER(getAttrib(jval, R_DimSymbol))[0], args.nrow);
+      int32_t wf = whichWriter(column);
+      if (wf<0) {
+        error("Column %d's type is '%s' - not yet implemented in fwrite.", j+1, type2char(TYPEOF(column)));
+      }
+      // columns gets a pointer to the first row of each column
+      int offset=0;
+      Rprintf("ncol=%d\n", INTEGER(dim)[1]);
+      for (int jj=0; jj<length(column)-1; jj++) {
+        Rprintf("x[%d]=%d\n", jj+2, (INTEGER(column)+1)[jj]);
+      }
+      for (int jj=0; jj<INTEGER(dim)[1]; jj++) {
+        Rprintf("column %d, offset=%d\n", k, offset);
+        switch(TYPEOF(column)) {
+        case LGLSXP:
+          args.columns[k] = (int *)(INTEGER(column)+offset); break;
+        case INTSXP:
+          args.columns[k] = wf==WF_CategString ? column+offset : (int *)(INTEGER(column)+offset);
+          break;
+        case REALSXP:
+          args.columns[k] = (double *)(REAL(column)+offset); break;
+        case CPLXSXP:
+          args.columns[k] = COMPLEX(column)+offset; break;
+        case STRSXP:
+          args.columns[k] = column+offset; break;
+        default:
+          error("Internal error -- unsupported matrix write type should have been caught earlier"); // # nocov
+        }
+        args.whichFun[k++] = (uint8_t)wf;
+        offset+=args.nrow;
+      }
+    } else {
+      if (args.nrow < 0) {
+        args.nrow = length(column);
+      } else if (args.nrow != length(column))
+        error("Column %d's length (%d) is not the same as column 1's length (%d)", j+1, length(column), args.nrow);
+
+      int32_t wf = whichWriter(column);
+      if (wf<0) {
+        error("Column %d's type is '%s' - not yet implemented in fwrite.", j+1, type2char(TYPEOF(column)));
+      }
+      Rprintf("column %d\n", k);
+      args.columns[k] = (wf==WF_CategString ? column : (void *)DATAPTR(column));
+      args.whichFun[k++] = (uint8_t)wf;
+      if (TYPEOF(column)==VECSXP && firstListColumn==0) firstListColumn = j+1;
     }
-    args.columns[j] = (wf==WF_CategString ? column : (void *)DATAPTR(column));
-    args.whichFun[j] = (uint8_t)wf;
-    if (TYPEOF(column)==VECSXP && firstListColumn==0) firstListColumn = j+1;
   }
+  Rprintf("out of loop\n");
 
   SEXP cn = getAttrib(DF, R_NamesSymbol);
   args.colNames = (LOGICAL(colNames_Arg)[0] && isString(cn)) ? (void *)DATAPTR(cn) : NULL;
@@ -285,6 +335,7 @@ SEXP fwriteR(
   args.nth = INTEGER(nThread_Arg)[0];
   args.showProgress = LOGICAL(showProgress_Arg)[0];
 
+  Rprintf("fwriteMain\n");
   fwriteMain(args);
 
   UNPROTECT(protecti);

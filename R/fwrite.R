@@ -31,9 +31,8 @@ fwrite = function(x, file="", append=FALSE, quote="auto",
   nThread = as.integer(nThread)
   # write.csv default is 'double' so fwrite follows suit. write.table's default is 'escape'
   # validate arguments
-  if (is.matrix(x)) { # coerce to data.table if input object is matrix
-    message("x being coerced from class: matrix to data.table")
-    x = as.data.table(x)
+  if (is.matrix(x)) {
+    x = list(x)
   }
   stopifnot(is.list(x),
     identical(quote,"auto") || isTRUEorFALSE(quote),
