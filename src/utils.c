@@ -146,13 +146,13 @@ void coerceFill(SEXP fill, double *dfill, int32_t *ifill, int64_t *i64fill) {
     }
   } else if (isReal(fill)) {
     if (Rinherits(fill,char_integer64)) {  // Rinherits true for nanotime
-      long long *llfill = (long long *)REAL(fill);
-      if (llfill[0]==NA_INT64_LL) {
+      int64_t rfill = ((int64_t *)REAL(fill))[0];
+      if (rfill==NA_INTEGER64) {
         ifill[0] = NA_INTEGER; dfill[0] = NA_REAL; i64fill[0] = NA_INTEGER64;
       } else {
-        ifill[0] = llfill[0]>INT32_MAX ? NA_INTEGER : (int32_t)(llfill[0]);
-        dfill[0] = (double)(llfill[0]);
-        i64fill[0] = llfill[0]>INT64_MAX ? NA_INTEGER64 : (int64_t)(llfill[0]);
+        ifill[0] = (rfill>INT32_MAX || rfill<=INT32_MIN) ? NA_INTEGER : (int32_t)rfill;
+        dfill[0] = (double)rfill;
+        i64fill[0] = rfill;
       }
     } else {
       double rfill = REAL(fill)[0];
@@ -160,9 +160,9 @@ void coerceFill(SEXP fill, double *dfill, int32_t *ifill, int64_t *i64fill) {
         // NA -> NA, NaN -> NaN
         ifill[0] = NA_INTEGER; dfill[0] = rfill; i64fill[0] = NA_INTEGER64;
       } else {
-        ifill[0] = rfill>INT32_MAX ? NA_INTEGER : (int32_t)(rfill);
+        ifill[0] = (!R_FINITE(rfill) || rfill>INT32_MAX || rfill<=INT32_MIN) ? NA_INTEGER : (int32_t)rfill;
         dfill[0] = rfill;
-        i64fill[0] = rfill>INT64_MAX ? NA_INTEGER64 : (int64_t)(rfill);
+        i64fill[0] = (!R_FINITE(rfill) || rfill>(double)INT64_MAX || rfill<=(double)INT64_MIN) ? NA_INTEGER64 : (int64_t)rfill;
       }
     }
   } else if (isLogical(fill) && LOGICAL(fill)[0]==NA_LOGICAL) {
@@ -183,8 +183,7 @@ SEXP coerceFillR(SEXP fill) {
   SET_VECTOR_ELT(ans, 2, allocVector(REALSXP, 1));
   INTEGER(VECTOR_ELT(ans, 0))[0] = ifill;
   REAL(VECTOR_ELT(ans, 1))[0] = dfill;
-  long long *ll = (long long *)REAL(VECTOR_ELT(ans, 2));
-  ll[0] = i64fill;
+  ((int64_t *)REAL(VECTOR_ELT(ans, 2)))[0] = i64fill;
   setAttrib(VECTOR_ELT(ans, 2), R_ClassSymbol, ScalarString(char_integer64));
   UNPROTECT(protecti);
   return ans;
