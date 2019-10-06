@@ -5,7 +5,7 @@ SEXP shift(SEXP obj, SEXP k, SEXP fill, SEXP type) {
 
   size_t size;
   int protecti=0;
-  SEXP x, tmp=R_NilValue, elem, ans, thisfill, klass;
+  SEXP x, tmp=R_NilValue, elem, ans, thisfill;
   unsigned long long *dthisfill;
   enum {LAG, LEAD/*, SHIFT, CYCLIC*/} stype = LAG; // currently SHIFT maps to LAG and CYCLIC is unimplemented (see comments in #1708)
   if (!xlength(obj)) return(obj); // NULL, list()
@@ -61,8 +61,7 @@ SEXP shift(SEXP obj, SEXP k, SEXP fill, SEXP type) {
       break;
 
     case REALSXP :
-      klass = getAttrib(elem, R_ClassSymbol);
-      if (isString(klass) && STRING_ELT(klass, 0) == char_integer64) {
+      if (Rinherits(elem, char_integer64)) {
         thisfill = PROTECT(allocVector(REALSXP, 1)); protecti++;
         dthisfill = (unsigned long long *)REAL(thisfill);
         if (INTEGER(fill)[0] == NA_INTEGER)

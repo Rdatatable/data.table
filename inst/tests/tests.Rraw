@@ -6472,6 +6472,11 @@ ans = list(as.integer(c(NA, 1:9)), as.integer(c(NA, NA, 1:8)))
 setattr(ans, 'names', nm)
 test(1463.39, shift(x, 1:2, give.names=TRUE), ans)
 
+if (test_nanotime) {
+  test(1463.40, shift(nanotime(1:4)         ), c(nanotime::nanotime(NA), nanotime::nanotime(1:3)));
+  test(1463.41, shift(nanotime(1:4), fill=0L), c(nanotime::nanotime(0L), nanotime::nanotime(1:3)));
+}
+
 # FR #686
 DT = data.table(a=rep(c("A", "B", "C", "A", "B"), c(2,2,3,1,2)), foo=1:10)
 # Seemingly superfluous 'foo' is needed to test fix for #1942
