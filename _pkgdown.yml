@@ -45,7 +45,7 @@ navbar:
     news:
       text: Changelog
       href: news/index.html
-    news:
+    benchmarks:
       text: Benchmarks
       href: https://h2oai.github.io/db-benchmark
     github:
