@@ -8,7 +8,7 @@
 
 ## BUG FIXES
 
-1. `shift()` on a `nanotime` with the default `fill=NA` now fills a `nanotime` missing value correctly, [#3942](https://github.com/Rdatatable/data.table/pull/3942). Thanks to @mschubmehl for the PR.
+1. `shift()` on a `nanotime` with the default `fill=NA` now fills a `nanotime` missing value correctly, [#3945](https://github.com/Rdatatable/data.table/issues/3945). Thanks to @mschubmehl for reporting and fixing in PR [#3942](https://github.com/Rdatatable/data.table/pull/3942).
 
 ## NOTES
 
