@@ -2135,7 +2135,7 @@ subset.data.table = function (x, subset, select, ...)
     key.cols = intersect(key.cols, names(x)[vars]) ## Only keep key.columns found in the select clause
   }
 
-  ans = x[r, vars, with=FALSE]
+  ans = x[r, vars, with = FALSE]
 
   if (nrow(ans) > 0L) {
     if (!missing(select) && length(key.cols)) {
