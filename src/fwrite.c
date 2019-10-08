@@ -566,7 +566,7 @@ int compressbuff(z_stream *stream, void* dest, size_t *destLen, const void* sour
 
   stream->next_out = dest;
   stream->avail_out = *destLen;
-  stream->next_in = (z_const Bytef *)source;
+  stream->next_in = (const Bytef *)source; // don't use z_const anywhere; #3939
   stream->avail_in = sourceLen;
 
   err = deflate(stream, Z_FINISH);
