@@ -1683,6 +1683,8 @@ test(583, DT[a<1], DT[0])
 test(584, DT[a<1], output="Empty data.table (0 rows and 2 cols): a,v")
 test(585, DT[a<1,list(v)], output="Empty data.table (0 rows and 1 cols): v")
 test(586.1, data.table(a=integer(),V1=integer()), output="Empty data.table (0 rows and 2 cols): a,V1")
+env = environment()
+data(iris, package='datasets', envir = env) # in case user has edited iris in their session
 test(586.2, print.data.table(iris[,FALSE]), output="Empty data.frame (150 rows and 0 cols)")   #3363
 
 # Test that .N is available in by on empty table, also in #1945
