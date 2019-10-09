@@ -794,16 +794,20 @@ void fwriteMain(fwriteMainArgs args)
   errno=0;
   char *buffPool = malloc(nth*(size_t)buffSize);
   if (!buffPool) {
+    // # nocov start
     STOP("Unable to allocate %d MB * %d thread buffers; '%d: %s'. Please read ?fwrite for nThread, buffMB and verbose options.",
-         (size_t)buffSize/(1024^2), nth, errno, strerror(errno));   // # nocov
+         (size_t)buffSize/(1024^2), nth, errno, strerror(errno));
+    // # nocov end
   }
   char *zbuffPool = NULL;
   if (args.is_gzip) {
     zbuffPool = malloc(nth*(size_t)zbuffSize);
     if (!zbuffPool) {
-      free(buffPool);                                               // # nocov
+      // # nocov start
+      free(buffPool);
       STOP("Unable to allocate %d MB * %d thread compressed buffers; '%d: %s'. Please read ?fwrite for nThread, buffMB and verbose options.",
-         (size_t)zbuffSize/(1024^2), nth, errno, strerror(errno));  // # nocov
+         (size_t)zbuffSize/(1024^2), nth, errno, strerror(errno));
+      // # nocov end
     }
   }
 
@@ -954,12 +958,12 @@ void fwriteMain(fwriteMainArgs args)
   // '&& !failed' is to not report the error as just 'closing file' but the next line for more detail
   // from the original error.
   if (failed) {
-    // nocov start
+    // # nocov start
     if (failed_compress)
       STOP("Error %d: compression error. Please retry with verbose=TRUE and search online for this error message.\n", failed_compress);
     if (failed_write)
       STOP("%s: '%s'", strerror(failed_write), args.filename);
-    // nocov end
+    // # nocov end
   }
 }
 
