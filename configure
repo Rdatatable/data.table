@@ -1,0 +1,32 @@
+#!/bin/sh
+# Let's keep this simple. If pkg-config is available, use it. Otherwise print
+# the helpful message to aid user if compilation does fail. Note 25 of R-exts:
+# "[pkg-config] is available on the machines used to produce the CRAN binary packages"
+
+if ! hash pkg-config 2>/dev/null; then
+  echo "*** pkg-config is not installed. It is used to check that zlib is installed. Compilation"
+  echo "*** will now be attempted and if it works you can ignore this message. If it fails and"
+  echo "*** and you cannot install pkg-config, try: locate zlib.h zconf.h. If they are not found"
+  echo "*** then try installing zlib1g-dev (Debian/Ubuntu), zlib-devel (Fedora) or zlib (OSX)"
+  exit 0  # now that the advice has been printed, exit with success and continue
+fi
+
+if ! `pkg-config --exists zlib`; then
+  echo "pkg-config did not detect zlib is installed. Try installing:"
+  echo "* deb: zlib1g-dev (Debian, Ubuntu, ...)"
+  echo "* rpm: zlib-devel (Fedora, EPEL, ...)"
+  echo "* brew: zlib (OSX)"
+  exit 1  # nothing more to do; zlib is required currently
+fi
+
+version=`pkg-config --modversion zlib`
+echo "zlib ${version} is available ok"
+
+lib=`pkg-config --libs zlib`
+if test $lib != "-lz"; then
+  echo "zlib is linked using ${lib} not the expected standard -lz. Please report to data.table issue tracker on GitHub."
+  exit 1
+fi
+
+exit 0
+

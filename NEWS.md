@@ -10,6 +10,8 @@
 
 1. `shift()` on a `nanotime` with the default `fill=NA` now fills a `nanotime` missing value correctly, [#3945](https://github.com/Rdatatable/data.table/issues/3945). Thanks to @mschubmehl for reporting and fixing in PR [#3942](https://github.com/Rdatatable/data.table/pull/3942).
 
+2. Compilation failed on CRAN's MacOS due to an older version of `zlib.h/zconf.h` which did not have `z_const` defined, [#3939](https://github.com/Rdatatable/data.table/issues/3939). Other open-source projects unrelated to R have experienced this problem on MacOS too. We have followed the common practice of removing `z_const` to support the older `zlib` versions, and data.table's release procedures have gained a `grep` to ensure `z_const` isn't used again by accident in future. The library `zlib` is used for `fwrite`'s new feature of multithreaded compression on-the-fly; see item 3 of 1.12.4 below.
+
 ## NOTES
 
 

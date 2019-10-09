@@ -48,6 +48,9 @@ grep "Rprintf" ./src/init.c
 grep "nearest *=" ./src/*.c  # none
 grep "class *=" ./src/*.c    # quite a few but none global
 
+# ensure no use of z_const from zconf.h; #3939
+grep "z_const" ./src/*.[hc]  # none other than the comment
+
 # No undefined type punning of the form:  *(long long *)&REAL(column)[i]
 # Failed clang 3.9.1 -O3 due to this, I think.
 grep "&REAL" ./src/*.c
@@ -149,6 +152,7 @@ system.time(test.data.table(script="*.Rraw"))  # apx 8h = froll 3h + nafill 1m +
 
 # Upload to win-builder: release, dev & old-release
 # Turn on Travis OSX; it's off in dev until it's added to GLCI (#3326) as it adds 17min after 11min Linux.
+# Turn on r-devel in Appveyor; it may be off in dev for similar dev cycle speed reasons
 
 
 ###############################################
