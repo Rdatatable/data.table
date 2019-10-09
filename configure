@@ -6,7 +6,7 @@
 if ! hash pkg-config 2>/dev/null; then
   echo "*** pkg-config is not installed. It is used to check that zlib is installed. Compilation"
   echo "*** will now be attempted and if it works you can ignore this message. If it fails and"
-  echo "*** and you cannot install pkg-config, try: locate zlib.h zconf.h. If they are not found"
+  echo "*** you cannot install pkg-config, try: locate zlib.h zconf.h. If they are not found"
   echo "*** then try installing zlib1g-dev (Debian/Ubuntu), zlib-devel (Fedora) or zlib (OSX)"
   exit 0  # now that the advice has been printed, exit with success and continue
 fi
@@ -29,4 +29,3 @@ if test $lib != "-lz"; then
 fi
 
 exit 0
-
