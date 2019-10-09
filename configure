@@ -1,4 +1,4 @@
-#! /bin/sh
+#!/bin/sh
 # Let's keep this simple. If pkg-config is available, use it. Otherwise print
 # the helpful message to aid user if compilation does fail. Note 25 of R-exts:
 # "[pkg-config] is available on the machines used to produce the CRAN binary packages"
