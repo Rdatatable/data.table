@@ -817,10 +817,6 @@ void fwriteMain(fwriteMainArgs args)
 
   #pragma omp parallel num_threads(nth)
   {
-    #pragma omp single
-    {
-      nth = omp_get_num_threads();  // update nth with the actual nth (might be less than requested)
-    }
     int me = omp_get_thread_num();
     int my_failed_compress = 0;
     char *ch, *myBuff;
