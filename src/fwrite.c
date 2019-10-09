@@ -1,4 +1,3 @@
-#include "fwriteLookups.h"
 #include <errno.h>
 #include <unistd.h>    // for access()
 #include <fcntl.h>
@@ -7,6 +6,7 @@
 #include <math.h>      // isfinite, isnan
 #include <stdlib.h>    // abs
 #include <string.h>    // strlen, strerror
+#include <zlib.h>      // for compression to .gz
 
 #ifdef WIN32
 #include <sys/types.h>
@@ -19,8 +19,8 @@
 #define CLOSE close
 #endif
 
-#include "zlib.h"      // for writing gzip file
 #include "myomp.h"
+#include "fwriteLookups.h"
 #include "fwrite.h"
 
 #define NUM_SF   15
