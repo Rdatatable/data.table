@@ -8,7 +8,7 @@ if ! hash pkg-config 2>/dev/null; then
   echo "*** will now be attempted and if it works you can ignore this message. If it fails and"
   echo "*** and you cannot install pkg-config, try: locate zlib.h zconf.h. If they are not found"
   echo "*** then try installing zlib1g-dev (Debian/Ubuntu), zlib-devel (Fedora) or zlib (OSX)"
-  return 0  # now that the advice has been printed, exit with success and continue
+  exit 0  # now that the advice has been printed, exit with success and continue
 fi
 
 if ! `pkg-config --exists zlib`; then
@@ -16,7 +16,7 @@ if ! `pkg-config --exists zlib`; then
   echo "* deb: zlib1g-dev (Debian, Ubuntu, ...)"
   echo "* rpm: zlib-devel (Fedora, EPEL, ...)"
   echo "* brew: zlib (OSX)"
-  return 1  # nothing more to do; zlib is required currently
+  exit 1  # nothing more to do; zlib is required currently
 fi
 
 version=`pkg-config --modversion zlib`
@@ -25,8 +25,8 @@ echo "zlib ${version} is available ok"
 lib=`pkg-config --libs zlib`
 if test $lib != "-lz"; then
   echo "zlib is linked using ${lib} not the expected standard -lz. Please report to data.table issue tracker on GitHub."
-  return 1
+  exit 1
 fi
 
-return 0
+exit 0
 
