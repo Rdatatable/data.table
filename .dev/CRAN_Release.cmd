@@ -49,7 +49,7 @@ grep "nearest *=" ./src/*.c  # none
 grep "class *=" ./src/*.c    # quite a few but none global
 
 # ensure no use of z_const from zconf.h; #3939
-grep "z_const" ./src/*.c     # none other than the comment
+grep "z_const" ./src/*.[hc]  # none other than the comment
 
 # No undefined type punning of the form:  *(long long *)&REAL(column)[i]
 # Failed clang 3.9.1 -O3 due to this, I think.
