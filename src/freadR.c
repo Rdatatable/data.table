@@ -81,7 +81,7 @@ SEXP freadR(
   dtnrows = 0;
   const char *ch, *ch2;
   if (!isString(inputArg) || LENGTH(inputArg)!=1)
-    error("Internal error: freadR input not a single character string: a filename or the data itself. Should have been caught at R level.");  // # nocov
+    error(_("Internal error: freadR input not a single character string: a filename or the data itself. Should have been caught at R level."));  // # nocov
   ch = ch2 = (const char *)CHAR(STRING_ELT(inputArg,0));
   while (*ch2!='\n' && *ch2!='\r' && *ch2!='\0') ch2++;
   args.input = (*ch2=='\0') ? R_ExpandFileName(ch) : ch; // for convenience so user doesn't have to call path.expand()
@@ -98,18 +98,18 @@ SEXP freadR(
   }
 
   if (!isString(sepArg) || LENGTH(sepArg)!=1 || strlen(CHAR(STRING_ELT(sepArg,0)))>1)
-    error("Internal error: freadR sep not a single character. R level catches this.");  // # nocov
+    error(_("Internal error: freadR sep not a single character. R level catches this."));  // # nocov
   args.sep = CHAR(STRING_ELT(sepArg,0))[0];   // '\0' when default "auto" was replaced by "" at R level
 
   if (!(isString(decArg) && LENGTH(decArg)==1 && strlen(CHAR(STRING_ELT(decArg,0)))==1))
-    error("Internal error: freadR dec not a single character. R level catches this.");  // # nocov
+    error(_("Internal error: freadR dec not a single character. R level catches this."));  // # nocov
   args.dec = CHAR(STRING_ELT(decArg,0))[0];
 
   if (IS_FALSE(quoteArg)) {
     args.quote = '\0';
   } else {
     if (!isString(quoteArg) || LENGTH(quoteArg)!=1 || strlen(CHAR(STRING_ELT(quoteArg,0))) > 1)
-      error("quote= must be a single character, blank \"\", or FALSE");
+      error(_("quote= must be a single character, blank \")\", or FALSE");
     args.quote = CHAR(STRING_ELT(quoteArg,0))[0];
   }
 
@@ -134,10 +134,10 @@ SEXP freadR(
     args.skipString = CHAR(STRING_ELT(skipArg,0));  // LENGTH==1 was checked at R level
   } else if (isInteger(skipArg)) {
     args.skipNrow = (int64_t)INTEGER(skipArg)[0];
-  } else error("Internal error: skip not integer or string in freadR.c"); // # nocov
+  } else error(_("Internal error: skip not integer or string in freadR.c")); // # nocov
 
   if (!isNull(NAstringsArg) && !isString(NAstringsArg))
-    error("Internal error: NAstringsArg is type '%s'. R level catches this", type2char(TYPEOF(NAstringsArg)));  // # nocov
+    error(_("Internal error: NAstringsArg is type '%s'. R level catches this"), type2char(TYPEOF(NAstringsArg)));  // # nocov
   int nnas = length(NAstringsArg);
   const char **NAstrings = (const char **)R_alloc((nnas + 1), sizeof(char*));  // +1 for the final NULL to save a separate nna variable
   for (int i=0; i<nnas; i++)
@@ -150,14 +150,14 @@ SEXP freadR(
   args.skipEmptyLines = LOGICAL(skipEmptyLinesArg)[0];
   args.fill = LOGICAL(fillArg)[0];
   args.showProgress = LOGICAL(showProgressArg)[0];
-  if (INTEGER(nThreadArg)[0]<1) error("nThread(%d)<1", INTEGER(nThreadArg)[0]);
+  if (INTEGER(nThreadArg)[0]<1) error(_("nThread(%d)<1"), INTEGER(nThreadArg)[0]);
   args.nth = (uint32_t)INTEGER(nThreadArg)[0];
   args.verbose = verbose;
   args.warningsAreErrors = warningsAreErrors;
   args.keepLeadingZeros = LOGICAL(keepLeadingZerosArgs)[0];
 
   // === extras used for callbacks ===
-  if (!isString(integer64Arg) || LENGTH(integer64Arg)!=1) error("'integer64' must be a single character string");
+  if (!isString(integer64Arg) || LENGTH(integer64Arg)!=1) error(_("'integer64' must be a single character string"));
   const char *tt = CHAR(STRING_ELT(integer64Arg,0));
   if (strcmp(tt, "integer64")==0) {
     readInt64As = CT_INT64;
@@ -657,7 +657,7 @@ void __halt(bool warn, const char *format, ...) {
   // if (warn) warning("%s", msg);
   //   this warning() call doesn't seem to honor warn=2 straight away in R 3.6, so now always call error() directly to be sure
   //   we were going via warning() before to get the (converted from warning) prefix in the message (which we could mimic in future)
-  error("%s", msg); // include "%s" because data in msg might include '%'
+  error(_("%s"), msg); // include "%s" because data in msg might include '%'
 }
 
 void prepareThreadContext(ThreadLocalFreadParsingContext *ctx) {}

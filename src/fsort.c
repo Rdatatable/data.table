@@ -106,9 +106,9 @@ SEXP fsort(SEXP x, SEXP verboseArg) {
   double t[10];
   t[0] = wallclock();
   if (!isLogical(verboseArg) || LENGTH(verboseArg)!=1 || LOGICAL(verboseArg)[0]==NA_LOGICAL)
-    error("verbose must be TRUE or FALSE");
+    error(_("verbose must be TRUE or FALSE"));
   Rboolean verbose = LOGICAL(verboseArg)[0];
-  if (!isNumeric(x)) error("x must be a vector of type 'double' currently");
+  if (!isNumeric(x)) error(_("x must be a vector of type 'double' currently"));
   // TODO: not only detect if already sorted, but if it is, just return x to save the duplicate
 
   SEXP ansVec = PROTECT(allocVector(REALSXP, xlength(x)));
@@ -154,7 +154,7 @@ SEXP fsort(SEXP x, SEXP verboseArg) {
     if (maxs[i]>max) max=maxs[i];
   }
   if (verbose) Rprintf("Range = [%g,%g]\n", min, max);
-  if (min < 0.0) error("Cannot yet handle negatives.");
+  if (min < 0.0) error(_("Cannot yet handle negatives."));
   // TODO: -0ULL should allow negatives
   //       avoid twiddle function call as expensive in recent tests (0.34 vs 2.7)
   //       possibly twiddle once to *ans, then untwiddle at the end in a fast parallel sweep
@@ -170,7 +170,7 @@ SEXP fsort(SEXP x, SEXP verboseArg) {
   if (verbose) Rprintf("maxBit=%d; MSBNbits=%d; shift=%d; MSBsize=%d\n", maxBit, MSBNbits, shift, MSBsize);
 
   R_xlen_t *counts = calloc(nBatch*MSBsize, sizeof(R_xlen_t));
-  if (counts==NULL) error("Unable to allocate working memory");
+  if (counts==NULL) error(_("Unable to allocate working memory"));
   // provided MSBsize>=9, each batch is a multiple of at least one 4k page, so no page overlap
   // TODO: change all calloc, malloc and free to Calloc and Free to be robust to error() and catch ooms.
 
@@ -227,7 +227,7 @@ SEXP fsort(SEXP x, SEXP verboseArg) {
     // sort bins by size, largest first to minimise last-man-home
     R_xlen_t *msbCounts = counts + (nBatch-1)*MSBsize;
     // msbCounts currently contains the ending position of each MSB (the starting location of the next) even across empty
-    if (msbCounts[MSBsize-1] != xlength(x)) error("Internal error: counts[nBatch-1][MSBsize-1] != length(x)"); // # nocov
+    if (msbCounts[MSBsize-1] != xlength(x)) error(_("Internal error: counts[nBatch-1][MSBsize-1] != length(x)")); // # nocov
     R_xlen_t *msbFrom = malloc(MSBsize*sizeof(R_xlen_t));
     int *order = malloc(MSBsize*sizeof(int));
     R_xlen_t cumSum = 0;

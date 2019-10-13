@@ -9,17 +9,17 @@ SEXP between(SEXP x, SEXP lower, SEXP upper, SEXP incbounds, SEXP NAboundsArg, S
   if ((nl!=1 && nl!=longest) ||
       (nu!=1 && nu!=longest) ||
       (nx!=1 && nx!=longest)) {
-    error("Incompatible vector lengths: length(x)==%d length(lower)==%d length(upper)==%d. Each should be either length 1 or the length of the longest.", nx, nl, nu);
+    error(_("Incompatible vector lengths: length(x)==%d length(lower)==%d length(upper)==%d. Each should be either length 1 or the length of the longest."), nx, nl, nu);
   }
   const int longestBound = MAX(nl, nu);  // just for when check=TRUE
   if (!isLogical(incbounds) || LOGICAL(incbounds)[0]==NA_LOGICAL)
-    error("incbounds must be TRUE or FALSE");
+    error(_("incbounds must be TRUE or FALSE"));
   const bool open = !LOGICAL(incbounds)[0];
   if (!isLogical(NAboundsArg) || LOGICAL(NAboundsArg)[0]==FALSE)
-    error("NAbounds must be TRUE or NA");
+    error(_("NAbounds must be TRUE or NA"));
   const bool NAbounds = LOGICAL(NAboundsArg)[0]==TRUE;
   if (!isLogical(checkArg) || LOGICAL(checkArg)[0]==NA_LOGICAL)
-    error("check must be TRUE or FALSE");
+    error(_("check must be TRUE or FALSE"));
   const bool check = LOGICAL(checkArg)[0];
   const bool verbose = GetVerbose();
 
@@ -61,7 +61,7 @@ SEXP between(SEXP x, SEXP lower, SEXP upper, SEXP incbounds, SEXP NAboundsArg, S
     if (check) for (int i=0; i<longestBound; ++i) {
       const int l=lp[i & lowMask], u=up[i & uppMask];
       if (l!=NA_INTEGER && u!=NA_INTEGER && l>u)
-        error("Item %d of lower (%d) is greater than item %d of upper (%d)", (i&lowMask)+1, l, (i&uppMask)+1, u);
+        error(_("Item %d of lower (%d) is greater than item %d of upper (%d)"), (i&lowMask)+1, l, (i&uppMask)+1, u);
     }
     if (NAbounds) {  // default NAbounds==TRUE => NA bound means TRUE; i.e. asif lower=-Inf or upper==Inf)
       #pragma omp parallel for num_threads(getDTthreads())
@@ -85,14 +85,14 @@ SEXP between(SEXP x, SEXP lower, SEXP upper, SEXP incbounds, SEXP NAboundsArg, S
   case REALSXP:
     if (Rinherits(x, char_integer64)) {
       if (!Rinherits(lower, char_integer64) || !Rinherits(upper, char_integer64))
-        error("x is integer64 but lower and/or upper are not."); // e.g. between(int64, character, character)
+        error(_("x is integer64 but lower and/or upper are not.")); // e.g. between(int64, character, character)
       const int64_t *lp = (int64_t *)REAL(lower);
       const int64_t *up = (int64_t *)REAL(upper);
       const int64_t *xp = (int64_t *)REAL(x);
       if (check) for (int i=0; i<longestBound; ++i) {
         const int64_t l=lp[i & lowMask], u=up[i & uppMask];
         if (l!=NA_INTEGER64 && u!=NA_INTEGER64 && l>u)
-          error("Item %d of lower (%lld) is greater than item %d of upper (%lld)", (i&lowMask)+1, l, (i&uppMask)+1, u);
+          error(_("Item %d of lower (%lld) is greater than item %d of upper (%lld)"), (i&lowMask)+1, l, (i&uppMask)+1, u);
       }
       if (NAbounds) {
         #pragma omp parallel for num_threads(getDTthreads())
@@ -112,14 +112,14 @@ SEXP between(SEXP x, SEXP lower, SEXP upper, SEXP incbounds, SEXP NAboundsArg, S
       if (verbose) Rprintf("between parallel processing of integer64 took %8.3fs\n", omp_get_wtime()-tic);
     } else {
       if (Rinherits(lower, char_integer64) || Rinherits(upper, char_integer64))
-        error("x is not integer64 but lower and/or upper is integer64. Please align classes.");
+        error(_("x is not integer64 but lower and/or upper is integer64. Please align classes."));
       const double *lp = REAL(lower);
       const double *up = REAL(upper);
       const double *xp = REAL(x);
       if (check) for (int i=0; i<longestBound; ++i) {
         const double l=lp[i & lowMask], u=up[i & uppMask];
         if (!isnan(l) && !isnan(u) && l>u)
-          error("Item %d of lower (%f) is greater than item %d of upper (%f)", (i&lowMask)+1, l, (i&uppMask)+1, u);
+          error(_("Item %d of lower (%f) is greater than item %d of upper (%f)"), (i&lowMask)+1, l, (i&uppMask)+1, u);
       }
       if (open) {
         if (NAbounds) {
@@ -169,7 +169,7 @@ SEXP between(SEXP x, SEXP lower, SEXP upper, SEXP incbounds, SEXP NAboundsArg, S
     if (check) for (int i=0; i<longestBound; ++i) {
       const SEXP l=lp[i & lowMask], u=up[i & uppMask];
       if (l!=NA_STRING && u!=NA_STRING && l!=u && strcmp(CHAR(ENC2UTF8(l)), CHAR(ENC2UTF8(u)))>0)
-        error("Item %d of lower ('%s') is greater than item %d of upper ('%s')", (i&lowMask)+1, CHAR(l), (i&uppMask)+1, CHAR(u));
+        error(_("Item %d of lower ('%s') is greater than item %d of upper ('%s')"), (i&lowMask)+1, CHAR(l), (i&uppMask)+1, CHAR(u));
     }
     if (NAbounds) {
       for (int i=0; i<longest; ++i) {
@@ -187,7 +187,7 @@ SEXP between(SEXP x, SEXP lower, SEXP upper, SEXP incbounds, SEXP NAboundsArg, S
     if (verbose) Rprintf("between non-parallel processing of character took %8.3fs\n", omp_get_wtime()-tic);
   } break;
   default:
-    error("Internal error: between.c unsupported type '%s' should have been caught at R level", type2char(TYPEOF(x)));  // # nocov
+    error(_("Internal error: between.c unsupported type '%s' should have been caught at R level"), type2char(TYPEOF(x)));  // # nocov
   }
   UNPROTECT(nprotect);
   return ans;

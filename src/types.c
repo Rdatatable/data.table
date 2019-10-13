@@ -20,7 +20,7 @@ void ansMsg(ans_t *ans, int n, bool verbose, const char *func) {
     if (ans[i].message[2][0] != '\0')
       warning("%s: %d:\n%s", func, i+1, ans[i].message[2]);
     if (ans[i].status == 3)
-      error("%s: %d:\n%s:", func, i+1, ans[i].message[3]);
+      error(_("%s: %d:\n%s:"), func, i+1, ans[i].message[3]);
   }
 }
 
@@ -52,7 +52,7 @@ void testRaiseMsg(ans_t *ans, int istatus, bool verbose) {
 }
 SEXP testMsgR(SEXP status, SEXP x, SEXP k) {
   if (!isInteger(status) || !isInteger(x) || !isInteger(k))
-    error("internal error: status, nx, nk must be integer"); // # nocov
+    error(_("internal error: status, nx, nk must be integer")); // # nocov
   int protecti = 0;
   const bool verbose = GetVerbose();
   int istatus = INTEGER(status)[0], nx = INTEGER(x)[0], nk = INTEGER(k)[0];

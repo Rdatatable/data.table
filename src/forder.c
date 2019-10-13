@@ -371,8 +371,8 @@ static uint64_t dmask=0;
 SEXP setNumericRounding(SEXP droundArg)
 // init.c has initial call with default of 2
 {
-  if (!isInteger(droundArg) || LENGTH(droundArg)!=1) error("Must an integer or numeric vector length 1");
-  if (INTEGER(droundArg)[0] < 0 || INTEGER(droundArg)[0] > 2) error("Must be 2, 1 or 0");
+  if (!isInteger(droundArg) || LENGTH(droundArg)!=1) error(_("Must an integer or numeric vector length 1"));
+  if (INTEGER(droundArg)[0] < 0 || INTEGER(droundArg)[0] > 2) error(_("Must be 2, 1 or 0"));
   dround = INTEGER(droundArg)[0];
   dmask = dround ? 1 << (8*dround-1) : 0;
   return R_NilValue;
@@ -428,11 +428,11 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
 
   if (!isNewList(DT)) {
     if (!isVectorAtomic(DT))
-      error("Internal error: input is not either a list of columns, or an atomic vector.");  // # nocov; caught by colnamesInt at R level, test 1962.0472
+      error(_("Internal error: input is not either a list of columns, or an atomic vector."));  // # nocov; caught by colnamesInt at R level, test 1962.0472
     if (!isNull(by))
-      error("Internal error: input is an atomic vector (not a list of columns) but by= is not NULL");  // # nocov; caught at R level, test 1962.043
+      error(_("Internal error: input is an atomic vector (not a list of columns) but by= is not NULL"));  // # nocov; caught at R level, test 1962.043
     if (!isInteger(ascArg) || LENGTH(ascArg)!=1)
-      error("Input is an atomic vector (not a list of columns) but order= is not a length 1 integer");
+      error(_("Input is an atomic vector (not a list of columns) but order= is not a length 1 integer"));
     if (verbose)
       Rprintf("forder.c received a vector type '%s' length %d\n", type2char(TYPEOF(DT)), length(DT));
     SEXP tt = PROTECT(allocVector(VECSXP, 1)); n_protect++;
@@ -445,31 +445,31 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
       Rprintf("forder.c received %d rows and %d columns\n", length(VECTOR_ELT(DT,0)), length(DT));
   }
   if (!length(DT))
-    error("Internal error: DT is an empty list() of 0 columns");  // # nocov  should have been caught be colnamesInt, test 2099.1
+    error(_("Internal error: DT is an empty list() of 0 columns"));  // # nocov  should have been caught be colnamesInt, test 2099.1
   if (!isInteger(by) || !LENGTH(by))
-    error("Internal error: DT has %d columns but 'by' is either not integer or is length 0", length(DT));  // # nocov  colnamesInt catches, 2099.2
+    error(_("Internal error: DT has %d columns but 'by' is either not integer or is length 0"), length(DT));  // # nocov  colnamesInt catches, 2099.2
   if (!isInteger(ascArg) || LENGTH(ascArg)!=LENGTH(by))
-    error("Either order= is not integer or its length (%d) is different to by='s length (%d)", LENGTH(ascArg), LENGTH(by));
+    error(_("Either order= is not integer or its length (%d) is different to by='s length (%d)"), LENGTH(ascArg), LENGTH(by));
   nrow = length(VECTOR_ELT(DT,0));
   int n_cplx = 0;
   for (int i=0; i<LENGTH(by); i++) {
     int by_i = INTEGER(by)[i];
     if (by_i < 1 || by_i > length(DT))
-      error("internal error: 'by' value %d out of range [1,%d]", by_i, length(DT)); // # nocov # R forderv already catch that using C colnamesInt
+      error(_("internal error: 'by' value %d out of range [1,%d]"), by_i, length(DT)); // # nocov # R forderv already catch that using C colnamesInt
     if ( nrow != length(VECTOR_ELT(DT, by_i-1)) )
-      error("Column %d is length %d which differs from length of column 1 (%d)\n", INTEGER(by)[i], length(VECTOR_ELT(DT, INTEGER(by)[i]-1)), nrow);
+      error(_("Column %d is length %d which differs from length of column 1 (%d)\n"), INTEGER(by)[i], length(VECTOR_ELT(DT, INTEGER(by)[i]-1)), nrow);
     if (TYPEOF(VECTOR_ELT(DT, by_i-1)) == CPLXSXP) n_cplx++;
   }
   if (!isLogical(retGrpArg) || LENGTH(retGrpArg)!=1 || INTEGER(retGrpArg)[0]==NA_LOGICAL)
-    error("retGrp= must be TRUE or FALSE");
+    error(_("retGrp= must be TRUE or FALSE"));
   retgrp = LOGICAL(retGrpArg)[0]==TRUE;
   if (!isLogical(sortGroupsArg) || LENGTH(sortGroupsArg)!=1 || INTEGER(sortGroupsArg)[0]==NA_LOGICAL )
-    error("sort= must be TRUE or FALSE");
+    error(_("sort= must be TRUE or FALSE"));
   sortType = LOGICAL(sortGroupsArg)[0]==TRUE;   // if sortType is 1, it is later flipped between +1/-1 according to ascArg. Otherwise ascArg is ignored when sortType==0
   if (!retgrp && !sortType)
-    error("At least one of retGrp= or sort= must be TRUE");
+    error(_("At least one of retGrp= or sort= must be TRUE"));
   if (!isLogical(naArg) || LENGTH(naArg) != 1)
-    error("na.last must be logical TRUE, FALSE or NA of length 1");
+    error(_("na.last must be logical TRUE, FALSE or NA of length 1"));
   nalast = (LOGICAL(naArg)[0] == NA_LOGICAL) ? -1 : LOGICAL(naArg)[0]; // 1=na last, 0=na first (default), -1=remove na
 
   if (nrow==0) {
@@ -1298,11 +1298,11 @@ SEXP isOrderedSubset(SEXP x, SEXP nrowArg)
 // specialized for use in [.data.table only
 // Ignores 0s but heeds NAs and any out-of-range (which result in NA)
 {
-  if (!isNull(x) && !isInteger(x)) error("x must be either NULL or an integer vector");
+  if (!isNull(x) && !isInteger(x)) error(_("x must be either NULL or an integer vector"));
   if (length(x)<=1) return(ScalarLogical(TRUE));  // a single NA when length(x)==1 is ordered (e.g. tests 128 & 130) otherwise anyNA => FALSE
-  if (!isInteger(nrowArg) || LENGTH(nrowArg)!=1) error("nrow must be integer vector length 1");
+  if (!isInteger(nrowArg) || LENGTH(nrowArg)!=1) error(_("nrow must be integer vector length 1"));
   const int nrow = INTEGER(nrowArg)[0];
-  if (nrow<0) error("nrow==%d but must be >=0", nrow);
+  if (nrow<0) error(_("nrow==%d but must be >=0"), nrow);
   const int *xd = INTEGER(x), xlen=LENGTH(x);
   for (int i=0, last=INT_MIN; i<xlen; ++i) {
     int elem = xd[i];
@@ -1319,7 +1319,7 @@ SEXP binary(SEXP x)
 {
   char buffer[69];
   int j;
-  if (!isReal(x)) error("x must be type 'double'");
+  if (!isReal(x)) error(_("x must be type 'double'"));
   SEXP ans = PROTECT(allocVector(STRSXP, LENGTH(x)));
   uint64_t *xd = (uint64_t *)REAL(x);
   for (int i=0; i<LENGTH(x); i++) {

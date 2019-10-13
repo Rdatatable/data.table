@@ -425,7 +425,7 @@ void frollapply(double *x, int64_t nx, double *w, int k, ans_t *ans, int align, 
   memcpy(w, x, k*sizeof(double));
   SEXP eval0 = PROTECT(eval(call, rho));
   if (xlength(eval0) != 1)
-    error("%s: results from provided FUN are not length 1", __func__);
+    error(_("%s: results from provided FUN are not length 1"), __func__);
   SEXPTYPE teval0 = TYPEOF(eval0);
   if (teval0 == REALSXP) {
     ans->dbl_v[k-1] = REAL(eval0)[0];
@@ -435,7 +435,7 @@ void frollapply(double *x, int64_t nx, double *w, int k, ans_t *ans, int align, 
         Rprintf("%s: results from provided FUN are not of type double, coercion from integer or logical will be applied on each iteration\n", __func__);
       ans->dbl_v[k-1] = REAL(coerceVector(eval0, REALSXP))[0];
     } else {
-      error("%s: results from provided FUN are not of type double", __func__);
+      error(_("%s: results from provided FUN are not of type double"), __func__);
     }
   }
   UNPROTECT(1); // eval0

@@ -70,7 +70,7 @@ void nafillInteger64(int64_t *x, uint_fast64_t nx, unsigned int type, int64_t fi
 SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP inplace, SEXP cols, SEXP verbose) {
   int protecti=0;
   if (!IS_TRUE_OR_FALSE(verbose))
-    error("verbose must be TRUE or FALSE");
+    error(_("verbose must be TRUE or FALSE"));
   bool bverbose = LOGICAL(verbose)[0];
 
   if (!xlength(obj))
@@ -80,9 +80,9 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP inplace, SEXP cols, SEXP verbo
   SEXP x = R_NilValue;
   if (isVectorAtomic(obj)) {
     if (binplace)
-      error("'x' argument is atomic vector, in-place update is supported only for list/data.table");
+      error(_("'x' argument is atomic vector, in-place update is supported only for list/data.table"));
     else if (!isReal(obj) && !isInteger(obj))
-      error("'x' argument must be numeric type, or list/data.table of numeric types");
+      error(_("'x' argument must be numeric type, or list/data.table of numeric types"));
     x = PROTECT(allocVector(VECSXP, 1)); protecti++; // wrap into list
     SET_VECTOR_ELT(x, 0, obj);
   } else {
@@ -92,7 +92,7 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP inplace, SEXP cols, SEXP verbo
     for (int i=0; i<length(ricols); i++) {
       SEXP this_col = VECTOR_ELT(obj, icols[i]-1);
       if (!isReal(this_col) && !isInteger(this_col))
-        error("'x' argument must be numeric type, or list/data.table of numeric types");
+        error(_("'x' argument must be numeric type, or list/data.table of numeric types"));
       SET_VECTOR_ELT(x, i, this_col);
     }
   }
@@ -130,10 +130,10 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP inplace, SEXP cols, SEXP verbo
   else if (!strcmp(CHAR(STRING_ELT(type, 0)), "nocb"))
     itype = 2;
   else
-    error("Internal error: invalid type argument in nafillR function, should have been caught before. Please report to data.table issue tracker."); // # nocov
+    error(_("Internal error: invalid type argument in nafillR function, should have been caught before. Please report to data.table issue tracker.")); // # nocov
 
   if (itype==0 && length(fill)!=1)
-    error("fill must be a vector of length 1");
+    error(_("fill must be a vector of length 1"));
 
   double dfill=NA_REAL;
   int32_t ifill=NA_INTEGER;
@@ -158,7 +158,7 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP inplace, SEXP cols, SEXP verbo
     case INTSXP : {
       nafillInteger(ix[i], inx[i], itype, ifill, &vans[i], bverbose);
     } break;
-    default: error("Internal error: invalid type argument in nafillR function, should have been caught before. Please report to data.table issue tracker."); // # nocov
+    default: error(_("Internal error: invalid type argument in nafillR function, should have been caught before. Please report to data.table issue tracker.")); // # nocov
     }
   }
   if (bverbose)
