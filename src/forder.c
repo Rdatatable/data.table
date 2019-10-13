@@ -91,7 +91,7 @@ static void cleanup() {
   free(cradix_counts); cradix_counts=NULL;
   free(cradix_xtmp);   cradix_xtmp=NULL;
   free_ustr();
-  if (key!=NULL) for (int i=0; i<nradix; i++) free(key[i]);
+  if (key!=NULL) { int i=0; while (key[i]!=NULL) free(key[i++]); }  // ==nradix, other than rare cases e.g. tests 1844.5-6 (#3940), and if a calloc fails
   free(key); key=NULL; nradix=0;
   savetl_end();  // Restore R's own usage of tl. Must run after the for loop in free_ustr() since only CHARSXP which had tl>0 (R's usage) are stored there.
 }
@@ -497,8 +497,10 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
   savetl_init();   // from now on use Error not error
 
   int ncol=length(by);
-  key = calloc((ncol+n_cplx)*8+1, sizeof(uint8_t *));  // needs to be before loop because part II relies on part I, column-by-column. +1 because we check NULL after last one
-  // TODO: if key==NULL Error
+  int keyAlloc = (ncol+n_cplx)*8 + 1;         // +1 for NULL to mark end; calloc to initialize with NULLs
+  key = calloc(keyAlloc, sizeof(uint8_t *));  // needs to be before loop because part II relies on part I, column-by-column.
+  if (!key)
+    STOP("Unable to allocate %llu bytes of working memory", (unsigned long long)(keyAlloc*sizeof(uint8_t *)));  // # nocov
   nradix=0; // the current byte we're writing this column to; might be squashing into it (spare>0)
   int spare=0;  // the amount of bits remaining on the right of the current nradix byte
   bool isReal=false;
@@ -599,8 +601,12 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
     }
 
     for (int b=0; b<nbyte; b++) {
-      if (key[nradix+b]==NULL)
-        key[nradix+b] = calloc(nrow, sizeof(uint8_t));  // 0 initialize so that NA's can just skip (NA is always the 0 offset)
+      if (key[nradix+b]==NULL) {
+        uint8_t *tt = calloc(nrow, sizeof(uint8_t));  // 0 initialize so that NA's can just skip (NA is always the 0 offset)
+        if (!tt)
+          STOP("Unable to allocate %llu bytes of working memory", (unsigned long long)(nrow * sizeof(uint8_t))); // # nocov
+        key[nradix+b] = tt;
+      }
     }
 
     const bool asc = (sortType>=0);
