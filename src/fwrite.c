@@ -870,11 +870,13 @@ void fwriteMain(fwriteMainArgs args)
       #pragma omp ordered
       {
         if (failed) {
+          // # nocov start
           if (failed_compress==0 && my_failed_compress!=0) {
-            failed_compress = my_failed_compress;                            // # nocov
-            if (mystream.msg!=NULL) strncpy(failed_msg, mystream.msg, 1000); // # nocov; copy zlib's msg for safe use after deflateEnd just in case zlib allocated the message
+            failed_compress = my_failed_compress;
+            if (mystream.msg!=NULL) strncpy(failed_msg, mystream.msg, 1000); // copy zlib's msg for safe use after deflateEnd just in case zlib allocated the message
           }
           // else another thread could have failed below while I was working or waiting above; their reason got here first
+          // # nocov end
         } else {
           errno=0;
           if (f==-1) {
