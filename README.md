@@ -60,13 +60,10 @@ See [the Installation wiki](https://github.com/Rdatatable/data.table/wiki/Instal
 ## Usage
 
 Use `data.table` subset `[` operator the same way you would use `data.frame` one, but...
-`DT[...]` builds in `base::subset()` and `base::with()` interfaces making `DF[...]` syntax much more flexible for expressing complex data processing operations in comprehensive and concise way. To the standard `DF[i, j]` it adds third argument `by` allowing `DT[i, j, by]` to perform computation by groups. As a result:
 
-* no need to prefix columns with `DT$`
-* any R expression is allowed in `j` argument, not just list of columns
+* no need to prefix each column with `DT$` (like `subset()` and `with()` but built-in)
+* any R expression using any package is allowed in `j` argument, not just list of columns
 * extra argument `by` to compute `j` expression by group
-* less error-prone, faster to read and type
-* allows various internal optimizations for speed and memory
 
 ```r
 library(data.table)
