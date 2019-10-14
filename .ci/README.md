@@ -32,6 +32,7 @@ Artifacts:
 
 Test jobs:
 - `r-release` on Linux, includes code coverage check
+- _(might be disabled)_ `r-release` on OSX
 
 Artifacts:
 - R packages repository having `data.table` sources only, url: `https://Rdatatable.github.io/data.table`
@@ -41,6 +42,7 @@ Artifacts:
 
 Test jobs:
 - Windows `r-release`
+- _(might be disabled)_ Windows `r-devel`
 
 Artifacts:
 - Windows `r-release` binaries accessed only via web UI

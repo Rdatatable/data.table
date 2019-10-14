@@ -551,6 +551,7 @@ void writeCategString(void *col, int64_t row, char **pch)
 }
 
 int init_stream(z_stream *stream) {
+  stream->next_in = Z_NULL;
   stream->zalloc = Z_NULL;
   stream->zfree = Z_NULL;
   stream->opaque = Z_NULL;
@@ -577,9 +578,6 @@ int compressbuff(z_stream *stream, void* dest, size_t *destLen, const void* sour
   *destLen = stream->total_out;
   return err == Z_STREAM_END ? Z_OK : err;
 }
-
-static int failed = 0;
-static int rowsPerBatch;
 
 void fwriteMain(fwriteMainArgs args)
 {
@@ -618,8 +616,8 @@ void fwriteMain(fwriteMainArgs args)
       DTPRINT("... ");
       for (int j=args.ncol-10; j<args.ncol; j++) DTPRINT("%d ", args.whichFun[j]);
     }
-    DTPRINT("\nargs.doRowNames=%d args.rowNames=%d doQuote=%d args.nrow=%d args.ncol=%d eolLen=%d\n",
-          args.doRowNames, args.rowNames, doQuote, args.nrow, args.ncol, eolLen);
+    DTPRINT("\nargs.doRowNames=%d args.rowNames=%d doQuote=%d args.nrow=%lld args.ncol=%d eolLen=%d\n",
+          args.doRowNames, args.rowNames, doQuote, (long long)args.nrow, args.ncol, eolLen);
   }
 
   // Calculate upper bound for line length. Numbers use a fixed maximum (e.g. 12 for integer) while strings find the longest
@@ -737,7 +735,7 @@ void fwriteMain(fwriteMainArgs args)
           STOP("Unable to allocate %d MiB for zbuffer: %s", zbuffSize / 1024 / 1024, strerror(errno));  // # nocov
         }
         size_t zbuffUsed = zbuffSize;
-        ret1 = compressbuff(&stream, zbuff, &zbuffUsed, buff, (int)(ch-buff));
+        ret1 = compressbuff(&stream, zbuff, &zbuffUsed, buff, (size_t)(ch-buff));
         if (ret1==Z_OK) ret2 = WRITE(f, zbuff, (int)zbuffUsed);
         deflateEnd(&stream);
         free(zbuff);
@@ -766,6 +764,7 @@ void fwriteMain(fwriteMainArgs args)
 
   // Decide buffer size and rowsPerBatch for each thread
   // Once rowsPerBatch is decided it can't be changed
+  int rowsPerBatch=0;
   if (maxLineLen*2>buffSize) { buffSize=2*maxLineLen; rowsPerBatch=2; }
   else rowsPerBatch = buffSize / maxLineLen;
   if (rowsPerBatch > args.nrow) rowsPerBatch = args.nrow;
@@ -774,13 +773,10 @@ void fwriteMain(fwriteMainArgs args)
   int nth = args.nth;
   if (numBatches < nth) nth = numBatches;
   if (args.verbose) {
-    DTPRINT("Writing %d rows in %d batches of %d rows (each buffer size %dMB, showProgress=%d, nth=%d) ... ",
-            args.nrow, numBatches, rowsPerBatch, args.buffMB, args.showProgress, nth);
-    if (f==-1) DTPRINT("\n");
+    DTPRINT("Writing %lld rows in %d batches of %d rows (each buffer size %dMB, showProgress=%d, nth=%d)\n",
+            (long long)args.nrow, numBatches, rowsPerBatch, args.buffMB, args.showProgress, nth);
   }
   t0 = wallclock();
-
-  failed=0;  // static global so checkBuffer can set it. -errno for malloc or realloc fails, +errno for write fail
 
   bool hasPrinted = false;
   int maxBuffUsedPC = 0;
@@ -795,41 +791,52 @@ void fwriteMain(fwriteMainArgs args)
     deflateEnd(&stream);
   }
 
+  errno=0;
+  char *buffPool = malloc(nth*(size_t)buffSize);
+  if (!buffPool) {
+    // # nocov start
+    STOP("Unable to allocate %d MB * %d thread buffers; '%d: %s'. Please read ?fwrite for nThread, buffMB and verbose options.",
+         (size_t)buffSize/(1024^2), nth, errno, strerror(errno));
+    // # nocov end
+  }
+  char *zbuffPool = NULL;
+  if (args.is_gzip) {
+    zbuffPool = malloc(nth*(size_t)zbuffSize);
+    if (!zbuffPool) {
+      // # nocov start
+      free(buffPool);
+      STOP("Unable to allocate %d MB * %d thread compressed buffers; '%d: %s'. Please read ?fwrite for nThread, buffMB and verbose options.",
+         (size_t)zbuffSize/(1024^2), nth, errno, strerror(errno));
+      // # nocov end
+    }
+  }
+
+  bool failed = false;   // naked (unprotected by atomic) write to bool ok because only ever write true in this special paradigm
+  int failed_compress = 0; // the first thread to fail writes their reason here when they first get to ordered section
+  char failed_msg[1001] = "";  // to hold zlib's msg; copied out of zlib in ordered section just in case the msg is allocated within zlib
+  int failed_write = 0;    // same. could use +ve and -ve in the same code but separate it out to trace Solaris problem, #3931
+
   #pragma omp parallel num_threads(nth)
   {
-    // local to each thread
+    int me = omp_get_thread_num();
+    int my_failed_compress = 0;
     char *ch, *myBuff;
+    ch = myBuff = buffPool + me*buffSize;
+
     void *myzBuff = NULL;
     size_t myzbuffUsed = 0;
-
-    // each thread has its own buffer. malloc and errno are thread-safe.
-    ch = myBuff = malloc(buffSize);
-    if (myBuff==NULL) failed=-errno;
-    // each thread has its own zbuffer
     z_stream mystream;
-    if (args.is_gzip && !failed) {
-      myzBuff = malloc(zbuffSize);
-      if (myzBuff==NULL) failed=-errno;
-      if(init_stream(&mystream)) {
-          failed = -998; // # nocov
+    if (args.is_gzip) {
+      myzBuff = zbuffPool + me*zbuffSize;
+      if (init_stream(&mystream)) { // this should be thread safe according to zlib documentation
+        failed = true;              // # nocov
+        my_failed_compress = -998;  // # nocov
       }
     }
 
-    // Do not rely on availability of '#omp cancel' new in OpenMP v4.0 (July 2013).
-    // OpenMP v4.0 is in gcc 4.9+ (https://gcc.gnu.org/wiki/openmp) but
-    // not yet in clang as of v3.8 (http://openmp.llvm.org/)
-    // If not-me failed, I'll see shared 'failed', fall through loop, free my buffer
-    // and after parallel section, single thread will call STOP() safely.
-
-    #pragma omp single
-    {
-      nth = omp_get_num_threads();  // update nth with the actual nth (might be different than requested)
-    }
-    int me = omp_get_thread_num();
-
     #pragma omp for ordered schedule(dynamic)
     for(int64_t start=0; start<args.nrow; start+=rowsPerBatch) {
-      if (failed) continue;  // Not break. See comments above about #omp cancel
+      if (failed) continue;  // Not break. Because we don't use #omp cancel yet.
       int64_t end = ((args.nrow - start)<rowsPerBatch) ? args.nrow : start + rowsPerBatch;
       for (int64_t i=start; i<end; i++) {
         // Tepid starts here (once at beginning of each per line)
@@ -852,28 +859,33 @@ void fwriteMain(fwriteMainArgs args)
         // Tepid again (once at the end of each line)
         ch--;  // backup onto the last sep after the last column. ncol>=1 because 0-columns was caught earlier.
         write_chars(args.eol, &ch);  // overwrite last sep with eol instead
-        if (failed) break; // this thread stop writing rows; fall through to clear up and STOP() below
       }
       // compress buffer if gzip
       if (args.is_gzip && !failed) {
-        if (!failed) {
-          myzbuffUsed = zbuffSize;
-          failed = compressbuff(&mystream, myzBuff, &myzbuffUsed, myBuff, (int)(ch-myBuff));
-        }
-        deflateReset(&mystream);
+        myzbuffUsed = zbuffSize;
+        int ret = compressbuff(&mystream, myzBuff, &myzbuffUsed, myBuff, (size_t)(ch-myBuff));
+        if (ret) { failed=true; my_failed_compress=ret; }
+        else deflateReset(&mystream);
       }
       #pragma omp ordered
       {
-        if (!failed) { // a thread ahead of me could have failed below while I was working or waiting above
+        if (failed) {
+          // # nocov start
+          if (failed_compress==0 && my_failed_compress!=0) {
+            failed_compress = my_failed_compress;
+            if (mystream.msg!=NULL) strncpy(failed_msg, mystream.msg, 1000); // copy zlib's msg for safe use after deflateEnd just in case zlib allocated the message
+          }
+          // else another thread could have failed below while I was working or waiting above; their reason got here first
+          // # nocov end
+        } else {
+          errno=0;
           if (f==-1) {
             *ch='\0';  // standard C string end marker so DTPRINT knows where to stop
             DTPRINT(myBuff);
-          } else if ((args.is_gzip)) {
-            if (WRITE(f, myzBuff, (int)(myzbuffUsed)) == -1) {
-              failed=errno;  // # nocov
-            }
-          } else if (WRITE(f, myBuff, (int)(ch - myBuff)) == -1) {
-              failed=errno;  // # nocov
+          } else if ((args.is_gzip ? WRITE(f, myzBuff, (int)myzbuffUsed)
+                                   : WRITE(f, myBuff,  (int)(ch-myBuff))) == -1) {
+            failed=true;         // # nocov
+            failed_write=errno;  // # nocov
           }
 
           int used = 100*((double)(ch-myBuff))/buffSize;  // percentage of original buffMB
@@ -888,9 +900,9 @@ void fwriteMain(fwriteMainArgs args)
             int ETA = (int)((args.nrow-end)*((now-startTime)/end));
             if (hasPrinted || ETA >= 2) {
               if (args.verbose && !hasPrinted) DTPRINT("\n");
-              DTPRINT("\rWritten %.1f%% of %d rows in %d secs using %d thread%s. "
+              DTPRINT("\rWritten %.1f%% of %lld rows in %d secs using %d thread%s. "
                       "maxBuffUsed=%d%%. ETA %d secs.      ",
-                       (100.0*end)/args.nrow, args.nrow, (int)(now-startTime), nth, nth==1?"":"s",
+                       (100.0*end)/args.nrow, (long long)args.nrow, (int)(now-startTime), nth, nth==1?"":"s",
                        maxBuffUsedPC, ETA);
               // TODO: use progress() as in fread
               nextTime = now+1;
@@ -921,9 +933,9 @@ void fwriteMain(fwriteMainArgs args)
     if (args.is_gzip) {
       deflateEnd(&mystream);
     }
-    free(myBuff);
-    free(myzBuff);
   }
+  free(buffPool);
+  free(zbuffPool);
 
   // Finished parallel region and can call R API safely now.
   if (hasPrinted) {
@@ -943,12 +955,15 @@ void fwriteMain(fwriteMainArgs args)
   // If a write failed, the line above tries close() to clean up, but that might fail as well. So the
   // '&& !failed' is to not report the error as just 'closing file' but the next line for more detail
   // from the original error.
-  if (failed<0) {
-    STOP("Error %d: one or more threads failed to allocate buffers or there was a compression error."        // # nocov
-         " Please try again with verbose=TRUE and try searching online for this error message.\n", failed);  // # nocov
-  } else if (failed>0) {
-    STOP("%s: '%s'", strerror(failed), args.filename);  // # nocov
+  if (failed) {
+    // # nocov start
+    if (failed_compress)
+      STOP("zlib v%s deflate() returned error %d with z_stream.msg '%s'. %s\n", zlibVersion(), failed_compress, failed_msg,
+           args.verbose ? "Please include the full output above in your data.table bug report."
+                        : "Please retry fwrite() with verbose=TRUE and include the full output with your data.table bug report.");
+    if (failed_write)
+      STOP("%s: '%s'", strerror(failed_write), args.filename);
+    // # nocov end
   }
-  return;
 }
 
