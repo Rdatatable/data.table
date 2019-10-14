@@ -12,6 +12,10 @@
 
 2. Compilation failed on CRAN's MacOS due to an older version of `zlib.h/zconf.h` which did not have `z_const` defined, [#3939](https://github.com/Rdatatable/data.table/issues/3939). Other open-source projects unrelated to R have experienced this problem on MacOS too. We have followed the common practice of removing `z_const` to support the older `zlib` versions, and data.table's release procedures have gained a `grep` to ensure `z_const` isn't used again by accident in future. The library `zlib` is used for `fwrite`'s new feature of multithreaded compression on-the-fly; see item 3 of 1.12.4 below.
 
+3. A runtime error in `fwrite`'s compression, but only observed so far on Solaris 10 32bit with zlib 1.2.8 (Apr 2013), [#3931](https://github.com/Rdatatable/data.table/issues/3931): `Error -2: one or more threads failed to allocate buffers or there was a compression error.` In case it happens again, this area has been made more robust and the error more detailed. As is often the case, investigating the Solaris problem revealed secondary issues in the same area of the code. In this case, some `%d` in verbose output should have been `%lld`. This obliquity that CRAN's Solaris provides is greatly appreciated.
+
+4. A leak could occur in the event of an unsupported column type error, or if working memory cannot all be allocated; [#3940](https://github.com/Rdatatable/data.table/issues/3940). Found thanks to `clang`'s Leak Sanitizer (prompted by CRAN's diligent use of latest tools), and two tests in the test suite which tested the unsupported type error.
+
 ## NOTES
 
 
