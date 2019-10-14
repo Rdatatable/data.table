@@ -813,6 +813,7 @@ void fwriteMain(fwriteMainArgs args)
 
   bool failed = false;   // naked (unprotected by atomic) write to bool ok because only ever write true in this special paradigm
   int failed_compress = 0; // the first thread to fail writes their reason here when they first get to ordered section
+  char failed_msg[1001] = "";  // to hold zlib's msg; copied out of zlib in ordered section just in case the msg is allocated within zlib
   int failed_write = 0;    // same. could use +ve and -ve in the same code but separate it out to trace Solaris problem, #3931
 
   #pragma omp parallel num_threads(nth)
@@ -869,7 +870,10 @@ void fwriteMain(fwriteMainArgs args)
       #pragma omp ordered
       {
         if (failed) {
-          if (failed_compress==0 && my_failed_compress!=0) failed_compress = my_failed_compress;  // # nocov
+          if (failed_compress==0 && my_failed_compress!=0) {
+            failed_compress = my_failed_compress;                            // # nocov
+            if (mystream.msg!=NULL) strncpy(failed_msg, mystream.msg, 1000); // # nocov; copy zlib's msg for safe use after deflateEnd just in case zlib allocated the message
+          }
           // else another thread could have failed below while I was working or waiting above; their reason got here first
         } else {
           errno=0;
@@ -952,9 +956,9 @@ void fwriteMain(fwriteMainArgs args)
   if (failed) {
     // # nocov start
     if (failed_compress)
-      STOP("zlib v%s deflate() returned error %d. Please search data.table's GitHub, StackOverflow tag, and zlib documentation for this error message. %s\n",
-           zlibVersion(), failed_compress, args.verbose ? "Please include the full output above in your data.table bug report."
-                                                        : "Please retry fwrite() with verbose=TRUE which may help you track down the issue.");
+      STOP("zlib v%s deflate() returned error %d with z_stream.msg '%s'. %s\n", zlibVersion(), failed_compress, failed_msg,
+           args.verbose ? "Please include the full output above in your data.table bug report."
+                        : "Please retry fwrite() with verbose=TRUE and include the full output with your data.table bug report.");
     if (failed_write)
       STOP("%s: '%s'", strerror(failed_write), args.filename);
     // # nocov end
