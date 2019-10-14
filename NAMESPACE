@@ -81,9 +81,14 @@ S3method(as.data.table, default)
 S3method(as.data.frame, data.table)
 S3method(as.list, data.table)
 S3method(as.matrix, data.table)
-#S3method(cbind, data.table)
-#S3method(rbind, data.table)
-export(.rbind.data.table)
+if (getRversion() >= "4.0.0") {
+  # this version number must be the same as in .onLoad
+  # fix in R in Sep 2019 (#3948) makes c|rbind S3 dispatch work; see FAQ 2.24.
+  # if we register these methods always though, the previous workaround no longer works in R<4.0.0. Hence only register in R>=4.0.0.
+  S3method(cbind, data.table)
+  S3method(rbind, data.table)
+}
+export(.rbind.data.table) # continue to export for now because it has been exported in the past so it may be depended on
 S3method(dim, data.table)
 S3method(dimnames, data.table)
 S3method("dimnames<-", data.table)
