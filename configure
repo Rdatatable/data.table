@@ -26,10 +26,14 @@ version=`pkg-config --modversion zlib`
 echo "zlib ${version} is available ok"
 
 lib=`pkg-config --libs zlib`
-expr "$lib" : ".*-lz\b" >/dev/null
+expr "$lib" : ".*-lz$" >/dev/null
 if [ $? -ne 0 ]; then
-  echo "zlib is linked using ${lib} which does not include the standard -lz. Please report to data.table issue tracker on GitHub."
-  exit 1
+  expr "$lib" : ".*-lz " >/dev/null
+  # would use \b in one expr but MacOS does not support \b
+  if [ $? -ne 0 ]; then
+    echo "zlib is linked using ${lib} which does not include the standard -lz. Please report to data.table issue tracker on GitHub."
+    exit 1
+  fi
 fi
 
 exit 0
