@@ -39,6 +39,7 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
   is_na = data.table:::is_na
   is.sorted = data.table:::is.sorted
   isReallyReal = data.table:::isReallyReal
+  isRealReallyInt = data.table:::isRealReallyInt
   melt.data.table = data.table:::melt.data.table  # for test 1953.4
   null.data.table = data.table:::null.data.table
   print.data.table = data.table:::print.data.table
@@ -16369,6 +16370,23 @@ test(2120.06, vDT[c("B","C","A"), on=.(i_id), .N, by=.EACHI][iDT[i_id, order(e_d
 test(2120.07, iDT[(i_id), order(e_date, e_time)], c(3L,4L,1L,2L))  # wrapping with () is different; uses character column to self-join
 test(2120.08, tmp[iDT[(i_id), order(e_date, e_time)]],             # different result with the NA
               data.table(i_id=c("A",NA,"B","C"), N=c(5L,NA,5L,5L)))
+
+# isRealReallyInt #3966, tests based on 1514
+x = as.numeric(sample(10))
+test(2121.01, isRealReallyInt(x), TRUE)
+x = as.numeric(sample(c(1:5, NA)))
+test(2121.02, isRealReallyInt(x), TRUE)
+x = c(1:2, NaN, NA)
+test(2121.03, isRealReallyInt(x), FALSE)
+x = c(1:2, Inf, NA)
+test(2121.04, isRealReallyInt(x), FALSE)
+x = c(1:2, -Inf, NA)
+test(2121.05, isRealReallyInt(x), FALSE)
+x = runif(2)
+test(2121.06, isRealReallyInt(x), FALSE)
+x = numeric()
+test(2121.07, isRealReallyInt(x), TRUE)
+test(2121.08, isRealReallyInt(9L), FALSE) # does not satisfy isReal
 
 
 ###################################

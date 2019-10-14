@@ -12,6 +12,13 @@ bool isRealReallyInt(SEXP x) {
   return i==n;
 }
 
+SEXP isRealReallyIntR(SEXP x) {
+  SEXP ans = PROTECT(allocVector(LGLSXP, 1));
+  LOGICAL(ans)[0] = (int)isRealReallyInt(x);
+  UNPROTECT(1);
+  return ans;
+}
+
 SEXP isReallyReal(SEXP x) {
   SEXP ans = PROTECT(allocVector(INTSXP, 1));
   INTEGER(ans)[0] = 0;
@@ -29,7 +36,7 @@ SEXP isReallyReal(SEXP x) {
     if (i<n) INTEGER(ans)[0] = i+1;  // return the location of first element which is really real; i.e. not an integer
   }
   UNPROTECT(1);
-  return(ans);
+  return ans;
 }
 
 bool allNA(SEXP x, bool errorForBadType) {
