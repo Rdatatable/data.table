@@ -9639,9 +9639,10 @@ test(1658.40, fwrite(matrix(1:4, nrow=2, ncol=2, dimnames = list(c("ra","rb"),c(
 # fwrite compress
 test(1658.41, fwrite(data.table(a=c(1:3), b=c(1:3)), compress="gzip"), output='a,b\n1,1\n2,2\n3,3')  # compress ignored on console
 DT = data.table(a=rep(1:2,each=100), b=rep(1:4,each=25))
-fwrite(DT, file=f1<-tempfile(fileext=".gz"))
-fwrite(DT, file=f2<-tempfile())
-test(1658.42, file.info(f1)$size < file.info(f2)$size)  # 74 < 804  (file.size() isn't available in R 3.1.0)
+test(1658.421, fwrite(DT, file=f1<-tempfile(fileext=".gz"), verbose=TRUE), NULL,
+               output="args.nrow=200 args.ncol=2.*maxLineLen=5[12].*Writing 200 rows in 1 batches of 200 rows.*nth=1")  # [12] for Windows where eolLen==2
+test(1658.422, fwrite(DT, file=f2<-tempfile()), NULL)
+test(1658.423, file.info(f1)$size < file.info(f2)$size)  # 74 < 804  (file.size() isn't available in R 3.1.0)
 if (test_R.utils) test(1658.43, fread(f1), DT)  # use fread to decompress gz (works cross-platform)
 fwrite(DT, file=f3<-tempfile(), compress="gzip")   # compress to filename not ending .gz
 test(1658.44, file.info(f3)$size, file.info(f1)$size)

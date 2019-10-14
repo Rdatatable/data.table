@@ -16,6 +16,8 @@ rm ./src/*.so
 rm ./src/*.o
 rm -rf ./data.table.Rcheck
 
+checkbashisms ./configure  # for portability; e.g. Solaris 10 running Bourne shell; #3964
+
 # Ensure no non-ASCII, other than in README.md is ok
 # tests.Rraw in particular have failed CRAN Solaris (only) due to this.
 grep -RI --exclude-dir=".git" --exclude="*.md" --exclude="*~" --color='auto' -P -n "[\x80-\xFF]" ./

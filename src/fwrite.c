@@ -551,6 +551,7 @@ void writeCategString(void *col, int64_t row, char **pch)
 }
 
 int init_stream(z_stream *stream) {
+  stream->next_in = Z_NULL;
   stream->zalloc = Z_NULL;
   stream->zfree = Z_NULL;
   stream->opaque = Z_NULL;
@@ -615,8 +616,8 @@ void fwriteMain(fwriteMainArgs args)
       DTPRINT("... ");
       for (int j=args.ncol-10; j<args.ncol; j++) DTPRINT("%d ", args.whichFun[j]);
     }
-    DTPRINT("\nargs.doRowNames=%d args.rowNames=%d doQuote=%d args.nrow=%d args.ncol=%d eolLen=%d\n",
-          args.doRowNames, args.rowNames, doQuote, args.nrow, args.ncol, eolLen);
+    DTPRINT("\nargs.doRowNames=%d args.rowNames=%d doQuote=%d args.nrow=%lld args.ncol=%d eolLen=%d\n",
+          args.doRowNames, args.rowNames, doQuote, (long long)args.nrow, args.ncol, eolLen);
   }
 
   // Calculate upper bound for line length. Numbers use a fixed maximum (e.g. 12 for integer) while strings find the longest
@@ -734,7 +735,7 @@ void fwriteMain(fwriteMainArgs args)
           STOP("Unable to allocate %d MiB for zbuffer: %s", zbuffSize / 1024 / 1024, strerror(errno));  // # nocov
         }
         size_t zbuffUsed = zbuffSize;
-        ret1 = compressbuff(&stream, zbuff, &zbuffUsed, buff, (int)(ch-buff));
+        ret1 = compressbuff(&stream, zbuff, &zbuffUsed, buff, (size_t)(ch-buff));
         if (ret1==Z_OK) ret2 = WRITE(f, zbuff, (int)zbuffUsed);
         deflateEnd(&stream);
         free(zbuff);
@@ -772,9 +773,8 @@ void fwriteMain(fwriteMainArgs args)
   int nth = args.nth;
   if (numBatches < nth) nth = numBatches;
   if (args.verbose) {
-    DTPRINT("Writing %d rows in %d batches of %d rows (each buffer size %dMB, showProgress=%d, nth=%d) ... ",
-            args.nrow, numBatches, rowsPerBatch, args.buffMB, args.showProgress, nth);
-    if (f==-1) DTPRINT("\n");
+    DTPRINT("Writing %lld rows in %d batches of %d rows (each buffer size %dMB, showProgress=%d, nth=%d)\n",
+            (long long)args.nrow, numBatches, rowsPerBatch, args.buffMB, args.showProgress, nth);
   }
   t0 = wallclock();
 
@@ -813,6 +813,7 @@ void fwriteMain(fwriteMainArgs args)
 
   bool failed = false;   // naked (unprotected by atomic) write to bool ok because only ever write true in this special paradigm
   int failed_compress = 0; // the first thread to fail writes their reason here when they first get to ordered section
+  char failed_msg[1001] = "";  // to hold zlib's msg; copied out of zlib in ordered section just in case the msg is allocated within zlib
   int failed_write = 0;    // same. could use +ve and -ve in the same code but separate it out to trace Solaris problem, #3931
 
   #pragma omp parallel num_threads(nth)
@@ -827,7 +828,7 @@ void fwriteMain(fwriteMainArgs args)
     z_stream mystream;
     if (args.is_gzip) {
       myzBuff = zbuffPool + me*zbuffSize;
-      if (init_stream(&mystream)) {
+      if (init_stream(&mystream)) { // this should be thread safe according to zlib documentation
         failed = true;              // # nocov
         my_failed_compress = -998;  // # nocov
       }
@@ -862,28 +863,29 @@ void fwriteMain(fwriteMainArgs args)
       // compress buffer if gzip
       if (args.is_gzip && !failed) {
         myzbuffUsed = zbuffSize;
-        int ret = compressbuff(&mystream, myzBuff, &myzbuffUsed, myBuff, (int)(ch-myBuff));
+        int ret = compressbuff(&mystream, myzBuff, &myzbuffUsed, myBuff, (size_t)(ch-myBuff));
         if (ret) { failed=true; my_failed_compress=ret; }
         else deflateReset(&mystream);
       }
       #pragma omp ordered
       {
         if (failed) {
-          if (failed_compress==0 && my_failed_compress!=0) failed_compress = my_failed_compress;  // # nocov
+          // # nocov start
+          if (failed_compress==0 && my_failed_compress!=0) {
+            failed_compress = my_failed_compress;
+            if (mystream.msg!=NULL) strncpy(failed_msg, mystream.msg, 1000); // copy zlib's msg for safe use after deflateEnd just in case zlib allocated the message
+          }
           // else another thread could have failed below while I was working or waiting above; their reason got here first
+          // # nocov end
         } else {
           errno=0;
           if (f==-1) {
             *ch='\0';  // standard C string end marker so DTPRINT knows where to stop
             DTPRINT(myBuff);
-          } else if (args.is_gzip) {
-            if (WRITE(f, myzBuff, (int)(myzbuffUsed)) == -1) {
-              failed=true;         // # nocov
-              failed_write=errno;  // # nocov
-            }
-          } else if (WRITE(f, myBuff, (int)(ch - myBuff)) == -1) {
-              failed=true;          // # nocov
-              failed_write=errno;  // # nocov
+          } else if ((args.is_gzip ? WRITE(f, myzBuff, (int)myzbuffUsed)
+                                   : WRITE(f, myBuff,  (int)(ch-myBuff))) == -1) {
+            failed=true;         // # nocov
+            failed_write=errno;  // # nocov
           }
 
           int used = 100*((double)(ch-myBuff))/buffSize;  // percentage of original buffMB
@@ -898,9 +900,9 @@ void fwriteMain(fwriteMainArgs args)
             int ETA = (int)((args.nrow-end)*((now-startTime)/end));
             if (hasPrinted || ETA >= 2) {
               if (args.verbose && !hasPrinted) DTPRINT("\n");
-              DTPRINT("\rWritten %.1f%% of %d rows in %d secs using %d thread%s. "
+              DTPRINT("\rWritten %.1f%% of %lld rows in %d secs using %d thread%s. "
                       "maxBuffUsed=%d%%. ETA %d secs.      ",
-                       (100.0*end)/args.nrow, args.nrow, (int)(now-startTime), nth, nth==1?"":"s",
+                       (100.0*end)/args.nrow, (long long)args.nrow, (int)(now-startTime), nth, nth==1?"":"s",
                        maxBuffUsedPC, ETA);
               // TODO: use progress() as in fread
               nextTime = now+1;
@@ -956,7 +958,9 @@ void fwriteMain(fwriteMainArgs args)
   if (failed) {
     // # nocov start
     if (failed_compress)
-      STOP("Error %d: compression error. Please retry with verbose=TRUE and search online for this error message.\n", failed_compress);
+      STOP("zlib v%s deflate() returned error %d with z_stream.msg '%s'. %s\n", zlibVersion(), failed_compress, failed_msg,
+           args.verbose ? "Please include the full output above in your data.table bug report."
+                        : "Please retry fwrite() with verbose=TRUE and include the full output with your data.table bug report.");
     if (failed_write)
       STOP("%s: '%s'", strerror(failed_write), args.filename);
     // # nocov end
