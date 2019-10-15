@@ -888,9 +888,9 @@ void fwriteMain(fwriteMainArgs args)
             int ETA = (int)((args.nrow-end)*((now-startTime)/end));
             if (hasPrinted || ETA >= 2) {
               if (args.verbose && !hasPrinted) DTPRINT(_("\n"));
-              DTPRINT(_("\rWritten %.1f%% of %d rows in %d secs using %d thread%s. maxBuffUsed=%d%%. ETA %d secs.      "),
-                       (100.0*end)/args.nrow, args.nrow, (int)(now-startTime), nth, nth==1?"":"s",
-                       maxBuffUsedPC, ETA);
+              DTPRINT("\rWritten %.1f%% of %d rows in %d secs using %d thread%s. maxBuffUsed=%d%%. ETA %d secs.      ",
+                      (100.0*end)/args.nrow, args.nrow, (int)(now-startTime), nth, nth==1?"":"s",
+                      maxBuffUsedPC, ETA);
               // TODO: use progress() as in fread
               nextTime = now+1;
               hasPrinted = true;
@@ -928,7 +928,7 @@ void fwriteMain(fwriteMainArgs args)
   if (hasPrinted) {
     // # nocov start
     if (!failed) { // clear the progress meter
-      DTPRINT(_("\r                                                                       ")
+      DTPRINT("\r                                                                       "
               "                                                              \r");
     } else {       // don't clear any potentially helpful output before error
       DTPRINT(_("\n"));
