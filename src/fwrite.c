@@ -889,7 +889,7 @@ void fwriteMain(fwriteMainArgs args)
             if (hasPrinted || ETA >= 2) {
               if (args.verbose && !hasPrinted) DTPRINT(_("\n"));
               DTPRINT(_("\rWritten %.1f%% of %d rows in %d secs using %d thread%s. ")
-                      "maxBuffUsed=%d%%. ETA %d secs.      ",
+                      _("maxBuffUsed=%d%%. ETA %d secs.      "),
                        (100.0*end)/args.nrow, args.nrow, (int)(now-startTime), nth, nth==1?"":"s",
                        maxBuffUsedPC, ETA);
               // TODO: use progress() as in fread
@@ -945,10 +945,9 @@ void fwriteMain(fwriteMainArgs args)
   // from the original error.
   if (failed<0) {
     STOP(_("Error %d: one or more threads failed to allocate buffers or there was a compression error.")        // # nocov
-         " Please try again with verbose=TRUE and try searching online for this error message.\n", failed);  // # nocov
+         _(" Please try again with verbose=TRUE and try searching online for this error message.\n"), failed);  // # nocov
   } else if (failed>0) {
     STOP(_("%s: '%s'"), strerror(failed), args.filename);  // # nocov
   }
   return;
 }
-
