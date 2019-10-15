@@ -360,9 +360,9 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
             error(_("Column %d of j's result for the first group is NULL. We rely on the column types of the first result to decide the type expected for the remaining groups (and require consistency). NULL columns are acceptable for later groups (and those are replaced with NA of appropriate type and recycled) but not for the first. Please use a typed empty vector instead, such as integer() or numeric()."), j+1);
           if (LOGICAL(verbose)[0] && !isNull(getAttrib(thiscol, R_NamesSymbol))) {
             if (wasvector) {
-              Rprintf("j appears to be a named vector. The same names will likely be created over and over again for each group and slow things down. Try and pass a named list (which data.table optimizes) or an unnamed list() instead.\n");
+              Rprintf(_("j appears to be a named vector. The same names will likely be created over and over again for each group and slow things down. Try and pass a named list (which data.table optimizes) or an unnamed list() instead.\n"));
             } else {
-              Rprintf("Column %d of j is a named vector (each item down the rows is named, somehow). Please remove those names for efficiency (to save creating them over and over for each group). They are ignored anyway.\n", j+1);
+              Rprintf(_("Column %d of j is a named vector (each item down the rows is named, somehow). Please remove those names for efficiency (to save creating them over and over for each group). They are ignored anyway.\n"), j+1);
             }
           }
           SET_VECTOR_ELT(ans, ngrpcols+j, allocVector(TYPEOF(thiscol), estn));
@@ -370,7 +370,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
         }
         SEXP jvalnames = PROTECT(getAttrib(jval, R_NamesSymbol));
         if (!isNull(jvalnames)) {
-          if (LOGICAL(verbose)[0]) Rprintf("The result of j is a named list. It's very inefficient to create the same names over and over again for each group. When j=list(...), any names are detected, removed and put back after grouping has completed, for efficiency. Using j=transform(), for example, prevents that speedup (consider changing to :=). This message may be upgraded to warning in future.\n");  // e.g. test 104 has j=transform().
+          if (LOGICAL(verbose)[0]) Rprintf(_("The result of j is a named list. It's very inefficient to create the same names over and over again for each group. When j=list(...), any names are detected, removed and put back after grouping has completed, for efficiency. Using j=transform(), for example, prevents that speedup (consider changing to :=). This message may be upgraded to warning in future.\n"));  // e.g. test 104 has j=transform().
           // names of result come from the first group and the names of remaining groups are ignored (all that matters for them is that the number of columns (and their types) match the first group.
           SEXP names2 = PROTECT(allocVector(STRSXP,ngrpcols+njval));
           //  for (j=0; j<ngrpcols; j++) SET_STRING_ELT(names2, j, STRING_ELT(bynames,j));  // These get set back up in R
@@ -382,7 +382,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
         UNPROTECT(1); // jvalnames
       } else {
         estn = ((double)ngrp/i)*1.1*(ansloc+maxn);
-        if (LOGICAL(verbose)[0]) Rprintf("dogroups: growing from %d to %d rows\n", length(VECTOR_ELT(ans,0)), estn);
+        if (LOGICAL(verbose)[0]) Rprintf(_("dogroups: growing from %d to %d rows\n"), length(VECTOR_ELT(ans,0)), estn);
         if (length(ans) != ngrpcols + njval) error(_("dogroups: length(ans)[%d]!=ngrpcols[%d]+njval[%d]"),length(ans),ngrpcols,njval);
         for (int j=0; j<length(ans); ++j) SET_VECTOR_ELT(ans, j, growVector(VECTOR_ELT(ans,j), estn));
       }
@@ -440,7 +440,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
   }
   if (isNull(lhs) && ans!=NULL) {
     if (ansloc < LENGTH(VECTOR_ELT(ans,0))) {
-      if (LOGICAL(verbose)[0]) Rprintf("Wrote less rows (%d) than allocated (%d).\n",ansloc,LENGTH(VECTOR_ELT(ans,0)));
+      if (LOGICAL(verbose)[0]) Rprintf(_("Wrote less rows (%d) than allocated (%d).\n"),ansloc,LENGTH(VECTOR_ELT(ans,0)));
       for (int j=0; j<length(ans); j++) SET_VECTOR_ELT(ans, j, growVector(VECTOR_ELT(ans,j), ansloc));
       // shrinks (misuse of word 'grow') back to the rows written, otherwise leak until ...
       // ... TO DO: set truelength to LENGTH(VECTOR_ELT(ans,0)), length to ansloc and enhance finalizer to handle over-allocated rows.
@@ -452,9 +452,9 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
   if (LOGICAL(verbose)[0]) {
     if (nblock[0] && nblock[1]) error(_("Internal error: block 0 [%d] and block 1 [%d] have both run"), nblock[0], nblock[1]); // # nocov
     int w = nblock[1]>0;
-    Rprintf("\n  %s took %.3fs for %d groups\n", w ? "collecting discontiguous groups" : "memcpy contiguous groups",
+    Rprintf(_("\n  %s took %.3fs for %d groups\n"), w ? "collecting discontiguous groups" : "memcpy contiguous groups",
                           1.0*tblock[w]/CLOCKS_PER_SEC, nblock[w]);
-    Rprintf("  eval(j) took %.3fs for %d calls\n", 1.0*tblock[2]/CLOCKS_PER_SEC, nblock[2]);
+    Rprintf(_("  eval(j) took %.3fs for %d calls\n"), 1.0*tblock[2]/CLOCKS_PER_SEC, nblock[2]);
   }
   UNPROTECT(nprotect);
   return(ans);
@@ -495,7 +495,7 @@ SEXP growVector(SEXP x, R_len_t newlen)
   default :
     memcpy((char *)DATAPTR(newx), (char *)DATAPTR(x), len*SIZEOF(x));   // SIZEOF() returns size_t (just as sizeof()) so * shouldn't overflow // TODO remove DATAPTR
   }
-  // if (verbose) Rprintf("Growing vector from %d to %d items of type '%s'\n", len, newlen, type2char(TYPEOF(x)));
+  // if (verbose) Rprintf(_("Growing vector from %d to %d items of type '%s'\n"), len, newlen, type2char(TYPEOF(x)));
   // Would print for every column if here. Now just up in dogroups (one msg for each table grow).
   keepattr(newx,x);
   UNPROTECT(1);

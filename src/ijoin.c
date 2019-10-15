@@ -125,7 +125,7 @@ SEXP lookup(SEXP ux, SEXP xlen, SEXP indices, SEXP gaps, SEXP overlaps, SEXP mul
   }
   pass1 = clock() - start;
   if (LOGICAL(verbose)[0])
-    Rprintf("First pass on calculating lengths in lookup ... done in %8.3f seconds\n", 1.0*(pass1)/CLOCKS_PER_SEC);
+    Rprintf(_("First pass on calculating lengths in lookup ... done in %8.3f seconds\n"), 1.0*(pass1)/CLOCKS_PER_SEC);
   // second pass: allocate vectors
   start = clock();
   lookup = VECTOR_ELT(ux, uxcols-4);
@@ -138,7 +138,7 @@ SEXP lookup(SEXP ux, SEXP xlen, SEXP indices, SEXP gaps, SEXP overlaps, SEXP mul
   }
   pass2 = clock() - start;
   if (LOGICAL(verbose)[0])
-    Rprintf("Second pass on allocation in lookup ... done in %8.3f seconds\n", 1.0*(pass2)/CLOCKS_PER_SEC);
+    Rprintf(_("Second pass on allocation in lookup ... done in %8.3f seconds\n"), 1.0*(pass2)/CLOCKS_PER_SEC);
   // generate lookup
   start = clock();
   idx = Calloc(uxrows, R_len_t); // resets bits, =0
@@ -217,7 +217,7 @@ SEXP lookup(SEXP ux, SEXP xlen, SEXP indices, SEXP gaps, SEXP overlaps, SEXP mul
   }
   pass3 = clock() - start;
   if (LOGICAL(verbose)[0])
-    Rprintf("Final step in generating lookup ... done in %8.3f seconds\n", 1.0*(pass3)/CLOCKS_PER_SEC);
+    Rprintf(_("Final step in generating lookup ... done in %8.3f seconds\n"), 1.0*(pass3)/CLOCKS_PER_SEC);
   return(R_NilValue);
 }
 
@@ -325,7 +325,7 @@ SEXP overlaps(SEXP ux, SEXP imatches, SEXP multArg, SEXP typeArg, SEXP nomatchAr
   } else totlen = rows;
   end1 = clock() - start;
   if (LOGICAL(verbose)[0])
-    Rprintf("First pass on calculating lengths in overlaps ... done in %8.3f seconds\n", 1.0*(end1)/CLOCKS_PER_SEC);
+    Rprintf(_("First pass on calculating lengths in overlaps ... done in %8.3f seconds\n"), 1.0*(end1)/CLOCKS_PER_SEC);
 
   // ans[0] is the the position of 'query' and ans[1] is that of 'subject'
   // allocate f1__ and f2__ and assign 'nomatch' to f2__
@@ -724,7 +724,7 @@ SEXP overlaps(SEXP ux, SEXP imatches, SEXP multArg, SEXP typeArg, SEXP nomatchAr
   }
   end2 = clock() - start;
   if (LOGICAL(verbose)[0])
-    Rprintf("Final step, fetching indices in overlaps ... done in %8.3f seconds\n", 1.0*(end2)/CLOCKS_PER_SEC);
+    Rprintf(_("Final step, fetching indices in overlaps ... done in %8.3f seconds\n"), 1.0*(end2)/CLOCKS_PER_SEC);
   UNPROTECT(1);
   return(ans);
 }

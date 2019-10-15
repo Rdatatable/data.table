@@ -120,7 +120,7 @@ static int _selfrefok(SEXP x, Rboolean checkNames, Rboolean verbose) {
   }
   p = R_ExternalPtrAddr(v);
   if (p==NULL) {
-    if (verbose) Rprintf(".internal.selfref ptr is NULL. This is expected and normal for a data.table loaded from disk. Please remember to always setDT() immediately after loading to prevent unexpected behavior. If this table was not loaded from disk or you've already run setDT(), please report to data.table issue tracker.\n");
+    if (verbose) Rprintf(_(".internal.selfref ptr is NULL. This is expected and normal for a data.table loaded from disk. Please remember to always setDT() immediately after loading to prevent unexpected behavior. If this table was not loaded from disk or you've already run setDT(), please report to data.table issue tracker.\n"));
     return -1;
   }
   if (!isNull(p)) error(_("Internal error: .internal.selfref ptr is not NULL or R_NilValue")); // # nocov
@@ -218,7 +218,7 @@ SEXP alloccol(SEXP dt, R_len_t n, Rboolean verbose)
   if (tl>0 && tl<l) error(_("Internal error, please report (including result of sessionInfo()) to data.table issue tracker: tl (%d) < l (%d) but tl of class is marked."), tl, l); // # nocov
   if (tl>l+10000) warning(_("tl (%d) is greater than 10,000 items over-allocated (l = %d). If you didn't set the datatable.alloccol option to be very large, please report to data.table issue tracker including the result of sessionInfo()."),tl,l);
   if (n>tl) return(shallow(dt,R_NilValue,n)); // usual case (increasing alloc)
-  if (n<tl && verbose) Rprintf("Attempt to reduce allocation from %d to %d ignored. Can only increase allocation via shallow copy. Please do not use DT[...]<- or DT$someCol<-. Use := inside DT[...] instead.",tl,n);
+  if (n<tl && verbose) Rprintf(_("Attempt to reduce allocation from %d to %d ignored. Can only increase allocation via shallow copy. Please do not use DT[...]<- or DT$someCol<-. Use := inside DT[...] instead."),tl,n);
         // otherwise the finalizer can't clear up the Large Vector heap
   return(dt);
 }
@@ -314,7 +314,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
   if (isNull(rows)) {
     numToDo = nrow;
     targetlen = nrow;
-    if (verbose) Rprintf("Assigning to all %d rows\n", nrow);
+    if (verbose) Rprintf(_("Assigning to all %d rows\n"), nrow);
     // fast way to assign to whole column, without creating 1:nrow(x) vector up in R, or here in C
   } else {
     if (isReal(rows)) {
@@ -331,7 +331,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
         error(_("i[%d] is %d which is out of range [1,nrow=%d]."),i+1,rowsd[i],nrow);  // set() reaches here (test 2005.2); := reaches the same error in subset.c first
       if (rowsd[i]>=1) numToDo++;
     }
-    if (verbose) Rprintf("Assigning to %d row subset of %d rows\n", numToDo, nrow);
+    if (verbose) Rprintf(_("Assigning to %d row subset of %d rows\n"), numToDo, nrow);
     // TODO: include in message if any rows are assigned several times (e.g. by=.EACHI with dups in i)
     if (numToDo==0) {
       if (!length(newcolnames)) {
@@ -339,7 +339,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
         UNPROTECT(protecti);
         return(dt); // all items of rows either 0 or NA. !length(newcolnames) for #759
       }
-      if (verbose) Rprintf("Added %d new column%s initialized with all-NA\n",
+      if (verbose) Rprintf(_("Added %d new column%s initialized with all-NA\n"),
                            length(newcolnames), (length(newcolnames)>1)?"s":"");
     }
   }
@@ -377,12 +377,12 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
   if (any_duplicated(cols,FALSE)) error(_("Can't assign to the same column twice in the same query (duplicates detected)."));
   if (!isNull(newcolnames) && !isString(newcolnames)) error(_("newcolnames is supplied but isn't a character vector"));
   bool RHS_list_of_columns = TYPEOF(values)==VECSXP && length(cols)>1;  // initial value; may be revised below
-  if (verbose) Rprintf("RHS_list_of_columns == %s\n", RHS_list_of_columns ? "true" : "false");
+  if (verbose) Rprintf(_("RHS_list_of_columns == %s\n"), RHS_list_of_columns ? "true" : "false");
   if (TYPEOF(values)==VECSXP && length(cols)==1 && length(values)==1) {
     SEXP item = VECTOR_ELT(values,0);
     if (isNull(item) || length(item)==1 || length(item)==targetlen) {
       RHS_list_of_columns=true;
-      if (verbose) Rprintf("RHS_list_of_columns revised to true because RHS list has 1 item which is NULL, or whose length %d is either 1 or targetlen (%d). Please unwrap RHS.\n", length(item), targetlen);
+      if (verbose) Rprintf(_("RHS_list_of_columns revised to true because RHS list has 1 item which is NULL, or whose length %d is either 1 or targetlen (%d). Please unwrap RHS.\n"), length(item), targetlen);
     }
   }
   if (RHS_list_of_columns) {
@@ -393,7 +393,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
       if (length(values)==1) {   // test 351.1; c("colA","colB"):=list(13:15) uses 13:15 for both columns
         values = VECTOR_ELT(values,0);
         RHS_list_of_columns = false;
-        if (verbose) Rprintf("Recycling single RHS list item across %d columns. Please unwrap RHS.\n", length(cols));
+        if (verbose) Rprintf(_("Recycling single RHS list item across %d columns. Please unwrap RHS.\n"), length(cols));
       } else {
         error(_("Supplied %d columns to be assigned %d items. Please see NEWS for v1.12.2."), length(cols), length(values));
       }
@@ -481,12 +481,12 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
          (TYPEOF(values)!=VECSXP && i>0) // assigning the same values to a second column. Have to ensure a copy #2540
          ) {
         if (verbose) {
-          Rprintf("RHS for item %d has been duplicated because NAMED==%d MAYBE_SHARED==%d, but then is being plonked. length(values)==%d; length(cols)==%d)\n",
+          Rprintf(_("RHS for item %d has been duplicated because NAMED==%d MAYBE_SHARED==%d, but then is being plonked. length(values)==%d; length(cols)==%d)\n"),
                   i+1, NAMED(thisvalue), MAYBE_SHARED(thisvalue), length(values), length(cols));
         }
         thisvalue = copyAsPlain(thisvalue);   // PROTECT not needed as assigned as element to protected list below.
       } else {
-        if (verbose) Rprintf("Direct plonk of unnamed RHS, no copy. NAMED==%d, MAYBE_SHARED==%d\n", NAMED(thisvalue), MAYBE_SHARED(thisvalue));  // e.g. DT[,a:=as.character(a)] as tested by 754.5
+        if (verbose) Rprintf(_("Direct plonk of unnamed RHS, no copy. NAMED==%d, MAYBE_SHARED==%d\n"), NAMED(thisvalue), MAYBE_SHARED(thisvalue));  // e.g. DT[,a:=as.character(a)] as tested by 754.5
       }
       SET_VECTOR_ELT(dt, coln, thisvalue);                 // plonk new column in as it's already the correct length
       setAttrib(thisvalue, R_NamesSymbol, R_NilValue);     // clear names such as  DT[,a:=mapvector[a]]
@@ -555,7 +555,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
       if (*tc1!='_' || *(tc1+1)!='_') {
         // fix for #1396
         if (verbose) {
-          Rprintf("Dropping index '%s' as it doesn't have '__' at the beginning of its name. It was very likely created by v1.9.4 of data.table.\n", tc1);
+          Rprintf(_("Dropping index '%s' as it doesn't have '__' at the beginning of its name. It was very likely created by v1.9.4 of data.table.\n"), tc1);
         }
         setAttrib(index, a, R_NilValue);
         indexNo++;
@@ -600,7 +600,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
         setAttrib(index, a, R_NilValue);
         SET_STRING_ELT(indexNames, indexNo, NA_STRING);
         if (verbose) {
-          Rprintf("Dropping index '%s' due to an update on a key column\n", c1+2);
+          Rprintf(_("Dropping index '%s' due to an update on a key column\n"), c1+2);
         }
       } else if(newKeyLength < strlen(c1)) {
         SEXP s4Str = PROTECT(mkString(s4));
@@ -609,14 +609,14 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
           SET_TAG(s, install(s4));
           SET_STRING_ELT(indexNames, indexNo, mkChar(s4));
           if (verbose)
-            Rprintf("Shortening index '%s' to '%s' due to an update on a key column\n", c1+2, s4 + 2);
+            Rprintf(_("Shortening index '%s' to '%s' due to an update on a key column\n"), c1+2, s4 + 2);
         } else { // indexLength > 0 || shortened name present already
           // indexLength > 0 indicates reordering. Drop it to avoid spurious reordering in non-indexed columns (#2372)
           // shortened anme already present indicates that index needs to be dropped to avoid duplicate indices.
           setAttrib(index, a, R_NilValue);
           SET_STRING_ELT(indexNames, indexNo, NA_STRING);
           if (verbose)
-            Rprintf("Dropping index '%s' due to an update on a key column\n", c1+2);
+            Rprintf(_("Dropping index '%s' due to an update on a key column\n"), c1+2);
         }
         UNPROTECT(1); // s4Str
       } //else: index is not affected by assign: nothing to be done
@@ -847,7 +847,7 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source,
   } else if ((TYPEOF(target)!=TYPEOF(source) || targetIsI64!=sourceIsI64) && !isNewList(target)) {
     if (GetVerbose()) {
       // only take the (small) cost of GetVerbose() (search of options() list) when types don't match
-      Rprintf("Zero-copy coerce when assigning '%s' to '%s' column %d named '%s'.\n",
+      Rprintf(_("Zero-copy coerce when assigning '%s' to '%s' column %d named '%s'.\n"),
               sourceIsI64 ? "integer64" : type2char(TYPEOF(source)),
               targetIsI64 ? "integer64" : type2char(TYPEOF(target)),
               colnum, colname);

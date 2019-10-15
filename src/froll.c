@@ -408,7 +408,7 @@ void frollsumExact(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool 
 void frollapply(double *x, int64_t nx, double *w, int k, ans_t *ans, int align, double fill, SEXP call, SEXP rho, bool verbose) {
   if (nx < k) {
     if (verbose)
-      Rprintf("%s: window width longer than input vector, returning all NA vector\n", __func__);
+      Rprintf(_("%s: window width longer than input vector, returning all NA vector\n"), __func__);
     for (int i=0; i<nx; i++) {
       ans->dbl_v[i] = fill;
     }
@@ -432,7 +432,7 @@ void frollapply(double *x, int64_t nx, double *w, int k, ans_t *ans, int align, 
   } else {
     if (teval0==INTSXP || teval0==LGLSXP) {
       if (verbose)
-        Rprintf("%s: results from provided FUN are not of type double, coercion from integer or logical will be applied on each iteration\n", __func__);
+        Rprintf(_("%s: results from provided FUN are not of type double, coercion from integer or logical will be applied on each iteration\n"), __func__);
       ans->dbl_v[k-1] = REAL(coerceVector(eval0, REALSXP))[0];
     } else {
       error(_("%s: results from provided FUN are not of type double"), __func__);
@@ -457,12 +457,12 @@ void frollapply(double *x, int64_t nx, double *w, int k, ans_t *ans, int align, 
   if (ans->status < 3 && align < 1) {
     int k_ = align==-1 ? k-1 : floor(k/2);
     if (verbose)
-      Rprintf("%s: align %d, shift answer by %d\n", __func__, align, -k_);
+      Rprintf(_("%s: align %d, shift answer by %d\n"), __func__, align, -k_);
     memmove((char *)ans->dbl_v, (char *)ans->dbl_v + (k_*sizeof(double)), (nx-k_)*sizeof(double));
     for (int64_t i=nx-k_; i<nx; i++) {
       ans->dbl_v[i] = fill;
     }
   }
   if (verbose)
-    Rprintf("%s: took %.3fs\n", __func__, omp_get_wtime()-tic);
+    Rprintf(_("%s: took %.3fs\n"), __func__, omp_get_wtime()-tic);
 }

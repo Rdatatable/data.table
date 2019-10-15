@@ -119,7 +119,7 @@ SEXP fsort(SEXP x, SEXP verboseArg) {
 
   int nth = getDTthreads();
   int nBatch=nth*2;  // at least nth; more to reduce last-man-home; but not too large to keep counts small in cache
-  if (verbose) Rprintf("nth=%d, nBatch=%d\n",nth,nBatch);
+  if (verbose) Rprintf(_("nth=%d, nBatch=%d\n"),nth,nBatch);
 
   size_t batchSize = (xlength(x)-1)/nBatch + 1;
   if (batchSize < 1024) batchSize = 1024; // simple attempt to work reasonably for short vector. 1024*8 = 2 4kb pages
@@ -153,7 +153,7 @@ SEXP fsort(SEXP x, SEXP verboseArg) {
     if (mins[i]<min) min=mins[i];
     if (maxs[i]>max) max=maxs[i];
   }
-  if (verbose) Rprintf("Range = [%g,%g]\n", min, max);
+  if (verbose) Rprintf(_("Range = [%g,%g]\n"), min, max);
   if (min < 0.0) error(_("Cannot yet handle negatives."));
   // TODO: -0ULL should allow negatives
   //       avoid twiddle function call as expensive in recent tests (0.34 vs 2.7)
@@ -167,14 +167,14 @@ SEXP fsort(SEXP x, SEXP verboseArg) {
   int MSBNbits = maxBit > 15 ? 16 : maxBit+1;       // how many bits make up the MSB
   int shift = maxBit + 1 - MSBNbits;                // the right shift to leave the MSB bits remaining
   size_t MSBsize = 1LL<<MSBNbits;                   // the number of possible MSB values (16 bits => 65,536)
-  if (verbose) Rprintf("maxBit=%d; MSBNbits=%d; shift=%d; MSBsize=%d\n", maxBit, MSBNbits, shift, MSBsize);
+  if (verbose) Rprintf(_("maxBit=%d; MSBNbits=%d; shift=%d; MSBsize=%d\n"), maxBit, MSBNbits, shift, MSBsize);
 
   R_xlen_t *counts = calloc(nBatch*MSBsize, sizeof(R_xlen_t));
   if (counts==NULL) error(_("Unable to allocate working memory"));
   // provided MSBsize>=9, each batch is a multiple of at least one 4k page, so no page overlap
   // TODO: change all calloc, malloc and free to Calloc and Free to be robust to error() and catch ooms.
 
-  if (verbose) Rprintf("counts is %dMB (%d pages per nBatch=%d, batchSize=%lld, lastBatchSize=%lld)\n",
+  if (verbose) Rprintf(_("counts is %dMB (%d pages per nBatch=%d, batchSize=%lld, lastBatchSize=%lld)\n"),
                        nBatch*MSBsize*sizeof(R_xlen_t)/(1024*1024), nBatch*MSBsize*sizeof(R_xlen_t)/(4*1024*nBatch),
                        nBatch, batchSize, lastBatchSize);
   t[3] = wallclock();
@@ -243,12 +243,12 @@ SEXP fsort(SEXP x, SEXP verboseArg) {
     // TODO: time this qsort but likely insignificant.
 
     if (verbose) {
-      Rprintf("Top 5 MSB counts: "); for(int i=0; i<5; i++) Rprintf("%lld ", msbCounts[order[i]]); Rprintf("\n");
-      Rprintf("Reduced MSBsize from %d to ", MSBsize);
+      Rprintf(_("Top 5 MSB counts: ")); for(int i=0; i<5; i++) Rprintf(_("%lld "), msbCounts[order[i]]); Rprintf(_("\n"));
+      Rprintf(_("Reduced MSBsize from %d to "), MSBsize);
     }
     while (MSBsize>0 && msbCounts[order[MSBsize-1]] < 2) MSBsize--;
     if (verbose) {
-      Rprintf("%d by excluding 0 and 1 counts\n", MSBsize);
+      Rprintf(_("%d by excluding 0 and 1 counts\n"), MSBsize);
     }
 
     t[6] = wallclock();
@@ -305,7 +305,7 @@ SEXP fsort(SEXP x, SEXP verboseArg) {
 
   double tot = t[7]-t[0];
   if (verbose) for (int i=1; i<=7; i++) {
-    Rprintf("%d: %.3f (%4.1f%%)\n", i, t[i]-t[i-1], 100.*(t[i]-t[i-1])/tot);
+    Rprintf(_("%d: %.3f (%4.1f%%)\n"), i, t[i]-t[i-1], 100.*(t[i]-t[i-1])/tot);
   }
 
   UNPROTECT(nprotect);

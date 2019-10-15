@@ -434,7 +434,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
     if (!isInteger(ascArg) || LENGTH(ascArg)!=1)
       error(_("Input is an atomic vector (not a list of columns) but order= is not a length 1 integer"));
     if (verbose)
-      Rprintf("forder.c received a vector type '%s' length %d\n", type2char(TYPEOF(DT)), length(DT));
+      Rprintf(_("forder.c received a vector type '%s' length %d\n"), type2char(TYPEOF(DT)), length(DT));
     SEXP tt = PROTECT(allocVector(VECSXP, 1)); n_protect++;
     SET_VECTOR_ELT(tt, 0, DT);
     DT = tt;
@@ -442,7 +442,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
     INTEGER(by)[0] = 1;
   } else {
     if (verbose)
-      Rprintf("forder.c received %d rows and %d columns\n", length(VECTOR_ELT(DT,0)), length(DT));
+      Rprintf(_("forder.c received %d rows and %d columns\n"), length(VECTOR_ELT(DT,0)), length(DT));
   }
   if (!length(DT))
     error(_("Internal error: DT is an empty list() of 0 columns"));  // # nocov  should have been caught be colnamesInt, test 2099.1
@@ -504,7 +504,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
   if (n_cplx) { CplxPart=PROTECT(allocVector(REALSXP, nrow)); n_protect++; } // one alloc is reused for each part
   TEND(2);
   for (int col=0; col<ncol; col++) {
-    // Rprintf("Finding range of column %d ...\n", col);
+    // Rprintf(_("Finding range of column %d ...\n"), col);
     SEXP x = VECTOR_ELT(DT,INTEGER(by)[col]-1);
     uint64_t min=0, max=0;     // min and max of non-NA finite values
     int na_count=0, infnan_count=0;
@@ -513,7 +513,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
       if (sortType!=1 && sortType!=-1)
         Error("Item %d of order (ascending/descending) is %d. Must be +1 or -1.", col+1, sortType);
     }
-    //Rprintf("sortType = %d\n", sortType);
+    //Rprintf(_("sortType = %d\n"), sortType);
     switch(TYPEOF(x)) {
     case INTSXP : case LGLSXP :  // TODO skip LGL and assume range [0,1]
       range_i32(INTEGER(x), nrow, &min, &max, &na_count);
@@ -537,7 +537,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
         range_i64((int64_t *)REAL(x), nrow, &min, &max, &na_count);
       } else {
         if (verbose && INHERITS(x, char_Date) && INTEGER(isReallyReal(x))[0]==0) {
-          Rprintf("\n*** Column %d passed to forder is a date stored as an 8 byte double but no fractions are present. Please consider a 4 byte integer date such as IDate to save space and time.\n", col+1);
+          Rprintf(_("\n*** Column %d passed to forder is a date stored as an 8 byte double but no fractions are present. Please consider a 4 byte integer date such as IDate to save space and time.\n"), col+1);
           // Note the (slightly expensive) isReallyReal will only run when verbose is true. Prefix '***' just to make it stand out in verbose output
           // In future this could be upgraded to option warning. But I figured that's what we use verbose to do (to trace problems and look for efficiencies).
           // If an automatic coerce is desired (see discussion in #1738) then this is the point to do that in this file. Move the INTSXP case above to be
@@ -564,7 +564,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
     }
 
     uint64_t range = max-min+1 +1/*NA*/ +isReal*3/*NaN, -Inf, +Inf*/;
-    // Rprintf("range=%llu  min=%llu  max=%llu  na_count==%d\n", range, min, max, na_count);
+    // Rprintf(_("range=%llu  min=%llu  max=%llu  na_count==%d\n"), range, min, max, na_count);
 
     int maxBit=0;
     while (range) { maxBit++; range>>=1; }
@@ -613,7 +613,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
 
     const uint64_t naval = ((nalast==1) == asc) ? max+1+isReal*2 : min-1-isReal*2;
     const uint64_t nanval = ((nalast==1) == asc) ? max+2 : min-2;  // only used when isReal
-    // Rprintf("asc=%d  min2=%llu  max2=%llu  naval==%llu  nanval==%llu\n", asc, min2, max2, naval, nanval);
+    // Rprintf(_("asc=%d  min2=%llu  max2=%llu  naval==%llu  nanval==%llu\n"), asc, min2, max2, naval, nanval);
 
     // several columns could squash into 1 byte. due to this bit squashing is why we deal
     // with asc|desc here, otherwise it could be done in the ugrp sorting by reversing the ugrp insert sort
@@ -706,11 +706,11 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
     }
     nradix += nbyte-1+(spare==0);
     TEND(4)
-    // Rprintf("Written key for column %d\n", col);
+    // Rprintf(_("Written key for column %d\n"), col);
   }
   if (key[nradix]!=NULL) nradix++;  // nradix now number of bytes in key
   #ifdef TIMING_ON
-  Rprintf("nradix=%d\n", nradix);
+  Rprintf(_("nradix=%d\n"), nradix);
   #endif
 
   int nth = getDTthreads();
@@ -782,10 +782,10 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
     int last=NBLOCK-1;
     while (last>=0 && nblock[last]==0) last--; // remove unused timing slots
     for (int i=0; i<=last; i++) {
-      Rprintf("Timing block %2d%s = %8.3f   %8d\n", i, (i>=17&&i<=19)?"(*)":"   ", tblock[i], nblock[i]);
+      Rprintf(_("Timing block %2d%s = %8.3f   %8d\n"), i, (i>=17&&i<=19)?"(*)":"   ", tblock[i], nblock[i]);
     }
     for (int i=0; i<=256; i++) {
-      if (stat[i]) Rprintf("stat[%03d]==%10zd\n", i, stat[i]);
+      if (stat[i]) Rprintf(_("stat[%03d]==%10zd\n"), i, stat[i]);
     }
   }
   #endif
@@ -821,7 +821,7 @@ void radix_r(const int from, const int to, const int radix) {
   }
   else if (my_n<=256) {
     // if (getDTthreads()==1)
-    // Rprintf("insert clause: radix=%d, my_n=%d, from=%d, to=%d\n", radix, my_n, from, to);
+    // Rprintf(_("insert clause: radix=%d, my_n=%d, from=%d, to=%d\n"), radix, my_n, from, to);
     // insert sort with some twists:
     // i) detects if grouped; if sortType==0 can then skip
     // ii) keeps group appearance order at byte level to minimize movement
@@ -933,7 +933,7 @@ void radix_r(const int from, const int to, const int radix) {
     return;
   }
   else if (my_n<=UINT16_MAX) {    // UINT16_MAX==65535 (important not 65536)
-    // if (getDTthreads()==1) Rprintf("counting clause: radix=%d, my_n=%d\n", radix, my_n);
+    // if (getDTthreads()==1) Rprintf(_("counting clause: radix=%d, my_n=%d\n"), radix, my_n);
     uint16_t my_counts[256] = {0};  // Needs to be all-0 on entry. This ={0} initialization should be fast as it's on stack. Otherwise, we have to manage
                                     // a stack of counts anyway since this is called recursively and these counts are needed to make the recursive calls.
                                     // This thread-private stack alloc has no chance of false sharing and gives omp and compiler best chance.

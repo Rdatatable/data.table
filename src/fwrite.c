@@ -227,7 +227,7 @@ void writeFloat64(double *col, int64_t row, char **pch)
     uint64_t l = y * SIZE_SF;  // low magnitude mult 10^NUM_SF
     // l now contains NUM_SF+1 digits as integer where repeated /10 below is accurate
 
-    // if (verbose) Rprintf("\nTRACE: acc=%.20Le ; y=%.20Le ; l=%llu ; e=%d     ", acc, y, l, exp);
+    // if (verbose) Rprintf(_("\nTRACE: acc=%.20Le ; y=%.20Le ; l=%llu ; e=%d     "), acc, y, l, exp);
 
     if (l%10 >= 5) l+=10; // use the last digit to round
     l /= 10;
@@ -610,15 +610,15 @@ void fwriteMain(fwriteMainArgs args)
   if (eolLen<=0) STOP("eol must be 1 or more bytes (usually either \\n or \\r\\n) but is length %d", eolLen);
 
   if (args.verbose) {
-    DTPRINT("Column writers: ");
+    DTPRINT(_("Column writers: "));
     if (args.ncol<=50) {
-      for (int j=0; j<args.ncol; j++) DTPRINT("%d ", args.whichFun[j]);
+      for (int j=0; j<args.ncol; j++) DTPRINT(_("%d "), args.whichFun[j]);
     } else {
-      for (int j=0; j<30; j++) DTPRINT("%d ", args.whichFun[j]);
-      DTPRINT("... ");
-      for (int j=args.ncol-10; j<args.ncol; j++) DTPRINT("%d ", args.whichFun[j]);
+      for (int j=0; j<30; j++) DTPRINT(_("%d "), args.whichFun[j]);
+      DTPRINT(_("... "));
+      for (int j=args.ncol-10; j<args.ncol; j++) DTPRINT(_("%d "), args.whichFun[j]);
     }
-    DTPRINT("\nargs.doRowNames=%d args.rowNames=%d doQuote=%d args.nrow=%d args.ncol=%d eolLen=%d\n",
+    DTPRINT(_("\nargs.doRowNames=%d args.rowNames=%d doQuote=%d args.nrow=%d args.ncol=%d eolLen=%d\n"),
           args.doRowNames, args.rowNames, doQuote, args.nrow, args.ncol, eolLen);
   }
 
@@ -658,7 +658,7 @@ void fwriteMain(fwriteMainArgs args)
     if (width<naLen) width = naLen;
     maxLineLen += width*2;  // *2 in case the longest string is all quotes and they all need to be escaped
   }
-  if (args.verbose) DTPRINT("maxLineLen=%zd. Found in %.3fs\n", maxLineLen, 1.0*(wallclock()-t0));
+  if (args.verbose) DTPRINT(_("maxLineLen=%zd. Found in %.3fs\n"), maxLineLen, 1.0*(wallclock()-t0));
 
   int f=0;
   if (*args.filename=='\0') {
@@ -687,9 +687,9 @@ void fwriteMain(fwriteMainArgs args)
 
   int yamlLen = strlen(args.yaml);
   if (args.verbose) {
-    DTPRINT("Writing bom (%s), yaml (%d characters) and column names (%s) ... ",
+    DTPRINT(_("Writing bom (%s), yaml (%d characters) and column names (%s) ... "),
             args.bom?"true":"false", yamlLen, args.colNames?"true":"false");
-    if (f==-1) DTPRINT("\n");
+    if (f==-1) DTPRINT(_("\n"));
   }
   size_t headerLen = 0;
   if (args.bom) headerLen += 3;
@@ -755,9 +755,9 @@ void fwriteMain(fwriteMainArgs args)
       }
     }
   }
-  if (args.verbose) DTPRINT("done in %.3fs\n", 1.0*(wallclock()-t0));
+  if (args.verbose) DTPRINT(_("done in %.3fs\n"), 1.0*(wallclock()-t0));
   if (args.nrow == 0) {
-    if (args.verbose) DTPRINT("No data rows present (nrow==0)\n");
+    if (args.verbose) DTPRINT(_("No data rows present (nrow==0)\n"));
     if (f!=-1 && CLOSE(f)) STOP("%s: '%s'", strerror(errno), args.filename);
     return;
   }
@@ -774,9 +774,9 @@ void fwriteMain(fwriteMainArgs args)
   int nth = args.nth;
   if (numBatches < nth) nth = numBatches;
   if (args.verbose) {
-    DTPRINT("Writing %d rows in %d batches of %d rows (each buffer size %dMB, showProgress=%d, nth=%d) ... ",
+    DTPRINT(_("Writing %d rows in %d batches of %d rows (each buffer size %dMB, showProgress=%d, nth=%d) ... "),
             args.nrow, numBatches, rowsPerBatch, args.buffMB, args.showProgress, nth);
-    if (f==-1) DTPRINT("\n");
+    if (f==-1) DTPRINT(_("\n"));
   }
   t0 = wallclock();
 
@@ -887,8 +887,8 @@ void fwriteMain(fwriteMainArgs args)
             // # nocov start
             int ETA = (int)((args.nrow-end)*((now-startTime)/end));
             if (hasPrinted || ETA >= 2) {
-              if (args.verbose && !hasPrinted) DTPRINT("\n");
-              DTPRINT("\rWritten %.1f%% of %d rows in %d secs using %d thread%s. "
+              if (args.verbose && !hasPrinted) DTPRINT(_("\n"));
+              DTPRINT(_("\rWritten %.1f%% of %d rows in %d secs using %d thread%s. ")
                       "maxBuffUsed=%d%%. ETA %d secs.      ",
                        (100.0*end)/args.nrow, args.nrow, (int)(now-startTime), nth, nth==1?"":"s",
                        maxBuffUsedPC, ETA);
@@ -929,10 +929,10 @@ void fwriteMain(fwriteMainArgs args)
   if (hasPrinted) {
     // # nocov start
     if (!failed) { // clear the progress meter
-      DTPRINT("\r                                                                       "
+      DTPRINT(_("\r                                                                       ")
               "                                                              \r");
     } else {       // don't clear any potentially helpful output before error
-      DTPRINT("\n");
+      DTPRINT(_("\n"));
     }
     // # nocov end
   }

@@ -47,7 +47,7 @@ SEXP coalesce(SEXP x, SEXP inplaceArg) {
   }
   if (!inplace) {
     first = PROTECT(copyAsPlain(first)); nprotect++;
-    if (verbose) Rprintf("coalesce copied first item (inplace=FALSE)\n");
+    if (verbose) Rprintf(_("coalesce copied first item (inplace=FALSE)\n"));
   }
   void **valP = (void **)R_alloc(nval, sizeof(void *));
   switch(TYPEOF(first)) {

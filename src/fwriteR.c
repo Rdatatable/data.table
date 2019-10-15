@@ -259,11 +259,11 @@ SEXP fwriteR(
   args.dec = *CHAR(STRING_ELT(dec_Arg,0));
 
   if (!firstListColumn) {
-    if (args.verbose) Rprintf("No list columns are present. Setting sep2='' otherwise quote='auto' would quote fields containing sep2.\n");
+    if (args.verbose) Rprintf(_("No list columns are present. Setting sep2='' otherwise quote='auto' would quote fields containing sep2.\n"));
     args.sep2 = sep2 = '\0';
   } else {
     if (args.verbose) {
-      Rprintf("If quote='auto', fields will be quoted if the field contains either sep ('%c') or sep2 ('%c') because column %d is a list column.\n",
+      Rprintf(_("If quote='auto', fields will be quoted if the field contains either sep ('%c') or sep2 ('%c') because column %d is a list column.\n"),
               args.sep, args.sep2, firstListColumn );
     }
     if (args.dec==args.sep || args.dec==args.sep2 || args.sep==args.sep2) {

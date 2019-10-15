@@ -14,7 +14,7 @@ char *end(char *start) {
 void ansMsg(ans_t *ans, int n, bool verbose, const char *func) {
   for (int i=0; i<n; i++) {
     if (verbose && (ans[i].message[0][0] != '\0'))
-      Rprintf("%s: %d:\n%s", func, i+1, ans[i].message[0]);
+      Rprintf(_("%s: %d:\n%s"), func, i+1, ans[i].message[0]);
     if (ans[i].message[1][0] != '\0')
       REprintf("%s: %d:\n%s", func, i+1, ans[i].message[1]);
     if (ans[i].message[2][0] != '\0')
@@ -61,7 +61,7 @@ SEXP testMsgR(SEXP status, SEXP x, SEXP k) {
   SEXP ans = PROTECT(allocVector(VECSXP, nk * nx)); protecti++;
   ans_t *vans = (ans_t *)R_alloc(nx*nk, sizeof(ans_t));
   if (verbose)
-    Rprintf("%s: allocating memory for results %dx%d\n", __func__, nx, nk);
+    Rprintf(_("%s: allocating memory for results %dx%d\n"), __func__, nx, nk);
   for (R_len_t i=0; i<nx; i++) {
     for (R_len_t j=0; j<nk; j++) {
       SET_VECTOR_ELT(ans, i*nk+j, allocVector(INTSXP, 1));

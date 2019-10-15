@@ -185,7 +185,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
     free(colMapRaw);  // local scope in this branch to ensure can't be used below
 
     // to view map when debugging ...
-    // for (int i=0; i<LENGTH(l); ++i) { for (int j=0; j<ncol; ++j) Rprintf("%2d ",colMap[i*ncol + j]);  Rprintf("\n"); }
+    // for (int i=0; i<LENGTH(l); ++i) { for (int j=0; j<ncol; ++j) Rprintf(_("%2d "),colMap[i*ncol + j]);  Rprintf(_("\n")); }
   }
 
   if (fill && usenames==NA_LOGICAL) error(_("Internal error: usenames==NA but fill=TRUE. usenames should have been set to TRUE earlier with warning."));

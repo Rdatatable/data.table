@@ -123,7 +123,7 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
 
   SEXP ans = PROTECT(allocVector(VECSXP, nk * nx)); protecti++; // allocate list to keep results
   if (verbose)
-    Rprintf("%s: allocating memory for results %dx%d\n", __func__, nx, nk);
+    Rprintf(_("%s: allocating memory for results %dx%d\n"), __func__, nx, nk);
   ans_t *dans = (ans_t *)R_alloc(nx*nk, sizeof(ans_t));         // answer columns as array of ans_t struct
   double* dx[nx];                                               // pointers to source columns
   uint64_t inx[nx];                                             // to not recalculate `length(x[[i]])` we store it in extra array
@@ -195,9 +195,9 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
 
   if (verbose) {
     if (ialgo==0)
-      Rprintf("%s: %d column(s) and %d window(s), if product > 1 then entering parallel execution\n", __func__, nx, nk);
+      Rprintf(_("%s: %d column(s) and %d window(s), if product > 1 then entering parallel execution\n"), __func__, nx, nk);
     else if (ialgo==1)
-      Rprintf("%s: %d column(s) and %d window(s), not entering parallel execution here because algo='exact' will compute results in parallel\n", __func__, nx, nk);
+      Rprintf(_("%s: %d column(s) and %d window(s), not entering parallel execution here because algo='exact' will compute results in parallel\n"), __func__, nx, nk);
   }
   #pragma omp parallel for if (ialgo==0 && nx*nk>1) schedule(auto) collapse(2) num_threads(getDTthreads())
   for (R_len_t i=0; i<nx; i++) {                                // loop over multiple columns
@@ -224,7 +224,7 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
   ansMsg(dans, nx*nk, verbose, __func__);                       // raise errors and warnings, as of now messages are not being produced
 
   if (verbose)
-    Rprintf("%s: processing of %d column(s) and %d window(s) took %.3fs\n", __func__, nx, nk, omp_get_wtime()-tic);
+    Rprintf(_("%s: processing of %d column(s) and %d window(s) took %.3fs\n"), __func__, nx, nk, omp_get_wtime()-tic);
 
   UNPROTECT(protecti);
   return isVectorAtomic(obj) && length(ans) == 1 ? VECTOR_ELT(ans, 0) : ans;
@@ -294,7 +294,7 @@ SEXP frollapplyR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP align, SEXP rho) {
 
   SEXP ans = PROTECT(allocVector(VECSXP, nk * nx)); protecti++;
   if (verbose)
-    Rprintf("%s: allocating memory for results %dx%d\n", __func__, nx, nk);
+    Rprintf(_("%s: allocating memory for results %dx%d\n"), __func__, nx, nk);
   ans_t *dans = (ans_t *)R_alloc(nx*nk, sizeof(ans_t));
   double* dx[nx];
   uint64_t inx[nx];
@@ -325,7 +325,7 @@ SEXP frollapplyR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP align, SEXP rho) {
   }
 
   if (verbose)
-    Rprintf("%s: processing of %d column(s) and %d window(s) took %.3fs\n", __func__, nx, nk, omp_get_wtime()-tic);
+    Rprintf(_("%s: processing of %d column(s) and %d window(s) took %.3fs\n"), __func__, nx, nk, omp_get_wtime()-tic);
 
   UNPROTECT(protecti);
   return isVectorAtomic(obj) && length(ans) == 1 ? VECTOR_ELT(ans, 0) : ans;

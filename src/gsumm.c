@@ -95,7 +95,7 @@ SEXP gforce(SEXP env, SEXP jsub, SEXP o, SEXP f, SEXP l, SEXP irowsArg) {
     int *elem = grp + fp[g]-1;
     for (int j=0; j<grpsize[g]; j++)  elem[j] = g;
   }
-  if (verbose) { Rprintf("gforce initial population of grp took %.3f\n", wallclock()-started); started=wallclock(); }
+  if (verbose) { Rprintf(_("gforce initial population of grp took %.3f\n"), wallclock()-started); started=wallclock(); }
   isunsorted = 0;
   if (LENGTH(o)) {
     isunsorted = 1; // for gmedian
@@ -110,7 +110,7 @@ SEXP gforce(SEXP env, SEXP jsub, SEXP o, SEXP f, SEXP l, SEXP irowsArg) {
     int nb = nbit(nrow-1);
     int shift = MAX(nb-8, 0);  // TODO: experiment nb/2.  Here it doesn't have to be /2 currently.
     int highSize = ((nrow-1)>>shift) + 1;
-    //Rprintf("When assigning grp[o] = g, highSize=%d  nb=%d  shift=%d  nBatch=%d\n", highSize, nb, shift, nBatch);
+    //Rprintf(_("When assigning grp[o] = g, highSize=%d  nb=%d  shift=%d  nBatch=%d\n"), highSize, nb, shift, nBatch);
     int *counts = calloc(nBatch*highSize, sizeof(int));  // TODO: cache-line align and make highSize a multiple of 64
     int *TMP   = malloc(nrow*2*sizeof(int));
     if (!counts || !TMP ) error(_("Internal error: Failed to allocate counts or TMP when assigning g in gforce"));
@@ -137,7 +137,7 @@ SEXP gforce(SEXP env, SEXP jsub, SEXP o, SEXP f, SEXP l, SEXP irowsArg) {
         *p   = my_g[i];
       }
     }
-    //Rprintf("gforce assign TMP (o,g) pairs took %.3f\n", wallclock()-started); started=wallclock();
+    //Rprintf(_("gforce assign TMP (o,g) pairs took %.3f\n"), wallclock()-started); started=wallclock();
     #pragma omp parallel for num_threads(getDTthreads())
     for (int h=0; h<highSize; h++) {  // very important that high is first loop here
       for (int b=0; b<nBatch; b++) {
@@ -151,7 +151,7 @@ SEXP gforce(SEXP env, SEXP jsub, SEXP o, SEXP f, SEXP l, SEXP irowsArg) {
     }
     free(counts);
     free(TMP);
-    //Rprintf("gforce assign TMP [ (o,g) pairs ] back to grp took %.3f\n", wallclock()-started); started=wallclock();
+    //Rprintf(_("gforce assign TMP [ (o,g) pairs ] back to grp took %.3f\n"), wallclock()-started); started=wallclock();
   }
 
   high = (uint16_t *)R_alloc(nrow, sizeof(uint16_t));  // maybe better to malloc to avoid R's heap, but safer to R_alloc since it's done via eval()
@@ -191,13 +191,13 @@ SEXP gforce(SEXP env, SEXP jsub, SEXP o, SEXP f, SEXP l, SEXP irowsArg) {
     // counts is now cumulated within batch (with ending values) and we leave it that way
     // memcpy(counts + b*256, myCounts, 256*sizeof(int));  // save cumulate for later, first bucket contains position of next. For ease later in the very last batch.
   }
-  if (verbose) { Rprintf("gforce assign high and low took %.3f\n", wallclock()-started); started=wallclock(); }
+  if (verbose) { Rprintf(_("gforce assign high and low took %.3f\n"), wallclock()-started); started=wallclock(); }
 
   oo = INTEGER(o);
   ff = INTEGER(f);
 
   SEXP ans = PROTECT( eval(jsub, env) );
-  if (verbose) { Rprintf("gforce eval took %.3f\n", wallclock()-started); started=wallclock(); }
+  if (verbose) { Rprintf(_("gforce eval took %.3f\n"), wallclock()-started); started=wallclock(); }
   // if this eval() fails with R error, R will release grp for us. Which is why we use R_alloc above.
   if (isVectorAtomic(ans)) {
     SEXP tt = PROTECT(allocVector(VECSXP, 1));
@@ -213,7 +213,7 @@ void *gather(SEXP x, bool *anyNA)
 {
   double started=wallclock();
   const bool verbose = GetVerbose();
-  if (verbose) Rprintf("gather took ... ");
+  if (verbose) Rprintf(_("gather took ... "));
   switch (TYPEOF(x)) {
   case LGLSXP: case INTSXP: {
     const int *restrict thisx = INTEGER(x);
@@ -333,7 +333,7 @@ void *gather(SEXP x, bool *anyNA)
   default :
     error(_("gather implemented for INTSXP, REALSXP, and CPLXSXP but not '%s'"), type2char(TYPEOF(x)));   // # nocov
   }
-  if (verbose) { Rprintf("%.3fs\n", wallclock()-started); }
+  if (verbose) { Rprintf(_("%.3fs\n"), wallclock()-started); }
   return gx;
 }
 
@@ -346,7 +346,7 @@ SEXP gsum(SEXP x, SEXP narmArg, SEXP warnOverflowArg)
   const int n = (irowslen == -1) ? length(x) : irowslen;
   double started = wallclock();
   const bool verbose=GetVerbose();
-  if (verbose) Rprintf("This gsum took (narm=%s) ... ", narm?"TRUE":"FALSE");
+  if (verbose) Rprintf(_("This gsum took (narm=%s) ... "), narm?"TRUE":"FALSE");
   if (nrow != n) error(_("nrow [%d] != length(x) [%d] in gsum"), nrow, n);
   bool anyNA=false;
   SEXP ans;
@@ -398,7 +398,7 @@ SEXP gsum(SEXP x, SEXP narmArg, SEXP warnOverflowArg)
         }
       }
     }
-    //Rprintf("gsum int took %.3f\n", wallclock()-started);
+    //Rprintf(_("gsum int took %.3f\n"), wallclock()-started);
     if (overflow) {
       UNPROTECT(1); // discard the result with overflow
       if (warnOverflow) warning(_("The sum of an integer column for a group was more than type 'integer' can hold so the result has been coerced to 'numeric' automatically for convenience."));
@@ -565,7 +565,7 @@ SEXP gsum(SEXP x, SEXP narmArg, SEXP warnOverflowArg)
     error(_("Type '%s' not supported by GForce sum (gsum). Either add the prefix base::sum(.) or turn off GForce optimization using options(datatable.optimize=1)"), type2char(TYPEOF(x)));
   }
   copyMostAttrib(x, ans);
-  if (verbose) { Rprintf("%.3fs\n", wallclock()-started); }
+  if (verbose) { Rprintf(_("%.3fs\n"), wallclock()-started); }
   UNPROTECT(1);
   return(ans);
 }
@@ -675,7 +675,7 @@ SEXP gmean(SEXP x, SEXP narm)
   }
   free(s); free(si); free(c);
   copyMostAttrib(x, ans);
-  // Rprintf("this gmean na.rm=TRUE took %8.3f\n", 1.0*(clock()-start)/CLOCKS_PER_SEC);
+  // Rprintf(_("this gmean na.rm=TRUE took %8.3f\n"), 1.0*(clock()-start)/CLOCKS_PER_SEC);
   UNPROTECT(1);
   return(ans);
 }
@@ -795,7 +795,7 @@ SEXP gmin(SEXP x, SEXP narm)
   }
   copyMostAttrib(x, ans); // all but names,dim and dimnames. And if so, we want a copy here, not keepattr's SET_ATTRIB.
   UNPROTECT(protecti);  // ans + maybe 1 coerced ans
-  // Rprintf("this gmin took %8.3f\n", 1.0*(clock()-start)/CLOCKS_PER_SEC);
+  // Rprintf(_("this gmin took %8.3f\n"), 1.0*(clock()-start)/CLOCKS_PER_SEC);
   return(ans);
 }
 
@@ -941,7 +941,7 @@ SEXP gmax(SEXP x, SEXP narm)
   }
   copyMostAttrib(x, ans); // all but names,dim and dimnames. And if so, we want a copy here, not keepattr's SET_ATTRIB.
   UNPROTECT(protecti);
-  // Rprintf("this gmax took %8.3f\n", 1.0*(clock()-start)/CLOCKS_PER_SEC);
+  // Rprintf(_("this gmax took %8.3f\n"), 1.0*(clock()-start)/CLOCKS_PER_SEC);
   return(ans);
 }
 
@@ -1449,6 +1449,6 @@ SEXP gprod(SEXP x, SEXP narm)
   free(s);
   copyMostAttrib(x, ans);
   UNPROTECT(1);
-  // Rprintf("this gprod took %8.3f\n", 1.0*(clock()-start)/CLOCKS_PER_SEC);
+  // Rprintf(_("this gprod took %8.3f\n"), 1.0*(clock()-start)/CLOCKS_PER_SEC);
   return(ans);
 }

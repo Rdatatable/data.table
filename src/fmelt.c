@@ -172,8 +172,8 @@ SEXP checkVars(SEXP DT, SEXP id, SEXP measure, Rboolean verbose) {
     SET_VECTOR_ELT(valuecols, 0, tmp2);
     idcols = tmp;
     if (verbose) {
-      Rprintf("'measure.vars' is missing. Assigning all columns other than 'id.vars' columns as 'measure.vars'.\n");
-      if (length(tmp2)) Rprintf("Assigned 'measure.vars' are [%s].\n", CHAR(STRING_ELT(concat(dtnames, tmp2), 0)));
+      Rprintf(_("'measure.vars' is missing. Assigning all columns other than 'id.vars' columns as 'measure.vars'.\n"));
+      if (length(tmp2)) Rprintf(_("Assigned 'measure.vars' are [%s].\n"), CHAR(STRING_ELT(concat(dtnames, tmp2), 0)));
     }
   } else if (isNull(id) && !isNull(measure)) {
     switch(TYPEOF(measure)) {
@@ -208,8 +208,8 @@ SEXP checkVars(SEXP DT, SEXP id, SEXP measure, Rboolean verbose) {
       SET_VECTOR_ELT(valuecols, 0, tmp2);
     }
     if (verbose) {
-      Rprintf("'id.vars' is missing. Assigning all columns other than 'measure.vars' columns as 'id.vars'.\n");
-      if (length(idcols)) Rprintf("Assigned 'id.vars' are [%s].\n", CHAR(STRING_ELT(concat(dtnames, idcols), 0)));
+      Rprintf(_("'id.vars' is missing. Assigning all columns other than 'measure.vars' columns as 'id.vars'.\n"));
+      if (length(idcols)) Rprintf(_("Assigned 'id.vars' are [%s].\n"), CHAR(STRING_ELT(concat(dtnames, idcols), 0)));
     }
   } else if (!isNull(id) && !isNull(measure)) {
     switch(TYPEOF(id)) {
@@ -384,7 +384,7 @@ SEXP getvaluecols(SEXP DT, SEXP dtnames, Rboolean valfactor, Rboolean verbose, s
     if (!data->isidentical[i])
       warning(_("'measure.vars' [%s] are not all of the same type. By order of hierarchy, the molten data value column will be of type '%s'. All measure variables not of type '%s' will be coerced too. Check DETAILS in ?melt.data.table for more on coercion.\n"), CHAR(STRING_ELT(concat(dtnames, thisvaluecols), 0)), type2char(data->maxtype[i]), type2char(data->maxtype[i]));
     if (data->maxtype[i] == VECSXP && data->narm) {
-      if (verbose) Rprintf("The molten data value type is a list at item %d. 'na.rm=TRUE' is ignored.\n", i+1);
+      if (verbose) Rprintf(_("The molten data value type is a list at item %d. 'na.rm=TRUE' is ignored.\n"), i+1);
       data->narm = FALSE;
     }
   }
@@ -679,7 +679,7 @@ SEXP fmelt(SEXP DT, SEXP id, SEXP measure, SEXP varfactor, SEXP valfactor, SEXP 
   if (!isLogical(verboseArg)) error(_("Argument 'verbose' should be logical TRUE/FALSE"));
   int ncol = LENGTH(DT);
   if (!ncol) {
-    if (verbose) Rprintf("ncol(data) is 0. Nothing to melt. Returning original data.table.");
+    if (verbose) Rprintf(_("ncol(data) is 0. Nothing to melt. Returning original data.table."));
     return(DT);
   }
   int protecti=0;

@@ -89,10 +89,10 @@ SEXP freadR(
   ch = args.input;
   while (*ch!='\0' && *ch!='\n' && *ch!='\r') ch++;
   if (*ch!='\0' || args.input[0]=='\0') {
-    if (verbose) DTPRINT("Input contains a \\n or is \"\". Taking this to be text input (not a filename)\n");
+    if (verbose) DTPRINT(_("Input contains a \\n or is \")\". Taking this to be text input (not a filename)\n");
     args.filename = NULL;
   } else {
-    if (verbose) DTPRINT("Input contains no \\n. Taking this to be a filename to open\n");
+    if (verbose) DTPRINT(_("Input contains no \\n. Taking this to be a filename to open\n"));
     args.filename = args.input;
     args.input = NULL;
   }

@@ -79,7 +79,7 @@ SEXP between(SEXP x, SEXP lower, SEXP upper, SEXP incbounds, SEXP NAboundsArg, S
         ansp[i] = (lok && uok) ? l+open<=elem && elem<=u-open : ((uok && elem>u-open) || (lok && elem<l+open)) ? FALSE : NA_LOGICAL;
       }
     }
-    if (verbose) Rprintf("between parallel processing of integer took %8.3fs\n", omp_get_wtime()-tic);
+    if (verbose) Rprintf(_("between parallel processing of integer took %8.3fs\n"), omp_get_wtime()-tic);
   } break;
 
   case REALSXP:
@@ -109,7 +109,7 @@ SEXP between(SEXP x, SEXP lower, SEXP upper, SEXP incbounds, SEXP NAboundsArg, S
           ansp[i] = (lok && uok) ? l+open<=elem && elem<=u-open : ((uok && elem>u-open) || (lok && elem<l+open)) ? FALSE : NA_LOGICAL;
         }
       }
-      if (verbose) Rprintf("between parallel processing of integer64 took %8.3fs\n", omp_get_wtime()-tic);
+      if (verbose) Rprintf(_("between parallel processing of integer64 took %8.3fs\n"), omp_get_wtime()-tic);
     } else {
       if (Rinherits(lower, char_integer64) || Rinherits(upper, char_integer64))
         error(_("x is not integer64 but lower and/or upper is integer64. Please align classes."));
@@ -137,7 +137,7 @@ SEXP between(SEXP x, SEXP lower, SEXP upper, SEXP incbounds, SEXP NAboundsArg, S
             ansp[i] = (lok && uok) ? l<elem && elem<u : ((uok && elem>=u) || (lok && elem<=l)) ? FALSE : NA_LOGICAL;
           }
         }
-        if (verbose) Rprintf("between parallel processing of double with open bounds took %8.3fs\n", omp_get_wtime()-tic);
+        if (verbose) Rprintf(_("between parallel processing of double with open bounds took %8.3fs\n"), omp_get_wtime()-tic);
       } else {
         if (NAbounds) {
           #pragma omp parallel for num_threads(getDTthreads())
@@ -154,7 +154,7 @@ SEXP between(SEXP x, SEXP lower, SEXP upper, SEXP incbounds, SEXP NAboundsArg, S
             ansp[i] = (lok && uok) ? l<=elem && elem<=u : ((uok && elem>u) || (lok && elem<l)) ? FALSE : NA_LOGICAL;
           }
         }
-        if (verbose) Rprintf("between parallel processing of double with closed bounds took %8.3fs\n", omp_get_wtime()-tic);
+        if (verbose) Rprintf(_("between parallel processing of double with closed bounds took %8.3fs\n"), omp_get_wtime()-tic);
       }
     }
     break;
@@ -184,7 +184,7 @@ SEXP between(SEXP x, SEXP lower, SEXP upper, SEXP incbounds, SEXP NAboundsArg, S
         ansp[i] = (lok && uok) ? LCMP && UCMP : ((uok && !UCMP) || (lok && !LCMP)) ? FALSE : NA_LOGICAL;
       }
     }
-    if (verbose) Rprintf("between non-parallel processing of character took %8.3fs\n", omp_get_wtime()-tic);
+    if (verbose) Rprintf(_("between non-parallel processing of character took %8.3fs\n"), omp_get_wtime()-tic);
   } break;
   default:
     error(_("Internal error: between.c unsupported type '%s' should have been caught at R level"), type2char(TYPEOF(x)));  // # nocov
