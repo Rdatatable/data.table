@@ -19,7 +19,7 @@ static int getIntEnv(const char *name, int def)
   long int ans = strtol(val, &end, 10);  // ignores leading whitespace. If it fully consumed the string, *end=='\0' and isspace('\0')==false
   while (isspace(*end)) end++;  // ignore trailing whitespace
   if (errno || (size_t)(end-val)!=nchar || ans<1 || ans>INT_MAX) {
-    warning("Ignoring invalid %s==\"%s\". Not an integer >= 1. Please remove any characters that are not a digit [0-9]. See ?data.table::setDTthreads.", name, val);
+    warning(_("Ignoring invalid %s==\")%s\". Not an integer >= 1. Please remove any characters that are not a digit [0-9]. See ?data.table::setDTthreads.", name, val);
     return def;
   }
   return (int)ans;
@@ -37,7 +37,7 @@ void initDTthreads() {
   int perc = getIntEnv("R_DATATABLE_NUM_PROCS_PERCENT", 50); // use "NUM_PROCS" to use the same name as the OpenMP function this uses
   // 50% of logical CPUs by default; half of 8 is 4 on laptop with 4 cores. Leaves plenty of room for other processes: #3395 & #3298
   if (perc<=1 || perc>100) {
-    warning("Ignoring invalid R_DATATABLE_NUM_PROCS_PERCENT==%d. If used it must be an integer between 2 and 100. Default is 50. See ?setDTtheads.", perc);
+    warning(_("Ignoring invalid R_DATATABLE_NUM_PROCS_PERCENT==%d. If used it must be an integer between 2 and 100. Default is 50. See ?setDTtheads."), perc);
     // not allowing 1 is to catch attempts to use 1 or 1.0 to represent 100%.
     perc = 50;
   }

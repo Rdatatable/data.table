@@ -216,7 +216,7 @@ SEXP alloccol(SEXP dt, R_len_t n, Rboolean verbose)
   // R <= 2.13.2 and we didn't catch uninitialized tl somehow
   if (tl<0) error(_("Internal error, tl of class is marked but tl<0.")); // # nocov
   if (tl>0 && tl<l) error(_("Internal error, please report (including result of sessionInfo()) to data.table issue tracker: tl (%d) < l (%d) but tl of class is marked."), tl, l); // # nocov
-  if (tl>l+10000) warning("tl (%d) is greater than 10,000 items over-allocated (l = %d). If you didn't set the datatable.alloccol option to be very large, please report to data.table issue tracker including the result of sessionInfo().",tl,l);
+  if (tl>l+10000) warning(_("tl (%d) is greater than 10,000 items over-allocated (l = %d). If you didn't set the datatable.alloccol option to be very large, please report to data.table issue tracker including the result of sessionInfo()."),tl,l);
   if (n>tl) return(shallow(dt,R_NilValue,n)); // usual case (increasing alloc)
   if (n<tl && verbose) Rprintf("Attempt to reduce allocation from %d to %d ignored. Can only increase allocation via shallow copy. Please do not use DT[...]<- or DT$someCol<-. Use := inside DT[...] instead.",tl,n);
         // otherwise the finalizer can't clear up the Large Vector heap
@@ -319,7 +319,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
   } else {
     if (isReal(rows)) {
       rows = PROTECT(coerceVector(rows, INTSXP)); protecti++;
-      warning("Coerced i from numeric to integer. Please pass integer for efficiency; e.g., 2L rather than 2");
+      warning(_("Coerced i from numeric to integer. Please pass integer for efficiency; e.g., 2L rather than 2"));
     }
     if (!isInteger(rows))
       error(_("i is type '%s'. Must be integer, or numeric is coerced with warning. If i is a logical subset, simply wrap with which(), and take the which() outside the loop if possible for efficiency."), type2char(TYPEOF(rows)));
@@ -344,7 +344,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
     }
   }
   if (!length(cols)) {
-    warning("length(LHS)==0; no columns to delete or assign RHS to.");   // test 1295 covers
+    warning(_("length(LHS)==0; no columns to delete or assign RHS to."));   // test 1295 covers
     *_Last_updated = 0;
     UNPROTECT(protecti);
     return(dt);
@@ -369,7 +369,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
   } else {
     if (isReal(cols)) {
       cols = PROTECT(coerceVector(cols, INTSXP)); protecti++;
-      warning("Coerced j from numeric to integer. Please pass integer for efficiency; e.g., 2L rather than 2");
+      warning(_("Coerced j from numeric to integer. Please pass integer for efficiency; e.g., 2L rather than 2"));
     }
     if (!isInteger(cols))
       error(_("j is type '%s'. Must be integer, character, or numeric is coerced with warning."), type2char(TYPEOF(cols)));
@@ -422,13 +422,13 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
       if (newcolnum<0 || newcolnum>=length(newcolnames))
         error(_("Internal error in assign.c: length(newcolnames)=%d, length(names)=%d, coln=%d"), length(newcolnames), length(names), coln); // # nocov
       if (isNull(thisvalue)) {
-        warning("Column '%s' does not exist to remove",CHAR(STRING_ELT(newcolnames,newcolnum)));
+        warning(_("Column '%s' does not exist to remove"),CHAR(STRING_ELT(newcolnames,newcolnum)));
         continue;
       }
       // RHS of assignment to new column is zero length but we'll use its type to create all-NA column of that type
     }
     if (isMatrix(thisvalue) && (j=INTEGER(getAttrib(thisvalue, R_DimSymbol))[1]) > 1)  // matrix passes above (considered atomic vector)
-      warning("%d column matrix RHS of := will be treated as one vector", j);
+      warning(_("%d column matrix RHS of := will be treated as one vector"), j);
     const SEXP existing = (coln+1)<=oldncol ? VECTOR_ELT(dt,coln) : R_NilValue;
     if (isFactor(existing) &&
       !isString(thisvalue) && TYPEOF(thisvalue)!=INTSXP && TYPEOF(thisvalue)!=LGLSXP && !isReal(thisvalue) && !isNewList(thisvalue)) {  // !=INTSXP includes factor
@@ -451,7 +451,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
       if (oldtncol==0) error(_("This data.table has either been loaded from disk (e.g. using readRDS()/load()) or constructed manually (e.g. using structure()). Please run setDT() or setalloccol() on it first (to pre-allocate space for new columns) before assigning by reference to it."));   // #2996
       error(_("Internal error: oldtncol(%d) < oldncol(%d). Please report to data.table issue tracker, including result of sessionInfo()."), oldtncol, oldncol); // # nocov
     }
-    if (oldtncol>oldncol+10000L) warning("truelength (%d) is greater than 10,000 items over-allocated (length = %d). See ?truelength. If you didn't set the datatable.alloccol option very large, please report to data.table issue tracker including the result of sessionInfo().",oldtncol, oldncol);
+    if (oldtncol>oldncol+10000L) warning(_("truelength (%d) is greater than 10,000 items over-allocated (length = %d). See ?truelength. If you didn't set the datatable.alloccol option very large, please report to data.table issue tracker including the result of sessionInfo()."),oldtncol, oldncol);
     if (oldtncol < oldncol+LENGTH(newcolnames))
       error(_("Internal error: DT passed to assign has not been allocated enough column slots. l=%d, tl=%d, adding %d"), oldncol, oldtncol, LENGTH(newcolnames));  // # nocov
     if (!selfrefnamesok(dt,verbose))
@@ -830,7 +830,7 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source,
       }
     }
   } else if (isString(source) && !isString(target) && !isNewList(target)) {
-    warning("Coercing 'character' RHS to '%s' to match the type of the target column (column %d named '%s').",
+    warning(_("Coercing 'character' RHS to '%s' to match the type of the target column (column %d named '%s')."),
             type2char(TYPEOF(target)), colnum, colname);
     // this "Coercing ..." warning first to give context in case coerceVector warns 'NAs introduced by coercion'
     source = PROTECT(coerceVector(source, TYPEOF(target))); protecti++;
@@ -841,7 +841,7 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source,
     }
     // as in base R; e.g. let as.double(list(1,2,3)) work but not as.double(list(1,c(2,4),3))
     // relied on by NNS, simstudy and table.express; tests 1294.*
-    warning("Coercing 'list' RHS to '%s' to match the type of the target column (column %d named '%s').",
+    warning(_("Coercing 'list' RHS to '%s' to match the type of the target column (column %d named '%s')."),
             type2char(TYPEOF(target)), colnum, colname);
     source = PROTECT(coerceVector(source, TYPEOF(target))); protecti++;
   } else if ((TYPEOF(target)!=TYPEOF(source) || targetIsI64!=sourceIsI64) && !isNewList(target)) {

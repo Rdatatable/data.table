@@ -188,7 +188,7 @@ static inline int64_t clamp_szt(int64_t x, int64_t lower, int64_t upper) {
  * Parameter `limit` cannot exceed 500.
  * The data might contain % characters. Therefore, careful to ensure that if the msg
  * is constructed manually (using say snprintf) that warning(), stop()
- * and Rprintf() are all called as warning("%s", msg) and not warning(msg).
+ * and Rprintf() are all called as warning(_("%s"), msg) and not warning(msg).
  */
 static const char* strlim(const char *ch, size_t limit) {
   static char buf[1002];

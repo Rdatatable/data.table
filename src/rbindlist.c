@@ -13,7 +13,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
   Rboolean usenames = LOGICAL(usenamesArg)[0];
   const bool fill = LOGICAL(fillArg)[0];
   if (fill && usenames!=TRUE) {
-    if (usenames==FALSE) warning("use.names= cannot be FALSE when fill is TRUE. Setting use.names=TRUE."); // else no warning if usenames==NA (default)
+    if (usenames==FALSE) warning(_("use.names= cannot be FALSE when fill is TRUE. Setting use.names=TRUE.")); // else no warning if usenames==NA (default)
     usenames=TRUE;
   }
   const bool idcol = !isNull(idcolArg);
@@ -55,7 +55,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
   if (numZero) {  // #1871
     SEXP names = getAttrib(VECTOR_ELT(l, firstZeroItem), R_NamesSymbol);
     const char *ch = names==R_NilValue ? "" : CHAR(STRING_ELT(names, firstZeroCol));
-    warning("Column %d ['%s'] of item %d is length 0. This (and %d other%s like it) has been filled with NA (NULL for list columns) to make each item uniform.",
+    warning(_("Column %d ['%s'] of item %d is length 0. This (and %d other%s like it) has been filled with NA (NULL for list columns) to make each item uniform."),
             firstZeroCol+1, ch, firstZeroItem+1, numZero-1, numZero==2?"":"s");
   }
   if (nrow==0 && ncol==0) return(R_NilValue);
@@ -207,7 +207,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
           SEXP s = getAttrib(VECTOR_ELT(l, i), R_NamesSymbol);
           int w2 = colMap[i*ncol + j];
           const char *str = isString(s) ? CHAR(STRING_ELT(s,w2)) : "";
-          snprintf(buff, 1000, "Column %d ['%s'] of item %d is missing in item %d. Use fill=TRUE to fill with NA (NULL for list columns), or use.names=FALSE to ignore column names.%s",
+          snprintf(buff, 1000, _("Column %d ['%s'] of item %d is missing in item %d. Use fill=TRUE to fill with NA (NULL for list columns), or use.names=FALSE to ignore column names.%s"),
                         w2+1, str, i+1, missi+1, extra );
           if (usenames==TRUE) error(buff);
           i = LENGTH(l); // break from outer i loop
@@ -216,7 +216,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
         if (w!=j && usenames==NA_LOGICAL) {
           SEXP s = getAttrib(VECTOR_ELT(l, i), R_NamesSymbol);
           if (!isString(s) || i==0) error(_("Internal error: usenames==NA but an out-of-order name has been found in an item with no names or the first item. [%d]"), i);
-          snprintf(buff, 1000, "Column %d ['%s'] of item %d appears in position %d in item %d. Set use.names=TRUE to match by column name, or use.names=FALSE to ignore column names.%s",
+          snprintf(buff, 1000, _("Column %d ['%s'] of item %d appears in position %d in item %d. Set use.names=TRUE to match by column name, or use.names=FALSE to ignore column names.%s"),
                                w+1, CHAR(STRING_ELT(s,w)), i+1, j+1, i, extra);
           i = LENGTH(l);
           break;
@@ -225,14 +225,14 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
       if (buff[0]) {
         SEXP opt = GetOption(install("datatable.rbindlist.check"), R_NilValue);
         if (!isNull(opt) && !(isString(opt) && length(opt)==1)) {
-          warning("options()$datatable.rbindlist.check is set but is not a single string. See news item 5 in v1.12.2.");
+          warning(_("options()$datatable.rbindlist.check is set but is not a single string. See news item 5 in v1.12.2."));
           opt = R_NilValue;
         }
         const char *o = isNull(opt) ? "message" : CHAR(STRING_ELT(opt,0));
         if      (strcmp(o,"message")==0) { eval(PROTECT(lang2(install("message"),PROTECT(ScalarString(mkChar(buff))))), R_GlobalEnv); UNPROTECT(2); }
         else if (strcmp(o,"warning")==0) warning(buff);
         else if (strcmp(o,"error")==0)   error(buff);
-        else if (strcmp(o,"none")!=0)    warning("options()$datatable.rbindlist.check=='%s' which is not 'message'|'warning'|'error'|'none'. See news item 5 in v1.12.2.", o);
+        else if (strcmp(o,"none")!=0)    warning(_("options()$datatable.rbindlist.check=='%s' which is not 'message'|'warning'|'error'|'none'. See news item 5 in v1.12.2."), o);
       }
     }
   }
@@ -328,7 +328,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
     if (!factor) copyMostAttrib(firstCol, target); // all but names,dim and dimnames; mainly for class. And if so, we want a copy here, not keepattr's SET_ATTRIB.
 
     if (factor && anyNotStringOrFactor) {
-      // in future warn, or use list column instead ... warning("Column %d contains a factor but not all items for the column are character or factor", idcol+j+1);
+      // in future warn, or use list column instead ... warning(_("Column %d contains a factor but not all items for the column are character or factor"), idcol+j+1);
       // some coercing from (likely) integer/numeric to character will be needed. But this coerce can feasibly fail with out-of-memory, so we have to do it up-front
       // before the savetl_init() because we have no hook to clean up tl if coerceVector fails.
       if (coercedForFactor==NULL) { coercedForFactor=PROTECT(allocVector(VECSXP, LENGTH(l))); nprotect++; }
@@ -519,7 +519,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
           }
           // else coerces if needed within memrecycle; with a no-alloc direct coerce from 1.12.4 (PR #3909)
           const char *ret = memrecycle(target, R_NilValue, ansloc, thisnrow, thisCol, idcol+j+1, foundName);
-          if (ret) warning("Column %d of item %d: %s", w+1, i+1, ret);
+          if (ret) warning(_("Column %d of item %d: %s"), w+1, i+1, ret);
           // e.g. when precision is lost like assigning 3.4 to integer64; test 2007.2
           // TODO: but maxType should handle that and this should never warn
         }
@@ -530,4 +530,3 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
   UNPROTECT(nprotect);  // ans, coercedForFactor, thisCol
   return(ans);
 }
-

@@ -204,9 +204,9 @@ SEXP convertNegAndZeroIdx(SEXP idx, SEXP maxArg, SEXP allowOverMax)
       }
     }
     if (countBeyond)
-      warning("Item %d of i is %d but there are only %d rows. Ignoring this and %d more like it out of %d.", firstBeyond, idxp[firstBeyond-1], max, countBeyond-1, n);
+      warning(_("Item %d of i is %d but there are only %d rows. Ignoring this and %d more like it out of %d."), firstBeyond, idxp[firstBeyond-1], max, countBeyond-1, n);
     if (countDup)
-      warning("Item %d of i is %d which removes that item but that has occurred before. Ignoring this dup and %d other dups.", firstDup, idxp[firstDup-1], countDup-1);
+      warning(_("Item %d of i is %d which removes that item but that has occurred before. Ignoring this dup and %d other dups."), firstDup, idxp[firstDup-1], countDup-1);
     int ansn = max-countRemoved;
     ans = PROTECT(allocVector(INTSXP, ansn));
     int *ansp = INTEGER(ans);

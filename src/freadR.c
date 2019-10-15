@@ -654,7 +654,7 @@ void __halt(bool warn, const char *format, ...) {
   vsnprintf(msg, 2000, format, args);
   va_end(args);
   freadCleanup(); // this closes mmp hence why we just copied substrings from mmp to msg[] first since mmp is now invalid
-  // if (warn) warning("%s", msg);
+  // if (warn) warning(_("%s"), msg);
   //   this warning() call doesn't seem to honor warn=2 straight away in R 3.6, so now always call error() directly to be sure
   //   we were going via warning() before to get the (converted from warning) prefix in the message (which we could mimic in future)
   error(_("%s"), msg); // include "%s" because data in msg might include '%'

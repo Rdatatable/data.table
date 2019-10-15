@@ -176,7 +176,7 @@ SEXP fwriteR(
   args.filename = CHAR(STRING_ELT(filename_Arg, 0));
   args.ncol = length(DF);
   if (args.ncol==0) {
-    warning("fwrite was passed an empty list of no columns. Nothing to write.");
+    warning(_("fwrite was passed an empty list of no columns. Nothing to write."));
     return R_NilValue;
   }
   args.nrow = length(VECTOR_ELT(DF, 0));

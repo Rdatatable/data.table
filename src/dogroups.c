@@ -316,7 +316,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
         const char *warn = memrecycle(target, order, INTEGER(starts)[i]-1, grpn, RHS, 0, "");
         // can't error here because length mismatch already checked for all jval columns before starting to add any new columns
         if (warn)
-          warning("Group %d column '%s': %s", i+1, CHAR(STRING_ELT(dtnames,INTEGER(lhs)[j]-1)), warn);
+          warning(_("Group %d column '%s': %s"), i+1, CHAR(STRING_ELT(dtnames,INTEGER(lhs)[j]-1)), warn);
       }
       UNPROTECT(1); // jval
       continue;
@@ -416,7 +416,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
         // including NULL and typed empty vectors, fill with NA
         // A NULL in the first group's jval isn't allowed; caught above after allocating ans
         if (!NullWarnDone && maxn>1) {  // maxn==1 in tests 172,280,281,282,403,405 and 406
-          warning("Item %d of j's result for group %d is zero length. This will be filled with %d NAs to match the longest column in this result. Later groups may have a similar problem but only the first is reported to save filling the warning buffer.", j+1, i+1, maxn);
+          warning(_("Item %d of j's result for group %d is zero length. This will be filled with %d NAs to match the longest column in this result. Later groups may have a similar problem but only the first is reported to save filling the warning buffer."), j+1, i+1, maxn);
           NullWarnDone = TRUE;
         }
         writeNA(target, thisansloc, maxn);

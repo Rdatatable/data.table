@@ -401,7 +401,7 @@ SEXP gsum(SEXP x, SEXP narmArg, SEXP warnOverflowArg)
     //Rprintf("gsum int took %.3f\n", wallclock()-started);
     if (overflow) {
       UNPROTECT(1); // discard the result with overflow
-      if (warnOverflow) warning("The sum of an integer column for a group was more than type 'integer' can hold so the result has been coerced to 'numeric' automatically for convenience.");
+      if (warnOverflow) warning(_("The sum of an integer column for a group was more than type 'integer' can hold so the result has been coerced to 'numeric' automatically for convenience."));
       ans = PROTECT(allocVector(REALSXP, ngrp));
       double *restrict ansp = REAL(ans);
       memset(ansp, 0, ngrp*sizeof(double));
@@ -714,7 +714,7 @@ SEXP gmin(SEXP x, SEXP narm)
       }
       for (i=0; i<ngrp; i++) {
         if (INTEGER(ans)[i] == NA_INTEGER) {
-          warning("No non-missing values found in at least one group. Coercing to numeric type and returning 'Inf' for such groups to be consistent with base");
+          warning(_("No non-missing values found in at least one group. Coercing to numeric type and returning 'Inf' for such groups to be consistent with base"));
           ans = PROTECT(coerceVector(ans, REALSXP)); protecti++;
           for (i=0; i<ngrp; i++) {
             if (ISNA(REAL(ans)[i])) REAL(ans)[i] = R_PosInf;
@@ -753,7 +753,7 @@ SEXP gmin(SEXP x, SEXP narm)
       }
       for (i=0; i<ngrp; i++) {
         if (STRING_ELT(ans, i)==NA_STRING) {
-          warning("No non-missing values found in at least one group. Returning 'NA' for such groups to be consistent with base");
+          warning(_("No non-missing values found in at least one group. Returning 'NA' for such groups to be consistent with base"));
           break;
         }
       }
@@ -780,7 +780,7 @@ SEXP gmin(SEXP x, SEXP narm)
       }
       for (i=0; i<ngrp; i++) {
         if (ISNAN(REAL(ans)[i])) {
-          warning("No non-missing values found in at least one group. Returning 'Inf' for such groups to be consistent with base");
+          warning(_("No non-missing values found in at least one group. Returning 'Inf' for such groups to be consistent with base"));
           for (; i<ngrp; i++) if (ISNAN(REAL(ans)[i])) REAL(ans)[i] = R_PosInf;
           break;
         }
@@ -847,7 +847,7 @@ SEXP gmax(SEXP x, SEXP narm)
       }
       for (i=0; i<ngrp; i++) {
         if (update[i] != 1)  {// equivalent of INTEGER(ans)[thisgrp] == NA_INTEGER
-          warning("No non-missing values found in at least one group. Coercing to numeric type and returning 'Inf' for such groups to be consistent with base");
+          warning(_("No non-missing values found in at least one group. Coercing to numeric type and returning 'Inf' for such groups to be consistent with base"));
           ans = PROTECT(coerceVector(ans, REALSXP)); protecti++;
           for (i=0; i<ngrp; i++) {
             if (update[i] != 1) REAL(ans)[i] = -R_PosInf;
@@ -888,7 +888,7 @@ SEXP gmax(SEXP x, SEXP narm)
       }
       for (i=0; i<ngrp; i++) {
         if (update[i] != 1)  {// equivalent of INTEGER(ans)[thisgrp] == NA_INTEGER
-          warning("No non-missing values found in at least one group. Returning 'NA' for such groups to be consistent with base");
+          warning(_("No non-missing values found in at least one group. Returning 'NA' for such groups to be consistent with base"));
           break;
         }
       }
@@ -927,7 +927,7 @@ SEXP gmax(SEXP x, SEXP narm)
       // everything taken care of already. Just warn if all NA groups have occurred at least once
       for (i=0; i<ngrp; i++) {
         if (update[i] != 1)  { // equivalent of REAL(ans)[thisgrp] == -R_PosInf
-          warning("No non-missing values found in at least one group. Returning '-Inf' for such groups to be consistent with base");
+          warning(_("No non-missing values found in at least one group. Returning '-Inf' for such groups to be consistent with base"));
           break;
         }
       }

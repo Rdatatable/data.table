@@ -145,7 +145,7 @@ SEXP checkVars(SEXP DT, SEXP id, SEXP measure, Rboolean verbose) {
     }
     valuecols = PROTECT(allocVector(VECSXP, 1)); protecti++;
     SET_VECTOR_ELT(valuecols, 0, tmp);
-    warning("id.vars and measure.vars are internally guessed when both are 'NULL'. All non-numeric/integer/logical type columns are considered id.vars, which in this case are columns [%s]. Consider providing at least one of 'id' or 'measure' vars in future.", CHAR(STRING_ELT(concat(dtnames, idcols), 0)));
+    warning(_("id.vars and measure.vars are internally guessed when both are 'NULL'. All non-numeric/integer/logical type columns are considered id.vars, which in this case are columns [%s]. Consider providing at least one of 'id' or 'measure' vars in future."), CHAR(STRING_ELT(concat(dtnames, idcols), 0)));
   } else if (!isNull(id) && isNull(measure)) {
     switch(TYPEOF(id)) {
       case STRSXP  : PROTECT(tmp = chmatch(id, dtnames, 0)); protecti++; break;
@@ -382,7 +382,7 @@ SEXP getvaluecols(SEXP DT, SEXP dtnames, Rboolean valfactor, Rboolean verbose, s
   for (int i=0; i<data->lvalues; ++i) {
     SEXP thisvaluecols = VECTOR_ELT(data->valuecols, i);
     if (!data->isidentical[i])
-      warning("'measure.vars' [%s] are not all of the same type. By order of hierarchy, the molten data value column will be of type '%s'. All measure variables not of type '%s' will be coerced too. Check DETAILS in ?melt.data.table for more on coercion.\n", CHAR(STRING_ELT(concat(dtnames, thisvaluecols), 0)), type2char(data->maxtype[i]), type2char(data->maxtype[i]));
+      warning(_("'measure.vars' [%s] are not all of the same type. By order of hierarchy, the molten data value column will be of type '%s'. All measure variables not of type '%s' will be coerced too. Check DETAILS in ?melt.data.table for more on coercion.\n"), CHAR(STRING_ELT(concat(dtnames, thisvaluecols), 0)), type2char(data->maxtype[i]), type2char(data->maxtype[i]));
     if (data->maxtype[i] == VECSXP && data->narm) {
       if (verbose) Rprintf("The molten data value type is a list at item %d. 'na.rm=TRUE' is ignored.\n", i+1);
       data->narm = FALSE;

@@ -18,7 +18,7 @@ void ansMsg(ans_t *ans, int n, bool verbose, const char *func) {
     if (ans[i].message[1][0] != '\0')
       REprintf("%s: %d:\n%s", func, i+1, ans[i].message[1]);
     if (ans[i].message[2][0] != '\0')
-      warning("%s: %d:\n%s", func, i+1, ans[i].message[2]);
+      warning(_("%s: %d:\n%s"), func, i+1, ans[i].message[2]);
     if (ans[i].status == 3)
       error(_("%s: %d:\n%s:"), func, i+1, ans[i].message[3]);
   }
