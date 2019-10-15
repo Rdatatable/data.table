@@ -989,8 +989,7 @@ SEXP gmedian(SEXP x, SEXP narmArg) {
     }}
     break;
   default:
-    error(_("Type '%s' not supported by GForce median (gmedian). Either add the prefix stats::median(.) or turn ")
-          "off GForce optimization using options(datatable.optimize=1)", type2char(TYPEOF(x)));
+    error(_("Type '%s' not supported by GForce median (gmedian). Either add the prefix stats::median(.) or turn off GForce optimization using options(datatable.optimize=1)"), type2char(TYPEOF(x)));
   }
   if (!isInt64) copyMostAttrib(x, ans);
   // else the integer64 class needs to be dropped since double is always returned by gmedian

@@ -387,8 +387,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
   }
   if (RHS_list_of_columns) {
     if (length(values)==0)
-      error(_("Supplied %d columns to be assigned an empty list (which may be an empty data.table or data.frame since they are lists too). ")
-            "To delete multiple columns use NULL instead. To add multiple empty list columns, use list(list()).", length(cols));
+      error(_("Supplied %d columns to be assigned an empty list (which may be an empty data.table or data.frame since they are lists too). To delete multiple columns use NULL instead. To add multiple empty list columns, use list(list())."), length(cols));
     if (length(values)!=length(cols)) {
       if (length(values)==1) {   // test 351.1; c("colA","colB"):=list(13:15) uses 13:15 for both columns
         values = VECTOR_ELT(values,0);
@@ -437,8 +436,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
     }
     if (nrow>0 && targetlen>0 && vlen>1 && vlen!=targetlen && (TYPEOF(existing)!=VECSXP || TYPEOF(thisvalue)==VECSXP)) {
       // note that isNewList(R_NilValue) is true so it needs to be TYPEOF(existing)!=VECSXP above
-      error(_("Supplied %d items to be assigned to %d items of column '%s'. If you wish to 'recycle' the RHS please ")
-            "use rep() to make this intent clear to readers of your code.", vlen, targetlen, CHAR(colnam));
+      error(_("Supplied %d items to be assigned to %d items of column '%s'. If you wish to 'recycle' the RHS please use rep() to make this intent clear to readers of your code."), vlen, targetlen, CHAR(colnam));
     }
   }
   // having now checked the inputs, from this point there should be no errors so we can now proceed to
@@ -1246,4 +1244,3 @@ SEXP setcolorder(SEXP x, SEXP o)
   Free(tmp);
   return(R_NilValue);
 }
-

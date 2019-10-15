@@ -1245,7 +1245,7 @@ int freadMain(freadMainArgs _args) {
     #endif
       int nbit = 8*sizeof(char *); // #nocov
       STOP(_("Opened %s file ok but could not memory map it. This is a %dbit process. %s."), filesize_to_str(fileSize), nbit,
-           nbit<=32 ? "Please upgrade to 64bit" : "There is probably not enough contiguous virtual memory available"); // # nocov
+           nbit<=32 ? _("Please upgrade to 64bit") : _("There is probably not enough contiguous virtual memory available")); // # nocov
     }
     sof = (const char*) mmp;
     if (verbose) DTPRINT(_("  Memory mapped ok\n"));
@@ -1301,8 +1301,8 @@ int freadMain(freadMainArgs _args) {
   while (ch<eof && *ch!='\n') ch++;
   eol_one_r = (ch==eof);
   if (verbose) DTPRINT(eol_one_r ?
-    "  No \\n exists in the file at all, so single \\r (if any) will be taken as one line ending. This is unusual but will happen normally when there is no \\r either; e.g. a single line missing its end of line.\n" :
-    "  \\n has been found in the input and different lines can end with different line endings (e.g. mixed \\n and \\r\\n in one file). This is common and ideal.\n");
+    _("  No \\n exists in the file at all, so single \\r (if any) will be taken as one line ending. This is unusual but will happen normally when there is no \\r either; e.g. a single line missing its end of line.\n") :
+    _("  \\n has been found in the input and different lines can end with different line endings (e.g. mixed \\n and \\r\\n in one file). This is common and ideal.\n"));
 
   bool lastEOLreplaced = false;
   if (args.filename) {
@@ -1586,8 +1586,7 @@ int freadMain(freadMainArgs _args) {
   ch = pos; // move back to start of line since countfields() moved to next
   if (!fill && tt!=ncol) STOP(_("Internal error: first line has field count %d but expecting %d"), tt, ncol); // # nocov
   if (verbose) {
-    DTPRINT(_("  Detected %d columns on line %d. This line is either column ")
-            "names or first data row. Line starts as: <<%s>>\n",
+    DTPRINT(_("  Detected %d columns on line %d. This line is either column names or first data row. Line starts as: <<%s>>\n"),
             tt, row1line, strlim(pos, 30));
     DTPRINT(_("  Quote rule picked = %d\n"), quoteRule);
     DTPRINT(_("  fill=%s and the most number of columns found is %d\n"), fill?"true":"false", ncol);
@@ -1596,7 +1595,7 @@ int freadMain(freadMainArgs _args) {
   if (ncol==1 && lastEOLreplaced && (eof[-1]=='\n' || eof[-1]=='\r')) {
     // Multiple newlines at the end are significant in the case of 1-column files only (multiple NA at the end)
     if (fileSize%4096==0) {
-      const char *msg = "This file is very unusual: it's one single column, ends with 2 or more end-of-line (representing several NA at the end), and is a multiple of 4096, too.";
+      const char *msg = _("This file is very unusual: it's one single column, ends with 2 or more end-of-line (representing several NA at the end), and is a multiple of 4096, too.");
       if (verbose) DTPRINT(_("  Copying file in RAM. %s\n"), msg);
       ASSERT(mmp_copy==NULL, "Internal error: mmp has already been copied due to abrupt non-eol ending, so it does not end with 2 or more eol.", 1/*dummy arg for macro*/); // #nocov
       copyFile(fileSize, msg, verbose);
@@ -1910,8 +1909,7 @@ int freadMain(freadMainArgs _args) {
     if (type[j]==CT_DROP) { size[j]=0; ndrop++; continue; }
     if (type[j]<tmpType[j]) {
       if (strcmp(typeName[tmpType[j]], typeName[type[j]]) != 0) {
-        DTWARN(_("Attempt to override column %d <<%.*s>> of inherent type '%s' down to '%s' ignored. Only overrides to a higher type are currently supported. ") \
-               "If this was intended, please coerce to the lower type afterwards.",
+        DTWARN(_("Attempt to override column %d <<%.*s>> of inherent type '%s' down to '%s' ignored. Only overrides to a higher type are currently supported. If this was intended, please coerce to the lower type afterwards."),
                j+1, colNames[j].len, colNamesAnchor+colNames[j].off, typeName[tmpType[j]], typeName[type[j]]);
       }
       type[j] = tmpType[j];
@@ -2214,7 +2212,7 @@ int freadMain(freadMainArgs _args) {
                 if (verbose) {
                   char temp[1001];
                   int len = snprintf(temp, 1000,
-                    "Column %d (\"%.*s\") bumped from '%s' to '%s' due to <<%.*s>> on row %llu\n",
+                    _("Column %d (\"%.*s\") bumped from '%s' to '%s' due to <<%.*s>> on row %llu\n"),
                     j+1, colNames[j].len, colNamesAnchor + colNames[j].off,
                     typeName[abs(joldType)], typeName[abs(thisType)],
                     (int)(tch-fieldStart), fieldStart, (llu)(ctx.DTi+myNrow));

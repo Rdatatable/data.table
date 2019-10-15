@@ -193,8 +193,8 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
     // Ensure no missings in both cases, and (when usenames==NA) all columns in same order too
     // We proceeded earlier as if fill was true, so varying ncol items will have missings here
     char buff[1001] = "";
-    const char *extra = usenames==TRUE?"":" use.names='check' (default from v1.12.2) emits this message and proceeds as if use.names=FALSE for "\
-                                          " backwards compatibility. See news item 5 in v1.12.2 for options to control this message.";
+    const char *extra = usenames==TRUE?"":_(" use.names='check' (default from v1.12.2) emits this message and proceeds as if use.names=FALSE for "\
+                                            " backwards compatibility. See news item 5 in v1.12.2 for options to control this message.");
     for (int i=0; i<LENGTH(l); ++i) {
       SEXP li = VECTOR_ELT(l, i);
       if (!length(li) || !length(getAttrib(li, R_NamesSymbol))) continue;
@@ -379,13 +379,13 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
               if (tl>=last) {  // if tl>=0 then also tl>=last because last<=0
                 if (tl>=0) {
                   sprintf(warnStr,    // not direct warning as we're inside tl region
-                  "Column %d of item %d is an ordered factor but level %d ['%s'] is missing from the ordered levels from column %d of item %d. " \
-                  "Each set of ordered factor levels should be an ordered subset of the first longest. A regular factor will be created for this column.",
+                  _("Column %d of item %d is an ordered factor but level %d ['%s'] is missing from the ordered levels from column %d of item %d. " \
+                    "Each set of ordered factor levels should be an ordered subset of the first longest. A regular factor will be created for this column."),
                   w+1, i+1, k+1, CHAR(s), longestW+1, longestI+1);
                 } else {
                   sprintf(warnStr,
-                  "Column %d of item %d is an ordered factor with '%s'<'%s' in its levels. But '%s'<'%s' in the ordered levels from column %d of item %d. " \
-                  "A regular factor will be created for this column due to this ambiguity.",
+                  _("Column %d of item %d is an ordered factor with '%s'<'%s' in its levels. But '%s'<'%s' in the ordered levels from column %d of item %d. " \
+                    "A regular factor will be created for this column due to this ambiguity."),
                   w+1, i+1, CHAR(levelsD[k-1]), CHAR(s), CHAR(s), CHAR(levelsD[k-1]), longestW+1, longestI+1);
                   // k>=1 (so k-1 is ok) because when k==0 last==0 and this branch wouldn't happen
                 }

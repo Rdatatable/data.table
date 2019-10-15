@@ -678,8 +678,8 @@ void fwriteMain(fwriteMainArgs args)
       // # nocov start
       int erropen = errno;
       STOP(access( args.filename, F_OK ) != -1 ?
-           "%s: '%s'. Failed to open existing file for writing. Do you have write permission to it? Is this Windows and does another process such as Excel have it open?" :
-           "%s: '%s'. Unable to create new file for writing (it does not exist already). Do you have permission to write here, is there space on the disk and does the path exist?",
+           _("%s: '%s'. Failed to open existing file for writing. Do you have write permission to it? Is this Windows and does another process such as Excel have it open?") :
+           _("%s: '%s'. Unable to create new file for writing (it does not exist already). Do you have permission to write here, is there space on the disk and does the path exist?"),
            strerror(erropen), args.filename);
       // # nocov end
     }
@@ -888,8 +888,7 @@ void fwriteMain(fwriteMainArgs args)
             int ETA = (int)((args.nrow-end)*((now-startTime)/end));
             if (hasPrinted || ETA >= 2) {
               if (args.verbose && !hasPrinted) DTPRINT(_("\n"));
-              DTPRINT(_("\rWritten %.1f%% of %d rows in %d secs using %d thread%s. ")
-                      _("maxBuffUsed=%d%%. ETA %d secs.      "),
+              DTPRINT(_("\rWritten %.1f%% of %d rows in %d secs using %d thread%s. maxBuffUsed=%d%%. ETA %d secs.      "),
                        (100.0*end)/args.nrow, args.nrow, (int)(now-startTime), nth, nth==1?"":"s",
                        maxBuffUsedPC, ETA);
               // TODO: use progress() as in fread
