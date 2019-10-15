@@ -600,14 +600,14 @@ void fwriteMain(fwriteMainArgs args)
   qmethodEscape = args.qmethodEscape;
   squashDateTime = args.squashDateTime;
 
-  if (args.buffMB<1 || args.buffMB>1024) STOP("buffMB=%d outside [1,1024]", args.buffMB);
+  if (args.buffMB<1 || args.buffMB>1024) STOP(_("buffMB=%d outside [1,1024]"), args.buffMB);
   size_t buffSize = (size_t)1024*1024*args.buffMB;
 
   int eolLen=strlen(args.eol), naLen=strlen(args.na);
   // Aside: codacy wants strnlen but strnlen is not in C99 (neither is strlen_s). To pass `gcc -std=c99 -Wall -pedantic`
   //        we'd need `#define _POSIX_C_SOURCE 200809L` before #include <string.h> but that seems a step too far
   //        and platform specific. We prefer to be pure C99.
-  if (eolLen<=0) STOP("eol must be 1 or more bytes (usually either \\n or \\r\\n) but is length %d", eolLen);
+  if (eolLen<=0) STOP(_("eol must be 1 or more bytes (usually either \\n or \\r\\n) but is length %d"), eolLen);
 
   if (args.verbose) {
     DTPRINT(_("Column writers: "));
@@ -651,7 +651,7 @@ void fwriteMain(fwriteMainArgs args)
         width = getMaxListItemLen(args.columns[j], args.nrow);
         break;
       default:
-        STOP("Internal error: type %d has no max length method implemented", args.whichFun[j]);  // # nocov
+        STOP(_("Internal error: type %d has no max length method implemented"), args.whichFun[j]);  // # nocov
       }
     }
     if (args.whichFun[j]==WF_Float64 && args.scipen>0) width+=MIN(args.scipen,350); // clamp width to IEEE754 max to avoid scipen=99999 allocating buffer larger than can ever be written
@@ -700,7 +700,7 @@ void fwriteMain(fwriteMainArgs args)
   }
   if (headerLen) {
     char *buff = malloc(headerLen);
-    if (!buff) STOP("Unable to allocate %d MiB for header: %s", headerLen / 1024 / 1024, strerror(errno));
+    if (!buff) STOP(_("Unable to allocate %d MiB for header: %s"), headerLen / 1024 / 1024, strerror(errno));
     char *ch = buff;
     if (args.bom) {*ch++=(char)0xEF; *ch++=(char)0xBB; *ch++=(char)0xBF; }  // 3 appears above (search for "bom")
     memcpy(ch, args.yaml, yamlLen);
@@ -728,13 +728,13 @@ void fwriteMain(fwriteMainArgs args)
         z_stream stream;
         if(init_stream(&stream)) {
           free(buff);                                    // # nocov
-          STOP("Can't allocate gzip stream structure");  // # nocov
+          STOP(_("Can't allocate gzip stream structure"));  // # nocov
         }
         size_t zbuffSize = deflateBound(&stream, headerLen);
         char *zbuff = malloc(zbuffSize);
         if (!zbuff) {
           free(buff);                                                                                   // # nocov
-          STOP("Unable to allocate %d MiB for zbuffer: %s", zbuffSize / 1024 / 1024, strerror(errno));  // # nocov
+          STOP(_("Unable to allocate %d MiB for zbuffer: %s"), zbuffSize / 1024 / 1024, strerror(errno));  // # nocov
         }
         size_t zbuffUsed = zbuffSize;
         ret1 = compressbuff(&stream, zbuff, &zbuffUsed, buff, (int)(ch-buff));
@@ -749,8 +749,8 @@ void fwriteMain(fwriteMainArgs args)
         // # nocov start
         int errwrite = errno; // capture write errno now incase close fails with a different errno
         CLOSE(f);
-        if (ret1) STOP("Compress gzip error: %d", ret1);
-        else      STOP("%s: '%s'", strerror(errwrite), args.filename);
+        if (ret1) STOP(_("Compress gzip error: %d"), ret1);
+        else      STOP(_("%s: '%s'"), strerror(errwrite), args.filename);
         // # nocov end
       }
     }
@@ -758,7 +758,7 @@ void fwriteMain(fwriteMainArgs args)
   if (args.verbose) DTPRINT(_("done in %.3fs\n"), 1.0*(wallclock()-t0));
   if (args.nrow == 0) {
     if (args.verbose) DTPRINT(_("No data rows present (nrow==0)\n"));
-    if (f!=-1 && CLOSE(f)) STOP("%s: '%s'", strerror(errno), args.filename);
+    if (f!=-1 && CLOSE(f)) STOP(_("%s: '%s'"), strerror(errno), args.filename);
     return;
   }
 
@@ -790,7 +790,7 @@ void fwriteMain(fwriteMainArgs args)
   if(args.is_gzip){
     z_stream stream;
     if(init_stream(&stream))
-      STOP("Can't allocate gzip stream structure"); // # nocov
+      STOP(_("Can't allocate gzip stream structure")); // # nocov
     zbuffSize = deflateBound(&stream, buffSize);
     deflateEnd(&stream);
   }
@@ -938,16 +938,16 @@ void fwriteMain(fwriteMainArgs args)
   }
 
   if (f!=-1 && CLOSE(f) && !failed)
-    STOP("%s: '%s'", strerror(errno), args.filename);  // # nocov
+    STOP(_("%s: '%s'"), strerror(errno), args.filename);  // # nocov
   // quoted '%s' in case of trailing spaces in the filename
   // If a write failed, the line above tries close() to clean up, but that might fail as well. So the
   // '&& !failed' is to not report the error as just 'closing file' but the next line for more detail
   // from the original error.
   if (failed<0) {
-    STOP("Error %d: one or more threads failed to allocate buffers or there was a compression error."        // # nocov
+    STOP(_("Error %d: one or more threads failed to allocate buffers or there was a compression error.")        // # nocov
          " Please try again with verbose=TRUE and try searching online for this error message.\n", failed);  // # nocov
   } else if (failed>0) {
-    STOP("%s: '%s'", strerror(failed), args.filename);  // # nocov
+    STOP(_("%s: '%s'"), strerror(failed), args.filename);  // # nocov
   }
   return;
 }

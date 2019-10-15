@@ -103,7 +103,7 @@ typedef struct FieldParseContext {
 static void Field(FieldParseContext *ctx);
 
 #define ASSERT(cond, msg, ...) \
-  if (!(cond)) STOP("Internal error in line %d of fread.c, please report on data.table GitHub:  " msg, __LINE__, __VA_ARGS__) // # nocov
+  if (!(cond)) STOP(_("Internal error in line %d of fread.c, please report on data.table GitHub:  ") msg, __LINE__, __VA_ARGS__) // # nocov
 
 
 
@@ -209,7 +209,7 @@ static char *typeLetter = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopq
 
 static char *typesAsString(int ncol) {
   int nLetters = strlen(typeLetter);
-  if (NUMTYPE>nLetters) STOP("Internal error: NUMTYPE(%d) > nLetters(%d)", NUMTYPE, nLetters); // # nocov
+  if (NUMTYPE>nLetters) STOP(_("Internal error: NUMTYPE(%d) > nLetters(%d)"), NUMTYPE, nLetters); // # nocov
   static char str[101];
   int i=0;
   if (ncol<=100) {
@@ -434,7 +434,7 @@ void copyFile(size_t fileSize, const char *msg, bool verbose)  // only called in
 {
   double tt = wallclock();
   mmp_copy = (char *)malloc((size_t)fileSize + 1/* extra \0 */);
-  if (!mmp_copy) STOP("Unable to allocate %s of contiguous virtual RAM. %s allocation.", filesize_to_str(fileSize), msg);
+  if (!mmp_copy) STOP(_("Unable to allocate %s of contiguous virtual RAM. %s allocation."), filesize_to_str(fileSize), msg);
   memcpy(mmp_copy, mmp, fileSize);
   sof = mmp_copy;
   eof = (char *)mmp_copy + fileSize;
@@ -1110,7 +1110,7 @@ int freadMain(freadMainArgs _args) {
 
   int64_t nrowLimit = args.nrowLimit;
   NAstrings = args.NAstrings;
-  if (NAstrings==NULL) STOP("Internal error: NAstrings is itself NULL. When empty it should be pointer to NULL."); // # nocov
+  if (NAstrings==NULL) STOP(_("Internal error: NAstrings is itself NULL. When empty it should be pointer to NULL.")); // # nocov
   any_number_like_NAstrings = false;
   blank_is_a_NAstring = false;
   // if we know there are no nastrings which are numbers (like -999999) then in the number
@@ -1128,12 +1128,12 @@ int freadMain(freadMainArgs _args) {
     const char *ch = *nastr;
     size_t nchar = strlen(ch);
     if (isspace(ch[0]) || isspace(ch[nchar-1]))
-      STOP("freadMain: NAstring <<%s>> has whitespace at the beginning or end", ch);
+      STOP(_("freadMain: NAstring <<%s>> has whitespace at the beginning or end"), ch);
     if (strcmp(ch,"T")==0    || strcmp(ch,"F")==0 ||
         strcmp(ch,"TRUE")==0 || strcmp(ch,"FALSE")==0 ||
         strcmp(ch,"True")==0 || strcmp(ch,"False")==0 ||
         strcmp(ch,"1")==0    || strcmp(ch,"0")==0)
-      STOP("freadMain: NAstring <<%s>> is recognized as type boolean, this is not permitted.", ch);
+      STOP(_("freadMain: NAstring <<%s>> is recognized as type boolean, this is not permitted."), ch);
     char *end;
     errno = 0;
     strtod(ch, &end);  // careful not to let "" get to here (see continue above) as strtod considers "" numeric
@@ -1165,10 +1165,10 @@ int freadMain(freadMainArgs _args) {
   fill = args.fill;
   dec = args.dec;
   quote = args.quote;
-  if (args.sep == quote && quote!='\0') STOP("sep == quote ('%c') is not allowed", quote);
-  if (dec=='\0') STOP("dec='' not allowed. Should be '.' or ','");
-  if (args.sep == dec) STOP("sep == dec ('%c') is not allowed", dec);
-  if (quote == dec) STOP("quote == dec ('%c') is not allowed", dec);
+  if (args.sep == quote && quote!='\0') STOP(_("sep == quote ('%c') is not allowed"), quote);
+  if (dec=='\0') STOP(_("dec='' not allowed. Should be '.' or ','"));
+  if (args.sep == dec) STOP(_("sep == dec ('%c') is not allowed"), dec);
+  if (quote == dec) STOP(_("quote == dec ('%c') is not allowed"), dec);
   // since quote=='\0' when user passed quote="", the logic in this file uses '*ch==quote && quote' otherwise
   //   the ending \0 at eof could be treated as a quote (test xxx)
 
@@ -1192,21 +1192,21 @@ int freadMain(freadMainArgs _args) {
     sof = args.input;
     fileSize = strlen(sof);
     eof = sof+fileSize;
-    if (*eof!='\0') STOP("Internal error: last byte of character input isn't \\0"); // # nocov
+    if (*eof!='\0') STOP(_("Internal error: last byte of character input isn't \\0")); // # nocov
   }
   else if (args.filename) {
     if (verbose) DTPRINT(_("  Opening file %s\n"), args.filename);
     const char* fnam = args.filename;
     #ifndef WIN32
       int fd = open(fnam, O_RDONLY);
-      if (fd==-1) STOP("file not found: %s",fnam);
+      if (fd==-1) STOP(_("file not found: %s"),fnam);
       struct stat stat_buf;
       if (fstat(fd, &stat_buf) == -1) {
         close(fd);                                                     // # nocov
-        STOP("Opened file ok but couldn't obtain its size: %s", fnam); // # nocov
+        STOP(_("Opened file ok but couldn't obtain its size: %s"), fnam); // # nocov
       }
       fileSize = (size_t) stat_buf.st_size;
-      if (fileSize == 0) {close(fd); STOP("File is empty: %s", fnam);}
+      if (fileSize == 0) {close(fd); STOP(_("File is empty: %s"), fnam);}
       if (verbose) DTPRINT(_("  File opened, size = %s.\n"), filesize_to_str(fileSize));
 
       // No MAP_POPULATE for faster nrows=10 and to make possible earlier progress bar in row count stage
@@ -1224,33 +1224,33 @@ int freadMain(freadMainArgs _args) {
         hFile = CreateFile(fnam, GENERIC_READ, FILE_SHARE_READ|FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL);
         // FILE_SHARE_WRITE is required otherwise if the file is open in Excel, CreateFile fails. Should be ok now.
         if (hFile==INVALID_HANDLE_VALUE) {
-          if (GetLastError()==ERROR_FILE_NOT_FOUND) STOP("File not found: %s",fnam);
+          if (GetLastError()==ERROR_FILE_NOT_FOUND) STOP(_("File not found: %s"),fnam);
           if (attempts<4) Sleep(250);  // 250ms
         }
         attempts++;
         // Looped retry to avoid ephemeral locks by system utilities as recommended here : http://support.microsoft.com/kb/316609
       }
-      if (hFile==INVALID_HANDLE_VALUE) STOP("Unable to open file after %d attempts (error %d): %s", attempts, GetLastError(), fnam);
+      if (hFile==INVALID_HANDLE_VALUE) STOP(_("Unable to open file after %d attempts (error %d): %s"), attempts, GetLastError(), fnam);
       LARGE_INTEGER liFileSize;
-      if (GetFileSizeEx(hFile,&liFileSize)==0) { CloseHandle(hFile); STOP("GetFileSizeEx failed (returned 0) on file: %s", fnam); }
+      if (GetFileSizeEx(hFile,&liFileSize)==0) { CloseHandle(hFile); STOP(_("GetFileSizeEx failed (returned 0) on file: %s"), fnam); }
       fileSize = (size_t)liFileSize.QuadPart;
-      if (fileSize<=0) { CloseHandle(hFile); STOP("File is empty: %s", fnam); }
+      if (fileSize<=0) { CloseHandle(hFile); STOP(_("File is empty: %s"), fnam); }
       if (verbose) DTPRINT(_("  File opened, size = %s.\n"), filesize_to_str(fileSize));
       HANDLE hMap=CreateFileMapping(hFile, NULL, PAGE_WRITECOPY, 0, 0, NULL);
-      if (hMap==NULL) { CloseHandle(hFile); STOP("This is Windows, CreateFileMapping returned error %d for file %s", GetLastError(), fnam); }
+      if (hMap==NULL) { CloseHandle(hFile); STOP(_("This is Windows, CreateFileMapping returned error %d for file %s"), GetLastError(), fnam); }
       mmp = MapViewOfFile(hMap,FILE_MAP_COPY,0,0,fileSize);  // fileSize must be <= hilo passed to CreateFileMapping above.
       CloseHandle(hMap);  // we don't need to keep the file open; the MapView keeps an internal reference;
       CloseHandle(hFile); //   see https://msdn.microsoft.com/en-us/library/windows/desktop/aa366537(v=vs.85).aspx
       if (mmp == NULL) {
     #endif
       int nbit = 8*sizeof(char *); // #nocov
-      STOP("Opened %s file ok but could not memory map it. This is a %dbit process. %s.", filesize_to_str(fileSize), nbit,
+      STOP(_("Opened %s file ok but could not memory map it. This is a %dbit process. %s."), filesize_to_str(fileSize), nbit,
            nbit<=32 ? "Please upgrade to 64bit" : "There is probably not enough contiguous virtual memory available"); // # nocov
     }
     sof = (const char*) mmp;
     if (verbose) DTPRINT(_("  Memory mapped ok\n"));
   } else {
-    STOP("Internal error: Neither `input` nor `filename` are given, nothing to read."); // # nocov
+    STOP(_("Internal error: Neither `input` nor `filename` are given, nothing to read.")); // # nocov
   }
   eof = sof + fileSize;
   tMap = wallclock();
@@ -1279,7 +1279,7 @@ int freadMain(freadMainArgs _args) {
     DTWARN("GB-18030 encoding detected, however fread() is unable to decode it. Some character fields may be garbled.\n");
   }
   else if (fileSize >= 2 && sof[0] + sof[1] == '\xFE' + '\xFF') {  // either 0xFE 0xFF or 0xFF 0xFE
-    STOP("File is encoded in UTF-16, this encoding is not supported by fread(). Please recode the file to UTF-8.");
+    STOP(_("File is encoded in UTF-16, this encoding is not supported by fread(). Please recode the file to UTF-8."));
   }
   if (eof>sof && (eof[-1]=='\x1A' || eof[-1]=='\0')) {
     char c = eof[-1];
@@ -1287,7 +1287,7 @@ int freadMain(freadMainArgs _args) {
     if (verbose) DTPRINT(_("  Last byte(s) of input found to be %s and removed.\n"),
                          c ? "0x1A (Ctrl+Z)" : "0x00 (NUL)");
   }
-  if (eof<=sof) STOP("Input is empty or only contains BOM or terminal control characters");
+  if (eof<=sof) STOP(_("Input is empty or only contains BOM or terminal control characters"));
   }
 
 
@@ -1373,7 +1373,7 @@ int freadMain(freadMainArgs _args) {
   // like wc -l, head -n and tail -n
   if (args.skipString) {
     ch = strstr(sof, args.skipString);  // as there is now a \0 at the end, this is safely bounded
-    if (!ch) STOP("skip='%s' not found in input (it is case sensitive and literal; i.e., no patterns, wildcards or regex)",
+    if (!ch) STOP(_("skip='%s' not found in input (it is case sensitive and literal; i.e., no patterns, wildcards or regex)"),
                   args.skipString);
     while (ch>sof && ch[-1]!='\n') ch--;  // move to beginning of line
     pos = ch;
@@ -1393,7 +1393,7 @@ int freadMain(freadMainArgs _args) {
       }
     }
     if (ch > sof && verbose) DTPRINT(_("  Skipped to line %llu in the file"), (llu)row1line);
-    if (ch>=eof) STOP("skip=%llu but the input only has %llu line%s", (llu)args.skipNrow, (llu)row1line, row1line>1?"s":"");
+    if (ch>=eof) STOP(_("skip=%llu but the input only has %llu line%s"), (llu)args.skipNrow, (llu)row1line, row1line>1?"s":"");
     pos = ch;
   }
 
@@ -1402,7 +1402,7 @@ int freadMain(freadMainArgs _args) {
   while (ch<eof && (isspace(*ch) || *ch=='\0')) {   // isspace matches ' ', \t, \n and \r;  \0 before eof should be skipped too
     if (*ch=='\n') { ch++; lineStart=ch; row1line++; } else ch++;
   }
-  if (ch>=eof) STOP("Input is either empty, fully whitespace, or skip has been set after the last non-whitespace.");
+  if (ch>=eof) STOP(_("Input is either empty, fully whitespace, or skip has been set after the last non-whitespace."));
   if (verbose) {
     if (lineStart>ch) DTPRINT(_("  Moved forward to first non-blank line (%d)\n"), row1line);
     DTPRINT(_("  Positioned on line %d starting: <<%s>>\n"), row1line, strlim(lineStart, 30));
@@ -1560,7 +1560,7 @@ int freadMain(freadMainArgs _args) {
           topQuoteRule = quoteRule;
         }
       }
-      if (!firstJumpEnd) STOP("Single column input contains invalid quotes. Self healing only effective when ncol>1");
+      if (!firstJumpEnd) STOP(_("Single column input contains invalid quotes. Self healing only effective when ncol>1"));
     }
 
     quoteRule = topQuoteRule;
@@ -1581,10 +1581,10 @@ int freadMain(freadMainArgs _args) {
     }
   }
 
-  if (ncol<1 || row1line<1) STOP("Internal error: ncol==%d line==%d after detecting sep, ncol and first line", ncol, row1line); // # nocov
+  if (ncol<1 || row1line<1) STOP(_("Internal error: ncol==%d line==%d after detecting sep, ncol and first line"), ncol, row1line); // # nocov
   int tt = countfields(&ch);
   ch = pos; // move back to start of line since countfields() moved to next
-  if (!fill && tt!=ncol) STOP("Internal error: first line has field count %d but expecting %d", tt, ncol); // # nocov
+  if (!fill && tt!=ncol) STOP(_("Internal error: first line has field count %d but expecting %d"), tt, ncol); // # nocov
   if (verbose) {
     DTPRINT(_("  Detected %d columns on line %d. This line is either column ")
             "names or first data row. Line starts as: <<%s>>\n",
@@ -1627,7 +1627,7 @@ int freadMain(freadMainArgs _args) {
 
   type =    (int8_t *)malloc((size_t)ncol * sizeof(int8_t));
   tmpType = (int8_t *)malloc((size_t)ncol * sizeof(int8_t));  // used i) in sampling to not stop on errors when bad jump point and ii) when accepting user overrides
-  if (!type || !tmpType) STOP("Failed to allocate 2 x %d bytes for type and tmpType: %s", ncol, strerror(errno));
+  if (!type || !tmpType) STOP(_("Failed to allocate 2 x %d bytes for type and tmpType: %s"), ncol, strerror(errno));
 
   int8_t type0 = 1;
   while (disabled_parsers[type0]) type0++;
@@ -1741,20 +1741,20 @@ int freadMain(freadMainArgs _args) {
     // Maybe previous line (if there is one, prevStart!=NULL) contains column names but there are too few (which is why it didn't become the first data row).
     ch = prevStart;
     int tt = countfields(&ch);
-    if (tt==ncol) STOP("Internal error: row before first data row has the same number of fields but we're not using it."); // # nocov
-    if (ch!=pos)  STOP("Internal error: ch!=pos after counting fields in the line before the first data row."); // # nocov
+    if (tt==ncol) STOP(_("Internal error: row before first data row has the same number of fields but we're not using it.")); // # nocov
+    if (ch!=pos)  STOP(_("Internal error: ch!=pos after counting fields in the line before the first data row.")); // # nocov
     if (verbose) DTPRINT(_("Types in 1st data row match types in 2nd data row but previous row has %d fields. Taking previous row as column names."), tt);
     if (tt<ncol) {
       autoFirstColName = (tt==ncol-1);
       DTWARN("Detected %d column names but the data has %d columns (i.e. invalid file). Added %d extra default column name%s\n", tt, ncol, ncol-tt,
              autoFirstColName ? " for the first column which is guessed to be row names or an index. Use setnames() afterwards if this guess is not correct, or fix the file write command that created the file to create a valid file." : "s at the end.");
     } else if (tt>ncol) {
-      if (fill) STOP("Internal error: fill=true but there is a previous row which should already have been filled."); // # nocov
+      if (fill) STOP(_("Internal error: fill=true but there is a previous row which should already have been filled.")); // # nocov
       DTWARN("Detected %d column names but the data has %d columns. Filling rows automatically. Set fill=TRUE explicitly to avoid this warning.\n", tt, ncol);
       fill = true;
       type =    (int8_t *)realloc(type,    (size_t)tt * sizeof(int8_t));
       tmpType = (int8_t *)realloc(tmpType, (size_t)tt * sizeof(int8_t));
-      if (!type || !tmpType) STOP("Failed to realloc 2 x %d bytes for type and tmpType: %s", tt, strerror(errno));
+      if (!type || !tmpType) STOP(_("Failed to realloc 2 x %d bytes for type and tmpType: %s"), tt, strerror(errno));
       for (int j=ncol; j<tt; j++) { tmpType[j] = type[j] = type0; }
       ncol = tt;
     }
@@ -1825,7 +1825,7 @@ int freadMain(freadMainArgs _args) {
               (llu)allocnrow, (llu)estnrow, (int)(100.0*allocnrow/estnrow-100.0));
       DTPRINT(_("  =====\n"));
     } else {
-      if (sampleLines > allocnrow) STOP("Internal error: sampleLines(%llu) > allocnrow(%llu)", (llu)sampleLines, (llu)allocnrow); // # nocov
+      if (sampleLines > allocnrow) STOP(_("Internal error: sampleLines(%llu) > allocnrow(%llu)"), (llu)sampleLines, (llu)allocnrow); // # nocov
     }
   }
   if (nrowLimit < allocnrow) {
@@ -1849,7 +1849,7 @@ int freadMain(freadMainArgs _args) {
     colNames = NULL;  // userOverride will assign V1, V2, etc
   } else {
     colNames = (lenOff*) calloc((size_t)ncol, sizeof(lenOff));
-    if (!colNames) STOP("Unable to allocate %d*%d bytes for column name pointers: %s", ncol, sizeof(lenOff), strerror(errno));
+    if (!colNames) STOP(_("Unable to allocate %d*%d bytes for column name pointers: %s"), ncol, sizeof(lenOff), strerror(errno));
     if (sep==' ') while (*ch==' ') ch++;
     void *targets[9] = {NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, colNames + autoFirstColName};
     FieldParseContext fctx = {
@@ -1871,7 +1871,7 @@ int freadMain(freadMainArgs _args) {
     }
     if (eol(&ch)) pos = ++ch;
     else if (*ch=='\0') pos = ch;
-    else STOP("Internal error: reading colnames ending on '%c'", *ch); // # nocov
+    else STOP(_("Internal error: reading colnames ending on '%c'"), *ch); // # nocov
     // now on first data row (row after column names)
     // when fill=TRUE and column names shorter (test 1635.2), leave calloc initialized lenOff.len==0
   }
@@ -1903,7 +1903,7 @@ int freadMain(freadMainArgs _args) {
   rowSize4 = 0;
   rowSize8 = 0;
   size = (int8_t *)malloc((size_t)ncol * sizeof(int8_t));  // TODO: remove size[] when we implement Pasha's idea to += size inside processor
-  if (!size) STOP("Failed to allocate %d bytes for size array: %s", ncol, strerror(errno));
+  if (!size) STOP(_("Failed to allocate %d bytes for size array: %s"), ncol, strerror(errno));
   nStringCols = 0;
   nNonStringCols = 0;
   for (int j=0; j<ncol; j++) {
@@ -1988,7 +1988,7 @@ int freadMain(freadMainArgs _args) {
   // should only engage when max_nrows is supplied, and supplied small too, so doesn't matter too much.
   if (initialBuffRows < 10) initialBuffRows = 10;
 
-  if (initialBuffRows > INT32_MAX) STOP("Buffer size %lld is too large\n", initialBuffRows);
+  if (initialBuffRows > INT32_MAX) STOP(_("Buffer size %lld is too large\n"), initialBuffRows);
   nth = imin(nJumps, nth);
 
   if (verbose) DTPRINT(_("[11] Read the data\n"));
@@ -2329,7 +2329,7 @@ int freadMain(freadMainArgs _args) {
 
   if (stopTeam) {
     if (internalErr[0]!='\0') {
-      STOP("%s", internalErr);  // # nocov
+      STOP(_("%s"), internalErr);  // # nocov
     }
     stopTeam = false;
 

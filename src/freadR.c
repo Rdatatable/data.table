@@ -165,7 +165,7 @@ SEXP freadR(
     readInt64As = CT_STRING;
   } else if (strcmp(tt,"double")==0 || strcmp(tt,"numeric")==0) {
     readInt64As = CT_FLOAT64;
-  } else STOP("Invalid value integer64='%s'. Must be 'integer64', 'character', 'double' or 'numeric'", tt);
+  } else STOP(_("Invalid value integer64='%s'. Must be 'integer64', 'character', 'double' or 'numeric'"), tt);
 
   colClassesSxp = colClassesArg;
 
@@ -173,19 +173,19 @@ SEXP freadR(
   dropSxp = dropArg;
   selectColClasses = false;
   if (!isNull(selectSxp)) {
-    if (!isNull(dropSxp)) STOP("Use either select= or drop= but not both.");
+    if (!isNull(dropSxp)) STOP(_("Use either select= or drop= but not both."));
     if (isNewList(selectArg)) {
       if (!isNull(colClassesSxp))
-        STOP("select= is type list for specifying types in select=, but colClasses= has been provided as well. Please remove colClasses=.");
+        STOP(_("select= is type list for specifying types in select=, but colClasses= has been provided as well. Please remove colClasses=."));
       if (!length(getAttrib(selectArg, R_NamesSymbol)))
-        STOP("select= is type list but has no names; expecting list(type1=cols1, type2=cols2, ...)");
+        STOP(_("select= is type list but has no names; expecting list(type1=cols1, type2=cols2, ...)"));
       colClassesSxp = selectArg;
       selectColClasses = true;
       selectSxp = R_NilValue;
     } else {
       if (!isNull(getAttrib(selectArg, R_NamesSymbol))) {
         if (!isNull(colClassesSxp))
-          STOP("select= is a named vector specifying the columns to select and their types, but colClasses= has been provided as well. Please remove colClasses=.");
+          STOP(_("select= is a named vector specifying the columns to select and their types, but colClasses= has been provided as well. Please remove colClasses=."));
         colClassesSxp = selectArg;
         selectSxp = getAttrib(selectArg, R_NamesSymbol);
         selectColClasses = true;
@@ -193,7 +193,7 @@ SEXP freadR(
     }
   } else {
     if (TYPEOF(colClassesSxp)==VECSXP && !length(getAttrib(colClassesSxp, R_NamesSymbol)))
-       STOP("colClasses is type list but has no names");
+       STOP(_("colClasses is type list but has no names"));
   }
 
   // Encoding, #563: Borrowed from do_setencoding from base R
@@ -203,7 +203,7 @@ SEXP freadR(
   if (strcmp(tt, "unknown")==0) ienc = CE_NATIVE;
   else if (strcmp(tt, "Latin-1")==0) ienc = CE_LATIN1;
   else if (strcmp(tt, "UTF-8")==0) ienc = CE_UTF8;
-  else STOP("encoding='%s' invalid. Must be 'unknown', 'Latin-1' or 'UTF-8'", tt);  // # nocov
+  else STOP(_("encoding='%s' invalid. Must be 'unknown', 'Latin-1' or 'UTF-8'"), tt);  // # nocov
   // === end extras ===
 
   RCHK = PROTECT(allocVector(VECSXP, 4));
@@ -244,8 +244,8 @@ static void applyDrop(SEXP items, int8_t *type, int ncol, int dropSource) {
 bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, int ncol)
 {
   // use typeSize superfluously to avoid not-used warning; otherwise could move typeSize from fread.h into fread.c
-  if (typeSize[CT_BOOL8_N]!=1) STOP("Internal error: typeSize[CT_BOOL8_N] != 1"); // # nocov
-  if (typeSize[CT_STRING]!=8) STOP("Internal error: typeSize[CT_STRING] != 1"); // # nocov
+  if (typeSize[CT_BOOL8_N]!=1) STOP(_("Internal error: typeSize[CT_BOOL8_N] != 1")); // # nocov
+  if (typeSize[CT_STRING]!=8) STOP(_("Internal error: typeSize[CT_STRING] != 1")); // # nocov
   colNamesSxp = R_NilValue;
   SET_VECTOR_ELT(RCHK, 1, colNamesSxp=allocVector(STRSXP, ncol));
   for (int i=0; i<ncol; i++) {
@@ -289,10 +289,10 @@ bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, int ncol)
     for (int i=0; i<n; ++i) {
       int k = selectInts[i];
       if (k==NA_INTEGER) continue; // missing column name warned above and skipped
-      if (k<0) STOP("Column number %d (select[%d]) is negative but should be in the range [1,ncol=%d]. Consider drop= for column exclusion.",k,i+1,ncol);
-      if (k==0) STOP("select = 0 (select[%d]) has no meaning. All values of select should be in the range [1,ncol=%d].",i+1,ncol);
-      if (k>ncol) STOP("Column number %d (select[%d]) is too large for this table, which only has %d columns.",k,i+1,ncol);
-      if (type[k-1]<0) STOP("Column number %d ('%s') has been selected twice by select=", k, CHAR(STRING_ELT(colNamesSxp,k-1)));
+      if (k<0) STOP(_("Column number %d (select[%d]) is negative but should be in the range [1,ncol=%d]. Consider drop= for column exclusion."),k,i+1,ncol);
+      if (k==0) STOP(_("select = 0 (select[%d]) has no meaning. All values of select should be in the range [1,ncol=%d]."),i+1,ncol);
+      if (k>ncol) STOP(_("Column number %d (select[%d]) is too large for this table, which only has %d columns."),k,i+1,ncol);
+      if (type[k-1]<0) STOP(_("Column number %d ('%s') has been selected twice by select="), k, CHAR(STRING_ELT(colNamesSxp,k-1)));
       type[k-1] *= -1; // detect and error on duplicates on all types without calling duplicated() at all
       selectRankD[k-1] = rank++;  // rank not i to skip missing column names
     }
@@ -310,12 +310,12 @@ bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, int ncol)
       SEXP typeEnum_idx = PROTECT(chmatch(colClassesSxp, typeRName_sxp, NUT));
       if (LENGTH(colClassesSxp)==1) {
         signed char newType = typeEnum[INTEGER(typeEnum_idx)[0]-1];
-        if (newType == CT_DROP) STOP("colClasses='NULL' is not permitted; i.e. to drop all columns and load nothing");
+        if (newType == CT_DROP) STOP(_("colClasses='NULL' is not permitted; i.e. to drop all columns and load nothing"));
         for (int i=0; i<ncol; i++) if (type[i]!=CT_DROP) type[i]=newType;   // freadMain checks bump up only not down
         if (INTEGER(typeEnum_idx)[0]==NUT) for (int i=0; i<ncol; i++) SET_STRING_ELT(colClassesAs, i, STRING_ELT(colClassesSxp,0));
       } else if (selectColClasses==false) {
         if (LENGTH(colClassesSxp)!=ncol)
-          STOP("colClasses= is an unnamed vector of types, length %d, but there are %d columns in the input. To specify types for a subset of columns, you can use "
+          STOP(_("colClasses= is an unnamed vector of types, length %d, but there are %d columns in the input. To specify types for a subset of columns, you can use ")
                "a named vector, list format, or specify types using select= instead of colClasses=. Please see examples in ?fread.", LENGTH(colClassesSxp), ncol);
         for (int i=0; i<ncol; ++i) {
           if (type[i]==CT_DROP) continue;                    // user might have specified the type of all columns including those dropped with drop=
@@ -326,8 +326,8 @@ bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, int ncol)
           if (w==NUT) SET_STRING_ELT(colClassesAs, i, STRING_ELT(colClassesSxp,i));
         }
       } else { // selectColClasses==true
-        if (!selectInts) STOP("Internal error: selectInts is NULL but selectColClasses is true");
-        if (length(selectSxp)!=length(colClassesSxp)) STOP("Internal error: length(selectSxp)!=length(colClassesSxp) but selectColClasses is true");
+        if (!selectInts) STOP(_("Internal error: selectInts is NULL but selectColClasses is true"));
+        if (length(selectSxp)!=length(colClassesSxp)) STOP(_("Internal error: length(selectSxp)!=length(colClassesSxp) but selectColClasses is true"));
         const int n = length(colClassesSxp);
         for (int i=0; i<n; ++i) {
           SEXP tt = STRING_ELT(colClassesSxp,i);
@@ -341,9 +341,9 @@ bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, int ncol)
       }
       UNPROTECT(1); // typeEnum_idx
     } else {
-      if (!isNewList(colClassesSxp)) STOP("colClasses is type '%s' but should be list or character", type2char(TYPEOF(colClassesSxp)));
+      if (!isNewList(colClassesSxp)) STOP(_("colClasses is type '%s' but should be list or character"), type2char(TYPEOF(colClassesSxp)));
       SEXP listNames = PROTECT(getAttrib(colClassesSxp, R_NamesSymbol));  // rchk wanted this protected
-      if (!length(listNames)) STOP("colClasses is type list but has no names");
+      if (!length(listNames)) STOP(_("colClasses is type list but has no names"));
       SEXP typeEnum_idx = PROTECT(chmatch(listNames, typeRName_sxp, NUT));
 
       int *selectRankD = NULL, rank = 1;
@@ -580,7 +580,7 @@ void pushBuffer(ThreadLocalFreadParsingContext *ctx)
         }
       } else
       if (thisSize == 1) {
-        if (type[j] > CT_BOOL8_L) STOP("Field size is 1 but the field is of type %d\n", type[j]);
+        if (type[j] > CT_BOOL8_L) STOP(_("Field size is 1 but the field is of type %d\n"), type[j]);
         Rboolean *dest = (Rboolean *)((char *)DATAPTR(VECTOR_ELT(DT, resj)) + DTi*sizeof(Rboolean));
         char *src1 = (char*)buff1 + off1;
         for (int i=0; i<nRows; i++) {
@@ -589,7 +589,7 @@ void pushBuffer(ThreadLocalFreadParsingContext *ctx)
           src1 += rowSize1;
           dest++;
         }
-      } else STOP("Internal error: unexpected field of size %d\n", thisSize);  // # nocov
+      } else STOP(_("Internal error: unexpected field of size %d\n"), thisSize);  // # nocov
       done++;
     }
     off8 += (size[j] & 8);
