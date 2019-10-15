@@ -1092,7 +1092,7 @@ int freadMain(freadMainArgs _args) {
   bool warningsAreErrors = args.warningsAreErrors;
 
   if (freadCleanup()) {
-    DTWARN("Previous fread() session was not cleaned up properly. Cleaned up ok at the beginning of this fread() call.\n"); // # nocov
+    DTWARN(_("Previous fread() session was not cleaned up properly. Cleaned up ok at the beginning of this fread() call.\n")); // # nocov
   }
 
   if (verbose) DTPRINT(_("[01] Check arguments\n"));
@@ -1276,7 +1276,7 @@ int freadMain(freadMainArgs _args) {
   else if (fileSize >= 4 && memcmp(sof, "\x84\x31\x95\x33", 4) == 0) {
     sof += 4;
     // ienc = CE_GB18030;
-    DTWARN("GB-18030 encoding detected, however fread() is unable to decode it. Some character fields may be garbled.\n");
+    DTWARN(_("GB-18030 encoding detected, however fread() is unable to decode it. Some character fields may be garbled.\n"));
   }
   else if (fileSize >= 2 && sof[0] + sof[1] == '\xFE' + '\xFF') {  // either 0xFE 0xFF or 0xFF 0xFE
     STOP(_("File is encoded in UTF-16, this encoding is not supported by fread(). Please recode the file to UTF-8."));
@@ -1565,7 +1565,7 @@ int freadMain(freadMainArgs _args) {
 
     quoteRule = topQuoteRule;
     if (quoteRule>1 && quote) {
-      DTWARN("Found and resolved improper quoting in first %d rows. If the fields are not quoted (e.g. field separator does not appear within any field), try quote=\"\" to avoid this warning.", jumpLines);
+      DTWARN(_("Found and resolved improper quoting in first %d rows. If the fields are not quoted (e.g. field separator does not appear within any field), try quote=\")\" to avoid this warning.", jumpLines);
       // TODO: include line number and text in warning. Could loop again with the standard quote rule to find the line that fails.
     }
     sep = topSep;
@@ -1746,11 +1746,11 @@ int freadMain(freadMainArgs _args) {
     if (verbose) DTPRINT(_("Types in 1st data row match types in 2nd data row but previous row has %d fields. Taking previous row as column names."), tt);
     if (tt<ncol) {
       autoFirstColName = (tt==ncol-1);
-      DTWARN("Detected %d column names but the data has %d columns (i.e. invalid file). Added %d extra default column name%s\n", tt, ncol, ncol-tt,
+      DTWARN(_("Detected %d column names but the data has %d columns (i.e. invalid file). Added %d extra default column name%s\n"), tt, ncol, ncol-tt,
              autoFirstColName ? " for the first column which is guessed to be row names or an index. Use setnames() afterwards if this guess is not correct, or fix the file write command that created the file to create a valid file." : "s at the end.");
     } else if (tt>ncol) {
       if (fill) STOP(_("Internal error: fill=true but there is a previous row which should already have been filled.")); // # nocov
-      DTWARN("Detected %d column names but the data has %d columns. Filling rows automatically. Set fill=TRUE explicitly to avoid this warning.\n", tt, ncol);
+      DTWARN(_("Detected %d column names but the data has %d columns. Filling rows automatically. Set fill=TRUE explicitly to avoid this warning.\n"), tt, ncol);
       fill = true;
       type =    (int8_t *)realloc(type,    (size_t)tt * sizeof(int8_t));
       tmpType = (int8_t *)realloc(tmpType, (size_t)tt * sizeof(int8_t));
@@ -1910,7 +1910,7 @@ int freadMain(freadMainArgs _args) {
     if (type[j]==CT_DROP) { size[j]=0; ndrop++; continue; }
     if (type[j]<tmpType[j]) {
       if (strcmp(typeName[tmpType[j]], typeName[type[j]]) != 0) {
-        DTWARN("Attempt to override column %d <<%.*s>> of inherent type '%s' down to '%s' ignored. Only overrides to a higher type are currently supported. " \
+        DTWARN(_("Attempt to override column %d <<%.*s>> of inherent type '%s' down to '%s' ignored. Only overrides to a higher type are currently supported. ") \
                "If this was intended, please coerce to the lower type afterwards.",
                j+1, colNames[j].len, colNamesAnchor+colNames[j].off, typeName[tmpType[j]], typeName[type[j]]);
       }
@@ -2425,18 +2425,18 @@ int freadMain(freadMainArgs _args) {
       while (ch<eof && *ch!='\n' && *ch!='\r') ch++;
       while (ch<eof && isspace(*ch)) ch++;
       if (ch==eof) {
-        DTWARN("Discarded single-line footer: <<%s>>", strlim(skippedFooter,500));
+        DTWARN(_("Discarded single-line footer: <<%s>>"), strlim(skippedFooter,500));
       }
       else {
         ch = headPos;
         int tt = countfields(&ch);
-        DTWARN("Stopped early on line %llu. Expected %d fields but found %d. Consider fill=TRUE and comment.char=. First discarded non-empty line: <<%s>>",
+        DTWARN(_("Stopped early on line %llu. Expected %d fields but found %d. Consider fill=TRUE and comment.char=. First discarded non-empty line: <<%s>>"),
           (llu)DTi+row1line, ncol, tt, strlim(skippedFooter,500));
       }
     }
   }
   if (quoteRuleBumpedCh!=NULL && quoteRuleBumpedCh<headPos) {
-    DTWARN("Found and resolved improper quoting out-of-sample. First healed line %llu: <<%s>>. If the fields are not quoted (e.g. field separator does not appear within any field), try quote=\"\" to avoid this warning.", (llu)quoteRuleBumpedLine, strlim(quoteRuleBumpedCh, 500));
+    DTWARN(_("Found and resolved improper quoting out-of-sample. First healed line %llu: <<%s>>. If the fields are not quoted (e.g. field separator does not appear within any field), try quote=\")\" to avoid this warning.", (llu)quoteRuleBumpedLine, strlim(quoteRuleBumpedCh, 500));
   }
 
   if (verbose) {

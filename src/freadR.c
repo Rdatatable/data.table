@@ -226,11 +226,11 @@ static void applyDrop(SEXP items, int8_t *type, int ncol, int dropSource) {
       else snprintf(buff, 50, "colClasses[[%d]][%d]", dropSource+1, j+1);
       if (k==NA_INTEGER) {
         if (isString(items))
-          DTWARN("Column name '%s' (%s) not found", CHAR(STRING_ELT(items, j)), buff);
+          DTWARN(_("Column name '%s' (%s) not found"), CHAR(STRING_ELT(items, j)), buff);
         else
-          DTWARN("%s is NA", buff);
+          DTWARN(_("%s is NA"), buff);
       } else {
-        DTWARN("%s is %d which is out of range [1,ncol=%d]", buff, k, ncol);
+        DTWARN(_("%s is %d which is out of range [1,ncol=%d]"), buff, k, ncol);
       }
     } else {
       type[k-1] = CT_DROP;
@@ -279,7 +279,7 @@ bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, int ncol)
     if (isString(selectSxp)) {
       selectInts = INTEGER(PROTECT(chmatch(selectSxp, colNamesSxp, NA_INTEGER))); nprotect++;
       for (int i=0; i<n; ++i) if (selectInts[i]==NA_INTEGER)
-        DTWARN("Column name '%s' not found in column name header (case sensitive), skipping.", CHAR(STRING_ELT(selectSxp, i)));
+        DTWARN(_("Column name '%s' not found in column name header (case sensitive), skipping."), CHAR(STRING_ELT(selectSxp, i)));
     } else {
       if (!isInteger(selectSxp)) { selectSxp=PROTECT(coerceVector(selectSxp, INTSXP)); nprotect++; }  // coerce numeric to int
       selectInts = INTEGER(selectSxp);
@@ -365,20 +365,20 @@ bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, int ncol)
           int k = INTEGER(itemsInt)[j];
           if (k==NA_INTEGER) {
             if (isString(items))
-              DTWARN("Column name '%s' (colClasses[[%d]][%d]) not found", CHAR(STRING_ELT(items, j)), i+1, j+1);
+              DTWARN(_("Column name '%s' (colClasses[[%d]][%d]) not found"), CHAR(STRING_ELT(items, j)), i+1, j+1);
             else
-              DTWARN("colClasses[[%d]][%d] is NA", i+1, j+1);
+              DTWARN(_("colClasses[[%d]][%d] is NA"), i+1, j+1);
           } else {
             if (k>=1 && k<=ncol) {
               if (type[k-1]<0)
-                DTWARN("Column %d ('%s') appears more than once in colClasses. The second time is colClasses[[%d]][%d].", k, CHAR(STRING_ELT(colNamesSxp,k-1)), i+1, j+1);
+                DTWARN(_("Column %d ('%s') appears more than once in colClasses. The second time is colClasses[[%d]][%d]."), k, CHAR(STRING_ELT(colNamesSxp,k-1)), i+1, j+1);
               else if (type[k-1]!=CT_DROP) {
                 type[k-1] = -thisType;     // freadMain checks bump up only not down.  Deliberately don't catch here to test freadMain; e.g. test 959
                 if (w==NUT) SET_STRING_ELT(colClassesAs, k-1, STRING_ELT(listNames,i));
                 if (selectRankD) selectRankD[k-1] = rank++;
               }
             } else {
-              DTWARN("Column number %d (colClasses[[%d]][%d]) is out of range [1,ncol=%d]", k, i+1, j+1, ncol);
+              DTWARN(_("Column number %d (colClasses[[%d]][%d]) is out of range [1,ncol=%d]"), k, i+1, j+1, ncol);
             }
           }
         }
