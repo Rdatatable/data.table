@@ -4,8 +4,6 @@
 
 # data.table [v1.12.5](https://github.com/Rdatatable/data.table/milestone/18)  (in development)
 
-## NEW FEATURES
-
 ## BUG FIXES
 
 1. `shift()` on a `nanotime` with the default `fill=NA` now fills a `nanotime` missing value correctly, [#3945](https://github.com/Rdatatable/data.table/issues/3945). Thanks to @mschubmehl for reporting and fixing in PR [#3942](https://github.com/Rdatatable/data.table/pull/3942).
@@ -14,9 +12,11 @@
 
 3. A runtime error in `fwrite`'s compression, but only observed so far on Solaris 10 32bit with zlib 1.2.8 (Apr 2013), [#3931](https://github.com/Rdatatable/data.table/issues/3931): `Error -2: one or more threads failed to allocate buffers or there was a compression error.` In case it happens again, this area has been made more robust and the error more detailed. As is often the case, investigating the Solaris problem revealed secondary issues in the same area of the code. In this case, some `%d` in verbose output should have been `%lld`. This obliquity that CRAN's Solaris provides is greatly appreciated.
 
-4. A leak could occur in the event of an unsupported column type error, or if working memory cannot all be allocated; [#3940](https://github.com/Rdatatable/data.table/issues/3940). Found thanks to `clang`'s Leak Sanitizer (prompted by CRAN's diligent use of latest tools), and two tests in the test suite which tested the unsupported type error.
+4. A leak could occur in the event of an unsupported column type error, or if working memory could only partially be allocated; [#3940](https://github.com/Rdatatable/data.table/issues/3940). Found thanks to `clang`'s Leak Sanitizer (prompted by CRAN's diligent use of latest tools), and two tests in the test suite which tested the unsupported-type error.
 
 ## NOTES
+
+1. Many thanks to Kurt Hornik for fixing R's S3 dispatch of `rbind` and `cbind` methods, [#3948](https://github.com/Rdatatable/data.table/issues/3948). With `R>=4.0.0` (current R-devel), `data.table` now registers the S3 methods `cbind.data.table` and `rbind.data.table`, and no longer applies the workaround documented in FAQ 2.24.
 
 
 # data.table [v1.12.4](https://github.com/Rdatatable/data.table/milestone/16?closed=1)  (03 Oct 2019)
