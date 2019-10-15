@@ -2531,14 +2531,16 @@ chgroup = function(x) {
   if (length(o)) as.vector(o) else seq_along(x)  # as.vector removes the attributes
 }
 
-cbind.data.table = data.table
-
-rbind.data.table = function(..., use.names=TRUE, fill=FALSE, idcol=NULL) {
+.rbind.data.table = function(..., use.names=TRUE, fill=FALSE, idcol=NULL) {
   l = lapply(list(...), function(x) if (is.list(x)) x else as.data.table(x))  #1626; e.g. psych binds a data.frame|table with a matrix
   rbindlist(l, use.names, fill, idcol)
 }
 
-.rbind.data.table = rbind.data.table  # to support R<4.0.0 and has been exported for a long time; see .onLoad and #3948
+if (base::getRversion() >= "4.0.0") {  #3948
+  # these cause cc() to fail if present in .GlobalEnv in dev with R<4.0.0
+  cbind.data.table = data.table
+  rbind.data.table = .rbind.data.table
+}
 
 rbindlist = function(l, use.names="check", fill=FALSE, idcol=NULL) {
   if (is.null(l)) return(null.data.table())
