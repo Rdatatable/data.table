@@ -2532,12 +2532,14 @@ chgroup = function(x) {
 }
 
 .rbind.data.table = function(..., use.names=TRUE, fill=FALSE, idcol=NULL) {
-  # See FAQ 2.23
-  # Called from base::rbind.data.frame
-  # fix for #1626.. because some packages (like psych) bind an input
-  # data.frame/data.table with a matrix..
-  l = lapply(list(...), function(x) if (is.list(x)) x else as.data.table(x))
+  l = lapply(list(...), function(x) if (is.list(x)) x else as.data.table(x))  #1626; e.g. psych binds a data.frame|table with a matrix
   rbindlist(l, use.names, fill, idcol)
+}
+
+if (base::getRversion() >= "4.0.0") {  #3948
+  # these cause cc() to fail if present in .GlobalEnv in dev with R<4.0.0
+  cbind.data.table = data.table
+  rbind.data.table = .rbind.data.table
 }
 
 rbindlist = function(l, use.names="check", fill=FALSE, idcol=NULL) {

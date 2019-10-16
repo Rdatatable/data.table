@@ -1683,6 +1683,8 @@ test(583, DT[a<1], DT[0])
 test(584, DT[a<1], output="Empty data.table (0 rows and 2 cols): a,v")
 test(585, DT[a<1,list(v)], output="Empty data.table (0 rows and 1 cols): v")
 test(586.1, data.table(a=integer(),V1=integer()), output="Empty data.table (0 rows and 2 cols): a,V1")
+env = environment()
+data(iris, package='datasets', envir = env) # in case user has edited iris in their session
 test(586.2, print.data.table(iris[,FALSE]), output="Empty data.frame (150 rows and 0 cols)")   #3363
 
 # Test that .N is available in by on empty table, also in #1945
@@ -2555,19 +2557,21 @@ if (test_bit64) {
 }
 
 # getwd() has been set by test.data.table() to the location of this tests.Rraw file. Test files should be in the same directory.
-f = testDir("ch11b.dat")  # http://www.stats.ox.ac.uk/pub/datasets/csb/ch11b.dat
-test(900.1, fread(f, logical01=FALSE), as.data.table(read.table(f)))
-test(900.2, fread(f, logical01=TRUE), as.data.table(read.table(f))[,V5:=as.logical(V5)])
+if (test_R.utils) {
+  f = testDir("ch11b.dat.bz2")  # http://www.stats.ox.ac.uk/pub/datasets/csb/ch11b.dat
+  test(900.1, fread(f, logical01=FALSE), as.data.table(read.table(f)))
+  test(900.2, fread(f, logical01=TRUE), as.data.table(read.table(f))[,V5:=as.logical(V5)])
 
-f = testDir("1206FUT.txt")    # a CRLF line ending file (DOS)
-test(901.1, DT<-fread(f,strip.white=FALSE), setDT(read.table(f,sep="\t",header=TRUE,colClasses=as.vector(sapply(DT,class)))))
-test(901.2, DT<-fread(f), setDT(read.table(f,sep="\t",header=TRUE,colClasses=as.vector(sapply(DT,class)),strip.white=TRUE)))
+  f = testDir("1206FUT.txt.bz2")    # a CRLF line ending file (DOS)
+  test(901.1, DT<-fread(f,strip.white=FALSE), setDT(read.table(f,sep="\t",header=TRUE,colClasses=as.vector(sapply(DT,class)))))
+  test(901.2, DT<-fread(f), setDT(read.table(f,sep="\t",header=TRUE,colClasses=as.vector(sapply(DT,class)),strip.white=TRUE)))
+}
 
 # Test the coerce of column 23 to character on line 179 due to the 'A' for the first time.
 # As from v1.9.8 the columns are guessed better and there is no longer a warning.  Test 899 tests the warning.
 # Columns 'Cancelled' and 'Diverted' seem boolean (so logical01=TRUE good default for those) but Month just happens to be all-Jan
-f = testDir("2008head.csv")
-test(902, fread(f,logical01=FALSE), as.data.table(read.csv(f,stringsAsFactors=FALSE)))
+f = testDir("2008head.csv.bz2")
+if (test_R.utils) test(902, fread(f,logical01=FALSE), as.data.table(read.csv(f,stringsAsFactors=FALSE)))
 test(903, fread("A,B\n1,3,foo,5\n2,4,barbaz,6"), data.table(A=1:2, B=3:4, V3=c("foo","barbaz"), V4=5:6),
           warning="Detected 2 column names but.*4.*Added 2 extra default column names at the end")
 test(904, fread("A,B,C,D\n1,3,foo,5\n2,4,barbaz,6"), DT<-data.table(A=1:2,B=3:4,C=c("foo","barbaz"),D=5:6))  # ok
@@ -3085,13 +3089,13 @@ test(1034, as.data.table(x<-as.character(sample(letters, 5))), data.table(V1=x))
     test(1036.08, dim(ans<-melt(DT, 1:2, variable.factor=FALSE)), INT(325,4), warning="All measure variables not of type 'character' will be coerced")
     test(1036.09, sapply(ans, class), c(Id="character",Id2="integer",variable="character",value="character"))
     test(1036.10, ans$variable[c(1,2,324,325)], tt)
-  }
 
-  # more from #1754; was test 1571
-  DT = fread(testDir("melt_1754_synth.csv"))
-  test(1037.101, names(DT)[duplicated(names(DT))], c("smoking75","smoking80","smoking88"))
-  test(1037.102, dim(ans<-melt(DT, id.vars=c("state","income","retailprice","percent_15_19","beercons"), measure.vars=patterns("^smoking"))), INT(1326,7))
-  test(1037.103, print(ans[c(1,1326)]), output="state.*income.*retailprice.*percent_15_19.*beercons.*variable.*value.*1.*9.6.*89.34.*smoking88.*smoking00.*41.6")
+    # more from #1754; was test 1571
+    DT = fread(testDir("melt_1754_synth.csv.bz2"))
+    test(1037.101, names(DT)[duplicated(names(DT))], c("smoking75","smoking80","smoking88"))
+    test(1037.102, dim(ans<-melt(DT, id.vars=c("state","income","retailprice","percent_15_19","beercons"), measure.vars=patterns("^smoking"))), INT(1326,7))
+    test(1037.103, print(ans[c(1,1326)]), output="state.*income.*retailprice.*percent_15_19.*beercons.*variable.*value.*1.*9.6.*89.34.*smoking88.*smoking00.*41.6")
+  }
 
   # more from #1754; was test 1572
   DT = setDT(data.frame("Time.point" = seq(0, 6), "Time.(h)" = c(0.0, 0.5, 1.0, 3.0, 5.0, 7.0, 24.0),
@@ -6301,7 +6305,7 @@ quote"\n2,should be ok\n'),
            data.table(A=1:2,B=c('embedded""
 quote','should be ok')))
 
-if (test_bit64) {
+if (test_bit64 && test_R.utils) {
   # quoted multiline (scrambled data thanks to #810)
   DT = data.table(
     GPMLHTLN = as.integer64(c("3308386085360", "3440245203140", "1305220146734")),
@@ -6309,8 +6313,8 @@ if (test_bit64) {
     ZBJBLOAJAQI = c("LHCYS AYE ZLEMYA IFU HEI JG FEYE", "", ""),
     JKCRUUBAVQ = c("", ".\\YAPCNXJ\\004570_850034_757\\VWBZSS_848482_600874_487_PEKT-6-KQTVIL-7_30\\IRVQT\\HUZWLBSJYHZ\\XFWPXQ-WSPJHC-00-0770000855383.KKZ", "")
   )
-  test(1449.1, fread(testDir("quoted_multiline.csv"))[c(1L, 43:44), c(1L, 22:24)], DT)
-  test(1449.2, fread(testDir("quoted_multiline.csv"), integer64='character', select = 'GPMLHTLN')[c(1L, 43:44)][[1L]], DT[ , as.character(GPMLHTLN)])
+  test(1449.1, fread(testDir("quoted_multiline.csv.bz2"))[c(1L, 43:44), c(1L, 22:24)], DT)
+  test(1449.2, fread(testDir("quoted_multiline.csv.bz2"), integer64='character', select = 'GPMLHTLN')[c(1L, 43:44)][[1L]], DT[ , as.character(GPMLHTLN)])
 }
 
 # Fix for #927
@@ -6333,7 +6337,7 @@ test(1451.8, shallow(DT, character(0)), null.data.table())  # length-0 input wor
 test(1452, fread("notexist.csv"), error="File 'notexist.csv' does not exist.*getwd")
 
 # Test for #802
-test(1453, fread(testDir("fread_line_error.csv"))[c(1,.N), c("V1","V24")],
+if (test_R.utils) test(1453, fread(testDir("fread_line_error.csv.bz2"))[c(1,.N), c("V1","V24")],
            data.table(V1=INT(3,32), V24=c(".Q8_2_0W_8_1_7_L-4-U-5_1YSV-S-3-5.X",".U5_5_8H_7_6_0_U-5-J-7_2GNY-J-3-5.X")),
            warning=c("resolved improper quoting", "Stopped.*line 12. Expected 24 fields but found 47.*First discarded non-empty line: <<31,3-0-7 4:1:7.5 HVV,"))
 
@@ -6469,6 +6473,11 @@ nm = c("x_lag_1", "x_lag_2")
 ans = list(as.integer(c(NA, 1:9)), as.integer(c(NA, NA, 1:8)))
 setattr(ans, 'names', nm)
 test(1463.39, shift(x, 1:2, give.names=TRUE), ans)
+
+if (test_nanotime) {
+  test(1463.40, shift(nanotime(1:4)         ), c(nanotime::nanotime(NA), nanotime::nanotime(1:3)));
+  test(1463.41, shift(nanotime(1:4), fill=0L), c(nanotime::nanotime(0L), nanotime::nanotime(1:3)));
+}
 
 # FR #686
 DT = data.table(a=rep(c("A", "B", "C", "A", "B"), c(2,2,3,1,2)), foo=1:10)
@@ -7583,8 +7592,8 @@ test(1551.5, fread(str),
   data.table(L1 = c("L2", "L3"), some = c("some", "this"), unquoted = c("\"half\" quoted", "should work"), stuff = c("stuff", "ok though")),
   warning = w)
 #1095
-rhs = read.table(testDir("issue_1095_fread.txt"), sep=",", comment.char="", stringsAsFactors=FALSE, quote="", strip.white=TRUE)
-test(1551.6, fread(testDir("issue_1095_fread.txt"), logical01=FALSE), setDT(rhs), warning=w)
+rhs = read.table(testDir("issue_1095_fread.txt.bz2"), sep=",", comment.char="", stringsAsFactors=FALSE, quote="", strip.white=TRUE)
+if (test_R.utils) test(1551.6, fread(testDir("issue_1095_fread.txt.bz2"), logical01=FALSE), setDT(rhs), warning=w)
 
 # FR #1314 rest of na.strings issue
 str = "a,b,c,d\n#N/A,+1,5.5,FALSE\n#N/A,5,6.6,TRUE\n#N/A,+1,#N/A,-999\n#N/A,#N/A,-999,FALSE\n#N/A,1,NA,TRUE"
@@ -7619,21 +7628,23 @@ test(1554.2, dt[-idx], data.table(a=letters[(1:10)[-idx]]))
 test(1554.3, dt[!idx], data.table(a=letters[(1:10)[-idx]]))
 test(1554.4, idx, structure(c(2L, 3L, 4L, 7L, 9L, 10L), .Dim = c(6L, 1L), .Dimnames = list(NULL, "Resample1")))
 
-# strip.white and other enhancements to 'fread()'
-# bug #1113
-ans1 <- fread(testDir("issue_1113_fread.txt"))
-# some inconsistency by R version on whether the last column
-#   () gets read as numeric (which it is) or as factor,
-#   see discussion on issue #2484; not clear exactly what changed
-#   in R to fix this (or when), so just test is.character
-#   and force numeric instead of testing R version
-ans2 <- read.table(testDir("issue_1113_fread.txt"), header=TRUE, stringsAsFactors = FALSE)
-if (is.character(ans2$MCMCOBJ)) {
-  ans2$MCMCOBJ = as.numeric(ans2$MCMCOBJ)
+if (test_R.utils) {
+  # strip.white and other enhancements to 'fread()'
+  # bug #1113
+  ans1 <- fread(testDir("issue_1113_fread.txt.bz2"))
+  # some inconsistency by R version on whether the last column
+  #   () gets read as numeric (which it is) or as factor,
+  #   see discussion on issue #2484; not clear exactly what changed
+  #   in R to fix this (or when), so just test is.character
+  #   and force numeric instead of testing R version
+  ans2 <- read.table(testDir("issue_1113_fread.txt.bz2"), header=TRUE, stringsAsFactors = FALSE)
+  if (is.character(ans2$MCMCOBJ)) {
+    ans2$MCMCOBJ = as.numeric(ans2$MCMCOBJ)
+  }
+  setDT(ans2)
+  setnames(ans2, names(ans1))
+  test(1555.01, ans1, ans2)
 }
-setDT(ans2)
-setnames(ans2, names(ans1))
-test(1555.01, ans1, ans2)
 
 # bug #1035, take care of spaces automatically. Note that the columns are also read in proper types. Also with quotes when sep is not space.
 str1=" ITERATION    THETA1       THETA2
@@ -7663,9 +7674,11 @@ str1="  22 4 6 4\n  34 22 34 5\n  6 2 1 4\n"
 str2="22 4 6 4\n34 22 34 5\n6 2 1 4\n"
 test(1555.11, fread(str1), fread(str2))
 
-# bug #785
-rhs <- setDT(read.table(testDir("issue_785_fread.txt"), header=TRUE, stringsAsFactors=FALSE, sep="\t", strip.white=TRUE))
-test(1555.12, fread(testDir("issue_785_fread.txt"), logical01=FALSE), rhs)
+if (test_R.utils) {
+  # bug #785
+  rhs <- setDT(read.table(testDir("issue_785_fread.txt.gz"), header=TRUE, stringsAsFactors=FALSE, sep="\t", strip.white=TRUE))
+  test(1555.12, fread(testDir("issue_785_fread.txt.gz"), logical01=FALSE), rhs)
+}
 
 # bug #529, http://stackoverflow.com/questions/22229109/r-data-table-fread-command-how-to-read-large-files-with-irregular-separators
 str1=" YYYY MM DD HH mm             19490             40790
@@ -8224,7 +8237,7 @@ test(1607, wide[, id := .I], data.table(resp = 1:5, id = 1:5))
 
 # better fix for #1462, + improved error message (if this better fix fails)
 # no need for quote="" and sep="\t"..
-test(1608, dim(fread(testDir('issue_1462_fread_quotes.txt'), header=FALSE)), c(4L, 224L), warning="resolved improper quoting")
+if (test_R.utils) test(1608, dim(fread(testDir('issue_1462_fread_quotes.txt.gz'), header=FALSE)), c(4L, 224L), warning="resolved improper quoting")
 
 # fix for #1164
 test(1609, fread(testDir("issue_1164_json.txt")), data.table(json1='{""f1"":""value1"",""f2"":""double quote escaped with a backslash [ \\"" ]""}', string1="string field"))
@@ -8522,10 +8535,12 @@ setattr(DT, 'class', c('data.table', 'data.frame')) # simulates over-allocation 
 if (!truelength(DT)) test(1620, truelength(as.data.table(DT)), 1026L)
 
 # fix for #1116, (#1239 and #1201)
-test(1621.1, fread(testDir("issue_1116_fread_few_lines.txt"), logical01=FALSE),
-             setDT(read.delim(testDir("issue_1116_fread_few_lines.txt"), stringsAsFactors=FALSE, sep=",", check.names=FALSE)))
-test(1621.2, fread(testDir("issue_1116_fread_few_lines_2.txt"), logical01=FALSE),
-             setDT(read.delim(testDir("issue_1116_fread_few_lines_2.txt"), stringsAsFactors=FALSE, sep=",", check.names=FALSE)))
+if (test_R.utils) {
+  test(1621.1, fread(testDir("issue_1116_fread_few_lines.txt.gz"), logical01=FALSE),
+               setDT(read.delim(testDir("issue_1116_fread_few_lines.txt.gz"), stringsAsFactors=FALSE, sep=",", check.names=FALSE)))
+  test(1621.2, fread(testDir("issue_1116_fread_few_lines_2.txt.gz"), logical01=FALSE),
+               setDT(read.delim(testDir("issue_1116_fread_few_lines_2.txt.gz"), stringsAsFactors=FALSE, sep=",", check.names=FALSE)))
+}
 
 # fix for #1573
 ans1 = fread(testDir("issue_1573_fill.txt"), fill=TRUE, na.strings="")
@@ -9624,9 +9639,10 @@ test(1658.40, fwrite(matrix(1:4, nrow=2, ncol=2, dimnames = list(c("ra","rb"),c(
 # fwrite compress
 test(1658.41, fwrite(data.table(a=c(1:3), b=c(1:3)), compress="gzip"), output='a,b\n1,1\n2,2\n3,3')  # compress ignored on console
 DT = data.table(a=rep(1:2,each=100), b=rep(1:4,each=25))
-fwrite(DT, file=f1<-tempfile(fileext=".gz"))
-fwrite(DT, file=f2<-tempfile())
-test(1658.42, file.info(f1)$size < file.info(f2)$size)  # 74 < 804  (file.size() isn't available in R 3.1.0)
+test(1658.421, fwrite(DT, file=f1<-tempfile(fileext=".gz"), verbose=TRUE), NULL,
+               output="args.nrow=200 args.ncol=2.*maxLineLen=5[12].*Writing 200 rows in 1 batches of 200 rows.*nth=1")  # [12] for Windows where eolLen==2
+test(1658.422, fwrite(DT, file=f2<-tempfile()), NULL)
+test(1658.423, file.info(f1)$size < file.info(f2)$size)  # 74 < 804  (file.size() isn't available in R 3.1.0)
 if (test_R.utils) test(1658.43, fread(f1), DT)  # use fread to decompress gz (works cross-platform)
 fwrite(DT, file=f3<-tempfile(), compress="gzip")   # compress to filename not ending .gz
 test(1658.44, file.info(f3)$size, file.info(f1)$size)
@@ -9891,10 +9907,12 @@ foo <- function(x) {
 test(1680.1, foo(x), melt(x, measure.vars=patterns("^y", "^z")))
 
 # melt warning prints only first 5 cols, #1752
-DT = fread(testDir("melt-warning-1752.tsv"))
-ans = suppressWarnings(melt(DT[, names(DT) %like% "(^Id[0-9]*$)|GEOGRAPHIC AREA CODES", with=FALSE], id=1:2))
-test(1681, melt(DT[, names(DT) %like% "(^Id[0-9]*$)|GEOGRAPHIC AREA CODES", with=FALSE], id.vars=1:2),
-    ans, warning="are not all of the same type")
+if (test_R.utils) {
+  DT = fread(testDir("melt-warning-1752.tsv.gz"))
+  ans = suppressWarnings(melt(DT[, names(DT) %like% "(^Id[0-9]*$)|GEOGRAPHIC AREA CODES", with=FALSE], id=1:2))
+  test(1681, melt(DT[, names(DT) %like% "(^Id[0-9]*$)|GEOGRAPHIC AREA CODES", with=FALSE], id.vars=1:2),
+      ans, warning="are not all of the same type")
+}
 
 # non-equi joins with by=.EACHI, not as exhaustive, but given the previous
 # tests were, this should be fine.. we'll add tests as we go along.
@@ -10132,8 +10150,7 @@ test(1702.2, isoweek(as.Date(test_cases)), test_values)
 test(1702.3, isoweek(as.POSIXct(test_cases)), test_values)
 
 # 1% sample of a 400-year cycle of dates for extra robustness
-isotest = fread(testDir('isoweek_test.csv'))
-test(1702.4, isoweek(isotest$input_date), isotest$expected_output)
+if (test_R.utils) test(1702.4, isoweek((DT<-fread(testDir('isoweek_test.csv.bz2')))$input_date), DT$expected_output)
 
 # fread, ensure no shell commands #1702
 if (.Platform$OS.type=="unix") {
@@ -11020,7 +11037,7 @@ test(1753.2, fread("X,Y\n1,2\n3,4,\n5,6",logical01=TRUE), ans<-data.table(X=TRUE
 test(1753.3, fread("X,Y\n1,2\n3,4,7\n5,6",logical01=TRUE), ans,                         warning="Stopped.*line 3. Expected 2 fields but found 3.*discarded.*<<3,4,7>>")
 
 # issue 2051 where a quoted field contains ",  New quote rule detection handles it.
-test(1753.4, fread(testDir("issue_2051.csv"))[2,grep("^Our.*tool$",COLUMN50)], 1L)
+if (test_R.utils) test(1753.4, fread(testDir("issue_2051.csv.gz"))[2,grep("^Our.*tool$",COLUMN50)], 1L)
 
 # check omp critical around SET_STRING_ELT
 # minimal construction big enough for parallelism with 8 or less threads. On a machine with more, do setDTthreads(8) first otherwise
@@ -11062,7 +11079,7 @@ test(1758, sapply(fread("A,B\n,"),class), c(A="logical",B="logical"))
 
 # Slowdown when parallel and all columns are character, #2091. This test tests the data loads ok but we need a
 # performance test environment to make sure the slowdown doesn't come back.  Fix was to delay call to SET_.
-test(1759, fread(testDir("alluniquechar.csv"))[c(1,2,499,500)],
+if (test_R.utils) test(1759, fread(testDir("alluniquechar.csv.gz"))[c(1,2,499,500)],
            data.table(A=c("jptokakysooopwtmlkeimzbgpeinhy","bchguwmynjhecsxpxldyzlemavmwvz",
                           "avlyclruzkazfqhyxnppaafwcveolb","dkmyfqhltlwzwwxyvshwrzrdmfyqdm"),
                       B=c("jptokakysooopwtmlkei","bchguwmynjhecsxpxldy","avlyclruzkazfqhyxnpp","dkmyfqhltlwzwwxyvshw"),
@@ -11513,10 +11530,12 @@ test(1816.2, fread(f, verbose=TRUE),
              output="Last byte.*0x00.*NUL.*removed")  #1895
 unlink(f)
 
-test(1817, fread(testDir("bad.txt"))[c(1,.N),c(1,3)],  #2238, fileSize multiple of 4096
+if (test_R.utils) {
+  test(1817, fread(testDir("bad.txt.bz2"))[c(1,.N),c(1,3)],  #2238, fileSize multiple of 4096
            data.table("####################"=c("#############","#########"),
                       "###############################################"=c(0,0)))   # not sure why this all-0 column is detectected as numeric rather than integer
-test(1818, fread(testDir("session_aborted_fatal_error.txt"))[c(1,.N),c(1,2,250,251)], data.table(V1=c("ACSSF","ACSSF"),V2=c("2010m1","2010m1"),V250=-1L,V251=-1L))
+  test(1818, fread(testDir("session_aborted_fatal_error.txt.bz2"))[c(1,.N),c(1,2,250,251)], data.table(V1=c("ACSSF","ACSSF"),V2=c("2010m1","2010m1"),V250=-1L,V251=-1L))
+}
 
 # expansion of uses of as.ITime.character, PR#1796
 test(1819, as.ITime("2015-09-29 08:22:00"), structure(30120L, class = "ITime"))
@@ -11924,7 +11943,7 @@ test(1856.3, fread("A,B\n\n\n"), ans)
 test(1856.4, fread("A,B\n3,4\n\n\n"), data.table(A=3L, B=4L))
 test(1856.5, fread("A,B\n3,4\n,\n\n\n"), data.table(A=c(3L,NA), B=c(4L,NA)))
 test(1856.6, fread("A,B\n3,4\n\n5,6\n"), data.table(A=3L, B=4L), warning="Discarded single-line footer: <<5,6>>")
-test(1856.7, fread(testDir("test0.txt"))[c(1,997,998,999)], data.table(x0=c(656609L, NA, -2368L, 955199L)))  # issue 2515
+if (test_R.utils) test(1856.7, fread(testDir("test0.txt.bz2"))[c(1,997,998,999)], data.table(x0=c(656609L, NA, -2368L, 955199L)))  # issue 2515
 DTs = list(                                      # passed fread(fwrite(DT))==DT before fix?
   data.table(A=logical(0)),                      # yes
   data.table(A=NA),                              # no
@@ -12037,9 +12056,11 @@ test(1867.01, fread("A,B\n1,3,5,7\n2,4,6,8\n"), data.table(A=1:2, B=3:4, V3=5:6,
               warning="Detected 2 column names but.*4.*Added 2 extra default column names at the end[.]")
 test(1867.02, fread("A,B,C,D,E\n1,3,5,7\n2,4,6,8\n"), data.table(A=1:2, B=3:4, C=5:6, D=7:8, E=NA),
               warning="Detected 5.*but.*4.*Filling rows automatically.")
-test(1867.03, fread(testDir("fillheader.csv"))[c(1,.N), c(1,29,30)], data.table("V1"="Ashburton District", EASTING=c(5154177L,5144032L), NORTHING=NA),
+if (test_R.utils) {
+  test(1867.03, fread(testDir("fillheader.csv.bz2"))[c(1,.N), c(1,29,30)], data.table("V1"="Ashburton District", EASTING=c(5154177L,5144032L), NORTHING=NA),
               warning="Detected 29.*but.*30.*Added 1 extra default column name.*guessed to be row names or an index.*valid file")
               # in this unusual case, every data row has a trailing comma but the column names do not. So the guess is wrong; a deliberate choice currently.
+}
 test(1867.04, fread("A,B\nCol1,Col2,Col3\n1,3,5\n2,4,6\n"), data.table(Col1=1:2, Col2=3:4, Col3=5:6))
 test(1867.05, fread("A\nCol1,Col2\n1,3,5\n2,4,6\n"), data.table(V1=1:2, Col1=3:4, Col2=5:6), warning="Added 1 extra default column name.*guessed to be row names or an index")
 test(1867.06, fread("Some header\ninfo\nCol1,Col2,Col3\n1,3,5\n2,4,6\n"), data.table(Col1=1:2, Col2=3:4, Col3=5:6))
@@ -12054,7 +12075,7 @@ DT = data.table(x=rep(c("a","b","c"),each=3), y=c(1L,3L,6L), v=10:18)
 write.table(DT, file = (f<-tempfile()), sep = "\t")
 test(1867.13, fread(f), data.table(V1=1:9, x=DT$x, y=DT$y, v=DT$v), warning="Added 1 extra default column name")
 unlink(f)
-# test(1867.14, fread(testDir("iterations.txt")))
+# test(1867.14, fread(testDir("iterations.txt.bz2")))
 
 # non equi joins bug fix #2313
 dt <- data.table(
@@ -12075,12 +12096,14 @@ test(1869.2, fread("A\r1\r\r\r2\r\r"), data.table(A=c(1L,NA,NA,2L,NA)))
 test(1869.3, fread("A\r1\r\r\r2\r\r\r"), data.table(A=c(1L,NA,NA,2L,NA,NA)))
 test(1869.4, fread("A,B\r2,3\r,\r,\r4,5\r\r"), data.table(A=c(2L,NA,NA,4L), B=c(3L,NA,NA,5L)))
 test(1869.5, fread("A,B\r2,3\r\r,\r2,4\r\r"), data.table(A=2L, B=3L), warning="Stopped.*line 3. Expected 2 fields but found 0.*First discarded non-empty line: <<,>>")  # two line footer because of the comma
-test(1869.6, fread(testDir("colnames4096.csv"), verbose=TRUE)[,c(1,2,585,586)],
+if (test_R.utils) {
+  test(1869.6, fread(testDir("colnames4096.csv.bz2"), verbose=TRUE)[,c(1,2,585,586)],
              data.table(Foo000=logical(), Bar001=logical(), Foo584=logical(), B=logical()),
              output = "Copying file in RAM.*file is very unusual.*ends abruptly.*multiple of 4096")
-test(1869.7, fread(testDir("onecol4096.csv"), verbose=TRUE)[c(1,2,245,246,249,255:.N),],
+  test(1869.7, fread(testDir("onecol4096.csv.bz2"), verbose=TRUE)[c(1,2,245,246,249,255:.N),],
              data.table(A=c("FooBarBazQux000","FooBarBazQux001","","FooBarBazQux245","","FooBarBazQux254","FooBarBazQux","FooBarBaz12","FooBarBazQux256","","","")),
              output = "Copying file in RAM.*file is very unusual.*one single column, ends with 2 or more end-of-line.*and is a multiple of 4096")
+}
 
 # better colname detection by comparing potential column names to the whole sample not just the first row of the sample, #2526
 test(1870.1, fread("A,100,200\n,300,400\n,500,600"), data.table(A=NA, "100"=c(300L,500L), "200"=c(400L,600L)))
@@ -12294,7 +12317,7 @@ v = seq_len(1291L)
 test(1882.3, CJ(v, v, v), error="Cross product of elements provided to CJ() would result in 2151685171 rows which exceeds .Machine$integer.max == 2147483647")
 
 # no re-read for particular file, #2509
-test(1883, fread(testDir("SA2-by-DJZ.csv"), verbose=TRUE, header=FALSE)[c(1,2,1381,.N),],
+if (test_R.utils) test(1883, fread(testDir("SA2-by-DJZ.csv.gz"), verbose=TRUE, header=FALSE)[c(1,2,1381,.N),],
            data.table(V1=c("Goulburn","","",""), V2=c("110018063","110018064","0&&&&&&&&","0@@@@@@@@"), V3=INT(3499,812,250796,7305367), V4=NA),
            warning='Stopped early on line 1394.*First discarded non-empty line: <<"Dataset: 2011 Census of Population and Housing">>',
            output="Rereading 0 columns")
@@ -12544,15 +12567,17 @@ test(1908, observed, expected)
 
 # skip= is now consistent as if the file started on that line.
 # Found via rev dep checking (package PhenotypeSimulator), #2786. It is still a breaking change that PhenotypeSimulator will need to accomodate please.
-test(1909.1, names(ans<-fread(testDir("genotypes_genome.txt"), skip="Samples:", sep=" ", colClasses="character")),
-             c("V1","Samples:"),
-             warning="Detected 1 column name.*but the data has 2 columns.*Added 1 extra default column name for the first column")
-test(1909.2, ans$V1, c("POP1:","POP1:","POP1:"))
-test(1909.3, nchar(ans[["Samples:"]]), INT(3287,3287,3287))
-test(1909.4, names(ans<-fread(testDir("genotypes_genome.txt"), skip="POP1:", sep=" ", colClasses="character", header=FALSE)),
-             c("V1","V2"))
-test(1909.5, ans$V1, c("POP1:","POP1:","POP1:"))
-test(1909.6, nchar(ans$V2), INT(3287,3287,3287))
+if (test_R.utils) {
+  test(1909.1, names(ans<-fread(testDir("genotypes_genome.txt.bz2"), skip="Samples:", sep=" ", colClasses="character")),
+               c("V1","Samples:"),
+               warning="Detected 1 column name.*but the data has 2 columns.*Added 1 extra default column name for the first column")
+  test(1909.2, ans$V1, c("POP1:","POP1:","POP1:"))
+  test(1909.3, nchar(ans[["Samples:"]]), INT(3287,3287,3287))
+  test(1909.4, names(ans<-fread(testDir("genotypes_genome.txt.bz2"), skip="POP1:", sep=" ", colClasses="character", header=FALSE)),
+               c("V1","V2"))
+  test(1909.5, ans$V1, c("POP1:","POP1:","POP1:"))
+  test(1909.6, nchar(ans$V2), INT(3287,3287,3287))
+}
 
 # possible regression suggested in PR#2843
 DT = data.table(x=1:10, y=1:2)
@@ -14634,7 +14659,7 @@ if (test_yaml) {  # csvy; #1701
   test(2032.16, fread(testDir('csvy/test_incomplete_header.csvy'), yaml = TRUE),
        error = 'Reached the end.*YAML.*valid csvy')
   ## use any other CSV in test directory which doesn't have YAML
-  test(2032.17, fread(testDir('issue_2051.csv'), yaml = TRUE),
+  if (test_R.utils) test(2032.17, fread(testDir('issue_2051.csv.gz'), yaml = TRUE),
        error = 'Encountered.*unskipped.*constitute.*valid YAML')
   ## no problem if some fields are missing a type (just
   ##   resort to standard auto-inferral, i.e., identical to

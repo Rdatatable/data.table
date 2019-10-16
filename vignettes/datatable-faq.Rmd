@@ -423,28 +423,15 @@ This is an unfortunate downside to get [#869](https://github.com/Rdatatable/data
 
 ## I've noticed that `base::cbind.data.frame` (and `base::rbind.data.frame`) appear to be changed by data.table. How is this possible? Why?
 
-It is a temporary, last resort solution until we discover a better way to solve the problems listed below. Essentially, the issue is that data.table inherits from `data.frame`, _and_ `base::cbind` and `base::rbind` (uniquely) do their own S3 dispatch internally as documented by `?cbind`. The change is adding one `for` loop to the start of each function directly in `base`; _e.g._,
+It was a temporary, last resort solution before rbind and cbind S3 method dispatch was fixed in R >= 4.0.0. Essentially, the issue was that `data.table` inherits from `data.frame`, _and_ `base::cbind` and `base::rbind` (uniquely) do their own S3 dispatch internally as documented by `?cbind`. The `data.table` workaround was adding one `for` loop to the start of each function directly in `base`. That modification was made dynamically, _i.e._, the `base` definition of `cbind.data.frame` was fetched, the `for` loop added to the beginning, and then assigned back to `base`. This solution was designed to be robust to different definitions of `base::cbind.data.frame` in different versions of R, including unknown future changes. It worked well. The competing requirements were:
 
-```{r}
-base::cbind.data.frame
-```
+ - `cbind(DT, DF)` needs to work. Defining `cbind.data.table` didn't work because `base::cbind` does its own S3 dispatch and required (before R 4.0.0) that the _first_ `cbind` method for each object it is passed is _identical_. This is not true in `cbind(DT, DF)` because the first method for `DT` is `cbind.data.table` but the first method for `DF` is `cbind.data.frame`. `base::cbind` then fell through to its internal `bind` code which appears to treat `DT` as a regular `list` and returns very odd looking and unusable `matrix` output. See [below](#cbinderror). We cannot just advise users not to call `cbind(DT, DF)` because packages such as `ggplot2` make such a call ([test 167.2](https://github.com/Rdatatable/data.table/blob/master/inst/tests/tests.Rraw#L444-L447)).
 
-That modification is made dynamically, _i.e._, the `base` definition of `cbind.data.frame` is fetched, the `for` loop added to the beginning and then assigned back to `base`. This solution is intended to be robust to different definitions of `base::cbind.data.frame` in different versions of R, including unknown future changes. Again, it is a last resort until a better solution is known or made available. The competing requirements are:
-
- - `cbind(DT, DF)` needs to work. Defining `cbind.data.table` doesn't work because `base::cbind` does its own S3 dispatch and requires that the _first_ `cbind` method for each object it is passed is _identical_. This is not true in `cbind(DT, DF)` because the first method for `DT` is `cbind.data.table` but the first method for `DF` is `cbind.data.frame`. `base::cbind` then falls through to its internal `bind` code which appears to treat `DT` as a regular `list` and returns very odd looking and unusable `matrix` output. See [below](#cbinderror). We cannot just advise users not to call `cbind(DT, DF)` because packages such as `ggplot2` make such a call ([test 167.2](https://github.com/Rdatatable/data.table/blob/master/inst/tests/tests.Rraw#L444-L447)).
-
- - This naturally leads to trying to mask `cbind.data.frame` instead. Since a data.table is a `data.frame`, `cbind` would find the same method for both `DT` and `DF`. However, this doesn't work either because `base::cbind` appears to find methods in `base` first; _i.e._, `base::cbind.data.frame` isn't maskable. This is reproducible as follows :
-
-```{r}
-foo = data.frame(a = 1:3)
-cbind.data.frame = function(...) cat("Not printed\n")
-cbind(foo)
-rm("cbind.data.frame")
-```
+ - This naturally led to trying to mask `cbind.data.frame` instead. Since a data.table is a `data.frame`, `cbind` would find the same method for both `DT` and `DF`. However, this didn't work either because `base::cbind` appears to find methods in `base` first; _i.e._, `base::cbind.data.frame` isn't maskable.
 
  - Finally, we tried masking `cbind` itself (v1.6.5 and v1.6.6). This allowed `cbind(DT, DF)` to work, but introduced compatibility issues with package `IRanges`, since `IRanges` also masks `cbind`. It worked if `IRanges` was lower on the `search()` path than data.table, but if `IRanges` was higher then data.table's, `cbind` would never be called and the strange-looking `matrix` output occurs again (see [below](#cbinderror)).
 
-If you know of a better solution that still solves all the issues above, then please let us know and we'll gladly change it.
+Many thanks to the R core team for fixing the issue in Sep 2019. data.table v1.12.6+ no longer applies the workaround in R >= 4.0.0.
 
 ## I've read about method dispatch (_e.g._ `merge` may or may not dispatch to `merge.data.table`) but _how_ does R know how to dispatch? Are dots significant or special? How on earth does R know which function to dispatch and when? {#r-dispatch}
 

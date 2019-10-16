@@ -16,6 +16,8 @@ rm ./src/*.so
 rm ./src/*.o
 rm -rf ./data.table.Rcheck
 
+checkbashisms ./configure  # for portability; e.g. Solaris 10 running Bourne shell; #3964
+
 # Ensure no non-ASCII, other than in README.md is ok
 # tests.Rraw in particular have failed CRAN Solaris (only) due to this.
 grep -RI --exclude-dir=".git" --exclude="*.md" --exclude="*~" --color='auto' -P -n "[\x80-\xFF]" ./
@@ -47,6 +49,9 @@ grep "Rprintf" ./src/init.c
 # See https://github.com/Rdatatable/data.table/issues/1351
 grep "nearest *=" ./src/*.c  # none
 grep "class *=" ./src/*.c    # quite a few but none global
+
+# ensure no use of z_const from zconf.h; #3939
+grep "z_const" ./src/*.[hc]  # none other than the comment
 
 # No undefined type punning of the form:  *(long long *)&REAL(column)[i]
 # Failed clang 3.9.1 -O3 due to this, I think.
@@ -148,6 +153,8 @@ gctorture2(step=50)
 system.time(test.data.table(script="*.Rraw"))  # apx 8h = froll 3h + nafill 1m + main 5h
 
 # Upload to win-builder: release, dev & old-release
+# Turn on Travis OSX; it's off in dev until it's added to GLCI (#3326) as it adds 17min after 11min Linux.
+# Turn on r-devel in Appveyor; it may be off in dev for similar dev cycle speed reasons
 
 
 ###############################################
@@ -195,14 +202,17 @@ R CMD check data.table_1.12.5.tar.gz
 
 cd ~/build
 wget -N https://stat.ethz.ch/R/daily/R-devel.tar.gz
-rm -rf R-devel
-rm -rf R-devel-strict
+rm -rf R-devel-strict-*
 tar xvf R-devel.tar.gz
-mv R-devel R-devel-strict
-cd R-devel-strict    # important to change directory name before building not after because the path is baked into the build, iiuc
-# Following R-exts#4.3.3
+mv R-devel R-devel-strict-gcc
+tar xvf R-devel.tar.gz
+mv R-devel R-devel-strict-clang
 
-./configure --without-recommended-packages --disable-byte-compiled-packages --disable-openmp --enable-strict-barrier --disable-long-double CC="gcc -fsanitize=undefined,address -fno-sanitize=float-divide-by-zero -fno-omit-frame-pointer"
+# use gcc-8 and clang-8 in CC=, or latest available in `apt cache search gcc-` or `clang-`
+
+cd R-devel-strict-clang    # important to change directory name before building not after because the path is baked into the build, iiuc
+./configure --without-recommended-packages --disable-byte-compiled-packages --disable-openmp --enable-strict-barrier --disable-long-double CC="clang-8 -fsanitize=undefined,address -fno-sanitize=float-divide-by-zero -fno-omit-frame-pointer"
+# See R-exts#4.3.3
 # CFLAGS an LIBS seem to be ignored now by latest R-devel/gcc, and it works without : CFLAGS="-O0 -g -Wall -pedantic" LIBS="-lpthread"
 # Adding --disable-long-double (see R-exts) in the same configure as ASAN/UBSAN used to fail, but now works. So now noLD is included in this strict build.
 # Other flags used in the past: CC="gcc -std=gnu99" CFLAGS="-O0 -g -Wall -pedantic -ffloat-store -fexcess-precision=standard"
@@ -212,16 +222,19 @@ cd R-devel-strict    # important to change directory name before building not af
 # LIBS="-lpthread" otherwise ld error about DSO missing
 # -fno-sanitize=float-divide-by-zero, otherwise /0 errors on R's summary.c (tests 648 and 1185.2) but ignore those:
 #   https://bugs.r-project.org/bugzilla3/show_bug.cgi?id=16000
-
 # without ubsan, openmp can be on :
-./configure --without-recommended-packages --disable-byte-compiled-packages --enable-strict-barrier CC="gcc -fsanitize=address -fno-sanitize=float-divide-by-zero -fno-omit-frame-pointer" CFLAGS="-O0 -g -Wall -pedantic"
+# ./configure --without-recommended-packages --disable-byte-compiled-packages --enable-strict-barrier CC="gcc -fsanitize=address -fno-sanitize=float-divide-by-zero -fno-omit-frame-pointer" CFLAGS="-O0 -g -Wall -pedantic"
 
 make
-alias Rdevel-strict='~/build/R-devel-strict/bin/R --vanilla'
+# change CC="clang-8|gcc-8 ..." in configure above and repeat
+alias Rdevel-strict-gcc='~/build/R-devel-strict-gcc/bin/R --vanilla'
+alias Rdevel-strict-clang='~/build/R-devel-strict-clang/bin/R --vanilla'
 cd ~/GitHub/data.table
-Rdevel-strict CMD INSTALL data.table_1.12.5.tar.gz
+Rdevel-strict-gcc CMD INSTALL data.table_1.12.5.tar.gz
+Rdevel-strict-clang CMD INSTALL data.table_1.12.5.tar.gz
 # Check UBSAN and ASAN flags appear in compiler output above. Rdevel was compiled with them so should be passed through to here
-Rdevel-strict
+Rdevel-strict-clang
+# repeat with Rdevel-strict-gcc
 isTRUE(.Machine$sizeof.longdouble==0)  # check noLD is being tested
 options(repos = "http://cloud.r-project.org")
 install.packages(c("bit64","xts","nanotime","R.utils","yaml")) # minimum packages needed to not skip any tests in test.data.table()
@@ -443,8 +456,14 @@ Bump version to even release number in 3 places :
   2) NEWS (without 'on CRAN date' text as that's not yet known)
   3) dllVersion() at the end of init.c
 DO NOT push to GitHub. Prevents even a slim possibility of user getting premature version. Even release numbers must have been obtained from CRAN and only CRAN. There were too many support problems in the past before this procedure was brought in.
+du -k inst/tests                # 1.5MB before
+bzip2 inst/tests/*.Rraw         # compress *.Rraw just for release to CRAN; do not commit compressed *.Rraw to git
+du -k inst/tests                # 0.75MB after
 R CMD build .
-R CMD check --as-cran data.table_1.12.4.tar.gz
+R CMD check data.table_1.12.4.tar.gz --as-cran
+#
+bunzip2 inst/tests/*.Rraw.bz2  # decompress *.Rraw again so as not to commit compressed *.Rraw to git
+#
 Resubmit to winbuilder (R-release, R-devel and R-oldrelease)
 Submit to CRAN. Message template :
 ------------------------------------------------------------

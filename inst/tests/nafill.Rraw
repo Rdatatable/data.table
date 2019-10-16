@@ -177,4 +177,12 @@ if (test_bit64) {
   test(6.44, identical(coerceFill(NaN), list(NA_integer_, NaN, as.integer64(NA))))
   test(6.45, identical(coerceFill(Inf), list(NA_integer_, Inf, as.integer64(NA))))
   test(6.46, identical(coerceFill(-Inf), list(NA_integer_, -Inf, as.integer64(NA))))
+  test(6.47, identical(coerceFill(-(2^62)), list(NA_integer_, -(2^62), as.integer64("-4611686018427387904"))))
+  test(6.48, identical(coerceFill(-(2^64)), list(NA_integer_, -(2^64), as.integer64(NA))))
+  test(6.49, identical(coerceFill(x<-as.integer64(-2147483647)), list(-2147483647L, -2147483647, x)))
+  test(6.50, identical(coerceFill(x<-as.integer64(-2147483648)), list(NA_integer_, -2147483648, x)))
+  test(6.51, identical(coerceFill(x<-as.integer64(-2147483649)), list(NA_integer_, -2147483649, x)))
+  test(6.52, identical(coerceFill(-2147483647), list(-2147483647L, -2147483647, as.integer64("-2147483647"))))
+  test(6.53, identical(coerceFill(-2147483648), list(NA_integer_, -2147483648,  as.integer64("-2147483648"))))
+  test(6.54, identical(coerceFill(-2147483649), list(NA_integer_, -2147483649,  as.integer64("-2147483649"))))
 }

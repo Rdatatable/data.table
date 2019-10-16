@@ -9,7 +9,7 @@ development:
 
 navbar:
   structure:
-    left:  [home, introduction, reference, articles, news]
+    left:  [home, introduction, reference, articles, news, benchmarks]
     right: [github]
   components:
     home:
@@ -42,9 +42,12 @@ navbar:
         href: articles/datatable-importing.html
       - text: "Benchmarking data.table"
         href: articles/datatable-benchmarking.html
-      news:
-        text: Changelog
-        href: news/index.html
-      github:
-        icon: fab fa-github fa-lg
-        href: https://github.com/Rdatatable/data.table
+    news:
+      text: Changelog
+      href: news/index.html
+    benchmarks:
+      text: Benchmarks
+      href: https://h2oai.github.io/db-benchmark
+    github:
+      icon: fab fa-github fa-lg
+      href: https://github.com/Rdatatable/data.table

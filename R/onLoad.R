@@ -25,31 +25,39 @@
     stop("The datatable.",dll," version (",dllV,") does not match the package (",RV,"). Please close all R sessions to release the old ",toupper(dll)," and reinstall data.table in a fresh R session. The root cause is that R's package installer can in some unconfirmed circumstances leave a package in a state that is apparently functional but where new R code is calling old C code silently: https://bugs.r-project.org/bugzilla/show_bug.cgi?id=17478. Once a package is in this mismatch state it may produce wrong results silently until you next upgrade the package. Please help by adding precise circumstances to 17478 to move the status to confirmed. This mismatch between R and C code can happen with any package not just data.table. It is just that data.table has added this check.")
   }
 
-  "Please read FAQ 2.23 (vignette('datatable-faq')) which explains in detail why data.table adds one for loop to the start of base::cbind.data.frame and base::rbind.data.frame. If there is a better solution we will gladly change it."
-  # Commented as a character string so this message is retained and seen by anyone who types data.table:::.onLoad
-  tt = base::cbind.data.frame
-  ss = body(tt)
-  if (class(ss)[1L]!="{") ss = as.call(c(as.name("{"), ss))
-  prefix = if (!missing(pkgname)) "data.table::" else ""  # R provides the arguments when it calls .onLoad, I don't in dev/test
-  if (!length(grep("data.table", ss[[2L]], fixed = TRUE))) {
-    ss = ss[c(1L, NA, 2L:length(ss))]
-    ss[[2L]] = parse(text=paste0("if (!identical(class(..1),'data.frame')) for (x in list(...)) { if (inherits(x,'data.table')) return(",prefix,"data.table(...)) }"))[[1L]]
-    body(tt)=ss
-    (unlockBinding)("cbind.data.frame",baseenv())
-    assign("cbind.data.frame",tt,envir=asNamespace("base"),inherits=FALSE)
-    lockBinding("cbind.data.frame",baseenv())
+  # c|rbind S3 dispatch now works in R-devel from Sep 2019; #3948 and FAQ 2.24, and R-devel is 4.0.0 as of now. I wanted to test
+  # for the presence of the R fix here rather than hard code a version number. But in this case the S3method registration needs to
+  # be conditional too: registering the S3 methods in R before 4.0.0 causes this workaround to no longer work. However, the R
+  # syntax available to use in NAMESPACE is very limited (can't call data.table() in it in a capability test, for example).
+  # This version number ("4.0.0") must be precisely the same as used in NAMESPACE; see PR for #3948.
+  if (base::getRversion() < "4.0.0") {
+    # continue to support R<4.0.0
+    # If R 3.6.2 (not yet released) includes the c|rbind S3 dispatch fix, then this workaround still works.
+    tt = base::cbind.data.frame
+    ss = body(tt)
+    if (class(ss)[1L]!="{") ss = as.call(c(as.name("{"), ss))
+    prefix = if (!missing(pkgname)) "data.table::" else ""  # R provides the arguments when it calls .onLoad, I don't in dev/test
+    if (!length(grep("data.table", ss[[2L]], fixed = TRUE))) {
+      ss = ss[c(1L, NA, 2L:length(ss))]
+      ss[[2L]] = parse(text=paste0("if (!identical(class(..1),'data.frame')) for (x in list(...)) { if (inherits(x,'data.table')) return(",prefix,"data.table(...)) }"))[[1L]]
+      body(tt)=ss
+      (unlockBinding)("cbind.data.frame",baseenv())
+      assign("cbind.data.frame",tt,envir=asNamespace("base"),inherits=FALSE)
+      lockBinding("cbind.data.frame",baseenv())
+    }
+    tt = base::rbind.data.frame
+    ss = body(tt)
+    if (class(ss)[1L]!="{") ss = as.call(c(as.name("{"), ss))
+    if (!length(grep("data.table", ss[[2L]], fixed = TRUE))) {
+      ss = ss[c(1L, NA, 2L:length(ss))]
+      ss[[2L]] = parse(text=paste0("for (x in list(...)) { if (inherits(x,'data.table')) return(",prefix,".rbind.data.table(...)) }"))[[1L]] # fix for #4995
+      body(tt)=ss
+      (unlockBinding)("rbind.data.frame",baseenv())
+      assign("rbind.data.frame",tt,envir=asNamespace("base"),inherits=FALSE)
+      lockBinding("rbind.data.frame",baseenv())
+    }
   }
-  tt = base::rbind.data.frame
-  ss = body(tt)
-  if (class(ss)[1L]!="{") ss = as.call(c(as.name("{"), ss))
-  if (!length(grep("data.table", ss[[2L]], fixed = TRUE))) {
-    ss = ss[c(1L, NA, 2L:length(ss))]
-    ss[[2L]] = parse(text=paste0("for (x in list(...)) { if (inherits(x,'data.table')) return(",prefix,".rbind.data.table(...)) }"))[[1L]] # fix for #4995
-    body(tt)=ss
-    (unlockBinding)("rbind.data.frame",baseenv())
-    assign("rbind.data.frame",tt,envir=asNamespace("base"),inherits=FALSE)
-    lockBinding("rbind.data.frame",baseenv())
-  }
+
   # Set options for the speed boost in v1.8.0 by avoiding 'default' arg of getOption(,default=)
   # In fread and fwrite we have moved back to using getOption's default argument since it is unlikely fread and fread will be called in a loop many times, plus they
   # are relatively heavy functions where the overhead in getOption() would not be noticed.  It's only really [.data.table where getOption default bit.

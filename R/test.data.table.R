@@ -1,4 +1,5 @@
-test.data.table = function(verbose=FALSE, pkg=".", silent=FALSE, script="tests.Rraw") {
+test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=FALSE) {
+  stopifnot(isTRUEorFALSE(verbose), isTRUEorFALSE(silent))
   if (exists("test.data.table", .GlobalEnv,inherits=FALSE)) {
     # package developer
     # nocov start
@@ -13,31 +14,41 @@ test.data.table = function(verbose=FALSE, pkg=".", silent=FALSE, script="tests.R
   }
   fulldir = file.path(rootdir, subdir)
 
+  stopifnot(is.character(script), length(script)==1L, !is.na(script), nzchar(script))
+  if (!grepl(".Rraw$", script))
+    stop("script must end with '.Rraw'. If a file ending '.Rraw.bz2' exists, that will be found and used.") # nocov
+
   if (identical(script,"*.Rraw")) {
     # nocov start
-    scripts = dir(fulldir, "*.Rraw")
-    scripts = scripts[!scripts %in% c("benchmark.Rraw","other.Rraw")]
+    scripts = dir(fulldir, "*.Rraw.*")
+    scripts = scripts[!grepl("bench|other", scripts)]
+    scripts = gsub("[.]bz2$","",scripts)
     for (fn in scripts) {test.data.table(verbose=verbose, pkg=pkg, silent=silent, script=fn); cat("\n");}
     return(invisible())
     # nocov end
   }
 
-  if (!is.null(script)) {
-    stopifnot(is.character(script), length(script)==1L, !is.na(script), nzchar(script))
-    if (!identical(basename(script), script)) {
-      # nocov start
-      subdir = dirname(script)
-      fulldir = normalizePath(subdir, mustWork=FALSE)
-      fn = basename(script)
-      # nocov end
-    } else {
-      fn = script
-    }
+  if (!identical(basename(script), script)) {
+    # nocov start
+    subdir = dirname(script)
+    fulldir = normalizePath(subdir, mustWork=FALSE)
+    fn = basename(script)
+    # nocov end
   } else {
-    stop("'script' argument should not be NULL") # nocov
+    fn = script
+  }
+
+  if (!file.exists(file.path(fulldir, fn))) {
+    # see end of CRAN_Release.cmd where *.Rraw are compressed just for CRAN release; #3937
+    # nocov start
+    fn2 = paste0(fn,".bz2")
+    if (!file.exists(file.path(fulldir, fn2)))
+      stop("Neither ",fn," or ",fn2," exist in ",fulldir)
+    fn = fn2
+    # nocov end
+    # sys.source() below accepts .bz2 directly.
   }
   fn = setNames(file.path(fulldir, fn), file.path(subdir, fn))
-  if (!file.exists(fn)) stop(fn," does not exist") # nocov
 
   # From R 3.6.0 onwards, we can check that && and || are using only length-1 logicals (in the test suite)
   # rather than relying on x && y being equivalent to x[[1L]] && y[[1L]]  silently.
