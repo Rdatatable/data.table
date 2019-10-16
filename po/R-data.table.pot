@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: data.table 1.12.5\n"
-"POT-Creation-Date: 2019-10-04 17:06\n"
+"POT-Creation-Date: 2019-10-16 22:08\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -1636,10 +1636,13 @@ msgstr ""
 msgid "data.table package is loaded. Unload or start a fresh R session."
 msgstr ""
 
-msgid "'script' argument should not be NULL"
+msgid "script must end with '.Rraw'. If a file ending '.Rraw.bz2' exists, that will be found and used."
 msgstr ""
 
-msgid "does not exist"
+msgid "Neither"
+msgstr ""
+
+msgid "exist in"
 msgstr ""
 
 msgid "Timings count mismatch:"

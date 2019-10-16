@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: data.table 1.12.5\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2019-10-16 15:03+0800\n"
+"POT-Creation-Date: 2019-10-16 22:10+0800\n"
 "PO-Revision-Date: 2019-10-04 17:06+08\n"
 "Last-Translator: Michael Chirico <MichaelChirico4@gmail.com>\n"
 "Language-Team: Mandarin\n"
@@ -1328,144 +1328,144 @@ msgstr ""
 msgid "names(data) is NULL. Please report to data.table-help"
 msgstr ""
 
-#: forder.c:103
+#: forder.c:106
 #, c-format
 msgid "Failed to realloc thread private group size buffer to %d*4bytes"
 msgstr ""
 
-#: forder.c:117
+#: forder.c:120
 #, c-format
 msgid "Failed to realloc group size result to %d*4bytes"
 msgstr ""
 
-#: forder.c:260
+#: forder.c:263
 #, c-format
 msgid ""
 "Logical error. counts[0]=%d in cradix but should have been decremented to 0. "
 "radix=%d"
 msgstr ""
 
-#: forder.c:275
+#: forder.c:278
 msgid "Failed to alloc cradix_counts"
 msgstr ""
 
-#: forder.c:277
+#: forder.c:280
 msgid "Failed to alloc cradix_tmp"
 msgstr ""
 
-#: forder.c:288
+#: forder.c:291
 #, c-format
 msgid ""
 "Internal error: ustr isn't empty when starting range_str: ustr_n=%d, "
 "ustr_alloc=%d"
 msgstr ""
 
-#: forder.c:289
+#: forder.c:292
 msgid "Internal error: ustr_maxlen isn't 0 when starting range_str"
 msgstr ""
 
-#: forder.c:309
+#: forder.c:312
 #, c-format
 msgid "Unable to realloc %d * %d bytes in range_str"
 msgstr ""
 
-#: forder.c:327
+#: forder.c:330
 msgid "Failed to alloc ustr3 when converting strings to UTF8"
 msgstr ""
 
-#: forder.c:345
+#: forder.c:348
 msgid "Failed to alloc tl when converting strings to UTF8"
 msgstr ""
 
-#: forder.c:374
+#: forder.c:377
 msgid "Must an integer or numeric vector length 1"
 msgstr ""
 
-#: forder.c:375
+#: forder.c:378
 msgid "Must be 2, 1 or 0"
 msgstr ""
 
-#: forder.c:409
+#: forder.c:412
 msgid "Unknown non-finite value; not NA, NaN, -Inf or +Inf"
 msgstr ""
 
-#: forder.c:431
+#: forder.c:434
 msgid ""
 "Internal error: input is not either a list of columns, or an atomic vector."
 msgstr ""
 
-#: forder.c:433
+#: forder.c:436
 msgid ""
 "Internal error: input is an atomic vector (not a list of columns) but by= is "
 "not NULL"
 msgstr ""
 
-#: forder.c:435
+#: forder.c:438
 msgid ""
 "Input is an atomic vector (not a list of columns) but order= is not a length "
 "1 integer"
 msgstr ""
 
-#: forder.c:437
+#: forder.c:440
 #, c-format
 msgid "forder.c received a vector type '%s' length %d\n"
 msgstr ""
 
-#: forder.c:445
+#: forder.c:448
 #, c-format
 msgid "forder.c received %d rows and %d columns\n"
 msgstr ""
 
-#: forder.c:448
+#: forder.c:451 forder.c:456
 msgid "Internal error: DT is an empty list() of 0 columns"
 msgstr ""
 
-#: forder.c:450
+#: forder.c:453 forder.c:458
 #, c-format
 msgid ""
 "Internal error: DT has %d columns but 'by' is either not integer or is "
 "length 0"
 msgstr ""
 
-#: forder.c:452
+#: forder.c:455 forder.c:460
 #, c-format
 msgid ""
 "Either order= is not integer or its length (%d) is different to by='s length "
 "(%d)"
 msgstr ""
 
-#: forder.c:458
+#: forder.c:466
 #, c-format
 msgid "internal error: 'by' value %d out of range [1,%d]"
 msgstr ""
 
-#: forder.c:460
+#: forder.c:468
 #, c-format
 msgid "Column %d is length %d which differs from length of column 1 (%d)\n"
 msgstr ""
 
-#: forder.c:464
+#: forder.c:472
 msgid "retGrp must be TRUE or FALSE"
 msgstr ""
 
-#: forder.c:467
+#: forder.c:475
 msgid "sort must be TRUE or FALSE"
 msgstr ""
 
-#: forder.c:470
+#: forder.c:478
 msgid "At least one of retGrp= or sort= must be TRUE"
 msgstr ""
 
-#: forder.c:472
+#: forder.c:480
 msgid "na.last must be logical TRUE, FALSE or NA of length 1"
 msgstr ""
 
-#: forder.c:514
+#: forder.c:524
 #, c-format
 msgid "Item %d of order (ascending/descending) is %d. Must be +1 or -1."
 msgstr ""
 
-#: forder.c:540
+#: forder.c:550
 #, c-format
 msgid ""
 "\n"
@@ -1474,51 +1474,51 @@ msgid ""
 "to save space and time.\n"
 msgstr ""
 
-#: forder.c:556
+#: forder.c:566
 #, c-format
 msgid "Column %d passed to [f]order is type '%s', not yet supported."
 msgstr ""
 
-#: forder.c:705
+#: forder.c:719
 msgid "Internal error: column not supported not caught earlier"
 msgstr ""
 
-#: forder.c:713
+#: forder.c:727
 #, c-format
 msgid "nradix=%d\n"
 msgstr ""
 
-#: forder.c:719
+#: forder.c:733
 #, c-format
 msgid ""
 "Failed to allocate TMP or UGRP or they weren't cache line aligned: nth=%d"
 msgstr ""
 
-#: forder.c:724
+#: forder.c:738
 msgid "Could not allocate (very tiny) group size thread buffers"
 msgstr ""
 
-#: forder.c:785
+#: forder.c:799
 #, c-format
 msgid "Timing block %2d%s = %8.3f   %8d\n"
 msgstr ""
 
-#: forder.c:788
+#: forder.c:802
 #, c-format
 msgid "stat[%03d]==%10zd\n"
 msgstr ""
 
-#: forder.c:1044
+#: forder.c:1058
 #, c-format
 msgid "Failed to allocate parallel counts. my_n=%d, nBatch=%d"
 msgstr ""
 
-#: forder.c:1153
+#: forder.c:1167
 #, c-format
 msgid "Unable to allocate TMP for my_n=%d items in parallel batch counting"
 msgstr ""
 
-#: forder.c:1260
+#: forder.c:1275
 msgid ""
 "is.sorted (R level) and fsorted (C level) only to be used on vectors. If "
 "needed on a list/data.table, you'll need the order anyway if not sorted, so "
@@ -1526,25 +1526,25 @@ msgid ""
 "C level"
 msgstr ""
 
-#: forder.c:1292
+#: forder.c:1307
 #, c-format
 msgid "type '%s' is not yet supported"
 msgstr ""
 
-#: forder.c:1301
+#: forder.c:1316
 msgid "x must be either NULL or an integer vector"
 msgstr ""
 
-#: forder.c:1303
+#: forder.c:1318
 msgid "nrow must be integer vector length 1"
 msgstr ""
 
-#: forder.c:1305
+#: forder.c:1320
 #, c-format
 msgid "nrow==%d but must be >=0"
 msgstr ""
 
-#: forder.c:1322
+#: forder.c:1337
 msgid "x must be type 'double'"
 msgstr ""
 
@@ -2854,7 +2854,7 @@ msgstr ""
 msgid "%lld "
 msgstr ""
 
-#: fsort.c:246 fwrite.c:692 fwrite.c:779 fwrite.c:890 fwrite.c:934
+#: fsort.c:246 fwrite.c:690 fwrite.c:947
 msgid "\n"
 msgstr ""
 
@@ -2873,49 +2873,49 @@ msgstr ""
 msgid "%d: %.3f (%4.1f%%)\n"
 msgstr ""
 
-#: fwrite.c:603
+#: fwrite.c:601
 #, c-format
 msgid "buffMB=%d outside [1,1024]"
 msgstr ""
 
-#: fwrite.c:610
+#: fwrite.c:608
 #, c-format
 msgid ""
 "eol must be 1 or more bytes (usually either \\n or \\r\\n) but is length %d"
 msgstr ""
 
-#: fwrite.c:613
+#: fwrite.c:611
 msgid "Column writers: "
 msgstr ""
 
-#: fwrite.c:615 fwrite.c:617 fwrite.c:619
+#: fwrite.c:613 fwrite.c:615 fwrite.c:617
 #, c-format
 msgid "%d "
 msgstr ""
 
-#: fwrite.c:618
+#: fwrite.c:616
 msgid "... "
 msgstr ""
 
-#: fwrite.c:621
+#: fwrite.c:619
 #, c-format
 msgid ""
 "\n"
-"args.doRowNames=%d args.rowNames=%d doQuote=%d args.nrow=%d args.ncol=%d "
+"args.doRowNames=%d args.rowNames=%d doQuote=%d args.nrow=%lld args.ncol=%d "
 "eolLen=%d\n"
 msgstr ""
 
-#: fwrite.c:654
+#: fwrite.c:652
 #, c-format
 msgid "Internal error: type %d has no max length method implemented"
 msgstr ""
 
-#: fwrite.c:661
+#: fwrite.c:659
 #, c-format
 msgid "maxLineLen=%zd. Found in %.3fs\n"
 msgstr ""
 
-#: fwrite.c:681
+#: fwrite.c:679
 #, c-format
 msgid ""
 "%s: '%s'. Failed to open existing file for writing. Do you have write "
@@ -2923,7 +2923,7 @@ msgid ""
 "have it open?"
 msgstr ""
 
-#: fwrite.c:682
+#: fwrite.c:680
 #, c-format
 msgid ""
 "%s: '%s'. Unable to create new file for writing (it does not exist already). "
@@ -2931,62 +2931,64 @@ msgid ""
 "the path exist?"
 msgstr ""
 
-#: fwrite.c:690
+#: fwrite.c:688
 #, c-format
 msgid "Writing bom (%s), yaml (%d characters) and column names (%s) ... "
 msgstr ""
 
-#: fwrite.c:703
+#: fwrite.c:701
 #, c-format
 msgid "Unable to allocate %d MiB for header: %s"
 msgstr ""
 
-#: fwrite.c:731 fwrite.c:793
+#: fwrite.c:729 fwrite.c:789
 msgid "Can't allocate gzip stream structure"
 msgstr ""
 
-#: fwrite.c:737
+#: fwrite.c:735
 #, c-format
 msgid "Unable to allocate %d MiB for zbuffer: %s"
 msgstr ""
 
-#: fwrite.c:752
+#: fwrite.c:750
 #, c-format
 msgid "Compress gzip error: %d"
 msgstr ""
 
-#: fwrite.c:753 fwrite.c:761 fwrite.c:940 fwrite.c:949
+#: fwrite.c:751 fwrite.c:759 fwrite.c:953
 #, c-format
 msgid "%s: '%s'"
 msgstr ""
 
-#: fwrite.c:758
+#: fwrite.c:756
 #, c-format
 msgid "done in %.3fs\n"
 msgstr ""
 
-#: fwrite.c:760
+#: fwrite.c:758
 msgid "No data rows present (nrow==0)\n"
 msgstr ""
 
-#: fwrite.c:777
+#: fwrite.c:776
 #, c-format
 msgid ""
-"Writing %d rows in %d batches of %d rows (each buffer size %dMB, "
-"showProgress=%d, nth=%d) ... "
+"Writing %lld rows in %d batches of %d rows (each buffer size %dMB, "
+"showProgress=%d, nth=%d)\n"
 msgstr ""
 
-#: fwrite.c:946
+#: fwrite.c:961
 #, c-format
-msgid ""
-"Error %d: one or more threads failed to allocate buffers or there was a "
-"compression error."
+msgid "zlib v%s deflate() returned error %d with z_stream.msg '%s'. %s\n"
 msgstr ""
 
-#: fwrite.c:947
+#: fwrite.c:962
+msgid "Please include the full output above in your data.table bug report."
+msgstr ""
+
+#: fwrite.c:963
 msgid ""
-" Please try again with verbose=TRUE and try searching online for this error "
-"message.\n"
+"Please retry fwrite() with verbose=TRUE and include the full output with "
+"your data.table bug report."
 msgstr ""
 
 #: fwriteR.c:41
@@ -4020,7 +4022,7 @@ msgstr ""
 msgid "Item %d of n is NA"
 msgstr ""
 
-#: shift.c:158
+#: shift.c:157
 #, c-format
 msgid "Unsupported type '%s'"
 msgstr ""
@@ -4284,19 +4286,19 @@ msgstr ""
 msgid "%s: fill argument must be numeric"
 msgstr ""
 
-#: utils.c:274
+#: utils.c:273
 #, c-format
 msgid "Internal error: unsupported type '%s' passed to copyAsPlain()"
 msgstr ""
 
-#: utils.c:278
+#: utils.c:277
 #, c-format
 msgid ""
 "Internal error: type '%s' passed to copyAsPlain() but it seems "
 "copyMostAttrib() retains ALTREP attributes"
 msgstr ""
 
-#: utils.c:313
+#: utils.c:312
 #, c-format
 msgid "Found and copied %d column%s with a shared memory address\n"
 msgstr ""
