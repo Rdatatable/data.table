@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: data.table 1.12.5\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2019-10-16 22:10+0800\n"
+"POT-Creation-Date: 2019-10-17 00:04+0800\n"
 "PO-Revision-Date: 2019-10-04 17:06+08\n"
 "Last-Translator: Michael Chirico <MichaelChirico4@gmail.com>\n"
 "Language-Team: Mandarin\n"
@@ -1596,12 +1596,6 @@ msgstr ""
 msgid "Internal error. Argument 'cols' to CanyNA is type '%s' not 'integer'"
 msgstr ""
 
-#: fread.c:106
-#, c-format
-msgid ""
-"Internal error in line %d of fread.c, please report on data.table GitHub:  "
-msgstr ""
-
 #: fread.c:149
 #, c-format
 msgid "System error %d unmapping view of file\n"
@@ -2242,11 +2236,6 @@ msgid ""
 "Column %d (\"%.*s\") bumped from '%s' to '%s' due to <<%.*s>> on row %llu\n"
 msgstr ""
 
-#: fread.c:2330 fread.c:2465 freadR.c:660
-#, c-format
-msgid "%s"
-msgstr ""
-
 #: fread.c:2337
 #, c-format
 msgid ""
@@ -2300,7 +2289,7 @@ msgstr ""
 msgid ""
 "Found and resolved improper quoting out-of-sample. First healed line %llu: <<"
 "%s>>. If the fields are not quoted (e.g. field separator does not appear "
-"within any field), try quote=\")\" to avoid this warning."
+"within any field), try quote=\"\" to avoid this warning."
 msgstr ""
 
 #: fread.c:2441
@@ -2519,10 +2508,6 @@ msgstr ""
 msgid ""
 "colClasses= is an unnamed vector of types, length %d, but there are %d "
 "columns in the input. To specify types for a subset of columns, you can use "
-msgstr ""
-
-#: freadR.c:319
-msgid ""
 "a named vector, list format, or specify types using select= instead of "
 "colClasses=. Please see examples in ?fread."
 msgstr ""
@@ -2572,6 +2557,11 @@ msgstr ""
 #: freadR.c:592
 #, c-format
 msgid "Internal error: unexpected field of size %d\n"
+msgstr ""
+
+#: freadR.c:660
+#, c-format
+msgid "%s"
 msgstr ""
 
 #: froll.c:18 froll.c:227 froll.c:411

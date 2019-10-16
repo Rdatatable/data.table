@@ -19,7 +19,7 @@ static int getIntEnv(const char *name, int def)
   long int ans = strtol(val, &end, 10);  // ignores leading whitespace. If it fully consumed the string, *end=='\0' and isspace('\0')==false
   while (isspace(*end)) end++;  // ignore trailing whitespace
   if (errno || (size_t)(end-val)!=nchar || ans<1 || ans>INT_MAX) {
-    warning(_("Ignoring invalid %s==\")%s\". Not an integer >= 1. Please remove any characters that are not a digit [0-9]. See ?data.table::setDTthreads.", name, val);
+    warning(_("Ignoring invalid %s==\")%s\". Not an integer >= 1. Please remove any characters that are not a digit [0-9]. See ?data.table::setDTthreads."), name, val);
     return def;
   }
   return (int)ans;

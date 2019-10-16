@@ -287,7 +287,7 @@ void attribute_visible R_init_datatable(DllInfo *info)
 
   if (TYPEOF(char_integer64) != CHARSXP) {
     // checking one is enough in case of any R-devel changes
-    error(_("PRINTNAME(install(\")integer64\")) has returned %s not %s", type2char(TYPEOF(char_integer64)), type2char(CHARSXP));  // # nocov
+    error(_("PRINTNAME(install(\")integer64\")) has returned %s not %s"), type2char(TYPEOF(char_integer64)), type2char(CHARSXP));  // # nocov
   }
 
   // create commonly used symbols, same as R_*Symbol but internal to DT

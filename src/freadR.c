@@ -89,7 +89,7 @@ SEXP freadR(
   ch = args.input;
   while (*ch!='\0' && *ch!='\n' && *ch!='\r') ch++;
   if (*ch!='\0' || args.input[0]=='\0') {
-    if (verbose) DTPRINT(_("Input contains a \\n or is \")\". Taking this to be text input (not a filename)\n");
+    if (verbose) DTPRINT(_("Input contains a \\n or is \")\". Taking this to be text input (not a filename)\n"));
     args.filename = NULL;
   } else {
     if (verbose) DTPRINT(_("Input contains no \\n. Taking this to be a filename to open\n"));
@@ -109,7 +109,7 @@ SEXP freadR(
     args.quote = '\0';
   } else {
     if (!isString(quoteArg) || LENGTH(quoteArg)!=1 || strlen(CHAR(STRING_ELT(quoteArg,0))) > 1)
-      error(_("quote= must be a single character, blank \")\", or FALSE");
+      error(_("quote= must be a single character, blank \")\", or FALSE"));
     args.quote = CHAR(STRING_ELT(quoteArg,0))[0];
   }
 
@@ -315,8 +315,8 @@ bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, int ncol)
         if (INTEGER(typeEnum_idx)[0]==NUT) for (int i=0; i<ncol; i++) SET_STRING_ELT(colClassesAs, i, STRING_ELT(colClassesSxp,0));
       } else if (selectColClasses==false) {
         if (LENGTH(colClassesSxp)!=ncol)
-          STOP(_("colClasses= is an unnamed vector of types, length %d, but there are %d columns in the input. To specify types for a subset of columns, you can use ")
-               _("a named vector, list format, or specify types using select= instead of colClasses=. Please see examples in ?fread."), LENGTH(colClassesSxp), ncol);
+          STOP(_("colClasses= is an unnamed vector of types, length %d, but there are %d columns in the input. To specify types for a subset of columns, you can use "
+                 "a named vector, list format, or specify types using select= instead of colClasses=. Please see examples in ?fread."), LENGTH(colClassesSxp), ncol);
         for (int i=0; i<ncol; ++i) {
           if (type[i]==CT_DROP) continue;                    // user might have specified the type of all columns including those dropped with drop=
           SEXP tt = STRING_ELT(colClassesSxp,i);

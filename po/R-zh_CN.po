@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: data.table 1.12.5\n"
-"POT-Creation-Date: 2019-10-16 22:08\n"
+"POT-Creation-Date: 2019-10-17 00:12\n"
 "PO-Revision-Date: 2019-10-04 17:06+08\n"
 "Last-Translator: Michael Chirico <MichaelChirico4@gmail.com>\n"
 "Language-Team: Mandarin\n"
@@ -1650,6 +1650,20 @@ msgid "using"
 msgstr ""
 
 msgid "threads (see ?getDTthreads).  Latest news: r-datatable.com"
+msgstr ""
+
+msgid "TRANSLATION CHECK"
+msgstr "中文"
+
+msgid "**********"
+msgstr ""
+
+msgid ""
+"Running data.table in English; package support is available in English only. "
+"When searching for online help, be sure to also check for the English error "
+"message. This can be obtained by looking at the po/R-<locale>.po and po/"
+"<locale>.po files in the package source, where the native language and "
+"English error messages can be found side-by-side"
 msgstr ""
 
 msgid ""

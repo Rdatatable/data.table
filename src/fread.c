@@ -103,7 +103,7 @@ typedef struct FieldParseContext {
 static void Field(FieldParseContext *ctx);
 
 #define ASSERT(cond, msg, ...) \
-  if (!(cond)) STOP(_("Internal error in line %d of fread.c, please report on data.table GitHub:  ") msg, __LINE__, __VA_ARGS__) // # nocov
+  if (!(cond)) STOP("Internal error in line %d of fread.c, please report on data.table GitHub:  " msg, __LINE__, __VA_ARGS__) // # nocov
 
 
 
@@ -1565,7 +1565,7 @@ int freadMain(freadMainArgs _args) {
 
     quoteRule = topQuoteRule;
     if (quoteRule>1 && quote) {
-      DTWARN(_("Found and resolved improper quoting in first %d rows. If the fields are not quoted (e.g. field separator does not appear within any field), try quote=\")\" to avoid this warning.", jumpLines);
+      DTWARN(_("Found and resolved improper quoting in first %d rows. If the fields are not quoted (e.g. field separator does not appear within any field), try quote=\")\" to avoid this warning."), jumpLines);
       // TODO: include line number and text in warning. Could loop again with the standard quote rule to find the line that fails.
     }
     sep = topSep;
@@ -2327,7 +2327,7 @@ int freadMain(freadMainArgs _args) {
 
   if (stopTeam) {
     if (internalErr[0]!='\0') {
-      STOP(_("%s"), internalErr);  // # nocov
+      STOP("%s", internalErr);  // # nocov
     }
     stopTeam = false;
 
@@ -2434,7 +2434,7 @@ int freadMain(freadMainArgs _args) {
     }
   }
   if (quoteRuleBumpedCh!=NULL && quoteRuleBumpedCh<headPos) {
-    DTWARN(_("Found and resolved improper quoting out-of-sample. First healed line %llu: <<%s>>. If the fields are not quoted (e.g. field separator does not appear within any field), try quote=\")\" to avoid this warning.", (llu)quoteRuleBumpedLine, strlim(quoteRuleBumpedCh, 500));
+    DTWARN(_("Found and resolved improper quoting out-of-sample. First healed line %llu: <<%s>>. If the fields are not quoted (e.g. field separator does not appear within any field), try quote=\"\" to avoid this warning."), (llu)quoteRuleBumpedLine, strlim(quoteRuleBumpedCh, 500));
   }
 
   if (verbose) {
@@ -2462,7 +2462,7 @@ int freadMain(freadMainArgs _args) {
       // if type bumps happened, it's useful to see them at the end after the timing 2 lines up showing the reread time
       // TODO - construct and output the copy and pastable colClasses argument so user can avoid the reread time if they are
       //        reading this file or files formatted like it many times (say in a production environment).
-      DTPRINT(_("%s"), typeBumpMsg);
+      DTPRINT("%s", typeBumpMsg);
       free(typeBumpMsg);  // local scope and only populated in verbose mode
     }
   }
