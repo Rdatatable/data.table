@@ -118,7 +118,7 @@ msgstr ""
 
 #: assign.c:241 fsort.c:109 nafill.c:73
 msgid "verbose must be TRUE or FALSE"
-msgstr ""
+msgstr "verbose必须是TRUE或FALSE"
 
 #: assign.c:289
 msgid "assign has been passed a NULL dt"
