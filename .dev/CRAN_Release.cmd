@@ -207,6 +207,7 @@ tar xvf R-devel.tar.gz
 mv R-devel R-devel-strict-gcc
 tar xvf R-devel.tar.gz
 mv R-devel R-devel-strict-clang
+tar xvf R-devel.tar.gz
 
 # use gcc-8 and clang-8 in CC=, or latest available in `apt cache search gcc-` or `clang-`
 
