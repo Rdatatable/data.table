@@ -207,7 +207,7 @@ test-dev-win: # R-devel on windows
     TEST_DATA_TABLE_MEMTEST: "FALSE" # disabled as described in #3147
   allow_failure: false
   script:
-    - Rscript -e "source('.ci/ci.R'); cu<-contrib.url(getOption('repos'), ver=Sys.getenv('R_BIN_VERSION')); print(cu); print(rownames(available.packages(cu))); install.packages(dcf.dependencies('DESCRIPTION', which='all'), quiet=TRUE, contriburl=cu)"
+    - Rscript -e "source('.ci/ci.R'); cu<-contrib.url(getOption('repos'), 'binary', ver=Sys.getenv('R_BIN_VERSION')); print(cu); print(rownames(available.packages(cu))); install.packages(dcf.dependencies('DESCRIPTION', which='all'), quiet=TRUE, contriburl=cu)"
     - *copy-src
     - rm -r bus
     - *move-src
