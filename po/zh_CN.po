@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: data.table 1.12.5\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2019-10-17 00:04+0800\n"
+"POT-Creation-Date: 2019-10-17 09:01+0800\n"
 "PO-Revision-Date: 2019-10-04 17:06+08\n"
 "Last-Translator: Michael Chirico <MichaelChirico4@gmail.com>\n"
 "Language-Team: Mandarin\n"
@@ -4140,20 +4140,6 @@ msgstr ""
 #: transpose.c:28
 #, c-format
 msgid "Item %d of list input is not an atomic vector"
-msgstr ""
-
-#: types.c:17 types.c:21
-#, c-format
-msgid ""
-"%s: %d:\n"
-"%s"
-msgstr ""
-
-#: types.c:23
-#, c-format
-msgid ""
-"%s: %d:\n"
-"%s:"
 msgstr ""
 
 #: types.c:55
