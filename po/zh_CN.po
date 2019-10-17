@@ -533,7 +533,7 @@ msgstr ""
 
 #: assign.c:1205
 msgid "x must be a character vector"
-msgstr ""
+msgstr "x必需为字符矢量"
 
 #: assign.c:1206
 msgid "'which' must be an integer vector"
