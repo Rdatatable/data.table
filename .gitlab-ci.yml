@@ -27,7 +27,7 @@ mirror-packages: # download all recursive dependencies of data.table suggests an
     - bus/$CI_BUILD_NAME/cran
   variables:
     R_BIN_VERSION: "3.6"
-    R_DEVEL_BIN_VERSION: "3.7"
+    R_DEVEL_BIN_VERSION: "4.0"
   script:
     - echo 'source(".ci/ci.R")' >> .Rprofile
     - mkdir -p bus/$CI_BUILD_NAME/cran/src/contrib
@@ -202,7 +202,7 @@ test-rel-win: # windows test and build binaries
 test-dev-win: # R-devel on windows
   <<: *test-win
   variables:
-    R_BIN_VERSION: "3.7"
+    R_BIN_VERSION: "4.0"
     R_DIR: "R-devel"
     TEST_DATA_TABLE_MEMTEST: "FALSE" # disabled as described in #3147
   allow_failure: false
@@ -254,7 +254,7 @@ integration: # merging all artifacts to produce single R repository and summarie
   #- test-rel-osx
   variables:
     R_BIN_VERSION: "3.6"
-    R_DEVEL_BIN_VERSION: "3.7"
+    R_DEVEL_BIN_VERSION: "4.0"
   script:
     # pkgdown installs pkgs from "." so run at start to have clean root dir
     - apt-get update -qq && apt-get install -y libxml2-dev
