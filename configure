@@ -43,7 +43,7 @@ if [ $msg -ne 0 ]; then
   echo "*** 'sudo apt-get build-dep r-base' should be sufficient too."
   echo "*** To silence this message, please ensure that :"
   echo "***   1) 'pkg-config --exists zlib' succeeds (i.e. \$? -eq 0)"
-  echo "***   2) 'pkg-config --libs zlib' includes '-lz'"
+  echo "***   2) 'pkg-config --libs zlib' contains -lz"
   echo "*** Compilation will now be attempted ..."
   exit 0
 fi
