@@ -8,7 +8,7 @@
 }
 \usage{
 rbindlist(l, use.names="check", fill=FALSE, idcol=NULL)
-# rbind(\dots, use.names=TRUE, fill=FALSE, idcol=NULL)
+# rbind(..., use.names=TRUE, fill=FALSE, idcol=NULL)
 }
 \arguments{
   \item{l}{ A list containing \code{data.table}, \code{data.frame} or \code{list} objects. \code{\dots} is the same but you pass the objects by name separately. }
