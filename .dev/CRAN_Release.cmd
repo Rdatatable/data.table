@@ -77,6 +77,9 @@ grep -n "[^A-Za-z0-9]F[^A-Za-z0-9]" ./inst/tests/tests.Rraw
 # 2) leave the rollends default using roll>=0 though; comments in PR #3803
 grep -Enr "^[^#]*(?:\[|==|>|<|>=|<=|,|\(|\+)\s*[-]?[0-9]+[^0-9L:.e]" R | grep -Ev "stop|warning|tolerance"
 
+# Never use ifelse. fifelse for vectors when necessary (nothing yet)
+ grep -Enr "\bifelse" R
+
 # No system.time in main tests.Rraw. Timings should be in benchmark.Rraw
 grep -n "system[.]time" ./inst/tests/tests.Rraw
 
@@ -496,4 +499,3 @@ When CRAN's email contains "Pretest results OK pending a manual inspection" (or 
 8. Push to master with this consistent commit message: "1.12.4 on CRAN. Bump to 1.12.5"
 9. Take sha from step 8 and run `git tag 1.12.4 34796cd1524828df9bf13a174265cb68a09fcd77` then `git push origin 1.12.4` (not `git push --tags` according to https://stackoverflow.com/a/5195913/403310)
 ######
-

@@ -133,7 +133,7 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir())
     }
   }
   stopifnot(length(skip)==1L, !is.na(skip), is.character(skip) || is.numeric(skip))
-  if (identical(skip,"__auto__")) skip = ifelse(yaml,0L,-1L)
+  if (identical(skip,"__auto__")) skip = if (yaml) 0L else -1L
   else if (is.double(skip)) skip = as.integer(skip)
   # else skip="string" so long as "string" is not "__auto__" (best conveys to user skip is automatic rather than user needing to know -1 or NA means auto)
   stopifnot(is.null(na.strings) || is.character(na.strings))
@@ -362,4 +362,3 @@ as_factor = function(x) {
 as_raw = function(x) {
   scan(text=x, what=raw(), quiet=TRUE)  # as in read.csv, which ultimately uses src/main/scan.c and strtoraw
 }
-
