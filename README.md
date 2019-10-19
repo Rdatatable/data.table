@@ -16,11 +16,9 @@
 
 `data.table` provides a high-performance version of [base R](https://www.r-project.org/about.html)'s `data.frame` with syntax and feature enhancements for ease of use, convenience and programming speed.
 
-<p style="border:3px; border-style:solid; border-color:#FF0000; padding: 1em;">
-On Tuesday 22nd October, Matt Dowle will be in New York for #h2oworld.<br>
-Please Ask-Me-Anything starting now: click <a href="http://sli.do">http://sli.do</a> and enter event code "askmattdowle".<br>
-I'll answer the most voted questions during my session: <a href="https://h2o.ai/h2oworldny-livestream-reg">https://h2o.ai/h2oworldny-livestream-reg</a>
-</p>
+> On Tuesday 22nd October, Matt Dowle will be in New York for #h2oworld.
+> Please Ask-Me-Anything starting now: click http://sli.do and enter event code "askmattdowle".
+> I'll answer the most voted questions during my session: https://h2o.ai/h2oworldny-livestream-reg
 
 ## Why `data.table`?
 
