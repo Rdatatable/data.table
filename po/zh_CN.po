@@ -1269,96 +1269,99 @@ msgid ""
 "molten data value column will be of type '%s'. All measure variables not of "
 "type '%s' will be coerced too. Check DETAILS in ?melt.data.table for more on "
 "coercion.\n"
-msgstr ""
+msgstr "'measure.vars'[%s]的数值类型不完全相同。由于融合数值将是'%s'类型，变量中不是'%s'类型"
+"的数将被强制转换为'%s'类型，更多关于强制转换的信息请查看?melt.data.table.\n"
 
 #: fmelt.c:387
 #, c-format
 msgid ""
 "The molten data value type is a list at item %d. 'na.rm=TRUE' is ignored.\n"
-msgstr ""
+msgstr "在项目%d中，融合后的数值类型是列表，参数'na.rm=TRUE'被自动忽略.\n"
 
 #: fmelt.c:490
 #, c-format
 msgid "Unknown column type '%s' for column '%s'."
-msgstr ""
+msgstr "'%s'列是未知的列类型"
 
 #: fmelt.c:514
 #, c-format
 msgid "Internal error: fmelt.c:getvarcols %d %d"
-msgstr ""
+msgstr "内部错误：fmelt.c:getvarcols %d %d"
 
 #: fmelt.c:662
 #, c-format
 msgid "Unknown column type '%s' for column '%s' in 'data'"
-msgstr ""
+msgstr "'data'中的'%s'列是未知列类型"
 
 #: fmelt.c:673
 msgid "Input is not of type VECSXP, expected a data.table, data.frame or list"
-msgstr ""
+msgstr "输入类型不是VECSXP，输入类型应该是data.table, data.frame 或 list"
 
 #: fmelt.c:674
 msgid "Argument 'value.factor' should be logical TRUE/FALSE"
-msgstr ""
+msgstr "'value.factor'的参数是逻辑值，必须是TRUE或FALSE"
 
 #: fmelt.c:675
 msgid "Argument 'variable.factor' should be logical TRUE/FALSE"
-msgstr ""
+msgstr "'variable.factor'的参数是逻辑值，必须是TRUE或FALSE"
 
 #: fmelt.c:676
 msgid "Argument 'na.rm' should be logical TRUE/FALSE."
-msgstr ""
+msgstr "'na.rm'的参数是逻辑值，必须是TRUE或FALSE"
 
 #: fmelt.c:677
 msgid "Argument 'variable.name' must be a character vector"
-msgstr ""
+msgstr "'variable.name'必须是字符串类型"
 
 #: fmelt.c:678
 msgid "Argument 'value.name' must be a character vector"
-msgstr ""
+msgstr "'value.name'必须是字符串类型"
 
 #: fmelt.c:679
 msgid "Argument 'verbose' should be logical TRUE/FALSE"
-msgstr ""
+msgstr "'verbose'的参数是逻辑值，必须是TRUE或FALSE"
 
 #: fmelt.c:682
 msgid "ncol(data) is 0. Nothing to melt. Returning original data.table."
-msgstr ""
+msgstr "ncol(data)为0，返回原data.table"
 
 #: fmelt.c:687
 msgid "names(data) is NULL. Please report to data.table-help"
-msgstr ""
+msgstr "names(data)为NULL，请像data.table-help报告。"
 
 #: forder.c:106
 #, c-format
 msgid "Failed to realloc thread private group size buffer to %d*4bytes"
-msgstr ""
+msgstr "向%d*4bytes重新分配多线程数据分组规模缓冲区失败"
 
 #: forder.c:120
 #, c-format
 msgid "Failed to realloc group size result to %d*4bytes"
-msgstr ""
+msgstr "由于%d*4bytes，重新分配分组规模失败"
 
 #: forder.c:263
 #, c-format
 msgid ""
 "Logical error. counts[0]=%d in cradix but should have been decremented to 0. "
 "radix=%d"
-msgstr ""
+msgstr "逻辑错误。在cradix中的counts[0]应该为0，而不是%d"
+"radix=%d"
 
 #: forder.c:278
 msgid "Failed to alloc cradix_counts"
-msgstr ""
+msgstr "分配cradix_counts失败"
 
 #: forder.c:280
 msgid "Failed to alloc cradix_tmp"
-msgstr ""
+msgstr "分配cradix_tmp失败"
 
 #: forder.c:291
 #, c-format
 msgid ""
 "Internal error: ustr isn't empty when starting range_str: ustr_n=%d, "
 "ustr_alloc=%d"
-msgstr ""
+msgstr "内部错误。开始运行range_str时，ustr不是空的：ustr_n=%d,"
+"ustr_alloc=%d"
 
 #: forder.c:292
 msgid "Internal error: ustr_maxlen isn't 0 when starting range_str"
