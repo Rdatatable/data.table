@@ -16,9 +16,13 @@
 
 `data.table` provides a high-performance version of [base R](https://www.r-project.org/about.html)'s `data.frame` with syntax and feature enhancements for ease of use, convenience and programming speed.
 
-| Tuesday 22nd October 2019 |
+---
+
+| **Tuesday 22nd October 2019** |
 | ------------------------- |
-| Matt Dowle will be in New York for [H2O World](https://www.h2o.ai/h2oworldnewyork/).<br>Please Ask-Me-Anything starting now: click http://sli.do and enter event code  "askmattdowle".<br>I'll answer the most voted questions during my session: https://h2o.ai/h2oworldny-livestream-reg |
+| **Matt Dowle will be in New York for [H2O World](https://www.h2o.ai/h2oworldnewyork/).<br>Please Ask-Me-Anything starting now: click http://sli.do and enter event code  "askmattdowle".<br>I'll answer the most voted questions during my session: https://h2o.ai/h2oworldny-livestream-reg** |
+
+---
 
 ## Why `data.table`?
 
