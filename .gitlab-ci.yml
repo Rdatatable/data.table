@@ -27,7 +27,7 @@ mirror-packages: # download all recursive dependencies of data.table suggests an
     - bus/$CI_BUILD_NAME/cran
   variables:
     R_BIN_VERSION: "3.6"
-    R_DEVEL_BIN_VERSION: "3.7"
+    R_DEVEL_BIN_VERSION: "3.7" ## CRAN does not yet use 4.0 for R-devel
   script:
     - echo 'source(".ci/ci.R")' >> .Rprofile
     - mkdir -p bus/$CI_BUILD_NAME/cran/src/contrib
@@ -207,7 +207,7 @@ test-dev-win: # R-devel on windows
     TEST_DATA_TABLE_MEMTEST: "FALSE" # disabled as described in #3147
   allow_failure: false
   script:
-    - Rscript -e "source('.ci/ci.R'); install.packages(dcf.dependencies('DESCRIPTION', which='all'), quiet=TRUE)"
+    - Rscript -e "source('.ci/ci.R'); install.packages(dcf.dependencies('DESCRIPTION', which='all'), quiet=TRUE, contriburl=contrib.url(getOption('repos'), 'binary', ver=Sys.getenv('R_BIN_VERSION')))"
     - *copy-src
     - rm -r bus
     - *move-src
