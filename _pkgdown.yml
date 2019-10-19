@@ -10,7 +10,7 @@ development:
 navbar:
   structure:
     left:  [home, introduction, reference, articles, news, benchmarks]
-    right: [github]
+    right: [ama, github]
   components:
     home:
       icon: fas fa-home fa-lg
@@ -48,6 +48,9 @@ navbar:
     benchmarks:
       text: Benchmarks
       href: https://h2oai.github.io/db-benchmark
+    ama:
+      text: Ask-Me-Anything 22-Oct-2019 Matt Dowle
+      href: https://twitter.com/MattDowle/status/1185318141896773632
     github:
       icon: fab fa-github fa-lg
       href: https://github.com/Rdatatable/data.table
