@@ -1360,7 +1360,7 @@ msgstr "分配cradix_tmp失败"
 msgid ""
 "Internal error: ustr isn't empty when starting range_str: ustr_n=%d, "
 "ustr_alloc=%d"
-msgstr "内部错误。开始运行range_str时，ustr不是空的：ustr_n=%d,"
+msgstr "内部错误。开始运行range_str时，ustr未清空：ustr_n=%d,"
 "ustr_alloc=%d"
 
 #: forder.c:292
