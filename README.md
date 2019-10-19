@@ -21,17 +21,18 @@
 
 <span style="background-color: #FFFF00">This text is highlighted in yellow.</span>
 
-<p style="background-color: #FFFF00">This whole paragraph of text is highlighted in yellow.</p>
+<p style="background-color: yellow">This whole paragraph of text is highlighted in yellow.</p>
 
 
 | Tuesday 22nd October |
 | -------------------- |
-| Some text |
+| Matt Dowle will be in New York for #h2oworld.<br>Please Ask-Me-Anything starting now: click http://sli.do and enter event code "askmattdowle".<br>I'll answer the most voted questions during my session: https://h2o.ai/h2oworldny-livestream-reg |
 
-
-> On Tuesday 22nd October, Matt Dowle will be in New York for #h2oworld.
-> Please Ask-Me-Anything starting now: click http://sli.do and enter event code "askmattdowle".
-> I'll answer the most voted questions during my session: https://h2o.ai/h2oworldny-livestream-reg
+| Tuesday 22nd October |
+| -------------------- |
+| Matt Dowle will be in New York for #h2oworld.<br>
+Please Ask-Me-Anything starting now: click http://sli.do and enter event code "askmattdowle".<br>
+I'll answer the most voted questions during my session: https://h2o.ai/h2oworldny-livestream-reg |
 
 ## Why `data.table`?
 
