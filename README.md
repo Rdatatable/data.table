@@ -16,23 +16,9 @@
 
 `data.table` provides a high-performance version of [base R](https://www.r-project.org/about.html)'s `data.frame` with syntax and feature enhancements for ease of use, convenience and programming speed.
 
-<p class="callout info">Test <mark>message</mark></p>
-
-
-<span style="background-color: #FFFF00">This text is highlighted in yellow.</span>
-
-<p style="background-color: yellow">This whole paragraph of text is highlighted in yellow.</p>
-
-
-| Tuesday 22nd October |
-| -------------------- |
-| Matt Dowle will be in New York for #h2oworld.<br>Please Ask-Me-Anything starting now: click http://sli.do and enter event code "askmattdowle".<br>I'll answer the most voted questions during my session: https://h2o.ai/h2oworldny-livestream-reg |
-
-| Tuesday 22nd October |
-| -------------------- |
-| Matt Dowle will be in New York for #h2oworld.<br>
-Please Ask-Me-Anything starting now: click http://sli.do and enter event code "askmattdowle".<br>
-I'll answer the most voted questions during my session: https://h2o.ai/h2oworldny-livestream-reg |
+| Tuesday 22nd October 2019 |
+| ------------------------- |
+| Matt Dowle will be in New York for [H2O World](https://www.h2o.ai/h2oworldnewyork/).<br>Please Ask-Me-Anything starting now: click http://sli.do and enter event code  "askmattdowle".<br>I'll answer the most voted questions during my session: https://h2o.ai/h2oworldny-livestream-reg |
 
 ## Why `data.table`?
 
