@@ -16,7 +16,18 @@
 
 `data.table` provides a high-performance version of [base R](https://www.r-project.org/about.html)'s `data.frame` with syntax and feature enhancements for ease of use, convenience and programming speed.
 
-<p class="callout info">Test message</p>
+<p class="callout info">Test <mark>message</mark></p>
+
+
+<span style="background-color: #FFFF00">This text is highlighted in yellow.</span>
+
+<p style="background-color: #FFFF00">This whole paragraph of text is highlighted in yellow.</p>
+
+
+| Tuesday 22nd October |
+| -------------------- |
+| Some text |
+
 
 > On Tuesday 22nd October, Matt Dowle will be in New York for #h2oworld.
 > Please Ask-Me-Anything starting now: click http://sli.do and enter event code "askmattdowle".
