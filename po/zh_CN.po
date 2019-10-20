@@ -3092,7 +3092,7 @@ msgstr "grp 的 gforce 初始群体数占了 %.3f\n "
 #: gsumm.c:116
 msgid ""
 "Internal error: Failed to allocate counts or TMP when assigning g in gforce"
-msgstr "内部错误：在 gforce 中设定 g 时，未能成功分配 counts 或者 TMP"
+msgstr "内部错误：在 gforce 中为 g 赋值时，未能成功为 counts 或者 TMP 分配空间"
 
 #: gsumm.c:194
 #, c-format
