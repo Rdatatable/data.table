@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
-"Project-Id-Version: data.table 1.12.5\n"
-"POT-Creation-Date: 2019-10-19 12:10\n"
+"Project-Id-Version: data.table 1.12.7\n"
+"POT-Creation-Date: 2019-10-21 16:15\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -1285,7 +1285,10 @@ msgstr ""
 msgid "Character vectors in 'sets' list must not have duplicated column names within a single grouping set."
 msgstr ""
 
-msgid "Double counting is going to happen. Argument 'sets' should be unique without taking order into account, unless you really want double counting, then get used to that warning. Otherwise `sets=unique(lapply(sets, sort))` will do the trick."
+msgid "'sets' contains a duplicate (i.e., equivalent up to sorting) element at index"
+msgstr ""
+
+msgid "; as such, there will be duplicate rows in the output -- note that grouping by A,B and B,A will produce the same aggregations. Use `sets=unique(lapply(sets, sort))` to eliminate duplicates."
 msgstr ""
 
 msgid "Expression passed to grouping sets function must not update by reference. Use ':=' on results of your grouping function."
