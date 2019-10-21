@@ -168,97 +168,103 @@ msgstr ""
 
 msgid ". Only integer, double or character columns may be roll joined."
 msgstr ""
-
+>>>>>>>>
 msgid "Incompatible join types: x."
-msgstr ""
+msgstr "不兼容的合并类型： x。"
 
 msgid "("
-msgstr ""
+msgstr "（"
 
 msgid ") and i."
-msgstr ""
+msgstr "）和 i。"
 
 msgid "). Factor columns must join to factor or character columns."
-msgstr ""
+msgstr "）。 因子类型的列必须与因子类型或字符类型的列才可以合并"
 
 msgid ")"
-msgstr ""
+msgstr "）"
 
 msgid "Incompatible join types:"
-msgstr ""
+msgstr "不兼容的合并类型"
 
 msgid "is type integer64 but"
-msgstr ""
+msgstr "是 integer64 类型但是"
 
 msgid "is type double and contains fractions"
-msgstr ""
+msgstr "是 double 类型并且包含分数"
 
 msgid "roll is not implemented for non-equi joins yet."
-msgstr ""
+msgstr "roll 还没有执行 non-equi joins"
 
 msgid "Column name '_nqgrp_' is reserved for non-equi joins."
-msgstr ""
+msgstr "列名 '_nqgrp_' 是为 non-equi joins 保留的"
 
 msgid "key argument of data.table() must be character"
-msgstr ""
+msgstr "data.table() 的主参数必须是字符"
 
 msgid "Object '"
-msgstr ""
+msgstr "对象 '"
 
 msgid "' not found. Perhaps you intended"
-msgstr ""
+msgstr "' 不存在， 可能你打算"
 
 msgid ","
-msgstr ""
+msgstr ","
 
 msgid "or"
-msgstr ""
+msgstr "或者"
 
 msgid "more"
-msgstr ""
+msgstr "更多"
 
 msgid "' not found amongst"
-msgstr ""
+msgstr "' 没有发现"
 
 msgid "and"
-msgstr ""
+msgstr "并且"
 
 msgid "Provide either by= or keyby= but not both"
-msgstr ""
+msgstr "提供 by= 或 keyby= ，但两者不能同时存在"
 
 msgid "Ignoring keyby= because j= is not supplied"
-msgstr ""
+msgstr "忽略 keyby= 因为没有提供 j= "
 
 msgid "Ignoring by= because j= is not supplied"
-msgstr ""
+msgstr "忽略 by= 因为没有提供 j= "
 
 msgid ""
 "When on= is provided but not i=, on= must be a named list or data.table|"
 "frame, and a natural join (i.e. join on common names) is invoked. Ignoring "
 "on= which is '"
 msgstr ""
+"当提供 on= 而不提供 i= 的时候， on= 必须是带名称的 list 或者 data.table 或者 data.frame，"
+"并且会调用自然合并（例如，按照共有名称合并），忽略 on= "
 
 msgid "'."
-msgstr ""
+msgstr "'。"
 
 msgid ""
 "i and j are both missing so ignoring the other arguments. This warning will "
 "be upgraded to error in future."
 msgstr ""
+"i 和 j 都缺少的时候忽略其他参数。将来此警告信息将升级为错误信息。"
 
 msgid "mult argument can only be 'first', 'last' or 'all'"
-msgstr ""
+msgstr "mult 参数只能赋值为 'first'， 'last' 或 'all'"
 
 msgid ""
 "roll must be a single TRUE, FALSE, positive/negative integer/double "
 "including +Inf and -Inf or 'nearest'"
 msgstr ""
+"roll 必须是单个参数，例如 TRUE， FALSE, 正或负的 integer 或 double"
+"包括 +Inf ， -Inf 或 'nearest'"
 
 msgid "roll is '"
-msgstr ""
+msgstr "roll 是"
 
 msgid "' (type character). Only valid character value is 'nearest'."
-msgstr ""
+msgstr "'(字符类型)。 唯一有效的字符值是'nearest'。"
+<<<<<<<<
 
 msgid "rollends must be a logical vector"
 msgstr ""
