@@ -1597,7 +1597,7 @@ msgstr "结果中存在重复的列名，请确保 `j` 和 `by` 传递的列中�
 
 msgid ""
 "Using integer64 class columns require to have 'bit64' package installed."
-msgstr "要使用 integer64 类需要先安装 'bit64' 包。"
+msgstr "要在列中使用 integer64 类，需要先安装 'bit64' 包。"
 
 msgid ""
 "internal error, package:xts is on search path but could not be loaded via "
