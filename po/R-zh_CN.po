@@ -170,7 +170,7 @@ msgid ". Only integer, double or character columns may be roll joined."
 msgstr ""
 >>>>>>>>
 msgid "Incompatible join types: x."
-msgstr "不兼容的合并类型： x。"
+msgstr "不兼容的联结类型： x。"
 
 msgid "("
 msgstr "（"
@@ -179,13 +179,13 @@ msgid ") and i."
 msgstr "）和 i。"
 
 msgid "). Factor columns must join to factor or character columns."
-msgstr "）。 因子类型的列必须与因子类型或字符类型的列才可以合并"
+msgstr "）。 因子类型的列必须与因子类型或字符类型的列才可以联结"
 
 msgid ")"
 msgstr "）"
 
 msgid "Incompatible join types:"
-msgstr "不兼容的合并类型"
+msgstr "不兼容的联结类型"
 
 msgid "is type integer64 but"
 msgstr "是 integer64 类型但是"
@@ -238,7 +238,7 @@ msgid ""
 "on= which is '"
 msgstr ""
 "当提供 on= 而不提供 i= 的时候， on= 必须是带名称的 list 或者 data.table 或者 data.frame，"
-"并且会调用自然合并（例如，按照共有名称合并），忽略 on= "
+"并且会调用自然联结（例如，按照共有名称联结），忽略 on= "
 
 msgid "'."
 msgstr "'。"
