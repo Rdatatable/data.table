@@ -6,9 +6,7 @@
 
 ## NEW FEATURES
 
-* Compiler support for OpenMP is now detected during installation, which allows
-  data.table to compile even if the users' toolchain differs from CRANs, as is
-  common on macOS. (#2161, @jimhester)
+* Compiler support for OpenMP is now detected during installation, which allows data.table to compile even if the users' toolchain differs from CRANs, as is common on macOS, [#2161](https://github.com/Rdatatable/data.table/issues/2161). Thanks @jimhesterm for the PR.
 
 ## BUG FIXES
 
