@@ -1542,10 +1542,10 @@ msgid ""
 msgstr "'x' 参数是一个 0 列的 data.table；无法对其应用分组。"
 
 msgid "Input data.table must not contain duplicate column names."
-msgstr "输入 data.table 不能含有重复的列名。"
+msgstr "作为输入的 data.table 对象不能含有重复的列名。"
 
 msgid "Argument 'by' must have unique column names for grouping."
-msgstr "'by' 参数必须包含用于分组的唯一列名。"
+msgstr "'by' 参数用于分组，不可包含重复列名。"
 
 msgid "Argument 'sets' must be a list of character vectors."
 msgstr "'sets' 参数必须是一个字符向量的列表。"
@@ -1559,7 +1559,7 @@ msgstr "在 'sets' 参数中应用的所有列也必须在 'by' 中。"
 msgid ""
 "When using `id=TRUE` the 'x' data.table must not have a column named "
 "'grouping'."
-msgstr "当使用 `id=TRUE``id=TRUE` 时，"
+msgstr "当使用 `id=TRUE` 时，"
 "data.table 'x' 不能包含名为 'grouping' 的列。"
 
 msgid ""
