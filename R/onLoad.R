@@ -17,12 +17,21 @@
 
 .onLoad = function(libname, pkgname) {
   # Runs when loaded but not attached to search() path; e.g., when a package just Imports (not Depends on) data.table
-  if (!exists("test.data.table", .GlobalEnv, inherits=FALSE) &&    # check when installed package is loaded but skip when developing the package with cc()
-      (dllV<-if(is.loaded("CdllVersion",PACKAGE="datatable")).Call(CdllVersion)else"before 1.12.0") != (RV<-packageVersion("data.table"))) {
-    #                                               ^^ not dot as this is the name of the dll file, #3282
-    dll = if (.Platform$OS.type=="windows") "dll" else "so"
-    # https://bugs.r-project.org/bugzilla/show_bug.cgi?id=17478
-    stop("The datatable.",dll," version (",dllV,") does not match the package (",RV,"). Please close all R sessions to release the old ",toupper(dll)," and reinstall data.table in a fresh R session. The root cause is that R's package installer can in some unconfirmed circumstances leave a package in a state that is apparently functional but where new R code is calling old C code silently: https://bugs.r-project.org/bugzilla/show_bug.cgi?id=17478. Once a package is in this mismatch state it may produce wrong results silently until you next upgrade the package. Please help by adding precise circumstances to 17478 to move the status to confirmed. This mismatch between R and C code can happen with any package not just data.table. It is just that data.table has added this check.")
+  if (!exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
+    # check when installed package is loaded but skip when developing the package with cc()
+    dllV = if (is.loaded("CdllVersion",PACKAGE="datatable")) .Call(CdllVersion) else "before 1.12.0"
+    #                                              ^^ no dot as this is the name of the dll file, #3282
+    RV = packageVersion("data.table")
+    if (dllV != RV) {
+      dll = if (.Platform$OS.type=="windows") "dll" else "so"
+      # https://bugs.r-project.org/bugzilla/show_bug.cgi?id=17478
+      stop("The datatable.",dll," version (",dllV,") does not match the package (",RV,"). Please close all R sessions to release the old ",toupper(dll)," and reinstall data.table in a fresh R session. The root cause is that R's package installer can in some unconfirmed circumstances leave a package in a state that is apparently functional but where new R code is calling old C code silently: https://bugs.r-project.org/bugzilla/show_bug.cgi?id=17478. Once a package is in this mismatch state it may produce wrong results silently until you next upgrade the package. Please help by adding precise circumstances to 17478 to move the status to confirmed. This mismatch between R and C code can happen with any package not just data.table. It is just that data.table has added this check.")
+    }
+    builtUsing = readRDS(system.file("Meta/package.rds",package="data.table"))$Built$R
+    if (!identical(base::getRversion()>="4.0.0", builtUsing>="4.0.0")) {
+      stop("This is R ", base::getRversion(), " but data.table has been installed using R ",builtUsing,". The major version must match. Please reinstall data.table.")
+      # the if(R>=4.0.0) in NAMESPACE when registering S3 methods rbind.data.table and cbind.data.table happens on install; #3968
+    }
   }
 
   # c|rbind S3 dispatch now works in R-devel from Sep 2019; #3948 and FAQ 2.24, and R-devel is 4.0.0 as of now. I wanted to test

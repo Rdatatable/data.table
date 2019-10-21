@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: data.table 1.12.5\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2019-10-17 00:04+0800\n"
+"POT-Creation-Date: 2019-10-21 16:15+0800\n"
 "PO-Revision-Date: 2019-10-04 17:06+08\n"
 "Last-Translator: Michael Chirico <MichaelChirico4@gmail.com>\n"
 "Language-Team: Mandarin\n"
@@ -1416,56 +1416,56 @@ msgstr ""
 msgid "forder.c received %d rows and %d columns\n"
 msgstr ""
 
-#: forder.c:451 forder.c:456
+#: forder.c:451
 msgid "Internal error: DT is an empty list() of 0 columns"
 msgstr ""
 
-#: forder.c:453 forder.c:458
+#: forder.c:453
 #, c-format
 msgid ""
 "Internal error: DT has %d columns but 'by' is either not integer or is "
 "length 0"
 msgstr ""
 
-#: forder.c:455 forder.c:460
+#: forder.c:455
 #, c-format
 msgid ""
 "Either order= is not integer or its length (%d) is different to by='s length "
 "(%d)"
 msgstr ""
 
-#: forder.c:466
+#: forder.c:461
 #, c-format
 msgid "internal error: 'by' value %d out of range [1,%d]"
 msgstr ""
 
-#: forder.c:468
+#: forder.c:463
 #, c-format
 msgid "Column %d is length %d which differs from length of column 1 (%d)\n"
 msgstr ""
 
-#: forder.c:472
+#: forder.c:467
 msgid "retGrp must be TRUE or FALSE"
 msgstr ""
 
-#: forder.c:475
+#: forder.c:470
 msgid "sort must be TRUE or FALSE"
 msgstr ""
 
-#: forder.c:478
+#: forder.c:473
 msgid "At least one of retGrp= or sort= must be TRUE"
 msgstr ""
 
-#: forder.c:480
+#: forder.c:475
 msgid "na.last must be logical TRUE, FALSE or NA of length 1"
 msgstr ""
 
-#: forder.c:524
+#: forder.c:519
 #, c-format
 msgid "Item %d of order (ascending/descending) is %d. Must be +1 or -1."
 msgstr ""
 
-#: forder.c:550
+#: forder.c:545
 #, c-format
 msgid ""
 "\n"
@@ -1474,51 +1474,51 @@ msgid ""
 "to save space and time.\n"
 msgstr ""
 
-#: forder.c:566
+#: forder.c:561
 #, c-format
 msgid "Column %d passed to [f]order is type '%s', not yet supported."
 msgstr ""
 
-#: forder.c:719
+#: forder.c:714
 msgid "Internal error: column not supported not caught earlier"
 msgstr ""
 
-#: forder.c:727
+#: forder.c:722
 #, c-format
 msgid "nradix=%d\n"
 msgstr ""
 
-#: forder.c:733
+#: forder.c:728
 #, c-format
 msgid ""
 "Failed to allocate TMP or UGRP or they weren't cache line aligned: nth=%d"
 msgstr ""
 
-#: forder.c:738
+#: forder.c:733
 msgid "Could not allocate (very tiny) group size thread buffers"
 msgstr ""
 
-#: forder.c:799
+#: forder.c:794
 #, c-format
 msgid "Timing block %2d%s = %8.3f   %8d\n"
 msgstr ""
 
-#: forder.c:802
+#: forder.c:797
 #, c-format
 msgid "stat[%03d]==%10zd\n"
 msgstr ""
 
-#: forder.c:1058
+#: forder.c:1053
 #, c-format
 msgid "Failed to allocate parallel counts. my_n=%d, nBatch=%d"
 msgstr ""
 
-#: forder.c:1167
+#: forder.c:1162
 #, c-format
 msgid "Unable to allocate TMP for my_n=%d items in parallel batch counting"
 msgstr ""
 
-#: forder.c:1275
+#: forder.c:1270
 msgid ""
 "is.sorted (R level) and fsorted (C level) only to be used on vectors. If "
 "needed on a list/data.table, you'll need the order anyway if not sorted, so "
@@ -1526,25 +1526,25 @@ msgid ""
 "C level"
 msgstr ""
 
-#: forder.c:1307
+#: forder.c:1302
 #, c-format
 msgid "type '%s' is not yet supported"
 msgstr ""
 
-#: forder.c:1316
+#: forder.c:1311
 msgid "x must be either NULL or an integer vector"
 msgstr ""
 
-#: forder.c:1318
+#: forder.c:1313
 msgid "nrow must be integer vector length 1"
 msgstr ""
 
-#: forder.c:1320
+#: forder.c:1315
 #, c-format
 msgid "nrow==%d but must be >=0"
 msgstr ""
 
-#: forder.c:1337
+#: forder.c:1332
 msgid "x must be type 'double'"
 msgstr ""
 
@@ -1949,7 +1949,7 @@ msgstr ""
 msgid ""
 "Found and resolved improper quoting in first %d rows. If the fields are not "
 "quoted (e.g. field separator does not appear within any field), try quote="
-"\")\" to avoid this warning."
+"\"\" to avoid this warning."
 msgstr ""
 
 #: fread.c:1584
@@ -2384,7 +2384,7 @@ msgid ""
 msgstr ""
 
 #: freadR.c:112
-msgid "quote= must be a single character, blank \")\", or FALSE"
+msgid "quote= must be a single character, blank \"\", or FALSE"
 msgstr ""
 
 #: freadR.c:137
@@ -3775,7 +3775,7 @@ msgid "fill= should be TRUE or FALSE"
 msgstr ""
 
 #: rbindlist.c:10
-msgid "use.names= should be TRUE, FALSE, or not used (\")check\" by default)"
+msgid "use.names= should be TRUE, FALSE, or not used (\"check\" by default)"
 msgstr ""
 
 #: rbindlist.c:12
@@ -4155,20 +4155,6 @@ msgstr ""
 #: transpose.c:28
 #, c-format
 msgid "Item %d of list input is not an atomic vector"
-msgstr ""
-
-#: types.c:17 types.c:21
-#, c-format
-msgid ""
-"%s: %d:\n"
-"%s"
-msgstr ""
-
-#: types.c:23
-#, c-format
-msgid ""
-"%s: %d:\n"
-"%s:"
 msgstr ""
 
 #: types.c:55

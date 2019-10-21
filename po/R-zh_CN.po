@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: data.table 1.12.5\n"
-"POT-Creation-Date: 2019-10-17 00:12\n"
+"POT-Creation-Date: 2019-10-21 16:15\n"
 "PO-Revision-Date: 2019-10-04 17:06+08\n"
 "Last-Translator: Michael Chirico <MichaelChirico4@gmail.com>\n"
 "Language-Team: Mandarin\n"
@@ -1568,13 +1568,16 @@ msgid ""
 msgstr "在单个分组中，'sets' 列表中的字符串向量不能有重复的列名。"
 
 msgid ""
-"Double counting is going to happen. Argument 'sets' should be unique without "
-"taking order into account, unless you really want double counting, then get "
-"used to that warning. Otherwise `sets=unique(lapply(sets, sort))` will do "
-"the trick."
-msgstr "将会发生重复计数。若你真想重复计数，请忽略该警告。"
-"否则参数 'sets' 应该是唯一的、无序的，可以使用 `sets=unique(lapply(sets, sort))`"
-"来完成该操作。"
+"'sets' contains a duplicate (i.e., equivalent up to sorting) element at index"
+msgstr "'sets' 的索引含有重复的元素，在做排序时的作用是对等的"
+
+msgid ""
+"; as such, there will be duplicate rows in the output -- note that grouping "
+"by A,B and B,A will produce the same aggregations. Use "
+"`sets=unique(lapply(sets, sort))` to eliminate duplicates."
+msgstr "；同样的，输出中也会包含重复的行（注意按照A、B分组与按照B、A分组的结果是一样的。）"
+"使用 `sets=unique(lapply(sets, sort))` 来消除重复。"
+
 
 msgid ""
 "Expression passed to grouping sets function must not update by reference. "
@@ -1733,6 +1736,15 @@ msgid ""
 "circumstances to 17478 to move the status to confirmed. This mismatch "
 "between R and C code can happen with any package not just data.table. It is "
 "just that data.table has added this check."
+msgstr ""
+
+msgid "This is R"
+msgstr ""
+
+msgid "but data.table has been installed using R"
+msgstr ""
+
+msgid ". The major version must match. Please reinstall data.table."
 msgstr ""
 
 msgid ""

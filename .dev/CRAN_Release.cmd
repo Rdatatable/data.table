@@ -126,15 +126,15 @@ test.data.table()
 install.packages("xml2")   # to check the 150 URLs in NEWS.md under --as-cran below
 q("no")
 R CMD build .
-R CMD check data.table_1.12.5.tar.gz --as-cran
-R CMD INSTALL data.table_1.12.5.tar.gz
+R CMD check data.table_1.12.7.tar.gz --as-cran
+R CMD INSTALL data.table_1.12.7.tar.gz
 
 # Test C locale doesn't break test suite (#2771)
 echo LC_ALL=C > ~/.Renviron
 R
 Sys.getlocale()=="C"
 q("no")
-R CMD check data.table_1.12.5.tar.gz
+R CMD check data.table_1.12.7.tar.gz
 rm ~/.Renviron
 
 # Test non-English does not break test.data.table() due to translation of messages; #3039, #630
@@ -173,7 +173,7 @@ alias R310=~/build/R-3.1.0/bin/R
 ### END ONE TIME BUILD
 
 cd ~/GitHub/data.table
-R310 CMD INSTALL ./data.table_1.12.5.tar.gz
+R310 CMD INSTALL ./data.table_1.12.7.tar.gz
 R310
 require(data.table)
 test.data.table(script="*.Rraw")
@@ -185,7 +185,7 @@ test.data.table(script="*.Rraw")
 vi ~/.R/Makevars
 # Make line SHLIB_OPENMP_CFLAGS= active to remove -fopenmp
 R CMD build .
-R CMD INSTALL data.table_1.12.5.tar.gz   # ensure that -fopenmp is missing and there are no warnings
+R CMD INSTALL data.table_1.12.7.tar.gz   # ensure that -fopenmp is missing and there are no warnings
 R
 require(data.table)   # observe startup message about no OpenMP detected
 test.data.table()
@@ -193,7 +193,7 @@ q("no")
 vi ~/.R/Makevars
 # revert change above
 R CMD build .
-R CMD check data.table_1.12.5.tar.gz
+R CMD check data.table_1.12.7.tar.gz
 
 
 #####################################################
@@ -207,6 +207,7 @@ tar xvf R-devel.tar.gz
 mv R-devel R-devel-strict-gcc
 tar xvf R-devel.tar.gz
 mv R-devel R-devel-strict-clang
+tar xvf R-devel.tar.gz
 
 # use gcc-8 and clang-8 in CC=, or latest available in `apt cache search gcc-` or `clang-`
 
@@ -230,8 +231,8 @@ make
 alias Rdevel-strict-gcc='~/build/R-devel-strict-gcc/bin/R --vanilla'
 alias Rdevel-strict-clang='~/build/R-devel-strict-clang/bin/R --vanilla'
 cd ~/GitHub/data.table
-Rdevel-strict-gcc CMD INSTALL data.table_1.12.5.tar.gz
-Rdevel-strict-clang CMD INSTALL data.table_1.12.5.tar.gz
+Rdevel-strict-gcc CMD INSTALL data.table_1.12.7.tar.gz
+Rdevel-strict-clang CMD INSTALL data.table_1.12.7.tar.gz
 # Check UBSAN and ASAN flags appear in compiler output above. Rdevel was compiled with them so should be passed through to here
 Rdevel-strict-clang
 # repeat with Rdevel-strict-gcc
@@ -272,7 +273,7 @@ cd R-devel
 make
 cd ~/GitHub/data.table
 vi ~/.R/Makevars  # make the -O0 -g line active, for info on source lines with any problems
-Rdevel CMD INSTALL data.table_1.12.5.tar.gz
+Rdevel CMD INSTALL data.table_1.12.7.tar.gz
 Rdevel -d "valgrind --tool=memcheck --leak-check=full --track-origins=yes --show-leak-kinds=definite"
 # gctorture(TRUE)      # very slow, many days
 # gctorture2(step=100)
@@ -310,7 +311,7 @@ cd ~/build/rchk/trunk
 . ../scripts/config.inc
 . ../scripts/cmpconfig.inc
 vi ~/.R/Makevars   # set CFLAGS=-O0 -g so that rchk can provide source line numbers
-echo 'install.packages("~/GitHub/data.table/data.table_1.12.5.tar.gz",repos=NULL)' | ./bin/R --slave
+echo 'install.packages("~/GitHub/data.table/data.table_1.12.7.tar.gz",repos=NULL)' | ./bin/R --slave
 # objcopy warnings (if any) can be ignored: https://github.com/kalibera/rchk/issues/17#issuecomment-497312504
 . ../scripts/check_package.sh data.table
 cat packages/lib/data.table/libs/*check
@@ -417,6 +418,7 @@ sudo apt-get -y install libssl-dev libsasl2-dev
 sudo apt-get -y install biber   # for ctsem
 sudo apt-get -y install libopenblas-dev  # for ivmte (+ local R build with default ./configure to pick up shared openblas)
 sudo apt-get -y install libhiredis-dev  # for redux used by nodbi
+sudo apt-get -y install libzmq3-dev   # for rzmq
 sudo R CMD javareconf
 # ENDIF
 
@@ -460,7 +462,7 @@ du -k inst/tests                # 1.5MB before
 bzip2 inst/tests/*.Rraw         # compress *.Rraw just for release to CRAN; do not commit compressed *.Rraw to git
 du -k inst/tests                # 0.75MB after
 R CMD build .
-R CMD check data.table_1.12.4.tar.gz --as-cran
+R CMD check data.table_1.12.6.tar.gz --as-cran
 #
 bunzip2 inst/tests/*.Rraw.bz2  # decompress *.Rraw again so as not to commit compressed *.Rraw to git
 #
@@ -489,9 +491,9 @@ When CRAN's email contains "Pretest results OK pending a manual inspection" (or 
 3. Add new heading in NEWS for the next dev version. Add "(submitted to CRAN on <today>)" on the released heading.
 4. Bump dllVersion() in init.c
 5. Bump 3 version numbers in Makefile
-6. Search and replace this .dev/CRAN_Release.cmd to update 1.12.3 to 1.12.5, and 1.12.2 to 1.12.4 (e.g. in step 8 and 9 below)
+6. Search and replace this .dev/CRAN_Release.cmd to update 1.12.5 to 1.12.7, and 1.12.4 to 1.12.6 (e.g. in step 8 and 9 below)
 7. Another final gd to view all diffs using meld. (I have `alias gd='git difftool &> /dev/null'` and difftool meld: http://meldmerge.org/)
-8. Push to master with this consistent commit message: "1.12.4 on CRAN. Bump to 1.12.5"
-9. Take sha from step 8 and run `git tag 1.12.4 34796cd1524828df9bf13a174265cb68a09fcd77` then `git push origin 1.12.4` (not `git push --tags` according to https://stackoverflow.com/a/5195913/403310)
+8. Push to master with this consistent commit message: "1.12.6 on CRAN. Bump to 1.12.7"
+9. Take sha from step 8 and run `git tag 1.12.6 34796cd1524828df9bf13a174265cb68a09fcd77` then `git push origin 1.12.6` (not `git push --tags` according to https://stackoverflow.com/a/5195913/403310)
 ######
 
