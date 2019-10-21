@@ -1498,108 +1498,114 @@ msgid "dateTimeAs must be a single string"
 msgstr ""
 
 msgid "dateTimeAs must be 'ISO','squash','epoch' or 'write.csv'"
-msgstr ""
+msgstr "dateTimeAs 必须是 'ISO'，'squash'，'epoch' 或 'write.csv'"
 
 msgid "logicalAsInt has been renamed logical01. Use logical01 only, not both."
-msgstr ""
+msgstr "logicalAsInt 已重命名为 logical01。不要同时使用它们，仅使用 logical01。"
 
 msgid "x being coerced from class: matrix to data.table"
-msgstr ""
+msgstr "x 的类将强制从 matrix 转变为 data.table"
 
 msgid "Input has no columns; doing nothing."
-msgstr ""
+msgstr "输入没有列，不执行任何操作。"
 
 msgid "If you intended to overwrite the file at"
-msgstr ""
+msgstr "如果你打算覆盖文件"
 
 msgid "with an empty one, please use file.remove first."
-msgstr ""
+msgstr "为空文件，请先使用 file.remove。"
 
 msgid "Input has no columns; creating an empty file at '"
-msgstr ""
+msgstr "输入没有列，将创建一个空文件 '"
 
 msgid "' and exiting."
-msgstr ""
+msgstr "' 并退出。"
 
 msgid ""
 "'data.table' relies on the package 'yaml' to write the file header; please "
 "add this to your library with install.packages('yaml') and try again."
-msgstr ""
+msgstr "'data.table' 依赖于 'yaml' 包来写文件头；"
+"请运行 install.packages('yaml') 安装 'yaml' 包后再试。"
 
 msgid "Argument 'x' must be a data.table object"
-msgstr ""
+msgstr "'x' 参数必须是一个 data.table 对象"
 
 msgid ""
 "Argument 'by' must be a character vector of column names used in grouping."
-msgstr ""
+msgstr "'by' 参数必须是一个字符向量，向量的元素是列名，用于分组。"
 
 msgid "Argument 'id' must be a logical scalar."
-msgstr ""
+msgstr "'id' 参数必须是一个逻辑标量。"
 
 msgid ""
 "Argument 'x' is a 0-column data.table; no measure to apply grouping over."
-msgstr ""
+msgstr "'x' 参数是一个 0 列的 data.table；无法对其应用分组。"
 
 msgid "Input data.table must not contain duplicate column names."
-msgstr ""
+msgstr "作为输入的 data.table 对象不能含有重复的列名。"
 
 msgid "Argument 'by' must have unique column names for grouping."
-msgstr ""
+msgstr "'by' 参数用于分组，不可包含重复列名。"
 
 msgid "Argument 'sets' must be a list of character vectors."
-msgstr ""
+msgstr "'sets' 参数必须是一个字符向量的列表。"
 
 msgid ""
 "All columns used in 'sets' argument must be in 'by' too. Columns used in "
 "'sets' but not present in 'by':"
-msgstr ""
+msgstr "在 'sets' 参数中应用的所有列也必须在 'by' 中。"
+"当前 'sets' 包含而 'by' 中不含的列有："
 
 msgid ""
 "When using `id=TRUE` the 'x' data.table must not have a column named "
 "'grouping'."
-msgstr ""
+msgstr "当使用 `id=TRUE` 时，"
+"data.table 'x' 不能包含名为 'grouping' 的列。"
 
 msgid ""
 "Character vectors in 'sets' list must not have duplicated column names "
 "within a single grouping set."
-msgstr ""
+msgstr "在单个分组中，'sets' 列表中的字符串向量不能有重复的列名。"
 
 msgid ""
 "'sets' contains a duplicate (i.e., equivalent up to sorting) element at index"
-msgstr ""
+msgstr "'sets' 的索引含有重复的元素，在做排序时的作用是对等的"
 
 msgid ""
 "; as such, there will be duplicate rows in the output -- note that grouping "
 "by A,B and B,A will produce the same aggregations. Use "
 "`sets=unique(lapply(sets, sort))` to eliminate duplicates."
-msgstr ""
+msgstr "；同样的，输出中也会包含重复的行（注意按照A、B分组与按照B、A分组的结果是一样的。）"
+"使用 `sets=unique(lapply(sets, sort))` 来消除重复。"
+
 
 msgid ""
 "Expression passed to grouping sets function must not update by reference. "
 "Use ':=' on results of your grouping function."
-msgstr ""
+msgstr "传递给分组相关函数的表达式不能通过引用更新。"
+"请在你的分组函数返回的结果中使用 ':=' 。"
 
 msgid ""
 "When using `id=TRUE` the 'j' expression must not evaluate to a column named "
 "'grouping'."
-msgstr ""
+msgstr "当 `id=TRUE` 时，'j' 表达式不能针对 'grouping' 列求值。"
 
 msgid ""
 "There exists duplicated column names in the results, ensure the column "
 "passed/evaluated in `j` and those in `by` are not overlapping."
-msgstr ""
+msgstr "结果中存在重复的列名，请确保 `j` 和 `by` 传递的列中没有发生重叠。"
 
 msgid ""
 "Using integer64 class columns require to have 'bit64' package installed."
-msgstr ""
+msgstr "要在列中使用 integer64 类，需要先安装 'bit64' 包。"
 
 msgid ""
 "internal error, package:xts is on search path but could not be loaded via "
 "requireNamespace"
-msgstr ""
+msgstr "内部错误，在搜索时找到了 xts 包，但无法使用 requireNamespace 加载"
 
 msgid "Argument 'sort' should be logical TRUE/FALSE"
-msgstr ""
+msgstr "参数 'sort' 应为逻辑值 TRUE 或 FALSE"
 
 msgid "Argument 'no.dups' should be logical TRUE/FALSE"
 msgstr ""

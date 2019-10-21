@@ -3056,11 +3056,11 @@ msgstr ""
 
 #: gsumm.c:47
 msgid "l is not an integer vector"
-msgstr ""
+msgstr "l 不是整数向量"
 
 #: gsumm.c:56
 msgid "irowsArg is neither an integer vector nor NULL"
-msgstr ""
+msgstr "irowsArg 既不是整数向量也不是 NULL"
 
 #: gsumm.c:58
 #, c-format
@@ -3070,47 +3070,48 @@ msgstr ""
 #: gsumm.c:66
 #, c-format
 msgid "o has length %d but sum(l)=%d"
-msgstr ""
+msgstr "o 的长度为 %d，但 sum(l) = %d"
 
 #: gsumm.c:69
 msgid "Internal error: o's maxgrpn attribute mismatches recalculated maxgrpn"
-msgstr ""
+msgstr "内部错误：o 的 maxgrpn 属性与重新计算的 maxgrpn 不匹配"
 
 #: gsumm.c:89
 #, c-format
 msgid ""
 "Internal error: nrow=%d  ngrp=%d  nbit=%d  shift=%d  highSize=%d  nBatch=%d  "
 "batchSize=%d  lastBatchSize=%d\n"
-msgstr ""
+msgstr "内部错误：nrow=%d ngrp=%d  nbit=%d  shift=%d  highSize=%d  nBatch=%d  "
+"batchSize=%d  lastBatchSize=%d\n"
 
 #: gsumm.c:98
 #, c-format
 msgid "gforce initial population of grp took %.3f\n"
-msgstr ""
+msgstr "grp 的 gforce 初始群体数占了 %.3f\n "
 
 #: gsumm.c:116
 msgid ""
 "Internal error: Failed to allocate counts or TMP when assigning g in gforce"
-msgstr ""
+msgstr "内部错误：在 gforce 中为 g 赋值时，未能成功为 counts 或者 TMP 分配空间"
 
 #: gsumm.c:194
 #, c-format
 msgid "gforce assign high and low took %.3f\n"
-msgstr ""
+msgstr "gforce 分配 high 和 low 用了 %.3f\n"
 
 #: gsumm.c:200
 #, c-format
 msgid "gforce eval took %.3f\n"
-msgstr ""
+msgstr "gforce eval 用了 %.3f\n"
 
 #: gsumm.c:216
 msgid "gather took ... "
-msgstr ""
+msgstr "gather 用了 ..."
 
 #: gsumm.c:334
 #, c-format
 msgid "gather implemented for INTSXP, REALSXP, and CPLXSXP but not '%s'"
-msgstr ""
+msgstr "gather 已支持 INTSXP，REALSXP 和 CPLXSXP，但不支持 '%s'"
 
 #: gsumm.c:336 gsumm.c:568
 #, c-format
@@ -3119,61 +3120,65 @@ msgstr ""
 
 #: gsumm.c:345
 msgid "sum is not meaningful for factors."
-msgstr ""
+msgstr "因子的和没有意义。"
 
 #: gsumm.c:349
 #, c-format
 msgid "This gsum took (narm=%s) ... "
-msgstr ""
+msgstr "gsum 占用了 (narm=%s) ..."
 
 #: gsumm.c:350 gsumm.c:606
 #, c-format
 msgid "nrow [%d] != length(x) [%d] in gsum"
-msgstr ""
+msgstr "gsum 中 nrow [%d] != length(x) [%d]"
 
 #: gsumm.c:404
 msgid ""
 "The sum of an integer column for a group was more than type 'integer' can "
 "hold so the result has been coerced to 'numeric' automatically for "
 "convenience."
-msgstr ""
+msgstr "某整数列分组求和的结果中，"
+"出现了超过了整型（interger）数值所允许最大值的情况，"
+"故结果被自动转换为数值类型（numeric）"
 
 #: gsumm.c:565
 #, c-format
 msgid ""
 "Type '%s' not supported by GForce sum (gsum). Either add the prefix base::"
 "sum(.) or turn off GForce optimization using options(datatable.optimize=1)"
-msgstr ""
+msgstr "GForce 求和（gsum）不支持类型 '%s'。请使用 base::sum(.) 或者"
+"设置 options(datatable.optimize=1) 关闭 GForce 优化"
 
 #: gsumm.c:578
 msgid ""
 "GForce mean can only be applied to columns, not .SD or similar. Likely "
 "you're looking for 'DT[,lapply(.SD,mean),by=,.SDcols=]'. See ?data.table."
-msgstr ""
+msgstr "GForce 求平均值仅适用于列，而不能用于 .SD 或其它。"
+"或许你在查找 'DT[,lapply(.SD,mean),by=,.SDcols=]'。参见 ?data.table 。"
 
 #: gsumm.c:579
 msgid "mean is not meaningful for factors."
-msgstr ""
+msgstr "因子的平均值没有意义"
 
 #: gsumm.c:599
 #, c-format
 msgid "Internal error: gsum returned type '%s'. typeof(x) is '%s'"
-msgstr ""
+msgstr "内部错误：gsum 返回的类型是 '%s'，而 typeof(x) 的结果则是 '%s'"
 
 #: gsumm.c:609
 #, c-format
 msgid "Unable to allocate %d * %d bytes for sum in gmean na.rm=TRUE"
-msgstr ""
+msgstr "无法为 gmean na.rm=TRUE 的总和（sum）分配 %d * %d 字节空间"
 
 #: gsumm.c:612
 #, c-format
 msgid "Unable to allocate %d * %d bytes for counts in gmean na.rm=TRUE"
-msgstr ""
+msgstr "无法为 gmean na.rm=TRUE 的计数（counts）分配 %d * %d 字节空间"
 
 #: gsumm.c:638
 #, c-format
 msgid "Unable to allocate %d * %d bytes for si in gmean na.rm=TRUE"
-msgstr ""
+msgstr "无法为 gmean na.rm=TRUE 的 si 分配 %d * %d 字节空间"
 
 #: gsumm.c:650
 #, c-format
@@ -3181,11 +3186,12 @@ msgid ""
 "Type '%s' not supported by GForce mean (gmean) na.rm=TRUE. Either add the "
 "prefix base::mean(.) or turn off GForce optimization using options(datatable."
 "optimize=1)"
-msgstr ""
+msgstr "GForce 求均值（gmean）不支持类型 '%s'。请使用 base::mean(.) 或者"
+"设置 options(datatable.optimize=1) 关闭 GForce 优化"
 
 #: gsumm.c:674
 msgid "Internal error: unsupported type at the end of gmean"
-msgstr ""
+msgstr "内部错误：gmean 结尾处存在不支持的类型"
 
 #: gsumm.c:687
 msgid ""
@@ -3193,38 +3199,45 @@ msgid ""
 "of all items in a list such as .SD, either add the prefix base::min(.SD) or "
 "turn off GForce optimization using options(datatable.optimize=1). More "
 "likely, you may be looking for 'DT[,lapply(.SD,min),by=,.SDcols=]'"
-msgstr ""
+msgstr "GForce 求最小值（min）仅适用于列，而不能用于 .SD 或其它。"
+"要找到列表中（如 .SD）所有元素的最小值，须使用 base::min(.SD) 或者"
+"设置 options(datatable.optimize=1) 关闭 GForce 优化。"
+"你更像是在查找 'DT[,lapply(.SD,min),by=,.SDcols=]'"
 
 #: gsumm.c:688
 msgid "min is not meaningful for factors."
-msgstr ""
+msgstr "因子的最小值没有意义。"
 
 #: gsumm.c:693
 #, c-format
 msgid "nrow [%d] != length(x) [%d] in gmin"
-msgstr ""
+msgstr "gmin 中 nrow [%d] != length(x) [%d]"
 
 #: gsumm.c:717 gsumm.c:850
 msgid ""
 "No non-missing values found in at least one group. Coercing to numeric type "
 "and returning 'Inf' for such groups to be consistent with base"
-msgstr ""
+msgstr "在至少一个分组中没有发现缺失值。"
+"为了与 base 保持一致，将这些组强制转换为数值类型并返回 ‘Inf’。"
 
 #: gsumm.c:756 gsumm.c:891
 msgid ""
 "No non-missing values found in at least one group. Returning 'NA' for such "
 "groups to be consistent with base"
-msgstr ""
+msgstr "在至少一个分组中没有发现缺失值。"
+"为了与 base 保持一致，这些组将返回 ‘NA’。"
 
 #: gsumm.c:783
 msgid ""
 "No non-missing values found in at least one group. Returning 'Inf' for such "
 "groups to be consistent with base"
-msgstr ""
+msgstr "在至少一个分组中没有发现缺失值。"
+"为了与 base 保持一致，这些组将返回 ‘Inf’。"
+
 
 #: gsumm.c:791
 msgid "Type 'complex' has no well-defined min"
-msgstr ""
+msgstr "复数不能比较大小，故没有最小值"
 
 #: gsumm.c:794
 #, c-format
@@ -3232,6 +3245,8 @@ msgid ""
 "Type '%s' not supported by GForce min (gmin). Either add the prefix base::"
 "min(.) or turn off GForce optimization using options(datatable.optimize=1)"
 msgstr ""
+"类型'%s'不支持应用 GForce 最小值（gmin） 优化。你可以添加前缀 base::"
+"min(.) 或者使用 options(datatable.optimize=1) 关闭 GForce 优化"
 
 #: gsumm.c:806
 msgid ""
