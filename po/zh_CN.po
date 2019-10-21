@@ -343,8 +343,8 @@ msgid ""
 "sessionInfo()."
 msgstr ""
 "truelength (%d) 的值大于超额分配的 10000 项 (length = %d)。请查看 ?truelength。
-"如果你没有将 datatable.alloccol 设置为非常大的数值，请将此问题汇报给 data.table 问题追踪器，"
-"包含 sessionInfo() 的信息"
+"如果你没有将 datatable.alloccol 设置为非常大的数值，"
+"请将此问题汇报给 data.table 问题追踪器，包含 sessionInfo() 的信息"
 
 #: assign.c:454
 #, c-format
@@ -384,7 +384,7 @@ msgid ""
 "RHS for item %d has been duplicated because NAMED==%d MAYBE_SHARED==%d, but "
 "then is being plonked. length(values)==%d; length(cols)==%d)\n"
 msgstr ""
-"项目 %d 的 RHS 已经被复制， 因为 NAMED==%d MAYBE_SHARED==%d， 但是然后被 plonk。" 
+"条目 %d 的 RHS 已经被复制， 因为 NAMED==%d MAYBE_SHARED==%d， 但是然后被 plonk。" 
 "length(values)==%d; length(cols)==%d)\n"
 
 #: assign.c:487
