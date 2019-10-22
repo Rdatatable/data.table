@@ -194,10 +194,10 @@ msgid "is type double and contains fractions"
 msgstr "是 double 类型并且包含分数"
 
 msgid "roll is not implemented for non-equi joins yet."
-msgstr "roll 还没有执行 non-equi joins"
+msgstr "roll 还没有执行不等长联结"
 
 msgid "Column name '_nqgrp_' is reserved for non-equi joins."
-msgstr "列名 '_nqgrp_' 是为 non-equi joins 保留的"
+msgstr "列名 '_nqgrp_' 是为不等长联结保留的"
 
 msgid "key argument of data.table() must be character"
 msgstr "data.table() 的主参数必须是字符"

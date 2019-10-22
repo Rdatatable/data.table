@@ -382,13 +382,13 @@ msgid ""
 "RHS for item %d has been duplicated because NAMED==%d MAYBE_SHARED==%d, but "
 "then is being plonked. length(values)==%d; length(cols)==%d)\n"
 msgstr ""
-"条目 %d 的 RHS 已经被复制， 因为 NAMED==%d MAYBE_SHARED==%d， 但是然后被 plonk。" 
+"条目 %d 的 RHS 已经被复制， 因为 NAMED==%d MAYBE_SHARED==%d， 但是然后被替换。" 
 "length(values)==%d; length(cols)==%d)\n"
 
 #: assign.c:487
 #, c-format
 msgid "Direct plonk of unnamed RHS, no copy. NAMED==%d, MAYBE_SHARED==%d\n"
-msgstr "直接 plonk 没有名字的 RHS，并没有复制。 NAMED==%d, MAYBE_SHARED==%d\n"
+msgstr "直接替换没有名字的 RHS，并没有复制。 NAMED==%d, MAYBE_SHARED==%d\n"
 
 #: assign.c:556
 #, c-format
