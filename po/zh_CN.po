@@ -314,7 +314,6 @@ msgid ""
 "your code."
 msgstr ""
 
->>>>>>>>
 #: assign.c:449
 msgid ""
 "This data.table has either been loaded from disk (e.g. using readRDS()/"
@@ -322,8 +321,8 @@ msgid ""
 "or setalloccol() on it first (to pre-allocate space for new columns) before "
 "assigning by reference to it."
 msgstr ""
-"´Ë data.table ÊÇ´ÓÓ²ÅÌµ¼Èë(ÀıÈç readRDS()/load() )»òÕßÊÖ¶¯´´½¨(ÀıÈç structure() )¡£"
-"ÔÚÍ¨¹ıÒıÓÃµÄ·½Ê½½øĞĞ¸³ÖµÇ°£¬ÇëÏÈÔËĞĞ setDT() »ò setalloccol() À´ÎªÔö¼ÓµÄÁĞÔ¤ÏÈ·ÖÅä¿Õ¼ä"
+"æ­¤ data.table æ˜¯ä»ç¡¬ç›˜å¯¼å…¥(ä¾‹å¦‚ readRDS()/load() )æˆ–è€…æ‰‹åŠ¨åˆ›å»º(ä¾‹å¦‚ structure() )ã€‚"
+"åœ¨é€šè¿‡å¼•ç”¨çš„æ–¹å¼è¿›è¡Œèµ‹å€¼å‰ï¼Œè¯·å…ˆè¿è¡Œ setDT() æˆ– setalloccol() æ¥ä¸ºå¢åŠ çš„åˆ—é¢„å…ˆåˆ†é…ç©ºé—´"
 
 #: assign.c:450
 #, c-format
@@ -331,8 +330,8 @@ msgid ""
 "Internal error: oldtncol(%d) < oldncol(%d). Please report to data.table "
 "issue tracker, including result of sessionInfo()."
 msgstr ""
-"ÄÚ²¿´íÎó: oldtncol(%d) < oldncol(%d)¡£ Çë½«´ËÎÊÌâ»ã±¨¸ø data.table ÎÊÌâ×·×ÙÆ÷£¬"
-"°üÀ¨ sessionInfo() µÄĞÅÏ¢¡£"
+"å†…éƒ¨é”™è¯¯: oldtncol(%d) < oldncol(%d)ã€‚ è¯·å°†æ­¤é—®é¢˜æ±‡æŠ¥ç»™ data.table é—®é¢˜è¿½è¸ªå™¨ï¼Œ"
+"åŒ…æ‹¬ sessionInfo() çš„ä¿¡æ¯ã€‚"
 
 #: assign.c:452
 #, c-format
@@ -342,9 +341,9 @@ msgid ""
 "please report to data.table issue tracker including the result of "
 "sessionInfo()."
 msgstr ""
-"truelength (%d) µÄÖµ´óÓÚ³¬¶î·ÖÅäµÄ 10000 Ïî (length = %d)¡£Çë²é¿´ ?truelength¡£
-"Èç¹ûÄãÃ»ÓĞ½« datatable.alloccol ÉèÖÃÎª·Ç³£´óµÄÊıÖµ£¬"
-"Çë½«´ËÎÊÌâ»ã±¨¸ø data.table ÎÊÌâ×·×ÙÆ÷£¬°üº¬ sessionInfo() µÄĞÅÏ¢"
+"truelength (%d) çš„å€¼å¤§äºè¶…é¢åˆ†é…çš„ 10000 é¡¹ (length = %d)ã€‚è¯·æŸ¥çœ‹ ?truelengthã€‚
+"å¦‚æœä½ æ²¡æœ‰å°† datatable.alloccol è®¾ç½®ä¸ºéå¸¸å¤§çš„æ•°å€¼ï¼Œ"
+"è¯·å°†æ­¤é—®é¢˜æ±‡æŠ¥ç»™ data.table é—®é¢˜è¿½è¸ªå™¨ï¼ŒåŒ…å« sessionInfo() çš„ä¿¡æ¯"
 
 #: assign.c:454
 #, c-format
@@ -352,8 +351,7 @@ msgid ""
 "Internal error: DT passed to assign has not been allocated enough column "
 "slots. l=%d, tl=%d, adding %d"
 msgstr ""
-"ÄÚ²¿´íÎó: ´«µİ³öÈ¥¸³ÖµµÄ DT Ã»ÓĞ±»·ÖÅä×ã¹»µÄÁĞ²Û¡£ l=%d, tl=%d, Ôö¼Ó %d"
-
+"å†…éƒ¨é”™è¯¯: ä¼ é€’å‡ºå»èµ‹å€¼çš„ DT æ²¡æœ‰è¢«åˆ†é…è¶³å¤Ÿçš„åˆ—æ§½ã€‚ l=%d, tl=%d, å¢åŠ  %d"
 
 #: assign.c:456
 msgid ""
@@ -361,22 +359,22 @@ msgid ""
 "reassigned. Please ensure to use setnames() rather than names<- or "
 "colnames<-. Otherwise, please report to data.table issue tracker."
 msgstr ""
-"¿´ÆğÀ´£¬ ÔÚÇ°ÃæµÄÄ³¸öÊ±¿Ì£¬´Ë data.table µÄÃû³ÆÒÑ¾­±»ÖØĞÂ¸³Öµ¡£"
-"ÇëÈ·±£Ê¹ÓÃ setnames() ¶ø²»ÊÇ names<- »ò colnames<- ½øĞĞ¸³Öµ¡£"
-"Èç¹û¸Ã°ì·¨ÎŞĞ§£¬Çë½«´ËÎÊÌâ»ã±¨¸ø data.table ÎÊÌâ×·×ÙÆ÷£¬°üº¬ sessionInfo() µÄĞÅÏ¢"
+"çœ‹èµ·æ¥ï¼Œ åœ¨å‰é¢çš„æŸä¸ªæ—¶åˆ»ï¼Œæ­¤ data.table çš„åç§°å·²ç»è¢«é‡æ–°èµ‹å€¼ã€‚"
+"è¯·ç¡®ä¿ä½¿ç”¨ setnames() è€Œä¸æ˜¯ names<- æˆ– colnames<- è¿›è¡Œèµ‹å€¼ã€‚"
+"å¦‚æœè¯¥åŠæ³•æ— æ•ˆï¼Œè¯·å°†æ­¤é—®é¢˜æ±‡æŠ¥ç»™ data.table é—®é¢˜è¿½è¸ªå™¨ï¼ŒåŒ…å« sessionInfo() çš„ä¿¡æ¯"
 
 #: assign.c:460
 #, c-format
 msgid "Internal error: selfrefnames is ok but tl names [%d] != tl [%d]"
 msgstr ""
-"ÄÚ²¿´íÎó: selfrefnames ÕıÈ·£¬µ« tl µÄÃû³Æ [%d] != tl [%d]"
+"å†…éƒ¨é”™è¯¯: selfrefnames æ­£ç¡®ï¼Œä½† tl çš„åç§° [%d] != tl [%d]"
 
 #: assign.c:471
 msgid ""
 "Internal error: earlier error 'When deleting columns, i should not be "
 "provided' did not happen."
 msgstr ""
-"ÄÚ²¿´íÎó: Ç°ÆÚµÄ´íÎó 'µ±É¾³ıÁĞµÄÊ±ºò£¬²»Ó¦¸ÃÌá¹©²ÎÊı i ' Ã»ÓĞ·¢Éú"
+"å†…éƒ¨é”™è¯¯: å‰æœŸçš„é”™è¯¯ 'å½“åˆ é™¤åˆ—çš„æ—¶å€™ï¼Œä¸åº”è¯¥æä¾›å‚æ•° i ' æ²¡æœ‰å‘ç”Ÿ"
 
 #: assign.c:482
 #, c-format
@@ -384,13 +382,13 @@ msgid ""
 "RHS for item %d has been duplicated because NAMED==%d MAYBE_SHARED==%d, but "
 "then is being plonked. length(values)==%d; length(cols)==%d)\n"
 msgstr ""
-"ÌõÄ¿ %d µÄ RHS ÒÑ¾­±»¸´ÖÆ£¬ ÒòÎª NAMED==%d MAYBE_SHARED==%d£¬ µ«ÊÇÈ»ºó±» plonk¡£" 
+"æ¡ç›® %d çš„ RHS å·²ç»è¢«å¤åˆ¶ï¼Œ å› ä¸º NAMED==%d MAYBE_SHARED==%dï¼Œ ä½†æ˜¯ç„¶åè¢« plonkã€‚" 
 "length(values)==%d; length(cols)==%d)\n"
 
 #: assign.c:487
 #, c-format
 msgid "Direct plonk of unnamed RHS, no copy. NAMED==%d, MAYBE_SHARED==%d\n"
-msgstr "Ö±½Ó plonk Ã»ÓĞÃû×ÖµÄ RHS£¬²¢Ã»ÓĞ¸´ÖÆ¡£ NAMED==%d, MAYBE_SHARED==%d\n"
+msgstr "ç›´æ¥ plonk æ²¡æœ‰åå­—çš„ RHSï¼Œå¹¶æ²¡æœ‰å¤åˆ¶ã€‚ NAMED==%d, MAYBE_SHARED==%d\n"
 
 #: assign.c:556
 #, c-format
@@ -398,119 +396,118 @@ msgid ""
 "Dropping index '%s' as it doesn't have '__' at the beginning of its name. It "
 "was very likely created by v1.9.4 of data.table.\n"
 msgstr ""
-"¶ªµôË÷Òı '%s' ÒòÎªËüµÄÃû×ÖÇ°ÃæÃ»ÓĞ '__' ¡£Õâ¸öºÜ¿ÉÄÜÊÇ data.table v1.9.4 ´´½¨µÄ"
+"ä¸¢æ‰ç´¢å¼• '%s' å› ä¸ºå®ƒçš„åå­—å‰é¢æ²¡æœ‰ '__' ã€‚è¿™ä¸ªå¾ˆå¯èƒ½æ˜¯ data.table v1.9.4 åˆ›å»ºçš„"
 
 #: assign.c:564
 msgid "Internal error: index name ends with trailing __"
-msgstr "ÄÚ²¿´íÎó: Ë÷ÒıÃû³ÆÒÔ __ ½áÎ²"
+msgstr "å†…éƒ¨é”™è¯¯: ç´¢å¼•åç§°ä»¥ __ ç»“å°¾"
 
 #: assign.c:569
 msgid "Internal error: Couldn't allocate memory for s4."
-msgstr "ÄÚ²¿´íÎó: ²»ÄÜ¸ø s4 ·ÖÅäÄÚ´æ"
+msgstr "å†…éƒ¨é”™è¯¯: ä¸èƒ½ç»™ s4 åˆ†é…å†…å­˜"
 
 #: assign.c:580
 msgid "Internal error: Couldn't allocate memory for s5."
-msgstr "ÄÚ²¿´íÎó: ²»ÄÜ¸ø s5 ·ÖÅäÄÚ´æ"
+msgstr "å†…éƒ¨é”™è¯¯: ä¸èƒ½ç»™ s5 åˆ†é…å†…å­˜"
 
 #: assign.c:601 assign.c:617
 #, c-format
 msgid "Dropping index '%s' due to an update on a key column\n"
-msgstr " ÒòÎªÒ»¸öÖ÷ÁĞµÄ¸üĞÂ£¬¶ªµôË÷Òı '%s'"
+msgstr " å› ä¸ºä¸€ä¸ªä¸»åˆ—çš„æ›´æ–°ï¼Œä¸¢æ‰ç´¢å¼• '%s'"
 
 #: assign.c:610
 #, c-format
 msgid "Shortening index '%s' to '%s' due to an update on a key column\n"
-msgstr "ÒòÎªÒ»¸öÖ÷ÁĞµÄ¸üĞÂ£¬Ëõ¶ÌË÷Òı '%s' µ½ '%s'"
+msgstr "å› ä¸ºä¸€ä¸ªä¸»åˆ—çš„æ›´æ–°ï¼Œç¼©çŸ­ç´¢å¼• '%s' åˆ° '%s'"
 
 #: assign.c:687
 #, c-format
 msgid "Internal error: recycle length error not caught earlier. slen=%d len=%d"
-msgstr "ÄÚ²¿´íÎó: ÔçÆÚÎ´±»·¢ÏÖµÄÑ­»·³¤¶È´íÎó slen=%d len=%d"
+msgstr "å†…éƒ¨é”™è¯¯: æ—©æœŸæœªè¢«å‘ç°çš„å¾ªç¯é•¿åº¦é”™è¯¯ slen=%d len=%d"
 
 #: assign.c:691
 msgid "Internal error: memrecycle has received NULL colname"
-msgstr "ÄÚ²¿´íÎó: memrecycle ½ÓÊÜµ½µÄÁĞÃûÎª NULL "
+msgstr "å†…éƒ¨é”™è¯¯: memrecycle æ¥å—åˆ°çš„åˆ—åä¸º NULL "
 
 #: assign.c:717
 #, c-format
 msgid ""
 "Cannot assign 'factor' to '%s'. Factors can only be assigned to factor, "
 "character or list columns."
-msgstr "²»ÄÜ½« 'factor' ¸³ÖµÎª '%s' ¡£Òò×ÓÀàĞÍÖ»ÄÜ¸³ÖµÎªÒò×Ó£¬×Ö·û»òÕßÁĞ±íÆäÖĞµÄÁĞ"
+msgstr "ä¸èƒ½å°† 'factor' èµ‹å€¼ä¸º '%s' ã€‚å› å­ç±»å‹åªèƒ½èµ‹å€¼ä¸ºå› å­ï¼Œå­—ç¬¦æˆ–è€…åˆ—è¡¨å…¶ä¸­çš„åˆ—"
 
 #: assign.c:731
 #, c-format
 msgid ""
 "Assigning factor numbers to column %d named '%s'. But %d is outside the "
 "level range [1,%d]"
-msgstr "½«ÁĞ %d Ãû³ÆÎª '%s' ¸³ÖµÎªÒò×Ó¡£µ«ÊÇ %d ÔÚ²ã´Î·¶Î§[1,%d]Ö®Íâ"
+msgstr "å°†åˆ— %d åç§°ä¸º '%s' èµ‹å€¼ä¸ºå› å­ã€‚ä½†æ˜¯ %d åœ¨å±‚æ¬¡èŒƒå›´[1,%d]ä¹‹å¤–"
 
 #: assign.c:739
 #, c-format
 msgid ""
 "Assigning factor numbers to column %d named '%s'. But %f is outside the "
 "level range [1,%d], or is not a whole number."
-msgstr "½«ÁĞ %d Ãû³ÆÎª '%s' ¸³ÖµÎªÒò×Ó¡£µ«ÊÇ %f ÔÚ²ã´Î·¶Î§[1,%d]Ö®Íâ£¬»òÕß²»ÊÇÒ»¸öÍêÕûµÄÊı×Ö"
+msgstr "å°†åˆ— %d åç§°ä¸º '%s' èµ‹å€¼ä¸ºå› å­ã€‚ä½†æ˜¯ %f åœ¨å±‚æ¬¡èŒƒå›´[1,%d]ä¹‹å¤–ï¼Œæˆ–è€…ä¸æ˜¯ä¸€ä¸ªå®Œæ•´çš„æ•°å­—"
 
 #: assign.c:745
 #, c-format
 msgid ""
 "Cannot assign '%s' to 'factor'. Factor columns can be assigned factor, "
 "character, NA in any type, or level numbers."
-msgstr "²»ÄÜ½« 'factor' ¸³ÖµÎª '%s' ¡£ Òò×ÓÁĞ¿É±»¸³ÖµÎªÒò×Ó£¬×Ö·û £¬NA »òÕß ²ã´ÎÊıÖµ"
+msgstr "ä¸èƒ½å°† 'factor' èµ‹å€¼ä¸º '%s' ã€‚ å› å­åˆ—å¯è¢«èµ‹å€¼ä¸ºå› å­ï¼Œå­—ç¬¦ ï¼ŒNA æˆ–è€… å±‚æ¬¡æ•°å€¼"
 
 #: assign.c:766
 msgid ""
 "Internal error: levels of target are either not unique or have truelength<0"
-msgstr "ÄÚ²¿´íÎó: Ä¿±êµÄ²ã´Î²»ÊÇÎ¨Ò»»òÕß³¤¶È<0"
+msgstr "å†…éƒ¨é”™è¯¯: ç›®æ ‡çš„å±‚æ¬¡ä¸æ˜¯å”¯ä¸€æˆ–è€…é•¿åº¦<0"
 
 #: assign.c:805
 #, c-format
 msgid "Unable to allocate working memory of %d bytes to combine factor levels"
-msgstr "²»ÄÜ·ÖÅä %d ×Ö½ÚµÄ¹¤×÷ÄÚ´æÀ´×éºÏÒò×Ó²ã´Î"
+msgstr "ä¸èƒ½åˆ†é… %d å­—èŠ‚çš„å·¥ä½œå†…å­˜æ¥ç»„åˆå› å­å±‚æ¬¡"
 
 #: assign.c:812
 msgid "Internal error: extra level check sum failed"
-msgstr "ÄÚ²¿´íÎó: ¶îÍâµÄ²ã´ÎĞ£ÑéºÍÊ§°Ü"
+msgstr "å†…éƒ¨é”™è¯¯: é¢å¤–çš„å±‚æ¬¡æ ¡éªŒå’Œå¤±è´¥"
 
 #: assign.c:831
 #, c-format
 msgid ""
 "Coercing 'character' RHS to '%s' to match the type of the target column "
 "(column %d named '%s')."
-msgstr "½«'character' RHS Ç¿ÖÆ×ª»»³É '%s' À´Æ¥ÅäÄ¿±êÁĞµÄÀàĞÍ"
+msgstr "å°†'character' RHS å¼ºåˆ¶è½¬æ¢æˆ '%s' æ¥åŒ¹é…ç›®æ ‡åˆ—çš„ç±»å‹"
 
 #: assign.c:837
 #, c-format
 msgid ""
 "Cannot coerce 'list' RHS to 'integer64' to match the type of the target "
 "column (column %d named '%s')."
-msgstr "²»ÄÜ½«'list' RHS Ç¿ÖÆ×ª»»³É 'integer64' À´Æ¥ÅäÄ¿±êÁĞµÄÀàĞÍ"
+msgstr "ä¸èƒ½å°†'list' RHS å¼ºåˆ¶è½¬æ¢æˆ 'integer64' æ¥åŒ¹é…ç›®æ ‡åˆ—çš„ç±»å‹"
 
 #: assign.c:842
 #, c-format
 msgid ""
 "Coercing 'list' RHS to '%s' to match the type of the target column (column "
 "%d named '%s')."
-msgstr "½«'list' RHS Ç¿ÖÆ×ª»»³É '%s' À´Æ¥ÅäÄ¿±êÁĞµÄÀàĞÍ(ÁĞ %d Ãû³Æ '%s')"
+msgstr "å°†'list' RHS å¼ºåˆ¶è½¬æ¢æˆ '%s' æ¥åŒ¹é…ç›®æ ‡åˆ—çš„ç±»å‹(åˆ— %d åç§° '%s')"
 
 #: assign.c:848
 #, c-format
 msgid "Zero-copy coerce when assigning '%s' to '%s' column %d named '%s'.\n"
-msgstr "µ± '%s' ¸³Öµ³É '%s' ÁĞ %d Ãû³Æ '%s'£¬½øĞĞZero-copyÇ¿ÖÆ×ª»»¡£"
+msgstr "å½“ '%s' èµ‹å€¼æˆ '%s' åˆ— %d åç§° '%s'ï¼Œè¿›è¡ŒZero-copyå¼ºåˆ¶è½¬æ¢ã€‚"
 
 #: assign.c:943
 #, c-format
 msgid "type '%s' cannot be coerced to '%s'"
-msgstr "ÀàĞÍ '%s' ²»ÄÜÇ¿ÖÆ×ª»»³É '%s'"
+msgstr "ç±»å‹ '%s' ä¸èƒ½å¼ºåˆ¶è½¬æ¢æˆ '%s'"
 
 #: assign.c:1063
 msgid ""
 "To assign integer64 to a character column, please use as.character() for "
 "clarity."
-msgstr "ÇëÊ¹ÓÃ as.character() °Ñ integer64 ÀàĞÍµÄÊıÖµ¸³Öµ¸ø×Ö·ûÁĞ"
+msgstr "è¯·ä½¿ç”¨ as.character() æŠŠ integer64 ç±»å‹çš„æ•°å€¼èµ‹å€¼ç»™å­—ç¬¦åˆ—"
 
-<<<<<<<<
 #: assign.c:1074
 #, c-format
 msgid "Unsupported column type in assign.c:memrecycle '%s'"
@@ -3075,11 +3072,11 @@ msgstr ""
 
 #: gsumm.c:47
 msgid "l is not an integer vector"
-msgstr "l ²»ÊÇÕûÊıÏòÁ¿"
+msgstr "l ä¸æ˜¯æ•´æ•°å‘é‡"
 
 #: gsumm.c:56
 msgid "irowsArg is neither an integer vector nor NULL"
-msgstr "irowsArg ¼È²»ÊÇÕûÊıÏòÁ¿Ò²²»ÊÇ NULL"
+msgstr "irowsArg æ—¢ä¸æ˜¯æ•´æ•°å‘é‡ä¹Ÿä¸æ˜¯ NULL"
 
 #: gsumm.c:58
 #, c-format
@@ -3089,48 +3086,48 @@ msgstr ""
 #: gsumm.c:66
 #, c-format
 msgid "o has length %d but sum(l)=%d"
-msgstr "o µÄ³¤¶ÈÎª %d£¬µ« sum(l) = %d"
+msgstr "o çš„é•¿åº¦ä¸º %dï¼Œä½† sum(l) = %d"
 
 #: gsumm.c:69
 msgid "Internal error: o's maxgrpn attribute mismatches recalculated maxgrpn"
-msgstr "ÄÚ²¿´íÎó£ºo µÄ maxgrpn ÊôĞÔÓëÖØĞÂ¼ÆËãµÄ maxgrpn ²»Æ¥Åä"
+msgstr "å†…éƒ¨é”™è¯¯ï¼šo çš„ maxgrpn å±æ€§ä¸é‡æ–°è®¡ç®—çš„ maxgrpn ä¸åŒ¹é…"
 
 #: gsumm.c:89
 #, c-format
 msgid ""
 "Internal error: nrow=%d  ngrp=%d  nbit=%d  shift=%d  highSize=%d  nBatch=%d  "
 "batchSize=%d  lastBatchSize=%d\n"
-msgstr "ÄÚ²¿´íÎó£ºnrow=%d ngrp=%d  nbit=%d  shift=%d  highSize=%d  nBatch=%d  "
+msgstr "å†…éƒ¨é”™è¯¯ï¼šnrow=%d ngrp=%d  nbit=%d  shift=%d  highSize=%d  nBatch=%d  "
 "batchSize=%d  lastBatchSize=%d\n"
 
 #: gsumm.c:98
 #, c-format
 msgid "gforce initial population of grp took %.3f\n"
-msgstr "grp µÄ gforce ³õÊ¼ÈºÌåÊıÕ¼ÁË %.3f\n "
+msgstr "grp çš„ gforce åˆå§‹ç¾¤ä½“æ•°å äº† %.3f\n "
 
 #: gsumm.c:116
 msgid ""
 "Internal error: Failed to allocate counts or TMP when assigning g in gforce"
-msgstr "ÄÚ²¿´íÎó£ºÔÚ gforce ÖĞÎª g ¸³ÖµÊ±£¬Î´ÄÜ³É¹¦Îª counts »òÕß TMP ·ÖÅä¿Õ¼ä"
+msgstr "å†…éƒ¨é”™è¯¯ï¼šåœ¨ gforce ä¸­ä¸º g èµ‹å€¼æ—¶ï¼Œæœªèƒ½æˆåŠŸä¸º counts æˆ–è€… TMP åˆ†é…ç©ºé—´"
 
 #: gsumm.c:194
 #, c-format
 msgid "gforce assign high and low took %.3f\n"
-msgstr "gforce ·ÖÅä high ºÍ low ÓÃÁË %.3f\n"
+msgstr "gforce åˆ†é… high å’Œ low ç”¨äº† %.3f\n"
 
 #: gsumm.c:200
 #, c-format
 msgid "gforce eval took %.3f\n"
-msgstr "gforce eval ÓÃÁË %.3f\n"
+msgstr "gforce eval ç”¨äº† %.3f\n"
 
 #: gsumm.c:216
 msgid "gather took ... "
-msgstr "gather ÓÃÁË ..."
+msgstr "gather ç”¨äº† ..."
 
 #: gsumm.c:334
 #, c-format
 msgid "gather implemented for INTSXP, REALSXP, and CPLXSXP but not '%s'"
-msgstr "gather ÒÑÖ§³Ö INTSXP£¬REALSXP ºÍ CPLXSXP£¬µ«²»Ö§³Ö '%s'"
+msgstr "gather å·²æ”¯æŒ INTSXPï¼ŒREALSXP å’Œ CPLXSXPï¼Œä½†ä¸æ”¯æŒ '%s'"
 
 #: gsumm.c:336 gsumm.c:568
 #, c-format
@@ -3139,65 +3136,65 @@ msgstr ""
 
 #: gsumm.c:345
 msgid "sum is not meaningful for factors."
-msgstr "Òò×ÓµÄºÍÃ»ÓĞÒâÒå¡£"
+msgstr "å› å­çš„å’Œæ²¡æœ‰æ„ä¹‰ã€‚"
 
 #: gsumm.c:349
 #, c-format
 msgid "This gsum took (narm=%s) ... "
-msgstr "gsum Õ¼ÓÃÁË (narm=%s) ..."
+msgstr "gsum å ç”¨äº† (narm=%s) ..."
 
 #: gsumm.c:350 gsumm.c:606
 #, c-format
 msgid "nrow [%d] != length(x) [%d] in gsum"
-msgstr "gsum ÖĞ nrow [%d] != length(x) [%d]"
+msgstr "gsum ä¸­ nrow [%d] != length(x) [%d]"
 
 #: gsumm.c:404
 msgid ""
 "The sum of an integer column for a group was more than type 'integer' can "
 "hold so the result has been coerced to 'numeric' automatically for "
 "convenience."
-msgstr "Ä³ÕûÊıÁĞ·Ö×éÇóºÍµÄ½á¹ûÖĞ£¬"
-"³öÏÖÁË³¬¹ıÁËÕûĞÍ£¨interger£©ÊıÖµËùÔÊĞí×î´óÖµµÄÇé¿ö£¬"
-"¹Ê½á¹û±»×Ô¶¯×ª»»ÎªÊıÖµÀàĞÍ£¨numeric£©"
+msgstr "æŸæ•´æ•°åˆ—åˆ†ç»„æ±‚å’Œçš„ç»“æœä¸­ï¼Œ"
+"å‡ºç°äº†è¶…è¿‡äº†æ•´å‹ï¼ˆintergerï¼‰æ•°å€¼æ‰€å…è®¸æœ€å¤§å€¼çš„æƒ…å†µï¼Œ"
+"æ•…ç»“æœè¢«è‡ªåŠ¨è½¬æ¢ä¸ºæ•°å€¼ç±»å‹ï¼ˆnumericï¼‰"
 
 #: gsumm.c:565
 #, c-format
 msgid ""
 "Type '%s' not supported by GForce sum (gsum). Either add the prefix base::"
 "sum(.) or turn off GForce optimization using options(datatable.optimize=1)"
-msgstr "GForce ÇóºÍ£¨gsum£©²»Ö§³ÖÀàĞÍ '%s'¡£ÇëÊ¹ÓÃ base::sum(.) »òÕß"
-"ÉèÖÃ options(datatable.optimize=1) ¹Ø±Õ GForce ÓÅ»¯"
+msgstr "GForce æ±‚å’Œï¼ˆgsumï¼‰ä¸æ”¯æŒç±»å‹ '%s'ã€‚è¯·ä½¿ç”¨ base::sum(.) æˆ–è€…"
+"è®¾ç½® options(datatable.optimize=1) å…³é—­ GForce ä¼˜åŒ–"
 
 #: gsumm.c:578
 msgid ""
 "GForce mean can only be applied to columns, not .SD or similar. Likely "
 "you're looking for 'DT[,lapply(.SD,mean),by=,.SDcols=]'. See ?data.table."
-msgstr "GForce ÇóÆ½¾ùÖµ½öÊÊÓÃÓÚÁĞ£¬¶ø²»ÄÜÓÃÓÚ .SD »òÆäËü¡£"
-"»òĞíÄãÔÚ²éÕÒ 'DT[,lapply(.SD,mean),by=,.SDcols=]'¡£²Î¼û ?data.table ¡£"
+msgstr "GForce æ±‚å¹³å‡å€¼ä»…é€‚ç”¨äºåˆ—ï¼Œè€Œä¸èƒ½ç”¨äº .SD æˆ–å…¶å®ƒã€‚"
+"æˆ–è®¸ä½ åœ¨æŸ¥æ‰¾ 'DT[,lapply(.SD,mean),by=,.SDcols=]'ã€‚å‚è§ ?data.table ã€‚"
 
 #: gsumm.c:579
 msgid "mean is not meaningful for factors."
-msgstr "Òò×ÓµÄÆ½¾ùÖµÃ»ÓĞÒâÒå"
+msgstr "å› å­çš„å¹³å‡å€¼æ²¡æœ‰æ„ä¹‰"
 
 #: gsumm.c:599
 #, c-format
 msgid "Internal error: gsum returned type '%s'. typeof(x) is '%s'"
-msgstr "ÄÚ²¿´íÎó£ºgsum ·µ»ØµÄÀàĞÍÊÇ '%s'£¬¶ø typeof(x) µÄ½á¹ûÔòÊÇ '%s'"
+msgstr "å†…éƒ¨é”™è¯¯ï¼šgsum è¿”å›çš„ç±»å‹æ˜¯ '%s'ï¼Œè€Œ typeof(x) çš„ç»“æœåˆ™æ˜¯ '%s'"
 
 #: gsumm.c:609
 #, c-format
 msgid "Unable to allocate %d * %d bytes for sum in gmean na.rm=TRUE"
-msgstr "ÎŞ·¨Îª gmean na.rm=TRUE µÄ×ÜºÍ£¨sum£©·ÖÅä %d * %d ×Ö½Ú¿Õ¼ä"
+msgstr "æ— æ³•ä¸º gmean na.rm=TRUE çš„æ€»å’Œï¼ˆsumï¼‰åˆ†é… %d * %d å­—èŠ‚ç©ºé—´"
 
 #: gsumm.c:612
 #, c-format
 msgid "Unable to allocate %d * %d bytes for counts in gmean na.rm=TRUE"
-msgstr "ÎŞ·¨Îª gmean na.rm=TRUE µÄ¼ÆÊı£¨counts£©·ÖÅä %d * %d ×Ö½Ú¿Õ¼ä"
+msgstr "æ— æ³•ä¸º gmean na.rm=TRUE çš„è®¡æ•°ï¼ˆcountsï¼‰åˆ†é… %d * %d å­—èŠ‚ç©ºé—´"
 
 #: gsumm.c:638
 #, c-format
 msgid "Unable to allocate %d * %d bytes for si in gmean na.rm=TRUE"
-msgstr "ÎŞ·¨Îª gmean na.rm=TRUE µÄ si ·ÖÅä %d * %d ×Ö½Ú¿Õ¼ä"
+msgstr "æ— æ³•ä¸º gmean na.rm=TRUE çš„ si åˆ†é… %d * %d å­—èŠ‚ç©ºé—´"
 
 #: gsumm.c:650
 #, c-format
@@ -3205,12 +3202,12 @@ msgid ""
 "Type '%s' not supported by GForce mean (gmean) na.rm=TRUE. Either add the "
 "prefix base::mean(.) or turn off GForce optimization using options(datatable."
 "optimize=1)"
-msgstr "GForce Çó¾ùÖµ£¨gmean£©²»Ö§³ÖÀàĞÍ '%s'¡£ÇëÊ¹ÓÃ base::mean(.) »òÕß"
-"ÉèÖÃ options(datatable.optimize=1) ¹Ø±Õ GForce ÓÅ»¯"
+msgstr "GForce æ±‚å‡å€¼ï¼ˆgmeanï¼‰ä¸æ”¯æŒç±»å‹ '%s'ã€‚è¯·ä½¿ç”¨ base::mean(.) æˆ–è€…"
+"è®¾ç½® options(datatable.optimize=1) å…³é—­ GForce ä¼˜åŒ–"
 
 #: gsumm.c:674
 msgid "Internal error: unsupported type at the end of gmean"
-msgstr "ÄÚ²¿´íÎó£ºgmean ½áÎ²´¦´æÔÚ²»Ö§³ÖµÄÀàĞÍ"
+msgstr "å†…éƒ¨é”™è¯¯ï¼šgmean ç»“å°¾å¤„å­˜åœ¨ä¸æ”¯æŒçš„ç±»å‹"
 
 #: gsumm.c:687
 msgid ""
@@ -3218,45 +3215,45 @@ msgid ""
 "of all items in a list such as .SD, either add the prefix base::min(.SD) or "
 "turn off GForce optimization using options(datatable.optimize=1). More "
 "likely, you may be looking for 'DT[,lapply(.SD,min),by=,.SDcols=]'"
-msgstr "GForce Çó×îĞ¡Öµ£¨min£©½öÊÊÓÃÓÚÁĞ£¬¶ø²»ÄÜÓÃÓÚ .SD »òÆäËü¡£"
-"ÒªÕÒµ½ÁĞ±íÖĞ£¨Èç .SD£©ËùÓĞÔªËØµÄ×îĞ¡Öµ£¬ĞëÊ¹ÓÃ base::min(.SD) »òÕß"
-"ÉèÖÃ options(datatable.optimize=1) ¹Ø±Õ GForce ÓÅ»¯¡£"
-"Äã¸üÏñÊÇÔÚ²éÕÒ 'DT[,lapply(.SD,min),by=,.SDcols=]'"
+msgstr "GForce æ±‚æœ€å°å€¼ï¼ˆminï¼‰ä»…é€‚ç”¨äºåˆ—ï¼Œè€Œä¸èƒ½ç”¨äº .SD æˆ–å…¶å®ƒã€‚"
+"è¦æ‰¾åˆ°åˆ—è¡¨ä¸­ï¼ˆå¦‚ .SDï¼‰æ‰€æœ‰å…ƒç´ çš„æœ€å°å€¼ï¼Œé¡»ä½¿ç”¨ base::min(.SD) æˆ–è€…"
+"è®¾ç½® options(datatable.optimize=1) å…³é—­ GForce ä¼˜åŒ–ã€‚"
+"ä½ æ›´åƒæ˜¯åœ¨æŸ¥æ‰¾ 'DT[,lapply(.SD,min),by=,.SDcols=]'"
 
 #: gsumm.c:688
 msgid "min is not meaningful for factors."
-msgstr "Òò×ÓµÄ×îĞ¡ÖµÃ»ÓĞÒâÒå¡£"
+msgstr "å› å­çš„æœ€å°å€¼æ²¡æœ‰æ„ä¹‰ã€‚"
 
 #: gsumm.c:693
 #, c-format
 msgid "nrow [%d] != length(x) [%d] in gmin"
-msgstr "gmin ÖĞ nrow [%d] != length(x) [%d]"
+msgstr "gmin ä¸­ nrow [%d] != length(x) [%d]"
 
 #: gsumm.c:717 gsumm.c:850
 msgid ""
 "No non-missing values found in at least one group. Coercing to numeric type "
 "and returning 'Inf' for such groups to be consistent with base"
-msgstr "ÔÚÖÁÉÙÒ»¸ö·Ö×éÖĞÃ»ÓĞ·¢ÏÖÈ±Ê§Öµ¡£"
-"ÎªÁËÓë base ±£³ÖÒ»ÖÂ£¬½«ÕâĞ©×éÇ¿ÖÆ×ª»»ÎªÊıÖµÀàĞÍ²¢·µ»Ø ¡®Inf¡¯¡£"
+msgstr "åœ¨è‡³å°‘ä¸€ä¸ªåˆ†ç»„ä¸­æ²¡æœ‰å‘ç°ç¼ºå¤±å€¼ã€‚"
+"ä¸ºäº†ä¸ base ä¿æŒä¸€è‡´ï¼Œå°†è¿™äº›ç»„å¼ºåˆ¶è½¬æ¢ä¸ºæ•°å€¼ç±»å‹å¹¶è¿”å› â€˜Infâ€™ã€‚"
 
 #: gsumm.c:756 gsumm.c:891
 msgid ""
 "No non-missing values found in at least one group. Returning 'NA' for such "
 "groups to be consistent with base"
-msgstr "ÔÚÖÁÉÙÒ»¸ö·Ö×éÖĞÃ»ÓĞ·¢ÏÖÈ±Ê§Öµ¡£"
-"ÎªÁËÓë base ±£³ÖÒ»ÖÂ£¬ÕâĞ©×é½«·µ»Ø ¡®NA¡¯¡£"
+msgstr "åœ¨è‡³å°‘ä¸€ä¸ªåˆ†ç»„ä¸­æ²¡æœ‰å‘ç°ç¼ºå¤±å€¼ã€‚"
+"ä¸ºäº†ä¸ base ä¿æŒä¸€è‡´ï¼Œè¿™äº›ç»„å°†è¿”å› â€˜NAâ€™ã€‚"
 
 #: gsumm.c:783
 msgid ""
 "No non-missing values found in at least one group. Returning 'Inf' for such "
 "groups to be consistent with base"
-msgstr "ÔÚÖÁÉÙÒ»¸ö·Ö×éÖĞÃ»ÓĞ·¢ÏÖÈ±Ê§Öµ¡£"
-"ÎªÁËÓë base ±£³ÖÒ»ÖÂ£¬ÕâĞ©×é½«·µ»Ø ¡®Inf¡¯¡£"
+msgstr "åœ¨è‡³å°‘ä¸€ä¸ªåˆ†ç»„ä¸­æ²¡æœ‰å‘ç°ç¼ºå¤±å€¼ã€‚"
+"ä¸ºäº†ä¸ base ä¿æŒä¸€è‡´ï¼Œè¿™äº›ç»„å°†è¿”å› â€˜Infâ€™ã€‚"
 
 
 #: gsumm.c:791
 msgid "Type 'complex' has no well-defined min"
-msgstr "¸´Êı²»ÄÜ±È½Ï´óĞ¡£¬¹ÊÃ»ÓĞ×îĞ¡Öµ"
+msgstr "å¤æ•°ä¸èƒ½æ¯”è¾ƒå¤§å°ï¼Œæ•…æ²¡æœ‰æœ€å°å€¼"
 
 #: gsumm.c:794
 #, c-format
@@ -3264,8 +3261,8 @@ msgid ""
 "Type '%s' not supported by GForce min (gmin). Either add the prefix base::"
 "min(.) or turn off GForce optimization using options(datatable.optimize=1)"
 msgstr ""
-"ÀàĞÍ'%s'²»Ö§³ÖÓ¦ÓÃ GForce ×îĞ¡Öµ£¨gmin£© ÓÅ»¯¡£Äã¿ÉÒÔÌí¼ÓÇ°×º base::"
-"min(.) »òÕßÊ¹ÓÃ options(datatable.optimize=1) ¹Ø±Õ GForce ÓÅ»¯"
+"ç±»å‹'%s'ä¸æ”¯æŒåº”ç”¨ GForce æœ€å°å€¼ï¼ˆgminï¼‰ ä¼˜åŒ–ã€‚ä½ å¯ä»¥æ·»åŠ å‰ç¼€ base::"
+"min(.) æˆ–è€…ä½¿ç”¨ options(datatable.optimize=1) å…³é—­ GForce ä¼˜åŒ–"
 
 #: gsumm.c:806
 msgid ""
