@@ -168,7 +168,7 @@ msgstr ""
 
 msgid ". Only integer, double or character columns may be roll joined."
 msgstr ""
->>>>>>>>
+
 msgid "Incompatible join types: x."
 msgstr "不兼容的联结类型： x。"
 
@@ -264,7 +264,6 @@ msgstr "roll 是"
 
 msgid "' (type character). Only valid character value is 'nearest'."
 msgstr "'(字符类型)。 唯一有效的字符值是'nearest'。"
-<<<<<<<<
 
 msgid "rollends must be a logical vector"
 msgstr ""
