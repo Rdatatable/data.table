@@ -1089,7 +1089,7 @@ msgid "Internal error -- empty rhsnames in dcast; please report"
 msgstr ""
 
 msgid "The melt generic in data.table has been passed a"
-msgstr "melt 泛型函数被传递了"
+msgstr "data.table 中的 melt 泛型函数被传递了"
 
 msgid ""
 ", but data.table::melt currently only has a method for data.tables. Please "
