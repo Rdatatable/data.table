@@ -1360,113 +1360,113 @@ msgstr "分配cradix_tmp失败"
 msgid ""
 "Internal error: ustr isn't empty when starting range_str: ustr_n=%d, "
 "ustr_alloc=%d"
-msgstr "内部错误。开始运行range_str时，ustr未清空：ustr_n=%d,"
+msgstr "内部错误：开始运行range_str时，ustr未清空：ustr_n=%d,"
 "ustr_alloc=%d"
 
 #: forder.c:292
 msgid "Internal error: ustr_maxlen isn't 0 when starting range_str"
-msgstr ""
+msgstr "内部错误：开始range_str时，ustr_maxlen不是0"
 
 #: forder.c:312
 #, c-format
 msgid "Unable to realloc %d * %d bytes in range_str"
-msgstr ""
+msgstr "在range_str中，无法重新分配%d * %d字节内存"
 
 #: forder.c:330
 msgid "Failed to alloc ustr3 when converting strings to UTF8"
-msgstr ""
+msgstr "将字符串转换为UTF8格式时，无法分配ustr3"
 
 #: forder.c:348
 msgid "Failed to alloc tl when converting strings to UTF8"
-msgstr ""
+msgstr "将字符串转换为UTF8格式时，无法分配tl"
 
 #: forder.c:377
 msgid "Must an integer or numeric vector length 1"
-msgstr ""
+msgstr "必须是长度为1的整数或数字向量"
 
 #: forder.c:378
 msgid "Must be 2, 1 or 0"
-msgstr ""
+msgstr "必须是2、1或者0"
 
 #: forder.c:412
 msgid "Unknown non-finite value; not NA, NaN, -Inf or +Inf"
-msgstr ""
+msgstr "未知的取值范围，不属于NA, NaN, -Inf或+Inf"
 
 #: forder.c:434
 msgid ""
 "Internal error: input is not either a list of columns, or an atomic vector."
-msgstr ""
+msgstr "内部错误：输入值既不是列表中的一列，也不是原子向量"
 
 #: forder.c:436
 msgid ""
 "Internal error: input is an atomic vector (not a list of columns) but by= is "
 "not NULL"
-msgstr ""
+msgstr "内部错误：输入值是一个原子向量(而不是列表中的一列)，但是by的参数是列表而不是NULL"
 
 #: forder.c:438
 msgid ""
 "Input is an atomic vector (not a list of columns) but order= is not a length "
 "1 integer"
-msgstr ""
+msgstr "输入值是一个原子向量(而不是列表中的一列)，但参数order不是长度为1的整数"
 
 #: forder.c:440
 #, c-format
 msgid "forder.c received a vector type '%s' length %d\n"
-msgstr ""
+msgstr "forder.c接收到一个类型为'%s'长度为%d的向量\n"
 
 #: forder.c:448
 #, c-format
 msgid "forder.c received %d rows and %d columns\n"
-msgstr ""
+msgstr "forder.c接收到%d行和%d列\n"
 
 #: forder.c:451 forder.c:456
 msgid "Internal error: DT is an empty list() of 0 columns"
-msgstr ""
+msgstr "内部错误：DT是一个0列的空list"
 
 #: forder.c:453 forder.c:458
 #, c-format
 msgid ""
 "Internal error: DT has %d columns but 'by' is either not integer or is "
 "length 0"
-msgstr ""
+msgstr "内部错误：DT内部有%d列，但参数"by"不是整数或长度为0"
 
 #: forder.c:455 forder.c:460
 #, c-format
 msgid ""
 "Either order= is not integer or its length (%d) is different to by='s length "
 "(%d)"
-msgstr ""
+msgstr "参数order不是整数，或者它的长度(%d)与参数by指定的长度不同"
 
 #: forder.c:466
 #, c-format
 msgid "internal error: 'by' value %d out of range [1,%d]"
-msgstr ""
+msgstr "内部错误：参数'by'的值%d超出[1，%d]的范围"
 
 #: forder.c:468
 #, c-format
 msgid "Column %d is length %d which differs from length of column 1 (%d)\n"
-msgstr ""
+msgstr "列%d的长度是%d，与第1列的长度(%d)不同\n"
 
 #: forder.c:472
 msgid "retGrp must be TRUE or FALSE"
-msgstr ""
+msgstr "retGrp的参数是逻辑值，必须是TRUE或FALSE"
 
 #: forder.c:475
 msgid "sort must be TRUE or FALSE"
-msgstr ""
+msgstr "sort的参数是逻辑值，必须是TRUE或FALSE"
 
 #: forder.c:478
 msgid "At least one of retGrp= or sort= must be TRUE"
-msgstr ""
+msgstr "retGrp和sort的参数中，至少一个是TRUE"
 
 #: forder.c:480
 msgid "na.last must be logical TRUE, FALSE or NA of length 1"
-msgstr ""
+msgstr "na.last的参数必须是逻辑值TRUE, FALSE或NA "
 
 #: forder.c:524
 #, c-format
 msgid "Item %d of order (ascending/descending) is %d. Must be +1 or -1."
-msgstr ""
+msgstr "排序(ascending/descending)选项%d是%d，必须是+1 or -1"
 
 #: forder.c:550
 #, c-format
@@ -1475,7 +1475,9 @@ msgid ""
 "*** Column %d passed to forder is a date stored as an 8 byte double but no "
 "fractions are present. Please consider a 4 byte integer date such as IDate "
 "to save space and time.\n"
-msgstr ""
+msgstr ""\n"
+"***传递给forder的列％d是一个没有小数的8字节double类型的日期数据，
+请考虑使用4个字节的整数日期（例如IDate）以节省空间和时间\n"
 
 #: forder.c:566
 #, c-format
