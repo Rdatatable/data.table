@@ -17,7 +17,7 @@ msgid ""
 "Internal error -- difftime objects may not be added to IDate, but Ops "
 "dispatch should have intervened to prevent this"
 msgstr "内部错误 -- 'difftime'对象不能与IDate类型相加"
-"正确操作应该防止此行为发生"
+"但是正确操作应该防止此行为发生"
 
 msgid "binary + is not defined for \"IDate\" objects"
 msgstr "\"IDate\" 对象没有已定义的'+'操作"
@@ -77,10 +77,10 @@ msgid "Item"
 msgstr "条目"
 
 msgid "has"
-msgstr ""
+msgstr "具有"
 
 msgid "rows but longest item has"
-msgstr ""
+msgstr "行，但最长项目有"
 
 msgid "; recycled with remainder."
 msgstr "用余数循环填充"
