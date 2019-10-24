@@ -6,6 +6,8 @@
 
 ## NEW FEATURES
 
+1. `.SDcols` now accepts functions for filtering based on conditions of the column _values_ (`patterns` can still be used for filtering based on the column _names_), [#3950](https://github.com/Rdatatable/data.table/issues/3950). We imagine the most common usage will be for column types, e.g. `.SDcols=is.numeric`, but any (even _ad hoc_) function that returns scalar `TRUE`/`FALSE` for each column will do. `.SDcols=!is.character` will return _non_-character columns (_a la_ `Negate()`).
+
 ## BUG FIXES
 
 ## NOTES

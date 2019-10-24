@@ -16370,6 +16370,16 @@ test(2120.07, iDT[(i_id), order(e_date, e_time)], c(3L,4L,1L,2L))  # wrapping wi
 test(2120.08, tmp[iDT[(i_id), order(e_date, e_time)]],             # different result with the NA
               data.table(i_id=c("A",NA,"B","C"), N=c(5L,NA,5L,5L)))
 
+# .SDcols accepts a function, #3950
+DT = data.table(a=1:5, b=2, c='a')
+test(2121.1, names(DT[ , .SD, .SDcols=is.numeric]), c('a', 'b'))
+test(2121.2, names(DT[ , .SD, .SDcols=!is.numeric]), 'c')
+test(2121.3, DT[ , .SD, .SDcols=function(x) x==1],
+     error='conditions were not met for: [a, b, c]')
+test(2121.4, DT[ , .SD, .SDcols=function(x) 2L],
+     error='conditions were not met for: [a, b, c]')
+test(2121.5, DT[ , .SD, .SDcols=function(x) NA_logical_],
+     error='conditions were not met for: [a, b, c]')
 
 ###################################
 #  Add new tests above this line  #
