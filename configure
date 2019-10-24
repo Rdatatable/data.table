@@ -61,6 +61,7 @@ echo "#include <omp.h>\nint main () { return omp_get_num_threads (); }" | ${CC} 
 
 # Write to Makevars
 if [ $R_NO_OPENMP ]; then
+  echo "OpenMP not supported!\nFor details on how to install the neessesary toolchains on your OS see:\n  https://github.com/Rdatatable/data.table/wiki/Installation "
   sed -e "s|@openmp_cflags@||" src/Makevars.in > src/Makevars
 else
   echo "OpenMP supported"
