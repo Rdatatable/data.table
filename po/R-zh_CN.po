@@ -261,21 +261,23 @@ msgid "' (type character). Only valid character value is 'nearest'."
 msgstr ""
 
 msgid "rollends must be a logical vector"
-msgstr ""
+msgstr "rollends必须是一个逻辑向量"
 
 msgid "rollends must be length 1 or 2"
-msgstr ""
+msgstr "rollends必须是长度为一或者是二"
 
 msgid ""
 "nomatch= must be either NA or NULL (or 0 for backwards compatibility which "
 "is the same as NULL)"
-msgstr ""
+msgstr "nomatch=必须是NA(缺失值)或者是(NULL)空值(或者对于反向匹配来说是0，其实"
+"也是和NULL(空值)一样的"
 
 msgid "which= must be a logical vector length 1. Either FALSE, TRUE or NA."
-msgstr ""
+msgstr "which=必须是一个长度为一的逻辑向量，比如FALSE(假)，TRUE(真)或者是"
+"NA(缺失值)"
 
 msgid "which=="
-msgstr ""
+msgstr "which=="
 
 msgid ""
 "(meaning return row numbers) but j is also supplied. Either you need row "
@@ -285,43 +287,44 @@ msgstr ""
 msgid ""
 "which=NA with nomatch=0 would always return an empty vector. Please change "
 "or remove either which or nomatch."
-msgstr ""
+msgstr "如果同时使用which=NA(缺失值)和nomatch=0会导致空向量的产生，所以请"
+"改变或者是移除which或者是nomatch的赋值"
 
 msgid "j must be provided when with=FALSE"
-msgstr ""
+msgstr "如果with=FALSE(假)，j必须要赋值"
 
 msgid ""
 "The symbol .. is invalid. The .. prefix must be followed by at least one "
 "character."
-msgstr ""
+msgstr "这个符号..是无效的。..的前缀的后面必须至少要有一个字符"
 
 msgid "Variable '"
-msgstr ""
+msgstr "变量 '"
 
 msgid ""
 "' is not found in calling scope. Looking in calling scope because you used "
 "the .. prefix."
-msgstr ""
+msgstr "' 并没有存在于调用环境中。之所以在调用环境中寻找是因为你使用了..的前缀"
 
 msgid "Variable '.."
-msgstr ""
+msgstr "变量 '.."
 
 msgid ""
 "' does exist in calling scope though, so please just removed the .. prefix "
 "from that variable name in calling scope."
-msgstr ""
+msgstr "' 并不存在于调用环境中。所以请移除在调用环境中那个变量名字的..前缀"
 
 msgid "Both '"
-msgstr ""
+msgstr "两个都有 '"
 
 msgid "' and '.."
-msgstr ""
+msgstr "' 和 '.."
 
 msgid "' exist in calling scope. Please remove the '.."
-msgstr ""
+msgstr "' 当前存在于调用环境. 请删除 '.."
 
 msgid "' variable in calling scope for clarity."
-msgstr ""
+msgstr "调用环境里的变量以方便理解"
 
 msgid ""
 "Internal error:  DT[, ..var] should be dealt with by the branch above now."
@@ -342,10 +345,11 @@ msgstr ""
 msgid ""
 ":= with keyby is only possible when i is not supplied since you can't setkey "
 "on a subset of rows. Either change keyby to by or remove i"
-msgstr ""
+msgstr ":=和keyby的组合只有在i没有赋值下才合理存在。因为你不能在一个行的子集"
+"调用setkey。要么把keyby换成by或者是移除i"
 
 msgid "nomatch isn't relevant together with :=, ignoring nomatch"
-msgstr ""
+msgstr "nomatch并不和:=有任何的相关，请忽略nomatch"
 
 msgid ""
 "not-join '!' prefix is present on i but nomatch is provided. Please remove "
@@ -353,7 +357,7 @@ msgid ""
 msgstr ""
 
 msgid "is not found in calling scope"
-msgstr ""
+msgstr "不存在调用环境里"
 
 msgid ""
 "When the first argument inside DT[...] is a single symbol (e.g. DT[var]), "
@@ -376,28 +380,28 @@ msgid ""
 msgstr ""
 
 msgid "Attempting to do natural join but no common columns in provided tables"
-msgstr ""
+msgstr "尝试进行自然连接然而并没有找到表格中相同的列"
 
 msgid "Internal error. Cannot by=.EACHI when joining to a secondary key, yet"
-msgstr ""
+msgstr "内部错误: "
 
 msgid "Internal error. irows has length in by=.EACHI"
-msgstr ""
+msgstr "内部错误: "
 
 msgid "logical error. i is not a data.table, but 'on' argument is provided."
-msgstr ""
+msgstr "逻辑错误。i不是一个data.table，但是"
 
 msgid "i has evaluated to type"
-msgstr ""
+msgstr "i的数据类型被定为"
 
 msgid ". Expecting logical, integer or double."
-msgstr ""
+msgstr "。数据类型必须是逻辑，整数或者是浮叔"
 
 msgid "i evaluates to a logical vector length"
-msgstr ""
+msgstr "i 被定为是逻辑向量的长度"
 
 msgid "but there are"
-msgstr ""
+msgstr "但是存在"
 
 msgid ""
 "rows. Recycling of logical i is no longer allowed as it hides more bugs than "
