@@ -100,14 +100,14 @@ msgid ""
 "coercion to POSIX failed with:"
 msgstr ""
 "'between' 中的 'x' 参数为 POSIX 类，而 'lower' 并不是，"
-"将 'lower' 强制转换成 POSIX 失败："
+"将 'lower' 自动转换成 POSIX 失败："
 
 msgid ""
 "'between' function the 'x' argument is a POSIX class while 'upper' was not, "
 "coercion to POSIX failed with:"
 msgstr ""
 "'between' 中的 'x' 参数为 POSIX 类，而 'upper' 并不是，"
-"将 'upper' 强制转换成 POSIX 失败："
+"将 'upper' 自动转换成 POSIX 失败："
 
 msgid ""
 "'between' lower= and upper= are both POSIXct but have different tzone "
@@ -133,10 +133,10 @@ msgstr "试图使用 intger64 类型但 'bit64' 包尚未安装"
 msgid ""
 "Not yet implemented NAbounds=TRUE for this non-numeric and non-character type"
 msgstr ""
-"将 NAbounds=TRUE 应用于非数值（numeric）型和非字符串（character）型的功能尚未开发"
+"对这种非数值（numeric）和非字符（character）的类型，尚未实现 NAbounds=TRUE 的功能"
 
 msgid "Some lower>upper for this non-numeric and non-character type"
-msgstr "对于该非数值（numeric）型和非字符串（character）型的输入，存在一部分下界（lower）> 上界（upper）的情况"
+msgstr "对于该非数值（numeric）和非字符（character）类型的输入，存在一部分下界（lower）> 上界（upper）的情况"
 
 msgid "RHS has length()"
 msgstr "右手侧（RHS）的长度为"
@@ -148,7 +148,7 @@ msgid "c"
 msgstr ""
 
 msgid "Perhaps you meant %s?"
-msgstr "或许你指的是 %s？"
+msgstr "或许你想用的是 %s？"
 
 msgid "The first element should be the lower bound(s);"
 msgstr "第一个元素应为下界；"
@@ -163,19 +163,19 @@ msgid "is type"
 msgstr "的类型为"
 
 msgid "which is not supported by data.table join"
-msgstr "，该类型无法用于 data.table 的联结"
+msgstr "，该类型无法用于 data.table 的联接"
 
 msgid "i."
 msgstr ""
 
 msgid "Attempting roll join on factor column when joining x."
-msgstr "试图针对数据类型为因子（factor）的列使用滚动联结（roll join），发生在将 x."
+msgstr "试图滚动联接（roll join）因子类型（factor）的列，这发生于将 x."
 
 msgid "to i."
 msgstr "与 i."
 
 msgid ". Only integer, double or character columns may be roll joined."
-msgstr "联结时。仅整（integer）型、数值（double）型或字符串（character）型可用于滚动联结（roll join）。"
+msgstr "联接时。但只有整数（integer）、双精度（double）或字符（character）类型的列可以使用滚动联接（roll join）。"
 
 msgid "Incompatible join types: x."
 msgstr ""

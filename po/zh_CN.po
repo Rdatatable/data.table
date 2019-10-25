@@ -172,9 +172,9 @@ msgid ""
 "a logical subset, simply wrap with which(), and take the which() outside the "
 "loop if possible for efficiency."
 msgstr ""
-"i 为 '%s' 类型。i 必须为整（integer）型，或数值（numeric）型（将被强制转换成整型并发出警告）。如果 i 为"
-"一逻辑向量（logical）的子集，请直接将它传给 which()，且如果可能的话将 which() 放置于"
-"循环之外以保持效率。"
+"i 为 '%s' 类型。i 必须为整（integer）型，或数值（numeric）型（将被自动转换成整型并发出警告）。如果 i 为"
+"一个用于筛选的逻辑（logical）向量，请直接将它传给 which()，且如果可能的话将 which() 放置于"
+"循环之外以保持高效。"
 
 #: assign.c:331
 #, c-format
@@ -189,11 +189,11 @@ msgstr "正在为 %d 行（总数为 %d 行）进行赋值\n"
 #: assign.c:342
 #, c-format
 msgid "Added %d new column%s initialized with all-NA\n"
-msgstr "添加了 %d 个新列 %s 并全部初始化为 NA \n"
+msgstr "添加了 %d 个新列 %s 并全部初始化为 NA\n"
 
 #: assign.c:347
 msgid "length(LHS)==0; no columns to delete or assign RHS to."
-msgstr "length(LHS)==0；未删除任何列或将右手侧（RHS）赋值给任何列。"
+msgstr "左手侧长度为0（length(LHS)==0）；没有列可供删除或赋值给右手侧（RHS）。"
 
 #: assign.c:361
 msgid ""
@@ -201,8 +201,8 @@ msgid ""
 "Please use a data.table for that. data.table's are over-allocated and don't "
 "shallow copy."
 msgstr ""
-"set() 用于数据框（data.frame）是为了修改现有列，而非添加新列。"
-"请使用 data.table 来完成上述操作。data.table 采用超额分配（over-allocated）并且不"
+"数据框（data.frame）的 set() 是用于修改现有列，而非添加新列。"
+"请使用 data.table 来添加新列。data.table 的操作是超额分配的（over-allocated）并且不"
 "进行浅拷贝（shallow copy）。"
 
 #: assign.c:372
@@ -210,7 +210,7 @@ msgid ""
 "Coerced j from numeric to integer. Please pass integer for efficiency; e.g., "
 "2L rather than 2"
 msgstr ""
-"将 j 从数值（numeric）型强制转换为整（integer）型。为了保持效率请直接传入整型，如"
+"将 j 从数值（numeric）型自动转换为整（integer）型。为了保持高效请直接传入整型，如"
 "2L 而非 2"
 
 #: assign.c:375
@@ -219,7 +219,7 @@ msgid ""
 "j is type '%s'. Must be integer, character, or numeric is coerced with "
 "warning."
 msgstr ""
-"j 为 '%s' 型。j 必须为整（integer）型、字符串（character）型、或数值（numeric）型（将被强制转换成整型"
+"j 为 '%s' 型。j 必须为整（integer）型、字符（character）型，或数值（numeric）型（将被自动转换成整型"
 "并发出警告）。"
 
 #: assign.c:377
@@ -227,7 +227,7 @@ msgid ""
 "Can't assign to the same column twice in the same query (duplicates "
 "detected)."
 msgstr ""
-"在一次查询语句中无法对同一列赋值两次（检测出
+"在一次查询中无法对同一列赋值两次（检测出
 重复项）。"
 
 #: assign.c:378
@@ -245,8 +245,8 @@ msgid ""
 "RHS_list_of_columns revised to true because RHS list has 1 item which is "
 "NULL, or whose length %d is either 1 or targetlen (%d). Please unwrap RHS.\n"
 msgstr ""
-"修改 RHS_list_of_columns 为真因右手侧（RHS）列表存在 1 "
-"为空值（NULL），或长度 %d 为 1 或 targetlen（%d）的项。请拆开右手侧。\n"
+"RHS_list_of_columns 改为真（True），因为右手侧列表（RHS list）有一子项"
+"为空值（NULL）或长度 %d 为 1 或 targetlen（%d）。请拆开右手侧。\n"
 
 #: assign.c:390
 #, c-format
@@ -255,21 +255,21 @@ msgid ""
 "table or data.frame since they are lists too). To delete multiple columns "
 "use NULL instead. To add multiple empty list columns, use list(list())."
 msgstr ""
-"给定的 %d 列将被赋值为空列表（可能为空数据、"
+"试图将 %d 列赋值为空列表（可能为空数据、"
 "表（table）或数据框（data.frame），因后两者也是列表的一种）。删除多个列时"
 "请使用空值（NULL）。添加多个空列表列（list columns）时，请使用 list(list())。"
 
 #: assign.c:395
 #, c-format
 msgid "Recycling single RHS list item across %d columns. Please unwrap RHS.\n"
-msgstr "右手侧（RHS）列表项循环应用于 %d 列。请拆开右手侧。\n"
+msgstr "回收重用（Recycling）单个右手侧（RHS）列表子项于 %d 列。请拆开右手侧。\n"
 
 #: assign.c:397
 #, c-format
 msgid ""
 "Supplied %d columns to be assigned %d items. Please see NEWS for v1.12.2."
 msgstr ""
-"指定 %d 列赋值给 %d 项。请阅读 v1.12.2 的更新信息（NEWS）。"
+"试图将 %2$d 项赋值给 %1$d 列。请阅读 v1.12.2 的更新信息（NEWS）。"
 
 #: assign.c:405
 #, c-format
@@ -278,9 +278,9 @@ msgid ""
 "set() on a data.frame is for changing existing columns, not adding new ones. "
 "Please use a data.table for that."
 msgstr ""
-"j 中第 %d 项的列编号为 %d，超出了有效范围 [1,ncol=%d]。"
-"set() 用于数据框（data.frame）是为了修改现有列，而非添加新列。"
-"请使用 data.table 来完成上述操作。"
+"j 中的列编号里第 %d 项是 %d，超出了有效范围 [1,ncol=%d]。"
+"数据框（data.frame）的 set() 是用于修改现有列，而非添加新列。"
+"请使用 data.table 来添加新列。"
 
 #: assign.c:406
 #, c-format
@@ -288,7 +288,7 @@ msgid ""
 "Item %d of column numbers in j is %d which is outside range [1,ncol=%d]. Use "
 "column names instead in j to add new columns."
 msgstr ""
-"j 中第 %d 项的列编号为 %d，超出了有效范围 [1,ncol=%d]。请在 j 中使用"
+"j 中的列编号里第 %d 项是 %d，超出了有效范围 [1,ncol=%d]。请在 j 中使用"
 "列名来添加新列。"
 
 #: assign.c:411
@@ -305,7 +305,7 @@ msgid ""
 "full length RHS vector such as vector('list',nrow(DT)); i.e., 'plonk' in the "
 "new column."
 msgstr ""
-"赋值语句的右手侧（RHS）指向列 '%s'，其长度为零但并非空值（NULL）。如果"
+"对已有列 '%s' 的赋值其右手侧（RHS）长度为零但并非空值（NULL）。如果"
 "想要删除列请使用空值（NULL）。否则，右手侧必须"
 "长度 > 0，如 NA_integer_。如果想将该列类型修改为"
 "空列表列（list column），正如所有修改列类型的操作一样，请在右手侧提供一个"
@@ -327,7 +327,7 @@ msgstr "要删除的列 '%s' 不存在"
 #: assign.c:430
 #, c-format
 msgid "%d column matrix RHS of := will be treated as one vector"
-msgstr "':=' 右手侧（RHS）  %d 列矩阵将被视为一维向量"
+msgstr "':=' 右手侧（RHS）%d 列矩阵将被视为一维向量"
 
 #: assign.c:434
 #, c-format
@@ -335,8 +335,8 @@ msgid ""
 "Can't assign to column '%s' (type 'factor') a value of type '%s' (not "
 "character, factor, integer or numeric)"
 msgstr ""
-"无法赋值给列 '%s'（类型 '因子'（'factor'））一个类型为 '%s' 的值（非
-字符串（character）型、因子（factor）型、整（integer）型或者数值（numeric）型）"
+"无法给因子（factor）类型列 '%s' 赋类型为 '%s' 的值（不是"
+"字符（character）、因子（factor）、整数（integer）或数值（numeric）类中的一种）"
 
 #: assign.c:439
 #, c-format
@@ -345,8 +345,8 @@ msgid ""
 "'recycle' the RHS please use rep() to make this intent clear to readers of "
 "your code."
 msgstr ""
-"试图将 %d 项赋值给 %d 列 '%s'。如果想"
-"'循环'（'recycle'）右手侧，请使用 rep() 以将该意图清晰地表述给阅读"
+"试图将 %d 项赋值给 %d 项（列 '%s'）。如果想"
+"'回收重用'（'recycle'）右手侧，请使用 rep() 以将该意图清晰地表述给阅读"
 "代码的人。"
 
 #: assign.c:449
