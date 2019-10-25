@@ -296,8 +296,8 @@ SEXP frollapplyR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP align, SEXP rho) {
   if (verbose)
     Rprintf("%s: allocating memory for results %dx%d\n", __func__, nx, nk);
   ans_t *dans = (ans_t *)R_alloc(nx*nk, sizeof(ans_t));
-  double* dx[nx];
-  uint64_t inx[nx];
+  double** dx = (double**)R_alloc(nx, sizeof(double*));
+  uint64_t* inx = (uint64_t*)R_alloc(nx, sizeof(uint64_t));
   for (R_len_t i=0; i<nx; i++) {
     inx[i] = xlength(VECTOR_ELT(x, i));
     for (R_len_t j=0; j<nk; j++) {
