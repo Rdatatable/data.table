@@ -16378,7 +16378,7 @@ test(2121.3, DT[ , .SD, .SDcols=function(x) x==1],
      error='conditions were not met for: [a, b, c]')
 test(2121.4, DT[ , .SD, .SDcols=function(x) 2L],
      error='conditions were not met for: [a, b, c]')
-test(2121.5, DT[ , .SD, .SDcols=function(x) NA_logical_],
+test(2121.5, DT[ , .SD, .SDcols=function(x) NA],
      error='conditions were not met for: [a, b, c]')
 
 ###################################
