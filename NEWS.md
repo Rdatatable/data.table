@@ -8,6 +8,8 @@
 
 ## BUG FIXES
 
+1. `frollapply` could segfault and exceed R's C protect limits, [#3993](https://github.com/Rdatatable/data.table/issues/3993). Thanks to @DavisVaughan for reporting and fixing.
+
 ## NOTES
 
 
