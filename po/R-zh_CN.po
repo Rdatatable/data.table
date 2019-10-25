@@ -269,7 +269,7 @@ msgstr "rollends必须是长度为一或者是二"
 msgid ""
 "nomatch= must be either NA or NULL (or 0 for backwards compatibility which "
 "is the same as NULL)"
-msgstr "nomatch=必须是NA(缺失值)或者是(NULL)空值(或者对于反向匹配来说是0，其实"
+msgstr "nomatch=必须NA(缺失值)或者是(NULL)空值(或者对于反向匹配来说是0，其实"
 "也是和NULL(空值)一样的"
 
 msgid "which= must be a logical vector length 1. Either FALSE, TRUE or NA."
@@ -392,25 +392,25 @@ msgid "Attempting to do natural join but no common columns in provided tables"
 msgstr "尝试进行自然连接然而并没有找到表格中相同的列"
 
 msgid "Internal error. Cannot by=.EACHI when joining to a secondary key, yet"
-msgstr "内部错误: 在进行第二个关键字的连接过程中，不能实现by=.EACHI"
+msgstr ""
 
 msgid "Internal error. irows has length in by=.EACHI"
-msgstr "内部错误:  irows有长度by=.EACHI"
+msgstr ""
 
 msgid "logical error. i is not a data.table, but 'on' argument is provided."
-msgstr "逻辑错误。i不是一个data.table，但是'on'的参数有被提供。"
+msgstr ""
 
 msgid "i has evaluated to type"
-msgstr "i的数据类型被定为"
+msgstr ""
 
 msgid ". Expecting logical, integer or double."
-msgstr "。数据类型必须是逻辑，整数或者是浮叔"
+msgstr ""
 
 msgid "i evaluates to a logical vector length"
-msgstr "i 被定为是逻辑向量的长度"
+msgstr ""
 
 msgid "but there are"
-msgstr "但是存在"
+msgstr ""
 
 msgid ""
 "rows. Recycling of logical i is no longer allowed as it hides more bugs than "
