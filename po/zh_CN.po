@@ -556,7 +556,7 @@ msgid ""
 "Item %d of 'which' is %d which is outside range of the length %d character "
 "vector"
 msgstr ""
-"'which' 的 %1%d 项是 %2%d 且超出了长度为%3%d字符的范围"
+"'which' 的 %1$d 项是 %2$d 且超出了长度为%3$d字符的范围"
 
 #: assign.c:1221
 msgid "dt passed to setcolorder has no names"
@@ -599,7 +599,7 @@ msgstr "check 必须是 TRUE (真) 或者是 FALSE (假)"
 #: between.c:64
 #, c-format
 msgid "Item %d of lower (%d) is greater than item %d of upper (%d)"
-msgstr "lower (%1%d) 的 %2%d 项大于 upper (%3%d)的 %4%d 项"
+msgstr "lower (%1$d) 的 %2$d 项大于 upper (%3$d)的 %4$d 项"
 
 #: between.c:82
 #, c-format
@@ -613,7 +613,7 @@ msgstr "x 是一个64位整数但是至少在 lower 和 upper 其中有一个不
 #: between.c:95
 #, c-format
 msgid "Item %d of lower (%lld) is greater than item %d of upper (%lld)"
-msgstr "lower (%2%lld) 的 %1%d 项大于 upper (%lld)的 %d 项"
+msgstr "lower (%2$lld) 的 %1$d 项大于 upper (%4$lld)的 %3$d 项"
 
 #: between.c:112
 #, c-format
@@ -629,7 +629,7 @@ msgstr "x 不是一个64位整数但是至少在 lower 和 upper 其中有一个
 #: between.c:122
 #, c-format
 msgid "Item %d of lower (%f) is greater than item %d of upper (%f)"
-msgstr "lower (%1%f) 的 %d 项大于 upper (%2%f)的 %d 项"
+msgstr "lower (%2$f) 的 %1$d 项大于 upper (%4$f)的 %3$d 项"
 
 #: between.c:140
 #, c-format
@@ -644,7 +644,7 @@ msgstr "设界的双精度浮点数的并行运行时间一共花费了 %8.3fs\n
 #: between.c:172
 #, c-format
 msgid "Item %d of lower ('%s') is greater than item %d of upper ('%s')"
-msgstr "lower (%1%s) 的 %1%d 项大于 upper (%2%s)的 %2%d 项"
+msgstr "lower (%2$s) 的 %1$d 项大于 upper (%4$s)的 %3$d 项"
 
 #: between.c:187
 #, c-format
@@ -669,7 +669,7 @@ msgstr "内部错误: xcols 不是一个整数向量"
 #: bmerge.c:50
 #, c-format
 msgid "Internal error: length(icols) [%d] > length(xcols) [%d]"
-msgstr "内部错误: icols[%1%d] 的长度大于 xcols[%2%d] 的长度"
+msgstr "内部错误: icols[%1$d] 的长度大于 xcols[%2$d] 的长度"
 
 #: bmerge.c:57
 #, c-format
@@ -684,17 +684,17 @@ msgstr "内部错误: xcols[%d] 是 NA, 缺失值"
 #: bmerge.c:59
 #, c-format
 msgid "icols[%d]=%d outside range [1,length(i)=%d]"
-msgstr "icols[%1%d]=%2%d 造成了空间溢出，当前范围是[1,length(i)=%3%d]"
+msgstr "icols[%1$d]=%2$d 造成了空间溢出，当前范围是[1,length(i)=%3$d]"
 
 #: bmerge.c:60
 #, c-format
 msgid "xcols[%d]=%d outside range [1,length(x)=%d]"
-msgstr "xcols[%1%d]=%2%d 造成了空间溢出，当前范围是[1,length(i)=%3%d]"
+msgstr "xcols[%1$d]=%2$d 造成了空间溢出，当前范围是[1,length(i)=%3$d]"
 
 #: bmerge.c:63
 #, c-format
 msgid "typeof x.%s (%s) != typeof i.%s (%s)"
-msgstr "x.%1%s (%2%s) 的数据类型和 i.%3%s (%4%s) 的数据类型并不一致"
+msgstr "x.%1$s (%2$s) 的数据类型和 i.%3$s (%4$s) 的数据类型并不一致"
 
 #: bmerge.c:70
 msgid "roll is character but not 'nearest'"
