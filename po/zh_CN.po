@@ -3,8 +3,8 @@ msgstr ""
 "Project-Id-Version: data.table 1.12.5\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2019-10-21 16:15+0800\n"
-"PO-Revision-Date: 2019-10-04 17:06+08\n"
-"Last-Translator: Michael Chirico <MichaelChirico4@gmail.com>\n"
+"PO-Revision-Date: 2019-10-26 23:54+08\n"
+"Last-Translator: Haogao Gu <koohoko@gmail.com>\n"
 "Language-Team: Mandarin\n"
 "Language: Mandarin\n"
 "MIME-Version: 1.0\n"
@@ -2607,12 +2607,15 @@ msgid ""
 "%s: NA (or other non-finite) value(s) are present in input, skip non-NA "
 "attempt and run with extra care for NAs\n"
 msgstr ""
+"%s: NA (æˆ–å…¶ä»–éæœ‰é™é•¿åº¦å€¼) å‡ºç°åœ¨è¾“å…¥ä¸­, è·³è¿‡éNAçš„"
+"è¾“å…¥å¹¶å½“å¿ƒNAå€¼\n"
 
 #: froll.c:141 froll.c:339
 #, c-format
 msgid ""
 "%s: running in parallel for input length %llu, window %d, hasna %d, narm %d\n"
 msgstr ""
+"%s: æ­£åœ¨å¹¶è¡Œè¿è¡Œ, è¾“å…¥é•¿åº¦ (input length) %llu, çª—å£ (window) %d, hasna %d, narm %d\n"
 
 #: froll.c:179 froll.c:372 frolladaptive.c:157 frolladaptive.c:336
 #, c-format
@@ -2620,11 +2623,13 @@ msgid ""
 "%s: NA (or other non-finite) value(s) are present in input, na.rm was FALSE "
 "so in 'exact' implementation NAs were handled already, no need to re-run\n"
 msgstr ""
+"%s: NA (æˆ–å…¶ä»–éæœ‰é™é•¿åº¦å€¼) å‡ºç°åœ¨è¾“å…¥ä¸­, na.rm ä¸º FALSE "
+"å› æ­¤åœ¨'exact'å®ç°ä¸­, NAå€¼å·²ç»è¢«å¤„ç†, ä¸éœ€è¦é‡æ–°è¿è¡Œ\n"
 
 #: froll.c:428
 #, c-format
 msgid "%s: results from provided FUN are not length 1"
-msgstr ""
+msgstr "%s: æ‰€æä¾›çš„å‡½æ•° (FUN) çš„ç»“æœé•¿åº¦ä¸ä¸º1"
 
 #: froll.c:435
 #, c-format
@@ -2632,80 +2637,87 @@ msgid ""
 "%s: results from provided FUN are not of type double, coercion from integer "
 "or logical will be applied on each iteration\n"
 msgstr ""
+"%s: æ‰€æä¾›çš„å‡½æ•° (FUN) çš„ç»“æœä¸æ˜¯åŒç²¾åº¦ (double) ç±»å‹, "
+"å¯¹æ•´æ•°æˆ–é€»è¾‘å€¼çš„ç±»å‹è½¬æ¢ä¼šåœ¨æ¯ä¸ªå¾ªç¯ä¸­æ‰§è¡Œ\n"
 
 #: froll.c:438
 #, c-format
 msgid "%s: results from provided FUN are not of type double"
-msgstr ""
+msgstr "%s: æ‰€æä¾›çš„å‡½æ•° (FUN) çš„ç»“æœä¸æ˜¯åŒç²¾åº¦ (double) ç±»å‹"
 
 #: froll.c:467
 #, c-format
 msgid "%s: took %.3fs\n"
-msgstr ""
+msgstr "%s: ä½¿ç”¨äº† %.3fs\n"
 
 #: frollR.c:15
 msgid "x must be of type numeric or logical"
-msgstr ""
+msgstr "x å¿…é¡»æ˜¯æ•°å€¼æˆ–è€…é€»è¾‘ç±»å‹"
 
 #: frollR.c:26
 msgid "x must be list, data.frame or data.table of numeric or logical types"
-msgstr ""
+msgstr "x å¿…é¡»æ˜¯åˆ—è¡¨ (list), æˆ–ç”±æ•°å€¼æˆ–è€…é€»è¾‘ç±»å‹ç»„æˆçš„æ•°æ®æ¡† (data.frame æˆ– data.table)"
 
 #: frollR.c:47 frollR.c:264
 msgid "n must be non 0 length"
-msgstr ""
+msgstr "n å¿…é¡»ä¸æ˜¯0é•¿åº¦"
 
 #: frollR.c:50
 msgid "adaptive must be TRUE or FALSE"
-msgstr ""
+msgstr "adaptive å¿…é¡»æ˜¯ TRUE æˆ–è€… FALSE"
 
 #: frollR.c:58
 msgid "n must be integer, list is accepted for adaptive TRUE"
-msgstr ""
+msgstr "n å¿…é¡»æ˜¯æ•´æ•°, æˆ–è€…å½“adaptive TRUEæ—¶ä¹Ÿå¯ä»¥æ˜¯åˆ—è¡¨"
 
 #: frollR.c:65 frollR.c:256 frollR.c:259
 msgid "n must be integer"
-msgstr ""
+msgstr "n å¿…é¡»æ˜¯æ•´æ•°"
 
 #: frollR.c:72
 msgid "n must be positive integer values (> 0)"
-msgstr ""
+msgstr "n å¿…é¡»æ˜¯æ­£æ•´æ•° (> 0)"
 
 #: frollR.c:81 frollR.c:93
 msgid "n must be integer vector or list of integer vectors"
-msgstr ""
+msgstr "n å¿…é¡»æ˜¯æ•´æ•°å‘é‡ æˆ–è€…ç”±æ•´æ•°å‘é‡ç»„æˆçš„åˆ—è¡¨"
 
 #: frollR.c:104 gsumm.c:342 gsumm.c:577 gsumm.c:686 gsumm.c:805 gsumm.c:950
 #: gsumm.c:1261 gsumm.c:1402 uniqlist.c:350
 msgid "na.rm must be TRUE or FALSE"
-msgstr ""
+msgstr "na.rm å¿…é¡»æ˜¯ TRUE æˆ–è€… FALSE"
 
 #: frollR.c:107
 msgid "hasNA must be TRUE, FALSE or NA"
-msgstr ""
+msgstr "hasNA å¿…é¡»æ˜¯ TRUE, FALSE æˆ–è€… NA"
 
 #: frollR.c:109
 msgid ""
 "using hasNA FALSE and na.rm TRUE does not make sense, if you know there are "
 "NA values use hasNA TRUE, otherwise leave it as default NA"
 msgstr ""
+"åŒæ—¶ä½¿ç”¨ hasNA FALSE å’Œ na.rm TRUE æ²¡æœ‰æ„ä¹‰, å¦‚æœæ˜ç¡®æœ‰"
+"NAå€¼, é‚£å°±ç”¨ hasNA TRUE, åœ¨å…¶ä»–æƒ…å†µå¯ä»¥è®©å®ƒä¿ç•™é»˜è®¤å€¼NA"
 
 #: frollR.c:119 frollR.c:275
 msgid ""
 "Internal error: invalid align argument in rolling function, should have been "
 "caught before. please report to data.table issue tracker."
 msgstr ""
+"å†…éƒ¨é”™è¯¯: åœ¨ rolling å‡½æ•°å†…æ— æ•ˆçš„ align å‚æ•°, ç†åº”åœ¨æ›´æ—©é˜¶æ®µæ’é™¤"
+"è¯·å‘data.table issue trackeræŠ¥å‘Š"
 
 #: frollR.c:122
 msgid ""
 "using adaptive TRUE and align argument different than 'right' is not "
 "implemented"
 msgstr ""
+"åŒæ—¶ä½¿ç”¨ adaptive TRUE å’Œä¸æ˜¯ 'right' çš„alignå‚æ•°è¿˜æœªèƒ½å®ç°"
 
 #: frollR.c:126 frollR.c:297 types.c:64
 #, c-format
 msgid "%s: allocating memory for results %dx%d\n"
-msgstr ""
+msgstr "%s: æ­£åœ¨ä¸ºç»“æœ %dx%d åˆ†é…å†…å­˜\n"
 
 #: frollR.c:135
 msgid ""
@@ -2714,44 +2726,52 @@ msgid ""
 "function on list having variable length of elements call it for each field "
 "separately"
 msgstr ""
+"adaptive rolling å‡½æ•°åªèƒ½å¤„ç†é•¿åº¦åŒä¸º"
+"çš„ 'x', æ¯”å¦‚ data.table æˆ–æ•°æ®æ¡†; å¦‚æœæƒ³åœ¨å«æœ‰ä¸åŒé•¿åº¦å…ƒç´ çš„åˆ—è¡¨ä¸Šæ‰§è¡Œ rolling"
+"å‡½æ•°, éœ€è¦åˆ†å¼€å•ç‹¬åœ°åœ¨æ¯ä¸€é¡¹ä¸Šé¢æ‰§è¡Œ."
 
 #: frollR.c:137
 msgid ""
 "length of integer vector(s) provided as list to 'n' argument must be equal "
 "to number of observations provided in 'x'"
 msgstr ""
+"'n' åˆ—è¡¨ä¸­æ•´æ•°å‘é‡çš„é•¿åº¦å¿…é¡»ç­‰äº 'x' ä¸­çš„è§‚å¯Ÿæ•°é‡"
 
 #: frollR.c:151
 msgid ""
 "Internal error: invalid fun argument in rolling function, should have been "
 "caught before. please report to data.table issue tracker."
 msgstr ""
+"å†…éƒ¨é”™è¯¯: åœ¨ rolling å‡½æ•°ä¸­æ— æ•ˆçš„ fun å‚æ•°, ç†åº”åœ¨æ›´æ—©é˜¶æ®µæ’é™¤"
+"è¯·å‘data.table issue trackeræŠ¥å‘Š"
 
 #: frollR.c:155 frollR.c:279 nafill.c:136 shift.c:21
 msgid "fill must be a vector of length 1"
-msgstr ""
+msgstr "fill å¿…é¡»æ˜¯é•¿åº¦ä¸º1çš„å‘é‡"
 
 #: frollR.c:169 frollR.c:292
 msgid "fill must be numeric"
-msgstr ""
+msgstr "fill å¿…é¡»æ˜¯æ•°å€¼å‹"
 
 #: frollR.c:185
 msgid ""
 "Internal error: invalid algo argument in rolling function, should have been "
 "caught before. please report to data.table issue tracker."
 msgstr ""
+"å†…éƒ¨é”™è¯¯: åœ¨ rolling å‡½æ•°å†…æ— æ•ˆçš„ algo å‚æ•°, ç†åº”åœ¨æ›´æ—©é˜¶æ®µæ’é™¤"
+"è¯·å‘data.table issue trackeræŠ¥å‘Š"
 
 #: frollR.c:190
 #, c-format
 msgid "Internal error: badaptive=%d but ik is not integer"
-msgstr ""
+msgstr "å†…éƒ¨é”™è¯¯: badaptive=%d ä½†æ˜¯ ik ä¸æ˜¯æ•´æ•°"
 
 #: frollR.c:198
 #, c-format
 msgid ""
 "%s: %d column(s) and %d window(s), if product > 1 then entering parallel "
 "execution\n"
-msgstr ""
+msgstr "%s: %d column(s) å’Œ %d window(s), å¦‚æœ product > 1 åˆ™è¿›å…¥å¹¶è¡Œæ‰§è¡Œ\n"
 
 #: frollR.c:200
 #, c-format
@@ -2759,48 +2779,50 @@ msgid ""
 "%s: %d column(s) and %d window(s), not entering parallel execution here "
 "because algo='exact' will compute results in parallel\n"
 msgstr ""
+"%s: %d column(s) å’Œ %d window(s), æœªèƒ½è¿›å…¥å¹¶è¡Œæ‰§è¡Œ,"
+"å› ä¸º algo='exact' ä¼šå¹¶è¡Œè®¡ç®—ç»“æœ\n"
 
 #: frollR.c:219
 #, c-format
 msgid "Internal error: Unknown sfun value in froll: %d"
-msgstr ""
+msgstr "å†…éƒ¨é”™è¯¯: åœ¨ froll: %d ä¸­æœªçŸ¥çš„ sfun å€¼"
 
 #: frollR.c:227 frollR.c:328
 #, c-format
 msgid "%s: processing of %d column(s) and %d window(s) took %.3fs\n"
-msgstr ""
+msgstr "%s: å¤„ç† %d column(s), å’Œ %d window(s) ç”¨æ‰ %.3fs\n"
 
 #: frollR.c:238
 msgid "internal error: 'fun' must be a function"
-msgstr ""
+msgstr "å†…éƒ¨é”™è¯¯: 'fun' å¿…é¡»æ˜¯ä¸€ä¸ªå‡½æ•°"
 
 #: frollR.c:240
 msgid "internal error: 'rho' should be an environment"
-msgstr ""
+msgstr "å†…éƒ¨é”™è¯¯: 'rho' åº”è¯¥ä¸ºä¸€ä¸ªç¯å¢ƒ (environment)"
 
 #: frolladaptive.c:33 frolladaptive.c:222
 #, c-format
 msgid "%s: running for input length %llu, hasna %d, narm %d\n"
-msgstr ""
+msgstr "%s: æ­£åœ¨è¿è¡Œ, è¾“å…¥é•¿åº¦ %llu, hasna %d, narm %d\n"
 
 #: frolladaptive.c:39 frolladaptive.c:228
 #, c-format
 msgid "%s: Unable to allocate memory for cumsum"
-msgstr ""
+msgstr "%s: æ— æ³•ä¸º cumsum åˆ†é…å†…å­˜"
 
 #: frolladaptive.c:75 frolladaptive.c:264
 #, c-format
 msgid "%s: Unable to allocate memory for cum NA counter"
-msgstr ""
+msgstr "%s: æ— æ³•ä¸º cum NA counter åˆ†é…å†…å­˜"
 
 #: frolladaptive.c:118 frolladaptive.c:302
 #, c-format
 msgid "%s: running in parallel for input length %llu, hasna %d, narm %d\n"
-msgstr ""
+msgstr "%s: æ­£åœ¨å¹¶è¡Œè¿è¡Œ, è¾“å…¥é•¿åº¦ %llu, hasna %d, narm %d\n"
 
 #: fsort.c:111
 msgid "x must be a vector of type 'double' currently"
-msgstr ""
+msgstr "x ç›®å‰å¿…é¡»æ˜¯åŒç²¾åº¦ ('double') ç±»å‹çš„å‘é‡"
 
 #: fsort.c:122
 #, c-format
@@ -3056,11 +3078,11 @@ msgstr ""
 
 #: gsumm.c:47
 msgid "l is not an integer vector"
-msgstr "l ²»ÊÇÕûÊıÏòÁ¿"
+msgstr "l ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½"
 
 #: gsumm.c:56
 msgid "irowsArg is neither an integer vector nor NULL"
-msgstr "irowsArg ¼È²»ÊÇÕûÊıÏòÁ¿Ò²²»ÊÇ NULL"
+msgstr "irowsArg ï¿½È²ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ò²ï¿½ï¿½ï¿½ï¿½ NULL"
 
 #: gsumm.c:58
 #, c-format
@@ -3070,48 +3092,48 @@ msgstr ""
 #: gsumm.c:66
 #, c-format
 msgid "o has length %d but sum(l)=%d"
-msgstr "o µÄ³¤¶ÈÎª %d£¬µ« sum(l) = %d"
+msgstr "o ï¿½Ä³ï¿½ï¿½ï¿½Îª %dï¿½ï¿½ï¿½ï¿½ sum(l) = %d"
 
 #: gsumm.c:69
 msgid "Internal error: o's maxgrpn attribute mismatches recalculated maxgrpn"
-msgstr "ÄÚ²¿´íÎó£ºo µÄ maxgrpn ÊôĞÔÓëÖØĞÂ¼ÆËãµÄ maxgrpn ²»Æ¥Åä"
+msgstr "ï¿½Ú²ï¿½ï¿½ï¿½ï¿½ï¿½o ï¿½ï¿½ maxgrpn ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Â¼ï¿½ï¿½ï¿½ï¿½ maxgrpn ï¿½ï¿½Æ¥ï¿½ï¿½"
 
 #: gsumm.c:89
 #, c-format
 msgid ""
 "Internal error: nrow=%d  ngrp=%d  nbit=%d  shift=%d  highSize=%d  nBatch=%d  "
 "batchSize=%d  lastBatchSize=%d\n"
-msgstr "ÄÚ²¿´íÎó£ºnrow=%d ngrp=%d  nbit=%d  shift=%d  highSize=%d  nBatch=%d  "
+msgstr "ï¿½Ú²ï¿½ï¿½ï¿½ï¿½ï¿½nrow=%d ngrp=%d  nbit=%d  shift=%d  highSize=%d  nBatch=%d  "
 "batchSize=%d  lastBatchSize=%d\n"
 
 #: gsumm.c:98
 #, c-format
 msgid "gforce initial population of grp took %.3f\n"
-msgstr "grp µÄ gforce ³õÊ¼ÈºÌåÊıÕ¼ÁË %.3f\n "
+msgstr "grp ï¿½ï¿½ gforce ï¿½ï¿½Ê¼Èºï¿½ï¿½ï¿½ï¿½Õ¼ï¿½ï¿½ %.3f\n "
 
 #: gsumm.c:116
 msgid ""
 "Internal error: Failed to allocate counts or TMP when assigning g in gforce"
-msgstr "ÄÚ²¿´íÎó£ºÔÚ gforce ÖĞÎª g ¸³ÖµÊ±£¬Î´ÄÜ³É¹¦Îª counts »òÕß TMP ·ÖÅä¿Õ¼ä"
+msgstr "ï¿½Ú²ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ gforce ï¿½ï¿½Îª g ï¿½ï¿½ÖµÊ±ï¿½ï¿½Î´ï¿½Ü³É¹ï¿½Îª counts ï¿½ï¿½ï¿½ï¿½ TMP ï¿½ï¿½ï¿½ï¿½Õ¼ï¿½"
 
 #: gsumm.c:194
 #, c-format
 msgid "gforce assign high and low took %.3f\n"
-msgstr "gforce ·ÖÅä high ºÍ low ÓÃÁË %.3f\n"
+msgstr "gforce ï¿½ï¿½ï¿½ï¿½ high ï¿½ï¿½ low ï¿½ï¿½ï¿½ï¿½ %.3f\n"
 
 #: gsumm.c:200
 #, c-format
 msgid "gforce eval took %.3f\n"
-msgstr "gforce eval ÓÃÁË %.3f\n"
+msgstr "gforce eval ï¿½ï¿½ï¿½ï¿½ %.3f\n"
 
 #: gsumm.c:216
 msgid "gather took ... "
-msgstr "gather ÓÃÁË ..."
+msgstr "gather ï¿½ï¿½ï¿½ï¿½ ..."
 
 #: gsumm.c:334
 #, c-format
 msgid "gather implemented for INTSXP, REALSXP, and CPLXSXP but not '%s'"
-msgstr "gather ÒÑÖ§³Ö INTSXP£¬REALSXP ºÍ CPLXSXP£¬µ«²»Ö§³Ö '%s'"
+msgstr "gather ï¿½ï¿½Ö§ï¿½ï¿½ INTSXPï¿½ï¿½REALSXP ï¿½ï¿½ CPLXSXPï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö§ï¿½ï¿½ '%s'"
 
 #: gsumm.c:336 gsumm.c:568
 #, c-format
@@ -3120,65 +3142,65 @@ msgstr ""
 
 #: gsumm.c:345
 msgid "sum is not meaningful for factors."
-msgstr "Òò×ÓµÄºÍÃ»ÓĞÒâÒå¡£"
+msgstr "ï¿½ï¿½ï¿½ÓµÄºï¿½Ã»ï¿½ï¿½ï¿½ï¿½ï¿½å¡£"
 
 #: gsumm.c:349
 #, c-format
 msgid "This gsum took (narm=%s) ... "
-msgstr "gsum Õ¼ÓÃÁË (narm=%s) ..."
+msgstr "gsum Õ¼ï¿½ï¿½ï¿½ï¿½ (narm=%s) ..."
 
 #: gsumm.c:350 gsumm.c:606
 #, c-format
 msgid "nrow [%d] != length(x) [%d] in gsum"
-msgstr "gsum ÖĞ nrow [%d] != length(x) [%d]"
+msgstr "gsum ï¿½ï¿½ nrow [%d] != length(x) [%d]"
 
 #: gsumm.c:404
 msgid ""
 "The sum of an integer column for a group was more than type 'integer' can "
 "hold so the result has been coerced to 'numeric' automatically for "
 "convenience."
-msgstr "Ä³ÕûÊıÁĞ·Ö×éÇóºÍµÄ½á¹ûÖĞ£¬"
-"³öÏÖÁË³¬¹ıÁËÕûĞÍ£¨interger£©ÊıÖµËùÔÊĞí×î´óÖµµÄÇé¿ö£¬"
-"¹Ê½á¹û±»×Ô¶¯×ª»»ÎªÊıÖµÀàĞÍ£¨numeric£©"
+msgstr "Ä³ï¿½ï¿½ï¿½ï¿½ï¿½Ğ·ï¿½ï¿½ï¿½ï¿½ï¿½ÍµÄ½ï¿½ï¿½ï¿½Ğ£ï¿½"
+"ï¿½ï¿½ï¿½ï¿½ï¿½Ë³ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í£ï¿½intergerï¿½ï¿½ï¿½ï¿½Öµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Öµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½"
+"ï¿½Ê½ï¿½ï¿½ï¿½ï¿½ï¿½Ô¶ï¿½×ªï¿½ï¿½Îªï¿½ï¿½Öµï¿½ï¿½ï¿½Í£ï¿½numericï¿½ï¿½"
 
 #: gsumm.c:565
 #, c-format
 msgid ""
 "Type '%s' not supported by GForce sum (gsum). Either add the prefix base::"
 "sum(.) or turn off GForce optimization using options(datatable.optimize=1)"
-msgstr "GForce ÇóºÍ£¨gsum£©²»Ö§³ÖÀàĞÍ '%s'¡£ÇëÊ¹ÓÃ base::sum(.) »òÕß"
-"ÉèÖÃ options(datatable.optimize=1) ¹Ø±Õ GForce ÓÅ»¯"
+msgstr "GForce ï¿½ï¿½Í£ï¿½gsumï¿½ï¿½ï¿½ï¿½Ö§ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ '%s'ï¿½ï¿½ï¿½ï¿½Ê¹ï¿½ï¿½ base::sum(.) ï¿½ï¿½ï¿½ï¿½"
+"ï¿½ï¿½ï¿½ï¿½ options(datatable.optimize=1) ï¿½Ø±ï¿½ GForce ï¿½Å»ï¿½"
 
 #: gsumm.c:578
 msgid ""
 "GForce mean can only be applied to columns, not .SD or similar. Likely "
 "you're looking for 'DT[,lapply(.SD,mean),by=,.SDcols=]'. See ?data.table."
-msgstr "GForce ÇóÆ½¾ùÖµ½öÊÊÓÃÓÚÁĞ£¬¶ø²»ÄÜÓÃÓÚ .SD »òÆäËü¡£"
-"»òĞíÄãÔÚ²éÕÒ 'DT[,lapply(.SD,mean),by=,.SDcols=]'¡£²Î¼û ?data.table ¡£"
+msgstr "GForce ï¿½ï¿½Æ½ï¿½ï¿½Öµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ğ£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ .SD ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½"
+"ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ú²ï¿½ï¿½ï¿½ 'DT[,lapply(.SD,mean),by=,.SDcols=]'ï¿½ï¿½ï¿½Î¼ï¿½ ?data.table ï¿½ï¿½"
 
 #: gsumm.c:579
 msgid "mean is not meaningful for factors."
-msgstr "Òò×ÓµÄÆ½¾ùÖµÃ»ÓĞÒâÒå"
+msgstr "ï¿½ï¿½ï¿½Óµï¿½Æ½ï¿½ï¿½ÖµÃ»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½"
 
 #: gsumm.c:599
 #, c-format
 msgid "Internal error: gsum returned type '%s'. typeof(x) is '%s'"
-msgstr "ÄÚ²¿´íÎó£ºgsum ·µ»ØµÄÀàĞÍÊÇ '%s'£¬¶ø typeof(x) µÄ½á¹ûÔòÊÇ '%s'"
+msgstr "ï¿½Ú²ï¿½ï¿½ï¿½ï¿½ï¿½gsum ï¿½ï¿½ï¿½Øµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ '%s'ï¿½ï¿½ï¿½ï¿½ typeof(x) ï¿½Ä½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ '%s'"
 
 #: gsumm.c:609
 #, c-format
 msgid "Unable to allocate %d * %d bytes for sum in gmean na.rm=TRUE"
-msgstr "ÎŞ·¨Îª gmean na.rm=TRUE µÄ×ÜºÍ£¨sum£©·ÖÅä %d * %d ×Ö½Ú¿Õ¼ä"
+msgstr "ï¿½Ş·ï¿½Îª gmean na.rm=TRUE ï¿½ï¿½ï¿½ÜºÍ£ï¿½sumï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ %d * %d ï¿½Ö½Ú¿Õ¼ï¿½"
 
 #: gsumm.c:612
 #, c-format
 msgid "Unable to allocate %d * %d bytes for counts in gmean na.rm=TRUE"
-msgstr "ÎŞ·¨Îª gmean na.rm=TRUE µÄ¼ÆÊı£¨counts£©·ÖÅä %d * %d ×Ö½Ú¿Õ¼ä"
+msgstr "ï¿½Ş·ï¿½Îª gmean na.rm=TRUE ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½ï¿½countsï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ %d * %d ï¿½Ö½Ú¿Õ¼ï¿½"
 
 #: gsumm.c:638
 #, c-format
 msgid "Unable to allocate %d * %d bytes for si in gmean na.rm=TRUE"
-msgstr "ÎŞ·¨Îª gmean na.rm=TRUE µÄ si ·ÖÅä %d * %d ×Ö½Ú¿Õ¼ä"
+msgstr "ï¿½Ş·ï¿½Îª gmean na.rm=TRUE ï¿½ï¿½ si ï¿½ï¿½ï¿½ï¿½ %d * %d ï¿½Ö½Ú¿Õ¼ï¿½"
 
 #: gsumm.c:650
 #, c-format
@@ -3186,12 +3208,12 @@ msgid ""
 "Type '%s' not supported by GForce mean (gmean) na.rm=TRUE. Either add the "
 "prefix base::mean(.) or turn off GForce optimization using options(datatable."
 "optimize=1)"
-msgstr "GForce Çó¾ùÖµ£¨gmean£©²»Ö§³ÖÀàĞÍ '%s'¡£ÇëÊ¹ÓÃ base::mean(.) »òÕß"
-"ÉèÖÃ options(datatable.optimize=1) ¹Ø±Õ GForce ÓÅ»¯"
+msgstr "GForce ï¿½ï¿½ï¿½Öµï¿½ï¿½gmeanï¿½ï¿½ï¿½ï¿½Ö§ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ '%s'ï¿½ï¿½ï¿½ï¿½Ê¹ï¿½ï¿½ base::mean(.) ï¿½ï¿½ï¿½ï¿½"
+"ï¿½ï¿½ï¿½ï¿½ options(datatable.optimize=1) ï¿½Ø±ï¿½ GForce ï¿½Å»ï¿½"
 
 #: gsumm.c:674
 msgid "Internal error: unsupported type at the end of gmean"
-msgstr "ÄÚ²¿´íÎó£ºgmean ½áÎ²´¦´æÔÚ²»Ö§³ÖµÄÀàĞÍ"
+msgstr "ï¿½Ú²ï¿½ï¿½ï¿½ï¿½ï¿½gmean ï¿½ï¿½Î²ï¿½ï¿½ï¿½ï¿½ï¿½Ú²ï¿½Ö§ï¿½Öµï¿½ï¿½ï¿½ï¿½ï¿½"
 
 #: gsumm.c:687
 msgid ""
@@ -3199,45 +3221,45 @@ msgid ""
 "of all items in a list such as .SD, either add the prefix base::min(.SD) or "
 "turn off GForce optimization using options(datatable.optimize=1). More "
 "likely, you may be looking for 'DT[,lapply(.SD,min),by=,.SDcols=]'"
-msgstr "GForce Çó×îĞ¡Öµ£¨min£©½öÊÊÓÃÓÚÁĞ£¬¶ø²»ÄÜÓÃÓÚ .SD »òÆäËü¡£"
-"ÒªÕÒµ½ÁĞ±íÖĞ£¨Èç .SD£©ËùÓĞÔªËØµÄ×îĞ¡Öµ£¬ĞëÊ¹ÓÃ base::min(.SD) »òÕß"
-"ÉèÖÃ options(datatable.optimize=1) ¹Ø±Õ GForce ÓÅ»¯¡£"
-"Äã¸üÏñÊÇÔÚ²éÕÒ 'DT[,lapply(.SD,min),by=,.SDcols=]'"
+msgstr "GForce ï¿½ï¿½ï¿½ï¿½Ğ¡Öµï¿½ï¿½minï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ğ£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ .SD ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½"
+"Òªï¿½Òµï¿½ï¿½Ğ±ï¿½ï¿½Ğ£ï¿½ï¿½ï¿½ .SDï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ôªï¿½Øµï¿½ï¿½ï¿½Ğ¡Öµï¿½ï¿½ï¿½ï¿½Ê¹ï¿½ï¿½ base::min(.SD) ï¿½ï¿½ï¿½ï¿½"
+"ï¿½ï¿½ï¿½ï¿½ options(datatable.optimize=1) ï¿½Ø±ï¿½ GForce ï¿½Å»ï¿½ï¿½ï¿½"
+"ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ú²ï¿½ï¿½ï¿½ 'DT[,lapply(.SD,min),by=,.SDcols=]'"
 
 #: gsumm.c:688
 msgid "min is not meaningful for factors."
-msgstr "Òò×ÓµÄ×îĞ¡ÖµÃ»ÓĞÒâÒå¡£"
+msgstr "ï¿½ï¿½ï¿½Óµï¿½ï¿½ï¿½Ğ¡ÖµÃ»ï¿½ï¿½ï¿½ï¿½ï¿½å¡£"
 
 #: gsumm.c:693
 #, c-format
 msgid "nrow [%d] != length(x) [%d] in gmin"
-msgstr "gmin ÖĞ nrow [%d] != length(x) [%d]"
+msgstr "gmin ï¿½ï¿½ nrow [%d] != length(x) [%d]"
 
 #: gsumm.c:717 gsumm.c:850
 msgid ""
 "No non-missing values found in at least one group. Coercing to numeric type "
 "and returning 'Inf' for such groups to be consistent with base"
-msgstr "ÔÚÖÁÉÙÒ»¸ö·Ö×éÖĞÃ»ÓĞ·¢ÏÖÈ±Ê§Öµ¡£"
-"ÎªÁËÓë base ±£³ÖÒ»ÖÂ£¬½«ÕâĞ©×éÇ¿ÖÆ×ª»»ÎªÊıÖµÀàĞÍ²¢·µ»Ø ¡®Inf¡¯¡£"
+msgstr "ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ã»ï¿½Ğ·ï¿½ï¿½ï¿½È±Ê§Öµï¿½ï¿½"
+"Îªï¿½ï¿½ï¿½ï¿½ base ï¿½ï¿½ï¿½ï¿½Ò»ï¿½Â£ï¿½ï¿½ï¿½ï¿½ï¿½Ğ©ï¿½ï¿½Ç¿ï¿½ï¿½×ªï¿½ï¿½Îªï¿½ï¿½Öµï¿½ï¿½ï¿½Í²ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Infï¿½ï¿½ï¿½ï¿½"
 
 #: gsumm.c:756 gsumm.c:891
 msgid ""
 "No non-missing values found in at least one group. Returning 'NA' for such "
 "groups to be consistent with base"
-msgstr "ÔÚÖÁÉÙÒ»¸ö·Ö×éÖĞÃ»ÓĞ·¢ÏÖÈ±Ê§Öµ¡£"
-"ÎªÁËÓë base ±£³ÖÒ»ÖÂ£¬ÕâĞ©×é½«·µ»Ø ¡®NA¡¯¡£"
+msgstr "ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ã»ï¿½Ğ·ï¿½ï¿½ï¿½È±Ê§Öµï¿½ï¿½"
+"Îªï¿½ï¿½ï¿½ï¿½ base ï¿½ï¿½ï¿½ï¿½Ò»ï¿½Â£ï¿½ï¿½ï¿½Ğ©ï¿½é½«ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½NAï¿½ï¿½ï¿½ï¿½"
 
 #: gsumm.c:783
 msgid ""
 "No non-missing values found in at least one group. Returning 'Inf' for such "
 "groups to be consistent with base"
-msgstr "ÔÚÖÁÉÙÒ»¸ö·Ö×éÖĞÃ»ÓĞ·¢ÏÖÈ±Ê§Öµ¡£"
-"ÎªÁËÓë base ±£³ÖÒ»ÖÂ£¬ÕâĞ©×é½«·µ»Ø ¡®Inf¡¯¡£"
+msgstr "ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ã»ï¿½Ğ·ï¿½ï¿½ï¿½È±Ê§Öµï¿½ï¿½"
+"Îªï¿½ï¿½ï¿½ï¿½ base ï¿½ï¿½ï¿½ï¿½Ò»ï¿½Â£ï¿½ï¿½ï¿½Ğ©ï¿½é½«ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Infï¿½ï¿½ï¿½ï¿½"
 
 
 #: gsumm.c:791
 msgid "Type 'complex' has no well-defined min"
-msgstr "¸´Êı²»ÄÜ±È½Ï´óĞ¡£¬¹ÊÃ»ÓĞ×îĞ¡Öµ"
+msgstr "ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ü±È½Ï´ï¿½Ğ¡ï¿½ï¿½ï¿½ï¿½Ã»ï¿½ï¿½ï¿½ï¿½Ğ¡Öµ"
 
 #: gsumm.c:794
 #, c-format
@@ -3245,8 +3267,8 @@ msgid ""
 "Type '%s' not supported by GForce min (gmin). Either add the prefix base::"
 "min(.) or turn off GForce optimization using options(datatable.optimize=1)"
 msgstr ""
-"ÀàĞÍ'%s'²»Ö§³ÖÓ¦ÓÃ GForce ×îĞ¡Öµ£¨gmin£© ÓÅ»¯¡£Äã¿ÉÒÔÌí¼ÓÇ°×º base::"
-"min(.) »òÕßÊ¹ÓÃ options(datatable.optimize=1) ¹Ø±Õ GForce ÓÅ»¯"
+"ï¿½ï¿½ï¿½ï¿½'%s'ï¿½ï¿½Ö§ï¿½ï¿½Ó¦ï¿½ï¿½ GForce ï¿½ï¿½Ğ¡Öµï¿½ï¿½gminï¿½ï¿½ ï¿½Å»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ç°×º base::"
+"min(.) ï¿½ï¿½ï¿½ï¿½Ê¹ï¿½ï¿½ options(datatable.optimize=1) ï¿½Ø±ï¿½ GForce ï¿½Å»ï¿½"
 
 #: gsumm.c:806
 msgid ""
