@@ -449,7 +449,7 @@ msgstr "当 with=FALSE，参数 j 必须为布尔型/字符型/整型之一"
 "，表征要选择的列。"
 
 msgid "by=c(...), key(...) or names(...) must evaluate to 'character'"
-msgstr "by=c(...)，key(...) 或 names(...) 只接受 'character' "
+msgstr "by=c(...), key(...) 或 names(...) 只接受 'character' "
 
 msgid "'by' is a character vector length"
 msgstr "'by' 是一个字符型向量，长度为"
