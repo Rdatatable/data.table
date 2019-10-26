@@ -924,7 +924,7 @@ msgid ""
 "Internal error: size-0 type %d in .SD column %d should have been caught "
 "earlier"
 msgstr ""
-"内部错误：.SD 列中类型 %d size-0 的问题未能被提前捕获到"
+"内部错误：未能提前捕获到 .SD 中第 %2$d 列类型 %1$d size-0 的问题"
 
 #: dogroups.c:83
 msgid "length(xknames)!=length(xSD)"
@@ -935,7 +935,7 @@ msgstr "length(xknames)!=length(xSD)"
 msgid ""
 "Internal error: type %d in .xSD column %d should have been caught by now"
 msgstr ""
-"内部错误：.xSD 列中类型 %d 的问题未能被提前捕获到"
+"内部错误：当前未能捕获到 .xSD 中第 %2$d 列类型 %1$d 的问题"
 
 #: dogroups.c:91
 #, c-format
