@@ -894,7 +894,7 @@ msgid ""
 "Internal error: unsupported size-0 type '%s' in column %d of 'by' should "
 "have been caught earlier"
 msgstr ""
-"内部错误：未能被提前捕获到 'by' 中第 %d 列不支持类型 '%s' 且size-0 的问题"
+"内部错误：未能被提前捕获到 'by' 中第 %2$d 列不支持类型 '%1$s' 且size-0 的问题"
 
 #: dogroups.c:43
 #, c-format
