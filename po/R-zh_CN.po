@@ -403,8 +403,8 @@ msgid ""
 "rows. Recycling of logical i is no longer allowed as it hides more bugs than "
 "is worth the rare convenience. Explicitly use rep(...,length=.N) if you "
 "really need to recycle."
-msgstr "行。不再允许布尔值 i 循环补齐，尽管这样有些许便利，但会隐藏更多的 bug，得不偿失。
-若确实需要循环补齐，请直接使用 rep(...,length=.N)。"
+msgstr "行。不再允许布尔值 i 循环补齐，尽管这样有些许便利，但会隐藏更多的 bug，得不偿失。"
+"若确实需要循环补齐，请直接使用 rep(...,length=.N)。"
 
 msgid "Internal error: notjoin but byjoin or !integer or nomatch==NA"
 msgstr "内部错误。原因可能为：notjoin 而非 byjoin；非整数；nomatch 为空"
