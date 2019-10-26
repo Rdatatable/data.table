@@ -724,83 +724,87 @@ msgstr ""
 
 #: bmerge.c:102
 msgid "Intrnal error: nqmaxgrpArg is not a positive length-1 integer vector"
-msgstr ""
+msgstr "内部错误：nqmaxgrpArg不是长度为1的正整型向量"
 
 #: bmerge.c:111
 msgid "Internal error in allocating memory for non-equi join"
-msgstr ""
+msgstr "不等值联结分配内存出现内部错误"
 
 #: bmerge.c:156
 msgid "Internal error: xoArg is not an integer vector"
-msgstr ""
+msgstr "内部错误：xoArg不是整型向量"
 
 #: bmerge.c:271 bmerge.c:379
 #, c-format
 msgid ""
 "Internal error in bmerge_r for '%s' column. Unrecognized value op[col]=%d"
 msgstr ""
+"bmerge_r 针对 '%s' 列的操作出现内部错误。无法识别值 op[col]=%d"
 
 #: bmerge.c:303
 #, c-format
 msgid "Only '==' operator is supported for columns of type %s."
-msgstr ""
+msgstr "%s 类型的列仅支持 '==' 操作符。"
 
 #: bmerge.c:410
 #, c-format
 msgid "Type '%s' not supported for joining/merging"
-msgstr ""
+msgstr "'%s' 类型不支持联结/归并"
 
 #: bmerge.c:468
 msgid "Internal error: xlow!=xupp-1 || xlow<xlowIn || xupp>xuppIn"
-msgstr ""
+msgstr "内部错误：xlow!=xupp-1 或 xlow<xlowIn 或 xupp>xuppIn"
 
 #: chmatch.c:4
 #, c-format
 msgid "x is type '%s' (must be 'character' or NULL)"
-msgstr ""
+msgstr "x 类型为 '%s' （必须为'character'或 NULL）"
 
 #: chmatch.c:5
 #, c-format
 msgid "table is type '%s' (must be 'character' or NULL)"
-msgstr ""
+msgstr "table 类型为 '%s' （必须为 'character' 或 NULL）"
 
 #: chmatch.c:6
 msgid "Internal error: either chin or chmatchdup should be true not both"
-msgstr ""
+msgstr "内部错误：chin 和 chmatchdup 不能同时为真"
 
 #: chmatch.c:30
 #, c-format
 msgid ""
 "Internal error: CHARSXP '%s' has a negative truelength (%d). Please file an "
 "issue on the data.table tracker."
-msgstr ""
+msgstr "内部错误：CHARSXP '%s' 的 truelength (%d) 为负。"
+"请将此问题汇报给 data.table 问题追踪器。"
 
 #: chmatch.c:60
 #, c-format
 msgid ""
 "Failed to allocate %lld bytes working memory in chmatchdup: length(table)=%d "
 "length(unique(table))=%d"
-msgstr ""
+msgstr "无法为 chmatchdup: length(table)=%d length(unique(table))=%d 分配 %lld 字节的内存空间"
 
 #: cj.c:89
 #, c-format
 msgid "Type '%s' not supported by CJ."
-msgstr ""
+msgstr "CJ 不支持 '%s' 类型"
 
 #: coalesce.c:5
 msgid "Internal error in coalesce.c: input is list(...) at R level"
-msgstr ""
+msgstr "内部错误：coalesce.c 中 R 层面的输入为 list(...)"
 
 #: coalesce.c:7
 msgid ""
 "Internal error in coalesce.c: argument 'inplaceArg' must be TRUE or FALSE"
 msgstr ""
+"内部错误：coalesce.c 中 'inplaceArg' 参数必须为 TRUE 或 FALSE"
 
 #: coalesce.c:16
 msgid ""
 "The first argument is a list, data.table or data.frame. In this case there "
 "should be no other arguments provided."
 msgstr ""
+"第一个参数是一个 list, data.table 或 data.frame。当前不应该提供其他参数。"
 
 #: coalesce.c:32
 #, c-format
@@ -808,6 +812,8 @@ msgid ""
 "Item 1 is a factor but item %d is not a factor. When factors are involved, "
 "all items must be factor."
 msgstr ""
+"元素1是一个因子，但元素 %d 不是。当涉及因子时，"
+"所有元素必须都为因子。"
 
 #: coalesce.c:34
 #, c-format
@@ -815,6 +821,7 @@ msgid ""
 "Item %d is a factor but its levels are not identical to the first item's "
 "levels."
 msgstr ""
+"元素 %d 是一个因子，但因子水平与第一个元素因子水平不同。"
 
 #: coalesce.c:38
 #, c-format
@@ -822,6 +829,8 @@ msgid ""
 "Item %d is a factor but item 1 is not a factor. When factors are involved, "
 "all items must be factor."
 msgstr ""
+"元素 %d 是一个因子，但元素1不是。当涉及因子时，"
+"所有元素必须都为因子。"
 
 #: coalesce.c:41
 #, c-format
@@ -829,11 +838,12 @@ msgid ""
 "Item %d is type %s but the first item is type %s. Please coerce before "
 "coalescing."
 msgstr ""
+"元素 %d 类型为 %s，但是第一个元素类型为 %s。请在 coalescing 之前强制转换类型。"
 
 #: coalesce.c:43
 #, c-format
 msgid "Item %d has a different class than item 1."
-msgstr ""
+msgstr "元素 %d 与元素1类型不同。"
 
 #: coalesce.c:46
 #, c-format
@@ -841,39 +851,40 @@ msgid ""
 "Item %d is length %d but the first item is length %d. Only singletons are "
 "recycled."
 msgstr ""
+"元素 %d 长度为 %d，但第一个元素长度为 %d。只有长度为1的元素才会进行循环补齐。"
 
 #: coalesce.c:50
 msgid "coalesce copied first item (inplace=FALSE)\n"
-msgstr ""
+msgstr "coalesce 复制了第一项 (inplace=FALSE)\n"
 
 #: coalesce.c:166
 #, c-format
 msgid "Unsupported type: %s"
-msgstr ""
+msgstr "不支持的类型：%s"
 
 #: dogroups.c:14
 msgid "Internal error: order not integer vector"
-msgstr ""
+msgstr "内部错误：order 不是整型向量"
 
 #: dogroups.c:15
 msgid "Internal error: starts not integer"
-msgstr ""
+msgstr "内部错误：starts 不是整型"
 
 #: dogroups.c:16
 msgid "Internal error: lens not integer"
-msgstr ""
+msgstr "内部错误：lens 不是整型"
 
 #: dogroups.c:18
 msgid "Internal error: jiscols not NULL but o__ has length"
-msgstr ""
+msgstr "内部错误：jiscols 非 NULL，但 o__ 长度不为0"
 
 #: dogroups.c:19
 msgid "Internal error: xjiscols not NULL but o__ has length"
-msgstr ""
+msgstr "内部错误：jiscols 非 NULL，但 o__ 长度不为0"
 
 #: dogroups.c:20
 msgid "'env' should be an environment"
-msgstr ""
+msgstr "'env' 应该是一个环境"
 
 #: dogroups.c:39
 #, c-format
@@ -881,15 +892,16 @@ msgid ""
 "Internal error: unsupported size-0 type '%s' in column %d of 'by' should "
 "have been caught earlier"
 msgstr ""
+"内部错误：未能被提前捕获到 'by' 中第 %d 列不支持类型 '%s' 且size-0 的问题"
 
 #: dogroups.c:43
 #, c-format
 msgid "!length(bynames)[%d]==length(groups)[%d]==length(grpcols)[%d]"
-msgstr ""
+msgstr "!length(bynames)[%d]==length(groups)[%d]==length(grpcols)[%d]"
 
 #: dogroups.c:62
 msgid "row.names attribute of .SD not found"
-msgstr ""
+msgstr ".SD 的行名属性不存在"
 
 #: dogroups.c:64
 #, c-format
@@ -897,32 +909,34 @@ msgid ""
 "row.names of .SD isn't integer length 2 with NA as first item; i.e., ."
 "set_row_names(). [%s %d %d]"
 msgstr ""
+".SD 的行名不是长度为2且首个元素为 NA 的整型；例如："
+"set_row_names(). [%s %d %d]"
 
 #: dogroups.c:69
 msgid "length(names)!=length(SD)"
-msgstr ""
+msgstr "length(names)!=length(SD)"
 
 #: dogroups.c:73
 #, c-format
 msgid ""
 "Internal error: size-0 type %d in .SD column %d should have been caught "
 "earlier"
-msgstr ""
+msgstr "内部错误：.SD 列中类型 %d size-0 的问题未能被提前捕获到"
 
 #: dogroups.c:83
 msgid "length(xknames)!=length(xSD)"
-msgstr ""
+msgstr "length(xknames)!=length(xSD)"
 
 #: dogroups.c:87
 #, c-format
 msgid ""
 "Internal error: type %d in .xSD column %d should have been caught by now"
-msgstr ""
+msgstr "内部错误：.xSD 列中类型 %d 的问题未能被提前捕获到"
 
 #: dogroups.c:91
 #, c-format
 msgid "length(iSD)[%d] != length(jiscols)[%d]"
-msgstr ""
+msgstr "length(iSD)[%d] != length(jiscols)[%d]"
 
 #: dogroups.c:92
 #, c-format
