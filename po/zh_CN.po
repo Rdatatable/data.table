@@ -784,7 +784,7 @@ msgid ""
 "Failed to allocate %lld bytes working memory in chmatchdup: length(table)=%d "
 "length(unique(table))=%d"
 msgstr ""
-"无法为 chmatchdup: length(table)=%d length(unique(table))=%d 分配 %lld 字节的内存空间"
+"无法为 chmatchdup: length(table)=%2$d length(unique(table))=%3$d 分配 %1$lld 字节的内存空间"
 
 #: cj.c:89
 #, c-format
