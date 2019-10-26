@@ -555,7 +555,9 @@ msgstr "'new' 的长度是 %d。 它的长度必须和'which' (%d)的长度一�
 msgid ""
 "Item %d of 'which' is %d which is outside range of the length %d character "
 "vector"
-msgstr "'which' 的 %1%d 项是 %2%d 且超出了长度为%3%d字符的范围"
+msgstr ""
+"'which' 的 %1%d 项是 %2%d 且超出了长度为%3%d字符的范围"
+
 
 #: assign.c:1221
 msgid "dt passed to setcolorder has no names"
@@ -593,7 +595,7 @@ msgstr "NAbounds 必须是 TRUE (真) 或者是 FALSE (假)"
 
 #: between.c:22
 msgid "check must be TRUE or FALSE"
-msgstr "check 必须是 TRUE (真) 或者是 FALSE (假)""
+msgstr "check 必须是 TRUE (真) 或者是 FALSE (假)"
 
 #: between.c:64
 #, c-format
@@ -603,7 +605,7 @@ msgstr "lower (%1%d) 的 %2%d 项大于 upper (%3%d)的 %4%d 项"
 #: between.c:82
 #, c-format
 msgid "between parallel processing of integer took %8.3fs\n"
-msgstr "整数的并行运行时间一共花费了 %8.3fs "
+msgstr "整数的并行运行时间一共花费了 %8.3fs\n"
 
 #: between.c:88
 msgid "x is integer64 but lower and/or upper are not."
@@ -612,12 +614,12 @@ msgstr "x 是一个64位整数但是至少在 lower 和 upper 其中有一个不
 #: between.c:95
 #, c-format
 msgid "Item %d of lower (%lld) is greater than item %d of upper (%lld)"
-msgstr "lower (%lld) 的 %d 项大于 upper (%lld)的 %d 项"
+msgstr "lower (%2%lld) 的 %1%d 项大于 upper (%lld)的 %d 项"
 
 #: between.c:112
 #, c-format
 msgid "between parallel processing of integer64 took %8.3fs\n"
-msgstr "64位整数的并行运行时间一共花费了 %8.3fs"
+msgstr "64位整数的并行运行时间一共花费了 %8.3fs\n"
 
 #: between.c:115
 msgid ""
@@ -633,12 +635,12 @@ msgstr "lower (%1%f) 的 %d 项大于 upper (%2%f)的 %d 项"
 #: between.c:140
 #, c-format
 msgid "between parallel processing of double with open bounds took %8.3fs\n"
-msgstr "不设界的双精度浮点数的并行运行时间一共花费了 %8.3fs"
+msgstr "不设界的双精度浮点数的并行运行时间一共花费了 %8.3fs\n"
 
 #: between.c:157
 #, c-format
 msgid "between parallel processing of double with closed bounds took %8.3fs\n"
-msgstr "设界的双精度浮点数的并行运行时间一共花费了 %8.3fs"
+msgstr "设界的双精度浮点数的并行运行时间一共花费了 %8.3fs\n"
 
 #: between.c:172
 #, c-format
@@ -648,7 +650,7 @@ msgstr "lower (%1%s) 的 %1%d 项大于 upper (%2%s)的 %2%d 项"
 #: between.c:187
 #, c-format
 msgid "between non-parallel processing of character took %8.3fs\n"
-msgstr "字符的并行运行时间一共花费了 %8.3fs"
+msgstr "字符的并行运行时间一共花费了 %8.3fs\n"
 
 #: between.c:190
 #, c-format
