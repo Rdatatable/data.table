@@ -558,7 +558,6 @@ msgid ""
 msgstr ""
 "'which' 的 %1%d 项是 %2%d 且超出了长度为%3%d字符的范围"
 
-
 #: assign.c:1221
 msgid "dt passed to setcolorder has no names"
 msgstr "setcolorder读取到的dt并没有名字"
