@@ -774,7 +774,8 @@ msgstr "内部错误：chin 和 chmatchdup 不能同时为真"
 msgid ""
 "Internal error: CHARSXP '%s' has a negative truelength (%d). Please file an "
 "issue on the data.table tracker."
-msgstr "内部错误：CHARSXP '%s' 的 truelength (%d) 为负。"
+msgstr ""
+"内部错误：CHARSXP '%s' 的 truelength (%d) 为负。"
 "请将此问题汇报给 data.table 问题追踪器。"
 
 #: chmatch.c:60
@@ -782,7 +783,8 @@ msgstr "内部错误：CHARSXP '%s' 的 truelength (%d) 为负。"
 msgid ""
 "Failed to allocate %lld bytes working memory in chmatchdup: length(table)=%d "
 "length(unique(table))=%d"
-msgstr "无法为 chmatchdup: length(table)=%d length(unique(table))=%d 分配 %lld 字节的内存空间"
+msgstr ""
+"无法为 chmatchdup: length(table)=%d length(unique(table))=%d 分配 %lld 字节的内存空间"
 
 #: cj.c:89
 #, c-format
@@ -921,7 +923,8 @@ msgstr "length(names)!=length(SD)"
 msgid ""
 "Internal error: size-0 type %d in .SD column %d should have been caught "
 "earlier"
-msgstr "内部错误：.SD 列中类型 %d size-0 的问题未能被提前捕获到"
+msgstr ""
+"内部错误：.SD 列中类型 %d size-0 的问题未能被提前捕获到"
 
 #: dogroups.c:83
 msgid "length(xknames)!=length(xSD)"
@@ -931,7 +934,8 @@ msgstr "length(xknames)!=length(xSD)"
 #, c-format
 msgid ""
 "Internal error: type %d in .xSD column %d should have been caught by now"
-msgstr "内部错误：.xSD 列中类型 %d 的问题未能被提前捕获到"
+msgstr ""
+"内部错误：.xSD 列中类型 %d 的问题未能被提前捕获到"
 
 #: dogroups.c:91
 #, c-format
