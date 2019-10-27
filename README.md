@@ -16,16 +16,6 @@
 
 `data.table` provides a high-performance version of [base R](https://www.r-project.org/about.html)'s `data.frame` with syntax and feature enhancements for ease of use, convenience and programming speed.
 
----
-
-**Tuesday 22nd October 2019<br>
-<br>
-Matt Dowle will be in New York for [H2O World](https://www.h2o.ai/h2oworldnewyork/).<br>
-Please Ask-Me-Anything starting now: click http://sli.do and enter event code  "askmattdowle".<br>
-I'll answer the most voted questions during my session: https://h2o.ai/h2oworldny-livestream-reg**
-
----
-
 ## Why `data.table`?
 
 * concise syntax: fast to type, fast to read
@@ -87,6 +77,8 @@ DT[Petal.Width > 1.0, mean(Petal.Length), by = Species]
 #1: versicolor 4.362791
 #2:  virginica 5.552000
 ```
+
+Read [examples in `?data.table` manual](https://rdatatable.gitlab.io/data.table/reference/data.table.html#examples) for a more complete usage.
 
 ### Getting started
 
