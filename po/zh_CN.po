@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: data.table 1.12.5\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2019-10-21 16:15+0800\n"
+"POT-Creation-Date: 2019-10-27 09:58+0800\n"
 "PO-Revision-Date: 2019-10-04 17:06+08\n"
 "Last-Translator: Michael Chirico <MichaelChirico4@gmail.com>\n"
 "Language-Team: Mandarin\n"
@@ -1480,7 +1480,7 @@ msgid "Column %d passed to [f]order is type '%s', not yet supported."
 msgstr ""
 
 #: forder.c:714
-msgid "Internal error: column not supported not caught earlier"
+msgid "Internal error: column not supported, not caught earlier"
 msgstr ""
 
 #: forder.c:722
@@ -3081,7 +3081,8 @@ msgstr "内部错误：o 的 maxgrpn 属性与重新计算的 maxgrpn 不匹配"
 msgid ""
 "Internal error: nrow=%d  ngrp=%d  nbit=%d  shift=%d  highSize=%d  nBatch=%d  "
 "batchSize=%d  lastBatchSize=%d\n"
-msgstr "内部错误：nrow=%d ngrp=%d  nbit=%d  shift=%d  highSize=%d  nBatch=%d  "
+msgstr ""
+"内部错误：nrow=%d ngrp=%d  nbit=%d  shift=%d  highSize=%d  nBatch=%d  "
 "batchSize=%d  lastBatchSize=%d\n"
 
 #: gsumm.c:98
@@ -3137,24 +3138,26 @@ msgid ""
 "The sum of an integer column for a group was more than type 'integer' can "
 "hold so the result has been coerced to 'numeric' automatically for "
 "convenience."
-msgstr "某整数列分组求和的结果中，"
-"出现了超过了整型（interger）数值所允许最大值的情况，"
-"故结果被自动转换为数值类型（numeric）"
+msgstr ""
+"某整数列分组求和的结果中，出现了超过了整型（interger）数值所允许最大值的情"
+"况，故结果被自动转换为数值类型（numeric）"
 
 #: gsumm.c:565
 #, c-format
 msgid ""
 "Type '%s' not supported by GForce sum (gsum). Either add the prefix base::"
 "sum(.) or turn off GForce optimization using options(datatable.optimize=1)"
-msgstr "GForce 求和（gsum）不支持类型 '%s'。请使用 base::sum(.) 或者"
-"设置 options(datatable.optimize=1) 关闭 GForce 优化"
+msgstr ""
+"GForce 求和（gsum）不支持类型 '%s'。请使用 base::sum(.) 或者设置 "
+"options(datatable.optimize=1) 关闭 GForce 优化"
 
 #: gsumm.c:578
 msgid ""
 "GForce mean can only be applied to columns, not .SD or similar. Likely "
 "you're looking for 'DT[,lapply(.SD,mean),by=,.SDcols=]'. See ?data.table."
-msgstr "GForce 求平均值仅适用于列，而不能用于 .SD 或其它。"
-"或许你在查找 'DT[,lapply(.SD,mean),by=,.SDcols=]'。参见 ?data.table 。"
+msgstr ""
+"GForce 求平均值仅适用于列，而不能用于 .SD 或其它。或许你在查找 "
+"'DT[,lapply(.SD,mean),by=,.SDcols=]'。参见 ?data.table 。"
 
 #: gsumm.c:579
 msgid "mean is not meaningful for factors."
@@ -3186,8 +3189,9 @@ msgid ""
 "Type '%s' not supported by GForce mean (gmean) na.rm=TRUE. Either add the "
 "prefix base::mean(.) or turn off GForce optimization using options(datatable."
 "optimize=1)"
-msgstr "GForce 求均值（gmean）不支持类型 '%s'。请使用 base::mean(.) 或者"
-"设置 options(datatable.optimize=1) 关闭 GForce 优化"
+msgstr ""
+"GForce 求均值（gmean）不支持类型 '%s'。请使用 base::mean(.) 或者设置 "
+"options(datatable.optimize=1) 关闭 GForce 优化"
 
 #: gsumm.c:674
 msgid "Internal error: unsupported type at the end of gmean"
@@ -3199,10 +3203,11 @@ msgid ""
 "of all items in a list such as .SD, either add the prefix base::min(.SD) or "
 "turn off GForce optimization using options(datatable.optimize=1). More "
 "likely, you may be looking for 'DT[,lapply(.SD,min),by=,.SDcols=]'"
-msgstr "GForce 求最小值（min）仅适用于列，而不能用于 .SD 或其它。"
-"要找到列表中（如 .SD）所有元素的最小值，须使用 base::min(.SD) 或者"
-"设置 options(datatable.optimize=1) 关闭 GForce 优化。"
-"你更像是在查找 'DT[,lapply(.SD,min),by=,.SDcols=]'"
+msgstr ""
+"GForce 求最小值（min）仅适用于列，而不能用于 .SD 或其它。要找到列表中"
+"（如 .SD）所有元素的最小值，须使用 base::min(.SD) 或者设置 "
+"options(datatable.optimize=1) 关闭 GForce 优化。你更像是在查找 "
+"'DT[,lapply(.SD,min),by=,.SDcols=]'"
 
 #: gsumm.c:688
 msgid "min is not meaningful for factors."
@@ -3217,23 +3222,23 @@ msgstr "gmin 中 nrow [%d] != length(x) [%d]"
 msgid ""
 "No non-missing values found in at least one group. Coercing to numeric type "
 "and returning 'Inf' for such groups to be consistent with base"
-msgstr "在至少一个分组中没有发现缺失值。"
-"为了与 base 保持一致，将这些组强制转换为数值类型并返回 ‘Inf’。"
+msgstr ""
+"在至少一个分组中没有发现缺失值。为了与 base 保持一致，将这些组强制转换为数值"
+"类型并返回 ‘Inf’。"
 
 #: gsumm.c:756 gsumm.c:891
 msgid ""
 "No non-missing values found in at least one group. Returning 'NA' for such "
 "groups to be consistent with base"
-msgstr "在至少一个分组中没有发现缺失值。"
-"为了与 base 保持一致，这些组将返回 ‘NA’。"
+msgstr ""
+"在至少一个分组中没有发现缺失值。为了与 base 保持一致，这些组将返回 ‘NA’。"
 
 #: gsumm.c:783
 msgid ""
 "No non-missing values found in at least one group. Returning 'Inf' for such "
 "groups to be consistent with base"
-msgstr "在至少一个分组中没有发现缺失值。"
-"为了与 base 保持一致，这些组将返回 ‘Inf’。"
-
+msgstr ""
+"在至少一个分组中没有发现缺失值。为了与 base 保持一致，这些组将返回 ‘Inf’。"
 
 #: gsumm.c:791
 msgid "Type 'complex' has no well-defined min"
@@ -3245,8 +3250,8 @@ msgid ""
 "Type '%s' not supported by GForce min (gmin). Either add the prefix base::"
 "min(.) or turn off GForce optimization using options(datatable.optimize=1)"
 msgstr ""
-"类型'%s'不支持应用 GForce 最小值（gmin） 优化。你可以添加前缀 base::"
-"min(.) 或者使用 options(datatable.optimize=1) 关闭 GForce 优化"
+"类型'%s'不支持应用 GForce 最小值（gmin） 优化。你可以添加前缀 base::min(.) 或"
+"者使用 options(datatable.optimize=1) 关闭 GForce 优化"
 
 #: gsumm.c:806
 msgid ""
