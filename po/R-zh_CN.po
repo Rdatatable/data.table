@@ -808,89 +808,94 @@ msgid "NA in 'new' at positions"
 msgstr ""
 
 msgid "Some duplicates exist in 'old':"
-msgstr ""
+msgstr "在'old' 中存在重复名称"
 
 msgid "'old' is type"
-msgstr ""
+msgstr "'old' 的类型是"
 
 msgid "but should be integer, double or character"
-msgstr ""
+msgstr "应该为整型,双整型或者字符型"
 
 msgid "'old' is length"
-msgstr ""
+msgstr "'old' 长度为"
 
 msgid "but 'new' is length"
-msgstr ""
+msgstr "‘new’ 的长度为"
 
 msgid "NA (or out of bounds) in 'old' at positions"
-msgstr ""
+msgstr "NA(或超出界限)出现在'old' 的位置"
 
 msgid "of 'old' is '"
-msgstr ""
+msgstr "of 'old' 是"
 
 msgid ""
 "' which appears several times in column names. Just the first will be "
 "changed. There are"
-msgstr ""
+msgstr "在列名中重复出现,仅第一个"
+"会改动，如下:"
 
 msgid "other items in old that are also duplicated in column names."
-msgstr ""
+msgstr "old中的其他项在列名中出现重复"
 
 msgid "Items of 'old' not found in column names:"
-msgstr ""
+msgstr "在列名中为找到 'old' 有关项"
 
 msgid ". Consider skip_absent=TRUE."
-msgstr ""
+msgstr "尝试 skip_absent=TRUE"
 
 msgid "Internal error: length(i)!=length(new)"
-msgstr ""
+msgstr "内部错误:length(i)!=length(new)"
 
 msgid "x has some duplicated column name(s):"
-msgstr ""
+msgstr "x 有多个重复列名:"
 
 msgid ". Please remove or rename the duplicate(s) and try again."
-msgstr ""
+msgstr "请移除或者重命名重复项并重试"
 
 msgid "Input is"
-msgstr ""
+msgstr "输入为"
 
 msgid "but should be a plain list of items to be stacked"
-msgstr ""
+msgstr "应该叠加普通列表项"
 
 msgid ""
 "idcol must be a logical or character vector of length 1. If logical TRUE the "
 "id column will named '.id'."
-msgstr ""
+msgstr "idcol必须为逻辑型向量或长度为1的字符型向量.如果逻辑值为TRUE"
+"id 列会命名为'.id'"
 
 msgid "use.names=NA invalid"
-msgstr ""
+msgstr "use.names=NA 无效赋值"
 
 msgid ""
 "use.names='check' cannot be used explicitly because the value 'check' is new "
 "in v1.12.2 and subject to change. It is just meant to convey default "
 "behavior. See ?rbindlist."
-msgstr ""
+msgstr "use.names='check'无法明确使用，由于值'check'为新增"
+"在v1.12.2中后续有所变化，仅用表示默认模式"
+"详见 ?rbindlist"
 
 msgid ""
 "Check that is.data.table(DT) == TRUE. Otherwise, := and `:=`(...) are "
 "defined for use in j, once only and in particular ways. See help(\":=\")."
-msgstr ""
+msgstr "检查是否is.data.table(DT) == TRUE,否则,:= and `:=`(...) 为"
+"被界定在j使用，仅一次以特别的方式使用,详见help(\":=\")"
 
 msgid ""
 "setDF only accepts data.table, data.frame or list of equal length as input"
-msgstr ""
+msgstr "setDF仅允许data.table，data.frame或者同样长度的列表作为输入"
 
 msgid "rownames contains duplicates"
-msgstr ""
+msgstr "行名含有重复"
 
 msgid "rownames incorrect length; expected"
-msgstr ""
+msgstr "行名长度不正确;需要"
 
 msgid "names, got"
-msgstr ""
+msgstr "名字,用"
 
 msgid "All elements in argument 'x' to 'setDF' must be of same length"
-msgstr ""
+msgstr "'setDF'中的参数'x'的所有元素必须同等长度"
 
 msgid "Cannot find symbol"
 msgstr ""
