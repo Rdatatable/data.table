@@ -9,7 +9,7 @@ development:
 
 navbar:
   structure:
-    left:  [home, introduction, reference, articles, news, benchmarks]
+    left:  [home, introduction, vignettes, news, benchmarks, presentations, articles]
     right: [github]
   components:
     home:
@@ -18,10 +18,7 @@ navbar:
     introduction:
       text: Introduction
       href: articles/datatable-intro.html
-    reference:
-      text: Manual
-      href: reference/index.html
-    articles:
+    vignettes:
       text: Vignettes
       menu:
       - text: "Introduction to data.table"
@@ -42,12 +39,20 @@ navbar:
         href: articles/datatable-importing.html
       - text: "Benchmarking data.table"
         href: articles/datatable-benchmarking.html
+      - text: Reference manual
+        href: reference/index.html
     news:
       text: Changelog
       href: news/index.html
     benchmarks:
       text: Benchmarks
       href: https://h2oai.github.io/db-benchmark
+    presentations:
+      text: Presentations
+      href: https://github.com/Rdatatable/data.table/wiki/Presentations
+    articles:
+      text: Articles
+      href: https://github.com/Rdatatable/data.table/wiki/Articles
     github:
       icon: fab fa-github fa-lg
       href: https://github.com/Rdatatable/data.table
