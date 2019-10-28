@@ -92,6 +92,8 @@ DT[Petal.Width > 1.0, mean(Petal.Length), by = Species]
 
 `data.table` is widely used by the R community. As of July 2019, it was used by over 680 CRAN and Bioconductor packages and was the [9th most starred](http://www.r-pkg.org/starred) R package on GitHub. If you need help, the `data.table` community is active StackOverflow, with nearly [9,000 questions](http://stackoverflow.com/questions/tagged/data.table).
 
+<iframe width="560" height="315" src="https://www.youtube-nocookie.com/embed/fZpA_cU0SPg" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+
 ### Stay up-to-date
 
 - click the **Watch** button at the top and right of GitHub project page
