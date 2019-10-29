@@ -4163,21 +4163,21 @@ msgstr "内部错误：uniqlist 已经传递长度为 0 的序列"
 #: uniqlist.c:19
 #, c-format
 msgid "Internal error: uniqlist has been passed length(order)==%d but nrow==%d"
-msgstr ""
+msgstr "内部错误：uniqlist 已经传递长度为 %d 的序列，而行数是 %d"
 
 #: uniqlist.c:96 uniqlist.c:127 uniqlist.c:208 uniqlist.c:245 uniqlist.c:318
 #, c-format
 msgid "Type '%s' not supported"
-msgstr ""
+msgstr "类型 '%s' 不被支持"
 
 #: uniqlist.c:148
 msgid "Input argument 'x' to 'uniqlengths' must be an integer vector"
-msgstr ""
+msgstr "输入到 'uniqlengths' 的参数 'x' 必须是整数向量"
 
 #: uniqlist.c:149
 msgid ""
 "Input argument 'n' to 'uniqlengths' must be an integer vector of length 1"
-msgstr ""
+msgstr "输入到 'uniqlengths' 的参数 'n' 必须是长度为 1 的整数向量"
 
 #: uniqlist.c:167
 msgid "cols must be an integer vector with length >= 1"
