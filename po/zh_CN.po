@@ -13,16 +13,16 @@ msgstr ""
 
 #: assign.c:9
 msgid "Internal error: finalizer hasn't received an ExternalPtr"
-msgstr ""
+msgstr "内部错误： 结束操作(finalizer)没有收到ExternalPtr"
 
 #: assign.c:11
 msgid "Internal error: finalizer's ExternalPtr doesn't see names in tag"
-msgstr ""
+msgstr "内部错误： 结束操作(finalizer)的ExternalPtr没有在tag中找到命名"
 
 #: assign.c:14
 #, c-format
 msgid "Internal error: finalizer sees l=%d, tl=%d"
-msgstr ""
+msgstr "内部错误： 结束操作(finalizer)检测到l=%d, tl=%d"
 
 #: assign.c:123
 msgid ""
@@ -31,49 +31,55 @@ msgid ""
 "loading to prevent unexpected behavior. If this table was not loaded from "
 "disk or you've already run setDT(), please report to data.table issue "
 "tracker.\n"
-msgstr ""
+msgstr ".internal.selfref ptr为空。 data.table的正常行为"
+"从磁盘读取， 请在装载结束后立刻运行setDT()操作"
+"避免发生异常行为。 如果该data.table不是"
+"从磁盘读取或已经运行了setDT(), 请报告data.table异常行为到"
+"issue tracker"
 
 #: assign.c:126
 msgid "Internal error: .internal.selfref ptr is not NULL or R_NilValue"
-msgstr ""
+msgstr "内部错误： .internal.selfref ptr不为NULL或R_NilValue"
 
 #: assign.c:128
 msgid "Internal error: .internal.selfref tag isn't NULL or a character vector"
-msgstr ""
+msgstr "内部错误： .internal.selfref ptr不为NULL或字符串"
 
 #: assign.c:170
 msgid "Internal error: length(names)>0 but <length(dt)"
-msgstr ""
+msgstr "内部错误： 列名列表长度不为零，但小于dt的长度"
 
 #: assign.c:199
 msgid "alloccol has been passed a NULL dt"
-msgstr ""
+msgstr "alloccol被传递给了空(NULL)dt"
 
 #: assign.c:200
 msgid "dt passed to alloccol isn't type VECSXP"
-msgstr ""
+msgstr "传递给alloccol的dt类型不为VECSXP"
 
 #: assign.c:202
 msgid ""
 "dt passed to alloccol has no class attribute. Please report result of "
 "traceback() to data.table issue tracker."
-msgstr ""
+msgstr "传递给alloccol的dt没有类型属性，请报告traceback()"
+"的运行结果给data.table的issue tracker"
 
 #: assign.c:207
 #, c-format
 msgid "Internal error: length of names (%d) is not length of dt (%d)"
-msgstr ""
+msgstr "内部错误： 列名列表长度与dt的长度不等"
 
 #: assign.c:217
 msgid "Internal error, tl of class is marked but tl<0."
-msgstr ""
+msgstr "内部错误： tl的类型被标记， 但tl长度小于零"
 
 #: assign.c:218
 #, c-format
 msgid ""
 "Internal error, please report (including result of sessionInfo()) to data."
 "table issue tracker: tl (%d) < l (%d) but tl of class is marked."
-msgstr ""
+msgstr "内部错误： 请汇报错误(包括sessionInfo()结果)给"
+"data.table的issue tracker"
 
 #: assign.c:219
 #, c-format
@@ -81,7 +87,9 @@ msgid ""
 "tl (%d) is greater than 10,000 items over-allocated (l = %d). If you didn't "
 "set the datatable.alloccol option to be very large, please report to data."
 "table issue tracker including the result of sessionInfo()."
-msgstr ""
+msgstr "tl (%d)超过了10,000，过度预分配(l = %d)"
+"如果用户没有设置datatable.alloccol成大数，请请汇报错误"
+"到data.table的issue tracker， 并包括sessionInfo()结果"
 
 #: assign.c:221
 #, c-format
@@ -89,75 +97,81 @@ msgid ""
 "Attempt to reduce allocation from %d to %d ignored. Can only increase "
 "allocation via shallow copy. Please do not use DT[...]<- or DT$someCol<-. "
 "Use := inside DT[...] instead."
-msgstr ""
+msgstr "忽视降低预分配从%d到%d的操作。 只能使用浅拷贝(shallow copy)增加预分配"
+"考虑在DT[...]中使用 :=， 而不是使用DT[...]<-或DT$someCol<-"
 
 #: assign.c:229
 msgid ""
 "Has getOption('datatable.alloccol') somehow become unset? It should be a "
 "number, by default 1024."
-msgstr ""
+msgstr "getOption('datatable.alloccol')结果是否返回为未设置，"
+"返回应该为数字， 默认值为1024"
 
 #: assign.c:231
 #, c-format
 msgid ""
 "getOption('datatable.alloccol') should be a number, by default 1024. But its "
 "type is '%s'."
-msgstr ""
+msgstr "getOption('datatable.alloc')应该返回数字，默认为1024"
+"但其类型为'%s'"
 
 #: assign.c:233
 #, c-format
 msgid ""
 "getOption('datatable.alloc') is a numeric vector ok but its length is %d. "
 "Its length should be 1."
-msgstr ""
+msgstr "getOption('datatable.alloc')结果为长度%d的数值向量"
+"其长度应该为1"
 
 #: assign.c:236
 #, c-format
 msgid "getOption('datatable.alloc')==%d.  It must be >=0 and not NA."
-msgstr ""
+msgstr "getOption('datatable.alloc')值为%d, 其必须大于零且不能为NA"
 
 #: assign.c:241 fsort.c:109 nafill.c:73
 msgid "verbose must be TRUE or FALSE"
-msgstr ""
+msgstr "verbose参数必须为TRUE或FALSE"
 
 #: assign.c:289
 msgid "assign has been passed a NULL dt"
-msgstr ""
+msgstr "传递给赋值操作的dt为NULL"
 
 #: assign.c:290
 msgid "dt passed to assign isn't type VECSXP"
-msgstr ""
+msgstr "传递给赋值操作的dt不是VECSXP类型"
 
 #: assign.c:292
 msgid ""
 ".SD is locked. Updating .SD by reference using := or set are reserved for "
 "future use. Use := in j directly. Or use copy(.SD) as a (slow) last resort, "
 "until shallow() is exported."
-msgstr ""
+msgstr ".SD变量被锁死。 使用':='更新.SD操作保留未来开发"
+"对'j'直接使用':='. 必要情况下， 可以使用copy(.SD)"
 
 #: assign.c:300
 msgid "Internal error: dt passed to Cassign is not a data.table or data.frame"
-msgstr ""
+msgstr "内部错误： 传递给赋值操作的dt不是data.table或data.frame类型"
 
 #: assign.c:304
 msgid "dt passed to assign has no names"
-msgstr ""
+msgstr "传递给赋值操作的dt没有命名"
 
 #: assign.c:306
 #, c-format
 msgid "Internal error in assign: length of names (%d) is not length of dt (%d)"
-msgstr ""
+msgstr "赋值的内部错误：名字的长度(%d)与dt的长度(%d)不匹配"
 
 #: assign.c:308
 msgid ""
 "data.table is NULL; malformed. A null data.table should be an empty list. "
 "typeof() should always return 'list' for data.table."
-msgstr ""
+msgstr "data.table为空，且定义错误，一个null的data.table应该为空list"
+"对data.table使用typeof()函数应该返回'list'类型"
 
 #: assign.c:317
 #, c-format
 msgid "Assigning to all %d rows\n"
-msgstr ""
+msgstr "为所有的%d行赋值"
 
 #: assign.c:322
 msgid ""
