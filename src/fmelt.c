@@ -677,6 +677,7 @@ SEXP fmelt(SEXP DT, SEXP id, SEXP measure, SEXP varfactor, SEXP valfactor, SEXP 
   if (!isString(varnames)) error(_("Argument 'variable.name' must be a character vector"));
   if (!isString(valnames)) error(_("Argument 'value.name' must be a character vector"));
   if (!isLogical(verboseArg)) error(_("Argument 'verbose' should be logical TRUE/FALSE"));
+  if (LOGICAL(verboseArg)[0] == TRUE) verbose = TRUE;
   int ncol = LENGTH(DT);
   if (!ncol) {
     if (verbose) Rprintf(_("ncol(data) is 0. Nothing to melt. Returning original data.table."));
