@@ -7,9 +7,14 @@ template:
 development:
   version_tooltip: "Development version"
 
+home:
+  links:
+  - text: CRAN-like website
+    href: web/packages/data.table/index.html
+
 navbar:
   structure:
-    left:  [home, introduction, vignettes, news, benchmarks, presentations, articles]
+    left:  [home, introduction, articles, news, benchmarks, presentations, communityarticles, reference]
     right: [github]
   components:
     home:
@@ -18,7 +23,7 @@ navbar:
     introduction:
       text: Introduction
       href: articles/datatable-intro.html
-    vignettes:
+    articles:
       text: Vignettes
       menu:
       - text: "Introduction to data.table"
@@ -39,10 +44,8 @@ navbar:
         href: articles/datatable-importing.html
       - text: "Benchmarking data.table"
         href: articles/datatable-benchmarking.html
-      - text: Reference manual
-        href: reference/index.html
     news:
-      text: Changelog
+      text: News
       href: news/index.html
     benchmarks:
       text: Benchmarks
@@ -50,9 +53,12 @@ navbar:
     presentations:
       text: Presentations
       href: https://github.com/Rdatatable/data.table/wiki/Presentations
-    articles:
+    communityarticles:
       text: Articles
       href: https://github.com/Rdatatable/data.table/wiki/Articles
+    reference:
+      text: Manual
+      href: reference/index.html
     github:
       icon: fab fa-github fa-lg
       href: https://github.com/Rdatatable/data.table
