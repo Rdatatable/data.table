@@ -227,8 +227,8 @@ msgid ""
 "Can't assign to the same column twice in the same query (duplicates "
 "detected)."
 msgstr ""
-"在一次查询中无法对同一列赋值两次（检测出
-重复项）。"
+"在一次查询中无法对同一列赋值两次（检测出"
+"重复项）。"
 
 #: assign.c:378
 msgid "newcolnames is supplied but isn't a character vector"
