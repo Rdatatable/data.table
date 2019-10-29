@@ -72,7 +72,7 @@ SEXP concat(SEXP vec, SEXP idx) {
   const int *iidx = INTEGER(idx);
   for (int i=0; i<length(idx); ++i) {
     if (iidx[i] < 0 || iidx[i] > length(vec))
-      error(_("concat: 'idx' must take values between 0 and length(vec); 0 <= idx <= length(vec)"));
+      error(_("Internal error in concat: 'idx' must take values between 0 and length(vec); 0 <= idx <= %d"), length(vec)); // # nocov
   }
   PROTECT(v = allocVector(STRSXP, nidx > 5 ? 5 : nidx));
   for (int i=0; i<length(v); ++i) {

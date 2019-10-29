@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: data.table 1.12.5\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2019-10-27 09:58+0800\n"
+"POT-Creation-Date: 2019-10-29 12:04+0800\n"
 "PO-Revision-Date: 2019-10-04 17:06+08\n"
 "Last-Translator: Michael Chirico <MichaelChirico4@gmail.com>\n"
 "Language-Team: Mandarin\n"
@@ -172,9 +172,9 @@ msgid ""
 "a logical subset, simply wrap with which(), and take the which() outside the "
 "loop if possible for efficiency."
 msgstr ""
-"i 为 '%s' 类型。i 必须为整（integer）型，或数值（numeric）型（将被自动转换成整型并发出警告）。如果 i 为"
-"一个用于筛选的逻辑（logical）向量，请直接将它传给 which()，且如果可能的话将 which() 放置于"
-"循环之外以保持高效。"
+"i 为 '%s' 类型。i 必须为整（integer）型，或数值（numeric）型（将被自动转换成"
+"整型并发出警告）。如果 i 为一个用于筛选的逻辑（logical）向量，请直接将它传给 "
+"which()，且如果可能的话将 which() 放置于循环之外以保持高效。"
 
 #: assign.c:331
 #, c-format
@@ -201,17 +201,17 @@ msgid ""
 "Please use a data.table for that. data.table's are over-allocated and don't "
 "shallow copy."
 msgstr ""
-"数据框（data.frame）的 set() 是用于修改现有列，而非添加新列。"
-"请使用 data.table 来添加新列。data.table 的操作是超额分配的（over-allocated）并且不"
-"进行浅拷贝（shallow copy）。"
+"数据框（data.frame）的 set() 是用于修改现有列，而非添加新列。请使用 data."
+"table 来添加新列。data.table 的操作是超额分配的（over-allocated）并且不进行浅"
+"拷贝（shallow copy）。"
 
 #: assign.c:372
 msgid ""
 "Coerced j from numeric to integer. Please pass integer for efficiency; e.g., "
 "2L rather than 2"
 msgstr ""
-"将 j 从数值（numeric）型自动转换为整（integer）型。为了保持高效请直接传入整型，如"
-"2L 而非 2"
+"将 j 从数值（numeric）型自动转换为整（integer）型。为了保持高效请直接传入整"
+"型，如2L 而非 2"
 
 #: assign.c:375
 #, c-format
@@ -219,16 +219,14 @@ msgid ""
 "j is type '%s'. Must be integer, character, or numeric is coerced with "
 "warning."
 msgstr ""
-"j 为 '%s' 型。j 必须为整（integer）型、字符（character）型，或数值（numeric）型（将被自动转换成整型"
-"并发出警告）。"
+"j 为 '%s' 型。j 必须为整（integer）型、字符（character）型，或数值（numeric）"
+"型（将被自动转换成整型并发出警告）。"
 
 #: assign.c:377
 msgid ""
 "Can't assign to the same column twice in the same query (duplicates "
 "detected)."
-msgstr ""
-"在一次查询中无法对同一列赋值两次（检测出"
-"重复项）。"
+msgstr "在一次查询中无法对同一列赋值两次（检测出重复项）。"
 
 #: assign.c:378
 msgid "newcolnames is supplied but isn't a character vector"
@@ -245,8 +243,8 @@ msgid ""
 "RHS_list_of_columns revised to true because RHS list has 1 item which is "
 "NULL, or whose length %d is either 1 or targetlen (%d). Please unwrap RHS.\n"
 msgstr ""
-"RHS_list_of_columns 改为真（True），因为右手侧列表（RHS list）有一子项"
-"为空值（NULL）或长度 %d 为 1 或 targetlen（%d）。请拆开右手侧。\n"
+"RHS_list_of_columns 改为真（True），因为右手侧列表（RHS list）有一子项为空值"
+"（NULL）或长度 %d 为 1 或 targetlen（%d）。请拆开右手侧。\n"
 
 #: assign.c:390
 #, c-format
@@ -255,21 +253,21 @@ msgid ""
 "table or data.frame since they are lists too). To delete multiple columns "
 "use NULL instead. To add multiple empty list columns, use list(list())."
 msgstr ""
-"试图将 %d 列赋值为空列表（可能为空数据、"
-"表（table）或数据框（data.frame），因后两者也是列表的一种）。删除多个列时"
-"请使用空值（NULL）。添加多个空列表列（list columns）时，请使用 list(list())。"
+"试图将 %d 列赋值为空列表（可能为空数据、表（table）或数据框（data.frame），因"
+"后两者也是列表的一种）。删除多个列时请使用空值（NULL）。添加多个空列表列"
+"（list columns）时，请使用 list(list())。"
 
 #: assign.c:395
 #, c-format
 msgid "Recycling single RHS list item across %d columns. Please unwrap RHS.\n"
-msgstr "回收重用（Recycling）单个右手侧（RHS）列表子项于 %d 列。请拆开右手侧。\n"
+msgstr ""
+"回收重用（Recycling）单个右手侧（RHS）列表子项于 %d 列。请拆开右手侧。\n"
 
 #: assign.c:397
 #, c-format
 msgid ""
 "Supplied %d columns to be assigned %d items. Please see NEWS for v1.12.2."
-msgstr ""
-"试图将 %2$d 项赋值给 %1$d 列。请阅读 v1.12.2 的更新信息（NEWS）。"
+msgstr "试图将 %2$d 项赋值给 %1$d 列。请阅读 v1.12.2 的更新信息（NEWS）。"
 
 #: assign.c:405
 #, c-format
@@ -278,9 +276,8 @@ msgid ""
 "set() on a data.frame is for changing existing columns, not adding new ones. "
 "Please use a data.table for that."
 msgstr ""
-"j 中的列编号里第 %d 项是 %d，超出了有效范围 [1,ncol=%d]。"
-"数据框（data.frame）的 set() 是用于修改现有列，而非添加新列。"
-"请使用 data.table 来添加新列。"
+"j 中的列编号里第 %d 项是 %d，超出了有效范围 [1,ncol=%d]。数据框（data.frame）"
+"的 set() 是用于修改现有列，而非添加新列。请使用 data.table 来添加新列。"
 
 #: assign.c:406
 #, c-format
@@ -288,8 +285,8 @@ msgid ""
 "Item %d of column numbers in j is %d which is outside range [1,ncol=%d]. Use "
 "column names instead in j to add new columns."
 msgstr ""
-"j 中的列编号里第 %d 项是 %d，超出了有效范围 [1,ncol=%d]。请在 j 中使用"
-"列名来添加新列。"
+"j 中的列编号里第 %d 项是 %d，超出了有效范围 [1,ncol=%d]。请在 j 中使用列名来"
+"添加新列。"
 
 #: assign.c:411
 msgid "When deleting columns, i should not be provided"
@@ -305,19 +302,17 @@ msgid ""
 "full length RHS vector such as vector('list',nrow(DT)); i.e., 'plonk' in the "
 "new column."
 msgstr ""
-"对已有列 '%s' 的赋值其右手侧（RHS）长度为零但并非空值（NULL）。如果"
-"想要删除列请使用空值（NULL）。否则，右手侧必须"
-"长度 > 0，如 NA_integer_。如果想将该列类型修改为"
-"空列表列（list column），正如所有修改列类型的操作一样，请在右手侧提供一个"
-"与该列原数据等长的向量，如 vector('list',nrow(DT))，即，用新数据替换（plonk）重新生成"
-"该列。"
+"对已有列 '%s' 的赋值其右手侧（RHS）长度为零但并非空值（NULL）。如果想要删除列"
+"请使用空值（NULL）。否则，右手侧必须长度 > 0，如 NA_integer_。如果想将该列类"
+"型修改为空列表列（list column），正如所有修改列类型的操作一样，请在右手侧提供"
+"一个与该列原数据等长的向量，如 vector('list',nrow(DT))，即，用新数据替换"
+"（plonk）重新生成该列。"
 
 #: assign.c:422
 #, c-format
 msgid ""
 "Internal error in assign.c: length(newcolnames)=%d, length(names)=%d, coln=%d"
-msgstr ""
-"assign.c 内部错误：length(newcolnames)=%d, length(names)=%d, coln=%d"
+msgstr "assign.c 内部错误：length(newcolnames)=%d, length(names)=%d, coln=%d"
 
 #: assign.c:424
 #, c-format
@@ -335,8 +330,8 @@ msgid ""
 "Can't assign to column '%s' (type 'factor') a value of type '%s' (not "
 "character, factor, integer or numeric)"
 msgstr ""
-"无法给因子（factor）类型列 '%s' 赋类型为 '%s' 的值（不是"
-"字符（character）、因子（factor）、整数（integer）或数值（numeric）类中的一种）"
+"无法给因子（factor）类型列 '%s' 赋类型为 '%s' 的值（不是字符（character）、因"
+"子（factor）、整数（integer）或数值（numeric）类中的一种）"
 
 #: assign.c:439
 #, c-format
@@ -345,9 +340,8 @@ msgid ""
 "'recycle' the RHS please use rep() to make this intent clear to readers of "
 "your code."
 msgstr ""
-"试图将 %d 项赋值给 %d 项（列 '%s'）。如果想"
-"'回收重用'（'recycle'）右手侧，请使用 rep() 以将该意图清晰地表述给阅读"
-"代码的人。"
+"试图将 %d 项赋值给 %d 项（列 '%s'）。如果想'回收重用'（'recycle'）右手侧，请"
+"使用 rep() 以将该意图清晰地表述给阅读代码的人。"
 
 #: assign.c:449
 msgid ""
@@ -356,10 +350,9 @@ msgid ""
 "or setalloccol() on it first (to pre-allocate space for new columns) before "
 "assigning by reference to it."
 msgstr ""
-"该 data.table 为从磁盘中载入（如使用 readRDS()/"
-"load()）或手动创建（如使用 structure()）。请首先对其运行 setDT() "
-"或 setalloccol() （以为新列预分配内存空间），然后再进行"
-"引用赋值（assigning by reference）操作。"
+"该 data.table 为从磁盘中载入（如使用 readRDS()/load()）或手动创建（如使用 "
+"structure()）。请首先对其运行 setDT() 或 setalloccol() （以为新列预分配内存空"
+"间），然后再进行引用赋值（assigning by reference）操作。"
 
 #: assign.c:450
 #, c-format
@@ -1209,9 +1202,10 @@ msgid "concat: 'idx' must be an integer vector of length >= 0"
 msgstr ""
 
 #: fmelt.c:75
+#, c-format
 msgid ""
-"concat: 'idx' must take values between 0 and length(vec); 0 <= idx <= "
-"length(vec)"
+"Internal error in concat: 'idx' must take values between 0 and length(vec); "
+"0 <= idx <= %d"
 msgstr ""
 
 #: fmelt.c:102
@@ -3195,8 +3189,8 @@ msgid ""
 "GForce mean can only be applied to columns, not .SD or similar. Likely "
 "you're looking for 'DT[,lapply(.SD,mean),by=,.SDcols=]'. See ?data.table."
 msgstr ""
-"GForce 求平均值仅适用于列，而不能用于 .SD 或其它。或许你在查找 "
-"'DT[,lapply(.SD,mean),by=,.SDcols=]'。参见 ?data.table 。"
+"GForce 求平均值仅适用于列，而不能用于 .SD 或其它。或许你在查找 'DT[,lapply(."
+"SD,mean),by=,.SDcols=]'。参见 ?data.table 。"
 
 #: gsumm.c:579
 msgid "mean is not meaningful for factors."
@@ -3243,10 +3237,10 @@ msgid ""
 "turn off GForce optimization using options(datatable.optimize=1). More "
 "likely, you may be looking for 'DT[,lapply(.SD,min),by=,.SDcols=]'"
 msgstr ""
-"GForce 求最小值（min）仅适用于列，而不能用于 .SD 或其它。要找到列表中"
-"（如 .SD）所有元素的最小值，须使用 base::min(.SD) 或者设置 "
-"options(datatable.optimize=1) 关闭 GForce 优化。你更像是在查找 "
-"'DT[,lapply(.SD,min),by=,.SDcols=]'"
+"GForce 求最小值（min）仅适用于列，而不能用于 .SD 或其它。要找到列表中（如 ."
+"SD）所有元素的最小值，须使用 base::min(.SD) 或者设置 options(datatable."
+"optimize=1) 关闭 GForce 优化。你更像是在查找 'DT[,lapply(.SD,min),by=,."
+"SDcols=]'"
 
 #: gsumm.c:688
 msgid "min is not meaningful for factors."
