@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: data.table 1.12.7\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2019-10-21 16:15+0800\n"
+"POT-Creation-Date: 2019-10-27 09:58+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -1486,7 +1486,7 @@ msgid "Column %d passed to [f]order is type '%s', not yet supported."
 msgstr ""
 
 #: forder.c:714
-msgid "Internal error: column not supported not caught earlier"
+msgid "Internal error: column not supported, not caught earlier"
 msgstr ""
 
 #: forder.c:722
