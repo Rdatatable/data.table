@@ -3163,7 +3163,7 @@ Sep,33.5,19.4,15.7,11.9,0,100.8,100.8,0,12.7,12.7,0,174.1")
   test(1037.413, melt(x, id.vars=1L, measure.vars=2L, value.name=c('a', 'b')),
        error="When 'measure.vars' is either not specified or a character/integer")
   x[ , r := as.raw(c(0, 1))]
-  test(1037.414, melt(x, id.vars='a', measure.vars='r'),
+  test(1037.414, melt(x, id.vars='x1', measure.vars='r'),
        error="Unknown column type 'raw' for column 'r'")
 }
 
