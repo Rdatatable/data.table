@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: data.table 1.12.7\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2019-10-27 09:58+0800\n"
+"POT-Creation-Date: 2019-10-29 12:04+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -1176,9 +1176,10 @@ msgid "concat: 'idx' must be an integer vector of length >= 0"
 msgstr ""
 
 #: fmelt.c:75
+#, c-format
 msgid ""
-"concat: 'idx' must take values between 0 and length(vec); 0 <= idx <= "
-"length(vec)"
+"Internal error in concat: 'idx' must take values between 0 and length(vec); "
+"0 <= idx <= %d"
 msgstr ""
 
 #: fmelt.c:102
