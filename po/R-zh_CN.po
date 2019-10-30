@@ -942,69 +942,77 @@ msgid ""
 "All elements in argument 'x' to 'setDT' must be of same length, but the "
 "profile of input lengths (length:frequency) is:"
 msgstr ""
+"'setDT' 的参数 'x' 中所有的元素都必须是同一长度，但"
+"输入长度的概况（长度（length）：频率（frequency））是："
 
 msgid "%s:%d"
 msgstr ""
 
 msgid "The first entry with fewer than"
-msgstr ""
+msgstr "第一个少于"
 
 msgid "entries is"
-msgstr ""
+msgstr "的输入项是"
 
 msgid ""
 "Argument 'x' to 'setDT' should be a 'list', 'data.frame' or 'data.table'"
 msgstr ""
+"'setDT' 参数 'x' 应为一个列表（'list'），数据框（'data.frame'）或 'data.table'"
 
 msgid "Item '"
-msgstr ""
+msgstr "项 '"
 
 msgid "' not found in names of input list"
-msgstr ""
+msgstr "' 不存在于输入列表的子项名中"
 
 msgid "'prefix' must be NULL or a character vector of length 1."
-msgstr ""
+msgstr "'prefix' 必须为 空（NULL）或者长度为 1 的字符向量。"
 
 msgid "x is a single vector, non-NULL 'cols' doesn't make sense."
-msgstr ""
+msgstr "x 是单个向量，非空的 'cols' 没有意义。"
 
 msgid "x is a list, 'cols' cannot be 0-length."
-msgstr ""
+msgstr "x 是一个列表（list），'cols' 长度不能为0。"
 
 msgid "RHS of"
-msgstr ""
+msgstr "右手侧（RHS）"
 
 msgid "is length"
-msgstr ""
+msgstr "长度为"
 
 msgid "which is not 1 or nrow ("
-msgstr ""
+msgstr "其非 1 或 总行数 nrow ("
 
 msgid ""
 "). For robustness, no recycling is allowed (other than of length 1 RHS). "
 "Consider %in% instead."
 msgstr ""
+")。为了鲁棒性考虑，不进行回收重用（recycling）（除非右手侧长度为 1 ）。"
+"考虑改用 %in% 。"
 
 msgid ""
 "Internal error in .isFastSubsettable. Please report to data.table developers"
 msgstr ""
+".isFastSubsettable 产生了内部错误。请向 data.table 开发者报告"
 
 msgid ""
 "'on' argument should be a named atomic vector of column names indicating "
 "which columns in 'i' should be joined with which columns in 'x'."
 msgstr ""
+"'on' 参数应为一个有子项名字的原子列名向量，指明"
+"'i' 中的哪些列应与 'x' 中的哪些列联接。"
 
 msgid "Found more than one operator in one 'on' statement:"
-msgstr ""
+msgstr "在一个 'on' 语句中出现了多于一个的操作符（operator）："
 
 msgid ". Please specify a single operator."
-msgstr ""
+msgstr "。请指定单个操作符。"
 
 msgid "'on' contains no column name:"
-msgstr ""
+msgstr "'on' 中没有列名："
 
 msgid ". Each 'on' clause must contain one or two column names."
-msgstr ""
+msgstr "。每个'on' 子句必须包含一个或两个列名。"
 
 msgid "'on' contains more than 2 column names:"
 msgstr ""
