@@ -1015,13 +1015,13 @@ msgid ". Each 'on' clause must contain one or two column names."
 msgstr "。每个'on' 子句必须包含一个或两个列名。"
 
 msgid "'on' contains more than 2 column names:"
-msgstr ""
+msgstr "'on' 包含了超过两个列名："
 
 msgid "Invalid operators"
-msgstr ""
+msgstr "无效的操作符"
 
 msgid ". Only allowed operators are"
-msgstr ""
+msgstr "。只有这些操作符是有效的"
 
 msgid "."
 msgstr ""
