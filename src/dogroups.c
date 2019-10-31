@@ -288,7 +288,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
         target = VECTOR_ELT(dt,INTEGER(lhs)[j]-1);
         RHS = VECTOR_ELT(jval,j%LENGTH(jval));
         if (isNull(RHS))
-          error(_("RHS is NULL when grouping :=. Makes no sense to delete a column by group. Perhaps use an empty vector instead."));
+          error(_("RHS of := is NULL during grouped assignment, but it's not possible to delete parts of a column. To return nothing for this group, use an empty (0-length) vector or list of vectors."));
         int vlen = length(RHS);
         if (vlen>1 && vlen!=grpn) {
           SEXP colname = isNull(target) ? STRING_ELT(newnames, INTEGER(lhs)[j]-origncol-1) : STRING_ELT(dtnames,INTEGER(lhs)[j]-1);

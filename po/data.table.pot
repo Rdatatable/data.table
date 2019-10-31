@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: data.table 1.12.7\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2019-10-29 12:04+0800\n"
+"POT-Creation-Date: 2019-10-31 21:58+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -953,8 +953,9 @@ msgstr ""
 
 #: dogroups.c:291
 msgid ""
-"RHS is NULL when grouping :=. Makes no sense to delete a column by group. "
-"Perhaps use an empty vector instead."
+"RHS of := is NULL during grouped assignment, but it's not possible to delete "
+"parts of a column. To return nothing for this group, use an empty (0-length) "
+"vector or list of vectors."
 msgstr ""
 
 #: dogroups.c:295
@@ -1327,11 +1328,11 @@ msgstr ""
 msgid "Argument 'verbose' should be logical TRUE/FALSE"
 msgstr ""
 
-#: fmelt.c:682
+#: fmelt.c:683
 msgid "ncol(data) is 0. Nothing to melt. Returning original data.table."
 msgstr ""
 
-#: fmelt.c:687
+#: fmelt.c:688
 msgid "names(data) is NULL. Please report to data.table-help"
 msgstr ""
 
