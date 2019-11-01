@@ -3,8 +3,8 @@ msgstr ""
 "Project-Id-Version: data.table 1.12.5\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2019-11-01 00:42+0800\n"
-"PO-Revision-Date: 2019-10-04 17:06+08\n"
-"Last-Translator: Michael Chirico <MichaelChirico4@gmail.com>\n"
+"PO-Revision-Date: 2019-10-31 17:27+08\n"
+"Last-Translator: Amy Tzu-Yu Chen <amy17519@gmail.com>\n"
 "Language-Team: Mandarin\n"
 "Language: Mandarin\n"
 "MIME-Version: 1.0\n"
@@ -1098,120 +1098,121 @@ msgstr ""
 #: dogroups.c:458
 #, c-format
 msgid "  eval(j) took %.3fs for %d calls\n"
-msgstr ""
+msgstr " eval(j)取%.3fs给 %d 调用\n"
 
 #: dogroups.c:482
 msgid "growVector passed NULL"
-msgstr ""
+msgstr "growVector通过NULL"
 
 #: fastmean.c:39
 msgid "narm should be TRUE or FALSE"
-msgstr ""
+msgstr "narm必须是TRUE或FALSE"
 
 #: fastmean.c:45
 #, c-format
 msgid "fastmean was passed type %s, not numeric or logical"
-msgstr ""
+msgstr "传递给 fastmean 的是 %s 类型，而不是数值或逻辑类型"
 
 #: fastmean.c:83 fastmean.c:111
 #, c-format
 msgid "Internal error: type '%s' not caught earlier in fastmean"
-msgstr ""
+msgstr "内部错误：先前fastmean没有侦测到类型 '%s' "
 
 #: fcast.c:80
 #, c-format
 msgid "Unsupported column type in fcast val: '%s'"
-msgstr ""
+msgstr "fcast val不支持的列类型：'%s'"
 
 #: fifelse.c:5
 msgid "Argument 'test' must be logical."
-msgstr ""
+msgstr "参数'test'必须是逻辑类型。"
 
 #: fifelse.c:23
 #, c-format
 msgid ""
 "'yes' is of type %s but 'no' is of type %s. Please make sure that both "
 "arguments have the same type."
-msgstr ""
+msgstr "'yes'是%s类型，但'no'是%s类型。请确认两个参数是同一类型。"
 
 #: fifelse.c:28
 msgid ""
 "'yes' has different class than 'no'. Please make sure that both arguments "
 "have the same class."
-msgstr ""
+msgstr "'yes'的类型与'no'不同。请确认两个参数是同一类型。"
 
 #: fifelse.c:33
 msgid "'yes' and 'no' are both type factor but their levels are different."
-msgstr ""
+msgstr "'yes'和'no'都是因子类型但他们的因子水平不同。"
 
 #: fifelse.c:38
 #, c-format
 msgid "Length of 'yes' is %lld but must be 1 or length of 'test' (%lld)."
-msgstr ""
+msgstr "'yes'长度是%lld但长度必须是1或者等于'test'的长度 (%lld)。"
 
 #: fifelse.c:40
 #, c-format
 msgid "Length of 'no' is %lld but must be 1 or length of 'test' (%lld)."
-msgstr ""
+msgstr "'no'长度是%lld但长度必须是1或者等于'test'的长度 (%lld)。"
 
 #: fifelse.c:51
 #, c-format
 msgid "Length of 'na' is %lld but must be 1"
-msgstr ""
+msgstr "'na'长度是%lld但必须是长度必须是1"
 
 #: fifelse.c:57
 #, c-format
 msgid ""
 "'yes' is of type %s but 'na' is of type %s. Please make sure that both "
 "arguments have the same type."
-msgstr ""
+msgstr "'yes'是%s类型，但'na'是%s类型。请确认两个参数是同一类型。"
 
 #: fifelse.c:59
 msgid ""
 "'yes' has different class than 'na'. Please make sure that both arguments "
 "have the same class."
-msgstr ""
+msgstr "'yes'的类型与'na'不同。请确认两个参数是同一类型。"
 
 #: fifelse.c:63
 msgid "'yes' and 'na' are both type factor but their levels are different."
-msgstr ""
+msgstr "'yes'和'na'都是因子类型但他们的因子水平不同"
 
 #: fifelse.c:133
 #, c-format
 msgid "Type %s is not supported."
-msgstr ""
+msgstr "不支持类型 %s"
 
 #: fmelt.c:18
 msgid "'x' must be an integer"
-msgstr ""
+msgstr "'x'必须是整数"
 
 #: fmelt.c:19
 msgid "'n' must be a positive integer"
-msgstr ""
+msgstr "'n'必须是正整数"
 
 #: fmelt.c:41
 msgid "Argument to 'which' must be logical"
-msgstr ""
+msgstr "'which'的参数必须是逻辑值"
 
 #: fmelt.c:70
 msgid "concat: 'vec must be a character vector"
-msgstr ""
+msgstr "串联：'vec 必须是一个字符向量"
 
 #: fmelt.c:71
 msgid "concat: 'idx' must be an integer vector of length >= 0"
-msgstr ""
+msgstr "串联：'idx' 必须为一个长度>= 0的整数向量"
 
 #: fmelt.c:75
 #, c-format
 msgid ""
 "Internal error in concat: 'idx' must take values between 0 and length(vec); "
 "0 <= idx <= %d"
-msgstr ""
+msgstr "串联内部错误：'idx'必须为0到length(vec)之间的值;"
+"0 <= idx <= %d"
 
 #: fmelt.c:102
 #, c-format
 msgid "Unknown 'measure.vars' type %s at index %d of list"
-msgstr ""
+msgstr "未知'measure.vars'类型 %s，位于列表中 %d"
 
 #: fmelt.c:148
 #, c-format
@@ -1220,80 +1221,86 @@ msgid ""
 "non-numeric/integer/logical type columns are considered id.vars, which in "
 "this case are columns [%s]. Consider providing at least one of 'id' or "
 "'measure' vars in future."
-msgstr ""
+msgstr "当'id.vars'和'measure.vars'都是NULL时，data.table会自动猜测适当值。"
+"所有非数值/整数/逻辑类型列会作为'id.vars'，即以下列 [%s]。"
+"以后请考虑择一指定'id.vars'或'measure.vars'。"
 
 #: fmelt.c:154 fmelt.c:219
 #, c-format
 msgid "Unknown 'id.vars' type %s, must be character or integer vector"
-msgstr ""
+msgstr "未知'id.vars'类型 %s，必须是字符或者整数向量(vector)"
 
 #: fmelt.c:159 fmelt.c:223
 msgid "One or more values in 'id.vars' is invalid."
-msgstr ""
+msgstr "'id.vars'里，一或多个数值无效"
 
 #: fmelt.c:175
 msgid ""
 "'measure.vars' is missing. Assigning all columns other than 'id.vars' "
 "columns as 'measure.vars'.\n"
-msgstr ""
+msgstr "找不到'measure.vars'。将指定所有'id.vars'以外的所有列为"
+"'measure.vars'。\n"
 
 #: fmelt.c:176
 #, c-format
 msgid "Assigned 'measure.vars' are [%s].\n"
-msgstr ""
+msgstr "指定'measure.vars'为[%s]。\n"
 
 #: fmelt.c:184
 #, c-format
 msgid ""
 "Unknown 'measure.vars' type %s, must be character or integer vector/list"
-msgstr ""
+msgstr "未知'measure.vars'类型 %s，必须是字符或者整数向量(vector)/列表(list)"
 
 #: fmelt.c:193 fmelt.c:239
 msgid "One or more values in 'measure.vars' is invalid."
-msgstr ""
+msgstr "'measure.vars'里，一或多个数值无效"
 
 #: fmelt.c:211
 msgid ""
 "'id.vars' is missing. Assigning all columns other than 'measure.vars' "
 "columns as 'id.vars'.\n"
-msgstr ""
+msgstr "找不到'id.vars'。将指定所有'measure.vars'以外的所有列为'id.vars'。\n"
 
 #: fmelt.c:212
 #, c-format
 msgid "Assigned 'id.vars' are [%s].\n"
-msgstr ""
+msgstr "指定的 'id.vars' 是 [%s].\n"
 
 #: fmelt.c:231
 #, c-format
 msgid "Unknown 'measure.vars' type %s, must be character or integer vector"
-msgstr ""
+msgstr "未知'measure.vars'类型 %s，必须是字符或者整数向量"
 
 #: fmelt.c:276
 msgid ""
 "When 'measure.vars' is a list, 'value.name' must be a character vector of "
 "length =1 or =length(measure.vars)."
-msgstr ""
+msgstr "当'measure.vars'是一个列表(list), 'value.name' 必须是一个"
+"长度为1或者等于length(measure.vars)的字符向量"
+
 
 #: fmelt.c:277
 msgid ""
 "When 'measure.vars' is either not specified or a character/integer vector, "
 "'value.name' must be a character vector of length =1."
-msgstr ""
+msgstr "当'measure.vars'未被指定或者是一个字符/整数向量时，""
+"'value.name'必须是一个长度1的字符/整数向量"
 
 #: fmelt.c:280
 msgid "'variable.name' must be a character/integer vector of length=1."
-msgstr ""
+msgstr "'variable.name' 必须是长度1的字符/整数向量。"
 
 #: fmelt.c:329
 msgid ""
 "Internal error: combineFactorLevels in fmelt.c expects all-character input"
-msgstr ""
+msgstr "内部错误：fmelt.c里的combineFactorLevels期望输入值为全字符"
 
 #: fmelt.c:332
 msgid ""
 "Internal error: combineFactorLevels in fmelt.c expects a character target to "
 "factorize"
-msgstr ""
+msgstr "内部错误：fmelt.c里的combineFactorLevels期望一个字符来分解"
 
 #: fmelt.c:385
 #, c-format
