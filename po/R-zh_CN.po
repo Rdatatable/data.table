@@ -647,7 +647,7 @@ msgid ""
 "existing column names to keyby=."
 msgstr "因为`:=`与`keyby=`一起使用且`keyby=`含有表达式, 所以代码跳过了一般
 "`keyby=`会执行的`setkey()` -- 代码只执行了`by=`。"
-若要避免此警告, 请使用`by=`, 或者提供`keyby=`现有的列名"
+"若要避免此警告, 请使用`by=`, 或者提供`keyby=`现有的列名"
 
 msgid "Internal error: jvnames is length"
 msgstr "内部错误:jvnames 是长度"
