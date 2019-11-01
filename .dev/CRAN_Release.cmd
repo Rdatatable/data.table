@@ -127,7 +127,7 @@ install.packages("xml2")   # to check the 150 URLs in NEWS.md under --as-cran be
 q("no")
 R CMD build .
 R CMD check data.table_1.12.7.tar.gz --as-cran
-R CMD INSTALL data.table_1.12.7.tar.gz
+R CMD INSTALL data.table_1.12.7.tar.gz --html
 
 # Test C locale doesn't break test suite (#2771)
 echo LC_ALL=C > ~/.Renviron
