@@ -1,0 +1,59 @@
+\name{fcase}
+\alias{fcase}
+\title{felse }
+\description{
+\code{fcase} is fast implementation of SQL \code{CASE WHEN} statement for R. This function is a nested version of \code{fifelse}. It is comparable to \code{dplyr::case_when} and supports \code{bit64}'s \code{integer64} and \code{nanotime} classes.
+}
+\usage{
+  fcase(..., default=NA)
+}
+\arguments{
+\item{...}{A sequence consisting of logical condition \code{when}, resulting value \code{value} pairs in the following order \code{when1, value1, when2,value2,...,whenN,valueN}. Logical conditions \code{when1,when2,...whenN} must all have the same length, type and attributes. The length of \code{value} may either be of length of \code{when} or 1. Please see examples section for further details.}
+\item{default}{Default value is \code{NA}. This is the value to return if none of the logical condition \code{when1,when2,...whenN} is not \code{TRUE}.}
+}
+\value{
+	It returns a value with the same length as logical conditions in \code{...} filled with corresponding resulting value from \code{...} or eventually \code{default}. Attributes of logical conditions in \code{...} are preserved.
+
+}
+\seealso{
+  \code{\link{fifelse}}
+}
+\examples{
+set.seed(123)
+x = sample(1:10, 5, replace = TRUE)
+data.table::fcase(
+	x < 5L, 1L,
+	x > 5L, 3L
+)
+# [1] 1 3 NA 3 3
+
+data.table::fcase(
+	x < 5L, 1L:5L,
+	x > 5L, 3L:7L
+)
+# [1] 1 4 NA 6 7
+
+# fcase preserves attributes, example with dates
+data.table::case{
+	x < 5L, as.Date("2019-10-11"),
+	x > 5L, as.Date("2019-10-14")
+}
+# [1] "2019-10-11" "2019-10-14" NA "2019-10-14" "2019-10-14"
+
+# fcase example with factor
+data.table::case{
+	x < 5L, factor("a", levels=letters[1:3]),
+	x > 5L, factor("b", levels=letters[1:3])
+}
+# [1] a b <NA> b b
+# Levels: a b c
+
+# Example of using the 'default' arguement
+data.table::fcase(
+	x < 5L, 1L,
+	x > 5L, 3L,
+	default = 5L
+)
+# [1] 1 3 5 3 3
+}
+\keyword{ data }

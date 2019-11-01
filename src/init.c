@@ -88,6 +88,7 @@ SEXP allNAR();
 
 // .Externals
 SEXP fastmean();
+SEXP fcaseR();
 
 static const
 R_CallMethodDef callMethods[] = {
@@ -182,6 +183,7 @@ R_CallMethodDef callMethods[] = {
 static const
 R_ExternalMethodDef externalMethods[] = {
 {"Cfastmean", (DL_FUNC) &fastmean, -1},
+{"CfcaseR", (DL_FUNC) &fcaseR, -1},
 {NULL, NULL, 0}
 };
 
@@ -309,6 +311,9 @@ void attribute_visible R_init_datatable(DllInfo *info)
 
   initDTthreads();
   avoid_openmp_hang_within_fork();
+
+  R_RegisterCCallable("data.table", "CfifelseR", (DL_FUNC) &fifelseR);
+  R_RegisterCCallable("data.table", "CfcaseR", (DL_FUNC) &fcaseR);
 }
 
 inline long long DtoLL(double x) {
