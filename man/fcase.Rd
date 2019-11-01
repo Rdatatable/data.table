@@ -1,6 +1,6 @@
 \name{fcase}
 \alias{fcase}
-\title{felse }
+\title{fcase}
 \description{
 \code{fcase} is fast implementation of SQL \code{CASE WHEN} statement for R. This function is a nested version of \code{fifelse}. It is comparable to \code{dplyr::case_when} and supports \code{bit64}'s \code{integer64} and \code{nanotime} classes.
 }
@@ -13,39 +13,37 @@
 }
 \value{
 	It returns a value with the same length as logical conditions in \code{...} filled with corresponding resulting value from \code{...} or eventually \code{default}. Attributes of logical conditions in \code{...} are preserved.
-
 }
 \seealso{
   \code{\link{fifelse}}
 }
 \examples{
-set.seed(123)
-x = sample(1:10, 5, replace = TRUE)
+x = 1:10 
 data.table::fcase(
 	x < 5L, 1L,
 	x > 5L, 3L
 )
-# [1] 1 3 NA 3 3
+# [1]  1  1  1  1 NA  3  3  3  3  3
 
 data.table::fcase(
-	x < 5L, 1L:5L,
-	x > 5L, 3L:7L
+	x < 5L, 1L:10L,
+	x > 5L, 3L:12L
 )
-# [1] 1 4 NA 6 7
+# [1]  1  2  3  4 NA  8  9 10 11 12
 
 # fcase preserves attributes, example with dates
-data.table::case{
+data.table::fcase(
 	x < 5L, as.Date("2019-10-11"),
 	x > 5L, as.Date("2019-10-14")
-}
-# [1] "2019-10-11" "2019-10-14" NA "2019-10-14" "2019-10-14"
+)
+# [1] "2019-10-11" "2019-10-11" "2019-10-11" "2019-10-11" NA  "2019-10-14" "2019-10-14" "2019-10-14" "2019-10-14" "2019-10-14"
 
 # fcase example with factor
-data.table::case{
+data.table::fcase(
 	x < 5L, factor("a", levels=letters[1:3]),
 	x > 5L, factor("b", levels=letters[1:3])
-}
-# [1] a b <NA> b b
+)
+# [1] a    a    a    a    <NA> b    b    b    b    b
 # Levels: a b c
 
 # Example of using the 'default' arguement
@@ -54,6 +52,6 @@ data.table::fcase(
 	x > 5L, 3L,
 	default = 5L
 )
-# [1] 1 3 5 3 3
+# [1] 1 1 1 1 5 3 3 3 3 3
 }
 \keyword{ data }
