@@ -18,11 +18,9 @@
 
 ---
 
-**Tuesday 22nd October 2019<br>
+**26 December 2019<br>
+Efficiency in data processing: data.table basics - Jan Gorecki, [Mumbai R@IISA 2019](https://r-iisa2019.rbind.io/)**
 <br>
-Matt Dowle will be in New York for [H2O World](https://www.h2o.ai/h2oworldnewyork/).<br>
-Please Ask-Me-Anything starting now: click http://sli.do and enter event code  "askmattdowle".<br>
-I'll answer the most voted questions during my session: https://h2o.ai/h2oworldny-livestream-reg**
 
 ---
 
@@ -50,18 +48,10 @@ I'll answer the most voted questions during my session: https://h2o.ai/h2oworldn
 
 ## Installation
 
-``` r
+```r
 install.packages("data.table")
-```
 
-### Development version
-
-```r
-install.packages("data.table", repos="https://Rdatatable.gitlab.io/data.table")
-```
-
-or update only if newer revision is available
-```r
+# latest development version:
 data.table::update.dev.pkg()
 ```
 
@@ -92,6 +82,7 @@ DT[Petal.Width > 1.0, mean(Petal.Length), by = Species]
 
 * [Introduction to data.table](https://cloud.r-project.org/web/packages/data.table/vignettes/datatable-intro.html) vignette
 * [Getting started](https://github.com/Rdatatable/data.table/wiki/Getting-started) wiki page
+* [Examples](https://rdatatable.gitlab.io/data.table/reference/data.table.html#examples) produced by `example(data.table)`
 
 ### Cheatsheets
 
