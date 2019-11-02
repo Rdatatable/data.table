@@ -6,17 +6,20 @@
 
 ## NEW FEATURES
 
-1. New function `fcase(.,default)` has been implemented in C, [#3823](https://github.com/Rdatatable/data.table/issues/3823). It is comparable to `dplyr::case_when`. Please see `?data.table::fcase` for more details.
+1. New function `fcase(...,default)` has been implemented in C by Morgan Jacob, [#3823](https://github.com/Rdatatable/data.table/issues/3823). It is comparable to `dplyr::case_when`. Please see `?data.table::fcase` for more details.
 
 ```R
-# default 4 threads on a laptop with 16GB RAM and 8 logical CPU
-x = sample(1L:10L, 3e8, replace=TRUE) # 1GB
+x = sample(1L:10L, 3e7, replace=TRUE) # 114Mb
 microbenchmark::microbenchmark(
 	dplyr::case_when(x < 5L ~ 1L, x > 5L ~ 3L),
-	data.table::fcase((x < 5L, 1L, x > 5L, 3L)),
-	times = 5L,
+	data.table::fcase(x < 5L, 1L, x > 5L, 3L),
+	times = 10L,
 	unit = "s"
 )
+# Unit: seconds
+#                                       expr  min   lq  mean  median   uq  max neval
+# dplyr::case_when(x < 5L ~ 1L, x > 5L ~ 3L) 4.14 4.17  4.24    4.25 4.31 4.35    10
+# data.table::fcase(x < 5L, 1L, x > 5L, 3L)  0.55 0.60  0.63    0.61 0.62 0.80    10
 ```
 
 ## BUG FIXES
