@@ -170,7 +170,7 @@ SEXP fcaseR(SEXP args) {
       value0 = outs;
       if (nonna) {
         if (xlength(na) != 1) {
-          error("Length of 'default' is %lld but must be 1.", xlength(na));
+          error("Length of 'default' must be 1.");
         }
         SEXPTYPE tn = TYPEOF(na);
         if (tn == LGLSXP && LOGICAL(na)[0]==NA_LOGICAL) {
@@ -201,9 +201,9 @@ SEXP fcaseR(SEXP args) {
       imask = false;
       l = 0;
       if (xlength(cons) != len0) {
-        error("Argument #%d is of length %lld, however argument #1 is of length %lld. "
+        error("Argument #%d has a different length than argument. "
                  "Please make sure all logical conditions have the same length.",
-                 i*2+1, xlength(cons), len0);
+                 i*2+1);
       }
       if (TYPEOF(outs) != type0) {
         error("Argument #%d is of type %s, however argument #2 is of type %s. "
@@ -224,7 +224,7 @@ SEXP fcaseR(SEXP args) {
     }
     len1 = xlength(outs);
     if (len1 != len0 && len1 != 1) {
-      error("Length of output value #%d is %lld but must 1 or length of logical condition (%lld).", i*2+1, len1, len0);
+      error("Length of output value #%d is must either 1 or length of logical condition.", i*2+1);
     }
     int64_t amask = len1>1 ? INT64_MAX : 0;
     switch(TYPEOF(outs)) {
