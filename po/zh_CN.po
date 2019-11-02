@@ -975,13 +975,17 @@ msgid ""
 "All items in j=list(...) should be atomic vectors or lists. If you are "
 "trying something like j=list(.SD,newcol=mean(colA)) then use := by group "
 "instead (much quicker), or cbind or merge afterwards."
-msgstr ""
+msgstr "j=list(...) 中的所有项目必须是原子向量或列表"
+"如果您试图进行 j=list(.SD,newcol=mean(colA)) 之类的的操作"
+"请使用 := by group 代替(更快速)，或事后使用 cbind()、merge()"
 
 #: dogroups.c:290
 msgid ""
 "RHS of := is NULL during grouped assignment, but it's not possible to delete "
 "parts of a column."
-msgstr ""
+msgstr "用 := 分组时 RHS 为 NULL"
+"但無法刪除部分列"
+
 
 #: dogroups.c:294
 #, c-format
@@ -990,23 +994,27 @@ msgid ""
 "RHS length must either be 1 (single values are ok) or match the LHS length "
 "exactly. If you wish to 'recycle' the RHS please use rep() explicitly to "
 "make this intent clear to readers of your code."
-msgstr ""
+msgstr "提供 %d 个项分配给第 '%s' 列中的第 %d 组，组的大小为 %d "
+"RHS 的长度必须是 1(可以是单个值) 或完全符合 LHS 的长度"
+"如果您想回收(recycle) RHS，请使用 rep() 向你的代码读者明确表达你的意图"
+
 
 #: dogroups.c:305
 msgid ""
 "Internal error: Trying to add new column by reference but tl is full; "
 "setalloccol should have run first at R level before getting to this point in "
 "dogroups"
-msgstr ""
+msgstr "内部错误 : 尝试依照引用增加新列但 tl 已满"
+"在进入 dogroups 之前，setalloccol 应该先在 R 运行"
 
 #: dogroups.c:320
 #, c-format
 msgid "Group %d column '%s': %s"
-msgstr ""
+msgstr "列 '%s' 第 %d 组 : %s"
 
 #: dogroups.c:327
 msgid "j doesn't evaluate to the same number of columns for each group"
-msgstr ""
+msgstr "j 估算出的每组的列数不同"
 
 #: dogroups.c:361
 #, c-format
@@ -1017,14 +1025,18 @@ msgid ""
 "groups (and those are replaced with NA of appropriate type and recycled) but "
 "not for the first. Please use a typed empty vector instead, such as "
 "integer() or numeric()."
-msgstr ""
+msgstr "j 的结果中第 %d 列在第 1 组中为 NULL"
+"我们依赖第 1 组的列类型去决定剩余组的类型(需要一致性)"
+"空 (NULL) 列可以出现在后面的组(适当的以 NA 取代并回收)但不能是第 1 组"
+"请输入空向量代替，例如 integer() 或 numeric()"
 
 #: dogroups.c:364
 msgid ""
 "j appears to be a named vector. The same names will likely be created over "
 "and over again for each group and slow things down. Try and pass a named "
 "list (which data.table optimizes) or an unnamed list() instead.\n"
-msgstr ""
+msgstr "j 是名称向量，这可能使相同的名称不停重复创建导致速度变慢"
+"请尝试输入名称列表(较适合 data.table)或是非名称列表代替\n"
 
 #: dogroups.c:366
 #, c-format
@@ -1032,7 +1044,9 @@ msgid ""
 "Column %d of j is a named vector (each item down the rows is named, "
 "somehow). Please remove those names for efficiency (to save creating them "
 "over and over for each group). They are ignored anyway.\n"
-msgstr ""
+msgstr "j 的第 %d 列是名称向量(整行的项都是名称)"
+"为了效率请移除这些名称(避免在每组重复创建这些名称)"
+"总之他们被忽略了\n"
 
 #: dogroups.c:374
 msgid ""
@@ -1041,12 +1055,15 @@ msgid ""
 "detected, removed and put back after grouping has completed, for efficiency. "
 "Using j=transform(), for example, prevents that speedup (consider changing "
 "to :=). This message may be upgraded to warning in future.\n"
-msgstr ""
+msgstr "j 的结果是名称列表，在每组不停重复创建相同的名称很没效率"
+"为了提高效率，当 j=list(...) 时侦测到的所有名称会被移出，待分组完成后再放回来"
+"可以使用  j=transform() 避免这种加速"
+"此讯息可能会在未来升级为警告\n"
 
 #: dogroups.c:386
 #, c-format
 msgid "dogroups: growing from %d to %d rows\n"
-msgstr ""
+msgstr "dogroups: 从 %d 列增加至 %d 列\n"
 
 #: dogroups.c:387
 #, c-format
@@ -1060,14 +1077,17 @@ msgid ""
 "%d NAs to match the longest column in this result. Later groups may have a "
 "similar problem but only the first is reported to save filling the warning "
 "buffer."
-msgstr ""
+msgstr "j 的结果第 %d 项在第 %d 组中为零长度(zero length)"
+"将使用 %d 个 NA 填入以符合结果中最长列的长度"
+"后面的分组也有相同问题，但只回报第一组以避免过多警告"
 
 #: dogroups.c:427
 #, c-format
 msgid ""
 "Column %d of result for group %d is type '%s' but expecting type '%s'. "
 "Column types must be consistent for each group."
-msgstr ""
+msgstr "结果的第 %d 列在第 %d 组中是 '%s' 类别而非预期的 '%s' 类别"
+"所有组的列类别必须一致"
 
 #: dogroups.c:429
 #, c-format
@@ -1076,24 +1096,27 @@ msgid ""
 "length must either be 1 (single values are ok) or match the LHS length "
 "exactly. If you wish to 'recycle' the RHS please use rep() explicitly to "
 "make this intent clear to readers of your code."
-msgstr ""
+msgstr "提供 %d 项给第 %d 列的第 %d 组，这组有 %d 行"
+"RHS長度必須為 1 (可以使用單個值) 或與 LHS 長度完全匹配"
+"如果您想回收(recycle) RHS，请使用 rep() 向你的代码读者明确表达你的意图"
 
 #: dogroups.c:444
 #, c-format
 msgid "Wrote less rows (%d) than allocated (%d).\n"
-msgstr ""
+msgstr "写入的行 (%d) 少于分配的 (%d)\n"
 
 #: dogroups.c:454
 #, c-format
 msgid "Internal error: block 0 [%d] and block 1 [%d] have both run"
-msgstr ""
+msgstr "内部错误 : 区块 0 [%d] 与区块 1 [%d] 都运行了"
 
 #: dogroups.c:456
 #, c-format
 msgid ""
 "\n"
 "  %s took %.3fs for %d groups\n"
-msgstr ""
+msgstr "\n"
+" %s 花了 %s.3fs 在 %d 个组\n"
 
 #: dogroups.c:458
 #, c-format
