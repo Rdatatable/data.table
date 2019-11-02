@@ -170,7 +170,7 @@ SEXP fcaseR(SEXP args) {
       value0 = outs;
       if (nonna) {
         if (xlength(na) != 1) {
-          error("Length of 'default' is %lld but must be 1", xlength(na));
+          error("Length of 'default' is %lld but must be 1.", xlength(na));
         }
         SEXPTYPE tn = TYPEOF(na);
         if (tn == LGLSXP && LOGICAL(na)[0]==NA_LOGICAL) {
@@ -224,7 +224,7 @@ SEXP fcaseR(SEXP args) {
     }
     len1 = xlength(outs);
     if (len1 != len0 && len1 != 1) {
-      error("Length of output value #%d is %lld but must 1 or length of logical condition (%lld)", i*2+1, len1, len0);
+      error("Length of output value #%d is %lld but must 1 or length of logical condition (%lld).", i*2+1, len1, len0);
     }
     int64_t amask = len1>1 ? INT64_MAX : 0;
     switch(TYPEOF(outs)) {
