@@ -986,7 +986,6 @@ msgid ""
 msgstr "用 := 分组时 RHS 为 NULL"
 "但無法刪除部分列"
 
-
 #: dogroups.c:294
 #, c-format
 msgid ""
