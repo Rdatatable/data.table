@@ -350,9 +350,8 @@ msgid ""
 "or setalloccol() on it first (to pre-allocate space for new columns) before "
 "assigning by reference to it."
 msgstr ""
-"该 data.table 为从磁盘中载入（如使用 readRDS()/load()）或手动创建（如使用 "
-"structure()）。请首先对其运行 setDT() 或 setalloccol() （以为新列预分配内存空"
-"间），然后再进行引用赋值（assigning by reference）操作。"
+"此 data.table 是从硬盘导入(例如 readRDS()/load() )或者手动创建(例如 structure() )。"
+"在通过引用的方式进行赋值前，请先运行 setDT() 或 setalloccol() 来为增加的列预先分配空间"
 
 #: assign.c:450
 #, c-format
@@ -360,6 +359,8 @@ msgid ""
 "Internal error: oldtncol(%d) < oldncol(%d). Please report to data.table "
 "issue tracker, including result of sessionInfo()."
 msgstr ""
+"内部错误: oldtncol(%d) < oldncol(%d)。 请将此问题汇报给 data.table 问题追踪器，"
+"包括 sessionInfo() 的信息。"
 
 #: assign.c:452
 #, c-format
@@ -369,6 +370,9 @@ msgid ""
 "please report to data.table issue tracker including the result of "
 "sessionInfo()."
 msgstr ""
+"truelength (%d) 的值大于超额分配的 10000 项 (length = %d)。请查看 ?truelength。"
+"如果你没有将 datatable.alloccol 设置为非常大的数值，"
+"请将此问题汇报给 data.table 问题追踪器，包含 sessionInfo() 的信息"
 
 #: assign.c:454
 #, c-format
@@ -376,6 +380,7 @@ msgid ""
 "Internal error: DT passed to assign has not been allocated enough column "
 "slots. l=%d, tl=%d, adding %d"
 msgstr ""
+"内部错误: 传递出去赋值的 DT 没有被分配足够的列槽。 l=%d, tl=%d, 增加 %d"
 
 #: assign.c:456
 msgid ""
@@ -383,17 +388,22 @@ msgid ""
 "reassigned. Please ensure to use setnames() rather than names<- or "
 "colnames<-. Otherwise, please report to data.table issue tracker."
 msgstr ""
+"此 data.table 的名称在早先已经被重新赋值。"
+"请确保使用 setnames() 而不是 names<- 或 colnames<- 进行赋值。"
+"如果该办法无效，请将此问题汇报给 data.table 问题追踪器，包含 sessionInfo() 的信息"
 
 #: assign.c:460
 #, c-format
 msgid "Internal error: selfrefnames is ok but tl names [%d] != tl [%d]"
 msgstr ""
+"内部错误: selfrefnames 正确，但 tl 的名称 [%d] != tl [%d]"
 
 #: assign.c:471
 msgid ""
 "Internal error: earlier error 'When deleting columns, i should not be "
 "provided' did not happen."
 msgstr ""
+"内部错误: 前期的错误 '当删除列的时候，不应该提供参数 i ' 没有发生"
 
 #: assign.c:482
 #, c-format
@@ -401,11 +411,13 @@ msgid ""
 "RHS for item %d has been duplicated because NAMED==%d MAYBE_SHARED==%d, but "
 "then is being plonked. length(values)==%d; length(cols)==%d)\n"
 msgstr ""
+"因为 NAMED==%d MAYBE_SHARED==%d， 所以条目 %d 的 RHS 已经被复制，但是接下来又要被替换了。"
+"length(values)==%d; length(cols)==%d)\n"
 
 #: assign.c:487
 #, c-format
 msgid "Direct plonk of unnamed RHS, no copy. NAMED==%d, MAYBE_SHARED==%d\n"
-msgstr ""
+msgstr "直接替换没有名字的 RHS，并没有复制。 NAMED==%d, MAYBE_SHARED==%d\n"
 
 #: assign.c:556
 #, c-format
@@ -413,79 +425,80 @@ msgid ""
 "Dropping index '%s' as it doesn't have '__' at the beginning of its name. It "
 "was very likely created by v1.9.4 of data.table.\n"
 msgstr ""
+"丢掉索引 '%s' 因为它的名字前面没有 '__' 。这个很可能是 data.table v1.9.4 创建的\n"
 
 #: assign.c:564
 msgid "Internal error: index name ends with trailing __"
-msgstr ""
+msgstr "内部错误: 索引名称以 __ 结尾"
 
 #: assign.c:569
 msgid "Internal error: Couldn't allocate memory for s4."
-msgstr ""
+msgstr "内部错误: 不能给 s4 分配内存"
 
 #: assign.c:580
 msgid "Internal error: Couldn't allocate memory for s5."
-msgstr ""
+msgstr "内部错误: 不能给 s5 分配内存"
 
 #: assign.c:601 assign.c:617
 #, c-format
 msgid "Dropping index '%s' due to an update on a key column\n"
-msgstr ""
+msgstr " 因为一个主列的更新，丢掉索引 '%s'\n"
 
 #: assign.c:610
 #, c-format
 msgid "Shortening index '%s' to '%s' due to an update on a key column\n"
-msgstr ""
+msgstr "因为一个主列的更新，缩短索引 '%s' 到 '%s'\n"
 
 #: assign.c:687
 #, c-format
 msgid "Internal error: recycle length error not caught earlier. slen=%d len=%d"
-msgstr ""
+msgstr "内部错误: 早期未被发现的循环长度错误 slen=%d len=%d"
 
 #: assign.c:691
 msgid "Internal error: memrecycle has received NULL colname"
-msgstr ""
+msgstr "内部错误: memrecycle 接受到的列名为 NULL "
 
 #: assign.c:717
 #, c-format
 msgid ""
 "Cannot assign 'factor' to '%s'. Factors can only be assigned to factor, "
 "character or list columns."
-msgstr ""
+msgstr "不能将 'factor' 赋值为 '%s' 。因子类型只能赋值为因子，字符或者列表其中的列"
 
 #: assign.c:731
 #, c-format
 msgid ""
 "Assigning factor numbers to column %d named '%s'. But %d is outside the "
 "level range [1,%d]"
-msgstr ""
+msgstr "将列 %d 名称为 '%s' 赋值为因子。但是 %d 在层次范围[1,%d]之外"
 
 #: assign.c:739
 #, c-format
 msgid ""
 "Assigning factor numbers to column %d named '%s'. But %f is outside the "
 "level range [1,%d], or is not a whole number."
-msgstr ""
+msgstr "将列 %d 名称为 '%s' 赋值为因子。但是 %f 在层次范围[1,%d]之外，或者不是一个完整的数字"
 
 #: assign.c:745
 #, c-format
 msgid ""
 "Cannot assign '%s' to 'factor'. Factor columns can be assigned factor, "
 "character, NA in any type, or level numbers."
-msgstr ""
+msgstr "不能将 'factor' 赋值为 '%s' 。 因子列可被赋值为因子，字符 ，NA 或者 层次数值"
 
 #: assign.c:766
 msgid ""
 "Internal error: levels of target are either not unique or have truelength<0"
-msgstr ""
+msgstr "内部错误: 目标的层次不是唯一或者长度<0"
 
 #: assign.c:805
 #, c-format
 msgid "Unable to allocate working memory of %d bytes to combine factor levels"
-msgstr ""
+msgstr "不能分配 %d 字节的工作内存来组合因子层次"
 
 #: assign.c:812
 msgid "Internal error: extra level check sum failed"
-msgstr ""
+msgstr "内部错误: 额外的层次校验和失败"
 
 #: assign.c:831
 #, c-format
@@ -493,6 +506,8 @@ msgid ""
 "Coercing 'character' RHS to '%s' to match the type of the target column "
 "(column %d named '%s')."
 msgstr ""
+"将'character' RHS 强制转换成 '%s' 来匹配目标列的类型(列 %d 名称 '%s')"
+
 
 #: assign.c:837
 #, c-format
@@ -500,29 +515,30 @@ msgid ""
 "Cannot coerce 'list' RHS to 'integer64' to match the type of the target "
 "column (column %d named '%s')."
 msgstr ""
+"不能将'list' RHS 强制转换成 'integer64' 来匹配目标列的类型(列 %d 名称 '%s')"
 
 #: assign.c:842
 #, c-format
 msgid ""
 "Coercing 'list' RHS to '%s' to match the type of the target column (column "
 "%d named '%s')."
-msgstr ""
+msgstr "将'list' RHS 强制转换成 '%s' 来匹配目标列的类型(列 %d 名称 '%s')"
 
 #: assign.c:848
 #, c-format
 msgid "Zero-copy coerce when assigning '%s' to '%s' column %d named '%s'.\n"
-msgstr ""
+msgstr "当 '%s' 赋值成 '%s' 列 %d 名称 '%s'，进行Zero-copy强制转换。\n"
 
 #: assign.c:943
 #, c-format
 msgid "type '%s' cannot be coerced to '%s'"
-msgstr ""
+msgstr "类型 '%s' 不能强制转换成 '%s'"
 
 #: assign.c:1063
 msgid ""
 "To assign integer64 to a character column, please use as.character() for "
 "clarity."
-msgstr ""
+msgstr "请使用 as.character() 把 integer64 类型的数值赋值给字符列"
 
 #: assign.c:1074
 #, c-format
