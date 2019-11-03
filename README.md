@@ -16,6 +16,14 @@
 
 `data.table` provides a high-performance version of [base R](https://www.r-project.org/about.html)'s `data.frame` with syntax and feature enhancements for ease of use, convenience and programming speed.
 
+---
+
+**26 December 2019<br>
+Efficiency in data processing: data.table basics - Jan Gorecki, [Mumbai R@IISA 2019](https://r-iisa2019.rbind.io/)**
+<br>
+
+---
+
 ## Why `data.table`?
 
 * concise syntax: fast to type, fast to read
@@ -40,18 +48,10 @@
 
 ## Installation
 
-``` r
+```r
 install.packages("data.table")
-```
 
-### Development version
-
-```r
-install.packages("data.table", repos="https://Rdatatable.gitlab.io/data.table")
-```
-
-or update only if newer revision is available
-```r
+# latest development version:
 data.table::update.dev.pkg()
 ```
 
@@ -82,6 +82,7 @@ DT[Petal.Width > 1.0, mean(Petal.Length), by = Species]
 
 * [Introduction to data.table](https://cloud.r-project.org/web/packages/data.table/vignettes/datatable-intro.html) vignette
 * [Getting started](https://github.com/Rdatatable/data.table/wiki/Getting-started) wiki page
+* [Examples](https://rdatatable.gitlab.io/data.table/reference/data.table.html#examples) produced by `example(data.table)`
 
 ### Cheatsheets
 

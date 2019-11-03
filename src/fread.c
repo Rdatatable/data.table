@@ -1244,7 +1244,7 @@ int freadMain(freadMainArgs _args) {
       if (mmp == NULL) {
     #endif
       int nbit = 8*sizeof(char *); // #nocov
-      STOP(_("Opened %s file ok but could not memory map it. This is a %dbit process. %s."), filesize_to_str(fileSize), nbit,
+      STOP(_("Opened %s file ok but could not memory map it. This is a %dbit process. %s."), filesize_to_str(fileSize), nbit, // # nocov
            nbit<=32 ? _("Please upgrade to 64bit") : _("There is probably not enough contiguous virtual memory available")); // # nocov
     }
     sof = (const char*) mmp;
@@ -1565,7 +1565,7 @@ int freadMain(freadMainArgs _args) {
 
     quoteRule = topQuoteRule;
     if (quoteRule>1 && quote) {
-      DTWARN(_("Found and resolved improper quoting in first %d rows. If the fields are not quoted (e.g. field separator does not appear within any field), try quote=\")\" to avoid this warning."), jumpLines);
+      DTWARN(_("Found and resolved improper quoting in first %d rows. If the fields are not quoted (e.g. field separator does not appear within any field), try quote=\"\" to avoid this warning."), jumpLines);
       // TODO: include line number and text in warning. Could loop again with the standard quote rule to find the line that fails.
     }
     sep = topSep;
