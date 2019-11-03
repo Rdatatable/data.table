@@ -12,7 +12,7 @@
 \item{default}{ Default return value, \code{NA} by default, for when all of the logical conditions \code{when1, when2, ..., whenN} are \code{FALSE} for some entries. }
 }
 \value{
-  Vector with the same length as the logical conditions (\code{when}) in \code{...}, filled with corresponding resulting value from \code{...}, or eventually \code{default}. Attributes of logical conditions in \code{...} are preserved.
+  Vector with the same length as the logical conditions (\code{when}) in \code{...}, filled with corresponding resulting value from \code{...}, or eventually \code{default}. Attributes of output values \code{value1, value2, ...valueN} in \code{...} are preserved.
 }
 \seealso{
   \code{\link{fifelse}}
