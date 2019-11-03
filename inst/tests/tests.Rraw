@@ -16370,16 +16370,6 @@ test(2120.07, iDT[(i_id), order(e_date, e_time)], c(3L,4L,1L,2L))  # wrapping wi
 test(2120.08, tmp[iDT[(i_id), order(e_date, e_time)]],             # different result with the NA
               data.table(i_id=c("A",NA,"B","C"), N=c(5L,NA,5L,5L)))
 
-# nan_is_na to treat NaN as NA in nafill, #4020
-x = c(NA, NaN, 0, 1, 2)
-ans1 = c(0, 0, 0:2)
-ans2 = c(0, NaN, 0:2)
-DT = data.table(a=x, b=x)
-test(2121.1, nafill(x, fill=0), ans1)
-test(2121.2, nafill(x, fill=0, nan=NaN), ans2)
-test(2121.3, setnafill(DT, fill=0, cols=1L), copy(DT)[ , a := ans1])
-test(2121.4, setnafill(DT, fill=0, nan=NaN), copy(DT)[ , c('a', 'b') := .(ans1, ans2)])
-
 
 ###################################
 #  Add new tests above this line  #

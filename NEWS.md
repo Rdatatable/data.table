@@ -6,7 +6,7 @@
 
 ## NEW FEATURES
 
-1. `nafill` and `setnafill` gain `nan` argument (default `NA`, alternative `NaN`) to say whether `NaN` should be considered the same as `NA` for filling purposes, [#4020](https://github.com/Rdatatable/data.table/issues/4020). Thanks @AnonymousBoba for the suggestion.
+1. `nafill` and `setnafill` gain `nan` argument to say whether `NaN` should be considered the same as `NA` for filling purposes, [#4020](https://github.com/Rdatatable/data.table/issues/4020). Prior versions had an implicit value of `nan=NaN`; the default is now `nan=NA`, i.e., `NaN` is treated as if it's missing. Thanks @AnonymousBoba for the suggestion.
 
 ## BUG FIXES
 

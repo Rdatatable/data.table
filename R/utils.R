@@ -16,9 +16,9 @@ allNA = function(x) .Call(C_allNAR, x)
 # helper for nan argument (e.g. nafill): TRUE -> treat NaN as NA
 nan_is_na = function(x) {
   if (length(x) > 1L) stop("Argument 'nan' must be length 1")
-  if (identical(x, NA)) return(TRUE)
+  if (identical(x, NA) || identical(x, NA_real_)) return(TRUE)
   if (identical(x, NaN)) return(FALSE)
-  stop("Argument 'nan' must be NA (_not_ NA_real_) or NaN")
+  stop("Argument 'nan' must be NA or NaN")
 }
 
 if (base::getRversion() < "3.2.0") {  # Apr 2015
