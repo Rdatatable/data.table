@@ -13,6 +13,13 @@ if (base::getRversion() < "3.5.0") {
 isTRUEorNA    = function(x) is.logical(x) && length(x)==1L && (is.na(x) || x)
 isTRUEorFALSE = function(x) is.logical(x) && length(x)==1L && !is.na(x)
 allNA = function(x) .Call(C_allNAR, x)
+# helper for nan argument (e.g. nafill): TRUE -> treat NaN as NA
+nan_is_na = function(x) {
+  if (length(x) > 1L) stop("Argument 'nan' must be length 1")
+  if (identical(x, NA)) return(TRUE)
+  if (identical(x, NaN)) return(FALSE)
+  stop("Argument 'nan' must be NA (_not_ NA_real_) or NaN")
+}
 
 if (base::getRversion() < "3.2.0") {  # Apr 2015
   isNamespaceLoaded = function(x) x %chin% loadedNamespaces()

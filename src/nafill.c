@@ -5,18 +5,36 @@ void nafillDouble(double *x, uint_fast64_t nx, unsigned int type, double fill, b
   if (verbose)
     tic = omp_get_wtime();
   if (type==0) { // const
-    for (uint_fast64_t i=0; i<nx; i++) {
-      ans->dbl_v[i] = nan_is_na ? (ISNAN(x[i]) ? fill : x[i]) : (ISNA(x[i]) ? fill : x[i]);
+    if (nan_is_na) {
+      for (uint_fast64_t i=0; i<nx; i++) {
+        ans->dbl_v[i] = ISNAN(x[i]) ? fill : x[i];
+      }
+    } else {
+      for (uint_fast64_t i=0; i<nx; i++) {
+        ans->dbl_v[i] = ISNA(x[i]) ? fill : x[i];
+      }
     }
   } else if (type==1) { // locf
     ans->dbl_v[0] = x[0];
-    for (uint_fast64_t i=1; i<nx; i++) {
-      ans->dbl_v[i] = nan_is_na ? (ISNAN(x[i]) ? ans->dbl_v[i-1] : x[i]) : (ISNA(x[i]) ? ans->dbl_v[i-1] : x[i]);
+    if (nan_is_na) {
+      for (uint_fast64_t i=1; i<nx; i++) {
+        ans->dbl_v[i] = ISNAN(x[i]) ? ans->dbl_v[i-1] : x[i];
+      }
+    } else {
+      for (uint_fast64_t i=1; i<nx; i++) {
+        ans->dbl_v[i] = ISNA(x[i]) ? ans->dbl_v[i-1] : x[i];
+      }
     }
   } else if (type==2) { // nocb
     ans->dbl_v[nx-1] = x[nx-1];
-    for (int_fast64_t i=nx-2; i>=0; i--) {
-      ans->dbl_v[i] = nan_is_na ? (ISNA(x[i]) ? ans->dbl_v[i+1] : x[i]) : (ISNA(x[i]) ? ans->dbl_v[i+1] : x[i]);
+    if (nan_is_na) {
+      for (int_fast64_t i=nx-2; i>=0; i--) {
+        ans->dbl_v[i] = ISNAN(x[i]) ? ans->dbl_v[i+1] : x[i];
+      }
+    } else {
+      for (int_fast64_t i=nx-2; i>=0; i--) {
+        ans->dbl_v[i] = ISNA(x[i]) ? ans->dbl_v[i+1] : x[i];
+      }
     }
   }
   if (verbose)

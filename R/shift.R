@@ -24,16 +24,16 @@ shift = function(x, n=1L, fill=NA, type=c("lag", "lead", "shift"), give.names=FA
   ans
 }
 
-nafill = function(x, type=c("const","locf","nocb"), fill=NA, nan_is_na=TRUE, verbose=getOption("datatable.verbose")) {
+nafill = function(x, type=c("const","locf","nocb"), fill=NA, nan=NA, verbose=getOption("datatable.verbose")) {
   type = match.arg(type)
   if (type!="const" && !missing(fill))
     warning("argument 'fill' ignored, only make sense for type='const'")
-  .Call(CnafillR, x, type, fill, nan_is_na, FALSE, NULL, verbose)
+  .Call(CnafillR, x, type, fill, nan_is_na(nan), FALSE, NULL, verbose)
 }
 
-setnafill = function(x, type=c("const","locf","nocb"), fill=NA, nan_is_na=TRUE, cols=seq_along(x), verbose=getOption("datatable.verbose")) {
+setnafill = function(x, type=c("const","locf","nocb"), fill=NA, nan=NA, cols=seq_along(x), verbose=getOption("datatable.verbose")) {
   type = match.arg(type)
   if (type!="const" && !missing(fill))
     warning("argument 'fill' ignored, only make sense for type='const'")
-  invisible(.Call(CnafillR, x, type, fill, nan_is_na, TRUE, cols, verbose))
+  invisible(.Call(CnafillR, x, type, fill, nan_is_na(nan), TRUE, cols, verbose))
 }
