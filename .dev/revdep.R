@@ -1,6 +1,6 @@
 # Run by package maintainer via these entries in ~/.bash_aliases :
-#   alias revdepr='cd ~/build/revdeplib/ && R_LIBS_SITE=none R_LIBS=~/build/revdeplib/ _R_CHECK_FORCE_SUGGESTS_=false R_PROFILE_USER=~/GitHub/data.table/.dev/revdep.R R'
 #   alias revdepsh='cd ~/build/revdeplib/ && export TZ=UTC && export R_LIBS_SITE=none && export R_LIBS=~/build/revdeplib/ && export _R_CHECK_FORCE_SUGGESTS_=false'
+#   alias revdepr='revdepsh; R_PROFILE_USER=~/GitHub/data.table/.dev/revdep.R ~/build/R-devel/bin/R'
 # revdep = reverse first-order dependency; i.e. the CRAN and Bioconductor packages which directly use data.table (765 at the time of writing)
 
 # Check that env variables have been set correctly:
@@ -8,7 +8,7 @@
 #   export R_LIBS=~/build/revdeplib/
 #   export _R_CHECK_FORCE_SUGGESTS_=false
 stopifnot(identical(length(.libPaths()), 2L))     # revdeplib (writeable by me) and the pre-installed recommended R library (sudo writeable)
-stopifnot(identical(file.info(.libPaths())[,"uname"], c(as.vector(Sys.info()["user"]), "root")))
+stopifnot(identical(file.info(.libPaths())[,"uname"], rep(as.vector(Sys.info()["user"]), 2)))  # 2nd one is root when using default R rather than Rdevel
 stopifnot(identical(.libPaths()[1], getwd()))
 stopifnot(identical(Sys.getenv("_R_CHECK_FORCE_SUGGESTS_"),"false"))
 options(repos = c("CRAN"=c("http://cloud.r-project.org")))
@@ -18,10 +18,10 @@ options(repos = c("CRAN"=c("http://cloud.r-project.org")))
 # and BiocManager::install()) will call this script again recursively.
 Sys.unsetenv("R_PROFILE_USER")
 
-system("sudo R -e \"utils::update.packages('/usr/lib/R/library', ask=FALSE, checkBuilt=TRUE)\"")
+system(paste0("~/build/R-devel/bin/R -e \"utils::update.packages('",.libPaths()[2],"', ask=FALSE, checkBuilt=TRUE)\""))
 
 require(utils)  # only base is loaded when R_PROFILE_USER runs
-update.packages(ask=FALSE, checkBuilt=TRUE)
+update.packages(ask=FALSE, checkBuilt=FALSE)
 # if package not found on mirror, try manually a different one:
 #   install.packages("<pkg>", repos="http://cran.stat.ucla.edu/")
 #   update.packages(ask=FALSE)   # a repeat sometimes does more, keep repeating until none
