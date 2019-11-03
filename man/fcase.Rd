@@ -2,7 +2,7 @@
 \alias{fcase}
 \title{fcase}
 \description{
-\code{fcase} is fast implementation of SQL \code{CASE WHEN} statement for R. This function is a nested version of \code{fifelse}. It is comparable to \code{dplyr::case_when} and supports \code{bit64}'s \code{integer64} and \code{nanotime} classes.
+\code{fcase} is a fast implementation of SQL \code{CASE WHEN} statement for R. Conceptually, \code{fcase} is a nested version of \code{\link{fifelse}} (with smarter implementation than manual nesting). It is comparable to \code{dplyr::case_when} and supports \code{bit64}'s \code{integer64} and \code{nanotime} classes.
 }
 \usage{
   fcase(..., default=NA)
