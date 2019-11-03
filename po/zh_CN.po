@@ -1794,7 +1794,7 @@ msgstr ""
 #: fread.c:1206
 #, c-format
 msgid "Opened file ok but couldn't obtain its size: %s"
-msgstr ""
+msgstr "文件能够打开但无法获知其大小：%s"
 
 #: fread.c:1209 fread.c:1237
 #, c-format
@@ -1999,7 +1999,9 @@ msgid ""
 "Found and resolved improper quoting in first %d rows. If the fields are not "
 "quoted (e.g. field separator does not appear within any field), try quote="
 "\"\" to avoid this warning."
-msgstr ""
+msgstr "在前 %d 行中发现并修正了不合适的引号用法。如果字段们没有"
+"加引号（例如字段间隔符没有在任何字段内出现），尝试使用 quote="
+"\"\" 来避免此警告。"
 
 #: fread.c:1584
 #, c-format
