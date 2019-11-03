@@ -1,22 +1,22 @@
 #include "data.table.h"
 
-void nafillDouble(double *x, uint_fast64_t nx, unsigned int type, double fill, ans_t *ans, bool verbose) {
+void nafillDouble(double *x, uint_fast64_t nx, unsigned int type, double fill, bool nan_is_na, ans_t *ans, bool verbose) {
   double tic=0.0;
   if (verbose)
     tic = omp_get_wtime();
   if (type==0) { // const
     for (uint_fast64_t i=0; i<nx; i++) {
-      ans->dbl_v[i] = ISNA(x[i]) ? fill : x[i];
+      ans->dbl_v[i] = nan_is_na ? (ISNAN(x[i]) ? fill : x[i]) : (ISNA(x[i]) ? fill : x[i]);
     }
   } else if (type==1) { // locf
     ans->dbl_v[0] = x[0];
     for (uint_fast64_t i=1; i<nx; i++) {
-      ans->dbl_v[i] = ISNA(x[i]) ? ans->dbl_v[i-1] : x[i];
+      ans->dbl_v[i] = nan_is_na ? (ISNAN(x[i]) ? ans->dbl_v[i-1] : x[i]) : (ISNA(x[i]) ? ans->dbl_v[i-1] : x[i]);
     }
   } else if (type==2) { // nocb
     ans->dbl_v[nx-1] = x[nx-1];
     for (int_fast64_t i=nx-2; i>=0; i--) {
-      ans->dbl_v[i] = ISNA(x[i]) ? ans->dbl_v[i+1] : x[i];
+      ans->dbl_v[i] = nan_is_na ? (ISNA(x[i]) ? ans->dbl_v[i+1] : x[i]) : (ISNA(x[i]) ? ans->dbl_v[i+1] : x[i]);
     }
   }
   if (verbose)
@@ -67,7 +67,7 @@ void nafillInteger64(int64_t *x, uint_fast64_t nx, unsigned int type, int64_t fi
     snprintf(ans->message[0], 500, "%s: took %.3fs\n", __func__, omp_get_wtime()-tic);
 }
 
-SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP inplace, SEXP cols, SEXP verbose) {
+SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, SEXP cols, SEXP verbose) {
   int protecti=0;
   if (!IS_TRUE_OR_FALSE(verbose))
     error("verbose must be TRUE or FALSE");
@@ -152,7 +152,10 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP inplace, SEXP cols, SEXP verbo
       if (INHERITS(this_x, char_integer64) || INHERITS(this_x, char_nanotime)) {  // inside parallel region so can't call Rinherits()
         nafillInteger64(i64x[i], inx[i], itype, i64fill, &vans[i], bverbose);
       } else {
-        nafillDouble(dx[i], inx[i], itype, dfill, &vans[i], bverbose);
+        if (!IS_TRUE_OR_FALSE(nan_is_na_arg))
+          error("nan_is_na must be TRUE or FALSE");
+        bool nan_is_na = LOGICAL(nan_is_na_arg)[0];
+        nafillDouble(dx[i], inx[i], itype, dfill, nan_is_na, &vans[i], bverbose);
       }
     } break;
     case INTSXP : {

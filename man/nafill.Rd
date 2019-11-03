@@ -10,15 +10,16 @@
   Fast fill missing values using constant value, \emph{last observation carried forward} or \emph{next observation carried backward}.
 }
 \usage{
-nafill(x, type=c("const","locf","nocb"), fill=NA,
+nafill(x, type=c("const","locf","nocb"), fill=NA, nan_is_na=TRUE,
        verbose=getOption("datatable.verbose"))
-setnafill(x, type=c("const","locf","nocb"), fill=NA, cols=seq_along(x),
-          verbose=getOption("datatable.verbose"))
+setnafill(x, type=c("const","locf","nocb"), fill=NA, nan_is_na=TRUE,
+          cols=seq_along(x), verbose=getOption("datatable.verbose"))
 }
 \arguments{
   \item{x}{ vector, list, data.frame or data.table of numeric columns. }
   \item{type}{ character, one of \emph{"const"}, \emph{"locf"} or \emph{"nocb"}. Defaults to \code{"const"}. }
   \item{fill}{ numeric or integer, value to be used to fill when \code{type=="const"}. }
+  \item{nan_is_na}{ \code{logical}; should \code{NaN} be treated as \code{NA} during replacement? }
   \item{cols}{ numeric or character vector specifying columns to be updated. }
   \item{verbose}{ logical, \code{TRUE} turns on timing messages to the console. }
 }
