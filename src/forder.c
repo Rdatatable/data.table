@@ -711,7 +711,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
       free_ustr();  // ustr could be left allocated and reused, but free now in case large and we're tight on ram
       break;
     default:
-       STOP(_("Internal error: column not supported not caught earlier"));  // # nocov
+       STOP(_("Internal error: column not supported, not caught earlier"));  // # nocov
     }
     nradix += nbyte-1+(spare==0);
     TEND(4)
