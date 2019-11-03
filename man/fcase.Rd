@@ -8,11 +8,11 @@
   fcase(..., default=NA)
 }
 \arguments{
-\item{...}{A sequence consisting of logical condition \code{when}, resulting value \code{value} pairs in the following order \code{when1, value1, when2,value2,...,whenN,valueN}. Logical conditions \code{when1,when2,...whenN} must all have the same length, type and attributes. The length of \code{value} may either be of length of \code{when} or 1. Please see examples section for further details.}
-\item{default}{Default value is \code{NA}. This is the value to return if none of the logical condition \code{when1,when2,...whenN} is not \code{TRUE}.}
+\item{...}{ A sequence consisting of logical condition (\code{when})-resulting value (\code{value}) \emph{pairs} in the following order \code{when1, value1, when2, value2, ..., whenN, valueN}. Logical conditions \code{when1, when2, ..., whenN} must all have the same length, type and attributes. Each \code{value} may either share length with \code{when} or be length 1. Please see Examples section for further details.}
+\item{default}{ Default return value, \code{NA} by default, for when all of the logical conditions \code{when1, when2, ..., whenN} are \code{FALSE} for some entries. }
 }
 \value{
-	It returns a value with the same length as logical conditions in \code{...} filled with corresponding resulting value from \code{...} or eventually \code{default}. Attributes of logical conditions in \code{...} are preserved.
+  Vector with the same length as the logical conditions (\code{when}) in \code{...}, filled with corresponding resulting value from \code{...}, or eventually \code{default}. Attributes of logical conditions in \code{...} are preserved.
 }
 \seealso{
   \code{\link{fifelse}}
