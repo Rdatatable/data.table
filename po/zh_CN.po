@@ -370,7 +370,7 @@ msgid ""
 "please report to data.table issue tracker including the result of "
 "sessionInfo()."
 msgstr ""
-"truelength (%d) 的值大于超额分配的 10000 项 (length = %d)。请查看 ?truelength。
+"truelength (%d) 的值大于超额分配的 10000 项 (length = %d)。请查看 ?truelength。"
 "如果你没有将 datatable.alloccol 设置为非常大的数值，"
 "请将此问题汇报给 data.table 问题追踪器，包含 sessionInfo() 的信息"
 
@@ -411,7 +411,7 @@ msgid ""
 "RHS for item %d has been duplicated because NAMED==%d MAYBE_SHARED==%d, but "
 "then is being plonked. length(values)==%d; length(cols)==%d)\n"
 msgstr ""
-"因为 NAMED==%d MAYBE_SHARED==%d， 所以条目 %d 的 RHS 已经被复制，但是接下来又要被替换了。" 
+"因为 NAMED==%d MAYBE_SHARED==%d， 所以条目 %d 的 RHS 已经被复制，但是接下来又要被替换了。"
 "length(values)==%d; length(cols)==%d)\n"
 
 #: assign.c:487
@@ -425,7 +425,7 @@ msgid ""
 "Dropping index '%s' as it doesn't have '__' at the beginning of its name. It "
 "was very likely created by v1.9.4 of data.table.\n"
 msgstr ""
-"丢掉索引 '%s' 因为它的名字前面没有 '__' 。这个很可能是 data.table v1.9.4 创建的"
+"丢掉索引 '%s' 因为它的名字前面没有 '__' 。这个很可能是 data.table v1.9.4 创建的\n"
 
 #: assign.c:564
 msgid "Internal error: index name ends with trailing __"
@@ -442,12 +442,12 @@ msgstr "内部错误: 不能给 s5 分配内存"
 #: assign.c:601 assign.c:617
 #, c-format
 msgid "Dropping index '%s' due to an update on a key column\n"
-msgstr " 因为一个主列的更新，丢掉索引 '%s'"
+msgstr " 因为一个主列的更新，丢掉索引 '%s'\n"
 
 #: assign.c:610
 #, c-format
 msgid "Shortening index '%s' to '%s' due to an update on a key column\n"
-msgstr "因为一个主列的更新，缩短索引 '%s' 到 '%s'"
+msgstr "因为一个主列的更新，缩短索引 '%s' 到 '%s'\n"
 
 #: assign.c:687
 #, c-format
@@ -505,14 +505,17 @@ msgstr "内部错误: 额外的层次校验和失败"
 msgid ""
 "Coercing 'character' RHS to '%s' to match the type of the target column "
 "(column %d named '%s')."
-msgstr "将'character' RHS 强制转换成 '%s' 来匹配目标列的类型"
+msgstr ""
+"将'character' RHS 强制转换成 '%s' 来匹配目标列的类型(列 %d 名称 '%s')"
+
 
 #: assign.c:837
 #, c-format
 msgid ""
 "Cannot coerce 'list' RHS to 'integer64' to match the type of the target "
 "column (column %d named '%s')."
-msgstr "不能将'list' RHS 强制转换成 'integer64' 来匹配目标列的类型"
+msgstr ""
+"不能将'list' RHS 强制转换成 'integer64' 来匹配目标列的类型(列 %d 名称 '%s')"
 
 #: assign.c:842
 #, c-format
@@ -524,7 +527,7 @@ msgstr "将'list' RHS 强制转换成 '%s' 来匹配目标列的类型(列 %d �
 #: assign.c:848
 #, c-format
 msgid "Zero-copy coerce when assigning '%s' to '%s' column %d named '%s'.\n"
-msgstr "当 '%s' 赋值成 '%s' 列 %d 名称 '%s'，进行Zero-copy强制转换。"
+msgstr "当 '%s' 赋值成 '%s' 列 %d 名称 '%s'，进行Zero-copy强制转换。\n"
 
 #: assign.c:943
 #, c-format
