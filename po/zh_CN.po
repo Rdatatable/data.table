@@ -1799,104 +1799,111 @@ msgstr "文件能够打开但无法获知其大小：%s"
 #: fread.c:1209 fread.c:1237
 #, c-format
 msgid "File is empty: %s"
-msgstr ""
+msgstr "文件是空的：%s"
 
 #: fread.c:1210 fread.c:1238
 #, c-format
 msgid "  File opened, size = %s.\n"
-msgstr ""
+msgstr "文件已打开，大小为 %s.\n"
 
 #: fread.c:1227
 #, c-format
 msgid "File not found: %s"
-msgstr ""
+msgstr "文件没有找到：%s"
 
 #: fread.c:1233
 #, c-format
 msgid "Unable to open file after %d attempts (error %d): %s"
-msgstr ""
+msgstr "经过 %d 次尝试后仍无法打开文件（错误 %d）：%s"
 
 #: fread.c:1235
 #, c-format
 msgid "GetFileSizeEx failed (returned 0) on file: %s"
-msgstr ""
+msgstr "GetFileSizeEx 未能成功执行（返回值为0）于文件：%s"
 
 #: fread.c:1240
 #, c-format
 msgid "This is Windows, CreateFileMapping returned error %d for file %s"
-msgstr ""
+msgstr "现在在Windows下，CreateFileMapping 返回错误 %d 于文件 %s"
 
 #: fread.c:1247
 #, c-format
 msgid ""
 "Opened %s file ok but could not memory map it. This is a %dbit process. %s."
-msgstr ""
+msgstr "能够打开文件 %s 但不能创建内存映射。这是一个 %d 位进程。 %s."
 
 #: fread.c:1248
 msgid "Please upgrade to 64bit"
-msgstr ""
+msgstr "请升级到64位"
 
 #: fread.c:1248
 msgid "There is probably not enough contiguous virtual memory available"
-msgstr ""
+msgstr "多半没有足够的连续虚拟内存"
 
 #: fread.c:1251
 msgid "  Memory mapped ok\n"
-msgstr ""
+msgstr "  内存映射正常\n"
 
 #: fread.c:1253
 msgid ""
 "Internal error: Neither `input` nor `filename` are given, nothing to read."
-msgstr ""
+msgstr "内部错误：既没有`input`（输入）也没有`filename`（文件名），没有什么可供读入。"
 
 #: fread.c:1270
 msgid "[03] Detect and skip BOM\n"
-msgstr ""
+msgstr "[03] 检测并跳过字节顺序标记（BOM）\n"
 
 #: fread.c:1274
 msgid ""
 "  UTF-8 byte order mark EF BB BF found at the start of the file and "
 "skipped.\n"
-msgstr ""
+msgstr "在文件头发现了UTF-8 字节顺序标记（BOM）EF BB BF 并已"
+"跳过。\n"
 
 #: fread.c:1279
 msgid ""
 "GB-18030 encoding detected, however fread() is unable to decode it. Some "
 "character fields may be garbled.\n"
-msgstr ""
+msgstr "检测到GB-18030 编码，但fread() 未能解码。某些 "
+"字符字段可能有乱码。\n"
 
 #: fread.c:1282
 msgid ""
 "File is encoded in UTF-16, this encoding is not supported by fread(). Please "
 "recode the file to UTF-8."
-msgstr ""
+msgstr "文件编码是UTF-16，fread()不支持此编码。请 "
+"将文件转换为UTF-8。"
 
 #: fread.c:1287
 #, c-format
 msgid "  Last byte(s) of input found to be %s and removed.\n"
-msgstr ""
+msgstr "  发现输入的最后字节是 %s 并已去除。\n"
 
 #: fread.c:1290
 msgid "Input is empty or only contains BOM or terminal control characters"
-msgstr ""
+msgstr "输入是空的或只有字节顺序标记（BOM）或终端控制字符"
 
 #: fread.c:1297
 msgid "[04] Arrange mmap to be \\0 terminated\n"
-msgstr ""
+msgstr "[04] 设定mmap为 \\0 终止\n"
 
 #: fread.c:1304
 msgid ""
 "  No \\n exists in the file at all, so single \\r (if any) will be taken as "
 "one line ending. This is unusual but will happen normally when there is no "
 "\\r either; e.g. a single line missing its end of line.\n"
-msgstr ""
+msgstr "  文件中完全没有换行符\\n，所以单个 \\r（如果有的话）将被当成"
+"一行的结束。这是不常见的但如果也没有"
+"\\r 的话属于正常；例如单个行没有行尾结束符。\n"
 
 #: fread.c:1305
 msgid ""
 "  \\n has been found in the input and different lines can end with different "
 "line endings (e.g. mixed \\n and \\r\\n in one file). This is common and "
 "ideal.\n"
-msgstr ""
+msgstr "  输入中有\\n 并且不同行可以有不同的 "
+"行尾结束符（如在一个文件中混合使用 \\n 和\\r\\n）。这很常见"
+"也是理想情况。\n"
 
 #: fread.c:1329
 #, c-format
