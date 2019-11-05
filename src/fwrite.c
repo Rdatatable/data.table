@@ -38,6 +38,7 @@ static int8_t doQuote=INT8_MIN;        // whether to surround fields with double
 static bool qmethodEscape=false;       // when quoting fields, how to escape double quotes in the field contents (default false means to add another double quote)
 static int scipen;
 static bool squashDateTime=false;      // 0=ISO(yyyy-mm-dd) 1=squash(yyyymmdd)
+static bool verbose=false;
 
 extern const char *getString(void *, int64_t);
 extern const int getStringLen(void *, int64_t);
@@ -563,14 +564,14 @@ int init_stream(z_stream *stream) {
 
 int compressbuff(z_stream *stream, void* dest, size_t *destLen, const void* source, size_t sourceLen)
 {
-  int err = 0;
-
   stream->next_out = dest;
   stream->avail_out = *destLen;
   stream->next_in = (Bytef *)source; // don't use z_const anywhere; #3939
   stream->avail_in = sourceLen;
+  if (verbose) DTPRINT("deflate input stream: %p %d %p %d\n", stream->next_out, (int)(stream->avail_out), stream->next_in, (int)(stream->avail_in));
 
-  err = deflate(stream, Z_FINISH);
+  int err = deflate(stream, Z_FINISH);
+  if (verbose) DTPRINT("deflate returned %d with stream->total_out==%d; Z_FINISH==%d, Z_OK==%d, Z_STREAM_END==%d\n", err, (int)(stream->total_out), Z_FINISH, Z_OK, Z_STREAM_END);
   if (err == Z_OK) {
     // with Z_FINISH, deflate must return Z_STREAM_END if correct, otherwise it's an error and we shouldn't return Z_OK (0)
     err = -9;  // # nocov
@@ -590,6 +591,7 @@ void fwriteMain(fwriteMainArgs args)
   dec = args.dec;
   scipen = args.scipen;
   doQuote = args.doQuote;
+  verbose = args.verbose;
 
   // When NA is a non-empty string, then we must quote all string fields in case they contain the na string
   // na is recommended to be empty, though
@@ -607,7 +609,7 @@ void fwriteMain(fwriteMainArgs args)
   //        and platform specific. We prefer to be pure C99.
   if (eolLen<=0) STOP("eol must be 1 or more bytes (usually either \\n or \\r\\n) but is length %d", eolLen);
 
-  if (args.verbose) {
+  if (verbose) {
     DTPRINT("Column writers: ");
     if (args.ncol<=50) {
       for (int j=0; j<args.ncol; j++) DTPRINT("%d ", args.whichFun[j]);
@@ -656,7 +658,7 @@ void fwriteMain(fwriteMainArgs args)
     if (width<naLen) width = naLen;
     maxLineLen += width*2;  // *2 in case the longest string is all quotes and they all need to be escaped
   }
-  if (args.verbose) DTPRINT("maxLineLen=%zd. Found in %.3fs\n", maxLineLen, 1.0*(wallclock()-t0));
+  if (verbose) DTPRINT("maxLineLen=%zd. Found in %.3fs\n", maxLineLen, 1.0*(wallclock()-t0));
 
   int f=0;
   if (*args.filename=='\0') {
@@ -684,7 +686,7 @@ void fwriteMain(fwriteMainArgs args)
   }
 
   int yamlLen = strlen(args.yaml);
-  if (args.verbose) {
+  if (verbose) {
     DTPRINT("Writing bom (%s), yaml (%d characters) and column names (%s) ... ",
             args.bom?"true":"false", yamlLen, args.colNames?"true":"false");
     if (f==-1) DTPRINT("\n");
@@ -753,9 +755,9 @@ void fwriteMain(fwriteMainArgs args)
       }
     }
   }
-  if (args.verbose) DTPRINT("done in %.3fs\n", 1.0*(wallclock()-t0));
+  if (verbose) DTPRINT("done in %.3fs\n", 1.0*(wallclock()-t0));
   if (args.nrow == 0) {
-    if (args.verbose) DTPRINT("No data rows present (nrow==0)\n");
+    if (verbose) DTPRINT("No data rows present (nrow==0)\n");
     if (f!=-1 && CLOSE(f)) STOP("%s: '%s'", strerror(errno), args.filename);
     return;
   }
@@ -772,7 +774,7 @@ void fwriteMain(fwriteMainArgs args)
   int numBatches = (args.nrow-1)/rowsPerBatch + 1;
   int nth = args.nth;
   if (numBatches < nth) nth = numBatches;
-  if (args.verbose) {
+  if (verbose) {
     DTPRINT("Writing %lld rows in %d batches of %d rows (each buffer size %dMB, showProgress=%d, nth=%d)\n",
             (long long)args.nrow, numBatches, rowsPerBatch, args.buffMB, args.showProgress, nth);
   }
@@ -899,7 +901,7 @@ void fwriteMain(fwriteMainArgs args)
             // # nocov start
             int ETA = (int)((args.nrow-end)*((now-startTime)/end));
             if (hasPrinted || ETA >= 2) {
-              if (args.verbose && !hasPrinted) DTPRINT("\n");
+              if (verbose && !hasPrinted) DTPRINT("\n");
               DTPRINT("\rWritten %.1f%% of %lld rows in %d secs using %d thread%s. "
                       "maxBuffUsed=%d%%. ETA %d secs.      ",
                        (100.0*end)/args.nrow, (long long)args.nrow, (int)(now-startTime), nth, nth==1?"":"s",
@@ -958,9 +960,10 @@ void fwriteMain(fwriteMainArgs args)
   if (failed) {
     // # nocov start
     if (failed_compress)
-      STOP("zlib v%s deflate() returned error %d with z_stream.msg '%s'. %s\n", zlibVersion(), failed_compress, failed_msg,
-           args.verbose ? "Please include the full output above in your data.table bug report."
-                        : "Please retry fwrite() with verbose=TRUE and include the full output with your data.table bug report.");
+      STOP("zlib %s (zlib.h %s) deflate() returned error %d with z_stream->msg==\"%s\" Z_FINISH=%d Z_BLOCK=%d. %s",
+           zlibVersion(), ZLIB_VERSION, failed_compress, failed_msg, Z_FINISH, Z_BLOCK,
+           verbose ? "Please include the full output above and below this message in your data.table bug report."
+                   : "Please retry fwrite() with verbose=TRUE and include the full output with your data.table bug report.");
     if (failed_write)
       STOP("%s: '%s'", strerror(failed_write), args.filename);
     // # nocov end
