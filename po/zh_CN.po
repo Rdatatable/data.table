@@ -1910,12 +1910,13 @@ msgstr "  输入中有\\n 并且不同行可以有不同的 "
 msgid ""
 "  File ends abruptly with '%c'. Final end-of-line is missing. Using cow page "
 "to write 0 to the last byte.\n"
-msgstr ""
+msgstr "  文件突然中止于 '%c'。没有最后一个行尾结束符。正使用写时复制页（cow, copy-on-write）"
+"写入 0 到最后一个比特。\n"
 
 #: fread.c:1336
 #, c-format
 msgid "  File ends abruptly with '%c'. Copying file in RAM. %s copy.\n"
-msgstr ""
+msgstr "  文件突然中止于 '%c'。正在从内存中复制文件。%s 复制。\n"
 
 #: fread.c:1370
 msgid "[05] Skipping initial rows if needed\n"
