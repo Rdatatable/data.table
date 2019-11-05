@@ -1913,14 +1913,14 @@ msgid ""
 "  File ends abruptly with '%c'. Final end-of-line is missing. Using cow page "
 "to write 0 to the last byte.\n"
 msgstr "  文件突然中止于 '%c'。没有最后一个行尾结束符。正使用写时复制页（cow, copy-on-write）"
-"写入 0 到最后一个比特。\n"
+"写入 0 到最后一个字节。\n"
 
 #: fread.c:1335
 msgid ""
 "This file is very unusual: it ends abruptly without a final newline, and "
 "also its size is a multiple of 4096 bytes. Please properly end the last row "
 "with a newline using for example 'echo >> file' to avoid this "
-msgstr ""
+msgstr "这个文件非常不正常：它突然中止而没有最后的换行，并且其大小是4096 字节的整数倍。请用一个换行（例如 'echo >> file'）来恰当地结束最后一行以避免此错误"
 
 #: fread.c:1336
 #, c-format
@@ -1929,37 +1929,37 @@ msgstr "  文件突然中止于 '%c'。正在从内存中复制文件。%s 复�
 
 #: fread.c:1370
 msgid "[05] Skipping initial rows if needed\n"
-msgstr ""
+msgstr "[05] 如需要的话跳过起始行\n"
 
 #: fread.c:1376
 #, c-format
 msgid ""
 "skip='%s' not found in input (it is case sensitive and literal; i.e., no "
 "patterns, wildcards or regex)"
-msgstr ""
+msgstr "在输入中没有发现 skip='%s' （这里大小写敏感并需要是字面形式，也就是说不能使用模式，适配符或正则表达式）"
 
 #: fread.c:1382
 #, c-format
 msgid ""
 "Found skip='%s' on line %llu. Taking this to be header row or first row of "
 "data.\n"
-msgstr ""
+msgstr "在行 %2$llu 发现了 skip='%1$s'。将此当做表头或数据的第一行。\n"
 
 #: fread.c:1395
 #, c-format
 msgid "  Skipped to line %llu in the file"
-msgstr ""
+msgstr "  跳到文件的第 %llu 行"
 
 #: fread.c:1396
 #, c-format
 msgid "skip=%llu but the input only has %llu line%s"
-msgstr ""
+msgstr "skip=%llu 但输入只有 %llu 行 %s"
 
 #: fread.c:1405
 msgid ""
 "Input is either empty, fully whitespace, or skip has been set after the last "
 "non-whitespace."
-msgstr ""
+msgstr "输入是空，或全部为空白，或跳过设置是在最后一个非空白字符之后。"
 
 #: fread.c:1407
 #, c-format
