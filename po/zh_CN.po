@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: data.table 1.12.5\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2019-10-21 16:15+0800\n"
+"POT-Creation-Date: 2019-11-05 09:55+0800\n"
 "PO-Revision-Date: 2019-11-02 17:06+08\n"
 "Last-Translator: Youhuang Bai <biobai@zju.edu.cn>\n"
 "Language-Team: Mandarin\n"
@@ -350,8 +350,9 @@ msgid ""
 "or setalloccol() on it first (to pre-allocate space for new columns) before "
 "assigning by reference to it."
 msgstr ""
-"此 data.table 是从硬盘导入(例如 readRDS()/load() )或者手动创建(例如 structure() )。"
-"在通过引用的方式进行赋值前，请先运行 setDT() 或 setalloccol() 来为增加的列预先分配空间"
+"此 data.table 是从硬盘导入(例如 readRDS()/load() )或者手动创建(例如 "
+"structure() )。在通过引用的方式进行赋值前，请先运行 setDT() 或 setalloccol() "
+"来为增加的列预先分配空间"
 
 #: assign.c:450
 #, c-format
@@ -359,8 +360,8 @@ msgid ""
 "Internal error: oldtncol(%d) < oldncol(%d). Please report to data.table "
 "issue tracker, including result of sessionInfo()."
 msgstr ""
-"内部错误: oldtncol(%d) < oldncol(%d)。 请将此问题汇报给 data.table 问题追踪器，"
-"包括 sessionInfo() 的信息。"
+"内部错误: oldtncol(%d) < oldncol(%d)。 请将此问题汇报给 data.table 问题追踪"
+"器，包括 sessionInfo() 的信息。"
 
 #: assign.c:452
 #, c-format
@@ -370,9 +371,9 @@ msgid ""
 "please report to data.table issue tracker including the result of "
 "sessionInfo()."
 msgstr ""
-"truelength (%d) 的值大于超额分配的 10000 项 (length = %d)。请查看 ?truelength。"
-"如果你没有将 datatable.alloccol 设置为非常大的数值，"
-"请将此问题汇报给 data.table 问题追踪器，包含 sessionInfo() 的信息"
+"truelength (%d) 的值大于超额分配的 10000 项 (length = %d)。请查看 ?"
+"truelength。如果你没有将 datatable.alloccol 设置为非常大的数值，请将此问题汇"
+"报给 data.table 问题追踪器，包含 sessionInfo() 的信息"
 
 #: assign.c:454
 #, c-format
@@ -388,22 +389,20 @@ msgid ""
 "reassigned. Please ensure to use setnames() rather than names<- or "
 "colnames<-. Otherwise, please report to data.table issue tracker."
 msgstr ""
-"此 data.table 的名称在早先已经被重新赋值。"
-"请确保使用 setnames() 而不是 names<- 或 colnames<- 进行赋值。"
-"如果该办法无效，请将此问题汇报给 data.table 问题追踪器，包含 sessionInfo() 的信息"
+"此 data.table 的名称在早先已经被重新赋值。请确保使用 setnames() 而不是 "
+"names<- 或 colnames<- 进行赋值。如果该办法无效，请将此问题汇报给 data.table "
+"问题追踪器，包含 sessionInfo() 的信息"
 
 #: assign.c:460
 #, c-format
 msgid "Internal error: selfrefnames is ok but tl names [%d] != tl [%d]"
-msgstr ""
-"内部错误: selfrefnames 正确，但 tl 的名称 [%d] != tl [%d]"
+msgstr "内部错误: selfrefnames 正确，但 tl 的名称 [%d] != tl [%d]"
 
 #: assign.c:471
 msgid ""
 "Internal error: earlier error 'When deleting columns, i should not be "
 "provided' did not happen."
-msgstr ""
-"内部错误: 前期的错误 '当删除列的时候，不应该提供参数 i ' 没有发生"
+msgstr "内部错误: 前期的错误 '当删除列的时候，不应该提供参数 i ' 没有发生"
 
 #: assign.c:482
 #, c-format
@@ -411,8 +410,8 @@ msgid ""
 "RHS for item %d has been duplicated because NAMED==%d MAYBE_SHARED==%d, but "
 "then is being plonked. length(values)==%d; length(cols)==%d)\n"
 msgstr ""
-"因为 NAMED==%d MAYBE_SHARED==%d， 所以条目 %d 的 RHS 已经被复制，但是接下来又要被替换了。"
-"length(values)==%d; length(cols)==%d)\n"
+"因为 NAMED==%d MAYBE_SHARED==%d， 所以条目 %d 的 RHS 已经被复制，但是接下来又"
+"要被替换了。length(values)==%d; length(cols)==%d)\n"
 
 #: assign.c:487
 #, c-format
@@ -425,7 +424,8 @@ msgid ""
 "Dropping index '%s' as it doesn't have '__' at the beginning of its name. It "
 "was very likely created by v1.9.4 of data.table.\n"
 msgstr ""
-"丢掉索引 '%s' 因为它的名字前面没有 '__' 。这个很可能是 data.table v1.9.4 创建的\n"
+"丢掉索引 '%s' 因为它的名字前面没有 '__' 。这个很可能是 data.table v1.9.4 创建"
+"的\n"
 
 #: assign.c:564
 msgid "Internal error: index name ends with trailing __"
@@ -463,7 +463,8 @@ msgstr "内部错误: memrecycle 接受到的列名为 NULL "
 msgid ""
 "Cannot assign 'factor' to '%s'. Factors can only be assigned to factor, "
 "character or list columns."
-msgstr "不能将 'factor' 赋值为 '%s' 。因子类型只能赋值为因子，字符或者列表其中的列"
+msgstr ""
+"不能将 'factor' 赋值为 '%s' 。因子类型只能赋值为因子，字符或者列表其中的列"
 
 #: assign.c:731
 #, c-format
@@ -477,14 +478,17 @@ msgstr "将列 %d 名称为 '%s' 赋值为因子。但是 %d 在层次范围[1,%
 msgid ""
 "Assigning factor numbers to column %d named '%s'. But %f is outside the "
 "level range [1,%d], or is not a whole number."
-msgstr "将列 %d 名称为 '%s' 赋值为因子。但是 %f 在层次范围[1,%d]之外，或者不是一个完整的数字"
+msgstr ""
+"将列 %d 名称为 '%s' 赋值为因子。但是 %f 在层次范围[1,%d]之外，或者不是一个完"
+"整的数字"
 
 #: assign.c:745
 #, c-format
 msgid ""
 "Cannot assign '%s' to 'factor'. Factor columns can be assigned factor, "
 "character, NA in any type, or level numbers."
-msgstr "不能将 'factor' 赋值为 '%s' 。 因子列可被赋值为因子，字符 ，NA 或者 层次数值"
+msgstr ""
+"不能将 'factor' 赋值为 '%s' 。 因子列可被赋值为因子，字符 ，NA 或者 层次数值"
 
 #: assign.c:766
 msgid ""
@@ -505,9 +509,7 @@ msgstr "内部错误: 额外的层次校验和失败"
 msgid ""
 "Coercing 'character' RHS to '%s' to match the type of the target column "
 "(column %d named '%s')."
-msgstr ""
-"将'character' RHS 强制转换成 '%s' 来匹配目标列的类型(列 %d 名称 '%s')"
-
+msgstr "将'character' RHS 强制转换成 '%s' 来匹配目标列的类型(列 %d 名称 '%s')"
 
 #: assign.c:837
 #, c-format
@@ -1903,6 +1905,13 @@ msgstr ""
 msgid ""
 "  File ends abruptly with '%c'. Final end-of-line is missing. Using cow page "
 "to write 0 to the last byte.\n"
+msgstr ""
+
+#: fread.c:1335
+msgid ""
+"This file is very unusual: it ends abruptly without a final newline, and "
+"also its size is a multiple of 4096 bytes. Please properly end the last row "
+"with a newline using for example 'echo >> file' to avoid this "
 msgstr ""
 
 #: fread.c:1336
