@@ -3168,8 +3168,8 @@ msgstr "某整数列分组求和的结果中，"
 msgid ""
 "Type '%s' not supported by GForce sum (gsum). Either add the prefix base::"
 "sum(.) or turn off GForce optimization using options(datatable.optimize=1)"
-msgstr "GForce 求和（gsum）不支持类型 '%s'。请使用 base::sum(.) 或者"
-"设置 options(datatable.optimize=1) 关闭 GForce 优化"
+msgstr "GForce 求和（gsum）不支持类型 '%s'。请使用前缀 base::sum(.) 或者"
+"设置 options(datatable.optimize=1) 来关闭 GForce 优化"
 
 #: gsumm.c:578
 msgid ""
