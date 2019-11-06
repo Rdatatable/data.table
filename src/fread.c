@@ -1244,7 +1244,7 @@ int freadMain(freadMainArgs _args) {
       if (mmp == NULL) {
     #endif
       int nbit = 8*sizeof(char *); // #nocov
-      STOP(_("Opened %s file ok but could not memory map it. This is a %dbit process. %s."), filesize_to_str(fileSize), nbit,
+      STOP(_("Opened %s file ok but could not memory map it. This is a %dbit process. %s."), filesize_to_str(fileSize), nbit, // # nocov
            nbit<=32 ? _("Please upgrade to 64bit") : _("There is probably not enough contiguous virtual memory available")); // # nocov
     }
     sof = (const char*) mmp;
@@ -1332,7 +1332,7 @@ int freadMain(freadMainArgs _args) {
         // field) since we rely on that logic to avoid the copy below when fileSize$4096==0 but there is a final eol ok.
         // TODO: portable way to discover relevant page size. 4096 is lowest common denominator, though, and should suffice.
       } else {
-        const char *msg = "This file is very unusual: it ends abruptly without a final newline, and also its size is a multiple of 4096 bytes. Please properly end the last row with a newline using for example 'echo >> file' to avoid this ";
+        const char *msg = _("This file is very unusual: it ends abruptly without a final newline, and also its size is a multiple of 4096 bytes. Please properly end the last row with a newline using for example 'echo >> file' to avoid this ");
         if (verbose) DTPRINT(_("  File ends abruptly with '%c'. Copying file in RAM. %s copy.\n"), eof[-1], msg);
         // In future, we may discover a way to mmap fileSize+1 on all OS when fileSize%4096==0, reliably. If and when, this clause can be updated with no code impact elsewhere.
         copyFile(fileSize, msg, verbose);

@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: data.table 1.12.7\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2019-10-21 16:15+0800\n"
+"POT-Creation-Date: 2019-11-05 09:55+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -951,13 +951,13 @@ msgid ""
 "instead (much quicker), or cbind or merge afterwards."
 msgstr ""
 
-#: dogroups.c:291
+#: dogroups.c:290
 msgid ""
-"RHS is NULL when grouping :=. Makes no sense to delete a column by group. "
-"Perhaps use an empty vector instead."
+"RHS of := is NULL during grouped assignment, but it's not possible to delete "
+"parts of a column."
 msgstr ""
 
-#: dogroups.c:295
+#: dogroups.c:294
 #, c-format
 msgid ""
 "Supplied %d items to be assigned to group %d of size %d in column '%s'. The "
@@ -966,23 +966,23 @@ msgid ""
 "make this intent clear to readers of your code."
 msgstr ""
 
-#: dogroups.c:304
+#: dogroups.c:305
 msgid ""
 "Internal error: Trying to add new column by reference but tl is full; "
 "setalloccol should have run first at R level before getting to this point in "
 "dogroups"
 msgstr ""
 
-#: dogroups.c:319
+#: dogroups.c:320
 #, c-format
 msgid "Group %d column '%s': %s"
 msgstr ""
 
-#: dogroups.c:326
+#: dogroups.c:327
 msgid "j doesn't evaluate to the same number of columns for each group"
 msgstr ""
 
-#: dogroups.c:360
+#: dogroups.c:361
 #, c-format
 msgid ""
 "Column %d of j's result for the first group is NULL. We rely on the column "
@@ -993,14 +993,14 @@ msgid ""
 "integer() or numeric()."
 msgstr ""
 
-#: dogroups.c:363
+#: dogroups.c:364
 msgid ""
 "j appears to be a named vector. The same names will likely be created over "
 "and over again for each group and slow things down. Try and pass a named "
 "list (which data.table optimizes) or an unnamed list() instead.\n"
 msgstr ""
 
-#: dogroups.c:365
+#: dogroups.c:366
 #, c-format
 msgid ""
 "Column %d of j is a named vector (each item down the rows is named, "
@@ -1008,7 +1008,7 @@ msgid ""
 "over and over for each group). They are ignored anyway.\n"
 msgstr ""
 
-#: dogroups.c:373
+#: dogroups.c:374
 msgid ""
 "The result of j is a named list. It's very inefficient to create the same "
 "names over and over again for each group. When j=list(...), any names are "
@@ -1017,17 +1017,17 @@ msgid ""
 "to :=). This message may be upgraded to warning in future.\n"
 msgstr ""
 
-#: dogroups.c:385
+#: dogroups.c:386
 #, c-format
 msgid "dogroups: growing from %d to %d rows\n"
 msgstr ""
 
-#: dogroups.c:386
+#: dogroups.c:387
 #, c-format
 msgid "dogroups: length(ans)[%d]!=ngrpcols[%d]+njval[%d]"
 msgstr ""
 
-#: dogroups.c:419
+#: dogroups.c:420
 #, c-format
 msgid ""
 "Item %d of j's result for group %d is zero length. This will be filled with "
@@ -1036,14 +1036,14 @@ msgid ""
 "buffer."
 msgstr ""
 
-#: dogroups.c:426
+#: dogroups.c:427
 #, c-format
 msgid ""
 "Column %d of result for group %d is type '%s' but expecting type '%s'. "
 "Column types must be consistent for each group."
 msgstr ""
 
-#: dogroups.c:428
+#: dogroups.c:429
 #, c-format
 msgid ""
 "Supplied %d items for column %d of group %d which has %d rows. The RHS "
@@ -1052,29 +1052,29 @@ msgid ""
 "make this intent clear to readers of your code."
 msgstr ""
 
-#: dogroups.c:443
+#: dogroups.c:444
 #, c-format
 msgid "Wrote less rows (%d) than allocated (%d).\n"
 msgstr ""
 
-#: dogroups.c:453
+#: dogroups.c:454
 #, c-format
 msgid "Internal error: block 0 [%d] and block 1 [%d] have both run"
 msgstr ""
 
-#: dogroups.c:455
+#: dogroups.c:456
 #, c-format
 msgid ""
 "\n"
 "  %s took %.3fs for %d groups\n"
 msgstr ""
 
-#: dogroups.c:457
+#: dogroups.c:458
 #, c-format
 msgid "  eval(j) took %.3fs for %d calls\n"
 msgstr ""
 
-#: dogroups.c:481
+#: dogroups.c:482
 msgid "growVector passed NULL"
 msgstr ""
 
@@ -1176,9 +1176,10 @@ msgid "concat: 'idx' must be an integer vector of length >= 0"
 msgstr ""
 
 #: fmelt.c:75
+#, c-format
 msgid ""
-"concat: 'idx' must take values between 0 and length(vec); 0 <= idx <= "
-"length(vec)"
+"Internal error in concat: 'idx' must take values between 0 and length(vec); "
+"0 <= idx <= %d"
 msgstr ""
 
 #: fmelt.c:102
@@ -1326,11 +1327,11 @@ msgstr ""
 msgid "Argument 'verbose' should be logical TRUE/FALSE"
 msgstr ""
 
-#: fmelt.c:682
+#: fmelt.c:683
 msgid "ncol(data) is 0. Nothing to melt. Returning original data.table."
 msgstr ""
 
-#: fmelt.c:687
+#: fmelt.c:688
 msgid "names(data) is NULL. Please report to data.table-help"
 msgstr ""
 
@@ -1486,7 +1487,7 @@ msgid "Column %d passed to [f]order is type '%s', not yet supported."
 msgstr ""
 
 #: forder.c:714
-msgid "Internal error: column not supported not caught earlier"
+msgid "Internal error: column not supported, not caught earlier"
 msgstr ""
 
 #: forder.c:722
@@ -1860,6 +1861,13 @@ msgstr ""
 msgid ""
 "  File ends abruptly with '%c'. Final end-of-line is missing. Using cow page "
 "to write 0 to the last byte.\n"
+msgstr ""
+
+#: fread.c:1335
+msgid ""
+"This file is very unusual: it ends abruptly without a final newline, and "
+"also its size is a multiple of 4096 bytes. Please properly end the last row "
+"with a newline using for example 'echo >> file' to avoid this "
 msgstr ""
 
 #: fread.c:1336

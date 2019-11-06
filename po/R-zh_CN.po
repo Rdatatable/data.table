@@ -87,178 +87,191 @@ msgid "; filled with NA"
 msgstr ""
 
 msgid "A column may not be called .SD. That has special meaning."
-msgstr ""
+msgstr "无法将列命名为 .SD，因为 .SD 为特殊符号。"
 
 msgid "class must be length 1"
-msgstr ""
+msgstr "class 的长度必须为 1"
 
 msgid "between has been passed an argument x of type logical"
-msgstr ""
+msgstr "传入 between 的参数 x 为逻辑（logical）型"
 
 msgid ""
 "'between' function the 'x' argument is a POSIX class while 'lower' was not, "
 "coercion to POSIX failed with:"
 msgstr ""
+"'between' 中的 'x' 参数为 POSIX 类，而 'lower' 并不是，"
+"将 'lower' 自动转换成 POSIX 失败："
 
 msgid ""
 "'between' function the 'x' argument is a POSIX class while 'upper' was not, "
 "coercion to POSIX failed with:"
 msgstr ""
+"'between' 中的 'x' 参数为 POSIX 类，而 'upper' 并不是，"
+"将 'upper' 自动转换成 POSIX 失败："
 
 msgid ""
 "'between' lower= and upper= are both POSIXct but have different tzone "
 "attributes:"
 msgstr ""
+"'between' 中的 lower= 和 upper= 均为 POSIXct 类型但却有不同的时区"
+"属性（tzone）："
 
 msgid ". Please align their time zones."
-msgstr ""
+msgstr "。请确保二者的时区一致。"
 
 msgid ""
 "'between' arguments are all POSIXct but have mismatched tzone attributes:"
 msgstr ""
+"'between' 的参数均为 POSIXct 类型但时区属性（tzone）不匹配："
 
 msgid ". The UTC times will be compared."
-msgstr ""
+msgstr "。将采用 UTC 时间进行比较。"
 
 msgid "trying to use integer64 class when 'bit64' package is not installed"
-msgstr ""
+msgstr "试图使用 intger64 类型但 'bit64' 包尚未安装"
 
 msgid ""
 "Not yet implemented NAbounds=TRUE for this non-numeric and non-character type"
 msgstr ""
+"对这种非数值（numeric）和非字符（character）的类型，尚未实现 NAbounds=TRUE 的功能"
 
 msgid "Some lower>upper for this non-numeric and non-character type"
-msgstr ""
+msgstr "对于该非数值（numeric）和非字符（character）类型的输入，存在一部分下界（lower）> 上界（upper）的情况"
 
 msgid "RHS has length()"
-msgstr ""
+msgstr "右手侧（RHS）的长度为"
 
 msgid "; expecting length 2."
-msgstr ""
+msgstr "；其长度应为 2。"
 
 msgid "c"
 msgstr ""
 
 msgid "Perhaps you meant %s?"
-msgstr ""
+msgstr "或许你想用的是 %s？"
 
 msgid "The first element should be the lower bound(s);"
-msgstr ""
+msgstr "第一个元素应为下界；"
 
 msgid "the second element should be the upper bound(s)."
-msgstr ""
+msgstr "第二个元素应为上界。"
 
 msgid "x."
 msgstr ""
 
 msgid "is type"
-msgstr ""
+msgstr "的类型为"
 
 msgid "which is not supported by data.table join"
-msgstr ""
+msgstr "，该类型无法用于 data.table 的联接"
 
 msgid "i."
 msgstr ""
 
 msgid "Attempting roll join on factor column when joining x."
-msgstr ""
+msgstr "试图滚动联接（roll join）因子类型（factor）的列，这发生于将 x."
 
 msgid "to i."
-msgstr ""
+msgstr "与 i."
 
 msgid ". Only integer, double or character columns may be roll joined."
-msgstr ""
+msgstr "联接时。但只有整数（integer）、双精度（double）或字符（character）类型的列可以使用滚动联接（roll join）。"
 
 msgid "Incompatible join types: x."
-msgstr ""
+msgstr "不兼容的联结类型： x。"
 
 msgid "("
-msgstr ""
+msgstr "（"
 
 msgid ") and i."
-msgstr ""
+msgstr "）和 i。"
 
 msgid "). Factor columns must join to factor or character columns."
-msgstr ""
+msgstr "）。 因子类型的列必须与因子类型或字符类型的列才可以联结"
 
 msgid ")"
-msgstr ""
+msgstr "）"
 
 msgid "Incompatible join types:"
-msgstr ""
+msgstr "不兼容的联结类型"
 
 msgid "is type integer64 but"
-msgstr ""
+msgstr "是 integer64 类型但是"
 
 msgid "is type double and contains fractions"
-msgstr ""
+msgstr "是 double 类型并且包含分数"
 
 msgid "roll is not implemented for non-equi joins yet."
-msgstr ""
+msgstr "不等长联结还不能执行 roll "
 
 msgid "Column name '_nqgrp_' is reserved for non-equi joins."
-msgstr ""
+msgstr "列名 '_nqgrp_' 是为不等长联结保留的"
 
 msgid "key argument of data.table() must be character"
-msgstr ""
+msgstr "data.table() 的主参数必须是字符"
 
 msgid "Object '"
-msgstr ""
+msgstr "对象 '"
 
 msgid "' not found. Perhaps you intended"
-msgstr ""
+msgstr "' 不存在， 可能你打算"
 
 msgid ","
-msgstr ""
+msgstr ","
 
 msgid "or"
-msgstr ""
+msgstr "或者"
 
 msgid "more"
-msgstr ""
+msgstr "更多"
 
 msgid "' not found amongst"
-msgstr ""
+msgstr "' 不存在"
 
 msgid "and"
-msgstr ""
+msgstr "并且"
 
 msgid "Provide either by= or keyby= but not both"
-msgstr ""
+msgstr "提供 by= 或 keyby= ，但两者不能同时存在"
 
 msgid "Ignoring keyby= because j= is not supplied"
-msgstr ""
+msgstr "因为没有提供 j= ，所以忽略 keyby= "
 
 msgid "Ignoring by= because j= is not supplied"
-msgstr ""
+msgstr "因为没有提供 j= ，所以忽略 by= "
 
 msgid ""
 "When on= is provided but not i=, on= must be a named list or data.table|"
 "frame, and a natural join (i.e. join on common names) is invoked. Ignoring "
 "on= which is '"
 msgstr ""
+"当提供 on= 而不提供 i= 的时候， on= 必须是带名称的 list 或者 data.table 或者 data.frame，"
+"并且会调用自然联结（例如，按照共有名称联结），忽略 on= "
 
 msgid "'."
-msgstr ""
+msgstr "'。"
 
 msgid ""
 "i and j are both missing so ignoring the other arguments. This warning will "
 "be upgraded to error in future."
 msgstr ""
+"i 和 j 都缺少的时候忽略其他参数。将来此警告信息将升级为错误信息。"
 
 msgid "mult argument can only be 'first', 'last' or 'all'"
-msgstr ""
+msgstr "mult 参数只能赋值为 'first'， 'last' 或 'all'"
 
 msgid ""
 "roll must be a single TRUE, FALSE, positive/negative integer/double "
 "including +Inf and -Inf or 'nearest'"
 msgstr ""
+"roll 必须是单个参数，例如 TRUE， FALSE, 正或负的 integer 或 double"
+"包括 +Inf ， -Inf 或 'nearest'"
 
 msgid "roll is '"
-msgstr ""
+msgstr "roll 是"
 
 msgid "' (type character). Only valid character value is 'nearest'."
-msgstr ""
+msgstr "'(字符类型)。 唯一有效的字符值是'nearest'。"
 
 msgid "rollends must be a logical vector"
 msgstr ""
@@ -1447,7 +1460,7 @@ msgstr ""
 "一个有效的 YAML header 应该根据行匹配结尾."
 
 msgid "the regex \""
-msgstr "正则 \"" 
+msgstr "正则 \""
 
 msgid "\". Please double check the input file is a valid csvy."
 msgstr ""
