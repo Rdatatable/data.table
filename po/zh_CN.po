@@ -2,9 +2,9 @@ msgid ""
 msgstr ""
 "Project-Id-Version: data.table 1.12.5\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2019-11-05 09:55+0800\n"
-"PO-Revision-Date: 2019-11-02 17:06+08\n"
-"Last-Translator: Youhuang Bai <biobai@zju.edu.cn>\n"
+"POT-Creation-Date: 2019-10-21 16:15+0800\n"
+"PO-Revision-Date: 2019-10-26 23:54+08\n"
+"Last-Translator: Haogao Gu <koohoko@gmail.com>\n"
 "Language-Team: Mandarin\n"
 "Language: Mandarin\n"
 "MIME-Version: 1.0\n"
@@ -2665,12 +2665,15 @@ msgid ""
 "%s: NA (or other non-finite) value(s) are present in input, skip non-NA "
 "attempt and run with extra care for NAs\n"
 msgstr ""
+"%s: NA (或其他非有限长度值) 出现在输入中, 跳过非NA的"
+"输入并当心NA值\n"
 
 #: froll.c:141 froll.c:339
 #, c-format
 msgid ""
 "%s: running in parallel for input length %llu, window %d, hasna %d, narm %d\n"
 msgstr ""
+"%s: 正在并行运行, 输入长度 (input length) %llu, 窗口 (window) %d, hasna %d, narm %d\n"
 
 #: froll.c:179 froll.c:372 frolladaptive.c:157 frolladaptive.c:336
 #, c-format
@@ -2678,11 +2681,13 @@ msgid ""
 "%s: NA (or other non-finite) value(s) are present in input, na.rm was FALSE "
 "so in 'exact' implementation NAs were handled already, no need to re-run\n"
 msgstr ""
+"%s: NA (或其他非有限长度值) 出现在输入中, na.rm 为 FALSE "
+"因此在'exact'实现中, NA值已经被处理, 不需要重新运行\n"
 
 #: froll.c:428
 #, c-format
 msgid "%s: results from provided FUN are not length 1"
-msgstr ""
+msgstr "%s: 所提供的函数 (FUN) 的结果长度不为1"
 
 #: froll.c:435
 #, c-format
@@ -2690,80 +2695,87 @@ msgid ""
 "%s: results from provided FUN are not of type double, coercion from integer "
 "or logical will be applied on each iteration\n"
 msgstr ""
+"%s: 所提供的函数 (FUN) 的结果不是双精度 (double) 类型, "
+"对整数或逻辑值的类型转换会在每个循环中执行\n"
 
 #: froll.c:438
 #, c-format
 msgid "%s: results from provided FUN are not of type double"
-msgstr ""
+msgstr "%s: 所提供的函数 (FUN) 的结果不是双精度 (double) 类型"
 
 #: froll.c:467
 #, c-format
 msgid "%s: took %.3fs\n"
-msgstr ""
+msgstr "%s: 使用了 %.3fs\n"
 
 #: frollR.c:15
 msgid "x must be of type numeric or logical"
-msgstr ""
+msgstr "x 必须是数值或者逻辑类型"
 
 #: frollR.c:26
 msgid "x must be list, data.frame or data.table of numeric or logical types"
-msgstr ""
+msgstr "x 必须是列表 (list), 或由数值或者逻辑类型组成的数据框 (data.frame 或 data.table)"
 
 #: frollR.c:47 frollR.c:264
 msgid "n must be non 0 length"
-msgstr ""
+msgstr "n 必须不是0长度"
 
 #: frollR.c:50
 msgid "adaptive must be TRUE or FALSE"
-msgstr ""
+msgstr "adaptive 必须是 TRUE 或者 FALSE"
 
 #: frollR.c:58
 msgid "n must be integer, list is accepted for adaptive TRUE"
-msgstr ""
+msgstr "n 必须是整数, 或者当adaptive TRUE时也可以是列表"
 
 #: frollR.c:65 frollR.c:256 frollR.c:259
 msgid "n must be integer"
-msgstr ""
+msgstr "n 必须是整数"
 
 #: frollR.c:72
 msgid "n must be positive integer values (> 0)"
-msgstr ""
+msgstr "n 必须是正整数 (> 0)"
 
 #: frollR.c:81 frollR.c:93
 msgid "n must be integer vector or list of integer vectors"
-msgstr ""
+msgstr "n 必须是整数向量 或者由整数向量组成的列表"
 
 #: frollR.c:104 gsumm.c:342 gsumm.c:577 gsumm.c:686 gsumm.c:805 gsumm.c:950
 #: gsumm.c:1261 gsumm.c:1402 uniqlist.c:350
 msgid "na.rm must be TRUE or FALSE"
-msgstr ""
+msgstr "na.rm 必须是 TRUE 或者 FALSE"
 
 #: frollR.c:107
 msgid "hasNA must be TRUE, FALSE or NA"
-msgstr ""
+msgstr "hasNA 必须是 TRUE, FALSE 或者 NA"
 
 #: frollR.c:109
 msgid ""
 "using hasNA FALSE and na.rm TRUE does not make sense, if you know there are "
 "NA values use hasNA TRUE, otherwise leave it as default NA"
 msgstr ""
+"同时使用 hasNA FALSE 和 na.rm TRUE 没有意义, 如果明确有"
+"NA值, 那就用 hasNA TRUE, 在其他情况可以让它保留默认值NA"
 
 #: frollR.c:119 frollR.c:275
 msgid ""
 "Internal error: invalid align argument in rolling function, should have been "
 "caught before. please report to data.table issue tracker."
 msgstr ""
+"内部错误: 在 rolling 函数内无效的 align 参数, 理应在更早阶段排除"
+"请向data.table issue tracker报告"
 
 #: frollR.c:122
 msgid ""
 "using adaptive TRUE and align argument different than 'right' is not "
 "implemented"
 msgstr ""
+"同时使用 adaptive TRUE 和不是 'right' 的align参数还未能实现"
 
 #: frollR.c:126 frollR.c:297 types.c:64
 #, c-format
 msgid "%s: allocating memory for results %dx%d\n"
-msgstr ""
+msgstr "%s: 正在为结果 %dx%d 分配内存\n"
 
 #: frollR.c:135
 msgid ""
@@ -2772,44 +2784,52 @@ msgid ""
 "function on list having variable length of elements call it for each field "
 "separately"
 msgstr ""
+"adaptive rolling 函数只能处理长度同为"
+"的 'x', 比如 data.table 或数据框; 如果想在含有不同长度元素的列表上执行 rolling"
+"函数, 需要分开单独地在每一项上面执行."
 
 #: frollR.c:137
 msgid ""
 "length of integer vector(s) provided as list to 'n' argument must be equal "
 "to number of observations provided in 'x'"
 msgstr ""
+"'n' 列表中整数向量的长度必须等于 'x' 中的观察数量"
 
 #: frollR.c:151
 msgid ""
 "Internal error: invalid fun argument in rolling function, should have been "
 "caught before. please report to data.table issue tracker."
 msgstr ""
+"内部错误: 在 rolling 函数中无效的 fun 参数, 理应在更早阶段排除"
+"请向data.table issue tracker报告"
 
 #: frollR.c:155 frollR.c:279 nafill.c:136 shift.c:21
 msgid "fill must be a vector of length 1"
-msgstr ""
+msgstr "fill 必须是长度为1的向量"
 
 #: frollR.c:169 frollR.c:292
 msgid "fill must be numeric"
-msgstr ""
+msgstr "fill 必须是数值型"
 
 #: frollR.c:185
 msgid ""
 "Internal error: invalid algo argument in rolling function, should have been "
 "caught before. please report to data.table issue tracker."
 msgstr ""
+"内部错误: 在 rolling 函数内无效的 algo 参数, 理应在更早阶段排除"
+"请向data.table issue tracker报告"
 
 #: frollR.c:190
 #, c-format
 msgid "Internal error: badaptive=%d but ik is not integer"
-msgstr ""
+msgstr "内部错误: badaptive=%d 但是 ik 不是整数"
 
 #: frollR.c:198
 #, c-format
 msgid ""
 "%s: %d column(s) and %d window(s), if product > 1 then entering parallel "
 "execution\n"
-msgstr ""
+msgstr "%s: %d column(s) 和 %d window(s), 如果 product > 1 则进入并行执行\n"
 
 #: frollR.c:200
 #, c-format
@@ -2817,48 +2837,50 @@ msgid ""
 "%s: %d column(s) and %d window(s), not entering parallel execution here "
 "because algo='exact' will compute results in parallel\n"
 msgstr ""
+"%s: %d column(s) 和 %d window(s), 未能进入并行执行,"
+"因为 algo='exact' 会并行计算结果\n"
 
 #: frollR.c:219
 #, c-format
 msgid "Internal error: Unknown sfun value in froll: %d"
-msgstr ""
+msgstr "内部错误: 在 froll: %d 中未知的 sfun 值"
 
 #: frollR.c:227 frollR.c:328
 #, c-format
 msgid "%s: processing of %d column(s) and %d window(s) took %.3fs\n"
-msgstr ""
+msgstr "%s: 处理 %d column(s), 和 %d window(s) 用掉 %.3fs\n"
 
 #: frollR.c:238
 msgid "internal error: 'fun' must be a function"
-msgstr ""
+msgstr "内部错误: 'fun' 必须是一个函数"
 
 #: frollR.c:240
 msgid "internal error: 'rho' should be an environment"
-msgstr ""
+msgstr "内部错误: 'rho' 应该为一个环境 (environment)"
 
 #: frolladaptive.c:33 frolladaptive.c:222
 #, c-format
 msgid "%s: running for input length %llu, hasna %d, narm %d\n"
-msgstr ""
+msgstr "%s: 正在运行, 输入长度 %llu, hasna %d, narm %d\n"
 
 #: frolladaptive.c:39 frolladaptive.c:228
 #, c-format
 msgid "%s: Unable to allocate memory for cumsum"
-msgstr ""
+msgstr "%s: 无法为 cumsum 分配内存"
 
 #: frolladaptive.c:75 frolladaptive.c:264
 #, c-format
 msgid "%s: Unable to allocate memory for cum NA counter"
-msgstr ""
+msgstr "%s: 无法为 cum NA counter 分配内存"
 
 #: frolladaptive.c:118 frolladaptive.c:302
 #, c-format
 msgid "%s: running in parallel for input length %llu, hasna %d, narm %d\n"
-msgstr ""
+msgstr "%s: 正在并行运行, 输入长度 %llu, hasna %d, narm %d\n"
 
 #: fsort.c:111
 msgid "x must be a vector of type 'double' currently"
-msgstr ""
+msgstr "x 目前必须是双精度 ('double') 类型的向量"
 
 #: fsort.c:122
 #, c-format
