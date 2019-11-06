@@ -3109,7 +3109,7 @@ msgstr "内部错误：nrow=%d ngrp=%d  nbit=%d  shift=%d  highSize=%d  nBatch=%
 #: gsumm.c:98
 #, c-format
 msgid "gforce initial population of grp took %.3f\n"
-msgstr "grp 的 gforce 初始群体数占了 %.3f\n "
+msgstr "grp 的 gforce 初始群体数占了 %.3f\n"
 
 #: gsumm.c:116
 msgid ""
