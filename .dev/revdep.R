@@ -62,11 +62,11 @@ for (p in deps) {
 }
 cat("New downloaded:",new," Already had latest:", old, " TOTAL:", length(deps), "\n")
 update.packages(repos=BiocManager::repositories(), checkBuilt=TRUE)  # double-check all dependencies are latest too
+cat("This is R ",R.version$major,".",R.version$minor,"; ",R.version.string,"\n",sep="")
 cat("Installed packages built using:\n")
-table(installed.packages()[,"Built"])  # ensure all built with this major release of R; e.g. none should have been built with R-devel
+drop(table(installed.packages()[,"Built"]))  # ensure all built with this major release of R
 
 # Remove the tar.gz no longer needed :
-system("ls *.tar.gz | wc -l")
 for (p in deps) {
   f = paste0(p, "_", avail[p,"Version"], ".tar.gz")  # keep this one
   all = system(paste0("ls ",p,"_*.tar.gz"), intern=TRUE)
