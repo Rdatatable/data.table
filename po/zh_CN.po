@@ -1011,7 +1011,7 @@ msgid ""
 "RHS length must either be 1 (single values are ok) or match the LHS length "
 "exactly. If you wish to 'recycle' the RHS please use rep() explicitly to "
 "make this intent clear to readers of your code."
-msgstr "提供 %d 个项分配给第 '%s' 列中的第 %d 组，组的大小为 %d "
+msgstr "提供 %1$d 个项分配给第 '%4$s' 列中的第 %2$d 组，组的大小为 %3$d "
 "RHS 的长度必须是 1(可以是单个值) 或完全符合 LHS 的长度"
 "如果您想回收(recycle) RHS，请使用 rep() 向你的代码读者明确表达你的意图"
 
@@ -1027,7 +1027,7 @@ msgstr "内部错误 : 尝试依照引用增加新列但 tl 已满"
 #: dogroups.c:320
 #, c-format
 msgid "Group %d column '%s': %s"
-msgstr "列 '%s' 第 %d 组 : %s"
+msgstr "列 '%2$s' 第 %1$d 组 : %3$s"
 
 #: dogroups.c:327
 msgid "j doesn't evaluate to the same number of columns for each group"
