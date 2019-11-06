@@ -976,7 +976,7 @@ msgid ""
 "trying something like j=list(.SD,newcol=mean(colA)) then use := by group "
 "instead (much quicker), or cbind or merge afterwards."
 msgstr "j=list(...) 中的所有项目必须是原子向量或列表"
-"如果您试图进行 j=list(.SD,newcol=mean(colA)) 之类的的操作"
+"如果您试图进行 j=list(.SD,newcol=mean(colA)) 之类的操作"
 "请使用 := by group 代替(更快速)，或事后使用 cbind()、merge()"
 
 #: dogroups.c:290
@@ -1095,7 +1095,7 @@ msgid ""
 "length must either be 1 (single values are ok) or match the LHS length "
 "exactly. If you wish to 'recycle' the RHS please use rep() explicitly to "
 "make this intent clear to readers of your code."
-msgstr "提供 %d 项给第 %d 列的第 %d 组，这组有 %d 行"
+msgstr "提供 %1$d 项给第 %3$d 組的第 %2$d 列，这组有 %4$d 行"
 "RHS長度必須為 1 (可以使用單個值) 或與 LHS 長度完全匹配"
 "如果您想回收(recycle) RHS，请使用 rep() 向你的代码读者明确表达你的意图"
 
@@ -1115,7 +1115,7 @@ msgid ""
 "\n"
 "  %s took %.3fs for %d groups\n"
 msgstr "\n"
-" %s 花了 %s.3fs 在 %d 个组\n"
+" %s 花了 %.3fs 在 %d 个组\n"
 
 #: dogroups.c:458
 #, c-format

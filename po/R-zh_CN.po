@@ -514,13 +514,13 @@ msgid ".SDcols is numeric but out of bounds [1,"
 msgstr ".SDcols 为数值但超出了 [1,"
 
 msgid "] at:"
-msgstr "] 的范围"
+msgstr "] 的范围:"
 
 msgid ".SDcols should be column numbers or names"
 msgstr ".SDcols 应为列数或是列名"
 
 msgid "Some items of .SDcols are not column names:"
-msgstr ".SDcols 中的部份项目不是列名"
+msgstr ".SDcols 中的部份项目不是列名:"
 
 msgid ""
 "This j doesn't use .SD but .SDcols has been supplied. Ignoring .SDcols. See ?"
@@ -552,7 +552,7 @@ msgstr ":= 的 LHS 是列的位置但超出了 [1,ncol] 的范围"
 msgid ""
 "LHS of := isn't column names ('character') or positions ('integer' or "
 "'numeric')"
-msgstr ":= 的 LHS 不是列名('字符')或列的位置('整数'或'数值)"
+msgstr ":= 的 LHS 不是列名('字符')或列的位置('整数'或'数值')"
 
 msgid ""
 "Invalid .internal.selfref detected and fixed by taking a (shallow) copy of "
@@ -579,10 +579,10 @@ msgstr ""
 "-- L[[i]][,:=] 语法只有在 i 长度为1时有效，但它的長度"
 
 msgid "Internal error -- item '"
-msgstr "内部错误 -- 项目"
+msgstr "内部错误 -- 项目 '"
 
 msgid "' not found in names of list"
-msgstr "未能在名称列表中找到"
+msgstr "' 未能在名称列表中找到"
 
 msgid "Internal error -- column(s) not found:"
 msgstr "内部错误 -- 找不到此列:"
@@ -601,7 +601,7 @@ msgid ""
 "' is not found in calling scope. Looking in calling scope because this "
 "symbol was prefixed with .. in the j= parameter."
 msgstr ""
-"未能在 calling scope 中找到，请查看 calling scope"
+"' 未能在调用范围 (calling scope) 中找到，请查看调用范围"
 "因为  j= 的参数以 .. 作为前缀"
 
 msgid "Internal error: xcolAns does not pass checks:"
@@ -614,15 +614,15 @@ msgstr "内部错误 : 在 R 生成连接结果时，irows为 NULL "
 "我们已使用了 CsubsetDT，现在不应该再发生了"
 
 msgid "j (the 2nd argument inside [...]) is a single symbol but column name '"
-msgstr "j ( [...] 中的第二顺位参数) 是单个符号而非列名"
+msgstr "j ( [...] 中的第二顺位参数) 是单个符号而列名 '"
 
 msgid "' is not found. Perhaps you intended DT[, .."
-msgstr "未被找到，也许你打算 DT[, .."
+msgstr "' 未被找到，也许你打算 DT[, .."
 
 msgid ""
 "]. This difference to data.frame is deliberate and explained in FAQ 1.1."
 msgstr ""
-"] ，在常见问题 1.1 中有解释dat.table与data.frame的差别"
+"] ，在FAQ 1.1 中有解释dat.table与data.frame的差别"
 
 msgid ""
 "Internal error: j has created a data.table result containing a NULL column"
@@ -637,7 +637,7 @@ msgstr "无法对 '.N' 列进行分组，因为与 data.table 特有的 .N 变�
 msgid ""
 "The column '.I' can't be grouped because it conflicts with the special .I "
 "variable. Try setnames(DT,'.I','I') first."
-msgstr "无法对 '.l' 列进行分组，因为与 data.table 特有的 .l 变量冲突"
+msgstr "无法对 '.I' 列进行分组，因为与 data.table 特有的 .I 变量冲突"
 "请先尝试 setnames(DT,'.I','I')"
 
 msgid "logical error. i is not data.table, but mult='all' and 'by'=.EACHI"
