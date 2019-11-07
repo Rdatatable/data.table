@@ -43,7 +43,7 @@ grep "pragma omp parallel" ./src/*.c | grep -v getDTthreads
 grep "[.]Call(\"" ./R/*.R
 
 # Make sure all \dots calls in the manual are parsed as ...
-Rscript -e "setwd('man'); which(sapply(list.files('.'), function(rd) any(rapply(tools::parse_Rd(rd), grepl, pattern='dots', fixed=TRUE), deflt=FALSE)))"
+Rscript -e "setwd('man'); unlist(sapply(list.files('.'), function(rd) rapply(tools::parse_Rd(rd), grep, pattern='dots', value=TRUE)))"
 
 # Ensure no Rprintf in init.c
 grep "Rprintf" ./src/init.c
