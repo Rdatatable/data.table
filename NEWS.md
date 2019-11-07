@@ -2,7 +2,18 @@
 
 **Benchmarks are regularly updated: [here](https://h2oai.github.io/db-benchmark/)**
 
-# data.table [v1.12.5](https://github.com/Rdatatable/data.table/milestone/18?closed=1)  (in development)
+# data.table [v1.12.7](https://github.com/Rdatatable/data.table/milestone/15)  (in development)
+
+## NEW FEATURES
+
+## BUG FIXES
+
+## NOTES
+
+1. Links in the manual were creating warnings when installing HTML, [#4000](https://github.com/Rdatatable/data.table/issues/4000). Thanks to Morgan Jacob.
+
+
+# data.table [v1.12.6](https://github.com/Rdatatable/data.table/milestone/18?closed=1)  (18 Oct 2019)
 
 ## BUG FIXES
 
