@@ -6,7 +6,7 @@
 
 ## NEW FEATURES
 
-1. Auto-naming in `j` now handles more complicated expressions (e.g. in `{` or `if`), [#2478](https://github.com/Rdatatable/data.table/issues/2478). For example, both `DT[ , .(x, y)]` and `DT[ , {x = 4+x; y=4+y; .(x, y)}]` now return columns named `x` and `y`.
+1. `DT[, {...; .(A,B)}]` (when `.()` is the final item of a multi-statement `{...}`) now auto-names the columns `A` and `B` (just like `DT[, .(A,B)]`) rather than `V1` and `V2`, [#2478](https://github.com/Rdatatable/data.table/issues/2478) [#609](https://github.com/Rdatatable/data.table/issues/609). Similarly, `DT[, if (.N>1) .(B), by=A]` now auto-names the column `B` rather than `V1`. Explicit names are unaffected; e.g. `DT[, {... y= ...; .(A=C+y)}, by=...]` named the result column `A` before, and still does.
 
 ## BUG FIXES
 
