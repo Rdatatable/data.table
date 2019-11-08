@@ -338,6 +338,7 @@ replace_dot_alias = function(e) {
     }
 
     if (is.null(isub)) return( null.data.table() )
+
     if (length(o <- .prepareFastSubset(isub = isub, x = x,
                                               enclos =  parent.frame(),
                                               notjoin = notjoin, verbose = verbose))){
@@ -1309,19 +1310,8 @@ replace_dot_alias = function(e) {
           ))
         jval = lapply(jval, `[`, 0L)
       if (is.atomic(jval)) {
-        setattr(jval,"names",NULL) # discard names of named vectors otherwise each cell in the column would have a name
+        setattr(jval,"names",NULL)  # discard names of named vectors otherwise each cell in the column would have a name
         jval = list(jval)
-      } else {
-        if (is.null(jvnames)) jvnames=names(jval)
-        lenjval = vapply_1i(jval, length)
-        nulljval = vapply_1b(jval, is.null)
-        if (lenjval[1L]==0L || any(lenjval != lenjval[1L])) {
-          jval = as.data.table.list(jval)   # does the vector expansion to create equal length vectors, and drops any NULL items
-          jvnames = jvnames[!nulljval] # fix for #1477
-        } else {
-          # all columns same length and at least 1 row; avoid copy. TODO: remove when as.data.table.list is ported to C
-          # setDT(jval)
-        }
       }
       if (!is.null(jvnames) && !all(jvnames=="")) setattr(jval, 'names', jvnames)  # e.g. jvnames=="N" for DT[,.N,]
       jval = as.data.table.list(jval, .named=NULL)
