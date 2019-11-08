@@ -1,4 +1,5 @@
-as.data.table = function(x, keep.rownames=FALSE, key=NULL, ...)
+as.data.table = function(x, keep.rownames=FALSE, ...)
+# cannot add new args before dots otherwise revdeps which implement their methods will start to warn; e.g. riskRegression in #3581
 {
   if (is.null(x))
     return(null.data.table())
@@ -115,11 +116,19 @@ as.data.table.array = function(x, keep.rownames=FALSE, key=NULL, sorted=TRUE, va
   ans[]
 }
 
-as.data.table.list = function(x, keep.rownames=FALSE, key=NULL, check.names=FALSE, ...) {
+as.data.table.list = function(x,
+  keep.rownames=FALSE,
+  key=NULL,
+  check.names=FALSE,
+  .named=NULL,  # (internal) whether the argument was named in the data.table() or cbind() call calling this as.data.table.list()
+                # e.g. cbind(foo=DF1, bar=DF2) have .named=c(TRUE,TRUE) due to the foo= and bar= and trigger "prefix." for non-vector items
+  ...)
+{
   n = length(x)
   eachnrow = integer(n)          # vector of lengths of each column. may not be equal if silent repetition is required.
   eachncol = integer(n)
   missing.check.names = missing(check.names)
+  origListNames = if (missing(.named)) names(x) else NULL  # as.data.table called directly, not from inside data.table() which provides .named, #3854
   for (i in seq_len(n)) {
     xi = x[[i]]
     if (is.null(xi)) next    # eachncol already initialized to 0 by integer() above
@@ -152,29 +161,30 @@ as.data.table.list = function(x, keep.rownames=FALSE, key=NULL, check.names=FALS
       # TODO: port this as.data.table.list() to C and use MAYBE_REFERENCED(x) || ALTREP(x) to save some copies.
       #       That saving used to be done by CcopyNamedInList but the copies happened again as well, so removing CcopyNamedInList is
       #       not worse than before, and gets us in a better centralized place to port as.data.table.list to C and use MAYBE_REFERENCED
-      #       again in future.
+      #       again in future, for #617.
     }
     if (identical(x,list())) vector("list", nrow) else rep(x, length.out=nrow)   # new objects don't need copy
   }
   vnames = character(ncol)
   k = 1L
+  n_null = 0L
   for(i in seq_len(n)) {
     xi = x[[i]]
-    if (is.null(xi)) next
+    if (is.null(xi)) { n_null = n_null+1L; next }
     if (eachnrow[i]>1L && nrow%%eachnrow[i]!=0L)   # in future: eachnrow[i]!=nrow
       warning("Item ", i, " has ", eachnrow[i], " rows but longest item has ", nrow, "; recycled with remainder.")
     if (eachnrow[i]==0L && nrow>0L && is.atomic(xi))   # is.atomic to ignore list() since list() is a common way to initialize; let's not insist on list(NULL)
       warning("Item ", i, " has 0 rows but longest item has ", nrow, "; filled with NA")  # the rep() in recycle() above creates the NA vector
     if (is.data.table(xi)) {   # matrix and data.frame were coerced to data.table above
-      # vnames[[i]] = names(xi)  #if (nm!="" && n>1L) paste(nm, names(xi), sep=".") else names(xi)
+      prefix = if (!isFALSE(.named[i]) && isTRUE(nchar(names(x)[i])>0L)) paste0(names(x)[i],".") else ""  # test 2058.12
       for (j in seq_along(xi)) {
         ans[[k]] = recycle(xi[[j]], nrow)
-        vnames[k] = names(xi)[j]
+        vnames[k] = paste0(prefix, names(xi)[j])
         k = k+1L
       }
     } else {
       nm = names(x)[i]
-      vnames[k] = if (length(nm) && !is.na(nm) && nm!="") nm else paste0("V",i)
+      vnames[k] = if (length(nm) && !is.na(nm) && nm!="") nm else paste0("V",i-n_null)  # i (not k) tested by 2058.14 to be the same as the past for now
       ans[[k]] = recycle(xi, nrow)
       k = k+1L
     }
@@ -183,6 +193,7 @@ as.data.table.list = function(x, keep.rownames=FALSE, key=NULL, check.names=FALS
   if (check.names) vnames = make.names(vnames, unique=TRUE)
   setattr(ans, "names", vnames)
   setDT(ans, key=key) # copy ensured above; also, setDT handles naming
+  if (length(origListNames)==length(ans)) setattr(ans, "names", origListNames)  # PR 3854 and tests 2058.15-17
   ans
 }
 
@@ -206,7 +217,7 @@ as.data.table.data.frame = function(x, keep.rownames=FALSE, key=NULL, ...) {
       setnames(ans, 'rn', keep.rownames[1L])
     return(ans)
   }
-  if (any(!sapply(x,is.atomic))) {
+  if (any(vapply_1i(x, function(xi) length(dim(xi))))) { # not is.atomic because is.atomic(matrix) is true
     # a data.frame with a column that is data.frame needs to be expanded; test 2013.4
     return(as.data.table.list(x, keep.rownames=keep.rownames, ...))
   }
@@ -227,6 +238,9 @@ as.data.table.data.frame = function(x, keep.rownames=FALSE, key=NULL, ...) {
 
 as.data.table.data.table = function(x, ...) {
   # as.data.table always returns a copy, automatically takes care of #473
+  if (any(vapply_1i(x, function(xi) length(dim(xi))))) { # for test 2089.2
+    return(as.data.table.list(x, ...))
+  }
   x = copy(x) # #1681
   # fix for #1078 and #1128, see .resetclass() for explanation.
   setattr(x, 'class', .resetclass(x, "data.table"))

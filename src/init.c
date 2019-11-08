@@ -25,7 +25,6 @@ SEXP reorder();
 SEXP rbindlist();
 SEXP vecseq();
 SEXP setlistelt();
-SEXP setmutable();
 SEXP address();
 SEXP expandAltRep();
 SEXP fmelt();
@@ -40,7 +39,6 @@ SEXP gmean();
 SEXP gmin();
 SEXP gmax();
 SEXP isOrderedSubset();
-SEXP pointWrapper();
 SEXP setNumericRounding();
 SEXP getNumericRounding();
 SEXP binary();
@@ -86,6 +84,7 @@ SEXP cj();
 SEXP lock();
 SEXP unlock();
 SEXP islockedR();
+SEXP allNAR();
 
 // .Externals
 SEXP fastmean();
@@ -112,7 +111,6 @@ R_CallMethodDef callMethods[] = {
 {"Crbindlist", (DL_FUNC) &rbindlist, -1},
 {"Cvecseq", (DL_FUNC) &vecseq, -1},
 {"Csetlistelt", (DL_FUNC) &setlistelt, -1},
-{"Csetmutable", (DL_FUNC) &setmutable, -1},
 {"Caddress", (DL_FUNC) &address, -1},
 {"CexpandAltRep", (DL_FUNC) &expandAltRep, -1},
 {"Cfmelt", (DL_FUNC) &fmelt, -1},
@@ -127,7 +125,6 @@ R_CallMethodDef callMethods[] = {
 {"Cgmin", (DL_FUNC) &gmin, -1},
 {"Cgmax", (DL_FUNC) &gmax, -1},
 {"CisOrderedSubset", (DL_FUNC) &isOrderedSubset, -1},
-{"CpointWrapper", (DL_FUNC) &pointWrapper, -1},
 {"CsetNumericRounding", (DL_FUNC) &setNumericRounding, -1},
 {"CgetNumericRounding", (DL_FUNC) &getNumericRounding, -1},
 {"Cbinary", (DL_FUNC) &binary, -1},
@@ -176,6 +173,9 @@ R_CallMethodDef callMethods[] = {
 {"C_lock", (DL_FUNC) &lock, -1},  // _ for these 3 to avoid Clock as in time
 {"C_unlock", (DL_FUNC) &unlock, -1},
 {"C_islocked", (DL_FUNC) &islockedR, -1},
+{"CfrollapplyR", (DL_FUNC) &frollapplyR, -1},
+{"CtestMsgR", (DL_FUNC) &testMsgR, -1},
+{"C_allNAR", (DL_FUNC) &allNAR, -1},
 {NULL, NULL, 0}
 };
 
@@ -363,6 +363,6 @@ SEXP initLastUpdated(SEXP var) {
 
 SEXP dllVersion() {
   // .onLoad calls this and checks the same as packageVersion() to ensure no R/C version mismatch, #3056
-  return(ScalarString(mkChar("1.12.3")));
+  return(ScalarString(mkChar("1.12.7")));
 }
 

@@ -1,0 +1,54 @@
+#!/bin/sh
+# Let's keep this simple. If pkg-config is available, use it. Otherwise print
+# the helpful message to aid user if compilation does fail. Note 25 of R-exts:
+# "[pkg-config] is available on the machines used to produce the CRAN binary packages"
+# This script should pass `checkbashisms` for portability; e.g. CRAN's Solaris 10,
+# and R-exts note 24 now suggests 'checkbashisms' as we proposed.
+
+msg=0
+pkg-config --version >/dev/null 2>&1
+if [ $? -ne 0 ]; then
+  echo "*** pkg-config is not installed."
+  msg=1
+else
+  pkg-config --exists zlib
+  if [ $? -ne 0 ]; then
+    echo "*** pkg-config is installed but 'pkg-config --exists zlib' did not return 0."
+    msg=1
+  else
+    lib=`pkg-config --libs zlib`
+    expr "$lib" : ".*-lz$" >/dev/null
+    if [ $? -ne 0 ]; then
+      expr "$lib" : ".*-lz " >/dev/null
+      # would use \b in one expr but MacOS does not support \b
+      if [ $? -ne 0 ]; then
+        echo "*** pkg-config is installed and 'pkg-config --exists zlib' succeeds but"
+        echo "*** 'pkg-config --libs zlib' returns '${lib}' which does not include the standard -lz."
+        msg=1
+      fi
+    fi
+  fi
+fi
+
+if [ $msg -ne 0 ]; then
+  echo "*** Compilation will now be attempted and if it works you can ignore this message. However,"
+  echo "*** if compilation fails, try 'locate zlib.h zconf.h' and ensure the zlib development library"
+  echo "*** is installed :"
+  echo "***   deb: zlib1g-dev (Debian, Ubuntu, ...)"
+  echo "***   rpm: zlib-devel (Fedora, EPEL, ...)"
+  echo "***   brew: zlib (OSX)"
+  echo "*** Note that zlib is required to compile R itself so you may find the advice in the R-admin"
+  echo "*** guide helpful regarding zlib. On Debian/Ubuntu, zlib1g-dev is a dependency of r-base as"
+  echo "*** shown by 'apt-cache showsrc r-base | grep ^Build-Depends | grep zlib', and therefore"
+  echo "*** 'sudo apt-get build-dep r-base' should be sufficient too."
+  echo "*** To silence this message, please ensure that :"
+  echo "***   1) 'pkg-config --exists zlib' succeeds (i.e. \$? -eq 0)"
+  echo "***   2) 'pkg-config --libs zlib' contains -lz"
+  echo "*** Compilation will now be attempted ..."
+  exit 0
+fi
+
+version=`pkg-config --modversion zlib`
+echo "zlib ${version} is available ok"
+exit 0
+

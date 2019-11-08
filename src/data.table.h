@@ -117,7 +117,6 @@ SEXP setcolorder(SEXP x, SEXP o);
 int StrCmp(SEXP x, SEXP y);
 uint64_t dtwiddle(void *p, int i);
 SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP naArg);
-bool need2utf8(SEXP x, int n);
 int getNumericRounding_C();
 
 // reorder.c
@@ -153,7 +152,7 @@ SEXP dt_na(SEXP x, SEXP cols);
 
 // assign.c
 SEXP alloccol(SEXP dt, R_len_t n, Rboolean verbose);
-const char *memrecycle(SEXP target, SEXP where, int r, int len, SEXP source);
+const char *memrecycle(SEXP target, SEXP where, int r, int len, SEXP source, int coln, const char *colname);
 SEXP shallowwrapper(SEXP dt, SEXP cols);
 
 SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols,
@@ -180,23 +179,25 @@ int getDTthreads();
 void avoid_openmp_hang_within_fork();
 
 // froll.c
-void frollmean(unsigned int algo, double *x, uint_fast64_t nx, ans_t *ans, int k, int align, double fill, bool narm, int hasna, bool verbose);
-void frollmeanFast(double *x, uint_fast64_t nx, ans_t *ans, int k, double fill, bool narm, int hasna, bool verbose);
-void frollmeanExact(double *x, uint_fast64_t nx, ans_t *ans, int k, double fill, bool narm, int hasna, bool verbose);
-void frollsum(unsigned int algo, double *x, uint_fast64_t nx, ans_t *ans, int k, int align, double fill, bool narm, int hasna, bool verbose);
-void frollsumFast(double *x, uint_fast64_t nx, ans_t *ans, int k, double fill, bool narm, int hasna, bool verbose);
-void frollsumExact(double *x, uint_fast64_t nx, ans_t *ans, int k, double fill, bool narm, int hasna, bool verbose);
+void frollmean(unsigned int algo, double *x, uint64_t nx, ans_t *ans, int k, int align, double fill, bool narm, int hasna, bool verbose);
+void frollmeanFast(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasna, bool verbose);
+void frollmeanExact(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasna, bool verbose);
+void frollsum(unsigned int algo, double *x, uint64_t nx, ans_t *ans, int k, int align, double fill, bool narm, int hasna, bool verbose);
+void frollsumFast(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasna, bool verbose);
+void frollsumExact(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasna, bool verbose);
+void frollapply(double *x, int64_t nx, double *w, int k, ans_t *ans, int align, double fill, SEXP call, SEXP rho, bool verbose);
 
 // frolladaptive.c
-void fadaptiverollmean(unsigned int algo, double *x, uint_fast64_t nx, ans_t *ans, int *k, double fill, bool narm, int hasna, bool verbose);
-void fadaptiverollmeanFast(double *x, uint_fast64_t nx, ans_t *ans, int *k, double fill, bool narm, int hasna, bool verbose);
-void fadaptiverollmeanExact(double *x, uint_fast64_t nx, ans_t *ans, int *k, double fill, bool narm, int hasna, bool verbose);
-void fadaptiverollsum(unsigned int algo, double *x, uint_fast64_t nx, ans_t *ans, int *k, double fill, bool narm, int hasna, bool verbose);
-void fadaptiverollsumFast(double *x, uint_fast64_t nx, ans_t *ans, int *k, double fill, bool narm, int hasna, bool verbose);
-void fadaptiverollsumExact(double *x, uint_fast64_t nx, ans_t *ans, int *k, double fill, bool narm, int hasna, bool verbose);
+void fadaptiverollmean(unsigned int algo, double *x, uint64_t nx, ans_t *ans, int *k, double fill, bool narm, int hasna, bool verbose);
+void fadaptiverollmeanFast(double *x, uint64_t nx, ans_t *ans, int *k, double fill, bool narm, int hasna, bool verbose);
+void fadaptiverollmeanExact(double *x, uint64_t nx, ans_t *ans, int *k, double fill, bool narm, int hasna, bool verbose);
+void fadaptiverollsum(unsigned int algo, double *x, uint64_t nx, ans_t *ans, int *k, double fill, bool narm, int hasna, bool verbose);
+void fadaptiverollsumFast(double *x, uint64_t nx, ans_t *ans, int *k, double fill, bool narm, int hasna, bool verbose);
+void fadaptiverollsumExact(double *x, uint64_t nx, ans_t *ans, int *k, double fill, bool narm, int hasna, bool verbose);
 
 // frollR.c
-SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEXP narm, SEXP hasNA, SEXP adaptive, SEXP verbose);
+SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEXP narm, SEXP hasNA, SEXP adaptive);
+SEXP frollapplyR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP align, SEXP rho);
 
 // nafill.c
 void nafillDouble(double *x, uint_fast64_t nx, unsigned int type, double fill, ans_t *ans, bool verbose);
@@ -204,7 +205,7 @@ void nafillInteger(int32_t *x, uint_fast64_t nx, unsigned int type, int32_t fill
 SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP inplace, SEXP cols, SEXP verbose);
 
 // between.c
-SEXP between(SEXP x, SEXP lower, SEXP upper, SEXP incbounds, SEXP NAbounds);
+SEXP between(SEXP x, SEXP lower, SEXP upper, SEXP incbounds, SEXP NAbounds, SEXP check);
 
 // coalesce.c
 SEXP coalesce(SEXP x, SEXP inplace);
@@ -212,14 +213,22 @@ SEXP coalesce(SEXP x, SEXP inplace);
 // utils.c
 bool isRealReallyInt(SEXP x);
 SEXP isReallyReal(SEXP x);
+bool allNA(SEXP x, bool errorForBadType);
 SEXP colnamesInt(SEXP x, SEXP cols, SEXP check_dups);
 void coerceFill(SEXP fill, double *dfill, int32_t *ifill, int64_t *i64fill);
 SEXP coerceFillR(SEXP fill);
 bool INHERITS(SEXP x, SEXP char_);
 bool Rinherits(SEXP x, SEXP char_);
+SEXP copyAsPlain(SEXP x);
 void copySharedColumns(SEXP x);
 SEXP lock(SEXP x);
 SEXP unlock(SEXP x);
 bool islocked(SEXP x);
 SEXP islockedR(SEXP x);
+bool need2utf8(SEXP x);
+SEXP coerceUtf8IfNeeded(SEXP x);
 
+// types.c
+char *end(char *start);
+void ansMsg(ans_t *ans, int n, bool verbose, const char *func);
+SEXP testMsgR(SEXP status, SEXP x, SEXP k);

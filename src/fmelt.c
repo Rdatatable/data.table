@@ -127,8 +127,7 @@ static SEXP unlist_(SEXP xint) {
 SEXP checkVars(SEXP DT, SEXP id, SEXP measure, Rboolean verbose) {
   int i, ncol=LENGTH(DT), targetcols=0, protecti=0, u=0, v=0;
   SEXP thiscol, idcols = R_NilValue, valuecols = R_NilValue, tmp, tmp2, booltmp, unqtmp, ans;
-  SEXP dtnames = PROTECT(getAttrib(DT, R_NamesSymbol));  // PROTECT for rchk
-  protecti++;
+  SEXP dtnames = PROTECT(getAttrib(DT, R_NamesSymbol)); protecti++;
 
   if (isNull(id) && isNull(measure)) {
     for (i=0; i<ncol; i++) {
@@ -508,8 +507,8 @@ SEXP getvaluecols(SEXP DT, SEXP dtnames, Rboolean valfactor, Rboolean verbose, s
 SEXP getvarcols(SEXP DT, SEXP dtnames, Rboolean varfactor, Rboolean verbose, struct processData *data) {
   // reworked in PR#3455 to create character/factor directly for efficiency, and handle duplicates (#1754)
   // data->nrow * data->lmax == data->totlen
-  SEXP ansvars=PROTECT(allocVector(VECSXP, 1));
-  int protecti=1;
+  int protecti=0;
+  SEXP ansvars=PROTECT(allocVector(VECSXP, 1)); protecti++;
   SEXP target;
   if (data->lvalues==1 && length(VECTOR_ELT(data->valuecols, 0)) != data->lmax)
     error("Internal error: fmelt.c:getvarcols %d %d", length(VECTOR_ELT(data->valuecols, 0)), data->lmax);  // # nocov
@@ -683,8 +682,8 @@ SEXP fmelt(SEXP DT, SEXP id, SEXP measure, SEXP varfactor, SEXP valfactor, SEXP 
     if (verbose) Rprintf("ncol(data) is 0. Nothing to melt. Returning original data.table.");
     return(DT);
   }
-  dtnames = PROTECT(getAttrib(DT, R_NamesSymbol));
-  int protecti=1;
+  int protecti=0;
+  dtnames = PROTECT(getAttrib(DT, R_NamesSymbol)); protecti++;
   if (isNull(dtnames)) error("names(data) is NULL. Please report to data.table-help");
   if (LOGICAL(narmArg)[0] == TRUE) narm = TRUE;
   if (LOGICAL(verboseArg)[0] == TRUE) verbose = TRUE;
@@ -693,8 +692,8 @@ SEXP fmelt(SEXP DT, SEXP id, SEXP measure, SEXP varfactor, SEXP valfactor, SEXP 
   preprocess(DT, id, measure, varnames, valnames, narm, verbose, &data);
   // edge case no measure.vars
   if (!data.lmax) {
-    ans = shallowwrapper(DT, data.idcols);
-    ans = PROTECT(duplicate(ans)); protecti++;
+    SEXP tt = PROTECT(shallowwrapper(DT, data.idcols)); protecti++;
+    ans = PROTECT(copyAsPlain(tt)); protecti++;
   } else {
     ansvals = PROTECT(getvaluecols(DT, dtnames, LOGICAL(valfactor)[0], verbose, &data)); protecti++;
     ansvars = PROTECT(getvarcols(DT, dtnames, LOGICAL(varfactor)[0], verbose, &data)); protecti++;

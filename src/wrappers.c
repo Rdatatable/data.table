@@ -64,14 +64,6 @@ SEXP setlistelt(SEXP l, SEXP i, SEXP value)
   return(R_NilValue);
 }
 
-SEXP setmutable(SEXP x)
-{
-  // called from one single place at R level. TODO: avoid somehow, but fails tests without
-  // At least the SET_NAMED() direct call is passed 0 and makes no assumptions about >0.  Good enough for now as patch for CRAN is needed.
-  SET_NAMED(x,0);
-  return(x);
-}
-
 SEXP address(SEXP x)
 {
   // A better way than : http://stackoverflow.com/a/10913296/403310
@@ -93,7 +85,7 @@ SEXP expandAltRep(SEXP x)
   for (int i=0; i<LENGTH(x); i++) {
     SEXP col = VECTOR_ELT(x,i);
     if (ALTREP(col)) {
-      SET_VECTOR_ELT(x, i, duplicate(col));
+      SET_VECTOR_ELT(x, i, copyAsPlain(col));
     }
   }
   return R_NilValue;

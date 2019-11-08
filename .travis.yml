@@ -13,7 +13,7 @@ r:
 
 os:
   - linux
-  # - osx  # Takes 13m (+9m linux = 22m total); #3357; #3326; #3331. Off by default to speed up dev cycle. AppVeyor covers R-devel and completes in 10m concurrently.
+  - osx  # Takes 13m (+9m linux = 22m total); #3357; #3326; #3331. Off by default to speed up dev cycle. AppVeyor covers R-devel and completes in 10m concurrently.
 
 before_install:
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew install llvm &&
@@ -22,7 +22,7 @@ before_install:
     export CFLAGS="-I/usr/local/opt/llvm/include"; fi
 
 r_packages:
-  - drat      # used in deploy.sh to publish tar.gz to github.io/Rdatatable/data.table
+  - drat      # used in .ci/deploy.sh to publish tar.gz to github.io/Rdatatable/data.table
   - devtools  # explicitly named temp fix for #2801
   # - covr    # used for code coverage reports in github pull requests
 
@@ -38,7 +38,7 @@ after_success:
     test $TRAVIS_REPO_SLUG == "Rdatatable/data.table" &&
     test $TRAVIS_PULL_REQUEST == "false" &&
     test $TRAVIS_BRANCH == "master" &&
-    bash deploy.sh
+    bash .ci/deploy.sh
 
 notifications:
   email:

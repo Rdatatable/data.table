@@ -8,7 +8,7 @@ SEXP transpose(SEXP l, SEXP fill, SEXP ignoreArg, SEXP keepNamesArg) {
   if (!isNewList(l))
     error("l must be a list.");
   if (!length(l))
-    return(duplicate(l));
+    return(copyAsPlain(l));
   if (!isLogical(ignoreArg) || LOGICAL(ignoreArg)[0]==NA_LOGICAL)
     error("ignore.empty should be logical TRUE/FALSE.");
   bool ignore = LOGICAL(ignoreArg)[0];
@@ -53,11 +53,9 @@ SEXP transpose(SEXP l, SEXP fill, SEXP ignoreArg, SEXP keepNamesArg) {
     SEXP li = VECTOR_ELT(l, i);
     const int len = length(li);
     if (ignore && len==0) continue;
-    bool coerce = false;
     if (TYPEOF(li) != maxtype) {
       li = PROTECT(isFactor(li) ? asCharacterFactor(li) : coerceVector(li, maxtype));
-      coerce = true;
-    }
+    } else PROTECT(li); // extra PROTECT just to help rchk by avoiding two counter variables
     switch (maxtype) {
     case LGLSXP : {
       const int *ili = LOGICAL(li);
@@ -89,7 +87,7 @@ SEXP transpose(SEXP l, SEXP fill, SEXP ignoreArg, SEXP keepNamesArg) {
     default :
       error("Unsupported column type '%s'", type2char(maxtype));
     }
-    if (coerce) UNPROTECT(1);
+    UNPROTECT(1); // inside the loop to save the protection stack
     k++;
   }
   UNPROTECT(nprotect);

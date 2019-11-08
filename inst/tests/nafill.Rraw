@@ -1,9 +1,5 @@
 require(methods)
 if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
-  if (!identical(suppressWarnings(packageDescription("data.table")), NA)) {
-    remove.packages("data.table")
-    stop("This is dev mode but data.table was installed. Uninstalled it. Please q() this R session and try cc() again. The installed namespace causes problems in dev mode for the S4 tests.\n")
-  }
   if ((tt<-compiler::enableJIT(-1))>0)
     cat("This is dev mode and JIT is enabled (level ", tt, ") so there will be a brief pause around the first test.\n", sep="")
 } else {
@@ -64,6 +60,7 @@ test(1.45, nafill(l, "nocb"), list(c(1:2,4L,4:5), structure(c(1,2,4,4,5), class=
 test(1.46, nafill(l, fill=0), list(c(1:2,0L,4:5), structure(c(1,2,0,4,5), class="Date"), c(0L,2L,0L,4L,0L), structure(c(0,2,0,4,0), class="Date")))
 test(1.47, nafill(l, fill=as.Date(0, origin="1970-01-01")), list(c(1:2,0L,4:5), structure(c(1,2,0,4,5), class="Date"), c(0L,2L,0L,4L,0L), structure(c(0,2,0,4,0), class="Date")))
 test(1.48, nafill(l, fill=as.Date("2019-06-05")), list(c(1:2,18052L,4:5), structure(c(1,2,18052,4,5), class="Date"), c(18052L,2L,18052L,4L,18052L), structure(c(18052,2,18052,4,18052), class="Date")))
+test(1.49, nafill(numeric()), numeric())
 if (test_bit64) {
   l = list(a=as.integer64(c(1:2,NA,4:5)), b=as.integer64(c(NA,2L,NA,4L,NA)))
   test(1.61, lapply(nafill(l, "locf"), as.character), lapply(list(c(1:2,2L,4:5), c(NA,2L,2L,4L,4L)), as.character))
@@ -158,6 +155,9 @@ dt = data.table(a=c(1L, 2L, NA_integer_), b=c(1, 2, NA_real_))
 test(5.01, nafill(dt, "locf", verbose=TRUE), output="nafillInteger: took.*nafillDouble: took.*nafillR.*took")
 test(5.02, setnafill(dt, "locf", verbose=TRUE), output="nafillInteger: took.*nafillDouble: took.*nafillR.*took")
 test(5.03, nafill(dt, "locf", verbose=NA), error="verbose must be TRUE or FALSE")
+if (test_bit64) {
+  test(5.04, nafill(as.integer64(c(NA,2,NA,3)), "locf", verbose=TRUE), as.integer64(c(NA,2,2,3)), output="nafillInteger64: took.*nafillR.*took")
+}
 
 # coerceFill
 if (test_bit64) {
@@ -177,4 +177,12 @@ if (test_bit64) {
   test(6.44, identical(coerceFill(NaN), list(NA_integer_, NaN, as.integer64(NA))))
   test(6.45, identical(coerceFill(Inf), list(NA_integer_, Inf, as.integer64(NA))))
   test(6.46, identical(coerceFill(-Inf), list(NA_integer_, -Inf, as.integer64(NA))))
+  test(6.47, identical(coerceFill(-(2^62)), list(NA_integer_, -(2^62), as.integer64("-4611686018427387904"))))
+  test(6.48, identical(coerceFill(-(2^64)), list(NA_integer_, -(2^64), as.integer64(NA))))
+  test(6.49, identical(coerceFill(x<-as.integer64(-2147483647)), list(-2147483647L, -2147483647, x)))
+  test(6.50, identical(coerceFill(x<-as.integer64(-2147483648)), list(NA_integer_, -2147483648, x)))
+  test(6.51, identical(coerceFill(x<-as.integer64(-2147483649)), list(NA_integer_, -2147483649, x)))
+  test(6.52, identical(coerceFill(-2147483647), list(-2147483647L, -2147483647, as.integer64("-2147483647"))))
+  test(6.53, identical(coerceFill(-2147483648), list(NA_integer_, -2147483648,  as.integer64("-2147483648"))))
+  test(6.54, identical(coerceFill(-2147483649), list(NA_integer_, -2147483649,  as.integer64("-2147483649"))))
 }

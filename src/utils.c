@@ -32,6 +32,53 @@ SEXP isReallyReal(SEXP x) {
   return(ans);
 }
 
+bool allNA(SEXP x, bool errorForBadType) {
+  // less space and time than all(is.na(x)) at R level because that creates full size is.na(x) first before all()
+  // whereas this allNA can often return early on testing the first value without reading the rest
+  const int n = length(x);
+  if (n==0) // empty vectors (including raw(), NULL, and list()) same as R's all(is.na()) true result; tests 2116.*
+    return true;
+  switch (TYPEOF(x)) {
+  case RAWSXP: // raw doesn't support NA so always false (other than length 0 case above)
+    return false;
+  case LGLSXP:
+  case INTSXP: {
+    const int *xd = INTEGER(x);
+    for (int i=0; i<n; ++i)    if (xd[i]!=NA_INTEGER) {
+      return false;
+    }
+    return true;
+  }
+  case REALSXP:
+    if (Rinherits(x,char_integer64)) {
+      const int64_t *xd = (int64_t *)REAL(x);
+      for (int i=0; i<n; ++i)  if (xd[i]!=NA_INTEGER64) {
+        return false;
+      }
+    } else {
+      const double *xd = REAL(x);
+      for (int i=0; i<n; ++i)  if (!ISNAN(xd[i])) {
+        return false;
+      }
+    }
+    return true;
+  case STRSXP: {
+    const SEXP *xd = STRING_PTR(x);
+    for (int i=0; i<n; ++i)    if (xd[i]!=NA_STRING) {
+      return false;
+    }
+    return true;
+  }}
+  if (!errorForBadType) return false;
+  error("Unsupported type '%s' passed to allNA()", type2char(TYPEOF(x)));  // e.g. VECSXP; tests 2116.16-18
+  // turned off allNA list support for now to avoid accidentally using it internally where we did not intend; allNA not yet exported
+  //   https://github.com/Rdatatable/data.table/pull/3909#discussion_r329065950
+}
+
+SEXP allNAR(SEXP x) {
+  return ScalarLogical(allNA(x, /*errorForBadType=*/true));
+}
+
 /* colnamesInt
  * for provided data.table (or a list-like) and a subset of its columns, it returns integer positions of those columns in DT
  * handle columns input as: integer, double, character and NULL (handled as seq_along(x))
@@ -98,22 +145,24 @@ void coerceFill(SEXP fill, double *dfill, int32_t *ifill, int64_t *i64fill) {
       i64fill[0] = (int64_t)(INTEGER(fill)[0]);
     }
   } else if (isReal(fill)) {
-    if (INHERITS(fill,char_integer64) || INHERITS(fill,char_nanotime)) {
-      long long *llfill = (long long *)REAL(fill);
-      if (llfill[0]==NA_INT64_LL) {
+    if (Rinherits(fill,char_integer64)) {  // Rinherits true for nanotime
+      int64_t rfill = ((int64_t *)REAL(fill))[0];
+      if (rfill==NA_INTEGER64) {
         ifill[0] = NA_INTEGER; dfill[0] = NA_REAL; i64fill[0] = NA_INTEGER64;
       } else {
-        ifill[0] = llfill[0]>INT32_MAX ? NA_INTEGER : (int32_t)(llfill[0]);
-        dfill[0] = (double)(llfill[0]);
-        i64fill[0] = (int64_t)(llfill[0]);
+        ifill[0] = (rfill>INT32_MAX || rfill<=INT32_MIN) ? NA_INTEGER : (int32_t)rfill;
+        dfill[0] = (double)rfill;
+        i64fill[0] = rfill;
       }
     } else {
-      if (ISNA(REAL(fill)[0])) {
-        ifill[0] = NA_INTEGER; dfill[0] = NA_REAL; i64fill[0] = NA_INTEGER64;
+      double rfill = REAL(fill)[0];
+      if (ISNAN(rfill)) {
+        // NA -> NA, NaN -> NaN
+        ifill[0] = NA_INTEGER; dfill[0] = rfill; i64fill[0] = NA_INTEGER64;
       } else {
-        ifill[0] = (int32_t)(REAL(fill)[0]);
-        dfill[0] = REAL(fill)[0];
-        i64fill[0] = (int64_t)(REAL(fill)[0]);
+        ifill[0] = (!R_FINITE(rfill) || rfill>INT32_MAX || rfill<=INT32_MIN) ? NA_INTEGER : (int32_t)rfill;
+        dfill[0] = rfill;
+        i64fill[0] = (!R_FINITE(rfill) || rfill>(double)INT64_MAX || rfill<=(double)INT64_MIN) ? NA_INTEGER64 : (int64_t)rfill;
       }
     }
   } else if (isLogical(fill) && LOGICAL(fill)[0]==NA_LOGICAL) {
@@ -134,8 +183,7 @@ SEXP coerceFillR(SEXP fill) {
   SET_VECTOR_ELT(ans, 2, allocVector(REALSXP, 1));
   INTEGER(VECTOR_ELT(ans, 0))[0] = ifill;
   REAL(VECTOR_ELT(ans, 1))[0] = dfill;
-  long long *ll = (long long *)REAL(VECTOR_ELT(ans, 2));
-  ll[0] = i64fill;
+  ((int64_t *)REAL(VECTOR_ELT(ans, 2)))[0] = i64fill;
   setAttrib(VECTOR_ELT(ans, 2), R_ClassSymbol, ScalarString(char_integer64));
   UNPROTECT(protecti);
   return ans;
@@ -160,49 +208,106 @@ inline bool INHERITS(SEXP x, SEXP char_) {
 }
 
 bool Rinherits(SEXP x, SEXP char_) {
- // motivation was nanotime which is S4 and inherits from integer64 via S3 extends
- // R's C API inherits() does not cover S4 and returns FALSE for nanotime, as does our own INHERITS above.
- // R's R-level inherits() calls objects.c:inherits2 which calls attrib.c:R_data_class2 and
- // then attrib.c:S4_extends which itself calls R level methods:::.extendsForS3 which then calls R level methods::extends.
- // Since that chain of calls is so complicated and involves evaluating R level anyway, let's just reuse it.
- // Rinherits prefix with 'R' to signify i) it calls R level and is not thread safe, and ii) is the R level inherits which covers S4.
- SEXP vec = PROTECT(ScalarString(char_));
- SEXP call = PROTECT(lang3(sym_inherits, x, vec));
- bool ans = LOGICAL(eval(call, R_GlobalEnv))[0]==1;
- UNPROTECT(2);
- return ans;
+  // motivation was nanotime which is S4 and inherits from integer64 via S3 extends
+  // R's C API inherits() does not cover S4 and returns FALSE for nanotime, as does our own INHERITS above.
+  // R's R-level inherits() calls objects.c:inherits2 which calls attrib.c:R_data_class2 and
+  // then attrib.c:S4_extends which itself calls R level methods:::.extendsForS3 which then calls R level methods::extends.
+  // Since that chain of calls is so complicated and involves evaluating R level anyway, let's just reuse it.
+  // Rinherits prefix with 'R' to signify i) it may call R level and is therefore not thread safe, and ii) includes R level inherits which covers S4.
+  bool ans = INHERITS(x, char_);        // try standard S3 class character vector first
+  if (!ans && char_==char_integer64)    // save the eval() for known S4 classes that inherit from integer64
+    ans = INHERITS(x, char_nanotime);   // comment this out to test the eval() works for nanotime
+  if (!ans && IS_S4_OBJECT(x)) {        // if it's not S4 we can save the overhead of R eval()
+    SEXP vec = PROTECT(ScalarString(char_));           // TODO: cover this branch by making two new test S4 classes: one that
+    SEXP call = PROTECT(lang3(sym_inherits, x, vec));  //       does inherit from integer64 and one that doesn't
+    ans = LOGICAL(eval(call, R_GlobalEnv))[0]==1;
+    UNPROTECT(2);
+  }
+  return ans;
+}
+
+SEXP copyAsPlain(SEXP x) {
+  // v1.12.2 and before used standard R duplicate() to do this. But that's not guaranteed to not return an ALTREP.
+  // e.g. ALTREP 'wrapper' on factor column (with materialized INTSXP) in package VIM under example(hotdeck)
+  //      .Internal(inspect(x[[5]]))
+  //      @558adf4d9508 13 INTSXP g0c0 [OBJ,NAM(7),ATT]  wrapper [srt=-2147483648,no_na=0]
+  // 'AsPlain' is intended to convey unALTREP-ing; i.e. materializing and removing any ALTREP attributes too
+  // For non-ALTREP this should do the same as R's duplicate(); but doesn't quite currently, so has to divert to duplicated() for now
+  // Intended for use on columns; to either un-ALTREP them or duplicate shared memory columns; see copySharedColumns() below
+  // Not intended to be called on a DT VECSXP where a concept of 'deep' might refer to whether the columns are copied
+
+  if (!ALTREP(x)) return duplicate(x);
+  // would prefer not to have this line, but without it test 1639.064 fails :
+  //   Running test id 1639.064      Error in `[.data.table`(r, -ii) :
+  //   Item 2 of i is -1 and item 1 is NA. Cannot mix negatives and NA.
+  //   Calls: test.data.table ... FUN -> make.levels -> rbindlist -> [ -> [.data.table
+  // Perhaps related to row names and the copyMostAttrib() below is not quite sufficient
+
+  size_t n = XLENGTH(x);
+  SEXP ans = PROTECT(allocVector(TYPEOF(x), XLENGTH(x)));
+  switch (TYPEOF(ans)) {
+  case RAWSXP:
+    memcpy(RAW(ans),     RAW(x),     n*sizeof(Rbyte));           // # nocov; add coverage when ALTREP is turned on for all types
+    break;                                                       // # nocov
+  case LGLSXP:
+    memcpy(LOGICAL(ans), LOGICAL(x), n*sizeof(Rboolean));        // # nocov
+    break;                                                       // # nocov
+  case INTSXP:
+    memcpy(INTEGER(ans), INTEGER(x), n*sizeof(int));             // covered by 10:1 after test 178
+    break;
+  case REALSXP:
+    memcpy(REAL(ans),    REAL(x),    n*sizeof(double));          // covered by as.Date("2013-01-01")+seq(1,1000,by=10) after test 1075
+    break;
+  case CPLXSXP:
+    memcpy(COMPLEX(ans), COMPLEX(x), n*sizeof(Rcomplex));        // # nocov
+    break;                                                       // # nocov
+  case STRSXP: {
+    const SEXP *xp=STRING_PTR(x);                                // covered by as.character(as.hexmode(1:500)) after test 642
+    for (R_xlen_t i=0; i<n; ++i) SET_STRING_ELT(ans, i, xp[i]);
+  } break;
+  case VECSXP: {
+    const SEXP *xp=VECTOR_PTR(x);                                // # nocov
+    for (R_xlen_t i=0; i<n; ++i) SET_VECTOR_ELT(ans, i, xp[i]);  // # nocov
+  } break;                                                       // # nocov
+  default:
+    error("Internal error: unsupported type '%s' passed to copyAsPlain()", type2char(TYPEOF(x))); // # nocov
+  }
+  copyMostAttrib(x, ans); // e.g. factor levels, class etc, but not names, dim or dimnames
+  if (ALTREP(ans))
+    error("Internal error: type '%s' passed to copyAsPlain() but it seems copyMostAttrib() retains ALTREP attributes", type2char(TYPEOF(x))); // # nocov
+  UNPROTECT(1);
+  return ans;
 }
 
 void copySharedColumns(SEXP x) {
   const int ncol = length(x);
   if (!isNewList(x) || ncol==1) return;
-  bool *shared = (bool *)R_alloc(ncol, sizeof(bool)); // on R heap in case duplicate() fails
+  bool *shared = (bool *)R_alloc(ncol, sizeof(bool)); // on R heap in case alloc fails
   int *savetl = (int *)R_alloc(ncol, sizeof(int));  // on R heap for convenience but could be a calloc
-  int nShared = 0;
+  int nShared=0, thistl=0;
   const SEXP *xp = VECTOR_PTR(x);
   for (int i=0; i<ncol; ++i) {
     SEXP thiscol = xp[i];
-    const int thistl = TRUELENGTH(thiscol);
-    if (thistl<0) {
+    if (ALTREP(thiscol) || (thistl=TRUELENGTH(thiscol))<0) {
       shared[i] = true;
       nShared++;
-      // do not duplicate() here as the duplicate() might fail. Careful to restore tl first to all columns.
+      // do not copyAsPlain() here as the alloc might fail: careful to restore tl first to all columns.
       // Aside: thistl is which column shares the same address as this one in case that's ever useful in future.
     } else {
       shared[i] = false;
       savetl[i] = thistl;  // these are vectors which are all expected to have tl, unlike CHARSXP which often don't (savetl() has CHARSXP in mind)
-      SET_TRUELENGTH(thiscol, -i-1);
+      SET_TRUELENGTH(thiscol, -i-1);  // just on plain vectors, not on ALTREP
     }
   }
   // now we know nShared and which ones they are (if any), restore original tl back to all columns
   for (int i=0; i<ncol; ++i) {
     if (!shared[i]) SET_TRUELENGTH(VECTOR_ELT(x, i), savetl[i]);
   }
-  // now that truelength has been restored for all columns, we can finally call duplicate()
+  // now that truelength has been restored for all columns, we can finally call copyAsPlain()
   if (nShared) {
     for (int i=0; i<ncol; ++i) {
       if (shared[i])
-        SET_VECTOR_ELT(x, i, duplicate(VECTOR_ELT(x, i)));
+        SET_VECTOR_ELT(x, i, copyAsPlain(VECTOR_ELT(x, i)));
     }
     if (GetVerbose()) Rprintf("Found and copied %d column%s with a shared memory address\n", nShared, nShared>1?"s":"");
     // GetVerbose() (slightly expensive call of all options) called here only when needed
@@ -228,3 +333,25 @@ SEXP islockedR(SEXP DT) {
   return ScalarLogical(islocked(DT));
 }
 
+bool need2utf8(SEXP x) {
+  const int xlen = length(x);
+  SEXP *xd = STRING_PTR(x);
+  for (int i=0; i<xlen; i++) {
+    if (NEED2UTF8(xd[i]))
+      return(true);
+  }
+  return(false);
+}
+
+SEXP coerceUtf8IfNeeded(SEXP x) {
+  if (!need2utf8(x))
+    return(x);
+  const int xlen = length(x);
+  SEXP ans = PROTECT(allocVector(STRSXP, xlen));
+  SEXP *xd = STRING_PTR(x);
+  for (int i=0; i<xlen; i++) {
+    SET_STRING_ELT(ans, i, ENC2UTF8(xd[i]));
+  }
+  UNPROTECT(1);
+  return(ans);
+}
