@@ -1986,51 +1986,51 @@ msgstr "输入是空，或全部为空白，或跳过设置是在最后一个非
 #: fread.c:1407
 #, c-format
 msgid "  Moved forward to first non-blank line (%d)\n"
-msgstr ""
+msgstr "  前移到第一个非空行 (%d)\n"
 
 #: fread.c:1408
 #, c-format
 msgid "  Positioned on line %d starting: <<%s>>\n"
-msgstr ""
+msgstr "  定位到行 %d 开始于： <<%s>>\n"
 
 #: fread.c:1426
 msgid "[06] Detect separator, quoting rule, and ncolumns\n"
-msgstr ""
+msgstr "[06] 检测分隔符，引用规则，以及列数\n"
 
 #: fread.c:1430
 msgid "  sep='\\n' passed in meaning read lines as single character column\n"
-msgstr ""
+msgstr "  sep='\\n' 设定意味着将把所有行读作一个字符列\n"
 
 #: fread.c:1449
 msgid "  Detecting sep automatically ...\n"
-msgstr ""
+msgstr "  自动检测分隔符中 ...\n"
 
 #: fread.c:1456
 #, c-format
 msgid "  Using supplied sep '%s'\n"
-msgstr ""
+msgstr "  使用提供的分隔符 '%s'\n"
 
 #: fread.c:1490
 #, c-format
 msgid "  with %d fields using quote rule %d\n"
-msgstr ""
+msgstr "  对 %d 个字段使用引用规则 %d\n"
 
 #: fread.c:1540
 #, c-format
 msgid "  with %d lines of %d fields using quote rule %d\n"
-msgstr ""
+msgstr "  对 %d 行的 %d 字段使用引用规则 %d\n"
 
 #: fread.c:1547
 msgid ""
 "  No sep and quote rule found a block of 2x2 or greater. Single column "
 "input.\n"
-msgstr ""
+msgstr "  没有分隔符并且引用规则发现了一个大于或等于2x2的区块。输入是单列。\n"
 
 #: fread.c:1563
 msgid ""
 "Single column input contains invalid quotes. Self healing only effective "
 "when ncol>1"
-msgstr ""
+msgstr "单列输入包含了不合法的引用。自我修正只有在列数大于1（ncol>1）时才有效"
 
 #: fread.c:1568
 #, c-format
@@ -2038,8 +2038,8 @@ msgid ""
 "Found and resolved improper quoting in first %d rows. If the fields are not "
 "quoted (e.g. field separator does not appear within any field), try quote="
 "\"\" to avoid this warning."
-msgstr "在前 %d 行中发现并修正了不合适的引号用法。如果字段们没有"
-"加引号（例如字段间隔符没有在任何字段内出现），尝试使用 quote="
+msgstr "在前 %d 行中发现并修正了不合适的引号用法。如果字段没有"
+"加引号（例如字段间隔符没有在任何字段内出现），可以尝试使用 quote="
 "\"\" 来避免此警告。"
 
 #: fread.c:1584
