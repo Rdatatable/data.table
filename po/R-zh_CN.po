@@ -1416,86 +1416,86 @@ msgid "the regex \""
 msgstr ""
 
 msgid "\". Please double check the input file is a valid csvy."
-msgstr ""
+msgstr "从这里开始"
 
 msgid "User-supplied 'header' will override that found in metadata."
-msgstr ""
+msgstr "用户提供的“header”将覆盖元数据中的列名"
 
 msgid ""
 "User-supplied column names in 'col.names' will override those found in YAML "
 "metadata."
-msgstr ""
+msgstr "用户在“col.names”中提供的列名将覆盖在YAML元数据中找到的列名"
 
 msgid ""
 "colClasses dictated by user input and those read from YAML header are in "
 "conflict (specifically, for column"
-msgstr ""
+msgstr "用户输入指定的列类型和从YAML列名中读取的列类型发生冲突（特别是column"
 
 msgid "s"
-msgstr ""
+msgstr "s"
 
 msgid "["
-msgstr ""
+msgstr "["
 
 msgid "]); the proceeding assumes the user input was"
-msgstr ""
+msgstr "]); 该过程假定用户输入的是"
 
 msgid ""
 "an intentional override and will ignore the types implied by the YAML "
 "header; please exclude"
-msgstr ""
+msgstr "有意覆盖的，并且将忽略YAML列名所指示的类型；"
 
 msgid "these columns"
-msgstr ""
+msgstr "这些列"
 
 msgid "this column from colClasses if this was unintentional."
-msgstr ""
+msgstr "如果是无意的，请排除colClasses中的此列"
 
 msgid "User-supplied 'sep' will override that found in metadata."
-msgstr ""
+msgstr "用户提供的“sep”将覆盖元数据中的分隔符"
 
 msgid "User-supplied 'quote' will override that found in metadata."
-msgstr ""
+msgstr "用户提供的“quote”将覆盖元数据中的引号"
 
 msgid "User-supplied 'dec' will override that found in metadata."
-msgstr ""
+msgstr "用户提供的“dec”将覆盖元数据中的小数点分隔符"
 
 msgid "User-supplied 'na.strings' will override that found in metadata."
-msgstr ""
+msgstr "用户提供的“na.strings”将覆盖元数据中对默认值的预处理"
 
 msgid "Column '"
-msgstr ""
+msgstr "列"
 
 msgid "' was requested to be '"
-msgstr ""
+msgstr "被要求为"
 
 msgid "' but fread encountered the following"
-msgstr ""
+msgstr "但是fread遇到了以下问题"
 
 msgid "error"
-msgstr ""
+msgstr "错误"
 
 msgid "warning"
-msgstr ""
+msgstr "警告"
 
 msgid ":"
-msgstr ""
+msgstr "："
 
 msgid "so the column has been left as type '"
-msgstr ""
+msgstr "所以该列已经被保存为类型"
 
 msgid ""
 "key argument of data.table() must be a character vector naming columns (NB: "
 "col.names are applied before this)"
-msgstr ""
+msgstr "data.table()的关键参数必须是字符向量命名的列（NB:col.names在这之前被使用过）"
 
 msgid ""
 "index argument of data.table() must be a character vector naming columns "
 "(NB: col.names are applied before this)"
-msgstr ""
+msgstr "data.table()的关键参数必须是字符向量命名的列（NB:col.names在这之前被使用过）"
 
 msgid "dateTimeAs must be a single string"
-msgstr ""
+msgstr "dataTimeAs 必须是单个字符串"
 
 msgid "dateTimeAs must be 'ISO','squash','epoch' or 'write.csv'"
 msgstr "dateTimeAs 必须是 'ISO'，'squash'，'epoch' 或 'write.csv'"
