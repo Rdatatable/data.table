@@ -960,7 +960,7 @@ msgid ""
 "will create a new column for each embedded column."
 msgstr ""
 "。setDT 会原样保留这些列但后续的操作如"
-"编组和联接可能会失败。请考虑使用 as.data.table() 因为它"
+"编组（grouping）和联接（joining）可能会失败。请考虑使用 as.data.table() 因为它"
 "会为每个内嵌列建立一个新列。"
 
 msgid "Column"

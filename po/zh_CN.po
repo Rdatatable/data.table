@@ -1917,7 +1917,7 @@ msgid ""
 "one line ending. This is unusual but will happen normally when there is no "
 "\\r either; e.g. a single line missing its end of line.\n"
 msgstr "  文件中完全没有换行符\\n，所以单个 \\r（如果有的话）将被当成"
-"一行的结束。这是不常见的但如果也没有"
+"一行的结束。这不太常见但如果没有"
 "\\r 的话属于正常；例如单个行没有行尾结束符。\n"
 
 #: fread.c:1305
