@@ -4,7 +4,7 @@ static void subsetVectorRaw(SEXP ans, SEXP source, SEXP idx, const bool anyNA)
 // Only for use by subsetDT() or subsetVector() below, hence static
 {
   const int n = length(idx);
-  if (length(ans)!=n) error("Internal error: subsetVectorRaw length(ans)==%d n=%d", length(ans), n);
+  if (length(ans)!=n) error(_("Internal error: subsetVectorRaw length(ans)==%d n=%d"), length(ans), n);
 
   const int *restrict idxp = INTEGER(idx);
   // anyNA refers to NA _in idx_; if there's NA in the data (source) that's just regular data to be copied
@@ -85,7 +85,7 @@ static void subsetVectorRaw(SEXP ans, SEXP source, SEXP idx, const bool anyNA)
     PARLOOP(0)
   } break;
   default :
-    error("Internal error: column type '%s' not supported by data.table subset. All known types are supported so please report as bug.", type2char(TYPEOF(source)));  // # nocov
+    error(_("Internal error: column type '%s' not supported by data.table subset. All known types are supported so please report as bug."), type2char(TYPEOF(source)));  // # nocov
   }
 }
 
@@ -94,7 +94,7 @@ static const char *check_idx(SEXP idx, int max, bool *anyNA_out, bool *orderedSu
 // error if any negatives, zeros or >max since they should have been dealt with by convertNegAndZeroIdx() called ealier at R level.
 // single cache efficient sweep with prefetch, so very low priority to go parallel
 {
-  if (!isInteger(idx)) error("Internal error. 'idx' is type '%s' not 'integer'", type2char(TYPEOF(idx))); // # nocov
+  if (!isInteger(idx)) error(_("Internal error. 'idx' is type '%s' not 'integer'"), type2char(TYPEOF(idx))); // # nocov
   bool anyLess=false, anyNA=false;
   int last = INT32_MIN;
   int *idxp = INTEGER(idx), n=LENGTH(idx);
@@ -118,11 +118,11 @@ SEXP convertNegAndZeroIdx(SEXP idx, SEXP maxArg, SEXP allowOverMax)
   // + a little more efficient than negativeSubscript in src/main/subscript.c (it's private to R so we can't call it anyway)
   // allowOverMaxArg is false when := (test 1024), otherwise true for selecting
 
-  if (!isInteger(idx)) error("Internal error. 'idx' is type '%s' not 'integer'", type2char(TYPEOF(idx))); // # nocov
-  if (!isInteger(maxArg) || length(maxArg)!=1) error("Internal error. 'maxArg' is type '%s' and length %d, should be an integer singleton", type2char(TYPEOF(maxArg)), length(maxArg)); // # nocov
-  if (!isLogical(allowOverMax) || LENGTH(allowOverMax)!=1 || LOGICAL(allowOverMax)[0]==NA_LOGICAL) error("Internal error: allowOverMax must be TRUE/FALSE");  // # nocov
+  if (!isInteger(idx)) error(_("Internal error. 'idx' is type '%s' not 'integer'"), type2char(TYPEOF(idx))); // # nocov
+  if (!isInteger(maxArg) || length(maxArg)!=1) error(_("Internal error. 'maxArg' is type '%s' and length %d, should be an integer singleton"), type2char(TYPEOF(maxArg)), length(maxArg)); // # nocov
+  if (!isLogical(allowOverMax) || LENGTH(allowOverMax)!=1 || LOGICAL(allowOverMax)[0]==NA_LOGICAL) error(_("Internal error: allowOverMax must be TRUE/FALSE"));  // # nocov
   int max = INTEGER(maxArg)[0], n=LENGTH(idx);
-  if (max<0) error("Internal error. max is %d, must be >= 0.", max); // # nocov    includes NA which will print as INT_MIN
+  if (max<0) error(_("Internal error. max is %d, must be >= 0."), max); // # nocov    includes NA which will print as INT_MIN
   int *idxp = INTEGER(idx);
 
   bool stop = false;
@@ -146,7 +146,7 @@ SEXP convertNegAndZeroIdx(SEXP idx, SEXP maxArg, SEXP allowOverMax)
     else if (elem>max && firstOverMax==0) firstOverMax=i+1;
   }
   if (firstOverMax && LOGICAL(allowOverMax)[0]==FALSE) {
-    error("i[%d] is %d which is out of range [1,nrow=%d]", firstOverMax, idxp[firstOverMax-1], max);
+    error(_("i[%d] is %d which is out of range [1,nrow=%d]"), firstOverMax, idxp[firstOverMax-1], max);
   }
 
   int countPos = n-countNeg-countZero-countNA;
@@ -158,7 +158,7 @@ SEXP convertNegAndZeroIdx(SEXP idx, SEXP maxArg, SEXP allowOverMax)
       if (firstNeg==0 && elem<0 && elem!=NA_INTEGER) firstNeg=i+1;
       i++;
     }
-    error("Item %d of i is %d and item %d is %d. Cannot mix positives and negatives.", firstNeg, idxp[firstNeg-1], firstPos, idxp[firstPos-1]);
+    error(_("Item %d of i is %d and item %d is %d. Cannot mix positives and negatives."), firstNeg, idxp[firstNeg-1], firstPos, idxp[firstPos-1]);
   }
   if (countNeg && countNA) {
     int i=0, firstNeg=0, firstNA=0;
@@ -168,7 +168,7 @@ SEXP convertNegAndZeroIdx(SEXP idx, SEXP maxArg, SEXP allowOverMax)
       if (firstNA==0 && elem==NA_INTEGER) firstNA=i+1;
       i++;
     }
-    error("Item %d of i is %d and item %d is NA. Cannot mix negatives and NA.", firstNeg, idxp[firstNeg-1], firstNA);
+    error(_("Item %d of i is %d and item %d is NA. Cannot mix negatives and NA."), firstNeg, idxp[firstNeg-1], firstNA);
   }
 
   SEXP ans;
@@ -204,9 +204,9 @@ SEXP convertNegAndZeroIdx(SEXP idx, SEXP maxArg, SEXP allowOverMax)
       }
     }
     if (countBeyond)
-      warning("Item %d of i is %d but there are only %d rows. Ignoring this and %d more like it out of %d.", firstBeyond, idxp[firstBeyond-1], max, countBeyond-1, n);
+      warning(_("Item %d of i is %d but there are only %d rows. Ignoring this and %d more like it out of %d."), firstBeyond, idxp[firstBeyond-1], max, countBeyond-1, n);
     if (countDup)
-      warning("Item %d of i is %d which removes that item but that has occurred before. Ignoring this dup and %d other dups.", firstDup, idxp[firstDup-1], countDup-1);
+      warning(_("Item %d of i is %d which removes that item but that has occurred before. Ignoring this dup and %d other dups."), firstDup, idxp[firstDup-1], countDup-1);
     int ansn = max-countRemoved;
     ans = PROTECT(allocVector(INTSXP, ansn));
     int *ansp = INTEGER(ans);
@@ -220,15 +220,15 @@ SEXP convertNegAndZeroIdx(SEXP idx, SEXP maxArg, SEXP allowOverMax)
 
 static void checkCol(SEXP col, int colNum, int nrow, SEXP x)
 {
-  if (isNull(col)) error("Column %d is NULL; malformed data.table.", colNum);
+  if (isNull(col)) error(_("Column %d is NULL; malformed data.table."), colNum);
   if (isNewList(col) && INHERITS(col, char_dataframe)) {
     SEXP names = getAttrib(x, R_NamesSymbol);
-    error("Column %d ['%s'] is a data.frame or data.table; malformed data.table.",
+    error(_("Column %d ['%s'] is a data.frame or data.table; malformed data.table."),
           colNum, isNull(names)?"":CHAR(STRING_ELT(names,colNum-1)));
   }
   if (length(col)!=nrow) {
     SEXP names = getAttrib(x, R_NamesSymbol);
-    error("Column %d ['%s'] is length %d but column 1 is length %d; malformed data.table.",
+    error(_("Column %d ['%s'] is length %d but column 1 is length %d; malformed data.table."),
           colNum, isNull(names)?"":CHAR(STRING_ELT(names,colNum-1)), length(col), nrow);
   }
 }
@@ -244,7 +244,7 @@ static void checkCol(SEXP col, int colNum, int nrow, SEXP x)
 
 SEXP subsetDT(SEXP x, SEXP rows, SEXP cols) {
   int nprotect=0;
-  if (!isNewList(x)) error("Internal error. Argument 'x' to CsubsetDT is type '%s' not 'list'", type2char(TYPEOF(rows))); // # nocov
+  if (!isNewList(x)) error(_("Internal error. Argument 'x' to CsubsetDT is type '%s' not 'list'"), type2char(TYPEOF(rows))); // # nocov
   if (!length(x)) return(x);  // return empty list
 
   const int nrow = length(VECTOR_ELT(x,0));
@@ -257,10 +257,10 @@ SEXP subsetDT(SEXP x, SEXP rows, SEXP cols) {
     if (err!=NULL) error(err);
   }
 
-  if (!isInteger(cols)) error("Internal error. Argument 'cols' to Csubset is type '%s' not 'integer'", type2char(TYPEOF(cols))); // # nocov
+  if (!isInteger(cols)) error(_("Internal error. Argument 'cols' to Csubset is type '%s' not 'integer'"), type2char(TYPEOF(cols))); // # nocov
   for (int i=0; i<LENGTH(cols); i++) {
     int this = INTEGER(cols)[i];
-    if (this<1 || this>LENGTH(x)) error("Item %d of 'cols' is %d which is outside 1-based range [1,ncol(x)=%d]", i+1, this, LENGTH(x));
+    if (this<1 || this>LENGTH(x)) error(_("Item %d of 'cols' is %d which is outside 1-based range [1,ncol(x)=%d]"), i+1, this, LENGTH(x));
   }
 
   int overAlloc = checkOverAlloc(GetOption(install("datatable.alloccol"), R_NilValue));
@@ -334,9 +334,9 @@ SEXP subsetVector(SEXP x, SEXP idx) { // idx is 1-based passed from R level
   bool anyNA=false, orderedSubset=false;
   int nprotect=0;
   if (isNull(x))
-    error("Internal error: NULL can not be subset. It is invalid for a data.table to contain a NULL column.");      // # nocov
+    error(_("Internal error: NULL can not be subset. It is invalid for a data.table to contain a NULL column."));      // # nocov
   if (check_idx(idx, length(x), &anyNA, &orderedSubset) != NULL)
-    error("Internal error: CsubsetVector is internal-use-only but has received negatives, zeros or out-of-range");  // # nocov
+    error(_("Internal error: CsubsetVector is internal-use-only but has received negatives, zeros or out-of-range"));  // # nocov
   SEXP ans = PROTECT(allocVector(TYPEOF(x), length(idx))); nprotect++;
   copyMostAttrib(x, ans);
   subsetVectorRaw(ans, x, idx, anyNA);
