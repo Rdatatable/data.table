@@ -102,6 +102,10 @@ typedef struct FieldParseContext {
 // Forward declarations
 static void Field(FieldParseContext *ctx);
 
+// note -- because ASSERT is doing literal char array concatenation, it is
+//   not possible to do translation of its messages without refactoring --
+//   essentially that would come down to creating f() g() in the code after
+//   macro expansion, which is not valid. These are internal errors, so just concede.
 #define ASSERT(cond, msg, ...) \
   if (!(cond)) STOP("Internal error in line %d of fread.c, please report on data.table GitHub:  " msg, __LINE__, __VA_ARGS__) // # nocov
 
@@ -1495,7 +1499,7 @@ int freadMain(freadMainArgs _args) {
           const char *prevLineStart=ch, *lineStart=ch;
           int lastncol = countfields(&ch);
           if (lastncol<0) continue;  //   invalid file with this sep and quote rule, skip
-          ASSERT(lastncol>0, _("Internal error: first non-empty row should always be at least one field; %c %d"), sep, quoteRule); // # nocov
+          ASSERT(lastncol>0, "first non-empty row should always be at least one field; %c %d", sep, quoteRule); // # nocov
           const char *thisBlockStart=lineStart;
           const char *thisBlockPrevStart = NULL;
           int thisBlockLines=1, thisRow=0;
@@ -1546,7 +1550,7 @@ int freadMain(freadMainArgs _args) {
     if (!firstJumpEnd) {
       if (verbose) DTPRINT(_("  No sep and quote rule found a block of 2x2 or greater. Single column input.\n"));
       topNumFields = 1;
-      ASSERT(topSep==127, _("Single column input has topSep=%d"), topSep);
+      ASSERT(topSep==127, "Single column input has topSep=%d", topSep);
       sep = topSep;
       // no self healing quote rules, as we don't have >1 field to disambiguate
       // choose quote rule 0 or 1 based on for which 100 rows gets furthest into file
@@ -1597,7 +1601,7 @@ int freadMain(freadMainArgs _args) {
     if (fileSize%4096==0) {
       const char *msg = _("This file is very unusual: it's one single column, ends with 2 or more end-of-line (representing several NA at the end), and is a multiple of 4096, too.");
       if (verbose) DTPRINT(_("  Copying file in RAM. %s\n"), msg);
-      ASSERT(mmp_copy==NULL, _("Internal error: mmp has already been copied due to abrupt non-eol ending, so it does not end with 2 or more eol."), 1/*dummy arg for macro*/); // #nocov
+      ASSERT(mmp_copy==NULL, "mmp has already been copied due to abrupt non-eol ending, so it does not end with 2 or more eol.", 1/*dummy arg for macro*/); // #nocov
       copyFile(fileSize, msg, verbose);
       pos = sof + (pos-(const char *)mmp);
       firstJumpEnd = sof + (firstJumpEnd-(const char *)mmp);
@@ -2342,7 +2346,7 @@ int freadMain(freadMainArgs _args) {
     }
     if (restartTeam) {
       if (verbose) DTPRINT(_("  Restarting team from jump %d. nSwept==%d quoteRule==%d\n"), jump0, nSwept, quoteRule);
-      ASSERT(nSwept>0 || quoteRuleBumpedCh!=NULL, _("Internal error: team restart but nSwept==%d and quoteRuleBumpedCh==%p"), nSwept, quoteRuleBumpedCh); // # nocov
+      ASSERT(nSwept>0 || quoteRuleBumpedCh!=NULL, "Internal error: team restart but nSwept==%d and quoteRuleBumpedCh==%p", nSwept, quoteRuleBumpedCh); // # nocov
       goto read;
     }
     // else nrowLimit applied and stopped early normally
