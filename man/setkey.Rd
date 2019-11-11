@@ -74,7 +74,7 @@ If you use column numbers then bugs (possibly silent) can more easily creep into
 your code as time progresses if changes are made elsewhere in your code; e.g., if
 you add, remove or reorder columns in a few months time, a \code{setkey} by column
 number will then refer to a different column, possibly returning incorrect results
-with no warning. (A similar concept exists in SQL, where \code{"select * from \dots"} is considered poor programming style when a robust, maintainable system is
+with no warning. (A similar concept exists in SQL, where \code{"select * from ..."} is considered poor programming style when a robust, maintainable system is
 required.)
 
 If you really wish to use column numbers, it is possible but
