@@ -1746,7 +1746,7 @@ int freadMain(freadMainArgs _args) {
     if (tt<ncol) {
       autoFirstColName = (tt==ncol-1);
       DTWARN(_("Detected %d column names but the data has %d columns (i.e. invalid file). Added %d extra default column name%s\n"), tt, ncol, ncol-tt,
-             autoFirstColName ? _(" for the first column which is guessed to be row names or an index. Use setnames() afterwards if this guess is not correct, or fix the file write command that created the file to create a valid file." : "s at the end."));
+             autoFirstColName ? _(" for the first column which is guessed to be row names or an index. Use setnames() afterwards if this guess is not correct, or fix the file write command that created the file to create a valid file.") : _("s at the end."));
     } else if (tt>ncol) {
       if (fill) STOP(_("Internal error: fill=true but there is a previous row which should already have been filled.")); // # nocov
       DTWARN(_("Detected %d column names but the data has %d columns. Filling rows automatically. Set fill=TRUE explicitly to avoid this warning.\n"), tt, ncol);
