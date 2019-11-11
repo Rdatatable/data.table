@@ -103,7 +103,7 @@ typedef struct FieldParseContext {
 static void Field(FieldParseContext *ctx);
 
 #define ASSERT(cond, msg, ...) \
-  if (!(cond)) STOP(_("Internal error in line %d of fread.c, please report on data.table GitHub:  ") msg, __LINE__, __VA_ARGS__) // # nocov
+  if (!(cond)) STOP("Internal error in line %d of fread.c, please report on data.table GitHub:  " msg, __LINE__, __VA_ARGS__) // # nocov
 
 
 
