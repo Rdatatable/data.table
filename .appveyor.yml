@@ -14,7 +14,7 @@ skip_branch_with_pr: true
 
 environment:
   global:
-    CRAN: http://cloud.r-project.org/
+    CRAN: http://cloud.r-project.org
     WARNINGS_ARE_ERRORS: 1
     R_CHECK_ARGS: --no-manual
 # R_CHECK_ARGS specified in order to turn off --as-cran (on by default) as that can be slow
