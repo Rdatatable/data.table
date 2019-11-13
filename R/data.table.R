@@ -2415,6 +2415,7 @@ setnames = function(x,old,new,skip_absent=FALSE) {
   if (length(names(x)) != ncol) stop("x has ",ncol," columns but its names are length ",length(names(x)))
   stopifnot(isTRUEorFALSE(skip_absent))
   if (missing(new) || missing(old)) {
+    # usage: setnames(DT, new = letters[1:n])
     if (missing(old)) { old = new; new = NULL }
     # for setnames(DT,new); e.g., setnames(DT,c("A","B")) where ncol(DT)==2
     if (is.function(old)) old = old(names(x))
