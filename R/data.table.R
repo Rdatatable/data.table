@@ -2414,7 +2414,8 @@ setnames = function(x,old,new,skip_absent=FALSE) {
   ncol = length(x)
   if (length(names(x)) != ncol) stop("x has ",ncol," columns but its names are length ",length(names(x)))
   stopifnot(isTRUEorFALSE(skip_absent))
-  if (missing(new)) {
+  if (missing(new) || missing(old)) {
+    if (missing(old)) { old = new; new = NULL }
     # for setnames(DT,new); e.g., setnames(DT,c("A","B")) where ncol(DT)==2
     if (is.function(old)) old = old(names(x))
     if (!is.character(old)) stop("Passed a vector of type '",typeof(old),"'. Needs to be type 'character'.")
@@ -2429,7 +2430,6 @@ setnames = function(x,old,new,skip_absent=FALSE) {
     new = old[w]
     i = w
   } else {
-    if (missing(old)) stop("When 'new' is provided, 'old' must be provided too")
     if (is.function(new)) new = if (is.numeric(old)) new(names(x)[old]) else new(old)
     if (!is.character(new)) stop("'new' is not a character vector or a function")
     #  if (anyDuplicated(new)) warning("Some duplicates exist in 'new': ", brackify(new[duplicated(new)]))  # dups allowed without warning; warn if and when the dup causes an ambiguity

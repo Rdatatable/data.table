@@ -13640,7 +13640,7 @@ setDT(x)
 names(x) = NULL
 test(1967.57, setnames(x), error = 'x has 2 columns but its names are length 0')
 names(x) = c('a', 'b')
-test(1967.58, setnames(x, new = 'c'), error = "When 'new' is provided")
+test(1967.58, names(setnames(x, new = c('b', 'c'))), c('b', 'c'))
 test(1967.59, setnames(x, 1:2, c(8L, 9L)), error = "'new' is not a character")
 test(1967.60, setnames(x, -1:1, c('hey', 'you')), error = "mixed.*negative")
 test(1967.61, setnames(x, 1+3i, 'cplx'), error = "'old' is type complex")
@@ -13651,8 +13651,7 @@ test(1967.63, setcolorder(x, c(1, 1)), error = 'specify duplicated column')
 test(1967.64, setcolorder(x, 1+3i), error = 'must be character or numeric')
 test(1967.65, setcolorder(x, 300), error = 'specify non existing column*.*300')
 
-test(1967.66, rbindlist(list(x), idcol = FALSE),
-     rbindlist(list(x)))
+test(1967.66, rbindlist(list(x), idcol = FALSE), rbindlist(list(x)))
 test(1967.67, rbindlist(list(x), idcol = 1+3i), error = 'idcol must be a logical')
 
 ### potentially altering user environment so use a strange name

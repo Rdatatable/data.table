@@ -6,6 +6,8 @@
 
 ## NEW FEATURES
 
+1. Using `setnames` as `setnames(DT, new=new_names)` now works as expected, [#4041](https://github.com/Rdatatable/data.table/issues/4041). Thanks @Kodiologist for the suggestion.
+
 ## BUG FIXES
 
 ## NOTES
