@@ -16370,7 +16370,7 @@ test(2120.07, iDT[(i_id), order(e_date, e_time)], c(3L,4L,1L,2L))  # wrapping wi
 test(2120.08, tmp[iDT[(i_id), order(e_date, e_time)]],             # different result with the NA
               data.table(i_id=c("A",NA,"B","C"), N=c(5L,NA,5L,5L)))
 
-# auto-name j even in complicated expressions, #2478
+# auto-name .() when it's the last item of {...} or wrapped with if(), #2478 #609
 DT = data.table(a = c(1, 1, 2), b = 4:6)
 test(2121.1, DT[ , {b = b; .(a, b = b + 1)}], DT[ , .(a, b=b+1)])
 test(2121.2, DT[ , {{{b = b; .(a, b = b + 1)}}}], DT[ , .(a, b=b+1)])

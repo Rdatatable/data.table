@@ -854,12 +854,13 @@ replace_dot_alias = function(e) {
       }
 
       jvnames = NULL
-      DOT_REGEX = "^[.](N|I|GRP|BY)$"
-      # function to handle auto-naming of j for potentially complicated expressions, #2478
-      #   defined here to have [.data.table as a parent
-      #   j-ending (ends of if/else or {}) for expression like
-      #     list(a=sum(v), v)
-      #   should create columns named a, v
+      drop_dot = function(x) {
+        tt = x %chin% c(".N",".I",".GRP",".BY")
+        if (any(tt)) x[tt] = substring(x[tt], 2L)
+        x
+      }
+      # handle auto-naming of last item of j (e.g. within {} or if/else, #2478)
+      #   e.g. DT[, .(a=sum(v), v, .N), by=] should create columns named a, v, N
       do_j_names = function(q) {
         if (!is.call(q) || !is.name(q[[1L]])) return(q)
         if (as.character(q[[1L]]) %chin% c('list', '.')) {
@@ -873,10 +874,10 @@ replace_dot_alias = function(e) {
             for (jj in idx) {
               thisq = q[[jj + 1L]]
               if (missing(thisq)) stop("Item ", jj, " of the .() or list() passed to j is missing") #3507
-              if (is.name(thisq)) nm[jj] = deparse(thisq, width.cutoff = 50L, backtick = FALSE, nlines = 1L)
+              if (is.name(thisq)) nm[jj] = as.character(thisq)
               # TO DO: if call to a[1] for example, then call it 'a' too
             }
-            nm[idx] = gsub(DOT_REGEX, "\\1", nm[idx])
+            nm[idx] = drop_dot(nm[idx])
             if (!is.null(jvnames) && any(idx <- nm != jvnames))
               warning("Different branches of j expression produced different auto-named columns: ", brackify(sprintf('%s!=%s', nm[idx], jvnames[idx])), '; using the most "last" names', call. = FALSE)
             jvnames <<- nm # TODO: handle if() list(a, b) else list(b, a) better
@@ -896,10 +897,9 @@ replace_dot_alias = function(e) {
         }
         return(q)
       }
-
       if (is.name(jsub)) {
         # j is a single unquoted column name
-        if (jsub!=".SD") jvnames = gsub(DOT_REGEX, "\\1", jsub)
+        if (jsub!=".SD") jvnames = drop_dot(as.character(jsub))
         # jsub is list()ed after it's eval'd inside dogroups.
       } else jsub = do_j_names(jsub) # else maybe a call to transform or something which returns a list.
       av = all.vars(jsub,TRUE)  # TRUE fixes bug #1294 which didn't see b in j=fns[[b]](c)
