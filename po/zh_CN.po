@@ -1300,7 +1300,7 @@ msgstr "当'measure.vars'是一个列表(list), 'value.name' 必须是一个"
 msgid ""
 "When 'measure.vars' is either not specified or a character/integer vector, "
 "'value.name' must be a character vector of length =1."
-msgstr "当'measure.vars'未被指定或者是一个字符/整数向量时，""
+msgstr "当'measure.vars'未被指定或者是一个字符/整数向量时，"
 "'value.name'必须是一个长度1的字符/整数向量"
 
 #: fmelt.c:280
