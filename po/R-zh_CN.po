@@ -814,7 +814,7 @@ msgid "'old' is type"
 msgstr "'old' 的类型是"
 
 msgid "but should be integer, double or character"
-msgstr "应该为整型,双整型或者字符型"
+msgstr "应该为整型,浮点型或者字符型"
 
 msgid "'old' is length"
 msgstr "'old' 长度为"
@@ -826,7 +826,7 @@ msgid "NA (or out of bounds) in 'old' at positions"
 msgstr "NA(或超出界限)出现在'old' 的位置"
 
 msgid "of 'old' is '"
-msgstr "of 'old' 是"
+msgstr "是"
 
 msgid ""
 "' which appears several times in column names. Just the first will be "
@@ -838,7 +838,7 @@ msgid "other items in old that are also duplicated in column names."
 msgstr "old中的其他项在列名中出现重复"
 
 msgid "Items of 'old' not found in column names:"
-msgstr "在列名中为找到 'old' 有关项"
+msgstr "在列名中未找到 'old' 有关项"
 
 msgid ". Consider skip_absent=TRUE."
 msgstr "尝试 skip_absent=TRUE"
@@ -871,7 +871,7 @@ msgid ""
 "use.names='check' cannot be used explicitly because the value 'check' is new "
 "in v1.12.2 and subject to change. It is just meant to convey default "
 "behavior. See ?rbindlist."
-msgstr "use.names='check'无法明确使用，由于值'check'为新增"
+msgstr "请勿直接使用use.names='check'，因为值'check'为新增"
 "在v1.12.2中后续有所变化，仅用表示默认模式"
 "详见 ?rbindlist"
 
