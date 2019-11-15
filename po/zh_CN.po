@@ -1623,7 +1623,7 @@ msgstr "无法分配 %s 的连续虚拟内存。 %s 已分配。"
 #: fread.c:442
 #, c-format
 msgid "Avoidable %.3f seconds. %s time to copy.\n"
-msgstr "可避免的 %.3f ，秒。 %s 复制用时\n"
+msgstr "可避免的 %.3f 秒。 %s 复制用时\n"
 
 #: fread.c:443
 #, c-format
