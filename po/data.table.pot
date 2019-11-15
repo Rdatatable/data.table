@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: data.table 1.12.7\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2019-11-01 00:42+0800\n"
+"POT-Creation-Date: 2019-11-05 09:55+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -1861,6 +1861,13 @@ msgstr ""
 msgid ""
 "  File ends abruptly with '%c'. Final end-of-line is missing. Using cow page "
 "to write 0 to the last byte.\n"
+msgstr ""
+
+#: fread.c:1335
+msgid ""
+"This file is very unusual: it ends abruptly without a final newline, and "
+"also its size is a multiple of 4096 bytes. Please properly end the last row "
+"with a newline using for example 'echo >> file' to avoid this "
 msgstr ""
 
 #: fread.c:1336
