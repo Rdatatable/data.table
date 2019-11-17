@@ -1007,7 +1007,7 @@ msgid "%s:%d"
 msgstr ""
 
 msgid "The first entry with fewer than"
-msgstr "第一个少于"
+msgstr "第一个长度少于"
 
 msgid "entries is"
 msgstr "的输入项是"
@@ -1045,7 +1045,7 @@ msgid ""
 "). For robustness, no recycling is allowed (other than of length 1 RHS). "
 "Consider %in% instead."
 msgstr ""
-")。为了鲁棒性考虑，不进行回收重用（recycling）（除非右手侧长度为 1 ）。"
+")。考虑到程序的稳健性，只有在右侧元素长度为 1 的情况下，我们才会对之进行循环。"
 "考虑改用 %in% 。"
 
 msgid ""
