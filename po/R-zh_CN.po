@@ -404,22 +404,24 @@ msgid "i has evaluated to type"
 msgstr ""
 
 msgid ". Expecting logical, integer or double."
-msgstr ""
+msgstr "。期望布尔类型，整型或浮点型。"
 
 msgid "i evaluates to a logical vector length"
-msgstr ""
+msgstr "i 为一个布尔类型向量的长度。"
 
 msgid "but there are"
-msgstr ""
+msgstr "但是存在"
 
 msgid ""
 "rows. Recycling of logical i is no longer allowed as it hides more bugs than "
 "is worth the rare convenience. Explicitly use rep(...,length=.N) if you "
 "really need to recycle."
 msgstr ""
+"行。不再允许布尔值 i 循环补齐，尽管这样有些许便利，但会隐藏更多的 bug，得不偿失。"
+"若确实需要循环补齐，请直接使用 rep(...,length=.N)。"
 
 msgid "Internal error: notjoin but byjoin or !integer or nomatch==NA"
-msgstr ""
+msgstr "内部错误。原因可能为：notjoin 而非 byjoin；非整数；nomatch 为空"
 
 msgid ""
 "with=FALSE together with := was deprecated in v1.9.4 released Oct 2014. "
@@ -427,39 +429,47 @@ msgid ""
 "to assign to column name(s) held in variable myVar. See ?':=' for other "
 "examples. As warned in 2014, this is now a warning."
 msgstr ""
+"2014年10月发布的1.9.4版本中，with=FALSE 和 := 共用的用法已被弃用。"
+"请把 := 左侧部分打上括号；例如，DT[,(myVar):=sum(b),by=a]"
+"对 myVar 中的列名进行赋值。输入 ?':=' 参看其他的"
+"例子。正如2014年的版本中所说明的，现在这种用法会出现警告。"
+
 
 msgid ""
 "with=FALSE ignored, it isn't needed when using :=. See ?':=' for examples."
 msgstr ""
+"当使用 :=. 的时候，with=FALSE 是多余的，会被忽略。输入 ?':=' 参看例子。"
 
 msgid "column(s) not removed because not found:"
-msgstr ""
+msgstr "列未被删除因为不存在："
 
 msgid "column(s) not found:"
-msgstr ""
+msgstr "列不存在"
 
 msgid "of j is"
-msgstr ""
+msgstr "j 是"
 
 msgid "which is outside the column number range [1,ncol="
-msgstr ""
+msgstr "不在列索引范围内 [1,ncol="
 
 msgid "]"
-msgstr ""
+msgstr "]"
 
 msgid "j mixes positives and negatives"
-msgstr ""
+msgstr "j 中同时存在正数和负数"
 
 msgid ""
 "When with=FALSE, j-argument should be of type logical/character/integer "
 "indicating the columns to select."
 msgstr ""
+"当 with=FALSE，参数 j 必须为布尔型/字符型/整型之一"
+"，表征要选择的列。"
 
 msgid "by=c(...), key(...) or names(...) must evaluate to 'character'"
-msgstr ""
+msgstr "by=c(...), key(...) 或 names(...) 只接受 'character' "
 
 msgid "'by' is a character vector length"
-msgstr ""
+msgstr "'by' 是一个字符型向量，长度为"
 
 msgid ""
 "but one or more items include a comma. Either pass a vector of column names "
@@ -467,37 +477,48 @@ msgid ""
 "containing comma separated column names. See ?data.table for other "
 "possibilities."
 msgstr ""
+"但是其中包含一个或多个逗号。请传入一个列名组成的向量"
+"（可以包含空格，但是不能包含逗号），或传入一个长度为1，由逗号分隔的列名组成的向量"
+"输入 ?data.table"
+"查看其他的选项。"
 
 msgid "Internal error: irows isn't integer"
-msgstr ""
+msgstr "内部错误：irows 不是整型"
 
 msgid ""
 "'by' appears to evaluate to column names but isn't c() or key(). Use "
 "by=list(...) if you can. Otherwise, by=eval"
 msgstr ""
+"传递给 'by' 参数的似乎是列名，但没有用 c() 或者 key() 函数。如若可以，请使用"
+"by=list(...)。此外，by=eval"
 
 msgid ""
 "should work. This is for efficiency so data.table can detect which columns "
 "are needed."
 msgstr ""
+"应该是可行的。这样做是出于性能考虑，凭此 data.table 可以判断哪些列"
+"是需要的。"
 
 msgid ""
 "'by' or 'keyby' must evaluate to a vector or a list of vectors (where 'list' "
 "includes data.table and data.frame which are lists, too)"
 msgstr ""
+"'by' 或者 'keyby' 参数只接受一个向量或由向量组成的列表（这里 'list'"
+"包含 data.table 和 data.frame，这二者本质也是列表"
 
 msgid "column or expression"
-msgstr ""
+msgstr "列或者表达式"
 
 msgid "of 'by' or 'keyby' is type"
-msgstr ""
+msgstr "传递给 'by' 和 'keyby' 参数的类型是"
 
 msgid ""
 ". Do not quote column names. Usage: DT[,sum(colC),by=list(colA,month(colB))]"
-msgstr ""
+msgstr "。请勿引用列名。用法：DT[,sum(colC),by=list(colA,month(colB))]"
 
 msgid "The items in the 'by' or 'keyby' list are length ("
 msgstr ""
+"'by' 或 'keyby' 列表中的元素长度为（"
 
 msgid "). Each must be length"
 msgstr ""
