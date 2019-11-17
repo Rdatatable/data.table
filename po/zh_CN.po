@@ -2394,16 +2394,16 @@ msgstr ""
 #: freadR.c:140
 #, c-format
 msgid "Internal error: NAstringsArg is type '%s'. R level catches this"
-msgstr ""
+msgstr "å†…éƒ¨é”™è¯¯ï¼šNAstringsArgæ˜¯'%s'æ•°æ®ç±»å‹.Rä¸­èƒ½å¤Ÿæ•è·è¿™ä¸ªä¿¡æ¯"
 
 #: freadR.c:153
 #, c-format
 msgid "nThread(%d)<1"
-msgstr ""
+msgstr "nThread(%d)<1ï¼ˆçº¿ç¨‹æ•°ï¼ˆ%dï¼‰å°äº1ï¼‰"
 
 #: freadR.c:160
 msgid "'integer64' must be a single character string"
-msgstr ""
+msgstr "'64æ•´æ•°å‹'å¿…é¡»æ˜¯å•ä¸ªå­—ç¬¦ä¸²"
 
 #: freadR.c:168
 #, c-format
@@ -2411,66 +2411,72 @@ msgid ""
 "Invalid value integer64='%s'. Must be 'integer64', 'character', 'double' or "
 "'numeric'"
 msgstr ""
+"64ä½æ•´æ•°å‹æœ‰æ•ˆå€¼='%s'.å¿…é¡»æ˜¯'64ä½æ•´æ•°å‹'ï¼Œ'å­—ç¬¦ä¸²'ï¼Œ'åŒç²¾åº¦æµ®ç‚¹å‹'æˆ–è€…'æ•°å€¼å‹'"
 
 #: freadR.c:176
 msgid "Use either select= or drop= but not both."
-msgstr ""
+msgstr "è¦ä¹ˆä½¿ç”¨select=è¦ä¹ˆä½¿ç”¨drop=ï¼Œç¦æ­¢åŒæ—¶ä½¿ç”¨"
 
 #: freadR.c:179
 msgid ""
 "select= is type list for specifying types in select=, but colClasses= has "
 "been provided as well. Please remove colClasses=."
 msgstr ""
+"select=æ˜¯ç”¨äºåœ¨select=ä¸­æŒ‡å®šç±»å‹çš„ç±»å‹åˆ—è¡¨ï¼Œä½†æ˜¯è¿˜æä¾›äº†colClasses=ã€‚è¯·åˆ é™¤colClasses=ã€‚"
 
 #: freadR.c:181
 msgid ""
 "select= is type list but has no names; expecting list(type1=cols1, "
 "type2=cols2, ...)"
 msgstr ""
+"select =æ˜¯ç±»å‹åˆ—è¡¨ï¼Œä½†æ²¡æœ‰åç§°ï¼› æœŸæœ›åˆ—è¡¨ï¼ˆtype1 = cols1ï¼Œtype2 = cols2ï¼Œ...ï¼‰"
 
 #: freadR.c:188
 msgid ""
 "select= is a named vector specifying the columns to select and their types, "
 "but colClasses= has been provided as well. Please remove colClasses=."
 msgstr ""
+"select =æ˜¯ä¸€ä¸ªå‘½åå‘é‡ï¼Œç”¨äºæŒ‡å®šè¦é€‰æ‹©çš„åˆ—åŠå…¶ç±»å‹ï¼Œ"
+"ä½†æ˜¯è¿˜æä¾›äº†colClasses =ã€‚ è¯·åˆ é™¤colClasses =ã€‚"
 
 #: freadR.c:196 freadR.c:346
 msgid "colClasses is type list but has no names"
-msgstr ""
+msgstr "colClassesæ˜¯ç±»å‹åˆ—è¡¨ï¼Œä½†æ²¡æœ‰åç§°"
 
 #: freadR.c:206
 #, c-format
 msgid "encoding='%s' invalid. Must be 'unknown', 'Latin-1' or 'UTF-8'"
-msgstr ""
+msgstr "encoding ='ï¼…s'æ— æ•ˆã€‚ å¿…é¡»ä¸º'æœªçŸ¥'ï¼Œ'æ‹‰ä¸1'æˆ–'UTF-8'
 
 #: freadR.c:229
 #, c-format
 msgid "Column name '%s' (%s) not found"
-msgstr ""
+msgstr "æ‰¾ä¸åˆ°åˆ—å'ï¼…s'ï¼ˆï¼…sï¼‰"
 
 #: freadR.c:231
 #, c-format
 msgid "%s is NA"
-msgstr ""
+msgstr "%sæ˜¯ç¼ºå¤±å€¼"
 
 #: freadR.c:233
 #, c-format
 msgid "%s is %d which is out of range [1,ncol=%d]"
-msgstr ""
+msgstr "ï¼…sæ˜¯ï¼…dï¼Œè¶…å‡ºèŒƒå›´[1ï¼Œncol =ï¼…d]"
 
 #: freadR.c:247
 msgid "Internal error: typeSize[CT_BOOL8_N] != 1"
-msgstr ""
+msgstr "å†…éƒ¨é”™è¯¯ï¼šç±»å‹å¤§å°[CT_BOOL8_N]ä¸ç­‰äº1"
 
 #: freadR.c:248
 msgid "Internal error: typeSize[CT_STRING] != 1"
-msgstr ""
+msgstr "å†…éƒ¨é”™è¯¯ï¼šç±»å‹å¤§å°[CT_STRING]ä¸ç­‰äº1"
 
 #: freadR.c:282
 #, c-format
 msgid ""
 "Column name '%s' not found in column name header (case sensitive), skipping."
 msgstr ""
+"åœ¨åˆ—åæ ‡é¢˜ä¸­æ‰¾ä¸åˆ°åˆ—å'ï¼…s'ï¼ˆåŒºåˆ†å¤§å°å†™ï¼‰ï¼Œæ­£åœ¨è·³è¿‡ã€‚"
 
 #: freadR.c:292
 #, c-format
@@ -2478,6 +2484,8 @@ msgid ""
 "Column number %d (select[%d]) is negative but should be in the range [1,ncol="
 "%d]. Consider drop= for column exclusion."
 msgstr ""
+"åˆ—å·ï¼…dï¼ˆselect [ï¼…d]ï¼‰ä¸ºè´Ÿï¼Œä½†åº”åœ¨[1ï¼Œncol =ï¼…d]èŒƒå›´å†…ã€‚â€
+â€œè€ƒè™‘drop=ç”¨äºæ’é™¤åˆ—ã€‚"
 
 #: freadR.c:293
 #, c-format
@@ -2485,6 +2493,7 @@ msgid ""
 "select = 0 (select[%d]) has no meaning. All values of select should be in "
 "the range [1,ncol=%d]."
 msgstr ""
+â€œselect=0ï¼ˆselect[ï¼…d]ï¼‰æ²¡æœ‰æ„ä¹‰ã€‚selectçš„æ‰€æœ‰å€¼éƒ½åº”åœ¨[1ï¼Œncol=ï¼…d]èŒƒå›´å†…ã€‚â€
 
 #: freadR.c:294
 #, c-format
@@ -2492,16 +2501,18 @@ msgid ""
 "Column number %d (select[%d]) is too large for this table, which only has %d "
 "columns."
 msgstr ""
+â€œå¯¹äºæ­¤è¡¨ï¼ˆä»…åŒ…å«ï¼…dåˆ—ï¼Œï¼‰åˆ—å·ï¼…dï¼ˆselect [ï¼…d]ï¼‰å¤ªå¤§ã€‚â€
 
 #: freadR.c:295
 #, c-format
 msgid "Column number %d ('%s') has been selected twice by select="
-msgstr ""
+msgstr "åˆ—å·ï¼…dï¼ˆ'ï¼…s'ï¼‰å·²ç”±select =é€‰æ‹©ä¸¤æ¬¡"
 
 #: freadR.c:313
 msgid ""
 "colClasses='NULL' is not permitted; i.e. to drop all columns and load nothing"
 msgstr ""
+â€œcolClasses ='NULL'æ˜¯ä¸å…è®¸çš„ï¼› å³åˆ é™¤æ‰€æœ‰åˆ—è€Œä¸åŠ è½½ä»»ä½•å†…å®¹â€
 
 #: freadR.c:318
 #, c-format
@@ -2511,31 +2522,36 @@ msgid ""
 "a named vector, list format, or specify types using select= instead of "
 "colClasses=. Please see examples in ?fread."
 msgstr ""
+"colClasses =æ˜¯ç±»å‹ä¸ºï¼…dçš„ç±»å‹çš„æœªå‘½åå‘é‡ï¼Œä½†æ˜¯æœ‰ï¼…dè¾“å…¥ä¸­çš„åˆ—ã€‚
+"è¦ä¸ºåˆ—çš„å­é›†æŒ‡å®šç±»å‹ï¼Œå¯ä»¥ä½¿ç”¨å‘½åå‘é‡ï¼Œåˆ—è¡¨æ ¼å¼æˆ–ä½¿ç”¨select="
+"è€Œä¸æ˜¯colClasses=ã€‚è¯·å‚é˜…'?fread'ä¸­çš„ç¤ºä¾‹ã€‚"
 
 #: freadR.c:329
 msgid "Internal error: selectInts is NULL but selectColClasses is true"
-msgstr ""
+msgstr "å†…éƒ¨é”™è¯¯ï¼šselectIntsä¸ºNULLï¼Œä½†selectColClassesä¸ºtrue"
 
 #: freadR.c:330
 msgid ""
 "Internal error: length(selectSxp)!=length(colClassesSxp) but "
 "selectColClasses is true"
 msgstr ""
+"å†…éƒ¨é”™è¯¯ï¼šlengthï¼ˆselect xpï¼‰ï¼=lengthï¼ˆcolClasses xpï¼‰ï¼Œ
+"ä½†select ColClassesä¸ºtrue"
 
 #: freadR.c:344
 #, c-format
 msgid "colClasses is type '%s' but should be list or character"
-msgstr ""
+msgstr "colClassesæ˜¯ç±»å‹'ï¼…s'ï¼Œä½†åº”è¯¥æ˜¯åˆ—è¡¨æˆ–å­—ç¬¦"
 
 #: freadR.c:368
 #, c-format
 msgid "Column name '%s' (colClasses[[%d]][%d]) not found"
-msgstr ""
+msgstr "æ‰¾ä¸åˆ°åˆ—å'ï¼…s'ï¼ˆcolClasses[[ï¼…d]][ï¼…d]ï¼‰"
 
 #: freadR.c:370
 #, c-format
 msgid "colClasses[[%d]][%d] is NA"
-msgstr ""
+msgstr "colClasses[[%d]][%d]æ˜¯NA"
 
 #: freadR.c:374
 #, c-format
@@ -2543,46 +2559,48 @@ msgid ""
 "Column %d ('%s') appears more than once in colClasses. The second time is "
 "colClasses[[%d]][%d]."
 msgstr ""
+"Column %d ('%s')åœ¨colClassesä¸­å‡ºç°äº†å¤šæ¬¡ã€‚"
+"ç¬¬äºŒæ¬¡æ˜¯colClasses[[%d]][%d]."
 
 #: freadR.c:381
 #, c-format
 msgid "Column number %d (colClasses[[%d]][%d]) is out of range [1,ncol=%d]"
-msgstr ""
+msgstr "åˆ—å·ï¼…d(colClasses[[%d]][%d])è¶…å‡ºèŒƒå›´[1,ncol=%d]"
 
 #: freadR.c:583
 #, c-format
 msgid "Field size is 1 but the field is of type %d\n"
-msgstr ""
+msgstr "å­—æ®µå¤§å°ä¸º1ï¼Œä½†å­—æ®µç±»å‹ä¸ºï¼…d \ n"
 
 #: freadR.c:592
 #, c-format
 msgid "Internal error: unexpected field of size %d\n"
-msgstr ""
+msgstr "å†…éƒ¨é”™è¯¯ï¼šå¤§å°ä¸ºï¼…d \ nçš„æ„å¤–å­—æ®µ"
 
 #: freadR.c:660
 #, c-format
 msgid "%s"
-msgstr ""
+msgstr "%s"
 
 #: froll.c:18 froll.c:227 froll.c:411
 #, c-format
 msgid "%s: window width longer than input vector, returning all NA vector\n"
-msgstr ""
+msgstr "ï¼…sï¼šçª—å£å®½åº¦æ¯”è¾“å…¥å‘é‡é•¿ï¼Œè¿”å›æ‰€æœ‰NAå‘é‡\n"
 
 #: froll.c:36 froll.c:244 froll.c:460
 #, c-format
 msgid "%s: align %d, shift answer by %d\n"
-msgstr ""
+msgstr "%sï¼šå¯¹é½%dï¼Œå°†ç­”æ¡ˆç§»ä½%d\n"
 
 #: froll.c:43 froll.c:251 frolladaptive.c:23 frolladaptive.c:218
 #, c-format
 msgid "%s: processing algo %u took %.3fs\n"
-msgstr ""
+msgstr "%s: å¤„ç†ç®—æ³•%uç”¨äº†%.3fs\n"
 
 #: froll.c:52 froll.c:255
 #, c-format
 msgid "%s: running for input length %llu, window %d, hasna %d, narm %d\n"
-msgstr ""
+msgstr "%s: è¿è¡Œè¾“å…¥é•¿åº¦%lluï¼Œçª—å£%dï¼Œhasna %dï¼Œnarm %d\n"
 
 #: froll.c:72 froll.c:82 froll.c:173 froll.c:275 froll.c:285 froll.c:366
 #: frolladaptive.c:62 frolladaptive.c:151 frolladaptive.c:251
@@ -2592,6 +2610,8 @@ msgid ""
 "%s: hasNA=FALSE used but NA (or other non-finite) value(s) are present in "
 "input, use default hasNA=NA to avoid this warning"
 msgstr ""
+"%sï¼šä½¿ç”¨äº†hasNA = FALSEï¼Œä½†è¾“å…¥ä¸­å­˜åœ¨NAï¼ˆæˆ–å…¶ä»–éé™å®šæ€§ï¼‰å€¼ï¼Œ"
+"è¯·ä½¿ç”¨é»˜è®¤çš„hasNA=NAä»¥é¿å…æ­¤è­¦å‘Š"
 
 #: froll.c:75 froll.c:177 froll.c:278 froll.c:370 frolladaptive.c:65
 #: frolladaptive.c:155 frolladaptive.c:254 frolladaptive.c:334
@@ -2600,6 +2620,7 @@ msgid ""
 "%s: NA (or other non-finite) value(s) are present in input, re-running with "
 "extra care for NAs\n"
 msgstr ""
+"%sï¼šè¾“å…¥ä¸­å­˜åœ¨NAï¼ˆæˆ–éé™å®šå€¼ï¼‰ï¼Œè¯·æ ¼å¤–æ³¨æ„NAå€¼å¹¶é‡æ–°è¿è¡Œ"
 
 #: froll.c:85 froll.c:288
 #, c-format
@@ -3056,11 +3077,11 @@ msgstr ""
 
 #: gsumm.c:47
 msgid "l is not an integer vector"
-msgstr "l ²»ÊÇÕûÊıÏòÁ¿"
+msgstr "l ??????????ï¿½ï¿½"
 
 #: gsumm.c:56
 msgid "irowsArg is neither an integer vector nor NULL"
-msgstr "irowsArg ¼È²»ÊÇÕûÊıÏòÁ¿Ò²²»ÊÇ NULL"
+msgstr "irowsArg ?È²?????????ï¿½ï¿½Ò²???? NULL"
 
 #: gsumm.c:58
 #, c-format
@@ -3070,48 +3091,48 @@ msgstr ""
 #: gsumm.c:66
 #, c-format
 msgid "o has length %d but sum(l)=%d"
-msgstr "o µÄ³¤¶ÈÎª %d£¬µ« sum(l) = %d"
+msgstr "o ?Ä³???Îª %d???? sum(l) = %d"
 
 #: gsumm.c:69
 msgid "Internal error: o's maxgrpn attribute mismatches recalculated maxgrpn"
-msgstr "ÄÚ²¿´íÎó£ºo µÄ maxgrpn ÊôĞÔÓëÖØĞÂ¼ÆËãµÄ maxgrpn ²»Æ¥Åä"
+msgstr "?Ú²???????o ?? maxgrpn ?????????Â¼????? maxgrpn ??Æ¥??"
 
 #: gsumm.c:89
 #, c-format
 msgid ""
 "Internal error: nrow=%d  ngrp=%d  nbit=%d  shift=%d  highSize=%d  nBatch=%d  "
 "batchSize=%d  lastBatchSize=%d\n"
-msgstr "ÄÚ²¿´íÎó£ºnrow=%d ngrp=%d  nbit=%d  shift=%d  highSize=%d  nBatch=%d  "
+msgstr "?Ú²???????nrow=%d ngrp=%d  nbit=%d  shift=%d  highSize=%d  nBatch=%d  "
 "batchSize=%d  lastBatchSize=%d\n"
 
 #: gsumm.c:98
 #, c-format
 msgid "gforce initial population of grp took %.3f\n"
-msgstr "grp µÄ gforce ³õÊ¼ÈºÌåÊıÕ¼ÁË %.3f\n "
+msgstr "grp ?? gforce ??Ê¼Èº????Õ¼?? %.3f\n "
 
 #: gsumm.c:116
 msgid ""
 "Internal error: Failed to allocate counts or TMP when assigning g in gforce"
-msgstr "ÄÚ²¿´íÎó£ºÔÚ gforce ÖĞÎª g ¸³ÖµÊ±£¬Î´ÄÜ³É¹¦Îª counts »òÕß TMP ·ÖÅä¿Õ¼ä"
+msgstr "?Ú²????????? gforce ??Îª g ??ÖµÊ±??Î´?Ü³É¹?Îª counts ???? TMP ?????Õ¼?"
 
 #: gsumm.c:194
 #, c-format
 msgid "gforce assign high and low took %.3f\n"
-msgstr "gforce ·ÖÅä high ºÍ low ÓÃÁË %.3f\n"
+msgstr "gforce ???? high ?? low ???? %.3f\n"
 
 #: gsumm.c:200
 #, c-format
 msgid "gforce eval took %.3f\n"
-msgstr "gforce eval ÓÃÁË %.3f\n"
+msgstr "gforce eval ???? %.3f\n"
 
 #: gsumm.c:216
 msgid "gather took ... "
-msgstr "gather ÓÃÁË ..."
+msgstr "gather ???? ..."
 
 #: gsumm.c:334
 #, c-format
 msgid "gather implemented for INTSXP, REALSXP, and CPLXSXP but not '%s'"
-msgstr "gather ÒÑÖ§³Ö INTSXP£¬REALSXP ºÍ CPLXSXP£¬µ«²»Ö§³Ö '%s'"
+msgstr "gather ??Ö§?? INTSXP??REALSXP ?? CPLXSXP??????Ö§?? '%s'"
 
 #: gsumm.c:336 gsumm.c:568
 #, c-format
@@ -3120,65 +3141,65 @@ msgstr ""
 
 #: gsumm.c:345
 msgid "sum is not meaningful for factors."
-msgstr "Òò×ÓµÄºÍÃ»ÓĞÒâÒå¡£"
+msgstr "???ÓµÄº?Ã»?????å¡£"
 
 #: gsumm.c:349
 #, c-format
 msgid "This gsum took (narm=%s) ... "
-msgstr "gsum Õ¼ÓÃÁË (narm=%s) ..."
+msgstr "gsum Õ¼???? (narm=%s) ..."
 
 #: gsumm.c:350 gsumm.c:606
 #, c-format
 msgid "nrow [%d] != length(x) [%d] in gsum"
-msgstr "gsum ÖĞ nrow [%d] != length(x) [%d]"
+msgstr "gsum ?? nrow [%d] != length(x) [%d]"
 
 #: gsumm.c:404
 msgid ""
 "The sum of an integer column for a group was more than type 'integer' can "
 "hold so the result has been coerced to 'numeric' automatically for "
 "convenience."
-msgstr "Ä³ÕûÊıÁĞ·Ö×éÇóºÍµÄ½á¹ûÖĞ£¬"
-"³öÏÖÁË³¬¹ıÁËÕûĞÍ£¨interger£©ÊıÖµËùÔÊĞí×î´óÖµµÄÇé¿ö£¬"
-"¹Ê½á¹û±»×Ô¶¯×ª»»ÎªÊıÖµÀàĞÍ£¨numeric£©"
+msgstr "Ä³?????Ğ·??????ÍµÄ½????Ğ£?"
+"?????Ë³????????Í£?interger????Öµ??????????Öµ????????"
+"?Ê½??????Ô¶?×ª??Îª??Öµ???Í£?numeric??"
 
 #: gsumm.c:565
 #, c-format
 msgid ""
 "Type '%s' not supported by GForce sum (gsum). Either add the prefix base::"
 "sum(.) or turn off GForce optimization using options(datatable.optimize=1)"
-msgstr "GForce ÇóºÍ£¨gsum£©²»Ö§³ÖÀàĞÍ '%s'¡£ÇëÊ¹ÓÃ base::sum(.) »òÕß"
-"ÉèÖÃ options(datatable.optimize=1) ¹Ø±Õ GForce ÓÅ»¯"
+msgstr "GForce ???Í£?gsum????Ö§?????? '%s'????Ê¹?? base::sum(.) ????"
+"???? options(datatable.optimize=1) ?Ø±? GForce ?Å»?"
 
 #: gsumm.c:578
 msgid ""
 "GForce mean can only be applied to columns, not .SD or similar. Likely "
 "you're looking for 'DT[,lapply(.SD,mean),by=,.SDcols=]'. See ?data.table."
-msgstr "GForce ÇóÆ½¾ùÖµ½öÊÊÓÃÓÚÁĞ£¬¶ø²»ÄÜÓÃÓÚ .SD »òÆäËü¡£"
-"»òĞíÄãÔÚ²éÕÒ 'DT[,lapply(.SD,mean),by=,.SDcols=]'¡£²Î¼û ?data.table ¡£"
+msgstr "GForce ??Æ½??Öµ?????????Ğ£??????????? .SD ????????"
+"???????Ú²??? 'DT[,lapply(.SD,mean),by=,.SDcols=]'???Î¼? ?data.table ??"
 
 #: gsumm.c:579
 msgid "mean is not meaningful for factors."
-msgstr "Òò×ÓµÄÆ½¾ùÖµÃ»ÓĞÒâÒå"
+msgstr "???Óµ?Æ½??ÖµÃ»??????"
 
 #: gsumm.c:599
 #, c-format
 msgid "Internal error: gsum returned type '%s'. typeof(x) is '%s'"
-msgstr "ÄÚ²¿´íÎó£ºgsum ·µ»ØµÄÀàĞÍÊÇ '%s'£¬¶ø typeof(x) µÄ½á¹ûÔòÊÇ '%s'"
+msgstr "?Ú²???????gsum ???Øµ??????? '%s'???? typeof(x) ?Ä½??????? '%s'"
 
 #: gsumm.c:609
 #, c-format
 msgid "Unable to allocate %d * %d bytes for sum in gmean na.rm=TRUE"
-msgstr "ÎŞ·¨Îª gmean na.rm=TRUE µÄ×ÜºÍ£¨sum£©·ÖÅä %d * %d ×Ö½Ú¿Õ¼ä"
+msgstr "?Ş·?Îª gmean na.rm=TRUE ???ÜºÍ£?sum?????? %d * %d ?Ö½Ú¿Õ¼?"
 
 #: gsumm.c:612
 #, c-format
 msgid "Unable to allocate %d * %d bytes for counts in gmean na.rm=TRUE"
-msgstr "ÎŞ·¨Îª gmean na.rm=TRUE µÄ¼ÆÊı£¨counts£©·ÖÅä %d * %d ×Ö½Ú¿Õ¼ä"
+msgstr "?Ş·?Îª gmean na.rm=TRUE ?Ä¼?????counts?????? %d * %d ?Ö½Ú¿Õ¼?"
 
 #: gsumm.c:638
 #, c-format
 msgid "Unable to allocate %d * %d bytes for si in gmean na.rm=TRUE"
-msgstr "ÎŞ·¨Îª gmean na.rm=TRUE µÄ si ·ÖÅä %d * %d ×Ö½Ú¿Õ¼ä"
+msgstr "?Ş·?Îª gmean na.rm=TRUE ?? si ???? %d * %d ?Ö½Ú¿Õ¼?"
 
 #: gsumm.c:650
 #, c-format
@@ -3186,12 +3207,12 @@ msgid ""
 "Type '%s' not supported by GForce mean (gmean) na.rm=TRUE. Either add the "
 "prefix base::mean(.) or turn off GForce optimization using options(datatable."
 "optimize=1)"
-msgstr "GForce Çó¾ùÖµ£¨gmean£©²»Ö§³ÖÀàĞÍ '%s'¡£ÇëÊ¹ÓÃ base::mean(.) »òÕß"
-"ÉèÖÃ options(datatable.optimize=1) ¹Ø±Õ GForce ÓÅ»¯"
+msgstr "GForce ????Öµ??gmean????Ö§?????? '%s'????Ê¹?? base::mean(.) ????"
+"???? options(datatable.optimize=1) ?Ø±? GForce ?Å»?"
 
 #: gsumm.c:674
 msgid "Internal error: unsupported type at the end of gmean"
-msgstr "ÄÚ²¿´íÎó£ºgmean ½áÎ²´¦´æÔÚ²»Ö§³ÖµÄÀàĞÍ"
+msgstr "?Ú²???????gmean ??Î²?????Ú²?Ö§?Öµ?????"
 
 #: gsumm.c:687
 msgid ""
@@ -3199,45 +3220,45 @@ msgid ""
 "of all items in a list such as .SD, either add the prefix base::min(.SD) or "
 "turn off GForce optimization using options(datatable.optimize=1). More "
 "likely, you may be looking for 'DT[,lapply(.SD,min),by=,.SDcols=]'"
-msgstr "GForce Çó×îĞ¡Öµ£¨min£©½öÊÊÓÃÓÚÁĞ£¬¶ø²»ÄÜÓÃÓÚ .SD »òÆäËü¡£"
-"ÒªÕÒµ½ÁĞ±íÖĞ£¨Èç .SD£©ËùÓĞÔªËØµÄ×îĞ¡Öµ£¬ĞëÊ¹ÓÃ base::min(.SD) »òÕß"
-"ÉèÖÃ options(datatable.optimize=1) ¹Ø±Õ GForce ÓÅ»¯¡£"
-"Äã¸üÏñÊÇÔÚ²éÕÒ 'DT[,lapply(.SD,min),by=,.SDcols=]'"
+msgstr "GForce ????Ğ¡Öµ??min???????????Ğ£??????????? .SD ????????"
+"Òª?Òµ??Ğ±??Ğ£??? .SD??????Ôª?Øµ???Ğ¡Öµ????Ê¹?? base::min(.SD) ????"
+"???? options(datatable.optimize=1) ?Ø±? GForce ?Å»???"
+"?????????Ú²??? 'DT[,lapply(.SD,min),by=,.SDcols=]'"
 
 #: gsumm.c:688
 msgid "min is not meaningful for factors."
-msgstr "Òò×ÓµÄ×îĞ¡ÖµÃ»ÓĞÒâÒå¡£"
+msgstr "???Óµ???Ğ¡ÖµÃ»?????å¡£"
 
 #: gsumm.c:693
 #, c-format
 msgid "nrow [%d] != length(x) [%d] in gmin"
-msgstr "gmin ÖĞ nrow [%d] != length(x) [%d]"
+msgstr "gmin ?? nrow [%d] != length(x) [%d]"
 
 #: gsumm.c:717 gsumm.c:850
 msgid ""
 "No non-missing values found in at least one group. Coercing to numeric type "
 "and returning 'Inf' for such groups to be consistent with base"
-msgstr "ÔÚÖÁÉÙÒ»¸ö·Ö×éÖĞÃ»ÓĞ·¢ÏÖÈ±Ê§Öµ¡£"
-"ÎªÁËÓë base ±£³ÖÒ»ÖÂ£¬½«ÕâĞ©×éÇ¿ÖÆ×ª»»ÎªÊıÖµÀàĞÍ²¢·µ»Ø ¡®Inf¡¯¡£"
+msgstr "??????Ò»????????Ã»?Ğ·???È±Ê§Öµ??"
+"Îª???? base ????Ò»?Â£?????Ğ©??Ç¿??×ª??Îª??Öµ???Í²????? ??Inf????"
 
 #: gsumm.c:756 gsumm.c:891
 msgid ""
 "No non-missing values found in at least one group. Returning 'NA' for such "
 "groups to be consistent with base"
-msgstr "ÔÚÖÁÉÙÒ»¸ö·Ö×éÖĞÃ»ÓĞ·¢ÏÖÈ±Ê§Öµ¡£"
-"ÎªÁËÓë base ±£³ÖÒ»ÖÂ£¬ÕâĞ©×é½«·µ»Ø ¡®NA¡¯¡£"
+msgstr "??????Ò»????????Ã»?Ğ·???È±Ê§Öµ??"
+"Îª???? base ????Ò»?Â£???Ğ©?é½«???? ??NA????"
 
 #: gsumm.c:783
 msgid ""
 "No non-missing values found in at least one group. Returning 'Inf' for such "
 "groups to be consistent with base"
-msgstr "ÔÚÖÁÉÙÒ»¸ö·Ö×éÖĞÃ»ÓĞ·¢ÏÖÈ±Ê§Öµ¡£"
-"ÎªÁËÓë base ±£³ÖÒ»ÖÂ£¬ÕâĞ©×é½«·µ»Ø ¡®Inf¡¯¡£"
+msgstr "??????Ò»????????Ã»?Ğ·???È±Ê§Öµ??"
+"Îª???? base ????Ò»?Â£???Ğ©?é½«???? ??Inf????"
 
 
 #: gsumm.c:791
 msgid "Type 'complex' has no well-defined min"
-msgstr "¸´Êı²»ÄÜ±È½Ï´óĞ¡£¬¹ÊÃ»ÓĞ×îĞ¡Öµ"
+msgstr "???????Ü±È½Ï´?Ğ¡????Ã»????Ğ¡Öµ"
 
 #: gsumm.c:794
 #, c-format
@@ -3245,8 +3266,8 @@ msgid ""
 "Type '%s' not supported by GForce min (gmin). Either add the prefix base::"
 "min(.) or turn off GForce optimization using options(datatable.optimize=1)"
 msgstr ""
-"ÀàĞÍ'%s'²»Ö§³ÖÓ¦ÓÃ GForce ×îĞ¡Öµ£¨gmin£© ÓÅ»¯¡£Äã¿ÉÒÔÌí¼ÓÇ°×º base::"
-"min(.) »òÕßÊ¹ÓÃ options(datatable.optimize=1) ¹Ø±Õ GForce ÓÅ»¯"
+"????'%s'??Ö§??Ó¦?? GForce ??Ğ¡Öµ??gmin?? ?Å»?????????????Ç°×º base::"
+"min(.) ????Ê¹?? options(datatable.optimize=1) ?Ø±? GForce ?Å»?"
 
 #: gsumm.c:806
 msgid ""
