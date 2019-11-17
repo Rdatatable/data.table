@@ -285,38 +285,39 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
       R_len_t origncol = LENGTH(dt);
       // check jval first before proceeding to add columns, so that if error on the first group, the columns aren't added
       for (int j=0; j<length(lhs); ++j) {
-        target = VECTOR_ELT(dt,INTEGER(lhs)[j]-1);
         RHS = VECTOR_ELT(jval,j%LENGTH(jval));
         if (isNull(RHS))
-          error(_("RHS is NULL when grouping :=. Makes no sense to delete a column by group. Perhaps use an empty vector instead."));
+          error(_("RHS of := is NULL during grouped assignment, but it's not possible to delete parts of a column."));
         int vlen = length(RHS);
         if (vlen>1 && vlen!=grpn) {
-          SEXP colname = isNull(target) ? STRING_ELT(newnames, INTEGER(lhs)[j]-origncol-1) : STRING_ELT(dtnames,INTEGER(lhs)[j]-1);
+          SEXP colname = isNull(VECTOR_ELT(dt, INTEGER(lhs)[j]-1)) ? STRING_ELT(newnames, INTEGER(lhs)[j]-origncol-1) : STRING_ELT(dtnames,INTEGER(lhs)[j]-1);
           error(_("Supplied %d items to be assigned to group %d of size %d in column '%s'. The RHS length must either be 1 (single values are ok) or match the LHS length exactly. If you wish to 'recycle' the RHS please use rep() explicitly to make this intent clear to readers of your code."),vlen,i+1,grpn,CHAR(colname));
           // e.g. in #4990 `:=` did not issue recycling warning during grouping. Now it is error not warning.
         }
       }
+      int n = LENGTH(VECTOR_ELT(dt, 0));
       for (int j=0; j<length(lhs); ++j) {
-        target = VECTOR_ELT(dt,INTEGER(lhs)[j]-1);
+        int colj = INTEGER(lhs)[j]-1;
+        target = VECTOR_ELT(dt, colj);
         RHS = VECTOR_ELT(jval,j%LENGTH(jval));
         if (isNull(target)) {
           // first time adding to new column
-          if (TRUELENGTH(dt) < INTEGER(lhs)[j]) error(_("Internal error: Trying to add new column by reference but tl is full; setalloccol should have run first at R level before getting to this point in dogroups")); // # nocov
-          target = PROTECT(allocNAVectorLike(RHS, LENGTH(VECTOR_ELT(dt,0))));
+          if (TRUELENGTH(dt) < colj+1) error(_("Internal error: Trying to add new column by reference but tl is full; setalloccol should have run first at R level before getting to this point in dogroups")); // # nocov
+          target = PROTECT(allocNAVectorLike(RHS, n));
           // Even if we could know reliably to switch from allocNAVectorLike to allocVector for slight speedup, user code could still
           // contain a switched halt, and in that case we'd want the groups not yet done to have NA rather than 0 or uninitialized.
           // Increment length only if the allocation passes, #1676. But before SET_VECTOR_ELT otherwise attempt-to-set-index-n/n R error
           SETLENGTH(dtnames, LENGTH(dtnames)+1);
           SETLENGTH(dt, LENGTH(dt)+1);
-          SET_VECTOR_ELT(dt, INTEGER(lhs)[j]-1, target);
+          SET_VECTOR_ELT(dt, colj, target);
           UNPROTECT(1);
-          SET_STRING_ELT(dtnames, INTEGER(lhs)[j]-1, STRING_ELT(newnames, INTEGER(lhs)[j]-origncol-1));
+          SET_STRING_ELT(dtnames, colj, STRING_ELT(newnames, colj-origncol));
           copyMostAttrib(RHS, target); // attributes of first group dominate; e.g. initial factor levels come from first group
         }
         const char *warn = memrecycle(target, order, INTEGER(starts)[i]-1, grpn, RHS, 0, "");
         // can't error here because length mismatch already checked for all jval columns before starting to add any new columns
         if (warn)
-          warning(_("Group %d column '%s': %s"), i+1, CHAR(STRING_ELT(dtnames,INTEGER(lhs)[j]-1)), warn);
+          warning(_("Group %d column '%s': %s"), i+1, CHAR(STRING_ELT(dtnames, colj)), warn);
       }
       UNPROTECT(1); // jval
       continue;

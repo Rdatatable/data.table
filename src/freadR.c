@@ -109,7 +109,7 @@ SEXP freadR(
     args.quote = '\0';
   } else {
     if (!isString(quoteArg) || LENGTH(quoteArg)!=1 || strlen(CHAR(STRING_ELT(quoteArg,0))) > 1)
-      error(_("quote= must be a single character, blank \")\", or FALSE"));
+      error(_("quote= must be a single character, blank \"\", or FALSE"));
     args.quote = CHAR(STRING_ELT(quoteArg,0))[0];
   }
 
