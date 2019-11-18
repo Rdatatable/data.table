@@ -2987,7 +2987,11 @@ test(1034, as.data.table(x<-as.character(sample(letters, 5))), data.table(V1=x))
   DT[, l_1 := DT[, list(c=list(rep(i_1, sample(5,1)))), by = i_1]$c] # generate list cols
   DT[, l_2 := DT[, list(c=list(rep(c_1, sample(5,1)))), by = i_1]$c]
 
-  test(1035.01, melt(DT, id.vars=1:2, measure.vars=3:4), melt(DT, id.vars=c("i_1", "i_2"), measure.vars=c("f_1", "c_1")))
+  test(1035.010, melt(DT, id.vars=1:2, measure.vars=3:4), melt(DT, id.vars=c("i_1", "i_2"), measure.vars=c("f_1", "c_1")))
+  test(1035.011, melt(DT, id.vars=as.raw(0), measure.vars=3:4),
+       error="Unknown 'id.vars' type raw")
+  test(1035.012, melt(DT, id.vars=1:3, measure.vars=as.raw(0)),
+       error="Unknown 'measure.vars' type raw")
 
   ans1 = cbind(DT[, c(1,2,8), with=FALSE], variable=factor("l_1"))
   ans1[, value := DT$l_1]
@@ -2998,14 +3002,19 @@ test(1034, as.data.table(x<-as.character(sample(letters, 5))), data.table(V1=x))
   test(1035.03, melt(DT, id.vars=4, measure.vars=5:6, na.rm=TRUE, variable.factor=FALSE), ans2)
 
   DT2 <- data.table(x=1:5, y=1+5i) # unimplemented class
-  test(1035.04, melt(DT2, id.vars=1), error="Unknown column type 'complex'")
+  test(1035.040, melt(DT2, id.vars=1), error="Unknown column type 'complex'")
+  test(1035.041, melt(DT2, id.vars=as.raw(0)), error="Unknown 'id.vars' type raw")
 
   # more tests
   DT[, f_2 := factor(sample(letters, N), ordered=TRUE)]
   DT[, id := 1:N]
   ans1 = cbind(melt(DT, id.vars="id", measure.vars=5:6, value.name="value1"), melt(DT, id.vars=integer(0), measure.vars=7:8, value.name="value2")[, variable:=NULL])
   levels(ans1$variable) = as.character(1:2)
-  test(1035.05, ans1, melt(DT, id.vars="id", measure.vars=list(5:6, 7:8)))
+  test(1035.050, ans1, melt(DT, id.vars="id", measure.vars=list(5:6, 7:8)))
+  ## use numeric index
+  test(1035.051, ans1, melt(DT, id.vars="id", measure.vars=list(c(5, 6), c(7, 8))))
+  test(1035.052, melt(DT, id.vars="id", measure.vars=list(as.raw(0))),
+       error="Unknown 'measure.vars' type raw")
   test(1035.06, ans1, melt(DT, id.vars="id", measure.vars=list(5:6, 7:8), na.rm=TRUE)) # should've no effect
   test(1035.07, ans1, melt(DT, id.vars="id", measure.vars=patterns("d_", "l_")))
   # melt retains ordered factors!
@@ -3033,7 +3042,12 @@ test(1034, as.data.table(x<-as.character(sample(letters, 5))), data.table(V1=x))
   # bug #699 - melt segfaults when vars are not in dt; was test 1316
   x = data.table(a=c(1,2),b=c(2,3),c=c(3,4))
   test(1035.14, melt(x, id.vars="d"), error="One or more values")
-  test(1035.15, melt(x, measure.vars="d"), error="One or more values")
+  test(1035.150, melt(x, measure.vars="d"), error="One or more values")
+  test(1035.151, melt(x, measure.vars=3L),
+       ans <- data.table(a=c(1, 2), b=c(2, 3), variable=factor('c'), value=c(3, 4)))
+  test(1035.152, melt(x, measure.vars=as.raw(0)), error="Unknown 'measure.vars' type raw")
+  test(1035.153, melt(x, measure.vars=3L, verbose=TRUE), ans,
+       output="'id.vars' is missing. Assigning all.*Assigned 'id.vars' are")
   test(1035.16, melt(x, id.vars="a", measure.vars="d"), error="One or more values")
   test(1035.17, melt(x, id.vars="d", measure.vars="a"), error="One or more values")
 
@@ -3061,7 +3075,10 @@ test(1034, as.data.table(x<-as.character(sample(letters, 5))), data.table(V1=x))
 
   # improper levels fix, #1359; was test 1563
   dt = data.table(id=1:3, x=NA_character_, y=c('a', NA_character_, 'c'))
-  test(1035.22, melt(dt, id.vars="id", na.rm=TRUE), data.table(id=c(1L,3L), variable=factor(c("y", "y")), value=c("a", "c")))
+  test(1035.220, melt(dt, id.vars="id", na.rm=TRUE), data.table(id=c(1L,3L), variable=factor(c("y", "y")), value=c("a", "c")))
+  test(1035.221, melt(dt, id.vars=c("id", "id"), na.rm=TRUE),
+       output = 'Duplicate column names found',
+       data.table(id=c(1L,3L), id.1=c(1L, 3L), variable=factor(c("y", "y")), value=c("a", "c")))
 
   # fixing segfault due to negative id and measure vars that I detected by accident; was test 1569
   dt = data.table(x=1:5, y=6:10, z=11:15)
@@ -3136,6 +3153,18 @@ Sep,33.5,19.4,15.7,11.9,0,100.8,100.8,0,12.7,12.7,0,174.1")
   test(1037.407, ans$variable, factor(c("1","1")))
   test(1037.408, dim(ans<-melt(x, measure.vars=patterns("^y", "^z"), na.rm=TRUE, variable.factor=FALSE)), INT(2,5))
   test(1037.409, ans$variable, c("1","1"))
+
+  test(1037.410, melt(data.table(NULL), verbose=TRUE), data.table(NULL),
+       output="ncol(data) is 0. Nothing to melt")
+  test(1037.411, melt(x, id.vars=1L, measure.vars=2L, variable.name=c('a', 'b')),
+       error="'variable.name' must be a character/integer")
+  test(1037.412, melt(x, id.vars=1L, measure.vars=list(2L), value.name=c('a', 'b')),
+       error="When 'measure.vars' is a list, 'value.name'")
+  test(1037.413, melt(x, id.vars=1L, measure.vars=2L, value.name=c('a', 'b')),
+       error="When 'measure.vars' is either not specified or a character/integer")
+  x[ , r := as.raw(c(0, 1))]
+  test(1037.414, melt(x, id.vars='x1', measure.vars='r'),
+       error="Unknown column type 'raw' for column 'r'")
 }
 
 # sorting and grouping of Inf, -Inf, NA and NaN,  #4684, #4815 & #4883
@@ -15578,7 +15607,7 @@ ord = 3:1
 test(2069.25, forder(data.table(a=3:1), ord), 3:1)
 # dogroups.c coverage
 test(2069.26, data.table(c='1')[ , expression(1), by=c], error="j evaluates to type 'expression'")
-test(2069.27, data.table(c='1', d=2)[ , d := .(NULL), by=c], error='RHS is NULL when grouping :=')
+test(2069.27, data.table(c='1', d=2)[ , d := .(NULL), by=c], error='RHS of := is NULL during grouped assignment')
 test(2069.28, data.table(c='1', d=2)[ , c(a='b'), by=c, verbose=TRUE], output='j appears to be a named vector')
 test(2069.29, data.table(c = '1', d = 2)[ , .(a = c(nm='b')), by = c, verbose = TRUE], output = 'Column 1 of j is a named vector')
 DT <- data.table(a = rep(1:3, each = 4), b = LETTERS[1:4], z = 0:3 + (4:1)*1i)
