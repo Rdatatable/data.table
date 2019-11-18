@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: data.table 1.12.5\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2019-10-22 21:04+0800\n"
+"POT-Creation-Date: 2019-11-15 19:06+0800\n"
 "PO-Revision-Date: 2019-10-26 16:01+08\n"
 "Last-Translator: Guangzheng Li <lgz1993leo@163.com>\n"
 "Language-Team: Mandarin\n"
@@ -788,8 +788,7 @@ msgstr "内部错误：xoArg不是整型向量"
 #, c-format
 msgid ""
 "Internal error in bmerge_r for '%s' column. Unrecognized value op[col]=%d"
-msgstr ""
-"bmerge_r 针对 '%s' 列的操作出现内部错误。无法识别值 op[col]=%d"
+msgstr "bmerge_r 针对 '%s' 列的操作出现内部错误。无法识别值 op[col]=%d"
 
 #: bmerge.c:303
 #, c-format
@@ -825,8 +824,8 @@ msgid ""
 "Internal error: CHARSXP '%s' has a negative truelength (%d). Please file an "
 "issue on the data.table tracker."
 msgstr ""
-"内部错误：CHARSXP '%s' 的 truelength (%d) 为负。"
-"请将此问题汇报给 data.table 问题追踪器。"
+"内部错误：CHARSXP '%s' 的 truelength (%d) 为负。请将此问题汇报给 data.table "
+"问题追踪器。"
 
 #: chmatch.c:60
 #, c-format
@@ -834,7 +833,8 @@ msgid ""
 "Failed to allocate %lld bytes working memory in chmatchdup: length(table)=%d "
 "length(unique(table))=%d"
 msgstr ""
-"无法为 chmatchdup: length(table)=%2$d length(unique(table))=%3$d 分配 %1$lld 字节的内存空间"
+"无法为 chmatchdup: length(table)=%2$d length(unique(table))=%3$d 分配 %1$lld "
+"字节的内存空间"
 
 #: cj.c:89
 #, c-format
@@ -848,8 +848,7 @@ msgstr "内部错误：coalesce.c 中 R 层面的输入为 list(...)"
 #: coalesce.c:7
 msgid ""
 "Internal error in coalesce.c: argument 'inplaceArg' must be TRUE or FALSE"
-msgstr ""
-"内部错误：coalesce.c 中 'inplaceArg' 参数必须为 TRUE 或 FALSE"
+msgstr "内部错误：coalesce.c 中 'inplaceArg' 参数必须为 TRUE 或 FALSE"
 
 #: coalesce.c:16
 msgid ""
@@ -863,26 +862,21 @@ msgstr ""
 msgid ""
 "Item 1 is a factor but item %d is not a factor. When factors are involved, "
 "all items must be factor."
-msgstr ""
-"元素1是一个因子，但元素 %d 不是。当涉及因子时，"
-"所有元素必须都为因子。"
+msgstr "元素1是一个因子，但元素 %d 不是。当涉及因子时，所有元素必须都为因子。"
 
 #: coalesce.c:34
 #, c-format
 msgid ""
 "Item %d is a factor but its levels are not identical to the first item's "
 "levels."
-msgstr ""
-"元素 %d 是一个因子，但因子水平与第一个元素因子水平不同。"
+msgstr "元素 %d 是一个因子，但因子水平与第一个元素因子水平不同。"
 
 #: coalesce.c:38
 #, c-format
 msgid ""
 "Item %d is a factor but item 1 is not a factor. When factors are involved, "
 "all items must be factor."
-msgstr ""
-"元素 %d 是一个因子，但元素1不是。当涉及因子时，"
-"所有元素必须都为因子。"
+msgstr "元素 %d 是一个因子，但元素1不是。当涉及因子时，所有元素必须都为因子。"
 
 #: coalesce.c:41
 #, c-format
@@ -890,7 +884,8 @@ msgid ""
 "Item %d is type %s but the first item is type %s. Please coerce before "
 "coalescing."
 msgstr ""
-"元素 %d 类型为 %s，但是第一个元素类型为 %s。请在 coalescing 之前强制转换类型。"
+"元素 %d 类型为 %s，但是第一个元素类型为 %s。请在 coalescing 之前强制转换类"
+"型。"
 
 #: coalesce.c:43
 #, c-format
@@ -961,8 +956,8 @@ msgid ""
 "row.names of .SD isn't integer length 2 with NA as first item; i.e., ."
 "set_row_names(). [%s %d %d]"
 msgstr ""
-".SD 的行名不是长度为2且首个元素为 NA 的整型；例如："
-"set_row_names(). [%s %d %d]"
+".SD 的行名不是长度为2且首个元素为 NA 的整型；例如：set_row_names(). [%s %d "
+"%d]"
 
 #: dogroups.c:69
 msgid "length(names)!=length(SD)"
@@ -973,8 +968,7 @@ msgstr "length(names)!=length(SD)"
 msgid ""
 "Internal error: size-0 type %d in .SD column %d should have been caught "
 "earlier"
-msgstr ""
-"内部错误：未能提前捕获到 .SD 中第 %2$d 列类型 %1$d size-0 的问题"
+msgstr "内部错误：未能提前捕获到 .SD 中第 %2$d 列类型 %1$d size-0 的问题"
 
 #: dogroups.c:83
 msgid "length(xknames)!=length(xSD)"
@@ -984,8 +978,7 @@ msgstr "length(xknames)!=length(xSD)"
 #, c-format
 msgid ""
 "Internal error: type %d in .xSD column %d should have been caught by now"
-msgstr ""
-"内部错误：当前未能捕获到 .xSD 中第 %2$d 列类型 %1$d 的问题"
+msgstr "内部错误：当前未能捕获到 .xSD 中第 %2$d 列类型 %1$d 的问题"
 
 #: dogroups.c:91
 #, c-format
@@ -1011,16 +1004,16 @@ msgid ""
 "All items in j=list(...) should be atomic vectors or lists. If you are "
 "trying something like j=list(.SD,newcol=mean(colA)) then use := by group "
 "instead (much quicker), or cbind or merge afterwards."
-msgstr "j=list(...) 中的所有项目必须是原子向量或列表"
-"如果您试图进行 j=list(.SD,newcol=mean(colA)) 之类的操作"
-"请使用 := by group 代替(更快速)，或事后使用 cbind()、merge()"
+msgstr ""
+"j=list(...) 中的所有项目必须是原子向量或列表如果您试图进行 j=list(.SD,"
+"newcol=mean(colA)) 之类的操作请使用 := by group 代替(更快速)，或事后使用 "
+"cbind()、merge()"
 
 #: dogroups.c:290
 msgid ""
 "RHS of := is NULL during grouped assignment, but it's not possible to delete "
 "parts of a column."
-msgstr "用 := 分组时 RHS 为 NULL"
-"但無法刪除部分列"
+msgstr "用 := 分组时 RHS 为 NULL但無法刪除部分列"
 
 #: dogroups.c:294
 #, c-format
@@ -1029,18 +1022,19 @@ msgid ""
 "RHS length must either be 1 (single values are ok) or match the LHS length "
 "exactly. If you wish to 'recycle' the RHS please use rep() explicitly to "
 "make this intent clear to readers of your code."
-msgstr "提供 %1$d 个项分配给第 '%4$s' 列中的第 %2$d 组，组的大小为 %3$d "
-"RHS 的长度必须是 1(可以是单个值) 或完全符合 LHS 的长度"
-"如果您想回收(recycle) RHS，请使用 rep() 向你的代码读者明确表达你的意图"
-
+msgstr ""
+"提供 %1$d 个项分配给第 '%4$s' 列中的第 %2$d 组，组的大小为 %3$d RHS 的长度必"
+"须是 1(可以是单个值) 或完全符合 LHS 的长度如果您想回收(recycle) RHS，请使用 "
+"rep() 向你的代码读者明确表达你的意图"
 
 #: dogroups.c:305
 msgid ""
 "Internal error: Trying to add new column by reference but tl is full; "
 "setalloccol should have run first at R level before getting to this point in "
 "dogroups"
-msgstr "内部错误 : 尝试依照引用增加新列但 tl 已满"
-"在进入 dogroups 之前，setalloccol 应该先在 R 运行"
+msgstr ""
+"内部错误 : 尝试依照引用增加新列但 tl 已满在进入 dogroups 之前，setalloccol 应"
+"该先在 R 运行"
 
 #: dogroups.c:320
 #, c-format
@@ -1060,18 +1054,19 @@ msgid ""
 "groups (and those are replaced with NA of appropriate type and recycled) but "
 "not for the first. Please use a typed empty vector instead, such as "
 "integer() or numeric()."
-msgstr "j 的结果中第 %d 列在第 1 组中为 NULL"
-"我们依赖第 1 组的列类型去决定剩余组的类型(需要一致性)"
-"空 (NULL) 列可以出现在后面的组(适当的以 NA 取代并回收)但不能是第 1 组"
-"请输入空向量代替，例如 integer() 或 numeric()"
+msgstr ""
+"j 的结果中第 %d 列在第 1 组中为 NULL我们依赖第 1 组的列类型去决定剩余组的类型"
+"(需要一致性)空 (NULL) 列可以出现在后面的组(适当的以 NA 取代并回收)但不能是第 "
+"1 组请输入空向量代替，例如 integer() 或 numeric()"
 
 #: dogroups.c:364
 msgid ""
 "j appears to be a named vector. The same names will likely be created over "
 "and over again for each group and slow things down. Try and pass a named "
 "list (which data.table optimizes) or an unnamed list() instead.\n"
-msgstr "j 是名称向量，这可能使相同的名称不停重复创建导致速度变慢"
-"请尝试输入名称列表(较适合 data.table)或是非名称列表代替\n"
+msgstr ""
+"j 是名称向量，这可能使相同的名称不停重复创建导致速度变慢请尝试输入名称列表(较"
+"适合 data.table)或是非名称列表代替\n"
 
 #: dogroups.c:366
 #, c-format
@@ -1079,9 +1074,9 @@ msgid ""
 "Column %d of j is a named vector (each item down the rows is named, "
 "somehow). Please remove those names for efficiency (to save creating them "
 "over and over for each group). They are ignored anyway.\n"
-msgstr "j 的第 %d 列是名称向量(整行的项都是名称)"
-"为了效率请移除这些名称(避免在每组重复创建这些名称)"
-"总之他们被忽略了\n"
+msgstr ""
+"j 的第 %d 列是名称向量(整行的项都是名称)为了效率请移除这些名称(避免在每组重复"
+"创建这些名称)总之他们被忽略了\n"
 
 #: dogroups.c:374
 msgid ""
@@ -1090,10 +1085,10 @@ msgid ""
 "detected, removed and put back after grouping has completed, for efficiency. "
 "Using j=transform(), for example, prevents that speedup (consider changing "
 "to :=). This message may be upgraded to warning in future.\n"
-msgstr "j 的结果是名称列表，在每组不停重复创建相同的名称很没效率"
-"为了提高效率，当 j=list(...) 时侦测到的所有名称会被移出，待分组完成后再放回来"
-"可以使用  j=transform() 避免这种加速"
-"此讯息可能会在未来升级为警告\n"
+msgstr ""
+"j 的结果是名称列表，在每组不停重复创建相同的名称很没效率为了提高效率，当 "
+"j=list(...) 时侦测到的所有名称会被移出，待分组完成后再放回来可以使用  "
+"j=transform() 避免这种加速此讯息可能会在未来升级为警告\n"
 
 #: dogroups.c:386
 #, c-format
@@ -1112,17 +1107,18 @@ msgid ""
 "%d NAs to match the longest column in this result. Later groups may have a "
 "similar problem but only the first is reported to save filling the warning "
 "buffer."
-msgstr "j 的结果第 %d 项在第 %d 组中为零长度(zero length)"
-"将使用 %d 个 NA 填入以符合结果中最长列的长度"
-"后面的分组也有相同问题，但只回报第一组以避免过多警告"
+msgstr ""
+"j 的结果第 %d 项在第 %d 组中为零长度(zero length)将使用 %d 个 NA 填入以符合结"
+"果中最长列的长度后面的分组也有相同问题，但只回报第一组以避免过多警告"
 
 #: dogroups.c:427
 #, c-format
 msgid ""
 "Column %d of result for group %d is type '%s' but expecting type '%s'. "
 "Column types must be consistent for each group."
-msgstr "结果的第 %d 列在第 %d 组中是 '%s' 类别而非预期的 '%s' 类别"
-"所有组的列类别必须一致"
+msgstr ""
+"结果的第 %d 列在第 %d 组中是 '%s' 类别而非预期的 '%s' 类别所有组的列类别必须"
+"一致"
 
 #: dogroups.c:429
 #, c-format
@@ -1131,9 +1127,10 @@ msgid ""
 "length must either be 1 (single values are ok) or match the LHS length "
 "exactly. If you wish to 'recycle' the RHS please use rep() explicitly to "
 "make this intent clear to readers of your code."
-msgstr "提供 %1$d 项给第 %3$d 組的第 %2$d 列，这组有 %4$d 行"
-"RHS長度必須為 1 (可以使用單個值) 或與 LHS 長度完全匹配"
-"如果您想回收(recycle) RHS，请使用 rep() 向你的代码读者明确表达你的意图"
+msgstr ""
+"提供 %1$d 项给第 %3$d 組的第 %2$d 列，这组有 %4$d 行RHS長度必須為 1 (可以使用"
+"單個值) 或與 LHS 長度完全匹配如果您想回收(recycle) RHS，请使用 rep() 向你的代"
+"码读者明确表达你的意图"
 
 #: dogroups.c:444
 #, c-format
@@ -1150,7 +1147,8 @@ msgstr "内部错误 : 区块 0 [%d] 与区块 1 [%d] 都运行了"
 msgid ""
 "\n"
 "  %s took %.3fs for %d groups\n"
-msgstr "\n"
+msgstr ""
+"\n"
 " %s 花了 %.3fs 在 %d 个组\n"
 
 #: dogroups.c:458
@@ -2704,16 +2702,15 @@ msgstr ""
 msgid ""
 "%s: NA (or other non-finite) value(s) are present in input, skip non-NA "
 "attempt and run with extra care for NAs\n"
-msgstr ""
-"%s: NA (或其他非有限长度值) 出现在输入中, 跳过非NA的"
-"输入并当心NA值\n"
+msgstr "%s: NA (或其他非有限长度值) 出现在输入中, 跳过非NA的输入并当心NA值\n"
 
 #: froll.c:141 froll.c:339
 #, c-format
 msgid ""
 "%s: running in parallel for input length %llu, window %d, hasna %d, narm %d\n"
 msgstr ""
-"%s: 正在并行运行, 输入长度 (input length) %llu, 窗口 (window) %d, hasna %d, narm %d\n"
+"%s: 正在并行运行, 输入长度 (input length) %llu, 窗口 (window) %d, hasna %d, "
+"narm %d\n"
 
 #: froll.c:179 froll.c:372 frolladaptive.c:157 frolladaptive.c:336
 #, c-format
@@ -2721,8 +2718,8 @@ msgid ""
 "%s: NA (or other non-finite) value(s) are present in input, na.rm was FALSE "
 "so in 'exact' implementation NAs were handled already, no need to re-run\n"
 msgstr ""
-"%s: NA (或其他非有限长度值) 出现在输入中, na.rm 为 FALSE "
-"因此在'exact'实现中, NA值已经被处理, 不需要重新运行\n"
+"%s: NA (或其他非有限长度值) 出现在输入中, na.rm 为 FALSE 因此在'exact'实现"
+"中, NA值已经被处理, 不需要重新运行\n"
 
 #: froll.c:428
 #, c-format
@@ -2735,8 +2732,8 @@ msgid ""
 "%s: results from provided FUN are not of type double, coercion from integer "
 "or logical will be applied on each iteration\n"
 msgstr ""
-"%s: 所提供的函数 (FUN) 的结果不是双精度 (double) 类型, "
-"对整数或逻辑值的类型转换会在每个循环中执行\n"
+"%s: 所提供的函数 (FUN) 的结果不是双精度 (double) 类型, 对整数或逻辑值的类型转"
+"换会在每个循环中执行\n"
 
 #: froll.c:438
 #, c-format
@@ -2754,7 +2751,9 @@ msgstr "x 必须是数值或者逻辑类型"
 
 #: frollR.c:26
 msgid "x must be list, data.frame or data.table of numeric or logical types"
-msgstr "x 必须是列表 (list), 或由数值或者逻辑类型组成的数据框 (data.frame 或 data.table)"
+msgstr ""
+"x 必须是列表 (list), 或由数值或者逻辑类型组成的数据框 (data.frame 或 data."
+"table)"
 
 #: frollR.c:47 frollR.c:264
 msgid "n must be non 0 length"
@@ -2794,23 +2793,22 @@ msgid ""
 "using hasNA FALSE and na.rm TRUE does not make sense, if you know there are "
 "NA values use hasNA TRUE, otherwise leave it as default NA"
 msgstr ""
-"同时使用 hasNA FALSE 和 na.rm TRUE 没有意义, 如果明确有"
-"NA值, 那就用 hasNA TRUE, 在其他情况可以让它保留默认值NA"
+"同时使用 hasNA FALSE 和 na.rm TRUE 没有意义, 如果明确有NA值, 那就用 hasNA "
+"TRUE, 在其他情况可以让它保留默认值NA"
 
 #: frollR.c:119 frollR.c:275
 msgid ""
 "Internal error: invalid align argument in rolling function, should have been "
 "caught before. please report to data.table issue tracker."
 msgstr ""
-"内部错误: 在 rolling 函数内无效的 align 参数, 理应在更早阶段排除"
-"请向data.table issue tracker报告"
+"内部错误: 在 rolling 函数内无效的 align 参数, 理应在更早阶段排除请向data."
+"table issue tracker报告"
 
 #: frollR.c:122
 msgid ""
 "using adaptive TRUE and align argument different than 'right' is not "
 "implemented"
-msgstr ""
-"同时使用 adaptive TRUE 和不是 'right' 的align参数还未能实现"
+msgstr "同时使用 adaptive TRUE 和不是 'right' 的align参数还未能实现"
 
 #: frollR.c:126 frollR.c:297 types.c:64
 #, c-format
@@ -2824,24 +2822,22 @@ msgid ""
 "function on list having variable length of elements call it for each field "
 "separately"
 msgstr ""
-"adaptive rolling 函数只能处理长度同为"
-"的 'x', 比如 data.table 或数据框; 如果想在含有不同长度元素的列表上执行 rolling"
-"函数, 需要分开单独地在每一项上面执行."
+"adaptive rolling 函数只能处理长度同为的 'x', 比如 data.table 或数据框; 如果想"
+"在含有不同长度元素的列表上执行 rolling函数, 需要分开单独地在每一项上面执行."
 
 #: frollR.c:137
 msgid ""
 "length of integer vector(s) provided as list to 'n' argument must be equal "
 "to number of observations provided in 'x'"
-msgstr ""
-"'n' 列表中整数向量的长度必须等于 'x' 中的观察数量"
+msgstr "'n' 列表中整数向量的长度必须等于 'x' 中的观察数量"
 
 #: frollR.c:151
 msgid ""
 "Internal error: invalid fun argument in rolling function, should have been "
 "caught before. please report to data.table issue tracker."
 msgstr ""
-"内部错误: 在 rolling 函数中无效的 fun 参数, 理应在更早阶段排除"
-"请向data.table issue tracker报告"
+"内部错误: 在 rolling 函数中无效的 fun 参数, 理应在更早阶段排除请向data.table "
+"issue tracker报告"
 
 #: frollR.c:155 frollR.c:279 nafill.c:136 shift.c:21
 msgid "fill must be a vector of length 1"
@@ -2856,8 +2852,8 @@ msgid ""
 "Internal error: invalid algo argument in rolling function, should have been "
 "caught before. please report to data.table issue tracker."
 msgstr ""
-"内部错误: 在 rolling 函数内无效的 algo 参数, 理应在更早阶段排除"
-"请向data.table issue tracker报告"
+"内部错误: 在 rolling 函数内无效的 algo 参数, 理应在更早阶段排除请向data."
+"table issue tracker报告"
 
 #: frollR.c:190
 #, c-format
@@ -2877,8 +2873,8 @@ msgid ""
 "%s: %d column(s) and %d window(s), not entering parallel execution here "
 "because algo='exact' will compute results in parallel\n"
 msgstr ""
-"%s: %d column(s) 和 %d window(s), 未能进入并行执行,"
-"因为 algo='exact' 会并行计算结果\n"
+"%s: %d column(s) 和 %d window(s), 未能进入并行执行,因为 algo='exact' 会并行计"
+"算结果\n"
 
 #: frollR.c:219
 #, c-format
@@ -2964,7 +2960,7 @@ msgstr ""
 msgid "%lld "
 msgstr ""
 
-#: fsort.c:246 fwrite.c:690 fwrite.c:947
+#: fsort.c:246 fwrite.c:693 fwrite.c:951
 msgid "\n"
 msgstr ""
 
@@ -2983,31 +2979,31 @@ msgstr ""
 msgid "%d: %.3f (%4.1f%%)\n"
 msgstr ""
 
-#: fwrite.c:601
+#: fwrite.c:603
 #, c-format
 msgid "buffMB=%d outside [1,1024]"
 msgstr ""
 
-#: fwrite.c:608
+#: fwrite.c:610
 #, c-format
 msgid ""
 "eol must be 1 or more bytes (usually either \\n or \\r\\n) but is length %d"
 msgstr ""
 
-#: fwrite.c:611
+#: fwrite.c:613
 msgid "Column writers: "
 msgstr ""
 
-#: fwrite.c:613 fwrite.c:615 fwrite.c:617
+#: fwrite.c:615 fwrite.c:617 fwrite.c:619
 #, c-format
 msgid "%d "
 msgstr ""
 
-#: fwrite.c:616
+#: fwrite.c:618
 msgid "... "
 msgstr ""
 
-#: fwrite.c:619
+#: fwrite.c:621
 #, c-format
 msgid ""
 "\n"
@@ -3015,17 +3011,17 @@ msgid ""
 "eolLen=%d\n"
 msgstr ""
 
-#: fwrite.c:652
+#: fwrite.c:654
 #, c-format
 msgid "Internal error: type %d has no max length method implemented"
 msgstr ""
 
-#: fwrite.c:659
+#: fwrite.c:662
 #, c-format
 msgid "maxLineLen=%zd. Found in %.3fs\n"
 msgstr ""
 
-#: fwrite.c:679
+#: fwrite.c:682
 #, c-format
 msgid ""
 "%s: '%s'. Failed to open existing file for writing. Do you have write "
@@ -3033,7 +3029,7 @@ msgid ""
 "have it open?"
 msgstr ""
 
-#: fwrite.c:680
+#: fwrite.c:683
 #, c-format
 msgid ""
 "%s: '%s'. Unable to create new file for writing (it does not exist already). "
@@ -3041,61 +3037,65 @@ msgid ""
 "the path exist?"
 msgstr ""
 
-#: fwrite.c:688
+#: fwrite.c:691
 #, c-format
 msgid "Writing bom (%s), yaml (%d characters) and column names (%s) ... "
 msgstr ""
 
-#: fwrite.c:701
+#: fwrite.c:704
 #, c-format
 msgid "Unable to allocate %d MiB for header: %s"
 msgstr ""
 
-#: fwrite.c:729 fwrite.c:789
+#: fwrite.c:732 fwrite.c:793
 msgid "Can't allocate gzip stream structure"
 msgstr ""
 
-#: fwrite.c:735
+#: fwrite.c:738
 #, c-format
 msgid "Unable to allocate %d MiB for zbuffer: %s"
 msgstr ""
 
-#: fwrite.c:750
+#: fwrite.c:753
 #, c-format
 msgid "Compress gzip error: %d"
 msgstr ""
 
-#: fwrite.c:751 fwrite.c:759 fwrite.c:953
+#: fwrite.c:754 fwrite.c:763 fwrite.c:957
 #, c-format
 msgid "%s: '%s'"
 msgstr ""
 
-#: fwrite.c:756
+#: fwrite.c:760
 #, c-format
 msgid "done in %.3fs\n"
 msgstr ""
 
-#: fwrite.c:758
+#: fwrite.c:762
 msgid "No data rows present (nrow==0)\n"
 msgstr ""
 
-#: fwrite.c:776
+#: fwrite.c:780
 #, c-format
 msgid ""
 "Writing %lld rows in %d batches of %d rows (each buffer size %dMB, "
 "showProgress=%d, nth=%d)\n"
 msgstr ""
 
-#: fwrite.c:961
+#: fwrite.c:965
 #, c-format
-msgid "zlib v%s deflate() returned error %d with z_stream.msg '%s'. %s\n"
+msgid ""
+"zlib %s (zlib.h %s) deflate() returned error %d with z_stream->msg==\"%s\" "
+"Z_FINISH=%d Z_BLOCK=%d. %s"
 msgstr ""
 
-#: fwrite.c:962
-msgid "Please include the full output above in your data.table bug report."
+#: fwrite.c:967
+msgid ""
+"Please include the full output above and below this message in your data."
+"table bug report."
 msgstr ""
 
-#: fwrite.c:963
+#: fwrite.c:968
 msgid ""
 "Please retry fwrite() with verbose=TRUE and include the full output with "
 "your data.table bug report."
