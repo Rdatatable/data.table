@@ -855,9 +855,11 @@ replace_dot_alias = function(e) {
 
       jvnames = NULL
       drop_dot = function(x) {
-        tt = x %chin% c(".N",".I",".GRP",".BY")
-        if (any(tt)) x[tt] = substring(x[tt], 2L)
-        x
+        if (length(x)!=1L) stop("Internal error: drop_dot passed ",length(x)," items")  # nocov
+        if (identical(substring(x<-as.character(x),1L,1L), ".") && x %chin% c(".N",".I",".GRP",".BY"))
+          substring(x, 2L)
+        else
+          x
       }
       # handle auto-naming of last item of j (e.g. within {} or if/else, #2478)
       #   e.g. DT[, .(a=sum(v), v, .N), by=] should create columns named a, v, N
@@ -870,18 +872,16 @@ replace_dot_alias = function(e) {
             nm = names(q[-1L])   # check list(a=sum(v),v)
             if (is.null(nm)) nm = rep.int("", qlen-1L)
             # attempt to auto-name unnamed columns
-            idx = which(!nzchar(nm))
-            for (jj in idx) {
+            for (jj in which(nm=="")) {
               thisq = q[[jj + 1L]]
               if (missing(thisq)) stop("Item ", jj, " of the .() or list() passed to j is missing") #3507
-              if (is.name(thisq)) nm[jj] = as.character(thisq)
+              if (is.name(thisq)) nm[jj] = drop_dot(thisq)
               # TO DO: if call to a[1] for example, then call it 'a' too
             }
-            nm[idx] = drop_dot(nm[idx])
             if (!is.null(jvnames) && any(idx <- nm != jvnames))
               warning("Different branches of j expression produced different auto-named columns: ", brackify(sprintf('%s!=%s', nm[idx], jvnames[idx])), '; using the most "last" names', call. = FALSE)
             jvnames <<- nm # TODO: handle if() list(a, b) else list(b, a) better
-            setattr(q, "names", NULL)  # drops the names from the list so it's faster to eval the j for each group. We'll put them back afterwards on the result.
+            setattr(q, "names", NULL)  # drops the names from the list so it's faster to eval the j for each group; reinstated at the end on the result.
           }
           return(q) # else empty list is needed for test 468: adding an empty list column
         }
@@ -899,7 +899,7 @@ replace_dot_alias = function(e) {
       }
       if (is.name(jsub)) {
         # j is a single unquoted column name
-        if (jsub!=".SD") jvnames = drop_dot(as.character(jsub))
+        if (jsub!=".SD") jvnames = drop_dot(jsub)
         # jsub is list()ed after it's eval'd inside dogroups.
       } else jsub = do_j_names(jsub) # else maybe a call to transform or something which returns a list.
       av = all.vars(jsub,TRUE)  # TRUE fixes bug #1294 which didn't see b in j=fns[[b]](c)
