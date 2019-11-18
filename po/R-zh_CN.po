@@ -404,22 +404,24 @@ msgid "i has evaluated to type"
 msgstr ""
 
 msgid ". Expecting logical, integer or double."
-msgstr ""
+msgstr "。期望布尔类型，整型或浮点型。"
 
 msgid "i evaluates to a logical vector length"
-msgstr ""
+msgstr "i 为一个布尔类型向量的长度。"
 
 msgid "but there are"
-msgstr ""
+msgstr "但是存在"
 
 msgid ""
 "rows. Recycling of logical i is no longer allowed as it hides more bugs than "
 "is worth the rare convenience. Explicitly use rep(...,length=.N) if you "
 "really need to recycle."
 msgstr ""
+"行。不再允许布尔值 i 循环补齐，尽管这样有些许便利，但会隐藏更多的 bug，得不偿失。"
+"若确实需要循环补齐，请直接使用 rep(...,length=.N)。"
 
 msgid "Internal error: notjoin but byjoin or !integer or nomatch==NA"
-msgstr ""
+msgstr "内部错误。原因可能为：notjoin 而非 byjoin；非整数；nomatch 为空"
 
 msgid ""
 "with=FALSE together with := was deprecated in v1.9.4 released Oct 2014. "
@@ -427,39 +429,47 @@ msgid ""
 "to assign to column name(s) held in variable myVar. See ?':=' for other "
 "examples. As warned in 2014, this is now a warning."
 msgstr ""
+"2014年10月发布的1.9.4版本中，with=FALSE 和 := 共用的用法已被弃用。"
+"请把 := 左侧部分打上括号；例如，DT[,(myVar):=sum(b),by=a]"
+"对 myVar 中的列名进行赋值。输入 ?':=' 参看其他的"
+"例子。正如2014年的版本中所说明的，现在这种用法会出现警告。"
+
 
 msgid ""
 "with=FALSE ignored, it isn't needed when using :=. See ?':=' for examples."
 msgstr ""
+"当使用 :=. 的时候，with=FALSE 是多余的，会被忽略。输入 ?':=' 参看例子。"
 
 msgid "column(s) not removed because not found:"
-msgstr ""
+msgstr "列未被删除因为不存在："
 
 msgid "column(s) not found:"
-msgstr ""
+msgstr "列不存在"
 
 msgid "of j is"
-msgstr ""
+msgstr "j 是"
 
 msgid "which is outside the column number range [1,ncol="
-msgstr ""
+msgstr "不在列索引范围内 [1,ncol="
 
 msgid "]"
-msgstr ""
+msgstr "]"
 
 msgid "j mixes positives and negatives"
-msgstr ""
+msgstr "j 中同时存在正数和负数"
 
 msgid ""
 "When with=FALSE, j-argument should be of type logical/character/integer "
 "indicating the columns to select."
 msgstr ""
+"当 with=FALSE，参数 j 必须为布尔型/字符型/整型之一"
+"，表征要选择的列。"
 
 msgid "by=c(...), key(...) or names(...) must evaluate to 'character'"
-msgstr ""
+msgstr "by=c(...), key(...) 或 names(...) 只接受 'character' "
 
 msgid "'by' is a character vector length"
-msgstr ""
+msgstr "'by' 是一个字符型向量，长度为"
 
 msgid ""
 "but one or more items include a comma. Either pass a vector of column names "
@@ -467,37 +477,48 @@ msgid ""
 "containing comma separated column names. See ?data.table for other "
 "possibilities."
 msgstr ""
+"但是其中包含一个或多个逗号。请传入一个列名组成的向量"
+"（可以包含空格，但是不能包含逗号），或传入一个长度为1，由逗号分隔的列名组成的向量"
+"输入 ?data.table"
+"查看其他的选项。"
 
 msgid "Internal error: irows isn't integer"
-msgstr ""
+msgstr "内部错误：irows 不是整型"
 
 msgid ""
 "'by' appears to evaluate to column names but isn't c() or key(). Use "
 "by=list(...) if you can. Otherwise, by=eval"
 msgstr ""
+"传递给 'by' 参数的似乎是列名，但没有用 c() 或者 key() 函数。如若可以，请使用"
+"by=list(...)。此外，by=eval"
 
 msgid ""
 "should work. This is for efficiency so data.table can detect which columns "
 "are needed."
 msgstr ""
+"应该是可行的。这样做是出于性能考虑，凭此 data.table 可以判断哪些列"
+"是需要的。"
 
 msgid ""
 "'by' or 'keyby' must evaluate to a vector or a list of vectors (where 'list' "
 "includes data.table and data.frame which are lists, too)"
 msgstr ""
+"'by' 或者 'keyby' 参数只接受一个向量或由向量组成的列表（这里 'list'"
+"包含 data.table 和 data.frame，这二者本质也是列表"
 
 msgid "column or expression"
-msgstr ""
+msgstr "列或者表达式"
 
 msgid "of 'by' or 'keyby' is type"
-msgstr ""
+msgstr "传递给 'by' 和 'keyby' 参数的类型是"
 
 msgid ""
 ". Do not quote column names. Usage: DT[,sum(colC),by=list(colA,month(colB))]"
-msgstr ""
+msgstr "。请勿引用列名。用法：DT[,sum(colC),by=list(colA,month(colB))]"
 
 msgid "The items in the 'by' or 'keyby' list are length ("
 msgstr ""
+"'by' 或 'keyby' 列表中的元素长度为（"
 
 msgid "). Each must be length"
 msgstr ""
@@ -935,116 +956,135 @@ msgid "All elements in argument 'x' to 'setDF' must be of same length"
 msgstr ""
 
 msgid "Cannot find symbol"
-msgstr ""
+msgstr "无法找到符号"
 
 msgid "Cannot convert '"
-msgstr ""
+msgstr "无法转换'"
 
 msgid ""
 "' to data.table by reference because binding is locked. It is very likely "
 "that '"
 msgstr ""
+"' 为引用形式的 data.table，因为绑定被锁定了。很有可能 "
+"'"
 
 msgid ""
 "' resides within a package (or an environment) that is locked to prevent "
 "modifying its variable bindings. Try copying the object to your current "
 "environment, ex: var <- copy(var) and then using setDT again."
 msgstr ""
+"' 存在于一个被锁定的包（或环境）中导致无法"
+"修改其绑定的变量。可以尝试复制对象（object）到你的现有"
+"环境，如：var <- copy(var) 然后再使用 setDT。"
 
 msgid "Some columns are a multi-column type (such as a matrix column):"
-msgstr ""
+msgstr "某些列是多重列类型（如矩阵列）："
 
 msgid ""
 ". setDT will retain these columns as-is but subsequent operations like "
 "grouping and joining may fail. Please consider as.data.table() instead which "
 "will create a new column for each embedded column."
 msgstr ""
+"。setDT 会原样保留这些列但后续的操作如"
+"编组（grouping）和联接（joining）可能会失败。请考虑使用 as.data.table() 因为它"
+"会为每个内嵌列建立一个新列。"
 
 msgid "Column"
-msgstr ""
+msgstr "列"
 
 msgid ""
 "is of POSIXlt type. Please convert it to POSIXct using as.POSIXct and run "
 "setDT again. We do not recommend use of POSIXlt at all because it uses 40 "
 "bytes to store one date."
 msgstr ""
+"属于 POSIXlt 类型。请使用 as.POSIXct 转换为 POSIXct 并再次执行"
+"setDT。我们非常不推荐使用 POSIXlt 因为它要用 40 "
+"字节来存储一个日期。"
 
 msgid ""
 "All elements in argument 'x' to 'setDT' must be of same length, but the "
 "profile of input lengths (length:frequency) is:"
 msgstr ""
+"'setDT' 的参数 'x' 中所有的元素都必须是同一长度，但"
+"输入长度的概况（长度（length）：频率（frequency））是："
 
 msgid "%s:%d"
 msgstr ""
 
 msgid "The first entry with fewer than"
-msgstr ""
+msgstr "第一个长度少于"
 
 msgid "entries is"
-msgstr ""
+msgstr "的输入项是"
 
 msgid ""
 "Argument 'x' to 'setDT' should be a 'list', 'data.frame' or 'data.table'"
 msgstr ""
+"'setDT' 参数 'x' 应为一个列表（'list'），数据框（'data.frame'）或 'data.table'"
 
 msgid "Item '"
-msgstr ""
+msgstr "项 '"
 
 msgid "' not found in names of input list"
-msgstr ""
+msgstr "' 不存在于输入列表的子项名中"
 
 msgid "'prefix' must be NULL or a character vector of length 1."
-msgstr ""
+msgstr "'prefix' 必须为 空（NULL）或者长度为 1 的字符向量。"
 
 msgid "x is a single vector, non-NULL 'cols' doesn't make sense."
-msgstr ""
+msgstr "x 是单个向量，非空的 'cols' 没有意义。"
 
 msgid "x is a list, 'cols' cannot be 0-length."
-msgstr ""
+msgstr "x 是一个列表（list），'cols' 长度不能为0。"
 
 msgid "RHS of"
-msgstr ""
+msgstr "右手侧（RHS）"
 
 msgid "is length"
-msgstr ""
+msgstr "长度为"
 
 msgid "which is not 1 or nrow ("
-msgstr ""
+msgstr "其非 1 或 总行数 nrow ("
 
 msgid ""
 "). For robustness, no recycling is allowed (other than of length 1 RHS). "
 "Consider %in% instead."
 msgstr ""
+")。考虑到程序的稳健性，只有在右侧元素长度为 1 的情况下，我们才会对之进行循环。"
+"考虑改用 %in% 。"
 
 msgid ""
 "Internal error in .isFastSubsettable. Please report to data.table developers"
 msgstr ""
+".isFastSubsettable 产生了内部错误。请向 data.table 开发者报告"
 
 msgid ""
 "'on' argument should be a named atomic vector of column names indicating "
 "which columns in 'i' should be joined with which columns in 'x'."
 msgstr ""
+"'on' 参数应为一个有子项名字的原子列名向量，指明"
+"'i' 中的哪些列应与 'x' 中的哪些列联接。"
 
 msgid "Found more than one operator in one 'on' statement:"
-msgstr ""
+msgstr "在一个 'on' 语句中出现了多于一个的操作符（operator）："
 
 msgid ". Please specify a single operator."
-msgstr ""
+msgstr "。请指定单个操作符。"
 
 msgid "'on' contains no column name:"
-msgstr ""
+msgstr "'on' 中没有列名："
 
 msgid ". Each 'on' clause must contain one or two column names."
-msgstr ""
+msgstr "。每个'on' 子句必须包含一个或两个列名。"
 
 msgid "'on' contains more than 2 column names:"
-msgstr ""
+msgstr "'on' 包含了超过两个列名："
 
 msgid "Invalid operators"
-msgstr ""
+msgstr "无效的操作符"
 
 msgid ". Only allowed operators are"
-msgstr ""
+msgstr "。只有这些操作符是有效的"
 
 msgid "."
 msgstr ""
