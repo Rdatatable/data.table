@@ -448,11 +448,6 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
       Rprintf(_("forder.c received %d rows and %d columns\n"), length(VECTOR_ELT(DT,0)), length(DT));
   }
   if (!length(DT))
-    error(_("Internal error: DT is an empty list() of 0 columns"));  // # nocov  should have been caught be colnamesInt, test 2099.1
-  if (!isInteger(by) || !LENGTH(by))
-    error(_("Internal error: DT has %d columns but 'by' is either not integer or is length 0"), length(DT));  // # nocov  colnamesInt catches, 2099.2
-  if (!isInteger(ascArg) || LENGTH(ascArg)!=LENGTH(by))
-    error(_("Either order= is not integer or its length (%d) is different to by='s length (%d)"), LENGTH(ascArg), LENGTH(by));
     STOP(_("Internal error: DT is an empty list() of 0 columns"));  // # nocov  should have been caught be colnamesInt, test 2099.1
   if (!isInteger(by) || !LENGTH(by))
     STOP(_("Internal error: DT has %d columns but 'by' is either not integer or is length 0"), length(DT));  // # nocov  colnamesInt catches, 2099.2
@@ -716,7 +711,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
       free_ustr();  // ustr could be left allocated and reused, but free now in case large and we're tight on ram
       break;
     default:
-       STOP(_("Internal error: column not supported not caught earlier"));  // # nocov
+       STOP(_("Internal error: column not supported, not caught earlier"));  // # nocov
     }
     nradix += nbyte-1+(spare==0);
     TEND(4)
