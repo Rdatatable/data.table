@@ -7,9 +7,14 @@ template:
 development:
   version_tooltip: "Development version"
 
+home:
+  links:
+  - text: CRAN-like website
+    href: web/packages/data.table/index.html
+
 navbar:
   structure:
-    left:  [home, introduction, reference, articles, news, benchmarks]
+    left:  [home, introduction, articles, news, benchmarks, presentations, communityarticles, reference]
     right: [github]
   components:
     home:
@@ -18,9 +23,6 @@ navbar:
     introduction:
       text: Introduction
       href: articles/datatable-intro.html
-    reference:
-      text: Manual
-      href: reference/index.html
     articles:
       text: Vignettes
       menu:
@@ -43,11 +45,20 @@ navbar:
       - text: "Benchmarking data.table"
         href: articles/datatable-benchmarking.html
     news:
-      text: Changelog
+      text: News
       href: news/index.html
     benchmarks:
       text: Benchmarks
       href: https://h2oai.github.io/db-benchmark
+    presentations:
+      text: Presentations
+      href: https://github.com/Rdatatable/data.table/wiki/Presentations
+    communityarticles:
+      text: Articles
+      href: https://github.com/Rdatatable/data.table/wiki/Articles
+    reference:
+      text: Manual
+      href: reference/index.html
     github:
       icon: fab fa-github fa-lg
       href: https://github.com/Rdatatable/data.table
