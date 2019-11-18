@@ -42,6 +42,9 @@ grep "pragma omp parallel" ./src/*.c | grep -v getDTthreads
 # Ensure all .Call's first argument are unquoted.
 grep "[.]Call(\"" ./R/*.R
 
+# Make sure all \dots calls in the manual are parsed as ...
+Rscript -e "setwd('man'); unlist(sapply(list.files('.'), function(rd) rapply(tools::parse_Rd(rd), grep, pattern='dots', value=TRUE)))"
+
 # Ensure no Rprintf in init.c
 grep "Rprintf" ./src/init.c
 
@@ -127,7 +130,7 @@ install.packages("xml2")   # to check the 150 URLs in NEWS.md under --as-cran be
 q("no")
 R CMD build .
 R CMD check data.table_1.12.7.tar.gz --as-cran
-R CMD INSTALL data.table_1.12.7.tar.gz
+R CMD INSTALL data.table_1.12.7.tar.gz --html
 
 # Test C locale doesn't break test suite (#2771)
 echo LC_ALL=C > ~/.Renviron

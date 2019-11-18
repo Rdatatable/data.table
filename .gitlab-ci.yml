@@ -309,7 +309,7 @@ integration: # merging all artifacts to produce single R repository and summarie
     # web/checks/check_results_$pkg.html
     - Rscript -e 'check.index("data.table", names(test.jobs))'
     # pkgdown merge
-    - Rscript -e 'common_files<-function(path1, path2) intersect(list.files(path1, all.files=TRUE, no..=TRUE), list.files(path2, all.files=TRUE, no..=TRUE)); if (length(f<-common_files("pkgdown","bus/integration/cran"))) message(paste(c("Following artifacts will be overwritten by pkgdown artifacts:", paste0("  ", f)), collapse="\n")); q("no")'
+    - Rscript -e 'common_files<-function(path1, path2) intersect(list.files(path1, all.files=TRUE, no..=TRUE), list.files(path2, all.files=TRUE, no..=TRUE)); msg = if (length(f<-common_files("pkgdown","bus/integration/cran"))) paste(c("Following artifacts will be overwritten by pkgdown artifacts:", paste0("  ", f)), collapse="\n") else "No overlapping files from pkgdown artifacts"; message(msg); q("no")'
     - mv pkgdown/* bus/integration/cran/
     # cleanup artifacts from other jobs
     - mkdir tmpbus

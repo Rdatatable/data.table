@@ -102,6 +102,10 @@ typedef struct FieldParseContext {
 // Forward declarations
 static void Field(FieldParseContext *ctx);
 
+// note -- because ASSERT is doing literal char array concatenation, it is
+//   not possible to do translation of its messages without refactoring --
+//   essentially that would come down to creating f() g() in the code after
+//   macro expansion, which is not valid. These are internal errors, so just concede.
 #define ASSERT(cond, msg, ...) \
   if (!(cond)) STOP("Internal error in line %d of fread.c, please report on data.table GitHub:  " msg, __LINE__, __VA_ARGS__) // # nocov
 
@@ -1244,7 +1248,7 @@ int freadMain(freadMainArgs _args) {
       if (mmp == NULL) {
     #endif
       int nbit = 8*sizeof(char *); // #nocov
-      STOP(_("Opened %s file ok but could not memory map it. This is a %dbit process. %s."), filesize_to_str(fileSize), nbit,
+      STOP(_("Opened %s file ok but could not memory map it. This is a %dbit process. %s."), filesize_to_str(fileSize), nbit, // # nocov
            nbit<=32 ? _("Please upgrade to 64bit") : _("There is probably not enough contiguous virtual memory available")); // # nocov
     }
     sof = (const char*) mmp;
@@ -1332,7 +1336,7 @@ int freadMain(freadMainArgs _args) {
         // field) since we rely on that logic to avoid the copy below when fileSize$4096==0 but there is a final eol ok.
         // TODO: portable way to discover relevant page size. 4096 is lowest common denominator, though, and should suffice.
       } else {
-        const char *msg = "This file is very unusual: it ends abruptly without a final newline, and also its size is a multiple of 4096 bytes. Please properly end the last row with a newline using for example 'echo >> file' to avoid this ";
+        const char *msg = _("This file is very unusual: it ends abruptly without a final newline, and also its size is a multiple of 4096 bytes. Please properly end the last row with a newline using for example 'echo >> file' to avoid this ");
         if (verbose) DTPRINT(_("  File ends abruptly with '%c'. Copying file in RAM. %s copy.\n"), eof[-1], msg);
         // In future, we may discover a way to mmap fileSize+1 on all OS when fileSize%4096==0, reliably. If and when, this clause can be updated with no code impact elsewhere.
         copyFile(fileSize, msg, verbose);
@@ -1495,7 +1499,7 @@ int freadMain(freadMainArgs _args) {
           const char *prevLineStart=ch, *lineStart=ch;
           int lastncol = countfields(&ch);
           if (lastncol<0) continue;  //   invalid file with this sep and quote rule, skip
-          ASSERT(lastncol>0, "Internal error: first non-empty row should always be at least one field; %c %d", sep, quoteRule); // # nocov
+          ASSERT(lastncol>0, "first non-empty row should always be at least one field; %c %d", sep, quoteRule); // # nocov
           const char *thisBlockStart=lineStart;
           const char *thisBlockPrevStart = NULL;
           int thisBlockLines=1, thisRow=0;
@@ -1597,7 +1601,7 @@ int freadMain(freadMainArgs _args) {
     if (fileSize%4096==0) {
       const char *msg = _("This file is very unusual: it's one single column, ends with 2 or more end-of-line (representing several NA at the end), and is a multiple of 4096, too.");
       if (verbose) DTPRINT(_("  Copying file in RAM. %s\n"), msg);
-      ASSERT(mmp_copy==NULL, "Internal error: mmp has already been copied due to abrupt non-eol ending, so it does not end with 2 or more eol.", 1/*dummy arg for macro*/); // #nocov
+      ASSERT(mmp_copy==NULL, "mmp has already been copied due to abrupt non-eol ending, so it does not end with 2 or more eol.", 1/*dummy arg for macro*/); // #nocov
       copyFile(fileSize, msg, verbose);
       pos = sof + (pos-(const char *)mmp);
       firstJumpEnd = sof + (firstJumpEnd-(const char *)mmp);
@@ -1689,7 +1693,7 @@ int freadMain(freadMainArgs _args) {
       if ( (thisNcol<ncol && ncol>1 && !fill) ||
            (!eol(&ch) && ch!=eof) ) {
         if (verbose) DTPRINT(_("  A line with too-%s fields (%d/%d) was found on line %d of sample jump %d. %s\n"),
-                             thisNcol<ncol ? "few" : "many", thisNcol, ncol, jumpLine, jump, jump>0 ? "Most likely this jump landed awkwardly so type bumps here will be skipped." : "");
+                             thisNcol<ncol ? _("few") : _("many"), thisNcol, ncol, jumpLine, jump, jump>0 ? _("Most likely this jump landed awkwardly so type bumps here will be skipped.") : "");
         bumped = false;
         if (jump==0) lastRowEnd=eof;  // to prevent the end from being tested; e.g. a short file with blank line within first 100 like test 976
         break;
@@ -1746,7 +1750,7 @@ int freadMain(freadMainArgs _args) {
     if (tt<ncol) {
       autoFirstColName = (tt==ncol-1);
       DTWARN(_("Detected %d column names but the data has %d columns (i.e. invalid file). Added %d extra default column name%s\n"), tt, ncol, ncol-tt,
-             autoFirstColName ? " for the first column which is guessed to be row names or an index. Use setnames() afterwards if this guess is not correct, or fix the file write command that created the file to create a valid file." : "s at the end.");
+             autoFirstColName ? _(" for the first column which is guessed to be row names or an index. Use setnames() afterwards if this guess is not correct, or fix the file write command that created the file to create a valid file.") : _("s at the end."));
     } else if (tt>ncol) {
       if (fill) STOP(_("Internal error: fill=true but there is a previous row which should already have been filled.")); // # nocov
       DTWARN(_("Detected %d column names but the data has %d columns. Filling rows automatically. Set fill=TRUE explicitly to avoid this warning.\n"), tt, ncol);
@@ -1773,7 +1777,7 @@ int freadMain(freadMainArgs _args) {
     }
     if (verbose) {
       if (sampleLines==0) {
-        DTPRINT(_("  'header' determined to be %s because there are%s number fields in the first and only row\n"), args.header?"true":"false", args.header?" no":"");
+        DTPRINT(_("  'header' determined to be %s because there are%s number fields in the first and only row\n"), args.header?_("true"):_("false"), args.header?_(" no"):"");
       } else {
         if (args.header)
           DTPRINT(_("  'header' determined to be true because all columns are type string and a better guess is not possible\n"));
@@ -2004,7 +2008,7 @@ int freadMain(freadMainArgs _args) {
       nth = omp_get_num_threads();
       if (me!=0) {
         // # nocov start
-        snprintf(internalErr, internalErrSize, "Internal error: Master thread is not thread 0 but thread %d.\n", me);
+        snprintf(internalErr, internalErrSize, _("Internal error: Master thread is not thread 0 but thread %d.\n"), me);
         stopTeam = true;
         // # nocov end
       }
@@ -2261,7 +2265,7 @@ int freadMain(freadMainArgs _args) {
         }
         else if (headPos!=thisJumpStart) {
            // # nocov start
-          snprintf(internalErr, internalErrSize, "Internal error: invalid head position. jump=%d, headPos=%p, thisJumpStart=%p, sof=%p", jump, (void*)headPos, (void*)thisJumpStart, (void*)sof);
+          snprintf(internalErr, internalErrSize, _("Internal error: invalid head position. jump=%d, headPos=%p, thisJumpStart=%p, sof=%p"), jump, (void*)headPos, (void*)thisJumpStart, (void*)sof);
           stopTeam = true;
           // # nocov end
         }
