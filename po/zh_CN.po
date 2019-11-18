@@ -2079,7 +2079,7 @@ msgid ""
 "  Detected %d columns on line %d. This line is either column names or first "
 "data row. Line starts as: <<%s>>\n"
 msgstr ""
-“检测到第%2$d行有%1$d列。该行为列名或数据集首行。"
+"检测到第%2$d行有%1$d列。该行为列名或数据集首行。"
 "该行以<<%3$s>>开始\n”
 
 #: fread.c:1595
@@ -2274,24 +2274,14 @@ msgid ""
 "  'header' determined to be true because all columns are type string and a "
 "better guess is not possible\n"
 msgstr ""
-<<<<<<< HEAD
 "参数 'header' 被设置为true，因为所有列类型均为字符串\n"
 #: fread.c:1781
-=======
-
-#: fread.c:1785
->>>>>>> 7272820d80caca3de82dad16ec3ab045d95220ca
 msgid ""
 "  'header' determined to be false because there are some number columns and "
 "those columns do not have a string field at the top of them\n"
 msgstr ""
-<<<<<<< HEAD
 "参数 'header' 被设置为false，因为部分字段的首行不为字符串\n"
 #: fread.c:1797
-=======
-
-#: fread.c:1801
->>>>>>> 7272820d80caca3de82dad16ec3ab045d95220ca
 #, c-format
 msgid "  Type codes (first row)   : %s  Quote rule %d\n"
 msgstr ""
@@ -2312,13 +2302,8 @@ msgstr " =====\n"
 msgid ""
 "  Sampled %llu rows (handled \\n inside quoted fields) at %d jump points\n"
 msgstr ""
-<<<<<<< HEAD
 "  已使用了 %1$d个跳点抽样 %2$llu 行(处理了字段间的分隔符\\n)\n"
 #: fread.c:1820
-=======
-
-#: fread.c:1824
->>>>>>> 7272820d80caca3de82dad16ec3ab045d95220ca
 #, c-format
 msgid "  Bytes from first data row on line %d to the end of last row: %llu\n"
 msgstr " 首行数据从文件第 %d行开始。数据占用总内存为 %llu 字节 \n"
