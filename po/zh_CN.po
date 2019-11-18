@@ -1957,11 +1957,12 @@ msgstr ""
 msgid ""
 "Internal error: ncol==%d line==%d after detecting sep, ncol and first line"
 msgstr ""
+"内部错误：检测分隔符，列数和首行后，ncol==%d line==%d"
 
 #: fread.c:1587
 #, c-format
 msgid "Internal error: first line has field count %d but expecting %d"
-msgstr ""
+msgstr "内部错误：首行有%d个字段，但应该有%d个"
 
 #: fread.c:1589
 #, c-format
@@ -1969,54 +1970,61 @@ msgid ""
 "  Detected %d columns on line %d. This line is either column names or first "
 "data row. Line starts as: <<%s>>\n"
 msgstr ""
+“检测到第%2$d行有%1$d列。该行为列名或数据集首行。"
+"该行以<<%3$s>>开始\n”
 
 #: fread.c:1591
 #, c-format
 msgid "  Quote rule picked = %d\n"
-msgstr ""
+msgstr "标点符号规则 = %d\n"
 
 #: fread.c:1592
 #, c-format
 msgid "  fill=%s and the most number of columns found is %d\n"
-msgstr ""
+msgstr "fill=%s 且找到的最大列数为 %d\n"
 
 #: fread.c:1598
 msgid ""
 "This file is very unusual: it's one single column, ends with 2 or more end-"
 "of-line (representing several NA at the end), and is a multiple of 4096, too."
 msgstr ""
+"该文件极为特殊，仅有一列数据，在结尾处包含多个行结束标记（表示多个空值），"
+"且长度为4096的整数倍。"
 
 #: fread.c:1599
 #, c-format
 msgid "  Copying file in RAM. %s\n"
-msgstr ""
+msgstr "正在将文件拷贝到RAM。%s\n"
 
 #: fread.c:1605
 msgid ""
 "  1-column file ends with 2 or more end-of-line. Restoring last eol using "
 "extra byte in cow page.\n"
 msgstr ""
+"该文件包含一列数据，存在多个行结束标记（表示多个空值）。"
+"正在使用写时复制页(cow, copy-on-write)额外的字节恢复最后一个标记.\n"
 
 #: fread.c:1624
 msgid ""
 "[07] Detect column types, good nrow estimate and whether first row is column "
 "names\n"
 msgstr ""
+"[07] 检测列类型，估计行数以及首行是否为列名\n"
 
 #: fread.c:1625
 #, c-format
 msgid "  'header' changed by user from 'auto' to %s\n"
-msgstr ""
+msgstr " 用户已将'header'（列名）从 'auto' 改为 %s\n"
 
 #: fread.c:1629
 #, c-format
 msgid "Failed to allocate 2 x %d bytes for type and tmpType: %s"
-msgstr ""
+msgstr "为 %2$s 类型分配 2 x %1$d bytes失败"
 
 #: fread.c:1650
 #, c-format
 msgid "  Number of sampling jump points = %d because "
-msgstr ""
+msgstr "采样跳点数 = %d 因为"
 
 #: fread.c:1651
 #, c-format
@@ -2030,14 +2038,14 @@ msgstr ""
 #: fread.c:1653
 #, c-format
 msgid "(%llu bytes from row 1 to eof) / (2 * %llu jump0size) == %llu\n"
-msgstr ""
+msgstr "(从首行到结束共 %llu bytes) / (2 * %llu jump0size) == %llu\n"
 
 #: fread.c:1691
 #, c-format
 msgid ""
 "  A line with too-%s fields (%d/%d) was found on line %d of sample jump %d. "
 "%s\n"
-msgstr ""
+msgstr "第%4$d个跳点所找到的第%3$d行，该行字段过于%1$s(%2$d/%3$d). "
 
 #: fread.c:1718
 #, c-format
@@ -2050,18 +2058,23 @@ msgid ""
 "  'header' determined to be true due to column %d containing a string on row "
 "1 and a lower type (%s) in the rest of the %d sample rows\n"
 msgstr ""
+" 'header' 参数设为真，原因是第%1$d列首行包含字符串，"
+"并且在样本中的另外%3$d行包含有较底层的数据类型(%2$s)\n"
 
 #: fread.c:1743
 msgid ""
 "Internal error: row before first data row has the same number of fields but "
 "we're not using it."
 msgstr ""
+"内部错误：数据首行的前一行包含相同数量的字段"
+"但不会用到该行。"
 
 #: fread.c:1744
 msgid ""
 "Internal error: ch!=pos after counting fields in the line before the first "
 "data row."
 msgstr ""
+"内部错误：对数据首行前一行的字段计数后，ch不等于pos"
 
 #: fread.c:1745
 #, c-format
@@ -2069,6 +2082,8 @@ msgid ""
 "Types in 1st data row match types in 2nd data row but previous row has %d "
 "fields. Taking previous row as column names."
 msgstr ""
+"数据第一行的类型与第二行相匹配，但是之前的行有"
+" %d 个字段。故将第一行数据的前一行作为列名"
 
 #: fread.c:1748
 #, c-format
@@ -2076,12 +2091,16 @@ msgid ""
 "Detected %d column names but the data has %d columns (i.e. invalid file). "
 "Added %d extra default column name%s\n"
 msgstr ""
+"检测到 %d 个列名，然而数据共有 %d 列（文件不合法）。"
+"添加了 %d 个额外列名%s\n"
 
 #: fread.c:1751
 msgid ""
 "Internal error: fill=true but there is a previous row which should already "
 "have been filled."
 msgstr ""
+"内部错误：参数fill设为了true，但是在此之前有一行"
+"应当已经被填充。"
 
 #: fread.c:1752
 #, c-format
@@ -2089,11 +2108,13 @@ msgid ""
 "Detected %d column names but the data has %d columns. Filling rows "
 "automatically. Set fill=TRUE explicitly to avoid this warning.\n"
 msgstr ""
+"检测到%d个列名，但数据共有%d列。已经自动填充。"
+"设置参数fill=TRUE以屏蔽此警告。"
 
 #: fread.c:1756
 #, c-format
 msgid "Failed to realloc 2 x %d bytes for type and tmpType: %s"
-msgstr ""
+msgstr "为 %2$s 类型重新分配 2 x %d bytes失败"
 
 #: fread.c:1776
 #, c-format
@@ -2101,19 +2122,20 @@ msgid ""
 "  'header' determined to be %s because there are%s number fields in the "
 "first and only row\n"
 msgstr ""
+" 参数'header' 被设置为%s， 因为唯一的一行包含 %s 个字段\n"
 
 #: fread.c:1779
 msgid ""
 "  'header' determined to be true because all columns are type string and a "
 "better guess is not possible\n"
 msgstr ""
-
+"参数 'header' 被设置为true，因为所有列类型均为字符串\n"
 #: fread.c:1781
 msgid ""
 "  'header' determined to be false because there are some number columns and "
 "those columns do not have a string field at the top of them\n"
 msgstr ""
-
+"参数 'header' 被设置为false，因为部分字段的首行不为字符串\n"
 #: fread.c:1797
 #, c-format
 msgid "  Type codes (first row)   : %s  Quote rule %d\n"
@@ -2124,31 +2146,32 @@ msgstr ""
 msgid ""
 "  All rows were sampled since file is small so we know nrow=%llu exactly\n"
 msgstr ""
+" 文件太小，全部行均被采样到，所以 nrow=%llu\n"
 
 #: fread.c:1818 fread.c:1825
 msgid "  =====\n"
-msgstr ""
+msgstr " =====\n"
 
 #: fread.c:1819
 #, c-format
 msgid ""
 "  Sampled %llu rows (handled \\n inside quoted fields) at %d jump points\n"
 msgstr ""
-
+"  已使用了 %1$d个跳点抽样 %2$llu 行(处理了字段间的分隔符\\n)\n"
 #: fread.c:1820
 #, c-format
 msgid "  Bytes from first data row on line %d to the end of last row: %llu\n"
-msgstr ""
+msgstr " 首行数据从文件第 %d行开始。数据占用总内存为 %llu 字节 \n"
 
 #: fread.c:1821
 #, c-format
 msgid "  Line length: mean=%.2f sd=%.2f min=%d max=%d\n"
-msgstr ""
+msgstr "文件每行长度的统计量：均值=%.2f，标准差=%.2f，最小值=%d ，最大值=%d\n"
 
 #: fread.c:1822
 #, c-format
 msgid "  Estimated number of rows: %llu / %.2f = %llu\n"
-msgstr ""
+msgstr "估计数据共有 %llu / %.2f = %llu 行\n"
 
 #: fread.c:1823
 #, c-format
