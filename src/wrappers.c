@@ -22,11 +22,18 @@ SEXP setattrib(SEXP x, SEXP name, SEXP value)
     UNPROTECT(1);
     return(x);
   }
-  setAttrib(x, name,
-    MAYBE_REFERENCED(value) ? duplicate(value) : value);
+  if (isNull(value) && isPairList(x) && strcmp(CHAR(STRING_ELT(name,0)),"names")==0) {
+    // backport fix in R 3.2.0 to support R 3.1.0; #4048 #3802
+    // apply this backport always (i.e. in R >=3.2.0 too) to avoid a switch on version number or feature test (to avoid more code, tests and nocov)
+    for (SEXP t=x; t!=R_NilValue; t=CDR(t)) {
+      SET_TAG(t, R_NilValue);
+    }
+  } else {
+    setAttrib(x, name, MAYBE_REFERENCED(value) ? duplicate(value) : value);
     // duplicate is temp fix to restore R behaviour prior to R-devel change on 10 Jan 2014 (r64724).
     // TO DO: revisit. Enough to reproduce is: DT=data.table(a=1:3); DT[2]; DT[,b:=2]
     // ... Error: selfrefnames is ok but tl names [1] != tl [100]
+  }
   return(R_NilValue);
 }
 
