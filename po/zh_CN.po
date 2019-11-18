@@ -2,9 +2,9 @@ msgid ""
 msgstr ""
 "Project-Id-Version: data.table 1.12.5\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2019-10-22 21:04+0800\n"
-"PO-Revision-Date: 2019-10-26 16:01+08\n"
-"Last-Translator: Guangzheng Li <lgz1993leo@163.com>\n"
+"POT-Creation-Date: 2019-11-11 11:44+0800\n"
+"PO-Revision-Date: 2019-11-10 15:29-04\n"
+"Last-Translator: Xianghui Dong <dracodoc@gmail.com>\n"
 "Language-Team: Mandarin\n"
 "Language: Mandarin\n"
 "MIME-Version: 1.0\n"
@@ -1011,16 +1011,16 @@ msgid ""
 "All items in j=list(...) should be atomic vectors or lists. If you are "
 "trying something like j=list(.SD,newcol=mean(colA)) then use := by group "
 "instead (much quicker), or cbind or merge afterwards."
-msgstr "j=list(...) 中的所有项目必须是原子向量或列表"
-"如果您试图进行 j=list(.SD,newcol=mean(colA)) 之类的操作"
-"请使用 := by group 代替(更快速)，或事后使用 cbind()、merge()"
+msgstr ""
+"j=list(...) 中的所有项目必须是原子向量或列表如果您试图进行 j=list(.SD,"
+"newcol=mean(colA)) 之类的操作请使用 := by group 代替(更快速)，或事后使用 "
+"cbind()、merge()"
 
 #: dogroups.c:290
 msgid ""
 "RHS of := is NULL during grouped assignment, but it's not possible to delete "
 "parts of a column."
-msgstr "用 := 分组时 RHS 为 NULL"
-"但無法刪除部分列"
+msgstr "用 := 分组时 RHS 为 NULL但無法刪除部分列"
 
 #: dogroups.c:294
 #, c-format
@@ -1029,18 +1029,19 @@ msgid ""
 "RHS length must either be 1 (single values are ok) or match the LHS length "
 "exactly. If you wish to 'recycle' the RHS please use rep() explicitly to "
 "make this intent clear to readers of your code."
-msgstr "提供 %1$d 个项分配给第 '%4$s' 列中的第 %2$d 组，组的大小为 %3$d "
-"RHS 的长度必须是 1(可以是单个值) 或完全符合 LHS 的长度"
-"如果您想回收(recycle) RHS，请使用 rep() 向你的代码读者明确表达你的意图"
-
+msgstr ""
+"提供 %1$d 个项分配给第 '%4$s' 列中的第 %2$d 组，组的大小为 %3$d RHS 的长度必"
+"须是 1(可以是单个值) 或完全符合 LHS 的长度如果您想回收(recycle) RHS，请使用 "
+"rep() 向你的代码读者明确表达你的意图"
 
 #: dogroups.c:305
 msgid ""
 "Internal error: Trying to add new column by reference but tl is full; "
 "setalloccol should have run first at R level before getting to this point in "
 "dogroups"
-msgstr "内部错误 : 尝试依照引用增加新列但 tl 已满"
-"在进入 dogroups 之前，setalloccol 应该先在 R 运行"
+msgstr ""
+"内部错误 : 尝试依照引用增加新列但 tl 已满在进入 dogroups 之前，setalloccol 应"
+"该先在 R 运行"
 
 #: dogroups.c:320
 #, c-format
@@ -1060,18 +1061,19 @@ msgid ""
 "groups (and those are replaced with NA of appropriate type and recycled) but "
 "not for the first. Please use a typed empty vector instead, such as "
 "integer() or numeric()."
-msgstr "j 的结果中第 %d 列在第 1 组中为 NULL"
-"我们依赖第 1 组的列类型去决定剩余组的类型(需要一致性)"
-"空 (NULL) 列可以出现在后面的组(适当的以 NA 取代并回收)但不能是第 1 组"
-"请输入空向量代替，例如 integer() 或 numeric()"
+msgstr ""
+"j 的结果中第 %d 列在第 1 组中为 NULL我们依赖第 1 组的列类型去决定剩余组的类型"
+"(需要一致性)空 (NULL) 列可以出现在后面的组(适当的以 NA 取代并回收)但不能是第 "
+"1 组请输入空向量代替，例如 integer() 或 numeric()"
 
 #: dogroups.c:364
 msgid ""
 "j appears to be a named vector. The same names will likely be created over "
 "and over again for each group and slow things down. Try and pass a named "
 "list (which data.table optimizes) or an unnamed list() instead.\n"
-msgstr "j 是名称向量，这可能使相同的名称不停重复创建导致速度变慢"
-"请尝试输入名称列表(较适合 data.table)或是非名称列表代替\n"
+msgstr ""
+"j 是名称向量，这可能使相同的名称不停重复创建导致速度变慢请尝试输入名称列表(较"
+"适合 data.table)或是非名称列表代替\n"
 
 #: dogroups.c:366
 #, c-format
@@ -1079,9 +1081,9 @@ msgid ""
 "Column %d of j is a named vector (each item down the rows is named, "
 "somehow). Please remove those names for efficiency (to save creating them "
 "over and over for each group). They are ignored anyway.\n"
-msgstr "j 的第 %d 列是名称向量(整行的项都是名称)"
-"为了效率请移除这些名称(避免在每组重复创建这些名称)"
-"总之他们被忽略了\n"
+msgstr ""
+"j 的第 %d 列是名称向量(整行的项都是名称)为了效率请移除这些名称(避免在每组重复"
+"创建这些名称)总之他们被忽略了\n"
 
 #: dogroups.c:374
 msgid ""
@@ -1090,10 +1092,10 @@ msgid ""
 "detected, removed and put back after grouping has completed, for efficiency. "
 "Using j=transform(), for example, prevents that speedup (consider changing "
 "to :=). This message may be upgraded to warning in future.\n"
-msgstr "j 的结果是名称列表，在每组不停重复创建相同的名称很没效率"
-"为了提高效率，当 j=list(...) 时侦测到的所有名称会被移出，待分组完成后再放回来"
-"可以使用  j=transform() 避免这种加速"
-"此讯息可能会在未来升级为警告\n"
+msgstr ""
+"j 的结果是名称列表，在每组不停重复创建相同的名称很没效率为了提高效率，当 "
+"j=list(...) 时侦测到的所有名称会被移出，待分组完成后再放回来可以使用  "
+"j=transform() 避免这种加速此讯息可能会在未来升级为警告\n"
 
 #: dogroups.c:386
 #, c-format
@@ -1112,17 +1114,18 @@ msgid ""
 "%d NAs to match the longest column in this result. Later groups may have a "
 "similar problem but only the first is reported to save filling the warning "
 "buffer."
-msgstr "j 的结果第 %d 项在第 %d 组中为零长度(zero length)"
-"将使用 %d 个 NA 填入以符合结果中最长列的长度"
-"后面的分组也有相同问题，但只回报第一组以避免过多警告"
+msgstr ""
+"j 的结果第 %d 项在第 %d 组中为零长度(zero length)将使用 %d 个 NA 填入以符合结"
+"果中最长列的长度后面的分组也有相同问题，但只回报第一组以避免过多警告"
 
 #: dogroups.c:427
 #, c-format
 msgid ""
 "Column %d of result for group %d is type '%s' but expecting type '%s'. "
 "Column types must be consistent for each group."
-msgstr "结果的第 %d 列在第 %d 组中是 '%s' 类别而非预期的 '%s' 类别"
-"所有组的列类别必须一致"
+msgstr ""
+"结果的第 %d 列在第 %d 组中是 '%s' 类别而非预期的 '%s' 类别所有组的列类别必须"
+"一致"
 
 #: dogroups.c:429
 #, c-format
@@ -1131,9 +1134,10 @@ msgid ""
 "length must either be 1 (single values are ok) or match the LHS length "
 "exactly. If you wish to 'recycle' the RHS please use rep() explicitly to "
 "make this intent clear to readers of your code."
-msgstr "提供 %1$d 项给第 %3$d 組的第 %2$d 列，这组有 %4$d 行"
-"RHS長度必須為 1 (可以使用單個值) 或與 LHS 長度完全匹配"
-"如果您想回收(recycle) RHS，请使用 rep() 向你的代码读者明确表达你的意图"
+msgstr ""
+"提供 %1$d 项给第 %3$d 組的第 %2$d 列，这组有 %4$d 行RHS長度必須為 1 (可以使用"
+"單個值) 或與 LHS 長度完全匹配如果您想回收(recycle) RHS，请使用 rep() 向你的代"
+"码读者明确表达你的意图"
 
 #: dogroups.c:444
 #, c-format
@@ -1150,7 +1154,8 @@ msgstr "内部错误 : 区块 0 [%d] 与区块 1 [%d] 都运行了"
 msgid ""
 "\n"
 "  %s took %.3fs for %d groups\n"
-msgstr "\n"
+msgstr ""
+"\n"
 " %s 花了 %.3fs 在 %d 个组\n"
 
 #: dogroups.c:458
@@ -1687,612 +1692,661 @@ msgstr ""
 msgid "Internal error. Argument 'cols' to CanyNA is type '%s' not 'integer'"
 msgstr ""
 
-#: fread.c:149
+#: fread.c:153
 #, c-format
 msgid "System error %d unmapping view of file\n"
 msgstr ""
 
-#: fread.c:152
+#: fread.c:156
 #, c-format
 msgid "System errno %d unmapping file: %s\n"
 msgstr ""
 
-#: fread.c:212
+#: fread.c:216
 #, c-format
 msgid "Internal error: NUMTYPE(%d) > nLetters(%d)"
 msgstr ""
 
-#: fread.c:437
+#: fread.c:441
 #, c-format
 msgid "Unable to allocate %s of contiguous virtual RAM. %s allocation."
 msgstr ""
 
-#: fread.c:442
+#: fread.c:446
 #, c-format
 msgid "Avoidable %.3f seconds. %s time to copy.\n"
 msgstr ""
 
-#: fread.c:443
+#: fread.c:447
 #, c-format
 msgid "  File copy in RAM took %.3f seconds.\n"
 msgstr ""
 
-#: fread.c:1095
+#: fread.c:1099
 msgid ""
 "Previous fread() session was not cleaned up properly. Cleaned up ok at the "
 "beginning of this fread() call.\n"
 msgstr ""
 
-#: fread.c:1098
+#: fread.c:1102
 msgid "[01] Check arguments\n"
 msgstr ""
 
-#: fread.c:1105
+#: fread.c:1109
 #, c-format
 msgid "  Using %d threads (omp_get_max_threads()=%d, nth=%d)\n"
 msgstr ""
 
-#: fread.c:1113
+#: fread.c:1117
 msgid ""
 "Internal error: NAstrings is itself NULL. When empty it should be pointer to "
 "NULL."
 msgstr ""
 
-#: fread.c:1131
+#: fread.c:1135
 #, c-format
 msgid "freadMain: NAstring <<%s>> has whitespace at the beginning or end"
 msgstr ""
 
-#: fread.c:1136
+#: fread.c:1140
 #, c-format
 msgid ""
 "freadMain: NAstring <<%s>> is recognized as type boolean, this is not "
 "permitted."
 msgstr ""
 
-#: fread.c:1146
+#: fread.c:1150
 msgid "  No NAstrings provided.\n"
 msgstr ""
 
-#: fread.c:1148
+#: fread.c:1152
 msgid "  NAstrings = ["
 msgstr ""
 
-#: fread.c:1151
+#: fread.c:1155
 msgid "]\n"
 msgstr ""
 
-#: fread.c:1153
+#: fread.c:1157
 msgid "  One or more of the NAstrings looks like a number.\n"
 msgstr ""
 
-#: fread.c:1155
+#: fread.c:1159
 msgid "  None of the NAstrings look like numbers.\n"
 msgstr ""
 
-#: fread.c:1157
+#: fread.c:1161
 #, c-format
 msgid "  skip num lines = %llu\n"
 msgstr ""
 
-#: fread.c:1158
+#: fread.c:1162
 #, c-format
 msgid "  skip to string = <<%s>>\n"
 msgstr ""
 
-#: fread.c:1159
+#: fread.c:1163
 #, c-format
 msgid "  show progress = %d\n"
 msgstr ""
 
-#: fread.c:1160
+#: fread.c:1164
 #, c-format
 msgid "  0/1 column will be read as %s\n"
 msgstr ""
 
-#: fread.c:1168
+#: fread.c:1172
 #, c-format
 msgid "sep == quote ('%c') is not allowed"
 msgstr ""
 
-#: fread.c:1169
+#: fread.c:1173
 msgid "dec='' not allowed. Should be '.' or ','"
 msgstr ""
 
-#: fread.c:1170
+#: fread.c:1174
 #, c-format
 msgid "sep == dec ('%c') is not allowed"
 msgstr ""
 
-#: fread.c:1171
+#: fread.c:1175
 #, c-format
 msgid "quote == dec ('%c') is not allowed"
 msgstr ""
 
-#: fread.c:1188
+#: fread.c:1192
 msgid "[02] Opening the file\n"
 msgstr ""
 
-#: fread.c:1191
+#: fread.c:1195
 msgid ""
 "  `input` argument is provided rather than a file name, interpreting as raw "
 "text to read\n"
 msgstr ""
 
-#: fread.c:1195
+#: fread.c:1199
 msgid "Internal error: last byte of character input isn't \\0"
-msgstr ""
-
-#: fread.c:1198
-#, c-format
-msgid "  Opening file %s\n"
 msgstr ""
 
 #: fread.c:1202
 #, c-format
-msgid "file not found: %s"
+msgid "  Opening file %s\n"
 msgstr ""
 
 #: fread.c:1206
 #, c-format
-msgid "Opened file ok but couldn't obtain its size: %s"
+msgid "file not found: %s"
 msgstr ""
 
-#: fread.c:1209 fread.c:1237
+#: fread.c:1210
+#, c-format
+msgid "Opened file ok but couldn't obtain its size: %s"
+msgstr "文件能够打开但无法获知其大小：%s"
+
+#: fread.c:1213 fread.c:1241
 #, c-format
 msgid "File is empty: %s"
-msgstr ""
+msgstr "文件是空的：%s"
 
-#: fread.c:1210 fread.c:1238
+#: fread.c:1214 fread.c:1242
 #, c-format
 msgid "  File opened, size = %s.\n"
-msgstr ""
+msgstr "文件已打开，大小为 %s.\n"
 
-#: fread.c:1227
+#: fread.c:1231
 #, c-format
 msgid "File not found: %s"
-msgstr ""
+msgstr "文件没有找到：%s"
 
-#: fread.c:1233
+#: fread.c:1237
 #, c-format
 msgid "Unable to open file after %d attempts (error %d): %s"
-msgstr ""
+msgstr "经过 %d 次尝试后仍无法打开文件（错误 %d）：%s"
 
-#: fread.c:1235
+#: fread.c:1239
 #, c-format
 msgid "GetFileSizeEx failed (returned 0) on file: %s"
-msgstr ""
+msgstr "GetFileSizeEx 未能成功执行（返回值为0）于文件：%s"
 
-#: fread.c:1240
+#: fread.c:1244
 #, c-format
 msgid "This is Windows, CreateFileMapping returned error %d for file %s"
-msgstr ""
+msgstr "现在在Windows下，CreateFileMapping 返回错误 %d 于文件 %s"
 
-#: fread.c:1247
+#: fread.c:1251
 #, c-format
 msgid ""
 "Opened %s file ok but could not memory map it. This is a %dbit process. %s."
-msgstr ""
+msgstr "能够打开文件 %s 但不能创建内存映射。这是一个 %d 位进程。 %s."
 
-#: fread.c:1248
+#: fread.c:1252
 msgid "Please upgrade to 64bit"
-msgstr ""
+msgstr "请升级到64位"
 
-#: fread.c:1248
+#: fread.c:1252
 msgid "There is probably not enough contiguous virtual memory available"
-msgstr ""
+msgstr "多半没有足够的连续虚拟内存"
 
-#: fread.c:1251
+#: fread.c:1255
 msgid "  Memory mapped ok\n"
-msgstr ""
+msgstr "  内存映射正常\n"
 
-#: fread.c:1253
+#: fread.c:1257
 msgid ""
 "Internal error: Neither `input` nor `filename` are given, nothing to read."
 msgstr ""
-
-#: fread.c:1270
-msgid "[03] Detect and skip BOM\n"
-msgstr ""
+"内部错误：既没有`input`（输入）也没有`filename`（文件名），没有什么可供读入。"
 
 #: fread.c:1274
+msgid "[03] Detect and skip BOM\n"
+msgstr "[03] 检测并跳过字节顺序标记（BOM）\n"
+
+#: fread.c:1278
 msgid ""
 "  UTF-8 byte order mark EF BB BF found at the start of the file and "
 "skipped.\n"
-msgstr ""
+msgstr "在文件头发现了UTF-8 字节顺序标记（BOM）EF BB BF 并已跳过。\n"
 
-#: fread.c:1279
+#: fread.c:1283
 msgid ""
 "GB-18030 encoding detected, however fread() is unable to decode it. Some "
 "character fields may be garbled.\n"
-msgstr ""
+msgstr "检测到GB-18030 编码，但fread() 未能解码。某些 字符字段可能有乱码。\n"
 
-#: fread.c:1282
+#: fread.c:1286
 msgid ""
 "File is encoded in UTF-16, this encoding is not supported by fread(). Please "
 "recode the file to UTF-8."
-msgstr ""
+msgstr "文件编码是UTF-16，fread()不支持此编码。请 将文件转换为UTF-8。"
 
-#: fread.c:1287
+#: fread.c:1291
 #, c-format
 msgid "  Last byte(s) of input found to be %s and removed.\n"
-msgstr ""
+msgstr "  发现输入的最后字节是 %s 并已去除。\n"
 
-#: fread.c:1290
+#: fread.c:1294
 msgid "Input is empty or only contains BOM or terminal control characters"
-msgstr ""
+msgstr "输入是空的或只有字节顺序标记（BOM）或终端控制字符"
 
-#: fread.c:1297
+#: fread.c:1301
 msgid "[04] Arrange mmap to be \\0 terminated\n"
-msgstr ""
+msgstr "[04] 设定mmap为 \\0 终止\n"
 
-#: fread.c:1304
+#: fread.c:1308
 msgid ""
 "  No \\n exists in the file at all, so single \\r (if any) will be taken as "
 "one line ending. This is unusual but will happen normally when there is no "
 "\\r either; e.g. a single line missing its end of line.\n"
 msgstr ""
+"  文件中完全没有换行符\\n，所以单个 \\r（如果有的话）将被当成一行的结束。这不"
+"太常见但如果没有\\r 的话属于正常；例如单个行没有行尾结束符。\n"
 
-#: fread.c:1305
+#: fread.c:1309
 msgid ""
 "  \\n has been found in the input and different lines can end with different "
 "line endings (e.g. mixed \\n and \\r\\n in one file). This is common and "
 "ideal.\n"
 msgstr ""
+"  输入中有\\n 并且不同行可以有不同的 行尾结束符（如在一个文件中混合使用 \\n "
+"和\\r\\n）。这很常见也是理想情况。\n"
 
-#: fread.c:1329
+#: fread.c:1333
 #, c-format
 msgid ""
 "  File ends abruptly with '%c'. Final end-of-line is missing. Using cow page "
 "to write 0 to the last byte.\n"
 msgstr ""
+"  文件突然中止于 '%c'。没有最后一个行尾结束符。正使用写时复制页（cow, copy-"
+"on-write）写入 0 到最后一个字节。\n"
 
-#: fread.c:1335
+#: fread.c:1339
 msgid ""
 "This file is very unusual: it ends abruptly without a final newline, and "
 "also its size is a multiple of 4096 bytes. Please properly end the last row "
 "with a newline using for example 'echo >> file' to avoid this "
 msgstr ""
+"这个文件非常不正常：它突然中止而没有最后的换行，并且其大小是4096 字节的整数"
+"倍。请用一个换行（例如 'echo >> file'）来恰当地结束最后一行以避免此错误"
 
-#: fread.c:1336
+#: fread.c:1340
 #, c-format
 msgid "  File ends abruptly with '%c'. Copying file in RAM. %s copy.\n"
-msgstr ""
+msgstr "  文件突然中止于 '%c'。正在从内存中复制文件。%s 复制。\n"
 
-#: fread.c:1370
+#: fread.c:1374
 msgid "[05] Skipping initial rows if needed\n"
-msgstr ""
+msgstr "[05] 如需要的话跳过起始行\n"
 
-#: fread.c:1376
+#: fread.c:1380
 #, c-format
 msgid ""
 "skip='%s' not found in input (it is case sensitive and literal; i.e., no "
 "patterns, wildcards or regex)"
 msgstr ""
+"在输入中没有发现 skip='%s' （这里大小写敏感并需要是字面形式，也就是说不能使用"
+"模式，适配符或正则表达式）"
 
-#: fread.c:1382
+#: fread.c:1386
 #, c-format
 msgid ""
 "Found skip='%s' on line %llu. Taking this to be header row or first row of "
 "data.\n"
-msgstr ""
+msgstr "在行 %2$llu 发现了 skip='%1$s'。将此当做表头或数据的第一行。\n"
 
-#: fread.c:1395
+#: fread.c:1399
 #, c-format
 msgid "  Skipped to line %llu in the file"
-msgstr ""
+msgstr "  跳到文件的第 %llu 行"
 
-#: fread.c:1396
+#: fread.c:1400
 #, c-format
 msgid "skip=%llu but the input only has %llu line%s"
-msgstr ""
+msgstr "skip=%llu 但输入只有 %llu 行 %s"
 
-#: fread.c:1405
+#: fread.c:1409
 msgid ""
 "Input is either empty, fully whitespace, or skip has been set after the last "
 "non-whitespace."
-msgstr ""
+msgstr "输入是空，或全部为空白，或跳过设置是在最后一个非空白字符之后。"
 
-#: fread.c:1407
+#: fread.c:1411
 #, c-format
 msgid "  Moved forward to first non-blank line (%d)\n"
-msgstr ""
+msgstr "  前移到第一个非空行 (%d)\n"
 
-#: fread.c:1408
+#: fread.c:1412
 #, c-format
 msgid "  Positioned on line %d starting: <<%s>>\n"
-msgstr ""
-
-#: fread.c:1426
-msgid "[06] Detect separator, quoting rule, and ncolumns\n"
-msgstr ""
+msgstr "  定位到行 %d 开始于： <<%s>>\n"
 
 #: fread.c:1430
+msgid "[06] Detect separator, quoting rule, and ncolumns\n"
+msgstr "[06] 检测分隔符，引用规则，以及列数\n"
+
+#: fread.c:1434
 msgid "  sep='\\n' passed in meaning read lines as single character column\n"
-msgstr ""
+msgstr "  sep='\\n' 设定意味着将把所有行读作一个字符列\n"
 
-#: fread.c:1449
+#: fread.c:1453
 msgid "  Detecting sep automatically ...\n"
-msgstr ""
+msgstr "  自动检测分隔符中 ...\n"
 
-#: fread.c:1456
+#: fread.c:1460
 #, c-format
 msgid "  Using supplied sep '%s'\n"
-msgstr ""
+msgstr "  使用提供的分隔符 '%s'\n"
 
-#: fread.c:1490
+#: fread.c:1494
 #, c-format
 msgid "  with %d fields using quote rule %d\n"
-msgstr ""
+msgstr "  对 %d 个字段使用引用规则 %d\n"
 
-#: fread.c:1540
+#: fread.c:1544
 #, c-format
 msgid "  with %d lines of %d fields using quote rule %d\n"
-msgstr ""
+msgstr "  对 %d 行的 %d 字段使用引用规则 %d\n"
 
-#: fread.c:1547
+#: fread.c:1551
 msgid ""
 "  No sep and quote rule found a block of 2x2 or greater. Single column "
 "input.\n"
-msgstr ""
+msgstr "  没有分隔符并且引用规则发现了一个大于或等于2x2的区块。输入是单列。\n"
 
-#: fread.c:1563
+#: fread.c:1567
 msgid ""
 "Single column input contains invalid quotes. Self healing only effective "
 "when ncol>1"
-msgstr ""
+msgstr "单列输入包含了不合法的引用。自我修正只有在列数大于1（ncol>1）时才有效"
 
-#: fread.c:1568
+#: fread.c:1572
 #, c-format
 msgid ""
 "Found and resolved improper quoting in first %d rows. If the fields are not "
 "quoted (e.g. field separator does not appear within any field), try quote="
 "\"\" to avoid this warning."
 msgstr ""
+"在前 %d 行中发现并修正了不合适的引号用法。如果字段没有加引号（例如字段间隔符"
+"没有在任何字段内出现），可以尝试使用 quote=\"\" 来避免此警告。"
 
-#: fread.c:1584
+#: fread.c:1588
 #, c-format
 msgid ""
 "Internal error: ncol==%d line==%d after detecting sep, ncol and first line"
 msgstr ""
 
-#: fread.c:1587
+#: fread.c:1591
 #, c-format
 msgid "Internal error: first line has field count %d but expecting %d"
 msgstr ""
 
-#: fread.c:1589
+#: fread.c:1593
 #, c-format
 msgid ""
 "  Detected %d columns on line %d. This line is either column names or first "
 "data row. Line starts as: <<%s>>\n"
 msgstr ""
 
-#: fread.c:1591
+#: fread.c:1595
 #, c-format
 msgid "  Quote rule picked = %d\n"
 msgstr ""
 
-#: fread.c:1592
+#: fread.c:1596
 #, c-format
 msgid "  fill=%s and the most number of columns found is %d\n"
 msgstr ""
 
-#: fread.c:1598
+#: fread.c:1602
 msgid ""
 "This file is very unusual: it's one single column, ends with 2 or more end-"
 "of-line (representing several NA at the end), and is a multiple of 4096, too."
 msgstr ""
 
-#: fread.c:1599
+#: fread.c:1603
 #, c-format
 msgid "  Copying file in RAM. %s\n"
 msgstr ""
 
-#: fread.c:1605
+#: fread.c:1609
 msgid ""
 "  1-column file ends with 2 or more end-of-line. Restoring last eol using "
 "extra byte in cow page.\n"
 msgstr ""
 
-#: fread.c:1624
+#: fread.c:1628
 msgid ""
 "[07] Detect column types, good nrow estimate and whether first row is column "
 "names\n"
 msgstr ""
 
-#: fread.c:1625
+#: fread.c:1629
 #, c-format
 msgid "  'header' changed by user from 'auto' to %s\n"
 msgstr ""
 
-#: fread.c:1629
+#: fread.c:1633
 #, c-format
 msgid "Failed to allocate 2 x %d bytes for type and tmpType: %s"
 msgstr ""
 
-#: fread.c:1650
+#: fread.c:1654
 #, c-format
 msgid "  Number of sampling jump points = %d because "
 msgstr ""
 
-#: fread.c:1651
+#: fread.c:1655
 #, c-format
 msgid "nrow limit (%llu) supplied\n"
 msgstr ""
 
-#: fread.c:1652
+#: fread.c:1656
 msgid "jump0size==0\n"
 msgstr ""
 
-#: fread.c:1653
+#: fread.c:1657
 #, c-format
 msgid "(%llu bytes from row 1 to eof) / (2 * %llu jump0size) == %llu\n"
 msgstr ""
 
-#: fread.c:1691
+#: fread.c:1695
 #, c-format
 msgid ""
 "  A line with too-%s fields (%d/%d) was found on line %d of sample jump %d. "
 "%s\n"
 msgstr ""
 
-#: fread.c:1718
+#: fread.c:1696
+msgid "few"
+msgstr ""
+
+#: fread.c:1696
+msgid "many"
+msgstr ""
+
+#: fread.c:1696
+msgid ""
+"Most likely this jump landed awkwardly so type bumps here will be skipped."
+msgstr ""
+
+#: fread.c:1722
 #, c-format
 msgid "  Type codes (jump %03d)    : %s  Quote rule %d\n"
 msgstr ""
 
-#: fread.c:1731
+#: fread.c:1735
 #, c-format
 msgid ""
 "  'header' determined to be true due to column %d containing a string on row "
 "1 and a lower type (%s) in the rest of the %d sample rows\n"
 msgstr ""
 
-#: fread.c:1743
+#: fread.c:1747
 msgid ""
 "Internal error: row before first data row has the same number of fields but "
 "we're not using it."
 msgstr ""
 
-#: fread.c:1744
+#: fread.c:1748
 msgid ""
 "Internal error: ch!=pos after counting fields in the line before the first "
 "data row."
 msgstr ""
 
-#: fread.c:1745
+#: fread.c:1749
 #, c-format
 msgid ""
 "Types in 1st data row match types in 2nd data row but previous row has %d "
 "fields. Taking previous row as column names."
 msgstr ""
 
-#: fread.c:1748
+#: fread.c:1752
 #, c-format
 msgid ""
 "Detected %d column names but the data has %d columns (i.e. invalid file). "
 "Added %d extra default column name%s\n"
 msgstr ""
 
-#: fread.c:1751
+#: fread.c:1753
+msgid ""
+" for the first column which is guessed to be row names or an index. Use "
+"setnames() afterwards if this guess is not correct, or fix the file write "
+"command that created the file to create a valid file."
+msgstr ""
+
+#: fread.c:1753
+msgid "s at the end."
+msgstr ""
+
+#: fread.c:1755
 msgid ""
 "Internal error: fill=true but there is a previous row which should already "
 "have been filled."
 msgstr ""
 
-#: fread.c:1752
+#: fread.c:1756
 #, c-format
 msgid ""
 "Detected %d column names but the data has %d columns. Filling rows "
 "automatically. Set fill=TRUE explicitly to avoid this warning.\n"
 msgstr ""
 
-#: fread.c:1756
+#: fread.c:1760
 #, c-format
 msgid "Failed to realloc 2 x %d bytes for type and tmpType: %s"
 msgstr ""
 
-#: fread.c:1776
+#: fread.c:1780
 #, c-format
 msgid ""
 "  'header' determined to be %s because there are%s number fields in the "
 "first and only row\n"
 msgstr ""
 
-#: fread.c:1779
+#: fread.c:1780
+msgid "true"
+msgstr ""
+
+#: fread.c:1780
+msgid "false"
+msgstr ""
+
+#: fread.c:1780
+msgid " no"
+msgstr ""
+
+#: fread.c:1783
 msgid ""
 "  'header' determined to be true because all columns are type string and a "
 "better guess is not possible\n"
 msgstr ""
 
-#: fread.c:1781
+#: fread.c:1785
 msgid ""
 "  'header' determined to be false because there are some number columns and "
 "those columns do not have a string field at the top of them\n"
 msgstr ""
 
-#: fread.c:1797
+#: fread.c:1801
 #, c-format
 msgid "  Type codes (first row)   : %s  Quote rule %d\n"
 msgstr ""
 
-#: fread.c:1806
+#: fread.c:1810
 #, c-format
 msgid ""
 "  All rows were sampled since file is small so we know nrow=%llu exactly\n"
 msgstr ""
 
-#: fread.c:1818 fread.c:1825
+#: fread.c:1822 fread.c:1829
 msgid "  =====\n"
 msgstr ""
 
-#: fread.c:1819
+#: fread.c:1823
 #, c-format
 msgid ""
 "  Sampled %llu rows (handled \\n inside quoted fields) at %d jump points\n"
 msgstr ""
 
-#: fread.c:1820
+#: fread.c:1824
 #, c-format
 msgid "  Bytes from first data row on line %d to the end of last row: %llu\n"
 msgstr ""
 
-#: fread.c:1821
+#: fread.c:1825
 #, c-format
 msgid "  Line length: mean=%.2f sd=%.2f min=%d max=%d\n"
 msgstr ""
 
-#: fread.c:1822
+#: fread.c:1826
 #, c-format
 msgid "  Estimated number of rows: %llu / %.2f = %llu\n"
 msgstr ""
 
-#: fread.c:1823
+#: fread.c:1827
 #, c-format
 msgid ""
 "  Initial alloc = %llu rows (%llu + %d%%) using bytes/max(mean-2*sd,min) "
 "clamped between [1.1*estn, 2.0*estn]\n"
 msgstr ""
 
-#: fread.c:1827
+#: fread.c:1831
 #, c-format
 msgid "Internal error: sampleLines(%llu) > allocnrow(%llu)"
 msgstr ""
 
-#: fread.c:1831
+#: fread.c:1835
 #, c-format
 msgid "  Alloc limited to lower nrows=%llu passed in.\n"
 msgstr ""
 
-#: fread.c:1843
+#: fread.c:1847
 msgid "[08] Assign column names\n"
 msgstr ""
 
-#: fread.c:1851
+#: fread.c:1855
 #, c-format
 msgid "Unable to allocate %d*%d bytes for column name pointers: %s"
 msgstr ""
 
-#: fread.c:1873
+#: fread.c:1877
 #, c-format
 msgid "Internal error: reading colnames ending on '%c'"
 msgstr ""
 
-#: fread.c:1891
+#: fread.c:1895
 msgid "[09] Apply user overrides on column types\n"
 msgstr ""
 
-#: fread.c:1895
+#: fread.c:1899
 msgid "  Cancelled by user: userOverride() returned false."
 msgstr ""
 
-#: fread.c:1905
+#: fread.c:1909
 #, c-format
 msgid "Failed to allocate %d bytes for size array: %s"
 msgstr ""
 
-#: fread.c:1912
+#: fread.c:1916
 #, c-format
 msgid ""
 "Attempt to override column %d <<%.*s>> of inherent type '%s' down to '%s' "
@@ -2300,89 +2354,101 @@ msgid ""
 "was intended, please coerce to the lower type afterwards."
 msgstr ""
 
-#: fread.c:1926
+#: fread.c:1930
 #, c-format
 msgid "  After %d type and %d drop user overrides : %s\n"
 msgstr ""
 
-#: fread.c:1934
+#: fread.c:1938
 msgid "[10] Allocate memory for the datatable\n"
 msgstr ""
 
-#: fread.c:1935
+#: fread.c:1939
 #, c-format
 msgid "  Allocating %d column slots (%d - %d dropped) with %llu rows\n"
 msgstr ""
 
-#: fread.c:1989
+#: fread.c:1993
 #, c-format
 msgid "Buffer size %lld is too large\n"
 msgstr ""
 
-#: fread.c:1992
+#: fread.c:1996
 msgid "[11] Read the data\n"
 msgstr ""
 
-#: fread.c:1995
+#: fread.c:1999
 #, c-format
 msgid "  jumps=[%d..%d), chunk_size=%llu, total_size=%llu\n"
 msgstr ""
 
-#: fread.c:2215
+#: fread.c:2011
+#, c-format
+msgid "Internal error: Master thread is not thread 0 but thread %d.\n"
+msgstr ""
+
+#: fread.c:2219
 #, c-format
 msgid ""
 "Column %d (\"%.*s\") bumped from '%s' to '%s' due to <<%.*s>> on row %llu\n"
 msgstr ""
 
-#: fread.c:2337
+#: fread.c:2268
+#, c-format
+msgid ""
+"Internal error: invalid head position. jump=%d, headPos=%p, thisJumpStart="
+"%p, sof=%p"
+msgstr ""
+
+#: fread.c:2341
 #, c-format
 msgid ""
 "  Too few rows allocated. Allocating additional %llu rows (now nrows=%llu) "
 "and continue reading from jump %d\n"
 msgstr ""
 
-#: fread.c:2344
+#: fread.c:2348
 #, c-format
 msgid "  Restarting team from jump %d. nSwept==%d quoteRule==%d\n"
 msgstr ""
 
-#: fread.c:2364
+#: fread.c:2368
 #, c-format
 msgid "  %d out-of-sample type bumps: %s\n"
 msgstr ""
 
-#: fread.c:2400
+#: fread.c:2404
 #, c-format
 msgid ""
 "Read %llu rows x %d columns from %s file in %02d:%06.3f wall clock time\n"
 msgstr ""
 
-#: fread.c:2407
+#: fread.c:2411
 msgid "[12] Finalizing the datatable\n"
 msgstr ""
 
-#: fread.c:2408
+#: fread.c:2412
 msgid "  Type counts:\n"
 msgstr ""
 
-#: fread.c:2410
+#: fread.c:2414
 #, c-format
 msgid "%10d : %-9s '%c'\n"
 msgstr ""
 
-#: fread.c:2426
+#: fread.c:2430
 #, c-format
 msgid "Discarded single-line footer: <<%s>>"
 msgstr ""
 
-#: fread.c:2431
+#: fread.c:2435
 #, c-format
 msgid ""
 "Stopped early on line %llu. Expected %d fields but found %d. Consider "
 "fill=TRUE and comment.char=. First discarded non-empty line: <<%s>>"
 msgstr ""
 
-#: fread.c:2437
+#: fread.c:2441
 #, c-format
 msgid ""
 "Found and resolved improper quoting out-of-sample. First healed line %llu: <<"
@@ -2390,67 +2456,67 @@ msgid ""
 "within any field), try quote=\"\" to avoid this warning."
 msgstr ""
 
-#: fread.c:2441
+#: fread.c:2445
 msgid "=============================\n"
-msgstr ""
-
-#: fread.c:2443
-#, c-format
-msgid "%8.3fs (%3.0f%%) Memory map %.3fGB file\n"
-msgstr ""
-
-#: fread.c:2444
-#, c-format
-msgid "%8.3fs (%3.0f%%) sep="
-msgstr ""
-
-#: fread.c:2446
-#, c-format
-msgid " ncol=%d and header detection\n"
 msgstr ""
 
 #: fread.c:2447
 #, c-format
+msgid "%8.3fs (%3.0f%%) Memory map %.3fGB file\n"
+msgstr ""
+
+#: fread.c:2448
+#, c-format
+msgid "%8.3fs (%3.0f%%) sep="
+msgstr ""
+
+#: fread.c:2450
+#, c-format
+msgid " ncol=%d and header detection\n"
+msgstr ""
+
+#: fread.c:2451
+#, c-format
 msgid "%8.3fs (%3.0f%%) Column type detection using %llu sample rows\n"
 msgstr ""
 
-#: fread.c:2449
+#: fread.c:2453
 #, c-format
 msgid ""
 "%8.3fs (%3.0f%%) Allocation of %llu rows x %d cols (%.3fGB) of which %llu "
 "(%3.0f%%) rows used\n"
 msgstr ""
 
-#: fread.c:2453
+#: fread.c:2457
 #, c-format
 msgid ""
 "%8.3fs (%3.0f%%) Reading %d chunks (%d swept) of %.3fMB (each chunk %d rows) "
 "using %d threads\n"
 msgstr ""
 
-#: fread.c:2455
+#: fread.c:2459
 #, c-format
 msgid ""
 "   + %8.3fs (%3.0f%%) Parse to row-major thread buffers (grown %d times)\n"
 msgstr ""
 
-#: fread.c:2456
+#: fread.c:2460
 #, c-format
 msgid "   + %8.3fs (%3.0f%%) Transpose\n"
 msgstr ""
 
-#: fread.c:2457
+#: fread.c:2461
 #, c-format
 msgid "   + %8.3fs (%3.0f%%) Waiting\n"
 msgstr ""
 
-#: fread.c:2458
+#: fread.c:2462
 #, c-format
 msgid ""
 "%8.3fs (%3.0f%%) Rereading %d columns due to out-of-sample type exceptions\n"
 msgstr ""
 
-#: fread.c:2460
+#: fread.c:2464
 #, c-format
 msgid "%8.3fs        Total\n"
 msgstr ""
@@ -2704,16 +2770,15 @@ msgstr ""
 msgid ""
 "%s: NA (or other non-finite) value(s) are present in input, skip non-NA "
 "attempt and run with extra care for NAs\n"
-msgstr ""
-"%s: NA (或其他非有限长度值) 出现在输入中, 跳过非NA的"
-"输入并当心NA值\n"
+msgstr "%s: NA (或其他非有限长度值) 出现在输入中, 跳过非NA的输入并当心NA值\n"
 
 #: froll.c:141 froll.c:339
 #, c-format
 msgid ""
 "%s: running in parallel for input length %llu, window %d, hasna %d, narm %d\n"
 msgstr ""
-"%s: 正在并行运行, 输入长度 (input length) %llu, 窗口 (window) %d, hasna %d, narm %d\n"
+"%s: 正在并行运行, 输入长度 (input length) %llu, 窗口 (window) %d, hasna %d, "
+"narm %d\n"
 
 #: froll.c:179 froll.c:372 frolladaptive.c:157 frolladaptive.c:336
 #, c-format
@@ -2721,8 +2786,8 @@ msgid ""
 "%s: NA (or other non-finite) value(s) are present in input, na.rm was FALSE "
 "so in 'exact' implementation NAs were handled already, no need to re-run\n"
 msgstr ""
-"%s: NA (或其他非有限长度值) 出现在输入中, na.rm 为 FALSE "
-"因此在'exact'实现中, NA值已经被处理, 不需要重新运行\n"
+"%s: NA (或其他非有限长度值) 出现在输入中, na.rm 为 FALSE 因此在'exact'实现"
+"中, NA值已经被处理, 不需要重新运行\n"
 
 #: froll.c:428
 #, c-format
@@ -2735,8 +2800,8 @@ msgid ""
 "%s: results from provided FUN are not of type double, coercion from integer "
 "or logical will be applied on each iteration\n"
 msgstr ""
-"%s: 所提供的函数 (FUN) 的结果不是双精度 (double) 类型, "
-"对整数或逻辑值的类型转换会在每个循环中执行\n"
+"%s: 所提供的函数 (FUN) 的结果不是双精度 (double) 类型, 对整数或逻辑值的类型转"
+"换会在每个循环中执行\n"
 
 #: froll.c:438
 #, c-format
@@ -2754,7 +2819,9 @@ msgstr "x 必须是数值或者逻辑类型"
 
 #: frollR.c:26
 msgid "x must be list, data.frame or data.table of numeric or logical types"
-msgstr "x 必须是列表 (list), 或由数值或者逻辑类型组成的数据框 (data.frame 或 data.table)"
+msgstr ""
+"x 必须是列表 (list), 或由数值或者逻辑类型组成的数据框 (data.frame 或 data."
+"table)"
 
 #: frollR.c:47 frollR.c:264
 msgid "n must be non 0 length"
@@ -2794,23 +2861,22 @@ msgid ""
 "using hasNA FALSE and na.rm TRUE does not make sense, if you know there are "
 "NA values use hasNA TRUE, otherwise leave it as default NA"
 msgstr ""
-"同时使用 hasNA FALSE 和 na.rm TRUE 没有意义, 如果明确有"
-"NA值, 那就用 hasNA TRUE, 在其他情况可以让它保留默认值NA"
+"同时使用 hasNA FALSE 和 na.rm TRUE 没有意义, 如果明确有NA值, 那就用 hasNA "
+"TRUE, 在其他情况可以让它保留默认值NA"
 
 #: frollR.c:119 frollR.c:275
 msgid ""
 "Internal error: invalid align argument in rolling function, should have been "
 "caught before. please report to data.table issue tracker."
 msgstr ""
-"内部错误: 在 rolling 函数内无效的 align 参数, 理应在更早阶段排除"
-"请向data.table issue tracker报告"
+"内部错误: 在 rolling 函数内无效的 align 参数, 理应在更早阶段排除请向data."
+"table issue tracker报告"
 
 #: frollR.c:122
 msgid ""
 "using adaptive TRUE and align argument different than 'right' is not "
 "implemented"
-msgstr ""
-"同时使用 adaptive TRUE 和不是 'right' 的align参数还未能实现"
+msgstr "同时使用 adaptive TRUE 和不是 'right' 的align参数还未能实现"
 
 #: frollR.c:126 frollR.c:297 types.c:64
 #, c-format
@@ -2824,24 +2890,22 @@ msgid ""
 "function on list having variable length of elements call it for each field "
 "separately"
 msgstr ""
-"adaptive rolling 函数只能处理长度同为"
-"的 'x', 比如 data.table 或数据框; 如果想在含有不同长度元素的列表上执行 rolling"
-"函数, 需要分开单独地在每一项上面执行."
+"adaptive rolling 函数只能处理长度同为的 'x', 比如 data.table 或数据框; 如果想"
+"在含有不同长度元素的列表上执行 rolling函数, 需要分开单独地在每一项上面执行."
 
 #: frollR.c:137
 msgid ""
 "length of integer vector(s) provided as list to 'n' argument must be equal "
 "to number of observations provided in 'x'"
-msgstr ""
-"'n' 列表中整数向量的长度必须等于 'x' 中的观察数量"
+msgstr "'n' 列表中整数向量的长度必须等于 'x' 中的观察数量"
 
 #: frollR.c:151
 msgid ""
 "Internal error: invalid fun argument in rolling function, should have been "
 "caught before. please report to data.table issue tracker."
 msgstr ""
-"内部错误: 在 rolling 函数中无效的 fun 参数, 理应在更早阶段排除"
-"请向data.table issue tracker报告"
+"内部错误: 在 rolling 函数中无效的 fun 参数, 理应在更早阶段排除请向data.table "
+"issue tracker报告"
 
 #: frollR.c:155 frollR.c:279 nafill.c:136 shift.c:21
 msgid "fill must be a vector of length 1"
@@ -2856,8 +2920,8 @@ msgid ""
 "Internal error: invalid algo argument in rolling function, should have been "
 "caught before. please report to data.table issue tracker."
 msgstr ""
-"内部错误: 在 rolling 函数内无效的 algo 参数, 理应在更早阶段排除"
-"请向data.table issue tracker报告"
+"内部错误: 在 rolling 函数内无效的 algo 参数, 理应在更早阶段排除请向data."
+"table issue tracker报告"
 
 #: frollR.c:190
 #, c-format
@@ -2877,8 +2941,8 @@ msgid ""
 "%s: %d column(s) and %d window(s), not entering parallel execution here "
 "because algo='exact' will compute results in parallel\n"
 msgstr ""
-"%s: %d column(s) 和 %d window(s), 未能进入并行执行,"
-"因为 algo='exact' 会并行计算结果\n"
+"%s: %d column(s) 和 %d window(s), 未能进入并行执行,因为 algo='exact' 会并行计"
+"算结果\n"
 
 #: frollR.c:219
 #, c-format
@@ -2964,7 +3028,7 @@ msgstr ""
 msgid "%lld "
 msgstr ""
 
-#: fsort.c:246 fwrite.c:690 fwrite.c:947
+#: fsort.c:246 fwrite.c:693 fwrite.c:951
 msgid "\n"
 msgstr ""
 
@@ -2983,31 +3047,31 @@ msgstr ""
 msgid "%d: %.3f (%4.1f%%)\n"
 msgstr ""
 
-#: fwrite.c:601
+#: fwrite.c:603
 #, c-format
 msgid "buffMB=%d outside [1,1024]"
 msgstr ""
 
-#: fwrite.c:608
+#: fwrite.c:610
 #, c-format
 msgid ""
 "eol must be 1 or more bytes (usually either \\n or \\r\\n) but is length %d"
 msgstr ""
 
-#: fwrite.c:611
+#: fwrite.c:613
 msgid "Column writers: "
 msgstr ""
 
-#: fwrite.c:613 fwrite.c:615 fwrite.c:617
+#: fwrite.c:615 fwrite.c:617 fwrite.c:619
 #, c-format
 msgid "%d "
 msgstr ""
 
-#: fwrite.c:616
+#: fwrite.c:618
 msgid "... "
 msgstr ""
 
-#: fwrite.c:619
+#: fwrite.c:621
 #, c-format
 msgid ""
 "\n"
@@ -3015,17 +3079,17 @@ msgid ""
 "eolLen=%d\n"
 msgstr ""
 
-#: fwrite.c:652
+#: fwrite.c:654
 #, c-format
 msgid "Internal error: type %d has no max length method implemented"
 msgstr ""
 
-#: fwrite.c:659
+#: fwrite.c:662
 #, c-format
 msgid "maxLineLen=%zd. Found in %.3fs\n"
 msgstr ""
 
-#: fwrite.c:679
+#: fwrite.c:682
 #, c-format
 msgid ""
 "%s: '%s'. Failed to open existing file for writing. Do you have write "
@@ -3033,7 +3097,7 @@ msgid ""
 "have it open?"
 msgstr ""
 
-#: fwrite.c:680
+#: fwrite.c:683
 #, c-format
 msgid ""
 "%s: '%s'. Unable to create new file for writing (it does not exist already). "
@@ -3041,61 +3105,65 @@ msgid ""
 "the path exist?"
 msgstr ""
 
-#: fwrite.c:688
+#: fwrite.c:691
 #, c-format
 msgid "Writing bom (%s), yaml (%d characters) and column names (%s) ... "
 msgstr ""
 
-#: fwrite.c:701
+#: fwrite.c:704
 #, c-format
 msgid "Unable to allocate %d MiB for header: %s"
 msgstr ""
 
-#: fwrite.c:729 fwrite.c:789
+#: fwrite.c:732 fwrite.c:793
 msgid "Can't allocate gzip stream structure"
 msgstr ""
 
-#: fwrite.c:735
+#: fwrite.c:738
 #, c-format
 msgid "Unable to allocate %d MiB for zbuffer: %s"
 msgstr ""
 
-#: fwrite.c:750
+#: fwrite.c:753
 #, c-format
 msgid "Compress gzip error: %d"
 msgstr ""
 
-#: fwrite.c:751 fwrite.c:759 fwrite.c:953
+#: fwrite.c:754 fwrite.c:763 fwrite.c:957
 #, c-format
 msgid "%s: '%s'"
 msgstr ""
 
-#: fwrite.c:756
+#: fwrite.c:760
 #, c-format
 msgid "done in %.3fs\n"
 msgstr ""
 
-#: fwrite.c:758
+#: fwrite.c:762
 msgid "No data rows present (nrow==0)\n"
 msgstr ""
 
-#: fwrite.c:776
+#: fwrite.c:780
 #, c-format
 msgid ""
 "Writing %lld rows in %d batches of %d rows (each buffer size %dMB, "
 "showProgress=%d, nth=%d)\n"
 msgstr ""
 
-#: fwrite.c:961
+#: fwrite.c:965
 #, c-format
-msgid "zlib v%s deflate() returned error %d with z_stream.msg '%s'. %s\n"
+msgid ""
+"zlib %s (zlib.h %s) deflate() returned error %d with z_stream->msg==\"%s\" "
+"Z_FINISH=%d Z_BLOCK=%d. %s"
 msgstr ""
 
-#: fwrite.c:962
-msgid "Please include the full output above in your data.table bug report."
+#: fwrite.c:967
+msgid ""
+"Please include the full output above and below this message in your data."
+"table bug report."
 msgstr ""
 
-#: fwrite.c:963
+#: fwrite.c:968
 msgid ""
 "Please retry fwrite() with verbose=TRUE and include the full output with "
 "your data.table bug report."
