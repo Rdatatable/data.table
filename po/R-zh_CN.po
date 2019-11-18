@@ -951,116 +951,135 @@ msgid "All elements in argument 'x' to 'setDF' must be of same length"
 msgstr ""
 
 msgid "Cannot find symbol"
-msgstr ""
+msgstr "无法找到符号"
 
 msgid "Cannot convert '"
-msgstr ""
+msgstr "无法转换'"
 
 msgid ""
 "' to data.table by reference because binding is locked. It is very likely "
 "that '"
 msgstr ""
+"' 为引用形式的 data.table，因为绑定被锁定了。很有可能 "
+"'"
 
 msgid ""
 "' resides within a package (or an environment) that is locked to prevent "
 "modifying its variable bindings. Try copying the object to your current "
 "environment, ex: var <- copy(var) and then using setDT again."
 msgstr ""
+"' 存在于一个被锁定的包（或环境）中导致无法"
+"修改其绑定的变量。可以尝试复制对象（object）到你的现有"
+"环境，如：var <- copy(var) 然后再使用 setDT。"
 
 msgid "Some columns are a multi-column type (such as a matrix column):"
-msgstr ""
+msgstr "某些列是多重列类型（如矩阵列）："
 
 msgid ""
 ". setDT will retain these columns as-is but subsequent operations like "
 "grouping and joining may fail. Please consider as.data.table() instead which "
 "will create a new column for each embedded column."
 msgstr ""
+"。setDT 会原样保留这些列但后续的操作如"
+"编组（grouping）和联接（joining）可能会失败。请考虑使用 as.data.table() 因为它"
+"会为每个内嵌列建立一个新列。"
 
 msgid "Column"
-msgstr ""
+msgstr "列"
 
 msgid ""
 "is of POSIXlt type. Please convert it to POSIXct using as.POSIXct and run "
 "setDT again. We do not recommend use of POSIXlt at all because it uses 40 "
 "bytes to store one date."
 msgstr ""
+"属于 POSIXlt 类型。请使用 as.POSIXct 转换为 POSIXct 并再次执行"
+"setDT。我们非常不推荐使用 POSIXlt 因为它要用 40 "
+"字节来存储一个日期。"
 
 msgid ""
 "All elements in argument 'x' to 'setDT' must be of same length, but the "
 "profile of input lengths (length:frequency) is:"
 msgstr ""
+"'setDT' 的参数 'x' 中所有的元素都必须是同一长度，但"
+"输入长度的概况（长度（length）：频率（frequency））是："
 
 msgid "%s:%d"
 msgstr ""
 
 msgid "The first entry with fewer than"
-msgstr ""
+msgstr "第一个长度少于"
 
 msgid "entries is"
-msgstr ""
+msgstr "的输入项是"
 
 msgid ""
 "Argument 'x' to 'setDT' should be a 'list', 'data.frame' or 'data.table'"
 msgstr ""
+"'setDT' 参数 'x' 应为一个列表（'list'），数据框（'data.frame'）或 'data.table'"
 
 msgid "Item '"
-msgstr ""
+msgstr "项 '"
 
 msgid "' not found in names of input list"
-msgstr ""
+msgstr "' 不存在于输入列表的子项名中"
 
 msgid "'prefix' must be NULL or a character vector of length 1."
-msgstr ""
+msgstr "'prefix' 必须为 空（NULL）或者长度为 1 的字符向量。"
 
 msgid "x is a single vector, non-NULL 'cols' doesn't make sense."
-msgstr ""
+msgstr "x 是单个向量，非空的 'cols' 没有意义。"
 
 msgid "x is a list, 'cols' cannot be 0-length."
-msgstr ""
+msgstr "x 是一个列表（list），'cols' 长度不能为0。"
 
 msgid "RHS of"
-msgstr ""
+msgstr "右手侧（RHS）"
 
 msgid "is length"
-msgstr ""
+msgstr "长度为"
 
 msgid "which is not 1 or nrow ("
-msgstr ""
+msgstr "其非 1 或 总行数 nrow ("
 
 msgid ""
 "). For robustness, no recycling is allowed (other than of length 1 RHS). "
 "Consider %in% instead."
 msgstr ""
+")。考虑到程序的稳健性，只有在右侧元素长度为 1 的情况下，我们才会对之进行循环。"
+"考虑改用 %in% 。"
 
 msgid ""
 "Internal error in .isFastSubsettable. Please report to data.table developers"
 msgstr ""
+".isFastSubsettable 产生了内部错误。请向 data.table 开发者报告"
 
 msgid ""
 "'on' argument should be a named atomic vector of column names indicating "
 "which columns in 'i' should be joined with which columns in 'x'."
 msgstr ""
+"'on' 参数应为一个有子项名字的原子列名向量，指明"
+"'i' 中的哪些列应与 'x' 中的哪些列联接。"
 
 msgid "Found more than one operator in one 'on' statement:"
-msgstr ""
+msgstr "在一个 'on' 语句中出现了多于一个的操作符（operator）："
 
 msgid ". Please specify a single operator."
-msgstr ""
+msgstr "。请指定单个操作符。"
 
 msgid "'on' contains no column name:"
-msgstr ""
+msgstr "'on' 中没有列名："
 
 msgid ". Each 'on' clause must contain one or two column names."
-msgstr ""
+msgstr "。每个'on' 子句必须包含一个或两个列名。"
 
 msgid "'on' contains more than 2 column names:"
-msgstr ""
+msgstr "'on' 包含了超过两个列名："
 
 msgid "Invalid operators"
-msgstr ""
+msgstr "无效的操作符"
 
 msgid ". Only allowed operators are"
-msgstr ""
+msgstr "。只有这些操作符是有效的"
 
 msgid "."
 msgstr ""
