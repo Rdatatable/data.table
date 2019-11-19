@@ -6,11 +6,15 @@
 
 ## NEW FEATURES
 
+1. `DT[, {...; .(A,B)}]` (when `.()` is the final item of a multi-statement `{...}`) now auto-names the columns `A` and `B` (just like `DT[, .(A,B)]`) rather than `V1` and `V2`, [#2478](https://github.com/Rdatatable/data.table/issues/2478) [#609](https://github.com/Rdatatable/data.table/issues/609). Similarly, `DT[, if (.N>1) .(B), by=A]` now auto-names the column `B` rather than `V1`. Explicit names are unaffected; e.g. `DT[, {... y= ...; .(A=C+y)}, by=...]` named the column `A` before, and still does.
+
 ## BUG FIXES
 
 ## NOTES
 
 1. Links in the manual were creating warnings when installing HTML, [#4000](https://github.com/Rdatatable/data.table/issues/4000). Thanks to Morgan Jacob.
+
+2. One test needed to be adjusted to pass R-devel (R 4.0.0) which will soon have reference counting turned on, [#4058](https://github.com/Rdatatable/data.table/issues/4058). This motivated early release to CRAN because every day CRAN tests every package using the previous day's changes in R-devel; a much valued feature of the R ecosystem. It helps R-core if packages can pass changes in R-devel as soon as possible. Thanks to Luke Tierney for the notice, and for implementing reference counting which we look forward to very much.
 
 
 # data.table [v1.12.6](https://github.com/Rdatatable/data.table/milestone/18?closed=1)  (18 Oct 2019)
