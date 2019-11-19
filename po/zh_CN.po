@@ -1570,7 +1570,7 @@ msgstr ""
 
 #: forder.c:714
 msgid "Internal error: column not supported, not caught earlier"
-msgstr ""
+msgstr "内部错误：列有不支持类型，未被前置识别"
 
 #: forder.c:722
 #, c-format
@@ -1581,16 +1581,16 @@ msgstr ""
 #, c-format
 msgid ""
 "Failed to allocate TMP or UGRP or they weren't cache line aligned: nth=%d"
-msgstr ""
+msgstr "分配TMP或UGRP失败或缓存行不一致： nth=%d"
 
 #: forder.c:733
 msgid "Could not allocate (very tiny) group size thread buffers"
-msgstr ""
+msgstr "无法分配（极小）块组大小的线程缓冲区"
 
 #: forder.c:794
 #, c-format
 msgid "Timing block %2d%s = %8.3f   %8d\n"
-msgstr ""
+msgstr "定时块 %2d%s = %8.3f   %8d\n"
 
 #: forder.c:797
 #, c-format
@@ -1600,12 +1600,12 @@ msgstr ""
 #: forder.c:1053
 #, c-format
 msgid "Failed to allocate parallel counts. my_n=%d, nBatch=%d"
-msgstr ""
+msgstr "分配并行计算失败，my_n=%d, nBatch=%d"
 
 #: forder.c:1162
 #, c-format
 msgid "Unable to allocate TMP for my_n=%d items in parallel batch counting"
-msgstr ""
+msgstr "无法分配TMP给并行批处理计算的 my_n=%d 项"
 
 #: forder.c:1270
 msgid ""
@@ -1613,144 +1613,152 @@ msgid ""
 "needed on a list/data.table, you'll need the order anyway if not sorted, so "
 "use if (length(o<-forder(...))) for efficiency in one step, or equivalent at "
 "C level"
-msgstr ""
+msgstr "is.sorted (R层面)和 fsorted (C 层面)使用对象仅为向量。如果"
+"需要用于list或data.table，需要对其进行排序"
+"如果(length(o<-forder(...)))，使用提高效率，或相当于在 "
 
 #: forder.c:1302
 #, c-format
 msgid "type '%s' is not yet supported"
-msgstr ""
+msgstr "类型 '%s' 目前不支持"
 
 #: forder.c:1311
 msgid "x must be either NULL or an integer vector"
-msgstr ""
+msgstr "x 必须为空值或整型向量"
 
 #: forder.c:1313
 msgid "nrow must be integer vector length 1"
-msgstr ""
+msgstr "nrow 必须为长度为1的整型向量"
 
 #: forder.c:1315
 #, c-format
 msgid "nrow==%d but must be >=0"
-msgstr ""
+msgstr "nrow==%d 但是必须  >=0"
 
 #: forder.c:1332
 msgid "x must be type 'double'"
-msgstr ""
+msgstr "x 必须为浮点数类型"
 
 #: frank.c:11
 #, c-format
 msgid "Internal error. Argument 'x' to Cdt_na is type '%s' not 'list'"
-msgstr ""
+msgstr "内部错误：参数 'x' 关于 Cdt_na 是 '%s' 类型而不是 'list' 类型"
 
 #: frank.c:12
 #, c-format
 msgid "Internal error. Argument 'cols' to Cdt_na is type '%s' not 'integer'"
-msgstr ""
+msgstr "内部错误：参数 'cols' 关于 Cdt_na 是 '%s' 类型而不是 'integer' 类型"
 
 #: frank.c:16 frank.c:146 subset.c:263
 #, c-format
 msgid "Item %d of 'cols' is %d which is outside 1-based range [1,ncol(x)=%d]"
-msgstr ""
+msgstr "'cols' 的 %d 项为 %d ，超出1的范围 [1,ncol(x)=%d]"
 
 #: frank.c:26 frank.c:155
 #, c-format
 msgid ""
 "Column %d of input list x is length %d, inconsistent with first column of "
 "that item which is length %d."
-msgstr ""
+msgstr "输入列表x的列 %d 长度为  %d，不同于第一列的"
+"该项长度为 %d"
 
 #: frank.c:65 frank.c:202 transpose.c:88
 #, c-format
 msgid "Unsupported column type '%s'"
-msgstr ""
+msgstr "不支持的列类型 '%s'"
 
 #: frank.c:83
 msgid ""
 "Internal error: invalid ties.method for frankv(), should have been caught "
 "before. please report to data.table issue tracker"
-msgstr ""
+msgstr "内部错误：对于 frankv()的无效值ties.method，应在"
+"之前被捕获。请报告给 data.table issue tracker"
 
 #: frank.c:130
 #, c-format
 msgid "Internal error: unknown ties value in frank: %d"
-msgstr ""
+msgstr "内部错误：frank中有未知的ties值 %d"
 
 #: frank.c:141
 #, c-format
 msgid "Internal error. Argument 'x' to CanyNA is type '%s' not 'list'"
-msgstr ""
+msgstr "内部错误：参数 'x' 关于 CanyNA 是 '%s' 类型而不是'list'类型"
 
 #: frank.c:142
 #, c-format
 msgid "Internal error. Argument 'cols' to CanyNA is type '%s' not 'integer'"
-msgstr ""
+msgstr "内部错误：参数 'cols' 关于 CanyNA 是 '%s' 类型而不是'integer'类型"
 
 #: fread.c:153
 #, c-format
 msgid "System error %d unmapping view of file\n"
-msgstr ""
+msgstr "系统错误 %d 取消映射文件视图\n"
 
 #: fread.c:156
 #, c-format
 msgid "System errno %d unmapping file: %s\n"
-msgstr ""
+msgstr "系统错误 %d 取消映射文件： %s\n"
 
 #: fread.c:216
 #, c-format
 msgid "Internal error: NUMTYPE(%d) > nLetters(%d)"
-msgstr ""
+msgstr "内部错误：NUMTYPE(%d) > nLetters(%d)"
 
 #: fread.c:441
 #, c-format
 msgid "Unable to allocate %s of contiguous virtual RAM. %s allocation."
-msgstr ""
+msgstr "无法分配 %s 的连续虚拟内存。 %s 已分配。"
 
 #: fread.c:446
 #, c-format
 msgid "Avoidable %.3f seconds. %s time to copy.\n"
-msgstr ""
+msgstr "可避免的 %.3f 秒。 %s 复制用时\n"
 
 #: fread.c:447
 #, c-format
 msgid "  File copy in RAM took %.3f seconds.\n"
-msgstr ""
+msgstr "内存上的文件复制耗时 %.3f 秒\n"
 
 #: fread.c:1099
 msgid ""
 "Previous fread() session was not cleaned up properly. Cleaned up ok at the "
 "beginning of this fread() call.\n"
-msgstr ""
+msgstr "之前的会话fread()未正确清理。在"
+"当前 fread() 会话开始前清理好\n"
 
 #: fread.c:1102
 msgid "[01] Check arguments\n"
-msgstr ""
+msgstr "[01] 参数检查\n"
 
 #: fread.c:1109
 #, c-format
 msgid "  Using %d threads (omp_get_max_threads()=%d, nth=%d)\n"
-msgstr ""
+msgstr "使用 %d 线程 (omp_get_max_threads()=%d, nth=%d)\n"
 
 #: fread.c:1117
 msgid ""
 "Internal error: NAstrings is itself NULL. When empty it should be pointer to "
 "NULL."
 msgstr ""
+"内部错误：NAstrings 自身为空值。当清空该项会指向"
+"NULL空值"
 
 #: fread.c:1135
 #, c-format
 msgid "freadMain: NAstring <<%s>> has whitespace at the beginning or end"
-msgstr ""
+msgstr "freadMain: NAstring <<%s>>  在开始或者结束处有空白"
 
 #: fread.c:1140
 #, c-format
 msgid ""
 "freadMain: NAstring <<%s>> is recognized as type boolean, this is not "
 "permitted."
-msgstr ""
+msgstr "freadMain: NAstring <<%s>> 被识别为布尔型，这是不"
+"允许"
 
 #: fread.c:1150
 msgid "  No NAstrings provided.\n"
-msgstr ""
+msgstr "未提供 NAstrings \n"
 
 #: fread.c:1152
 msgid "  NAstrings = ["
@@ -1762,74 +1770,76 @@ msgstr ""
 
 #: fread.c:1157
 msgid "  One or more of the NAstrings looks like a number.\n"
-msgstr ""
+msgstr "一个或多个 NAstrings 类似数值\n"
 
 #: fread.c:1159
 msgid "  None of the NAstrings look like numbers.\n"
-msgstr ""
+msgstr "没有 NAstrings 为数值\n"
 
 #: fread.c:1161
 #, c-format
 msgid "  skip num lines = %llu\n"
-msgstr ""
+msgstr "跳过行数为 %llu\n"
 
 #: fread.c:1162
 #, c-format
 msgid "  skip to string = <<%s>>\n"
-msgstr ""
+msgstr "跳转至 string = <<%s>>\n"
 
 #: fread.c:1163
 #, c-format
 msgid "  show progress = %d\n"
-msgstr ""
+msgstr "显示进程  %d\n"
 
 #: fread.c:1164
 #, c-format
 msgid "  0/1 column will be read as %s\n"
-msgstr ""
+msgstr " 0/1 列被读取为  %s\n"
 
 #: fread.c:1172
 #, c-format
 msgid "sep == quote ('%c') is not allowed"
-msgstr ""
+msgstr "sep == quote ('%c') 不被允许"
 
 #: fread.c:1173
 msgid "dec='' not allowed. Should be '.' or ','"
-msgstr ""
+msgstr "dec='' 不允许，应该为 '.' 或者 ','"
 
 #: fread.c:1174
 #, c-format
 msgid "sep == dec ('%c') is not allowed"
-msgstr ""
+msgstr "sep == dec ('%c') 不允许"
 
 #: fread.c:1175
 #, c-format
 msgid "quote == dec ('%c') is not allowed"
-msgstr ""
+msgstr "quote == dec ('%c') 不允许"
 
 #: fread.c:1192
 msgid "[02] Opening the file\n"
-msgstr ""
+msgstr "[02]  打开文件\n"
 
 #: fread.c:1195
 msgid ""
 "  `input` argument is provided rather than a file name, interpreting as raw "
 "text to read\n"
 msgstr ""
+"提供 `input` 参数而非文件名，理解为原始的"
+"文本读取\n"
 
 #: fread.c:1199
 msgid "Internal error: last byte of character input isn't \\0"
-msgstr ""
+msgstr "内部错误：字符输入的最后一个字节不是 \\0"
 
 #: fread.c:1202
 #, c-format
 msgid "  Opening file %s\n"
-msgstr ""
+msgstr "打开文件 %s\n"
 
 #: fread.c:1206
 #, c-format
 msgid "file not found: %s"
-msgstr ""
+msgstr "文件未找到： %s"
 
 #: fread.c:1210
 #, c-format
