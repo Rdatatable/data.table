@@ -886,7 +886,8 @@ replace_dot_alias = function(e) {
           return(q) # else empty list is needed for test 468: adding an empty list column
         }
         if (q[[1L]] == '{') {
-          q[[length(q)]] = do_j_names(q[[length(q)]])
+          qlen = length(q)
+          if (!is.null(q[[qlen]])) q[[qlen]] = do_j_names(q[[qlen]])
           return(q)
         }
         if (q[[1L]] == 'if') {
