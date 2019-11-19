@@ -5664,7 +5664,7 @@ test(1372.92, foverlaps(i, x, mult="all", type="equal", nomatch=NULL, which=TRUE
 x = c(1L,5L,3L)
 address(x) ## shouldn't increment NAM field
 out = capture.output(.Internal(inspect(x)))
-test(1373, grepl("NAM\\(1\\)", out), TRUE)
+test(1373, grepl("(NAM|REF)\\(1\\)", out), TRUE)  # 'NAM'<R4 'REF'>=R4; #4058
 
 # fix for bug #762 - key'd data.table with a non-existing column in 'by' is not handled properly.
 DT <- data.table(x=1:5, z=5:1, key="z")

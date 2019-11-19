@@ -205,6 +205,7 @@ R CMD check data.table_1.12.7.tar.gz
 
 cd ~/build
 wget -N https://stat.ethz.ch/R/daily/R-devel.tar.gz
+rm -rf R-devel
 rm -rf R-devel-strict-*
 tar xvf R-devel.tar.gz
 mv R-devel R-devel-strict-gcc
@@ -212,14 +213,16 @@ tar xvf R-devel.tar.gz
 mv R-devel R-devel-strict-clang
 tar xvf R-devel.tar.gz
 
-# use gcc-8 and clang-8 in CC=, or latest available in `apt cache search gcc-` or `clang-`
+cd R-devel  # used for revdep testing: .dev/revdep.R
+./configure CFLAGS="-O2 -Wall -pedantic -DSWITCH_TO_REFCNT"
 
+# use gcc-8 and clang-8 in CC=, or latest available in `apt cache search gcc-` or `clang-`
 cd R-devel-strict-clang    # important to change directory name before building not after because the path is baked into the build, iiuc
 ./configure --without-recommended-packages --disable-byte-compiled-packages --disable-openmp --enable-strict-barrier --disable-long-double CC="clang-8 -fsanitize=undefined,address -fno-sanitize=float-divide-by-zero -fno-omit-frame-pointer"
 # See R-exts#4.3.3
 # CFLAGS an LIBS seem to be ignored now by latest R-devel/gcc, and it works without : CFLAGS="-O0 -g -Wall -pedantic" LIBS="-lpthread"
 # Adding --disable-long-double (see R-exts) in the same configure as ASAN/UBSAN used to fail, but now works. So now noLD is included in this strict build.
-# Other flags used in the past: CC="gcc -std=gnu99" CFLAGS="-O0 -g -Wall -pedantic -ffloat-store -fexcess-precision=standard"
+# Other flags used in the past: CC="gcc -std=gnu99" CFLAGS="-O0 -g -Wall -pedantic -DSWITCH_TO_REFCNT -ffloat-store -fexcess-precision=standard"
 # For ubsan, disabled openmp otherwise gcc fails in R's distance.c:256 error: ‘*.Lubsan_data0’ not specified in enclosing parallel
 # UBSAN gives direct line number under gcc but not clang it seems. clang-5.0 has been helpful too, though.
 # If use later gcc-8, add F77=gfortran-8
@@ -227,7 +230,7 @@ cd R-devel-strict-clang    # important to change directory name before building 
 # -fno-sanitize=float-divide-by-zero, otherwise /0 errors on R's summary.c (tests 648 and 1185.2) but ignore those:
 #   https://bugs.r-project.org/bugzilla3/show_bug.cgi?id=16000
 # without ubsan, openmp can be on :
-# ./configure --without-recommended-packages --disable-byte-compiled-packages --enable-strict-barrier CC="gcc -fsanitize=address -fno-sanitize=float-divide-by-zero -fno-omit-frame-pointer" CFLAGS="-O0 -g -Wall -pedantic"
+# ./configure --without-recommended-packages --disable-byte-compiled-packages --enable-strict-barrier CC="gcc -fsanitize=address -fno-sanitize=float-divide-by-zero -fno-omit-frame-pointer" CFLAGS="-O0 -g -Wall -pedantic -DSWITCH_TO_REFCNT"
 
 make
 # change CC="clang-8|gcc-8 ..." in configure above and repeat
