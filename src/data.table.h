@@ -3,7 +3,8 @@
 #include <Rinternals.h>
 // #include <signal.h> // the debugging machinery + breakpoint aidee
 // raise(SIGINT);
-#include <stdint.h> // for uint64_t rather than unsigned long long
+#include <stdint.h>    // for uint64_t rather than unsigned long long
+#include <inttypes.h>  // for PRId64 and PRIu64
 #include <stdbool.h>
 #include "myomp.h"
 #include "types.h"

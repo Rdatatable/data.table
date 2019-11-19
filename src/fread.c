@@ -1988,7 +1988,7 @@ int freadMain(freadMainArgs _args) {
   // should only engage when max_nrows is supplied, and supplied small too, so doesn't matter too much.
   if (initialBuffRows < 10) initialBuffRows = 10;
 
-  if (initialBuffRows > INT32_MAX) STOP("Buffer size %lld is too large\n", initialBuffRows);
+  if (initialBuffRows > INT32_MAX) STOP("Buffer size %"PRId64" is too large\n", (int64_t)initialBuffRows);
   nth = imin(nJumps, nth);
 
   if (verbose) DTPRINT("[11] Read the data\n");
