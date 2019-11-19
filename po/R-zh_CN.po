@@ -2084,7 +2084,7 @@ msgid "x and y must have the same column order"
 msgstr "x 和 y 的列顺序必须保持一致"
 
 msgid "unsupported column type"
-msgstr "列的类型不被支持"
+msgstr "不支持的列类型"
 
 msgid "found in x or y:"
 msgstr "存在于 x 或 y 中"
@@ -2110,7 +2110,7 @@ msgstr "所有参与比较的数据集都不应该包含名为 '.seqn' 的列"
 msgid ""
 "Datasets to compare with 'ignore.row.order' must not have unsupported column "
 "types:"
-msgstr "与 'ignore.row.order' 进行比较的数据集，不能存在不被支持的列类型："
+msgstr "与 'ignore.row.order' 进行比较的数据集，不能存在不支持的列类型："
 
 msgid ""
 "Argument 'tolerance' was forced to lowest accepted value `sqrt(.Machine"
@@ -2142,7 +2142,7 @@ msgid "' not a column name of info"
 msgstr "' 不是如下信息的列名："
 
 msgid "data.table package is loaded. Unload or start a fresh R session."
-msgstr "data.table 程辑包加载完毕，并将一直可用，直到其被卸载或启用一个新的 R 会话为止。"
+msgstr "data.table 包加载完毕，并将一直可用，直到其被卸载或启用一个新的 R 会话为止。"
 
 msgid ""
 "script must end with '.Rraw'. If a file ending '.Rraw.bz2' exists, that will "

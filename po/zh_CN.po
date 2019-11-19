@@ -4150,7 +4150,7 @@ msgstr ""
 #: reorder.c:17
 #, c-format
 msgid "Item %d of list is type '%s' which isn't yet supported (SIZEOF=%d)"
-msgstr "列表的项目 %d 是 '%s' 类型，其尚不被支持 (SIZEOF=%d)"
+msgstr "列表的第 %d 项是 '%s' 类型，其尚不被支持 (SIZEOF=%d)"
 
 #: reorder.c:19
 #, c-format
@@ -4164,7 +4164,7 @@ msgstr "列 %d 的长度是 %d ，与列 1 (%d) 的长度不同。数据表无�
 msgid ""
 "reorder accepts vectors but this non-VECSXP is type '%s' which isn't yet "
 "supported (SIZEOF=%d)"
-msgstr "重新排序需要接受向量，但此 non-VECSXP 是 '%s' 类型，其尚不被支持 (SIZEOF=%d)"
+msgstr "重新排序需要输入向量，但输入了 '%s' 类型的非向量对象，目前并不支持 (SIZEOF=%d)"
 
 #: reorder.c:28
 msgid ""
@@ -4175,7 +4175,7 @@ msgstr "reorder.c中的内部错误：无法重新排序ALTREP向量。请参阅
 
 #: reorder.c:33
 msgid "order must be an integer vector"
-msgstr "排序必须是整数的向量"
+msgstr "排序必须是整数向量"
 
 #: reorder.c:34
 #, c-format
@@ -4213,7 +4213,7 @@ msgstr "内部错误：k 必须是整数"
 #: shift.c:33
 #, c-format
 msgid "Item %d of n is NA"
-msgstr "n 的项目 %d 不可用（NA）"
+msgstr "n 的第 %d 项是NA"
 
 #: shift.c:157
 #, c-format
@@ -4223,7 +4223,7 @@ msgstr "不支持 '%s' 类型"
 #: subset.c:7
 #, c-format
 msgid "Internal error: subsetVectorRaw length(ans)==%d n=%d"
-msgstr "内部错误： subsetVectorRaw ans 长度等于 %d ， n 等于 %d"
+msgstr "内部错误： subsetVectorRaw ans length(ans)==%d n=%d"
 
 #: subset.c:88
 #, c-format
@@ -4242,7 +4242,7 @@ msgstr "内部错误：'idx' 是 '%s' 类型，而非 '整数'"
 msgid ""
 "Internal error. 'maxArg' is type '%s' and length %d, should be an integer "
 "singleton"
-msgstr "内部错误：'maxArg' 是 '%s' 类型，长度为 %d ，应该是整数单元素集合"
+msgstr "内部错误：'maxArg' 是 '%s' 类型，长度为 %d ，应该是单一整数"
 
 #: subset.c:123
 msgid "Internal error: allowOverMax must be TRUE/FALSE"
@@ -4262,26 +4262,26 @@ msgstr "i[%d] 是 %d ，超出 [1,nrow=%d] 的范围"
 #, c-format
 msgid ""
 "Item %d of i is %d and item %d is %d. Cannot mix positives and negatives."
-msgstr "i 的项目 %d 是 %d ，项目 %d 是 %d 。正负不能混用。"
+msgstr "i 的第 %d 项是 %d ，第 %d 项是 %d 。正负不能混用。"
 
 #: subset.c:171
 #, c-format
 msgid "Item %d of i is %d and item %d is NA. Cannot mix negatives and NA."
-msgstr "i 的项目 %d 是 %d ，项目 %d 无效（NA）。负值和 NA 不能混用。"
+msgstr "i 的第 %d 项是 %d ，第 %d 项是 NA 。负值和 NA 不能混用。"
 
 #: subset.c:207
 #, c-format
 msgid ""
 "Item %d of i is %d but there are only %d rows. Ignoring this and %d more "
 "like it out of %d."
-msgstr "i 的项目 %d 是 %d ，但只有 %d 行。 %d 更倾向于忽略这些行而不是 %d 。"
+msgstr "i 的第 %d 项是 %d ，但只有 %d 行。忽略这项以及其他相似的 %d 项（共 %d 项）。"
 
 #: subset.c:209
 #, c-format
 msgid ""
 "Item %d of i is %d which removes that item but that has occurred before. "
 "Ignoring this dup and %d other dups."
-msgstr "i 的项目 %d 是 %d ，它删除了该项目，但此操作之前发生过。请忽略这个及其他 %d 个 dups。"
+msgstr "i 的第 %d 项是 %d ，它删除了这项但此操作之前发生过。忽略该重复以及其他 %d 个重复。"
 
 #: subset.c:223
 #, c-format
@@ -4343,7 +4343,7 @@ msgstr "fill 必须是长度为 1 的向量，例如默认值 NA"
 #: transpose.c:28
 #, c-format
 msgid "Item %d of list input is not an atomic vector"
-msgstr "列表输入的项目 %d 不是原子(atomic)向量"
+msgstr "列表输入的第 %d 项不是原子(atomic)向量"
 
 #: types.c:55
 msgid "internal error: status, nx, nk must be integer"
