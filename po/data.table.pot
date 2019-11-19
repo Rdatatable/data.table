@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: data.table 1.12.7\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2019-11-15 19:06+0800\n"
+"POT-Creation-Date: 2019-11-20 05:46+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -4397,24 +4397,24 @@ msgid ""
 "instead."
 msgstr ""
 
-#: wrappers.c:59
+#: wrappers.c:66
 msgid "First argument to setlistelt must be a list()"
 msgstr ""
 
-#: wrappers.c:60
+#: wrappers.c:67
 msgid "Second argument to setlistelt must a length 1 integer vector"
 msgstr ""
 
-#: wrappers.c:62
+#: wrappers.c:69
 #, c-format
 msgid "i (%d) is outside the range of items [1,%d]"
 msgstr ""
 
-#: wrappers.c:84
+#: wrappers.c:91
 msgid "x isn't a VECSXP"
 msgstr ""
 
-#: wrappers.c:99
+#: wrappers.c:106
 #, c-format
 msgid ""
 "dim.data.table expects a data.table as input (which is a list), but seems to "
