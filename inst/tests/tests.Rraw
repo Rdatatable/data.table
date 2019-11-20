@@ -16218,10 +16218,10 @@ if (test_xts) {
   )
   test(2108.25, last(xt), xt_last, output="using xts::last: is.xts(x)")
   test(2108.26, last(xt, n=2L), xt_last2, output="using xts::last: is.xts(x)")
-  test(2108.31, head(x, n=2L), 1:2, output="using xts::first: !is.xts(x) & nargs>1 & 'package:xts'%in%search()")
-  test(2108.32, head(y, n=2L), y[1:2], output="using xts::first: !is.xts(x) & nargs>1 & 'package:xts'%in%search()")
-  test(2108.33, head(x, n=1L), 1L, output="using xts::first: !is.xts(x) & nargs>1 & 'package:xts'%in%search()")
-  test(2108.34, head(y, n=1L), y[1L], output="using xts::first: !is.xts(x) & nargs>1 & 'package:xts'%in%search()")
+  test(2108.31, first(x, n=2L), 1:2, output="using xts::first: !is.xts(x) & nargs>1 & 'package:xts'%in%search()")
+  test(2108.32, first(y, n=2L), y[1:2], output="using xts::first: !is.xts(x) & nargs>1 & 'package:xts'%in%search()")
+  test(2108.33, first(x, n=1L), 1L, output="using xts::first: !is.xts(x) & nargs>1 & 'package:xts'%in%search()")
+  test(2108.34, first(y, n=1L), y[1L], output="using xts::first: !is.xts(x) & nargs>1 & 'package:xts'%in%search()")
   xt_first = structure(
     c(142.25, 142.860001, 140.570007, 141.369995, 94807600, 108.999954),
     class = c("xts", "zoo"), .indexCLASS = "Date", tclass = "Date", .indexTZ = "UTC", tzone = "UTC",
