@@ -1390,8 +1390,8 @@ int freadMain(freadMainArgs _args) {
         row1line++;
       }
     }
-    if (ch > sof && verbose) DTPRINT(_("  Skipped to line %"PRIu64" in the file"), (llu)row1line);
-    if (ch>=eof) STOP(_("skip=%"PRIu64" but the input only has %"PRIu64" line%s"), (llu)args.skipNrow, (llu)row1line, row1line>1?"s":"");
+    if (ch > sof && verbose) DTPRINT(_("  Skipped to line %"PRIu64" in the file"), (uint64_t)row1line);
+    if (ch>=eof) STOP(_("skip=%"PRIu64" but the input only has %"PRIu64" line%s"), (uint64_t)args.skipNrow, (uint64_t)row1line, row1line>1?"s":"");
     pos = ch;
   }
 
@@ -1992,7 +1992,7 @@ int freadMain(freadMainArgs _args) {
   restartTeam = false;
   if (verbose) DTPRINT(_("  jumps=[%d..%d), chunk_size=%"PRIu64", total_size=%"PRIu64"\n"),
                        jump0, nJumps, (uint64_t)chunkBytes, (uint64_t)(eof-pos));
-  ASSERT(allocnrow <= nrowLimit, _("allocnrow(%"PRIu64") <= nrowLimit(%"PRIu64")"), (uint64_t)allocnrow, (uint64_t)nrowLimit);
+  ASSERT(allocnrow <= nrowLimit, "allocnrow(%"PRIu64") <= nrowLimit(%"PRIu64")", (uint64_t)allocnrow, (uint64_t)nrowLimit);
   #pragma omp parallel num_threads(nth)
   {
     int me = omp_get_thread_num();
