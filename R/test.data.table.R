@@ -352,6 +352,12 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
       }
     }
   }
+  if (fail && exists("out",inherits=FALSE)) {
+    # nocov start
+    cat("Output captured before unexpected warning/error/message:\n")
+    cat(out,sep="\n")
+    # nocov end
+  }
   if (!fail && !length(error) && (length(output) || length(notOutput))) {
     if (out[length(out)] == "NULL") out = out[-length(out)]
     out = paste(out, collapse="\n")
