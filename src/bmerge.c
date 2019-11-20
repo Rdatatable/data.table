@@ -50,8 +50,10 @@ SEXP bmerge(SEXP iArg, SEXP xArg, SEXP icolsArg, SEXP xcolsArg, SEXP isorted, SE
   if (LENGTH(icolsArg) > LENGTH(xcolsArg)) error("Internal error: length(icols) [%d] > length(xcols) [%d]", LENGTH(icolsArg), LENGTH(xcolsArg)); // # nocov
   icols = INTEGER(icolsArg);
   xcols = INTEGER(xcolsArg);
-  xN = LENGTH(VECTOR_ELT(x,0));
-  iN = ilen = anslen = LENGTH(VECTOR_ELT(i,0));
+  xN = LENGTH(x) ? LENGTH(VECTOR_ELT(x,0)) : 0;
+  // #4060 when i is a zero-column data.table, 
+  // LENGTH(VECTOR_ELT(i,0)) will return the garbage value
+  iN = ilen = anslen = LENGTH(i) ? LENGTH(VECTOR_ELT(i,0)) : 0;
   ncol = LENGTH(icolsArg);    // there may be more sorted columns in x than involved in the join
   for(int col=0; col<ncol; col++) {
     if (icols[col]==NA_INTEGER) error("Internal error. icols[%d] is NA", col); // # nocov

@@ -16381,6 +16381,11 @@ test(2121.5, DT[, .(.N=.N), by=a], data.table(a=c(1,2), .N=2:1)) # user supplied
 ## { ending in NULL should retain that NULL, #4061
 test(2121.6, DT[ , {.(a, b=b+1); NULL}], NULL)
 
+# #4060 no segfaults when i is NULL or a zero-column data.table
+tbl <- data.table(A = "a", key = "A")
+test(4060.1, tbl[J(NULL)], tbl[0])
+test(4060.2, tbl[J(data.table())], tbl[0])
+
 
 ###################################
 #  Add new tests above this line  #
