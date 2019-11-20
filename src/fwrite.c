@@ -3,6 +3,7 @@
 #include <fcntl.h>
 #include <stdbool.h>   // true and false
 #include <stdint.h>    // INT32_MIN
+#include <inttypes.h>  // PRId64
 #include <math.h>      // isfinite, isnan
 #include <stdlib.h>    // abs
 #include <string.h>    // strlen, strerror
@@ -228,7 +229,7 @@ void writeFloat64(double *col, int64_t row, char **pch)
     uint64_t l = y * SIZE_SF;  // low magnitude mult 10^NUM_SF
     // l now contains NUM_SF+1 digits as integer where repeated /10 below is accurate
 
-    // if (verbose) Rprintf(_("\nTRACE: acc=%.20Le ; y=%.20Le ; l=%llu ; e=%d     "), acc, y, l, exp);
+    // if (verbose) Rprintf(_("\nTRACE: acc=%.20Le ; y=%.20Le ; l=%"PRIu64" ; e=%d     "), acc, y, l, exp);
 
     if (l%10 >= 5) l+=10; // use the last digit to round
     l /= 10;
@@ -618,7 +619,7 @@ void fwriteMain(fwriteMainArgs args)
       DTPRINT(_("... "));
       for (int j=args.ncol-10; j<args.ncol; j++) DTPRINT(_("%d "), args.whichFun[j]);
     }
-    DTPRINT(_("\nargs.doRowNames=%d args.rowNames=%d doQuote=%d args.nrow=%lld args.ncol=%d eolLen=%d\n"),
+    DTPRINT(_("\nargs.doRowNames=%d args.rowNames=%d doQuote=%d args.nrow=%"PRIu64" args.ncol=%d eolLen=%d\n"),
           args.doRowNames, args.rowNames, doQuote, (long long)args.nrow, args.ncol, eolLen);
   }
 
@@ -658,8 +659,8 @@ void fwriteMain(fwriteMainArgs args)
     if (width<naLen) width = naLen;
     maxLineLen += width*2;  // *2 in case the longest string is all quotes and they all need to be escaped
   }
-  
-  if (verbose) DTPRINT(_("maxLineLen=%zd. Found in %.3fs\n"), maxLineLen, 1.0*(wallclock()-t0));
+
+  if (verbose) DTPRINT(_("maxLineLen=%"PRIu64". Found in %.3fs\n"), maxLineLen, 1.0*(wallclock()-t0));
 
   int f=0;
   if (*args.filename=='\0') {
@@ -777,7 +778,7 @@ void fwriteMain(fwriteMainArgs args)
   int nth = args.nth;
   if (numBatches < nth) nth = numBatches;
   if (verbose) {
-    DTPRINT(_("Writing %lld rows in %d batches of %d rows (each buffer size %dMB, showProgress=%d, nth=%d)\n"),
+    DTPRINT(_("Writing %"PRIu64" rows in %d batches of %d rows (each buffer size %dMB, showProgress=%d, nth=%d)\n"),
             (long long)args.nrow, numBatches, rowsPerBatch, args.buffMB, args.showProgress, nth);
   }
   t0 = wallclock();
@@ -904,9 +905,9 @@ void fwriteMain(fwriteMainArgs args)
             int ETA = (int)((args.nrow-end)*((now-startTime)/end));
             if (hasPrinted || ETA >= 2) {
               if (verbose && !hasPrinted) DTPRINT("\n");
-              DTPRINT("\rWritten %.1f%% of %lld rows in %d secs using %d thread%s. "
+              DTPRINT("\rWritten %.1f%% of %"PRId64" rows in %d secs using %d thread%s. "
                       "maxBuffUsed=%d%%. ETA %d secs.      ",
-                       (100.0*end)/args.nrow, (long long)args.nrow, (int)(now-startTime), nth, nth==1?"":"s",
+                       (100.0*end)/args.nrow, (int64_t)args.nrow, (int)(now-startTime), nth, nth==1?"":"s",
                        maxBuffUsedPC, ETA);
               // TODO: use progress() as in fread
               nextTime = now+1;

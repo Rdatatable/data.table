@@ -124,7 +124,7 @@ SEXP fsort(SEXP x, SEXP verboseArg) {
   size_t batchSize = (xlength(x)-1)/nBatch + 1;
   if (batchSize < 1024) batchSize = 1024; // simple attempt to work reasonably for short vector. 1024*8 = 2 4kb pages
   nBatch = (xlength(x)-1)/batchSize + 1;
-  R_xlen_t lastBatchSize = xlength(x) - (nBatch-1)*batchSize;
+  size_t lastBatchSize = xlength(x) - (nBatch-1)*batchSize;
   // could be that lastBatchSize == batchSize when i) xlength(x) is multiple of nBatch
   // and ii) for small vectors with just one batch
 
@@ -174,7 +174,7 @@ SEXP fsort(SEXP x, SEXP verboseArg) {
   // provided MSBsize>=9, each batch is a multiple of at least one 4k page, so no page overlap
   // TODO: change all calloc, malloc and free to Calloc and Free to be robust to error() and catch ooms.
 
-  if (verbose) Rprintf(_("counts is %dMB (%d pages per nBatch=%d, batchSize=%lld, lastBatchSize=%lld)\n"),
+  if (verbose) Rprintf(_("counts is %dMB (%d pages per nBatch=%d, batchSize=%"PRIu64", lastBatchSize=%"PRIu64")\n"),
                        nBatch*MSBsize*sizeof(R_xlen_t)/(1024*1024), nBatch*MSBsize*sizeof(R_xlen_t)/(4*1024*nBatch),
                        nBatch, batchSize, lastBatchSize);
   t[3] = wallclock();
@@ -243,7 +243,7 @@ SEXP fsort(SEXP x, SEXP verboseArg) {
     // TODO: time this qsort but likely insignificant.
 
     if (verbose) {
-      Rprintf(_("Top 5 MSB counts: ")); for(int i=0; i<5; i++) Rprintf(_("%lld "), msbCounts[order[i]]); Rprintf(_("\n"));
+      Rprintf(_("Top 5 MSB counts: ")); for(int i=0; i<5; i++) Rprintf(_("%"PRIu64" "), msbCounts[order[i]]); Rprintf(_("\n"));
       Rprintf(_("Reduced MSBsize from %d to "), MSBsize);
     }
     while (MSBsize>0 && msbCounts[order[MSBsize-1]] < 2) MSBsize--;
