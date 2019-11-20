@@ -174,9 +174,10 @@ SEXP fsort(SEXP x, SEXP verboseArg) {
   // provided MSBsize>=9, each batch is a multiple of at least one 4k page, so no page overlap
   // TODO: change all calloc, malloc and free to Calloc and Free to be robust to error() and catch ooms.
 
-  if (verbose) Rprintf("counts is %dMB (%d pages per nBatch=%d, batchSize=%zu, lastBatchSize=%zu)\n",
-                       nBatch*MSBsize*sizeof(R_xlen_t)/(1024*1024), nBatch*MSBsize*sizeof(R_xlen_t)/(4*1024*nBatch),
-                       nBatch, batchSize, lastBatchSize);
+  if (verbose) Rprintf("counts is %dMB (%d pages per nBatch=%d, batchSize=%"PRIu64", lastBatchSize=%"PRIu64")\n",
+                       (int)(nBatch*MSBsize*sizeof(R_xlen_t)/(1024*1024)),
+                       (int)(nBatch*MSBsize*sizeof(R_xlen_t)/(4*1024*nBatch)),
+                       nBatch, (uint64_t)batchSize, (uint64_t)lastBatchSize);
   t[3] = wallclock();
   #pragma omp parallel for num_threads(nth)
   for (int batch=0; batch<nBatch; batch++) {

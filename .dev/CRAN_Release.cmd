@@ -66,6 +66,17 @@ grep "PROTECT_PTR" ./src/*.c
 # No use of long long, instead use int64_t. TODO
 # grep "long long" ./src/*.c
 
+// No use of llu, lld, zd or zu
+grep -nE "(llu|lld|zd|zu)" src/*.[hc]
+// Comment moved here from fread.c on 19 Nov 2019
+// [Moved from fread.c on 19 Nov 2019] On Windows variables of type `size_t` cannot be printed
+// with "%zu" in the `snprintf()` function. For those variables we used to cast them into
+// `unsigned long long int` before printing, and defined (llu) to make the cast shorter.
+// We're now observing warnings from gcc-8 with -Wformat-extra-args, #4062. So
+// now we're more strict and cast to [u]int64_t and use PRIu64/PRId64 from <inttypes.h>
+// In many cases the format specifier is passed to our own macro (e.g. DTPRINT) or to Rprintf(),
+// error() etc, and even if they don't call sprintf() now, they could in future.
+
 # No tabs in C or R code (sorry, Richard Hendricks)
 grep -P "\t" ./R/*.R
 grep -P "\t" ./src/*.c

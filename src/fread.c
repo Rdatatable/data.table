@@ -27,12 +27,6 @@
 #include "fread.h"
 #include "freadLookups.h"
 
-// On Windows variables of type `size_t` cannot be printed with "%zu" in the
-// `snprintf()` function. For those variables we will cast them into
-// `unsigned long long int` before printing; and this #define makes it
-// slightly simpler.
-#define llu   unsigned long long int
-
 // Private globals to save passing all of them through to highly iterated field processors
 static const char *sof, *eof;
 static char sep;

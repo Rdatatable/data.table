@@ -794,7 +794,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
       Rprintf("Timing block %2d%s = %8.3f   %8d\n", i, (i>=17&&i<=19)?"(*)":"   ", tblock[i], nblock[i]);
     }
     for (int i=0; i<=256; i++) {
-      if (stat[i]) Rprintf("stat[%03d]==%10zd\n", i, stat[i]);
+      if (stat[i]) Rprintf("stat[%03d]==%20"PRIu64"\n", i, (uint64_t)stat[i]);
     }
   }
   #endif

@@ -659,7 +659,7 @@ void fwriteMain(fwriteMainArgs args)
     if (width<naLen) width = naLen;
     maxLineLen += width*2;  // *2 in case the longest string is all quotes and they all need to be escaped
   }
-  if (verbose) DTPRINT("maxLineLen=%zd. Found in %.3fs\n", maxLineLen, 1.0*(wallclock()-t0));
+  if (verbose) DTPRINT("maxLineLen=%"PRIu64". Found in %.3fs\n", (uint64_t)maxLineLen, 1.0*(wallclock()-t0));
 
   int f=0;
   if (*args.filename=='\0') {
