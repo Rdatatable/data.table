@@ -1577,7 +1577,7 @@ msgstr ""
 
 #: forder.c:714
 msgid "Internal error: column not supported, not caught earlier"
-msgstr ""
+msgstr "内部错误：列有不支持类型，未被前置识别"
 
 #: forder.c:722
 #, c-format
@@ -1588,16 +1588,16 @@ msgstr ""
 #, c-format
 msgid ""
 "Failed to allocate TMP or UGRP or they weren't cache line aligned: nth=%d"
-msgstr ""
+msgstr "分配TMP或UGRP失败或缓存行不一致： nth=%d"
 
 #: forder.c:733
 msgid "Could not allocate (very tiny) group size thread buffers"
-msgstr ""
+msgstr "无法分配（极小）块组大小的线程缓冲区"
 
 #: forder.c:794
 #, c-format
 msgid "Timing block %2d%s = %8.3f   %8d\n"
-msgstr ""
+msgstr "定时块 %2d%s = %8.3f   %8d\n"
 
 #: forder.c:797
 #, c-format
@@ -1607,12 +1607,12 @@ msgstr ""
 #: forder.c:1053
 #, c-format
 msgid "Failed to allocate parallel counts. my_n=%d, nBatch=%d"
-msgstr ""
+msgstr "分配并行计算失败，my_n=%d, nBatch=%d"
 
 #: forder.c:1162
 #, c-format
 msgid "Unable to allocate TMP for my_n=%d items in parallel batch counting"
-msgstr ""
+msgstr "无法分配TMP给并行批处理计算的 my_n=%d 项"
 
 #: forder.c:1270
 msgid ""
@@ -1621,143 +1621,148 @@ msgid ""
 "use if (length(o<-forder(...))) for efficiency in one step, or equivalent at "
 "C level"
 msgstr ""
+"is.sorted (R层面)和 fsorted (C 层面)使用对象仅为向量。如果需要用于list或data."
+"table，需要对其进行排序如果(length(o<-forder(...)))，使用提高效率，或相当于"
+"在 "
 
 #: forder.c:1302
 #, c-format
 msgid "type '%s' is not yet supported"
-msgstr ""
+msgstr "类型 '%s' 目前不支持"
 
 #: forder.c:1311
 msgid "x must be either NULL or an integer vector"
-msgstr ""
+msgstr "x 必须为空值或整型向量"
 
 #: forder.c:1313
 msgid "nrow must be integer vector length 1"
-msgstr ""
+msgstr "nrow 必须为长度为1的整型向量"
 
 #: forder.c:1315
 #, c-format
 msgid "nrow==%d but must be >=0"
-msgstr ""
+msgstr "nrow==%d 但是必须  >=0"
 
 #: forder.c:1332
 msgid "x must be type 'double'"
-msgstr ""
+msgstr "x 必须为浮点数类型"
 
 #: frank.c:11
 #, c-format
 msgid "Internal error. Argument 'x' to Cdt_na is type '%s' not 'list'"
-msgstr ""
+msgstr "内部错误：参数 'x' 关于 Cdt_na 是 '%s' 类型而不是 'list' 类型"
 
 #: frank.c:12
 #, c-format
 msgid "Internal error. Argument 'cols' to Cdt_na is type '%s' not 'integer'"
-msgstr ""
+msgstr "内部错误：参数 'cols' 关于 Cdt_na 是 '%s' 类型而不是 'integer' 类型"
 
 #: frank.c:16 frank.c:146 subset.c:263
 #, c-format
 msgid "Item %d of 'cols' is %d which is outside 1-based range [1,ncol(x)=%d]"
-msgstr ""
+msgstr "'cols' 的 %d 项为 %d ，超出1的范围 [1,ncol(x)=%d]"
 
 #: frank.c:26 frank.c:155
 #, c-format
 msgid ""
 "Column %d of input list x is length %d, inconsistent with first column of "
 "that item which is length %d."
-msgstr ""
+msgstr "输入列表x的列 %d 长度为  %d，不同于第一列的该项长度为 %d"
 
 #: frank.c:65 frank.c:202 transpose.c:88
 #, c-format
 msgid "Unsupported column type '%s'"
-msgstr ""
+msgstr "不支持的列类型 '%s'"
 
 #: frank.c:83
 msgid ""
 "Internal error: invalid ties.method for frankv(), should have been caught "
 "before. please report to data.table issue tracker"
 msgstr ""
+"内部错误：对于 frankv()的无效值ties.method，应在之前被捕获。请报告给 data."
+"table issue tracker"
 
 #: frank.c:130
 #, c-format
 msgid "Internal error: unknown ties value in frank: %d"
-msgstr ""
+msgstr "内部错误：frank中有未知的ties值 %d"
 
 #: frank.c:141
 #, c-format
 msgid "Internal error. Argument 'x' to CanyNA is type '%s' not 'list'"
-msgstr ""
+msgstr "内部错误：参数 'x' 关于 CanyNA 是 '%s' 类型而不是'list'类型"
 
 #: frank.c:142
 #, c-format
 msgid "Internal error. Argument 'cols' to CanyNA is type '%s' not 'integer'"
-msgstr ""
+msgstr "内部错误：参数 'cols' 关于 CanyNA 是 '%s' 类型而不是'integer'类型"
 
 #: fread.c:153
 #, c-format
 msgid "System error %d unmapping view of file\n"
-msgstr ""
+msgstr "系统错误 %d 取消映射文件视图\n"
 
 #: fread.c:156
 #, c-format
 msgid "System errno %d unmapping file: %s\n"
-msgstr ""
+msgstr "系统错误 %d 取消映射文件： %s\n"
 
 #: fread.c:216
 #, c-format
 msgid "Internal error: NUMTYPE(%d) > nLetters(%d)"
-msgstr ""
+msgstr "内部错误：NUMTYPE(%d) > nLetters(%d)"
 
 #: fread.c:441
 #, c-format
 msgid "Unable to allocate %s of contiguous virtual RAM. %s allocation."
-msgstr ""
+msgstr "无法分配 %s 的连续虚拟内存。 %s 已分配。"
 
 #: fread.c:446
 #, c-format
 msgid "Avoidable %.3f seconds. %s time to copy.\n"
-msgstr ""
+msgstr "可避免的 %.3f 秒。 %s 复制用时\n"
 
 #: fread.c:447
 #, c-format
 msgid "  File copy in RAM took %.3f seconds.\n"
-msgstr ""
+msgstr "内存上的文件复制耗时 %.3f 秒\n"
 
 #: fread.c:1099
 msgid ""
 "Previous fread() session was not cleaned up properly. Cleaned up ok at the "
 "beginning of this fread() call.\n"
-msgstr ""
+msgstr "之前的会话fread()未正确清理。在当前 fread() 会话开始前清理好\n"
 
 #: fread.c:1102
 msgid "[01] Check arguments\n"
-msgstr ""
+msgstr "[01] 参数检查\n"
 
 #: fread.c:1109
 #, c-format
 msgid "  Using %d threads (omp_get_max_threads()=%d, nth=%d)\n"
-msgstr ""
+msgstr "使用 %d 线程 (omp_get_max_threads()=%d, nth=%d)\n"
 
 #: fread.c:1117
 msgid ""
 "Internal error: NAstrings is itself NULL. When empty it should be pointer to "
 "NULL."
-msgstr ""
+msgstr "内部错误：NAstrings 自身为空值。当清空该项会指向NULL空值"
 
 #: fread.c:1135
 #, c-format
 msgid "freadMain: NAstring <<%s>> has whitespace at the beginning or end"
-msgstr ""
+msgstr "freadMain: NAstring <<%s>>  在开始或者结束处有空白"
 
 #: fread.c:1140
 #, c-format
 msgid ""
 "freadMain: NAstring <<%s>> is recognized as type boolean, this is not "
 "permitted."
-msgstr ""
+msgstr "freadMain: NAstring <<%s>> 被识别为布尔型，这是不允许"
 
 #: fread.c:1150
 msgid "  No NAstrings provided.\n"
-msgstr ""
+msgstr "未提供 NAstrings \n"
 
 #: fread.c:1152
 msgid "  NAstrings = ["
@@ -1769,74 +1774,74 @@ msgstr ""
 
 #: fread.c:1157
 msgid "  One or more of the NAstrings looks like a number.\n"
-msgstr ""
+msgstr "一个或多个 NAstrings 类似数值\n"
 
 #: fread.c:1159
 msgid "  None of the NAstrings look like numbers.\n"
-msgstr ""
+msgstr "没有 NAstrings 为数值\n"
 
 #: fread.c:1161
 #, c-format
 msgid "  skip num lines = %llu\n"
-msgstr ""
+msgstr "跳过行数为 %llu\n"
 
 #: fread.c:1162
 #, c-format
 msgid "  skip to string = <<%s>>\n"
-msgstr ""
+msgstr "跳转至 string = <<%s>>\n"
 
 #: fread.c:1163
 #, c-format
 msgid "  show progress = %d\n"
-msgstr ""
+msgstr "显示进程  %d\n"
 
 #: fread.c:1164
 #, c-format
 msgid "  0/1 column will be read as %s\n"
-msgstr ""
+msgstr " 0/1 列被读取为  %s\n"
 
 #: fread.c:1172
 #, c-format
 msgid "sep == quote ('%c') is not allowed"
-msgstr ""
+msgstr "sep == quote ('%c') 不被允许"
 
 #: fread.c:1173
 msgid "dec='' not allowed. Should be '.' or ','"
-msgstr ""
+msgstr "dec='' 不允许，应该为 '.' 或者 ','"
 
 #: fread.c:1174
 #, c-format
 msgid "sep == dec ('%c') is not allowed"
-msgstr ""
+msgstr "sep == dec ('%c') 不允许"
 
 #: fread.c:1175
 #, c-format
 msgid "quote == dec ('%c') is not allowed"
-msgstr ""
+msgstr "quote == dec ('%c') 不允许"
 
 #: fread.c:1192
 msgid "[02] Opening the file\n"
-msgstr ""
+msgstr "[02]  打开文件\n"
 
 #: fread.c:1195
 msgid ""
 "  `input` argument is provided rather than a file name, interpreting as raw "
 "text to read\n"
-msgstr ""
+msgstr "提供 `input` 参数而非文件名，理解为原始的文本读取\n"
 
 #: fread.c:1199
 msgid "Internal error: last byte of character input isn't \\0"
-msgstr ""
+msgstr "内部错误：字符输入的最后一个字节不是 \\0"
 
 #: fread.c:1202
 #, c-format
 msgid "  Opening file %s\n"
-msgstr ""
+msgstr "打开文件 %s\n"
 
 #: fread.c:1206
 #, c-format
 msgid "file not found: %s"
-msgstr ""
+msgstr "文件未找到： %s"
 
 #: fread.c:1210
 #, c-format
@@ -4157,14 +4162,14 @@ msgstr ""
 #: reorder.c:17
 #, c-format
 msgid "Item %d of list is type '%s' which isn't yet supported (SIZEOF=%d)"
-msgstr ""
+msgstr "列表的第 %d 项是 '%s' 类型，其尚不被支持 (SIZEOF=%d)"
 
 #: reorder.c:19
 #, c-format
 msgid ""
 "Column %d is length %d which differs from length of column 1 (%d). Invalid "
 "data.table."
-msgstr ""
+msgstr "列 %d 的长度是 %d ，与列 1 (%d) 的长度不同。数据表无效。"
 
 #: reorder.c:27
 #, c-format
@@ -4172,63 +4177,70 @@ msgid ""
 "reorder accepts vectors but this non-VECSXP is type '%s' which isn't yet "
 "supported (SIZEOF=%d)"
 msgstr ""
+"重新排序需要输入向量，但输入了 '%s' 类型的非向量对象，目前并不支持 (SIZEOF="
+"%d)"
 
 #: reorder.c:28
 msgid ""
 "Internal error in reorder.c: cannot reorder an ALTREP vector. Please see "
 "NEWS item 2 in v1.11.4 and report this as a bug."
 msgstr ""
+"reorder.c中的内部错误：无法重新排序ALTREP向量。请参阅 v1.11.4 中“新"
+"闻”（NEWS）的项目2，并将其作为 BUG 上报。"
 
 #: reorder.c:33
 msgid "order must be an integer vector"
-msgstr ""
+msgstr "排序必须是整数向量"
 
 #: reorder.c:34
 #, c-format
 msgid "nrow(x)[%d]!=length(order)[%d]"
-msgstr ""
+msgstr "nrow(x)[%d] 不等于 length(order)[%d]"
 
 #: reorder.c:48
 #, c-format
 msgid "order is not a permutation of 1:nrow[%d]"
-msgstr ""
+msgstr "顺序与 1 到 nrow[%d] 的排列不同"
 
 #: reorder.c:57
 #, c-format
 msgid ""
 "Unable to allocate %d * %d bytes of working memory for reordering data.table"
-msgstr ""
+msgstr "在工作内存中无法分配 %d * %d 个字节对 data.table 重新排序"
 
 #: shift.c:17
 #, c-format
 msgid ""
 "type '%s' passed to shift(). Must be a vector, list, data.frame or data.table"
 msgstr ""
+"传递给 shift() 的 '%s' 类型，必须是向量、列表、data.frame 或 data.table"
 
 #: shift.c:24 shift.c:28
 msgid ""
 "Internal error: invalid type for shift(), should have been caught before. "
 "please report to data.table issue tracker"
 msgstr ""
+"内部错误：shift() 的类型无效，请提前排查。请向 data.table 提交问题追踪"
+"（issue tracker）报告"
 
 #: shift.c:31
 msgid "Internal error: k must be integer"
-msgstr ""
+msgstr "内部错误：k 必须是整数"
 
 #: shift.c:33
 #, c-format
 msgid "Item %d of n is NA"
-msgstr ""
+msgstr "n 的第 %d 项是NA"
 
 #: shift.c:157
 #, c-format
 msgid "Unsupported type '%s'"
-msgstr ""
+msgstr "不支持 '%s' 类型"
 
 #: subset.c:7
 #, c-format
 msgid "Internal error: subsetVectorRaw length(ans)==%d n=%d"
-msgstr ""
+msgstr "内部错误： subsetVectorRaw ans length(ans)==%d n=%d"
 
 #: subset.c:88
 #, c-format
@@ -4236,43 +4248,45 @@ msgid ""
 "Internal error: column type '%s' not supported by data.table subset. All "
 "known types are supported so please report as bug."
 msgstr ""
+"内部错误：data.table 子集不支持列类型 '%s' 。已知所有类型均被支持，因此请提交"
+"此BUG。"
 
 #: subset.c:97 subset.c:121
 #, c-format
 msgid "Internal error. 'idx' is type '%s' not 'integer'"
-msgstr ""
+msgstr "内部错误：'idx' 是 '%s' 类型，而非 '整数'"
 
 #: subset.c:122
 #, c-format
 msgid ""
 "Internal error. 'maxArg' is type '%s' and length %d, should be an integer "
 "singleton"
-msgstr ""
+msgstr "内部错误：'maxArg' 是 '%s' 类型，长度为 %d ，应该是单一整数"
 
 #: subset.c:123
 msgid "Internal error: allowOverMax must be TRUE/FALSE"
-msgstr ""
+msgstr "内部错误：allowOverMax 必须是 TRUE 或 FALSE"
 
 #: subset.c:125
 #, c-format
 msgid "Internal error. max is %d, must be >= 0."
-msgstr ""
+msgstr "内部错误。最大值是 %d ，且必须 >= 0。"
 
 #: subset.c:149
 #, c-format
 msgid "i[%d] is %d which is out of range [1,nrow=%d]"
-msgstr ""
+msgstr "i[%d] 是 %d ，超出 [1,nrow=%d] 的范围"
 
 #: subset.c:161
 #, c-format
 msgid ""
 "Item %d of i is %d and item %d is %d. Cannot mix positives and negatives."
-msgstr ""
+msgstr "i 的第 %d 项是 %d ，第 %d 项是 %d 。正负不能混用。"
 
 #: subset.c:171
 #, c-format
 msgid "Item %d of i is %d and item %d is NA. Cannot mix negatives and NA."
-msgstr ""
+msgstr "i 的第 %d 项是 %d ，第 %d 项是 NA 。负值和 NA 不能混用。"
 
 #: subset.c:207
 #, c-format
@@ -4280,6 +4294,7 @@ msgid ""
 "Item %d of i is %d but there are only %d rows. Ignoring this and %d more "
 "like it out of %d."
 msgstr ""
+"i 的第 %d 项是 %d ，但只有 %d 行。忽略这项以及其他相似的 %d 项（共 %d 项）。"
 
 #: subset.c:209
 #, c-format
@@ -4287,103 +4302,106 @@ msgid ""
 "Item %d of i is %d which removes that item but that has occurred before. "
 "Ignoring this dup and %d other dups."
 msgstr ""
+"i 的第 %d 项是 %d ，它删除了这项但此操作之前发生过。忽略该重复以及其他 %d 个"
+"重复。"
 
 #: subset.c:223
 #, c-format
 msgid "Column %d is NULL; malformed data.table."
-msgstr ""
+msgstr "%d 列为空（NULL）；data.table 格式错误。"
 
 #: subset.c:226
 #, c-format
 msgid "Column %d ['%s'] is a data.frame or data.table; malformed data.table."
-msgstr ""
+msgstr "%d ['%s'] 列是 data.frame 或 data.table; data.table 格式错误。"
 
 #: subset.c:231
 #, c-format
 msgid ""
 "Column %d ['%s'] is length %d but column 1 is length %d; malformed data."
 "table."
-msgstr ""
+msgstr "%d ['%s'] 长度为 %d ，而列 1 的长度为 %d ；data.table 格式错误。"
 
 #: subset.c:247
 #, c-format
 msgid "Internal error. Argument 'x' to CsubsetDT is type '%s' not 'list'"
-msgstr ""
+msgstr "内部错误：CsubsetDT 的参数 'x' 是 '%s' 类型而非列表"
 
 #: subset.c:260
 #, c-format
 msgid "Internal error. Argument 'cols' to Csubset is type '%s' not 'integer'"
-msgstr ""
+msgstr "内部错误：CsubsetDT 的参数 'cols' 是 '%s' 类型而非整数"
 
 #: subset.c:337
 msgid ""
 "Internal error: NULL can not be subset. It is invalid for a data.table to "
 "contain a NULL column."
-msgstr ""
+msgstr "内部错误：空集（NULL）不能作为子集。data.table 包含空列是无效的。"
 
 #: subset.c:339
 msgid ""
 "Internal error: CsubsetVector is internal-use-only but has received "
 "negatives, zeros or out-of-range"
 msgstr ""
+"内部错误：CsubsetVector 仅供内部使用，但收到了负数、零或其他超出范围的值"
 
 #: transpose.c:9
 msgid "l must be a list."
-msgstr ""
+msgstr "l 必须是列表"
 
 #: transpose.c:13
 msgid "ignore.empty should be logical TRUE/FALSE."
-msgstr ""
+msgstr "ignore.empty 应该是逻辑类型 TRUE 或 FALSE。"
 
 #: transpose.c:16
 msgid ""
 "keep.names should be either NULL, or the name of the first column of the "
 "result in which to place the names of the input"
-msgstr ""
+msgstr "keep.names 应该是空（NULL），或者为放置输入名称的结果中第一列的列名"
 
 #: transpose.c:19
 msgid "fill must be a length 1 vector, such as the default NA"
-msgstr ""
+msgstr "fill 必须是长度为 1 的向量，例如默认值 NA"
 
 #: transpose.c:28
 #, c-format
 msgid "Item %d of list input is not an atomic vector"
-msgstr ""
+msgstr "列表输入的第 %d 项不是原子(atomic)向量"
 
 #: types.c:55
 msgid "internal error: status, nx, nk must be integer"
-msgstr ""
+msgstr "内部错误：status, nx, nk 必须是整数"
 
 #: uniqlist.c:14
 msgid "Internal error: uniqlist has not been passed a list of columns"
-msgstr ""
+msgstr "内部错误：uniqlist 尚未传递列"
 
 #: uniqlist.c:17
 msgid "Internal error: uniqlist has been passed a non-integer order"
-msgstr ""
+msgstr "内部错误：uniqlist 已经传递非整数序列"
 
 #: uniqlist.c:18
 msgid "Internal error: uniqlist has been passed a length-0 order"
-msgstr ""
+msgstr "内部错误：uniqlist 已经传递长度为 0 的序列"
 
 #: uniqlist.c:19
 #, c-format
 msgid "Internal error: uniqlist has been passed length(order)==%d but nrow==%d"
-msgstr ""
+msgstr "内部错误：uniqlist 已经传递长度为 %d 的序列，而行数是 %d"
 
 #: uniqlist.c:96 uniqlist.c:127 uniqlist.c:208 uniqlist.c:245 uniqlist.c:318
 #, c-format
 msgid "Type '%s' not supported"
-msgstr ""
+msgstr "类型 '%s' 不被支持"
 
 #: uniqlist.c:148
 msgid "Input argument 'x' to 'uniqlengths' must be an integer vector"
-msgstr ""
+msgstr "输入到 'uniqlengths' 的参数 'x' 必须是整数向量"
 
 #: uniqlist.c:149
 msgid ""
 "Input argument 'n' to 'uniqlengths' must be an integer vector of length 1"
-msgstr ""
+msgstr "输入到 'uniqlengths' 的参数 'n' 必须是长度为 1 的整数向量"
 
 #: uniqlist.c:167
 msgid "cols must be an integer vector with length >= 1"
@@ -4539,24 +4557,24 @@ msgid ""
 "instead."
 msgstr ""
 
-#: wrappers.c:59
+#: wrappers.c:66
 msgid "First argument to setlistelt must be a list()"
 msgstr ""
 
-#: wrappers.c:60
+#: wrappers.c:67
 msgid "Second argument to setlistelt must a length 1 integer vector"
 msgstr ""
 
-#: wrappers.c:62
+#: wrappers.c:69
 #, c-format
 msgid "i (%d) is outside the range of items [1,%d]"
 msgstr ""
 
-#: wrappers.c:84
+#: wrappers.c:91
 msgid "x isn't a VECSXP"
 msgstr ""
 
-#: wrappers.c:99
+#: wrappers.c:106
 #, c-format
 msgid ""
 "dim.data.table expects a data.table as input (which is a list), but seems to "
