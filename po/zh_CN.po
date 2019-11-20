@@ -3594,7 +3594,7 @@ msgstr "ascii字符'/'不是在'0'前"
 
 #: init.c:247
 msgid "The C expression (uint_fast8_t)('/'-'0')<10 is true. Should be false."
-msgstr "C表达式 (uint_fast8_t)('/'-'0')<10  为 true. 应该是 false."
+msgstr "C表达式 (uint_fast8_t)('/'-'0') <10  为 true. 应该是 false."
 
 #: init.c:248
 msgid "The ascii character ':' is not just after '9'"
@@ -3602,7 +3602,7 @@ msgstr "ascii字符':'不是在'9'后"
 
 #: init.c:249
 msgid "The C expression (uint_fast8_t)('9'-':')<10 is true. Should be false."
-msgstr "C表达式(uint_fast8_t)('9'-':')<10 <10  为 true. 应该是 false."
+msgstr "C表达式(uint_fast8_t)('9'-':') < 10  为 true. 应该是 false."
 
 #: init.c:254
 #, c-format

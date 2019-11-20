@@ -1799,7 +1799,7 @@ msgid ""
 "with perhaps copy(). Has been warning since 2012 and will be an error in "
 "future."
 msgstr "key(x)<-value 已经废弃，不再支持。请使用setkey(), 也许您需要配套使用copy()"
-"自2012年来就警告将弃用原用法，将来该用法将抛出错误"
+"自2012年来就警告将弃用原用法，将来该用法将报错"
 
 msgid "x is not a data.table"
 msgstr "x不是一个data.table"
@@ -1848,7 +1848,7 @@ msgid "Internal error: index '"
 msgstr "内部错误：索引"
 
 msgid "' exists but is invalid"
-msgstr "存在但非法"
+msgstr "存在但无效"
 
 msgid ""
 "Use 'if (length(o <- forderv(DT,by))) ...' for efficiency in one step, so "
@@ -1858,7 +1858,7 @@ msgstr ""
 "同时如果你还未排序，你也获得了变量o"
 
 msgid "x is vector but 'by' is supplied"
-msgstr "x是一个向量， 但是'by'提供了"
+msgstr "x是一个向量， 但是参数'by'被提供"
 
 msgid "x is a single vector, non-NULL 'by' doesn't make sense"
 msgstr "x是一个单向量，非NULL的'by'参数不合理"
