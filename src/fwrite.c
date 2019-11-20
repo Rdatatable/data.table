@@ -229,7 +229,7 @@ void writeFloat64(double *col, int64_t row, char **pch)
     uint64_t l = y * SIZE_SF;  // low magnitude mult 10^NUM_SF
     // l now contains NUM_SF+1 digits as integer where repeated /10 below is accurate
 
-    // if (verbose) Rprintf("\nTRACE: acc=%.20Le ; y=%.20Le ; l=%llu ; e=%d     ", acc, y, l, exp);
+    // if (verbose) Rprintf("\nTRACE: acc=%.20Le ; y=%.20Le ; l=%"PRIu64" ; e=%d     ", acc, y, l, exp);
 
     if (l%10 >= 5) l+=10; // use the last digit to round
     l /= 10;
