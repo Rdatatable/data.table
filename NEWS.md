@@ -10,6 +10,8 @@
 
 ## BUG FIXES
 
+1. Fix the bug that `DT[J(i)]` may trigger segfaults when i is `NULL` or a zero-column data.table object, [#4060](https://github.com/Rdatatable/data.table/issues/4060), [#4067](https://github.com/Rdatatable/data.table/pull/4067). Thanks @shrektan for the bug report and fix.
+
 ## NOTES
 
 1. Links in the manual were creating warnings when installing HTML, [#4000](https://github.com/Rdatatable/data.table/issues/4000). Thanks to Morgan Jacob.
