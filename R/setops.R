@@ -104,7 +104,7 @@ fsetequal = function(x, y, all=TRUE) {
 
 all.equal.data.table = function(target, current, trim.levels=TRUE, check.attributes=TRUE, ignore.col.order=FALSE, ignore.row.order=FALSE, tolerance=sqrt(.Machine$double.eps), ...) {
   stopifnot(is.logical(trim.levels), is.logical(check.attributes), is.logical(ignore.col.order), is.logical(ignore.row.order), is.numeric(tolerance), is.data.table(target))
-  if (!is.data.table(current)) return(NextMethod())
+  if (!is.data.table(current)) return(paste0('target is data.table, current is ', data.class(current)))
 
   msg = character(0L)
   # init checks that detect high level all.equal
