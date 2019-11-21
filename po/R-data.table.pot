@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: data.table 1.12.7\n"
-"POT-Creation-Date: 2019-10-21 16:15\n"
+"POT-Creation-Date: 2019-11-20 05:46\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -412,7 +412,22 @@ msgstr ""
 msgid "; the same length as there are rows in x (after subsetting if i is provided)."
 msgstr ""
 
+msgid "Internal error: drop_dot passed"
+msgstr ""
+
+msgid "items"
+msgstr ""
+
 msgid "of the .() or list() passed to j is missing"
+msgstr ""
+
+msgid "Different branches of j expression produced different auto-named columns:"
+msgstr ""
+
+msgid "%s!=%s"
+msgstr ""
+
+msgid "; using the most \"last\" names"
 msgstr ""
 
 msgid ".SDcols missing at the following indices:"
