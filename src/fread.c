@@ -101,7 +101,7 @@ static void Field(FieldParseContext *ctx);
 //   essentially that would come down to creating f() g() in the code after
 //   macro expansion, which is not valid. These are internal errors, so just concede.
 #define ASSERT(cond, msg, ...) \
-  if (!(cond)) STOP("Internal error in line %d of fread.c, please report on data.table GitHub:  " msg, __LINE__, __VA_ARGS__) // # nocov
+  if (!(cond)) STOP(_("Internal error in line %d of fread.c, please report on data.table GitHub:  " msg), __LINE__, __VA_ARGS__) // # nocov
 
 
 

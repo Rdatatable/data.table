@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: data.table 1.12.7\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2019-11-21 08:00+0800\n"
+"POT-Creation-Date: 2019-11-21 08:53+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -1606,6 +1606,12 @@ msgstr ""
 msgid "Internal error. Argument 'cols' to CanyNA is type '%s' not 'integer'"
 msgstr ""
 
+#: fread.c:104
+#, c-format
+msgid ""
+"Internal error in line %d of fread.c, please report on data.table GitHub:  "
+msgstr ""
+
 #: fread.c:147
 #, c-format
 msgid "System error %d unmapping view of file\n"
@@ -2913,34 +2919,34 @@ msgid ""
 "%<PRIu64>)\n"
 msgstr ""
 
-#: fsort.c:230
+#: fsort.c:231
 msgid "Internal error: counts[nBatch-1][MSBsize-1] != length(x)"
 msgstr ""
 
-#: fsort.c:246
+#: fsort.c:247
 msgid "Top 5 MSB counts: "
-msgstr ""
-
-#: fsort.c:246
-#, c-format
-msgid "%<PRIu64> "
-msgstr ""
-
-#: fsort.c:246 fwrite.c:694 fwrite.c:952
-msgid "\n"
 msgstr ""
 
 #: fsort.c:247
 #, c-format
+msgid "%<PRId64> "
+msgstr ""
+
+#: fsort.c:247 fwrite.c:694 fwrite.c:952
+msgid "\n"
+msgstr ""
+
+#: fsort.c:248
+#, c-format
 msgid "Reduced MSBsize from %d to "
 msgstr ""
 
-#: fsort.c:251
+#: fsort.c:252
 #, c-format
 msgid "%d by excluding 0 and 1 counts\n"
 msgstr ""
 
-#: fsort.c:308
+#: fsort.c:309
 #, c-format
 msgid "%d: %.3f (%4.1f%%)\n"
 msgstr ""
@@ -2973,7 +2979,7 @@ msgstr ""
 #, c-format
 msgid ""
 "\n"
-"args.doRowNames=%d args.rowNames=%d doQuote=%d args.nrow=%<PRIu64> args.ncol="
+"args.doRowNames=%d args.rowNames=%d doQuote=%d args.nrow=%<PRId64> args.ncol="
 "%d eolLen=%d\n"
 msgstr ""
 
@@ -3044,7 +3050,7 @@ msgstr ""
 #: fwrite.c:781
 #, c-format
 msgid ""
-"Writing %<PRIu64> rows in %d batches of %d rows (each buffer size %dMB, "
+"Writing %<PRId64> rows in %d batches of %d rows (each buffer size %dMB, "
 "showProgress=%d, nth=%d)\n"
 msgstr ""
 
@@ -3692,7 +3698,7 @@ msgstr ""
 
 #: init.c:254
 #, c-format
-msgid "Conversion of NA_INT64 via double failed %<PRIu64>!=%<PRIu64>"
+msgid "Conversion of NA_INT64 via double failed %<PRId64>!=%<PRId64>"
 msgstr ""
 
 #: init.c:258
@@ -3897,7 +3903,7 @@ msgstr ""
 #: rbindlist.c:62
 #, c-format
 msgid ""
-"Total rows in the list is %<PRIu64> which is larger than the maximum number "
+"Total rows in the list is %<PRId64> which is larger than the maximum number "
 "of rows, currently %d"
 msgstr ""
 
@@ -3908,7 +3914,7 @@ msgstr ""
 #: rbindlist.c:71
 #, c-format
 msgid ""
-"Failed to allocate upper bound of %<PRIu64> unique column names "
+"Failed to allocate upper bound of %<PRId64> unique column names "
 "[sum(lapply(l,ncol))]"
 msgstr ""
 

@@ -175,8 +175,9 @@ SEXP fsort(SEXP x, SEXP verboseArg) {
   // TODO: change all calloc, malloc and free to Calloc and Free to be robust to error() and catch ooms.
 
   if (verbose) Rprintf(_("counts is %dMB (%d pages per nBatch=%d, batchSize=%"PRIu64", lastBatchSize=%"PRIu64")\n"),
-                       nBatch*MSBsize*sizeof(R_xlen_t)/(1024*1024), nBatch*MSBsize*sizeof(R_xlen_t)/(4*1024*nBatch),
-                       nBatch, batchSize, lastBatchSize);
+                       nBatch*MSBsize*sizeof(R_xlen_t)/(1024*1024),
+                       nBatch*MSBsize*sizeof(R_xlen_t)/(4*1024*nBatch),
+                       nBatch, (uint64_t)batchSize, (uint64_t)lastBatchSize);
   t[3] = wallclock();
   #pragma omp parallel for num_threads(nth)
   for (int batch=0; batch<nBatch; batch++) {
@@ -243,7 +244,7 @@ SEXP fsort(SEXP x, SEXP verboseArg) {
     // TODO: time this qsort but likely insignificant.
 
     if (verbose) {
-      Rprintf(_("Top 5 MSB counts: ")); for(int i=0; i<5; i++) Rprintf(_("%"PRIu64" "), msbCounts[order[i]]); Rprintf(_("\n"));
+      Rprintf(_("Top 5 MSB counts: ")); for(int i=0; i<5; i++) Rprintf(_("%"PRId64" "), (int64_t)msbCounts[order[i]]); Rprintf(_("\n"));
       Rprintf(_("Reduced MSBsize from %d to "), MSBsize);
     }
     while (MSBsize>0 && msbCounts[order[MSBsize-1]] < 2) MSBsize--;
