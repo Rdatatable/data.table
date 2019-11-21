@@ -829,12 +829,12 @@ msgstr ""
 "问题追踪器。"
 
 #: chmatch.c:60
-#, fuzzy, c-format
+#, c-format
 msgid ""
 "Failed to allocate %<PRIu64> bytes working memory in chmatchdup: "
 "length(table)=%d length(unique(table))=%d"
 msgstr ""
-"无法为 chmatchdup: length(table)=%2$d length(unique(table))=%3$d 分配 %1$lld "
+"无法为 chmatchdup: length(table)=%2$d length(unique(table))=%3$d 分配 %1$<PRIu64> "
 "字节的内存空间"
 
 #: cj.c:89
@@ -1202,21 +1202,21 @@ msgid "'yes' and 'no' are both type factor but their levels are different."
 msgstr "'yes'和'no'都是因子类型但他们的因子水平不同。"
 
 #: fifelse.c:38
-#, fuzzy, c-format
+#, c-format
 msgid ""
 "Length of 'yes' is %<PRId64> but must be 1 or length of 'test' (%<PRId64>)."
-msgstr "'yes'长度是%lld但长度必须是1或者等于'test'的长度 (%lld)。"
+msgstr "'yes'长度是%<PRId64>但长度必须是1或者等于'test'的长度 (%<PRId64>)。"
 
 #: fifelse.c:40
-#, fuzzy, c-format
+#, c-format
 msgid ""
 "Length of 'no' is %<PRId64> but must be 1 or length of 'test' (%<PRId64>)."
-msgstr "'no'长度是%lld但长度必须是1或者等于'test'的长度 (%lld)。"
+msgstr "'no'长度是%<PRId64>但长度必须是1或者等于'test'的长度 (%<PRId64>)。"
 
 #: fifelse.c:51
-#, fuzzy, c-format
+#, c-format
 msgid "Length of 'na' is %<PRId64> but must be 1"
-msgstr "'na'长度是%lld但必须是长度必须是1"
+msgstr "'na'长度是%<PRId64>但必须是长度必须是1"
 
 #: fifelse.c:57
 #, c-format
@@ -1785,9 +1785,9 @@ msgid "  None of the NAstrings look like numbers.\n"
 msgstr "没有 NAstrings 为数值\n"
 
 #: fread.c:1155
-#, fuzzy, c-format
+#, c-format
 msgid "  skip num lines = %<PRId64>\n"
-msgstr "跳过行数为 %llu\n"
+msgstr "跳过行数为 %<PRId64>\n"
 
 #: fread.c:1156
 #, c-format
@@ -2004,21 +2004,21 @@ msgstr ""
 "模式，适配符或正则表达式）"
 
 #: fread.c:1380
-#, fuzzy, c-format
+#, c-format
 msgid ""
 "Found skip='%s' on line %<PRIu64>. Taking this to be header row or first row "
 "of data.\n"
-msgstr "在行 %2$llu 发现了 skip='%1$s'。将此当做表头或数据的第一行。\n"
+msgstr "在行 %2$<PRIu64> 发现了 skip='%1$s'。将此当做表头或数据的第一行。\n"
 
 #: fread.c:1393
-#, fuzzy, c-format
+#, c-format
 msgid "  Skipped to line %<PRIu64> in the file"
-msgstr "  跳到文件的第 %llu 行"
+msgstr "  跳到文件的第 %<PRIu64> 行"
 
 #: fread.c:1394
-#, fuzzy, c-format
+#, c-format
 msgid "skip=%<PRIu64> but the input only has %<PRIu64> line%s"
-msgstr "skip=%llu 但输入只有 %llu 行 %s"
+msgstr "skip=%<PRIu64> 但输入只有 %<PRIu64> 行 %s"
 
 #: fread.c:1403
 msgid ""
@@ -2473,14 +2473,13 @@ msgid ""
 msgstr ""
 
 #: fread.c:2435
-#, fuzzy, c-format
+#, c-format
 msgid ""
 "Found and resolved improper quoting out-of-sample. First healed line "
 "%<PRIu64>: <<%s>>. If the fields are not quoted (e.g. field separator does "
 "not appear within any field), try quote=\"\" to avoid this warning."
 msgstr ""
-"在前 %d 行中发现并修正了不合适的引号用法。如果字段没有加引号（例如字段间隔符"
-"没有在任何字段内出现），可以尝试使用 quote=\"\" 来避免此警告。"
+""
 
 #: fread.c:2439
 msgid "=============================\n"
@@ -2770,10 +2769,10 @@ msgid "%s: processing algo %u took %.3fs\n"
 msgstr ""
 
 #: froll.c:52 froll.c:255
-#, fuzzy, c-format
+#, c-format
 msgid "%s: running for input length %<PRIu64>, window %d, hasna %d, narm %d\n"
 msgstr ""
-"%s: 正在并行运行, 输入长度 (input length) %llu, 窗口 (window) %d, hasna %d, "
+"%s: 正在并行运行, 输入长度 (input length) %<PRIu64>, 窗口 (window) %d, hasna %d, "
 "narm %d\n"
 
 #: froll.c:72 froll.c:82 froll.c:173 froll.c:275 froll.c:285 froll.c:366
@@ -2801,12 +2800,12 @@ msgid ""
 msgstr "%s: NA (或其他非有限长度值) 出现在输入中, 跳过非NA的输入并当心NA值\n"
 
 #: froll.c:141 froll.c:339
-#, fuzzy, c-format
+#, c-format
 msgid ""
 "%s: running in parallel for input length %<PRIu64>, window %d, hasna %d, "
 "narm %d\n"
 msgstr ""
-"%s: 正在并行运行, 输入长度 (input length) %llu, 窗口 (window) %d, hasna %d, "
+"%s: 正在并行运行, 输入长度 (input length) %<PRIu64>, 窗口 (window) %d, hasna %d, "
 "narm %d\n"
 
 #: froll.c:179 froll.c:372 frolladaptive.c:157 frolladaptive.c:336
@@ -2992,9 +2991,9 @@ msgid "internal error: 'rho' should be an environment"
 msgstr "内部错误: 'rho' 应该为一个环境 (environment)"
 
 #: frolladaptive.c:33 frolladaptive.c:222
-#, fuzzy, c-format
+#, c-format
 msgid "%s: running for input length %<PRIu64>, hasna %d, narm %d\n"
-msgstr "%s: 正在运行, 输入长度 %llu, hasna %d, narm %d\n"
+msgstr "%s: 正在运行, 输入长度 %<PRIu64>, hasna %d, narm %d\n"
 
 #: frolladaptive.c:39 frolladaptive.c:228
 #, c-format
@@ -3007,9 +3006,9 @@ msgid "%s: Unable to allocate memory for cum NA counter"
 msgstr "%s: 无法为 cum NA counter 分配内存"
 
 #: frolladaptive.c:118 frolladaptive.c:302
-#, fuzzy, c-format
+#, c-format
 msgid "%s: running in parallel for input length %<PRIu64>, hasna %d, narm %d\n"
-msgstr "%s: 正在并行运行, 输入长度 %llu, hasna %d, narm %d\n"
+msgstr "%s: 正在并行运行, 输入长度 %<PRIu64>, hasna %d, narm %d\n"
 
 #: fsort.c:111
 msgid "x must be a vector of type 'double' currently"

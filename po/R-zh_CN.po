@@ -523,9 +523,8 @@ msgid ""
 "; the same length as there are rows in x (after subsetting if i is provided)."
 msgstr ""
 
-#, fuzzy
 msgid "Internal error: drop_dot passed"
-msgstr "内部错误 : xcolAns 无法通过检查:"
+msgstr ""
 
 msgid "items"
 msgstr ""
