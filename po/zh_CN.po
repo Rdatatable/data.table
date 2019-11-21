@@ -1618,7 +1618,7 @@ msgstr "分配并行计算失败，my_n=%d, nBatch=%d"
 msgid "Unable to allocate TMP for my_n=%d items in parallel batch counting"
 msgstr "无法分配TMP给并行批处理计算的 my_n=%d 项"
 
-#: forder.c:1270
+#: forder.c:1269
 msgid ""
 "is.sorted (R level) and fsorted (C level) only to be used on vectors. If "
 "needed on a list/data.table, you'll need the order anyway if not sorted, so "
@@ -1629,25 +1629,25 @@ msgstr ""
 "table，需要对其进行排序如果(length(o<-forder(...)))，使用提高效率，或相当于"
 "在 "
 
-#: forder.c:1302
+#: forder.c:1301
 #, c-format
 msgid "type '%s' is not yet supported"
 msgstr "类型 '%s' 目前不支持"
 
-#: forder.c:1311
+#: forder.c:1310
 msgid "x must be either NULL or an integer vector"
 msgstr "x 必须为空值或整型向量"
 
-#: forder.c:1313
+#: forder.c:1312
 msgid "nrow must be integer vector length 1"
 msgstr "nrow 必须为长度为1的整型向量"
 
-#: forder.c:1315
+#: forder.c:1314
 #, c-format
 msgid "nrow==%d but must be >=0"
 msgstr "nrow==%d 但是必须  >=0"
 
-#: forder.c:1332
+#: forder.c:1331
 msgid "x must be type 'double'"
 msgstr "x 必须为浮点数类型"
 
@@ -1702,11 +1702,10 @@ msgid "Internal error. Argument 'cols' to CanyNA is type '%s' not 'integer'"
 msgstr "内部错误：参数 'cols' 关于 CanyNA 是 '%s' 类型而不是'integer'类型"
 
 #: fread.c:104
-#, fuzzy, c-format
+#, c-format
 msgid ""
 "Internal error in line %d of fread.c, please report on data.table GitHub:  "
 msgstr ""
-""
 
 #: fread.c:147
 #, c-format
@@ -3063,7 +3062,7 @@ msgstr ""
 msgid "%<PRId64> "
 msgstr ""
 
-#: fsort.c:247 fwrite.c:694 fwrite.c:952
+#: fsort.c:247 fwrite.c:693 fwrite.c:950
 msgid "\n"
 msgstr ""
 
@@ -3119,12 +3118,12 @@ msgstr ""
 msgid "Internal error: type %d has no max length method implemented"
 msgstr ""
 
-#: fwrite.c:663
+#: fwrite.c:662
 #, c-format
 msgid "maxLineLen=%<PRIu64>. Found in %.3fs\n"
 msgstr ""
 
-#: fwrite.c:683
+#: fwrite.c:682
 #, c-format
 msgid ""
 "%s: '%s'. Failed to open existing file for writing. Do you have write "
@@ -3132,7 +3131,7 @@ msgid ""
 "have it open?"
 msgstr ""
 
-#: fwrite.c:684
+#: fwrite.c:683
 #, c-format
 msgid ""
 "%s: '%s'. Unable to create new file for writing (it does not exist already). "
@@ -3140,65 +3139,65 @@ msgid ""
 "the path exist?"
 msgstr ""
 
-#: fwrite.c:692
+#: fwrite.c:691
 #, c-format
 msgid "Writing bom (%s), yaml (%d characters) and column names (%s) ... "
 msgstr ""
 
-#: fwrite.c:705
+#: fwrite.c:704
 #, c-format
 msgid "Unable to allocate %d MiB for header: %s"
 msgstr ""
 
-#: fwrite.c:733 fwrite.c:794
+#: fwrite.c:732 fwrite.c:792
 msgid "Can't allocate gzip stream structure"
 msgstr ""
 
-#: fwrite.c:739
+#: fwrite.c:738
 #, c-format
 msgid "Unable to allocate %d MiB for zbuffer: %s"
 msgstr ""
 
-#: fwrite.c:754
+#: fwrite.c:753
 #, c-format
 msgid "Compress gzip error: %d"
 msgstr ""
 
-#: fwrite.c:755 fwrite.c:764 fwrite.c:958
+#: fwrite.c:754 fwrite.c:762 fwrite.c:956
 #, c-format
 msgid "%s: '%s'"
 msgstr ""
 
-#: fwrite.c:761
+#: fwrite.c:759
 #, c-format
 msgid "done in %.3fs\n"
 msgstr ""
 
-#: fwrite.c:763
+#: fwrite.c:761
 msgid "No data rows present (nrow==0)\n"
 msgstr ""
 
-#: fwrite.c:781
+#: fwrite.c:779
 #, c-format
 msgid ""
 "Writing %<PRId64> rows in %d batches of %d rows (each buffer size %dMB, "
 "showProgress=%d, nth=%d)\n"
 msgstr ""
 
-#: fwrite.c:966
+#: fwrite.c:964
 #, c-format
 msgid ""
 "zlib %s (zlib.h %s) deflate() returned error %d with z_stream->msg==\"%s\" "
 "Z_FINISH=%d Z_BLOCK=%d. %s"
 msgstr ""
 
-#: fwrite.c:968
+#: fwrite.c:966
 msgid ""
 "Please include the full output above and below this message in your data."
 "table bug report."
 msgstr ""
 
-#: fwrite.c:969
+#: fwrite.c:967
 msgid ""
 "Please retry fwrite() with verbose=TRUE and include the full output with "
 "your data.table bug report."
@@ -3870,7 +3869,7 @@ msgstr ""
 
 #: init.c:290
 #, c-format
-msgid "PRINTNAME(install(\")integer64\")) has returned %s not %s"
+msgid "PRINTNAME(install(\"integer64\")) has returned %s not %s"
 msgstr ""
 
 #: init.c:359
