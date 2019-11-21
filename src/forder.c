@@ -309,7 +309,7 @@ static void range_str(SEXP *x, int n, uint64_t *out_min, uint64_t *out_max, int 
         ustr_alloc = (ustr_alloc==0) ? 16384 : ustr_alloc*2;  // small initial guess, negligible time to alloc 128KB (32 pages)
         if (ustr_alloc>n) ustr_alloc = n;  // clamp at n. Reaches n when fully unique (no dups)
         ustr = realloc(ustr, ustr_alloc * sizeof(SEXP));
-        if (ustr==NULL) STOP(_("Unable to realloc %d * %d bytes in range_str"), ustr_alloc, sizeof(SEXP));  // # nocov
+        if (ustr==NULL) STOP(_("Unable to realloc %d * %d bytes in range_str"), ustr_alloc, (int)sizeof(SEXP));  // # nocov
       }
       ustr[ustr_n++] = s;
       SET_TRUELENGTH(s, -ustr_n);  // unique in any order is fine. first-appearance order is achieved later in count_group
@@ -1160,7 +1160,6 @@ void radix_r(const int from, const int to, const int radix) {
   if (!skip) {
     int *TMP = malloc(my_n * sizeof(int));
     if (!TMP) STOP(_("Unable to allocate TMP for my_n=%d items in parallel batch counting"), my_n);
-    if (!TMP) STOP("Unable to allocate TMP for my_n=%d items in parallel batch counting", my_n);
     #pragma omp parallel for num_threads(getDTthreads())
     for (int batch=0; batch<nBatch; batch++) {
       const int *restrict      my_starts = starts + batch*256;
