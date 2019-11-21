@@ -8466,8 +8466,15 @@ test(1613.573, all.equal(cbind(x, factor(1)), cbind(x, factor(1)), ignore.row.or
 test(1613.581, all(all.equal(x, y, ignore.row.order = FALSE, tolerance = 1), all.equal(x, y, ignore.row.order = TRUE, tolerance = 1)))
 test(1613.582, all(all.equal(x, y, ignore.row.order = FALSE, tolerance = sqrt(.Machine$double.eps)/2), all.equal(x, y, ignore.row.order = TRUE, tolerance = sqrt(.Machine$double.eps)/2)), warning = "Argument 'tolerance' was forced")
 
-test(1613.59, all.equal.data.table(1L, 2L), error = "'target' and 'current' must both be data.tables")
-test(1613.60, all.equal(data.table(1L), 2L), error = "'target' and 'current' must both be data.tables")
+# fix for #4042
+test(1613.59, all.equal.data.table(1L, 2L), error = "is.data.table(target) is not TRUE")
+DT <- data.table(1L)
+DF <- setattr(data.frame(1L), "third non-exlc attr", "dummy")
+test(1613.601, all.equal(DT, 1L), all.equal(DF, 1L))
+L1 <- list(a = DT, b = setattr("foo", "tbl", DT))
+L2 <- list(a = DF, b = setattr("foo", "tbl", DF))
+test(1613.602, is.character(all.equal(L1, L2)))
+
 DT1 <- data.table(a = 1:4, b = letters[1:4], .seqn = 5L)
 DT2 <- data.table(a = 4:1, b = letters[4:1], .seqn = 5L)
 test(1613.61, all.equal(DT1, DT2, ignore.row.order = TRUE), error = "column named '.seqn'")
