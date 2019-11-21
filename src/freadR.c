@@ -572,7 +572,7 @@ void pushBuffer(ThreadLocalFreadParsingContext *ctx)
       if (thisSize == 4) {
         char *dest = (char *)DATAPTR(VECTOR_ELT(DT, resj)) + DTi*4;
         char *src4 = (char*)buff4 + off4;
-        // debug line for #3369 ... if (DTi>2638000) printf("freadR.c:460: thisSize==4, resj=%d, %zd, %d, %d, j=%d, done=%d\n", resj, DTi, off4, rowSize4, j, done);
+        // debug line for #3369 ... if (DTi>2638000) printf("freadR.c:460: thisSize==4, resj=%d, %"PRIu64", %d, %d, j=%d, done=%d\n", resj, (uint64_t)DTi, off4, rowSize4, j, done);
         for (int i=0; i<nRows; i++) {
           memcpy(dest, src4, 4);
           src4 += rowSize4;
