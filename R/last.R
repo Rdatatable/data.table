@@ -10,9 +10,11 @@ last = function(x, n=1L, ...) {
           cat("last: using xts::last: !is.xts(x) & nargs>1 & 'package:xts'%in%search()\n")
         xts::last(x, n=n, ...)
       } else {
+        # nocov start
         if (verbose)
           cat("last: using utils::tail: !is.xts(x) & nargs>1 & !'package:xts'%in%search()\n")
         utils::tail(x, n=n, ...)
+        # nocov end
       }
     } else {
       dx = dim(x)
@@ -33,7 +35,7 @@ last = function(x, n=1L, ...) {
     }
   } else {
     if (!requireNamespace("xts", quietly=TRUE))
-      stop("'xts' class passed to data.table::last function but 'xts' is not available, you should have 'xts' installed already")
+      stop("'xts' class passed to data.table::last function but 'xts' is not available, you should have 'xts' installed already") # nocov
     if (verbose)
       cat("last: using xts::last: is.xts(x)\n")
     xts::last(x, n=n, ...)
@@ -49,9 +51,11 @@ first = function(x, n=1L, ...) {
           cat("first: using xts::first: !is.xts(x) & nargs>1 & 'package:xts'%in%search()\n")
         xts::first(x, n=n, ...)
       } else {
+        # nocov start
         if (verbose)
           cat("first: using utils::head: !is.xts(x) & nargs>1 & !'package:xts'%in%search()\n")
         utils::head(x, n=n, ...)
+        # nocov end
       }
     } else {
       dx = dim(x)
@@ -72,7 +76,7 @@ first = function(x, n=1L, ...) {
     }
   } else {
     if (!requireNamespace("xts", quietly=TRUE))
-      stop("'xts' class passed to data.table::first function but 'xts' is not available, you should have 'xts' installed already")
+      stop("'xts' class passed to data.table::first function but 'xts' is not available, you should have 'xts' installed already") # nocov
     if (verbose)
       cat("first: using xts::first: is.xts(x)\n")
     xts::first(x, n=n, ...)
