@@ -31,11 +31,11 @@ msgid ""
 "loading to prevent unexpected behavior. If this table was not loaded from "
 "disk or you've already run setDT(), please report to data.table issue "
 "tracker.\n"
-msgstr ".internal.selfref ptr为空。 data.table的正常行为"
-"从磁盘读取， 请在装载结束后立刻运行setDT()操作"
+msgstr ".internal.selfref ptr为空。 这是从磁盘加载data.table的正常现象"
+"请在装载结束后立刻运行setDT()操作"
 "避免发生异常行为。 如果该data.table不是"
 "从磁盘读取或已经运行了setDT(), 请报告data.table异常行为到"
-"issue tracker"
+"问题跟踪器(issue tracker)"
 
 #: assign.c:126
 msgid "Internal error: .internal.selfref ptr is not NULL or R_NilValue"
@@ -43,15 +43,15 @@ msgstr "内部错误： .internal.selfref ptr不为NULL或R_NilValue"
 
 #: assign.c:128
 msgid "Internal error: .internal.selfref tag isn't NULL or a character vector"
-msgstr "内部错误： .internal.selfref ptr不为NULL或字符串"
+msgstr "内部错误： .internal.selfref ptr不为NULL或字符向量"
 
 #: assign.c:170
 msgid "Internal error: length(names)>0 but <length(dt)"
-msgstr "内部错误： 列名列表长度不为零，但小于dt的长度"
+msgstr "内部错误： 列名列表(names)长度应大于零，但小于dt的长度"
 
 #: assign.c:199
 msgid "alloccol has been passed a NULL dt"
-msgstr "alloccol被传递给了空(NULL)dt"
+msgstr "alloccol被传递给了一个空的(NULL)dt"
 
 #: assign.c:200
 msgid "dt passed to alloccol isn't type VECSXP"
@@ -62,12 +62,12 @@ msgid ""
 "dt passed to alloccol has no class attribute. Please report result of "
 "traceback() to data.table issue tracker."
 msgstr "传递给alloccol的dt没有类型属性，请报告traceback()"
-"的运行结果给data.table的issue tracker"
+"的运行结果给data.table的问题跟踪器issue tracker"
 
 #: assign.c:207
 #, c-format
 msgid "Internal error: length of names (%d) is not length of dt (%d)"
-msgstr "内部错误： 列名列表长度与dt的长度不等"
+msgstr "内部错误： 列名列表(%d)长度与dt(%d)的长度不等"
 
 #: assign.c:217
 msgid "Internal error, tl of class is marked but tl<0."
@@ -79,7 +79,7 @@ msgid ""
 "Internal error, please report (including result of sessionInfo()) to data."
 "table issue tracker: tl (%d) < l (%d) but tl of class is marked."
 msgstr "内部错误： 请汇报错误(包括sessionInfo()结果)给"
-"data.table的issue tracker"
+"data.table的问题跟踪器issue tracker: tl(%d) < l(%d), 但是tl的类型已被标记"
 
 #: assign.c:219
 #, c-format
@@ -88,8 +88,8 @@ msgid ""
 "set the datatable.alloccol option to be very large, please report to data."
 "table issue tracker including the result of sessionInfo()."
 msgstr "tl (%d)超过了10,000，过度预分配(l = %d)"
-"如果用户没有设置datatable.alloccol成大数，请请汇报错误"
-"到data.table的issue tracker， 并包括sessionInfo()结果"
+"如果用户没有设置datatable.alloccol很大，请请汇报错误"
+"到data.table的问题跟踪器issue tracker， 并包含sessionInfo()信息"
 
 #: assign.c:221
 #, c-format
@@ -126,7 +126,7 @@ msgstr "getOption('datatable.alloc')结果为长度%d的数值向量"
 #: assign.c:236
 #, c-format
 msgid "getOption('datatable.alloc')==%d.  It must be >=0 and not NA."
-msgstr "getOption('datatable.alloc')值为%d, 其必须大于零且不能为NA"
+msgstr "getOption('datatable.alloc')值为%d, 其必须大于等于零且不能为NA"
 
 #: assign.c:241 fsort.c:109 nafill.c:73
 msgid "verbose must be TRUE or FALSE"
@@ -134,7 +134,7 @@ msgstr "verbose参数必须为TRUE或FALSE"
 
 #: assign.c:289
 msgid "assign has been passed a NULL dt"
-msgstr "传递给赋值操作的dt为NULL"
+msgstr "赋值已经被传递给一个空的(NULL)dt"
 
 #: assign.c:290
 msgid "dt passed to assign isn't type VECSXP"
@@ -145,8 +145,8 @@ msgid ""
 ".SD is locked. Updating .SD by reference using := or set are reserved for "
 "future use. Use := in j directly. Or use copy(.SD) as a (slow) last resort, "
 "until shallow() is exported."
-msgstr ".SD变量被锁死。 使用':='更新.SD操作保留未来开发"
-"对'j'直接使用':='. 必要情况下， 可以使用copy(.SD)"
+msgstr ".SD被锁定。 使用':='更新.SD操作保留将来使用"
+"对'j'直接使用':=', 或可以使用copy(.SD)， 直到导出shallow()"
 
 #: assign.c:300
 msgid "Internal error: dt passed to Cassign is not a data.table or data.frame"
@@ -159,14 +159,14 @@ msgstr "传递给赋值操作的dt没有命名"
 #: assign.c:306
 #, c-format
 msgid "Internal error in assign: length of names (%d) is not length of dt (%d)"
-msgstr "赋值的内部错误：名字的长度(%d)与dt的长度(%d)不匹配"
+msgstr "赋值的内部错误： names的长度(%d)与dt的长度(%d)不匹配"
 
 #: assign.c:308
 msgid ""
 "data.table is NULL; malformed. A null data.table should be an empty list. "
 "typeof() should always return 'list' for data.table."
-msgstr "data.table为空，且定义错误，一个null的data.table应该为空list"
-"对data.table使用typeof()函数应该返回'list'类型"
+msgstr "data.table为空， 格式错误，一个null的data.table应该为空的列表list"
+"即对data.table使用typeof()函数应该返回'list'类型"
 
 #: assign.c:317
 #, c-format
