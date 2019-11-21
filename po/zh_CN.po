@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: data.table 1.12.5\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2019-11-01 00:42+0800\n"
+"POT-Creation-Date: 2019-11-21 08:00+0800\n"
 "PO-Revision-Date: 2019-10-31 17:27+08\n"
 "Last-Translator: Amy Tzu-Yu Chen <amy17519@gmail.com>\n"
 "Language-Team: Mandarin\n"
@@ -658,7 +658,8 @@ msgstr ""
 
 #: between.c:95
 #, c-format
-msgid "Item %d of lower (%lld) is greater than item %d of upper (%lld)"
+msgid ""
+"Item %d of lower (%<PRId64>) is greater than item %d of upper (%<PRId64>)"
 msgstr ""
 
 #: between.c:112
@@ -828,10 +829,10 @@ msgstr ""
 "问题追踪器。"
 
 #: chmatch.c:60
-#, c-format
+#, fuzzy, c-format
 msgid ""
-"Failed to allocate %lld bytes working memory in chmatchdup: length(table)=%d "
-"length(unique(table))=%d"
+"Failed to allocate %<PRIu64> bytes working memory in chmatchdup: "
+"length(table)=%d length(unique(table))=%d"
 msgstr ""
 "无法为 chmatchdup: length(table)=%2$d length(unique(table))=%3$d 分配 %1$lld "
 "字节的内存空间"
@@ -1201,18 +1202,20 @@ msgid "'yes' and 'no' are both type factor but their levels are different."
 msgstr "'yes'和'no'都是因子类型但他们的因子水平不同。"
 
 #: fifelse.c:38
-#, c-format
-msgid "Length of 'yes' is %lld but must be 1 or length of 'test' (%lld)."
+#, fuzzy, c-format
+msgid ""
+"Length of 'yes' is %<PRId64> but must be 1 or length of 'test' (%<PRId64>)."
 msgstr "'yes'长度是%lld但长度必须是1或者等于'test'的长度 (%lld)。"
 
 #: fifelse.c:40
-#, c-format
-msgid "Length of 'no' is %lld but must be 1 or length of 'test' (%lld)."
+#, fuzzy, c-format
+msgid ""
+"Length of 'no' is %<PRId64> but must be 1 or length of 'test' (%<PRId64>)."
 msgstr "'no'长度是%lld但长度必须是1或者等于'test'的长度 (%lld)。"
 
 #: fifelse.c:51
-#, c-format
-msgid "Length of 'na' is %lld but must be 1"
+#, fuzzy, c-format
+msgid "Length of 'na' is %<PRId64> but must be 1"
 msgstr "'na'长度是%lld但必须是长度必须是1"
 
 #: fifelse.c:57
@@ -1262,8 +1265,7 @@ msgstr "串联：'idx' 必须为一个长度>= 0的整数向量"
 msgid ""
 "Internal error in concat: 'idx' must take values between 0 and length(vec); "
 "0 <= idx <= %d"
-msgstr "串联内部错误：'idx'必须为0到length(vec)之间的值;"
-"0 <= idx <= %d"
+msgstr "串联内部错误：'idx'必须为0到length(vec)之间的值;0 <= idx <= %d"
 
 #: fmelt.c:102
 #, c-format
@@ -1277,9 +1279,10 @@ msgid ""
 "non-numeric/integer/logical type columns are considered id.vars, which in "
 "this case are columns [%s]. Consider providing at least one of 'id' or "
 "'measure' vars in future."
-msgstr "当'id.vars'和'measure.vars'都是NULL时，data.table会自动猜测适当值。"
-"所有非数值/整数/逻辑类型列会作为'id.vars'，即以下列 [%s]。"
-"以后请考虑择一指定'id.vars'或'measure.vars'。"
+msgstr ""
+"当'id.vars'和'measure.vars'都是NULL时，data.table会自动猜测适当值。所有非数"
+"值/整数/逻辑类型列会作为'id.vars'，即以下列 [%s]。以后请考虑择一指定'id."
+"vars'或'measure.vars'。"
 
 #: fmelt.c:154 fmelt.c:219
 #, c-format
@@ -1294,8 +1297,8 @@ msgstr "'id.vars'里，一或多个数值无效"
 msgid ""
 "'measure.vars' is missing. Assigning all columns other than 'id.vars' "
 "columns as 'measure.vars'.\n"
-msgstr "找不到'measure.vars'。将指定所有'id.vars'以外的所有列为"
-"'measure.vars'。\n"
+msgstr ""
+"找不到'measure.vars'。将指定所有'id.vars'以外的所有列为'measure.vars'。\n"
 
 #: fmelt.c:176
 #, c-format
@@ -1332,16 +1335,17 @@ msgstr "未知'measure.vars'类型 %s，必须是字符或者整数向量"
 msgid ""
 "When 'measure.vars' is a list, 'value.name' must be a character vector of "
 "length =1 or =length(measure.vars)."
-msgstr "当'measure.vars'是一个列表(list), 'value.name' 必须是一个"
-"长度为1或者等于length(measure.vars)的字符向量"
-
+msgstr ""
+"当'measure.vars'是一个列表(list), 'value.name' 必须是一个长度为1或者等于"
+"length(measure.vars)的字符向量"
 
 #: fmelt.c:277
 msgid ""
 "When 'measure.vars' is either not specified or a character/integer vector, "
 "'value.name' must be a character vector of length =1."
-msgstr "当'measure.vars'未被指定或者是一个字符/整数向量时，"
-"'value.name'必须是一个长度1的字符/整数向量"
+msgstr ""
+"当'measure.vars'未被指定或者是一个字符/整数向量时，'value.name'必须是一个长度"
+"1的字符/整数向量"
 
 #: fmelt.c:280
 msgid "'variable.name' must be a character/integer vector of length=1."
@@ -1601,7 +1605,7 @@ msgstr "定时块 %2d%s = %8.3f   %8d\n"
 
 #: forder.c:797
 #, c-format
-msgid "stat[%03d]==%10zd\n"
+msgid "stat[%03d]==%20<PRIu64>\n"
 msgstr ""
 
 #: forder.c:1053
@@ -1697,247 +1701,255 @@ msgstr "内部错误：参数 'x' 关于 CanyNA 是 '%s' 类型而不是'list'�
 msgid "Internal error. Argument 'cols' to CanyNA is type '%s' not 'integer'"
 msgstr "内部错误：参数 'cols' 关于 CanyNA 是 '%s' 类型而不是'integer'类型"
 
-#: fread.c:153
+#: fread.c:147
 #, c-format
 msgid "System error %d unmapping view of file\n"
 msgstr "系统错误 %d 取消映射文件视图\n"
 
-#: fread.c:156
+#: fread.c:150
 #, c-format
 msgid "System errno %d unmapping file: %s\n"
 msgstr "系统错误 %d 取消映射文件： %s\n"
 
-#: fread.c:216
+#: fread.c:210
 #, c-format
 msgid "Internal error: NUMTYPE(%d) > nLetters(%d)"
 msgstr "内部错误：NUMTYPE(%d) > nLetters(%d)"
 
-#: fread.c:441
+#: fread.c:435
 #, c-format
 msgid "Unable to allocate %s of contiguous virtual RAM. %s allocation."
 msgstr "无法分配 %s 的连续虚拟内存。 %s 已分配。"
 
-#: fread.c:446
+#: fread.c:440
 #, c-format
 msgid "Avoidable %.3f seconds. %s time to copy.\n"
 msgstr "可避免的 %.3f 秒。 %s 复制用时\n"
 
-#: fread.c:447
+#: fread.c:441
 #, c-format
 msgid "  File copy in RAM took %.3f seconds.\n"
 msgstr "内存上的文件复制耗时 %.3f 秒\n"
 
-#: fread.c:1099
+#: fread.c:1093
 msgid ""
 "Previous fread() session was not cleaned up properly. Cleaned up ok at the "
 "beginning of this fread() call.\n"
 msgstr "之前的会话fread()未正确清理。在当前 fread() 会话开始前清理好\n"
 
-#: fread.c:1102
+#: fread.c:1096
 msgid "[01] Check arguments\n"
 msgstr "[01] 参数检查\n"
 
-#: fread.c:1109
+#: fread.c:1103
 #, c-format
 msgid "  Using %d threads (omp_get_max_threads()=%d, nth=%d)\n"
 msgstr "使用 %d 线程 (omp_get_max_threads()=%d, nth=%d)\n"
 
-#: fread.c:1117
+#: fread.c:1111
 msgid ""
 "Internal error: NAstrings is itself NULL. When empty it should be pointer to "
 "NULL."
 msgstr "内部错误：NAstrings 自身为空值。当清空该项会指向NULL空值"
 
-#: fread.c:1135
+#: fread.c:1129
 #, c-format
 msgid "freadMain: NAstring <<%s>> has whitespace at the beginning or end"
 msgstr "freadMain: NAstring <<%s>>  在开始或者结束处有空白"
 
-#: fread.c:1140
+#: fread.c:1134
 #, c-format
 msgid ""
 "freadMain: NAstring <<%s>> is recognized as type boolean, this is not "
 "permitted."
 msgstr "freadMain: NAstring <<%s>> 被识别为布尔型，这是不允许"
 
-#: fread.c:1150
+#: fread.c:1144
 msgid "  No NAstrings provided.\n"
 msgstr "未提供 NAstrings \n"
 
-#: fread.c:1152
+#: fread.c:1146
 msgid "  NAstrings = ["
 msgstr ""
 
-#: fread.c:1155
+#: fread.c:1149
 msgid "]\n"
 msgstr ""
 
-#: fread.c:1157
+#: fread.c:1151
 msgid "  One or more of the NAstrings looks like a number.\n"
 msgstr "一个或多个 NAstrings 类似数值\n"
 
-#: fread.c:1159
+#: fread.c:1153
 msgid "  None of the NAstrings look like numbers.\n"
 msgstr "没有 NAstrings 为数值\n"
 
-#: fread.c:1161
-#, c-format
-msgid "  skip num lines = %llu\n"
+#: fread.c:1155
+#, fuzzy, c-format
+msgid "  skip num lines = %<PRId64>\n"
 msgstr "跳过行数为 %llu\n"
 
-#: fread.c:1162
+#: fread.c:1156
 #, c-format
 msgid "  skip to string = <<%s>>\n"
 msgstr "跳转至 string = <<%s>>\n"
 
-#: fread.c:1163
+#: fread.c:1157
 #, c-format
 msgid "  show progress = %d\n"
 msgstr "显示进程  %d\n"
 
-#: fread.c:1164
+#: fread.c:1158
 #, c-format
 msgid "  0/1 column will be read as %s\n"
 msgstr " 0/1 列被读取为  %s\n"
 
-#: fread.c:1172
+#: fread.c:1158
+msgid "boolean"
+msgstr ""
+
+#: fread.c:1158
+msgid "integer"
+msgstr ""
+
+#: fread.c:1166
 #, c-format
 msgid "sep == quote ('%c') is not allowed"
 msgstr "sep == quote ('%c') 不被允许"
 
-#: fread.c:1173
+#: fread.c:1167
 msgid "dec='' not allowed. Should be '.' or ','"
 msgstr "dec='' 不允许，应该为 '.' 或者 ','"
 
-#: fread.c:1174
+#: fread.c:1168
 #, c-format
 msgid "sep == dec ('%c') is not allowed"
 msgstr "sep == dec ('%c') 不允许"
 
-#: fread.c:1175
+#: fread.c:1169
 #, c-format
 msgid "quote == dec ('%c') is not allowed"
 msgstr "quote == dec ('%c') 不允许"
 
-#: fread.c:1192
+#: fread.c:1186
 msgid "[02] Opening the file\n"
 msgstr "[02]  打开文件\n"
 
-#: fread.c:1195
+#: fread.c:1189
 msgid ""
 "  `input` argument is provided rather than a file name, interpreting as raw "
 "text to read\n"
 msgstr "提供 `input` 参数而非文件名，理解为原始的文本读取\n"
 
-#: fread.c:1199
+#: fread.c:1193
 msgid "Internal error: last byte of character input isn't \\0"
 msgstr "内部错误：字符输入的最后一个字节不是 \\0"
 
-#: fread.c:1202
+#: fread.c:1196
 #, c-format
 msgid "  Opening file %s\n"
 msgstr "打开文件 %s\n"
 
-#: fread.c:1206
+#: fread.c:1200
 #, c-format
 msgid "file not found: %s"
 msgstr "文件未找到： %s"
 
-#: fread.c:1210
+#: fread.c:1204
 #, c-format
 msgid "Opened file ok but couldn't obtain its size: %s"
 msgstr "文件能够打开但无法获知其大小：%s"
 
-#: fread.c:1213 fread.c:1241
+#: fread.c:1207 fread.c:1235
 #, c-format
 msgid "File is empty: %s"
 msgstr "文件是空的：%s"
 
-#: fread.c:1214 fread.c:1242
+#: fread.c:1208 fread.c:1236
 #, c-format
 msgid "  File opened, size = %s.\n"
 msgstr "文件已打开，大小为 %s.\n"
 
-#: fread.c:1231
+#: fread.c:1225
 #, c-format
 msgid "File not found: %s"
 msgstr "文件没有找到：%s"
 
-#: fread.c:1237
+#: fread.c:1231
 #, c-format
 msgid "Unable to open file after %d attempts (error %d): %s"
 msgstr "经过 %d 次尝试后仍无法打开文件（错误 %d）：%s"
 
-#: fread.c:1239
+#: fread.c:1233
 #, c-format
 msgid "GetFileSizeEx failed (returned 0) on file: %s"
 msgstr "GetFileSizeEx 未能成功执行（返回值为0）于文件：%s"
 
-#: fread.c:1244
+#: fread.c:1238
 #, c-format
 msgid "This is Windows, CreateFileMapping returned error %d for file %s"
 msgstr "现在在Windows下，CreateFileMapping 返回错误 %d 于文件 %s"
 
-#: fread.c:1251
+#: fread.c:1245
 #, c-format
 msgid ""
 "Opened %s file ok but could not memory map it. This is a %dbit process. %s."
 msgstr "能够打开文件 %s 但不能创建内存映射。这是一个 %d 位进程。 %s."
 
-#: fread.c:1252
+#: fread.c:1246
 msgid "Please upgrade to 64bit"
 msgstr "请升级到64位"
 
-#: fread.c:1252
+#: fread.c:1246
 msgid "There is probably not enough contiguous virtual memory available"
 msgstr "多半没有足够的连续虚拟内存"
 
-#: fread.c:1255
+#: fread.c:1249
 msgid "  Memory mapped ok\n"
 msgstr "  内存映射正常\n"
 
-#: fread.c:1257
+#: fread.c:1251
 msgid ""
 "Internal error: Neither `input` nor `filename` are given, nothing to read."
 msgstr ""
 "内部错误：既没有`input`（输入）也没有`filename`（文件名），没有什么可供读入。"
 
-#: fread.c:1274
+#: fread.c:1268
 msgid "[03] Detect and skip BOM\n"
 msgstr "[03] 检测并跳过字节顺序标记（BOM）\n"
 
-#: fread.c:1278
+#: fread.c:1272
 msgid ""
 "  UTF-8 byte order mark EF BB BF found at the start of the file and "
 "skipped.\n"
 msgstr "在文件头发现了UTF-8 字节顺序标记（BOM）EF BB BF 并已跳过。\n"
 
-#: fread.c:1283
+#: fread.c:1277
 msgid ""
 "GB-18030 encoding detected, however fread() is unable to decode it. Some "
 "character fields may be garbled.\n"
 msgstr "检测到GB-18030 编码，但fread() 未能解码。某些 字符字段可能有乱码。\n"
 
-#: fread.c:1286
+#: fread.c:1280
 msgid ""
 "File is encoded in UTF-16, this encoding is not supported by fread(). Please "
 "recode the file to UTF-8."
 msgstr "文件编码是UTF-16，fread()不支持此编码。请 将文件转换为UTF-8。"
 
-#: fread.c:1291
+#: fread.c:1285
 #, c-format
 msgid "  Last byte(s) of input found to be %s and removed.\n"
 msgstr "  发现输入的最后字节是 %s 并已去除。\n"
 
-#: fread.c:1294
+#: fread.c:1288
 msgid "Input is empty or only contains BOM or terminal control characters"
 msgstr "输入是空的或只有字节顺序标记（BOM）或终端控制字符"
 
-#: fread.c:1301
+#: fread.c:1295
 msgid "[04] Arrange mmap to be \\0 terminated\n"
 msgstr "[04] 设定mmap为 \\0 终止\n"
 
-#: fread.c:1308
+#: fread.c:1302
 msgid ""
 "  No \\n exists in the file at all, so single \\r (if any) will be taken as "
 "one line ending. This is unusual but will happen normally when there is no "
@@ -1946,7 +1958,7 @@ msgstr ""
 "  文件中完全没有换行符\\n，所以单个 \\r（如果有的话）将被当成一行的结束。这不"
 "太常见但如果没有\\r 的话属于正常；例如单个行没有行尾结束符。\n"
 
-#: fread.c:1309
+#: fread.c:1303
 msgid ""
 "  \\n has been found in the input and different lines can end with different "
 "line endings (e.g. mixed \\n and \\r\\n in one file). This is common and "
@@ -1955,7 +1967,7 @@ msgstr ""
 "  输入中有\\n 并且不同行可以有不同的 行尾结束符（如在一个文件中混合使用 \\n "
 "和\\r\\n）。这很常见也是理想情况。\n"
 
-#: fread.c:1333
+#: fread.c:1327
 #, c-format
 msgid ""
 "  File ends abruptly with '%c'. Final end-of-line is missing. Using cow page "
@@ -1964,7 +1976,7 @@ msgstr ""
 "  文件突然中止于 '%c'。没有最后一个行尾结束符。正使用写时复制页（cow, copy-"
 "on-write）写入 0 到最后一个字节。\n"
 
-#: fread.c:1339
+#: fread.c:1333
 msgid ""
 "This file is very unusual: it ends abruptly without a final newline, and "
 "also its size is a multiple of 4096 bytes. Please properly end the last row "
@@ -1973,16 +1985,16 @@ msgstr ""
 "这个文件非常不正常：它突然中止而没有最后的换行，并且其大小是4096 字节的整数"
 "倍。请用一个换行（例如 'echo >> file'）来恰当地结束最后一行以避免此错误"
 
-#: fread.c:1340
+#: fread.c:1334
 #, c-format
 msgid "  File ends abruptly with '%c'. Copying file in RAM. %s copy.\n"
 msgstr "  文件突然中止于 '%c'。正在从内存中复制文件。%s 复制。\n"
 
-#: fread.c:1374
+#: fread.c:1368
 msgid "[05] Skipping initial rows if needed\n"
 msgstr "[05] 如需要的话跳过起始行\n"
 
-#: fread.c:1380
+#: fread.c:1374
 #, c-format
 msgid ""
 "skip='%s' not found in input (it is case sensitive and literal; i.e., no "
@@ -1991,79 +2003,79 @@ msgstr ""
 "在输入中没有发现 skip='%s' （这里大小写敏感并需要是字面形式，也就是说不能使用"
 "模式，适配符或正则表达式）"
 
-#: fread.c:1386
-#, c-format
+#: fread.c:1380
+#, fuzzy, c-format
 msgid ""
-"Found skip='%s' on line %llu. Taking this to be header row or first row of "
-"data.\n"
+"Found skip='%s' on line %<PRIu64>. Taking this to be header row or first row "
+"of data.\n"
 msgstr "在行 %2$llu 发现了 skip='%1$s'。将此当做表头或数据的第一行。\n"
 
-#: fread.c:1399
-#, c-format
-msgid "  Skipped to line %llu in the file"
+#: fread.c:1393
+#, fuzzy, c-format
+msgid "  Skipped to line %<PRIu64> in the file"
 msgstr "  跳到文件的第 %llu 行"
 
-#: fread.c:1400
-#, c-format
-msgid "skip=%llu but the input only has %llu line%s"
+#: fread.c:1394
+#, fuzzy, c-format
+msgid "skip=%<PRIu64> but the input only has %<PRIu64> line%s"
 msgstr "skip=%llu 但输入只有 %llu 行 %s"
 
-#: fread.c:1409
+#: fread.c:1403
 msgid ""
 "Input is either empty, fully whitespace, or skip has been set after the last "
 "non-whitespace."
 msgstr "输入是空，或全部为空白，或跳过设置是在最后一个非空白字符之后。"
 
-#: fread.c:1411
+#: fread.c:1405
 #, c-format
 msgid "  Moved forward to first non-blank line (%d)\n"
 msgstr "  前移到第一个非空行 (%d)\n"
 
-#: fread.c:1412
+#: fread.c:1406
 #, c-format
 msgid "  Positioned on line %d starting: <<%s>>\n"
 msgstr "  定位到行 %d 开始于： <<%s>>\n"
 
-#: fread.c:1430
+#: fread.c:1424
 msgid "[06] Detect separator, quoting rule, and ncolumns\n"
 msgstr "[06] 检测分隔符，引用规则，以及列数\n"
 
-#: fread.c:1434
+#: fread.c:1428
 msgid "  sep='\\n' passed in meaning read lines as single character column\n"
 msgstr "  sep='\\n' 设定意味着将把所有行读作一个字符列\n"
 
-#: fread.c:1453
+#: fread.c:1447
 msgid "  Detecting sep automatically ...\n"
 msgstr "  自动检测分隔符中 ...\n"
 
-#: fread.c:1460
+#: fread.c:1454
 #, c-format
 msgid "  Using supplied sep '%s'\n"
 msgstr "  使用提供的分隔符 '%s'\n"
 
-#: fread.c:1494
+#: fread.c:1488
 #, c-format
 msgid "  with %d fields using quote rule %d\n"
 msgstr "  对 %d 个字段使用引用规则 %d\n"
 
-#: fread.c:1544
+#: fread.c:1538
 #, c-format
 msgid "  with %d lines of %d fields using quote rule %d\n"
 msgstr "  对 %d 行的 %d 字段使用引用规则 %d\n"
 
-#: fread.c:1551
+#: fread.c:1545
 msgid ""
 "  No sep and quote rule found a block of 2x2 or greater. Single column "
 "input.\n"
 msgstr "  没有分隔符并且引用规则发现了一个大于或等于2x2的区块。输入是单列。\n"
 
-#: fread.c:1567
+#: fread.c:1561
 msgid ""
 "Single column input contains invalid quotes. Self healing only effective "
 "when ncol>1"
 msgstr "单列输入包含了不合法的引用。自我修正只有在列数大于1（ncol>1）时才有效"
 
-#: fread.c:1572
+#: fread.c:1566
 #, c-format
 msgid ""
 "Found and resolved improper quoting in first %d rows. If the fields are not "
@@ -2073,285 +2085,290 @@ msgstr ""
 "在前 %d 行中发现并修正了不合适的引号用法。如果字段没有加引号（例如字段间隔符"
 "没有在任何字段内出现），可以尝试使用 quote=\"\" 来避免此警告。"
 
-#: fread.c:1588
+#: fread.c:1582
 #, c-format
 msgid ""
 "Internal error: ncol==%d line==%d after detecting sep, ncol and first line"
 msgstr ""
 
-#: fread.c:1591
+#: fread.c:1585
 #, c-format
 msgid "Internal error: first line has field count %d but expecting %d"
 msgstr ""
 
-#: fread.c:1593
+#: fread.c:1587
 #, c-format
 msgid ""
 "  Detected %d columns on line %d. This line is either column names or first "
 "data row. Line starts as: <<%s>>\n"
 msgstr ""
 
-#: fread.c:1595
+#: fread.c:1589
 #, c-format
 msgid "  Quote rule picked = %d\n"
 msgstr ""
 
-#: fread.c:1596
+#: fread.c:1590
 #, c-format
 msgid "  fill=%s and the most number of columns found is %d\n"
 msgstr ""
 
-#: fread.c:1602
+#: fread.c:1596
 msgid ""
 "This file is very unusual: it's one single column, ends with 2 or more end-"
 "of-line (representing several NA at the end), and is a multiple of 4096, too."
 msgstr ""
 
-#: fread.c:1603
+#: fread.c:1597
 #, c-format
 msgid "  Copying file in RAM. %s\n"
 msgstr ""
 
-#: fread.c:1609
+#: fread.c:1603
 msgid ""
 "  1-column file ends with 2 or more end-of-line. Restoring last eol using "
 "extra byte in cow page.\n"
 msgstr ""
 
-#: fread.c:1628
+#: fread.c:1622
 msgid ""
 "[07] Detect column types, good nrow estimate and whether first row is column "
 "names\n"
 msgstr ""
 
-#: fread.c:1629
+#: fread.c:1623
 #, c-format
 msgid "  'header' changed by user from 'auto' to %s\n"
 msgstr ""
 
-#: fread.c:1633
+#: fread.c:1627
 #, c-format
 msgid "Failed to allocate 2 x %d bytes for type and tmpType: %s"
 msgstr ""
 
-#: fread.c:1654
+#: fread.c:1648
 #, c-format
 msgid "  Number of sampling jump points = %d because "
 msgstr ""
 
-#: fread.c:1655
+#: fread.c:1649
 #, c-format
-msgid "nrow limit (%llu) supplied\n"
+msgid "nrow limit (%<PRIu64>) supplied\n"
 msgstr ""
 
-#: fread.c:1656
+#: fread.c:1650
 msgid "jump0size==0\n"
 msgstr ""
 
-#: fread.c:1657
+#: fread.c:1651
 #, c-format
-msgid "(%llu bytes from row 1 to eof) / (2 * %llu jump0size) == %llu\n"
+msgid ""
+"(%<PRIu64> bytes from row 1 to eof) / (2 * %<PRIu64> jump0size) == "
+"%<PRIu64>\n"
 msgstr ""
 
-#: fread.c:1695
+#: fread.c:1689
 #, c-format
 msgid ""
 "  A line with too-%s fields (%d/%d) was found on line %d of sample jump %d. "
 "%s\n"
 msgstr ""
 
-#: fread.c:1696
+#: fread.c:1690
 msgid "few"
 msgstr ""
 
-#: fread.c:1696
+#: fread.c:1690
 msgid "many"
 msgstr ""
 
-#: fread.c:1696
+#: fread.c:1690
 msgid ""
 "Most likely this jump landed awkwardly so type bumps here will be skipped."
 msgstr ""
 
-#: fread.c:1722
+#: fread.c:1716
 #, c-format
 msgid "  Type codes (jump %03d)    : %s  Quote rule %d\n"
 msgstr ""
 
-#: fread.c:1735
+#: fread.c:1729
 #, c-format
 msgid ""
 "  'header' determined to be true due to column %d containing a string on row "
 "1 and a lower type (%s) in the rest of the %d sample rows\n"
 msgstr ""
 
-#: fread.c:1747
+#: fread.c:1741
 msgid ""
 "Internal error: row before first data row has the same number of fields but "
 "we're not using it."
 msgstr ""
 
-#: fread.c:1748
+#: fread.c:1742
 msgid ""
 "Internal error: ch!=pos after counting fields in the line before the first "
 "data row."
 msgstr ""
 
-#: fread.c:1749
+#: fread.c:1743
 #, c-format
 msgid ""
 "Types in 1st data row match types in 2nd data row but previous row has %d "
 "fields. Taking previous row as column names."
 msgstr ""
 
-#: fread.c:1752
+#: fread.c:1746
 #, c-format
 msgid ""
 "Detected %d column names but the data has %d columns (i.e. invalid file). "
 "Added %d extra default column name%s\n"
 msgstr ""
 
-#: fread.c:1753
+#: fread.c:1747
 msgid ""
 " for the first column which is guessed to be row names or an index. Use "
 "setnames() afterwards if this guess is not correct, or fix the file write "
 "command that created the file to create a valid file."
 msgstr ""
 
-#: fread.c:1753
+#: fread.c:1747
 msgid "s at the end."
 msgstr ""
 
-#: fread.c:1755
+#: fread.c:1749
 msgid ""
 "Internal error: fill=true but there is a previous row which should already "
 "have been filled."
 msgstr ""
 
-#: fread.c:1756
+#: fread.c:1750
 #, c-format
 msgid ""
 "Detected %d column names but the data has %d columns. Filling rows "
 "automatically. Set fill=TRUE explicitly to avoid this warning.\n"
 msgstr ""
 
-#: fread.c:1760
+#: fread.c:1754
 #, c-format
 msgid "Failed to realloc 2 x %d bytes for type and tmpType: %s"
 msgstr ""
 
-#: fread.c:1780
+#: fread.c:1774
 #, c-format
 msgid ""
 "  'header' determined to be %s because there are%s number fields in the "
 "first and only row\n"
 msgstr ""
 
-#: fread.c:1780
+#: fread.c:1774
 msgid "true"
 msgstr ""
 
-#: fread.c:1780
+#: fread.c:1774
 msgid "false"
 msgstr ""
 
-#: fread.c:1780
+#: fread.c:1774
 msgid " no"
 msgstr ""
 
-#: fread.c:1783
+#: fread.c:1777
 msgid ""
 "  'header' determined to be true because all columns are type string and a "
 "better guess is not possible\n"
 msgstr ""
 
-#: fread.c:1785
+#: fread.c:1779
 msgid ""
 "  'header' determined to be false because there are some number columns and "
 "those columns do not have a string field at the top of them\n"
 msgstr ""
 
-#: fread.c:1801
+#: fread.c:1795
 #, c-format
 msgid "  Type codes (first row)   : %s  Quote rule %d\n"
 msgstr ""
 
-#: fread.c:1810
+#: fread.c:1804
 #, c-format
 msgid ""
-"  All rows were sampled since file is small so we know nrow=%llu exactly\n"
+"  All rows were sampled since file is small so we know nrow=%<PRIu64> "
+"exactly\n"
 msgstr ""
 
-#: fread.c:1822 fread.c:1829
+#: fread.c:1816 fread.c:1823
 msgid "  =====\n"
 msgstr ""
 
-#: fread.c:1823
+#: fread.c:1817
 #, c-format
 msgid ""
-"  Sampled %llu rows (handled \\n inside quoted fields) at %d jump points\n"
+"  Sampled %<PRIu64> rows (handled \\n inside quoted fields) at %d jump "
+"points\n"
 msgstr ""
 
-#: fread.c:1824
+#: fread.c:1818
 #, c-format
-msgid "  Bytes from first data row on line %d to the end of last row: %llu\n"
+msgid ""
+"  Bytes from first data row on line %d to the end of last row: %<PRIu64>\n"
 msgstr ""
 
-#: fread.c:1825
+#: fread.c:1819
 #, c-format
 msgid "  Line length: mean=%.2f sd=%.2f min=%d max=%d\n"
 msgstr ""
 
-#: fread.c:1826
+#: fread.c:1820
 #, c-format
-msgid "  Estimated number of rows: %llu / %.2f = %llu\n"
+msgid "  Estimated number of rows: %<PRIu64> / %.2f = %<PRIu64>\n"
 msgstr ""
 
-#: fread.c:1827
+#: fread.c:1821
 #, c-format
 msgid ""
-"  Initial alloc = %llu rows (%llu + %d%%) using bytes/max(mean-2*sd,min) "
-"clamped between [1.1*estn, 2.0*estn]\n"
+"  Initial alloc = %<PRIu64> rows (%<PRIu64> + %d%%) using bytes/"
+"max(mean-2*sd,min) clamped between [1.1*estn, 2.0*estn]\n"
 msgstr ""
 
-#: fread.c:1831
+#: fread.c:1825
 #, c-format
-msgid "Internal error: sampleLines(%llu) > allocnrow(%llu)"
+msgid "Internal error: sampleLines(%<PRIu64>) > allocnrow(%<PRIu64>)"
 msgstr ""
 
-#: fread.c:1835
+#: fread.c:1829
 #, c-format
-msgid "  Alloc limited to lower nrows=%llu passed in.\n"
+msgid "  Alloc limited to lower nrows=%<PRIu64> passed in.\n"
 msgstr ""
 
-#: fread.c:1847
+#: fread.c:1841
 msgid "[08] Assign column names\n"
 msgstr ""
 
-#: fread.c:1855
+#: fread.c:1849
 #, c-format
 msgid "Unable to allocate %d*%d bytes for column name pointers: %s"
 msgstr ""
 
-#: fread.c:1877
+#: fread.c:1871
 #, c-format
 msgid "Internal error: reading colnames ending on '%c'"
 msgstr ""
 
-#: fread.c:1895
+#: fread.c:1889
 msgid "[09] Apply user overrides on column types\n"
 msgstr ""
 
-#: fread.c:1899
+#: fread.c:1893
 msgid "  Cancelled by user: userOverride() returned false."
 msgstr ""
 
-#: fread.c:1909
+#: fread.c:1903
 #, c-format
 msgid "Failed to allocate %d bytes for size array: %s"
 msgstr ""
 
-#: fread.c:1916
+#: fread.c:1910
 #, c-format
 msgid ""
 "Attempt to override column %d <<%.*s>> of inherent type '%s' down to '%s' "
@@ -2359,169 +2376,173 @@ msgid ""
 "was intended, please coerce to the lower type afterwards."
 msgstr ""
 
-#: fread.c:1930
+#: fread.c:1924
 #, c-format
 msgid "  After %d type and %d drop user overrides : %s\n"
 msgstr ""
 
-#: fread.c:1938
+#: fread.c:1932
 msgid "[10] Allocate memory for the datatable\n"
 msgstr ""
 
-#: fread.c:1939
+#: fread.c:1933
 #, c-format
-msgid "  Allocating %d column slots (%d - %d dropped) with %llu rows\n"
+msgid "  Allocating %d column slots (%d - %d dropped) with %<PRIu64> rows\n"
+msgstr ""
+
+#: fread.c:1987
+#, c-format
+msgid "Buffer size %<PRId64> is too large\n"
+msgstr ""
+
+#: fread.c:1990
+msgid "[11] Read the data\n"
 msgstr ""
 
 #: fread.c:1993
 #, c-format
-msgid "Buffer size %lld is too large\n"
+msgid "  jumps=[%d..%d), chunk_size=%<PRIu64>, total_size=%<PRIu64>\n"
 msgstr ""
 
-#: fread.c:1996
-msgid "[11] Read the data\n"
-msgstr ""
-
-#: fread.c:1999
-#, c-format
-msgid "  jumps=[%d..%d), chunk_size=%llu, total_size=%llu\n"
-msgstr ""
-
-#: fread.c:2011
+#: fread.c:2005
 #, c-format
 msgid "Internal error: Master thread is not thread 0 but thread %d.\n"
 msgstr ""
 
-#: fread.c:2219
+#: fread.c:2213
 #, c-format
 msgid ""
-"Column %d (\"%.*s\") bumped from '%s' to '%s' due to <<%.*s>> on row %llu\n"
+"Column %d (\"%.*s\") bumped from '%s' to '%s' due to <<%.*s>> on row "
+"%<PRIu64>\n"
 msgstr ""
 
-#: fread.c:2268
+#: fread.c:2262
 #, c-format
 msgid ""
 "Internal error: invalid head position. jump=%d, headPos=%p, thisJumpStart="
 "%p, sof=%p"
 msgstr ""
 
-#: fread.c:2341
+#: fread.c:2335
 #, c-format
 msgid ""
-"  Too few rows allocated. Allocating additional %llu rows (now nrows=%llu) "
-"and continue reading from jump %d\n"
+"  Too few rows allocated. Allocating additional %<PRIu64> rows (now nrows="
+"%<PRIu64>) and continue reading from jump %d\n"
 msgstr ""
 
-#: fread.c:2348
+#: fread.c:2342
 #, c-format
 msgid "  Restarting team from jump %d. nSwept==%d quoteRule==%d\n"
 msgstr ""
 
-#: fread.c:2368
+#: fread.c:2362
 #, c-format
 msgid "  %d out-of-sample type bumps: %s\n"
 msgstr ""
 
-#: fread.c:2404
+#: fread.c:2398
 #, c-format
 msgid ""
-"Read %llu rows x %d columns from %s file in %02d:%06.3f wall clock time\n"
+"Read %<PRIu64> rows x %d columns from %s file in %02d:%06.3f wall clock "
+"time\n"
 msgstr ""
 
-#: fread.c:2411
+#: fread.c:2405
 msgid "[12] Finalizing the datatable\n"
 msgstr ""
 
-#: fread.c:2412
+#: fread.c:2406
 msgid "  Type counts:\n"
 msgstr ""
 
-#: fread.c:2414
+#: fread.c:2408
 #, c-format
 msgid "%10d : %-9s '%c'\n"
 msgstr ""
 
-#: fread.c:2430
+#: fread.c:2424
 #, c-format
 msgid "Discarded single-line footer: <<%s>>"
 msgstr ""
 
-#: fread.c:2435
+#: fread.c:2429
 #, c-format
 msgid ""
-"Stopped early on line %llu. Expected %d fields but found %d. Consider "
+"Stopped early on line %<PRIu64>. Expected %d fields but found %d. Consider "
 "fill=TRUE and comment.char=. First discarded non-empty line: <<%s>>"
+msgstr ""
+
+#: fread.c:2435
+#, fuzzy, c-format
+msgid ""
+"Found and resolved improper quoting out-of-sample. First healed line "
+"%<PRIu64>: <<%s>>. If the fields are not quoted (e.g. field separator does "
+"not appear within any field), try quote=\"\" to avoid this warning."
+msgstr ""
+"在前 %d 行中发现并修正了不合适的引号用法。如果字段没有加引号（例如字段间隔符"
+"没有在任何字段内出现），可以尝试使用 quote=\"\" 来避免此警告。"
+
+#: fread.c:2439
+msgid "=============================\n"
 msgstr ""
 
 #: fread.c:2441
 #, c-format
-msgid ""
-"Found and resolved improper quoting out-of-sample. First healed line %llu: <<"
-"%s>>. If the fields are not quoted (e.g. field separator does not appear "
-"within any field), try quote=\"\" to avoid this warning."
-msgstr ""
-
-#: fread.c:2445
-msgid "=============================\n"
-msgstr ""
-
-#: fread.c:2447
-#, c-format
 msgid "%8.3fs (%3.0f%%) Memory map %.3fGB file\n"
 msgstr ""
 
-#: fread.c:2448
+#: fread.c:2442
 #, c-format
 msgid "%8.3fs (%3.0f%%) sep="
 msgstr ""
 
-#: fread.c:2450
+#: fread.c:2444
 #, c-format
 msgid " ncol=%d and header detection\n"
 msgstr ""
 
-#: fread.c:2451
+#: fread.c:2445
 #, c-format
-msgid "%8.3fs (%3.0f%%) Column type detection using %llu sample rows\n"
+msgid "%8.3fs (%3.0f%%) Column type detection using %<PRIu64> sample rows\n"
 msgstr ""
 
-#: fread.c:2453
+#: fread.c:2447
 #, c-format
 msgid ""
-"%8.3fs (%3.0f%%) Allocation of %llu rows x %d cols (%.3fGB) of which %llu "
-"(%3.0f%%) rows used\n"
+"%8.3fs (%3.0f%%) Allocation of %<PRIu64> rows x %d cols (%.3fGB) of which "
+"%<PRIu64> (%3.0f%%) rows used\n"
 msgstr ""
 
-#: fread.c:2457
+#: fread.c:2451
 #, c-format
 msgid ""
 "%8.3fs (%3.0f%%) Reading %d chunks (%d swept) of %.3fMB (each chunk %d rows) "
 "using %d threads\n"
 msgstr ""
 
-#: fread.c:2459
+#: fread.c:2453
 #, c-format
 msgid ""
 "   + %8.3fs (%3.0f%%) Parse to row-major thread buffers (grown %d times)\n"
 msgstr ""
 
-#: fread.c:2460
+#: fread.c:2454
 #, c-format
 msgid "   + %8.3fs (%3.0f%%) Transpose\n"
 msgstr ""
 
-#: fread.c:2461
+#: fread.c:2455
 #, c-format
 msgid "   + %8.3fs (%3.0f%%) Waiting\n"
 msgstr ""
 
-#: fread.c:2462
+#: fread.c:2456
 #, c-format
 msgid ""
 "%8.3fs (%3.0f%%) Rereading %d columns due to out-of-sample type exceptions\n"
 msgstr ""
 
-#: fread.c:2464
+#: fread.c:2458
 #, c-format
 msgid "%8.3fs        Total\n"
 msgstr ""
@@ -2749,9 +2770,11 @@ msgid "%s: processing algo %u took %.3fs\n"
 msgstr ""
 
 #: froll.c:52 froll.c:255
-#, c-format
-msgid "%s: running for input length %llu, window %d, hasna %d, narm %d\n"
+#, fuzzy, c-format
+msgid "%s: running for input length %<PRIu64>, window %d, hasna %d, narm %d\n"
 msgstr ""
+"%s: 正在并行运行, 输入长度 (input length) %llu, 窗口 (window) %d, hasna %d, "
+"narm %d\n"
 
 #: froll.c:72 froll.c:82 froll.c:173 froll.c:275 froll.c:285 froll.c:366
 #: frolladaptive.c:62 frolladaptive.c:151 frolladaptive.c:251
@@ -2778,9 +2801,10 @@ msgid ""
 msgstr "%s: NA (或其他非有限长度值) 出现在输入中, 跳过非NA的输入并当心NA值\n"
 
 #: froll.c:141 froll.c:339
-#, c-format
+#, fuzzy, c-format
 msgid ""
-"%s: running in parallel for input length %llu, window %d, hasna %d, narm %d\n"
+"%s: running in parallel for input length %<PRIu64>, window %d, hasna %d, "
+"narm %d\n"
 msgstr ""
 "%s: 正在并行运行, 输入长度 (input length) %llu, 窗口 (window) %d, hasna %d, "
 "narm %d\n"
@@ -2968,8 +2992,8 @@ msgid "internal error: 'rho' should be an environment"
 msgstr "内部错误: 'rho' 应该为一个环境 (environment)"
 
 #: frolladaptive.c:33 frolladaptive.c:222
-#, c-format
-msgid "%s: running for input length %llu, hasna %d, narm %d\n"
+#, fuzzy, c-format
+msgid "%s: running for input length %<PRIu64>, hasna %d, narm %d\n"
 msgstr "%s: 正在运行, 输入长度 %llu, hasna %d, narm %d\n"
 
 #: frolladaptive.c:39 frolladaptive.c:228
@@ -2983,8 +3007,8 @@ msgid "%s: Unable to allocate memory for cum NA counter"
 msgstr "%s: 无法为 cum NA counter 分配内存"
 
 #: frolladaptive.c:118 frolladaptive.c:302
-#, c-format
-msgid "%s: running in parallel for input length %llu, hasna %d, narm %d\n"
+#, fuzzy, c-format
+msgid "%s: running in parallel for input length %<PRIu64>, hasna %d, narm %d\n"
 msgstr "%s: 正在并行运行, 输入长度 %llu, hasna %d, narm %d\n"
 
 #: fsort.c:111
@@ -3017,7 +3041,8 @@ msgstr ""
 #: fsort.c:177
 #, c-format
 msgid ""
-"counts is %dMB (%d pages per nBatch=%d, batchSize=%lld, lastBatchSize=%lld)\n"
+"counts is %dMB (%d pages per nBatch=%d, batchSize=%<PRIu64>, lastBatchSize="
+"%<PRIu64>)\n"
 msgstr ""
 
 #: fsort.c:230
@@ -3030,10 +3055,10 @@ msgstr ""
 
 #: fsort.c:246
 #, c-format
-msgid "%lld "
+msgid "%<PRIu64> "
 msgstr ""
 
-#: fsort.c:246 fwrite.c:693 fwrite.c:951
+#: fsort.c:246 fwrite.c:694 fwrite.c:952
 msgid "\n"
 msgstr ""
 
@@ -3052,49 +3077,49 @@ msgstr ""
 msgid "%d: %.3f (%4.1f%%)\n"
 msgstr ""
 
-#: fwrite.c:603
+#: fwrite.c:604
 #, c-format
 msgid "buffMB=%d outside [1,1024]"
 msgstr ""
 
-#: fwrite.c:610
+#: fwrite.c:611
 #, c-format
 msgid ""
 "eol must be 1 or more bytes (usually either \\n or \\r\\n) but is length %d"
 msgstr ""
 
-#: fwrite.c:613
+#: fwrite.c:614
 msgid "Column writers: "
 msgstr ""
 
-#: fwrite.c:615 fwrite.c:617 fwrite.c:619
+#: fwrite.c:616 fwrite.c:618 fwrite.c:620
 #, c-format
 msgid "%d "
 msgstr ""
 
-#: fwrite.c:618
+#: fwrite.c:619
 msgid "... "
 msgstr ""
 
-#: fwrite.c:621
+#: fwrite.c:622
 #, c-format
 msgid ""
 "\n"
-"args.doRowNames=%d args.rowNames=%d doQuote=%d args.nrow=%lld args.ncol=%d "
-"eolLen=%d\n"
+"args.doRowNames=%d args.rowNames=%d doQuote=%d args.nrow=%<PRIu64> args.ncol="
+"%d eolLen=%d\n"
 msgstr ""
 
-#: fwrite.c:654
+#: fwrite.c:655
 #, c-format
 msgid "Internal error: type %d has no max length method implemented"
 msgstr ""
 
-#: fwrite.c:662
+#: fwrite.c:663
 #, c-format
-msgid "maxLineLen=%zd. Found in %.3fs\n"
+msgid "maxLineLen=%<PRIu64>. Found in %.3fs\n"
 msgstr ""
 
-#: fwrite.c:682
+#: fwrite.c:683
 #, c-format
 msgid ""
 "%s: '%s'. Failed to open existing file for writing. Do you have write "
@@ -3102,7 +3127,7 @@ msgid ""
 "have it open?"
 msgstr ""
 
-#: fwrite.c:683
+#: fwrite.c:684
 #, c-format
 msgid ""
 "%s: '%s'. Unable to create new file for writing (it does not exist already). "
@@ -3110,65 +3135,65 @@ msgid ""
 "the path exist?"
 msgstr ""
 
-#: fwrite.c:691
+#: fwrite.c:692
 #, c-format
 msgid "Writing bom (%s), yaml (%d characters) and column names (%s) ... "
 msgstr ""
 
-#: fwrite.c:704
+#: fwrite.c:705
 #, c-format
 msgid "Unable to allocate %d MiB for header: %s"
 msgstr ""
 
-#: fwrite.c:732 fwrite.c:793
+#: fwrite.c:733 fwrite.c:794
 msgid "Can't allocate gzip stream structure"
 msgstr ""
 
-#: fwrite.c:738
+#: fwrite.c:739
 #, c-format
 msgid "Unable to allocate %d MiB for zbuffer: %s"
 msgstr ""
 
-#: fwrite.c:753
+#: fwrite.c:754
 #, c-format
 msgid "Compress gzip error: %d"
 msgstr ""
 
-#: fwrite.c:754 fwrite.c:763 fwrite.c:957
+#: fwrite.c:755 fwrite.c:764 fwrite.c:958
 #, c-format
 msgid "%s: '%s'"
 msgstr ""
 
-#: fwrite.c:760
+#: fwrite.c:761
 #, c-format
 msgid "done in %.3fs\n"
 msgstr ""
 
-#: fwrite.c:762
+#: fwrite.c:763
 msgid "No data rows present (nrow==0)\n"
 msgstr ""
 
-#: fwrite.c:780
+#: fwrite.c:781
 #, c-format
 msgid ""
-"Writing %lld rows in %d batches of %d rows (each buffer size %dMB, "
+"Writing %<PRIu64> rows in %d batches of %d rows (each buffer size %dMB, "
 "showProgress=%d, nth=%d)\n"
 msgstr ""
 
-#: fwrite.c:965
+#: fwrite.c:966
 #, c-format
 msgid ""
 "zlib %s (zlib.h %s) deflate() returned error %d with z_stream->msg==\"%s\" "
 "Z_FINISH=%d Z_BLOCK=%d. %s"
 msgstr ""
 
-#: fwrite.c:967
+#: fwrite.c:968
 msgid ""
 "Please include the full output above and below this message in your data."
 "table bug report."
 msgstr ""
 
-#: fwrite.c:968
+#: fwrite.c:969
 msgid ""
 "Please retry fwrite() with verbose=TRUE and include the full output with "
 "your data.table bug report."
@@ -3819,7 +3844,7 @@ msgstr ""
 
 #: init.c:254
 #, c-format
-msgid "Conversion of NA_INT64 via double failed %lld!=%lld"
+msgid "Conversion of NA_INT64 via double failed %<PRIu64>!=%<PRIu64>"
 msgstr ""
 
 #: init.c:258
@@ -4024,8 +4049,8 @@ msgstr ""
 #: rbindlist.c:62
 #, c-format
 msgid ""
-"Total rows in the list is %lld which is larger than the maximum number of "
-"rows, currently %d"
+"Total rows in the list is %<PRIu64> which is larger than the maximum number "
+"of rows, currently %d"
 msgstr ""
 
 #: rbindlist.c:63
@@ -4035,8 +4060,8 @@ msgstr ""
 #: rbindlist.c:71
 #, c-format
 msgid ""
-"Failed to allocate upper bound of %lld unique column names [sum(lapply(l,"
-"ncol))]"
+"Failed to allocate upper bound of %<PRIu64> unique column names "
+"[sum(lapply(l,ncol))]"
 msgstr ""
 
 #: rbindlist.c:102
@@ -4416,7 +4441,7 @@ msgstr ""
 #, c-format
 msgid ""
 "All elements to input list must be of same length. Element [%d] has length "
-"%llu != length of first element = %llu."
+"%<PRIu64> != length of first element = %<PRIu64>."
 msgstr ""
 
 #: uniqlist.c:255
