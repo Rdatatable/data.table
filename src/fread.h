@@ -1,6 +1,7 @@
 #ifndef dt_FREAD_H
 #define dt_FREAD_H
 #include <stdint.h>  // uint32_t
+#include <inttypes.h> // PRId64
 #include <stdlib.h>  // size_t
 #include <stdbool.h> // bool
 #include "myomp.h"

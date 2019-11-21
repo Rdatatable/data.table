@@ -72,7 +72,7 @@ SEXP concat(SEXP vec, SEXP idx) {
   const int *iidx = INTEGER(idx);
   for (int i=0; i<length(idx); ++i) {
     if (iidx[i] < 0 || iidx[i] > length(vec))
-      error(_("concat: 'idx' must take values between 0 and length(vec); 0 <= idx <= length(vec)"));
+      error(_("Internal error in concat: 'idx' must take values between 0 and length(vec); 0 <= idx <= %d"), length(vec)); // # nocov
   }
   PROTECT(v = allocVector(STRSXP, nidx > 5 ? 5 : nidx));
   for (int i=0; i<length(v); ++i) {
@@ -677,6 +677,7 @@ SEXP fmelt(SEXP DT, SEXP id, SEXP measure, SEXP varfactor, SEXP valfactor, SEXP 
   if (!isString(varnames)) error(_("Argument 'variable.name' must be a character vector"));
   if (!isString(valnames)) error(_("Argument 'value.name' must be a character vector"));
   if (!isLogical(verboseArg)) error(_("Argument 'verbose' should be logical TRUE/FALSE"));
+  if (LOGICAL(verboseArg)[0] == TRUE) verbose = TRUE;
   int ncol = LENGTH(DT);
   if (!ncol) {
     if (verbose) Rprintf(_("ncol(data) is 0. Nothing to melt. Returning original data.table."));
