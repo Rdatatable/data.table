@@ -184,6 +184,8 @@ nchar_width = function(x) {
   max(nchar(as.character(x), type = "width"))
 }
 dt_width = function(x, class, names) {
+  # gets the width of the data.table at each column
+  #   and compares it to the console width
   widths = sapply(x, nchar_width)
   if (class) widths = ifelse(widths < 6, 6, widths)
   names = sapply(names, nchar_width)
