@@ -92,10 +92,10 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
   if (quote) colnames(toprint) <- paste0('"', old <- colnames(toprint), '"')
   if (trunc.cols) {
     # allow truncation of columns to print only what will fit in console #XXXX
-    widths = dt_width(DT, TRUE, names(DT))
+    widths = dt_width(toprint, class, names(toprint))
     cons_width = getOption("width")
     cols_to_print = widths < cons_width
-    not_printed = names(DT)[!cols_to_print]
+    not_printed = names(toprint)[!cols_to_print]
     not_printed_paste = paste(not_printed, collapse = ", ")
     to_print = to_print[, cols_to_print]
   }
