@@ -92,7 +92,7 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
   if (quote) colnames(toprint) <- paste0('"', old <- colnames(toprint), '"')
   if (trunc.cols) {
     # allow truncation of columns to print only what will fit in console #XXXX
-    widths = dt_width(x, class, names(x))
+    widths = dt_width(x, class, row.names, names(x))
     cons_width = getOption("width")
     cols_to_print = widths < cons_width
     not_printed = names(x)[!cols_to_print]
@@ -187,13 +187,13 @@ cut_top = function(x) cat(capture.output(x)[-1L], sep = '\n')
 nchar_width = function(x) {
   max(nchar(as.character(x), type = "width"))
 }
-dt_width = function(x, class, rownames, names) {
+dt_width = function(x, class, row.names, names) {
   # gets the width of the data.table at each column
   #   and compares it to the console width
   widths = sapply(x, nchar_width)
   if (class) widths = ifelse(widths < 6, 6, widths)
   names = sapply(names, nchar_width)
   dt_widths = ifelse(widths > names, widths, names)
-  rownum_width = if (rownames) nchar_width(nrow(x)) else 0
+  rownum_width = if (row.names) nchar_width(nrow(x)) else 0
   cumsum(dt_widths + 1) + rownum_width + 2
 }
