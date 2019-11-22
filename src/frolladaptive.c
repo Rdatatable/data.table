@@ -1,7 +1,3 @@
-#include <stdio.h>
-#include <stdint.h>
-#include <stdbool.h>
-#include <Rdefines.h>
 #include "data.table.h"
 
 /* fast adaptive rolling mean - router

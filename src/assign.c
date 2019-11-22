@@ -1,6 +1,4 @@
 #include "data.table.h"
-#include <Rdefines.h>
-#include <Rmath.h>
 
 static void finalizer(SEXP p)
 {
