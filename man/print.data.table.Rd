@@ -61,15 +61,15 @@
   setindexv(DT, "a")
   print(DT, print.keys=TRUE)
 
-  #
+  # `trunc.cols` will make it so only columns that fit in console will be printed
+  #    with a message that states the variables not shown
+  options("width" = 40)
   DT <- data.table(thing_11 = vector("integer", 3),
                    thing_21 = vector("complex", 3),
                    thing_31 = as.IDate(paste0("2016-02-0", 1:3)),
                    thing_41 = "aasdfasdfasdfasdfasdfasdfasdfasdfasdfasdf",
                    thing_51 = vector("integer", 3),
-                   thing_61 = vector("complex", 3),
-                   thing_71 = as.IDate(paste0("2016-02-0", 1:3)),
-                   thing_81 = "aasdfasdfasdfasdfasdfasdfasdfasdfasdfasdf")
+                   thing_61 = vector("complex", 3))
   print(DT, trunc.cols=TRUE)
 }
 

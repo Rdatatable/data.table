@@ -93,9 +93,9 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
   if (trunc.cols) {
     # allow truncation of columns to print only what will fit in console #XXXX
     widths = dt_width(DT, TRUE, names(DT))
-    cons_width = options("width")
+    cons_width = getOption("width")
     cols_to_print = widths < cons_width
-    not_printed = names(DT)[!cols]
+    not_printed = names(DT)[!cols_to_print]
     not_printed_paste = paste(not_printed, collapse = ", ")
     to_print = to_print[, cols_to_print]
   }
@@ -190,5 +190,5 @@ dt_width = function(x, class, names) {
   if (class) widths = ifelse(widths < 6, 6, widths)
   names = sapply(names, nchar_width)
   dt_widths = ifelse(widths > names, widths, names)
-  cumsum(dt_widths + 1)
+  cumsum(dt_widths + 1) + 3
 }
