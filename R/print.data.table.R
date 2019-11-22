@@ -6,11 +6,13 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
                row.names=getOption("datatable.print.rownames"),
                col.names=getOption("datatable.print.colnames"),
                print.keys=getOption("datatable.print.keys"),
+               trunc.cols=getOption("datatable.print.trunc.cols"),
                quote=FALSE,
                timezone=FALSE, ...) {
   # topn  - print the top topn and bottom topn rows with '---' inbetween (5)
   # nrows - under this the whole (small) table is printed, unless topn is provided (100)
   # class - should column class be printed underneath column name? (FALSE)
+  # trunc.cols - should only the columns be printed that can fit in the console? (FALSE)
   if (!col.names %chin% c("auto", "top", "none"))
     stop("Valid options for col.names are 'auto', 'top', and 'none'")
   if (col.names == "none" && class)
@@ -88,6 +90,15 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
     rownames(toprint)[1L] = ""
   }
   if (quote) colnames(toprint) <- paste0('"', old <- colnames(toprint), '"')
+  if (trunc.cols) {
+    # allow truncation of columns to print only what will fit in console #XXXX
+    widths = dt_width(DT, TRUE, names(DT))
+    cons_width = options("width")
+    cols_to_print = widths < cons_width
+    not_printed = names(DT)[!cols]
+    not_printed_paste = paste(not_printed, collapse = ", ")
+    to_print = to_print[, cols_to_print]
+  }
   if (printdots) {
     toprint = rbind(head(toprint, topn + isTRUE(class)), "---"="", tail(toprint, topn))
     rownames(toprint) = format(rownames(toprint), justify="right")
@@ -107,6 +118,10 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
   } else {
     print(toprint, right=TRUE, quote=quote)
   }
+  if (trunc.cols)
+    # prints names of variables not shown in the print
+    cat(sprintf(ngettext(length(not_printed), "Variable not shown: %s", "Variables not shown: %s"), paste0(not_printed_paste, ".")))
+
   invisible(x)
 }
 
@@ -164,3 +179,14 @@ shouldPrint = function(x) {
 #   as opposed to printing a blank line, for excluding col.names per PR #1483
 cut_top = function(x) cat(capture.output(x)[-1L], sep = '\n')
 
+# to calculate widths of data.table and console
+nchar_width = function(x) {
+  max(nchar(as.character(x), type = "width"))
+}
+dt_width = function(x, class, names) {
+  widths = sapply(x, nchar_width)
+  if (class) widths = ifelse(widths < 6, 6, widths)
+  names = sapply(names, nchar_width)
+  dt_widths = ifelse(widths > names, widths, names)
+  cumsum(dt_widths + 1)
+}

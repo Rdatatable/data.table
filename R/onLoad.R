@@ -71,14 +71,15 @@
   # In fread and fwrite we have moved back to using getOption's default argument since it is unlikely fread and fread will be called in a loop many times, plus they
   # are relatively heavy functions where the overhead in getOption() would not be noticed.  It's only really [.data.table where getOption default bit.
   # Improvement to base::getOption() now submitted (100x; 5s down to 0.05s):  https://bugs.r-project.org/bugzilla/show_bug.cgi?id=17394
-  opts = c("datatable.verbose"="FALSE",            # datatable.<argument name>
+  opts = c("datatable.verbose"="FALSE",        # datatable.<argument name>
        "datatable.optimize"="Inf",             # datatable.<argument name>
        "datatable.print.nrows"="100L",         # datatable.<argument name>
        "datatable.print.topn"="5L",            # datatable.<argument name>
        "datatable.print.class"="FALSE",        # for print.data.table
        "datatable.print.rownames"="TRUE",      # for print.data.table
-       "datatable.print.colnames"="'auto'",      # for print.data.table
+       "datatable.print.colnames"="'auto'",    # for print.data.table
        "datatable.print.keys"="FALSE",         # for print.data.table
+       "datatable.print.trunc.cols"="FALSE",   # for print.data.table
        "datatable.allow.cartesian"="FALSE",    # datatable.<argument name>
        "datatable.dfdispatchwarn"="TRUE",                   # not a function argument
        "datatable.warnredundantby"="TRUE",                  # not a function argument
