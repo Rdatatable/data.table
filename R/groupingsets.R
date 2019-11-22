@@ -83,7 +83,7 @@ groupingsets.data.table = function(x, j, by, sets, .SDcols, id = FALSE, jj, ...)
     setcolorder(empty, c("grouping", by, setdiff(names(empty), c("grouping", by))))
   }
   # workaround for rbindlist fill=TRUE on integer64 #1459
-  int64.cols = vapply(empty, inherits, logical(1L), "integer64")
+  int64.cols = vapply_1b(empty, inherits, "integer64")
   int64.cols = names(int64.cols)[int64.cols]
   if (length(int64.cols) && !requireNamespace("bit64", quietly=TRUE))
     stop("Using integer64 class columns require to have 'bit64' package installed.") # nocov
