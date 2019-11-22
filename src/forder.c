@@ -500,7 +500,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
   int keyAlloc = (ncol+n_cplx)*8 + 1;         // +1 for NULL to mark end; calloc to initialize with NULLs
   key = calloc(keyAlloc, sizeof(uint8_t *));  // needs to be before loop because part II relies on part I, column-by-column.
   if (!key)
-    STOP("Unable to allocate %llu bytes of working memory", (unsigned long long)(keyAlloc*sizeof(uint8_t *)));  // # nocov
+    STOP("Unable to allocate %"PRId64" bytes of working memory", (uint64_t)keyAlloc*sizeof(uint8_t *));  // # nocov
   nradix=0; // the current byte we're writing this column to; might be squashing into it (spare>0)
   int spare=0;  // the amount of bits remaining on the right of the current nradix byte
   bool isReal=false;
@@ -569,7 +569,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
     }
 
     uint64_t range = max-min+1 +1/*NA*/ +isReal*3/*NaN, -Inf, +Inf*/;
-    // Rprintf("range=%llu  min=%llu  max=%llu  na_count==%d\n", range, min, max, na_count);
+    // Rprintf("range=%"PRIu64"  min=%"PRIu64"  max=%"PRIu64"  na_count==%d\n", range, min, max, na_count);
 
     int maxBit=0;
     while (range) { maxBit++; range>>=1; }
@@ -604,7 +604,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
       if (key[nradix+b]==NULL) {
         uint8_t *tt = calloc(nrow, sizeof(uint8_t));  // 0 initialize so that NA's can just skip (NA is always the 0 offset)
         if (!tt)
-          STOP("Unable to allocate %llu bytes of working memory", (unsigned long long)(nrow * sizeof(uint8_t))); // # nocov
+          STOP("Unable to allocate %"PRIu64" bytes of working memory", (uint64_t)nrow*sizeof(uint8_t)); // # nocov
         key[nradix+b] = tt;
       }
     }
@@ -622,7 +622,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
 
     const uint64_t naval = ((nalast==1) == asc) ? max+1+isReal*2 : min-1-isReal*2;
     const uint64_t nanval = ((nalast==1) == asc) ? max+2 : min-2;  // only used when isReal
-    // Rprintf("asc=%d  min2=%llu  max2=%llu  naval==%llu  nanval==%llu\n", asc, min2, max2, naval, nanval);
+    // Rprintf("asc=%d  min2=%"PRIu64"  max2=%"PRIu64"  naval==%"PRIu64"  nanval==%"PRIu64"\n", asc, min2, max2, naval, nanval);
 
     // several columns could squash into 1 byte. due to this bit squashing is why we deal
     // with asc|desc here, otherwise it could be done in the ugrp sorting by reversing the ugrp insert sort
@@ -794,7 +794,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
       Rprintf("Timing block %2d%s = %8.3f   %8d\n", i, (i>=17&&i<=19)?"(*)":"   ", tblock[i], nblock[i]);
     }
     for (int i=0; i<=256; i++) {
-      if (stat[i]) Rprintf("stat[%03d]==%10zd\n", i, stat[i]);
+      if (stat[i]) Rprintf("stat[%03d]==%20"PRIu64"\n", i, (uint64_t)stat[i]);
     }
   }
   #endif
