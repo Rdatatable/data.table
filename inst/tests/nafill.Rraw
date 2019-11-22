@@ -152,12 +152,13 @@ test(4.24, colnamesInt(dt, "a"), error="has no names")
 
 # verbose
 dt = data.table(a=c(1L, 2L, NA_integer_), b=c(1, 2, NA_real_))
-test(5.01, nafill(dt, "locf", verbose=TRUE), output="nafillInteger: took.*nafillDouble: took.*nafillR.*took")
-test(5.02, setnafill(dt, "locf", verbose=TRUE), output="nafillInteger: took.*nafillDouble: took.*nafillR.*took")
-test(5.03, nafill(dt, "locf", verbose=NA), error="verbose must be TRUE or FALSE")
+old=options(datatable.verbose=TRUE)
+test(5.01, nafill(dt, "locf"), output="nafillInteger: took.*nafillDouble: took.*nafillR.*took")
+test(5.02, setnafill(dt, "locf"), output="nafillInteger: took.*nafillDouble: took.*nafillR.*took")
 if (test_bit64) {
-  test(5.04, nafill(as.integer64(c(NA,2,NA,3)), "locf", verbose=TRUE), as.integer64(c(NA,2,2,3)), output="nafillInteger64: took.*nafillR.*took")
+  test(5.03, nafill(as.integer64(c(NA,2,NA,3)), "locf"), as.integer64(c(NA,2,2,3)), output="nafillInteger64: took.*nafillR.*took")
 }
+options(old)
 
 # coerceFill
 if (test_bit64) {
