@@ -107,6 +107,10 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
     } else {
       print(toprint, right=TRUE, quote=quote)
     }
+    if (trunc.cols)
+      # prints names of variables not shown in the print
+      cat(sprintf(ngettext(length(not_printed), "Variable not shown: %s", "Variables not shown: %s"), paste0(not_printed_paste, ".")))
+
     return(invisible(x))
   }
   if (nrow(toprint)>20L && col.names == "auto")
@@ -183,12 +187,13 @@ cut_top = function(x) cat(capture.output(x)[-1L], sep = '\n')
 nchar_width = function(x) {
   max(nchar(as.character(x), type = "width"))
 }
-dt_width = function(x, class, names) {
+dt_width = function(x, class, rownames, names) {
   # gets the width of the data.table at each column
   #   and compares it to the console width
   widths = sapply(x, nchar_width)
   if (class) widths = ifelse(widths < 6, 6, widths)
   names = sapply(names, nchar_width)
   dt_widths = ifelse(widths > names, widths, names)
-  cumsum(dt_widths + 1) + 3
+  rownum_width = if (rownames) nchar_width(nrow(x)) else 0
+  cumsum(dt_widths + 1) + rownum_width + 2
 }

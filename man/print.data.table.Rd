@@ -63,6 +63,7 @@
 
   # `trunc.cols` will make it so only columns that fit in console will be printed
   #    with a message that states the variables not shown
+  old_width = getOption("width")
   options("width" = 40)
   DT <- data.table(thing_11 = vector("integer", 3),
                    thing_21 = vector("complex", 3),
@@ -71,5 +72,6 @@
                    thing_51 = vector("integer", 3),
                    thing_61 = vector("complex", 3))
   print(DT, trunc.cols=TRUE)
+  options("width" = old_width)
 }
 
