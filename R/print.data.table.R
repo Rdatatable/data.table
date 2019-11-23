@@ -97,7 +97,9 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
     cols_to_print = widths < cons_width
     not_printed = names(x)[!cols_to_print]
     not_printed_paste = paste(not_printed, collapse = ", ")
-    toprint = toprint[, cols_to_print]
+    # When nrow(toprint) = 1, attributes get lost in the subset,
+    #   function below adds those back when necessary
+    toprint = toprint_subset(toprint, cols_to_print)
   }
   if (printdots) {
     toprint = rbind(head(toprint, topn + isTRUE(class)), "---"="", tail(toprint, topn))
@@ -107,7 +109,7 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
     } else {
       print(toprint, right=TRUE, quote=quote)
     }
-    if (trunc.cols)
+    if (trunc.cols && length(not_printed) > 0)
       # prints names of variables not shown in the print
       cat(sprintf(ngettext(length(not_printed), "Variable not shown: %s", "Variables not shown: %s"), paste0(not_printed_paste, ".")))
 
@@ -122,7 +124,7 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
   } else {
     print(toprint, right=TRUE, quote=quote)
   }
-  if (trunc.cols)
+  if (trunc.cols && length(not_printed) > 0)
     # prints names of variables not shown in the print
     cat(sprintf(ngettext(length(not_printed), "Variable not shown: %s", "Variables not shown: %s"), paste0(not_printed_paste, ".")))
 
@@ -196,4 +198,16 @@ dt_width = function(x, class, row.names, names) {
   dt_widths = ifelse(widths > names, widths, names)
   rownum_width = if (row.names) nchar_width(nrow(x)) else 0
   cumsum(dt_widths + 1) + rownum_width + 2
+}
+toprint_subset <- function(x, cols_to_print) {
+  if (nrow(x) == 1){
+    atts = attributes(x)
+    atts$dim = c(1, sum(cols_to_print))
+    atts$dimnames[[2]] = atts$dimnames[[2]][cols_to_print]
+    x = x[, cols_to_print]
+    attributes(x) = atts
+    x
+  } else {
+    x[, cols_to_print]
+  }
 }
