@@ -8469,9 +8469,13 @@ test(1613.582, all(all.equal(x, y, ignore.row.order = FALSE, tolerance = sqrt(.M
 # fix for #4042
 test(1613.59, all.equal.data.table(1L, 2L), error = "is.data.table(target) is not TRUE")
 test(1613.601, all.equal(data.table(a=1), data.frame(a=1)), "target is data.table, current is data.frame")
+test(1613.602, all.equal(data.table(a=1), data.frame(a=1), check.attributes = F))
+test(1613.603, all.equal(data.table(a=1), list(a=1), check.attributes = F))
+test(1613.604, all.equal(data.table(a=c(1,1), b=c(2,2)), list(a=1,b=c(2,2)), check.attributes = F), "target is data.table and current is not of a comparable form")
+test(1613.605, all.equal(data.table(a=1), 1L, check.attributes = F), "target is data.table and current is not of a comparable form")
 L1 <- list(a = data.table(1L), b = setattr("foo", "tbl", data.table(1L)))
-L2 <- list(a = 1L, b = setattr("foo", "tbl", data.frame(1L)))
-test(1613.604, is.character(all.equal(L1, L2)))
+L2 <- list(a = list(1L), b = setattr("foo", "tbl", 1L))
+test(1613.606, is.character(all.equal(L1, L2)))
 
 DT1 <- data.table(a = 1:4, b = letters[1:4], .seqn = 5L)
 DT2 <- data.table(a = 4:1, b = letters[4:1], .seqn = 5L)
