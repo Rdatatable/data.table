@@ -16381,6 +16381,10 @@ test(2121.5, DT[, .(.N=.N), by=a], data.table(a=c(1,2), .N=2:1)) # user supplied
 ## { ending in NULL should retain that NULL, #4061
 test(2121.6, DT[ , {.(a, b=b+1); NULL}], NULL)
 
+# aggregating and grouping by same column #3103
+dt = data.table(SomeNumberA=c(1,1,1),SomeNumberB=c(1,1,1))
+test(2122.1, dt[, .(.N, TotalA=sum(SomeNumberA), TotalB=sum(SomeNumberB)), by=SomeNumberA], data.table(SomeNumberA=1, N=3L, TotalA=1, TotalB=3))
+
 
 ###################################
 #  Add new tests above this line  #

@@ -10,6 +10,8 @@
 
 ## BUG FIXES
 
+1. grouping and aggregating by same column could sometimes raise error, [#3103](https://github.com/Rdatatable/data.table/issues/3103). Thanks to @cbailiss for reporting.
+
 ## NOTES
 
 1. Links in the manual were creating warnings when installing HTML, [#4000](https://github.com/Rdatatable/data.table/issues/4000). Thanks to Morgan Jacob.
