@@ -89,14 +89,14 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
     toprint = rbind(abbs, toprint)
     rownames(toprint)[1L] = ""
   }
+  if (isFALSE(class)) abbs = ""
   if (quote) colnames(toprint) <- paste0('"', old <- colnames(toprint), '"')
-  if (trunc.cols) {
+  if (isTRUE(trunc.cols)) {
     # allow truncation of columns to print only what will fit in console #XXXX
     widths = dt_width(x, class, row.names, names(x))
     cons_width = getOption("width")
     cols_to_print = widths < cons_width
     not_printed = names(x)[!cols_to_print]
-    not_printed_paste = paste(not_printed, collapse = ", ")
     # When nrow(toprint) = 1, attributes get lost in the subset,
     #   function below adds those back when necessary
     toprint = toprint_subset(toprint, cols_to_print)
@@ -111,7 +111,7 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
     }
     if (trunc.cols && length(not_printed) > 0)
       # prints names of variables not shown in the print
-      cat(sprintf(ngettext(length(not_printed), "Variable not shown: %s", "Variables not shown: %s"), paste0(not_printed_paste, ".")))
+      trunc_cols_message(not_printed, abbs)
 
     return(invisible(x))
   }
@@ -126,7 +126,7 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
   }
   if (trunc.cols && length(not_printed) > 0)
     # prints names of variables not shown in the print
-    cat(sprintf(ngettext(length(not_printed), "Variable not shown: %s", "Variables not shown: %s"), paste0(not_printed_paste, ".")))
+    trunc_cols_message(not_printed, abbs)
 
   invisible(x)
 }
@@ -199,7 +199,7 @@ dt_width = function(x, class, row.names, names) {
   rownum_width = if (row.names) nchar_width(nrow(x)) else 0
   cumsum(dt_widths + 1) + rownum_width + 2
 }
-toprint_subset <- function(x, cols_to_print) {
+toprint_subset = function(x, cols_to_print) {
   if (nrow(x) == 1){
     atts = attributes(x)
     atts$dim = c(1, sum(cols_to_print))
@@ -211,3 +211,13 @@ toprint_subset <- function(x, cols_to_print) {
     x[, cols_to_print]
   }
 }
+trunc_cols_message = function(not_printed, abbs){
+  n = length(not_printed)
+  classes = tail(abbs, n)
+  not_printed_paste = paste(not_printed, classes, collapse = ", ")
+  cat(sprintf(ngettext(n,
+                       paste0("1 variable not shown: %s"),
+                       paste0(n, " variables not shown: %s")),
+              not_printed_paste))
+}
+

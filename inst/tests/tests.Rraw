@@ -16392,7 +16392,7 @@ test(2122.1,
      capture.output(print(DT, trunc.cols=TRUE)),
      c("               a             b",
        "1: aaaaaaaaaaaaa bbbbbbbbbbbbb",
-       "Variable not shown: c." ))
+       "1 variable not shown: c " ))
 # Printing with dots
 DT = data.table(a = vector("integer", 101),
                 b = "bbbbbbbbbbbbb",
@@ -16410,7 +16410,7 @@ test(2122.2, capture.output(print(DT, trunc.cols=TRUE)),
        " 99: 0 bbbbbbbbbbbbb ccccccccccccc",
        "100: 0 bbbbbbbbbbbbb ccccccccccccc",
        "101: 0 bbbbbbbbbbbbb ccccccccccccc"))
-test(2122.3, capture.output(print(DT, trunc.cols=TRUE, row.names = FALSE)),
+test(2122.3, capture.output(print(DT, trunc.cols=TRUE, row.names=FALSE)),
      c("    a             b             c",
        "    0 bbbbbbbbbbbbb ccccccccccccc",
        "    0 bbbbbbbbbbbbb ccccccccccccc",
@@ -16437,7 +16437,7 @@ test(2122.4, capture.output(print(DT, trunc.cols=TRUE, class=TRUE)),
        " 99:     0 bbbbbbbbbbbbb",
        "100:     0 bbbbbbbbbbbbb",
        "101:     0 bbbbbbbbbbbbb",
-       "Variable not shown: c."))
+       "1 variable not shown: c <char>"))
 test(2122.5, capture.output(print(DT, trunc.cols=TRUE, class=TRUE, row.names=FALSE)),
      c("        a             b             c",
        "    <int>        <char>        <char>",
@@ -16460,7 +16460,7 @@ test(2122.6, capture.output(print(DT, trunc.cols=TRUE)),
      c("   a             b             c",
        "1: 0 bbbbbbbbbbbbb ccccccccccccc",
        "2: 0 bbbbbbbbbbbbb ccccccccccccc",
-       "Variable not shown: d."))
+       "1 variable not shown: d "))
 options(old_width)
 
 
