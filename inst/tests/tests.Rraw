@@ -16389,11 +16389,10 @@ DT = data.table(a = "aaaaaaaaaaaaa",
                 b = "bbbbbbbbbbbbb",
                 c = "ccccccccccccc",
                 d = "ddddddddddddd")
-test(2122.1,
-     capture.output(print(DT, trunc.cols=TRUE)),
+test(2122,
+     capture.output(print(DT, trunc.cols=TRUE))[1:2],
      c("               a             b",
-       "1: aaaaaaaaaaaaa bbbbbbbbbbbbb",
-       "2 variables not shown: c, d" ))
+       "1: aaaaaaaaaaaaa bbbbbbbbbbbbb"))
 # Printing with dots
 DT = data.table(a = vector("integer", 102),
                 b = "bbbbbbbbbbbbb",
