@@ -89,7 +89,7 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
     toprint = rbind(abbs, toprint)
     rownames(toprint)[1L] = ""
   }
-  if (isFALSE(class)) abbs = ""
+  if (isFALSE(class) || (isTRUE(class) && col.names == "none")) abbs = ""
   if (quote) colnames(toprint) <- paste0('"', old <- colnames(toprint), '"')
   if (isTRUE(trunc.cols)) {
     # allow truncation of columns to print only what will fit in console PR #4074

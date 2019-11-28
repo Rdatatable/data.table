@@ -16387,16 +16387,18 @@ old_width = options("width" = 40)
 # Single row printing (to check issue with losing attributes)
 DT = data.table(a = "aaaaaaaaaaaaa",
                 b = "bbbbbbbbbbbbb",
-                c = "ccccccccccccc")
+                c = "ccccccccccccc",
+                d = "ddddddddddddd")
 test(2122.1,
      capture.output(print(DT, trunc.cols=TRUE)),
      c("               a             b",
        "1: aaaaaaaaaaaaa bbbbbbbbbbbbb",
-       "1 variable not shown: c" ))
+       "2 variables not shown: c, d " ))
 # Printing with dots
-DT = data.table(a = vector("integer", 101),
+DT = data.table(a = vector("integer", 102),
                 b = "bbbbbbbbbbbbb",
-                c = "ccccccccccccc")
+                c = "ccccccccccccc",
+                d = c("ddddddddddddd", "d"))
 test(2122.2, capture.output(print(DT, trunc.cols=TRUE)),
      c("     a             b             c",
        "  1: 0 bbbbbbbbbbbbb ccccccccccccc",
@@ -16405,11 +16407,12 @@ test(2122.2, capture.output(print(DT, trunc.cols=TRUE)),
        "  4: 0 bbbbbbbbbbbbb ccccccccccccc",
        "  5: 0 bbbbbbbbbbbbb ccccccccccccc",
        " ---                              ",
-       " 97: 0 bbbbbbbbbbbbb ccccccccccccc",
        " 98: 0 bbbbbbbbbbbbb ccccccccccccc",
        " 99: 0 bbbbbbbbbbbbb ccccccccccccc",
        "100: 0 bbbbbbbbbbbbb ccccccccccccc",
-       "101: 0 bbbbbbbbbbbbb ccccccccccccc"))
+       "101: 0 bbbbbbbbbbbbb ccccccccccccc",
+       "102: 0 bbbbbbbbbbbbb ccccccccccccc",
+       "1 variable not shown: d "))
 test(2122.3, capture.output(print(DT, trunc.cols=TRUE, row.names=FALSE)),
      c("    a             b             c",
        "    0 bbbbbbbbbbbbb ccccccccccccc",
@@ -16422,45 +16425,31 @@ test(2122.3, capture.output(print(DT, trunc.cols=TRUE, row.names=FALSE)),
        "    0 bbbbbbbbbbbbb ccccccccccccc",
        "    0 bbbbbbbbbbbbb ccccccccccccc",
        "    0 bbbbbbbbbbbbb ccccccccccccc",
-       "    0 bbbbbbbbbbbbb ccccccccccccc"))
-test(2122.4, capture.output(print(DT, trunc.cols=TRUE, class=TRUE)),
-     c("         a             b",
-       "     <int>        <char>",
-       "  1:     0 bbbbbbbbbbbbb",
-       "  2:     0 bbbbbbbbbbbbb",
-       "  3:     0 bbbbbbbbbbbbb",
-       "  4:     0 bbbbbbbbbbbbb",
-       "  5:     0 bbbbbbbbbbbbb",
-       " ---                    ",
-       " 97:     0 bbbbbbbbbbbbb",
-       " 98:     0 bbbbbbbbbbbbb",
-       " 99:     0 bbbbbbbbbbbbb",
-       "100:     0 bbbbbbbbbbbbb",
-       "101:     0 bbbbbbbbbbbbb",
-       "1 variable not shown: c <char>"))
-test(2122.5, capture.output(print(DT, trunc.cols=TRUE, class=TRUE, row.names=FALSE)),
+       "    0 bbbbbbbbbbbbb ccccccccccccc",
+       "1 variable not shown: d " ))
+test(2122.4, capture.output(print(DT, trunc.cols=TRUE, class=TRUE))[14],
+     "1 variable not shown: d <char> ")
+test(2122.5, capture.output(print(DT, trunc.cols=TRUE, class=TRUE, row.names=FALSE))[c(1,14)],
      c("        a             b             c",
-       "    <int>        <char>        <char>",
-       "        0 bbbbbbbbbbbbb ccccccccccccc",
-       "        0 bbbbbbbbbbbbb ccccccccccccc",
-       "        0 bbbbbbbbbbbbb ccccccccccccc",
-       "        0 bbbbbbbbbbbbb ccccccccccccc",
-       "        0 bbbbbbbbbbbbb ccccccccccccc",
-       "---                                  ",
-       "        0 bbbbbbbbbbbbb ccccccccccccc",
-       "        0 bbbbbbbbbbbbb ccccccccccccc",
-       "        0 bbbbbbbbbbbbb ccccccccccccc",
-       "        0 bbbbbbbbbbbbb ccccccccccccc",
-       "        0 bbbbbbbbbbbbb ccccccccccccc"))
+       "1 variable not shown: d <char> " ))
+test(2122.6, capture.output(print(DT, trunc.cols=TRUE, col.names="none")),
+     c("1: 0 bbbbbbbbbbbbb"
+       "2: 0 bbbbbbbbbbbbb"
+       "2 variables not shown: c, d "))
+test(2122.7, capture.output(print(DT, trunc.cols=TRUE, class=TRUE, col.names="none")),
+     c("1: 0 bbbbbbbbbbbbb"
+       "2: 0 bbbbbbbbbbbbb"
+       "2 variables not shown: c, d "))
+options("width" = 20)
 DT = data.table(a = vector("integer", 2),
                 b = "bbbbbbbbbbbbb",
                 c = "ccccccccccccc",
                 d = "ddddddddddddd")
-test(2122.6, capture.output(print(DT, trunc.cols=TRUE)),
-     c("   a             b             c",
-       "1: 0 bbbbbbbbbbbbb ccccccccccccc",
-       "2: 0 bbbbbbbbbbbbb ccccccccccccc",
-       "1 variable not shown: d"))
+test(2122.8, capture.output(print(DT, trunc.cols=TRUE)),
+     c("   a             b",
+       "1: 0 bbbbbbbbbbbbb",
+       "2: 0 bbbbbbbbbbbbb",
+       "2 variables not shown: c, d "))
 options(old_width)
 
 
