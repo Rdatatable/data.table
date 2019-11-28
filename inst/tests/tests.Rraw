@@ -16389,6 +16389,7 @@ DT = data.table(a = "aaaaaaaaaaaaa",
                 b = "bbbbbbbbbbbbb",
                 c = "ccccccccccccc",
                 d = "ddddddddddddd")
+
 test(2122.01,
      capture.output(print(DT, trunc.cols=TRUE))[3],
      "2 variables not shown: [c, d]")
@@ -16411,6 +16412,7 @@ test(2122.02, capture.output(print(DT, trunc.cols=TRUE)),
        "101: 0 bbbbbbbbbbbbb ccccccccccccc",
        "102: 0 bbbbbbbbbbbbb ccccccccccccc",
        "1 variable not shown: [d]"))
+
 test(2122.03, capture.output(print(DT, trunc.cols=TRUE, row.names=FALSE)),
      c("    a             b             c",
        "    0 bbbbbbbbbbbbb ccccccccccccc",
@@ -16425,6 +16427,7 @@ test(2122.03, capture.output(print(DT, trunc.cols=TRUE, row.names=FALSE)),
        "    0 bbbbbbbbbbbbb ccccccccccccc",
        "    0 bbbbbbbbbbbbb ccccccccccccc",
        "1 variable not shown: [d]" ))
+
 test(2122.04, capture.output(print(DT, trunc.cols=TRUE, class=TRUE))[14],
      "1 variable not shown: [d <char>]")
 test(2122.05, capture.output(print(DT, trunc.cols=TRUE, class=TRUE, row.names=FALSE))[c(1,14)],

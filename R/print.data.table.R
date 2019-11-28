@@ -93,11 +93,14 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
   if (quote) colnames(toprint) <- paste0('"', old <- colnames(toprint), '"')
   if (isTRUE(trunc.cols)) {
     # allow truncation of columns to print only what will fit in console PR #4074
-    widths = dt_width(toprint, class, row.names, col.names, colnames(x))
+    widths = dt_width(toprint, class, row.names, col.names)
     cons_width = getOption("width")
-    cols_to_print = widths <= cons_width
+    cols_to_print = widths < cons_width
     not_printed = colnames(toprint)[!cols_to_print]
-    if (sum(cols_to_print) == 0L) stop("Width of console too small to print a single column when `trunc.cols=TRUE`. Consider increasing the width of the console or use `trunc.cols=FALSE`.", call. = FALSE)
+    if (!any(cols_to_print)) {
+      trunc_cols_message(not_printed, abbs, class, col.names)
+      return(invisible(x))
+    }
     # When nrow(toprint) = 1, attributes get lost in the subset,
     #   function below adds those back when necessary
     toprint = toprint_subset(toprint, cols_to_print)
@@ -112,7 +115,7 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
     }
     if (trunc.cols && length(not_printed) > 0L)
       # prints names of variables not shown in the print
-      trunc_cols_message(not_printed, abbs, class)
+      trunc_cols_message(not_printed, abbs, class, col.names)
 
     return(invisible(x))
   }
@@ -127,7 +130,7 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
   }
   if (trunc.cols && length(not_printed) > 0L)
     # prints names of variables not shown in the print
-    trunc_cols_message(not_printed, abbs, class)
+    trunc_cols_message(not_printed, abbs, class, col.names)
 
   invisible(x)
 }
@@ -187,23 +190,15 @@ shouldPrint = function(x) {
 cut_top = function(x) cat(capture.output(x)[-1L], sep = '\n')
 
 # to calculate widths of data.table for PR #4074
-nchar_width = function(x) {
-  each_width = nchar(x, type = "width")
-  widths = vector("numeric", ncol(x))
-  for (i in 1L:ncol(x)){
-    widths[i] = max(each_width[, i])
-  }
-  widths
-}
 # gets the width of the data.table at each column
 #   and compares it to the console width
-dt_width = function(x, class, row.names, col.names, names) {
-  widths = nchar_width(x)
-  if (class) widths = ifelse(widths < 6L, 6L, widths)
-  if (col.names == "none") names = sapply(names, nchar, type = "width") else names = 0L
-  dt_widths = ifelse(widths > names, widths, names)
-  rownum_width = if (row.names) max(nchar(as.character(rownames(x)), type = "width")) else 0L
-  cumsum(dt_widths + 1L) + rownum_width + 1L
+dt_width = function(x, class, row.names, col.names) {
+  widths = apply(nchar(x, type='width'), 2L, max)
+  if (class) widths = pmax(widths, 6L)
+  if (col.names != "none") names = sapply(colnames(x), nchar, type = "width") else names = 0L
+  dt_widths = pmax(widths, names)
+  rownum_width = if (row.names) as.integer(ceiling(log10(nrow(x)))+2) else 0L
+  cumsum(dt_widths + 1L) + rownum_width
 }
 # keeps the dim and dimnames attributes
 toprint_subset = function(x, cols_to_print) {
@@ -219,14 +214,14 @@ toprint_subset = function(x, cols_to_print) {
   }
 }
 # message for when trunc.cols=TRUE and some columns are not printed
-trunc_cols_message = function(not_printed, abbs, class){
+trunc_cols_message = function(not_printed, abbs, class, col.names){
   n = length(not_printed)
-  if (class) classes = paste0(" ", tail(abbs, n)) else classes = ""
-  not_printed_paste = paste0(not_printed, classes, collapse = ", ")
-  cat(sprintf(ngettext(n,
-                       paste0("1 variable not shown: %s"),
-                       paste0(n, " variables not shown: %s")),
-              not_printed_paste),
-      "\n")
+  if (class && col.names != "none") classes = paste0(" ", tail(abbs, n)) else classes = ""
+  cat(sprintf(
+    ngettext(n,
+             "%d variable not shown: %s\n",
+             "%d variables not shown: %s\n"),
+    n, brackify(paste0(not_printed, classes))
+  ))
 }
 
