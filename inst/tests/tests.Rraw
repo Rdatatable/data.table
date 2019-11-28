@@ -16432,14 +16432,13 @@ test(2122.4, capture.output(print(DT, trunc.cols=TRUE, class=TRUE))[14],
 test(2122.5, capture.output(print(DT, trunc.cols=TRUE, class=TRUE, row.names=FALSE))[c(1,14)],
      c("        a             b             c",
        "1 variable not shown: d <char> " ))
-test(2122.6, capture.output(print(DT, trunc.cols=TRUE, col.names="none")),
-     c("1: 0 bbbbbbbbbbbbb"
-       "2: 0 bbbbbbbbbbbbb"
-       "2 variables not shown: c, d "))
-test(2122.7, capture.output(print(DT, trunc.cols=TRUE, class=TRUE, col.names="none")),
-     c("1: 0 bbbbbbbbbbbbb"
-       "2: 0 bbbbbbbbbbbbb"
-       "2 variables not shown: c, d "))
+test(2122.6, capture.output(print(DT, trunc.cols=TRUE, col.names="none"))[c(1,12)],
+     c("  1: 0 bbbbbbbbbbbbb ccccccccccccc",
+       "1 variable not shown: d " ))
+test(2122.7, capture.output(print(DT, trunc.cols=TRUE, class=TRUE, col.names="none"))[c(1,13)],
+     c("  1: 0 bbbbbbbbbbbbb ccccccccccccc",
+       "1 variable not shown: d  " ),
+     warning = "Column classes will be suppressed when col.names is 'none'")
 options("width" = 20)
 DT = data.table(a = vector("integer", 2),
                 b = "bbbbbbbbbbbbb",
