@@ -93,7 +93,7 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
   if (quote) colnames(toprint) <- paste0('"', old <- colnames(toprint), '"')
   if (isTRUE(trunc.cols)) {
     # allow truncation of columns to print only what will fit in console PR #4074
-    widths = dt_width(toprint, class, row.names, colnames(x))
+    widths = dt_width(toprint, class, row.names, col.names, colnames(x))
     cons_width = getOption("width")
     cols_to_print = widths <= cons_width
     not_printed = names(x)[!cols_to_print]
@@ -223,6 +223,7 @@ trunc_cols_message = function(not_printed, abbs){
   cat(sprintf(ngettext(n,
                        paste0("1 variable not shown: %s"),
                        paste0(n, " variables not shown: %s")),
-              not_printed_paste))
+              not_printed_paste),
+      "\n")
 }
 
