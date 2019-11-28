@@ -98,7 +98,7 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
     cols_to_print = widths < cons_width
     not_printed = colnames(toprint)[!cols_to_print]
     if (!any(cols_to_print)) {
-      trunc_cols_message(not_printed, abbs, class)
+      trunc_cols_message(not_printed, abbs, class, col.names)
       return(invisible(x))
     }
     # When nrow(toprint) = 1, attributes get lost in the subset,
@@ -115,7 +115,7 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
     }
     if (trunc.cols && length(not_printed) > 0L)
       # prints names of variables not shown in the print
-      trunc_cols_message(not_printed, abbs, class)
+      trunc_cols_message(not_printed, abbs, class, col.names)
 
     return(invisible(x))
   }
@@ -130,7 +130,7 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
   }
   if (trunc.cols && length(not_printed) > 0L)
     # prints names of variables not shown in the print
-    trunc_cols_message(not_printed, abbs, class)
+    trunc_cols_message(not_printed, abbs, class, col.names)
 
   invisible(x)
 }
@@ -214,9 +214,9 @@ toprint_subset = function(x, cols_to_print) {
   }
 }
 # message for when trunc.cols=TRUE and some columns are not printed
-trunc_cols_message = function(not_printed, abbs, class){
+trunc_cols_message = function(not_printed, abbs, class, col.names){
   n = length(not_printed)
-  if (class) classes = paste0(" ", tail(abbs, n)) else classes = ""
+  if (class && col.names != "none") classes = paste0(" ", tail(abbs, n)) else classes = ""
   cat(sprintf(
     ngettext(n,
              "%d variable not shown: %s\n",
