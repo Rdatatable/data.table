@@ -12454,9 +12454,7 @@ test(1897.2, attributes(attr(DT, 'index')),
      list(`__a` = c(3L, 2L, 4L, 1L, 5L),
           `__a__b` = c(3L, 4L, 2L, 1L, 5L)))
 
-test(1898.1, set2key(DT, a), error="deprecated. Please use setindex() instead.")
-test(1898.2, set2keyv(DT, "a"), error="deprecated. Please use setindexv() instead.")
-test(1898.3, key2(DT), error="deprecated. Please use indices() instead.")
+# tests 1898.{1,2,3} for set2key etc. deprecation were removed along with those functions
 
 # Allow column to be used as rownames when converting to matrix #2702
 DT = data.table(id = letters[1:4], X = 1:4, Y = 5:8)

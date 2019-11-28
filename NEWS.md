@@ -18,6 +18,8 @@
 
 3. C internals have been standardized to use `PRI[u|d]64` to print `[u]int64_t`. This solves new warnings from `gcc-8` on Windows with `%lld`, [#4062](https://github.com/Rdatatable/data.table/issues/4062), in many cases already working around `snprintf` on Windows not supporting `%zu`. Release procedures have been augmented to prevent any internal use of `llu`, `lld`, `zu` or `zd`.
 
+4. `set2key`, `set2keyv`, and `key2` have been completely removed. Reminder that note 11 in v1.11.0 (May 2018) warned that `set2key()` and `key2()` will be removed in May 2019. They have been warning since v1.9.8 (Nov 2016) and their warnings were upgraded to errors in v1.11.0 (May 2018). When they were introduced in version 1.9.4 (Oct 2014) they were marked as 'experimental'.
+
 
 # data.table [v1.12.6](https://github.com/Rdatatable/data.table/milestone/18?closed=1)  (18 Oct 2019)
 
