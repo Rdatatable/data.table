@@ -187,22 +187,14 @@ shouldPrint = function(x) {
 cut_top = function(x) cat(capture.output(x)[-1L], sep = '\n')
 
 # to calculate widths of data.table for PR #4074
-nchar_width = function(x) {
-  each_width = nchar(x, type = "width")
-  widths = vector("numeric", ncol(x))
-  for (i in 1L:ncol(x)){
-    widths[i] = max(each_width[, i])
-  }
-  widths
-}
 # gets the width of the data.table at each column
 #   and compares it to the console width
 dt_width = function(x, class, row.names, col.names) {
-  widths = nchar_width(x)
+  widths = apply(nchar(x, type='width'), 2L, max)
   if (class) widths = ifelse(widths < 6L, 6L, widths)
   if (col.names != "none") names = sapply(colnames(x), nchar, type = "width") else names = 0L
   dt_widths = ifelse(widths > names, widths, names)
-  rownum_width = if (row.names) max(nchar(rownames(x), type = "width")) else 0L
+  rownum_width = if (row.names) as.integer(ceiling(log10(nrow(x)))+1) else 0L
   cumsum(dt_widths + 1L) + rownum_width + 1L
 }
 # keeps the dim and dimnames attributes
