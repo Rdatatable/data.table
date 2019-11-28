@@ -194,7 +194,7 @@ nchar_width = function(x) {
   }
   widths
 }
-dt_width = function(x, class, row.names, names) {
+dt_width = function(x, class, row.names, col.names, names) {
   # gets the width of the data.table at each column
   #   and compares it to the console width
   widths = nchar_width(x)
