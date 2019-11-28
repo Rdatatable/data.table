@@ -16389,7 +16389,8 @@ DT = data.table(a = "aaaaaaaaaaaaa",
                 b = "bbbbbbbbbbbbb",
                 c = "ccccccccccccc",
                 d = "ddddddddddddd")
-test(2122,
+
+test(2122.01,
      capture.output(print(DT, trunc.cols=TRUE))[3],
      "2 variables not shown: [c, d]")
 # Printing with dots
@@ -16397,7 +16398,7 @@ DT = data.table(a = vector("integer", 102),
                 b = "bbbbbbbbbbbbb",
                 c = "ccccccccccccc",
                 d = c("ddddddddddddd", "d"))
-test(2122.2, capture.output(print(DT, trunc.cols=TRUE)),
+test(2122.02, capture.output(print(DT, trunc.cols=TRUE)),
      c("     a             b             c",
        "  1: 0 bbbbbbbbbbbbb ccccccccccccc",
        "  2: 0 bbbbbbbbbbbbb ccccccccccccc",
@@ -16411,7 +16412,8 @@ test(2122.2, capture.output(print(DT, trunc.cols=TRUE)),
        "101: 0 bbbbbbbbbbbbb ccccccccccccc",
        "102: 0 bbbbbbbbbbbbb ccccccccccccc",
        "1 variable not shown: [d]"))
-test(2122.3, capture.output(print(DT, trunc.cols=TRUE, row.names=FALSE)),
+
+test(2122.03, capture.output(print(DT, trunc.cols=TRUE, row.names=FALSE)),
      c("    a             b             c",
        "    0 bbbbbbbbbbbbb ccccccccccccc",
        "    0 bbbbbbbbbbbbb ccccccccccccc",
@@ -16425,15 +16427,16 @@ test(2122.3, capture.output(print(DT, trunc.cols=TRUE, row.names=FALSE)),
        "    0 bbbbbbbbbbbbb ccccccccccccc",
        "    0 bbbbbbbbbbbbb ccccccccccccc",
        "1 variable not shown: [d]" ))
-test(2122.4, capture.output(print(DT, trunc.cols=TRUE, class=TRUE))[14],
+
+test(2122.04, capture.output(print(DT, trunc.cols=TRUE, class=TRUE))[14],
      "1 variable not shown: [d <char>]")
-test(2122.5, capture.output(print(DT, trunc.cols=TRUE, class=TRUE, row.names=FALSE))[c(1,14)],
+test(2122.05, capture.output(print(DT, trunc.cols=TRUE, class=TRUE, row.names=FALSE))[c(1,14)],
      c("        a             b             c",
        "1 variable not shown: [d <char>]" ))
-test(2122.6, capture.output(print(DT, trunc.cols=TRUE, col.names="none"))[c(1,12)],
+test(2122.06, capture.output(print(DT, trunc.cols=TRUE, col.names="none"))[c(1,12)],
      c("  1: 0 bbbbbbbbbbbbb ccccccccccccc",
        "1 variable not shown: [d]" ))
-test(2122.7, capture.output(print(DT, trunc.cols=TRUE, class=TRUE, col.names="none"))[c(1,13)],
+test(2122.07, capture.output(print(DT, trunc.cols=TRUE, class=TRUE, col.names="none"))[c(1,13)],
      c("  1: 0 bbbbbbbbbbbbb ccccccccccccc",
        "1 variable not shown: [d]" ),
      warning = "Column classes will be suppressed when col.names is 'none'")
@@ -16442,7 +16445,7 @@ DT = data.table(a = vector("integer", 2),
                 b = "bbbbbbbbbbbbb",
                 c = "ccccccccccccc",
                 d = "ddddddddddddd")
-test(2122.8, capture.output(print(DT, trunc.cols=TRUE)),
+test(2122.08, capture.output(print(DT, trunc.cols=TRUE)),
      c("   a             b",
        "1: 0 bbbbbbbbbbbbb",
        "2: 0 bbbbbbbbbbbbb",
@@ -16452,7 +16455,7 @@ DT = data.table(a = "aaaaaaaaaaaaa",
                 b = "bbbbbbbbbbbbb",
                 c = "ccccccccccccc",
                 d = "ddddddddddddd")
-test(2122.9, capture.output(print(DT, trunc.cols=TRUE)),
+test(2122.09, capture.output(print(DT, trunc.cols=TRUE)),
      "4 variables not shown: [a, b, c, d]")
 test(2122.10, capture.output(print(DT, trunc.cols=TRUE, class=TRUE)),
      "4 variables not shown: [a <char>, b <char>, c <char>, d <char>]")
