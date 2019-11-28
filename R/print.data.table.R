@@ -97,6 +97,7 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
     cons_width = getOption("width")
     cols_to_print = widths <= cons_width
     not_printed = colnames(toprint)[!cols_to_print]
+    if (sum(cols_to_print) == 0) stop("Width of console too small to print a single column when `trunc.cols=TRUE`. Consider increasing the width of the console or use `trunc.cols=FALSE`.", call. = FALSE)
     # When nrow(toprint) = 1, attributes get lost in the subset,
     #   function below adds those back when necessary
     toprint = toprint_subset(toprint, cols_to_print)
@@ -214,7 +215,7 @@ toprint_subset = function(x, cols_to_print) {
     attributes(x) = atts
     x
   } else {
-    x[, cols_to_print]
+    x[, cols_to_print, drop=FALSE]
   }
 }
 # message for when trunc.cols=TRUE and some columns are not printed
