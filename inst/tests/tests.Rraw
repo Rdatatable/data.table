@@ -16449,6 +16449,13 @@ test(2122.8, capture.output(print(DT, trunc.cols=TRUE)),
        "1: 0 bbbbbbbbbbbbb",
        "2: 0 bbbbbbbbbbbbb",
        "2 variables not shown: c, d "))
+options("width" = 10)
+DT = data.table(a = "aaaaaaaaaaaaa",
+                b = "bbbbbbbbbbbbb",
+                c = "ccccccccccccc",
+                d = "ddddddddddddd")
+test(2122.9, print(DT, trunc.cols=TRUE),
+     error = "Width of console too small to print a single column when `trunc.cols=TRUE`. Consider increasing the width of the console or use `trunc.cols=FALSE`.")
 options(old_width)
 
 
