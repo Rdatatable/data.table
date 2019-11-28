@@ -93,7 +93,7 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
   if (quote) colnames(toprint) <- paste0('"', old <- colnames(toprint), '"')
   if (isTRUE(trunc.cols)) {
     # allow truncation of columns to print only what will fit in console PR #4074
-    widths = dt_width(toprint, class, row.names, col.names, colnames(x))
+    widths = dt_width(toprint, class, row.names, col.names)
     cons_width = getOption("width")
     cols_to_print = widths <= cons_width
     not_printed = colnames(toprint)[!cols_to_print]
@@ -197,12 +197,12 @@ nchar_width = function(x) {
 }
 # gets the width of the data.table at each column
 #   and compares it to the console width
-dt_width = function(x, class, row.names, col.names, names) {
+dt_width = function(x, class, row.names, col.names) {
   widths = nchar_width(x)
   if (class) widths = ifelse(widths < 6L, 6L, widths)
-  if (col.names == "none") names = sapply(names, nchar, type = "width") else names = 0L
+  if (col.names != "none") names = sapply(colnames(x), nchar, type = "width") else names = 0L
   dt_widths = ifelse(widths > names, widths, names)
-  rownum_width = if (row.names) max(nchar(as.character(rownames(x)), type = "width")) else 0L
+  rownum_width = if (row.names) max(nchar(rownames(x), type = "width")) else 0L
   cumsum(dt_widths + 1L) + rownum_width + 1L
 }
 # keeps the dim and dimnames attributes
