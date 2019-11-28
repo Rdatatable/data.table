@@ -95,7 +95,7 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
     # allow truncation of columns to print only what will fit in console PR #4074
     widths = dt_width(toprint, class, row.names, col.names)
     cons_width = getOption("width")
-    cols_to_print = widths <= cons_width
+    cols_to_print = widths < cons_width
     not_printed = colnames(toprint)[!cols_to_print]
     if (!any(cols_to_print)) {
       trunc_cols_message(not_printed, abbs, class)
@@ -197,7 +197,7 @@ dt_width = function(x, class, row.names, col.names) {
   if (class) widths = pmax(widths, 6L)
   if (col.names != "none") names = sapply(colnames(x), nchar, type = "width") else names = 0L
   dt_widths = pmax(widths, names)
-  rownum_width = if (row.names) as.integer(ceiling(log10(nrow(x)))+1) else 0L
+  rownum_width = if (row.names) as.integer(ceiling(log10(nrow(x)))+2) else 0L
   cumsum(dt_widths + 1L) + rownum_width
 }
 # keeps the dim and dimnames attributes
@@ -218,10 +218,11 @@ trunc_cols_message = function(not_printed, abbs, class){
   n = length(not_printed)
   if (class) classes = paste0(" ", tail(abbs, n)) else classes = ""
   not_printed_paste = paste0(not_printed, classes, collapse = ", ")
-  cat(sprintf(ngettext(n,
-                       paste0("1 variable not shown: %s"),
-                       paste0(n, " variables not shown: %s")),
-              not_printed_paste),
-      "\n")
+  cat(sprintf(
+    ngettext(n,
+             "%d variable not shown: %s\n",
+             "%d variables not shown: %s\n"),
+    n, not_printed_paste
+  ))
 }
 
