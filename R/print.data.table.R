@@ -218,8 +218,8 @@ toprint_subset = function(x, cols_to_print) {
 }
 trunc_cols_message = function(not_printed, abbs){
   n = length(not_printed)
-  classes = tail(abbs, n)
-  not_printed_paste = paste(not_printed, classes, collapse = ", ")
+  classes = paste0(" ", tail(abbs, n))
+  not_printed_paste = paste0(not_printed, classes, collapse = ", ")
   cat(sprintf(ngettext(n,
                        paste0("1 variable not shown: %s"),
                        paste0(n, " variables not shown: %s")),
