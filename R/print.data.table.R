@@ -96,7 +96,7 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
     widths = dt_width(toprint, class, row.names, col.names, colnames(x))
     cons_width = getOption("width")
     cols_to_print = widths <= cons_width
-    not_printed = names(x)[!cols_to_print]
+    not_printed = colnames(toprint)[!cols_to_print]
     # When nrow(toprint) = 1, attributes get lost in the subset,
     #   function below adds those back when necessary
     toprint = toprint_subset(toprint, cols_to_print)
