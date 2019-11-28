@@ -97,7 +97,7 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
     cons_width = getOption("width")
     cols_to_print = widths <= cons_width
     not_printed = colnames(toprint)[!cols_to_print]
-    if (sum(cols_to_print) == 0) stop("Width of console too small to print a single column when `trunc.cols=TRUE`. Consider increasing the width of the console or use `trunc.cols=FALSE`.", call. = FALSE)
+    if (sum(cols_to_print) == 0L) stop("Width of console too small to print a single column when `trunc.cols=TRUE`. Consider increasing the width of the console or use `trunc.cols=FALSE`.", call. = FALSE)
     # When nrow(toprint) = 1, attributes get lost in the subset,
     #   function below adds those back when necessary
     toprint = toprint_subset(toprint, cols_to_print)
@@ -110,7 +110,7 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
     } else {
       print(toprint, right=TRUE, quote=quote)
     }
-    if (trunc.cols && length(not_printed) > 0)
+    if (trunc.cols && length(not_printed) > 0L)
       # prints names of variables not shown in the print
       trunc_cols_message(not_printed, abbs, class)
 
@@ -125,7 +125,7 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
   } else {
     print(toprint, right=TRUE, quote=quote)
   }
-  if (trunc.cols && length(not_printed) > 0)
+  if (trunc.cols && length(not_printed) > 0L)
     # prints names of variables not shown in the print
     trunc_cols_message(not_printed, abbs, class)
 
@@ -199,19 +199,19 @@ nchar_width = function(x) {
 #   and compares it to the console width
 dt_width = function(x, class, row.names, col.names, names) {
   widths = nchar_width(x)
-  if (class) widths = ifelse(widths < 6, 6, widths)
-  if (col.names == "none") names = sapply(names, nchar, type = "width") else names = 0
+  if (class) widths = ifelse(widths < 6L, 6L, widths)
+  if (col.names == "none") names = sapply(names, nchar, type = "width") else names = 0L
   dt_widths = ifelse(widths > names, widths, names)
-  rownum_width = if (row.names) max(nchar(as.character(rownames(x)), type = "width")) else 0
-  cumsum(dt_widths + 1) + rownum_width + 1
+  rownum_width = if (row.names) max(nchar(as.character(rownames(x)), type = "width")) else 0L
+  cumsum(dt_widths + 1L) + rownum_width + 1L
 }
 # keeps the dim and dimnames attributes
 toprint_subset = function(x, cols_to_print) {
-  if (nrow(x) == 1){
+  if (nrow(x) == 1L){
     atts = attributes(x)
-    atts$dim = c(1, sum(cols_to_print))
-    atts$dimnames[[2]] = atts$dimnames[[2]][cols_to_print]
-    x = x[, cols_to_print]
+    atts$dim = c(1L, sum(cols_to_print))
+    atts$dimnames[[2L]] = atts$dimnames[[2L]][cols_to_print]
+    x = x[, cols_to_print, drop=FALSE]
     attributes(x) = atts
     x
   } else {
