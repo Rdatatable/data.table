@@ -92,10 +92,10 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
   if (isFALSE(class)) abbs = ""
   if (quote) colnames(toprint) <- paste0('"', old <- colnames(toprint), '"')
   if (isTRUE(trunc.cols)) {
-    # allow truncation of columns to print only what will fit in console #XXXX
-    widths = dt_width(x, class, row.names, names(x))
+    # allow truncation of columns to print only what will fit in console PR #4074
+    widths = dt_width(toprint, class, row.names, colnames(x))
     cons_width = getOption("width")
-    cols_to_print = widths < cons_width
+    cols_to_print = widths <= cons_width
     not_printed = names(x)[!cols_to_print]
     # When nrow(toprint) = 1, attributes get lost in the subset,
     #   function below adds those back when necessary
@@ -185,19 +185,24 @@ shouldPrint = function(x) {
 #   as opposed to printing a blank line, for excluding col.names per PR #1483
 cut_top = function(x) cat(capture.output(x)[-1L], sep = '\n')
 
-# to calculate widths of data.table and console
+# to calculate widths of data.table
 nchar_width = function(x) {
-  max(nchar(as.character(x), type = "width"))
+  each_width = nchar(x, type = "width")
+  widths = vector("numeric", ncol(x))
+  for (i in 1L:ncol(x)){
+    widths[i] = max(each_width[, i])
+  }
+  widths
 }
 dt_width = function(x, class, row.names, names) {
   # gets the width of the data.table at each column
   #   and compares it to the console width
-  widths = sapply(x, nchar_width)
+  widths = nchar_width(x)
   if (class) widths = ifelse(widths < 6, 6, widths)
-  names = sapply(names, nchar_width)
+  if (col.names == "none") names = sapply(names, nchar, type = "width") else names = 0
   dt_widths = ifelse(widths > names, widths, names)
-  rownum_width = if (row.names) nchar_width(nrow(x)) else 0
-  cumsum(dt_widths + 1) + rownum_width + 2
+  rownum_width = if (row.names) max(nchar(as.character(rownames(x)), type = "width")) else 0
+  cumsum(dt_widths + 1) + rownum_width + 1
 }
 toprint_subset = function(x, cols_to_print) {
   if (nrow(x) == 1){
