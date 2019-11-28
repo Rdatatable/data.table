@@ -217,12 +217,11 @@ toprint_subset = function(x, cols_to_print) {
 trunc_cols_message = function(not_printed, abbs, class){
   n = length(not_printed)
   if (class) classes = paste0(" ", tail(abbs, n)) else classes = ""
-  not_printed_paste = paste0(not_printed, classes, collapse = ", ")
   cat(sprintf(
     ngettext(n,
              "%d variable not shown: %s\n",
              "%d variables not shown: %s\n"),
-    n, not_printed_paste
+    n, brackify(paste0(not_printed, classes))
   ))
 }
 
