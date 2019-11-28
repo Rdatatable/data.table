@@ -191,9 +191,9 @@ cut_top = function(x) cat(capture.output(x)[-1L], sep = '\n')
 #   and compares it to the console width
 dt_width = function(x, class, row.names, col.names) {
   widths = apply(nchar(x, type='width'), 2L, max)
-  if (class) widths = ifelse(widths < 6L, 6L, widths)
+  if (class) widths = pmax(widths, 6L)
   if (col.names != "none") names = sapply(colnames(x), nchar, type = "width") else names = 0L
-  dt_widths = ifelse(widths > names, widths, names)
+  dt_widths = pmax(widths, names)
   rownum_width = if (row.names) as.integer(ceiling(log10(nrow(x)))+1) else 0L
   cumsum(dt_widths + 1L) + rownum_width + 1L
 }
