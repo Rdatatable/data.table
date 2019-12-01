@@ -8,7 +8,7 @@
 
 1. `DT[, {...; .(A,B)}]` (i.e. when `.()` is the final item of a multi-statement `{...}`) now auto-names the columns `A` and `B` (just like `DT[, .(A,B)]`) rather than `V1` and `V2`, [#2478](https://github.com/Rdatatable/data.table/issues/2478) [#609](https://github.com/Rdatatable/data.table/issues/609). Similarly, `DT[, if (.N>1) .(B), by=A]` now auto-names the column `B` rather than `V1`. Explicit names are unaffected; e.g. `DT[, {... y= ...; .(A=C+y)}, by=...]` named the column `A` before, and still does. Thanks also to @renkun-ken for his go-first strong testing which caught an issue not caught by the test suite or by revdep testing, related to NULL being the last item, [#4061](https://github.com/Rdatatable/data.table/issues/4061).
 
-2. The C function `CsubsetDT` is exported in order to allow another package to use this fast subsetting of a `data.table` at C level. The exporting uses R's standard `R_RegisterCCallable` mechanism, which means other packages wishing to call this function use `R_GetCCallable` at C level in order to make the call. This mechanism is described in [Writing R Extensions](https://cran.r-project.org/doc/manuals/r-release/R-exts.html#Linking-to-native-routines-in-other-packages).
+2. The C function `CsubsetDT` is exported in order to allow another package to use this fast subsetting of a `data.table` at C level. The exporting uses R's standard `R_RegisterCCallable` mechanism, which means other packages wishing to call this function use `R_GetCCallable` at C level in order to make the call. This mechanism is described in [Writing R Extensions](https://cran.r-project.org/doc/manuals/r-release/R-exts.html) in _Linking to native routines in other packages_ section.
 
 ## BUG FIXES
 
