@@ -16384,11 +16384,9 @@ test(2121.6, DT[ , {.(a, b=b+1); NULL}], NULL)
 # system timezone is not usually UTC, so as.ITime.POSIXct shouldn't assume so
 oldtz=Sys.getenv('TZ')
 Sys.setenv(TZ='Asia/Jakarta') # UTC+7
-t0 = Sys.time()
-test(2122.1, as.integer(unclass(as.ITime(t0)) %/% 3600), as.POSIXlt(t0)$hour)
-d0 = as.POSIXct(trunc(t0, 'day'))
-# base defaults
-test(2122.2, unclass(as.IDate(d0)), as.integer(as.Date(d0, tz='')))
+t0 = as.POSIXct('2019-10-01')
+test(2122.1, format(as.ITime(t0)), '00:00:00')
+test(2122.2, format(as.IDate(t0)), '2019-10-01')
 Sys.setenv(TZ=oldtz)
 
 
