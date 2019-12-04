@@ -16381,6 +16381,16 @@ test(2121.5, DT[, .(.N=.N), by=a], data.table(a=c(1,2), .N=2:1)) # user supplied
 ## { ending in NULL should retain that NULL, #4061
 test(2121.6, DT[ , {.(a, b=b+1); NULL}], NULL)
 
+# system timezone is not usually UTC, so as.ITime.POSIXct shouldn't assume so
+oldtz=Sys.getenv('TZ')
+Sys.setenv(TZ='Asia/Jakarta') # UTC+7
+t0 = Sys.time()
+test(2122.1, as.integer(unclass(as.ITime(t0)) %/% 3600), as.POSIXlt(t0)$hour)
+d0 = as.POSIXct(trunc(t0, 'day'))
+# base defaults
+test(2122.2, unclass(as.IDate(d0)), as.integer(as.Date(d0, tz='')))
+Sys.setenv(TZ=oldtz)
+
 
 ###################################
 #  Add new tests above this line  #

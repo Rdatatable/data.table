@@ -10,6 +10,8 @@
 
 ## BUG FIXES
 
+1. `as.IDate` and `as.ITime` methods for `POSIXct` input wrongly assigned `NULL` timezone to `UTC` (actually it's the session's default timezone), [#4085](https://github.com/Rdatatable/data.table/issues/4085).
+
 ## NOTES
 
 1. Links in the manual were creating warnings when installing HTML, [#4000](https://github.com/Rdatatable/data.table/issues/4000). Thanks to Morgan Jacob.
