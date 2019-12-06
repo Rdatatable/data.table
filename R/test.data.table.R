@@ -1,5 +1,5 @@
-test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=FALSE) {
-  stopifnot(isTRUEorFALSE(verbose), isTRUEorFALSE(silent))
+test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=FALSE, showProgress=interactive()) {
+  stopifnot(isTRUEorFALSE(verbose), isTRUEorFALSE(silent), isTRUEorFALSE(showProgress))
   if (exists("test.data.table", .GlobalEnv,inherits=FALSE)) {
     # package developer
     # nocov start
@@ -23,7 +23,7 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
     scripts = dir(fulldir, "*.Rraw.*")
     scripts = scripts[!grepl("bench|other", scripts)]
     scripts = gsub("[.]bz2$","",scripts)
-    for (fn in scripts) {test.data.table(verbose=verbose, pkg=pkg, silent=silent, script=fn); cat("\n");}
+    for (fn in scripts) {test.data.table(script=fn, verbose=verbose, pkg=pkg, silent=silent, showProgress=showProgress); cat("\n");}
     return(invisible())
     # nocov end
   }
@@ -109,13 +109,16 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
   assign("memtest", as.logical(Sys.getenv("TEST_DATA_TABLE_MEMTEST", "FALSE")), envir=env)
   assign("filename", fn, envir=env)
   assign("inittime", as.integer(Sys.time()), envir=env) # keep measures from various test.data.table runs
-  # It doesn't matter that 3000L is far larger than needed for other and benchmark.
-  if (isTRUE(silent)){
-    try(sys.source(fn, envir=env), silent=silent)  # nocov
-  } else {
-    sys.source(fn, envir=env)
-  }
+  assign("showProgress", showProgress, envir=env)
+
+  err = try(sys.source(fn, envir=env), silent=silent)
+
   options(oldOptions)
+  if (inherits(err,"try-error")) {
+    if (silent) return(FALSE)
+    stop("Failed after test ", env$prevtest, " before the next test() call in ",fn)  # nocov
+    # and the try() above with silent=FALSE will have already printed the error itself
+  }
 
   # Sys.setlocale("LC_CTYPE", oldlocale)
   ans = env$nfail==0
@@ -261,6 +264,7 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
     inittime = get("inittime", parent.frame())
     filename = get("filename", parent.frame())
     foreign = get("foreign", parent.frame())
+    showProgress = get("showProgress", parent.frame())
     time = nTest = NULL  # to avoid 'no visible binding' note
     on.exit( {
        now = proc.time()[3L]
@@ -268,12 +272,19 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
        assign("lasttime", now, parent.frame(), inherits=TRUE)
        timings[ as.integer(num), `:=`(time=time+took, nTest=nTest+1L), verbose=FALSE ]
     } )
-    cat("\rRunning test id", numStr, "     ")
-    flush.console()
-    # This flush is for Windows to make sure last test number is written to file in CRAN and win-builder output where
-    # console output is captured. \r seems especially prone to not being auto flushed. The downside is that the last 13
-    # lines output are filled with the last 13 "running test num" lines rather than the last error output, but that's
-    # better than the dev-time-lost when it crashes and it actually crashed much later than the last test number visible.
+    if (showProgress)
+      cat("\rRunning test id", numStr, "     ")   # nocov
+    # This cat() used to be done always with a flush.console() too for Windows. That was so that if the test script
+    # fully crashed R with a segfault, then at least we'd know it crashed somewhere after the last test number flushed
+    # to the log file and displayed by CRAN. But the downside of that was that when a non-crashing regular R error
+    # occurred inbetween two test() calls, it would be displayed by CRAN with thousands of these test number lines before
+    # and fill up the CRAN error log.
+    # So now we only output the test number in interactive() mode so users can see it it running when they run test.data.table(). In
+    # batch mode (i.e. R CMD check) if an error occurs inbetween two test() calls, test.data.table() now outputs an error stating
+    # which test it occured after so we don't need to rely on the ouput file and scroll through pages and pages of it.
+    # However, if the error is a segfault then we won't know after which point since the try(sys.source()) won't return in that
+    # case. If that becomes a problem, then we could launch a new R process to run the try(sys.source()) and have the prevtest
+    # written out of that process to a 5 byte temp file so the calling R process can tell us after which test it crashed.
   } else {
     memtest = FALSE          # nocov
     filename = NA_character_ # nocov
