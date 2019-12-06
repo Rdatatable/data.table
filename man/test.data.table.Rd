@@ -5,7 +5,9 @@
   Runs a set of tests to check data.table is working correctly.
 }
 \usage{
-test.data.table(script="tests.Rraw", verbose=FALSE, pkg=".", silent=FALSE, showProgress=interactive()&&!silent)
+test.data.table(script = "tests.Rraw", verbose = FALSE, pkg = ".",
+                silent = FALSE,
+                showProgress = interactive() && !silent)
 }
 \arguments{
 \item{script}{ Run arbitrary R test script. }
