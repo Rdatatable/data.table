@@ -65,8 +65,8 @@ update.dev.pkg = function(object="data.table", repo="https://Rdatatable.gitlab.i
 }
 
 # non-exported utility when using devel version #3272: data.table:::.git()
-.git = function(quiet=FALSE) {
-  ans = unname(read.dcf(system.file("DESCRIPTION", package="data.table"), fields="Revision")[, "Revision"])
+.git = function(quiet=FALSE, lib.loc=NULL) {
+  ans = unname(read.dcf(system.file("DESCRIPTION", package="data.table", lib.loc=lib.loc, mustWork=TRUE), fields="Revision")[, "Revision"])
   if (!quiet && is.na(ans))
     cat("Git revision is not available. Most likely data.table was installed from CRAN or local archive.\nGit revision is available when installing from our repositories 'https://Rdatatable.gitlab.io/data.table' and 'https://Rdatatable.github.io/data.table'.\n")
   ans
