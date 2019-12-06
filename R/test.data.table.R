@@ -273,18 +273,13 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
        timings[ as.integer(num), `:=`(time=time+took, nTest=nTest+1L), verbose=FALSE ]
     } )
     if (showProgress)
-      cat("\rRunning test id", numStr, "     ")   # nocov
-    # This cat() used to be done always with a flush.console() too for Windows. That was so that if the test script
-    # fully crashed R with a segfault, then at least we'd know it crashed somewhere after the last test number flushed
-    # to the log file and displayed by CRAN. But the downside of that was that when a non-crashing regular R error
-    # occurred inbetween two test() calls, it would be displayed by CRAN with thousands of these test number lines before
-    # and fill up the CRAN error log.
-    # So now we only output the test number in interactive() mode so users can see it it running when they run test.data.table(). In
-    # batch mode (i.e. R CMD check) if an error occurs inbetween two test() calls, test.data.table() now outputs an error stating
-    # which test it occured after so we don't need to rely on the ouput file and scroll through pages and pages of it.
-    # However, if the error is a segfault then we won't know after which point since the try(sys.source()) won't return in that
-    # case. If that becomes a problem, then we could launch a new R process to run the try(sys.source()) and have the prevtest
-    # written out of that process to a 5 byte temp file so the calling R process can tell us after which test it crashed.
+      cat("\rRunning test id", numStr, "     ")   # nocov.
+    # See PR #4090 for comments about change here in Dec 2019.
+    # If a segfault error occurs in future and we'd like to know after which test, then arrange for the
+    # try(sys.source()) in test.data.table() to be run in a separate R process. That process could write out
+    # prevtest to a temp file so we know where it got to from this R process. That should be more reliable
+    # than what we were doing before which was for test() to always write its test number to output (which might
+    # not be flushed to the output upon segfault, depending on OS).
   } else {
     memtest = FALSE          # nocov
     filename = NA_character_ # nocov
