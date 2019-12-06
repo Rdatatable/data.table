@@ -1,9 +1,9 @@
 # nocov start
 
-dcf.lib = function(pkg, field, lib.loc){
+dcf.lib = function(pkg, field, lib.loc=NULL){
   # get DESCRIPTION metadata field from local library
   stopifnot(is.character(pkg), is.character(field), length(pkg)==1L, length(field)==1L)
-  dcf = system.file("DESCRIPTION", package=pkg, lib.loc=lib.loc)
+  dcf = system.file("DESCRIPTION", package=pkg, lib.loc=lib.loc, mustWork=TRUE)
   if (nzchar(dcf)) read.dcf(dcf, fields=field)[1L] else NA_character_
 }
 
