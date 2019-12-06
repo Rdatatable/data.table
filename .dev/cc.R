@@ -79,6 +79,7 @@ cc = function(test=TRUE, clean=FALSE, debug=FALSE, omp=!debug, cc_dir, path=Sys.
   for (i in seq_along(xx$.External))
     assign(xx$.External[[i]]$name,  xx$.External[[i]]$address, envir=.GlobalEnv)
   sourceDir(paste0(path,"/R"))
+  if (base::getRversion()<"4.0.0") rm(list=c("rbind.data.table","cbind.data.table"), envir=.GlobalEnv) # 3968 follow up
   assign("testDir", function(x)paste0(path,"/inst/tests/",x), envir=.GlobalEnv)
   .onLoad()
   if (is.logical(test) && isTRUE(test)) test.data.table() else if (is.character(test)) test.data.table(script=test)

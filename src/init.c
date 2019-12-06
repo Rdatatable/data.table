@@ -252,7 +252,7 @@ void attribute_visible R_init_datatable(DllInfo *info)
   // Variables rather than #define for NA_INT64 to ensure correct usage; i.e. not casted
   NA_INT64_LL = LLONG_MIN;
   NA_INT64_D = LLtoD(NA_INT64_LL);
-  if (NA_INT64_LL != DtoLL(NA_INT64_D)) error("Conversion of NA_INT64 via double failed %lld!=%lld", NA_INT64_LL, DtoLL(NA_INT64_D));
+  if (NA_INT64_LL != DtoLL(NA_INT64_D)) error("Conversion of NA_INT64 via double failed %"PRId64"!=%"PRId64"", (int64_t)NA_INT64_LL, (int64_t)DtoLL(NA_INT64_D));
   // LLONG_MIN when punned to double is the sign bit set and then all zeros in exponent and significand i.e. -0.0
   //   That's why we must never test for NA_INT64_D using == in double type. Must always DtoLL and compare long long types.
   //   Assigning NA_INT64_D to a REAL is ok however.
@@ -364,6 +364,6 @@ SEXP initLastUpdated(SEXP var) {
 
 SEXP dllVersion() {
   // .onLoad calls this and checks the same as packageVersion() to ensure no R/C version mismatch, #3056
-  return(ScalarString(mkChar("1.12.5")));
+  return(ScalarString(mkChar("1.12.7")));
 }
 

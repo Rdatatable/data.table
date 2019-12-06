@@ -81,9 +81,25 @@ S3method(as.data.table, default)
 S3method(as.data.frame, data.table)
 S3method(as.list, data.table)
 S3method(as.matrix, data.table)
-#S3method(cbind, data.table)
-#S3method(rbind, data.table)
-export(.rbind.data.table)
+if (getRversion() >= "4.0.0") {
+  # this version number must be the same as in .onLoad
+  # fix in R in Sep 2019 (#3948) makes c|rbind S3 dispatch work; see FAQ 2.24.
+  # if we register these (new in v1.12.6) methods always though, the previous workaround no longer works in R<4.0.0. Hence only register in R>=4.0.0.
+  S3method(cbind, data.table)
+  S3method(rbind, data.table)
+}
+# else {
+#  # and if we export but don't register in R < 4.0.0 we get this note:
+#  # > Found the following apparent S3 methods exported but not registered:
+#  # > cbind.data.table rbind.data.table
+#  # in addition to errors in tests 324, 326, 414.1, 414.2, 442, 445, 451
+#  export(cbind.data.table)
+#  export(rbind.data.table)
+#  # A revdep using rbind.data.frame() directly before (which data.table changed in base) should change to rbind() generic and that should work
+#  # in all combinations of R before/after 4.0.0 and data.table before/after 1.12.6, so long as data.table is installed using the same major
+#  # version of R (and that is checked in .onLoad with error if not).
+# }
+export(.rbind.data.table) # continue to export for now because it has been exported in the past so it may be depended on
 S3method(dim, data.table)
 S3method(dimnames, data.table)
 S3method("dimnames<-", data.table)

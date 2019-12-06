@@ -171,7 +171,7 @@ SEXP rleid(SEXP l, SEXP cols) {
     if (elem<1 || elem>ncol) error("Item %d of cols is %d which is outside range of l [1,length(l)=%d]", i+1, elem, ncol);
   }
   for (int i=1; i<ncol; i++) {
-    if (xlength(VECTOR_ELT(l,i)) != nrow) error("All elements to input list must be of same length. Element [%d] has length %llu != length of first element = %llu.", i+1, xlength(VECTOR_ELT(l,i)), nrow);
+    if (xlength(VECTOR_ELT(l,i)) != nrow) error("All elements to input list must be of same length. Element [%d] has length %"PRIu64" != length of first element = %"PRIu64".", i+1, (uint64_t)xlength(VECTOR_ELT(l,i)), (uint64_t)nrow);
   }
   SEXP ans = PROTECT(allocVector(INTSXP, nrow));
   int *ians = INTEGER(ans);

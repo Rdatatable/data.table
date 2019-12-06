@@ -59,7 +59,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
             firstZeroCol+1, ch, firstZeroItem+1, numZero-1, numZero==2?"":"s");
   }
   if (nrow==0 && ncol==0) return(R_NilValue);
-  if (nrow>INT32_MAX) error("Total rows in the list is %lld which is larger than the maximum number of rows, currently %d", nrow, INT32_MAX);
+  if (nrow>INT32_MAX) error("Total rows in the list is %"PRId64" which is larger than the maximum number of rows, currently %d", (int64_t)nrow, INT32_MAX);
   if (usenames==TRUE && !anyNames) error("use.names=TRUE but no item of input list has any names");
 
   int *colMap=NULL; // maps each column in final result to the column of each list item
@@ -68,7 +68,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
     // when use.names==NA we also proceed here as if use.names was TRUE to save new code and then check afterwards the map is 1:ncol for every item
     // first find number of unique column names present; i.e. length(unique(unlist(lapply(l,names))))
     SEXP *uniq = (SEXP *)malloc(upperBoundUniqueNames * sizeof(SEXP));  // upperBoundUniqueNames was initialized with 1 to ensure this is defined (otherwise 0 when no item has names)
-    if (!uniq) error("Failed to allocate upper bound of %lld unique column names [sum(lapply(l,ncol))]", upperBoundUniqueNames);
+    if (!uniq) error("Failed to allocate upper bound of %"PRId64" unique column names [sum(lapply(l,ncol))]", (int64_t)upperBoundUniqueNames);
     savetl_init();
     int nuniq=0;
     for (int i=0; i<LENGTH(l); i++) {

@@ -1,10 +1,25 @@
 **If you are viewing this file on CRAN, please check [latest news on GitHub](https://github.com/Rdatatable/data.table/blob/master/NEWS.md) where the formatting is also better.**
 
-**Benchmarks are regularly upated: [here](https://h2oai.github.io/db-benchmark/)**
+**Benchmarks are regularly updated: [here](https://h2oai.github.io/db-benchmark/)**
 
-# data.table [v1.12.5](https://github.com/Rdatatable/data.table/milestone/18)  (in development)
+# data.table [v1.12.7](https://github.com/Rdatatable/data.table/milestone/15)  (in development)
 
 ## NEW FEATURES
+
+1. `DT[, {...; .(A,B)}]` (i.e. when `.()` is the final item of a multi-statement `{...}`) now auto-names the columns `A` and `B` (just like `DT[, .(A,B)]`) rather than `V1` and `V2`, [#2478](https://github.com/Rdatatable/data.table/issues/2478) [#609](https://github.com/Rdatatable/data.table/issues/609). Similarly, `DT[, if (.N>1) .(B), by=A]` now auto-names the column `B` rather than `V1`. Explicit names are unaffected; e.g. `DT[, {... y= ...; .(A=C+y)}, by=...]` named the column `A` before, and still does. Thanks also to @renkun-ken for his go-first strong testing which caught an issue not caught by the test suite or by revdep testing, related to NULL being the last item, [#4061](https://github.com/Rdatatable/data.table/issues/4061).
+
+## BUG FIXES
+
+## NOTES
+
+1. Links in the manual were creating warnings when installing HTML, [#4000](https://github.com/Rdatatable/data.table/issues/4000). Thanks to Morgan Jacob.
+
+2. One test needed to be adjusted to pass R-devel (R 4.0.0) which will soon have reference counting turned on, [#4058](https://github.com/Rdatatable/data.table/issues/4058). This motivated early release to CRAN because every day CRAN tests every package using the previous day's changes in R-devel; a much valued feature of the R ecosystem. It helps R-core if packages can pass changes in R-devel as soon as possible. Thanks to Luke Tierney for the notice, and for implementing reference counting which we look forward to very much.
+
+3. C internals have been standardized to use `PRI[u|d]64` to print `[u]int64_t`. This solves new warnings from `gcc-8` on Windows with `%lld`, [#4062](https://github.com/Rdatatable/data.table/issues/4062), in many cases already working around `snprintf` on Windows not supporting `%zu`. Release procedures have been augmented to prevent any internal use of `llu`, `lld`, `zu` or `zd`.
+
+
+# data.table [v1.12.6](https://github.com/Rdatatable/data.table/milestone/18?closed=1)  (18 Oct 2019)
 
 ## BUG FIXES
 
@@ -14,9 +29,11 @@
 
 3. A runtime error in `fwrite`'s compression, but only observed so far on Solaris 10 32bit with zlib 1.2.8 (Apr 2013), [#3931](https://github.com/Rdatatable/data.table/issues/3931): `Error -2: one or more threads failed to allocate buffers or there was a compression error.` In case it happens again, this area has been made more robust and the error more detailed. As is often the case, investigating the Solaris problem revealed secondary issues in the same area of the code. In this case, some `%d` in verbose output should have been `%lld`. This obliquity that CRAN's Solaris provides is greatly appreciated.
 
-4. A leak could occur in the event of an unsupported column type error, or if working memory cannot all be allocated; [#3940](https://github.com/Rdatatable/data.table/issues/3940). Found thanks to `clang`'s Leak Sanitizer (prompted by CRAN's diligent use of latest tools), and two tests in the test suite which tested the unsupported type error.
+4. A leak could occur in the event of an unsupported column type error, or if working memory could only partially be allocated; [#3940](https://github.com/Rdatatable/data.table/issues/3940). Found thanks to `clang`'s Leak Sanitizer (prompted by CRAN's diligent use of latest tools), and two tests in the test suite which tested the unsupported-type error.
 
 ## NOTES
+
+1. Many thanks to Kurt Hornik for fixing R's S3 dispatch of `rbind` and `cbind` methods, [#3948](https://github.com/Rdatatable/data.table/issues/3948). With `R>=4.0.0` (current R-devel), `data.table` now registers the S3 methods `cbind.data.table` and `rbind.data.table`, and no longer applies the workaround documented in FAQ 2.24.
 
 
 # data.table [v1.12.4](https://github.com/Rdatatable/data.table/milestone/16?closed=1)  (03 Oct 2019)
