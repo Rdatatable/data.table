@@ -282,11 +282,14 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
     # prevtest to a temp file so we know where it got to from this R process. That should be more reliable
     # than what we were doing before which was for test() to always write its test number to output (which might
     # not be flushed to the output upon segfault, depending on OS).
-  } else {
+    rm(showProgress) # if removing this line ensure that 'else' branch below defines 'showProgress = interactive()'
+  } else { # not `test.data.table` but just `cc(F); test(...)`
     memtest = FALSE          # nocov
     filename = NA_character_ # nocov
     foreign = FALSE          # nocov ; assumes users of 'cc(F); test(...)' has LANGUAGE=en
+    #showProgress = interactive() # nocov # not used anywhere down the code so commented out
   }
+
   if (!missing(error) && !missing(y))
     stop("Test ",numStr," is invalid: when error= is provided it does not make sense to pass y as well")  # nocov
 
