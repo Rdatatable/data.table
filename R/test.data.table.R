@@ -115,9 +115,11 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
 
   options(oldOptions)
   if (inherits(err,"try-error")) {
+    # nocov start
     if (silent) return(FALSE)
-    stop("Failed after test ", env$prevtest, " before the next test() call in ",fn)  # nocov
-    # and the try() above with silent=FALSE will have already printed the error itself
+    stop("Failed after test ", env$prevtest, " before the next test() call in ",fn)
+    # the try() above with silent=FALSE will have already printed the error itself
+    # nocov end
   }
 
   # Sys.setlocale("LC_CTYPE", oldlocale)
