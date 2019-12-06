@@ -1,4 +1,4 @@
-test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=FALSE, showProgress=interactive()) {
+test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=FALSE, showProgress=interactive()&&!silent) {
   stopifnot(isTRUEorFALSE(verbose), isTRUEorFALSE(silent), isTRUEorFALSE(showProgress))
   if (exists("test.data.table", .GlobalEnv,inherits=FALSE)) {
     # package developer
@@ -282,14 +282,13 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
     # prevtest to a temp file so we know where it got to from this R process. That should be more reliable
     # than what we were doing before which was for test() to always write its test number to output (which might
     # not be flushed to the output upon segfault, depending on OS).
-    rm(showProgress) # if removing this line ensure that 'else' branch below defines 'showProgress = interactive()'
-  } else { # not `test.data.table` but just `cc(F); test(...)`
+  } else {
+    # not `test.data.table` but developer running tests manually; i.e. `cc(F); test(...)`
     memtest = FALSE          # nocov
     filename = NA_character_ # nocov
     foreign = FALSE          # nocov ; assumes users of 'cc(F); test(...)' has LANGUAGE=en
-    #showProgress = interactive() # nocov # not used anywhere down the code so commented out
+    showProgress = FALSE     # nocov
   }
-
   if (!missing(error) && !missing(y))
     stop("Test ",numStr," is invalid: when error= is provided it does not make sense to pass y as well")  # nocov
 

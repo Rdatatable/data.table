@@ -5,7 +5,7 @@
   Runs a set of tests to check data.table is working correctly.
 }
 \usage{
-test.data.table(script="tests.Rraw", verbose=FALSE, pkg=".", silent=FALSE, showProgress=interactive())
+test.data.table(script="tests.Rraw", verbose=FALSE, pkg=".", silent=FALSE, showProgress=interactive()&&!silent)
 }
 \arguments{
 \item{script}{ Run arbitrary R test script. }
@@ -15,10 +15,12 @@ test.data.table(script="tests.Rraw", verbose=FALSE, pkg=".", silent=FALSE, showP
 \item{showProgress}{ Output 'Running test <n> ...\\r' at the start of each test? }
 }
 \details{
-   Runs a series of tests. These can be used to see features and examples of usage, too. Running test.data.table will tell you the full location of the test file(s) to open.
+  Runs a series of tests. These can be used to see features and examples of usage, too. Running test.data.table will tell you the full location of the test file(s) to open.
+
+  Setting \code{silent=TRUE} sets \code{showProgress=FALSE} too, via the default of \code{showProgress}.
 }
 \value{
-If all tests were successful, \code{TRUE} is returned. Otherwise, see the \code{silent} argument above. \code{silent=TRUE} is intended for use at the start of production scripts; e.g. \code{stopifnot(test.data.table(silent=TRUE))} to check \code{data.table} is passing its own tests before proceeding.
+  If all tests were successful, \code{TRUE} is returned. Otherwise, see the \code{silent} argument above. \code{silent=TRUE} is intended for use at the start of production scripts; e.g. \code{stopifnot(test.data.table(silent=TRUE))} to check \code{data.table} is passing its own tests before proceeding.
 }
 \seealso{ \code{\link{data.table}}, \code{\link{test}} }
 \keyword{ data }
