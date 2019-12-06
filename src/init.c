@@ -3,6 +3,39 @@
 #include <R_ext/Rdynload.h>
 #include <R_ext/Visibility.h>
 
+// global constants extern in data.table.h for gcc10 -fno-common; #4091
+// these are written to once here on initialization, but because of that write they can't be declared const
+SEXP char_integer64;
+SEXP char_ITime;
+SEXP char_IDate;
+SEXP char_Date;
+SEXP char_POSIXct;
+SEXP char_nanotime;
+SEXP char_lens;
+SEXP char_indices;
+SEXP char_allLen1;
+SEXP char_allGrp1;
+SEXP char_factor;
+SEXP char_ordered;
+SEXP char_datatable;
+SEXP char_dataframe;
+SEXP char_NULL;
+SEXP sym_sorted;
+SEXP sym_index;
+SEXP sym_BY;
+SEXP sym_starts, char_starts;
+SEXP sym_maxgrpn;
+SEXP sym_colClassesAs;
+SEXP sym_verbose;
+SEXP SelfRefSymbol;
+SEXP sym_inherits;
+SEXP sym_datatable_locked;
+double NA_INT64_D;
+long long NA_INT64_LL;
+Rcomplex NA_CPLX;
+size_t sizes[100];
+size_t typeorder[100];
+
 // .Calls
 SEXP setattrib();
 SEXP bmerge();
