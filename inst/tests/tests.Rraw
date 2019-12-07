@@ -16381,6 +16381,12 @@ test(2121.5, DT[, .(.N=.N), by=a], data.table(a=c(1,2), .N=2:1)) # user supplied
 ## { ending in NULL should retain that NULL, #4061
 test(2121.6, DT[ , {.(a, b=b+1); NULL}], NULL)
 
+# reference count when deleting columns; 4093
+DT = data.table(x=1:2, y=3:4, z <- 5:6)
+DT[, x := NULL]
+DT[, y := NULL]
+test(2122, .Internal(inspect(DT,1)), output="VECSXP.*INTSXP.*[[].*(NAM|REF).*[]].*5,6.*ATTRIB")
+
 
 ###################################
 #  Add new tests above this line  #
