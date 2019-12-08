@@ -1920,101 +1920,106 @@ msgid "but should be a number between 2 and 100"
 msgstr ""
 
 msgid "Valid options for col.names are 'auto', 'top', and 'none'"
-msgstr ""
+msgstr "对col.names有效的参数为'auto', 'top', and 'none'"
 
 msgid "Column classes will be suppressed when col.names is 'none'"
-msgstr ""
+msgstr "当col.names为'none'时，列的类型将被抑制"
 
 msgid ""
 "Internal structure doesn't seem to be a list. Possibly corrupt data.table."
-msgstr ""
+msgstr "内部类型可能不是一个列表，该操作可能会损坏data.table"
 
 msgid ""
 "x may no longer be the character name of the data.table. The possibility was "
 "undocumented and has been removed."
-msgstr ""
+msgstr "x可能不再是data.table的名字。 该变化不被记录并且已经被删除"
 
 msgid "set2key() is now deprecated. Please use setindex() instead."
-msgstr ""
+msgstr "set2key()已经废弃，请使用setindex()"
 
 msgid "set2keyv() is now deprecated. Please use setindexv() instead."
-msgstr ""
+msgstr "set2keyv()已经废弃，请使用setindexv()"
 
 msgid "key2() is now deprecated. Please use indices() instead."
-msgstr ""
+msgstr "key2()已经废弃，请使用indices()"
 
 msgid ""
 "key(x)<-value is deprecated and not supported. Please change to use setkey() "
 "with perhaps copy(). Has been warning since 2012 and will be an error in "
 "future."
-msgstr ""
+msgstr "key(x)<-value 已经废弃，不再支持。请使用setkey(), 也许您需要配套使用copy()"
+"自2012年来就警告将弃用原用法，将来该用法将报错"
 
 msgid "x is not a data.table"
-msgstr ""
+msgstr "x不是一个data.table"
 
 msgid ""
 "cols is not a character vector. Please see further information in ?setkey."
-msgstr ""
+msgstr "列不是一个字符类型的向量. 更多信息请查看?setkey."
 
 msgid ""
 "Setting a physical key on .SD is reserved for possible future use; to modify "
 "the original data's order by group. Try setindex() instead. Or, set*(copy(."
 "SD)) as a (slow) last resort."
-msgstr ""
+msgstr "在.SD设置一个物理的键的功能被保留，以备未来的需求; 如需通过分组修改原数据顺序"
+"请使用setindex(), 或者set*(copy(.SD))作为最终(该方式缓慢)的方法"
 
 msgid ""
 "cols is a character vector of zero length. Removed the key, but use NULL "
 "instead, or wrap with suppressWarnings() to avoid this warning."
-msgstr ""
+msgstr "列为一个长度为0的字符串向量，请删除键值并使用NULL, 或者使用suppressWarnings()来避免警告"
 
 msgid "cols is the empty string. Use NULL to remove the key."
-msgstr ""
+msgstr "列为一个空字符串，请使用NULL以删除键值。"
 
 msgid "cols contains some blanks."
-msgstr ""
+msgstr "列中包含空白"
 
 msgid "some columns are not in the data.table:"
-msgstr ""
+msgstr "一些列不在data.table中"
 
 msgid ""
 "x contains a column called '.xi'. Conflicts with internal use by data.table."
-msgstr ""
+msgstr "x包含一个叫做'.xi'的列。这与data.table中使用的内部名称冲突"
 
 msgid "' is type '"
-msgstr ""
+msgstr "是类型"
 
 msgid "' which is not supported as a key column type, currently."
-msgstr ""
+msgstr "目前不是一种被支持的列类型"
 
 msgid ""
 "Internal error. 'cols' should be character at this point in setkey; please "
 "report."
-msgstr ""
+msgstr "内部错误： 目前在setkey中，'cols'应该是字符类型, 请报告"
 
 msgid "Internal error: index '"
-msgstr ""
+msgstr "内部错误：索引"
 
 msgid "' exists but is invalid"
-msgstr ""
+msgstr "存在但无效"
 
 msgid ""
 "Use 'if (length(o <- forderv(DT,by))) ...' for efficiency in one step, so "
 "you have o as well if not sorted."
 msgstr ""
+"请使用'if (length(o <- forderv(DT,by))) ...' , 以便在一步中拥有较好的效率，"
+"同时如果你还未排序，你也获得了变量o"
 
 msgid "x is vector but 'by' is supplied"
-msgstr ""
+msgstr "x是一个向量， 但是参数'by'被提供"
 
 msgid "x is a single vector, non-NULL 'by' doesn't make sense"
-msgstr ""
+msgstr "x是一个单向量，非NULL的'by'参数不合理"
 
 msgid "Attempting to order a 0-column data.table or data.frame."
-msgstr ""
+msgstr "你正在试图对一个0列的data.table或者data.frame排序"
 
 msgid ""
 "The first item passed to [f]order is a plain list but there are more items. "
 "It should be a data.table or data.frame."
-msgstr ""
+msgstr "传递给[f]order的第一个变量是一个简单的列表, 但此处有更多的项"
+"它需要是一个data.table或者data.frame"
 
 msgid "Internal code should not be being called on type double"
 msgstr ""

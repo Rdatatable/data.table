@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: data.table 1.12.7\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2019-12-08 11:20+0800\n"
+"POT-Creation-Date: 2019-12-08 18:59+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -410,172 +410,172 @@ msgstr ""
 msgid "Shortening index '%s' to '%s' due to an update on a key column\n"
 msgstr ""
 
-#: assign.c:685
+#: assign.c:680
 #, c-format
 msgid "Internal error: recycle length error not caught earlier. slen=%d len=%d"
 msgstr ""
 
-#: assign.c:689
+#: assign.c:684
 msgid "Internal error: memrecycle has received NULL colname"
 msgstr ""
 
-#: assign.c:715
+#: assign.c:710
 #, c-format
 msgid ""
 "Cannot assign 'factor' to '%s'. Factors can only be assigned to factor, "
 "character or list columns."
 msgstr ""
 
-#: assign.c:729
+#: assign.c:724
 #, c-format
 msgid ""
 "Assigning factor numbers to column %d named '%s'. But %d is outside the "
 "level range [1,%d]"
 msgstr ""
 
-#: assign.c:737
+#: assign.c:732
 #, c-format
 msgid ""
 "Assigning factor numbers to column %d named '%s'. But %f is outside the "
 "level range [1,%d], or is not a whole number."
 msgstr ""
 
-#: assign.c:743
+#: assign.c:738
 #, c-format
 msgid ""
 "Cannot assign '%s' to 'factor'. Factor columns can be assigned factor, "
 "character, NA in any type, or level numbers."
 msgstr ""
 
-#: assign.c:764
+#: assign.c:759
 msgid ""
 "Internal error: levels of target are either not unique or have truelength<0"
 msgstr ""
 
-#: assign.c:803
+#: assign.c:798
 #, c-format
 msgid "Unable to allocate working memory of %d bytes to combine factor levels"
 msgstr ""
 
-#: assign.c:810
+#: assign.c:805
 msgid "Internal error: extra level check sum failed"
 msgstr ""
 
-#: assign.c:829
+#: assign.c:824
 #, c-format
 msgid ""
 "Coercing 'character' RHS to '%s' to match the type of the target column "
 "(column %d named '%s')."
 msgstr ""
 
-#: assign.c:835
+#: assign.c:830
 #, c-format
 msgid ""
 "Cannot coerce 'list' RHS to 'integer64' to match the type of the target "
 "column (column %d named '%s')."
 msgstr ""
 
-#: assign.c:840
+#: assign.c:835
 #, c-format
 msgid ""
 "Coercing 'list' RHS to '%s' to match the type of the target column (column "
 "%d named '%s')."
 msgstr ""
 
-#: assign.c:846
+#: assign.c:841
 #, c-format
 msgid "Zero-copy coerce when assigning '%s' to '%s' column %d named '%s'.\n"
 msgstr ""
 
-#: assign.c:941
+#: assign.c:936
 #, c-format
 msgid "type '%s' cannot be coerced to '%s'"
 msgstr ""
 
-#: assign.c:1061
+#: assign.c:1056
 msgid ""
 "To assign integer64 to a character column, please use as.character() for "
 "clarity."
 msgstr ""
 
-#: assign.c:1072
+#: assign.c:1067
 #, c-format
 msgid "Unsupported column type in assign.c:memrecycle '%s'"
 msgstr ""
 
-#: assign.c:1119
+#: assign.c:1114
 #, c-format
 msgid "Internal error: writeNA passed a vector of type '%s'"
 msgstr ""
 
-#: assign.c:1150
+#: assign.c:1145
 #, c-format
 msgid ""
 "Internal error: savetl_init checks failed (%d %d %p %p). please report to "
 "data.table issue tracker."
 msgstr ""
 
-#: assign.c:1158
+#: assign.c:1153
 #, c-format
 msgid "Failed to allocate initial %d items in savetl_init"
 msgstr ""
 
-#: assign.c:1167
+#: assign.c:1162
 #, c-format
 msgid ""
 "Internal error: reached maximum %d items for savetl. Please report to data."
 "table issue tracker."
 msgstr ""
 
-#: assign.c:1174
+#: assign.c:1169
 #, c-format
 msgid "Failed to realloc saveds to %d items in savetl"
 msgstr ""
 
-#: assign.c:1180
+#: assign.c:1175
 #, c-format
 msgid "Failed to realloc savedtl to %d items in savetl"
 msgstr ""
 
-#: assign.c:1203
+#: assign.c:1198
 msgid "x must be a character vector"
 msgstr ""
 
-#: assign.c:1204
+#: assign.c:1199
 msgid "'which' must be an integer vector"
 msgstr ""
 
-#: assign.c:1205
+#: assign.c:1200
 msgid "'new' must be a character vector"
 msgstr ""
 
-#: assign.c:1206
+#: assign.c:1201
 #, c-format
 msgid "'new' is length %d. Should be the same as length of 'which' (%d)"
 msgstr ""
 
-#: assign.c:1209
+#: assign.c:1204
 #, c-format
 msgid ""
 "Item %d of 'which' is %d which is outside range of the length %d character "
 "vector"
 msgstr ""
 
-#: assign.c:1219
+#: assign.c:1214
 msgid "dt passed to setcolorder has no names"
 msgstr ""
 
-#: assign.c:1221
+#: assign.c:1216
 #, c-format
 msgid "Internal error: dt passed to setcolorder has %d columns but %d names"
 msgstr ""
 
-#: assign.c:1228
+#: assign.c:1223
 msgid ""
 "Internal error: o passed to Csetcolorder contains an NA or out-of-bounds"
 msgstr ""
 
-#: assign.c:1230
+#: assign.c:1225
 msgid "Internal error: o passed to Csetcolorder contains a duplicate"
 msgstr ""
 
@@ -2852,7 +2852,7 @@ msgstr ""
 msgid "Internal error: Unknown sfun value in froll: %d"
 msgstr ""
 
-#: frollR.c:227 frollR.c:328
+#: frollR.c:227 frollR.c:329
 #, c-format
 msgid "%s: processing of %d column(s) and %d window(s) took %.3fs\n"
 msgstr ""
