@@ -436,6 +436,7 @@ sudo apt-get -y install biber   # for ctsem
 sudo apt-get -y install libopenblas-dev  # for ivmte (+ local R build with default ./configure to pick up shared openblas)
 sudo apt-get -y install libhiredis-dev  # for redux used by nodbi
 sudo apt-get -y install libzmq3-dev   # for rzmq
+sudo apt-get -y install libimage-exiftool-perl   # for camtrapR
 sudo R CMD javareconf
 # ENDIF
 
