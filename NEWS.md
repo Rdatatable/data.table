@@ -10,11 +10,15 @@
 
 ## BUG FIXES
 
+1. `frollapply` could segfault and exceed R's C protect limits, [#3993](https://github.com/Rdatatable/data.table/issues/3993). Thanks to @DavisVaughan for reporting and fixing.
+
+2. `DT[, sum(grp), by=grp]` (i.e. aggregating the same column being grouped) could error with `object 'grp' not found`, [#3103](https://github.com/Rdatatable/data.table/issues/3103). Thanks to @cbailiss for reporting.
+
 ## NOTES
 
 1. Links in the manual were creating warnings when installing HTML, [#4000](https://github.com/Rdatatable/data.table/issues/4000). Thanks to Morgan Jacob.
 
-2. One test needed to be adjusted to pass R-devel (R 4.0.0) which will soon have reference counting turned on, [#4058](https://github.com/Rdatatable/data.table/issues/4058). This motivated early release to CRAN because every day CRAN tests every package using the previous day's changes in R-devel; a much valued feature of the R ecosystem. It helps R-core if packages can pass changes in R-devel as soon as possible. Thanks to Luke Tierney for the notice, and for implementing reference counting which we look forward to very much.
+2. Adjustments for R-devel (R 4.0.0) which now has reference counting turned on, [#4058](https://github.com/Rdatatable/data.table/issues/4058) [#4093](https://github.com/Rdatatable/data.table/issues/4093). This motivated early release to CRAN because every day CRAN tests every package using the previous day's changes in R-devel; a much valued feature of the R ecosystem. It helps R-core if packages can pass changes in R-devel as soon as possible. Thanks to Luke Tierney for the notice, and for implementing reference counting which we look forward to very much.
 
 3. C internals have been standardized to use `PRI[u|d]64` to print `[u]int64_t`. This solves new warnings from `gcc-8` on Windows with `%lld`, [#4062](https://github.com/Rdatatable/data.table/issues/4062), in many cases already working around `snprintf` on Windows not supporting `%zu`. Release procedures have been augmented to prevent any internal use of `llu`, `lld`, `zu` or `zd`.
 
