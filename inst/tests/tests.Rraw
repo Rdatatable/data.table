@@ -16388,6 +16388,10 @@ DT[, y := NULL]
 test(2122.1, .Internal(inspect(DT,1)), output="VECSXP.*INTSXP.*[[].*(NAM|REF).*[]].*5,6.*ATTRIB")
 test(2122.2, DT, data.table(V3=5:6))
 
+# aggregating and grouping by same column #3103
+dt = data.table(SomeNumberA=c(1,1,1),SomeNumberB=c(1,1,1))
+test(2123, dt[, .(.N, TotalA=sum(SomeNumberA), TotalB=sum(SomeNumberB)), by=SomeNumberA], data.table(SomeNumberA=1, N=3L, TotalA=1, TotalB=3))
+
 
 ###################################
 #  Add new tests above this line  #
