@@ -3924,7 +3924,7 @@ msgstr "'verbose'必须是TRUE或者FALSE"
 #: openmp-utils.c:70
 msgid ""
 "This installation of data.table has not been compiled with OpenMP support.\n"
-msgstr "安装的data.table并不是获得OpenMP支持的编译"
+msgstr "安装的data.table并不是获得OpenMP支持的编译\n"
 
 #: openmp-utils.c:75
 #, c-format
