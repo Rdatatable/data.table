@@ -5,26 +5,25 @@ msgstr ""
 "POT-Creation-Date: 2019-10-22 21:04+0800\n"
 "PO-Revision-Date: 2019-11-16 20:05+0800\n"
 "Last-Translator: Xianying Tan <shrektan@126.com>\n"
-"Language-Team: Mandarin\n"
 "Language: Mandarin\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: assign.c:9
+#: assign.c:7
 msgid "Internal error: finalizer hasn't received an ExternalPtr"
 msgstr ""
 
-#: assign.c:11
+#: assign.c:9
 msgid "Internal error: finalizer's ExternalPtr doesn't see names in tag"
 msgstr ""
 
-#: assign.c:14
+#: assign.c:12
 #, c-format
 msgid "Internal error: finalizer sees l=%d, tl=%d"
 msgstr ""
 
-#: assign.c:123
+#: assign.c:121
 msgid ""
 ".internal.selfref ptr is NULL. This is expected and normal for a data.table "
 "loaded from disk. Please remember to always setDT() immediately after "
@@ -33,49 +32,49 @@ msgid ""
 "tracker.\n"
 msgstr ""
 
-#: assign.c:126
+#: assign.c:124
 msgid "Internal error: .internal.selfref ptr is not NULL or R_NilValue"
 msgstr ""
 
-#: assign.c:128
+#: assign.c:126
 msgid "Internal error: .internal.selfref tag isn't NULL or a character vector"
 msgstr ""
 
-#: assign.c:170
+#: assign.c:168
 msgid "Internal error: length(names)>0 but <length(dt)"
 msgstr ""
 
-#: assign.c:199
+#: assign.c:197
 msgid "alloccol has been passed a NULL dt"
 msgstr ""
 
-#: assign.c:200
+#: assign.c:198
 msgid "dt passed to alloccol isn't type VECSXP"
 msgstr ""
 
-#: assign.c:202
+#: assign.c:200
 msgid ""
 "dt passed to alloccol has no class attribute. Please report result of "
 "traceback() to data.table issue tracker."
 msgstr ""
 
-#: assign.c:207
+#: assign.c:205
 #, c-format
 msgid "Internal error: length of names (%d) is not length of dt (%d)"
 msgstr ""
 
-#: assign.c:217
+#: assign.c:215
 msgid "Internal error, tl of class is marked but tl<0."
 msgstr ""
 
-#: assign.c:218
+#: assign.c:216
 #, c-format
 msgid ""
 "Internal error, please report (including result of sessionInfo()) to data."
 "table issue tracker: tl (%d) < l (%d) but tl of class is marked."
 msgstr ""
 
-#: assign.c:219
+#: assign.c:217
 #, c-format
 msgid ""
 "tl (%d) is greater than 10,000 items over-allocated (l = %d). If you didn't "
@@ -83,7 +82,7 @@ msgid ""
 "table issue tracker including the result of sessionInfo()."
 msgstr ""
 
-#: assign.c:221
+#: assign.c:219
 #, c-format
 msgid ""
 "Attempt to reduce allocation from %d to %d ignored. Can only increase "
@@ -91,81 +90,81 @@ msgid ""
 "Use := inside DT[...] instead."
 msgstr ""
 
-#: assign.c:229
+#: assign.c:227
 msgid ""
 "Has getOption('datatable.alloccol') somehow become unset? It should be a "
 "number, by default 1024."
 msgstr ""
 
-#: assign.c:231
+#: assign.c:229
 #, c-format
 msgid ""
 "getOption('datatable.alloccol') should be a number, by default 1024. But its "
 "type is '%s'."
 msgstr ""
 
-#: assign.c:233
+#: assign.c:231
 #, c-format
 msgid ""
 "getOption('datatable.alloc') is a numeric vector ok but its length is %d. "
 "Its length should be 1."
 msgstr ""
 
-#: assign.c:236
+#: assign.c:234
 #, c-format
 msgid "getOption('datatable.alloc')==%d.  It must be >=0 and not NA."
 msgstr ""
 
-#: assign.c:241 fsort.c:109 nafill.c:73
+#: assign.c:239 fsort.c:109 nafill.c:73
 msgid "verbose must be TRUE or FALSE"
 msgstr ""
 
-#: assign.c:289
+#: assign.c:287
 msgid "assign has been passed a NULL dt"
 msgstr ""
 
-#: assign.c:290
+#: assign.c:288
 msgid "dt passed to assign isn't type VECSXP"
 msgstr ""
 
-#: assign.c:292
+#: assign.c:290
 msgid ""
 ".SD is locked. Updating .SD by reference using := or set are reserved for "
 "future use. Use := in j directly. Or use copy(.SD) as a (slow) last resort, "
 "until shallow() is exported."
 msgstr ""
 
-#: assign.c:300
+#: assign.c:298
 msgid "Internal error: dt passed to Cassign is not a data.table or data.frame"
 msgstr ""
 
-#: assign.c:304
+#: assign.c:302
 msgid "dt passed to assign has no names"
 msgstr ""
 
-#: assign.c:306
+#: assign.c:304
 #, c-format
 msgid "Internal error in assign: length of names (%d) is not length of dt (%d)"
 msgstr ""
 
-#: assign.c:308
+#: assign.c:306
 msgid ""
 "data.table is NULL; malformed. A null data.table should be an empty list. "
 "typeof() should always return 'list' for data.table."
 msgstr ""
 
-#: assign.c:317
+#: assign.c:315
 #, c-format
 msgid "Assigning to all %d rows\n"
 msgstr ""
 
-#: assign.c:322
+#: assign.c:320
 msgid ""
 "Coerced i from numeric to integer. Please pass integer for efficiency; e.g., "
 "2L rather than 2"
 msgstr ""
 
-#: assign.c:325
+#: assign.c:323
 #, c-format
 msgid ""
 "i is type '%s'. Must be integer, or numeric is coerced with warning. If i is "
@@ -176,26 +175,26 @@ msgstr ""
 "整型并发出警告）。如果 i 为一个用于筛选的逻辑（logical）向量，请直接将它传给 "
 "which()，且如果可能的话将 which() 放置于循环之外以保持高效。"
 
-#: assign.c:331
+#: assign.c:329
 #, c-format
 msgid "i[%d] is %d which is out of range [1,nrow=%d]."
 msgstr "i[%d] 为 %d 且超出了范围 [1,nrow=%d]。"
 
-#: assign.c:334
+#: assign.c:332
 #, c-format
 msgid "Assigning to %d row subset of %d rows\n"
 msgstr "正在为 %d 行（总数为 %d 行）进行赋值\n"
 
-#: assign.c:342
+#: assign.c:340
 #, c-format
 msgid "Added %d new column%s initialized with all-NA\n"
 msgstr "添加了 %d 个新列 %s 并全部初始化为 NA\n"
 
-#: assign.c:347
+#: assign.c:345
 msgid "length(LHS)==0; no columns to delete or assign RHS to."
 msgstr "左手侧长度为0（length(LHS)==0）；没有列可供删除或赋值给右手侧（RHS）。"
 
-#: assign.c:361
+#: assign.c:359
 msgid ""
 "set() on a data.frame is for changing existing columns, not adding new ones. "
 "Please use a data.table for that. data.table's are over-allocated and don't "
@@ -205,7 +204,7 @@ msgstr ""
 "table 来添加新列。data.table 的操作是超额分配的（over-allocated）并且不进行浅"
 "拷贝（shallow copy）。"
 
-#: assign.c:372
+#: assign.c:370
 msgid ""
 "Coerced j from numeric to integer. Please pass integer for efficiency; e.g., "
 "2L rather than 2"
@@ -213,7 +212,7 @@ msgstr ""
 "将 j 从数值（numeric）型自动转换为整（integer）型。为了保持高效请直接传入整"
 "型，如2L 而非 2"
 
-#: assign.c:375
+#: assign.c:373
 #, c-format
 msgid ""
 "j is type '%s'. Must be integer, character, or numeric is coerced with "
@@ -222,22 +221,22 @@ msgstr ""
 "j 为 '%s' 型。j 必须为整（integer）型、字符（character）型，或数值（numeric）"
 "型（将被自动转换成整型并发出警告）。"
 
-#: assign.c:377
+#: assign.c:375
 msgid ""
 "Can't assign to the same column twice in the same query (duplicates "
 "detected)."
 msgstr "在一次查询中无法对同一列赋值两次（检测出重复项）。"
 
-#: assign.c:378
+#: assign.c:376
 msgid "newcolnames is supplied but isn't a character vector"
 msgstr "指定了 newcolnames 但其并非一字符串向量"
 
-#: assign.c:380
+#: assign.c:378
 #, c-format
 msgid "RHS_list_of_columns == %s\n"
 msgstr "RHS_list_of_columns == %s\n"
 
-#: assign.c:385
+#: assign.c:383
 #, c-format
 msgid ""
 "RHS_list_of_columns revised to true because RHS list has 1 item which is "
@@ -246,7 +245,7 @@ msgstr ""
 "RHS_list_of_columns 改为真（True），因为右手侧列表（RHS list）有一子项为空值"
 "（NULL）或长度 %d 为 1 或 targetlen（%d）。请拆开右手侧。\n"
 
-#: assign.c:390
+#: assign.c:388
 #, c-format
 msgid ""
 "Supplied %d columns to be assigned an empty list (which may be an empty data."
@@ -257,19 +256,19 @@ msgstr ""
 "后两者也是列表的一种）。删除多个列时请使用空值（NULL）。添加多个空列表列"
 "（list columns）时，请使用 list(list())。"
 
-#: assign.c:395
+#: assign.c:393
 #, c-format
 msgid "Recycling single RHS list item across %d columns. Please unwrap RHS.\n"
 msgstr ""
 "回收重用（Recycling）单个右手侧（RHS）列表子项于 %d 列。请拆开右手侧。\n"
 
-#: assign.c:397
+#: assign.c:395
 #, c-format
 msgid ""
 "Supplied %d columns to be assigned %d items. Please see NEWS for v1.12.2."
 msgstr "试图将 %2$d 项赋值给 %1$d 列。请阅读 v1.12.2 的更新信息（NEWS）。"
 
-#: assign.c:405
+#: assign.c:403
 #, c-format
 msgid ""
 "Item %d of column numbers in j is %d which is outside range [1,ncol=%d]. "
@@ -279,7 +278,7 @@ msgstr ""
 "j 中的列编号里第 %d 项是 %d，超出了有效范围 [1,ncol=%d]。数据框（data.frame）"
 "的 set() 是用于修改现有列，而非添加新列。请使用 data.table 来添加新列。"
 
-#: assign.c:406
+#: assign.c:404
 #, c-format
 msgid ""
 "Item %d of column numbers in j is %d which is outside range [1,ncol=%d]. Use "
@@ -288,11 +287,11 @@ msgstr ""
 "j 中的列编号里第 %d 项是 %d，超出了有效范围 [1,ncol=%d]。请在 j 中使用列名来"
 "添加新列。"
 
-#: assign.c:411
+#: assign.c:409
 msgid "When deleting columns, i should not be provided"
 msgstr "当删除列时，不应指定 i"
 
-#: assign.c:417
+#: assign.c:415
 #, c-format
 msgid ""
 "RHS of assignment to existing column '%s' is zero length but not NULL. If "
@@ -308,23 +307,23 @@ msgstr ""
 "一个与该列原数据等长的向量，如 vector('list',nrow(DT))，即，用新数据替换"
 "（plonk）重新生成该列。"
 
-#: assign.c:422
+#: assign.c:420
 #, c-format
 msgid ""
 "Internal error in assign.c: length(newcolnames)=%d, length(names)=%d, coln=%d"
 msgstr "assign.c 内部错误：length(newcolnames)=%d, length(names)=%d, coln=%d"
 
-#: assign.c:424
+#: assign.c:422
 #, c-format
 msgid "Column '%s' does not exist to remove"
 msgstr "要删除的列 '%s' 不存在"
 
-#: assign.c:430
+#: assign.c:428
 #, c-format
 msgid "%d column matrix RHS of := will be treated as one vector"
 msgstr "':=' 右手侧（RHS）%d 列矩阵将被视为一维向量"
 
-#: assign.c:434
+#: assign.c:432
 #, c-format
 msgid ""
 "Can't assign to column '%s' (type 'factor') a value of type '%s' (not "
@@ -333,7 +332,7 @@ msgstr ""
 "无法给因子（factor）类型列 '%s' 赋类型为 '%s' 的值（不是字符（character）、因"
 "子（factor）、整数（integer）或数值（numeric）类中的一种）"
 
-#: assign.c:439
+#: assign.c:437
 #, c-format
 msgid ""
 "Supplied %d items to be assigned to %d items of column '%s'. If you wish to "
@@ -343,7 +342,7 @@ msgstr ""
 "试图将 %d 项赋值给 %d 项（列 '%s'）。如果想'回收重用'（'recycle'）右手侧，请"
 "使用 rep() 以将该意图清晰地表述给阅读代码的人。"
 
-#: assign.c:449
+#: assign.c:447
 msgid ""
 "This data.table has either been loaded from disk (e.g. using readRDS()/"
 "load()) or constructed manually (e.g. using structure()). Please run setDT() "
@@ -354,7 +353,7 @@ msgstr ""
 "structure() )。在通过引用的方式进行赋值前，请先运行 setDT() 或 setalloccol() "
 "来为增加的列预先分配空间"
 
-#: assign.c:450
+#: assign.c:448
 #, c-format
 msgid ""
 "Internal error: oldtncol(%d) < oldncol(%d). Please report to data.table "
@@ -363,7 +362,7 @@ msgstr ""
 "内部错误: oldtncol(%d) < oldncol(%d)。 请将此问题汇报给 data.table 问题追踪"
 "器，包括 sessionInfo() 的信息。"
 
-#: assign.c:452
+#: assign.c:450
 #, c-format
 msgid ""
 "truelength (%d) is greater than 10,000 items over-allocated (length = %d). "
@@ -375,7 +374,7 @@ msgstr ""
 "truelength。如果你没有将 datatable.alloccol 设置为非常大的数值，请将此问题汇"
 "报给 data.table 问题追踪器，包含 sessionInfo() 的信息"
 
-#: assign.c:454
+#: assign.c:452
 #, c-format
 msgid ""
 "Internal error: DT passed to assign has not been allocated enough column "
@@ -383,7 +382,7 @@ msgid ""
 msgstr ""
 "内部错误: 传递出去赋值的 DT 没有被分配足够的列槽。 l=%d, tl=%d, 增加 %d"
 
-#: assign.c:456
+#: assign.c:454
 msgid ""
 "It appears that at some earlier point, names of this data.table have been "
 "reassigned. Please ensure to use setnames() rather than names<- or "
@@ -393,18 +392,18 @@ msgstr ""
 "names<- 或 colnames<- 进行赋值。如果该办法无效，请将此问题汇报给 data.table "
 "问题追踪器，包含 sessionInfo() 的信息"
 
-#: assign.c:460
+#: assign.c:458
 #, c-format
 msgid "Internal error: selfrefnames is ok but tl names [%d] != tl [%d]"
 msgstr "内部错误: selfrefnames 正确，但 tl 的名称 [%d] != tl [%d]"
 
-#: assign.c:471
+#: assign.c:469
 msgid ""
 "Internal error: earlier error 'When deleting columns, i should not be "
 "provided' did not happen."
 msgstr "内部错误: 前期的错误 '当删除列的时候，不应该提供参数 i ' 没有发生"
 
-#: assign.c:482
+#: assign.c:480
 #, c-format
 msgid ""
 "RHS for item %d has been duplicated because NAMED==%d MAYBE_SHARED==%d, but "
@@ -413,12 +412,12 @@ msgstr ""
 "因为 NAMED==%d MAYBE_SHARED==%d， 所以条目 %d 的 RHS 已经被复制，但是接下来又"
 "要被替换了。length(values)==%d; length(cols)==%d)\n"
 
-#: assign.c:487
+#: assign.c:485
 #, c-format
 msgid "Direct plonk of unnamed RHS, no copy. NAMED==%d, MAYBE_SHARED==%d\n"
 msgstr "直接替换没有名字的 RHS，并没有复制。 NAMED==%d, MAYBE_SHARED==%d\n"
 
-#: assign.c:556
+#: assign.c:554
 #, c-format
 msgid ""
 "Dropping index '%s' as it doesn't have '__' at the beginning of its name. It "
@@ -427,38 +426,38 @@ msgstr ""
 "丢掉索引 '%s' 因为它的名字前面没有 '__' 。这个很可能是 data.table v1.9.4 创建"
 "的\n"
 
-#: assign.c:564
+#: assign.c:562
 msgid "Internal error: index name ends with trailing __"
 msgstr "内部错误: 索引名称以 __ 结尾"
 
-#: assign.c:569
+#: assign.c:567
 msgid "Internal error: Couldn't allocate memory for s4."
 msgstr "内部错误: 不能给 s4 分配内存"
 
-#: assign.c:580
+#: assign.c:578
 msgid "Internal error: Couldn't allocate memory for s5."
 msgstr "内部错误: 不能给 s5 分配内存"
 
-#: assign.c:601 assign.c:617
+#: assign.c:599 assign.c:615
 #, c-format
 msgid "Dropping index '%s' due to an update on a key column\n"
 msgstr " 因为一个主列的更新，丢掉索引 '%s'\n"
 
-#: assign.c:610
+#: assign.c:608
 #, c-format
 msgid "Shortening index '%s' to '%s' due to an update on a key column\n"
 msgstr "因为一个主列的更新，缩短索引 '%s' 到 '%s'\n"
 
-#: assign.c:687
+#: assign.c:685
 #, c-format
 msgid "Internal error: recycle length error not caught earlier. slen=%d len=%d"
 msgstr "内部错误: 早期未被发现的循环长度错误 slen=%d len=%d"
 
-#: assign.c:691
+#: assign.c:689
 msgid "Internal error: memrecycle has received NULL colname"
 msgstr "内部错误: memrecycle 接受到的列名为 NULL "
 
-#: assign.c:717
+#: assign.c:715
 #, c-format
 msgid ""
 "Cannot assign 'factor' to '%s'. Factors can only be assigned to factor, "
@@ -466,14 +465,14 @@ msgid ""
 msgstr ""
 "不能将 'factor' 赋值为 '%s' 。因子类型只能赋值为因子，字符或者列表其中的列"
 
-#: assign.c:731
+#: assign.c:729
 #, c-format
 msgid ""
 "Assigning factor numbers to column %d named '%s'. But %d is outside the "
 "level range [1,%d]"
 msgstr "将列 %d 名称为 '%s' 赋值为因子。但是 %d 在层次范围[1,%d]之外"
 
-#: assign.c:739
+#: assign.c:737
 #, c-format
 msgid ""
 "Assigning factor numbers to column %d named '%s'. But %f is outside the "
@@ -482,7 +481,7 @@ msgstr ""
 "将列 %d 名称为 '%s' 赋值为因子。但是 %f 在层次范围[1,%d]之外，或者不是一个完"
 "整的数字"
 
-#: assign.c:745
+#: assign.c:743
 #, c-format
 msgid ""
 "Cannot assign '%s' to 'factor'. Factor columns can be assigned factor, "
@@ -490,28 +489,28 @@ msgid ""
 msgstr ""
 "不能将 'factor' 赋值为 '%s' 。 因子列可被赋值为因子，字符 ，NA 或者 层次数值"
 
-#: assign.c:766
+#: assign.c:764
 msgid ""
 "Internal error: levels of target are either not unique or have truelength<0"
 msgstr "内部错误: 目标的层次不是唯一或者长度<0"
 
-#: assign.c:805
+#: assign.c:803
 #, c-format
 msgid "Unable to allocate working memory of %d bytes to combine factor levels"
 msgstr "不能分配 %d 字节的工作内存来组合因子层次"
 
-#: assign.c:812
+#: assign.c:810
 msgid "Internal error: extra level check sum failed"
 msgstr "内部错误: 额外的层次校验和失败"
 
-#: assign.c:831
+#: assign.c:829
 #, c-format
 msgid ""
 "Coercing 'character' RHS to '%s' to match the type of the target column "
 "(column %d named '%s')."
 msgstr "将'character' RHS 强制转换成 '%s' 来匹配目标列的类型(列 %d 名称 '%s')"
 
-#: assign.c:837
+#: assign.c:835
 #, c-format
 msgid ""
 "Cannot coerce 'list' RHS to 'integer64' to match the type of the target "
@@ -519,107 +518,107 @@ msgid ""
 msgstr ""
 "不能将'list' RHS 强制转换成 'integer64' 来匹配目标列的类型(列 %d 名称 '%s')"
 
-#: assign.c:842
+#: assign.c:840
 #, c-format
 msgid ""
 "Coercing 'list' RHS to '%s' to match the type of the target column (column "
 "%d named '%s')."
 msgstr "将'list' RHS 强制转换成 '%s' 来匹配目标列的类型(列 %d 名称 '%s')"
 
-#: assign.c:848
+#: assign.c:846
 #, c-format
 msgid "Zero-copy coerce when assigning '%s' to '%s' column %d named '%s'.\n"
 msgstr "当 '%s' 赋值成 '%s' 列 %d 名称 '%s'，进行Zero-copy强制转换。\n"
 
-#: assign.c:943
+#: assign.c:941
 #, c-format
 msgid "type '%s' cannot be coerced to '%s'"
 msgstr "类型 '%s' 不能强制转换成 '%s'"
 
-#: assign.c:1063
+#: assign.c:1061
 msgid ""
 "To assign integer64 to a character column, please use as.character() for "
 "clarity."
 msgstr "请使用 as.character() 把 integer64 类型的数值赋值给字符列"
 
-#: assign.c:1074
+#: assign.c:1072
 #, c-format
 msgid "Unsupported column type in assign.c:memrecycle '%s'"
 msgstr ""
 
-#: assign.c:1121
+#: assign.c:1119
 #, c-format
 msgid "Internal error: writeNA passed a vector of type '%s'"
 msgstr ""
 
-#: assign.c:1152
+#: assign.c:1150
 #, c-format
 msgid ""
 "Internal error: savetl_init checks failed (%d %d %p %p). please report to "
 "data.table issue tracker."
 msgstr ""
 
-#: assign.c:1160
+#: assign.c:1158
 #, c-format
 msgid "Failed to allocate initial %d items in savetl_init"
 msgstr ""
 
-#: assign.c:1169
+#: assign.c:1167
 #, c-format
 msgid ""
 "Internal error: reached maximum %d items for savetl. Please report to data."
 "table issue tracker."
 msgstr ""
 
-#: assign.c:1176
+#: assign.c:1174
 #, c-format
 msgid "Failed to realloc saveds to %d items in savetl"
 msgstr ""
 
-#: assign.c:1182
+#: assign.c:1180
 #, c-format
 msgid "Failed to realloc savedtl to %d items in savetl"
 msgstr ""
 
-#: assign.c:1205
+#: assign.c:1203
 msgid "x must be a character vector"
 msgstr ""
 
-#: assign.c:1206
+#: assign.c:1204
 msgid "'which' must be an integer vector"
 msgstr ""
 
-#: assign.c:1207
+#: assign.c:1205
 msgid "'new' must be a character vector"
 msgstr ""
 
-#: assign.c:1208
+#: assign.c:1206
 #, c-format
 msgid "'new' is length %d. Should be the same as length of 'which' (%d)"
 msgstr ""
 
-#: assign.c:1211
+#: assign.c:1209
 #, c-format
 msgid ""
 "Item %d of 'which' is %d which is outside range of the length %d character "
 "vector"
 msgstr ""
 
-#: assign.c:1221
+#: assign.c:1219
 msgid "dt passed to setcolorder has no names"
 msgstr ""
 
-#: assign.c:1223
+#: assign.c:1221
 #, c-format
 msgid "Internal error: dt passed to setcolorder has %d columns but %d names"
 msgstr ""
 
-#: assign.c:1230
+#: assign.c:1228
 msgid ""
 "Internal error: o passed to Csetcolorder contains an NA or out-of-bounds"
 msgstr ""
 
-#: assign.c:1232
+#: assign.c:1230
 msgid "Internal error: o passed to Csetcolorder contains a duplicate"
 msgstr ""
 
@@ -2758,53 +2757,53 @@ msgstr ""
 msgid "%s"
 msgstr ""
 
-#: froll.c:18 froll.c:227 froll.c:411
+#: froll.c:14 froll.c:223 froll.c:407
 #, c-format
 msgid "%s: window width longer than input vector, returning all NA vector\n"
 msgstr ""
 
-#: froll.c:36 froll.c:244 froll.c:460
+#: froll.c:32 froll.c:240 froll.c:456
 #, c-format
 msgid "%s: align %d, shift answer by %d\n"
 msgstr ""
 
-#: froll.c:43 froll.c:251 frolladaptive.c:23 frolladaptive.c:218
+#: froll.c:39 froll.c:247 frolladaptive.c:19 frolladaptive.c:214
 #, c-format
 msgid "%s: processing algo %u took %.3fs\n"
 msgstr ""
 
-#: froll.c:52 froll.c:255
+#: froll.c:48 froll.c:251
 #, c-format
 msgid "%s: running for input length %<PRIu64>, window %d, hasna %d, narm %d\n"
 msgstr ""
 "%s: 正在并行运行, 输入长度 (input length) %<PRIu64>, 窗口 (window) %d, hasna "
 "%d, narm %d\n"
 
-#: froll.c:72 froll.c:82 froll.c:173 froll.c:275 froll.c:285 froll.c:366
-#: frolladaptive.c:62 frolladaptive.c:151 frolladaptive.c:251
-#: frolladaptive.c:330
+#: froll.c:68 froll.c:78 froll.c:169 froll.c:271 froll.c:281 froll.c:362
+#: frolladaptive.c:58 frolladaptive.c:147 frolladaptive.c:247
+#: frolladaptive.c:326
 #, c-format
 msgid ""
 "%s: hasNA=FALSE used but NA (or other non-finite) value(s) are present in "
 "input, use default hasNA=NA to avoid this warning"
 msgstr ""
 
-#: froll.c:75 froll.c:177 froll.c:278 froll.c:370 frolladaptive.c:65
-#: frolladaptive.c:155 frolladaptive.c:254 frolladaptive.c:334
+#: froll.c:71 froll.c:173 froll.c:274 froll.c:366 frolladaptive.c:61
+#: frolladaptive.c:151 frolladaptive.c:250 frolladaptive.c:330
 #, c-format
 msgid ""
 "%s: NA (or other non-finite) value(s) are present in input, re-running with "
 "extra care for NAs\n"
 msgstr ""
 
-#: froll.c:85 froll.c:288
+#: froll.c:81 froll.c:284
 #, c-format
 msgid ""
 "%s: NA (or other non-finite) value(s) are present in input, skip non-NA "
 "attempt and run with extra care for NAs\n"
 msgstr "%s: NA (或其他非有限长度值) 出现在输入中, 跳过非NA的输入并当心NA值\n"
 
-#: froll.c:141 froll.c:339
+#: froll.c:137 froll.c:335
 #, c-format
 msgid ""
 "%s: running in parallel for input length %<PRIu64>, window %d, hasna %d, "
@@ -2813,7 +2812,7 @@ msgstr ""
 "%s: 正在并行运行, 输入长度 (input length) %<PRIu64>, 窗口 (window) %d, hasna "
 "%d, narm %d\n"
 
-#: froll.c:179 froll.c:372 frolladaptive.c:157 frolladaptive.c:336
+#: froll.c:175 froll.c:368 frolladaptive.c:153 frolladaptive.c:332
 #, c-format
 msgid ""
 "%s: NA (or other non-finite) value(s) are present in input, na.rm was FALSE "
@@ -2822,12 +2821,12 @@ msgstr ""
 "%s: NA (或其他非有限长度值) 出现在输入中, na.rm 为 FALSE 因此在'exact'实现"
 "中, NA值已经被处理, 不需要重新运行\n"
 
-#: froll.c:428
+#: froll.c:424
 #, c-format
 msgid "%s: results from provided FUN are not length 1"
 msgstr "%s: 所提供的函数 (FUN) 的结果长度不为1"
 
-#: froll.c:435
+#: froll.c:431
 #, c-format
 msgid ""
 "%s: results from provided FUN are not of type double, coercion from integer "
@@ -2836,12 +2835,12 @@ msgstr ""
 "%s: 所提供的函数 (FUN) 的结果不是双精度 (double) 类型, 对整数或逻辑值的类型转"
 "换会在每个循环中执行\n"
 
-#: froll.c:438
+#: froll.c:434
 #, c-format
 msgid "%s: results from provided FUN are not of type double"
 msgstr "%s: 所提供的函数 (FUN) 的结果不是双精度 (double) 类型"
 
-#: froll.c:467
+#: froll.c:463
 #, c-format
 msgid "%s: took %.3fs\n"
 msgstr "%s: 使用了 %.3fs\n"
@@ -2995,22 +2994,22 @@ msgstr "内部错误: 'fun' 必须是一个函数"
 msgid "internal error: 'rho' should be an environment"
 msgstr "内部错误: 'rho' 应该为一个环境 (environment)"
 
-#: frolladaptive.c:33 frolladaptive.c:222
+#: frolladaptive.c:29 frolladaptive.c:218
 #, c-format
 msgid "%s: running for input length %<PRIu64>, hasna %d, narm %d\n"
 msgstr "%s: 正在运行, 输入长度 %<PRIu64>, hasna %d, narm %d\n"
 
-#: frolladaptive.c:39 frolladaptive.c:228
+#: frolladaptive.c:35 frolladaptive.c:224
 #, c-format
 msgid "%s: Unable to allocate memory for cumsum"
 msgstr "%s: 无法为 cumsum 分配内存"
 
-#: frolladaptive.c:75 frolladaptive.c:264
+#: frolladaptive.c:71 frolladaptive.c:260
 #, c-format
 msgid "%s: Unable to allocate memory for cum NA counter"
 msgstr "%s: 无法为 cum NA counter 分配内存"
 
-#: frolladaptive.c:118 frolladaptive.c:302
+#: frolladaptive.c:114 frolladaptive.c:298
 #, c-format
 msgid "%s: running in parallel for input length %<PRIu64>, hasna %d, narm %d\n"
 msgstr "%s: 正在并行运行, 输入长度 %<PRIu64>, hasna %d, narm %d\n"
@@ -3740,156 +3739,156 @@ msgstr ""
 msgid "Final step, fetching indices in overlaps ... done in %8.3f seconds\n"
 msgstr ""
 
-#: init.c:198
+#: init.c:231
 #, c-format
 msgid ""
 "Pointers are %d bytes, greater than 8. We have not tested on any "
 "architecture greater than 64bit yet."
 msgstr ""
 
-#: init.c:209
+#: init.c:242
 #, c-format
 msgid "Checking NA_INTEGER [%d] == INT_MIN [%d] %s"
 msgstr ""
 
-#: init.c:210
+#: init.c:243
 #, c-format
 msgid "Checking NA_INTEGER [%d] == NA_LOGICAL [%d] %s"
 msgstr ""
 
-#: init.c:211
+#: init.c:244
 #, c-format
 msgid "Checking sizeof(int) [%d] is 4 %s"
 msgstr ""
 
-#: init.c:212
+#: init.c:245
 #, c-format
 msgid "Checking sizeof(double) [%d] is 8 %s"
 msgstr ""
 
-#: init.c:214
+#: init.c:247
 #, c-format
 msgid "Checking sizeof(long long) [%d] is 8 %s"
 msgstr ""
 
-#: init.c:215
+#: init.c:248
 #, c-format
 msgid "Checking sizeof(pointer) [%d] is 4 or 8 %s"
 msgstr ""
 
-#: init.c:216
+#: init.c:249
 #, c-format
 msgid "Checking sizeof(SEXP) [%d] == sizeof(pointer) [%d] %s"
 msgstr ""
 
-#: init.c:217
+#: init.c:250
 #, c-format
 msgid "Checking sizeof(uint64_t) [%d] is 8 %s"
 msgstr ""
 
-#: init.c:218
+#: init.c:251
 #, c-format
 msgid "Checking sizeof(int64_t) [%d] is 8 %s"
 msgstr ""
 
-#: init.c:219
+#: init.c:252
 #, c-format
 msgid "Checking sizeof(signed char) [%d] is 1 %s"
 msgstr ""
 
-#: init.c:220
+#: init.c:253
 #, c-format
 msgid "Checking sizeof(int8_t) [%d] is 1 %s"
 msgstr ""
 
-#: init.c:221
+#: init.c:254
 #, c-format
 msgid "Checking sizeof(uint8_t) [%d] is 1 %s"
 msgstr ""
 
-#: init.c:222
+#: init.c:255
 #, c-format
 msgid "Checking sizeof(int16_t) [%d] is 2 %s"
 msgstr ""
 
-#: init.c:223
+#: init.c:256
 #, c-format
 msgid "Checking sizeof(uint16_t) [%d] is 2 %s"
 msgstr ""
 
-#: init.c:226
+#: init.c:259
 #, c-format
 msgid "Checking LENGTH(allocVector(INTSXP,2)) [%d] is 2 %s"
 msgstr ""
 
-#: init.c:227
+#: init.c:260
 #, c-format
 msgid "Checking TRUELENGTH(allocVector(INTSXP,2)) [%d] is 0 %s"
 msgstr ""
 
-#: init.c:234
+#: init.c:267
 #, c-format
 msgid "Checking memset(&i,0,sizeof(int)); i == (int)0 %s"
 msgstr ""
 
-#: init.c:237
+#: init.c:270
 #, c-format
 msgid "Checking memset(&ui, 0, sizeof(unsigned int)); ui == (unsigned int)0 %s"
 msgstr ""
 
-#: init.c:240
+#: init.c:273
 #, c-format
 msgid "Checking memset(&d, 0, sizeof(double)); d == (double)0.0 %s"
 msgstr ""
 
-#: init.c:243
+#: init.c:276
 #, c-format
 msgid "Checking memset(&ld, 0, sizeof(long double)); ld == (long double)0.0 %s"
 msgstr ""
 
-#: init.c:246
+#: init.c:279
 msgid "The ascii character '/' is not just before '0'"
 msgstr ""
 
-#: init.c:247
+#: init.c:280
 msgid "The C expression (uint_fast8_t)('/'-'0')<10 is true. Should be false."
 msgstr ""
 
-#: init.c:248
+#: init.c:281
 msgid "The ascii character ':' is not just after '9'"
 msgstr ""
 
-#: init.c:249
+#: init.c:282
 msgid "The C expression (uint_fast8_t)('9'-':')<10 is true. Should be false."
 msgstr ""
 
-#: init.c:254
+#: init.c:287
 #, c-format
 msgid "Conversion of NA_INT64 via double failed %<PRId64>!=%<PRId64>"
 msgstr ""
 
-#: init.c:258
+#: init.c:291
 msgid "NA_INT64_D (negative -0.0) is not == 0.0."
 msgstr ""
 
-#: init.c:259
+#: init.c:292
 msgid "NA_INT64_D (negative -0.0) is not ==-0.0."
 msgstr ""
 
-#: init.c:260
+#: init.c:293
 msgid "ISNAN(NA_INT64_D) is TRUE but should not be"
 msgstr ""
 
-#: init.c:261
+#: init.c:294
 msgid "isnan(NA_INT64_D) is TRUE but should not be"
 msgstr ""
 
-#: init.c:290
+#: init.c:323
 #, c-format
 msgid "PRINTNAME(install(\"integer64\")) has returned %s not %s"
 msgstr ""
 
-#: init.c:359
+#: init.c:392
 msgid ".Last.value in namespace is not a length 1 integer"
 msgstr ""
 

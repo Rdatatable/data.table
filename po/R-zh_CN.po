@@ -707,9 +707,10 @@ msgid ""
 "used) because := is being used together with keyby= but the keyby= contains "
 "some expressions. To avoid this warning, use by= instead, or provide "
 "existing column names to keyby=."
-msgstr "因为`:=`与`keyby=`一起使用且`keyby=`含有表达式, 所以代码跳过了一般"
-"`keyby=`会执行的`setkey()` -- 代码只执行了`by=`。"
-"若要避免此警告, 请使用`by=`, 或者提供`keyby=`现有的列名"
+msgstr ""
+"因为`:=`与`keyby=`一起使用且`keyby=`含有表达式, 所以代码跳过了一般`keyby=`会"
+"执行的`setkey()` -- 代码只执行了`by=`。若要避免此警告, 请使用`by=`, 或者提供"
+"`keyby=`现有的列名"
 
 msgid "Internal error: jvnames is length"
 msgstr "内部错误:jvnames 是长度"
@@ -736,7 +737,8 @@ msgstr "。 rownames参数为单一列名或单一数值。请考虑使用`rowna
 
 msgid ""
 "length(rownames)==0 but should be a single column name or number, or NULL"
-msgstr "行名长度为零，`length(rownames)==0`，但应该为单一列名，单一数值，或NULL"
+msgstr ""
+"行名长度为零，`length(rownames)==0`，但应该为单一列名，单一数值，或NULL"
 
 msgid "rownames is TRUE but key has multiple columns"
 msgstr "rownames是TRUE但key不只一个列"
@@ -778,16 +780,18 @@ msgstr "j 必须是列名(column name)或列位(column position)的向量"
 msgid ""
 "Attempt to assign to column position greater than ncol(x). Create the column "
 "by name, instead. This logic intends to catch (most likely) user errors."
-msgstr "试图指定至比ncol(x)还大的列位(column position)。请指定至列名(column name)。"
-"一般来说用列名取代列位能解决大部分错误。"
+msgstr ""
+"试图指定至比ncol(x)还大的列位(column position)。请指定至列名(column name)。一"
+"般来说用列名取代列位能解决大部分错误。"
 
 msgid ""
 "data.table inherits from data.frame (from v1.5), but this data.table does "
 "not. Has it been created manually (e.g. by using 'structure' rather than "
 "'data.table') or saved to disk using a prior version of data.table?"
-msgstr "data.table继承自data.frame(v1.5)，但这个data.table并不是。"
-"请检查这个data.table是不是手动创建的（可能创建时使用了`structure()`而非`data.table()`),"
-"或者是不是使用了更早的data.table版本创建后存到硬盘了。"
+msgstr ""
+"data.table继承自data.frame(v1.5)，但这个data.table并不是。请检查这个data."
+"table是不是手动创建的（可能创建时使用了`structure()`而非`data.table()`),或者"
+"是不是使用了更早的data.table版本创建后存到硬盘了。"
 
 msgid "attempting to assign invalid object to dimnames of a data.table"
 msgstr "试图指定无效对象给data.table的维度名(dimnames)"
@@ -1099,6 +1103,12 @@ msgid ". Only allowed operators are"
 msgstr "。只有这些操作符是有效的"
 
 msgid "."
+msgstr ""
+
+msgid "There is no"
+msgstr ""
+
+msgid "package in provided repository."
 msgstr ""
 
 msgid "'fromLast' must be TRUE or FALSE"
@@ -1827,12 +1837,6 @@ msgid ""
 "**********"
 msgstr ""
 
-msgid "There is no"
-msgstr ""
-
-msgid "package in provided repository."
-msgstr ""
-
 msgid ""
 "The option 'datatable.nomatch' is being used and is not set to the default "
 "NA. This option is still honored for now but will be deprecated in future. "
@@ -2173,6 +2177,12 @@ msgid "Neither"
 msgstr ""
 
 msgid "exist in"
+msgstr ""
+
+msgid "Failed after test"
+msgstr ""
+
+msgid "before the next test() call in"
 msgstr ""
 
 msgid "Timings count mismatch:"
