@@ -118,7 +118,7 @@ msgstr ""
 
 #: assign.c:239 fsort.c:109 nafill.c:73
 msgid "verbose must be TRUE or FALSE"
-msgstr ""
+msgstr "verbose必须是TRUE或FALSE"
 
 #: assign.c:287
 msgid "assign has been passed a NULL dt"
@@ -449,16 +449,16 @@ msgstr " 因为一个主列的更新，丢掉索引 '%s'\n"
 msgid "Shortening index '%s' to '%s' due to an update on a key column\n"
 msgstr "因为一个主列的更新，缩短索引 '%s' 到 '%s'\n"
 
-#: assign.c:685
+#: assign.c:680
 #, c-format
 msgid "Internal error: recycle length error not caught earlier. slen=%d len=%d"
 msgstr "内部错误: 早期未被发现的循环长度错误 slen=%d len=%d"
 
-#: assign.c:689
+#: assign.c:684
 msgid "Internal error: memrecycle has received NULL colname"
 msgstr "内部错误: memrecycle 接受到的列名为 NULL "
 
-#: assign.c:715
+#: assign.c:710
 #, c-format
 msgid ""
 "Cannot assign 'factor' to '%s'. Factors can only be assigned to factor, "
@@ -466,14 +466,14 @@ msgid ""
 msgstr ""
 "不能将 'factor' 赋值为 '%s' 。因子类型只能赋值为因子，字符或者列表其中的列"
 
-#: assign.c:729
+#: assign.c:724
 #, c-format
 msgid ""
 "Assigning factor numbers to column %d named '%s'. But %d is outside the "
 "level range [1,%d]"
 msgstr "将列 %d 名称为 '%s' 赋值为因子。但是 %d 在层次范围[1,%d]之外"
 
-#: assign.c:737
+#: assign.c:732
 #, c-format
 msgid ""
 "Assigning factor numbers to column %d named '%s'. But %f is outside the "
@@ -482,7 +482,7 @@ msgstr ""
 "将列 %d 名称为 '%s' 赋值为因子。但是 %f 在层次范围[1,%d]之外，或者不是一个完"
 "整的数字"
 
-#: assign.c:743
+#: assign.c:738
 #, c-format
 msgid ""
 "Cannot assign '%s' to 'factor'. Factor columns can be assigned factor, "
@@ -490,28 +490,28 @@ msgid ""
 msgstr ""
 "不能将 'factor' 赋值为 '%s' 。 因子列可被赋值为因子，字符 ，NA 或者 层次数值"
 
-#: assign.c:764
+#: assign.c:759
 msgid ""
 "Internal error: levels of target are either not unique or have truelength<0"
 msgstr "内部错误: 目标的层次不是唯一或者长度<0"
 
-#: assign.c:803
+#: assign.c:798
 #, c-format
 msgid "Unable to allocate working memory of %d bytes to combine factor levels"
 msgstr "不能分配 %d 字节的工作内存来组合因子层次"
 
-#: assign.c:810
+#: assign.c:805
 msgid "Internal error: extra level check sum failed"
 msgstr "内部错误: 额外的层次校验和失败"
 
-#: assign.c:829
+#: assign.c:824
 #, c-format
 msgid ""
 "Coercing 'character' RHS to '%s' to match the type of the target column "
 "(column %d named '%s')."
 msgstr "将'character' RHS 强制转换成 '%s' 来匹配目标列的类型(列 %d 名称 '%s')"
 
-#: assign.c:835
+#: assign.c:830
 #, c-format
 msgid ""
 "Cannot coerce 'list' RHS to 'integer64' to match the type of the target "
@@ -519,40 +519,40 @@ msgid ""
 msgstr ""
 "不能将'list' RHS 强制转换成 'integer64' 来匹配目标列的类型(列 %d 名称 '%s')"
 
-#: assign.c:840
+#: assign.c:835
 #, c-format
 msgid ""
 "Coercing 'list' RHS to '%s' to match the type of the target column (column "
 "%d named '%s')."
 msgstr "将'list' RHS 强制转换成 '%s' 来匹配目标列的类型(列 %d 名称 '%s')"
 
-#: assign.c:846
+#: assign.c:841
 #, c-format
 msgid "Zero-copy coerce when assigning '%s' to '%s' column %d named '%s'.\n"
 msgstr "当 '%s' 赋值成 '%s' 列 %d 名称 '%s'，进行Zero-copy强制转换。\n"
 
-#: assign.c:941
+#: assign.c:936
 #, c-format
 msgid "type '%s' cannot be coerced to '%s'"
 msgstr "类型 '%s' 不能强制转换成 '%s'"
 
-#: assign.c:1061
+#: assign.c:1056
 msgid ""
 "To assign integer64 to a character column, please use as.character() for "
 "clarity."
 msgstr "请使用 as.character() 把 integer64 类型的数值赋值给字符列"
 
-#: assign.c:1072
+#: assign.c:1067
 #, c-format
 msgid "Unsupported column type in assign.c:memrecycle '%s'"
 msgstr "assign.c:memrecycle '%s' 里有不支持的列的类型"
 
-#: assign.c:1119
+#: assign.c:1114
 #, c-format
 msgid "Internal error: writeNA passed a vector of type '%s'"
 msgstr "内部错误：writeNA 函数读取到了一个类型是'%s'的向量"
 
-#: assign.c:1150
+#: assign.c:1145
 #, c-format
 msgid ""
 "Internal error: savetl_init checks failed (%d %d %p %p). please report to "
@@ -561,12 +561,12 @@ msgstr ""
 "内部错误：savetl_init的校验失败 (%d %d %p %p)，请将此问题汇报给data.table 问"
 "题追踪器。"
 
-#: assign.c:1158
+#: assign.c:1153
 #, c-format
 msgid "Failed to allocate initial %d items in savetl_init"
 msgstr "不能给 savetl_init 最开始的 %d 个项进行分配 "
 
-#: assign.c:1167
+#: assign.c:1162
 #, c-format
 msgid ""
 "Internal error: reached maximum %d items for savetl. Please report to data."
@@ -575,55 +575,55 @@ msgstr ""
 "内部错误：已经达到了savetl能处理的最多 %d 数量的子项。请将此问题汇报给data."
 "table 问题追踪器。"
 
-#: assign.c:1174
+#: assign.c:1169
 #, c-format
 msgid "Failed to realloc saveds to %d items in savetl"
 msgstr "不能给savetl里的 %d 个项提供 saveds"
 
-#: assign.c:1180
+#: assign.c:1175
 #, c-format
 msgid "Failed to realloc savedtl to %d items in savetl"
 msgstr "不能给savetl里的 %d 个项提供 savetl"
 
-#: assign.c:1203
+#: assign.c:1198
 msgid "x must be a character vector"
 msgstr "x 必须是一个字符向量"
 
-#: assign.c:1204
+#: assign.c:1199
 msgid "'which' must be an integer vector"
 msgstr "'which' 必须是一个整数向量"
 
-#: assign.c:1205
+#: assign.c:1200
 msgid "'new' must be a character vector"
 msgstr "'new' 必须是一个字符向量"
 
-#: assign.c:1206
+#: assign.c:1201
 #, c-format
 msgid "'new' is length %d. Should be the same as length of 'which' (%d)"
 msgstr "'new' 的长度是 %d。 它的长度必须和'which' (%d)的长度一致。"
 
-#: assign.c:1209
+#: assign.c:1204
 #, c-format
 msgid ""
 "Item %d of 'which' is %d which is outside range of the length %d character "
 "vector"
 msgstr "'which' 的 %1$d 项是 %2$d 且超出了长度为%3$d字符的范围"
 
-#: assign.c:1219
+#: assign.c:1214
 msgid "dt passed to setcolorder has no names"
 msgstr "setcolorder读取到的dt并没有名字"
 
-#: assign.c:1221
+#: assign.c:1216
 #, c-format
 msgid "Internal error: dt passed to setcolorder has %d columns but %d names"
 msgstr "内部错误: setcolorder读取到的dt有 %d 列但是有 %d 个名字。"
 
-#: assign.c:1228
+#: assign.c:1223
 msgid ""
 "Internal error: o passed to Csetcolorder contains an NA or out-of-bounds"
 msgstr "内部错误: Csetcolorder读取到的o有一个NA(缺失值)或者是出界"
 
-#: assign.c:1230
+#: assign.c:1225
 msgid "Internal error: o passed to Csetcolorder contains a duplicate"
 msgstr "内部错误: Csetcolorder读取到的o含有一个重复值"
 
@@ -2990,7 +2990,7 @@ msgstr ""
 msgid "Internal error: Unknown sfun value in froll: %d"
 msgstr "内部错误: 在 froll: %d 中未知的 sfun 值"
 
-#: frollR.c:227 frollR.c:328
+#: frollR.c:227 frollR.c:329
 #, c-format
 msgid "%s: processing of %d column(s) and %d window(s) took %.3fs\n"
 msgstr "%s: 处理 %d column(s), 和 %d window(s) 用掉 %.3fs\n"
@@ -3836,74 +3836,76 @@ msgstr ""
 #: init.c:276
 #, c-format
 msgid "Checking memset(&ld, 0, sizeof(long double)); ld == (long double)0.0 %s"
-msgstr ""
+msgstr "检查memset(&ld, 0, sizeof(long double)); ld == (long double)0.0 %s"
 
 #: init.c:279
 msgid "The ascii character '/' is not just before '0'"
-msgstr ""
+msgstr "ascii字符'/'不是在'0'前"
 
 #: init.c:280
 msgid "The C expression (uint_fast8_t)('/'-'0')<10 is true. Should be false."
-msgstr ""
+msgstr "C表达式 (uint_fast8_t)('/'-'0') <10  为 true. 应该是 false."
 
 #: init.c:281
 msgid "The ascii character ':' is not just after '9'"
-msgstr ""
+msgstr "ascii字符':'不是在'9'后"
 
 #: init.c:282
 msgid "The C expression (uint_fast8_t)('9'-':')<10 is true. Should be false."
-msgstr ""
+msgstr "C表达式(uint_fast8_t)('9'-':') < 10  为 true. 应该是 false."
 
 #: init.c:287
 #, c-format
 msgid "Conversion of NA_INT64 via double failed %<PRId64>!=%<PRId64>"
-msgstr ""
+msgstr "double类型转化为NA_INT64失败，%<PRId64>!=%<PRId64>"
 
 #: init.c:291
 msgid "NA_INT64_D (negative -0.0) is not == 0.0."
-msgstr ""
+msgstr "NA_INT64_D (negative -0.0) 不是 == 0.0."
 
 #: init.c:292
 msgid "NA_INT64_D (negative -0.0) is not ==-0.0."
-msgstr ""
+msgstr "NA_INT64_D (negative -0.0) 不是 ==-0.0."
 
 #: init.c:293
 msgid "ISNAN(NA_INT64_D) is TRUE but should not be"
-msgstr ""
+msgstr "ISNAN(NA_INT64_D) 不应该是TRUE"
 
 #: init.c:294
 msgid "isnan(NA_INT64_D) is TRUE but should not be"
-msgstr ""
+msgstr "isnan(NA_INT64_D) 不应该是 TRUE"
 
 #: init.c:323
 #, c-format
 msgid "PRINTNAME(install(\"integer64\")) has returned %s not %s"
-msgstr ""
+msgstr "PRINTNAME(install(\"integer64\")) 返回了 %s , 而不是 %s"
 
 #: init.c:392
 msgid ".Last.value in namespace is not a length 1 integer"
-msgstr ""
+msgstr "命名空间中，.Last.value 不是一个长度为 1 的整型"
 
 #: nafill.c:83
 msgid ""
 "'x' argument is atomic vector, in-place update is supported only for list/"
 "data.table"
-msgstr ""
+msgstr "参数'x'是一个原子型矢量，原位的更新只为list 或 data.table提供"
 
 #: nafill.c:85 nafill.c:95
 msgid "'x' argument must be numeric type, or list/data.table of numeric types"
-msgstr ""
+msgstr "参数'x'必须是数字类型，或者是数字类型的list/data.table"
 
 #: nafill.c:133 nafill.c:161
 msgid ""
 "Internal error: invalid type argument in nafillR function, should have been "
 "caught before. Please report to data.table issue tracker."
 msgstr ""
+"内部错误：函数 nafillR 中有无效类型的参数, 该错误理应已被捕获，请向data.table"
+"的issue通道报告"
 
 #: nafill.c:177
 #, c-format
 msgid "%s: parallel processing of %d column(s) took %.3fs\n"
-msgstr ""
+msgstr "%s : 并行处理 %d 列， 用时 %.3fs\n"
 
 #: openmp-utils.c:22
 #, c-format
@@ -3911,6 +3913,8 @@ msgid ""
 "Ignoring invalid %s==\")%s\". Not an integer >= 1. Please remove any "
 "characters that are not a digit [0-9]. See ?data.table::setDTthreads."
 msgstr ""
+"忽略无效的 %s==\")%s\". 不是一个 >= 1 的整型. 请去除任何不是[0-9]数字的字"
+"符。 查看?data.table::setDTthreads."
 
 #: openmp-utils.c:40
 #, c-format
@@ -3918,119 +3922,125 @@ msgid ""
 "Ignoring invalid R_DATATABLE_NUM_PROCS_PERCENT==%d. If used it must be an "
 "integer between 2 and 100. Default is 50. See ?setDTtheads."
 msgstr ""
+"忽略无效的R_DATATABLE_NUM_PROCS_PERCENT==%d. 如需使用，它必须是一个2-100的整"
+"型，默认值为50查看?setDTtheads."
 
 #: openmp-utils.c:67
 msgid "'verbose' must be TRUE or FALSE"
-msgstr ""
+msgstr "'verbose'必须是TRUE或者FALSE"
 
 #: openmp-utils.c:70
 msgid ""
 "This installation of data.table has not been compiled with OpenMP support.\n"
-msgstr ""
+msgstr "安装的data.table并不是获得OpenMP支持的编译\n"
 
 #: openmp-utils.c:75
 #, c-format
 msgid "  omp_get_num_procs()            %d\n"
-msgstr ""
+msgstr "  omp_get_num_procs()            %d\n"
 
 #: openmp-utils.c:76
 #, c-format
 msgid "  R_DATATABLE_NUM_PROCS_PERCENT  %s\n"
-msgstr ""
+msgstr "  R_DATATABLE_NUM_PROCS_PERCENT  %s\n"
 
 #: openmp-utils.c:77
 #, c-format
 msgid "  R_DATATABLE_NUM_THREADS        %s\n"
-msgstr ""
+msgstr "  R_DATATABLE_NUM_THREADS        %s\n"
 
 #: openmp-utils.c:78
 #, c-format
 msgid "  omp_get_thread_limit()         %d\n"
-msgstr ""
+msgstr "  omp_get_thread_limit()         %d\n"
 
 #: openmp-utils.c:79
 #, c-format
 msgid "  omp_get_max_threads()          %d\n"
-msgstr ""
+msgstr "  omp_get_max_threads()          %d\n"
 
 #: openmp-utils.c:80
 #, c-format
 msgid "  OMP_THREAD_LIMIT               %s\n"
-msgstr ""
+msgstr "  OMP_THREAD_LIMIT               %s\n"
 
 #: openmp-utils.c:81
 #, c-format
 msgid "  OMP_NUM_THREADS                %s\n"
-msgstr ""
+msgstr "  OMP_NUM_THREADS                %s\n"
 
 #: openmp-utils.c:82
 #, c-format
 msgid "  RestoreAfterFork               %s\n"
-msgstr ""
+msgstr "  RestoreAfterFork               %s\n"
 
 #: openmp-utils.c:83
 #, c-format
 msgid "  data.table is using %d threads. See ?setDTthreads.\n"
-msgstr ""
+msgstr "  data.table 正在使用 %d 线程. 查看 ?setDTthreads.\n"
 
 #: openmp-utils.c:91
 msgid ""
 "restore_after_fork= must be TRUE, FALSE, or NULL (default). "
 "getDTthreads(verbose=TRUE) reports the current setting.\n"
 msgstr ""
+"restore_after_fork= 必须是 TRUE, FALSE, 或者 NULL (默认值). "
+"getDTthreads(verbose=TRUE) 来查看当前设置.\n"
 
 #: openmp-utils.c:105
 #, c-format
 msgid ""
 "threads= must be either NULL (default) or a single number. It has length %d"
-msgstr ""
+msgstr "threads= 必须是 NULL (默认值) 或者一个数字. 目前它长度为 %d"
 
 #: openmp-utils.c:107
 msgid "threads= must be either NULL (default) or type integer/numeric"
-msgstr ""
+msgstr "threads= 必须是 NULL (默认值) 或者数字/整型类型"
 
 #: openmp-utils.c:109
 msgid ""
 "threads= must be either NULL or a single integer >= 0. See ?setDTthreads."
-msgstr ""
+msgstr "threads= 必须是 NULL 或者一个>=0 的整型。 查看 ?setDTthreads."
 
 #: openmp-utils.c:114
 msgid "Internal error: percent= must be TRUE or FALSE at C level"
-msgstr ""
+msgstr "内部错误: 在 C 中，percent= 必须是TRUE or FALSE "
 
 #: openmp-utils.c:117
 #, c-format
 msgid ""
 "Internal error: threads==%d should be between 2 and 100 (percent=TRUE at C "
 "level)."
-msgstr ""
+msgstr "内部错误: threads==%d 应该为 2 至 100 (percent=TRUE, 在 C 中)."
 
 #: rbindlist.c:8
 msgid "fill= should be TRUE or FALSE"
-msgstr ""
+msgstr "fill= 应该是 TRUE 或 FALSE"
 
 #: rbindlist.c:10
 msgid "use.names= should be TRUE, FALSE, or not used (\"check\" by default)"
-msgstr ""
+msgstr "use.names= 应该是 TRUE, FALSE, 或者默认不使用 (\"check\" )"
 
 #: rbindlist.c:12
 msgid ""
 "Input to rbindlist must be a list. This list can contain data.tables, data."
 "frames or plain lists."
 msgstr ""
+"rbindlist的输入必须是一个list. 该list可以包含data.table, data.frame 或者 普通"
+"list."
 
 #: rbindlist.c:16
 msgid "use.names= cannot be FALSE when fill is TRUE. Setting use.names=TRUE."
-msgstr ""
+msgstr "当fill是TRUE时，use.names= 不能是FALSE . 正在设置 use.names=TRUE."
 
 #: rbindlist.c:20
 msgid "Internal error: rbindlist.c idcol is not a single string"
-msgstr ""
+msgstr "内部错误: rbindlist.c idcol 不是一个单字符串"
 
 #: rbindlist.c:31
 #, c-format
 msgid "Item %d of input is not a data.frame, data.table or list"
-msgstr ""
+msgstr "输入项 %d 不是一个data.frame, data.table 或list"
 
 #: rbindlist.c:39
 #, c-format
@@ -4038,11 +4048,12 @@ msgid ""
 "Item %d has %d columns, inconsistent with item %d which has %d columns. To "
 "fill missing columns use fill=TRUE."
 msgstr ""
+"项%d有%d列, 与第%d项不一致， 它有%d列. 若要填补这些列, 请使用fill=TRUE."
 
 #: rbindlist.c:42
 #, c-format
 msgid "Item %d has %d columns but %d column names. Invalid object."
-msgstr ""
+msgstr "=====================第%d项有%d列, 却有列名 %d 个. 无效对象."
 
 #: rbindlist.c:49
 #, c-format
