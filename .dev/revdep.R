@@ -1,6 +1,6 @@
 # Run by package maintainer via these entries in ~/.bash_aliases :
-#   alias revdepr='cd ~/build/revdeplib/ && R_LIBS_SITE=none R_LIBS=~/build/revdeplib/ _R_CHECK_FORCE_SUGGESTS_=false R_PROFILE_USER=~/GitHub/data.table/.dev/revdep.R R'
 #   alias revdepsh='cd ~/build/revdeplib/ && export TZ=UTC && export R_LIBS_SITE=none && export R_LIBS=~/build/revdeplib/ && export _R_CHECK_FORCE_SUGGESTS_=false'
+#   alias revdepr='revdepsh; R_PROFILE_USER=~/GitHub/data.table/.dev/revdep.R ~/build/R-devel/bin/R'
 # revdep = reverse first-order dependency; i.e. the CRAN and Bioconductor packages which directly use data.table (765 at the time of writing)
 
 # Check that env variables have been set correctly:
@@ -8,17 +8,18 @@
 #   export R_LIBS=~/build/revdeplib/
 #   export _R_CHECK_FORCE_SUGGESTS_=false
 stopifnot(identical(length(.libPaths()), 2L))     # revdeplib (writeable by me) and the pre-installed recommended R library (sudo writeable)
-stopifnot(identical(file.info(.libPaths())[,"uname"], c(as.vector(Sys.info()["user"]), "root")))
+stopifnot(identical(file.info(.libPaths())[,"uname"], rep(as.vector(Sys.info()["user"]), 2)))  # 2nd one is root when using default R rather than Rdevel
 stopifnot(identical(.libPaths()[1], getwd()))
 stopifnot(identical(Sys.getenv("_R_CHECK_FORCE_SUGGESTS_"),"false"))
 options(repos = c("CRAN"=c("http://cloud.r-project.org")))
+R = "~/build/R-devel/bin/R"  # alias doesn't work from system()
 
 # The alias sets R_PROFILE_USER so that this script runs on R starting up, leaving prompt running.
 # But if we don't unset it now, anything else from now on that does something like system("R CMD INSTALL") (e.g. update.packages()
 # and BiocManager::install()) will call this script again recursively.
 Sys.unsetenv("R_PROFILE_USER")
 
-system("sudo R -e \"utils::update.packages('/usr/lib/R/library', ask=FALSE, checkBuilt=TRUE)\"")
+system(paste0(R," -e \"utils::update.packages('",.libPaths()[2],"', ask=FALSE, checkBuilt=TRUE)\""))
 
 require(utils)  # only base is loaded when R_PROFILE_USER runs
 update.packages(ask=FALSE, checkBuilt=TRUE)
@@ -29,7 +30,7 @@ update.packages(ask=FALSE, checkBuilt=TRUE)
 # Follow: https://bioconductor.org/install
 # Ensure no library() call in .Rprofile, such as library(bit64)
 require(BiocManager)
-BiocManager::install(ask=FALSE, version="devel")
+BiocManager::install(ask=FALSE, version="devel", checkBuilt=TRUE)
 BiocManager::valid()
 
 avail = available.packages(repos=BiocManager::repositories())  # includes CRAN at the end from getOption("repos"). And ensure latest Bioc version is in repo path here.
@@ -37,7 +38,6 @@ deps = tools::package_dependencies("data.table", db=avail, which="all", reverse=
 exclude = c("TCGAbiolinks")  # too long (>30mins): https://github.com/BioinformaticsFMRP/TCGAbiolinks/issues/240
 deps = deps[-match(exclude, deps)]
 table(avail[deps,"Repository"])
-length(deps)
 old = 0
 new = 0
 if (basename(.libPaths()[1]) != "revdeplib") stop("Must start R with exports as above")
@@ -61,12 +61,12 @@ for (p in deps) {
   }
 }
 cat("New downloaded:",new," Already had latest:", old, " TOTAL:", length(deps), "\n")
-length(deps)
 update.packages(repos=BiocManager::repositories(), checkBuilt=TRUE)  # double-check all dependencies are latest too
-table(installed.packages()[,"Built"])  # ensure all built with this major release of R; e.g. none should have been built with R-devel
+cat("This is R ",R.version$major,".",R.version$minor,"; ",R.version.string,"\n",sep="")
+cat("Installed packages built using:\n")
+drop(table(installed.packages()[,"Built"]))  # ensure all built with this major release of R
 
 # Remove the tar.gz no longer needed :
-system("ls *.tar.gz | wc -l")
 for (p in deps) {
   f = paste0(p, "_", avail[p,"Version"], ".tar.gz")  # keep this one
   all = system(paste0("ls ",p,"_*.tar.gz"), intern=TRUE)
@@ -82,8 +82,8 @@ for (p in deps) {
     system(paste0("rm ",i,"_*.tar.gz"))
   }
 }
-system("ls *.tar.gz | wc -l")
-length(deps)
+num_tar.gz = as.integer(system("ls *.tar.gz | wc -l", intern=TRUE))
+if (length(deps) != num_tar.gz) stop("num_tar.gz==",num_tar.gz," but length(deps)==",length(deps))
 
 status = function(which="both") {
   if (which=="both") {
@@ -97,7 +97,7 @@ status = function(which="both") {
     cat("Oldest 00check.log (to check no old stale ones somehow missed):\n")
     system("find . -name '00check.log' | xargs ls -lt | tail -1")
     cat("\n")
-    tt = length(system('ps -aux | grep "parallel.*R CMD check"', intern=TRUE))>2L
+    tt = length(system('ps -aux | grep "parallel.*R.* CMD check"', intern=TRUE))>2L
     cat("parallel R CMD check is ", if(tt)"" else "not ", "running\n",sep="")
     if (file.exists("/tmp/started.flag")) {
       # system("ls -lrt /tmp/*.flag")
@@ -176,7 +176,7 @@ run = function(pkgs=NULL) {
   cat("Proceed? (ctrl-c or enter)\n")
   scan(quiet=TRUE)
   if (!identical(pkgs,"_ALL_")) for (i in pkgs) system(paste0("rm -rf ./",i,".Rcheck"))
-  cmd = paste0("ls -1 *.tar.gz ", filter, "| TZ='UTC' OMP_THREAD_LIMIT=2 parallel --max-procs 50% R CMD check")
+  cmd = paste0("ls -1 *.tar.gz ", filter, "| TZ='UTC' OMP_THREAD_LIMIT=2 parallel --max-procs 50% ",R," CMD check")
   # TZ='UTC' because some packages have failed locally for me but not on CRAN or for their maintainer, due to sensitivity of tests to timezone
   if (as.integer(system("ps -e | grep perfbar | wc -l", intern=TRUE)) < 1) system("perfbar",wait=FALSE)
   system("touch /tmp/started.flag ; rm -f /tmp/finished.flag")
@@ -186,7 +186,7 @@ run = function(pkgs=NULL) {
 inst = function() {
   last = system("ls -t ~/GitHub/data.table/data.table_*.tar.gz", intern=TRUE)[1L]  # latest timestamp should be dev version
   cat("Installing",last,"...\n")
-  system(paste("R CMD INSTALL", last))
+  system(paste0(R," CMD INSTALL ",last))
 }
 
 log = function(bioc=FALSE, fnam="~/fail.log") {
