@@ -1,6 +1,4 @@
 #include "data.table.h"
-#include <Rdefines.h>
-#include <Rmath.h>
 
 static void finalizer(SEXP p)
 {
@@ -862,7 +860,7 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source,
       const char *sType = sourceIsI64 ? "integer64" : type2char(TYPEOF(source));                                        \
       const char *tType = targetIsI64 ? "integer64" : type2char(TYPEOF(target));                                        \
       int n = snprintf(memrecycle_message, MSGSIZE,                                                                     \
-               FMT" (type '%s') at RHS position %d "TO" when assigning to type '%s'", val, sType, i+1, tType);          \
+            "%"FMT" (type '%s') at RHS position %d "TO" when assigning to type '%s'", val, sType, i+1, tType);          \
       if (colnum>0 && n>0 && n<MSGSIZE)                                                                                 \
         snprintf(memrecycle_message+n, MSGSIZE-n, " (column %d named '%s')", colnum, colname);                          \
       /* string returned so that rbindlist/dogroups can prefix it with which item of its list this refers to  */        \
@@ -874,28 +872,28 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source,
     switch(TYPEOF(target)) {
     case LGLSXP:
       switch (TYPEOF(source)) {
-      case RAWSXP:  CHECK_RANGE(Rbyte, RAW,      val!=0 && val!=1,                                        "%d",   "taken as TRUE")
-      case INTSXP:  CHECK_RANGE(int, INTEGER,    val!=0 && val!=1 && val!=NA_INTEGER,                     "%d",   "taken as TRUE")
+      case RAWSXP:  CHECK_RANGE(Rbyte, RAW,    val!=0 && val!=1,                                        "d",    "taken as TRUE")
+      case INTSXP:  CHECK_RANGE(int, INTEGER,  val!=0 && val!=1 && val!=NA_INTEGER,                     "d",    "taken as TRUE")
       case REALSXP: if (sourceIsI64)
-                    CHECK_RANGE(long long, REAL, val!=0 && val!=1 && val!=NA_INTEGER64,                   "%lld", "taken as TRUE")
-              else  CHECK_RANGE(double, REAL,    !ISNAN(val) && val!=0.0 && val!=1.0,                     "%f",   "taken as TRUE")
+                    CHECK_RANGE(int64_t, REAL, val!=0 && val!=1 && val!=NA_INTEGER64,                   PRId64, "taken as TRUE")
+              else  CHECK_RANGE(double, REAL,  !ISNAN(val) && val!=0.0 && val!=1.0,                     "f",    "taken as TRUE")
       } break;
     case RAWSXP:
       switch (TYPEOF(source)) {
-      case INTSXP:  CHECK_RANGE(int, INTEGER,    val<0 || val>255,                                        "%d",   "taken as 0")
+      case INTSXP:  CHECK_RANGE(int, INTEGER,  val<0 || val>255,                                        "d",    "taken as 0")
       case REALSXP: if (sourceIsI64)
-                    CHECK_RANGE(long long, REAL, val<0 || val>255,                                        "%lld", "taken as 0")
-              else  CHECK_RANGE(double, REAL,    !R_FINITE(val) || val<0.0 || val>256.0 || (int)val!=val, "%f",   "either truncated (precision lost) or taken as 0")
+                    CHECK_RANGE(int64_t, REAL, val<0 || val>255,                                        PRId64, "taken as 0")
+              else  CHECK_RANGE(double, REAL,  !R_FINITE(val) || val<0.0 || val>256.0 || (int)val!=val, "f",    "either truncated (precision lost) or taken as 0")
       } break;
     case INTSXP:
       if (TYPEOF(source)==REALSXP) {
         if (sourceIsI64)
-                    CHECK_RANGE(long long, REAL, val!=NA_INTEGER64 && (val<=NA_INTEGER || val>INT_MAX),   "%lld",  "out-of-range (NA)")
-        else        CHECK_RANGE(double, REAL,    !ISNAN(val) && (!R_FINITE(val) || (int)val!=val),        "%f",    "truncated (precision lost)")
+                    CHECK_RANGE(int64_t, REAL, val!=NA_INTEGER64 && (val<=NA_INTEGER || val>INT_MAX),   PRId64,  "out-of-range (NA)")
+        else        CHECK_RANGE(double, REAL,  !ISNAN(val) && (!R_FINITE(val) || (int)val!=val),        "f",     "truncated (precision lost)")
       } break;
     case REALSXP:
       if (targetIsI64 && isReal(source) && !sourceIsI64) {
-                    CHECK_RANGE(double, REAL,    !ISNAN(val) && (!R_FINITE(val) || (int)val!=val),        "%f",    "truncated (precision lost)")
+                    CHECK_RANGE(double, REAL,  !ISNAN(val) && (!R_FINITE(val) || (int)val!=val),        "f",     "truncated (precision lost)")
       }
     }
   }
