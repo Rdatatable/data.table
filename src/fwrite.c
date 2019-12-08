@@ -1,9 +1,9 @@
+#include "dt_stdio.h"
 #include <errno.h>
 #include <unistd.h>    // for access()
 #include <fcntl.h>
 #include <stdbool.h>   // true and false
 #include <stdint.h>    // INT32_MIN
-#include <inttypes.h>  // PRId64
 #include <math.h>      // isfinite, isnan
 #include <stdlib.h>    // abs
 #include <string.h>    // strlen, strerror
