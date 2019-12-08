@@ -18,6 +18,8 @@
 
 3. C internals have been standardized to use `PRI[u|d]64` to print `[u]int64_t`. This solves new warnings from `gcc-8` on Windows with `%lld`, [#4062](https://github.com/Rdatatable/data.table/issues/4062), in many cases already working around `snprintf` on Windows not supporting `%zu`. Release procedures have been augmented to prevent any internal use of `llu`, `lld`, `zu` or `zd`.
 
+4. `test.data.table()` gains `showProgress=interactive()` to suppress the thousands of `Running test id <num> ...` lines displayed by CRAN checks when there are warnings or errors.
+
 
 # data.table [v1.12.6](https://github.com/Rdatatable/data.table/milestone/18?closed=1)  (18 Oct 2019)
 

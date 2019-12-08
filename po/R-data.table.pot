@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: data.table 1.12.7\n"
-"POT-Creation-Date: 2019-11-20 05:46\n"
+"POT-Creation-Date: 2019-12-08 11:20\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -853,6 +853,12 @@ msgstr ""
 msgid "."
 msgstr ""
 
+msgid "There is no"
+msgstr ""
+
+msgid "package in provided repository."
+msgstr ""
+
 msgid "'fromLast' must be TRUE or FALSE"
 msgstr ""
 
@@ -1399,12 +1405,6 @@ msgstr ""
 msgid "This warning message should not occur on Windows or Linux. If it does, please file a GitHub issue.\n**********"
 msgstr ""
 
-msgid "There is no"
-msgstr ""
-
-msgid "package in provided repository."
-msgstr ""
-
 msgid "The option 'datatable.nomatch' is being used and is not set to the default NA. This option is still honored for now but will be deprecated in future. Please see NEWS for 1.12.4 for detailed information and motivation. To specify inner join, please specify `nomatch=NULL` explicitly in your calls rather than changing the default using this option."
 msgstr ""
 
@@ -1679,6 +1679,12 @@ msgid "Neither"
 msgstr ""
 
 msgid "exist in"
+msgstr ""
+
+msgid "Failed after test"
+msgstr ""
+
+msgid "before the next test() call in"
 msgstr ""
 
 msgid "Timings count mismatch:"
