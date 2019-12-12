@@ -781,22 +781,22 @@ msgstr "输入值是一个指向与R全局值相同位置的长度为1的逻辑"
 "您需要将结果分配回一个变量，参看 issue #1281"
 
 msgid "x is not a data.table or data.frame"
-msgstr "x 不是 data.table 或 data.frame。"
+msgstr "x 不是 data.table 或 data.frame."
 
 msgid "x has"
 msgstr "x 有"
 
 msgid "columns but its names are length"
-msgstr "很多纵列，但纵列的名字是"
+msgstr " 列，但其列名的数为 "
 
 msgid "Passed a vector of type '"
-msgstr "传递了类型向量的长度值；"
+msgstr "传递了一个向量，向量类型是；"
 
 msgid "'. Needs to be type 'character'."
-msgstr "需要按 'character'类型"
+msgstr ". 需要是 "character" 类型."
 
 msgid "names to a"
-msgstr "去命名"
+msgstr "命名"
 
 msgid "column data.table"
 msgstr "data.table 的纵列"

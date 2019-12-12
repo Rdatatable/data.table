@@ -1298,7 +1298,7 @@ msgstr "'data' 中的'%s'列是未知列类型"
 
 #: fmelt.c:673
 msgid "Input is not of type VECSXP, expected a data.table, data.frame or list"
-msgstr "输入类型不能是 VECSXP，输入类型应该是 data.table," "data.frame 或 list"
+msgstr "输入类型不是 VECSXP，输入类型应该是 data.table," "data.frame 或 list。"
 
 #: fmelt.c:674
 msgid "Argument 'value.factor' should be logical TRUE/FALSE"
@@ -1341,7 +1341,7 @@ msgstr "无法重新将线程私有的组大小缓冲区分割为%d*4字节"
 #: forder.c:120
 #, c-format
 msgid "Failed to realloc group size result to %d*4bytes"
-msgstr "由于%d*4字节，重新分配组大小失败"
+msgstr "分配%d*4字节内存时失败。"
 
 #: forder.c:263
 #, c-format
