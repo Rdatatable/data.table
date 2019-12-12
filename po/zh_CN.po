@@ -1369,201 +1369,209 @@ msgid ""
 "molten data value column will be of type '%s'. All measure variables not of "
 "type '%s' will be coerced too. Check DETAILS in ?melt.data.table for more on "
 "coercion.\n"
-msgstr ""
+msgstr "'measure.vars'[%s] 的数据类型不完全相同。"
+"由于融合后的数据将是'%s'类型，所以变量中不是'%s'类型"
+"的数将被强制转换为'%s'类型，更多关于强制转换的信息"
+"请查看 ?melt.data.table.\n"
 
 #: fmelt.c:387
 #, c-format
 msgid ""
 "The molten data value type is a list at item %d. 'na.rm=TRUE' is ignored.\n"
-msgstr ""
+msgstr "在项目%d中，融合后的数值类型是列表，"
+"参数'na.rm = TRUE'被自动忽略\n"
 
 #: fmelt.c:490
 #, c-format
 msgid "Unknown column type '%s' for column '%s'."
-msgstr ""
+msgstr "'%s'列是未知的纵列类型"
 
 #: fmelt.c:514
 #, c-format
 msgid "Internal error: fmelt.c:getvarcols %d %d"
-msgstr ""
+msgstr "内部错误：fmelt.c : getvarcols %d %d"
 
 #: fmelt.c:662
 #, c-format
 msgid "Unknown column type '%s' for column '%s' in 'data'"
-msgstr ""
+msgstr "'data' 中的'%s'列是未知列类型"
 
 #: fmelt.c:673
 msgid "Input is not of type VECSXP, expected a data.table, data.frame or list"
-msgstr ""
+msgstr "输入类型不是 VECSXP，输入类型应该是 data.table," "data.frame 或 list。"
 
 #: fmelt.c:674
 msgid "Argument 'value.factor' should be logical TRUE/FALSE"
-msgstr ""
+msgstr "'value.factor' 的参数是逻辑值，必须是 TRUE 或" "FALSE"
 
 #: fmelt.c:675
 msgid "Argument 'variable.factor' should be logical TRUE/FALSE"
-msgstr ""
+msgstr "'variable.factor' 的参数是逻辑值，必须是 TRUE 或"
+"FALSE"
 
 #: fmelt.c:676
 msgid "Argument 'na.rm' should be logical TRUE/FALSE."
-msgstr ""
+msgstr "'na.rm' 的参数是逻辑值，必须是 TRUE 或 FALSE"
 
 #: fmelt.c:677
 msgid "Argument 'variable.name' must be a character vector"
-msgstr ""
+msgstr "'variable.name' 必须是字符串类型"
 
 #: fmelt.c:678
 msgid "Argument 'value.name' must be a character vector"
-msgstr ""
+msgstr "'value.name' 必须是字符串类型"
 
 #: fmelt.c:679
 msgid "Argument 'verbose' should be logical TRUE/FALSE"
-msgstr ""
+msgstr "'verbose' 的参数是逻辑值，必须是 TRUE 或 FALSE"
 
 #: fmelt.c:683
 msgid "ncol(data) is 0. Nothing to melt. Returning original data.table."
-msgstr ""
+msgstr "ncol(data)为0，返回原 data.table"
 
 #: fmelt.c:688
 msgid "names(data) is NULL. Please report to data.table-help"
-msgstr ""
+msgstr "names(data)为NULL，请向 data.table-help 报告"
 
 #: forder.c:106
 #, c-format
 msgid "Failed to realloc thread private group size buffer to %d*4bytes"
-msgstr ""
+msgstr "无法重新将线程私有的组大小缓冲区分割为%d*4字节"
 
 #: forder.c:120
 #, c-format
 msgid "Failed to realloc group size result to %d*4bytes"
-msgstr ""
+msgstr "分配%d*4字节内存时失败。"
 
 #: forder.c:263
 #, c-format
 msgid ""
 "Logical error. counts[0]=%d in cradix but should have been decremented to 0. "
 "radix=%d"
-msgstr ""
+msgstr "逻辑错误：在 cradix 中的 counts[0] 应该为0，而不是%d"
+"radix=%d"
 
 #: forder.c:278
 msgid "Failed to alloc cradix_counts"
-msgstr ""
+msgstr "分配 cradix_counts 失败"
 
 #: forder.c:280
 msgid "Failed to alloc cradix_tmp"
-msgstr ""
+msgstr "分配 cradix_tmp 失败"
 
 #: forder.c:291
 #, c-format
 msgid ""
 "Internal error: ustr isn't empty when starting range_str: ustr_n=%d, "
 "ustr_alloc=%d"
-msgstr ""
+msgstr "内部错误：开始运行 range_str 时，ustr 未清空：ustr_n=%d,"
+"ustr_alloc=%d"
 
 #: forder.c:292
 msgid "Internal error: ustr_maxlen isn't 0 when starting range_str"
-msgstr ""
+msgstr "内部错误：开始 range_str 时，ustr_maxlen 不是0"
 
 #: forder.c:312
 #, c-format
 msgid "Unable to realloc %d * %d bytes in range_str"
-msgstr ""
+msgstr "在 range_str 中，无法重新分配%d * %d字节"
 
 #: forder.c:330
 msgid "Failed to alloc ustr3 when converting strings to UTF8"
-msgstr ""
+msgstr "将字符串转换为 UTF8 格式时，无法分配ustr3"
 
 #: forder.c:348
 msgid "Failed to alloc tl when converting strings to UTF8"
-msgstr ""
+msgstr "将字符串转换为 UTF8 格式时，无法分配 tl"
 
 #: forder.c:377
 msgid "Must an integer or numeric vector length 1"
-msgstr ""
+msgstr "必须是长度为1的整数或数字向量"
 
 #: forder.c:378
 msgid "Must be 2, 1 or 0"
-msgstr ""
+msgstr "必须是2、1或者0"
 
 #: forder.c:412
 msgid "Unknown non-finite value; not NA, NaN, -Inf or +Inf"
-msgstr ""
+msgstr "未知的取值范围，不属于 NA, NaN, -Inf 或 +Inf"
 
 #: forder.c:434
 msgid ""
 "Internal error: input is not either a list of columns, or an atomic vector."
-msgstr ""
+msgstr "内部错误：输入值既不是列表中的一列，也不是原子向量"
 
 #: forder.c:436
 msgid ""
 "Internal error: input is an atomic vector (not a list of columns) but by= is "
 "not NULL"
-msgstr ""
+msgstr "内部错误：输入值是一个原子向量(而不是列表中的一列)，但是" "'by' 的参数是列表而不是NULL"
 
 #: forder.c:438
 msgid ""
 "Input is an atomic vector (not a list of columns) but order= is not a length "
 "1 integer"
-msgstr ""
+msgstr "输入值是一个原子向量(而不是列表中的一列)，但参数 order" "不是长度为1的整数"
 
 #: forder.c:440
 #, c-format
 msgid "forder.c received a vector type '%s' length %d\n"
-msgstr ""
+msgstr "forder.c 接收到一个类型为'%s'长度为%d的向量\n"
 
 #: forder.c:448
 #, c-format
 msgid "forder.c received %d rows and %d columns\n"
-msgstr ""
+msgstr "forder.c 接收到%d行和%d列\n"
 
 #: forder.c:451
 msgid "Internal error: DT is an empty list() of 0 columns"
-msgstr ""
+msgstr "内部错误：DT 是一个0列的空 list"
 
 #: forder.c:453
 #, c-format
 msgid ""
 "Internal error: DT has %d columns but 'by' is either not integer or is "
 "length 0"
-msgstr ""
+msgstr "内部错误：DT 内部有%d列，但参数 "by" 不是整数或长度为0"
 
 #: forder.c:455
 #, c-format
 msgid ""
 "Either order= is not integer or its length (%d) is different to by='s length "
 "(%d)"
-msgstr ""
+msgstr "参数 order 不是整数，或者它的长度(%d)与参数 'by' 指定的"
+"长度不同"
 
 #: forder.c:461
 #, c-format
 msgid "internal error: 'by' value %d out of range [1,%d]"
-msgstr ""
+msgstr "内部错误：参数 'by' 的值%d超出[1，%d]的范围"
 
 #: forder.c:463
 #, c-format
 msgid "Column %d is length %d which differs from length of column 1 (%d)\n"
-msgstr ""
+msgstr "列%d的长度是%d，与第1列的长度(%d)不同\n"
 
 #: forder.c:467
 msgid "retGrp must be TRUE or FALSE"
-msgstr ""
+msgstr "retGrp 的参数是逻辑值，必须是 TRUE 或 FALSE"
 
 #: forder.c:470
 msgid "sort must be TRUE or FALSE"
-msgstr ""
+msgstr " sort 的参数是逻辑值，必须是 TRUE 或 FALSE"
 
 #: forder.c:473
 msgid "At least one of retGrp= or sort= must be TRUE"
-msgstr ""
+msgstr "retGrp 和sort 的参数中，至少一个必须是 TRUE"
 
 #: forder.c:475
 msgid "na.last must be logical TRUE, FALSE or NA of length 1"
-msgstr ""
+msgstr "na.last 的参数必须是逻辑值 TRUE, FALSE 或 NA "
 
 #: forder.c:519
 #, c-format
 msgid "Item %d of order (ascending/descending) is %d. Must be +1 or -1."
-msgstr ""
+msgstr "排序(ascending/descending)选项%d是%d，必须是+1 or -1"
 
 #: forder.c:545
 #, c-format
@@ -1572,7 +1580,8 @@ msgid ""
 "*** Column %d passed to forder is a date stored as an 8 byte double but no "
 "fractions are present. Please consider a 4 byte integer date such as IDate "
 "to save space and time.\n"
-msgstr ""
+msgstr ""\n"
+"***传递给 forder 的%d列是一个没有小数的8字节 double 类型的日期数""据，请考虑使用4字节的整数日期（例如IDate）以节省空间和时间\n"
 
 #: forder.c:561
 #, c-format
