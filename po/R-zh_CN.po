@@ -825,79 +825,82 @@ msgid "'subset' must evaluate to logical"
 msgstr "'subset' 必须为logical"
 
 msgid "Argument 'invert' must be logical TRUE/FALSE"
-msgstr ""
+msgstr " 'invert' 的参数是逻辑值，必须是 TRUE/FALSE"
 
 msgid "x argument must be a data.table"
-msgstr ""
+msgstr "参数 x 必须是一个 data.table"
 
 msgid "group length is 0 but data nrow > 0"
-msgstr ""
+msgstr "分组长度为0，但 data nrow > 0"
 
 msgid ""
 "passing 'f' argument together with 'by' is not allowed, use 'by' when split "
 "by column in data.table and 'f' when split by external factor"
-msgstr ""
+msgstr "不可同时指定参数 'f' 和参数 'by' ，当利用 data.table" "的纵列进行数据分割时,请使用参数 'by'；"
+"当利用外部因子进行数据分割时，请使用参数 'f'"
 
 msgid "Either 'by' or 'f' argument must be supplied"
-msgstr ""
+msgstr "必须提供参数 'by' 或参数 'f'"
 
 msgid "Column '.ll.tech.split' is reserved for split.data.table processing"
-msgstr ""
+msgstr "为 split.data.table 进程，纵列 '.ll.tech.split' 被保存"
 
 msgid "Column '.nm.tech.split' is reserved for split.data.table processing"
-msgstr ""
+msgstr "为 split.data.table 进程，纵列 '.nm.tech.split' 被保存"
 
 msgid "Argument 'by' must refer to column names in x"
-msgstr ""
+msgstr "参数 'by' 只适用于 x 中的列名"
 
 msgid ""
 "Argument 'by' must refer only to atomic-type columns, but the following "
 "columns are non-atomic:"
-msgstr ""
+msgstr "参数 'by' 只适用于原子类型的纵列，但现在关联的纵列不是原子类型"
 
 msgid ""
 "x is not a data.table. Shallow copy is a copy of the vector of column "
 "pointers (only), so is only meaningful for data.table"
-msgstr ""
+msgstr "浅拷贝（shallow copy）只是列指针向量的拷贝，因此仅对 data.table 有意义，而 x 不是 data.table"
 
 msgid "setalloccol attempting to modify `*tmp*`"
-msgstr ""
+msgstr "setalloccol 试图修改 '*tmp*'"
 
 msgid ""
 "Input is a length=1 logical that points to the same address as R's global "
 "value. Therefore the attribute has not been set by reference, rather on a "
 "copy. You will need to assign the result back to a variable. See issue #1281."
-msgstr ""
+msgstr "输入值是一个指向与R全局值相同位置的长度为1的逻辑"
+"值。因此，该属性是通过副本，而不是reference 的形式设置。"
+"您需要将结果分配回一个变量，参看 issue #1281"
 
 msgid "x is not a data.table or data.frame"
-msgstr ""
+msgstr "x 不是 data.table 或 data.frame."
 
 msgid "x has"
-msgstr ""
+msgstr "x 有"
 
 msgid "columns but its names are length"
-msgstr ""
+msgstr " 列，但其列名的数为 "
 
 msgid "Passed a vector of type '"
-msgstr ""
+msgstr "传递了一个向量，向量类型是；"
 
 msgid "'. Needs to be type 'character'."
-msgstr ""
+msgstr ". 需要是 'character' 类型."
 
 msgid "names to a"
-msgstr ""
+msgstr "命名"
 
 msgid "column data.table"
-msgstr ""
+msgstr "data.table 的纵列"
 
 msgid "When 'new' is provided, 'old' must be provided too"
-msgstr ""
+msgstr "当提供参数 'new' 时，也必须要提供参数 'old' "
 
 msgid "'new' is not a character vector or a function"
-msgstr ""
+msgstr "'new' 既不是特征向量也不是 function"
 
 msgid "NA in 'new' at positions"
-msgstr ""
+msgstr "在 'new' 中有NA值"
 
 msgid "Some duplicates exist in 'old':"
 msgstr "在'old' 中存在重复名称"
