@@ -14,23 +14,23 @@ SEXP shift(SEXP obj, SEXP k, SEXP fill, SEXP type) {
     SET_VECTOR_ELT(x, 0, obj);
   } else {
     if (!isNewList(obj))
-      error("type '%s' passed to shift(). Must be a vector, list, data.frame or data.table", type2char(TYPEOF(obj)));
+      error(_("type '%s' passed to shift(). Must be a vector, list, data.frame or data.table"), type2char(TYPEOF(obj)));
     x = obj;
   }
   if (length(fill) != 1)
-    error("fill must be a vector of length 1");
+    error(_("fill must be a vector of length 1"));
   // the following two errors should be caught by match.arg() at the R level
   if (!isString(type) || length(type) != 1)
-    error("Internal error: invalid type for shift(), should have been caught before. please report to data.table issue tracker"); // # nocov
+    error(_("Internal error: invalid type for shift(), should have been caught before. please report to data.table issue tracker")); // # nocov
   if (!strcmp(CHAR(STRING_ELT(type, 0)), "lag")) stype = LAG;
   else if (!strcmp(CHAR(STRING_ELT(type, 0)), "lead")) stype = LEAD;
   else if (!strcmp(CHAR(STRING_ELT(type, 0)), "shift")) stype = LAG; // when we get rid of nested if branches we can use SHIFT, for now it maps to LAG
-  else error("Internal error: invalid type for shift(), should have been caught before. please report to data.table issue tracker"); // # nocov
+  else error(_("Internal error: invalid type for shift(), should have been caught before. please report to data.table issue tracker")); // # nocov
 
   int nx = length(x), nk = length(k);
-  if (!isInteger(k)) error("Internal error: k must be integer"); // # nocov
+  if (!isInteger(k)) error(_("Internal error: k must be integer")); // # nocov
   const int *kd = INTEGER(k);
-  for (int i=0; i<nk; i++) if (kd[i]==NA_INTEGER) error("Item %d of n is NA", i+1);  // NA crashed (#3354); n is called k at C level
+  for (int i=0; i<nk; i++) if (kd[i]==NA_INTEGER) error(_("Item %d of n is NA"), i+1);  // NA crashed (#3354); n is called k at C level
 
   ans = PROTECT(allocVector(VECSXP, nk * nx)); protecti++;
   for (int i=0; i<nx; i++) {
@@ -154,7 +154,7 @@ SEXP shift(SEXP obj, SEXP k, SEXP fill, SEXP type) {
       break;
 
     default :
-      error("Unsupported type '%s'", type2char(TYPEOF(elem)));
+      error(_("Unsupported type '%s'"), type2char(TYPEOF(elem)));
     }
   }
 

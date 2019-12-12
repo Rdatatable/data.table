@@ -51,4 +51,3 @@ fi
 version=`pkg-config --modversion zlib`
 echo "zlib ${version} is available ok"
 exit 0
-

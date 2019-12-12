@@ -8,12 +8,12 @@ extern SEXP char_integer64;
 SEXP dt_na(SEXP x, SEXP cols) {
   int n=0, elem;
 
-  if (!isNewList(x)) error("Internal error. Argument 'x' to Cdt_na is type '%s' not 'list'", type2char(TYPEOF(x))); // # nocov
-  if (!isInteger(cols)) error("Internal error. Argument 'cols' to Cdt_na is type '%s' not 'integer'", type2char(TYPEOF(cols))); // # nocov
+  if (!isNewList(x)) error(_("Internal error. Argument 'x' to Cdt_na is type '%s' not 'list'"), type2char(TYPEOF(x))); // # nocov
+  if (!isInteger(cols)) error(_("Internal error. Argument 'cols' to Cdt_na is type '%s' not 'integer'"), type2char(TYPEOF(cols))); // # nocov
   for (int i=0; i<LENGTH(cols); ++i) {
     elem = INTEGER(cols)[i];
     if (elem<1 || elem>LENGTH(x))
-      error("Item %d of 'cols' is %d which is outside 1-based range [1,ncol(x)=%d]", i+1, elem, LENGTH(x));
+      error(_("Item %d of 'cols' is %d which is outside 1-based range [1,ncol(x)=%d]"), i+1, elem, LENGTH(x));
     if (!n) n = length(VECTOR_ELT(x, elem-1));
   }
   SEXP ans = PROTECT(allocVector(LGLSXP, n));
@@ -23,7 +23,7 @@ SEXP dt_na(SEXP x, SEXP cols) {
     SEXP v = VECTOR_ELT(x, INTEGER(cols)[i]-1);
     if (!length(v) || isNewList(v) || isList(v)) continue; // like stats:::na.omit.data.frame, skip list/pairlist columns
     if (n != length(v))
-      error("Column %d of input list x is length %d, inconsistent with first column of that item which is length %d.", i+1,length(v),n);
+      error(_("Column %d of input list x is length %d, inconsistent with first column of that item which is length %d."), i+1,length(v),n);
     switch (TYPEOF(v)) {
     case LGLSXP: {
       const int *iv = LOGICAL(v);
@@ -62,7 +62,7 @@ SEXP dt_na(SEXP x, SEXP cols) {
     }
       break;
     default:
-      error("Unsupported column type '%s'", type2char(TYPEOF(v)));
+      error(_("Unsupported column type '%s'"), type2char(TYPEOF(v)));
     }
   }
   UNPROTECT(1);
@@ -80,7 +80,7 @@ SEXP frank(SEXP xorderArg, SEXP xstartArg, SEXP xlenArg, SEXP ties_method) {
   else if (!strcmp(CHAR(STRING_ELT(ties_method, 0)), "dense")) ties = DENSE;
   else if (!strcmp(CHAR(STRING_ELT(ties_method, 0)), "sequence")) ties = SEQUENCE;
   // else if (!strcmp(CHAR(STRING_ELT(ties_method, 0)), "runlength")) ties = RUNLENGTH;
-  else error("Internal error: invalid ties.method for frankv(), should have been caught before. please report to data.table issue tracker"); // # nocov
+  else error(_("Internal error: invalid ties.method for frankv(), should have been caught before. please report to data.table issue tracker")); // # nocov
   n = length(xorderArg);
   SEXP ans = (ties == MEAN) ? PROTECT(allocVector(REALSXP, n)) : PROTECT(allocVector(INTSXP, n));
   int *ians = INTEGER(ans);
@@ -127,7 +127,7 @@ SEXP frank(SEXP xorderArg, SEXP xstartArg, SEXP xlenArg, SEXP ties_method) {
     //       INTEGER(ans)[xorder[j]-1] = k++;
     //   }
     //   break;
-    default: error("Internal error: unknown ties value in frank: %d", ties); // #nocov
+    default: error(_("Internal error: unknown ties value in frank: %d"), ties); // #nocov
     }
   }
   UNPROTECT(1);
@@ -138,12 +138,12 @@ SEXP frank(SEXP xorderArg, SEXP xstartArg, SEXP xlenArg, SEXP ties_method) {
 SEXP anyNA(SEXP x, SEXP cols) {
   int i, j, n=0, elem;
 
-  if (!isNewList(x)) error("Internal error. Argument 'x' to CanyNA is type '%s' not 'list'", type2char(TYPEOF(x))); // #nocov
-  if (!isInteger(cols)) error("Internal error. Argument 'cols' to CanyNA is type '%s' not 'integer'", type2char(TYPEOF(cols))); // # nocov
+  if (!isNewList(x)) error(_("Internal error. Argument 'x' to CanyNA is type '%s' not 'list'"), type2char(TYPEOF(x))); // #nocov
+  if (!isInteger(cols)) error(_("Internal error. Argument 'cols' to CanyNA is type '%s' not 'integer'"), type2char(TYPEOF(cols))); // # nocov
   for (i=0; i<LENGTH(cols); i++) {
     elem = INTEGER(cols)[i];
     if (elem<1 || elem>LENGTH(x))
-      error("Item %d of 'cols' is %d which is outside 1-based range [1,ncol(x)=%d]", i+1, elem, LENGTH(x));
+      error(_("Item %d of 'cols' is %d which is outside 1-based range [1,ncol(x)=%d]"), i+1, elem, LENGTH(x));
     if (!n) n = length(VECTOR_ELT(x, elem-1));
   }
   SEXP ans = PROTECT(allocVector(LGLSXP, 1));
@@ -152,7 +152,7 @@ SEXP anyNA(SEXP x, SEXP cols) {
     SEXP v = VECTOR_ELT(x, INTEGER(cols)[i]-1);
     if (!length(v) || isNewList(v) || isList(v)) continue; // like stats:::na.omit.data.frame, skip list/pairlist columns
     if (n != length(v))
-      error("Column %d of input list x is length %d, inconsistent with first column of that item which is length %d.", i+1,length(v),n);
+      error(_("Column %d of input list x is length %d, inconsistent with first column of that item which is length %d."), i+1,length(v),n);
     j=0;
     switch (TYPEOF(v)) {
     case LGLSXP: {
@@ -199,7 +199,7 @@ SEXP anyNA(SEXP x, SEXP cols) {
     }
       break;
     default:
-      error("Unsupported column type '%s'", type2char(TYPEOF(v)));
+      error(_("Unsupported column type '%s'"), type2char(TYPEOF(v)));
     }
     if (LOGICAL(ans)[0]) break;
   }
