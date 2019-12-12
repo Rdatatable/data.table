@@ -141,26 +141,27 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b, SEXP na) {
   return ans;
 }
 
-SEXP fcaseR(SEXP args) {
-  int n=length(args)-2;
+SEXP fcaseR(SEXP na, SEXP rho, SEXP args) {
+  int n=length(args);
   if (n % 2) {
     error("Please supply an even number of arguments in ..., consisting of logical condition,"
-             " resulting value pairs (in that order); received %d inputs (including 'default' argument).", n+1);
+             " resulting value pairs (in that order); received %d inputs.", n);
   }
-  args = CDR(args);
-  SEXP na = CAR(args); args = CDR(args);
   int nprotect = 0, l = 0;
   int64_t len0=0, len1=0, len2=0, idx=0;
-  SEXP ans = R_NilValue, value0 = R_NilValue, tracker = R_NilValue;
+  SEXP ans = R_NilValue, value0 = R_NilValue, tracker = R_NilValue, cons = R_NilValue, outs = R_NilValue;
+  PROTECT_INDEX Icons, Iouts;
+  PROTECT_WITH_INDEX(cons, &Icons); nprotect++;
+  PROTECT_WITH_INDEX(outs, &Iouts); nprotect++;
   SEXPTYPE type0;
   bool nonna = !isNull(na), imask = true;
   int *restrict p = NULL;
   n = n/2;
-  for (int i=0; i<n; i++) {
-    SEXP cons = CAR(args); args = CDR(args);
-    SEXP outs = CAR(args); args = CDR(args);
+  for (int i=0; i<n; ++i) {
+    REPROTECT(cons = eval(VECTOR_PTR(args)[2*i], rho), Icons);
+    REPROTECT(outs = eval(VECTOR_PTR(args)[2*i+1], rho), Iouts);
     if (!isLogical(cons)) {
-      error("Argument #%d must be logical.",i*2+1);
+      error("Argument #%d must be logical.",2*i+1);
     }
     const int *restrict pcons = LOGICAL(cons);
     if (i == 0) {
@@ -201,7 +202,7 @@ SEXP fcaseR(SEXP args) {
       imask = false;
       l = 0;
       if (xlength(cons) != len0) {
-        error("Argument #%d has a different length than argument. "
+        error("Argument #%d has a different length than argument #1. "
                  "Please make sure all logical conditions have the same length.",
                  i*2+1);
       }
@@ -224,7 +225,7 @@ SEXP fcaseR(SEXP args) {
     }
     len1 = xlength(outs);
     if (len1 != len0 && len1 != 1) {
-      error("Length of output value #%d is must either 1 or length of logical condition.", i*2+1);
+      error("Length of output value #%d must either be 1 or length of logical condition.", i*2+2);
     }
     int64_t amask = len1>1 ? INT64_MAX : 0;
     switch(TYPEOF(outs)) {
@@ -314,6 +315,7 @@ SEXP fcaseR(SEXP args) {
     default:
       error("Type %s is not supported.", type2char(TYPEOF(outs)));
     }
+    if(0 == l) break;
     len2 = l;
   }
   UNPROTECT(nprotect);

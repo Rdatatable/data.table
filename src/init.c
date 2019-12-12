@@ -19,6 +19,7 @@ SEXP chmatch_R();
 SEXP chmatchdup_R();
 SEXP chin_R();
 SEXP fifelseR();
+SEXP fcaseR();
 SEXP freadR();
 SEXP fwriteR();
 SEXP reorder();
@@ -88,7 +89,6 @@ SEXP allNAR();
 
 // .Externals
 SEXP fastmean();
-SEXP fcaseR();
 
 static const
 R_CallMethodDef callMethods[] = {
@@ -171,6 +171,7 @@ R_CallMethodDef callMethods[] = {
 {"Ccj", (DL_FUNC) &cj, -1},
 {"Ccoalesce", (DL_FUNC) &coalesce, -1},
 {"CfifelseR", (DL_FUNC) &fifelseR, -1},
+{"CfcaseR", (DL_FUNC) &fcaseR, -1},
 {"C_lock", (DL_FUNC) &lock, -1},  // _ for these 3 to avoid Clock as in time
 {"C_unlock", (DL_FUNC) &unlock, -1},
 {"C_islocked", (DL_FUNC) &islockedR, -1},
@@ -183,7 +184,6 @@ R_CallMethodDef callMethods[] = {
 static const
 R_ExternalMethodDef externalMethods[] = {
 {"Cfastmean", (DL_FUNC) &fastmean, -1},
-{"CfcaseR", (DL_FUNC) &fcaseR, -1},
 {NULL, NULL, 0}
 };
 

@@ -6,10 +6,10 @@
 
 ## NEW FEATURES
 
-1. New function `fcase(...,default)` implemented in C, [#3823](https://github.com/Rdatatable/data.table/issues/3823), is inspired by SQL `CASE WHEN` which is a common tool in SQL for e.g. building labels or cutting age groups based on conditions. `fcase` is comparable to R function `dplyr::case_when`. Please see `?data.table::fcase` for more details.
+1. New function `fcase(...,default)` implemented in C by Morgan Jacob, [#3823](https://github.com/Rdatatable/data.table/issues/3823), is inspired by SQL `CASE WHEN` which is a common tool in SQL for e.g. building labels or cutting age groups based on conditions. `fcase` is comparable to R function `dplyr::case_when`. Please see `?data.table::fcase` for more details.
 
 ```R
-x = sample(1:100, 3e8, replace = TRUE) # 1 GB
+x = sample(1:100, 3e7, replace = TRUE) # 114 MB
 microbenchmark::microbenchmark(
 dplyr::case_when(
   x < 10L ~ 0L,
@@ -19,7 +19,7 @@ dplyr::case_when(
   x < 50L ~ 40L,
   x < 60L ~ 50L,
   x > 60L ~ 60L
-)
+),
 data.table::fcase(
   x < 10L, 0L,
   x < 20L, 10L,
@@ -31,6 +31,10 @@ data.table::fcase(
 ),
 times = 5L,
 unit ="s")
+# Unit: seconds
+#               expr   min    lq  mean   median    uq    max neval
+# dplyr::case_when   11.57 11.71 12.22    11.82 12.00  14.02     5
+# data.table::fcase   1.49  1.55  1.67     1.71  1.73   1.86     5
 ```
 
 ## BUG FIXES
