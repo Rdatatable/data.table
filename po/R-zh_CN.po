@@ -823,7 +823,7 @@ msgstr "分组长度为0，但 data nrow > 0"
 msgid ""
 "passing 'f' argument together with 'by' is not allowed, use 'by' when split "
 "by column in data.table and 'f' when split by external factor"
-msgstr "不可同时指定参数 'f' 和参数 'by' ，当利用 data.table" "的纵列进行数据分割时,请使用参数 'by'；""
+msgstr "不可同时指定参数 'f' 和参数 'by' ，当利用 data.table" "的纵列进行数据分割时,请使用参数 'by'；"
 "当利用外部因子进行数据分割时，请使用参数 'f'"
 
 msgid "Either 'by' or 'f' argument must be supplied"
@@ -872,7 +872,7 @@ msgid "Passed a vector of type '"
 msgstr "传递了一个向量，向量类型是；"
 
 msgid "'. Needs to be type 'character'."
-msgstr ". 需要是 "character" 类型."
+msgstr ". 需要是 'character' 类型."
 
 msgid "names to a"
 msgstr "命名"

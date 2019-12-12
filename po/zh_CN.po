@@ -1369,9 +1369,9 @@ msgid ""
 "molten data value column will be of type '%s'. All measure variables not of "
 "type '%s' will be coerced too. Check DETAILS in ?melt.data.table for more on "
 "coercion.\n"
-msgstr "'measure.vars'[%s] 的数据类型不完全相同。"
-"由于融合后的数据将是'%s'类型，所以变量中不是'%s'类型"
-"的数将被强制转换为'%s'类型，更多关于强制转换的信息"
+msgstr "'measure.vars'[%1$s] 的数据类型不完全相同。"
+"由于融合后的数据将是'%2$s'类型，所以变量中不是'%3$s'类型"
+"的数将被强制转换为'%2$s'类型，更多关于强制转换的信息"
 "请查看 ?melt.data.table.\n"
 
 #: fmelt.c:387
@@ -1384,7 +1384,7 @@ msgstr "在项目%d中，融合后的数值类型是列表，"
 #: fmelt.c:490
 #, c-format
 msgid "Unknown column type '%s' for column '%s'."
-msgstr "'%s'列是未知的纵列类型"
+msgstr "'%s'列是未知的纵列类型: '%s'"
 
 #: fmelt.c:514
 #, c-format
@@ -1394,7 +1394,7 @@ msgstr "内部错误：fmelt.c : getvarcols %d %d"
 #: fmelt.c:662
 #, c-format
 msgid "Unknown column type '%s' for column '%s' in 'data'"
-msgstr "'data' 中的'%s'列是未知列类型"
+msgstr "'data' 中的'%s'列是未知列类型:'%s'"
 
 #: fmelt.c:673
 msgid "Input is not of type VECSXP, expected a data.table, data.frame or list"
@@ -1436,7 +1436,7 @@ msgstr "names(data)为NULL，请向 data.table-help 报告"
 #: forder.c:106
 #, c-format
 msgid "Failed to realloc thread private group size buffer to %d*4bytes"
-msgstr "无法重新将线程私有的组大小缓冲区分割为%d*4字节"
+msgstr "无法将线程私有的组大小缓冲区重新分配为%d*4字节"
 
 #: forder.c:120
 #, c-format
@@ -1532,7 +1532,7 @@ msgstr "内部错误：DT 是一个0列的空 list"
 msgid ""
 "Internal error: DT has %d columns but 'by' is either not integer or is "
 "length 0"
-msgstr "内部错误：DT 内部有%d列，但参数 "by" 不是整数或长度为0"
+msgstr "内部错误：DT 内部有%d列，但参数 'by' 不是整数或长度为0"
 
 #: forder.c:455
 #, c-format
@@ -1540,7 +1540,7 @@ msgid ""
 "Either order= is not integer or its length (%d) is different to by='s length "
 "(%d)"
 msgstr "参数 order 不是整数，或者它的长度(%d)与参数 'by' 指定的"
-"长度不同"
+"长度(%d)不同"
 
 #: forder.c:461
 #, c-format
@@ -1580,7 +1580,7 @@ msgid ""
 "*** Column %d passed to forder is a date stored as an 8 byte double but no "
 "fractions are present. Please consider a 4 byte integer date such as IDate "
 "to save space and time.\n"
-msgstr ""\n"
+msgstr "\n"
 "***传递给 forder 的%d列是一个没有小数的8字节 double 类型的日期数""据，请考虑使用4字节的整数日期（例如IDate）以节省空间和时间\n"
 
 #: forder.c:561
