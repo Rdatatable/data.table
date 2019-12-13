@@ -311,9 +311,6 @@ void attribute_visible R_init_datatable(DllInfo *info)
 
   initDTthreads();
   avoid_openmp_hang_within_fork();
-
-  R_RegisterCCallable("data.table", "CfifelseR", (DL_FUNC) &fifelseR);
-  R_RegisterCCallable("data.table", "CfcaseR", (DL_FUNC) &fcaseR);
 }
 
 inline long long DtoLL(double x) {

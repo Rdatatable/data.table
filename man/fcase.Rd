@@ -18,35 +18,35 @@
   \code{\link{fifelse}}
 }
 \examples{
-x = 1:10 
+x = 1:10
 data.table::fcase(
 	x < 5L, 1L,
 	x > 5L, 3L
 )
-# [1]  1  1  1  1 NA  3  3  3  3  3
 
 data.table::fcase(
 	x < 5L, 1L:10L,
 	x > 5L, 3L:12L
 )
-# [1]  1  2  3  4 NA  8  9 10 11 12
+
+# Lazy evaluation example
+data.table::fcase(
+	x < 5L, 1L,
+	x >= 5L, 3L,
+	x == 5L, stop("provided value is an unexpected one!")
+)
 
 # fcase preserves attributes, example with dates
 data.table::fcase(
 	x < 5L, as.Date("2019-10-11"),
 	x > 5L, as.Date("2019-10-14")
 )
-# [1] "2019-10-11" "2019-10-11" "2019-10-11"
-# [4] "2019-10-11" NA  "2019-10-14" "2019-10-14" 
-# [8] "2019-10-14" "2019-10-14" "2019-10-14"
 
 # fcase example with factor
 data.table::fcase(
 	x < 5L, factor("a", levels=letters[1:3]),
 	x > 5L, factor("b", levels=letters[1:3])
 )
-# [1] a    a    a    a    <NA> b    b    b    b    b
-# Levels: a b c
 
 # Example of using the 'default' arguement
 data.table::fcase(
@@ -54,6 +54,5 @@ data.table::fcase(
 	x > 5L, 3L,
 	default = 5L
 )
-# [1] 1 1 1 1 5 3 3 3 3 3
 }
 \keyword{ data }

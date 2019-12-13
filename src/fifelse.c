@@ -161,7 +161,7 @@ SEXP fcaseR(SEXP na, SEXP rho, SEXP args) {
     REPROTECT(cons = eval(VECTOR_PTR(args)[2*i], rho), Icons);
     REPROTECT(outs = eval(VECTOR_PTR(args)[2*i+1], rho), Iouts);
     if (!isLogical(cons)) {
-      error("Argument #%d must be logical.",2*i+1);
+      error("Argument #%d must be logical.", 2*i+1);
     }
     const int *restrict pcons = LOGICAL(cons);
     if (i == 0) {
@@ -213,7 +213,7 @@ SEXP fcaseR(SEXP na, SEXP rho, SEXP args) {
       }
       if (!R_compute_identical(PROTECT(getAttrib(value0,R_ClassSymbol)),  PROTECT(getAttrib(outs,R_ClassSymbol)), 0)) {
         error("Argument #%d has different class than argument #2, "
-                 "Please make sure all output values have the same class.",i*2+2);
+                 "Please make sure all output values have the same class.", i*2+2);
       }
       UNPROTECT(2);
       if (isFactor(value0)) {
@@ -238,7 +238,7 @@ SEXP fcaseR(SEXP na, SEXP rho, SEXP args) {
         if (pcons[idx]==1) {
           pans[idx] = pouts[idx & amask];
         } else {
-          if(imask) pans[j] = pna;
+          if (imask) pans[j] = pna;
           p[l++] = idx;
         }
       }
@@ -252,7 +252,7 @@ SEXP fcaseR(SEXP na, SEXP rho, SEXP args) {
         if (pcons[idx]==1) {
           pans[idx] = pouts[idx & amask];
         } else {
-          if(imask) pans[j] = pna;
+          if (imask) pans[j] = pna;
           p[l++] = idx;
         }
       }
@@ -267,7 +267,7 @@ SEXP fcaseR(SEXP na, SEXP rho, SEXP args) {
         if (pcons[idx]==1) {
           pans[idx] = pouts[idx & amask];
         } else {
-          if(imask) pans[j] = pna;
+          if (imask) pans[j] = pna;
           p[l++] = idx;
         }
       }
@@ -281,7 +281,7 @@ SEXP fcaseR(SEXP na, SEXP rho, SEXP args) {
         if (pcons[idx]==1) {
           pans[idx] = pouts[idx & amask];
         } else {
-          if(imask) pans[j] = pna;
+          if (imask) pans[j] = pna;
           p[l++] = idx;
         }
       }
@@ -294,7 +294,7 @@ SEXP fcaseR(SEXP na, SEXP rho, SEXP args) {
         if (pcons[idx]==1) {
           SET_STRING_ELT(ans, idx, pouts[idx & amask]);
         } else {
-          if(imask) SET_STRING_ELT(ans, idx, pna);
+          if (imask) SET_STRING_ELT(ans, idx, pna);
           p[l++] = idx;
         }
       }
@@ -307,7 +307,7 @@ SEXP fcaseR(SEXP na, SEXP rho, SEXP args) {
         if (pcons[idx]==1) {
           SET_VECTOR_ELT(ans, idx, pouts[idx & amask]);
         } else {
-          if(imask && nonna) SET_VECTOR_ELT(ans, idx, pna);
+          if (imask && nonna) SET_VECTOR_ELT(ans, idx, pna);
           p[l++] = idx;
         }
       }
@@ -315,7 +315,7 @@ SEXP fcaseR(SEXP na, SEXP rho, SEXP args) {
     default:
       error("Type %s is not supported.", type2char(TYPEOF(outs)));
     }
-    if(0 == l) break;
+    if (0 == l) break;
     len2 = l;
   }
   UNPROTECT(nprotect);

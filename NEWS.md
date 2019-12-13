@@ -6,9 +6,27 @@
 
 ## NEW FEATURES
 
-1. New function `fcase(...,default)` implemented in C by Morgan Jacob, [#3823](https://github.com/Rdatatable/data.table/issues/3823), is inspired by SQL `CASE WHEN` which is a common tool in SQL for e.g. building labels or cutting age groups based on conditions. `fcase` is comparable to R function `dplyr::case_when`. Please see `?data.table::fcase` for more details.
+1. New function `fcase(...,default)` implemented in C by Morgan Jacob, [#3823](https://github.com/Rdatatable/data.table/issues/3823), is inspired by SQL `CASE WHEN` which is a common tool in SQL for e.g. building labels or cutting age groups based on conditions. `fcase` is comparable to R function `dplyr::case_when` however it evaluates its arguments in a lazy way (i.e. only when needed) as shown below. Please see `?data.table::fcase` for more details.
 
 ```R
+# Lazy evaluation
+x = 1:10
+data.table::fcase(
+	x < 5L, 1L,
+	x >= 5L, 3L,
+	x == 5L, stop("provided value is an unexpected one!")
+)
+# [1] 1 1 1 1 3 3 3 3 3 3
+
+dplyr::case_when(
+	x < 5L ~ 1L,
+	x >= 5L ~ 3L,
+	x == 5L ~ stop("provided value is an unexpected one!")
+)
+# Error in eval_tidy(pair$rhs, env = default_env) :
+#  provided value is an unexpected one!
+
+# Benchmark
 x = sample(1:100, 3e7, replace = TRUE) # 114 MB
 microbenchmark::microbenchmark(
 dplyr::case_when(
@@ -30,7 +48,7 @@ data.table::fcase(
   x > 60L, 60L
 ),
 times = 5L,
-unit ="s")
+unit = "s")
 # Unit: seconds
 #               expr   min    lq  mean   median    uq    max neval
 # dplyr::case_when   11.57 11.71 12.22    11.82 12.00  14.02     5
