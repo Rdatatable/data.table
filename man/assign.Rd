@@ -10,13 +10,13 @@
 }
 \usage{
 # 1. LHS := RHS form
-# DT[i, LHS := RHS, by = \dots]
-# DT[i, c("LHS1", "LHS2") := list(RHS1, RHS2), by = \dots]
+# DT[i, LHS := RHS, by = ...]
+# DT[i, c("LHS1", "LHS2") := list(RHS1, RHS2), by = ...]
 
 # 2. Functional form
 # DT[i, `:=`(LHS1 = RHS1,
 #            LHS2 = RHS2,
-#            \dots), by = \dots]
+#            ...), by = ...]
 
 set(x, i = NULL, j, value)
 }

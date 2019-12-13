@@ -57,7 +57,7 @@ static SEXP chmatchMain(SEXP x, SEXP table, int nomatch, bool chin, bool chmatch
       // # nocov start
       for (int i=0; i<tablelen; i++) SET_TRUELENGTH(td[i], 0);
       savetl_end();
-      error("Failed to allocate %lld bytes working memory in chmatchdup: length(table)=%d length(unique(table))=%d", (tablelen*2+nuniq)*sizeof(int), tablelen, nuniq);
+      error("Failed to allocate %"PRIu64" bytes working memory in chmatchdup: length(table)=%d length(unique(table))=%d", ((uint64_t)tablelen*2+nuniq)*sizeof(int), tablelen, nuniq);
       // # nocov end
     }
     for (int i=0; i<tablelen; ++i) counts[-TRUELENGTH(td[i])-1]++;
