@@ -238,7 +238,9 @@ SEXP fcaseR(SEXP na, SEXP rho, SEXP args) {
         if (pcons[idx]==1) {
           pans[idx] = pouts[idx & amask];
         } else {
-          if (imask) pans[j] = pna;
+          if (imask) {
+            pans[j] = pna;
+          }
           p[l++] = idx;
         }
       }
@@ -252,7 +254,9 @@ SEXP fcaseR(SEXP na, SEXP rho, SEXP args) {
         if (pcons[idx]==1) {
           pans[idx] = pouts[idx & amask];
         } else {
-          if (imask) pans[j] = pna;
+          if (imask) {
+            pans[j] = pna;
+          }
           p[l++] = idx;
         }
       }
@@ -267,7 +271,9 @@ SEXP fcaseR(SEXP na, SEXP rho, SEXP args) {
         if (pcons[idx]==1) {
           pans[idx] = pouts[idx & amask];
         } else {
-          if (imask) pans[j] = pna;
+          if (imask) {
+            pans[j] = pna;
+          }
           p[l++] = idx;
         }
       }
@@ -281,7 +287,9 @@ SEXP fcaseR(SEXP na, SEXP rho, SEXP args) {
         if (pcons[idx]==1) {
           pans[idx] = pouts[idx & amask];
         } else {
-          if (imask) pans[j] = pna;
+          if (imask) {
+            pans[j] = pna;
+          }
           p[l++] = idx;
         }
       }
@@ -294,7 +302,9 @@ SEXP fcaseR(SEXP na, SEXP rho, SEXP args) {
         if (pcons[idx]==1) {
           SET_STRING_ELT(ans, idx, pouts[idx & amask]);
         } else {
-          if (imask) SET_STRING_ELT(ans, idx, pna);
+          if (imask) {
+            SET_STRING_ELT(ans, idx, pna);
+          }
           p[l++] = idx;
         }
       }
@@ -307,7 +317,9 @@ SEXP fcaseR(SEXP na, SEXP rho, SEXP args) {
         if (pcons[idx]==1) {
           SET_VECTOR_ELT(ans, idx, pouts[idx & amask]);
         } else {
-          if (imask && nonna) SET_VECTOR_ELT(ans, idx, pna);
+          if (imask && nonna) {
+            SET_VECTOR_ELT(ans, idx, pna);
+          }
           p[l++] = idx;
         }
       }
@@ -315,7 +327,9 @@ SEXP fcaseR(SEXP na, SEXP rho, SEXP args) {
     default:
       error("Type %s is not supported.", type2char(TYPEOF(outs)));
     }
-    if (0 == l) break;
+    if (l==0) {
+      break;
+    }
     len2 = l;
   }
   UNPROTECT(nprotect);
