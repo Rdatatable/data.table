@@ -114,6 +114,30 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
   err = try(sys.source(fn, envir=env), silent=silent)
 
   options(oldOptions)
+  if (is.na(orig__R_CHECK_LENGTH_1_LOGIC2_)) {
+    Sys.unsetenv("_R_CHECK_LENGTH_1_LOGIC2_")
+  } else {
+    Sys.setenv("_R_CHECK_LENGTH_1_LOGIC2_" = orig__R_CHECK_LENGTH_1_LOGIC2_) # nocov
+  }
+  # Sys.setlocale("LC_CTYPE", oldlocale)
+  suppressWarnings(do.call("RNGkind",as.list(oldRNG)))
+  # suppressWarnings for the unlikely event that user selected sample='Rounding' themselves before calling test.data.table()
+
+  # Now output platform trace before error (if any) to be sure to always show it; e.g. to confirm endianness in #4099.
+  # As one long dense line for cases when 00check.log only shows the last 13 lines of log; to only use up one
+  # of those 13 line and give a better chance of seeing more of the output before it. Having said that, CRAN
+  # does show the full file output these days, so the 13 line limit no longer bites so much. It still bit recently
+  # when receiving output of R CMD check sent over email, though.
+  cat("\n", date(),   # so we can tell exactly when these tests ran on CRAN to double-check the result is up to date
+    "  endian==", .Platform$endian,
+    ", sizeof(long double)==", .Machine$sizeof.longdouble,
+    ", sizeof(pointer)==", .Machine$sizeof.pointer,
+    ", TZ=", suppressWarnings(Sys.timezone()),
+    ", locale='", Sys.getlocale(), "'",
+    ", l10n_info()='", paste0(names(l10n_info()), "=", l10n_info(), collapse="; "), "'",
+    ", getDTthreads()='", paste0(gsub("[ ][ ]+","==",gsub("^[ ]+","",capture.output(invisible(getDTthreads(verbose=TRUE))))), collapse="; "), "'",
+    "\n", sep="")
+
   if (inherits(err,"try-error")) {
     # nocov start
     if (silent) return(FALSE)
@@ -122,39 +146,26 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
     # nocov end
   }
 
-  # Sys.setlocale("LC_CTYPE", oldlocale)
-  ans = env$nfail==0
-
-  if (is.na(orig__R_CHECK_LENGTH_1_LOGIC2_)) {
-    Sys.unsetenv("_R_CHECK_LENGTH_1_LOGIC2_")
-  } else {
-    Sys.setenv("_R_CHECK_LENGTH_1_LOGIC2_" = orig__R_CHECK_LENGTH_1_LOGIC2_) # nocov
+  nfail = env$nfail
+  ntest = env$ntest
+  if (nfail > 0L) {
+    # nocov start
+    if (nfail > 1L) {s1="s";s2="s: "} else {s1="";s2=" "}
+    stop(nfail," error",s1," out of ",ntest,". Search ",names(fn)," for test number",s2,paste(env$whichfail,collapse=", "),".")
+    # important to stop() here, so that 'R CMD check' fails
+    # nocov end
   }
 
-  suppressWarnings(do.call("RNGkind",as.list(oldRNG)))
-  # suppressWarning again in the unlikely event that user selected sample='Rounding' themselves before calling test.data.table()
-
-  timings = get("timings", envir=env)
-  ntest = get("ntest", envir=env)
-  nfail = get("nfail", envir=env)
-  started.at = get("started.at", envir=env)
-  whichfail = get("whichfail", envir=env)
-
-  # Summary. This code originally in tests.Rraw and moved up here in #3307
-  # One big long line because CRAN checks output last 13 lines. One long line counts as one out of 13.
-  plat = paste0("endian==", .Platform$endian,
-                ", sizeof(long double)==", .Machine$sizeof.longdouble,
-                ", sizeof(pointer)==", .Machine$sizeof.pointer,
-                ", TZ=", suppressWarnings(Sys.timezone()),
-                ", locale='", Sys.getlocale(), "'",
-                ", l10n_info()='", paste0(names(l10n_info()), "=", l10n_info(), collapse="; "), "'",
-                ", getDTthreads()='", paste0(gsub("[ ][ ]+","==",gsub("^[ ]+","",capture.output(invisible(getDTthreads(verbose=TRUE))))), collapse="; "), "'")
+  # There aren't any errors, so we can use up 11 lines for the timings table
+  timings = env$timings
   DT = head(timings[-1L][order(-time)], 10L)   # exclude id 1 as in dev that includes JIT
   if ((x<-sum(timings[["nTest"]])) != ntest) {
     warning("Timings count mismatch:",x,"vs",ntest)  # nocov
   }
-  cat("\n10 longest running tests took ", as.integer(tt<-DT[, sum(time)]), "s (", as.integer(100*tt/(ss<-timings[,sum(time)])), "% of ", as.integer(ss), "s)\n", sep="")
+  cat("10 longest running tests took ", as.integer(tt<-DT[, sum(time)]), "s (", as.integer(100*tt/(ss<-timings[,sum(time)])), "% of ", as.integer(ss), "s)\n", sep="")
   print(DT, class=FALSE)
+
+  cat("All ",ntest," tests in ",names(fn)," completed ok in ",timetaken(env$started.at),"\n",sep="")
 
   ## this chunk requires to include new suggested deps: graphics, grDevices
   #memtest.plot = function(.inittime) {
@@ -181,21 +192,7 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
   #}
   #if (memtest<-get("memtest", envir=env)) memtest.plot(get("inittime", envir=env))
 
-  # nocov start
-  if (nfail > 0L) {
-    if (nfail > 1L) {s1="s";s2="s: "} else {s1="";s2=" "}
-    cat("\r")
-    stop(nfail," error",s1," out of ",ntest," in ",timetaken(started.at)," on ",date(),". [",plat,"].",
-         " Search ",names(fn)," for test number",s2,paste(whichfail,collapse=", "),".")
-    # important to stop() here, so that 'R CMD check' fails
-  }
-  # nocov end
-  cat(plat,"\n\nAll ",ntest," tests in ",names(fn)," completed ok in ",timetaken(started.at)," on ",date(),"\n",sep="")
-  # date() is included so we can tell exactly when these tests ran on CRAN. Sometimes a CRAN log can show error but that can be just
-  # stale due to not updating yet since a fix in R-devel, for example.
-
-  #attr(ans, "details", exact=TRUE) = env
-  invisible(ans)
+  invisible(nfail==0L)
 }
 
 # nocov start
