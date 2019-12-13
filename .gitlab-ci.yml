@@ -2,8 +2,6 @@ variables:
   CRAN_MIRROR: "https://cloud.r-project.org"
   _R_CHECK_FORCE_SUGGESTS_: "false"
   _R_CHECK_NO_STOP_ON_TEST_ERROR_: "true"
-  # Block truncation of any error messages in R CMD check
-  _R_CHECK_TESTS_NLINES_: 0
 
 stages:
   - dependencies
@@ -100,6 +98,7 @@ test-rel-lin: #  most comprehensive tests, force all suggests, also integration 
     _R_CHECK_CRAN_INCOMING_: "FALSE"
     _R_CHECK_CRAN_INCOMING_REMOTE_: "FALSE"
     _R_CHECK_FORCE_SUGGESTS_: "TRUE"
+    _R_CHECK_TESTS_NLINES_: "0"
     OPENBLAS_MAIN_FREE: "1"
     TEST_DATA_TABLE_WITH_OTHER_PACKAGES: "TRUE"
   script:
