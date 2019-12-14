@@ -8,6 +8,8 @@
 
 ## BUG FIXES
 
+1. A NULL timezone on POSIXct was interpreted by `as.IDate` and `as.ITime` as UTC rather than the session's default timezone (`tz=""`) , [#4085](https://github.com/Rdatatable/data.table/issues/4085).
+
 ## NOTES
 
 
