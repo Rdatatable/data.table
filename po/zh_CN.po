@@ -2410,7 +2410,7 @@ msgstr "  正在分配 %d 列位置（%d - %d 已丢弃），%<PRIu64> 行\n"
 #: fread.c:1987
 #, c-format
 msgid "Buffer size %<PRId64> is too large\n"
-msgstr "缓冲长度 %<PRId64> 过大"
+msgstr "缓冲长度 %<PRId64> 过大\n"
 
 #: fread.c:1990
 msgid "[11] Read the data\n"
@@ -2463,11 +2463,11 @@ msgid ""
 "Read %<PRIu64> rows x %d columns from %s file in %02d:%06.3f wall clock "
 "time\n"
 msgstr ""
-"读取 %llu 行 x %d 列，从 %s 文件（时钟时间 %02d:%06.3f）\n"
+"读取 %<PRIu64> 行 x %d 列，从 %s 文件（时钟时间 %02d:%06.3f）\n"
 
 #: fread.c:2405
 msgid "[12] Finalizing the datatable\n"
-msgstr "[12] 最后定型 datatable"
+msgstr "[12] 最后定型 datatable\n"
 
 #: fread.c:2406
 msgid "  Type counts:\n"
@@ -2489,7 +2489,7 @@ msgid ""
 "Stopped early on line %<PRIu64>. Expected %d fields but found %d. Consider "
 "fill=TRUE and comment.char=. First discarded non-empty line: <<%s>>"
 msgstr ""
-"在第 %llu 行提前终止。预期有 %d 个字段但只找到 %d 个。可以考虑设置 "
+"在第 %<PRIu64> 行提前终止。预期有 %d 个字段但只找到 %d 个。可以考虑设置 "
 "fill=TRUE 和 comment.char=。 首个丢弃的非空行：<<%s>>"
 
 #: fread.c:2435
@@ -2499,7 +2499,7 @@ msgid ""
 "%<PRIu64>: <<%s>>. If the fields are not quoted (e.g. field separator does "
 "not appear within any field), try quote=\"\" to avoid this warning."
 msgstr ""
-"发现并修复了样本外的错误引号。首次在第 %llu 行修复：<<%s>>。"
+"发现并修复了样本外的错误引号。首次在第 %<PRIu64> 行修复：<<%s>>。"
 "如果这些字段不在引号内（例如：字段间隔符没有在任何一个字段中出现），"
 "尝试用 quote=\"\" 来避免该警告。"
 
@@ -2533,7 +2533,7 @@ msgid ""
 "%8.3fs (%3.0f%%) Allocation of %<PRIu64> rows x %d cols (%.3fGB) of which "
 "%<PRIu64> (%3.0f%%) rows used\n"
 msgstr ""
-"%8.3fs (%3.0f%%) %llu 行 x %d 列 (%.3fGB) 的分配中已使用 %llu "
+"%8.3fs (%3.0f%%) %<PRIu64> 行 x %d 列 (%.3fGB) 的分配中已使用 %<PRIu64> "
 "(%3.0f%%) 行\n"
 
 #: fread.c:2451
@@ -2592,7 +2592,7 @@ msgstr ""
 
 #: freadR.c:95
 msgid "Input contains no \\n. Taking this to be a filename to open\n"
-msgstr "输入中不包含 \\n。输入将被当做文件名打开。"
+msgstr "输入中不包含 \\n。输入将被当做文件名打开。\n"
 
 #: freadR.c:101
 msgid ""
