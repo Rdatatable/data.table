@@ -2357,39 +2357,39 @@ msgstr ""
 #: fread.c:1825
 #, c-format
 msgid "Internal error: sampleLines(%<PRIu64>) > allocnrow(%<PRIu64>)"
-msgstr ""
+msgstr "内部错误：sampleLines(%<PRIu64>) > allocnrow(%<PRIu64>)"
 
 #: fread.c:1829
 #, c-format
 msgid "  Alloc limited to lower nrows=%<PRIu64> passed in.\n"
-msgstr ""
+msgstr "  分配被限制在输入的更小的 nrows=%<PRIu64> 值上。\n"
 
 #: fread.c:1841
 msgid "[08] Assign column names\n"
-msgstr ""
+msgstr "[08] 指定列名\n"
 
 #: fread.c:1849
 #, c-format
 msgid "Unable to allocate %d*%d bytes for column name pointers: %s"
-msgstr ""
+msgstr "无法分配 %d*%d 字节给列名指针: %s"
 
 #: fread.c:1871
 #, c-format
 msgid "Internal error: reading colnames ending on '%c'"
-msgstr ""
+msgstr "内部错误：读取列名终止于 '%c'"
 
 #: fread.c:1889
 msgid "[09] Apply user overrides on column types\n"
-msgstr ""
+msgstr "[09] 使用用户指定的列类型\n"
 
 #: fread.c:1893
 msgid "  Cancelled by user: userOverride() returned false."
-msgstr ""
+msgstr "  用户已取消：userOverride() 返回 false。"
 
 #: fread.c:1903
 #, c-format
 msgid "Failed to allocate %d bytes for size array: %s"
-msgstr ""
+msgstr "无法分配 %d 字节给 size 数组：%s"
 
 #: fread.c:1910
 #, c-format
@@ -2398,34 +2398,36 @@ msgid ""
 "ignored. Only overrides to a higher type are currently supported. If this "
 "was intended, please coerce to the lower type afterwards."
 msgstr ""
+"试图覆盖第 %d 列 <<%.*s>>，将内部类型 '%s' 降级为 '%s' 的操作被忽略。只支持将列类型"
+"升为更高阶的类型。如果确定此操作，请完成之后再转换类型。"
 
 #: fread.c:1924
 #, c-format
 msgid "  After %d type and %d drop user overrides : %s\n"
-msgstr ""
+msgstr "  经过 %d 类型和 %d 丢弃用户覆盖：%s\n"
 
 #: fread.c:1932
 msgid "[10] Allocate memory for the datatable\n"
-msgstr ""
+msgstr "[10] 分配内存给 datatable\n"
 
 #: fread.c:1933
 #, c-format
 msgid "  Allocating %d column slots (%d - %d dropped) with %<PRIu64> rows\n"
-msgstr ""
+msgstr "  正在分配 %d 列位置（%d - %d 已丢弃），%<PRIu64> 行\n"
 
 #: fread.c:1987
 #, c-format
 msgid "Buffer size %<PRId64> is too large\n"
-msgstr ""
+msgstr "缓冲长度 %<PRId64> 过大\n"
 
 #: fread.c:1990
 msgid "[11] Read the data\n"
-msgstr ""
+msgstr "[11] 读取数据\n"
 
 #: fread.c:1993
 #, c-format
 msgid "  jumps=[%d..%d), chunk_size=%<PRIu64>, total_size=%<PRIu64>\n"
-msgstr ""
+msgstr "  jumps=[%d..%d)，chunk_size=%<PRIu64>，total_size=%<PRIu64>\n"
 
 #: fread.c:2005
 #, c-format
@@ -2437,7 +2439,7 @@ msgstr ""
 msgid ""
 "Column %d (\"%.*s\") bumped from '%s' to '%s' due to <<%.*s>> on row "
 "%<PRIu64>\n"
-msgstr ""
+msgstr "第 %d 列(\"%.*s\") 发生了从 '%s' 到 '%s' 的类型转换，由于 <<%.*s>> 出现在第 %<PRIu64> 行\n"
 
 #: fread.c:2262
 #, c-format
@@ -2449,19 +2451,19 @@ msgstr ""
 #: fread.c:2335
 #, c-format
 msgid ""
-"  Too few rows allocated. Allocating additional %<PRIu64> rows (now nrows="
-"%<PRIu64>) and continue reading from jump %d\n"
-msgstr ""
+"  Too few rows allocated. Allocating additional %<PRIu64> rows (now nrows=%<PRIu64>) "
+"and continue reading from jump %d\n"
+msgstr "  分配的行数太少。正在分配额外的 %<PRIu64> 行（当前 nrows=%<PRIu64>），并从跳跃 %d 继续读取\n"
 
 #: fread.c:2342
 #, c-format
 msgid "  Restarting team from jump %d. nSwept==%d quoteRule==%d\n"
-msgstr ""
+msgstr "  从跳跃 %d 重启组。nSwept==%d quoteRule==%d\n"
 
 #: fread.c:2362
 #, c-format
 msgid "  %d out-of-sample type bumps: %s\n"
-msgstr ""
+msgstr "  %d 样本外类型变更：%s\n"
 
 #: fread.c:2398
 #, c-format
@@ -2469,24 +2471,25 @@ msgid ""
 "Read %<PRIu64> rows x %d columns from %s file in %02d:%06.3f wall clock "
 "time\n"
 msgstr ""
+"读取 %<PRIu64> 行 x %d 列，从 %s 文件（时钟时间 %02d:%06.3f）\n"
 
 #: fread.c:2405
 msgid "[12] Finalizing the datatable\n"
-msgstr ""
+msgstr "[12] 最后定型 datatable\n"
 
 #: fread.c:2406
 msgid "  Type counts:\n"
-msgstr ""
+msgstr " 类型数量：\n"
 
 #: fread.c:2408
 #, c-format
 msgid "%10d : %-9s '%c'\n"
-msgstr ""
+msgstr "%10d : %-9s '%c'\n"
 
 #: fread.c:2424
 #, c-format
 msgid "Discarded single-line footer: <<%s>>"
-msgstr ""
+msgstr "丢弃末尾行：<<%s>>"
 
 #: fread.c:2429
 #, c-format
@@ -2494,6 +2497,8 @@ msgid ""
 "Stopped early on line %<PRIu64>. Expected %d fields but found %d. Consider "
 "fill=TRUE and comment.char=. First discarded non-empty line: <<%s>>"
 msgstr ""
+"在第 %<PRIu64> 行提前终止。预期有 %d 个字段但只找到 %d 个。可以考虑设置 "
+"fill=TRUE 和 comment.char=。 首个丢弃的非空行：<<%s>>"
 
 #: fread.c:2435
 #, c-format
@@ -2502,30 +2507,33 @@ msgid ""
 "%<PRIu64>: <<%s>>. If the fields are not quoted (e.g. field separator does "
 "not appear within any field), try quote=\"\" to avoid this warning."
 msgstr ""
+"发现并修复了样本外的错误引号。首次在第 %<PRIu64> 行修复：<<%s>>。"
+"如果这些字段不在引号内（例如：字段间隔符没有在任何一个字段中出现），"
+"尝试用 quote=\"\" 来避免该警告。"
 
 #: fread.c:2439
 msgid "=============================\n"
-msgstr ""
+msgstr "=============================\n"
 
 #: fread.c:2441
 #, c-format
 msgid "%8.3fs (%3.0f%%) Memory map %.3fGB file\n"
-msgstr ""
+msgstr "%8.3fs (%3.0f%%) 内存映射 %.3fGB 文件\n"
 
 #: fread.c:2442
 #, c-format
 msgid "%8.3fs (%3.0f%%) sep="
-msgstr ""
+msgstr "%8.3fs (%3.0f%%) sep="
 
 #: fread.c:2444
 #, c-format
 msgid " ncol=%d and header detection\n"
-msgstr ""
+msgstr " ncol=%d 和表头检测\n"
 
 #: fread.c:2445
 #, c-format
 msgid "%8.3fs (%3.0f%%) Column type detection using %<PRIu64> sample rows\n"
-msgstr ""
+msgstr "%8.3fs (%3.0f%%) 列类型检测基于 %<PRIu64> 个样本行\n"
 
 #: fread.c:2447
 #, c-format
@@ -2533,6 +2541,8 @@ msgid ""
 "%8.3fs (%3.0f%%) Allocation of %<PRIu64> rows x %d cols (%.3fGB) of which "
 "%<PRIu64> (%3.0f%%) rows used\n"
 msgstr ""
+"%8.3fs (%3.0f%%) %<PRIu64> 行 x %d 列 (%.3fGB) 的分配中已使用 %<PRIu64> "
+"(%3.0f%%) 行\n"
 
 #: fread.c:2451
 #, c-format
@@ -2540,67 +2550,77 @@ msgid ""
 "%8.3fs (%3.0f%%) Reading %d chunks (%d swept) of %.3fMB (each chunk %d rows) "
 "using %d threads\n"
 msgstr ""
+"%8.3fs (%3.0f%%) 正在读取 %d 个块 (%d 已扫描) of %.3fMB (每个块 %d 行) "
+"使用 %d 个线程\n"
 
 #: fread.c:2453
 #, c-format
 msgid ""
 "   + %8.3fs (%3.0f%%) Parse to row-major thread buffers (grown %d times)\n"
 msgstr ""
+"   + %8.3fs (%3.0f%%) 解析到行处理线程的缓冲区（已增长 %d 次）\n"
 
 #: fread.c:2454
 #, c-format
 msgid "   + %8.3fs (%3.0f%%) Transpose\n"
-msgstr ""
+msgstr "   + %8.3fs (%3.0f%%) 转置\n"
 
 #: fread.c:2455
 #, c-format
 msgid "   + %8.3fs (%3.0f%%) Waiting\n"
-msgstr ""
+msgstr "   + %8.3fs (%3.0f%%) 正在等待\n"
 
 #: fread.c:2456
 #, c-format
 msgid ""
 "%8.3fs (%3.0f%%) Rereading %d columns due to out-of-sample type exceptions\n"
 msgstr ""
+"%8.3fs (%3.0f%%) 正在重读 %d 列，由于样本外类型异常\n"
 
 #: fread.c:2458
 #, c-format
 msgid "%8.3fs        Total\n"
-msgstr ""
+msgstr "%8.3fs        总计\n"
 
 #: freadR.c:84
 msgid ""
 "Internal error: freadR input not a single character string: a filename or "
 "the data itself. Should have been caught at R level."
 msgstr ""
+"内部错误：freadR 输入的不是单个字符串：文件名或者数据文本。"
+"该错误本应在 R 中被捕获。"
 
 #: freadR.c:92
 msgid ""
 "Input contains a \\n or is \")\". Taking this to be text input (not a "
 "filename)\n"
 msgstr ""
+"输入中包含 \\n 或者是 \")\"。输入将被当做数据文本（而非"
+"文件名）\n"
 
 #: freadR.c:95
 msgid "Input contains no \\n. Taking this to be a filename to open\n"
-msgstr ""
+msgstr "输入中不包含 \\n。输入将被当做文件名打开。\n"
 
 #: freadR.c:101
 msgid ""
 "Internal error: freadR sep not a single character. R level catches this."
 msgstr ""
+"内部错误：freadR sep 不是单个字符。R 中应该捕获此错误。"
 
 #: freadR.c:105
 msgid ""
 "Internal error: freadR dec not a single character. R level catches this."
 msgstr ""
+"内部错误：freadR dec 不是单个字符。R 中应该捕获此错误。"
 
 #: freadR.c:112
 msgid "quote= must be a single character, blank \"\", or FALSE"
-msgstr ""
+msgstr "quote= 必须是单个字符，空白 \"\"，或者 FALSE"
 
 #: freadR.c:137
 msgid "Internal error: skip not integer or string in freadR.c"
-msgstr ""
+msgstr "内部错误：freadR.c 中 skip 非整数或字符串"
 
 #: freadR.c:140
 #, c-format
