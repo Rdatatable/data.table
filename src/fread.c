@@ -1130,7 +1130,7 @@ int freadMain(freadMainArgs _args) {
       STOP("freadMain: NAstring <<%s>> is recognized as type boolean, this is not permitted.", ch);
     char *end;
     errno = 0;
-    strtod(ch, &end);  // careful not to let "" get to here (see continue above) as strtod considers "" numeric
+    double ignored = strtod(ch, &end);  // careful not to let "" get to here (see continue above) as strtod considers "" numeric
     if (errno==0 && (size_t)(end - ch) == nchar) any_number_like_NAstrings = true;
     nastr++;
   }
