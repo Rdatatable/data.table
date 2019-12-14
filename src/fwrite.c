@@ -42,10 +42,10 @@ static bool squashDateTime=false;      // 0=ISO(yyyy-mm-dd) 1=squash(yyyymmdd)
 static bool verbose=false;
 
 extern const char *getString(void *, int64_t);
-extern const int getStringLen(void *, int64_t);
-extern const int getMaxStringLen(void *, int64_t);
-extern const int getMaxCategLen(void *);
-extern const int getMaxListItemLen(void *, int64_t);
+extern int getStringLen(void *, int64_t);
+extern int getMaxStringLen(void *, int64_t);
+extern int getMaxCategLen(void *);
+extern int getMaxListItemLen(void *, int64_t);
 extern const char *getCategString(void *, int64_t);
 extern double wallclock(void);
 
