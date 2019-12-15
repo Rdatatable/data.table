@@ -42,10 +42,10 @@ static bool squashDateTime=false;      // 0=ISO(yyyy-mm-dd) 1=squash(yyyymmdd)
 static bool verbose=false;
 
 extern const char *getString(void *, int64_t);
-extern const int getStringLen(void *, int64_t);
-extern const int getMaxStringLen(void *, int64_t);
-extern const int getMaxCategLen(void *);
-extern const int getMaxListItemLen(void *, int64_t);
+extern int getStringLen(void *, int64_t);
+extern int getMaxStringLen(void *, int64_t);
+extern int getMaxCategLen(void *);
+extern int getMaxListItemLen(void *, int64_t);
 extern const char *getCategString(void *, int64_t);
 extern double wallclock(void);
 
@@ -581,6 +581,15 @@ int compressbuff(z_stream *stream, void* dest, size_t *destLen, const void* sour
   return err == Z_STREAM_END ? Z_OK : err;
 }
 
+void print_z_stream(const z_stream *s)   // temporary tracing function for #4099
+{
+  const unsigned char *byte = (unsigned char *)s;
+  for (int i=0; i<sizeof(z_stream); ++i) {
+    DTPRINT("%02x ", byte[i]);
+  }
+  DTPRINT("\n");
+}
+
 void fwriteMain(fwriteMainArgs args)
 {
   double startTime = wallclock();
@@ -731,6 +740,7 @@ void fwriteMain(fwriteMainArgs args)
           free(buff);                                    // # nocov
           STOP("Can't allocate gzip stream structure");  // # nocov
         }
+        if (verbose) {DTPRINT("z_stream for header (1): "); print_z_stream(&stream);}
         size_t zbuffSize = deflateBound(&stream, headerLen);
         char *zbuff = malloc(zbuffSize);
         if (!zbuff) {
@@ -739,6 +749,7 @@ void fwriteMain(fwriteMainArgs args)
         }
         size_t zbuffUsed = zbuffSize;
         ret1 = compressbuff(&stream, zbuff, &zbuffUsed, buff, (size_t)(ch-buff));
+        if (verbose) {DTPRINT("z_stream for header (2): "); print_z_stream(&stream);}
         if (ret1==Z_OK) ret2 = WRITE(f, zbuff, (int)zbuffUsed);
         deflateEnd(&stream);
         free(zbuff);
@@ -819,6 +830,8 @@ void fwriteMain(fwriteMainArgs args)
   char failed_msg[1001] = "";  // to hold zlib's msg; copied out of zlib in ordered section just in case the msg is allocated within zlib
   int failed_write = 0;    // same. could use +ve and -ve in the same code but separate it out to trace Solaris problem, #3931
 
+  if (nth>1) verbose=false; // printing isn't thread safe (there's a temporary print in compressbuff for tracing solaris; #4099)
+
   #pragma omp parallel num_threads(nth)
   {
     int me = omp_get_thread_num();
@@ -835,6 +848,7 @@ void fwriteMain(fwriteMainArgs args)
         failed = true;              // # nocov
         my_failed_compress = -998;  // # nocov
       }
+      if (verbose) {DTPRINT("z_stream for data (1): "); print_z_stream(&mystream);}
     }
 
     #pragma omp for ordered schedule(dynamic)
@@ -866,7 +880,9 @@ void fwriteMain(fwriteMainArgs args)
       // compress buffer if gzip
       if (args.is_gzip && !failed) {
         myzbuffUsed = zbuffSize;
+        if (verbose) {DTPRINT("z_stream for data (2): "); print_z_stream(&mystream);}
         int ret = compressbuff(&mystream, myzBuff, &myzbuffUsed, myBuff, (size_t)(ch-myBuff));
+        if (verbose) {DTPRINT("z_stream for data (3): "); print_z_stream(&mystream);}
         if (ret) { failed=true; my_failed_compress=ret; }
         else deflateReset(&mystream);
       }

@@ -33,7 +33,7 @@ as.IDate.Date = function(x, ...) {
 }
 
 as.IDate.POSIXct = function(x, tz = attr(x, "tzone", exact=TRUE), ...) {
-  if (is.null(tz)) tz = "UTC"
+  if (is.null(tz)) tz=''
   if (tz %chin% c("UTC", "GMT")) {
     (setattr(as.integer(as.numeric(x) %/% 86400L), "class", c("IDate", "Date")))  # %/% returns new object so can use setattr() on it; wrap with () to return visibly
   } else
@@ -138,7 +138,7 @@ as.ITime.default = function(x, ...) {
 }
 
 as.ITime.POSIXct = function(x, tz = attr(x, "tzone", exact=TRUE), ...) {
-  if (is.null(tz)) tz = "UTC"
+  if (is.null(tz)) tz=''
   if (tz %chin% c("UTC", "GMT")) as.ITime(unclass(x), ...)
   else as.ITime(as.POSIXlt(x, tz = tz, ...), ...)
 }
