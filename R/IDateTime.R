@@ -37,7 +37,6 @@ as.IDate.POSIXct = function(x, tz = attr(x, "tzone", exact=TRUE), ...) {
     (setattr(as.integer(as.numeric(x) %/% 86400L), "class", c("IDate", "Date")))  # %/% returns new object so can use setattr() on it; wrap with () to return visibly
   } else
     if (is.null(tz)) tz=''
-    print(tz)
     as.IDate(as.Date(x, tz = tz, ...))
 }
 
