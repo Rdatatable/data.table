@@ -36,8 +36,6 @@ as.IDate.POSIXct = function(x, tz = attr(x, "tzone", exact=TRUE), ...) {
   if (is_utc(tz)) {
     (setattr(as.integer(as.numeric(x) %/% 86400L), "class", c("IDate", "Date")))  # %/% returns new object so can use setattr() on it; wrap with () to return visibly
   } else
-
-    as.Date.POSIXct = function(x, tz, ...) {print(sprintf("Found tz=%s", tz)); base::as.Date.POSIXct(x, tz, ...)}
     as.IDate(as.Date(x, tz =  if (is.null(tz)) tz='' else tz, ...))
 }
 
