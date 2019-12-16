@@ -25,6 +25,8 @@ environment:
 # Default GCC_PATH appears to be gcc-4.6.3 which is now unsupported as from Rtools.exe v3.4.
     _R_CHECK_NO_STOP_ON_TEST_ERROR_: true
 # continue tests even if some script failed
+    _R_CHECK_TESTS_NLINES_: 0
+# Block truncation of any error messages in R CMD check
 
   matrix:
 
