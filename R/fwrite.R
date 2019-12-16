@@ -82,7 +82,8 @@ fwrite = function(x, file="", append=FALSE, quote="auto",
       return(invisible())
     }
   }
-  yaml = if (!yaml) "" else {
+  write_yaml <- yaml == TRUE || (is.list(yaml) && length(yaml) != 0)
+  yaml = if (!write_yaml) "" else {
     if (!requireNamespace('yaml', quietly=TRUE))
       stop("'data.table' relies on the package 'yaml' to write the file header; please add this to your library with install.packages('yaml') and try again.") # nocov
     schema_vec = sapply(x, class)
@@ -103,6 +104,10 @@ fwrite = function(x, file="", append=FALSE, quote="auto",
       header=col.names, sep=sep, sep2=sep2, eol=eol, na.strings=na,
       dec=dec, qmethod=qmethod, logical01=logical01
     )
+    if (is.list(yaml)) {
+      yaml_header <- c(yaml_header, yaml)  
+    }
+    
     paste0('---', eol, yaml::as.yaml(yaml_header, line.sep=eol), '---', eol) # NB: as.yaml adds trailing newline
   }
   file = enc2native(file) # CfwriteR cannot handle UTF-8 if that is not the native encoding, see #3078.
