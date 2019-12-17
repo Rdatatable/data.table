@@ -1,6 +1,8 @@
 \name{setDTthreads}
 \alias{setDTthreads}
 \alias{getDTthreads}
+\alias{openMP}
+\alias{openmp}
 \title{ Set or get number of threads that data.table should use }
 \description{
   Set and get number of threads to be used in \code{data.table} functions that are parallelized with OpenMP. The number of threads is initialized when \code{data.table} is first loaded in the R session using optional envioronment variables. Thereafter, the number of threads may be changed by calling \code{setDTthreads}. If you change an environment variable using \code{Sys.setenv} you will need to call \code{setDTthreads} again to reread the environment variables.
@@ -30,6 +32,23 @@
   \code{setDTthreads()} affects \code{data.table} only and does not change R itself or other packages using OpenMP. We have followed the advice of section 1.2.1.1 in the R-exts manual: "\ldots or, better, for the regions in your code as part of their specification\ldots num_threads(nthreads)\ldots That way you only control your own code and not that of other OpenMP users." Every parallel region in data.table contain a \code{num_threads(getDTthreads())} directive. This is mandated by a \code{grep} in data.table's quality control script.
 
   \code{setDTthreads(0)} is the same as \code{setDTthreads(percent=100)}; i.e. use all logical CPUs, subject to \code{Sys.getenv("OMP_THREAD_LIMIT")}. Please note again that CRAN's daily test system sets \code{OMP_THREAD_LIMIT} to 2, so developers of CRAN packages should never change \code{OMP_THREAD_LIMIT} inside their package to a value greater than 2.
+
+  Internally parallelized code is used in the following places:
+
+  \itemize{
+    \item{\code{between.c} - \code{\link{between}()}}
+    \item{\code{cj.c} - \code{\link{CJ}()}}
+    \item{\code{coalesce.c} - \code{\link{fcoalesce}()}}
+    \item{\code{fifelse.c} - \code{\link{fifelse}()}}
+    \item{\code{fread.c} - \code{\link{fread}()}}
+    \item{\code{forder.c}, \code{fsort.c}, and \code{reorder.c} - \code{\link{forder}()} and related}
+    \item{\code{froll.c}, \code{frolladaptive.c}, and \code{frollR.c} - \code{\link{froll}()} and family}
+    \item{\code{fwrite.c} - \code{\link{fwrite}()}}
+    \item{\code{gsumm.c} - GForce in various places, see \link{GForce}}
+    \item{\code{nafill.c} - \code{\link{nafill}()}}
+    \item{\code{subset.c} - Used in \code{\link[=data.table]{[.data.table}} subsetting}
+    \item{\code{types.c} - Internal testing usage}
+  }
 }
 \keyword{ data }
 

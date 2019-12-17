@@ -6,9 +6,9 @@
 #, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: data.table 1.12.7\n"
+"Project-Id-Version: data.table 1.12.9\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2019-12-08 18:59+0800\n"
+"POT-Creation-Date: 2019-12-17 11:02+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -2932,7 +2932,7 @@ msgstr ""
 msgid "%<PRId64> "
 msgstr ""
 
-#: fsort.c:247 fwrite.c:693 fwrite.c:950
+#: fsort.c:247 fwrite.c:702 fwrite.c:966
 msgid "\n"
 msgstr ""
 
@@ -2951,31 +2951,31 @@ msgstr ""
 msgid "%d: %.3f (%4.1f%%)\n"
 msgstr ""
 
-#: fwrite.c:604
+#: fwrite.c:613
 #, c-format
 msgid "buffMB=%d outside [1,1024]"
 msgstr ""
 
-#: fwrite.c:611
+#: fwrite.c:620
 #, c-format
 msgid ""
 "eol must be 1 or more bytes (usually either \\n or \\r\\n) but is length %d"
 msgstr ""
 
-#: fwrite.c:614
+#: fwrite.c:623
 msgid "Column writers: "
 msgstr ""
 
-#: fwrite.c:616 fwrite.c:618 fwrite.c:620
+#: fwrite.c:625 fwrite.c:627 fwrite.c:629
 #, c-format
 msgid "%d "
 msgstr ""
 
-#: fwrite.c:619
+#: fwrite.c:628
 msgid "... "
 msgstr ""
 
-#: fwrite.c:622
+#: fwrite.c:631
 #, c-format
 msgid ""
 "\n"
@@ -2983,17 +2983,17 @@ msgid ""
 "%d eolLen=%d\n"
 msgstr ""
 
-#: fwrite.c:655
+#: fwrite.c:664
 #, c-format
 msgid "Internal error: type %d has no max length method implemented"
 msgstr ""
 
-#: fwrite.c:662
+#: fwrite.c:671
 #, c-format
 msgid "maxLineLen=%<PRIu64>. Found in %.3fs\n"
 msgstr ""
 
-#: fwrite.c:682
+#: fwrite.c:691
 #, c-format
 msgid ""
 "%s: '%s'. Failed to open existing file for writing. Do you have write "
@@ -3001,7 +3001,7 @@ msgid ""
 "have it open?"
 msgstr ""
 
-#: fwrite.c:683
+#: fwrite.c:692
 #, c-format
 msgid ""
 "%s: '%s'. Unable to create new file for writing (it does not exist already). "
@@ -3009,65 +3009,65 @@ msgid ""
 "the path exist?"
 msgstr ""
 
-#: fwrite.c:691
+#: fwrite.c:700
 #, c-format
 msgid "Writing bom (%s), yaml (%d characters) and column names (%s) ... "
 msgstr ""
 
-#: fwrite.c:704
+#: fwrite.c:713
 #, c-format
 msgid "Unable to allocate %d MiB for header: %s"
 msgstr ""
 
-#: fwrite.c:732 fwrite.c:792
+#: fwrite.c:741 fwrite.c:803
 msgid "Can't allocate gzip stream structure"
 msgstr ""
 
-#: fwrite.c:738
+#: fwrite.c:748
 #, c-format
 msgid "Unable to allocate %d MiB for zbuffer: %s"
 msgstr ""
 
-#: fwrite.c:753
+#: fwrite.c:764
 #, c-format
 msgid "Compress gzip error: %d"
 msgstr ""
 
-#: fwrite.c:754 fwrite.c:762 fwrite.c:956
+#: fwrite.c:765 fwrite.c:773 fwrite.c:972
 #, c-format
 msgid "%s: '%s'"
 msgstr ""
 
-#: fwrite.c:759
+#: fwrite.c:770
 #, c-format
 msgid "done in %.3fs\n"
 msgstr ""
 
-#: fwrite.c:761
+#: fwrite.c:772
 msgid "No data rows present (nrow==0)\n"
 msgstr ""
 
-#: fwrite.c:779
+#: fwrite.c:790
 #, c-format
 msgid ""
 "Writing %<PRId64> rows in %d batches of %d rows (each buffer size %dMB, "
 "showProgress=%d, nth=%d)\n"
 msgstr ""
 
-#: fwrite.c:964
+#: fwrite.c:980
 #, c-format
 msgid ""
 "zlib %s (zlib.h %s) deflate() returned error %d with z_stream->msg==\"%s\" "
 "Z_FINISH=%d Z_BLOCK=%d. %s"
 msgstr ""
 
-#: fwrite.c:966
+#: fwrite.c:982
 msgid ""
 "Please include the full output above and below this message in your data."
 "table bug report."
 msgstr ""
 
-#: fwrite.c:967
+#: fwrite.c:983
 msgid ""
 "Please retry fwrite() with verbose=TRUE and include the full output with "
 "your data.table bug report."
