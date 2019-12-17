@@ -5693,7 +5693,7 @@ test(1372.92, foverlaps(i, x, mult="all", type="equal", nomatch=NULL, which=TRUE
 x = c(1L,5L,3L)
 address(x) ## shouldn't increment NAM field
 out = capture.output(.Internal(inspect(x)))
-test(1373, grepl("NAM\\(1\\)", out), TRUE)
+test(1373, grepl("(NAM|REF)\\(1\\)", out), TRUE)  # 'NAM'<R4 'REF'>=R4; #4058
 
 # fix for bug #762 - key'd data.table with a non-existing column in 'by' is not handled properly.
 DT <- data.table(x=1:5, z=5:1, key="z")
@@ -10300,11 +10300,11 @@ test(1725, DT, data.table(a=1:3, add0=NA_real_, add1=c(NA,NA,1.1), add2=c(NA,NA,
 DT = data.table(grp=rep(3:1,each=3), val=1:9)
 lastGrp = 0L
 test(1726.1, DT[, {ans=mean(val)+lastGrp; lastGrp<<-min(val); .(ans, .GRP)}, keyby=grp],
-           data.table(grp=1:3, V1=c(8,12,6), V2=1:3, key="grp") )
+           data.table(grp=1:3, ans=c(8,12,6), GRP=1:3, key="grp") )
 test(1726.2, lastGrp, 1L)
 lastGrp = -1L
 test(1726.3, DT[, {ans=mean(val)+lastGrp; lastGrp<<-min(val); .(ans, .GRP)}, by=grp],
-           data.table(grp=3:1, V1=c(1,6,12), V2=1:3) )
+           data.table(grp=3:1, ans=c(1,6,12), GRP=1:3) )
 test(1726.4, lastGrp, 7L)
 rm(lastGrp)
 
@@ -16398,6 +16398,28 @@ test(2120.06, vDT[c("B","C","A"), on=.(i_id), .N, by=.EACHI][iDT[i_id, order(e_d
 test(2120.07, iDT[(i_id), order(e_date, e_time)], c(3L,4L,1L,2L))  # wrapping with () is different; uses character column to self-join
 test(2120.08, tmp[iDT[(i_id), order(e_date, e_time)]],             # different result with the NA
               data.table(i_id=c("A",NA,"B","C"), N=c(5L,NA,5L,5L)))
+
+# auto-name .() when it's the last item of {...} or wrapped with if(), #2478 #609
+DT = data.table(a = c(1, 1, 2), b = 4:6)
+test(2121.1, DT[ , {b = b; .(a, b = b + 1)}], DT[ , .(a, b=b+1)])
+test(2121.2, DT[ , {{{b = b; .(a, b = b + 1)}}}], DT[ , .(a, b=b+1)])
+test(2121.3, DT[ , if (.N > 1L) .(b), by=a], DT[1:2])
+test(2121.4, DT[ , if (.N > 1L) .(b) else .(c=b), by=a], DT[ , .(a, c=b)],
+     warning="Different branches of j expression produced different auto-named columns")
+test(2121.5, DT[, .(.N=.N), by=a], data.table(a=c(1,2), .N=2:1)) # user supplied names preside over autoname dropping leading dot
+## { ending in NULL should retain that NULL, #4061
+test(2121.6, DT[ , {.(a, b=b+1); NULL}], NULL)
+
+# reference count when deleting columns; 4093
+DT = data.table(x=1:2, y=3:4, z <- 5:6)
+DT[, x := NULL]
+DT[, y := NULL]
+test(2122.1, .Internal(inspect(DT,1)), output="VECSXP.*INTSXP.*[[].*(NAM|REF).*[]].*5,6.*ATTRIB")
+test(2122.2, DT, data.table(V3=5:6))
+
+# aggregating and grouping by same column #3103
+dt = data.table(SomeNumberA=c(1,1,1),SomeNumberB=c(1,1,1))
+test(2123, dt[, .(.N, TotalA=sum(SomeNumberA), TotalB=sum(SomeNumberB)), by=SomeNumberA], data.table(SomeNumberA=1, N=3L, TotalA=1, TotalB=3))
 
 
 ###################################
