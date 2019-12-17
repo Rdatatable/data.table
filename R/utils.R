@@ -117,6 +117,14 @@ do_patterns = function(pat_sub, all_cols) {
   return(matched)
 }
 
+# check UTC status
+is_utc = function(tz) {
+  # via grep('UTC|GMT', OlsonNames(), value = TRUE)
+  utc_tz = c("Etc/GMT", "Etc/UTC", "GMT", "GMT-0", "GMT+0", "GMT0", "UTC")
+  if (is.null(tz)) tz = Sys.timezone()
+  return(tz %chin% utc_tz)
+}
+
 # nocov start #593 always return a data.table
 edit.data.table = function(name, ...) {
   setDT(NextMethod('edit', name))[]
