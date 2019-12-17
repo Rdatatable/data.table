@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: data.table 1.12.9\n"
-"POT-Creation-Date: 2019-12-12 11:41\n"
+"POT-Creation-Date: 2019-12-17 11:02\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -1687,28 +1687,19 @@ msgstr ""
 msgid "before the next test() call in"
 msgstr ""
 
+msgid "out of"
+msgstr ""
+
+msgid ". Search"
+msgstr ""
+
+msgid "for test number"
+msgstr ""
+
 msgid "Timings count mismatch:"
 msgstr ""
 
 msgid "vs"
-msgstr ""
-
-msgid "out of"
-msgstr ""
-
-msgid "in"
-msgstr ""
-
-msgid "on"
-msgstr ""
-
-msgid ". ["
-msgstr ""
-
-msgid "Search"
-msgstr ""
-
-msgid "for test number"
 msgstr ""
 
 msgid "Test"
