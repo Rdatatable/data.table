@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: data.table 1.12.9\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2019-12-17 11:02+0800\n"
+"POT-Creation-Date: 2019-12-18 00:56+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -775,14 +775,14 @@ msgstr ""
 msgid "Internal error: either chin or chmatchdup should be true not both"
 msgstr ""
 
-#: chmatch.c:30
+#: chmatch.c:44
 #, c-format
 msgid ""
 "Internal error: CHARSXP '%s' has a negative truelength (%d). Please file an "
 "issue on the data.table tracker."
 msgstr ""
 
-#: chmatch.c:60
+#: chmatch.c:73
 #, c-format
 msgid ""
 "Failed to allocate %<PRIu64> bytes working memory in chmatchdup: "

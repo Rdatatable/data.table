@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: data.table 1.12.5\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2019-12-17 11:02+0800\n"
+"POT-Creation-Date: 2019-12-18 00:56+0800\n"
 "PO-Revision-Date: 2019-10-31 17:27+08\n"
 "Last-Translator: Amy Tzu-Yu Chen <amy17519@gmail.com>\n"
 "Language-Team: Mandarin\n"
@@ -837,7 +837,7 @@ msgstr "table 类型为 '%s' （必须为 'character' 或 NULL）"
 msgid "Internal error: either chin or chmatchdup should be true not both"
 msgstr "内部错误：chin 和 chmatchdup 不能同时为真"
 
-#: chmatch.c:30
+#: chmatch.c:44
 #, c-format
 msgid ""
 "Internal error: CHARSXP '%s' has a negative truelength (%d). Please file an "
@@ -846,7 +846,7 @@ msgstr ""
 "内部错误：CHARSXP '%s' 的 truelength (%d) 为负。请将此问题汇报给 data.table "
 "问题追踪器。"
 
-#: chmatch.c:60
+#: chmatch.c:73
 #, c-format
 msgid ""
 "Failed to allocate %<PRIu64> bytes working memory in chmatchdup: "
@@ -3661,7 +3661,9 @@ msgstr ""
 msgid ""
 "Type '%s' not supported by GForce sd (gsd). Either add the prefix stats::"
 "sd(.) or turn off GForce optimization using options(datatable.optimize=1)"
-msgstr "GForce sd (gsd)不支持类型'%s'，要么添加前缀 stats::sd(.)，要么使用选项datatable.optimize=1来关闭GForce优化。"
+msgstr ""
+"GForce sd (gsd)不支持类型'%s'，要么添加前缀 stats::sd(.)，要么使用选项"
+"datatable.optimize=1来关闭GForce优化。"
 
 #: gsumm.c:1403
 msgid ""
@@ -3669,10 +3671,10 @@ msgid ""
 "all items in a list such as .SD, either add the prefix base::prod(.SD) or "
 "turn off GForce optimization using options(datatable.optimize=1). More "
 "likely, you may be looking for 'DT[,lapply(.SD,prod),by=,.SDcols=]'"
-msgstr "GForce prod只能应用于列，而不能应用于.SD或其他类似格式的。"
-"为了在列表如.SD相乘所有的元素，要么添加前缀base::prod(.SD), "
-"要么使用选项datatable.optimize=1来关闭GForce优化。"
-"你可以试试'DT[,lapply(.SD,prod),by=,.SDcols=]'"
+msgstr ""
+"GForce prod只能应用于列，而不能应用于.SD或其他类似格式的。为了在列表如.SD相乘"
+"所有的元素，要么添加前缀base::prod(.SD), 要么使用选项datatable.optimize=1来关"
+"闭GForce优化。你可以试试'DT[,lapply(.SD,prod),by=,.SDcols=]'"
 
 #: gsumm.c:1404
 msgid "prod is not meaningful for factors."
@@ -3693,19 +3695,23 @@ msgstr "无法给gprod分配%d * %d 字节"
 msgid ""
 "Type '%s' not supported by GForce prod (gprod). Either add the prefix base::"
 "prod(.) or turn off GForce optimization using options(datatable.optimize=1)"
-msgstr "GForce prod (gprod)不支持类型'%s'，要么添加前缀 base::prod(.)，要么使用选项datatable.optimize=1来关闭GForce优化。"
+msgstr ""
+"GForce prod (gprod)不支持类型'%s'，要么添加前缀 base::prod(.)，要么使用选项"
+"datatable.optimize=1来关闭GForce优化。"
 
 #: ijoin.c:22 ijoin.c:243
 msgid ""
 "Internal error: invalid value for 'mult'; this should have been caught "
 "before. please report to data.table issue tracker"
-msgstr "内部错误：'mult'的值无效；这应该在之前被找到。请报告给data.table问题跟踪器"
+msgstr ""
+"内部错误：'mult'的值无效；这应该在之前被找到。请报告给data.table问题跟踪器"
 
 #: ijoin.c:29 ijoin.c:250
 msgid ""
 "Internal error: invalid value for 'type'; this should have been caught "
 "before. please report to data.table issue tracker"
-msgstr "内部错误：'type'的值无效；这应该在之前被找到。请报告给data.table问题跟踪器"
+msgstr ""
+"内部错误：'type'的值无效；这应该在之前被找到。请报告给data.table问题跟踪器"
 
 #: ijoin.c:56 ijoin.c:121
 #, c-format
@@ -3720,12 +3726,12 @@ msgstr "内部错误：在查找中出现未知的mult：%d"
 #: ijoin.c:128
 #, c-format
 msgid "First pass on calculating lengths in lookup ... done in %8.3f seconds\n"
-msgstr "查找的第一步：长度计算...在%8.3f秒内完成"
+msgstr "查找的第一步：长度计算...在%8.3f秒内完成\n"
 
 #: ijoin.c:141
 #, c-format
 msgid "Second pass on allocation in lookup ... done in %8.3f seconds\n"
-msgstr "查找的第二步：分配...在%8.3f秒内完成"
+msgstr "查找的第二步：分配...在%8.3f秒内完成\n"
 
 #: ijoin.c:160
 #, c-format
@@ -3742,7 +3748,7 @@ msgstr "内部错误：在在查找的过程中，mult=%d出现未知的类型�
 #: ijoin.c:220
 #, c-format
 msgid "Final step in generating lookup ... done in %8.3f seconds\n"
-msgstr "查找的最后一步：生成结果...在在%8.3f秒内完成"
+msgstr "查找的最后一步：生成结果...在在%8.3f秒内完成\n"
 
 #: ijoin.c:323
 #, c-format
@@ -3753,7 +3759,7 @@ msgstr "内部错误：在重叠的过程中，mult=ALL出现未知类型：%d"
 #, c-format
 msgid ""
 "First pass on calculating lengths in overlaps ... done in %8.3f seconds\n"
-msgstr "重叠的第一步：长度计算...在%8.3f秒内完成"
+msgstr "重叠的第一步：长度计算...在%8.3f秒内完成\n"
 
 #: ijoin.c:464 ijoin.c:571 ijoin.c:720
 #, c-format
@@ -3768,7 +3774,7 @@ msgstr "内部错误：在重叠中出现未知的mult：%d"
 #: ijoin.c:727
 #, c-format
 msgid "Final step, fetching indices in overlaps ... done in %8.3f seconds\n"
-msgstr "重叠的最后一步：获取索引...在％8.3f秒内完成"
+msgstr "重叠的最后一步：获取索引...在%8.3f秒内完成\n"
 
 #: init.c:231
 #, c-format
