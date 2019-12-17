@@ -4,17 +4,31 @@ static SEXP chmatchMain(SEXP x, SEXP table, int nomatch, bool chin, bool chmatch
   if (!isString(x) && !isNull(x)) error("x is type '%s' (must be 'character' or NULL)", type2char(TYPEOF(x)));
   if (!isString(table) && !isNull(table)) error("table is type '%s' (must be 'character' or NULL)", type2char(TYPEOF(table)));
   if (chin && chmatchdup) error("Internal error: either chin or chmatchdup should be true not both");  // # nocov
-  // allocations up front before savetl starts
-  SEXP ans = PROTECT(allocVector(chin?LGLSXP:INTSXP, length(x)));
-  if (!length(x)) { UNPROTECT(1); return ans; }  // no need to look at table when x is empty
+  const int xlen = length(x);
+  const int tablelen = length(table);
+  // allocations up front before savetl starts in case allocs fail
+  SEXP ans = PROTECT(allocVector(chin?LGLSXP:INTSXP, xlen));
+  if (xlen==0) { UNPROTECT(1); return ans; }  // no need to look at table when x is empty
   int *ansd = INTEGER(ans);
-  if (!length(table)) { const int val=(chin?0:nomatch), n=LENGTH(x); for (int i=0; i<n; ++i) ansd[i]=val; UNPROTECT(1); return ans; }
+  if (tablelen==0) { const int val=(chin?0:nomatch), n=xlen; for (int i=0; i<n; ++i) ansd[i]=val; UNPROTECT(1); return ans; }
   // Since non-ASCII strings may be marked with different encodings, it only make sense to compare
   // the bytes under a same encoding (UTF-8) #3844 #3850
   const SEXP *xd = STRING_PTR(PROTECT(coerceUtf8IfNeeded(x)));
   const SEXP *td = STRING_PTR(PROTECT(coerceUtf8IfNeeded(table)));
+  const int nprotect = 3; // ans, xd, td
+  if (xlen==1) {
+    ansd[0] = nomatch;
+    for (int i=0; i<tablelen; ++i) {
+      if (td[i]==xd[0]) {
+        ansd[0] = chin ? 1 : i+1;
+        break; // short-circuit early; if there are dups in table the first is returned
+      }
+    }
+    UNPROTECT(nprotect);
+    return ans;
+  }
+  // else xlen>1; nprotect is const above since no more R allocations should occur after this point
   savetl_init();
-  const int xlen = length(x);
   for (int i=0; i<xlen; i++) {
     SEXP s = xd[i];
     const int tl = TRUELENGTH(s);
@@ -31,7 +45,6 @@ static SEXP chmatchMain(SEXP x, SEXP table, int nomatch, bool chin, bool chmatch
       // # nocov end
     }
   }
-  const int tablelen = length(table);
   int nuniq=0;
   for (int i=0; i<tablelen; ++i) {
     SEXP s = td[i];
@@ -89,8 +102,8 @@ static SEXP chmatchMain(SEXP x, SEXP table, int nomatch, bool chin, bool chmatch
   for (int i=0; i<tablelen; i++)
     SET_TRUELENGTH(td[i], 0);  // reinstate 0 rather than leave the -i-1
   savetl_end();
-  UNPROTECT(3);  // ans, xd, td
-  return(ans);
+  UNPROTECT(nprotect);  // ans, xd, td
+  return ans;
 }
 
 // for internal use from C :
