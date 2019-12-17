@@ -3661,7 +3661,7 @@ msgstr ""
 msgid ""
 "Type '%s' not supported by GForce sd (gsd). Either add the prefix stats::"
 "sd(.) or turn off GForce optimization using options(datatable.optimize=1)"
-msgstr ""
+msgstr "GForce sd (gsd)不支持类型'%s'，要么添加前缀 stats::sd(.)，要么使用选项datatable.optimize=1来关闭GForce优化。"
 
 #: gsumm.c:1403
 msgid ""
@@ -3669,205 +3669,208 @@ msgid ""
 "all items in a list such as .SD, either add the prefix base::prod(.SD) or "
 "turn off GForce optimization using options(datatable.optimize=1). More "
 "likely, you may be looking for 'DT[,lapply(.SD,prod),by=,.SDcols=]'"
-msgstr ""
+msgstr "GForce prod只能应用于列，而不能应用于.SD或其他类似格式的。"
+"为了在列表如.SD相乘所有的元素，要么添加前缀base::prod(.SD), "
+"要么使用选项datatable.optimize=1来关闭GForce优化。"
+"你可以试试'DT[,lapply(.SD,prod),by=,.SDcols=]'"
 
 #: gsumm.c:1404
 msgid "prod is not meaningful for factors."
-msgstr ""
+msgstr "prod对于因子是没有意义的"
 
 #: gsumm.c:1409
 #, c-format
 msgid "nrow [%d] != length(x) [%d] in gprod"
-msgstr ""
+msgstr "在gprod中，nrow [%d] != length(x) [%d]"
 
 #: gsumm.c:1411
 #, c-format
 msgid "Unable to allocate %d * %d bytes for gprod"
-msgstr ""
+msgstr "无法给gprod分配%d * %d 字节"
 
 #: gsumm.c:1446
 #, c-format
 msgid ""
 "Type '%s' not supported by GForce prod (gprod). Either add the prefix base::"
 "prod(.) or turn off GForce optimization using options(datatable.optimize=1)"
-msgstr ""
+msgstr "GForce prod (gprod)不支持类型'%s'，要么添加前缀 base::prod(.)，要么使用选项datatable.optimize=1来关闭GForce优化。"
 
 #: ijoin.c:22 ijoin.c:243
 msgid ""
 "Internal error: invalid value for 'mult'; this should have been caught "
 "before. please report to data.table issue tracker"
-msgstr ""
+msgstr "内部错误：'mult'的值无效；这应该在之前被找到。请报告给data.table问题跟踪器"
 
 #: ijoin.c:29 ijoin.c:250
 msgid ""
 "Internal error: invalid value for 'type'; this should have been caught "
 "before. please report to data.table issue tracker"
-msgstr ""
+msgstr "内部错误：'type'的值无效；这应该在之前被找到。请报告给data.table问题跟踪器"
 
 #: ijoin.c:56 ijoin.c:121
 #, c-format
 msgid "Internal error: unknown type in mult=%d in lookup: %d"
-msgstr ""
+msgstr "内部错误：在查找的过程中，mult=%d出现未知的类型：%d"
 
 #: ijoin.c:124 ijoin.c:215
 #, c-format
 msgid "Internal error: unknown mult in lookup: %d"
-msgstr ""
+msgstr "内部错误：在查找中出现未知的mult：%d"
 
 #: ijoin.c:128
 #, c-format
 msgid "First pass on calculating lengths in lookup ... done in %8.3f seconds\n"
-msgstr ""
+msgstr "查找的第一步：长度计算...在%8.3f秒内完成"
 
 #: ijoin.c:141
 #, c-format
 msgid "Second pass on allocation in lookup ... done in %8.3f seconds\n"
-msgstr ""
+msgstr "查找的第二步：分配...在%8.3f秒内完成"
 
 #: ijoin.c:160
 #, c-format
 msgid "Internal error: unknown type lookup should have been caught earlier: %d"
-msgstr ""
+msgstr "内部错误：未知类型查找应该被更早找到：%d"
 
 #: ijoin.c:212
 #, c-format
 msgid ""
 "Internal error: unknown type in mult=%d in lookup should have been caught "
 "earlier: %d"
-msgstr ""
+msgstr "内部错误：在在查找的过程中，mult=%d出现未知的类型应该被更早找到：%d"
 
 #: ijoin.c:220
 #, c-format
 msgid "Final step in generating lookup ... done in %8.3f seconds\n"
-msgstr ""
+msgstr "查找的最后一步：生成结果...在在%8.3f秒内完成"
 
 #: ijoin.c:323
 #, c-format
 msgid "Internal error: unknown type in mult=ALL in overlaps: %d"
-msgstr ""
+msgstr "内部错误：在重叠的过程中，mult=ALL出现未知类型：%d"
 
 #: ijoin.c:328
 #, c-format
 msgid ""
 "First pass on calculating lengths in overlaps ... done in %8.3f seconds\n"
-msgstr ""
+msgstr "重叠的第一步：长度计算...在%8.3f秒内完成"
 
 #: ijoin.c:464 ijoin.c:571 ijoin.c:720
 #, c-format
 msgid "Internal error: unknown type in mult=%d in overlaps: %d"
-msgstr ""
+msgstr "内部错误：在重叠的过程中，mult=%d出现未知类型：%d"
 
 #: ijoin.c:723
 #, c-format
 msgid "Internal error: unknown mult in overlaps: %d"
-msgstr ""
+msgstr "内部错误：在重叠中出现未知的mult：%d"
 
 #: ijoin.c:727
 #, c-format
 msgid "Final step, fetching indices in overlaps ... done in %8.3f seconds\n"
-msgstr ""
+msgstr "重叠的最后一步：获取索引...在％8.3f秒内完成"
 
 #: init.c:231
 #, c-format
 msgid ""
 "Pointers are %d bytes, greater than 8. We have not tested on any "
 "architecture greater than 64bit yet."
-msgstr ""
+msgstr "指针是%d个字节，大于8。我们尚未在大于64位的任何体系结构上进行测试。"
 
 #: init.c:242
 #, c-format
 msgid "Checking NA_INTEGER [%d] == INT_MIN [%d] %s"
-msgstr ""
+msgstr "检查NA_INTEGER [%d] == INT_MIN [%d] %s"
 
 #: init.c:243
 #, c-format
 msgid "Checking NA_INTEGER [%d] == NA_LOGICAL [%d] %s"
-msgstr ""
+msgstr "检查Checking NA_INTEGER [%d] == NA_LOGICAL [%d] %s"
 
 #: init.c:244
 #, c-format
 msgid "Checking sizeof(int) [%d] is 4 %s"
-msgstr ""
+msgstr "检查sizeof（int）[%d]是否为4 %s"
 
 #: init.c:245
 #, c-format
 msgid "Checking sizeof(double) [%d] is 8 %s"
-msgstr ""
+msgstr "检查 sizeof(double) [%d]是否为8 %s"
 
 #: init.c:247
 #, c-format
 msgid "Checking sizeof(long long) [%d] is 8 %s"
-msgstr ""
+msgstr "检查sizeof(long long) [%d]是否为8 %s"
 
 #: init.c:248
 #, c-format
 msgid "Checking sizeof(pointer) [%d] is 4 or 8 %s"
-msgstr ""
+msgstr "检查sizeof(pointer) [%d]是否为4 或者 8 %s"
 
 #: init.c:249
 #, c-format
 msgid "Checking sizeof(SEXP) [%d] == sizeof(pointer) [%d] %s"
-msgstr ""
+msgstr "检查sizeof(SEXP) [%d] == sizeof(pointer) [%d] %s"
 
 #: init.c:250
 #, c-format
 msgid "Checking sizeof(uint64_t) [%d] is 8 %s"
-msgstr ""
+msgstr "检查 sizeof(uint64_t) [%d]是否为8 %s"
 
 #: init.c:251
 #, c-format
 msgid "Checking sizeof(int64_t) [%d] is 8 %s"
-msgstr ""
+msgstr "检查sizeof(int64_t) [%d]是否为8 %s"
 
 #: init.c:252
 #, c-format
 msgid "Checking sizeof(signed char) [%d] is 1 %s"
-msgstr ""
+msgstr "检查sizeof(signed char) [%d]是否为1 %s"
 
 #: init.c:253
 #, c-format
 msgid "Checking sizeof(int8_t) [%d] is 1 %s"
-msgstr ""
+msgstr "检查sizeof(int8_t) [%d]是否为1 %s"
 
 #: init.c:254
 #, c-format
 msgid "Checking sizeof(uint8_t) [%d] is 1 %s"
-msgstr ""
+msgstr "检查sizeof(uint8_t) [%d]是否为1 %s"
 
 #: init.c:255
 #, c-format
 msgid "Checking sizeof(int16_t) [%d] is 2 %s"
-msgstr ""
+msgstr "检查sizeof(int16_t) [%d]是否为2 %s"
 
 #: init.c:256
 #, c-format
 msgid "Checking sizeof(uint16_t) [%d] is 2 %s"
-msgstr ""
+msgstr "检查sizeof(uint16_t) [%d]是否为2 %s"
 
 #: init.c:259
 #, c-format
 msgid "Checking LENGTH(allocVector(INTSXP,2)) [%d] is 2 %s"
-msgstr ""
+msgstr "检查LENGTH(allocVector(INTSXP,2)) [%d]是否为2 %s"
 
 #: init.c:260
 #, c-format
 msgid "Checking TRUELENGTH(allocVector(INTSXP,2)) [%d] is 0 %s"
-msgstr ""
+msgstr "检查TRUELENGTH(allocVector(INTSXP,2)) [%d]是否为0 %s"
 
 #: init.c:267
 #, c-format
 msgid "Checking memset(&i,0,sizeof(int)); i == (int)0 %s"
-msgstr ""
+msgstr "检查memset(&i,0,sizeof(int)); i == (int)0 %s"
 
 #: init.c:270
 #, c-format
 msgid "Checking memset(&ui, 0, sizeof(unsigned int)); ui == (unsigned int)0 %s"
-msgstr ""
+msgstr "检查memset(&ui, 0, sizeof(unsigned int)); ui == (unsigned int)0 %s"
 
 #: init.c:273
 #, c-format
 msgid "Checking memset(&d, 0, sizeof(double)); d == (double)0.0 %s"
-msgstr ""
+msgstr "检查memset(&d, 0, sizeof(double)); d == (double)0.0 %s"
 
 #: init.c:276
 #, c-format
@@ -3876,7 +3879,7 @@ msgstr "检查memset(&ld, 0, sizeof(long double)); ld == (long double)0.0 %s"
 
 #: init.c:279
 msgid "The ascii character '/' is not just before '0'"
-msgstr "ascii字符'/'不是在'0'前"
+msgstr "ASCII 字符 '/' 后一个字符并非字符 '0'"
 
 #: init.c:280
 msgid "The C expression (uint_fast8_t)('/'-'0')<10 is true. Should be false."
