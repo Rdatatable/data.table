@@ -16400,6 +16400,12 @@ test(2124.1, format(as.ITime(t0)), '00:00:00')
 test(2124.2, format(as.IDate(t0)), '2019-10-01')
 Sys.setenv(TZ=oldtz)
 
+# Extra arguments in yaml
+data = data.table(x = 1, y = 100)
+file = tempfile()
+fwrite(data, file, yaml =  list(something_else = "o hai!"))
+x = fread(file, yaml = TRUE)
+test(2125, attr(x, "yaml_metadata")$something_else, "o hai!")
 
 ###################################
 #  Add new tests above this line  #
