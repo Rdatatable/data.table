@@ -18,6 +18,8 @@
 
 1. `as.IDate`, `as.ITime`, `second`, `minute`, and `hour` now recognize UTC equivalents for speed: GMT, GMT-0, GMT+0, GMT0, Etc/GMT, and Etc/UTC, [#4116](https://github.com/Rdatatable/data.table/issues/4116).
 
+2. `set2key`, `set2keyv`, and `key2` have been removed, as they have been warning since v1.9.8 (Nov 2016) and halting with helpful message since v1.11.0 (May 2018). When they were introduced in version 1.9.4 (Oct 2014) they were marked as 'experimental' and quickly superceded by `setindex` and `indices`.
+
 
 # data.table [v1.12.8](https://github.com/Rdatatable/data.table/milestone/15?closed=1)  (09 Dec 2019)
 
