@@ -33,10 +33,10 @@ as.IDate.Date = function(x, ...) {
 }
 
 as.IDate.POSIXct = function(x, tz = attr(x, "tzone", exact=TRUE), ...) {
-  if (is_utc(tz)) {
+  if (is_utc(tz))
     (setattr(as.integer(as.numeric(x) %/% 86400L), "class", c("IDate", "Date")))  # %/% returns new object so can use setattr() on it; wrap with () to return visibly
-  } else
-    as.IDate(as.Date(x, tz =  if (is.null(tz)) tz='' else tz, ...))
+  else
+    as.IDate(as.Date(x, tz =  if (is.null(tz)) '' else tz, ...))
 }
 
 as.IDate.IDate = function(x, ...) x
