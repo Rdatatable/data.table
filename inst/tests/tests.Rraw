@@ -16649,6 +16649,12 @@ test(2125.09, capture.output(print(DT, trunc.cols=TRUE)),
 test(2125.10, capture.output(print(DT, trunc.cols=TRUE, class=TRUE)),
      "4 variables not shown: [a <char>, b <char>, c <char>, d <char>]")
 options(old_width)
+# Extra arguments in yaml
+data = data.table(x = 1, y = 100)
+file = tempfile()
+fwrite(data, file, yaml =  list(something_else = "o hai!"))
+x = fread(file, yaml = TRUE)
+test(2125, attr(x, "yaml_metadata")$something_else, "o hai!")
 
 # segfault when i is NULL or zero-column, #4060
 DT = data.table(A="a", key="A")
