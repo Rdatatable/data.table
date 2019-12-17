@@ -30,7 +30,7 @@
   \item{\dots}{ Other arguments ultimately passed to \code{format}. }
 }
 \details{
-  By default, with an eye to the typically large number of observations in a code{data.table}, only the beginning and end of the object are displayed (specifically, \code{head(x, topn)} and \code{tail(x, topn)} are displayed unless \code{nrow(x) < nrows}, in which case all rows will print).
+  By default, with an eye to the typically large number of observations in a \code{data.table}, only the beginning and end of the object are displayed (specifically, \code{head(x, topn)} and \code{tail(x, topn)} are displayed unless \code{nrow(x) < nrows}, in which case all rows will print).
 }
 \seealso{\code{\link{print.default}}}
 \examples{
