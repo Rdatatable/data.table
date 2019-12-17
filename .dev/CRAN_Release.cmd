@@ -46,7 +46,10 @@ grep -Elr "#pragma omp (?:for|parallel)" src | sort
 grep "[.]Call(\"" ./R/*.R
 
 # Make sure all \dots calls in the manual are parsed as ...
-Rscript -e "setwd('man'); unlist(sapply(list.files('.'), function(rd) rapply(tools::parse_Rd(rd), grep, pattern='dots', value=TRUE)))"
+Rscript -e "setwd('man'); unlist(sapply(list.files('.'), function(rd) rapply(tools::parse_Rd(rd), grep, pattern='dots', fixed = TRUE, value=TRUE)))"
+
+# No unused macros in the manual (e.g. code{} instead of \code{})
+grep -Enr "\b[^\a-z][a-z]+\{[^}]+\}" man
 
 # Ensure no Rprintf in init.c
 grep "Rprintf" ./src/init.c
