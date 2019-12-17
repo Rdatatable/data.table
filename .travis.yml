@@ -13,7 +13,7 @@ r:
 
 os:
   - linux
-  - osx  # Takes 13m (+9m linux = 22m total); #3357; #3326; #3331. Off by default to speed up dev cycle. AppVeyor covers R-devel and completes in 10m concurrently.
+#  - osx  # Takes 13m (+9m linux = 22m total); #3357; #3326; #3331. When off it's to speed up dev cycle; CRAN_Release.cmd has a reminder to turn back on.
 
 before_install:
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew install llvm &&
@@ -50,5 +50,7 @@ env:
     - PKG_CFLAGS="-O3 -Wall -pedantic"
     - _R_CHECK_NO_STOP_ON_TEST_ERROR_=true
     - _R_CHECK_CRAN_INCOMING_REMOTE_=false
+    # Block truncation of any error messages in R CMD check
+    - _R_CHECK_TESTS_NLINES_=0
     # drat using @jangorecki token
     - secure: "CxDW++rsQApQWos+h1z/F76odysyD6AtXJrDwlCHlgqXeKJNRATR4wZDDR18SK+85jUqjoqOvpyrq+5kKuyg6AnA/zduaX2uYE5mcntEUiyzlG/jJUKbcJqt22nyAvFXP3VS60T2u4H6IIhVmr7dArdxLkv8W+pJvf2Tg6kx8Ws="
