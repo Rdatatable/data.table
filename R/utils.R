@@ -119,8 +119,8 @@ do_patterns = function(pat_sub, all_cols) {
 
 # check UTC status
 is_utc = function(tz) {
-  # via grep('UTC|GMT', OlsonNames(), value = TRUE)
-  utc_tz = c("Etc/GMT", "Etc/UTC", "GMT", "GMT-0", "GMT+0", "GMT0", "UTC")
+  # via grep('UTC|GMT', OlsonNames(), value = TRUE); ordered by "prior" frequency
+  utc_tz = c("UTC", "GMT", "Etc/UTC", "Etc/GMT", "GMT-0", "GMT+0", "GMT0")
   if (is.null(tz)) tz = Sys.timezone()
   return(tz %chin% utc_tz)
 }
