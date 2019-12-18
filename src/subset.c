@@ -242,7 +242,7 @@ static void checkCol(SEXP col, int colNum, int nrow, SEXP x)
 *   4) Could do it other ways but may as well go to C now as we were going to do that anyway
 */
 
-SEXP subsetDT(SEXP x, SEXP rows, SEXP cols) {
+SEXP subsetDT(SEXP x, SEXP rows, SEXP cols) { // API change needs update NEWS.md and man/cdt.Rd
   int nprotect=0;
   if (!isNewList(x)) error(_("Internal error. Argument 'x' to CsubsetDT is type '%s' not 'list'"), type2char(TYPEOF(rows))); // # nocov
   if (!length(x)) return(x);  // return empty list
