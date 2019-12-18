@@ -296,8 +296,8 @@ SEXP frollapplyR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP align, SEXP rho) {
   if (verbose)
     Rprintf("%s: allocating memory for results %dx%d\n", __func__, nx, nk);
   ans_t *dans = (ans_t *)R_alloc(nx*nk, sizeof(ans_t));
-  double* dx[nx];
-  uint64_t inx[nx];
+  double** dx = (double**)R_alloc(nx, sizeof(double*));
+  uint64_t* inx = (uint64_t*)R_alloc(nx, sizeof(uint64_t));
   for (R_len_t i=0; i<nx; i++) {
     inx[i] = xlength(VECTOR_ELT(x, i));
     for (R_len_t j=0; j<nk; j++) {
@@ -307,21 +307,22 @@ SEXP frollapplyR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP align, SEXP rho) {
     dx[i] = REAL(VECTOR_ELT(x, i));
   }
 
-  double *dw[nk];
-  SEXP pw[nk], pc[nk];
-  // in the following loop we handle vectorized k argument
-  // for each k we need to allocate own width window object: pw
+  double* dw;
+  SEXP pw, pc;
+
+  // in the outer loop we handle vectorized k argument
+  // for each k we need to allocate a width window object: pw
   // we also need to construct distinct R call pointing to that window
   for (R_len_t j=0; j<nk; j++) {
-    pw[j] = PROTECT(allocVector(REALSXP, ik[j])); protecti++;
-    dw[j] = REAL(pw[j]);
-    pc[j] = PROTECT(LCONS(fun, LCONS(pw[j], LCONS(R_DotsSymbol, R_NilValue)))); protecti++;
-  }
+    pw = PROTECT(allocVector(REALSXP, ik[j]));
+    dw = REAL(pw);
+    pc = PROTECT(LCONS(fun, LCONS(pw, LCONS(R_DotsSymbol, R_NilValue))));
 
-  for (R_len_t i=0; i<nx; i++) {
-    for (R_len_t j=0; j<nk; j++) {
-      frollapply(dx[i], inx[i], dw[j], ik[j], &dans[i*nk+j], ialign, dfill, pc[j], rho, verbose);
+    for (R_len_t i=0; i<nx; i++) {
+      frollapply(dx[i], inx[i], dw, ik[j], &dans[i*nk+j], ialign, dfill, pc, rho, verbose);
     }
+
+    UNPROTECT(2);
   }
 
   if (verbose)
