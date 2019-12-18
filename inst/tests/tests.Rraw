@@ -16649,7 +16649,20 @@ test(2127.69, fcase(test_vec1, 1L, test_vec_na1, 2L), error = "Argument #3 has a
 test(2127.70, fcase(test_vec1, as.Date("2019-10-11"), test_vec2, 2), error = "Argument #4 has different class than argument #2, Please make sure all output values have the same class.")
 test(2127.71, fcase(test_vec1, 1L, test_vec2, 2:3), error = "Length of output value #4 must either be 1 or length of logical condition.")
 test(2127.72, fcase(TRUE, 1L, FALSE, stop("bang!")), 1L)
-
+test(2127.73, fcase(test_vec1, 1L, test_vec2, 0:10), as.integer(c( 1, 1, 1, 1, 1, NA, 6, 7, 8, 9, 10)))
+test(2127.74, fcase(test_vec1, 0:10, test_vec2, 0L), as.integer(c( 0, 1, 2, 3, 4, NA, 0, 0, 0, 0, 0)))
+test(2127.75, fcase(test_vec1, 1, test_vec2, as.numeric(0:10)), as.numeric(c( 1, 1, 1, 1, 1, NA, 6, 7, 8, 9, 10)))
+test(2127.76, fcase(test_vec1, as.numeric(0:10), test_vec2, 0), as.numeric(c( 0, 1, 2, 3, 4, NA, 0, 0, 0, 0, 0)))
+test(2127.77, fcase(test_vec1, "1", test_vec2, as.character(0:10)), as.character(c( 1, 1, 1, 1, 1, NA, 6, 7, 8, 9, 10)))
+test(2127.78, fcase(test_vec1, as.character(0:10), test_vec2, "0"), as.character(c( 0, 1, 2, 3, 4, NA, 0, 0, 0, 0, 0)))
+test(2127.79, fcase(test_vec1, TRUE, test_vec2, rep(FALSE, 11L)), as.logical(out_vec))
+test(2127.80, fcase(test_vec1, rep(TRUE, 11L), test_vec2, FALSE), as.logical(out_vec))
+test(2127.81, fcase(test_vec1, 1+0i, test_vec2, rep(0+0i, 11L)), as.complex(out_vec))
+test(2127.82, fcase(test_vec1, rep(1+0i, 11L), test_vec2, 0+0i), as.complex(out_vec))
+test(2127.83, fcase(test_vec1, list(rep(1, 11L)), test_vec2, list(0)), list(rep(1, 11L),rep(1, 11L),rep(1, 11L),rep(1, 11L),rep(1, 11L), NULL, 0, 0, 0, 0, 0))
+test(2127.84, fcase(test_vec1, list(1), test_vec2, list(rep(0,11L))), list(1,1,1,1,1, NULL, rep(0,11L), rep(0,11L), rep(0,11L), rep(0,11L), rep(0,11L)))
+test(2127.85, fcase(test_vec1, list(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1), test_vec2, list(0)), list(1,1,1,1,1, NULL, 0, 0, 0, 0, 0))
+test(2127.86, fcase(test_vec1, list(1), test_vec2, list(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)), list(1,1,1,1,1, NULL, 0, 0, 0, 0, 0))
 
 ###################################
 #  Add new tests above this line  #
