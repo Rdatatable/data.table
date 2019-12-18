@@ -582,7 +582,7 @@ msgstr ""
 #: assign.c:1153
 #, c-format
 msgid "Failed to allocate initial %d items in savetl_init"
-msgstr "不能给 savetl_init 最开始的 %d 个项进行分配 "
+msgstr "不能为 savetl_init 最开始的 %d 个项分配空间"
 
 #: assign.c:1162
 #, c-format
@@ -590,13 +590,13 @@ msgid ""
 "Internal error: reached maximum %d items for savetl. Please report to data."
 "table issue tracker."
 msgstr ""
-"内部错误：已经达到了savetl能处理的最多 %d 数量的子项。请将此问题汇报给data."
-"table 问题追踪器。"
+"内部错误：已经达到了 savetl 能处理的子项上限 %d。请将此问题汇报给data.table"
+"问题追踪器。"
 
 #: assign.c:1169
 #, c-format
 msgid "Failed to realloc saveds to %d items in savetl"
-msgstr "不能给savetl里的 %d 个项提供 saveds"
+msgstr "不能给 savetl 里的 %d 个项重新分配 saveds"
 
 #: assign.c:1175
 #, c-format
@@ -625,7 +625,7 @@ msgstr "'new' 的长度是 %d。 它的长度必须和'which' (%d)的长度一�
 msgid ""
 "Item %d of 'which' is %d which is outside range of the length %d character "
 "vector"
-msgstr "'which' 的 %1$d 项是 %2$d 且超出了长度为%3$d字符的范围"
+msgstr "'which' 的 %d 项是 %d，这超出了 %d 字符的长度范围"
 
 #: assign.c:1214
 msgid "dt passed to setcolorder has no names"
@@ -639,7 +639,7 @@ msgstr "内部错误: setcolorder读取到的dt有 %d 列但是有 %d 个名字�
 #: assign.c:1223
 msgid ""
 "Internal error: o passed to Csetcolorder contains an NA or out-of-bounds"
-msgstr "内部错误: Csetcolorder读取到的o有一个NA(缺失值)或者是出界"
+msgstr "内部错误: Csetcolorder读取到的o有一个NA(缺失值)或者是下标出界"
 
 #: assign.c:1225
 msgid "Internal error: o passed to Csetcolorder contains a duplicate"
@@ -652,7 +652,7 @@ msgid ""
 "%d. Each should be either length 1 or the length of the longest."
 msgstr ""
 "向量长度不一致：length(x)==%d length(lower)==%d length(upper)==%d。每一个向量"
-"要么是长度为一或者是最长的长度。"
+"要么是长度为一或者是等于最长向量的长度。"
 
 #: between.c:16
 msgid "incbounds must be TRUE or FALSE"
@@ -669,7 +669,7 @@ msgstr "check 必须是 TRUE (真) 或者是 FALSE (假)"
 #: between.c:64
 #, c-format
 msgid "Item %d of lower (%d) is greater than item %d of upper (%d)"
-msgstr "lower (%1$d) 的 %2$d 项大于 upper (%3$d)的 %4$d 项"
+msgstr "lower (%2$d) 的 %1$d 项大于 upper (%3$d)的 %4$d 项"
 
 #: between.c:82
 #, c-format
@@ -695,7 +695,7 @@ msgstr "64位整数的并行运行时间一共花费了 %8.3fs\n"
 msgid ""
 "x is not integer64 but lower and/or upper is integer64. Please align classes."
 msgstr ""
-"x 不是一个64位整数但是至少在 lower 和 upper 其中有一个是64位整数，请保证所有"
+"x 不是一个64位整数但是 lower 和 upper 中至少有一个是64位整数，请保证所有"
 "的变量类型一致。"
 
 #: between.c:122
