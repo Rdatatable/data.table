@@ -22,7 +22,7 @@ vector \%plike\% pattern
    \item{pattern}{ Pattern to be matched }
    \item{ignore.case}{ \code{logical}; is \code{pattern} case-sensitive? }
    \item{fixed}{ \code{logical}; should \code{pattern} be interpreted as a literal string (i.e., ignoring regular expressions)? }
-   \item{perl}{ \code{logical}; is \code{pattern} perl-compatible regular expression? }
+   \item{perl}{ \code{logical}; is \code{pattern} Perl-compatible regular expression? }
 }
 \details{
   Internally, \code{like} is essentially a wrapper around \code{\link[base:grep]{base::grepl}}, except that it is smarter about handling \code{factor} input (\code{base::grep} uses slow \code{as.character} conversion).
