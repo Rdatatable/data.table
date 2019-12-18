@@ -1,9 +1,10 @@
+#include "dt_stdio.h"  // PRId64 and PRIu64
 #include <R.h>
 #define USE_RINTERNALS
 #include <Rinternals.h>
 // #include <signal.h> // the debugging machinery + breakpoint aidee
 // raise(SIGINT);
-#include <stdint.h> // for uint64_t rather than unsigned long long
+#include <stdint.h>    // for uint64_t rather than unsigned long long
 #include <stdbool.h>
 #include "myomp.h"
 #include "types.h"
@@ -64,36 +65,40 @@ typedef R_xlen_t RLEN;
 #endif
 
 // init.c
-SEXP char_integer64;
-SEXP char_ITime;
-SEXP char_IDate;
-SEXP char_Date;
-SEXP char_POSIXct;
-SEXP char_nanotime;
-SEXP char_lens;
-SEXP char_indices;
-SEXP char_allLen1;
-SEXP char_allGrp1;
-SEXP char_factor;
-SEXP char_ordered;
-SEXP char_datatable;
-SEXP char_dataframe;
-SEXP char_NULL;
-SEXP sym_sorted;
-SEXP sym_index;
-SEXP sym_BY;
-SEXP sym_starts, char_starts;
-SEXP sym_maxgrpn;
-SEXP sym_colClassesAs;
-SEXP sym_verbose;
-SEXP sym_inherits;
-SEXP sym_datatable_locked;
+extern SEXP char_integer64;
+extern SEXP char_ITime;
+extern SEXP char_IDate;
+extern SEXP char_Date;
+extern SEXP char_POSIXct;
+extern SEXP char_nanotime;
+extern SEXP char_lens;
+extern SEXP char_indices;
+extern SEXP char_allLen1;
+extern SEXP char_allGrp1;
+extern SEXP char_factor;
+extern SEXP char_ordered;
+extern SEXP char_datatable;
+extern SEXP char_dataframe;
+extern SEXP char_NULL;
+extern SEXP sym_sorted;
+extern SEXP sym_index;
+extern SEXP sym_BY;
+extern SEXP sym_starts, char_starts;
+extern SEXP sym_maxgrpn;
+extern SEXP sym_colClassesAs;
+extern SEXP sym_verbose;
+extern SEXP SelfRefSymbol;
+extern SEXP sym_inherits;
+extern SEXP sym_datatable_locked;
+extern double NA_INT64_D;
+extern long long NA_INT64_LL;
+extern Rcomplex NA_CPLX;  // initialized in init.c; see there for comments
+extern size_t sizes[100];  // max appears to be FUNSXP = 99, see Rinternals.h
+extern size_t typeorder[100];
+
 long long DtoLL(double x);
 double LLtoD(long long x);
 bool GetVerbose();
-double NA_INT64_D;
-long long NA_INT64_LL;
-Rcomplex NA_CPLX;  // initialized in init.c; see there for comments
 
 // cj.c
 SEXP cj(SEXP base_list);
@@ -101,9 +106,6 @@ SEXP cj(SEXP base_list);
 // dogroups.c
 SEXP keepattr(SEXP to, SEXP from);
 SEXP growVector(SEXP x, R_len_t newlen);
-size_t sizes[100];  // max appears to be FUNSXP = 99, see Rinternals.h
-size_t typeorder[100];
-SEXP SelfRefSymbol;
 
 // assign.c
 SEXP allocNAVector(SEXPTYPE type, R_len_t n);

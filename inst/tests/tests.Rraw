@@ -11125,7 +11125,7 @@ test(1764.2, format(structure(NA_integer_, class = "ITime")), NA_character_)
 # IDateTime error when tzone is NULL, #1973
 x = as.POSIXct('2017-03-17', tz="UTC")
 attr(x, 'tzone') = NULL
-test(1765, print(IDateTime(x)), output=".*idate.*itime.*1: 2017-03-17")
+test(1765, print(IDateTime(x)), output=".*idate.*itime.*1: 2017-03-1[67]")
 
 # print(null.data.table()) should not output NULL as well, #1852
 # use capture.output() in this case rather than output= to ensure NULL is not output
@@ -12454,9 +12454,7 @@ test(1897.2, attributes(attr(DT, 'index')),
      list(`__a` = c(3L, 2L, 4L, 1L, 5L),
           `__a__b` = c(3L, 4L, 2L, 1L, 5L)))
 
-test(1898.1, set2key(DT, a), error="deprecated. Please use setindex() instead.")
-test(1898.2, set2keyv(DT, "a"), error="deprecated. Please use setindexv() instead.")
-test(1898.3, key2(DT), error="deprecated. Please use indices() instead.")
+# tests 1898.{1,2,3} for set2key etc. deprecation were removed along with those functions
 
 # Allow column to be used as rownames when converting to matrix #2702
 DT = data.table(id = letters[1:4], X = 1:4, Y = 5:8)
@@ -16461,6 +16459,108 @@ test(2121.3, DT[ , if (.N > 1L) .(b), by=a], DT[1:2])
 test(2121.4, DT[ , if (.N > 1L) .(b) else .(c=b), by=a], DT[ , .(a, c=b)],
      warning="Different branches of j expression produced different auto-named columns")
 test(2121.5, DT[, .(.N=.N), by=a], data.table(a=c(1,2), .N=2:1)) # user supplied names preside over autoname dropping leading dot
+## { ending in NULL should retain that NULL, #4061
+test(2121.6, DT[ , {.(a, b=b+1); NULL}], NULL)
+
+# reference count when deleting columns; 4093
+DT = data.table(x=1:2, y=3:4, z <- 5:6)
+DT[, x := NULL]
+DT[, y := NULL]
+test(2122.1, .Internal(inspect(DT,1)), output="VECSXP.*INTSXP.*[[].*(NAM|REF).*[]].*5,6.*ATTRIB")
+test(2122.2, DT, data.table(V3=5:6))
+
+# aggregating and grouping by same column #3103
+dt = data.table(SomeNumberA=c(1,1,1),SomeNumberB=c(1,1,1))
+test(2123, dt[, .(.N, TotalA=sum(SomeNumberA), TotalB=sum(SomeNumberB)), by=SomeNumberA], data.table(SomeNumberA=1, N=3L, TotalA=1, TotalB=3))
+
+# system timezone is not usually UTC, so as.ITime.POSIXct shouldn't assume so, #4085
+oldtz=Sys.getenv('TZ')
+Sys.setenv(TZ='Asia/Jakarta') # UTC+7
+t0 = as.POSIXct('2019-10-01')
+test(2124.1, format(as.ITime(t0)), '00:00:00')
+test(2124.2, format(as.IDate(t0)), '2019-10-01')
+Sys.setenv(TZ=oldtz)
+
+# trunc.cols in print.data.table, #4074
+old_width = options("width" = 40)
+# Single row printing (to check issue with losing attributes)
+DT = data.table(a = "aaaaaaaaaaaaa",
+                b = "bbbbbbbbbbbbb",
+                c = "ccccccccccccc",
+                d = "ddddddddddddd")
+test(2125.01,
+     capture.output(print(DT, trunc.cols=TRUE))[3],
+     "2 variables not shown: [c, d]")
+# Printing with dots
+DT = data.table(a = vector("integer", 102),
+                b = "bbbbbbbbbbbbb",
+                c = "ccccccccccccc",
+                d = c("ddddddddddddd", "d"))
+test(2125.02, capture.output(print(DT, trunc.cols=TRUE)),
+     c("     a             b             c",
+       "  1: 0 bbbbbbbbbbbbb ccccccccccccc",
+       "  2: 0 bbbbbbbbbbbbb ccccccccccccc",
+       "  3: 0 bbbbbbbbbbbbb ccccccccccccc",
+       "  4: 0 bbbbbbbbbbbbb ccccccccccccc",
+       "  5: 0 bbbbbbbbbbbbb ccccccccccccc",
+       " ---                              ",
+       " 98: 0 bbbbbbbbbbbbb ccccccccccccc",
+       " 99: 0 bbbbbbbbbbbbb ccccccccccccc",
+       "100: 0 bbbbbbbbbbbbb ccccccccccccc",
+       "101: 0 bbbbbbbbbbbbb ccccccccccccc",
+       "102: 0 bbbbbbbbbbbbb ccccccccccccc",
+       "1 variable not shown: [d]"))
+test(2125.03, capture.output(print(DT, trunc.cols=TRUE, row.names=FALSE)),
+     c("    a             b             c",
+       "    0 bbbbbbbbbbbbb ccccccccccccc",
+       "    0 bbbbbbbbbbbbb ccccccccccccc",
+       "    0 bbbbbbbbbbbbb ccccccccccccc",
+       "    0 bbbbbbbbbbbbb ccccccccccccc",
+       "    0 bbbbbbbbbbbbb ccccccccccccc",
+       "---                              ",
+       "    0 bbbbbbbbbbbbb ccccccccccccc",
+       "    0 bbbbbbbbbbbbb ccccccccccccc",
+       "    0 bbbbbbbbbbbbb ccccccccccccc",
+       "    0 bbbbbbbbbbbbb ccccccccccccc",
+       "    0 bbbbbbbbbbbbb ccccccccccccc",
+       "1 variable not shown: [d]" ))
+test(2125.04, capture.output(print(DT, trunc.cols=TRUE, class=TRUE))[14],
+     "1 variable not shown: [d <char>]")
+test(2125.05, capture.output(print(DT, trunc.cols=TRUE, class=TRUE, row.names=FALSE))[c(1,14)],
+     c("        a             b             c",
+       "1 variable not shown: [d <char>]" ))
+test(2125.06, capture.output(print(DT, trunc.cols=TRUE, col.names="none"))[c(1,12)],
+     c("  1: 0 bbbbbbbbbbbbb ccccccccccccc",
+       "1 variable not shown: [d]" ))
+test(2125.07, capture.output(print(DT, trunc.cols=TRUE, class=TRUE, col.names="none"))[c(1,13)],
+     c("  1: 0 bbbbbbbbbbbbb ccccccccccccc",
+       "1 variable not shown: [d]" ),
+     warning = "Column classes will be suppressed when col.names is 'none'")
+options("width" = 20)
+DT = data.table(a = vector("integer", 2),
+                b = "bbbbbbbbbbbbb",
+                c = "ccccccccccccc",
+                d = "ddddddddddddd")
+test(2125.08, capture.output(print(DT, trunc.cols=TRUE)),
+     c("   a             b",
+       "1: 0 bbbbbbbbbbbbb",
+       "2: 0 bbbbbbbbbbbbb",
+       "2 variables not shown: [c, d]"))
+options("width" = 10)
+DT = data.table(a = "aaaaaaaaaaaaa",
+                b = "bbbbbbbbbbbbb",
+                c = "ccccccccccccc",
+                d = "ddddddddddddd")
+test(2125.09, capture.output(print(DT, trunc.cols=TRUE)),
+     "4 variables not shown: [a, b, c, d]")
+test(2125.10, capture.output(print(DT, trunc.cols=TRUE, class=TRUE)),
+     "4 variables not shown: [a <char>, b <char>, c <char>, d <char>]")
+options(old_width)
+
+# segfault when i is NULL or zero-column, #4060
+DT = data.table(A="a", key="A")
+test(2126.1, DT[J(NULL)], DT[0])
+test(2126.2, DT[data.table()], DT[0])
 
 
 ###################################
