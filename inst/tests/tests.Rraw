@@ -11125,7 +11125,7 @@ test(1764.2, format(structure(NA_integer_, class = "ITime")), NA_character_)
 # IDateTime error when tzone is NULL, #1973
 x = as.POSIXct('2017-03-17', tz="UTC")
 attr(x, 'tzone') = NULL
-test(1765, print(IDateTime(x)), output=".*idate.*itime.*1: 2017-03-17")
+test(1765, print(IDateTime(x)), output=".*idate.*itime.*1: 2017-03-1[67]")
 
 # print(null.data.table()) should not output NULL as well, #1852
 # use capture.output() in this case rather than output= to ensure NULL is not output
@@ -16380,6 +16380,25 @@ test(2121.4, DT[ , if (.N > 1L) .(b) else .(c=b), by=a], DT[ , .(a, c=b)],
 test(2121.5, DT[, .(.N=.N), by=a], data.table(a=c(1,2), .N=2:1)) # user supplied names preside over autoname dropping leading dot
 ## { ending in NULL should retain that NULL, #4061
 test(2121.6, DT[ , {.(a, b=b+1); NULL}], NULL)
+
+# reference count when deleting columns; 4093
+DT = data.table(x=1:2, y=3:4, z <- 5:6)
+DT[, x := NULL]
+DT[, y := NULL]
+test(2122.1, .Internal(inspect(DT,1)), output="VECSXP.*INTSXP.*[[].*(NAM|REF).*[]].*5,6.*ATTRIB")
+test(2122.2, DT, data.table(V3=5:6))
+
+# aggregating and grouping by same column #3103
+dt = data.table(SomeNumberA=c(1,1,1),SomeNumberB=c(1,1,1))
+test(2123, dt[, .(.N, TotalA=sum(SomeNumberA), TotalB=sum(SomeNumberB)), by=SomeNumberA], data.table(SomeNumberA=1, N=3L, TotalA=1, TotalB=3))
+
+# system timezone is not usually UTC, so as.ITime.POSIXct shouldn't assume so, #4085
+oldtz=Sys.getenv('TZ')
+Sys.setenv(TZ='Asia/Jakarta') # UTC+7
+t0 = as.POSIXct('2019-10-01')
+test(2124.1, format(as.ITime(t0)), '00:00:00')
+test(2124.2, format(as.IDate(t0)), '2019-10-01')
+Sys.setenv(TZ=oldtz)
 
 
 ###################################
