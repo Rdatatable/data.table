@@ -12,6 +12,8 @@
 
 3. `print` method for `data.table`s gains `trunc.cols` argument (and corresponding option `datatable.print.trunc.cols`, default `FALSE`), [#1497](https://github.com/Rdatatable/data.table/issues/1497), part of [#1523](https://github.com/Rdatatable/data.table/issues/1523). This prints only as many columns as fit in the console without wrapping to new lines (e.g., the first 5 of 80 columns) and a message that states the count and names of the variables not shown. When `class=TRUE` the message also contains the classes of the variables. `data.table` has always automatically truncated _rows_ of a table for efficiency (e.g. printing 10 rows instead of 10 million); in the future, we may do the same for _columns_ (e.g., 10 columns instead of 20,000) by changing the default for this argument. Thanks to @nverno for the initial suggestion and to @TysonStanley for the PR.
 
+4. `setnames(DT, new=new_names)` (i.e. explicitly named `new=` argument) now works as expected rather than an error message requesting that `old=` be supplied too, [#4041](https://github.com/Rdatatable/data.table/issues/4041). Thanks @Kodiologist for the suggestion.
+
 ## BUG FIXES
 
 1. A NULL timezone on POSIXct was interpreted by `as.IDate` and `as.ITime` as UTC rather than the session's default timezone (`tz=""`) , [#4085](https://github.com/Rdatatable/data.table/issues/4085).
