@@ -12,7 +12,7 @@
 \item{default}{ Default return value, \code{NA} by default, for when all of the logical conditions \code{when1, when2, ..., whenN} are \code{FALSE} for some entries. }
 }
 \value{
-  Vector with the same length as the logical conditions (\code{when}) in \code{...}, filled with corresponding resulting value from \code{...}, or eventually \code{default}. Attributes of output values \code{value1, value2, ...valueN} in \code{...} are preserved.
+  Vector with the same length as the logical conditions (\code{when}) in \code{...}, filled with the corresponding values (\code{value}) from \code{...}, or eventually \code{default}. Attributes of output values \code{value1, value2, ...valueN} in \code{...} are preserved.
 }
 \seealso{
   \code{\link{fifelse}}
@@ -42,13 +42,13 @@ fcase(
 	x > 5L, as.Date("2019-10-14")
 )
 
-# fcase example with factor
+# fcase example with factor; note the matching levels
 fcase(
 	x < 5L, factor("a", levels=letters[1:3]),
 	x > 5L, factor("b", levels=letters[1:3])
 )
 
-# Example of using the 'default' arguement
+# Example of using the 'default' argument
 fcase(
 	x < 5L, 1L,
 	x > 5L, 3L,
