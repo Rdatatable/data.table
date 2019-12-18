@@ -130,7 +130,7 @@ msgstr "getOption('datatable.alloc')结果为长度%d的数值向量其长度应
 msgid "getOption('datatable.alloc')==%d.  It must be >=0 and not NA."
 msgstr "getOption('datatable.alloc')值为%d, 其必须大于等于零且不能为NA"
 
-#: assign.c:239 fsort.c:109 nafill.c:73
+#: assign.c:239 fsort.c:109
 msgid "verbose must be TRUE or FALSE"
 msgstr "verbose参数必须为TRUE或FALSE"
 
@@ -563,12 +563,12 @@ msgstr "请使用 as.character() 把 integer64 类型的数值赋值给字符列
 #: assign.c:1067
 #, c-format
 msgid "Unsupported column type in assign.c:memrecycle '%s'"
-msgstr ""
+msgstr "assign.c:memrecycle '%s' 里有不支持的列的类型"
 
 #: assign.c:1114
 #, c-format
 msgid "Internal error: writeNA passed a vector of type '%s'"
-msgstr ""
+msgstr "内部错误：writeNA 函数读取到了一个类型是'%s'的向量"
 
 #: assign.c:1145
 #, c-format
@@ -576,11 +576,13 @@ msgid ""
 "Internal error: savetl_init checks failed (%d %d %p %p). please report to "
 "data.table issue tracker."
 msgstr ""
+"内部错误：savetl_init的校验失败 (%d %d %p %p)，请将此问题汇报给data.table 问"
+"题追踪器。"
 
 #: assign.c:1153
 #, c-format
 msgid "Failed to allocate initial %d items in savetl_init"
-msgstr ""
+msgstr "不能为 savetl_init 最开始的 %d 个项分配空间"
 
 #: assign.c:1162
 #, c-format
@@ -588,58 +590,60 @@ msgid ""
 "Internal error: reached maximum %d items for savetl. Please report to data."
 "table issue tracker."
 msgstr ""
+"内部错误：已经达到了 savetl 能处理的子项上限 %d。请将此问题汇报给data.table问"
+"题追踪器。"
 
 #: assign.c:1169
 #, c-format
 msgid "Failed to realloc saveds to %d items in savetl"
-msgstr ""
+msgstr "不能给 savetl 里的 %d 个项重新分配 saveds"
 
 #: assign.c:1175
 #, c-format
 msgid "Failed to realloc savedtl to %d items in savetl"
-msgstr ""
+msgstr "不能给savetl里的 %d 个项提供 savetl"
 
 #: assign.c:1198
 msgid "x must be a character vector"
-msgstr "x必需为字符矢量"
+msgstr "x 必须是一个字符向量"
 
 #: assign.c:1199
 msgid "'which' must be an integer vector"
-msgstr ""
+msgstr "'which' 必须是一个整数向量"
 
 #: assign.c:1200
 msgid "'new' must be a character vector"
-msgstr ""
+msgstr "'new' 必须是一个字符向量"
 
 #: assign.c:1201
 #, c-format
 msgid "'new' is length %d. Should be the same as length of 'which' (%d)"
-msgstr ""
+msgstr "'new' 的长度是 %d。 它的长度必须和'which' (%d)的长度一致。"
 
 #: assign.c:1204
 #, c-format
 msgid ""
 "Item %d of 'which' is %d which is outside range of the length %d character "
 "vector"
-msgstr ""
+msgstr "'which' 的 %d 项是 %d，这超出了 %d 字符的长度范围"
 
 #: assign.c:1214
 msgid "dt passed to setcolorder has no names"
-msgstr ""
+msgstr "setcolorder读取到的dt并没有名字"
 
 #: assign.c:1216
 #, c-format
 msgid "Internal error: dt passed to setcolorder has %d columns but %d names"
-msgstr ""
+msgstr "内部错误: setcolorder读取到的dt有 %d 列但是有 %d 个名字。"
 
 #: assign.c:1223
 msgid ""
 "Internal error: o passed to Csetcolorder contains an NA or out-of-bounds"
-msgstr ""
+msgstr "内部错误: Csetcolorder读取到的o有一个NA(缺失值)或者是下标出界"
 
 #: assign.c:1225
 msgid "Internal error: o passed to Csetcolorder contains a duplicate"
-msgstr ""
+msgstr "内部错误: Csetcolorder读取到的o含有一个重复值"
 
 #: between.c:12
 #, c-format
@@ -647,145 +651,149 @@ msgid ""
 "Incompatible vector lengths: length(x)==%d length(lower)==%d length(upper)=="
 "%d. Each should be either length 1 or the length of the longest."
 msgstr ""
+"向量长度不一致：length(x)==%d length(lower)==%d length(upper)==%d。每一个向量"
+"要么是长度为一或者是等于最长向量的长度。"
 
 #: between.c:16
 msgid "incbounds must be TRUE or FALSE"
-msgstr ""
+msgstr "incbounds 必须是 TRUE (真) 或者是 FALSE (假)"
 
 #: between.c:19
 msgid "NAbounds must be TRUE or NA"
-msgstr ""
+msgstr "NAbounds 必须是 TRUE (真) 或者是 FALSE (假)"
 
 #: between.c:22
 msgid "check must be TRUE or FALSE"
-msgstr ""
+msgstr "check 必须是 TRUE (真) 或者是 FALSE (假)"
 
 #: between.c:64
 #, c-format
 msgid "Item %d of lower (%d) is greater than item %d of upper (%d)"
-msgstr ""
+msgstr "lower (%2$d) 的 %1$d 项大于 upper (%3$d)的 %4$d 项"
 
 #: between.c:82
 #, c-format
 msgid "between parallel processing of integer took %8.3fs\n"
-msgstr ""
+msgstr "整数的并行运行时间一共花费了 %8.3fs\n"
 
 #: between.c:88
 msgid "x is integer64 but lower and/or upper are not."
-msgstr ""
+msgstr "x 是一个64位整数但是至少在 lower 和 upper 其中有一个不是。"
 
 #: between.c:95
 #, c-format
 msgid ""
 "Item %d of lower (%<PRId64>) is greater than item %d of upper (%<PRId64>)"
-msgstr ""
+msgstr "lower (%2$<PRId64>) 的 %1$d 项大于 upper (%4$<PRId64>)的 %3$d 项"
 
 #: between.c:112
 #, c-format
 msgid "between parallel processing of integer64 took %8.3fs\n"
-msgstr ""
+msgstr "64位整数的并行运行时间一共花费了 %8.3fs\n"
 
 #: between.c:115
 msgid ""
 "x is not integer64 but lower and/or upper is integer64. Please align classes."
 msgstr ""
+"x 不是一个64位整数但是 lower 和 upper 中至少有一个是64位整数，请保证所有的变"
+"量类型一致。"
 
 #: between.c:122
 #, c-format
 msgid "Item %d of lower (%f) is greater than item %d of upper (%f)"
-msgstr ""
+msgstr "lower (%2$f) 的 %1$d 项大于 upper (%4$f)的 %3$d 项"
 
 #: between.c:140
 #, c-format
 msgid "between parallel processing of double with open bounds took %8.3fs\n"
-msgstr ""
+msgstr "不设界的双精度浮点数的并行运行时间一共花费了 %8.3fs\n"
 
 #: between.c:157
 #, c-format
 msgid "between parallel processing of double with closed bounds took %8.3fs\n"
-msgstr ""
+msgstr "设界的双精度浮点数的并行运行时间一共花费了 %8.3fs\n"
 
 #: between.c:172
 #, c-format
 msgid "Item %d of lower ('%s') is greater than item %d of upper ('%s')"
-msgstr ""
+msgstr "lower (%2$s) 的 %1$d 项大于 upper (%4$s)的 %3$d 项"
 
 #: between.c:187
 #, c-format
 msgid "between non-parallel processing of character took %8.3fs\n"
-msgstr ""
+msgstr "字符的并行运行时间一共花费了 %8.3fs\n"
 
 #: between.c:190
 #, c-format
 msgid ""
 "Internal error: between.c unsupported type '%s' should have been caught at R "
 "level"
-msgstr ""
+msgstr "内部错误: between.c 不支持 '%s' 类型这个问题应该在R运行的时候被发现。"
 
 #: bmerge.c:48
 msgid "Internal error: icols is not integer vector"
-msgstr ""
+msgstr "内部错误: icols 不是一个整数向量"
 
 #: bmerge.c:49
 msgid "Internal error: xcols is not integer vector"
-msgstr ""
+msgstr "内部错误: xcols 不是一个整数向量"
 
 #: bmerge.c:50
 #, c-format
 msgid "Internal error: length(icols) [%d] > length(xcols) [%d]"
-msgstr ""
+msgstr "内部错误: icols[%1$d] 的长度大于 xcols[%2$d] 的长度"
 
 #: bmerge.c:57
 #, c-format
 msgid "Internal error. icols[%d] is NA"
-msgstr ""
+msgstr "内部错误: icols[%d] 是 NA, 缺失值"
 
 #: bmerge.c:58
 #, c-format
 msgid "Internal error. xcols[%d] is NA"
-msgstr ""
+msgstr "内部错误: xcols[%d] 是 NA, 缺失值"
 
 #: bmerge.c:59
 #, c-format
 msgid "icols[%d]=%d outside range [1,length(i)=%d]"
-msgstr ""
+msgstr "icols[%1$d]=%2$d 造成了空间溢出，当前范围是[1,length(i)=%3$d]"
 
 #: bmerge.c:60
 #, c-format
 msgid "xcols[%d]=%d outside range [1,length(x)=%d]"
-msgstr ""
+msgstr "xcols[%1$d]=%2$d 造成了空间溢出，当前范围是[1,length(i)=%3$d]"
 
 #: bmerge.c:63
 #, c-format
 msgid "typeof x.%s (%s) != typeof i.%s (%s)"
-msgstr ""
+msgstr "x.%1$s (%2$s) 的数据类型和 i.%3$s (%4$s) 的数据类型并不一致"
 
 #: bmerge.c:70
 msgid "roll is character but not 'nearest'"
-msgstr ""
+msgstr "roll 是字符但并不是最近的"
 
 #: bmerge.c:71
 msgid "roll='nearest' can't be applied to a character column, yet."
-msgstr ""
+msgstr "roll='最近的'的功能当前并不能被使用在字符列。"
 
 #: bmerge.c:74
 msgid "Internal error: roll is not character or double"
-msgstr ""
+msgstr "内部错误: roll 不是字符或者是浮点"
 
 #: bmerge.c:79
 msgid "rollends must be a length 2 logical vector"
-msgstr ""
+msgstr "rollends 必须是一个长度为2的逻辑向量"
 
 #: bmerge.c:89 uniqlist.c:270
 msgid ""
 "Internal error: invalid value for 'mult'. please report to data.table issue "
 "tracker"
-msgstr ""
+msgstr "内部错误: 'mult' 是无效值。 请将此问题汇报给 data.table 问题追踪器。"
 
 #: bmerge.c:93
 msgid ""
 "Internal error: opArg is not an integer vector of length equal to length(on)"
-msgstr ""
+msgstr "内部错误: opArg 不是一个长度为 on 的整数向量"
 
 #: bmerge.c:96
 msgid "Internal error: nqgrpArg must be an integer vector"
@@ -2984,7 +2992,7 @@ msgstr ""
 "内部错误: 在 rolling 函数中无效的 fun 参数, 理应在更早阶段排除请向data.table "
 "issue tracker报告"
 
-#: frollR.c:155 frollR.c:279 nafill.c:136 shift.c:21
+#: frollR.c:155 frollR.c:279 nafill.c:152 shift.c:21
 msgid "fill must be a vector of length 1"
 msgstr "fill 必须是长度为1的向量"
 
@@ -3783,163 +3791,163 @@ msgid ""
 "architecture greater than 64bit yet."
 msgstr "指针是%d个字节，大于8。我们尚未在大于64位的任何体系结构上进行测试。"
 
-#: init.c:242
+#: init.c:245
 #, c-format
 msgid "Checking NA_INTEGER [%d] == INT_MIN [%d] %s"
 msgstr "检查NA_INTEGER [%d] == INT_MIN [%d] %s"
 
-#: init.c:243
+#: init.c:246
 #, c-format
 msgid "Checking NA_INTEGER [%d] == NA_LOGICAL [%d] %s"
 msgstr "检查Checking NA_INTEGER [%d] == NA_LOGICAL [%d] %s"
 
-#: init.c:244
+#: init.c:247
 #, c-format
 msgid "Checking sizeof(int) [%d] is 4 %s"
 msgstr "检查sizeof（int）[%d]是否为4 %s"
 
-#: init.c:245
+#: init.c:248
 #, c-format
 msgid "Checking sizeof(double) [%d] is 8 %s"
 msgstr "检查 sizeof(double) [%d]是否为8 %s"
 
-#: init.c:247
+#: init.c:250
 #, c-format
 msgid "Checking sizeof(long long) [%d] is 8 %s"
 msgstr "检查sizeof(long long) [%d]是否为8 %s"
 
-#: init.c:248
+#: init.c:251
 #, c-format
 msgid "Checking sizeof(pointer) [%d] is 4 or 8 %s"
 msgstr "检查sizeof(pointer) [%d]是否为4 或者 8 %s"
 
-#: init.c:249
+#: init.c:252
 #, c-format
 msgid "Checking sizeof(SEXP) [%d] == sizeof(pointer) [%d] %s"
 msgstr "检查sizeof(SEXP) [%d] == sizeof(pointer) [%d] %s"
 
-#: init.c:250
+#: init.c:253
 #, c-format
 msgid "Checking sizeof(uint64_t) [%d] is 8 %s"
 msgstr "检查 sizeof(uint64_t) [%d]是否为8 %s"
 
-#: init.c:251
+#: init.c:254
 #, c-format
 msgid "Checking sizeof(int64_t) [%d] is 8 %s"
 msgstr "检查sizeof(int64_t) [%d]是否为8 %s"
 
-#: init.c:252
+#: init.c:255
 #, c-format
 msgid "Checking sizeof(signed char) [%d] is 1 %s"
 msgstr "检查sizeof(signed char) [%d]是否为1 %s"
 
-#: init.c:253
+#: init.c:256
 #, c-format
 msgid "Checking sizeof(int8_t) [%d] is 1 %s"
 msgstr "检查sizeof(int8_t) [%d]是否为1 %s"
 
-#: init.c:254
+#: init.c:257
 #, c-format
 msgid "Checking sizeof(uint8_t) [%d] is 1 %s"
 msgstr "检查sizeof(uint8_t) [%d]是否为1 %s"
 
-#: init.c:255
+#: init.c:258
 #, c-format
 msgid "Checking sizeof(int16_t) [%d] is 2 %s"
 msgstr "检查sizeof(int16_t) [%d]是否为2 %s"
 
-#: init.c:256
+#: init.c:259
 #, c-format
 msgid "Checking sizeof(uint16_t) [%d] is 2 %s"
 msgstr "检查sizeof(uint16_t) [%d]是否为2 %s"
 
-#: init.c:259
+#: init.c:262
 #, c-format
 msgid "Checking LENGTH(allocVector(INTSXP,2)) [%d] is 2 %s"
 msgstr "检查LENGTH(allocVector(INTSXP,2)) [%d]是否为2 %s"
 
-#: init.c:260
+#: init.c:263
 #, c-format
 msgid "Checking TRUELENGTH(allocVector(INTSXP,2)) [%d] is 0 %s"
 msgstr "检查TRUELENGTH(allocVector(INTSXP,2)) [%d]是否为0 %s"
 
-#: init.c:267
+#: init.c:270
 #, c-format
 msgid "Checking memset(&i,0,sizeof(int)); i == (int)0 %s"
 msgstr "检查memset(&i,0,sizeof(int)); i == (int)0 %s"
 
-#: init.c:270
+#: init.c:273
 #, c-format
 msgid "Checking memset(&ui, 0, sizeof(unsigned int)); ui == (unsigned int)0 %s"
 msgstr "检查memset(&ui, 0, sizeof(unsigned int)); ui == (unsigned int)0 %s"
 
-#: init.c:273
+#: init.c:276
 #, c-format
 msgid "Checking memset(&d, 0, sizeof(double)); d == (double)0.0 %s"
 msgstr "检查memset(&d, 0, sizeof(double)); d == (double)0.0 %s"
 
-#: init.c:276
+#: init.c:279
 #, c-format
 msgid "Checking memset(&ld, 0, sizeof(long double)); ld == (long double)0.0 %s"
 msgstr "检查memset(&ld, 0, sizeof(long double)); ld == (long double)0.0 %s"
 
-#: init.c:279
+#: init.c:282
 msgid "The ascii character '/' is not just before '0'"
 msgstr "ASCII 字符 '/' 后一个字符并非字符 '0'"
 
-#: init.c:280
+#: init.c:283
 msgid "The C expression (uint_fast8_t)('/'-'0')<10 is true. Should be false."
 msgstr "C表达式 (uint_fast8_t)('/'-'0') <10  为 true. 应该是 false."
 
-#: init.c:281
+#: init.c:284
 msgid "The ascii character ':' is not just after '9'"
 msgstr "ascii字符':'不是在'9'后"
 
-#: init.c:282
+#: init.c:285
 msgid "The C expression (uint_fast8_t)('9'-':')<10 is true. Should be false."
 msgstr "C表达式(uint_fast8_t)('9'-':') < 10  为 true. 应该是 false."
 
-#: init.c:287
+#: init.c:290
 #, c-format
 msgid "Conversion of NA_INT64 via double failed %<PRId64>!=%<PRId64>"
 msgstr "double类型转化为NA_INT64失败，%<PRId64>!=%<PRId64>"
 
-#: init.c:291
+#: init.c:294
 msgid "NA_INT64_D (negative -0.0) is not == 0.0."
 msgstr "NA_INT64_D (negative -0.0) 不是 == 0.0."
 
-#: init.c:292
+#: init.c:295
 msgid "NA_INT64_D (negative -0.0) is not ==-0.0."
 msgstr "NA_INT64_D (negative -0.0) 不是 ==-0.0."
 
-#: init.c:293
+#: init.c:296
 msgid "ISNAN(NA_INT64_D) is TRUE but should not be"
 msgstr "ISNAN(NA_INT64_D) 不应该是TRUE"
 
-#: init.c:294
+#: init.c:297
 msgid "isnan(NA_INT64_D) is TRUE but should not be"
 msgstr "isnan(NA_INT64_D) 不应该是 TRUE"
 
-#: init.c:323
+#: init.c:326
 #, c-format
 msgid "PRINTNAME(install(\"integer64\")) has returned %s not %s"
 msgstr "PRINTNAME(install(\"integer64\")) 返回了 %s , 而不是 %s"
 
-#: init.c:392
+#: init.c:395
 msgid ".Last.value in namespace is not a length 1 integer"
 msgstr "命名空间中，.Last.value 不是一个长度为 1 的整型"
 
-#: nafill.c:83
+#: nafill.c:99
 msgid ""
 "'x' argument is atomic vector, in-place update is supported only for list/"
 "data.table"
 msgstr "参数'x'是一个原子型矢量，原位的更新只为list 或 data.table提供"
 
-#: nafill.c:85 nafill.c:95
+#: nafill.c:101 nafill.c:111
 msgid "'x' argument must be numeric type, or list/data.table of numeric types"
 msgstr "参数'x'必须是数字类型，或者是数字类型的list/data.table"
 
-#: nafill.c:133 nafill.c:161
+#: nafill.c:149 nafill.c:180
 msgid ""
 "Internal error: invalid type argument in nafillR function, should have been "
 "caught before. Please report to data.table issue tracker."
@@ -3947,7 +3955,7 @@ msgstr ""
 "内部错误：函数 nafillR 中有无效类型的参数, 该错误理应已被捕获，请向data.table"
 "的issue通道报告"
 
-#: nafill.c:177
+#: nafill.c:196
 #, c-format
 msgid "%s: parallel processing of %d column(s) took %.3fs\n"
 msgstr "%s : 并行处理 %d 列， 用时 %.3fs\n"

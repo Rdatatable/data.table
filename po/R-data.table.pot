@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: data.table 1.12.9\n"
-"POT-Creation-Date: 2019-12-17 11:02\n"
+"POT-Creation-Date: 2019-12-18 15:07\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -673,9 +673,6 @@ msgstr ""
 msgid "column data.table"
 msgstr ""
 
-msgid "When 'new' is provided, 'old' must be provided too"
-msgstr ""
-
 msgid "'new' is not a character vector or a function"
 msgstr ""
 
@@ -1324,7 +1321,10 @@ msgstr ""
 msgid "Using integer64 class columns require to have 'bit64' package installed."
 msgstr ""
 
-msgid "internal error, package:xts is on search path but could not be loaded via requireNamespace"
+msgid "'xts' class passed to data.table::last function but 'xts' is not available, you should have 'xts' installed already"
+msgstr ""
+
+msgid "'xts' class passed to data.table::first function but 'xts' is not available, you should have 'xts' installed already"
 msgstr ""
 
 msgid "Argument 'sort' should be logical TRUE/FALSE"
@@ -1475,15 +1475,6 @@ msgid "Internal structure doesn't seem to be a list. Possibly corrupt data.table
 msgstr ""
 
 msgid "x may no longer be the character name of the data.table. The possibility was undocumented and has been removed."
-msgstr ""
-
-msgid "set2key() is now deprecated. Please use setindex() instead."
-msgstr ""
-
-msgid "set2keyv() is now deprecated. Please use setindexv() instead."
-msgstr ""
-
-msgid "key2() is now deprecated. Please use indices() instead."
 msgstr ""
 
 msgid "key(x)<-value is deprecated and not supported. Please change to use setkey() with perhaps copy(). Has been warning since 2012 and will be an error in future."
@@ -1744,6 +1735,12 @@ msgstr ""
 msgid "l not type list"
 msgstr ""
 
+msgid "Argument 'nan' must be length 1"
+msgstr ""
+
+msgid "Argument 'nan' must be NA or NaN"
+msgstr ""
+
 msgid "x not boolean"
 msgstr ""
 
@@ -1764,3 +1761,8 @@ msgstr ""
 
 msgid "Following columns are not numeric and will be omitted:"
 msgstr ""
+
+msgid        "%d variable not shown: %s\n"
+msgid_plural "%d variables not shown: %s\n"
+msgstr[0]    ""
+msgstr[1]    ""

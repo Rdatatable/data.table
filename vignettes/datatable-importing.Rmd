@@ -189,7 +189,11 @@ If this is anyway your preferred approach to package development, please define 
 
 ## Further information on dependencies
 
-For more canonical documentation of defining packages dependency check the official manual: [Writing R Extensions](https://cran.r-project.org/doc/manuals/r-release/R-exts.html)
+For more canonical documentation of defining packages dependency check the official manual: [Writing R Extensions](https://cran.r-project.org/doc/manuals/r-release/R-exts.html).
+
+## Importing data.table C routines
+
+Some of internally used C routines are now exported on C level thus can be used in R packages directly from their C code. See [`?cdt`](https://rdatatable.gitlab.io/data.table/reference/cdt.html) for details and [Writing R Extensions](https://cran.r-project.org/doc/manuals/r-release/R-exts.html) _Linking to native routines in other packages_ section for usage.
 
 ## Importing from non-R Applications {non-r-API}
 
