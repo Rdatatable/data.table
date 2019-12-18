@@ -12,6 +12,8 @@
 
 3. `print` method for `data.table`s gains `trunc.cols` argument (and corresponding option `datatable.print.trunc.cols`, default `FALSE`), [#1497](https://github.com/Rdatatable/data.table/issues/1497), part of [#1523](https://github.com/Rdatatable/data.table/issues/1523). This prints only as many columns as fit in the console without wrapping to new lines (e.g., the first 5 of 80 columns) and a message that states the count and names of the variables not shown. When `class=TRUE` the message also contains the classes of the variables. `data.table` has always automatically truncated _rows_ of a table for efficiency (e.g. printing 10 rows instead of 10 million); in the future, we may do the same for _columns_ (e.g., 10 columns instead of 20,000) by changing the default for this argument. Thanks to @nverno for the initial suggestion and to @TysonStanley for the PR.
 
+4. `setnames(DT, new=new_names)` (i.e. explicitly named `new=` argument) now works as expected rather than an error message requesting that `old=` be supplied too, [#4041](https://github.com/Rdatatable/data.table/issues/4041). Thanks @Kodiologist for the suggestion.
+
 ## BUG FIXES
 
 1. A NULL timezone on POSIXct was interpreted by `as.IDate` and `as.ITime` as UTC rather than the session's default timezone (`tz=""`) , [#4085](https://github.com/Rdatatable/data.table/issues/4085).
@@ -32,8 +34,6 @@
 ## NEW FEATURES
 
 1. `DT[, {...; .(A,B)}]` (i.e. when `.()` is the final item of a multi-statement `{...}`) now auto-names the columns `A` and `B` (just like `DT[, .(A,B)]`) rather than `V1` and `V2`, [#2478](https://github.com/Rdatatable/data.table/issues/2478) [#609](https://github.com/Rdatatable/data.table/issues/609). Similarly, `DT[, if (.N>1) .(B), by=A]` now auto-names the column `B` rather than `V1`. Explicit names are unaffected; e.g. `DT[, {... y= ...; .(A=C+y)}, by=...]` named the column `A` before, and still does. Thanks also to @renkun-ken for his go-first strong testing which caught an issue not caught by the test suite or by revdep testing, related to NULL being the last item, [#4061](https://github.com/Rdatatable/data.table/issues/4061).
-
-2. Using `setnames` as `setnames(DT, new=new_names)` now works as expected, [#4041](https://github.com/Rdatatable/data.table/issues/4041). Thanks @Kodiologist for the suggestion.
 
 ## BUG FIXES
 
