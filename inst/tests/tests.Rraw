@@ -16257,9 +16257,10 @@ test(2108.71, first(df), structure(list(a=1L, b=3L), row.names=1L, class="data.f
 test(2108.72, first(dt), data.table(a=1L, b=3L), output="using 'x[1L,]': !is.xts(x) & !nargs>1 & is.data.frame(x)")
 # matrix/array utils::tail behavior is likely to change in future R, Michael is more in the topic
 test(2108.81, last(mx), structure(c(3L, 6L, 9L), .Dim = c(1L, 3L), .Dimnames = list("[3,]", NULL)), output="using utils::tail: !is.xts(x) & !nargs>1 & !is.null(dim(x)) & !is.data.frame(x)")
-test(2108.82, last(ar), 27L, output="using utils::tail: !is.xts(x) & !nargs>1 & !is.null(dim(x)) & !is.data.frame(x)")
+r4 = base::getRversion() >= "3.7.0" # two tests disabled for now #4127
+if (!r4) test(2108.82, last(ar), 27L, output="using utils::tail: !is.xts(x) & !nargs>1 & !is.null(dim(x)) & !is.data.frame(x)")
 test(2108.91, first(mx), structure(c(1L, 4L, 7L), .Dim = c(1L, 3L)), output="using utils::head: !is.xts(x) & !nargs>1 & !is.null(dim(x)) & !is.data.frame(x)")
-test(2108.92, first(ar), 1L, output="using utils::head: !is.xts(x) & !nargs>1 & !is.null(dim(x)) & !is.data.frame(x)")
+if (!r4) test(2108.92, first(ar), 1L, output="using utils::head: !is.xts(x) & !nargs>1 & !is.null(dim(x)) & !is.data.frame(x)")
 options(old)
 
 # error in autonaming by={...}, #3156
