@@ -44,8 +44,8 @@ z = y
 z[5L] = NaN
 z[2L] = Inf
 z[9L] = -Inf
-test(1.21, nafill(z, "locf"), c(NA,Inf,3,4,NaN,NaN,7,8,-Inf,-Inf)/2)
-test(1.22, nafill(z, "nocb"), c(Inf,Inf,3,4,NaN,7,7,8,-Inf,NA)/2)
+test(1.21, nafill(z, "locf"), c(NA,Inf,3,4,4,4,7,8,-Inf,-Inf)/2)
+test(1.22, nafill(z, "nocb"), c(Inf,Inf,3,4,7,7,7,8,-Inf,NA)/2)
 dt = data.table(x, y, z)
 test(1.31, nafill(dt, "locf"), unname(lapply(dt, nafill, "locf")))
 test(1.32, nafill(dt, "nocb"), unname(lapply(dt, nafill, "nocb")))
@@ -152,12 +152,13 @@ test(4.24, colnamesInt(dt, "a"), error="has no names")
 
 # verbose
 dt = data.table(a=c(1L, 2L, NA_integer_), b=c(1, 2, NA_real_))
-test(5.01, nafill(dt, "locf", verbose=TRUE), output="nafillInteger: took.*nafillDouble: took.*nafillR.*took")
-test(5.02, setnafill(dt, "locf", verbose=TRUE), output="nafillInteger: took.*nafillDouble: took.*nafillR.*took")
-test(5.03, nafill(dt, "locf", verbose=NA), error="verbose must be TRUE or FALSE")
+old=options(datatable.verbose=TRUE)
+test(5.01, nafill(dt, "locf"), output="nafillInteger: took.*nafillDouble: took.*nafillR.*took")
+test(5.02, setnafill(dt, "locf"), output="nafillInteger: took.*nafillDouble: took.*nafillR.*took")
 if (test_bit64) {
-  test(5.04, nafill(as.integer64(c(NA,2,NA,3)), "locf", verbose=TRUE), as.integer64(c(NA,2,2,3)), output="nafillInteger64: took.*nafillR.*took")
+  test(5.03, nafill(as.integer64(c(NA,2,NA,3)), "locf"), as.integer64(c(NA,2,2,3)), output="nafillInteger64: took.*nafillR.*took")
 }
+options(old)
 
 # coerceFill
 if (test_bit64) {
@@ -186,3 +187,19 @@ if (test_bit64) {
   test(6.53, identical(coerceFill(-2147483648), list(NA_integer_, -2147483648,  as.integer64("-2147483648"))))
   test(6.54, identical(coerceFill(-2147483649), list(NA_integer_, -2147483649,  as.integer64("-2147483649"))))
 }
+
+# nan argument to treat NaN as NA in nafill, #4020
+x = c(-1, NA, NaN, 0, 1, 2)
+ans1 = c(-1, 0, 0, 0:2)
+ans2 = c(-1, 0, NaN, 0:2)
+DT = data.table(a=x, b=x)
+test(7.01, nafill(x, fill=0), ans1)
+test(7.02, nafill(x, fill=0, nan=NaN), ans2)
+test(7.03, nafill(x, 'locf'), c(-1, -1, -1, 0:2))
+test(7.04, nafill(x, 'locf', nan=NaN), c(-1, -1, NaN, 0:2))
+test(7.05, nafill(x, 'nocb'), ans1)
+test(7.06, nafill(x, 'nocb', nan=NaN), c(-1, NaN, NaN, 0:2))
+test(7.07, setnafill(DT, fill=0, cols=1L), copy(DT)[ , a := ans1])
+test(7.08, setnafill(DT, fill=0, nan=NaN), copy(DT)[ , c('a', 'b') := .(ans1, ans2)])
+test(7.09, nafill(x, fill=0, nan=c(NA, NaN)), error="Argument 'nan' must be length 1")
+test(7.10, nafill(x, fill=0, nan=Inf), error="Argument 'nan' must be NA or NaN")

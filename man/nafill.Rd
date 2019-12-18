@@ -10,20 +10,20 @@
   Fast fill missing values using constant value, \emph{last observation carried forward} or \emph{next observation carried backward}.
 }
 \usage{
-nafill(x, type=c("const","locf","nocb"), fill=NA,
-       verbose=getOption("datatable.verbose"))
-setnafill(x, type=c("const","locf","nocb"), fill=NA, cols=seq_along(x),
-          verbose=getOption("datatable.verbose"))
+nafill(x, type=c("const","locf","nocb"), fill=NA, nan=NA)
+setnafill(x, type=c("const","locf","nocb"), fill=NA, nan=NA, cols=seq_along(x))
 }
 \arguments{
   \item{x}{ vector, list, data.frame or data.table of numeric columns. }
   \item{type}{ character, one of \emph{"const"}, \emph{"locf"} or \emph{"nocb"}. Defaults to \code{"const"}. }
   \item{fill}{ numeric or integer, value to be used to fill when \code{type=="const"}. }
+  \item{nan}{ (numeric \code{x} only) Either \code{NaN} or \code{NA}; if the former, \code{NaN} is treated as distinct from \code{NA}, otherwise, they are treated the same during replacement? }
   \item{cols}{ numeric or character vector specifying columns to be updated. }
-  \item{verbose}{ logical, \code{TRUE} turns on timing messages to the console. }
 }
 \details{
   Only \emph{double} and \emph{integer} data types are currently supported.
+
+  Note that both \code{nafill} and \code{setnafill} provide some verbose output when \code{getOption('datatable.verbose')} is \code{TRUE}.
 }
 \value{
   A list except when the input is a \code{vector} in which case a \code{vector} is returned. For \code{setnafill} the input argument is returned, updated by reference.
