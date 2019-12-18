@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: data.table 1.12.5\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2019-11-21 21:16+0800\n"
+"POT-Creation-Date: 2019-12-18 15:07+0800\n"
 "PO-Revision-Date: 2019-10-04 17:06+08\n"
 "Last-Translator: Zhi Yang <zyang895@gmail.com>\n"
 "Language-Team: Mandarin\n"
@@ -130,7 +130,7 @@ msgstr "getOption('datatable.alloc')结果为长度%d的数值向量其长度应
 msgid "getOption('datatable.alloc')==%d.  It must be >=0 and not NA."
 msgstr "getOption('datatable.alloc')值为%d, 其必须大于等于零且不能为NA"
 
-#: assign.c:239 fsort.c:109 nafill.c:73
+#: assign.c:239 fsort.c:109
 msgid "verbose must be TRUE or FALSE"
 msgstr "verbose参数必须为TRUE或FALSE"
 
@@ -590,8 +590,8 @@ msgid ""
 "Internal error: reached maximum %d items for savetl. Please report to data."
 "table issue tracker."
 msgstr ""
-"内部错误：已经达到了 savetl 能处理的子项上限 %d。请将此问题汇报给data.table"
-"问题追踪器。"
+"内部错误：已经达到了 savetl 能处理的子项上限 %d。请将此问题汇报给data.table问"
+"题追踪器。"
 
 #: assign.c:1169
 #, c-format
@@ -695,8 +695,8 @@ msgstr "64位整数的并行运行时间一共花费了 %8.3fs\n"
 msgid ""
 "x is not integer64 but lower and/or upper is integer64. Please align classes."
 msgstr ""
-"x 不是一个64位整数但是 lower 和 upper 中至少有一个是64位整数，请保证所有"
-"的变量类型一致。"
+"x 不是一个64位整数但是 lower 和 upper 中至少有一个是64位整数，请保证所有的变"
+"量类型一致。"
 
 #: between.c:122
 #, c-format
@@ -2992,7 +2992,7 @@ msgstr ""
 "内部错误: 在 rolling 函数中无效的 fun 参数, 理应在更早阶段排除请向data.table "
 "issue tracker报告"
 
-#: frollR.c:155 frollR.c:279 nafill.c:136 shift.c:21
+#: frollR.c:155 frollR.c:279 nafill.c:152 shift.c:21
 msgid "fill must be a vector of length 1"
 msgstr "fill 必须是长度为1的向量"
 
@@ -3791,163 +3791,163 @@ msgid ""
 "architecture greater than 64bit yet."
 msgstr "指针是%d个字节，大于8。我们尚未在大于64位的任何体系结构上进行测试。"
 
-#: init.c:242
+#: init.c:245
 #, c-format
 msgid "Checking NA_INTEGER [%d] == INT_MIN [%d] %s"
 msgstr "检查NA_INTEGER [%d] == INT_MIN [%d] %s"
 
-#: init.c:243
+#: init.c:246
 #, c-format
 msgid "Checking NA_INTEGER [%d] == NA_LOGICAL [%d] %s"
 msgstr "检查Checking NA_INTEGER [%d] == NA_LOGICAL [%d] %s"
 
-#: init.c:244
+#: init.c:247
 #, c-format
 msgid "Checking sizeof(int) [%d] is 4 %s"
 msgstr "检查sizeof（int）[%d]是否为4 %s"
 
-#: init.c:245
+#: init.c:248
 #, c-format
 msgid "Checking sizeof(double) [%d] is 8 %s"
 msgstr "检查 sizeof(double) [%d]是否为8 %s"
 
-#: init.c:247
+#: init.c:250
 #, c-format
 msgid "Checking sizeof(long long) [%d] is 8 %s"
 msgstr "检查sizeof(long long) [%d]是否为8 %s"
 
-#: init.c:248
+#: init.c:251
 #, c-format
 msgid "Checking sizeof(pointer) [%d] is 4 or 8 %s"
 msgstr "检查sizeof(pointer) [%d]是否为4 或者 8 %s"
 
-#: init.c:249
+#: init.c:252
 #, c-format
 msgid "Checking sizeof(SEXP) [%d] == sizeof(pointer) [%d] %s"
 msgstr "检查sizeof(SEXP) [%d] == sizeof(pointer) [%d] %s"
 
-#: init.c:250
+#: init.c:253
 #, c-format
 msgid "Checking sizeof(uint64_t) [%d] is 8 %s"
 msgstr "检查 sizeof(uint64_t) [%d]是否为8 %s"
 
-#: init.c:251
+#: init.c:254
 #, c-format
 msgid "Checking sizeof(int64_t) [%d] is 8 %s"
 msgstr "检查sizeof(int64_t) [%d]是否为8 %s"
 
-#: init.c:252
+#: init.c:255
 #, c-format
 msgid "Checking sizeof(signed char) [%d] is 1 %s"
 msgstr "检查sizeof(signed char) [%d]是否为1 %s"
 
-#: init.c:253
+#: init.c:256
 #, c-format
 msgid "Checking sizeof(int8_t) [%d] is 1 %s"
 msgstr "检查sizeof(int8_t) [%d]是否为1 %s"
 
-#: init.c:254
+#: init.c:257
 #, c-format
 msgid "Checking sizeof(uint8_t) [%d] is 1 %s"
 msgstr "检查sizeof(uint8_t) [%d]是否为1 %s"
 
-#: init.c:255
+#: init.c:258
 #, c-format
 msgid "Checking sizeof(int16_t) [%d] is 2 %s"
 msgstr "检查sizeof(int16_t) [%d]是否为2 %s"
 
-#: init.c:256
+#: init.c:259
 #, c-format
 msgid "Checking sizeof(uint16_t) [%d] is 2 %s"
 msgstr "检查sizeof(uint16_t) [%d]是否为2 %s"
 
-#: init.c:259
+#: init.c:262
 #, c-format
 msgid "Checking LENGTH(allocVector(INTSXP,2)) [%d] is 2 %s"
 msgstr "检查LENGTH(allocVector(INTSXP,2)) [%d]是否为2 %s"
 
-#: init.c:260
+#: init.c:263
 #, c-format
 msgid "Checking TRUELENGTH(allocVector(INTSXP,2)) [%d] is 0 %s"
 msgstr "检查TRUELENGTH(allocVector(INTSXP,2)) [%d]是否为0 %s"
 
-#: init.c:267
+#: init.c:270
 #, c-format
 msgid "Checking memset(&i,0,sizeof(int)); i == (int)0 %s"
 msgstr "检查memset(&i,0,sizeof(int)); i == (int)0 %s"
 
-#: init.c:270
+#: init.c:273
 #, c-format
 msgid "Checking memset(&ui, 0, sizeof(unsigned int)); ui == (unsigned int)0 %s"
 msgstr "检查memset(&ui, 0, sizeof(unsigned int)); ui == (unsigned int)0 %s"
 
-#: init.c:273
+#: init.c:276
 #, c-format
 msgid "Checking memset(&d, 0, sizeof(double)); d == (double)0.0 %s"
 msgstr "检查memset(&d, 0, sizeof(double)); d == (double)0.0 %s"
 
-#: init.c:276
+#: init.c:279
 #, c-format
 msgid "Checking memset(&ld, 0, sizeof(long double)); ld == (long double)0.0 %s"
 msgstr "检查memset(&ld, 0, sizeof(long double)); ld == (long double)0.0 %s"
 
-#: init.c:279
+#: init.c:282
 msgid "The ascii character '/' is not just before '0'"
 msgstr "ASCII 字符 '/' 后一个字符并非字符 '0'"
 
-#: init.c:280
+#: init.c:283
 msgid "The C expression (uint_fast8_t)('/'-'0')<10 is true. Should be false."
 msgstr "C表达式 (uint_fast8_t)('/'-'0') <10  为 true. 应该是 false."
 
-#: init.c:281
+#: init.c:284
 msgid "The ascii character ':' is not just after '9'"
 msgstr "ascii字符':'不是在'9'后"
 
-#: init.c:282
+#: init.c:285
 msgid "The C expression (uint_fast8_t)('9'-':')<10 is true. Should be false."
 msgstr "C表达式(uint_fast8_t)('9'-':') < 10  为 true. 应该是 false."
 
-#: init.c:287
+#: init.c:290
 #, c-format
 msgid "Conversion of NA_INT64 via double failed %<PRId64>!=%<PRId64>"
 msgstr "double类型转化为NA_INT64失败，%<PRId64>!=%<PRId64>"
 
-#: init.c:291
+#: init.c:294
 msgid "NA_INT64_D (negative -0.0) is not == 0.0."
 msgstr "NA_INT64_D (negative -0.0) 不是 == 0.0."
 
-#: init.c:292
+#: init.c:295
 msgid "NA_INT64_D (negative -0.0) is not ==-0.0."
 msgstr "NA_INT64_D (negative -0.0) 不是 ==-0.0."
 
-#: init.c:293
+#: init.c:296
 msgid "ISNAN(NA_INT64_D) is TRUE but should not be"
 msgstr "ISNAN(NA_INT64_D) 不应该是TRUE"
 
-#: init.c:294
+#: init.c:297
 msgid "isnan(NA_INT64_D) is TRUE but should not be"
 msgstr "isnan(NA_INT64_D) 不应该是 TRUE"
 
-#: init.c:323
+#: init.c:326
 #, c-format
 msgid "PRINTNAME(install(\"integer64\")) has returned %s not %s"
 msgstr "PRINTNAME(install(\"integer64\")) 返回了 %s , 而不是 %s"
 
-#: init.c:392
+#: init.c:395
 msgid ".Last.value in namespace is not a length 1 integer"
 msgstr "命名空间中，.Last.value 不是一个长度为 1 的整型"
 
-#: nafill.c:83
+#: nafill.c:99
 msgid ""
 "'x' argument is atomic vector, in-place update is supported only for list/"
 "data.table"
 msgstr "参数'x'是一个原子型矢量，原位的更新只为list 或 data.table提供"
 
-#: nafill.c:85 nafill.c:95
+#: nafill.c:101 nafill.c:111
 msgid "'x' argument must be numeric type, or list/data.table of numeric types"
 msgstr "参数'x'必须是数字类型，或者是数字类型的list/data.table"
 
-#: nafill.c:133 nafill.c:161
+#: nafill.c:149 nafill.c:180
 msgid ""
 "Internal error: invalid type argument in nafillR function, should have been "
 "caught before. Please report to data.table issue tracker."
@@ -3955,7 +3955,7 @@ msgstr ""
 "内部错误：函数 nafillR 中有无效类型的参数, 该错误理应已被捕获，请向data.table"
 "的issue通道报告"
 
-#: nafill.c:177
+#: nafill.c:196
 #, c-format
 msgid "%s: parallel processing of %d column(s) took %.3fs\n"
 msgstr "%s : 并行处理 %d 列， 用时 %.3fs\n"
