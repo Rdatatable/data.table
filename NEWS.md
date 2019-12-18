@@ -16,6 +16,7 @@
 
 5. `nafill` and `setnafill` gain `nan` argument to say whether `NaN` should be considered the same as `NA` for filling purposes, [#4020](https://github.com/Rdatatable/data.table/issues/4020). Prior versions had an implicit value of `nan=NaN`; the default is now `nan=NA`, i.e., `NaN` is treated as if it's missing. Thanks @AnonymousBoba for the suggestion. Also, while `nafill` still respects `getOption('datatable.verbose')`, the `verbose` argument has been removed.
 
+6. New convenience functions `%plike%` which map the existing `like()` argument `perl`, [#3702](https://github.com/Rdatatable/data.table/issues/3702). `%plike%` uses Perl-compatible regular expression (PCRE) which extends on TRE and is more efficient. Thanks @KyleHaynes for the suggestion and PR.
 
 ## BUG FIXES
 

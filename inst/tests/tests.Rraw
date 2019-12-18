@@ -7211,7 +7211,7 @@ test(1530.2, which.first(x), which(x)[1L])
 test(1530.3, which.last(1:5), error = "x not boolean")
 test(1530.4, which.last(x), tail(which(x), 1L))
 
-# test for like, %like%, %ilike%, %flike%
+# test for like, %like%, %ilike%, %flike%, %plike%
 set.seed(2L)
 x = apply(matrix(sample(letters, 12), nrow=2), 1, paste, collapse="")
 y = factor(sample(c(letters[1:5], x), 20, TRUE))
@@ -7227,6 +7227,10 @@ test(1532.6, like(x, '()'), c(TRUE, TRUE, TRUE))
 test(1532.7, like(x, '()', fixed = TRUE), c(FALSE, FALSE, TRUE))
 test(1532.8, x %ilike% 'hey', c(TRUE, TRUE, FALSE))
 test(1532.9, x %flike% '()', c(FALSE, FALSE, TRUE))
+## %plike% for #3702
+test(1532.10, like(x, "(?=h)(?=.*y)", perl = TRUE), c(FALSE, TRUE, FALSE))
+test(1532.11, x %plike% "(?=h)(?=.*y)", c(FALSE, TRUE, FALSE))
+
 
 # coverage for setkey() to 100%
 dt1 = data.table(x=sample(5), y=1:5, key="y")
