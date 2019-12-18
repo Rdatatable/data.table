@@ -16474,6 +16474,11 @@ test(2125.10, capture.output(print(DT, trunc.cols=TRUE, class=TRUE)),
      "4 variables not shown: [a <char>, b <char>, c <char>, d <char>]")
 options(old_width)
 
+# segfault when i is NULL or zero-column, #4060
+DT = data.table(A="a", key="A")
+test(2126.1, DT[J(NULL)], DT[0])
+test(2126.2, DT[data.table()], DT[0])
+
 
 ###################################
 #  Add new tests above this line  #
