@@ -235,3 +235,7 @@ SEXP coerceUtf8IfNeeded(SEXP x);
 char *end(char *start);
 void ansMsg(ans_t *ans, int n, bool verbose, const char *func);
 SEXP testMsgR(SEXP status, SEXP x, SEXP k);
+
+//fifelse.c
+SEXP fifelseR(SEXP l, SEXP a, SEXP b, SEXP na);
+SEXP fcaseR(SEXP na, SEXP rho, SEXP args);
