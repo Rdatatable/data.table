@@ -2610,7 +2610,7 @@ msgstr ""
 
 #: freadR.c:176
 msgid "Use either select= or drop= but not both."
-msgstr "要么使用select=要么使用drop=，禁止同时使用"
+msgstr "select=和drop=不可同时使用"
 
 #: freadR.c:179
 msgid ""
@@ -2641,7 +2641,7 @@ msgstr "colClasses是类型列表，但没有名称"
 #: freadR.c:206
 #, c-format
 msgid "encoding='%s' invalid. Must be 'unknown', 'Latin-1' or 'UTF-8'"
-msgstr "encoding ='％s'无效。 必须为'未知'，'拉丁1'或'UTF-8'
+msgstr "encoding ='％s'无效。 必须为'未知'，'Latin-1'或'UTF-8'
 
 #: freadR.c:229
 #, c-format
