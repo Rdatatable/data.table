@@ -1,6 +1,4 @@
 #include "data.table.h"
-#include <Rdefines.h>
-#include <Rmath.h>
 
 static void finalizer(SEXP p)
 {
@@ -280,12 +278,12 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
   // newcolnames : add these columns (if any)
   // cols : column names or numbers corresponding to the values to set
   // rows : row numbers to assign
-  R_len_t i, j, numToDo, targetlen, vlen, r, oldncol, oldtncol, coln, protecti=0, newcolnum, indexLength;
-  SEXP targetcol, nullint, s, colnam, tmp, colorder, key, index, a, assignedNames, indexNames;
-  bool verbose=GetVerbose(), anytodelete=false;
+  R_len_t i, j, numToDo, targetlen, vlen, oldncol, oldtncol, coln, protecti=0, newcolnum, indexLength;
+  SEXP targetcol, nullint, s, colnam, tmp, key, index, a, assignedNames, indexNames;
+  bool verbose=GetVerbose();
+  int ndelete=0;  // how many columns are being deleted
   const char *c1, *tc1, *tc2;
   int *buf, newKeyLength, indexNo;
-  size_t size; // must be size_t otherwise overflow later in memcpy
   if (isNull(dt)) error("assign has been passed a NULL dt");
   if (TYPEOF(dt) != VECSXP) error("dt passed to assign isn't type VECSXP");
   if (islocked(dt))
@@ -471,7 +469,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
     SEXP thisvalue = RHS_list_of_columns ? VECTOR_ELT(values, i) : values;
     if (TYPEOF(thisvalue)==NILSXP) {
       if (!isNull(rows)) error("Internal error: earlier error 'When deleting columns, i should not be provided' did not happen."); // # nocov
-      anytodelete = true;
+      ndelete++;
       continue;   // delete column(s) afterwards, below this loop
     }
     vlen = length(thisvalue);
@@ -625,42 +623,37 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
       s = CDR(s);
     }
   }
-  if (anytodelete) {
-    // Delete any columns assigned NULL (there was a 'continue' earlier in loop above)
-    // In reverse order to make repeated memmove easy. Otherwise cols would need to be updated as well after each delete.
-    PROTECT(colorder = copyAsPlain(cols)); protecti++;
-    R_isort(INTEGER(colorder),LENGTH(cols));
-    PROTECT(colorder = match(cols, colorder, 0)); protecti++;  // actually matches colorder to cols (oddly, arguments are that way around)
-    // Can't find a visible R entry point to return ordering of cols, above is only way I could find.
-    // Need ordering (rather than just sorting) because the RHS corresponds in order to the LHS.
-
-    for (r=LENGTH(cols)-1; r>=0; r--) {
-      i = INTEGER(colorder)[r]-1;
-      coln = INTEGER(cols)[i]-1;
+  if (ndelete) {
+    // delete any columns assigned NULL (there was a 'continue' earlier in loop above)
+    int *tt = (int *)R_alloc(ndelete, sizeof(int));
+    const int *colsd=INTEGER(cols), ncols=length(cols), ndt=length(dt);
+    for (int i=0, k=0; i<ncols; ++i) {   // find which ones to delete and put them in tt
+      // Aside: a new column being assigned NULL (something odd to do) would have been warned above, added above, and now deleted. Just
+      //        easier to code it this way; e.g. so that other columns may be added or removed ok by the same query.
+      coln = colsd[i]-1;
       SEXP thisvalue = RHS_list_of_columns ? VECTOR_ELT(values, i) : values;
-      if (isNull(thisvalue)) {
-        // A new column being assigned NULL would have been warned above, added above, and now deleted (just easier
-        // to code it this way e.g. so that other columns may be added or removed ok by the same query).
-        size=sizeof(SEXP *);
-        memmove((char *)DATAPTR(dt)+coln*size,
-            (char *)DATAPTR(dt)+(coln+1)*size,
-            (LENGTH(dt)-coln-1)*size);
-        SET_VECTOR_ELT(dt, LENGTH(dt)-1, R_NilValue);
-        SETLENGTH(dt, LENGTH(dt)-1);
-        // adding using := by group relies on NULL here to know column slot is empty.
-        // good to tidy up the vector anyway.
-        memmove((char *)DATAPTR(names)+coln*size,
-          (char *)DATAPTR(names)+(coln+1)*size,
-          (LENGTH(names)-coln-1)*size);
-        SET_STRING_ELT(names, LENGTH(names)-1, NA_STRING);  // no need really, just to be tidy.
-        SETLENGTH(names, LENGTH(names)-1);
-        if (LENGTH(names)==0) {
-          // That was last column deleted, leaving NULL data.table, so we need to reset .row_names, so that it really is the NULL data.table.
-          PROTECT(nullint=allocVector(INTSXP, 0)); protecti++;
-          setAttrib(dt, R_RowNamesSymbol, nullint);  // i.e. .set_row_names(0)
-          //setAttrib(dt, R_NamesSymbol, R_NilValue);
-        }
-      }
+      if (isNull(thisvalue)) tt[k++] = coln;
+    }
+    R_isort(tt, ndelete);  // sort the column-numbers-to-delete into ascending order
+    for (int i=0; i<ndelete-1; ++i) {
+      if (tt[i]>=tt[i+1])
+        error("Internal error: %d column numbers to delete not now in strictly increasing order. No-dups were checked earlier."); // # nocov
+    }
+    for (int i=tt[0], j=1, k=tt[0]+1;  i<ndt-ndelete;  ++i, ++k) {  // i moves up from the first non-deleted column and is the target of write
+      while (j<ndelete && k==tt[j]) { j++; k++; }                   // move k up to the next non-deleted column; j is the next position in tt
+      SET_VECTOR_ELT(dt,    i, VECTOR_ELT(dt,    k));
+      SET_STRING_ELT(names, i, STRING_ELT(names, k));
+    }
+    for (int i=ndt-ndelete; i<ndt; ++i) {   // blank out the ndelete slots at the end
+      SET_VECTOR_ELT(dt, i, R_NilValue);
+      SET_STRING_ELT(names, i, NA_STRING);  // release reference to the CHARSXP
+    }
+    SETLENGTH(dt,    ndt-ndelete);
+    SETLENGTH(names, ndt-ndelete);
+    if (LENGTH(names)==0) {
+      // That was last column deleted, leaving NULL data.table, so we need to reset .row_names, so that it really is the NULL data.table.
+      PROTECT(nullint=allocVector(INTSXP, 0)); protecti++;
+      setAttrib(dt, R_RowNamesSymbol, nullint);  // i.e. .set_row_names(0)
     }
   }
   UNPROTECT(protecti);
@@ -864,7 +857,7 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source,
       const char *sType = sourceIsI64 ? "integer64" : type2char(TYPEOF(source));                                        \
       const char *tType = targetIsI64 ? "integer64" : type2char(TYPEOF(target));                                        \
       int n = snprintf(memrecycle_message, MSGSIZE,                                                                     \
-               FMT" (type '%s') at RHS position %d "TO" when assigning to type '%s'", val, sType, i+1, tType);          \
+            "%"FMT" (type '%s') at RHS position %d "TO" when assigning to type '%s'", val, sType, i+1, tType);          \
       if (colnum>0 && n>0 && n<MSGSIZE)                                                                                 \
         snprintf(memrecycle_message+n, MSGSIZE-n, " (column %d named '%s')", colnum, colname);                          \
       /* string returned so that rbindlist/dogroups can prefix it with which item of its list this refers to  */        \
@@ -876,28 +869,28 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source,
     switch(TYPEOF(target)) {
     case LGLSXP:
       switch (TYPEOF(source)) {
-      case RAWSXP:  CHECK_RANGE(Rbyte, RAW,      val!=0 && val!=1,                                        "%d",   "taken as TRUE")
-      case INTSXP:  CHECK_RANGE(int, INTEGER,    val!=0 && val!=1 && val!=NA_INTEGER,                     "%d",   "taken as TRUE")
+      case RAWSXP:  CHECK_RANGE(Rbyte, RAW,    val!=0 && val!=1,                                        "d",    "taken as TRUE")
+      case INTSXP:  CHECK_RANGE(int, INTEGER,  val!=0 && val!=1 && val!=NA_INTEGER,                     "d",    "taken as TRUE")
       case REALSXP: if (sourceIsI64)
-                    CHECK_RANGE(long long, REAL, val!=0 && val!=1 && val!=NA_INTEGER64,                   "%lld", "taken as TRUE")
-              else  CHECK_RANGE(double, REAL,    !ISNAN(val) && val!=0.0 && val!=1.0,                     "%f",   "taken as TRUE")
+                    CHECK_RANGE(int64_t, REAL, val!=0 && val!=1 && val!=NA_INTEGER64,                   PRId64, "taken as TRUE")
+              else  CHECK_RANGE(double, REAL,  !ISNAN(val) && val!=0.0 && val!=1.0,                     "f",    "taken as TRUE")
       } break;
     case RAWSXP:
       switch (TYPEOF(source)) {
-      case INTSXP:  CHECK_RANGE(int, INTEGER,    val<0 || val>255,                                        "%d",   "taken as 0")
+      case INTSXP:  CHECK_RANGE(int, INTEGER,  val<0 || val>255,                                        "d",    "taken as 0")
       case REALSXP: if (sourceIsI64)
-                    CHECK_RANGE(long long, REAL, val<0 || val>255,                                        "%lld", "taken as 0")
-              else  CHECK_RANGE(double, REAL,    !R_FINITE(val) || val<0.0 || val>256.0 || (int)val!=val, "%f",   "either truncated (precision lost) or taken as 0")
+                    CHECK_RANGE(int64_t, REAL, val<0 || val>255,                                        PRId64, "taken as 0")
+              else  CHECK_RANGE(double, REAL,  !R_FINITE(val) || val<0.0 || val>256.0 || (int)val!=val, "f",    "either truncated (precision lost) or taken as 0")
       } break;
     case INTSXP:
       if (TYPEOF(source)==REALSXP) {
         if (sourceIsI64)
-                    CHECK_RANGE(long long, REAL, val!=NA_INTEGER64 && (val<=NA_INTEGER || val>INT_MAX),   "%lld",  "out-of-range (NA)")
-        else        CHECK_RANGE(double, REAL,    !ISNAN(val) && (!R_FINITE(val) || (int)val!=val),        "%f",    "truncated (precision lost)")
+                    CHECK_RANGE(int64_t, REAL, val!=NA_INTEGER64 && (val<=NA_INTEGER || val>INT_MAX),   PRId64,  "out-of-range (NA)")
+        else        CHECK_RANGE(double, REAL,  !ISNAN(val) && (!R_FINITE(val) || (int)val!=val),        "f",     "truncated (precision lost)")
       } break;
     case REALSXP:
       if (targetIsI64 && isReal(source) && !sourceIsI64) {
-                    CHECK_RANGE(double, REAL,    !ISNAN(val) && (!R_FINITE(val) || (int)val!=val),        "%f",    "truncated (precision lost)")
+                    CHECK_RANGE(double, REAL,  !ISNAN(val) && (!R_FINITE(val) || (int)val!=val),        "f",     "truncated (precision lost)")
       }
     }
   }

@@ -1,5 +1,5 @@
-test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=FALSE) {
-  stopifnot(isTRUEorFALSE(verbose), isTRUEorFALSE(silent))
+test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=FALSE, showProgress=interactive()&&!silent) {
+  stopifnot(isTRUEorFALSE(verbose), isTRUEorFALSE(silent), isTRUEorFALSE(showProgress))
   if (exists("test.data.table", .GlobalEnv,inherits=FALSE)) {
     # package developer
     # nocov start
@@ -23,7 +23,7 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
     scripts = dir(fulldir, "*.Rraw.*")
     scripts = scripts[!grepl("bench|other", scripts)]
     scripts = gsub("[.]bz2$","",scripts)
-    for (fn in scripts) {test.data.table(verbose=verbose, pkg=pkg, silent=silent, script=fn); cat("\n");}
+    for (fn in scripts) {test.data.table(script=fn, verbose=verbose, pkg=pkg, silent=silent, showProgress=showProgress); cat("\n");}
     return(invisible())
     # nocov end
   }
@@ -109,47 +109,63 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
   assign("memtest", as.logical(Sys.getenv("TEST_DATA_TABLE_MEMTEST", "FALSE")), envir=env)
   assign("filename", fn, envir=env)
   assign("inittime", as.integer(Sys.time()), envir=env) # keep measures from various test.data.table runs
-  # It doesn't matter that 3000L is far larger than needed for other and benchmark.
-  if (isTRUE(silent)){
-    try(sys.source(fn, envir=env), silent=silent)  # nocov
-  } else {
-    sys.source(fn, envir=env)
-  }
+  assign("showProgress", showProgress, envir=env)
+
+  err = try(sys.source(fn, envir=env), silent=silent)
+
   options(oldOptions)
-
-  # Sys.setlocale("LC_CTYPE", oldlocale)
-  ans = env$nfail==0
-
   if (is.na(orig__R_CHECK_LENGTH_1_LOGIC2_)) {
     Sys.unsetenv("_R_CHECK_LENGTH_1_LOGIC2_")
   } else {
     Sys.setenv("_R_CHECK_LENGTH_1_LOGIC2_" = orig__R_CHECK_LENGTH_1_LOGIC2_) # nocov
   }
-
+  # Sys.setlocale("LC_CTYPE", oldlocale)
   suppressWarnings(do.call("RNGkind",as.list(oldRNG)))
-  # suppressWarning again in the unlikely event that user selected sample='Rounding' themselves before calling test.data.table()
+  # suppressWarnings for the unlikely event that user selected sample='Rounding' themselves before calling test.data.table()
 
-  timings = get("timings", envir=env)
-  ntest = get("ntest", envir=env)
-  nfail = get("nfail", envir=env)
-  started.at = get("started.at", envir=env)
-  whichfail = get("whichfail", envir=env)
+  # Now output platform trace before error (if any) to be sure to always show it; e.g. to confirm endianness in #4099.
+  # As one long dense line for cases when 00check.log only shows the last 13 lines of log; to only use up one
+  # of those 13 line and give a better chance of seeing more of the output before it. Having said that, CRAN
+  # does show the full file output these days, so the 13 line limit no longer bites so much. It still bit recently
+  # when receiving output of R CMD check sent over email, though.
+  cat("\n", date(),   # so we can tell exactly when these tests ran on CRAN to double-check the result is up to date
+    "  endian==", .Platform$endian,
+    ", sizeof(long double)==", .Machine$sizeof.longdouble,
+    ", sizeof(pointer)==", .Machine$sizeof.pointer,
+    ", TZ=", suppressWarnings(Sys.timezone()),
+    ", locale='", Sys.getlocale(), "'",
+    ", l10n_info()='", paste0(names(l10n_info()), "=", l10n_info(), collapse="; "), "'",
+    ", getDTthreads()='", paste0(gsub("[ ][ ]+","==",gsub("^[ ]+","",capture.output(invisible(getDTthreads(verbose=TRUE))))), collapse="; "), "'",
+    "\n", sep="")
 
-  # Summary. This code originally in tests.Rraw and moved up here in #3307
-  # One big long line because CRAN checks output last 13 lines. One long line counts as one out of 13.
-  plat = paste0("endian==", .Platform$endian,
-                ", sizeof(long double)==", .Machine$sizeof.longdouble,
-                ", sizeof(pointer)==", .Machine$sizeof.pointer,
-                ", TZ=", suppressWarnings(Sys.timezone()),
-                ", locale='", Sys.getlocale(), "'",
-                ", l10n_info()='", paste0(names(l10n_info()), "=", l10n_info(), collapse="; "), "'",
-                ", getDTthreads()='", paste0(gsub("[ ][ ]+","==",gsub("^[ ]+","",capture.output(invisible(getDTthreads(verbose=TRUE))))), collapse="; "), "'")
+  if (inherits(err,"try-error")) {
+    # nocov start
+    if (silent) return(FALSE)
+    stop("Failed after test ", env$prevtest, " before the next test() call in ",fn)
+    # the try() above with silent=FALSE will have already printed the error itself
+    # nocov end
+  }
+
+  nfail = env$nfail
+  ntest = env$ntest
+  if (nfail > 0L) {
+    # nocov start
+    if (nfail > 1L) {s1="s";s2="s: "} else {s1="";s2=" "}
+    stop(nfail," error",s1," out of ",ntest,". Search ",names(fn)," for test number",s2,paste(env$whichfail,collapse=", "),".")
+    # important to stop() here, so that 'R CMD check' fails
+    # nocov end
+  }
+
+  # There aren't any errors, so we can use up 11 lines for the timings table
+  timings = env$timings
   DT = head(timings[-1L][order(-time)], 10L)   # exclude id 1 as in dev that includes JIT
   if ((x<-sum(timings[["nTest"]])) != ntest) {
     warning("Timings count mismatch:",x,"vs",ntest)  # nocov
   }
-  cat("\n10 longest running tests took ", as.integer(tt<-DT[, sum(time)]), "s (", as.integer(100*tt/(ss<-timings[,sum(time)])), "% of ", as.integer(ss), "s)\n", sep="")
+  cat("10 longest running tests took ", as.integer(tt<-DT[, sum(time)]), "s (", as.integer(100*tt/(ss<-timings[,sum(time)])), "% of ", as.integer(ss), "s)\n", sep="")
   print(DT, class=FALSE)
+
+  cat("All ",ntest," tests in ",names(fn)," completed ok in ",timetaken(env$started.at),"\n",sep="")
 
   ## this chunk requires to include new suggested deps: graphics, grDevices
   #memtest.plot = function(.inittime) {
@@ -176,21 +192,7 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
   #}
   #if (memtest<-get("memtest", envir=env)) memtest.plot(get("inittime", envir=env))
 
-  # nocov start
-  if (nfail > 0L) {
-    if (nfail > 1L) {s1="s";s2="s: "} else {s1="";s2=" "}
-    cat("\r")
-    stop(nfail," error",s1," out of ",ntest," in ",timetaken(started.at)," on ",date(),". [",plat,"].",
-         " Search ",names(fn)," for test number",s2,paste(whichfail,collapse=", "),".")
-    # important to stop() here, so that 'R CMD check' fails
-  }
-  # nocov end
-  cat(plat,"\n\nAll ",ntest," tests in ",names(fn)," completed ok in ",timetaken(started.at)," on ",date(),"\n",sep="")
-  # date() is included so we can tell exactly when these tests ran on CRAN. Sometimes a CRAN log can show error but that can be just
-  # stale due to not updating yet since a fix in R-devel, for example.
-
-  #attr(ans, "details", exact=TRUE) = env
-  invisible(ans)
+  invisible(nfail==0L)
 }
 
 # nocov start
@@ -261,6 +263,7 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
     inittime = get("inittime", parent.frame())
     filename = get("filename", parent.frame())
     foreign = get("foreign", parent.frame())
+    showProgress = get("showProgress", parent.frame())
     time = nTest = NULL  # to avoid 'no visible binding' note
     on.exit( {
        now = proc.time()[3L]
@@ -268,16 +271,20 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
        assign("lasttime", now, parent.frame(), inherits=TRUE)
        timings[ as.integer(num), `:=`(time=time+took, nTest=nTest+1L), verbose=FALSE ]
     } )
-    cat("\rRunning test id", numStr, "     ")
-    flush.console()
-    # This flush is for Windows to make sure last test number is written to file in CRAN and win-builder output where
-    # console output is captured. \r seems especially prone to not being auto flushed. The downside is that the last 13
-    # lines output are filled with the last 13 "running test num" lines rather than the last error output, but that's
-    # better than the dev-time-lost when it crashes and it actually crashed much later than the last test number visible.
+    if (showProgress)
+      cat("\rRunning test id", numStr, "     ")   # nocov.
+    # See PR #4090 for comments about change here in Dec 2019.
+    # If a segfault error occurs in future and we'd like to know after which test, then arrange for the
+    # try(sys.source()) in test.data.table() to be run in a separate R process. That process could write out
+    # prevtest to a temp file so we know where it got to from this R process. That should be more reliable
+    # than what we were doing before which was for test() to always write its test number to output (which might
+    # not be flushed to the output upon segfault, depending on OS).
   } else {
+    # not `test.data.table` but developer running tests manually; i.e. `cc(F); test(...)`
     memtest = FALSE          # nocov
     filename = NA_character_ # nocov
     foreign = FALSE          # nocov ; assumes users of 'cc(F); test(...)' has LANGUAGE=en
+    showProgress = FALSE     # nocov
   }
   if (!missing(error) && !missing(y))
     stop("Test ",numStr," is invalid: when error= is provided it does not make sense to pass y as well")  # nocov
@@ -316,7 +323,7 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
   }
   if (memtest) {
     mem = as.list(c(inittime=inittime, filename=basename(filename), timestamp=timestamp, test=num, ps_mem(), gc_mem())) # nocov
-    fwrite(mem, "memtest.csv", append=TRUE)                                                                             # nocov
+    fwrite(mem, "memtest.csv", append=TRUE, verbose=FALSE)                                                                             # nocov
   }
   fail = FALSE
   if (.test.data.table) {
@@ -351,6 +358,12 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
         }
       }
     }
+  }
+  if (fail && exists("out",inherits=FALSE)) {
+    # nocov start
+    cat("Output captured before unexpected warning/error/message:\n")
+    cat(out,sep="\n")
+    # nocov end
   }
   if (!fail && !length(error) && (length(output) || length(notOutput))) {
     if (out[length(out)] == "NULL") out = out[-length(out)]

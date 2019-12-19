@@ -1027,6 +1027,12 @@ test(6010.005, frollmean(d, 3:4), frollapply(d, 3:4, mean))
 d = rbind(d, list(NA,NA))
 ans = list(c(NA,NA,1.5,2,1.5,2,2.5), c(NA,NA,NA,2,1,1.5,2), c(NA,NA,1.25,1.5,1.75,1.5,2), c(NA,NA,NA,1.5,1,1.25,1.5))
 test(6010.006, frollapply(d, 3:4, function(x, ...) if (sum(x, ...)>5) min(x, ...) else max(x, ...), na.rm=TRUE), ans)
+# segfault and protect limits #3993 - disabled by default due to high memory usage
+if (FALSE) {
+  test(6010.007, frollapply(1, rep(1L, 1e5), identity), as.list(rep(1, 1e5)))
+  test(6010.008, frollapply(1, rep(1L, 1e6), identity), as.list(rep(1, 1e6)))
+  test(6010.009, frollapply(as.list(rep(1, 1e6)), 1, identity), as.list(rep(1, 1e6)))
+}
 #### corner cases from examples
 test(6010.101, frollapply(1:5, 3, function(x) head(x, 2)), error="frollapply: results from provided FUN are not length 1")
 f = function(x) {

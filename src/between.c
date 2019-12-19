@@ -92,7 +92,7 @@ SEXP between(SEXP x, SEXP lower, SEXP upper, SEXP incbounds, SEXP NAboundsArg, S
       if (check) for (int i=0; i<longestBound; ++i) {
         const int64_t l=lp[i & lowMask], u=up[i & uppMask];
         if (l!=NA_INTEGER64 && u!=NA_INTEGER64 && l>u)
-          error("Item %d of lower (%lld) is greater than item %d of upper (%lld)", (i&lowMask)+1, l, (i&uppMask)+1, u);
+          error("Item %d of lower (%"PRId64") is greater than item %d of upper (%"PRId64")", (i&lowMask)+1, l, (i&uppMask)+1, u);
       }
       if (NAbounds) {
         #pragma omp parallel for num_threads(getDTthreads())

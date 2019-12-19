@@ -22,13 +22,13 @@ vector \%flike\% pattern
    \item{fixed}{ \code{logical}; should \code{pattern} be interpreted as a literal string (i.e., ignoring regular expressions)? }
 }
 \details{
-  Internally, \code{like} is essentially a wrapper around \code{\link[base]{grepl}}, except that it is smarter about handling \code{factor} input (\code{base::grep} uses slow \code{as.character} conversion).
+  Internally, \code{like} is essentially a wrapper around \code{\link[base:grep]{base::grepl}}, except that it is smarter about handling \code{factor} input (\code{base::grep} uses slow \code{as.character} conversion).
 }
 \value{
     Logical vector, \code{TRUE} for items that match \code{pattern}.
 }
 \note{ Current implementation does not make use of sorted keys. }
-\seealso{ \code{\link[base]{grepl}} }
+\seealso{ \code{\link[base:grep]{base::grepl}} }
 \examples{
 DT = data.table(Name=c("Mary","George","Martha"), Salary=c(2,3,4))
 DT[Name \%like\% "^Mar"]
