@@ -4,7 +4,7 @@
 \title{Fast melt for data.table}
 \description{
 \code{melt} is \code{data.table}'s wide-to-long reshaping tool. 
-It provides an S3 method for melting \code{data.table}s. It is written in C for speed and memory
+We provide an S3 method for melting \code{data.table}s. It is written in C for speed and memory
 efficiency. Since \code{v1.9.6}, \code{melt.data.table} allows melting into
 multiple columns simultaneously.
 }
