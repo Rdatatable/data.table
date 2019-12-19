@@ -1,12 +1,12 @@
 # Intended for use with a data.table 'where'
 # Don't use * or % like SQL's like.  Uses regexpr syntax - more powerful.
 # returns 'logical' so can be combined with other where clauses.
-like = function(vector, pattern, ignore.case = FALSE, fixed = FALSE, perl = FALSE) {
+like = function(vector, pattern, ...) {
   if (is.factor(vector)) {
-    as.integer(vector) %in% grep(pattern, levels(vector), ignore.case = ignore.case, fixed = fixed, perl = perl)
+    as.integer(vector) %in% grep(pattern, levels(vector), ...)
   } else {
     # most usually character, but integer and numerics will be silently coerced by grepl
-    grepl(pattern, vector, ignore.case = ignore.case, fixed = fixed, perl = perl)
+    grepl(pattern, vector, ignore.case = ...)
   }
 }
 
