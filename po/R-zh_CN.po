@@ -1276,14 +1276,14 @@ msgid "columns of y's key must be identical to the columns specified in by.y."
 msgstr "在‘by.y’中，y键的列必须与指定的列相同"
 
 msgid "Elements listed in 'by.x' must be valid names in data.table 'x'"
-msgstr "对于data.table中的‘X’，‘by.x’中的要素必须是有效名称"
+msgstr "对于data.table中的‘X’，‘by.x’中的元素必须是有效名称"
 
 msgid ""
 "Duplicate columns are not allowed in overlap joins. This may change in the "
 "future."
 msgstr ""
 “搭接部分不允许出现重复列。”
-“这种情况会在将来进行更改。”
+“这个要求可能会在未来有所调整。”
 
 msgid ""
 "length(by.x) != length(by.y). Columns specified in by.x should correspond to "
@@ -1367,7 +1367,7 @@ msgid "length(na.last) = 0"
 msgstr "na.last长度等于0"
 
 msgid "length(na.last) > 1, only the first element will be used"
-msgstr "当na.last长度大于1时，只会使用第一部分"
+msgstr "当na.last长度大于1时，只会使用第一个元素"
 
 msgid "x is a single vector, non-NULL 'cols' doesn't make sense"
 msgstr "x是单个向量，非空的'cols'没有意义"
