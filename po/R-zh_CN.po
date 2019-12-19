@@ -1322,73 +1322,83 @@ msgid "A non-empty vector of column names or numbers is required for by.x"
 msgstr "'by.x' 必须是一个非空向量，包含列名或者序号"
 
 msgid "A non-empty vector of column names or numbers is required for by.y"
-msgstr ""
+msgstr "‘by.y’应该是具有列名或者数字非空向量"
 
 msgid "The first"
-msgstr ""
+msgstr "首先"
 
 msgid "columns of y's key must be identical to the columns specified in by.y."
-msgstr ""
+msgstr "在‘by.y’中，y键的列必须与指定的列相同"
 
 msgid "Elements listed in 'by.x' must be valid names in data.table 'x'"
-msgstr ""
+msgstr "对于data.table中的‘X’，‘by.x’中的元素必须是有效名称"
 
 msgid ""
 "Duplicate columns are not allowed in overlap joins. This may change in the "
 "future."
 msgstr ""
+“搭接部分不允许出现重复列。”
+“这个要求可能会在未来有所调整。”
 
 msgid ""
 "length(by.x) != length(by.y). Columns specified in by.x should correspond to "
 "columns specified in by.y and should be of same lengths."
 msgstr ""
+“当by.x的长度不等于by.y时。by.x中指定的列应该与by.y中指定的列等长。”
 
 msgid "y has some duplicated column name(s):"
-msgstr ""
+msgstr "y有重复的列名时："
 
 msgid ""
 "The last two columns in by.x should correspond to the 'start' and 'end' "
 "intervals in data.table 'x' and must be integer/numeric type."
 msgstr ""
+“‘by.x’的最后两列应该与data.table ‘x’中的‘开始’与‘结尾’的间隔对应”
+“且必须是整数/数字类型”
 
 msgid "NA values in data.table 'x' start column: '"
-msgstr ""
+msgstr "在data.table的X的初始列的NA值时：‘"
 
 msgid ""
 "'. All rows with NA values in the range columns must be removed for "
 "foverlaps() to work."
 msgstr ""
+“’。必须删除范围列内的具有NA值的行，以（保证）foverlaps()起作用。”
 
 msgid "NA values in data.table 'x' end column: '"
-msgstr ""
+msgstr "在data.table的‘X’的末尾列中NA值时："
 
 msgid "All entries in column"
-msgstr ""
+msgstr "列中所有条目"
 
 msgid "should be <= corresponding entries in column"
-msgstr ""
+msgstr "应该<=列中相应的条目"
 
 msgid "in data.table 'x'."
-msgstr ""
+msgstr "在data.table的‘X’部分"
 
 msgid ""
 "The last two columns in by.y should correspond to the 'start' and 'end' "
 "intervals in data.table 'y' and must be integer/numeric type."
 msgstr ""
+“‘by.y’的最后两列应该与data.table ‘y’中的‘开始’与‘结尾’的间隔对应”
+“且必须是整数/数字类型”
 
 msgid "NA values in data.table 'y' start column: '"
-msgstr ""
+msgstr "NA值在data.table的‘y’起始列时："
 
 msgid "NA values in data.table 'y' end column: '"
-msgstr ""
+msgstr "NA值在data.table的‘y’尾列时："
 
 msgid "in data.table 'y'."
-msgstr ""
+msgstr "在data.table的‘y’部分"
 
 msgid ""
 "Some interval cols are of type POSIXct while others are not. Please ensure "
 "all interval cols are (or are not) of POSIXct type"
 msgstr ""
+“一些间隔列的类型是POSIXct而有些不是。”
+“（因此）请确保所有间隔列都是或都不是POSIXct类型”
 
 msgid ""
 "POSIXct interval cols have mixed timezones. Overlaps are performed on the "
@@ -1397,18 +1407,22 @@ msgid ""
 "overlap but their internal representations do Please ensure that POSIXct "
 "type interval cols have identical 'tzone' attributes to avoid confusion."
 msgstr ""
+“POSIXct间隔列有混合的时区。”
+“POSIXct对象（始终以UTC纪元时间为准）以内部数字表现形式展现为重叠，”
+“因此显示的值可能（使用户）留下‘值是不会重叠，但其内部表现显示显示却重叠’的印象，”
+“（所以）请确保POSIXct类型的间隔列具有相同的‘时区’属性以避免混乱。”
 
 msgid "Not yet implemented"
-msgstr ""
+msgstr "尚未实现"
 
 msgid "maxgap > minoverlap. maxgap will have no effect here."
-msgstr ""
+msgstr "最大空隙大于最小重叠，此处的最大空隙无效。"
 
 msgid "length(na.last) = 0"
-msgstr ""
+msgstr "na.last长度等于0"
 
 msgid "length(na.last) > 1, only the first element will be used"
-msgstr ""
+msgstr "当na.last长度大于1时，只会使用第一个元素"
 
 msgid "x is a single vector, non-NULL 'cols' doesn't make sense"
 msgstr "x是单个向量，非空的'cols'没有意义"

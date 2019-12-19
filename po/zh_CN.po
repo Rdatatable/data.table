@@ -2640,16 +2640,16 @@ msgstr "内部错误：freadR.c 中 skip 非整数或字符串"
 #: freadR.c:140
 #, c-format
 msgid "Internal error: NAstringsArg is type '%s'. R level catches this"
-msgstr ""
+msgstr "内部错误：NAstringsArg是'%s'数据类型.R中能够捕获这个信息"
 
 #: freadR.c:153
 #, c-format
 msgid "nThread(%d)<1"
-msgstr ""
+msgstr "nThread(%d)<1（线程数（%d）小于1）"
 
 #: freadR.c:160
 msgid "'integer64' must be a single character string"
-msgstr ""
+msgstr "'64整数型'必须是单个字符串"
 
 #: freadR.c:168
 #, c-format
@@ -2657,66 +2657,72 @@ msgid ""
 "Invalid value integer64='%s'. Must be 'integer64', 'character', 'double' or "
 "'numeric'"
 msgstr ""
+"64位整数型有效值='%s'.必须是'64位整数型'，'字符串'，'双精度浮点型'或者'数值型'"
 
 #: freadR.c:176
 msgid "Use either select= or drop= but not both."
-msgstr ""
+msgstr "select=和drop=不可同时使用"
 
 #: freadR.c:179
 msgid ""
 "select= is type list for specifying types in select=, but colClasses= has "
 "been provided as well. Please remove colClasses=."
 msgstr ""
+"select=是用于在select=中指定类型的类型列表，但是还提供了colClasses=。请删除colClasses=。"
 
 #: freadR.c:181
 msgid ""
 "select= is type list but has no names; expecting list(type1=cols1, "
 "type2=cols2, ...)"
 msgstr ""
+"select =是类型列表，但没有名称； 期望列表（type1 = cols1，type2 = cols2，...）"
 
 #: freadR.c:188
 msgid ""
 "select= is a named vector specifying the columns to select and their types, "
 "but colClasses= has been provided as well. Please remove colClasses=."
 msgstr ""
+"select =是一个命名向量，用于指定要选择的列及其类型，"
+"但是还提供了colClasses =。 请删除colClasses =。"
 
 #: freadR.c:196 freadR.c:346
 msgid "colClasses is type list but has no names"
-msgstr ""
+msgstr "colClasses是类型列表，但没有名称"
 
 #: freadR.c:206
 #, c-format
 msgid "encoding='%s' invalid. Must be 'unknown', 'Latin-1' or 'UTF-8'"
-msgstr ""
+msgstr "encoding ='％s'无效。 必须为'未知'，'Latin-1'或'UTF-8'
 
 #: freadR.c:229
 #, c-format
 msgid "Column name '%s' (%s) not found"
-msgstr ""
+msgstr "找不到列名'％s'（％s）"
 
 #: freadR.c:231
 #, c-format
 msgid "%s is NA"
-msgstr ""
+msgstr "%s是缺失值"
 
 #: freadR.c:233
 #, c-format
 msgid "%s is %d which is out of range [1,ncol=%d]"
-msgstr ""
+msgstr "％s是％d，超出范围[1，ncol =％d]"
 
 #: freadR.c:247
 msgid "Internal error: typeSize[CT_BOOL8_N] != 1"
-msgstr ""
+msgstr "内部错误：类型大小[CT_BOOL8_N]不等于1"
 
 #: freadR.c:248
 msgid "Internal error: typeSize[CT_STRING] != 1"
-msgstr ""
+msgstr "内部错误：类型大小[CT_STRING]不等于1"
 
 #: freadR.c:282
 #, c-format
 msgid ""
 "Column name '%s' not found in column name header (case sensitive), skipping."
 msgstr ""
+"在列名标题中找不到列名'％s'（区分大小写），正在跳过。"
 
 #: freadR.c:292
 #, c-format
@@ -2724,6 +2730,8 @@ msgid ""
 "Column number %d (select[%d]) is negative but should be in the range [1,ncol="
 "%d]. Consider drop= for column exclusion."
 msgstr ""
+"列号％d（select [％d]）为负，但应在[1，ncol =％d]范围内。”
+“考虑drop=用于排除列。"
 
 #: freadR.c:293
 #, c-format
@@ -2731,6 +2739,7 @@ msgid ""
 "select = 0 (select[%d]) has no meaning. All values of select should be in "
 "the range [1,ncol=%d]."
 msgstr ""
+“select=0（select[％d]）没有意义。select的所有值都应在[1，ncol=％d]范围内。”
 
 #: freadR.c:294
 #, c-format
@@ -2738,16 +2747,18 @@ msgid ""
 "Column number %d (select[%d]) is too large for this table, which only has %d "
 "columns."
 msgstr ""
+“对于此表（仅包含％d列，）列号％d（select [％d]）太大。”
 
 #: freadR.c:295
 #, c-format
 msgid "Column number %d ('%s') has been selected twice by select="
-msgstr ""
+msgstr "列号％d（'％s'）已由select =选择两次"
 
 #: freadR.c:313
 msgid ""
 "colClasses='NULL' is not permitted; i.e. to drop all columns and load nothing"
 msgstr ""
+“colClasses ='NULL'是不允许的； 即删除所有列而不加载任何内容”
 
 #: freadR.c:318
 #, c-format
@@ -2757,31 +2768,36 @@ msgid ""
 "a named vector, list format, or specify types using select= instead of "
 "colClasses=. Please see examples in ?fread."
 msgstr ""
+"colClasses =是类型为％d的类型的未命名向量，但是有％d输入中的列。
+"要为列的子集指定类型，可以使用命名向量，列表格式或使用select="
+"而不是colClasses=。请参阅'?fread'中的示例。"
 
 #: freadR.c:329
 msgid "Internal error: selectInts is NULL but selectColClasses is true"
-msgstr ""
+msgstr "内部错误：selectInts为NULL，但selectColClasses为true"
 
 #: freadR.c:330
 msgid ""
 "Internal error: length(selectSxp)!=length(colClassesSxp) but "
 "selectColClasses is true"
 msgstr ""
+"内部错误：length（select xp）！=length（colClasses xp），
+"但select ColClasses为true"
 
 #: freadR.c:344
 #, c-format
 msgid "colClasses is type '%s' but should be list or character"
-msgstr ""
+msgstr "colClasses是类型'％s'，但应该是列表或字符"
 
 #: freadR.c:368
 #, c-format
 msgid "Column name '%s' (colClasses[[%d]][%d]) not found"
-msgstr ""
+msgstr "找不到列名'％s'（colClasses[[％d]][％d]）"
 
 #: freadR.c:370
 #, c-format
 msgid "colClasses[[%d]][%d] is NA"
-msgstr ""
+msgstr "colClasses[[%d]][%d]是NA"
 
 #: freadR.c:374
 #, c-format
@@ -2789,41 +2805,43 @@ msgid ""
 "Column %d ('%s') appears more than once in colClasses. The second time is "
 "colClasses[[%d]][%d]."
 msgstr ""
+"Column %d ('%s')在colClasses中出现了多次。"
+"第二次是colClasses[[%d]][%d]."
 
 #: freadR.c:381
 #, c-format
 msgid "Column number %d (colClasses[[%d]][%d]) is out of range [1,ncol=%d]"
-msgstr ""
+msgstr "列号％d(colClasses[[%d]][%d])超出范围[1,ncol=%d]"
 
 #: freadR.c:583
 #, c-format
 msgid "Field size is 1 but the field is of type %d\n"
-msgstr ""
+msgstr "字段大小为1，但字段类型为％d \ n"
 
 #: freadR.c:592
 #, c-format
 msgid "Internal error: unexpected field of size %d\n"
-msgstr ""
+msgstr "内部错误：大小为％d \ n的意外字段"
 
 #: freadR.c:660
 #, c-format
 msgid "%s"
-msgstr ""
+msgstr "%s"
 
 #: froll.c:14 froll.c:223 froll.c:407
 #, c-format
 msgid "%s: window width longer than input vector, returning all NA vector\n"
-msgstr ""
+msgstr "％s：窗口宽度比输入向量长，返回所有NA向量\n"
 
 #: froll.c:32 froll.c:240 froll.c:456
 #, c-format
 msgid "%s: align %d, shift answer by %d\n"
-msgstr ""
+msgstr "%s：对齐%d，将答案移位%d\n"
 
 #: froll.c:39 froll.c:247 frolladaptive.c:19 frolladaptive.c:214
 #, c-format
 msgid "%s: processing algo %u took %.3fs\n"
-msgstr ""
+msgstr "%s: 处理算法%u用了%.3fs\n"
 
 #: froll.c:48 froll.c:251
 #, c-format
@@ -2840,6 +2858,8 @@ msgid ""
 "%s: hasNA=FALSE used but NA (or other non-finite) value(s) are present in "
 "input, use default hasNA=NA to avoid this warning"
 msgstr ""
+"%s：使用了hasNA = FALSE，但输入中存在NA（或其他非限定性）值，"
+"请使用默认的hasNA=NA以避免此警告"
 
 #: froll.c:71 froll.c:173 froll.c:274 froll.c:366 frolladaptive.c:61
 #: frolladaptive.c:151 frolladaptive.c:250 frolladaptive.c:330
@@ -2848,6 +2868,7 @@ msgid ""
 "%s: NA (or other non-finite) value(s) are present in input, re-running with "
 "extra care for NAs\n"
 msgstr ""
+"%s：输入中存在NA（或非限定值），请格外注意NA值并重新运行"
 
 #: froll.c:81 froll.c:284
 #, c-format
