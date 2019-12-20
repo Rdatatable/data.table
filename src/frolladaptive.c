@@ -1,7 +1,3 @@
-#include <stdio.h>
-#include <stdint.h>
-#include <stdbool.h>
-#include <Rdefines.h>
 #include "data.table.h"
 
 /* fast adaptive rolling mean - router
@@ -30,7 +26,7 @@ void fadaptiverollmean(unsigned int algo, double *x, uint64_t nx, ans_t *ans, in
  */
 void fadaptiverollmeanFast(double *x, uint64_t nx, ans_t *ans, int *k, double fill, bool narm, int hasna, bool verbose) {
   if (verbose)
-    snprintf(end(ans->message[0]), 500, "%s: running for input length %llu, hasna %d, narm %d\n", __func__, (unsigned long long int)nx, hasna, (int) narm);
+    snprintf(end(ans->message[0]), 500, "fadaptiverollmeanFast: running for input length %"PRIu64", hasna %d, narm %d\n", (uint64_t)nx, hasna, (int) narm);
   bool truehasna = hasna>0;                                     // flag to re-run if NAs detected
   long double w = 0.0;
   double *cs = malloc(nx*sizeof(double));                       // cumsum vector, same as double cs[nx] but no segfault
@@ -115,7 +111,7 @@ void fadaptiverollmeanFast(double *x, uint64_t nx, ans_t *ans, int *k, double fi
  */
 void fadaptiverollmeanExact(double *x, uint64_t nx, ans_t *ans, int *k, double fill, bool narm, int hasna, bool verbose) {
   if (verbose)
-    snprintf(end(ans->message[0]), 500, "%s: running in parallel for input length %llu, hasna %d, narm %d\n", __func__, (unsigned long long int)nx, hasna, (int) narm);
+    snprintf(end(ans->message[0]), 500, "fadaptiverollmeanExact: running in parallel for input length %"PRIu64", hasna %d, narm %d\n", (uint64_t)nx, hasna, (int) narm);
   bool truehasna = hasna>0;                                     // flag to re-run if NAs detected
   if (!truehasna || !narm) {                                    // narm=FALSE handled here as NAs properly propagated in exact algo
     #pragma omp parallel for num_threads(getDTthreads())
@@ -219,7 +215,7 @@ void fadaptiverollsum(unsigned int algo, double *x, uint64_t nx, ans_t *ans, int
 }
 void fadaptiverollsumFast(double *x, uint64_t nx, ans_t *ans, int *k, double fill, bool narm, int hasna, bool verbose) {
   if (verbose)
-    snprintf(end(ans->message[0]), 500, "%s: running for input length %llu, hasna %d, narm %d\n", __func__, (unsigned long long int)nx, hasna, (int) narm);
+    snprintf(end(ans->message[0]), 500, "fadaptiverollsumFast: running for input length %"PRIu64", hasna %d, narm %d\n", (uint64_t)nx, hasna, (int) narm);
   bool truehasna = hasna>0;
   long double w = 0.0;
   double *cs = malloc(nx*sizeof(double));
@@ -299,7 +295,7 @@ void fadaptiverollsumFast(double *x, uint64_t nx, ans_t *ans, int *k, double fil
 }
 void fadaptiverollsumExact(double *x, uint64_t nx, ans_t *ans, int *k, double fill, bool narm, int hasna, bool verbose) {
   if (verbose)
-    snprintf(end(ans->message[0]), 500, "%s: running in parallel for input length %llu, hasna %d, narm %d\n", __func__, (unsigned long long int)nx, hasna, (int) narm);
+    snprintf(end(ans->message[0]), 500, "fadaptiverollsumExact: running in parallel for input length %"PRIu64", hasna %d, narm %d\n", (uint64_t)nx, hasna, (int) narm);
   bool truehasna = hasna>0;
   if (!truehasna || !narm) {
     #pragma omp parallel for num_threads(getDTthreads())

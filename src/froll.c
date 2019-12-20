@@ -1,7 +1,3 @@
-#include <stdio.h>
-#include <stdint.h>
-#include <stdbool.h>
-#include <Rdefines.h>
 #include "data.table.h"
 
 /* fast rolling mean - router
@@ -49,7 +45,7 @@ void frollmean(unsigned int algo, double *x, uint64_t nx, ans_t *ans, int k, int
  */
 void frollmeanFast(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasna, bool verbose) {
   if (verbose)
-    snprintf(end(ans->message[0]), 500, "%s: running for input length %llu, window %d, hasna %d, narm %d\n", __func__, (unsigned long long int)nx, k, hasna, (int)narm);
+    snprintf(end(ans->message[0]), 500, "frollmeanFast: running for input length %"PRIu64", window %d, hasna %d, narm %d\n", (uint64_t)nx, k, hasna, (int)narm);
   long double w = 0.0;                                          // sliding window aggregate
   bool truehasna = hasna>0;                                     // flag to re-run with NA support if NAs detected
   if (!truehasna) {
@@ -138,7 +134,7 @@ void frollmeanFast(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool 
  */
 void frollmeanExact(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasna, bool verbose) {
   if (verbose)
-    snprintf(end(ans->message[0]), 500, "%s: running in parallel for input length %llu, window %d, hasna %d, narm %d\n", __func__, (unsigned long long int)nx, k, hasna, (int)narm);
+    snprintf(end(ans->message[0]), 500, "frollmeanExact: running in parallel for input length %"PRIu64", window %d, hasna %d, narm %d\n", (uint64_t)nx, k, hasna, (int)narm);
   for (int i=0; i<k-1; i++) {                                   // fill partial window only
     ans->dbl_v[i] = fill;
   }
@@ -252,7 +248,7 @@ void frollsum(unsigned int algo, double *x, uint64_t nx, ans_t *ans, int k, int 
 }
 void frollsumFast(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasna, bool verbose) {
   if (verbose)
-    snprintf(end(ans->message[0]), 500, "%s: running for input length %llu, window %d, hasna %d, narm %d\n", __func__, (unsigned long long int)nx, k, hasna, (int)narm);
+    snprintf(end(ans->message[0]), 500, "frollsumFast: running for input length %"PRIu64", window %d, hasna %d, narm %d\n", (uint64_t)nx, k, hasna, (int)narm);
   long double w = 0.0;
   bool truehasna = hasna>0;
   if (!truehasna) {
@@ -336,7 +332,7 @@ void frollsumFast(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool n
 }
 void frollsumExact(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasna, bool verbose) {
   if (verbose)
-    snprintf(end(ans->message[0]), 500, "%s: running in parallel for input length %llu, window %d, hasna %d, narm %d\n", __func__, (unsigned long long int)nx, k, hasna, (int)narm);
+    snprintf(end(ans->message[0]), 500, "frollsumExact: running in parallel for input length %"PRIu64", window %d, hasna %d, narm %d\n", (uint64_t)nx, k, hasna, (int)narm);
   for (int i=0; i<k-1; i++) {
     ans->dbl_v[i] = fill;
   }

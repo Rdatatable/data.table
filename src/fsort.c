@@ -124,7 +124,7 @@ SEXP fsort(SEXP x, SEXP verboseArg) {
   size_t batchSize = (xlength(x)-1)/nBatch + 1;
   if (batchSize < 1024) batchSize = 1024; // simple attempt to work reasonably for short vector. 1024*8 = 2 4kb pages
   nBatch = (xlength(x)-1)/batchSize + 1;
-  R_xlen_t lastBatchSize = xlength(x) - (nBatch-1)*batchSize;
+  size_t lastBatchSize = xlength(x) - (nBatch-1)*batchSize;
   // could be that lastBatchSize == batchSize when i) xlength(x) is multiple of nBatch
   // and ii) for small vectors with just one batch
 
@@ -174,9 +174,10 @@ SEXP fsort(SEXP x, SEXP verboseArg) {
   // provided MSBsize>=9, each batch is a multiple of at least one 4k page, so no page overlap
   // TODO: change all calloc, malloc and free to Calloc and Free to be robust to error() and catch ooms.
 
-  if (verbose) Rprintf("counts is %dMB (%d pages per nBatch=%d, batchSize=%lld, lastBatchSize=%lld)\n",
-                       nBatch*MSBsize*sizeof(R_xlen_t)/(1024*1024), nBatch*MSBsize*sizeof(R_xlen_t)/(4*1024*nBatch),
-                       nBatch, batchSize, lastBatchSize);
+  if (verbose) Rprintf("counts is %dMB (%d pages per nBatch=%d, batchSize=%"PRIu64", lastBatchSize=%"PRIu64")\n",
+                       (int)(nBatch*MSBsize*sizeof(R_xlen_t)/(1024*1024)),
+                       (int)(nBatch*MSBsize*sizeof(R_xlen_t)/(4*1024*nBatch)),
+                       nBatch, (uint64_t)batchSize, (uint64_t)lastBatchSize);
   t[3] = wallclock();
   #pragma omp parallel for num_threads(nth)
   for (int batch=0; batch<nBatch; batch++) {
@@ -243,7 +244,7 @@ SEXP fsort(SEXP x, SEXP verboseArg) {
     // TODO: time this qsort but likely insignificant.
 
     if (verbose) {
-      Rprintf("Top 5 MSB counts: "); for(int i=0; i<5; i++) Rprintf("%lld ", msbCounts[order[i]]); Rprintf("\n");
+      Rprintf("Top 5 MSB counts: "); for(int i=0; i<5; i++) Rprintf("%"PRId64" ", (int64_t)msbCounts[order[i]]); Rprintf("\n");
       Rprintf("Reduced MSBsize from %d to ", MSBsize);
     }
     while (MSBsize>0 && msbCounts[order[MSBsize-1]] < 2) MSBsize--;
