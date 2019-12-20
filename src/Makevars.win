@@ -1,0 +1,5 @@
+PKG_CFLAGS = $(SHLIB_OPENMP_CFLAGS)
+PKG_LIBS = $(SHLIB_OPENMP_CFLAGS) -lz
+
+all: $(SHLIB)
+	mv $(SHLIB) datatable$(SHLIB_EXT)
