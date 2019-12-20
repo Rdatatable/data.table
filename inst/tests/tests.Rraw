@@ -75,6 +75,8 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
   melt = data.table::melt               # reshape2
   last = data.table::last               # xts
   first = data.table::first             # xts, S4Vectors
+  transpose = data.table::transpose     # Rfast
+  
 }
 
 # Load optional Suggests packages, which are tested by Travis for code coverage, and on CRAN
@@ -85,6 +87,7 @@ sugg = c(
   "nanotime",       # fwrite looks for the 'nanotime' class name at C level (but we have our own writer in C, though)
   "R.utils",        # for fread to accept .gz and .bz2 files directly
   "yaml"            # for fread's yaml argument (csvy capability)
+  # Rfast           # for as.matrix's fast conversion with Rfast::data.frame.to_matrix
   # zoo             # In DESCRIPTION:Suggests otherwise R CMD check warning: '::' or ':::' import not declared from: 'zoo'; it is tested in other.Rraw though
 )
 for (s in sugg) {
@@ -16682,3 +16685,4 @@ test(2129, rbind(A,B)$c3, expression(as.character(Sys.time()), as.character(Sys.
 ########################
 #  Add new tests here  #
 ########################
+

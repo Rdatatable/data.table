@@ -1841,7 +1841,7 @@ replace_dot_alias = function(e) {
 #    x
 #}
 
-as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
+as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, Rfast=FALSE, ...) {
   # rownames = the rownames column (most common usage)
   if (!is.null(rownames)) {
     if (!is.null(rownames.value)) stop("rownames and rownames.value cannot both be used at the same time")
@@ -1897,6 +1897,16 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
   }
   if (any(dm == 0L))
     return(array(NA, dim = dm, dimnames = list(rownames.value, cn)))
+  if (isTRUE(Rfast) && requireNamespace("Rfast", quietly=TRUE)) { # much faster conversion
+    if (length(unique(sapply(X, class))) > 1) {
+      # TODO must manually cast columns to a common type
+    } else {
+      X <- Rfast::data.frame.to_matrix(X, col.names=TRUE, row.names=TRUE)
+      if (length(rownames.value) == 0)
+        rownames(X) <- NULL
+      return(X)
+    }
+  }
   p = dm[2L]
   n = dm[1L]
   collabs = as.list(cn)

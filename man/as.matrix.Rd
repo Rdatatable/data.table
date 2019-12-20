@@ -7,7 +7,7 @@ Converts a \code{data.table} into a \code{matrix}, optionally using one
 of the columns in the \code{data.table} as the \code{matrix} \code{rownames}.
 }
 \usage{
-\method{as.matrix}{data.table}(x, rownames=NULL, rownames.value=NULL, \dots)}
+\method{as.matrix}{data.table}(x, rownames=NULL, rownames.value=NULL, Rfast=FALSE, \dots)}
 
 \arguments{
 
@@ -22,6 +22,9 @@ be used.}
 \item{rownames.value}{optional, a vector of values to be used as the
 \code{rownames} in the returned \code{matrix}. It must be the same length
 as \code{nrow(x)}.}
+
+\item{Rfast}{logical; if \code{TRUE}, use the \code{\link[Rfast]{data.frame.to_matrix}} 
+function in the \code{Rfast} package to convert to the \code{matrix}}
 
 \item{\dots}{ Required to be present because the generic `as.matrix` generic has it. Arguments here are not currently used or passed on by this method. }
 
