@@ -19,11 +19,11 @@ const char *getString(SEXP *col, int64_t row) {   // TODO: inline for use in fwr
   return x==NA_STRING ? NULL : CHAR(x);
 }
 
-const int getStringLen(SEXP *col, int64_t row) {
+int getStringLen(SEXP *col, int64_t row) {
   return LENGTH(col[row]);  // LENGTH of CHARSXP is nchar
 }
 
-const int getMaxStringLen(const SEXP *col, const int64_t n) {
+int getMaxStringLen(const SEXP *col, const int64_t n) {
   int max=0;
   SEXP last=NULL;
   for (int i=0; i<n; ++i) {
@@ -36,7 +36,7 @@ const int getMaxStringLen(const SEXP *col, const int64_t n) {
   return max;
 }
 
-const int getMaxCategLen(SEXP col) {
+int getMaxCategLen(SEXP col) {
   col = getAttrib(col, R_LevelsSymbol);
   if (!isString(col)) error("Internal error: col passed to getMaxCategLen is missing levels");
   return getMaxStringLen( STRING_PTR(col), LENGTH(col) );
@@ -87,7 +87,7 @@ void writeList(SEXP *col, int64_t row, char **pch) {
   *pch = ch;
 }
 
-const int getMaxListItemLen(const SEXP *col, const int64_t n) {
+int getMaxListItemLen(const SEXP *col, const int64_t n) {
   int max=0;
   SEXP last=NULL;
   for (int i=0; i<n; ++i) {
@@ -156,6 +156,7 @@ SEXP fwriteR(
   SEXP rowNames_Arg,       // TRUE|FALSE
   SEXP colNames_Arg,       // TRUE|FALSE
   SEXP logical01_Arg,      // TRUE|FALSE
+  SEXP scipen_Arg,
   SEXP dateTimeAs_Arg,     // 0=ISO(yyyy-mm-dd),1=squash(yyyymmdd),2=epoch,3=write.csv
   SEXP buffMB_Arg,         // [1-1024] default 8MB
   SEXP nThread_Arg,
@@ -224,6 +225,7 @@ SEXP fwriteR(
   // when called later for cell items of list columns (if any)
   dateTimeAs = INTEGER(dateTimeAs_Arg)[0];
   logical01 = LOGICAL(logical01_Arg)[0];
+  args.scipen = INTEGER(scipen_Arg)[0];
 
   int firstListColumn = 0;
   for (int j=0; j<args.ncol; j++) {

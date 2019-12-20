@@ -32,6 +32,53 @@ SEXP isReallyReal(SEXP x) {
   return(ans);
 }
 
+bool allNA(SEXP x, bool errorForBadType) {
+  // less space and time than all(is.na(x)) at R level because that creates full size is.na(x) first before all()
+  // whereas this allNA can often return early on testing the first value without reading the rest
+  const int n = length(x);
+  if (n==0) // empty vectors (including raw(), NULL, and list()) same as R's all(is.na()) true result; tests 2116.*
+    return true;
+  switch (TYPEOF(x)) {
+  case RAWSXP: // raw doesn't support NA so always false (other than length 0 case above)
+    return false;
+  case LGLSXP:
+  case INTSXP: {
+    const int *xd = INTEGER(x);
+    for (int i=0; i<n; ++i)    if (xd[i]!=NA_INTEGER) {
+      return false;
+    }
+    return true;
+  }
+  case REALSXP:
+    if (Rinherits(x,char_integer64)) {
+      const int64_t *xd = (int64_t *)REAL(x);
+      for (int i=0; i<n; ++i)  if (xd[i]!=NA_INTEGER64) {
+        return false;
+      }
+    } else {
+      const double *xd = REAL(x);
+      for (int i=0; i<n; ++i)  if (!ISNAN(xd[i])) {
+        return false;
+      }
+    }
+    return true;
+  case STRSXP: {
+    const SEXP *xd = STRING_PTR(x);
+    for (int i=0; i<n; ++i)    if (xd[i]!=NA_STRING) {
+      return false;
+    }
+    return true;
+  }}
+  if (!errorForBadType) return false;
+  error("Unsupported type '%s' passed to allNA()", type2char(TYPEOF(x)));  // e.g. VECSXP; tests 2116.16-18
+  // turned off allNA list support for now to avoid accidentally using it internally where we did not intend; allNA not yet exported
+  //   https://github.com/Rdatatable/data.table/pull/3909#discussion_r329065950
+}
+
+SEXP allNAR(SEXP x) {
+  return ScalarLogical(allNA(x, /*errorForBadType=*/true));
+}
+
 /* colnamesInt
  * for provided data.table (or a list-like) and a subset of its columns, it returns integer positions of those columns in DT
  * handle columns input as: integer, double, character and NULL (handled as seq_along(x))
@@ -98,22 +145,24 @@ void coerceFill(SEXP fill, double *dfill, int32_t *ifill, int64_t *i64fill) {
       i64fill[0] = (int64_t)(INTEGER(fill)[0]);
     }
   } else if (isReal(fill)) {
-    if (INHERITS(fill,char_integer64) || INHERITS(fill,char_nanotime)) {
-      long long *llfill = (long long *)REAL(fill);
-      if (llfill[0]==NA_INT64_LL) {
+    if (Rinherits(fill,char_integer64)) {  // Rinherits true for nanotime
+      int64_t rfill = ((int64_t *)REAL(fill))[0];
+      if (rfill==NA_INTEGER64) {
         ifill[0] = NA_INTEGER; dfill[0] = NA_REAL; i64fill[0] = NA_INTEGER64;
       } else {
-        ifill[0] = llfill[0]>INT32_MAX ? NA_INTEGER : (int32_t)(llfill[0]);
-        dfill[0] = (double)(llfill[0]);
-        i64fill[0] = (int64_t)(llfill[0]);
+        ifill[0] = (rfill>INT32_MAX || rfill<=INT32_MIN) ? NA_INTEGER : (int32_t)rfill;
+        dfill[0] = (double)rfill;
+        i64fill[0] = rfill;
       }
     } else {
-      if (ISNA(REAL(fill)[0])) {
-        ifill[0] = NA_INTEGER; dfill[0] = NA_REAL; i64fill[0] = NA_INTEGER64;
+      double rfill = REAL(fill)[0];
+      if (ISNAN(rfill)) {
+        // NA -> NA, NaN -> NaN
+        ifill[0] = NA_INTEGER; dfill[0] = rfill; i64fill[0] = NA_INTEGER64;
       } else {
-        ifill[0] = (int32_t)(REAL(fill)[0]);
-        dfill[0] = REAL(fill)[0];
-        i64fill[0] = (int64_t)(REAL(fill)[0]);
+        ifill[0] = (!R_FINITE(rfill) || rfill>INT32_MAX || rfill<=INT32_MIN) ? NA_INTEGER : (int32_t)rfill;
+        dfill[0] = rfill;
+        i64fill[0] = (!R_FINITE(rfill) || rfill>(double)INT64_MAX || rfill<=(double)INT64_MIN) ? NA_INTEGER64 : (int64_t)rfill;
       }
     }
   } else if (isLogical(fill) && LOGICAL(fill)[0]==NA_LOGICAL) {
@@ -134,8 +183,7 @@ SEXP coerceFillR(SEXP fill) {
   SET_VECTOR_ELT(ans, 2, allocVector(REALSXP, 1));
   INTEGER(VECTOR_ELT(ans, 0))[0] = ifill;
   REAL(VECTOR_ELT(ans, 1))[0] = dfill;
-  long long *ll = (long long *)REAL(VECTOR_ELT(ans, 2));
-  ll[0] = i64fill;
+  ((int64_t *)REAL(VECTOR_ELT(ans, 2)))[0] = i64fill;
   setAttrib(VECTOR_ELT(ans, 2), R_ClassSymbol, ScalarString(char_integer64));
   UNPROTECT(protecti);
   return ans;
@@ -160,17 +208,22 @@ inline bool INHERITS(SEXP x, SEXP char_) {
 }
 
 bool Rinherits(SEXP x, SEXP char_) {
- // motivation was nanotime which is S4 and inherits from integer64 via S3 extends
- // R's C API inherits() does not cover S4 and returns FALSE for nanotime, as does our own INHERITS above.
- // R's R-level inherits() calls objects.c:inherits2 which calls attrib.c:R_data_class2 and
- // then attrib.c:S4_extends which itself calls R level methods:::.extendsForS3 which then calls R level methods::extends.
- // Since that chain of calls is so complicated and involves evaluating R level anyway, let's just reuse it.
- // Rinherits prefix with 'R' to signify i) it calls R level and is not thread safe, and ii) is the R level inherits which covers S4.
- SEXP vec = PROTECT(ScalarString(char_));
- SEXP call = PROTECT(lang3(sym_inherits, x, vec));
- bool ans = LOGICAL(eval(call, R_GlobalEnv))[0]==1;
- UNPROTECT(2);
- return ans;
+  // motivation was nanotime which is S4 and inherits from integer64 via S3 extends
+  // R's C API inherits() does not cover S4 and returns FALSE for nanotime, as does our own INHERITS above.
+  // R's R-level inherits() calls objects.c:inherits2 which calls attrib.c:R_data_class2 and
+  // then attrib.c:S4_extends which itself calls R level methods:::.extendsForS3 which then calls R level methods::extends.
+  // Since that chain of calls is so complicated and involves evaluating R level anyway, let's just reuse it.
+  // Rinherits prefix with 'R' to signify i) it may call R level and is therefore not thread safe, and ii) includes R level inherits which covers S4.
+  bool ans = INHERITS(x, char_);        // try standard S3 class character vector first
+  if (!ans && char_==char_integer64)    // save the eval() for known S4 classes that inherit from integer64
+    ans = INHERITS(x, char_nanotime);   // comment this out to test the eval() works for nanotime
+  if (!ans && IS_S4_OBJECT(x)) {        // if it's not S4 we can save the overhead of R eval()
+    SEXP vec = PROTECT(ScalarString(char_));           // TODO: cover this branch by making two new test S4 classes: one that
+    SEXP call = PROTECT(lang3(sym_inherits, x, vec));  //       does inherit from integer64 and one that doesn't
+    ans = LOGICAL(eval(call, R_GlobalEnv))[0]==1;
+    UNPROTECT(2);
+  }
+  return ans;
 }
 
 SEXP copyAsPlain(SEXP x) {
@@ -280,3 +333,25 @@ SEXP islockedR(SEXP DT) {
   return ScalarLogical(islocked(DT));
 }
 
+bool need2utf8(SEXP x) {
+  const int xlen = length(x);
+  SEXP *xd = STRING_PTR(x);
+  for (int i=0; i<xlen; i++) {
+    if (NEED2UTF8(xd[i]))
+      return(true);
+  }
+  return(false);
+}
+
+SEXP coerceUtf8IfNeeded(SEXP x) {
+  if (!need2utf8(x))
+    return(x);
+  const int xlen = length(x);
+  SEXP ans = PROTECT(allocVector(STRSXP, xlen));
+  SEXP *xd = STRING_PTR(x);
+  for (int i=0; i<xlen; i++) {
+    SET_STRING_ELT(ans, i, ENC2UTF8(xd[i]));
+  }
+  UNPROTECT(1);
+  return(ans);
+}

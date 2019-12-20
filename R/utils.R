@@ -12,6 +12,14 @@ if (base::getRversion() < "3.5.0") {
 }
 isTRUEorNA    = function(x) is.logical(x) && length(x)==1L && (is.na(x) || x)
 isTRUEorFALSE = function(x) is.logical(x) && length(x)==1L && !is.na(x)
+allNA = function(x) .Call(C_allNAR, x)
+# helper for nan argument (e.g. nafill): TRUE -> treat NaN as NA
+nan_is_na = function(x) {
+  if (length(x) != 1L) stop("Argument 'nan' must be length 1")
+  if (identical(x, NA) || identical(x, NA_real_)) return(TRUE)
+  if (identical(x, NaN)) return(FALSE)
+  stop("Argument 'nan' must be NA or NaN")
+}
 
 if (base::getRversion() < "3.2.0") {  # Apr 2015
   isNamespaceLoaded = function(x) x %chin% loadedNamespaces()
@@ -74,19 +82,25 @@ name_dots = function(...) {
   } else {
     vnames[is.na(vnames)] = ""
   }
-  for (i in which(vnames=="")) {
-    if ((tmp <- deparse(dot_sub[[i]])[1L]) == make.names(tmp))
-      vnames[i] = tmp
+  notnamed = vnames==""
+  if (any(notnamed)) {
+    syms = sapply(dot_sub, is.symbol)  # save the deparse() in most cases of plain symbol
+    for (i in which(notnamed)) {
+      tmp = if (syms[i]) as.character(dot_sub[[i]]) else deparse(dot_sub[[i]])[1L]
+      if (tmp == make.names(tmp)) vnames[i]=tmp
+    }
   }
-  if (length(w<-which(vnames==""))) vnames[w] = paste0("V", w)
-  vnames
+  list(vnames=vnames, .named=!notnamed)
 }
 
 # convert a vector like c(1, 4, 3, 2) into a string like [1, 4, 3, 2]
 #   (common aggregation method for error messages)
-brackify = function(x) {
-  # arbitrary cutoff
-  if (length(x) > 10L) x = c(x[1:10], '...')
+brackify = function(x, quote=FALSE) {
+  # arbitrary
+  CUTOFF = 10L
+  # keep one more than needed to trigger dots if needed
+  if (quote && is.character(x)) x = paste0("'",head(x,CUTOFF+1L),"'")
+  if (length(x) > CUTOFF) x = c(x[1:CUTOFF], '...')
   sprintf('[%s]', paste(x, collapse = ', '))
 }
 
@@ -108,6 +122,14 @@ do_patterns = function(pat_sub, all_cols) {
          paste(pats[idx], collapse = ', '), ']')
 
   return(matched)
+}
+
+# check UTC status
+is_utc = function(tz) {
+  # via grep('UTC|GMT', OlsonNames(), value = TRUE); ordered by "prior" frequency
+  utc_tz = c("UTC", "GMT", "Etc/UTC", "Etc/GMT", "GMT-0", "GMT+0", "GMT0")
+  if (is.null(tz)) tz = Sys.timezone()
+  return(tz %chin% utc_tz)
 }
 
 # nocov start #593 always return a data.table

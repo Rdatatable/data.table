@@ -1,5 +1,5 @@
 # is x[i] in between lower[i] and upper[i] ?
-between = function(x, lower, upper, incbounds=TRUE, NAbounds=TRUE) {
+between = function(x, lower, upper, incbounds=TRUE, NAbounds=TRUE, check=FALSE) {
   if (is.logical(x)) stop("between has been x of type logical")
   if (is.logical(lower)) lower = as.integer(lower)   # typically NA (which is logical type)
   if (is.logical(upper)) upper = as.integer(upper)   # typically NA (which is logical type)
@@ -17,12 +17,19 @@ between = function(x, lower, upper, incbounds=TRUE, NAbounds=TRUE) {
   }
   # POSIX check timezone match
   if (is.px(x) && is.px(lower) && is.px(upper)) {
-    tz_match = function(x, y, z) { # NULL match "", else all identical
-      ((is.null(x) || !nzchar(x)) && (is.null(y) || !nzchar(y)) && (is.null(z) || !nzchar(z))) ||
-        (identical(x, y) && identical(x, z))
+    tzs = sapply(list(x,lower,upper), function(x) {
+      tt = attr(x,"tzone",exact=TRUE)
+      if (is.null(tt)) "" else tt
+    })
+    # lower/upper should be more tightly linked than x/lower, so error
+    #   if the former don't match but only inform if they latter don't
+    if (tzs[2L]!=tzs[3L]) {
+      stop("'between' lower= and upper= are both POSIXct but have different tzone attributes: ", brackify(tzs[2:3],quote=TRUE), ". Please align their time zones.")
+      # otherwise the check in between.c that lower<=upper can (correctly) fail for this reason
     }
-    if (!tz_match(attr(x, "tzone", exact=TRUE), attr(lower, "tzone", exact=TRUE), attr(upper, "tzone", exact=TRUE))) {
-      stop("'between' function arguments have mismatched timezone attribute, align all arguments to same timezone")
+    if (tzs[1L]!=tzs[2L]) {
+      message("'between' arguments are all POSIXct but have mismatched tzone attributes: ", brackify(tzs,quote=TRUE),". The UTC times will be compared.")
+      # the underlying numeric is always UTC anyway in POSIXct so no coerce is needed; just compare as-is. As done by CoSMoS::example(analyzeTS), #3581
     }
   }
   if (is.i64(x)) {
@@ -35,10 +42,11 @@ between = function(x, lower, upper, incbounds=TRUE, NAbounds=TRUE) {
     # faster parallelised version for int/double/character
     # Cbetween supports length(lower)==1 (recycled) and (from v1.12.0) length(lower)==length(x).
     # length(upper) can be 1 or length(x) independently of lower
-    .Call(Cbetween, x, lower, upper, incbounds, NAbounds)
+    .Call(Cbetween, x, lower, upper, incbounds, NAbounds, check)
   } else {
     if (isTRUE(getOption("datatable.verbose"))) cat("optimised between not available for this data type, fallback to slow R routine\n")
     if (isTRUE(NAbounds) && (anyNA(lower) || anyNA(upper))) stop("Not yet implemented NAbounds=TRUE for this non-numeric and non-character type")
+    if (check && any(lower>upper, na.rm=TRUE)) stop("Some lower>upper for this non-numeric and non-character type")
     if (incbounds) x>=lower & x<=upper
     else x>lower & x<upper
   }

@@ -1,16 +1,11 @@
-#include "frollR.h"
+#include <Rdefines.h>
+#include "data.table.h"
 
-SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEXP narm, SEXP hasna, SEXP adaptive, SEXP verbose) {
+SEXP coerceToRealListR(SEXP obj) {
+  // accept atomic/list of integer/logical/real returns list of real
   int protecti = 0;
-  if (!isLogical(verbose) || length(verbose)!=1 || LOGICAL(verbose)[0]==NA_LOGICAL)
-    error("verbose must be TRUE or FALSE");
-  bool bverbose = LOGICAL(verbose)[0];
-
-  if (!xlength(obj)) return(obj);                               // empty input: NULL, list()
-  double tic = 0;
-  if (bverbose) tic = omp_get_wtime();
-  SEXP x;                                                       // holds input data as list
-  if (isVectorAtomic(obj)) {                                    // wrap atomic vector into list
+  SEXP x = R_NilValue;
+  if (isVectorAtomic(obj)) {
     x = PROTECT(allocVector(VECSXP, 1)); protecti++;
     if (isReal(obj)) {
       SET_VECTOR_ELT(x, 0, obj);
@@ -20,18 +15,32 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
       error("x must be of type numeric or logical");
     }
   } else {
-    R_len_t nobj=length(obj);
+    R_len_t nobj = length(obj);
     x = PROTECT(allocVector(VECSXP, nobj)); protecti++;
     for (R_len_t i=0; i<nobj; i++) {
       if (isReal(VECTOR_ELT(obj, i))) {
         SET_VECTOR_ELT(x, i, VECTOR_ELT(obj, i));
-      } else if (isInteger(VECTOR_ELT(obj, i)) || isLogical(VECTOR_ELT(obj, i))) { // coerce integer and logical types to double
+      } else if (isInteger(VECTOR_ELT(obj, i)) || isLogical(VECTOR_ELT(obj, i))) {
         SET_VECTOR_ELT(x, i, coerceVector(VECTOR_ELT(obj, i), REALSXP));
       } else {
         error("x must be list, data.frame or data.table of numeric or logical types");
       }
     }
   }
+  UNPROTECT(protecti);
+  return x;
+}
+
+SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEXP narm, SEXP hasna, SEXP adaptive) {
+  int protecti = 0;
+  const bool verbose = GetVerbose();
+
+  if (!xlength(obj))
+    return(obj);                                                // empty input: NULL, list()
+  double tic = 0;
+  if (verbose)
+    tic = omp_get_wtime();
+  SEXP x = PROTECT(coerceToRealListR(obj)); protecti++;
   R_len_t nx=length(x);                                         // number of columns to roll on
 
   if (xlength(k) == 0)                                          // check that window is non zero length
@@ -87,10 +96,11 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
     }
   }
   int* ikl[nk];                                                 // pointers to adaptive window width
-  if (badaptive)
+  if (badaptive) {
     for (int j=0; j<nk; j++) ikl[j] = INTEGER(VECTOR_ELT(kl, j));
+  }
 
-  if (!isLogical(narm) || length(narm)!=1 || LOGICAL(narm)[0]==NA_LOGICAL)
+  if (!IS_TRUE_OR_FALSE(narm))
     error("na.rm must be TRUE or FALSE");
 
   if (!isLogical(hasna) || length(hasna)!=1)
@@ -99,21 +109,24 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
     error("using hasNA FALSE and na.rm TRUE does not make sense, if you know there are NA values use hasNA TRUE, otherwise leave it as default NA");
 
   int ialign;                                                   // decode align to integer
-  if (!strcmp(CHAR(STRING_ELT(align, 0)), "right")) ialign = 1;
-  else if (!strcmp(CHAR(STRING_ELT(align, 0)), "center")) ialign = 0;
-  else if (!strcmp(CHAR(STRING_ELT(align, 0)), "left")) ialign = -1;
-  else error("Internal error: invalid align argument in rolling function, should have been caught before. please report to data.table issue tracker."); // # nocov
+  if (!strcmp(CHAR(STRING_ELT(align, 0)), "right"))
+    ialign = 1;
+  else if (!strcmp(CHAR(STRING_ELT(align, 0)), "center"))
+    ialign = 0;
+  else if (!strcmp(CHAR(STRING_ELT(align, 0)), "left"))
+    ialign = -1;
+  else
+    error("Internal error: invalid align argument in rolling function, should have been caught before. please report to data.table issue tracker."); // # nocov
 
   if (badaptive && ialign!=1)
     error("using adaptive TRUE and align argument different than 'right' is not implemented");
 
-  SEXP ans;
-  ans = PROTECT(allocVector(VECSXP, nk * nx)); protecti++;      // allocate list to keep results
-  ans_t *dans = malloc(sizeof(ans_t)*nx*nk);      // answer columns as array of double_ans_t struct
-  if (!dans) error("%s: Unable to allocate memory answer", __func__); // # nocov
+  SEXP ans = PROTECT(allocVector(VECSXP, nk * nx)); protecti++; // allocate list to keep results
+  if (verbose)
+    Rprintf("%s: allocating memory for results %dx%d\n", __func__, nx, nk);
+  ans_t *dans = (ans_t *)R_alloc(nx*nk, sizeof(ans_t));         // answer columns as array of ans_t struct
   double* dx[nx];                                               // pointers to source columns
-  uint_fast64_t inx[nx];                                        // to not recalculate `length(x[[i]])` we store it in extra array
-  if (bverbose) Rprintf("%s: allocating memory for results %dx%d\n", __func__, nx, nk);
+  uint64_t inx[nx];                                             // to not recalculate `length(x[[i]])` we store it in extra array
   for (R_len_t i=0; i<nx; i++) {
     inx[i] = xlength(VECTOR_ELT(x, i));                         // for list input each vector can have different length
     for (R_len_t j=0; j<nk; j++) {
@@ -130,9 +143,13 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
   }
 
   enum {MEAN, SUM} sfun;
-  if (!strcmp(CHAR(STRING_ELT(fun, 0)), "mean")) sfun = MEAN;
-  else if (!strcmp(CHAR(STRING_ELT(fun, 0)), "sum")) sfun = SUM;
-  else error("Internal error: invalid fun argument in rolling function, should have been caught before. please report to data.table issue tracker."); // # nocov
+  if (!strcmp(CHAR(STRING_ELT(fun, 0)), "mean")) {
+    sfun = MEAN;
+  } else if (!strcmp(CHAR(STRING_ELT(fun, 0)), "sum")) {
+    sfun = SUM;
+  } else {
+    error("Internal error: invalid fun argument in rolling function, should have been caught before. please report to data.table issue tracker."); // # nocov
+  }
 
   if (length(fill) != 1)
     error("fill must be a vector of length 1");
@@ -160,49 +177,156 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
     -1;                                                         // hasna FALSE, there should be no NAs
 
   unsigned int ialgo;                                           // decode algo to integer
-  if (!strcmp(CHAR(STRING_ELT(algo, 0)), "fast")) ialgo = 0;    // fast = 0
-  else if (!strcmp(CHAR(STRING_ELT(algo, 0)), "exact")) ialgo = 1; // exact = 1
-  else error("Internal error: invalid algo argument in rolling function, should have been caught before. please report to data.table issue tracker."); // # nocov
+  if (!strcmp(CHAR(STRING_ELT(algo, 0)), "fast"))
+    ialgo = 0;                                                  // fast = 0
+  else if (!strcmp(CHAR(STRING_ELT(algo, 0)), "exact"))
+    ialgo = 1;                                                  // exact = 1
+  else
+    error("Internal error: invalid algo argument in rolling function, should have been caught before. please report to data.table issue tracker."); // # nocov
 
   int* iik = NULL;
   if (!badaptive) {
-    if (!isInteger(ik)) error("Internal error: badaptive=%d but ik is not integer", badaptive);    // # nocov
+    if (!isInteger(ik))
+      error("Internal error: badaptive=%d but ik is not integer", badaptive); // # nocov
     iik = INTEGER(ik);                                          // pointer to non-adaptive window width, still can be vector when doing multiple windows
   } else {
     // ik is still R_NilValue from initialization. But that's ok as it's only needed below when !badaptive.
   }
 
-  if (bverbose) {
-    if (ialgo==0) Rprintf("%s: %d column(s) and %d window(s), if product > 1 then entering parallel execution\n", __func__, nx, nk);
-    else if (ialgo==1) Rprintf("%s: %d column(s) and %d window(s), not entering parallel execution here because algo='exact' will compute results in parallel\n", __func__, nx, nk);
+  if (verbose) {
+    if (ialgo==0)
+      Rprintf("%s: %d column(s) and %d window(s), if product > 1 then entering parallel execution\n", __func__, nx, nk);
+    else if (ialgo==1)
+      Rprintf("%s: %d column(s) and %d window(s), not entering parallel execution here because algo='exact' will compute results in parallel\n", __func__, nx, nk);
   }
   #pragma omp parallel for if (ialgo==0 && nx*nk>1) schedule(auto) collapse(2) num_threads(getDTthreads())
-  for (R_len_t i=0; i<nx; i++) {                            // loop over multiple columns
-    for (R_len_t j=0; j<nk; j++) {                          // loop over multiple windows
+  for (R_len_t i=0; i<nx; i++) {                                // loop over multiple columns
+    for (R_len_t j=0; j<nk; j++) {                              // loop over multiple windows
       switch (sfun) {
       case MEAN :
-        if (!badaptive) frollmean(ialgo, dx[i], inx[i], &dans[i*nk+j], iik[j], ialign, dfill, bnarm, ihasna, bverbose);
-        else fadaptiverollmean(ialgo, dx[i], inx[i], &dans[i*nk+j], ikl[j], dfill, bnarm, ihasna, bverbose);
+        if (!badaptive)
+          frollmean(ialgo, dx[i], inx[i], &dans[i*nk+j], iik[j], ialign, dfill, bnarm, ihasna, verbose);
+        else
+          fadaptiverollmean(ialgo, dx[i], inx[i], &dans[i*nk+j], ikl[j], dfill, bnarm, ihasna, verbose);
         break;
       case SUM :
-        if (!badaptive) frollsum(ialgo, dx[i], inx[i], &dans[i*nk+j], iik[j], ialign, dfill, bnarm, ihasna, bverbose);
-        else fadaptiverollsum(ialgo, dx[i], inx[i], &dans[i*nk+j], ikl[j], dfill, bnarm, ihasna, bverbose);
+        if (!badaptive)
+          frollsum(ialgo, dx[i], inx[i], &dans[i*nk+j], iik[j], ialign, dfill, bnarm, ihasna, verbose);
+        else
+          fadaptiverollsum(ialgo, dx[i], inx[i], &dans[i*nk+j], ikl[j], dfill, bnarm, ihasna, verbose);
         break;
-      default: error("Internal error: Unknown sfun value in froll: %d", sfun); // #nocov
+      default:
+        error("Internal error: Unknown sfun value in froll: %d", sfun); // #nocov
       }
     }
   }
 
-  for (R_len_t i=0; i<nx; i++) {                                // raise errors and warnings, as of now messages are not being produced
-    for (R_len_t j=0; j<nk; j++) {
-      if (bverbose && (dans[i*nk+j].message[0][0] != '\0')) Rprintf("%s: %d:\n%s", __func__, i*nk+j+1, dans[i*nk+j].message[0]);
-      if (dans[i*nk+j].message[1][0] != '\0') REprintf("%s: %d:\n%s", __func__, i*nk+j+1, dans[i*nk+j].message[1]); // # nocov because no messages yet // change REprintf according to comments in #3483 when ready
-      if (dans[i*nk+j].message[2][0] != '\0') warning("%s: %d:\n%s", __func__, i*nk+j+1, dans[i*nk+j].message[2]);
-      if (dans[i*nk+j].status == 3) error("%s: %d: %s", __func__, i*nk+j+1, dans[i*nk+j].message[3]); // # nocov because only caused by malloc
+  ansMsg(dans, nx*nk, verbose, __func__);                       // raise errors and warnings, as of now messages are not being produced
+
+  if (verbose)
+    Rprintf("%s: processing of %d column(s) and %d window(s) took %.3fs\n", __func__, nx, nk, omp_get_wtime()-tic);
+
+  UNPROTECT(protecti);
+  return isVectorAtomic(obj) && length(ans) == 1 ? VECTOR_ELT(ans, 0) : ans;
+}
+
+SEXP frollapplyR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP align, SEXP rho) {
+  int protecti = 0;
+  const bool verbose = GetVerbose();
+
+  if (!isFunction(fun))
+    error("internal error: 'fun' must be a function"); // # nocov
+  if (!isEnvironment(rho))
+    error("internal error: 'rho' should be an environment"); // # nocov
+
+  if (!xlength(obj))
+    return(obj);
+  double tic = 0;
+  if (verbose)
+    tic = omp_get_wtime();
+  SEXP x = PROTECT(coerceToRealListR(obj)); protecti++;
+  R_len_t nx = length(x);
+
+  if (!isInteger(k)) {
+    if (isReal(k)) {
+      if (isRealReallyInt(k)) {
+        SEXP ik = PROTECT(coerceVector(k, INTSXP)); protecti++;
+        k = ik;
+      } else {
+        error("n must be integer");
+      }
+    } else {
+      error("n must be integer");
     }
   }
+  R_len_t nk = length(k);
+  if (nk == 0)
+    error("n must be non 0 length");
+  int *ik = INTEGER(k);
 
-  if (bverbose) Rprintf("%s: processing of %d column(s) and %d window(s) took %.3fs\n", __func__, nx, nk, omp_get_wtime()-tic);
+  int ialign;
+  if (!strcmp(CHAR(STRING_ELT(align, 0)), "right")) {
+    ialign = 1;
+  } else if (!strcmp(CHAR(STRING_ELT(align, 0)), "center")) {
+    ialign = 0;
+  } else if (!strcmp(CHAR(STRING_ELT(align, 0)), "left")) {
+    ialign = -1;
+  } else {
+    error("Internal error: invalid align argument in rolling function, should have been caught before. please report to data.table issue tracker."); // # nocov
+  }
+
+  if (length(fill) != 1)
+    error("fill must be a vector of length 1");
+  double dfill;
+  if (isInteger(fill)) {
+    if (INTEGER(fill)[0]==NA_LOGICAL) {
+      dfill = NA_REAL;
+    } else {
+      dfill = (double)INTEGER(fill)[0];
+    }
+  } else if (isReal(fill)) {
+    dfill = REAL(fill)[0];
+  } else if (isLogical(fill) && LOGICAL(fill)[0]==NA_LOGICAL){
+    dfill = NA_REAL;
+  } else {
+    error("fill must be numeric");
+  }
+
+  SEXP ans = PROTECT(allocVector(VECSXP, nk * nx)); protecti++;
+  if (verbose)
+    Rprintf("%s: allocating memory for results %dx%d\n", __func__, nx, nk);
+  ans_t *dans = (ans_t *)R_alloc(nx*nk, sizeof(ans_t));
+  double** dx = (double**)R_alloc(nx, sizeof(double*));
+  uint64_t* inx = (uint64_t*)R_alloc(nx, sizeof(uint64_t));
+  for (R_len_t i=0; i<nx; i++) {
+    inx[i] = xlength(VECTOR_ELT(x, i));
+    for (R_len_t j=0; j<nk; j++) {
+      SET_VECTOR_ELT(ans, i*nk+j, allocVector(REALSXP, inx[i]));
+      dans[i*nk+j] = ((ans_t) { .dbl_v=REAL(VECTOR_ELT(ans, i*nk+j)), .status=0, .message={"\0","\0","\0","\0"} });
+    }
+    dx[i] = REAL(VECTOR_ELT(x, i));
+  }
+
+  double* dw;
+  SEXP pw, pc;
+
+  // in the outer loop we handle vectorized k argument
+  // for each k we need to allocate a width window object: pw
+  // we also need to construct distinct R call pointing to that window
+  for (R_len_t j=0; j<nk; j++) {
+    pw = PROTECT(allocVector(REALSXP, ik[j]));
+    dw = REAL(pw);
+    pc = PROTECT(LCONS(fun, LCONS(pw, LCONS(R_DotsSymbol, R_NilValue))));
+
+    for (R_len_t i=0; i<nx; i++) {
+      frollapply(dx[i], inx[i], dw, ik[j], &dans[i*nk+j], ialign, dfill, pc, rho, verbose);
+    }
+
+    UNPROTECT(2);
+  }
+
+  if (verbose)
+    Rprintf("%s: processing of %d column(s) and %d window(s) took %.3fs\n", __func__, nx, nk, omp_get_wtime()-tic);
 
   UNPROTECT(protecti);
   return isVectorAtomic(obj) && length(ans) == 1 ? VECTOR_ELT(ans, 0) : ans;

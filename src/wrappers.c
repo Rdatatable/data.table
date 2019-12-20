@@ -22,11 +22,18 @@ SEXP setattrib(SEXP x, SEXP name, SEXP value)
     UNPROTECT(1);
     return(x);
   }
-  setAttrib(x, name,
-    MAYBE_REFERENCED(value) ? duplicate(value) : value);
+  if (isNull(value) && isPairList(x) && strcmp(CHAR(STRING_ELT(name,0)),"names")==0) {
+    // backport fix in R 3.2.0 to support R 3.1.0; #4048 #3802
+    // apply this backport always (i.e. in R >=3.2.0 too) to avoid a switch on version number or feature test (to avoid more code, tests and nocov)
+    for (SEXP t=x; t!=R_NilValue; t=CDR(t)) {
+      SET_TAG(t, R_NilValue);
+    }
+  } else {
+    setAttrib(x, name, MAYBE_REFERENCED(value) ? duplicate(value) : value);
     // duplicate is temp fix to restore R behaviour prior to R-devel change on 10 Jan 2014 (r64724).
     // TO DO: revisit. Enough to reproduce is: DT=data.table(a=1:3); DT[2]; DT[,b:=2]
     // ... Error: selfrefnames is ok but tl names [1] != tl [100]
+  }
   return(R_NilValue);
 }
 
@@ -62,14 +69,6 @@ SEXP setlistelt(SEXP l, SEXP i, SEXP value)
   if (LENGTH(l) < i2 || i2<1) error("i (%d) is outside the range of items [1,%d]",i2,LENGTH(l));
   SET_VECTOR_ELT(l, i2-1, value);
   return(R_NilValue);
-}
-
-SEXP setmutable(SEXP x)
-{
-  // called from one single place at R level. TODO: avoid somehow, but fails tests without
-  // At least the SET_NAMED() direct call is passed 0 and makes no assumptions about >0.  Good enough for now as patch for CRAN is needed.
-  SET_NAMED(x,0);
-  return(x);
 }
 
 SEXP address(SEXP x)

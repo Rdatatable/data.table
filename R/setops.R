@@ -41,11 +41,18 @@ funique = function(x) {
   if (!identical(sort(names(x)), sort(names(y)))) stop("x and y must have the same column names")
   if (!identical(names(x), names(y))) stop("x and y must have the same column order")
   bad_types = c("raw", "complex", if (block_list) "list")
-  found = bad_types %chin% c(vapply(x, typeof, FUN.VALUE = ""),
-                             vapply(y, typeof, FUN.VALUE = ""))
+  found = bad_types %chin% c(vapply_1c(x, typeof), vapply_1c(y, typeof))
   if (any(found)) stop("unsupported column type", if (sum(found) > 1L) "s" else "",
                        " found in x or y: ", brackify(bad_types[found]))
-  if (!identical(lapply(x, class), lapply(y, class))) stop("x and y must have the same column classes")
+  super = function(x) {
+    # allow character->factor and integer->numeric because from v1.12.4 i's type is retained by joins, #3820
+    ans = class(x)[1L]
+    switch(ans, factor="character", integer="numeric", ans)
+  }
+  if (!identical(sx<-sapply(x, super), sy<-sapply(y, super))) {
+    w = which.first(sx!=sy)
+    stop("Item ",w," of x is '",class(x[[w]])[1L],"' but the corresponding item of y is '", class(y[[w]])[1L], "'.")
+  }
   if (.seqn && ".seqn" %chin% names(x)) stop("None of the datasets should contain a column named '.seqn'")
 }
 
@@ -168,7 +175,7 @@ all.equal.data.table = function(target, current, trim.levels=TRUE, check.attribu
   if (ignore.row.order) {
     if (".seqn" %chin% names(target))
       stop("None of the datasets to compare should contain a column named '.seqn'")
-    bad.type = setNames(c("raw","complex","list") %chin% c(vapply(current, typeof, FUN.VALUE = ""), vapply(target, typeof, FUN.VALUE = "")), c("raw","complex","list"))
+    bad.type = setNames(c("raw","complex","list") %chin% c(vapply_1c(current, typeof), vapply_1c(target, typeof)), c("raw","complex","list"))
     if (any(bad.type))
       stop("Datasets to compare with 'ignore.row.order' must not have unsupported column types: ", brackify(names(bad.type)[bad.type]))
     if (between(tolerance, 0, sqrt(.Machine$double.eps), incbounds=FALSE)) {

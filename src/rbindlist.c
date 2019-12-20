@@ -59,7 +59,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
             firstZeroCol+1, ch, firstZeroItem+1, numZero-1, numZero==2?"":"s");
   }
   if (nrow==0 && ncol==0) return(R_NilValue);
-  if (nrow>INT32_MAX) error("Total rows in the list is %lld which is larger than the maximum number of rows, currently %d", nrow, INT32_MAX);
+  if (nrow>INT32_MAX) error("Total rows in the list is %"PRId64" which is larger than the maximum number of rows, currently %d", (int64_t)nrow, INT32_MAX);
   if (usenames==TRUE && !anyNames) error("use.names=TRUE but no item of input list has any names");
 
   int *colMap=NULL; // maps each column in final result to the column of each list item
@@ -68,7 +68,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
     // when use.names==NA we also proceed here as if use.names was TRUE to save new code and then check afterwards the map is 1:ncol for every item
     // first find number of unique column names present; i.e. length(unique(unlist(lapply(l,names))))
     SEXP *uniq = (SEXP *)malloc(upperBoundUniqueNames * sizeof(SEXP));  // upperBoundUniqueNames was initialized with 1 to ensure this is defined (otherwise 0 when no item has names)
-    if (!uniq) error("Failed to allocate upper bound of %lld unique column names [sum(lapply(l,ncol))]", upperBoundUniqueNames);
+    if (!uniq) error("Failed to allocate upper bound of %"PRId64" unique column names [sum(lapply(l,ncol))]", (int64_t)upperBoundUniqueNames);
     savetl_init();
     int nuniq=0;
     for (int i=0; i<LENGTH(l); i++) {
@@ -241,7 +241,9 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
     ncol = length(VECTOR_ELT(l, first));  // ncol was increased as if fill=true, so reduce it back given fill=false (fill==false checked above)
   }
 
-  SEXP ans=PROTECT(allocVector(VECSXP, idcol + ncol)), ansNames;
+  int nprotect = 0;
+  SEXP ans = PROTECT(allocVector(VECSXP, idcol + ncol)); nprotect++;
+  SEXP ansNames;
   setAttrib(ans, R_NamesSymbol, ansNames=allocVector(STRSXP, idcol + ncol));
   if (idcol) {
     SET_STRING_ELT(ansNames, 0, STRING_ELT(idcolArg, 0));
@@ -267,14 +269,14 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
     }
   }
 
-  SEXP coercedForFactor = R_NilValue;
+  SEXP coercedForFactor = NULL;
   for(int j=0; j<ncol; ++j) {
     int maxType=LGLSXP;  // initialize with LGLSXP for test 2002.3 which has col x NULL in both lists to be filled with NA for #1871
     bool factor=false, orderedFactor=false;     // ordered factor is class c("ordered","factor"). isFactor() is true when isOrdered() is true.
     int longestLen=0, longestW=-1, longestI=-1; // just for ordered factor
     SEXP longestLevels=R_NilValue;              // just for ordered factor
     bool int64=false;
-    bool foundName=false;
+    const char *foundName=NULL;
     bool anyNotStringOrFactor=false;
     SEXP firstCol=R_NilValue;
     int firsti=-1, firstw=-1;
@@ -284,8 +286,9 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
       int w = usenames ? colMap[i*ncol + j] : j;  // colMap tells us which item to fetch for each of the final result columns, so we can stack column-by-column
       if (w==-1) continue;  // column j of final result has no input from this item (fill must be true)
       if (!foundName) {
-        SEXP cn=getAttrib(li, R_NamesSymbol);
-        if (length(cn)) { SET_STRING_ELT(ansNames, idcol+j, STRING_ELT(cn, w)); foundName=true; }
+        SEXP cn=PROTECT(getAttrib(li, R_NamesSymbol));
+        if (length(cn)) { SEXP tt; SET_STRING_ELT(ansNames, idcol+j, tt=STRING_ELT(cn, w)); foundName=CHAR(tt); }
+        UNPROTECT(1);
       }
       SEXP thisCol = VECTOR_ELT(li, w);
       int thisType = TYPEOF(thisCol);
@@ -299,24 +302,25 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
           int thisLen = length(getAttrib(thisCol, R_LevelsSymbol));
           if (thisLen>longestLen) { longestLen=thisLen; longestLevels=getAttrib(thisCol, R_LevelsSymbol); /*for warnings later ...*/longestW=w; longestI=i; }
         }
-      } else if (!isString(thisCol) && length(thisCol)) anyNotStringOrFactor=true;
+      } else if (!isString(thisCol)) anyNotStringOrFactor=true;  // even for length 0 columns for consistency; test 2113.3
       if (INHERITS(thisCol, char_integer64)) {
         if (firsti>=0 && !length(getAttrib(firstCol, R_ClassSymbol))) { firsti=i; firstw=w; firstCol=thisCol; } // so the integer64 attribute gets copied to target below
         int64=true;
       }
       if (firsti==-1) { firsti=i; firstw=w; firstCol=thisCol; }
       else {
-        bool prot = false;
-        if (!factor && !int64 && (prot=true) && !R_compute_identical(PROTECT(getAttrib(thisCol, R_ClassSymbol)),
-                                                                     PROTECT(getAttrib(firstCol, R_ClassSymbol)),
-                                                                     0)) {
-          error("Class attribute on column %d of item %d does not match with column %d of item %d.", w+1, i+1, firstw+1, firsti+1);
+        if (!factor && !int64) {
+          if (!R_compute_identical(PROTECT(getAttrib(thisCol, R_ClassSymbol)),
+                                   PROTECT(getAttrib(firstCol, R_ClassSymbol)),
+                                   0)) {
+            error("Class attribute on column %d of item %d does not match with column %d of item %d.", w+1, i+1, firstw+1, firsti+1);
+          }
+          UNPROTECT(2);
         }
-        if (prot) UNPROTECT(2);
       }
     }
 
-    if (!foundName) { char buff[12]; sprintf(buff,"V%d",j+1), SET_STRING_ELT(ansNames, idcol+j, mkChar(buff)); }
+    if (!foundName) { static char buff[12]; sprintf(buff,"V%d",j+1), SET_STRING_ELT(ansNames, idcol+j, mkChar(buff)); foundName=buff; }
     if (factor) maxType=INTSXP;  // if any items are factors then a factor is created (could be an option)
     if (int64 && maxType!=REALSXP)
       error("Internal error: column %d of result is determined to be integer64 but maxType=='%s' != REALSXP", j+1, type2char(maxType)); // # nocov
@@ -328,7 +332,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
       // in future warn, or use list column instead ... warning("Column %d contains a factor but not all items for the column are character or factor", idcol+j+1);
       // some coercing from (likely) integer/numeric to character will be needed. But this coerce can feasibly fail with out-of-memory, so we have to do it up-front
       // before the savetl_init() because we have no hook to clean up tl if coerceVector fails.
-      if (isNull(coercedForFactor)) coercedForFactor = PROTECT(allocVector(VECSXP, LENGTH(l)));
+      if (coercedForFactor==NULL) { coercedForFactor=PROTECT(allocVector(VECSXP, LENGTH(l))); nprotect++; }
       for (int i=0; i<LENGTH(l); ++i) {
         int w = usenames ? colMap[i*ncol + j] : j;
         if (w==-1) continue;
@@ -436,21 +440,51 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
           }
           int *targetd = INTEGER(target);
           if (isFactor(thisCol)) {
-            // loop through levels. If all i == truelength(i) then just do a memcpy. Otherwise hop via the integer map.
-            bool nohop = true;
-            for (int k=0; k<n; ++k) {
-              SEXP s = thisColStrD[k];
-              if (s!=NA_STRING && -TRUELENGTH(s)!=k+1) { nohop=false; break; }
-            }
-            if (nohop) memcpy(targetd+ansloc, INTEGER(thisCol), thisnrow*SIZEOF(thisCol));
-            else {
-              int *id = INTEGER(thisCol);
-              for (int r=0; r<thisnrow; r++)
-                targetd[ansloc+r] = id[r]==NA_INTEGER ? NA_INTEGER : -TRUELENGTH(thisColStrD[id[r]-1]);
+            const int *id = INTEGER(thisCol);
+            if (length(thisCol)<=1) {
+              // recycle length-1, or NA-fill length-0
+              SEXP lev;
+              const int val = (length(thisCol)==1 && id[0]!=NA_INTEGER && (lev=thisColStrD[id[0]-1])!=NA_STRING) ? -TRUELENGTH(lev) : NA_INTEGER;
+              //                                                                                    ^^ #3915 and tests 2015.2-5
+              for (int r=0; r<thisnrow; ++r) targetd[ansloc+r] = val;
+            } else {
+              // length(thisCol)==thisnrow alreay checked before this truelength-clobber region
+              // If all i==truelength(i) then just do a memcpy since hop is identity. Otherwise hop via the integer map.
+              bool hop = false;
+              if (orderedFactor) {
+                // retain the position of NA level (if any) and the integer mappings to it
+                for (int k=0; k<n; ++k) {
+                  SEXP s = thisColStrD[k];
+                  if (s!=NA_STRING && -TRUELENGTH(s)!=k+1) { hop=true; break; }
+                }
+              } else {
+                for (int k=0; k<n; ++k) {
+                  SEXP s = thisColStrD[k];
+                  if (s==NA_STRING || -TRUELENGTH(s)!=k+1) { hop=true; break; }
+                }
+              }
+              if (hop) {
+                if (orderedFactor) {
+                  for (int r=0; r<thisnrow; ++r)
+                    targetd[ansloc+r] = id[r]==NA_INTEGER ? NA_INTEGER : -TRUELENGTH(thisColStrD[id[r]-1]);
+                } else {
+                  for (int r=0; r<thisnrow; ++r) {
+                    SEXP lev;
+                    targetd[ansloc+r] = id[r]==NA_INTEGER || (lev=thisColStrD[id[r]-1])==NA_STRING ? NA_INTEGER : -TRUELENGTH(lev);
+                  }
+                }
+              } else {
+                memcpy(targetd+ansloc, id, thisnrow*SIZEOF(thisCol));
+              }
             }
           } else {
-            SEXP *sd = STRING_PTR(thisColStr);
-            for (int r=0; r<thisnrow; r++) targetd[ansloc+r] = sd[r]==NA_STRING ? NA_INTEGER : -TRUELENGTH(sd[r]);
+            const SEXP *sd = STRING_PTR(thisColStr);
+            if (length(thisCol)<=1) {
+              const int val = (length(thisCol)==1 && sd[0]!=NA_STRING) ? -TRUELENGTH(sd[0]) : NA_INTEGER;
+              for (int r=0; r<thisnrow; ++r) targetd[ansloc+r] = val;
+            } else {
+              for (int r=0; r<thisnrow; ++r) targetd[ansloc+r] = sd[r]==NA_STRING ? NA_INTEGER : -TRUELENGTH(sd[r]);
+            }
           }
         }
         ansloc += thisnrow;
@@ -480,22 +514,21 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
         if (w==-1 || !length(thisCol=VECTOR_ELT(li, w))) {  // !length for zeroCol warning above; #1871
           writeNA(target, ansloc, thisnrow);  // writeNA is integer64 aware and writes INT64_MIN
         } else {
-          bool coerced = false;
           if ((TYPEOF(target)==VECSXP || TYPEOF(target)==EXPRSXP) && TYPEOF(thisCol)!=TYPEOF(target)) {
             // do an as.list() on the atomic column; #3528
-            thisCol = PROTECT(coerceVector(thisCol, TYPEOF(target)));
-            coerced = true;
-          } // else coerces if needed within memrecycle; possibly with a no-alloc direct coerce
-          const char *ret = memrecycle(target, R_NilValue, ansloc, thisnrow, thisCol);
-          if (coerced) UNPROTECT(1);
-          if (ret) warning("Column %d of item %d: %s", w+1, i+1, ret);  // currently just one warning when precision is lost; e.g. assigning 3.4 to integer64
+            thisCol = PROTECT(coerceVector(thisCol, TYPEOF(target))); nprotect++;
+          }
+          // else coerces if needed within memrecycle; with a no-alloc direct coerce from 1.12.4 (PR #3909)
+          const char *ret = memrecycle(target, R_NilValue, ansloc, thisnrow, thisCol, idcol+j+1, foundName);
+          if (ret) warning("Column %d of item %d: %s", w+1, i+1, ret);
+          // e.g. when precision is lost like assigning 3.4 to integer64; test 2007.2
+          // TODO: but maxType should handle that and this should never warn
         }
         ansloc += thisnrow;
       }
     }
   }
-  if (!isNull(coercedForFactor)) UNPROTECT(1);
-  UNPROTECT(1);  // ans
+  UNPROTECT(nprotect);  // ans, coercedForFactor, thisCol
   return(ans);
 }
 
