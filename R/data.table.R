@@ -935,6 +935,13 @@ replace_dot_alias = function(e) {
               .SDcols = Reduce(intersect, do_patterns(colsub, names_x))
             } else {
               .SDcols = eval(colsub, parent.frame(), parent.frame())
+              # allow filtering via function in .SDcols, #3950
+              if (is.function(.SDcols)) {
+                .SDcols = lapply(x, .SDcols)
+                if (any(idx <- vapply_1i(.SDcols, length) > 1L | vapply_1c(.SDcols, typeof) != 'logical' | vapply_1b(.SDcols, anyNA)))
+                  stop("When .SDcols is a function, it is applied to each column; the output of this function must be a non-missing boolean scalar signalling inclusion/exclusion of the column. However, these conditions were not met for: ", brackify(names(x)[idx]))
+                .SDcols = unlist(.SDcols, use.names = FALSE)
+              }
             }
           }
           if (anyNA(.SDcols))
