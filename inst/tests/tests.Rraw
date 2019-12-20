@@ -16673,7 +16673,12 @@ test(2128.3, DT[, .SD, .SDcols=function(x) x==1], error='conditions were not met
 test(2128.4, DT[, .SD, .SDcols=function(x) 2L],   error='conditions were not met for: [a, b, c]')
 test(2128.5, DT[, .SD, .SDcols=function(x) NA],   error='conditions were not met for: [a, b, c]')
 
+# expression columns in rbindlist, #546
+A = data.table(c1 = 1, c2 = 'asd', c3 = expression(as.character(Sys.time())))
+B = data.table(c1 = 3, c2 = 'qwe', c3 = expression(as.character(Sys.time()+5)))
+test(2129, rbind(A,B)$c3, expression(as.character(Sys.time()), as.character(Sys.time()+5)))
 
-###################################
-#  Add new tests above this line  #
-###################################
+
+########################
+#  Add new tests here  #
+########################
