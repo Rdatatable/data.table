@@ -50,4 +50,27 @@ fi
 
 version=`pkg-config --modversion zlib`
 echo "zlib ${version} is available ok"
+
+# Find R compilers
+CC=`${R_HOME}/bin/R CMD config CC`
+CFLAGS=`${R_HOME}/bin/R CMD config CFLAGS`
+CPPFLAGS=`${R_HOME}/bin/R CMD config CPPFLAGS`
+
+# Test if we have a OPENMP compatible compiler
+echo "#include <omp.h>\nint main () { return omp_get_num_threads (); }" | ${CC} ${CPPFLAGS} ${PKG_CFLAGS} ${CFLAGS} ${SHLIB_OPENMP_CFLAGS} -E -xc - >/dev/null 2>&1 || R_NO_OPENMP=1;
+
+# Write to Makevars
+if [ $R_NO_OPENMP ]; then
+  echo "*** OpenMP not supported! data.table uses OpenMP to automatically"
+  echo "***   parallelize operations like sorting, grouping, file reading, etc."
+  echo "*** For details on how to install the necessary toolchains on your OS see:"
+  echo "***   https://github.com/Rdatatable/data.table/wiki/Installation"
+  echo "*** Continuing installation without OpenMP support..."
+  sed -e "s|@openmp_cflags@||" src/Makevars.in > src/Makevars
+else
+  echo "OpenMP supported"
+  sed -e "s|@openmp_cflags@|\$(SHLIB_OPENMP_CFLAGS)|" src/Makevars.in > src/Makevars
+fi
+
+
 exit 0
