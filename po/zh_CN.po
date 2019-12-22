@@ -2265,7 +2265,7 @@ msgid ""
 "Internal error: fill=true but there is a previous row which should already "
 "have been filled."
 msgstr ""
-"内部错误：参数fill设为了true，但是在此之前有一行"
+"内部错误：参数fill=true，但是在此之前有一行"
 "应当已经被填充。"
 
 #: fread.c:1750
