@@ -1059,7 +1059,8 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source,
       BODY(SEXP, STRING_PTR, SEXP, val,  SET_STRING_ELT(target, off+i, cval))
     }
   case VECSXP :
-    if (TYPEOF(source)!=VECSXP)
+  case EXPRSXP :  // #546
+    if (TYPEOF(source)!=VECSXP && TYPEOF(source)!=EXPRSXP)
       BODY(SEXP, &, SEXP, val,           SET_VECTOR_ELT(target, off+i, cval))
     else
       BODY(SEXP, VECTOR_PTR, SEXP, val,  SET_VECTOR_ELT(target, off+i, cval))
