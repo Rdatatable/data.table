@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: data.table 1.12.9\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2019-12-19 12:36+0800\n"
+"POT-Creation-Date: 2019-12-23 00:00+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -498,84 +498,84 @@ msgid ""
 "clarity."
 msgstr ""
 
-#: assign.c:1067
+#: assign.c:1068
 #, c-format
 msgid "Unsupported column type in assign.c:memrecycle '%s'"
 msgstr ""
 
-#: assign.c:1114
+#: assign.c:1115
 #, c-format
 msgid "Internal error: writeNA passed a vector of type '%s'"
 msgstr ""
 
-#: assign.c:1145
+#: assign.c:1146
 #, c-format
 msgid ""
 "Internal error: savetl_init checks failed (%d %d %p %p). please report to "
 "data.table issue tracker."
 msgstr ""
 
-#: assign.c:1153
+#: assign.c:1154
 #, c-format
 msgid "Failed to allocate initial %d items in savetl_init"
 msgstr ""
 
-#: assign.c:1162
+#: assign.c:1163
 #, c-format
 msgid ""
 "Internal error: reached maximum %d items for savetl. Please report to data."
 "table issue tracker."
 msgstr ""
 
-#: assign.c:1169
+#: assign.c:1170
 #, c-format
 msgid "Failed to realloc saveds to %d items in savetl"
 msgstr ""
 
-#: assign.c:1175
+#: assign.c:1176
 #, c-format
 msgid "Failed to realloc savedtl to %d items in savetl"
 msgstr ""
 
-#: assign.c:1198
+#: assign.c:1199
 msgid "x must be a character vector"
 msgstr ""
 
-#: assign.c:1199
+#: assign.c:1200
 msgid "'which' must be an integer vector"
 msgstr ""
 
-#: assign.c:1200
+#: assign.c:1201
 msgid "'new' must be a character vector"
 msgstr ""
 
-#: assign.c:1201
+#: assign.c:1202
 #, c-format
 msgid "'new' is length %d. Should be the same as length of 'which' (%d)"
 msgstr ""
 
-#: assign.c:1204
+#: assign.c:1205
 #, c-format
 msgid ""
 "Item %d of 'which' is %d which is outside range of the length %d character "
 "vector"
 msgstr ""
 
-#: assign.c:1214
+#: assign.c:1215
 msgid "dt passed to setcolorder has no names"
 msgstr ""
 
-#: assign.c:1216
+#: assign.c:1217
 #, c-format
 msgid "Internal error: dt passed to setcolorder has %d columns but %d names"
 msgstr ""
 
-#: assign.c:1223
+#: assign.c:1224
 msgid ""
 "Internal error: o passed to Csetcolorder contains an NA or out-of-bounds"
 msgstr ""
 
-#: assign.c:1225
+#: assign.c:1226
 msgid "Internal error: o passed to Csetcolorder contains a duplicate"
 msgstr ""
 
@@ -3982,34 +3982,34 @@ msgid ""
 "'message'|'warning'|'error'|'none'. See news item 5 in v1.12.2."
 msgstr ""
 
-#: rbindlist.c:297
+#: rbindlist.c:298
 #, c-format
 msgid ""
 "Column %d of item %d has type 'factor' but has no levels; i.e. malformed."
 msgstr ""
 
-#: rbindlist.c:315
+#: rbindlist.c:316
 #, c-format
 msgid ""
 "Class attribute on column %d of item %d does not match with column %d of "
 "item %d."
 msgstr ""
 
-#: rbindlist.c:325
+#: rbindlist.c:326
 #, c-format
 msgid ""
 "Internal error: column %d of result is determined to be integer64 but "
 "maxType=='%s' != REALSXP"
 msgstr ""
 
-#: rbindlist.c:361
+#: rbindlist.c:362
 #, c-format
 msgid ""
 "Failed to allocate working memory for %d ordered factor levels of result "
 "column %d"
 msgstr ""
 
-#: rbindlist.c:382
+#: rbindlist.c:383
 #, c-format
 msgid ""
 "Column %d of item %d is an ordered factor but level %d ['%s'] is missing "
@@ -4018,7 +4018,7 @@ msgid ""
 "factor will be created for this column."
 msgstr ""
 
-#: rbindlist.c:387
+#: rbindlist.c:388
 #, c-format
 msgid ""
 "Column %d of item %d is an ordered factor with '%s'<'%s' in its levels. But "
@@ -4026,14 +4026,14 @@ msgid ""
 "will be created for this column due to this ambiguity."
 msgstr ""
 
-#: rbindlist.c:432
+#: rbindlist.c:433
 #, c-format
 msgid ""
 "Failed to allocate working memory for %d factor levels of result column %d "
 "when reading item %d of item %d"
 msgstr ""
 
-#: rbindlist.c:522
+#: rbindlist.c:523
 #, c-format
 msgid "Column %d of item %d: %s"
 msgstr ""

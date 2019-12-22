@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: data.table 1.12.5\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2019-12-19 12:36+0800\n"
+"POT-Creation-Date: 2019-12-23 00:00+0800\n"
 "PO-Revision-Date: 2019-10-04 17:06+08\n"
 "Last-Translator: Zhi Yang <zyang895@gmail.com>\n"
 "Language-Team: Mandarin\n"
@@ -560,17 +560,17 @@ msgid ""
 "clarity."
 msgstr "请使用 as.character() 把 integer64 类型的数值赋值给字符列"
 
-#: assign.c:1067
+#: assign.c:1068
 #, c-format
 msgid "Unsupported column type in assign.c:memrecycle '%s'"
 msgstr "assign.c:memrecycle '%s' 里有不支持的列的类型"
 
-#: assign.c:1114
+#: assign.c:1115
 #, c-format
 msgid "Internal error: writeNA passed a vector of type '%s'"
 msgstr "内部错误：writeNA 函数读取到了一个类型是'%s'的向量"
 
-#: assign.c:1145
+#: assign.c:1146
 #, c-format
 msgid ""
 "Internal error: savetl_init checks failed (%d %d %p %p). please report to "
@@ -579,12 +579,12 @@ msgstr ""
 "内部错误：savetl_init的校验失败 (%d %d %p %p)，请将此问题汇报给data.table 问"
 "题追踪器。"
 
-#: assign.c:1153
+#: assign.c:1154
 #, c-format
 msgid "Failed to allocate initial %d items in savetl_init"
 msgstr "不能为 savetl_init 最开始的 %d 个项分配空间"
 
-#: assign.c:1162
+#: assign.c:1163
 #, c-format
 msgid ""
 "Internal error: reached maximum %d items for savetl. Please report to data."
@@ -593,55 +593,55 @@ msgstr ""
 "内部错误：已经达到了 savetl 能处理的子项上限 %d。请将此问题汇报给data.table问"
 "题追踪器。"
 
-#: assign.c:1169
+#: assign.c:1170
 #, c-format
 msgid "Failed to realloc saveds to %d items in savetl"
 msgstr "不能给 savetl 里的 %d 个项重新分配 saveds"
 
-#: assign.c:1175
+#: assign.c:1176
 #, c-format
 msgid "Failed to realloc savedtl to %d items in savetl"
 msgstr "不能给savetl里的 %d 个项提供 savetl"
 
-#: assign.c:1198
+#: assign.c:1199
 msgid "x must be a character vector"
 msgstr "x 必须是一个字符向量"
 
-#: assign.c:1199
+#: assign.c:1200
 msgid "'which' must be an integer vector"
 msgstr "'which' 必须是一个整数向量"
 
-#: assign.c:1200
+#: assign.c:1201
 msgid "'new' must be a character vector"
 msgstr "'new' 必须是一个字符向量"
 
-#: assign.c:1201
+#: assign.c:1202
 #, c-format
 msgid "'new' is length %d. Should be the same as length of 'which' (%d)"
 msgstr "'new' 的长度是 %d。 它的长度必须和'which' (%d)的长度一致。"
 
-#: assign.c:1204
+#: assign.c:1205
 #, c-format
 msgid ""
 "Item %d of 'which' is %d which is outside range of the length %d character "
 "vector"
 msgstr "'which' 的 %d 项是 %d，这超出了 %d 字符的长度范围"
 
-#: assign.c:1214
+#: assign.c:1215
 msgid "dt passed to setcolorder has no names"
 msgstr "setcolorder读取到的dt并没有名字"
 
-#: assign.c:1216
+#: assign.c:1217
 #, c-format
 msgid "Internal error: dt passed to setcolorder has %d columns but %d names"
 msgstr "内部错误: setcolorder读取到的dt有 %d 列但是有 %d 个名字。"
 
-#: assign.c:1223
+#: assign.c:1224
 msgid ""
 "Internal error: o passed to Csetcolorder contains an NA or out-of-bounds"
 msgstr "内部错误: Csetcolorder读取到的o有一个NA(缺失值)或者是下标出界"
 
-#: assign.c:1225
+#: assign.c:1226
 msgid "Internal error: o passed to Csetcolorder contains a duplicate"
 msgstr "内部错误: Csetcolorder读取到的o含有一个重复值"
 
@@ -2130,8 +2130,7 @@ msgstr ""
 #, c-format
 msgid ""
 "Internal error: ncol==%d line==%d after detecting sep, ncol and first line"
-msgstr ""
-"内部错误：检测分隔符，列数和首行后，ncol==%d line==%d"
+msgstr "内部错误：检测分隔符，列数和首行后，ncol==%d line==%d"
 
 #: fread.c:1585
 #, c-format
@@ -2143,9 +2142,7 @@ msgstr "内部错误：首行有%d个字段，但应该有%d个"
 msgid ""
 "  Detected %d columns on line %d. This line is either column names or first "
 "data row. Line starts as: <<%s>>\n"
-msgstr ""
-"检测到第%2$d行有%1$d列。该行为列名或数据集首行。"
-"该行以<<%3$s>>开始\n”
+msgstr "检测到第%2$d行有%1$d列。该行为列名或数据集首行。该行以<<%3$s>>开始\n"
 
 #: fread.c:1589
 #, c-format
@@ -2162,8 +2159,8 @@ msgid ""
 "This file is very unusual: it's one single column, ends with 2 or more end-"
 "of-line (representing several NA at the end), and is a multiple of 4096, too."
 msgstr ""
-"该文件极为特殊，仅有一列数据，在结尾处包含多个行结束标记（表示多个空值），"
-"且长度为4096的整数倍。"
+"该文件极为特殊，仅有一列数据，在结尾处包含多个行结束标记（表示多个空值），且"
+"长度为4096的整数倍。"
 
 #: fread.c:1597
 #, c-format
@@ -2175,15 +2172,14 @@ msgid ""
 "  1-column file ends with 2 or more end-of-line. Restoring last eol using "
 "extra byte in cow page.\n"
 msgstr ""
-"该文件包含一列数据，存在多个行结束标记（表示多个空值）。"
-"正在使用写时复制页(cow, copy-on-write)额外的字节恢复最后一个标记.\n"
+"该文件包含一列数据，存在多个行结束标记（表示多个空值）。正在使用写时复制页"
+"(cow, copy-on-write)额外的字节恢复最后一个标记.\n"
 
 #: fread.c:1622
 msgid ""
 "[07] Detect column types, good nrow estimate and whether first row is column "
 "names\n"
-msgstr ""
-"[07] 检测列类型，估计行数以及首行是否为列名\n"
+msgstr "[07] 检测列类型，估计行数以及首行是否为列名\n"
 
 #: fread.c:1623
 #, c-format
@@ -2214,14 +2210,15 @@ msgstr ""
 msgid ""
 "(%<PRIu64> bytes from row 1 to eof) / (2 * %<PRIu64> jump0size) == "
 "%<PRIu64>\n"
-msgstr "(从首行到结束共 %<PRIu64> bytes) / (2 * %<PRIu64> jump0size) == %<PRIu64>\n"
+msgstr ""
+"(从首行到结束共 %<PRIu64> bytes) / (2 * %<PRIu64> jump0size) == %<PRIu64>\n"
 
 #: fread.c:1689
 #, c-format
 msgid ""
 "  A line with too-%s fields (%d/%d) was found on line %d of sample jump %d. "
 "%s\n"
-msgstr "第%4$d个跳点所找到的第%3$d行，该行字段过于%1$s(%2$d/%3$d). "
+msgstr "第%5$d个跳点所找到的第%4$d行，该行字段过于%1$s(%2$d/%3$d). %6$s\n"
 
 #: fread.c:1690
 msgid "few"
@@ -2247,23 +2244,20 @@ msgid ""
 "  'header' determined to be true due to column %d containing a string on row "
 "1 and a lower type (%s) in the rest of the %d sample rows\n"
 msgstr ""
-" 'header' 参数设为真，原因是第%1$d列首行包含字符串，"
-"并且在样本中的另外%3$d行包含有较底层的数据类型(%2$s)\n"
+" 'header' 参数设为真，原因是第%1$d列首行包含字符串，并且在样本中的另外%3$d行"
+"包含有较底层的数据类型(%2$s)\n"
 
 #: fread.c:1741
 msgid ""
 "Internal error: row before first data row has the same number of fields but "
 "we're not using it."
-msgstr ""
-"内部错误：数据首行的前一行包含相同数量的字段"
-"但不会用到该行。"
+msgstr "内部错误：数据首行的前一行包含相同数量的字段但不会用到该行。"
 
 #: fread.c:1742
 msgid ""
 "Internal error: ch!=pos after counting fields in the line before the first "
 "data row."
-msgstr ""
-"内部错误：对数据首行前一行的字段计数后，ch不等于pos"
+msgstr "内部错误：对数据首行前一行的字段计数后，ch不等于pos"
 
 #: fread.c:1743
 #, c-format
@@ -2271,8 +2265,8 @@ msgid ""
 "Types in 1st data row match types in 2nd data row but previous row has %d "
 "fields. Taking previous row as column names."
 msgstr ""
-"数据第一行的类型与第二行相匹配，但是之前的行有"
-" %d 个字段。故将第一行数据的前一行作为列名"
+"数据第一行的类型与第二行相匹配，但是之前的行有 %d 个字段。故将第一行数据的前"
+"一行作为列名"
 
 #: fread.c:1746
 #, c-format
@@ -2280,8 +2274,7 @@ msgid ""
 "Detected %d column names but the data has %d columns (i.e. invalid file). "
 "Added %d extra default column name%s\n"
 msgstr ""
-"检测到 %d 个列名，然而数据共有 %d 列（文件不合法）。"
-"添加了 %d 个额外列名%s\n"
+"检测到 %d 个列名，然而数据共有 %d 列（文件不合法）。添加了 %d 个额外列名%s\n"
 
 #: fread.c:1747
 msgid ""
@@ -2298,9 +2291,7 @@ msgstr ""
 msgid ""
 "Internal error: fill=true but there is a previous row which should already "
 "have been filled."
-msgstr ""
-"内部错误：参数fill=true，但是在此之前有一行"
-"应当已经被填充。"
+msgstr "内部错误：参数fill=true，但是在此之前有一行应当已经被填充。"
 
 #: fread.c:1750
 #, c-format
@@ -2308,21 +2299,19 @@ msgid ""
 "Detected %d column names but the data has %d columns. Filling rows "
 "automatically. Set fill=TRUE explicitly to avoid this warning.\n"
 msgstr ""
-"检测到%d个列名，但数据共有%d列。已经自动填充。"
-"设置参数fill=TRUE以屏蔽此警告。"
+"检测到%d个列名，但数据共有%d列。已经自动填充。设置参数fill=TRUE以屏蔽此警告。\n"
 
 #: fread.c:1754
 #, c-format
 msgid "Failed to realloc 2 x %d bytes for type and tmpType: %s"
-msgstr "为 %2$s 类型重新分配 2 x %d bytes失败"
+msgstr "为 %2$s 类型重新分配 2 x %1$d bytes失败"
 
 #: fread.c:1774
 #, c-format
 msgid ""
 "  'header' determined to be %s because there are%s number fields in the "
 "first and only row\n"
-msgstr ""
-" 参数'header' 被设置为%s， 因为唯一的一行包含 %s 个字段\n"
+msgstr " 参数'header' 被设置为%s， 因为唯一的一行包含 %s 个字段\n"
 
 #: fread.c:1774
 msgid "true"
@@ -2340,15 +2329,13 @@ msgstr ""
 msgid ""
 "  'header' determined to be true because all columns are type string and a "
 "better guess is not possible\n"
-msgstr ""
-"参数 'header' 被设置为true，因为所有列类型均为字符串\n"
+msgstr "参数 'header' 被设置为true，因为所有列类型均为字符串\n"
 
 #: fread.c:1779
 msgid ""
 "  'header' determined to be false because there are some number columns and "
 "those columns do not have a string field at the top of them\n"
-msgstr ""
-"参数 'header' 被设置为false，因为部分字段的首行不为字符串\n"
+msgstr "参数 'header' 被设置为false，因为部分字段的首行不为字符串\n"
 
 #: fread.c:1795
 #, c-format
@@ -2360,8 +2347,7 @@ msgstr ""
 msgid ""
 "  All rows were sampled since file is small so we know nrow=%<PRIu64> "
 "exactly\n"
-msgstr ""
-" 文件太小，全部行均被采样到，所以 nrow=%llu\n"
+msgstr " 文件太小，全部行均被采样到，所以 nrow=%<PRIu64>\n"
 
 #: fread.c:1816 fread.c:1823
 msgid "  =====\n"
@@ -2372,15 +2358,13 @@ msgstr " =====\n"
 msgid ""
 "  Sampled %<PRIu64> rows (handled \\n inside quoted fields) at %d jump "
 "points\n"
-msgstr ""
-"  已使用了 %1$d个跳点抽样 %2$llu 行(处理了字段间的分隔符\\n)\n"
+msgstr "  已使用了 %2$d个跳点抽样 %1$<PRIu64> 行(处理了字段间的分隔符\\n)\n"
 
 #: fread.c:1818
 #, c-format
 msgid ""
 "  Bytes from first data row on line %d to the end of last row: %<PRIu64>\n"
 msgstr ""
-
 
 #: fread.c:1819
 #, c-format
@@ -2759,8 +2743,7 @@ msgid ""
 "Column number %d (select[%d]) is negative but should be in the range [1,ncol="
 "%d]. Consider drop= for column exclusion."
 msgstr ""
-"列号%d（select [%d]）为负，但应在[1，ncol =%d]范围内。考虑drop=用于排除"
-"列。"
+"列号%d（select [%d]）为负，但应在[1，ncol =%d]范围内。考虑drop=用于排除列。"
 
 #: freadR.c:293
 #, c-format
@@ -2795,8 +2778,8 @@ msgid ""
 "a named vector, list format, or specify types using select= instead of "
 "colClasses=. Please see examples in ?fread."
 msgstr ""
-"colClasses =是类型为%d的类型的未命名向量，但是有%d输入中的列。要为列的子集"
-"指定类型，可以使用命名向量，列表格式或使用select=而不是colClasses=。请参阅'?"
+"colClasses =是类型为%d的类型的未命名向量，但是有%d输入中的列。要为列的子集指"
+"定类型，可以使用命名向量，列表格式或使用select=而不是colClasses=。请参阅'?"
 "fread'中的示例。"
 
 #: freadR.c:329
@@ -2847,9 +2830,7 @@ msgstr "字段大小为1，但字段类型为%d \n"
 #: freadR.c:592
 #, c-format
 msgid "Internal error: unexpected field of size %d\n"
-msgstr ""
-"内部错误：大小为%d "
-"的意外字段\n"
+msgstr "内部错误：大小为%d 的意外字段\n"
 
 #: freadR.c:660
 #, c-format
@@ -4252,34 +4233,34 @@ msgid ""
 "'message'|'warning'|'error'|'none'. See news item 5 in v1.12.2."
 msgstr ""
 
-#: rbindlist.c:297
+#: rbindlist.c:298
 #, c-format
 msgid ""
 "Column %d of item %d has type 'factor' but has no levels; i.e. malformed."
 msgstr ""
 
-#: rbindlist.c:315
+#: rbindlist.c:316
 #, c-format
 msgid ""
 "Class attribute on column %d of item %d does not match with column %d of "
 "item %d."
 msgstr ""
 
-#: rbindlist.c:325
+#: rbindlist.c:326
 #, c-format
 msgid ""
 "Internal error: column %d of result is determined to be integer64 but "
 "maxType=='%s' != REALSXP"
 msgstr ""
 
-#: rbindlist.c:361
+#: rbindlist.c:362
 #, c-format
 msgid ""
 "Failed to allocate working memory for %d ordered factor levels of result "
 "column %d"
 msgstr ""
 
-#: rbindlist.c:382
+#: rbindlist.c:383
 #, c-format
 msgid ""
 "Column %d of item %d is an ordered factor but level %d ['%s'] is missing "
@@ -4288,7 +4269,7 @@ msgid ""
 "factor will be created for this column."
 msgstr ""
 
-#: rbindlist.c:387
+#: rbindlist.c:388
 #, c-format
 msgid ""
 "Column %d of item %d is an ordered factor with '%s'<'%s' in its levels. But "
@@ -4296,14 +4277,14 @@ msgid ""
 "will be created for this column due to this ambiguity."
 msgstr ""
 
-#: rbindlist.c:432
+#: rbindlist.c:433
 #, c-format
 msgid ""
 "Failed to allocate working memory for %d factor levels of result column %d "
 "when reading item %d of item %d"
 msgstr ""
 
-#: rbindlist.c:522
+#: rbindlist.c:523
 #, c-format
 msgid "Column %d of item %d: %s"
 msgstr ""

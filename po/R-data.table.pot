@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: data.table 1.12.9\n"
-"POT-Creation-Date: 2019-12-18 15:07\n"
+"POT-Creation-Date: 2019-12-22 23:59\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -428,6 +428,9 @@ msgid "%s!=%s"
 msgstr ""
 
 msgid "; using the most \"last\" names"
+msgstr ""
+
+msgid "When .SDcols is a function, it is applied to each column; the output of this function must be a non-missing boolean scalar signalling inclusion/exclusion of the column. However, these conditions were not met for:"
 msgstr ""
 
 msgid ".SDcols missing at the following indices:"
