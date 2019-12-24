@@ -211,6 +211,7 @@ R_CallMethodDef callMethods[] = {
 {"CfrollapplyR", (DL_FUNC) &frollapplyR, -1},
 {"CtestMsgR", (DL_FUNC) &testMsgR, -1},
 {"C_allNAR", (DL_FUNC) &allNAR, -1},
+{"Cwhich_eqR", (DL_FUNC) &which_eqR, -1},
 {"CfintersectR", (DL_FUNC) &fintersectR, -1},
 {NULL, NULL, 0}
 };

@@ -231,11 +231,9 @@ bool need2utf8(SEXP x);
 SEXP coerceUtf8IfNeeded(SEXP x);
 
 // fwhich.c
-void which_eq_int(int *x, int nx, int *out, int *nout, int val, bool negate);
-void which_eq_double(double *x, int nx, int *out, int *nout, double val, bool negate);
-void which_eq_char(SEXP x, int nx, int *out, int *nout, SEXP val, bool negate);
-void which_eq_int64(int64_t *x, int nx, int *out, int *nout, int64_t val, bool negate);
-SEXP which_eqR(SEXP x, SEXP val, SEXP negate);
+void which_eq(SEXP x, int nx, int *iwhich, int *nwhich, SEXP val, bool negate, int *y, int ny);
+SEXP which_eqR(SEXP x, SEXP val, SEXP negate, SEXP intersect);
+void fintersect(int *x, int nx, int *y, int ny, int *out, int *nans);
 SEXP fintersectR(SEXP x, SEXP y);
 
 // types.c
