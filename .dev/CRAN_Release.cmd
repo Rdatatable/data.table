@@ -40,7 +40,7 @@ grep --exclude="./src/openmp-utils.c" omp_get_max_threads ./src/*
 grep "pragma omp parallel" ./src/*.c | grep -v getDTthreads
 
 # Update documented list of places where openMP parallelism is used: c.f. ?openmp
-grep -Elr "#pragma omp (?:for|parallel)" src | sort
+grep -Elr "[pP]ragma.*omp" src | sort
 
 # Ensure all .Call's first argument are unquoted.
 grep "[.]Call(\"" ./R/*.R
