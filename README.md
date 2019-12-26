@@ -22,10 +22,6 @@
 List-columns in data.table - Tyson Barrett, [rstudio::conf(2020L)](https://rstudio.com/conference/)**
 <br>
 
-**26 December 2019<br>
-Efficiency in data processing: data.table basics - Jan Gorecki, [Mumbai R@IISA 2019](https://r-iisa2019.rbind.io/)**
-<br>
-
 ---
 
 ## Why `data.table`?
