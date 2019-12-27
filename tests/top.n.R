@@ -1,5 +1,5 @@
 library(data.table)
-
+options(datatable.auto.index=FALSE)
 ######################## top.n ###################################
 dt <- as.data.table(iris)
 options(datatable.verbose=TRUE)
@@ -41,3 +41,24 @@ identical(dt[top.n(3, Sepal.Length)],
 
 identical(dt[top.n(3, Sepal.Length, Species)],
           dt[dt[order(-Sepal.Length), .I[1:3], by = Species]$V1])
+
+#0.5 GB groupby benchmark from H20
+N = 10000000
+K = 100
+set.seed(108)
+
+DT = data.table(
+  id1 = sample(sprintf("id%03d",1:K), N, TRUE),      # large groups (char)
+  id2 = sample(sprintf("id%03d",1:K), N, TRUE),      # large groups (char)
+  id3 = sample(sprintf("id%010d",1:(N/K)), N, TRUE), # small groups (char)
+  id4 = sample(K, N, TRUE),                          # large groups (int)
+  id5 = sample(K, N, TRUE),                          # large groups (int)
+  id6 = sample(N/K, N, TRUE),                        # small groups (int)
+  v1 =  sample(5, N, TRUE),                          # int in range [1,5]
+  v2 =  sample(5, N, TRUE),                          # int in range [1,5]
+  v3 =  round(runif(N,max=100),4)                    # numeric e.g. 23.5749
+)
+
+system.time({res1 = DT[order(-v3), .(largest2_v3 = head(v3, 2L)), by = id6]})
+system.time({res2 = DT[top.n(2L, v3, id6), .(id6, largest2_v3 = v3)]})
+identical(res1, res2)
