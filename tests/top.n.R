@@ -25,8 +25,8 @@ dt[top.n(3, Sepal.Length, Species, ties = TRUE)]
 dt[top.n(-3, Sepal.Length, Species, ties = TRUE)]
 
 #for codecov - produces error message requiring n != 0L.
-dt[top.n(0L)]
-dt[top.n()]
+try(dt[top.n(0L)])
+try(dt[top.n()])
 
 ## no wt
 options(datatable.verbose=FALSE)
