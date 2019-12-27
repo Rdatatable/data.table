@@ -337,6 +337,30 @@ replace_dot_alias = function(e) {
         isub = isub[[2L]]
     }
 
+    if (is.call(isub) && as.character(isub[[1]])[[1L]] %chin% c('top.n', 'filter.at')) {  #TODO , 'sample.n'
+      if (verbose) cat('Inside subset.i helper functions. The following will be evaluated\n')
+      l <- eval(isub)
+      if (verbose) print(l)
+      
+      if (is.null(names(l))){ #unnamed lists need to use eval
+        if (length(l) == 1) {
+          eval(l[[1]], parent.frame(), parent.frame())
+        } else {
+          for(itm in l) {eval(itm)}
+        }
+        isub = ind
+      } else if (!is.null(l$f_order)){
+        #next three lines copied from elsewhere except isub is replaced with l[['i']]
+        ienv = new.env(parent=parent.frame())
+        if (getOption("datatable.optimize")>=1L) assign("order", forder, ienv)
+        isub = tryCatch(eval(.massagei(l[['i']]), x, ienv), error=function(e) .checkTypos(e, names_x))
+      } else if (is.null(l$by)) {
+        isub = do.call(`[.data.table`, l)
+      } else {
+        isub = do.call(`[.data.table`, l)$V1
+      }
+    }
+    
     if (is.null(isub)) return( null.data.table() )
 
     if (length(o <- .prepareFastSubset(isub = isub, x = x,
@@ -3086,3 +3110,153 @@ isReallyReal = function(x) {
   names(on) = xCols
   return(list(on = on, ops = idx_op))
 }
+
+top.n = function(n, wt, by, ties = F) {
+  ## helper that takes takes top.n() from the isub and massages it to produce indices for isub
+  
+  #' @param n must be non-zero integer.
+  #' @param wt optional unquoted column. 
+  #' @param by optional; accepts anything that the normal by argument accepts.
+  #' @param ties logical. Is ignored if wt is not provided.
+  #' @return List. The number of list elements depends on the arguments above. 
+  #' 
+  #' `top.n(n)` returns an unnamed list that must be evaluated in the parent frame for .N.
+  #' `top.n(n, wt)` returns a list to be called using the forder optimization
+  #' 
+  #' All other combinations return a named list to be evaluated as `do.call(`[data.table`, l_args)`
+
+  if (missing(n) || n == 0) {
+    stop("A non-zero n argument needs supplied to top.n(n, wt, by, ties = F)")
+  }
+
+  l_args = list(x = quote(x))
+  if (!missing(by))  l_args[['by']] = substitute(by)
+  
+  if (missing(wt)){ 
+    if (ties) warning("Ties argument is TRUE without a wt column supplied. Ties argument will be ignored - head(dt, n) or, if n < 0, tail(dt, abs(n)) will be returned")
+    
+    if (n < 0) ind_sub = substitute(max(1, .N + n + 1):.N, list(n = n)) else ind_sub = substitute(1:min(n, .N), list(n = n)) 
+    
+    if (missing(by)){
+      return(list(substitute(ind <- inds, list(inds = ind_sub)))) 
+    } else {
+      l_args[['j']] = substitute(.I[inds], list(inds = ind_sub))
+    }
+  
+  } else {
+    
+    if (ties){
+      if (n < 0){
+        l_args[['j']] = substitute(.I[frank(wt, ties.method = 'min') <= n], list(n = abs(n), wt = substitute(wt)))
+      } else {
+        l_args[['j']] = substitute(.I[frank(-wt, ties.method = 'min') <= n], list(n = n, wt = substitute(wt)))
+      } 
+    } else {
+
+      i_j_subset = substitute(1:min(n, .N), list(n = abs(n)))
+      if (n < 0) i_order = substitute(order(wt), list(wt = substitute(wt))) else i_order = substitute(order(-wt), list(wt = substitute(wt)))
+      
+      if (missing(by)){
+        l_args[['i']] = substitute(order_i[i_subset], list(order_i = i_order, i_subset = i_j_subset))
+        l_args[['f_order']] = TRUE
+      } else {
+        l_args[['i']] = i_order
+        l_args[['j']] = substitute(.I[j_subset], list(j_subset = i_j_subset))
+      }
+    }
+  }
+
+  l_args
+}
+
+filter.at = function(cols, logic, by, all.vars = TRUE){
+  ## helper that takes takes filter.at() from the isub and massages it to produce indices for isub
+  
+  #' @param cols required; can accept all values that .SDcols accepts
+  #' @param logic required; a function or unquoted text that results in logic evaluation. The
+  #'              unquoted text must include `x` as an argument.
+  #'              If the argument contains `which.min` or `which.max`, intermediate results will
+  #'              be combined with `union` instead of `&` or `|`. 
+  #' @param by optional; accepts anything that the normal by argument accepts.
+  #' @param all.vars logical. Except as mentioned in `logic`, `all.vars = T` will reduce
+  #'                  results using `&` and `all.vars = F` will reduce results using `|`
+  #'                  
+  #' @return List. The number of list elements depends on the arguments above. 
+  #' 
+  #' `filter.at(cols = T, logic, all.vars = TRUE)` returns an unnamed list that needs to
+  #'      be evaulated in loop. This is to allow for some optimization of `dt[a & b & c]`.
+  #'      Argument can also be `cols = c('V1','V2')` to get the same  return as `cols = T`.
+  #' 
+  #' All other combinations return a named list to be evaluated as `do.call(`[data.table`, l_args)`
+  
+  cols = substitute(cols)
+  logic = substitute(logic)
+  
+  # for anonymous functions vs. functions in the environment
+  is_fx = any(as.character(logic) == 'x') || length(as.character(logic)) > 1
+
+  # Predicates wtih rle and cumsum do not work with chaining i.e. 
+  #
+  # dt[rleid(x1) < 5 & rleid(x2) < 5] does not always equal
+  # dt[rleid(x1) < 5][rleid(x2) < 5]
+  #
+  # May want to make this an arg that defaults to FALSE or based on data.table optimization arg
+
+  quickFilter = !grepl('rle|cumsum|min|max|sum', deparse(logic))
+  which.mFilter = grepl('which.m', deparse(logic))
+
+  if (missing(by) && all.vars && quickFilter && !which.mFilter && is_fx && !grepl("patterns|:", deparse(cols))){
+    
+    #optimization. For logic of x == 5 and cols = c('a','b','c') the result of this would be
+    #
+    # ind <- which(dt[['a']] == 5)
+    # for(col in c('b','c')){
+    #   ind <- ind[dt[['col']][ind] == 5]
+    # }
+    
+    #use `<-` within substitution; changing to `=` caused errors
+    
+    
+    if (isTRUE(try(cols, silent = T))){
+      logic_eq_start = eval(substitute(substitute(ind <- which(eq), list(x = substitute(x[[1]]))), list(eq = logic)))
+      logic_eq_loop = eval(substitute(substitute(for (col in seq_len(length(dt))[-1]){ind <- .Call(CsubsetVector, ind, which(eq))}, list(dt = quote(x), x = substitute(.Call(CsubsetVector, x[[col]], ind)))), list(eq = logic)))
+    } else {
+      #unquoted single columns can still get through to here - deparse(cols) will address this. 
+      cols = tryCatch(eval(cols, parent.frame()), error = function(e) deparse(cols))
+      
+      dt_quote_start = substitute(x[[cols]], list (cols = cols[1]))
+      logic_eq_start = eval(substitute(substitute(ind <- which(eq), list(x = dt_quote_start)), list(eq = logic)))
+      
+      dt_quote_loop = quote(.Call(CsubsetVector, x[[col]], ind))
+      logic_eq_loop = eval(substitute(substitute(for (col in cols){ind <- .Call(CsubsetVector, ind, which(eq))}, list(cols = cols[-1], x = dt_quote_loop)), list(eq = logic)))
+    }
+    return(list(logic_eq_start, logic_eq_loop))
+  }
+  
+  l_args = list(x = quote(x))
+  if (!missing(by)) l_args[['by']] = substitute(by)
+  if (!isTRUE(try(cols, silent = T))) l_args[['.SDcols']] = cols
+  
+  if (which.mFilter) {
+    reduce_fx = 'union'
+  } else if(all.vars) {
+    reduce_fx = '&'
+  } else {
+    reduce_fx = '|'
+  }
+
+  if (is_fx) {
+    j_text = substitute(Reduce(r_fx, lapply(.SD, function(x) l_app_fx)), list(r_fx = reduce_fx, l_app_fx = logic))
+  } else {
+    j_text = substitute(Reduce(r_fx, lapply(.SD, l_app_fx)), list(r_fx = reduce_fx, l_app_fx = logic))
+  }
+
+  if (which.mFilter) {
+    l_args[['j']] = substitute(.I[text], list(text = j_text))
+  } else {
+    l_args[['j']] = j_text
+  }
+
+  l_args
+}
+                                            
