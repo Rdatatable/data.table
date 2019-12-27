@@ -1,4 +1,6 @@
 library(data.table)
+options(datatable.auto.index=FALSE)
+
 ############################### filter.at ################################
 set.seed(123)
 dt <- data.table(replicate(3, sample(c(T, F), 1E2, replace = T)))
@@ -24,12 +26,12 @@ dt[filter.at(V1:V3, x)]
 # to show all identical and not performance:
 options(datatable.verbose=FALSE)
 
-bench::mark(dt[filter.at(cols = TRUE, logic = x)],
-            dt[filter.at(c('V1','V2','V3'), x)],
-            dt[filter.at(patterns('V'), logic = x)],
-            dt[filter.at(V1:V3, x)],
-            dt[V1 & V2 & V3] #creates index with default options
-            )
+#bench::mark(dt[filter.at(cols = TRUE, logic = x)],
+#            dt[filter.at(c('V1','V2','V3'), x)],
+#            dt[filter.at(patterns('V'), logic = x)],
+#            dt[filter.at(V1:V3, x)],
+#            dt[V1 & V2 & V3] #creates index with default options
+#            )
 
 # `|` with no by
 dt[filter.at(cols = TRUE, logic = x, all.vars = F)]
@@ -75,13 +77,22 @@ foo <- data.table(
   z = as.character(runif(n = 10^6))
 )
 
-bench::mark(
-  foo[filter.at(c('x', 'y', 'z'), like(x, '123'))],
-  foo[filter.at(TRUE, like(x, '123'))],
-  foo[filter.at(x:z, like(x, '123'))],
-  foo[like(x, "123")][like(y, "123")][like(z, "123")],
-  foo[like(x, "123") & like(y, "123") & like(z, "123")]
-  )
+#bench::mark(
+#  foo[filter.at(c('x', 'y', 'z'), like(x, '123'))],
+#  foo[filter.at(TRUE, like(x, '123'))],
+#  foo[filter.at(x:z, like(x, '123'))],
+#  foo[like(x, "123")][like(y, "123")][like(z, "123")],
+#  foo[like(x, "123") & like(y, "123") & like(z, "123")]
+#  )
+
+## A tibble: 5 x 13
+#  expression                                              min median `itr/sec` mem_alloc `gc/sec`
+#  <bch:expr>                                            <bch> <bch:>     <dbl> <bch:byt>    <dbl>
+#1 foo[filter.at(c("x", "y", "z"), like(x, "123"))]      315ms  315ms      3.17     7.9MB     3.17
+#2 foo[filter.at(TRUE, like(x, "123"))]                  310ms  313ms      3.20     7.9MB     0   
+#3 foo[filter.at(x:z, like(x, "123"))]                   859ms  859ms      1.16   22.95MB     0   
+#4 foo[like(x, "123")][like(y, "123")][like(z, "123")]   290ms  292ms      3.43    8.13MB     0   
+#5 foo[like(x, "123") & like(y, "123") & like(z, "123")] 858ms  858ms      1.17    22.9MB     0   
 
 # see https://stackoverflow.com/questions/58570110/how-to-delete-rows-for-leading-and-trailing-nas-by-group-in-r
 df1<-data.frame(ID=(rep(c("C1001","C1008","C1009","C1012"),each=17)),
@@ -120,8 +131,8 @@ DT[yyy > 0,.(NewCol = paste(month, day),
 A = "yyy"; B = 0; C = "NewCol"; D = "month";E = "day";G = "foo"; H = c("bar","yyy")
 
 # OP wants:
-DT[..A > ..B , .(..C = paste(..D, ..E),
-                 ..H), by = ..G]
+#DT[..A > ..B , .(..C = paste(..D, ..E),
+#                 ..H), by = ..G]
 
 # a little closer
 DT[filter.at(A, x > B),
