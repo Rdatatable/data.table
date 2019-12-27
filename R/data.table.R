@@ -3214,10 +3214,7 @@ filter.at = function(cols, logic, by, all.vars = TRUE){
     #   ind <- ind[dt[['col']][ind] == 5]
     # }
     
-    #use `<-` within substitution; changing to `=` caused errors
-    
-    
-    if (isTRUE(try(cols, silent = T))){
+    if (isTRUE(try(cols, silent = TRUE))){
       logic_eq_start = eval(substitute(substitute(ind <- which(eq), list(x = substitute(x[[1]]))), list(eq = logic)))
       logic_eq_loop = eval(substitute(substitute(for (col in seq_len(length(dt))[-1]){ind <- .Call(CsubsetVector, ind, which(eq))}, list(dt = quote(x), x = substitute(.Call(CsubsetVector, x[[col]], ind)))), list(eq = logic)))
     } else {
@@ -3235,7 +3232,7 @@ filter.at = function(cols, logic, by, all.vars = TRUE){
   
   l_args = list(x = quote(x))
   if (!missing(by)) l_args[['by']] = substitute(by)
-  if (!isTRUE(try(cols, silent = T))) l_args[['.SDcols']] = cols
+  if (!isTRUE(try(cols, silent = TRUE))) l_args[['.SDcols']] = cols
   
   if (which.mFilter) {
     reduce_fx = 'union'
