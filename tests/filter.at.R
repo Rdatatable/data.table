@@ -5,6 +5,8 @@ dt <- data.table(replicate(3, sample(c(T, F), 1E2, replace = T)))
 cols <- c('V1', 'V2', 'V3')
 cols2 <- c('V1', 'V2')
 
+# dt[filter.at(cols, logic, by, all.ties = T)]
+
 # `&` with no by
 #optimized
 options(datatable.verbose=TRUE)
