@@ -13,13 +13,20 @@ dt[top.n(-3)]
 dt[top.n(3, by = Species)]
 dt[top.n(-3, by = Species)]
 dt[top.n(3, by = Species, ties = TRUE)] #ties ignored
+dt[top.n(-3, Sepal.Length, ties = TRUE)]
 
 ## wt
 dt[top.n(3, Sepal.Length)]
 dt[top.n(3, Sepal.Length, ties = TRUE)]
 
 dt[top.n(3, Sepal.Length, Species)]
+dt[top.n(-3, Sepal.Length, Species)]
 dt[top.n(3, Sepal.Length, Species, ties = TRUE)]
+dt[top.n(-3, Sepal.Length, Species, ties = TRUE)]
+
+#for codecov - produces error message requiring n != 0L.
+dt[top.n(0L)]
+dt[top.n()]
 
 ## no wt
 options(datatable.verbose=FALSE)
@@ -60,5 +67,10 @@ DT = data.table(
 )
 
 system.time({res1 = DT[order(-v3), .(largest2_v3 = head(v3, 2L)), by = id6]})
+#   user  system elapsed 
+#   4.08    0.28    3.45 
 system.time({res2 = DT[top.n(2L, v3, id6), .(id6, largest2_v3 = v3)]})
+#   user  system elapsed 
+#   2.48    0.16    1.75
 identical(res1, res2)
+# [1] TRUE
