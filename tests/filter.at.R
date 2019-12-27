@@ -55,7 +55,7 @@ dt[filter.at(V1:V3, which.min(x))]
 # with by
 dt[filter.at(TRUE, which.min(x), by = ID)]
 
-# see https://stackoverflow.com/questions/59333424/select-row-from-data-table-in-programming-mode/59338483#59338483
+######### see https://stackoverflow.com/questions/59333424/select-row-from-data-table-in-programming-mode/59338483#59338483 #######
 tb = data.table(g_id = c(1, 1, 1, 2, 2, 2, 3),
                 item_no = sample(c(24,25,26,27,28,29,30)),
                 time_no = c(100, 110, 120, 130, 140, 160, 170)
@@ -67,7 +67,7 @@ grp = "g_id"
 tb[, .SD[which.min(get(mincol))], grp]
 tb[filter.at(mincol, which.min(x), grp)]
 
-# see https://github.com/Rdatatable/data.table/issues/4105
+################### see https://github.com/Rdatatable/data.table/issues/4105 ##############################
 set.seed(1)
 foo <- data.table(
   x = as.character(runif(n = 10^6)),
@@ -102,3 +102,31 @@ df1[filter.at(patterns('x'), !(rleid(x) %in% c(1, max(rleid(x))) & is.na(x)), ID
 
 fx = function (x) {!(rleid(x) %in% c(1, max(rleid(x))) & is.na(x))}
 df1[filter.at(x1:x2, fx, ID)]
+
+################## see https://github.com/Rdatatable/data.table/issues/2655 ##################################
+set.seed(1234)
+DT <- data.table(foo = rep(LETTERS[1:2],8),
+                 bar = rep(letters[17:20],4),
+                 month = rep(month.name[1:4],4),
+                 day = seq_len(16),
+                 yyy = rnorm(16,mean = 0.5,1.5))
+
+## Expression 1: with hard coded columns
+DT[yyy > 0,.(NewCol = paste(month, day),
+             bar,
+             yyy), by = foo]
+
+## Expression 2: everything passed by reference
+A = "yyy"; B = 0; C = "NewCol"; D = "month";E = "day";G = "foo"; H = c("bar","yyy")
+
+# OP wants:
+DT[..A > ..B , .(..C = paste(..D, ..E),
+                 ..H), by = ..G]
+
+# a little closer
+DT[filter.at(A, x > B),
+   .(NewCol = paste(month, day),
+     bar,
+     yyy),
+   by = G]
+
