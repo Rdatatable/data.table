@@ -19,11 +19,11 @@ const char *getString(SEXP *col, int64_t row) {   // TODO: inline for use in fwr
   return x==NA_STRING ? NULL : CHAR(x);
 }
 
-const int getStringLen(SEXP *col, int64_t row) {
+int getStringLen(SEXP *col, int64_t row) {
   return LENGTH(col[row]);  // LENGTH of CHARSXP is nchar
 }
 
-const int getMaxStringLen(const SEXP *col, const int64_t n) {
+int getMaxStringLen(const SEXP *col, const int64_t n) {
   int max=0;
   SEXP last=NULL;
   for (int i=0; i<n; ++i) {
@@ -36,7 +36,7 @@ const int getMaxStringLen(const SEXP *col, const int64_t n) {
   return max;
 }
 
-const int getMaxCategLen(SEXP col) {
+int getMaxCategLen(SEXP col) {
   col = getAttrib(col, R_LevelsSymbol);
   if (!isString(col)) error(_("Internal error: col passed to getMaxCategLen is missing levels"));
   return getMaxStringLen( STRING_PTR(col), LENGTH(col) );
@@ -87,7 +87,7 @@ void writeList(SEXP *col, int64_t row, char **pch) {
   *pch = ch;
 }
 
-const int getMaxListItemLen(const SEXP *col, const int64_t n) {
+int getMaxListItemLen(const SEXP *col, const int64_t n) {
   int max=0;
   SEXP last=NULL;
   for (int i=0; i<n; ++i) {

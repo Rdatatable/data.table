@@ -133,7 +133,7 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir())
     }
   }
   stopifnot(length(skip)==1L, !is.na(skip), is.character(skip) || is.numeric(skip))
-  if (identical(skip,"__auto__")) skip = ifelse(yaml,0L,-1L)
+  if (identical(skip,"__auto__")) skip = if (yaml) 0L else -1L
   else if (is.double(skip)) skip = as.integer(skip)
   # else skip="string" so long as "string" is not "__auto__" (best conveys to user skip is automatic rather than user needing to know -1 or NA means auto)
   stopifnot(is.null(na.strings) || is.character(na.strings))
@@ -312,9 +312,9 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir())
   if (stringsAsFactors) {
     if (is.double(stringsAsFactors)) { #2025
       should_be_factor = function(v) is.character(v) && uniqueN(v) < nr * stringsAsFactors
-      cols_to_factor = which(vapply(ans, should_be_factor, logical(1L)))
+      cols_to_factor = which(vapply_1b(ans, should_be_factor))
     } else {
-      cols_to_factor = which(vapply(ans, is.character, logical(1L)))
+      cols_to_factor = which(vapply_1b(ans, is.character))
     }
     if (verbose) cat("stringsAsFactors=", stringsAsFactors, " converted ", length(cols_to_factor), " column(s): ", brackify(names(ans)[cols_to_factor]), "\n", sep="")
     for (j in cols_to_factor) set(ans, j=j, value=as_factor(.subset2(ans, j)))
@@ -362,4 +362,3 @@ as_factor = function(x) {
 as_raw = function(x) {
   scan(text=x, what=raw(), quiet=TRUE)  # as in read.csv, which ultimately uses src/main/scan.c and strtoraw
 }
-

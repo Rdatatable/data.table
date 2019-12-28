@@ -1,8 +1,9 @@
 #ifndef dt_FREAD_H
 #define dt_FREAD_H
-#include <stdint.h>  // uint32_t
-#include <stdlib.h>  // size_t
-#include <stdbool.h> // bool
+#include "dt_stdio.h"  // PRId64
+#include <stdint.h>    // uint32_t
+#include <stdlib.h>    // size_t
+#include <stdbool.h>   // bool
 #include "myomp.h"
 #ifdef DTPY
   #include "py_fread.h"

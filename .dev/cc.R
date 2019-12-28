@@ -60,14 +60,14 @@ cc = function(test=TRUE, clean=FALSE, debug=FALSE, omp=!debug, cc_dir, path=Sys.
   if (clean) system("rm *.o *.so")
   OMP = if (omp) "" else "no-"
   if (debug) {
-    ret = system(sprintf("MAKEFLAGS='-j CC=%s PKG_CFLAGS=-f%sopenmp CFLAGS=-std=c99\\ -O0\\ -ggdb\\ -pedantic' R CMD SHLIB -d -o data.table.so *.c", CC, OMP))
+    ret = system(sprintf("MAKEFLAGS='-j CC=%s PKG_CFLAGS=-f%sopenmp CFLAGS=-std=c99\\ -O0\\ -ggdb\\ -pedantic' R CMD SHLIB -d -o datatable.so *.c", CC, OMP))
   } else {
-    ret = system(sprintf("MAKEFLAGS='-j CC=%s CFLAGS=-f%sopenmp\\ -std=c99\\ -O3\\ -pipe\\ -Wall\\ -pedantic' R CMD SHLIB -o data.table.so *.c", CC, OMP))
+    ret = system(sprintf("MAKEFLAGS='-j CC=%s CFLAGS=-f%sopenmp\\ -std=c99\\ -O3\\ -pipe\\ -Wall\\ -pedantic\\ -fno-common' R CMD SHLIB -o datatable.so *.c", CC, OMP))
     # TODO add -Wextra too?
   }
   if (ret) return()
   # clang -Weverything includes -pedantic and issues many more warnings than gcc
-  # system("R CMD SHLIB -o data.table.so *.c")
+  # system("R CMD SHLIB -o datatable.so *.c")
   if (any(sapply(objects(envir=.GlobalEnv),function(x){inherits(get(x,.GlobalEnv),"data.table")}))) {
     cat("ABOUT TO RELOAD .SO BUT THERE ARE DATA.TABLE OBJECTS IN .GLOBALENV SO FINALIZER MIGHT CRASH\n")
   }
