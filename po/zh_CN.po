@@ -3093,11 +3093,11 @@ msgstr "nth=%d, nBatch=%d\n"
 #: fsort.c:156
 #, c-format
 msgid "Range = [%g,%g]\n"
-msgstr ""
+msgstr "范围Χ=[%g,%g]\n"
 
 #: fsort.c:157
 msgid "Cannot yet handle negatives."
-msgstr ""
+msgstr "目前无法处理负值。"
 
 #: fsort.c:170
 #, c-format
@@ -3106,7 +3106,7 @@ msgstr "maxBit=%d; MSBNbits=%d; shift=%d; MSBsize=%d\n"
 
 #: fsort.c:173
 msgid "Unable to allocate working memory"
-msgstr ""
+msgstr "无法分配工作内存"
 
 #: fsort.c:177
 #, c-format
@@ -3114,6 +3114,8 @@ msgid ""
 "counts is %dMB (%d pages per nBatch=%d, batchSize=%<PRIu64>, lastBatchSize="
 "%<PRIu64>)\n"
 msgstr ""
+"counts为%dMB (每个nBatch中的%d页=%d, batchSize=%<PRIu64>, lastBatchSize="
+"%<PRIu64>)\n"
 
 #: fsort.c:231
 msgid "Internal error: counts[nBatch-1][MSBsize-1] != length(x)"
@@ -3121,7 +3123,7 @@ msgstr "内部错误：counts[nBatch-1][MSBsize-1] != length(x)"
 
 #: fsort.c:247
 msgid "Top 5 MSB counts: "
-msgstr ""
+msgstr "前5个MSB counts："
 
 #: fsort.c:247
 #, c-format
@@ -3135,12 +3137,12 @@ msgstr "\n"
 #: fsort.c:248
 #, c-format
 msgid "Reduced MSBsize from %d to "
-msgstr ""
+msgstr "MSBsize 从 %d 减少到"
 
 #: fsort.c:252
 #, c-format
 msgid "%d by excluding 0 and 1 counts\n"
-msgstr ""
+msgstr "%d 通过排除0和1的counts\n"
 
 #: fsort.c:309
 #, c-format
@@ -3150,17 +3152,17 @@ msgstr "%d: %.3f (%4.1f%%)\n"
 #: fwrite.c:613
 #, c-format
 msgid "buffMB=%d outside [1,1024]"
-msgstr "buffMB=%d 在 [1,1024] 外"
+msgstr "buffMB=%d 在[1,1024]之外"
 
 #: fwrite.c:620
 #, c-format
 msgid ""
 "eol must be 1 or more bytes (usually either \\n or \\r\\n) but is length %d"
-msgstr ""
+msgstr "eol必须是1或更多的字节（通常是either\\n 或 \\r\\n）但是长度为%d"
 
 #: fwrite.c:623
 msgid "Column writers: "
-msgstr ""
+msgstr "数据写入： "
 
 #: fwrite.c:625 fwrite.c:627 fwrite.c:629
 #, c-format
@@ -3178,16 +3180,19 @@ msgid ""
 "args.doRowNames=%d args.rowNames=%d doQuote=%d args.nrow=%<PRId64> args.ncol="
 "%d eolLen=%d\n"
 msgstr ""
+"\n"
+"args.doRowNames=%d args.rowNames=%d doQuote=%d args.nrow=%<PRId64> args.ncol="
+"%d eolLen=%d\n"
 
 #: fwrite.c:664
 #, c-format
 msgid "Internal error: type %d has no max length method implemented"
-msgstr ""
+msgstr "内部错误：%d type 没有实施最大长度的方法"
 
 #: fwrite.c:671
 #, c-format
 msgid "maxLineLen=%<PRIu64>. Found in %.3fs\n"
-msgstr ""
+msgstr "maxLineLen=%<PRIu64>. 在%.3fs中发现\n"
 
 #: fwrite.c:691
 #, c-format
@@ -3196,6 +3201,8 @@ msgid ""
 "permission to it? Is this Windows and does another process such as Excel "
 "have it open?"
 msgstr ""
+"%s: '%s'. 无法打开一斤存在的文件进行写入.你是否对该文件有写入权限？这是"
+"Windows系统？是否有Excel之类的进程已经打开了该文件？"
 
 #: fwrite.c:692
 #, c-format
@@ -3204,30 +3211,32 @@ msgid ""
 "Do you have permission to write here, is there space on the disk and does "
 "the path exist?"
 msgstr ""
+"%s: '%s'. 无法创建新的文件进行写入（文件不存在）你是否对此有写入权限？磁盘上"
+"是否有空间以及路径是否存在？"
 
 #: fwrite.c:700
 #, c-format
 msgid "Writing bom (%s), yaml (%d characters) and column names (%s) ... "
-msgstr ""
+msgstr "正在写入bom (%s), yaml (%d characters) 和 column names (%s) ..."
 
 #: fwrite.c:713
 #, c-format
 msgid "Unable to allocate %d MiB for header: %s"
-msgstr ""
+msgstr "无法为header: %2$s分配%1$d MiB"
 
 #: fwrite.c:741 fwrite.c:803
 msgid "Can't allocate gzip stream structure"
-msgstr ""
+msgstr "无法分配gzip的流结构"
 
 #: fwrite.c:748
 #, c-format
 msgid "Unable to allocate %d MiB for zbuffer: %s"
-msgstr ""
+msgstr "无法为zbuffer: %2$s分配%1$d MiB"
 
 #: fwrite.c:764
 #, c-format
 msgid "Compress gzip error: %d"
-msgstr ""
+msgstr "解压gzip错误: %d"
 
 #: fwrite.c:765 fwrite.c:773 fwrite.c:972
 #, c-format
@@ -3237,11 +3246,11 @@ msgstr "%s: '%s'"
 #: fwrite.c:770
 #, c-format
 msgid "done in %.3fs\n"
-msgstr ""
+msgstr "%.3fs完成\n"
 
 #: fwrite.c:772
 msgid "No data rows present (nrow==0)\n"
-msgstr ""
+msgstr "当前没有数据行(nrow==0)\n"
 
 #: fwrite.c:790
 #, c-format
@@ -3249,6 +3258,9 @@ msgid ""
 "Writing %<PRId64> rows in %d batches of %d rows (each buffer size %dMB, "
 "showProgress=%d, nth=%d)\n"
 msgstr ""
+"正在%3$d行的%2$d批处理中写入%1$<PRId64>行(每个缓存的大小为%4$dMB，"
+"showProgress=%5$d, nth=%6$d)\n"
+")\n"
 
 #: fwrite.c:980
 #, c-format
@@ -3256,26 +3268,29 @@ msgid ""
 "zlib %s (zlib.h %s) deflate() returned error %d with z_stream->msg==\"%s\" "
 "Z_FINISH=%d Z_BLOCK=%d. %s"
 msgstr ""
+"zlib %s (zlib.h %s) deflate() 返回了错误%d跟错误 z_stream->msg==\"%s\" "
+"Z_FINISH=%d Z_BLOCK=%d . %s"
 
 #: fwrite.c:982
 msgid ""
 "Please include the full output above and below this message in your data."
 "table bug report."
-msgstr ""
+msgstr "请在你的data.table错误报告中包含本条信息上下内容的完整输出。"
 
 #: fwrite.c:983
 msgid ""
 "Please retry fwrite() with verbose=TRUE and include the full output with "
 "your data.table bug report."
 msgstr ""
+"请使用verbose=TRUE重试fwrite()，并将完整的输出包含在你的data.table错误报告中"
 
 #: fwriteR.c:41
 msgid "Internal error: col passed to getMaxCategLen is missing levels"
-msgstr ""
+msgstr "内部错误：传递给getMaxCateLen的col正在丢失级别"
 
 #: fwriteR.c:75
 msgid "Internal error: getMaxListItemLen should have caught this up front."
-msgstr ""
+msgstr "内部错误：getMaxListItemLen应该已经预先抓取了这个"
 
 #: fwriteR.c:98
 #, c-format
@@ -3284,37 +3299,39 @@ msgid ""
 "list columns containing items which are atomic vectors of type logical, "
 "integer, integer64, double, complex and character."
 msgstr ""
+"列表页行%d的类型是'%s' - 尚未实施. fwrite()可以写入包含逻辑类型原子向量项目的"
+"列表页，整数，整数64，双精度，复数和字符"
 
 #: fwriteR.c:103
 #, c-format
 msgid ""
 "Internal error: row %d of list column has no max length method implemented"
-msgstr ""
+msgstr "内部错误：列表页的%d行没有实现最大长度方法"
 
 #: fwriteR.c:170
 msgid ""
 "fwrite must be passed an object of type list; e.g. data.frame, data.table"
-msgstr ""
+msgstr "fwrite必须传递一个类型为列表的对象；比如data.frame, data.table"
 
 #: fwriteR.c:179
 msgid "fwrite was passed an empty list of no columns. Nothing to write."
-msgstr ""
+msgstr "fwrite传递了一个没有列的空列表. 没有对象可以写入"
 
 #: fwriteR.c:234
 #, c-format
 msgid "Column %d's length (%d) is not the same as column 1's length (%d)"
-msgstr ""
+msgstr "列%d的长度(%d)和列1的长度(%d)不一致"
 
 #: fwriteR.c:237
 #, c-format
 msgid "Column %d's type is '%s' - not yet implemented in fwrite."
-msgstr ""
+msgstr "列%d的类型是'%s' - 尚未在fwrite中实施"
 
 #: fwriteR.c:262
 msgid ""
 "No list columns are present. Setting sep2='' otherwise quote='auto' would "
 "quote fields containing sep2.\n"
-msgstr ""
+msgstr "当前没有列表页. 设置sep2=''否则quote='auto'将引用包含sep2的字段.\n"
 
 #: fwriteR.c:266
 #, c-format
@@ -3322,17 +3339,20 @@ msgid ""
 "If quote='auto', fields will be quoted if the field contains either sep "
 "('%c') or sep2 ('%c') because column %d is a list column.\n"
 msgstr ""
+"如果参数设定quote = 'auto'，由于%3$d列是列表页 (list-column is a data frame "
+"that host lists)，所有包含sep('%1$c') 或 sep2 ('%2$c')的字段将会被自动加上引"
+"号。\n"
 
 #: fwriteR.c:270
 #, c-format
 msgid ""
 "sep ('%c'), sep2 ('%c') and dec ('%c') must all be different. Column %d is a "
 "list column."
-msgstr ""
+msgstr "sep ('%c'), sep2 ('%c') 和 dec ('%c') 必须都不相同. 列 %d 是一个空列表"
 
 #: gsumm.c:43
 msgid "env is not an environment"
-msgstr ""
+msgstr "env不是环境"
 
 #: gsumm.c:45
 msgid "o is not an integer vector"
@@ -3340,7 +3360,7 @@ msgstr ""
 
 #: gsumm.c:46
 msgid "f is not an integer vector"
-msgstr ""
+msgstr "f不是一个整数向量"
 
 #: gsumm.c:47
 msgid "l is not an integer vector"
@@ -4722,27 +4742,3 @@ msgid ""
 msgstr ""
 "dim.data.table的参数必须为一个data.table（实质为一个列表），但输入参数为%s类"
 "型"
-
-#, c-format
-#~ msgid "nrow [%d] != length(x) [%d] in gmin"
-#~ msgstr "gmin 中 nrow [%d] != length(x) [%d]"
-
-#, c-format
-#~ msgid "nrow [%d] != length(x) [%d] in gmax"
-#~ msgstr "gmax检测到行数[%d]不等于x的长度[%d]"
-
-#, c-format
-#~ msgid "nrow [%d] != length(x) [%d] in gmedian"
-#~ msgstr "gmedian函数检测到行数[%d]不等于x的长度[%d]"
-
-#, c-format
-#~ msgid "nrow [%d] != length(x) [%d] in gtail"
-#~ msgstr "gtail函数检测到行数[%d]不等于x的长度[%d]"
-
-#, c-format
-#~ msgid "nrow [%d] != length(x) [%d] in ghead"
-#~ msgstr "ghead函数检测到行数[%d]不等于x的长度[%d]"
-
-#, c-format
-#~ msgid "nrow [%d] != length(x) [%d] in gprod"
-#~ msgstr "在gprod中，nrow [%d] != length(x) [%d]"
