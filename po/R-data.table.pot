@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: data.table 1.12.9\n"
-"POT-Creation-Date: 2019-12-22 23:59\n"
+"POT-Creation-Date: 2019-12-29 01:32\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -1547,9 +1547,6 @@ msgid "New parallel sort has not been implemented for decreasing=TRUE so far. Us
 msgstr ""
 
 msgid "New parallel sort has not been implemented for vectors containing NA values so far. Using one thread."
-msgstr ""
-
-msgid "x must be a data.frame or data.table."
 msgstr ""
 
 msgid "x must be a data.frame or data.table"

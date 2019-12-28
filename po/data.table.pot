@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: data.table 1.12.9\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2019-12-23 00:00+0800\n"
+"POT-Creation-Date: 2019-12-29 01:51+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -1715,14 +1715,6 @@ msgstr ""
 msgid "  0/1 column will be read as %s\n"
 msgstr ""
 
-#: fread.c:1158
-msgid "boolean"
-msgstr ""
-
-#: fread.c:1158
-msgid "integer"
-msgstr ""
-
 #: fread.c:1166
 #, c-format
 msgid "sep == quote ('%c') is not allowed"
@@ -2157,14 +2149,6 @@ msgstr ""
 msgid ""
 "  'header' determined to be %s because there are%s number fields in the "
 "first and only row\n"
-msgstr ""
-
-#: fread.c:1774
-msgid "true"
-msgstr ""
-
-#: fread.c:1774
-msgid "false"
 msgstr ""
 
 #: fread.c:1774
@@ -3218,9 +3202,10 @@ msgstr ""
 msgid "This gsum took (narm=%s) ... "
 msgstr ""
 
-#: gsumm.c:350 gsumm.c:606
+#: gsumm.c:350 gsumm.c:606 gsumm.c:693 gsumm.c:812 gsumm.c:955 gsumm.c:1005
+#: gsumm.c:1085 gsumm.c:1176 gsumm.c:1266 gsumm.c:1409
 #, c-format
-msgid "nrow [%d] != length(x) [%d] in gsum"
+msgid "nrow [%d] != length(x) [%d] in %s"
 msgstr ""
 
 #: gsumm.c:404
@@ -3291,11 +3276,6 @@ msgstr ""
 msgid "min is not meaningful for factors."
 msgstr ""
 
-#: gsumm.c:693
-#, c-format
-msgid "nrow [%d] != length(x) [%d] in gmin"
-msgstr ""
-
 #: gsumm.c:717 gsumm.c:850
 msgid ""
 "No non-missing values found in at least one group. Coercing to numeric type "
@@ -3337,11 +3317,6 @@ msgstr ""
 msgid "max is not meaningful for factors."
 msgstr ""
 
-#: gsumm.c:812
-#, c-format
-msgid "nrow [%d] != length(x) [%d] in gmax"
-msgstr ""
-
 #: gsumm.c:930
 msgid ""
 "No non-missing values found in at least one group. Returning '-Inf' for such "
@@ -3372,11 +3347,6 @@ msgstr ""
 msgid "median is not meaningful for factors."
 msgstr ""
 
-#: gsumm.c:955
-#, c-format
-msgid "nrow [%d] != length(x) [%d] in gmedian"
-msgstr ""
-
 #: gsumm.c:992
 #, c-format
 msgid ""
@@ -3385,21 +3355,11 @@ msgid ""
 "optimize=1)"
 msgstr ""
 
-#: gsumm.c:1005
-#, c-format
-msgid "nrow [%d] != length(x) [%d] in gtail"
-msgstr ""
-
 #: gsumm.c:1073
 #, c-format
 msgid ""
 "Type '%s' not supported by GForce tail (gtail). Either add the prefix utils::"
 "tail(.) or turn off GForce optimization using options(datatable.optimize=1)"
-msgstr ""
-
-#: gsumm.c:1085 gsumm.c:1176
-#, c-format
-msgid "nrow [%d] != length(x) [%d] in ghead"
 msgstr ""
 
 #: gsumm.c:1153
@@ -3450,11 +3410,6 @@ msgstr ""
 msgid "var/sd is not meaningful for factors."
 msgstr ""
 
-#: gsumm.c:1266
-#, c-format
-msgid "nrow [%d] != length(x) [%d] in gvar"
-msgstr ""
-
 #: gsumm.c:1382
 #, c-format
 msgid ""
@@ -3479,11 +3434,6 @@ msgstr ""
 
 #: gsumm.c:1404
 msgid "prod is not meaningful for factors."
-msgstr ""
-
-#: gsumm.c:1409
-#, c-format
-msgid "nrow [%d] != length(x) [%d] in gprod"
 msgstr ""
 
 #: gsumm.c:1411

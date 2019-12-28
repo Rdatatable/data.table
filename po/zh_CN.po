@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: data.table 1.12.5\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2019-11-11 11:44+0800\n"
+"POT-Creation-Date: 2019-12-29 01:51+0800\n"
 "PO-Revision-Date: 2019-11-18 00:26-04\n"
 "Last-Translator: Yuhang Chen <yuhangchen0802@gmail.com>\n"
 "Language-Team: Mandarin\n"
@@ -1015,7 +1015,7 @@ msgstr "length(iSD)[%d] != length(jiscols)[%d]"
 #: dogroups.c:92
 #, c-format
 msgid "length(xSD)[%d] != length(xjiscols)[%d]"
-msgstr ""
+msgstr "length(xSD)[%d] != length(xjiscols)[%d]"
 
 #: dogroups.c:155 dogroups.c:184
 msgid "Internal error. Type of column should have been checked by now"
@@ -1125,7 +1125,7 @@ msgstr "dogroups: 从 %d 列增加至 %d 列\n"
 #: dogroups.c:387
 #, c-format
 msgid "dogroups: length(ans)[%d]!=ngrpcols[%d]+njval[%d]"
-msgstr ""
+msgstr "dogroups: length(ans)[%d]!=ngrpcols[%d]+njval[%d]"
 
 #: dogroups.c:420
 #, c-format
@@ -1621,7 +1621,7 @@ msgstr "内部错误：列有不支持类型，未被前置识别"
 #: forder.c:722
 #, c-format
 msgid "nradix=%d\n"
-msgstr ""
+msgstr "nradix=%d\n"
 
 #: forder.c:728
 #, c-format
@@ -1641,7 +1641,7 @@ msgstr "定时块 %2d%s = %8.3f   %8d\n"
 #: forder.c:797
 #, c-format
 msgid "stat[%03d]==%20<PRIu64>\n"
-msgstr ""
+msgstr "stat[%03d]==%20<PRIu64>\n"
 
 #: forder.c:1053
 #, c-format
@@ -1815,7 +1815,7 @@ msgstr ""
 
 #: fread.c:1149
 msgid "]\n"
-msgstr ""
+msgstr "]\n"
 
 #: fread.c:1151
 msgid "  One or more of the NAstrings looks like a number.\n"
@@ -1844,14 +1844,6 @@ msgstr "显示进程  %d\n"
 #, c-format
 msgid "  0/1 column will be read as %s\n"
 msgstr " 0/1 列被读取为  %s\n"
-
-#: fread.c:1158
-msgid "boolean"
-msgstr ""
-
-#: fread.c:1158
-msgid "integer"
-msgstr ""
 
 #: fread.c:1166
 #, c-format
@@ -2203,7 +2195,7 @@ msgstr ""
 
 #: fread.c:1650
 msgid "jump0size==0\n"
-msgstr ""
+msgstr "jump0size==0\n"
 
 #: fread.c:1651
 #, c-format
@@ -2299,7 +2291,8 @@ msgid ""
 "Detected %d column names but the data has %d columns. Filling rows "
 "automatically. Set fill=TRUE explicitly to avoid this warning.\n"
 msgstr ""
-"检测到%d个列名，但数据共有%d列。已经自动填充。设置参数fill=TRUE以屏蔽此警告。\n"
+"检测到%d个列名，但数据共有%d列。已经自动填充。设置参数fill=TRUE以屏蔽此警"
+"告。\n"
 
 #: fread.c:1754
 #, c-format
@@ -2314,16 +2307,8 @@ msgid ""
 msgstr " 参数'header' 被设置为%s， 因为唯一的一行包含 %s 个字段\n"
 
 #: fread.c:1774
-msgid "true"
-msgstr ""
-
-#: fread.c:1774
-msgid "false"
-msgstr ""
-
-#: fread.c:1774
 msgid " no"
-msgstr ""
+msgstr "0"
 
 #: fread.c:1777
 msgid ""
@@ -3103,7 +3088,7 @@ msgstr "x 目前必须是双精度 ('double') 类型的向量"
 #: fsort.c:122
 #, c-format
 msgid "nth=%d, nBatch=%d\n"
-msgstr ""
+msgstr "nth=%d, nBatch=%d\n"
 
 #: fsort.c:156
 #, c-format
@@ -3117,7 +3102,7 @@ msgstr ""
 #: fsort.c:170
 #, c-format
 msgid "maxBit=%d; MSBNbits=%d; shift=%d; MSBsize=%d\n"
-msgstr ""
+msgstr "maxBit=%d; MSBNbits=%d; shift=%d; MSBsize=%d\n"
 
 #: fsort.c:173
 msgid "Unable to allocate working memory"
@@ -3132,7 +3117,7 @@ msgstr ""
 
 #: fsort.c:231
 msgid "Internal error: counts[nBatch-1][MSBsize-1] != length(x)"
-msgstr ""
+msgstr "内部错误：counts[nBatch-1][MSBsize-1] != length(x)"
 
 #: fsort.c:247
 msgid "Top 5 MSB counts: "
@@ -3141,11 +3126,11 @@ msgstr ""
 #: fsort.c:247
 #, c-format
 msgid "%<PRId64> "
-msgstr ""
+msgstr "%<PRId64> "
 
 #: fsort.c:247 fwrite.c:702 fwrite.c:966
 msgid "\n"
-msgstr ""
+msgstr "\n"
 
 #: fsort.c:248
 #, c-format
@@ -3160,12 +3145,12 @@ msgstr ""
 #: fsort.c:309
 #, c-format
 msgid "%d: %.3f (%4.1f%%)\n"
-msgstr ""
+msgstr "%d: %.3f (%4.1f%%)\n"
 
 #: fwrite.c:613
 #, c-format
 msgid "buffMB=%d outside [1,1024]"
-msgstr ""
+msgstr "buffMB=%d 在 [1,1024] 外"
 
 #: fwrite.c:620
 #, c-format
@@ -3180,11 +3165,11 @@ msgstr ""
 #: fwrite.c:625 fwrite.c:627 fwrite.c:629
 #, c-format
 msgid "%d "
-msgstr ""
+msgstr "%d "
 
 #: fwrite.c:628
 msgid "... "
-msgstr ""
+msgstr "... "
 
 #: fwrite.c:631
 #, c-format
@@ -3247,7 +3232,7 @@ msgstr ""
 #: fwrite.c:765 fwrite.c:773 fwrite.c:972
 #, c-format
 msgid "%s: '%s'"
-msgstr ""
+msgstr "%s: '%s'"
 
 #: fwrite.c:770
 #, c-format
@@ -3420,7 +3405,7 @@ msgstr "gather 已支持 INTSXP，REALSXP 和 CPLXSXP，但不支持 '%s'"
 #: gsumm.c:336 gsumm.c:568
 #, c-format
 msgid "%.3fs\n"
-msgstr ""
+msgstr "%.3fs\n"
 
 #: gsumm.c:345
 msgid "sum is not meaningful for factors."
@@ -3431,10 +3416,11 @@ msgstr "因子的和没有意义。"
 msgid "This gsum took (narm=%s) ... "
 msgstr "gsum 占用了 (narm=%s) ..."
 
-#: gsumm.c:350 gsumm.c:606
+#: gsumm.c:350 gsumm.c:606 gsumm.c:693 gsumm.c:812 gsumm.c:955 gsumm.c:1005
+#: gsumm.c:1085 gsumm.c:1176 gsumm.c:1266 gsumm.c:1409
 #, c-format
-msgid "nrow [%d] != length(x) [%d] in gsum"
-msgstr "gsum 中 nrow [%d] != length(x) [%d]"
+msgid "nrow [%d] != length(x) [%d] in %s"
+msgstr "%3$s 中 nrow [%1$d] != length(x) [%2$d]"
 
 #: gsumm.c:404
 msgid ""
@@ -3516,11 +3502,6 @@ msgstr ""
 msgid "min is not meaningful for factors."
 msgstr "因子的最小值没有意义。"
 
-#: gsumm.c:693
-#, c-format
-msgid "nrow [%d] != length(x) [%d] in gmin"
-msgstr "gmin 中 nrow [%d] != length(x) [%d]"
-
 #: gsumm.c:717 gsumm.c:850
 msgid ""
 "No non-missing values found in at least one group. Coercing to numeric type "
@@ -3563,19 +3544,14 @@ msgid ""
 "turn off GForce optimization using options(datatable.optimize=1). More "
 "likely, you may be looking for 'DT[,lapply(.SD,max),by=,.SDcols=]'"
 msgstr ""
-"GForce的max函数只能在应用在数据列上，而不能在.SD或者其他对象上。为了找到"
-"某个list（如.SD）里所有元素的最大值，请使用 base::max(.SD) 或者"
-"通过设置 options(datatable.optimize=1) 来关掉GForce优化。更有可能的是，"
-"你真正想要使用的命令是 'DT[,lapply(.SD,max),by=,.SDcols=]'"
+"GForce的max函数只能在应用在数据列上，而不能在.SD或者其他对象上。为了找到某个"
+"list（如.SD）里所有元素的最大值，请使用 base::max(.SD) 或者通过设置 "
+"options(datatable.optimize=1) 来关掉GForce优化。更有可能的是，你真正想要使用"
+"的命令是 'DT[,lapply(.SD,max),by=,.SDcols=]'"
 
 #: gsumm.c:807
 msgid "max is not meaningful for factors."
 msgstr "因子的最大值是没有意义的"
-
-#: gsumm.c:812
-#, c-format
-msgid "nrow [%d] != length(x) [%d] in gmax"
-msgstr "gmax检测到行数[%d]不等于x的长度[%d]"
 
 #: gsumm.c:930
 msgid ""
@@ -3594,8 +3570,8 @@ msgid ""
 "Type '%s' not supported by GForce max (gmax). Either add the prefix base::"
 "max(.) or turn off GForce optimization using options(datatable.optimize=1)"
 msgstr ""
-"GForce的max (gmax)函数不支持类型 '%s'。请使用 base::max(.) 或者设置"
-" options(datatable.optimize=1) 来关掉GForce优化"
+"GForce的max (gmax)函数不支持类型 '%s'。请使用 base::max(.) 或者设置 "
+"options(datatable.optimize=1) 来关掉GForce优化"
 
 #: gsumm.c:951
 msgid ""
@@ -3605,19 +3581,14 @@ msgid ""
 "optimize=1). More likely, you may be looking for 'DT[,lapply(.SD,median),"
 "by=,.SDcols=]'"
 msgstr ""
-"GForce的median函数只能在应用在数据列上，而不能在.SD或者其他对象上。为了找到"
-"某个list（如.SD）里所有元素的最大值，请使用 stats::median(.SD) 或者"
-"通过设置 options(datatable.optimize=1) 来关掉GForce优化。更有可能的是，"
-"你真正想要使用的命令是 'DT[,lapply(.SD,median),by=,.SDcols=]'"
+"GForce的median函数只能在应用在数据列上，而不能在.SD或者其他对象上。为了找到某"
+"个list（如.SD）里所有元素的最大值，请使用 stats::median(.SD) 或者通过设置 "
+"options(datatable.optimize=1) 来关掉GForce优化。更有可能的是，你真正想要使用"
+"的命令是 'DT[,lapply(.SD,median),by=,.SDcols=]'"
 
 #: gsumm.c:952
 msgid "median is not meaningful for factors."
 msgstr "因子的中位值没有意义。"
-
-#: gsumm.c:955
-#, c-format
-msgid "nrow [%d] != length(x) [%d] in gmedian"
-msgstr "gmedian函数检测到行数[%d]不等于x的长度[%d]"
 
 #: gsumm.c:992
 #, c-format
@@ -3626,13 +3597,8 @@ msgid ""
 "stats::median(.) or turn off GForce optimization using options(datatable."
 "optimize=1)"
 msgstr ""
-"GForce函数median (gmedian)不支持类型'%s'。请使用 stats::tail(.) 或者设置"
-" options(datatable.optimize=1) 来关掉GForce优化。"
-
-#: gsumm.c:1005
-#, c-format
-msgid "nrow [%d] != length(x) [%d] in gtail"
-msgstr "gtail函数检测到行数[%d]不等于x的长度[%d]"
+"GForce函数median (gmedian)不支持类型'%s'。请使用 stats::tail(.) 或者设置 "
+"options(datatable.optimize=1) 来关掉GForce优化。"
 
 #: gsumm.c:1073
 #, c-format
@@ -3640,13 +3606,8 @@ msgid ""
 "Type '%s' not supported by GForce tail (gtail). Either add the prefix utils::"
 "tail(.) or turn off GForce optimization using options(datatable.optimize=1)"
 msgstr ""
-"GForce函数tail (gtail)不支持类型'%s'。请使用 utils::tail(.) 或者设置"
-" options(datatable.optimize=1) 来关掉GForce优化。"
-
-#: gsumm.c:1085 gsumm.c:1176
-#, c-format
-msgid "nrow [%d] != length(x) [%d] in ghead"
-msgstr "ghead函数检测到行数[%d]不等于x的长度[%d]"
+"GForce函数tail (gtail)不支持类型'%s'。请使用 utils::tail(.) 或者设置 "
+"options(datatable.optimize=1) 来关掉GForce优化。"
 
 #: gsumm.c:1153
 #, c-format
@@ -3654,8 +3615,8 @@ msgid ""
 "Type '%s' not supported by GForce head (ghead). Either add the prefix utils::"
 "head(.) or turn off GForce optimization using options(datatable.optimize=1)"
 msgstr ""
-"GForce函数head (ghead)不支持类型'%s'。请使用 utils::head(.) 或者设置"
-" options(datatable.optimize=1) 来关掉GForce优化。"
+"GForce函数head (ghead)不支持类型'%s'。请使用 utils::head(.) 或者设置 "
+"options(datatable.optimize=1) 来关掉GForce优化。"
 
 #: gsumm.c:1161
 msgid ""
@@ -3698,11 +3659,6 @@ msgstr ""
 msgid "var/sd is not meaningful for factors."
 msgstr ""
 
-#: gsumm.c:1266
-#, c-format
-msgid "nrow [%d] != length(x) [%d] in gvar"
-msgstr ""
-
 #: gsumm.c:1382
 #, c-format
 msgid ""
@@ -3733,11 +3689,6 @@ msgstr ""
 #: gsumm.c:1404
 msgid "prod is not meaningful for factors."
 msgstr "prod对于因子是没有意义的"
-
-#: gsumm.c:1409
-#, c-format
-msgid "nrow [%d] != length(x) [%d] in gprod"
-msgstr "在gprod中，nrow [%d] != length(x) [%d]"
 
 #: gsumm.c:1411
 #, c-format
@@ -4160,8 +4111,8 @@ msgid ""
 "Column %d of item %d is length %d inconsistent with column %d which is "
 "length %d. Only length-1 columns are recycled."
 msgstr ""
-"第 %2$d 项的第 %1$d 列长度为 %3$d，与第 %4$d 列的长度 %5$d 不一致。"
-"只有长度为 1 的列会被循环补齐。"
+"第 %2$d 项的第 %1$d 列长度为 %3$d，与第 %4$d 列的长度 %5$d 不一致。只有长度"
+"为 1 的列会被循环补齐。"
 
 #: rbindlist.c:58
 #, c-format
@@ -4169,29 +4120,26 @@ msgid ""
 "Column %d ['%s'] of item %d is length 0. This (and %d other%s like it) has "
 "been filled with NA (NULL for list columns) to make each item uniform."
 msgstr ""
-"第%d列['%s'](子项%d的)的长度为0，它(以及%d其他%s类似的)被填充为NA"
-"(等同与列表列的NULL值)使得每一个子项统一。"
+"第%d列['%s'](子项%d的)的长度为0，它(以及%d其他%s类似的)被填充为NA(等同与列表"
+"列的NULL值)使得每一个子项统一。"
 
 #: rbindlist.c:62
 #, c-format
 msgid ""
 "Total rows in the list is %<PRId64> which is larger than the maximum number "
 "of rows, currently %d"
-msgstr ""
-"列表的总行数为 %<PRId64>，比当前行数的最大值 %d 大。"
+msgstr "列表的总行数为 %<PRId64>，比当前行数的最大值 %d 大。"
 
 #: rbindlist.c:63
 msgid "use.names=TRUE but no item of input list has any names"
-msgstr ""
-"use.names=TRUE，但是输入列表的各项均没有名字。"
+msgstr "use.names=TRUE，但是输入列表的各项均没有名字。"
 
 #: rbindlist.c:71
 #, c-format
 msgid ""
 "Failed to allocate upper bound of %<PRId64> unique column names "
 "[sum(lapply(l,ncol))]"
-msgstr ""
-"无法为 %<PRId64> 个独有列名 [sum(lapply(l,ncol))] 的上界分配内存。"
+msgstr "无法为 %<PRId64> 个独有列名 [sum(lapply(l,ncol))] 的上界分配内存。"
 
 #: rbindlist.c:102
 #, c-format
@@ -4208,7 +4156,8 @@ msgid ""
 "Internal error: usenames==NA but fill=TRUE. usenames should have been set to "
 "TRUE earlier with warning."
 msgstr ""
-"内部错误：usenames==NA 但是 fill=TRUE。usenames应该已在警告之前被设置为了 TRUE。"
+"内部错误：usenames==NA 但是 fill=TRUE。usenames应该已在警告之前被设置为了 "
+"TRUE。"
 
 #: rbindlist.c:196
 msgid ""
@@ -4217,7 +4166,8 @@ msgid ""
 "for options to control this message."
 msgstr ""
 "use.names='check'（从v1.12.2版本开始的默认值）发出该消息并为了向后兼容按照"
-"use.names=FALSE执行。有关控制此消息的选项，请参见 v1.12.2 更新信息中的第 5 项。"
+"use.names=FALSE执行。有关控制此消息的选项，请参见 v1.12.2 更新信息中的第 5 "
+"项。"
 
 #: rbindlist.c:206
 msgid ""
@@ -4232,15 +4182,15 @@ msgid ""
 "with NA (NULL for list columns), or use.names=FALSE to ignore column names.%s"
 msgstr ""
 "第 %3$d 项的第 %1$d 列 ['%2$s'] 在第 %4$d 项中并不存在。请使用 fill=TRUE 以用"
-"NA （或 NULL 若该列为列表（list））填充，或使用 use.names=FALSE 以忽略列名。%5$s"
+"NA （或 NULL 若该列为列表（list））填充，或使用 use.names=FALSE 以忽略列"
+"名。%5$s"
 
 #: rbindlist.c:218
 #, c-format
 msgid ""
 "Internal error: usenames==NA but an out-of-order name has been found in an "
 "item with no names or the first item. [%d]"
-msgstr ""
-"内部错误：usenames==NA 但某项或第一项中存在一个无序的名字。 [%d]"
+msgstr "内部错误：usenames==NA 但某项或第一项中存在一个无序的名字。 [%d]"
 
 #: rbindlist.c:219
 #, c-format
@@ -4249,16 +4199,16 @@ msgid ""
 "names=TRUE to match by column name, or use.names=FALSE to ignore column "
 "names.%s"
 msgstr ""
-"第 %3$d 项的第 %1$d 列 ['%2$s'] 出现在第 %5$d 项的第 %4$d 列。设置"
-"use.names=TRUE 以按列名匹配，或使用 use.names=FALSE 以忽视列名。%6$s"
+"第 %3$d 项的第 %1$d 列 ['%2$s'] 出现在第 %5$d 项的第 %4$d 列。设置use."
+"names=TRUE 以按列名匹配，或使用 use.names=FALSE 以忽视列名。%6$s"
 
 #: rbindlist.c:228
 msgid ""
 "options()$datatable.rbindlist.check is set but is not a single string. See "
 "news item 5 in v1.12.2."
 msgstr ""
-"options()$datatable.rbindlist.check 已设置但并非单个字符串。参见 v1.12.2"
-"更新信息中的第 5 项。"
+"options()$datatable.rbindlist.check 已设置但并非单个字符串。参见 v1.12.2更新"
+"信息中的第 5 项。"
 
 #: rbindlist.c:235
 #, c-format
@@ -4266,14 +4216,16 @@ msgid ""
 "options()$datatable.rbindlist.check=='%s' which is not "
 "'message'|'warning'|'error'|'none'. See news item 5 in v1.12.2."
 msgstr ""
-"options()$datatable.rbindlist.check=='%s' 不是"
-"'message'|'warning'|'error'|'none'。参见 v1.12.2 更新信息中的第 5 项。"
+"options()$datatable.rbindlist.check=='%s' 不"
+"是'message'|'warning'|'error'|'none'。参见 v1.12.2 更新信息中的第 5 项。"
 
 #: rbindlist.c:298
 #, c-format
 msgid ""
 "Column %d of item %d has type 'factor' but has no levels; i.e. malformed."
-msgstr "第%2$d 项的第 %1$d 列为因子（'factor'）类型却没有因子水平（levels），格式错误。"
+msgstr ""
+"第%2$d 项的第 %1$d 列为因子（'factor'）类型却没有因子水平（levels），格式错"
+"误。"
 
 #: rbindlist.c:316
 #, c-format
@@ -4305,9 +4257,9 @@ msgid ""
 "factor levels should be an ordered subset of the first longest. A regular "
 "factor will be created for this column."
 msgstr ""
-"第 %2$d 项的第 %1$d 列为一有序因子（ordered factor），但第 %3$d 个水平（level）['%4$s']"
-"在第 %6$d 项第 %5$d 列的有序因子水平中缺失。每组有序"
-"因子水平应为其中最长有序因子水平的子集。该列将被创建为一非有序因子列。"
+"第 %2$d 项的第 %1$d 列为一有序因子（ordered factor），但第 %3$d 个水平"
+"（level）['%4$s']在第 %6$d 项第 %5$d 列的有序因子水平中缺失。每组有序因子水平"
+"应为其中最长有序因子水平的子集。该列将被创建为一非有序因子列。"
 
 #: rbindlist.c:388
 #, c-format
@@ -4316,9 +4268,9 @@ msgid ""
 "'%s'<'%s' in the ordered levels from column %d of item %d. A regular factor "
 "will be created for this column due to this ambiguity."
 msgstr ""
-"第 %2$d 项的第 %1$d 列中有序因子水平 '%3$s'<'%4$s'。但"
-"在第 %8$d 项第 %7$d 列的有序因子水平中却 '%5$s'<'%6$s'。由于"
-"这种模糊性，该列将被创建为一非有序因子列。"
+"第 %2$d 项的第 %1$d 列中有序因子水平 '%3$s'<'%4$s'。但在第 %8$d 项第 %7$d 列"
+"的有序因子水平中却 '%5$s'<'%6$s'。由于这种模糊性，该列将被创建为一非有序因子"
+"列。"
 
 #: rbindlist.c:433
 #, c-format
@@ -4590,8 +4542,9 @@ msgstr "列的%d项是%d，它超出l的所在区间[1,length(l)=%d]"
 msgid ""
 "All elements to input list must be of same length. Element [%d] has length "
 "%<PRIu64> != length of first element = %<PRIu64>."
-msgstr "列表的所有元素必须是同样的长度。元素[%d]的长度%<PRIu64>不等于"
-"第一个元素的长度%<PRIu64>"
+msgstr ""
+"列表的所有元素必须是同样的长度。元素[%d]的长度%<PRIu64>不等于第一个元素的长"
+"度%<PRIu64>"
 
 #: uniqlist.c:255
 msgid "Internal error: nestedid was not passed a list length 1 or more"
@@ -4672,8 +4625,8 @@ msgstr "内部错误：copyAsPlain()不支持类型为'%s'的参数"
 msgid ""
 "Internal error: type '%s' passed to copyAsPlain() but it seems "
 "copyMostAttrib() retains ALTREP attributes"
-msgstr "内部错误：copyAsPlain()中参数为'%s'类型，但"
-"copyMostAttrib() 保留了ALTREP属性"
+msgstr ""
+"内部错误：copyAsPlain()中参数为'%s'类型，但copyMostAttrib() 保留了ALTREP属性"
 
 #: utils.c:312
 #, c-format
@@ -4701,11 +4654,10 @@ msgid ""
 "Otherwise, please search for this error message in the FAQ, Wiki, Stack "
 "Overflow and data.table issue tracker for advice."
 msgstr ""
-"连接后将生成超过2^31行（已达内部的vecseq的物理"
-"极限）。这很可能是一个错误的连接操作。请检查i中是否存在重复的键值（key values），"
-"导致x中对应的组反复连接。若确定重复的连接可授受，可尝试 by=.EACHI "
-"以使j中的语句仅在每个 i 中对应的组运行以避免大量的内存分配。"
-"否则，请在常见问题（FAQ）、维基（Wiki）、Stack "
+"连接后将生成超过2^31行（已达内部的vecseq的物理极限）。这很可能是一个错误的连"
+"接操作。请检查i中是否存在重复的键值（key values），导致x中对应的组反复连接。"
+"若确定重复的连接可授受，可尝试 by=.EACHI 以使j中的语句仅在每个 i 中对应的组运"
+"行以避免大量的内存分配。否则，请在常见问题（FAQ）、维基（Wiki）、Stack "
 "Overflow 和 data.table GitHub Issue中寻求帮助。"
 
 #: vecseq.c:25
@@ -4725,12 +4677,12 @@ msgid ""
 "large allocation. If you are sure you wish to proceed, rerun with allow."
 "cartesian=TRUE. Otherwise, please search for this error message in the FAQ, "
 "Wiki, Stack Overflow and data.table issue tracker for advice."
-msgstr "连接后生成%d行；多于%d = nrow(x)+nrow(i)。请检查"
-"i中是否存在重复的键值（key values），导致x中对应的组反复连接。"
-"若确定重复的连接可授受，可尝试 by=.EACHI 以使j中的语句仅在每个 i 中对应的组运行"
-"以避免大量的内存分配。如果确认要继续，请设置"
-"cartesian=TRUE 并重新运行。否则，请在常见问题（FAQ）、"
-"维基（Wiki）、Stack Overflow 和 data.table GitHub Issue中寻求帮助。"
+msgstr ""
+"连接后生成%d行；多于%d = nrow(x)+nrow(i)。请检查i中是否存在重复的键值（key "
+"values），导致x中对应的组反复连接。若确定重复的连接可授受，可尝试 by=.EACHI "
+"以使j中的语句仅在每个 i 中对应的组运行以避免大量的内存分配。如果确认要继续，"
+"请设置cartesian=TRUE 并重新运行。否则，请在常见问题（FAQ）、维基（Wiki）、"
+"Stack Overflow 和 data.table GitHub Issue中寻求帮助。"
 
 #: wrappers.c:11
 msgid "Attribute name must be a character vector of length 1"
@@ -4741,8 +4693,9 @@ msgid ""
 "Internal structure doesn't seem to be a list. Can't set class to be 'data."
 "table' or 'data.frame'. Use 'as.data.table()' or 'as.data.frame()' methods "
 "instead."
-msgstr "内部结构并不非一个列表。无法将目标的类型设置为一个data.table"
-"或data.frame。请使用'as.data.table()' 或 'as.data.frame()'."
+msgstr ""
+"内部结构并不非一个列表。无法将目标的类型设置为一个data.table或data.frame。请"
+"使用'as.data.table()' 或 'as.data.frame()'."
 
 #: wrappers.c:66
 msgid "First argument to setlistelt must be a list()"
@@ -4766,5 +4719,30 @@ msgstr "x并非一个VECSXP"
 msgid ""
 "dim.data.table expects a data.table as input (which is a list), but seems to "
 "be of type %s"
-msgstr "dim.data.table的参数必须为一个data.table（实质为一个列表），但输入参数"
-"为%s类型"
+msgstr ""
+"dim.data.table的参数必须为一个data.table（实质为一个列表），但输入参数为%s类"
+"型"
+
+#, c-format
+#~ msgid "nrow [%d] != length(x) [%d] in gmin"
+#~ msgstr "gmin 中 nrow [%d] != length(x) [%d]"
+
+#, c-format
+#~ msgid "nrow [%d] != length(x) [%d] in gmax"
+#~ msgstr "gmax检测到行数[%d]不等于x的长度[%d]"
+
+#, c-format
+#~ msgid "nrow [%d] != length(x) [%d] in gmedian"
+#~ msgstr "gmedian函数检测到行数[%d]不等于x的长度[%d]"
+
+#, c-format
+#~ msgid "nrow [%d] != length(x) [%d] in gtail"
+#~ msgstr "gtail函数检测到行数[%d]不等于x的长度[%d]"
+
+#, c-format
+#~ msgid "nrow [%d] != length(x) [%d] in ghead"
+#~ msgstr "ghead函数检测到行数[%d]不等于x的长度[%d]"
+
+#, c-format
+#~ msgid "nrow [%d] != length(x) [%d] in gprod"
+#~ msgstr "在gprod中，nrow [%d] != length(x) [%d]"

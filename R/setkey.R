@@ -251,7 +251,7 @@ setorder = function(x, ..., na.last=FALSE)
 # na.last=FALSE here, to be consistent with data.table's default
 # as opposed to DT[order(.)] where na.last=TRUE, to be consistent with base
 {
-  if (!is.data.frame(x)) stop("x must be a data.frame or data.table.")
+  if (!is.data.frame(x)) stop("x must be a data.frame or data.table")
   cols = substitute(list(...))[-1L]
   if (identical(as.character(cols),"NULL")) return(x)
   if (length(cols)) {

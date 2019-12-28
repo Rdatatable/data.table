@@ -1155,7 +1155,7 @@ int freadMain(freadMainArgs _args) {
     if (args.skipNrow >= 0) DTPRINT(_("  skip num lines = %"PRId64"\n"), (int64_t)args.skipNrow);
     if (args.skipString) DTPRINT(_("  skip to string = <<%s>>\n"), args.skipString);
     DTPRINT(_("  show progress = %d\n"), args.showProgress);
-    DTPRINT(_("  0/1 column will be read as %s\n"), args.logical01? _("boolean") : _("integer"));
+    DTPRINT(_("  0/1 column will be read as %s\n"), args.logical01? "boolean" : "integer");
   }
 
   stripWhite = args.stripWhite;
@@ -1771,7 +1771,7 @@ int freadMain(freadMainArgs _args) {
     }
     if (verbose) {
       if (sampleLines==0) {
-        DTPRINT(_("  'header' determined to be %s because there are%s number fields in the first and only row\n"), args.header?_("true"):_("false"), args.header?_(" no"):"");
+        DTPRINT(_("  'header' determined to be %s because there are%s number fields in the first and only row\n"), args.header?"TRUE":"FALSE", args.header?_(" no"):"");
       } else {
         if (args.header)
           DTPRINT(_("  'header' determined to be true because all columns are type string and a better guess is not possible\n"));

@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: data.table 1.12.5\n"
-"POT-Creation-Date: 2019-12-22 23:59\n"
+"POT-Creation-Date: 2019-12-29 01:32\n"
 "PO-Revision-Date: 2019-11-16 18:37+0800\n"
 "Last-Translator: Xianying Tan <shrektan@126.com>\n"
 "Language-Team: Mandarin\n"
@@ -153,7 +153,7 @@ msgid "; expecting length 2."
 msgstr "；其长度应为 2。"
 
 msgid "c"
-msgstr ""
+msgstr "c"
 
 msgid "Perhaps you meant %s?"
 msgstr "或许你想用的是 %s？"
@@ -165,7 +165,7 @@ msgid "the second element should be the upper bound(s)."
 msgstr "第二个元素应为上界。"
 
 msgid "x."
-msgstr ""
+msgstr "x."
 
 msgid "is type"
 msgstr "的类型为"
@@ -174,7 +174,7 @@ msgid "which is not supported by data.table join"
 msgstr "，该类型无法用于 data.table 的联接"
 
 msgid "i."
-msgstr ""
+msgstr "i."
 
 msgid "Attempting roll join on factor column when joining x."
 msgstr "试图滚动联接（roll join）因子类型（factor）的列，这发生于将 x."
@@ -564,7 +564,7 @@ msgid ""
 msgstr ""
 
 msgid "%s!=%s"
-msgstr ""
+msgstr "%s!=%s"
 
 msgid "; using the most \"last\" names"
 msgstr ""
@@ -1061,7 +1061,7 @@ msgstr ""
 "（length）：频率（frequency））是："
 
 msgid "%s:%d"
-msgstr ""
+msgstr "%s:%d"
 
 msgid "The first entry with fewer than"
 msgstr "第一个长度少于"
@@ -1139,7 +1139,7 @@ msgid ". Only allowed operators are"
 msgstr "。只有这些操作符是有效的"
 
 msgid "."
-msgstr ""
+msgstr "."
 
 msgid "There is no"
 msgstr ""
@@ -1498,10 +1498,10 @@ msgid "' has size 0. Returning a NULL"
 msgstr "' 的大小为0. 返回一个NULL"
 
 msgid "data.table"
-msgstr ""
+msgstr "data.table"
 
 msgid "data.frame"
-msgstr ""
+msgstr "data.frame"
 
 msgid ""
 "To read gz and bz2 files directly, fread() requires 'R.utils' package which "
@@ -1583,7 +1583,7 @@ msgid "Encountered <"
 msgstr "遇到 <"
 
 msgid "..."
-msgstr ""
+msgstr "..."
 
 msgid "> at the first"
 msgstr "> 在第一个"
@@ -1627,10 +1627,10 @@ msgid ""
 msgstr ""
 
 msgid "s"
-msgstr ""
+msgstr "s"
 
 msgid "["
-msgstr ""
+msgstr "["
 
 msgid "]); the proceeding assumes the user input was"
 msgstr ""
@@ -1674,7 +1674,7 @@ msgid "warning"
 msgstr ""
 
 msgid ":"
-msgstr ""
+msgstr ":"
 
 msgid "so the column has been left as type '"
 msgstr ""
@@ -2123,9 +2123,6 @@ msgstr ""
 msgid ""
 "New parallel sort has not been implemented for vectors containing NA values "
 "so far. Using one thread."
-msgstr ""
-
-msgid "x must be a data.frame or data.table."
 msgstr ""
 
 msgid "x must be a data.frame or data.table"
