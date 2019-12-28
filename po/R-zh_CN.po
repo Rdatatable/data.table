@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: data.table 1.12.5\n"
-"POT-Creation-Date: 2019-10-21 16:15\n"
+"POT-Creation-Date: 2019-12-22 23:59\n"
 "PO-Revision-Date: 2019-11-16 18:37+0800\n"
 "Last-Translator: Xianying Tan <shrektan@126.com>\n"
 "Language-Team: Mandarin\n"
@@ -2243,32 +2243,32 @@ msgid ""
 msgstr "因子列和 ignore.row.order 都不能与非 0 的容差（tolerance）参数同时使用"
 
 msgid "Internal error: factor type mismatch should have been caught earlier"
-msgstr "内部错误：请提前排查不匹配的因子类型"
+msgstr "内部错误：此时不匹配的因子类型应已被发现"
 
 msgid "argument 'fill' ignored, only make sense for type='const'"
-msgstr "参数 'fill' 被忽略，仅对 'const' 类型有意义"
+msgstr "参数 'fill' 将被忽略，因其仅当 type='const'时有意义"
 
 msgid "order.col='"
-msgstr "按列排序 = '"
+msgstr "order.col='"
 
 msgid "' not a column name of info"
-msgstr "' 不是如下信息的列名："
+msgstr "' 并非info的一个列名"
 
 msgid "data.table package is loaded. Unload or start a fresh R session."
-msgstr ""
-"data.table 包加载完毕，并将一直可用，直到其被卸载或启用一个新的 R 会话为止。"
+msgstr "data.table 包已被加载。请将其卸载或启动一个新的 R 会话。"
 
 msgid ""
 "script must end with '.Rraw'. If a file ending '.Rraw.bz2' exists, that will "
 "be found and used."
 msgstr ""
-"脚本必须以 '.Rraw' 结尾。如果以 'Rraw.bz2' 结尾的文件存在，也将被发现和使用。"
+"脚本文件名必须以 '.Rraw' 结尾。如果以 'Rraw.bz2' 结尾的文件存在，其也将被使"
+"用。"
 
 msgid "Neither"
 msgstr ""
 
 msgid "exist in"
-msgstr ""
+msgstr "均不存在于文件夹"
 
 msgid "Failed after test"
 msgstr ""
@@ -2277,62 +2277,62 @@ msgid "before the next test() call in"
 msgstr ""
 
 msgid "out of"
-msgstr ""
+msgstr "总数为"
 
 msgid ". Search"
-msgstr ""
+msgstr ". 搜索"
 
 msgid "for test number"
-msgstr ""
+msgstr "以获得测试编号"
 
 msgid "Timings count mismatch:"
-msgstr ""
+msgstr "计时不一致:"
 
 msgid "vs"
-msgstr ""
+msgstr "vs"
 
 msgid "Test"
-msgstr ""
+msgstr "测试"
 
 msgid ""
 "is invalid: when error= is provided it does not make sense to pass y as well"
-msgstr ""
+msgstr "无效：当使用了error=，不应再输入y"
 
 msgid "Use started.at=proc.time() not Sys.time() (POSIXt and slow)"
-msgstr ""
+msgstr "使用started.at=proc.time()而非Sys.time() (返回POSIXt类型，处理较慢)"
 
 msgid "make.names='"
-msgstr ""
+msgstr "make.names='"
 
 msgid "' not found in names of input"
-msgstr ""
+msgstr "'不存在于输入的名字里"
 
 msgid "make.names="
-msgstr ""
+msgstr "make.names="
 
 msgid "is out of range [1,ncol="
-msgstr ""
+msgstr "不在以下区间[1,ncol="
 
 msgid "'names' must be TRUE/FALSE or a character vector."
-msgstr ""
+msgstr "'names'必须为TRUE/FALSE，或一个字符（character）向量。"
 
 msgid "'keep' should contain integer values between"
-msgstr ""
+msgstr "'keep'所含整数值应在区间"
 
 msgid "length(names) (="
-msgstr ""
+msgstr "length(names) (="
 
 msgid ") is not equal to length("
-msgstr ""
+msgstr ") 并不等于(="
 
 msgid ") (="
-msgstr ""
+msgstr ") (="
 
 msgid ")."
-msgstr ""
+msgstr ")."
 
 msgid "l not type list"
-msgstr ""
+msgstr "l并非列表（list）类型"
 
 msgid "Argument 'nan' must be length 1"
 msgstr ""
@@ -2341,7 +2341,7 @@ msgid "Argument 'nan' must be NA or NaN"
 msgstr ""
 
 msgid "x not boolean"
-msgstr ""
+msgstr "x并非布尔值"
 
 msgid ""
 "Some columns are type 'integer64' but package bit64 is not installed. Those "
@@ -2349,29 +2349,45 @@ msgid ""
 "to reload the data. Simply install.packages('bit64') to obtain the integer64 "
 "print method and print the data again."
 msgstr ""
+"有些列的类型是64 位整数类型（'integer64')但bit64包并没有安装。这些列会被显示"
+"成看起来有些奇怪的浮点型数据。然而并不需要重新载入这些数据，只需运行 install."
+"packages('bit64') 来获取显示integer64类型的打印方法，再重新打印该数据即可。"
 
 msgid "Pattern"
-msgstr ""
+msgstr "Pattern"
 
 msgid "not found: ["
-msgstr ""
+msgstr "未找到: ["
 
 msgid ""
 "Input xts object should not have 'index' column because it would result in "
 "duplicate column names. Rename 'index' column in xts or use `keep."
 "rownames=FALSE` and add index manually as another column."
 msgstr ""
+"输入的xts对象不能含有'index'列，因这会导致出现重复的列名。请尝试重新命名xts中"
+"的'index'列或者使用`keep.rownames=FALSE`并手动添加index为另外的列"
 
 msgid ""
 "data.table must have a time based column in first position, use "
 "`setcolorder` function to change the order, or see ?timeBased for supported "
 "types"
 msgstr ""
+"data.table的首列必须为一个以时间为基础的列，请使用`setcolorder`方程来改变它的"
+"顺序，或者通过?timeBased来查看支持的类型"
 
 msgid "Following columns are not numeric and will be omitted:"
-msgstr ""
+msgstr "以下的列并非数值类型，将被忽略："
 
 msgid "%d variable not shown: %s\n"
 msgid_plural "%d variables not shown: %s\n"
 msgstr[0] ""
 msgstr[1] ""
+
+#~ msgid "in"
+#~ msgstr "在"
+
+#~ msgid "on"
+#~ msgstr "在"
+
+#~ msgid ". ["
+#~ msgstr ". ["
