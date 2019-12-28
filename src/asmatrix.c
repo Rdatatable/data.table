@@ -1,15 +1,25 @@
 #include "data.table.h"
 
 SEXP asmatrix(SEXP dt, SEXP nrow, SEXP ncol) {
-  int n = asInteger(nrow);
-  int p = asInteger(ncol);
-  SEXP mat = PROTECT(allocVector(REALSXP, n*p));
-  int vecIndex = 0; // keep track of where we are in mat 
+  int n, p; // row and column numbers
+  SEXP mat; // output matrix
+  SEXP col; // vector to hold each column in dt
+  double *pmat, *pcol; // pointers to casted R objects
+  int vecIdx = 0; // counter to track place in vector underlying matrix
   
+  // Setup output matrix vector
+  n = asInteger(nrow);
+  p = asInteger(ncol);
+  mat = PROTECT(allocVector(REALSXP, n*p));
+  
+  // Iterate through dt and copy into mat 
+  pmat = REAL(mat);
   for (int jj = 0; jj < p; jj++) {
+    col = VECTOR_ELT(dt, jj);
+    pcol = REAL(col);
     for (int ii = 0; ii < n; ii++) {
-      REAL(mat)[vecIndex] = REAL(VECTOR_ELT(dt, jj))[ii];
-      vecIndex++;
+      pmat[vecIdx] = pcol[ii];
+      vecIdx++;
     }
   }
 
