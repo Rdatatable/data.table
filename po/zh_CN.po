@@ -2851,12 +2851,12 @@ msgstr "\n"
 #: fsort.c:247
 #, c-format
 msgid "Reduced MSBsize from %d to "
-msgstr "MSBsize 从 %d 减少到"
+msgstr "MSB大小 从 %d 减少到%d"
 
 #: fsort.c:251
 #, c-format
 msgid "%d by excluding 0 and 1 counts\n"
-msgstr "%d 通过排除0和1的counts\n"
+msgstr "通过排除0和1的counts"
 
 #: fsort.c:308
 #, c-format
@@ -3039,15 +3039,15 @@ msgstr "当前没有列表页. 设置sep2=''否则quote='auto'将引用包含sep2的字段.\n"
 msgid ""
 "If quote='auto', fields will be quoted if the field contains either sep "
 "('%c') or sep2 ('%c') because column %d is a list column.\n"
-msgstr "如果quote='auto', 字段包含任意一个sep，字段将被引用"
+msgstr "如果参数设定quote = 'auto'，由于%d列是列表页，所有包含sep('%c') 或 sep2 ('%c')的字段将会被自动加上引号"
 
 #: fwriteR.c:270
 #, c-format
-msgid ""
+msgid ""2019-12-28
 "sep ('%c'), sep2 ('%c') and dec ('%c') must all be different. Column %d is a "
 "list column."
 msgstr "sep ('%c'), sep2 ('%c') 和 dec ('%c') 必须都不相同. 列 %d 是一个"
-"空列表"
+"列表页"
 
 #: gsumm.c:43
 msgid "env is not an environment"
@@ -3055,7 +3055,7 @@ msgstr "env不是环境"
 
 #: gsumm.c:45
 msgid "o is not an integer vector"
-msgstr ""
+msgstr "o不是整数向量"
 
 #: gsumm.c:46
 msgid "f is not an integer vector"
@@ -3063,7 +3063,7 @@ msgstr "f不是一个整数向量"
 
 #: gsumm.c:47
 msgid "l is not an integer vector"
-msgstr "l 不是整数向量"
+msgstr "l 不是一个整数向量"
 
 #: gsumm.c:56
 msgid "irowsArg is neither an integer vector nor NULL"
