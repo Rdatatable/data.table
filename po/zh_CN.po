@@ -2,10 +2,9 @@ msgid ""
 msgstr ""
 "Project-Id-Version: data.table 1.12.5\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2019-12-23 00:00+0800\n"
-"PO-Revision-Date: 2019-10-04 17:06+08\n"
-"Last-Translator: Zhi Yang <zyang895@gmail.com>\n"
-"Language-Team: Mandarin\n"
+"POT-Creation-Date: 2019-10-22 21:04+0800\n"
+"PO-Revision-Date: 2019-11-16 20:05+0800\n"
+"Last-Translator: Xianying Tan <shrektan@126.com>\n"
 "Language: Mandarin\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -3563,25 +3562,30 @@ msgid ""
 "turn off GForce optimization using options(datatable.optimize=1). More "
 "likely, you may be looking for 'DT[,lapply(.SD,max),by=,.SDcols=]'"
 msgstr ""
+"GForce的max函数只能在应用在数据列上，而不能在.SD或者其他对象上。为了找到"
+"某个list（如.SD）里所有元素的最大值，请使用 base::max(.SD) 或者"
+"通过设置 options(datatable.optimize=1) 来关掉GForce优化。更有可能的是，"
+"你真正想要使用的命令是 'DT[,lapply(.SD,max),by=,.SDcols=]'"
 
 #: gsumm.c:807
 msgid "max is not meaningful for factors."
-msgstr ""
+msgstr "因子的最大值是没有意义的"
 
 #: gsumm.c:812
 #, c-format
 msgid "nrow [%d] != length(x) [%d] in gmax"
-msgstr ""
+msgstr "gmax检测到行数[%d]不等于x的长度[%d]"
 
 #: gsumm.c:930
 msgid ""
 "No non-missing values found in at least one group. Returning '-Inf' for such "
 "groups to be consistent with base"
 msgstr ""
+"至少有一个子集的值全为缺失值。为保持和base包一致，对这种情况将会返回'-Inf'"
 
 #: gsumm.c:937
 msgid "Type 'complex' has no well-defined max"
-msgstr ""
+msgstr "类型'complex'没有明确定义的最大值"
 
 #: gsumm.c:940
 #, c-format
@@ -3589,6 +3593,8 @@ msgid ""
 "Type '%s' not supported by GForce max (gmax). Either add the prefix base::"
 "max(.) or turn off GForce optimization using options(datatable.optimize=1)"
 msgstr ""
+"GForce的max (gmax)函数不支持类型 '%s'。请使用 base::max(.) 或者设置"
+" options(datatable.optimize=1) 来关掉GForce优化"
 
 #: gsumm.c:951
 msgid ""
@@ -3598,15 +3604,19 @@ msgid ""
 "optimize=1). More likely, you may be looking for 'DT[,lapply(.SD,median),"
 "by=,.SDcols=]'"
 msgstr ""
+"GForce的median函数只能在应用在数据列上，而不能在.SD或者其他对象上。为了找到"
+"某个list（如.SD）里所有元素的最大值，请使用 stats::median(.SD) 或者"
+"通过设置 options(datatable.optimize=1) 来关掉GForce优化。更有可能的是，"
+"你真正想要使用的命令是 'DT[,lapply(.SD,median),by=,.SDcols=]'"
 
 #: gsumm.c:952
 msgid "median is not meaningful for factors."
-msgstr ""
+msgstr "因子的中位值没有意义。"
 
 #: gsumm.c:955
 #, c-format
 msgid "nrow [%d] != length(x) [%d] in gmedian"
-msgstr ""
+msgstr "gmedian函数检测到行数[%d]不等于x的长度[%d]"
 
 #: gsumm.c:992
 #, c-format
@@ -3615,11 +3625,13 @@ msgid ""
 "stats::median(.) or turn off GForce optimization using options(datatable."
 "optimize=1)"
 msgstr ""
+"GForce函数median (gmedian)不支持类型'%s'。请使用 stats::tail(.) 或者设置"
+" options(datatable.optimize=1) 来关掉GForce优化。"
 
 #: gsumm.c:1005
 #, c-format
 msgid "nrow [%d] != length(x) [%d] in gtail"
-msgstr ""
+msgstr "gtail函数检测到行数[%d]不等于x的长度[%d]"
 
 #: gsumm.c:1073
 #, c-format
@@ -3627,11 +3639,13 @@ msgid ""
 "Type '%s' not supported by GForce tail (gtail). Either add the prefix utils::"
 "tail(.) or turn off GForce optimization using options(datatable.optimize=1)"
 msgstr ""
+"GForce函数tail (gtail)不支持类型'%s'。请使用 utils::tail(.) 或者设置"
+" options(datatable.optimize=1) 来关掉GForce优化。"
 
 #: gsumm.c:1085 gsumm.c:1176
 #, c-format
 msgid "nrow [%d] != length(x) [%d] in ghead"
-msgstr ""
+msgstr "ghead函数检测到行数[%d]不等于x的长度[%d]"
 
 #: gsumm.c:1153
 #, c-format
@@ -3639,6 +3653,8 @@ msgid ""
 "Type '%s' not supported by GForce head (ghead). Either add the prefix utils::"
 "head(.) or turn off GForce optimization using options(datatable.optimize=1)"
 msgstr ""
+"GForce函数head (ghead)不支持类型'%s'。请使用 utils::head(.) 或者设置"
+" options(datatable.optimize=1) 来关掉GForce优化。"
 
 #: gsumm.c:1161
 msgid ""

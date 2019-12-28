@@ -1,9 +1,9 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: data.table 1.12.5\n"
-"POT-Creation-Date: 2019-12-22 23:59\n"
-"PO-Revision-Date: 2019-10-04 17:06+08\n"
-"Last-Translator: Zhi Yang <zyang895@gmail.com>\n"
+"POT-Creation-Date: 2019-10-21 16:15\n"
+"PO-Revision-Date: 2019-11-16 18:37+0800\n"
+"Last-Translator: Xianying Tan <shrektan@126.com>\n"
 "Language-Team: Mandarin\n"
 "Language: Mandarin\n"
 "MIME-Version: 1.0\n"
@@ -1811,55 +1811,55 @@ msgid "Argument 'sort' should be logical TRUE/FALSE"
 msgstr "参数 'sort' 应为逻辑值 TRUE 或 FALSE"
 
 msgid "Argument 'no.dups' should be logical TRUE/FALSE"
-msgstr ""
+msgstr "参数 'no.dups' 应为逻辑值 TRUE 或 FALSE"
 
 msgid "You are trying to join data.tables where"
-msgstr ""
+msgstr "你正在试图去联结data.table，其中"
 
 msgid "'x' and 'y' arguments are"
-msgstr ""
+msgstr "参数'x'和'y'是"
 
 msgid "'x' argument is"
-msgstr ""
+msgstr "参数'x'的值为"
 
 msgid "'y' argument is"
-msgstr ""
+msgstr "参数'y'的值为"
 
 msgid "0 columns data.table."
-msgstr ""
+msgstr "0列的data.table对象。"
 
 msgid "`by.x` and `by.y` must be of same length."
-msgstr ""
+msgstr "`by.x`和`by.y`必须是相同的长度。"
 
 msgid "Supplied both `by` and `by.x/by.y`. `by` argument will be ignored."
-msgstr ""
+msgstr "参数`by`和`by.x/by.y`都提供了值。参数`by`的值会被忽略。"
 
 msgid "A non-empty vector of column names are required for `by.x` and `by.y`."
-msgstr ""
+msgstr "`by.x`和`by.y`必须是非空的列名。"
 
 msgid "Elements listed in `by.x` must be valid column names in x."
-msgstr ""
+msgstr "`by.x`中的列名必须是x的有效列。"
 
 msgid "Elements listed in `by.y` must be valid column names in y."
-msgstr ""
+msgstr "`by.y`中的列名必须是y的有效列。"
 
 msgid "A non-empty vector of column names for `by` is required."
-msgstr ""
+msgstr "`by`必须是非空的列名。"
 
 msgid "Elements listed in `by` must be valid column names in x and y"
-msgstr ""
+msgstr "`by`中的列名必须是x和y的有效列"
 
 msgid "column names"
-msgstr ""
+msgstr "列名"
 
 msgid "are duplicated in the result"
-msgstr ""
+msgstr "在结果中是重复的"
 
 msgid "IN DEVELOPMENT built"
-msgstr ""
+msgstr "在开发版本中"
 
 msgid "using"
-msgstr ""
+msgstr "使用"
 
 msgid "threads (see ?getDTthreads).  Latest news: r-datatable.com"
 msgstr "线程（请参阅?getDTthreads）。最新的消息：r-datatable.com"
