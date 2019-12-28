@@ -14758,6 +14758,15 @@ if (test_yaml) {  # csvy; #1701
   close(fcon)
   test(2033.14, fread(f), DT)
   unlink(f)
+  
+  # Extra arguments in yaml
+  data = data.table(x = 1, y = 100)
+  file = tempfile()
+  fwrite(data, file, yaml =  list(something_else = "o hai!"))
+  x = fread(file, yaml = TRUE)
+  unlink(file)
+  test(2125.01, attr(x, "yaml_metadata")$something_else, "o hai!")
+  test(2125.02, attr(x, "yaml_metadata")$schema$fields[[1]]$name, "x")
 }
 
 # fcast coverage
@@ -16400,12 +16409,6 @@ test(2124.1, format(as.ITime(t0)), '00:00:00')
 test(2124.2, format(as.IDate(t0)), '2019-10-01')
 Sys.setenv(TZ=oldtz)
 
-# Extra arguments in yaml
-data = data.table(x = 1, y = 100)
-file = tempfile()
-fwrite(data, file, yaml =  list(something_else = "o hai!"))
-x = fread(file, yaml = TRUE)
-test(2125, attr(x, "yaml_metadata")$something_else, "o hai!")
 
 ###################################
 #  Add new tests above this line  #
