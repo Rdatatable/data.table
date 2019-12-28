@@ -11,7 +11,7 @@
 
 \usage{\method{update}{dev.pkg}(object="data.table",
 repo="https://Rdatatable.gitlab.io/data.table", field="Revision",
-type=getOption("pkgType"), \dots)
+type=getOption("pkgType"), lib=NULL, \dots)
 }
 \arguments{
   \item{object}{ character scalar, package name. }
@@ -20,6 +20,8 @@ type=getOption("pkgType"), \dots)
     DESCRIPTION file, default \code{"Revision"}. }
   \item{type}{ character scalar, default \code{getOption("pkgType")}, used
     to define if package has to be installed from sources, binaries or both. }
+  \item{lib}{ character scalar, library location where package is meant to
+    be upgraded. }
   \item{\dots}{ passed to \code{\link[utils]{install.packages}}. }
 }
 \details{
@@ -37,4 +39,3 @@ type=getOption("pkgType"), \dots)
   \code{\link{data.table}}
 }
 \keyword{ data }
-
