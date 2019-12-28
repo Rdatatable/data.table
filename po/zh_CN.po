@@ -2,9 +2,9 @@ msgid ""
 msgstr ""
 "Project-Id-Version: data.table 1.12.5\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2019-10-22 21:04+0800\n"
-"PO-Revision-Date: 2019-11-16 20:05+0800\n"
-"Last-Translator: Xianying Tan <shrektan@126.com>\n"
+"POT-Creation-Date: 2019-11-11 11:44+0800\n"
+"PO-Revision-Date: 2019-11-18 00:26-04\n"
+"Last-Translator: Yuhang Chen <yuhangchen0802@gmail.com>\n"
 "Language-Team: Mandarin\n"
 "Language: Mandarin\n"
 "MIME-Version: 1.0\n"
@@ -4160,6 +4160,8 @@ msgid ""
 "Column %d of item %d is length %d inconsistent with column %d which is "
 "length %d. Only length-1 columns are recycled."
 msgstr ""
+"第 %2$d 项的第 %1$d 列长度为 %3$d，与第 %4$d 列的长度 %5$d 不一致。"
+"只有长度为 1 的列会被循环补齐。"
 
 #: rbindlist.c:58
 #, c-format
@@ -4167,6 +4169,8 @@ msgid ""
 "Column %d ['%s'] of item %d is length 0. This (and %d other%s like it) has "
 "been filled with NA (NULL for list columns) to make each item uniform."
 msgstr ""
+"第%d列['%s'](子项%d的)的长度为0，它(以及%d其他%s类似的)被填充为NA"
+"(等同与列表列的NULL值)使得每一个子项统一。"
 
 #: rbindlist.c:62
 #, c-format
@@ -4174,10 +4178,12 @@ msgid ""
 "Total rows in the list is %<PRId64> which is larger than the maximum number "
 "of rows, currently %d"
 msgstr ""
+"列表的总行数为 %<PRId64>，比当前行数的最大值 %d 大。"
 
 #: rbindlist.c:63
 msgid "use.names=TRUE but no item of input list has any names"
 msgstr ""
+"use.names=TRUE，但是输入列表的各项均没有名字。"
 
 #: rbindlist.c:71
 #, c-format
@@ -4185,22 +4191,24 @@ msgid ""
 "Failed to allocate upper bound of %<PRId64> unique column names "
 "[sum(lapply(l,ncol))]"
 msgstr ""
+"无法为 %<PRId64> 个独有列名 [sum(lapply(l,ncol))] 的上界分配内存。"
 
 #: rbindlist.c:102
 #, c-format
 msgid "Failed to allocate nuniq=%d items working memory in rbindlist.c"
-msgstr ""
+msgstr "错误发生于 rbindlist.c，无法分配 nuniq=%d 项工作内存。"
 
 #: rbindlist.c:136
 #, c-format
 msgid "Failed to allocate ncol=%d items working memory in rbindlist.c"
-msgstr ""
+msgstr "错误发生于 rbindlist.c，无法分配 ncol=%d 项工作内存。"
 
 #: rbindlist.c:191
 msgid ""
 "Internal error: usenames==NA but fill=TRUE. usenames should have been set to "
 "TRUE earlier with warning."
 msgstr ""
+"内部错误：usenames==NA 但是 fill=TRUE。usenames应该已在警告之前被设置为了 TRUE。"
 
 #: rbindlist.c:196
 msgid ""
@@ -4208,12 +4216,14 @@ msgid ""
 "if use.names=FALSE for  backwards compatibility. See news item 5 in v1.12.2 "
 "for options to control this message."
 msgstr ""
+"use.names='check'（从v1.12.2版本开始的默认值）发出该消息并为了向后兼容按照"
+"use.names=FALSE执行。有关控制此消息的选项，请参见 v1.12.2 更新信息中的第 5 项。"
 
 #: rbindlist.c:206
 msgid ""
 "Internal error: could not find the first column name not present in earlier "
 "item"
-msgstr ""
+msgstr "内部错误：无法找到一个不存在于之前项中的列名。"
 
 #: rbindlist.c:210
 #, c-format
@@ -4221,6 +4231,8 @@ msgid ""
 "Column %d ['%s'] of item %d is missing in item %d. Use fill=TRUE to fill "
 "with NA (NULL for list columns), or use.names=FALSE to ignore column names.%s"
 msgstr ""
+"第 %3$d 项的第 %1$d 列 ['%2$s'] 在第 %4$d 项中并不存在。请使用 fill=TRUE 以用"
+"NA （或 NULL 若该列为列表（list））填充，或使用 use.names=FALSE 以忽略列名。%5$s"
 
 #: rbindlist.c:218
 #, c-format
@@ -4228,6 +4240,7 @@ msgid ""
 "Internal error: usenames==NA but an out-of-order name has been found in an "
 "item with no names or the first item. [%d]"
 msgstr ""
+"内部错误：usenames==NA 但某项或第一项中存在一个无序的名字。 [%d]"
 
 #: rbindlist.c:219
 #, c-format
@@ -4236,12 +4249,16 @@ msgid ""
 "names=TRUE to match by column name, or use.names=FALSE to ignore column "
 "names.%s"
 msgstr ""
+"第 %3$d 项的第 %1$d 列 ['%2$s'] 出现在第 %5$d 项的第 %4$d 列。设置"
+"use.names=TRUE 以按列名匹配，或使用 use.names=FALSE 以忽视列名。%6$s"
 
 #: rbindlist.c:228
 msgid ""
 "options()$datatable.rbindlist.check is set but is not a single string. See "
 "news item 5 in v1.12.2."
 msgstr ""
+"options()$datatable.rbindlist.check 已设置但并非单个字符串。参见 v1.12.2"
+"更新信息中的第 5 项。"
 
 #: rbindlist.c:235
 #, c-format
@@ -4249,19 +4266,21 @@ msgid ""
 "options()$datatable.rbindlist.check=='%s' which is not "
 "'message'|'warning'|'error'|'none'. See news item 5 in v1.12.2."
 msgstr ""
+"options()$datatable.rbindlist.check=='%s' 不是"
+"'message'|'warning'|'error'|'none'。参见 v1.12.2 更新信息中的第 5 项。"
 
 #: rbindlist.c:298
 #, c-format
 msgid ""
 "Column %d of item %d has type 'factor' but has no levels; i.e. malformed."
-msgstr ""
+msgstr "第%2$d 项的第 %1$d 列为因子（'factor'）类型却没有因子水平（levels），格式错误。"
 
 #: rbindlist.c:316
 #, c-format
 msgid ""
 "Class attribute on column %d of item %d does not match with column %d of "
 "item %d."
-msgstr ""
+msgstr "第 %2$d 项的第 %1$d 列的类属性与第 %4$d 项的第 %3$d列的不匹配。"
 
 #: rbindlist.c:326
 #, c-format
@@ -4269,13 +4288,14 @@ msgid ""
 "Internal error: column %d of result is determined to be integer64 but "
 "maxType=='%s' != REALSXP"
 msgstr ""
+"内部错误：结果中的第 %d 列应为 integer64 类型，但maxType=='%s' != REALSXP"
 
 #: rbindlist.c:362
 #, c-format
 msgid ""
 "Failed to allocate working memory for %d ordered factor levels of result "
 "column %d"
-msgstr ""
+msgstr "未能为结果中第 %d 列的 %d 个有序因子水平分配工作内存"
 
 #: rbindlist.c:383
 #, c-format
@@ -4285,6 +4305,9 @@ msgid ""
 "factor levels should be an ordered subset of the first longest. A regular "
 "factor will be created for this column."
 msgstr ""
+"第 %2$d 项的第 %1$d 列为一有序因子（ordered factor），但第 %3$d 个水平（level）['%4$s']"
+"在第 %6$d 项第 %5$d 列的有序因子水平中缺失。每组有序"
+"因子水平应为其中最长有序因子水平的子集。该列将被创建为一非有序因子列。"
 
 #: rbindlist.c:388
 #, c-format
@@ -4293,6 +4316,9 @@ msgid ""
 "'%s'<'%s' in the ordered levels from column %d of item %d. A regular factor "
 "will be created for this column due to this ambiguity."
 msgstr ""
+"第 %2$d 项的第 %1$d 列中有序因子水平 '%3$s'<'%4$s'。但"
+"在第 %8$d 项第 %7$d 列的有序因子水平中却 '%5$s'<'%6$s'。由于"
+"这种模糊性，该列将被创建为一非有序因子列。"
 
 #: rbindlist.c:433
 #, c-format
