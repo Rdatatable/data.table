@@ -1727,16 +1727,16 @@ msgid "A non-empty vector of column names are required for `by.x` and `by.y`."
 msgstr "`by.x`和`by.y`必须是非空的列名。"
 
 msgid "Elements listed in `by.x` must be valid column names in x."
-msgstr "`by.x`中的元素必须是x的有效列。"
+msgstr "`by.x`中的列名必须是x的有效列。"
 
 msgid "Elements listed in `by.y` must be valid column names in y."
-msgstr "`by.y`中的元素必须是y的有效列。"
+msgstr "`by.y`中的列名必须是y的有效列。"
 
 msgid "A non-empty vector of column names for `by` is required."
 msgstr "`by`必须是非空的列名。"
 
 msgid "Elements listed in `by` must be valid column names in x and y"
-msgstr "`by`中的元素必须是x和y的有效列"
+msgstr "`by`中的列名必须是x和y的有效列"
 
 msgid "column names"
 msgstr "列名"

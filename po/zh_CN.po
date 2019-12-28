@@ -3403,7 +3403,7 @@ msgstr ""
 
 #: gsumm.c:937
 msgid "Type 'complex' has no well-defined max"
-msgstr "类型'complex'不存在有清楚定义的最大值"
+msgstr "类型'complex'没有明确定义的最大值"
 
 #: gsumm.c:940
 #, c-format
