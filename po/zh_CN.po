@@ -4578,117 +4578,119 @@ msgstr "输入到 'uniqlengths' 的参数 'n' 必须是长度为 1 的整数向�
 
 #: uniqlist.c:167
 msgid "cols must be an integer vector with length >= 1"
-msgstr ""
+msgstr "cols必须是一个长度大于等于1的整数向量"
 
 #: uniqlist.c:171
 #, c-format
 msgid "Item %d of cols is %d which is outside range of l [1,length(l)=%d]"
-msgstr ""
+msgstr "列的%d项是%d，它超出l的所在区间[1,length(l)=%d]"
 
 #: uniqlist.c:174
 #, c-format
 msgid ""
 "All elements to input list must be of same length. Element [%d] has length "
 "%<PRIu64> != length of first element = %<PRIu64>."
-msgstr ""
+msgstr "列表的所有元素必须是同样的长度。元素[%d]的长度%<PRIu64>不等于"
+"第一个元素的长度%<PRIu64>"
 
 #: uniqlist.c:255
 msgid "Internal error: nestedid was not passed a list length 1 or more"
-msgstr ""
+msgstr "内部错误：nestedid并不是一个长度大于或者等于1的列表"
 
 #: uniqlist.c:262
 #, c-format
 msgid "Internal error: nrows[%d]>0 but ngrps==0"
-msgstr ""
+msgstr "内部错误：nrows[%d]>0但是but ngrps==0"
 
 #: uniqlist.c:264
 msgid "cols must be an integer vector of positive length"
-msgstr ""
+msgstr "cols必须是一个长度大于零的整数向量"
 
 #: uniqlist.c:349
 msgid "x is not a logical vector"
-msgstr ""
+msgstr "x不是一个逻辑向量"
 
 #: utils.c:73
 #, c-format
 msgid "Unsupported type '%s' passed to allNA()"
-msgstr ""
+msgstr "allNA() 不支持'%s'类型"
 
 #: utils.c:92
 msgid "'x' argument must be data.table compatible"
-msgstr ""
+msgstr "'x' 必须为data.table支持的类型"
 
 #: utils.c:94
 msgid "'check_dups' argument must be TRUE or FALSE"
-msgstr ""
+msgstr "参数'check_dups'必须为TRUE或者是FALSE"
 
 #: utils.c:110
 msgid ""
 "argument specifying columns is type 'double' and one or more items in it are "
 "not whole integers"
-msgstr ""
+msgstr "指定列的参数是一个双精度类型而其中至少有一个元素不是整数"
 
 #: utils.c:116
 #, c-format
 msgid "argument specifying columns specify non existing column(s): cols[%d]=%d"
-msgstr ""
+msgstr "指定列的参数指定了不存在的列: cols[%d]=%d"
 
 #: utils.c:121
 msgid "'x' argument data.table has no names"
-msgstr ""
+msgstr "data.table的参数x并没有名字"
 
 #: utils.c:126
 #, c-format
 msgid ""
 "argument specifying columns specify non existing column(s): cols[%d]='%s'"
-msgstr ""
+msgstr "指定列的参数指定了不存在的列: cols[%d]='%s'"
 
 #: utils.c:129
 msgid "argument specifying columns must be character or numeric"
-msgstr ""
+msgstr "指定列的参数必须是字符或者是数值"
 
 #: utils.c:132
 msgid "argument specifying columns specify duplicated column(s)"
-msgstr ""
+msgstr "指定列的参数指定了重复的列"
 
 #: utils.c:138
 #, c-format
 msgid "%s: fill argument must be length 1"
-msgstr ""
+msgstr "%s：fill参数的长度必须为1"
 
 #: utils.c:171
 #, c-format
 msgid "%s: fill argument must be numeric"
-msgstr ""
+msgstr "%s：fill参数必须为数值类型"
 
 #: utils.c:273
 #, c-format
 msgid "Internal error: unsupported type '%s' passed to copyAsPlain()"
-msgstr ""
+msgstr "内部错误：copyAsPlain()不支持类型为'%s'的参数"
 
 #: utils.c:277
 #, c-format
 msgid ""
 "Internal error: type '%s' passed to copyAsPlain() but it seems "
 "copyMostAttrib() retains ALTREP attributes"
-msgstr ""
+msgstr "内部错误：copyAsPlain()中参数为'%s'类型，但"
+"copyMostAttrib() 保留了ALTREP属性"
 
 #: utils.c:312
 #, c-format
 msgid "Found and copied %d column%s with a shared memory address\n"
-msgstr ""
+msgstr "发现并拷贝了具有相同的内存地址的%d列%s\n"
 
 #: vecseq.c:13
 msgid "x must be an integer vector"
-msgstr ""
+msgstr "x必须为一个整数向量"
 
 #: vecseq.c:14
 msgid "len must be an integer vector"
-msgstr ""
+msgstr "len必须为一个整数向量"
 
 #: vecseq.c:15
 msgid "x and len must be the same length"
-msgstr ""
+msgstr "x和len必须长度一致"
 
 #: vecseq.c:21
 msgid ""
@@ -4699,14 +4701,20 @@ msgid ""
 "Otherwise, please search for this error message in the FAQ, Wiki, Stack "
 "Overflow and data.table issue tracker for advice."
 msgstr ""
+"连接后将生成超过2^31行（已达内部的vecseq的物理"
+"极限）。这很可能是一个错误的连接操作。请检查i中是否存在重复的键值（key values），"
+"导致x中对应的组反复连接。若确定重复的连接可授受，可尝试 by=.EACHI "
+"以使j中的语句仅在每个 i 中对应的组运行以避免大量的内存分配。"
+"否则，请在常见问题（FAQ）、维基（Wiki）、Stack "
+"Overflow 和 data.table GitHub Issue中寻求帮助。"
 
 #: vecseq.c:25
 msgid "clamp must be a double vector length 1"
-msgstr ""
+msgstr "clamp 必须为一个长度为1的双精度向量"
 
 #: vecseq.c:27
 msgid "clamp must be positive"
-msgstr ""
+msgstr "clamp必须为正数"
 
 #: vecseq.c:28
 #, c-format
@@ -4717,39 +4725,46 @@ msgid ""
 "large allocation. If you are sure you wish to proceed, rerun with allow."
 "cartesian=TRUE. Otherwise, please search for this error message in the FAQ, "
 "Wiki, Stack Overflow and data.table issue tracker for advice."
-msgstr ""
+msgstr "连接后生成%d行；多于%d = nrow(x)+nrow(i)。请检查"
+"i中是否存在重复的键值（key values），导致x中对应的组反复连接。"
+"若确定重复的连接可授受，可尝试 by=.EACHI 以使j中的语句仅在每个 i 中对应的组运行"
+"以避免大量的内存分配。如果确认要继续，请设置"
+"cartesian=TRUE 并重新运行。否则，请在常见问题（FAQ）、"
+"维基（Wiki）、Stack Overflow 和 data.table GitHub Issue中寻求帮助。"
 
 #: wrappers.c:11
 msgid "Attribute name must be a character vector of length 1"
-msgstr ""
+msgstr "属性的名字必须为一个长度为1的字符向量"
 
 #: wrappers.c:16
 msgid ""
 "Internal structure doesn't seem to be a list. Can't set class to be 'data."
 "table' or 'data.frame'. Use 'as.data.table()' or 'as.data.frame()' methods "
 "instead."
-msgstr ""
+msgstr "内部结构并不非一个列表。无法将目标的类型设置为一个data.table"
+"或data.frame。请使用'as.data.table()' 或 'as.data.frame()'."
 
 #: wrappers.c:66
 msgid "First argument to setlistelt must be a list()"
-msgstr ""
+msgstr "setlistelt的第一个参数必须是一个列表"
 
 #: wrappers.c:67
 msgid "Second argument to setlistelt must a length 1 integer vector"
-msgstr ""
+msgstr "setlistelt的第二个参数必须为一个长度为1的整数向量"
 
 #: wrappers.c:69
 #, c-format
 msgid "i (%d) is outside the range of items [1,%d]"
-msgstr ""
+msgstr "i (%d)超出了[1,%d]的范围"
 
 #: wrappers.c:91
 msgid "x isn't a VECSXP"
-msgstr ""
+msgstr "x并非一个VECSXP"
 
 #: wrappers.c:106
 #, c-format
 msgid ""
 "dim.data.table expects a data.table as input (which is a list), but seems to "
 "be of type %s"
-msgstr ""
+msgstr "dim.data.table的参数必须为一个data.table（实质为一个列表），但输入参数"
+"为%s类型"
