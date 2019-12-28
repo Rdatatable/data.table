@@ -1942,7 +1942,12 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
       X[[j]] = xj
     }
   }
-  X = unlist(X, recursive = FALSE, use.names = FALSE)
+  colclasses <- sapply(X, class)
+  if (all(unique(colclasses) == "numeric")) {
+    X = .Call(Casmatrix, X, n, length(X))
+  } else {
+    X = unlist(X, recursive = FALSE, use.names = FALSE)
+  }
   dim(X) <- c(n, length(X)/n)
   dimnames(X) <- list(rownames.value, unlist(collabs, use.names = FALSE))
   X
