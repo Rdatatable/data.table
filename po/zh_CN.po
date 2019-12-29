@@ -3027,7 +3027,7 @@ msgstr ""
 #: fsort.c:156
 #, c-format
 msgid "Range = [%g,%g]\n"
-msgstr "èŒƒå›´Î§=[%g,%g]\n"
+msgstr "Range = [%g,%g]\n"
 
 #: fsort.c:157
 msgid "Cannot yet handle negatives."
@@ -3069,7 +3069,7 @@ msgstr "\n"
 #, c-format
 msgid "Reduced MSBsize from %d to "
 <<<<<<< HEAD
-msgstr "MSB´óĞ¡ ´Ó %d ¼õÉÙµ½%d"
+msgstr "MSBï¿½ï¿½Ğ¡ ï¿½ï¿½ %d ï¿½ï¿½ï¿½Ùµï¿½%d"
 =======
 msgstr "MSBsize ä» %d å‡å°‘åˆ°"
 >>>>>>> a9485c1829c5d28082736eded48ccc8aaad51393
@@ -3078,7 +3078,7 @@ msgstr "MSBsize ä» %d å‡å°‘åˆ°"
 #, c-format
 msgid "%d by excluding 0 and 1 counts\n"
 <<<<<<< HEAD
-msgstr "Í¨¹ıÅÅ³ı0ºÍ1µÄcounts"
+msgstr "Í¨ï¿½ï¿½ï¿½Å³ï¿½0ï¿½ï¿½1ï¿½ï¿½counts"
 =======
 msgstr "%d é€šè¿‡æ’é™¤0å’Œ1çš„counts\n"
 >>>>>>> a9485c1829c5d28082736eded48ccc8aaad51393
@@ -3204,7 +3204,7 @@ msgstr "zlib v%s deflate()ä½¿ç”¨%d with z_stream.msg '%s'. %sè¿”å›äº†é”™è¯¯\n"
 msgid ""
 "Please include the full output above and below this message in your data."
 "table bug report."
-msgstr "è¯·åœ¨ä½ çš„data.tableé”™è¯¯æŠ¥å‘Šä¸­åŒ…å«ä¸Šé¢å®Œæ•´çš„è¾“å‡º"
+msgstr "è¯·å°†æ­¤æ¶ˆæ¯ä¸Šæ–¹å’Œä¸‹æ–¹çš„å…¨éƒ¨è¾“å‡ºç»“æœä¸€èµ·æäº¤åˆ°data.tableçš„bug reportä¸­"
 
 #: fwrite.c:967
 msgid ""
@@ -3267,7 +3267,7 @@ msgid ""
 "If quote='auto', fields will be quoted if the field contains either sep "
 "('%c') or sep2 ('%c') because column %d is a list column.\n"
 <<<<<<< HEAD
-msgstr "Èç¹û²ÎÊıÉè¶¨quote = 'auto'£¬ÓÉÓÚ%dÁĞÊÇÁĞ±íÒ³£¬ËùÓĞ°üº¬sep('%c') »ò sep2 ('%c')µÄ×Ö¶Î½«»á±»×Ô¶¯¼ÓÉÏÒıºÅ"
+msgstr "ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½è¶¨quote = 'auto'ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½%dï¿½ï¿½ï¿½ï¿½ï¿½Ğ±ï¿½Ò³ï¿½ï¿½ï¿½ï¿½ï¿½Ğ°ï¿½ï¿½ï¿½sep('%c') ï¿½ï¿½ sep2 ('%c')ï¿½ï¿½ï¿½Ö¶Î½ï¿½ï¿½á±»ï¿½Ô¶ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½"
 =======
 msgstr "å¦‚æœquote='auto', å­—æ®µåŒ…å«ä»»æ„ä¸€ä¸ªsepï¼Œå­—æ®µå°†è¢«å¼•ç”¨"
 >>>>>>> a9485c1829c5d28082736eded48ccc8aaad51393
@@ -3278,8 +3278,8 @@ msgid ""2019-12-28
 "sep ('%c'), sep2 ('%c') and dec ('%c') must all be different. Column %d is a "
 "list column."
 <<<<<<< HEAD
-msgstr "sep ('%c'), sep2 ('%c') ºÍ dec ('%c') ±ØĞë¶¼²»ÏàÍ¬. ÁĞ %d ÊÇÒ»¸ö"
-"ÁĞ±íÒ³"
+msgstr "sep ('%c'), sep2 ('%c') ï¿½ï¿½ dec ('%c') ï¿½ï¿½ï¿½ë¶¼ï¿½ï¿½ï¿½ï¿½Í¬. ï¿½ï¿½ %d ï¿½ï¿½Ò»ï¿½ï¿½"
+"ï¿½Ğ±ï¿½Ò³"
 =======
 msgstr "sep ('%c'), sep2 ('%c') å’Œ dec ('%c') å¿…é¡»éƒ½ä¸ç›¸åŒ. åˆ— %d æ˜¯ä¸€ä¸ª"
 "ç©ºåˆ—è¡¨"
@@ -3291,7 +3291,7 @@ msgstr "envä¸æ˜¯ç¯å¢ƒ"
 
 #: gsumm.c:45
 msgid "o is not an integer vector"
-msgstr "o²»ÊÇÕûÊıÏòÁ¿"
+msgstr "oä¸æ˜¯æ•´æ•°å‘é‡"
 
 #: gsumm.c:46
 msgid "f is not an integer vector"
@@ -3299,11 +3299,7 @@ msgstr "fä¸æ˜¯ä¸€ä¸ªæ•´æ•°å‘é‡"
 
 #: gsumm.c:47
 msgid "l is not an integer vector"
-<<<<<<< HEAD
-msgstr "l ²»ÊÇÒ»¸öÕûÊıÏòÁ¿"
-=======
 msgstr "l ä¸æ˜¯æ•´æ•°å‘é‡"
->>>>>>> a9485c1829c5d28082736eded48ccc8aaad51393
 
 #: gsumm.c:56
 msgid "irowsArg is neither an integer vector nor NULL"
