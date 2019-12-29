@@ -157,7 +157,7 @@ SEXP asmatrix_list(SEXP dt, SEXP nrow, SEXP ncol) {
 // Dispatch function for different atomic types
 SEXP asmatrix(SEXP dt, SEXP nrow, SEXP ncol) {
   // Conversion to common type handled in R
-  SEXPTYPE R_atomic_type = TYPEOF(VECTOR_ELT(dt, 1)); 
+  SEXPTYPE R_atomic_type = TYPEOF(VECTOR_ELT(dt, 0)); 
   
   switch(R_atomic_type) {
     case LGLSXP: 
