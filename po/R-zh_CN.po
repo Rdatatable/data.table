@@ -1614,7 +1614,7 @@ msgid "\". Please double check the input file is a valid csvy."
 msgstr "从这里开始"
 
 msgid "User-supplied 'header' will override that found in metadata."
-msgstr "用户提供的“header”将覆盖元数据中的表头"
+msgstr "用户提供的'header'将覆盖元数据中的表头"
 
 msgid ""
 "User-supplied column names in 'col.names' will override those found in YAML "
