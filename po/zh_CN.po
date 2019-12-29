@@ -3093,7 +3093,7 @@ msgstr "nth=%d, nBatch=%d\n"
 #: fsort.c:156
 #, c-format
 msgid "Range = [%g,%g]\n"
-msgstr "范围Χ=[%g,%g]\n"
+msgstr "Range = [%g,%g]\n"
 
 #: fsort.c:157
 msgid "Cannot yet handle negatives."
@@ -3111,11 +3111,8 @@ msgstr "无法分配工作内存"
 #: fsort.c:177
 #, c-format
 msgid ""
-"counts is %dMB (%d pages per nBatch=%d, batchSize=%<PRIu64>, lastBatchSize="
-"%<PRIu64>)\n"
-msgstr ""
-"counts为%dMB (每个nBatch中的%d页=%d, batchSize=%<PRIu64>, lastBatchSize="
-"%<PRIu64>)\n"
+"counts is %dMB (%d pages per nBatch=%d, batchSize=%<PRIu64>, lastBatchSize=%<PRIu64>)\n"
+msgstr "counts为%dMB (每个nBatch中的%d页=%d, batchSize=%<PRIu64>, lastBatchSize=%<PRIu64>)\n"
 
 #: fsort.c:231
 msgid "Internal error: counts[nBatch-1][MSBsize-1] != length(x)"
@@ -3177,12 +3174,11 @@ msgstr "... "
 #, c-format
 msgid ""
 "\n"
-"args.doRowNames=%d args.rowNames=%d doQuote=%d args.nrow=%<PRId64> args.ncol="
-"%d eolLen=%d\n"
-msgstr ""
-"\n"
-"args.doRowNames=%d args.rowNames=%d doQuote=%d args.nrow=%<PRId64> args.ncol="
-"%d eolLen=%d\n"
+"args.doRowNames=%d args.rowNames=%d doQuote=%d args.nrow=%<PRId64> args.ncol=%d "
+"eolLen=%d\n"
+msgstr "\n"
+"args.doRowNames=%d args.rowNames=%d doQuote=%d args.nrow=%<PRId64> args.ncol=%d "
+"eolLen=%d\n"
 
 #: fwrite.c:664
 #, c-format
@@ -3200,9 +3196,8 @@ msgid ""
 "%s: '%s'. Failed to open existing file for writing. Do you have write "
 "permission to it? Is this Windows and does another process such as Excel "
 "have it open?"
-msgstr ""
-"%s: '%s'. 无法打开一斤存在的文件进行写入.你是否对该文件有写入权限？这是"
-"Windows系统？是否有Excel之类的进程已经打开了该文件？"
+msgstr "%s: '%s'. 无法打开一斤存在的文件进行写入.你是否对该文件有写入权限？"
+"这是Windows系统？是否有Excel之类的进程已经打开了该文件？"
 
 #: fwrite.c:692
 #, c-format
@@ -3210,9 +3205,8 @@ msgid ""
 "%s: '%s'. Unable to create new file for writing (it does not exist already). "
 "Do you have permission to write here, is there space on the disk and does "
 "the path exist?"
-msgstr ""
-"%s: '%s'. 无法创建新的文件进行写入（文件不存在）你是否对此有写入权限？磁盘上"
-"是否有空间以及路径是否存在？"
+msgstr "%s: '%s'. 无法创建新的文件进行写入（文件不存在）"
+"你是否对此有写入权限？磁盘上是否有空间以及路径是否存在？"
 
 #: fwrite.c:700
 #, c-format
@@ -3275,14 +3269,13 @@ msgstr ""
 msgid ""
 "Please include the full output above and below this message in your data."
 "table bug report."
-msgstr "请在你的data.table错误报告中包含本条信息上下内容的完整输出。"
+msgstr "请将此消息上方和下方的全部输出结果一起提交到data.table的bug report中"
 
 #: fwrite.c:983
 msgid ""
 "Please retry fwrite() with verbose=TRUE and include the full output with "
 "your data.table bug report."
-msgstr ""
-"请使用verbose=TRUE重试fwrite()，并将完整的输出包含在你的data.table错误报告中"
+msgstr "请使用verbose=TRUE重试fwrite()，并将完整的输出提交到data.table的bug report中"
 
 #: fwriteR.c:41
 msgid "Internal error: col passed to getMaxCategLen is missing levels"
@@ -3298,9 +3291,9 @@ msgid ""
 "Row %d of list column is type '%s' - not yet implemented. fwrite() can write "
 "list columns containing items which are atomic vectors of type logical, "
 "integer, integer64, double, complex and character."
-msgstr ""
-"列表页行%d的类型是'%s' - 尚未实施. fwrite()可以写入包含逻辑类型原子向量项目的"
-"列表页，整数，整数64，双精度，复数和字符"
+msgstr "列表页行%d的类型是'%s' - 尚未实施. fwrite()可以写入"
+"包含逻辑类型原子向量项目的列表页，"
+"整数，整数64，双精度，复数和字符"
 
 #: fwriteR.c:103
 #, c-format
@@ -3331,7 +3324,7 @@ msgstr "列%d的类型是'%s' - 尚未在fwrite中实施"
 msgid ""
 "No list columns are present. Setting sep2='' otherwise quote='auto' would "
 "quote fields containing sep2.\n"
-msgstr "当前没有列表页. 设置sep2=''否则quote='auto'将引用包含sep2的字段.\n"
+msgstr "当前没有列表页. 设置sep2=''否则quote='auto'会自动为所有包含sep2的字段加上引号.\n"
 
 #: fwriteR.c:266
 #, c-format
@@ -3356,7 +3349,7 @@ msgstr "env不是环境"
 
 #: gsumm.c:45
 msgid "o is not an integer vector"
-msgstr ""
+msgstr "o不是整数向量"
 
 #: gsumm.c:46
 msgid "f is not an integer vector"
