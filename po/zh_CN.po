@@ -3210,7 +3210,7 @@ msgstr "请将此消息上方和下方的全部输出结果一起提交到data.t
 msgid ""
 "Please retry fwrite() with verbose=TRUE and include the full output with "
 "your data.table bug report."
-msgstr "请使用verbose=TRUE重试fwrite()，并将完整的输出包含在你的data.table错误报告中"
+msgstr "请使用verbose=TRUE重试fwrite()，并将完整的输出提交到data.table的bug report中"
 
 #: fwriteR.c:41
 msgid "Internal error: col passed to getMaxCategLen is missing levels"
@@ -3259,7 +3259,7 @@ msgstr "列%d的类型是'%s' - 尚未在fwrite中实施"
 msgid ""
 "No list columns are present. Setting sep2='' otherwise quote='auto' would "
 "quote fields containing sep2.\n"
-msgstr "当前没有列表页. 设置sep2=''否则quote='auto'将引用包含sep2的字段.\n"
+msgstr "当前没有列表页. 设置sep2=''否则quote='auto'会自动为所有包含sep2的字段加上引号.\n"
 
 #: fwriteR.c:266
 #, c-format
