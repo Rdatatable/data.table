@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: data.table 1.12.9\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2019-12-29 01:51+0800\n"
+"POT-Creation-Date: 2019-12-30 01:24+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -3122,16 +3122,9 @@ msgstr ""
 msgid "env is not an environment"
 msgstr ""
 
-#: gsumm.c:45
-msgid "o is not an integer vector"
-msgstr ""
-
-#: gsumm.c:46
-msgid "f is not an integer vector"
-msgstr ""
-
-#: gsumm.c:47
-msgid "l is not an integer vector"
+#: gsumm.c:45 gsumm.c:46 gsumm.c:47
+#, c-format
+msgid "%s is not an integer vector"
 msgstr ""
 
 #: gsumm.c:56

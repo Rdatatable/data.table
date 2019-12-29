@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: data.table 1.12.9\n"
-"POT-Creation-Date: 2019-12-29 10:26\n"
+"POT-Creation-Date: 2019-12-29 22:35\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -1651,10 +1651,7 @@ msgstr ""
 msgid "script must end with '.Rraw'. If a file ending '.Rraw.bz2' exists, that will be found and used."
 msgstr ""
 
-msgid "Neither"
-msgstr ""
-
-msgid "exist in"
+msgid "Neither %s nor %s exist in %s"
 msgstr ""
 
 msgid "Failed after test"

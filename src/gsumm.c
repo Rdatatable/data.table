@@ -42,9 +42,9 @@ SEXP gforce(SEXP env, SEXP jsub, SEXP o, SEXP f, SEXP l, SEXP irowsArg) {
   const bool verbose = GetVerbose();
   if (TYPEOF(env) != ENVSXP) error(_("env is not an environment"));
   // The type of jsub is pretty flexbile in R, so leave checking to eval() below.
-  if (!isInteger(o)) error(_("o is not an integer vector"));
-  if (!isInteger(f)) error(_("f is not an integer vector"));
-  if (!isInteger(l)) error(_("l is not an integer vector"));
+  if (!isInteger(o)) error(_("%s is not an integer vector"), "o");
+  if (!isInteger(f)) error(_("%s is not an integer vector"), "f");
+  if (!isInteger(l)) error(_("%s is not an integer vector"), "l");
   if (isNull(irowsArg)) {
     irows = NULL;
     irowslen = -1;
