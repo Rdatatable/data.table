@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: data.table 1.12.5\n"
-"POT-Creation-Date: 2019-12-29 01:32\n"
+"POT-Creation-Date: 2019-12-29 10:26\n"
 "PO-Revision-Date: 2019-11-16 18:37+0800\n"
 "Last-Translator: Xianying Tan <shrektan@126.com>\n"
 "Language-Team: Mandarin\n"
@@ -540,14 +540,10 @@ msgid ""
 ". Do not quote column names. Usage: DT[,sum(colC),by=list(colA,month(colB))]"
 msgstr "。请勿引用列名。用法：DT[,sum(colC),by=list(colA,month(colB))]"
 
-msgid "The items in the 'by' or 'keyby' list are length ("
-msgstr "'by' 或 'keyby' 列表中的元素长度为（"
-
-msgid "). Each must be length"
-msgstr ""
-
 msgid ""
-"; the same length as there are rows in x (after subsetting if i is provided)."
+"The items in the 'by' or 'keyby' list are length(s) (%s). Each must be "
+"length %d; the same length as there are rows in x (after subsetting if i is "
+"provided)."
 msgstr ""
 
 msgid "Internal error: drop_dot passed"
@@ -556,7 +552,7 @@ msgstr ""
 msgid "items"
 msgstr ""
 
-msgid "of the .() or list() passed to j is missing"
+msgid "Item %d of the .() or list() passed to j is missing"
 msgstr ""
 
 msgid ""
@@ -1141,10 +1137,7 @@ msgstr "。只有这些操作符是有效的"
 msgid "."
 msgstr "."
 
-msgid "There is no"
-msgstr ""
-
-msgid "package in provided repository."
+msgid "There is no package %s in provided repository."
 msgstr ""
 
 msgid "'fromLast' must be TRUE or FALSE"
@@ -1168,7 +1161,7 @@ msgid ""
 msgstr ""
 
 msgid ") or as.data.table("
-msgstr ""
+msgstr ") 或 as.data.table("
 
 msgid ""
 "). If you intend to use a reshape2::dcast, try installing that package "
@@ -1205,13 +1198,13 @@ msgid ""
 msgstr ""
 
 msgid "'data' must be a data.table."
-msgstr ""
+msgstr "'data' 必须为 data.table"
 
 msgid "'drop' must be logical TRUE/FALSE"
-msgstr ""
+msgstr "'drop' 必须为逻辑 TRUE/FALSE"
 
 msgid "Column ["
-msgstr ""
+msgstr "列 ["
 
 msgid "] not found or of unknown type."
 msgstr ""
@@ -1682,12 +1675,14 @@ msgstr "所以该列已经被保存为类型"
 msgid ""
 "key argument of data.table() must be a character vector naming columns (NB: "
 "col.names are applied before this)"
-msgstr "data.table()的关键参数必须是字符向量命名的列（NB:col.names在这之前被使用过）"
+msgstr ""
+"data.table()的关键参数必须是字符向量命名的列（NB:col.names在这之前被使用过）"
 
 msgid ""
 "index argument of data.table() must be a character vector naming columns "
 "(NB: col.names are applied before this)"
-msgstr "data.table()的关键参数必须是字符向量命名的列（NB:col.names在这之前被使用过）"
+msgstr ""
+"data.table()的关键参数必须是字符向量命名的列（NB:col.names在这之前被使用过）"
 
 msgid "dateTimeAs must be a single string"
 msgstr "dataTimeAs 必须是单个字符串"
@@ -1798,13 +1793,8 @@ msgid ""
 msgstr "要在列中使用 integer64 类，需要先安装 'bit64' 包。"
 
 msgid ""
-"'xts' class passed to data.table::last function but 'xts' is not available, "
-"you should have 'xts' installed already"
-msgstr ""
-
-msgid ""
-"'xts' class passed to data.table::first function but 'xts' is not available, "
-"you should have 'xts' installed already"
+"'xts' class passed to %s function but 'xts' is not available, you should "
+"have 'xts' installed already"
 msgstr ""
 
 msgid "Argument 'sort' should be logical TRUE/FALSE"
@@ -2126,10 +2116,10 @@ msgid ""
 msgstr ""
 
 msgid "x must be a data.frame or data.table"
-msgstr ""
+msgstr "x 必须为 data.frame 或 data.table"
 
 msgid "na.last must be logical TRUE/FALSE"
-msgstr ""
+msgstr "na.last 必须为逻辑 TRUE/FALSE"
 
 msgid ""
 "cols is not a character vector. Please see further information in ?setorder."
@@ -2149,17 +2139,16 @@ msgstr ""
 msgid "is non-atomic, which can't be sorted; try setting sorted = FALSE"
 msgstr ""
 
-msgid "Cross product of elements provided to CJ() would result in"
-msgstr ""
-
-msgid "rows which exceeds .Machine$integer.max =="
+msgid ""
+"Cross product of elements provided to CJ() would result in %d rows which "
+"exceeds .Machine$integer.max == %d"
 msgstr ""
 
 msgid "x and y must both be data.tables"
 msgstr ""
 
 msgid "length(by.x) != length(by.y)"
-msgstr ""
+msgstr "length(by.x) != length(by.y)"
 
 msgid "When x's column ('"
 msgstr ""
@@ -2379,6 +2368,9 @@ msgid "%d variable not shown: %s\n"
 msgid_plural "%d variables not shown: %s\n"
 msgstr[0] ""
 msgstr[1] ""
+
+#~ msgid "The items in the 'by' or 'keyby' list are length ("
+#~ msgstr "'by' 或 'keyby' 列表中的元素长度为（"
 
 #~ msgid "in"
 #~ msgstr "在"

@@ -1811,7 +1811,7 @@ msgstr "未提供 NAstrings \n"
 
 #: fread.c:1146
 msgid "  NAstrings = ["
-msgstr ""
+msgstr "  NAstrings = ["
 
 #: fread.c:1149
 msgid "]\n"
@@ -3373,7 +3373,7 @@ msgstr "irowsArg 既不是整数向量也不是 NULL"
 #: gsumm.c:58
 #, c-format
 msgid "length(f)=%d != length(l)=%d"
-msgstr ""
+msgstr "length(f)=%d != length(l)=%d"
 
 #: gsumm.c:66
 #, c-format
@@ -4302,7 +4302,7 @@ msgstr ""
 #: rbindlist.c:523
 #, c-format
 msgid "Column %d of item %d: %s"
-msgstr ""
+msgstr "第 %2$d 项的第 %1$d 列: %3$s"
 
 #: reorder.c:17
 #, c-format
