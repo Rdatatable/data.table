@@ -1943,7 +1943,8 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
     }
   }
   colclasses <- sapply(X, class)
-  if (all(unique(colclasses) == "numeric")) {
+  if (length(unique(colclasses)) == 1) {
+    typeint <- c("logical"=1L, "integer"=2L, "numeric"=3L, "complex"=4L, "character"=5L, "raw"=6L)
     X = .Call(Casmatrix, X, n, length(X))
   } else {
     X = unlist(X, recursive = FALSE, use.names = FALSE)
