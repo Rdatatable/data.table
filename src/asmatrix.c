@@ -106,6 +106,30 @@ SEXP asmatrix_complex(SEXP dt, SEXP nrow, SEXP ncol) {
   return mat;
 }
 
+SEXP asmatrix_character(SEXP dt, SEXP nrow, SEXP ncol) {
+  int n, p; // row and column numbers
+  SEXP mat; // output matrix
+  SEXP pcol; // pointer to column in dt
+  int vecIdx = 0; // counter to track place in vector underlying matrix
+  
+  // Setup output matrix vector
+  n = asInteger(nrow);
+  p = asInteger(ncol);
+  mat = PROTECT(allocVector(STRSXP, n*p));
+  
+  // Iterate through dt and copy into mat 
+  for (int jj = 0; jj < p; jj++) {
+    pcol = VECTOR_ELT(dt, jj);
+    for (int ii = 0; ii < n; ii++) {
+      SET_STRING_ELT(mat, vecIdx, STRING_ELT(pcol, ii));
+      vecIdx++;
+    }
+  }
+  
+  UNPROTECT(1);
+  return mat;
+}
+
 // Dispatch function for different atomic types
 SEXP asmatrix(SEXP dt, SEXP nrow, SEXP ncol) {
   // Conversion to common type handled in R
@@ -120,6 +144,8 @@ SEXP asmatrix(SEXP dt, SEXP nrow, SEXP ncol) {
       return(asmatrix_numeric(dt, nrow, ncol));
     case CPLXSXP: 
       return(asmatrix_complex(dt, nrow, ncol));
+    case STRSXP: 
+      return(asmatrix_character(dt, nrow, ncol));
     default:
       error("Unsupported matrix type '%s'", type2char(R_atomic_type));
   }
