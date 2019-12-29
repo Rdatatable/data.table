@@ -1946,7 +1946,7 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
   # If any columns of x are multi-column, which can only occur if x is
   # constructed incorrectly (see test 2074.07), use the old non-C
   # method of converting to a matrix.
-  col.classes = sapply(X, class)
+  col.classes = unlist(lapply(X, class))
   if (any(col.classes %in% c("matrix", "data.frame", "data.table"))) { 
     X = unlist(X, recursive = FALSE, use.names = FALSE)
     dim(X) = c(n, length(X)/n)
@@ -1955,9 +1955,9 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
   } 
   
   # convert columns to common class before handing over to C
-  class.order = c("logical"=1, "integer"=2, "numeric"=3, "complex"=4,
-                  "character"=5, "raw"=6, "list"=7)
-  if (length(unique(col.classes)) > 1) { 
+  class.order = c("logical"=1L, "integer"=2L, "numeric"=3L, "complex"=4L,
+                  "character"=5L, "raw"=6L, "list"=7L)
+  if (length(unique(col.classes)) > 1L) { 
     target.class = names(which.max(class.order[unique(col.classes)]))
     if (target.class == "raw") target.class = "character" # to match behaviour of as.matrix.data.frame
     for (col in which(col.classes != target.class)) {
