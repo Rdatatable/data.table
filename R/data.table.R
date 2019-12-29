@@ -1942,13 +1942,31 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
       X[[j]] = xj
     }
   }
-  colclasses = sapply(X, class)
-  if (length(unique(colclasses)) == 1) {
-    X = .Call(Casmatrix, X, n, length(X))
-  } else {
-    X = unlist(X, recursive = FALSE, use.names = FALSE)
+  
+  # convert columns to common class before handing over to C
+  class.order = c("logical"=1, "integer"=2, "numeric"=3, "complex"=4,
+                  "character"=5, "raw"=6, "list"=7)
+  col.classes = sapply(X, class)
+  if (length(unique(col.classes)) > 1) { 
+    target.class = names(which.max(class.order[unique(col.classes)]))
+    if (target.class == "raw") target.class = "character" # to match behaviour of as.matrix.data.frame
+    for (col in which(col.classes != target.class)) {
+      switch(target.class,
+             # 'logical' can never be reached, it will always be converted to something more complex 
+             "integer" = { X[[col]] = as.integer(X[[col]]) }, 
+             "numeric" = { X[[col]] = as.numeric(X[[col]]) }, 
+             "complex" = { X[[col]] = as.complex(X[[col]]) }, 
+             "character" = { X[[col]] = as.character(X[[col]]) }
+             # 'raw' can never be reached - columns should all be converted to 'character' if any were 'raw'
+             # 'list' can never be reached - if there is one list column, all will converted to list columns already
+      )
+      
+    }
   }
-  dim(X) = c(n, length(X)/n)
+  
+  p = length(X)
+  X = .Call(Casmatrix, X, n, p)
+  dim(X) = c(n, p)
   dimnames(X) = list(rownames.value, unlist(collabs, use.names = FALSE))
   X
 }
