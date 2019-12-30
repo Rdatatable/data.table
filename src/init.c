@@ -3,6 +3,39 @@
 #include <R_ext/Rdynload.h>
 #include <R_ext/Visibility.h>
 
+// global constants extern in data.table.h for gcc10 -fno-common; #4091
+// these are written to once here on initialization, but because of that write they can't be declared const
+SEXP char_integer64;
+SEXP char_ITime;
+SEXP char_IDate;
+SEXP char_Date;
+SEXP char_POSIXct;
+SEXP char_nanotime;
+SEXP char_lens;
+SEXP char_indices;
+SEXP char_allLen1;
+SEXP char_allGrp1;
+SEXP char_factor;
+SEXP char_ordered;
+SEXP char_datatable;
+SEXP char_dataframe;
+SEXP char_NULL;
+SEXP sym_sorted;
+SEXP sym_index;
+SEXP sym_BY;
+SEXP sym_starts, char_starts;
+SEXP sym_maxgrpn;
+SEXP sym_colClassesAs;
+SEXP sym_verbose;
+SEXP SelfRefSymbol;
+SEXP sym_inherits;
+SEXP sym_datatable_locked;
+double NA_INT64_D;
+long long NA_INT64_LL;
+Rcomplex NA_CPLX;
+size_t sizes[100];
+size_t typeorder[100];
+
 // .Calls
 SEXP setattrib();
 SEXP bmerge();
@@ -19,6 +52,7 @@ SEXP chmatch_R();
 SEXP chmatchdup_R();
 SEXP chin_R();
 SEXP fifelseR();
+SEXP fcaseR();
 SEXP freadR();
 SEXP fwriteR();
 SEXP reorder();
@@ -170,6 +204,7 @@ R_CallMethodDef callMethods[] = {
 {"Ccj", (DL_FUNC) &cj, -1},
 {"Ccoalesce", (DL_FUNC) &coalesce, -1},
 {"CfifelseR", (DL_FUNC) &fifelseR, -1},
+{"CfcaseR", (DL_FUNC) &fcaseR, -1},
 {"C_lock", (DL_FUNC) &lock, -1},  // _ for these 3 to avoid Clock as in time
 {"C_unlock", (DL_FUNC) &unlock, -1},
 {"C_islocked", (DL_FUNC) &islockedR, -1},
@@ -202,6 +237,9 @@ static void setSizes() {
 void attribute_visible R_init_datatable(DllInfo *info)
 // relies on pkg/src/Makevars to mv data.table.so to datatable.so
 {
+  // C exported routines, see ?cdt for details
+  R_RegisterCCallable("data.table", "CsubsetDT", (DL_FUNC) &subsetDT);
+
   R_registerRoutines(info, NULL, callMethods, NULL, externalMethods);
   R_useDynamicSymbols(info, FALSE);
   setSizes();
@@ -363,6 +401,6 @@ SEXP initLastUpdated(SEXP var) {
 
 SEXP dllVersion() {
   // .onLoad calls this and checks the same as packageVersion() to ensure no R/C version mismatch, #3056
-  return(ScalarString(mkChar("1.12.7")));
+  return(ScalarString(mkChar("1.12.9")));
 }
 
