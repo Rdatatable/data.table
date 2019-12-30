@@ -1887,7 +1887,7 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
   if (!is.null(rownames)) {
     # extract that column and drop it.
     rownames.value = x[[rownames]]
-    dm = dim(x) - 0:1
+    dm = dim(x) - 0L:1L
     cn = names(x)[-rownames]
     X = x[, .SD, .SDcols = cn]
   } else {
