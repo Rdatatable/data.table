@@ -1903,18 +1903,17 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
   class(X) = NULL
   non.numeric = non.atomic = FALSE
   all.logical = TRUE
+  # use setDT to check whether any columns are multi-column (e.g. matrices), then unpack using as.data.table
+  multi.col <- tryCatch({ setDT(x); FALSE }, warning=function(w) { return(TRUE) })
+  if (multi.col) {
+    X = as.data.table(X)
+    cn = names(X)
+    collabs = as.list(cn)
+    class(X) = NULL
+  }
   for (j in seq_len(p)) {
     if (is.ff(X[[j]])) X[[j]] = X[[j]][]   # nocov to bring the ff into memory, since we need to create a matrix in memory
     xj = X[[j]]
-    if (length(dj <- dim(xj)) == 2L && dj[2L] > 1L) {
-      if (inherits(xj, "data.table"))
-        xj = X[[j]] = as.matrix(X[[j]])
-      dnj = dimnames(xj)[[2L]]
-      collabs[[j]] = paste(collabs[[j]], if (length(dnj) >
-        0L)
-        dnj
-      else seq_len(dj[2L]), sep = ".")
-    }
     if (!is.logical(xj))
       all.logical = FALSE
     if (length(levels(xj)) > 0L || !(is.numeric(xj) || is.complex(xj) || is.logical(xj)) ||
@@ -1943,18 +1942,8 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
     }
   }
   
-  # If any columns of x are multi-column, which can only occur if x is
-  # constructed incorrectly (see test 2074.07), use the old non-C
-  # method of converting to a matrix.
-  col.classes = unlist(lapply(X, class))
-  if (any(col.classes %in% c("matrix", "data.frame", "data.table"))) { 
-    X = unlist(X, recursive = FALSE, use.names = FALSE)
-    dim(X) = c(n, length(X)/n)
-    dimnames(X) = list(rownames.value, unlist(collabs, use.names = FALSE))
-    return(X)
-  } 
-  
   # convert columns to common class before handing over to C
+  col.classes = unlist(lapply(X, class))
   class.order = c("logical"=1L, "integer"=2L, "numeric"=3L, "complex"=4L,
                   "character"=5L, "raw"=6L, "list"=7L)
   if (length(unique(col.classes)) > 1L) { 

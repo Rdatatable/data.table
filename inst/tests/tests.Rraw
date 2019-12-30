@@ -15730,7 +15730,7 @@ DT = data.table(a=1, b=2)
 test(2074.06, DT[ , c(.SD[1], .SD[1, .SD[1]]), by=a], data.table(a=1, b=2, b=2))
 ## as.matrix.data.table when a column has columns (only possible when constructed incorrectly)
 DT = structure(list(a=1:5, d=data.table(b=6:10, c=11:15), m=matrix(16:25, ncol=2L)), class = c('data.table', 'data.frame'))
-test(2074.07, as.matrix(DT), matrix(1:25, ncol=5L, dimnames=list(NULL, c('a', 'd.b', 'd.c', 'm.1', 'm.2'))))
+test(2074.07, as.matrix(DT), matrix(1:25, ncol=5L, dimnames=list(NULL, c('a', 'd.b', 'd.c', 'm.V1', 'm.V2'))))
 ## can induce !cedta() from base::rownames to get this error
 test(2074.08, rownames(structure(list(1:5), class='data.table')), error="Has it been created manually")
 ## default dimnames.data.table
