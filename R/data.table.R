@@ -1885,19 +1885,19 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
            " but should be nrow(x)==", nrow(x))
   }
   if (!is.null(rownames)) {
-    # extract that column and drop it.
+    # extract that column.
     rownames.value = x[[rownames]]
     dm = dim(x) - 0L:1L
     cn = names(x)[-rownames]
-    X = x[, .SD, .SDcols = cn]
   } else {
     dm = dim(x)
     cn = names(x)
-    X = x
+    rownames = ncol(x) + 1L # if no rownames to drop, set index to > ncol so that we can do [-rownames] rather than if (is.null(rownames)) {} else {} to drop the column in the rest of the code
   }
+  X = x
   if (any(dm == 0L))
     return(array(NA, dim = dm, dimnames = list(rownames.value, cn)))
-  p = dm[2L]
+  p = length(cn)
   n = dm[1L]
   collabs = as.list(cn)
   class(X) = NULL
@@ -1906,12 +1906,14 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
   # use setDT to check whether any columns are multi-column (e.g. matrices), then unpack using as.data.table
   multi.col <- tryCatch({ setDT(x); FALSE }, warning=function(w) { return(TRUE) })
   if (multi.col) {
-    X = as.data.table(X)
+    X = as.data.table(X[-rownames])
     cn = names(X)
     collabs = as.list(cn)
+    p = ncol(X)
+    rownames = p + 1L
     class(X) = NULL
   }
-  for (j in seq_len(p)) {
+  for (j in seq_len(p)[-rownames]) {
     if (is.ff(X[[j]])) X[[j]] = X[[j]][]   # nocov to bring the ff into memory, since we need to create a matrix in memory
     xj = X[[j]]
     if (!is.logical(xj))
@@ -1924,7 +1926,7 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
       non.atomic = TRUE
   }
   if (non.atomic) {
-    for (j in seq_len(p)) {
+    for (j in seq_len(p)[-rownames]) {
       xj = X[[j]]
       if (is.recursive(xj)) { }
       else X[[j]] = as.list(as.vector(xj))
@@ -1932,7 +1934,7 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
   }
   else if (all.logical) { }
   else if (non.numeric) {
-    for (j in seq_len(p)) {
+    for (j in seq_len(p)[-rownames]) {
       if (is.character(X[[j]])) next
       xj = X[[j]]
       miss = is.na(xj)
@@ -1943,13 +1945,14 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
   }
   
   # convert columns to common class before handing over to C
-  col.classes = unlist(lapply(X, class))
+  col.classes = unlist(lapply(X[-rownames], class))
   class.order = c("logical"=1L, "integer"=2L, "numeric"=3L, "complex"=4L,
                   "character"=5L, "raw"=6L, "list"=7L)
   if (length(unique(col.classes)) > 1L) { 
     target.class = names(which.max(class.order[unique(col.classes)]))
     if (target.class == "raw") target.class = "character" # to match behaviour of as.matrix.data.frame
     for (col in which(col.classes != target.class)) {
+      ifelse(col >= rownames, col + 1L, col)
       switch(target.class,
              # 'logical' can never be reached, it will always be converted to something more complex 
              "integer" = { X[[col]] = as.integer(X[[col]]) }, 
@@ -1959,12 +1962,11 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
              # 'raw' can never be reached - columns should all be converted to 'character' if any were 'raw'
              # 'list' can never be reached - if there is one list column, all will converted to list columns already
       )
-      
     }
   }
   
-  p = length(X)
-  X = .Call(Casmatrix, X, n, p)
+  p = length(X[-rownames])
+  X = .Call(Casmatrix, X, n, p, rownames)
   dim(X) = c(n, p)
   dimnames(X) = list(rownames.value, unlist(collabs, use.names = FALSE))
   X
