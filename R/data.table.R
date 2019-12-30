@@ -1903,9 +1903,8 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
   class(X) = NULL
   non.numeric = non.atomic = FALSE
   all.logical = TRUE
-  # use setDT to check whether any columns are multi-column (e.g. matrices), then unpack using as.data.table
-  multi.col <- tryCatch({ setDT(x); FALSE }, warning=function(w) { return(TRUE) })
-  if (multi.col) {
+  # Check for any wide matrix like columns and unpack using as.data.table
+  if (length(which_wide_columns(x)) > 0L) {
     X = as.data.table(X[-rownames])
     cn = names(X)
     collabs = as.list(cn)
@@ -2675,6 +2674,12 @@ setDF = function(x, rownames=NULL) {
   invisible(x)
 }
 
+# find matrix-like columns
+which_wide_columns = function(x) {
+  idx = vapply_1i(x, function(xi) length(dim(xi))) > 1L
+  which(idx)
+}
+
 setDT = function(x, keep.rownames=FALSE, key=NULL, check.names=FALSE) {
   name = substitute(x)
   if (is.name(name)) {
@@ -2691,10 +2696,10 @@ setDT = function(x, keep.rownames=FALSE, key=NULL, check.names=FALSE) {
     }
   }
   # check no matrix-like columns, #3760. Other than a single list(matrix) is unambiguous and depended on by some revdeps, #3581
-  if (length(x)>1L) {
-    idx = vapply_1i(x, function(xi) length(dim(xi)))>1L
-    if (any(idx))
-      warning("Some columns are a multi-column type (such as a matrix column): ", brackify(which(idx)),". setDT will retain these columns as-is but subsequent operations like grouping and joining may fail. Please consider as.data.table() instead which will create a new column for each embedded column.")
+  if (length(x) > 1L) {
+      wide_idx <- which_wide_columns(x)
+      if (length(wide_idx) > 0L)
+        warning("Some columns are a multi-column type (such as a matrix column): ", brackify(wide_idx),". setDT will retain these columns as-is but subsequent operations like grouping and joining may fail. Please consider as.data.table() instead which will create a new column for each embedded column.")
   }
   if (is.data.table(x)) {
     # fix for #1078 and #1128, see .resetclass() for explanation.
