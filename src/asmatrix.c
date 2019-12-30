@@ -16,10 +16,8 @@ SEXP asmatrix_logical(SEXP dt, R_xlen_t matlen, R_xlen_t n, R_xlen_t rncolnum) {
   for (R_xlen_t jj = 0; jj < xlength(dt); jj++) {
     if (jj == rncolnum) continue; // skip rownames. TODO: make sure this does slow down because of branch prediction
     pcol = LOGICAL(VECTOR_ELT(dt, jj));
-    for (R_xlen_t ii = 0; ii < n; ii++) {
-      pmat[vecIdx] = pcol[ii];
-      vecIdx++;
-    }
+    memcpy(pmat + vecIdx, pcol, sizeof(int)*n);
+    vecIdx += n;
   }
   
   UNPROTECT(1);
@@ -36,10 +34,8 @@ SEXP asmatrix_integer(SEXP dt, R_xlen_t matlen, R_xlen_t n, R_xlen_t rncolnum) {
   for (R_xlen_t jj = 0; jj < xlength(dt); jj++) {
     if (jj == rncolnum) continue; // skip rownames. TODO: make sure this does slow down because of branch prediction
     pcol = INTEGER(VECTOR_ELT(dt, jj));
-    for (R_xlen_t ii = 0; ii < n; ii++) {
-      pmat[vecIdx] = pcol[ii];
-      vecIdx++;
-    }
+    memcpy(pmat + vecIdx, pcol, sizeof(int)*n);
+    vecIdx += n;
   }
   
   UNPROTECT(1);
@@ -56,10 +52,8 @@ SEXP asmatrix_numeric(SEXP dt, R_xlen_t matlen, R_xlen_t n, R_xlen_t rncolnum) {
   for (R_xlen_t jj = 0; jj < xlength(dt); jj++) {
     if (jj == rncolnum) continue; // skip rownames. TODO: make sure this does slow down because of branch prediction
     pcol = REAL(VECTOR_ELT(dt, jj));
-    for (R_xlen_t ii = 0; ii < n; ii++) {
-      pmat[vecIdx] = pcol[ii];
-      vecIdx++;
-    }
+    memcpy(pmat + vecIdx, pcol, sizeof(double)*n);
+    vecIdx += n;
   }
   
   UNPROTECT(1);
@@ -76,10 +70,8 @@ SEXP asmatrix_complex(SEXP dt, R_xlen_t matlen, R_xlen_t n, R_xlen_t rncolnum) {
   for (R_xlen_t jj = 0; jj < xlength(dt); jj++) {
     if (jj == rncolnum) continue; // skip rownames. TODO: make sure this does slow down because of branch prediction
     pcol = COMPLEX(VECTOR_ELT(dt, jj));
-    for (R_xlen_t ii = 0; ii < n; ii++) {
-      pmat[vecIdx] = pcol[ii];
-      vecIdx++;
-    }
+    memcpy(pmat + vecIdx, pcol, sizeof(Rcomplex)*n);
+    vecIdx += n;
   }
   
   UNPROTECT(1);
