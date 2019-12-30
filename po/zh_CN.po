@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: data.table 1.12.5\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2019-12-23 00:00+0800\n"
+"POT-Creation-Date: 2019-12-30 01:24+0800\n"
 "PO-Revision-Date: 2019-11-18 00:26-04\n"
 "Last-Translator: Yuhang Chen <yuhangchen0802@gmail.com>\n"
 "Language-Team: Mandarin\n"
@@ -181,7 +181,7 @@ msgstr "为所有的%d行赋值\n"
 msgid ""
 "Coerced i from numeric to integer. Please pass integer for efficiency; e.g., "
 "2L rather than 2"
-msgstr ""
+msgstr "将i由数值型强制转换为整数型。请直接传入整数以提高效率，如传入2L而非2"
 
 #: assign.c:323
 #, c-format
@@ -797,7 +797,7 @@ msgstr "内部错误: opArg 不是一个长度为 on 的整数向量"
 
 #: bmerge.c:96
 msgid "Internal error: nqgrpArg must be an integer vector"
-msgstr ""
+msgstr "内部错误：nqgrpArg 必须为一个整数向量"
 
 #: bmerge.c:102
 msgid "Intrnal error: nqmaxgrpArg is not a positive length-1 integer vector"
@@ -1015,16 +1015,16 @@ msgstr "length(iSD)[%d] != length(jiscols)[%d]"
 #: dogroups.c:92
 #, c-format
 msgid "length(xSD)[%d] != length(xjiscols)[%d]"
-msgstr ""
+msgstr "length(xSD)[%d] != length(xjiscols)[%d]"
 
 #: dogroups.c:155 dogroups.c:184
 msgid "Internal error. Type of column should have been checked by now"
-msgstr ""
+msgstr "内部错误：至此列的类型应已经被检查完成"
 
 #: dogroups.c:273
 #, c-format
 msgid "j evaluates to type '%s'. Must evaluate to atomic vector or list."
-msgstr ""
+msgstr "j的运算结果为'%s'类型。其运算结果必须为原子向量或列表。"
 
 #: dogroups.c:281
 msgid ""
@@ -1125,7 +1125,7 @@ msgstr "dogroups: 从 %d 列增加至 %d 列\n"
 #: dogroups.c:387
 #, c-format
 msgid "dogroups: length(ans)[%d]!=ngrpcols[%d]+njval[%d]"
-msgstr ""
+msgstr "dogroups: length(ans)[%d]!=ngrpcols[%d]+njval[%d]"
 
 #: dogroups.c:420
 #, c-format
@@ -1612,7 +1612,7 @@ msgstr ""
 #: forder.c:561
 #, c-format
 msgid "Column %d passed to [f]order is type '%s', not yet supported."
-msgstr ""
+msgstr "传递给 [f]order 的第%d列为 '%s'类型，目前尚不支持。"
 
 #: forder.c:714
 msgid "Internal error: column not supported, not caught earlier"
@@ -1621,7 +1621,7 @@ msgstr "内部错误：列有不支持类型，未被前置识别"
 #: forder.c:722
 #, c-format
 msgid "nradix=%d\n"
-msgstr ""
+msgstr "nradix=%d\n"
 
 #: forder.c:728
 #, c-format
@@ -1641,7 +1641,7 @@ msgstr "定时块 %2d%s = %8.3f   %8d\n"
 #: forder.c:797
 #, c-format
 msgid "stat[%03d]==%20<PRIu64>\n"
-msgstr ""
+msgstr "stat[%03d]==%20<PRIu64>\n"
 
 #: forder.c:1053
 #, c-format
@@ -1740,7 +1740,7 @@ msgstr "内部错误：参数 'cols' 关于 CanyNA 是 '%s' 类型而不是'inte
 #, c-format
 msgid ""
 "Internal error in line %d of fread.c, please report on data.table GitHub:  "
-msgstr ""
+msgstr "fread.c中%d行出现内部错误，请在 data.table 的 GitHub中提交报告："
 
 #: fread.c:147
 #, c-format
@@ -1811,11 +1811,11 @@ msgstr "未提供 NAstrings \n"
 
 #: fread.c:1146
 msgid "  NAstrings = ["
-msgstr ""
+msgstr "  NAstrings = ["
 
 #: fread.c:1149
 msgid "]\n"
-msgstr ""
+msgstr "]\n"
 
 #: fread.c:1151
 msgid "  One or more of the NAstrings looks like a number.\n"
@@ -1844,14 +1844,6 @@ msgstr "显示进程  %d\n"
 #, c-format
 msgid "  0/1 column will be read as %s\n"
 msgstr " 0/1 列被读取为  %s\n"
-
-#: fread.c:1158
-msgid "boolean"
-msgstr ""
-
-#: fread.c:1158
-msgid "integer"
-msgstr ""
 
 #: fread.c:1166
 #, c-format
@@ -2199,11 +2191,11 @@ msgstr "采样跳点数 = %d 因为"
 #: fread.c:1649
 #, c-format
 msgid "nrow limit (%<PRIu64>) supplied\n"
-msgstr ""
+msgstr "指定了nrow 的最大值 (%<PRIu64>) \n"
 
 #: fread.c:1650
 msgid "jump0size==0\n"
-msgstr ""
+msgstr "jump0size==0\n"
 
 #: fread.c:1651
 #, c-format
@@ -2222,21 +2214,21 @@ msgstr "第%5$d个跳点所找到的第%4$d行，该行字段过于%1$s(%2$d/%3$
 
 #: fread.c:1690
 msgid "few"
-msgstr ""
+msgstr "少"
 
 #: fread.c:1690
 msgid "many"
-msgstr ""
+msgstr "多"
 
 #: fread.c:1690
 msgid ""
 "Most likely this jump landed awkwardly so type bumps here will be skipped."
-msgstr ""
+msgstr "很有可能这一跳点的位置并不合适，因此此处的类型转换将被跳过。"
 
 #: fread.c:1716
 #, c-format
 msgid "  Type codes (jump %03d)    : %s  Quote rule %d\n"
-msgstr ""
+msgstr " 类型码（跳点 %03d）   : %s  引用规则 %d\n"
 
 #: fread.c:1729
 #, c-format
@@ -2282,10 +2274,12 @@ msgid ""
 "setnames() afterwards if this guess is not correct, or fix the file write "
 "command that created the file to create a valid file."
 msgstr ""
+"作为第一列，并被用于猜测行名或索引。若上述猜测不正确，可在后续使用setnames()"
+"进行修改，或修复用于生成该文件的文件写入命令以生成有效的文件。"
 
 #: fread.c:1747
 msgid "s at the end."
-msgstr ""
+msgstr "到结尾处"
 
 #: fread.c:1749
 msgid ""
@@ -2315,16 +2309,8 @@ msgid ""
 msgstr " 参数'header' 被设置为%s， 因为唯一的一行包含 %s 个字段\n"
 
 #: fread.c:1774
-msgid "true"
-msgstr ""
-
-#: fread.c:1774
-msgid "false"
-msgstr ""
-
-#: fread.c:1774
 msgid " no"
-msgstr ""
+msgstr "0"
 
 #: fread.c:1777
 msgid ""
@@ -2341,7 +2327,7 @@ msgstr "参数 'header' 被设置为false，因为部分字段的首行不为字
 #: fread.c:1795
 #, c-format
 msgid "  Type codes (first row)   : %s  Quote rule %d\n"
-msgstr ""
+msgstr " 类型码（第一行）   : %s  引用规则 %d\n"
 
 #: fread.c:1804
 #, c-format
@@ -2365,7 +2351,7 @@ msgstr "  已使用了 %2$d个跳点抽样 %1$<PRIu64> 行(处理了字段间的
 #, c-format
 msgid ""
 "  Bytes from first data row on line %d to the end of last row: %<PRIu64>\n"
-msgstr ""
+msgstr " 从第一个数据行(%d)到最后一行的字节: %<PRIu64>\n"
 
 #: fread.c:1819
 #, c-format
@@ -2383,6 +2369,8 @@ msgid ""
 "  Initial alloc = %<PRIu64> rows (%<PRIu64> + %d%%) using bytes/"
 "max(mean-2*sd,min) clamped between [1.1*estn, 2.0*estn]\n"
 msgstr ""
+"为 %<PRIu64> 行 (%<PRIu64> + %d%%)分配初始内存，大小为字节数/max(mean-2*sd,"
+"min)，并确保该数值落于区间[1.1*estn, 2.0*estn]中\n"
 
 #: fread.c:1825
 #, c-format
@@ -2462,7 +2450,7 @@ msgstr "  jumps=[%d..%d)，chunk_size=%<PRIu64>，total_size=%<PRIu64>\n"
 #: fread.c:2005
 #, c-format
 msgid "Internal error: Master thread is not thread 0 but thread %d.\n"
-msgstr ""
+msgstr "内部错误：主线程并非线程0而是线程%d\n"
 
 #: fread.c:2213
 #, c-format
@@ -2478,7 +2466,7 @@ msgstr ""
 msgid ""
 "Internal error: invalid head position. jump=%d, headPos=%p, thisJumpStart="
 "%p, sof=%p"
-msgstr ""
+msgstr "内部错误：head 位置无效。jump=%d, headPos=%p, thisJumpStart=%p, sof=%p"
 
 #: fread.c:2335
 #, c-format
@@ -3104,7 +3092,7 @@ msgstr "x 目前必须是双精度 ('double') 类型的向量"
 #: fsort.c:122
 #, c-format
 msgid "nth=%d, nBatch=%d\n"
-msgstr ""
+msgstr "nth=%d, nBatch=%d\n"
 
 #: fsort.c:156
 #, c-format
@@ -3127,12 +3115,15 @@ msgstr "无法分配工作内存"
 #: fsort.c:177
 #, c-format
 msgid ""
-"counts is %dMB (%d pages per nBatch=%d, batchSize=%<PRIu64>, lastBatchSize=%<PRIu64>)\n"
-msgstr "counts为%dMB (每个nBatch中的%d页=%d, batchSize=%<PRIu64>, lastBatchSize=%<PRIu64>)\n"
+"counts is %dMB (%d pages per nBatch=%d, batchSize=%<PRIu64>, lastBatchSize="
+"%<PRIu64>)\n"
+msgstr ""
+"counts为%dMB (每个nBatch中的%d页=%d, batchSize=%<PRIu64>, lastBatchSize="
+"%<PRIu64>)\n"
 
 #: fsort.c:231
 msgid "Internal error: counts[nBatch-1][MSBsize-1] != length(x)"
-msgstr "内部错误：counts[nBatch-1][MSBsize-1] 不等于 length(x)"
+msgstr "内部错误：counts[nBatch-1][MSBsize-1] != length(x)"
 
 #: fsort.c:247
 msgid "Top 5 MSB counts: "
@@ -3190,11 +3181,12 @@ msgstr "... "
 #, c-format
 msgid ""
 "\n"
-"args.doRowNames=%d args.rowNames=%d doQuote=%d args.nrow=%<PRId64> args.ncol=%d "
-"eolLen=%d\n"
-msgstr "\n"
-"args.doRowNames=%d args.rowNames=%d doQuote=%d args.nrow=%<PRId64> args.ncol=%d "
-"eolLen=%d\n"
+"args.doRowNames=%d args.rowNames=%d doQuote=%d args.nrow=%<PRId64> args.ncol="
+"%d eolLen=%d\n"
+msgstr ""
+"\n"
+"args.doRowNames=%d args.rowNames=%d doQuote=%d args.nrow=%<PRId64> args.ncol="
+"%d eolLen=%d\n"
 
 #: fwrite.c:664
 #, c-format
@@ -3212,8 +3204,9 @@ msgid ""
 "%s: '%s'. Failed to open existing file for writing. Do you have write "
 "permission to it? Is this Windows and does another process such as Excel "
 "have it open?"
-msgstr "%s: '%s'. 无法打开一斤存在的文件进行写入.你是否对该文件有写入权限？"
-"这是Windows系统？是否有Excel之类的进程已经打开了该文件？"
+msgstr ""
+"%s: '%s'. 无法打开一斤存在的文件进行写入.你是否对该文件有写入权限？这是"
+"Windows系统？是否有Excel之类的进程已经打开了该文件？"
 
 #: fwrite.c:692
 #, c-format
@@ -3221,8 +3214,9 @@ msgid ""
 "%s: '%s'. Unable to create new file for writing (it does not exist already). "
 "Do you have permission to write here, is there space on the disk and does "
 "the path exist?"
-msgstr "%s: '%s'. 无法创建新的文件进行写入（文件不存在）"
-"你是否对此有写入权限？磁盘上是否有空间以及路径是否存在？"
+msgstr ""
+"%s: '%s'. 无法创建新的文件进行写入（文件不存在）你是否对此有写入权限？磁盘上"
+"是否有空间以及路径是否存在？"
 
 #: fwrite.c:700
 #, c-format
@@ -3291,7 +3285,8 @@ msgstr "请将此消息上方和下方的全部输出结果一起提交到data.t
 msgid ""
 "Please retry fwrite() with verbose=TRUE and include the full output with "
 "your data.table bug report."
-msgstr "请使用verbose=TRUE重试fwrite()，并将完整的输出提交到data.table的bug report中"
+msgstr ""
+"请使用verbose=TRUE重试fwrite()，并将完整的输出提交到data.table的bug report中"
 
 #: fwriteR.c:41
 msgid "Internal error: col passed to getMaxCategLen is missing levels"
@@ -3307,9 +3302,9 @@ msgid ""
 "Row %d of list column is type '%s' - not yet implemented. fwrite() can write "
 "list columns containing items which are atomic vectors of type logical, "
 "integer, integer64, double, complex and character."
-msgstr "列表页行%d的类型是'%s' - 尚未实施. fwrite()可以写入"
-"包含逻辑类型原子向量项目的列表页，"
-"整数，整数64，双精度，复数和字符"
+msgstr ""
+"列表页行%d的类型是'%s' - 尚未实施. fwrite()可以写入包含逻辑类型原子向量项目的"
+"列表页，整数，整数64，双精度，复数和字符"
 
 #: fwriteR.c:103
 #, c-format
@@ -3340,7 +3335,9 @@ msgstr "列%d的类型是'%s' - 尚未在fwrite中实施"
 msgid ""
 "No list columns are present. Setting sep2='' otherwise quote='auto' would "
 "quote fields containing sep2.\n"
-msgstr "当前没有列表页. 设置sep2=''否则quote='auto'会自动为所有包含sep2的字段加上引号.\n"
+msgstr ""
+"当前没有列表页. 设置sep2=''否则quote='auto'会自动为所有包含sep2的字段加上引"
+"号.\n"
 
 #: fwriteR.c:266
 #, c-format
@@ -3363,17 +3360,10 @@ msgstr "sep ('%c'), sep2 ('%c') 和 dec ('%c') 必须都不相同. 列 %d 是一
 msgid "env is not an environment"
 msgstr "env不是环境"
 
-#: gsumm.c:45
-msgid "o is not an integer vector"
-msgstr "o不是整数向量"
-
-#: gsumm.c:46
-msgid "f is not an integer vector"
-msgstr "f不是一个整数向量"
-
-#: gsumm.c:47
-msgid "l is not an integer vector"
-msgstr "l 不是整数向量"
+#: gsumm.c:45 gsumm.c:46 gsumm.c:47
+#, c-format
+msgid "%s is not an integer vector"
+msgstr "%s不是整数向量"
 
 #: gsumm.c:56
 msgid "irowsArg is neither an integer vector nor NULL"
@@ -3382,7 +3372,7 @@ msgstr "irowsArg 既不是整数向量也不是 NULL"
 #: gsumm.c:58
 #, c-format
 msgid "length(f)=%d != length(l)=%d"
-msgstr ""
+msgstr "length(f)=%d != length(l)=%d"
 
 #: gsumm.c:66
 #, c-format
@@ -3434,7 +3424,7 @@ msgstr "gather 已支持 INTSXP，REALSXP 和 CPLXSXP，但不支持 '%s'"
 #: gsumm.c:336 gsumm.c:568
 #, c-format
 msgid "%.3fs\n"
-msgstr ""
+msgstr "%.3fs\n"
 
 #: gsumm.c:345
 msgid "sum is not meaningful for factors."
@@ -3445,10 +3435,11 @@ msgstr "因子的和没有意义。"
 msgid "This gsum took (narm=%s) ... "
 msgstr "gsum 占用了 (narm=%s) ..."
 
-#: gsumm.c:350 gsumm.c:606
+#: gsumm.c:350 gsumm.c:606 gsumm.c:693 gsumm.c:812 gsumm.c:955 gsumm.c:1005
+#: gsumm.c:1085 gsumm.c:1176 gsumm.c:1266 gsumm.c:1409
 #, c-format
-msgid "nrow [%d] != length(x) [%d] in gsum"
-msgstr "gsum 中 nrow [%d] != length(x) [%d]"
+msgid "nrow [%d] != length(x) [%d] in %s"
+msgstr "%3$s 中 nrow [%1$d] != length(x) [%2$d]"
 
 #: gsumm.c:404
 msgid ""
@@ -3530,11 +3521,6 @@ msgstr ""
 msgid "min is not meaningful for factors."
 msgstr "因子的最小值没有意义。"
 
-#: gsumm.c:693
-#, c-format
-msgid "nrow [%d] != length(x) [%d] in gmin"
-msgstr "gmin 中 nrow [%d] != length(x) [%d]"
-
 #: gsumm.c:717 gsumm.c:850
 msgid ""
 "No non-missing values found in at least one group. Coercing to numeric type "
@@ -3586,11 +3572,6 @@ msgstr ""
 msgid "max is not meaningful for factors."
 msgstr "因子的最大值是没有意义的"
 
-#: gsumm.c:812
-#, c-format
-msgid "nrow [%d] != length(x) [%d] in gmax"
-msgstr "gmax检测到行数[%d]不等于x的长度[%d]"
-
 #: gsumm.c:930
 msgid ""
 "No non-missing values found in at least one group. Returning '-Inf' for such "
@@ -3628,11 +3609,6 @@ msgstr ""
 msgid "median is not meaningful for factors."
 msgstr "因子的中位值没有意义。"
 
-#: gsumm.c:955
-#, c-format
-msgid "nrow [%d] != length(x) [%d] in gmedian"
-msgstr "gmedian函数检测到行数[%d]不等于x的长度[%d]"
-
 #: gsumm.c:992
 #, c-format
 msgid ""
@@ -3643,11 +3619,6 @@ msgstr ""
 "GForce函数median (gmedian)不支持类型'%s'。请使用 stats::tail(.) 或者设置 "
 "options(datatable.optimize=1) 来关掉GForce优化。"
 
-#: gsumm.c:1005
-#, c-format
-msgid "nrow [%d] != length(x) [%d] in gtail"
-msgstr "gtail函数检测到行数[%d]不等于x的长度[%d]"
-
 #: gsumm.c:1073
 #, c-format
 msgid ""
@@ -3656,11 +3627,6 @@ msgid ""
 msgstr ""
 "GForce函数tail (gtail)不支持类型'%s'。请使用 utils::tail(.) 或者设置 "
 "options(datatable.optimize=1) 来关掉GForce优化。"
-
-#: gsumm.c:1085 gsumm.c:1176
-#, c-format
-msgid "nrow [%d] != length(x) [%d] in ghead"
-msgstr "ghead函数检测到行数[%d]不等于x的长度[%d]"
 
 #: gsumm.c:1153
 #, c-format
@@ -3675,20 +3641,20 @@ msgstr ""
 msgid ""
 "Internal error, gtail is only implemented for n=1. This should have been "
 "caught before. please report to data.table issue tracker."
-msgstr ""
+msgstr "内部错误：gtail仅能应用于n=1的情况。此错误理应已被处理。请在 data.table 的 GitHub中提交报告。"
 
 #: gsumm.c:1166
 msgid ""
 "Internal error, ghead is only implemented for n=1. This should have been "
 "caught before. please report to data.table issue tracker."
-msgstr ""
+msgstr "内部错误：ghead仅能应用于n=1的情况。此错误理应已被处理。请在 data.table 的 GitHub中提交报告。"
 
 #: gsumm.c:1172
 msgid ""
 "Internal error, `g[` (gnthvalue) is only implemented single value subsets "
 "with positive index, e.g., .SD[2]. This should have been caught before. "
 "please report to data.table issue tracker."
-msgstr ""
+msgstr "内部错误：`g[` (gnthvalue) 仅能用于采用单个正数索引求取子集，如 .SD[2]。此错误理应已被处理。请在 data.table 的 GitHub中提交报告。"
 
 #: gsumm.c:1250
 #, c-format
@@ -3696,7 +3662,7 @@ msgid ""
 "Type '%s' not supported by GForce subset `[` (gnthvalue). Either add the "
 "prefix utils::head(.) or turn off GForce optimization using "
 "options(datatable.optimize=1)"
-msgstr ""
+msgstr "GForce取子集运算符`[` (gnthvalue)尚不支持'%s'类型。。请添加前缀stats::var(.)，或使用options(datatable.optimize=1) 关闭 GForce优化"
 
 #: gsumm.c:1262
 msgid ""
@@ -3706,23 +3672,18 @@ msgid ""
 "using options(datatable.optimize=1). Alternatively, if you only need the "
 "diagonal elements, 'DT[,lapply(.SD,var),by=,.SDcols=]' is the optimized way "
 "to do this."
-msgstr ""
+msgstr "GForce var/sd 仅能应用于列，而非.SD或其他。若要求取某一列表，如.SD，所有元素的全协方差矩阵，请添加前缀stats::var(.SD)（或stats::sd(.SD)），或使用options(datatable.optimize=1) 关闭 GForce优化。另外，若仅需获得对角线元素，最佳的方式是使用'DT[,lapply(.SD,var),by=,.SDcols=]'。"
 
 #: gsumm.c:1263
 msgid "var/sd is not meaningful for factors."
-msgstr ""
-
-#: gsumm.c:1266
-#, c-format
-msgid "nrow [%d] != length(x) [%d] in gvar"
-msgstr ""
+msgstr "无法对因子类型使用 var/sd。"
 
 #: gsumm.c:1382
 #, c-format
 msgid ""
 "Type '%s' not supported by GForce var (gvar). Either add the prefix stats::"
 "var(.) or turn off GForce optimization using options(datatable.optimize=1)"
-msgstr ""
+msgstr "GForce var (gvar) 尚不支持 '%s'类型。请添加前缀stats::var(.)，或使用options(datatable.optimize=1) 关闭 GForce优化"
 
 #: gsumm.c:1384
 #, c-format
@@ -3747,11 +3708,6 @@ msgstr ""
 #: gsumm.c:1404
 msgid "prod is not meaningful for factors."
 msgstr "prod对于因子是没有意义的"
-
-#: gsumm.c:1409
-#, c-format
-msgid "nrow [%d] != length(x) [%d] in gprod"
-msgstr "在gprod中，nrow [%d] != length(x) [%d]"
 
 #: gsumm.c:1411
 #, c-format
@@ -4340,12 +4296,12 @@ msgstr ""
 msgid ""
 "Failed to allocate working memory for %d factor levels of result column %d "
 "when reading item %d of item %d"
-msgstr ""
+msgstr "当读取第%4$d项的第%3$d个子项时，无法为第%2$d列的%1$d个因素水平分配工作内存"
 
 #: rbindlist.c:523
 #, c-format
 msgid "Column %d of item %d: %s"
-msgstr ""
+msgstr "第 %2$d 项的第 %1$d 列: %3$s"
 
 #: reorder.c:17
 #, c-format

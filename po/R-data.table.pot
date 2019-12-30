@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: data.table 1.12.9\n"
-"POT-Creation-Date: 2019-12-22 23:59\n"
+"POT-Creation-Date: 2019-12-29 22:35\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -403,13 +403,7 @@ msgstr ""
 msgid ". Do not quote column names. Usage: DT[,sum(colC),by=list(colA,month(colB))]"
 msgstr ""
 
-msgid "The items in the 'by' or 'keyby' list are length ("
-msgstr ""
-
-msgid "). Each must be length"
-msgstr ""
-
-msgid "; the same length as there are rows in x (after subsetting if i is provided)."
+msgid "The items in the 'by' or 'keyby' list are length(s) (%s). Each must be length %d; the same length as there are rows in x (after subsetting if i is provided)."
 msgstr ""
 
 msgid "Internal error: drop_dot passed"
@@ -418,7 +412,7 @@ msgstr ""
 msgid "items"
 msgstr ""
 
-msgid "of the .() or list() passed to j is missing"
+msgid "Item %d of the .() or list() passed to j is missing"
 msgstr ""
 
 msgid "Different branches of j expression produced different auto-named columns:"
@@ -853,10 +847,7 @@ msgstr ""
 msgid "."
 msgstr ""
 
-msgid "There is no"
-msgstr ""
-
-msgid "package in provided repository."
+msgid "There is no package %s in provided repository."
 msgstr ""
 
 msgid "'fromLast' must be TRUE or FALSE"
@@ -1324,10 +1315,7 @@ msgstr ""
 msgid "Using integer64 class columns require to have 'bit64' package installed."
 msgstr ""
 
-msgid "'xts' class passed to data.table::last function but 'xts' is not available, you should have 'xts' installed already"
-msgstr ""
-
-msgid "'xts' class passed to data.table::first function but 'xts' is not available, you should have 'xts' installed already"
+msgid "'xts' class passed to %s function but 'xts' is not available, you should have 'xts' installed already"
 msgstr ""
 
 msgid "Argument 'sort' should be logical TRUE/FALSE"
@@ -1549,9 +1537,6 @@ msgstr ""
 msgid "New parallel sort has not been implemented for vectors containing NA values so far. Using one thread."
 msgstr ""
 
-msgid "x must be a data.frame or data.table."
-msgstr ""
-
 msgid "x must be a data.frame or data.table"
 msgstr ""
 
@@ -1573,10 +1558,7 @@ msgstr ""
 msgid "is non-atomic, which can't be sorted; try setting sorted = FALSE"
 msgstr ""
 
-msgid "Cross product of elements provided to CJ() would result in"
-msgstr ""
-
-msgid "rows which exceeds .Machine$integer.max =="
+msgid "Cross product of elements provided to CJ() would result in %d rows which exceeds .Machine$integer.max == %d"
 msgstr ""
 
 msgid "x and y must both be data.tables"
@@ -1669,10 +1651,7 @@ msgstr ""
 msgid "script must end with '.Rraw'. If a file ending '.Rraw.bz2' exists, that will be found and used."
 msgstr ""
 
-msgid "Neither"
-msgstr ""
-
-msgid "exist in"
+msgid "Neither %s nor %s exist in %s"
 msgstr ""
 
 msgid "Failed after test"

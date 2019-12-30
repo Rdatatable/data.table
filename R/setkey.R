@@ -251,7 +251,7 @@ setorder = function(x, ..., na.last=FALSE)
 # na.last=FALSE here, to be consistent with data.table's default
 # as opposed to DT[order(.)] where na.last=TRUE, to be consistent with base
 {
-  if (!is.data.frame(x)) stop("x must be a data.frame or data.table.")
+  if (!is.data.frame(x)) stop("x must be a data.frame or data.table")
   cols = substitute(list(...))[-1L]
   if (identical(as.character(cols),"NULL")) return(x)
   if (length(cols)) {
@@ -357,7 +357,7 @@ CJ = function(..., sorted = TRUE, unique = FALSE)
     }
   }
   nrow = prod( vapply_1i(l, length) )  # lengths(l) will work from R 3.2.0
-  if (nrow > .Machine$integer.max) stop("Cross product of elements provided to CJ() would result in ",nrow," rows which exceeds .Machine$integer.max == ",.Machine$integer.max)
+  if (nrow > .Machine$integer.max) stop(gettextf("Cross product of elements provided to CJ() would result in %d rows which exceeds .Machine$integer.max == %d", nrow, Machine$integer.max, domain='R-data.table'))
   l = .Call(Ccj, l)
   setDT(l)
   l = setalloccol(l)  # a tiny bit wasteful to over-allocate a fixed join table (column slots only), doing it anyway for consistency since

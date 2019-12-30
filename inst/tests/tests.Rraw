@@ -13889,7 +13889,7 @@ test(1984.05, DT[ , sum(b), keyby = c, verbose = TRUE],
 test(1984.06, DT[1:3, sum(a), by=b:c], data.table(b=10:8, c=1:3, V1=1:3))
 test(1984.07, DT[, sum(a), by=call('sin',pi)], error='must evaluate to a vector or a list of vectors')
 test(1984.08, DT[, sum(a), by=as.raw(0)],           error='column or expression.*type raw')
-test(1984.09, DT[, sum(a), by=.(1,1:2)],       error='The items.*list are length [(]1,2[)].*Each must be length 10; .*rows in x.*after subsetting')
+test(1984.09, DT[, sum(a), by=.(1,1:2)],       error='The items.*list are length[(]s[)] [(]1,2[)].*Each must be length 10; .*rows in x.*after subsetting')
 options('datatable.optimize' = Inf)
 test(1984.10, DT[ , 1, by = .(a %% 2), verbose = TRUE],
      data.table(a = c(1, 0), V1 = c(1, 1)),
