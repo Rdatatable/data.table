@@ -357,24 +357,23 @@ SEXP fwhichOpt(SEXP expr, bool *doOpt) {
   double tic = 0;
   if (verbose)
     tic = omp_get_wtime();
-  SEXP node = expr;
   bool escape = false;
-  SEXP args = R_NilValue, rhs = R_NilValue;
   int nand = 0, nop = 0;
+  SEXP node = expr;
   //bool debug = false;
   for (int i=0;; i++) { // examine if supported expression, and investigate number of AND and OP
     if (escape) {
-      if (debug) {Rprintf("id=%d, doOpt=0, skip", i);}
+      //if (debug) {Rprintf("id=%d, doOpt=0, skip", i);}
       continue;
     }
     if (OP_CALL(node)) {
-      if (debug) {Rprintf("i=%d, leaf node of supported OP\n", i);}
+      //if (debug) {Rprintf("i=%d, leaf node of supported OP\n", i);}
       nop++;
       break;
     } else if (AND_CALL(node)) {
       nand++;
-      args = CDR(node);
-      rhs = CAR(CDR(args));
+      SEXP args = CDR(node);
+      SEXP rhs = CADR(args);
       if (OP_CALL(rhs)) {
         nop++;
       } else {
@@ -383,8 +382,8 @@ SEXP fwhichOpt(SEXP expr, bool *doOpt) {
       }
       node = CAR(args);
     } else {
+      //if (debug) {Rprintf("i=%d, unsupported OP, node: ", i); Rf_PrintValue(node);}
       escape = true;
-      if (debug) {Rprintf("i=%d, unsupported OP, node: ", i); Rf_PrintValue(node);}
       break;
     }
   }
@@ -401,17 +400,11 @@ SEXP fwhichOpt(SEXP expr, bool *doOpt) {
       //if (debug) {Rprintf("i=%d, node: ", i); Rf_PrintValue(node);}
       int limit = 0; // extra stop
       for (int j=0; j<nand-i; j++) {
-        limit++;
-        if (limit>1000) {
-          warning("exceeded 1000 limit in fwitchOpt, please report to data.table issue tracker, together with query used, fallback to R's which");
-          escape = true;
-          break;
-        }
-        node = CAR(CDR(node));
+        node = CADR(node);
         //if (debug) {Rprintf("i=%d, j=%d, subsetting node: ", i, j);  Rf_PrintValue(node);}
       }
       if (i > 0)
-        node = CAR(CDR(CDR(node)));
+        node = CADDR(node);
       //if (debug) {Rprintf("i=%d, final node: ", i);  Rf_PrintValue(node);}
       SET_VECTOR_ELT(ans, i, node);
     }
@@ -496,8 +489,8 @@ SEXP fwhichR(SEXP expr, SEXP rho) {
     expr = PROTECT(LCONS(install("which"), LCONS(expr, R_NilValue))); protecti++;
     ans = PROTECT(eval(expr, rho)); protecti++;
   }
-  UNPROTECT(protecti);
   if (verbose)
     Rprintf("fwhich: took %.3fs\n", omp_get_wtime()-tic);
+  UNPROTECT(protecti);
   return ans;
 }
