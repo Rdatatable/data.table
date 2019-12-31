@@ -19,7 +19,7 @@
 for MSG in error warning DTWARN DTPRINT Rprintf STOP Error;
   do for SRC_FILE in src/*.c;
     # no inplace -i in default mac sed
-    do sed -E "s/$MSG[(]("[^"]*")/$MSG(_(\1)/g" $SRC_FILE > out;
+    do sed -E "s/$MSG[(](\"[^\"]*\")/$MSG(_(\1)/g" $SRC_FILE > out;
     mv out $SRC_FILE;
   done
 done
@@ -42,7 +42,11 @@ xgettext --keyword=_ -o data.table.pot *.c
 cd ..
 
 ## (b) Update R template file: src/R-data.table.pot
-## much easier, once the update_pkg_po bug is fixed
+## Messages in cat() are not captured unless they're returned via
+##   gettext, gettextf, or ngettext; this finds cat(["'] instances
+##   (as opposed to cat(gettext(["'] instances) and wraps them
+##   in gettext. Some manual inspection is required as this approach
+##   is over-eager (e.g. cat("\n") -> cat(gettext("\n")) is unnecessary)
 R --no-save
 ## a bug fix in R still hadn't made the 2019-12-12 release,
 ##   so run the following to source the corrected function manually

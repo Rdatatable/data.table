@@ -40,7 +40,7 @@ cedta = function(n=2L) {
     tryCatch("data.table" %chin% get(".Depends",paste("package",nsname,sep=":"),inherits=FALSE),error=function(e)FALSE)  # both ns$.Depends and get(.Depends,ns) are not sufficient
   if (!ans && getOption("datatable.verbose")) {
     # nocov start
-    cat("cedta decided '",nsname,"' wasn't data.table aware. Here is call stack with [[1L]] applied:\n",sep="")
+    cat(gettext("cedta decided '%s' wasn't data.table aware. Here is call stack with [[1L]] applied:\n", nsname, domain="R-data.table"))
     print(sapply(sys.calls(), "[[", 1L))
     # nocov end
     # so we can trace the namespace name that may need to be added (very unusually)
