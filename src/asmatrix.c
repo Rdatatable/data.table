@@ -26,7 +26,7 @@ SEXP asmatrix_logical(SEXP dt, R_xlen_t matlen, R_xlen_t n, R_xlen_t rncolnum) {
     int threadnum = omp_get_thread_num();
     R_xlen_t startcol = threadnum * chunksize;
     R_xlen_t endcol = startcol + chunksize - 1;
-    if (endcol >= dtncol) endcol = xlength(dt) - 1;
+    if (endcol >= dtncol) endcol = dtncol - 1;
     
     // Determine where to fill in the matrix vector
     R_xlen_t vecIdx = startcol * n;
@@ -59,7 +59,7 @@ SEXP asmatrix_integer(SEXP dt, R_xlen_t matlen, R_xlen_t n, R_xlen_t rncolnum) {
     int threadnum = omp_get_thread_num();
     R_xlen_t startcol = threadnum * chunksize;
     R_xlen_t endcol = startcol + chunksize - 1;
-    if (endcol >= dtncol) endcol = xlength(dt) - 1;
+    if (endcol >= dtncol) endcol = dtncol - 1;
     
     // Determine where to fill in the matrix vector
     R_xlen_t vecIdx = startcol * n;
@@ -92,7 +92,7 @@ SEXP asmatrix_numeric(SEXP dt, R_xlen_t matlen, R_xlen_t n, R_xlen_t rncolnum) {
     int threadnum = omp_get_thread_num();
     R_xlen_t startcol = threadnum * chunksize;
     R_xlen_t endcol = startcol + chunksize - 1;
-    if (endcol >= dtncol) endcol = xlength(dt) - 1;
+    if (endcol >= dtncol) endcol = dtncol - 1;
     
     // Determine where to fill in the matrix vector
     R_xlen_t vecIdx = startcol * n;
@@ -125,7 +125,7 @@ SEXP asmatrix_complex(SEXP dt, R_xlen_t matlen, R_xlen_t n, R_xlen_t rncolnum) {
     int threadnum = omp_get_thread_num();
     R_xlen_t startcol = threadnum * chunksize;
     R_xlen_t endcol = startcol + chunksize - 1;
-    if (endcol >= dtncol) endcol = xlength(dt) - 1;
+    if (endcol >= dtncol) endcol = dtncol - 1;
     
     // Determine where to fill in the matrix vector
     R_xlen_t vecIdx = startcol * n;
@@ -157,7 +157,7 @@ SEXP asmatrix_character(SEXP dt, R_xlen_t matlen, R_xlen_t n, R_xlen_t rncolnum)
     int threadnum = omp_get_thread_num();
     R_xlen_t startcol = threadnum * chunksize;
     R_xlen_t endcol = startcol + chunksize - 1;
-    if (endcol >= dtncol) endcol = xlength(dt) - 1;
+    if (endcol >= dtncol) endcol = dtncol - 1;
     
     // Determine where to fill in the matrix vector
     R_xlen_t vecIdx = startcol * n;
@@ -191,7 +191,7 @@ SEXP asmatrix_list(SEXP dt, R_xlen_t matlen, R_xlen_t n, R_xlen_t rncolnum) {
     int threadnum = omp_get_thread_num();
     R_xlen_t startcol = threadnum * chunksize;
     R_xlen_t endcol = startcol + chunksize - 1;
-    if (endcol >= dtncol) endcol = xlength(dt) - 1;
+    if (endcol >= dtncol) endcol = dtncol - 1;
     
     // Determine where to fill in the matrix vector
     R_xlen_t vecIdx = startcol * n;
