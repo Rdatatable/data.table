@@ -279,9 +279,8 @@ msgstr "不等长联结还不能执行 roll "
 msgid "forder took ..."
 msgstr ""
 
-#, fuzzy
 msgid "Generating group lengths ..."
-msgstr "；其长度应为 2。"
+msgstr ""
 
 msgid "Generating non-equi group ids ..."
 msgstr ""
@@ -2480,11 +2479,10 @@ msgstr "'sorted' 为 TRUE 但元素"
 msgid "is non-atomic, which can't be sorted; try setting sorted = FALSE"
 msgstr "并非原子类型，无法排序。请尝试使用 sorted=FALSE"
 
-#, fuzzy
 msgid ""
 "Cross product of elements provided to CJ() would result in %.0f rows which "
 "exceeds .Machine$integer.max == %d"
-msgstr "CJ()中元素的叉积将产生 %d 行，已超过 .Machine$integer.max == %d"
+msgstr "CJ()中元素的叉积将产生 %.0f 行，已超过 .Machine$integer.max == %d"
 
 msgid "x and y must both be data.tables"
 msgstr "x 和 y 均需为 data.table"

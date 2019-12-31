@@ -47,6 +47,12 @@ cd ..
 ##   (as opposed to cat(gettext(["'] instances) and wraps them
 ##   in gettext. Some manual inspection is required as this approach
 ##   is over-eager (e.g. cat("\n") -> cat(gettext("\n")) is unnecessary)
+## Run 2nd time with '[^']*' to find cat(' (none so far)
+for SRC_FILE in R/*;
+  do sed -E "s/cat[(](\"[^\"]*\")/cat(gettext(\1, domain=\"R-data.table\")/g" $SRC_FILE > out;
+  mv out $SRC_FILE;
+done
+
 R --no-save
 ## a bug fix in R still hadn't made the 2019-12-12 release,
 ##   so run the following to source the corrected function manually
