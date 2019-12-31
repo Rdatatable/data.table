@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: data.table 1.12.9\n"
-"POT-Creation-Date: 2019-12-29 22:35\n"
+"POT-Creation-Date: 2019-12-31 13:02\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -1378,10 +1378,7 @@ msgstr ""
 msgid "TRANSLATION CHECK"
 msgstr ""
 
-msgid "**********"
-msgstr ""
-
-msgid "Running data.table in English; package support is available in English only. When searching for online help, be sure to also check for the English error message. This can be obtained by looking at the po/R-<locale>.po and po/<locale>.po files in the package source, where the native language and English error messages can be found side-by-side"
+msgid "**********\nRunning data.table in English; package support is available in English only. When searching for online help, be sure to also check for the English error message. This can be obtained by looking at the po/R-<locale>.po and po/<locale>.po files in the package source, where the native language and English error messages can be found side-by-side\n**********"
 msgstr ""
 
 msgid "**********\nThis development version of data.table was built more than 4 weeks ago. Please update: data.table::update.dev.pkg()\n**********"
@@ -1558,7 +1555,7 @@ msgstr ""
 msgid "is non-atomic, which can't be sorted; try setting sorted = FALSE"
 msgstr ""
 
-msgid "Cross product of elements provided to CJ() would result in %d rows which exceeds .Machine$integer.max == %d"
+msgid "Cross product of elements provided to CJ() would result in %.0f rows which exceeds .Machine$integer.max == %d"
 msgstr ""
 
 msgid "x and y must both be data.tables"
