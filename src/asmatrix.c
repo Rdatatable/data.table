@@ -9,15 +9,36 @@
 SEXP asmatrix_logical(SEXP dt, R_xlen_t matlen, R_xlen_t n, R_xlen_t rncolnum) {
   SEXP mat = PROTECT(allocVector(LGLSXP, matlen)); // output matrix
   int *pmat, *pcol; // pointers to casted R objects
-  R_xlen_t vecIdx = 0; // counter to track place in vector underlying matrix
-
-  // Iterate through dt and copy into mat 
   pmat = LOGICAL(mat);
-  for (R_xlen_t jj = 0; jj < xlength(dt); jj++) {
-    if (jj == rncolnum) continue; // skip rownames. TODO: make sure this does slow down because of branch prediction
-    pcol = LOGICAL(VECTOR_ELT(dt, jj));
-    memcpy(pmat + vecIdx, pcol, sizeof(int)*n);
-    vecIdx += n;
+
+  /* Using OMP is slightly less straightforward here because the number 
+   * of columns in the matrix may differ from the number of columns in
+   * the data.table if there is a rownames column we're skipping over.
+   * This means we have a lot of manual set up to make sure all our 
+   * array indices are pointing to the right place in memory across 
+   * threads. 
+   */
+  R_xlen_t dtncol = xlength(dt);
+  R_xlen_t chunksize = dtncol/getDTthreads() + 1; 
+  #pragma omp parallel num_threads(getDTthreads()) private(pcol)
+  { 
+    // Determine which columns in DT we're iterating through on this thread
+    int threadnum = omp_get_thread_num();
+    R_xlen_t startcol = threadnum * chunksize;
+    R_xlen_t endcol = startcol + chunksize - 1;
+    if (endcol >= dtncol) endcol = xlength(dt) - 1;
+    
+    // Determine where to fill in the matrix vector
+    R_xlen_t vecIdx = startcol * n;
+    if (rncolnum < startcol) vecIdx -= n;
+    
+    // Iterate through columns in DT, copying the contents to the matrix column
+    for (R_xlen_t jj = startcol; jj <= endcol; jj++) {
+      if (jj == rncolnum) continue; // skip rownames.
+      pcol = LOGICAL(VECTOR_ELT(dt, jj));
+      memcpy(pmat + vecIdx, pcol, sizeof(int)*n);
+      vecIdx += n;
+    }
   }
   
   UNPROTECT(1);
@@ -27,15 +48,30 @@ SEXP asmatrix_logical(SEXP dt, R_xlen_t matlen, R_xlen_t n, R_xlen_t rncolnum) {
 SEXP asmatrix_integer(SEXP dt, R_xlen_t matlen, R_xlen_t n, R_xlen_t rncolnum) {
   SEXP mat = PROTECT(allocVector(INTSXP, matlen)); // output matrix
   int *pmat, *pcol; // pointers to casted R objects
-  R_xlen_t vecIdx = 0; // counter to track place in vector underlying matrix
-  
-  // Iterate through dt and copy into mat 
   pmat = INTEGER(mat);
-  for (R_xlen_t jj = 0; jj < xlength(dt); jj++) {
-    if (jj == rncolnum) continue; // skip rownames. TODO: make sure this does slow down because of branch prediction
-    pcol = INTEGER(VECTOR_ELT(dt, jj));
-    memcpy(pmat + vecIdx, pcol, sizeof(int)*n);
-    vecIdx += n;
+
+  // Set up parallel OMP chunk
+  R_xlen_t dtncol = xlength(dt);
+  R_xlen_t chunksize = dtncol/getDTthreads() + 1; 
+  #pragma omp parallel num_threads(getDTthreads()) private(pcol)
+  { 
+    // Determine which columns in DT we're iterating through on this thread
+    int threadnum = omp_get_thread_num();
+    R_xlen_t startcol = threadnum * chunksize;
+    R_xlen_t endcol = startcol + chunksize - 1;
+    if (endcol >= dtncol) endcol = xlength(dt) - 1;
+    
+    // Determine where to fill in the matrix vector
+    R_xlen_t vecIdx = startcol * n;
+    if (rncolnum < startcol) vecIdx -= n;
+    
+    // Iterate through columns in DT, copying the contents to the matrix column
+    for (R_xlen_t jj = startcol; jj <= endcol; jj++) {
+      if (jj == rncolnum) continue; // skip rownames.
+      pcol = INTEGER(VECTOR_ELT(dt, jj));
+      memcpy(pmat + vecIdx, pcol, sizeof(int)*n);
+      vecIdx += n;
+    }
   }
   
   UNPROTECT(1);
@@ -45,15 +81,30 @@ SEXP asmatrix_integer(SEXP dt, R_xlen_t matlen, R_xlen_t n, R_xlen_t rncolnum) {
 SEXP asmatrix_numeric(SEXP dt, R_xlen_t matlen, R_xlen_t n, R_xlen_t rncolnum) {
   SEXP mat = PROTECT(allocVector(REALSXP, matlen)); // output matrix
   double *pmat, *pcol; // pointers to casted R objects
-  R_xlen_t vecIdx = 0; // counter to track place in vector underlying matrix
-  
-  // Iterate through dt and copy into mat 
   pmat = REAL(mat);
-  for (R_xlen_t jj = 0; jj < xlength(dt); jj++) {
-    if (jj == rncolnum) continue; // skip rownames. TODO: make sure this does slow down because of branch prediction
-    pcol = REAL(VECTOR_ELT(dt, jj));
-    memcpy(pmat + vecIdx, pcol, sizeof(double)*n);
-    vecIdx += n;
+  
+  // Set up parallel OMP chunk
+  R_xlen_t dtncol = xlength(dt);
+  R_xlen_t chunksize = dtncol/getDTthreads() + 1; 
+  #pragma omp parallel num_threads(getDTthreads()) private(pcol)
+  { 
+    // Determine which columns in DT we're iterating through on this thread
+    int threadnum = omp_get_thread_num();
+    R_xlen_t startcol = threadnum * chunksize;
+    R_xlen_t endcol = startcol + chunksize - 1;
+    if (endcol >= dtncol) endcol = xlength(dt) - 1;
+    
+    // Determine where to fill in the matrix vector
+    R_xlen_t vecIdx = startcol * n;
+    if (rncolnum < startcol) vecIdx -= n;
+    
+    // Iterate through columns in DT, copying the contents to the matrix column
+    for (R_xlen_t jj = startcol; jj <= endcol; jj++) {
+      if (jj == rncolnum) continue; // skip rownames.
+      pcol = REAL(VECTOR_ELT(dt, jj));
+      memcpy(pmat + vecIdx, pcol, sizeof(double)*n);
+      vecIdx += n;
+    }
   }
   
   UNPROTECT(1);
@@ -63,15 +114,30 @@ SEXP asmatrix_numeric(SEXP dt, R_xlen_t matlen, R_xlen_t n, R_xlen_t rncolnum) {
 SEXP asmatrix_complex(SEXP dt, R_xlen_t matlen, R_xlen_t n, R_xlen_t rncolnum) {
   SEXP mat = PROTECT(allocVector(CPLXSXP, matlen)); // output matrix
   Rcomplex *pmat, *pcol; // pointers to casted R objects
-  R_xlen_t vecIdx = 0; // counter to track place in vector underlying matrix
-  
-  // Iterate through dt and copy into mat 
   pmat = COMPLEX(mat);
-  for (R_xlen_t jj = 0; jj < xlength(dt); jj++) {
-    if (jj == rncolnum) continue; // skip rownames. TODO: make sure this does slow down because of branch prediction
-    pcol = COMPLEX(VECTOR_ELT(dt, jj));
-    memcpy(pmat + vecIdx, pcol, sizeof(Rcomplex)*n);
-    vecIdx += n;
+  
+  // Set up parallel OMP chunk
+  R_xlen_t dtncol = xlength(dt);
+  R_xlen_t chunksize = dtncol/getDTthreads() + 1; 
+  #pragma omp parallel num_threads(getDTthreads()) private(pcol)
+  { 
+    // Determine which columns in DT we're iterating through on this thread
+    int threadnum = omp_get_thread_num();
+    R_xlen_t startcol = threadnum * chunksize;
+    R_xlen_t endcol = startcol + chunksize - 1;
+    if (endcol >= dtncol) endcol = xlength(dt) - 1;
+    
+    // Determine where to fill in the matrix vector
+    R_xlen_t vecIdx = startcol * n;
+    if (rncolnum < startcol) vecIdx -= n;
+    
+    // Iterate through columns in DT, copying the contents to the matrix column
+    for (R_xlen_t jj = startcol; jj <= endcol; jj++) {
+      if (jj == rncolnum) continue; // skip rownames.
+      pcol = COMPLEX(VECTOR_ELT(dt, jj));
+      memcpy(pmat + vecIdx, pcol, sizeof(Rcomplex)*n);
+      vecIdx += n;
+    }
   }
   
   UNPROTECT(1);
@@ -81,17 +147,32 @@ SEXP asmatrix_complex(SEXP dt, R_xlen_t matlen, R_xlen_t n, R_xlen_t rncolnum) {
 SEXP asmatrix_character(SEXP dt, R_xlen_t matlen, R_xlen_t n, R_xlen_t rncolnum) {
   SEXP mat = PROTECT(allocVector(STRSXP, matlen)); // output matrix
   SEXP pcol; // pointers to casted R objects
-  R_xlen_t vecIdx = 0; // counter to track place in vector underlying matrix
-  
-  // Iterate through dt and copy into mat 
-  for (R_xlen_t jj = 0; jj < xlength(dt); jj++) {
-    if (jj == rncolnum) continue; // skip rownames. TODO: make sure this does slow down because of branch prediction
-    pcol = VECTOR_ELT(dt, jj);
-    for (R_xlen_t ii = 0; ii < n; ii++) {
-      SET_STRING_ELT(mat, vecIdx, STRING_ELT(pcol, ii));
-      vecIdx++;
+
+  // Set up parallel OMP chunk
+  R_xlen_t dtncol = xlength(dt);
+  R_xlen_t chunksize = dtncol/getDTthreads() + 1; 
+  #pragma omp parallel num_threads(getDTthreads()) private(pcol)
+  { 
+    // Determine which columns in DT we're iterating through on this thread
+    int threadnum = omp_get_thread_num();
+    R_xlen_t startcol = threadnum * chunksize;
+    R_xlen_t endcol = startcol + chunksize - 1;
+    if (endcol >= dtncol) endcol = xlength(dt) - 1;
+    
+    // Determine where to fill in the matrix vector
+    R_xlen_t vecIdx = startcol * n;
+    if (rncolnum < startcol) vecIdx -= n;
+    
+    // Iterate through columns in DT, copying the contents to the matrix column
+    for (R_xlen_t jj = startcol; jj <= endcol; jj++) {
+      if (jj == rncolnum) continue; // skip rownames.
+      pcol = VECTOR_ELT(dt, jj);
+      for (R_xlen_t ii = 0; ii < n; ii++) {
+        SET_STRING_ELT(mat, vecIdx, STRING_ELT(pcol, ii));
+        vecIdx++;
+      }
     }
-  }
+  }  
   
   UNPROTECT(1);
   return mat;
@@ -100,17 +181,32 @@ SEXP asmatrix_character(SEXP dt, R_xlen_t matlen, R_xlen_t n, R_xlen_t rncolnum)
 SEXP asmatrix_list(SEXP dt, R_xlen_t matlen, R_xlen_t n, R_xlen_t rncolnum) {
   SEXP mat = PROTECT(allocVector(VECSXP, matlen)); // output matrix
   SEXP pcol; // pointers to casted R objects
-  R_xlen_t vecIdx = 0; // counter to track place in vector underlying matrix
-  
-  // Iterate through dt and copy into mat 
-  for (R_xlen_t jj = 0; jj < xlength(dt); jj++) {
-    if (jj == rncolnum) continue; // skip rownames. TODO: make sure this does slow down because of branch prediction
-    pcol = VECTOR_ELT(dt, jj);
-    for (R_xlen_t ii = 0; ii < n; ii++) {
-      SET_VECTOR_ELT(mat, vecIdx, VECTOR_ELT(pcol, ii));
-      vecIdx++;
+
+  // Set up parallel OMP chunk
+  R_xlen_t dtncol = xlength(dt);
+  R_xlen_t chunksize = dtncol/getDTthreads() + 1; 
+  #pragma omp parallel num_threads(getDTthreads()) private(pcol)
+  { 
+    // Determine which columns in DT we're iterating through on this thread
+    int threadnum = omp_get_thread_num();
+    R_xlen_t startcol = threadnum * chunksize;
+    R_xlen_t endcol = startcol + chunksize - 1;
+    if (endcol >= dtncol) endcol = xlength(dt) - 1;
+    
+    // Determine where to fill in the matrix vector
+    R_xlen_t vecIdx = startcol * n;
+    if (rncolnum < startcol) vecIdx -= n;
+    
+    // Iterate through columns in DT, copying the contents to the matrix column
+    for (R_xlen_t jj = startcol; jj <= endcol; jj++) {
+      if (jj == rncolnum) continue; // skip rownames.
+      pcol = VECTOR_ELT(dt, jj);
+      for (R_xlen_t ii = 0; ii < n; ii++) {
+        SET_VECTOR_ELT(mat, vecIdx, VECTOR_ELT(pcol, ii));
+        vecIdx++;
+      }
     }
-  }
+  }  
   
   UNPROTECT(1);
   return mat;

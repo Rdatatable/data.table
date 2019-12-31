@@ -36,6 +36,7 @@
   Internally parallelized code is used in the following places:
 
   \itemize{
+    \item{\code{asmatrix.c} - \code{\link{as.matrix}()}}
     \item{\code{between.c} - \code{\link{between}()}}
     \item{\code{cj.c} - \code{\link{CJ}()}}
     \item{\code{coalesce.c} - \code{\link{fcoalesce}()}}
