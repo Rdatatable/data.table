@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: data.table 1.12.9\n"
-"POT-Creation-Date: 2019-12-31 15:31\n"
+"POT-Creation-Date: 2019-12-31 16:28\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -163,7 +163,7 @@ msgstr ""
 msgid ". Only integer, double or character columns may be roll joined."
 msgstr ""
 
-msgid "Matching i.%s to factor levels to x.%s factor levels."
+msgid "Matching i.%s factor levels to x.%s factor levels."
 msgstr ""
 
 msgid "Coercing factor column i.%s to type character to match type of x.%s."

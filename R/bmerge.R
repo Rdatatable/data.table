@@ -49,7 +49,7 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
       if (roll!=0.0 && a==length(icols))
         stop("Attempting roll join on factor column when joining x.",names(x)[xc]," to i.",names(i)[ic],". Only integer, double or character columns may be roll joined.")
       if (xclass=="factor" && iclass=="factor") {
-        if (verbose) cat(gettextf("Matching i.%s to factor levels to x.%s factor levels.\n", names(i)[ic], names(x)[xc], domain="R-data.table"))
+        if (verbose) cat(gettextf("Matching i.%s factor levels to x.%s factor levels.\n", names(i)[ic], names(x)[xc], domain="R-data.table"))
         set(i, j=ic, value=chmatch(levels(i[[ic]]), levels(x[[xc]]), nomatch=0L)[i[[ic]]])  # nomatch=0L otherwise a level that is missing would match to NA values
         next
       } else {
