@@ -217,7 +217,7 @@ R_CallMethodDef callMethods[] = {
 {"Cwhich_eqR", (DL_FUNC) &which_eqR, -1},
 {"CfintersectR", (DL_FUNC) &fintersectR, -1},
 {"CfwhichR", (DL_FUNC) &fwhichR, -1},
-{"CfwhichOptR", (DL_FUNC) &fwhichOptR, -1},
+//{"CfwhichOptR", (DL_FUNC) &fwhichOptR, -1},
 {NULL, NULL, 0}
 };
 

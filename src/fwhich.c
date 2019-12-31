@@ -348,7 +348,7 @@ SEXP which_eqR(SEXP x, SEXP val, SEXP negate, SEXP intersect) {
 //#define OR_CALL(x) (CAR(x)==sym_or) // TODO: not yet used, would allow to support: DT[v1==s1 | v2==s2 | v3==s3] - has to use union instead of intersect short-circuit
 #define EQ_CALL(x) (CAR(x)==sym_equal)
 #define NEQ_CALL(x) (CAR(x)==sym_nequal)
-//#define IN_CALL(x) (CAR(x)==sym_in) // TODO: %in% // requires all C which_in funs
+//#define IN_CALL(x) (CAR(x)==sym_in) // TODO: %in% // requires C which_in funs
 //#define NIN_CALL(x) (CAR(x)==sym_nin) // TODO: %!in% // requires #4152
 #define OP_CALL(x) (EQ_CALL(x) || NEQ_CALL(x))
 SEXP fwhichOpt(SEXP expr, bool *doOpt) {
@@ -361,7 +361,7 @@ SEXP fwhichOpt(SEXP expr, bool *doOpt) {
   bool escape = false;
   SEXP args = R_NilValue, rhs = R_NilValue;
   int nand = 0, nop = 0;
-  bool debug = false;
+  //bool debug = false;
   for (int i=0;; i++) { // examine if supported expression, and investigate number of AND and OP
     if (escape) {
       if (debug) {Rprintf("id=%d, doOpt=0, skip", i);}
@@ -388,7 +388,7 @@ SEXP fwhichOpt(SEXP expr, bool *doOpt) {
       break;
     }
   }
-  if (debug) {Rprintf("fwhichOpt: nand=%d, nop=%d\n", nand, nop);}
+  //if (debug) {Rprintf("fwhichOpt: nand=%d, nop=%d\n", nand, nop);}
   if (!escape && nand+1 != nop)
     error("internal error: number of & should be equal to number of OP-1");
   SEXP ans = R_NilValue;
@@ -398,7 +398,7 @@ SEXP fwhichOpt(SEXP expr, bool *doOpt) {
       if (escape)
         break;
       node = expr;
-      if (debug) {Rprintf("i=%d, node: ", i); Rf_PrintValue(node);}
+      //if (debug) {Rprintf("i=%d, node: ", i); Rf_PrintValue(node);}
       int limit = 0; // extra stop
       for (int j=0; j<nand-i; j++) {
         limit++;
@@ -408,11 +408,11 @@ SEXP fwhichOpt(SEXP expr, bool *doOpt) {
           break;
         }
         node = CAR(CDR(node));
-        if (debug) {Rprintf("i=%d, j=%d, subsetting node: ", i, j);  Rf_PrintValue(node);}
+        //if (debug) {Rprintf("i=%d, j=%d, subsetting node: ", i, j);  Rf_PrintValue(node);}
       }
       if (i > 0)
         node = CAR(CDR(CDR(node)));
-      if (debug) {Rprintf("i=%d, final node: ", i);  Rf_PrintValue(node);}
+      //if (debug) {Rprintf("i=%d, final node: ", i);  Rf_PrintValue(node);}
       SET_VECTOR_ELT(ans, i, node);
     }
   }
@@ -422,12 +422,12 @@ SEXP fwhichOpt(SEXP expr, bool *doOpt) {
   UNPROTECT(protecti);
   return ans;
 } // turn expression from form of pairlist into list of expressions
-SEXP fwhichOptR(SEXP expr) {
+/*SEXP fwhichOptR(SEXP expr) {
   bool doOpt = false;
   SEXP ans = fwhichOpt(expr, &doOpt);
   Rprintf("fwhichOptR: doOpt %d\n", doOpt);
   return ans;
-} // only for testing dev
+} // only for testing dev*/
 SEXP fwhichR(SEXP expr, SEXP rho) {
   const bool verbose = GetVerbose();
   double tic = 0;
