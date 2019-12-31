@@ -1,8 +1,9 @@
 #include "data.table.h"
 
 /*
- * fast intersect only when x and y sorted
- * now used only during benchmarks, which_eq_int already has a built-in intersect via 'y' and 'ny' args
+ * fast sorted intersect only when x and y sorted
+ * do not confuse with exported R fintersect
+ * now used only during benchmarks, fwhich already has a built-in intersect via 'y' and 'ny' args
  */
 void fintersect(int *x, int nx, int *y, int ny, int *out, int *nans) {
   if (nx && ny) { // otherwise segfault when fintersect(integer(), integer())
@@ -23,9 +24,9 @@ void fintersect(int *x, int nx, int *y, int ny, int *out, int *nans) {
 }
 SEXP fintersectR(SEXP x, SEXP y) {
   if (!isInteger(x))
-    error("fintersect accept only integer class");
+    error("fsintersect accept only integer class");
   if (!isInteger(y))
-    error("fintersect accept only integer class");
+    error("fsintersect accept only integer class");
   // check no NAs
   // check no duplicates
   // check sorted
@@ -41,63 +42,63 @@ SEXP fintersectR(SEXP x, SEXP y) {
 }
 
 /*
- * which equals to
- * which_eq, !which_eq
+ * which equal, which in
+ * handle negation
  * handling short-circuit when calling which_eq iteratively
  */
-static inline void which_eq_int(int *x, int nx, int *out, int *nout, int val, bool negate, int *y, int ny) {
-  int j=0;
+static void which_eq_int(int *x, int nx, int *out, int *nout, int val, bool negate, int *y, int ny) {
+  int n = 0;
   if (ny<0) {
     if (negate) {
       for (int i=0; i<nx; i++) {
         if (x[i] != val) {
-          out[j] = i;
-          j++;
+          out[n] = i;
+          n++;
         }
       }
     } else {
       for (int i=0; i<nx; i++) {
         if (x[i] == val) {
-          out[j] = i;
-          j++;
+          out[n] = i;
+          n++;
         }
       }
     }
-  } else if (ny>0) { // short circuit when intersect/y arg provided
+  } else if (ny>0) { // short-circuit for intersect to y argument
     if (negate) {
       for (int i=0; i<ny; i++) {
         if (x[y[i]] != val) {
-          out[j] = y[i];
-          j++;
+          out[n] = y[i];
+          n++;
         }
       }
     } else {
       for (int i=0; i<ny; i++) {
         if (x[y[i]] == val) {
-          out[j] = y[i];
-          j++;
+          out[n] = y[i];
+          n++;
         }
       }
     }
   }
-  nout[0] = j;
+  nout[0] = n;
 }
-static inline void which_eq_double(double *x, int nx, int *out, int *nout, double val, bool negate, int *y, int ny) {
-  int j=0;
+static void which_eq_double(double *x, int nx, int *out, int *nout, double val, bool negate, int *y, int ny) {
+  int n = 0;
   if (ny<0) {
     if (ISNA(val)) {
       if (negate) {
         for (int i=0; i<nx; i++) {
           if (!ISNA(x[i])) {
-            out[j] = i;
-            j++;
+            out[n] = i;
+            n++;
           }
         }
       } else {
         for (int i=0; i<nx; i++) {
           if (ISNA(x[i])) {
-            out[j] = i;
-            j++;
+            out[n] = i;
+            n++;
           }
         }
       }
@@ -105,15 +106,15 @@ static inline void which_eq_double(double *x, int nx, int *out, int *nout, doubl
       if (negate) {
         for (int i=0; i<nx; i++) {
           if (!ISNAN(x[i]) || ISNA(x[i])) {
-            out[j] = i;
-            j++;
+            out[n] = i;
+            n++;
           }
         }
       } else {
         for (int i=0; i<nx; i++) {
           if (ISNAN(x[i]) && !ISNA(x[i])) {
-            out[j] = i;
-            j++;
+            out[n] = i;
+            n++;
           }
         }
       }
@@ -121,15 +122,15 @@ static inline void which_eq_double(double *x, int nx, int *out, int *nout, doubl
       if (negate) {
         for (int i=0; i<nx; i++) {
           if (x[i] != val) {
-            out[j] = i;
-            j++;
+            out[n] = i;
+            n++;
           }
         }
       } else {
         for (int i=0; i<nx; i++) {
           if (x[i] == val) {
-            out[j] = i;
-            j++;
+            out[n] = i;
+            n++;
           }
         }
       }
@@ -139,15 +140,15 @@ static inline void which_eq_double(double *x, int nx, int *out, int *nout, doubl
       if (negate) {
         for (int i=0; i<ny; i++) {
           if (!ISNA(x[y[i]])) {
-            out[j] = y[i];
-            j++;
+            out[n] = y[i];
+            n++;
           }
         }
       } else {
         for (int i=0; i<ny; i++) {
           if (ISNA(x[y[i]])) {
-            out[j] = y[i];
-            j++;
+            out[n] = y[i];
+            n++;
           }
         }
       }
@@ -155,15 +156,15 @@ static inline void which_eq_double(double *x, int nx, int *out, int *nout, doubl
       if (negate) {
         for (int i=0; i<ny; i++) {
           if (!ISNAN(x[y[i]]) || ISNA(x[y[i]])) {
-            out[j] = y[i];
-            j++;
+            out[n] = y[i];
+            n++;
           }
         }
       } else {
         for (int i=0; i<ny; i++) {
           if (ISNAN(x[y[i]]) && !ISNA(x[y[i]])) {
-            out[j] = y[i];
-            j++;
+            out[n] = y[i];
+            n++;
           }
         }
       }
@@ -171,74 +172,74 @@ static inline void which_eq_double(double *x, int nx, int *out, int *nout, doubl
       if (negate) {
         for (int i=0; i<ny; i++) {
           if (x[y[i]] != val) {
-            out[j] = y[i];
-            j++;
+            out[n] = y[i];
+            n++;
           }
         }
       } else {
         for (int i=0; i<ny; i++) {
           if (x[y[i]] == val) {
-            out[j] = y[i];
-            j++;
+            out[n] = y[i];
+            n++;
           }
         }
       }
     }
   }
-  nout[0] = j;
+  nout[0] = n;
 }
-static inline void which_eq_char(SEXP x, int nx, int *out, int *nout, SEXP val, bool negate, int *y, int ny) {
-  int j=0;
+static void which_eq_char(SEXP x, int nx, int *out, int *nout, SEXP val, bool negate, int *y, int ny) {
+  int n = 0;
   if (ny<0) {
     if (negate) {
       for (int i=0; i<nx; i++) {
-        if (STRING_ELT(x, i) != val) {
-          out[j] = i;
-          j++;
+        if (StrCmp(STRING_ELT(x, i), val)!=0) {
+          out[n] = i;
+          n++;
         }
       }
     } else {
       for (int i=0; i<nx; i++) {
-        if (STRING_ELT(x, i) == val) {
-          out[j] = i;
-          j++;
+        if (StrCmp(STRING_ELT(x, i), val)==0) {
+          out[n] = i;
+          n++;
         }
       }
     }
   } else if (ny>0) {
     if (negate) {
       for (int i=0; i<ny; i++) {
-        if (STRING_ELT(x, y[i]) != val) {
-          out[j] = y[i];
-          j++;
+        if (StrCmp(STRING_ELT(x, y[i]), val)!=0) {
+          out[n] = y[i];
+          n++;
         }
       }
     } else {
       for (int i=0; i<ny; i++) {
-        if (STRING_ELT(x, y[i]) == val) {
-          out[j] = y[i];
-          j++;
+        if (StrCmp(STRING_ELT(x, y[i]), val)==0) {
+          out[n] = y[i];
+          n++;
         }
       }
     }
   }
-  nout[0] = j;
+  nout[0] = n;
 }
-static inline void which_eq_int64(int64_t *x, int nx, int *out, int *nout, int64_t val, bool negate, int *y, int ny) {
-  int j=0;
+static void which_eq_int64(int64_t *x, int nx, int *out, int *nout, int64_t val, bool negate, int *y, int ny) {
+  int n = 0;
   if (ny<0) {
     if (negate) {
       for (int i=0; i<nx; i++) {
         if (x[i] != val) {
-          out[j] = i;
-          j++;
+          out[n] = i;
+          n++;
         }
       }
     } else {
       for (int i=0; i<nx; i++) {
         if (x[i] == val) {
-          out[j] = i;
-          j++;
+          out[n] = i;
+          n++;
         }
       }
     }
@@ -246,42 +247,42 @@ static inline void which_eq_int64(int64_t *x, int nx, int *out, int *nout, int64
     if (negate) {
       for (int i=0; i<ny; i++) {
         if (x[y[i]] != val) {
-          out[j] = y[i];
-          j++;
+          out[n] = y[i];
+          n++;
         }
       }
     } else {
       for (int i=0; i<ny; i++) {
         if (x[y[i]] == val) {
-          out[j] = y[i];
-          j++;
+          out[n] = y[i];
+          n++;
         }
       }
     }
   }
-  nout[0] = j;
+  nout[0] = n;
 }
-void which_eq(SEXP x, int nx, int *iwhich, int *nwhich, SEXP val, bool negate, int *y, int ny) {
+void which_eq(SEXP x, int *iwhich, int *nwhich, SEXP val, bool negate, int *y, int ny) {
   const bool verbose = GetVerbose();
   double tic = 0;
   if (verbose)
     tic = omp_get_wtime();
   switch (TYPEOF(x)) {
   case LGLSXP: {
-    which_eq_int(LOGICAL(x), nx, iwhich, nwhich, LOGICAL(val)[0], negate, y, ny);
+    which_eq_int(LOGICAL(x), length(x), iwhich, nwhich, LOGICAL(val)[0], negate, y, ny);
   } break;
   case INTSXP: {
-    which_eq_int(INTEGER(x), nx, iwhich, nwhich, INTEGER(val)[0], negate, y, ny);
+    which_eq_int(INTEGER(x), length(x), iwhich, nwhich, INTEGER(val)[0], negate, y, ny);
   } break;
   case REALSXP: {
     if (Rinherits(x, char_integer64)) {
-    which_eq_int64((int64_t *)REAL(x), nx, iwhich, nwhich, ((int64_t *)REAL(val))[0], negate, y, ny);
-  } else {
-    which_eq_double(REAL(x), nx, iwhich, nwhich, REAL(val)[0], negate, y, ny);
-  }
+      which_eq_int64((int64_t *)REAL(x), length(x), iwhich, nwhich, ((int64_t *)REAL(val))[0], negate, y, ny);
+    } else {
+      which_eq_double(REAL(x), length(x), iwhich, nwhich, REAL(val)[0], negate, y, ny);
+    }
   } break;
   case STRSXP: {
-    which_eq_char(x, nx, iwhich, nwhich, STRING_ELT(val, 0), negate, y, ny);
+    which_eq_char(x, length(x), iwhich, nwhich, STRING_ELT(val, 0), negate, y, ny);
   } break;
   default: {
     error("%s: Incompatible type: %s", __func__, type2char(TYPEOF(x)));
@@ -290,67 +291,266 @@ void which_eq(SEXP x, int nx, int *iwhich, int *nwhich, SEXP val, bool negate, i
   if (verbose)
     Rprintf("which_eq: took %.3fs\n", omp_get_wtime()-tic);
 }
-SEXP which_eqR(SEXP x, SEXP val, SEXP negate, SEXP intersect) {
-  int protecti = 0;
-  if (!isVectorAtomic(x))
-    error("%s: argument 'x' must be atomic vector", __func__);
-  if (TYPEOF(x)!=TYPEOF(val))
-    error("%s: argument 'value' must of the same type as argument 'x'", __func__);
-  if (length(val)!=1)
-    error("%s: argument 'value' must be length 1", __func__);
-  if (!IS_TRUE_OR_FALSE(negate))
-    error("%s: argument 'negate' must be TRUE or FALSE", __func__);
-  if (!isNull(intersect) && !isInteger(intersect))
-    error("%s: argument 'intersect' must be integer or NULL", __func__);
 
-  // check all intersect values are smaller than length(x), no NAs, no dups
-  R_len_t nx = length(x);
-  int ny = isNull(intersect) ? -1 : length(intersect);
-  int nans = isNull(intersect) ? nx : MIN(nx, ny);
-  if (ny>0)
-    intersect = duplicate(intersect);
-  int *yp = INTEGER(intersect);
-  for (int i=0; i<ny; i++) {
-    yp[i]--; // shift 1-based index to 0-based index - this is for intersect argument, a short circuit
+static void which_in_int(int *x, int nx, int *out, int *nout, int *val, int nval, bool negate, int *y, int ny) {
+  int n = 0;
+  if (ny<0) {
+    if (negate) {
+      for (int i=0; i<nx; i++) {
+        for (int j=0; j<nval; j++) {
+          if (x[i] != val[j]) {
+            out[n] = i;
+            n++;
+            break;
+          }
+        }
+      }
+    } else {
+      for (int i=0; i<nx; i++) {
+        for (int j=0; j<nval; j++) {
+          if (x[i] == val[j]) {
+            out[n] = i;
+            n++;
+            break;
+          }
+        }
+      }
+    }
+  } else if (ny>0) { // short-circuit for intersect to y argument
+    if (negate) {
+      for (int i=0; i<ny; i++) {
+        for (int j=0; j<nval; j++) {
+          if (x[y[i]] != val[j]) {
+            out[n] = y[i];
+            n++;
+            break;
+          }
+        }
+      }
+    } else {
+      for (int i=0; i<ny; i++) {
+        for (int j=0; j<nval; j++) {
+          if (x[y[i]] == val[j]) {
+            out[n] = y[i];
+            n++;
+            break;
+          }
+        }
+      }
+    }
   }
-  SEXP ans = PROTECT(allocVector(INTSXP, nans)); protecti++;
-  int *iwhich = INTEGER(ans);
-  int nwhich = 0;
-
-  which_eq(x, nx, iwhich, &nwhich, val, LOGICAL(negate)[0], yp, ny);
-
-  for (int i=0; i<nwhich; i++) {
-    iwhich[i]++; // shift 0-based index to 1-based index
+  nout[0] = n;
+}
+static void which_in_double(double *x, int nx, int *out, int *nout, double *val, int nval, bool negate, int *y, int ny) {
+  int n = 0;
+  if (ny<0) {
+    if (negate) {
+      for (int i=0; i<nx; i++) {
+        for (int j=0; j<nval; j++) {
+          if (x[i] != val[j]) {
+            out[n] = i;
+            n++;
+            break;
+          }
+        }
+      }
+    } else {
+      for (int i=0; i<nx; i++) {
+        for (int j=0; j<nval; j++) {
+          if (x[i] == val[j]) {
+            out[n] = i;
+            n++;
+            break;
+          }
+        }
+      }
+    }
+  } else if (ny>0) {
+    if (negate) {
+      for (int i=0; i<ny; i++) {
+        for (int j=0; j<nval; j++) {
+          if (x[y[i]] != val[j]) {
+            out[n] = y[i];
+            n++;
+            break;
+          }
+        }
+      }
+    } else {
+      for (int i=0; i<ny; i++) {
+        for (int j=0; j<nval; j++) {
+          if (x[y[i]] == val[j]) {
+            out[n] = y[i];
+            n++;
+            break;
+          }
+        }
+      }
+    }
   }
-
-  SETLENGTH(ans, nwhich);
-  UNPROTECT(protecti);
-  return ans;
-} // used only for benchmarks
+  nout[0] = n;
+} // TODO: NA and NaN support
+static void which_in_char(SEXP x, int nx, int *out, int *nout, SEXP val, int nval, bool negate, int *y, int ny) {
+  int n = 0;
+  if (ny<0) {
+    if (negate) {
+      for (int i=0; i<nx; i++) {
+        for (int j=0; j<nval; j++) {
+          if (StrCmp(STRING_ELT(x, i), STRING_ELT(val, j))!=0) {
+            out[n] = i;
+            n++;
+            break;
+          }
+        }
+      }
+    } else {
+      for (int i=0; i<nx; i++) {
+        for (int j=0; j<nval; j++) {
+          if (StrCmp(STRING_ELT(x, i), STRING_ELT(val, j))==0) {
+            out[n] = i;
+            n++;
+            break;
+          }
+        }
+      }
+    }
+  } else if (ny>0) {
+    if (negate) {
+      for (int i=0; i<ny; i++) {
+        for (int j=0; j<nval; j++) {
+          if (StrCmp(STRING_ELT(x, y[i]), STRING_ELT(val, j))!=0) {
+            out[n] = y[i];
+            n++;
+            break;
+          }
+        }
+      }
+    } else {
+      for (int i=0; i<ny; i++) {
+        for (int j=0; j<nval; j++) {
+          if (StrCmp(STRING_ELT(x, y[i]), STRING_ELT(val, j))==0) {
+            out[n] = y[i];
+            n++;
+            break;
+          }
+        }
+      }
+    }
+  }
+  nout[0] = n;
+}
+static void which_in_int64(int64_t *x, int nx, int *out, int *nout, int64_t *val, int nval, bool negate, int *y, int ny) {
+  int n = 0;
+  if (ny<0) {
+    if (negate) {
+      for (int i=0; i<nx; i++) {
+        for (int j=0; j<nval; j++) {
+          if (x[i] != val[j]) {
+            out[n] = i;
+            n++;
+            break;
+          }
+        }
+      }
+    } else {
+      for (int i=0; i<nx; i++) {
+        for (int j=0; j<nval; j++) {
+          if (x[i] == val[j]) {
+            out[n] = i;
+            n++;
+            break;
+          }
+        }
+      }
+    }
+  } else if (ny>0) {
+    if (negate) {
+      for (int i=0; i<ny; i++) {
+        for (int j=0; j<nval; j++) {
+          if (x[y[i]] != val[j]) {
+            out[n] = y[i];
+            n++;
+            break;
+          }
+        }
+      }
+    } else {
+      for (int i=0; i<ny; i++) {
+        for (int j=0; j<nval; j++) {
+          if (x[y[i]] == val[j]) {
+            out[n] = y[i];
+            n++;
+            break;
+          }
+        }
+      }
+    }
+  }
+  nout[0] = n;
+}
+void which_in(SEXP x, int *iwhich, int *nwhich, SEXP val, bool negate, int *y, int ny) {
+  const bool verbose = GetVerbose();
+  double tic = 0;
+  if (verbose)
+    tic = omp_get_wtime();
+  switch (TYPEOF(x)) {
+  case LGLSXP: {
+    which_in_int(LOGICAL(x), length(x), iwhich, nwhich, LOGICAL(val), length(val), negate, y, ny);
+  } break;
+  case INTSXP: {
+    which_in_int(INTEGER(x), length(x), iwhich, nwhich, INTEGER(val), length(val), negate, y, ny);
+  } break;
+  case REALSXP: {
+    if (Rinherits(x, char_integer64)) {
+      which_in_int64((int64_t *)REAL(x), length(x), iwhich, nwhich, (int64_t *)REAL(val), length(val), negate, y, ny);
+    } else {
+      which_in_double(REAL(x), length(x), iwhich, nwhich, REAL(val), length(val), negate, y, ny);
+    }
+  } break;
+  case STRSXP: {
+    which_in_char(x, length(x), iwhich, nwhich, val, length(val), negate, y, ny);
+  } break;
+  default: {
+    error("%s: Incompatible type: %s", __func__, type2char(TYPEOF(x)));
+  }
+  }
+  if (verbose)
+    Rprintf("which_in: took %.3fs\n", omp_get_wtime()-tic);
+}
 
 /*
- * TODO: which_in, which_like, etc.
- */
-
-/*
- * TODO: which op
- * router for which_eq, which_in, which_like, etc.
+ * which op
+ * route for which_eq, which_in, which_like, etc.
  * used so we can optimize: DT[v1==s1 & v2%in%s2 & like(v3,s3)]
- */
-
-/*
- * fast which
- * for a supported type of input: DT[v1==s1 & v2==s2 & v3==s3]
- * for now has to be wrapped with: DT[fwhich(v1==s1 & v2==s2 & v3==s3)]
- * redirects to which_eq calls (or which_op in future)
  */
 #define AND_CALL(x) (CAR(x)==sym_and)
 //#define OR_CALL(x) (CAR(x)==sym_or) // TODO: not yet used, would allow to support: DT[v1==s1 | v2==s2 | v3==s3] - has to use union instead of intersect short-circuit
 #define EQ_CALL(x) (CAR(x)==sym_equal)
 #define NEQ_CALL(x) (CAR(x)==sym_nequal)
-//#define IN_CALL(x) (CAR(x)==sym_in) // TODO: %in% // requires C which_in funs
-//#define NIN_CALL(x) (CAR(x)==sym_nin) // TODO: %!in% // requires #4152
-#define OP_CALL(x) (EQ_CALL(x) || NEQ_CALL(x))
+#define IN_CALL(x) (CAR(x)==sym_in)
+#define NIN_CALL(x) (CAR(x)==sym_nin)
+#define OP_CALL(x) (EQ_CALL(x) || NEQ_CALL(x) || IN_CALL(x) || NIN_CALL(x))
+void which_op(SEXP e, SEXP x, int *iwhich, int *nwhich, SEXP val, int *y, int ny) {
+  if (EQ_CALL(e) || NEQ_CALL(e)) {
+    which_eq(
+      x,              // lhs
+      iwhich, nwhich, // this iter result
+      val,            // rhs
+      NEQ_CALL(e),    // negate
+      y, ny           // last iter result
+    );
+  } else if (IN_CALL(e) || NIN_CALL(e)) {
+    which_in(x, iwhich, nwhich, val, NIN_CALL(e), y, ny);
+  } else {
+    error("internal error: unsupported OP, should have been caught by now, please report to issue tracker");
+  }
+}
+
+/*
+ * fast which optimization
+ * helper function to process unevaluated expression from form of pairlist into a list of expressions
+ * also investigate if optimization is possible for provided expression
+ */
 SEXP fwhichOpt(SEXP expr, bool *doOpt) {
   const bool verbose = GetVerbose();
   int protecti = 0;
@@ -389,16 +589,13 @@ SEXP fwhichOpt(SEXP expr, bool *doOpt) {
   }
   //if (debug) {Rprintf("fwhichOpt: nand=%d, nop=%d\n", nand, nop);}
   if (!escape && nand+1 != nop)
-    error("internal error: number of & should be equal to number of OP-1");
+    error("internal error: number of & should be equal to number of OP-1, please report to issue tracker");
   SEXP ans = R_NilValue;
   if (!escape) {
     ans = PROTECT(allocVector(VECSXP, nop)); protecti++;
     for (int i=0; i<nop; i++) {
-      if (escape)
-        break;
       node = expr;
       //if (debug) {Rprintf("i=%d, node: ", i); Rf_PrintValue(node);}
-      int limit = 0; // extra stop
       for (int j=0; j<nand-i; j++) {
         node = CADR(node);
         //if (debug) {Rprintf("i=%d, j=%d, subsetting node: ", i, j);  Rf_PrintValue(node);}
@@ -414,13 +611,14 @@ SEXP fwhichOpt(SEXP expr, bool *doOpt) {
     Rprintf("fwhichOpt: took %.3fs\n", omp_get_wtime()-tic);
   UNPROTECT(protecti);
   return ans;
-} // turn expression from form of pairlist into list of expressions
-/*SEXP fwhichOptR(SEXP expr) {
-  bool doOpt = false;
-  SEXP ans = fwhichOpt(expr, &doOpt);
-  Rprintf("fwhichOptR: doOpt %d\n", doOpt);
-  return ans;
-} // only for testing dev*/
+}
+
+/*
+ * fast which
+ * for a supported type of input: DT[v1==s1 & v2==s2 & v3==s3]
+ * for now has to be wrapped with: DT[fwhich(v1==s1 & v2==s2 & v3==s3)]
+ * redirects to which_op calls
+ */
 SEXP fwhichR(SEXP expr, SEXP rho) {
   const bool verbose = GetVerbose();
   double tic = 0;
@@ -445,15 +643,6 @@ SEXP fwhichR(SEXP expr, SEXP rho) {
         continue;
       }
       SEXP e = VECTOR_ELT(exprs, i);
-      bool negate;
-      if (EQ_CALL(e)) {
-        negate = false;
-      } else if (NEQ_CALL(e)) {
-        negate = true;
-      } else {
-        Rprintf("fwhich: OP call: "); Rf_PrintValue(e);
-        error("internal error: could not guess negate argument from OP call, there should be only supported OPs by now, please report to issue tracker");
-      }
       SEXP x = eval(CADR(e), rho);
       SEXP val = eval(CADDR(e), rho);
       //Rprintf("x: "); Rf_PrintValue(x); Rprintf("val: "); /Rf_PrintValue(val);
@@ -467,13 +656,12 @@ SEXP fwhichR(SEXP expr, SEXP rho) {
       int nans = !i ? nx : MIN(nx, ny); // this MIN will have to be MAX for `|` operator, where we need union instead of intersect
       ans = PROTECT(allocVector(INTSXP, nans)); protecti++; // TODO: protect with index instead?
       iwhich = INTEGER(ans);
-      //which_op(); // route for "equal", "in", "like", also "na"/"nan"->"equal"
-      which_eq(
-        x, nx, // lhs
+      which_op(
+        e,               // this iter expr
+        x,               // lhs
         iwhich, &nwhich, // this iter result
-        val, // rhs
-        negate,
-        yp, ny // last iter result
+        val,             // rhs
+        yp, ny           // last iter result
       );
       ny = nwhich;
       yp = INTEGER(ans);
@@ -494,3 +682,43 @@ SEXP fwhichR(SEXP expr, SEXP rho) {
   UNPROTECT(protecti);
   return ans;
 }
+
+SEXP which_eqR(SEXP x, SEXP val, SEXP negate, SEXP intersect) {
+  int protecti = 0;
+  if (!isVectorAtomic(x))
+    error("%s: argument 'x' must be atomic vector", __func__);
+  if (TYPEOF(x)!=TYPEOF(val))
+    error("%s: argument 'value' must of the same type as argument 'x'", __func__);
+  if (length(val)!=1)
+    error("%s: argument 'value' must be length 1", __func__);
+  if (!IS_TRUE_OR_FALSE(negate))
+    error("%s: argument 'negate' must be TRUE or FALSE", __func__);
+  if (!isNull(intersect) && !isInteger(intersect))
+    error("%s: argument 'intersect' must be integer or NULL", __func__);
+  // check all intersect values are smaller than length(x), no NAs, no dups
+  R_len_t nx = length(x);
+  int ny = isNull(intersect) ? -1 : length(intersect);
+  int nans = isNull(intersect) ? nx : MIN(nx, ny);
+  if (ny>0)
+    intersect = duplicate(intersect);
+  int *yp = INTEGER(intersect);
+  for (int i=0; i<ny; i++) {
+    yp[i]--; // shift 1-based index to 0-based index - this is for intersect argument, a short circuit
+  }
+  SEXP ans = PROTECT(allocVector(INTSXP, nans)); protecti++;
+  int *iwhich = INTEGER(ans);
+  int nwhich = 0;
+  which_eq(x, iwhich, &nwhich, val, LOGICAL(negate)[0], yp, ny);
+  for (int i=0; i<nwhich; i++) {
+    iwhich[i]++; // shift 0-based index to 1-based index
+  }
+  SETLENGTH(ans, nwhich);
+  UNPROTECT(protecti);
+  return ans;
+} // used only for benchmarks
+/*SEXP fwhichOptR(SEXP expr) {
+ bool doOpt = false;
+ SEXP ans = fwhichOpt(expr, &doOpt);
+ Rprintf("fwhichOptR: doOpt %d\n", doOpt);
+ return ans;
+} // only for testing dev*/

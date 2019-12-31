@@ -33,6 +33,8 @@ SEXP sym_datatable_locked;
 SEXP sym_and;
 SEXP sym_equal;
 SEXP sym_nequal;
+SEXP sym_in;
+SEXP sym_nin;
 double NA_INT64_D;
 long long NA_INT64_LL;
 Rcomplex NA_CPLX;
@@ -354,6 +356,8 @@ void attribute_visible R_init_datatable(DllInfo *info)
   sym_and      = install("&");
   sym_equal    = install("==");
   sym_nequal   = install("!=");
+  sym_in       = install("%in%");
+  sym_nin      = install("%!in%");
   initDTthreads();
   avoid_openmp_hang_within_fork();
 }

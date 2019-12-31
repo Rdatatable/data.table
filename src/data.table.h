@@ -92,6 +92,8 @@ extern SEXP sym_datatable_locked;
 extern SEXP sym_and;
 extern SEXP sym_equal;
 extern SEXP sym_nequal;
+extern SEXP sym_in;
+extern SEXP sym_nin;
 extern double NA_INT64_D;
 extern long long NA_INT64_LL;
 extern Rcomplex NA_CPLX;  // initialized in init.c; see there for comments
@@ -234,12 +236,14 @@ bool need2utf8(SEXP x);
 SEXP coerceUtf8IfNeeded(SEXP x);
 
 // fwhich.c
-void which_eq(SEXP x, int nx, int *iwhich, int *nwhich, SEXP val, bool negate, int *y, int ny);
-SEXP which_eqR(SEXP x, SEXP val, SEXP negate, SEXP intersect);
-void fintersect(int *x, int nx, int *y, int ny, int *out, int *nans);
-SEXP fintersectR(SEXP x, SEXP y);
-SEXP fwhichOptR(SEXP expr);
+void which_eq(SEXP x, int *iwhich, int *nwhich, SEXP val, bool negate, int *y, int ny);
+void which_in(SEXP x, int *iwhich, int *nwhich, SEXP val, bool negate, int *y, int ny);
+void which_op(SEXP e, SEXP x, int *iwhich, int *nwhich, SEXP val, int *y, int ny);
 SEXP fwhichR(SEXP expr, SEXP rho);
+SEXP which_eqR(SEXP x, SEXP val, SEXP negate, SEXP intersect); // for testing and benchmarking only
+void fintersect(int *x, int nx, int *y, int ny, int *out, int *nans); // for testing and benchmarking only
+SEXP fintersectR(SEXP x, SEXP y); // for testing and benchmarking only
+SEXP fwhichOptR(SEXP expr); // for testing and benchmarking only
 
 // types.c
 char *end(char *start);

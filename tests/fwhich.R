@@ -134,4 +134,23 @@ system.time(ans6<-DT[fwhich(v1!=s1 & v2!=s2 & v3!=s3)])
 is.null(indices(DT)) && all.equal(ans1, ans2) && all.equal(ans1, ans3) && all.equal(ans1, ans4) && all.equal(ans1, ans5) && all.equal(ans1, ans6)
 rm(list=paste0("ans",1:6))
 
+# mixed ops ----
+
+DT = data.table(v1 = 1:10, v2 = 1:10, v3 = 1:10)
+s1 = 2:9
+s2 = 5L
+s3 = 4:6
+options(datatable.verbose=TRUE)
+DT[fwhich(v1%in%s1 & v2%in%s2 & v3%in%s3)]
+DT[fwhich(v1%in%s1 & v2==s2 & v3%in%s3)]
+DT[fwhich(v1%in%s1 & v2!=6L & v3%in%s3)]
+DT[fwhich(v1%in%s1 & v2%!in%s2 & v3%in%s3)]
+options(datatable.verbose=FALSE)
+
+# coerce int-num ----
+
+# NA, NaNs ----
+
+#TODO: op=%in% type=double NA/NaN support
+
 # end ----
