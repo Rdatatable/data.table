@@ -1,5 +1,5 @@
 library(data.table)
-fintersect = data.table:::fintersect
+fsintersect = data.table:::fsintersect
 which_eq = data.table:::which_eq
 fwhich = data.table:::fwhich
 
@@ -63,7 +63,7 @@ system.time(which(x==v))
 system.time(which_eq(x, v, TRUE))
 system.time(which(x!=v))
 
-# which_eq + fintersect, fwhich ----
+# which_eq + fsintersect, fwhich ----
 
 set.seed(108)
 N = 1e7L
@@ -88,7 +88,7 @@ if (warmup_check<-FALSE) {
 system.time(ans1<-DT[v1==s1 & v2==s2 & v3==s3])
 system.time(ans2<-DT[v1==s1][v2==s2][v3==s3])
 system.time(ans3<-DT[intersect(intersect(which(v1==s1), which(v2==s2)), which(v3==s3))])
-system.time(ans4<-DT[fintersect(fintersect(which_eq(v1, s1), which_eq(v2, s2)), which_eq(v3, s3))])
+system.time(ans4<-DT[fsintersect(fsintersect(which_eq(v1, s1), which_eq(v2, s2)), which_eq(v3, s3))])
 system.time(ans5<-DT[which_eq(v3, s3, intersect=which_eq(v2, s2, intersect=which_eq(v1, s1)))]) # short-curcuit, internal style API, and 0-1 index shifting each time
 system.time(ans6<-DT[fwhich(v1==s1 & v2==s2 & v3==s3)]) # built-in short-curcuit, nice API, no 0-1 index shifting each time, adds some overhead of processing language object
 is.null(indices(DT)) && all.equal(ans1, ans2) && all.equal(ans1, ans3) && all.equal(ans1, ans4) && all.equal(ans1, ans5) && all.equal(ans1, ans6)
@@ -97,7 +97,7 @@ rm(list=paste0("ans",1:6))
 system.time(ans1<-DT[v1!=s1 & v2!=s2 & v3!=s3])
 system.time(ans2<-DT[v1!=s1][v2!=s2][v3!=s3])
 system.time(ans3<-DT[intersect(intersect(which(v1!=s1), which(v2!=s2)), which(v3!=s3))])
-system.time(ans4<-DT[fintersect(fintersect(which_eq(v1, s1, negate=TRUE), which_eq(v2, s2, negate=TRUE)), which_eq(v3, s3, negate=TRUE))])
+system.time(ans4<-DT[fsintersect(fsintersect(which_eq(v1, s1, negate=TRUE), which_eq(v2, s2, negate=TRUE)), which_eq(v3, s3, negate=TRUE))])
 system.time(ans5<-DT[which_eq(v3, s3, negate=TRUE, intersect=which_eq(v2, s2, negate=TRUE, intersect=which_eq(v1, s1, negate=TRUE)))])
 system.time(ans6<-DT[fwhich(v1!=s1 & v2!=s2 & v3!=s3)])
 is.null(indices(DT)) && all.equal(ans1, ans2) && all.equal(ans1, ans3) && all.equal(ans1, ans4) && all.equal(ans1, ans5) && all.equal(ans1, ans6)
@@ -119,7 +119,7 @@ options(datatable.auto.index=FALSE)
 system.time(ans1<-DT[v1==s1 & v2==s2 & v3==s3])
 system.time(ans2<-DT[v1==s1][v2==s2][v3==s3])
 system.time(ans3<-DT[intersect(intersect(which(v1==s1), which(v2==s2)), which(v3==s3))])
-system.time(ans4<-DT[fintersect(fintersect(which_eq(v1, s1), which_eq(v2, s2)), which_eq(v3, s3))])
+system.time(ans4<-DT[fsintersect(fsintersect(which_eq(v1, s1), which_eq(v2, s2)), which_eq(v3, s3))])
 system.time(ans5<-DT[which_eq(v3, s3, intersect=which_eq(v2, s2, intersect=which_eq(v1, s1)))])
 system.time(ans6<-DT[fwhich(v1==s1 & v2==s2 & v3==s3)])
 is.null(indices(DT)) && all.equal(ans1, ans2) && all.equal(ans1, ans3) && all.equal(ans1, ans4) && all.equal(ans1, ans5) && all.equal(ans1, ans6)
@@ -128,7 +128,7 @@ rm(list=paste0("ans",1:6))
 system.time(ans1<-DT[v1!=s1 & v2!=s2 & v3!=s3])
 system.time(ans2<-DT[v1!=s1][v2!=s2][v3!=s3])
 system.time(ans3<-DT[intersect(intersect(which(v1!=s1), which(v2!=s2)), which(v3!=s3))])
-system.time(ans4<-DT[fintersect(fintersect(which_eq(v1, s1, negate=TRUE), which_eq(v2, s2, negate=TRUE)), which_eq(v3, s3, negate=TRUE))])
+system.time(ans4<-DT[fsintersect(fsintersect(which_eq(v1, s1, negate=TRUE), which_eq(v2, s2, negate=TRUE)), which_eq(v3, s3, negate=TRUE))])
 system.time(ans5<-DT[which_eq(v3, s3, negate=TRUE, intersect=which_eq(v2, s2, negate=TRUE, intersect=which_eq(v1, s1, negate=TRUE)))])
 system.time(ans6<-DT[fwhich(v1!=s1 & v2!=s2 & v3!=s3)])
 is.null(indices(DT)) && all.equal(ans1, ans2) && all.equal(ans1, ans3) && all.equal(ans1, ans4) && all.equal(ans1, ans5) && all.equal(ans1, ans6)

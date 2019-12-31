@@ -14,7 +14,7 @@ coerceFill = function(x) .Call(CcoerceFillR, x)
 testMsg = function(status=0L, nx=2L, nk=2L) .Call(CtestMsgR, as.integer(status)[1L], as.integer(nx)[1L], as.integer(nk)[1L])
 
 which_eq = function(x, value, negate=FALSE, intersect=NULL) .Call(Cwhich_eqR, x, value, negate, intersect) ## only for benchmarking
-fintersect = function(x, y) .Call(CfintersectR, x, y) ## only for benchmarking
+fsintersect = function(x, y) .Call(CfintersectR, x, y) ## only for benchmarking
 exprList = function(x) {
   stopifnot(is.language(x))
   len = 1L
