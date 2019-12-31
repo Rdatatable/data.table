@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: data.table 1.12.5\n"
-"POT-Creation-Date: 2019-12-31 16:28\n"
+"POT-Creation-Date: 2019-12-31 17:43\n"
 "PO-Revision-Date: 2019-11-16 18:37+0800\n"
 "Last-Translator: Xianying Tan <shrektan@126.com>\n"
 "Language-Team: Mandarin\n"
@@ -179,86 +179,58 @@ msgstr ""
 msgid "done in"
 msgstr "结束了"
 
-msgid "x."
-msgstr "x."
+msgid "%s is type %s which is not supported by data.table join"
+msgstr "%s的类型为%s，该类型无法用于 data.table 的联接"
 
-msgid "is type"
-msgstr "的类型为"
-
-msgid "which is not supported by data.table join"
-msgstr "，该类型无法用于 data.table 的联接"
-
-msgid "i."
-msgstr "i."
-
-msgid "Attempting roll join on factor column when joining x."
-msgstr "试图滚动联接（roll join）因子类型（factor）的列，这发生于将 x."
-
-msgid "to i."
-msgstr "与 i."
-
-msgid ". Only integer, double or character columns may be roll joined."
+msgid ""
+"Attempting roll join on factor column when joining %s to %s. Only integer, "
+"double or character columns may be roll joined."
 msgstr ""
-"联接时。但只有整数（integer）、双精度（double）或字符（character）类型的列可"
-"以使用滚动联接（roll join）。"
+"联接%s与%s时试图滚动联接（roll join）因子类型（factor）的列。但只有整数（integer）、双精度（double）或字符（character）类型的列可"
+"以使用滚动联接。"
 
-msgid "Matching i.%s factor levels to x.%s factor levels."
+msgid "Matching %s factor levels to %s factor levels."
 msgstr ""
 
-msgid "Coercing factor column i.%s to type character to match type of x.%s."
+msgid "Coercing factor column %s to type character to match type of %s."
 msgstr ""
 
-msgid "Matching character column i.%s to factor levels in x.%s."
+msgid "Matching character column %s to factor levels in %s."
 msgstr ""
 
-msgid "Incompatible join types: x."
-msgstr "不兼容的联结类型： x。"
+msgid ""
+"Incompatible join types: %s (%s) and %s (%s). Factor columns must join to "
+"factor or character columns."
+msgstr "不兼容的联结类型: %s (%s) 和 %s (%s)。 因子类型的列必须与因子类型或字符类型的列才可以联结"
 
-msgid "("
-msgstr "（"
-
-msgid ") and i."
-msgstr "）和 i。"
-
-msgid "). Factor columns must join to factor or character columns."
-msgstr "）。 因子类型的列必须与因子类型或字符类型的列才可以联结"
-
-msgid "i.%s has same type (%s) as x.%s. No coercion needed."
+msgid "%s has same type (%s) as %s. No coercion needed."
 msgstr ""
 
-msgid "Coercing all-NA i.%s (%s) to type %s to match type of x.%s."
+msgid "Coercing all-NA %s (%s) to type %s to match type of %s."
 msgstr ""
 
-msgid "Coercing all-NA x.%s (%s) to type %s to match type of i.%s."
-msgstr ""
-
-msgid ")"
-msgstr "）"
+msgid "Incompatible join types: %s (%s) and %s (%s)"
+msgstr "不兼容的联结类型: %s (%s) 和 %s (%s)。"
 
 msgid "Coercing %s column %s%s to type integer64 to match type of %s."
 msgstr ""
 
-msgid "Incompatible join types:"
-msgstr "不兼容的联结类型"
-
-msgid "is type integer64 but"
-msgstr "是 integer64 类型但是"
-
-msgid "is type double and contains fractions"
-msgstr "是 double 类型并且包含分数"
+msgid ""
+"Incompatible join types: %s is type integer64 but %s is type double and "
+"contains fractions"
+msgstr "不兼容的联结类型: %s 是 integer64 类型的列但 %s 是有分数的双精度类型列。"
 
 msgid ""
-"Coercing double column i.%s (which contains no fractions) to type integer to "
-"match type of x.%s"
+"Coercing double column %s (which contains no fractions) to type integer to "
+"match type of %s"
 msgstr ""
 
 msgid ""
-"Coercing integer column x.%s to type double to match type of i.%s which "
-"contains fractions."
+"Coercing integer column %s to type double to match type of %s which contains "
+"fractions."
 msgstr ""
 
-msgid ""
-"Coercing integer column i.%s to type double for join to match type of x.%s."
+msgid "Coercing integer column %s to type double for join to match type of %s."
 msgstr ""
 
 msgid "on= matches existing key, using key"

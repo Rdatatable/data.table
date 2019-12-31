@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: data.table 1.12.9\n"
-"POT-Creation-Date: 2019-12-31 16:28\n"
+"POT-Creation-Date: 2019-12-31 17:43\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -142,79 +142,46 @@ msgstr ""
 msgid "done in"
 msgstr ""
 
-msgid "x."
+msgid "%s is type %s which is not supported by data.table join"
 msgstr ""
 
-msgid "is type"
+msgid "Attempting roll join on factor column when joining %s to %s. Only integer, double or character columns may be roll joined."
 msgstr ""
 
-msgid "which is not supported by data.table join"
+msgid "Matching %s factor levels to %s factor levels."
 msgstr ""
 
-msgid "i."
+msgid "Coercing factor column %s to type character to match type of %s."
 msgstr ""
 
-msgid "Attempting roll join on factor column when joining x."
+msgid "Matching character column %s to factor levels in %s."
 msgstr ""
 
-msgid "to i."
+msgid "Incompatible join types: %s (%s) and %s (%s). Factor columns must join to factor or character columns."
 msgstr ""
 
-msgid ". Only integer, double or character columns may be roll joined."
+msgid "%s has same type (%s) as %s. No coercion needed."
 msgstr ""
 
-msgid "Matching i.%s factor levels to x.%s factor levels."
+msgid "Coercing all-NA %s (%s) to type %s to match type of %s."
 msgstr ""
 
-msgid "Coercing factor column i.%s to type character to match type of x.%s."
-msgstr ""
-
-msgid "Matching character column i.%s to factor levels in x.%s."
-msgstr ""
-
-msgid "Incompatible join types: x."
-msgstr ""
-
-msgid "("
-msgstr ""
-
-msgid ") and i."
-msgstr ""
-
-msgid "). Factor columns must join to factor or character columns."
-msgstr ""
-
-msgid "i.%s has same type (%s) as x.%s. No coercion needed."
-msgstr ""
-
-msgid "Coercing all-NA i.%s (%s) to type %s to match type of x.%s."
-msgstr ""
-
-msgid "Coercing all-NA x.%s (%s) to type %s to match type of i.%s."
-msgstr ""
-
-msgid ")"
+msgid "Incompatible join types: %s (%s) and %s (%s)"
 msgstr ""
 
 msgid "Coercing %s column %s%s to type integer64 to match type of %s."
 msgstr ""
 
-msgid "Incompatible join types:"
+msgid "Incompatible join types: %s is type integer64 but %s is type double and contains fractions"
 msgstr ""
 
-msgid "is type integer64 but"
+msgid "Coercing double column %s (which contains no fractions) to type integer to match type of %s"
 msgstr ""
 
-msgid "is type double and contains fractions"
+msgid "Coercing integer column %s to type double to match type of %s which contains fractions."
 msgstr ""
 
-msgid "Coercing double column i.%s (which contains no fractions) to type integer to match type of x.%s"
-msgstr ""
-
-msgid "Coercing integer column x.%s to type double to match type of i.%s which contains fractions."
-msgstr ""
-
-msgid "Coercing integer column i.%s to type double for join to match type of x.%s."
+msgid "Coercing integer column %s to type double for join to match type of %s."
 msgstr ""
 
 msgid "on= matches existing key, using key"

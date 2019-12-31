@@ -43,74 +43,76 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
     xc = xcols[a]
     xclass = getClass(x[[xc]])
     iclass = getClass(i[[ic]])
-    if (!xclass %chin% supported) stop("x.", names(x)[xc]," is type ", xclass, " which is not supported by data.table join")
-    if (!iclass %chin% supported) stop("i.", names(i)[ic]," is type ", iclass, " which is not supported by data.table join")
+    xname = paste0("x.", names(x)[xc])
+    iname = paste0("i.", names(i)[ic])
+    if (!xclass %chin% supported) stop(gettextf("%s is type %s which is not supported by data.table join", xname, xclass, domain="R-data.table"))
+    if (!iclass %chin% supported) stop(gettextf("%s is type %s which is not supported by data.table join", iname, iclass, domain="R-data.table"))
     if (xclass=="factor" || iclass=="factor") {
       if (roll!=0.0 && a==length(icols))
-        stop("Attempting roll join on factor column when joining x.",names(x)[xc]," to i.",names(i)[ic],". Only integer, double or character columns may be roll joined.")
+        stop(gettextf("Attempting roll join on factor column when joining %s to %s. Only integer, double or character columns may be roll joined.", xname, iname, domain="R-data.table"))
       if (xclass=="factor" && iclass=="factor") {
-        if (verbose) cat(gettextf("Matching i.%s factor levels to x.%s factor levels.\n", names(i)[ic], names(x)[xc], domain="R-data.table"))
+        if (verbose) cat(gettextf("Matching %s factor levels to %s factor levels.\n", iname, xname, domain="R-data.table"))
         set(i, j=ic, value=chmatch(levels(i[[ic]]), levels(x[[xc]]), nomatch=0L)[i[[ic]]])  # nomatch=0L otherwise a level that is missing would match to NA values
         next
       } else {
         if (xclass=="character") {
-          if (verbose) cat(gettextf("Coercing factor column i.%s to type character to match type of x.%s.\n", names(i)[ic], names(x)[xc], domain="R-data.table"))
+          if (verbose) cat(gettextf("Coercing factor column %s to type character to match type of %s.\n", iname, xname, domain="R-data.table"))
           set(i, j=ic, value=val<-as.character(i[[ic]]))
           set(callersi, j=ic, value=val)  # factor in i joining to character in x will return character and not keep x's factor; e.g. for antaresRead #3581
           next
         } else if (iclass=="character") {
-          if (verbose) cat(gettextf("Matching character column i.%s to factor levels in x.%s.\n", names(i)[ic], names(x)[xc], domain="R-data.table"))
+          if (verbose) cat(gettextf("Matching character column %s to factor levels in %s.\n", iname, xname, domain="R-data.table"))
           newvalue = chmatch(i[[ic]], levels(x[[xc]]), nomatch=0L)
           if (anyNA(i[[ic]])) newvalue[is.na(i[[ic]])] = NA_integer_  # NA_character_ should match to NA in factor, #3809
           set(i, j=ic, value=newvalue)
           next
         }
       }
-      stop("Incompatible join types: x.", names(x)[xc], " (",xclass,") and i.", names(i)[ic], " (",iclass,"). Factor columns must join to factor or character columns.")
+      stop(gettextf("Incompatible join types: %s (%s) and %s (%s). Factor columns must join to factor or character columns.", xname, xclass, iname, iclass, domain="R-data.table"))
     }
     if (xclass == iclass) {
-      if (verbose) cat(gettextf("i.%s has same type (%s) as x.%s. No coercion needed.\n", names(i)[ic], xclass, names(x)[xc], domain="R-data.table"))
+      if (verbose) cat(gettextf("%s has same type (%s) as %s. No coercion needed.\n", iname, xclass, xname, domain="R-data.table"))
       next
     }
     if (xclass=="character" || iclass=="character" ||
         xclass=="logical" || iclass=="logical" ||
         xclass=="factor" || iclass=="factor") {
       if (anyNA(i[[ic]]) && allNA(i[[ic]])) {
-        if (verbose) cat(gettextf("Coercing all-NA i.%s (%s) to type %s to match type of x.%s.\n", names(i)[ic], iclass, xclass, names(x)[xc], domain="R-data.table"))
+        if (verbose) cat(gettextf("Coercing all-NA %s (%s) to type %s to match type of %s.\n", iname, iclass, xclass, xname, domain="R-data.table"))
         set(i, j=ic, value=match.fun(paste0("as.", xclass))(i[[ic]]))
         next
       }
       else if (anyNA(x[[xc]]) && allNA(x[[xc]])) {
-        if (verbose) cat(gettextf("Coercing all-NA x.%s (%s) to type %s to match type of i.%s.\n", names(x)[xc], xclass, iclass, names(i)[ic], domain="R-data.table"))
+        if (verbose) cat(gettextf("Coercing all-NA %s (%s) to type %s to match type of %s.\n", xname, xclass, iclass, iname, domain="R-data.table"))
         set(x, j=xc, value=match.fun(paste0("as.", iclass))(x[[xc]]))
         next
       }
-      stop("Incompatible join types: x.", names(x)[xc], " (",xclass,") and i.", names(i)[ic], " (",iclass,")")
+      stop(gettextf("Incompatible join types: %s (%s) and %s (%s)", xname, xclass, iname, iclass, domain="R-data.table"))
     }
     if (xclass=="integer64" || iclass=="integer64") {
-      nm = paste0(c("i.","x."), c(names(i)[ic], names(x)[xc]))
+      nm = c(iname, xname)
       if (xclass=="integer64") { w=i; wc=ic; wclass=iclass; } else { w=x; wc=xc; wclass=xclass; nm=rev(nm) }  # w is which to coerce
       if (wclass=="integer" || (wclass=="double" && !isReallyReal(w[[wc]]))) {
         if (verbose) cat(gettextf("Coercing %s column %s%s to type integer64 to match type of %s.\n", wclass, nm[1L], if (wclass=="double") " (which contains no fractions)" else "", nm[2L], domain="R-data.table"))
         set(w, j=wc, value=bit64::as.integer64(w[[wc]]))
-      } else stop("Incompatible join types: ", nm[2L], " is type integer64 but ", nm[1L], " is type double and contains fractions")
+      } else stop(gettextf("Incompatible join types: %s is type integer64 but %s is type double and contains fractions", nm[2L], nm[1L], domain="R-data.table"))
     } else {
       # just integer and double left
       if (iclass=="double") {
         if (!isReallyReal(i[[ic]])) {
           # common case of ad hoc user-typed integers missing L postfix joining to correct integer keys
           # we've always coerced to int and returned int, for convenience.
-          if (verbose) cat(gettextf("Coercing double column i.%s (which contains no fractions) to type integer to match type of x.%s", names(i)[ic], names(x)[xc], domain="R-data.table"))
+          if (verbose) cat(gettextf("Coercing double column %s (which contains no fractions) to type integer to match type of %s", iname, xname, domain="R-data.table"))
           val = as.integer(i[[ic]])
           if (!is.null(attributes(i[[ic]]))) attributes(val) = attributes(i[[ic]])  # to retain Date for example; 3679
           set(i, j=ic, value=val)
           set(callersi, j=ic, value=val)       # change the shallow copy of i up in [.data.table to reflect in the result, too.
         } else {
-          if (verbose) cat(gettextf("Coercing integer column x.%s to type double to match type of i.%s which contains fractions.\n", names(x)[xc], names(i)[ic], domain="R-data.table"))
+          if (verbose) cat(gettextf("Coercing integer column %s to type double to match type of %s which contains fractions.\n", xname, iname, domain="R-data.table"))
           set(x, j=xc, value=as.double(x[[xc]]))
         }
       } else {
-        if (verbose) cat(gettextf("Coercing integer column i.%s to type double for join to match type of x.%s.\n", names(i)[ic], names(x)[xc], domain="R-data.table"))
+        if (verbose) cat(gettextf("Coercing integer column %s to type double for join to match type of %s.\n", iname, xname, domain="R-data.table"))
         set(i, j=ic, value=as.double(i[[ic]]))
       }
     }
