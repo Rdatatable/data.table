@@ -755,7 +755,7 @@ replace_dot_alias = function(e) {
             if (!is.na(w)) {
               byindex = indices(x)[w]
               if (!length(getindex(x, byindex))) {
-                if (verbose) cat(gettext("by index '%s' but that index has 0 length. Ignoring.\n", byindex, domain="R-data.table"))
+                if (verbose) cat(gettextf("by index '%s' but that index has 0 length. Ignoring.\n", byindex, domain="R-data.table"))
                 byindex=FALSE
               }
             }

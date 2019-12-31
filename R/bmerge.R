@@ -174,7 +174,7 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
       xo = forderv(nqx, c(ncol(nqx), xcols))
       if (verbose) {cat(gettext("done in", domain="R-data.table"),timetaken(last.started.at),"\n"); flush.console()}
     } else nqgrp = integer(0L)
-    if (verbose) cat(gettext("  Found %d non-equi group(s) ...\n", nqmaxgrp, domain="R-data.table"))
+    if (verbose) cat(gettextf("  Found %d non-equi group(s) ...\n", nqmaxgrp, domain="R-data.table"))
   }
 
   if (verbose) {last.started.at=proc.time();cat(gettext("Starting bmerge ...\n", domain="R-data.table"));flush.console()}
