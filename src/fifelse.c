@@ -1,6 +1,9 @@
 #include "data.table.h"
 
 SEXP fifelseR(SEXP l, SEXP a, SEXP b, SEXP na) {
+  if (isS4(a) || isS4(b)) {
+    error("S4 class objects are not supported.");  
+  }
   if (!isLogical(l))
     error(_("Argument 'test' must be logical."));
   const int64_t len0 = xlength(l);
@@ -160,6 +163,9 @@ SEXP fcaseR(SEXP na, SEXP rho, SEXP args) {
   for (int i=0; i<n; ++i) {
     REPROTECT(cons = eval(VECTOR_PTR(args)[2*i], rho), Icons);
     REPROTECT(outs = eval(VECTOR_PTR(args)[2*i+1], rho), Iouts);
+    if (isS4(outs)) {
+      error("S4 class objects are not supported. Please see https://github.com/Rdatatable/data.table/issues/4131.");  
+    }
     if (!isLogical(cons)) {
       error("Argument #%d must be logical.", 2*i+1);
     }
