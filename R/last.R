@@ -7,12 +7,12 @@ last = function(x, n=1L, ...) {
     if (nargs()>1L) {
       if ("package:xts" %chin% search()) {
         if (verbose)
-          cat(gettext("last: using xts::last: !is.xts(x) & nargs>1 & 'package:xts'%in%search()\n", domain="R-data.table"))
+          cat(gettextf("%s: using %s: %s\n", "last", "xts::last", "!is.xts(x) & nargs>1 & 'package:xts'%in%search()", domain="R-data.table"))
         xts::last(x, n=n, ...)
       } else {
         # nocov start
         if (verbose)
-          cat(gettext("last: using utils::tail: !is.xts(x) & nargs>1 & !'package:xts'%in%search()\n", domain="R-data.table"))
+          cat(gettextf("%s: using %s: %s\n", "last", "utils::tail", "!is.xts(x) & nargs>1 & !'package:xts'%in%search()", domain="R-data.table"))
         utils::tail(x, n=n, ...)
         # nocov end
       }
@@ -20,16 +20,16 @@ last = function(x, n=1L, ...) {
       dx = dim(x)
       if (is.null(dx)) {
         if (verbose)
-          cat(gettext("last: using 'x[[length(x)]]': !is.xts(x) & !nargs>1 & is.null(dim(x))\n", domain="R-data.table"))
+          cat(gettextf("%s: using %s: %s\n", "last", "'x[[length(x)]]'", "!is.xts(x) & !nargs>1 & is.null(dim(x))", domain="R-data.table"))
         lx = length(x)
         if (!lx) x else x[[lx]]
       } else if (is.data.frame(x)) {
         if (verbose)
-          cat(gettext("last: using 'x[nrow(x),]': !is.xts(x) & !nargs>1 & is.data.frame(x)\n", domain="R-data.table"))
+          cat(gettextf("%s: using %s: %s\n", "last", "'x[nrow(x),]'", "!is.xts(x) & !nargs>1 & is.data.frame(x)", domain="R-data.table"))
         x[dx[1L], , drop=FALSE]
       } else {
         if (verbose)
-          cat(gettext("last: using utils::tail: !is.xts(x) & !nargs>1 & !is.null(dim(x)) & !is.data.frame(x)\n", domain="R-data.table"))
+          cat(gettextf("%s: using %s: %s\n", "last", "utils::tail", "!is.xts(x) & !nargs>1 & !is.null(dim(x)) & !is.data.frame(x)", domain="R-data.table"))
         utils::tail(x, n=n, ...)
       }
     }
@@ -37,7 +37,7 @@ last = function(x, n=1L, ...) {
     if (!requireNamespace("xts", quietly=TRUE))
       stop(gettextf("'xts' class passed to %s function but 'xts' is not available, you should have 'xts' installed already", "data.table::last", domain="R-data.table")) # nocov
     if (verbose)
-      cat(gettext("last: using xts::last: is.xts(x)\n", domain="R-data.table"))
+      cat(gettextf("%s: using %s: %s\n", "last", "xts::last", "is.xts(x)", domain="R-data.table"))
     xts::last(x, n=n, ...)
   }
 }
@@ -48,12 +48,12 @@ first = function(x, n=1L, ...) {
     if (nargs()>1L) {
       if ("package:xts" %chin% search()) {
         if (verbose)
-          cat(gettext("first: using xts::first: !is.xts(x) & nargs>1 & 'package:xts'%in%search()\n", domain="R-data.table"))
+          cat(gettextf("%s: using %s: %s\n", "first", "xts::first", "!is.xts(x) & nargs>1 & 'package:xts'%in%search()", domain="R-data.table"))
         xts::first(x, n=n, ...)
       } else {
         # nocov start
         if (verbose)
-          cat(gettext("first: using utils::head: !is.xts(x) & nargs>1 & !'package:xts'%in%search()\n", domain="R-data.table"))
+          cat(gettextf("%s: using %s: %s\n", "first", "utils::head", "!is.xts(x) & nargs>1 & !'package:xts'%in%search()", domain="R-data.table"))
         utils::head(x, n=n, ...)
         # nocov end
       }
@@ -61,16 +61,16 @@ first = function(x, n=1L, ...) {
       dx = dim(x)
       if (is.null(dx)) {
         if (verbose)
-          cat(gettext("first: using 'x[[1L]]': !is.xts(x) & !nargs>1 & is.null(dim(x))\n", domain="R-data.table"))
+          cat(gettextf("%s: using %s: %s\n", "first", "'x[[1L]]'", "!is.xts(x) & !nargs>1 & is.null(dim(x))", domain="R-data.table"))
         lx = length(x)
         if (!lx) x else x[[1L]]
       } else if (is.data.frame(x)) {
         if (verbose)
-          cat(gettext("first: using 'x[1L,]': !is.xts(x) & !nargs>1 & is.data.frame(x)\n", domain="R-data.table"))
+          cat(gettextf("%s: using %s: %s\n", "first", "'x[1L,]'", "!is.xts(x) & !nargs>1 & is.data.frame(x)", domain="R-data.table"))
         if (!dx[1L]) x else x[1L, , drop=FALSE]
       } else {
         if (verbose)
-          cat(gettext("first: using utils::head: !is.xts(x) & !nargs>1 & !is.null(dim(x)) & !is.data.frame(x)\n", domain="R-data.table"))
+          cat(gettextf("%s: using %s: %s\n", "first", "utils::head", "!is.xts(x) & !nargs>1 & !is.null(dim(x)) & !is.data.frame(x)", domain="R-data.table"))
         utils::head(x, n=n, ...)
       }
     }
@@ -78,7 +78,7 @@ first = function(x, n=1L, ...) {
     if (!requireNamespace("xts", quietly=TRUE))
       stop(gettextf("'xts' class passed to %s function but 'xts' is not available, you should have 'xts' installed already", "data.table::first", domain="R-data.table")) # nocov
     if (verbose)
-      cat(gettext("first: using xts::first: is.xts(x)\n", domain="R-data.table"))
+      cat(gettextf("%s: using %s: %s\n", "first", "xts::first", "is.xts(x)", domain="R-data.table"))
     xts::first(x, n=n, ...)
   }
 }

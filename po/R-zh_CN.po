@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: data.table 1.12.5\n"
-"POT-Creation-Date: 2019-12-31 14:30\n"
+"POT-Creation-Date: 2019-12-31 14:55\n"
 "PO-Revision-Date: 2019-11-16 18:37+0800\n"
 "Last-Translator: Xianying Tan <shrektan@126.com>\n"
 "Language-Team: Mandarin\n"
@@ -171,13 +171,13 @@ msgid "the second element should be the upper bound(s)."
 msgstr "第二个元素应为上界。"
 
 msgid "forderv(query) took ..."
-msgstr ""
+msgstr "forderv(query) 用了 ..."
 
 msgid "Generating final logical vector ..."
 msgstr ""
 
 msgid "done in"
-msgstr ""
+msgstr "结束了"
 
 msgid "x."
 msgstr "x."
@@ -277,7 +277,7 @@ msgid "roll is not implemented for non-equi joins yet."
 msgstr "不等长联结还不能执行 roll "
 
 msgid "forder took ..."
-msgstr ""
+msgstr "forder 用了 ..."
 
 msgid "Generating group lengths ..."
 msgstr ""
@@ -298,7 +298,7 @@ msgid "Starting bmerge ..."
 msgstr ""
 
 msgid "bmerge done in"
-msgstr ""
+msgstr "bmerge 结束了"
 
 msgid ""
 "cedta decided '%s' wasn't data.table aware. Here is call stack with [[1L]] "
@@ -306,7 +306,7 @@ msgid ""
 msgstr ""
 
 msgid "key argument of data.table() must be character"
-msgstr "data.table() 的主参数必须是字符"
+msgstr "data.table() 的key参数必须是字符"
 
 msgid "Object '"
 msgstr "对象 '"
@@ -504,7 +504,7 @@ msgstr ""
 "但i是一个 data.table (或者是字符向量)，必须使用 'on=' 参数指明参与连接的列 "
 "(参见 ?data.table)，可以是keying x(比如，已排序过，和标记已排序过，请参见?"
 "setkey)，或者是在x和i共用列的名字(比如，自然连接)。如果x有在内存被排序过，"
-"Keyed连接的速度会在非常大的数据上有较明显的提高。"
+"键(keyed)连接的速度会在非常大的数据上有较明显的提高。"
 
 msgid "Attempting to do natural join but no common columns in provided tables"
 msgstr "尝试进行自然连接然而并没有找到表格中相同的列"
@@ -518,8 +518,8 @@ msgstr ""
 msgid "Constructing irows for '!byjoin || nqbyjoin' ..."
 msgstr ""
 
-msgid "Internal error. Cannot by=.EACHI when joining to a secondary key, yet"
-msgstr "内部错误：目前尚无法对次键使用by=.EACH命令"
+msgid "Internal error. Cannot by=.EACHI when joining to an index, yet"
+msgstr "内部错误：目前尚无法对索引(index)使用by=.EACH命令"
 
 msgid "Internal error. irows has length in by=.EACHI"
 msgstr "内部错误：by=.EACHI 中 irows 有长度"
@@ -731,7 +731,7 @@ msgid ""
 msgstr ""
 
 msgid "New:"
-msgstr ""
+msgstr "新:"
 
 msgid ""
 ".SD is locked. Using := in .SD's j is reserved for possible future use; a "
@@ -890,7 +890,7 @@ msgid "Finding groups using uniqlist on key ..."
 msgstr ""
 
 msgid "Internal error: byindex not the index name"
-msgstr "内部错误 : byindex 不是索引名称"
+msgstr "内部错误 : byindex 不是索引(index)名称"
 
 msgid "Finding groups using uniqlist on index '%s' ..."
 msgstr ""
@@ -982,7 +982,7 @@ msgstr ""
 "行名长度为零，`length(rownames)==0`，但应该为单一列名，单一数值，或NULL"
 
 msgid "rownames is TRUE but key has multiple columns"
-msgstr "rownames是TRUE但key不只一个列"
+msgstr "rownames是TRUE但键(key)不只一个列"
 
 msgid "; taking first column x[,1] as rownames"
 msgstr "； 取第一列, `column x[,1]`, 为rownames"
@@ -1548,7 +1548,7 @@ msgid ""
 "'y' must be keyed (i.e., sorted, and, marked as sorted). Call setkey(y, ...) "
 "first, see ?setkey. Also check the examples in ?foverlaps."
 msgstr ""
-"'y' 必须有主键（已经排序并且标记为已排序）。请先用 setkey(y, ...) 设置主键，"
+"'y' 必须有键（key:已经排序并且标记为已排序）。请先用 setkey(y, ...) 设置主键，"
 "可以参考 ?setkey 以及 ?foverlaps 中提供的例子。"
 
 msgid ""
@@ -1580,7 +1580,7 @@ msgid "The first"
 msgstr "首先"
 
 msgid "columns of y's key must be identical to the columns specified in by.y."
-msgstr "在'by.y'中，y键的列必须与指定的列相同"
+msgstr "在'by.y'中，y键(key)的列必须与指定的列相同"
 
 msgid "Elements listed in 'by.x' must be valid names in data.table 'x'"
 msgstr "对于data.table中的'X'，'by.x'中的元素必须是有效名称"
@@ -1942,7 +1942,7 @@ msgid ""
 "key argument of data.table() must be a character vector naming columns (NB: "
 "col.names are applied before this)"
 msgstr ""
-"data.table()的关键参数必须是字符向量命名的列（NB:col.names在这之前被使用过）"
+"data.table()的key参数必须是字符向量命名的列（NB:col.names在这之前被使用过）"
 
 msgid ""
 "index argument of data.table() must be a character vector naming columns "
@@ -2062,53 +2062,13 @@ msgid ""
 "Using integer64 class columns require to have 'bit64' package installed."
 msgstr "要在列中使用 integer64 类，需要先安装 'bit64' 包。"
 
-msgid "last: using xts::last: !is.xts(x) & nargs>1 & 'package:xts'%in%search()"
-msgstr ""
-
-msgid ""
-"last: using utils::tail: !is.xts(x) & nargs>1 & !'package:xts'%in%search()"
-msgstr ""
-
-msgid "last: using 'x[[length(x)]]': !is.xts(x) & !nargs>1 & is.null(dim(x))"
-msgstr ""
-
-msgid "last: using 'x[nrow(x),]': !is.xts(x) & !nargs>1 & is.data.frame(x)"
-msgstr ""
-
-msgid ""
-"last: using utils::tail: !is.xts(x) & !nargs>1 & !is.null(dim(x)) & !is.data."
-"frame(x)"
-msgstr ""
+msgid "%s: using %s: %s"
+msgstr "%s: 用 %s: %s"
 
 msgid ""
 "'xts' class passed to %s function but 'xts' is not available, you should "
 "have 'xts' installed already"
 msgstr "'xts'类对象传递给了%s方程，但是'xts'包不可用。您应首先安装'xts'包"
-
-msgid "last: using xts::last: is.xts(x)"
-msgstr ""
-
-msgid ""
-"first: using xts::first: !is.xts(x) & nargs>1 & 'package:xts'%in%search()"
-msgstr ""
-
-msgid ""
-"first: using utils::head: !is.xts(x) & nargs>1 & !'package:xts'%in%search()"
-msgstr ""
-
-msgid "first: using 'x[[1L]]': !is.xts(x) & !nargs>1 & is.null(dim(x))"
-msgstr ""
-
-msgid "first: using 'x[1L,]': !is.xts(x) & !nargs>1 & is.data.frame(x)"
-msgstr ""
-
-msgid ""
-"first: using utils::head: !is.xts(x) & !nargs>1 & !is.null(dim(x)) & !is."
-"data.frame(x)"
-msgstr ""
-
-msgid "first: using xts::first: is.xts(x)"
-msgstr ""
 
 msgid "Argument 'sort' should be logical TRUE/FALSE"
 msgstr "参数 'sort' 应为逻辑值 TRUE 或 FALSE"
@@ -2320,7 +2280,7 @@ msgid "Column classes will be suppressed when col.names is 'none'"
 msgstr "当col.names为'none'时，列的类型将被抑制"
 
 msgid "Key: <%s>"
-msgstr ""
+msgstr "键(key): <%s>"
 
 msgid "Null data.%s (0 rows and 0 cols)"
 msgstr ""
@@ -2357,7 +2317,7 @@ msgid ""
 "the original data's order by group. Try setindex() instead. Or, set*(copy(."
 "SD)) as a (slow) last resort."
 msgstr ""
-"在.SD设置一个物理的键的功能被保留，以备未来的需求; 如需通过分组修改原数据顺序"
+"在.SD设置一个物理的键(key)的功能被保留，以备未来的需求; 如需通过分组修改原数据顺序"
 "请使用setindex(), 或者set*(copy(.SD))作为最终(该方式缓慢)的方法"
 
 msgid ""
@@ -2368,7 +2328,7 @@ msgstr ""
 "来避免警告"
 
 msgid "cols is the empty string. Use NULL to remove the key."
-msgstr "列为一个空字符串，请使用NULL以删除键值。"
+msgstr "列为一个空字符串，请使用NULL以删除键(key)值。"
 
 msgid "cols contains some blanks."
 msgstr "列中包含空白"
@@ -2384,7 +2344,7 @@ msgid "' is type '"
 msgstr "是类型"
 
 msgid "' which is not supported as a key column type, currently."
-msgstr "目前不是一种被支持的列类型"
+msgstr "目前不是一种被支持的键(key)列类型"
 
 msgid ""
 "Internal error. 'cols' should be character at this point in setkey; please "
@@ -2404,7 +2364,7 @@ msgid "x is already ordered by these columns, no need to call reorder"
 msgstr ""
 
 msgid "Internal error: index '"
-msgstr "内部错误：索引"
+msgstr "内部错误：索引(index) '"
 
 msgid "' exists but is invalid"
 msgstr "存在但无效"
@@ -2753,7 +2713,7 @@ msgid ""
 "rownames=FALSE` and add index manually as another column."
 msgstr ""
 "输入的xts对象不能含有'index'列，因这会导致出现重复的列名。请尝试重新命名xts中"
-"的'index'列或者使用`keep.rownames=FALSE`并手动添加index为另外的列"
+"的'index'列或者使用`keep.rownames=FALSE`并手动添加索引(index)为另外的列"
 
 msgid ""
 "data.table must have a time based column in first position, use "
@@ -2768,7 +2728,7 @@ msgstr "以下的列并非数值类型，将被忽略："
 
 msgid "Index: "
 msgid_plural "Indices: "
-msgstr[0] ""
+msgstr[0] "索引(index): "
 
 msgid "%d variable not shown: %s\n"
 msgid_plural "%d variables not shown: %s\n"

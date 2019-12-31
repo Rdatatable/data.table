@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: data.table 1.12.9\n"
-"POT-Creation-Date: 2019-12-31 14:30\n"
+"POT-Creation-Date: 2019-12-31 15:04\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -406,7 +406,7 @@ msgstr ""
 msgid "Constructing irows for '!byjoin || nqbyjoin' ..."
 msgstr ""
 
-msgid "Internal error. Cannot by=.EACHI when joining to a secondary key, yet"
+msgid "Internal error. Cannot by=.EACHI when joining to an index, yet"
 msgstr ""
 
 msgid "Internal error. irows has length in by=.EACHI"
@@ -1531,43 +1531,10 @@ msgstr ""
 msgid "Using integer64 class columns require to have 'bit64' package installed."
 msgstr ""
 
-msgid "last: using xts::last: !is.xts(x) & nargs>1 & 'package:xts'%in%search()"
-msgstr ""
-
-msgid "last: using utils::tail: !is.xts(x) & nargs>1 & !'package:xts'%in%search()"
-msgstr ""
-
-msgid "last: using 'x[[length(x)]]': !is.xts(x) & !nargs>1 & is.null(dim(x))"
-msgstr ""
-
-msgid "last: using 'x[nrow(x),]': !is.xts(x) & !nargs>1 & is.data.frame(x)"
-msgstr ""
-
-msgid "last: using utils::tail: !is.xts(x) & !nargs>1 & !is.null(dim(x)) & !is.data.frame(x)"
+msgid "%s: using %s: %s"
 msgstr ""
 
 msgid "'xts' class passed to %s function but 'xts' is not available, you should have 'xts' installed already"
-msgstr ""
-
-msgid "last: using xts::last: is.xts(x)"
-msgstr ""
-
-msgid "first: using xts::first: !is.xts(x) & nargs>1 & 'package:xts'%in%search()"
-msgstr ""
-
-msgid "first: using utils::head: !is.xts(x) & nargs>1 & !'package:xts'%in%search()"
-msgstr ""
-
-msgid "first: using 'x[[1L]]': !is.xts(x) & !nargs>1 & is.null(dim(x))"
-msgstr ""
-
-msgid "first: using 'x[1L,]': !is.xts(x) & !nargs>1 & is.data.frame(x)"
-msgstr ""
-
-msgid "first: using utils::head: !is.xts(x) & !nargs>1 & !is.null(dim(x)) & !is.data.frame(x)"
-msgstr ""
-
-msgid "first: using xts::first: is.xts(x)"
 msgstr ""
 
 msgid "Argument 'sort' should be logical TRUE/FALSE"

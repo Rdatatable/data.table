@@ -484,7 +484,7 @@ replace_dot_alias = function(e) {
           if (identical(nomatch, 0L) && allLen1) irows = irows[irows != 0L]
         } else {
           if (length(xo) && missing(on))
-            stop("Internal error. Cannot by=.EACHI when joining to a secondary key, yet") # nocov
+            stop("Internal error. Cannot by=.EACHI when joining to an index, yet") # nocov
           # since f__ refers to xo later in grouping, so xo needs to be passed through to dogroups too.
           if (length(irows))
             stop("Internal error. irows has length in by=.EACHI") # nocov
