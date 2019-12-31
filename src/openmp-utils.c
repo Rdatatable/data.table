@@ -19,7 +19,7 @@ static int getIntEnv(const char *name, int def)
   long int ans = strtol(val, &end, 10);  // ignores leading whitespace. If it fully consumed the string, *end=='\0' and isspace('\0')==false
   while (isspace(*end)) end++;  // ignore trailing whitespace
   if (errno || (size_t)(end-val)!=nchar || ans<1 || ans>INT_MAX) {
-    warning("Ignoring invalid %s==\"%s\". Not an integer >= 1. Please remove any characters that are not a digit [0-9]. See ?data.table::setDTthreads.", name, val);
+    warning(_("Ignoring invalid %s==\")%s\". Not an integer >= 1. Please remove any characters that are not a digit [0-9]. See ?data.table::setDTthreads."), name, val);
     return def;
   }
   return (int)ans;
@@ -37,7 +37,7 @@ void initDTthreads() {
   int perc = getIntEnv("R_DATATABLE_NUM_PROCS_PERCENT", 50); // use "NUM_PROCS" to use the same name as the OpenMP function this uses
   // 50% of logical CPUs by default; half of 8 is 4 on laptop with 4 cores. Leaves plenty of room for other processes: #3395 & #3298
   if (perc<=1 || perc>100) {
-    warning("Ignoring invalid R_DATATABLE_NUM_PROCS_PERCENT==%d. If used it must be an integer between 2 and 100. Default is 50. See ?setDTtheads.", perc);
+    warning(_("Ignoring invalid R_DATATABLE_NUM_PROCS_PERCENT==%d. If used it must be an integer between 2 and 100. Default is 50. See ?setDTtheads."), perc);
     // not allowing 1 is to catch attempts to use 1 or 1.0 to represent 100%.
     perc = 50;
   }
@@ -64,23 +64,23 @@ static const char *mygetenv(const char *name, const char *unset) {
 }
 
 SEXP getDTthreads_R(SEXP verbose) {
-  if (!isLogical(verbose) || LENGTH(verbose)!=1 || INTEGER(verbose)[0]==NA_LOGICAL) error("'verbose' must be TRUE or FALSE");
+  if (!isLogical(verbose) || LENGTH(verbose)!=1 || INTEGER(verbose)[0]==NA_LOGICAL) error(_("'verbose' must be TRUE or FALSE"));
   if (LOGICAL(verbose)[0]) {
     #ifndef _OPENMP
-      Rprintf("This installation of data.table has not been compiled with OpenMP support.\n");
+      Rprintf(_("This installation of data.table has not been compiled with OpenMP support.\n"));
     #endif
     // this output is captured, paste0(collapse="; ")'d, and placed at the end of test.data.table() for display in the last 13 lines of CRAN check logs
     // it is also printed at the start of test.data.table() so that we can trace any Killed events on CRAN before the end is reached
     // this is printed verbatim (e.g. without using data.table to format the output) in case there is a problem even with simple data.table creation/printing
-    Rprintf("  omp_get_num_procs()            %d\n", omp_get_num_procs());
-    Rprintf("  R_DATATABLE_NUM_PROCS_PERCENT  %s\n", mygetenv("R_DATATABLE_NUM_PROCS_PERCENT", "unset (default 50)"));
-    Rprintf("  R_DATATABLE_NUM_THREADS        %s\n", mygetenv("R_DATATABLE_NUM_THREADS", "unset"));
-    Rprintf("  omp_get_thread_limit()         %d\n", omp_get_thread_limit());
-    Rprintf("  omp_get_max_threads()          %d\n", omp_get_max_threads());
-    Rprintf("  OMP_THREAD_LIMIT               %s\n", mygetenv("OMP_THREAD_LIMIT", "unset"));  // CRAN sets to 2
-    Rprintf("  OMP_NUM_THREADS                %s\n", mygetenv("OMP_NUM_THREADS", "unset"));
-    Rprintf("  RestoreAfterFork               %s\n", RestoreAfterFork ? "true" : "false");
-    Rprintf("  data.table is using %d threads. See ?setDTthreads.\n", getDTthreads());
+    Rprintf(_("  omp_get_num_procs()            %d\n"), omp_get_num_procs());
+    Rprintf(_("  R_DATATABLE_NUM_PROCS_PERCENT  %s\n"), mygetenv("R_DATATABLE_NUM_PROCS_PERCENT", "unset (default 50)"));
+    Rprintf(_("  R_DATATABLE_NUM_THREADS        %s\n"), mygetenv("R_DATATABLE_NUM_THREADS", "unset"));
+    Rprintf(_("  omp_get_thread_limit()         %d\n"), omp_get_thread_limit());
+    Rprintf(_("  omp_get_max_threads()          %d\n"), omp_get_max_threads());
+    Rprintf(_("  OMP_THREAD_LIMIT               %s\n"), mygetenv("OMP_THREAD_LIMIT", "unset"));  // CRAN sets to 2
+    Rprintf(_("  OMP_NUM_THREADS                %s\n"), mygetenv("OMP_NUM_THREADS", "unset"));
+    Rprintf(_("  RestoreAfterFork               %s\n"), RestoreAfterFork ? "true" : "false");
+    Rprintf(_("  data.table is using %d threads. See ?setDTthreads.\n"), getDTthreads());
   }
   return ScalarInteger(getDTthreads());
 }
@@ -88,7 +88,7 @@ SEXP getDTthreads_R(SEXP verbose) {
 SEXP setDTthreads(SEXP threads, SEXP restore_after_fork, SEXP percent) {
   if (!isNull(restore_after_fork)) {
     if (!isLogical(restore_after_fork) || LOGICAL(restore_after_fork)[0]==NA_LOGICAL) {
-      error("restore_after_fork= must be TRUE, FALSE, or NULL (default). getDTthreads(verbose=TRUE) reports the current setting.\n");
+      error(_("restore_after_fork= must be TRUE, FALSE, or NULL (default). getDTthreads(verbose=TRUE) reports the current setting.\n"));
     }
     RestoreAfterFork = LOGICAL(restore_after_fork)[0];  // # nocov
   }
@@ -102,19 +102,19 @@ SEXP setDTthreads(SEXP threads, SEXP restore_after_fork, SEXP percent) {
     // reflect that and a call to setDTthreads(threads=NULL) will update DTthreads.
   } else {
     int n=0, protecti=0;
-    if (length(threads)!=1) error("threads= must be either NULL (default) or a single number. It has length %d", length(threads));
+    if (length(threads)!=1) error(_("threads= must be either NULL (default) or a single number. It has length %d"), length(threads));
     if (isReal(threads)) { threads = PROTECT(coerceVector(threads, INTSXP)); protecti++; }
-    if (!isInteger(threads)) error("threads= must be either NULL (default) or type integer/numeric");
+    if (!isInteger(threads)) error(_("threads= must be either NULL (default) or type integer/numeric"));
     if ((n=INTEGER(threads)[0]) < 0) {  // <0 catches NA too since NA is negative (INT_MIN)
-      error("threads= must be either NULL or a single integer >= 0. See ?setDTthreads.");
+      error(_("threads= must be either NULL or a single integer >= 0. See ?setDTthreads."));
     }
     UNPROTECT(protecti);
     int num_procs = imax(omp_get_num_procs(), 1); // max just in case omp_get_num_procs() returns <= 0 (perhaps error, or unsupported)
     if (!isLogical(percent) || length(percent)!=1 || LOGICAL(percent)[0]==NA_LOGICAL) {
-      error("Internal error: percent= must be TRUE or FALSE at C level");  // # nocov
+      error(_("Internal error: percent= must be TRUE or FALSE at C level"));  // # nocov
     }
     if (LOGICAL(percent)[0]) {
-      if (n<2 || n>100) error("Internal error: threads==%d should be between 2 and 100 (percent=TRUE at C level).", n);  // # nocov
+      if (n<2 || n>100) error(_("Internal error: threads==%d should be between 2 and 100 (percent=TRUE at C level)."), n);  // # nocov
       n = num_procs*n/100;  // if 0 it will be reset to 1 in the imax() below
     } else {
       if (n==0 || n>num_procs) n = num_procs; // setDTthreads(0) == setDTthread(percent=100); i.e. use all logical CPUs (the default in 1.12.0 and before, from 1.12.2 it's 50%)

@@ -183,7 +183,7 @@ replace_dot_alias = function(e) {
     }
     return(x)
   }
-  if (!mult %chin% c("first","last","all")) stop("mult argument can only be 'first','last' or 'all'")
+  if (!mult %chin% c("first","last","all")) stop("mult argument can only be 'first', 'last' or 'all'")
   missingroll = missing(roll)
   if (length(roll)!=1L || is.na(roll)) stop("roll must be a single TRUE, FALSE, positive/negative integer/double including +Inf and -Inf or 'nearest'")
   if (is.character(roll)) {
@@ -820,7 +820,7 @@ replace_dot_alias = function(e) {
           if (!typeof(byval[[jj]]) %chin% ORDERING_TYPES) stop("column or expression ",jj," of 'by' or 'keyby' is type ",typeof(byval[[jj]]),". Do not quote column names. Usage: DT[,sum(colC),by=list(colA,month(colB))]")
         }
         tt = vapply_1i(byval,length)
-        if (any(tt!=xnrow)) stop("The items in the 'by' or 'keyby' list are length (",paste(tt,collapse=","),"). Each must be length ", xnrow, "; the same length as there are rows in x (after subsetting if i is provided).")
+        if (any(tt!=xnrow)) stop(gettextf("The items in the 'by' or 'keyby' list are length(s) (%s). Each must be length %d; the same length as there are rows in x (after subsetting if i is provided).", paste(tt, collapse=","), xnrow, domain='R-data.table'))
         if (is.null(bynames)) bynames = rep.int("",length(byval))
         if (length(idx <- which(!nzchar(bynames))) && !bynull) {
           # TODO: improve this and unify auto-naming of jsub and bysub
@@ -874,7 +874,7 @@ replace_dot_alias = function(e) {
             # attempt to auto-name unnamed columns
             for (jj in which(nm=="")) {
               thisq = q[[jj + 1L]]
-              if (missing(thisq)) stop("Item ", jj, " of the .() or list() passed to j is missing") #3507
+              if (missing(thisq)) stop(gettextf("Item %d of the .() or list() passed to j is missing", jj, domain="R-data.table")) #3507
               if (is.name(thisq)) nm[jj] = drop_dot(thisq)
               # TO DO: if call to a[1] for example, then call it 'a' too
             }

@@ -8,6 +8,7 @@
 #include <stdbool.h>
 #include "myomp.h"
 #include "types.h"
+#include "po.h"
 
 // data.table depends on R>=3.0.0 when R_xlen_t was introduced
 // Before R 3.0.0, RLEN used to be switched to R_len_t as R_xlen_t wasn't available.
