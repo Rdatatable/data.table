@@ -82,7 +82,7 @@ build: # build data.table sources as tar.gz archive
   tags:
     - windows
   before_script:
-    - export PATH="/c/$R_DIR/bin:/c/Rtools/bin:$PATH"
+    - export PATH="/c/$R_DIR/bin:/c/rtools40/bin:$PATH"
     - rm -rf /tmp/$R_DIR/library && mkdir -p /tmp/$R_DIR/library
     - export R_LIBS_USER="/tmp/$R_DIR/library"
 
