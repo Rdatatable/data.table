@@ -21,7 +21,7 @@
     packageStartupMessage("data.table ", v, if(dev)paste0(" IN DEVELOPMENT built ",d,g),
                           " using ", getDTthreads(verbose=FALSE), " threads (see ?getDTthreads).  Latest news: r-datatable.com")
     if (gettext("TRANSLATION CHECK", domain='R-data.table') != "TRANSLATION CHECK")
-      packageStartupMessage(gettext("**********\n", "Running data.table in English; package support is available in English only. When searching for online help, be sure to also check for the English error message. This can be obtained by looking at the po/R-<locale>.po and po/<locale>.po files in the package source, where the native language and English error messages can be found side-by-side"))
+      packageStartupMessage(gettext("**********\nRunning data.table in English; package support is available in English only. When searching for online help, be sure to also check for the English error message. This can be obtained by looking at the po/R-<locale>.po and po/<locale>.po files in the package source, where the native language and English error messages can be found side-by-side\n**********", domain="R-data.table"))
     if (dev && (Sys.Date() - as.Date(d))>28L)
       packageStartupMessage("**********\nThis development version of data.table was built more than 4 weeks ago. Please update: data.table::update.dev.pkg()\n**********")
     if (!.Call(ChasOpenMP))
