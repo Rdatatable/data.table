@@ -89,6 +89,9 @@ extern SEXP sym_verbose;
 extern SEXP SelfRefSymbol;
 extern SEXP sym_inherits;
 extern SEXP sym_datatable_locked;
+extern SEXP sym_and;
+extern SEXP sym_equal;
+extern SEXP sym_nequal;
 extern double NA_INT64_D;
 extern long long NA_INT64_LL;
 extern Rcomplex NA_CPLX;  // initialized in init.c; see there for comments
@@ -235,6 +238,8 @@ void which_eq(SEXP x, int nx, int *iwhich, int *nwhich, SEXP val, bool negate, i
 SEXP which_eqR(SEXP x, SEXP val, SEXP negate, SEXP intersect);
 void fintersect(int *x, int nx, int *y, int ny, int *out, int *nans);
 SEXP fintersectR(SEXP x, SEXP y);
+SEXP fwhichOptR(SEXP expr);
+SEXP fwhichR(SEXP expr, SEXP rho);
 
 // types.c
 char *end(char *start);
