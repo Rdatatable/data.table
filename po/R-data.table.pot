@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: data.table 1.12.9\n"
-"POT-Creation-Date: 2019-12-31 15:04\n"
+"POT-Creation-Date: 2019-12-31 15:31\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -1876,7 +1876,7 @@ msgstr ""
 msgid "argument 'fill' ignored, only make sense for type='const'"
 msgstr ""
 
-msgid "No objects of class data.table exist in"
+msgid "No objects of class data.table exist in %s"
 msgstr ""
 
 msgid "order.col='"
@@ -1895,9 +1895,6 @@ msgid "script must end with '.Rraw'. If a file ending '.Rraw.bz2' exists, that w
 msgstr ""
 
 msgid "Neither %s nor %s exist in %s"
-msgstr ""
-
-msgid "getDTthreads(verbose=TRUE):"
 msgstr ""
 
 msgid "test.data.table() running:"

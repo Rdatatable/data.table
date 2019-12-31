@@ -83,7 +83,7 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
     width = max(getOption('width'), 80L) # some tests (e.g. 1066, 1293) rely on capturing output that will be garbled with small width
   )
 
-  cat(gettext("getDTthreads(verbose=TRUE):\n", domain="R-data.table"))         # for tracing on CRAN; output to log before anything is attempted
+  cat("getDTthreads(verbose=TRUE):\n")         # for tracing on CRAN; output to log before anything is attempted
   getDTthreads(verbose=TRUE)                   # includes the returned value in the verbose output (rather than dangling '[1] 4'); e.g. "data.table is using 4 threads"
   cat(gettext("test.data.table() running:", domain="R-data.table"), fn, "\n")  # print fn to log before attempting anything on it (in case it is missing); on same line for slightly easier grep
   env = new.env(parent=.GlobalEnv)

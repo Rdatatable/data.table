@@ -8,7 +8,7 @@ tables = function(mb=TRUE, order.col="NAME", width=80,
   all_obj = objects(envir=env, all.names=TRUE)
   is_DT = which(vapply_1b(all_obj, function(x) is.data.table(get(x, envir=env))))
   if (!length(is_DT)) {
-    if (!silent) cat(gettext("No objects of class data.table exist in", domain="R-data.table"), if (identical(env,.GlobalEnv)) ".GlobalEnv" else format(env), "\n")
+    if (!silent) cat(gettextf("No objects of class data.table exist in %s\n", if (identical(env, .GlobalEnv)) ".GlobalEnv" else format(env), domain="R-data.table"))
     return(invisible(data.table(NULL)))
   }
   DT_names = all_obj[is_DT]
