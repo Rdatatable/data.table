@@ -16708,6 +16708,27 @@ A = data.table(c1 = 1, c2 = 'asd', c3 = expression(as.character(Sys.time())))
 B = data.table(c1 = 3, c2 = 'qwe', c3 = expression(as.character(Sys.time()+5)))
 test(2129, rbind(A,B)$c3, expression(as.character(Sys.time()), as.character(Sys.time()+5)))
 
+# print dims in list-columns #3671
+DT = data.table::data.table(
+  x = 1:2,
+  y = list(data.table(x = 1,
+                      y = 1),
+           data.table(x = 2,
+                      y = 2)))
+test(2130.01, capture.output(print(DT)),
+     c("   x                 y",
+       "1: 1 <data.table[1x2]>",
+       "2: 2 <data.table[1x2]>"))
+DT = data.table::data.table(
+  x = 1:2,
+  y = list(list(x = 1,
+                y = c("yes", "no")),
+           list(x = 2,
+                y = 2)))
+test(2130.02, capture.output(print(DT)),
+     c("   x         y",
+       "1: 1 <list[2]>",
+       "2: 2 <list[2]>"))
 
 ########################
 #  Add new tests here  #
