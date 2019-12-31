@@ -262,16 +262,16 @@ msgid ""
 msgstr ""
 
 msgid "on= matches existing key, using key"
-msgstr ""
+msgstr "on=和现有键(key)相等,用键"
 
 msgid "on= matches existing index, using index"
-msgstr ""
+msgstr "on=和现有索引(index)相等,用索引"
 
 msgid "Calculated ad hoc index in %s"
 msgstr ""
 
 msgid "Non-equi join operators detected ..."
-msgstr ""
+msgstr "侦测到不等长联结操作符(operator)..."
 
 msgid "roll is not implemented for non-equi joins yet."
 msgstr "不等长联结还不能执行 roll "
@@ -292,10 +292,10 @@ msgid "Recomputing forder with non-equi ids ..."
 msgstr ""
 
 msgid "Found %d non-equi group(s) ..."
-msgstr ""
+msgstr "找到%d不等长分组 ..."
 
 msgid "Starting bmerge ..."
-msgstr ""
+msgstr "bmerge开始..."
 
 msgid "bmerge done in"
 msgstr "bmerge 结束了"
@@ -303,7 +303,7 @@ msgstr "bmerge 结束了"
 msgid ""
 "cedta decided '%s' wasn't data.table aware. Here is call stack with [[1L]] "
 "applied:"
-msgstr ""
+msgstr "cedta决定'%s'不认识data.table.使用[[1L]]后的呼叫堆疊就是:"
 
 msgid "key argument of data.table() must be character"
 msgstr "data.table() 的key参数必须是字符"
@@ -525,10 +525,10 @@ msgid "Internal error. irows has length in by=.EACHI"
 msgstr "内部错误：by=.EACHI 中 irows 有长度"
 
 msgid "Reorder irows for 'mult==\"all\" && !allGrp1' ..."
-msgstr ""
+msgstr "对'mult==\"all\" && !allGrp1'再排序irows ..."
 
 msgid "Reordering %d rows after bmerge done in ..."
-msgstr ""
+msgstr "再排序%d行。bmerge用了..."
 
 msgid "logical error. i is not a data.table, but 'on' argument is provided."
 msgstr "逻辑错误。当 i 并非一个 data.table时，不应提供'on'参数"
@@ -557,7 +557,7 @@ msgid "Internal error: notjoin but byjoin or !integer or nomatch==NA"
 msgstr "内部错误。原因可能为：notjoin 而非 byjoin；非整数；nomatch 为空"
 
 msgid "Inverting irows for notjoin done in ..."
-msgstr ""
+msgstr "对 notjoin 求逆 irows 用了 ..."
 
 msgid ""
 "with=FALSE together with := was deprecated in v1.9.4 released Oct 2014. "
@@ -721,7 +721,7 @@ msgid ""
 msgstr "此处 j 不使用 .SD 但提供了 .SDcols ，因此忽略 .SDcols详见 ?data.table"
 
 msgid "Detected that j uses these columns:"
-msgstr ""
+msgstr "侦测 j 用这个列:"
 
 msgid ""
 "'(m)get' found in j. ansvars being set to all columns. Use .SDcols or a "
@@ -899,16 +899,16 @@ msgid "Internal error: byindex not found"
 msgstr "内部错误 : 找不到 byindex"
 
 msgid "lapply optimization changed j from '%s' to '%s'"
-msgstr ""
+msgstr "lapply优化改变j从'%s'成'%s'"
 
 msgid "lapply optimization is on, j unchanged as '%s'"
-msgstr ""
+msgstr "lapply优化打开了, j ('%s')没有区别"
 
 msgid "GForce optimized j to '"
-msgstr ""
+msgstr "GForce优化 j 到 '"
 
 msgid "GForce is on, left j unchanged"
-msgstr ""
+msgstr "GForce打开了, j 没有区别"
 
 msgid ""
 "Unable to optimize call to mean() and could be very slow. You must name 'na."
@@ -920,13 +920,13 @@ msgstr ""
 "第二顺位参数"
 
 msgid "Old mean optimization changed j from '%s' to '%s'"
-msgstr ""
+msgstr "旧mean优化改变j 从'%s'成'%s'"
 
 msgid "Old mean optimization is on, left j unchanged."
-msgstr ""
+msgstr "旧mean优化打开了，j没有区别。"
 
 msgid "All optimizations are turned off"
-msgstr ""
+msgstr "所有优化关掉了"
 
 msgid "Optimization is on but left j unchanged (single plain symbol): '%s'"
 msgstr ""
@@ -938,7 +938,7 @@ msgid "Making each group and running j (GForce %s) ..."
 msgstr ""
 
 msgid "setkey() after the := with keyby= ..."
-msgstr ""
+msgstr "keyby=中，:=后setkey() ..."
 
 msgid ""
 "The setkey() normally performed by keyby= has been skipped (as if by= was "
@@ -960,7 +960,7 @@ msgid "and bynames is"
 msgstr "同时bynames是"
 
 msgid "setkey() afterwards for keyby=.EACHI ..."
-msgstr ""
+msgstr "keyby=.EACHI中到底setkey() ..."
 
 msgid "rownames and rownames.value cannot both be used at the same time"
 msgstr "rownames和rownames.value 不能同时使用"
@@ -1327,16 +1327,16 @@ msgid ""
 msgstr ""
 
 msgid "Optimized subsetting with key '"
-msgstr ""
+msgstr "优化的子集用键(key) '"
 
 msgid "Optimized subsetting with index '"
-msgstr ""
+msgstr "优化的子集用索引(index) '"
 
 msgid "Creating new index '"
-msgstr ""
+msgstr "造成新索引(index) '"
 
 msgid "Creating index %s done in ..."
-msgstr ""
+msgstr "造成新索引(index) %s 用了 ..."
 
 msgid ""
 "'on' argument should be a named atomic vector of column names indicating "
@@ -1661,7 +1661,7 @@ msgstr ""
 "免混乱。"
 
 msgid "unique() + setkey() operations done in ..."
-msgstr ""
+msgstr "unique() + setkey() 执行用了 ..."
 
 msgid "binary search(es) done in ..."
 msgstr ""
@@ -1936,7 +1936,7 @@ msgid "so the column has been left as type '"
 msgstr "所以该列已经被保存为类型"
 
 msgid "stringsAsFactors=%s converted %d column(s): %s"
-msgstr ""
+msgstr "stringsAsFactors=%s 改变 %d 列: %s"
 
 msgid ""
 "key argument of data.table() must be a character vector naming columns (NB: "
