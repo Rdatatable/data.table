@@ -149,8 +149,16 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
   ntest = env$ntest
   if (nfail > 0L) {
     # nocov start
-    if (nfail > 1L) {s1="s";s2="s: "} else {s1="";s2=" "}
-    stop(nfail," error",s1," out of ",ntest,". Search ",names(fn)," for test number",s2,paste(env$whichfail,collapse=", "),".")
+    # see https://bugs.r-project.org/bugzilla/show_bug.cgi?id=17682
+    #   for why this isn't stop(sprintf(...))
+    msg = sprintf(
+      ngettext(
+        nfail, domain="R-data.table",
+        "%d error out of %d. Search %s for test number %s",
+        "%d errors out of %d. Search %s for test numbers %s"
+      ), nfail, ntest, names(fn), paste(env$whichfail, collapse=", ")
+    )
+    stop(msg)
     # important to stop() here, so that 'R CMD check' fails
     # nocov end
   }

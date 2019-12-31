@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: data.table 1.12.9\n"
-"POT-Creation-Date: 2019-12-31 17:43\n"
+"POT-Creation-Date: 2019-12-31 18:45\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -1582,19 +1582,7 @@ msgstr ""
 msgid "The option 'datatable.nomatch' is being used and is not set to the default NA. This option is still honored for now but will be deprecated in future. Please see NEWS for 1.12.4 for detailed information and motivation. To specify inner join, please specify `nomatch=NULL` explicitly in your calls rather than changing the default using this option."
 msgstr ""
 
-msgid "The datatable."
-msgstr ""
-
-msgid "version ("
-msgstr ""
-
-msgid ") does not match the package ("
-msgstr ""
-
-msgid "). Please close all R sessions to release the old"
-msgstr ""
-
-msgid "and reinstall data.table in a fresh R session. The root cause is that R's package installer can in some unconfirmed circumstances leave a package in a state that is apparently functional but where new R code is calling old C code silently: https://bugs.r-project.org/bugzilla/show_bug.cgi?id=17478. Once a package is in this mismatch state it may produce wrong results silently until you next upgrade the package. Please help by adding precise circumstances to 17478 to move the status to confirmed. This mismatch between R and C code can happen with any package not just data.table. It is just that data.table has added this check."
+msgid "The datatable.%s version (%s) does not match the package (%s). Please close all R sessions to release the old %s and reinstall data.table in a fresh R session. The root cause is that R's package installer can in some unconfirmed circumstances leave a package in a state that is apparently functional but where new R code is calling old C code silently: https://bugs.r-project.org/bugzilla/show_bug.cgi?id=17478. Once a package is in this mismatch state it may produce wrong results silently until you next upgrade the package. Please help by adding precise circumstances to 17478 to move the status to confirmed. This mismatch between R and C code can happen with any package not just data.table. It is just that data.table has added this check."
 msgstr ""
 
 msgid "This is R"
@@ -1771,25 +1759,13 @@ msgstr ""
 msgid "length(by.x) != length(by.y)"
 msgstr ""
 
-msgid "When x's column ('"
+msgid "When x's column ('%s') is character, the corresponding column in y ('%s') should be factor or character, but found incompatible type '%s'."
 msgstr ""
 
-msgid "') is character, the corresponding column in y ('"
+msgid "When x's column ('%s') is factor, the corresponding column in y ('%s') should be character or factor, but found incompatible type '%s'."
 msgstr ""
 
-msgid "') should be factor or character, but found incompatible type '"
-msgstr ""
-
-msgid "') is factor, the corresponding column in y ('"
-msgstr ""
-
-msgid "') should be character or factor, but found incompatible type '"
-msgstr ""
-
-msgid "') is integer or numeric, the corresponding column in y ('"
-msgstr ""
-
-msgid "') can not be character or logical types, but found incompatible type '"
+msgid "When x's column ('%s') is integer or numeric, the corresponding column in y ('%s') can not be character or logical types, but found incompatible type '%s'."
 msgstr ""
 
 msgid "argument 'all' should be logical of length one"
@@ -1874,15 +1850,6 @@ msgid "Failed after test"
 msgstr ""
 
 msgid "before the next test() call in"
-msgstr ""
-
-msgid "out of"
-msgstr ""
-
-msgid ". Search"
-msgstr ""
-
-msgid "for test number"
 msgstr ""
 
 msgid "Timings count mismatch:"
@@ -2003,5 +1970,10 @@ msgstr[1]    ""
 
 msgid        "%d variable not shown: %s\n"
 msgid_plural "%d variables not shown: %s\n"
+msgstr[0]    ""
+msgstr[1]    ""
+
+msgid        "%d error out of %d. Search %s for test number %s"
+msgid_plural "%d errors out of %d. Search %s for test numbers %s"
 msgstr[0]    ""
 msgstr[1]    ""
