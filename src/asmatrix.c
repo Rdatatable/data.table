@@ -17,7 +17,8 @@ SEXP asmatrix_logical(SEXP dt, R_xlen_t matlen, R_xlen_t n, R_xlen_t rncolnum) {
    * in the parallel OMP threads
    */
   R_xlen_t dtncol = xlength(dt);
-  int *pcol[dtncol];
+  int **pcol;
+  pcol = (int **) R_alloc(dtncol, sizeof(int *));
   for (R_xlen_t jj = 0; jj < dtncol; jj++) {
     pcol[jj] = LOGICAL(VECTOR_ELT(dt, jj));
   }
@@ -63,7 +64,8 @@ SEXP asmatrix_integer(SEXP dt, R_xlen_t matlen, R_xlen_t n, R_xlen_t rncolnum) {
   
   // Create an array of pointers for the individual columns in DT 
   R_xlen_t dtncol = xlength(dt);
-  int *pcol[dtncol];
+  int **pcol;
+  pcol = (int **) R_alloc(dtncol, sizeof(int *));
   for (R_xlen_t jj = 0; jj < dtncol; jj++) {
     pcol[jj] = INTEGER(VECTOR_ELT(dt, jj));
   }
@@ -102,7 +104,8 @@ SEXP asmatrix_numeric(SEXP dt, R_xlen_t matlen, R_xlen_t n, R_xlen_t rncolnum) {
   
   // Create an array of pointers for the individual columns in DT 
   R_xlen_t dtncol = xlength(dt);
-  double *pcol[dtncol];
+  double **pcol;
+  pcol = (double **) R_alloc(dtncol, sizeof(double *));
   for (R_xlen_t jj = 0; jj < dtncol; jj++) {
     pcol[jj] = REAL(VECTOR_ELT(dt, jj));
   }
@@ -141,7 +144,8 @@ SEXP asmatrix_complex(SEXP dt, R_xlen_t matlen, R_xlen_t n, R_xlen_t rncolnum) {
   
   // Create an array of pointers for the individual columns in DT 
   R_xlen_t dtncol = xlength(dt);
-  Rcomplex *pcol[dtncol];
+  Rcomplex **pcol;
+  pcol = (Rcomplex **) R_alloc(dtncol, sizeof(Rcomplex *));
   for (R_xlen_t jj = 0; jj < dtncol; jj++) {
     pcol[jj] = COMPLEX(VECTOR_ELT(dt, jj));
   }
