@@ -195,6 +195,9 @@ SEXP unnest(SEXP x) {
         for (int i=0; i<n; i++) {
           SEXP xji = VECTOR_ELT(xj, i);
           for (int k=0; k<LENGTH(xji); k++) {
+            // TODO: this isn't right -- we need to use logic like
+            //   cj.c to rep in phases; here, same pattern is applied
+            //   to each column -> wrong output
             for (int repi=0; repi<row_counts[i]/LENGTH(xji); repi++) {
               SET_VECTOR_ELT(tmp, outi++, VECTOR_ELT(xji, k));
             }
