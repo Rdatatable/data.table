@@ -35,6 +35,7 @@ SEXP sym_equal;
 SEXP sym_nequal;
 SEXP sym_in;
 SEXP sym_nin;
+SEXP sym_bang;
 double NA_INT64_D;
 long long NA_INT64_LL;
 Rcomplex NA_CPLX;
@@ -217,7 +218,7 @@ R_CallMethodDef callMethods[] = {
 {"CtestMsgR", (DL_FUNC) &testMsgR, -1},
 {"C_allNAR", (DL_FUNC) &allNAR, -1},
 {"Cwhich_eqR", (DL_FUNC) &which_eqR, -1},
-{"CfintersectR", (DL_FUNC) &fintersectR, -1},
+{"CfsintersectR", (DL_FUNC) &fsintersectR, -1},
 {"CfwhichR", (DL_FUNC) &fwhichR, -1},
 //{"CfwhichOptR", (DL_FUNC) &fwhichOptR, -1},
 {NULL, NULL, 0}
@@ -358,6 +359,7 @@ void attribute_visible R_init_datatable(DllInfo *info)
   sym_nequal   = install("!=");
   sym_in       = install("%in%");
   sym_nin      = install("%!in%");
+  sym_bang     = install("!");
   initDTthreads();
   avoid_openmp_hang_within_fork();
 }

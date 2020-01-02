@@ -94,6 +94,7 @@ extern SEXP sym_equal;
 extern SEXP sym_nequal;
 extern SEXP sym_in;
 extern SEXP sym_nin;
+extern SEXP sym_bang;
 extern double NA_INT64_D;
 extern long long NA_INT64_LL;
 extern Rcomplex NA_CPLX;  // initialized in init.c; see there for comments
@@ -241,8 +242,8 @@ void which_in(SEXP x, int *iwhich, int *nwhich, SEXP val, bool negate, int *y, i
 void which_op(SEXP e, SEXP x, int *iwhich, int *nwhich, SEXP val, int *y, int ny);
 SEXP fwhichR(SEXP expr, SEXP rho);
 SEXP which_eqR(SEXP x, SEXP val, SEXP negate, SEXP intersect); // for testing and benchmarking only
-void fintersect(int *x, int nx, int *y, int ny, int *out, int *nans); // for testing and benchmarking only
-SEXP fintersectR(SEXP x, SEXP y); // for testing and benchmarking only
+void fsintersect(int *x, int nx, int *y, int ny, int *out, int *nans); // for testing and benchmarking only
+SEXP fsintersectR(SEXP x, SEXP y); // for testing and benchmarking only
 SEXP fwhichOptR(SEXP expr); // for testing and benchmarking only
 
 // types.c

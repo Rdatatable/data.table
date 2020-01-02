@@ -5,7 +5,7 @@
  * do not confuse with exported R fintersect
  * now used only during benchmarks, fwhich already has a built-in intersect via 'y' and 'ny' args
  */
-void fintersect(int *x, int nx, int *y, int ny, int *out, int *nans) {
+void fsintersect(int *x, int nx, int *y, int ny, int *out, int *nans) {
   if (nx && ny) { // otherwise segfault when fintersect(integer(), integer())
     for (R_xlen_t i=0, j=0;;) {
       if (x[i]==y[j]) {
@@ -22,7 +22,7 @@ void fintersect(int *x, int nx, int *y, int ny, int *out, int *nans) {
     }
   }
 }
-SEXP fintersectR(SEXP x, SEXP y) {
+SEXP fsintersectR(SEXP x, SEXP y) {
   if (!isInteger(x))
     error("fsintersect accept only integer class");
   if (!isInteger(y))
@@ -35,7 +35,7 @@ SEXP fintersectR(SEXP x, SEXP y) {
   SEXP ans = PROTECT(allocVector(INTSXP, MIN(nx, ny)));
   int *ansp = INTEGER(ans);
   int nans = 0;
-  fintersect(xp, nx, yp, ny, ansp, &nans);
+  fsintersect(xp, nx, yp, ny, ansp, &nans);
   SETLENGTH(ans, nans);
   UNPROTECT(1);
   return ans;
@@ -44,7 +44,7 @@ SEXP fintersectR(SEXP x, SEXP y) {
 /*
  * which equal, which in
  * handle negation
- * handling short-circuit when calling which_eq iteratively
+ * handling short-circuit when calling which_* iteratively
  */
 static void which_eq_int(int *x, int nx, int *out, int *nout, int val, bool negate, int *y, int ny) {
   int n = 0;
@@ -267,29 +267,31 @@ void which_eq(SEXP x, int *iwhich, int *nwhich, SEXP val, bool negate, int *y, i
   double tic = 0;
   if (verbose)
     tic = omp_get_wtime();
+  int nx = length(x);
+  int nxy = ny<0 ? nx : ny;
   switch (TYPEOF(x)) {
   case LGLSXP: {
-    which_eq_int(LOGICAL(x), length(x), iwhich, nwhich, LOGICAL(val)[0], negate, y, ny);
+    which_eq_int(LOGICAL(x), nx, iwhich, nwhich, LOGICAL(val)[0], negate, y, ny);
   } break;
   case INTSXP: {
-    which_eq_int(INTEGER(x), length(x), iwhich, nwhich, INTEGER(val)[0], negate, y, ny);
+    which_eq_int(INTEGER(x), nx, iwhich, nwhich, INTEGER(val)[0], negate, y, ny);
   } break;
   case REALSXP: {
     if (Rinherits(x, char_integer64)) {
-      which_eq_int64((int64_t *)REAL(x), length(x), iwhich, nwhich, ((int64_t *)REAL(val))[0], negate, y, ny);
+      which_eq_int64((int64_t *)REAL(x), nx, iwhich, nwhich, ((int64_t *)REAL(val))[0], negate, y, ny);
     } else {
-      which_eq_double(REAL(x), length(x), iwhich, nwhich, REAL(val)[0], negate, y, ny);
+      which_eq_double(REAL(x), nx, iwhich, nwhich, REAL(val)[0], negate, y, ny);
     }
   } break;
   case STRSXP: {
-    which_eq_char(x, length(x), iwhich, nwhich, STRING_ELT(val, 0), negate, y, ny);
+    which_eq_char(x, nx, iwhich, nwhich, STRING_ELT(val, 0), negate, y, ny);
   } break;
   default: {
     error("%s: Incompatible type: %s", __func__, type2char(TYPEOF(x)));
   }
   }
   if (verbose)
-    Rprintf("which_eq: took %.3fs\n", omp_get_wtime()-tic);
+    Rprintf("%s: in %d, out %d, took %.3fs\n", __func__, nxy, nwhich[0], omp_get_wtime()-tic);
 }
 
 static void which_in_int(int *x, int nx, int *out, int *nout, int *val, int nval, bool negate, int *y, int ny) {
@@ -343,46 +345,56 @@ static void which_in_int(int *x, int nx, int *out, int *nout, int *val, int nval
 }
 static void which_in_double(double *x, int nx, int *out, int *nout, double *val, int nval, bool negate, int *y, int ny) {
   int n = 0;
-  if (ny<0) {
-    if (negate) {
-      for (int i=0; i<nx; i++) {
-        for (int j=0; j<nval; j++) {
-          if (x[i] != val[j]) {
-            out[n] = i;
-            n++;
-            break;
+  if (ny!=0) {
+    /*bool hasNA = false, hasNaN = false; // TODO: NA, NaN handling
+    for (int j=0; j<nval; j++) {
+      if (ISNA(val[j])) {
+        hasNA = true;
+        hasNaN = true;
+        break;
+      }
+    }*/
+    if (ny<0) {
+      if (negate) {
+        for (int i=0; i<nx; i++) {
+          for (int j=0; j<nval; j++) {
+            if (x[i] != val[j]) {
+              out[n] = i;
+              n++;
+              break;
+            }
+          }
+        }
+      } else {
+        for (int i=0; i<nx; i++) {
+          for (int j=0; j<nval; j++) {
+            if (x[i] == val[j]) {
+              out[n] = i;
+              n++;
+              break;
+            }
           }
         }
       }
-    } else {
-      for (int i=0; i<nx; i++) {
-        for (int j=0; j<nval; j++) {
-          if (x[i] == val[j]) {
-            out[n] = i;
-            n++;
-            break;
+    } else if (ny>0) {
+      if (negate) {
+        for (int i=0; i<ny; i++) {
+          for (int j=0; j<nval; j++) {
+            if (x[y[i]] != val[j]) {
+              out[n] = y[i];
+              n++;
+              break;
+            }
           }
         }
-      }
-    }
-  } else if (ny>0) {
-    if (negate) {
-      for (int i=0; i<ny; i++) {
-        for (int j=0; j<nval; j++) {
-          if (x[y[i]] != val[j]) {
-            out[n] = y[i];
-            n++;
-            break;
-          }
-        }
-      }
-    } else {
-      for (int i=0; i<ny; i++) {
-        for (int j=0; j<nval; j++) {
-          if (x[y[i]] == val[j]) {
-            out[n] = y[i];
-            n++;
-            break;
+      } else {
+        for (int i=0; i<ny; i++) {
+          for (int j=0; j<nval; j++) {
+            if (x[y[i]] == val[j]) {
+              out[n] = y[i];
+              n++;
+              break;
+            }
           }
         }
       }
@@ -493,30 +505,57 @@ void which_in(SEXP x, int *iwhich, int *nwhich, SEXP val, bool negate, int *y, i
   double tic = 0;
   if (verbose)
     tic = omp_get_wtime();
+  int nx = length(x);
+  int nxy = ny<0 ? nx : ny;
   switch (TYPEOF(x)) {
   case LGLSXP: {
-    which_in_int(LOGICAL(x), length(x), iwhich, nwhich, LOGICAL(val), length(val), negate, y, ny);
+    which_in_int(LOGICAL(x), nx, iwhich, nwhich, LOGICAL(val), length(val), negate, y, ny);
   } break;
   case INTSXP: {
-    which_in_int(INTEGER(x), length(x), iwhich, nwhich, INTEGER(val), length(val), negate, y, ny);
+    which_in_int(INTEGER(x), nx, iwhich, nwhich, INTEGER(val), length(val), negate, y, ny);
   } break;
   case REALSXP: {
     if (Rinherits(x, char_integer64)) {
-      which_in_int64((int64_t *)REAL(x), length(x), iwhich, nwhich, (int64_t *)REAL(val), length(val), negate, y, ny);
+      which_in_int64((int64_t *)REAL(x), nx, iwhich, nwhich, (int64_t *)REAL(val), length(val), negate, y, ny);
     } else {
-      which_in_double(REAL(x), length(x), iwhich, nwhich, REAL(val), length(val), negate, y, ny);
+      which_in_double(REAL(x), nx, iwhich, nwhich, REAL(val), length(val), negate, y, ny);
     }
   } break;
   case STRSXP: {
-    which_in_char(x, length(x), iwhich, nwhich, val, length(val), negate, y, ny);
+    which_in_char(x, nx, iwhich, nwhich, val, length(val), negate, y, ny);
   } break;
   default: {
     error("%s: Incompatible type: %s", __func__, type2char(TYPEOF(x)));
   }
   }
   if (verbose)
-    Rprintf("which_in: took %.3fs\n", omp_get_wtime()-tic);
+    Rprintf("%s: in %d, out %d, took %.3fs\n", __func__, nxy, nwhich[0], omp_get_wtime()-tic);
 }
+
+/*
+ which NA, NaN, N[A|aN]
+ +---------------------+
+ | C fun    | NaN | NA | R fun
+ +---------------------+
+ | ISNAN    |  t  | t  | is.na
+ | R_IsNaN  |  t  | f  | is.nan
+ | ISNA     |  f  | t  | is.na && !is.nan
+ | R_IsNA   |  f  | t  | is.na && !is.nan
+ +---------------------+
+ +---------------------+
+ | R fun    | NaN | NA | C fun
+ +---------------------+
+ | is.na    |  t  | t  | ISNAN
+ | is.nan   |  t  | f  | R_IsNaN
+ +---------------------+
+ | is.nana? |  f  | t  | R_IsNA
+ +---------------------+
+ fwhich(is.na(x) & is.nan(y) & is.na(z))
+ N* & NaN & N*
+ fwhich(is.na(x) & is.nan(y) & (is.na(z) && !is.nan(z)))
+ also revise handling x==NA and x==NaN vs base R
+ */
+//which_na(SEXP x, int *iwhich, int *nwhich, SEXP val, bool negate, int *y, int ny) {}
 
 /*
  * which op
@@ -528,7 +567,8 @@ void which_in(SEXP x, int *iwhich, int *nwhich, SEXP val, bool negate, int *y, i
 #define EQ_CALL(x) (CAR(x)==sym_equal)
 #define NEQ_CALL(x) (CAR(x)==sym_nequal)
 #define IN_CALL(x) (CAR(x)==sym_in)
-#define NIN_CALL(x) (CAR(x)==sym_nin)
+#define BANG_CALL(x) (CAR(x)==sym_bang)
+#define NIN_CALL(x) (CAR(x)==sym_nin || (BANG_CALL(x) && IN_CALL(CADR(x)))) // optimize x%!in%y and !x%in%y
 #define OP_CALL(x) (EQ_CALL(x) || NEQ_CALL(x) || IN_CALL(x) || NIN_CALL(x))
 void which_op(SEXP e, SEXP x, int *iwhich, int *nwhich, SEXP val, int *y, int ny) {
   if (EQ_CALL(e) || NEQ_CALL(e)) {
@@ -608,7 +648,7 @@ SEXP fwhichOpt(SEXP expr, bool *doOpt) {
   }
   doOpt[0] = !escape;
   if (verbose)
-    Rprintf("fwhichOpt: took %.3fs\n", omp_get_wtime()-tic);
+    Rprintf("%s: doOpt %d, took %.3fs\n", __func__, doOpt[0], omp_get_wtime()-tic);
   UNPROTECT(protecti);
   return ans;
 }
@@ -630,25 +670,32 @@ SEXP fwhichR(SEXP expr, SEXP rho) {
   SEXP exprs = fwhichOpt(expr, &doOpt);
   if (!doOpt) {
     if (verbose)
-      Rprintf("fwhich: optimization not available for operations used in provided expression, fallback to R's which\n");
+      Rprintf("%s: optimization not available for operations used in provided expression, fallback to R's which\n", __func__);
   } else {
     if (verbose)
-      Rprintf("fwhich: optimization kicks-in\n");
+      Rprintf("%s: optimization kicks-in\n", __func__);
     int ny=-1, nwhich=0;
     int *yp=0, *iwhich=0;
     int nexprs = length(exprs);
+    SEXP x = R_NilValue, val = R_NilValue;
     for (int i=0; i<nexprs; i++) {
       if (i && !ny) { // already zero length answer
         //if (verbose) Rprintf("fwhich iter %d skip as already 0 length result\n", i+1);
         continue;
       }
       SEXP e = VECTOR_ELT(exprs, i);
-      SEXP x = eval(CADR(e), rho);
-      SEXP val = eval(CADDR(e), rho);
-      //Rprintf("x: "); Rf_PrintValue(x); Rprintf("val: "); /Rf_PrintValue(val);
+      if (BANG_CALL(e)) {
+        x = eval(CADR(CADR(e)), rho);
+        val = eval(CADDR(CADR(e)), rho);
+      } else {
+        x = eval(CADR(e), rho);
+        val = eval(CADDR(e), rho);
+      }
       if (!(isInteger(x) || isReal(x) || isString(x)) || !(isInteger(val) || isReal(val) || isString(val))) {
-        if (verbose)
-          Rprintf("fwhich optimization not available for argument classes used in provided expression, fallback to R's which\n");
+        if (verbose) {
+          Rprintf("%s: optimization not available for argument classes used in provided expression, fallback to R's which\n", __func__);
+          //Rprintf("x: "); Rf_PrintValue(x); Rprintf("val: "); Rf_PrintValue(val);
+        }
         doOpt = false;
         break;
       }
@@ -678,11 +725,12 @@ SEXP fwhichR(SEXP expr, SEXP rho) {
     ans = PROTECT(eval(expr, rho)); protecti++;
   }
   if (verbose)
-    Rprintf("fwhich: took %.3fs\n", omp_get_wtime()-tic);
+    Rprintf("%s: took %.3fs\n", __func__, omp_get_wtime()-tic);
   UNPROTECT(protecti);
   return ans;
 }
 
+/* dev space */
 SEXP which_eqR(SEXP x, SEXP val, SEXP negate, SEXP intersect) {
   int protecti = 0;
   if (!isVectorAtomic(x))
