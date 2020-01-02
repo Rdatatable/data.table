@@ -213,6 +213,9 @@ SEXP between(SEXP x, SEXP lower, SEXP upper, SEXP incbounds, SEXP NAbounds, SEXP
 // coalesce.c
 SEXP coalesce(SEXP x, SEXP inplace);
 
+// unnest.c
+SEXP unnest(SEXP x);
+
 // utils.c
 bool isRealReallyInt(SEXP x);
 SEXP isReallyReal(SEXP x);
@@ -230,7 +233,6 @@ bool islocked(SEXP x);
 SEXP islockedR(SEXP x);
 bool need2utf8(SEXP x);
 SEXP coerceUtf8IfNeeded(SEXP x);
-SEXP prod_int(SEXP x);
 
 // types.c
 char *end(char *start);

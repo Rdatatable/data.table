@@ -355,17 +355,3 @@ SEXP coerceUtf8IfNeeded(SEXP x) {
   UNPROTECT(1);
   return(ans);
 }
-
-// base::prod always returns double; return int directly
-SEXP prod_int(SEXP x) {
-  if (TYPEOF(x) != INTSXP)
-    error("Internal error: invalid input type %s", type2char(TYPEOF(x))); // # nocov
-  SEXP ans = PROTECT(allocVector(INTSXP, 1));
-  int cumprod = 1;
-  int *xp = INTEGER(x);
-  for (int i=0; i < LENGTH(x); i++) {
-    cumprod *= xp[i];
-  }
-  INTEGER(ans)[0] = cumprod;
-  return ans;
-}
