@@ -190,13 +190,13 @@ msgstr ""
 "（integer）、双精度（double）或字符（character）类型的列可以使用滚动联接。"
 
 msgid "Matching %s factor levels to %s factor levels."
-msgstr ""
+msgstr "匹配 %s 的因子水平和 %s 的因子水平。"
 
 msgid "Coercing factor column %s to type character to match type of %s."
-msgstr ""
+msgstr "将因子类型列 %s 强制转换成字符来匹配目 %s。"
 
 msgid "Matching character column %s to factor levels in %s."
-msgstr ""
+msgstr "匹配字符类型列 %s 和 %s 的因子水平。"
 
 msgid ""
 "Incompatible join types: %s (%s) and %s (%s). Factor columns must join to "
@@ -589,13 +589,13 @@ msgstr ""
 "其他的选项。"
 
 msgid "by index '%s' but that index has 0 length. Ignoring."
-msgstr ""
+msgstr "by 索引(index) '%s' 但那索引的长度为0。将被忽视。"
 
 msgid "Internal error: irows isn't integer"
 msgstr "内部错误：irows 不是整型"
 
 msgid "i clause present and columns used in by detected, only these subset:"
-msgstr ""
+msgstr "有 i 子句和在 by 用的列被侦测, 子集只有这个:"
 
 msgid ""
 "i clause present but columns used in by not detected. Having to subset all "
