@@ -166,8 +166,8 @@ format_list_item = function(x, ...) {
 }
 
 format_col.default = function(x, ...) {
-  if (!is.null(dim(x))) stop("Invalid column: it has dimensions. Can't format it. If it's the result of data.table(table()), use as.data.table(table()) instead.")
-  if (is.list(x)) return(vapply_1c(x, format_list_item))
+  if (!is.null(dim(x))) return("<multi-column>")
+  if (is.list(x)) return(vapply_1c(x, format_list_item, ...))
   format(char.trunc(x), ...) # added an else here to fix #5435
 }
 
