@@ -174,7 +174,7 @@ msgid "forderv(query) took ..."
 msgstr "forderv(query) 用了 ..."
 
 msgid "Generating final logical vector ..."
-msgstr ""
+msgstr "产生最后的逻辑向量 ..."
 
 msgid "done in"
 msgstr "结束了"
