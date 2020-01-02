@@ -95,6 +95,8 @@ extern SEXP sym_nequal;
 extern SEXP sym_in;
 extern SEXP sym_nin;
 extern SEXP sym_bang;
+extern SEXP sym_like;
+extern SEXP sym_oplike;
 extern double NA_INT64_D;
 extern long long NA_INT64_LL;
 extern Rcomplex NA_CPLX;  // initialized in init.c; see there for comments

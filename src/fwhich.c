@@ -42,7 +42,7 @@ SEXP fsintersectR(SEXP x, SEXP y) {
 }
 
 /*
- * which equal, which in
+ * which equal, which in, which like
  * handle negation
  * handling short-circuit when calling which_* iteratively
  */
@@ -532,6 +532,43 @@ void which_in(SEXP x, int *iwhich, int *nwhich, SEXP val, bool negate, int *y, i
     Rprintf("%s: in %d, out %d, took %.3fs\n", __func__, nxy, nwhich[0], omp_get_wtime()-tic);
 }
 
+static void which_like_any(SEXP x, int nx, int *out, int *nout, SEXP val, int nval, bool negate, int *y, int ny) {
+  int n = 0;
+  int protecti = 0;
+  // if (isFactor(x)) {} // TODO: optimize same as in `like`
+  if (ny>0) {
+    SEXP idx = PROTECT(allocVector(INTSXP, ny)); protecti++;
+    int *idxp = INTEGER(idx);
+    for (int i=0; i<ny; i++) {
+      idxp[i] = y[i]+1;
+    }
+    x = PROTECT(subsetVector(x, idx)); protecti++;
+  } // short-circuit
+  if (ny!=0) {
+    SEXP grep = PROTECT(lang5(install("grep"), val, x, /*value=*/PROTECT(ScalarLogical(false)), /*invert=*/PROTECT(ScalarLogical(negate)))); protecti++; protecti++; protecti++;
+    SET_TAG(CDR(grep), install("pattern")); SET_TAG(CDDR(grep), install("x")); SET_TAG(CDDDR(grep), install("value")); SET_TAG(CDR(CDDDR(grep)), install("invert"));
+    SEXP ans = PROTECT(eval(grep, R_GlobalEnv)); protecti++;
+    n = length(ans);
+    int *ansp = INTEGER(ans);
+    for (int i=0; i<n; i++) {
+      out[i] = ansp[i]-1;
+    }
+  }
+  UNPROTECT(protecti);
+  nout[0] = n;
+} // TODO: avoid R C eval and call C grep, avoid 1-0-1 index shifting
+void which_like(SEXP x, int *iwhich, int *nwhich, SEXP val, bool negate, int *y, int ny) {
+  const bool verbose = GetVerbose();
+  double tic = 0;
+  if (verbose)
+    tic = omp_get_wtime();
+  int nx = length(x);
+  int nxy = ny<0 ? nx : ny;
+  which_like_any(x, nx, iwhich, nwhich, val, length(val), negate, y, ny);
+  if (verbose)
+    Rprintf("%s: in %d, out %d, took %.3fs\n", __func__, nxy, nwhich[0], omp_get_wtime()-tic);
+}
+
 /*
  which NA, NaN, N[A|aN]
  +---------------------+
@@ -568,8 +605,10 @@ void which_in(SEXP x, int *iwhich, int *nwhich, SEXP val, bool negate, int *y, i
 #define NEQ_CALL(x) (CAR(x)==sym_nequal)
 #define IN_CALL(x) (CAR(x)==sym_in)
 #define BANG_CALL(x) (CAR(x)==sym_bang)
-#define NIN_CALL(x) (CAR(x)==sym_nin || (BANG_CALL(x) && IN_CALL(CADR(x)))) // optimize x%!in%y and !x%in%y
-#define OP_CALL(x) (EQ_CALL(x) || NEQ_CALL(x) || IN_CALL(x) || NIN_CALL(x))
+#define NIN_CALL(x) (CAR(x)==sym_nin || (BANG_CALL(x) && IN_CALL(CADR(x)))) // optimizes x%!in%y (FR #4152 not yet merged but will work here anyway) and !x%in%y
+#define LIKE_CALL(x) (CAR(x)==sym_oplike || (CAR(x)==sym_like && length(CDR(x))==2)) // like(,, ignore.case, fixed) not optimized!
+#define NLIKE_CALL(x) (BANG_CALL(x) && LIKE_CALL(CADR(x)))
+#define OP_CALL(x) (EQ_CALL(x) || NEQ_CALL(x) || IN_CALL(x) || NIN_CALL(x) || LIKE_CALL(x) || NLIKE_CALL(x))
 void which_op(SEXP e, SEXP x, int *iwhich, int *nwhich, SEXP val, int *y, int ny) {
   if (EQ_CALL(e) || NEQ_CALL(e)) {
     which_eq(
@@ -581,6 +620,8 @@ void which_op(SEXP e, SEXP x, int *iwhich, int *nwhich, SEXP val, int *y, int ny
     );
   } else if (IN_CALL(e) || NIN_CALL(e)) {
     which_in(x, iwhich, nwhich, val, NIN_CALL(e), y, ny);
+  }  else if (LIKE_CALL(e) || NLIKE_CALL(e)) {
+    which_like(x, iwhich, nwhich, val, NLIKE_CALL(e), y, ny);
   } else {
     error("internal error: unsupported OP, should have been caught by now, please report to issue tracker");
   }

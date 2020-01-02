@@ -5,24 +5,29 @@ fwhich = data.table:::fwhich
 
 # Filter Helper Functions #4133 ----
 
-foo <- data.table(
-  x = as.character(runif(n = 10^6)),
-  y = as.character(runif(n = 10^6)),
-  z = as.character(runif(n = 10^6))
+N = 1e6L
+foo = data.table(
+  x = as.character(runif(n = N)),
+  y = as.character(runif(n = N)),
+  z = as.character(runif(n = N))
 )
+invisible({foo[c(1L,N)]; foo[c(1L,N)]; foo[c(1L,N)]}) # warmup
 # easy
 system.time(foo[like(x, "123")][like(y, "123")][like(z, "123")])
 system.time(foo[like(x, "123") & like(y, "123") & like(z, "123")])
+system.time(foo[fwhich(like(x, "123") & like(y, "123") & like(z, "123"))])
 # hard
 system.time(foo[like(x, "*")][like(y, "*")][like(z, "*")])
 system.time(foo[like(x, "*") & like(y, "*") & like(z, "*")])
-
-# A tibble: 3 x 13
-#expression                                              min median `itr/sec` mem_alloc `gc/sec` n_itr
-#<bch:expr>                                            <bch> <bch:>     <dbl> <bch:byt>    <dbl> <int>
-#  1 foo[filter.at(c("x", "y", "z"), like(x, "123"))]      290ms  301ms      3.32     7.9MB    0.831     4
-#2 foo[like(x, "123")][like(y, "123")][like(z, "123")]   291ms  291ms      3.35    8.13MB    0         5
-#3 foo[like(x, "123") & like(y, "123") & like(z, "123")] 858ms  884ms      1.10    22.9MB    0         5
+system.time(foo[fwhich(like(x, "*") & like(y, "*") & like(z, "*"))])
+# easy
+system.time(foo[!like(x, "123")][!like(y, "123")][!like(z, "123")])
+system.time(foo[!like(x, "123") & !like(y, "123") & !like(z, "123")])
+system.time(foo[fwhich(!like(x, "123") & !like(y, "123") & !like(z, "123"))])
+# hard
+system.time(foo[!like(x, "*")][!like(y, "*")][!like(z, "*")])
+system.time(foo[!like(x, "*") & !like(y, "*") & !like(z, "*")])
+system.time(foo[!fwhich(like(x, "*") & !like(y, "*") & !like(z, "*"))])
 
 # Speed up logical indexing with multiple conditions #4105 ----
 
