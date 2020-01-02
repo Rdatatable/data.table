@@ -130,11 +130,11 @@ head(ans)
 
 #### {.bs-callout .bs-callout-info}
 
-* Within the frame of a `data.table`, columns can be referred to *as if they are variables*, much like in SQL or Stata. Therefore, we simply refer to `dest` and `month` as if they are variables. We do not need to add the prefix `flights$` each time. Nevertheless, using `flights$dest` and `flights$month` would work just fine.
+* Within the frame of a `data.table`, columns can be referred to *as if they are variables*, much like in SQL or Stata. Therefore, we simply refer to `origin` and `month` as if they are variables. We do not need to add the prefix `flights$` each time. Nevertheless, using `flights$origin` and `flights$month` would work just fine.
 
 * The *row indices* that satisfy the condition `origin == "JFK" & month == 6L` are computed, and since there is nothing else left to do, all columns from `flights` at rows corresponding to those *row indices* are simply returned as a `data.table`.
 
-* A comma after the condition in `i` is not required. But `flights[dest == "JFK" & month == 6L, ]` would work just fine. In `data.frame`s, however, the comma is necessary.
+* A comma after the condition in `i` is not required. But `flights[origin == "JFK" & month == 6L, ]` would work just fine. In `data.frame`s, however, the comma is necessary.
 
 #### -- Get the first two rows from `flights`. {#subset-rows-integer}
 

@@ -1,0 +1,2387 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: data.table 1.12.5\n"
+"POT-Creation-Date: 2019-12-31 13:02\n"
+"PO-Revision-Date: 2019-11-16 18:37+0800\n"
+"Last-Translator: Xianying Tan <shrektan@126.com>\n"
+"Language-Team: Mandarin\n"
+"Language: Mandarin\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+
+msgid "data.table package loaded. When developing don't load package"
+msgstr "data.table包已载入, 开发时无需载入"
+
+msgid ""
+"Internal error -- difftime objects may not be added to IDate, but Ops "
+"dispatch should have intervened to prevent this"
+msgstr ""
+"内部错误 -- 'difftime'对象可能不能被添加到IDate类型但是正确操作应该防止此行为"
+"发生"
+
+msgid "binary + is not defined for \"IDate\" objects"
+msgstr "没有为\"IDate\" 对象定义的'+'操作"
+
+msgid "can only subtract from \"IDate\" objects"
+msgstr "只能从\"IDate\"对象中减去"
+
+msgid "Internal error: storage mode of IDate is somehow no longer integer"
+msgstr "内部错误： IDate的存储模式不为整型"
+
+msgid "unary - is not defined for \"IDate\" objects"
+msgstr "没有为\"IDate\" 对象定义的一元的'-'操作"
+
+msgid ""
+"Internal error -- difftime objects may not be subtracted from IDate, but Ops "
+"dispatch should have intervened to prevent this"
+msgstr ""
+"内部错误 -- 不能与IDate类型中减去'difftime'对象但是正确操作应该防止此行为发生"
+
+msgid "Valid options for ms are 'truncate',"
+msgstr "'ms'有效的选项为'truncate'"
+
+msgid "'nearest', and 'ceil'."
+msgstr "'nearest'和'ceil'"
+
+msgid ""
+"as.data.table.array method should only be called for arrays with 3+ "
+"dimensions; use the matrix method for 2-dimensional arrays"
+msgstr ""
+"请只对3维或以上的数组使用as.data.table.array方法对二维数组请使用matrix方法"
+
+msgid ""
+"Argument 'value.name' must be scalar character, non-NA and at least one "
+"character"
+msgstr "参数'value.name'必须为标量字符或non-NA至少包含一个字符"
+
+msgid "Argument 'sorted' must be scalar logical and non-NA"
+msgstr "参数'sorted'必须为标量逻辑或non-NA"
+
+msgid "Argument 'na.rm' must be scalar logical and non-NA"
+msgstr "参数'na.rm'必须为标量逻辑或non-NA"
+
+msgid "Please provide either 'key' or 'sorted', but not both."
+msgstr "请提供参数'key'或'sorted',但不可同时提供"
+
+msgid "Argument 'value.name' should not overlap with column names in result:"
+msgstr "参数'value.name'不能与结果中已有列名重复"
+
+msgid ""
+"POSIXlt column type detected and converted to POSIXct. We do not recommend "
+"use of POSIXlt at all because it uses 40 bytes to store one date."
+msgstr ""
+"检测到使用了POSIXlt类型的列， 并转成POSIXctdata.table不建议使用POSIXlt对象, "
+"因为其使用40字节来存储一个日期"
+
+msgid "Item"
+msgstr "条目"
+
+msgid "has"
+msgstr "具有"
+
+msgid "rows but longest item has"
+msgstr "行，但最长条目有"
+
+msgid "; recycled with remainder."
+msgstr "用余数循环填充"
+
+msgid "has 0 rows but longest item has"
+msgstr "没有行，但最长的条目有"
+
+msgid "; filled with NA"
+msgstr "用NA填充"
+
+msgid "A column may not be called .SD. That has special meaning."
+msgstr "无法将列命名为 .SD，因为 .SD 为特殊符号。"
+
+msgid "class must be length 1"
+msgstr "class 的长度必须为 1"
+
+msgid "between has been passed an argument x of type logical"
+msgstr "传入 between 的参数 x 为逻辑（logical）型"
+
+msgid ""
+"'between' function the 'x' argument is a POSIX class while 'lower' was not, "
+"coercion to POSIX failed with:"
+msgstr ""
+"'between' 中的 'x' 参数为 POSIX 类，而 'lower' 并不是，将 'lower' 自动转换成 "
+"POSIX 失败："
+
+msgid ""
+"'between' function the 'x' argument is a POSIX class while 'upper' was not, "
+"coercion to POSIX failed with:"
+msgstr ""
+"'between' 中的 'x' 参数为 POSIX 类，而 'upper' 并不是，将 'upper' 自动转换成 "
+"POSIX 失败："
+
+msgid ""
+"'between' lower= and upper= are both POSIXct but have different tzone "
+"attributes:"
+msgstr ""
+"'between' 中的 lower= 和 upper= 均为 POSIXct 类型但却有不同的时区属性"
+"（tzone）："
+
+msgid ". Please align their time zones."
+msgstr "。请确保二者的时区一致。"
+
+msgid ""
+"'between' arguments are all POSIXct but have mismatched tzone attributes:"
+msgstr "'between' 的参数均为 POSIXct 类型但时区属性（tzone）不匹配："
+
+msgid ". The UTC times will be compared."
+msgstr "。将采用 UTC 时间进行比较。"
+
+msgid "trying to use integer64 class when 'bit64' package is not installed"
+msgstr "试图使用 intger64 类型但 'bit64' 包尚未安装"
+
+msgid ""
+"Not yet implemented NAbounds=TRUE for this non-numeric and non-character type"
+msgstr ""
+"对这种非数值（numeric）和非字符（character）的类型，尚未实现 NAbounds=TRUE 的"
+"功能"
+
+msgid "Some lower>upper for this non-numeric and non-character type"
+msgstr ""
+"对于该非数值（numeric）和非字符（character）类型的输入，存在一部分下界"
+"（lower）> 上界（upper）的情况"
+
+msgid "RHS has length()"
+msgstr "右手侧（RHS）的长度为"
+
+msgid "; expecting length 2."
+msgstr "；其长度应为 2。"
+
+msgid "c"
+msgstr "c"
+
+msgid "Perhaps you meant %s?"
+msgstr "或许你想用的是 %s？"
+
+msgid "The first element should be the lower bound(s);"
+msgstr "第一个元素应为下界；"
+
+msgid "the second element should be the upper bound(s)."
+msgstr "第二个元素应为上界。"
+
+msgid "x."
+msgstr "x."
+
+msgid "is type"
+msgstr "的类型为"
+
+msgid "which is not supported by data.table join"
+msgstr "，该类型无法用于 data.table 的联接"
+
+msgid "i."
+msgstr "i."
+
+msgid "Attempting roll join on factor column when joining x."
+msgstr "试图滚动联接（roll join）因子类型（factor）的列，这发生于将 x."
+
+msgid "to i."
+msgstr "与 i."
+
+msgid ". Only integer, double or character columns may be roll joined."
+msgstr ""
+"联接时。但只有整数（integer）、双精度（double）或字符（character）类型的列可"
+"以使用滚动联接（roll join）。"
+
+msgid "Incompatible join types: x."
+msgstr "不兼容的联结类型： x。"
+
+msgid "("
+msgstr "（"
+
+msgid ") and i."
+msgstr "）和 i。"
+
+msgid "). Factor columns must join to factor or character columns."
+msgstr "）。 因子类型的列必须与因子类型或字符类型的列才可以联结"
+
+msgid ")"
+msgstr "）"
+
+msgid "Incompatible join types:"
+msgstr "不兼容的联结类型"
+
+msgid "is type integer64 but"
+msgstr "是 integer64 类型但是"
+
+msgid "is type double and contains fractions"
+msgstr "是 double 类型并且包含分数"
+
+msgid "roll is not implemented for non-equi joins yet."
+msgstr "不等长联结还不能执行 roll "
+
+msgid "Column name '_nqgrp_' is reserved for non-equi joins."
+msgstr "列名 '_nqgrp_' 是为不等长联结保留的"
+
+msgid "key argument of data.table() must be character"
+msgstr "data.table() 的主参数必须是字符"
+
+msgid "Object '"
+msgstr "对象 '"
+
+msgid "' not found. Perhaps you intended"
+msgstr "' 不存在， 可能你打算"
+
+msgid ","
+msgstr ","
+
+msgid "or"
+msgstr "或者"
+
+msgid "more"
+msgstr "更多"
+
+msgid "' not found amongst"
+msgstr "' 不存在"
+
+msgid "and"
+msgstr "并且"
+
+msgid "Provide either by= or keyby= but not both"
+msgstr "提供 by= 或 keyby= ，但两者不能同时存在"
+
+msgid "Ignoring keyby= because j= is not supplied"
+msgstr "因为没有提供 j= ，所以忽略 keyby= "
+
+msgid "Ignoring by= because j= is not supplied"
+msgstr "因为没有提供 j= ，所以忽略 by= "
+
+msgid ""
+"When on= is provided but not i=, on= must be a named list or data.table|"
+"frame, and a natural join (i.e. join on common names) is invoked. Ignoring "
+"on= which is '"
+msgstr ""
+"当提供 on= 而不提供 i= 的时候， on= 必须是带名称的 list 或者 data.table 或者 "
+"data.frame，并且会调用自然联结（例如，按照共有名称联结），忽略 on= "
+
+msgid "'."
+msgstr "'。"
+
+msgid ""
+"i and j are both missing so ignoring the other arguments. This warning will "
+"be upgraded to error in future."
+msgstr "i 和 j 都缺少的时候忽略其他参数。将来此警告信息将升级为错误信息。"
+
+msgid "mult argument can only be 'first', 'last' or 'all'"
+msgstr "mult 参数只能赋值为 'first'， 'last' 或 'all'"
+
+msgid ""
+"roll must be a single TRUE, FALSE, positive/negative integer/double "
+"including +Inf and -Inf or 'nearest'"
+msgstr ""
+"roll 必须是单个参数，例如 TRUE， FALSE, 正或负的 integer 或 double包括 "
+"+Inf ， -Inf 或 'nearest'"
+
+msgid "roll is '"
+msgstr "roll 是"
+
+msgid "' (type character). Only valid character value is 'nearest'."
+msgstr "'(字符类型)。 唯一有效的字符值是'nearest'。"
+
+msgid "rollends must be a logical vector"
+msgstr "rollends必须是一个逻辑向量"
+
+msgid "rollends must be length 1 or 2"
+msgstr "rollends 的长度必须是 1 或者 2"
+
+msgid ""
+"nomatch= must be either NA or NULL (or 0 for backwards compatibility which "
+"is the same as NULL)"
+msgstr "nomatch= 必须是 NA 或 NULL (或者在向后兼容的情形下为 0，这等同于 NULL)"
+
+msgid "which= must be a logical vector length 1. Either FALSE, TRUE or NA."
+msgstr "which= 必须是一个长度为 1 的逻辑向量。其取值为 FALSE，TRUE 或者 NA。"
+
+msgid "which=="
+msgstr "which=="
+
+msgid ""
+"(meaning return row numbers) but j is also supplied. Either you need row "
+"numbers or the result of j, but only one type of result can be returned."
+msgstr ""
+"(表示行数会被返回) 但是 j 也被提供了。你可能需要行数或者是 j 的结果，但是只能"
+"返回一种结果。"
+
+msgid ""
+"which=NA with nomatch=0 would always return an empty vector. Please change "
+"or remove either which or nomatch."
+msgstr ""
+"同时使用 which=NA 和 nomatch=0 会得到一个空向量。请改变或者是移除 which或 "
+"nomatch 的取值"
+
+msgid "j must be provided when with=FALSE"
+msgstr "如果with=FALSE(假)，j必须要赋值"
+
+msgid ""
+"The symbol .. is invalid. The .. prefix must be followed by at least one "
+"character."
+msgstr "符号 .. 是无效的。前缀 .. 之后必须要有至少一个字符"
+
+msgid "Variable '"
+msgstr "变量 '"
+
+msgid ""
+"' is not found in calling scope. Looking in calling scope because you used "
+"the .. prefix."
+msgstr "' 并没有存在于调用环境中。之所以在调用环境中寻找是因为你使用了..的前缀"
+
+msgid "Variable '.."
+msgstr "变量 '.."
+
+msgid ""
+"' does exist in calling scope though, so please just removed the .. prefix "
+"from that variable name in calling scope."
+msgstr "' 并不存在于调用环境中。所以请移除在调用环境中那个变量名字的..前缀"
+
+msgid "Both '"
+msgstr "两个都有 '"
+
+msgid "' and '.."
+msgstr "' 和 '.."
+
+msgid "' exist in calling scope. Please remove the '.."
+msgstr "' 当前存在于调用环境. 请删除 '.."
+
+msgid "' variable in calling scope for clarity."
+msgstr "这个调用环境里的变量以方便理解"
+
+msgid ""
+"Internal error:  DT[, ..var] should be dealt with by the branch above now."
+msgstr "内部错误: DT[, ..var]应该被分支处理中。"
+
+msgid ""
+"' is not found in calling scope. Looking in calling scope because you set "
+"with=FALSE. Also, please use .. symbol prefix and remove with=FALSE."
+msgstr ""
+"' 并没有存在于调用环境中。之所以在调用环境中搜索是因为你使用了with=FALSE。请"
+"使用 .. 符号前缀并且移除 with=FALSE。"
+
+msgid ""
+"You have wrapped := with {} which is ok but then := must be the only thing "
+"inside {}. You have something else inside {} as well. Consider placing the "
+"{} on the RHS of := instead; e.g. DT[,someCol:={tmpVar1<-...;tmpVar2<-...;"
+"tmpVar1*tmpVar2}"
+msgstr ""
+"用 {} 套用 := 可行，但是 {} 中只能有 := 。而你现在 {} 中还有其他的参数。请尝"
+"试将 {} 置于 := 的RHS之上；比如，DT[,someCol:={tmpVar1<-...; tmpVar2<-...; "
+"tmpVar1*tmpVar2}"
+
+msgid ""
+":= with keyby is only possible when i is not supplied since you can't setkey "
+"on a subset of rows. Either change keyby to by or remove i"
+msgstr ""
+":=和keyby的组合只有在i没有赋值下才合理存在。因为你不能在一个行的子集调用"
+"setkey。要么把keyby换成by或者是移除i"
+
+msgid "nomatch isn't relevant together with :=, ignoring nomatch"
+msgstr "nomatch 并不和 := 有任何的相关，将忽略nomatch"
+
+msgid ""
+"not-join '!' prefix is present on i but nomatch is provided. Please remove "
+"nomatch."
+msgstr ""
+"not-join '!' 前缀在 i 中存在，但是 nomatch 也被提供了。需要移除nomatch。"
+
+msgid "is not found in calling scope"
+msgstr "不存在调用环境里"
+
+msgid ""
+"When the first argument inside DT[...] is a single symbol (e.g. DT[var]), "
+"data.table looks for var in calling scope."
+msgstr ""
+"当DT[...]的第一个参数是一个单个的符号(e.g. DT[var])，data.table会在调用环境中"
+"搜寻var。"
+
+msgid ""
+"i is invalid type (matrix). Perhaps in future a 2 column matrix could return "
+"a list of elements of DT (in the spirit of A[B] in FAQ 2.14). Please report "
+"to data.table issue tracker if you'd like this, or add your comments to FR "
+"#657."
+msgstr ""
+"i不是一个有效的类型(矩阵)。也许在以后一个包含两列的矩阵会返回包含一串元素的"
+"DT (请参考问答集2.14的A[B])。如果你有需求，请将此问题汇报给data.table 问题追"
+"踪器或者是在FR中留下你的想法"
+
+msgid ""
+"When i is a data.table (or character vector), the columns to join by must be "
+"specified using 'on=' argument (see ?data.table), by keying x (i.e. sorted, "
+"and, marked as sorted, see ?setkey), or by sharing column names between x "
+"and i (i.e., a natural join). Keyed joins might have further speed benefits "
+"on very large data due to x being sorted in RAM."
+msgstr ""
+"但i是一个 data.table (或者是字符向量)，必须使用 'on=' 参数指明参与连接的列 "
+"(参见 ?data.table)，可以是keying x(比如，已排序过，和标记已排序过，请参见?"
+"setkey)，或者是在x和i共用列的名字(比如，自然连接)。如果x有在内存被排序过，"
+"Keyed连接的速度会在非常大的数据上有较明显的提高。"
+
+msgid "Attempting to do natural join but no common columns in provided tables"
+msgstr "尝试进行自然连接然而并没有找到表格中相同的列"
+
+msgid "Internal error. Cannot by=.EACHI when joining to a secondary key, yet"
+msgstr "内部错误：目前尚无法对次键使用by=.EACH命令"
+
+msgid "Internal error. irows has length in by=.EACHI"
+msgstr "内部错误：by=.EACHI 中 irows 有长度"
+
+msgid "logical error. i is not a data.table, but 'on' argument is provided."
+msgstr "逻辑错误。当 i 并非一个 data.table时，不应提供'on'参数"
+
+msgid "i has evaluated to type"
+msgstr "i 运算结果为类型"
+
+msgid ". Expecting logical, integer or double."
+msgstr "。期望布尔类型，整型或浮点型。"
+
+msgid "i evaluates to a logical vector length"
+msgstr "i 为一个布尔类型向量的长度。"
+
+msgid "but there are"
+msgstr "但是存在"
+
+msgid ""
+"rows. Recycling of logical i is no longer allowed as it hides more bugs than "
+"is worth the rare convenience. Explicitly use rep(...,length=.N) if you "
+"really need to recycle."
+msgstr ""
+"行。不再允许布尔值 i 循环补齐，尽管这样有些许便利，但会隐藏更多的 bug，得不偿"
+"失。若确实需要循环补齐，请直接使用 rep(...,length=.N)。"
+
+msgid "Internal error: notjoin but byjoin or !integer or nomatch==NA"
+msgstr "内部错误。原因可能为：notjoin 而非 byjoin；非整数；nomatch 为空"
+
+msgid ""
+"with=FALSE together with := was deprecated in v1.9.4 released Oct 2014. "
+"Please wrap the LHS of := with parentheses; e.g., DT[,(myVar):=sum(b),by=a] "
+"to assign to column name(s) held in variable myVar. See ?':=' for other "
+"examples. As warned in 2014, this is now a warning."
+msgstr ""
+"2014年10月发布的1.9.4版本中，with=FALSE 和 := 共用的用法已被弃用。请把 := 左"
+"侧部分打上括号；例如，DT[,(myVar):=sum(b),by=a]对 myVar 中的列名进行赋值。输"
+"入 ?':=' 参看其他的例子。正如2014年的版本中所说明的，现在这种用法会出现警告。"
+
+msgid ""
+"with=FALSE ignored, it isn't needed when using :=. See ?':=' for examples."
+msgstr ""
+"当使用 :=. 的时候，with=FALSE 是多余的，会被忽略。输入 ?':=' 参看例子。"
+
+msgid "column(s) not removed because not found:"
+msgstr "列未被删除因为不存在："
+
+msgid "column(s) not found:"
+msgstr "列不存在"
+
+msgid "of j is"
+msgstr "j 是"
+
+msgid "which is outside the column number range [1,ncol="
+msgstr "不在列索引范围内 [1,ncol="
+
+msgid "]"
+msgstr "]"
+
+msgid "j mixes positives and negatives"
+msgstr "j 中同时存在正数和负数"
+
+msgid ""
+"When with=FALSE, j-argument should be of type logical/character/integer "
+"indicating the columns to select."
+msgstr "当 with=FALSE，参数 j 必须为布尔型/字符型/整型之一，表征要选择的列。"
+
+msgid "by=c(...), key(...) or names(...) must evaluate to 'character'"
+msgstr "by=c(...), key(...) 或 names(...) 只接受 'character' "
+
+msgid "'by' is a character vector length"
+msgstr "'by' 是一个字符型向量，长度为"
+
+msgid ""
+"but one or more items include a comma. Either pass a vector of column names "
+"(which can contain spaces, but no commas), or pass a vector length 1 "
+"containing comma separated column names. See ?data.table for other "
+"possibilities."
+msgstr ""
+"但是其中包含一个或多个逗号。请传入一个列名组成的向量（可以包含空格，但是不能"
+"包含逗号），或传入一个长度为1，由逗号分隔的列名组成的向量输入 ?data.table查看"
+"其他的选项。"
+
+msgid "Internal error: irows isn't integer"
+msgstr "内部错误：irows 不是整型"
+
+msgid ""
+"'by' appears to evaluate to column names but isn't c() or key(). Use "
+"by=list(...) if you can. Otherwise, by=eval"
+msgstr ""
+"传递给 'by' 参数的似乎是列名，但没有用 c() 或者 key() 函数。如若可以，请使用"
+"by=list(...)。此外，by=eval"
+
+msgid ""
+"should work. This is for efficiency so data.table can detect which columns "
+"are needed."
+msgstr ""
+"应该是可行的。这样做是出于性能考虑，凭此 data.table 可以判断哪些列是需要的。"
+
+msgid ""
+"'by' or 'keyby' must evaluate to a vector or a list of vectors (where 'list' "
+"includes data.table and data.frame which are lists, too)"
+msgstr ""
+"'by' 或者 'keyby' 参数只接受一个向量或由向量组成的列表（这里 'list'包含 data."
+"table 和 data.frame，这二者本质也是列表"
+
+msgid "column or expression"
+msgstr "列或者表达式"
+
+msgid "of 'by' or 'keyby' is type"
+msgstr "传递给 'by' 和 'keyby' 参数的类型是"
+
+msgid ""
+". Do not quote column names. Usage: DT[,sum(colC),by=list(colA,month(colB))]"
+msgstr "。请勿引用列名。用法：DT[,sum(colC),by=list(colA,month(colB))]"
+
+msgid ""
+"The items in the 'by' or 'keyby' list are length(s) (%s). Each must be "
+"length %d; the same length as there are rows in x (after subsetting if i is "
+"provided)."
+msgstr ""
+"在'by'或'keyby'列表中的项长度为 %s。每一项的长度须均为%d，即应与 x （或经 i "
+"筛选后的子集）中所包含行数相同。"
+
+msgid "Internal error: drop_dot passed"
+msgstr "内部错误：drop_dot 传入的参数有"
+
+msgid "items"
+msgstr "项"
+
+msgid "Item %d of the .() or list() passed to j is missing"
+msgstr "传递给j的 .() 或 list()中第%d项缺失"
+
+msgid ""
+"Different branches of j expression produced different auto-named columns:"
+msgstr "j表达式中的不同分支自动生成的列名不同："
+
+msgid "%s!=%s"
+msgstr "%s!=%s"
+
+msgid "; using the most \"last\" names"
+msgstr "；将使用最晚生成的名字"
+
+msgid ""
+"When .SDcols is a function, it is applied to each column; the output of this "
+"function must be a non-missing boolean scalar signalling inclusion/exclusion "
+"of the column. However, these conditions were not met for:"
+msgstr ""
+"当传入 .SDcols 的参数为一个方程时，该方程将应用于每一列，并须返回单个非缺失值"
+"的布尔值指示该列是否应当被包含/排除。然而上述条件对如下列并不满足："
+
+msgid ".SDcols missing at the following indices:"
+msgstr ".SDcols 的如下位置为缺失值："
+
+msgid ".SDcols is numeric but has both +ve and -ve indices"
+msgstr ".SDcols 为数值，但同时具有 +ve 和 -ve 索引"
+
+msgid ".SDcols is numeric but out of bounds [1,"
+msgstr ".SDcols 为数值但超出了 [1,"
+
+msgid "] at:"
+msgstr "] 的范围:"
+
+msgid ".SDcols should be column numbers or names"
+msgstr ".SDcols 应为列数或是列名"
+
+msgid "Some items of .SDcols are not column names:"
+msgstr ".SDcols 中的部份项目不是列名:"
+
+msgid ""
+"This j doesn't use .SD but .SDcols has been supplied. Ignoring .SDcols. See ?"
+"data.table."
+msgstr "此处 j 不使用 .SD 但提供了 .SDcols ，因此忽略 .SDcols详见 ?data.table"
+
+msgid ""
+".SD is locked. Using := in .SD's j is reserved for possible future use; a "
+"tortuously flexible way to modify by group. Use := in j directly to modify "
+"by group by reference."
+msgstr ""
+".SD 已锁定，在 .SD  的 j  中使用 := 进行分组修改是较不直观的方式此功能被保留"
+"以供未来使用请直接在 j 中使用 := 依照引用进行分组修改"
+
+msgid "In `:=`(col1=val1, col2=val2, ...) form, all arguments must be named."
+msgstr "在`:=`(col1=val1, col2=val2, ...) 中，所有参数必须被指名"
+
+msgid ""
+"LHS of := must be a symbol, or an atomic vector (column names or positions)."
+msgstr ":= 的 LHS 必须是符号或是原子向量(列名或是列的位置)"
+
+msgid ""
+"LHS of := appears to be column positions but are outside [1,ncol] range. New "
+"columns can only be added by name."
+msgstr ":= 的 LHS 是列的位置但超出了 [1,ncol] 的范围新列只能以名称的方式新增"
+
+msgid ""
+"LHS of := isn't column names ('character') or positions ('integer' or "
+"'numeric')"
+msgstr ":= 的 LHS 不是列名('字符')或列的位置('整数'或'数值')"
+
+msgid ""
+"Invalid .internal.selfref detected and fixed by taking a (shallow) copy of "
+"the data.table so that := can add this new column by reference. At an "
+"earlier point, this data.table has been copied by R (or was created manually "
+"using structure() or similar). Avoid names<- and attr<- which in R currently "
+"(and oddly) may copy the whole data.table. Use set* syntax instead to avoid "
+"copying: ?set, ?setnames and ?setattr. If this message doesn't help, please "
+"report your use case to the data.table issue tracker so the root cause can "
+"be fixed or this message improved."
+msgstr ""
+"侦测到无效的 .internal.selfref ，已藉由获取 data.table 的(浅层)副本的方式修复"
+"以便 := 能利用引用加入新列在过去的某个时间点，此 data.table 已被 R 复制(或是"
+"以 structure()等方式手动生成)请避免 names<- 与 attr<- 等目前(与偶发)可能会在 "
+"R 中复制整个data.table的操作请改用 set* 语法以避免复制，详见 ?set、?setnames "
+"及 ?setattr如果以上讯息无法提供帮助，请回报你的案例至 data.table 问题追踪以助"
+"于修复根本原因或改进本讯息"
+
+msgid ""
+"Cannot assign to an under-allocated recursively indexed list -- L[[i]][,:=] "
+"syntax is only valid when i is length 1, but it's length"
+msgstr ""
+"无法指定配置不足的递归索引列表-- L[[i]][,:=] 语法只有在 i 长度为1时有效，但它"
+"的長度"
+
+msgid "Internal error -- item '"
+msgstr "内部错误 -- 项目 '"
+
+msgid "' not found in names of list"
+msgstr "' 未能在名称列表中找到"
+
+msgid "Internal error -- column(s) not found:"
+msgstr "内部错误 -- 找不到此列:"
+
+msgid ""
+"strptime() usage detected and wrapped with as.POSIXct(). This is to minimize "
+"the chance of assigning POSIXlt columns, which use 40+ bytes to store one "
+"date (versus 8 for POSIXct). Use as.POSIXct() (which will call strptime() as "
+"needed internally) to avoid this warning."
+msgstr ""
+"侦测到使用 strptime() ，已用 as.POSIXct() 包裹这么做是为了尽量避免列被指定为 "
+"POSIXltPOSIXlt用40个以上的位元组储存日期(相较于 POSIXct 只用8位元组)请使用 "
+"as.POSIXct() 以避免本警告 (此函数会根据需求在内部调用 strptime())"
+
+msgid ""
+"' is not found in calling scope. Looking in calling scope because this "
+"symbol was prefixed with .. in the j= parameter."
+msgstr ""
+"' 未能在调用范围 (calling scope) 中找到，请查看调用范围因为  j= 的参数以 .. "
+"作为前缀"
+
+msgid "Internal error: xcolAns does not pass checks:"
+msgstr "内部错误 : xcolAns 无法通过检查:"
+
+msgid ""
+"Internal error: irows is NULL when making join result at R level. Should no "
+"longer happen now we use CsubsetDT earlier."
+msgstr ""
+"内部错误 : 在 R 生成连接结果时，irows为 NULL 我们已使用了 CsubsetDT，现在不应"
+"该再发生了"
+
+msgid "j (the 2nd argument inside [...]) is a single symbol but column name '"
+msgstr "j ( [...] 中的第二顺位参数) 是单个符号而列名 '"
+
+msgid "' is not found. Perhaps you intended DT[, .."
+msgstr "' 未被找到，也许你打算 DT[, .."
+
+msgid ""
+"]. This difference to data.frame is deliberate and explained in FAQ 1.1."
+msgstr "] ，在FAQ 1.1 中有解释dat.table与data.frame的差别"
+
+msgid ""
+"Internal error: j has created a data.table result containing a NULL column"
+msgstr "内部错误 : j 创建了一个有列为 NULL 的 data.table"
+
+msgid ""
+"The column '.N' can't be grouped because it conflicts with the special .N "
+"variable. Try setnames(DT,'.N','N') first."
+msgstr ""
+"无法对 '.N' 列进行分组，因为与 data.table 特有的 .N 变量冲突请先尝试 "
+"setnames(DT,'.N','N')"
+
+msgid ""
+"The column '.I' can't be grouped because it conflicts with the special .I "
+"variable. Try setnames(DT,'.I','I') first."
+msgstr ""
+"无法对 '.I' 列进行分组，因为与 data.table 特有的 .I 变量冲突请先尝试 "
+"setnames(DT,'.I','I')"
+
+msgid "logical error. i is not data.table, but mult='all' and 'by'=.EACHI"
+msgstr "逻辑错误: i 不是data.table，但 mult='all' 及 'by'=.EACHI"
+
+msgid "Internal error: by= is missing"
+msgstr "内部错误 : 缺少 by="
+
+msgid "Internal error: byindex not the index name"
+msgstr "内部错误 : byindex 不是索引名称"
+
+msgid "Internal error: byindex not found"
+msgstr "内部错误 : 找不到 byindex"
+
+msgid ""
+"Unable to optimize call to mean() and could be very slow. You must name 'na."
+"rm' like that otherwise if you do mean(x,TRUE) the TRUE is taken to mean "
+"'trim' which is the 2nd argument of mean. 'trim' is not yet optimized."
+msgstr ""
+"无法优化对 mean() 的调用，这可能导致运行非常缓慢您必须使用 na.rm=TRUE，否则如"
+"果您直接使用 mean(x,TRUE)会被认定为 trim=TRUE，trim 是 mean() 中尚未被优化的"
+"第二顺位参数"
+
+msgid "Internal error: length(irows)!=length(o__)"
+msgstr "内部错误：length(irows)!=length(o__)"
+
+msgid ""
+"The setkey() normally performed by keyby= has been skipped (as if by= was "
+"used) because := is being used together with keyby= but the keyby= contains "
+"some expressions. To avoid this warning, use by= instead, or provide "
+"existing column names to keyby=."
+msgstr ""
+"因为`:=`与`keyby=`一起使用且`keyby=`含有表达式, 所以代码跳过了一般`keyby=`会"
+"执行的`setkey()` -- 代码只执行了`by=`。若要避免此警告, 请使用`by=`, 或者提供"
+"`keyby=`现有的列名"
+
+msgid "Internal error: jvnames is length"
+msgstr "内部错误:jvnames 是长度"
+
+msgid "but ans is"
+msgstr "但是ans(答案)是"
+
+msgid "and bynames is"
+msgstr "同时bynames是"
+
+msgid "rownames and rownames.value cannot both be used at the same time"
+msgstr "rownames和rownames.value 不能同时使用"
+
+msgid "length(rownames)=="
+msgstr "length(rownames)== (行名长度==)"
+
+msgid "but nrow(DT)=="
+msgstr "但是nrow(DT)=="
+
+msgid ""
+". The rownames argument specifies a single column name or number. Consider "
+"rownames.value= instead."
+msgstr "。 rownames参数为单一列名或单一数值。请考虑使用`rownames.values=`。"
+
+msgid ""
+"length(rownames)==0 but should be a single column name or number, or NULL"
+msgstr ""
+"行名长度为零，`length(rownames)==0`，但应该为单一列名，单一数值，或NULL"
+
+msgid "rownames is TRUE but key has multiple columns"
+msgstr "rownames是TRUE但key不只一个列"
+
+msgid "; taking first column x[,1] as rownames"
+msgstr "； 取第一列, `column x[,1]`, 为rownames"
+
+msgid "'"
+msgstr "'"
+
+msgid "' is not a column of x"
+msgstr "' 不是x的一个列"
+
+msgid "as.integer(rownames)=="
+msgstr "as.integer(rownames)=="
+
+msgid "]."
+msgstr "]."
+
+msgid "length(rownames.value)=="
+msgstr "length(rownames.value)=="
+
+msgid "but should be nrow(x)=="
+msgstr "但应该是nrow(x)=="
+
+msgid ""
+"When i is a matrix in DT[i]<-value syntax, it doesn't make sense to provide j"
+msgstr "当i以`DT[i]<-value`的形式出现，不需要提供j"
+
+msgid "j must be an atomic vector, see ?is.atomic"
+msgstr "j必须是原子向量，请参考 ?is.atomic"
+
+msgid "NA in j"
+msgstr "j里有NA"
+
+msgid "j must be vector of column name or positions"
+msgstr "j 必须是列名(column name)或列位(column position)的向量"
+
+msgid ""
+"Attempt to assign to column position greater than ncol(x). Create the column "
+"by name, instead. This logic intends to catch (most likely) user errors."
+msgstr ""
+"试图指定至比ncol(x)还大的列位(column position)。请指定至列名(column name)。一"
+"般来说用列名取代列位能解决大部分错误。"
+
+msgid ""
+"data.table inherits from data.frame (from v1.5), but this data.table does "
+"not. Has it been created manually (e.g. by using 'structure' rather than "
+"'data.table') or saved to disk using a prior version of data.table?"
+msgstr ""
+"data.table继承自data.frame(v1.5)，但这个data.table并不是。请检查这个data."
+"table是不是手动创建的（可能创建时使用了`structure()`而非`data.table()`),或者"
+"是不是使用了更早的data.table版本创建后存到硬盘了。"
+
+msgid "attempting to assign invalid object to dimnames of a data.table"
+msgstr "试图指定无效对象给data.table的维度名(dimnames)"
+
+msgid "data.tables do not have rownames"
+msgstr "data.tables没有rownames"
+
+msgid "Can't assign"
+msgstr "无法指定"
+
+msgid "colnames to a"
+msgstr "列名为一个"
+
+msgid "-column data.table"
+msgstr "-列 data.table"
+
+msgid "'subset' must evaluate to logical"
+msgstr "'subset' 必须为logical"
+
+msgid "Argument 'invert' must be logical TRUE/FALSE"
+msgstr " 'invert' 的参数是逻辑值，必须是 TRUE/FALSE"
+
+msgid "x argument must be a data.table"
+msgstr "参数 x 必须是一个 data.table"
+
+msgid "group length is 0 but data nrow > 0"
+msgstr "分组长度为0，但 data nrow > 0"
+
+msgid ""
+"passing 'f' argument together with 'by' is not allowed, use 'by' when split "
+"by column in data.table and 'f' when split by external factor"
+msgstr ""
+"不可同时指定参数 'f' 和参数 'by' ，当利用 data.table的纵列进行数据分割时,请使"
+"用参数 'by'；当利用外部因子进行数据分割时，请使用参数 'f'"
+
+msgid "Either 'by' or 'f' argument must be supplied"
+msgstr "必须提供参数 'by' 或参数 'f'"
+
+msgid "Column '.ll.tech.split' is reserved for split.data.table processing"
+msgstr "为 split.data.table 进程，纵列 '.ll.tech.split' 被保存"
+
+msgid "Column '.nm.tech.split' is reserved for split.data.table processing"
+msgstr "为 split.data.table 进程，纵列 '.nm.tech.split' 被保存"
+
+msgid "Argument 'by' must refer to column names in x"
+msgstr "参数 'by' 只适用于 x 中的列名"
+
+msgid ""
+"Argument 'by' must refer only to atomic-type columns, but the following "
+"columns are non-atomic:"
+msgstr "参数 'by' 只适用于原子类型的纵列，但现在关联的纵列不是原子类型"
+
+msgid ""
+"x is not a data.table. Shallow copy is a copy of the vector of column "
+"pointers (only), so is only meaningful for data.table"
+msgstr ""
+"浅拷贝（shallow copy）只是列指针向量的拷贝，因此仅对 data.table 有意义，而 x "
+"不是 data.table"
+
+msgid "setalloccol attempting to modify `*tmp*`"
+msgstr "setalloccol 试图修改 '*tmp*'"
+
+msgid ""
+"Input is a length=1 logical that points to the same address as R's global "
+"value. Therefore the attribute has not been set by reference, rather on a "
+"copy. You will need to assign the result back to a variable. See issue #1281."
+msgstr ""
+"输入值是一个指向与R全局值相同位置的长度为1的逻辑值。因此，该属性是通过副本，"
+"而不是reference 的形式设置。您需要将结果分配回一个变量，参看 issue #1281"
+
+msgid "x is not a data.table or data.frame"
+msgstr "x 不是 data.table 或 data.frame."
+
+msgid "x has"
+msgstr "x 有"
+
+msgid "columns but its names are length"
+msgstr " 列，但其列名的数为 "
+
+msgid "Passed a vector of type '"
+msgstr "传递了一个向量，向量类型是；"
+
+msgid "'. Needs to be type 'character'."
+msgstr ". 需要是 'character' 类型."
+
+msgid "names to a"
+msgstr "命名"
+
+msgid "column data.table"
+msgstr "data.table 的纵列"
+
+msgid "'new' is not a character vector or a function"
+msgstr "'new' 既不是特征向量也不是 function"
+
+msgid "NA in 'new' at positions"
+msgstr "在 'new' 中有NA值"
+
+msgid "Some duplicates exist in 'old':"
+msgstr "在'old' 中存在重复名称"
+
+msgid "'old' is type"
+msgstr "'old' 的类型是"
+
+msgid "but should be integer, double or character"
+msgstr "应该为整型,浮点型或者字符型"
+
+msgid "'old' is length"
+msgstr "'old' 长度为"
+
+msgid "but 'new' is length"
+msgstr "'new' 的长度为"
+
+msgid "NA (or out of bounds) in 'old' at positions"
+msgstr "NA(或超出界限)出现在'old' 的位置"
+
+msgid "of 'old' is '"
+msgstr "是"
+
+msgid ""
+"' which appears several times in column names. Just the first will be "
+"changed. There are"
+msgstr "在列名中重复出现,仅第一个会改动，如下:"
+
+msgid "other items in old that are also duplicated in column names."
+msgstr "old中的其他项在列名中出现重复"
+
+msgid "Items of 'old' not found in column names:"
+msgstr "在列名中未找到 'old' 有关项"
+
+msgid ". Consider skip_absent=TRUE."
+msgstr "尝试 skip_absent=TRUE"
+
+msgid "Internal error: length(i)!=length(new)"
+msgstr "内部错误:length(i)!=length(new)"
+
+msgid "x has some duplicated column name(s):"
+msgstr "x 有多个重复列名:"
+
+msgid ". Please remove or rename the duplicate(s) and try again."
+msgstr "请移除或者重命名重复项并重试"
+
+msgid "Input is"
+msgstr "输入为"
+
+msgid "but should be a plain list of items to be stacked"
+msgstr "应该叠加普通列表项"
+
+msgid ""
+"idcol must be a logical or character vector of length 1. If logical TRUE the "
+"id column will named '.id'."
+msgstr ""
+"idcol必须为逻辑型向量或长度为1的字符型向量.如果逻辑值为TRUEid 列会命名为'.id'"
+
+msgid "use.names=NA invalid"
+msgstr "use.names=NA 无效赋值"
+
+msgid ""
+"use.names='check' cannot be used explicitly because the value 'check' is new "
+"in v1.12.2 and subject to change. It is just meant to convey default "
+"behavior. See ?rbindlist."
+msgstr ""
+"请勿直接使用use.names='check'，因为值'check'为新增在v1.12.2中后续有所变化，仅"
+"用表示默认模式详见 ?rbindlist"
+
+msgid ""
+"Check that is.data.table(DT) == TRUE. Otherwise, := and `:=`(...) are "
+"defined for use in j, once only and in particular ways. See help(\":=\")."
+msgstr ""
+"检查是否is.data.table(DT) == TRUE,否则,:= and `:=`(...) 为被界定在j使用，仅一"
+"次以特别的方式使用,详见help(\":=\")"
+
+msgid ""
+"setDF only accepts data.table, data.frame or list of equal length as input"
+msgstr "setDF仅允许data.table，data.frame或者同样长度的列表作为输入"
+
+msgid "rownames contains duplicates"
+msgstr "行名含有重复"
+
+msgid "rownames incorrect length; expected"
+msgstr "行名长度不正确;需要"
+
+msgid "names, got"
+msgstr "名字,用"
+
+msgid "All elements in argument 'x' to 'setDF' must be of same length"
+msgstr "'setDF'中的参数'x'的所有元素必须同等长度"
+
+msgid "Cannot find symbol"
+msgstr "无法找到符号"
+
+msgid "Cannot convert '"
+msgstr "无法转换'"
+
+msgid ""
+"' to data.table by reference because binding is locked. It is very likely "
+"that '"
+msgstr "' 为引用形式的 data.table，因为绑定被锁定了。很有可能 '"
+
+msgid ""
+"' resides within a package (or an environment) that is locked to prevent "
+"modifying its variable bindings. Try copying the object to your current "
+"environment, ex: var <- copy(var) and then using setDT again."
+msgstr ""
+"' 存在于一个被锁定的包（或环境）中导致无法修改其绑定的变量。可以尝试复制对象"
+"（object）到你的现有环境，如：var <- copy(var) 然后再使用 setDT。"
+
+msgid "Some columns are a multi-column type (such as a matrix column):"
+msgstr "某些列是多重列类型（如矩阵列）："
+
+msgid ""
+". setDT will retain these columns as-is but subsequent operations like "
+"grouping and joining may fail. Please consider as.data.table() instead which "
+"will create a new column for each embedded column."
+msgstr ""
+"。setDT 会原样保留这些列但后续的操作如编组（grouping）和联接（joining）可能会"
+"失败。请考虑使用 as.data.table() 因为它会为每个内嵌列建立一个新列。"
+
+msgid "Column"
+msgstr "列"
+
+msgid ""
+"is of POSIXlt type. Please convert it to POSIXct using as.POSIXct and run "
+"setDT again. We do not recommend use of POSIXlt at all because it uses 40 "
+"bytes to store one date."
+msgstr ""
+"属于 POSIXlt 类型。请使用 as.POSIXct 转换为 POSIXct 并再次执行setDT。我们非常"
+"不推荐使用 POSIXlt 因为它要用 40 字节来存储一个日期。"
+
+msgid ""
+"All elements in argument 'x' to 'setDT' must be of same length, but the "
+"profile of input lengths (length:frequency) is:"
+msgstr ""
+"'setDT' 的参数 'x' 中所有的元素都必须是同一长度，但输入长度的概况（长度"
+"（length）：频率（frequency））是："
+
+msgid "%s:%d"
+msgstr "%s:%d"
+
+msgid "The first entry with fewer than"
+msgstr "第一个长度少于"
+
+msgid "entries is"
+msgstr "的输入项是"
+
+msgid ""
+"Argument 'x' to 'setDT' should be a 'list', 'data.frame' or 'data.table'"
+msgstr ""
+"'setDT' 参数 'x' 应为一个列表（'list'），数据框（'data.frame'）或 'data."
+"table'"
+
+msgid "Item '"
+msgstr "项 '"
+
+msgid "' not found in names of input list"
+msgstr "' 不存在于输入列表的子项名中"
+
+msgid "'prefix' must be NULL or a character vector of length 1."
+msgstr "'prefix' 必须为 空（NULL）或者长度为 1 的字符向量。"
+
+msgid "x is a single vector, non-NULL 'cols' doesn't make sense."
+msgstr "x 是单个向量，非空的 'cols' 没有意义。"
+
+msgid "x is a list, 'cols' cannot be 0-length."
+msgstr "x 是一个列表（list），'cols' 长度不能为0。"
+
+msgid "RHS of"
+msgstr "右手侧（RHS）"
+
+msgid "is length"
+msgstr "长度为"
+
+msgid "which is not 1 or nrow ("
+msgstr "其非 1 或 总行数 nrow ("
+
+msgid ""
+"). For robustness, no recycling is allowed (other than of length 1 RHS). "
+"Consider %in% instead."
+msgstr ""
+")。考虑到程序的稳健性，只有在右侧元素长度为 1 的情况下，我们才会对之进行循"
+"环。考虑改用 %in% 。"
+
+msgid ""
+"Internal error in .isFastSubsettable. Please report to data.table developers"
+msgstr ".isFastSubsettable 产生了内部错误。请向 data.table 开发者报告"
+
+msgid ""
+"'on' argument should be a named atomic vector of column names indicating "
+"which columns in 'i' should be joined with which columns in 'x'."
+msgstr ""
+"'on' 参数应为一个有子项名字的原子列名向量，指明'i' 中的哪些列应与 'x' 中的哪"
+"些列联接。"
+
+msgid "Found more than one operator in one 'on' statement:"
+msgstr "在一个 'on' 语句中出现了多于一个的操作符（operator）："
+
+msgid ". Please specify a single operator."
+msgstr "。请指定单个操作符。"
+
+msgid "'on' contains no column name:"
+msgstr "'on' 中没有列名："
+
+msgid ". Each 'on' clause must contain one or two column names."
+msgstr "。每个'on' 子句必须包含一个或两个列名。"
+
+msgid "'on' contains more than 2 column names:"
+msgstr "'on' 包含了超过两个列名："
+
+msgid "Invalid operators"
+msgstr "无效的操作符"
+
+msgid ". Only allowed operators are"
+msgstr "。只有这些操作符是有效的"
+
+msgid "."
+msgstr "."
+
+msgid "There is no package %s in provided repository."
+msgstr "所提供的资料库中不含包%s"
+
+msgid "'fromLast' must be TRUE or FALSE"
+msgstr "'fromLast' 必须为 TRUE 或 FALSE"
+
+msgid "x must be an atomic vector or data.frames/data.tables"
+msgstr "x 必须是原子向量或data.frame/data.table"
+
+msgid "Using '"
+msgstr "使用 '"
+
+msgid "' as value column. Use 'value.var' to override"
+msgstr "' 作为 value 列。可使用 'value.var' 修改"
+
+msgid "The dcast generic in data.table has been passed a"
+msgstr "data.table 中的 dcast 泛型函数被传递了"
+
+msgid ""
+", but data.table::dcast currently only has a method for data.tables. Please "
+"confirm your input is a data.table, with setDT("
+msgstr ""
+"，但目前 data.table::dcast 仅提供了针对 data.table 的方法。您可通过如下两种方"
+"法确保您的输入为一个 data.table对象，即setDT("
+
+msgid ") or as.data.table("
+msgstr ") 或 as.data.table("
+
+msgid ""
+"). If you intend to use a reshape2::dcast, try installing that package "
+"first, but do note that reshape2 is deprecated and you should be migrating "
+"your code away from using it."
+msgstr ""
+")。若您想使用reshape2::dcast，尝试先安装reshape2。但请注意reshape2已经不推荐"
+"使用，您应修改您的代码以不再使用它。"
+
+msgid ""
+"and will attempt to redirect to the reshape2::dcast; please note that "
+"reshape2 is deprecated, and this redirection is now deprecated as well. "
+"Please do this redirection yourself like reshape2::dcast("
+msgstr ""
+"，将尝试重定向到reshape2::dcast。请注意reshape2已经不推荐使用，故该重定向目前"
+"也不推荐使用。请手动执行该重定向，如reshape2::dcast("
+
+msgid "). In the next version, this warning will become an error."
+msgstr ")。在下一个版本中，此警告将变成为错误。"
+
+msgid ""
+"Invalid formula. Cast formula should be of the form LHS ~ RHS, for e.g., a + "
+"b ~ c."
+msgstr "无效的公式。所转换的公式的形式应为LHS ~ RHS，如a + b ~ c。"
+
+msgid "data.table to cast must have unique column names"
+msgstr "要转换的data.table必须具有唯一的列名"
+
+msgid "value.var values ["
+msgstr "value.var 的值 ["
+
+msgid "] are not found in 'data'."
+msgstr "] 无法在 'data' 中找到"
+
+msgid ""
+"When 'fun.aggregate' and 'value.var' are both lists, 'value.var' must be "
+"either of length =1 or =length(fun.aggregate)."
+msgstr ""
+"当 'fun.aggregate' 和 'value.var' 同为 list时, 'value.var' 的长度必须为 1 或 "
+"length(fun.aggregate)。"
+
+msgid "'data' must be a data.table."
+msgstr "'data' 必须为 data.table"
+
+msgid "'drop' must be logical TRUE/FALSE"
+msgstr "'drop' 必须为逻辑 TRUE/FALSE"
+
+msgid "Column ["
+msgstr "列 ["
+
+msgid "] not found or of unknown type."
+msgstr "] 无法找到或其类型未知。"
+
+msgid "Columns specified in formula can not be of type list"
+msgstr "在formula中指定的列不应为列表类型"
+
+msgid "Can not cast an empty data.table"
+msgstr "无法转换一个空的data.table"
+
+msgid "Aggregate function missing, defaulting to 'length'"
+msgstr "聚合函数缺失，将默认采用'length'"
+
+msgid "Internal error -- empty rhsnames in dcast; please report"
+msgstr "内部错误：dcast 中 rhsnames 为空；请报告"
+
+msgid "The melt generic in data.table has been passed a"
+msgstr "data.table 中的 melt 泛型函数被传递了"
+
+msgid ""
+", but data.table::melt currently only has a method for data.tables. Please "
+"confirm your input is a data.table, with setDT("
+msgstr ""
+"，然而 data.table::melt 当前只支持输入 data.table 对象。请确保输入的是一个  "
+"data.table 对象，可以用 setDT("
+
+msgid ""
+"). If you intend to use a method from reshape2, try installing that package "
+"first, but do note that reshape2 is deprecated and you should be migrating "
+"your code away from using it."
+msgstr ""
+")。如果确实要使用 reshape2 中的方法，首先要安装这个包。需要注意，reshape2 已"
+"经弃用，你应该将代码迁移并且不再使用它。"
+
+msgid ""
+"and will attempt to redirect to the relevant reshape2 method; please note "
+"that reshape2 is deprecated, and this redirection is now deprecated as well. "
+"To continue using melt methods from reshape2 while both libraries are "
+"attached, e.g. melt.list, you can prepend the namespace like reshape2::melt("
+msgstr ""
+"即将转向到 reshape2 中的相关方法；请注意 reshape2 已经弃用，这个转向也已经弃"
+"用。如果要在 data.table 和 reshape2 同时附着的情况下继续使用 reshape2 中的 "
+"melt 方法，（例如 melt.list），你可以把命名空间写在函数名称前面，例如 "
+"reshape2::melt("
+
+msgid "Input patterns must be of type character."
+msgstr "输入的 patterns 必须是字符类型。"
+
+msgid "'data' must be a data.table"
+msgstr "'data' 必须是一个 data.table"
+
+msgid "'value.name' provided in both 'measure.vars'"
+msgstr "'value.name' 同时出现在了 'measure.vars'"
+
+msgid "and 'value.name argument'; value provided in"
+msgstr "和 'value.name' 参数中；'measure.vars' 中的值"
+
+msgid "'measure.vars' is given precedence."
+msgstr "将被优先使用。"
+
+msgid "Please provide a name to each element of 'measure.vars'."
+msgstr "请为 'measure.vars' 中的每个元素提供一个名称。"
+
+msgid ""
+"y and x must both be data.tables. Use `setDT()` to convert list/data.frames "
+"to data.tables by reference or as.data.table() to convert to data.tables by "
+"copying."
+msgstr ""
+"y 和 x 必须都是 data.table 对象。用 `setDT()` 可以把列表/数据框引用转换为  "
+"data.table，或者用 as.data.table() 进行复制转换。"
+
+msgid "maxgap must be a non-negative integer value of length 1"
+msgstr "maxgap 必须是一个长度为1的非负整数"
+
+msgid "minoverlap must be a positive integer value of length 1"
+msgstr "minoverlap 必须是一个长度为1的正整数"
+
+msgid "which must be a logical vector of length 1. Either TRUE/FALSE"
+msgstr "which 必须是一个长度为1的逻辑向量（TRUE/FALSE）"
+
+msgid "nomatch must either be NA or NULL"
+msgstr "nomatch 必须是 NA 或 NULL"
+
+msgid "maxgap and minoverlap arguments are not yet implemented."
+msgstr "maxgap 和 minoverlap 参数还未实现。"
+
+msgid ""
+"'y' must be keyed (i.e., sorted, and, marked as sorted). Call setkey(y, ...) "
+"first, see ?setkey. Also check the examples in ?foverlaps."
+msgstr ""
+"'y' 必须有主键（已经排序并且标记为已排序）。请先用 setkey(y, ...) 设置主键，"
+"可以参考 ?setkey 以及 ?foverlaps 中提供的例子。"
+
+msgid ""
+"'by.x' and 'by.y' should contain at least two column names (or numbers) each "
+"- corresponding to 'start' and 'end' points of intervals. Please see ?"
+"foverlaps and examples for more info."
+msgstr ""
+"'by.x' 和 'by.y' 每个应当包含至少两个列名（或序号），分别对应区间的起始点 "
+"'start' 和 结束点 'end'。请参考 ?foverlaps 以及提供的例子。"
+
+msgid ""
+"Invalid numeric value for 'by.x'; it should be a vector with values 1 <= by."
+"x <= length(x)"
+msgstr ""
+"无效的 'by.x' 数值，应该是一个向量，其中的值满足 1 <= by.x <= length(x)"
+
+msgid ""
+"Invalid numeric value for 'by.y'; it should be a vector with values 1 <= by."
+"y <= length(y)"
+msgstr "无效的 'by.y' 数值，应当满足 1 <= by.y <= length(y)"
+
+msgid "A non-empty vector of column names or numbers is required for by.x"
+msgstr "'by.x' 必须是一个非空向量，包含列名或者序号"
+
+msgid "A non-empty vector of column names or numbers is required for by.y"
+msgstr "'by.y'应该是具有列名或者数字非空向量"
+
+msgid "The first"
+msgstr "首先"
+
+msgid "columns of y's key must be identical to the columns specified in by.y."
+msgstr "在'by.y'中，y键的列必须与指定的列相同"
+
+msgid "Elements listed in 'by.x' must be valid names in data.table 'x'"
+msgstr "对于data.table中的'X'，'by.x'中的元素必须是有效名称"
+
+msgid ""
+"Duplicate columns are not allowed in overlap joins. This may change in the "
+"future."
+msgstr "搭接部分不允许出现重复列。这个要求可能会在未来有所调整。"
+
+msgid ""
+"length(by.x) != length(by.y). Columns specified in by.x should correspond to "
+"columns specified in by.y and should be of same lengths."
+msgstr "当by.x的长度不等于by.y时。by.x中指定的列应该与by.y中指定的列等长。"
+
+msgid "y has some duplicated column name(s):"
+msgstr "y有重复的列名时："
+
+msgid ""
+"The last two columns in by.x should correspond to the 'start' and 'end' "
+"intervals in data.table 'x' and must be integer/numeric type."
+msgstr ""
+"'by.x'的最后两列应该与data.table 'x'中的'开始'与'结尾'的间隔对应且必须是整数/"
+"数字类型"
+
+msgid "NA values in data.table 'x' start column: '"
+msgstr "在data.table的X的初始列的NA值时：'"
+
+msgid ""
+"'. All rows with NA values in the range columns must be removed for "
+"foverlaps() to work."
+msgstr "'。必须删除范围列内的具有NA值的行，以（保证）foverlaps()起作用。"
+
+msgid "NA values in data.table 'x' end column: '"
+msgstr "在data.table的'X'的末尾列中NA值时："
+
+msgid "All entries in column"
+msgstr "列中所有条目"
+
+msgid "should be <= corresponding entries in column"
+msgstr "应该<=列中相应的条目"
+
+msgid "in data.table 'x'."
+msgstr "在data.table的'X'部分"
+
+msgid ""
+"The last two columns in by.y should correspond to the 'start' and 'end' "
+"intervals in data.table 'y' and must be integer/numeric type."
+msgstr ""
+"'by.y'的最后两列应该与data.table 'y'中的'开始'与'结尾'的间隔对应且必须是整数/"
+"数字类型"
+
+msgid "NA values in data.table 'y' start column: '"
+msgstr "NA值在data.table的'y'起始列时："
+
+msgid "NA values in data.table 'y' end column: '"
+msgstr "NA值在data.table的'y'尾列时："
+
+msgid "in data.table 'y'."
+msgstr "在data.table的'y'部分"
+
+msgid ""
+"Some interval cols are of type POSIXct while others are not. Please ensure "
+"all interval cols are (or are not) of POSIXct type"
+msgstr ""
+"一些间隔列的类型是POSIXct而有些不是。（因此）请确保所有间隔列都是或都不是"
+"POSIXct类型"
+
+msgid ""
+"POSIXct interval cols have mixed timezones. Overlaps are performed on the "
+"internal numerical representation of POSIXct objects (always in UTC epoch "
+"time), therefore printed values may give the impression that values don't "
+"overlap but their internal representations do Please ensure that POSIXct "
+"type interval cols have identical 'tzone' attributes to avoid confusion."
+msgstr ""
+"POSIXct间隔列有混合的时区。POSIXct对象（始终以UTC纪元时间为准）以内部数字表现"
+"形式展现为重叠，因此显示的值可能（使用户）留下'值是不会重叠，但其内部表现显示"
+"显示却重叠'的印象，（所以）请确保POSIXct类型的间隔列具有相同的'时区'属性以避"
+"免混乱。"
+
+msgid "Not yet implemented"
+msgstr "尚未实现"
+
+msgid "maxgap > minoverlap. maxgap will have no effect here."
+msgstr "最大空隙大于最小重叠，此处的最大空隙无效。"
+
+msgid "length(na.last) = 0"
+msgstr "na.last长度等于0"
+
+msgid "length(na.last) > 1, only the first element will be used"
+msgstr "当na.last长度大于1时，只会使用第一个元素"
+
+msgid "x is a single vector, non-NULL 'cols' doesn't make sense"
+msgstr "x是单个向量，非空的'cols'没有意义"
+
+msgid "x is a list, 'cols' can not be 0-length"
+msgstr "x是一个list, 'cols'不能为0长度"
+
+msgid "Used more than one of the arguments input=, file=, text= and cmd=."
+msgstr "使用了超过一个参数, 包括input=, file=, text= 和 cmd=."
+
+msgid "Argument 'encoding' must be 'unknown', 'UTF-8' or 'Latin-1'."
+msgstr "参数 'encoding' 必须为 'unknown', 'UTF-8' 或 'Latin-1'."
+
+msgid "'text=' is type"
+msgstr "'text=' 是类型"
+
+msgid "but must be character."
+msgstr "但必须是字符."
+
+msgid ""
+"input= must be a single character string containing a file name, a system "
+"command containing at least one space, a URL starting 'http[s]://', "
+"'ftp[s]://' or 'file://', or, the input data itself containing at least one "
+"\\n or \\r"
+msgstr ""
+"input= 必须是以下其中一种字符串: 一个文件名, 一个含有不少于一个空格的系统命"
+"令, 以'http[s]://','ftp[s]://' 或 'file://' 开头的URL, 或是本身就包含至少一个"
+"\\n 或 \\r的输入数据"
+
+msgid ""
+"input= contains no \\n or \\r, but starts with a space. Please remove the "
+"leading space, or use text=, file= or cmd="
+msgstr ""
+"input= 不包含 \\n 或 \\r, 但是开头有个空格请移除开头的空格, 或使用text=, "
+"file= 或 cmd="
+
+msgid ""
+"Input URL requires https:// connection for which fread() requires 'curl' "
+"package which cannot be found. Please install 'curl' using 'install."
+"packages('curl')'."
+msgstr ""
+"输入的URL要求 https:// 连接. 因而 fread() 要求 'curl' 包.请用 'install."
+"packages('curl')' 安装'curl'包."
+
+msgid "Taking input= as a system command ('"
+msgstr "正将 input= 当做系统命令 ('"
+
+msgid ""
+"') and a variable has been used in the expression passed to `input=`. Please "
+"use fread(cmd=...). There is a security concern if you are creating an app, "
+"and the app could have a malicious user, and the app is not running in a "
+"secure environment; e.g. the app is running as root. Please read item 5 in "
+"the NEWS file for v1.11.6 for more information and for the option to "
+"suppress this message."
+msgstr ""
+"') 同时一个变量也被传输到 `input=`.请使用fread(cmd=...).这是出于安全考虑. 试"
+"想你在开发一个app, 这个app可能有恶意用户, 同时这个app的运行环境不安全 (比如在"
+"root环境下运行).请阅读v1.11.6版本的NEWS file里面的item 5获取更多资讯, 或了解"
+"如何取消这个提示."
+
+msgid "File '"
+msgstr "文件'"
+
+msgid "' does not exist or is non-readable. getwd()=='"
+msgstr "' 不存在, 或不可读. getwd()=='"
+
+msgid "' is a directory. Not yet implemented."
+msgstr "'是个目录。还没有编程实现。"
+
+msgid "' has size 0. Returning a NULL"
+msgstr "' 的大小为0. 返回一个NULL"
+
+msgid "data.table"
+msgstr "data.table"
+
+msgid "data.frame"
+msgstr "data.frame"
+
+msgid ""
+"To read gz and bz2 files directly, fread() requires 'R.utils' package which "
+"cannot be found. Please install 'R.utils' using 'install.packages('R."
+"utils')'."
+msgstr ""
+"想要直接读取 gz 和 bz2 文件, fread() 需要 'R.utils' 包.请用 'install."
+"packages('R.utils')'安装 'R.utils' 包."
+
+msgid ""
+"'autostart' is now deprecated and ignored. Consider skip='string' or skip=n"
+msgstr ""
+"'autostart' 现在已经不再推荐使用且失效, 请考虑用 skip='string' 或 skip=n"
+
+msgid ""
+"colClasses is type 'logical' which is ok if all NA but it has some TRUE or "
+"FALSE values in it which is not allowed. Please consider the drop= or "
+"select= argument instead. See ?fread."
+msgstr ""
+"colClasses 只能在全部是NA的情况下为逻辑变量. 请考虑使用 drop= 或 select= . 更"
+"多信息请参照 ?fread"
+
+msgid "colClasses is not type list or character vector"
+msgstr "colClasses 不是列表 (list) 或字符向量 (character vector)"
+
+msgid ""
+"colClasses=\"NULL\" (quoted) is interpreted as colClasses=NULL (the default) "
+"as opposed to dropping every column."
+msgstr ""
+"colClasses=\"NULL\" (带引号) 应该被视为 colClasses=NULL (默认情况)而不是弃掉"
+"每个列"
+
+msgid ""
+"strip.white==TRUE (default) and \"\" is present in na.strings, so any number "
+"of spaces in string columns will already be read as <NA>."
+msgstr ""
+"na.strings 中包含 strip.white==TRUE (默认情况) 和 \"\", 因此(字符类型的)列中"
+"的空格会被当作 <NA>."
+
+msgid ""
+"Since strip.white=TRUE (default), use na.strings=\"\" to specify that any "
+"number of spaces in a string column should be read as <NA>."
+msgstr ""
+"因为 strip.white=TRUE (默认情况), 请使用 na.strings=\"\" 以使得(字符类型的)列"
+"中的空格会被当作 <NA>."
+
+msgid ""
+"But strip.white=FALSE. Use strip.white=TRUE (default) together with na."
+"strings=\"\" to turn any number of spaces in string columns into <NA>"
+msgstr ""
+"但是 strip.white=FALSE. 请使用 strip.white=TRUE (默认情况), 同时na.strings="
+"\"\", 以使得(字符类型的)列中的空格转成 <NA>."
+
+msgid ""
+"'data.table' relies on the package 'yaml' to parse the file header; please "
+"add this to your library with install.packages('yaml') and try again."
+msgstr ""
+"'data.table' 依赖 'yaml' 包来分析文件头 (header)请使用 install."
+"packages('yaml') 来安装然后再重试."
+
+msgid ""
+"Combining a search string as 'skip' and reading a YAML header may not work "
+"as expected -- currently,"
+msgstr ""
+"读取一个 YAML 文件头 (header) 的同时以 'skip' 为搜索字符可能会引起异常 -- 目"
+"前"
+
+msgid ""
+"reading will proceed to search for 'skip' from the beginning of the file, "
+"NOT from the end of"
+msgstr "读取会直接从文件的开头搜索 'skip', 而非从元数据 (metadata) "
+
+msgid ""
+"the metadata; please file an issue on GitHub if you'd like to see more "
+"intuitive behavior supported."
+msgstr "的尾部开始; 如果你希望更直观的功能, 请在 Github 上提交 issue."
+
+msgid "Encountered <"
+msgstr "遇到 <"
+
+msgid "..."
+msgstr "..."
+
+msgid "> at the first"
+msgstr "> 在第一个"
+
+msgid "unskipped line ("
+msgstr "非跳过的行 ("
+
+msgid "), which does not constitute the start to a valid YAML header"
+msgstr "), 它不含符合要求的 YAML header."
+
+msgid "(expecting something matching regex \""
+msgstr "需要符合正则 (regex) \""
+
+msgid "\"); please check your input and try again."
+msgstr "\"); 请检查你的输入然后重试."
+
+msgid ""
+"Reached the end of the file before finding a completion to the YAML header. "
+"A valid YAML header is bookended by lines matching"
+msgstr ""
+"到了文件的结尾, 还没发现 YAML header 的完结.一个有效的 YAML header 应该根据行"
+"匹配结尾."
+
+msgid "the regex \""
+msgstr "正则 \""
+
+msgid "\". Please double check the input file is a valid csvy."
+msgstr "从这里开始"
+
+msgid "User-supplied 'header' will override that found in metadata."
+msgstr "用户提供的'header'将覆盖元数据中的表头"
+
+msgid ""
+"User-supplied column names in 'col.names' will override those found in YAML "
+"metadata."
+msgstr "用户在“col.names”中提供的列名将覆盖在YAML元数据中找到的列名"
+
+msgid ""
+"colClasses dictated by user input and those read from YAML header are in "
+"conflict (specifically, for column"
+msgstr "用户输入指定的列类型和从YAML列名中读取的列类型发生冲突（特别是column"
+
+msgid "s"
+msgstr "s"
+
+msgid "["
+msgstr "["
+
+msgid "]); the proceeding assumes the user input was"
+msgstr "]); 该过程假定用户输入的是"
+
+msgid ""
+"an intentional override and will ignore the types implied by the YAML "
+"header; please exclude"
+msgstr "有意覆盖的，因此将忽略YAML表头所指示的列类型；请排除"
+
+msgid "these columns"
+msgstr "这些列"
+
+msgid "this column from colClasses if this was unintentional."
+msgstr "如果不想覆盖，请将这些列从colClasses中排除"
+
+msgid "User-supplied 'sep' will override that found in metadata."
+msgstr "用户提供的“sep”将覆盖元数据中的分隔符"
+
+msgid "User-supplied 'quote' will override that found in metadata."
+msgstr "用户提供的“quote”将覆盖元数据中的引号"
+
+msgid "User-supplied 'dec' will override that found in metadata."
+msgstr "用户提供的“dec”将覆盖元数据中的小数点分隔符"
+
+msgid "User-supplied 'na.strings' will override that found in metadata."
+msgstr "用户提供的“na.strings”将覆盖元数据中对默认值的预处理"
+
+msgid "Column '"
+msgstr "列"
+
+msgid "' was requested to be '"
+msgstr "被要求为"
+
+msgid "' but fread encountered the following"
+msgstr "但是fread遇到了以下问题"
+
+msgid "error"
+msgstr "错误"
+
+msgid "warning"
+msgstr "警告"
+
+msgid ":"
+msgstr ":"
+
+msgid "so the column has been left as type '"
+msgstr "所以该列已经被保存为类型"
+
+msgid ""
+"key argument of data.table() must be a character vector naming columns (NB: "
+"col.names are applied before this)"
+msgstr ""
+"data.table()的关键参数必须是字符向量命名的列（NB:col.names在这之前被使用过）"
+
+msgid ""
+"index argument of data.table() must be a character vector naming columns "
+"(NB: col.names are applied before this)"
+msgstr ""
+"data.table()的index参数必须是字符向量命名的列（NB:参数col.names在这之前被使用"
+"过）"
+
+msgid "dateTimeAs must be a single string"
+msgstr "dataTimeAs 必须是单个字符串"
+
+msgid "dateTimeAs must be 'ISO','squash','epoch' or 'write.csv'"
+msgstr "dateTimeAs 必须是 'ISO'，'squash'，'epoch' 或 'write.csv'"
+
+msgid "logicalAsInt has been renamed logical01. Use logical01 only, not both."
+msgstr ""
+"logicalAsInt 已重命名为 logical01。不要同时使用它们，仅使用 logical01。"
+
+msgid "x being coerced from class: matrix to data.table"
+msgstr "x 的类将强制从 matrix 转变为 data.table"
+
+msgid "Input has no columns; doing nothing."
+msgstr "输入没有列，不执行任何操作。"
+
+msgid "If you intended to overwrite the file at"
+msgstr "如果你打算覆盖文件"
+
+msgid "with an empty one, please use file.remove first."
+msgstr "为空文件，请先使用 file.remove。"
+
+msgid "Input has no columns; creating an empty file at '"
+msgstr "输入没有列，将创建一个空文件 '"
+
+msgid "' and exiting."
+msgstr "' 并退出。"
+
+msgid ""
+"'data.table' relies on the package 'yaml' to write the file header; please "
+"add this to your library with install.packages('yaml') and try again."
+msgstr ""
+"'data.table' 依赖于 'yaml' 包来写文件头；请运行 install.packages('yaml') 安"
+"装 'yaml' 包后再试。"
+
+msgid "Argument 'x' must be a data.table object"
+msgstr "'x' 参数必须是一个 data.table 对象"
+
+msgid ""
+"Argument 'by' must be a character vector of column names used in grouping."
+msgstr "'by' 参数必须是一个字符向量，向量的元素是列名，用于分组。"
+
+msgid "Argument 'id' must be a logical scalar."
+msgstr "'id' 参数必须是一个逻辑标量。"
+
+msgid ""
+"Argument 'x' is a 0-column data.table; no measure to apply grouping over."
+msgstr "'x' 参数是一个 0 列的 data.table；无法对其应用分组。"
+
+msgid "Input data.table must not contain duplicate column names."
+msgstr "作为输入的 data.table 对象不能含有重复的列名。"
+
+msgid "Argument 'by' must have unique column names for grouping."
+msgstr "'by' 参数用于分组，不可包含重复列名。"
+
+msgid "Argument 'sets' must be a list of character vectors."
+msgstr "'sets' 参数必须是一个字符向量的列表。"
+
+msgid ""
+"All columns used in 'sets' argument must be in 'by' too. Columns used in "
+"'sets' but not present in 'by':"
+msgstr ""
+"在 'sets' 参数中应用的所有列也必须在 'by' 中。当前 'sets' 包含而 'by' 中不含"
+"的列有："
+
+msgid ""
+"When using `id=TRUE` the 'x' data.table must not have a column named "
+"'grouping'."
+msgstr "当使用 `id=TRUE` 时，data.table 'x' 不能包含名为 'grouping' 的列。"
+
+msgid ""
+"Character vectors in 'sets' list must not have duplicated column names "
+"within a single grouping set."
+msgstr "在单个分组中，'sets' 列表中的字符串向量不能有重复的列名。"
+
+msgid ""
+"'sets' contains a duplicate (i.e., equivalent up to sorting) element at index"
+msgstr "'sets' 的索引含有重复的元素，在做排序时的作用是对等的"
+
+msgid ""
+"; as such, there will be duplicate rows in the output -- note that grouping "
+"by A,B and B,A will produce the same aggregations. Use "
+"`sets=unique(lapply(sets, sort))` to eliminate duplicates."
+msgstr ""
+"；同样的，输出中也会包含重复的行（注意按照A、B分组与按照B、A分组的结果是一样"
+"的。）使用 `sets=unique(lapply(sets, sort))` 来消除重复。"
+
+msgid ""
+"Expression passed to grouping sets function must not update by reference. "
+"Use ':=' on results of your grouping function."
+msgstr ""
+"传递给分组相关函数的表达式不能通过引用更新。请在你的分组函数返回的结果中使用 "
+"':=' 。"
+
+msgid ""
+"When using `id=TRUE` the 'j' expression must not evaluate to a column named "
+"'grouping'."
+msgstr "当 `id=TRUE` 时，'j' 表达式不能针对 'grouping' 列求值。"
+
+msgid ""
+"There exists duplicated column names in the results, ensure the column "
+"passed/evaluated in `j` and those in `by` are not overlapping."
+msgstr "结果中存在重复的列名，请确保 `j` 和 `by` 传递的列中没有发生重叠。"
+
+msgid ""
+"Using integer64 class columns require to have 'bit64' package installed."
+msgstr "要在列中使用 integer64 类，需要先安装 'bit64' 包。"
+
+msgid ""
+"'xts' class passed to %s function but 'xts' is not available, you should "
+"have 'xts' installed already"
+msgstr "'xts'类对象传递给了%s方程，但是'xts'包不可用。您应首先安装'xts'包"
+
+msgid "Argument 'sort' should be logical TRUE/FALSE"
+msgstr "参数 'sort' 应为逻辑值 TRUE 或 FALSE"
+
+msgid "Argument 'no.dups' should be logical TRUE/FALSE"
+msgstr "参数 'no.dups' 应为逻辑值 TRUE 或 FALSE"
+
+msgid "You are trying to join data.tables where"
+msgstr "你正在试图去联结data.table，其中"
+
+msgid "'x' and 'y' arguments are"
+msgstr "参数'x'和'y'是"
+
+msgid "'x' argument is"
+msgstr "参数'x'的值为"
+
+msgid "'y' argument is"
+msgstr "参数'y'的值为"
+
+msgid "0 columns data.table."
+msgstr "0列的data.table对象。"
+
+msgid "`by.x` and `by.y` must be of same length."
+msgstr "`by.x`和`by.y`必须是相同的长度。"
+
+msgid "Supplied both `by` and `by.x/by.y`. `by` argument will be ignored."
+msgstr "参数`by`和`by.x/by.y`都提供了值。参数`by`的值会被忽略。"
+
+msgid "A non-empty vector of column names are required for `by.x` and `by.y`."
+msgstr "`by.x`和`by.y`必须是非空的列名。"
+
+msgid "Elements listed in `by.x` must be valid column names in x."
+msgstr "`by.x`中的列名必须是x的有效列。"
+
+msgid "Elements listed in `by.y` must be valid column names in y."
+msgstr "`by.y`中的列名必须是y的有效列。"
+
+msgid "A non-empty vector of column names for `by` is required."
+msgstr "`by`必须是非空的列名。"
+
+msgid "Elements listed in `by` must be valid column names in x and y"
+msgstr "`by`中的列名必须是x和y的有效列"
+
+msgid "column names"
+msgstr "列名"
+
+msgid "are duplicated in the result"
+msgstr "在结果中是重复的"
+
+msgid "IN DEVELOPMENT built"
+msgstr "在开发版本中"
+
+msgid "using"
+msgstr "使用"
+
+msgid "threads (see ?getDTthreads).  Latest news: r-datatable.com"
+msgstr "线程（请参阅?getDTthreads）。最新的消息：r-datatable.com"
+
+msgid "TRANSLATION CHECK"
+msgstr "翻译检查"
+
+msgid ""
+"**********\n"
+"Running data.table in English; package support is available in English only. "
+"When searching for online help, be sure to also check for the English error "
+"message. This can be obtained by looking at the po/R-<locale>.po and po/"
+"<locale>.po files in the package source, where the native language and "
+"English error messages can be found side-by-side\n"
+"**********"
+msgstr ""
+"**********\n"
+"用中文运行data.table。软件包只提供英语支持。当在在线搜索帮助时，也要确保检查"
+"英语错误信息。这个可以通过查看软件包源文件中的po/R-zh_CN.po和po/zh_CN.po文件"
+"获得，这个文件可以并排找到母语和英语错误信息。\n"
+"**********"
+
+msgid ""
+"**********\n"
+"This development version of data.table was built more than 4 weeks ago. "
+"Please update: data.table::update.dev.pkg()\n"
+"**********"
+msgstr ""
+"**********这个data.table的开发版本是在4个多星期之前构建的。请更新版本：data."
+"table::update.dev.pkg()\n"
+"**********"
+
+msgid ""
+"**********\n"
+"This installation of data.table has not detected OpenMP support. It should "
+"still work but in single-threaded mode."
+msgstr ""
+"**********\n"
+"data.table的安装未检测到OpenMP支持。在单线程模式下应该仍能运行"
+
+msgid ""
+"If this is a Mac, please ensure you are using R>=3.4.0 and have followed our "
+"Mac instructions here: https://github.com/Rdatatable/data.table/wiki/"
+"Installation."
+msgstr ""
+"如果是Mac，请确保您使用的R版本>=3.4.0，同时遵循了我们Mac上的安装说明："
+"https://github.com/Rdatatable/data.table/wiki/Installation。"
+
+msgid ""
+"This warning message should not occur on Windows or Linux. If it does, "
+"please file a GitHub issue.\n"
+"**********"
+msgstr ""
+"在Windows或Linux上不应出现此警告消息。如果有，请提交给GitHub issue。\n"
+"**********"
+
+msgid ""
+"The option 'datatable.nomatch' is being used and is not set to the default "
+"NA. This option is still honored for now but will be deprecated in future. "
+"Please see NEWS for 1.12.4 for detailed information and motivation. To "
+"specify inner join, please specify `nomatch=NULL` explicitly in your calls "
+"rather than changing the default using this option."
+msgstr ""
+"这个选项'datatable.nomatch'正在被使用，没有被设置为默认值NA。该选项目前仍被使"
+"用，但在未来不会被使用。相关的详细信息和动机，请参阅1.12.4的信息。要指定内部"
+"连接，请在调用中明确指定`nomatch = NULL`，而不要使用此选项更改默认值。"
+
+msgid "The datatable."
+msgstr "datatable"
+
+msgid "version ("
+msgstr "版本("
+
+msgid ") does not match the package ("
+msgstr ")和包不匹配 ("
+
+msgid "). Please close all R sessions to release the old"
+msgstr ").请关闭所有R会话以释放旧版本"
+
+msgid ""
+"and reinstall data.table in a fresh R session. The root cause is that R's "
+"package installer can in some unconfirmed circumstances leave a package in a "
+"state that is apparently functional but where new R code is calling old C "
+"code silently: https://bugs.r-project.org/bugzilla/show_bug.cgi?id=17478. "
+"Once a package is in this mismatch state it may produce wrong results "
+"silently until you next upgrade the package. Please help by adding precise "
+"circumstances to 17478 to move the status to confirmed. This mismatch "
+"between R and C code can happen with any package not just data.table. It is "
+"just that data.table has added this check."
+msgstr ""
+"并在全新的R会话中重新安装data.table。根本原因是R包安装程序可能在某些未经确认"
+"的条件下将包置于显然可以正常工作的状态，但是新的R代码正在默默地调用旧的C代"
+"码：https://bugs.r-project.org/bugzilla/show_bug.cgi?id=17478。一旦安装包处于"
+"这不匹配的状态下，在您下次升级程序包之前，它可能会默默地产生错误的结果请提交"
+"具体的情况至17478协助我们确认这个Bug。R和C代码之间的这种不匹配可能发生在任何"
+"包中，而不仅仅是在data.table中。只是data.table添加了这个检查"
+
+msgid "This is R"
+msgstr "这是R"
+
+msgid "but data.table has been installed using R"
+msgstr "但是data.table安装在R"
+
+msgid ". The major version must match. Please reinstall data.table."
+msgstr "。主要的版本必须匹配。 请重新安装data.table"
+
+msgid ""
+"Option 'datatable.old.bywithoutby' has been removed as warned for 2 years. "
+"It is now ignored. Please use by=.EACHI instead and stop using this option."
+msgstr ""
+"选项'datatable.old.bywithoutby'已经被移除，警告了2年。它现在被忽略。 请改用"
+"by = .EACHI，然后停止使用这个选项。"
+
+msgid "Unexpected base R behaviour: list(x) has copied x"
+msgstr "意外的base R行为：list(x)已经复制了x"
+
+msgid "Unexpected base R behaviour: names<- has copied column contents"
+msgstr "意外的base R行为：names<- 已复制列内容"
+
+msgid ""
+"Unexpected base R behaviour: DF[2,2]<- did not copy column 2 which was "
+"assigned to"
+msgstr "意外的base R行为：DF[2,2]<- 没有复制第二列它被分配给"
+
+msgid ""
+"Unexpected base R behaviour: DF[2,2]<- copied the first column which was not "
+"assigned to, too"
+msgstr "意外的base R行为：DF[2,2]<-复制了第一列的内容，它也没有被分配给"
+
+msgid "Unexpected base R behaviour: DF[2,2]<- has not copied address(DF)"
+msgstr "意外的base R行为：DF[2,2]<- 还没有复制address(DF)"
+
+msgid ""
+"Reminder to data.table developers: don't use getRversion() internally. Add a "
+"behaviour test to .onLoad instead."
+msgstr ""
+"提醒data.table开发人员：请勿在内部使用getRversion()。将行为测试添加到.onLoad"
+
+msgid "Provide either threads= or percent= but not both"
+msgstr "提供threads=或percent=，但不能两者都提供"
+
+msgid "percent= is provided but is length"
+msgstr "提供了percent =，但为长度"
+
+msgid "percent=="
+msgstr "percent=="
+
+msgid "but should be a number between 2 and 100"
+msgstr "但应为2到100之间的数字"
+
+msgid "Valid options for col.names are 'auto', 'top', and 'none'"
+msgstr "对col.names有效的参数为'auto', 'top', and 'none'"
+
+msgid "Column classes will be suppressed when col.names is 'none'"
+msgstr "当col.names为'none'时，列的类型将被抑制"
+
+msgid ""
+"Internal structure doesn't seem to be a list. Possibly corrupt data.table."
+msgstr "内部类型可能不是一个列表，该操作可能会损坏data.table"
+
+msgid ""
+"x may no longer be the character name of the data.table. The possibility was "
+"undocumented and has been removed."
+msgstr "x可能不再是data.table的名字。 该变化不被记录并且已经被删除"
+
+msgid ""
+"key(x)<-value is deprecated and not supported. Please change to use setkey() "
+"with perhaps copy(). Has been warning since 2012 and will be an error in "
+"future."
+msgstr ""
+"key(x)<-value 已经废弃，不再支持。请使用setkey(), 也许您需要配套使用copy()自"
+"2012年来就警告将弃用原用法，将来该用法将报错"
+
+msgid "x is not a data.table"
+msgstr "x不是一个data.table"
+
+msgid ""
+"cols is not a character vector. Please see further information in ?setkey."
+msgstr "列不是一个字符类型的向量. 更多信息请查看?setkey."
+
+msgid ""
+"Setting a physical key on .SD is reserved for possible future use; to modify "
+"the original data's order by group. Try setindex() instead. Or, set*(copy(."
+"SD)) as a (slow) last resort."
+msgstr ""
+"在.SD设置一个物理的键的功能被保留，以备未来的需求; 如需通过分组修改原数据顺序"
+"请使用setindex(), 或者set*(copy(.SD))作为最终(该方式缓慢)的方法"
+
+msgid ""
+"cols is a character vector of zero length. Removed the key, but use NULL "
+"instead, or wrap with suppressWarnings() to avoid this warning."
+msgstr ""
+"列为一个长度为0的字符串向量，请删除键值并使用NULL, 或者使用suppressWarnings()"
+"来避免警告"
+
+msgid "cols is the empty string. Use NULL to remove the key."
+msgstr "列为一个空字符串，请使用NULL以删除键值。"
+
+msgid "cols contains some blanks."
+msgstr "列中包含空白"
+
+msgid "some columns are not in the data.table:"
+msgstr "一些列不在data.table中"
+
+msgid ""
+"x contains a column called '.xi'. Conflicts with internal use by data.table."
+msgstr "x包含一个叫做'.xi'的列。这与data.table中使用的内部名称冲突"
+
+msgid "' is type '"
+msgstr "是类型"
+
+msgid "' which is not supported as a key column type, currently."
+msgstr "目前不是一种被支持的列类型"
+
+msgid ""
+"Internal error. 'cols' should be character at this point in setkey; please "
+"report."
+msgstr "内部错误： 目前在setkey中，'cols'应该是字符类型, 请报告"
+
+msgid "Internal error: index '"
+msgstr "内部错误：索引"
+
+msgid "' exists but is invalid"
+msgstr "存在但无效"
+
+msgid ""
+"Use 'if (length(o <- forderv(DT,by))) ...' for efficiency in one step, so "
+"you have o as well if not sorted."
+msgstr ""
+"请使用'if (length(o <- forderv(DT,by))) ...' , 以便在一步中拥有较好的效率，同"
+"时如果你还未排序，你也获得了变量o"
+
+msgid "x is vector but 'by' is supplied"
+msgstr "x是一个向量， 但是参数'by'被提供"
+
+msgid "x is a single vector, non-NULL 'by' doesn't make sense"
+msgstr "x是一个单向量，非NULL的'by'参数不合理"
+
+msgid "Attempting to order a 0-column data.table or data.frame."
+msgstr "你正在试图对一个0列的data.table或者data.frame排序"
+
+msgid ""
+"The first item passed to [f]order is a plain list but there are more items. "
+"It should be a data.table or data.frame."
+msgstr ""
+"传递给[f]order的第一个变量是一个简单的列表, 但此处有更多的项它需要是一个data."
+"table或者data.frame"
+
+msgid "Internal code should not be being called on type double"
+msgstr "内部代码不应被调用给双精度类型"
+
+msgid ""
+"Input is not a vector of type double. New parallel sort has only been done "
+"for double vectors so far. Using one thread."
+msgstr ""
+"输入一个并非双精度类型的向量。目前新的并行排序方法仅可应用于双精确度向量。将"
+"使用单线程进行计算"
+
+msgid ""
+"New parallel sort has not been implemented for decreasing=TRUE so far. Using "
+"one thread."
+msgstr ""
+"目前新的并行排序方法尚无法在decreasing=TRUE的条件下使用。将使用单线程进行计"
+"算。"
+
+msgid ""
+"New parallel sort has not been implemented for vectors containing NA values "
+"so far. Using one thread."
+msgstr "目前新的并行排序方法尚无法用于包含缺失值的向量。将使用单线程。"
+
+msgid "x must be a data.frame or data.table"
+msgstr "x 必须为 data.frame 或 data.table"
+
+msgid "na.last must be logical TRUE/FALSE"
+msgstr "na.last 必须为逻辑 TRUE/FALSE"
+
+msgid ""
+"cols is not a character vector. Please see further information in ?setorder."
+msgstr "cols并非一个字符向量。请参考 ?setorder以获得更多信息。"
+
+msgid ""
+"cols is a character vector of zero length. Use NULL instead, or wrap with "
+"suppressWarnings() to avoid this warning."
+msgstr ""
+"cols为一长度为零的字符向量。请使用NULL代替，或将本函数使用suppressWarnings()"
+"包裹以阻止该警告。"
+
+msgid "' which is not supported for ordering currently."
+msgstr "'，该类型目前尚不支持排序。"
+
+msgid "'sorted' is TRUE but element"
+msgstr "'sorted' 为 TRUE 但元素"
+
+msgid "is non-atomic, which can't be sorted; try setting sorted = FALSE"
+msgstr "并非原子类型，无法排序。请尝试使用 sorted=FALSE"
+
+msgid ""
+"Cross product of elements provided to CJ() would result in %.0f rows which "
+"exceeds .Machine$integer.max == %d"
+msgstr "CJ()中元素的叉积将产生 %.0f 行，已超过 .Machine$integer.max == %d"
+
+msgid "x and y must both be data.tables"
+msgstr "x 和 y 均需为 data.table"
+
+msgid "length(by.x) != length(by.y)"
+msgstr "length(by.x) != length(by.y)"
+
+msgid "When x's column ('"
+msgstr "当 x 的列 ('"
+
+msgid "') is character, the corresponding column in y ('"
+msgstr "') 是字符，y 中相应的列 ('"
+
+msgid "') should be factor or character, but found incompatible type '"
+msgstr "') 应该是因子或字符，然而此类型并不兼容：'"
+
+msgid "') is factor, the corresponding column in y ('"
+msgstr "') 是因子，y 中相应的列 ('"
+
+msgid "') should be character or factor, but found incompatible type '"
+msgstr "') 应该是字符或因子，然而此类型并不兼容：'"
+
+msgid "') is integer or numeric, the corresponding column in y ('"
+msgstr "') 是整数或数值，y 中相应的列 ('"
+
+msgid "') can not be character or logical types, but found incompatible type '"
+msgstr "') 不能是字符或逻辑类型，然而此类型不兼容：'"
+
+msgid "argument 'all' should be logical of length one"
+msgstr "参数 'all' 应该是长度为 1 的逻辑型"
+
+msgid "x and y must have the same column names"
+msgstr "x 和 y 的列名必须相同"
+
+msgid "x and y must have the same column order"
+msgstr "x 和 y 的列顺序必须保持一致"
+
+msgid "unsupported column type"
+msgstr "不支持的列类型"
+
+msgid "found in x or y:"
+msgstr "存在于 x 或 y 中"
+
+msgid "of x is '"
+msgstr "对于 x ，是 '"
+
+msgid "' but the corresponding item of y is '"
+msgstr "' 然而 y 中对应的项是：'"
+
+msgid "None of the datasets should contain a column named '.seqn'"
+msgstr "所有的数据集都不应该包含名为 '.seqn' 的列"
+
+msgid "'target' and 'current' must both be data.tables"
+msgstr "'target' 和 'current' 都必须是 data.table"
+
+msgid "Internal error: ncol(current)==ncol(target) was checked above"
+msgstr "内部错误：ncol(current)==ncol(target) 之前已经检查"
+
+msgid "None of the datasets to compare should contain a column named '.seqn'"
+msgstr "所有参与比较的数据集都不应该包含名为 '.seqn' 的列"
+
+msgid ""
+"Datasets to compare with 'ignore.row.order' must not have unsupported column "
+"types:"
+msgstr "与 'ignore.row.order' 进行比较的数据集，不能存在不支持的列类型："
+
+msgid ""
+"Argument 'tolerance' was forced to lowest accepted value `sqrt(.Machine"
+"$double.eps)` from provided"
+msgstr ""
+"参数 'tolerance' 被强制设定为最低接受值 `sqrt(.Machine$double.eps)`，此值来自"
+"于："
+
+msgid ""
+"Duplicate rows in datasets, numeric columns and ignore.row.order cannot be "
+"used with non 0 tolerance argument"
+msgstr ""
+"数据集中的重复行、数字列和 ignore.row.order 都不能与非 0 的容差（tolerance）"
+"参数同时使用"
+
+msgid ""
+"Factor columns and ignore.row.order cannot be used with non 0 tolerance "
+"argument"
+msgstr "因子列和 ignore.row.order 都不能与非 0 的容差（tolerance）参数同时使用"
+
+msgid "Internal error: factor type mismatch should have been caught earlier"
+msgstr "内部错误：此时不匹配的因子类型应已被发现"
+
+msgid "argument 'fill' ignored, only make sense for type='const'"
+msgstr "参数 'fill' 将被忽略，因其仅当 type='const'时有意义"
+
+msgid "order.col='"
+msgstr "order.col='"
+
+msgid "' not a column name of info"
+msgstr "' 并非info的一个列名"
+
+msgid "data.table package is loaded. Unload or start a fresh R session."
+msgstr "data.table 包已被加载。请将其卸载或启动一个新的 R 会话。"
+
+msgid ""
+"script must end with '.Rraw'. If a file ending '.Rraw.bz2' exists, that will "
+"be found and used."
+msgstr ""
+"脚本文件名必须以 '.Rraw' 结尾。如果以 'Rraw.bz2' 结尾的文件存在，其也将被使"
+"用。"
+
+msgid "Neither %s nor %s exist in %s"
+msgstr "%3$s 中 %1$s 也 %2$s 不存在"
+
+msgid "Failed after test"
+msgstr "错误出现于测试"
+
+msgid "before the next test() call in"
+msgstr "后，先于下一调用test()于"
+
+msgid "out of"
+msgstr "总数为"
+
+msgid ". Search"
+msgstr ". 搜索"
+
+msgid "for test number"
+msgstr "以获得测试编号"
+
+msgid "Timings count mismatch:"
+msgstr "计时不一致:"
+
+msgid "vs"
+msgstr "vs"
+
+msgid "Test"
+msgstr "测试"
+
+msgid ""
+"is invalid: when error= is provided it does not make sense to pass y as well"
+msgstr "无效：当使用了error=，不应再输入y"
+
+msgid "Use started.at=proc.time() not Sys.time() (POSIXt and slow)"
+msgstr "使用started.at=proc.time()而非Sys.time() (返回POSIXt类型，处理较慢)"
+
+msgid "make.names='"
+msgstr "make.names='"
+
+msgid "' not found in names of input"
+msgstr "'不存在于输入的名字里"
+
+msgid "make.names="
+msgstr "make.names="
+
+msgid "is out of range [1,ncol="
+msgstr "不在以下区间[1,ncol="
+
+msgid "'names' must be TRUE/FALSE or a character vector."
+msgstr "'names'必须为TRUE/FALSE，或一个字符（character）向量。"
+
+msgid "'keep' should contain integer values between"
+msgstr "'keep'所含整数值应在区间"
+
+msgid "length(names) (="
+msgstr "length(names) (="
+
+msgid ") is not equal to length("
+msgstr ") 并不等于(="
+
+msgid ") (="
+msgstr ") (="
+
+msgid ")."
+msgstr ")."
+
+msgid "l not type list"
+msgstr "l并非列表（list）类型"
+
+msgid "Argument 'nan' must be length 1"
+msgstr "参数 'nan' 的长度必须为 1"
+
+msgid "Argument 'nan' must be NA or NaN"
+msgstr "参数 'nan' 必须为 NA 或 NaN"
+
+msgid "x not boolean"
+msgstr "x并非布尔值"
+
+msgid ""
+"Some columns are type 'integer64' but package bit64 is not installed. Those "
+"columns will print as strange looking floating point data. There is no need "
+"to reload the data. Simply install.packages('bit64') to obtain the integer64 "
+"print method and print the data again."
+msgstr ""
+"有些列的类型是64 位整数类型（'integer64')但bit64包并没有安装。这些列会被显示"
+"成看起来有些奇怪的浮点型数据。然而并不需要重新载入这些数据，只需运行 install."
+"packages('bit64') 来获取显示integer64类型的打印方法，再重新打印该数据即可。"
+
+msgid "Pattern"
+msgstr "Pattern"
+
+msgid "not found: ["
+msgstr "未找到: ["
+
+msgid ""
+"Input xts object should not have 'index' column because it would result in "
+"duplicate column names. Rename 'index' column in xts or use `keep."
+"rownames=FALSE` and add index manually as another column."
+msgstr ""
+"输入的xts对象不能含有'index'列，因这会导致出现重复的列名。请尝试重新命名xts中"
+"的'index'列或者使用`keep.rownames=FALSE`并手动添加index为另外的列"
+
+msgid ""
+"data.table must have a time based column in first position, use "
+"`setcolorder` function to change the order, or see ?timeBased for supported "
+"types"
+msgstr ""
+"data.table的首列必须为一个以时间为基础的列，请使用`setcolorder`方程来改变它的"
+"顺序，或者通过?timeBased来查看支持的类型"
+
+msgid "Following columns are not numeric and will be omitted:"
+msgstr "以下的列并非数值类型，将被忽略："
+
+msgid "%d variable not shown: %s\n"
+msgid_plural "%d variables not shown: %s\n"
+msgstr[0] "%d变量没显示: %s\n"

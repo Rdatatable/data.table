@@ -1,4 +1,4 @@
-frankv <- function(x, cols=seq_along(x), order=1L, na.last=TRUE, ties.method=c("average", "first", "random", "max", "min", "dense")) {
+frankv = function(x, cols=seq_along(x), order=1L, na.last=TRUE, ties.method=c("average", "first", "random", "max", "min", "dense")) {
   ties.method = match.arg(ties.method)
   if (!length(na.last)) stop('length(na.last) = 0')
   if (length(na.last) != 1L) {
@@ -7,7 +7,7 @@ frankv <- function(x, cols=seq_along(x), order=1L, na.last=TRUE, ties.method=c("
   }
   keep = (na.last == "keep")
   na.last = as.logical(na.last)
-  as_list <- function(x) {
+  as_list = function(x) {
     xx = vector("list", 1L)
     .Call(Csetlistelt, xx, 1L, x)
     xx
@@ -18,11 +18,9 @@ frankv <- function(x, cols=seq_along(x), order=1L, na.last=TRUE, ties.method=c("
     cols = 1L
     x = as_list(x)
   } else {
+    cols = colnamesInt(x, cols, check_dups=TRUE)
     if (!length(cols))
       stop("x is a list, 'cols' can not be 0-length")
-    if (is.character(cols))
-      cols = chmatch(cols, names(x))
-    cols = as.integer(cols)
   }
   x = .shallow(x, cols) # shallow copy even if list..
   setDT(x)
@@ -43,7 +41,7 @@ frankv <- function(x, cols=seq_along(x), order=1L, na.last=TRUE, ties.method=c("
     cols = c(cols, ncol(x))
   }
   xorder  = forderv(x, by=cols, order=order, sort=TRUE, retGrp=TRUE, na.last=if (isFALSE(na.last)) na.last else TRUE)
-  xstart  = attr(xorder, 'starts')
+  xstart  = attr(xorder, 'starts', exact=TRUE)
   xsorted = FALSE
   if (!length(xorder)) {
     xsorted = TRUE
@@ -67,7 +65,7 @@ frankv <- function(x, cols=seq_along(x), order=1L, na.last=TRUE, ties.method=c("
   ans
 }
 
-frank <- function(x, ..., na.last=TRUE, ties.method=c("average", "first", "random", "max", "min", "dense")) {
+frank = function(x, ..., na.last=TRUE, ties.method=c("average", "first", "random", "max", "min", "dense")) {
   cols = substitute(list(...))[-1L]
   if (identical(as.character(cols), "NULL")) {
     cols  = NULL

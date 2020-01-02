@@ -1,15 +1,18 @@
 # Moved here out from data.table.R on 10 Aug 2017. See data.table.R for history prior to that.
 
-print.data.table <- function(x, topn=getOption("datatable.print.topn"),
+print.data.table = function(x, topn=getOption("datatable.print.topn"),
                nrows=getOption("datatable.print.nrows"),
                class=getOption("datatable.print.class"),
                row.names=getOption("datatable.print.rownames"),
                col.names=getOption("datatable.print.colnames"),
                print.keys=getOption("datatable.print.keys"),
-               quote=FALSE, ...) {    
+               trunc.cols=getOption("datatable.print.trunc.cols"),
+               quote=FALSE,
+               ...) {
   # topn  - print the top topn and bottom topn rows with '---' inbetween (5)
   # nrows - under this the whole (small) table is printed, unless topn is provided (100)
   # class - should column class be printed underneath column name? (FALSE)
+  # trunc.cols - should only the columns be printed that can fit in the console? (FALSE)
   if (!col.names %chin% c("auto", "top", "none"))
     stop("Valid options for col.names are 'auto', 'top', and 'none'")
   if (col.names == "none" && class)
@@ -22,8 +25,10 @@ print.data.table <- function(x, topn=getOption("datatable.print.topn"),
     # This applies just at the prompt. Inside functions, print(DT) will of course print.
     # Other options investigated (could revisit): Cstack_info(), .Last.value gets set first before autoprint, history(), sys.status(),
     #   topenv(), inspecting next statement in caller, using clock() at C level to timeout suppression after some number of cycles
-    SYS <- sys.calls()
+    SYS = sys.calls()
     if (length(SYS) <= 2L ||  # "> DT" auto-print or "> print(DT)" explicit print (cannot distinguish from R 3.2.0 but that's ok)
+        ( length(SYS) >= 3L && is.symbol(thisSYS <- SYS[[length(SYS)-2L]][[1L]]) &&
+          as.character(thisSYS) == 'source') || # suppress printing from source(echo = TRUE) calls, #2369
         ( length(SYS) > 3L && is.symbol(thisSYS <- SYS[[length(SYS)-3L]][[1L]]) &&
           as.character(thisSYS) %chin% mimicsAutoPrint ) )  {
       return(invisible(x))
@@ -54,7 +59,7 @@ print.data.table <- function(x, topn=getOption("datatable.print.topn"),
     }
     return(invisible(x))
   }
-  if ((topn*2+1)<nrow(x) && (nrow(x)>nrows || !topnmiss)) {
+  if ((topn*2L+1L)<nrow(x) && (nrow(x)>nrows || !topnmiss)) {
     toprint = rbindlist(list(head(x, topn), tail(x, topn)), use.names=FALSE)  # no need to match names because head and tail of same x, and #3306
     rn = c(seq_len(topn), seq.int(to=nrow(x), length.out=topn))
     printdots = TRUE
@@ -65,8 +70,7 @@ print.data.table <- function(x, topn=getOption("datatable.print.topn"),
   }
   toprint=format.data.table(toprint, na.encode=FALSE, ...)  # na.encode=FALSE so that NA in character cols print as <NA>
 
-  if ((!"bit64" %chin% loadedNamespaces()) && any(sapply(x,inherits,"integer64"))) require_bit64()
-  # When we depend on R 3.2.0 (Apr 2015) we can use isNamespaceLoaded() added then, instead of %chin% above
+  require_bit64_if_needed(x)
 
   # FR #5020 - add row.names = logical argument to print.data.table
   if (isTRUE(row.names)) rownames(toprint)=paste0(format(rn,right=TRUE,scientific=FALSE),":") else rownames(toprint)=rep.int("", nrow(toprint))
@@ -80,14 +84,28 @@ print.data.table <- function(x, topn=getOption("datatable.print.topn"),
       factor = "<fctr>", POSIXct = "<POSc>", logical = "<lgcl>",
       IDate = "<IDat>", integer64 = "<i64>", raw = "<raw>",
       expression = "<expr>", ordered = "<ord>")
-    classes = vapply(x, function(col) class(col)[1L], "", USE.NAMES=FALSE)
+    classes = vapply_1c(x, function(col) class(col)[1L], use.names=FALSE)
     abbs = unname(class_abb[classes])
-    if ( length(idx <- which(is.na(abbs))) )
-    abbs[idx] = paste0("<", classes[idx], ">")
+    if ( length(idx <- which(is.na(abbs))) ) abbs[idx] = paste0("<", classes[idx], ">")
     toprint = rbind(abbs, toprint)
     rownames(toprint)[1L] = ""
   }
+  if (isFALSE(class) || (isTRUE(class) && col.names == "none")) abbs = ""
   if (quote) colnames(toprint) <- paste0('"', old <- colnames(toprint), '"')
+  if (isTRUE(trunc.cols)) {
+    # allow truncation of columns to print only what will fit in console PR #4074
+    widths = dt_width(toprint, class, row.names, col.names)
+    cons_width = getOption("width")
+    cols_to_print = widths < cons_width
+    not_printed = colnames(toprint)[!cols_to_print]
+    if (!any(cols_to_print)) {
+      trunc_cols_message(not_printed, abbs, class, col.names)
+      return(invisible(x))
+    }
+    # When nrow(toprint) = 1, attributes get lost in the subset,
+    #   function below adds those back when necessary
+    toprint = toprint_subset(toprint, cols_to_print)
+  }
   if (printdots) {
     toprint = rbind(head(toprint, topn + isTRUE(class)), "---"="", tail(toprint, topn))
     rownames(toprint) = format(rownames(toprint), justify="right")
@@ -96,6 +114,10 @@ print.data.table <- function(x, topn=getOption("datatable.print.topn"),
     } else {
       print(toprint, right=TRUE, quote=quote)
     }
+    if (trunc.cols && length(not_printed) > 0L)
+      # prints names of variables not shown in the print
+      trunc_cols_message(not_printed, abbs, class, col.names)
+
     return(invisible(x))
   }
   if (nrow(toprint)>20L && col.names == "auto")
@@ -107,6 +129,10 @@ print.data.table <- function(x, topn=getOption("datatable.print.topn"),
   } else {
     print(toprint, right=TRUE, quote=quote)
   }
+  if (trunc.cols && length(not_printed) > 0L)
+    # prints names of variables not shown in the print
+    trunc_cols_message(not_printed, abbs, class, col.names)
+
   invisible(x)
 }
 
@@ -167,4 +193,40 @@ char.trunc <- function(x, trunc.char = getOption("datatable.prettyprint.char")) 
   idx = which(nchar(x) > trunc.char)
   x[idx] = paste0(substr(x[idx], 1L, as.integer(trunc.char)), "...")
   x
+}
+
+# to calculate widths of data.table for PR #4074
+# gets the width of the data.table at each column
+#   and compares it to the console width
+dt_width = function(x, class, row.names, col.names) {
+  widths = apply(nchar(x, type='width'), 2L, max)
+  if (class) widths = pmax(widths, 6L)
+  if (col.names != "none") names = sapply(colnames(x), nchar, type = "width") else names = 0L
+  dt_widths = pmax(widths, names)
+  rownum_width = if (row.names) as.integer(ceiling(log10(nrow(x)))+2) else 0L
+  cumsum(dt_widths + 1L) + rownum_width
+}
+# keeps the dim and dimnames attributes
+toprint_subset = function(x, cols_to_print) {
+  if (nrow(x) == 1L){
+    atts = attributes(x)
+    atts$dim = c(1L, sum(cols_to_print))
+    atts$dimnames[[2L]] = atts$dimnames[[2L]][cols_to_print]
+    x = x[, cols_to_print, drop=FALSE]
+    attributes(x) = atts
+    x
+  } else {
+    x[, cols_to_print, drop=FALSE]
+  }
+}
+# message for when trunc.cols=TRUE and some columns are not printed
+trunc_cols_message = function(not_printed, abbs, class, col.names){
+  n = length(not_printed)
+  if (class && col.names != "none") classes = paste0(" ", tail(abbs, n)) else classes = ""
+  cat(sprintf(
+    ngettext(n,
+             "%d variable not shown: %s\n",
+             "%d variables not shown: %s\n"),
+    n, brackify(paste0(not_printed, classes))
+  ))
 }

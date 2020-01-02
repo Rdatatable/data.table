@@ -1,19 +1,19 @@
 
-warning_oldUniqueByKey = "The deprecated option 'datatable.old.unique.by.key' is being used. Please stop using it and pass 'by=key(DT)' instead for clarity. For more information please search the NEWS file for this option."
-# upgrade the 4 calls below to error after May 2019 ( see note 10 from 1.11.0 May 2018 which said one year from then )
+error_oldUniqueByKey = "The deprecated option 'datatable.old.unique.by.key' is being used. Please stop using it and pass 'by=key(DT)' instead for clarity. For more information please search the NEWS file for this option."
+# remove this option in June 2020 (see note 10 from 1.12.4 in May 2019 which said one year from then )
 
-duplicated.data.table <- function(x, incomparables=FALSE, fromLast=FALSE, by=seq_along(x), ...) {
+duplicated.data.table = function(x, incomparables=FALSE, fromLast=FALSE, by=seq_along(x), ...) {
   if (!cedta()) return(NextMethod("duplicated")) #nocov
   if (!identical(incomparables, FALSE)) {
     .NotYetUsed("incomparables != FALSE")
   }
   if (missing(by) && isTRUE(getOption("datatable.old.unique.by.key"))) {  #1284
     by = key(x)
-    warning(warning_oldUniqueByKey)
+    stop(error_oldUniqueByKey)
   }
   if (nrow(x) == 0L || ncol(x) == 0L) return(logical(0L)) # fix for bug #5582
   if (is.na(fromLast) || !is.logical(fromLast)) stop("'fromLast' must be TRUE or FALSE")
-  query <- .duplicated.helper(x, by)
+  query = .duplicated.helper(x, by)
   # fix for bug #5405 - unique on null data table returns error (because of 'forderv')
   # however, in this case we can bypass having to go to forderv at all.
   if (!length(query$by)) return(logical(0L))
@@ -23,17 +23,17 @@ duplicated.data.table <- function(x, incomparables=FALSE, fromLast=FALSE, by=seq
     if (fromLast) f = cumsum(uniqlengths(f, nrow(x)))
   } else {
     o = forderv(x, by=query$by, sort=FALSE, retGrp=TRUE)
-    if (attr(o, 'maxgrpn') == 1L) return(rep.int(FALSE, nrow(x)))
-    f = attr(o,"starts")
+    if (attr(o, 'maxgrpn', exact=TRUE) == 1L) return(rep.int(FALSE, nrow(x)))
+    f = attr(o, "starts", exact=TRUE)
     if (fromLast) f = cumsum(uniqlengths(f, nrow(x)))
     if (length(o)) f = o[f]
   }
-  res <- rep.int(TRUE, nrow(x))
+  res = rep.int(TRUE, nrow(x))
   res[f] = FALSE
   res
 }
 
-unique.data.table <- function(x, incomparables=FALSE, fromLast=FALSE, by=seq_along(x), ...) {
+unique.data.table = function(x, incomparables=FALSE, fromLast=FALSE, by=seq_along(x), ...) {
   if (!cedta()) return(NextMethod("unique")) # nocov
   if (!identical(incomparables, FALSE)) {
     .NotYetUsed("incomparables != FALSE")
@@ -41,14 +41,14 @@ unique.data.table <- function(x, incomparables=FALSE, fromLast=FALSE, by=seq_alo
   if (nrow(x) <= 1L) return(x)
   if (missing(by) && isTRUE(getOption("datatable.old.unique.by.key"))) {
     by = key(x)
-    warning(warning_oldUniqueByKey)
-  } else if (is.null(by)) by=seq_along(x)
+    stop(error_oldUniqueByKey)
+  }
   o = forderv(x, by=by, sort=FALSE, retGrp=TRUE)
   # if by=key(x), forderv tests for orderedness within it quickly and will short-circuit
-  # there isn't any need in unique() to call uniqlist like duplicated does; uniqlist retuns a new nrow(x) vector anyway and isn't
+  # there isn't any need in unique() to call uniqlist like duplicated does; uniqlist returns a new nrow(x) vector anyway and isn't
   # as efficient as forderv returning empty o when input is already ordered
-  if (attr(o, 'maxgrpn') == 1L) return(copy(x))  # return copy so that unique(x)[, col := val] doesn't affect original data.table, #3383.
-  f = attr(o,"starts")
+  if (attr(o, 'maxgrpn', exact=TRUE) == 1L) return(copy(x))  # return copy so that unique(x)[, col := val] doesn't affect original data.table, #3383.
+  f = attr(o, "starts", exact=TRUE)
   if (fromLast) f = cumsum(uniqlengths(f, nrow(x)))
   if (length(o)) f = o[f]
   if (length(o <- forderv(f))) f = f[o]  # don't sort the uniques too
@@ -83,49 +83,27 @@ unique.data.table <- function(x, incomparables=FALSE, fromLast=FALSE, by=seq_alo
 ## unique.data.table and duplicated.data.table both needed this. However,
 ## unique.data.table has been refactored to simply call duplicated.data.table
 ## making the refactor unnecessary, but let's leave it here just in case
-.duplicated.helper <- function(x, by) {
-  use.sub.cols <- !is.null(by) # && !isTRUE(by) # Fixing bug #5424
-
-  if (use.sub.cols) {
-    ## Did the user specify (integer) indexes for the columns?
-    if (is.numeric(by)) {
-      if (any(as.integer(by) != by) || any(by<1L) || any(by>ncol(x))) {
-        stop("Integer values between 1 and ncol are required for 'by' when ",
-             "column indices. It's often better to use column names.")
-      }
-      by <- names(x)[by]
-    }
-    if (!is.character(by)) {
-      stop("Only NULL, column indices or column names are allowed in by")
-    }
-    bad.cols <- setdiff(by, names(x))
-    if (length(bad.cols)) {
-      stop("by specifies column names that do not exist. First 5: ",paste(head(bad.cols,5),collapse=","))
-    }
-
-    use.keyprefix = haskey(x) &&
+.duplicated.helper = function(x, by) {
+  cols = colnamesInt(x, by, check_dups=FALSE)
+  use.keyprefix = if (is.null(by)) FALSE else {
+    haskey(x) &&
       length(by) <= length(key(x)) &&
       all(head(key(x), length(by)) == by)
-  } else {
-    ## by is not was explicitly set to
-    use.keyprefix = FALSE
-    by = names(x)
   }
-
-  list(use.keyprefix=use.keyprefix, by=by)
+  list(use.keyprefix=use.keyprefix, by=names(x)[cols])
 }
 
 # FR #5172 anyDuplicated.data.table
 # Note that base's anyDuplicated is faster than any(duplicated(.)) (for vectors) - for data.frames it still pastes before calling duplicated
 # In that sense, this anyDuplicated is *not* the same as base's - meaning it's not a different implementation
 # This is just a wrapper. That being said, it should be incredibly fast on data.tables (due to data.table's fast forder)
-anyDuplicated.data.table <- function(x, incomparables=FALSE, fromLast=FALSE, by=seq_along(x), ...) {
+anyDuplicated.data.table = function(x, incomparables=FALSE, fromLast=FALSE, by=seq_along(x), ...) {
   if (!cedta()) return(NextMethod("anyDuplicated")) # nocov
   if (missing(by) && isTRUE(getOption("datatable.old.unique.by.key"))) {
     by = key(x)
-    warning(warning_oldUniqueByKey)
+    stop(error_oldUniqueByKey)
   }
-  dups <- duplicated(x, incomparables, fromLast, by, ...)
+  dups = duplicated(x, incomparables, fromLast, by, ...)
   if (fromLast) idx = tail(which(dups), 1L) else idx = head(which(dups), 1L)
   if (!length(idx)) idx=0L
   idx
@@ -135,10 +113,10 @@ anyDuplicated.data.table <- function(x, incomparables=FALSE, fromLast=FALSE, by=
 # of groups in a vector or data.table. Here by data.table,
 # we really mean `.SD` - used in a grouping operation
 # TODO: optimise uniqueN further with GForce.
-uniqueN <- function(x, by = if (is.list(x)) seq_along(x) else NULL, na.rm=FALSE) { # na.rm, #1455
+uniqueN = function(x, by = if (is.list(x)) seq_along(x) else NULL, na.rm=FALSE) { # na.rm, #1455
   if (missing(by) && is.data.table(x) && isTRUE(getOption("datatable.old.unique.by.key"))) {
     by = key(x)
-    warning(warning_oldUniqueByKey)
+    stop(error_oldUniqueByKey)
   }
   if (is.null(x)) return(0L)
   if (!is.atomic(x) && !is.data.frame(x))
@@ -147,9 +125,8 @@ uniqueN <- function(x, by = if (is.list(x)) seq_along(x) else NULL, na.rm=FALSE)
     if (is.logical(x)) return(.Call(CuniqueNlogical, x, na.rm=na.rm))
     x = as_list(x)
   }
-  if (is.null(by)) by = seq_along(x)
   o = forderv(x, by=by, retGrp=TRUE, na.last=if (!na.rm) FALSE else NA)
-  starts = attr(o, 'starts')
+  starts = attr(o, 'starts', exact=TRUE)
   if (!na.rm) {
     length(starts)
   } else {

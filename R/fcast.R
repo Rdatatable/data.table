@@ -1,29 +1,31 @@
-guess <- function(x) {
+guess = function(x) {
   if ("value" %chin% names(x))
     return("value")
   if ("(all)" %chin% names(x))
     return("(all)")
-  var <- names(x)[ncol(x)]
+  var = names(x)[ncol(x)]
   message("Using '", var, "' as value column. Use 'value.var' to override")
   return(var)
 }
 
-dcast <- function(data, formula, fun.aggregate = NULL, ..., margins = NULL,
-      subset = NULL, fill = NULL, value.var = guess(data)) {
-  if (is.data.table(data))
-    UseMethod("dcast", data)
+dcast <- function(
+  data, formula, fun.aggregate = NULL, ..., margins = NULL,
+  subset = NULL, fill = NULL, value.var = guess(data)
+) {
+  if (is.data.table(data)) UseMethod("dcast", data)
+  # nocov start
   else {
-    # reshape2::dcast is not generic so we have to call it explicitly. See comments at the top of fmelt.R too.
-    # nocov start
+    data_name = deparse(substitute(data))
     ns = tryCatch(getNamespace("reshape2"), error=function(e)
-         stop("The dcast generic in data.table has been passed a ",class(data)[1L]," (not a data.table) but the reshape2 package is not installed to process this type. Please either install reshape2 and try again, or pass a data.table to dcast instead."))
+      stop("The dcast generic in data.table has been passed a ",class(data)[1L],", but data.table::dcast currently only has a method for data.tables. Please confirm your input is a data.table, with setDT(", data_name, ") or as.data.table(", data_name, "). If you intend to use a reshape2::dcast, try installing that package first, but do note that reshape2 is deprecated and you should be migrating your code away from using it."))
+    warning("The dcast generic in data.table has been passed a ", class(data)[1L], " and will attempt to redirect to the reshape2::dcast; please note that reshape2 is deprecated, and this redirection is now deprecated as well. Please do this redirection yourself like reshape2::dcast(", data_name, "). In the next version, this warning will become an error.")
     ns$dcast(data, formula, fun.aggregate = fun.aggregate, ..., margins = margins,
              subset = subset, fill = fill, value.var = value.var)
-    # nocov end
   }
+  # nocov end
 }
 
-check_formula <- function(formula, varnames, valnames) {
+check_formula = function(formula, varnames, valnames) {
   if (is.character(formula)) formula = as.formula(formula)
   if (!inherits(formula, "formula") || length(formula) != 3L)
     stop("Invalid formula. Cast formula should be of the form LHS ~ RHS, for e.g., a + b ~ c.")  # nocov; couldn't find a way to construct a test formula with length!=3L
@@ -35,7 +37,7 @@ check_formula <- function(formula, varnames, valnames) {
   deparse_formula(as.list(formula)[-1L], varnames, allvars)
 }
 
-deparse_formula <- function(expr, varnames, allvars) {
+deparse_formula = function(expr, varnames, allvars) {
   lvars = lapply(expr, function(this) {
     if (is.call(this)) {
       if (this[[1L]] == quote(`+`))
@@ -51,7 +53,7 @@ deparse_formula <- function(expr, varnames, allvars) {
   lvars = lapply(lvars, function(x) if (length(x) && !is.list(x)) list(x) else x)
 }
 
-value_vars <- function(value.var, varnames) {
+value_vars = function(value.var, varnames) {
   if (is.character(value.var))
     value.var = list(value.var)
   value.var = lapply(value.var, unique)
@@ -62,7 +64,7 @@ value_vars <- function(value.var, varnames) {
   value.var
 }
 
-aggregate_funs <- function(funs, vals, sep="_", ...) {
+aggregate_funs = function(funs, vals, sep="_", ...) {
   if (is.call(funs) && funs[[1L]] == "eval")
     funs = eval(funs[[2L]], parent.frame(2L), parent.frame(2L))
   if (is.call(funs) && as.character(funs[[1L]]) %chin% c("c", "list")) {
@@ -78,7 +80,7 @@ aggregate_funs <- function(funs, vals, sep="_", ...) {
   }
   only_one_fun = length(unlist(funs)) == 1L
   dots = list(...)
-  construct_funs <- function(fun, nm, val) {
+  construct_funs = function(fun, nm, val) {
     ans = vector("list", length(fun)*length(val))
     nms = vector("character", length(ans))
     k = 1L
@@ -96,9 +98,9 @@ aggregate_funs <- function(funs, vals, sep="_", ...) {
     setattr(ans, 'names', nms)
   }
   ans = lapply(seq_along(funs), function(i) {
-    nm <- names(funs[i])
+    nm = names(funs[i])
     if (is.null(nm) || !nzchar(nm)) {
-      nm <- all.names(funs[[i]], max.names=1L, functions=TRUE)
+      nm = all.names(funs[[i]], max.names=1L, functions=TRUE)
     }
     if (!length(nm)) nm <- paste0("fun", i)
     construct_funs(funs[i], nm, vals[[i]])
@@ -106,10 +108,15 @@ aggregate_funs <- function(funs, vals, sep="_", ...) {
   as.call(c(quote(list), unlist(ans)))
 }
 
-dcast.data.table <- function(data, formula, fun.aggregate = NULL, sep = "_", ..., margins = NULL, subset = NULL, fill = NULL, drop = TRUE, value.var = guess(data), verbose = getOption("datatable.verbose")) {
+dcast.data.table = function(data, formula, fun.aggregate = NULL, sep = "_", ..., margins = NULL, subset = NULL, fill = NULL, drop = TRUE, value.var = guess(data), verbose = getOption("datatable.verbose")) {
   if (!is.data.table(data)) stop("'data' must be a data.table.")
   drop = as.logical(rep(drop, length.out=2L))
   if (anyNA(drop)) stop("'drop' must be logical TRUE/FALSE")
+  # #2980 if explicitly providing fun.aggregate=length but not a value.var,
+  #   just use the last column (as guess(data) would do) because length will be
+  #   the same on all columns
+  if (missing(value.var) && !missing(fun.aggregate) && identical(fun.aggregate, length))
+    value.var = names(data)[ncol(data)]
   lvals = value_vars(value.var, names(data))
   valnames = unique(unlist(lvals))
   lvars = check_formula(formula, names(data), valnames)
@@ -140,8 +147,8 @@ dcast.data.table <- function(data, formula, fun.aggregate = NULL, sep = "_", ...
   }
   setDT(dat)
 
-  m <- as.list(match.call()[-1L])
-  subset <- m[["subset"]][[2L]]
+  m = as.list(match.call()[-1L])
+  subset = m[["subset"]][[2L]]
   if (!is.null(subset)) {
     if (is.name(subset)) subset = as.call(list(quote(`(`), subset))
     idx = which(eval(subset, data, parent.frame())) # any advantage thro' secondary keys?
@@ -152,7 +159,7 @@ dcast.data.table <- function(data, formula, fun.aggregate = NULL, sep = "_", ...
   fill.default = NULL
   if (is.null(fun.call)) {
     oo = forderv(dat, by=varnames, retGrp=TRUE)
-    if (attr(oo, 'maxgrpn') > 1L) {
+    if (attr(oo, 'maxgrpn', exact=TRUE) > 1L) {
       message("Aggregate function missing, defaulting to 'length'")
       fun.call = quote(length)
     }
@@ -161,19 +168,19 @@ dcast.data.table <- function(data, formula, fun.aggregate = NULL, sep = "_", ...
     fun.call = aggregate_funs(fun.call, lvals, sep, ...)
     errmsg = "Aggregating function(s) should take vector inputs and return a single value (length=1). However, function(s) returns length!=1. This value will have to be used to fill any missing combinations, and therefore must be length=1. Either override by setting the 'fill' argument explicitly or modify your function to handle this case appropriately."
     if (is.null(fill)) {
-      fill.default <- suppressWarnings(dat[0L][, eval(fun.call)])
+      fill.default = suppressWarnings(dat[0L][, eval(fun.call)])
       # tryCatch(fill.default <- dat[0L][, eval(fun.call)], error = function(x) stop(errmsg, call.=FALSE))
       if (nrow(fill.default) != 1L) stop(errmsg, call.=FALSE)
     }
     dat = dat[, eval(fun.call), by=c(varnames)]
   }
-  order_ <- function(x) {
+  order_ = function(x) {
     o = forderv(x, retGrp=TRUE, sort=TRUE)
-    idx = attr(o, 'starts')
+    idx = attr(o, 'starts', exact=TRUE)
     if (!length(o)) o = seq_along(x)
     o[idx] # subsetVector retains attributes, using R's subset for now
   }
-  cj_uniq <- function(DT) {
+  cj_uniq = function(DT) {
     do.call("CJ", lapply(DT, function(x)
       if (is.factor(x)) {
         xint = seq_along(levels(x))

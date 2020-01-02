@@ -1,11 +1,11 @@
-fread <- function(
+fread = function(
 input="", file=NULL, text=NULL, cmd=NULL, sep="auto", sep2="auto", dec=".", quote="\"", nrows=Inf, header="auto",
 na.strings=getOption("datatable.na.strings","NA"), stringsAsFactors=FALSE, verbose=getOption("datatable.verbose",FALSE),
 skip="__auto__", select=NULL, drop=NULL, colClasses=NULL, integer64=getOption("datatable.integer64","integer64"),
 col.names, check.names=FALSE, encoding="unknown", strip.white=TRUE, fill=FALSE, blank.lines.skip=FALSE, key=NULL, index=NULL,
 showProgress=getOption("datatable.showProgress",interactive()), data.table=getOption("datatable.fread.datatable",TRUE),
 nThread=getDTthreads(verbose), logical01=getOption("datatable.logical01",FALSE), keepLeadingZeros=getOption("datatable.keepLeadingZeros",FALSE),
-yaml=FALSE, autostart=NA)
+yaml=FALSE, autostart=NA, tmpdir=tempdir())
 {
   if (missing(input)+is.null(file)+is.null(text)+is.null(cmd) < 3L) stop("Used more than one of the arguments input=, file=, text= and cmd=.")
   input_has_vars = length(all.vars(substitute(input)))>0L  # see news for v1.11.6
@@ -25,7 +25,7 @@ yaml=FALSE, autostart=NA)
              isTRUEorFALSE(verbose), isTRUEorFALSE(check.names), isTRUEorFALSE(logical01), isTRUEorFALSE(keepLeadingZeros), isTRUEorFALSE(yaml) )
   stopifnot( isTRUEorFALSE(stringsAsFactors) || (is.double(stringsAsFactors) && length(stringsAsFactors)==1L && 0.0<=stringsAsFactors && stringsAsFactors<=1.0))
   stopifnot( is.numeric(nrows), length(nrows)==1L )
-  if (is.na(nrows) || nrows<0) nrows=Inf   # accept -1 to mean Inf, as read.table does
+  if (is.na(nrows) || nrows<0L) nrows=Inf   # accept -1 to mean Inf, as read.table does
   if (identical(header,"auto")) header=NA
   stopifnot(is.logical(header) && length(header)==1L)  # TRUE, FALSE or NA
   stopifnot(is.numeric(nThread) && length(nThread)==1L)
@@ -35,7 +35,7 @@ yaml=FALSE, autostart=NA)
     if (!is.character(text)) stop("'text=' is type ", typeof(text), " but must be character.")
     if (!length(text)) return(data.table())
     if (length(text) > 1L) {
-      cat(text, file=(tmpFile<-tempfile()), sep="\n")  # avoid paste0() which could create a new very long single string in R's memory
+      cat(text, file=(tmpFile<-tempfile(tmpdir=tmpdir)), sep="\n")  # avoid paste0() which could create a new very long single string in R's memory
       file = tmpFile
       on.exit(unlink(tmpFile), add=TRUE)
     } else {
@@ -60,7 +60,7 @@ yaml=FALSE, autostart=NA)
         # nocov start
         if (!requireNamespace("curl", quietly = TRUE))
           stop("Input URL requires https:// connection for which fread() requires 'curl' package which cannot be found. Please install 'curl' using 'install.packages('curl')'.") # nocov
-        tmpFile = tempfile(fileext = paste0(".",tools::file_ext(input)))  # retain .gz extension in temp filename so it knows to be decompressed further below
+        tmpFile = tempfile(fileext = paste0(".",tools::file_ext(input)), tmpdir=tmpdir)  # retain .gz extension in temp filename so it knows to be decompressed further below
         curl::curl_download(input, tmpFile, mode="wb", quiet = !showProgress)
         file = tmpFile
         on.exit(unlink(tmpFile), add=TRUE)
@@ -70,7 +70,7 @@ yaml=FALSE, autostart=NA)
         # nocov start
         method = if (str7=="file://") "internal" else getOption("download.file.method", default="auto")
         # force "auto" when file:// to ensure we don't use an invalid option (e.g. wget), #1668
-        tmpFile = tempfile(fileext = paste0(".",tools::file_ext(input)))
+        tmpFile = tempfile(fileext = paste0(".",tools::file_ext(input)), tmpdir=tmpdir)
         download.file(input, tmpFile, method=method, mode="wb", quiet=!showProgress)
         # In text mode on Windows-only, R doubles up \r to make \r\r\n line endings. mode="wb" avoids that. See ?connections:"CRLF"
         file = tmpFile
@@ -80,7 +80,7 @@ yaml=FALSE, autostart=NA)
       else if (length(grep(' ', input, fixed = TRUE)) && !file.exists(input)) {  # file name or path containing spaces is not a command
         cmd = input
         if (input_has_vars && getOption("datatable.fread.input.cmd.message", TRUE)) {
-          message("Taking input= as a system command ('",cmd,"') and a variable has been used in the expression passed to `input=`. Please use fread(cmd=...). There is a security concern if you are creating an app, and the app could have a malicious user, and the app is not running in a secure envionment; e.g. the app is running as root. Please read item 5 in the NEWS file for v1.11.6 for more information and for the option to suppress this message.")
+          message("Taking input= as a system command ('",cmd,"') and a variable has been used in the expression passed to `input=`. Please use fread(cmd=...). There is a security concern if you are creating an app, and the app could have a malicious user, and the app is not running in a secure environment; e.g. the app is running as root. Please read item 5 in the NEWS file for v1.11.6 for more information and for the option to suppress this message.")
         }
       }
       else {
@@ -89,7 +89,7 @@ yaml=FALSE, autostart=NA)
     }
   }
   if (!is.null(cmd)) {
-    (if (.Platform$OS.type == "unix") system else shell)(paste0('(', cmd, ') > ', tmpFile<-tempfile()))
+    (if (.Platform$OS.type == "unix") system else shell)(paste0('(', cmd, ') > ', tmpFile<-tempfile(tmpdir=tmpdir)))
     file = tmpFile
     on.exit(unlink(tmpFile), add=TRUE)
   }
@@ -108,7 +108,7 @@ yaml=FALSE, autostart=NA)
       if (!requireNamespace("R.utils", quietly = TRUE))
         stop("To read gz and bz2 files directly, fread() requires 'R.utils' package which cannot be found. Please install 'R.utils' using 'install.packages('R.utils')'.") # nocov
       FUN = if (ext2==".gz") gzfile else bzfile
-      R.utils::decompressFile(file, decompFile<-tempfile(), ext=NULL, FUN=FUN, remove=FALSE)   # ext is not used by decompressFile when destname is supplied, but isn't optional
+      R.utils::decompressFile(file, decompFile<-tempfile(tmpdir=tmpdir), ext=NULL, FUN=FUN, remove=FALSE)   # ext is not used by decompressFile when destname is supplied, but isn't optional
       file = decompFile   # don't use 'tmpFile' symbol again, as tmpFile might be the http://domain.org/file.csv.gz download
       on.exit(unlink(decompFile), add=TRUE)
     }
@@ -118,7 +118,7 @@ yaml=FALSE, autostart=NA)
   }
   if (!missing(autostart)) warning("'autostart' is now deprecated and ignored. Consider skip='string' or skip=n");
   if (is.logical(colClasses)) {
-    if (!all(is.na(colClasses))) stop("colClasses is type 'logical' which is ok if all NA but it has some TRUE or FALSE values in it which is not allowed. Please consider the drop= or select= argument instead. See ?fread.")
+    if (!allNA(colClasses)) stop("colClasses is type 'logical' which is ok if all NA but it has some TRUE or FALSE values in it which is not allowed. Please consider the drop= or select= argument instead. See ?fread.")
     colClasses = NULL
   }
   if (!is.null(colClasses) && is.atomic(colClasses)) {
@@ -133,7 +133,7 @@ yaml=FALSE, autostart=NA)
     }
   }
   stopifnot(length(skip)==1L, !is.na(skip), is.character(skip) || is.numeric(skip))
-  if (identical(skip,"__auto__")) skip = ifelse(yaml,0L,-1L)
+  if (identical(skip,"__auto__")) skip = if (yaml) 0L else -1L
   else if (is.double(skip)) skip = as.integer(skip)
   # else skip="string" so long as "string" is not "__auto__" (best conveys to user skip is automatic rather than user needing to know -1 or NA means auto)
   stopifnot(is.null(na.strings) || is.character(na.strings))
@@ -153,10 +153,10 @@ yaml=FALSE, autostart=NA)
     # whitespace at the beginning or end of na.strings is checked at C level and is an error there; test 1804
   }
   if (yaml) {
-    # for tracking which YAML elements may be overridden by being declared explicitly
-    call_args = names(match.call())
     if (!requireNamespace('yaml', quietly = TRUE))
       stop("'data.table' relies on the package 'yaml' to parse the file header; please add this to your library with install.packages('yaml') and try again.") # nocov
+    # for tracking which YAML elements may be overridden by being declared explicitly
+    call_args = names(match.call())
     if (is.character(skip))
       warning("Combining a search string as 'skip' and reading a YAML header may not work as expected -- currently, ",
               "reading will proceed to search for 'skip' from the beginning of the file, NOT from the end of ",
@@ -271,12 +271,12 @@ yaml=FALSE, autostart=NA)
               fill,showProgress,nThread,verbose,warnings2errors,logical01,select,drop,colClasses,integer64,encoding,keepLeadingZeros)
   if (!length(ans)) return(null.data.table())  # test 1743.308 drops all columns
   nr = length(ans[[1L]])
-  if ((!"bit64" %chin% loadedNamespaces()) && any(sapply(ans,inherits,"integer64"))) require_bit64()  # nocov
+  require_bit64_if_needed(ans)
   setattr(ans,"row.names",.set_row_names(nr))
 
   if (isTRUE(data.table)) {
     setattr(ans, "class", c("data.table", "data.frame"))
-    alloc.col(ans)
+    setalloccol(ans)
   } else {
     setattr(ans, "class", "data.frame")
   }
@@ -285,11 +285,11 @@ yaml=FALSE, autostart=NA)
     setattr(ans, 'names', make.names(names(ans), unique=TRUE))
   }
 
-  colClassesAs = attr(ans, "colClassesAs")   # should only be present if one or more are != ""
+  colClassesAs = attr(ans, "colClassesAs", exact=TRUE)   # should only be present if one or more are != ""
   for (j in which(colClassesAs!="")) {       # # 1634
-    v <- .subset2(ans, j)
+    v = .subset2(ans, j)
     new_class = colClassesAs[j]
-    new_v <- tryCatch({    # different to read.csv; i.e. won't error if a column won't coerce (fallback with warning instead)
+    new_v = tryCatch({    # different to read.csv; i.e. won't error if a column won't coerce (fallback with warning instead)
       switch(new_class,
              "factor" = as_factor(v),
              "complex" = as.complex(v),
@@ -311,10 +311,10 @@ yaml=FALSE, autostart=NA)
 
   if (stringsAsFactors) {
     if (is.double(stringsAsFactors)) { #2025
-      should_be_factor <- function(v) is.character(v) && uniqueN(v) < nr * stringsAsFactors
-      cols_to_factor <- which(vapply(ans, should_be_factor, logical(1L)))
+      should_be_factor = function(v) is.character(v) && uniqueN(v) < nr * stringsAsFactors
+      cols_to_factor = which(vapply_1b(ans, should_be_factor))
     } else {
-      cols_to_factor <- which(vapply(ans, is.character, logical(1L)))
+      cols_to_factor = which(vapply_1b(ans, is.character))
     }
     if (verbose) cat("stringsAsFactors=", stringsAsFactors, " converted ", length(cols_to_factor), " column(s): ", brackify(names(ans)[cols_to_factor]), "\n", sep="")
     for (j in cols_to_factor) set(ans, j=j, value=as_factor(.subset2(ans, j)))
@@ -350,7 +350,7 @@ yaml=FALSE, autostart=NA)
 }
 
 # simplified but faster version of `factor()` for internal use.
-as_factor <- function(x) {
+as_factor = function(x) {
   lev = forderv(x, retGrp = TRUE, na.last = NA)
   # get levels, also take care of all sorted condition
   lev = if (length(lev)) x[lev[attributes(lev)$starts]] else x[attributes(lev)$starts]
@@ -359,7 +359,6 @@ as_factor <- function(x) {
   setattr(ans, 'class', 'factor')
 }
 
-as_raw <- function(x) {
+as_raw = function(x) {
   scan(text=x, what=raw(), quiet=TRUE)  # as in read.csv, which ultimately uses src/main/scan.c and strtoraw
 }
-

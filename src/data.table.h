@@ -1,12 +1,14 @@
+#include "dt_stdio.h"  // PRId64 and PRIu64
 #include <R.h>
 #define USE_RINTERNALS
 #include <Rinternals.h>
 // #include <signal.h> // the debugging machinery + breakpoint aidee
 // raise(SIGINT);
-#include <stdint.h> // for uint64_t rather than unsigned long long
+#include <stdint.h>    // for uint64_t rather than unsigned long long
 #include <stdbool.h>
 #include "myomp.h"
 #include "types.h"
+#include "po.h"
 
 // data.table depends on R>=3.0.0 when R_xlen_t was introduced
 // Before R 3.0.0, RLEN used to be switched to R_len_t as R_xlen_t wasn't available.
@@ -20,6 +22,7 @@ typedef R_xlen_t RLEN;
 #define IS_LATIN(x) (LEVELS(x) & 4)
 #define IS_TRUE(x)  (TYPEOF(x)==LGLSXP && LENGTH(x)==1 && LOGICAL(x)[0]==TRUE)
 #define IS_FALSE(x) (TYPEOF(x)==LGLSXP && LENGTH(x)==1 && LOGICAL(x)[0]==FALSE)
+#define IS_TRUE_OR_FALSE(x) (TYPEOF(x)==LGLSXP && LENGTH(x)==1 && LOGICAL(x)[0]!=NA_LOGICAL)
 
 #define SIZEOF(x) sizes[TYPEOF(x)]
 #define TYPEORDER(x) typeorder[x]
@@ -33,6 +36,10 @@ typedef R_xlen_t RLEN;
 #undef MAX
 #endif
 #define MAX(a,b) (((a)>(b))?(a):(b))
+
+// for use with bit64::integer64
+#define NA_INTEGER64  INT64_MIN
+#define MAX_INTEGER64 INT64_MAX
 
 // Backport macros added to R in 2017 so we don't need to update dependency from R 3.0.0
 #ifndef MAYBE_SHARED
@@ -59,41 +66,51 @@ typedef R_xlen_t RLEN;
 #endif
 
 // init.c
-SEXP char_integer64;
-SEXP char_ITime;
-SEXP char_IDate;
-SEXP char_Date;
-SEXP char_POSIXct;
-SEXP char_nanotime;
-SEXP char_lens;
-SEXP char_indices;
-SEXP char_allLen1;
-SEXP char_allGrp1;
-SEXP char_factor;
-SEXP char_ordered;
-SEXP char_dataframe;
-SEXP char_NULL;
-SEXP sym_sorted;
-SEXP sym_index;
-SEXP sym_BY;
-SEXP sym_starts, char_starts;
-SEXP sym_maxgrpn;
-SEXP sym_colClassesAs;
-bool INHERITS(SEXP x, SEXP char_);
+extern SEXP char_integer64;
+extern SEXP char_ITime;
+extern SEXP char_IDate;
+extern SEXP char_Date;
+extern SEXP char_POSIXct;
+extern SEXP char_nanotime;
+extern SEXP char_lens;
+extern SEXP char_indices;
+extern SEXP char_allLen1;
+extern SEXP char_allGrp1;
+extern SEXP char_factor;
+extern SEXP char_ordered;
+extern SEXP char_datatable;
+extern SEXP char_dataframe;
+extern SEXP char_NULL;
+extern SEXP sym_sorted;
+extern SEXP sym_index;
+extern SEXP sym_BY;
+extern SEXP sym_starts, char_starts;
+extern SEXP sym_maxgrpn;
+extern SEXP sym_colClassesAs;
+extern SEXP sym_verbose;
+extern SEXP SelfRefSymbol;
+extern SEXP sym_inherits;
+extern SEXP sym_datatable_locked;
+extern double NA_INT64_D;
+extern long long NA_INT64_LL;
+extern Rcomplex NA_CPLX;  // initialized in init.c; see there for comments
+extern size_t sizes[100];  // max appears to be FUNSXP = 99, see Rinternals.h
+extern size_t typeorder[100];
+
 long long DtoLL(double x);
 double LLtoD(long long x);
-double NA_INT64_D;
-long long NA_INT64_LL;
+bool GetVerbose();
+
+// cj.c
+SEXP cj(SEXP base_list);
 
 // dogroups.c
 SEXP keepattr(SEXP to, SEXP from);
 SEXP growVector(SEXP x, R_len_t newlen);
-size_t sizes[100];  // max appears to be FUNSXP = 99, see Rinternals.h
-size_t typeorder[100];
-SEXP SelfRefSymbol;
 
 // assign.c
 SEXP allocNAVector(SEXPTYPE type, R_len_t n);
+SEXP allocNAVectorLike(SEXP x, R_len_t n);
 void writeNA(SEXP v, const int from, const int n);
 void savetl_init(), savetl(SEXP s), savetl_end();
 int checkOverAlloc(SEXP x);
@@ -103,8 +120,6 @@ SEXP setcolorder(SEXP x, SEXP o);
 int StrCmp(SEXP x, SEXP y);
 uint64_t dtwiddle(void *p, int i);
 SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP naArg);
-bool need2utf8(SEXP x, int n);
-SEXP isReallyReal(SEXP);
 int getNumericRounding_C();
 
 // reorder.c
@@ -140,7 +155,7 @@ SEXP dt_na(SEXP x, SEXP cols);
 
 // assign.c
 SEXP alloccol(SEXP dt, R_len_t n, Rboolean verbose);
-const char *memrecycle(SEXP target, SEXP where, int r, int len, SEXP source);
+const char *memrecycle(SEXP target, SEXP where, int r, int len, SEXP source, int coln, const char *colname);
 SEXP shallowwrapper(SEXP dt, SEXP cols);
 
 SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols,
@@ -154,8 +169,9 @@ SEXP bmerge(SEXP iArg, SEXP xArg, SEXP icolsArg, SEXP xcolsArg, SEXP isorted,
                 SEXP multArg, SEXP opArg, SEXP nqgrpArg, SEXP nqmaxgrpArg);
 
 // quickselect
-double dquickselect(double *x, int n, int k);
-double iquickselect(int *x, int n, int k);
+double dquickselect(double *x, int n);
+double iquickselect(int *x, int n);
+double i64quickselect(int64_t *x, int n);
 
 // fread.c
 double wallclock();
@@ -166,20 +182,60 @@ int getDTthreads();
 void avoid_openmp_hang_within_fork();
 
 // froll.c
-void frollmean(unsigned int algo, double *x, uint_fast64_t nx, ans_t *ans, int k, int align, double fill, bool narm, int hasna, bool verbose);
-void frollmeanFast(double *x, uint_fast64_t nx, ans_t *ans, int k, double fill, bool narm, int hasna, bool verbose);
-void frollmeanExact(double *x, uint_fast64_t nx, ans_t *ans, int k, double fill, bool narm, int hasna, bool verbose);
+void frollmean(unsigned int algo, double *x, uint64_t nx, ans_t *ans, int k, int align, double fill, bool narm, int hasna, bool verbose);
+void frollmeanFast(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasna, bool verbose);
+void frollmeanExact(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasna, bool verbose);
+void frollsum(unsigned int algo, double *x, uint64_t nx, ans_t *ans, int k, int align, double fill, bool narm, int hasna, bool verbose);
+void frollsumFast(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasna, bool verbose);
+void frollsumExact(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasna, bool verbose);
+void frollapply(double *x, int64_t nx, double *w, int k, ans_t *ans, int align, double fill, SEXP call, SEXP rho, bool verbose);
 
 // frolladaptive.c
-void fadaptiverollmean(unsigned int algo, double *x, uint_fast64_t nx, ans_t *ans, int *k, double fill, bool narm, int hasna, bool verbose);
-void fadaptiverollmeanFast(double *x, uint_fast64_t nx, ans_t *ans, int *k, double fill, bool narm, int hasna, bool verbose);
-void fadaptiverollmeanExact(double *x, uint_fast64_t nx, ans_t *ans, int *k, double fill, bool narm, int hasna, bool verbose);
+void fadaptiverollmean(unsigned int algo, double *x, uint64_t nx, ans_t *ans, int *k, double fill, bool narm, int hasna, bool verbose);
+void fadaptiverollmeanFast(double *x, uint64_t nx, ans_t *ans, int *k, double fill, bool narm, int hasna, bool verbose);
+void fadaptiverollmeanExact(double *x, uint64_t nx, ans_t *ans, int *k, double fill, bool narm, int hasna, bool verbose);
+void fadaptiverollsum(unsigned int algo, double *x, uint64_t nx, ans_t *ans, int *k, double fill, bool narm, int hasna, bool verbose);
+void fadaptiverollsumFast(double *x, uint64_t nx, ans_t *ans, int *k, double fill, bool narm, int hasna, bool verbose);
+void fadaptiverollsumExact(double *x, uint64_t nx, ans_t *ans, int *k, double fill, bool narm, int hasna, bool verbose);
 
 // frollR.c
-SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEXP narm, SEXP hasNA, SEXP adaptive, SEXP verbose);
+SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEXP narm, SEXP hasNA, SEXP adaptive);
+SEXP frollapplyR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP align, SEXP rho);
 
 // nafill.c
-SEXP colnamesInt(SEXP x, SEXP cols);
-void nafillDouble(double *x, uint_fast64_t nx, unsigned int type, double fill, ans_t *ans, bool verbose);
+void nafillDouble(double *x, uint_fast64_t nx, unsigned int type, double fill, bool nan_is_na, ans_t *ans, bool verbose);
 void nafillInteger(int32_t *x, uint_fast64_t nx, unsigned int type, int32_t fill, ans_t *ans, bool verbose);
-SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP inplace, SEXP cols, SEXP verbose);
+SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, SEXP cols);
+
+// between.c
+SEXP between(SEXP x, SEXP lower, SEXP upper, SEXP incbounds, SEXP NAbounds, SEXP check);
+
+// coalesce.c
+SEXP coalesce(SEXP x, SEXP inplace);
+
+// utils.c
+bool isRealReallyInt(SEXP x);
+SEXP isReallyReal(SEXP x);
+bool allNA(SEXP x, bool errorForBadType);
+SEXP colnamesInt(SEXP x, SEXP cols, SEXP check_dups);
+void coerceFill(SEXP fill, double *dfill, int32_t *ifill, int64_t *i64fill);
+SEXP coerceFillR(SEXP fill);
+bool INHERITS(SEXP x, SEXP char_);
+bool Rinherits(SEXP x, SEXP char_);
+SEXP copyAsPlain(SEXP x);
+void copySharedColumns(SEXP x);
+SEXP lock(SEXP x);
+SEXP unlock(SEXP x);
+bool islocked(SEXP x);
+SEXP islockedR(SEXP x);
+bool need2utf8(SEXP x);
+SEXP coerceUtf8IfNeeded(SEXP x);
+
+// types.c
+char *end(char *start);
+void ansMsg(ans_t *ans, int n, bool verbose, const char *func);
+SEXP testMsgR(SEXP status, SEXP x, SEXP k);
+
+//fifelse.c
+SEXP fifelseR(SEXP l, SEXP a, SEXP b, SEXP na);
+SEXP fcaseR(SEXP na, SEXP rho, SEXP args);

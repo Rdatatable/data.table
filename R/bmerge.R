@@ -1,107 +1,188 @@
 
-bmerge <- function(i, x, leftcols, rightcols, xo, roll, rollends, nomatch, mult, ops, nqgrp, nqmaxgrp, verbose)
+bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbose)
 {
-  # TO DO: rename leftcols to icols, rightcols to xcols
-  # TO DO: xo could be moved inside Cbmerge
-  # bmerge moved to be separate function now that list() doesn't copy in R
-  # types of i join columns are promoted to match x's types (with warning or verbose)
+  callersi = i
+  i = shallow(i)
+  # Just before the call to bmerge() in [.data.table there is a shallow() copy of i to prevent coercions here
+  # by bmerge changing the type of the user's input object by reference. We now shallow copy i again. If we then
+  # coerce a column in i only, we are just changing the temporary coercion used for the merge operation. If we
+  # set callersi too then we are keeping that coerced i column in the merge result returned to user.
+  # The type of the i column is always returned (i.e. just i set not callersi too), other than:
+  #   i) to convert int-as-double to int, useful for ad hoc joins when the L postfix is often forgotten.
+  #  ii) to coerce i.factor to character when joining to x.character
+  # So those are the only two uses of callersi below.
+  # Careful to only use plonk syntax (full column) on i and x from now on, otherwise user's i and x would
+  # change. This is why shallow() is very importantly internal only, currently.
 
-  # Important that i is already passed in as a shallow copy, due to these coercions for factors.
-  # i.e. bmerge(i<-shallow(i),...)
-  # The caller ([.data.table) then uses the coerced columns to build the output
+  # Using .SD in j to join could fail due to being locked and set() being used here, #1926
+  .Call(C_unlock, i)
+  x = shallow(x)
+  .Call(C_unlock, x)
+  if (.Call(C_islocked, callersi)) {
+    .Call(C_unlock, callersi)
+    on.exit(.Call(C_lock, callersi))
+  }
 
-  # careful to only plonk syntax (full column) on i from now on (otherwise i would change)
-  # TO DO: enforce via .internal.shallow attribute and expose shallow() to users
-  # This is why shallow() is very importantly internal only, currently.
+  supported = c(ORDERING_TYPES, "factor", "integer64")
 
-  origi = shallow(i)      # Needed for factor to factor/character joins, to recover the original levels
-                          # Otherwise, types of i join columns are anyways promoted to match x's
-                          # types (with warning or verbose)
-  resetifactor = NULL     # Keep track of any factor to factor/character join cols (only time we keep orig)
-  for (a in seq_along(leftcols)) {
-    # This loop is simply to support joining factor columns
-    # Note that if i is keyed, if this coerces, i's key gets dropped and the key may not be retained
-    lc = leftcols[a]   # i   # TO DO: rename left and right to i and x
-    rc = rightcols[a]  # x
-    icnam = names(i)[lc]
-    xcnam = names(x)[rc]
-    if (is.character(x[[rc]])) {
-      if (is.character(i[[lc]])) next
-      if (!is.factor(i[[lc]]))
-        stop("x.'",xcnam,"' is a character column being joined to i.'",icnam,"' which is type '",typeof(i[[lc]]),"'. Character columns must join to factor or character columns.")
-      if (verbose) cat("Coercing factor column i.'",icnam,"' to character to match type of x.'",xcnam,"'.\n",sep="")
-      set(i,j=lc,value=as.character(i[[lc]]))
-      # no longer copies all of i, thanks to shallow() and :=/set
+  getClass = function(x) {
+    ans = typeof(x)
+    if      (ans=="integer") { if (is.factor(x))             ans = "factor"    }
+    else if (ans=="double")  { if (inherits(x, "integer64")) ans = "integer64" }
+    # do not call isReallyReal(x) yet because i) if both types are double we don't need to coerce even if one or both sides
+    # are int-as-double, and ii) to save calling it until we really need it
+    ans
+  }
+
+  if (nrow(i)) for (a in seq_along(icols)) {
+    # - check that join columns have compatible types
+    # - do type coercions if necessary on just the shallow local copies for the purpose of join
+    # - handle factor columns appropriately
+    # Note that if i is keyed, if this coerces i's key gets dropped by set()
+    ic = icols[a]
+    xc = xcols[a]
+    xclass = getClass(x[[xc]])
+    iclass = getClass(i[[ic]])
+    if (!xclass %chin% supported) stop("x.", names(x)[xc]," is type ", xclass, " which is not supported by data.table join")
+    if (!iclass %chin% supported) stop("i.", names(i)[ic]," is type ", iclass, " which is not supported by data.table join")
+    if (xclass=="factor" || iclass=="factor") {
+      if (roll!=0.0 && a==length(icols))
+        stop("Attempting roll join on factor column when joining x.",names(x)[xc]," to i.",names(i)[ic],". Only integer, double or character columns may be roll joined.")
+      if (xclass=="factor" && iclass=="factor") {
+        if (verbose) cat("Matching i.",names(i)[ic]," factor levels to x.",names(x)[xc]," factor levels.\n",sep="")
+        set(i, j=ic, value=chmatch(levels(i[[ic]]), levels(x[[xc]]), nomatch=0L)[i[[ic]]])  # nomatch=0L otherwise a level that is missing would match to NA values
+        next
+      } else {
+        if (xclass=="character") {
+          if (verbose) cat("Coercing factor column i.",names(i)[ic]," to type character to match type of x.",names(x)[xc],".\n",sep="")
+          set(i, j=ic, value=val<-as.character(i[[ic]]))
+          set(callersi, j=ic, value=val)  # factor in i joining to character in x will return character and not keep x's factor; e.g. for antaresRead #3581
+          next
+        } else if (iclass=="character") {
+          if (verbose) cat("Matching character column i.",names(i)[ic]," to factor levels in x.",names(x)[xc],".\n",sep="")
+          newvalue = chmatch(i[[ic]], levels(x[[xc]]), nomatch=0L)
+          if (anyNA(i[[ic]])) newvalue[is.na(i[[ic]])] = NA_integer_  # NA_character_ should match to NA in factor, #3809
+          set(i, j=ic, value=newvalue)
+          next
+        }
+      }
+      stop("Incompatible join types: x.", names(x)[xc], " (",xclass,") and i.", names(i)[ic], " (",iclass,"). Factor columns must join to factor or character columns.")
+    }
+    if (xclass == iclass) {
+      if (verbose) cat("i.",names(i)[ic]," has same type (",xclass,") as x.",names(x)[xc],". No coercion needed.\n", sep="")
       next
     }
-    if (is.factor(x[[rc]])) {
-      if (is.character(i[[lc]])) {
-        if (verbose) cat("Coercing character column i.'",icnam,"' to factor to match type of x.'",xcnam,"'. If possible please change x.'",xcnam,"' to character. Character columns are now preferred in joins.\n",sep="")
-        set(origi, j=lc, value=factor(origi[[lc]])) # note the use of 'origi' here - see #499 and #945
-        # TO DO: we need a way to avoid copying 'value' for internal purposes
-        # that would allow setting: set(i, j=lc, value=origi[[lc]]) without resulting in a copy.
-        # until then using 'val <- origi[[lc]]' below to avoid another copy.
-      } else {
-        if (!is.factor(i[[lc]]))
-          stop("x.'",xcnam,"' is a factor column being joined to i.'",icnam,"' which is type '",typeof(i[[lc]]),"'. Factor columns must join to factor or character columns.")
+    if (xclass=="character" || iclass=="character" ||
+        xclass=="logical" || iclass=="logical" ||
+        xclass=="factor" || iclass=="factor") {
+      if (anyNA(i[[ic]]) && allNA(i[[ic]])) {
+        if (verbose) cat("Coercing all-NA i.",names(i)[ic]," (",iclass,") to type ",xclass," to match type of x.",names(x)[xc],".\n",sep="")
+        set(i, j=ic, value=match.fun(paste0("as.", xclass))(i[[ic]]))
+        next
       }
-      # Retain original levels of i's factor columns in factor to factor joins (important when NAs,
-      # see tests 687 and 688).
-      # Moved it outside of 'else' to fix #499 and #945.
-      resetifactor = c(resetifactor,lc)
-      if (roll!=0.0 && a==length(leftcols)) stop("Attempting roll join on factor column x.",names(x)[rc],". Only integer, double or character colums may be roll joined.")   # because the chmatch on next line returns <strike>NA</strike> <new>0</new> for missing chars in x (rather than some integer greater than existing). Note roll!=0.0 is ok in this 0 special floating point case e.g. as.double(FALSE)==0.0 is ok, and "nearest"!=0.0 is also true.
-      val = origi[[lc]] # note: using 'origi' here because set(..., value = .) always copies '.', we need a way to avoid it in internal cases.
-      lx = levels(x[[rc]])
-      li = levels(val)
-      newfactor = chmatch(li, lx, nomatch=0L)[val] # fix for #945, a hacky solution for now.
-      levels(newfactor) = lx
-      class(newfactor) = "factor"
-      set(i, j=lc, value=newfactor)
-      # COMMENT BELOW IS NOT TRUE ANYMORE... had to change nomatch to 0L to take care of case where 'NA' occurs as a separate value... See #945.
-      # <OUTDATED> NAs can be produced by this level match, in which case the C code (it knows integer value NA)
-      # can skip over the lookup. It's therefore important we pass NA rather than 0 to the C code.
+      else if (anyNA(x[[xc]]) && allNA(x[[xc]])) {
+        if (verbose) cat("Coercing all-NA x.",names(x)[xc]," (",xclass,") to type ",iclass," to match type of i.",names(i)[ic],".\n",sep="")
+        set(x, j=xc, value=match.fun(paste0("as.", iclass))(x[[xc]]))
+        next
+      }
+      stop("Incompatible join types: x.", names(x)[xc], " (",xclass,") and i.", names(i)[ic], " (",iclass,")")
     }
-    # Fix for #1108.
-    # TODO: clean this code up...
-    # NOTE: bit64::is.double(int64) returns FALSE.. but base::is.double returns TRUE
-    is.int64 <- function(x) inherits(x, 'integer64')
-    is.strictlydouble <- function(x) !is.int64(x) && is.double(x)
-    if (is.integer(x[[rc]]) && (base::is.double(i[[lc]]) || is.logical(i[[lc]]))) {
-      # TO DO: add warning if reallyreal about loss of precision
-      # or could coerce in binary search on the fly, at cost
-      if (verbose) cat("Coercing ", typeof(i[[lc]])," column i.'",icnam,"' to integer to match type of x.'",xcnam,"'. Please avoid coercion for efficiency.\n",sep="")
-      newval = i[[lc]]
-      if (is.int64(newval))
-        newval = as.integer(newval)
-      else mode(newval) = "integer"  # retains column attributes (such as IDateTime class)
-      set(i, j=lc, value=newval)
-    } else if (is.int64(x[[rc]]) && (is.integer(i[[lc]]) || is.logical(i[[lc]]) || is.strictlydouble(i[[lc]]) )) {
-      if (verbose) cat("Coercing ",typeof(i[[lc]])," column i.'",icnam,"' to double to match type of x.'",xcnam,"'. Please avoid coercion for efficiency.\n",sep="")
-      newval = bit64::as.integer64(i[[lc]])
-      set(i, j=lc, value=newval)
-    } else if (is.strictlydouble(x[[rc]]) && (is.integer(i[[lc]]) || is.logical(i[[lc]]) || is.int64(i[[lc]]) )) {
-      if (verbose) cat("Coercing ",typeof(i[[lc]])," column i.'",icnam,"' to double to match type of x.'",xcnam,"'. Please avoid coercion for efficiency.\n",sep="")
-      newval = i[[lc]]
-      if (is.int64(newval))
-        newval = as.numeric(newval)
-      else mode(newval) = "double"
-      set(i, j=lc, value=newval)
+    if (xclass=="integer64" || iclass=="integer64") {
+      nm = paste0(c("i.","x."), c(names(i)[ic], names(x)[xc]))
+      if (xclass=="integer64") { w=i; wc=ic; wclass=iclass; } else { w=x; wc=xc; wclass=xclass; nm=rev(nm) }  # w is which to coerce
+      if (wclass=="integer" || (wclass=="double" && !isReallyReal(w[[wc]]))) {
+        if (verbose) cat("Coercing ",wclass," column ", nm[1L], if(wclass=="double")" (which contains no fractions)"," to type integer64 to match type of ", nm[2L],".\n",sep="")
+        set(w, j=wc, value=bit64::as.integer64(w[[wc]]))
+      } else stop("Incompatible join types: ", nm[2L], " is type integer64 but ", nm[1L], " is type double and contains fractions")
+    } else {
+      # just integer and double left
+      if (iclass=="double") {
+        if (!isReallyReal(i[[ic]])) {
+          # common case of ad hoc user-typed integers missing L postfix joining to correct integer keys
+          # we've always coerced to int and returned int, for convenience.
+          if (verbose) cat("Coercing double column i.",names(i)[ic]," (which contains no fractions) to type integer to match type of x.",names(x)[xc],".\n",sep="")
+          val = as.integer(i[[ic]])
+          if (!is.null(attributes(i[[ic]]))) attributes(val) = attributes(i[[ic]])  # to retain Date for example; 3679
+          set(i, j=ic, value=val)
+          set(callersi, j=ic, value=val)       # change the shallow copy of i up in [.data.table to reflect in the result, too.
+        } else {
+          if (verbose) cat("Coercing integer column x.",names(x)[xc]," to type double to match type of i.",names(i)[ic]," which contains fractions.\n",sep="")
+          set(x, j=xc, value=as.double(x[[xc]]))
+        }
+      } else {
+        if (verbose) cat("Coercing integer column i.",names(i)[ic]," to type double for join to match type of x.",names(x)[xc],".\n",sep="")
+        set(i, j=ic, value=as.double(i[[ic]]))
+      }
     }
   }
-  ## after all modifications of i, check if i has a proper key on all leftcols
-  io <- identical(leftcols, head(chmatch(key(i), names(i)), length(leftcols)))
-  if (verbose) {last.started.at=proc.time();cat("Starting bmerge ...");flush.console()}
-  ans = .Call(Cbmerge, i, x, as.integer(leftcols), as.integer(rightcols), io, xo, roll, rollends, nomatch, mult, ops, nqgrp, nqmaxgrp)
-  if (verbose) {cat("done in",timetaken(last.started.at),"\n"); flush.console()}
 
-  # in the caller's shallow copy,  see comment at the top of this function for usage
-  # We want to leave the coercions to i in place otherwise, since the caller depends on that to build the result
-  if (length(resetifactor)) {
-    for (ii in resetifactor)
-      set(i,j=ii,value=origi[[ii]])
-    if (haskey(origi))
-      setattr(i, 'sorted', key(origi))
+  ## after all modifications of i, check if i has a proper key on all icols
+  io = identical(icols, head(chmatch(key(i), names(i)), length(icols)))
+
+  ## after all modifications of x, check if x has a proper key on all xcols.
+  ## If not, calculate the order. Also for non-equi joins, the order must be calculated.
+  non_equi = which.first(ops != 1L) # 1 is "==" operator
+  if (is.na(non_equi)) {
+    # equi join. use existing key (#1825) or existing secondary index (#1439)
+    if (identical(xcols, head(chmatch(key(x), names(x)), length(xcols)))) {
+      xo = integer(0L)
+      if (verbose) cat("on= matches existing key, using key\n")
+    } else {
+      xo = NULL
+      if (isTRUE(getOption("datatable.use.index"))) {
+        xo = getindex(x, names(x)[xcols])
+        if (verbose && !is.null(xo)) cat("on= matches existing index, using index\n")
+      }
+      if (is.null(xo)) {
+        if (verbose) {last.started.at=proc.time(); flush.console()}
+        xo = forderv(x, by = xcols)
+        if (verbose) {cat("Calculated ad hoc index in",timetaken(last.started.at),"\n"); flush.console()}
+        # TODO: use setindex() instead, so it's cached for future reuse
+      }
+    }
+    ## these variables are only needed for non-equi joins. Set them to default.
+    nqgrp = integer(0L)
+    nqmaxgrp = 1L
+  } else {
+    # non-equi operators present.. investigate groups..
+    nqgrp = integer(0L)
+    nqmaxgrp = 1L
+    if (verbose) cat("Non-equi join operators detected ... \n")
+    if (roll != FALSE) stop("roll is not implemented for non-equi joins yet.")
+    if (verbose) {last.started.at=proc.time();cat("  forder took ... ");flush.console()}
+    # TODO: could check/reuse secondary indices, but we need 'starts' attribute as well!
+    xo = forderv(x, xcols, retGrp=TRUE)
+    if (verbose) {cat(timetaken(last.started.at),"\n"); flush.console()}
+    xg = attr(xo, 'starts', exact=TRUE)
+    resetcols = head(xcols, non_equi-1L)
+    if (length(resetcols)) {
+      # TODO: can we get around having to reorder twice here?
+      # or at least reuse previous order?
+      if (verbose) {last.started.at=proc.time();cat("  Generating group lengths ... ");flush.console()}
+      resetlen = attr(forderv(x, resetcols, retGrp=TRUE), 'starts', exact=TRUE)
+      resetlen = .Call(Cuniqlengths, resetlen, nrow(x))
+      if (verbose) {cat("done in",timetaken(last.started.at),"\n"); flush.console()}
+    } else resetlen = integer(0L)
+    if (verbose) {last.started.at=proc.time();cat("  Generating non-equi group ids ... ");flush.console()}
+    nqgrp = .Call(Cnestedid, x, xcols[non_equi:length(xcols)], xo, xg, resetlen, mult)
+    if (verbose) {cat("done in",timetaken(last.started.at),"\n"); flush.console()}
+    if (length(nqgrp)) nqmaxgrp = max(nqgrp) # fix for #1986, when 'x' is 0-row table max(.) returns -Inf.
+    if (nqmaxgrp > 1L) { # got some non-equi join work to do
+      if ("_nqgrp_" %in% names(x)) stop("Column name '_nqgrp_' is reserved for non-equi joins.")
+      if (verbose) {last.started.at=proc.time();cat("  Recomputing forder with non-equi ids ... ");flush.console()}
+      set(nqx<-shallow(x), j="_nqgrp_", value=nqgrp)
+      xo = forderv(nqx, c(ncol(nqx), xcols))
+      if (verbose) {cat("done in",timetaken(last.started.at),"\n"); flush.console()}
+    } else nqgrp = integer(0L)
+    if (verbose) cat("  Found", nqmaxgrp, "non-equi group(s) ...\n")
   }
+
+  if (verbose) {last.started.at=proc.time();cat("Starting bmerge ...\n");flush.console()}
+  ans = .Call(Cbmerge, i, x, as.integer(icols), as.integer(xcols), io, xo, roll, rollends, nomatch, mult, ops, nqgrp, nqmaxgrp)
+  if (verbose) {cat("bmerge done in",timetaken(last.started.at),"\n"); flush.console()}
+  # TO DO: xo could be moved inside Cbmerge
+
+  ans$xo = xo  # for further use by [.data.table
   return(ans)
 }
 

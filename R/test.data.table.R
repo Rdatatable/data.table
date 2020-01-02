@@ -1,9 +1,10 @@
-test.data.table <- function(verbose=FALSE, pkg="pkg", silent=FALSE, with.other.packages=FALSE, benchmark=FALSE, script="tests.Rraw") {
+test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=FALSE, showProgress=interactive()&&!silent) {
+  stopifnot(isTRUEorFALSE(verbose), isTRUEorFALSE(silent), isTRUEorFALSE(showProgress))
   if (exists("test.data.table", .GlobalEnv,inherits=FALSE)) {
     # package developer
     # nocov start
     if ("package:data.table" %chin% search()) stop("data.table package is loaded. Unload or start a fresh R session.")
-    rootdir = if (pkg %chin% dir()) file.path(getwd(), pkg) else Sys.getenv("CC_DIR")
+    rootdir = if (pkg!="." && pkg %chin% dir()) file.path(getwd(), pkg) else Sys.getenv("PROJ_PATH")
     subdir = file.path("inst","tests")
     # nocov end
   } else {
@@ -12,38 +13,46 @@ test.data.table <- function(verbose=FALSE, pkg="pkg", silent=FALSE, with.other.p
     subdir = "tests"
   }
   fulldir = file.path(rootdir, subdir)
-  
-  # nocov start
-  if (isTRUE(benchmark)) {
-    warning("'benchmark' argument is deprecated, use script='benchmark.Rraw' instead")
-    script = "benchmark.Rraw"
-  }
-  if (isTRUE(with.other.packages)) {
-    warning("'with.other.packages' argument is deprecated, use script='other.Rraw' instead")
-    script = "other.Rraw"
-  }
-  # nocov end
 
-  if (!is.null(script)) {
-    stopifnot(is.character(script), length(script)==1L, !is.na(script), nzchar(script))
-    if (!identical(basename(script), script)) {
-      # nocov start
-      subdir = dirname(script)
-      fulldir = normalizePath(subdir, mustWork=FALSE)
-      fn = basename(script)
-      # nocov end
-    } else {
-      fn = script
-    }
+  stopifnot(is.character(script), length(script)==1L, !is.na(script), nzchar(script))
+  if (!grepl(".Rraw$", script))
+    stop("script must end with '.Rraw'. If a file ending '.Rraw.bz2' exists, that will be found and used.") # nocov
+
+  if (identical(script,"*.Rraw")) {
+    # nocov start
+    scripts = dir(fulldir, "*.Rraw.*")
+    scripts = scripts[!grepl("bench|other", scripts)]
+    scripts = gsub("[.]bz2$","",scripts)
+    for (fn in scripts) {test.data.table(script=fn, verbose=verbose, pkg=pkg, silent=silent, showProgress=showProgress); cat("\n");}
+    return(invisible())
+    # nocov end
+  }
+
+  if (!identical(basename(script), script)) {
+    # nocov start
+    subdir = dirname(script)
+    fulldir = normalizePath(subdir, mustWork=FALSE)
+    fn = basename(script)
+    # nocov end
   } else {
-    stop("'script' argument should not be NULL") # nocov
+    fn = script
+  }
+
+  if (!file.exists(file.path(fulldir, fn))) {
+    # see end of CRAN_Release.cmd where *.Rraw are compressed just for CRAN release; #3937
+    # nocov start
+    fn2 = paste0(fn,".bz2")
+    if (!file.exists(file.path(fulldir, fn2)))
+      stop(gettextf("Neither %s nor %s exist in %s",fn, fn2, fulldir, domain="R-data.table"))
+    fn = fn2
+    # nocov end
+    # sys.source() below accepts .bz2 directly.
   }
   fn = setNames(file.path(fulldir, fn), file.path(subdir, fn))
-  if (!file.exists(fn)) stop(fn," does not exist") # nocov
 
   # From R 3.6.0 onwards, we can check that && and || are using only length-1 logicals (in the test suite)
   # rather than relying on x && y being equivalent to x[[1L]] && y[[1L]]  silently.
-  orig__R_CHECK_LENGTH_1_LOGIC2_ <- Sys.getenv("_R_CHECK_LENGTH_1_LOGIC2_", unset = NA_character_)
+  orig__R_CHECK_LENGTH_1_LOGIC2_ = Sys.getenv("_R_CHECK_LENGTH_1_LOGIC2_", unset = NA_character_)
   Sys.setenv("_R_CHECK_LENGTH_1_LOGIC2_" = TRUE)
   # This environment variable is restored to its previous state (including not defined) after sourcing test script
 
@@ -51,17 +60,48 @@ test.data.table <- function(verbose=FALSE, pkg="pkg", silent=FALSE, with.other.p
   # sample method changed in R 3.6 to remove bias; see #3431 for links and notes
   # This can be removed (and over 120 tests updated) if and when the oldest R version we test and support is moved to R 3.6
 
-  oldverbose = options(datatable.verbose=verbose)
-  oldenc = options(encoding="UTF-8")[[1L]]  # just for tests 708-712 on Windows
   # TO DO: reinstate solution for C locale of CRAN's Mac (R-Forge's Mac is ok)
   # oldlocale = Sys.getlocale("LC_CTYPE")
   # Sys.setlocale("LC_CTYPE", "")   # just for CRAN's Mac to get it off C locale (post to r-devel on 16 Jul 2012)
 
-  cat("Running", fn, "\n")
+  # Control options in case user set them. The user's values are restored after the sys.source() below.
+  if (is.null(options()$warnPartialMatchArgs))   options(warnPartialMatchArgs=FALSE)   # R 3.1.0 had a NULL default for these 3. Set to FALSE
+  if (is.null(options()$warnPartialMatchAttr))   options(warnPartialMatchAttr=FALSE)   # now otherwise options(oldOptions) fails later.
+  if (is.null(options()$warnPartialMatchDollar)) options(warnPartialMatchDollar=FALSE)
+  oldOptions = options(
+    datatable.verbose = verbose,
+    encoding = "UTF-8",  # just for tests 708-712 on Windows
+    scipen = 0L,  # fwrite now respects scipen
+    datatable.optimize = Inf,
+    datatable.alloccol = 1024L,
+    datatable.print.class = FALSE,  # this is TRUE in cc.R and we like TRUE. But output= tests need to be updated (they assume FALSE currently)
+    datatable.rbindlist.check = NULL,
+    datatable.integer64 = "integer64",
+    warnPartialMatchArgs = base::getRversion()>="3.6.0", # ensure we don't rely on partial argument matching in internal code, #3664; >=3.6.0 for #3865
+    warnPartialMatchAttr = TRUE,
+    warnPartialMatchDollar = TRUE,
+    width = max(getOption('width'), 80L) # some tests (e.g. 1066, 1293) rely on capturing output that will be garbled with small width
+  )
+
+  cat("getDTthreads(verbose=TRUE):\n")         # for tracing on CRAN; output to log before anything is attempted
+  getDTthreads(verbose=TRUE)                   # includes the returned value in the verbose output (rather than dangling '[1] 4'); e.g. "data.table is using 4 threads"
+  cat("test.data.table() running:", fn, "\n")  # print fn to log before attempting anything on it (in case it is missing); on same line for slightly easier grep
   env = new.env(parent=.GlobalEnv)
   assign("testDir", function(x) file.path(fulldir, x), envir=env)
+
+  # are R's messages being translated to a foreign language? #3039, #630
+  txt = eval(parse(text="tryCatch(mean(not__exist__), error = function(e) e$message)"), envir=.GlobalEnv)
+  foreign = txt != "object 'not__exist__' not found"
+  if (foreign) {
+    # nocov start
+    cat("\n**** This R session's language is not English. Each test will still check that the correct number of errors and/or\n",
+          "**** warnings are produced. However, to test the text of each error/warning too, please restart R with LANGUAGE=en\n\n", sep="")
+    # nocov end
+  }
+  assign("foreign", foreign, envir=env)
   assign("nfail", 0L, envir=env)
   assign("ntest", 0L, envir=env)
+  assign("prevtest", -1L, envir=env)
   assign("whichfail", NULL, envir=env)
   assign("started.at", proc.time(), envir=env)
   assign("lasttime", proc.time()[3L], envir=env)  # used by test() to attribute time inbetween tests to the next test
@@ -69,47 +109,63 @@ test.data.table <- function(verbose=FALSE, pkg="pkg", silent=FALSE, with.other.p
   assign("memtest", as.logical(Sys.getenv("TEST_DATA_TABLE_MEMTEST", "FALSE")), envir=env)
   assign("filename", fn, envir=env)
   assign("inittime", as.integer(Sys.time()), envir=env) # keep measures from various test.data.table runs
-  # It doesn't matter that 3000L is far larger than needed for other and benchmark.
-  if(isTRUE(silent)){
-    try(sys.source(fn, envir=env), silent=silent)  # nocov
-  } else {
-    sys.source(fn, envir=env)
-  }
-  options(oldverbose)
-  options(oldenc)
-  # Sys.setlocale("LC_CTYPE", oldlocale)
-  ans = env$nfail==0
+  assign("showProgress", showProgress, envir=env)
 
+  err = try(sys.source(fn, envir=env), silent=silent)
+
+  options(oldOptions)
   if (is.na(orig__R_CHECK_LENGTH_1_LOGIC2_)) {
     Sys.unsetenv("_R_CHECK_LENGTH_1_LOGIC2_")
   } else {
     Sys.setenv("_R_CHECK_LENGTH_1_LOGIC2_" = orig__R_CHECK_LENGTH_1_LOGIC2_) # nocov
   }
-
+  # Sys.setlocale("LC_CTYPE", oldlocale)
   suppressWarnings(do.call("RNGkind",as.list(oldRNG)))
-  # suppressWarning again in the unlikely event that user selected sample='Rounding' themselves before calling test.data.table()
+  # suppressWarnings for the unlikely event that user selected sample='Rounding' themselves before calling test.data.table()
 
-  timings = get("timings", envir=env)
-  ntest = get("ntest", envir=env)
-  nfail = get("nfail", envir=env)
-  started.at = get("started.at", envir=env)
-  whichfail = get("whichfail", envir=env)
+  # Now output platform trace before error (if any) to be sure to always show it; e.g. to confirm endianness in #4099.
+  # As one long dense line for cases when 00check.log only shows the last 13 lines of log; to only use up one
+  # of those 13 line and give a better chance of seeing more of the output before it. Having said that, CRAN
+  # does show the full file output these days, so the 13 line limit no longer bites so much. It still bit recently
+  # when receiving output of R CMD check sent over email, though.
+  cat("\n", date(),   # so we can tell exactly when these tests ran on CRAN to double-check the result is up to date
+    "  endian==", .Platform$endian,
+    ", sizeof(long double)==", .Machine$sizeof.longdouble,
+    ", sizeof(pointer)==", .Machine$sizeof.pointer,
+    ", TZ=", suppressWarnings(Sys.timezone()),
+    ", locale='", Sys.getlocale(), "'",
+    ", l10n_info()='", paste0(names(l10n_info()), "=", l10n_info(), collapse="; "), "'",
+    ", getDTthreads()='", paste0(gsub("[ ][ ]+","==",gsub("^[ ]+","",capture.output(invisible(getDTthreads(verbose=TRUE))))), collapse="; "), "'",
+    "\n", sep="")
 
-  # Summary. This code originally in tests.Rraw and moved up here in #3307
-  # One big long line because CRAN checks output last 13 lines. One long line counts as one out of 13.
-  plat = paste0("endian==", .Platform$endian,
-                ", sizeof(long double)==", .Machine$sizeof.longdouble,
-                ", sizeof(pointer)==", .Machine$sizeof.pointer,
-                ", TZ=", suppressWarnings(Sys.timezone()),
-                ", locale='", Sys.getlocale(), "'",
-                ", l10n_info()='", paste0(names(l10n_info()), "=", l10n_info(), collapse="; "), "'",
-                ", getDTthreads()='", paste0(capture.output(invisible(getDTthreads(verbose=TRUE))), collapse="; "), "'")
-  DT = head(timings[-1L][order(-time)],10)   # exclude id 1 as in dev that includes JIT
+  if (inherits(err,"try-error")) {
+    # nocov start
+    if (silent) return(FALSE)
+    stop("Failed after test ", env$prevtest, " before the next test() call in ",fn)
+    # the try() above with silent=FALSE will have already printed the error itself
+    # nocov end
+  }
+
+  nfail = env$nfail
+  ntest = env$ntest
+  if (nfail > 0L) {
+    # nocov start
+    if (nfail > 1L) {s1="s";s2="s: "} else {s1="";s2=" "}
+    stop(nfail," error",s1," out of ",ntest,". Search ",names(fn)," for test number",s2,paste(env$whichfail,collapse=", "),".")
+    # important to stop() here, so that 'R CMD check' fails
+    # nocov end
+  }
+
+  # There aren't any errors, so we can use up 11 lines for the timings table
+  timings = env$timings
+  DT = head(timings[-1L][order(-time)], 10L)   # exclude id 1 as in dev that includes JIT
   if ((x<-sum(timings[["nTest"]])) != ntest) {
     warning("Timings count mismatch:",x,"vs",ntest)  # nocov
   }
-  cat("\n10 longest running tests took ", as.integer(tt<-DT[, sum(time)]), "s (", as.integer(100*tt/(ss<-timings[,sum(time)])), "% of ", as.integer(ss), "s)\n", sep="")
+  cat("10 longest running tests took ", as.integer(tt<-DT[, sum(time)]), "s (", as.integer(100*tt/(ss<-timings[,sum(time)])), "% of ", as.integer(ss), "s)\n", sep="")
   print(DT, class=FALSE)
+
+  cat("All ",ntest," tests in ",names(fn)," completed ok in ",timetaken(env$started.at),"\n",sep="")
 
   ## this chunk requires to include new suggested deps: graphics, grDevices
   #memtest.plot = function(.inittime) {
@@ -117,7 +173,7 @@ test.data.table <- function(verbose=FALSE, pkg="pkg", silent=FALSE, with.other.p
   #  inittime=PS_rss=GC_used=GC_max_used=NULL
   #  m = fread("memtest.csv")[inittime==.inittime]
   #  if (nrow(m)) {
-  #    ps_na = all(is.na(m[["PS_rss"]])) # OS with no 'ps -o rss R' support
+  #    ps_na = allNA(m[["PS_rss"]]) # OS with no 'ps -o rss R' support
   #    grDevices::png("memtest.png")
   #    p = graphics::par(mfrow=c(if (ps_na) 2 else 3, 2))
   #    if (!ps_na) {
@@ -136,25 +192,11 @@ test.data.table <- function(verbose=FALSE, pkg="pkg", silent=FALSE, with.other.p
   #}
   #if (memtest<-get("memtest", envir=env)) memtest.plot(get("inittime", envir=env))
 
-  # nocov start
-  if (nfail > 0) {
-    if (nfail>1) {s1="s";s2="s: "} else {s1="";s2=" "}
-    cat("\r")
-    stop(nfail," error",s1," out of ",ntest," in ",timetaken(started.at)," on ",date(),". [",plat,"].",
-         " Search ",names(fn)," for test number",s2,paste(whichfail,collapse=", "),".")
-    # important to stop() here, so that 'R CMD check' fails
-  }
-  # nocov end
-  cat(plat,"\n\nAll ",ntest," tests in ",names(fn)," completed ok in ",timetaken(started.at)," on ",date(),"\n",sep="")
-  # date() is included so we can tell exactly when these tests ran on CRAN. Sometimes a CRAN log can show error but that can be just
-  # stale due to not updating yet since a fix in R-devel, for example.
-
-  #attr(ans, "details") <- env
-  invisible(ans)
+  invisible(nfail==0L)
 }
 
 # nocov start
-compactprint <- function(DT, topn=2L) {
+compactprint = function(DT, topn=2L) {
   tt = vapply_1c(DT,function(x)class(x)[1L])
   tt[tt=="integer64"] = "i64"
   tt = substring(tt, 1L, 3L)
@@ -180,7 +222,7 @@ ps_mem = function() {
   ans = tryCatch(as.numeric(system(cmd, intern=TRUE, ignore.stderr=TRUE)), warning=function(w) NA_real_, error=function(e) NA_real_)
   stopifnot(length(ans)==1L) # extra check if other OSes would not handle 'tail -1' properly for some reason
   # returns RSS memory occupied by current R process in MB rounded to 1 decimal places (as in gc), ps already returns KB
-  c("PS_rss"=round(ans / 1024, 1))
+  c("PS_rss"=round(ans / 1024, 1L))
   # nocov end
 }
 
@@ -193,7 +235,7 @@ gc_mem = function() {
   # nocov end
 }
 
-test <- function(num,x,y=TRUE,error=NULL,warning=NULL,output=NULL,message=NULL) {
+test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,notOutput=NULL) {
   # Usage:
   # i) tests that x equals y when both x and y are supplied, the most common usage
   # ii) tests that x is TRUE when y isn't supplied
@@ -209,7 +251,9 @@ test <- function(num,x,y=TRUE,error=NULL,warning=NULL,output=NULL,message=NULL) 
   # 3) each test has a unique id which we refer to in commit messages, emails etc.
   # 4) test that a query generates exactly 2 warnings, that they are both the correct warning messages, and that the result is the one expected
   .test.data.table = exists("nfail", parent.frame()) # test() can be used inside functions defined in tests.Rraw, so inherits=TRUE (default) here
+  numStr = sprintf("%.8g", num)
   if (.test.data.table) {
+    prevtest = get("prevtest", parent.frame())
     nfail = get("nfail", parent.frame())   # to cater for both test.data.table() and stepping through tests in dev
     whichfail = get("whichfail", parent.frame())
     assign("ntest", get("ntest", parent.frame()) + 1L, parent.frame(), inherits=TRUE)   # bump number of tests run
@@ -218,30 +262,36 @@ test <- function(num,x,y=TRUE,error=NULL,warning=NULL,output=NULL,message=NULL) 
     memtest = get("memtest", parent.frame())
     inittime = get("inittime", parent.frame())
     filename = get("filename", parent.frame())
+    foreign = get("foreign", parent.frame())
+    showProgress = get("showProgress", parent.frame())
     time = nTest = NULL  # to avoid 'no visible binding' note
     on.exit( {
-       now = proc.time()[3]
+       now = proc.time()[3L]
        took = now-lasttime  # so that prep time between tests is attributed to the following test
        assign("lasttime", now, parent.frame(), inherits=TRUE)
        timings[ as.integer(num), `:=`(time=time+took, nTest=nTest+1L), verbose=FALSE ]
     } )
-    cat("\rRunning test id", sprintf("%.8g", num), "     ")
-    flush.console()
-    # This flush is for Windows to make sure last test number is written to file in CRAN and win-builder output where
-    # console output is captured. \r seems especially prone to not being auto flushed. The downside is that the last 13
-    # lines output are filled with the last 13 "running test num" lines rather than the last error output, but that's
-    # better than the dev-time-lost when it crashes and it actually crashed much later than the last test number visible.
+    if (showProgress)
+      cat("\rRunning test id", numStr, "     ")   # nocov.
+    # See PR #4090 for comments about change here in Dec 2019.
+    # If a segfault error occurs in future and we'd like to know after which test, then arrange for the
+    # try(sys.source()) in test.data.table() to be run in a separate R process. That process could write out
+    # prevtest to a temp file so we know where it got to from this R process. That should be more reliable
+    # than what we were doing before which was for test() to always write its test number to output (which might
+    # not be flushed to the output upon segfault, depending on OS).
   } else {
+    # not `test.data.table` but developer running tests manually; i.e. `cc(F); test(...)`
     memtest = FALSE          # nocov
     filename = NA_character_ # nocov
+    foreign = FALSE          # nocov ; assumes users of 'cc(F); test(...)' has LANGUAGE=en
+    showProgress = FALSE     # nocov
   }
-
   if (!missing(error) && !missing(y))
-    stop("Test ",num," is invalid: when error= is provided it does not make sense to pass y as well")  # nocov
+    stop("Test ",numStr," is invalid: when error= is provided it does not make sense to pass y as well")  # nocov
 
-  string_match = function(x, y) {
-    length(grep(x,y,fixed=TRUE)) ||                    # try treating x as literal first; useful for most messages containing ()[]+ characters
-    length(tryCatch(grep(x,y), error=function(e)NULL)) # otherwise try x as regexp
+  string_match = function(x, y, ignore.case=FALSE) {
+    length(grep(x, y, fixed=TRUE)) ||  # try treating x as literal first; useful for most messages containing ()[]+ characters
+    length(tryCatch(grep(x, y, ignore.case=ignore.case), error=function(e)NULL))  # otherwise try x as regexp
   }
 
   xsub = substitute(x)
@@ -264,7 +314,7 @@ test <- function(num,x,y=TRUE,error=NULL,warning=NULL,output=NULL,message=NULL) 
   if (memtest) {
     timestamp = as.numeric(Sys.time())   # nocov
   }
-  if (is.null(output)) {
+  if (is.null(output) && is.null(notOutput)) {
     x = suppressMessages(withCallingHandlers(tryCatch(x, error=eHandler), warning=wHandler, message=mHandler))
     # save the overhead of capture.output() since there are a lot of tests, often called in loops
     # Thanks to tryCatch2 by Jan here : https://github.com/jangorecki/logR/blob/master/R/logR.R#L21
@@ -273,15 +323,24 @@ test <- function(num,x,y=TRUE,error=NULL,warning=NULL,output=NULL,message=NULL) 
   }
   if (memtest) {
     mem = as.list(c(inittime=inittime, filename=basename(filename), timestamp=timestamp, test=num, ps_mem(), gc_mem())) # nocov
-    fwrite(mem, "memtest.csv", append=TRUE)                                                                             # nocov
+    fwrite(mem, "memtest.csv", append=TRUE, verbose=FALSE)                                                                             # nocov
   }
   fail = FALSE
-  for (type in c("warning","error","message")) {
+  if (.test.data.table) {
+    if (num<prevtest+0.0000005) {
+      # nocov start
+      cat("Test id", numStr, "is not in increasing order\n")
+      fail = TRUE
+      # nocov end
+    }
+    assign("prevtest", num, parent.frame(), inherits=TRUE)
+  }
+  if (!fail) for (type in c("warning","error","message")) {
     observed = actual[[type]]
     expected = get(type)
     if (length(expected) != length(observed)) {
       # nocov start
-      cat("Test ",num," produced ",length(observed)," ",type,"s but expected ",length(expected),"\n",sep="")
+      cat("Test ",numStr," produced ",length(observed)," ",type,"s but expected ",length(expected),"\n",sep="")
       cat(paste("Expected:",expected), sep="\n")
       cat(paste("Observed:",observed), sep="\n")
       fail = TRUE
@@ -289,9 +348,9 @@ test <- function(num,x,y=TRUE,error=NULL,warning=NULL,output=NULL,message=NULL) 
     } else {
       # the expected type occurred and, if more than 1 of that type, in the expected order
       for (i in seq_along(expected)) {
-        if (!string_match(expected[i], observed[i])) {
+        if (!foreign && !string_match(expected[i], observed[i])) {
           # nocov start
-          cat("Test",num,"didn't produce the correct",type,":\n")
+          cat("Test",numStr,"didn't produce the correct",type,":\n")
           cat("Expected:", expected[i], "\n")
           cat("Observed:", observed[i], "\n")
           fail = TRUE
@@ -300,14 +359,28 @@ test <- function(num,x,y=TRUE,error=NULL,warning=NULL,output=NULL,message=NULL) 
       }
     }
   }
-  if (!fail && !length(error) && length(output)) {
+  if (fail && exists("out",inherits=FALSE)) {
+    # nocov start
+    cat("Output captured before unexpected warning/error/message:\n")
+    cat(out,sep="\n")
+    # nocov end
+  }
+  if (!fail && !length(error) && (length(output) || length(notOutput))) {
     if (out[length(out)] == "NULL") out = out[-length(out)]
     out = paste(out, collapse="\n")
     output = paste(output, collapse="\n")  # so that output= can be either a \n separated string, or a vector of strings.
-    if (!string_match(output, out)) {
+    if (length(output) && !string_match(output, out)) {
       # nocov start
-      cat("Test",num,"didn't produce correct output:\n")
+      cat("Test",numStr,"did not produce correct output:\n")
       cat("Expected: <<",gsub("\n","\\\\n",output),">>\n",sep="")  # \n printed as '\\n' so the two lines of output can be compared vertically
+      cat("Observed: <<",gsub("\n","\\\\n",out),">>\n",sep="")
+      fail = TRUE
+      # nocov end
+    }
+    if (length(notOutput) && string_match(notOutput, out, ignore.case=TRUE)) {
+      # nocov start
+      cat("Test",numStr,"produced output but should not have:\n")
+      cat("Expected absent (case insensitive): <<",gsub("\n","\\\\n",notOutput),">>\n",sep="")
       cat("Observed: <<",gsub("\n","\\\\n",out),">>\n",sep="")
       fail = TRUE
       # nocov end
@@ -320,7 +393,7 @@ test <- function(num,x,y=TRUE,error=NULL,warning=NULL,output=NULL,message=NULL) 
     if (is.data.table(x) && is.data.table(y)) {
       if (!selfrefok(x) || !selfrefok(y)) {
         # nocov start
-        cat("Test ",num," ran without errors but selfrefok(", if(!selfrefok(x))"x"else"y", ") is FALSE\n", sep="")
+        cat("Test ",numStr," ran without errors but selfrefok(", if(!selfrefok(x))"x"else"y", ") is FALSE\n", sep="")
         fail = TRUE
         # nocov end
       } else {
@@ -342,12 +415,20 @@ test <- function(num,x,y=TRUE,error=NULL,warning=NULL,output=NULL,message=NULL) 
     # For test 617 on r-prerel-solaris-sparc on 7 Mar 2013
     # nocov start
     if (!fail) {
-      cat("Test",num,"ran without errors but failed check that x equals y:\n")
-      cat("> x =",deparse(xsub),"\n")
-      if (is.data.table(x)) compactprint(x) else {cat("First 6 of ", length(x)," (type '", typeof(x), "'): ", sep=""); print(head(x))}
-      cat("> y =",deparse(ysub),"\n")
-      if (is.data.table(y)) compactprint(y) else {cat("First 6 of ", length(y)," (type '", typeof(y), "'): ", sep=""); print(head(y))}
-      if (!isTRUE(all.equal.result)) cat(all.equal.result,sep="\n")
+      cat("Test", numStr, "ran without errors but failed check that x equals y:\n")
+      failPrint = function(x, xsub) {
+        cat(">", substitute(x), "=", xsub, "\n")
+        if (is.data.table(x)) compactprint(x) else {
+          nn = length(x)
+          cat(sprintf("First %d of %d (type '%s'): \n", min(nn, 6L), length(x), typeof(x)))
+          # head.matrix doesn't restrict columns
+          if (length(d <- dim(x))) do.call(`[`, c(list(x, drop = FALSE), lapply(pmin(d, 6L), seq_len)))
+          else print(head(x))
+        }
+      }
+      failPrint(x, deparse(xsub))
+      failPrint(y, deparse(ysub))
+      if (!isTRUE(all.equal.result)) cat(all.equal.result, sep="\n")
       fail = TRUE
     }
     # nocov end
@@ -355,7 +436,7 @@ test <- function(num,x,y=TRUE,error=NULL,warning=NULL,output=NULL,message=NULL) 
   if (fail && .test.data.table) {
     # nocov start
     assign("nfail", nfail+1L, parent.frame(), inherits=TRUE)
-    assign("whichfail", c(whichfail, num), parent.frame(), inherits=TRUE)
+    assign("whichfail", c(whichfail, numStr), parent.frame(), inherits=TRUE)
     # nocov end
   }
   invisible(!fail)

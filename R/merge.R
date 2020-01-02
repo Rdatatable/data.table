@@ -1,9 +1,10 @@
-merge.data.table <- function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FALSE, all.x = all,
+merge.data.table = function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FALSE, all.x = all,
                all.y = all, sort = TRUE, suffixes = c(".x", ".y"), no.dups = TRUE, allow.cartesian=getOption("datatable.allow.cartesian"), ...) {
   if (!sort %in% c(TRUE, FALSE))
     stop("Argument 'sort' should be logical TRUE/FALSE")
   if (!no.dups %in% c(TRUE, FALSE))
     stop("Argument 'no.dups' should be logical TRUE/FALSE")
+  class_x = class(x)
   if (!is.data.table(y)) {
     y = as.data.table(y)
     if (missing(by) && missing(by.x)) {
@@ -60,11 +61,11 @@ merge.data.table <- function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FA
     end[chmatch(dupkeyx, end, 0L)] = paste0(dupkeyx, suffixes[2L])
   }
 
-  dt = y[x,nomatch = if (all.x) NA else 0L,on=by,allow.cartesian=allow.cartesian]   # includes JIS columns (with a i. prefix if conflict with x names)
+  dt = y[x, nomatch=if (all.x) NA else NULL, on=by, allow.cartesian=allow.cartesian]   # includes JIS columns (with a i. prefix if conflict with x names)
 
   if (all.y && nrow(y)) {  # If y does not have any rows, no need to proceed
     # Perhaps not very commonly used, so not a huge deal that the join is redone here.
-    missingyidx = y[!x,which=TRUE,on=by,allow.cartesian=allow.cartesian]
+    missingyidx = y[!x, which=TRUE, on=by, allow.cartesian=allow.cartesian]
     if (length(missingyidx)) {
       yy = y[missingyidx]
       othercolsx = setdiff(names(x), by)
@@ -78,7 +79,7 @@ merge.data.table <- function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FA
       dt = rbind(dt, yy, use.names=FALSE)
     }
   }
-  # X[Y] sytax puts JIS i columns at the end, merge likes them alongside i.
+  # X[Y] syntax puts JIS i columns at the end, merge likes them alongside i.
   newend = setdiff(names(y), by.y)
   # fix for #1290, make sure by.y order is set properly before naming
   setcolorder(dt, c(by.y, setdiff(names(dt), c(by.y, newend)), newend))
@@ -89,15 +90,13 @@ merge.data.table <- function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FA
 
   # Throw warning if there are duplicate column names in 'dt' (i.e. if
   # `suffixes=c("","")`, to match behaviour in base:::merge.data.frame)
-  resultdupnames <- names(dt)[duplicated(names(dt))]
+  resultdupnames = names(dt)[duplicated(names(dt))]
   if (length(resultdupnames)) {
     warning("column names ", paste0("'", resultdupnames, "'", collapse=", "),
             " are duplicated in the result")
   }
 
-  # merge resets class, #1378. X[Y] is quite clear that X is being *subset* by Y,
-  # makes sense to therefore retain X's class, unlike `merge`. Hard to tell what
-  # class to retain for *full join* for example.
-  setattr(dt, 'class', c("data.table", "data.frame"))
+  # retain custom classes of first argument that resulted in dispatch to this method, #1378
+  setattr(dt, "class", class_x)
   dt
 }

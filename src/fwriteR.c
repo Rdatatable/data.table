@@ -19,11 +19,11 @@ const char *getString(SEXP *col, int64_t row) {   // TODO: inline for use in fwr
   return x==NA_STRING ? NULL : CHAR(x);
 }
 
-const int getStringLen(SEXP *col, int64_t row) {
+int getStringLen(SEXP *col, int64_t row) {
   return LENGTH(col[row]);  // LENGTH of CHARSXP is nchar
 }
 
-const int getMaxStringLen(const SEXP *col, const int64_t n) {
+int getMaxStringLen(const SEXP *col, const int64_t n) {
   int max=0;
   SEXP last=NULL;
   for (int i=0; i<n; ++i) {
@@ -36,9 +36,9 @@ const int getMaxStringLen(const SEXP *col, const int64_t n) {
   return max;
 }
 
-const int getMaxCategLen(SEXP col) {
+int getMaxCategLen(SEXP col) {
   col = getAttrib(col, R_LevelsSymbol);
-  if (!isString(col)) error("Internal error: col passed to getMaxCategLen is missing levels");
+  if (!isString(col)) error(_("Internal error: col passed to getMaxCategLen is missing levels"));
   return getMaxStringLen( STRING_PTR(col), LENGTH(col) );
 }
 
@@ -55,6 +55,7 @@ writer_fun_t funs[] = {
   &writeInt32,
   &writeInt64,
   &writeFloat64,
+  &writeComplex,
   &writeITime,
   &writeDateInt32,
   &writeDateFloat64,
@@ -71,7 +72,7 @@ void writeList(SEXP *col, int64_t row, char **pch) {
   SEXP v = col[row];
   int32_t wf = whichWriter(v);
   if (TYPEOF(v)==VECSXP || wf==INT32_MIN || isFactor(v)) {
-    error("Internal error: getMaxListItemLen should have caught this up front.");  // # nocov
+    error(_("Internal error: getMaxListItemLen should have caught this up front."));  // # nocov
   }
   char *ch = *pch;
   write_chars(sep2start, &ch);
@@ -86,7 +87,7 @@ void writeList(SEXP *col, int64_t row, char **pch) {
   *pch = ch;
 }
 
-const int getMaxListItemLen(const SEXP *col, const int64_t n) {
+int getMaxListItemLen(const SEXP *col, const int64_t n) {
   int max=0;
   SEXP last=NULL;
   for (int i=0; i<n; ++i) {
@@ -94,12 +95,12 @@ const int getMaxListItemLen(const SEXP *col, const int64_t n) {
     if (this==last) continue; // no point calling LENGTH() again on the same string; LENGTH is unlikely as fast as single pointer compare
     int32_t wf = whichWriter(this);
     if (TYPEOF(this)==VECSXP || wf==INT32_MIN || isFactor(this)) {
-      error("Row %d of list column is type '%s' - not yet implemented. fwrite() can write list columns containing items which are atomic vectors of" \
-            " type logical, integer, integer64, double and character.", i+1, isFactor(this) ? "factor" : type2char(TYPEOF(this)));
+      error(_("Row %d of list column is type '%s' - not yet implemented. fwrite() can write list columns containing items which are atomic vectors of type logical, integer, integer64, double, complex and character."),
+            i+1, isFactor(this) ? "factor" : type2char(TYPEOF(this)));
     }
     int width = writerMaxLen[wf];
     if (width==0) {
-      if (wf!=WF_String) STOP("Internal error: row %d of list column has no max length method implemented", i+1); // # nocov
+      if (wf!=WF_String) STOP(_("Internal error: row %d of list column has no max length method implemented"), i+1); // # nocov
       const int l = LENGTH(this);
       for (int j=0; j<l; ++j) width+=LENGTH(STRING_ELT(this, j));
     } else {
@@ -130,6 +131,8 @@ static int32_t whichWriter(SEXP column) {
     if (INHERITS(column, char_Date))     return WF_DateFloat64;
     if (INHERITS(column, char_POSIXct))  return WF_POSIXct;
     return WF_Float64;
+  case CPLXSXP:
+    return WF_Complex;
   case STRSXP:
     return WF_String;
   case VECSXP:
@@ -153,22 +156,27 @@ SEXP fwriteR(
   SEXP rowNames_Arg,       // TRUE|FALSE
   SEXP colNames_Arg,       // TRUE|FALSE
   SEXP logical01_Arg,      // TRUE|FALSE
+  SEXP scipen_Arg,
   SEXP dateTimeAs_Arg,     // 0=ISO(yyyy-mm-dd),1=squash(yyyymmdd),2=epoch,3=write.csv
   SEXP buffMB_Arg,         // [1-1024] default 8MB
   SEXP nThread_Arg,
   SEXP showProgress_Arg,
   SEXP is_gzip_Arg,
+  SEXP bom_Arg,
+  SEXP yaml_Arg,
   SEXP verbose_Arg
   )
 {
-  if (!isNewList(DF)) error("fwrite must be passed an object of type list; e.g. data.frame, data.table");
+  if (!isNewList(DF)) error(_("fwrite must be passed an object of type list; e.g. data.frame, data.table"));
   fwriteMainArgs args;
   args.is_gzip = LOGICAL(is_gzip_Arg)[0];
+  args.bom = LOGICAL(bom_Arg)[0];
+  args.yaml = CHAR(STRING_ELT(yaml_Arg, 0));
   args.verbose = LOGICAL(verbose_Arg)[0];
   args.filename = CHAR(STRING_ELT(filename_Arg, 0));
   args.ncol = length(DF);
   if (args.ncol==0) {
-    warning("fwrite was passed an empty list of no columns. Nothing to write.");
+    warning(_("fwrite was passed an empty list of no columns. Nothing to write."));
     return R_NilValue;
   }
   args.nrow = length(VECTOR_ELT(DF, 0));
@@ -217,15 +225,16 @@ SEXP fwriteR(
   // when called later for cell items of list columns (if any)
   dateTimeAs = INTEGER(dateTimeAs_Arg)[0];
   logical01 = LOGICAL(logical01_Arg)[0];
+  args.scipen = INTEGER(scipen_Arg)[0];
 
   int firstListColumn = 0;
   for (int j=0; j<args.ncol; j++) {
     SEXP column = VECTOR_ELT(DFcoerced, j);
     if (args.nrow != length(column))
-      error("Column %d's length (%d) is not the same as column 1's length (%d)", j+1, length(column), args.nrow);
+      error(_("Column %d's length (%d) is not the same as column 1's length (%d)"), j+1, length(column), args.nrow);
     int32_t wf = whichWriter(column);
     if (wf<0) {
-      error("Column %d's type is '%s' - not yet implemented in fwrite.", j+1, type2char(TYPEOF(column)));
+      error(_("Column %d's type is '%s' - not yet implemented in fwrite."), j+1, type2char(TYPEOF(column)));
     }
     args.columns[j] = (wf==WF_CategString ? column : (void *)DATAPTR(column));
     args.whichFun[j] = (uint8_t)wf;
@@ -250,15 +259,15 @@ SEXP fwriteR(
   args.dec = *CHAR(STRING_ELT(dec_Arg,0));
 
   if (!firstListColumn) {
-    if (args.verbose) Rprintf("No list columns are present. Setting sep2='' otherwise quote='auto' would quote fields containing sep2.\n");
+    if (args.verbose) Rprintf(_("No list columns are present. Setting sep2='' otherwise quote='auto' would quote fields containing sep2.\n"));
     args.sep2 = sep2 = '\0';
   } else {
     if (args.verbose) {
-      Rprintf("If quote='auto', fields will be quoted if the field contains either sep ('%c') or sep2 ('%c') because column %d is a list column.\n",
+      Rprintf(_("If quote='auto', fields will be quoted if the field contains either sep ('%c') or sep2 ('%c') because column %d is a list column.\n"),
               args.sep, args.sep2, firstListColumn );
     }
     if (args.dec==args.sep || args.dec==args.sep2 || args.sep==args.sep2) {
-      error("sep ('%c'), sep2 ('%c') and dec ('%c') must all be different. Column %d is a list column.",
+      error(_("sep ('%c'), sep2 ('%c') and dec ('%c') must all be different. Column %d is a list column."),
             args.sep, args.sep2, args.dec, firstListColumn);
     }
   }
@@ -281,4 +290,3 @@ SEXP fwriteR(
   UNPROTECT(protecti);
   return(R_NilValue);
 }
-
