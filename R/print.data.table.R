@@ -192,9 +192,14 @@ cut_top = function(x) cat(capture.output(x)[-1L], sep = '\n')
 # for printing the dims for list columns #3671
 #   is used in format.data.table()
 paste_dims = function(x) {
-  dims = dim(x)
-  if (is.null(dims))
-    dims = length(x)
+  if (isS4(x)) {
+    dims = length(slotNames(x))
+  } else {
+    dims = dim(x)
+    if (is.null(dims))
+      dims = length(x)
+  }
+
   dims = paste(dims, collapse="x")
   paste0("[", dims, "]")
 }

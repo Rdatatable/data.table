@@ -16729,6 +16729,23 @@ test(2130.02, capture.output(print(DT)),
      c("   x         y",
        "1: 1 <list[2]>",
        "2: 2 <list[2]>"))
+s4class <- setClass("ex_class",
+                    slots = list(x = "integer",
+                                 y = "character",
+                                 z = "numeric"))
+DT = data.table::data.table(
+  x = 1:2,
+  y = list(s4class(x = 1L,
+                   y = c("yes", "no"),
+                   z = 2.5),
+           s4class(x = 2L,
+                   y = "yes",
+                   z = 1)))
+test(2130.03, capture.output(print(DT)),
+     c("   x             y",
+       "1: 1 <ex_class[3]>",
+       "2: 2 <ex_class[3]>"))
+
 
 ########################
 #  Add new tests here  #
