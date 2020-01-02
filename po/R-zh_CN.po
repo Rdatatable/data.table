@@ -243,7 +243,7 @@ msgid "on= matches existing index, using index"
 msgstr "on=和现有索引(index)相等,用索引"
 
 msgid "Calculated ad hoc index in %s"
-msgstr ""
+msgstr "计算临时索引用了 %s"
 
 msgid "Non-equi join operators detected ..."
 msgstr "侦测到不等长联结操作符(operator)..."
