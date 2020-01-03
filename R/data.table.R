@@ -2019,7 +2019,9 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
     uniq.col.classes = target.class
   }
   
-  X = .Call(Casmatrix, X, rownames)
+  # Copy the values into a matrix
+  X = .Call(Casmatrix, X, rownames) # rownames here is a column index to skip over
+  class(X) = uniq.col.classes # setting class allows for non-atomic types, e.g. integer64
   dim(X) = c(n, length(X)/n)
   dimnames(X) = list(rownames.value, unlist(collabs, use.names = FALSE))
   X
