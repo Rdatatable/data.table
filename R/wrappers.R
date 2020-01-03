@@ -15,7 +15,7 @@ testMsg = function(status=0L, nx=2L, nk=2L) .Call(CtestMsgR, as.integer(status)[
 
 fwhich = function(x) .Call(CfwhichR, substitute(x), parent.frame())
 which_eq = function(x, value, negate=FALSE, intersect=NULL) .Call(Cwhich_eqR, x, value, negate, intersect) ## only for benchmarking
-fsintersect = function(x, y) .Call(CsfintersectR, x, y) ## only for benchmarking
+fsintersect = function(x, y) .Call(CfsintersectR, x, y) ## only for benchmarking
 #fwhichOpt = function(x) .Call(CfwhichOptR, substitute(x)) ## only for dev testing
 
 "%!in%" = function(x, y) !(x %in% y)
