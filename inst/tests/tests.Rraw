@@ -1631,7 +1631,7 @@ test(557, DT[, f(.SD), by=x], error="[.]SD is locked.*reserved for possible futu
 # Test printing on nested data.table, bug #1803
 DT = data.table(x=letters[1:3], y=list(1:10, letters[1:4], data.table(a=1:3,b=4:6)))
 test(558, capture.output(print(DT)),
-          c("   x               y", "1: a 1,2,3,4,5,6,...", "2: b         a,b,c,d", "3: c    <data.table>"))
+     c("   x                 y", "1: a   1,2,3,4,5,6,...", "2: b           a,b,c,d", "3: c <data.table[3x2]>"))
 test(559, setkey(DT,x)["a",y][[1]], 1:10)   # y is symbol representing list column, specially detected in dogroups
 
 # Test renaming of .N to N
@@ -8280,11 +8280,11 @@ DT1  = data.table(lcol = list(list(1:3), list(1:3), list(1:3)),
                   xcol = as.complex(icol), ocol = factor(icol, ordered = TRUE),
                   fcol = factor(icol))
 test(1610.1, capture.output(print(DT1, class=TRUE)),
-     c("     lcol  icol  ncol   ccol   xcol  ocol   fcol",
-       "   <list> <int> <num> <char> <cplx> <ord> <fctr>",
-       "1: <list>     1     1      a   1+0i     1      1",
-       "2: <list>     2     2      b   2+0i     2      2",
-       "3: <list>     3     3      c   3+0i     3      3"))
+     c("        lcol  icol  ncol   ccol   xcol  ocol   fcol",
+       "      <list> <int> <num> <char> <cplx> <ord> <fctr>",
+       "1: <list[1]>     1     1      a   1+0i     1      1",
+       "2: <list[1]>     2     2      b   2+0i     2      2",
+       "3: <list[1]>     3     3      c   3+0i     3      3"))
 DT2 = data.table(
   Dcol = as.Date('2016-01-01') + 0:2,
   Pcol = as.POSIXct('2016-01-01 01:00:00', tz = 'UTC') + 86400L*(0:2),
@@ -8872,13 +8872,13 @@ test(1635.2, fread(text, fill=TRUE), setnames(ans1[, 1:7], c(letters[1:5], paste
 # testing function type in dt, #518
 dt = data.table(x=1, y=sum)
 test(1636.1, class(dt$y), "list")
-test(1636.2, any(grepl("1: 1 <function>", capture.output(print(dt)))), TRUE)
+test(1636.2, print(dt), output="1: 1 <function[1]>")
 dt = data.table(x=1:2, y=sum)
 test(1636.3, class(dt$y), "list")
-test(1636.4, any(grepl("2: 2 <function>", capture.output(print(dt)))), TRUE)
+test(1636.4, print(dt), output="2: 2 <function[1]>")
 dt = data.table(x=1:2, y=c(sum, min))
 test(1636.5, class(dt$y), "list")
-test(1636.6, any(grepl("2: 2 <function>", capture.output(print(dt)))), TRUE)
+test(1636.6, print(dt), output="2: 2 <function[1]>")
 
 # #484 fix (related to #495 fix above)
 dt = data.table(a = 1, b = 1)
@@ -16708,13 +16708,31 @@ A = data.table(c1 = 1, c2 = 'asd', c3 = expression(as.character(Sys.time())))
 B = data.table(c1 = 3, c2 = 'qwe', c3 = expression(as.character(Sys.time()+5)))
 test(2129, rbind(A,B)$c3, expression(as.character(Sys.time()), as.character(Sys.time()+5)))
 
+# print dims in list-columns, #3671
+DT = data.table(
+  x = 1:2,
+  y = list(data.table(x=1, y=1),
+           data.table(x=2, y=2)))
+test(2130.01, print(DT), output=c("   x                 y", "1: 1 <data.table[1x2]>", "2: 2 <data.table[1x2]>"))
+DT = data.table(
+  x = 1:2,
+  y = list(list(x=1, y=c("yes", "no")),
+           list(x=2, y=2)))
+test(2130.02, print(DT), output=c("   x         y", "1: 1 <list[2]>",         "2: 2 <list[2]>"))
+s4class = setClass("ex_class", slots = list(x="integer", y="character", z="numeric"))
+DT = data.table(
+  x = 1:2,
+  y = list(s4class(x=1L, y=c("yes", "no"), z=2.5),
+           s4class(x=2L, y="yes", z=1)))
+test(2130.03, print(DT), output=c("   x             y", "1: 1 <ex_class[3]>",     "2: 2 <ex_class[3]>"))
+
 # S4 object not suported in fifelse and fcase, #4135
 setClass("rdate", slots=list(date="numeric"))
 setMethod("show","rdate", function(object) print(object@date))
 s1 = new("rdate",date=20191231)
 s2 = new("rdate",date=20191230)
-test(2130.1, fifelse(TRUE, s1, s2), error = "S4 class objects (except nanotime) are not supported.")
-test(2130.2, fcase(TRUE, s1, FALSE, s2), error = "S4 class objects (except nanotime) are not supported. Please see https://github.com/Rdatatable/data.table/issues/4131.")
+test(2131.1, fifelse(TRUE, s1, s2), error = "S4 class objects (except nanotime) are not supported.")
+test(2131.2, fcase(TRUE, s1, FALSE, s2), error = "S4 class objects (except nanotime) are not supported. Please see https://github.com/Rdatatable/data.table/issues/4131.")
 
 ########################
 #  Add new tests here  #
