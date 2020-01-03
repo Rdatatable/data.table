@@ -16732,7 +16732,8 @@ setMethod("show","rdate", function(object) print(object@date))
 s1 = new("rdate",date=20191231)
 s2 = new("rdate",date=20191230)
 test(2131.1, fifelse(TRUE, s1, s2), error = "S4 class objects (except nanotime) are not supported.")
-test(2131.2, fcase(TRUE, s1, FALSE, s2), error = "S4 class objects (except nanotime) are not supported. Please see https://github.com/Rdatatable/data.table/issues/4131.")
+test(2131.2, fifelse(TRUE, 1, s2), error = "S4 class objects (except nanotime) are not supported.")
+test(2131.3, fcase(TRUE, s1, FALSE, s2), error = "S4 class objects (except nanotime) are not supported. Please see https://github.com/Rdatatable/data.table/issues/4131.")
 
 ########################
 #  Add new tests here  #
