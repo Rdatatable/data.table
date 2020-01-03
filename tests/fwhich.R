@@ -1,40 +1,64 @@
 library(data.table)
-fsintersect = data.table:::fsintersect
-which_eq = data.table:::which_eq
+
+# speed up logical indexing with multiple conditions #4105 ----
+
 fwhich = data.table:::fwhich
-
-# Filter Helper Functions #4133 ----
-
-N = 1e6L
+set.seed(108)
+N = 1e6L # timings for 1e8L, 35 GB mem required
 foo = data.table(
   x = as.character(runif(n = N)),
   y = as.character(runif(n = N)),
   z = as.character(runif(n = N))
 )
 invisible({foo[c(1L,N)]; foo[c(1L,N)]; foo[c(1L,N)]}) # warmup
-# easy
+
+## easy
 system.time(foo[like(x, "123")][like(y, "123")][like(z, "123")])
+#   user  system elapsed 
+# 34.491   2.200  36.693 
 system.time(foo[like(x, "123") & like(y, "123") & like(z, "123")])
+#   user  system elapsed 
+#102.829   6.408 109.241 
 system.time(foo[fwhich(like(x, "123") & like(y, "123") & like(z, "123"))])
-# hard
+#   user  system elapsed 
+# 33.188   1.156  34.346 
+
+## hard
 system.time(foo[like(x, "*")][like(y, "*")][like(z, "*")])
+#   user  system elapsed 
+# 82.554   9.927  92.484 
 system.time(foo[like(x, "*") & like(y, "*") & like(z, "*")])
+#   user  system elapsed 
+# 41.066   4.920  45.988 
 system.time(foo[fwhich(like(x, "*") & like(y, "*") & like(z, "*"))])
-# easy
+#   user  system elapsed 
+# 74.307   8.320  82.324
+
+## !easy
 system.time(foo[!like(x, "123")][!like(y, "123")][!like(z, "123")])
+#   user  system elapsed 
+#151.403  15.151 166.561 
 system.time(foo[!like(x, "123") & !like(y, "123") & !like(z, "123")])
+#   user  system elapsed 
+#109.646   9.911 119.562 
 system.time(foo[fwhich(!like(x, "123") & !like(y, "123") & !like(z, "123"))])
-# hard
+#   user  system elapsed 
+#142.395  13.652 155.758 
+
+## !hard
 system.time(foo[!like(x, "*")][!like(y, "*")][!like(z, "*")])
+#   user  system elapsed 
+# 10.400   0.812  11.213 
 system.time(foo[!like(x, "*") & !like(y, "*") & !like(z, "*")])
-system.time(foo[!fwhich(like(x, "*") & !like(y, "*") & !like(z, "*"))])
+#   user  system elapsed 
+# 34.604   2.864  37.470 
+system.time(foo[fwhich(!like(x, "*") & !like(y, "*") & !like(z, "*"))])
+#   user  system elapsed 
+# 10.689   0.264  10.953
 
-# Speed up logical indexing with multiple conditions #4105 ----
+# fast which #3663 ----
 
-# which_equal, which_in #3663 ----
-
-## which_eq ----
-
+which_eq = data.table:::which_eq
 set.seed(108)
 N = 1e7L
 
@@ -68,8 +92,9 @@ system.time(which(x==v))
 system.time(which_eq(x, v, TRUE))
 system.time(which(x!=v))
 
-# which_eq + fsintersect, fwhich ----
+# which_eq+fsintersect vs fwhich ----
 
+fsintersect = data.table:::fsintersect
 set.seed(108)
 N = 1e7L
 DT = data.table(
@@ -139,7 +164,7 @@ system.time(ans6<-DT[fwhich(v1!=s1 & v2!=s2 & v3!=s3)])
 is.null(indices(DT)) && all.equal(ans1, ans2) && all.equal(ans1, ans3) && all.equal(ans1, ans4) && all.equal(ans1, ans5) && all.equal(ans1, ans6)
 rm(list=paste0("ans",1:6))
 
-# mixed ops ----
+# fwhich mixed ops ----
 
 DT = data.table(v1 = 1:10, v2 = 1:10, v3 = 1:10)
 s1 = 2:9
@@ -156,6 +181,6 @@ options(datatable.verbose=FALSE)
 
 # NA, NaNs ----
 
-#TODO: op=%in% type=double NA/NaN support
+# TODO: type=double NA/NaN support
 
 # end ----
