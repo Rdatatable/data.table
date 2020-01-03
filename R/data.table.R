@@ -1964,9 +1964,8 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
     }
   }
   
-  p = length(X[-rownames])
-  X = .Call(Casmatrix, X, n, p, rownames)
-  dim(X) = c(n, p)
+  X = .Call(Casmatrix, X, rownames)
+  dim(X) = c(n, length(X)/n)
   dimnames(X) = list(rownames.value, unlist(collabs, use.names = FALSE))
   X
 }
