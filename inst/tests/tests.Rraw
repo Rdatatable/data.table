@@ -16713,8 +16713,8 @@ setClass("rdate", slots=list(date="numeric"))
 setMethod("show","rdate", function(object) print(object@date))
 s1 = new("rdate",date=20191231)
 s2 = new("rdate",date=20191230)
-test(2130.1, fifelse(TRUE, s1, s2), error = "S4 class objects are not supported.")
-test(2130.2, fcase(TRUE, s1, FALSE, s2), error = "S4 class objects are not supported. Please see https://github.com/Rdatatable/data.table/issues/4131.")
+test(2130.1, fifelse(TRUE, s1, s2), error = "S4 class objects (except nanotime) are not supported.")
+test(2130.2, fcase(TRUE, s1, FALSE, s2), error = "S4 class objects (except nanotime) are not supported. Please see https://github.com/Rdatatable/data.table/issues/4131.")
 
 ########################
 #  Add new tests here  #
