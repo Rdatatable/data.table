@@ -1910,8 +1910,7 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
   n = dm[1L]
   collabs = as.list(cn)
   class(X) = NULL
-  non.numeric = non.atomic = FALSE
-  all.logical = TRUE
+  
   # Check for any wide matrix like columns and unpack using as.data.table
   if (length(which_wide_columns(x)) > 0L) {
     X = as.data.table(X[-rownames])
@@ -1921,57 +1920,103 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
     rownames = p + 1L
     class(X) = NULL
   }
-  for (j in seq_len(p)[-rownames]) {
-    if (is.ff(X[[j]])) X[[j]] = X[[j]][]   # nocov to bring the ff into memory, since we need to create a matrix in memory
-    xj = X[[j]]
-    if (!is.logical(xj))
-      all.logical = FALSE
-    if (length(levels(xj)) > 0L || !(is.numeric(xj) || is.complex(xj) || is.logical(xj)) ||
-        (!is.null(cl <- attr(xj, "class", exact=TRUE)) && any(cl %chin%
-        c("Date", "POSIXct", "POSIXlt"))))
-      non.numeric = TRUE
-    if (!is.atomic(xj))
-      non.atomic = TRUE
-  }
-  if (non.atomic) {
-    for (j in seq_len(p)[-rownames]) {
-      xj = X[[j]]
-      if (is.recursive(xj)) { }
-      else X[[j]] = as.list(as.vector(xj))
+  
+  # We now need to make sure all the columns are the same type, handling special
+  # cases where some columns are not stored in memory (ff objects), lists, or 
+  # otherwise non-atomic types (e.g. S4). Further, we want to minimize
+  # the number of checks done, e.g. if all columns are already the same type
+  
+  # Check for ff columns which need to be brought into memory. Running the any
+  # command on the unique column class list means for x with many columns we 
+  # don't do expensive per-column checks unless necessary.
+  col.classes = lapply(X, class)[-rownames]
+  uniq.col.classes = unique(unlist(col.classes))
+  any.ff = ("ff" %chin% uniq.col.classes)
+  if (any.ff) {
+    which.ff = which(sapply(col.classes, function(cl_vec) { "ff" %chin% cl_vec }))
+    which.ff[which.ff >= rownames] = which.ff[which.ff >= rownames] + 1L # need to increment to account for skipped over rownames column
+    for (j in which.ff) {
+      X[[j]] = X[[j]][] # bring into memory
     }
-  }
-  else if (all.logical) { }
-  else if (non.numeric) {
-    for (j in seq_len(p)[-rownames]) {
-      if (is.character(X[[j]])) next
-      xj = X[[j]]
-      miss = is.na(xj)
-      xj = if (length(levels(xj))) as.vector(xj) else format(xj)
-      is.na(xj) = miss
-      X[[j]] = xj
-    }
+    
+    # need to redetermine the classes now that all columns have been brought into memory
+    col.classes = lapply(X, class)[-rownames]
+    uniq.col.classes = unique(unlist(col.classes))
   }
   
-  # convert columns to common class before handing over to C
-  col.classes = unlist(lapply(X, class)[-rownames])
-  class.order = c("logical"=1L, "integer"=2L, "numeric"=3L, "complex"=4L,
-                  "character"=5L, "raw"=6L, "list"=7L)
-  if (length(unique(col.classes)) > 1L) { 
-    target.class = names(which.max(class.order[unique(col.classes)]))
-    if (target.class == "raw") target.class = "character" # to match behaviour of as.matrix.data.frame
-    for (col in which(col.classes != target.class)) {
-      if (col >= rownames) 
-        col = col + 1L
-      switch(target.class,
-             # 'logical' can never be reached, it will always be converted to something more complex 
-             "integer" = { X[[col]] = as.integer(X[[col]]) }, 
-             "numeric" = { X[[col]] = as.numeric(X[[col]]) }, 
-             "complex" = { X[[col]] = as.complex(X[[col]]) }, 
-             "character" = { X[[col]] = as.character(X[[col]]) }
-             # 'raw' can never be reached - columns should all be converted to 'character' if any were 'raw'
-             # 'list' can never be reached - if there is one list column, all will converted to list columns already
-      )
+  # Next determine if any columns are list or non-atomic type. If so, convert all columns to lists
+  col.types = lapply(X, typeof)[-rownames]
+  uniq.col.types = unique(unlist(col.types))
+  atomics <- c("logical", "integer", "numeric", "double", "complex", "character", "raw")
+  any.non.atomic = (length(setdiff(uniq.col.types, atomics)) > 0L)
+  if (any.non.atomic) {
+    for (j in seq_len(p)[-rownames]) {
+      if (!is.recursive(X[[j]])) { 
+        X[[j]] = as.list(as.vector(X[[j]]))
+      }
     }
+    
+    # redetermine classes and types for next checks
+    col.classes = lapply(X, class)[-rownames]
+    uniq.col.classes = unique(unlist(col.classes))
+    col.types = lapply(X, typeof)[-rownames]
+    uniq.col.types = unique(unlist(col.types))
+  }
+  
+  # Convert factors to character vectors
+  any.factors = ("factor" %chin% uniq.col.classes)
+  if (any.factors) {
+    which.factors = which(sapply(col.classes, function(cl_vec) { "factor" %chin% cl_vec }))
+    which.factors[which.factors >= rownames] = which.factors[which.factors >= rownames] + 1L
+    
+    for (j in which.factors) {
+      miss = is.na(X[[j]])
+      X[[j]] = as.vector(X[[j]])
+      is.na(X[[j]]) = miss
+    }
+    
+    # redetermine classes and types for next checks
+    col.classes = lapply(X, class)[-rownames]
+    uniq.col.classes = unique(col.classes)
+    col.types = lapply(X, typeof)[-rownames]
+    uniq.col.types = unique(col.types)
+  }
+  
+  # Classes to be converted to character vectors
+  charconvert.classes = c("Date", "POSIXct", "POSIXlt", "raw")
+  any.charconvert = any(charconvert.classes %chin% uniq.col.classes)
+  if (any.charconvert) {
+    which.charconvert = which(sapply(col.classes, function(cl_vec) { any(charconvert.classes %chin% cl_vec) }))
+    which.charconvert[which.charconvert >= rownames] = which.charconvert[which.charconvert >= rownames] + 1L
+    
+    for (j in which.charconvert) {
+      miss = is.na(X[[j]])
+      X[[j]] = format(X[[j]])
+      is.na(X[[j]]) = miss
+    }
+    
+    # redetermine classes and types for next checks
+    col.classes = lapply(X, class)[-rownames]
+    uniq.col.classes = unique(col.classes)
+    col.types = lapply(X, typeof)[-rownames]
+    uniq.col.types = unique(col.types)
+  }
+  
+  # If columns do not all have the same class we need to coerce 
+  if (length(uniq.col.classes) > 1L) { 
+    class.order = c("logical"=1L, "integer"=2L, "numeric"=3L, "complex"=4L, "character"=5L, "list"=6L)
+    target.class = names(which.max(class.order[uniq.col.classes]))
+    which.convert = which(sapply(col.classes, function(cl_vec) { !any(target.class %chin% cl_vec) }))
+    which.convert[which.convert >= rownames] = which.convert[which.convert >= rownames] + 1L
+    
+    for (j in which.convert) {
+      switch(target.class,
+             "integer"={ X[[j]] = as.integer(X[[j]]) },
+             "numeric"={ X[[j]] = as.numeric(X[[j]]) },
+             "complex"={ X[[j]] = as.complex(X[[j]]) },
+             "character"={ X[[j]] = as.character(X[[j]]) })
+    }
+    uniq.col.classes = target.class
   }
   
   X = .Call(Casmatrix, X, rownames)
