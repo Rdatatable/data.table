@@ -189,19 +189,14 @@ shouldPrint = function(x) {
 #   as opposed to printing a blank line, for excluding col.names per PR #1483
 cut_top = function(x) cat(capture.output(x)[-1L], sep = '\n')
 
-# for printing the dims for list columns #3671
-#   is used in format.data.table()
+# for printing the dims for list columns #3671; used by format.data.table()
 paste_dims = function(x) {
-  if (isS4(x)) {
-    dims = length(slotNames(x))
+  dims = if (isS4(x)) {
+    length(slotNames(x))
   } else {
-    dims = dim(x)
-    if (is.null(dims))
-      dims = length(x)
+    if (is.null(dim(x))) length(x) else dim(x)
   }
-
-  dims = paste(dims, collapse="x")
-  paste0("[", dims, "]")
+  paste0("[", paste(dims,collapse="x"), "]")
 }
 
 # to calculate widths of data.table for PR #4074
