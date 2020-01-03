@@ -250,11 +250,11 @@ SEXP asmatrix(SEXP dt, SEXP rownames) {
   if (rncolnum < p)
     p--;
 
-  // Check neither rows or columns are greater than 2^31 - 1
-  if (((p >> 31) - 1) > 0) 
-    error("Matrices with > 2^31 - 1 columns are not supported by R");
-  if (((n >> 31) - 1) > 0) 
-    error("Matrices with > 2^31 - 1 rows are not supported by R");
+  // Check neither rows or columns are greater than INT_MAX
+  if (p > INT_MAX) 
+    error("Matrices with > %d (.Machine$integer.max) columns are not supported", INT_MAX);
+  if (n > INT_MAX) 
+    error("Matrices with > %d (.Machine$integer.max) rows are not supported", INT_MAX);
   
   // Determine the number of elements in the resulting matrix
   R_xlen_t matlen = n * p;
