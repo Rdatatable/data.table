@@ -485,13 +485,13 @@ msgid "Attempting to do natural join but no common columns in provided tables"
 msgstr "尝试进行自然连接然而并没有找到表格中相同的列"
 
 msgid "Joining but 'x' has no key, natural join using"
-msgstr ""
+msgstr "联结但 'x' 没有键 (key)，自然联结用"
 
 msgid "not-join called with 'by=.EACHI'; Replacing !i with i=setdiff_(x,i) ..."
 msgstr ""
 
 msgid "Constructing irows for '!byjoin || nqbyjoin' ..."
-msgstr ""
+msgstr "造成 irows 与 '!byjoin || nqbyjoin' ..."
 
 msgid "Internal error. Cannot by=.EACHI when joining to an index, yet"
 msgstr "内部错误：目前尚无法对索引(index)使用by=.EACH命令"
@@ -703,7 +703,7 @@ msgid ""
 "single j=eval(macro) instead. Both will detect the columns used which is "
 "important for efficiency.\n"
 "Old:"
-msgstr ""
+msgstr "j 中找到了 '(m)get'。旧:"
 
 msgid "New:"
 msgstr "新:"
