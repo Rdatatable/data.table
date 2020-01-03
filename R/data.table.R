@@ -2002,29 +2002,54 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
     uniq.col.types = unique(col.types)
   }
   
-  # If columns do not all have the same class we need to coerce 
+  # If columns do not all have the same class we need to coerce
+  C.as.matrix = TRUE
   if (length(uniq.col.classes) > 1L) { 
-    class.order = c("logical"=1L, "integer"=2L, "numeric"=3L, "complex"=4L, "character"=5L, "list"=6L)
-    target.class = names(which.max(class.order[uniq.col.classes]))
-    which.convert = which(sapply(col.classes, function(cl_vec) { !any(target.class %chin% cl_vec) }))
-    which.convert[which.convert >= rownames] = which.convert[which.convert >= rownames] + 1L
+    class.order = c("logical"=1L, "integer"=2L, "integer64"=3L, "numeric"=4L, 
+                    "complex"=5L, "character"=6L, "list"=7L)
     
-    for (j in which.convert) {
-      switch(target.class,
-             "integer"={ X[[j]] = as.integer(X[[j]]) },
-             "numeric"={ X[[j]] = as.numeric(X[[j]]) },
-             "complex"={ X[[j]] = as.complex(X[[j]]) },
-             "character"={ X[[j]] = as.character(X[[j]]) })
+    # Any classes not listed above we don't know how to coerce, so we fall back on unlist
+    if (length(setdiff(uniq.col.classes, names(class.order))) > 0L) {
+      C.as.matrix = FALSE
+    } else {
+      # Determine target coercion class from class hiearachy
+      target.class = names(which.max(class.order[uniq.col.classes]))
+      if ("integer64" %chin% uniq.col.classes && target.class %chin% c("numeric", "complex"))
+        target.class = "character" # integer64 can't be reliably converted to numeric or complex
+      
+      # Determine which columns we're converting
+      which.convert = which(sapply(col.classes, function(cl_vec) { !any(target.class %chin% cl_vec) }))
+      which.convert[which.convert >= rownames] = which.convert[which.convert >= rownames] + 1L
+      
+      # Coerce the columns
+      for (j in which.convert) {
+        switch(target.class,
+               "integer"={ X[[j]] = as.integer(X[[j]]) },
+               "integer64"={ X[[j]] = bit64::as.integer64(X[[j]]) },
+               "numeric"={ X[[j]] = as.numeric(X[[j]]) },
+               "complex"={ X[[j]] = as.complex(X[[j]]) },
+               "character"={ X[[j]] = as.character(X[[j]]) })
+      }
+      
+      # Set the class to be given to the resulting matrix
+      uniq.col.classes = target.class
     }
-    uniq.col.classes = target.class
   }
   
-  # Copy the values into a matrix
-  X = .Call(Casmatrix, X, rownames) # rownames here is a column index to skip over
-  class(X) = uniq.col.classes # setting class allows for non-atomic types, e.g. integer64
-  dim(X) = c(n, length(X)/n)
-  dimnames(X) = list(rownames.value, unlist(collabs, use.names = FALSE))
-  X
+  if (C.as.matrix) {
+    # Copy the values into a matrix
+    X = .Call(Casmatrix, X, rownames) # rownames here is a column index to skip over
+    class(X) = uniq.col.classes # setting class allows for non-atomic classes, e.g. integer64
+    dim(X) = c(n, length(X)/n)
+    dimnames(X) = list(rownames.value, unlist(collabs, use.names = FALSE))
+    X
+  } else {
+    # Fallback method to use when we can't determine type/class to coerce to
+    X = unlist(X[-rownames], recursive = FALSE, use.names = FALSE)
+    dim(X) = c(n, length(X)/n)
+    dimnames(X) = list(rownames.value, unlist(collabs, use.names = FALSE))
+    X
+  }
 }
 
 # bug #2375. fixed. same as head.data.frame and tail.data.frame to deal with negative indices
