@@ -1877,11 +1877,11 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
         if (is.na(rownames) || rownames<1L || rownames>ncol(x))
           stop("as.integer(rownames)==", rownames,
                " which is outside the column number range [1,ncol=", ncol(x), "].")
-        if (length(X[[rownames]]) != nrow(x)) 
-          stop("x[,", rownames, "] has multi-column type (such as a matrix column)",
+        if (length(x[[rownames]]) != nrow(x)) 
+          stop("x[,", rownames, "] has multi-column type (such as a matrix column) ",
                "and cannot be used as rownames: length(x[,", rownames,
                "])==", length(X[[rownames]]), "but should be nrow(x)==", nrow(x))
-        if (is.list(X[[rownames]]))
+        if (is.list(x[[rownames]]))
           stop("x[,", rownames, "] is a list column, the rownames column should be a vector")
       }
     }
