@@ -1944,14 +1944,15 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
   }
   
   # convert columns to common class before handing over to C
-  col.classes = unlist(lapply(X[-rownames], class))
+  col.classes = unlist(lapply(X, class)[-rownames])
   class.order = c("logical"=1L, "integer"=2L, "numeric"=3L, "complex"=4L,
                   "character"=5L, "raw"=6L, "list"=7L)
   if (length(unique(col.classes)) > 1L) { 
     target.class = names(which.max(class.order[unique(col.classes)]))
     if (target.class == "raw") target.class = "character" # to match behaviour of as.matrix.data.frame
     for (col in which(col.classes != target.class)) {
-      ifelse(col >= rownames, col + 1L, col)
+      if (col >= rownames) 
+        col = col + 1L
       switch(target.class,
              # 'logical' can never be reached, it will always be converted to something more complex 
              "integer" = { X[[col]] = as.integer(X[[col]]) }, 
