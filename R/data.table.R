@@ -1892,7 +1892,10 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
   }
   if (!is.null(rownames)) {
     # extract that column.
-    rownames.value = x[[rownames]]
+    if (is.ff(x[[rownames]]))
+      rownames.value = x[[rownames]][] # bring the column into memory if ff object
+    else
+      rownames.value = x[[rownames]]
     dm = dim(x) - 0:1
     cn = names(x)[-rownames]
   } else {
