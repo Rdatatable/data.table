@@ -1,12 +1,13 @@
 #include "data.table.h"
 
 /*
- * fast sorted intersect only when x and y sorted
+ * fast sorted intersect
  * do not confuse with exported R fintersect
- * now used only during benchmarks, fwhich already has a built-in intersect via 'y' and 'ny' args
+ * fwhich already has a built-in intersect via which_*_*(y, ny) args
+ * used only during benchmarks, thus no extra checks in fsintersectR
  */
 void fsintersect(int *x, int nx, int *y, int ny, int *out, int *nans) {
-  if (nx && ny) { // otherwise segfault when fintersect(integer(), integer())
+  if (nx && ny) { // otherwise segfault when fsintersect(integer(), integer())
     for (R_xlen_t i=0, j=0;;) {
       if (x[i]==y[j]) {
         out[nans[0]++] = x[i];
@@ -43,8 +44,8 @@ SEXP fsintersectR(SEXP x, SEXP y) {
 
 /*
  * which equal, which in, which like
- * handle negation
- * handling short-circuit when calling which_* iteratively
+ * support negation
+ * support short-circuit when calling which_* iteratively
  */
 static void which_eq_int(int *x, int nx, int *out, int *nout, int val, bool negate, int *y, int ny) {
   int n = 0;
@@ -293,7 +294,6 @@ void which_eq(SEXP x, int *iwhich, int *nwhich, SEXP val, bool negate, int *y, i
   if (verbose)
     Rprintf("%s: in %d, out %d, took %.3fs\n", __func__, nxy, nwhich[0], omp_get_wtime()-tic);
 }
-
 static void which_in_int(int *x, int nx, int *out, int *nout, int *val, int nval, bool negate, int *y, int ny) {
   int n = 0;
   if (ny<0) {
@@ -531,7 +531,6 @@ void which_in(SEXP x, int *iwhich, int *nwhich, SEXP val, bool negate, int *y, i
   if (verbose)
     Rprintf("%s: in %d, out %d, took %.3fs\n", __func__, nxy, nwhich[0], omp_get_wtime()-tic);
 }
-
 static void which_like_any(SEXP x, int nx, int *out, int *nout, SEXP val, int nval, bool negate, int *y, int ny) {
   int n = 0;
   int protecti = 0;
@@ -570,7 +569,7 @@ void which_like(SEXP x, int *iwhich, int *nwhich, SEXP val, bool negate, int *y,
 }
 
 /*
- which NA, NaN, N[A|aN]
+ * which NA, NaN, N[A|aN]
  +---------------------+
  | C fun    | NaN | NA | R fun
  +---------------------+
@@ -587,10 +586,10 @@ void which_like(SEXP x, int *iwhich, int *nwhich, SEXP val, bool negate, int *y,
  +---------------------+
  | is.nana? |  f  | t  | R_IsNA
  +---------------------+
- fwhich(is.na(x) & is.nan(y) & is.na(z))
- N* & NaN & N*
- fwhich(is.na(x) & is.nan(y) & (is.na(z) && !is.nan(z)))
- also revise handling x==NA and x==NaN vs base R
+ * fwhich(is.na(x) & is.nan(y) & is.na(z))
+ * N* & NaN & N*
+ * fwhich(is.na(x) & is.nan(y) & (is.na(z) && !is.nan(z)))
+ * also revise handling x==NA and x==NaN vs base R
  */
 //which_na(SEXP x, int *iwhich, int *nwhich, SEXP val, bool negate, int *y, int ny) {}
 
@@ -600,7 +599,7 @@ void which_like(SEXP x, int *iwhich, int *nwhich, SEXP val, bool negate, int *y,
  * used so we can optimize: DT[v1==s1 & v2%in%s2 & like(v3,s3)]
  */
 #define AND_CALL(x) (CAR(x)==sym_and)
-//#define OR_CALL(x) (CAR(x)==sym_or) // TODO: not yet used, would allow to support: DT[v1==s1 | v2==s2 | v3==s3] - has to use union instead of intersect short-circuit
+//#define OR_CALL(x) (CAR(x)==sym_or) // TODO: not yet used, would allow to support: DT[v1==s1 | v2==s2 | v3==s3], short-circuit has to reduce via union instead of intersect
 #define EQ_CALL(x) (CAR(x)==sym_equal)
 #define NEQ_CALL(x) (CAR(x)==sym_nequal)
 #define IN_CALL(x) (CAR(x)==sym_in)
@@ -608,7 +607,7 @@ void which_like(SEXP x, int *iwhich, int *nwhich, SEXP val, bool negate, int *y,
 #define NIN_CALL(x) (CAR(x)==sym_nin || (BANG_CALL(x) && IN_CALL(CADR(x)))) // optimizes x%!in%y (FR #4152 not yet merged but will work here anyway) and !x%in%y
 #define LIKE_CALL(x) (CAR(x)==sym_oplike || (CAR(x)==sym_like && length(CDR(x))==2)) // like(,, ignore.case, fixed) not optimized!
 #define NLIKE_CALL(x) (BANG_CALL(x) && LIKE_CALL(CADR(x)))
-#define OP_CALL(x) (EQ_CALL(x) || NEQ_CALL(x) || IN_CALL(x) || NIN_CALL(x) || LIKE_CALL(x) || NLIKE_CALL(x))
+#define OP_CALL(x) (EQ_CALL(x) || NEQ_CALL(x) || IN_CALL(x) || NIN_CALL(x) || LIKE_CALL(x) || NLIKE_CALL(x)) // all supported operators
 void which_op(SEXP e, SEXP x, int *iwhich, int *nwhich, SEXP val, int *y, int ny) {
   if (EQ_CALL(e) || NEQ_CALL(e)) {
     which_eq(
@@ -623,14 +622,15 @@ void which_op(SEXP e, SEXP x, int *iwhich, int *nwhich, SEXP val, int *y, int ny
   }  else if (LIKE_CALL(e) || NLIKE_CALL(e)) {
     which_like(x, iwhich, nwhich, val, NLIKE_CALL(e), y, ny);
   } else {
-    error("internal error: unsupported OP, should have been caught by now, please report to issue tracker");
+    error("internal error: unsupported operator, should have been caught by now, please report to issue tracker");
   }
 }
 
 /*
- * fast which optimization
- * helper function to process unevaluated expression from form of pairlist into a list of expressions
- * also investigate if optimization is possible for provided expression
+ * fast which optimization expression pre-processing
+ * investigate if optimization is possible for provided expression
+ * unnest unevaluated expression from a pairlist into a list of expressions
+ * does not evaluate any part of expression
  */
 SEXP fwhichOpt(SEXP expr, bool *doOpt) {
   const bool verbose = GetVerbose();
@@ -670,7 +670,7 @@ SEXP fwhichOpt(SEXP expr, bool *doOpt) {
   }
   //if (debug) {Rprintf("fwhichOpt: nand=%d, nop=%d\n", nand, nop);}
   if (!escape && nand+1 != nop)
-    error("internal error: number of & should be equal to number of OP-1, please report to issue tracker");
+    error("internal error: number of & calls should be equal to number of operators-1, please report to issue tracker");
   SEXP ans = R_NilValue;
   if (!escape) {
     ans = PROTECT(allocVector(VECSXP, nop)); protecti++;
@@ -696,8 +696,8 @@ SEXP fwhichOpt(SEXP expr, bool *doOpt) {
 
 /*
  * fast which
- * for a supported type of input: DT[v1==s1 & v2==s2 & v3==s3]
- * for now has to be wrapped with: DT[fwhich(v1==s1 & v2==s2 & v3==s3)]
+ * for a supported type of input: DT[v1==s1 & v2%in%s2 & v3%like%s3]
+ * for now has to be wrapped with: DT[fwhich(v1==s1 & v2%in%s2 & v3%like%s3)]
  * redirects to which_op calls
  */
 SEXP fwhichR(SEXP expr, SEXP rho) {
@@ -734,14 +734,14 @@ SEXP fwhichR(SEXP expr, SEXP rho) {
       }
       if (!(isInteger(x) || isReal(x) || isString(x)) || !(isInteger(val) || isReal(val) || isString(val))) {
         if (verbose) {
-          Rprintf("%s: optimization not available for argument classes used in provided expression, fallback to R's which\n", __func__);
+          Rprintf("%s: optimization aborted due to unsupported class used in expression, fallback to R's which\n", __func__);
           //Rprintf("x: "); Rf_PrintValue(x); Rprintf("val: "); Rf_PrintValue(val);
         }
         doOpt = false;
         break;
       }
       R_len_t nx = length(x);
-      int nans = !i ? nx : MIN(nx, ny); // this MIN will have to be MAX for `|` operator, where we need union instead of intersect
+      int nans = !i ? nx : MIN(nx, ny); // this MIN will have to be MAX for `|` (OR_CALL), then we need also union instead of intersect
       ans = PROTECT(allocVector(INTSXP, nans)); protecti++; // TODO: protect with index instead?
       iwhich = INTEGER(ans);
       which_op(

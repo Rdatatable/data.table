@@ -60,7 +60,7 @@ system.time(foo[fwhich(!like(x, "*") & !like(y, "*") & !like(z, "*"))])
 
 which_eq = data.table:::which_eq
 set.seed(108)
-N = 1e7L
+N = 1e6L
 
 x = sample(N, N, FALSE) # 1 match
 v = as.integer(N/2L)
@@ -96,7 +96,7 @@ system.time(which(x!=v))
 
 fsintersect = data.table:::fsintersect
 set.seed(108)
-N = 1e7L
+N = 1e6L
 DT = data.table(
   v1 = sample(1e1L, N, TRUE),
   v2 = sample(1e2L, N, TRUE),

@@ -360,10 +360,11 @@ void attribute_visible R_init_datatable(DllInfo *info)
   sym_equal    = install("==");
   sym_nequal   = install("!=");
   sym_in       = install("%in%");
-  sym_nin      = install("%!in%");
+  sym_nin      = install("%!in%"); // FR #4152 not yet merged but can already be optimized to which_in(negate=true)
   sym_bang     = install("!");
   sym_like     = install("like");
   sym_oplike   = install("%like%");
+
   initDTthreads();
   avoid_openmp_hang_within_fork();
 }
