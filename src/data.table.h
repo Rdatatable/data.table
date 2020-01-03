@@ -214,7 +214,7 @@ SEXP between(SEXP x, SEXP lower, SEXP upper, SEXP incbounds, SEXP NAbounds, SEXP
 SEXP coalesce(SEXP x, SEXP inplace);
 
 // unnest.c
-SEXP unnest(SEXP x);
+SEXP unnest(SEXP x, SEXP cols);
 
 // utils.c
 bool isRealReallyInt(SEXP x);

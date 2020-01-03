@@ -1,11 +1,25 @@
 #include "data.table.h"
 #include <Rdefines.h>
 
-SEXP unnest(SEXP x) {
+SEXP unnest(SEXP x, SEXP cols) {
+  int k = LENGTH(cols);
+  // nothing to unnest -- need to go further, just be sure to copy
+  if (k == 0)
+    return (duplicate(x));
   int n = LENGTH(VECTOR_ELT(x, 0));
   int p = LENGTH(x);
+
+  if (TYPEOF(cols) != INTSXP)
+    error(_("cols must be an integer vector, got %s"), type2char(TYPEOF(cols)));
+  int *colp = INTEGER(cols);
+  for (int i=0; i<k; i++) {
+    if (colp[i] < 1 || colp[i] > p)
+      error(_("cols to unnest must be in [1, ncol(x)=%d], but cols[%d]=%d"), p, i, k);
+  }
+
   int row_counts[n];
-  SEXPTYPE col_types[p];
+
+
 
   bool all_atomic = true;
 
@@ -26,11 +40,6 @@ SEXP unnest(SEXP x) {
     default:
       error(_("Unsupported type: %s"), type2char(this_col));
     }
-  }
-
-  // no need to go further, just be sure to copy
-  if (all_atomic) {
-    return (duplicate(x));
   }
 
   double this_row;
