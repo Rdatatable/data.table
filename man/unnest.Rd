@@ -9,7 +9,7 @@ For tables with non-rectangular columns (i.e., \code{list}), \code{unnest} "stre
 }
 \arguments{
   \item{x}{ A \code{data.table} }
-  \item{cols}{ An \code{integer} vector of column indices of which columns to unnest; defaults to all \code{list} columns. Can be useful for unnesting only a subset of a table's \code{list} columns. Note that non-\code{list} columns are skipped; if there are no \code{list} columns provided, a \code{\link{copy}} of the table is returned.
+  \item{cols}{ An \code{integer} vector of column indices of which columns to unnest; defaults to all \code{list} columns. Can be useful for unnesting only a subset of a table's \code{list} columns. Note that non-\code{list} columns are skipped; if there are no \code{list} columns provided, a \code{\link{copy}} of the table is returned. }
 }
 \details{
   By default, when \code{length(cols) > 1L}, a \emph{cartesian unnest} is performed, that is, the cross-product (\emph{a la} \code{\link{CJ}}) of each row's list elements is returned. If there are two columns in \code{cols}, \code{A} and \code{B}, the output will thus have \code{sum(lengths(A) * lengths(B))} rows.
