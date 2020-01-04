@@ -5,13 +5,10 @@ SEXP cj(SEXP base_list) {
   SEXP out = PROTECT(allocVector(VECSXP, ncol));
   // start with double to allow overflow
   double nrow_dbl=1;
-  int nrow;
   for (int j=0; j<ncol; ++j) nrow_dbl *= length(VECTOR_ELT(base_list, j));
-  if (nrow_dbl > INT_MAX) {
+  if (nrow_dbl > INT_MAX)
       error(_("Cross product of elements provided to CJ() would result in %.0f rows which exceeds .Machine$integer.max == %d"), nrow_dbl, INT_MAX);
-  } else {
-    nrow = (int) nrow_dbl;
-  }
+  int nrow = (int) nrow_dbl;
   int eachrep = 1;
   for (int j=ncol-1; j>=0; --j) {
     SEXP source = VECTOR_ELT(base_list, j), target;
