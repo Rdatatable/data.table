@@ -16783,12 +16783,12 @@ test(2131.16, address(funnest(x, cols=1L)) != address(x))
 x[ , V4 := NULL]
 ans[ , V4 := NULL]
 ans = unique(ans)
-test(2131.15, funnest(x), ans)
+test(2131.17, funnest(x), ans)
 
-test(2131.16, funnest(1), error='Input to funnest must be a data.table')
+test(2131.18, funnest(1), error='Input to funnest must be a data.table')
 x = data.table(a=1)
-test(2131.17, funnest(x), x)
-test(2131.18, address(funnest(x)) != address(x))
+test(2131.19, funnest(x), x)
+test(2131.20, address(funnest(x)) != address(x))
 
 ########################
 #  Add new tests here  #
