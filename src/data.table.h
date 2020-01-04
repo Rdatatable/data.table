@@ -103,6 +103,7 @@ bool GetVerbose();
 
 // cj.c
 SEXP cj(SEXP base_list);
+SEXP unnest(SEXP x, SEXP cols);
 
 // dogroups.c
 SEXP keepattr(SEXP to, SEXP from);
@@ -212,9 +213,6 @@ SEXP between(SEXP x, SEXP lower, SEXP upper, SEXP incbounds, SEXP NAbounds, SEXP
 
 // coalesce.c
 SEXP coalesce(SEXP x, SEXP inplace);
-
-// unnest.c
-SEXP unnest(SEXP x, SEXP cols);
 
 // utils.c
 bool isRealReallyInt(SEXP x);
