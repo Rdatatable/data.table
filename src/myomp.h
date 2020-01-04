@@ -11,3 +11,4 @@
   #define omp_get_wtime()        0
 #endif
 
+#define OMP_MIN_VALUE 1024
