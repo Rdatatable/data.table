@@ -17,7 +17,8 @@ void cycle_vector(SEXP source, SEXP target, int j, int eachrep, int nrow) {
     for (int i=0; i<thislen; ++i) {
       const int item = sourceP[i];
       const int end = (i+1)*eachrep;
-      for (int j=i*eachrep; j<end; ++j) targetP[j] = item;  // no div, mod or read ops inside loop; just rep a const contiguous write
+      for (int j=i*eachrep; j<end; ++j)
+        targetP[j] = item;  // no div, mod or read ops inside loop; just rep a const contiguous write
     }
     #pragma omp parallel for num_threads(getDTthreads()) if (nrow >= OMP_MIN_VALUE)
     for (int i=1; i<ncopy; ++i) {
@@ -160,22 +161,21 @@ SEXP unnest(SEXP x, SEXP cols) {
       error("Implied number of unnested rows (%.0f) exceeds %d, the maximum currently allowed.", out_rows_dbl, INT_MAX);
     }
     row_counts[i] = (int) this_row;
-    out_rows += row_counts[i++];
-    eachrep[i] = 1; // initializing
+    out_rows += row_counts[i];
+    eachrep[i++] = 1; // initializing
   }
 
   // TODO: factor columns?
   SEXP ans = PROTECT(allocVector(VECSXP, p));
   copyMostAttrib(x, ans);
-  int outi=0;
   for (int j=p-1, lj=lk-1; j>=0; j--) {
     Rprintf("j=%d\n", j);
     SEXP xj = VECTOR_ELT(x, j), ansj;
+    int outi=0;
     if (lj >= 0 && j == lcols[lj]) { // vec col: apply unnesting
       // TODO: type bumping for mismatch
       SET_VECTOR_ELT(ans, j, ansj=allocVector(TYPEOF(VECTOR_ELT(xj, 0)), out_rows));
       for (int i=0; i<n; i++) {
-        Rprintf("\ti=%d\n", i);
         cycle_vector(VECTOR_ELT(xj, i), ansj + outi, lj, eachrep[i], row_counts[i]);
         eachrep[i] *= LENGTH(VECTOR_ELT(xj, i));
         outi += row_counts[i];
