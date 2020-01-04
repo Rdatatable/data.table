@@ -98,6 +98,8 @@ SEXP cj(SEXP base_list) {
 }
 
 SEXP unnest(SEXP x, SEXP cols) {
+  if (!INHERITS(x, char_datatable))
+    error(_("Input to unnest must be a data.table"));
   int k = LENGTH(cols);
   // nothing to unnest -- need to go further, just be sure to copy
   if (k == 0)
@@ -135,6 +137,11 @@ SEXP unnest(SEXP x, SEXP cols) {
 
   int row_counts[n];
 
+  /* unnest the specified cols; each row is expanded with cj,
+   *   then the end result is concatentated with rbindlist. in this way,
+   *   we can let cj handle the crossing logic and rbindlist handle such
+   *   things as type coercion
+   */
   SEXP cj_rowwise = PROTECT(allocVector(VECSXP, n));
   for (int i=0; i<n; i++) {
     SEXP nest_vals = PROTECT(allocVector(VECSXP, lk));
@@ -151,9 +158,9 @@ SEXP unnest(SEXP x, SEXP cols) {
   SEXP ans = PROTECT(allocVector(VECSXP, p));
   copyMostAttrib(x, ans);
   for (int j=0, lj=0; j<p; j++) {
-    if (lj < lk && j == lcols[lj]) { // vec col: apply unnesting
+    if (lj < lk && j == lcols[lj]) { // vec col: plonk from unnested value above
       SET_VECTOR_ELT(ans, j, VECTOR_ELT(unnest_lcols, lj++));
-    } else { // non-vec col: simply copy
+    } else { // non-vec col: simply cascade each row the right # of times
       int outi=0;
       SEXP xj = VECTOR_ELT(x, j), ansj;
       SET_VECTOR_ELT(ans, j, ansj=allocVector(TYPEOF(xj), out_rows));
