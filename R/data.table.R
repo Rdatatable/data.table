@@ -1933,13 +1933,15 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
   # cases where some columns are not stored in memory (ff objects), lists, or 
   # otherwise non-atomic types (e.g. S4). Further, we want to minimize
   # the number of checks done, e.g. if all columns are already the same type
+
+  col.classes = lapply(X, class)
+  uniq.col.classes = unique(col.classes) # list structure preserves cases where a column has multiple classes
+  uniq.classes = unique(unlist(uniq.col.classes)) # vector of distinct classes used to determine checks to proceed
   
   # Check for ff columns which need to be brought into memory. Running the any
   # command on the unique column class list means for x with many columns we 
   # don't do expensive per-column checks unless necessary.
-  col.classes = lapply(X, class)
-  uniq.col.classes = unique(unlist(col.classes))
-  any.ff = ("ff" %chin% uniq.col.classes)
+  any.ff = ("ff" %chin% uniq.classes)
   if (any.ff) {
     which.ff = which(sapply(col.classes, function(cl_vec) { "ff" %chin% cl_vec }))
     for (j in which.ff) {
@@ -1948,12 +1950,13 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
     
     # need to redetermine the classes now that all columns have been brought into memory
     col.classes = lapply(X, class)
-    uniq.col.classes = unique(unlist(col.classes))
+    uniq.col.classes = unique(col.classes)
+    uniq.classes = unique(unlist(uniq.col.classes))
   }
   
   # Next determine if any columns are list or non-atomic type. If so, convert all columns to lists
-  col.types = lapply(X, typeof)
-  uniq.col.types = unique(unlist(col.types))
+  col.types = sapply(X, typeof)
+  uniq.col.types = unique(col.types)
   atomics <- c("logical", "integer", "numeric", "double", "complex", "character", "raw")
   any.non.atomic = (length(setdiff(uniq.col.types, atomics)) > 0L)
   if (any.non.atomic) {
@@ -1965,13 +1968,14 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
     
     # redetermine classes and types for next checks
     col.classes = lapply(X, class)
-    uniq.col.classes = unique(unlist(col.classes))
-    col.types = lapply(X, typeof)
-    uniq.col.types = unique(unlist(col.types))
+    uniq.col.classes = unique(col.classes)
+    uniq.classes = unique(unlist(uniq.col.classes))
+    col.types = sapply(X, typeof)
+    uniq.col.types = unique(col.types)
   }
   
   # Convert factors to character vectors
-  any.factors = ("factor" %chin% uniq.col.classes)
+  any.factors = ("factor" %chin% uniq.classes)
   if (any.factors) {
     which.factors = which(sapply(col.classes, function(cl_vec) { "factor" %chin% cl_vec }))
     for (j in which.factors) {
@@ -1983,13 +1987,14 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
     # redetermine classes and types for next checks
     col.classes = lapply(X, class)
     uniq.col.classes = unique(col.classes)
-    col.types = lapply(X, typeof)
+    uniq.classes = unique(unlist(uniq.col.classes))
+    col.types = sapply(X, typeof)
     uniq.col.types = unique(col.types)
   }
   
   # Classes to be converted to character vectors
   charconvert.classes = c("Date", "POSIXct", "POSIXlt", "raw")
-  any.charconvert = any(charconvert.classes %chin% uniq.col.classes)
+  any.charconvert = any(charconvert.classes %chin% uniq.classes)
   if (any.charconvert) {
     which.charconvert = which(sapply(col.classes, function(cl_vec) { any(charconvert.classes %chin% cl_vec) }))
     for (j in which.charconvert) {
@@ -2001,20 +2006,20 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
     # redetermine classes and types for next checks
     col.classes = lapply(X, class)
     uniq.col.classes = unique(col.classes)
-    col.types = lapply(X, typeof)
+    uniq.classes = unique(unlist(uniq.col.classes))
+    col.types = sapply(X, typeof)
     uniq.col.types = unique(col.types)
   }
   
   # Other classes from suggested packages that have special type conversion rules
-  any.bit64 = ("integer64" %chin% uniq.col.classes)
-  if (any.bit64 && length(uniq.col.classes) > 1L) {
+  any.bit64 = ("integer64" %chin% uniq.classes)
+  if (any.bit64 && length(uniq.classes) > 1L) {
     # Determine target class we're converting to 
     target.class = NULL
-    if (all(uniq.col.classes %chin% c("integer64", "logical", "integer")))
+    if (all(uniq.classes %chin% c("integer64", "logical", "integer")))
       target.class = "integer64"
-    else if (all(uniq.col.classes %chin% c("integer64", "numeric", "complex", "character")))
+    else if (all(uniq.classes %chin% c("integer64", "numeric", "complex", "character")))
       target.class = "character" # integer64 cannot reliably be converted to numeric or complex
-
     
     if (!is.null(target.class)) { # if NULL fallback on type coercion
       # Which columns need to be coerced?
@@ -2031,19 +2036,16 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
     # redetermine classes and types for next checks
     col.classes = lapply(X, class)
     uniq.col.classes = unique(col.classes)
-    col.types = lapply(X, typeof)
+    uniq.classes = unique(unlist(uniq.col.classes))
+    col.types = sapply(X, typeof)
     uniq.col.types = unique(col.types)
   }
   
-  # If columns do not all have the same type we need to coerce
+  # If columns still do not all have the same type we need to coerce
   if (length(uniq.col.types) > 1L) { 
     type.order = c("logical"=1L, "raw"=2L, "integer"=3L, "numeric"=4L, 
                    "complex"=5L, "character"=6L, "list"=7L)
-    
-    # Determine target coercion class from class hiearachy
     target.type = names(which.max(type.order[uniq.col.types]))
-    
-    # Determine which columns we're converting
     which.convert = which(sapply(col.types, function(tp_vec) { !any(target.type %chin% tp_vec) }))
 
     # Coerce the columns
@@ -2058,26 +2060,27 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
              # list should not be possible to reach, as all columns will be list type from prior coercion
       )
     }
-    uniq.col.classes = target.type
+    col.classes = lapply(X, class)
+    uniq.col.classes = unique(col.classes)
+    uniq.classes = unique(unlist(uniq.col.classes))
   }
-  
-  
-  # Generate warning if there are any column classes not of the base types - this means
-  # we've encountered a class we otherwise don't know how to coerce 
-  unknown.classes = setdiff(uniq.col.classes, names(type.order))
-  if (length(unknown.classes) > 1L)
-    warning("Could not determine how to coerce class(es) ", 
-            paste(paste0("'", unknown.classes, "'"), collapse=","),
-            ", columns have been coerced to type '", target, "'")
   
   # Copy the values into a matrix
   X = .Call(Casmatrix, X)
   dim(X) = c(n, length(X)/n)
   dimnames(X) = list(rownames.value, cn)
   
-  # Determine additional class(es) to give matrix if the matrix type is a class from a suggested package, e.g. bit64
-  data.class <- setdiff(uniq.col.classes, names(type.order))
-  class(X) <- c("matrix", data.class)
+  # Determine any additional classes to give to the matrix - this applies
+  # where all columns have the same set of classes, and those classes 
+  # include those defined in packages outside of base R - for example
+  # if all columns have class integer64 we can add this class to the 
+  # matrix.
+  if (length(uniq.col.classes) == 1L) {
+    base.types = c("logical", "raw", "integer", "numeric", "double", 
+                     "complex", "character", "list")
+    add.class = setdiff(uniq.classes, base.types)
+    class(X) = add.class
+  }
   
   X
 }
