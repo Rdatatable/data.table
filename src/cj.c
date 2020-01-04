@@ -137,51 +137,35 @@ SEXP unnest(SEXP x, SEXP cols) {
       lcols[lk++] = j-1; // move to 0-based
     } break;
     default:
-      error(_("Unsupported type: %s"), type2char(TYPEOF(VECTOR_ELT(x, j))));
+      error(_("Unsupported type for unnesting: %s"), type2char(TYPEOF(VECTOR_ELT(x, j))));
     }
   }
+  if (lk == 0)
+    return (duplicate(x));
 
   int row_counts[n];
-  int eachrep[n];
 
-  double this_row;
-  int out_rows=0, i=0;
-  // find the mapping i -> # rows corresponding to i in output,
-  //   also check feasibility of output
-  while (i < n) {
-    this_row = 1;
-    for (int jj=0; jj<lk; jj++)
-      this_row *= LENGTH(VECTOR_ELT(VECTOR_ELT(x, lcols[jj]), i));
-    if (this_row > INT_MAX)
-      error("Implied number of unnested rows from row %d (%.0f) exceeds %d, the maximum currently allowed.", i, this_row, INT_MAX);
-    if (out_rows > INT_MAX - this_row) {
-      double out_rows_dbl = (double) out_rows;
-      for (;i<n; i++)
-        out_rows_dbl += row_counts[i];
-      error("Implied number of unnested rows (%.0f) exceeds %d, the maximum currently allowed.", out_rows_dbl, INT_MAX);
-    }
-    row_counts[i] = (int) this_row;
-    out_rows += row_counts[i];
-    eachrep[i++] = 1; // initializing
+  SEXP cj_rowwise = PROTECT(allocVector(VECSXP, n));
+  for (int i=0; i<n; i++) {
+    SEXP nest_vals = PROTECT(allocVector(VECSXP, lk));
+    for (int j=0; j<lk; j++)
+      SET_VECTOR_ELT(nest_vals, j, VECTOR_ELT(VECTOR_ELT(x, lcols[j]), i));
+    SET_VECTOR_ELT(cj_rowwise, i, cj(nest_vals));
+    row_counts[i] = LENGTH(VECTOR_ELT(VECTOR_ELT(cj_rowwise, i), 0));
+    UNPROTECT(1);
   }
+  SEXP unnest_lcols = rbindlist(cj_rowwise, ScalarLogical(FALSE), ScalarLogical(FALSE), R_NilValue);
+  UNPROTECT(1);
+  int out_rows = LENGTH(VECTOR_ELT(unnest_lcols, 0));
 
-  // TODO: factor columns?
   SEXP ans = PROTECT(allocVector(VECSXP, p));
   copyMostAttrib(x, ans);
-  for (int j=p-1, lj=lk-1; j>=0; j--) {
-    Rprintf("j=%d\n", j);
-    SEXP xj = VECTOR_ELT(x, j), ansj;
-    int outi=0;
-    if (lj >= 0 && j == lcols[lj]) { // vec col: apply unnesting
-      // TODO: type bumping for mismatch
-      SET_VECTOR_ELT(ans, j, ansj=allocVector(TYPEOF(VECTOR_ELT(xj, 0)), out_rows));
-      for (int i=0; i<n; i++) {
-        cycle_vector(VECTOR_ELT(xj, i), ansj + outi, lj, eachrep[i], row_counts[i]);
-        eachrep[i] *= LENGTH(VECTOR_ELT(xj, i));
-        outi += row_counts[i];
-      }
-      lj--;
+  for (int j=0, lj=0; j<p; j++) {
+    if (lj < lk && j == lcols[lj]) { // vec col: apply unnesting
+      SET_VECTOR_ELT(ans, j, VECTOR_ELT(unnest_lcols, lj++));
     } else { // non-vec col: simply copy
+      int outi=0;
+      SEXP xj = VECTOR_ELT(x, j), ansj;
       SET_VECTOR_ELT(ans, j, ansj=allocVector(TYPEOF(xj), out_rows));
       switch(TYPEOF(xj)) {
       case RAWSXP: {
@@ -235,10 +219,9 @@ SEXP unnest(SEXP x, SEXP cols) {
       } break;
       default: error(_("Unsupported column type %s"), type2char(TYPEOF(xj)));
       }
+      copyMostAttrib(xj, ansj);
     }
-    copyMostAttrib(xj, ansj);
   }
-  Rprintf("done\n");
 
   // copy names
   SEXP ansNames;
@@ -248,5 +231,5 @@ SEXP unnest(SEXP x, SEXP cols) {
     SET_STRING_ELT(ansNames, j, STRING_ELT(xNames, j));
   }
   UNPROTECT(2);
-  return (ans);
+  return ans;
 }
