@@ -156,7 +156,6 @@ SEXP unnest(SEXP x, SEXP cols) {
   int out_rows = LENGTH(VECTOR_ELT(unnest_lcols, 0));
 
   SEXP ans = PROTECT(allocVector(VECSXP, p));
-  copyMostAttrib(x, ans);
   for (int j=0, lj=0; j<p; j++) {
     if (lj < lk && j == lcols[lj]) { // vec col: plonk from unnested value above
       SET_VECTOR_ELT(ans, j, VECTOR_ELT(unnest_lcols, lj++));
