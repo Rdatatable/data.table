@@ -129,7 +129,7 @@ SEXP unnest(SEXP x, SEXP cols) {
       lcols[lk++] = j-1; // move to 0-based
     } break;
     default:
-      error(_("Unsupported type for unnesting: %s"), type2char(TYPEOF(VECTOR_ELT(x, j))));
+      error(_("Unsupported type for unnesting: '%s'"), type2char(TYPEOF(VECTOR_ELT(x, j-1))));
     }
   }
   if (lk == 0)

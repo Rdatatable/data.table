@@ -16727,10 +16727,10 @@ DT = data.table(
 test(2130.03, print(DT), output=c("   x             y", "1: 1 <ex_class[3]>",     "2: 2 <ex_class[3]>"))
 
 # funnest
-x = setDT(list(V1=1:2, V2=3:4, V3=list(1:3, 1:2), V4=list(1L, 1:3)))
+x = setDT(list(V1=1:2, V2=c(3,4), V3=list(1:3, 1:2), V4=list(1L, 1:3)))
 ans = data.table(
   V1 = c(1L, 1L, 1L, 2L, 2L, 2L, 2L, 2L, 2L),
-  V2 = c(3L, 3L, 3L, 4L, 4L, 4L, 4L, 4L, 4L),
+  V2 = c(3, 3, 3, 4, 4, 4, 4, 4, 4),
   V3 = c(1L, 2L, 3L, 1L, 1L, 1L, 2L, 2L, 2L),
   V4 = c(1L, 1L, 1L, 1L, 2L, 3L, 1L, 2L, 3L)
 )
@@ -16789,6 +16789,9 @@ test(2131.18, funnest(1), error='Input to funnest must be a data.table')
 x = data.table(a=1)
 test(2131.19, funnest(x), x)
 test(2131.20, address(funnest(x)) != address(x))
+
+x[ , e := expression(2)]
+test(2131.21, funnest(x, cols=2L), error='Unsupported type for unnesting')
 
 ########################
 #  Add new tests here  #
