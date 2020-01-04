@@ -22,6 +22,6 @@ A \code{data.table}
 }
 \examples{
 x = setDT(list(V1 = 1:2, V2 = 3:4, V3 = list(1:3, 1:2), V4 = list(1L, 1:3)))
-unnest(x)
+funnest(x)
 }
 \keyword{ data }
