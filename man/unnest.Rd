@@ -1,11 +1,11 @@
-\name{unnest}
-\alias{unnest}
+\name{funnest}
+\alias{funnest}
 \title{ Unnest/explode list columns }
 \description{
-For tables with non-rectangular columns (i.e., \code{list}), \code{unnest} "stretches" the table by creating a row for each list element, while also preserving the structure of rectangular columns. Akin to \code{EXPLODE} in U-SQL or HiveQL/SparkQL or \code{UNNEST} from Presto or BigQuery, and similar to \code{\link{melt}} -- both reshape "long", but \code{unnest} does so for "ragged" tables more naturally.
+For tables with non-rectangular columns (i.e., \code{list}), \code{funnest} "stretches" the table by creating a row for each list element, while also preserving the structure of rectangular columns. Akin to \code{EXPLODE} in U-SQL or HiveQL/SparkQL or \code{UNNEST} from Presto or BigQuery, and similar to \code{\link{melt}} -- both reshape "long", but \code{funnest} does so for "ragged" tables more naturally.
 }
 \usage{
-  unnest(x, cols = which(vapply_1b(x, is.list)))
+  funnest(x, cols = which(vapply_1b(x, is.list)))
 }
 \arguments{
   \item{x}{ A \code{data.table} }

@@ -7,7 +7,7 @@ SEXP cj(SEXP base_list) {
   double nrow_dbl=1;
   for (int j=0; j<ncol; ++j) nrow_dbl *= length(VECTOR_ELT(base_list, j));
   if (nrow_dbl > INT_MAX)
-      error(_("Cross product of elements provided to CJ() would result in %.0f rows which exceeds .Machine$integer.max == %d"), nrow_dbl, INT_MAX);
+      error(_("Cross product of elements provided for cross-join would result in %.0f rows which exceeds .Machine$integer.max == %d"), nrow_dbl, INT_MAX);
   int nrow = (int) nrow_dbl;
   int eachrep = 1;
   for (int j=ncol-1; j>=0; --j) {
@@ -89,7 +89,7 @@ SEXP cj(SEXP base_list) {
       }
     } break;
     default:
-      error(_("Type '%s' not supported by CJ."), type2char(TYPEOF(source)));
+      error(_("Type '%s' not supported by cross-join."), type2char(TYPEOF(source)));
     }
     eachrep *= thislen;
   }
@@ -99,7 +99,7 @@ SEXP cj(SEXP base_list) {
 
 SEXP unnest(SEXP x, SEXP cols) {
   if (!INHERITS(x, char_datatable))
-    error(_("Input to unnest must be a data.table"));
+    error(_("Input to funnest must be a data.table"));
   int k = LENGTH(cols);
   // nothing to unnest -- need to go further, just be sure to copy
   if (k == 0)
@@ -213,7 +213,15 @@ SEXP unnest(SEXP x, SEXP cols) {
           outi += row_counts[i];
         }
       } break;
-      default: error(_("Unsupported column type %s"), type2char(TYPEOF(xj)));
+      case VECSXP: {
+        for (int i=0; i<n; i++) {
+          for(int repi=0; repi<row_counts[i]; repi++) {
+            SET_VECTOR_ELT(ansj, outi + repi, VECTOR_ELT(xj, i));
+          }
+          outi += row_counts[i];
+        }
+      } break;
+      default: error(_("Unsupported column type '%s'"), type2char(TYPEOF(xj)));
       }
       copyMostAttrib(xj, ansj);
     }
