@@ -21,11 +21,7 @@ A \code{data.table}
   \code{\link{CJ}}, \code{\link{rbindlist}}
 }
 \examples{
-x = c(11L, NA, 13L, NA, 15L, NA)
-y = c(NA, 12L, 5L, NA, NA, NA)
-z = c(11L, NA, 1L, 14L, NA, NA)
-fcoalesce(x, y, z)
-fcoalesce(list(x,y,z))   # same
-fcoalesce(x, list(y,z))  # same
+x = setDT(list(V1 = 1:2, V2 = 3:4, V3 = list(1:3, 1:2), V4 = list(1L, 1:3)))
+unnest(x)
 }
 \keyword{ data }
