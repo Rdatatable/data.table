@@ -9,7 +9,7 @@
 SEXP asmatrix_logical(SEXP dt, R_xlen_t matlen, R_xlen_t n) {
   // Create output matrix, allocate memory, and create a pointer to it.
   SEXP mat = PROTECT(allocVector(LGLSXP, matlen));
-  int *pmat; 
+  Rboolean *pmat; 
   pmat = LOGICAL(mat);
   
   /* Create an array of pointers for the individual columns in DT 
@@ -17,8 +17,8 @@ SEXP asmatrix_logical(SEXP dt, R_xlen_t matlen, R_xlen_t n) {
    * in the parallel OMP threads
    */
   R_len_t dtncol = length(dt);
-  int **pcol;
-  pcol = (int **) R_alloc(dtncol, sizeof(int *));
+  Rboolean **pcol;
+  pcol = (Rboolean **) R_alloc(dtncol, sizeof(Rboolean *));
   for (R_len_t jj = 0; jj < dtncol; jj++) {
     pcol[jj] = LOGICAL(VECTOR_ELT(dt, jj));
   }
@@ -46,7 +46,7 @@ SEXP asmatrix_logical(SEXP dt, R_xlen_t matlen, R_xlen_t n) {
     
     // Iterate through columns in DT, copying the contents to the matrix column
     for (R_len_t jj = startcol; jj <= endcol; jj++) {
-      memcpy(pmat + vecIdx, pcol[jj], sizeof(int)*n);
+      memcpy(pmat + vecIdx, pcol[jj], sizeof(Rboolean)*n);
       vecIdx += n;
     }
   }
