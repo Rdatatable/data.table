@@ -1861,28 +1861,41 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
           warning("rownames is TRUE but key has multiple columns ",
                   brackify(key(x)), "; taking first column x[,1] as rownames")
         }
-        rownames = if (length(key(x))==1L) chmatch(key(x),names(x)) else 1L
+        rownames.index = if (length(key(x))==1L) chmatch(key(x),names(x)) else 1L
       }
       else if (is.logical(rownames) || is.na(rownames)) {
         # FALSE, NA, NA_character_ all mean the same as NULL
         rownames = NULL
       }
       else if (is.character(rownames)) {
-        w = chmatch(rownames, names(x))
-        if (is.na(w)) stop("'", rownames, "' is not a column of x")
-        rownames = w
+        rownames.index = chmatch(rownames, names(x))
+        if (is.na(rownames.index)) stop("'", rownames, "' is not a column of x")
+        rownames = paste0("'", rownames, "'") # for use in later error messages if needed
       }
       else { # rownames is a column number already
-        rownames = as.integer(rownames)
-        if (is.na(rownames) || rownames<1L || rownames>ncol(x))
+        rownames.index = as.integer(rownames)
+        if (is.na(rownames.index) || rownames.index<1L || rownames.index>ncol(x))
           stop("as.integer(rownames)==", rownames,
                " which is outside the column number range [1,ncol=", ncol(x), "].")
-        if (length(x[[rownames]]) != nrow(x)) 
-          stop("x[,", rownames, "] has multi-column type (such as a matrix column) ",
-               "and cannot be used as rownames: length(x[,", rownames,
-               "])==", length(X[[rownames]]), "but should be nrow(x)==", nrow(x))
-        if (is.list(x[[rownames]]))
-          stop("x[,", rownames, "] is a list column, the rownames column should be a vector")
+      }
+    }
+    if (!is.null(rownames)) {
+      # Extract the rownames column, bringing it into memory if ff object
+      if (is.ff(x[[rownames.index]])) { 
+        rownames.value = x[[rownames.index]][]
+      } else {
+        rownames.value = x[[rownames.index]]
+      }
+      # Check rownames column is appropriate dimension
+      if (length(dim(rownames.value)) > 1L) {
+        stop("x[,", rownames, "] has multi-column type (such as a matrix column)",
+             " and cannot be used as rownames: dim(x[,", rownames, "])==", 
+             brackify(dim(rownames.value)))
+      }
+      # Warn if list column:
+      if (is.list(rownames.value)) {
+        warning("x[,", rownames, "] is a list column, which will be coerced to a",
+                "character vector when used as rownames")
       }
     }
   } else if (!is.null(rownames.value)) {
@@ -1890,6 +1903,7 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
       stop("length(rownames.value)==", length(rownames.value),
            " but should be nrow(x)==", nrow(x))
   }
+  
   # Create a new list X containing pointers to columns in x, so that any
   # modifications (i.e. type coercion, dropping of rownames column) do 
   # not change the input data.table. New copies in memory are only 
@@ -1902,16 +1916,11 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
   p = length(cn)
   n = dm[1L]
   
-  # If there is a rownames column extract and drop it, updating the dimensions
+  # If there is a rownames column, exctract, drop, and update the dimensions
   if (!is.null(rownames)) {
-    # extract that column.
-    if (is.ff(X[[rownames]]))
-      rownames.value = X[[rownames]][] # bring the column into memory if ff object
-    else
-      rownames.value = X[[rownames]]
-    X[[rownames]] = NULL
+    X[[rownames.index]] = NULL
     dm = dm - 0:1
-    cn = cn[-rownames]
+    cn = cn[-rownames.index]
     p = p - 1L
   }
 

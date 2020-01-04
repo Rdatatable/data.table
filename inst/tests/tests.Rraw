@@ -12471,7 +12471,7 @@ test(1899.05, as.matrix(DT, 1:4), mat3)
 test(1899.06, as.matrix(DT, -1), error="as.integer(rownames)==-1 which is outside the column number range")
 test(1899.07, as.matrix(DT, "Z"), error="'Z' is not a column of x")
 test(1899.08, as.matrix(DT, c(1,2)), error="length(rownames)==2 but nrow(DT)==4. The rownames argument specifies a single column name or number. Consider rownames.value= instead.")
-test(1899.09, as.matrix(DT, complex(1)), error="as.integer(rownames)==0 which is outside the column number range [1,ncol=3].")
+test(1899.09, as.matrix(DT, complex(1)), error="as.integer(rownames)==0+0i which is outside the column number range [1,ncol=3].")
 # values that pass through (rownames ignored)
 test(1899.10, as.matrix(DT, NA), mat2)
 test(1899.11, as.matrix(DT, NULL), mat2)
@@ -16682,3 +16682,13 @@ test(2129, rbind(A,B)$c3, expression(as.character(Sys.time()), as.character(Sys.
 ########################
 #  Add new tests here  #
 ########################
+
+## Check for appropriate errors when giving rownames to as.matrix.data.table that are mutli-column (only possible when constructed incorrectly) or list
+DT = structure(list(a=list(1,2:3,4:6,letters[1:5],list(1, "a")), d=data.table(b=6:10, c=11:15), m=matrix(16:25, ncol=2L)), class = c('data.table', 'data.frame'))
+test(2130.1, as.matrix(DT, rownames="d"), error="x[,'d'] has multi-column type (such as a matrix column) and cannot be used as rownames: dim(x[,'d'])==[5, 2]")
+test(2130.2, as.matrix(DT, rownames=2), error='x[,2] has multi-column type (such as a matrix column) and cannot be used as rownames: dim(x[,2])==[5, 2]')
+mat = matrix(6:25, nrow=5, dimnames=list(DT[["a"]], c("d.b", "d.c", "m.V1", "m.V2")))
+test(2130.3, as.matrix(DT, rownames="a"), mat, warning="x[,'a'] is a list column, which will be coerced to acharacter vector when used as rownames")
+test(2130.4, as.matrix(DT, rownames=1), mat, warning='x[,1] is a list column, which will be coerced to acharacter vector when used as rownames')
+
+
