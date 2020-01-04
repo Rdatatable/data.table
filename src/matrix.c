@@ -6,7 +6,7 @@
  * corresponding asmatrix_<type> function.
  */
 
-SEXP asmatrix_logical(SEXP dt, R_xlen_t matlen, R_xlen_t n, R_len_t rncolnum) {
+SEXP asmatrix_logical(SEXP dt, R_xlen_t matlen, R_xlen_t n) {
   // Create output matrix, allocate memory, and create a pointer to it.
   SEXP mat = PROTECT(allocVector(LGLSXP, matlen));
   int *pmat; 
@@ -43,13 +43,9 @@ SEXP asmatrix_logical(SEXP dt, R_xlen_t matlen, R_xlen_t n, R_len_t rncolnum) {
     
     // Determine where to fill in the matrix vector
     R_xlen_t vecIdx = startcol * n;
-    if (rncolnum < startcol) 
-      vecIdx -= n;
     
     // Iterate through columns in DT, copying the contents to the matrix column
     for (R_len_t jj = startcol; jj <= endcol; jj++) {
-      if (jj == rncolnum) // skip rownames.
-        continue; 
       memcpy(pmat + vecIdx, pcol[jj], sizeof(int)*n);
       vecIdx += n;
     }
@@ -59,7 +55,7 @@ SEXP asmatrix_logical(SEXP dt, R_xlen_t matlen, R_xlen_t n, R_len_t rncolnum) {
   return mat;
 }
 
-SEXP asmatrix_integer(SEXP dt, R_xlen_t matlen, R_xlen_t n, R_len_t rncolnum) {
+SEXP asmatrix_integer(SEXP dt, R_xlen_t matlen, R_xlen_t n) {
   // Create output matrix, allocate memory, and create a pointer to it.
   SEXP mat = PROTECT(allocVector(INTSXP, matlen));
   int *pmat; 
@@ -86,13 +82,9 @@ SEXP asmatrix_integer(SEXP dt, R_xlen_t matlen, R_xlen_t n, R_len_t rncolnum) {
     
     // Determine where to fill in the matrix vector
     R_xlen_t vecIdx = startcol * n;
-    if (rncolnum < startcol) 
-      vecIdx -= n;
     
     // Iterate through columns in DT, copying the contents to the matrix column
     for (R_len_t jj = startcol; jj <= endcol; jj++) {
-      if (jj == rncolnum) // skip rownames.
-        continue; 
       memcpy(pmat + vecIdx, pcol[jj], sizeof(int)*n);
       vecIdx += n;
     }
@@ -102,7 +94,7 @@ SEXP asmatrix_integer(SEXP dt, R_xlen_t matlen, R_xlen_t n, R_len_t rncolnum) {
   return mat;
 }
 
-SEXP asmatrix_numeric(SEXP dt, R_xlen_t matlen, R_xlen_t n, R_len_t rncolnum) {
+SEXP asmatrix_numeric(SEXP dt, R_xlen_t matlen, R_xlen_t n) {
   // Create output matrix, allocate memory, and create a pointer to it.
   SEXP mat = PROTECT(allocVector(REALSXP, matlen));
   double *pmat; 
@@ -129,13 +121,9 @@ SEXP asmatrix_numeric(SEXP dt, R_xlen_t matlen, R_xlen_t n, R_len_t rncolnum) {
     
     // Determine where to fill in the matrix vector
     R_xlen_t vecIdx = startcol * n;
-    if (rncolnum < startcol) 
-      vecIdx -= n;
-    
+
     // Iterate through columns in DT, copying the contents to the matrix column
     for (R_len_t jj = startcol; jj <= endcol; jj++) {
-      if (jj == rncolnum) // skip rownames.
-        continue; 
       memcpy(pmat + vecIdx, pcol[jj], sizeof(double)*n);
       vecIdx += n;
     }
@@ -145,7 +133,7 @@ SEXP asmatrix_numeric(SEXP dt, R_xlen_t matlen, R_xlen_t n, R_len_t rncolnum) {
   return mat;
 }
 
-SEXP asmatrix_complex(SEXP dt, R_xlen_t matlen, R_xlen_t n, R_len_t rncolnum) {
+SEXP asmatrix_complex(SEXP dt, R_xlen_t matlen, R_xlen_t n) {
   // Create output matrix, allocate memory, and create a pointer to it.
   SEXP mat = PROTECT(allocVector(CPLXSXP, matlen));
   Rcomplex *pmat; 
@@ -172,13 +160,9 @@ SEXP asmatrix_complex(SEXP dt, R_xlen_t matlen, R_xlen_t n, R_len_t rncolnum) {
     
     // Determine where to fill in the matrix vector
     R_xlen_t vecIdx = startcol * n;
-    if (rncolnum < startcol) 
-      vecIdx -= n;
     
     // Iterate through columns in DT, copying the contents to the matrix column
     for (R_len_t jj = startcol; jj <= endcol; jj++) {
-      if (jj == rncolnum)  // skip rownames.
-        continue; 
       memcpy(pmat + vecIdx, pcol[jj], sizeof(Rcomplex)*n);
       vecIdx += n;
     }
@@ -188,7 +172,7 @@ UNPROTECT(1);
 return mat;
 }
 
-SEXP asmatrix_character(SEXP dt, R_xlen_t matlen, R_len_t n, R_len_t rncolnum) {
+SEXP asmatrix_character(SEXP dt, R_xlen_t matlen, R_len_t n) {
   // Create output matrix, allocate memory, and create a pointer to it
   SEXP mat = PROTECT(allocVector(STRSXP, matlen)); // output matrix
   SEXP pcol; // pointers to casted R objects
@@ -199,8 +183,6 @@ SEXP asmatrix_character(SEXP dt, R_xlen_t matlen, R_len_t n, R_len_t rncolnum) {
   // Iterate through dt and copy into mat 
   R_xlen_t vecIdx = 0; // counter to track place in vector underlying matrix
   for (R_len_t jj = 0; jj < dtncol; jj++) {
-    if (jj == rncolnum) // skip rownames.
-      continue; 
     pcol = VECTOR_ELT(dt, jj);
     for (R_len_t ii = 0; ii < n; ii++) {
       SET_STRING_ELT(mat, vecIdx, STRING_ELT(pcol, ii));
@@ -212,7 +194,7 @@ SEXP asmatrix_character(SEXP dt, R_xlen_t matlen, R_len_t n, R_len_t rncolnum) {
   return mat;
 }
 
-SEXP asmatrix_list(SEXP dt, R_xlen_t matlen, R_len_t n, R_len_t rncolnum) {
+SEXP asmatrix_list(SEXP dt, R_xlen_t matlen, R_len_t n) {
   // Create output matrix, allocate memory, and create a pointer to it
   SEXP mat = PROTECT(allocVector(VECSXP, matlen)); // output matrix
   SEXP pcol; // pointers to casted R objects
@@ -223,8 +205,6 @@ SEXP asmatrix_list(SEXP dt, R_xlen_t matlen, R_len_t n, R_len_t rncolnum) {
   // Iterate through dt and copy into mat 
   R_xlen_t vecIdx = 0; // counter to track place in vector underlying matrix
   for (R_len_t jj = 0; jj < dtncol; jj++) {
-    if (jj == rncolnum) // skip rownames.
-      continue; 
     pcol = VECTOR_ELT(dt, jj);
     for (R_len_t ii = 0; ii < n; ii++) {
       SET_VECTOR_ELT(mat, vecIdx, VECTOR_ELT(pcol, ii));
@@ -237,18 +217,10 @@ SEXP asmatrix_list(SEXP dt, R_xlen_t matlen, R_len_t n, R_len_t rncolnum) {
 }
 
 // Dispatch function for different atomic types
-SEXP asmatrix(SEXP dt, SEXP rownames) {
+SEXP asmatrix(SEXP dt) {
   // Determine the number of rows and columns in the data.table
   R_xlen_t p = xlength(dt);
   R_xlen_t n = xlength(VECTOR_ELT(dt, 0));
-  
-  /* Determine the column number in which the rownames is stored 
-   * to skip when filling in the matrix. If there are no rownames, this
-   * number will be larger than the number of columns in the data.table.
-   */
-  R_xlen_t rncolnum = asInteger(rownames) - 1; // -1 to convert from 1-based to 0-based indexing
-  if (rncolnum < p)
-    p--;
 
   // Check neither rows or columns are greater than INT_MAX
   if (p > INT_MAX) 
@@ -260,28 +232,23 @@ SEXP asmatrix(SEXP dt, SEXP rownames) {
   R_xlen_t matlen = n * p;
   
   /* Conversion to a common atomic type is handled in R. We detect the
-   * atomic type from the first column; unless that column is the 
-   * rownames column we want to drop.
-   */
-  int firstcol = 0;
-  if (rncolnum == 0) 
-    firstcol++;
-  SEXPTYPE R_atomic_type = TYPEOF(VECTOR_ELT(dt, firstcol));
+   * atomic type from the first column. */
+  SEXPTYPE R_atomic_type = TYPEOF(VECTOR_ELT(dt, 0));
   
   // Copy values from dt into the matrix mat using appropriately typed function
   switch(R_atomic_type) {
     case LGLSXP: 
-      return(asmatrix_logical(dt, matlen, n, rncolnum));
+      return(asmatrix_logical(dt, matlen, n));
     case INTSXP: 
-      return(asmatrix_integer(dt, matlen, n, rncolnum));
+      return(asmatrix_integer(dt, matlen, n));
     case REALSXP: 
-      return(asmatrix_numeric(dt, matlen, n, rncolnum));
+      return(asmatrix_numeric(dt, matlen, n));
     case CPLXSXP: 
-      return(asmatrix_complex(dt, matlen, n, rncolnum));
+      return(asmatrix_complex(dt, matlen, n));
     case STRSXP: 
-      return(asmatrix_character(dt, matlen, (R_len_t) n, rncolnum));
+      return(asmatrix_character(dt, matlen, (R_len_t) n));
     case VECSXP:
-      return(asmatrix_list(dt, matlen, (R_len_t) n, rncolnum));
+      return(asmatrix_list(dt, matlen, (R_len_t) n));
     default:
       error("Unsupported matrix type '%s'", type2char(R_atomic_type));
   }

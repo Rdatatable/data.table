@@ -1890,36 +1890,44 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
       stop("length(rownames.value)==", length(rownames.value),
            " but should be nrow(x)==", nrow(x))
   }
-  if (!is.null(rownames)) {
-    # extract that column.
-    if (is.ff(x[[rownames]]))
-      rownames.value = x[[rownames]][] # bring the column into memory if ff object
-    else
-      rownames.value = x[[rownames]]
-    dm = dim(x) - 0:1
-    cn = names(x)[-rownames]
-  } else {
-    dm = dim(x)
-    cn = names(x)
-    rownames = ncol(x) + 1L # if no rownames to drop, set index to > ncol so that we can do [-rownames] rather than if (is.null(rownames)) {} else {} to drop the column in the rest of the code
-  }
+  # Create a new list X containing pointers to columns in x, so that any
+  # modifications (i.e. type coercion, dropping of rownames column) do 
+  # not change the input data.table. New copies in memory are only 
+  # created for columns that are modified (those coerced to a different
+  # type or class)
   X = x
-  if (any(dm == 0L))
-    return(array(NA, dim = dm, dimnames = list(rownames.value, cn)))
+  dm = dim(x)
+  cn = names(x)
+  class(X) = NULL
   p = length(cn)
   n = dm[1L]
-  collabs = as.list(cn)
-  class(X) = NULL
   
+  # If there is a rownames column extract and drop it, updating the dimensions
+  if (!is.null(rownames)) {
+    # extract that column.
+    if (is.ff(X[[rownames]]))
+      rownames.value = X[[rownames]][] # bring the column into memory if ff object
+    else
+      rownames.value = X[[rownames]]
+    X[[rownames]] = NULL
+    dm = dm - 0:1
+    cn = cn[-rownames]
+    p = p - 1L
+  }
+
   # Check for any wide matrix like columns and unpack using as.data.table
   if (length(which_wide_columns(x)) > 0L) {
-    X = as.data.table(X[-rownames])
+    X = as.data.table(X)
+    dm = dim(X)
     cn = names(X)
-    collabs = as.list(cn)
-    p = ncol(X)
-    rownames = p + 1L
     class(X) = NULL
+    p = length(cn)
+    n = dm[1L]
   }
+  
+  # If no rows or columns can simply return empty array
+  if (any(dm == 0L))
+    return(array(NA, dim = dm, dimnames = list(rownames.value, cn)))
   
   # We now need to make sure all the columns are the same type, handling special
   # cases where some columns are not stored in memory (ff objects), lists, or 
@@ -1929,37 +1937,36 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
   # Check for ff columns which need to be brought into memory. Running the any
   # command on the unique column class list means for x with many columns we 
   # don't do expensive per-column checks unless necessary.
-  col.classes = lapply(X, class)[-rownames]
+  col.classes = lapply(X, class)
   uniq.col.classes = unique(unlist(col.classes))
   any.ff = ("ff" %chin% uniq.col.classes)
   if (any.ff) {
     which.ff = which(sapply(col.classes, function(cl_vec) { "ff" %chin% cl_vec }))
-    which.ff[which.ff >= rownames] = which.ff[which.ff >= rownames] + 1L # need to increment to account for skipped over rownames column
     for (j in which.ff) {
       X[[j]] = X[[j]][] # bring into memory
     }
     
     # need to redetermine the classes now that all columns have been brought into memory
-    col.classes = lapply(X, class)[-rownames]
+    col.classes = lapply(X, class)
     uniq.col.classes = unique(unlist(col.classes))
   }
   
   # Next determine if any columns are list or non-atomic type. If so, convert all columns to lists
-  col.types = lapply(X, typeof)[-rownames]
+  col.types = lapply(X, typeof)
   uniq.col.types = unique(unlist(col.types))
   atomics <- c("logical", "integer", "numeric", "double", "complex", "character", "raw")
   any.non.atomic = (length(setdiff(uniq.col.types, atomics)) > 0L)
   if (any.non.atomic) {
-    for (j in seq_len(p)[-rownames]) {
+    for (j in seq_len(p)) {
       if (!is.recursive(X[[j]])) { 
         X[[j]] = as.list(as.vector(X[[j]]))
       }
     }
     
     # redetermine classes and types for next checks
-    col.classes = lapply(X, class)[-rownames]
+    col.classes = lapply(X, class)
     uniq.col.classes = unique(unlist(col.classes))
-    col.types = lapply(X, typeof)[-rownames]
+    col.types = lapply(X, typeof)
     uniq.col.types = unique(unlist(col.types))
   }
   
@@ -1967,8 +1974,6 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
   any.factors = ("factor" %chin% uniq.col.classes)
   if (any.factors) {
     which.factors = which(sapply(col.classes, function(cl_vec) { "factor" %chin% cl_vec }))
-    which.factors[which.factors >= rownames] = which.factors[which.factors >= rownames] + 1L
-    
     for (j in which.factors) {
       miss = is.na(X[[j]])
       X[[j]] = as.vector(X[[j]])
@@ -1976,9 +1981,9 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
     }
     
     # redetermine classes and types for next checks
-    col.classes = lapply(X, class)[-rownames]
+    col.classes = lapply(X, class)
     uniq.col.classes = unique(col.classes)
-    col.types = lapply(X, typeof)[-rownames]
+    col.types = lapply(X, typeof)
     uniq.col.types = unique(col.types)
   }
   
@@ -1987,8 +1992,6 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
   any.charconvert = any(charconvert.classes %chin% uniq.col.classes)
   if (any.charconvert) {
     which.charconvert = which(sapply(col.classes, function(cl_vec) { any(charconvert.classes %chin% cl_vec) }))
-    which.charconvert[which.charconvert >= rownames] = which.charconvert[which.charconvert >= rownames] + 1L
-    
     for (j in which.charconvert) {
       miss = is.na(X[[j]])
       X[[j]] = format(X[[j]])
@@ -1996,9 +1999,9 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
     }
     
     # redetermine classes and types for next checks
-    col.classes = lapply(X, class)[-rownames]
+    col.classes = lapply(X, class)
     uniq.col.classes = unique(col.classes)
-    col.types = lapply(X, typeof)[-rownames]
+    col.types = lapply(X, typeof)
     uniq.col.types = unique(col.types)
   }
   
@@ -2019,8 +2022,7 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
       
       # Determine which columns we're converting
       which.convert = which(sapply(col.classes, function(cl_vec) { !any(target.class %chin% cl_vec) }))
-      which.convert[which.convert >= rownames] = which.convert[which.convert >= rownames] + 1L
-      
+
       # Coerce the columns
       for (j in which.convert) {
         switch(target.class,
@@ -2038,16 +2040,16 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
   
   if (C.as.matrix) {
     # Copy the values into a matrix
-    X = .Call(Casmatrix, X, rownames) # rownames here is a column index to skip over
+    X = .Call(Casmatrix, X)
     class(X) = uniq.col.classes # setting class allows for non-atomic classes, e.g. integer64
     dim(X) = c(n, length(X)/n)
-    dimnames(X) = list(rownames.value, unlist(collabs, use.names = FALSE))
+    dimnames(X) = list(rownames.value, cn)
     X
   } else {
     # Fallback method to use when we can't determine type/class to coerce to
-    X = unlist(X[-rownames], recursive = FALSE, use.names = FALSE)
+    X = unlist(X, recursive = FALSE, use.names = FALSE)
     dim(X) = c(n, length(X)/n)
-    dimnames(X) = list(rownames.value, unlist(collabs, use.names = FALSE))
+    dimnames(X) = list(rownames.value, cn)
     X
   }
 }
