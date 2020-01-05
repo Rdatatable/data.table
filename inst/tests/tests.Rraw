@@ -16699,3 +16699,10 @@ cmat = matrix(complex(real=1:4, imaginary=0:3), ncol=2, dimnames=list(NULL, c("A
 cdt = as.data.table(cmat)
 test(2131.2, as.matrix(cdt), cmat)
 
+## Codecov for ff class. We don't want to add ff to depends/suggests but if the user is 
+## using ff we would like as.matrix to work correctly
+DT = data.table(A=1:5, rn = letters[1:5], B=6:10)
+class(DT[["rn"]]) = "ff" # note this will fail if user actually has the ff package loaded
+class(DT[["B"]]) = "ff"
+mat = matrix(1:10, ncol=2, dimnames=list(letters[1:5], c("A", "B")))
+test(2132, as.matrix(DT, rownames="rn"), mat)
