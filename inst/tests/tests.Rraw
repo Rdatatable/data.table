@@ -16691,4 +16691,11 @@ mat = matrix(6:25, nrow=5, dimnames=list(DT[["a"]], c("d.b", "d.c", "m.V1", "m.V
 test(2130.3, as.matrix(DT, rownames="a"), mat, warning="x[,'a'] is a list column, which will be coerced to acharacter vector when used as rownames")
 test(2130.4, as.matrix(DT, rownames=1), mat, warning='x[,1] is a list column, which will be coerced to acharacter vector when used as rownames')
 
+## Check C-implementations of basic matrix types not covered by previous tests
+lmat = matrix(c(TRUE, FALSE, NA, FALSE), ncol=2, dimnames=list(NULL, c("A", "B")))
+ldt = as.data.table(lmat)
+test(2131.1, as.matrix(ldt), lmat)
+cmat = matrix(complex(real=1:4, imaginary=0:3), ncol=2, dimnames=list(NULL, c("A", "B")))
+cdt = as.data.table(cmat)
+test(2131.2, as.matrix(cdt), cmat)
 
