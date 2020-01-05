@@ -788,13 +788,13 @@ SEXP which_eqR(SEXP x, SEXP val, SEXP negate, SEXP intersect) {
   R_len_t nx = length(x);
   int ny = isNull(intersect) ? -1 : length(intersect);
   int nans = isNull(intersect) ? nx : MIN(nx, ny);
-  if (ny>0)
+  int *yp = 0;
+  if (ny>0) {
     intersect = duplicate(intersect);
-  Rprintf("R-devel debug start\n"); // cannot get data pointer of 'NULL' objects
-  int *yp = INTEGER(intersect);
-  Rprintf("R-devel debug end\n");
-  for (int i=0; i<ny; i++) {
-    yp[i]--; // shift 1-based index to 0-based index - this is for intersect argument, a short circuit
+    yp = INTEGER(intersect);
+    for (int i=0; i<ny; i++) {
+      yp[i]--; // shift 1-based index to 0-based index - this is for intersect argument, a short circuit
+    }
   }
   SEXP ans = PROTECT(allocVector(INTSXP, nans)); protecti++;
   int *iwhich = INTEGER(ans);
