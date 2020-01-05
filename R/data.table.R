@@ -2052,7 +2052,7 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
   
   # If columns still do not all have the same type we need to coerce
   if (length(uniq.col.types) > 1L) { 
-    type.order = c("logical"=1L, "raw"=2L, "integer"=3L, "numeric"=4L, 
+    type.order = c("logical"=1L, "raw"=2L, "integer"=3L, "double"=4L, 
                    "complex"=5L, "character"=6L, "list"=7L)
     target.type = names(which.max(type.order[uniq.col.types]))
     which.convert = which(sapply(col.types, function(tp_vec) { !any(target.type %chin% tp_vec) }))
@@ -2063,7 +2063,7 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
              # logical impossible to reach - no type coercion necessary if all columns are logical
              # raw is not possible to reach as they are converted to character columns to match as.matrix.data.frame
              "integer"={ X[[j]] = as.integer(X[[j]]) },
-             "numeric"={ X[[j]] = as.numeric(X[[j]]) },
+             "double"={ X[[j]] = as.double(X[[j]]) },
              "complex"={ X[[j]] = as.complex(X[[j]]) },
              "character"={ X[[j]] = as.character(X[[j]]) }
              # list should not be possible to reach, as all columns will be list type from prior coercion
