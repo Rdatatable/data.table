@@ -16722,3 +16722,24 @@ if (test_bit64) {
   DT = data.table(A=as.integer64(0:1), B=c(0.1, 0.2), C=complex(real=1:2, imaginary=0:1))
   test(2133.2, as.matrix(DT), mat)
 }
+
+## Test other class and type conversion in as.matrix
+mat = matrix(letters[1:4], ncol=2, dimnames=list(NULL, c("A", "B")))
+DT = data.table(A=as.factor(c("a", "b")), B=as.factor(c("c", "d")))
+test(2134.1, as.matrix(DT), mat)
+
+mat = matrix(paste0(0, 1:4), ncol=2, dimnames=list(NULL, c("A", "B")))
+DT = data.table(A=as.raw(1:2), B=as.raw(3:4))
+test(2134.2, as.matrix(DT), mat)
+
+mat = matrix(paste0("2019-01-0", 1:4), ncol=2, dimnames=list(NULL, c("A", "B")))
+DT = data.table(A=as.IDate(paste0("2019-01-0", 1:2)), B=as.IDate(paste0("2019-01-0", 3:4)))
+test(2134.3, as.matrix(DT), mat)
+
+mat = matrix(c(1, 2, 0.1, 0.2, TRUE, FALSE), ncol=3, dimnames=list(NULL, c("A", "B", "C")))
+DT = data.table(A=1:2, B=c(0.1, 0.2), C=c(TRUE, FALSE))
+test(2134.4, as.matrix(DT), mat)
+
+mat = matrix(c(1, 2, 0.1, 0.2, TRUE, FALSE, complex(1:2, 1:2)), ncol=4, dimnames=list(NULL, LETTERS[1:4]))
+DT = data.table(A=1:2, B=c(0.1, 0.2), C=c(TRUE, FALSE), D=complex(1:2, 1:2))
+test(2134.5, as.matrix(DT), mat)
