@@ -545,7 +545,7 @@ static void which_like_any(SEXP x, int nx, int *out, int *nout, SEXP val, int nv
   } // short-circuit
   if (ny!=0) {
     SEXP grep = PROTECT(lang5(install("grep"), val, x, /*value=*/PROTECT(ScalarLogical(false)), /*invert=*/PROTECT(ScalarLogical(negate)))); protecti++; protecti++; protecti++;
-    SET_TAG(CDR(grep), install("pattern")); SET_TAG(CDDR(grep), install("x")); SET_TAG(CDDDR(grep), install("value")); SET_TAG(CDR(CDDDR(grep)), install("invert"));
+    SET_TAG(CDR(grep), install("pattern")); SET_TAG(CDDR(grep), install("x")); SET_TAG(CDR(CDDR(grep)), install("value")); SET_TAG(CDDR(CDDR(grep)), install("invert"));
     SEXP ans = PROTECT(eval(grep, R_GlobalEnv)); protecti++;
     n = length(ans);
     int *ansp = INTEGER(ans);
