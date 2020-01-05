@@ -221,12 +221,6 @@ SEXP asmatrix(SEXP dt) {
   // Determine the number of rows and columns in the data.table
   R_xlen_t p = xlength(dt);
   R_xlen_t n = xlength(VECTOR_ELT(dt, 0));
-
-  // Check neither rows or columns are greater than INT_MAX
-  if (p > INT_MAX) 
-    error("Matrices with > %d (.Machine$integer.max) columns are not supported", INT_MAX);
-  if (n > INT_MAX) 
-    error("Matrices with > %d (.Machine$integer.max) rows are not supported", INT_MAX);
   
   // Determine the number of elements in the resulting matrix
   R_xlen_t matlen = n * p;
