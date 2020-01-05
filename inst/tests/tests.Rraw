@@ -16720,5 +16720,5 @@ if (test_bit64) {
   # large integers (>32 bits) cannot be converted to numeric or complex
   mat = matrix(c("0", "1", "0.1", "0.2", "1+0i", "2+1i"), ncol=3, dimnames=list(NULL, c("A", "B", "C")))
   DT = data.table(A=as.integer64(0:1), B=c(0.1, 0.2), C=complex(real=1:2, imaginary=0:1))
-  test("2133.2", as.matrix(DT), mat)
+  test(2133.2, as.matrix(DT), mat)
 }
