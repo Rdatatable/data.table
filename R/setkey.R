@@ -356,8 +356,6 @@ CJ = function(..., sorted = TRUE, unique = FALSE)
       if (unique) l[[i]] = unique(y)
     }
   }
-  nrow = prod( vapply_1i(l, length) )  # lengths(l) will work from R 3.2.0
-  if (nrow > .Machine$integer.max) stop(gettextf("Cross product of elements provided to CJ() would result in %.0f rows which exceeds .Machine$integer.max == %d", nrow, .Machine$integer.max, domain='R-data.table'))
   l = .Call(Ccj, l)
   setDT(l)
   l = setalloccol(l)  # a tiny bit wasteful to over-allocate a fixed join table (column slots only), doing it anyway for consistency since

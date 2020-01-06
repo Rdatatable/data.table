@@ -103,6 +103,10 @@ bool GetVerbose();
 
 // cj.c
 SEXP cj(SEXP base_list);
+SEXP unnest(SEXP x, SEXP cols);
+
+// rbindlist.c
+SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg);
 
 // dogroups.c
 SEXP keepattr(SEXP to, SEXP from);
