@@ -8505,6 +8505,15 @@ test(1613.605, all.equal(data.table(a=1), try(stop('this wont work'), silent = T
 L1 <- list(a = data.table(1), b = setattr("foo", "tbl", data.table(1)))
 L2 <- list(a = 1, b = setattr("foo", "tbl", 1))
 test(1613.606, all(grepl("target is data.table, current is numeric", all.equal(L1, L2))))
+as.data.table.foo = function(x) { # test as.data.table coerce of 'current' argument
+  if (!length(x)) warning("empty foo")
+  as.data.table(unclass(foo))
+}
+foo = structure(list(NULL), class="foo")
+test(1613.607, all.equal(data.table(), foo, check.attributes=FALSE))
+foo = structure(list(), class="foo")
+test(1613.608, all.equal(data.table(), foo, check.attributes=FALSE), warning="empty")
+rm(as.data.table.foo, foo)
 
 DT1 <- data.table(a = 1:4, b = letters[1:4], .seqn = 5L)
 DT2 <- data.table(a = 4:1, b = letters[4:1], .seqn = 5L)
