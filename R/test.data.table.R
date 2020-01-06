@@ -149,16 +149,14 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
   ntest = env$ntest
   if (nfail > 0L) {
     # nocov start
-    # see https://bugs.r-project.org/bugzilla/show_bug.cgi?id=17682
-    #   for why this isn't stop(sprintf(...))
-    msg = sprintf(
+    # domain=NA since it's already translated by then
+    stop(domain = NA, sprintf(
       ngettext(
         nfail, domain="R-data.table",
         "%d error out of %d. Search %s for test number %s",
         "%d errors out of %d. Search %s for test numbers %s"
       ), nfail, ntest, names(fn), paste(env$whichfail, collapse=", ")
-    )
-    stop(msg)
+    ))
     # important to stop() here, so that 'R CMD check' fails
     # nocov end
   }
