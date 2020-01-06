@@ -15,7 +15,7 @@
 \arguments{
   \item{target, current}{
       \code{data.table}s to compare. If \code{current} is not a \code{data.table}, but \code{check.attributes} is FALSE,
-      it will coerced to one via \link{as.data.table}.
+      it will be coerced to one via \link{as.data.table}.
   }
 
   \item{trim.levels}{
