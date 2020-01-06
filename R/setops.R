@@ -107,7 +107,7 @@ all.equal.data.table = function(target, current, trim.levels=TRUE, check.attribu
 
   if (!is.data.table(current)) {
     if (check.attributes) return(paste0('target is data.table, current is ', data.class(current)))
-    try({current = setDT(copy(current))}, silent = TRUE)
+    try({current = as.data.table(current)}, silent = TRUE)
     if (!is.data.table(current)) return('target is data.table but current is not and failed to be coerced to it')
   }
 
