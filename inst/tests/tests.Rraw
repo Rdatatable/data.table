@@ -8509,6 +8509,7 @@ as.data.table.foo = function(x) { # test as.data.table coerce of 'current' argum
   if (!length(x)) warning("empty foo")
   as.data.table(unclass(foo))
 }
+registerS3method("as.data.table", "foo", as.data.table.foo)
 foo = structure(list(NULL), class="foo")
 test(1613.607, all.equal(data.table(), foo, check.attributes=FALSE))
 foo = structure(list(), class="foo")
