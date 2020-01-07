@@ -77,5 +77,10 @@ else
   sed -e "s|@openmp_cflags@|\$(SHLIB_OPENMP_CFLAGS)|" src/Makevars.in > src/Makevars
 fi
 
+# compiler info to output #3291
+if [ "$CC"=~"gcc" ]; then
+  GCCV=`${CC} -dumpfullversion -dumpversion`
+  echo "$CC $GCCV"
+fi
 
 exit 0
