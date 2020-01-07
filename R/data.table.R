@@ -1924,13 +1924,6 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
     p = p - 1L
   }
   
-  # The maximum dimension size (row or column) for a matrix is 2^31-1 (or the Machine maximum integer)
-  # Check and error before doing computation/memory expensive column checks and coercion
-  if (p > .Machine$integer.max) 
-    error("Matrices with > ", .Machine$integer.max, " (.Machine$integer.max) columns are not supported")
-  if (n > INT_MAX) 
-    error("Matrices with > ", .Machine$integer.max, " (.Machine$integer.max) rows are not supported")
-  
   # Check for any wide matrix like columns and unpack using as.data.table
   if (length(which_wide_columns(x)) > 0L) {
     X = as.data.table(X)
@@ -1940,6 +1933,13 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
     p = length(cn)
     n = dm[1L]
   }
+  
+  # The maximum dimension size (row or column) for a matrix is 2^31-1 (or the Machine maximum integer)
+  # Check and error before doing computation/memory expensive column checks and coercion
+  if (p > .Machine$integer.max) 
+    error("Matrices with > ", .Machine$integer.max, " (.Machine$integer.max) columns are not supported")
+  if (n > .Machine$integer.max) 
+    error("Matrices with > ", .Machine$integer.max, " (.Machine$integer.max) rows are not supported")
   
   # If no rows or columns can simply return empty array
   if (any(dm == 0L))
