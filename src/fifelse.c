@@ -4,17 +4,9 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b, SEXP na) {
   if (!isLogical(l)) {
     error(_("Argument 'test' must be logical."));
   }
-  if (isS4(a)) {
-    if (STRING_ELT(PROTECT(getAttrib(a, R_ClassSymbol)), 0) != char_nanotime) {
-      error("S4 class objects (except nanotime) are not supported.");
-    }
-    UNPROTECT(1);
-  }
-  if (isS4(b)) {
-    if (STRING_ELT(PROTECT(getAttrib(b, R_ClassSymbol)), 0) != char_nanotime) {
-      error("S4 class objects (except nanotime) are not supported.");
-    }
-    UNPROTECT(1);
+  if (  (isS4(a) && !INHERITS(a, char_nanotime))
+     || (isS4(b) && !INHERITS(b, char_nanotime)) ) {
+    error("S4 class objects (except nanotime) are not supported.");
   }
   const int64_t len0 = xlength(l);
   const int64_t len1 = xlength(a);
@@ -173,11 +165,8 @@ SEXP fcaseR(SEXP na, SEXP rho, SEXP args) {
   for (int i=0; i<n; ++i) {
     REPROTECT(cons = eval(VECTOR_PTR(args)[2*i], rho), Icons);
     REPROTECT(outs = eval(VECTOR_PTR(args)[2*i+1], rho), Iouts);
-    if (isS4(outs)) {
-      if (STRING_ELT(PROTECT(getAttrib(outs, R_ClassSymbol)), 0) != char_nanotime) {
-        error("S4 class objects (except nanotime) are not supported. Please see https://github.com/Rdatatable/data.table/issues/4131.");
-      }
-      UNPROTECT(1);
+    if (isS4(outs) && !INHERITS(outs, char_nanotime)) {
+      error("S4 class objects (except nanotime) are not supported. Please see https://github.com/Rdatatable/data.table/issues/4131.");
     }
     if (!isLogical(cons)) {
       error("Argument #%d must be logical.", 2*i+1);
