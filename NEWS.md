@@ -81,7 +81,11 @@ unit = "s")
 
 3. Dispatch of `first` and `last` functions now properly works again for `xts` objects, [#4053](https://github.com/Rdatatable/data.table/issues/4053). Thanks to @ethanbsmith for reporting.
 
-4. `all.equal(DT, y)` no longer errors when `y` is not a data.table, [#4042](https://github.com/Rdatatable/data.table/issues/4042). Thanks to @d-sci for reporting and the PR.
+4. If `.SD` is returned as-is during grouping, it is now unlocked for downstream usage, part of [#4159](https://github.com/Rdatatable/data.table/issues/4159).
+
+5. `GForce` is deactivated for `[[` on non-atomic input, part of [#4159](https://github.com/Rdatatable/data.table/issues/4159).
+
+6. `all.equal(DT, y)` no longer errors when `y` is not a data.table, [#4042](https://github.com/Rdatatable/data.table/issues/4042). Thanks to @d-sci for reporting and the PR.
 
 ## NOTES
 
@@ -98,6 +102,8 @@ unit = "s")
     We would be remiss not to mention the laudable lengths to which the R core team goes to maintain the _much_ larger repository (about 6,000 messages in more than 10 languages) of translations for R itself.
 
     We will evaluate the feasibility (in terms of maintenance difficulty and CRAN package size limits) of offering support for other languages in later releases.
+
+4. `fifelse` and `fcase` notify users that S4 objects (except `nanotime`) are not supported [#4135](https://github.com/Rdatatable/data.table/issues/4135). Thanks to @torema-ed for bringing it to our attention and Morgan Jacob for the PR.
 
 
 # data.table [v1.12.8](https://github.com/Rdatatable/data.table/milestone/15?closed=1)  (09 Dec 2019)
