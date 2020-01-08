@@ -1,4 +1,70 @@
 ###############################################
+#  Updating translations
+###############################################
+
+# 1) Update messages for new release
+## (a) Update C template file: src/data.table.pot
+##     ideally, we are including _() wrapping in
+##     new PRs throughout dev cycle, and this step
+##     becomes about tying up loose ends
+## Appending _() char array wrapping to all messages
+##   that might be shown to the user. This step is slightly
+##   too greedy, as it includes too many msg, some of which
+##   need not be translated [more work to do here to make
+##   this less manual] some things to watch out for:
+##     * quote embedded (and escaped) within message [could be fixed with smarter regex]
+##     * multi-line implicit-concat arrays (in C, `"a" "b"` is the same as `"ab"`) should be wrapped "on the outside" not individually
+##     * `data.table` shares some of its `src` with `pydatatable`, so the requirement to `#include <R.h>` before the `#define _` macro meant we need to be careful about including this macro only in the R headers for these files (hence I created `po.h`)
+##     * Can't use `_()` _inside_ another functional macro. Only wrap the string passed to the macro later.
+for MSG in error warning DTWARN DTPRINT Rprintf STOP Error;
+  do for SRC_FILE in src/*.c;
+    # no inplace -i in default mac sed
+    do sed -E "s/$MSG[(]("[^"]*")/$MSG(_(\1)/g" $SRC_FILE > out;
+    mv out $SRC_FILE;
+  done
+done
+
+## checking for other lines calling these that didn't get _()-wrapped
+for MSG in error warning DTWARN DTPRINT Rprintf STOP Error;
+  do grep -Er "\b$MSG[(]" src --include=*.c | grep -v _ | grep -Ev "(?://|[*]).*$MSG[(]"
+
+## similar, but a bit more manual to check snprintf usage
+
+## look for char array that haven't been covered yet
+grep -Er '"[^"]+"' src --include=*.c | grep -Fv '_("' | grep -v "#include" | grep -v '//.*".*"'
+
+## look for lines starting with a char array (likely continued from prev line & can be combined)
+grep -Er '^\s*"' src/*.c
+
+## Now extract these messages with xgettext
+cd src
+xgettext --keyword=_ -o data.table.pot *.c
+cd ..
+
+## (b) Update R template file: src/R-data.table.pot
+## much easier, once the update_pkg_po bug is fixed
+R --no-save
+## a bug fix in R still hadn't made the 2019-12-12 release,
+##   so run the following to source the corrected function manually
+STEM='https://raw.githubusercontent.com/wch/r-source/trunk/src/library/tools/R'
+source(file.path(STEM, 'utils.R'))
+source(file.path(STEM, 'xgettext.R'))
+source(file.path(STEM, 'translations.R'))
+## shouldn't be any errors from this...
+update_pkg_po('.')
+q()
+
+# 2) Open a PR with the new templates & contact the translators
+#   * zh_CN:
+## Translators to submit commits with translations to this PR
+##   [or perhaps, if we get several languages, each to open
+##    its own PR and merge to main translation PR]
+
+## 3) Check validity
+##   update_pkg_po('.') to be run again for the PR
+##     [can this be done via Travis?]
+
+###############################################
 #  Basic checks
 ###############################################
 
