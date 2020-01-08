@@ -1990,7 +1990,7 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
   # Next determine if any columns are list or non-atomic type. If so, convert all columns to lists
   col.types = sapply(X, typeof)
   uniq.col.types = unique(col.types)
-  atomics <- c("logical", "integer", "numeric", "double", "complex", "character", "raw")
+  atomics <- c("logical", "integer", "double", "complex", "character", "raw")
   any.non.atomic = (length(setdiff(uniq.col.types, atomics)) > 0L)
   if (any.non.atomic) {
     for (j in seq_len(p)) {
