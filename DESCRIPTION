@@ -49,7 +49,8 @@ Authors@R: c(
   person("Tyson","Barrett",        role="ctb"),
   person("Jim","Hester",           role="ctb"),
   person("Anthony","Damico",       role="ctb"),
-  person("Sebastian","Freundt",    role="ctb"))
+  person("Sebastian","Freundt",    role="ctb"),
+  person("David","Simons",         role="ctb"))
 Depends: R (>= 3.1.0)
 Imports: methods
 Suggests: bit64, curl, R.utils, knitr, xts, nanotime, zoo, yaml
