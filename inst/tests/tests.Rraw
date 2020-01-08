@@ -16699,13 +16699,6 @@ cmat = matrix(complex(real=1:4, imaginary=0:3), ncol=2, dimnames=list(NULL, c("A
 cdt = as.data.table(cmat)
 test(2131.2, as.matrix(cdt), cmat)
 
-## Codecov for ff class. We don't want to add ff to depends/suggests but if the user is 
-## using ff we would like as.matrix to work correctly
-DT = data.table(A=1:5, rn = letters[1:5], B=6:10)
-class(DT[["rn"]]) = "ff" # note this will fail if user actually has the ff package loaded
-class(DT[["B"]]) = "ff"
-mat = matrix(1:10, ncol=2, dimnames=list(letters[1:5], c("A", "B")))
-test(2132, as.matrix(DT, rownames="rn"), mat)
 
 ## Test bit64 conversion in as.matrix
 if (test_bit64) {
@@ -16714,32 +16707,32 @@ if (test_bit64) {
   dim(i64_mat) = c(3,3)
   colnames(i64_mat) = c("A", "B", "C")
   DT = data.table(A=c(TRUE, FALSE, NA), B=1:3, C=as.integer64(4:6))
-  test(2133.1, as.matrix(DT), i64_mat)
+  test(2132.1, as.matrix(DT), i64_mat)
   
   # integer64 with numeric and/or complex should be coerced to character - 
   # large integers (>32 bits) cannot be converted to numeric or complex
   mat = matrix(c("0", "1", "0.1", "0.2", "1+0i", "2+1i"), ncol=3, dimnames=list(NULL, c("A", "B", "C")))
   DT = data.table(A=as.integer64(0:1), B=c(0.1, 0.2), C=complex(real=1:2, imaginary=0:1))
-  test(2133.2, as.matrix(DT), mat)
+  test(2132.2, as.matrix(DT), mat)
 }
 
 ## Test other class and type conversion in as.matrix
 mat = matrix(letters[1:4], ncol=2, dimnames=list(NULL, c("A", "B")))
 DT = data.table(A=as.factor(c("a", "b")), B=as.factor(c("c", "d")))
-test(2134.1, as.matrix(DT), mat)
+test(2133.1, as.matrix(DT), mat)
 
 mat = matrix(paste0(0, 1:4), ncol=2, dimnames=list(NULL, c("A", "B")))
 DT = data.table(A=as.raw(1:2), B=as.raw(3:4))
-test(2134.2, as.matrix(DT), mat)
+test(2133.2, as.matrix(DT), mat)
 
 mat = matrix(paste0("2019-01-0", 1:4), ncol=2, dimnames=list(NULL, c("A", "B")))
 DT = data.table(A=as.IDate(paste0("2019-01-0", 1:2)), B=as.IDate(paste0("2019-01-0", 3:4)))
-test(2134.3, as.matrix(DT), mat)
+test(2133.3, as.matrix(DT), mat)
 
 mat = matrix(c(1, 2, 0.1, 0.2, TRUE, FALSE), ncol=3, dimnames=list(NULL, c("A", "B", "C")))
 DT = data.table(A=1:2, B=c(0.1, 0.2), C=c(TRUE, FALSE))
-test(2134.4, as.matrix(DT), mat)
+test(2133.4, as.matrix(DT), mat)
 
 mat = matrix(c(1, 2, 0.1, 0.2, TRUE, FALSE, complex(1:2, 1:2)), ncol=4, dimnames=list(NULL, LETTERS[1:4]))
 DT = data.table(A=1:2, B=c(0.1, 0.2), C=c(TRUE, FALSE), D=complex(1:2, 1:2))
-test(2134.5, as.matrix(DT), mat)
+test(2133.5, as.matrix(DT), mat)

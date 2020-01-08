@@ -1957,6 +1957,7 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
   # Check for ff columns which need to be brought into memory. Running the any
   # command on the unique column class list means for x with many columns we 
   # don't do expensive per-column checks unless necessary.
+  # nocov start
   any.ff = ("ff" %chin% uniq.classes)
   if (any.ff) {
     which.ff = which(sapply(col.classes, function(cl_vec) { "ff" %chin% cl_vec }))
@@ -1969,6 +1970,7 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
     uniq.col.classes = unique(col.classes)
     uniq.classes = unique(unlist(uniq.col.classes))
   }
+  # nocov end
   
   # Next determine if any columns are list or non-atomic type. If so, convert all columns to lists
   col.types = sapply(X, typeof)
