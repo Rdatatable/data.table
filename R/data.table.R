@@ -1923,16 +1923,14 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
   # created for columns that are modified (those coerced to a different
   # type or class)
   X = x
-  dm = dim(x)
   cn = names(x)
-  class(X) = NULL
   p = length(cn)
-  n = dm[1L]
+  n = x[,.N]
+  class(X) = NULL
   
   # If there is a rownames column, exctract, drop, and update the dimensions
   if (!is.null(rownames)) {
     X[[rownames.index]] = NULL
-    dm = dm - 0:1
     cn = cn[-rownames.index]
     p = p - 1L
   }
@@ -1940,11 +1938,10 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
   # Check for any wide matrix like columns and unpack using as.data.table
   if (length(which_wide_columns(x)) > 0L) {
     X = as.data.table(X)
-    dm = dim(X)
-    cn = names(X)
-    class(X) = NULL
+    cn = names(x)
     p = length(cn)
-    n = dm[1L]
+    n = x[,.N]
+    class(X) = NULL
   }
   
   # The maximum dimension size (row or column) for a matrix is 2^31-1 (or the Machine maximum integer)
@@ -1957,8 +1954,8 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
   # nocov end
   
   # If no rows or columns can simply return empty array
-  if (any(dm == 0L))
-    return(array(NA, dim = dm, dimnames = list(rownames.value, cn)))
+  if (p == 0L || n == 0L)
+    return(array(NA, dim = list(n, p), dimnames = list(rownames.value, cn)))
   
   # We now need to make sure all the columns are the same type, handling special
   # cases where some columns are not stored in memory (ff objects), lists, or 
