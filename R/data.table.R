@@ -1751,6 +1751,15 @@ replace_dot_alias = function(e) {
   } else {
     ans = .Call(Cdogroups, x, xcols, groups, grpcols, jiscols, xjiscols, grporder, o__, f__, len__, jsub, SDenv, cols, newnames, !missing(on), verbose)
   }
+  # unlock any locked data.table components of the answer, #4159
+  runlock = function(x) {
+    if (is.recursive(x)) {
+      if (inherits(x, 'data.table')) .Call(C_unlock, x)
+      else return(lapply(x, runlock))
+    }
+    return(invisible())
+  }
+  runlock(ans)
   if (verbose) {cat(timetaken(last.started.at),"\n"); flush.console()}
   # TO DO: xrows would be a better name for irows: irows means the rows of x that i joins to
   # Grouping by i: icols the joins columns (might not need), isdcols (the non join i and used by j), all __ are length x
