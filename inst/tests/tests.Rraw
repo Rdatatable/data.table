@@ -16731,6 +16731,12 @@ DT = data.table(
            s4class(x=2L, y="yes", z=1)))
 test(2130.03, print(DT), output=c("   x             y", "1: 1 <ex_class[3]>",     "2: 2 <ex_class[3]>"))
 
+# .SD from grouping should be unlocked, part of #4159
+x = data.table(a=1:3, b=4:6)
+test(2131, lapply(x[ , list(dt = list(.SD)), by = a]$dt, attr, '.data.table.locked'),
+           list(NULL, NULL, NULL))
+
+
 ########################
 #  Add new tests here  #
 ########################
