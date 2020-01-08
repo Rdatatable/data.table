@@ -8045,6 +8045,11 @@ options(datatable.optimize=Inf)
 test(1581.14, ans2 <- dt[x %in% letters[15:20], d1[[2]], by=x, verbose=TRUE],
               output = "GForce optimized j")
 test(1581.15, ans1, ans2)
+# also, block for non-atomic input, #4159
+dt = data.table(a=1:3)
+dt[ , l := .(list(1, 2, 3))]
+test(1581.16, dt[ , .(l = l[[1L]]), by=a, verbose=TRUE],
+     dt[ , l := unlist(l)], output='(GForce FALSE)')
 
 # handle NULL value correctly #1429
 test(1582, uniqueN(NULL), 0L)
@@ -16726,14 +16731,20 @@ DT = data.table(
            s4class(x=2L, y="yes", z=1)))
 test(2130.03, print(DT), output=c("   x             y", "1: 1 <ex_class[3]>",     "2: 2 <ex_class[3]>"))
 
+# .SD from grouping should be unlocked, part of #4159
+x = data.table(a=1:3, b=4:6)
+test(2131, lapply(x[ , list(dt = list(.SD)), by = a]$dt, attr, '.data.table.locked'),
+           list(NULL, NULL, NULL))
+
 # S4 object not suported in fifelse and fcase, #4135
 setClass("rdate", slots=list(date="numeric"))
 setMethod("show","rdate", function(object) print(object@date))
 s1 = new("rdate",date=20191231)
 s2 = new("rdate",date=20191230)
-test(2131.1, fifelse(TRUE, s1, s2), error = "S4 class objects (except nanotime) are not supported.")
-test(2131.2, fifelse(TRUE, 1, s2), error = "S4 class objects (except nanotime) are not supported.")
-test(2131.3, fcase(TRUE, s1, FALSE, s2), error = "S4 class objects (except nanotime) are not supported. Please see https://github.com/Rdatatable/data.table/issues/4131.")
+test(2132.1, fifelse(TRUE, s1, s2),      error = "S4 class objects (except nanotime) are not supported.")
+test(2132.2, fifelse(TRUE, 1, s2),       error = "S4 class objects (except nanotime) are not supported.")
+test(2132.3, fcase(TRUE, s1, FALSE, s2), error = "S4 class objects (except nanotime) are not supported. Please see https://github.com/Rdatatable/data.table/issues/4131.")
+
 
 ########################
 #  Add new tests here  #
