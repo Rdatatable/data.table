@@ -51,7 +51,6 @@ SEXP asmatrix_logical(SEXP dt, R_xlen_t matlen, R_xlen_t n) {
     }
   }
   
-  UNPROTECT(1);
   return mat;
 }
 
@@ -90,7 +89,6 @@ SEXP asmatrix_integer(SEXP dt, R_xlen_t matlen, R_xlen_t n) {
     }
   }
   
-  UNPROTECT(1);
   return mat;
 }
 
@@ -129,7 +127,6 @@ SEXP asmatrix_numeric(SEXP dt, R_xlen_t matlen, R_xlen_t n) {
     }
   }
   
-  UNPROTECT(1);
   return mat;
 }
 
@@ -168,7 +165,6 @@ SEXP asmatrix_complex(SEXP dt, R_xlen_t matlen, R_xlen_t n) {
     }
   }
 
-UNPROTECT(1);
 return mat;
 }
 
@@ -190,7 +186,6 @@ SEXP asmatrix_character(SEXP dt, R_xlen_t matlen, R_len_t n) {
     }
   }
   
-  UNPROTECT(1);
   return mat;
 }
 
@@ -212,12 +207,17 @@ SEXP asmatrix_list(SEXP dt, R_xlen_t matlen, R_len_t n) {
     }
   }
   
-  UNPROTECT(1);
   return mat;
 }
 
 // Dispatch function for different atomic types
 SEXP asmatrix(SEXP dt) {
+  // Timing
+  const bool verbose = GetVerbose(); 
+  double tic = 0; 
+  if (verbose) 
+    tic = omp_get_wtime();
+  
   // Determine the number of rows and columns in the data.table
   R_xlen_t p = xlength(dt);
   R_xlen_t n = xlength(VECTOR_ELT(dt, 0));
@@ -230,21 +230,34 @@ SEXP asmatrix(SEXP dt) {
   SEXPTYPE R_atomic_type = TYPEOF(VECTOR_ELT(dt, 0));
   
   // Copy values from dt into the matrix mat using appropriately typed function
+  SEXP mat;
   switch(R_atomic_type) {
     case LGLSXP: 
-      return(asmatrix_logical(dt, matlen, n));
+      mat = asmatrix_logical(dt, matlen, n);
+      break;
     case INTSXP: 
-      return(asmatrix_integer(dt, matlen, n));
+      mat = asmatrix_integer(dt, matlen, n);
+      break;
     case REALSXP: 
-      return(asmatrix_numeric(dt, matlen, n));
+      mat = asmatrix_numeric(dt, matlen, n);
+      break;
     case CPLXSXP: 
-      return(asmatrix_complex(dt, matlen, n));
+      mat = asmatrix_complex(dt, matlen, n);
+      break;
     case STRSXP: 
-      return(asmatrix_character(dt, matlen, (R_len_t) n));
+      mat = asmatrix_character(dt, matlen, (R_len_t) n);
+      break;
     case VECSXP:
-      return(asmatrix_list(dt, matlen, (R_len_t) n));
+      mat = asmatrix_list(dt, matlen, (R_len_t) n);
+      break;
     default:
       error("Unsupported matrix type '%s'", type2char(R_atomic_type));
   }
+  
+  if (verbose) 
+    Rprintf("%s: took %.3fs\n", __func__, omp_get_wtime()-tic);
+  
+  UNPROTECT(1);
+  return(mat);
 }
 
