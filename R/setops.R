@@ -103,8 +103,13 @@ fsetequal = function(x, y, all=TRUE) {
 # all.equal ----
 
 all.equal.data.table = function(target, current, trim.levels=TRUE, check.attributes=TRUE, ignore.col.order=FALSE, ignore.row.order=FALSE, tolerance=sqrt(.Machine$double.eps), ...) {
-  stopifnot(is.logical(trim.levels), is.logical(check.attributes), is.logical(ignore.col.order), is.logical(ignore.row.order), is.numeric(tolerance))
-  if (!is.data.table(target) || !is.data.table(current)) stop("'target' and 'current' must both be data.tables")
+  stopifnot(is.logical(trim.levels), is.logical(check.attributes), is.logical(ignore.col.order), is.logical(ignore.row.order), is.numeric(tolerance), is.data.table(target))
+
+  if (!is.data.table(current)) {
+    if (check.attributes) return(paste0('target is data.table, current is ', data.class(current)))
+    try({current = as.data.table(current)}, silent = TRUE)
+    if (!is.data.table(current)) return('target is data.table but current is not and failed to be coerced to it')
+  }
 
   msg = character(0L)
   # init checks that detect high level all.equal
