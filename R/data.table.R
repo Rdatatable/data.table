@@ -1522,7 +1522,11 @@ replace_dot_alias = function(e) {
         jvnames = sdvars
       }
     } else if (length(as.character(jsub[[1L]])) == 1L) {  # Else expect problems with <jsub[[1L]] == >
-      subopt = length(jsub) == 3L && (jsub[[1L]] == "[" || jsub[[1L]] == "[[") && (is.numeric(jsub[[3L]]) || jsub[[3L]] == ".N")
+      # g[[ only applies to atomic input, for now, was causing #4159
+      subopt = length(jsub) == 3L &&
+        (jsub[[1L]] == "[" ||
+           (jsub[[1L]] == "[[" && eval(call('is.atomic', jsub[[2L]]), envir = x))) &&
+        (is.numeric(jsub[[3L]]) || jsub[[3L]] == ".N")
       headopt = jsub[[1L]] == "head" || jsub[[1L]] == "tail"
       firstopt = jsub[[1L]] == "first" || jsub[[1L]] == "last" # fix for #2030
       if ((length(jsub) >= 2L && jsub[[2L]] == ".SD") &&
@@ -1649,7 +1653,7 @@ replace_dot_alias = function(e) {
           # otherwise there must be three arguments, and only in two cases:
           #   1) head/tail(x, 1) or 2) x[n], n>0
           length(q)==3L && length(q3 <- q[[3L]])==1L && is.numeric(q3) &&
-            ( (q1c %chin% c("head", "tail") && q3==1L) || ((q1c == "[" || q1c == "[[") && q3>0L) )
+            ( (q1c %chin% c("head", "tail") && q3==1L) || ((q1c == "[" || (q1c == "[[" && eval(call('is.atomic', q[[2L]]), envir=x))) && q3>0L) )
         }
         if (jsub[[1L]]=="list") {
           GForce = TRUE
