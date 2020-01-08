@@ -258,7 +258,7 @@ head(flights)
 * The `LHS := RHS` form allows us to operate on multiple columns. In the RHS, to compute the `max` on columns specified in `.SDcols`, we make use of the base function `lapply()` along with `.SD` in the same way as we have seen before in the *"Introduction to data.table"* vignette. It returns a list of two elements, containing the maximum value corresponding to `dep_delay` and `arr_delay` for each group.
 
 #
-Before moving on to the next section, let's clean up the newly created columns `speed`, `max_speed`, `max_dep_delay` and `max_arr_delay`.
+Let's clean up the newly created columns `speed`, `max_speed`, `max_dep_delay` and `max_arr_delay`.
 
 ```{r}
 # RHS gets automatically recycled to length of LHS
@@ -266,6 +266,22 @@ flights[, c("speed", "max_speed", "max_dep_delay", "max_arr_delay") := NULL]
 head(flights)
 ```
 
+#### -- How can we update multiple existing columns in place using `.SD`?
+
+```{r}
+char_cols <- sapply(flights, is.character)
+flights[, .SD := lapply(.SD, as.factor), .SDcols = char_cols]
+str(flights[, ..char_cols])
+```
+#### {.bs-callout .bs-callout-info}
+
+* We also could have used `(char_cols)` on the `LHS` but `.SD` is a shorthand. 
+
+Let's clean up again and make our newly made factor columns back to character columns.
+```{r}
+flights[, .SD := lapply(.SD, as.character), .SDcols = char_cols]
+str(flights[, ..char_cols])
+```
 ## 3) `:=` and `copy()`
 
 `:=` modifies the input object by reference. Apart from the features we have discussed already, sometimes we might want to use the update by reference feature for its side effect. And at other times it may not be desirable to modify the original object, in which case we can use `copy()` function, as we will see in a moment.
