@@ -183,7 +183,7 @@ replace_dot_alias = function(e) {
     }
     return(x)
   }
-  if (!mult %chin% c("first","last","all")) stop("mult argument can only be 'first','last' or 'all'")
+  if (!mult %chin% c("first","last","all")) stop("mult argument can only be 'first', 'last' or 'all'")
   missingroll = missing(roll)
   if (length(roll)!=1L || is.na(roll)) stop("roll must be a single TRUE, FALSE, positive/negative integer/double including +Inf and -Inf or 'nearest'")
   if (is.character(roll)) {
@@ -820,7 +820,7 @@ replace_dot_alias = function(e) {
           if (!typeof(byval[[jj]]) %chin% ORDERING_TYPES) stop("column or expression ",jj," of 'by' or 'keyby' is type ",typeof(byval[[jj]]),". Do not quote column names. Usage: DT[,sum(colC),by=list(colA,month(colB))]")
         }
         tt = vapply_1i(byval,length)
-        if (any(tt!=xnrow)) stop("The items in the 'by' or 'keyby' list are length (",paste(tt,collapse=","),"). Each must be length ", xnrow, "; the same length as there are rows in x (after subsetting if i is provided).")
+        if (any(tt!=xnrow)) stop(gettextf("The items in the 'by' or 'keyby' list are length(s) (%s). Each must be length %d; the same length as there are rows in x (after subsetting if i is provided).", paste(tt, collapse=","), xnrow, domain='R-data.table'))
         if (is.null(bynames)) bynames = rep.int("",length(byval))
         if (length(idx <- which(!nzchar(bynames))) && !bynull) {
           # TODO: improve this and unify auto-naming of jsub and bysub
@@ -874,7 +874,7 @@ replace_dot_alias = function(e) {
             # attempt to auto-name unnamed columns
             for (jj in which(nm=="")) {
               thisq = q[[jj + 1L]]
-              if (missing(thisq)) stop("Item ", jj, " of the .() or list() passed to j is missing") #3507
+              if (missing(thisq)) stop(gettextf("Item %d of the .() or list() passed to j is missing", jj, domain="R-data.table")) #3507
               if (is.name(thisq)) nm[jj] = drop_dot(thisq)
               # TO DO: if call to a[1] for example, then call it 'a' too
             }
@@ -1526,7 +1526,11 @@ replace_dot_alias = function(e) {
         jvnames = sdvars
       }
     } else if (length(as.character(jsub[[1L]])) == 1L) {  # Else expect problems with <jsub[[1L]] == >
-      subopt = length(jsub) == 3L && (jsub[[1L]] == "[" || jsub[[1L]] == "[[") && (is.numeric(jsub[[3L]]) || jsub[[3L]] == ".N")
+      # g[[ only applies to atomic input, for now, was causing #4159
+      subopt = length(jsub) == 3L &&
+        (jsub[[1L]] == "[" ||
+           (jsub[[1L]] == "[[" && eval(call('is.atomic', jsub[[2L]]), envir = x))) &&
+        (is.numeric(jsub[[3L]]) || jsub[[3L]] == ".N")
       headopt = jsub[[1L]] == "head" || jsub[[1L]] == "tail"
       firstopt = jsub[[1L]] == "first" || jsub[[1L]] == "last" # fix for #2030
       if ((length(jsub) >= 2L && jsub[[2L]] == ".SD") &&
@@ -1653,7 +1657,7 @@ replace_dot_alias = function(e) {
           # otherwise there must be three arguments, and only in two cases:
           #   1) head/tail(x, 1) or 2) x[n], n>0
           length(q)==3L && length(q3 <- q[[3L]])==1L && is.numeric(q3) &&
-            ( (q1c %chin% c("head", "tail") && q3==1L) || ((q1c == "[" || q1c == "[[") && q3>0L) )
+            ( (q1c %chin% c("head", "tail") && q3==1L) || ((q1c == "[" || (q1c == "[[" && eval(call('is.atomic', q[[2L]]), envir=x))) && q3>0L) )
         }
         if (jsub[[1L]]=="list") {
           GForce = TRUE
@@ -1755,6 +1759,15 @@ replace_dot_alias = function(e) {
   } else {
     ans = .Call(Cdogroups, x, xcols, groups, grpcols, jiscols, xjiscols, grporder, o__, f__, len__, jsub, SDenv, cols, newnames, !missing(on), verbose)
   }
+  # unlock any locked data.table components of the answer, #4159
+  runlock = function(x) {
+    if (is.recursive(x)) {
+      if (inherits(x, 'data.table')) .Call(C_unlock, x)
+      else return(lapply(x, runlock))
+    }
+    return(invisible())
+  }
+  runlock(ans)
   if (verbose) {cat(timetaken(last.started.at),"\n"); flush.console()}
   # TO DO: xrows would be a better name for irows: irows means the rows of x that i joins to
   # Grouping by i: icols the joins columns (might not need), isdcols (the non join i and used by j), all __ are length x

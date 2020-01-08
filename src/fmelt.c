@@ -15,8 +15,8 @@ SEXP seq_int(int n, int start) {
 
 // very specific "set_diff" for integers
 SEXP set_diff(SEXP x, int n) {
-  if (TYPEOF(x) != INTSXP) error("'x' must be an integer");
-  if (n <= 0) error("'n' must be a positive integer");
+  if (TYPEOF(x) != INTSXP) error(_("'x' must be an integer"));
+  if (n <= 0) error(_("'n' must be a positive integer"));
   SEXP table = PROTECT(seq_int(n, 1));       // TODO: using match to 1:n seems odd here, why use match at all
   SEXP xmatch = PROTECT(match(x, table, 0)); // Old comment:took a while to realise: matches vec against x - thanks to comment from Matt in assign.c!
   const int *ixmatch = INTEGER(xmatch);
@@ -38,7 +38,7 @@ SEXP which(SEXP x, Rboolean val) {
 
   int j=0, n = length(x);
   SEXP ans;
-  if (!isLogical(x)) error("Argument to 'which' must be logical");
+  if (!isLogical(x)) error(_("Argument to 'which' must be logical"));
   const int *ix = LOGICAL(x);
   int *buf = (int *) R_alloc(n, sizeof(int));
   for (int i=0; i<n; ++i) {
@@ -57,7 +57,7 @@ SEXP which(SEXP x, Rboolean val) {
 // whichwrapper for R
 SEXP whichwrapper(SEXP x, SEXP val) {
   // if (LOGICAL(val)[0] == NA_LOGICAL)
-  //     error("val should be logical TRUE/FALSE");
+  //     error(_("val should be logical TRUE/FALSE"));
   return which(x, LOGICAL(val)[0]);
 }
 
@@ -67,12 +67,12 @@ SEXP concat(SEXP vec, SEXP idx) {
   SEXP s, t, v;
   int nidx=length(idx);
 
-  if (TYPEOF(vec) != STRSXP) error("concat: 'vec must be a character vector");
-  if (!isInteger(idx) || length(idx) < 0) error("concat: 'idx' must be an integer vector of length >= 0");
+  if (TYPEOF(vec) != STRSXP) error(_("concat: 'vec must be a character vector"));
+  if (!isInteger(idx) || length(idx) < 0) error(_("concat: 'idx' must be an integer vector of length >= 0"));
   const int *iidx = INTEGER(idx);
   for (int i=0; i<length(idx); ++i) {
     if (iidx[i] < 0 || iidx[i] > length(vec))
-      error("concat: 'idx' must take values between 0 and length(vec); 0 <= idx <= length(vec)");
+      error(_("Internal error in concat: 'idx' must take values between 0 and length(vec); 0 <= idx <= %d"), length(vec)); // # nocov
   }
   PROTECT(v = allocVector(STRSXP, nidx > 5 ? 5 : nidx));
   for (int i=0; i<length(v); ++i) {
@@ -99,7 +99,7 @@ SEXP measurelist(SEXP measure, SEXP dtnames) {
       case STRSXP  : tmp = PROTECT(chmatch(VECTOR_ELT(measure, i), dtnames, 0)); protecti++; break;
       case REALSXP : tmp = PROTECT(coerceVector(VECTOR_ELT(measure, i), INTSXP)); protecti++; break;
       case INTSXP  : tmp = VECTOR_ELT(measure, i); break;
-      default : error("Unknown 'measure.vars' type %s at index %d of list", type2char(TYPEOF(VECTOR_ELT(measure, i))), i+1);
+      default : error(_("Unknown 'measure.vars' type %s at index %d of list"), type2char(TYPEOF(VECTOR_ELT(measure, i))), i+1);
     }
     SET_VECTOR_ELT(ans, i, tmp);
   }
@@ -145,18 +145,18 @@ SEXP checkVars(SEXP DT, SEXP id, SEXP measure, Rboolean verbose) {
     }
     valuecols = PROTECT(allocVector(VECSXP, 1)); protecti++;
     SET_VECTOR_ELT(valuecols, 0, tmp);
-    warning("id.vars and measure.vars are internally guessed when both are 'NULL'. All non-numeric/integer/logical type columns are considered id.vars, which in this case are columns [%s]. Consider providing at least one of 'id' or 'measure' vars in future.", CHAR(STRING_ELT(concat(dtnames, idcols), 0)));
+    warning(_("id.vars and measure.vars are internally guessed when both are 'NULL'. All non-numeric/integer/logical type columns are considered id.vars, which in this case are columns [%s]. Consider providing at least one of 'id' or 'measure' vars in future."), CHAR(STRING_ELT(concat(dtnames, idcols), 0)));
   } else if (!isNull(id) && isNull(measure)) {
     switch(TYPEOF(id)) {
       case STRSXP  : PROTECT(tmp = chmatch(id, dtnames, 0)); protecti++; break;
       case REALSXP : PROTECT(tmp = coerceVector(id, INTSXP)); protecti++; break;
       case INTSXP  : tmp = id; break;
-      default : error("Unknown 'id.vars' type %s, must be character or integer vector", type2char(TYPEOF(id)));
+      default : error(_("Unknown 'id.vars' type %s, must be character or integer vector"), type2char(TYPEOF(id)));
     }
     booltmp = PROTECT(duplicated(tmp, FALSE)); protecti++;
     for (i=0; i<length(tmp); i++) {
       if (INTEGER(tmp)[i] <= 0 || INTEGER(tmp)[i] > ncol)
-        error("One or more values in 'id.vars' is invalid.");
+        error(_("One or more values in 'id.vars' is invalid."));
       else if (!LOGICAL(booltmp)[i]) targetcols++;
       else continue;
     }
@@ -172,8 +172,8 @@ SEXP checkVars(SEXP DT, SEXP id, SEXP measure, Rboolean verbose) {
     SET_VECTOR_ELT(valuecols, 0, tmp2);
     idcols = tmp;
     if (verbose) {
-      Rprintf("'measure.vars' is missing. Assigning all columns other than 'id.vars' columns as 'measure.vars'.\n");
-      if (length(tmp2)) Rprintf("Assigned 'measure.vars' are [%s].\n", CHAR(STRING_ELT(concat(dtnames, tmp2), 0)));
+      Rprintf(_("'measure.vars' is missing. Assigning all columns other than 'id.vars' columns as 'measure.vars'.\n"));
+      if (length(tmp2)) Rprintf(_("Assigned 'measure.vars' are [%s].\n"), CHAR(STRING_ELT(concat(dtnames, tmp2), 0)));
     }
   } else if (isNull(id) && !isNull(measure)) {
     switch(TYPEOF(measure)) {
@@ -181,7 +181,7 @@ SEXP checkVars(SEXP DT, SEXP id, SEXP measure, Rboolean verbose) {
       case REALSXP : tmp2 = PROTECT(coerceVector(measure, INTSXP)); protecti++; break;
       case INTSXP  : tmp2 = measure; break;
       case VECSXP  : tmp2 = PROTECT(measurelist(measure, dtnames)); protecti++; break;
-      default : error("Unknown 'measure.vars' type %s, must be character or integer vector/list", type2char(TYPEOF(measure)));
+      default : error(_("Unknown 'measure.vars' type %s, must be character or integer vector/list"), type2char(TYPEOF(measure)));
     }
     tmp = tmp2;
     if (isNewList(measure)) {
@@ -190,7 +190,7 @@ SEXP checkVars(SEXP DT, SEXP id, SEXP measure, Rboolean verbose) {
     booltmp = PROTECT(duplicated(tmp, FALSE)); protecti++;
     for (i=0; i<length(tmp); i++) {
       if (INTEGER(tmp)[i] <= 0 || INTEGER(tmp)[i] > ncol)
-        error("One or more values in 'measure.vars' is invalid.");
+        error(_("One or more values in 'measure.vars' is invalid."));
       else if (!LOGICAL(booltmp)[i]) targetcols++;
       else continue;
     }
@@ -208,19 +208,19 @@ SEXP checkVars(SEXP DT, SEXP id, SEXP measure, Rboolean verbose) {
       SET_VECTOR_ELT(valuecols, 0, tmp2);
     }
     if (verbose) {
-      Rprintf("'id.vars' is missing. Assigning all columns other than 'measure.vars' columns as 'id.vars'.\n");
-      if (length(idcols)) Rprintf("Assigned 'id.vars' are [%s].\n", CHAR(STRING_ELT(concat(dtnames, idcols), 0)));
+      Rprintf(_("'id.vars' is missing. Assigning all columns other than 'measure.vars' columns as 'id.vars'.\n"));
+      if (length(idcols)) Rprintf(_("Assigned 'id.vars' are [%s].\n"), CHAR(STRING_ELT(concat(dtnames, idcols), 0)));
     }
   } else if (!isNull(id) && !isNull(measure)) {
     switch(TYPEOF(id)) {
       case STRSXP  : tmp = PROTECT(chmatch(id, dtnames, 0)); protecti++; break;
       case REALSXP : tmp = PROTECT(coerceVector(id, INTSXP)); protecti++; break;
       case INTSXP  : tmp = id; break;
-      default : error("Unknown 'id.vars' type %s, must be character or integer vector", type2char(TYPEOF(id)));
+      default : error(_("Unknown 'id.vars' type %s, must be character or integer vector"), type2char(TYPEOF(id)));
     }
     for (i=0; i<length(tmp); i++) {
       if (INTEGER(tmp)[i] <= 0 || INTEGER(tmp)[i] > ncol)
-        error("One or more values in 'id.vars' is invalid.");
+        error(_("One or more values in 'id.vars' is invalid."));
     }
     idcols = PROTECT(tmp); protecti++;
     switch(TYPEOF(measure)) {
@@ -228,7 +228,7 @@ SEXP checkVars(SEXP DT, SEXP id, SEXP measure, Rboolean verbose) {
       case REALSXP : tmp2 = PROTECT(coerceVector(measure, INTSXP)); protecti++; break;
       case INTSXP  : tmp2 = measure; break;
       case VECSXP  : tmp2 = PROTECT(measurelist(measure, dtnames)); protecti++; break;
-      default : error("Unknown 'measure.vars' type %s, must be character or integer vector", type2char(TYPEOF(measure)));
+      default : error(_("Unknown 'measure.vars' type %s, must be character or integer vector"), type2char(TYPEOF(measure)));
     }
     tmp = tmp2;
     if (isNewList(measure)) {
@@ -236,7 +236,7 @@ SEXP checkVars(SEXP DT, SEXP id, SEXP measure, Rboolean verbose) {
     }
     for (i=0; i<length(tmp); i++) {
       if (INTEGER(tmp)[i] <= 0 || INTEGER(tmp)[i] > ncol)
-        error("One or more values in 'measure.vars' is invalid.");
+        error(_("One or more values in 'measure.vars' is invalid."));
     }
     if (isNewList(measure)) valuecols = tmp2;
     else {
@@ -273,11 +273,11 @@ static void preprocess(SEXP DT, SEXP id, SEXP measure, SEXP varnames, SEXP valna
   data->lvalues = length(data->valuecols);
   data->narm = narm;
   if (length(valnames) != data->lvalues) {
-    if (isNewList(measure)) error("When 'measure.vars' is a list, 'value.name' must be a character vector of length =1 or =length(measure.vars).");
-    else error("When 'measure.vars' is either not specified or a character/integer vector, 'value.name' must be a character vector of length =1.");
+    if (isNewList(measure)) error(_("When 'measure.vars' is a list, 'value.name' must be a character vector of length =1 or =length(measure.vars)."));
+    else error(_("When 'measure.vars' is either not specified or a character/integer vector, 'value.name' must be a character vector of length =1."));
   }
   if (length(varnames) != 1)
-    error("'variable.name' must be a character/integer vector of length=1.");
+    error(_("'variable.name' must be a character/integer vector of length=1."));
   data->leach = (int *)R_alloc(data->lvalues, sizeof(int));
   data->isidentical = (int *)R_alloc(data->lvalues, sizeof(int));
   data->isfactor = (int *)R_alloc(data->lvalues, sizeof(int));
@@ -326,10 +326,10 @@ static SEXP combineFactorLevels(SEXP factorLevels, SEXP target, int * factorType
   int maxlevels=0, nitem=length(factorLevels);
   for (int i=0; i<nitem; ++i) {
     SEXP this = VECTOR_ELT(factorLevels, i);
-    if (!isString(this)) error("Internal error: combineFactorLevels in fmelt.c expects all-character input");  // # nocov
+    if (!isString(this)) error(_("Internal error: combineFactorLevels in fmelt.c expects all-character input"));  // # nocov
     maxlevels+=length(this);
   }
-  if (!isString(target)) error("Internal error: combineFactorLevels in fmelt.c expects a character target to factorize");  // # nocov
+  if (!isString(target)) error(_("Internal error: combineFactorLevels in fmelt.c expects a character target to factorize"));  // # nocov
   int nrow = length(target);
   SEXP ans = PROTECT(allocVector(INTSXP, nrow));
   SEXP *levelsRaw = (SEXP *)R_alloc(maxlevels, sizeof(SEXP));  // allocate for worst-case all-unique levels
@@ -382,9 +382,9 @@ SEXP getvaluecols(SEXP DT, SEXP dtnames, Rboolean valfactor, Rboolean verbose, s
   for (int i=0; i<data->lvalues; ++i) {
     SEXP thisvaluecols = VECTOR_ELT(data->valuecols, i);
     if (!data->isidentical[i])
-      warning("'measure.vars' [%s] are not all of the same type. By order of hierarchy, the molten data value column will be of type '%s'. All measure variables not of type '%s' will be coerced too. Check DETAILS in ?melt.data.table for more on coercion.\n", CHAR(STRING_ELT(concat(dtnames, thisvaluecols), 0)), type2char(data->maxtype[i]), type2char(data->maxtype[i]));
+      warning(_("'measure.vars' [%s] are not all of the same type. By order of hierarchy, the molten data value column will be of type '%s'. All measure variables not of type '%s' will be coerced too. Check DETAILS in ?melt.data.table for more on coercion.\n"), CHAR(STRING_ELT(concat(dtnames, thisvaluecols), 0)), type2char(data->maxtype[i]), type2char(data->maxtype[i]));
     if (data->maxtype[i] == VECSXP && data->narm) {
-      if (verbose) Rprintf("The molten data value type is a list at item %d. 'na.rm=TRUE' is ignored.\n", i+1);
+      if (verbose) Rprintf(_("The molten data value type is a list at item %d. 'na.rm=TRUE' is ignored.\n"), i+1);
       data->narm = FALSE;
     }
   }
@@ -487,7 +487,7 @@ SEXP getvaluecols(SEXP DT, SEXP dtnames, Rboolean valfactor, Rboolean verbose, s
         }
       } break;
       default :
-        error("Unknown column type '%s' for column '%s'.", type2char(TYPEOF(thiscol)), CHAR(STRING_ELT(dtnames, INTEGER(thisvaluecols)[i]-1)));
+        error(_("Unknown column type '%s' for column '%s'."), type2char(TYPEOF(thiscol)), CHAR(STRING_ELT(dtnames, INTEGER(thisvaluecols)[i]-1)));
       }
       if (data->narm) counter += thislen;
       UNPROTECT(thisprotecti);  // inside inner loop (note that it's double loop) so as to limit use of protection stack
@@ -511,7 +511,7 @@ SEXP getvarcols(SEXP DT, SEXP dtnames, Rboolean varfactor, Rboolean verbose, str
   SEXP ansvars=PROTECT(allocVector(VECSXP, 1)); protecti++;
   SEXP target;
   if (data->lvalues==1 && length(VECTOR_ELT(data->valuecols, 0)) != data->lmax)
-    error("Internal error: fmelt.c:getvarcols %d %d", length(VECTOR_ELT(data->valuecols, 0)), data->lmax);  // # nocov
+    error(_("Internal error: fmelt.c:getvarcols %d %d"), length(VECTOR_ELT(data->valuecols, 0)), data->lmax);  // # nocov
   if (!varfactor) {
     SET_VECTOR_ELT(ansvars, 0, target=allocVector(STRSXP, data->totlen));
     if (data->lvalues == 1) {
@@ -659,7 +659,7 @@ SEXP getidcols(SEXP DT, SEXP dtnames, Rboolean verbose, struct processData *data
       }
     }
       break;
-    default : error("Unknown column type '%s' for column '%s' in 'data'", type2char(TYPEOF(thiscol)), CHAR(STRING_ELT(dtnames, INTEGER(data->idcols)[i]-1)));
+    default : error(_("Unknown column type '%s' for column '%s' in 'data'"), type2char(TYPEOF(thiscol)), CHAR(STRING_ELT(dtnames, INTEGER(data->idcols)[i]-1)));
     }
   }
   UNPROTECT(1);
@@ -670,21 +670,22 @@ SEXP fmelt(SEXP DT, SEXP id, SEXP measure, SEXP varfactor, SEXP valfactor, SEXP 
   SEXP dtnames, ansvals, ansvars, ansids, ansnames, ans;
   Rboolean narm=FALSE, verbose=FALSE;
 
-  if (!isNewList(DT)) error("Input is not of type VECSXP, expected a data.table, data.frame or list");
-  if (!isLogical(valfactor)) error("Argument 'value.factor' should be logical TRUE/FALSE");
-  if (!isLogical(varfactor)) error("Argument 'variable.factor' should be logical TRUE/FALSE");
-  if (!isLogical(narmArg)) error("Argument 'na.rm' should be logical TRUE/FALSE.");
-  if (!isString(varnames)) error("Argument 'variable.name' must be a character vector");
-  if (!isString(valnames)) error("Argument 'value.name' must be a character vector");
-  if (!isLogical(verboseArg)) error("Argument 'verbose' should be logical TRUE/FALSE");
+  if (!isNewList(DT)) error(_("Input is not of type VECSXP, expected a data.table, data.frame or list"));
+  if (!isLogical(valfactor)) error(_("Argument 'value.factor' should be logical TRUE/FALSE"));
+  if (!isLogical(varfactor)) error(_("Argument 'variable.factor' should be logical TRUE/FALSE"));
+  if (!isLogical(narmArg)) error(_("Argument 'na.rm' should be logical TRUE/FALSE."));
+  if (!isString(varnames)) error(_("Argument 'variable.name' must be a character vector"));
+  if (!isString(valnames)) error(_("Argument 'value.name' must be a character vector"));
+  if (!isLogical(verboseArg)) error(_("Argument 'verbose' should be logical TRUE/FALSE"));
+  if (LOGICAL(verboseArg)[0] == TRUE) verbose = TRUE;
   int ncol = LENGTH(DT);
   if (!ncol) {
-    if (verbose) Rprintf("ncol(data) is 0. Nothing to melt. Returning original data.table.");
+    if (verbose) Rprintf(_("ncol(data) is 0. Nothing to melt. Returning original data.table."));
     return(DT);
   }
   int protecti=0;
   dtnames = PROTECT(getAttrib(DT, R_NamesSymbol)); protecti++;
-  if (isNull(dtnames)) error("names(data) is NULL. Please report to data.table-help");
+  if (isNull(dtnames)) error(_("names(data) is NULL. Please report to data.table-help"));
   if (LOGICAL(narmArg)[0] == TRUE) narm = TRUE;
   if (LOGICAL(verboseArg)[0] == TRUE) verbose = TRUE;
   struct processData data;

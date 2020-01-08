@@ -1631,7 +1631,7 @@ test(557, DT[, f(.SD), by=x], error="[.]SD is locked.*reserved for possible futu
 # Test printing on nested data.table, bug #1803
 DT = data.table(x=letters[1:3], y=list(1:10, letters[1:4], data.table(a=1:3,b=4:6)))
 test(558, capture.output(print(DT)),
-          c("   x               y", "1: a 1,2,3,4,5,6,...", "2: b         a,b,c,d", "3: c    <data.table>"))
+     c("   x                 y", "1: a   1,2,3,4,5,6,...", "2: b           a,b,c,d", "3: c <data.table[3x2]>"))
 test(559, setkey(DT,x)["a",y][[1]], 1:10)   # y is symbol representing list column, specially detected in dogroups
 
 # Test renaming of .N to N
@@ -2987,7 +2987,11 @@ test(1034, as.data.table(x<-as.character(sample(letters, 5))), data.table(V1=x))
   DT[, l_1 := DT[, list(c=list(rep(i_1, sample(5,1)))), by = i_1]$c] # generate list cols
   DT[, l_2 := DT[, list(c=list(rep(c_1, sample(5,1)))), by = i_1]$c]
 
-  test(1035.01, melt(DT, id.vars=1:2, measure.vars=3:4), melt(DT, id.vars=c("i_1", "i_2"), measure.vars=c("f_1", "c_1")))
+  test(1035.010, melt(DT, id.vars=1:2, measure.vars=3:4), melt(DT, id.vars=c("i_1", "i_2"), measure.vars=c("f_1", "c_1")))
+  test(1035.011, melt(DT, id.vars=as.raw(0), measure.vars=3:4),
+       error="Unknown 'id.vars' type raw")
+  test(1035.012, melt(DT, id.vars=1:3, measure.vars=as.raw(0)),
+       error="Unknown 'measure.vars' type raw")
 
   ans1 = cbind(DT[, c(1,2,8), with=FALSE], variable=factor("l_1"))
   ans1[, value := DT$l_1]
@@ -2998,14 +3002,19 @@ test(1034, as.data.table(x<-as.character(sample(letters, 5))), data.table(V1=x))
   test(1035.03, melt(DT, id.vars=4, measure.vars=5:6, na.rm=TRUE, variable.factor=FALSE), ans2)
 
   DT2 <- data.table(x=1:5, y=1+5i) # unimplemented class
-  test(1035.04, melt(DT2, id.vars=1), error="Unknown column type 'complex'")
+  test(1035.040, melt(DT2, id.vars=1), error="Unknown column type 'complex'")
+  test(1035.041, melt(DT2, id.vars=as.raw(0)), error="Unknown 'id.vars' type raw")
 
   # more tests
   DT[, f_2 := factor(sample(letters, N), ordered=TRUE)]
   DT[, id := 1:N]
   ans1 = cbind(melt(DT, id.vars="id", measure.vars=5:6, value.name="value1"), melt(DT, id.vars=integer(0), measure.vars=7:8, value.name="value2")[, variable:=NULL])
   levels(ans1$variable) = as.character(1:2)
-  test(1035.05, ans1, melt(DT, id.vars="id", measure.vars=list(5:6, 7:8)))
+  test(1035.050, ans1, melt(DT, id.vars="id", measure.vars=list(5:6, 7:8)))
+  ## use numeric index
+  test(1035.051, ans1, melt(DT, id.vars="id", measure.vars=list(c(5, 6), c(7, 8))))
+  test(1035.052, melt(DT, id.vars="id", measure.vars=list(as.raw(0))),
+       error="Unknown 'measure.vars' type raw")
   test(1035.06, ans1, melt(DT, id.vars="id", measure.vars=list(5:6, 7:8), na.rm=TRUE)) # should've no effect
   test(1035.07, ans1, melt(DT, id.vars="id", measure.vars=patterns("d_", "l_")))
   # melt retains ordered factors!
@@ -3033,7 +3042,12 @@ test(1034, as.data.table(x<-as.character(sample(letters, 5))), data.table(V1=x))
   # bug #699 - melt segfaults when vars are not in dt; was test 1316
   x = data.table(a=c(1,2),b=c(2,3),c=c(3,4))
   test(1035.14, melt(x, id.vars="d"), error="One or more values")
-  test(1035.15, melt(x, measure.vars="d"), error="One or more values")
+  test(1035.150, melt(x, measure.vars="d"), error="One or more values")
+  test(1035.151, melt(x, measure.vars=3L),
+       ans <- data.table(a=c(1, 2), b=c(2, 3), variable=factor('c'), value=c(3, 4)))
+  test(1035.152, melt(x, measure.vars=as.raw(0)), error="Unknown 'measure.vars' type raw")
+  test(1035.153, melt(x, measure.vars=3L, verbose=TRUE), ans,
+       output="'id.vars' is missing. Assigning all.*Assigned 'id.vars' are")
   test(1035.16, melt(x, id.vars="a", measure.vars="d"), error="One or more values")
   test(1035.17, melt(x, id.vars="d", measure.vars="a"), error="One or more values")
 
@@ -3061,7 +3075,10 @@ test(1034, as.data.table(x<-as.character(sample(letters, 5))), data.table(V1=x))
 
   # improper levels fix, #1359; was test 1563
   dt = data.table(id=1:3, x=NA_character_, y=c('a', NA_character_, 'c'))
-  test(1035.22, melt(dt, id.vars="id", na.rm=TRUE), data.table(id=c(1L,3L), variable=factor(c("y", "y")), value=c("a", "c")))
+  test(1035.220, melt(dt, id.vars="id", na.rm=TRUE), data.table(id=c(1L,3L), variable=factor(c("y", "y")), value=c("a", "c")))
+  test(1035.221, melt(dt, id.vars=c("id", "id"), na.rm=TRUE),
+       output = 'Duplicate column names found',
+       data.table(id=c(1L,3L), id.1=c(1L, 3L), variable=factor(c("y", "y")), value=c("a", "c")))
 
   # fixing segfault due to negative id and measure vars that I detected by accident; was test 1569
   dt = data.table(x=1:5, y=6:10, z=11:15)
@@ -3136,6 +3153,18 @@ Sep,33.5,19.4,15.7,11.9,0,100.8,100.8,0,12.7,12.7,0,174.1")
   test(1037.407, ans$variable, factor(c("1","1")))
   test(1037.408, dim(ans<-melt(x, measure.vars=patterns("^y", "^z"), na.rm=TRUE, variable.factor=FALSE)), INT(2,5))
   test(1037.409, ans$variable, c("1","1"))
+
+  test(1037.410, melt(data.table(NULL), verbose=TRUE), data.table(NULL),
+       output="ncol(data) is 0. Nothing to melt")
+  test(1037.411, melt(x, id.vars=1L, measure.vars=2L, variable.name=c('a', 'b')),
+       error="'variable.name' must be a character/integer")
+  test(1037.412, melt(x, id.vars=1L, measure.vars=list(2L), value.name=c('a', 'b')),
+       error="When 'measure.vars' is a list, 'value.name'")
+  test(1037.413, melt(x, id.vars=1L, measure.vars=2L, value.name=c('a', 'b')),
+       error="When 'measure.vars' is either not specified or a character/integer")
+  x[ , r := as.raw(c(0, 1))]
+  test(1037.414, melt(x, id.vars='x1', measure.vars='r'),
+       error="Unknown column type 'raw' for column 'r'")
 }
 
 # sorting and grouping of Inf, -Inf, NA and NaN,  #4684, #4815 & #4883
@@ -8016,6 +8045,11 @@ options(datatable.optimize=Inf)
 test(1581.14, ans2 <- dt[x %in% letters[15:20], d1[[2]], by=x, verbose=TRUE],
               output = "GForce optimized j")
 test(1581.15, ans1, ans2)
+# also, block for non-atomic input, #4159
+dt = data.table(a=1:3)
+dt[ , l := .(list(1, 2, 3))]
+test(1581.16, dt[ , .(l = l[[1L]]), by=a, verbose=TRUE],
+     dt[ , l := unlist(l)], output='(GForce FALSE)')
 
 # handle NULL value correctly #1429
 test(1582, uniqueN(NULL), 0L)
@@ -8251,11 +8285,11 @@ DT1  = data.table(lcol = list(list(1:3), list(1:3), list(1:3)),
                   xcol = as.complex(icol), ocol = factor(icol, ordered = TRUE),
                   fcol = factor(icol))
 test(1610.1, capture.output(print(DT1, class=TRUE)),
-     c("     lcol  icol  ncol   ccol   xcol  ocol   fcol",
-       "   <list> <int> <num> <char> <cplx> <ord> <fctr>",
-       "1: <list>     1     1      a   1+0i     1      1",
-       "2: <list>     2     2      b   2+0i     2      2",
-       "3: <list>     3     3      c   3+0i     3      3"))
+     c("        lcol  icol  ncol   ccol   xcol  ocol   fcol",
+       "      <list> <int> <num> <char> <cplx> <ord> <fctr>",
+       "1: <list[1]>     1     1      a   1+0i     1      1",
+       "2: <list[1]>     2     2      b   2+0i     2      2",
+       "3: <list[1]>     3     3      c   3+0i     3      3"))
 DT2 = data.table(
   Dcol = as.Date('2016-01-01') + 0:2,
   Pcol = as.POSIXct('2016-01-01 01:00:00', tz = 'UTC') + 86400L*(0:2),
@@ -8843,13 +8877,13 @@ test(1635.2, fread(text, fill=TRUE), setnames(ans1[, 1:7], c(letters[1:5], paste
 # testing function type in dt, #518
 dt = data.table(x=1, y=sum)
 test(1636.1, class(dt$y), "list")
-test(1636.2, any(grepl("1: 1 <function>", capture.output(print(dt)))), TRUE)
+test(1636.2, print(dt), output="1: 1 <function[1]>")
 dt = data.table(x=1:2, y=sum)
 test(1636.3, class(dt$y), "list")
-test(1636.4, any(grepl("2: 2 <function>", capture.output(print(dt)))), TRUE)
+test(1636.4, print(dt), output="2: 2 <function[1]>")
 dt = data.table(x=1:2, y=c(sum, min))
 test(1636.5, class(dt$y), "list")
-test(1636.6, any(grepl("2: 2 <function>", capture.output(print(dt)))), TRUE)
+test(1636.6, print(dt), output="2: 2 <function[1]>")
 
 # #484 fix (related to #495 fix above)
 dt = data.table(a = 1, b = 1)
@@ -10059,7 +10093,7 @@ test(1695.14, x %between% c(3, NA), rep(NA, 3L))
 test(1695.15, x %between% c(NA, NA), rep(NA, 3L))
 x = integer(0)
 test(1695.16, x %between% c(3, 7), logical(0))
-test(1695.17, TRUE %between% c(3, 7), error="between has been x of type logical")
+test(1695.17, TRUE %between% c(3, 7), error="between has been passed an argument x of type logical")
 x = c("foo","bar","paz")
 test(1695.18, between(x, "bag", "fog"), c(FALSE, TRUE, FALSE))
 test(1695.19, between(x, c("b","f","a"), "q"), c(TRUE, FALSE, TRUE))
@@ -10902,14 +10936,14 @@ test(1750.18, uniqueN({
   r <- groupingsets(dt, j = c(list(cnt=.N), lapply(.SD, sum)), by = c("color","year","status"), sets=sets, id=TRUE)
   r[, lapply(.SD, sum), by = .(double_counting = grouping==5L, double_counting = grouping!=5L), .SDcols = c("cnt","amount","value")]
 }, by = c("cnt","amount","value")
-), 1L, warning = "Double counting is going to happen")
+), 1L, warning = "'sets' contains a duplicate")
 # duplicate entries in `sets` but reorderd - double counting on `grouping==1L`
 sets = list(c("color","year"), "year", c("year","color"), character())
 test(1750.19, uniqueN({
   r <- groupingsets(dt, j = c(list(cnt=.N), lapply(.SD, sum)), by = c("color","year","status"), sets=sets, id=TRUE)
   r[, lapply(.SD, sum), by = .(double_counting = grouping==1L, double_counting = grouping!=1L), .SDcols = c("cnt","amount","value")]
 }, by = c("cnt","amount","value")
-), 1L, warning = "Double counting is going to happen")
+), 1L, warning = "'sets' contains a duplicate")
 # entries in `by` / `sets` not exists in data.table
 test(1750.20, exists("notexist"), FALSE)  # https://github.com/Rdatatable/data.table/issues/3055#issuecomment-423364960
 test(1750.21, groupingsets(dt, j = c(list(cnt=.N), lapply(.SD, sum)), by = c("color","year","notexist"), sets=list(c("color"), character()), id=TRUE), error = "object 'notexist' not found")
@@ -13276,8 +13310,8 @@ test(1962.039, is.sorted(3:1, by = 'x'),
 
 DT = data.table(a = 3:1)
 test(1962.0401, forderv(DT, sort=FALSE, retGrp=FALSE), error='At least one of retGrp= or sort= must be TRUE')
-test(1962.0402, forderv(DT, sort=0),                   error='sort= must be TRUE or FALSE')
-test(1962.0403, forderv(DT, retGrp=0),                 error='retGrp= must be TRUE or FALSE')
+test(1962.0402, forderv(DT, sort=0),                   error='sort must be TRUE or FALSE')
+test(1962.0403, forderv(DT, retGrp=0),                 error='retGrp must be TRUE or FALSE')
 test(1962.041, forderv(DT, na.last = logical(0L)),     error='na.last must be logical TRUE, FALSE or NA of length 1')
 test(1962.042, forderv(DT, na.last = c(TRUE, FALSE)),  error='na.last must be logical TRUE, FALSE or NA of length 1')
 test(1962.043, forderv(DT$a, by = 'a'),                error='x is a single vector, non-NULL')
@@ -13860,7 +13894,7 @@ test(1984.05, DT[ , sum(b), keyby = c, verbose = TRUE],
 test(1984.06, DT[1:3, sum(a), by=b:c], data.table(b=10:8, c=1:3, V1=1:3))
 test(1984.07, DT[, sum(a), by=call('sin',pi)], error='must evaluate to a vector or a list of vectors')
 test(1984.08, DT[, sum(a), by=as.raw(0)],           error='column or expression.*type raw')
-test(1984.09, DT[, sum(a), by=.(1,1:2)],       error='The items.*list are length [(]1,2[)].*Each must be length 10; .*rows in x.*after subsetting')
+test(1984.09, DT[, sum(a), by=.(1,1:2)],       error='The items.*list are length[(]s[)] [(]1,2[)].*Each must be length 10; .*rows in x.*after subsetting')
 options('datatable.optimize' = Inf)
 test(1984.10, DT[ , 1, by = .(a %% 2), verbose = TRUE],
      data.table(a = c(1, 0), V1 = c(1, 1)),
@@ -15575,7 +15609,7 @@ ord = 3:1
 test(2069.25, forder(data.table(a=3:1), ord), 3:1)
 # dogroups.c coverage
 test(2069.26, data.table(c='1')[ , expression(1), by=c], error="j evaluates to type 'expression'")
-test(2069.27, data.table(c='1', d=2)[ , d := .(NULL), by=c], error='RHS is NULL when grouping :=')
+test(2069.27, data.table(c='1', d=2)[ , d := .(NULL), by=c], error='RHS of := is NULL during grouped assignment')
 test(2069.28, data.table(c='1', d=2)[ , c(a='b'), by=c, verbose=TRUE], output='j appears to be a named vector')
 test(2069.29, data.table(c = '1', d = 2)[ , .(a = c(nm='b')), by = c, verbose = TRUE], output = 'Column 1 of j is a named vector')
 DT <- data.table(a = rep(1:3, each = 4), b = LETTERS[1:4], z = 0:3 + (4:1)*1i)
@@ -16257,10 +16291,11 @@ test(2108.71, first(df), structure(list(a=1L, b=3L), row.names=1L, class="data.f
 test(2108.72, first(dt), data.table(a=1L, b=3L), output="using 'x[1L,]': !is.xts(x) & !nargs>1 & is.data.frame(x)")
 # matrix/array utils::tail behavior is likely to change in future R, Michael is more in the topic
 test(2108.81, last(mx), structure(c(3L, 6L, 9L), .Dim = c(1L, 3L), .Dimnames = list("[3,]", NULL)), output="using utils::tail: !is.xts(x) & !nargs>1 & !is.null(dim(x)) & !is.data.frame(x)")
-r4 = base::getRversion() >= "3.7.0" # two tests disabled for now #4127
-if (!r4) test(2108.82, last(ar), 27L, output="using utils::tail: !is.xts(x) & !nargs>1 & !is.null(dim(x)) & !is.data.frame(x)")
+expected = if (base::getRversion() < "3.7.0") 27L else structure(c(3L, 6L, 9L, 12L, 15L, 18L, 21L, 24L, 27L), .Dim = c(1L, 3L, 3L), .Dimnames = list("[3,]", NULL, NULL)) #4127
+test(2108.82, last(ar), expected, output="using utils::tail: !is.xts(x) & !nargs>1 & !is.null(dim(x)) & !is.data.frame(x)")
 test(2108.91, first(mx), structure(c(1L, 4L, 7L), .Dim = c(1L, 3L)), output="using utils::head: !is.xts(x) & !nargs>1 & !is.null(dim(x)) & !is.data.frame(x)")
-if (!r4) test(2108.92, first(ar), 1L, output="using utils::head: !is.xts(x) & !nargs>1 & !is.null(dim(x)) & !is.data.frame(x)")
+expected = if (base::getRversion() < "3.7.0") 1L else structure(c(1L, 4L, 7L, 10L, 13L, 16L, 19L, 22L, 25L), .Dim = c(1L, 3L, 3L)) #4127
+test(2108.92, first(ar), expected, output="using utils::head: !is.xts(x) & !nargs>1 & !is.null(dim(x)) & !is.data.frame(x)")
 options(old)
 
 # error in autonaming by={...}, #3156
@@ -16677,6 +16712,29 @@ test(2128.5, DT[, .SD, .SDcols=function(x) NA],   error='conditions were not met
 A = data.table(c1 = 1, c2 = 'asd', c3 = expression(as.character(Sys.time())))
 B = data.table(c1 = 3, c2 = 'qwe', c3 = expression(as.character(Sys.time()+5)))
 test(2129, rbind(A,B)$c3, expression(as.character(Sys.time()), as.character(Sys.time()+5)))
+
+# print dims in list-columns, #3671
+DT = data.table(
+  x = 1:2,
+  y = list(data.table(x=1, y=1),
+           data.table(x=2, y=2)))
+test(2130.01, print(DT), output=c("   x                 y", "1: 1 <data.table[1x2]>", "2: 2 <data.table[1x2]>"))
+DT = data.table(
+  x = 1:2,
+  y = list(list(x=1, y=c("yes", "no")),
+           list(x=2, y=2)))
+test(2130.02, print(DT), output=c("   x         y", "1: 1 <list[2]>",         "2: 2 <list[2]>"))
+s4class = setClass("ex_class", slots = list(x="integer", y="character", z="numeric"))
+DT = data.table(
+  x = 1:2,
+  y = list(s4class(x=1L, y=c("yes", "no"), z=2.5),
+           s4class(x=2L, y="yes", z=1)))
+test(2130.03, print(DT), output=c("   x             y", "1: 1 <ex_class[3]>",     "2: 2 <ex_class[3]>"))
+
+# .SD from grouping should be unlocked, part of #4159
+x = data.table(a=1:3, b=4:6)
+test(2131, lapply(x[ , list(dt = list(.SD)), by = a]$dt, attr, '.data.table.locked'),
+           list(NULL, NULL, NULL))
 
 
 ########################

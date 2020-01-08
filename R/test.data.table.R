@@ -43,7 +43,7 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
     # nocov start
     fn2 = paste0(fn,".bz2")
     if (!file.exists(file.path(fulldir, fn2)))
-      stop("Neither ",fn," or ",fn2," exist in ",fulldir)
+      stop(gettextf("Neither %s nor %s exist in %s",fn, fn2, fulldir, domain="R-data.table"))
     fn = fn2
     # nocov end
     # sys.source() below accepts .bz2 directly.

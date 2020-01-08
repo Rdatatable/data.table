@@ -8,12 +8,12 @@
 
 SEXP setattrib(SEXP x, SEXP name, SEXP value)
 {
-  if (!isString(name) || LENGTH(name)!=1) error("Attribute name must be a character vector of length 1");
+  if (!isString(name) || LENGTH(name)!=1) error(_("Attribute name must be a character vector of length 1"));
   if (!isNewList(x) &&
       strcmp(CHAR(STRING_ELT(name,0)),"class")==0 &&
       isString(value) && LENGTH(value)>0 &&
       (strcmp(CHAR(STRING_ELT(value, 0)),"data.table")==0 || strcmp(CHAR(STRING_ELT(value,0)),"data.frame")==0) ) {
-    error("Internal structure doesn't seem to be a list. Can't set class to be 'data.table' or 'data.frame'. Use 'as.data.table()' or 'as.data.frame()' methods instead.");
+    error(_("Internal structure doesn't seem to be a list. Can't set class to be 'data.table' or 'data.frame'. Use 'as.data.table()' or 'as.data.frame()' methods instead."));
   }
   if (isLogical(x) && LENGTH(x)==1 &&
       (x==ScalarLogical(TRUE) || x==ScalarLogical(FALSE) || x==ScalarLogical(NA_LOGICAL))) {  // R's internal globals, #1281
@@ -63,10 +63,10 @@ SEXP setlistelt(SEXP l, SEXP i, SEXP value)
 {
   R_len_t i2;
   // Internal use only. So that := can update elements of a list of data.table, #2204. Just needed to overallocate/grow the VECSXP.
-  if (!isNewList(l)) error("First argument to setlistelt must be a list()");
-  if (!isInteger(i) || LENGTH(i)!=1) error("Second argument to setlistelt must a length 1 integer vector");
+  if (!isNewList(l)) error(_("First argument to setlistelt must be a list()"));
+  if (!isInteger(i) || LENGTH(i)!=1) error(_("Second argument to setlistelt must a length 1 integer vector"));
   i2 = INTEGER(i)[0];
-  if (LENGTH(l) < i2 || i2<1) error("i (%d) is outside the range of items [1,%d]",i2,LENGTH(l));
+  if (LENGTH(l) < i2 || i2<1) error(_("i (%d) is outside the range of items [1,%d]"),i2,LENGTH(l));
   SET_VECTOR_ELT(l, i2-1, value);
   return(R_NilValue);
 }
@@ -88,7 +88,7 @@ SEXP expandAltRep(SEXP x)
   // At R level (for example [.data.table) we use and benefit from altrep vectors very much. It's just as columns that we expand them.
   // See extensive discussion in issue #2866
 
-  if (TYPEOF(x) != VECSXP) error("x isn't a VECSXP");
+  if (TYPEOF(x) != VECSXP) error(_("x isn't a VECSXP"));
   for (int i=0; i<LENGTH(x); i++) {
     SEXP col = VECTOR_ELT(x,i);
     if (ALTREP(col)) {
@@ -103,7 +103,7 @@ SEXP dim(SEXP x)
   // fast implementation of dim.data.table
 
   if (TYPEOF(x) != VECSXP) {
-    error("dim.data.table expects a data.table as input (which is a list), but seems to be of type %s",
+    error(_("dim.data.table expects a data.table as input (which is a list), but seems to be of type %s"),
         type2char(TYPEOF(x)));
   }
 
