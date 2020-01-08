@@ -685,8 +685,7 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source,
   *memrecycle_message = '\0';
   int protecti=0;
   if (isNewList(source)) {
-    // A list() column; i.e. target is a column of pointers to SEXPs rather than the much more common case
-    // where memrecycle copies the DATAPTR data to the atomic target from the atomic source.
+    // A list() column; i.e. target is a column of pointers to SEXPs rather than the more common case of numbers in an atomic vector.
     // If any item within the list is NAMED then take a fresh copy. So far this has occurred from dogroups.c when
     // j returns .BY or similar specials as-is within a list(). Those specials are static inside
     // dogroups so if we don't copy now the last value written to them by dogroups becomes repeated in the result;
