@@ -16683,11 +16683,9 @@ test(2129, rbind(A,B)$c3, expression(as.character(Sys.time()), as.character(Sys.
 #  Add new tests here  #
 ########################
 
-## make names(.SD) work - issue #795
+## names(.SD) - issue #795
 DT <- data.table(a=1:6, b=1:6, c=rep(c(T,F), 3))
 mycols <- 1:2
-test(2131.1, DT[, names(.SD) :=lapply(.SD, `*`, 2), .SDcols=mycols], data.table(a = (1:6)*2, b = (1:6)*2, c = rep(c(T, F), 3)))
-test(2131.2, DT[, names(.SD) := lapply(.SD, '*', 2), .SDcols = -3L], data.table(a = (1:6)*4, b = (1:6)*4, c = rep(c(T, F), 3)))
-test(2131.3, DT[, .SD := lapply(.SD, '*', 2), .SDcols = -3L], data.table(a = (1:6)*8, b = (1:6)*8, c = rep(c(T, F), 3)))
-test(2131.4, DT[, .SDcols := lapply(.SD, '*', 2), .SDcols = -3L], data.table(a = (1:6)*16, b = (1:6)*16, c = rep(c(T, F), 3)))
-test(2131.5, DT[, .SD := lapply(.SD, '*', 2)], data.table(a = (1:6)*32, b = (1:6)*32, c = rep(c(T, F), 3) * 2))
+test(2131.1, DT[, .SD := lapply(.SD, `*`, 2), .SDcols = mycols], data.table(a = (1:6)*2, b = (1:6)*2, c = rep(c(T, F), 3)))
+test(2131.3, DT[, .SD := lapply(.SD, '*', 2), .SDcols = -3L], data.table(a = (1:6)*4, b = (1:6)*4, c = rep(c(T, F), 3)))
+test(2131.5, DT[, .SD := lapply(.SD, '*', 2)], data.table(a = (1:6)*8, b = (1:6)*8, c = rep(c(T, F), 3) * 2))
