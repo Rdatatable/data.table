@@ -1894,11 +1894,9 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
     }
     if (!is.null(rownames)) {
       # Extract the rownames column, bringing it into memory if ff object
-      if (is.ff(x[[rownames.index]])) { 
-        rownames.value = x[[rownames.index]][]
-      } else {
-        rownames.value = x[[rownames.index]]
-      }
+      if (is.ff(x[[rownames.index]])) rownames.value = x[[rownames.index]][] # nocov
+      else rownames.value = x[[rownames.index]]
+      
       # Check rownames column is appropriate dimension
       if (length(dim(rownames.value)) > 1L) {
         stop("x[,", rownames, "] has multi-column type (such as a matrix column)",
