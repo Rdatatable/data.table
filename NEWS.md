@@ -71,6 +71,8 @@ unit = "s")
 
 9. `rbindlist` now supports columns of type `expression`, [#546](https://github.com/Rdatatable/data.table/issues/546). Thanks @jangorecki for the report.
 
+10. Using `dt[, .SD := lapply(.SD, fx)]` now works, [#795](https://github.com/Rdatatable/data.table/issues/795). Thanks to @brodieG for the report and @ColeMiller1 for PR.
+
 ## BUG FIXES
 
 1. A NULL timezone on POSIXct was interpreted by `as.IDate` and `as.ITime` as UTC rather than the session's default timezone (`tz=""`) , [#4085](https://github.com/Rdatatable/data.table/issues/4085).
