@@ -1938,9 +1938,9 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
   # Check and error before doing computation/memory expensive column checks and coercion
   # nocov start
   if (p > .Machine$integer.max) 
-    error("Matrices with > ", .Machine$integer.max, " (.Machine$integer.max) columns are not supported")
+    stop("Matrices with > ", .Machine$integer.max, " (.Machine$integer.max) columns are not supported")
   if (n > .Machine$integer.max) 
-    error("Matrices with > ", .Machine$integer.max, " (.Machine$integer.max) rows are not supported")
+    stop("Matrices with > ", .Machine$integer.max, " (.Machine$integer.max) rows are not supported")
   # nocov end
   
   # If no rows or columns can simply return empty array
