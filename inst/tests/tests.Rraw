@@ -16752,19 +16752,19 @@ test(2132.3, fcase(TRUE, s1, FALSE, s2), error = "S4 class objects (except nanot
 
 ## Check for appropriate errors when giving rownames to as.matrix.data.table that are mutli-column (only possible when constructed incorrectly) or list
 DT = structure(list(a=list(1,2:3,4:6,letters[1:5],list(1, "a")), d=data.table(b=6:10, c=11:15), m=matrix(16:25, ncol=2L)), class = c('data.table', 'data.frame'))
-test(2130.1, as.matrix(DT, rownames="d"), error="x[,'d'] has multi-column type (such as a matrix column) and cannot be used as rownames: dim(x[,'d'])==[5, 2]")
-test(2130.2, as.matrix(DT, rownames=2), error='x[,2] has multi-column type (such as a matrix column) and cannot be used as rownames: dim(x[,2])==[5, 2]')
+test(2133.1, as.matrix(DT, rownames="d"), error="x[,'d'] has multi-column type (such as a matrix column) and cannot be used as rownames: dim(x[,'d'])==[5, 2]")
+test(2133.2, as.matrix(DT, rownames=2), error='x[,2] has multi-column type (such as a matrix column) and cannot be used as rownames: dim(x[,2])==[5, 2]')
 mat = matrix(6:25, nrow=5, dimnames=list(DT[["a"]], c("d.b", "d.c", "m.V1", "m.V2")))
-test(2130.3, as.matrix(DT, rownames="a"), mat, warning="x[,'a'] is a list column, which will be coerced to acharacter vector when used as rownames")
-test(2130.4, as.matrix(DT, rownames=1), mat, warning='x[,1] is a list column, which will be coerced to acharacter vector when used as rownames')
+test(2133.3, as.matrix(DT, rownames="a"), mat, warning="x[,'a'] is a list column, which will be coerced to acharacter vector when used as rownames")
+test(2133.4, as.matrix(DT, rownames=1), mat, warning='x[,1] is a list column, which will be coerced to acharacter vector when used as rownames')
 
 ## Check C-implementations of basic matrix types not covered by previous tests
 lmat = matrix(c(TRUE, FALSE, NA, FALSE), ncol=2, dimnames=list(NULL, c("A", "B")))
 ldt = as.data.table(lmat)
-test(2131.1, as.matrix(ldt), lmat)
+test(2134.1, as.matrix(ldt), lmat)
 cmat = matrix(complex(real=1:4, imaginary=0:3), ncol=2, dimnames=list(NULL, c("A", "B")))
 cdt = as.data.table(cmat)
-test(2131.2, as.matrix(cdt), cmat)
+test(2134.2, as.matrix(cdt), cmat)
 
 
 ## Test bit64 conversion in as.matrix
@@ -16774,32 +16774,32 @@ if (test_bit64) {
   dim(i64_mat) = c(3,3)
   colnames(i64_mat) = c("A", "B", "C")
   DT = data.table(A=c(TRUE, FALSE, NA), B=1:3, C=as.integer64(4:6))
-  test(2132.1, as.matrix(DT), i64_mat)
+  test(2135.1, as.matrix(DT), i64_mat)
   
   # integer64 with numeric and/or complex should be coerced to character - 
   # large integers (>32 bits) cannot be converted to numeric or complex
   mat = matrix(c("0", "1", "0.1", "0.2", "1+0i", "2+1i"), ncol=3, dimnames=list(NULL, c("A", "B", "C")))
   DT = data.table(A=as.integer64(0:1), B=c(0.1, 0.2), C=complex(real=1:2, imaginary=0:1))
-  test(2132.2, as.matrix(DT), mat)
+  test(2135.2, as.matrix(DT), mat)
 }
 
 ## Test other class and type conversion in as.matrix
 mat = matrix(letters[1:4], ncol=2, dimnames=list(NULL, c("A", "B")))
 DT = data.table(A=as.factor(c("a", "b")), B=as.factor(c("c", "d")))
-test(2133.1, as.matrix(DT), mat)
+test(2136.1, as.matrix(DT), mat)
 
 mat = matrix(paste0(0, 1:4), ncol=2, dimnames=list(NULL, c("A", "B")))
 DT = data.table(A=as.raw(1:2), B=as.raw(3:4))
-test(2133.2, as.matrix(DT), mat)
+test(2136.2, as.matrix(DT), mat)
 
 mat = matrix(paste0("2019-01-0", 1:4), ncol=2, dimnames=list(NULL, c("A", "B")))
 DT = data.table(A=as.IDate(paste0("2019-01-0", 1:2)), B=as.IDate(paste0("2019-01-0", 3:4)))
-test(2133.3, as.matrix(DT), mat)
+test(2136.3, as.matrix(DT), mat)
 
 mat = matrix(c(1, 2, 0.1, 0.2, TRUE, FALSE), ncol=3, dimnames=list(NULL, c("A", "B", "C")))
 DT = data.table(A=1:2, B=c(0.1, 0.2), C=c(TRUE, FALSE))
-test(2133.4, as.matrix(DT), mat)
+test(2136.4, as.matrix(DT), mat)
 
 mat = matrix(c(1, 2, 0.1, 0.2, TRUE, FALSE, complex(1:2, 1:2)), ncol=4, dimnames=list(NULL, LETTERS[1:4]))
 DT = data.table(A=1:2, B=c(0.1, 0.2), C=c(TRUE, FALSE), D=complex(1:2, 1:2))
-test(2133.5, as.matrix(DT), mat)
+test(2136.5, as.matrix(DT), mat)
