@@ -1906,7 +1906,7 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
       # Warn if list column:
       if (is.list(rownames.value)) {
         warning("x[,", rownames, "] is a list column, which will be coerced to a",
-                "character vector when used as rownames")
+                " character vector when used as rownames")
       }
     }
   } else if (!is.null(rownames.value)) {

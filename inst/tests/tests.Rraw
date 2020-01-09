@@ -16755,8 +16755,8 @@ DT = structure(list(a=list(1,2:3,4:6,letters[1:5],list(1, "a")), d=data.table(b=
 test(2133.1, as.matrix(DT, rownames="d"), error="x[,'d'] has multi-column type (such as a matrix column) and cannot be used as rownames: dim(x[,'d'])==[5, 2]")
 test(2133.2, as.matrix(DT, rownames=2), error='x[,2] has multi-column type (such as a matrix column) and cannot be used as rownames: dim(x[,2])==[5, 2]')
 mat = matrix(6:25, nrow=5, dimnames=list(DT[["a"]], c("d.b", "d.c", "m.V1", "m.V2")))
-test(2133.3, as.matrix(DT, rownames="a"), mat, warning="x[,'a'] is a list column, which will be coerced to acharacter vector when used as rownames")
-test(2133.4, as.matrix(DT, rownames=1), mat, warning='x[,1] is a list column, which will be coerced to acharacter vector when used as rownames')
+test(2133.3, as.matrix(DT, rownames="a"), mat, warning="x[,'a'] is a list column, which will be coerced to a character vector when used as rownames")
+test(2133.4, as.matrix(DT, rownames=1), mat, warning='x[,1] is a list column, which will be coerced to a character vector when used as rownames')
 
 ## Check C-implementations of basic matrix types not covered by previous tests
 lmat = matrix(c(TRUE, FALSE, NA, FALSE), ncol=2, dimnames=list(NULL, c("A", "B")))
