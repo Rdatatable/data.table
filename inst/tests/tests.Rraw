@@ -2929,7 +2929,8 @@ test(1017.2, fread(f, integer64="character"), DT)
 unlink(f)
 
 # ERANGE errno handled, #4879
-test(1018, identical(fread("1.46761e-313\n"), data.table(V1=1.46761e-313)))
+test(1018.1, identical(fread("1.46761e-313\n"), data.table(V1=1.46761e-313)))
+test(1018.2, identical(fread("1.46761e+313\n"), data.table(V1=1.46761e+313)))
 test(1019, fread("A\n1.23456789123456789123456999\n"), data.table(A=1.234567891234568))
 
 # crash assigning to row 0, #2754
