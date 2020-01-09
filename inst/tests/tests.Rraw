@@ -16803,3 +16803,28 @@ test(2136.4, as.matrix(DT), mat)
 mat = matrix(c(1, 2, 0.1, 0.2, TRUE, FALSE, complex(1:2, 1:2)), ncol=4, dimnames=list(NULL, LETTERS[1:4]))
 DT = data.table(A=1:2, B=c(0.1, 0.2), C=c(TRUE, FALSE), D=complex(1:2, 1:2))
 test(2136.5, as.matrix(DT), mat)
+
+## Tests for complex column types not captured by standard tests. These are things that would usually only
+## be possible through incorrect construction of data.tables, e.g. NULL columns, environments, expressions, etc.
+DT = structure(list(A=NULL, B=1:2, C=NULL, D=3:4, E=NULL), class=c("data.table", "data.frame"))
+mat = matrix(1:4, ncol=2, dimnames=list(NULL, c("B", "D"))) 
+test(2137.1, as.matrix(DT), mat)
+
+DT = structure(list(B=1:2, C=NULL, D=3:4, E=NULL), class=c("data.table", "data.frame"))
+test(2137.2, as.matrix(DT), mat)
+
+DT = structure(list(C=NULL, E=NULL), class=c("data.table", "data.frame"))
+mat = array(NA, dim = list(0, 0), dimnames = list(NULL, NULL))
+test(2137.3, as.matrix(DT), mat)
+
+DT = structure(list(A=NULL, B=logical(0), C=NULL, D=character(0)), class=c("data.table", "data.frame"))
+mat = array(NA, dim = list(0, 2), dimnames = list(NULL, c("A", "B")))
+test(2137.4, as.matrix(DT), mat)
+
+DT = structure(list(A=1:6, B=1:2), class=c("data.table", "data.frame"))  # DT[,B]  is c(1,2)
+DT2 = data.table(A=1:6, B=1:2)                                           # DT2[,B] is c(1,2,1,2,1,2)
+test(2137.5, as.matrix(DT), as.matrix(DT2))
+
+
+
+
