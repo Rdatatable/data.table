@@ -266,7 +266,7 @@ SEXP copyAsPlain(SEXP x) {
     for (R_xlen_t i=0; i<n; ++i) SET_STRING_ELT(ans, i, xp[i]);
   } break;
   case VECSXP: {
-    const SEXP *xp=VECTOR_PTR(x);                                // # nocov
+    const SEXP *xp=SEXPPTR_RO(x);                                // # nocov
     for (R_xlen_t i=0; i<n; ++i) SET_VECTOR_ELT(ans, i, xp[i]);  // # nocov
   } break;                                                       // # nocov
   default:
@@ -285,7 +285,7 @@ void copySharedColumns(SEXP x) {
   bool *shared = (bool *)R_alloc(ncol, sizeof(bool)); // on R heap in case alloc fails
   int *savetl = (int *)R_alloc(ncol, sizeof(int));  // on R heap for convenience but could be a calloc
   int nShared=0, thistl=0;
-  const SEXP *xp = VECTOR_PTR(x);
+  const SEXP *xp = SEXPPTR_RO(x);
   for (int i=0; i<ncol; ++i) {
     SEXP thiscol = xp[i];
     if (ALTREP(thiscol) || (thistl=TRUELENGTH(thiscol))<0) {

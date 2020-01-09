@@ -1062,7 +1062,7 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source,
     if (TYPEOF(source)!=VECSXP && TYPEOF(source)!=EXPRSXP)
       BODY(SEXP, &, SEXP, val,           SET_VECTOR_ELT(target, off+i, cval))
     else
-      BODY(SEXP, VECTOR_PTR, SEXP, val,  SET_VECTOR_ELT(target, off+i, cval))
+      BODY(SEXP, SEXPPTR_RO, SEXP, val,  SET_VECTOR_ELT(target, off+i, cval))
   default :
     error(_("Unsupported column type in assign.c:memrecycle '%s'"), type2char(TYPEOF(target)));  // # nocov
   }

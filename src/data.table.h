@@ -1,6 +1,5 @@
 #include "dt_stdio.h"  // PRId64 and PRIu64
 #include <R.h>
-#define USE_RINTERNALS
 #include <Rinternals.h>
 // #include <signal.h> // the debugging machinery + breakpoint aidee
 // raise(SIGINT);
@@ -64,6 +63,8 @@ typedef R_xlen_t RLEN;
 #ifndef ALTREP
 #define ALTREP(x) 0  // for R<3.5.0, see issue #2866 and grep for "ALTREP" to see comments where it's used
 #endif
+
+#define SEXPPTR_RO(x) ((const SEXP *)DATAPTR_RO(x))
 
 // init.c
 extern SEXP char_integer64;
