@@ -16746,27 +16746,27 @@ test(2131, lapply(x[ , list(dt = list(.SD)), by = a]$dt, attr, '.data.table.lock
 dt = data.table(A = 1:6, B = 6:11, C = 11:16, grp = c('c', 'b', 'b', 'a', 'a', 'a'))
 cols = 1:2
 
-test(2131.01, dt[, .SD := lapply(.SD, '*', 2), .SDcols = cols], data.table(A = (1:6) * 2, B = (6:11) * 2, C = (11:16), grp = c('c', 'b', 'b', 'a', 'a', 'a')))
-test(2131.02, dt[4:6, .SD := lapply(.SD, '/', 2), .SDcols = cols], data.table(A = c(1:3 * 2, 4:6), B = c(6:8 * 2, 9:11), C = (11:16), grp = c('c', 'b', 'b', 'a', 'a', 'a')))
-test(2131.03, dt[, names(.SD) := lapply(.SD, '*', 2), .SDcols = 2L], data.table(A = c(1:3 * 2, 4:6), B = c(6:8 * 2 * 2, 9:11 * 2), C = (11:16), grp = c('c', 'b', 'b', 'a', 'a', 'a')))
-test(2131.04, dt[, names(.SD) := lapply(.SD, '/', 2), .SDcols = 2L], data.table(A = c(1:3 * 2, 4:6), B = c(6:8 * 2, 9:11), C = (11:16), grp = c('c', 'b', 'b', 'a', 'a', 'a')))
-test(2131.1,dt[, .SD := lapply(.SD, sum), by = grp], data.table(A = c(2, 10, 10, 15, 15, 15), B = c(12, 30, 30, 30, 30, 30), C = c(11L, 25L, 25L, 45L, 45L, 45L), grp = c('c', 'b', 'b', 'a', 'a', 'a')))
+test(2132.01, dt[, .SD := lapply(.SD, '*', 2), .SDcols = cols], data.table(A = (1:6) * 2, B = (6:11) * 2, C = (11:16), grp = c('c', 'b', 'b', 'a', 'a', 'a')))
+test(2132.02, dt[4:6, .SD := lapply(.SD, '/', 2), .SDcols = cols], data.table(A = c(1:3 * 2, 4:6), B = c(6:8 * 2, 9:11), C = (11:16), grp = c('c', 'b', 'b', 'a', 'a', 'a')))
+test(2132.03, dt[, names(.SD) := lapply(.SD, '*', 2), .SDcols = 2L], data.table(A = c(1:3 * 2, 4:6), B = c(6:8 * 2 * 2, 9:11 * 2), C = (11:16), grp = c('c', 'b', 'b', 'a', 'a', 'a')))
+test(2132.04, dt[, names(.SD) := lapply(.SD, '/', 2), .SDcols = 2L], data.table(A = c(1:3 * 2, 4:6), B = c(6:8 * 2, 9:11), C = (11:16), grp = c('c', 'b', 'b', 'a', 'a', 'a')))
+test(2132.10,dt[, .SD := lapply(.SD, sum), by = grp], data.table(A = c(2, 10, 10, 15, 15, 15), B = c(12, 30, 30, 30, 30, 30), C = c(11L, 25L, 25L, 45L, 45L, 45L), grp = c('c', 'b', 'b', 'a', 'a', 'a')))
 
 dt[, grp := NULL]
-test(2131.2, dt[, .SD := lapply(.SD, sum)], data.table(A = rep(sum(2, 10, 10, 15, 15, 15), 6L), B = rep(sum(12, 30, 30, 30, 30, 30), 6L), C = rep(sum(11L, 25L, 25L, 45L, 45L, 45L), 6L)))
-test(2131.3, dt[, .SD := NULL, .SDcols = cols], data.table(C = rep(sum(11L, 25L, 25L, 45L, 45L, 45L), 6L)))
+test(2132.20, dt[, .SD := lapply(.SD, sum)], data.table(A = rep(sum(2, 10, 10, 15, 15, 15), 6L), B = rep(sum(12, 30, 30, 30, 30, 30), 6L), C = rep(sum(11L, 25L, 25L, 45L, 45L, 45L), 6L)))
+test(2132.30, dt[, .SD := NULL, .SDcols = cols], data.table(C = rep(sum(11L, 25L, 25L, 45L, 45L, 45L), 6L)))
 
 dt = data.table(iris)
 keep = c('Species', 'Sepal.Width')
 
-test(2131.4, dt[, .SD := NULL, .SDcols = !keep], data.table(iris[, c('Sepal.Width', 'Species')]))
+test(2132.40, dt[, .SD := NULL, .SDcols = !keep], data.table(iris[, c('Sepal.Width', 'Species')]))
 
 dt = data.table(iris)
-test(2131.5, dt[, setdiff(names(.SD), keep) := NULL], data.table(iris[, c('Sepal.Width', 'Species')]))
+test(2132.50, dt[, setdiff(names(.SD), keep) := NULL], data.table(iris[, c('Sepal.Width', 'Species')]))
 
 dt = data.table(iris)
-test(2131.6, dt[, .SD := NULL, .SDcols = !keep], data.table(iris[, c('Sepal.Width', 'Species')]))
+test(2132.60, dt[, .SD := NULL, .SDcols = !keep], data.table(iris[, c('Sepal.Width', 'Species')]))
 
 dt = data.table(iris)
 cols = c('Sepal.Length', 'Sepal.Width', 'Petal.Length', 'Petal.Width')
-test(2131.7, dt[, paste(names(.SD), 'max', sep = '_') := lapply(.SD, max), by = Species, .SDcols = is.numeric],data.table(iris)[, paste(cols, 'max', sep = '_') := lapply(.SD, max), by = Species, .SDcols = cols])
+test(2132.70, dt[, paste(names(.SD), 'max', sep = '_') := lapply(.SD, max), by = Species, .SDcols = is.numeric],data.table(iris)[, paste(cols, 'max', sep = '_') := lapply(.SD, max), by = Species, .SDcols = cols])
