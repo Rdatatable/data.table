@@ -510,7 +510,7 @@ void pushBuffer(ThreadLocalFreadParsingContext *ctx)
   // While the string columns are happening other threads before me can be copying their non-string buffers to the
   // final DT and other threads after me can be filling their buffers too.
   // rowSize is passed in because it will be different (much smaller) on the reread covering any type exception columns
-  // locals passed in on stack so openmp knows that no synchonization is required
+  // locals passed in on stack so openmp knows that no synchronization is required
 
   // the byte position of this column in the first row of the row-major buffer
   if (nStringCols) {
@@ -561,29 +561,29 @@ void pushBuffer(ThreadLocalFreadParsingContext *ctx)
     resj++;
     if (type[j]!=CT_STRING && type[j]>0) {
       if (thisSize == 8) {
-        char *dest = (char *)DATAPTR(VECTOR_ELT(DT, resj)) + DTi*8;
-        char *src8 = (char*)buff8 + off8;
-        for (int i=0; i<nRows; i++) {
-          memcpy(dest, src8, 8);
+        double *dest = (double *)REAL(VECTOR_ELT(DT, resj)) + DTi;
+        const char *src8 = (char*)buff8 + off8;
+        for (int i=0; i<nRows; ++i) {
+          *dest = *(double *)src8;
           src8 += rowSize8;
-          dest += 8;
+          dest++;
         }
       } else
       if (thisSize == 4) {
-        char *dest = (char *)DATAPTR(VECTOR_ELT(DT, resj)) + DTi*4;
-        char *src4 = (char*)buff4 + off4;
+        int *dest = (int *)INTEGER(VECTOR_ELT(DT, resj)) + DTi;
+        const char *src4 = (char*)buff4 + off4;
         // debug line for #3369 ... if (DTi>2638000) printf("freadR.c:460: thisSize==4, resj=%d, %"PRIu64", %d, %d, j=%d, done=%d\n", resj, (uint64_t)DTi, off4, rowSize4, j, done);
-        for (int i=0; i<nRows; i++) {
-          memcpy(dest, src4, 4);
+        for (int i=0; i<nRows; ++i) {
+          *dest = *(int *)src4;
           src4 += rowSize4;
-          dest += 4;
+          dest++;
         }
       } else
       if (thisSize == 1) {
         if (type[j] > CT_BOOL8_L) STOP(_("Field size is 1 but the field is of type %d\n"), type[j]);
-        Rboolean *dest = (Rboolean *)((char *)DATAPTR(VECTOR_ELT(DT, resj)) + DTi*sizeof(Rboolean));
-        char *src1 = (char*)buff1 + off1;
-        for (int i=0; i<nRows; i++) {
+        Rboolean *dest = (Rboolean *)LOGICAL(VECTOR_ELT(DT, resj)) + DTi;
+        const char *src1 = (char*)buff1 + off1;
+        for (int i=0; i<nRows; ++i) {
           int8_t v = *(int8_t *)src1;
           *dest = (v==INT8_MIN ? NA_INTEGER : v);
           src1 += rowSize1;
