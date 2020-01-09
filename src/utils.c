@@ -134,6 +134,28 @@ SEXP colnamesInt(SEXP x, SEXP cols, SEXP check_dups) {
   return ricols;
 }
 
+/* replace_dot_alias
+ * we don't just simply alias .=list because i) list is a primitive (faster to iterate) and ii) we test for use
+ * of "list" in several places so it saves having to remember to write "." || "list" in those places
+ * replace_dot_aliasR wrapper should be used to prevent update of input
+ */
+SEXP replace_dot_alias(SEXP x) {
+  if (isLanguage(x) && !isFunction(CAR(x))) {
+    if (CAR(x) == sym_bquote) // handling `.` inside bquote, #1912
+      return x;
+    if (CAR(x) == sym_dot)
+      SETCAR(x, sym_list);
+    for (SEXP t=x; t!=R_NilValue; t=CDR(t)) {
+      if (!isNull(CADR(t)))
+        SETCADR(t, replace_dot_alias(CADR(t)));
+    }
+  }
+  return x;
+}
+SEXP replace_dot_aliasR(SEXP x) {
+  return replace_dot_alias(duplicate(x));
+}
+
 void coerceFill(SEXP fill, double *dfill, int32_t *ifill, int64_t *i64fill) {
   if (xlength(fill) != 1) error(_("%s: fill argument must be length 1"), __func__);
   if (isInteger(fill)) {

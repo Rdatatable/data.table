@@ -91,6 +91,9 @@ extern SEXP sym_verbose;
 extern SEXP SelfRefSymbol;
 extern SEXP sym_inherits;
 extern SEXP sym_datatable_locked;
+extern SEXP sym_dot;
+extern SEXP sym_list;
+extern SEXP sym_bquote;
 extern double NA_INT64_D;
 extern long long NA_INT64_LL;
 extern Rcomplex NA_CPLX;  // initialized in init.c; see there for comments
@@ -218,6 +221,7 @@ bool isRealReallyInt(SEXP x);
 SEXP isReallyReal(SEXP x);
 bool allNA(SEXP x, bool errorForBadType);
 SEXP colnamesInt(SEXP x, SEXP cols, SEXP check_dups);
+SEXP replace_dot_aliasR(SEXP x);
 void coerceFill(SEXP fill, double *dfill, int32_t *ifill, int64_t *i64fill);
 SEXP coerceFillR(SEXP fill);
 bool INHERITS(SEXP x, SEXP char_);

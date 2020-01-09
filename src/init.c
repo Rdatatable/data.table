@@ -30,6 +30,9 @@ SEXP sym_verbose;
 SEXP SelfRefSymbol;
 SEXP sym_inherits;
 SEXP sym_datatable_locked;
+SEXP sym_dot;
+SEXP sym_list;
+SEXP sym_bquote;
 double NA_INT64_D;
 long long NA_INT64_LL;
 Rcomplex NA_CPLX;
@@ -211,6 +214,7 @@ R_CallMethodDef callMethods[] = {
 {"CfrollapplyR", (DL_FUNC) &frollapplyR, -1},
 {"CtestMsgR", (DL_FUNC) &testMsgR, -1},
 {"C_allNAR", (DL_FUNC) &allNAR, -1},
+{"Creplace_dot_aliasR", (DL_FUNC) &replace_dot_aliasR, -1},
 {NULL, NULL, 0}
 };
 
@@ -344,6 +348,9 @@ void attribute_visible R_init_datatable(DllInfo *info)
   SelfRefSymbol = install(".internal.selfref");
   sym_inherits = install("inherits");
   sym_datatable_locked = install(".data.table.locked");
+  sym_dot = install(".");
+  sym_list = install("list");
+  sym_bquote = install("bquote");
 
   initDTthreads();
   avoid_openmp_hang_within_fork();
