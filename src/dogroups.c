@@ -314,7 +314,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
           SET_STRING_ELT(dtnames, colj, STRING_ELT(newnames, colj-origncol));
           copyMostAttrib(RHS, target); // attributes of first group dominate; e.g. initial factor levels come from first group
         }
-        const char *warn = memrecycle(target, order, INTEGER(starts)[i]-1, grpn, RHS, 0, "");
+        const char *warn = memrecycle(target, order, INTEGER(starts)[i]-1, grpn, RHS, -1, 0, "");
         // can't error here because length mismatch already checked for all jval columns before starting to add any new columns
         if (warn)
           warning(_("Group %d column '%s': %s"), i+1, CHAR(STRING_ELT(dtnames, colj)), warn);
@@ -388,26 +388,11 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
         for (int j=0; j<length(ans); ++j) SET_VECTOR_ELT(ans, j, growVector(VECTOR_ELT(ans,j), estn));
       }
     }
-    // Now copy jval into ans ...
+    // write the group values to ans, recycled to match the nrow of the result for this group ...
     for (int j=0; j<ngrpcols; ++j) {
-      target = VECTOR_ELT(ans,j);
-      source = VECTOR_ELT(groups, INTEGER(grpcols)[j]-1);  // target and source the same type by construction above
-      int tsize = SIZEOF(target);
-      if (tsize==4) {
-        int *td = INTEGER(target);
-        int *sd = INTEGER(source);
-        for (int r=0; r<maxn; ++r) td[ansloc+r] = sd[igrp];  // TODO: replace this section with memrecycle; igrp source offset needs adding
-      } else if (tsize==8) {                                 //       would resolve past comment too: 'shouldn't need SET_* to age objects here since groups. revisit'
-        double *td = REAL(target);
-        double *sd = REAL(source);
-        for (int r=0; r<maxn; ++r) td[ansloc+r] = sd[igrp];
-      } else {
-        // #3634 -- CPLXSXP columns have size 16
-        Rcomplex *td = COMPLEX(target);
-        Rcomplex *sd = COMPLEX(source);
-        for (int r=0; r<maxn; ++r) td[ansloc+r] = sd[igrp];
-      }
+      memrecycle(VECTOR_ELT(ans,j), R_NilValue, ansloc, maxn, VECTOR_ELT(groups, INTEGER(grpcols)[j]-1), igrp, j+1, "Internal error recycling group values");
     }
+    // Now copy jval into ans ...
     for (int j=0; j<njval; ++j) {
       thisansloc = ansloc;
       source = VECTOR_ELT(jval,j);
@@ -428,7 +413,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
         if (thislen>1 && thislen!=maxn && grpn>0) {  // grpn>0 for grouping empty tables; test 1986
           error(_("Supplied %d items for column %d of group %d which has %d rows. The RHS length must either be 1 (single values are ok) or match the LHS length exactly. If you wish to 'recycle' the RHS please use rep() explicitly to make this intent clear to readers of your code."), thislen, j+1, i+1, maxn);
         }
-        memrecycle(target, R_NilValue, thisansloc, maxn, source, 0, "");
+        memrecycle(target, R_NilValue, thisansloc, maxn, source, -1, 0, "");
       }
     }
     ansloc += maxn;
