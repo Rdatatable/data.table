@@ -1027,14 +1027,14 @@ replace_dot_alias = function(e) {
           lhs = jsub[[2L]]
           jsub = jsub[[3L]]
           if (is.name(lhs)) {
-            if (deparse(lhs) == '.SD') lhs = sdvars else lhs = as.character(lhs)
+            if (lhs == as.name('.SD')) lhs = sdvars else lhs = as.character(lhs)
           } else {
-            # if (deparse(lhs) == 'names(.SD)') {
-              # lhs = sdvars
-            # } else {
-              # e.g. (MyVar):= or get("MyVar"):=
-              lhs = eval(lhs, parent.frame(), parent.frame())
-            # }
+            #i.e lhs is names(.SD) || setdiff(names(.SD), cols) || (cols)
+            if (lhs[[1]] == as.name('names') && lhs[[2]] == as.name('.SD')) lhs = sdvars
+            for (i in seq_along(lhs)[-1]){
+              if (lhs[[i]] == as.name('names(.SD)')) lhs[[i]] = sdvars
+            }
+            lhs = eval(lhs, parent.frame(), parent.frame())
           }
         } else {
           # `:=`(c2=1L,c3=2L,...)
