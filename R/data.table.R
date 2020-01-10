@@ -1967,7 +1967,7 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
   column_properties = function(X) {
     X.info = new.env()
     with(X.info, {
-      classes = sapply(X, class) # list if any column has > 1 class, vector otherwise
+      classes = lapply(X, class)
       uniq.class.list = unique(classes) # unique sets of classes found across all columns
       uniq.classes = sort(unique(uniq.class.list)) # vector of unique classes
       types = vapply_1c(X, typeof)
