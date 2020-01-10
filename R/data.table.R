@@ -1870,10 +1870,9 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
       stop("length(rownames)==0 but should be a single column name or number, or NULL")
     } else {
       if (isTRUE(rownames)) {
-        if (length(key(x))>1L) {
+        if (length(key(x))>1L)
           warning("rownames is TRUE but key has multiple columns ",
                   brackify(key(x)), "; taking first column x[,1] as rownames")
-        }
         rownames = if (length(key(x))==1L) chmatch(key(x),names(x)) else 1L
       }
       else if (is.logical(rownames) || is.na(rownames)) {
@@ -1897,16 +1896,14 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
       else rownames.value = x[[rownames]]
       
       # Check rownames column is appropriate dimension
-      if (length(dim(rownames.value)) > 1L) {
+      if (length(dim(rownames.value)) > 1L)
         stop("x[,", rownames, "] has multi-column type (such as a matrix column)",
              " and cannot be used as rownames: dim(x[,", rownames, "])==", 
              brackify(dim(rownames.value)))
-      }
       # Warn if list column:
-      if (is.list(rownames.value)) {
+      if (is.list(rownames.value))
         warning("x[,", rownames, "] is a list column, which will be coerced to a",
                 " character vector when used as rownames")
-      }
     }
   } else if (!is.null(rownames.value)) {
     if (length(rownames.value)!=nrow(x))
