@@ -1030,11 +1030,13 @@ replace_dot_alias = function(e) {
             if (lhs == as.name('.SD')) lhs = sdvars else lhs = as.character(lhs)
           } else {
             #i.e lhs is names(.SD) || setdiff(names(.SD), cols) || (cols)
-            if (lhs[[1]] == as.name('names') && lhs[[2]] == as.name('.SD')) lhs = sdvars
-            for (i in seq_along(lhs)[-1]){
-              if (lhs[[i]] == as.name('names(.SD)')) lhs[[i]] = sdvars
+            replace_names_sd = function(e){
+              if (length(e) == 1L) return(e)
+              if (e[[1L]] == as.name('names') && e[[2L]] == as.name('.SD')) return(sdvars)
+              for (i in seq_along(e)[-1L]) if (!is.null(e[[i]])) e[[i]] = replace_names_sd(e[[i]])
+              e
             }
-            lhs = eval(lhs, parent.frame(), parent.frame())
+            lhs = eval(replace_names_sd(lhs), parent.frame(), parent.frame())
           }
         } else {
           # `:=`(c2=1L,c3=2L,...)
