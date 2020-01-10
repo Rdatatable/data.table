@@ -16752,14 +16752,12 @@ test(2133.4, dt[1L, names(.SD) := lapply(.SD, '+', 2L)], data.table(a = as.integ
 test(2133.5, dt[, setdiff(names(.SD), 'a') := NULL], data.table(a = as.integer(c(4, 2:4 * 2))))
 test(2133.6, dt[, c(names(.SD)) := NULL], null.data.table())
 
-dt = data.table(iris)
-keep = c('Species', 'Sepal.Width')
-test(2133.7, dt[, names(.SD) := lapply(.SD, max), by = Species], data.table(iris)[, names(iris)[-5] := lapply(.SD, max), by = Species])
+dt = data.table(a = 1:4, b = 5:8, grp = c('a', 'a', 'b', 'c'))
+test(2133.7, dt[, names(.SD) := lapply(.SD, max), by = grp], data.table(a = c(2L, 2L, 3L, 4L), b = c(6L, 6L, 7L, 8L), grp = c('a', 'a', 'b', 'c')))
 
-dt = data.table(iris)
-keep = c('Species', 'Sepal.Width')
-test(2133.8, dt[, .SD := NULL, .SDcols = !keep], data.table(iris[names(iris) %in% keep]))
+dt = data.table(a = 1:4, b = 5:8, grp = c('a', 'a', 'b', 'c'))
+keep = c('a', 'b')
+test(2133.8, dt[, .SD := NULL, .SDcols = !keep], data.table(a = 1:4, b = 5:8))
 
-dt = data.table(iris)
-cols = c('Sepal.Length', 'Sepal.Width', 'Petal.Length', 'Petal.Width')
-test(2133.9, dt[, paste(names(.SD), 'max', sep = '_') := lapply(.SD, max), by = Species] , data.table(iris)[, paste(cols, 'max', sep = '_') := lapply(.SD, max), by = Species])
+dt = data.table(a = 1:4, b = 5:8, grp = c('a', 'a', 'b', 'c'))
+test(2133.9, dt[, paste(names(.SD), 'max', sep = '_') := lapply(.SD, max), by = grp] , data.table(a = 1:4, b = 5:8, grp = c('a', 'a', 'b', 'c'))[, paste(c('a','b'), 'max', sep = '_') := lapply(.SD, max), by = grp])
