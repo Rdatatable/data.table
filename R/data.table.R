@@ -1891,15 +1891,17 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
       }
     }
     if (!is.null(rownames)) {
-      # Extract the rownames column, bringing it into memory if ff object
-      if (is.ff(x[[rownames]])) rownames.value = x[[rownames]][] # nocov
-      else rownames.value = x[[rownames]]
-      
+      # Extract the rownames column
+      rownames.value = x[[rownames]]
+      # bring it into memory if ff object
+      if (is.ff(rownames.value)) rownames.value = rownames.value[] # nocov
+
       # Check rownames column is appropriate dimension
       if (length(dim(rownames.value)) > 1L)
         stop("x[,", rownames, "] has multi-column type (such as a matrix column)",
              " and cannot be used as rownames: dim(x[,", rownames, "])==", 
              brackify(dim(rownames.value)))
+      
       # Warn if list column:
       if (is.list(rownames.value))
         warning("x[,", rownames, "] is a list column, which will be coerced to a",
@@ -1940,12 +1942,7 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
   # Get matrix meta-data
   cn = names(X)
   p = length(cn)
-  if (p == 0L) {
-    n = 0L
-  } else {
-    n = length(X[[1L]])
-  }
-    
+  n = if(p == 0L) 0L else length(X[[1L]])
 
   # The maximum dimension size (row or column) for a matrix is 2^31-1 (or the Machine maximum integer)
   # Check and error before doing computation/memory expensive column checks and coercion
