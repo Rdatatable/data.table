@@ -5,7 +5,7 @@
 
 SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEXP xjiscols, SEXP grporder, SEXP order, SEXP starts, SEXP lens, SEXP jexp, SEXP env, SEXP lhs, SEXP newnames, SEXP on, SEXP verbose)
 {
-  R_len_t rownum, ngrp, nrowgroups, njval=0, ngrpcols, ansloc=0, maxn, estn=-1, thisansloc, grpn, thislen, igrp, origIlen=0, origSDnrow=0;
+  R_len_t ngrp, nrowgroups, njval=0, ngrpcols, ansloc=0, maxn, estn=-1, thisansloc, grpn, thislen, igrp, origIlen=0, origSDnrow=0;
   int nprotect=0;
   SEXP ans=NULL, jval, thiscol, BY, N, I, GRP, iSD, xSD, rownames, s, RHS, target, source;
   Rboolean wasvector, firstalloc=FALSE, NullWarnDone=FALSE;
@@ -189,7 +189,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
       SETLENGTH(I, grpn);
       int *iI = INTEGER(I);
       if (LENGTH(order)==0) {
-        if (grpn) rownum = istarts[i]-1; else rownum = -1;  // not ternary to pass strict-barrier
+        const int rownum = grpn ? istarts[i]-1 : -1;
         for (int j=0; j<grpn; ++j) iI[j] = rownum+j+1;
         if (rownum>=0) {
           for (int j=0; j<length(SDall); ++j) {
@@ -208,7 +208,10 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
         }
         if (LOGICAL(verbose)[0]) { tblock[0] += clock()-tstart; nblock[0]++; }
       } else {
-        // Fairly happy with this block. No need for SET_* here. See comment above.
+        // No need for SET_* here because the target (SDall) is i) a temporary internal pointing to already-protected source items,
+        // and ii) all items would be immediately decremented after this group is finished anyway.
+        // The SET_ calls do happen, but just where neeed; i.e. after jval is performed and the result assigned to ans.
+        // If we did SET_ here, it would incur unnecessary overhead as this is highly iterated.
         for (int k=0; k<grpn; ++k) iI[k] = iorder[ istarts[i]-1 + k ];
         for (int j=0; j<length(SDall); ++j) {
           size_t size = SIZEOF(VECTOR_ELT(SDall,j));
@@ -218,23 +221,19 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
             int *td = INTEGER(target);
             const int *sd = INTEGER(source);
             for (int k=0; k<grpn; ++k) {
-              rownum = iI[k]-1;
-              td[k] = sd[rownum];  // on 32bit copies pointers too
+              td[k] = sd[iI[k]-1];  // on 32bit copies pointers too
             }
           } else if (size==8) {
             double *td = REAL(target);
             const double *sd = REAL(source);
             for (int k=0; k<grpn; ++k) {
-              rownum = iI[k]-1;
-              td[k] = sd[rownum];  // on 64bit copies pointers too
+              td[k] = sd[iI[k]-1];  // on 64bit copies pointers too
             }
-          } else { // size 16
-            // #3634 -- CPLXSXP columns have size 16
+          } else { // size==16
             Rcomplex *td = COMPLEX(target);
             const Rcomplex *sd = COMPLEX(source);
             for (int k=0; k<grpn; ++k) {
-              rownum = iI[k]-1;
-              td[k] = sd[rownum];
+              td[k] = sd[iI[k]-1];
             }
           }
         }
