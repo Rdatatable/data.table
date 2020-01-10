@@ -1874,28 +1874,27 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
           warning("rownames is TRUE but key has multiple columns ",
                   brackify(key(x)), "; taking first column x[,1] as rownames")
         }
-        rownames.index = if (length(key(x))==1L) chmatch(key(x),names(x)) else 1L
+        rownames = if (length(key(x))==1L) chmatch(key(x),names(x)) else 1L
       }
       else if (is.logical(rownames) || is.na(rownames)) {
         # FALSE, NA, NA_character_ all mean the same as NULL
         rownames = NULL
       }
       else if (is.character(rownames)) {
-        rownames.index = chmatch(rownames, names(x))
-        if (is.na(rownames.index)) stop("'", rownames, "' is not a column of x")
-        rownames = paste0("'", rownames, "'") # for use in later error messages if needed
+        w = chmatch(rownames, names(x))
+        if (is.na(w)) stop("'", rownames, "' is not a column of x")
       }
       else { # rownames is a column number already
-        rownames.index = as.integer(rownames)
-        if (is.na(rownames.index) || rownames.index<1L || rownames.index>ncol(x))
+        rownames = as.integer(rownames)
+        if (is.na(rownames) || rownames<1L || rownames>ncol(x))
           stop("as.integer(rownames)==", rownames,
                " which is outside the column number range [1,ncol=", ncol(x), "].")
       }
     }
     if (!is.null(rownames)) {
       # Extract the rownames column, bringing it into memory if ff object
-      if (is.ff(x[[rownames.index]])) rownames.value = x[[rownames.index]][] # nocov
-      else rownames.value = x[[rownames.index]]
+      if (is.ff(x[[rownames]])) rownames.value = x[[rownames]][] # nocov
+      else rownames.value = x[[rownames]]
       
       # Check rownames column is appropriate dimension
       if (length(dim(rownames.value)) > 1L) {
@@ -1925,7 +1924,7 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
   
   # Drop the rownames column, if used
   if (!is.null(rownames))
-    X[[rownames.index]] = NULL
+    X[[rownames]] = NULL
   
   # Check and fix the data.table if it is malformed - i.e. contains NULL
   # columns, wide columns, or columns whose length != .N. For NULL columns
