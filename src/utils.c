@@ -81,7 +81,7 @@ SEXP allNAR(SEXP x) {
 
 /* colnamesInt
  * for provided data.table (or a list-like) and a subset of its columns, it returns integer positions of those columns in DT
- * handle columns input as: integer, double, character and NULL (handled as seq_along(x))
+ * handle columns input as: integer, double, character, logical and NULL (handled as seq_along(x))
  * adds validation for:
  *   correct range [1,ncol], and if type real checks whole integer
  *   existing columns for character
@@ -100,7 +100,7 @@ SEXP colnamesInt(SEXP x, SEXP cols, SEXP check_dups) {
     ricols = PROTECT(allocVector(INTSXP, nx)); protecti++;
     int *icols = INTEGER(ricols);
     for (int i=0; i<nx; i++) icols[i] = i+1;
-  } else if (length(cols)==0) { // integer(0)
+  } else if (length(cols)==0 && !isLogical(cols)) { // integer(0)
     ricols = PROTECT(allocVector(INTSXP, 0)); protecti++;
   } else if (isInteger(cols) || isReal(cols)) {
     if (isInteger(cols)) {
@@ -125,8 +125,22 @@ SEXP colnamesInt(SEXP x, SEXP cols, SEXP check_dups) {
       if (icols[i]==0)
         error(_("argument specifying columns specify non existing column(s): cols[%d]='%s'"), i+1, CHAR(STRING_ELT(cols, i))); // handles NAs also
     }
+  } else if (isLogical(cols)) {
+    if (nc != nx)
+      error(_("argument specifying columns is logical and has different length than number of columns in a table"));
+    int *lcols = LOGICAL(cols);
+    ricols = PROTECT(allocVector(INTSXP, nc)); protecti++;
+    int *icols = LOGICAL(ricols);
+    int ntrue = 0;
+    for (int i=0; i<nc; i++) {
+      if (lcols[i]==NA_LOGICAL)
+        error(_("argument specifying columns is logical and has NAs"));
+      else if (lcols[i])
+        icols[ntrue++] = i+1;
+    }
+    SETLENGTH(ricols, ntrue);
   } else {
-    error(_("argument specifying columns must be character or numeric"));
+    error(_("argument specifying columns must be character, numeric or logical"));
   }
   if (LOGICAL(check_dups)[0] && any_duplicated(ricols, FALSE))
     error(_("argument specifying columns specify duplicated column(s)"));
