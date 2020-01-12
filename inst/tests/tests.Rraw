@@ -483,10 +483,16 @@ test(171.2, DT[B=="b"][A==85,C], numeric())
 test(171.3, DT[ , data.table( A, C )[ A==25, C ] + data.table( A, C )[ A==85, C ], by=B ], data.table(B=c("a","c"),V1=c(67,905)))
 test(172, DT[ , list(3,data.table( A, C )[ A==25, C ] + data.table( A, C )[ A==85, C ]), by=B ], data.table(B=c("a","b","c"),V1=3,V2=c(67,NA,905)))
 
-# Test growing result in memory. Usually the guess is good though.
-# This example returns no rows for first group so guess for up-front allocate needs a reallocate
+# Test growing result in memory (growVector). Usually the guess is good though.
 DT = data.table(A=c(1L,1L,2L,2L,3L,3L), B=1:6)
-test(173, DT[,B[B>3],by=A][,V1], c(4L,5L,6L))
+# no rows for first group so guess for up-front allocate needs a reallocate ...
+test(173.1, DT[,B[B>3],by=A][,V1], c(4L,5L,6L))
+# cover raw type with the 3rd group result being unexpectedly larger ...
+test(173.2, DT[, if(.GRP==3) as.raw(3:5) else as.raw(.GRP), by=A],
+            data.table(A=INT(1,2,3,3,3), V1=as.raw(1:5)))
+# 2nd group returns more than the number of the rows in that group, and cover list type too ...
+test(173.3, DT[, .(if(.GRP==2) list(3:5, "b", 0:1, mean) else list("a",1:2)), by=A],
+            data.table(A=INT(1,1,2,2,2,2,3,3), V1=list("a",1:2,3:5,"b",0:1,mean,"a",1:2)))
 
 # Example taken from Harish post to datatable-help on 11 July
 DT <- data.table(
