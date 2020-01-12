@@ -2042,7 +2042,7 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
     target.class = NULL
     if (!requireNamespace("bit64", quietly=TRUE)) 
        stop("coercion to or from integer64 columns requires the bit64 package") # nocov
-    if (all(X.info$uniq.classes %chin% c("integer64", "logical", "integer")))
+    if (all(X.info$uniq.classes %chin% c("integer64", "logical", "integer", "raw")))
       target.class = "integer64"
     else if (all(X.info$uniq.classes %chin% c("integer64", "numeric", "complex", "character")))
       target.class = "character" # integer64 cannot reliably be converted to numeric or complex
@@ -2057,10 +2057,10 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
                "integer64"={ X[[j]] = bit64::as.integer64(X[[j]]) },
                "character"={ X[[j]] = as.character(X[[j]]) })
       }
+      
+      # redetermine classes and types
+      X.info = column_properties(X)
     }
-    
-    # redetermine classes and types
-    X.info = column_properties(X)
   }
   
   # If columns still do not all have the same type we need to coerce
