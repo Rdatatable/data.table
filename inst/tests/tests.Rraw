@@ -16788,7 +16788,7 @@ mat = matrix(letters[1:4], ncol=2, dimnames=list(NULL, c("A", "B")))
 DT = data.table(A=as.factor(c("a", "b")), B=as.factor(c("c", "d")))
 test(2136.1, as.matrix(DT), mat)
 
-mat = matrix(paste0(0, 1:4), ncol=2, dimnames=list(NULL, c("A", "B")))
+mat = matrix(as.raw(1:4), ncol=2, dimnames=list(NULL, c("A", "B")))
 DT = data.table(A=as.raw(1:2), B=as.raw(3:4))
 test(2136.2, as.matrix(DT), mat)
 

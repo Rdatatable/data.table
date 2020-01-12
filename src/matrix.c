@@ -54,6 +54,44 @@ SEXP asmatrix_logical(SEXP dt, R_xlen_t matlen, R_xlen_t n) {
   return mat;
 }
 
+SEXP asmatrix_raw(SEXP dt, R_xlen_t matlen, R_xlen_t n) {
+  // Create output matrix, allocate memory, and create a pointer to it.
+  SEXP mat = PROTECT(allocVector(RAWSXP, matlen));
+  Rbyte *pmat; 
+  pmat = RAW(mat);
+  
+  // Create an array of pointers for the individual columns in DT 
+  R_len_t dtncol = length(dt);
+  Rbyte **pcol;
+  pcol = (Rbyte **) R_alloc(dtncol, sizeof(Rbyte *));
+  for (R_len_t jj = 0; jj < dtncol; jj++) {
+    pcol[jj] = RAW(VECTOR_ELT(dt, jj));
+  }
+  
+  // Set up parallel OMP chunk
+  R_len_t chunksize = dtncol/getDTthreads() + 1; 
+  #pragma omp parallel num_threads(getDTthreads())
+  { 
+    // Determine which columns in DT we're iterating through on this thread
+    int threadnum = omp_get_thread_num();
+    R_len_t startcol = threadnum * chunksize;
+    R_len_t endcol = startcol + chunksize - 1;
+    if (endcol >= dtncol) 
+      endcol = dtncol - 1;
+    
+    // Determine where to fill in the matrix vector
+    R_xlen_t vecIdx = startcol * n;
+    
+    // Iterate through columns in DT, copying the contents to the matrix column
+    for (R_len_t jj = startcol; jj <= endcol; jj++) {
+      memcpy(pmat + vecIdx, pcol[jj], sizeof(Rbyte)*n);
+      vecIdx += n;
+    }
+  }
+
+return mat;
+}
+
 SEXP asmatrix_integer(SEXP dt, R_xlen_t matlen, R_xlen_t n) {
   // Create output matrix, allocate memory, and create a pointer to it.
   SEXP mat = PROTECT(allocVector(INTSXP, matlen));
@@ -232,6 +270,9 @@ SEXP asmatrix(SEXP dt) {
   // Copy values from dt into the matrix mat using appropriately typed function
   SEXP mat;
   switch(R_atomic_type) {
+    case RAWSXP:
+      mat = asmatrix_raw(dt, matlen, n);
+      break;
     case LGLSXP: 
       mat = asmatrix_logical(dt, matlen, n);
       break;

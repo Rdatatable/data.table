@@ -2021,7 +2021,7 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
   }
   
   # Classes to be converted to character vectors
-  charconvert.classes = c("Date", "POSIXct", "POSIXlt", "raw")
+  charconvert.classes = c("Date", "POSIXct", "POSIXlt")
   any.charconvert = any(charconvert.classes %chin% X.info$uniq.classes)
   if (any.charconvert) {
     which.charconvert = which(sapply(X.info$classes, function(cl_vec) { any(charconvert.classes %chin% cl_vec) }))
@@ -2065,7 +2065,7 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
   
   # If columns still do not all have the same type we need to coerce
   if (length(X.info$uniq.types) > 1L) { 
-    type.order = c("logical"=1L, "raw"=2L, "integer"=3L, "double"=4L, 
+    type.order = c("raw"=1L, "logical"=2L, "integer"=3L, "double"=4L, 
                    "complex"=5L, "character"=6L, "list"=7L)
     target.type = names(which.max(type.order[X.info$uniq.types]))
     which.convert = which(sapply(X.info$types, function(tp_vec) { !any(target.type %chin% tp_vec) }))
@@ -2073,8 +2073,8 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
     # Coerce the columns
     for (j in which.convert) {
       switch(target.type,
-             # logical impossible to reach - no type coercion necessary if all columns are logical
-             # raw is not possible to reach as they are converted to character columns to match as.matrix.data.frame
+             # raw impossible to reach - no coercion necessary if all columns are logical
+             "logical"={ X[[j]] = as.logical() },
              "integer"={ X[[j]] = as.integer(X[[j]]) },
              "double"={ X[[j]] = as.double(X[[j]]) },
              "complex"={ X[[j]] = as.complex(X[[j]]) },
