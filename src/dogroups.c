@@ -138,13 +138,14 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
     if (istarts[i] == NA_INTEGER || (LENGTH(order) && iorder[ istarts[i]-1 ]==NA_INTEGER)) {
       for (int j=0; j<length(SDall); ++j) {
         writeNA(VECTOR_ELT(SDall, j), 0, 1);
-        // writeNA uses SET_ for STR and VEC. Which is why we now use SET_ to assign to SDall always too. Otherwise,
+        // writeNA uses SET_ for STR and VEC, and we always use SET_ to assign to SDall always too. Otherwise,
         // this writeNA could decrement the reference for the old value which wasn't incremented in the first place.
         // Further, the eval(jval) could feasibly assign to SD although that is currently caught and disallowed. If that
         // became possible, that assign from user's j expression would decrement the reference which wasn't incremented
         // in the first place. And finally, upon release of SD, values will be decremented, where they weren't incremented
         // in the first place. All in all, too risky to write behind the barrier in this section.
-        // Or in the words, this entire section, and this entire dogroups.c file, is now write-barrier compliant from v1.12.10.
+        // Or in the words, this entire section, and this entire dogroups.c file, is now write-barrier compliant from v1.12.10
+        // and we hope that reference counting on by default from R 4.0 will avoid costly gc()s.
       }
       grpn = 1;  // it may not be 1 e.g. test 722. TODO: revisit.
       SETLENGTH(I, grpn);
@@ -167,24 +168,10 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
         }
         if (LOGICAL(verbose)[0]) { tblock[0] += clock()-tstart; nblock[0]++; }
       } else {
-        // No need for SET_* here because the target (SDall) is i) a temporary internal pointing to already-protected source items,
-        // and ii) all items would be immediately decremented after this group is finished anyway.
-        // The SET_ calls do happen, but just where needed; i.e. after jval is performed and the result assigned to ans.
-        // If we did SET_ here, it would incur unnecessary overhead as this is highly iterated.
         for (int k=0; k<grpn; ++k) iI[k] = iorder[ istarts[i]-1 + k ];
-        const int *iIc = iI;  // now that iI is written, potentially help the optimizer in the deep loop in the switch(size) below
         for (int j=0; j<length(SDall); ++j) {
-          const size_t size = SIZEOF(VECTOR_ELT(SDall,j));
-          char *td = (char *)DATAPTR_RO(VECTOR_ELT(SDall,j));
-          const char *sd = DATAPTR_RO(VECTOR_ELT(dt,INTEGER(dtcols)[j]-1));
-          switch(size) {
-          // a looped call to memcpy with non-const size might not be optimized (depending on compiler and
-          // options), so just do a few cases to avoid potential memcpy call overhead
-          case  4: for (int k=0; k<grpn; ++k) (   (int *)td)[k] = (   (const int *)sd)[iIc[k]-1]; break;
-          case  8: for (int k=0; k<grpn; ++k) ((double *)td)[k] = ((const double *)sd)[iIc[k]-1]; break;
-          case 16: for (int k=0; k<grpn; ++k) memcpy(td + k*size, sd + (iIc[k]-1)*size, 16); break;
-          default: error(_("Internal error: unexpected size %d in dogroups"), (int)size);
-          }
+          // this is the main non-contiguous gather, and is parallel (within-column) for non-SEXP
+          subsetVectorRaw(VECTOR_ELT(SDall,j), VECTOR_ELT(dt,INTEGER(dtcols)[j]-1), I, /*anyNA=*/false);
         }
         if (LOGICAL(verbose)[0]) { tblock[1] += clock()-tstart; nblock[1]++; }
         // The two blocks have separate timing statements to make sure which is running

@@ -1,7 +1,7 @@
 #include "data.table.h"
 
-static void subsetVectorRaw(SEXP ans, SEXP source, SEXP idx, const bool anyNA)
-// Only for use by subsetDT() or subsetVector() below, hence static
+void subsetVectorRaw(SEXP ans, SEXP source, SEXP idx, const bool anyNA)
+// Used here by subsetDT() and by dogroups.c
 {
   const int n = length(idx);
   if (length(ans)!=n) error(_("Internal error: subsetVectorRaw length(ans)==%d n=%d"), length(ans), n);

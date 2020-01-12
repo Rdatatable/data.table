@@ -129,6 +129,7 @@ int getNumericRounding_C();
 SEXP reorder(SEXP x, SEXP order);
 
 // subset.c
+void subsetVectorRaw(SEXP ans, SEXP source, SEXP idx, const bool anyNA);
 SEXP subsetVector(SEXP x, SEXP idx);
 
 // fcast.c
