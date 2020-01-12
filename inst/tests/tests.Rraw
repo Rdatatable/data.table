@@ -16804,6 +16804,10 @@ mat = matrix(c(1, 2, 0.1, 0.2, TRUE, FALSE, complex(1:2, 1:2)), ncol=4, dimnames
 DT = data.table(A=1:2, B=c(0.1, 0.2), C=c(TRUE, FALSE), D=complex(1:2, 1:2))
 test(2136.5, as.matrix(DT), mat)
 
+mat = matrix(c(TRUE, FALSE, FALSE, TRUE), ncol=2, dimnames=list(NULL, c("A", "B")))
+DT = data.table(A=c(TRUE,FALSE), B=as.raw(0:1))
+test(2136.6, as.matrix(DT), mat)
+
 ## Tests for complex column types not captured by standard tests. These are things that would usually only
 ## be possible through incorrect construction of data.tables, e.g. NULL columns, environments, expressions, etc.
 DT = structure(list(A=NULL, B=1:2, C=NULL, D=3:4, E=NULL), class=c("data.table", "data.frame"))
