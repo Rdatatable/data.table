@@ -66,6 +66,7 @@ typedef R_xlen_t RLEN;
 #endif
 
 #define SEXPPTR_RO(x) ((const SEXP *)DATAPTR_RO(x))
+// for convenient [] since DATAPTR_RO is untyped (const void *) and we wish to avoid overhead of looped STRING_ELT and VECTOR_ELT
 
 // init.c
 extern SEXP char_integer64;
@@ -157,7 +158,7 @@ SEXP dt_na(SEXP x, SEXP cols);
 
 // assign.c
 SEXP alloccol(SEXP dt, R_len_t n, Rboolean verbose);
-const char *memrecycle(const SEXP target, const SEXP where, const int r, const int len, SEXP source, const int sourceItem, const int coln, const char *colname);
+const char *memrecycle(const SEXP target, const SEXP where, const int r, const int len, SEXP source, const int sourceStart, const int sourceLen, const int coln, const char *colname);
 SEXP shallowwrapper(SEXP dt, SEXP cols);
 
 SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols,

@@ -502,7 +502,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
     } else {                 // existing column
       targetcol = VECTOR_ELT(dt,coln);
     }
-    const char *ret = memrecycle(targetcol, rows, 0, targetlen, thisvalue, -1, coln+1, CHAR(STRING_ELT(names, coln)));
+    const char *ret = memrecycle(targetcol, rows, 0, targetlen, thisvalue, 0, -1, coln+1, CHAR(STRING_ELT(names, coln)));
     if (ret) warning(ret);
   }
 
@@ -668,19 +668,22 @@ static bool anyNamed(SEXP x) {
 #define MSGSIZE 1000
 static char memrecycle_message[MSGSIZE+1]; // returned to rbindlist so it can prefix with which one of the list of data.table-like objects
 
-const char *memrecycle(const SEXP target, const SEXP where, const int start, const int len, SEXP source, const int sourceItem, const int colnum, const char *colname)
+const char *memrecycle(const SEXP target, const SEXP where, const int start, const int len, SEXP source, const int sourceStart, const int sourceLen, const int colnum, const char *colname)
 // like memcpy but recycles single-item source
 // 'where' a 1-based INTEGER vector subset of target to assign to, or NULL or integer()
 // assigns to target[start:start+len-1] or target[where[start:start+len-1]] where start is 0-based
-// if sourceStart==-1 then all of source is used (if it is 1 item then it is recycled, or its length must match),
-//   otherwise sourceStart>=0 is the single item from source to recycle (used in dogroups to recycle the group values)
+// if sourceLen==-1 then all of source is used (if it is 1 item then it is recycled, or its length must match) for convenience to avoid
+//   having to use length(source) (repeating source expression) in each call
+// sourceLen==1 is used in dogroups to recycle the group values into ans to match the nrow of each group's result; sourceStart is set to each group value row.
 {
   if (len<1) return NULL;
-  if (length(source)==0) return NULL;
-  if (sourceItem>=0 && sourceItem>=length(source))
-    error(_("Internal error: sourceItem=%d length(source)=%d"), sourceItem, length(source)); // # nocov
-  const int soff = sourceItem>=0 ? sourceItem : 0;
-  const int slen = sourceItem>=0 ? 1 : length(source);
+  const int slen = sourceLen>=0 ? sourceLen : length(source);
+  if (slen==0) return NULL;
+  if (sourceStart<0 || sourceStart+slen>length(source))
+    error(_("Internal error memrecycle: sourceStart=%d sourceLen=%d length(source)=%d"), sourceStart, sourceLen, length(source)); // # nocov
+  if (!length(where) && start+len>length(target))
+    error(_("Internal error memrecycle: start=%d len=%d length(target)=%d"), start, len, length(target)); // # nocov
+  const int soff = sourceStart;
   if (slen>1 && slen!=len && (!isNewList(target) || isNewList(source)))
     error(_("Internal error: recycle length error not caught earlier. slen=%d len=%d"), slen, len); // # nocov
   // Internal error because the column has already been added to the DT, so length mismatch should have been caught before adding the column.
@@ -701,6 +704,7 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
     // If source is already not named (because j already created a fresh unnamed vector within a list()) we don't want to
     // duplicate unnecessarily, hence checking for named rather than duplicating always.
     // See #481, #1270 and tests 1341.* fail without this copy.
+    // ********** This might go away now that we copy properly in dogroups.c **********
     if (anyNamed(source)) {
       source = PROTECT(copyAsPlain(source)); protecti++;
     }

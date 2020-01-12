@@ -113,76 +113,44 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
     INTEGER(N)[0] = istarts[i] == NA_INTEGER ? 0 : grpn;
     // .N is number of rows matched to ( 0 even when nomatch is NA)
     INTEGER(GRP)[0] = i+1;  // group counter exposed as .GRP
+    INTEGER(rownames)[1] = -grpn;  // the .set_row_names() of .SD. Not .N when nomatch=NA and this is a nomatch
+    for (int j=0; j<length(SDall); ++j) {
+      SETLENGTH(VECTOR_ELT(SDall,j), grpn);  // before copying data in otherwise assigning after the end could error R API checks
+      defineVar(nameSyms[j], VECTOR_ELT(SDall, j), env);
+      // Redo this defineVar for each group in case user's j assigned to the column names (env is static) (tests 387 and 388)
+      // nameSyms pre-stored to save repeated install() for efficiency, though.
+    }
+    for (int j=0; j<length(xSD); ++j) {
+      defineVar(xknameSyms[j], VECTOR_ELT(xSD, j), env);
+    }
 
     for (int j=0; j<length(iSD); ++j) {   // either this or the next for() will run, not both
-      size_t size = SIZEOF(VECTOR_ELT(iSD,j));
-      memcpy((char *)DATAPTR(VECTOR_ELT(iSD,j)),  // ok use of memcpy. Loop'd through columns not rows // TODO remove DATAPTR
-             (char *)DATAPTR(VECTOR_ELT(groups,INTEGER(jiscols)[j]-1))+i*size,
-             size);
+      memrecycle(VECTOR_ELT(iSD,j), R_NilValue, 0, 1, VECTOR_ELT(groups, INTEGER(jiscols)[j]-1), i, 1, j+1, "Internal error assigning to iSD");
+      // we're just use memrecycle here to assign a single value
     }
     // igrp determines the start of the current group in rows of dt (0 based).
     // if jiscols is not null, we have a by = .EACHI, so the start is exactly i.
     // Otherwise, igrp needs to be determined from starts, potentially taking care about the order if present.
     igrp = !isNull(jiscols) ? i : (length(grporder) ? INTEGER(grporder)[istarts[i]-1]-1 : istarts[i]-1);
     if (igrp>=0 && nrowgroups) for (int j=0; j<length(BY); ++j) {    // igrp can be -1 so 'if' is important, otherwise memcpy crash
-      size_t size = SIZEOF(VECTOR_ELT(BY,j));
-      memcpy((char *)DATAPTR(VECTOR_ELT(BY,j)),  // ok use of memcpy size 1. Loop'd through columns not rows // TODO remove DATAPTR
-             (char *)DATAPTR(VECTOR_ELT(groups,INTEGER(grpcols)[j]-1))+igrp*size,
-             size);
+      memrecycle(VECTOR_ELT(BY,j), R_NilValue, 0, 1, VECTOR_ELT(groups, INTEGER(grpcols)[j]-1), igrp, 1, j+1, "Internal error assigning to BY");
     }
     if (istarts[i] == NA_INTEGER || (LENGTH(order) && iorder[ istarts[i]-1 ]==NA_INTEGER)) {
       for (int j=0; j<length(SDall); ++j) {
-        switch (TYPEOF(VECTOR_ELT(SDall, j))) {
-        case LGLSXP :
-          LOGICAL(VECTOR_ELT(SDall,j))[0] = NA_LOGICAL;
-          break;
-        case INTSXP :
-          INTEGER(VECTOR_ELT(SDall,j))[0] = NA_INTEGER;
-          break;
-        case REALSXP :
-          REAL(VECTOR_ELT(SDall,j))[0] = NA_REAL;
-          break;
-        case CPLXSXP : {
-          COMPLEX(VECTOR_ELT(SDall, j))[0] = NA_CPLX;
-        } break;
-        case STRSXP :
-          SET_STRING_ELT(VECTOR_ELT(SDall,j),0,NA_STRING);
-          break;
-        case VECSXP :
-          SET_VECTOR_ELT(VECTOR_ELT(SDall,j),0,R_NilValue);
-          break;
-        default:
-          error(_("Internal error. Type of column should have been checked by now")); // #nocov
-        }
+        writeNA(VECTOR_ELT(SDall, j), 0, 1);
+        // writeNA uses SET_ for STR and VEC. Which is why we now use SET_ to assign to SDall always too. Otherwise,
+        // this writeNA could decrement the reference for the old value which wasn't incremented in the first place.
+        // Further, the eval(jval) could feasibly assign to SD although that is currently caught and disallowed. If that
+        // became possible, that assign from user's j expression would decrement the reference which wasn't incremented
+        // in the first place. And finally, upon release of SD, values will be decremented, where they weren't incremented
+        // in the first place. All in all, too risky to write behind the barrier in this section.
+        // Or in the words, this entire section, and this entire dogroups.c file, is now write-barrier compliant from v1.12.10.
       }
       grpn = 1;  // it may not be 1 e.g. test 722. TODO: revisit.
       SETLENGTH(I, grpn);
       INTEGER(I)[0] = 0;
       for (int j=0; j<length(xSD); ++j) {
-        switch (TYPEOF(VECTOR_ELT(xSD, j))) {
-        case LGLSXP :
-          LOGICAL(VECTOR_ELT(xSD,j))[0] = NA_LOGICAL;
-          break;
-        case INTSXP :
-          INTEGER(VECTOR_ELT(xSD,j))[0] = NA_INTEGER;
-          break;
-        case REALSXP :
-          REAL(VECTOR_ELT(xSD,j))[0] = NA_REAL;
-          break;
-        case CPLXSXP : {
-          // TODO: test; requires bmerge.c accomodation for CPLXSXP
-          COMPLEX(VECTOR_ELT(xSD, j))[0] = NA_CPLX;
-        }  break;
-        case STRSXP :
-          SET_STRING_ELT(VECTOR_ELT(xSD,j),0,NA_STRING);
-          break;
-        case VECSXP :
-          // TODO: test; requires ability to merge on list columns
-          SET_VECTOR_ELT(VECTOR_ELT(xSD,j),0,R_NilValue);
-          break;
-        default:
-          error(_("Internal error. Type of column should have been checked by now")); // #nocov
-        }
+        writeNA(VECTOR_ELT(xSD, j), 0, 1);
       }
     } else {
       if (LOGICAL(verbose)[0]) tstart = clock();
@@ -192,69 +160,39 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
         const int rownum = grpn ? istarts[i]-1 : -1;
         for (int j=0; j<grpn; ++j) iI[j] = rownum+j+1;
         if (rownum>=0) {
-          for (int j=0; j<length(SDall); ++j) {
-            size_t size = SIZEOF(VECTOR_ELT(SDall,j));
-            memcpy((char *)DATAPTR(VECTOR_ELT(SDall,j)),  // direct memcpy best here, for usually large size groups. by= each row is slow and not recommended anyway, so we don't mind there's no switch here for grpn==1 // TODO remove DATAPTR
-                   (char *)DATAPTR(VECTOR_ELT(dt,INTEGER(dtcols)[j]-1))+rownum*size,
-                   grpn*size);
-            // SD is our own alloc'd memory, and the source (DT) is protected throughout, so no need for SET_* overhead
-          }
-          for (int j=0; j<length(xSD); ++j) {
-            size_t size = SIZEOF(VECTOR_ELT(xSD,j));
-            memcpy((char *)DATAPTR(VECTOR_ELT(xSD,j)),  // ok use of memcpy. Loop'd through columns not rows // TODO remove DATAPTR
-                   (char *)DATAPTR(VECTOR_ELT(dt,INTEGER(xjiscols)[j]-1))+rownum*size,
-                   size);
-          }
+          for (int j=0; j<length(SDall); ++j)
+            memrecycle(VECTOR_ELT(SDall,j), R_NilValue, 0, grpn, VECTOR_ELT(dt, INTEGER(dtcols)[j]-1), rownum, grpn, j+1, "Internal error assigning to SDall");
+          for (int j=0; j<length(xSD); ++j)
+            memrecycle(VECTOR_ELT(xSD,j), R_NilValue, 0, 1, VECTOR_ELT(dt, INTEGER(xjiscols)[j]-1), rownum, 1, j+1, "Internal error assigning to xSD");
         }
         if (LOGICAL(verbose)[0]) { tblock[0] += clock()-tstart; nblock[0]++; }
       } else {
         // No need for SET_* here because the target (SDall) is i) a temporary internal pointing to already-protected source items,
         // and ii) all items would be immediately decremented after this group is finished anyway.
-        // The SET_ calls do happen, but just where neeed; i.e. after jval is performed and the result assigned to ans.
+        // The SET_ calls do happen, but just where needed; i.e. after jval is performed and the result assigned to ans.
         // If we did SET_ here, it would incur unnecessary overhead as this is highly iterated.
         for (int k=0; k<grpn; ++k) iI[k] = iorder[ istarts[i]-1 + k ];
+        const int *iIc = iI;  // now that iI is written, potentially help the optimizer in the deep loop in the switch(size) below
         for (int j=0; j<length(SDall); ++j) {
-          size_t size = SIZEOF(VECTOR_ELT(SDall,j));
-          target = VECTOR_ELT(SDall,j);
-          source = VECTOR_ELT(dt,INTEGER(dtcols)[j]-1);
-          if (size==4) {
-            int *td = INTEGER(target);
-            const int *sd = INTEGER(source);
-            for (int k=0; k<grpn; ++k) {
-              td[k] = sd[iI[k]-1];  // on 32bit copies pointers too
-            }
-          } else if (size==8) {
-            double *td = REAL(target);
-            const double *sd = REAL(source);
-            for (int k=0; k<grpn; ++k) {
-              td[k] = sd[iI[k]-1];  // on 64bit copies pointers too
-            }
-          } else { // size==16
-            Rcomplex *td = COMPLEX(target);
-            const Rcomplex *sd = COMPLEX(source);
-            for (int k=0; k<grpn; ++k) {
-              td[k] = sd[iI[k]-1];
-            }
+          const size_t size = SIZEOF(VECTOR_ELT(SDall,j));
+          char *td = (char *)DATAPTR_RO(VECTOR_ELT(SDall,j));
+          const char *sd = DATAPTR_RO(VECTOR_ELT(dt,INTEGER(dtcols)[j]-1));
+          switch(size) {
+          // a looped call to memcpy with non-const size might not be optimized (depending on compiler and
+          // options), so just do a few cases to avoid potential memcpy call overhead
+          case  4: for (int k=0; k<grpn; ++k) (   (int *)td)[k] = (   (const int *)sd)[iIc[k]-1]; break;
+          case  8: for (int k=0; k<grpn; ++k) ((double *)td)[k] = ((const double *)sd)[iIc[k]-1]; break;
+          case 16: for (int k=0; k<grpn; ++k) memcpy(td + k*size, sd + (iIc[k]-1)*size, 16); break;
+          default: error(_("Internal error: unexpected size %d in dogroups"), (int)size);
           }
         }
         if (LOGICAL(verbose)[0]) { tblock[1] += clock()-tstart; nblock[1]++; }
         // The two blocks have separate timing statements to make sure which is running
       }
     }
-    INTEGER(rownames)[1] = -grpn;  // the .set_row_names() of .SD. Not .N when nomatch=NA and this is a nomatch
-    for (int j=0; j<length(SDall); ++j) {
-      SETLENGTH(VECTOR_ELT(SDall,j), grpn);
-      defineVar(nameSyms[j], VECTOR_ELT(SDall, j), env);
-      // In case user's j assigns to the columns names (env is static) (tests 387 and 388)
-      // nameSyms pre-stored to save repeated install() for efficiency.
-    }
-    for (int j=0; j<length(xSD); ++j) {
-      defineVar(xknameSyms[j], VECTOR_ELT(xSD, j), env);
-    }
 
     if (LOGICAL(verbose)[0]) tstart = clock();  // call to clock() is more expensive than an 'if'
     PROTECT(jval = eval(jexp, env));
-
     if (LOGICAL(verbose)[0]) { tblock[2] += clock()-tstart; nblock[2]++; }
 
     if (isNull(jval))  {
@@ -313,7 +251,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
           SET_STRING_ELT(dtnames, colj, STRING_ELT(newnames, colj-origncol));
           copyMostAttrib(RHS, target); // attributes of first group dominate; e.g. initial factor levels come from first group
         }
-        const char *warn = memrecycle(target, order, INTEGER(starts)[i]-1, grpn, RHS, -1, 0, "");
+        const char *warn = memrecycle(target, order, INTEGER(starts)[i]-1, grpn, RHS, 0, -1, 0, "");
         // can't error here because length mismatch already checked for all jval columns before starting to add any new columns
         if (warn)
           warning(_("Group %d column '%s': %s"), i+1, CHAR(STRING_ELT(dtnames, colj)), warn);
@@ -389,7 +327,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
     }
     // write the group values to ans, recycled to match the nrow of the result for this group ...
     for (int j=0; j<ngrpcols; ++j) {
-      memrecycle(VECTOR_ELT(ans,j), R_NilValue, ansloc, maxn, VECTOR_ELT(groups, INTEGER(grpcols)[j]-1), igrp, j+1, "Internal error recycling group values");
+      memrecycle(VECTOR_ELT(ans,j), R_NilValue, ansloc, maxn, VECTOR_ELT(groups, INTEGER(grpcols)[j]-1), igrp, 1, j+1, "Internal error recycling group values");
     }
     // Now copy jval into ans ...
     for (int j=0; j<njval; ++j) {
@@ -412,7 +350,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
         if (thislen>1 && thislen!=maxn && grpn>0) {  // grpn>0 for grouping empty tables; test 1986
           error(_("Supplied %d items for column %d of group %d which has %d rows. The RHS length must either be 1 (single values are ok) or match the LHS length exactly. If you wish to 'recycle' the RHS please use rep() explicitly to make this intent clear to readers of your code."), thislen, j+1, i+1, maxn);
         }
-        memrecycle(target, R_NilValue, thisansloc, maxn, source, -1, 0, "");
+        memrecycle(target, R_NilValue, thisansloc, maxn, source, 0, -1, 0, "");
       }
     }
     ansloc += maxn;
@@ -455,30 +393,45 @@ SEXP keepattr(SEXP to, SEXP from)
   return to;
 }
 
-SEXP growVector(SEXP x, R_len_t newlen)
+SEXP growVector(SEXP x, const R_len_t newlen)
 {
   // Similar to EnlargeVector in src/main/subassign.c, with the following changes :
   // * replaced switch and loops with one memcpy for INTEGER and REAL, but need to age CHAR and VEC.
   // * no need to cater for names
   // * much shorter and faster
   SEXP newx;
-  R_len_t i, len = length(x);
+  R_len_t len = length(x);
   if (isNull(x)) error(_("growVector passed NULL"));
   PROTECT(newx = allocVector(TYPEOF(x), newlen));   // TO DO: R_realloc(?) here?
   if (newlen < len) len=newlen;   // i.e. shrink
   switch (TYPEOF(x)) {
-  case STRSXP :
-    for (i=0; i<len; i++)
-      SET_STRING_ELT(newx, i, STRING_ELT(x, i));
-    // TO DO. Using SET_ to ensure objects are aged, rather than memcpy. Perhaps theres a bulk/fast way to age CHECK_OLD_TO_NEW
+  case RAWSXP:
+    memcpy(RAW(newx), RAW(x), len*SIZEOF(x));
     break;
-  case VECSXP :
-    for (i=0; i<len; i++)
-      SET_VECTOR_ELT(newx, i, VECTOR_ELT(x, i));
-    // TO DO: Again, is there bulk op to avoid this loop, which still respects older generations
+  case LGLSXP:
+    memcpy(LOGICAL(newx), LOGICAL(x), len*SIZEOF(x));
     break;
+  case INTSXP:
+    memcpy(INTEGER(newx), INTEGER(x), len*SIZEOF(x));
+    break;
+  case REALSXP:
+    memcpy(REAL(newx), REAL(x), len*SIZEOF(x));
+    break;
+  case CPLXSXP:
+    memcpy(COMPLEX(newx), COMPLEX(x), len*SIZEOF(x));
+    break;
+  case STRSXP : {
+    const SEXP *xd = SEXPPTR_RO(x);
+    for (int i=0; i<len; ++i)
+      SET_STRING_ELT(newx, i, xd[i]);
+  } break;
+  case VECSXP : {
+    const SEXP *xd = SEXPPTR_RO(x);
+    for (int i=0; i<len; ++i)
+      SET_VECTOR_ELT(newx, i, xd[i]);
+  } break;
   default :
-    memcpy((char *)DATAPTR(newx), (char *)DATAPTR(x), len*SIZEOF(x));   // SIZEOF() returns size_t (just as sizeof()) so * shouldn't overflow // TODO remove DATAPTR
+    error(_("Internal error: growVector doesn't support type '%s'"), type2char(TYPEOF(x)));
   }
   // if (verbose) Rprintf(_("Growing vector from %d to %d items of type '%s'\n"), len, newlen, type2char(TYPEOF(x)));
   // Would print for every column if here. Now just up in dogroups (one msg for each table grow).
