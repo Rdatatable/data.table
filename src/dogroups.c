@@ -3,13 +3,14 @@
 #include <fcntl.h>
 #include <time.h>
 
-SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEXP xjiscols, SEXP grporder, SEXP order, SEXP starts, SEXP lens, SEXP jexp, SEXP env, SEXP lhs, SEXP newnames, SEXP on, SEXP verbose)
+SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEXP xjiscols, SEXP grporder, SEXP order, SEXP starts, SEXP lens, SEXP jexp, SEXP env, SEXP lhs, SEXP newnames, SEXP on, SEXP verboseArg)
 {
   R_len_t ngrp, nrowgroups, njval=0, ngrpcols, ansloc=0, maxn, estn=-1, thisansloc, grpn, thislen, igrp, origIlen=0, origSDnrow=0;
   int nprotect=0;
   SEXP ans=NULL, jval, thiscol, BY, N, I, GRP, iSD, xSD, rownames, s, RHS, target, source;
   Rboolean wasvector, firstalloc=FALSE, NullWarnDone=FALSE;
   clock_t tstart=0, tblock[10]={0}; int nblock[10]={0};
+  const bool verbose = LOGICAL(verboseArg)[0]==1;
 
   if (!isInteger(order)) error(_("Internal error: order not integer vector")); // # nocov
   if (TYPEOF(starts) != INTSXP) error(_("Internal error: starts not integer")); // # nocov
@@ -154,7 +155,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
         writeNA(VECTOR_ELT(xSD, j), 0, 1);
       }
     } else {
-      if (LOGICAL(verbose)[0]) tstart = clock();
+      if (verbose) tstart = clock();
       SETLENGTH(I, grpn);
       int *iI = INTEGER(I);
       if (LENGTH(order)==0) {
@@ -166,21 +167,21 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
           for (int j=0; j<length(xSD); ++j)
             memrecycle(VECTOR_ELT(xSD,j), R_NilValue, 0, 1, VECTOR_ELT(dt, INTEGER(xjiscols)[j]-1), rownum, 1, j+1, "Internal error assigning to xSD");
         }
-        if (LOGICAL(verbose)[0]) { tblock[0] += clock()-tstart; nblock[0]++; }
+        if (verbose) { tblock[0] += clock()-tstart; nblock[0]++; }
       } else {
         for (int k=0; k<grpn; ++k) iI[k] = iorder[ istarts[i]-1 + k ];
         for (int j=0; j<length(SDall); ++j) {
           // this is the main non-contiguous gather, and is parallel (within-column) for non-SEXP
           subsetVectorRaw(VECTOR_ELT(SDall,j), VECTOR_ELT(dt,INTEGER(dtcols)[j]-1), I, /*anyNA=*/false);
         }
-        if (LOGICAL(verbose)[0]) { tblock[1] += clock()-tstart; nblock[1]++; }
+        if (verbose) { tblock[1] += clock()-tstart; nblock[1]++; }
         // The two blocks have separate timing statements to make sure which is running
       }
     }
 
-    if (LOGICAL(verbose)[0]) tstart = clock();  // call to clock() is more expensive than an 'if'
+    if (verbose) tstart = clock();  // call to clock() is more expensive than an 'if'
     PROTECT(jval = eval(jexp, env));
-    if (LOGICAL(verbose)[0]) { tblock[2] += clock()-tstart; nblock[2]++; }
+    if (verbose) { tblock[2] += clock()-tstart; nblock[2]++; }
 
     if (isNull(jval))  {
       // j may be a plot or other side-effect only
@@ -283,7 +284,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
           thiscol = VECTOR_ELT(jval, j);
           if (isNull(thiscol))
             error(_("Column %d of j's result for the first group is NULL. We rely on the column types of the first result to decide the type expected for the remaining groups (and require consistency). NULL columns are acceptable for later groups (and those are replaced with NA of appropriate type and recycled) but not for the first. Please use a typed empty vector instead, such as integer() or numeric()."), j+1);
-          if (LOGICAL(verbose)[0] && !isNull(getAttrib(thiscol, R_NamesSymbol))) {
+          if (verbose && !isNull(getAttrib(thiscol, R_NamesSymbol))) {
             if (wasvector) {
               Rprintf(_("j appears to be a named vector. The same names will likely be created over and over again for each group and slow things down. Try and pass a named list (which data.table optimizes) or an unnamed list() instead.\n"));
             } else {
@@ -295,7 +296,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
         }
         SEXP jvalnames = PROTECT(getAttrib(jval, R_NamesSymbol));
         if (!isNull(jvalnames)) {
-          if (LOGICAL(verbose)[0]) Rprintf(_("The result of j is a named list. It's very inefficient to create the same names over and over again for each group. When j=list(...), any names are detected, removed and put back after grouping has completed, for efficiency. Using j=transform(), for example, prevents that speedup (consider changing to :=). This message may be upgraded to warning in future.\n"));  // e.g. test 104 has j=transform().
+          if (verbose) Rprintf(_("The result of j is a named list. It's very inefficient to create the same names over and over again for each group. When j=list(...), any names are detected, removed and put back after grouping has completed, for efficiency. Using j=transform(), for example, prevents that speedup (consider changing to :=). This message may be upgraded to warning in future.\n"));  // e.g. test 104 has j=transform().
           // names of result come from the first group and the names of remaining groups are ignored (all that matters for them is that the number of columns (and their types) match the first group.
           SEXP names2 = PROTECT(allocVector(STRSXP,ngrpcols+njval));
           //  for (j=0; j<ngrpcols; j++) SET_STRING_ELT(names2, j, STRING_ELT(bynames,j));  // These get set back up in R
@@ -307,7 +308,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
         UNPROTECT(1); // jvalnames
       } else {
         estn = ((double)ngrp/i)*1.1*(ansloc+maxn);
-        if (LOGICAL(verbose)[0]) Rprintf(_("dogroups: growing from %d to %d rows\n"), length(VECTOR_ELT(ans,0)), estn);
+        if (verbose) Rprintf(_("dogroups: growing from %d to %d rows\n"), length(VECTOR_ELT(ans,0)), estn);
         if (length(ans) != ngrpcols + njval) error(_("dogroups: length(ans)[%d]!=ngrpcols[%d]+njval[%d]"),length(ans),ngrpcols,njval);
         for (int j=0; j<length(ans); ++j) SET_VECTOR_ELT(ans, j, growVector(VECTOR_ELT(ans,j), estn));
       }
@@ -350,7 +351,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
   }
   if (isNull(lhs) && ans!=NULL) {
     if (ansloc < LENGTH(VECTOR_ELT(ans,0))) {
-      if (LOGICAL(verbose)[0]) Rprintf(_("Wrote less rows (%d) than allocated (%d).\n"),ansloc,LENGTH(VECTOR_ELT(ans,0)));
+      if (verbose) Rprintf(_("Wrote less rows (%d) than allocated (%d).\n"),ansloc,LENGTH(VECTOR_ELT(ans,0)));
       for (int j=0; j<length(ans); j++) SET_VECTOR_ELT(ans, j, growVector(VECTOR_ELT(ans,j), ansloc));
       // shrinks (misuse of word 'grow') back to the rows written, otherwise leak until ...
       // ... TO DO: set truelength to LENGTH(VECTOR_ELT(ans,0)), length to ansloc and enhance finalizer to handle over-allocated rows.
@@ -359,7 +360,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
   // Now reset length of .SD columns and .I to length of largest group, otherwise leak if the last group is smaller (often is).
   for (int j=0; j<length(SDall); ++j) SETLENGTH(VECTOR_ELT(SDall,j), origSDnrow);
   SETLENGTH(I, origIlen);
-  if (LOGICAL(verbose)[0]) {
+  if (verbose) {
     if (nblock[0] && nblock[1]) error(_("Internal error: block 0 [%d] and block 1 [%d] have both run"), nblock[0], nblock[1]); // # nocov
     int w = nblock[1]>0;
     Rprintf(_("\n  %s took %.3fs for %d groups\n"), w ? "collecting discontiguous groups" : "memcpy contiguous groups",
