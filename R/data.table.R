@@ -1944,13 +1944,24 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
   }
   X.info = column_properties(X)
   
+  # helper functions
+  col_is_type = function(X.info, target) {
+    vapply_1b(X.info$types, `==`, target)
+  }
+  col_is_class = function(X.info, target) {
+    if (length(target) > 1)
+      vapply_1b(X.info$classes, function(cl_vec) { target %chin% cl_vec } )
+    else
+      vapply_1b(X.info$classes, `==`, target)
+  }
+  
   # Check and fix the data.table if it is malformed - i.e. contains NULL
   # columns, wide columns, or columns whose length != .N. For NULL columns
   # we need to drop manually, otherwise we can use as.data.table().
   any.null = ("NULL" %chin% X.info$uniq.types)
   if (any.null) {
-    which.null = vapply_1b(X.info$types, `==`, "NULL")
-    X[which.null] = NULL
+    col.is.null = col_is_type(X.info, "NULL")
+    X[col.is.null] = NULL
     X.info = column_properties(X) # update column properties info
   }
   
@@ -1986,7 +1997,7 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
   # nocov start
   any.ff = ("ff" %chin% X.info$uniq.classes)
   if (any.ff) {
-    which.ff = which(sapply(X.info$classes, function(cl_vec) { "ff" %chin% cl_vec }))
+    which.ff = which(col_is_class(X.info, "ff"))
     for (j in which.ff) {
       X[[j]] = X[[j]][] # bring into memory
     }
@@ -2008,7 +2019,7 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
   # Convert factors to character vectors
   any.factors = ("factor" %chin% X.info$uniq.classes)
   if (any.factors) {
-    which.factors = which(sapply(X.info$classes, function(cl_vec) { "factor" %chin% cl_vec }))
+    which.factors = which(col_is_class(X.info, "factor"))
     for (j in which.factors) {
       miss = is.na(X[[j]])
       X[[j]] = as.vector(X[[j]])
@@ -2045,15 +2056,15 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
     if (!is.null(target.class)) { # if NULL fallback on type coercion
       # no method as.integer64.raw so we need to do two-step conversion
       if (target.class == "integer64" && "raw" %chin% X.info$uniq.classes) {
-        which.convert = which(sapply(X.info$classes, function(cl_vec) { ("raw" %chin% cl_vec) }))
+        which.convert = which(col_is_class(X.info, "raw"))
         for (j in which.convert) {
           X[[j]] = bit64::as.integer64(as.integer(X[[j]]))
         }
       }
       
       # Which columns need to be coerced?
-      which.convert = which(sapply(X.info$classes, function(cl_vec) { !any(target.class %chin% cl_vec) }))
-      
+      which.convert = which(!col_is_class(X.info, target.class))
+
       # Coerce the columns
       for (j in which.convert) {
         switch(target.class,
@@ -2070,8 +2081,8 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
     type.order = c("raw"=1L, "logical"=2L, "integer"=3L, "double"=4L, 
                    "complex"=5L, "character"=6L, "list"=7L)
     target.type = names(which.max(type.order[X.info$uniq.types]))
-    which.convert = which(sapply(X.info$types, function(tp_vec) { !any(target.type %chin% tp_vec) }))
-
+    which.convert = which(!col_is_type(X.info, target.type))
+    
     # Coerce the columns
     for (j in which.convert) {
       switch(target.type,
