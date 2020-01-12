@@ -6,7 +6,7 @@
  * corresponding asmatrix_<type> function.
  */
 
-SEXP asmatrix_logical(SEXP dt, R_xlen_t matlen, R_xlen_t n) {
+SEXP asmatrix_integer(SEXP dt, R_xlen_t matlen, R_xlen_t n) {
   // Create output matrix, allocate memory, and create a pointer to it.
   SEXP mat = PROTECT(allocVector(LGLSXP, matlen));
   int *pmat; 
@@ -90,44 +90,6 @@ SEXP asmatrix_raw(SEXP dt, R_xlen_t matlen, R_xlen_t n) {
   }
 
 return mat;
-}
-
-SEXP asmatrix_integer(SEXP dt, R_xlen_t matlen, R_xlen_t n) {
-  // Create output matrix, allocate memory, and create a pointer to it.
-  SEXP mat = PROTECT(allocVector(INTSXP, matlen));
-  int *pmat; 
-  pmat = INTEGER(mat);
-  
-  // Create an array of pointers for the individual columns in DT 
-  R_len_t dtncol = length(dt);
-  int **pcol;
-  pcol = (int **) R_alloc(dtncol, sizeof(int *));
-  for (R_len_t jj = 0; jj < dtncol; jj++) {
-    pcol[jj] = INTEGER(VECTOR_ELT(dt, jj));
-  }
-  
-  // Set up parallel OMP chunk
-  R_len_t chunksize = dtncol/getDTthreads() + 1; 
-  #pragma omp parallel num_threads(getDTthreads())
-  { 
-    // Determine which columns in DT we're iterating through on this thread
-    int threadnum = omp_get_thread_num();
-    R_len_t startcol = threadnum * chunksize;
-    R_len_t endcol = startcol + chunksize - 1;
-    if (endcol >= dtncol) 
-      endcol = dtncol - 1;
-    
-    // Determine where to fill in the matrix vector
-    R_xlen_t vecIdx = startcol * n;
-    
-    // Iterate through columns in DT, copying the contents to the matrix column
-    for (R_len_t jj = startcol; jj <= endcol; jj++) {
-      memcpy(pmat + vecIdx, pcol[jj], sizeof(int)*n);
-      vecIdx += n;
-    }
-  }
-  
-  return mat;
 }
 
 SEXP asmatrix_numeric(SEXP dt, R_xlen_t matlen, R_xlen_t n) {
@@ -273,9 +235,7 @@ SEXP asmatrix(SEXP dt) {
     case RAWSXP:
       mat = asmatrix_raw(dt, matlen, n);
       break;
-    case LGLSXP: 
-      mat = asmatrix_logical(dt, matlen, n);
-      break;
+    case LGLSXP:
     case INTSXP: 
       mat = asmatrix_integer(dt, matlen, n);
       break;
