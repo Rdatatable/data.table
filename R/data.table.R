@@ -2072,7 +2072,7 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
   }
   
   # If columns still do not all have the same type we need to coerce
-  if (length(X.info$uniq.types) > 1L) { 
+  if (!any.non.atomic && length(X.info$uniq.types) > 1L) { 
     type.order = c("raw"=1L, "logical"=2L, "integer"=3L, "double"=4L, 
                    "complex"=5L, "character"=6L, "list"=7L)
     target.type = names(which.max(type.order[X.info$uniq.types]))
