@@ -7,7 +7,7 @@ setcoalesce = function(...) .Call(Ccoalesce, list(...), TRUE)
 
 fifelse = function(test, yes, no, na=NA) .Call(CfifelseR, test, yes, no, na)
 fcase   = function(..., default=NA) .Call(CfcaseR, default, parent.frame(), as.list(substitute(list(...)))[-1L])
-fpos    = function(haystack, needle, all=TRUE, overlap=TRUE) .Call(CposR, haystack, needle, all, overlap)
+fpos    = function(haystack, needle, all=TRUE, overlap=TRUE) .Call(CfposR, haystack, needle, all, overlap)
 
 colnamesInt = function(x, cols, check_dups=FALSE) .Call(CcolnamesInt, x, cols, check_dups)
 coerceFill = function(x) .Call(CcoerceFillR, x)

@@ -399,8 +399,8 @@ SEXP fposR(SEXP haystack, SEXP needle, SEXP all, SEXP overlap) {
   SEXP row = PROTECT(allocVector(INTSXP, sz)); nprotect++;
   int *restrict pcol = INTEGER(col);
   int *restrict prow = INTEGER(row);
-  const int pall = LOGICAL(all)[0];
-  const int poverlap = LOGICAL(overlap)[0];
+  const int pall = !LOGICAL(all)[0];
+  const int poverlap = !LOGICAL(overlap)[0];
 
   switch(thaystack) {
   case LGLSXP: {
@@ -428,12 +428,12 @@ SEXP fposR(SEXP haystack, SEXP needle, SEXP all, SEXP overlap) {
         if (id) {
           prow[x] = j + 1;
           pcol[x++] = i + 1;
-          if (!pall) {
+          if (pall) {
             goto label;
           }
           if (poverlap) {
-            ti = i + 1;
-            tj = j + 1;
+            ti = i + l;
+            tj = j + k;
           }
         }
       }
@@ -464,12 +464,12 @@ SEXP fposR(SEXP haystack, SEXP needle, SEXP all, SEXP overlap) {
         if (id) {
           prow[x] = j + 1;
           pcol[x++] = i + 1;
-          if (!pall) {
+          if (pall) {
             goto label;
           }
           if (poverlap) {
-            ti = i + 1;
-            tj = j + 1;
+            ti = i + l;
+            tj = j + k;
           }
         }
       }
@@ -502,12 +502,12 @@ SEXP fposR(SEXP haystack, SEXP needle, SEXP all, SEXP overlap) {
         if (id) {
           prow[x] = j + 1;
           pcol[x++] = i + 1;
-          if (!pall) {
+          if (pall) {
             goto label;
           }
           if (poverlap) {
-            ti = i + 1;
-            tj = j + 1;
+            ti = i + l;
+            tj = j + k;
           }
         }
       }
@@ -540,12 +540,12 @@ SEXP fposR(SEXP haystack, SEXP needle, SEXP all, SEXP overlap) {
         if (id) {
           prow[x] = j + 1;
           pcol[x++] = i + 1;
-          if (!pall) {
+          if (pall) {
             goto label;
           }
           if (poverlap) {
-            ti = i + 1;
-            tj = j + 1;
+            ti = i + l;
+            tj = j + k;
           }
         }
       }
@@ -574,12 +574,12 @@ SEXP fposR(SEXP haystack, SEXP needle, SEXP all, SEXP overlap) {
         if (id) {
           prow[x] = j + 1;
           pcol[x++] = i + 1;
-          if (!pall) {
+          if (pall) {
             goto label;
           }
           if (poverlap) {
-            ti = i + 1;
-            tj = j + 1;
+            ti = i + l;
+            tj = j + k;
           }
         }
       }

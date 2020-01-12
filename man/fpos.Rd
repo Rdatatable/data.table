@@ -37,6 +37,6 @@ fpos(big_matrix, small_matrix)
 fpos(big_matrix, small_matrix, all = FALSE)
 
 # return non overlapping occurences
-fpos(big_matrix, small_matrix, overlap = FALSE) # to fix
+fpos(big_matrix, small_matrix, overlap = FALSE)
 }
 \keyword{ data }

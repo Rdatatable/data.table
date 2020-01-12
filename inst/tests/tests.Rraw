@@ -16788,7 +16788,7 @@ mat_lgl_a = mat_cpl_a = mat_chr_a = mat_dbl_a = mat_int_a = mymatrix
 mat_cpl_b = mat_dbl_b = mat_chr_b = mat_int_b = mat_lgl_b = mat_int_a
 
 storage.mode(mat_dbl_a) = "numeric"
-storage.mode(mat_int_a) = "integer"
+storage.mode(mat_int_a) = "integer" 
 storage.mode(mat_chr_a) = "character"
 storage.mode(mat_cpl_a) = "complex"
 storage.mode(mat_lgl_a) = "logical"
@@ -16799,6 +16799,22 @@ mat_int_b[2,2] = NA; storage.mode(mat_int_b) = "integer"
 mat_chr_b[2,2] = NA; storage.mode(mat_chr_b) = "character"
 mat_lgl_b[2,2] = NA; storage.mode(mat_lgl_b) = "logical"
 mat_cpl_b[2,2] = NA; storage.mode(mat_cpl_b) = "complex"
+
+big_matrix = matrix(c(1:5), nrow = 10, ncol = 5)
+small_matrix = matrix(c(2:3), nrow = 2, ncol = 2)
+
+big_matrix_d = big_matrix_ch = big_matrix_l = big_matrix_cp = big_matrix
+small_matrix_d = small_matrix_ch = small_matrix_l = small_matrix_cp = small_matrix
+
+storage.mode(big_matrix_d) = "numeric"
+storage.mode(big_matrix_ch) = "character"
+storage.mode(big_matrix_cp) = "complex"
+storage.mode(big_matrix_l) = "logical"
+
+storage.mode(small_matrix_d) = "numeric"
+storage.mode(small_matrix_ch) = "character"
+storage.mode(small_matrix_cp) = "complex"
+storage.mode(small_matrix_l) = "logical"
 
 test(9999.001, fpos(mat_dbl_a, mat_dbl_a[1:2,1:2], FALSE), matrix(c(1L,1L),nrow = 1))
 test(9999.002, fpos(mat_dbl_a, mat_dbl_a[1:2,9:10], FALSE), matrix(c(1L,9L),nrow = 1))
@@ -16834,6 +16850,21 @@ test(9999.031, fpos(matrix(c(1:30),nrow = 5), matrix(c(19,24),nrow = 1), TRUE), 
 test(9999.032, fpos(mat_lgl_a, mat_int_a[19:20,9:10]), error = "Haystack type (logical) and needle type (integer) are different. Please make sure that they have the same type.")
 test(9999.033, fpos(mat_dbl_a, mat_int_a[19:20,9:10]), matrix(c(19L,9L),nrow = 1))
 test(9999.034, fpos(mat_int_a, mat_dbl_a[19:20,9:10]), matrix(c(19L,9L),nrow = 1))
+test(9999.035, fpos(big_matrix, small_matrix), matrix(c(2L,7L,2L,7L,2L,7L,2L,7L,1L,1L,2L,2L,3L,3L,4L,4L),nrow = 8))
+test(9999.036, fpos(big_matrix, small_matrix, all = FALSE), matrix(c(2L,1L),nrow = 1))
+test(9999.037, fpos(big_matrix, small_matrix, overlap = FALSE), matrix(c(2L,7L,2L,7L,1L,1L,3L,3L),nrow = 4))
+test(9999.038, fpos(big_matrix_d, small_matrix_d), matrix(c(2L,7L,2L,7L,2L,7L,2L,7L,1L,1L,2L,2L,3L,3L,4L,4L),nrow = 8))
+test(9999.039, fpos(big_matrix_d, small_matrix_d, all = FALSE), matrix(c(2L,1L),nrow = 1))
+test(9999.040, fpos(big_matrix_d, small_matrix_d, overlap = FALSE), matrix(c(2L,7L,2L,7L,1L,1L,3L,3L),nrow = 4))
+test(9999.041, head(fpos(big_matrix_l, small_matrix_l),6), matrix(c(1L,2L,3L,4L,5L,6L,1L,1L,1L,1L,1L,1L),nrow = 6))
+test(9999.042, fpos(big_matrix_l, small_matrix_l, all = FALSE), matrix(c(1L,1L),nrow = 1))
+test(9999.043, fpos(big_matrix_l, small_matrix_l, overlap = FALSE), matrix(c(1L,3L,5L,7L,9L,1L,3L,5L,7L,9L,1L,1L,1L,1L,1L,3L,3L,3L,3L,3L),nrow = 10))
+test(9999.044, fpos(big_matrix_cp, small_matrix_cp), matrix(c(2L,7L,2L,7L,2L,7L,2L,7L,1L,1L,2L,2L,3L,3L,4L,4L),nrow = 8))
+test(9999.045, fpos(big_matrix_cp, small_matrix_cp, all = FALSE), matrix(c(2L,1L),nrow = 1))
+test(9999.046, fpos(big_matrix_cp, small_matrix_cp, overlap = FALSE), matrix(c(2L,7L,2L,7L,1L,1L,3L,3L),nrow = 4))
+test(9999.047, fpos(big_matrix_ch, small_matrix_ch), matrix(c(2L,7L,2L,7L,2L,7L,2L,7L,1L,1L,2L,2L,3L,3L,4L,4L),nrow = 8))
+test(9999.048, fpos(big_matrix_ch, small_matrix_ch, all = FALSE), matrix(c(2L,1L),nrow = 1))
+test(9999.049, fpos(big_matrix_ch, small_matrix_ch, overlap = FALSE), matrix(c(2L,7L,2L,7L,1L,1L,3L,3L),nrow = 4))
 
 ########################
 #  Add new tests here  #
