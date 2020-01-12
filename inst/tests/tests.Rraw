@@ -16865,6 +16865,7 @@ test(9999.046, fpos(big_matrix_cp, small_matrix_cp, overlap = FALSE), matrix(c(2
 test(9999.047, fpos(big_matrix_ch, small_matrix_ch), matrix(c(2L,7L,2L,7L,2L,7L,2L,7L,1L,1L,2L,2L,3L,3L,4L,4L),nrow = 8))
 test(9999.048, fpos(big_matrix_ch, small_matrix_ch, all = FALSE), matrix(c(2L,1L),nrow = 1))
 test(9999.049, fpos(big_matrix_ch, small_matrix_ch, overlap = FALSE), matrix(c(2L,7L,2L,7L,1L,1L,3L,3L),nrow = 4))
+test(9999.050, fpos(big_matrix_ch, small_matrix_ch, overlap = c(TRUE,FALSE)), error = "Argument 'overlap' must be TRUE or FALSE and length 1.")
 
 ########################
 #  Add new tests here  #
