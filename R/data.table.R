@@ -1925,18 +1925,41 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
   if (!is.null(rownames))
     X[[rownames]] = NULL
   
+  # We now need to make sure all the columns are the same type, handling special
+  # cases where some columns are not stored in memory (ff objects), lists, or 
+  # otherwise non-atomic types (e.g. S4). Further, we want to minimize
+  # the number of checks done, e.g. if all columns are already the same type.
+  
+  # Get information about the classes and types of each column, returned in an environment.
+  column_properties = function(X) {
+    X.info = new.env()
+    with(X.info, {
+      classes = lapply(X, class)
+      uniq.class.list = unique(classes) # unique sets of classes found across all columns
+      uniq.classes = sort(unique(unlist(uniq.class.list))) # vector of unique classes
+      types = vapply_1c(X, typeof)
+      uniq.types = sort(unique(types))
+    })
+    X.info
+  }
+  X.info = column_properties(X)
+  
   # Check and fix the data.table if it is malformed - i.e. contains NULL
   # columns, wide columns, or columns whose length != .N. For NULL columns
   # we need to drop manually, otherwise we can use as.data.table().
-  null.columns = vapply_1b(X, is.null) 
-  if (any(null.columns))
-    X[null.columns] = NULL
+  any.null = ("NULL" %chin% X.info$uniq.types)
+  if (any.null) {
+    which.null = vapply_1b(X.info$types, `==`, "NULL")
+    X[which.null] = NULL
+    X.info = column_properties(X) # update column properties info
+  }
   
   has.wide.columns = any(vapply_1b(X, function(xj) length(dim(xj)) > 0L)) 
   n.column.lengths = length(unique(vapply_1i(X, length)))
   if (has.wide.columns || n.column.lengths > 1L) {
     X = as.data.table(X)
     class(X) = NULL 
+    X.info = column_properties(X) # update column properties info
   }
   
   # Get matrix meta-data
@@ -1956,26 +1979,6 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
   # If no rows or columns can simply return empty array
   if (p == 0L || n == 0L)
     return(array(NA, dim = list(n, p), dimnames = list(rownames.value, cn)))
-  
-  # We now need to make sure all the columns are the same type, handling special
-  # cases where some columns are not stored in memory (ff objects), lists, or 
-  # otherwise non-atomic types (e.g. S4). Further, we want to minimize
-  # the number of checks done, e.g. if all columns are already the same type.
-  
-  
-  # Get information about the classes and types of each column, returned in an environment.
-  column_properties = function(X) {
-    X.info = new.env()
-    with(X.info, {
-      classes = lapply(X, class)
-      uniq.class.list = unique(classes) # unique sets of classes found across all columns
-      uniq.classes = sort(unique(unlist(uniq.class.list))) # vector of unique classes
-      types = vapply_1c(X, typeof)
-      uniq.types = sort(unique(types))
-    })
-    X.info
-  }
-  X.info = column_properties(X)
   
   # Check for ff columns which need to be brought into memory. Running the any
   # command on the unique column class list means for x with many columns we 
