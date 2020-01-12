@@ -53,6 +53,7 @@ SEXP chmatchdup_R();
 SEXP chin_R();
 SEXP fifelseR();
 SEXP fcaseR();
+SEXP fposR();
 SEXP freadR();
 SEXP fwriteR();
 SEXP reorder();
@@ -205,6 +206,7 @@ R_CallMethodDef callMethods[] = {
 {"Ccoalesce", (DL_FUNC) &coalesce, -1},
 {"CfifelseR", (DL_FUNC) &fifelseR, -1},
 {"CfcaseR", (DL_FUNC) &fcaseR, -1},
+{"CfposR", (DL_FUNC) &fposR, -1},
 {"C_lock", (DL_FUNC) &lock, -1},  // _ for these 3 to avoid Clock as in time
 {"C_unlock", (DL_FUNC) &unlock, -1},
 {"C_islocked", (DL_FUNC) &islockedR, -1},

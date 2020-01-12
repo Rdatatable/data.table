@@ -16764,6 +16764,76 @@ test(2132.1, fifelse(TRUE, s1, s2),      error = "S4 class objects (except nanot
 test(2132.2, fifelse(TRUE, 1, s2),       error = "S4 class objects (except nanotime) are not supported.")
 test(2132.3, fcase(TRUE, s1, FALSE, s2), error = "S4 class objects (except nanotime) are not supported. Please see https://github.com/Rdatatable/data.table/issues/4131.")
 
+# Function to find matrix and vector
+mymatrix = matrix(
+  c(30,-16,22,17,-14,13,43,-26,45,49,-46,-20,-48,-45,5,-43,34,-4,-46,-32,
+    3,3,-46,-38,-2,21,-41,-29,12,-22,-1,-28,-19,-31,-3,42,47,12,-39,17,
+    42,16,24,-41,9,1,-21,-11,24,-25,36,43,22,27,-32,-12,-16,-14,-47,36,
+    -41,0,28,11,35,-4,42,42,28,10,13,-25,14,-36,-45,0,18,10,16,-6,
+    -11,26,-14,19,-19,-30,-6,20,-28,-36,-34,-12,-45,-28,-41,-34,39,27,-34,15,
+    -45,41,-10,33,34,-46,24,-15,-40,36,21,-4,-18,-3,-1,30,-18,-12,-46,44,
+    30,3,-26,29,7,-8,38,-11,-19,24,-15,-13,20,-26,-19,46,-5,-1,26,41,
+    6,-47,-4,29,27,-37,46,21,13,12,37,50,12,30,34,-35,-22,23,-31,22,
+    -8,38,-16,14,-2,0,-4,47,-2,13,6,-26,-36,31,43,-36,20,37,45,37,
+    8,37,-43,-48,37,-39,6,23,-8,-14,26,14,14,48,4,-3,3,-32,-35,1,
+    8,42,28,-6,-16,-27,19,-38,-14,-43,-33,-35,-17,49,-7,22,36,-31,17,-45,
+    -40,4,-32,-39,33,-41,18,-50,-48,38,-5,-27,-44,7,23,38,-13,9,31,29,
+    -21,-6,-43,-42,-25,-46,-4,48,11,3,-43,42,-9,45,48,16,24,-38,-32,38,
+    38,44,18,11,-5,45,-29,26,-50,18,-11,-43,-8,-37,24,-41,-37,44,-18,38,
+    25,-39,-13,26,-20,30,-1,-5,-22,42,-11,-2,-42,-43,0,-49,12,-2,-16,34),
+  nrow = 20, ncol = 15
+)
+
+mat_lgl_a = mat_cpl_a = mat_chr_a = mat_dbl_a = mat_int_a = mymatrix
+mat_cpl_b = mat_dbl_b = mat_chr_b = mat_int_b = mat_lgl_b = mat_int_a
+
+storage.mode(mat_dbl_a) = "numeric"
+storage.mode(mat_int_a) = "integer"
+storage.mode(mat_chr_a) = "character"
+storage.mode(mat_cpl_a) = "complex"
+storage.mode(mat_lgl_a) = "logical"
+mat_raw_a = abs(mat_int_a); storage.mode(mat_raw_a) = "raw"
+
+mat_dbl_b[2,2] = NA; storage.mode(mat_dbl_b) = "numeric"
+mat_int_b[2,2] = NA; storage.mode(mat_int_b) = "integer"
+mat_chr_b[2,2] = NA; storage.mode(mat_chr_b) = "character"
+mat_lgl_b[2,2] = NA; storage.mode(mat_lgl_b) = "logical"
+mat_cpl_b[2,2] = NA; storage.mode(mat_cpl_b) = "complex"
+
+test(9999.001, fpos(mat_dbl_a, mat_dbl_a[1:2,1:2], FALSE), matrix(c(1L,1L),nrow = 1))
+test(9999.002, fpos(mat_dbl_a, mat_dbl_a[1:2,9:10], FALSE), matrix(c(1L,9L),nrow = 1))
+test(9999.003, fpos(mat_dbl_a, mat_dbl_a[19:20,1:2], FALSE), matrix(c(19L,1L),nrow = 1))
+test(9999.004, fpos(mat_dbl_a, mat_dbl_a[19:20,9:10], FALSE), matrix(c(19L,9L),nrow = 1))
+test(9999.005, fpos(mat_int_a, mat_int_a[1:2,1:2], TRUE), matrix(c(1L,1L),nrow = 1))
+test(9999.006, fpos(mat_int_a, mat_int_a[1:2,9:10], TRUE), matrix(c(1L,9L),nrow = 1))
+test(9999.007, fpos(mat_int_a, mat_int_a[19:20,1:2], TRUE), matrix(c(19L,1L),nrow = 1))
+test(9999.008, fpos(mat_int_a, mat_int_a[19:20,9:10], TRUE), matrix(c(19L,9L),nrow = 1))
+test(9999.009, fpos(mat_chr_a, mat_chr_a[1:2,1:2], FALSE), matrix(c(1L,1L),nrow = 1))
+test(9999.010, fpos(mat_chr_a, mat_chr_a[1:2,9:10], FALSE), matrix(c(1L,9L),nrow = 1))
+test(9999.011, fpos(mat_chr_a, mat_chr_a[19:20,1:2], FALSE), matrix(c(19L,1L),nrow = 1))
+test(9999.012, fpos(mat_chr_a, mat_chr_a[19:20,9:10], FALSE), matrix(c(19L,9L),nrow = 1))
+test(9999.013, fpos(mat_lgl_a, mat_lgl_a[2:3,4:5], TRUE), matrix(c(2L,16L,6L,4L,4L,9L),nrow = 3))
+test(9999.014, fpos(mat_lgl_a, mat_lgl_a[1:2,9:10], FALSE), matrix(c(1L,1L),nrow = 1))
+test(9999.015, fpos(mat_lgl_a, mat_lgl_a[19:20,1:2], FALSE), matrix(c(1L,1L),nrow = 1))
+test(9999.016, fpos(mat_lgl_a, mat_lgl_a[14:15,14:15], TRUE), matrix(c(1L,15L,5L,14L,3L,3L,8L,14L),nrow = 4))
+test(9999.017, fpos(mat_lgl_a, mat_lgl_a[19:20,9:10], c(TRUE,FALSE)), error = "Argument 'all' must be TRUE or FALSE and length 1.")
+test(9999.018, fpos(c(1:5), mat_lgl_a[19:20,9:10],TRUE), error = "One of the dimension of the small matrix is greater than the large matrix.")
+test(9999.019, fpos(mat_lgl_a[19:20,9:10],TRUE, FALSE), matrix(c(1L,1L),nrow = 1))
+test(9999.020, fpos(mat_lgl_a[19:20,9:10], mat_lgl_a, TRUE), error = "One of the dimension of the small matrix is greater than the large matrix.")
+test(9999.021, fpos(mat_raw_a, mat_raw_a[1:2,1:2], TRUE), error = "Type raw of 'haystack' is not supported.")
+test(9999.022, fpos(mat_int_a, mat_raw_a[1:2,1:2], TRUE), error = "Type raw of 'needle' is not supported.")
+test(9999.023, fpos(mat_dbl_b, mat_dbl_b[1:2,1:2], FALSE), matrix(c(1L,1L),nrow = 1))
+test(9999.024, fpos(mat_int_b, mat_int_b[1:2,1:2], FALSE), matrix(c(1L,1L),nrow = 1))
+test(9999.025, fpos(mat_chr_b, mat_chr_b[1:2,1:2], FALSE), matrix(c(1L,1L),nrow = 1))
+test(9999.026, fpos(mat_lgl_b, mat_lgl_b[1:2,1:2], FALSE), matrix(c(1L,1L),nrow = 1))
+test(9999.027, fpos(mat_cpl_b, mat_cpl_b[1:2,1:2], FALSE), matrix(c(1L,1L),nrow = 1))
+test(9999.028, fpos(mat_cpl_a, mat_cpl_a[1:2,1:2], TRUE), matrix(c(1L,1L),nrow = 1))
+test(9999.029, fpos(mat_cpl_a, mat_cpl_a[2:3,2:3], TRUE), matrix(c(2L,2L),nrow = 1))
+test(9999.030, fpos(matrix(c(1:30),nrow = 5), matrix(13), TRUE), matrix(c(3L, 3L),nrow = 1))
+test(9999.031, fpos(matrix(c(1:30),nrow = 5), matrix(c(19,24),nrow = 1), TRUE), matrix(c(4L, 4L),nrow = 1))
+test(9999.032, fpos(mat_lgl_a, mat_int_a[19:20,9:10]), error = "Haystack type (logical) and needle type (integer) are different. Please make sure that they have the same type.")
+test(9999.033, fpos(mat_dbl_a, mat_int_a[19:20,9:10]), matrix(c(19L,9L),nrow = 1))
+test(9999.034, fpos(mat_int_a, mat_dbl_a[19:20,9:10]), matrix(c(19L,9L),nrow = 1))
 
 ########################
 #  Add new tests here  #

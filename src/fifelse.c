@@ -343,3 +343,253 @@ SEXP fcaseR(SEXP na, SEXP rho, SEXP args) {
   UNPROTECT(nprotect);
   return ans;
 }
+
+SEXP fposR(SEXP haystack, SEXP needle, SEXP all, SEXP overlap) {
+  if (!IS_TRUE_OR_FALSE(all)) {
+    error("Argument 'all' must be TRUE or FALSE and length 1.");
+  }
+  if (!IS_TRUE_OR_FALSE(overlap)) {
+    error("Argument 'overlap' must be TRUE or FALSE and length 1.");
+  }
+
+  SEXPTYPE thaystack = TYPEOF(haystack);
+  SEXPTYPE tneedle = TYPEOF(needle);
+
+  if (thaystack != INTSXP && thaystack != REALSXP && thaystack != LGLSXP &&
+      thaystack != CPLXSXP && thaystack != STRSXP) {
+    error("Type %s of 'haystack' is not supported.", type2char(thaystack));
+  }
+  if (tneedle != INTSXP && tneedle != REALSXP && tneedle != LGLSXP &&
+      tneedle != CPLXSXP && tneedle != STRSXP) {
+    error("Type %s of 'needle' is not supported.", type2char(tneedle));
+  }
+
+  const int64_t n = nrows(haystack);
+  const int64_t m = ncols(haystack);
+  const int64_t k = nrows(needle);
+  const int64_t l = ncols(needle);
+
+  if (k > n || l > m) {
+    error("One of the dimension of the small matrix is greater than the large matrix.");
+  }
+
+  int nprotect = 0;
+
+  if (thaystack != tneedle) {
+    if (tneedle == INTSXP && thaystack == REALSXP) {
+       needle = PROTECT(coerceVector(needle, thaystack)); nprotect++;
+       tneedle = thaystack;
+    } else if (tneedle == REALSXP && thaystack == INTSXP) {
+       haystack = PROTECT(coerceVector(haystack, tneedle)); nprotect++;
+       thaystack = tneedle;
+    } else {
+       error("Haystack type (%s) and needle type (%s) are different."
+             " Please make sure that they have the same type.",
+             type2char(thaystack), type2char(tneedle));
+    }
+  }
+
+  const int64_t lim_x = n - k + 1;
+  const int64_t lim_y = m - l + 1;
+  const int64_t sz = lim_x * lim_y;
+  int64_t i, j, p, q, id, tj = 0, ti = 0;
+  int64_t poshaystack = 0, posneedle = 0, x = 0;
+
+  SEXP col = PROTECT(allocVector(INTSXP, sz)); nprotect++;
+  SEXP row = PROTECT(allocVector(INTSXP, sz)); nprotect++;
+  int *restrict pcol = INTEGER(col);
+  int *restrict prow = INTEGER(row);
+  const int pall = LOGICAL(all)[0];
+  const int poverlap = LOGICAL(overlap)[0];
+
+  switch(thaystack) {
+  case LGLSXP: {
+    const int *restrict inthaystack = LOGICAL(haystack);
+    const int *restrict intneedle = LOGICAL(needle);
+    for (i = 0; i < lim_y; ++i) {
+      for (j = 0; j < lim_x; ++j) {
+        id = 1;
+        if (i < ti && j < tj) {
+            continue;
+        }
+        for (p = 0; p < l; ++p) {
+          poshaystack = (i+p) * n  + j;
+          posneedle = p * k;
+          for (q = 0; q < k; ++q) {
+            if (inthaystack[poshaystack + q] != intneedle[posneedle + q]) {
+                id = 0;
+                break;
+            }
+          }
+          if (!id) {
+            break;
+          }
+        }
+        if (id) {
+          prow[x] = j + 1;
+          pcol[x++] = i + 1;
+          if (!pall) {
+            goto label;
+          }
+          if (poverlap) {
+            ti = i + 1;
+            tj = j + 1;
+          }
+        }
+      }
+    }
+  } break;
+  case INTSXP: {
+    const int *restrict inthaystack = INTEGER(haystack);
+    const int *restrict intneedle = INTEGER(needle);
+    for (i = 0; i < lim_y; ++i) {
+      for (j = 0; j < lim_x; ++j) {
+        id = 1;
+        if (i < ti && j < tj) {
+            continue;
+        }
+        for (p = 0; p < l; ++p) {
+          poshaystack = (i+p) * n  + j;
+          posneedle = p * k;
+          for (q = 0; q < k; ++q) {
+              if (inthaystack[poshaystack + q] != intneedle[posneedle + q]) {
+                  id = 0;
+                  break;
+              }
+          }
+          if (!id) {
+            break;
+          }
+        }
+        if (id) {
+          prow[x] = j + 1;
+          pcol[x++] = i + 1;
+          if (!pall) {
+            goto label;
+          }
+          if (poverlap) {
+            ti = i + 1;
+            tj = j + 1;
+          }
+        }
+      }
+    }
+  } break;
+  case REALSXP: {
+    const double *restrict doublehaystack = REAL(haystack);
+    const double *restrict doubleneedle = REAL(needle);
+    for (i = 0; i < lim_y; ++i) {
+      for (j = 0; j < lim_x; ++j) {
+        id = 1;
+        if (i < ti && j < tj) {
+            continue;
+        }
+        for (p = 0; p < l; ++p)
+        {
+          poshaystack = (i+p) * n  + j;
+          posneedle = p * k;
+          for (q = 0; q < k; ++q) {
+            if (doublehaystack[poshaystack + q] != doubleneedle[posneedle + q] &&
+               (!ISNA(doublehaystack[poshaystack + q]) && !ISNA(doubleneedle[posneedle + q]))) {
+                id = 0;
+                break;
+            }
+          }
+          if (!id) {
+            break;
+          }
+        }
+        if (id) {
+          prow[x] = j + 1;
+          pcol[x++] = i + 1;
+          if (!pall) {
+            goto label;
+          }
+          if (poverlap) {
+            ti = i + 1;
+            tj = j + 1;
+          }
+        }
+      }
+    }
+  } break;
+  case CPLXSXP: {
+    const Rcomplex *restrict cplhaystack = COMPLEX(haystack);
+    const Rcomplex *restrict cplneedle = COMPLEX(needle);
+    for (i = 0; i < lim_y; ++i) {
+      for (j = 0; j < lim_x; ++j) {
+        id = 1;
+        if (i < ti && j < tj) {
+            continue;
+        }
+        for (p = 0; p < l; ++p) {
+          poshaystack = (i+p) * n  + j;
+          posneedle = p * k;
+          for (q = 0; q < k; ++q) {
+            if ((cplhaystack[poshaystack + q].r != cplneedle[posneedle + q].r ||
+                cplhaystack[poshaystack + q].i != cplneedle[posneedle + q].i) &&
+               (!ISNA(cplhaystack[poshaystack + q].r) && !ISNA(cplneedle[posneedle + q].r))) {
+                id = 0;
+                break;
+            }
+          }
+          if (!id) {
+            break;
+          }
+        }
+        if (id) {
+          prow[x] = j + 1;
+          pcol[x++] = i + 1;
+          if (!pall) {
+            goto label;
+          }
+          if (poverlap) {
+            ti = i + 1;
+            tj = j + 1;
+          }
+        }
+      }
+    }
+  } break;
+  case STRSXP: {
+    for (i = 0; i < lim_y; ++i) {
+      for (j = 0; j < lim_x; ++j) {
+        id = 1;
+        if (i < ti && j < tj) {
+            continue;
+        }
+        for (p = 0; p < l; ++p) {
+          poshaystack = (i+p) * n  + j;
+          posneedle = p * k;
+          for (q = 0; q < k; ++q) {
+              if (CHAR(STRING_ELT(haystack, poshaystack + q)) != CHAR(STRING_ELT(needle, posneedle + q))) {
+                  id = 0;
+                  break;
+              }
+          }
+          if (!id) {
+            break;
+          }
+        }
+        if (id) {
+          prow[x] = j + 1;
+          pcol[x++] = i + 1;
+          if (!pall) {
+            goto label;
+          }
+          if (poverlap) {
+            ti = i + 1;
+            tj = j + 1;
+          }
+        }
+      }
+    }
+  } break;
+  }
+  label:;
+  SEXP ans = PROTECT(allocMatrix(INTSXP, x, 2)); nprotect++;
+  memcpy(INTEGER(ans), prow, x*sizeof(int));
+  memcpy(INTEGER(ans)+x, pcol, x*sizeof(int));
+  UNPROTECT(nprotect);
+  return ans;
+}
