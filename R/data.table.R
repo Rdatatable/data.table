@@ -2084,9 +2084,6 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
              # list impossible to reach - list and other recursive columns handled separately
       )
     }
-    
-    # redetermine classes and types
-    X.info = column_properties(X)
   }
   
   # If mix of recursive column types, fall back on unlist method
