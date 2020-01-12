@@ -1997,10 +1997,9 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
   atomics <- c("logical", "integer", "double", "complex", "character", "raw")
   any.non.atomic = (length(setdiff(X.info$uniq.types, atomics)) > 0L)
   if (any.non.atomic) {
-    for (j in seq_len(p)) {
-      if (!is.recursive(X[[j]])) { 
+    for (j in seq_len(p)) { # TODO can check recursive from the type list instead of iterating?
+      if (!is.recursive(X[[j]]))
         X[[j]] = as.list(as.vector(X[[j]]))
-      }
     }
     
     # redetermine classes and types for next checks
