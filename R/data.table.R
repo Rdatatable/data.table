@@ -1931,15 +1931,30 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
   # the number of checks done, e.g. if all columns are already the same type.
   
   # Get information about the classes and types of each column, returned in an environment.
-  column_properties = function(X) {
-    X.info = new.env()
-    with(X.info, {
-      classes = lapply(X, class)
-      uniq.class.list = unique(classes) # unique sets of classes found across all columns
-      uniq.classes = sort(unique(unlist(uniq.class.list))) # vector of unique classes
-      types = vapply_1c(X, typeof)
-      uniq.types = sort(unique(types))
-    })
+  # additional arguments allow for efficient updating of information
+  column_properties = function(X, X.info, cols.to.update, cols.to.drop) {
+    if (missing(X.info))
+      X.info = new.env()
+    
+    # Get class and type of relevant columns
+    if (missing(cols.to.update) && missing(cols.to.drop)) {
+      X.info$classes = lapply(X, class) # lapply here because a column may have > 1 class. 
+      X.info$types = vapply_1c(X, typeof)
+    } else if (!missing(cols.to.drop)) {
+      X.info$classes = X.info$classes[-cols.to.drop]
+      X.info$types = X.info$types[-cols.to.drop]
+    } else if (!missing(cols.to.update)) {
+      X.info$classes[cols.to.update] = lapply(X[cols.to.update], class)
+      X.info$types[cols.to.update] = vapply_1c(X[cols.to.update], typeof)
+    } else {
+      stop("Internal error: cols.to.update and cols.to.drop cannot both be supplied to column_properties()") # nocov
+    }
+    
+    # Get unique classes and types
+    X.info$uniq.class.list = unique(X.info$classes) # list, i.e. handles multi-class columns
+    X.info$uniq.classes = sort(unique(unlist(X.info$uniq.class.list))) # flat vector of unique classes
+    X.info$uniq.types = sort(unique(X.info$types))
+
     X.info
   }
   X.info = column_properties(X)
@@ -1950,19 +1965,30 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
   }
   col_is_class = function(X.info, target) {
     if (length(target) > 1)
-      vapply_1b(X.info$classes, function(cl_vec) { target %chin% cl_vec } )
+      vapply_1b(X.info$classes, function(cl_vec) { any(target %chin% cl_vec) } )
     else
       vapply_1b(X.info$classes, `==`, target)
+  }
+  any_class_is = function(X.info, target) {
+    any(target %chin% X.info$uniq.classes)
+  }
+  any_type_is = function(X.info, target) {
+    any(target %chin% X.info$uniq.types)
+  }
+  all_class_is = function(X.info, target) {
+    length(setdiff(X.info$uniq.classes, target)) == 0L
+  }
+  all_type_is = function(X.info, target) {
+    length(setdiff(X.info$uniq.types, target)) == 0L
   }
   
   # Check and fix the data.table if it is malformed - i.e. contains NULL
   # columns, wide columns, or columns whose length != .N. For NULL columns
   # we need to drop manually, otherwise we can use as.data.table().
-  any.null = ("NULL" %chin% X.info$uniq.types)
-  if (any.null) {
-    col.is.null = col_is_type(X.info, "NULL")
+  if (any_type_is(X.info, "NULL")) {
+    col.is.null = which(col_is_type(X.info, "NULL"))
     X[col.is.null] = NULL
-    X.info = column_properties(X) # update column properties info
+    X.info = column_properties(X, X.info, cols.to.drop = col.is.null) # update column properties info
   }
   
   has.wide.columns = any(vapply_1b(X, function(xj) length(dim(xj)) > 0L)) 
@@ -1970,7 +1996,7 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
   if (has.wide.columns || n.column.lengths > 1L) {
     X = as.data.table(X)
     class(X) = NULL 
-    X.info = column_properties(X) # update column properties info
+    X.info = column_properties(X) # get column properties info
   }
   
   # Get matrix meta-data
@@ -1995,71 +2021,67 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
   # command on the unique column class list means for x with many columns we 
   # don't do expensive per-column checks unless necessary.
   # nocov start
-  any.ff = ("ff" %chin% X.info$uniq.classes)
-  if (any.ff) {
+  if (any_class_is(X.info, "ff")) {
     which.ff = which(col_is_class(X.info, "ff"))
     for (j in which.ff) {
       X[[j]] = X[[j]][] # bring into memory
     }
-    X.info = column_properties(X) # update column properties info
+    X.info = column_properties(X, X.info, cols.to.update = which.ff) # update column properties info
   }
   # nocov end
   
   # Next determine if any columns are list or non-atomic type. If so, convert all columns to lists
   atomic.types <- c("logical", "integer", "double", "complex", "character", "raw")
-  any.non.atomic = (length(setdiff(X.info$uniq.types, atomic.types)) > 0L)
+  any.non.atomic = !all_type_is(X.info, atomic.types)
   if (any.non.atomic) {
     for (j in seq_len(p)) { # TODO can check recursive from the type list instead of iterating?
       if (!is.recursive(X[[j]]))
         X[[j]] = as.list(as.vector(X[[j]]))
     }
-    X.info = column_properties(X) # update column properties info
   }
   
   # Convert factors to character vectors
-  any.factors = ("factor" %chin% X.info$uniq.classes)
-  if (any.factors) {
+  if (!any.non.atomic && any_class_is(X.info, "factor")) {
     which.factors = which(col_is_class(X.info, "factor"))
     for (j in which.factors) {
       miss = is.na(X[[j]])
       X[[j]] = as.vector(X[[j]])
       is.na(X[[j]]) = miss
     }
-    X.info = column_properties(X)
+    X.info = column_properties(X, X.info, cols.to.update = which.factors)
   }
   
   # Classes to be converted to character vectors
   charconvert.classes = c("Date", "POSIXct", "POSIXlt")
-  any.charconvert = any(charconvert.classes %chin% X.info$uniq.classes)
-  if (any.charconvert) {
-    which.charconvert = which(sapply(X.info$classes, function(cl_vec) { any(charconvert.classes %chin% cl_vec) }))
+  if (!any.non.atomic && any_class_is(X.info, charconvert.classes)) {
+    which.charconvert = which(col_is_class(X.info, charconvert.classes))
     for (j in which.charconvert) {
       miss = is.na(X[[j]])
       X[[j]] = format(X[[j]])
       is.na(X[[j]]) = miss
     }
-    X.info = column_properties(X) # update column properties info
+    X.info = column_properties(X, X.info, cols.to.update = which.charconvert) # update column properties info
   }
   
   # Other classes from suggested packages that have special type conversion rules
-  any.bit64 = ("integer64" %chin% X.info$uniq.classes)
-  if (any.bit64 && length(X.info$uniq.classes) > 1L) {
+  if (!any.non.atomic && any_class_is(X.info, "integer64") && length(X.info$uniq.classes) > 1L) {
     # Determine target class we're converting to 
     target.class = NULL
     if (!requireNamespace("bit64", quietly=TRUE)) 
        stop("coercion to or from integer64 columns requires the bit64 package") # nocov
-    if (all(X.info$uniq.classes %chin% c("integer64", "logical", "integer", "raw")))
+    if (all_class_is(X.info, c("integer64", "logical", "integer", "raw")))
       target.class = "integer64"
-    else if (all(X.info$uniq.classes %chin% c("integer64", "numeric", "complex", "character")))
+    else if (all_class_is(X.info, c("integer64", "numeric", "complex", "character")))
       target.class = "character" # integer64 cannot reliably be converted to numeric or complex
     
     if (!is.null(target.class)) { # if NULL fallback on type coercion
       # no method as.integer64.raw so we need to do two-step conversion
-      if (target.class == "integer64" && "raw" %chin% X.info$uniq.classes) {
+      if (target.class == "integer64" && any_class_is(X.info, "raw")) {
         which.convert = which(col_is_class(X.info, "raw"))
         for (j in which.convert) {
-          X[[j]] = bit64::as.integer64(as.integer(X[[j]]))
+          X[[j]] = as.integer(X[[j]])
         }
+        X.info = column_properties(X, X.info, cols.to.update = which.convert)
       }
       
       # Which columns need to be coerced?
@@ -2072,7 +2094,7 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
                "character"={ X[[j]] = as.character(X[[j]]) })
       }
       
-      X.info = column_properties(X) # update column properties info
+      X.info = column_properties(X, X.info,  cols.to.update = which.convert) # update column properties info
     }
   }
   
