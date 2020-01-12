@@ -292,7 +292,7 @@ SEXP asmatrix(SEXP dt) {
       mat = asmatrix_list(dt, matlen, (R_len_t) n);
       break;
     default:
-      error("Unsupported matrix type '%s'", type2char(R_atomic_type));
+      error("Internal error: unsupported matrix type '%s'", type2char(R_atomic_type)); // nocov
   }
   
   if (verbose) 
