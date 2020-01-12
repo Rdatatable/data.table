@@ -2086,6 +2086,11 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
     }
   }
   
+  # Warn if fell back on type coercion
+  if (!any.non.atomic && length(X.info$uniq.class.list) > 1L) 
+    warning("Could not coerce columns to a common class, class information", 
+            "has been stripped and columns coerced to type ", typeof(X[[1L]])) # nocov
+  
   # If mix of recursive column types, fall back on unlist method
   if (any.non.atomic && length(X.info$uniq.types) > 1L)
     X = unlist(X, recursive = FALSE, use.names = FALSE) 
