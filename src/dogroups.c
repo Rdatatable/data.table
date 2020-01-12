@@ -405,21 +405,11 @@ SEXP growVector(SEXP x, const R_len_t newlen)
   PROTECT(newx = allocVector(TYPEOF(x), newlen));   // TO DO: R_realloc(?) here?
   if (newlen < len) len=newlen;   // i.e. shrink
   switch (TYPEOF(x)) {
-  case RAWSXP:
-    memcpy(RAW(newx), RAW(x), len*SIZEOF(x));
-    break;
-  case LGLSXP:
-    memcpy(LOGICAL(newx), LOGICAL(x), len*SIZEOF(x));
-    break;
-  case INTSXP:
-    memcpy(INTEGER(newx), INTEGER(x), len*SIZEOF(x));
-    break;
-  case REALSXP:
-    memcpy(REAL(newx), REAL(x), len*SIZEOF(x));
-    break;
-  case CPLXSXP:
-    memcpy(COMPLEX(newx), COMPLEX(x), len*SIZEOF(x));
-    break;
+  case RAWSXP:  memcpy(RAW(newx),     RAW(x),     len*SIZEOF(x)); break;
+  case LGLSXP:  memcpy(LOGICAL(newx), LOGICAL(x), len*SIZEOF(x)); break;
+  case INTSXP:  memcpy(INTEGER(newx), INTEGER(x), len*SIZEOF(x)); break;
+  case REALSXP: memcpy(REAL(newx),    REAL(x),    len*SIZEOF(x)); break;
+  case CPLXSXP: memcpy(COMPLEX(newx), COMPLEX(x), len*SIZEOF(x)); break;
   case STRSXP : {
     const SEXP *xd = SEXPPTR_RO(x);
     for (int i=0; i<len; ++i)
