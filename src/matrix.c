@@ -165,7 +165,7 @@ SEXP asmatrix_complex(SEXP dt, R_xlen_t matlen, R_xlen_t n) {
     }
   }
 
-return mat;
+  return mat;
 }
 
 SEXP asmatrix_character(SEXP dt, R_xlen_t matlen, R_len_t n) {
