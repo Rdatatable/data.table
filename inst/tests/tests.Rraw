@@ -16833,5 +16833,9 @@ DT = structure(list(A=function(){}, B=list(1), C=expression(1+1)), class=c("data
 mat = matrix(c(A=function(){}, B=list(1), C=expression(1+1)), ncol=3, dimnames=list(NULL, c("A","B","C")))
 test(2137.6, as.matrix(DT), mat) # falls back on unlist 
 
+DT = data.table(A=function(){}, B=list(1))
+mat = matrix(c(A=function(){}, B=list(1)), ncol=2, dimnames=list(NULL, c("A","B")))
+test(2137.7, as.matrix(DT), mat)
+
 
 
