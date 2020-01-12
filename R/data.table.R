@@ -2087,7 +2087,7 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
              "double"={ X[[j]] = as.double(X[[j]]) },
              "complex"={ X[[j]] = as.complex(X[[j]]) },
              "character"={ X[[j]] = as.character(X[[j]]) }
-             # list should not be possible to reach, as all columns will be list type from prior coercion
+             # list impossible to reach - list and other recursive columns handled separately
       )
     }
     
@@ -2095,8 +2095,14 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
     X.info = column_properties(X)
   }
   
-  # Copy the values into a matrix
-  X = .Call(Casmatrix, X)
+  # If mix of recursive column types, fall back on unlist method
+  if (any.non.atomic && length(X.info$uniq.types) > 1L)
+    X = unlist(X, recursive = FALSE, use.names = FALSE) 
+  # Otherwise use fast C method to copy values into matrix
+  else  
+    X = .Call(Casmatrix, X)   
+
+  # Add necessary attributes
   dim(X) = c(n, length(X)/n)
   dimnames(X) = list(rownames.value, cn)
   
