@@ -1990,9 +1990,7 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
     for (j in which.ff) {
       X[[j]] = X[[j]][] # bring into memory
     }
-    
-    # update column information
-    X.info = column_properties(X)
+    X.info = column_properties(X) # update column properties info
   }
   # nocov end
   
@@ -2004,9 +2002,7 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
       if (!is.recursive(X[[j]]))
         X[[j]] = as.list(as.vector(X[[j]]))
     }
-    
-    # redetermine classes and types for next checks
-    X.info = column_properties(X)
+    X.info = column_properties(X) # update column properties info
   }
   
   # Convert factors to character vectors
@@ -2018,8 +2014,6 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
       X[[j]] = as.vector(X[[j]])
       is.na(X[[j]]) = miss
     }
-    
-    # redetermine classes and types for next checks
     X.info = column_properties(X)
   }
   
@@ -2033,9 +2027,7 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
       X[[j]] = format(X[[j]])
       is.na(X[[j]]) = miss
     }
-    
-    # redetermine classes and types for next checks
-    X.info = column_properties(X)
+    X.info = column_properties(X) # update column properties info
   }
   
   # Other classes from suggested packages that have special type conversion rules
@@ -2069,8 +2061,7 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
                "character"={ X[[j]] = as.character(X[[j]]) })
       }
       
-      # redetermine classes and types
-      X.info = column_properties(X)
+      X.info = column_properties(X) # update column properties info
     }
   }
   
