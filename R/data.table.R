@@ -2006,8 +2006,8 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
   # nocov end
   
   # Next determine if any columns are list or non-atomic type. If so, convert all columns to lists
-  atomics <- c("logical", "integer", "double", "complex", "character", "raw")
-  any.non.atomic = (length(setdiff(X.info$uniq.types, atomics)) > 0L)
+  atomic.types <- c("logical", "integer", "double", "complex", "character", "raw")
+  any.non.atomic = (length(setdiff(X.info$uniq.types, atomic.types)) > 0L)
   if (any.non.atomic) {
     for (j in seq_len(p)) { # TODO can check recursive from the type list instead of iterating?
       if (!is.recursive(X[[j]]))
@@ -2098,7 +2098,10 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
   }
   
   # Warn if fell back on type coercion
-  if (!any.non.atomic && length(X.info$uniq.class.list) > 1L) 
+  atomic.classes = c("logical", "raw", "integer", "numeric", 
+                     "complex", "character", "list")
+  non.atomics = setdiff(X.info$uniq.classes, atomic.classes)
+  if (!any.non.atomic && length(non.atomics) > 0L && length(X.info$uniq.class.list) > 1L)  
     warning("Could not coerce columns to a common class, class information", 
             "has been stripped and columns coerced to type ", typeof(X[[1L]])) # nocov
   
@@ -2118,12 +2121,8 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
   # include those defined in packages outside of base R - for example
   # if all columns have class integer64 we can add this class to the 
   # matrix.
-  if (!any.non.atomic && length(X.info$uniq.class.list) == 1L) {
-    base.types = c("logical", "raw", "integer", "numeric", "double", 
-                     "complex", "character", "list")
-    add.class = setdiff(X.info$uniq.classes, base.types)
-    class(X) = add.class
-  }
+  if (!any.non.atomic && length(non.atomics) > 0L && length(X.info$uniq.class.list) == 1L)
+    class(X) = non.atomics
   
   X
 }
