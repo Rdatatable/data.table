@@ -2107,7 +2107,7 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
   # include those defined in packages outside of base R - for example
   # if all columns have class integer64 we can add this class to the 
   # matrix.
-  if (length(X.info$uniq.class.list) == 1L) {
+  if (!any.non.atomic && length(X.info$uniq.class.list) == 1L) {
     base.types = c("logical", "raw", "integer", "numeric", "double", 
                      "complex", "character", "list")
     add.class = setdiff(X.info$uniq.classes, base.types)
