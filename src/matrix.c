@@ -254,7 +254,7 @@ SEXP asmatrix(SEXP dt) {
   const bool verbose = GetVerbose(); 
   double tic = 0; 
   if (verbose) 
-    tic = omp_get_wtime();
+    tic = omp_get_wtime(); // nocov
   
   // Determine the number of rows and columns in the data.table
   R_xlen_t p = xlength(dt);
@@ -296,7 +296,7 @@ SEXP asmatrix(SEXP dt) {
   }
   
   if (verbose) 
-    Rprintf("%s: took %.3fs\n", __func__, omp_get_wtime()-tic);
+    Rprintf("%s: took %.3fs\n", __func__, omp_get_wtime()-tic); // nocov
   
   UNPROTECT(1);
   return(mat);

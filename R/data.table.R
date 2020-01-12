@@ -2123,9 +2123,12 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
   atomic.classes = c("logical", "raw", "integer", "numeric", 
                      "complex", "character", "list")
   non.atomics = setdiff(X.info$uniq.classes, atomic.classes)
-  if (!any.non.atomic && length(non.atomics) > 0L && length(X.info$uniq.class.list) > 1L)  
+  # nocov start
+  if (!any.non.atomic && length(non.atomics) > 0L && length(X.info$uniq.class.list) > 1L) {
     warning("Could not coerce columns to a common class, class information", 
-            "has been stripped and columns coerced to type ", typeof(X[[1L]])) # nocov
+            "has been stripped and columns coerced to type ", typeof(X[[1L]]))
+  }
+  # nocov end
   
   # If mix of recursive column types, fall back on unlist method
   if (any.non.atomic && length(X.info$uniq.types) > 1L)
