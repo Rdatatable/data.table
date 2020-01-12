@@ -2041,7 +2041,7 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
     # Determine target class we're converting to 
     target.class = NULL
     if (!requireNamespace("bit64", quietly=TRUE)) 
-      target.class = "character" # bit64 package not installed
+       stop("coercion to or from integer64 columns requires the bit64 package") # nocov
     if (all(X.info$uniq.classes %chin% c("integer64", "logical", "integer")))
       target.class = "integer64"
     else if (all(X.info$uniq.classes %chin% c("integer64", "numeric", "complex", "character")))
