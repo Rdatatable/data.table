@@ -1969,7 +1969,7 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
     with(X.info, {
       classes = lapply(X, class)
       uniq.class.list = unique(classes) # unique sets of classes found across all columns
-      uniq.classes = sort(unique(uniq.class.list)) # vector of unique classes
+      uniq.classes = sort(unique(unlist(uniq.class.list))) # vector of unique classes
       types = vapply_1c(X, typeof)
       uniq.types = sort(unique(types))
     })
@@ -2007,7 +2007,7 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
   }
   
   # Convert factors to character vectors
-  any.factors = ("factor" %chin% X.info$classes)
+  any.factors = ("factor" %chin% X.info$uniq.classes)
   if (any.factors) {
     which.factors = which(sapply(X.info$classes, function(cl_vec) { "factor" %chin% cl_vec }))
     for (j in which.factors) {
