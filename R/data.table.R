@@ -2048,6 +2048,14 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
       target.class = "character" # integer64 cannot reliably be converted to numeric or complex
     
     if (!is.null(target.class)) { # if NULL fallback on type coercion
+      # no method as.integer64.raw so we need to do two-step conversion
+      if (target.class == "integer64" && "raw" %chin% X.info$uniq.classes) {
+        which.convert = which(sapply(X.info$classes, function(cl_vec) { ("raw" %chin% cl_vec) }))
+        for (j in which.convert) {
+          X[[j]] = bit64::as.integer64(as.integer(X[[j]]))
+        }
+      }
+      
       # Which columns need to be coerced?
       which.convert = which(sapply(X.info$classes, function(cl_vec) { !any(target.class %chin% cl_vec) }))
       
