@@ -3,9 +3,9 @@
 SEXP reorder(SEXP x, SEXP order)
 {
   // For internal use only by setkey().
-  // 'order' must strictly be a permutation of 1:n (i.e. no repeats, zeros or NAs)
-  // If only a small subset in the middle is reordered the ends are moved in: [start,end].
-  // x may be a vector, or a list of same-length vectors such as data.table
+  // 'order' must be a strict permutation of 1:n; i.e. no repeats, zeros, NAs. Also known as a shuffle.
+  // If only a small subset in the middle is reordered, the ends are moved in to avoid wasteful work.
+  // x may be a vector, or a list of same-length vectors (typically a data.table).
   R_len_t nrow, ncol;
   size_t maxSize = 0;
   if (isNewList(x)) {
@@ -37,66 +37,61 @@ SEXP reorder(SEXP x, SEXP order)
 
   const int *restrict idx = INTEGER(order);
   int i=0;
-  while (i<nrow && idx[i] == i+1) i++;
+  while (i<nrow && idx[i] == i+1) ++i;
   const int start = i;
   if (start==nrow) { UNPROTECT(nprotect); return(R_NilValue); }  // input is 1:n, nothing to do
   i = nrow-1;
-  while (idx[i] == i+1) i--;
+  while (idx[i] == i+1) --i;
   const int end = i;
-  for (int i=start; i<=end; i++) {
+  for (int i=start; i<=end; ++i) {
     int itmp = idx[i]-1;
     if (itmp<start || itmp>end) error(_("order is not a permutation of 1:nrow[%d]"), nrow);
+    // This file is for internal use (so we should get the input right), but this check seems sensible to still perform since it should
+    // run in negligible time (sequential with prefetch). It is not sufficient though; e.g. a non-permutation such as a duplicate will not be caught.
+    // But checking for dups would incur too much cost given that i) this is for internal use only and we only use this function internally
+    // when we're sure we're passing in a strict permutation, and ii) this operation is fundamental to setkey and data.table.
   }
-  // Creorder is for internal use (so we should get the input right!), but the check above seems sensible. The for loop above should run
-  // in neglible time (sequential with prefetch). It will catch NAs anywhere but won't catch duplicates. But doing so would be going too
-  // far given this is for internal use only and we only use this function internally when we're sure it's a permutation.
 
-  char *TMP = malloc(nrow * maxSize);
-  // enough RAM for a copy of one column (of largest type). Writes into the [start,end] subset. Outside [start,end] is wasted in that rarer case
-  // to save a "-start" in the deep loop below in all cases.
+  char *TMP = malloc((end-start+1)*maxSize);
   if (!TMP) error(_("Unable to allocate %d * %d bytes of working memory for reordering data.table"), end-start+1, maxSize);
 
-  for (int i=0; i<ncol; i++) {
+  for (int i=0; i<ncol; ++i) {
     const SEXP v = isNewList(x) ? VECTOR_ELT(x,i) : x;
     const size_t size = SIZEOF(v);    // size_t, otherwise #5305 (integer overflow in memcpy)
     if (size==4) {
-      int *vd = (int *)DATAPTR(v);
-      const int *restrict cvd = vd;
+      const int *restrict vd = DATAPTR_RO(v);
       int *restrict tmp = (int *)TMP;
       #pragma omp parallel for num_threads(getDTthreads())
-      for (int i=start; i<=end; i++) {
-        tmp[i] = cvd[idx[i]-1];  // copies 4 bytes; including pointers on 32bit (STRSXP and VECSXP)
+      for (int i=start; i<=end; ++i) {
+        tmp[i-start] = vd[idx[i]-1];  // copies 4 bytes; e.g. INTSXP and also SEXP pointers on 32bit (STRSXP and VECSXP)
       }
-      memcpy(vd+start, tmp+start, (end-start+1)*size);
+      // Theory:
+      // The write to TMP is contiguous, so sync between cpus of written-cache-lines should not be an issue.
+      // The read from vd is random, but at least the column has a good chance of being all in cache as parallelism is within column.
+      // As idx approaches being ordered (e.g. moving blocks around) then this should approach read cache-efficiency too.
     } else if (size==8) {
-      double *vd = (double *)DATAPTR(v);
-      const double *restrict cvd = vd;
+      const double *restrict vd = DATAPTR_RO(v);
       double *restrict tmp = (double *)TMP;
       #pragma omp parallel for num_threads(getDTthreads())
-      for (int i=start; i<=end; i++) {
-        tmp[i] = cvd[idx[i]-1];  // copies 8 bytes; including pointers on 64bit (STRSXP and VECSXP)
+      for (int i=start; i<=end; ++i) {
+        tmp[i-start] = vd[idx[i]-1];  // copies 8 bytes; e.g. REALSXP and also SEXP pointers on 64bit (STRSXP and VECSXP)
       }
-      memcpy(vd+start, tmp+start, (end-start+1)*size);
-    } else {
-      // #1444 -- support for copying CPLXSXP (which have size 16)
-      Rcomplex *vd = (Rcomplex *)DATAPTR(v);
-      const Rcomplex *restrict cvd = vd;
+    } else { // size 16; checked up front
+      const Rcomplex *restrict vd = DATAPTR_RO(v);
       Rcomplex *restrict tmp = (Rcomplex *)TMP;
       #pragma omp parallel for num_threads(getDTthreads())
-      for (int i=start; i<=end; i++) {
-        tmp[i] = cvd[idx[i]-1];  // copies 16 bytes
+      for (int i=start; i<=end; ++i) {
+        tmp[i-start] = vd[idx[i]-1];
       }
-      memcpy(vd+start, tmp+start, (end-start+1)*size);
     }
+
+    // Unique and somber line. Not done lightly. Please read all comments in this file.
+    memcpy(((char *)DATAPTR_RO(v)) + size*start, TMP, size*(end-start+1));
+    // The one and only place in data.table where we write behind the write-barrier. Fundamental to setkey and data.table.
+    // This file is unique and special w.r.t. the write-barrier: an utterly strict in-place shuffle.
+    // This shuffle operation does not inc or dec named/refcnt, or anything similar in R: past, present or future.
   }
-  // It's ok to ignore write barrier, and in parallel too, only because this reorder() function accepts and checks
-  // a unique permutation of 1:nrow. It performs an in-place shuffle. This operation in the end does not change gcgen, mark or
-  // named/refcnt. They all stay the same even for STRSXP and VECSXP because it's just a data shuffle.
-  //
-  // Theory:
-  // The write to TMP is contiguous, so sync between cpus of written-cache-lines should not be an issue.
-  // The read from vd is random, but at least the column has a good chance of being all in cache as parallelism is within column.
-  // As idx approaches being ordered (e.g. moving blocks around) then it should automatically be more read cache efficient.
+
   free(TMP);
   UNPROTECT(nprotect);
   return(R_NilValue);
