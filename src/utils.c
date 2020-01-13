@@ -94,7 +94,7 @@ SEXP colnamesInt(SEXP x, SEXP cols, SEXP check_dups, SEXP inverse) {
   if (!IS_TRUE_OR_FALSE(check_dups))
     error(_("'check_dups' argument must be TRUE or FALSE"));
   if (!IS_TRUE_OR_FALSE(inverse))
-    error(_("'check_dups' argument must be TRUE or FALSE"));
+    error(_("'inverse' argument must be TRUE or FALSE"));
   int protecti = 0;
   R_len_t nx = length(x);
   R_len_t nc = length(cols);
