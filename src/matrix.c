@@ -6,9 +6,13 @@
  * corresponding asmatrix_<type> function.
  */
 
-SEXP asmatrix_logical(SEXP dt, R_xlen_t matlen, R_xlen_t n) {
+SEXP asmatrix_logical(SEXP dt) {
+  // Determine the number of rows and columns in the data.table
+  R_len_t p = length(dt);
+  R_len_t n = length(VECTOR_ELT(dt, 0));
+  
   // Create output matrix, allocate memory, and create a pointer to it.
-  SEXP mat = PROTECT(allocVector(LGLSXP, matlen));
+  SEXP mat = PROTECT(allocMatrix(LGLSXP, n, p));
   int *pmat; 
   pmat = LOGICAL(mat);
   
@@ -16,10 +20,9 @@ SEXP asmatrix_logical(SEXP dt, R_xlen_t matlen, R_xlen_t n) {
    * so that we avoid creating these and calling the helper functions
    * in the parallel OMP threads
    */
-  R_len_t dtncol = length(dt);
   int **pcol;
-  pcol = (int **) R_alloc(dtncol, sizeof(int *));
-  for (R_len_t jj = 0; jj < dtncol; jj++) {
+  pcol = (int **) R_alloc(p, sizeof(int *));
+  for (R_len_t jj = 0; jj < p; jj++) {
     pcol[jj] = LOGICAL(VECTOR_ELT(dt, jj));
   }
 
@@ -30,16 +33,15 @@ SEXP asmatrix_logical(SEXP dt, R_xlen_t matlen, R_xlen_t n) {
    * array indices are pointing to the right place in memory across 
    * threads. 
    */
-  
-  R_len_t chunksize = dtncol/getDTthreads() + 1; 
+  R_len_t chunksize = p/getDTthreads() + 1; 
   #pragma omp parallel num_threads(getDTthreads())
   { 
     // Determine which columns in DT we're iterating through on this thread
     int threadnum = omp_get_thread_num();
     R_len_t startcol = threadnum * chunksize;
     R_len_t endcol = startcol + chunksize - 1;
-    if (endcol >= dtncol)
-      endcol = dtncol - 1;
+    if (endcol >= p)
+      endcol = p - 1;
     
     // Determine where to fill in the matrix vector
     R_xlen_t vecIdx = startcol * n;
@@ -54,30 +56,33 @@ SEXP asmatrix_logical(SEXP dt, R_xlen_t matlen, R_xlen_t n) {
   return mat;
 }
 
-SEXP asmatrix_raw(SEXP dt, R_xlen_t matlen, R_xlen_t n) {
+SEXP asmatrix_raw(SEXP dt) {
+  // Determine the number of rows and columns in the data.table
+  R_len_t p = length(dt);
+  R_len_t n = length(VECTOR_ELT(dt, 0));
+  
   // Create output matrix, allocate memory, and create a pointer to it.
-  SEXP mat = PROTECT(allocVector(RAWSXP, matlen));
+  SEXP mat = PROTECT(allocMatrix(RAWSXP, n, p));
   Rbyte *pmat; 
   pmat = RAW(mat);
   
   // Create an array of pointers for the individual columns in DT 
-  R_len_t dtncol = length(dt);
   Rbyte **pcol;
-  pcol = (Rbyte **) R_alloc(dtncol, sizeof(Rbyte *));
-  for (R_len_t jj = 0; jj < dtncol; jj++) {
+  pcol = (Rbyte **) R_alloc(p, sizeof(Rbyte *));
+  for (R_len_t jj = 0; jj < p; jj++) {
     pcol[jj] = RAW(VECTOR_ELT(dt, jj));
   }
   
   // Set up parallel OMP chunk
-  R_len_t chunksize = dtncol/getDTthreads() + 1; 
+  R_len_t chunksize = p/getDTthreads() + 1; 
   #pragma omp parallel num_threads(getDTthreads())
   { 
     // Determine which columns in DT we're iterating through on this thread
     int threadnum = omp_get_thread_num();
     R_len_t startcol = threadnum * chunksize;
     R_len_t endcol = startcol + chunksize - 1;
-    if (endcol >= dtncol) 
-      endcol = dtncol - 1;
+    if (endcol >= p) 
+      endcol = p - 1;
     
     // Determine where to fill in the matrix vector
     R_xlen_t vecIdx = startcol * n;
@@ -92,30 +97,33 @@ SEXP asmatrix_raw(SEXP dt, R_xlen_t matlen, R_xlen_t n) {
   return mat;
 }
 
-SEXP asmatrix_integer(SEXP dt, R_xlen_t matlen, R_xlen_t n) {
+SEXP asmatrix_integer(SEXP dt) {
+  // Determine the number of rows and columns in the data.table
+  R_len_t p = length(dt);
+  R_len_t n = length(VECTOR_ELT(dt, 0));
+  
   // Create output matrix, allocate memory, and create a pointer to it.
-  SEXP mat = PROTECT(allocVector(INTSXP, matlen));
+  SEXP mat = PROTECT(allocMatrix(INTSXP, n, p));
   int *pmat; 
   pmat = INTEGER(mat);
   
   // Create an array of pointers for the individual columns in DT 
-  R_len_t dtncol = length(dt);
   int **pcol;
-  pcol = (int **) R_alloc(dtncol, sizeof(int *));
-  for (R_len_t jj = 0; jj < dtncol; jj++) {
+  pcol = (int **) R_alloc(p, sizeof(int *));
+  for (R_len_t jj = 0; jj < p; jj++) {
     pcol[jj] = INTEGER(VECTOR_ELT(dt, jj));
   }
   
   // Set up parallel OMP chunk
-  R_len_t chunksize = dtncol/getDTthreads() + 1; 
+  R_len_t chunksize = p/getDTthreads() + 1; 
   #pragma omp parallel num_threads(getDTthreads())
   { 
     // Determine which columns in DT we're iterating through on this thread
     int threadnum = omp_get_thread_num();
     R_len_t startcol = threadnum * chunksize;
     R_len_t endcol = startcol + chunksize - 1;
-    if (endcol >= dtncol) 
-      endcol = dtncol - 1;
+    if (endcol >= p) 
+      endcol = p - 1;
     
     // Determine where to fill in the matrix vector
     R_xlen_t vecIdx = startcol * n;
@@ -130,30 +138,33 @@ SEXP asmatrix_integer(SEXP dt, R_xlen_t matlen, R_xlen_t n) {
   return mat;
 }
 
-SEXP asmatrix_numeric(SEXP dt, R_xlen_t matlen, R_xlen_t n) {
+SEXP asmatrix_numeric(SEXP dt) {
+  // Determine the number of rows and columns in the data.table
+  R_len_t p = length(dt);
+  R_len_t n = length(VECTOR_ELT(dt, 0));
+  
   // Create output matrix, allocate memory, and create a pointer to it.
-  SEXP mat = PROTECT(allocVector(REALSXP, matlen));
+  SEXP mat = PROTECT(allocMatrix(REALSXP, n, p));
   double *pmat; 
   pmat = REAL(mat);
   
   // Create an array of pointers for the individual columns in DT 
-  R_len_t dtncol = length(dt);
   double **pcol;
-  pcol = (double **) R_alloc(dtncol, sizeof(double *));
-  for (R_len_t jj = 0; jj < dtncol; jj++) {
+  pcol = (double **) R_alloc(p, sizeof(double *));
+  for (R_len_t jj = 0; jj < p; jj++) {
     pcol[jj] = REAL(VECTOR_ELT(dt, jj));
   }
   
   // Set up parallel OMP chunk
-  R_len_t chunksize = dtncol/getDTthreads() + 1; 
+  R_len_t chunksize = p/getDTthreads() + 1; 
   #pragma omp parallel num_threads(getDTthreads())
   { 
     // Determine which columns in DT we're iterating through on this thread
     int threadnum = omp_get_thread_num();
     R_len_t startcol = threadnum * chunksize;
     R_len_t endcol = startcol + chunksize - 1;
-    if (endcol >= dtncol) 
-      endcol = dtncol - 1;
+    if (endcol >= p) 
+      endcol = p - 1;
     
     // Determine where to fill in the matrix vector
     R_xlen_t vecIdx = startcol * n;
@@ -168,30 +179,33 @@ SEXP asmatrix_numeric(SEXP dt, R_xlen_t matlen, R_xlen_t n) {
   return mat;
 }
 
-SEXP asmatrix_complex(SEXP dt, R_xlen_t matlen, R_xlen_t n) {
+SEXP asmatrix_complex(SEXP dt) {
+  // Determine the number of rows and columns in the data.table
+  R_len_t p = length(dt);
+  R_len_t n = length(VECTOR_ELT(dt, 0));
+  
   // Create output matrix, allocate memory, and create a pointer to it.
-  SEXP mat = PROTECT(allocVector(CPLXSXP, matlen));
+  SEXP mat = PROTECT(allocMatrix(CPLXSXP, n, p));
   Rcomplex *pmat; 
   pmat = COMPLEX(mat);
   
   // Create an array of pointers for the individual columns in DT 
-  R_len_t dtncol = length(dt);
   Rcomplex **pcol;
-  pcol = (Rcomplex **) R_alloc(dtncol, sizeof(Rcomplex *));
-  for (R_len_t jj = 0; jj < dtncol; jj++) {
+  pcol = (Rcomplex **) R_alloc(p, sizeof(Rcomplex *));
+  for (R_len_t jj = 0; jj < p; jj++) {
     pcol[jj] = COMPLEX(VECTOR_ELT(dt, jj));
   }
   
   // Set up parallel OMP chunk
-  R_len_t chunksize = dtncol/getDTthreads() + 1; 
+  R_len_t chunksize = p/getDTthreads() + 1; 
   #pragma omp parallel num_threads(getDTthreads())
   { 
     // Determine which columns in DT we're iterating through on this thread
     int threadnum = omp_get_thread_num();
     R_len_t startcol = threadnum * chunksize;
     R_len_t endcol = startcol + chunksize - 1;
-    if (endcol >= dtncol) 
-      endcol = dtncol - 1;
+    if (endcol >= p) 
+      endcol = p - 1;
     
     // Determine where to fill in the matrix vector
     R_xlen_t vecIdx = startcol * n;
@@ -206,17 +220,18 @@ SEXP asmatrix_complex(SEXP dt, R_xlen_t matlen, R_xlen_t n) {
   return mat;
 }
 
-SEXP asmatrix_character(SEXP dt, R_xlen_t matlen, R_len_t n) {
-  // Create output matrix, allocate memory, and create a pointer to it
-  SEXP mat = PROTECT(allocVector(STRSXP, matlen)); // output matrix
-  SEXP pcol; // pointers to casted R objects
+SEXP asmatrix_character(SEXP dt) {
+  // Determine the number of rows and columns in the data.table
+  R_len_t p = length(dt);
+  R_len_t n = length(VECTOR_ELT(dt, 0));
   
-  // Determine number of columns and rows
-  R_len_t dtncol = length(dt);
+  // Create output matrix, allocate memory, and create a pointer to it
+  SEXP mat = PROTECT(allocMatrix(STRSXP, n, p)); // output matrix
+  SEXP pcol; // pointers to casted R objects
 
   // Iterate through dt and copy into mat 
   R_xlen_t vecIdx = 0; // counter to track place in vector underlying matrix
-  for (R_len_t jj = 0; jj < dtncol; jj++) {
+  for (R_len_t jj = 0; jj < p; jj++) {
     pcol = VECTOR_ELT(dt, jj);
     for (R_len_t ii = 0; ii < n; ii++) {
       SET_STRING_ELT(mat, vecIdx, STRING_ELT(pcol, ii));
@@ -227,17 +242,18 @@ SEXP asmatrix_character(SEXP dt, R_xlen_t matlen, R_len_t n) {
   return mat;
 }
 
-SEXP asmatrix_list(SEXP dt, R_xlen_t matlen, R_len_t n) {
+SEXP asmatrix_list(SEXP dt) {
+  // Determine the number of rows and columns in the data.table
+  R_len_t p = length(dt);
+  R_len_t n = length(VECTOR_ELT(dt, 0));
+  
   // Create output matrix, allocate memory, and create a pointer to it
-  SEXP mat = PROTECT(allocVector(VECSXP, matlen)); // output matrix
+  SEXP mat = PROTECT(allocMatrix(VECSXP, n, p)); // output matrix
   SEXP pcol; // pointers to casted R objects
   
-  // Determine number of columns and rows
-  R_len_t dtncol = length(dt);
-
   // Iterate through dt and copy into mat 
   R_xlen_t vecIdx = 0; // counter to track place in vector underlying matrix
-  for (R_len_t jj = 0; jj < dtncol; jj++) {
+  for (R_len_t jj = 0; jj < p; jj++) {
     pcol = VECTOR_ELT(dt, jj);
     for (R_len_t ii = 0; ii < n; ii++) {
       SET_VECTOR_ELT(mat, vecIdx, VECTOR_ELT(pcol, ii));
@@ -256,13 +272,6 @@ SEXP asmatrix(SEXP dt) {
   if (verbose) 
     tic = omp_get_wtime(); // nocov
   
-  // Determine the number of rows and columns in the data.table
-  R_xlen_t p = xlength(dt);
-  R_xlen_t n = xlength(VECTOR_ELT(dt, 0));
-  
-  // Determine the number of elements in the resulting matrix
-  R_xlen_t matlen = n * p;
-  
   /* Conversion to a common atomic type is handled in R. We detect the
    * atomic type from the first column. */
   SEXPTYPE R_atomic_type = TYPEOF(VECTOR_ELT(dt, 0));
@@ -271,25 +280,25 @@ SEXP asmatrix(SEXP dt) {
   SEXP mat;
   switch(R_atomic_type) {
     case RAWSXP:
-      mat = asmatrix_raw(dt, matlen, n);
+      mat = asmatrix_raw(dt);
       break;
     case LGLSXP:
-      mat = asmatrix_logical(dt, matlen, n);
+      mat = asmatrix_logical(dt);
       break;
     case INTSXP: 
-      mat = asmatrix_integer(dt, matlen, n);
+      mat = asmatrix_integer(dt);
       break;
     case REALSXP: 
-      mat = asmatrix_numeric(dt, matlen, n);
+      mat = asmatrix_numeric(dt);
       break;
     case CPLXSXP: 
-      mat = asmatrix_complex(dt, matlen, n);
+      mat = asmatrix_complex(dt);
       break;
     case STRSXP: 
-      mat = asmatrix_character(dt, matlen, (R_len_t) n);
+      mat = asmatrix_character(dt);
       break;
     case VECSXP:
-      mat = asmatrix_list(dt, matlen, (R_len_t) n);
+      mat = asmatrix_list(dt);
       break;
     default:
       error("Internal error: unsupported matrix type '%s'", type2char(R_atomic_type)); // nocov
