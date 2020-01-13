@@ -26,31 +26,10 @@ SEXP asmatrix_logical(SEXP dt) {
     pcol[jj] = LOGICAL(VECTOR_ELT(dt, jj));
   }
 
-  /* Using OMP is slightly less straightforward here because the number 
-   * of columns in the matrix may differ from the number of columns in
-   * the data.table if there is a rownames column we're skipping over.
-   * This means we have a lot of manual set up to make sure all our 
-   * array indices are pointing to the right place in memory across 
-   * threads. 
-   */
-  R_len_t chunksize = p/getDTthreads() + 1; 
-  #pragma omp parallel num_threads(getDTthreads())
-  { 
-    // Determine which columns in DT we're iterating through on this thread
-    int threadnum = omp_get_thread_num();
-    R_len_t startcol = threadnum * chunksize;
-    R_len_t endcol = startcol + chunksize - 1;
-    if (endcol >= p)
-      endcol = p - 1;
-    
-    // Determine where to fill in the matrix vector
-    R_xlen_t vecIdx = startcol * n;
-    
-    // Iterate through columns in DT, copying the contents to the matrix column
-    for (R_len_t jj = startcol; jj <= endcol; jj++) {
-      memcpy(pmat + vecIdx, pcol[jj], sizeof(int)*n);
-      vecIdx += n;
-    }
+  // Multithreaded for loop to copy each column into the matrix memory location
+  #pragma omp parallel for num_threads(getDTthreads())
+  for (R_len_t jj = 0; jj < p; jj++) {
+    memcpy(pmat + (jj * n), pcol[jj], sizeof(int)*n);
   }
   
   return mat;
@@ -73,25 +52,10 @@ SEXP asmatrix_raw(SEXP dt) {
     pcol[jj] = RAW(VECTOR_ELT(dt, jj));
   }
   
-  // Set up parallel OMP chunk
-  R_len_t chunksize = p/getDTthreads() + 1; 
-  #pragma omp parallel num_threads(getDTthreads())
-  { 
-    // Determine which columns in DT we're iterating through on this thread
-    int threadnum = omp_get_thread_num();
-    R_len_t startcol = threadnum * chunksize;
-    R_len_t endcol = startcol + chunksize - 1;
-    if (endcol >= p) 
-      endcol = p - 1;
-    
-    // Determine where to fill in the matrix vector
-    R_xlen_t vecIdx = startcol * n;
-    
-    // Iterate through columns in DT, copying the contents to the matrix column
-    for (R_len_t jj = startcol; jj <= endcol; jj++) {
-      memcpy(pmat + vecIdx, pcol[jj], sizeof(Rbyte)*n);
-      vecIdx += n;
-    }
+  // Multithreaded for loop to copy each column into the matrix memory location
+  #pragma omp parallel for num_threads(getDTthreads())
+  for (R_len_t jj = 0; jj < p; jj++) {
+    memcpy(pmat + (jj * n), pcol[jj], sizeof(Rbyte)*n);
   }
 
   return mat;
@@ -114,25 +78,10 @@ SEXP asmatrix_integer(SEXP dt) {
     pcol[jj] = INTEGER(VECTOR_ELT(dt, jj));
   }
   
-  // Set up parallel OMP chunk
-  R_len_t chunksize = p/getDTthreads() + 1; 
-  #pragma omp parallel num_threads(getDTthreads())
-  { 
-    // Determine which columns in DT we're iterating through on this thread
-    int threadnum = omp_get_thread_num();
-    R_len_t startcol = threadnum * chunksize;
-    R_len_t endcol = startcol + chunksize - 1;
-    if (endcol >= p) 
-      endcol = p - 1;
-    
-    // Determine where to fill in the matrix vector
-    R_xlen_t vecIdx = startcol * n;
-    
-    // Iterate through columns in DT, copying the contents to the matrix column
-    for (R_len_t jj = startcol; jj <= endcol; jj++) {
-      memcpy(pmat + vecIdx, pcol[jj], sizeof(int)*n);
-      vecIdx += n;
-    }
+  // Multithreaded for loop to copy each column into the matrix memory location
+  #pragma omp parallel for num_threads(getDTthreads())
+  for (R_len_t jj = 0; jj < p; jj++) {
+    memcpy(pmat + (jj * n), pcol[jj], sizeof(int)*n);
   }
   
   return mat;
@@ -155,25 +104,10 @@ SEXP asmatrix_numeric(SEXP dt) {
     pcol[jj] = REAL(VECTOR_ELT(dt, jj));
   }
   
-  // Set up parallel OMP chunk
-  R_len_t chunksize = p/getDTthreads() + 1; 
-  #pragma omp parallel num_threads(getDTthreads())
-  { 
-    // Determine which columns in DT we're iterating through on this thread
-    int threadnum = omp_get_thread_num();
-    R_len_t startcol = threadnum * chunksize;
-    R_len_t endcol = startcol + chunksize - 1;
-    if (endcol >= p) 
-      endcol = p - 1;
-    
-    // Determine where to fill in the matrix vector
-    R_xlen_t vecIdx = startcol * n;
-
-    // Iterate through columns in DT, copying the contents to the matrix column
-    for (R_len_t jj = startcol; jj <= endcol; jj++) {
-      memcpy(pmat + vecIdx, pcol[jj], sizeof(double)*n);
-      vecIdx += n;
-    }
+  // Multithreaded for loop to copy each column into the matrix memory location
+  #pragma omp parallel for num_threads(getDTthreads())
+  for (R_len_t jj = 0; jj < p; jj++) {
+    memcpy(pmat + (jj * n), pcol[jj], sizeof(double)*n);
   }
   
   return mat;
@@ -196,25 +130,10 @@ SEXP asmatrix_complex(SEXP dt) {
     pcol[jj] = COMPLEX(VECTOR_ELT(dt, jj));
   }
   
-  // Set up parallel OMP chunk
-  R_len_t chunksize = p/getDTthreads() + 1; 
-  #pragma omp parallel num_threads(getDTthreads())
-  { 
-    // Determine which columns in DT we're iterating through on this thread
-    int threadnum = omp_get_thread_num();
-    R_len_t startcol = threadnum * chunksize;
-    R_len_t endcol = startcol + chunksize - 1;
-    if (endcol >= p) 
-      endcol = p - 1;
-    
-    // Determine where to fill in the matrix vector
-    R_xlen_t vecIdx = startcol * n;
-    
-    // Iterate through columns in DT, copying the contents to the matrix column
-    for (R_len_t jj = startcol; jj <= endcol; jj++) {
-      memcpy(pmat + vecIdx, pcol[jj], sizeof(Rcomplex)*n);
-      vecIdx += n;
-    }
+  // Multithreaded for loop to copy each column into the matrix memory location
+  #pragma omp parallel for num_threads(getDTthreads())
+  for (R_len_t jj = 0; jj < p; jj++) {
+    memcpy(pmat + (jj * n), pcol[jj], sizeof(Rcomplex)*n);
   }
 
   return mat;
