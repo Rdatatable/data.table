@@ -2042,7 +2042,7 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
     
     # Coerce to list as necessary
     for (j in which.not.recursive) {
-      X[[j]] = as.list(as.vector(X[[j]]))
+      X[[j]] = as.list(X[[j]])
     }
   }
   
