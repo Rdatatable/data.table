@@ -82,25 +82,32 @@ SEXP allNAR(SEXP x) {
 /* colnamesInt
  * for provided data.table (or a list-like) and a subset of its columns, it returns integer positions of those columns in DT
  * handle columns input as: integer, double, character, logical and NULL (handled as seq_along(x))
+ * inverse proceed to inverted selection to handle '!' or '-' calls
  * adds validation for:
  *   correct range [1,ncol], and if type real checks whole integer
  *   existing columns for character
  *   optionally check for no duplicates
  */
-SEXP colnamesInt(SEXP x, SEXP cols, SEXP check_dups) {
+SEXP colnamesInt(SEXP x, SEXP cols, SEXP check_dups, SEXP inverse) {
   if (!isNewList(x))
     error(_("'x' argument must be data.table compatible"));
   if (!IS_TRUE_OR_FALSE(check_dups))
     error(_("'check_dups' argument must be TRUE or FALSE"));
+  if (!IS_TRUE_OR_FALSE(inverse))
+    error(_("'check_dups' argument must be TRUE or FALSE"));
   int protecti = 0;
   R_len_t nx = length(x);
   R_len_t nc = length(cols);
+  if (isLogical(cols) && nc != nx)
+    error(_("argument specifying columns is logical and has different length than number of columns in a table"));
   SEXP ricols = R_NilValue;
-  if (isNull(cols)) { // seq_along(x)
+  bool binverse = LOGICAL(inverse)[0];
+  if ((!binverse && isNull(cols)) || (binverse && length(cols)==0)) { // seq_along(x)
     ricols = PROTECT(allocVector(INTSXP, nx)); protecti++;
     int *icols = INTEGER(ricols);
-    for (int i=0; i<nx; i++) icols[i] = i+1;
-  } else if (length(cols)==0 && !isLogical(cols)) { // integer(0)
+    for (int i=0; i<nx; i++)
+      icols[i] = i+1;
+  } else if ((!binverse && length(cols)==0) || (binverse && isNull(cols))) { // integer(0)
     ricols = PROTECT(allocVector(INTSXP, 0)); protecti++;
   } else if (isInteger(cols) || isReal(cols)) {
     if (isInteger(cols)) {
@@ -110,24 +117,46 @@ SEXP colnamesInt(SEXP x, SEXP cols, SEXP check_dups) {
         error(_("argument specifying columns is type 'double' and one or more items in it are not whole integers"));
       ricols = PROTECT(coerceVector(cols, INTSXP)); protecti++;
     }
-    int *icols = INTEGER(ricols);
-    for (int i=0; i<nc; i++) {
-      if ((icols[i]>nx) || (icols[i]<1))
-        error(_("argument specifying columns specify non existing column(s): cols[%d]=%d"), i+1, icols[i]); // handles NAs also
+    if (!binverse) {
+      int *icols = INTEGER(ricols);
+      for (int i=0; i<nc; i++) {
+        if ((icols[i]>nx) || (icols[i]<1))
+          error(_("argument specifying columns specify non existing column(s): cols[%d]=%d"), i+1, icols[i]); // handles NAs also
+      }
+    } else {
+      SEXP notricols = ricols;
+      SEXP ricols = PROTECT(allocVector(INTSXP, nx-nc)); protecti++;
+      int *icols = INTEGER(ricols);
+      error("int/real binverse todo");
+      //for (int i=0; i<nc; i++) {
+      //  if ((icols[i]>nx) || (icols[i]<1))
+      //    error(_("argument specifying columns specify non existing column(s): cols[%d]=%d"), i+1, icols[i]); // handles NAs also
+      //}
     }
   } else if (isString(cols)) {
-    SEXP xnames = PROTECT(getAttrib(x, R_NamesSymbol)); protecti++;
+    SEXP xnames = getAttrib(x, R_NamesSymbol);
     if (isNull(xnames))
       error(_("'x' argument data.table has no names"));
-    ricols = PROTECT(chmatch(cols, xnames, 0)); protecti++;
-    int *icols = INTEGER(ricols);
-    for (int i=0; i<nc; i++) {
-      if (icols[i]==0)
-        error(_("argument specifying columns specify non existing column(s): cols[%d]='%s'"), i+1, CHAR(STRING_ELT(cols, i))); // handles NAs also
+    if (!binverse) {
+      ricols = PROTECT(chmatch(cols, xnames, 0)); protecti++;
+      Rf_PrintValue(ricols);
+      int *icols = INTEGER(ricols);
+      for (int i=0; i<nc; i++) {
+        if (icols[i]==0)
+          error(_("argument specifying columns specify non existing column(s): cols[%d]='%s'"), i+1, CHAR(STRING_ELT(cols, i))); // handles NAs also
+      }
+    } else {
+      error("todo");
+      /*SEXP xmatch = PROTECT(chmatch(xnames, cols, 0)); protecti++; // we actually need a no-match
+      int *xmatchp = INTEGER(xmatch);
+      int len = 0;
+      for (int i=0; i<length(xmatch); i++) {
+        if (xmatchp[i]==0)
+          len++; // TODO as tests for NAs!
+      }
+      ricols = PROTECT(allocVector(INTSXP, len)); protecti++;*/
     }
   } else if (isLogical(cols)) {
-    if (nc != nx)
-      error(_("argument specifying columns is logical and has different length than number of columns in a table"));
     int *lcols = LOGICAL(cols);
     ricols = PROTECT(allocVector(INTSXP, nc)); protecti++;
     int *icols = LOGICAL(ricols);
@@ -135,7 +164,7 @@ SEXP colnamesInt(SEXP x, SEXP cols, SEXP check_dups) {
     for (int i=0; i<nc; i++) {
       if (lcols[i]==NA_LOGICAL)
         error(_("argument specifying columns is logical and has NAs"));
-      else if (lcols[i])
+      else if ((!binverse && lcols[i]) || (binverse && !lcols[i]))
         icols[ntrue++] = i+1;
     }
     SETLENGTH(ricols, ntrue);
@@ -167,7 +196,127 @@ SEXP replace_dot_alias(SEXP x) {
   return x;
 }
 SEXP replace_dot_aliasR(SEXP x) {
-  return replace_dot_alias(duplicate(x));
+  return replace_dot_alias(MAYBE_REFERENCED(x) ? duplicate(x) : x);
+}
+
+/* range_int
+ * used in exprCols(v4:v2) to produce 4:2 sequence
+ */
+SEXP range_int(int from, int to) {
+  if (from==NA_INTEGER || to==NA_INTEGER)
+    error(_("internal error: NA was supplied to generate integer range")); // # nocov
+  int len = to - from;
+  int ord = len>=0 ? 1 : -1;
+  len = len * ord;
+  SEXP ans = PROTECT(allocVector(INTSXP, len+1));
+  int *ansp = INTEGER(ans);
+  for (int i=0; i<=len; i++)
+    ansp[i] = from+i*ord;
+  UNPROTECT(1);
+  return ans;
+}
+
+/* funCols
+ * helper that calls lapply(DT, fun) to produce logical vector
+ */
+SEXP funCols(SEXP x, SEXP fun, SEXP rho) {
+  SEXP lfn = PROTECT(LCONS(sym_lapply, LCONS(x, LCONS(fun, R_NilValue))));
+  SEXP lst = PROTECT(eval(lfn, rho));
+  SEXP log = PROTECT(allocVector(LGLSXP, length(x)));
+  int *logp = LOGICAL(log);
+  for (int i=0; i<length(lst); ++i) {
+    SEXP lsti = VECTOR_ELT(lst, i);
+    if (length(lsti)!=1 || !isLogical(lsti) || LOGICAL(lsti)[0]==NA_LOGICAL)
+      error("When argument for columns selection is a function, it is applied to each column; the output of this function must be a non-missing boolean scalar signalling inclusion/exclusion of the column. However, these conditions were not met at least for: %s", CHAR(STRING_ELT(getAttrib(x, R_NamesSymbol), i)));
+    logp[i] = LOGICAL(lsti)[0];
+  }
+  UNPROTECT(3);
+  return log;
+}
+
+/* exprCols
+ * turns NSE expression into columns int
+ * helper for j and .SDcols
+ * handles v1, "v1", v1:v3, !"v1", -"v1", paste0("v",1:3)
+ * does not evaluate only for `symbol:symbol` expression, or `symbol` when "symbol" is existing column
+ */
+SEXP exprCols(SEXP x, SEXP expr, /*SEXP with, */SEXP rho) {
+  int protecti=0;
+  if (isNull(expr))
+    error(_("columns selection is NULL")); // expr=NULL
+  SEXP sym_parenthesis = install("(");
+  SEXP sym_patterns = install("patterns");
+  while(isLanguage(expr) && CAR(expr)==sym_parenthesis)
+    expr = CADR(expr);
+  if (isNull(expr))
+    error(_("columns selection is NULL")); // expr=((NULL))
+  // TODO handle inverse selection: !cols_var, !"V2", !V2, !paste0("V",2:3)
+  // but not !V3:V2, we could handle that as well but do we really want?
+  bool inverse = false;
+  if (isLanguage(expr) && (CAR(expr)==sym_bang || CAR(expr)==sym_minus)) {
+    //Rprintf("isLanguage(expr) && CAR(expr)=='[!|-]'\n");
+    inverse = true;
+    expr = CADR(expr);
+  }
+  // non-evaluated case: V3:V2
+  // single symbol V2 may or may not be evaluated, see below
+  if (isLanguage(expr) && CAR(expr)==sym_colon) {  // 3:2, V3:V2, min(V3):min(V2)
+    //Rprintf("isLanguage(expr) && CAR(expr)==':'\n");
+    SEXP lhs = CADR(expr), rhs = CADDR(expr);
+    if (isSymbol(lhs) && isSymbol(rhs)) { // V3:V2
+      //Rprintf("isSymbol(colon_lhs) && isSymbol(colon_rhs)\n");
+      if (inverse)
+        error("column range selection by col1:col2 is not supported with combination of negation via '!' or '-'");
+      lhs = colnamesInt(x, ScalarString(PRINTNAME(lhs)), ScalarLogical(false), ScalarLogical(false)); // may raise error if lhs column does not exists
+      rhs = colnamesInt(x, ScalarString(PRINTNAME(rhs)), ScalarLogical(false), ScalarLogical(false));
+      if (!isInteger(lhs) || !isInteger(rhs) || length(lhs)!=1 || length(rhs)!=1 || LOGICAL(lhs)[0]==NA_LOGICAL || LOGICAL(rhs)[0]==NA_LOGICAL)
+        error(_("internal error: LHS and RHS of `:` call should be integer non-NA scalars already")); // # nocov
+      UNPROTECT(protecti);
+      return range_int(INTEGER(lhs)[0], INTEGER(rhs)[0]);
+    } else { // evaluates later on: 3:2, f(V3):f(V2)
+      //Rprintf("!isSymbol(colon_lhs) || !isSymbol(colon_rhs)\n");
+    }
+  }
+  SEXP cols = R_NilValue, value = R_NilValue;
+  if (isLanguage(expr) && CAR(expr)==sym_patterns) {
+    //Rprintf("isLanguage(expr) && CAR(expr)=='patterns'\n");
+    SEXP xnames = getAttrib(x, R_NamesSymbol);
+    if (isNull(xnames))
+      error(_("'x' argument data.table has no names"));
+    // .SDcols = Reduce(intersect, do_patterns(colsub, names_x))
+    SEXP sym_quote = install("quote");
+    SEXP sym_do_patterns = install("do_patterns");
+    SEXP lpat = PROTECT(eval(LCONS(sym_do_patterns, LCONS(LCONS(sym_quote, LCONS(expr, R_NilValue)), LCONS(xnames, R_NilValue))), rho)); protecti++;
+    SEXP sym_Reduce = install("Reduce");
+    SEXP sym_intersect = install("intersect");
+    cols = PROTECT(eval(LCONS(sym_Reduce, LCONS(sym_intersect, LCONS(lpat, R_NilValue))), rho)); protecti++;
+  }
+  // single symbol V2 might be also a function, to check that we need to evaluate, thus first we check if "V2" is existing column name, if not then we evaluate to see if it is a function.
+  // adding support of 'with' argument here may improve control, when with=FALSE then cols=eval(expr, rho) could be made straight away
+  if (isSymbol(expr)) { // V1, is.numeric
+    if (!isNull(cols))
+      error("internal error: cols should be still NULL at that point, did CAR(expr)=='patterns' branch kicked in? then isSymbol(expr) branch should not be reached"); // # nocov
+    SEXP xnames = getAttrib(x, R_NamesSymbol);
+    if (isNull(xnames))
+      error(_("'x' argument data.table has no names"));
+    cols = PROTECT(ScalarString(PRINTNAME(expr))); protecti++; // "V1", "is.numeric"
+    if (INTEGER(chmatch(cols, xnames, 0))[0]==0)
+      cols = R_NilValue;
+  }
+  // evaluate expr
+  if (isNull(cols)) {
+    value = PROTECT(eval(expr, rho)); protecti++;
+    if (isFunction(value)) { // expr could be either symbol or language: f, function(x) x
+      //Rprintf("isFunction(eval(expr))\n");
+      cols = PROTECT(funCols(x, expr, rho)); protecti++;
+    } else {
+      cols = value;
+    }
+  }
+  if (isNull(cols))
+    error("internal error: cols should not be NULL by now"); // # or could be NULL when .SD provided, but eval(.SD) may already resolve that, no nocov for now
+  UNPROTECT(protecti);
+  return colnamesInt(x, cols, ScalarLogical(false), ScalarLogical(inverse));
 }
 
 void coerceFill(SEXP fill, double *dfill, int32_t *ifill, int64_t *i64fill) {

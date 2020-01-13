@@ -106,6 +106,7 @@ brackify = function(x, quote=FALSE) {
 
 # patterns done via NSE in melt.data.table and .SDcols in `[.data.table`
 do_patterns = function(pat_sub, all_cols) {
+  stopifnot(is.call(pat_sub))
   # received as substitute(patterns(...))
   pat_sub = as.list(pat_sub)[-1L]
   # identify cols = argument if present
