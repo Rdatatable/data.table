@@ -2143,7 +2143,7 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
   }
   # Otherwise use fast C method to copy values into matrix
   else {  
-    X = .Call(Casmatrix, X)   
+    X = .Call(Casmatrix, X)
   }
   
   # Add row and column names
