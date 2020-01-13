@@ -52,8 +52,7 @@ SEXP reorder(SEXP x, SEXP order)
     // when we're sure we're passing in a strict permutation, and ii) this operation is fundamental to setkey and data.table.
   }
 
-  char *TMP = malloc((end-start+1)*maxSize);
-  if (!TMP) error(_("Unable to allocate %d * %d bytes of working memory for reordering data.table"), end-start+1, maxSize);
+  char *TMP = (char *)R_alloc(end-start+1, maxSize);
 
   for (int i=0; i<ncol; ++i) {
     const SEXP v = isNewList(x) ? VECTOR_ELT(x,i) : x;
@@ -91,9 +90,7 @@ SEXP reorder(SEXP x, SEXP order)
     // This file is unique and special w.r.t. the write-barrier: an utterly strict in-place shuffle.
     // This shuffle operation does not inc or dec named/refcnt, or anything similar in R: past, present or future.
   }
-
-  free(TMP);
   UNPROTECT(nprotect);
-  return(R_NilValue);
+  return R_NilValue;
 }
 
