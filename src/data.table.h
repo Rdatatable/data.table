@@ -239,4 +239,4 @@ SEXP testMsgR(SEXP status, SEXP x, SEXP k);
 //fifelse.c
 SEXP fifelseR(SEXP l, SEXP a, SEXP b, SEXP na);
 SEXP fcaseR(SEXP na, SEXP rho, SEXP args);
-SEXP fposR(SEXP haystack, SEXP needle, SEXP all, SEXP overlap);
+SEXP fposR(SEXP needle, SEXP haystack, SEXP all, SEXP overlap);

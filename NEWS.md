@@ -73,6 +73,39 @@ unit = "s")
 
 10. The dimensions of objects in a `list` column are now displayed, [#3671](https://github.com/Rdatatable/data.table/issues/3671). Thanks to @randomgambit for the request, and Tyson Barrett for the PR.
 
+11. New function `fpos(needle, haystack, all=TRUE, overlap=TRUE)` implemented in C by Morgan Jacob, [#4170](https://github.com/Rdatatable/data.table/issues/4170), is inspired `base::which`. `fpos` allows users to find the position of a vector or matrix inside larger ones. Please see `?fpos` for more details.
+
+```R
+# Find matrix inside a larger one
+set.seed(123)
+mat = matrix(sample(c(TRUE, FALSE), 1e2, replace = TRUE), nrow = 10)
+fpos(
+  needle = matrix(c(TRUE, FALSE, FALSE, FALSE), nrow = 2),
+  haystack = mat
+)
+#     [,1] [,2]
+# [1,]   5    8
+
+# Similarity with base::which
+mat = matrix(sample(c(TRUE, FALSE), 1e8, replace = TRUE), nrow = 1e4) # 382 MB
+microbenchmark::microbenchmark(
+  which(mat == TRUE, arr.ind = TRUE),
+  fpos(TRUE, mat),
+  times = 5L,
+  unit = "s"
+)
+# Unit: seconds
+#  expr    min    lq  mean median    uq    max neval
+# which   1.90  1.92  2.02   1.98  2.13   2.14     5
+# fpos    0.68  0.70  0.79   0.76  0.86   0.98     5
+
+a = which(mat == TRUE, arr.ind = TRUE)
+b = fpos(TRUE, mat)
+colnames(b) = c("row", "col")
+all.equal(a, b)
+# TRUE
+```
+
 ## BUG FIXES
 
 1. A NULL timezone on POSIXct was interpreted by `as.IDate` and `as.ITime` as UTC rather than the session's default timezone (`tz=""`) , [#4085](https://github.com/Rdatatable/data.table/issues/4085).

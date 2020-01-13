@@ -344,12 +344,15 @@ SEXP fcaseR(SEXP na, SEXP rho, SEXP args) {
   return ans;
 }
 
-SEXP fposR(SEXP haystack, SEXP needle, SEXP all, SEXP overlap) {
+SEXP fposR(SEXP needle, SEXP haystack, SEXP all, SEXP overlap) {
   if (!IS_TRUE_OR_FALSE(all)) {
     error("Argument 'all' must be TRUE or FALSE and length 1.");
   }
   if (!IS_TRUE_OR_FALSE(overlap)) {
     error("Argument 'overlap' must be TRUE or FALSE and length 1.");
+  }
+  if (isS4(haystack) || isS4(needle)) {
+    error("S4 class objects are not supported.");
   }
 
   SEXPTYPE thaystack = TYPEOF(haystack);
@@ -357,11 +360,11 @@ SEXP fposR(SEXP haystack, SEXP needle, SEXP all, SEXP overlap) {
 
   if (thaystack != INTSXP && thaystack != REALSXP && thaystack != LGLSXP &&
       thaystack != CPLXSXP && thaystack != STRSXP) {
-    error("Type %s of 'haystack' is not supported.", type2char(thaystack));
+    error("Type %s for 'haystack' is not supported.", type2char(thaystack));
   }
   if (tneedle != INTSXP && tneedle != REALSXP && tneedle != LGLSXP &&
       tneedle != CPLXSXP && tneedle != STRSXP) {
-    error("Type %s of 'needle' is not supported.", type2char(tneedle));
+    error("Type %s for 'needle' is not supported.", type2char(tneedle));
   }
 
   const int64_t n = nrows(haystack);
@@ -587,6 +590,9 @@ SEXP fposR(SEXP haystack, SEXP needle, SEXP all, SEXP overlap) {
   } break;
   }
   label:;
+  if (x == 0) {
+    return R_NilValue;
+  }
   SEXP ans = PROTECT(allocMatrix(INTSXP, x, 2)); nprotect++;
   memcpy(INTEGER(ans), prow, x*sizeof(int));
   memcpy(INTEGER(ans)+x, pcol, x*sizeof(int));
