@@ -117,7 +117,6 @@ SEXP allocNAVectorLike(SEXP x, R_len_t n);
 void writeNA(SEXP v, const int from, const int n);
 void savetl_init(), savetl(SEXP s), savetl_end();
 int checkOverAlloc(SEXP x);
-SEXP setcolorder(SEXP x, SEXP o);
 
 // forder.c
 int StrCmp(SEXP x, SEXP y);
@@ -127,6 +126,7 @@ int getNumericRounding_C();
 
 // reorder.c
 SEXP reorder(SEXP x, SEXP order);
+SEXP setcolorder(SEXP x, SEXP o);
 
 // subset.c
 void subsetVectorRaw(SEXP ans, SEXP source, SEXP idx, const bool anyNA);

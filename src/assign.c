@@ -1216,33 +1216,3 @@ SEXP setcharvec(SEXP x, SEXP which, SEXP newx)
   return R_NilValue;
 }
 
-SEXP setcolorder(SEXP x, SEXP o)
-{
-  SEXP names = getAttrib(x, R_NamesSymbol);
-  const int *od = INTEGER(o), ncol=LENGTH(x);
-  if (isNull(names)) error(_("dt passed to setcolorder has no names"));
-  if (ncol != LENGTH(names))
-    error(_("Internal error: dt passed to setcolorder has %d columns but %d names"), ncol, LENGTH(names));  // # nocov
-
-  // Double-check here at C level that o[] is a strict permutation of 1:ncol. Reordering columns by reference makes no
-  // difference to generations/refcnt so we can write behind barrier in this very special case of strict permutation.
-  bool *seen = Calloc(ncol, bool);
-  for (int i=0; i<ncol; ++i) {
-    if (od[i]==NA_INTEGER || od[i]<1 || od[i]>ncol)
-      error(_("Internal error: o passed to Csetcolorder contains an NA or out-of-bounds"));  // # nocov
-    if (seen[od[i]-1])
-      error(_("Internal error: o passed to Csetcolorder contains a duplicate"));             // # nocov
-    seen[od[i]-1] = true;
-  }
-  Free(seen);
-
-  SEXP *tmp = Calloc(ncol, SEXP);
-  SEXP *xd = VECTOR_PTR(x), *namesd = STRING_PTR(names);
-  for (int i=0; i<ncol; ++i) tmp[i] = xd[od[i]-1];
-  memcpy(xd, tmp, ncol*sizeof(SEXP)); // sizeof is type size_t so no overflow here
-  for (int i=0; i<ncol; ++i) tmp[i] = namesd[od[i]-1];
-  memcpy(namesd, tmp, ncol*sizeof(SEXP));
-  // No need to change key (if any); sorted attribute is column names not positions
-  Free(tmp);
-  return(R_NilValue);
-}

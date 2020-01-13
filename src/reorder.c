@@ -38,21 +38,25 @@ SEXP reorder(SEXP x, SEXP order)
   const int *restrict idx = INTEGER(order);
   int i=0;
   while (i<nrow && idx[i] == i+1) ++i;
-  const int start = i;
-  if (start==nrow) { UNPROTECT(nprotect); return(R_NilValue); }  // input is 1:n, nothing to do
+  const int start=i;
+  if (start==nrow) { UNPROTECT(nprotect); return R_NilValue; }  // input is 1:n, nothing to do
   i = nrow-1;
   while (idx[i] == i+1) --i;
-  const int end = i;
+  const int end=i, nmid=end-start+1;
+
+  uint8_t *seen = (uint8_t *)R_alloc(nmid, sizeof(uint8_t)); // detect duplicates
+  memset(seen, 0, nmid*sizeof(uint8_t));
   for (int i=start; i<=end; ++i) {
-    int itmp = idx[i]-1;
-    if (itmp<start || itmp>end) error(_("order is not a permutation of 1:nrow[%d]"), nrow);
-    // This file is for internal use (so we should get the input right), but this check seems sensible to still perform since it should
-    // run in negligible time (sequential with prefetch). It is not sufficient though; e.g. a non-permutation such as a duplicate will not be caught.
-    // But checking for dups would incur too much cost given that i) this is for internal use only and we only use this function internally
-    // when we're sure we're passing in a strict permutation, and ii) this operation is fundamental to setkey and data.table.
+    if (idx[i]==NA_INTEGER || idx[i]-1<start || idx[i]-1>end || seen[idx[i]-1-start]++)
+      error(_("Item %d of order (%d) is either NA, out of range [1,%d], or is duplicated. The new order must be a strict permutation of 1:n"),
+              i+1, idx[i], length(order));
+    // This should run in reasonable time because although 'seen' is random write, it is writing to just 1 byte * nrow
+    // which is relatively small and has a good chance of fitting in cache.
+    // A worry mitigated by this check is a user passing their own incorrect ordering using ::: to reach this internal.
+    // This check is once up front, and then idx is applied to all the columns which is where the most time is spent.
   }
 
-  char *TMP = (char *)R_alloc(end-start+1, maxSize);
+  char *TMP = (char *)R_alloc(nmid, maxSize);
 
   for (int i=0; i<ncol; ++i) {
     const SEXP v = isNewList(x) ? VECTOR_ELT(x,i) : x;
@@ -85,12 +89,27 @@ SEXP reorder(SEXP x, SEXP order)
     }
 
     // Unique and somber line. Not done lightly. Please read all comments in this file.
-    memcpy(((char *)DATAPTR_RO(v)) + size*start, TMP, size*(end-start+1));
+    memcpy(((char *)DATAPTR_RO(v)) + size*start, TMP, size*nmid);
     // The one and only place in data.table where we write behind the write-barrier. Fundamental to setkey and data.table.
     // This file is unique and special w.r.t. the write-barrier: an utterly strict in-place shuffle.
     // This shuffle operation does not inc or dec named/refcnt, or anything similar in R: past, present or future.
   }
   UNPROTECT(nprotect);
+  return R_NilValue;
+}
+
+SEXP setcolorder(SEXP x, SEXP o)
+{
+  SEXP names = getAttrib(x, R_NamesSymbol);
+  const int ncol=LENGTH(x);
+  if (isNull(names)) error(_("dt passed to setcolorder has no names"));
+  if (ncol != LENGTH(names))
+    error(_("Internal error: dt passed to setcolorder has %d columns but %d names"), ncol, LENGTH(names));  // # nocov
+  SEXP tt = PROTECT(allocVector(VECSXP, 2));
+  SET_VECTOR_ELT(tt, 0, names);
+  SET_VECTOR_ELT(tt, 1, x);
+  reorder(tt, o);
+  UNPROTECT(1);
   return R_NilValue;
 }
 
