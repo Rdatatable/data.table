@@ -8513,19 +8513,19 @@ test(1613.602, all.equal(data.table(a=1), data.frame(a=1), check.attributes = FA
 test(1613.603, all.equal(data.table(a=1), list(a=1), check.attributes = FALSE))
 test(1613.604, all.equal(data.table(a=1), 1, check.attributes = FALSE))
 test(1613.605, all.equal(data.table(a=1), try(stop('this wont work'), silent = TRUE), check.attributes = FALSE), "target is data.table but current is not and failed to be coerced to it")
-L1 <- list(a = data.table(1), b = setattr("foo", "tbl", data.table(1)))
-L2 <- list(a = 1, b = setattr("foo", "tbl", 1))
+L1 = list(a = data.table(1), b = setattr("foo1613", "tbl", data.table(1)))
+L2 = list(a = 1, b = setattr("foo1613", "tbl", 1))
 test(1613.606, all(grepl("target is data.table, current is numeric", all.equal(L1, L2))))
-as.data.table.foo = function(x) { # test as.data.table coerce of 'current' argument
-  if (!length(x)) warning("empty foo")
-  as.data.table(unclass(foo))
+as.data.table.foo1613 = function(x) { # test as.data.table coerce of 'current' argument
+  if (!length(x)) warning("empty foo1613")
+  as.data.table(unclass(foo1613))
 }
-registerS3method("as.data.table", "foo", as.data.table.foo)
-foo = structure(list(NULL), class="foo")
-test(1613.607, all.equal(data.table(), foo, check.attributes=FALSE))
-foo = structure(list(), class="foo")
-test(1613.608, all.equal(data.table(), foo, check.attributes=FALSE), warning="empty")
-rm(as.data.table.foo, foo)
+registerS3method("as.data.table", "foo1613", as.data.table.foo1613)
+foo1613 = structure(list(NULL), class="foo1613")
+test(1613.607, all.equal(data.table(), foo1613, check.attributes=FALSE))
+foo1613 = structure(list(), class="foo1613")
+test(1613.608, all.equal(data.table(), foo1613, check.attributes=FALSE), warning="empty")
+rm(as.data.table.foo1613, foo1613)
 
 DT1 <- data.table(a = 1:4, b = letters[1:4], .seqn = 5L)
 DT2 <- data.table(a = 4:1, b = letters[4:1], .seqn = 5L)
@@ -16762,13 +16762,13 @@ test(2131, lapply(x[ , list(dt = list(.SD)), by = a]$dt, attr, '.data.table.lock
            list(NULL, NULL, NULL))
 
 # S4 object not suported in fifelse and fcase, #4135
-setClass("rdate", slots=list(date="numeric"))
-setMethod("show","rdate", function(object) print(object@date))
-s1 = new("rdate",date=20191231)
-s2 = new("rdate",date=20191230)
+class2132 = setClass("class2132", slots=list(x="numeric"))
+s1 = class2132(x=20191231)
+s2 = class2132(x=20191230)
 test(2132.1, fifelse(TRUE, s1, s2),      error = "S4 class objects (except nanotime) are not supported.")
 test(2132.2, fifelse(TRUE, 1, s2),       error = "S4 class objects (except nanotime) are not supported.")
 test(2132.3, fcase(TRUE, s1, FALSE, s2), error = "S4 class objects (except nanotime) are not supported. Please see https://github.com/Rdatatable/data.table/issues/4131.")
+rm(s1, s2, class2132)
 
 
 ########################
