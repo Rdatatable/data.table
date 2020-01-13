@@ -1961,7 +1961,10 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
   
   # helper functions
   col_is_type = function(X.info, target) {
-    vapply_1b(X.info$types, `==`, target)
+    if (length(target) > 1)
+      vapply_1b(X.info$types, function(cl_vec) { any(target %chin% cl_vec) } )
+    else
+      vapply_1b(X.info$type, `==`, target)
   }
   col_is_class = function(X.info, target) {
     if (length(target) > 1)
@@ -2034,9 +2037,21 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
   atomic.types <- c("logical", "integer", "double", "complex", "character", "raw")
   any.non.atomic = !all_type_is(X.info, atomic.types)
   if (any.non.atomic) {
-    for (j in seq_len(p)) { # TODO can check recursive from the type list instead of iterating?
-      if (!is.recursive(X[[j]]))
-        X[[j]] = as.list(as.vector(X[[j]]))
+    # We only want to coerce columns to list if they are not already recursive
+    # see R source code src/main/coerce.c and src/main/utils.c
+    recursive.types = c("list", "pairlist", "closure", "environment", "promise", "language",
+                        "special", "builtin", "...", "any", "expression")
+    which.not.recursive = which(!col_is_type(X.info, recursive.types))
+    
+    # Some types may be recursive if subsettable. Find out which of these are actually 
+    # already recursive to skip
+    maybe.recursive = c("expternalptr", "bytecode", "weakref")
+    which.maybe.recursive = which(col_is_type(X.info, maybe.recursive))
+    which.not.recursive = c(which.not.recursive, which(!vapply_1b(X[which.maybe.recursive], is.recursive)))
+    
+    # Coerce to list as necessary
+    for (j in which.not.recursive) {
+      X[[j]] = as.list(as.vector(X[[j]]))
     }
   }
   
