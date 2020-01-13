@@ -2131,14 +2131,16 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
   # nocov end
   
   # If mix of recursive column types, fall back on unlist method
-  if (any.non.atomic && length(X.info$uniq.types) > 1L)
-    X = unlist(X, recursive = FALSE, use.names = FALSE) 
+  if (any.non.atomic && length(X.info$uniq.types) > 1L) {
+    X = unlist(X, recursive = FALSE, use.names = FALSE)
+    dim(X) = c(n, length(X)/n)
+  }
   # Otherwise use fast C method to copy values into matrix
-  else  
+  else {  
     X = .Call(Casmatrix, X)   
-
-  # Add necessary attributes
-  dim(X) = c(n, length(X)/n)
+  }
+  
+  # Add row and column names
   dimnames(X) = list(rownames.value, cn)
   
   # Determine any additional classes to give to the matrix - this applies
@@ -2147,7 +2149,7 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
   # if all columns have class integer64 we can add this class to the 
   # matrix.
   if (!any.non.atomic && length(non.atomics) > 0L && length(X.info$uniq.class.list) == 1L)
-    class(X) = c(non.atomics, class(X)) # class(X) should be "matrix" or c("matrix", "array") in R >= 4.0.0 
+    class(X) = c(non.atomics, class(X)) # class(X) should be "matrix" or c("matrix", "array") in R >= 4.0.0
   
   X
 }
