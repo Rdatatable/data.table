@@ -2047,6 +2047,8 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
     for (j in which.not.recursive) {
       X[[j]] = as.list(X[[j]])
     }
+    
+    X.info = column_properties(X, X.info, cols.to.update = which.not.recursive)
   }
   
   # Convert factors to character vectors
@@ -2140,7 +2142,7 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
   # nocov end
   
   # If mix of recursive column types, fall back on unlist method
-  if (any.non.atomic && length(X.info$uniq.types) > 1L) {
+  if (any.non.atomic && !(length(X.info$uniq.types) == 1L && X.info$uniq.types == "list")) {
     X = unlist(X, recursive = FALSE, use.names = FALSE)
     dim(X) = c(n, length(X)/n)
   }
