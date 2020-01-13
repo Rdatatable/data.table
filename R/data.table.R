@@ -2037,8 +2037,11 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
     # Some types may be recursive if subsettable. Find out which of these are actually 
     # already recursive to skip
     maybe.recursive = c("expternalptr", "bytecode", "weakref")
-    which.maybe.recursive = which(col_is(X.info$types, maybe.recursive))
-    which.not.recursive = c(which.not.recursive, which(!vapply_1b(X[which.maybe.recursive], is.recursive)))
+    which.maybe.recursive = which(col_is(X.info$types, maybe.recursive)) # which columns maybe recursive
+    maybe.is.recursive = vapply_1b(X[which.maybe.recursive], is.recursive) # are any actually recursive?
+    which.maybe.is.recursive = which.maybe.recursive[!maybe.is.recursive] # indices of these columns that weren't recursive
+                                                     
+    which.not.recursive = sort(c(which.not.recursive, maybe.recursive.is.recursive))
     
     # Coerce to list as necessary
     for (j in which.not.recursive) {
