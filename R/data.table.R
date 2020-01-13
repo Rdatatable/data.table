@@ -1960,36 +1960,27 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
   X.info = column_properties(X)
   
   # helper functions
-  col_is_type = function(X.info, target) {
+  col_is = function(col.info, target) { # col.info should either be types or classes
     if (length(target) > 1)
-      vapply_1b(X.info$types, function(cl_vec) { any(target %chin% cl_vec) } )
+      vapply_1b(col.info, function(xj) { any(target %chin% xj) } )
     else
-      vapply_1b(X.info$types, `==`, target)
+      vapply_1b(col.info, `==`, target)
   }
-  col_is_class = function(X.info, target) {
-    if (length(target) > 1)
-      vapply_1b(X.info$classes, function(cl_vec) { any(target %chin% cl_vec) } )
-    else
-      vapply_1b(X.info$classes, `==`, target)
+
+  any_col_is = function(col.uniqs, target) { # col.uniqs should either be uniq.classes or uniq.types
+    any(target %chin% col.uniqs)
   }
-  any_class_is = function(X.info, target) {
-    any(target %chin% X.info$uniq.classes)
+
+  all_col_is = function(col.uniqs, target) { # col.uniqs should either be uniq.classes or uniq.types
+    length(setdiff(col.uniqs, target)) == 0L
   }
-  any_type_is = function(X.info, target) {
-    any(target %chin% X.info$uniq.types)
-  }
-  all_class_is = function(X.info, target) {
-    length(setdiff(X.info$uniq.classes, target)) == 0L
-  }
-  all_type_is = function(X.info, target) {
-    length(setdiff(X.info$uniq.types, target)) == 0L
-  }
+
   
   # Check and fix the data.table if it is malformed - i.e. contains NULL
   # columns, wide columns, or columns whose length != .N. For NULL columns
   # we need to drop manually, otherwise we can use as.data.table().
-  if (any_type_is(X.info, "NULL")) {
-    col.is.null = which(col_is_type(X.info, "NULL"))
+  if (any_col_is(X.info$uniq.types, "NULL")) {
+    col.is.null = which(col_is(X.info$types, "NULL"))
     X[col.is.null] = NULL
     X.info = column_properties(X, X.info, cols.to.drop = col.is.null) # update column properties info
   }
@@ -2024,8 +2015,8 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
   # command on the unique column class list means for x with many columns we 
   # don't do expensive per-column checks unless necessary.
   # nocov start
-  if (any_class_is(X.info, "ff")) {
-    which.ff = which(col_is_class(X.info, "ff"))
+  if (any_col_is(X.info$uniq.classes, "ff")) {
+    which.ff = which(col_is(X.info$classes, "ff"))
     for (j in which.ff) {
       X[[j]] = X[[j]][] # bring into memory
     }
@@ -2035,18 +2026,18 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
   
   # Next determine if any columns are list or non-atomic type. If so, convert all columns to lists
   atomic.types <- c("logical", "integer", "double", "complex", "character", "raw")
-  any.non.atomic = !all_type_is(X.info, atomic.types)
+  any.non.atomic = !all_col_is(X.info$uniq.types, atomic.types)
   if (any.non.atomic) {
     # We only want to coerce columns to list if they are not already recursive
     # see R source code src/main/coerce.c and src/main/utils.c
     recursive.types = c("list", "pairlist", "closure", "environment", "promise", "language",
                         "special", "builtin", "...", "any", "expression")
-    which.not.recursive = which(!col_is_type(X.info, recursive.types))
+    which.not.recursive = which(!col_is(X.info$types, recursive.types))
     
     # Some types may be recursive if subsettable. Find out which of these are actually 
     # already recursive to skip
     maybe.recursive = c("expternalptr", "bytecode", "weakref")
-    which.maybe.recursive = which(col_is_type(X.info, maybe.recursive))
+    which.maybe.recursive = which(col_is(X.info$types, maybe.recursive))
     which.not.recursive = c(which.not.recursive, which(!vapply_1b(X[which.maybe.recursive], is.recursive)))
     
     # Coerce to list as necessary
@@ -2056,8 +2047,8 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
   }
   
   # Convert factors to character vectors
-  if (!any.non.atomic && any_class_is(X.info, "factor")) {
-    which.factors = which(col_is_class(X.info, "factor"))
+  if (!any.non.atomic && any_col_is(X.info$uniq.classes, "factor")) {
+    which.factors = which(col_is(X.info$classes, "factor"))
     for (j in which.factors) {
       miss = is.na(X[[j]])
       X[[j]] = as.vector(X[[j]])
@@ -2068,8 +2059,8 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
   
   # Classes to be converted to character vectors
   charconvert.classes = c("Date", "POSIXct", "POSIXlt")
-  if (!any.non.atomic && any_class_is(X.info, charconvert.classes)) {
-    which.charconvert = which(col_is_class(X.info, charconvert.classes))
+  if (!any.non.atomic && any_col_is(X.info$uniq.classes, charconvert.classes)) {
+    which.charconvert = which(col_is(X.info$classes, charconvert.classes))
     for (j in which.charconvert) {
       miss = is.na(X[[j]])
       X[[j]] = format(X[[j]])
@@ -2079,20 +2070,20 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
   }
   
   # Other classes from suggested packages that have special type conversion rules
-  if (!any.non.atomic && any_class_is(X.info, "integer64") && length(X.info$uniq.classes) > 1L) {
+  if (!any.non.atomic && any_col_is(X.info$uniq.classes, "integer64") && length(X.info$uniq.classes) > 1L) {
     # Determine target class we're converting to 
     target.class = NULL
     if (!requireNamespace("bit64", quietly=TRUE)) 
        stop("coercion to or from integer64 columns requires the bit64 package") # nocov
-    if (all_class_is(X.info, c("integer64", "logical", "integer", "raw")))
+    if (all_col_is(X.info$uniq.classes, c("integer64", "logical", "integer", "raw")))
       target.class = "integer64"
-    else if (all_class_is(X.info, c("integer64", "numeric", "complex", "character")))
+    else if (all_col_is(X.info$uniq.classes, c("integer64", "numeric", "complex", "character")))
       target.class = "character" # integer64 cannot reliably be converted to numeric or complex
     
     if (!is.null(target.class)) { # if NULL fallback on type coercion
       # no method as.integer64.raw so we need to do two-step conversion
-      if (target.class == "integer64" && any_class_is(X.info, "raw")) {
-        which.convert = which(col_is_class(X.info, "raw"))
+      if (target.class == "integer64" && any_col_is(X.info$uniq.classes, "raw")) {
+        which.convert = which(col_is(X.info$classes, "raw"))
         for (j in which.convert) {
           X[[j]] = as.integer(X[[j]])
         }
@@ -2100,7 +2091,7 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
       }
       
       # Which columns need to be coerced?
-      which.convert = which(!col_is_class(X.info, target.class))
+      which.convert = which(!col_is(X.info$classes, target.class))
 
       # Coerce the columns
       for (j in which.convert) {
@@ -2118,7 +2109,7 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
     type.order = c("raw"=1L, "logical"=2L, "integer"=3L, "double"=4L, 
                    "complex"=5L, "character"=6L, "list"=7L)
     target.type = names(which.max(type.order[X.info$uniq.types]))
-    which.convert = which(!col_is_type(X.info, target.type))
+    which.convert = which(!col_is(X.info$types, target.type))
     
     # Coerce the columns
     for (j in which.convert) {
