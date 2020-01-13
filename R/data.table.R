@@ -2147,7 +2147,7 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
   # if all columns have class integer64 we can add this class to the 
   # matrix.
   if (!any.non.atomic && length(non.atomics) > 0L && length(X.info$uniq.class.list) == 1L)
-    class(X) = non.atomics
+    class(X) = c(non.atomics, class(X)) # class(X) should be "matrix" or c("matrix", "array") in R >= 4.0.0 
   
   X
 }
