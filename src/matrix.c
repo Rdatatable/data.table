@@ -189,7 +189,7 @@ SEXP asmatrix(SEXP dt) {
   const bool verbose = GetVerbose(); 
   double tic = 0; 
   if (verbose) 
-    tic = omp_get_wtime(); // nocov
+    tic = omp_get_wtime(); // # nocov
   
   /* Conversion to a common atomic type is handled in R. We detect the
    * atomic type from the first column. */
@@ -220,11 +220,11 @@ SEXP asmatrix(SEXP dt) {
       mat = asmatrix_list(dt);
       break;
     default:
-      error("Internal error: unsupported matrix type '%s'", type2char(R_atomic_type)); // nocov
+      error("Internal error: unsupported matrix type '%s'", type2char(R_atomic_type)); // # nocov
   }
   
   if (verbose) 
-    Rprintf("%s: took %.3fs\n", __func__, omp_get_wtime()-tic); // nocov
+    Rprintf("%s: took %.3fs\n", __func__, omp_get_wtime()-tic); // # nocov
   
   UNPROTECT(1);
   return(mat);
