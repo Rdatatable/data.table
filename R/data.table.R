@@ -1964,7 +1964,7 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
     if (length(target) > 1)
       vapply_1b(X.info$types, function(cl_vec) { any(target %chin% cl_vec) } )
     else
-      vapply_1b(X.info$type, `==`, target)
+      vapply_1b(X.info$types, `==`, target)
   }
   col_is_class = function(X.info, target) {
     if (length(target) > 1)
