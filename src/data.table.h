@@ -1,22 +1,20 @@
 #include "dt_stdio.h"  // PRId64 and PRIu64
 #include <R.h>
-
 #include <Rversion.h>
 #if !defined(R_VERSION) || R_VERSION < R_Version(3, 5, 0)  // R-exts$6.14
-#define ALTREP(x) 0     // #2866
-#define USE_RINTERNALS  // #4164
-#define DATAPTR_RO(x) ((const void *)DATAPTR(x))
+#  define ALTREP(x) 0     // #2866
+#  define USE_RINTERNALS  // #3301
+#  define DATAPTR_RO(x) ((const void *)DATAPTR(x))
 #endif
 #include <Rinternals.h>
 #define SEXPPTR_RO(x) ((const SEXP *)DATAPTR_RO(x))  // to avoid overhead of looped STRING_ELT and VECTOR_ELT
-
-// #include <signal.h> // the debugging machinery + breakpoint aidee
-// raise(SIGINT);
 #include <stdint.h>    // for uint64_t rather than unsigned long long
 #include <stdbool.h>
 #include "myomp.h"
 #include "types.h"
 #include "po.h"
+// #include <signal.h> // the debugging machinery + breakpoint aidee
+// raise(SIGINT);
 
 // data.table depends on R>=3.0.0 when R_xlen_t was introduced
 // Before R 3.0.0, RLEN used to be switched to R_len_t as R_xlen_t wasn't available.
@@ -36,12 +34,12 @@ typedef R_xlen_t RLEN;
 #define TYPEORDER(x) typeorder[x]
 
 #ifdef MIN
-#undef MIN
+#  undef MIN
 #endif
 #define MIN(a,b) (((a)<(b))?(a):(b))
 
 #ifdef MAX
-#undef MAX
+#  undef MAX
 #endif
 #define MAX(a,b) (((a)>(b))?(a):(b))
 
@@ -51,10 +49,10 @@ typedef R_xlen_t RLEN;
 
 // Backport macros added to R in 2017 so we don't need to update dependency from R 3.0.0
 #ifndef MAYBE_SHARED
-# define MAYBE_SHARED(x) (NAMED(x) > 1)
+#  define MAYBE_SHARED(x) (NAMED(x) > 1)
 #endif
 #ifndef MAYBE_REFERENCED
-# define MAYBE_REFERENCED(x) ( NAMED(x) > 0 )
+#  define MAYBE_REFERENCED(x) ( NAMED(x) > 0 )
 #endif
 
 // If we find a non-ASCII, non-NA, non-UTF8 encoding, we try to convert it to UTF8. That is, marked non-ascii/non-UTF8 encodings will
