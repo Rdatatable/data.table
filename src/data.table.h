@@ -1,6 +1,5 @@
 #include "dt_stdio.h"  // PRId64 and PRIu64
 #include <R.h>
-#define USE_RINTERNALS
 #include <Rinternals.h>
 // #include <signal.h> // the debugging machinery + breakpoint aidee
 // raise(SIGINT);
@@ -61,8 +60,9 @@ typedef R_xlen_t RLEN;
 #define NEED2UTF8(s) !(IS_ASCII(s) || (s)==NA_STRING || IS_UTF8(s))
 #define ENC2UTF8(s) (!NEED2UTF8(s) ? (s) : mkCharCE(translateCharUTF8(s), CE_UTF8))
 
-#ifndef ALTREP
-#define ALTREP(x) 0  // for R<3.5.0, see issue #2866 and grep for "ALTREP" to see comments where it's used
+#include <Rversion.h>
+#if !defined(R_VERSION) || R_VERSION<R_Version(3, 5, 0)  // R-exts$6.14
+#define ALTREP(x) 0  // see issue #2866 and grep for "ALTREP" to see comments where it's used
 #endif
 
 #define SEXPPTR_RO(x) ((const SEXP *)DATAPTR_RO(x))
