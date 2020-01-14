@@ -2134,7 +2134,7 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
     # Coerce the columns
     for (j in which.convert) {
       switch(target.type,
-             # raw impossible to reach - no coercion necessary if all columns are logical
+             # raw impossible to reach - no coercion necessary if all columns are raw
              "logical"={ X[[j]] = as.logical(X[[j]]) },
              "integer"={ X[[j]] = as.integer(X[[j]]) },
              "double"={ X[[j]] = as.double(X[[j]]) },
