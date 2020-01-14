@@ -1959,22 +1959,37 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
   }
   X.info = column_properties(X)
   
-  # helper functions
-  col_is = function(col.info, target) { # col.info should either be types or classes
+  # Check whether any column has type or class among the 'target' vector,
+  # by matching to the precomputed vector of unique class or type information
+  # stored in X.info. col.uniqs should either be X.info$uniq.classes or 
+  # X.info$uniq.types. Returns a single TRUE or FALSE.
+  any_col_is = function(col.uniqs, target) { 
+    any(target %chin% col.uniqs)
+  }
+  
+  # Check whether all columns have type or class among the 'target' vector,
+  # by matching to the precomputed vector of unique class or type information
+  # stored in X.info. col.uniqs should either be X.info$uniq.classes or 
+  # X.info$uniq.types. Returns a single TRUE or FALSE.
+  all_col_is = function(col.uniqs, target) {
+    length(setdiff(col.uniqs, target)) == 0L
+  }
+  
+  # Check whether each column has type or class among the 'target' vector,
+  # by matching to the precomputed vector of class or type information
+  # stored in X.info. col.info should either be X.info$types or X.info$classes.
+  # Returns TRUE or FALSE for each column, allowing for which() or which(!()) to
+  # be subsequently applied to get column indices for subsetting. This function
+  # should generally be applied only after an any_col_is() or all_col_is() check
+  # to avoid expensive checks across all columns where they are not needed (i.e.
+  # if all columns are of a single type already we want to minimise the column
+  # check computation)
+  col_is = function(col.info, target) { 
     if (length(target) > 1)
       vapply_1b(col.info, function(xj) { any(target %chin% xj) } )
     else
       vapply_1b(col.info, `==`, target)
   }
-
-  any_col_is = function(col.uniqs, target) { # col.uniqs should either be uniq.classes or uniq.types
-    any(target %chin% col.uniqs)
-  }
-
-  all_col_is = function(col.uniqs, target) { # col.uniqs should either be uniq.classes or uniq.types
-    length(setdiff(col.uniqs, target)) == 0L
-  }
-
   
   # Check and fix the data.table if it is malformed - i.e. contains NULL
   # columns, wide columns, or columns whose length != .N. For NULL columns
