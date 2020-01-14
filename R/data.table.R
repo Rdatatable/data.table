@@ -2039,6 +2039,29 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
   }
   # nocov end
   
+  # Convert factors to character vectors
+  if (any_col_is(X.info$uniq.classes, "factor")) {
+    which.factors = which(col_is(X.info$classes, "factor"))
+    for (j in which.factors) {
+      miss = is.na(X[[j]])
+      X[[j]] = as.vector(X[[j]])
+      is.na(X[[j]]) = miss
+    }
+    X.info = column_properties(X, X.info, cols.to.update = which.factors)
+  }
+  
+  # Classes to be converted to character vectors
+  charconvert.classes = c("Date", "POSIXct", "POSIXlt")
+  if (any_col_is(X.info$uniq.classes, charconvert.classes)) {
+    which.charconvert = which(col_is(X.info$classes, charconvert.classes))
+    for (j in which.charconvert) {
+      miss = is.na(X[[j]])
+      X[[j]] = format(X[[j]])
+      is.na(X[[j]]) = miss
+    }
+    X.info = column_properties(X, X.info, cols.to.update = which.charconvert) # update column properties info
+  }
+  
   # Next determine if any columns are list or non-atomic type. If so, convert all columns to lists
   atomic.types <- c("logical", "integer", "double", "complex", "character", "raw")
   any.non.atomic = !all_col_is(X.info$uniq.types, atomic.types)
@@ -2064,29 +2087,6 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
     }
     
     X.info = column_properties(X, X.info, cols.to.update = which.not.recursive)
-  }
-  
-  # Convert factors to character vectors
-  if (!any.non.atomic && any_col_is(X.info$uniq.classes, "factor")) {
-    which.factors = which(col_is(X.info$classes, "factor"))
-    for (j in which.factors) {
-      miss = is.na(X[[j]])
-      X[[j]] = as.vector(X[[j]])
-      is.na(X[[j]]) = miss
-    }
-    X.info = column_properties(X, X.info, cols.to.update = which.factors)
-  }
-  
-  # Classes to be converted to character vectors
-  charconvert.classes = c("Date", "POSIXct", "POSIXlt")
-  if (!any.non.atomic && any_col_is(X.info$uniq.classes, charconvert.classes)) {
-    which.charconvert = which(col_is(X.info$classes, charconvert.classes))
-    for (j in which.charconvert) {
-      miss = is.na(X[[j]])
-      X[[j]] = format(X[[j]])
-      is.na(X[[j]]) = miss
-    }
-    X.info = column_properties(X, X.info, cols.to.update = which.charconvert) # update column properties info
   }
   
   # Other classes from suggested packages that have special type conversion rules
