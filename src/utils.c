@@ -356,14 +356,3 @@ SEXP coerceUtf8IfNeeded(SEXP x) {
   return(ans);
 }
 
-//const void *DATAPTR_RO(SEXP x) {
-//{
-//  switch (TYPEOF(x)) {
-//  case LGLSXP:  return LOGICAL(X);
-//  case INTSXP:  return INTEGER(x);
-//  case REALSXP: return REAL(x);
-//  case STRSXP:  return STRING_PTR(x);  // return as const * (read only)
-//  case VECSXP:  return VECTOR_PTR(x);  // return as const * (read only)
-//  }
-//}
-

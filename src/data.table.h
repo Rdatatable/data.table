@@ -1,6 +1,15 @@
 #include "dt_stdio.h"  // PRId64 and PRIu64
 #include <R.h>
+
+#include <Rversion.h>
+#if !defined(R_VERSION) || R_VERSION < R_Version(3, 5, 0)  // R-exts$6.14
+#define ALTREP(x) 0     // #2866
+#define USE_RINTERNALS  // #4164
+#define DATAPTR_RO(x) ((const void *)DATAPTR(x))
+#endif
 #include <Rinternals.h>
+#define SEXPPTR_RO(x) ((const SEXP *)DATAPTR_RO(x))  // to avoid overhead of looped STRING_ELT and VECTOR_ELT
+
 // #include <signal.h> // the debugging machinery + breakpoint aidee
 // raise(SIGINT);
 #include <stdint.h>    // for uint64_t rather than unsigned long long
@@ -59,14 +68,6 @@ typedef R_xlen_t RLEN;
 // timing the impact and manually avoiding (is there an IS_ASCII on the character vector rather than testing each item every time?)
 #define NEED2UTF8(s) !(IS_ASCII(s) || (s)==NA_STRING || IS_UTF8(s))
 #define ENC2UTF8(s) (!NEED2UTF8(s) ? (s) : mkCharCE(translateCharUTF8(s), CE_UTF8))
-
-#include <Rversion.h>
-#if !defined(R_VERSION) || R_VERSION<R_Version(3, 5, 0)  // R-exts$6.14
-#define ALTREP(x) 0  // see issue #2866 and grep for "ALTREP" to see comments where it's used
-#endif
-
-#define SEXPPTR_RO(x) ((const SEXP *)DATAPTR_RO(x))
-// for convenient [] since DATAPTR_RO is untyped (const void *) and we wish to avoid overhead of looped STRING_ELT and VECTOR_ELT
 
 // init.c
 extern SEXP char_integer64;
@@ -234,7 +235,6 @@ bool islocked(SEXP x);
 SEXP islockedR(SEXP x);
 bool need2utf8(SEXP x);
 SEXP coerceUtf8IfNeeded(SEXP x);
-//const void *DATAPTR_RO(SEXP x);
 
 // types.c
 char *end(char *start);
