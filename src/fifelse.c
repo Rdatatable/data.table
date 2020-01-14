@@ -591,6 +591,7 @@ SEXP fposR(SEXP needle, SEXP haystack, SEXP all, SEXP overlap) {
   }
   label:;
   if (x == 0) {
+    UNPROTECT(nprotect);
     return R_NilValue;
   }
   SEXP ans = PROTECT(allocMatrix(INTSXP, x, 2)); nprotect++;
