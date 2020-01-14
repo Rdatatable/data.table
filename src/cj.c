@@ -74,7 +74,7 @@ SEXP cj(SEXP base_list) {
       }
     } break;
     case VECSXP: {
-      const SEXP *sourceP = VECTOR_PTR(source);
+      const SEXP *sourceP = SEXPPTR_RO(source);
       int start = 0;
       for (int i=0; i<ncopy; ++i) {
         for (int j=0; j<thislen; ++j) {

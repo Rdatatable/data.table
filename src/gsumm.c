@@ -1189,9 +1189,9 @@ SEXP gnthvalue(SEXP x, SEXP valArg) {
   }
     break;
   case INTSXP: {
-    const int *ix = LOGICAL(x);
+    const int *ix = INTEGER(x);
     ans = PROTECT(allocVector(INTSXP, ngrp));
-    int *ians = LOGICAL(ans);
+    int *ians = INTEGER(ans);
     for (i=0; i<ngrp; i++) {
       if (val > grpsize[i]) { INTEGER(ans)[i] = NA_INTEGER; continue; }
       k = ff[i]+val-2;

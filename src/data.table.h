@@ -1,7 +1,15 @@
 #include "dt_stdio.h"  // PRId64 and PRIu64
 #include <R.h>
-#define USE_RINTERNALS
+
+#include <Rversion.h>
+#if !defined(R_VERSION) || R_VERSION < R_Version(3, 5, 0)  // R-exts$6.14
+#define ALTREP(x) 0     // #2866
+#define USE_RINTERNALS  // #4164
+#define DATAPTR_RO(x) ((const void *)DATAPTR(x))
+#endif
 #include <Rinternals.h>
+#define SEXPPTR_RO(x) ((const SEXP *)DATAPTR_RO(x))  // to avoid overhead of looped STRING_ELT and VECTOR_ELT
+
 // #include <signal.h> // the debugging machinery + breakpoint aidee
 // raise(SIGINT);
 #include <stdint.h>    // for uint64_t rather than unsigned long long
@@ -61,10 +69,6 @@ typedef R_xlen_t RLEN;
 #define NEED2UTF8(s) !(IS_ASCII(s) || (s)==NA_STRING || IS_UTF8(s))
 #define ENC2UTF8(s) (!NEED2UTF8(s) ? (s) : mkCharCE(translateCharUTF8(s), CE_UTF8))
 
-#ifndef ALTREP
-#define ALTREP(x) 0  // for R<3.5.0, see issue #2866 and grep for "ALTREP" to see comments where it's used
-#endif
-
 // init.c
 extern SEXP char_integer64;
 extern SEXP char_ITime;
@@ -114,7 +118,6 @@ SEXP allocNAVectorLike(SEXP x, R_len_t n);
 void writeNA(SEXP v, const int from, const int n);
 void savetl_init(), savetl(SEXP s), savetl_end();
 int checkOverAlloc(SEXP x);
-SEXP setcolorder(SEXP x, SEXP o);
 
 // forder.c
 int StrCmp(SEXP x, SEXP y);
@@ -124,8 +127,10 @@ int getNumericRounding_C();
 
 // reorder.c
 SEXP reorder(SEXP x, SEXP order);
+SEXP setcolorder(SEXP x, SEXP o);
 
 // subset.c
+void subsetVectorRaw(SEXP ans, SEXP source, SEXP idx, const bool anyNA);
 SEXP subsetVector(SEXP x, SEXP idx);
 
 // fcast.c
@@ -155,7 +160,7 @@ SEXP dt_na(SEXP x, SEXP cols);
 
 // assign.c
 SEXP alloccol(SEXP dt, R_len_t n, Rboolean verbose);
-const char *memrecycle(SEXP target, SEXP where, int r, int len, SEXP source, int coln, const char *colname);
+const char *memrecycle(const SEXP target, const SEXP where, const int r, const int len, SEXP source, const int sourceStart, const int sourceLen, const int coln, const char *colname);
 SEXP shallowwrapper(SEXP dt, SEXP cols);
 
 SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols,
