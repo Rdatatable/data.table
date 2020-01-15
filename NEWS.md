@@ -85,6 +85,8 @@ unit = "s")
 
 5. `GForce` is deactivated for `[[` on non-atomic input, part of [#4159](https://github.com/Rdatatable/data.table/issues/4159).
 
+6. `all.equal(DT, y)` no longer errors when `y` is not a data.table, [#4042](https://github.com/Rdatatable/data.table/issues/4042). Thanks to @d-sci for reporting and the PR.
+
 ## NOTES
 
 1. `as.IDate`, `as.ITime`, `second`, `minute`, and `hour` now recognize UTC equivalents for speed: GMT, GMT-0, GMT+0, GMT0, Etc/GMT, and Etc/UTC, [#4116](https://github.com/Rdatatable/data.table/issues/4116).

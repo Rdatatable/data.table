@@ -2755,7 +2755,7 @@ setcolorder = function(x, neworder=key(x))
   if (is.character(neworder) && anyDuplicated(names(x)))
     stop("x has some duplicated column name(s): ", paste(names(x)[duplicated(names(x))], collapse=","), ". Please remove or rename the duplicate(s) and try again.")
   # if (!is.data.table(x)) stop("x is not a data.table")
-  neworder = colnamesInt(x, neworder, check_dups=TRUE)
+  neworder = colnamesInt(x, neworder, check_dups=FALSE)  # dups are now checked inside Csetcolorder below
   if (length(neworder) != length(x)) {
     #if shorter than length(x), pad by the missing
     #  elements (checks below will catch other mistakes)
