@@ -87,6 +87,8 @@ unit = "s")
 
 6. `all.equal(DT, y)` no longer errors when `y` is not a data.table, [#4042](https://github.com/Rdatatable/data.table/issues/4042). Thanks to @d-sci for reporting and the PR.
 
+7. `as.data.table(table(NULL))` no longer errors, [#4179](https://github.com/Rdatatable/data.table/issues/4179). An empty `data.table` is returned. This is in contrast to `as.data.frame(table(NULL))`, which returns 0-row, 1-column table; the 0-column version works better with other `data.table` functions like `rbindlist` (the one-column version would necessitate `use.names=TRUE`).
+
 ## NOTES
 
 1. `as.IDate`, `as.ITime`, `second`, `minute`, and `hour` now recognize UTC equivalents for speed: GMT, GMT-0, GMT+0, GMT0, Etc/GMT, and Etc/UTC, [#4116](https://github.com/Rdatatable/data.table/issues/4116).
