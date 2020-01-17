@@ -79,15 +79,15 @@ build: # build data.table sources as tar.gz archive
 .test-cran-lin-template: &test-cran-lin
   <<: *test-lin
   variables:
-    _R_CHECK_CRAN_INCOMING_: "TRUE"           # stricter --as-cran checks should run in dev pipelines continuously (not sure what they are though)
-    _R_CHECK_CRAN_INCOMING_REMOTE_: "FALSE"   # Other than no URL checking (takes many minutes) or 'Days since last update 0' NOTEs needed, #3284
+    _R_CHECK_CRAN_INCOMING_: "TRUE"
+    _R_CHECK_CRAN_INCOMING_REMOTE_: "FALSE"
   script:
     - Rscript -e 'source(".ci/ci.R"); install.packages(dcf.dependencies("DESCRIPTION", which="most"), quiet=TRUE)'
     - *copy-src
     - rm -r bus
     - *move-src
     - cd bus/$CI_BUILD_NAME
-    - R CMD check --as-cran $(ls -1t data.table_*.tar.gz | head -n 1)
+    - R CMD check --as-cran --no-manual $(ls -1t data.table_*.tar.gz | head -n 1)
     - *cleanup-src
 
 .test-win-template: &test-win
@@ -144,14 +144,24 @@ test-rel-vanilla-lin: # minimal installation, no suggested deps, no vignettes or
     - R CMD check --no-manual --ignore-vignettes $(ls -1t data.table_*.tar.gz | head -n 1)
     - *cleanup-src
 
-test-rel-cran-lin: # currently released R on Linux
-  <<: *test-cran-lin
+test-rel-cran-lin: # currently released R on Linux, extra NOTEs check and build pdf manual thus not from cran-lin template
+  <<: *test-lin
   image: registry.gitlab.com/jangorecki/dockerfiles/r-builder
+  variables:
+    _R_CHECK_CRAN_INCOMING_: "TRUE"           # stricter --as-cran checks should run in dev pipelines continuously (not sure what they are though)
+    _R_CHECK_CRAN_INCOMING_REMOTE_: "FALSE"   # Other than no URL checking (takes many minutes) or 'Days since last update 0' NOTEs needed, #3284
   before_script:
     - mkdir -p ~/.R
     - echo 'CFLAGS=-g0 -O2 -fopenmp -Wall -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2'> ~/.R/Makevars # -g0 because -g increases datatable.so size from 0.5MB to 1.5MB and breaches 'installed package size <= 5MB' note
     - echo 'CXXFLAGS=-g0 -O2 -fopenmp -Wall -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2' >> ~/.R/Makevars
-  after_script:
+  script:
+    - Rscript -e 'source(".ci/ci.R"); install.packages(dcf.dependencies("DESCRIPTION", which="most"), quiet=TRUE)'
+    - *copy-src
+    - rm -r bus
+    - *move-src
+    - cd bus/$CI_BUILD_NAME
+    - R CMD check --as-cran $(ls -1t data.table_*.tar.gz | head -n 1)
+    - *cleanup-src
     - >-
         Rscript -e 'l<-readLines("data.table.Rcheck/00check.log"); if (!identical(l[length(l)], "Status: 1 NOTE")) stop("Last line of ", shQuote("00check.log"), " is not ", shQuote("Status: 1 NOTE"), "(size of tarball) but ", shQuote(toString(l[length(l)]))) else q("no")'
 
