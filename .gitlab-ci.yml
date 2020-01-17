@@ -183,6 +183,36 @@ test-310-cran-lin: # test stated R dependency (3.1.0) using Linux
     - R CMD check --as-cran $(ls -1t data.table_*.tar.gz | head -n 1)
     - *cleanup-src
 
+test-344-cran-lin: # test last non-altrep version
+  <<: *test-lin
+  image: registry.gitlab.com/jangorecki/dockerfiles/r-3.4.4
+  variables:
+    _R_CHECK_CRAN_INCOMING_: "TRUE"
+    _R_CHECK_CRAN_INCOMING_REMOTE_: "FALSE"
+  script:
+    - Rscript -e 'source(".ci/ci.R"); install.packages(dcf.dependencies("DESCRIPTION", which="most"), quiet=TRUE)'
+    - *copy-src
+    - rm -r bus
+    - *move-src
+    - cd bus/$CI_BUILD_NAME
+    - R CMD check --as-cran $(ls -1t data.table_*.tar.gz | head -n 1)
+    - *cleanup-src
+
+test-350-cran-lin: # test last first altrep version
+  <<: *test-lin
+  image: registry.gitlab.com/jangorecki/dockerfiles/r-3.5.0
+  variables:
+    _R_CHECK_CRAN_INCOMING_: "TRUE"
+    _R_CHECK_CRAN_INCOMING_REMOTE_: "FALSE"
+  script:
+    - Rscript -e 'source(".ci/ci.R"); install.packages(dcf.dependencies("DESCRIPTION", which="most"), quiet=TRUE)'
+    - *copy-src
+    - rm -r bus
+    - *move-src
+    - cd bus/$CI_BUILD_NAME
+    - R CMD check --as-cran $(ls -1t data.table_*.tar.gz | head -n 1)
+    - *cleanup-src
+
 test-rel-win: # windows test and build binaries
   <<: *test-win
   variables:
@@ -250,6 +280,8 @@ integration: # merging all artifacts to produce single R repository and summarie
   - test-dev-cran-lin
   - test-rel-vanilla-lin
   - test-310-cran-lin
+  - test-344-cran-lin
+  - test-350-cran-lin
   - test-rel-win
   - test-dev-win
   #- test-rel-osx

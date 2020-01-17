@@ -12,6 +12,8 @@ Test jobs:
 - `test-dev-cran-lin` - `r-devel` and `--as-cran` on Linux, `--enable-strict-barrier --disable-long-double`
 - `test-rel-vanilla-lin` - `r-release` on Linux, no suggested deps, no OpenMP, `-O0`, tracks memory usage during tests
 - `test-310-cran-lin` - R 3.1.0 on Linux
+- `test-344-cran-lin` - R 3.4.4 on Linux
+- `test-350-cran-lin` - R 3.5.0 on Linux, no `r-recommended`
 - `test-rel-win` - `r-release` on Windows
 - `test-dev-win` - `r-devel` on Windows
 - `test-rel-osx` - MacOSX build not yet deployed, see [#3326](https://github.com/Rdatatable/data.table/issues/3326) for status
