@@ -309,7 +309,7 @@ SEXP exprCols(SEXP x, SEXP expr, /*SEXP with, */SEXP rho) {
     if (isFunction(value)) { // expr could be either symbol or language: f, function(x) x
       //Rprintf("isFunction(eval(expr))\n");
       cols = PROTECT(funCols(x, expr, rho)); protecti++;
-    } else { // evaluated value: 2:3, c("V1","V2"), but not call objects anymore
+    } else { // evaluated value: c(2L,3L), c("V1","V2"), but not call objects anymore
       cols = value;
     }
   }
