@@ -51,6 +51,7 @@ build: # build data.table sources as tar.gz archive
     - mkdir -p bus/$CI_BUILD_NAME/cran/src/contrib
     - mv $(ls -1t data.table_*.tar.gz | head -n 1) bus/$CI_BUILD_NAME/cran/src/contrib/.
     - Rscript -e 'tools::write_PACKAGES(contrib.url("bus/build/cran"), fields="Revision", addFiles=TRUE)'
+    - rm bus/$CI_BUILD_NAME/cran/src/contrib/PACKAGES.rds # fallback to PACKAGES dcf so available.packages 3.4.4 works
   <<: *artifacts
 
 .test-copy-src: &copy-src
