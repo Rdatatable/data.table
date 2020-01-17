@@ -33,6 +33,7 @@ mirror-packages: # download all recursive dependencies of data.table suggests an
     - mkdir -p bus/$CI_BUILD_NAME/cran/src/contrib
     # mirror R dependencies: source, win.binary
     - Rscript -e 'mirror.packages(dcf.dependencies(c("DESCRIPTION","inst/tests/tests-DESCRIPTION"), "all"), repos=c(Sys.getenv("CRAN_MIRROR"), dcf.repos("inst/tests/tests-DESCRIPTION")), repodir="bus/mirror-packages/cran")'
+    - rm bus/$CI_BUILD_NAME/cran/src/contrib/PACKAGES.rds # fallback to PACKAGES dcf so available.packages 3.4.4 works
     - Rscript -e 'sapply(simplify=FALSE, setNames(nm=Sys.getenv(c("R_BIN_VERSION","R_DEVEL_BIN_VERSION"))), function(binary.ver) mirror.packages(type="win.binary", dcf.dependencies("DESCRIPTION", "all"), repos=Sys.getenv("CRAN_MIRROR"), repodir="bus/mirror-packages/cran", binary.ver=binary.ver))'
   <<: *artifacts
 
