@@ -16758,8 +16758,19 @@ test(2130.03, print(DT), output=c("   x             y", "1: 1 <ex_class[3]>",   
 
 # .SD from grouping should be unlocked, part of #4159
 x = data.table(a=1:3, b=4:6)
-test(2131, lapply(x[ , list(dt = list(.SD)), by = a]$dt, attr, '.data.table.locked'),
-           list(NULL, NULL, NULL))
+test(2131.1, lapply(x[ , list(dt = list(.SD)), by = a]$dt, attr, '.data.table.locked'),
+     list(NULL, NULL, NULL))
+## truly recursive object (contains itself) can cause infinite recursion, #4173
+f = function(data) {
+  x = new.env()
+  x$a = 2
+  x$b = x
+  x
+}
+
+dt = data.table(x = rep(1:3, each = 3), y = runif(9))
+out = dt[, list(evaluated = list(f(copy(.SD)))), by = x]
+test(2131.2, class(out$evaluated[[1L]]), 'environment')
 
 # S4 object not suported in fifelse and fcase, #4135
 class2132 = setClass("class2132", slots=list(x="numeric"))
