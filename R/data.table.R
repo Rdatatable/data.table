@@ -1756,6 +1756,8 @@ replace_dot_alias = function(e) {
     ans = .Call(Cdogroups, x, xcols, groups, grpcols, jiscols, xjiscols, grporder, o__, f__, len__, jsub, SDenv, cols, newnames, !missing(on), verbose)
   }
   # unlock any locked data.table components of the answer, #4159
+  # MAX_DEPTH prevents possible infinite recursion from truly recursive object, #4173
+  #   TODO: is there an efficient way to get around this MAX_DEPTH limit?
   MAX_DEPTH = 5L
   runlock = function(x, current_depth = 1L) {
     if (is.recursive(x) && current_depth <= MAX_DEPTH) {
