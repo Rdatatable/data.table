@@ -54,16 +54,13 @@ build: # build data.table sources as tar.gz archive
   <<: *artifacts
 
 .test-copy-src: &copy-src
-  - &copy-src
-    cp $(ls -1t bus/build/cran/src/contrib/data.table_*.tar.gz | head -n 1) .
+  - cp $(ls -1t bus/build/cran/src/contrib/data.table_*.tar.gz | head -n 1) .
 
 .test-move-src: &move-src
-  - &move-src
-    mkdir -p bus/$CI_BUILD_NAME && mv $(ls -1t data.table_*.tar.gz | head -n 1) bus/$CI_BUILD_NAME
+  - mkdir -p bus/$CI_BUILD_NAME && mv $(ls -1t data.table_*.tar.gz | head -n 1) bus/$CI_BUILD_NAME
 
 .test-cleanup-src: &cleanup-src
-  - &cleanup-src
-    rm $(ls -1t data.table_*.tar.gz | head -n 1)
+  - rm $(ls -1t data.table_*.tar.gz | head -n 1)
 
 .test-template: &test
   stage: test
