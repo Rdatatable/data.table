@@ -48,12 +48,12 @@ test(1.64, .Call(CexprCols, as.data.table(lapply(1:5, c)), quote(((V4))), "j", e
 test(1.65, .Call(CexprCols, as.data.table(lapply(1:5, c)), quote(((c("V4","V2")))), ".SDcols", environment()), c(4L,2L))
 test(1.66, .Call(CexprCols, as.data.table(lapply(1:5, c)), quote(((4:2))), ".SDcols", environment()), c(4L,3L,2L))
 test(1.67, .Call(CexprCols, as.data.table(lapply(1:5, c)), quote(((V4:V2))), ".SDcols", environment()), c(4L,3L,2L))
-test(1.68, .Call(CexprCols, as.data.table(lapply(1:5, c)), quote(((V4))), ".SDcols", environment()), 4L) ## TODO should raise error(?)
+test(1.68, .Call(CexprCols, as.data.table(lapply(1:5, c)), quote(((V4))), ".SDcols", environment()), error="'V4' not found")
 
-test(1.71, .Call(CexprCols, as.data.table(lapply(1:5, c)), quote(is.numeric), "j", environment()), error=".SDcols")
-test(1.72, .Call(CexprCols, as.data.table(lapply(1:5, c)), quote(!is.numeric), "j", environment()), error=".SDcols")
+test(1.71, .Call(CexprCols, as.data.table(lapply(1:5, c)), quote(is.numeric), "j", environment()), error="non existing column")
+#test(1.72, .Call(CexprCols, as.data.table(lapply(1:5, c)), quote(!is.numeric), "j", environment()), error="non existing column")
 test(1.73, .Call(CexprCols, as.data.table(lapply(1:5, c)), quote(is.numeric), ".SDcols", environment()), c(1L,2L,3L,4L,5L))
-test(1.74, .Call(CexprCols, as.data.table(lapply(1:5, c)), quote(!is.numeric), ".SDcols", environment()), integer())
+#test(1.74, .Call(CexprCols, as.data.table(lapply(1:5, c)), quote(!is.numeric), ".SDcols", environment()), integer())
 
 test(1.81, .Call(CexprCols, as.data.table(lapply(1:5, c)), quote(2:4), "j", environment()), c(2L,3L,4L))
 test(1.82, .Call(CexprCols, as.data.table(lapply(1:5, c)), quote(4:2), "j", environment()), c(4L,3L,2L))
@@ -62,7 +62,7 @@ test(1.84, .Call(CexprCols, as.data.table(lapply(1:5, c)), quote(4:2), ".SDcols"
 
 patterns = c("V1","V2")
 test(1.91, .Call(CexprCols, as.data.table(lapply(1:5, c)), quote(patterns), "j", environment()), c(1L,2L))
-test(1.91, .Call(CexprCols, as.data.table(lapply(1:5, c)), quote(patterns), ".SDcols", environment()), c(1L,2L))
+test(1.92, .Call(CexprCols, as.data.table(lapply(1:5, c)), quote(patterns), ".SDcols", environment()), c(1L,2L))
 rm(patterns)
 
 as.data.table(lapply(1:5, c))[, 3:2]
@@ -84,9 +84,12 @@ as.data.table(lapply(1:5, c))[, V1:V2]
 
 as.data.table(lapply(1:5, c))[, ((3:2))]
 
-.Call(CexprCols, as.data.table(lapply(1:5, c)), quote(patterns("V2|V4")), environment())
-.Call(CexprCols, as.data.table(lapply(1:5, c)), quote(!patterns("V2|V4")), environment())
-.Call(CexprCols, as.data.table(lapply(1:5, c)), quote(patterns("V2|V4", "V2|V5")), environment())
+.Call(CexprCols, as.data.table(lapply(1:5, c)), quote(patterns("V2|V4")), "j", environment())
+.Call(CexprCols, as.data.table(lapply(1:5, c)), quote(!patterns("V2|V4")), "j", environment())
+.Call(CexprCols, as.data.table(lapply(1:5, c)), quote(patterns("V2|V4", "V2|V5")), "j", environment())
+.Call(CexprCols, as.data.table(lapply(1:5, c)), quote(patterns("V2|V4")), ".SDcols", environment())
+.Call(CexprCols, as.data.table(lapply(1:5, c)), quote(!patterns("V2|V4")), ".SDcols", environment())
+.Call(CexprCols, as.data.table(lapply(1:5, c)), quote(patterns("V2|V4", "V2|V5")), ".SDcols", environment())
 
 as.data.table(lapply(1:5, c))[, patterns("V")]
 
