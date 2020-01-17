@@ -60,6 +60,13 @@ test(1.82, .Call(CexprCols, as.data.table(lapply(1:5, c)), quote(4:2), "j", envi
 test(1.83, .Call(CexprCols, as.data.table(lapply(1:5, c)), quote(2:4), ".SDcols", environment()), c(2L,3L,4L))
 test(1.84, .Call(CexprCols, as.data.table(lapply(1:5, c)), quote(4:2), ".SDcols", environment()), c(4L,3L,2L))
 
+.Call(CexprCols, as.data.table(lapply(1:5, c)), quote(patterns("V2|V4")), "j", environment())
+.Call(CexprCols, as.data.table(lapply(1:5, c)), quote(!patterns("V2|V4")), "j", environment())
+.Call(CexprCols, as.data.table(lapply(1:5, c)), quote(patterns("V2|V4", "V2|V5")), "j", environment())
+.Call(CexprCols, as.data.table(lapply(1:5, c)), quote(patterns("V2|V4")), ".SDcols", environment())
+.Call(CexprCols, as.data.table(lapply(1:5, c)), quote(!patterns("V2|V4")), ".SDcols", environment())
+.Call(CexprCols, as.data.table(lapply(1:5, c)), quote(patterns("V2|V4", "V2|V5")), ".SDcols", environment())
+
 patterns = c("V1","V2")
 test(1.91, .Call(CexprCols, as.data.table(lapply(1:5, c)), quote(patterns), "j", environment()), c(1L,2L))
 test(1.92, .Call(CexprCols, as.data.table(lapply(1:5, c)), quote(patterns), ".SDcols", environment()), c(1L,2L))
@@ -90,8 +97,6 @@ as.data.table(lapply(1:5, c))[, ((3:2))]
 .Call(CexprCols, as.data.table(lapply(1:5, c)), quote(patterns("V2|V4")), ".SDcols", environment())
 .Call(CexprCols, as.data.table(lapply(1:5, c)), quote(!patterns("V2|V4")), ".SDcols", environment())
 .Call(CexprCols, as.data.table(lapply(1:5, c)), quote(patterns("V2|V4", "V2|V5")), ".SDcols", environment())
-
-as.data.table(lapply(1:5, c))[, patterns("V")]
 
 # 4004
 iris <- as.data.table(iris)
