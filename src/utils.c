@@ -304,12 +304,12 @@ SEXP exprCols(SEXP x, SEXP expr, /*SEXP with, */SEXP rho) {
       cols = R_NilValue;
   }
   // evaluate expr
-  if (isNull(cols)) {
+  if (isNull(cols)) { // various cases where all have to be evaluated: c("V1","V2"), paste0("V",1:2), is.numeric, function(x) is.numeric(x), also `cols` symbol when there is no column named "cols"
     value = PROTECT(eval(expr, rho)); protecti++;
     if (isFunction(value)) { // expr could be either symbol or language: f, function(x) x
       //Rprintf("isFunction(eval(expr))\n");
       cols = PROTECT(funCols(x, expr, rho)); protecti++;
-    } else { // everything else c("V1","V2"), paste0("V",1:2), also `cols` symbol when there is no column named "cols"
+    } else { // evaluated value: 2:3, c("V1","V2"), but not call objects anymore
       cols = value;
     }
   }
