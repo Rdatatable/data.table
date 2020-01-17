@@ -343,3 +343,193 @@ SEXP fcaseR(SEXP na, SEXP rho, SEXP args) {
   UNPROTECT(nprotect);
   return ans;
 }
+
+SEXP topnR(SEXP vec, SEXP n, SEXP dec) {
+	int nprotect = 0;
+	int64_t i, j, idx = 0;
+	const int64_t len0 = asInteger(n);
+	const int64_t len1 = xlength(vec);
+	
+	if (isS4(vec) && !INHERITS(vec, char_nanotime)) {
+		error("S4 class objects (excluding nanotime) are not supported.");
+	}
+	if (len0 > 1000) {
+		error("Function 'topn' is not built for large value of 'n'. The algorithm is made for small values. Please prefer the 'order' if you want to proceed with such large value.");
+	}
+	if (len0 > len1) {
+		error("'n' cannot be larger than length of 'vec'.");
+	}
+	if (len0 < 1) {
+		error("Please enter a positive integer larger or equal to 1.");
+	}
+	if (!IS_TRUE_OR_FALSE(dec)) {
+		error("Argument 'decreasing' must be TRUE or FALSE and length 1.");
+	}
+	
+	const bool vdec = LOGICAL(dec)[0];
+	SEXPTYPE tvec = TYPEOF(vec);
+	SEXP ans = PROTECT(allocVector(INTSXP, len0)); nprotect++;
+	int *restrict pans = INTEGER(ans);
+	int tmp;
+
+	if (vdec) {
+		switch(tvec) {
+		case INTSXP: {
+			const int *restrict pvec = INTEGER(vec);
+			int min_value = pvec[0];
+			for (i = 0; i < len0; ++i) {
+				pans[i] = i;
+				if (pvec[i] <= min_value || pvec[i] == NA_INTEGER) {
+					min_value = pvec[i];
+					idx = i;
+				}
+			}
+			for (i = len0; i < len1; ++i) {
+				if (pvec[i] == NA_INTEGER) {
+					continue;
+				}
+				if (pvec[i] > min_value) {
+					min_value = pvec[i];
+					pans[idx] = i;
+					for (j = 0; j <len0; ++j) {
+						if ((min_value > pvec[pans[j]] || (min_value == pvec[pans[j]] && pans[idx] < pans[j])) || pvec[pans[j]] == NA_INTEGER) {
+							min_value = pvec[pans[j]];
+							idx = j;
+						}
+					}
+				}
+			}
+			for (i = 0; i < len0; ++i) {
+				tmp = pans[i];
+				for (j = i; j > 0 && (pvec[tmp] > pvec[pans[j-1]] || (pvec[tmp] == pvec[pans[j-1]] && tmp < pans[j-1])); --j) {
+					pans[j] = pans[j-1];
+				}
+				pans[j] = tmp;
+			}
+			for (i =0; i < len0; ++i) {
+				pans[i]++;
+			}
+		} break;
+		case REALSXP: {
+			const double *restrict pvec = REAL(vec);
+			double min_value = pvec[0];
+			for (i = 0; i < len0; ++i) {
+				pans[i] = i;
+				if (pvec[i] <= min_value || ISNAN(pvec[i])) {
+					min_value = pvec[i];
+					idx = i;
+				}
+			}
+			for (i = len0; i < len1; ++i) {
+				if (ISNAN(pvec[i])) {
+					continue;
+				}
+				if (pvec[i] > min_value || ISNAN(min_value)) {
+					min_value = pvec[i];
+					pans[idx] = i;
+					for (j = 0; j <len0; ++j) {
+						if ((min_value > pvec[pans[j]] || (min_value == pvec[pans[j]] && pans[idx] < pans[j])) || ISNAN(pvec[pans[j]])) {
+							min_value = pvec[pans[j]];
+							idx = j;
+						}
+					}
+				}
+			}
+			for (i = 0; i < len0; ++i) {
+				tmp = pans[i];
+				for (j = i; j > 0 && (pvec[tmp] > pvec[pans[j-1]] || (pvec[tmp] == pvec[pans[j-1]] && tmp < pans[j-1]) || (!ISNAN(pvec[tmp]) && ISNAN(pvec[pans[j-1]]))); --j) {
+					pans[j] = pans[j-1];
+				}
+				pans[j] = tmp;
+			}
+			for (i =0; i < len0; ++i) {
+				pans[i]++;
+			}
+		} break;
+		default:
+			error("Type %s is not supported.", type2char(tvec));
+		}
+	} else {
+		switch(tvec) {
+		case INTSXP: {
+			const int *restrict pvec = INTEGER(vec);
+			int min_value = pvec[0];
+			for (i = 0; i < len0; ++i) {
+				pans[i] = i;
+				if ((pvec[i] >= min_value && min_value != NA_INTEGER) || pvec[i] == NA_INTEGER) {
+					min_value = pvec[i];
+					idx = i;
+				}
+			}
+			for (i = len0; i < len1; ++i) {
+				if (pvec[i] == NA_INTEGER) {
+					continue;
+				}
+				if (pvec[i] < min_value || min_value == NA_INTEGER) {
+					min_value = pvec[i];
+					pans[idx] = i;
+					for (j = 0; j <len0; ++j) {
+						if (((min_value < pvec[pans[j]] || (min_value == pvec[pans[j]] && pans[idx] < pans[j])) && min_value != NA_INTEGER) || pvec[pans[j]] == NA_INTEGER) {
+							min_value = pvec[pans[j]];
+							idx = j;
+						}
+					}
+				}
+			}
+			for (i = 0; i < len0; ++i) {
+				tmp = pans[i];
+				if (pvec[tmp] == NA_INTEGER) {
+					continue;
+				}
+				for (j = i; j > 0 && (pvec[tmp] < pvec[pans[j-1]] || (pvec[tmp] == pvec[pans[j-1]] && tmp < pans[j-1]) || pvec[pans[j-1]] == NA_INTEGER); --j) {
+					pans[j] = pans[j-1];
+				}
+				pans[j] = tmp;
+			}
+			for (i =0; i < len0; ++i) {
+				pans[i]++;
+			}
+		} break;
+		case REALSXP: {
+			const double *restrict pvec = REAL(vec);
+			double min_value = pvec[0];
+			for (i = 0; i < len0; ++i) {
+				pans[i] = i;
+				if (pvec[i] >= min_value || ISNAN(pvec[i])) {
+					min_value = pvec[i];
+					idx = i;
+				}
+			}
+			for (i = len0; i < len1; ++i) {
+				if (ISNAN(pvec[i])) {
+					continue;
+				}
+				if (pvec[i] < min_value || ISNAN(min_value)) {
+					min_value = pvec[i];
+					pans[idx] = i;
+					for (j = 0; j <len0; ++j) {
+						if ((min_value < pvec[pans[j]] || (min_value == pvec[pans[j]] && pans[idx] < pans[j])) || ISNAN(pvec[pans[j]])) {
+							min_value = pvec[pans[j]];
+							idx = j;
+						}
+					}
+				}
+			}
+			for (i = 0; i < len0; ++i) {
+				tmp = pans[i];
+				for (j = i; j > 0 && (pvec[tmp] < pvec[pans[j-1]] || (pvec[tmp] == pvec[pans[j-1]] && tmp < pans[j-1]) || (!ISNAN(pvec[tmp]) && ISNAN(pvec[pans[j-1]]))); --j) {
+					pans[j] = pans[j-1];
+				}
+				pans[j] = tmp;
+			}
+			for (i =0; i < len0; ++i) {
+				pans[i]++;
+			}
+		} break;
+		default:
+			error("Type %s is not supported.", type2char(tvec));
+		}
+	}	
+	UNPROTECT(nprotect);
+	return ans;
+}
