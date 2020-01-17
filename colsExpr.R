@@ -8,35 +8,63 @@ cc(F)
 # remove branch in data.table.R#L909
 
 f = function(x) all(x %between% c(2L,4L))
-.Call(CexprCols, as.data.table(lapply(1:5, c)), quote(f), environment()) ## symbol -> eval -> fun
-.Call(CexprCols, as.data.table(lapply(1:5, c)), quote(function(x) all(x %between% c(2L,4L))), environment()) ## lang -> eval -> fun
+test(1.11, .Call(CexprCols, as.data.table(lapply(1:5, c)), quote(f), "j", environment()), error=".SDcols")
+test(1.12, .Call(CexprCols, as.data.table(lapply(1:5, c)), quote(function(x) all(x %between% c(2L,4L))), "j", environment()), error=".SDcols")
+test(1.13, .Call(CexprCols, as.data.table(lapply(1:5, c)), quote(f), ".SDcols", environment()), c(2L,3L,4L)) ## symbol -> eval -> fun
+test(1.13, .Call(CexprCols, as.data.table(lapply(1:5, c)), quote(function(x) all(x %between% c(2L,4L))), ".SDcols", environment()), c(2L,3L,4L)) ## lang -> eval -> fun
 
-.Call(CexprCols, as.data.table(lapply(1:5, c)), c(4,2), environment())
-.Call(CexprCols, as.data.table(lapply(1:5, c)), c(4L,2L), environment())
-.Call(CexprCols, as.data.table(lapply(1:5, c)), c("V4","V2"), environment())
+test(1.21, .Call(CexprCols, as.data.table(lapply(1:5, c)), c(4,2), "j", environment()), c(4L,2L))
+test(1.22, .Call(CexprCols, as.data.table(lapply(1:5, c)), c(4L,2L), "j", environment()), c(4L,2L))
+test(1.23, .Call(CexprCols, as.data.table(lapply(1:5, c)), c("V4","V2"), "j", environment()), c(4L,2L))
+test(1.24, .Call(CexprCols, as.data.table(lapply(1:5, c)), c(4,2), ".SDcols", environment()), c(4L,2L))
+test(1.25, .Call(CexprCols, as.data.table(lapply(1:5, c)), c(4L,2L), ".SDcols", environment()), c(4L,2L))
+test(1.26, .Call(CexprCols, as.data.table(lapply(1:5, c)), c("V4","V2"), ".SDcols", environment()), c(4L,2L))
 
-.Call(CexprCols, as.data.table(lapply(1:5, c)), quote(c(2,4)), environment())
-.Call(CexprCols, as.data.table(lapply(1:5, c)), quote(c(4,2)), environment())
-.Call(CexprCols, as.data.table(lapply(1:5, c)), quote(c("V4","V2")), environment())
+test(1.31, .Call(CexprCols, as.data.table(lapply(1:5, c)), quote(c(2,4)), "j", environment()), c(2L,4L))
+test(1.32, .Call(CexprCols, as.data.table(lapply(1:5, c)), quote(c(4,2)), "j", environment()), c(4L,2L))
+test(1.33, .Call(CexprCols, as.data.table(lapply(1:5, c)), quote(c("V4","V2")), "j", environment()), c(4L,2L))
+test(1.34, .Call(CexprCols, as.data.table(lapply(1:5, c)), quote(c(2,4)), ".SDcols", environment()), c(2L,4L))
+test(1.35, .Call(CexprCols, as.data.table(lapply(1:5, c)), quote(c(4,2)), ".SDcols", environment()), c(4L,2L))
+test(1.36, .Call(CexprCols, as.data.table(lapply(1:5, c)), quote(c("V4","V2")), ".SDcols", environment()), c(4L,2L))
 
-.Call(CexprCols, as.data.table(lapply(1:5, c)), quote(V2:V4), environment())
-.Call(CexprCols, as.data.table(lapply(1:5, c)), quote(V4:V2), environment())
+test(1.41, .Call(CexprCols, as.data.table(lapply(1:5, c)), quote(V2:V4), "j", environment()), c(2L,3L,4L))
+test(1.42, .Call(CexprCols, as.data.table(lapply(1:5, c)), quote(V4:V2), "j", environment()), c(4L,3L,2L))
+test(1.43, .Call(CexprCols, as.data.table(lapply(1:5, c)), quote(V2:V4), ".SDcols", environment()), c(2L,3L,4L))
+test(1.44, .Call(CexprCols, as.data.table(lapply(1:5, c)), quote(V4:V2), ".SDcols", environment()), c(4L,3L,2L))
 
-.Call(CexprCols, as.data.table(lapply(1:5, c)), (function()c(4L,2L))(), environment())
-.Call(CexprCols, as.data.table(lapply(1:5, c)), paste0("V",c(4L,2L)), environment())
-.Call(CexprCols, as.data.table(lapply(1:5, c)), quote((function()c(4L,2L))()), environment())
-.Call(CexprCols, as.data.table(lapply(1:5, c)), quote(paste0("V",c(4L,2L))), environment())
+test(1.51, .Call(CexprCols, as.data.table(lapply(1:5, c)), (function()c(4L,2L))(), "j", environment()), c(4L,2L)) # note that this is call, not a function
+test(1.52, .Call(CexprCols, as.data.table(lapply(1:5, c)), paste0("V",c(4L,2L)), "j", environment()), c(4L,2L))
+test(1.53, .Call(CexprCols, as.data.table(lapply(1:5, c)), quote((function()c(4L,2L))()), "j", environment()), c(4L,2L))
+test(1.54, .Call(CexprCols, as.data.table(lapply(1:5, c)), quote(paste0("V",c(4L,2L))), "j", environment()), c(4L,2L))
+test(1.55, .Call(CexprCols, as.data.table(lapply(1:5, c)), (function()c(4L,2L))(), ".SDcols", environment()), c(4L,2L))
+test(1.56, .Call(CexprCols, as.data.table(lapply(1:5, c)), paste0("V",c(4L,2L)), ".SDcols", environment()), c(4L,2L))
+test(1.57, .Call(CexprCols, as.data.table(lapply(1:5, c)), quote((function()c(4L,2L))()), ".SDcols", environment()), c(4L,2L))
+test(1.58, .Call(CexprCols, as.data.table(lapply(1:5, c)), quote(paste0("V",c(4L,2L))), ".SDcols", environment()), c(4L,2L))
 
-.Call(CexprCols, as.data.table(lapply(1:5, c)), quote(((c("V4","V2")))), environment())
-.Call(CexprCols, as.data.table(lapply(1:5, c)), quote(((4:2))), environment())
-.Call(CexprCols, as.data.table(lapply(1:5, c)), quote(((V4:V2))), environment())
-.Call(CexprCols, as.data.table(lapply(1:5, c)), quote(((V4))), environment())
+test(1.61, .Call(CexprCols, as.data.table(lapply(1:5, c)), quote(((c("V4","V2")))), "j", environment()), c(4L,2L))
+test(1.62, .Call(CexprCols, as.data.table(lapply(1:5, c)), quote(((4:2))), "j", environment()), c(4L,3L,2L))
+test(1.63, .Call(CexprCols, as.data.table(lapply(1:5, c)), quote(((V4:V2))), "j", environment()), c(4L,3L,2L))
+test(1.64, .Call(CexprCols, as.data.table(lapply(1:5, c)), quote(((V4))), "j", environment()), 4L)
+test(1.65, .Call(CexprCols, as.data.table(lapply(1:5, c)), quote(((c("V4","V2")))), ".SDcols", environment()), c(4L,2L))
+test(1.66, .Call(CexprCols, as.data.table(lapply(1:5, c)), quote(((4:2))), ".SDcols", environment()), c(4L,3L,2L))
+test(1.67, .Call(CexprCols, as.data.table(lapply(1:5, c)), quote(((V4:V2))), ".SDcols", environment()), c(4L,3L,2L))
+test(1.68, .Call(CexprCols, as.data.table(lapply(1:5, c)), quote(((V4))), ".SDcols", environment()), 4L) ## TODO should raise error(?)
 
-.Call(CexprCols, as.data.table(lapply(1:5, c)), quote(is.numeric), environment())
-.Call(CexprCols, as.data.table(lapply(1:5, c)), quote(!is.numeric), environment())
+test(1.71, .Call(CexprCols, as.data.table(lapply(1:5, c)), quote(is.numeric), "j", environment()), error=".SDcols")
+test(1.72, .Call(CexprCols, as.data.table(lapply(1:5, c)), quote(!is.numeric), "j", environment()), error=".SDcols")
+test(1.73, .Call(CexprCols, as.data.table(lapply(1:5, c)), quote(is.numeric), ".SDcols", environment()), c(1L,2L,3L,4L,5L))
+test(1.74, .Call(CexprCols, as.data.table(lapply(1:5, c)), quote(!is.numeric), ".SDcols", environment()), integer())
 
-.Call(CexprCols, as.data.table(lapply(1:5, c)), quote(2:4), environment())
-.Call(CexprCols, as.data.table(lapply(1:5, c)), quote(4:2), environment())
+test(1.81, .Call(CexprCols, as.data.table(lapply(1:5, c)), quote(2:4), "j", environment()), c(2L,3L,4L))
+test(1.82, .Call(CexprCols, as.data.table(lapply(1:5, c)), quote(4:2), "j", environment()), c(4L,3L,2L))
+test(1.83, .Call(CexprCols, as.data.table(lapply(1:5, c)), quote(2:4), ".SDcols", environment()), c(2L,3L,4L))
+test(1.84, .Call(CexprCols, as.data.table(lapply(1:5, c)), quote(4:2), ".SDcols", environment()), c(4L,3L,2L))
+
+patterns = c("V1","V2")
+test(1.91, .Call(CexprCols, as.data.table(lapply(1:5, c)), quote(patterns), "j", environment()), c(1L,2L))
+test(1.91, .Call(CexprCols, as.data.table(lapply(1:5, c)), quote(patterns), ".SDcols", environment()), c(1L,2L))
+rm(patterns)
+
 as.data.table(lapply(1:5, c))[, 3:2]
 r1 = 3L
 r2 = 2L

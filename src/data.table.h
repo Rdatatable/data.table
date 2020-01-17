@@ -226,7 +226,7 @@ SEXP isReallyReal(SEXP x);
 bool allNA(SEXP x, bool errorForBadType);
 SEXP colnamesInt(SEXP x, SEXP cols, SEXP check_dups, SEXP inverse);
 SEXP replace_dot_aliasR(SEXP x);
-SEXP exprCols(SEXP x, SEXP expr, SEXP rho);
+SEXP exprCols(SEXP x, SEXP expr, SEXP mode, SEXP rho);
 void coerceFill(SEXP fill, double *dfill, int32_t *ifill, int64_t *i64fill);
 SEXP coerceFillR(SEXP fill);
 bool INHERITS(SEXP x, SEXP char_);

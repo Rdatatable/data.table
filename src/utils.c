@@ -139,7 +139,6 @@ SEXP colnamesInt(SEXP x, SEXP cols, SEXP check_dups, SEXP inverse) {
       error(_("'x' argument data.table has no names"));
     if (!binverse) {
       ricols = PROTECT(chmatch(cols, xnames, 0)); protecti++;
-      Rf_PrintValue(ricols);
       int *icols = INTEGER(ricols);
       for (int i=0; i<nc; i++) {
         if (icols[i]==0)
@@ -240,24 +239,34 @@ SEXP funCols(SEXP x, SEXP fun, SEXP rho) {
  * handles v1, "v1", v1:v3, !"v1", -"v1", paste0("v",1:3)
  * does not evaluate only for `symbol:symbol` expression, or `symbol` when "symbol" is existing column
  */
-SEXP exprCols(SEXP x, SEXP expr, /*SEXP with, */SEXP rho) {
+SEXP exprCols(SEXP x, SEXP expr, SEXP mode, /*SEXP with, */SEXP rho) {
   int protecti=0;
+  if (!isString(mode) || length(mode)!=1 || STRING_ELT(mode, 0)==NA_STRING)
+    error(_("internal error: mode argument has to be character, non-NA of length 1")); // # nocov
   if (isNull(expr))
     error(_("columns selection is NULL")); // expr=NULL
+  enum {MODE_J, MODE_SD, MODE_BY} smode;
+  if (!strcmp(CHAR(STRING_ELT(mode, 0)), "j")) {
+    smode = MODE_J;
+  } else if (!strcmp(CHAR(STRING_ELT(mode, 0)), ".SDcols")) {
+    smode = MODE_SD;
+  } else if (!strcmp(CHAR(STRING_ELT(mode, 0)), "by")) {
+    error(_("internal error: exprCols does not yet support selecting columns for 'by' argument")); // # nocov
+    //smode = MODE_BY;
+  } else {
+    error(_("Internal error: invalid 'mode' argument in exprCols function, should have been caught before. please report to data.table issue tracker.")); // # nocov
+  }
   SEXP sym_parenthesis = install("(");
   SEXP sym_patterns = install("patterns");
-  while(isLanguage(expr) && CAR(expr)==sym_parenthesis)
+  while (isLanguage(expr) && CAR(expr)==sym_parenthesis)
     expr = CADR(expr);
   if (isNull(expr))
     error(_("columns selection is NULL")); // expr=((NULL))
   // TODO handle inverse selection: !cols_var, !"V2", !V2, !paste0("V",2:3)
   // but not !V3:V2, we could handle that as well but do we really want?
-  bool inverse = false;
-  if (isLanguage(expr) && (CAR(expr)==sym_bang || CAR(expr)==sym_minus)) {
-    //Rprintf("isLanguage(expr) && CAR(expr)=='[!|-]'\n");
-    inverse = true;
+  bool inverse = isLanguage(expr) && (CAR(expr)==sym_bang || CAR(expr)==sym_minus);
+  if (inverse)
     expr = CADR(expr);
-  }
   // non-evaluated case: V3:V2
   // single symbol V2 may or may not be evaluated, see below
   if (isLanguage(expr) && CAR(expr)==sym_colon) {  // 3:2, V3:V2, min(V3):min(V2)
@@ -279,6 +288,8 @@ SEXP exprCols(SEXP x, SEXP expr, /*SEXP with, */SEXP rho) {
   }
   SEXP cols = R_NilValue, value = R_NilValue;
   if (isLanguage(expr) && CAR(expr)==sym_patterns) {
+    if (smode != MODE_SD)
+      error(_("patterns helper function is available only in .SDcols argument"));
     //Rprintf("isLanguage(expr) && CAR(expr)=='patterns'\n");
     SEXP xnames = getAttrib(x, R_NamesSymbol);
     if (isNull(xnames))
@@ -307,6 +318,8 @@ SEXP exprCols(SEXP x, SEXP expr, /*SEXP with, */SEXP rho) {
   if (isNull(cols)) { // various cases where all have to be evaluated: c("V1","V2"), paste0("V",1:2), is.numeric, function(x) is.numeric(x), also `cols` symbol when there is no column named "cols"
     value = PROTECT(eval(expr, rho)); protecti++;
     if (isFunction(value)) { // expr could be either symbol or language: f, function(x) x
+      if (smode != MODE_SD)
+        error(_("function is available only in .SDcols argument"));
       //Rprintf("isFunction(eval(expr))\n");
       cols = PROTECT(funCols(x, expr, rho)); protecti++;
     } else { // evaluated value: c(2L,3L), c("V1","V2"), but not call objects anymore
