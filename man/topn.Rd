@@ -16,11 +16,18 @@ The function \code{topn} is equivalent to \code{base} function \code{order} when
 Return the index of the top \code{n} value (positive of negative) in vector \code{vec}.
 }
 \examples{
-# Example 1: 
+x = rnorm(1e6)
 
-# Example 2: 
+# Example 1: index of top 6 negative values 
+topn(x, 6L)
+order(x)[1:6]
 
-# Example 3: 
+# Example 2: index of top 6 positive values
+topn(x, 6L, decreasing = TRUE)
+order(x, decreasing = TRUE)[1:6]
 
+# Example 3: top 6 negative values
+x[topn(x, 6L)]
+sort(x)[1:6]
 }
 \keyword{ data }
