@@ -493,7 +493,7 @@ SEXP fposR(SEXP needle, SEXP haystack, SEXP all, SEXP overlap) {
           posneedle = p * k;
           for (q = 0; q < k; ++q) {
             if (doublehaystack[poshaystack + q] != doubleneedle[posneedle + q] &&
-               (!ISNA(doublehaystack[poshaystack + q]) && !ISNA(doubleneedle[posneedle + q]))) {
+               (!ISNAN(doublehaystack[poshaystack + q]) && !ISNAN(doubleneedle[posneedle + q]))) {
                 id = 0;
                 break;
             }
@@ -531,7 +531,7 @@ SEXP fposR(SEXP needle, SEXP haystack, SEXP all, SEXP overlap) {
           for (q = 0; q < k; ++q) {
             if ((cplhaystack[poshaystack + q].r != cplneedle[posneedle + q].r ||
                 cplhaystack[poshaystack + q].i != cplneedle[posneedle + q].i) &&
-               (!ISNA(cplhaystack[poshaystack + q].r) && !ISNA(cplneedle[posneedle + q].r))) {
+               (!ISNAN(cplhaystack[poshaystack + q].r) && !ISNAN(cplneedle[posneedle + q].r))) {
                 id = 0;
                 break;
             }
