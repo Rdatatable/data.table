@@ -73,6 +73,33 @@ unit = "s")
 
 10. The dimensions of objects in a `list` column are now displayed, [#3671](https://github.com/Rdatatable/data.table/issues/3671). Thanks to @randomgambit for the request, and Tyson Barrett for the PR.
 
+11. `topn(vec ,n=6L, decreasing=FALSE)` implemented in C by Morgan Jacob, [#3804](https://github.com/Rdatatable/data.table/issues/3804), is inspired by `dplyr::top_n`. It returns the top largest or smallest `n` values for a given numeric vector `vec`. Please see `?topn` for more details.
+
+```R
+set.seed(123)
+x = rnorm(5e7) # 382 MB
+microbenchmark::microbenchmark(
+  topn(x, 6L),
+  order(x)[1:6], 
+  times = 10L
+)
+# Unit: seconds
+#          expr    min    lq  mean  median    uq   max neval
+# topn(x, 6L)     0.19  0.19  0.20    0.20  0.20  0.22    10
+# order(x)[1:6]   4.56  4.60  4.65    4.62  4.70  4.77    10
+
+microbenchmark::microbenchmark(
+  x[topn(x, 6L)],
+  sort(x)[1:6], 
+  times = 10L,
+  unit = "s"
+)
+# Unit: seconds
+#           expr  min    lq  mean  median    uq   max neval
+# x[topn(x, 6L)] 0.19  0.20  0.20    0.20  0.20  0.21    10
+# sort(x)[1:6]   8.27  8.36  8.42    8.43  8.50  8.55    10
+```
+
 ## BUG FIXES
 
 1. A NULL timezone on POSIXct was interpreted by `as.IDate` and `as.ITime` as UTC rather than the session's default timezone (`tz=""`) , [#4085](https://github.com/Rdatatable/data.table/issues/4085).
