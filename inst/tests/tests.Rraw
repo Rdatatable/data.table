@@ -16816,6 +16816,10 @@ storage.mode(small_matrix_ch) = "character"
 storage.mode(small_matrix_cp) = "complex"
 storage.mode(small_matrix_l) = "logical"
 
+class2133 = setClass("class2133", slots=list(x="numeric"))
+s1 = class2133(x=20191231)
+s2 = class2133(x=20191230)
+
 test(2133.001, fpos(mat_dbl_a[1:2,1:2], mat_dbl_a, FALSE), matrix(c(1L,1L),nrow = 1))
 test(2133.002, fpos(mat_dbl_a[1:2,9:10], mat_dbl_a, FALSE), matrix(c(1L,9L),nrow = 1))
 test(2133.003, fpos(mat_dbl_a[19:20,1:2], mat_dbl_a, FALSE), matrix(c(19L,1L),nrow = 1))
@@ -16874,6 +16878,7 @@ test(2133.055, fpos(s1, TRUE), error = "S4 class objects are not supported.")
 test(2133.056, fpos(TRUE, s2), error = "S4 class objects are not supported.")
 test(2133.057, fpos(TRUE, data.frame(c(1:10))), error = "Type list for 'haystack' is not supported.")
 test(2133.058, fpos(TRUE, data.table(c(1:10))), error = "Type list for 'haystack' is not supported.")
+rm(s1, s2, class2133)
 
 ########################
 #  Add new tests here  #
