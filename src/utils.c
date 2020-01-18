@@ -127,7 +127,7 @@ SEXP colnamesInt(SEXP x, SEXP cols, SEXP check_dups, SEXP inverse) {
       SEXP notricols = ricols;
       SEXP ricols = PROTECT(allocVector(INTSXP, nx-nc)); protecti++;
       int *icols = INTEGER(ricols);
-      error("int/real binverse todo");
+      error("todo colnamesInt inverse isInteger|isReal");
       //for (int i=0; i<nc; i++) {
       //  if ((icols[i]>nx) || (icols[i]<1))
       //    error(_("argument specifying columns specify non existing column(s): cols[%d]=%d"), i+1, icols[i]); // handles NAs also
@@ -145,7 +145,7 @@ SEXP colnamesInt(SEXP x, SEXP cols, SEXP check_dups, SEXP inverse) {
           error(_("argument specifying columns specify non existing column(s): cols[%d]='%s'"), i+1, CHAR(STRING_ELT(cols, i))); // handles NAs also
       }
     } else {
-      error("todo");
+      error("todo colnamesInt inverse isString");
       /*SEXP xmatch = PROTECT(chmatch(xnames, cols, 0)); protecti++; // we actually need a no-match
       int *xmatchp = INTEGER(xmatch);
       int len = 0;
@@ -245,6 +245,8 @@ SEXP exprCols(SEXP x, SEXP expr, SEXP mode, /*SEXP with, */SEXP rho) {
     error(_("internal error: mode argument has to be character, non-NA of length 1")); // # nocov
   if (isNull(expr))
     error(_("columns selection is NULL")); // expr=NULL
+  if (!isNewList(x))
+    error(_("'x' argument must be data.table"));
   bool mode_j=false, mode_sd=false;
   if (strcmp(CHAR(STRING_ELT(mode, 0)), "j")==0)
     mode_j = true;
@@ -278,9 +280,11 @@ SEXP exprCols(SEXP x, SEXP expr, SEXP mode, /*SEXP with, */SEXP rho) {
       return range_int(INTEGER(lhs)[0], INTEGER(rhs)[0]);
     } else {
       // evaluates later on: 3:2, f(V3):f(V2)
+      //Rf_PrintValue(lhs);
+      //Rf_PrintValue(rhs);
     }
   }
-  // patterns will not evaluate as well because we wrap expr into quote(expr)
+  // patterns will not evaluate as well because we wrap expr into quote(expr) before calling eval on do_patterns call
   if (isLanguage(expr) && CAR(expr)==sym_patterns && mode_sd) {
     SEXP xnames = getAttrib(x, R_NamesSymbol);
     if (isNull(xnames))
@@ -302,23 +306,24 @@ SEXP exprCols(SEXP x, SEXP expr, SEXP mode, /*SEXP with, */SEXP rho) {
     if (isNull(xnames))
       error(_("'x' argument data.table has no names"));
     expr_sym = PROTECT(ScalarString(PRINTNAME(expr))); protecti++; // "V1", "is.numeric"
-    expr_sym_match = PROTECT(chmatch(expr_sym, xnames, 0)); protecti++;
+    expr_sym_match = chmatch(expr_sym, xnames, 0);
     if (INTEGER(expr_sym_match)[0]!=0) {
       UNPROTECT(protecti);
       return expr_sym_match;
     }
   }
-  // evaluate expr
   // various cases where all have to be evaluated: c("V1","V2"), paste0("V",1:2), is.numeric, function(x) is.numeric(x), also `cols` symbol when there is no column named "cols"
   SEXP value = PROTECT(eval(expr, rho)); protecti++;
   SEXP cols = R_NilValue;
   if (isFunction(value) && mode_sd) { // expr could be either symbol or language: f, function(x) x
     cols = PROTECT(funCols(x, expr, rho)); protecti++;
-  } else if (isFunction(value) && !mode_sd) { // just to handle error message consistently
-    //Rf_PrintValue(value);
+  } else if (isSymbol(expr) && mode_j) { // handle error message consistently
+    if (isNull(expr_sym) || isNull(expr_sym_match))
+      error(_("internal error: expr symbol name, and if it matches to column names, should be known already")); // # nocov
     cols = expr_sym;
+  } else if (isFunction(value) && mode_j) {
+    error(_("providing function as a column selection to 'j' argument is not supported, use '.SDcols' instead"));
   } else { // evaluated value: c(2L,3L), c("V1","V2"), but not call objects anymore
-    //Rf_PrintValue(value);
     cols = value;
   }
   if (isNull(cols))
