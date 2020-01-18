@@ -16850,6 +16850,7 @@ test(2134.068, topn(x0, 100L), error = "'n' cannot be larger than length of 'vec
 test(2134.069, topn(x0, 10L, decreasing = NA), error = "Argument 'decreasing' must be TRUE or FALSE and length 1.")
 test(2134.070, topn(s1, 10L, decreasing = NA), error = "S4 class objects (excluding nanotime) are not supported.")
 test(2134.071, topn(x4, 2L), error = "Type raw is not supported.")
+test(2134.072, topn(x4, 2L, decreasing = TRUE), error = "Type raw is not supported.")
 rm(s1, class2134)
 
 ########################
