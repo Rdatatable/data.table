@@ -1027,16 +1027,16 @@ replace_dot_alias = function(e) {
           lhs = jsub[[2L]]
           jsub = jsub[[3L]]
           if (is.name(lhs)) {
-            if (lhs == as.name('.SD')) lhs = sdvars else lhs = as.character(lhs)
+            lhs = as.character(lhs)
           } else {
             #i.e lhs is names(.SD) || setdiff(names(.SD), cols) || (cols)
-            replace_names_sd = function(e){
+            replace_names_sd = function(e, cols){
               if (length(e) == 1L) return(e)
-              if (e[[1L]] == as.name('names') && e[[2L]] == as.name('.SD')) return(sdvars)
-              for (i in seq_along(e)[-1L]) if (!is.null(e[[i]])) e[[i]] = replace_names_sd(e[[i]])
+              if (e[[1L]] == quote(names) && e[[2L]] == quote(.SD)) return(cols)
+              for (i in seq_along(e)[-1L]) if (!is.null(e[[i]])) e[[i]] = replace_names_sd(e[[i]], cols)
               e
             }
-            lhs = eval(replace_names_sd(lhs), parent.frame(), parent.frame())
+            lhs = eval(replace_names_sd(lhs, sdvars), parent.frame(), parent.frame())
           }
         } else {
           # `:=`(c2=1L,c3=2L,...)
