@@ -19,7 +19,7 @@
 #            ...), by = ...]
 
 # 3. Multiple columns in place
-# DT[i, .SD = lapply(.SD, fx), by = ..., .SDcols = ...]
+# DT[i, names(.SD) := lapply(.SD, fx), by = ...]
 
 set(x, i = NULL, j, value)
 }
