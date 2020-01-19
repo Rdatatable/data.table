@@ -90,14 +90,14 @@ microbenchmark::microbenchmark(
 
 microbenchmark::microbenchmark(
   x[topn(x, 6L)],
-  sort(x)[1:6], 
+  sort(x, partial = 1:6)[1:6],
   times = 10L,
   unit = "s"
 )
 # Unit: seconds
-#           expr  min    lq  mean  median    uq   max neval
-# x[topn(x, 6L)] 0.19  0.20  0.20    0.20  0.20  0.21    10
-# sort(x)[1:6]   8.27  8.36  8.42    8.43  8.50  8.55    10
+#                        expr   min    lq  mean  median    uq   max neval
+# x[topn(x, 6L)]               0.19  0.20  0.20    0.20  0.20  0.21    10
+# sort(x, partial = 1:6)[1:6]  1.20  1.22  1.23    1.24  1.25  1.27    10
 ```
 
 ## BUG FIXES
