@@ -16778,7 +16778,7 @@ x3 = as.numeric(x2)
 x4 = as.raw(c(1,2,3))
 
 class2134 = setClass("class2134", slots=list(x="numeric"))
-s1 = class2134(x=20191231)ķ
+s1 = class2134(x=20191231)
 
 test(2134.001, topn(x0, 1L), order(x0)[1:1])
 test(2134.002, topn(x0, 2L), order(x0)[1:2])
