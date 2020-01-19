@@ -270,16 +270,16 @@ head(flights)
 
 ```{r}
 char_cols <- sapply(flights, is.character)
-flights[, .SD := lapply(.SD, as.factor), .SDcols = char_cols]
+flights[, names(.SD) := lapply(.SD, as.factor), .SDcols = char_cols]
 str(flights[, ..char_cols])
 ```
 #### {.bs-callout .bs-callout-info}
 
-* We also could have used `(char_cols)` on the `LHS` but `.SD` is a shorthand. 
+* We also could have used `(char_cols)` on the `LHS`. 
 
 Let's clean up again and make our newly made factor columns back to character columns.
 ```{r}
-flights[, .SD := lapply(.SD, as.character), .SDcols = char_cols]
+flights[, names(.SD) := lapply(.SD, as.character), .SDcols = char_cols]
 str(flights[, ..char_cols])
 ```
 ## 3) `:=` and `copy()`
