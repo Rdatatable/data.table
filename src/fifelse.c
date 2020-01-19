@@ -347,7 +347,7 @@ SEXP fcaseR(SEXP na, SEXP rho, SEXP args) {
 SEXP topnR(SEXP vec, SEXP n, SEXP dec) {
 	int nprotect = 0;
 	int64_t i, j, idx = 0;
-	const int64_t len0 = asInteger(n);
+	int len0 = asInteger(n);
 	const int64_t len1 = xlength(vec);
 	
 	if (isS4(vec) && !INHERITS(vec, char_nanotime)) {
@@ -357,7 +357,8 @@ SEXP topnR(SEXP vec, SEXP n, SEXP dec) {
 		error("Function 'topn' is not built for large value of 'n'. The algorithm is made for small values. Please prefer the 'order' if you want to proceed with such large value.");
 	}
 	if (len0 > len1) {
-		error("'n' cannot be larger than length of 'vec'.");
+		warning("'n' is larger than length of 'vec'. 'n' will be set to length of 'vec'.");
+		len0 = len1;
 	}
 	if (len0 < 1) {
 		error("Please enter a positive integer larger or equal to 1.");
