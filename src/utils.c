@@ -254,17 +254,26 @@ SEXP exprCols(SEXP x, SEXP expr, SEXP mode, /*SEXP with, */SEXP rho) {
     mode_sd = true;
   else
     error(_("Internal error: invalid 'mode' argument in exprCols function, should have been caught before. please report to data.table issue tracker.")); // # nocov
-  SEXP sym_parenthesis = install("(");
-  SEXP sym_patterns = install("patterns");
-  while (isLanguage(expr) && CAR(expr)==sym_parenthesis)
-    expr = CADR(expr);
-  if (isNull(expr))
-    error(_("columns selection is NULL")); // expr=((NULL))
   // TODO in colnamesInt: handle inverse selection: !cols_var, !"V2", !V2, !paste0("V",2:3)
   // but not !V3:V2, we could handle that as well but do we really want?
-  bool inverse = isLanguage(expr) && (CAR(expr)==sym_bang || CAR(expr)==sym_minus);
+  // we already have tests for !(V3:V2) so we do want to support that
+  // TODO test for !!V3
+  bool inverse = isLanguage(expr) && (CAR(expr)==sym_bang || CAR(expr)==sym_minus); // length(expr)==2, otherwise V3-V2 will pick it up
   if (inverse)
     expr = CADR(expr);
+  SEXP sym_parenthesis = install("(");
+  while (isLanguage(expr) && CAR(expr)==sym_parenthesis)
+    expr = CADR(expr);
+  SEXP sym_brackets = install("{");
+  while (isLanguage(expr) && CAR(expr)==sym_brackets && length(expr)==2)
+    expr = CADR(expr); // verify #376, 2121.2
+  SEXP sym_eval = install("eval");
+  if (isLanguage(expr) && CAR(expr)==sym_eval) {
+    
+  }
+  //SEXP attribute_hidden do_allnames(SEXP call, SEXP op, SEXP args, SEXP env)
+  if (isNull(expr))
+    error(_("columns selection is NULL")); // expr=((NULL))
   // non-evaluated case: V3:V2
   // single symbol V2 may or may not be evaluated, see below
   if (isLanguage(expr) && CAR(expr)==sym_colon) {  // 3:2, V3:V2, min(V3):min(V2)
@@ -285,6 +294,7 @@ SEXP exprCols(SEXP x, SEXP expr, SEXP mode, /*SEXP with, */SEXP rho) {
     }
   }
   // patterns will not evaluate as well because we wrap expr into quote(expr) before calling eval on do_patterns call
+  SEXP sym_patterns = install("patterns");
   if (isLanguage(expr) && CAR(expr)==sym_patterns && mode_sd) {
     SEXP xnames = getAttrib(x, R_NamesSymbol);
     if (isNull(xnames))

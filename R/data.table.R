@@ -205,6 +205,7 @@ replace_dot_alias = function(e) .Call(Creplace_dot_aliasR, e)
   if (!missing(j)) {
     jsub = replace_dot_alias(substitute(j))
     root = if (is.call(jsub)) as.character(jsub[[1L]])[1L] else ""
+    # j exprCols non-eval opt start
     if (root == ":" ||
         (root %chin% c("-","!") && is.call(jsub[[2L]]) && jsub[[2L]][[1L]]=="(" && is.call(jsub[[2L]][[2L]]) && jsub[[2L]][[2L]][[1L]]==":") ||
         ( (!length(av<-all.vars(jsub)) || all(substring(av,1L,2L)=="..")) &&
@@ -266,6 +267,7 @@ replace_dot_alias = function(e) .Call(Creplace_dot_aliasR, e)
         as.character(jsub[[1L]])[1L]
       } else ""
     }
+    # j exprCols opt end
     if (root == ":=") {
       allow.cartesian=TRUE   # (see #800)
       if (!missing(i) && keyby)
@@ -638,6 +640,7 @@ replace_dot_alias = function(e) .Call(Creplace_dot_aliasR, e)
       # fix for #1216, make sure the parentheses are peeled from expr of the form (((1:4)))
       while (is.call(jsub) && jsub[[1L]] == "(") jsub = as.list(jsub)[[-1L]]
       if (is.call(jsub) && length(jsub) == 3L && jsub[[1L]] == ":") {
+        # below parent.frame() handles var1:var2 scoped from parent scope, still not evaluates
         j = eval(jsub, setattr(as.list(seq_along(x)), 'names', names_x), parent.frame()) # else j will be evaluated for the first time on next line
       } else {
         names(..syms) = ..syms
@@ -909,6 +912,7 @@ replace_dot_alias = function(e) .Call(Creplace_dot_aliasR, e)
         } else {
           # FR #4979 - negative numeric and character indices for SDcols
           colsub = substitute(.SDcols)
+          new_ansvals = exprCols(x, colsub, ".SDcols", parent.frame())
           # fix for #5190. colsub[[1L]] gave error when it's a symbol.
           if (is.call(colsub) && deparse(colsub[[1L]], 500L, backtick=FALSE) %chin% c("!", "-")) {
             negate_sdcols = TRUE
@@ -955,6 +959,9 @@ replace_dot_alias = function(e) .Call(Creplace_dot_aliasR, e)
             # dups = FALSE here. DT[, .SD, .SDcols=c("x", "x")] again doesn't really help with which 'x' to keep (and if '-' which x to remove)
             ansvals = chmatch(ansvars, names_x)
           }
+          if (!isTRUE(m<-all.equal(ansvals, new_ansvals))) warning(m)
+          new_sdvars = new_ansvars = names_x[new_ansvals]
+          if (!isTRUE(m<-all.equal(sdvars, new_sdvars))) warning(m)
         }
         # fix for long standing FR/bug, #495 and #484
         allcols = c(names_x, xdotprefix, names_i, idotprefix)
