@@ -139,7 +139,7 @@ msgstr "试图使用 intger64 类型但 'bit64' 包尚未安装"
 msgid ""
 "optimised between not available for this data type, fallback to slow R "
 "routine"
-msgstr ""
+msgstr "对这种数据类型的优化尚未实现，使用备用较慢的R方法。"
 
 msgid ""
 "Not yet implemented NAbounds=TRUE for this non-numeric and non-character type"
@@ -177,7 +177,7 @@ msgid "Generating final logical vector ..."
 msgstr "产生最后的逻辑向量 ..."
 
 msgid "done in"
-msgstr "结束了"
+msgstr "结束在"
 
 msgid "%s is type %s which is not supported by data.table join"
 msgstr "%s的类型为%s，该类型无法用于 data.table 的联接"
@@ -206,16 +206,16 @@ msgstr ""
 "列才可以联结"
 
 msgid "%s has same type (%s) as %s. No coercion needed."
-msgstr ""
+msgstr "%s 有 %s 的类型。不需要强制转换。"
 
 msgid "Coercing all-NA %s (%s) to type %s to match type of %s."
-msgstr ""
+msgstr "强制转换 all-NA %s (%s) 为 %s 类型用来匹配 %s 类型。"
 
 msgid "Incompatible join types: %s (%s) and %s (%s)"
 msgstr "不兼容的联结类型: %s (%s) 和 %s (%s)。"
 
 msgid "Coercing %s column %s%s to type integer64 to match type of %s."
-msgstr ""
+msgstr "强制转换 %s 个列 %s%s 为整数64类型用来匹配 %s 类型。"
 
 msgid ""
 "Incompatible join types: %s is type integer64 but %s is type double and "
@@ -255,7 +255,7 @@ msgid "forder took ..."
 msgstr "forder 用了 ..."
 
 msgid "Generating group lengths ..."
-msgstr ""
+msgstr "正在生成组的长度。。。"
 
 msgid "Generating non-equi group ids ..."
 msgstr ""
