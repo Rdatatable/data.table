@@ -16770,6 +16770,38 @@ test(2132.2, fifelse(TRUE, 1, s2),       error = "S4 class objects (except nanot
 test(2132.3, fcase(TRUE, s1, FALSE, s2), error = "S4 class objects (except nanotime) are not supported. Please see https://github.com/Rdatatable/data.table/issues/4131.")
 rm(s1, s2, class2132)
 
+# psum / pprod, #3467
+x = c(1, 3, NA, 5)
+y = c(2, NA, 4, 1)
+z = c(3, 4, 4, 1)
+# psum
+test(2135.001, psum(x, y, z, na.rm = FALSE), c(6, NA, NA, 7))
+test(2135.002, psum(x, y, z, na.rm = TRUE), c(6, 7, 8, 7))
+test(2135.003, psum(as.integer(x), as.integer(y), as.integer(z), na.rm = FALSE), c(6L, NA_integer_, NA_integer_, 7L))
+test(2135.004, psum(as.integer(x), as.integer(y), as.integer(z), na.rm = TRUE), c(6L, 7L, 8L, 7L))
+test(2135.005, psum(as.raw(z), y, na.rm = TRUE), error = "Argument 1 is of type raw. Only integer and double types are supported.")
+test(2135.006, psum(x, y, 1:2, na.rm = FALSE), error = "Argument 3 is of length 2 but argument 1 is of length 4. If you wish to 'recycle' your argument, please use rep() to make this intent clear to the readers of your code.")
+test(2135.007, psum(1:10, 1:5, na.rm = FALSE), error = "Argument 2 is of length 5 but argument 1 is of length 10. If you wish to 'recycle' your argument, please use rep() to make this intent clear to the readers of your code.")
+test(2135.008, psum(x, as.raw(z), y, na.rm = TRUE), error = "Argument 2 is of type raw. Only integer and double types are supported.")
+test(2135.009, psum(1:10, 1:10, 21:30), 1:10 + 1:10 + 21:30)
+test(2135.010, psum(x, y, z, na.rm = NA), error = "Argument 'na.rm' must be TRUE or FALSE and length 1.")
+test(2135.011, psum(x, na.rm = FALSE), error = "Please supply at least 2 arguments. (1 argument supplied)")
+test(2135.012, psum(as.integer(x), y, z, na.rm = TRUE), c(6, 7, 8, 7))
+test(2135.013, psum(c(1,3,NA,5,NA), c(2,NA,4,1,NA), na.rm = TRUE), c(3, 3, 4, 6, NA))
+# pprod
+test(2135.014, pprod(x, y, z, na.rm = FALSE), c(6, NA, NA, 5))
+test(2135.015, pprod(x, y, z, na.rm = TRUE), c(6, 12, 16, 5))
+test(2135.016, pprod(as.integer(x), as.integer(y), as.integer(z), na.rm = FALSE), c(6L, NA_integer_, NA_integer_, 5L))
+test(2135.017, pprod(as.integer(x), as.integer(y), as.integer(z), na.rm = TRUE), c(6L, 12L, 16L, 5L))
+test(2135.018, pprod(as.raw(z), y, na.rm = TRUE), error = "Argument 1 is of type raw. Only integer and double types are supported.")
+test(2135.019, pprod(x, y, 1:2, na.rm = FALSE), error = "Argument 3 is of length 2 but argument 1 is of length 4. If you wish to 'recycle' your argument, please use rep() to make this intent clear to the readers of your code.")
+test(2135.020, pprod(1:10, 1:5, na.rm = FALSE), error = "Argument 2 is of length 5 but argument 1 is of length 10. If you wish to 'recycle' your argument, please use rep() to make this intent clear to the readers of your code.")
+test(2135.021, pprod(x, as.raw(z), y, na.rm = TRUE), error = "Argument 2 is of type raw. Only integer and double types are supported.")
+test(2135.022, pprod(1:10, 1:10, 21:30), 1:10 * 1:10 * 21:30)
+test(2135.023, pprod(x, y, z, na.rm = NA), error = "Argument 'na.rm' must be TRUE or FALSE and length 1.")
+test(2135.024, pprod(x, na.rm = FALSE), error = "Please supply at least 2 arguments. (1 argument supplied)")
+test(2135.025, pprod(as.integer(x), y, z, na.rm = TRUE), c(6, 12, 16, 5))
+test(2135.026, pprod(c(1,3,NA,5,NA), c(2,NA,4,1,NA), na.rm = TRUE), c(2, 3, 4, 5, NA))
 
 ########################
 #  Add new tests here  #

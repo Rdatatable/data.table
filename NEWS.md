@@ -73,6 +73,8 @@ unit = "s")
 
 10. The dimensions of objects in a `list` column are now displayed, [#3671](https://github.com/Rdatatable/data.table/issues/3671). Thanks to @randomgambit for the request, and Tyson Barrett for the PR.
 
+11. `psum(..., na.rm=FALSE)` and `pprod(..., na.rm=FALSE)` implemented in C by Morgan Jacob, [#3467](https://github.com/Rdatatable/data.table/issues/3467), are inspired by `base::pmin` and `base::pmax`. These new functions work only for integer and double type and do not recycle vectors. Please see `?psum` for more details.
+
 ## BUG FIXES
 
 1. A NULL timezone on POSIXct was interpreted by `as.IDate` and `as.ITime` as UTC rather than the session's default timezone (`tz=""`) , [#4085](https://github.com/Rdatatable/data.table/issues/4085).
