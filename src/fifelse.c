@@ -354,7 +354,7 @@ SEXP topnR(SEXP vec, SEXP n, SEXP dec) {
 		error("S4 class objects (excluding nanotime) are not supported.");
 	}
 	if (len0 > 1000) {
-		error("Function 'topn' is not built for large value of 'n'. The algorithm is made for small values. Please prefer the 'order' if you want to proceed with such large value.");
+		error("Function 'topn' is not built for large value of 'n'. The algorithm is made for small values. Please prefer the 'order' function if you want to proceed with such large value.");
 	}
 	if (len0 > len1) {
 		warning("'n' is larger than length of 'vec'. 'n' will be set to length of 'vec'.");
