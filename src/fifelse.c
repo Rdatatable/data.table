@@ -345,159 +345,167 @@ SEXP fcaseR(SEXP na, SEXP rho, SEXP args) {
 }
 
 SEXP psumR(SEXP na, SEXP args) {
-	if (!IS_TRUE_OR_FALSE(na)) {
-		error("Argument 'na.rm' must be TRUE or FALSE and length 1.");
-	}
-	const int n=length(args);
-	if (n <= 1) {
-		error("Please supply at least 2 arguments. (%d argument supplied)", n);
-	}
-	SEXPTYPE anstype = TYPEOF(SEXPPTR_RO(args)[0]);
-	const int64_t len0 = xlength(SEXPPTR_RO(args)[0]);
-	if (anstype != INTSXP && anstype != REALSXP) {
-		error("Argument 1 is of type %s. Only integer and double types are supported.", type2char(anstype));
-	}
-	for (int i = 1; i < n; ++i) {
-		SEXPTYPE type = TYPEOF(SEXPPTR_RO(args)[i]);
-		int64_t len1 = xlength(SEXPPTR_RO(args)[i]);
-		if (type != INTSXP && type != REALSXP) {
-			error("Argument %d is of type %s. Only integer and double types are supported.",
-			i+1, type2char(type));
-		}
-		if (len1 != len0) {
-			error("Argument %d is of length %"PRId64" but argument 1 is of length %"PRId64". "
-			"If you wish to 'recycle' your argument, please use rep() to make this intent "
-			"clear to the readers of your code.", i+1, len1, len0);
-		}
-		if (type > anstype) {
-			anstype = type;
-		}
-	}
-	int nprotect = 0;
-	SEXP ans = PROTECT(duplicate(SEXPPTR_RO(args)[0])); nprotect++;
-	if (anstype != TYPEOF(ans)) {
-		ans = coerceVector(ans, anstype);
-	}
-	const bool narm = LOGICAL(na)[0];
-	switch(anstype) {
-	case INTSXP: {
-		int *restrict pans =INTEGER(ans);
-		SEXP int_a = R_NilValue;
-		PROTECT_INDEX Iaint;
-		PROTECT_WITH_INDEX(int_a, &Iaint); nprotect++;
-		for (int i = 1; i < n; ++i) {
-			REPROTECT(int_a = duplicate(SEXPPTR_RO(args)[i]), Iaint);
-			int *pa = INTEGER(int_a);
-			if (narm) {
-				for (int64_t j = 0; j < len0; ++j) {
-					pans[j] = pans[j] == NA_INTEGER ? pa[j] : (pa[j]==NA_INTEGER ? pans[j] : (pans[j] + pa[j]));
-				}
-			} else {
-				for (int64_t j = 0; j < len0; ++j) {
-					pans[j] = (pans[j] == NA_INTEGER || pa[j] == NA_INTEGER) ? NA_INTEGER : (pans[j] + pa[j]);
-				}
-			}
-		}
-	} break;
-	case REALSXP: {
-		double *restrict pans = REAL(ans);
-		SEXP dbl_a = R_NilValue;
-		PROTECT_INDEX Iadbl;
-		PROTECT_WITH_INDEX(dbl_a, &Iadbl); nprotect++;
-		for (int i = 1; i < n; ++i) {
-			REPROTECT(dbl_a = duplicate(SEXPPTR_RO(args)[i]), Iadbl);
-			double *pa = REAL(dbl_a);
-			if (narm) {
-				for (int64_t j = 0; j < len0; ++j) {
-					pans[j] = ISNAN(pans[j]) ? pa[j] : (ISNAN(pa[j]) ? pans[j] : (pans[j] + pa[j]));
-				}
-			} else {
-				for (int64_t j = 0; j < len0; ++j) {
-					pans[j] = (ISNAN(pans[j]) || ISNAN(pa[j])) ? NA_REAL : (pans[j] + pa[j]);
-				}
-			}
-		}
-	} break;
-	}
-	UNPROTECT(nprotect);
-	return ans;
+  if (!IS_TRUE_OR_FALSE(na)) {
+    error("Argument 'na.rm' must be TRUE or FALSE and length 1.");
+  }
+  const int n=length(args);
+  if (n <= 1) {
+    error("Please supply at least 2 arguments. (%d argument supplied)", n);
+  }
+  SEXPTYPE anstype = TYPEOF(SEXPPTR_RO(args)[0]);
+  const int64_t len0 = xlength(SEXPPTR_RO(args)[0]);
+  if (anstype != INTSXP && anstype != REALSXP) {
+    error("Argument 1 is of type %s. Only integer and double types are supported.", type2char(anstype));
+  }
+  for (int i = 1; i < n; ++i) {
+    SEXPTYPE type = TYPEOF(SEXPPTR_RO(args)[i]);
+    int64_t len1 = xlength(SEXPPTR_RO(args)[i]);
+    if (type != INTSXP && type != REALSXP) {
+      error("Argument %d is of type %s. Only integer and double types are supported.",
+      i+1, type2char(type));
+    }
+    if (len1 != len0) {
+      error("Argument %d is of length %"PRId64" but argument 1 is of length %"PRId64". "
+      "If you wish to 'recycle' your argument, please use rep() to make this intent "
+      "clear to the readers of your code.", i+1, len1, len0);
+    }
+    if (type > anstype) {
+      anstype = type;
+    }
+  }
+  int nprotect = 0;
+  SEXP ans = PROTECT(duplicate(SEXPPTR_RO(args)[0])); nprotect++;
+  if (anstype != TYPEOF(ans)) {
+    ans = coerceVector(ans, anstype);
+  }
+  const bool narm = LOGICAL(na)[0];
+  switch(anstype) {
+  case INTSXP: {
+    int *restrict pans =INTEGER(ans);
+    SEXP int_a = R_NilValue;
+    PROTECT_INDEX Iaint;
+    PROTECT_WITH_INDEX(int_a, &Iaint); nprotect++;
+    for (int i = 1; i < n; ++i) {
+      REPROTECT(int_a = duplicate(SEXPPTR_RO(args)[i]), Iaint);
+      int *pa = INTEGER(int_a);
+      if (narm) {
+        for (int64_t j = 0; j < len0; ++j) {
+          pans[j] = pans[j] == NA_INTEGER ? pa[j] : (pa[j]==NA_INTEGER ? pans[j] : (pans[j] + pa[j]));
+        }
+      } else {
+        for (int64_t j = 0; j < len0; ++j) {
+          pans[j] = (pans[j] == NA_INTEGER || pa[j] == NA_INTEGER) ? NA_INTEGER : (pans[j] + pa[j]);
+        }
+      }
+    }
+  } break;
+  case REALSXP: {
+    double *restrict pans = REAL(ans);
+    SEXP dbl_a = R_NilValue;
+    PROTECT_INDEX Iadbl;
+    PROTECT_WITH_INDEX(dbl_a, &Iadbl); nprotect++;
+    for (int i = 1; i < n; ++i) {
+      if (TYPEOF(SEXPPTR_RO(args)[i]) != anstype) {
+        REPROTECT(dbl_a = coerceVector(duplicate(SEXPPTR_RO(args)[i]), anstype), Iadbl);
+      } else {
+        REPROTECT(dbl_a = duplicate(SEXPPTR_RO(args)[i]), Iadbl);
+      }
+      double *pa = REAL(dbl_a);
+      if (narm) {
+        for (int64_t j = 0; j < len0; ++j) {
+          pans[j] = ISNAN(pans[j]) ? pa[j] : (ISNAN(pa[j]) ? pans[j] : (pans[j] + pa[j]));
+        }
+      } else {
+        for (int64_t j = 0; j < len0; ++j) {
+          pans[j] = (ISNAN(pans[j]) || ISNAN(pa[j])) ? NA_REAL : (pans[j] + pa[j]);
+        }
+      }
+    }
+  } break;
+  }
+  UNPROTECT(nprotect);
+  return ans;
 }
 
 SEXP pprodR(SEXP na, SEXP args) {
-	if (!IS_TRUE_OR_FALSE(na)) {
-		error("Argument 'na.rm' must be TRUE or FALSE and length 1.");
-	}
-	const int n=length(args);
-	if (n <= 1) {
-		error("Please supply at least 2 arguments. %d argument supplied.", n);
-	}
-	SEXPTYPE anstype = TYPEOF(SEXPPTR_RO(args)[0]);
-	const int64_t len0 = xlength(SEXPPTR_RO(args)[0]);
-	if (anstype != INTSXP && anstype != REALSXP) {
-		error("Argument 1 is of type %s. Only integer and double types are supported.", type2char(anstype));
-	}
-	for (int i = 1; i < n; ++i) {
-		SEXPTYPE type = TYPEOF(SEXPPTR_RO(args)[i]);
-		int64_t len1 = xlength(SEXPPTR_RO(args)[i]);
-		if (type != INTSXP && type != REALSXP) {
-			error("Argument %d is of type %s. Only integer and double types are supported.",
-			i+1, type2char(type));
-		}
-		if (len1 != len0) {
-			error("Argument %d is of length %"PRId64" but argument 1 is of length %"PRId64". "
-			"If you wish to 'recycle' your argument, please use rep() to make this intent "
-			"clear to the readers of your code.", i+1, len1, len0);
-		}
-		if (type > anstype) {
-			anstype = type;
-		}
-	}
-	int nprotect = 0;
-	SEXP ans = PROTECT(duplicate(SEXPPTR_RO(args)[0])); nprotect++;
-	if (anstype != TYPEOF(ans)) {
-		ans = coerceVector(ans, anstype);
-	}
-	const bool narm = LOGICAL(na)[0];
-	switch(anstype) {
-	case INTSXP: {
-		int *restrict pans =INTEGER(ans);
-		SEXP int_a = R_NilValue;
-		PROTECT_INDEX Iaint;
-		PROTECT_WITH_INDEX(int_a, &Iaint); nprotect++;
-		for (int i = 1; i < n; ++i) {
-			REPROTECT(int_a = duplicate(SEXPPTR_RO(args)[i]), Iaint);
-			int *pa = INTEGER(int_a);
-			if (narm) {
-				for (int64_t j = 0; j < len0; ++j) {
-					pans[j] = pans[j] == NA_INTEGER ? pa[j] : (pa[j]==NA_INTEGER ? pans[j] : (pans[j] * pa[j]));
-				}
-			} else {
-				for (int64_t j = 0; j < len0; ++j) {
-					pans[j] = (pans[j] == NA_INTEGER || pa[j] == NA_INTEGER) ? NA_INTEGER : (pans[j] * pa[j]);
-				}
-			}
-		}
-	} break;
-	case REALSXP: {
-		double *restrict pans = REAL(ans);
-		SEXP dbl_a = R_NilValue;
-		PROTECT_INDEX Iadbl;
-		PROTECT_WITH_INDEX(dbl_a, &Iadbl); nprotect++;
-		for (int i = 1; i < n; ++i) {
-			REPROTECT(dbl_a = duplicate(SEXPPTR_RO(args)[i]), Iadbl);
-			double *pa = REAL(dbl_a);
-			if (narm) {
-				for (int64_t j = 0; j < len0; ++j) {
-					pans[j] = ISNAN(pans[j]) ? pa[j] : (ISNAN(pa[j]) ? pans[j] : (pans[j] * pa[j]));
-				}
-			} else {
-				for (int64_t j = 0; j < len0; ++j) {
-					pans[j] = (ISNAN(pans[j]) || ISNAN(pa[j])) ? NA_REAL : (pans[j] * pa[j]);
-				}
-			}
-		}
-	} break;
-	}
-	UNPROTECT(nprotect);
-	return ans;
+  if (!IS_TRUE_OR_FALSE(na)) {
+    error("Argument 'na.rm' must be TRUE or FALSE and length 1.");
+  }
+  const int n=length(args);
+  if (n <= 1) {
+    error("Please supply at least 2 arguments. %d argument supplied.", n);
+  }
+  SEXPTYPE anstype = TYPEOF(SEXPPTR_RO(args)[0]);
+  const int64_t len0 = xlength(SEXPPTR_RO(args)[0]);
+  if (anstype != INTSXP && anstype != REALSXP) {
+    error("Argument 1 is of type %s. Only integer and double types are supported.", type2char(anstype));
+  }
+  for (int i = 1; i < n; ++i) {
+    SEXPTYPE type = TYPEOF(SEXPPTR_RO(args)[i]);
+    int64_t len1 = xlength(SEXPPTR_RO(args)[i]);
+    if (type != INTSXP && type != REALSXP) {
+      error("Argument %d is of type %s. Only integer and double types are supported.",
+      i+1, type2char(type));
+    }
+    if (len1 != len0) {
+      error("Argument %d is of length %"PRId64" but argument 1 is of length %"PRId64". "
+      "If you wish to 'recycle' your argument, please use rep() to make this intent "
+      "clear to the readers of your code.", i+1, len1, len0);
+    }
+    if (type > anstype) {
+      anstype = type;
+    }
+  }
+  int nprotect = 0;
+  SEXP ans = PROTECT(duplicate(SEXPPTR_RO(args)[0])); nprotect++;
+  if (anstype != TYPEOF(ans)) {
+    ans = coerceVector(ans, anstype);
+  }
+  const bool narm = LOGICAL(na)[0];
+  switch(anstype) {
+  case INTSXP: {
+    int *restrict pans =INTEGER(ans);
+    SEXP int_a = R_NilValue;
+    PROTECT_INDEX Iaint;
+    PROTECT_WITH_INDEX(int_a, &Iaint); nprotect++;
+    for (int i = 1; i < n; ++i) {
+      REPROTECT(int_a = duplicate(SEXPPTR_RO(args)[i]), Iaint);
+      int *pa = INTEGER(int_a);
+      if (narm) {
+        for (int64_t j = 0; j < len0; ++j) {
+          pans[j] = pans[j] == NA_INTEGER ? pa[j] : (pa[j]==NA_INTEGER ? pans[j] : (pans[j] * pa[j]));
+        }
+      } else {
+        for (int64_t j = 0; j < len0; ++j) {
+          pans[j] = (pans[j] == NA_INTEGER || pa[j] == NA_INTEGER) ? NA_INTEGER : (pans[j] * pa[j]);
+        }
+      }
+    }
+  } break;
+  case REALSXP: {
+    double *restrict pans = REAL(ans);
+    SEXP dbl_a = R_NilValue;
+    PROTECT_INDEX Iadbl;
+    PROTECT_WITH_INDEX(dbl_a, &Iadbl); nprotect++;
+    for (int i = 1; i < n; ++i) {
+      if (TYPEOF(SEXPPTR_RO(args)[i]) != anstype) {
+        REPROTECT(dbl_a = coerceVector(duplicate(SEXPPTR_RO(args)[i]), anstype), Iadbl);
+      } else {
+        REPROTECT(dbl_a = duplicate(SEXPPTR_RO(args)[i]), Iadbl);
+      }
+      double *pa = REAL(dbl_a);
+      if (narm) {
+        for (int64_t j = 0; j < len0; ++j) {
+          pans[j] = ISNAN(pans[j]) ? pa[j] : (ISNAN(pa[j]) ? pans[j] : (pans[j] * pa[j]));
+        }
+      } else {
+        for (int64_t j = 0; j < len0; ++j) {
+          pans[j] = (ISNAN(pans[j]) || ISNAN(pa[j])) ? NA_REAL : (pans[j] * pa[j]);
+        }
+      }
+    }
+  } break;
+  }
+  UNPROTECT(nprotect);
+  return ans;
 }
