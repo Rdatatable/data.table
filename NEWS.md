@@ -73,7 +73,7 @@ unit = "s")
 
 10. The dimensions of objects in a `list` column are now displayed, [#3671](https://github.com/Rdatatable/data.table/issues/3671). Thanks to @randomgambit for the request, and Tyson Barrett for the PR.
 
-11. `topn(vec ,n=6L, decreasing=FALSE)` implemented in C by Morgan Jacob, [#3804](https://github.com/Rdatatable/data.table/issues/3804), is inspired by `dplyr::top_n`. It returns the top largest or smallest `n` values for a given numeric vector `vec`. Please see `?topn` for more details.
+11. New function `topn`, implemented in C by Morgan Jacob, [#3804](https://github.com/Rdatatable/data.table/issues/3804). It returns the top largest or smallest `n` values for a given numeric vector `vec`. Please see `?topn` for more details. Similar to `dplyr::top_n`.
 
 ```R
 set.seed(123)
