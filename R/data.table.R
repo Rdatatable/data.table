@@ -2711,7 +2711,6 @@ setDT = function(x, keep.rownames=FALSE, key=NULL, check.names=FALSE) {
       # many operations still work in the presence of NULL columns and it might be convenient
       # e.g. in package eplusr which calls setDT on a list when parsing JSON. Operations which
       # fail for NULL columns will give helpful error at that point, #3480 and #3471
-      
       n = vector("integer", length(x))
       col.is.null = vapply_1b(x, is.null)
       n[col.is.null] = NA_integer_
@@ -2731,10 +2730,10 @@ setDT = function(x, keep.rownames=FALSE, key=NULL, check.names=FALSE) {
              brackify(sprintf('%s:%d', names(tbl), tbl)), "\nThe first entry with fewer than ", n_range[2L], " entries is ", which.max(n<n_range[2L]))
       }
     }
-    # Check columns for allowed data types
-    for (i in seq_along(x)) {
-      if (inherits(x[[i]], "POSIXlt")) stop("Column ", i, " is of POSIXlt type. Please convert it to POSIXct using as.POSIXct and run setDT again. We do not recommend use of POSIXlt at all because it uses 40 bytes to store one date.")
-    }
+    # Check columns for disallowed data types
+    col.POSIXlt = vapply_1b(x, inherits, "POSIXlt")
+    if (length(col.POSIXlt) > 0L)
+      stop("Columns ", brackify(col.POSIXlt), " are of POSIXlt type. Please convert it to POSIXct using as.POSIXct and run setDT again. We do not recommend use of POSIXlt at all because it uses 40 bytes to store one date.")
     
     # Type specific data.table creation can now proceed
     if (is.data.table(x)) {
