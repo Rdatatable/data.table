@@ -223,8 +223,8 @@ R_ExternalMethodDef externalMethods[] = {
 static void setSizes() {
   for (int i=0; i<100; ++i) { sizes[i]=0; typeorder[i]=0; }
   // only these types are currently allowed as column types :
-  sizes[LGLSXP] =  sizeof(int);       typeorder[LGLSXP] =  0;
-  sizes[RAWSXP] =  sizeof(Rbyte);     typeorder[RAWSXP] =  1;
+  sizes[RAWSXP] =  sizeof(Rbyte);     typeorder[RAWSXP] =  0;
+  sizes[LGLSXP] =  sizeof(int);       typeorder[LGLSXP] =  1;
   sizes[INTSXP] =  sizeof(int);       typeorder[INTSXP] =  2;   // integer and factor
   sizes[REALSXP] = sizeof(double);    typeorder[REALSXP] = 3;   // numeric and integer64
   sizes[CPLXSXP] = sizeof(Rcomplex);  typeorder[CPLXSXP] = 4;
