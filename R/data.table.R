@@ -2703,26 +2703,21 @@ setDT = function(x, keep.rownames=FALSE, key=NULL, check.names=FALSE) {
     if (length(x)>1L) {
       # check no matrix-like columns, #3760. Other than a single 
       # list(matrix) is unambiguous and depended on by some revdeps, #3581
-      idx = which(vapply_1i(x, function(xi) length(dim(xi)))>1L)
-      if (length(idx)>0L)
-        warning("Some columns are a multi-column type (such as a matrix column): ", brackify(idx),". setDT will retain these columns as-is but subsequent operations like grouping and joining may fail. Please consider as.data.table() instead which will create a new column for each embedded column.")
+      dim.col = vapply_1i(x, function(xi) length(dim(xi)))>1L
+      if (any(dim.col))
+        warning("Some columns are a multi-column type (such as a matrix column): ", brackify(which(dim.col)),". setDT will retain these columns as-is but subsequent operations like grouping and joining may fail. Please consider as.data.table() instead which will create a new column for each embedded column.")
       
       # Check column lengths are consistent, ignoring NULL columns (even though they are not really allowed)
       # many operations still work in the presence of NULL columns and it might be convenient
       # e.g. in package eplusr which calls setDT on a list when parsing JSON. Operations which
       # fail for NULL columns will give helpful error at that point, #3480 and #3471
-      n = vector("integer", length(x))
-      col.is.null = vapply_1b(x, is.null)
-      n[col.is.null] = NA_integer_
-      if (length(idx)>0L && is.data.table(x)) {
-        n[-c(idx, col.is.null)] = x[, vapply_1i(.SD, length), .SDcols=!c(idx, col.is.null)]
-        n[idx] = x[, vapply_1i(.SD, nrow), .SDcols=idx]
-      } else if (length(idx)>0L) {
-        n[-c(idx, col.is.null)] = vapply_1i(x[-c(idx, col.is.null)], length)
-        n[idx] = vapply_1i(x[idx], nrow)
-      } else {
-        n[-col.is.null] = vapply_1i(x[-col.is.null], length)
-      }
+      X = x
+      class(X) = NULL # create classless reference to x so that following code works even when isTRUE(inherits(x, "data.table))
+      n = vector("integer", length(X))
+      null.col = vapply_1b(x, is.null)
+      n[null.col] = NA_integer_
+      n[!dim.col & !null.col] = vapply_1i(X[!dim.col & !null.col], length)
+      n[dim.col] = vapply_1i(X[dim.col], nrow)
       n_range = range(n, na.rm=TRUE) 
       if (n_range[1L] != n_range[2L]) {
         tbl = sort(table(n))
@@ -2731,7 +2726,7 @@ setDT = function(x, keep.rownames=FALSE, key=NULL, check.names=FALSE) {
       }
     }
     # Check columns for disallowed data types
-    col.POSIXlt = vapply_1b(x, inherits, "POSIXlt")
+    col.POSIXlt = which(vapply_1b(x, inherits, "POSIXlt"))
     if (length(col.POSIXlt) > 0L)
       stop("Columns ", brackify(col.POSIXlt), " are of POSIXlt type. Please convert it to POSIXct using as.POSIXct and run setDT again. We do not recommend use of POSIXlt at all because it uses 40 bytes to store one date.")
     
