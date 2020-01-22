@@ -16780,7 +16780,7 @@ DT1 = data.table(a=as.raw(1), b=as.raw(2), c=as.raw(3), d=as.raw(4), e=as.raw(5)
 DT2 = data.table(a=as.raw(1), b=TRUE, c=1L, d=1.5, e=complex(real=3, imaginary=1), f="a", g=list(3:5), h=expression(1+1))
 DT3 = setDT(lapply(names(DT1), function(j) c(DT1[[j]], DT2[[j]])))
 setnames(DT3, names(DT1))
-test(2133, rbind(DT1, DT2), DT3)
+test(2133, rbind(DT1, DT2), DT3, warning="Column 2 of item 1: 2 (type 'raw') at RHS position 1 taken as TRUE when assigning to type 'logical' (column 2 named 'b')") # warning expected due to loss of precision when coercing raw to logical
 
 
 
