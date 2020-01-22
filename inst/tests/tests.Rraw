@@ -16774,3 +16774,13 @@ rm(s1, s2, class2132)
 ########################
 #  Add new tests here  #
 ########################
+
+# Check rbindlist coercion rules for raw match base R (e.g. using c()) #4172
+DT1 = data.table(a=as.raw(1), b=as.raw(2), c=as.raw(3), d=as.raw(4), e=as.raw(5), f=as.raw(6), g=as.raw(7), h=as.raw(8))
+DT2 = data.table(a=as.raw(1), b=TRUE, c=1L, d=1.5, e=complex(real=3, imaginary=1), f="a", g=list(3:5), h=expression(1+1))
+DT3 = setDT(lapply(names(DT1), function(j) c(DT1[[j]], DT2[[j]])))
+setnames(DT3, names(DT1))
+test(2133, rbind(DT1, DT2), DT3)
+
+
+
