@@ -2679,69 +2679,97 @@ setDT = function(x, keep.rownames=FALSE, key=NULL, check.names=FALSE) {
       stop("Cannot convert '", cname, "' to data.table by reference because binding is locked. It is very likely that '", cname, "' resides within a package (or an environment) that is locked to prevent modifying its variable bindings. Try copying the object to your current environment, ex: var <- copy(var) and then using setDT again.")
     }
   }
-  # check no matrix-like columns, #3760. Other than a single list(matrix) is unambiguous and depended on by some revdeps, #3581
-  if (length(x)>1L) {
-    idx = vapply_1i(x, function(xi) length(dim(xi)))>1L
-    if (any(idx))
-      warning("Some columns are a multi-column type (such as a matrix column): ", brackify(which(idx)),". setDT will retain these columns as-is but subsequent operations like grouping and joining may fail. Please consider as.data.table() instead which will create a new column for each embedded column.")
-  }
-  if (is.data.table(x)) {
-    # fix for #1078 and #1128, see .resetclass() for explanation.
-    setattr(x, 'class', .resetclass(x, 'data.table'))
+
+  # Some input types do not require column checks, 
+  if (is.data.table(x) && selfrefok(x) > 0L) {
+    # if already valid data.table, we can skip checks, but may need to make 
+    # names safe and set key:
+    setattr(x, 'class', .resetclass(x, 'data.table')) # fix for #1078 and #1128, see .resetclass() for explanation
     if (!missing(key)) setkeyv(x, key) # fix for #1169
     if (check.names) setattr(x, "names", make.names(names(x), unique=TRUE))
-    if (selfrefok(x) > 0L) return(invisible(x)) else setalloccol(x)
-  } else if (is.data.frame(x)) {
-    rn = if (!identical(keep.rownames, FALSE)) rownames(x) else NULL
-    setattr(x, "row.names", .set_row_names(nrow(x)))
-    if (check.names) setattr(x, "names", make.names(names(x), unique=TRUE))
-    # fix for #1078 and #1128, see .resetclass() for explanation.
-    setattr(x, "class", .resetclass(x, 'data.frame'))
-    setalloccol(x)
-    if (!is.null(rn)) {
-      nm = c(if (is.character(keep.rownames)) keep.rownames[1L] else "rn", names(x))
-      x[, (nm[1L]) := rn]
-      setcolorder(x, nm)
-    }
-  } 
-  if (is.list(x) && length(x)==1L && is.matrix(x[[1L]])) {
+    return(invisible(x))
+  } else if (is.list(x) && length(x)==1L && is.matrix(x[[1L]])) {
     # a single list(matrix) is unambiguous and depended on by some revdeps, #3581
     x = as.data.table.matrix(x[[1L]])
   } else if (is.null(x) || (is.list(x) && !length(x))) {
     x = null.data.table()
-  } else if (is.list(x)) {
-    # copied from as.data.table.list - except removed the copy
+  } else if (!is.list(x)) {
+    stop("Argument 'x' to 'setDT' should be a 'list', 'data.frame' or 'data.table'")
+  } else { 
+    # x is a list (or data.frame or data.table) but not a valid data.table 
+    # so sanity checks on columns need to proceed, then data.table can be
+    # created by reference
+    
+    if (length(x)>1L) {
+      # check no matrix-like columns, #3760. Other than a single 
+      # list(matrix) is unambiguous and depended on by some revdeps, #3581
+      idx = which(vapply_1i(x, function(xi) length(dim(xi)))>1L)
+      if (length(idx)>0L)
+        warning("Some columns are a multi-column type (such as a matrix column): ", brackify(idx),". setDT will retain these columns as-is but subsequent operations like grouping and joining may fail. Please consider as.data.table() instead which will create a new column for each embedded column.")
+      
+      # Check column lengths are consistent
+      if (length(idx)>0L && is.data.table(x)) {
+        n = vector("integer", length(x))
+        n[-idx] = x[, vapply_1i(.SD, length), .SDcols=!idx]
+        n[idx] = x[, vapply_1i(.SD, nrow), .SDcols=idx]
+      } else if (length(idx)>0L) {
+        n = vector("integer", length(x))
+        n[-idx] = vapply_1i(x[-idx], length)
+        n[idx] = vapply_1i(x[idx], nrow)
+      } else {
+        n = vapply_1i(x, length)
+      }
+      n_range = range(n)
+      if (n_range[1L] != n_range[2L]) {
+        tbl = sort(table(n))
+        stop("All elements in argument 'x' to 'setDT' must be of same length, but the profile of input lengths (length:frequency) is: ",
+             brackify(sprintf('%s:%d', names(tbl), tbl)), "\nThe first entry with fewer than ", n_range[2L], " entries is ", which.max(n<n_range[2L]))
+      }
+    }
+    # Check columns for allowed data types
     for (i in seq_along(x)) {
       if (is.null(x[[i]])) next   # allow NULL columns to be created by setDT(list) even though they are not really allowed
-                                  # many operations still work in the presence of NULL columns and it might be convenient
-                                  # e.g. in package eplusr which calls setDT on a list when parsing JSON. Operations which
-                                  # fail for NULL columns will give helpful error at that point, #3480 and #3471
+      # many operations still work in the presence of NULL columns and it might be convenient
+      # e.g. in package eplusr which calls setDT on a list when parsing JSON. Operations which
+      # fail for NULL columns will give helpful error at that point, #3480 and #3471
       if (inherits(x[[i]], "POSIXlt")) stop("Column ", i, " is of POSIXlt type. Please convert it to POSIXct using as.POSIXct and run setDT again. We do not recommend use of POSIXlt at all because it uses 40 bytes to store one date.")
     }
-    n = vapply_1i(x, length)
-    n_range = range(n)
-    if (n_range[1L] != n_range[2L]) {
-      tbl = sort(table(n))
-      stop("All elements in argument 'x' to 'setDT' must be of same length, but the profile of input lengths (length:frequency) is: ",
-           brackify(sprintf('%s:%d', names(tbl), tbl)), "\nThe first entry with fewer than ", n_range[2L], " entries is ", which.max(n<n_range[2L]))
-    }
-    xn = names(x)
-    if (is.null(xn)) {
-      setattr(x, "names", paste0("V",seq_len(length(x))))
-    } else {
-      idx = xn %chin% "" # names can be NA - test 1006 caught that!
-      if (any(idx)) {
-        xn[idx] = paste0("V", seq_along(which(idx)))
-        setattr(x, "names", xn)
+    
+    # Type specific data.table creation can now proceed
+    if (is.data.table(x)) {
+      setattr(x, "row.names", .set_row_names(nrow(x)))
+      setalloccol(x)
+    } else if (is.data.frame(x)) {
+      rn = if (!identical(keep.rownames, FALSE)) rownames(x) else NULL
+      setattr(x, "row.names", .set_row_names(nrow(x)))
+      if (check.names) setattr(x, "names", make.names(names(x), unique=TRUE))
+      # fix for #1078 and #1128, see .resetclass() for explanation.
+      setattr(x, "class", .resetclass(x, 'data.frame'))
+      setalloccol(x)
+      if (!is.null(rn)) {
+        nm = c(if (is.character(keep.rownames)) keep.rownames[1L] else "rn", names(x))
+        x[, (nm[1L]) := rn]
+        setcolorder(x, nm)
       }
-      if (check.names) setattr(x, "names", make.names(xn, unique=TRUE))
+    } else { # x is a list
+      xn = names(x)
+      if (is.null(xn)) {
+        setattr(x, "names", paste0("V",seq_len(length(x))))
+      } else {
+        idx = xn %chin% "" # names can be NA - test 1006 caught that!
+        if (any(idx)) {
+          xn[idx] = paste0("V", seq_along(which(idx)))
+          setattr(x, "names", xn)
+        }
+        if (check.names) setattr(x, "names", make.names(xn, unique=TRUE))
+      }
+      setattr(x,"row.names",.set_row_names(length(x[[1L]])))
+      setattr(x,"class",c("data.table","data.frame"))
+      setalloccol(x)
     }
-    setattr(x,"row.names",.set_row_names(n_range[2L]))
-    setattr(x,"class",c("data.table","data.frame"))
-    setalloccol(x)
-  } else {
-    stop("Argument 'x' to 'setDT' should be a 'list', 'data.frame' or 'data.table'")
   }
+
+  # Finalise data.table - applies even to those created by as.data.table and null.data.table
   if (!is.null(key)) setkeyv(x, key)
   if (is.name(name)) {
     name = as.character(name)
