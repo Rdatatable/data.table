@@ -2707,19 +2707,24 @@ setDT = function(x, keep.rownames=FALSE, key=NULL, check.names=FALSE) {
       if (length(idx)>0L)
         warning("Some columns are a multi-column type (such as a matrix column): ", brackify(idx),". setDT will retain these columns as-is but subsequent operations like grouping and joining may fail. Please consider as.data.table() instead which will create a new column for each embedded column.")
       
-      # Check column lengths are consistent
+      # Check column lengths are consistent, ignoring NULL columns (even though they are not really allowed)
+      # many operations still work in the presence of NULL columns and it might be convenient
+      # e.g. in package eplusr which calls setDT on a list when parsing JSON. Operations which
+      # fail for NULL columns will give helpful error at that point, #3480 and #3471
+      
+      n = vector("integer", length(x))
+      col.is.null = vapply_1b(x, is.null)
+      n[col.is.null] = NA_integer_
       if (length(idx)>0L && is.data.table(x)) {
-        n = vector("integer", length(x))
-        n[-idx] = x[, vapply_1i(.SD, length), .SDcols=!idx]
+        n[-c(idx, col.is.null)] = x[, vapply_1i(.SD, length), .SDcols=!c(idx, col.is.null)]
         n[idx] = x[, vapply_1i(.SD, nrow), .SDcols=idx]
       } else if (length(idx)>0L) {
-        n = vector("integer", length(x))
-        n[-idx] = vapply_1i(x[-idx], length)
+        n[-c(idx, col.is.null)] = vapply_1i(x[-c(idx, col.is.null)], length)
         n[idx] = vapply_1i(x[idx], nrow)
       } else {
-        n = vapply_1i(x, length)
+        n[-col.is.null] = vapply_1i(x[-col.is.null], length)
       }
-      n_range = range(n)
+      n_range = range(n, na.rm=TRUE) 
       if (n_range[1L] != n_range[2L]) {
         tbl = sort(table(n))
         stop("All elements in argument 'x' to 'setDT' must be of same length, but the profile of input lengths (length:frequency) is: ",
@@ -2728,10 +2733,6 @@ setDT = function(x, keep.rownames=FALSE, key=NULL, check.names=FALSE) {
     }
     # Check columns for allowed data types
     for (i in seq_along(x)) {
-      if (is.null(x[[i]])) next   # allow NULL columns to be created by setDT(list) even though they are not really allowed
-      # many operations still work in the presence of NULL columns and it might be convenient
-      # e.g. in package eplusr which calls setDT on a list when parsing JSON. Operations which
-      # fail for NULL columns will give helpful error at that point, #3480 and #3471
       if (inherits(x[[i]], "POSIXlt")) stop("Column ", i, " is of POSIXlt type. Please convert it to POSIXct using as.POSIXct and run setDT again. We do not recommend use of POSIXlt at all because it uses 40 bytes to store one date.")
     }
     
