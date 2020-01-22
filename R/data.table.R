@@ -2700,31 +2700,30 @@ setDT = function(x, keep.rownames=FALSE, key=NULL, check.names=FALSE) {
     # so sanity checks on columns need to proceed, then data.table can be
     # created by reference
     
-    if (length(x)>1L) {
-      # check no matrix-like columns, #3760. Other than a single 
-      # list(matrix) is unambiguous and depended on by some revdeps, #3581
-      dim.col = vapply_1i(x, function(xi) length(dim(xi)))>1L
-      if (any(dim.col))
-        warning("Some columns are a multi-column type (such as a matrix column): ", brackify(which(dim.col)),". setDT will retain these columns as-is but subsequent operations like grouping and joining may fail. Please consider as.data.table() instead which will create a new column for each embedded column.")
-      
-      # Check column lengths are consistent, ignoring NULL columns (even though they are not really allowed)
-      # many operations still work in the presence of NULL columns and it might be convenient
-      # e.g. in package eplusr which calls setDT on a list when parsing JSON. Operations which
-      # fail for NULL columns will give helpful error at that point, #3480 and #3471
-      X = x
-      class(X) = NULL # create classless reference to x so that following code works even when isTRUE(inherits(x, "data.table))
-      n = vector("integer", length(X))
-      null.col = vapply_1b(x, is.null)
-      n[null.col] = NA_integer_
-      n[!dim.col & !null.col] = vapply_1i(X[!dim.col & !null.col], length)
-      n[dim.col] = vapply_1i(X[dim.col], nrow)
-      n_range = range(n, na.rm=TRUE) 
-      if (n_range[1L] != n_range[2L]) {
-        tbl = sort(table(n))
-        stop("All elements in argument 'x' to 'setDT' must be of same length, but the profile of input lengths (length:frequency) is: ",
-             brackify(sprintf('%s:%d', names(tbl), tbl)), "\nThe first entry with fewer than ", n_range[2L], " entries is ", which.max(n<n_range[2L]))
-      }
+    # check no matrix-like columns, #3760. Other than a single 
+    # list(matrix) is unambiguous and depended on by some revdeps, #3581
+    dim.col = vapply_1i(x, function(xi) length(dim(xi)))>1L
+    if (length(x)>1L && any(dim.col))
+      warning("Some columns are a multi-column type (such as a matrix column): ", brackify(which(dim.col)),". setDT will retain these columns as-is but subsequent operations like grouping and joining may fail. Please consider as.data.table() instead which will create a new column for each embedded column.")
+    
+    # Check column lengths are consistent, ignoring NULL columns (even though they are not really allowed)
+    # many operations still work in the presence of NULL columns and it might be convenient
+    # e.g. in package eplusr which calls setDT on a list when parsing JSON. Operations which
+    # fail for NULL columns will give helpful error at that point, #3480 and #3471
+    X = x
+    class(X) = NULL # create classless reference to x so that following code works even when isTRUE(inherits(x, "data.table))
+    n = vector("integer", length(X))
+    null.col = vapply_1b(x, is.null)
+    n[null.col] = NA_integer_
+    n[!dim.col & !null.col] = vapply_1i(X[!dim.col & !null.col], length)
+    n[dim.col] = vapply_1i(X[dim.col], nrow)
+    n_range = if(all(null.col)) c(0L, 0L) else range(n, na.rm=TRUE) 
+    if (n_range[1L] != n_range[2L]) {
+      tbl = sort(table(n))
+      stop("All elements in argument 'x' to 'setDT' must be of same length, but the profile of input lengths (length:frequency) is: ",
+           brackify(sprintf('%s:%d', names(tbl), tbl)), "\nThe first entry with fewer than ", n_range[2L], " entries is ", which.max(n<n_range[2L]))
     }
+      
     # Check columns for disallowed data types
     col.POSIXlt = which(vapply_1b(x, inherits, "POSIXlt"))
     if (length(col.POSIXlt) > 0L)
@@ -2732,11 +2731,11 @@ setDT = function(x, keep.rownames=FALSE, key=NULL, check.names=FALSE) {
     
     # Type specific data.table creation can now proceed
     if (is.data.table(x)) {
-      setattr(x, "row.names", .set_row_names(nrow(x)))
+      setattr(x, "row.names", .set_row_names(n_range[1L]))
       setalloccol(x)
     } else if (is.data.frame(x)) {
       rn = if (!identical(keep.rownames, FALSE)) rownames(x) else NULL
-      setattr(x, "row.names", .set_row_names(nrow(x)))
+      setattr(x, "row.names", .set_row_names(n_range[1L]))
       if (check.names) setattr(x, "names", make.names(names(x), unique=TRUE))
       # fix for #1078 and #1128, see .resetclass() for explanation.
       setattr(x, "class", .resetclass(x, 'data.frame'))
@@ -2758,7 +2757,7 @@ setDT = function(x, keep.rownames=FALSE, key=NULL, check.names=FALSE) {
         }
         if (check.names) setattr(x, "names", make.names(xn, unique=TRUE))
       }
-      setattr(x,"row.names",.set_row_names(length(x[[1L]])))
+      setattr(x,"row.names",.set_row_names(n_range[1L]))
       setattr(x,"class",c("data.table","data.frame"))
       setalloccol(x)
     }
