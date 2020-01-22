@@ -8326,7 +8326,7 @@ dt = data.table(d1="1984-03-17")
 ans = data.table(d1="1984-03-17", d2=as.POSIXct("1984-03-17", tz='UTC'))
 test(1612.2, dt[, d2 := strptime(d1, "%Y-%m-%d", tz='UTC')], ans, warning="strptime() usage detected and wrapped with as.POSIXct()")
 ll = list(a=as.POSIXlt("2015-01-01"), b=2L)
-test(1612.3, setDT(ll), error="Column 1 is of POSIXlt type")
+test(1612.3, setDT(ll), error="Columns [1] are of POSIXlt type")
 
 # tests for all.equal.data.table #1106
 # diff nrow
