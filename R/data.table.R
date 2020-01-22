@@ -2725,9 +2725,9 @@ setDT = function(x, keep.rownames=FALSE, key=NULL, check.names=FALSE) {
     }
       
     # Check columns for disallowed data types
-    col.POSIXlt = which(vapply_1b(x, inherits, "POSIXlt"))
-    if (length(col.POSIXlt) > 0L)
-      stop("Columns ", brackify(col.POSIXlt), " are of POSIXlt type. Please convert it to POSIXct using as.POSIXct and run setDT again. We do not recommend use of POSIXlt at all because it uses 40 bytes to store one date.")
+    col.POSIXlt = vapply_1b(x, inherits, "POSIXlt")
+    if (any(col.POSIXlt))
+      stop("Columns ", brackify(which(col.POSIXlt)), " are of POSIXlt type. Please convert it to POSIXct using as.POSIXct and run setDT again. We do not recommend use of POSIXlt at all because it uses 40 bytes to store one date.")
     
     # Type specific data.table creation can now proceed
     if (is.data.table(x)) {
