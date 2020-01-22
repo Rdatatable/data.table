@@ -41,12 +41,12 @@ static int scipen;
 static bool squashDateTime=false;      // 0=ISO(yyyy-mm-dd) 1=squash(yyyymmdd)
 static bool verbose=false;
 
-extern const char *getString(void *, int64_t);
-extern int getStringLen(void *, int64_t);
-extern int getMaxStringLen(void *, int64_t);
-extern int getMaxCategLen(void *);
-extern int getMaxListItemLen(void *, int64_t);
-extern const char *getCategString(void *, int64_t);
+extern const char *getString(const void *, int64_t);
+extern int getStringLen(const void *, int64_t);
+extern int getMaxStringLen(const void *, int64_t);
+extern int getMaxCategLen(const void *);
+extern int getMaxListItemLen(const void *, int64_t);
+extern const char *getCategString(const void *, int64_t);
 extern double wallclock(void);
 
 inline void write_chars(const char *x, char **pch)
@@ -542,12 +542,12 @@ static inline void write_string(const char *x, char **pch)
   *pch = ch;
 }
 
-void writeString(void *col, int64_t row, char **pch)
+void writeString(const void *col, int64_t row, char **pch)
 {
   write_string(getString(col, row), pch);
 }
 
-void writeCategString(void *col, int64_t row, char **pch)
+void writeCategString(const void *col, int64_t row, char **pch)
 {
   write_string(getCategString(col, row), pch);
 }

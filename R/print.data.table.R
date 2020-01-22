@@ -145,7 +145,7 @@ format.data.table = function (x, ..., justify="none", timezone = FALSE) {
     else if (is.atomic(x) || inherits(x,"formula")) # FR #2591 - format.data.table issue with columns of class "formula"
       paste(c(format(head(x, 6L), justify=justify, ...), if (length(x) > 6L) "..."), collapse=",")  # fix for #5435 - format has to be added here...
     else
-      paste0("<", class(x)[1L], ">")
+      paste0("<", class(x)[1L], paste_dims(x), ">")
   }
   # FR #2842 add timezone for posix timestamps
   format.timezone = function(col) { # paste timezone to a time object
@@ -188,6 +188,16 @@ shouldPrint = function(x) {
 # for removing the head (column names) of matrix output entirely,
 #   as opposed to printing a blank line, for excluding col.names per PR #1483
 cut_top = function(x) cat(capture.output(x)[-1L], sep = '\n')
+
+# for printing the dims for list columns #3671; used by format.data.table()
+paste_dims = function(x) {
+  dims = if (isS4(x)) {
+    length(slotNames(x))
+  } else {
+    if (is.null(dim(x))) length(x) else dim(x)
+  }
+  paste0("[", paste(dims,collapse="x"), "]")
+}
 
 # to calculate widths of data.table for PR #4074
 # gets the width of the data.table at each column
