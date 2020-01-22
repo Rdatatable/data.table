@@ -2732,6 +2732,7 @@ setDT = function(x, keep.rownames=FALSE, key=NULL, check.names=FALSE) {
     # Type specific data.table creation can now proceed
     if (is.data.table(x)) {
       setattr(x, "row.names", .set_row_names(n_range[1L]))
+      setattr(x, "class", .resetclass(x, 'data.table'))
       setalloccol(x)
     } else if (is.data.frame(x)) {
       rn = if (!identical(keep.rownames, FALSE)) rownames(x) else NULL
