@@ -14959,12 +14959,24 @@ test(2041.1, DT[, median(date), by=g], data.table(g=c("a","b"), V1=as.Date(c("20
 test(2041.2, DT[, median(time), by=g], DT[c(2,5),.(g=g, V1=time)])
 
 # 'invalid trim argument' with optimization level 1; #1876
+options(datatable.optimize = 1L)
 test(2042.1, DT[ , as.character(mean(date)), by=g, verbose=TRUE ],
              data.table(g=c("a","b"), V1=c("2018-01-04","2018-01-21")),
              output=msg<-"GForce is on, left j unchanged.*Old mean optimization is on, left j unchanged")
 test(2042.2, DT[ , format(mean(date),"%b-%Y")], "Jan-2018")
 test(2042.3, DT[ , format(mean(date),"%b-%Y"), by=g, verbose=TRUE ],  # just this case generated the error
              data.table(g=c("a","b"), V1=c("Jan-2018","Jan-2018")), output=msg)
+# also incidentally fixed #2491
+DT = data.table(
+  Group = c("A", "A", "B", "B", "C", "C"),
+  Date1 = .Date(c(17446.0291040738, 17470.0221205444, 17445.0765226481,
+                  17456.0360002079, 17440.0230725919, 17451.0572453837)),
+  Date2 = .Date(c(17459.1561177987, 17451.1086757995, 17449.0820898537,
+                  17443.1175238448, 17461.0463715783, 17448.1033968224))
+)
+DT[ , DiffTime := abs(difftime(Date1, Date2, units = 'days'))]
+test(2042.4, DT[ , round(mean(DiffTime)), by = Group],
+     data.table(Group = c("A", "B", "C"), V1 = structure(c(16, 8, 12), class = "difftime", units = "days")))
 
 # gforce wrongly applied to external variable; #875
 DT = data.table(x=INT(1,1,1,2,2), y=1:5)
