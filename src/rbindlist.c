@@ -271,7 +271,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
 
   SEXP coercedForFactor = NULL;
   for(int j=0; j<ncol; ++j) {
-    int maxType=RAWSXP;  // initialize with LGLSXP for test 2002.3 which has col x NULL in both lists to be filled with NA for #1871
+    int maxType=-1; // Initialize to -1, which is not a SEXPTYPE, to detect when both columns are NULL to be filled with NA_logical_
     bool factor=false, orderedFactor=false;     // ordered factor is class c("ordered","factor"). isFactor() is true when isOrdered() is true.
     int longestLen=0, longestW=-1, longestI=-1; // just for ordered factor
     SEXP longestLevels=R_NilValue;              // just for ordered factor
@@ -292,8 +292,8 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
       }
       SEXP thisCol = VECTOR_ELT(li, w);
       int thisType = TYPEOF(thisCol);
-      // Use >= for #546 -- TYPEORDER=0 for both LGLSXP and EXPRSXP (but also NULL)
-      if (TYPEORDER(thisType)>=TYPEORDER(maxType) && !isNull(thisCol)) maxType=thisType;
+      // Use >= for #546 -- TYPEORDER=0 for both RAWSXP and EXPRSXP. For NULL, keep maxType as -1 
+      if (!isNull(thisCol) && TYPEORDER(thisType)>=TYPEORDER(maxType)) maxType=thisType;
       if (isFactor(thisCol)) {
         if (isNull(getAttrib(thisCol,R_LevelsSymbol))) error(_("Column %d of item %d has type 'factor' but has no levels; i.e. malformed."), w+1, i+1);
         factor = true;
@@ -320,6 +320,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
       }
     }
 
+    if (maxType == -1) maxType=LGLSXP; // col X is NULL in both lists then column to be filled with NA_logical_ #1871, test 2002.03
     if (!foundName) { static char buff[12]; sprintf(buff,"V%d",j+1), SET_STRING_ELT(ansNames, idcol+j, mkChar(buff)); foundName=buff; }
     if (factor) maxType=INTSXP;  // if any items are factors then a factor is created (could be an option)
     if (int64 && maxType!=REALSXP)
