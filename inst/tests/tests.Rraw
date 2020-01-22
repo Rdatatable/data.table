@@ -16774,3 +16774,17 @@ rm(s1, s2, class2132)
 ########################
 #  Add new tests here  #
 ########################
+
+# Test setDT for robustness
+l = structure(list(A=1:5, B=1), class="data.table")
+test(2133.1, setDT(l), error="All elements in argument 'x' to 'setDT' must be of same length, but the profile of input lengths (length:frequency) is: [1:1, 5:1]")
+
+l = list(A=1:5, B=NULL, C=6:10)
+df = structure(list(A=1:5, B=NULL, C=6:10), class=c("data.frame"))
+test(2133.2, setDT(l), setDT(df))
+
+l = list(A=1:5, B=NULL, C=6:10)
+dt = structure(list(A=1:5, B=NULL, C=6:10), class=c("data.frame", "data.table"))
+test(2133.3, setDT(l), setDT(dt))
+
+
