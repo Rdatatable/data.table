@@ -514,18 +514,33 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
         if (w==-1 || !length(thisCol=VECTOR_ELT(li, w))) {  // !length for zeroCol warning above; #1871
           writeNA(target, ansloc, thisnrow);  // writeNA is integer64 aware and writes INT64_MIN
         } else {
-          if ((TYPEOF(target)==VECSXP) && TYPEOF(thisCol)>TYPEOF(target)) {
-            // Exotic non-atomic types need each element to be wrapped in a list, e.g. expression vectors #546
+          if ((TYPEOF(target)==VECSXP) && (isVectorAtomic(thisCol) || TYPEOF(thisCol)==LISTSXP)) {
+            // do an as.list() on the atomic column; #3528
+            // pairlists (LISTSXP) can also be coerced to lists using coerceVector
+            thisCol = PROTECT(coerceVector(thisCol, TYPEOF(target))); nprotect++;
+          } else if ((TYPEOF(target)==VECSXP) && TYPEOF(thisCol)==EXPRSXP) {
+            // For EXPRSXP each element to be wrapped in a list, e.g. expression vectors #546
             SEXP thisColList = PROTECT(allocVector(VECSXP, length(thisCol))); nprotect++;
             for(int r=0; r<length(thisCol); ++r) {
               SEXP thisElement = VECTOR_ELT(thisCol, r);
-              if (TYPEOF(thisCol) == EXPRSXP) thisElement = PROTECT(coerceVector(thisElement, EXPRSXP)); nprotect++; // otherwise LANGSXP
+              thisElement = PROTECT(coerceVector(thisElement, EXPRSXP)); nprotect++; // otherwise LANGSXP
               SET_VECTOR_ELT(thisColList, r, thisElement);
             }
             thisCol = thisColList;
-          } else if ((TYPEOF(target)==VECSXP) && TYPEOF(thisCol)<TYPEOF(target)) {
-            // do an as.list() on the atomic column; #3528
-            thisCol = PROTECT(coerceVector(thisCol, TYPEOF(target))); nprotect++;
+          } else if ((TYPEOF(target)==VECSXP) && !isVector(thisCol) && TYPEOF(thisCol)!=TYPEOF(target)) { 
+            // Anything not a vector we can assign directly through SET_VECTOR_ELT
+            // Although tecnically there should only be one list element for any type met here,
+            // the length of the type may be > 1, in which case the other columns in data.table
+            // will have been recycled. We therefore in turn have to recycle the list elements
+            // to match the number of rows.
+            SEXP thisColList = PROTECT(allocVector(VECSXP, length(thisCol))); nprotect++;
+            for(int r=0; r<length(thisCol); ++r) {
+              SET_VECTOR_ELT(thisColList, r, thisCol);
+            }
+            thisCol = thisColList;
+          } else if ((TYPEOF(target)==VECSXP) && TYPEOF(thisCol)!=TYPEOF(target)) {
+            // should be unreachable
+            error("Internal error: rbindlist cannot handle type %s\n", type2char(TYPEOF(thisCol))); // # nocov
           }
           // else coerces if needed within memrecycle; with a no-alloc direct coerce from 1.12.4 (PR #3909)
           const char *ret = memrecycle(target, R_NilValue, ansloc, thisnrow, thisCol, 0, -1, idcol+j+1, foundName);
