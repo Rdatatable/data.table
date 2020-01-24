@@ -12,7 +12,7 @@ setnames(x,old,new,skip_absent=FALSE)
 setlevels(x, value)
 }
 \arguments{
-  \item{x}{ \code{setnames} accepts \code{data.frame} and \code{data.table}. \code{setattr} accepts any input; e.g, list, columns of a \code{data.frame} or \code{data.table}. \code{setlevels} accepts vector of factors.}
+  \item{x}{ \code{setnames} accepts \code{data.frame} and \code{data.table}. \code{setattr} accepts any input; e.g, list, columns of a \code{data.frame} or \code{data.table}. \code{setlevels} is specific to factors.}
   \item{name}{ The character attribute name. }
   \item{value}{ The value to assign to the attribute or \code{NULL} removes the attribute, if present. }
   \item{old}{ When \code{new} is provided, character names or numeric positions of column names to change. When \code{new} is not provided, a function or the new column names (i.e., it's implicitly treated as \code{new}; excluding \code{old} and explicitly naming \code{new} is equivalent). If a function, it will be called with the current column names and is supposed to return the new column names. The new column names must be the same length as the number of columns. See examples. }
