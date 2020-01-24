@@ -292,8 +292,8 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
       }
       SEXP thisCol = VECTOR_ELT(li, w);
       int thisType = TYPEOF(thisCol);
-      // Use >= for #546 -- TYPEORDER=0 for both LGLSXP and EXPRSXP (but also NULL)
-      if (TYPEORDER(thisType)>=TYPEORDER(maxType) && !isNull(thisCol)) maxType=thisType;
+      if (TYPEORDER(thisType)>TYPEORDER(VECSXP) && !isNull(thisCol)) maxType=VECSXP; 
+      else if (TYPEORDER(thisType)>TYPEORDER(maxType) && !isNull(thisCol)) maxType=thisType; 
       if (isFactor(thisCol)) {
         if (isNull(getAttrib(thisCol,R_LevelsSymbol))) error(_("Column %d of item %d has type 'factor' but has no levels; i.e. malformed."), w+1, i+1);
         factor = true;
@@ -514,7 +514,16 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
         if (w==-1 || !length(thisCol=VECTOR_ELT(li, w))) {  // !length for zeroCol warning above; #1871
           writeNA(target, ansloc, thisnrow);  // writeNA is integer64 aware and writes INT64_MIN
         } else {
-          if ((TYPEOF(target)==VECSXP || TYPEOF(target)==EXPRSXP) && TYPEOF(thisCol)!=TYPEOF(target)) {
+          if ((TYPEOF(target)==VECSXP) && TYPEOF(thisCol)>TYPEOF(target)) {
+            // Exotic non-atomic types need each element to be wrapped in a list, e.g. expression vectors #546
+            SEXP thisColList = PROTECT(allocVector(VECSXP, length(thisCol))); nprotect++;
+            for(int r=0; r<length(thisCol); ++r) {
+              SEXP thisElement = VECTOR_ELT(thisCol, r);
+              if (TYPEOF(thisCol) == EXPRSXP) thisElement = coerceVector(thisElement, EXPRSXP); // otherwise LANGSXP
+              SET_VECTOR_ELT(thisColList, r, thisElement);
+            }
+            thisCol = thisColList;
+          } else if ((TYPEOF(target)==VECSXP) && TYPEOF(thisCol)<TYPEOF(target)) {
             // do an as.list() on the atomic column; #3528
             thisCol = PROTECT(coerceVector(thisCol, TYPEOF(target))); nprotect++;
           }
