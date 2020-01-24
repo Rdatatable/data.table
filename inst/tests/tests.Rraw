@@ -16736,7 +16736,23 @@ test(2128.5, DT[, .SD, .SDcols=function(x) NA],   error='conditions were not met
 # expression columns in rbindlist, #546
 A = data.table(c1 = 1, c2 = 'asd', c3 = expression(as.character(Sys.time())))
 B = data.table(c1 = 3, c2 = 'qwe', c3 = expression(as.character(Sys.time()+5)))
-test(2129, rbind(A,B)$c3, expression(as.character(Sys.time()), as.character(Sys.time()+5)))
+DT = data.table(c1 = c(1, 3), c2 = c("asd", "qwe"), 
+                c3 = list(expression(as.character(Sys.time())), expression(as.character(Sys.time() + 5))))
+test(2129.1, rbind(A,B), DT)
+
+A = data.table(c1 = 1, c2 = 'asd', c3 = expression(as.character(Sys.time())))
+B = data.table(c1 = 3:5, c2 = c('qwe', "foo", "bar"), 
+               c3 = expression(1+1, print("test"), as.character(Sys.time()+5)))
+DT = data.table(c1 = c(1, 3:5), c2 = c("asd", "qwe", "foo", "bar"), 
+                c3 = list(expression(as.character(Sys.time())), expression(1+1), expression(print("test")), 
+                          expression(as.character(Sys.time()+5))))
+test(2129.2, rbind(A,B), DT)
+
+A = data.table(c1 = 1, c2 = 'asd', c3 = expression(as.character(Sys.time())))
+B = data.table(c1 = 3:5, c2 = c('qwe', "foo", "bar"), c3 = 4:6)
+DT = data.table(c1 = c(1, 3:5), c2 = c("asd", "qwe", "foo", "bar"), 
+                c3 = list(expression(as.character(Sys.time())), 4L, 5L, 6L))
+test(2129.3, rbind(A,B), DT)
 
 # print dims in list-columns, #3671
 DT = data.table(
