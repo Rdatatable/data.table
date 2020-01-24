@@ -519,7 +519,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
             SEXP thisColList = PROTECT(allocVector(VECSXP, length(thisCol))); nprotect++;
             for(int r=0; r<length(thisCol); ++r) {
               SEXP thisElement = VECTOR_ELT(thisCol, r);
-              if (TYPEOF(thisCol) == EXPRSXP) thisElement = coerceVector(thisElement, EXPRSXP); // otherwise LANGSXP
+              if (TYPEOF(thisCol) == EXPRSXP) thisElement = PROTECT(coerceVector(thisElement, EXPRSXP)); nprotect++; // otherwise LANGSXP
               SET_VECTOR_ELT(thisColList, r, thisElement);
             }
             thisCol = thisColList;
