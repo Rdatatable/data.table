@@ -1,6 +1,7 @@
 \name{setattr}
 \alias{setattr}
 \alias{setnames}
+\alias{setlevels}
 \title{ Set attributes of objects by reference }
 \description{
   In \code{data.table}, all \code{set*} functions change their input \emph{by reference}. That is, no copy is made at all, other than temporary working memory which is as large as one column. The only other \code{data.table} operator that modifies input by reference is \code{\link{:=}}. Check out the \code{See Also} section below for other \code{set*} function that \code{data.table} provides.
@@ -8,9 +9,10 @@
 \usage{
 setattr(x,name,value)
 setnames(x,old,new,skip_absent=FALSE)
+setlevels(x, value)
 }
 \arguments{
-  \item{x}{ \code{setnames} accepts \code{data.frame} and \code{data.table}. \code{setattr} accepts any input; e.g, list, columns of a \code{data.frame} or \code{data.table}. }
+  \item{x}{ \code{setnames} accepts \code{data.frame} and \code{data.table}. \code{setattr} accepts any input; e.g, list, columns of a \code{data.frame} or \code{data.table}. \code{setlevels} accepts vector of factors.}
   \item{name}{ The character attribute name. }
   \item{value}{ The value to assign to the attribute or \code{NULL} removes the attribute, if present. }
   \item{old}{ When \code{new} is provided, character names or numeric positions of column names to change. When \code{new} is not provided, a function or the new column names (i.e., it's implicitly treated as \code{new}; excluding \code{old} and explicitly naming \code{new} is equivalent). If a function, it will be called with the current column names and is supposed to return the new column names. The new column names must be the same length as the number of columns. See examples. }
@@ -23,6 +25,8 @@ setnames(x,old,new,skip_absent=FALSE)
   \code{setnames} operates on \code{data.table} and \code{data.frame} not other types like \code{list} and \code{vector}. It can be used to change names \emph{by name} with built-in checks and warnings (e.g., if any old names are missing or appear more than once).
 
   \code{setattr} is a more general function that allows setting of any attribute to an object \emph{by reference}.
+
+  \code{setlevels} is a function to set the levels of factor vector.
 
   A very welcome change in R 3.1+ was that `names<-` and `colnames<-` no longer copy the \emph{entire} object as they used to (up to 4 times), see examples below. They now take a shallow copy. The `set*` functions in data.table are still useful because they don't even take a shallow copy. This allows changing names and attributes of a (usually very large) \code{data.table} in the global environment \emph{from within functions}. Like a database.
 
@@ -78,6 +82,9 @@ f = function(\dots) {
 f()
 attr(DT,"myFlag")   # TRUE
 attr(DT,"myFlag2")  # NULL
+
+x = as.factor(c("A", "A", "B", "B", "B", "C")) # factor vector with levels A B C
+setlevels(x, c("X", "Y", "Z"))                 # set factor levels to: X Y Z
 
 }
 \keyword{ data }
