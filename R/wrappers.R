@@ -13,4 +13,4 @@ coerceFill = function(x) .Call(CcoerceFillR, x)
 
 testMsg = function(status=0L, nx=2L, nk=2L) .Call(CtestMsgR, as.integer(status)[1L], as.integer(nx)[1L], as.integer(nk)[1L])
 
-setlevels = function(x, value) invisible( if (is.factor(x)) .Call(Csetlevels, x, as.character(value), unique(value)) )
+setlevels = function(x, value) invisible( if (is.factor(x)) .Call(Csetlevels, x, as.character(value), unique(value)) else x)
