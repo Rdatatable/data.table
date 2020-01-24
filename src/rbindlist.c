@@ -552,6 +552,6 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
       }
     }
   }
-  UNPROTECT(nprotect);  // ans, coercedForFactor, thisCol
+  UNPROTECT(nprotect);  // ans, coercedForFactor, thisCol, thisElement
   return(ans);
 }
