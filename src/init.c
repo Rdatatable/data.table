@@ -221,7 +221,7 @@ R_ExternalMethodDef externalMethods[] = {
 };
 
 static void setSizes() {
-  for (int i=0; i<100; ++i) { sizes[i]=0; typeorder[i]=7; }
+  for (int i=0; i<100; ++i) { sizes[i]=0; typeorder[i]=7; } // typeorder init value must be > listed types below
   // only these types are currently allowed as column types :
   sizes[LGLSXP] =  sizeof(int);       typeorder[LGLSXP] =  0;
   sizes[RAWSXP] =  sizeof(Rbyte);     typeorder[RAWSXP] =  1;
