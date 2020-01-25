@@ -1913,271 +1913,29 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
            " but should be nrow(x)==", nrow(x))
   }
   
-  # Create a new list X containing pointers to columns in x, so that any
-  # modifications (i.e. type coercion, dropping of rownames column) do 
-  # not change the input data.table. New copies in memory are only 
-  # created for columns that are modified (those coerced to a different
-  # type or class)
-  X = x
-  class(X) = NULL
-  
-  # Drop the rownames column, if used
-  if (!is.null(rownames))
-    X[[rownames]] = NULL
-  
-  # We now need to make sure all the columns are the same type, handling special
-  # cases where some columns are not stored in memory (ff objects), lists, or 
-  # otherwise non-atomic types (e.g. S4). Further, we want to minimize
-  # the number of checks done, e.g. if all columns are already the same type.
-  
-  # Get information about the classes and types of each column, returned in an environment.
-  # additional arguments allow for efficient updating of information
-  column_properties = function(X, X.info, cols.to.update, cols.to.drop) {
-    if (missing(X.info))
-      X.info = new.env()
-    
-    # Get class and type of relevant columns
-    if (missing(cols.to.update) && missing(cols.to.drop)) {
-      X.info$classes = lapply(X, class) # lapply here because a column may have > 1 class. 
-      X.info$types = vapply_1c(X, typeof)
-    } else if (!missing(cols.to.drop)) {
-      X.info$classes = X.info$classes[-cols.to.drop]
-      X.info$types = X.info$types[-cols.to.drop]
-    } else if (!missing(cols.to.update)) {
-      X.info$classes[cols.to.update] = lapply(X[cols.to.update], class)
-      X.info$types[cols.to.update] = vapply_1c(X[cols.to.update], typeof)
-    } else {
-      stop("Internal error: cols.to.update and cols.to.drop cannot both be supplied to column_properties()") # nocov
-    }
-    
-    # Get unique classes and types
-    X.info$uniq.class.list = unique(X.info$classes) # list, i.e. handles multi-class columns
-    X.info$uniq.classes = sort(unique(unlist(X.info$uniq.class.list))) # flat vector of unique classes
-    X.info$uniq.types = sort(unique(X.info$types))
-
-    X.info
-  }
-  X.info = column_properties(X)
-  
-  # Check whether any column has type or class among the 'target' vector,
-  # by matching to the precomputed vector of unique class or type information
-  # stored in X.info. col.uniqs should either be X.info$uniq.classes or 
-  # X.info$uniq.types. Returns a single TRUE or FALSE.
-  any_col_is = function(col.uniqs, target) { 
-    any(target %chin% col.uniqs)
-  }
-  
-  # Check whether all columns have type or class among the 'target' vector,
-  # by matching to the precomputed vector of unique class or type information
-  # stored in X.info. col.uniqs should either be X.info$uniq.classes or 
-  # X.info$uniq.types. Returns a single TRUE or FALSE.
-  all_col_is = function(col.uniqs, target) {
-    length(setdiff(col.uniqs, target)) == 0L
-  }
-  
-  # Check whether each column has type or class among the 'target' vector,
-  # by matching to the precomputed vector of class or type information
-  # stored in X.info. col.info should either be X.info$types or X.info$classes.
-  # Returns TRUE or FALSE for each column, allowing for which() or which(!()) to
-  # be subsequently applied to get column indices for subsetting. This function
-  # should generally be applied only after an any_col_is() or all_col_is() check
-  # to avoid expensive checks across all columns where they are not needed (i.e.
-  # if all columns are of a single type already we want to minimise the column
-  # check computation)
-  col_is = function(col.info, target) { 
-    if (length(target) > 1)
-      vapply_1b(col.info, function(xj) { any(target %chin% xj) } )
-    else
-      vapply_1b(col.info, `==`, target)
-  }
-  
-  # Check and fix the data.table if it is malformed - i.e. contains NULL
-  # columns, wide columns, or columns whose length != .N. For NULL columns
-  # we need to drop manually, otherwise we can use as.data.table().
-  if (any_col_is(X.info$uniq.types, "NULL")) {
-    col.is.null = which(col_is(X.info$types, "NULL"))
-    X[col.is.null] = NULL
-    X.info = column_properties(X, X.info, cols.to.drop = col.is.null) # update column properties info
-  }
-  
-  has.wide.columns = any(vapply_1b(X, function(xj) length(dim(xj)) > 0L)) 
-  n.column.lengths = length(unique(vapply_1i(X, length)))
-  if (has.wide.columns || n.column.lengths > 1L) {
-    X = as.data.table(X)
-    class(X) = NULL 
-    X.info = column_properties(X) # get column properties info
-  }
-  
   # Get matrix meta-data
-  cn = names(X)
+  cn = names(x)
+  if (!is.null(rownames)) {
+    if(is.character(rownames)) cn = cn[-chmatch(rownames, cn)]
+    else cn = cn[-rownames]
+  }
   p = length(cn)
-  n = if(p == 0L) 0L else length(X[[1L]])
-
-  # The maximum dimension size (row or column) for a matrix is 2^31-1 (or the Machine maximum integer)
-  # Check and error before doing computation/memory expensive column checks and coercion
-  # nocov start
-  if (p > .Machine$integer.max) 
-    stop("Matrices with > ", .Machine$integer.max, " (.Machine$integer.max) columns are not supported")
-  if (n > .Machine$integer.max) 
-    stop("Matrices with > ", .Machine$integer.max, " (.Machine$integer.max) rows are not supported")
-  # nocov end
+  n = nrow(x)
   
   # If no rows or columns can simply return empty array
   if (p == 0L || n == 0L)
     return(array(NA, dim = list(n, p), dimnames = list(rownames.value, cn)))
   
-  # Check for ff columns which need to be brought into memory. Running the any
-  # command on the unique column class list means for x with many columns we 
-  # don't do expensive per-column checks unless necessary.
-  # nocov start
-  if (any_col_is(X.info$uniq.classes, "ff")) {
-    which.ff = which(col_is(X.info$classes, "ff"))
-    for (j in which.ff) {
-      X[[j]] = X[[j]][] # bring into memory
-    }
-    X.info = column_properties(X, X.info, cols.to.update = which.ff) # update column properties info
-  }
-  # nocov end
+  # Put each column inside a list so we can use rbindlist to stack into a single vector
+  l = replicate(p, vector("list", 1), simplify=FALSE) 
+  for (j in seq_len(p))
+    l[[j]][[1]] = x[[j]] # copies pointer to column 
   
-  # Convert factors to character vectors
-  if (any_col_is(X.info$uniq.classes, "factor")) {
-    which.factors = which(col_is(X.info$classes, "factor"))
-    for (j in which.factors) {
-      miss = is.na(X[[j]])
-      X[[j]] = as.vector(X[[j]])
-      is.na(X[[j]]) = miss
-    }
-    X.info = column_properties(X, X.info, cols.to.update = which.factors)
-  }
-  
-  # Classes to be converted to character vectors
-  charconvert.classes = c("Date", "POSIXct", "POSIXlt")
-  if (any_col_is(X.info$uniq.classes, charconvert.classes)) {
-    which.charconvert = which(col_is(X.info$classes, charconvert.classes))
-    for (j in which.charconvert) {
-      miss = is.na(X[[j]])
-      X[[j]] = format(X[[j]])
-      is.na(X[[j]]) = miss
-    }
-    X.info = column_properties(X, X.info, cols.to.update = which.charconvert) # update column properties info
-  }
-  
-  # Next determine if any columns are list or non-atomic type. If so, convert all columns to lists
-  atomic.types <- c("logical", "integer", "double", "complex", "character", "raw")
-  any.non.atomic = !all_col_is(X.info$uniq.types, atomic.types)
-  if (any.non.atomic) {
-    # We only want to coerce columns to list if they are not already recursive
-    # see R source code src/main/coerce.c and src/main/utils.c
-    recursive.types = c("list", "pairlist", "closure", "environment", "promise", "language",
-                        "special", "builtin", "...", "any", "expression")
-    which.not.recursive = which(!col_is(X.info$types, recursive.types))
-    
-    # Some types may be recursive if subsettable. Find out which of these are actually 
-    # already recursive to skip
-    maybe.recursive = c("expternalptr", "bytecode", "weakref")
-    which.maybe.recursive = which(col_is(X.info$types, maybe.recursive)) # which columns maybe recursive
-    maybe.is.recursive = vapply_1b(X[which.maybe.recursive], is.recursive) # are any actually recursive?
-    which.maybe.is.recursive = which.maybe.recursive[!maybe.is.recursive] # indices of these columns that weren't recursive
-                                                     
-    which.not.recursive = sort(c(which.not.recursive, which.maybe.is.recursive))
-    
-    # Coerce to list as necessary
-    for (j in which.not.recursive) {
-      X[[j]] = as.list(X[[j]])
-    }
-    
-    X.info = column_properties(X, X.info, cols.to.update = which.not.recursive)
-  }
-  
-  # Other classes from suggested packages that have special type conversion rules
-  if (!any.non.atomic && any_col_is(X.info$uniq.classes, "integer64") && length(X.info$uniq.classes) > 1L) {
-    # Determine target class we're converting to 
-    target.class = NULL
-    if (!requireNamespace("bit64", quietly=TRUE)) 
-       stop("coercion to or from integer64 columns requires the bit64 package") # nocov
-    if (all_col_is(X.info$uniq.classes, c("integer64", "logical", "integer", "raw")))
-      target.class = "integer64"
-    else if (all_col_is(X.info$uniq.classes, c("integer64", "numeric", "complex", "character")))
-      target.class = "character" # integer64 cannot reliably be converted to numeric or complex
-    
-    if (!is.null(target.class)) { # if NULL fallback on type coercion
-      # no method as.integer64.raw so we need to do two-step conversion
-      if (target.class == "integer64" && any_col_is(X.info$uniq.classes, "raw")) {
-        which.convert = which(col_is(X.info$classes, "raw"))
-        for (j in which.convert) {
-          X[[j]] = as.integer(X[[j]])
-        }
-        X.info = column_properties(X, X.info, cols.to.update = which.convert)
-      }
-      
-      # Which columns need to be coerced?
-      which.convert = which(!col_is(X.info$classes, target.class))
-
-      # Coerce the columns
-      for (j in which.convert) {
-        switch(target.class,
-               "integer64"={ X[[j]] = bit64::as.integer64(X[[j]]) },
-               "character"={ X[[j]] = as.character(X[[j]]) })
-      }
-      
-      X.info = column_properties(X, X.info,  cols.to.update = which.convert) # update column properties info
-    }
-  }
-  
-  # If columns still do not all have the same type we need to coerce
-  if (!any.non.atomic && length(X.info$uniq.types) > 1L) { 
-    type.order = c("raw"=1L, "logical"=2L, "integer"=3L, "double"=4L, 
-                   "complex"=5L, "character"=6L, "list"=7L)
-    target.type = names(which.max(type.order[X.info$uniq.types]))
-    which.convert = which(!col_is(X.info$types, target.type))
-    
-    # Coerce the columns
-    for (j in which.convert) {
-      switch(target.type,
-             # raw impossible to reach - no coercion necessary if all columns are raw
-             "logical"={ X[[j]] = as.logical(X[[j]]) },
-             "integer"={ X[[j]] = as.integer(X[[j]]) },
-             "double"={ X[[j]] = as.double(X[[j]]) },
-             "complex"={ X[[j]] = as.complex(X[[j]]) },
-             "character"={ X[[j]] = as.character(X[[j]]) }
-             # list impossible to reach - list and other recursive columns handled separately
-      )
-    }
-  }
-  
-  # Warn if fell back on type coercion
-  atomic.classes = c("logical", "raw", "integer", "numeric", 
-                     "complex", "character", "list")
-  non.atomics = setdiff(X.info$uniq.classes, atomic.classes)
-  # nocov start
-  if (!any.non.atomic && length(non.atomics) > 0L && length(X.info$uniq.class.list) > 1L) {
-    warning("Could not coerce columns to a common class, class information", 
-            "has been stripped and columns coerced to type ", typeof(X[[1L]]))
-  }
-  # nocov end
-  
-  # If mix of recursive column types, fall back on unlist method
-  if (any.non.atomic && !(length(X.info$uniq.types) == 1L && X.info$uniq.types == "list")) {
-    X = unlist(X, recursive = FALSE, use.names = FALSE)
-    dim(X) = c(n, length(X)/n)
-  }
-  # Otherwise use fast C method to copy values into matrix
-  else {  
-    X = .Call(Casmatrix, X)
-  }
-  
-  # Add row and column names
-  dimnames(X) = list(rownames.value, cn)
-  
-  # Determine any additional classes to give to the matrix - this applies
-  # where all columns have the same set of classes, and those classes 
-  # include those defined in packages outside of base R - for example
-  # if all columns have class integer64 we can add this class to the 
-  # matrix.
-  if (!any.non.atomic && length(non.atomics) > 0L && length(X.info$uniq.class.list) == 1L)
-    class(X) = c(non.atomics, class(X)) # class(X) should be "matrix" or c("matrix", "array") in R >= 4.0.0
-  
-  X
+  ans = .Call(Crbindlist, l, FALSE, FALSE, NULL) # 1-column data.table of stacked result
+  ans = ans[[1]] # extract vector
+  dim(ans) = c(n, p)
+  dimnames(ans) = list(rownames.value, cn)
+  ans
 }
 
 # bug #2375. fixed. same as head.data.frame and tail.data.frame to deal with negative indices

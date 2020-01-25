@@ -46,7 +46,6 @@
     \item{\code{fwrite.c} - \code{\link{fwrite}()}}
     \item{\code{gsumm.c} - GForce in various places, see \link{GForce}}
     \item{\code{nafill.c} - \code{\link{nafill}()}}
-    \item{\code{matrix.c} - \code{\link{as.matrix}()}}
     \item{\code{subset.c} - Used in \code{\link[=data.table]{[.data.table}} subsetting}
     \item{\code{types.c} - Internal testing usage}
   }
