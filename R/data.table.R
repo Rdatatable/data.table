@@ -1913,12 +1913,16 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
            " but should be nrow(x)==", nrow(x))
   }
   
-  # Get matrix meta-data
-  cn = names(x)
-  if (!is.null(rownames)) {
-    if(is.character(rownames)) cn = cn[-chmatch(rownames, cn)]
-    else cn = cn[-rownames]
-  }
+  # To drop rownames column without modifying x, we create a list X where
+  # each element is a pointer to the column in x. Then, by assigning the 
+  # rownames column to NULL we simply drop the pointer to the column 
+  # leaving X with the columns we want to conver to a matrix without 
+  # modifying x or copying any columns.
+  X = x
+  class(X) = NULL
+  if (!is.null(rownames))
+    X[[rownames]] = NULL
+  cn = names(X)
   p = length(cn)
   n = nrow(x)
   
@@ -1926,10 +1930,12 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
   if (p == 0L || n == 0L)
     return(array(NA, dim = list(n, p), dimnames = list(rownames.value, cn)))
   
-  # Put each column inside a list so we can use rbindlist to stack into a single vector
-  l = replicate(p, vector("list", 1), simplify=FALSE) 
+  # Copy pointer to each column into a nested list structure so that we 
+  # can use rbindlist to stack the columns into a vector of a single type
+  # that we can then assign dimensions to convert to a matrix.
+  l = replicate(p, vector("list", 1), simplify=FALSE)
   for (j in seq_len(p))
-    l[[j]][[1]] = x[[j]] # copies pointer to column 
+    l[[j]][[1]] = X[[j]] # copies pointer to column 
   
   ans = .Call(Crbindlist, l, FALSE, FALSE, NULL) # 1-column data.table of stacked result
   ans = ans[[1]] # extract vector
