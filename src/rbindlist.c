@@ -512,7 +512,15 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
         int w = usenames ? colMap[i*ncol + j] : j;
         SEXP thisCol;
         if (w==-1 || !length(thisCol=VECTOR_ELT(li, w))) {  // !length for zeroCol warning above; #1871
-          writeNA(target, ansloc, thisnrow);  // writeNA is integer64 aware and writes INT64_MIN
+          if (TYPEOF(target)==VECSXP) { // Fill list columns with NA instead of NULL #4198
+            for (int r=0; r<thisnrow; ++r) {
+              SEXP thisElement = PROTECT(allocVector(LGLSXP, 1)); nprotect++;
+              writeNA(thisElement, 0, 1);
+              SET_VECTOR_ELT(target, ansloc+r, thisElement);
+            }
+          } else {
+            writeNA(target, ansloc, thisnrow);  // writeNA is integer64 aware and writes INT64_MIN
+          }
         } else {
           if ((TYPEOF(target)==VECSXP || TYPEOF(target)==EXPRSXP) && TYPEOF(thisCol)!=TYPEOF(target)) {
             // do an as.list() on the atomic column; #3528
@@ -528,6 +536,6 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
       }
     }
   }
-  UNPROTECT(nprotect);  // ans, coercedForFactor, thisCol
+  UNPROTECT(nprotect);  // ans, coercedForFactor, thisCol, thisElement
   return(ans);
 }

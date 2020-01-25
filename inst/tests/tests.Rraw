@@ -16770,6 +16770,12 @@ test(2132.2, fifelse(TRUE, 1, s2),       error = "S4 class objects (except nanot
 test(2132.3, fcase(TRUE, s1, FALSE, s2), error = "S4 class objects (except nanotime) are not supported. Please see https://github.com/Rdatatable/data.table/issues/4131.")
 rm(s1, s2, class2132)
 
+# rbindlist(..., fill = TRUE) should fill list columns with NA not NULL
+A = data.table(c1=0L, c2=list(1:3))
+B = data.table(c1=1:2)
+DT = data.table(c1=0:2, c2=list(1:3, NA, NA))
+test(2133, rbind(A,B,fill=TRUE), DT)
+
 
 ########################
 #  Add new tests here  #
