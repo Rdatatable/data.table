@@ -16733,7 +16733,7 @@ test(2128.3, DT[, .SD, .SDcols=function(x) x==1], error='conditions were not met
 test(2128.4, DT[, .SD, .SDcols=function(x) 2L],   error='conditions were not met for: [a, b, c]')
 test(2128.5, DT[, .SD, .SDcols=function(x) NA],   error='conditions were not met for: [a, b, c]')
 
-# expression columns in rbindlist, #546
+# Test non-atomic columns in rbindlist, e.g. expressions, #546
 A = data.table(c1 = 1, c2 = 'asd', c3 = expression(as.character(Sys.time())))
 B = data.table(c1 = 3, c2 = 'qwe', c3 = expression(as.character(Sys.time()+5)))
 DT = data.table(c1 = c(1, 3), c2 = c("asd", "qwe"), 
@@ -16754,7 +16754,14 @@ DT = data.table(c1 = c(1, 3:5), c2 = c("asd", "qwe", "foo", "bar"),
                 c3 = list(expression(as.character(Sys.time())), 4L, 5L, 6L))
 test(2129.3, rbind(A,B), DT)
 
-# print dims in list-columns, #3671
+A = data.table(c1 = 1, c2 = quote(1+1)) # length(quote(1+1)) = 3, so A[,.N] = 3 with c1 recycled
+B = data.table(c1 = 2, c2 = 'asd')
+test(2129.4, rbind(A, B)$c2, list(quote(1+1), quote(1+1), quote(1+1), 'asd')) # list(quote(1+1)) is recycled
+
+A = data.table(c1 = 1:3, c2 = pairlist(A=1, B=list(1, 2:3), C=pairlist(C1=1, C2=3:4)))
+test(2129.5, rbind(A,B)$c2, c(as.list(A$c2), 'asd')) # top level pairlist becomes list
+
+# print dims in list-colrmns, #3671
 DT = data.table(
   x = 1:2,
   y = list(data.table(x=1, y=1),
