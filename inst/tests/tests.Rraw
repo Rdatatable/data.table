@@ -16772,6 +16772,8 @@ rm(s1, s2, class2132)
 
 # setlevels, #2219
 test(2133.1, setlevels(as.factor(c("A", "A", "B", "B", "B", "C")), c("X", "Y", "Z")), as.factor(c("X", "X", "Y", "Y", "Y", "Z")))
+test(2133.2, setlevels(c("A", "A", "B", "B", "B", "C"), c("X", "Y", "Z")), c("A", "A", "B", "B", "B", "C"))
+test(2133.3, setlevels(as.factor(c("A", "A", "B", "B", "B", "C")), c("X", "X", "Y", "Z")), error = "'value' has duplicated value. Please make sure no duplicated values are introduced.")
 
 ########################
 #  Add new tests here  #

@@ -40,6 +40,9 @@ SEXP setattrib(SEXP x, SEXP name, SEXP value)
 // fix for #1142 - duplicated levels for factors
 SEXP setlevels(SEXP x, SEXP levels, SEXP ulevels) {
 
+  if (!isFactor(x)) {
+    return(x);
+  }
   R_len_t nx = length(x);
   SEXP xchar, newx;
   xchar = PROTECT(allocVector(STRSXP, nx));

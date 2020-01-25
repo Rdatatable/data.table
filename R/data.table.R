@@ -2450,6 +2450,14 @@ setattr = function(x,name,value) {
   invisible(x)
 }
 
+setlevels = function(x, value) {
+  if (anyDuplicated(value) == 0) {
+    invisible(.Call(Csetlevels, x, as.character(value), value))
+  } else {
+    stop("'value' has duplicated value. Please make sure no duplicated values are introduced.")
+  }
+}
+
 setnames = function(x,old,new,skip_absent=FALSE) {
   # Sets by reference, maintains truelength, no copy of table at all.
   # But also more convenient than names(DT)[i]="newname"  because we can also do setnames(DT,"oldname","newname")
