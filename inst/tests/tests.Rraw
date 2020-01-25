@@ -14191,7 +14191,7 @@ test(2002.03, rbindlist( list(list(a=1L, b=2L, x=NULL), list(a=2L, b=NULL, x=NUL
              warning="Column 3 ['x'] of item 1 is length 0. This (and 2 others like it) has been filled with NA (NULL for list columns) to make each item uniform.")
 # tests from #1302
 test(2002.04, rbindlist( list(list(a=1L,z=list()), list(a=2L, z=list("m"))) ),
-             data.table(a=1:2, z=list(NULL, "m")),
+             data.table(a=1:2, z=list(NA, "m")),
              warning="Column 2 ['z'] of item 1 is length 0. This (and 0 others like it) has been filled with NA")
 test(2002.05, rbindlist( list( list(a=1L, z=list("z")), list(a=2L, z=list(c("a","b"))) )),
              data.table(a=1:2, z=list("z", c("a","b"))))
