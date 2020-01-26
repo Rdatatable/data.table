@@ -2,7 +2,7 @@
 #include <Rdefines.h>
 #include <ctype.h>   // for isdigit
 
-SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
+SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP asmatrixArg)
 {
   if (!isLogical(fillArg) || LENGTH(fillArg) != 1 || LOGICAL(fillArg)[0] == NA_LOGICAL)
     error(_("fill= should be TRUE or FALSE"));
@@ -18,6 +18,9 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
   }
   const bool idcol = !isNull(idcolArg);
   if (idcol && (!isString(idcolArg) || LENGTH(idcolArg)!=1)) error(_("Internal error: rbindlist.c idcol is not a single string"));  // # nocov
+  if (!isLogical(asmatrixArg) || LENGTH(asmatrixArg) != 1 || LOGICAL(asmatrixArg)[0] == NA_LOGICAL)
+    error(_("asmatrix= should be TRUE or FALSE"));
+  const bool asmatrix = LOGICAL(asmatrixArg)[0];
   int ncol=0, first=0;
   int64_t nrow=0, upperBoundUniqueNames=1;
   bool anyNames=false;
@@ -59,7 +62,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
             firstZeroCol+1, ch, firstZeroItem+1, numZero-1, numZero==2?"":"s");
   }
   if (nrow==0 && ncol==0) return(R_NilValue);
-  if (nrow>INT32_MAX) error(_("Total rows in the list is %"PRId64" which is larger than the maximum number of rows, currently %d"), (int64_t)nrow, INT32_MAX);
+  if (!(asmatrix) && nrow>INT32_MAX) error(_("Total rows in the list is %"PRId64" which is larger than the maximum number of rows, currently %d"), (int64_t)nrow, INT32_MAX);
   if (usenames==TRUE && !anyNames) error(_("use.names=TRUE but no item of input list has any names"));
 
   int *colMap=NULL; // maps each column in final result to the column of each list item
@@ -325,8 +328,10 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
     if (int64 && maxType!=REALSXP)
       error(_("Internal error: column %d of result is determined to be integer64 but maxType=='%s' != REALSXP"), j+1, type2char(maxType)); // # nocov
     SEXP target;
-    SET_VECTOR_ELT(ans, idcol+j, target=allocVector(maxType, nrow));  // does not initialize logical & numerics, but does initialize character and list
-    if (!factor) copyMostAttrib(firstCol, target); // all but names,dim and dimnames; mainly for class. And if so, we want a copy here, not keepattr's SET_ATTRIB.
+    if (asmatrix) target = allocMatrix(maxType, nrow/LENGTH(l), LENGTH(l)); // ensures correct class inheritance
+    else target = allocVector(maxType, nrow);
+    SET_VECTOR_ELT(ans, idcol+j, target);  // does not initialize logical & numerics, but does initialize character and list
+    if (!factor & !asmatrix) copyMostAttrib(firstCol, target); // all but names,dim and dimnames; mainly for class. And if so, we want a copy here, not keepattr's SET_ATTRIB.
 
     if (factor && anyNotStringOrFactor) {
       // in future warn, or use list column instead ... warning(_("Column %d contains a factor but not all items for the column are character or factor"), idcol+j+1);

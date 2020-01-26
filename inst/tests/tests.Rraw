@@ -16854,8 +16854,8 @@ DT2 = data.table(A=1:6, B=1:2)                                           # DT2[,
 test(2137.5, as.matrix(DT), as.matrix(DT2))
 
 DT = structure(list(A=function(){}, B=list(1), C=expression(1+1)), class=c("data.table", "data.frame")) 
-mat = matrix(c(A=function(){}, B=list(1), C=expression(1+1)), ncol=3, dimnames=list(NULL, c("A","B","C")))
-test(2137.6, as.matrix(DT), mat) # falls back on unlist 
+mat = matrix(c(A=list(function(){}), B=list(1), C=list(expression(1+1))), ncol=3, dimnames=list(NULL, c("A","B","C")))
+test(2137.6, as.matrix(DT), mat) 
 
 DT = data.table(A=function(){}, B=list(1))
 mat = matrix(c(A=function(){}, B=list(1)), ncol=2, dimnames=list(NULL, c("A","B")))
