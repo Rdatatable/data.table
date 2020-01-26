@@ -4,15 +4,9 @@
 
 SEXP asmatrix(SEXP dt, SEXP rownames)
 {
-  // check matrix dimensions do not exceed INT_MAX. Should not be possible, but just in case:
-  int64_t ncol64=xlength(dt);
-  int64_t nrow64=xlength(VECTOR_ELT(dt, 0));
-  if (ncol64 > INT_MAX || nrow64 > INT_MAX) 
-    error(_("matrix dimensions may not exceed %d"), INT_MAX); // # nocov
-  
-  // From this point we are guaranteed nrow and ncol are int
-  int ncol = (int) ncol64;
-  int nrow = (int) nrow64;
+  // Determine rows and colums
+  int ncol = length(dt);
+  int nrow = length(VECTOR_ELT(dt, 0));
 
   // Extract pointers to each column
   SEXP thisCol[ncol];
