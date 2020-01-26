@@ -2036,24 +2036,8 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
     X.info = class_info(X, X.info, cols.to.update = which.charconvert)
   }
   
-  # Integer64 needs to be coerced to character if any columns are numeric, complex or character
-  if (any_class_is(X.info, "integer64") && any_class_is(X.info, c("numeric", "complex", "character"))) {
-    if (!requireNamespace("bit64", quietly=TRUE)) 
-      stop("coercion of integer64 columns requires the bit64 package") # nocov
-    which.int64 = which_class_is(X.info, "integer64")
-    for (j in seq_len(p)) X[[j]] = as.character(X[[j]])
-    X.info = class_info(X, X.info, cols.to.update = which.integer64)
-  }
-
-  # Put each column inside a list so we can use rbindlist to stack into a single vector
-  l = replicate(p, vector("list", 1), simplify=FALSE) 
-  for (j in seq_len(p))
-    l[[j]][[1]] = X[[j]] # copies pointer to column 
-  
   # Remaining type conversion is handled in Crbindlist 
-  ans = .Call(Crbindlist, l, use.names=FALSE, fill=FALSE, idcol=NULL, asmatrix=TRUE)
-  ans = ans[[1]] # Crbindlist returns a data.table with 1 column, extract this
-  dimnames(ans) = list(rownames.value, cn) # dim assigned by allocMatrix
+  ans = .Call(Casmatrix, X, rownames.value)
   ans
 }
 
@@ -2697,7 +2681,7 @@ rbindlist = function(l, use.names="check", fill=FALSE, idcol=NULL) {
     if (!miss) stop("use.names='check' cannot be used explicitly because the value 'check' is new in v1.12.2 and subject to change. It is just meant to convey default behavior. See ?rbindlist.")
     use.names = NA
   }
-  ans = .Call(Crbindlist, l, use.names, fill, idcol, asmatrix=FALSE)
+  ans = .Call(Crbindlist, l, use.names, fill, idcol)
   if (!length(ans)) return(null.data.table())
   setDT(ans)[]
 }
