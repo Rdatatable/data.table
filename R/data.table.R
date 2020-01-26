@@ -2013,18 +2013,15 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
     stop("Matrices with > ", .Machine$integer.max, " (.Machine$integer.max) rows are not supported")
   # nocov end
   
-  # If no rows or columns can simply return empty array
-  if (p == 0L || n == 0L)
-    return(matrix(nrow=n, ncol=p, dimnames = list(rownames.value, cn)))
-  
   # Convert factors to character vectors
   if (any_class_is(X.info, "factor")) {
-    which.factors = which_class_is(X.info, "factor")
-    for (j in which.factors) {
+    which.factor = which_class_is(X.info, "factor")
+    for (j in which.factor) {
       miss = is.na(X[[j]])
       X[[j]] = as.vector(X[[j]])
       is.na(X[[j]]) = miss
     }
+    X.info = class_info(X, X.info, cols.to.update = which.factor)
   }
   
   # Classes to be converted to character vectors
@@ -2036,8 +2033,18 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
       X[[j]] = format(X[[j]])
       is.na(X[[j]]) = miss
     }
+    X.info = class_info(X, X.info, cols.to.update = which.charconvert)
   }
   
+  # Integer64 needs to be coerced to character if any columns are numeric, complex or character
+  if (any_class_is(X.info, "integer64") && any_class_is(X.info, c("numeric", "complex", "character"))) {
+    if (!requireNamespace("bit64", quietly=TRUE)) 
+      stop("coercion of integer64 columns requires the bit64 package") # nocov
+    which.int64 = which_class_is(X.info, "integer64")
+    for (j in seq_len(p)) X[[j]] = as.character(X[[j]])
+    X.info = class_info(X, X.info, cols.to.update = which.integer64)
+  }
+
   # Put each column inside a list so we can use rbindlist to stack into a single vector
   l = replicate(p, vector("list", 1), simplify=FALSE) 
   for (j in seq_len(p))
@@ -2045,8 +2052,6 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
   
   # Remaining type conversion is handled in Crbindlist 
   ans = .Call(Crbindlist, l, use.names=FALSE, fill=FALSE, idcol=NULL, asmatrix=TRUE)
-  
-  # Extract vector and convert to matrix
   ans = ans[[1]] # Crbindlist returns a data.table with 1 column, extract this
   dimnames(ans) = list(rownames.value, cn) # dim assigned by allocMatrix
   ans
