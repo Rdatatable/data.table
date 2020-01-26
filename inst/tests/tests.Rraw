@@ -16810,7 +16810,6 @@ if (test_bit64) {
   mat = matrix(list(as.integer64(0), as.integer64(1), 'asd', 'qwe', 2:3, "A"),
                 ncol=3, dimnames=list(NULL, c("A", "B", "C")))
   test(2135.3, as.matrix(DT), mat)
-          
 }
 
 ## Test other class and type conversion in as.matrix
