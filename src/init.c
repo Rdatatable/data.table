@@ -10,6 +10,8 @@ SEXP char_ITime;
 SEXP char_IDate;
 SEXP char_Date;
 SEXP char_POSIXct;
+SEXP char_POSIXlt;
+SEXP char_POSIXt;
 SEXP char_nanotime;
 SEXP char_lens;
 SEXP char_indices;
@@ -119,6 +121,7 @@ SEXP lock();
 SEXP unlock();
 SEXP islockedR();
 SEXP allNAR();
+SEXP asmatrix();
 
 // .Externals
 SEXP fastmean();
@@ -211,6 +214,7 @@ R_CallMethodDef callMethods[] = {
 {"CfrollapplyR", (DL_FUNC) &frollapplyR, -1},
 {"CtestMsgR", (DL_FUNC) &testMsgR, -1},
 {"C_allNAR", (DL_FUNC) &allNAR, -1},
+{"Casmatrix", (DL_FUNC) &asmatrix, -1},
 {NULL, NULL, 0}
 };
 
@@ -311,6 +315,8 @@ void attribute_visible R_init_datatable(DllInfo *info)
   char_ITime =     PRINTNAME(install("ITime"));
   char_Date =      PRINTNAME(install("Date"));   // used for IDate too since IDate inherits from Date
   char_POSIXct =   PRINTNAME(install("POSIXct"));
+  char_POSIXlt =   PRINTNAME(install("POSIXlt"));
+  char_POSIXt =    PRINTNAME(install("POSIXt"));
   char_nanotime =  PRINTNAME(install("nanotime"));
   char_starts =    PRINTNAME(sym_starts = install("starts"));
   char_lens =      PRINTNAME(install("lens"));

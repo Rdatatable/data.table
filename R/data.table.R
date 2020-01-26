@@ -1922,26 +1922,27 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
   class(X) = NULL
   if (!is.null(rownames))
     X[[rownames]] = NULL
-  cn = names(X)
-  p = length(cn)
-  n = nrow(x)
   
-  # If no rows or columns can simply return empty array
-  if (p == 0L || n == 0L)
-    return(array(NA, dim = list(n, p), dimnames = list(rownames.value, cn)))
+  # Make sure the data.table is rectangle - all columns must be the same
+  # length, not be multi-dimensional, and loaded into memory
+  null.col = vapply_1b(X, is.null)
+  X[null.col] = NULL # drop NULL columns
   
-  # Copy pointer to each column into a nested list structure so that we 
-  # can use rbindlist to stack the columns into a vector of a single type
-  # that we can then assign dimensions to convert to a matrix.
-  l = replicate(p, vector("list", 1), simplify=FALSE)
-  for (j in seq_len(p))
-    l[[j]][[1]] = X[[j]] # copies pointer to column 
+  if (length(X)==0)
+    return(matrix(nrow=0, ncol=0))
   
-  ans = .Call(Crbindlist, l, FALSE, FALSE, NULL) # 1-column data.table of stacked result
-  ans = ans[[1]] # extract vector
-  dim(ans) = c(n, p)
-  dimnames(ans) = list(rownames.value, cn)
-  ans
+  ff.col = which(vapply_1b(X, is.ff)) # load ff columns into memory
+  for (j in ff.col) X[[ff.col]] = X[[ff.col]][] # nocov
+  
+  multidim = vapply_1b(X, function(xj) !is.null(dim(xj))) # check any columns for dim attribute
+  colnrn = range(vapply_1i(X, length)) # all cols should be same length
+  if (any(multidim) || colnrn[1L]!=colnrn[2L])
+    X = as.data.table(X) # unpacks multi dimensional columns and harmonises column lengths by recycling
+  
+  print(str(X))
+  
+  # Coerce to matrix
+  .Call(Casmatrix, X, rownames.value) 
 }
 
 # bug #2375. fixed. same as head.data.frame and tail.data.frame to deal with negative indices
