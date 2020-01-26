@@ -10,8 +10,6 @@ SEXP char_ITime;
 SEXP char_IDate;
 SEXP char_Date;
 SEXP char_POSIXct;
-SEXP char_POSIXlt;
-SEXP char_POSIXt;
 SEXP char_nanotime;
 SEXP char_lens;
 SEXP char_indices;
@@ -315,8 +313,6 @@ void attribute_visible R_init_datatable(DllInfo *info)
   char_ITime =     PRINTNAME(install("ITime"));
   char_Date =      PRINTNAME(install("Date"));   // used for IDate too since IDate inherits from Date
   char_POSIXct =   PRINTNAME(install("POSIXct"));
-  char_POSIXlt =   PRINTNAME(install("POSIXlt"));
-  char_POSIXt =    PRINTNAME(install("POSIXt"));
   char_nanotime =  PRINTNAME(install("nanotime"));
   char_starts =    PRINTNAME(sym_starts = install("starts"));
   char_lens =      PRINTNAME(install("lens"));

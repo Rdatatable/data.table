@@ -16842,11 +16842,11 @@ DT = structure(list(B=1:2, C=NULL, D=3:4, E=NULL), class=c("data.table", "data.f
 test(2137.2, as.matrix(DT), mat)
 
 DT = structure(list(C=NULL, E=NULL), class=c("data.table", "data.frame"))
-mat = matrix(nrow=0, ncol=0)
+mat = array(NA, dim = list(0, 0), dimnames = list(NULL, NULL))
 test(2137.3, as.matrix(DT), mat)
 
 DT = structure(list(A=NULL, B=logical(0), C=NULL, D=character(0)), class=c("data.table", "data.frame"))
-mat = matrix("", nrow=0, ncol=2, dimnames = list(NULL, c("B", "D"))) # should be empty character matrix
+mat = array(NA, dim = list(0, 2), dimnames = list(NULL, c("B", "D")))
 test(2137.4, as.matrix(DT), mat)
 
 DT = structure(list(A=1:6, B=1:2), class=c("data.table", "data.frame"))  # DT[,B]  is c(1,2)
@@ -16854,16 +16854,12 @@ DT2 = data.table(A=1:6, B=1:2)                                           # DT2[,
 test(2137.5, as.matrix(DT), as.matrix(DT2))
 
 DT = structure(list(A=function(){}, B=list(1), C=expression(1+1)), class=c("data.table", "data.frame")) 
-mat = matrix(c(A=list(function(){}), B=list(1), C=list(expression(1+1))), ncol=3, dimnames=list(NULL, c("A","B","C")))
-test(2137.6, as.matrix(DT), mat) 
+mat = matrix(c(A=function(){}, B=list(1), C=expression(1+1)), ncol=3, dimnames=list(NULL, c("A","B","C")))
+test(2137.6, as.matrix(DT), mat) # falls back on unlist 
 
 DT = data.table(A=function(){}, B=list(1))
 mat = matrix(c(A=function(){}, B=list(1)), ncol=2, dimnames=list(NULL, c("A","B")))
 test(2137.7, as.matrix(DT), mat)
 
-# When single column matrix provided, and that column is rownames, nrow * 0 matrix should be returned
-DT = data.table(rn=LETTERS)
-mat = matrix(nrow=26, ncol=0, dimnames=list(LETTERS, NULL))
-test(2137.8, as.matrix(DT), mat)
 
 

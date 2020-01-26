@@ -73,8 +73,6 @@ extern SEXP char_ITime;
 extern SEXP char_IDate;
 extern SEXP char_Date;
 extern SEXP char_POSIXct;
-extern SEXP char_POSIXlt;
-extern SEXP char_POSIXt;
 extern SEXP char_nanotime;
 extern SEXP char_lens;
 extern SEXP char_indices;

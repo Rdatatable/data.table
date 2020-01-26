@@ -1,112 +1,232 @@
 #include "data.table.h"
-#include <Rdefines.h>
-#include <ctype.h>   // for isdigit
 
-SEXP asmatrix(SEXP dt, SEXP rownames)
-{
-  // check matrix dimensions do not exceed INT_MAX. Should not be possible, but just in case:
-  int64_t ncol64=xlength(dt);
-  int64_t nrow64=xlength(VECTOR_ELT(dt, 0));
-  if (ncol64 > INT_MAX || nrow64 > INT_MAX) 
-    error(_("matrix dimensions may not exceed %d"), INT_MAX); // # nocov
-  
-  // From this point we are guaranteed nrow and ncol are int
-  int ncol = (int) ncol64;
-  int nrow = (int) nrow64;
+/* To handle different matrix types (e.g. numeric, character, etc)
+ * there is a single dispatch function asmatrix at the bottom of the 
+ * file that detects the appropriate R atomic type then calls the
+ * corresponding asmatrix_<type> function.
+ */
 
-  // Extract pointers to each column
-  SEXP thisCol[ncol];
-  for (int j=0; j<ncol; ++j) {
-    thisCol[j] = VECTOR_ELT(dt, j);
-  }
+SEXP asmatrix_logical(SEXP dt) {
+  // Determine the number of rows and columns in the data.table
+  R_len_t p = length(dt);
+  R_len_t n = length(VECTOR_ELT(dt, 0));
   
-  // Extract column types and determine type to coerce to
-  int maxType=RAWSXP;
-  int thisType[ncol];
-  bool integer64=false; // are we coercing to integer64 class?
-  for (int j=0; j<ncol; ++j) {
-    // Extract column type or flag column as special class requiring special coercion rules
-    if (isFactor(thisCol[j])) thisType[j] = -1;
-    else if (INHERITS(thisCol[j], char_Date) || INHERITS(thisCol[j], char_ITime) || 
-             INHERITS(thisCol[j], char_POSIXt), INHERITS(thisCol[j], char_nanotime)) thisType[j] = -2;
-    else if (INHERITS(thisCol[j], char_integer64)) thisType[j] = -3;
-    else thisType[j] = TYPEOF(thisCol[j]);
+  // Create output matrix, allocate memory, and create a pointer to it.
+  SEXP mat = PROTECT(allocMatrix(LGLSXP, n, p));
+  int *pmat; 
+  pmat = LOGICAL(mat);
+  
+  /* Create an array of pointers for the individual columns in DT 
+   * so that we avoid creating these and calling the helper functions
+   * in the parallel OMP threads
+   */
+  int **pcol;
+  pcol = (int **) R_alloc(p, sizeof(int *));
+  for (R_len_t jj = 0; jj < p; jj++) {
+    pcol[jj] = LOGICAL(VECTOR_ELT(dt, jj));
+  }
 
-    // Determine the maximum type now that we have inspected this column
-    if (maxType==VECSXP); // nothing to do, max type is already list
-    // factors and date/poix like always coerce to string
-    else if ((thisType[j] == -1 || thisType[j] == -2) && TYPEORDER(maxType) < TYPEORDER(STRSXP)) maxType = STRSXP;
-    // raw, logical, and integer can be coerced to integer64
-    else if (thisType[j] == -3 && TYPEORDER(maxType) > TYPEORDER(REALSXP)) { maxType = INTSXP; integer64 = true; }
-    // numeric, complex, and string cannot be coerced to integer64, nor integer64 to those types, so all promoted to STRSXP
-    else if (thisType[j] == -3) maxType = STRSXP;
-    // non-atomic non-list types are coerced / wrapped in list, see #4196
-    else if (TYPEORDER(thisType[j])>TYPEORDER(VECSXP)) maxType=VECSXP;
-    // otherwise if this column is higher in typeorder list, set this type as maxType
-    else if (TYPEORDER(thisType[j])>TYPEORDER(maxType)) maxType=thisType[j];
-    // Set int64 to false if it was previously the maxType and the new maxType > INTSXP
-    if (integer64 && TYPEORDER(maxType)>TYPEORDER(INTSXP)) integer64 = false;
+  // Multithreaded for loop to copy each column into the matrix memory location
+  #pragma omp parallel for num_threads(getDTthreads())
+  for (R_len_t jj = 0; jj < p; jj++) {
+    memcpy(pmat + (jj * n), pcol[jj], sizeof(int)*n);
   }
   
-  // allocate matrix
-  int nprotect=0;
-  SEXP ans = PROTECT(allocMatrix(maxType, nrow, ncol)); nprotect++;
-  
-  // Add dimnames
-  SEXP dimnames = PROTECT(allocVector(VECSXP, 2)); nprotect++;
-  SET_VECTOR_ELT(dimnames, 0, rownames);
-  SET_VECTOR_ELT(dimnames, 1, getAttrib(dt, R_NamesSymbol));
-  setAttrib(ans, R_DimNamesSymbol, dimnames);
-  
-  // If any nrow 0 we can now return. ncol == 0 handled in R.
-  if (nrow == 0) {
-    UNPROTECT(nprotect);
-    return(ans);
-  }
-  
-  // Coerce columns (if needed) and fill
-  SEXP coerced[ncol];
-  int ansloc=0; // position in vector to start copying to, filling by column.
-  for (int j=0; j<ncol; ++j) {
-    if (thisType[j] == maxType) { // no type coercion needed
-      coerced[j] = thisCol[j]; 
-    } else if (maxType==VECSXP) { // coercion to list not handled by memrecycle.
-      if (isVectorAtomic(thisCol[j]) || thisType[j]==LISTSXP) {
-        // Atomic vectors and pairlists can be coerced to list with coerceVector:
-        coerced[j] = PROTECT(coerceVector(thisCol[j], maxType)); nprotect++;
-      } else if (thisType[j]==EXPRSXP) {
-        // For EXPRSXP each element must be wrapped in a list and re-coerced to EXPRSXP, otherwise column is LANGSXP
-        coerced[j] = PROTECT(allocVector(VECSXP, nrow)); nprotect++;
-        for (int i=0; i<nrow; ++i) {
-          SEXP thisElement = PROTECT(coerceVector(VECTOR_ELT(thisCol[j], i), EXPRSXP)); nprotect++;
-          SET_VECTOR_ELT(coerced[j], i, thisElement);
-        }
-      } else if (!isVector(thisCol[j])) { 
-        // Anything not a vector we can assign directly through SET_VECTOR_ELT
-        // Although tecnically there should only be one list element for any type met here,
-        // the length of the type may be > 1, in which case the other columns in data.table
-        // will have been recycled. We therefore in turn have to recycle the list elements
-        // to match the number of rows.
-        coerced[j] = PROTECT(allocVector(VECSXP, nrow)); nprotect++;
-        for (int i=0; i<nrow; ++i) {
-          SET_VECTOR_ELT(coerced[j], i, thisCol[j]);
-        }
-      } else { // should be unreachable
-        error("Internal error: as.matrix cannot coerce type %s to list\n", type2char(thisType[j])); // # nocov
-      }
-    } else {
-      // else coerces if needed within memrecycle
-      coerced[j] = thisCol[j]; 
-    }
-    
-    // Fill matrix with memrecycle
-    const char *ret = memrecycle(ans, R_NilValue, ansloc, nrow, coerced[j], 0, -1, 0, "V1");
-    // Warning when precision is lost after coercion, should not be possible to reach
-    if (ret) warning(_("Column %d: %s"), j+1, ret); // # nocov
-    // TODO: but maxType should handle that and this should never warn
-    ansloc += nrow;
-  }
-    
-  UNPROTECT(nprotect);  // ans, dimnames, coerced, thisElement
-  return(ans);
+  return mat;
 }
+
+SEXP asmatrix_raw(SEXP dt) {
+  // Determine the number of rows and columns in the data.table
+  R_len_t p = length(dt);
+  R_len_t n = length(VECTOR_ELT(dt, 0));
+  
+  // Create output matrix, allocate memory, and create a pointer to it.
+  SEXP mat = PROTECT(allocMatrix(RAWSXP, n, p));
+  Rbyte *pmat; 
+  pmat = RAW(mat);
+  
+  // Create an array of pointers for the individual columns in DT 
+  Rbyte **pcol;
+  pcol = (Rbyte **) R_alloc(p, sizeof(Rbyte *));
+  for (R_len_t jj = 0; jj < p; jj++) {
+    pcol[jj] = RAW(VECTOR_ELT(dt, jj));
+  }
+  
+  // Multithreaded for loop to copy each column into the matrix memory location
+  #pragma omp parallel for num_threads(getDTthreads())
+  for (R_len_t jj = 0; jj < p; jj++) {
+    memcpy(pmat + (jj * n), pcol[jj], sizeof(Rbyte)*n);
+  }
+
+  return mat;
+}
+
+SEXP asmatrix_integer(SEXP dt) {
+  // Determine the number of rows and columns in the data.table
+  R_len_t p = length(dt);
+  R_len_t n = length(VECTOR_ELT(dt, 0));
+  
+  // Create output matrix, allocate memory, and create a pointer to it.
+  SEXP mat = PROTECT(allocMatrix(INTSXP, n, p));
+  int *pmat; 
+  pmat = INTEGER(mat);
+  
+  // Create an array of pointers for the individual columns in DT 
+  int **pcol;
+  pcol = (int **) R_alloc(p, sizeof(int *));
+  for (R_len_t jj = 0; jj < p; jj++) {
+    pcol[jj] = INTEGER(VECTOR_ELT(dt, jj));
+  }
+  
+  // Multithreaded for loop to copy each column into the matrix memory location
+  #pragma omp parallel for num_threads(getDTthreads())
+  for (R_len_t jj = 0; jj < p; jj++) {
+    memcpy(pmat + (jj * n), pcol[jj], sizeof(int)*n);
+  }
+  
+  return mat;
+}
+
+SEXP asmatrix_numeric(SEXP dt) {
+  // Determine the number of rows and columns in the data.table
+  R_len_t p = length(dt);
+  R_len_t n = length(VECTOR_ELT(dt, 0));
+  
+  // Create output matrix, allocate memory, and create a pointer to it.
+  SEXP mat = PROTECT(allocMatrix(REALSXP, n, p));
+  double *pmat; 
+  pmat = REAL(mat);
+  
+  // Create an array of pointers for the individual columns in DT 
+  double **pcol;
+  pcol = (double **) R_alloc(p, sizeof(double *));
+  for (R_len_t jj = 0; jj < p; jj++) {
+    pcol[jj] = REAL(VECTOR_ELT(dt, jj));
+  }
+  
+  // Multithreaded for loop to copy each column into the matrix memory location
+  #pragma omp parallel for num_threads(getDTthreads())
+  for (R_len_t jj = 0; jj < p; jj++) {
+    memcpy(pmat + (jj * n), pcol[jj], sizeof(double)*n);
+  }
+  
+  return mat;
+}
+
+SEXP asmatrix_complex(SEXP dt) {
+  // Determine the number of rows and columns in the data.table
+  R_len_t p = length(dt);
+  R_len_t n = length(VECTOR_ELT(dt, 0));
+  
+  // Create output matrix, allocate memory, and create a pointer to it.
+  SEXP mat = PROTECT(allocMatrix(CPLXSXP, n, p));
+  Rcomplex *pmat; 
+  pmat = COMPLEX(mat);
+  
+  // Create an array of pointers for the individual columns in DT 
+  Rcomplex **pcol;
+  pcol = (Rcomplex **) R_alloc(p, sizeof(Rcomplex *));
+  for (R_len_t jj = 0; jj < p; jj++) {
+    pcol[jj] = COMPLEX(VECTOR_ELT(dt, jj));
+  }
+  
+  // Multithreaded for loop to copy each column into the matrix memory location
+  #pragma omp parallel for num_threads(getDTthreads())
+  for (R_len_t jj = 0; jj < p; jj++) {
+    memcpy(pmat + (jj * n), pcol[jj], sizeof(Rcomplex)*n);
+  }
+
+  return mat;
+}
+
+SEXP asmatrix_character(SEXP dt) {
+  // Determine the number of rows and columns in the data.table
+  R_len_t p = length(dt);
+  R_len_t n = length(VECTOR_ELT(dt, 0));
+  
+  // Create output matrix, allocate memory, and create a pointer to it
+  SEXP mat = PROTECT(allocMatrix(STRSXP, n, p)); // output matrix
+  SEXP pcol; // pointers to casted R objects
+
+  // Iterate through dt and copy into mat 
+  R_xlen_t vecIdx = 0; // counter to track place in vector underlying matrix
+  for (R_len_t jj = 0; jj < p; jj++) {
+    pcol = VECTOR_ELT(dt, jj);
+    for (R_len_t ii = 0; ii < n; ii++) {
+      SET_STRING_ELT(mat, vecIdx, STRING_ELT(pcol, ii));
+      vecIdx++;
+    }
+  }
+  
+  return mat;
+}
+
+SEXP asmatrix_list(SEXP dt) {
+  // Determine the number of rows and columns in the data.table
+  R_len_t p = length(dt);
+  R_len_t n = length(VECTOR_ELT(dt, 0));
+  
+  // Create output matrix, allocate memory, and create a pointer to it
+  SEXP mat = PROTECT(allocMatrix(VECSXP, n, p)); // output matrix
+  SEXP pcol; // pointers to casted R objects
+  
+  // Iterate through dt and copy into mat 
+  R_xlen_t vecIdx = 0; // counter to track place in vector underlying matrix
+  for (R_len_t jj = 0; jj < p; jj++) {
+    pcol = VECTOR_ELT(dt, jj);
+    for (R_len_t ii = 0; ii < n; ii++) {
+      SET_VECTOR_ELT(mat, vecIdx, VECTOR_ELT(pcol, ii));
+      vecIdx++;
+    }
+  }
+  
+  return mat;
+}
+
+// Dispatch function for different atomic types
+SEXP asmatrix(SEXP dt) {
+  // Timing
+  const bool verbose = GetVerbose(); 
+  double tic = 0; 
+  if (verbose) 
+    tic = omp_get_wtime(); // # nocov
+  
+  /* Conversion to a common atomic type is handled in R. We detect the
+   * atomic type from the first column. */
+  SEXPTYPE R_atomic_type = TYPEOF(VECTOR_ELT(dt, 0));
+  
+  // Copy values from dt into the matrix mat using appropriately typed function
+  SEXP mat;
+  switch(R_atomic_type) {
+    case RAWSXP:
+      mat = asmatrix_raw(dt);
+      break;
+    case LGLSXP:
+      mat = asmatrix_logical(dt);
+      break;
+    case INTSXP: 
+      mat = asmatrix_integer(dt);
+      break;
+    case REALSXP: 
+      mat = asmatrix_numeric(dt);
+      break;
+    case CPLXSXP: 
+      mat = asmatrix_complex(dt);
+      break;
+    case STRSXP: 
+      mat = asmatrix_character(dt);
+      break;
+    case VECSXP:
+      mat = asmatrix_list(dt);
+      break;
+    default:
+      error("Internal error: unsupported matrix type '%s'", type2char(R_atomic_type)); // # nocov
+  }
+  
+  if (verbose) 
+    Rprintf("%s: took %.3fs\n", __func__, omp_get_wtime()-tic); // # nocov
+  
+  UNPROTECT(1);
+  return(mat);
+}
+
