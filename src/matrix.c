@@ -25,27 +25,14 @@ SEXP asmatrix(SEXP dt, SEXP rownames)
   int thisType[ncol];
   bool integer64=false; // are we coercing to integer64 class?
   for (int j=0; j<ncol; ++j) {
-    // Extract column type or flag column as special class requiring special coercion rules
-    if (isFactor(thisCol[j])) thisType[j] = -1;
-    else if (INHERITS(thisCol[j], char_Date) || INHERITS(thisCol[j], char_ITime) || 
-             INHERITS(thisCol[j], char_POSIXt), INHERITS(thisCol[j], char_nanotime)) thisType[j] = -2;
-    else if (INHERITS(thisCol[j], char_integer64)) thisType[j] = -3;
-    else thisType[j] = TYPEOF(thisCol[j]);
-
+    // Extract column type  
+    thisType[j] = TYPEOF(thisCol[j]);
     // Determine the maximum type now that we have inspected this column
     if (maxType==VECSXP); // nothing to do, max type is already list
-    // factors and date/poix like always coerce to string
-    else if ((thisType[j] == -1 || thisType[j] == -2) && TYPEORDER(maxType) < TYPEORDER(STRSXP)) maxType = STRSXP;
-    // raw, logical, and integer can be coerced to integer64
-    else if (thisType[j] == -3 && TYPEORDER(maxType) > TYPEORDER(REALSXP)) { maxType = INTSXP; integer64 = true; }
-    // numeric, complex, and string cannot be coerced to integer64, nor integer64 to those types, so all promoted to STRSXP
-    else if (thisType[j] == -3) maxType = STRSXP;
     // non-atomic non-list types are coerced / wrapped in list, see #4196
     else if (TYPEORDER(thisType[j])>TYPEORDER(VECSXP)) maxType=VECSXP;
     // otherwise if this column is higher in typeorder list, set this type as maxType
     else if (TYPEORDER(thisType[j])>TYPEORDER(maxType)) maxType=thisType[j];
-    // Set int64 to false if it was previously the maxType and the new maxType > INTSXP
-    if (integer64 && TYPEORDER(maxType)>TYPEORDER(INTSXP)) integer64 = false;
   }
   
   // allocate matrix
