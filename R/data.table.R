@@ -1925,11 +1925,11 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
   if (!is.null(rownames))
     X[[rownames]] = NULL
   
-  # Converting to a matrix is a special case of rbindlist (treating each
-  # colum as a single data.table). There are a few special coercion rules
-  # for matrices - they cannot have factors (they must be converted to
-  # character vectors) nor Date like classes (again converted to character).
-  # We also need to make sure the data.table is not malformed (NULL columns,
+  # All columns must be coerced to a common type to become a matrix. 
+  # There are a few special coercion rules - matrices cannot contain 
+  # factors nor Date like classes. These are always coerced to character
+  # vectors regardless of the other column types/classes. We also need 
+  # to make sure the data.table is not malformed (NULL columns,
   # multi-dimensional columns). Further, we want to minimize
   # the number of checks done, e.g. if all columns are already the same type.
   
@@ -1998,22 +1998,16 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
     class(X) = NULL 
     X.info = class_info(X) 
   }
-  
-  # Get matrix meta-data
-  cn = names(X)
-  p = length(cn)
-  n = length(X[[1L]])
 
   # The maximum dimension size (row or column) for a matrix is 2^31-1 (or the Machine maximum integer)
-  # Check and error before doing computation/memory expensive column checks and coercion
-  # nocov start
-  if (p > .Machine$integer.max) 
-    stop("Matrices with > ", .Machine$integer.max, " (.Machine$integer.max) columns are not supported")
-  if (n > .Machine$integer.max) 
-    stop("Matrices with > ", .Machine$integer.max, " (.Machine$integer.max) rows are not supported")
-  # nocov end
+  # This should not be possible with current data.table, but we should check and error before doing 
+  # computation/memory expensive column checks and coercion for future proofing
+  p = length(cn)
+  n = length(X[[1L]])
+  if (length(X) > .Machine$integer.max || length(X[[1L]]) > .Machine$integer.max )
+    stop("Matrices with more than ", .Machine$integer.max, " columns or rows are not supported") # nocov
   
-  # Convert factors to character vectors
+  # Always convert factors to character vectors
   if (any_class_is(X.info, "factor")) {
     which.factor = which_class_is(X.info, "factor")
     for (j in which.factor) {
@@ -2024,7 +2018,7 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
     X.info = class_info(X, X.info, cols.to.update = which.factor)
   }
   
-  # Classes to be converted to character vectors
+  # Always convert date/time/POSIX like classes to character vectors
   charconvert.classes = c("Date", "POSIXct", "POSIXlt", "POSIXt", "IDate", "ITime", "nanotime")
   if (any_class_is(X.info, charconvert.classes)) {
     which.charconvert = which_class_is(X.info, charconvert.classes)
@@ -2033,10 +2027,9 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
       X[[j]] = format(X[[j]])
       is.na(X[[j]]) = miss
     }
-    X.info = class_info(X, X.info, cols.to.update = which.charconvert)
   }
   
-  # Remaining type conversion is handled in Crbindlist 
+  # Remaining type and class coercion is handled in Casmatrix
   ans = .Call(Casmatrix, X, rownames.value)
   ans
 }
