@@ -16805,6 +16805,13 @@ if (test_bit64) {
   mat = matrix(c("0", "1", "0.1", "0.2", "1+0i", "2+1i"), ncol=3, dimnames=list(NULL, c("A", "B", "C")))
   DT = data.table(A=as.integer64(0:1), B=c(0.1, 0.2), C=complex(real=1:2, imaginary=0:1))
   test(2135.2, as.matrix(DT), mat)
+  
+  # But not if any non-atomic columns
+  DT = data.table(A=as.integer64(0:1), B=c('asd', 'qwe'), C=list(2:3, "A"))
+  mat = matrix(list(as.integer64(0), as.integer64(1), 'asd', 'qwe', 2:3, "A"),
+                ncol=3, dimnames=list(NULL, c("A", "B", "C")))
+  test(2135.3, as.matrix(DT), mat)
+          
 }
 
 ## Test other class and type conversion in as.matrix
