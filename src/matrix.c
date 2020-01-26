@@ -14,15 +14,11 @@ SEXP asmatrix(SEXP dt, SEXP rownames)
   int ncol = (int) ncol64;
   int nrow = (int) nrow64;
 
-  Rprintf("Matrix dim: c(%d, %d), length=%ld\n", nrow, ncol, nrow64*ncol64);
-  
   // Extract pointers to each column
   SEXP thisCol[ncol];
   for (int j=0; j<ncol; ++j) {
     thisCol[j] = VECTOR_ELT(dt, j);
   }
-  
-  Rprintf("Vector of column pointers extracted.\n");
   
   // Extract column types and determine type to coerce to
   int maxType=RAWSXP;
@@ -52,8 +48,6 @@ SEXP asmatrix(SEXP dt, SEXP rownames)
     if (integer64 && TYPEORDER(maxType)>TYPEORDER(INTSXP)) integer64 = false;
   }
   
-  Rprintf("Max type to coerce to is: %s, integer64=%d\n", type2char(maxType), integer64);
-  
   // allocate matrix
   int nprotect=0;
   SEXP ans = PROTECT(allocMatrix(maxType, nrow, ncol)); nprotect++;
@@ -70,15 +64,11 @@ SEXP asmatrix(SEXP dt, SEXP rownames)
     return(ans);
   }
   
-  Rprintf("Coercing columns...\n");
-  
-  // Coerce columns (if needed)
+  // Coerce columns (if needed) and fill
   SEXP coerced[ncol];
+  int ansloc=0; // position in vector to start copying to, filling by column.
   for (int j=0; j<ncol; ++j) {
-    Rprintf("  %d\n", j+1);
     if (thisType[j] == maxType) { // no type coercion needed
-      coerced[j] = thisCol[j]; 
-    } else if (TYPEORDER(thisType[j]) < TYPEORDER(VECSXP)) { // coercion handled by memrecycle
       coerced[j] = thisCol[j]; 
     } else if (maxType==VECSXP) { // coercion to list not handled by memrecycle.
       if (isVectorAtomic(thisCol[j]) || thisType[j]==LISTSXP) {
@@ -104,22 +94,19 @@ SEXP asmatrix(SEXP dt, SEXP rownames)
       } else { // should be unreachable
         error("Internal error: as.matrix cannot coerce type %s to list\n", type2char(thisType[j])); // # nocov
       }
+    } else {
+      // else coerces if needed within memrecycle
+      coerced[j] = thisCol[j]; 
     }
-  }
     
-  Rprintf("Done!\n\nFilling matrix with memrecycle...\n");
-  int ansloc=0; // position in vector to start copying to, filling by column.
-  for (int j=0; j<ncol; ++j) {
-    Rprintf("  %d\n", j+1);
-    // else coerces if needed within memrecycle; with a no-alloc direct coerce from 1.12.4 (PR #3909)
+    // Fill matrix with memrecycle
     const char *ret = memrecycle(ans, R_NilValue, ansloc, nrow, coerced[j], 0, -1, 0, "V1");
     // Warning when precision is lost after coercion, should not be possible to reach
     if (ret) warning(_("Column %d: %s"), j+1, ret); // # nocov
     // TODO: but maxType should handle that and this should never warn
     ansloc += nrow;
   }
-  Rprintf("Done!\n\n");
-  
+    
   UNPROTECT(nprotect);  // ans, dimnames, coerced, thisElement
   return(ans);
 }
