@@ -13687,7 +13687,7 @@ test(1967.526, x[keyby=a],      x,       warning=c("Ignoring keyby= because j= i
 test(1967.53, as.matrix(x, rownames = 2:3),
      error = 'length(rownames)==2 but')
 test(1967.54, as.matrix(x[0L]),
-     structure(logical(0), .Dim = c(0L, 2L), .Dimnames = list(NULL, c("a", "b"))))
+     structure(integer(0), .Dim = c(0L, 2L), .Dimnames = list(NULL, c("a", "b"))))
 
 test(1967.55, subset(x, 5L), error = "'subset' must evaluate to logical")
 
@@ -16846,7 +16846,7 @@ mat = array(NA, dim = list(0, 0), dimnames = list(NULL, NULL))
 test(2137.3, as.matrix(DT), mat)
 
 DT = structure(list(A=NULL, B=logical(0), C=NULL, D=character(0)), class=c("data.table", "data.frame"))
-mat = array(NA, dim = list(0, 2), dimnames = list(NULL, c("B", "D")))
+mat = matrix(character(0), nrow=0, ncol=2, dimnames = list(NULL, c("B", "D")))
 test(2137.4, as.matrix(DT), mat)
 
 DT = structure(list(A=1:6, B=1:2), class=c("data.table", "data.frame"))  # DT[,B]  is c(1,2)
