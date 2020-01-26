@@ -16838,6 +16838,10 @@ class(DT$A) = "foo"
 class(DT$B) = "bar"
 test(2136.7, as.matrix(DT), mat) # should not trigger class mismatch chek in rbindlist
 
+mat = matrix(logical(0), nrow=26, ncol=0, dimnames=list(LETTERS, NULL))
+DT = data.table(A=LETTERS)
+test(2136.8, as.matrix(DT, rownames="A"), mat) # nrow and rownames should be preserved
+
 ## Tests for complex column types not captured by standard tests. These are things that would usually only
 ## be possible through incorrect construction of data.tables, e.g. NULL columns, environments, expressions, etc.
 DT = structure(list(A=NULL, B=1:2, C=NULL, D=3:4, E=NULL), class=c("data.table", "data.frame"))
