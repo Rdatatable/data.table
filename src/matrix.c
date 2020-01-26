@@ -58,8 +58,8 @@ SEXP asmatrix(SEXP dt, SEXP rownames)
   SET_VECTOR_ELT(dimnames, 1, getAttrib(dt, R_NamesSymbol));
   setAttrib(ans, R_DimNamesSymbol, dimnames);
   
-  // If any dim 0 we can now return
-  if (nrow == 0 || ncol == 0) {
+  // If any nrow 0 we can now return. ncol == 0 handled in R.
+  if (nrow == 0) {
     UNPROTECT(nprotect);
     return(ans);
   }

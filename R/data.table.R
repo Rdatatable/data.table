@@ -1929,7 +1929,7 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
   X[null.col] = NULL # drop NULL columns
   
   if (length(X)==0)
-    return(matrix(nrow=0, ncol=0))
+    return(matrix(nrow=length(rownames.values), ncol=0, dimnames=list(rownames.values, NULL)))
   
   ff.col = which(vapply_1b(X, is.ff)) # load ff columns into memory
   for (j in ff.col) X[[ff.col]] = X[[ff.col]][] # nocov
