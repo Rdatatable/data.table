@@ -322,7 +322,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
 
     if (!foundName) { static char buff[12]; sprintf(buff,"V%d",j+1), SET_STRING_ELT(ansNames, idcol+j, mkChar(buff)); foundName=buff; }
     if (factor) maxType=INTSXP;  // if any items are factors then a factor is created (could be an option)
-    if (int64 && maxType!=REALSXP)
+    if (int64 && maxType!=REALSXP && maxType!=VECSXP)
       error(_("Internal error: column %d of result is determined to be integer64 but maxType=='%s' != REALSXP"), j+1, type2char(maxType)); // # nocov
     SEXP target;
     SET_VECTOR_ELT(ans, idcol+j, target=allocVector(maxType, nrow));  // does not initialize logical & numerics, but does initialize character and list
@@ -517,6 +517,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
           if (TYPEOF(target)==VECSXP) {
             thisCol = PROTECT(coerceAsList(thisCol, thisnrow)); nprotect++;
           }
+
           // else coerces if needed within memrecycle; with a no-alloc direct coerce from 1.12.4 (PR #3909)
           const char *ret = memrecycle(target, R_NilValue, ansloc, thisnrow, thisCol, 0, -1, idcol+j+1, foundName);
           if (ret) warning(_("Column %d of item %d: %s"), w+1, i+1, ret);
