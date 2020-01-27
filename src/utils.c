@@ -365,10 +365,10 @@ SEXP coerceAsList(SEXP x, int len) {
     // do an as.list() on the atomic column; #3528
     // pairlists (LISTSXP) can also be coerced to lists using coerceVector
     coerced = PROTECT(coerceVector(x, VECSXP)); nprotect++;
-  } else if (TYPEOF(thisCol)==EXPRSXP) {
+  } else if (TYPEOF(x)==EXPRSXP) {
     // For EXPRSXP each element to be wrapped in a list, e.g. expression vectors #546
-    coerced = PROTECT(allocVector(VECSXP, len)); nprotect++;
-    for(int i=0; i<len); ++i) {
+    coerced = PROTECT(allocVector(VECSXP, length(x))); nprotect++;
+    for(int i=0; i<length(x); ++i) {
       SEXP thisElement = VECTOR_ELT(x, i);
       thisElement = PROTECT(coerceVector(thisElement, EXPRSXP)); nprotect++; // otherwise LANGSXP
       SET_VECTOR_ELT(coerced, i, thisElement);
@@ -379,9 +379,11 @@ SEXP coerceAsList(SEXP x, int len) {
     // the length of the type may be > 1, in which case the other columns in data.table
     // will have been recycled. We therefore in turn have to recycle the list elements
     // to match the number of rows.
+    if (len < 1) // len used here instead of length(x) because length(x) does not reflect length of target vector data.table
+      error("Internal Error: len provided to C function coerceAsList must be > 0\n"); // # nocov
     coerced = PROTECT(allocVector(VECSXP, len)); nprotect++;
-    for(int i=0; i<len); ++i) {
-      SET_VECTOR_ELT(coerced, i, thisElement);
+    for(int i=0; i<len; ++i) {
+      SET_VECTOR_ELT(coerced, i, x);
     }
   } else {
     // should be unreachable
