@@ -98,7 +98,22 @@ SEXP asmatrix(SEXP dt, SEXP rownames)
         error("Internal error: as.matrix cannot coerce type %s to list\n", type2char(TYPEOF(thisCol))); // # nocov
       }
     } else if (integer64 && INHERITS(thisCol, char_integer64)) {
-      error("Internal error: coercion of integer64 to character not yet supported\n");
+      // memrecycle does not coerce integer64 to character
+      // the below is adapted from the bit64 package C function as_character_integer64
+      coerced = PROTECT(allocVector(STRSXP, nrow)); nprotect++;
+      int64_t * thisColVal = (int64_t *) REAL(thisCol);
+      static char buff[22];
+      for(int i=0; i<nrow; ++i){
+        if (thisColVal[i]==NA_INTEGER64) {
+          SET_STRING_ELT(coerced, i, NA_STRING);
+        } else {
+          snprintf(buff, 22, "%lli", thisColVal[i]); 
+          SET_STRING_ELT(coerced, i, mkChar(buff)); 
+        }
+      }
+    } else if (maxType == STRSXP && TYPEOF(thisCol)==CPLXSXP) {
+      // memrecycle does not coerce complex to strsxp
+      coerced = PROTECT(coerceVector(thisCol, STRSXP));
     } else {
       coerced = thisCol; // type coercion handled by memrecycle
     }
