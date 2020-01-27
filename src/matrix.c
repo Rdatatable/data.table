@@ -75,9 +75,6 @@ SEXP asmatrix(SEXP dt, SEXP rownames)
     } else if (integer64 && maxType == STRSXP && INHERITS(thisCol, char_integer64)) {
       // memrecycle does not coerce integer64 to character
       coerced = PROTECT(asCharacterInteger64(thisCol)); nprotect++;
-    } else if (maxType == STRSXP && TYPEOF(thisCol)==CPLXSXP) {
-      // memrecycle does not coerce complex to strsxp
-      coerced = PROTECT(coerceVector(thisCol, STRSXP));
     } else {
       coerced = thisCol; // type coercion handled by memrecycle
     }
