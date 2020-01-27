@@ -16785,8 +16785,8 @@ DT = data.table(A=c(A$A, B$A))
 test(2133.3, rbind(A,B), DT)
 
 A = data.table(A=as.complex(rep(NA, 5)))
-DT = data.table(A=c(A$A, B$A))
-test(2133.4, rbind(A,B), DT)
+DT = data.table(A=c(A$A, A$A))
+test(2133.4, rbind(A,A), DT)
 
 ########################
 #  Add new tests here  #
