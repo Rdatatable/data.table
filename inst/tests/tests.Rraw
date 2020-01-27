@@ -16770,6 +16770,11 @@ test(2132.2, fifelse(TRUE, 1, s2),       error = "S4 class objects (except nanot
 test(2132.3, fcase(TRUE, s1, FALSE, s2), error = "S4 class objects (except nanotime) are not supported. Please see https://github.com/Rdatatable/data.table/issues/4131.")
 rm(s1, s2, class2132)
 
+# Complex to character conversion in rbindlist #4202
+A = data.table(A=complex(real = 1:3, imaginary=c(0, -1, 1)))
+B = data.table(A=c('qwe', 'asd'))
+DT = data.table(A=c(A$A, B$A))
+test(2133, rbind(A,B), DT)
 
 ########################
 #  Add new tests here  #
