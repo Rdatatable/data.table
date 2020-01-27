@@ -16774,7 +16774,15 @@ rm(s1, s2, class2132)
 A = data.table(A=complex(real = 1:3, imaginary=c(0, -1, 1)))
 B = data.table(A=c('qwe', 'asd'))
 DT = data.table(A=c(A$A, B$A))
-test(2133, rbind(A,B), DT)
+test(2133.1, rbind(A,B), DT)
+
+A = data.table(A=c(complex(real = 1:3, imaginary=c(0, -1, 1)), NA))
+DT = data.table(A=c(A$A, B$A))
+test(2133.2, rbind(A,B), DT)
+
+A = data.table(A=c(complex(real = 1:3, imaginary=c(0, -1, 1)), NaN))
+DT = data.table(A=c(A$A, B$A))
+test(2133.2, rbind(A,B), DT)
 
 ########################
 #  Add new tests here  #
