@@ -52,7 +52,7 @@ SEXP asmatrix(SEXP dt, SEXP rownames)
   setAttrib(ans, R_DimNamesSymbol, dimnames);
   
   // for memrecycle to be integer64 aware we need to add integer64 class to ans
-  SEXP matClass = PROTECT(getAttrib(ans, R_ClassSymbol));
+  SEXP matClass = PROTECT(getAttrib(ans, R_ClassSymbol)); nprotect++;
   if (integer64 && maxType == REALSXP) {
     SEXP i64Class = PROTECT(allocVector(STRSXP, 1)); nprotect++;
     SET_STRING_ELT(i64Class, 0, char_integer64);
