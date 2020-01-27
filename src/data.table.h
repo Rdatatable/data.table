@@ -47,6 +47,9 @@ typedef R_xlen_t RLEN;
 #define NA_INTEGER64  INT64_MIN
 #define MAX_INTEGER64 INT64_MAX
 
+// for use with CPLXSXP, no macro provided by R internals
+#define ISNAN_COMPLEX(x) (ISNAN(x.r) || ISNAN(x.i)) // TRUE if either real or imaginary component is NA or NaN
+
 // Backport macros added to R in 2017 so we don't need to update dependency from R 3.0.0
 #ifndef MAYBE_SHARED
 #  define MAYBE_SHARED(x) (NAMED(x) > 1)
