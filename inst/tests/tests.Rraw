@@ -16795,9 +16795,8 @@ test(2134.2, as.matrix(cdt), cmat)
 if (test_bit64) {
   # integer64 with logical, raw, or integer should be coerced to integer64
   i64_mat <- matrix(as.integer64(c(1,0,NA,1:9)), nrow=3, ncol=4, dimnames=list(NULL, LETTERS[1:4]))
-  class(i64_mat) = c("integer64", class(i64_mat))
   DT = data.table(A=c(TRUE, FALSE, NA), B=1:3, C=as.raw(4:6), D=as.integer64(7:9))
-  test(2135.1, as.matrix(DT), i64_mat)
+  test(2135.1, as.matrix(DT), i64_mat) # should be integer64 aware, but class not added
   
   # integer64 with numeric and/or complex should be coerced to character - 
   # large integers (>32 bits) cannot be converted to numeric or complex

@@ -1,9 +1,13 @@
 #include "data.table.h"
-#include <Rdefines.h>
-#include <ctype.h>   // for isdigit
+
+#define INTEGER64_ASCHAR_LEN 22
+#define INTEGER64_ASCHAR_FMT "%lli"
 
 SEXP asmatrix(SEXP dt, SEXP rownames)
 {
+  // PROTECT / UNPROTECT stack counter
+  int nprotect=0;
+  
   // Determine rows and colums
   int ncol = length(dt);
   int nrow = length(VECTOR_ELT(dt, 0));
@@ -42,7 +46,6 @@ SEXP asmatrix(SEXP dt, SEXP rownames)
   }
   
   // allocate matrix
-  int nprotect=0;
   SEXP ans = PROTECT(allocMatrix(maxType, nrow, ncol)); nprotect++;
   
   // Add dimnames
@@ -51,15 +54,12 @@ SEXP asmatrix(SEXP dt, SEXP rownames)
   SET_VECTOR_ELT(dimnames, 1, getAttrib(dt, R_NamesSymbol));
   setAttrib(ans, R_DimNamesSymbol, dimnames);
   
-  // Add integer64 class to existing classes ("matrix" in R < 4.0.0 or c("matrix", "array") in R>=4.0.0)
+  // for memrecycle to be integer64 aware we need to add integer64 class to ans
+  SEXP matClass = PROTECT(getAttrib(ans, R_ClassSymbol));
   if (integer64 && maxType == REALSXP) {
-    SEXP matClass = getAttrib(ans, R_ClassSymbol);
-    SEXP newClass = PROTECT(allocVector(STRSXP, length(matClass)+1)); nprotect++;
-    SET_STRING_ELT(newClass, 0, char_integer64);
-    for (int i=0; i<length(matClass); ++i) {
-      SET_STRING_ELT(newClass, i+1, STRING_ELT(matClass, i));
-    }
-    setAttrib(ans, R_ClassSymbol, newClass);
+    SEXP i64Class = PROTECT(allocVector(STRSXP, 1)); nprotect++;
+    SET_STRING_ELT(i64Class, 0, char_integer64);
+    setAttrib(ans, R_ClassSymbol, i64Class);
   }
 
   // If any nrow 0 we can now return. ncol == 0 handled in R.
@@ -97,17 +97,17 @@ SEXP asmatrix(SEXP dt, SEXP rownames)
       } else { // should be unreachable
         error("Internal error: as.matrix cannot coerce type %s to list\n", type2char(TYPEOF(thisCol))); // # nocov
       }
-    } else if (integer64 && INHERITS(thisCol, char_integer64)) {
+    } else if (integer64 && maxType == STRSXP && INHERITS(thisCol, char_integer64)) {
       // memrecycle does not coerce integer64 to character
       // the below is adapted from the bit64 package C function as_character_integer64
       coerced = PROTECT(allocVector(STRSXP, nrow)); nprotect++;
       int64_t * thisColVal = (int64_t *) REAL(thisCol);
-      static char buff[22];
+      static char buff[INTEGER64_ASCHAR_LEN];
       for(int i=0; i<nrow; ++i){
         if (thisColVal[i]==NA_INTEGER64) {
           SET_STRING_ELT(coerced, i, NA_STRING);
         } else {
-          snprintf(buff, 22, "%lli", thisColVal[i]); 
+          snprintf(buff, INTEGER64_ASCHAR_LEN, INTEGER64_ASCHAR_FMT, thisColVal[i]); 
           SET_STRING_ELT(coerced, i, mkChar(buff)); 
         }
       }
@@ -124,6 +124,11 @@ SEXP asmatrix(SEXP dt, SEXP rownames)
     if (ret) warning(_("Column %d: %s"), j+1, ret); // # nocov
     // TODO: but maxType should handle that and this should never warn
     ansloc += nrow;
+  }
+  
+  // Reset class - matrices do not have class information
+  if (integer64 && maxType == REALSXP) {
+    setAttrib(ans, R_ClassSymbol, matClass);
   }
     
   UNPROTECT(nprotect);  // ans, dimnames, coerced, thisElement
