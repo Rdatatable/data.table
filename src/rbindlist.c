@@ -309,7 +309,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
       }
       if (firsti==-1) { firsti=i; firstw=w; firstCol=thisCol; }
       else {
-        if (!factor && !int64) {
+        if (!factor && !int64 && maxType != VECSXP) {
           if (!R_compute_identical(PROTECT(getAttrib(thisCol, R_ClassSymbol)),
                                    PROTECT(getAttrib(firstCol, R_ClassSymbol)),
                                    0)) {
