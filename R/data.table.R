@@ -2002,8 +2002,6 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
   # The maximum dimension size (row or column) for a matrix is 2^31-1 (or the Machine maximum integer)
   # This should not be possible with current data.table, but we should check and error before doing 
   # computation/memory expensive column checks and coercion for future proofing
-  p = length(cn)
-  n = length(X[[1L]])
   if (length(X) > .Machine$integer.max || length(X[[1L]]) > .Machine$integer.max )
     stop("Matrices with more than ", .Machine$integer.max, " columns or rows are not supported") # nocov
   
