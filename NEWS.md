@@ -87,6 +87,8 @@ unit = "s")
 
 6. `all.equal(DT, y)` no longer errors when `y` is not a data.table, [#4042](https://github.com/Rdatatable/data.table/issues/4042). Thanks to @d-sci for reporting and the PR.
 
+7. `rbindlist` no longer errors when coercing complex vectors to character vectors, [#4202](https://github.com/Rdatatable/data.table/issues/4202). Thanks to @sritchie73 for reporting and the PR.
+
 ## NOTES
 
 1. `as.IDate`, `as.ITime`, `second`, `minute`, and `hour` now recognize UTC equivalents for speed: GMT, GMT-0, GMT+0, GMT0, Etc/GMT, and Etc/UTC, [#4116](https://github.com/Rdatatable/data.table/issues/4116).
