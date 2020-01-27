@@ -16770,11 +16770,6 @@ test(2132.2, fifelse(TRUE, 1, s2),       error = "S4 class objects (except nanot
 test(2132.3, fcase(TRUE, s1, FALSE, s2), error = "S4 class objects (except nanotime) are not supported. Please see https://github.com/Rdatatable/data.table/issues/4131.")
 rm(s1, s2, class2132)
 
-
-########################
-#  Add new tests here  #
-########################
-
 ## Check for appropriate errors when giving rownames to as.matrix.data.table that are mutli-column (only possible when constructed incorrectly) or list
 DT = structure(list(a=list(1,2:3,4:6,letters[1:5],list(1, "a")), d=data.table(b=6:10, c=11:15), m=matrix(16:25, ncol=2L)), class = c('data.table', 'data.frame'))
 test(2133.1, as.matrix(DT, rownames="d"), error="x[,d] has multi-column type (such as a matrix column) and cannot be used as rownames: dim(x[,d])==[5, 2]")
@@ -16834,7 +16829,7 @@ test(2136.5, as.matrix(DT), mat)
 
 mat = matrix(c(TRUE, FALSE, FALSE, TRUE), ncol=2, dimnames=list(NULL, c("A", "B")))
 DT = data.table(A=c(TRUE,FALSE), B=as.raw(0:1))
-test(2136.6, as.matrix(DT), mat)
+test(2136.6, as.matrix(DT), mat) # Raw should be coerced to logical #4195
 
 mat = matrix(logical(0), nrow=26, ncol=0, dimnames=list(LETTERS, NULL))
 DT = data.table(A=LETTERS)
@@ -16869,5 +16864,14 @@ DT = data.table(A=function(){}, B=list(1))
 mat = matrix(c(A=function(){}, B=list(1)), ncol=2, dimnames=list(NULL, c("A","B")))
 test(2137.7, as.matrix(DT), mat)
 
+DT = data.table(A=expression(as.character(system.time())), B=quote(1+1))
+mat = matrix(list(expression(as.character(system.time())), expression(as.character(system.time())),
+                  expression(as.character(system.time())), quote(1+1), quote(1+1), quote(1+1)), 
+                  nrow=3, ncol=2, dimnames=list(NULL, c("A","B")))
+test(2137.8, as.matrix(DT), mat) # non-atomic wrapped in list #4196
+
+########################
+#  Add new tests here  #
+########################
 
 
