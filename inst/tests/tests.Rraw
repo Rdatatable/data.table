@@ -16870,8 +16870,20 @@ mat = matrix(list(expression(as.character(system.time())), expression(as.charact
                   nrow=3, ncol=2, dimnames=list(NULL, c("A","B")))
 test(2137.8, as.matrix(DT), mat) # non-atomic wrapped in list #4196
 
+# Test rownames to character conversions
+DT = data.table(A=as.IDate(1:3), B=factor(c("A", "B", "A"), levels=c("B", "A")))
+mat1 = matrix(c("A", "B", "A"), nrow=3, ncol=1, dimnames=list(as.character(as.IDate(1:3)), "B"))
+mat2 = matrix(as.character(as.IDate(1:3)), nrow=3, ncol=1, dimnames=list(c("A", "B", "A"), "A"))
+test(2138.1, as.matrix(DT, rownames="A"), mat1)
+test(2138.2, as.matrix(DT, rownames="B"), mat2)
+
+if (test_bit64) {
+  # Integer64 as row names
+  DT = data.table(A=as.integer64(0:1), B=c('asd', 'qwe'), C=list(2:3, "A"))
+  mat = matrix(list('asd', 'qwe', 2:3, "A"), ncol=2, dimnames=list(c("0", "1"), c("B", "C")))
+  test(2138.3, as.matrix(DT, rownames="A"), mat)
+}
+
 ########################
 #  Add new tests here  #
 ########################
-
-

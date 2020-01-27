@@ -356,3 +356,20 @@ SEXP coerceUtf8IfNeeded(SEXP x) {
   return(ans);
 }
 
+// Adapted from the bit64 package C function as_character_integer64
+// Allows us to be integer64 aware without the user loading the bit64 package
+SEXP asCharacterInteger64(SEXP x) {
+  SEXP coerced = PROTECT(allocVector(STRSXP, length(x)));
+  int64_t * px = (int64_t *) REAL(x);
+  static char buff[INTEGER64_ASCHAR_LEN];
+  for(int i=0; i<length(x); ++i){
+    if (px[i]==NA_INTEGER64) {
+      SET_STRING_ELT(coerced, i, NA_STRING);
+    } else {
+      snprintf(buff, INTEGER64_ASCHAR_LEN, INTEGER64_ASCHAR_FMT, px[i]); 
+      SET_STRING_ELT(coerced, i, mkChar(buff)); 
+    }
+  }
+  UNPROTECT(1);
+  return(coerced);
+}

@@ -1,8 +1,5 @@
 #include "data.table.h"
 
-#define INTEGER64_ASCHAR_LEN 22
-#define INTEGER64_ASCHAR_FMT "%lli"
-
 SEXP asmatrix(SEXP dt, SEXP rownames)
 {
   // PROTECT / UNPROTECT stack counter
@@ -99,18 +96,7 @@ SEXP asmatrix(SEXP dt, SEXP rownames)
       }
     } else if (integer64 && maxType == STRSXP && INHERITS(thisCol, char_integer64)) {
       // memrecycle does not coerce integer64 to character
-      // the below is adapted from the bit64 package C function as_character_integer64
-      coerced = PROTECT(allocVector(STRSXP, nrow)); nprotect++;
-      int64_t * thisColVal = (int64_t *) REAL(thisCol);
-      static char buff[INTEGER64_ASCHAR_LEN];
-      for(int i=0; i<nrow; ++i){
-        if (thisColVal[i]==NA_INTEGER64) {
-          SET_STRING_ELT(coerced, i, NA_STRING);
-        } else {
-          snprintf(buff, INTEGER64_ASCHAR_LEN, INTEGER64_ASCHAR_FMT, thisColVal[i]); 
-          SET_STRING_ELT(coerced, i, mkChar(buff)); 
-        }
-      }
+      coerced = PROTECT(asCharacterInteger64(thisCol)); nprotect++;
     } else if (maxType == STRSXP && TYPEOF(thisCol)==CPLXSXP) {
       // memrecycle does not coerce complex to strsxp
       coerced = PROTECT(coerceVector(thisCol, STRSXP));

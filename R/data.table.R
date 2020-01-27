@@ -1855,6 +1855,21 @@ replace_dot_alias = function(e) {
 #}
 
 as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
+  # Classes always converted to character when coercing to matrix, and in rownames
+  charconvert.classes = c("Date", "POSIXct", "POSIXlt", "POSIXt", "IDate", "ITime", "nanotime")
+  factorAsCharacter = function(v) { # converts factor to character while being NA aware
+    miss = is.na(v)
+    v = as.vector(v)
+    is.na(v) = miss
+    v
+  }
+  POSIXasCharacter = function(v) { # converts data/time to character while being NA aware
+    miss = is.na(v)
+    v = format(v)
+    is.na(v) = miss
+    v
+  }
+  
   # rownames = the rownames column (most common usage)
   if (!is.null(rownames)) {
     if (!is.null(rownames.value)) stop("rownames and rownames.value cannot both be used at the same time")
@@ -1894,7 +1909,16 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
       # Extract the rownames column
       rownames.value = x[[rownames]]
       # bring it into memory if ff object
-      if (is.ff(rownames.value)) rownames.value = rownames.value[] # nocov
+      if (is.ff(rownames.value)) 
+        rownames.value = rownames.value[] # nocov
+      # Coerce factor to character so we get the labels not the int representation as rownames
+      if (is.factor(rownames.value)) 
+        rownames.value = factorAsCharacter(rownames.value)
+      # Same with date or time like classes
+      if (any(charconvert.classes %in% class(rownames.value))) 
+        rownames.value = POSIXasCharacter(rownames.value)
+      if (inherits(rownames.value, "integer64"))
+        rownames.value = .Call(CasCharacterInteger64, rownames.value)
 
       # Check rownames column is appropriate dimension
       if (length(dim(rownames.value)) > 1L)
@@ -2008,23 +2032,16 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
   # Always convert factors to character vectors
   if (any_class_is(X.info, "factor")) {
     which.factor = which_class_is(X.info, "factor")
-    for (j in which.factor) {
-      miss = is.na(X[[j]])
-      X[[j]] = as.vector(X[[j]])
-      is.na(X[[j]]) = miss
-    }
+    for (j in which.factor) 
+      X[[j]] = factorAsCharacter(X[[j]])
     X.info = class_info(X, X.info, cols.to.update = which.factor)
   }
   
   # Always convert date/time/POSIX like classes to character vectors
-  charconvert.classes = c("Date", "POSIXct", "POSIXlt", "POSIXt", "IDate", "ITime", "nanotime")
   if (any_class_is(X.info, charconvert.classes)) {
     which.charconvert = which_class_is(X.info, charconvert.classes)
-    for (j in which.charconvert) {
-      miss = is.na(X[[j]])
-      X[[j]] = format(X[[j]])
-      is.na(X[[j]]) = miss
-    }
+    for (j in which.charconvert)
+      X[[j]] = POSIXasCharacter(X[[j]])
   }
   
   # Remaining type and class coercion is handled in Casmatrix
