@@ -514,7 +514,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
         if (w==-1 || !length(thisCol=VECTOR_ELT(li, w))) {  // !length for zeroCol warning above; #1871
           writeNA(target, ansloc, thisnrow);  // writeNA is integer64 aware and writes INT64_MIN
         } else {
-          if (TYPEOF(target)==VECSXP) {
+          if (maxType==VECSXP) {
             thisCol = PROTECT(coerceAsList(thisCol, thisnrow)); nprotect++;
           }
 
@@ -523,6 +523,10 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
           if (ret) warning(_("Column %d of item %d: %s"), w+1, i+1, ret);
           // e.g. when precision is lost like assigning 3.4 to integer64; test 2007.2
           // TODO: but maxType should handle that and this should never warn
+       
+          // memrecycle incorrectly adds integer64 class to whole list if any element has class integer64
+          if (maxType == VECSXP && INHERITS(target, char_integer64)) 
+            setAttrib(target, R_ClassSymbol, R_NilValue);
         }
         ansloc += thisnrow;
       }
