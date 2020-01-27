@@ -356,3 +356,38 @@ SEXP coerceUtf8IfNeeded(SEXP x) {
   return(ans);
 }
 
+SEXP coerceAsList(SEXP x, int len) {
+  SEXP coerced;
+  int nprotect = 0;
+  if (TYPEOF(x)==VECSXP) {
+    return(x);
+  } else if (isVectorAtomic(x) || TYPEOF(x)==LISTSXP) {
+    // do an as.list() on the atomic column; #3528
+    // pairlists (LISTSXP) can also be coerced to lists using coerceVector
+    coerced = PROTECT(coerceVector(x, VECSXP)); nprotect++;
+  } else if (TYPEOF(thisCol)==EXPRSXP) {
+    // For EXPRSXP each element to be wrapped in a list, e.g. expression vectors #546
+    coerced = PROTECT(allocVector(VECSXP, len)); nprotect++;
+    for(int i=0; i<len); ++i) {
+      SEXP thisElement = VECTOR_ELT(x, i);
+      thisElement = PROTECT(coerceVector(thisElement, EXPRSXP)); nprotect++; // otherwise LANGSXP
+      SET_VECTOR_ELT(coerced, i, thisElement);
+    }
+  } else if (!isVector(x)) { 
+    // Anything not a vector we can assign directly through SET_VECTOR_ELT
+    // Although tecnically there should only be one list element for any type met here,
+    // the length of the type may be > 1, in which case the other columns in data.table
+    // will have been recycled. We therefore in turn have to recycle the list elements
+    // to match the number of rows.
+    coerced = PROTECT(allocVector(VECSXP, len)); nprotect++;
+    for(int i=0; i<len); ++i) {
+      SET_VECTOR_ELT(coerced, i, thisElement);
+    }
+  } else {
+    // should be unreachable
+    error("Internal error: cannot coerce type %s to list\n", type2char(TYPEOF(x))); // # nocov
+  }
+  
+  UNPROTECT(nprotect);
+  return(coerced);
+}
