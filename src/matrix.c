@@ -70,30 +70,8 @@ SEXP asmatrix(SEXP dt, SEXP rownames)
   int ansloc=0; // position in vector to start copying to, filling by column.
   for (int j=0; j<ncol; ++j) {
     SEXP thisCol = VECTOR_ELT(dt, j);
-    if (maxType == VECSXP && TYPEOF(thisCol) != VECSXP) { // coercion to list not handled by memrecycle.
-      if (isVectorAtomic(thisCol) || TYPEOF(thisCol)==LISTSXP) {
-        // Atomic vectors and pairlists can be coerced to list with coerceVector:
-        coerced = PROTECT(coerceVector(thisCol, maxType)); nprotect++;
-      } else if (TYPEOF(thisCol)==EXPRSXP) {
-        // For EXPRSXP each element must be wrapped in a list and re-coerced to EXPRSXP, otherwise column is LANGSXP
-        coerced = PROTECT(allocVector(VECSXP, nrow)); nprotect++;
-        for (int i=0; i<nrow; ++i) {
-          SEXP thisElement = PROTECT(coerceVector(VECTOR_ELT(thisCol, i), EXPRSXP)); nprotect++;
-          SET_VECTOR_ELT(coerced, i, thisElement);
-        }
-      } else if (!isVector(thisCol)) { 
-        // Anything not a vector we can assign directly through SET_VECTOR_ELT
-        // Although tecnically there should only be one list element for any type met here,
-        // the length of the type may be > 1, in which case the other columns in data.table
-        // will have been recycled. We therefore in turn have to recycle the list elements
-        // to match the number of rows.
-        coerced = PROTECT(allocVector(VECSXP, nrow)); nprotect++;
-        for (int i=0; i<nrow; ++i) {
-          SET_VECTOR_ELT(coerced, i, thisCol);
-        }
-      } else { // should be unreachable
-        error("Internal error: as.matrix cannot coerce type %s to list\n", type2char(TYPEOF(thisCol))); // # nocov
-      }
+    if (maxType == VECSXP) { // coercion to list not handled by memrecycle.
+      coerced = PROTECT(coerceAsList(thisCol, nrow)); nprotect++;
     } else if (integer64 && maxType == STRSXP && INHERITS(thisCol, char_integer64)) {
       // memrecycle does not coerce integer64 to character
       coerced = PROTECT(asCharacterInteger64(thisCol)); nprotect++;
