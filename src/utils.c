@@ -361,8 +361,14 @@ SEXP coerceAsList(SEXP x, int len) {
   int nprotect = 0;
   if (TYPEOF(x)==VECSXP) {
     return(x);
-  } else if (isVectorAtomic(x) || TYPEOF(x)==LISTSXP) {
+  } else if (isVectorAtomic(x)) {
     // do an as.list() on the atomic column; #3528
+    coerced = PROTECT(coerceVector(x, VECSXP)); nprotect++;
+    // propogate any class attributes onto each list element:
+    for(int i=0; i<length(x); ++i) {
+      copyMostAttrib(x, VECTOR_ELT(coerced, i)); 
+    }
+  } else if(TYPEOF(x)==LISTSXP) {
     // pairlists (LISTSXP) can also be coerced to lists using coerceVector
     coerced = PROTECT(coerceVector(x, VECSXP)); nprotect++;
   } else if (TYPEOF(x)==EXPRSXP) {
