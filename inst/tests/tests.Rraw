@@ -16784,6 +16784,10 @@ A = data.table(A=c(complex(real = 1:3, imaginary=c(0, -1, 1)), NaN))
 DT = data.table(A=c(A$A, B$A))
 test(2133.3, rbind(A,B), DT)
 
+A = data.table(A=as.complex(rep(NA, 5)))
+DT = data.table(A=c(A$A, B$A))
+test(2133.4, rbind(A,B), DT)
+
 ########################
 #  Add new tests here  #
 ########################
