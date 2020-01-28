@@ -361,23 +361,25 @@ SEXP coerceAsList(SEXP x, int len) {
   int nprotect = 0;
   if (TYPEOF(x)==VECSXP) {
     return(x);
-  } else if (isVectorAtomic(x)) {
-    // do an as.list() on the atomic column; #3528
-    coerced = PROTECT(coerceVector(x, VECSXP)); nprotect++;
-    // propogate any class attributes onto each list element:
-    for(int i=0; i<length(x); ++i) {
-      copyMostAttrib(x, VECTOR_ELT(coerced, i)); 
-    }
-  } else if(TYPEOF(x)==LISTSXP) {
-    // pairlists (LISTSXP) can also be coerced to lists using coerceVector
-    coerced = PROTECT(coerceVector(x, VECSXP)); nprotect++;
-  } else if (TYPEOF(x)==EXPRSXP) {
-    // For EXPRSXP each element to be wrapped in a list, e.g. expression vectors #546
+  } if (TYPEOF(x) == LISTSXP) {
+    coerced = PROTECT(coerceVector(x, VECSXP)); nprotect++; // top level pairlist converted to regular list
+  } else if (isVector(x)) {
+    // Allocate VECSXP container, 
     coerced = PROTECT(allocVector(VECSXP, length(x))); nprotect++;
     for(int i=0; i<length(x); ++i) {
-      SEXP thisElement = VECTOR_ELT(x, i);
-      thisElement = PROTECT(coerceVector(thisElement, EXPRSXP)); nprotect++; // otherwise LANGSXP
+      // Allocate length-1 vector of appropriate type and set it in the right place in the VECSXP container
+      SEXP thisElement = PROTECT(allocVector(TYPEOF(x), 1)); nprotect++;
       SET_VECTOR_ELT(coerced, i, thisElement);
+      
+      // Copy any class attributes from x into each element of coerced
+      // Must happen before memrecycle for memrecycle to handle class
+      // correctly (currently only relevant for integer64)
+      copyMostAttrib(x, thisElement); 
+      
+      // Use memrecycle to give each list element the correct value
+      const char *ret = memrecycle(thisElement, R_NilValue, 0, 1, x, i, 1, 0, "V1");
+      if (ret) error(_("Internal Error: memrecycle could not copy vector element into list")); // # nocov
+      // ret > 0 should be impossible because TYPEOF(thisElement) == TYPEOF(x)
     }
   } else if (!isVector(x)) { 
     // Anything not a vector we can assign directly through SET_VECTOR_ELT
@@ -396,6 +398,6 @@ SEXP coerceAsList(SEXP x, int len) {
     error("Internal error: cannot coerce type %s to list\n", type2char(TYPEOF(x))); // # nocov
   }
   
-  UNPROTECT(nprotect);
+  UNPROTECT(nprotect); // coerced, thisElement
   return(coerced);
 }
