@@ -293,7 +293,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
       SEXP thisCol = VECTOR_ELT(li, w);
       int thisType = TYPEOF(thisCol);
       // Use >= for #546 -- TYPEORDER=0 for both RAWSXP and EXPRSXP. For NULL, keep maxType as -1 
-      if (!isNull(thisCol) && TYPEORDER(thisType)>=TYPEORDER(maxType)) maxType=thisType;
+      if (!isNull(thisCol) && (maxType == -1 || TYPEORDER(thisType)>=TYPEORDER(maxType))) maxType=thisType;
       if (isFactor(thisCol)) {
         if (isNull(getAttrib(thisCol,R_LevelsSymbol))) error(_("Column %d of item %d has type 'factor' but has no levels; i.e. malformed."), w+1, i+1);
         factor = true;
