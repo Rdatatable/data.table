@@ -1219,11 +1219,15 @@ SEXP setcharvec(SEXP x, SEXP which, SEXP newx)
 // mempcy only works for standard length vectors (size_t == uint, max value=2^32)
 // memcpy64 works around this by running memcpy in INT_MAX length chunks
 void *memcpy64(void *str1, const void *str2, uint64_t n) {
-  const int blocks = n / INT_MAX + 1;
-  for (int bi = 0; bi<n; ++bi) {
-    size_t blen = (bi < (n - 1) ? INT_MAX : n - bi * INT_MAX);
-    uint64_t offset = bi * INT_MAX;
-    memcpy(str1+offset, str2+offset, blen);
+  if (n < INT_MAX) { // don't compute blocksize etc if n < INT_MAX
+    memcpy(str1, str2, n);
+  } else {
+    int blocks = n / INT_MAX + 1;
+    for (int bi = 0; bi<blocks; ++bi) {
+      int blen = (bi < (blocks - 1) ? INT_MAX : n - bi * INT_MAX);
+      uint64_t offset = bi * INT_MAX;
+      memcpy(str1+offset, str2+offset, (size_t) blen);
+    }
   }
 }
 
