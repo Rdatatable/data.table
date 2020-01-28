@@ -160,7 +160,7 @@ SEXP dt_na(SEXP x, SEXP cols);
 
 // assign.c
 SEXP alloccol(SEXP dt, R_len_t n, Rboolean verbose);
-const char *memrecycle(const SEXP target, const SEXP where, const int r, const int len, SEXP source, const int sourceStart, const int sourceLen, const int coln, const char *colname);
+const char *memrecycle(const SEXP target, const SEXP where, const int64_t r, const int64_t len, SEXP source, const int64_t sourceStart, const int64_t sourceLen, const int64_t coln, const char *colname);
 SEXP shallowwrapper(SEXP dt, SEXP cols);
 
 SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols,
