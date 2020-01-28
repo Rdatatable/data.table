@@ -361,7 +361,7 @@ SEXP coerceUtf8IfNeeded(SEXP x) {
 SEXP asCharacterInteger64(SEXP x) {
   const int64_t lenx = xlength(x);
   SEXP coerced = PROTECT(allocVector(STRSXP, lenx));
-  int64_t * px = (int64_t *) REAL(x);
+  long long int *px = (long long int *) REAL(x);
   static char buff[INTEGER64_ASCHAR_LEN];
   for (int64_t i=0; i<lenx; ++i) {
     if (px[i]==NA_INTEGER64) {
