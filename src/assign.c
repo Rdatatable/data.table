@@ -952,7 +952,7 @@ const char *memrecycle(const SEXP target, const SEXP where, const int64_t start,
     switch (TYPEOF(source)) {
     case RAWSXP:
       if (mc) {
-                    memcpy(td, RAW(source), slen*sizeof(Rbyte)); break;
+                    memcpy64(td, RAW(source), slen*sizeof(Rbyte)); break;
       } else        BODY(Rbyte, RAW,    Rbyte, val,                                     td[i]=cval)
     case LGLSXP:    BODY(int, LOGICAL,  Rbyte, val==1,                                  td[i]=cval)
     case INTSXP:    BODY(int, INTEGER,  Rbyte, (val>255 || val<0) ? 0 : val,            td[i]=cval)
@@ -969,7 +969,7 @@ const char *memrecycle(const SEXP target, const SEXP where, const int64_t start,
     case RAWSXP:    BODY(Rbyte, RAW,    int, val!=0,                                    td[i]=cval)
     case LGLSXP:
       if (mc) {
-                    memcpy(td, LOGICAL(source), slen*sizeof(Rboolean)); break;
+                    memcpy64(td, LOGICAL(source), slen*sizeof(Rboolean)); break;
       } else        BODY(int, LOGICAL,  int, val,                                       td[i]=cval)
     case INTSXP:    BODY(int, INTEGER,  int, val==NA_INTEGER ? NA_LOGICAL : val!=0,     td[i]=cval)
     case REALSXP:
@@ -986,7 +986,7 @@ const char *memrecycle(const SEXP target, const SEXP where, const int64_t start,
     case  LGLSXP:   // same as INTSXP ...
     case  INTSXP:
       if (mc) {
-                    memcpy(td, INTEGER(source), slen*sizeof(int)); break;
+                    memcpy64(td, INTEGER(source), slen*sizeof(int)); break;
       } else        BODY(int, INTEGER,  int, val,                                       td[i]=cval)
     case REALSXP:
       if (sourceIsI64)
@@ -1005,7 +1005,7 @@ const char *memrecycle(const SEXP target, const SEXP where, const int64_t start,
       case REALSXP:
         if (sourceIsI64) {
           if (mc) {
-                    memcpy(td, (int64_t *)REAL(source), slen*sizeof(int64_t)); break;
+                    memcpy64(td, (int64_t *)REAL(source), slen*sizeof(int64_t)); break;
           } else    BODY(int64_t, REAL, int64_t, val,                                   td[i]=cval)
         } else      BODY(double, REAL,  int64_t, R_FINITE(val) ? val : NA_INTEGER64,    td[i]=cval)
       default:      COERCE_ERROR("integer64");
@@ -1019,7 +1019,7 @@ const char *memrecycle(const SEXP target, const SEXP where, const int64_t start,
       case REALSXP:
         if (!sourceIsI64) {
           if (mc) {
-                    memcpy(td, (double *)REAL(source), slen*sizeof(double)); break;
+                    memcpy64(td, (double *)REAL(source), slen*sizeof(double)); break;
           } else    BODY(double, REAL,  double, val,                                    td[i]=cval)
         } else      BODY(int64_t, REAL, double, val==NA_INTEGER64 ? NA_REAL : val,      td[i]=cval)
       default:      COERCE_ERROR("double");
@@ -1039,7 +1039,7 @@ const char *memrecycle(const SEXP target, const SEXP where, const int64_t start,
       else          BODY(double,  REAL, double, ISNAN(val)?(im=NA_REAL,NA_REAL):(im=0.0,val),         td[i].r=cval;td[i].i=im)
     case CPLXSXP:
       if (mc) {
-                    memcpy(td, COMPLEX(source), slen*sizeof(Rcomplex)); break;
+                    memcpy64(td, COMPLEX(source), slen*sizeof(Rcomplex)); break;
       } else        BODY(Rcomplex, COMPLEX, Rcomplex, val,                                            td[i]=cval)
     default:        COERCE_ERROR("complex");
     }
@@ -1215,4 +1215,16 @@ SEXP setcharvec(SEXP x, SEXP which, SEXP newx)
   }
   return R_NilValue;
 }
+
+// mempcy only works for standard length vectors (size_t == uint, max value=2^32)
+// memcpy64 works around this by running memcpy in INT_MAX length chunks
+void *memcpy64(void *str1, const void *str2, uint64_t n) {
+  const int blocks = n / INT_MAX + 1;
+  for (int bi = 0; bi<n; ++bi) {
+    size_t blen = (bi < (n - 1) ? INT_MAX : n - bi * INT_MAX);
+    uint64_t offset = bi * INT_MAX;
+    memcpy(str1+offset, str2+offset, blen);
+  }
+}
+
 
