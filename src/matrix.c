@@ -67,7 +67,7 @@ SEXP asmatrix(SEXP dt, SEXP rownames)
   
   // Coerce columns (if needed) and fill
   SEXP coerced;
-  int ansloc=0; // position in vector to start copying to, filling by column.
+  int64_t ansloc=0; // position in vector to start copying to, filling by column.
   for (int j=0; j<ncol; ++j) {
     SEXP thisCol = VECTOR_ELT(dt, j);
     if (maxType == VECSXP) { // coercion to list not handled by memrecycle.
