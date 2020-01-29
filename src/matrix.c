@@ -26,7 +26,7 @@
 #undef VECCPY
 #define VECCPY(GETTER, SETTER) {{                              \
   int64_t ansloc=0;                                            \
-  for (int j = 0; j<ncol; ++j) {                               \  
+  for (int j = 0; j<ncol; ++j) {                               \
     for (int i = 0; i<nrow; ++i) {                             \
       SETTER(ans, ansloc, GETTER(VECTOR_ELT(dt, j), i));       \
       ansloc++;                                                \
@@ -101,17 +101,8 @@ SEXP asmatrix(SEXP dt, SEXP rownames)
     return(ans);
   }
   
-  // for memrecycle to be integer64 aware we need to add integer64 class to ans
-  SEXP matClass = PROTECT(getAttrib(ans, R_ClassSymbol)); nprotect++;
-  if (integer64 && maxType == REALSXP) {
-    SEXP i64Class = PROTECT(allocVector(STRSXP, 1)); nprotect++;
-    SET_STRING_ELT(i64Class, 0, char_integer64);
-    setAttrib(ans, R_ClassSymbol, i64Class);
-  }
-  
   // Identify and coerce columns as needed
   if (coerce) {
-    // Coerce columns where needed and fill
     for (int j=0; j<ncol; ++j) {
       SEXP thisCol = VECTOR_ELT(dt, j);
       if ((TYPEOF(thisCol) != maxType)  ||
@@ -123,8 +114,14 @@ SEXP asmatrix(SEXP dt, SEXP rownames)
           // memrecycle does not coerce integer64 to character
           coerced = PROTECT(asCharacterInteger64(thisCol)); nprotect++;
         } else {
-          // coerce with memrecycle
+          // coerce with memrecycle. For memrecycle to be integer64 aware
+          // we have to add the class to the target vector
           coerced = PROTECT(allocVector(maxType, nrow));
+          if(integer64) {
+            SEXP i64Class = PROTECT(allocVector(STRSXP, 1)); nprotect++;
+            SET_STRING_ELT(i64Class, 0, char_integer64);
+            setAttrib(coerced, R_ClassSymbol, i64Class);
+          }
           const char *ret = memrecycle(coerced, R_NilValue, 0, nrow, thisCol, 0, -1, 0, "V1");
           // Warning when precision is lost after coercion, should not be possible to reach
           if (ret) error("Internal Error: column %d: %s\n", j+1, ret); // # nocov
@@ -145,13 +142,8 @@ SEXP asmatrix(SEXP dt, SEXP rownames)
     case VECSXP: VECCPY(VECTOR_ELT, SET_VECTOR_ELT);
     default:
       error("Internal Error: unreachable state in as.matrix\n"); // # nocov
-  
-  // If integer64 class added, reset class information - matrices do not 
-  // have additional class information
-  if (integer64 && maxType == REALSXP) {
-    setAttrib(ans, R_ClassSymbol, matClass);
   }
-    
+  
   UNPROTECT(nprotect);  // ans, dimnames, coerced, thisElement
   return(ans);
 }
