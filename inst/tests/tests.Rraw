@@ -8274,6 +8274,8 @@ test(1606, fread("2,\n1,a,b", fill=TRUE), data.table(V1=2:1, V2=c("","a"), V3=c(
 dt = data.table(resp=c(1:5))
 wide = copy(list(metrics = dt))$metrics # copy here copies the list of data.table and therefore didn't overallocate before..
 test(1607, wide[, id := .I], data.table(resp = 1:5, id = 1:5))
+wide = copy(list(a = list(b = dt)))$a$b # check again on doubly nested list
+test(1607.1, wide[, id := .I], data.table(resp = 1:5, id = 1:5))
 
 # better fix for #1462, + improved error message (if this better fix fails)
 # no need for quote="" and sep="\t"..
