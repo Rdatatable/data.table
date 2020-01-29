@@ -26,13 +26,13 @@ SEXP asmatrix(SEXP dt, SEXP rownames)
     } else if (TYPEORDER(thisType)>TYPEORDER(VECSXP)) {
       // non-atomic non-list types are coerced / wrapped in list, see #4196
       maxType=VECSXP;
-      coerce=true; // VECSXP cant use memcpy
     // otherwise if this column is higher in typeorder list, set this type as maxType
     } else if (TYPEORDER(thisType)>TYPEORDER(maxType)) {
-      if (j > 0) coerce=true;
       maxType=thisType;
     } else if (integer64) {
-      coerce=true; // earlier column is int64 but this one isn't
+      coerce=true; // earlier column is integer64 but this one isn't
+    } else if (TYPEORDER(thisType)!=TYPEORDER(maxType)) {
+      coerce=true; // no change to maxType, but this col is different to previous so coercion required
     }
   }
   
