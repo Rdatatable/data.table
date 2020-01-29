@@ -79,31 +79,31 @@ SEXP asmatrix(SEXP dt, SEXP rownames)
       switch(maxType) {
         case RAWSXP: {
           for (int j=0; j<ncol; ++j) {
-            memcpy(RAW(ans)+ansloc, RAW(VECTOR_ELT(dt, j)), nrow);
+            memcpy(RAW(ans)+ansloc, RAW(VECTOR_ELT(dt, j)), nrow*sizeof(Rbyte));
             ansloc+=nrow;
           }
           break;
         } case LGLSXP: {
           for (int j=0; j<ncol; ++j) {
-            memcpy(LOGICAL(ans)+ansloc, LOGICAL(VECTOR_ELT(dt, j)), nrow);
+            memcpy(LOGICAL(ans)+ansloc, LOGICAL(VECTOR_ELT(dt, j)), nrow*sizeof(Rboolean));
             ansloc+=nrow;
           }
           break;        
         } case INTSXP: {
           for (int j=0; j<ncol; ++j) {
-            memcpy(INTEGER(ans)+ansloc, INTEGER(VECTOR_ELT(dt, j)), nrow);
+            memcpy(INTEGER(ans)+ansloc, INTEGER(VECTOR_ELT(dt, j)), nrow*sizeof(int));
             ansloc+=nrow;
           }
           break;         
         } case REALSXP: {
           for (int j=0; j<ncol; ++j) {
-            memcpy(REAL(ans)+ansloc, REAL(VECTOR_ELT(dt, j)), nrow);
+            memcpy(REAL(ans)+ansloc, REAL(VECTOR_ELT(dt, j)), nrow*sizeof(double));
             ansloc+=nrow;
           }
           break;   
         } case CPLXSXP: {
           for (int j=0; j<ncol; ++j) {
-            memcpy(COMPLEX(ans)+ansloc, COMPLEX(VECTOR_ELT(dt, j)), nrow);
+            memcpy(COMPLEX(ans)+ansloc, COMPLEX(VECTOR_ELT(dt, j)), nrow*sizeof(Rcomplex));
             ansloc+=nrow;
           }
           break;
