@@ -680,7 +680,7 @@ const char *memrecycle(const SEXP target, const SEXP where, const int64_t start,
   const int64_t slen = sourceLen>=0 ? sourceLen : xlength(source);
   if (slen==0) return NULL;
   if (sourceStart<0 || sourceStart+slen>xlength(source))
-    error(_("Internal error memrecycle: sourceStart=%"PRId64" sourceLen=%ld length(source)=%"PRId64""), sourceStart, sourceLen, xlength(source)); // # nocov
+    error(_("Internal error memrecycle: sourceStart=%"PRId64" sourceLen=%"PRId64" length(source)=%"PRId64""), sourceStart, sourceLen, xlength(source)); // # nocov
   if (!xlength(where) && start+len>xlength(target))
     error(_("Internal error memrecycle: start=%"PRId64" len=%"PRId64" length(target)=%"PRId64""), start, len, xlength(target)); // # nocov
   const int64_t soff = sourceStart;
