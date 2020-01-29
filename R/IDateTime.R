@@ -240,6 +240,22 @@ rep.ITime = function (x, ...)
   class(y) = "ITime"   # unlass and rep could feasibly not copy, hence use class<- not setattr()
   y
 }
+                           
+round.ITime <- function(x, digits = c("hours", "minutes")) 
+{
+  (setattr(switch(match.arg(digits),
+                  hours = round(unclass(x)/3600)*3600,
+                  minutes = round(unclass(x)/60)*60), 
+           "class", "ITime"))
+} 
+
+trunc.ITime <- function(x, units = c("hours", "minutes")) 
+{
+  (setattr(switch(match.arg(units),
+                  hours = trunc(unclass(x)/3600)*3600,
+                  minutes = trunc(unclass(x)/60)*60), 
+           "class", "ITime"))
+}
 
 "[.ITime" = function(x, ..., drop = TRUE)
 {
