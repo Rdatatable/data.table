@@ -111,7 +111,7 @@ SEXP asmatrix(SEXP dt, SEXP rownames)
           error("Internal Error: unreachable state in as.matrix with nrow > 1\n"); // # nocov
         }
       }
-    } else if (maxType == VECSXP) {
+    } else if (maxType == STRSXP) {
       int64_t ansloc=0;
       for (int j = 0; j<ncol; ++j) {
         for (int i = 0; i<nrow; ++i) {
@@ -119,7 +119,7 @@ SEXP asmatrix(SEXP dt, SEXP rownames)
           ansloc++;
         }
       }
-    } else if (maxType == STRSXP) {
+    } else if (maxType == VECSXP) {
       int64_t ansloc=0;
       for (int j = 0; j<ncol; ++j) {
         for (int i = 0; i<nrow; ++i) {
