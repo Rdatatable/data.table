@@ -1,5 +1,40 @@
 #include "data.table.h"
 
+/* Fills the allocated matrix (ans) with columns of the input data.table
+ * (dt) using memcpy assuming all columns have the same SEXPTYPE. 
+ * Where nrow = 1 faster to just assign directly rather than use memcpy
+ */
+#undef OMP_MEMCPY
+#define OMP_MEMCPY(RFUN, CTYPE) {{                                  \
+  if (nrow == 1) {                                                  \
+    for (int j=0; j<ncol; ++j) {                                    \
+      RFUN(ans)[j] = RFUN(VECTOR_ELT(dt, j))[0];                    \
+    }                                                               \
+  } else {                                                          \
+    CTYPE *pans = RFUN(ans);                                        \
+    CTYPE **pcol;                                                   \
+    pcol = (CTYPE **) R_alloc(ncol, sizeof(CTYPE *));               \
+    for (int j=0; j<ncol; ++j) pcol[j] = RFUN(VECTOR_ELT(dt, j));   \
+    _Pragma ("omp parallel for num_threads(getDTthreads())")        \
+    for (int j=0; j<ncol; ++j) {                                    \
+      int64_t ansloc = (int64_t)j*nrow;                             \
+      memcpy(pans+ansloc, pcol[j], nrow*sizeof(CTYPE));             \
+    }                                                               \
+  }                                                                 \
+} break; }
+
+#undef VECCPY
+#define VECCPY(GETTER, SETTER) {{                              \
+  int64_t ansloc=0;                                            \
+  for (int j = 0; j<ncol; ++j) {                               \  
+    for (int i = 0; i<nrow; ++i) {                             \
+      SETTER(ans, ansloc, GETTER(VECTOR_ELT(dt, j), i));       \
+      ansloc++;                                                \
+    }                                                          \
+  }                                                            \
+} break; }
+  
+
 SEXP asmatrix(SEXP dt, SEXP rownames)
 {
   // PROTECT / UNPROTECT stack counter
@@ -78,105 +113,16 @@ SEXP asmatrix(SEXP dt, SEXP rownames)
   // I.e. optimise for usual case of calling as.matrix on a large data.table 
   // where all columns are already the same time
   if (!coerce) {
-    if (nrow > 1 && TYPEORDER(maxType) < TYPEORDER(STRSXP)) {
-      switch(maxType) {
-        case RAWSXP: {
-          Rbyte *pans = RAW(ans);
-          Rbyte **pcol;
-          pcol = (Rbyte **) R_alloc(ncol, sizeof(Rbyte *));
-          for (int j=0; j<ncol; ++j) pcol[j] = RAW(VECTOR_ELT(dt, j));
-          #pragma omp parallel for num_threads(getDTthreads())
-          for (int j=0; j<ncol; ++j) {
-            int64_t ansloc = (int64_t)j*nrow;
-            memcpy(pans+ansloc, pcol, nrow*sizeof(Rbyte));
-          }
-          break;
-        } case LGLSXP: {
-          int *pans = LOGICAL(ans);
-          int **pcol;
-          pcol = (int **) R_alloc(ncol, sizeof(int *));
-          for (int j=0; j<ncol; ++j) pcol[j] = LOGICAL(VECTOR_ELT(dt, j));
-          #pragma omp parallel for num_threads(getDTthreads())
-          for (int j=0; j<ncol; ++j) {
-            int64_t ansloc = (int64_t)j*nrow;
-            memcpy(pans+ansloc, pcol, nrow*sizeof(int));
-          }
-          break;       
-        } case INTSXP: {
-          int *pans = INTEGER(ans);
-          int **pcol;
-          pcol = (int **) R_alloc(ncol, sizeof(int *));
-          for (int j=0; j<ncol; ++j) pcol[j] = INTEGER(VECTOR_ELT(dt, j));
-          #pragma omp parallel for num_threads(getDTthreads())
-          for (int j=0; j<ncol; ++j) {
-            int64_t ansloc = (int64_t)j*nrow;
-            memcpy(pans+ansloc, pcol, nrow*sizeof(int));
-          }
-          break;         
-        } case REALSXP: {
-          double *pans = REAL(ans);
-          double **pcol;
-          pcol = (double **) R_alloc(ncol, sizeof(double *));
-          for (int j=0; j<ncol; ++j) pcol[j] = REAL(VECTOR_ELT(dt, j));
-          #pragma omp parallel for num_threads(getDTthreads())
-          for (int j=0; j<ncol; ++j) {
-            int64_t ansloc = (int64_t)j*nrow;
-            memcpy(pans+ansloc, pcol, nrow*sizeof(double));
-          }
-          break;   
-        } case CPLXSXP: {
-          Rcomplex *pans = COMPLEX(ans);
-          Rcomplex **pcol;
-          pcol = (Rcomplex **) R_alloc(ncol, sizeof(Rcomplex *));
-          for (int j=0; j<ncol; ++j) pcol[j] = COMPLEX(VECTOR_ELT(dt, j));
-          #pragma omp parallel for num_threads(getDTthreads())
-          for (int j=0; j<ncol; ++j) {
-            int64_t ansloc = (int64_t)j*nrow;
-            memcpy(pans+ansloc, pcol, nrow*sizeof(Rcomplex));
-          }
-          break; 
-        } default: {
-          error("Internal Error: unreachable state in as.matrix with nrow > 1\n"); // # nocov
-        }
-      }
-    } else if (maxType == STRSXP) {
-      int64_t ansloc=0;
-      for (int j = 0; j<ncol; ++j) {
-        for (int i = 0; i<nrow; ++i) {
-          SET_STRING_ELT(ans, ansloc, STRING_ELT(VECTOR_ELT(dt, j), i));
-          ansloc++;
-        }
-      }
-    } else if (maxType == VECSXP) {
-      int64_t ansloc=0;
-      for (int j = 0; j<ncol; ++j) {
-        for (int i = 0; i<nrow; ++i) {
-          SET_VECTOR_ELT(ans, ansloc, VECTOR_ELT(VECTOR_ELT(dt, j), i));
-          ansloc++;
-        }
-      }
-    } else {
-      // faster to assign than to memcpy single element
-      switch(maxType) {
-        case RAWSXP: {
-          for (int j=0; j<ncol; ++j) RAW(ans)[j] = RAW(VECTOR_ELT(dt, j))[0];
-          break;
-        } case LGLSXP: {
-          for (int j=0; j<ncol; ++j) LOGICAL(ans)[j] = LOGICAL(VECTOR_ELT(dt, j))[0];
-          break;        
-        } case INTSXP: {
-          for (int j=0; j<ncol; ++j) INTEGER(ans)[j] = INTEGER(VECTOR_ELT(dt, j))[0];
-          break;         
-        } case REALSXP: {
-          for (int j=0; j<ncol; ++j) REAL(ans)[j] = REAL(VECTOR_ELT(dt, j))[0];
-          break;   
-        } case CPLXSXP: {
-          for (int j=0; j<ncol; ++j) COMPLEX(ans)[j] = COMPLEX(VECTOR_ELT(dt, j))[0];
-          break;
-        } default: {
-          error("Internal Error: unreachable state in as.matrix with nrow == 1\n"); // # nocov
-        }
-      }
+    switch(maxType) {
+      case RAWSXP: OMP_MEMCPY(RAW, Rbyte);
+      case LGLSXP: OMP_MEMCPY(LOGICAL, int);
+      case INTSXP: OMP_MEMCPY(INTEGER, int);
+      case REALSXP: OMP_MEMCPY(REAL, double);
+      case CPLXSXP: OMP_MEMCPY(COMPLEX, Rcomplex);
+      case STRSXP: VECCPY(STRING_ELT, SET_STRING_ELT);
+      case VECSXP: VECCPY(VECTOR_ELT, SET_VECTOR_ELT);
+      default:
+        error("Internal Error: unreachable state in as.matrix\n"); // # nocov
     }
   } else {
     // Coerce columns where needed and fill
