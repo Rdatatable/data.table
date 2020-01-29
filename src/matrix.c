@@ -109,46 +109,45 @@ SEXP asmatrix(SEXP dt, SEXP rownames)
     setAttrib(ans, R_ClassSymbol, i64Class);
   }
   
-  // If no coercion needed, we can simply loop through without checking and copy.
-  // I.e. optimise for usual case of calling as.matrix on a large data.table 
-  // where all columns are already the same time
-  if (!coerce) {
-    switch(maxType) {
-      case RAWSXP: OMP_MEMCPY(RAW, Rbyte);
-      case LGLSXP: OMP_MEMCPY(LOGICAL, int);
-      case INTSXP: OMP_MEMCPY(INTEGER, int);
-      case REALSXP: OMP_MEMCPY(REAL, double);
-      case CPLXSXP: OMP_MEMCPY(COMPLEX, Rcomplex);
-      case STRSXP: VECCPY(STRING_ELT, SET_STRING_ELT);
-      case VECSXP: VECCPY(VECTOR_ELT, SET_VECTOR_ELT);
-      default:
-        error("Internal Error: unreachable state in as.matrix\n"); // # nocov
-    }
-  } else {
+  // Identify and coerce columns as needed
+  if (coerce) {
     // Coerce columns where needed and fill
-    SEXP coerced;
-    int64_t ansloc=0; // position in vector to start copying to, filling by column.
     for (int j=0; j<ncol; ++j) {
       SEXP thisCol = VECTOR_ELT(dt, j);
-      if (maxType == VECSXP) { // coercion to list not handled by memrecycle.
-        coerced = PROTECT(coerceAsList(thisCol, nrow)); nprotect++;
-      } else if (integer64 && maxType == STRSXP && INHERITS(thisCol, char_integer64)) {
-        // memrecycle does not coerce integer64 to character
-        coerced = PROTECT(asCharacterInteger64(thisCol)); nprotect++;
-      } else {
-        coerced = thisCol; // type coercion handled by memrecycle
+      if ((TYPEOF(thisCol) != maxType)  ||
+          (integer64 && !INHERITS(thisCol, char_integer64))) {
+        SEXP coerced;
+        if (maxType == VECSXP) { // coercion to list not handled by memrecycle.
+          coerced = PROTECT(coerceAsList(thisCol, nrow)); nprotect++;
+        } else if (integer64 && maxType == STRSXP && INHERITS(thisCol, char_integer64)) {
+          // memrecycle does not coerce integer64 to character
+          coerced = PROTECT(asCharacterInteger64(thisCol)); nprotect++;
+        } else {
+          // coerce with memrecycle
+          coerced = PROTECT(allocVector(maxType, nrow));
+          const char *ret = memrecycle(coerced, R_NilValue, 0, nrow, thisCol, 0, -1, 0, "V1");
+          // Warning when precision is lost after coercion, should not be possible to reach
+          if (ret) error("Internal Error: column %d: %s\n", j+1, ret); // # nocov
+        }
+        SET_VECTOR_ELT(dt, j, coerced);
       }
-      
-      // Fill matrix with memrecycle
-      const char *ret = memrecycle(ans, R_NilValue, ansloc, nrow, coerced, 0, -1, 0, "V1");
-      // Warning when precision is lost after coercion, should not be possible to reach
-      if (ret) warning(_("Column %d: %s"), j+1, ret); // # nocov
-      // TODO: but maxType should handle that and this should never warn
-      ansloc += nrow;
     }
   }
   
-  // Reset class - matrices do not have class information
+  // Copy columns into matrix, recycling memory
+  switch(maxType) {
+    case RAWSXP: OMP_MEMCPY(RAW, Rbyte);
+    case LGLSXP: OMP_MEMCPY(LOGICAL, int);
+    case INTSXP: OMP_MEMCPY(INTEGER, int);
+    case REALSXP: OMP_MEMCPY(REAL, double);
+    case CPLXSXP: OMP_MEMCPY(COMPLEX, Rcomplex);
+    case STRSXP: VECCPY(STRING_ELT, SET_STRING_ELT);
+    case VECSXP: VECCPY(VECTOR_ELT, SET_VECTOR_ELT);
+    default:
+      error("Internal Error: unreachable state in as.matrix\n"); // # nocov
+  
+  // If integer64 class added, reset class information - matrices do not 
+  // have additional class information
   if (integer64 && maxType == REALSXP) {
     setAttrib(ans, R_ClassSymbol, matClass);
   }
