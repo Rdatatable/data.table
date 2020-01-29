@@ -79,38 +79,57 @@ SEXP asmatrix(SEXP dt, SEXP rownames)
   // where all columns are already the same time
   if (!coerce) {
     if (nrow > 1 && TYPEORDER(maxType) < TYPEORDER(STRSXP)) {
-      int64_t ansloc=0;
       switch(maxType) {
         case RAWSXP: {
+          Rbyte *pans = RAW(ans);
+          Rbyte **pcol;
+          for (int j=0; j<ncol; ++j) pcol[j] = RAW(VECTOR_ELT(dt, j));
+          #pragma omp parallel for num_threads(getDTthreads())
           for (int j=0; j<ncol; ++j) {
-            memcpy(RAW(ans)+ansloc, RAW(VECTOR_ELT(dt, j)), nrow*sizeof(Rbyte));
-            ansloc+=nrow;
+            int64_t ansloc = j*nrow;
+            memcpy(pans+ansloc, pcol, nrow*sizeof(Rbyte));
           }
           break;
         } case LGLSXP: {
+          int *pans = LOGICAL(ans);
+          int **pcol;
+          for (int j=0; j<ncol; ++j) pcol[j] = LOGICAL(VECTOR_ELT(dt, j));
+          #pragma omp parallel for num_threads(getDTthreads())
           for (int j=0; j<ncol; ++j) {
-            memcpy(LOGICAL(ans)+ansloc, LOGICAL(VECTOR_ELT(dt, j)), nrow*sizeof(Rboolean));
-            ansloc+=nrow;
+            int64_t ansloc = j*nrow;
+            memcpy(pans+ansloc, pcol, nrow*sizeof(int));
           }
-          break;        
+          break;       
         } case INTSXP: {
+          int *pans = INTEGER(ans);
+          int **pcol;
+          for (int j=0; j<ncol; ++j) pcol[j] = INTEGER(VECTOR_ELT(dt, j));
+          #pragma omp parallel for num_threads(getDTthreads())
           for (int j=0; j<ncol; ++j) {
-            memcpy(INTEGER(ans)+ansloc, INTEGER(VECTOR_ELT(dt, j)), nrow*sizeof(int));
-            ansloc+=nrow;
+            int64_t ansloc = j*nrow;
+            memcpy(pans+ansloc, pcol, nrow*sizeof(int));
           }
           break;         
         } case REALSXP: {
+          double *pans = REAL(ans);
+          double **pcol;
+          for (int j=0; j<ncol; ++j) pcol[j] = REAL(VECTOR_ELT(dt, j));
+          #pragma omp parallel for num_threads(getDTthreads())
           for (int j=0; j<ncol; ++j) {
-            memcpy(REAL(ans)+ansloc, REAL(VECTOR_ELT(dt, j)), nrow*sizeof(double));
-            ansloc+=nrow;
+            int64_t ansloc = j*nrow;
+            memcpy(pans+ansloc, pcol, nrow*sizeof(double));
           }
           break;   
         } case CPLXSXP: {
+          Rcomplex *pans = COMPLEX(ans);
+          Rcomplex **pcol;
+          for (int j=0; j<ncol; ++j) pcol[j] = COMPLEX(VECTOR_ELT(dt, j));
+          #pragma omp parallel for num_threads(getDTthreads())
           for (int j=0; j<ncol; ++j) {
-            memcpy(COMPLEX(ans)+ansloc, COMPLEX(VECTOR_ELT(dt, j)), nrow*sizeof(Rcomplex));
-            ansloc+=nrow;
+            int64_t ansloc = j*nrow;
+            memcpy(pans+ansloc, pcol, nrow*sizeof(Rcomplex));
           }
-          break;
+          break; 
         } default: {
           error("Internal Error: unreachable state in as.matrix with nrow > 1\n"); // # nocov
         }
