@@ -83,50 +83,55 @@ SEXP asmatrix(SEXP dt, SEXP rownames)
         case RAWSXP: {
           Rbyte *pans = RAW(ans);
           Rbyte **pcol;
+          pcol = (Rbyte **) R_alloc(ncol, sizeof(Rbyte *));
           for (int j=0; j<ncol; ++j) pcol[j] = RAW(VECTOR_ELT(dt, j));
           #pragma omp parallel for num_threads(getDTthreads())
           for (int j=0; j<ncol; ++j) {
-            int64_t ansloc = j*nrow;
+            int64_t ansloc = (int64_t)j*nrow;
             memcpy(pans+ansloc, pcol, nrow*sizeof(Rbyte));
           }
           break;
         } case LGLSXP: {
           int *pans = LOGICAL(ans);
           int **pcol;
+          pcol = (int **) R_alloc(ncol, sizeof(int *));
           for (int j=0; j<ncol; ++j) pcol[j] = LOGICAL(VECTOR_ELT(dt, j));
           #pragma omp parallel for num_threads(getDTthreads())
           for (int j=0; j<ncol; ++j) {
-            int64_t ansloc = j*nrow;
+            int64_t ansloc = (int64_t)j*nrow;
             memcpy(pans+ansloc, pcol, nrow*sizeof(int));
           }
           break;       
         } case INTSXP: {
           int *pans = INTEGER(ans);
           int **pcol;
+          pcol = (int **) R_alloc(ncol, sizeof(int *));
           for (int j=0; j<ncol; ++j) pcol[j] = INTEGER(VECTOR_ELT(dt, j));
           #pragma omp parallel for num_threads(getDTthreads())
           for (int j=0; j<ncol; ++j) {
-            int64_t ansloc = j*nrow;
+            int64_t ansloc = (int64_t)j*nrow;
             memcpy(pans+ansloc, pcol, nrow*sizeof(int));
           }
           break;         
         } case REALSXP: {
           double *pans = REAL(ans);
           double **pcol;
+          pcol = (double **) R_alloc(ncol, sizeof(double *));
           for (int j=0; j<ncol; ++j) pcol[j] = REAL(VECTOR_ELT(dt, j));
           #pragma omp parallel for num_threads(getDTthreads())
           for (int j=0; j<ncol; ++j) {
-            int64_t ansloc = j*nrow;
+            int64_t ansloc = (int64_t)j*nrow;
             memcpy(pans+ansloc, pcol, nrow*sizeof(double));
           }
           break;   
         } case CPLXSXP: {
           Rcomplex *pans = COMPLEX(ans);
           Rcomplex **pcol;
+          pcol = (Rcomplex **) R_alloc(ncol, sizeof(Rcomplex *));
           for (int j=0; j<ncol; ++j) pcol[j] = COMPLEX(VECTOR_ELT(dt, j));
           #pragma omp parallel for num_threads(getDTthreads())
           for (int j=0; j<ncol; ++j) {
-            int64_t ansloc = j*nrow;
+            int64_t ansloc = (int64_t)j*nrow;
             memcpy(pans+ansloc, pcol, nrow*sizeof(Rcomplex));
           }
           break; 
