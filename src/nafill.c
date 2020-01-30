@@ -96,9 +96,9 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, S
   SEXP x = R_NilValue;
   if (isVectorAtomic(obj)) {
     if (binplace)
-      error("'x' argument is atomic vector, in-place update is supported only for list/data.table");
+      error(_("'x' argument is atomic vector, in-place update is supported only for list/data.table"));
     else if (!isReal(obj) && !isInteger(obj))
-      error("'x' argument must be numeric type, or list/data.table of numeric types");
+      error(_("'x' argument must be numeric type, or list/data.table of numeric types"));
     x = PROTECT(allocVector(VECSXP, 1)); protecti++; // wrap into list
     SET_VECTOR_ELT(x, 0, obj);
   } else {
@@ -108,7 +108,7 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, S
     for (int i=0; i<length(ricols); i++) {
       SEXP this_col = VECTOR_ELT(obj, icols[i]-1);
       if (!isReal(this_col) && !isInteger(this_col))
-        error("'x' argument must be numeric type, or list/data.table of numeric types");
+        error(_("'x' argument must be numeric type, or list/data.table of numeric types"));
       SET_VECTOR_ELT(x, i, this_col);
     }
   }
@@ -121,16 +121,26 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, S
   SEXP ans = R_NilValue;
   ans_t *vans = (ans_t *)R_alloc(nx, sizeof(ans_t));
   for (R_len_t i=0; i<nx; i++) {
-    inx[i] = xlength(VECTOR_ELT(x, i));
-    dx[i] = REAL(VECTOR_ELT(x, i));
-    ix[i] = INTEGER(VECTOR_ELT(x, i));
-    i64x[i] = (int64_t *)REAL(VECTOR_ELT(x, i));
+    const SEXP xi = VECTOR_ELT(x, i);
+    inx[i] = xlength(xi);
+    // not sure why these pointers are being constructed like this; TODO: simplify structure
+    if (isReal(xi)) {
+      dx[i] = REAL(xi);
+      i64x[i] = (int64_t *)REAL(xi);
+      ix[i] = NULL;
+    } else {
+      ix[i] = INTEGER(xi);
+      dx[i] = NULL;
+      i64x[i] = NULL;
+    }
   }
   if (!binplace) {
     ans = PROTECT(allocVector(VECSXP, nx)); protecti++;
     for (R_len_t i=0; i<nx; i++) {
       SET_VECTOR_ELT(ans, i, allocVector(TYPEOF(VECTOR_ELT(x, i)), inx[i]));
-      vans[i] = ((ans_t) { .dbl_v=REAL(VECTOR_ELT(ans, i)), .int_v=INTEGER(VECTOR_ELT(ans, i)), .int64_v=(int64_t *)REAL(VECTOR_ELT(ans, i)), .status=0, .message={"\0","\0","\0","\0"} });
+      const SEXP ansi = VECTOR_ELT(ans, i);
+      const void *p = isReal(ansi) ? (void *)REAL(ansi) : (void *)INTEGER(ansi);
+      vans[i] = ((ans_t) { .dbl_v=(double *)p, .int_v=(int *)p, .int64_v=(int64_t *)p, .status=0, .message={"\0","\0","\0","\0"} });
     }
   } else {
     for (R_len_t i=0; i<nx; i++) {
@@ -146,10 +156,10 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, S
   else if (!strcmp(CHAR(STRING_ELT(type, 0)), "nocb"))
     itype = 2;
   else
-    error("Internal error: invalid type argument in nafillR function, should have been caught before. Please report to data.table issue tracker."); // # nocov
+    error(_("Internal error: invalid type argument in nafillR function, should have been caught before. Please report to data.table issue tracker.")); // # nocov
 
   if (itype==0 && length(fill)!=1)
-    error("fill must be a vector of length 1");
+    error(_("fill must be a vector of length 1"));
 
   double dfill=NA_REAL;
   int32_t ifill=NA_INTEGER;
@@ -177,7 +187,7 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, S
     case INTSXP : {
       nafillInteger(ix[i], inx[i], itype, ifill, &vans[i], verbose);
     } break;
-    default: error("Internal error: invalid type argument in nafillR function, should have been caught before. Please report to data.table issue tracker."); // # nocov
+    default: error(_("Internal error: invalid type argument in nafillR function, should have been caught before. Please report to data.table issue tracker.")); // # nocov
     }
   }
   if (verbose)
@@ -193,7 +203,7 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, S
   ansMsg(vans, nx, verbose, __func__);
 
   if (verbose)
-    Rprintf("%s: parallel processing of %d column(s) took %.3fs\n", __func__, nx, toc-tic);
+    Rprintf(_("%s: parallel processing of %d column(s) took %.3fs\n"), __func__, nx, toc-tic);
 
   UNPROTECT(protecti);
   if (binplace) {

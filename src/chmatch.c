@@ -1,9 +1,9 @@
 #include "data.table.h"
 
 static SEXP chmatchMain(SEXP x, SEXP table, int nomatch, bool chin, bool chmatchdup) {
-  if (!isString(x) && !isNull(x)) error("x is type '%s' (must be 'character' or NULL)", type2char(TYPEOF(x)));
-  if (!isString(table) && !isNull(table)) error("table is type '%s' (must be 'character' or NULL)", type2char(TYPEOF(table)));
-  if (chin && chmatchdup) error("Internal error: either chin or chmatchdup should be true not both");  // # nocov
+  if (!isString(x) && !isNull(x)) error(_("x is type '%s' (must be 'character' or NULL)"), type2char(TYPEOF(x)));
+  if (!isString(table) && !isNull(table)) error(_("table is type '%s' (must be 'character' or NULL)"), type2char(TYPEOF(table)));
+  if (chin && chmatchdup) error(_("Internal error: either chin or chmatchdup should be true not both"));  // # nocov
   const int xlen = length(x);
   const int tablelen = length(table);
   // allocations up front before savetl starts in case allocs fail
@@ -41,7 +41,7 @@ static SEXP chmatchMain(SEXP x, SEXP table, int nomatch, bool chin, bool chmatch
       // We rely on that 0-initialization, and that R's internal hash is positive.
       // # nocov start
       savetl_end();
-      error("Internal error: CHARSXP '%s' has a negative truelength (%d). Please file an issue on the data.table tracker.", CHAR(s), tl);
+      error(_("Internal error: CHARSXP '%s' has a negative truelength (%d). Please file an issue on the data.table tracker."), CHAR(s), tl);
       // # nocov end
     }
   }
@@ -70,7 +70,7 @@ static SEXP chmatchMain(SEXP x, SEXP table, int nomatch, bool chin, bool chmatch
       // # nocov start
       for (int i=0; i<tablelen; i++) SET_TRUELENGTH(td[i], 0);
       savetl_end();
-      error("Failed to allocate %"PRIu64" bytes working memory in chmatchdup: length(table)=%d length(unique(table))=%d", ((uint64_t)tablelen*2+nuniq)*sizeof(int), tablelen, nuniq);
+      error(_("Failed to allocate %"PRIu64" bytes working memory in chmatchdup: length(table)=%d length(unique(table))=%d"), ((uint64_t)tablelen*2+nuniq)*sizeof(int), tablelen, nuniq);
       // # nocov end
     }
     for (int i=0; i<tablelen; ++i) counts[-TRUELENGTH(td[i])-1]++;

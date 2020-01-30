@@ -1,0 +1,1747 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: data.table 1.12.9\n"
+"POT-Creation-Date: 2019-12-31 13:02\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=CHARSET\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+
+msgid "data.table package loaded. When developing don't load package"
+msgstr ""
+
+msgid "Internal error -- difftime objects may not be added to IDate, but Ops dispatch should have intervened to prevent this"
+msgstr ""
+
+msgid "binary + is not defined for \"IDate\" objects"
+msgstr ""
+
+msgid "can only subtract from \"IDate\" objects"
+msgstr ""
+
+msgid "Internal error: storage mode of IDate is somehow no longer integer"
+msgstr ""
+
+msgid "unary - is not defined for \"IDate\" objects"
+msgstr ""
+
+msgid "Internal error -- difftime objects may not be subtracted from IDate, but Ops dispatch should have intervened to prevent this"
+msgstr ""
+
+msgid "Valid options for ms are 'truncate',"
+msgstr ""
+
+msgid "'nearest', and 'ceil'."
+msgstr ""
+
+msgid "as.data.table.array method should only be called for arrays with 3+ dimensions; use the matrix method for 2-dimensional arrays"
+msgstr ""
+
+msgid "Argument 'value.name' must be scalar character, non-NA and at least one character"
+msgstr ""
+
+msgid "Argument 'sorted' must be scalar logical and non-NA"
+msgstr ""
+
+msgid "Argument 'na.rm' must be scalar logical and non-NA"
+msgstr ""
+
+msgid "Please provide either 'key' or 'sorted', but not both."
+msgstr ""
+
+msgid "Argument 'value.name' should not overlap with column names in result:"
+msgstr ""
+
+msgid "POSIXlt column type detected and converted to POSIXct. We do not recommend use of POSIXlt at all because it uses 40 bytes to store one date."
+msgstr ""
+
+msgid "Item"
+msgstr ""
+
+msgid "has"
+msgstr ""
+
+msgid "rows but longest item has"
+msgstr ""
+
+msgid "; recycled with remainder."
+msgstr ""
+
+msgid "has 0 rows but longest item has"
+msgstr ""
+
+msgid "; filled with NA"
+msgstr ""
+
+msgid "A column may not be called .SD. That has special meaning."
+msgstr ""
+
+msgid "class must be length 1"
+msgstr ""
+
+msgid "between has been passed an argument x of type logical"
+msgstr ""
+
+msgid "'between' function the 'x' argument is a POSIX class while 'lower' was not, coercion to POSIX failed with:"
+msgstr ""
+
+msgid "'between' function the 'x' argument is a POSIX class while 'upper' was not, coercion to POSIX failed with:"
+msgstr ""
+
+msgid "'between' lower= and upper= are both POSIXct but have different tzone attributes:"
+msgstr ""
+
+msgid ". Please align their time zones."
+msgstr ""
+
+msgid "'between' arguments are all POSIXct but have mismatched tzone attributes:"
+msgstr ""
+
+msgid ". The UTC times will be compared."
+msgstr ""
+
+msgid "trying to use integer64 class when 'bit64' package is not installed"
+msgstr ""
+
+msgid "Not yet implemented NAbounds=TRUE for this non-numeric and non-character type"
+msgstr ""
+
+msgid "Some lower>upper for this non-numeric and non-character type"
+msgstr ""
+
+msgid "RHS has length()"
+msgstr ""
+
+msgid "; expecting length 2."
+msgstr ""
+
+msgid "c"
+msgstr ""
+
+msgid "Perhaps you meant %s?"
+msgstr ""
+
+msgid "The first element should be the lower bound(s);"
+msgstr ""
+
+msgid "the second element should be the upper bound(s)."
+msgstr ""
+
+msgid "x."
+msgstr ""
+
+msgid "is type"
+msgstr ""
+
+msgid "which is not supported by data.table join"
+msgstr ""
+
+msgid "i."
+msgstr ""
+
+msgid "Attempting roll join on factor column when joining x."
+msgstr ""
+
+msgid "to i."
+msgstr ""
+
+msgid ". Only integer, double or character columns may be roll joined."
+msgstr ""
+
+msgid "Incompatible join types: x."
+msgstr ""
+
+msgid "("
+msgstr ""
+
+msgid ") and i."
+msgstr ""
+
+msgid "). Factor columns must join to factor or character columns."
+msgstr ""
+
+msgid ")"
+msgstr ""
+
+msgid "Incompatible join types:"
+msgstr ""
+
+msgid "is type integer64 but"
+msgstr ""
+
+msgid "is type double and contains fractions"
+msgstr ""
+
+msgid "roll is not implemented for non-equi joins yet."
+msgstr ""
+
+msgid "Column name '_nqgrp_' is reserved for non-equi joins."
+msgstr ""
+
+msgid "key argument of data.table() must be character"
+msgstr ""
+
+msgid "Object '"
+msgstr ""
+
+msgid "' not found. Perhaps you intended"
+msgstr ""
+
+msgid ","
+msgstr ""
+
+msgid "or"
+msgstr ""
+
+msgid "more"
+msgstr ""
+
+msgid "' not found amongst"
+msgstr ""
+
+msgid "and"
+msgstr ""
+
+msgid "Provide either by= or keyby= but not both"
+msgstr ""
+
+msgid "Ignoring keyby= because j= is not supplied"
+msgstr ""
+
+msgid "Ignoring by= because j= is not supplied"
+msgstr ""
+
+msgid "When on= is provided but not i=, on= must be a named list or data.table|frame, and a natural join (i.e. join on common names) is invoked. Ignoring on= which is '"
+msgstr ""
+
+msgid "'."
+msgstr ""
+
+msgid "i and j are both missing so ignoring the other arguments. This warning will be upgraded to error in future."
+msgstr ""
+
+msgid "mult argument can only be 'first', 'last' or 'all'"
+msgstr ""
+
+msgid "roll must be a single TRUE, FALSE, positive/negative integer/double including +Inf and -Inf or 'nearest'"
+msgstr ""
+
+msgid "roll is '"
+msgstr ""
+
+msgid "' (type character). Only valid character value is 'nearest'."
+msgstr ""
+
+msgid "rollends must be a logical vector"
+msgstr ""
+
+msgid "rollends must be length 1 or 2"
+msgstr ""
+
+msgid "nomatch= must be either NA or NULL (or 0 for backwards compatibility which is the same as NULL)"
+msgstr ""
+
+msgid "which= must be a logical vector length 1. Either FALSE, TRUE or NA."
+msgstr ""
+
+msgid "which=="
+msgstr ""
+
+msgid "(meaning return row numbers) but j is also supplied. Either you need row numbers or the result of j, but only one type of result can be returned."
+msgstr ""
+
+msgid "which=NA with nomatch=0 would always return an empty vector. Please change or remove either which or nomatch."
+msgstr ""
+
+msgid "j must be provided when with=FALSE"
+msgstr ""
+
+msgid "The symbol .. is invalid. The .. prefix must be followed by at least one character."
+msgstr ""
+
+msgid "Variable '"
+msgstr ""
+
+msgid "' is not found in calling scope. Looking in calling scope because you used the .. prefix."
+msgstr ""
+
+msgid "Variable '.."
+msgstr ""
+
+msgid "' does exist in calling scope though, so please just removed the .. prefix from that variable name in calling scope."
+msgstr ""
+
+msgid "Both '"
+msgstr ""
+
+msgid "' and '.."
+msgstr ""
+
+msgid "' exist in calling scope. Please remove the '.."
+msgstr ""
+
+msgid "' variable in calling scope for clarity."
+msgstr ""
+
+msgid "Internal error:  DT[, ..var] should be dealt with by the branch above now."
+msgstr ""
+
+msgid "' is not found in calling scope. Looking in calling scope because you set with=FALSE. Also, please use .. symbol prefix and remove with=FALSE."
+msgstr ""
+
+msgid "You have wrapped := with {} which is ok but then := must be the only thing inside {}. You have something else inside {} as well. Consider placing the {} on the RHS of := instead; e.g. DT[,someCol:={tmpVar1<-...;tmpVar2<-...;tmpVar1*tmpVar2}"
+msgstr ""
+
+msgid ":= with keyby is only possible when i is not supplied since you can't setkey on a subset of rows. Either change keyby to by or remove i"
+msgstr ""
+
+msgid "nomatch isn't relevant together with :=, ignoring nomatch"
+msgstr ""
+
+msgid "not-join '!' prefix is present on i but nomatch is provided. Please remove nomatch."
+msgstr ""
+
+msgid "is not found in calling scope"
+msgstr ""
+
+msgid "When the first argument inside DT[...] is a single symbol (e.g. DT[var]), data.table looks for var in calling scope."
+msgstr ""
+
+msgid "i is invalid type (matrix). Perhaps in future a 2 column matrix could return a list of elements of DT (in the spirit of A[B] in FAQ 2.14). Please report to data.table issue tracker if you'd like this, or add your comments to FR #657."
+msgstr ""
+
+msgid "When i is a data.table (or character vector), the columns to join by must be specified using 'on=' argument (see ?data.table), by keying x (i.e. sorted, and, marked as sorted, see ?setkey), or by sharing column names between x and i (i.e., a natural join). Keyed joins might have further speed benefits on very large data due to x being sorted in RAM."
+msgstr ""
+
+msgid "Attempting to do natural join but no common columns in provided tables"
+msgstr ""
+
+msgid "Internal error. Cannot by=.EACHI when joining to a secondary key, yet"
+msgstr ""
+
+msgid "Internal error. irows has length in by=.EACHI"
+msgstr ""
+
+msgid "logical error. i is not a data.table, but 'on' argument is provided."
+msgstr ""
+
+msgid "i has evaluated to type"
+msgstr ""
+
+msgid ". Expecting logical, integer or double."
+msgstr ""
+
+msgid "i evaluates to a logical vector length"
+msgstr ""
+
+msgid "but there are"
+msgstr ""
+
+msgid "rows. Recycling of logical i is no longer allowed as it hides more bugs than is worth the rare convenience. Explicitly use rep(...,length=.N) if you really need to recycle."
+msgstr ""
+
+msgid "Internal error: notjoin but byjoin or !integer or nomatch==NA"
+msgstr ""
+
+msgid "with=FALSE together with := was deprecated in v1.9.4 released Oct 2014. Please wrap the LHS of := with parentheses; e.g., DT[,(myVar):=sum(b),by=a] to assign to column name(s) held in variable myVar. See ?':=' for other examples. As warned in 2014, this is now a warning."
+msgstr ""
+
+msgid "with=FALSE ignored, it isn't needed when using :=. See ?':=' for examples."
+msgstr ""
+
+msgid "column(s) not removed because not found:"
+msgstr ""
+
+msgid "column(s) not found:"
+msgstr ""
+
+msgid "of j is"
+msgstr ""
+
+msgid "which is outside the column number range [1,ncol="
+msgstr ""
+
+msgid "]"
+msgstr ""
+
+msgid "j mixes positives and negatives"
+msgstr ""
+
+msgid "When with=FALSE, j-argument should be of type logical/character/integer indicating the columns to select."
+msgstr ""
+
+msgid "by=c(...), key(...) or names(...) must evaluate to 'character'"
+msgstr ""
+
+msgid "'by' is a character vector length"
+msgstr ""
+
+msgid "but one or more items include a comma. Either pass a vector of column names (which can contain spaces, but no commas), or pass a vector length 1 containing comma separated column names. See ?data.table for other possibilities."
+msgstr ""
+
+msgid "Internal error: irows isn't integer"
+msgstr ""
+
+msgid "'by' appears to evaluate to column names but isn't c() or key(). Use by=list(...) if you can. Otherwise, by=eval"
+msgstr ""
+
+msgid "should work. This is for efficiency so data.table can detect which columns are needed."
+msgstr ""
+
+msgid "'by' or 'keyby' must evaluate to a vector or a list of vectors (where 'list' includes data.table and data.frame which are lists, too)"
+msgstr ""
+
+msgid "column or expression"
+msgstr ""
+
+msgid "of 'by' or 'keyby' is type"
+msgstr ""
+
+msgid ". Do not quote column names. Usage: DT[,sum(colC),by=list(colA,month(colB))]"
+msgstr ""
+
+msgid "The items in the 'by' or 'keyby' list are length(s) (%s). Each must be length %d; the same length as there are rows in x (after subsetting if i is provided)."
+msgstr ""
+
+msgid "Internal error: drop_dot passed"
+msgstr ""
+
+msgid "items"
+msgstr ""
+
+msgid "Item %d of the .() or list() passed to j is missing"
+msgstr ""
+
+msgid "Different branches of j expression produced different auto-named columns:"
+msgstr ""
+
+msgid "%s!=%s"
+msgstr ""
+
+msgid "; using the most \"last\" names"
+msgstr ""
+
+msgid "When .SDcols is a function, it is applied to each column; the output of this function must be a non-missing boolean scalar signalling inclusion/exclusion of the column. However, these conditions were not met for:"
+msgstr ""
+
+msgid ".SDcols missing at the following indices:"
+msgstr ""
+
+msgid ".SDcols is numeric but has both +ve and -ve indices"
+msgstr ""
+
+msgid ".SDcols is numeric but out of bounds [1,"
+msgstr ""
+
+msgid "] at:"
+msgstr ""
+
+msgid ".SDcols should be column numbers or names"
+msgstr ""
+
+msgid "Some items of .SDcols are not column names:"
+msgstr ""
+
+msgid "This j doesn't use .SD but .SDcols has been supplied. Ignoring .SDcols. See ?data.table."
+msgstr ""
+
+msgid ".SD is locked. Using := in .SD's j is reserved for possible future use; a tortuously flexible way to modify by group. Use := in j directly to modify by group by reference."
+msgstr ""
+
+msgid "In `:=`(col1=val1, col2=val2, ...) form, all arguments must be named."
+msgstr ""
+
+msgid "LHS of := must be a symbol, or an atomic vector (column names or positions)."
+msgstr ""
+
+msgid "LHS of := appears to be column positions but are outside [1,ncol] range. New columns can only be added by name."
+msgstr ""
+
+msgid "LHS of := isn't column names ('character') or positions ('integer' or 'numeric')"
+msgstr ""
+
+msgid "Invalid .internal.selfref detected and fixed by taking a (shallow) copy of the data.table so that := can add this new column by reference. At an earlier point, this data.table has been copied by R (or was created manually using structure() or similar). Avoid names<- and attr<- which in R currently (and oddly) may copy the whole data.table. Use set* syntax instead to avoid copying: ?set, ?setnames and ?setattr. If this message doesn't help, please report your use case to the data.table issue tracker so the root cause can be fixed or this message improved."
+msgstr ""
+
+msgid "Cannot assign to an under-allocated recursively indexed list -- L[[i]][,:=] syntax is only valid when i is length 1, but it's length"
+msgstr ""
+
+msgid "Internal error -- item '"
+msgstr ""
+
+msgid "' not found in names of list"
+msgstr ""
+
+msgid "Internal error -- column(s) not found:"
+msgstr ""
+
+msgid "strptime() usage detected and wrapped with as.POSIXct(). This is to minimize the chance of assigning POSIXlt columns, which use 40+ bytes to store one date (versus 8 for POSIXct). Use as.POSIXct() (which will call strptime() as needed internally) to avoid this warning."
+msgstr ""
+
+msgid "' is not found in calling scope. Looking in calling scope because this symbol was prefixed with .. in the j= parameter."
+msgstr ""
+
+msgid "Internal error: xcolAns does not pass checks:"
+msgstr ""
+
+msgid "Internal error: irows is NULL when making join result at R level. Should no longer happen now we use CsubsetDT earlier."
+msgstr ""
+
+msgid "j (the 2nd argument inside [...]) is a single symbol but column name '"
+msgstr ""
+
+msgid "' is not found. Perhaps you intended DT[, .."
+msgstr ""
+
+msgid "]. This difference to data.frame is deliberate and explained in FAQ 1.1."
+msgstr ""
+
+msgid "Internal error: j has created a data.table result containing a NULL column"
+msgstr ""
+
+msgid "The column '.N' can't be grouped because it conflicts with the special .N variable. Try setnames(DT,'.N','N') first."
+msgstr ""
+
+msgid "The column '.I' can't be grouped because it conflicts with the special .I variable. Try setnames(DT,'.I','I') first."
+msgstr ""
+
+msgid "logical error. i is not data.table, but mult='all' and 'by'=.EACHI"
+msgstr ""
+
+msgid "Internal error: by= is missing"
+msgstr ""
+
+msgid "Internal error: byindex not the index name"
+msgstr ""
+
+msgid "Internal error: byindex not found"
+msgstr ""
+
+msgid "Unable to optimize call to mean() and could be very slow. You must name 'na.rm' like that otherwise if you do mean(x,TRUE) the TRUE is taken to mean 'trim' which is the 2nd argument of mean. 'trim' is not yet optimized."
+msgstr ""
+
+msgid "Internal error: length(irows)!=length(o__)"
+msgstr ""
+
+msgid "The setkey() normally performed by keyby= has been skipped (as if by= was used) because := is being used together with keyby= but the keyby= contains some expressions. To avoid this warning, use by= instead, or provide existing column names to keyby=."
+msgstr ""
+
+msgid "Internal error: jvnames is length"
+msgstr ""
+
+msgid "but ans is"
+msgstr ""
+
+msgid "and bynames is"
+msgstr ""
+
+msgid "rownames and rownames.value cannot both be used at the same time"
+msgstr ""
+
+msgid "length(rownames)=="
+msgstr ""
+
+msgid "but nrow(DT)=="
+msgstr ""
+
+msgid ". The rownames argument specifies a single column name or number. Consider rownames.value= instead."
+msgstr ""
+
+msgid "length(rownames)==0 but should be a single column name or number, or NULL"
+msgstr ""
+
+msgid "rownames is TRUE but key has multiple columns"
+msgstr ""
+
+msgid "; taking first column x[,1] as rownames"
+msgstr ""
+
+msgid "'"
+msgstr ""
+
+msgid "' is not a column of x"
+msgstr ""
+
+msgid "as.integer(rownames)=="
+msgstr ""
+
+msgid "]."
+msgstr ""
+
+msgid "length(rownames.value)=="
+msgstr ""
+
+msgid "but should be nrow(x)=="
+msgstr ""
+
+msgid "When i is a matrix in DT[i]<-value syntax, it doesn't make sense to provide j"
+msgstr ""
+
+msgid "j must be an atomic vector, see ?is.atomic"
+msgstr ""
+
+msgid "NA in j"
+msgstr ""
+
+msgid "j must be vector of column name or positions"
+msgstr ""
+
+msgid "Attempt to assign to column position greater than ncol(x). Create the column by name, instead. This logic intends to catch (most likely) user errors."
+msgstr ""
+
+msgid "data.table inherits from data.frame (from v1.5), but this data.table does not. Has it been created manually (e.g. by using 'structure' rather than 'data.table') or saved to disk using a prior version of data.table?"
+msgstr ""
+
+msgid "attempting to assign invalid object to dimnames of a data.table"
+msgstr ""
+
+msgid "data.tables do not have rownames"
+msgstr ""
+
+msgid "Can't assign"
+msgstr ""
+
+msgid "colnames to a"
+msgstr ""
+
+msgid "-column data.table"
+msgstr ""
+
+msgid "'subset' must evaluate to logical"
+msgstr ""
+
+msgid "Argument 'invert' must be logical TRUE/FALSE"
+msgstr ""
+
+msgid "x argument must be a data.table"
+msgstr ""
+
+msgid "group length is 0 but data nrow > 0"
+msgstr ""
+
+msgid "passing 'f' argument together with 'by' is not allowed, use 'by' when split by column in data.table and 'f' when split by external factor"
+msgstr ""
+
+msgid "Either 'by' or 'f' argument must be supplied"
+msgstr ""
+
+msgid "Column '.ll.tech.split' is reserved for split.data.table processing"
+msgstr ""
+
+msgid "Column '.nm.tech.split' is reserved for split.data.table processing"
+msgstr ""
+
+msgid "Argument 'by' must refer to column names in x"
+msgstr ""
+
+msgid "Argument 'by' must refer only to atomic-type columns, but the following columns are non-atomic:"
+msgstr ""
+
+msgid "x is not a data.table. Shallow copy is a copy of the vector of column pointers (only), so is only meaningful for data.table"
+msgstr ""
+
+msgid "setalloccol attempting to modify `*tmp*`"
+msgstr ""
+
+msgid "Input is a length=1 logical that points to the same address as R's global value. Therefore the attribute has not been set by reference, rather on a copy. You will need to assign the result back to a variable. See issue #1281."
+msgstr ""
+
+msgid "x is not a data.table or data.frame"
+msgstr ""
+
+msgid "x has"
+msgstr ""
+
+msgid "columns but its names are length"
+msgstr ""
+
+msgid "Passed a vector of type '"
+msgstr ""
+
+msgid "'. Needs to be type 'character'."
+msgstr ""
+
+msgid "names to a"
+msgstr ""
+
+msgid "column data.table"
+msgstr ""
+
+msgid "'new' is not a character vector or a function"
+msgstr ""
+
+msgid "NA in 'new' at positions"
+msgstr ""
+
+msgid "Some duplicates exist in 'old':"
+msgstr ""
+
+msgid "'old' is type"
+msgstr ""
+
+msgid "but should be integer, double or character"
+msgstr ""
+
+msgid "'old' is length"
+msgstr ""
+
+msgid "but 'new' is length"
+msgstr ""
+
+msgid "NA (or out of bounds) in 'old' at positions"
+msgstr ""
+
+msgid "of 'old' is '"
+msgstr ""
+
+msgid "' which appears several times in column names. Just the first will be changed. There are"
+msgstr ""
+
+msgid "other items in old that are also duplicated in column names."
+msgstr ""
+
+msgid "Items of 'old' not found in column names:"
+msgstr ""
+
+msgid ". Consider skip_absent=TRUE."
+msgstr ""
+
+msgid "Internal error: length(i)!=length(new)"
+msgstr ""
+
+msgid "x has some duplicated column name(s):"
+msgstr ""
+
+msgid ". Please remove or rename the duplicate(s) and try again."
+msgstr ""
+
+msgid "Input is"
+msgstr ""
+
+msgid "but should be a plain list of items to be stacked"
+msgstr ""
+
+msgid "idcol must be a logical or character vector of length 1. If logical TRUE the id column will named '.id'."
+msgstr ""
+
+msgid "use.names=NA invalid"
+msgstr ""
+
+msgid "use.names='check' cannot be used explicitly because the value 'check' is new in v1.12.2 and subject to change. It is just meant to convey default behavior. See ?rbindlist."
+msgstr ""
+
+msgid "Check that is.data.table(DT) == TRUE. Otherwise, := and `:=`(...) are defined for use in j, once only and in particular ways. See help(\":=\")."
+msgstr ""
+
+msgid "setDF only accepts data.table, data.frame or list of equal length as input"
+msgstr ""
+
+msgid "rownames contains duplicates"
+msgstr ""
+
+msgid "rownames incorrect length; expected"
+msgstr ""
+
+msgid "names, got"
+msgstr ""
+
+msgid "All elements in argument 'x' to 'setDF' must be of same length"
+msgstr ""
+
+msgid "Cannot find symbol"
+msgstr ""
+
+msgid "Cannot convert '"
+msgstr ""
+
+msgid "' to data.table by reference because binding is locked. It is very likely that '"
+msgstr ""
+
+msgid "' resides within a package (or an environment) that is locked to prevent modifying its variable bindings. Try copying the object to your current environment, ex: var <- copy(var) and then using setDT again."
+msgstr ""
+
+msgid "Some columns are a multi-column type (such as a matrix column):"
+msgstr ""
+
+msgid ". setDT will retain these columns as-is but subsequent operations like grouping and joining may fail. Please consider as.data.table() instead which will create a new column for each embedded column."
+msgstr ""
+
+msgid "Column"
+msgstr ""
+
+msgid "is of POSIXlt type. Please convert it to POSIXct using as.POSIXct and run setDT again. We do not recommend use of POSIXlt at all because it uses 40 bytes to store one date."
+msgstr ""
+
+msgid "All elements in argument 'x' to 'setDT' must be of same length, but the profile of input lengths (length:frequency) is:"
+msgstr ""
+
+msgid "%s:%d"
+msgstr ""
+
+msgid "The first entry with fewer than"
+msgstr ""
+
+msgid "entries is"
+msgstr ""
+
+msgid "Argument 'x' to 'setDT' should be a 'list', 'data.frame' or 'data.table'"
+msgstr ""
+
+msgid "Item '"
+msgstr ""
+
+msgid "' not found in names of input list"
+msgstr ""
+
+msgid "'prefix' must be NULL or a character vector of length 1."
+msgstr ""
+
+msgid "x is a single vector, non-NULL 'cols' doesn't make sense."
+msgstr ""
+
+msgid "x is a list, 'cols' cannot be 0-length."
+msgstr ""
+
+msgid "RHS of"
+msgstr ""
+
+msgid "is length"
+msgstr ""
+
+msgid "which is not 1 or nrow ("
+msgstr ""
+
+msgid "). For robustness, no recycling is allowed (other than of length 1 RHS). Consider %in% instead."
+msgstr ""
+
+msgid "Internal error in .isFastSubsettable. Please report to data.table developers"
+msgstr ""
+
+msgid "'on' argument should be a named atomic vector of column names indicating which columns in 'i' should be joined with which columns in 'x'."
+msgstr ""
+
+msgid "Found more than one operator in one 'on' statement:"
+msgstr ""
+
+msgid ". Please specify a single operator."
+msgstr ""
+
+msgid "'on' contains no column name:"
+msgstr ""
+
+msgid ". Each 'on' clause must contain one or two column names."
+msgstr ""
+
+msgid "'on' contains more than 2 column names:"
+msgstr ""
+
+msgid "Invalid operators"
+msgstr ""
+
+msgid ". Only allowed operators are"
+msgstr ""
+
+msgid "."
+msgstr ""
+
+msgid "There is no package %s in provided repository."
+msgstr ""
+
+msgid "'fromLast' must be TRUE or FALSE"
+msgstr ""
+
+msgid "x must be an atomic vector or data.frames/data.tables"
+msgstr ""
+
+msgid "Using '"
+msgstr ""
+
+msgid "' as value column. Use 'value.var' to override"
+msgstr ""
+
+msgid "The dcast generic in data.table has been passed a"
+msgstr ""
+
+msgid ", but data.table::dcast currently only has a method for data.tables. Please confirm your input is a data.table, with setDT("
+msgstr ""
+
+msgid ") or as.data.table("
+msgstr ""
+
+msgid "). If you intend to use a reshape2::dcast, try installing that package first, but do note that reshape2 is deprecated and you should be migrating your code away from using it."
+msgstr ""
+
+msgid "and will attempt to redirect to the reshape2::dcast; please note that reshape2 is deprecated, and this redirection is now deprecated as well. Please do this redirection yourself like reshape2::dcast("
+msgstr ""
+
+msgid "). In the next version, this warning will become an error."
+msgstr ""
+
+msgid "Invalid formula. Cast formula should be of the form LHS ~ RHS, for e.g., a + b ~ c."
+msgstr ""
+
+msgid "data.table to cast must have unique column names"
+msgstr ""
+
+msgid "value.var values ["
+msgstr ""
+
+msgid "] are not found in 'data'."
+msgstr ""
+
+msgid "When 'fun.aggregate' and 'value.var' are both lists, 'value.var' must be either of length =1 or =length(fun.aggregate)."
+msgstr ""
+
+msgid "'data' must be a data.table."
+msgstr ""
+
+msgid "'drop' must be logical TRUE/FALSE"
+msgstr ""
+
+msgid "Column ["
+msgstr ""
+
+msgid "] not found or of unknown type."
+msgstr ""
+
+msgid "Columns specified in formula can not be of type list"
+msgstr ""
+
+msgid "Can not cast an empty data.table"
+msgstr ""
+
+msgid "Aggregate function missing, defaulting to 'length'"
+msgstr ""
+
+msgid "Internal error -- empty rhsnames in dcast; please report"
+msgstr ""
+
+msgid "The melt generic in data.table has been passed a"
+msgstr ""
+
+msgid ", but data.table::melt currently only has a method for data.tables. Please confirm your input is a data.table, with setDT("
+msgstr ""
+
+msgid "). If you intend to use a method from reshape2, try installing that package first, but do note that reshape2 is deprecated and you should be migrating your code away from using it."
+msgstr ""
+
+msgid "and will attempt to redirect to the relevant reshape2 method; please note that reshape2 is deprecated, and this redirection is now deprecated as well. To continue using melt methods from reshape2 while both libraries are attached, e.g. melt.list, you can prepend the namespace like reshape2::melt("
+msgstr ""
+
+msgid "Input patterns must be of type character."
+msgstr ""
+
+msgid "'data' must be a data.table"
+msgstr ""
+
+msgid "'value.name' provided in both 'measure.vars'"
+msgstr ""
+
+msgid "and 'value.name argument'; value provided in"
+msgstr ""
+
+msgid "'measure.vars' is given precedence."
+msgstr ""
+
+msgid "Please provide a name to each element of 'measure.vars'."
+msgstr ""
+
+msgid "y and x must both be data.tables. Use `setDT()` to convert list/data.frames to data.tables by reference or as.data.table() to convert to data.tables by copying."
+msgstr ""
+
+msgid "maxgap must be a non-negative integer value of length 1"
+msgstr ""
+
+msgid "minoverlap must be a positive integer value of length 1"
+msgstr ""
+
+msgid "which must be a logical vector of length 1. Either TRUE/FALSE"
+msgstr ""
+
+msgid "nomatch must either be NA or NULL"
+msgstr ""
+
+msgid "maxgap and minoverlap arguments are not yet implemented."
+msgstr ""
+
+msgid "'y' must be keyed (i.e., sorted, and, marked as sorted). Call setkey(y, ...) first, see ?setkey. Also check the examples in ?foverlaps."
+msgstr ""
+
+msgid "'by.x' and 'by.y' should contain at least two column names (or numbers) each - corresponding to 'start' and 'end' points of intervals. Please see ?foverlaps and examples for more info."
+msgstr ""
+
+msgid "Invalid numeric value for 'by.x'; it should be a vector with values 1 <= by.x <= length(x)"
+msgstr ""
+
+msgid "Invalid numeric value for 'by.y'; it should be a vector with values 1 <= by.y <= length(y)"
+msgstr ""
+
+msgid "A non-empty vector of column names or numbers is required for by.x"
+msgstr ""
+
+msgid "A non-empty vector of column names or numbers is required for by.y"
+msgstr ""
+
+msgid "The first"
+msgstr ""
+
+msgid "columns of y's key must be identical to the columns specified in by.y."
+msgstr ""
+
+msgid "Elements listed in 'by.x' must be valid names in data.table 'x'"
+msgstr ""
+
+msgid "Duplicate columns are not allowed in overlap joins. This may change in the future."
+msgstr ""
+
+msgid "length(by.x) != length(by.y). Columns specified in by.x should correspond to columns specified in by.y and should be of same lengths."
+msgstr ""
+
+msgid "y has some duplicated column name(s):"
+msgstr ""
+
+msgid "The last two columns in by.x should correspond to the 'start' and 'end' intervals in data.table 'x' and must be integer/numeric type."
+msgstr ""
+
+msgid "NA values in data.table 'x' start column: '"
+msgstr ""
+
+msgid "'. All rows with NA values in the range columns must be removed for foverlaps() to work."
+msgstr ""
+
+msgid "NA values in data.table 'x' end column: '"
+msgstr ""
+
+msgid "All entries in column"
+msgstr ""
+
+msgid "should be <= corresponding entries in column"
+msgstr ""
+
+msgid "in data.table 'x'."
+msgstr ""
+
+msgid "The last two columns in by.y should correspond to the 'start' and 'end' intervals in data.table 'y' and must be integer/numeric type."
+msgstr ""
+
+msgid "NA values in data.table 'y' start column: '"
+msgstr ""
+
+msgid "NA values in data.table 'y' end column: '"
+msgstr ""
+
+msgid "in data.table 'y'."
+msgstr ""
+
+msgid "Some interval cols are of type POSIXct while others are not. Please ensure all interval cols are (or are not) of POSIXct type"
+msgstr ""
+
+msgid "POSIXct interval cols have mixed timezones. Overlaps are performed on the internal numerical representation of POSIXct objects (always in UTC epoch time), therefore printed values may give the impression that values don't overlap but their internal representations do Please ensure that POSIXct type interval cols have identical 'tzone' attributes to avoid confusion."
+msgstr ""
+
+msgid "Not yet implemented"
+msgstr ""
+
+msgid "maxgap > minoverlap. maxgap will have no effect here."
+msgstr ""
+
+msgid "length(na.last) = 0"
+msgstr ""
+
+msgid "length(na.last) > 1, only the first element will be used"
+msgstr ""
+
+msgid "x is a single vector, non-NULL 'cols' doesn't make sense"
+msgstr ""
+
+msgid "x is a list, 'cols' can not be 0-length"
+msgstr ""
+
+msgid "Used more than one of the arguments input=, file=, text= and cmd=."
+msgstr ""
+
+msgid "Argument 'encoding' must be 'unknown', 'UTF-8' or 'Latin-1'."
+msgstr ""
+
+msgid "'text=' is type"
+msgstr ""
+
+msgid "but must be character."
+msgstr ""
+
+msgid "input= must be a single character string containing a file name, a system command containing at least one space, a URL starting 'http[s]://', 'ftp[s]://' or 'file://', or, the input data itself containing at least one \\n or \\r"
+msgstr ""
+
+msgid "input= contains no \\n or \\r, but starts with a space. Please remove the leading space, or use text=, file= or cmd="
+msgstr ""
+
+msgid "Input URL requires https:// connection for which fread() requires 'curl' package which cannot be found. Please install 'curl' using 'install.packages('curl')'."
+msgstr ""
+
+msgid "Taking input= as a system command ('"
+msgstr ""
+
+msgid "') and a variable has been used in the expression passed to `input=`. Please use fread(cmd=...). There is a security concern if you are creating an app, and the app could have a malicious user, and the app is not running in a secure environment; e.g. the app is running as root. Please read item 5 in the NEWS file for v1.11.6 for more information and for the option to suppress this message."
+msgstr ""
+
+msgid "File '"
+msgstr ""
+
+msgid "' does not exist or is non-readable. getwd()=='"
+msgstr ""
+
+msgid "' is a directory. Not yet implemented."
+msgstr ""
+
+msgid "' has size 0. Returning a NULL"
+msgstr ""
+
+msgid "data.table"
+msgstr ""
+
+msgid "data.frame"
+msgstr ""
+
+msgid "To read gz and bz2 files directly, fread() requires 'R.utils' package which cannot be found. Please install 'R.utils' using 'install.packages('R.utils')'."
+msgstr ""
+
+msgid "'autostart' is now deprecated and ignored. Consider skip='string' or skip=n"
+msgstr ""
+
+msgid "colClasses is type 'logical' which is ok if all NA but it has some TRUE or FALSE values in it which is not allowed. Please consider the drop= or select= argument instead. See ?fread."
+msgstr ""
+
+msgid "colClasses is not type list or character vector"
+msgstr ""
+
+msgid "colClasses=\"NULL\" (quoted) is interpreted as colClasses=NULL (the default) as opposed to dropping every column."
+msgstr ""
+
+msgid "strip.white==TRUE (default) and \"\" is present in na.strings, so any number of spaces in string columns will already be read as <NA>."
+msgstr ""
+
+msgid "Since strip.white=TRUE (default), use na.strings=\"\" to specify that any number of spaces in a string column should be read as <NA>."
+msgstr ""
+
+msgid "But strip.white=FALSE. Use strip.white=TRUE (default) together with na.strings=\"\" to turn any number of spaces in string columns into <NA>"
+msgstr ""
+
+msgid "'data.table' relies on the package 'yaml' to parse the file header; please add this to your library with install.packages('yaml') and try again."
+msgstr ""
+
+msgid "Combining a search string as 'skip' and reading a YAML header may not work as expected -- currently,"
+msgstr ""
+
+msgid "reading will proceed to search for 'skip' from the beginning of the file, NOT from the end of"
+msgstr ""
+
+msgid "the metadata; please file an issue on GitHub if you'd like to see more intuitive behavior supported."
+msgstr ""
+
+msgid "Encountered <"
+msgstr ""
+
+msgid "..."
+msgstr ""
+
+msgid "> at the first"
+msgstr ""
+
+msgid "unskipped line ("
+msgstr ""
+
+msgid "), which does not constitute the start to a valid YAML header"
+msgstr ""
+
+msgid "(expecting something matching regex \""
+msgstr ""
+
+msgid "\"); please check your input and try again."
+msgstr ""
+
+msgid "Reached the end of the file before finding a completion to the YAML header. A valid YAML header is bookended by lines matching"
+msgstr ""
+
+msgid "the regex \""
+msgstr ""
+
+msgid "\". Please double check the input file is a valid csvy."
+msgstr ""
+
+msgid "User-supplied 'header' will override that found in metadata."
+msgstr ""
+
+msgid "User-supplied column names in 'col.names' will override those found in YAML metadata."
+msgstr ""
+
+msgid "colClasses dictated by user input and those read from YAML header are in conflict (specifically, for column"
+msgstr ""
+
+msgid "s"
+msgstr ""
+
+msgid "["
+msgstr ""
+
+msgid "]); the proceeding assumes the user input was"
+msgstr ""
+
+msgid "an intentional override and will ignore the types implied by the YAML header; please exclude"
+msgstr ""
+
+msgid "these columns"
+msgstr ""
+
+msgid "this column from colClasses if this was unintentional."
+msgstr ""
+
+msgid "User-supplied 'sep' will override that found in metadata."
+msgstr ""
+
+msgid "User-supplied 'quote' will override that found in metadata."
+msgstr ""
+
+msgid "User-supplied 'dec' will override that found in metadata."
+msgstr ""
+
+msgid "User-supplied 'na.strings' will override that found in metadata."
+msgstr ""
+
+msgid "Column '"
+msgstr ""
+
+msgid "' was requested to be '"
+msgstr ""
+
+msgid "' but fread encountered the following"
+msgstr ""
+
+msgid "error"
+msgstr ""
+
+msgid "warning"
+msgstr ""
+
+msgid ":"
+msgstr ""
+
+msgid "so the column has been left as type '"
+msgstr ""
+
+msgid "key argument of data.table() must be a character vector naming columns (NB: col.names are applied before this)"
+msgstr ""
+
+msgid "index argument of data.table() must be a character vector naming columns (NB: col.names are applied before this)"
+msgstr ""
+
+msgid "dateTimeAs must be a single string"
+msgstr ""
+
+msgid "dateTimeAs must be 'ISO','squash','epoch' or 'write.csv'"
+msgstr ""
+
+msgid "logicalAsInt has been renamed logical01. Use logical01 only, not both."
+msgstr ""
+
+msgid "x being coerced from class: matrix to data.table"
+msgstr ""
+
+msgid "Input has no columns; doing nothing."
+msgstr ""
+
+msgid "If you intended to overwrite the file at"
+msgstr ""
+
+msgid "with an empty one, please use file.remove first."
+msgstr ""
+
+msgid "Input has no columns; creating an empty file at '"
+msgstr ""
+
+msgid "' and exiting."
+msgstr ""
+
+msgid "'data.table' relies on the package 'yaml' to write the file header; please add this to your library with install.packages('yaml') and try again."
+msgstr ""
+
+msgid "Argument 'x' must be a data.table object"
+msgstr ""
+
+msgid "Argument 'by' must be a character vector of column names used in grouping."
+msgstr ""
+
+msgid "Argument 'id' must be a logical scalar."
+msgstr ""
+
+msgid "Argument 'x' is a 0-column data.table; no measure to apply grouping over."
+msgstr ""
+
+msgid "Input data.table must not contain duplicate column names."
+msgstr ""
+
+msgid "Argument 'by' must have unique column names for grouping."
+msgstr ""
+
+msgid "Argument 'sets' must be a list of character vectors."
+msgstr ""
+
+msgid "All columns used in 'sets' argument must be in 'by' too. Columns used in 'sets' but not present in 'by':"
+msgstr ""
+
+msgid "When using `id=TRUE` the 'x' data.table must not have a column named 'grouping'."
+msgstr ""
+
+msgid "Character vectors in 'sets' list must not have duplicated column names within a single grouping set."
+msgstr ""
+
+msgid "'sets' contains a duplicate (i.e., equivalent up to sorting) element at index"
+msgstr ""
+
+msgid "; as such, there will be duplicate rows in the output -- note that grouping by A,B and B,A will produce the same aggregations. Use `sets=unique(lapply(sets, sort))` to eliminate duplicates."
+msgstr ""
+
+msgid "Expression passed to grouping sets function must not update by reference. Use ':=' on results of your grouping function."
+msgstr ""
+
+msgid "When using `id=TRUE` the 'j' expression must not evaluate to a column named 'grouping'."
+msgstr ""
+
+msgid "There exists duplicated column names in the results, ensure the column passed/evaluated in `j` and those in `by` are not overlapping."
+msgstr ""
+
+msgid "Using integer64 class columns require to have 'bit64' package installed."
+msgstr ""
+
+msgid "'xts' class passed to %s function but 'xts' is not available, you should have 'xts' installed already"
+msgstr ""
+
+msgid "Argument 'sort' should be logical TRUE/FALSE"
+msgstr ""
+
+msgid "Argument 'no.dups' should be logical TRUE/FALSE"
+msgstr ""
+
+msgid "You are trying to join data.tables where"
+msgstr ""
+
+msgid "'x' and 'y' arguments are"
+msgstr ""
+
+msgid "'x' argument is"
+msgstr ""
+
+msgid "'y' argument is"
+msgstr ""
+
+msgid "0 columns data.table."
+msgstr ""
+
+msgid "`by.x` and `by.y` must be of same length."
+msgstr ""
+
+msgid "Supplied both `by` and `by.x/by.y`. `by` argument will be ignored."
+msgstr ""
+
+msgid "A non-empty vector of column names are required for `by.x` and `by.y`."
+msgstr ""
+
+msgid "Elements listed in `by.x` must be valid column names in x."
+msgstr ""
+
+msgid "Elements listed in `by.y` must be valid column names in y."
+msgstr ""
+
+msgid "A non-empty vector of column names for `by` is required."
+msgstr ""
+
+msgid "Elements listed in `by` must be valid column names in x and y"
+msgstr ""
+
+msgid "column names"
+msgstr ""
+
+msgid "are duplicated in the result"
+msgstr ""
+
+msgid "IN DEVELOPMENT built"
+msgstr ""
+
+msgid "using"
+msgstr ""
+
+msgid "threads (see ?getDTthreads).  Latest news: r-datatable.com"
+msgstr ""
+
+msgid "TRANSLATION CHECK"
+msgstr ""
+
+msgid "**********\nRunning data.table in English; package support is available in English only. When searching for online help, be sure to also check for the English error message. This can be obtained by looking at the po/R-<locale>.po and po/<locale>.po files in the package source, where the native language and English error messages can be found side-by-side\n**********"
+msgstr ""
+
+msgid "**********\nThis development version of data.table was built more than 4 weeks ago. Please update: data.table::update.dev.pkg()\n**********"
+msgstr ""
+
+msgid "**********\nThis installation of data.table has not detected OpenMP support. It should still work but in single-threaded mode."
+msgstr ""
+
+msgid "If this is a Mac, please ensure you are using R>=3.4.0 and have followed our Mac instructions here: https://github.com/Rdatatable/data.table/wiki/Installation."
+msgstr ""
+
+msgid "This warning message should not occur on Windows or Linux. If it does, please file a GitHub issue.\n**********"
+msgstr ""
+
+msgid "The option 'datatable.nomatch' is being used and is not set to the default NA. This option is still honored for now but will be deprecated in future. Please see NEWS for 1.12.4 for detailed information and motivation. To specify inner join, please specify `nomatch=NULL` explicitly in your calls rather than changing the default using this option."
+msgstr ""
+
+msgid "The datatable."
+msgstr ""
+
+msgid "version ("
+msgstr ""
+
+msgid ") does not match the package ("
+msgstr ""
+
+msgid "). Please close all R sessions to release the old"
+msgstr ""
+
+msgid "and reinstall data.table in a fresh R session. The root cause is that R's package installer can in some unconfirmed circumstances leave a package in a state that is apparently functional but where new R code is calling old C code silently: https://bugs.r-project.org/bugzilla/show_bug.cgi?id=17478. Once a package is in this mismatch state it may produce wrong results silently until you next upgrade the package. Please help by adding precise circumstances to 17478 to move the status to confirmed. This mismatch between R and C code can happen with any package not just data.table. It is just that data.table has added this check."
+msgstr ""
+
+msgid "This is R"
+msgstr ""
+
+msgid "but data.table has been installed using R"
+msgstr ""
+
+msgid ". The major version must match. Please reinstall data.table."
+msgstr ""
+
+msgid "Option 'datatable.old.bywithoutby' has been removed as warned for 2 years. It is now ignored. Please use by=.EACHI instead and stop using this option."
+msgstr ""
+
+msgid "Unexpected base R behaviour: list(x) has copied x"
+msgstr ""
+
+msgid "Unexpected base R behaviour: names<- has copied column contents"
+msgstr ""
+
+msgid "Unexpected base R behaviour: DF[2,2]<- did not copy column 2 which was assigned to"
+msgstr ""
+
+msgid "Unexpected base R behaviour: DF[2,2]<- copied the first column which was not assigned to, too"
+msgstr ""
+
+msgid "Unexpected base R behaviour: DF[2,2]<- has not copied address(DF)"
+msgstr ""
+
+msgid "Reminder to data.table developers: don't use getRversion() internally. Add a behaviour test to .onLoad instead."
+msgstr ""
+
+msgid "Provide either threads= or percent= but not both"
+msgstr ""
+
+msgid "percent= is provided but is length"
+msgstr ""
+
+msgid "percent=="
+msgstr ""
+
+msgid "but should be a number between 2 and 100"
+msgstr ""
+
+msgid "Valid options for col.names are 'auto', 'top', and 'none'"
+msgstr ""
+
+msgid "Column classes will be suppressed when col.names is 'none'"
+msgstr ""
+
+msgid "Internal structure doesn't seem to be a list. Possibly corrupt data.table."
+msgstr ""
+
+msgid "x may no longer be the character name of the data.table. The possibility was undocumented and has been removed."
+msgstr ""
+
+msgid "key(x)<-value is deprecated and not supported. Please change to use setkey() with perhaps copy(). Has been warning since 2012 and will be an error in future."
+msgstr ""
+
+msgid "x is not a data.table"
+msgstr ""
+
+msgid "cols is not a character vector. Please see further information in ?setkey."
+msgstr ""
+
+msgid "Setting a physical key on .SD is reserved for possible future use; to modify the original data's order by group. Try setindex() instead. Or, set*(copy(.SD)) as a (slow) last resort."
+msgstr ""
+
+msgid "cols is a character vector of zero length. Removed the key, but use NULL instead, or wrap with suppressWarnings() to avoid this warning."
+msgstr ""
+
+msgid "cols is the empty string. Use NULL to remove the key."
+msgstr ""
+
+msgid "cols contains some blanks."
+msgstr ""
+
+msgid "some columns are not in the data.table:"
+msgstr ""
+
+msgid "x contains a column called '.xi'. Conflicts with internal use by data.table."
+msgstr ""
+
+msgid "' is type '"
+msgstr ""
+
+msgid "' which is not supported as a key column type, currently."
+msgstr ""
+
+msgid "Internal error. 'cols' should be character at this point in setkey; please report."
+msgstr ""
+
+msgid "Internal error: index '"
+msgstr ""
+
+msgid "' exists but is invalid"
+msgstr ""
+
+msgid "Use 'if (length(o <- forderv(DT,by))) ...' for efficiency in one step, so you have o as well if not sorted."
+msgstr ""
+
+msgid "x is vector but 'by' is supplied"
+msgstr ""
+
+msgid "x is a single vector, non-NULL 'by' doesn't make sense"
+msgstr ""
+
+msgid "Attempting to order a 0-column data.table or data.frame."
+msgstr ""
+
+msgid "The first item passed to [f]order is a plain list but there are more items. It should be a data.table or data.frame."
+msgstr ""
+
+msgid "Internal code should not be being called on type double"
+msgstr ""
+
+msgid "Input is not a vector of type double. New parallel sort has only been done for double vectors so far. Using one thread."
+msgstr ""
+
+msgid "New parallel sort has not been implemented for decreasing=TRUE so far. Using one thread."
+msgstr ""
+
+msgid "New parallel sort has not been implemented for vectors containing NA values so far. Using one thread."
+msgstr ""
+
+msgid "x must be a data.frame or data.table"
+msgstr ""
+
+msgid "na.last must be logical TRUE/FALSE"
+msgstr ""
+
+msgid "cols is not a character vector. Please see further information in ?setorder."
+msgstr ""
+
+msgid "cols is a character vector of zero length. Use NULL instead, or wrap with suppressWarnings() to avoid this warning."
+msgstr ""
+
+msgid "' which is not supported for ordering currently."
+msgstr ""
+
+msgid "'sorted' is TRUE but element"
+msgstr ""
+
+msgid "is non-atomic, which can't be sorted; try setting sorted = FALSE"
+msgstr ""
+
+msgid "Cross product of elements provided to CJ() would result in %.0f rows which exceeds .Machine$integer.max == %d"
+msgstr ""
+
+msgid "x and y must both be data.tables"
+msgstr ""
+
+msgid "length(by.x) != length(by.y)"
+msgstr ""
+
+msgid "When x's column ('"
+msgstr ""
+
+msgid "') is character, the corresponding column in y ('"
+msgstr ""
+
+msgid "') should be factor or character, but found incompatible type '"
+msgstr ""
+
+msgid "') is factor, the corresponding column in y ('"
+msgstr ""
+
+msgid "') should be character or factor, but found incompatible type '"
+msgstr ""
+
+msgid "') is integer or numeric, the corresponding column in y ('"
+msgstr ""
+
+msgid "') can not be character or logical types, but found incompatible type '"
+msgstr ""
+
+msgid "argument 'all' should be logical of length one"
+msgstr ""
+
+msgid "x and y must have the same column names"
+msgstr ""
+
+msgid "x and y must have the same column order"
+msgstr ""
+
+msgid "unsupported column type"
+msgstr ""
+
+msgid "found in x or y:"
+msgstr ""
+
+msgid "of x is '"
+msgstr ""
+
+msgid "' but the corresponding item of y is '"
+msgstr ""
+
+msgid "None of the datasets should contain a column named '.seqn'"
+msgstr ""
+
+msgid "'target' and 'current' must both be data.tables"
+msgstr ""
+
+msgid "Internal error: ncol(current)==ncol(target) was checked above"
+msgstr ""
+
+msgid "None of the datasets to compare should contain a column named '.seqn'"
+msgstr ""
+
+msgid "Datasets to compare with 'ignore.row.order' must not have unsupported column types:"
+msgstr ""
+
+msgid "Argument 'tolerance' was forced to lowest accepted value `sqrt(.Machine$double.eps)` from provided"
+msgstr ""
+
+msgid "Duplicate rows in datasets, numeric columns and ignore.row.order cannot be used with non 0 tolerance argument"
+msgstr ""
+
+msgid "Factor columns and ignore.row.order cannot be used with non 0 tolerance argument"
+msgstr ""
+
+msgid "Internal error: factor type mismatch should have been caught earlier"
+msgstr ""
+
+msgid "argument 'fill' ignored, only make sense for type='const'"
+msgstr ""
+
+msgid "order.col='"
+msgstr ""
+
+msgid "' not a column name of info"
+msgstr ""
+
+msgid "data.table package is loaded. Unload or start a fresh R session."
+msgstr ""
+
+msgid "script must end with '.Rraw'. If a file ending '.Rraw.bz2' exists, that will be found and used."
+msgstr ""
+
+msgid "Neither %s nor %s exist in %s"
+msgstr ""
+
+msgid "Failed after test"
+msgstr ""
+
+msgid "before the next test() call in"
+msgstr ""
+
+msgid "out of"
+msgstr ""
+
+msgid ". Search"
+msgstr ""
+
+msgid "for test number"
+msgstr ""
+
+msgid "Timings count mismatch:"
+msgstr ""
+
+msgid "vs"
+msgstr ""
+
+msgid "Test"
+msgstr ""
+
+msgid "is invalid: when error= is provided it does not make sense to pass y as well"
+msgstr ""
+
+msgid "Use started.at=proc.time() not Sys.time() (POSIXt and slow)"
+msgstr ""
+
+msgid "make.names='"
+msgstr ""
+
+msgid "' not found in names of input"
+msgstr ""
+
+msgid "make.names="
+msgstr ""
+
+msgid "is out of range [1,ncol="
+msgstr ""
+
+msgid "'names' must be TRUE/FALSE or a character vector."
+msgstr ""
+
+msgid "'keep' should contain integer values between"
+msgstr ""
+
+msgid "length(names) (="
+msgstr ""
+
+msgid ") is not equal to length("
+msgstr ""
+
+msgid ") (="
+msgstr ""
+
+msgid ")."
+msgstr ""
+
+msgid "l not type list"
+msgstr ""
+
+msgid "Argument 'nan' must be length 1"
+msgstr ""
+
+msgid "Argument 'nan' must be NA or NaN"
+msgstr ""
+
+msgid "x not boolean"
+msgstr ""
+
+msgid "Some columns are type 'integer64' but package bit64 is not installed. Those columns will print as strange looking floating point data. There is no need to reload the data. Simply install.packages('bit64') to obtain the integer64 print method and print the data again."
+msgstr ""
+
+msgid "Pattern"
+msgstr ""
+
+msgid "not found: ["
+msgstr ""
+
+msgid "Input xts object should not have 'index' column because it would result in duplicate column names. Rename 'index' column in xts or use `keep.rownames=FALSE` and add index manually as another column."
+msgstr ""
+
+msgid "data.table must have a time based column in first position, use `setcolorder` function to change the order, or see ?timeBased for supported types"
+msgstr ""
+
+msgid "Following columns are not numeric and will be omitted:"
+msgstr ""
+
+msgid        "%d variable not shown: %s\n"
+msgid_plural "%d variables not shown: %s\n"
+msgstr[0]    ""
+msgstr[1]    ""

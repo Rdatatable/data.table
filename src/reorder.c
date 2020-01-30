@@ -3,9 +3,9 @@
 SEXP reorder(SEXP x, SEXP order)
 {
   // For internal use only by setkey().
-  // 'order' must strictly be a permutation of 1:n (i.e. no repeats, zeros or NAs)
-  // If only a small subset in the middle is reordered the ends are moved in: [start,end].
-  // x may be a vector, or a list of same-length vectors such as data.table
+  // 'order' must be a strict permutation of 1:n; i.e. no repeats, zeros, NAs. Also known as a shuffle.
+  // If only a small subset in the middle is reordered, the ends are moved in to avoid wasteful work.
+  // x may be a vector, or a list of same-length vectors (typically a data.table).
   R_len_t nrow, ncol;
   size_t maxSize = 0;
   if (isNewList(x)) {
@@ -14,9 +14,9 @@ SEXP reorder(SEXP x, SEXP order)
     for (int i=0; i<ncol; i++) {
       SEXP v = VECTOR_ELT(x,i);
       if (SIZEOF(v)!=4 && SIZEOF(v)!=8 && SIZEOF(v)!=16)
-        error("Item %d of list is type '%s' which isn't yet supported (SIZEOF=%d)", i+1, type2char(TYPEOF(v)), SIZEOF(v));
+        error(_("Item %d of list is type '%s' which isn't yet supported (SIZEOF=%d)"), i+1, type2char(TYPEOF(v)), SIZEOF(v));
       if (length(v)!=nrow)
-        error("Column %d is length %d which differs from length of column 1 (%d). Invalid data.table.", i+1, length(v), nrow);
+        error(_("Column %d is length %d which differs from length of column 1 (%d). Invalid data.table."), i+1, length(v), nrow);
       if (SIZEOF(v) > maxSize)
         maxSize=SIZEOF(v);
       if (ALTREP(v)) SET_VECTOR_ELT(x, i, copyAsPlain(v));
@@ -24,81 +24,92 @@ SEXP reorder(SEXP x, SEXP order)
     copySharedColumns(x); // otherwise two columns which point to the same vector would be reordered and then re-reordered, issues linked in PR#3768
   } else {
     if (SIZEOF(x)!=4 && SIZEOF(x)!=8 && SIZEOF(x)!=16)
-      error("reorder accepts vectors but this non-VECSXP is type '%s' which isn't yet supported (SIZEOF=%d)", type2char(TYPEOF(x)), SIZEOF(x));
-    if (ALTREP(x)) error("Internal error in reorder.c: cannot reorder an ALTREP vector. Please see NEWS item 2 in v1.11.4 and report this as a bug."); // # nocov
+      error(_("reorder accepts vectors but this non-VECSXP is type '%s' which isn't yet supported (SIZEOF=%d)"), type2char(TYPEOF(x)), SIZEOF(x));
+    if (ALTREP(x)) error(_("Internal error in reorder.c: cannot reorder an ALTREP vector. Please see NEWS item 2 in v1.11.4 and report this as a bug.")); // # nocov
     maxSize = SIZEOF(x);
     nrow = length(x);
     ncol = 1;
   }
-  if (!isInteger(order)) error("order must be an integer vector");
-  if (length(order) != nrow) error("nrow(x)[%d]!=length(order)[%d]",nrow,length(order));
+  if (!isInteger(order)) error(_("order must be an integer vector"));
+  if (length(order) != nrow) error(_("nrow(x)[%d]!=length(order)[%d]"),nrow,length(order));
   int nprotect = 0;
   if (ALTREP(order)) { order=PROTECT(copyAsPlain(order)); nprotect++; }  // TODO: if it's an ALTREP sequence some optimizations are possible rather than expand
 
   const int *restrict idx = INTEGER(order);
   int i=0;
-  while (i<nrow && idx[i] == i+1) i++;
-  const int start = i;
-  if (start==nrow) { UNPROTECT(nprotect); return(R_NilValue); }  // input is 1:n, nothing to do
+  while (i<nrow && idx[i] == i+1) ++i;
+  const int start=i;
+  if (start==nrow) { UNPROTECT(nprotect); return R_NilValue; }  // input is 1:n, nothing to do
   i = nrow-1;
-  while (idx[i] == i+1) i--;
-  const int end = i;
-  for (int i=start; i<=end; i++) {
-    int itmp = idx[i]-1;
-    if (itmp<start || itmp>end) error("order is not a permutation of 1:nrow[%d]", nrow);
+  while (idx[i] == i+1) --i;
+  const int end=i, nmid=end-start+1;
+
+  uint8_t *seen = (uint8_t *)R_alloc(nmid, sizeof(uint8_t)); // detect duplicates
+  memset(seen, 0, nmid*sizeof(uint8_t));
+  for (int i=start; i<=end; ++i) {
+    if (idx[i]==NA_INTEGER || idx[i]-1<start || idx[i]-1>end || seen[idx[i]-1-start]++)
+      error(_("Item %d of order (%d) is either NA, out of range [1,%d], or is duplicated. The new order must be a strict permutation of 1:n"),
+              i+1, idx[i], length(order));
+    // This should run in reasonable time because although 'seen' is random write, it is writing to just 1 byte * nrow
+    // which is relatively small and has a good chance of fitting in cache.
+    // A worry mitigated by this check is a user passing their own incorrect ordering using ::: to reach this internal.
+    // This check is once up front, and then idx is applied to all the columns which is where the most time is spent.
   }
-  // Creorder is for internal use (so we should get the input right!), but the check above seems sensible. The for loop above should run
-  // in neglible time (sequential with prefetch). It will catch NAs anywhere but won't catch duplicates. But doing so would be going too
-  // far given this is for internal use only and we only use this function internally when we're sure it's a permutation.
 
-  char *TMP = malloc(nrow * maxSize);
-  // enough RAM for a copy of one column (of largest type). Writes into the [start,end] subset. Outside [start,end] is wasted in that rarer case
-  // to save a "-start" in the deep loop below in all cases.
-  if (!TMP) error("Unable to allocate %d * %d bytes of working memory for reordering data.table", end-start+1, maxSize);
+  char *TMP = (char *)R_alloc(nmid, maxSize);
 
-  for (int i=0; i<ncol; i++) {
+  for (int i=0; i<ncol; ++i) {
     const SEXP v = isNewList(x) ? VECTOR_ELT(x,i) : x;
     const size_t size = SIZEOF(v);    // size_t, otherwise #5305 (integer overflow in memcpy)
     if (size==4) {
-      int *vd = (int *)DATAPTR(v);
-      const int *restrict cvd = vd;
+      const int *restrict vd = DATAPTR_RO(v);
       int *restrict tmp = (int *)TMP;
       #pragma omp parallel for num_threads(getDTthreads())
-      for (int i=start; i<=end; i++) {
-        tmp[i] = cvd[idx[i]-1];  // copies 4 bytes; including pointers on 32bit (STRSXP and VECSXP)
+      for (int i=start; i<=end; ++i) {
+        tmp[i-start] = vd[idx[i]-1];  // copies 4 bytes; e.g. INTSXP and also SEXP pointers on 32bit (STRSXP and VECSXP)
       }
-      memcpy(vd+start, tmp+start, (end-start+1)*size);
+      // Theory:
+      // The write to TMP is contiguous, so sync between cpus of written-cache-lines should not be an issue.
+      // The read from vd is random, but at least the column has a good chance of being all in cache as parallelism is within column.
+      // As idx approaches being ordered (e.g. moving blocks around) then this should approach read cache-efficiency too.
     } else if (size==8) {
-      double *vd = (double *)DATAPTR(v);
-      const double *restrict cvd = vd;
+      const double *restrict vd = DATAPTR_RO(v);
       double *restrict tmp = (double *)TMP;
       #pragma omp parallel for num_threads(getDTthreads())
-      for (int i=start; i<=end; i++) {
-        tmp[i] = cvd[idx[i]-1];  // copies 8 bytes; including pointers on 64bit (STRSXP and VECSXP)
+      for (int i=start; i<=end; ++i) {
+        tmp[i-start] = vd[idx[i]-1];  // copies 8 bytes; e.g. REALSXP and also SEXP pointers on 64bit (STRSXP and VECSXP)
       }
-      memcpy(vd+start, tmp+start, (end-start+1)*size);
-    } else {
-      // #1444 -- support for copying CPLXSXP (which have size 16)
-      Rcomplex *vd = (Rcomplex *)DATAPTR(v);
-      const Rcomplex *restrict cvd = vd;
+    } else { // size 16; checked up front
+      const Rcomplex *restrict vd = DATAPTR_RO(v);
       Rcomplex *restrict tmp = (Rcomplex *)TMP;
       #pragma omp parallel for num_threads(getDTthreads())
-      for (int i=start; i<=end; i++) {
-        tmp[i] = cvd[idx[i]-1];  // copies 16 bytes
+      for (int i=start; i<=end; ++i) {
+        tmp[i-start] = vd[idx[i]-1];
       }
-      memcpy(vd+start, tmp+start, (end-start+1)*size);
     }
+
+    // Unique and somber line. Not done lightly. Please read all comments in this file.
+    memcpy(((char *)DATAPTR_RO(v)) + size*start, TMP, size*nmid);
+    // The one and only place in data.table where we write behind the write-barrier. Fundamental to setkey and data.table.
+    // This file is unique and special w.r.t. the write-barrier: an utterly strict in-place shuffle.
+    // This shuffle operation does not inc or dec named/refcnt, or anything similar in R: past, present or future.
   }
-  // It's ok to ignore write barrier, and in parallel too, only because this reorder() function accepts and checks
-  // a unique permutation of 1:nrow. It performs an in-place shuffle. This operation in the end does not change gcgen, mark or
-  // named/refcnt. They all stay the same even for STRSXP and VECSXP because it's just a data shuffle.
-  //
-  // Theory:
-  // The write to TMP is contiguous, so sync between cpus of written-cache-lines should not be an issue.
-  // The read from vd is random, but at least the column has a good chance of being all in cache as parallelism is within column.
-  // As idx approaches being ordered (e.g. moving blocks around) then it should automatically be more read cache efficient.
-  free(TMP);
   UNPROTECT(nprotect);
-  return(R_NilValue);
+  return R_NilValue;
+}
+
+SEXP setcolorder(SEXP x, SEXP o)
+{
+  SEXP names = getAttrib(x, R_NamesSymbol);
+  const int ncol=LENGTH(x);
+  if (isNull(names)) error(_("dt passed to setcolorder has no names"));
+  if (ncol != LENGTH(names))
+    error(_("Internal error: dt passed to setcolorder has %d columns but %d names"), ncol, LENGTH(names));  // # nocov
+  SEXP tt = PROTECT(allocVector(VECSXP, 2));
+  SET_VECTOR_ELT(tt, 0, names);
+  SET_VECTOR_ELT(tt, 1, x);
+  reorder(tt, o);
+  UNPROTECT(1);
+  return R_NilValue;
 }
 
