@@ -73,7 +73,7 @@ unit = "s")
 
 10. The dimensions of objects in a `list` column are now displayed, [#3671](https://github.com/Rdatatable/data.table/issues/3671). Thanks to @randomgambit for the request, and Tyson Barrett for the PR.
 
-11. New symbol in `j`, `.NGRP`, which counts the overall number of groups in the current grouping, part of [#1206](https://github.com/Rdatatable/data.table/issues/1206).
+11. New symbol available in `j`, `.NGRP`, which counts the number of groups in the current grouping, part of [#1206](https://github.com/Rdatatable/data.table/issues/1206). This is a complement to symbols already available in `j`: `.GRP` indexes the current group while `.I` indexes rows globally; `.N` gives the number of rows in the current group while `.NGRP` gives the number of groups globally.
 
 ## BUG FIXES
 
