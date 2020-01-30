@@ -75,6 +75,8 @@ extern SEXP char_ITime;
 extern SEXP char_IDate;
 extern SEXP char_Date;
 extern SEXP char_POSIXct;
+extern SEXP char_POSIXlt;
+extern SEXP char_POSIXt;
 extern SEXP char_nanotime;
 extern SEXP char_lens;
 extern SEXP char_indices;
@@ -236,6 +238,8 @@ SEXP islockedR(SEXP x);
 bool need2utf8(SEXP x);
 SEXP coerceUtf8IfNeeded(SEXP x);
 SEXP asCharacterInteger64(SEXP x);
+SEXP formatRFUN(SEXP x);
+bool isPOSIXlike(SEXP x);
 
 // types.c
 char *end(char *start);

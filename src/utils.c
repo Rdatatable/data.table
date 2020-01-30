@@ -374,3 +374,24 @@ SEXP asCharacterInteger64(SEXP x) {
   UNPROTECT(1);
   return(coerced);
 }
+
+// Calls the R function format from within C
+// Useful for converting date/time like vectors to character in C
+SEXP formatRFUN(SEXP x) {
+  SEXP f;
+  PROTECT(f = lang2(install("format"), x));
+  int errorOccurred;
+  SEXP ret = R_tryEval(f, R_GetCurrentEnv(), &errorOccurred);
+  UNPROTECT(1);
+  return(ret);
+}
+
+// Checks whether a vector inherits from 
+// c("Date", "POSIXct", "POSIXlt", "POSIXt", "IDate", "ITime", "nanotime")
+bool isPOSIXlike(SEXP x) {
+  if (INHERITS(x, char_IDate) || INHERITS(x, char_ITime) ||
+      INHERITS(x, char_nanotime) || INHERITS(x, char_POSIXt) ||
+      INHERITS(x, char_POSIXct) || INHERITS(x, char_POSIXlt)) 
+    return(true);
+  return(false);
+}

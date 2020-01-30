@@ -2023,13 +2023,6 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
   if (length(X) > .Machine$integer.max || length(X[[1L]]) > .Machine$integer.max )
     stop("Matrices with more than ", .Machine$integer.max, " columns or rows are not supported") # nocov
   
-  # Always convert date/time/POSIX like classes to character vectors
-  if (any_class_is(X.info, charconvert.classes)) {
-    which.charconvert = which_class_is(X.info, charconvert.classes)
-    for (j in which.charconvert)
-      X[[j]] = POSIXasCharacter(X[[j]])
-  }
-  
   # Remaining type and class coercion is handled in Casmatrix
   ans = .Call(Casmatrix, X, rownames.value)
   ans

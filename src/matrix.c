@@ -39,7 +39,45 @@
       ansloc++;                                                \
     }                                                          \
   }                                                            \
-} break; }
+} break; }                                                     \
+
+
+void checkAndCoerce(SEXP dt, int *nprotect, int *maxType, bool *coerce, bool *integer64) {
+  R_xlen_t ncol = xlength(dt);
+  for (int j=0; j<ncol; ++j) {
+    // Extract column type and do any mandatory coercions (e.g. factor to character)
+    SEXP thisCol = VECTOR_ELT(dt, j);
+    if (isFactor(thisCol)) {
+      thisCol = PROTECT(asCharacterFactor(thisCol)); (*nprotect)++;
+      SET_VECTOR_ELT(dt, j, thisCol); // assignment back to dt doesn't modify input data.table
+    }
+    if (isPOSIXlike(thisCol)) {
+      thisCol = PROTECT(formatRFUN(thisCol)); (*nprotect)++;
+    }
+    
+    // Determine the maximum type for matrix
+    int thisType = TYPEOF(thisCol);
+    if (INHERITS(thisCol, char_integer64)) {
+      // If integer64 defer coercion til after we know maxType of other columns
+      if (j > 0 && !integer64) *coerce=true;
+      *integer64=true;
+    } else if (TYPEORDER(thisType)>TYPEORDER(VECSXP)) {
+      // non-atomic non-list types are coerced / wrapped in list, see #4196
+      if (j > 0) 
+        *coerce = true;
+      *maxType=VECSXP;
+    } else if (TYPEORDER(thisType)>TYPEORDER(*maxType)) {
+      // otherwise if this column is higher in typeorder list, set this type as maxType
+      if (j > 0) 
+        *coerce = true;
+      *maxType=thisType;
+    } else if (*integer64) {
+      *coerce=true; // earlier column is integer64 but this one isn't
+    } else if (TYPEORDER(thisType)!=TYPEORDER(*maxType)) {
+      *coerce=true; // no change to maxType, but this col is different to previous so coercion required
+    }
+  }
+}
   
 
 SEXP asmatrix(SEXP dt, SEXP rownames)
@@ -55,36 +93,7 @@ SEXP asmatrix(SEXP dt, SEXP rownames)
   int maxType=RAWSXP;
   bool coerce=false; // if no columns need coercing, can just use memcpy
   bool integer64=false; // are we coercing to integer64?
-  for (int j=0; j<ncol; ++j) {
-    // Extract column type and do any mandatory coercions (e.g. factor to character)
-    SEXP thisCol = VECTOR_ELT(dt, j);
-    if (isFactor(thisCol)) {
-      thisCol = PROTECT(asCharacterFactor(thisCol));
-      SET_VECTOR_ELT(dt, j, thisCol); // assignment back to dt doesn't modify input data.table
-    }
-
-    // Determine the maximum type for matrix
-    int thisType = TYPEOF(thisCol);
-    if (INHERITS(thisCol, char_integer64)) {
-      // If integer64 defer coercion til after we know maxType of other columns
-      if (j > 0 && !integer64) coerce=true;
-      integer64=true;
-    } else if (TYPEORDER(thisType)>TYPEORDER(VECSXP)) {
-      // non-atomic non-list types are coerced / wrapped in list, see #4196
-      if (j > 0) 
-        coerce = true;
-      maxType=VECSXP;
-    } else if (TYPEORDER(thisType)>TYPEORDER(maxType)) {
-      // otherwise if this column is higher in typeorder list, set this type as maxType
-      if (j > 0) 
-        coerce = true;
-      maxType=thisType;
-    } else if (integer64) {
-      coerce=true; // earlier column is integer64 but this one isn't
-    } else if (TYPEORDER(thisType)!=TYPEORDER(maxType)) {
-      coerce=true; // no change to maxType, but this col is different to previous so coercion required
-    }
-  }
+  checkAndCoerce(dt, &nprotect, &maxType, &coerce, &integer64);
   
   // Determine type to coerce to based on presence of integer64 columns and maxType.
   if (integer64) {
