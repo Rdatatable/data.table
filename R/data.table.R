@@ -19,7 +19,7 @@ setPackageName("data.table",.global)
 #   (1) add to man/special-symbols.Rd
 #   (2) export() in NAMESPACE
 #   (3) add to vignettes/datatable-importing.Rmd#globals section
-.SD = .N = .I = .GRP = .BY = .EACHI = NULL
+.SD = .N = .I = .GRP = .NGRP = .BY = .EACHI = NULL
 # These are exported to prevent NOTEs from R CMD check, and checkUsage via compiler.
 # But also exporting them makes it clear (to users and other packages) that data.table uses these as symbols.
 # And NULL makes it clear (to the R's mask check on loading) that they're variables not functions.
@@ -856,7 +856,7 @@ replace_dot_alias = function(e) {
       jvnames = NULL
       drop_dot = function(x) {
         if (length(x)!=1L) stop("Internal error: drop_dot passed ",length(x)," items")  # nocov
-        if (identical(substring(x<-as.character(x),1L,1L), ".") && x %chin% c(".N",".I",".GRP",".BY"))
+        if (identical(substring(x<-as.character(x), 1L, 1L), ".") && x %chin% c(".N", ".I", ".GRP", ".NGRP", ".BY"))
           substring(x, 2L)
         else
           x
@@ -1266,6 +1266,7 @@ replace_dot_alias = function(e) {
     # Temp fix for #921. Allocate `.I` only if j-expression uses it.
     SDenv$.I = if (!missing(j) && use.I) seq_len(SDenv$.N) else 0L
     SDenv$.GRP = 1L
+    SDenv$.NGRP = 1L
     .Call(C_lock, SDenv$.SD) # used to stop := modifying .SD via j=f(.SD), bug#1727. The more common case of j=.SD[,subcol:=1] was already caught when jsub is inspected for :=.
     .Call(C_lock, SDenv$.SDall)
     lockBinding(".SD",SDenv)
@@ -1273,6 +1274,7 @@ replace_dot_alias = function(e) {
     lockBinding(".N",SDenv)
     lockBinding(".I",SDenv)
     lockBinding(".GRP",SDenv)
+    lockBinding(".NGRP", SDenv)
     for (ii in ansvars) assign(ii, SDenv$.SDall[[ii]], SDenv)
     # Since .SD is inside SDenv, alongside its columns as variables, R finds .SD symbol more quickly, if used.
     # There isn't a copy of the columns here, the xvar symbols point to the SD columns (copy-on-write).
@@ -1471,6 +1473,9 @@ replace_dot_alias = function(e) {
   lockBinding(".N",SDenv)
   lockBinding(".GRP",SDenv)
   lockBinding(".iSD",SDenv)
+
+  SDenv$.NGRP = length(f__)
+  lockBinding(".NGRP", SDenv)
 
   GForce = FALSE
   if ( getOption("datatable.optimize")>=1L && (is.call(jsub) || (is.name(jsub) && as.character(jsub)[1L] %chin% c(".SD", ".N"))) ) {  # Ability to turn off if problems or to benchmark the benefit

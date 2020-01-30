@@ -16770,6 +16770,12 @@ test(2132.2, fifelse(TRUE, 1, s2),       error = "S4 class objects (except nanot
 test(2132.3, fcase(TRUE, s1, FALSE, s2), error = "S4 class objects (except nanotime) are not supported. Please see https://github.com/Rdatatable/data.table/issues/4131.")
 rm(s1, s2, class2132)
 
+# new .NGRP symbol
+DT = data.table(grp1 = rep(1:4, each = 2L), grp2 = rep(1:2, 4L))
+test(2133.1, DT[ , .NGRP], 1L)
+test(2133.2, DT[ , .NGRP, by = grp1]$NGRP, rep(4L, 4L))
+test(2133.3, DT[ , .NGRP, by = grp2]$NGRP, rep(2L, 2L))
+test(2133.4, DT[ , .NGRP, by = .(grp1, grp2)]$NGRP, rep(8L, 8L))
 
 ########################
 #  Add new tests here  #
