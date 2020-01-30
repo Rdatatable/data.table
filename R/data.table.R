@@ -997,7 +997,7 @@ replace_dot_alias = function(e) {
           } else { ## TODO remove this else statement in Jan. 2023
             newvars = setdiff(allcols, bynames) # checking if old cols c("y", "x") became c("x", "y")
             if (length(newvars) == length(ansvars) && !all(newvars == ansvars)) {
-              warning("(m)get found in j with update assignment (i.e., `(cols) := ...`). j previously was re-ordered. See Issue #4089")
+              warning("(m)get found in j with update assignment (i.e., `(cols) := ...`). j column order was re-ordered prior to version 1.12.9. See Issue #4089")
             }
           } 
         } else  if (length(non_sdvars)) {
