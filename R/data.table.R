@@ -1857,12 +1857,6 @@ replace_dot_alias = function(e) {
 as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
   # Classes always converted to character when coercing to matrix, and in rownames
   charconvert.classes = c("Date", "POSIXct", "POSIXlt", "POSIXt", "IDate", "ITime", "nanotime")
-  factorAsCharacter = function(v) { # converts factor to character while being NA aware
-    miss = is.na(v)
-    v = as.vector(v)
-    is.na(v) = miss
-    v
-  }
   POSIXasCharacter = function(v) { # converts data/time to character while being NA aware
     miss = is.na(v)
     v = format(v)
@@ -1913,7 +1907,7 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
         rownames.value = rownames.value[] # nocov
       # Coerce factor to character so we get the labels not the int representation as rownames
       if (is.factor(rownames.value)) 
-        rownames.value = factorAsCharacter(rownames.value)
+        rownames.value = as.vector(rownames.value)
       # Same with date or time like classes
       if (any(charconvert.classes %in% class(rownames.value))) 
         rownames.value = POSIXasCharacter(rownames.value)
@@ -2028,14 +2022,6 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
   # computation/memory expensive column checks and coercion for future proofing
   if (length(X) > .Machine$integer.max || length(X[[1L]]) > .Machine$integer.max )
     stop("Matrices with more than ", .Machine$integer.max, " columns or rows are not supported") # nocov
-  
-  # Always convert factors to character vectors
-  if (any_class_is(X.info, "factor")) {
-    which.factor = which_class_is(X.info, "factor")
-    for (j in which.factor) 
-      X[[j]] = factorAsCharacter(X[[j]])
-    X.info = class_info(X, X.info, cols.to.update = which.factor)
-  }
   
   # Always convert date/time/POSIX like classes to character vectors
   if (any_class_is(X.info, charconvert.classes)) {

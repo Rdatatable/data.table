@@ -56,11 +56,15 @@ SEXP asmatrix(SEXP dt, SEXP rownames)
   bool coerce=false; // if no columns need coercing, can just use memcpy
   bool integer64=false; // are we coercing to integer64?
   for (int j=0; j<ncol; ++j) {
-    // Extract column type. 
+    // Extract column type and do any mandatory coercions (e.g. factor to character)
     SEXP thisCol = VECTOR_ELT(dt, j);
-    int thisType = TYPEOF(thisCol);
+    if (isFactor(thisCol)) {
+      thisCol = PROTECT(asCharacterFactor(thisCol));
+      SET_VECTOR_ELT(dt, j, thisCol); // assignment back to dt doesn't modify input data.table
+    }
 
-    // Determine the maximum type now that we have inspected this column
+    // Determine the maximum type for matrix
+    int thisType = TYPEOF(thisCol);
     if (INHERITS(thisCol, char_integer64)) {
       // If integer64 defer coercion til after we know maxType of other columns
       if (j > 0 && !integer64) coerce=true;
