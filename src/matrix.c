@@ -1,12 +1,14 @@
 #include "data.table.h"
 
 /* Fills the allocated matrix (ans) with columns of the input data.table
- * (dt) using memcpy assuming all columns have the same SEXPTYPE. 
- * Where nrow = 1 faster to just assign directly rather than use memcpy
+ * (dt) using memcpy assuming all columns have the same SEXPTYPE. This
+ * macro means we don't have to repeat the loop below for each SEXPTYPE.
+ * RFUN and CTYPE should be a pair (e.g. INTEGER and int for INTSXP, or
+ * REAL and double for REALSXP).
  */
 #undef OMP_MEMCPY
 #define OMP_MEMCPY(RFUN, CTYPE) {{                                  \
-  if (nrow == 1) {                                                  \
+  if (nrow == 1) { /* faster to just assign directly if n=1 */      \
     for (int j=0; j<ncol; ++j) {                                    \
       RFUN(ans)[j] = RFUN(VECTOR_ELT(dt, j))[0];                    \
     }                                                               \
@@ -23,6 +25,11 @@
   }                                                                 \
 } break; }
 
+/* For STRSXP and VECSXP we need to iterate through every element,
+ * extracting using STRING_ELT or VECTOR_ELT, then assing using
+ * SET_STRING_ELT or SET_VECTOR_ELT. These are not thread safe, so 
+ * can't use OMP.
+ */
 #undef VECCPY
 #define VECCPY(GETTER, SETTER) {{                              \
   int64_t ansloc=0;                                            \
