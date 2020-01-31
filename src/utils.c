@@ -389,10 +389,13 @@ SEXP asCharacterITime(SEXP x) {
       int hh = ax / 3600;
       int mm = (ax - hh * 3600) / 60;
       int ss = ax - hh * 3600 - mm * 60;
+      int err;
       if (neg)
-        snprintf(buff, 10, "-%02d:%02d:%02d", hh, mm, ss);
+        err = snprintf(buff, 10, "-%02d:%02d:%02d", hh, mm, ss);
       else 
-        snprintf(buff, 9, "%02d:%02d:%02d", hh, mm, ss);
+        err = snprintf(buff, 9, "%02d:%02d:%02d", hh, mm, ss);
+      if (err != 0) // should not be possible, handled to silence compiler warnings
+        error("Internal Error: snprintf in as.character.ITime"); // # nocov
       SET_STRING_ELT(coerced, j, mkChar(buff));
     }
   }
