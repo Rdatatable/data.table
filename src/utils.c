@@ -404,7 +404,7 @@ SEXP asCharacterITime(SEXP x) {
 SEXP callRfun1(const char *name, const char *package, SEXP arg) {
   SEXP pkgEnv = findVarInFrame3(R_NamespaceRegistry, install(package), (Rboolean) true);
   if (pkgEnv == R_UnboundValue)
-    error("Package '%s\ not loaded\n", package); // # nocov
+    error("Package '%s' not loaded\n", package); // # nocov
 
   SEXP rfun = PROTECT(lang2(install(name), arg));
   int errorOccurred;
