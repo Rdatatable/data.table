@@ -53,6 +53,12 @@ void checkAndCoerce(SEXP dt, int *nprotect, int *maxType, bool *coerce, bool *in
     } else if (INHERITS(thisCol, char_ITime)) {
       thisCol = PROTECT(asCharacterITime(thisCol)); (*nprotect)++;
       SET_VECTOR_ELT(dt, j, thisCol); 
+    } else if (INHERITS(thisCol, char_nanotime)) {
+      thisCol = PROTECT(callRfun1("format.nanotime", "nanotime", thisCol)); (*nprotect)++;
+      SET_VECTOR_ELT(dt, j, thisCol);
+    } else if (isPOSIXlike(thisCol)) {
+      thisCol = PROTECT(callRfun1("format", "base", thisCol)); (*nprotect)++;
+      SET_VECTOR_ELT(dt, j, thisCol);
     }
     
     

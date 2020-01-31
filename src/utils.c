@@ -376,11 +376,11 @@ SEXP asCharacterInteger64(SEXP x) {
 }
 
 // Checks whether a vector inherits from 
-// c("Date", "POSIXct", "POSIXlt", "POSIXt", "IDate", "ITime", "nanotime")
+// c("Date", "POSIXct", "POSIXlt", "POSIXt", "IDate")
 bool isPOSIXlike(SEXP x) {
-  if (INHERITS(x, char_IDate) || INHERITS(x, char_ITime) ||
-      INHERITS(x, char_nanotime) || INHERITS(x, char_POSIXt) ||
-      INHERITS(x, char_POSIXct) || INHERITS(x, char_POSIXlt)) 
+  if (INHERITS(x, char_IDate) || INHERITS(x, char_POSIXt) ||
+      INHERITS(x, char_POSIXct) || INHERITS(x, char_POSIXlt) ||
+      INHERITS(x, char_ITime) || INHERITS(x, char_nanotime)) 
     return(true);
   return(false);
 }
@@ -408,4 +408,18 @@ SEXP asCharacterITime(SEXP x) {
   }
   UNPROTECT(1);
   return(coerced);
+}
+
+// Execute any R function with 1 argument.
+SEXP callRfun1(const char *name, const char *package, SEXP arg) {
+  SEXP pkgEnv = findVarInFrame3(R_NamespaceRegistry, install(package), (Rboolean) true);
+  if (pkgEnv == R_UnboundValue)
+    error("Package '%s\ not loaded\n", package); // # nocov
+
+  SEXP rfun = PROTECT(lang2(install(name), arg));
+  int errorOccurred;
+  SEXP ret = R_tryEval(rfun, pkgEnv, &errorOccurred);
+  
+  UNPROTECT(1);
+  return(ret);
 }
