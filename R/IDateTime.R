@@ -257,14 +257,6 @@ trunc.ITime <- function(x, units = c("hours", "minutes"))
            "class", "ITime"))
 }
 
-floor.ITime <- function(x) {
-  (setattr(as.integer(floor(unclass(x)/3600)*3600), "class", "ITime"))
-}
-
-ceiling.ITime <- function(x) {
-  (setattr(as.integer(ceiling(unclass(x)/3600)*3600), "class", "ITime"))
-}
-
 "[.ITime" = function(x, ..., drop = TRUE)
 {
   cl = oldClass(x)
