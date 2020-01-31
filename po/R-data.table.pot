@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: data.table 1.12.9\n"
-"POT-Creation-Date: 2019-12-31 18:45\n"
+"POT-Creation-Date: 2020-01-31 17:27\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -1790,9 +1790,6 @@ msgid "' but the corresponding item of y is '"
 msgstr ""
 
 msgid "None of the datasets should contain a column named '.seqn'"
-msgstr ""
-
-msgid "'target' and 'current' must both be data.tables"
 msgstr ""
 
 msgid "Internal error: ncol(current)==ncol(target) was checked above"
