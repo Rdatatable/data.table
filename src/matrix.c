@@ -285,8 +285,7 @@ SEXP asmatrix(SEXP dt, SEXP rownames)
   int nprotect=0;
   
   SEXP rncontainer = PROTECT(allocVector(VECSXP, 1)); nprotect++; // PROTECTED container to hold (maybe coerced) rownames 
-  SET_VECTOR_ELT(rncontainer, 0, R_NilValue); // initialise in case rownames is null
-  
+
   // Coerce and check rownames - do this first so rownames, if coerced,
   // is placed at the bottom of the protection stack. This way we don't
   // unintentionally unprotect it when poping the stack, e.g after coercing
@@ -309,6 +308,7 @@ SEXP asmatrix(SEXP dt, SEXP rownames)
     if (TYPEOF(rownames) == VECSXP || TYPEOF(rownames) == LISTSXP)
       warning("Extracted rownames column or provided rownames.values are a list column, so will be converted to a character representation");
     SET_VECTOR_ELT(rncontainer, 0, rownames); UNPROTECT(rnstack); // coerced rownames now PROTECTED in rnContainer 
+    rownames = VECTOR_ELT(rncontainer, 0);
   }
   
   // Extract column types and determine type to coerce to
@@ -326,7 +326,8 @@ SEXP asmatrix(SEXP dt, SEXP rownames)
     error("R does not support matrices with more than %d columns or rows", R_LEN_T_MAX); // # nocov
   
   // Check rownames length for errors now we know nrow.
-  if (nrow != 0 && xlength(VECTOR_ELT(rncontainer, 0)) != nrow) {
+  
+  if (!isNull(rownames) && nrow != 0 && xlength(rownames) != nrow) {
     error("Extracted rownames column or provided rownames.values do not match the number of rows in the matrix");
   }
   
@@ -343,7 +344,7 @@ SEXP asmatrix(SEXP dt, SEXP rownames)
   if (ncol == 0) {
     if (!isNull(rownames)) { // Add rownames if they exist
       SEXP dimnames = PROTECT(allocVector(VECSXP, 2)); nprotect++;
-      SET_VECTOR_ELT(dimnames, 0, VECTOR_ELT(rncontainer, 0));
+      SET_VECTOR_ELT(dimnames, 0, rownames);
       SET_VECTOR_ELT(dimnames, 1, R_NilValue);
       setAttrib(ans, R_DimNamesSymbol, dimnames);
     } 
@@ -375,7 +376,7 @@ SEXP asmatrix(SEXP dt, SEXP rownames)
   
   // Add dimension names
   SEXP dimnames = PROTECT(allocVector(VECSXP, 2)); nprotect++;
-  SET_VECTOR_ELT(dimnames, 0, VECTOR_ELT(rncontainer, 0));
+  SET_VECTOR_ELT(dimnames, 0, rownames);
   SET_VECTOR_ELT(dimnames, 1, colnames);
   setAttrib(ans, R_DimNamesSymbol, dimnames); UNPROTECT(1); nprotect--; // dimnames now PROTECTED by ans
   
