@@ -375,17 +375,6 @@ SEXP asCharacterInteger64(SEXP x) {
   return(coerced);
 }
 
-// Calls the R function format from within C
-// Useful for converting date/time like vectors to character in C
-SEXP formatRFUN(SEXP x) {
-  SEXP f;
-  PROTECT(f = lang2(install("format"), x));
-  int errorOccurred;
-  SEXP ret = R_tryEval(f, R_GetCurrentEnv(), &errorOccurred);
-  UNPROTECT(1);
-  return(ret);
-}
-
 // Checks whether a vector inherits from 
 // c("Date", "POSIXct", "POSIXlt", "POSIXt", "IDate", "ITime", "nanotime")
 bool isPOSIXlike(SEXP x) {
@@ -394,4 +383,29 @@ bool isPOSIXlike(SEXP x) {
       INHERITS(x, char_POSIXct) || INHERITS(x, char_POSIXlt)) 
     return(true);
   return(false);
+}
+
+SEXP asCharacterITime(SEXP x) {
+  R_xlen_t lenx = xlength(x);
+  SEXP coerced = PROTECT(allocVector(STRSXP, lenx));
+  int *px = INTEGER(x);
+  static char buff[10];
+  for (R_xlen_t j=0; j < lenx; ++j) {
+    if (px[j] == NA_INTEGER) {
+      SET_STRING_ELT(coerced, j, NA_STRING);
+    } else {
+      bool neg = px[j] < 0;
+      int ax = neg ? -px[j] : px[j];
+      int hh = ax / 3600;
+      int mm = (ax - hh * 3600) / 60;
+      int ss = ax - hh * 3600 - mm * 60;
+      if (neg)
+        snprintf(buff, 10, "-%02d:%02d:%02d", hh, mm, ss);
+      else 
+        snprintf(buff, 9, "%02d:%02d:%02d", hh, mm, ss);
+      SET_STRING_ELT(coerced, j, mkChar(buff));
+    }
+  }
+  UNPROTECT(1);
+  return(coerced);
 }

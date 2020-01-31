@@ -238,8 +238,8 @@ SEXP islockedR(SEXP x);
 bool need2utf8(SEXP x);
 SEXP coerceUtf8IfNeeded(SEXP x);
 SEXP asCharacterInteger64(SEXP x);
-SEXP formatRFUN(SEXP x);
 bool isPOSIXlike(SEXP x);
+SEXP asCharacterITime(SEXP x);
 
 // types.c
 char *end(char *start);

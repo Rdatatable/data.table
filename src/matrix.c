@@ -50,10 +50,11 @@ void checkAndCoerce(SEXP dt, int *nprotect, int *maxType, bool *coerce, bool *in
     if (isFactor(thisCol)) {
       thisCol = PROTECT(asCharacterFactor(thisCol)); (*nprotect)++;
       SET_VECTOR_ELT(dt, j, thisCol); // assignment back to dt doesn't modify input data.table
+    } else if (INHERITS(thisCol, char_ITime)) {
+      thisCol = PROTECT(asCharacterITime(thisCol)); (*nprotect)++;
+      SET_VECTOR_ELT(dt, j, thisCol); 
     }
-    if (isPOSIXlike(thisCol)) {
-      thisCol = PROTECT(formatRFUN(thisCol)); (*nprotect)++;
-    }
+    
     
     // Determine the maximum type for matrix
     int thisType = TYPEOF(thisCol);
