@@ -136,19 +136,21 @@ SEXP asmatrix(SEXP dt, SEXP rownames)
   }
   
   // Coerce and check rownames
-  if (coerceIfMandatory(&rownames)) { // loads if FF, coerces to character if factor or POSIX-like
-    PROTECT(rownames); nprotect++;
+  if (!isNull(rownames)) {
+    if (coerceIfMandatory(&rownames)) { // loads if FF, coerces to character if factor or POSIX-like
+      PROTECT(rownames); nprotect++;
+    }
+    if (INHERITS(rownames, char_integer64)) {
+      rownames = PROTECT(asCharacterInteger64(rownames)); nprotect++;
+    }
+    if (TYPEOF(rownames) == VECSXP || TYPEOF(rownames) == LISTSXP)
+      warning("Extracted rownames column or provided rownames.values are a list column, so will be converted to a character representation");
+    if (!isNull(getAttrib(rownames, R_DimSymbol)))
+      error("Extracted rownames column or provided rownames.values are multi-column type (e.g. a matrix or data.table) and cannot be used as rownames");
+    if (xlength(rownames) != nrow)
+      error("Extracted rownames column or provided rownames.values do not match the number of rows in the matrix");
   }
-  if (INHERITS(rownames, char_integer64)) {
-    rownames = PROTECT(asCharacterInteger64(rownames)); nprotect++;
-  }
-  if (TYPEOF(rownames) == VECSXP || TYPEOF(rownames) == LISTSXP)
-    warning("Extracted rownames column or provided rownames.values are a list column, so will be converted to a character representation");
-  if (!isNull(getAttrib(rownames, R_DimSymbol)))
-    error("Extracted rownames column or provided rownames.values are multi-column type (e.g. a matrix or data.table) and cannot be used as rownames");
-  if (xlength(rownames) != nrow)
-    error("Extracted rownames column or provided rownames.values do not match the number of rows in the matrix");
-  
+
   // allocate matrix
   SEXP ans = PROTECT(allocMatrix(maxType, nrow, ncol)); nprotect++;
   
