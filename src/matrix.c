@@ -362,6 +362,31 @@ SEXP asmatrix(SEXP dt, SEXP rownames)
     return(ans);
   }
   
+  // recycle columns to match nrow if needed
+  if (recycle) {
+    for (R_xlen_t j = 0; j < ncol; ++j) {
+      SEXP thisCol = VECTOR_ELT(dt, j);
+      int thisnrow = length(thisCol);
+      if (thisnrow != nrow) {
+        if (thisnrow % nrow != 0) { // nrow not divisible by thisnrow; error
+          error("Could not recycle column of length %d into nrow of %d", thisnrow, nrow);
+        }
+        // Allocate new column to fill with memrecycle. Add integer64 class if needed.
+        SEXP newCol = PROTECT(allocVector(TYPEOF(thisCol), nrow)); nprotect++;
+        if (INHERITS(thisCol, char_integer64)) {
+          SEXP i64Class = PROTECT(allocVector(STRSXP, 1)); nprotect++;
+          SET_STRING_ELT(i64Class, 0, char_integer64);
+          setAttrib(newCol, R_ClassSymbol, i64Class);
+        }
+        // Fill column repeating elements as needed
+        for (int i = 0; i < (nrow / thisnrow); ++i) {
+          memrecycle(newCol, R_NilValue, i*thisnrow, thisnrow, thisCol, 0, -1, 0, "V1");
+        }
+        SET_VECTOR_ELT(dt, j, newCol);
+      } 
+    }
+  }
+  
   // Identify and coerce columns as needed
   if (coerce) {
     for (int j=0; j<ncol; ++j) {
