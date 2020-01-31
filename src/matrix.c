@@ -126,8 +126,7 @@ SEXP asmatrix(SEXP dt, SEXP rownames)
   if (coerce) {
     for (int j=0; j<ncol; ++j) {
       SEXP thisCol = VECTOR_ELT(dt, j);
-      if ((TYPEOF(thisCol) != maxType)  ||
-          (integer64 && !INHERITS(thisCol, char_integer64))) {
+      if ((TYPEOF(thisCol) != maxType)  || (integer64 && !INHERITS(thisCol, char_integer64))) {
         SEXP coerced;
         if (maxType == VECSXP) { // coercion to list not handled by memrecycle.
           coerced = PROTECT(coerceAsList(thisCol, nrow)); nprotect++;
