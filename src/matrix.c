@@ -150,6 +150,10 @@ SEXP asmatrix(SEXP dt, SEXP rownames)
     if (xlength(rownames) != nrow)
       error("Extracted rownames column or provided rownames.values do not match the number of rows in the matrix");
   }
+  
+  // Dimension checks
+  if (ncol > R_LEN_T_MAX || nrow > R_LEN_T_MAX)
+    error("R does not support matrices with more than %d columns or rows", R_LEN_T_MAX); // # nocov
 
   // allocate matrix
   SEXP ans = PROTECT(allocMatrix(maxType, nrow, ncol)); nprotect++;
