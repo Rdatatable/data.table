@@ -252,8 +252,8 @@ round.ITime <- function(x, units = c("hours", "minutes"))
 trunc.ITime <- function(x, units = c("hours", "minutes")) 
 {
   (setattr(switch(match.arg(units),
-                  hours = as.integer(trunc(unclass(x)/3600)*3600),
-                  minutes = as.integer(trunc(unclass(x)/60)*60)), 
+                  hours = as.integer(unclass(x)%/%3600*3600),
+                  minutes = as.integer(unclass(x)%/%60*60)), 
            "class", "ITime"))
 }
 
