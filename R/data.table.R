@@ -1855,15 +1855,6 @@ replace_dot_alias = function(e) {
 #}
 
 as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
-  # Classes always converted to character when coercing to matrix, and in rownames
-  charconvert.classes = c("Date", "POSIXct", "POSIXlt", "POSIXt", "IDate", "ITime", "nanotime")
-  POSIXasCharacter = function(v) { # converts data/time to character while being NA aware
-    miss = is.na(v)
-    v = format(v)
-    is.na(v) = miss
-    v
-  }
-  
   # rownames = the rownames column (most common usage)
   if (!is.null(rownames)) {
     if (!is.null(rownames.value)) stop("rownames and rownames.value cannot both be used at the same time")
@@ -1899,36 +1890,6 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
                " which is outside the column number range [1,ncol=", ncol(x), "].")
       }
     }
-    if (!is.null(rownames)) {
-      # Extract the rownames column
-      rownames.value = x[[rownames]]
-      # bring it into memory if ff object
-      if (is.ff(rownames.value)) 
-        rownames.value = rownames.value[] # nocov
-      # Coerce factor to character so we get the labels not the int representation as rownames
-      if (is.factor(rownames.value)) 
-        rownames.value = as.vector(rownames.value)
-      # Same with date or time like classes
-      if (any(charconvert.classes %in% class(rownames.value))) 
-        rownames.value = POSIXasCharacter(rownames.value)
-      if (inherits(rownames.value, "integer64"))
-        rownames.value = .Call(CasCharacterInteger64, rownames.value)
-
-      # Check rownames column is appropriate dimension
-      if (length(dim(rownames.value)) > 1L)
-        stop("x[,", rownames, "] has multi-column type (such as a matrix column)",
-             " and cannot be used as rownames: dim(x[,", rownames, "])==", 
-             brackify(dim(rownames.value)))
-      
-      # Warn if list column:
-      if (is.list(rownames.value))
-        warning("x[,", rownames, "] is a list column, which will be coerced to a",
-                " character vector when used as rownames")
-    }
-  } else if (!is.null(rownames.value)) {
-    if (length(rownames.value)!=nrow(x))
-      stop("length(rownames.value)==", length(rownames.value),
-           " but should be nrow(x)==", nrow(x))
   }
   
   # Create a new list X containing pointers to columns in x, so that any

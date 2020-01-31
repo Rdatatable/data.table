@@ -41,37 +41,48 @@
   }                                                            \
 } break; }                                                     \
 
+/* Takes and vector, coerces and replaces it by reference, if:
+ * 
+ *  - If it as an ff vector from the ff package, it is loaded into memory
+ *    becoming a regular R vector
+ *  - If the vector is a factor, or POSIX-like it is coerced to its string
+ *    representation.
+ */
+bool coerceIfMandatory(SEXP *thisCol) {
+  int nprotect = 0;
+  if (INHERITS(*thisCol, char_ff)) { // if ff, load vector into memory so its a regular SEXP
+    *thisCol = PROTECT(callRfun1("[.ff", "ff", *thisCol)); nprotect++;
+  }
+  if (isFactor(*thisCol)) {
+    *thisCol = PROTECT(asCharacterFactor(*thisCol)); nprotect++;
+  } else if (INHERITS(*thisCol, char_ITime)) {
+    *thisCol = PROTECT(asCharacterITime(*thisCol)); nprotect++;
+  } else if (INHERITS(*thisCol, char_nanotime)) {
+    *thisCol = PROTECT(callRfun1("format.nanotime", "nanotime", *thisCol)); nprotect++; 
+  } else if (INHERITS(*thisCol, char_Date)) {
+    *thisCol = PROTECT(callRfun1("format.Date", "base", *thisCol)); nprotect++;
+  } else if (INHERITS(*thisCol, char_POSIXct)) {
+    *thisCol = PROTECT(callRfun1("format.POSIXct", "base", *thisCol)); nprotect++;
+  } else if (INHERITS(*thisCol, char_POSIXlt)) {
+    *thisCol = PROTECT(callRfun1("format.POSIXlt", "base", *thisCol)); nprotect++;
+  }
+  UNPROTECT(nprotect);
+  return((bool) nprotect);
+}
 
-void checkAndCoerce(SEXP dt, int *nprotect, int *maxType, bool *coerce, bool *integer64) {
+/* Preprocess the input data.table, coercing any columns that have mandatory
+ * coercion rules (see above), determining the maxType for the matrix, 
+ * whether any columns differ from this maxType and require later coercion,
+ * and whether any columns are integer64
+ */
+void preprocess(SEXP dt, int *nprotect, int *maxType, bool *coerce, bool *integer64) {
   R_xlen_t ncol = xlength(dt);
   for (int j=0; j<ncol; ++j) {
     // Extract column type and do any mandatory coercions (e.g. factor to character)
     SEXP thisCol = VECTOR_ELT(dt, j);
-    if (INHERITS(thisCol, char_ff)) { // if ff, load vector into memory so its a regular SEXP
-      thisCol = PROTECT(callRfun1("[.ff", "ff", thisCol)); (*nprotect)++;
-      SET_VECTOR_ELT(dt, j, thisCol); // assignment back to dt doesn't modify input data.table
+    if (coerceIfMandatory(&thisCol)) {
+      SET_VECTOR_ELT(dt, j, PROTECT(thisCol)); (*nprotect)++;
     }
-    if (isFactor(thisCol)) {
-      thisCol = PROTECT(asCharacterFactor(thisCol)); (*nprotect)++;
-      SET_VECTOR_ELT(dt, j, thisCol);
-    } else if (INHERITS(thisCol, char_ITime)) {
-      thisCol = PROTECT(asCharacterITime(thisCol)); (*nprotect)++;
-      SET_VECTOR_ELT(dt, j, thisCol); 
-    } else if (INHERITS(thisCol, char_nanotime)) {
-      thisCol = PROTECT(callRfun1("format.nanotime", "nanotime", thisCol)); (*nprotect)++;
-      SET_VECTOR_ELT(dt, j, thisCol);
-    } else if (INHERITS(thisCol, char_Date)) {
-      thisCol = PROTECT(callRfun1("format.Date", "base", thisCol)); (*nprotect)++;
-      SET_VECTOR_ELT(dt, j, thisCol);
-    } else if (INHERITS(thisCol, char_POSIXct)) {
-      thisCol = PROTECT(callRfun1("format.POSIXct", "base", thisCol)); (*nprotect)++;
-      SET_VECTOR_ELT(dt, j, thisCol);
-    } else if (INHERITS(thisCol, char_POSIXlt)) {
-      thisCol = PROTECT(callRfun1("format.POSIXlt", "base", thisCol)); (*nprotect)++;
-      SET_VECTOR_ELT(dt, j, thisCol);
-    }
-    
-    
     
     // Determine the maximum type for matrix
     int thisType = TYPEOF(thisCol);
@@ -111,7 +122,7 @@ SEXP asmatrix(SEXP dt, SEXP rownames)
   int maxType=RAWSXP;
   bool coerce=false; // if no columns need coercing, can just use memcpy
   bool integer64=false; // are we coercing to integer64?
-  checkAndCoerce(dt, &nprotect, &maxType, &coerce, &integer64);
+  preprocess(dt, &nprotect, &maxType, &coerce, &integer64);
   
   // Determine type to coerce to based on presence of integer64 columns and maxType.
   if (integer64) {
@@ -123,6 +134,20 @@ SEXP asmatrix(SEXP dt, SEXP rownames)
       maxType = STRSXP;
     // else maxType is VECSXP, so no coercion needed.
   }
+  
+  // Coerce and check rownames
+  if (coerceIfMandatory(&rownames)) { // loads if FF, coerces to character if factor or POSIX-like
+    PROTECT(rownames); nprotect++;
+  }
+  if (INHERITS(rownames, char_integer64)) {
+    rownames = PROTECT(asCharacterInteger64(rownames)); nprotect++;
+  }
+  if (TYPEOF(rownames) == VECSXP || TYPEOF(rownames) == LISTSXP)
+    warning("Extracted rownames column or provided rownames.values are a list column, so will be converted to a character representation");
+  if (!isNull(getAttrib(rownames, R_DimSymbol)))
+    error("Extracted rownames column or provided rownames.values are multi-column type (e.g. a matrix or data.table) and cannot be used as rownames");
+  if (xlength(rownames) != nrow)
+    error("Extracted rownames column or provided rownames.values do not match the number of rows in the matrix");
   
   // allocate matrix
   SEXP ans = PROTECT(allocMatrix(maxType, nrow, ncol)); nprotect++;
