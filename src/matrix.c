@@ -133,7 +133,7 @@ void preprocess(SEXP *dt, int64_t *nprotect, int *maxType, R_xlen_t *nrow,
     if (INHERITS(thisCol, char_integer64)) {
       if (*integer64) {
         // all columns already checked are integer64, nothing left to do here
-      } else if (INHERITS(thisCol, char_integer64) && *ncol > 0 && !*integer64) {
+      } else if (*ncol > 0 && !*integer64) {
         // This column is integer64, but at least one column checked already is not
         *coerce = true;
         *integer64 = true;
@@ -141,7 +141,7 @@ void preprocess(SEXP *dt, int64_t *nprotect, int *maxType, R_xlen_t *nrow,
           *maxType = STRSXP; // numeric and complex cannot be coerced to int64, must coerce to character
         else if (TYPEORDER(*maxType) < TYPEORDER(REALSXP))
           *maxType = REALSXP;
-      } else if (INHERITS(thisCol, char_integer64) && *ncol == 0) {
+      } else if (*ncol == 0) {
         // This column is integer64 and it is the first column checked
         *integer64 = true;
         *maxType = REALSXP;
@@ -156,7 +156,11 @@ void preprocess(SEXP *dt, int64_t *nprotect, int *maxType, R_xlen_t *nrow,
       // otherwise if this column is higher in typeorder list, set this type as maxType
       if (j > 0) 
         *coerce = true;
-      *maxType=thisType;
+      // if any previous column is integer64, then maxType must be STRSXP if any numeric or complex cols
+      if (*integer64 && thisType != VECSXP && TYPEORDER(thisType) > TYPEORDER(INTSXP))
+        *maxType = STRSXP;
+      else
+        *maxType=thisType;
     } else {
       // TYPEORDER(thisType) < TYPEORDER(*maxType), 
       // no change to maxType, but this col is different to previous so coercion required
