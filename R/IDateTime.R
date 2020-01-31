@@ -243,7 +243,7 @@ rep.ITime = function (x, ...)
                            
 round.ITime <- function(x, units = c("hours", "minutes")) 
 {
-  (setattr(switch(match.arg(digits),
+  (setattr(switch(match.arg(units),
                   hours = as.integer(round(unclass(x)/3600)*3600),
                   minutes = as.integer(round(unclass(x)/60)*60)), 
            "class", "ITime"))
