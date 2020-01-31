@@ -73,6 +73,8 @@ unit = "s")
 
 10. The dimensions of objects in a `list` column are now displayed, [#3671](https://github.com/Rdatatable/data.table/issues/3671). Thanks to @randomgambit for the request, and Tyson Barrett for the PR.
 
+11. Added support for `round()`, `trunc()`, `floor()`, `ceiling()` to extend functionality of `.ITime`. `round()` and `trunc()` can be used with arguments digits/units: "hours" or "minutes", whereas `floor()` and `ceiling()` only works for "hour". Thanks to @JensPederM for adding these functions. 
+
 ## BUG FIXES
 
 1. A NULL timezone on POSIXct was interpreted by `as.IDate` and `as.ITime` as UTC rather than the session's default timezone (`tz=""`) , [#4085](https://github.com/Rdatatable/data.table/issues/4085).
