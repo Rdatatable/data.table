@@ -124,7 +124,7 @@ SEXP islockedR();
 SEXP allNAR();
 SEXP asmatrix();
 SEXP asCharacterInteger64();
-SEXP asCharacterITime();
+SEXP asCharacterITime_R();
 
 // .Externals
 SEXP fastmean();
@@ -219,7 +219,7 @@ R_CallMethodDef callMethods[] = {
 {"C_allNAR", (DL_FUNC) &allNAR, -1},
 {"Casmatrix", (DL_FUNC) &asmatrix, -1},
 {"CasCharacterInteger64", (DL_FUNC) &asCharacterInteger64, -1},
-{"CasCharacterITime", (DL_FUNC) &asCharacterITime, -1},
+{"CasCharacterITime", (DL_FUNC) &asCharacterITime_R, -1},
 {NULL, NULL, 0}
 };
 

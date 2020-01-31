@@ -358,9 +358,9 @@ SEXP coerceUtf8IfNeeded(SEXP x) {
 
 // Adapted from the bit64 package C function as_character_integer64
 // Allows us to be integer64 aware without the user loading the bit64 package
-SEXP asCharacterInteger64(SEXP x) {
+SEXP asCharacterInteger64(SEXP x, int *nprotect) {
   const int64_t lenx = xlength(x);
-  SEXP coerced = PROTECT(allocVector(STRSXP, lenx));
+  SEXP coerced = PROTECT(allocVector(STRSXP, lenx)); nprotect++;
   long long int *px = (long long int *) REAL(x);
   static char buff[22];
   for (int64_t i=0; i<lenx; ++i) {
@@ -371,13 +371,12 @@ SEXP asCharacterInteger64(SEXP x) {
       SET_STRING_ELT(coerced, i, mkChar(buff)); 
     }
   }
-  UNPROTECT(1);
   return(coerced);
 }
 
-SEXP asCharacterITime(SEXP x) {
+SEXP asCharacterITime(SEXP x, int *nprotect) {
   R_xlen_t lenx = xlength(x);
-  SEXP coerced = PROTECT(allocVector(STRSXP, lenx));
+  SEXP coerced = PROTECT(allocVector(STRSXP, lenx)); nprotect++;
   int *px = INTEGER(x);
   static char buff[10];
   for (R_xlen_t j=0; j < lenx; ++j) {
@@ -399,20 +398,25 @@ SEXP asCharacterITime(SEXP x) {
       SET_STRING_ELT(coerced, j, mkChar(buff));
     }
   }
+  return(coerced);
+}
+
+SEXP asCharacterITime_R(SEXP x) {
+  int nprotect = 0;
+  SEXP coerced = asCharacterITime(x, &nprotect);
   UNPROTECT(1);
   return(coerced);
 }
 
 // Execute any R function with 1 argument.
-SEXP callRfun1(const char *name, const char *package, SEXP arg) {
+SEXP callRfun1(const char *name, const char *package, SEXP arg, int *nprotect) {
   SEXP pkgEnv = findVarInFrame3(R_NamespaceRegistry, install(package), (Rboolean) true);
   if (pkgEnv == R_UnboundValue)
     error("Package '%s' not loaded\n", package); // # nocov
 
-  SEXP rfun = PROTECT(lang2(install(name), arg));
+  SEXP rfun = PROTECT(lang2(install(name), arg)); nprotect++;
   int errorOccurred;
   SEXP ret = R_tryEval(rfun, pkgEnv, &errorOccurred);
   
-  UNPROTECT(1);
   return(ret);
 }

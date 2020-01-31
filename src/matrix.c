@@ -48,17 +48,17 @@
 bool toCharacterFactorPOSIX(SEXP *thisCol, int *nprotect) {
   bool coerced = true;
   if (isFactor(*thisCol)) {
-    *thisCol = PROTECT(asCharacterFactor(*thisCol)); (*nprotect)++;
+    *thisCol = asCharacterFactor(*thisCol, nprotect);
   } else if (INHERITS(*thisCol, char_ITime)) {
-    *thisCol = PROTECT(asCharacterITime(*thisCol)); (*nprotect)++;
+    *thisCol = asCharacterITime(*thisCol, nprotect);
   } else if (INHERITS(*thisCol, char_nanotime)) {
-    *thisCol = PROTECT(callRfun1("format.nanotime", "nanotime", *thisCol)); (*nprotect)++;
+    *thisCol = callRfun1("format.nanotime", "nanotime", *thisCol, nprotect);
   } else if (INHERITS(*thisCol, char_Date)) {
-    *thisCol = PROTECT(callRfun1("format.Date", "base", *thisCol)); (*nprotect)++;
+    *thisCol = callRfun1("format.Date", "base", *thisCol, nprotect);
   } else if (INHERITS(*thisCol, char_POSIXct)) {
-    *thisCol = PROTECT(callRfun1("format.POSIXct", "base", *thisCol)); (*nprotect)++;
+    *thisCol = callRfun1("format.POSIXct", "base", *thisCol, nprotect);
   } else if (INHERITS(*thisCol, char_POSIXlt)) {
-    *thisCol = PROTECT(callRfun1("format.POSIXlt", "base", *thisCol)); (*nprotect)++;
+    *thisCol = callRfun1("format.POSIXlt", "base", *thisCol, nprotect);
   } else {
     coerced = false;
   }
@@ -118,7 +118,7 @@ void preprocess(SEXP *dt, int *nprotect, int *maxType, R_xlen_t *nrow,
     
     // Load ff column into memory
     if (INHERITS(thisCol, char_ff)) {
-      thisCol = PROTECT(callRfun1("[.ff", "ff", thisCol)); (*nprotect)++;
+      thisCol = callRfun1("[.ff", "ff", thisCol, nprotect); // nprotect incremented in callRfun1
       SET_VECTOR_ELT(*dt, j, thisCol); UNPROTECT(1); (*nprotect)--; // 'thisCol' now PROTECTED by dt
     }
     
@@ -295,13 +295,13 @@ SEXP asmatrix(SEXP dt, SEXP rownames)
     int rnstack = 0; // separate protect stack counter because number of coercions may be 0-3
     // If ff vector must be loaded into memory
     if (INHERITS(rownames, char_ff)) { 
-      rownames = PROTECT(callRfun1("[.ff", "ff", rownames)); rnstack++;
+      rownames = callRfun1("[.ff", "ff", rownames, &rnstack); // rnstack incremented in function
     }
     // Convert to string if factor, date, or time 
     toCharacterFactorPOSIX(&rownames, &rnstack);
     // if integer64 convert to character to avoid garbage numeric values
     if (INHERITS(rownames, char_integer64)) {
-      rownames = PROTECT(asCharacterInteger64(rownames)); rnstack++;
+      rownames = asCharacterInteger64(rownames, &rnstack); // rnstack incremented in function
     }
     if (INHERITS(rownames, char_dataframe) || INHERITS(rownames, char_datatable) || 
         !isNull(getAttrib(rownames, R_DimSymbol)))
@@ -418,10 +418,10 @@ SEXP asmatrix(SEXP dt, SEXP rownames)
       if ((TYPEOF(thisCol) != maxType)  || (integer64 && !INHERITS(thisCol, char_integer64))) {
         SEXP coerced;
         if (maxType == VECSXP) { // coercion to list not handled by memrecycle.
-          coerced = coerceAsList(thisCol, nrow, &thisprotect); // nprotect incremented
+          coerced = coerceAsList(thisCol, nrow, &thisprotect); // thisprotect incremented
         } else if (integer64 && maxType == STRSXP && INHERITS(thisCol, char_integer64)) {
           // memrecycle does not coerce integer64 to character
-          coerced = PROTECT(asCharacterInteger64(thisCol)); thisprotect++;
+          coerced = asCharacterInteger64(thisCol, &thisprotect); // thisprotect incremented
         } else {
           // coerce with memrecycle. For memrecycle to be integer64 aware
           // we have to add the class to the target vector

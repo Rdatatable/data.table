@@ -236,9 +236,9 @@ bool islocked(SEXP x);
 SEXP islockedR(SEXP x);
 bool need2utf8(SEXP x);
 SEXP coerceUtf8IfNeeded(SEXP x);
-SEXP asCharacterInteger64(SEXP x);
-SEXP asCharacterITime(SEXP x);
-SEXP callRfun1(const char *name, const char *package, SEXP x);
+SEXP asCharacterInteger64(SEXP x, int *nprotect);
+SEXP asCharacterITime(SEXP x, int *nprotect);
+SEXP callRfun1(const char *name, const char *package, SEXP x, int *nprotect);
 
 // types.c
 char *end(char *start);
