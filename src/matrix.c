@@ -45,7 +45,7 @@
 /* If the vector is a factor or POSIX-like it is coerced to its string 
  * representation and replaced by reference.
  */
-bool toCharacterFactorPOSIX(SEXP *thisCol, int64_t *nprotect) {
+bool toCharacterFactorPOSIX(SEXP *thisCol, int *nprotect) {
   bool coerced = true;
   if (isFactor(*thisCol)) {
     *thisCol = PROTECT(asCharacterFactor(*thisCol)); (*nprotect)++;
@@ -78,7 +78,7 @@ bool toCharacterFactorPOSIX(SEXP *thisCol, int64_t *nprotect) {
  *
  * Where there are data.table or data.frame columns this function recurses.
  */
-void preprocess(SEXP *dt, int64_t *nprotect, int *maxType, R_xlen_t *nrow, 
+void preprocess(SEXP *dt, int *nprotect, int *maxType, R_xlen_t *nrow, 
                 R_xlen_t *ncol, bool *coerce, bool *integer64, 
                 bool *unpack, bool *recycle) {
   for (int j=0; j<xlength(*dt); ++j) {
@@ -119,12 +119,12 @@ void preprocess(SEXP *dt, int64_t *nprotect, int *maxType, R_xlen_t *nrow,
     // Load ff column into memory
     if (INHERITS(thisCol, char_ff)) {
       thisCol = PROTECT(callRfun1("[.ff", "ff", thisCol)); (*nprotect)++;
-      SET_VECTOR_ELT(*dt, j, thisCol);
+      SET_VECTOR_ELT(*dt, j, thisCol); UNPROTECT(1); (*nprotect)--; // 'thisCol' now PROTECTED by dt
     }
     
     // do any mandatory coercions (e.g. factor to character)
     if (toCharacterFactorPOSIX(&thisCol, nprotect)) {
-      SET_VECTOR_ELT(*dt, j, thisCol);
+      SET_VECTOR_ELT(*dt, j, thisCol); UNPROTECT(1); (*nprotect)--; // 'thisCol' now PROTECTED by dt
     }
     
     // Determine the maximum type for matrix and whether we will need to do any
@@ -170,8 +170,8 @@ void preprocess(SEXP *dt, int64_t *nprotect, int *maxType, R_xlen_t *nrow,
 }
 
 // Make a vector of names of the format V1, V2, V3, ..., VN
-SEXP makeNames(R_xlen_t n) {
-  SEXP names = PROTECT(allocVector(STRSXP, n)); 
+SEXP makeNames(R_xlen_t n, int *nprotect) {
+  SEXP names = PROTECT(allocVector(STRSXP, n)); (*nprotect)++;
   
   // determine buffer width based on width of n
   size_t buffwidth = 2;
@@ -183,15 +183,14 @@ SEXP makeNames(R_xlen_t n) {
     snprintf(buff, buffwidth, "V%"PRId64"", i+1);
     SET_STRING_ELT(names, i, mkChar(buff));
   }
-  UNPROTECT(1);
   return(names);
 }
 
 // Add a prefix to a character vector, separated by a "."
 // I.e. for concatenating names of a multi-dimensional column
-SEXP prependNames(SEXP names, SEXP prefixArg) {
+SEXP prependNames(SEXP names, SEXP prefixArg, int *nprotect) {
   R_xlen_t len = xlength(names);
-  SEXP ans = PROTECT(allocVector(STRSXP, len));
+  SEXP ans = PROTECT(allocVector(STRSXP, len)); (*nprotect)++;
   const char *prefix = CHAR(prefixArg);
   
   /* To determine the buffer width of the new column names, we need to 
@@ -213,14 +212,13 @@ SEXP prependNames(SEXP names, SEXP prefixArg) {
     snprintf(buff, buffwidth, "%s.%s", prefix, namei);
     SET_STRING_ELT(ans, i, mkChar(buff));
   }
-  UNPROTECT(1);
   return(ans);
 }
 
 /* Recurse through a data.table, extracting any multi dimensional columns 
  * into their single columns in the top level data.table
  */
-void flatten(SEXP *dt, SEXP *dtcn, SEXP *newdt, SEXP *newcn, R_xlen_t *jtarget, int64_t *nprotect) {
+void flatten(SEXP *dt, SEXP *dtcn, SEXP *newdt, SEXP *newcn, R_xlen_t *jtarget, int *nprotect) {
   for (R_xlen_t j = 0; j < xlength(*dt); ++j) {
     SEXP thisCol = VECTOR_ELT(*dt, j);
     SEXP colDim = getAttrib(thisCol, R_DimSymbol);
@@ -232,10 +230,13 @@ void flatten(SEXP *dt, SEXP *dtcn, SEXP *newdt, SEXP *newcn, R_xlen_t *jtarget, 
       // This column is a data.table or data.frame we will recurse into
       // Make composite column names before recursing
       SEXP subdtcn = getAttrib(thisCol, R_NamesSymbol); // names(dt[,j])
-      SEXP compositecn = PROTECT(prependNames(subdtcn, colName)); (*nprotect)++;
+      SEXP compositecn = prependNames(subdtcn, colName, nprotect); // nprotect incremented
 
       // recurse into data.table
-      flatten(&thisCol, &compositecn, newdt, newcn, jtarget, nprotect);
+      int recurseflattenstack = 0;
+      flatten(&thisCol, &compositecn, newdt, newcn, jtarget, &recurseflattenstack);
+      UNPROTECT(recurseflattenstack); // everything PROTECTED behind 'dt'
+      UNPROTECT(1); (*nprotect)--; // no longer need to PROTECT compositecn, all elements now PROTECTED in dtcn
     } else if (!isNull(colDim)) {
       // matrix, we have to split up vector into new columns of length mat nrow
       int matnrow = INTEGER(colDim)[0];
@@ -245,27 +246,30 @@ void flatten(SEXP *dt, SEXP *dtcn, SEXP *newdt, SEXP *newcn, R_xlen_t *jtarget, 
       SEXP matcn; 
       
       // If no column names we need to make our own of the form V1, V2, ..., VN
+      int matcnprotect = 0; // below may add 0 or 1 to protect stack
       if (isNull(matdm)) {
-        matcn = PROTECT(makeNames(matncol)); (*nprotect)++;
+        matcn = makeNames(matncol, &matcnprotect); // matcnprotect incremented
       } else {
         matcn = STRING_ELT(matdm, 1);
         if (isNull(matcn)) {
-          matcn = PROTECT(makeNames(matncol)); (*nprotect)++;
+          matcn = makeNames(matncol, &matcnprotect); // matcnprotect incremented
         }
       }
 
       // Make composite column names
-      SEXP compositecn = PROTECT(prependNames(matcn, colName)); (*nprotect)++;
+      SEXP compositecn = prependNames(matcn, colName, nprotect); // nprotect incremented
 
       // Iterate through each column of the matrix, copying its contents into the new column vector
       for (int mj = 0; mj < matncol; ++mj) {
         SEXP thisNewCol = PROTECT(allocVector(mattype, matnrow)); (*nprotect)++;
         R_xlen_t start = (R_xlen_t) mj * matnrow;
         memrecycle(thisNewCol, R_NilValue, 0, matnrow, thisCol, start, matnrow, 0, "V1");
-        SET_VECTOR_ELT(*newdt, *jtarget, thisNewCol);
+        SET_VECTOR_ELT(*newdt, *jtarget, thisNewCol); UNPROTECT(1); nprotect--;
         SET_STRING_ELT(*newcn, *jtarget, STRING_ELT(compositecn, mj)); // add new column name
         (*jtarget)++; // Increment column index in the new flattened data.table
       }
+      UNPROTECT(1); (*nprotect)--; // pop compositecn from protect stack, now PROTECTED by newcn
+      UNPROTECT(matcnprotect); // pop any PROTECTED created matrix column names, now PROTECTED in newcn. 
     } else {
       // Single column, add pointer to new flattend data.table in the right spot
       SET_VECTOR_ELT(*newdt, *jtarget, thisCol);
@@ -278,7 +282,34 @@ void flatten(SEXP *dt, SEXP *dtcn, SEXP *newdt, SEXP *newcn, R_xlen_t *jtarget, 
 SEXP asmatrix(SEXP dt, SEXP rownames)
 {
   // PROTECT / UNPROTECT stack counter
-  int64_t nprotect=0;
+  int nprotect=0;
+  
+  SEXP rncontainer = PROTECT(allocVector(VECSXP, 1)); nprotect++; // PROTECTED container to hold (maybe coerced) rownames 
+  SET_VECTOR_ELT(rncontainer, 0, R_NilValue); // initialise in case rownames is null
+  
+  // Coerce and check rownames - do this first so rownames, if coerced,
+  // is placed at the bottom of the protection stack. This way we don't
+  // unintentionally unprotect it when poping the stack, e.g after coercing
+  // a column and assigning back into the protected list container.
+  if (!isNull(rownames)) {
+    int rnstack = 0; // separate protect stack counter because number of coercions may be 0-3
+    // If ff vector must be loaded into memory
+    if (INHERITS(rownames, char_ff)) { 
+      rownames = PROTECT(callRfun1("[.ff", "ff", rownames)); rnstack++;
+    }
+    // Convert to string if factor, date, or time 
+    toCharacterFactorPOSIX(&rownames, &rnstack);
+    // if integer64 convert to character to avoid garbage numeric values
+    if (INHERITS(rownames, char_integer64)) {
+      rownames = PROTECT(asCharacterInteger64(rownames)); rnstack++;
+    }
+    if (INHERITS(rownames, char_dataframe) || INHERITS(rownames, char_datatable) || 
+        !isNull(getAttrib(rownames, R_DimSymbol)))
+        error("Extracted rownames column or provided rownames.values are multi-column type (e.g. a matrix or data.table) and cannot be used as rownames");
+    if (TYPEOF(rownames) == VECSXP || TYPEOF(rownames) == LISTSXP)
+      warning("Extracted rownames column or provided rownames.values are a list column, so will be converted to a character representation");
+    SET_VECTOR_ELT(rncontainer, 0, rownames); UNPROTECT(rnstack); // coerced rownames now PROTECTED in rnContainer 
+  }
   
   // Extract column types and determine type to coerce to
   int maxType=RAWSXP;
@@ -291,28 +322,12 @@ SEXP asmatrix(SEXP dt, SEXP rownames)
   preprocess(&dt, &nprotect, &maxType, &nrow, &ncol, &coerce, &integer64, &unpack, &recycle);
   
   // Check matrix is not larger than allowed by R
-  if (ncol > R_LEN_T_MAX || nrow > R_LEN_T_MAX) 
+  if (ncol > R_LEN_T_MAX || nrow > R_LEN_T_MAX)
     error("R does not support matrices with more than %d columns or rows", R_LEN_T_MAX); // # nocov
   
-  // Coerce and check rownames
-  if (!isNull(rownames)) {
-    // If ff vector must be loaded into memory
-    if (INHERITS(rownames, char_ff)) { 
-      rownames = PROTECT(callRfun1("[.ff", "ff", rownames)); nprotect++;
-    }
-    // Convert to string if factor, date, or time 
-    toCharacterFactorPOSIX(&rownames, &nprotect);
-    // if integer64 convert to character to avoid garbage numeric values
-    if (INHERITS(rownames, char_integer64)) {
-      rownames = PROTECT(asCharacterInteger64(rownames)); nprotect++;
-    }
-    if (INHERITS(rownames, char_dataframe) || INHERITS(rownames, char_datatable) || 
-        !isNull(getAttrib(rownames, R_DimSymbol)))
-        error("Extracted rownames column or provided rownames.values are multi-column type (e.g. a matrix or data.table) and cannot be used as rownames");
-    if (TYPEOF(rownames) == VECSXP || TYPEOF(rownames) == LISTSXP)
-      warning("Extracted rownames column or provided rownames.values are a list column, so will be converted to a character representation");
-    if (nrow != 0 && xlength(rownames) != nrow)
-      error("Extracted rownames column or provided rownames.values do not match the number of rows in the matrix");
+  // Check rownames length for errors now we know nrow.
+  if (nrow != 0 && xlength(rownames) != nrow) {
+    error("Extracted rownames column or provided rownames.values do not match the number of rows in the matrix");
   }
   
   // If no columns, nrow is dictated by rownames
@@ -322,16 +337,16 @@ SEXP asmatrix(SEXP dt, SEXP rownames)
   }
 
   // allocate matrix
-  SEXP ans = PROTECT(allocMatrix(maxType, nrow, ncol)); nprotect++;
+  SEXP ans = PROTECT(allocMatrix(maxType, nrow, ncol)); nprotect++; // should only be 'rnContainer' and 'ans' on PROTECT stack
   
   // if ncol == 0 we can now return
   if (ncol == 0) {
     if (!isNull(rownames)) { // Add rownames if they exist
       SEXP dimnames = PROTECT(allocVector(VECSXP, 2)); nprotect++;
-      SET_VECTOR_ELT(dimnames, 0, rownames);
+      SET_VECTOR_ELT(dimnames, 0, VECTOR_ELT(rncontainer, 0));
       SET_VECTOR_ELT(dimnames, 1, R_NilValue);
       setAttrib(ans, R_DimNamesSymbol, dimnames);
-    }
+    } 
     UNPROTECT(nprotect);
     return(ans);
   }
@@ -339,8 +354,8 @@ SEXP asmatrix(SEXP dt, SEXP rownames)
   // if, somehow, the input data.table lacks names, make them
   SEXP colnames = getAttrib(dt, R_NamesSymbol); // names(dt)
   if (isNull(colnames)) {
-    colnames = PROTECT(makeNames(xlength(dt))); nprotect++;
-    setAttrib(dt, R_NamesSymbol, colnames);
+    colnames = makeNames(xlength(dt), &nprotect); // nprotect incremented
+    setAttrib(dt, R_NamesSymbol, colnames); UNPROTECT(1); nprotect--; // PROTECTED by dt now
   }
   
   // Unpack data.table if needed
@@ -348,17 +363,21 @@ SEXP asmatrix(SEXP dt, SEXP rownames)
     SEXP newdt = PROTECT(allocVector(VECSXP, ncol)); nprotect++;
     SEXP newcn = PROTECT(allocVector(STRSXP, ncol)); nprotect++;
     R_xlen_t j = 0;
-    flatten(&dt, &colnames, &newdt, &newcn, &j, &nprotect);
+    int flprotect=0; // protect stack counter for flatten
+    flatten(&dt, &colnames, &newdt, &newcn, &j, &flprotect);
     setAttrib(newdt, R_NamesSymbol, newcn);
+    UNPROTECT(flprotect); // everything in flattened now PROTECTED in newdt
+    UNPROTECT(1); nprotect--; // pop newcn PROTECT call, now PROTECTED by 'newdt' after setAttrib.
     dt = newdt;
     colnames = getAttrib(dt, R_NamesSymbol);
   }
+  // top of PROTECT stack is either 'ans' or 'newdt' (if unpack was true)
   
   // Add dimension names
   SEXP dimnames = PROTECT(allocVector(VECSXP, 2)); nprotect++;
-  SET_VECTOR_ELT(dimnames, 0, rownames);
+  SET_VECTOR_ELT(dimnames, 0, VECTOR_ELT(rncontainer, 0));
   SET_VECTOR_ELT(dimnames, 1, colnames);
-  setAttrib(ans, R_DimNamesSymbol, dimnames);
+  setAttrib(ans, R_DimNamesSymbol, dimnames); UNPROTECT(1); nprotect--; // dimnames now PROTECTED by ans
   
   // If nrow 0 we can now return.
   if (nrow == 0) {
@@ -380,13 +399,13 @@ SEXP asmatrix(SEXP dt, SEXP rownames)
         if (INHERITS(thisCol, char_integer64)) {
           SEXP i64Class = PROTECT(allocVector(STRSXP, 1)); nprotect++;
           SET_STRING_ELT(i64Class, 0, char_integer64);
-          setAttrib(newCol, R_ClassSymbol, i64Class);
+          setAttrib(newCol, R_ClassSymbol, i64Class); UNPROTECT(1); nprotect--; // class PROTECTED in newCol
         }
         // Fill column repeating elements as needed
         for (int i = 0; i < (nrow / thisnrow); ++i) {
           memrecycle(newCol, R_NilValue, i*thisnrow, thisnrow, thisCol, 0, -1, 0, "V1");
         }
-        SET_VECTOR_ELT(dt, j, newCol);
+        SET_VECTOR_ELT(dt, j, newCol); UNPROTECT(1); nprotect--; // newCol PROTECTED in dt
       } 
     }
   }
@@ -395,27 +414,28 @@ SEXP asmatrix(SEXP dt, SEXP rownames)
   if (coerce) {
     for (int j=0; j<ncol; ++j) {
       SEXP thisCol = VECTOR_ELT(dt, j);
+      int thisprotect=0;
       if ((TYPEOF(thisCol) != maxType)  || (integer64 && !INHERITS(thisCol, char_integer64))) {
         SEXP coerced;
         if (maxType == VECSXP) { // coercion to list not handled by memrecycle.
-          coerced = PROTECT(coerceAsList(thisCol, nrow)); nprotect++;
+          coerced = coerceAsList(thisCol, nrow, &thisprotect); // nprotect incremented
         } else if (integer64 && maxType == STRSXP && INHERITS(thisCol, char_integer64)) {
           // memrecycle does not coerce integer64 to character
-          coerced = PROTECT(asCharacterInteger64(thisCol)); nprotect++;
+          coerced = PROTECT(asCharacterInteger64(thisCol)); thisprotect++;
         } else {
           // coerce with memrecycle. For memrecycle to be integer64 aware
           // we have to add the class to the target vector
-          coerced = PROTECT(allocVector(maxType, nrow));
+          coerced = PROTECT(allocVector(maxType, nrow)); thisprotect++;
           if(integer64) {
-            SEXP i64Class = PROTECT(allocVector(STRSXP, 1)); nprotect++;
+            SEXP i64Class = PROTECT(allocVector(STRSXP, 1)); thisprotect++;
             SET_STRING_ELT(i64Class, 0, char_integer64);
-            setAttrib(coerced, R_ClassSymbol, i64Class);
+            setAttrib(coerced, R_ClassSymbol, i64Class); UNPROTECT(1); thisprotect--; // class PROTECTED in coerced
           }
           const char *ret = memrecycle(coerced, R_NilValue, 0, nrow, thisCol, 0, -1, 0, "V1");
           // Warning when precision is lost after coercion, should not be possible to reach
           if (ret) error("Internal Error: column %d: %s\n", j+1, ret); // # nocov
         }
-        SET_VECTOR_ELT(dt, j, coerced);
+        SET_VECTOR_ELT(dt, j, coerced); UNPROTECT(thisprotect); // coerced PROTECTED in dt
       }
     }
   }
@@ -433,6 +453,6 @@ SEXP asmatrix(SEXP dt, SEXP rownames)
       error("Internal Error: unreachable state in as.matrix\n"); // # nocov
   }
   
-  UNPROTECT(nprotect);  // ans, dimnames, coerced, thisElement
+  UNPROTECT(nprotect);
   return(ans);
 }
