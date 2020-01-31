@@ -216,12 +216,11 @@ SEXP prependNames(SEXP names, SEXP prefixArg) {
 /* Recurse through a data.table, extracting any multi dimensional columns 
  * into their single columns in the top level data.table
  */
-void flatten(SEXP *dt, SEXP *newdt, SEXP *newcn, R_xlen_t *jtarget, int64_t *nprotect) {
-  SEXP dtcn = getAttrib(*dt, R_NamesSymbol); // names(dt)
+void flatten(SEXP *dt, SEXP *dtcn, SEXP *newdt, SEXP *newcn, R_xlen_t *jtarget, int64_t *nprotect) {
   for (R_xlen_t j = 0; j < xlength(*dt); ++j) {
     SEXP thisCol = VECTOR_ELT(*dt, j);
     SEXP colDim = getAttrib(thisCol, R_DimSymbol);
-    SEXP colName = STRING_ELT(dtcn, j);
+    SEXP colName = STRING_ELT(*dtcn, j);
     if (isNull(thisCol)) {
       // Empty column, do not add to newdt
       continue;
@@ -230,10 +229,9 @@ void flatten(SEXP *dt, SEXP *newdt, SEXP *newcn, R_xlen_t *jtarget, int64_t *npr
       // Make composite column names before recursing
       SEXP subdtcn = getAttrib(thisCol, R_NamesSymbol); // names(dt[,j])
       SEXP compositecn = PROTECT(prependNames(subdtcn, colName)); (*nprotect)++;
-      setAttrib(thisCol, R_NamesSymbol, compositecn);
 
       // recurse into data.table
-      flatten(&thisCol, newdt, newcn, jtarget, nprotect);
+      flatten(&thisCol, &compositecn, newdt, newcn, jtarget, nprotect);
     } else if (!isNull(colDim)) {
       // matrix, we have to split up vector into new columns of length mat nrow
       int matnrow = INTEGER(colDim)[0];
@@ -335,10 +333,10 @@ SEXP asmatrix(SEXP dt, SEXP rownames)
   }
   
   // if, somehow, the input data.table lacks names, make them
-  SEXP cn = getAttrib(dt, R_NamesSymbol); // names(dt)
-  if (isNull(cn)) {
-    cn = PROTECT(makeNames(xlength(dt))); nprotect++;
-    setAttrib(dt, R_NamesSymbol, cn);
+  SEXP colnames = getAttrib(dt, R_NamesSymbol); // names(dt)
+  if (isNull(colnames)) {
+    colnames = PROTECT(makeNames(xlength(dt))); nprotect++;
+    setAttrib(dt, R_NamesSymbol, colnames);
   }
   
   // Unpack data.table if needed
@@ -346,15 +344,16 @@ SEXP asmatrix(SEXP dt, SEXP rownames)
     SEXP newdt = PROTECT(allocVector(VECSXP, ncol)); nprotect++;
     SEXP newcn = PROTECT(allocVector(STRSXP, ncol)); nprotect++;
     R_xlen_t j = 0;
-    flatten(&dt, &newdt, &newcn, &j, &nprotect);
+    flatten(&dt, &colnames, &newdt, &newcn, &j, &nprotect);
     setAttrib(newdt, R_NamesSymbol, newcn);
     dt = newdt;
+    colnames = getAttrib(dt, R_NamesSymbol);
   }
   
   // Add dimension names
   SEXP dimnames = PROTECT(allocVector(VECSXP, 2)); nprotect++;
   SET_VECTOR_ELT(dimnames, 0, rownames);
-  SET_VECTOR_ELT(dimnames, 1, getAttrib(dt, R_NamesSymbol));
+  SET_VECTOR_ELT(dimnames, 1, colnames);
   setAttrib(ans, R_DimNamesSymbol, dimnames);
   
   // If nrow 0 we can now return.
