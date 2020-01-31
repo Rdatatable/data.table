@@ -1900,9 +1900,11 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
   X = x
   class(X) = NULL
   
-  # Drop the rownames column, if used
-  if (!is.null(rownames))
+  # Extract and drop the rownames column, if used
+  if (!is.null(rownames)) {
+    rownames.value = X[[rownames]]
     X[[rownames]] = NULL
+  }
   
   # All columns must be coerced to a common type to become a matrix. 
   # There are a few special coercion rules - matrices cannot contain 
