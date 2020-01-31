@@ -48,7 +48,7 @@
 bool toCharacterFactorPOSIX(SEXP *thisCol, int *nprotect) {
   bool coerced = true;
   if (isFactor(*thisCol)) {
-    *thisCol = asCharacterFactor(*thisCol, nprotect);
+    *thisCol = PROTECT(asCharacterFactor(*thisCol)); (*nprotect)++;
   } else if (INHERITS(*thisCol, char_ITime)) {
     *thisCol = asCharacterITime(*thisCol, nprotect);
   } else if (INHERITS(*thisCol, char_nanotime)) {
