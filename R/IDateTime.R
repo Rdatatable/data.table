@@ -244,17 +244,25 @@ rep.ITime = function (x, ...)
 round.ITime <- function(x, digits = c("hours", "minutes")) 
 {
   (setattr(switch(match.arg(digits),
-                  hours = round(unclass(x)/3600)*3600,
-                  minutes = round(unclass(x)/60)*60), 
+                  hours = as.integer(round(unclass(x)/3600L)*3600L),
+                  minutes = as.integer(round(unclass(x)/60L)*60L)), 
            "class", "ITime"))
 } 
 
 trunc.ITime <- function(x, units = c("hours", "minutes")) 
 {
   (setattr(switch(match.arg(units),
-                  hours = trunc(unclass(x)/3600)*3600,
-                  minutes = trunc(unclass(x)/60)*60), 
+                  hours = as.integer(trunc(unclass(x)/3600L)*3600L),
+                  minutes = as.integer(trunc(unclass(x)/60L)*60L)), 
            "class", "ITime"))
+}
+
+floor.ITime <- function(x) {
+  (setattr(as.integer(floor(unclass(x)/3600L)*3600L), "class", "ITime"))
+}
+
+ceiling.ITime <- function(x) {
+  (setattr(as.integer(ceiling(unclass(x)/3600L)*3600L), "class", "ITime"))
 }
 
 "[.ITime" = function(x, ..., drop = TRUE)
