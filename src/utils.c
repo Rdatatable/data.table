@@ -367,7 +367,7 @@ SEXP asCharacterInteger64(SEXP x) {
     if (px[i]==NA_INTEGER64) {
       SET_STRING_ELT(coerced, i, NA_STRING);
     } else {
-      snprintf(buff, 22, "%"PRId64"", px[i]); 
+      snprintf(buff, 22, "%lld", px[i]); 
       SET_STRING_ELT(coerced, i, mkChar(buff)); 
     }
   }
