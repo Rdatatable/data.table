@@ -326,7 +326,7 @@ SEXP asmatrix(SEXP dt, SEXP rownames)
     error("R does not support matrices with more than %d columns or rows", R_LEN_T_MAX); // # nocov
   
   // Check rownames length for errors now we know nrow.
-  if (nrow != 0 && xlength(rownames) != nrow) {
+  if (nrow != 0 && xlength(VECTOR_ELT(rncontainer, 0)) != nrow) {
     error("Extracted rownames column or provided rownames.values do not match the number of rows in the matrix");
   }
   
