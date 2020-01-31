@@ -1892,83 +1892,12 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
     }
   }
   
-  # Create a new list X containing pointers to columns in x, so that any
-  # modifications (i.e. type coercion, dropping of rownames column) do 
-  # not change the input data.table. New copies in memory are only 
-  # created for columns that are modified (those coerced to a different
-  # type or class)
-  X = x
-  class(X) = NULL
-  
   # Extract and drop the rownames column, if used
+  X = x
   if (!is.null(rownames)) {
+    class(X) = NULL # means we can set x[[rownames]] to NULL to drop without modifying the input data.table
     rownames.value = X[[rownames]]
     X[[rownames]] = NULL
-  }
-  
-  # All columns must be coerced to a common type to become a matrix. 
-  # There are a few special coercion rules - matrices cannot contain 
-  # factors nor Date like classes. These are always coerced to character
-  # vectors regardless of the other column types/classes. We also need 
-  # to make sure the data.table is not malformed (NULL columns,
-  # multi-dimensional columns). Further, we want to minimize
-  # the number of checks done, e.g. if all columns are already the same type.
-  
-  # Returns environment of class information, or updates it in a way that 
-  # minimises calls across columns
-  class_info = function(X, X.info, cols.to.update, cols.to.drop) {
-    if (missing(X.info))
-      X.info = new.env()
-    
-    # Get class and type of relevant columns
-    if (missing(cols.to.update) && missing(cols.to.drop))
-      X.info$classes = lapply(X, class) # lapply here because a column may have > 1 class. 
-    else if (!missing(cols.to.drop))
-      X.info$classes = X.info$classes[-cols.to.drop]
-    else if (!missing(cols.to.update))
-      X.info$classes[cols.to.update] = lapply(X[cols.to.update], class)
-    else 
-      stop("Internal error: cols.to.update and cols.to.drop cannot both be supplied to column_properties()") # nocov
-    
-    # vector of unique classes for checking any col is class before getting which col is class
-    X.info$uniq.class.sets = unique(X.info$classes) # unique combinations of classes
-    X.info$uniq.classes = sort(unique(unlist(X.info$uniq.class.sets))) # flat vector of all unique classes, e.g. for any_class_is
-    X.info
-  }
-  X.info = class_info(X)
-  
-  # Check whether any column has class among the 'target' vector,
-  # by matching to the precomputed vector of unique class information
-  # stored in X.info.
-  any_class_is = function(X.info, target) { 
-    any(target %chin% X.info$uniq.classes)
-  }
-  
-  # Retunrn a vector of column indices indicating the columns which 
-  # inherit any class among the target vector using the precomputed class
-  # information in X.info.
-  which_class_is = function(X.info, target) { 
-    which(vapply_1b(X.info$classes, function(xj) { any(target %chin% xj) } ))
-  }
-  
-  # Check for NULL columns and drop 
-  if (any_class_is(X.info, "NULL")) {
-    col.is.null = which_class_is(X.info, "NULL")
-    X[col.is.null] = NULL
-    X.info = class_info(X, X.info, cols.to.drop = col.is.null)
-  }
-  
-  # If no columns left, return matrix, preserving rownames if any
-  if (length(X) == 0L)
-    return(matrix(nrow=length(rownames.value), ncol=0, dimnames=list(rownames.value, NULL)))
-  
-  # Check for multi-dimensional columns or varying column length, fix with as.data.table
-  multidim = vapply_1b(X, function(xj) length(dim(xj)) > 0L)
-  colnrn = range(vapply_1i(X, length))
-  if (any(multidim) || colnrn[1L] != colnrn[2L]) {
-    X = as.data.table(X)
-    class(X) = NULL 
-    X.info = class_info(X) 
   }
   
   # Remaining type and class coercion is handled in Casmatrix
