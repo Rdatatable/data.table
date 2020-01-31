@@ -16774,3 +16774,18 @@ rm(s1, s2, class2132)
 ########################
 #  Add new tests here  #
 ########################
+
+# round, trunc, floor, and ceiling should all be 'integer' and and have class 'ITime'
+DT = data.table(time = as.ITime(seq(as.POSIXct("2020-01-01 07:00:00"), as.POSIXct("2020-01-01 09:00:00"), "67 sec")))
+
+DT[, ':='(
+  round_hour = round(time, "hour"),
+  round_min = round(time, "min"),
+  trunc_hour = trunc(time, "hour"),
+  trunc_min = trunc(time, "min"),
+  floor_hour = floor(time),
+  ceiling_hour = ceiling(time)
+)]
+
+test(2133.1, TRUE, all(sapply(DT, function(x) class(x) == "ITime")))
+test(2133.2, TRUE, all(sapply(DT, function(x) typeof(unclass(x)) == "integer")))
