@@ -362,12 +362,12 @@ SEXP asCharacterInteger64(SEXP x) {
   const int64_t lenx = xlength(x);
   SEXP coerced = PROTECT(allocVector(STRSXP, lenx));
   long long int *px = (long long int *) REAL(x);
-  static char buff[INTEGER64_ASCHAR_LEN];
+  static char buff[22];
   for (int64_t i=0; i<lenx; ++i) {
     if (px[i]==NA_INTEGER64) {
       SET_STRING_ELT(coerced, i, NA_STRING);
     } else {
-      snprintf(buff, INTEGER64_ASCHAR_LEN, INTEGER64_ASCHAR_FMT, px[i]); 
+      snprintf(buff, 22, "%"PRId64"", px[i]); 
       SET_STRING_ELT(coerced, i, mkChar(buff)); 
     }
   }
