@@ -375,16 +375,6 @@ SEXP asCharacterInteger64(SEXP x) {
   return(coerced);
 }
 
-// Checks whether a vector inherits from 
-// c("Date", "POSIXct", "POSIXlt", "POSIXt", "IDate")
-bool isPOSIXlike(SEXP x) {
-  if (INHERITS(x, char_IDate) || INHERITS(x, char_POSIXt) ||
-      INHERITS(x, char_POSIXct) || INHERITS(x, char_POSIXlt) ||
-      INHERITS(x, char_ITime) || INHERITS(x, char_nanotime)) 
-    return(true);
-  return(false);
-}
-
 SEXP asCharacterITime(SEXP x) {
   R_xlen_t lenx = xlength(x);
   SEXP coerced = PROTECT(allocVector(STRSXP, lenx));

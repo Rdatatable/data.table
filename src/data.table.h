@@ -238,7 +238,6 @@ SEXP islockedR(SEXP x);
 bool need2utf8(SEXP x);
 SEXP coerceUtf8IfNeeded(SEXP x);
 SEXP asCharacterInteger64(SEXP x);
-bool isPOSIXlike(SEXP x);
 SEXP asCharacterITime(SEXP x);
 SEXP callRfun1(const char *name, const char *package, SEXP x);
 
