@@ -21,6 +21,7 @@ SEXP char_factor;
 SEXP char_ordered;
 SEXP char_datatable;
 SEXP char_dataframe;
+SEXP char_ff;
 SEXP char_NULL;
 SEXP sym_sorted;
 SEXP sym_index;
@@ -331,6 +332,7 @@ void attribute_visible R_init_datatable(DllInfo *info)
   char_ordered =   PRINTNAME(install("ordered"));
   char_datatable = PRINTNAME(install("data.table"));
   char_dataframe = PRINTNAME(install("data.frame"));
+  char_ff =        PRINTNAME(install("ff"));
   char_NULL =      PRINTNAME(install("NULL"));
 
   if (TYPEOF(char_integer64) != CHARSXP) {

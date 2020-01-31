@@ -86,6 +86,7 @@ extern SEXP char_factor;
 extern SEXP char_ordered;
 extern SEXP char_datatable;
 extern SEXP char_dataframe;
+extern SEXP char_ff;
 extern SEXP char_NULL;
 extern SEXP sym_sorted;
 extern SEXP sym_index;

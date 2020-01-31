@@ -47,9 +47,13 @@ void checkAndCoerce(SEXP dt, int *nprotect, int *maxType, bool *coerce, bool *in
   for (int j=0; j<ncol; ++j) {
     // Extract column type and do any mandatory coercions (e.g. factor to character)
     SEXP thisCol = VECTOR_ELT(dt, j);
+    if (INHERITS(thisCol, char_ff)) { // if ff, load vector into memory so its a regular SEXP
+      thisCol = PROTECT(callRfun1("[.ff", "ff", thisCol)); (*nprotect)++;
+      SET_VECTOR_ELT(dt, j, thisCol); // assignment back to dt doesn't modify input data.table
+    }
     if (isFactor(thisCol)) {
       thisCol = PROTECT(asCharacterFactor(thisCol)); (*nprotect)++;
-      SET_VECTOR_ELT(dt, j, thisCol); // assignment back to dt doesn't modify input data.table
+      SET_VECTOR_ELT(dt, j, thisCol);
     } else if (INHERITS(thisCol, char_ITime)) {
       thisCol = PROTECT(asCharacterITime(thisCol)); (*nprotect)++;
       SET_VECTOR_ELT(dt, j, thisCol); 

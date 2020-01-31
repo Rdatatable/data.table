@@ -1999,15 +1999,6 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
   if (length(X) == 0L)
     return(matrix(nrow=length(rownames.value), ncol=0, dimnames=list(rownames.value, NULL)))
   
-  # Check for ff columns which need to be brought into memory. 
-  if (any_class_is(X.info, "ff")) {
-    # nocov start
-    which.ff = which_class_is(X.info, "ff")
-    for (j in which.ff) X[[j]] = X[[j]][] # bring into memory
-    X.info = class_info(X, X.info, cols.to.update = which.ff)
-    # nocov end
-  }
-  
   # Check for multi-dimensional columns or varying column length, fix with as.data.table
   multidim = vapply_1b(X, function(xj) length(dim(xj)) > 0L)
   colnrn = range(vapply_1i(X, length))
