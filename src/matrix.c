@@ -85,26 +85,25 @@ void preprocess(SEXP *dt, int64_t *nprotect, int *maxType, R_xlen_t *nrow,
     SEXP thisCol = VECTOR_ELT(*dt, j);
     R_xlen_t thisnrow = xlength(thisCol);
     
-    // Check for columns to drop
+    // Check for empty columns or multi-dimension columns, which mean we will have to unpack and flatten
+    SEXP colDim = getAttrib(thisCol, R_DimSymbol);
     if (isNull(thisCol)) {
+      // NULL columns will be dropped
       *unpack=true;
       continue; // no other checks relevant, move to next column in dt
-    } 
-    
-    // Check for multidimensional columns to unpack, recursively if data.table or data.frame encountered.
-    SEXP colDim = getAttrib(thisCol, R_DimSymbol);
-    if (!isNull(colDim)) {
+    } else if (INHERITS(thisCol, char_dataframe) || INHERITS(thisCol, char_datatable)) {
+      // column is a data.table or data.frame, recurse
+      *unpack=true;
+      preprocess(&thisCol, nprotect, maxType, nrow, ncol, coerce, integer64, unpack, recycle);
+      continue; // no other checks needed after recurse, iterate to next column in dt
+    } else if (!isNull(colDim)) {
+      // matrix or multidimensional array
       *unpack=true;
       R_xlen_t dims=xlength(colDim);
       if (dims > 2)
         error("Cannot unpack array column with %d dimensions", dims);
-      if (TYPEOF(thisCol) == VECSXP) { // column is a data.table or data.frame, recurse
-        preprocess(&thisCol, nprotect, maxType, nrow, ncol, coerce, integer64, unpack, recycle);
-        continue; // no other checks needed after recurse, iterate to next column in dt
-      } else { // matrix
-        thisnrow = INTEGER(colDim)[0];
-        (*ncol) += INTEGER(colDim)[1];
-      }
+      thisnrow = INTEGER(colDim)[0];
+      (*ncol) += INTEGER(colDim)[1]; 
     } else {
       (*ncol)++;
     }
@@ -166,104 +165,110 @@ void preprocess(SEXP *dt, int64_t *nprotect, int *maxType, R_xlen_t *nrow,
   }
 }
 
+// Make a vector of names of the format V1, V2, V3, ..., VN
+SEXP makeNames(R_xlen_t n) {
+  SEXP names = PROTECT(allocVector(STRSXP, n)); 
+  
+  // determine buffer width based on width of n
+  size_t buffwidth = 2;
+  for (R_xlen_t ndiv = n; ndiv > 0; ndiv /= 10) buffwidth++; 
+  char buff[buffwidth];
+  
+  // Make names 
+  for (R_xlen_t i = 0; i < n; ++i) {
+    snprintf(buff, buffwidth, "V%"PRId64"", i+1);
+    SET_STRING_ELT(names, i, mkChar(buff));
+  }
+  UNPROTECT(1);
+  return(names);
+}
+
+// Add a prefix to a character vector, separated by a "."
+// I.e. for concatenating names of a multi-dimensional column
+SEXP prependNames(SEXP names, SEXP prefixArg) {
+  R_xlen_t len = xlength(names);
+  SEXP ans = PROTECT(allocVector(STRSXP, len));
+  const char *prefix = CHAR(prefixArg);
+  
+  /* To determine the buffer width of the new column names, we need to 
+   * know the maximum number of characters in any input column name as
+   * well as the size of the prefix. */
+  size_t prefixw = strlen(prefix); // nchar(prefix)
+  size_t namesmaxw = 0; 
+  for (R_xlen_t i = 0; i < len; ++i) {
+    const char *namei = CHAR(STRING_ELT(names, i));
+    size_t namew = strlen(namei); // nchar(names[i])
+    namesmaxw = namew > namesmaxw ? namew : namesmaxw; 
+  }
+  size_t buffwidth = prefixw + namesmaxw + 2; // size of both buffers + extra for separator and terminating \0
+  char buff[buffwidth];
+  
+  // make new composite column name
+  for (R_xlen_t i = 0; i < len; ++i) {
+    const char *namei = CHAR(STRING_ELT(names, i));
+    snprintf(buff, buffwidth, "%s.%s", prefix, namei);
+    SET_STRING_ELT(ans, i, mkChar(buff));
+  }
+  UNPROTECT(1);
+  return(ans);
+}
+
 /* Recurse through a data.table, extracting any multi dimensional columns 
  * into their single columns in the top level data.table
  */
-SEXP flatten(SEXP *dt, SEXP *newdt, SEXP *newcn, R_xlen_t *jtarget, int64_t *nprotect) {
+void flatten(SEXP *dt, SEXP *newdt, SEXP *newcn, R_xlen_t *jtarget, int64_t *nprotect) {
+  SEXP dtcn = getAttrib(*dt, R_NamesSymbol); // names(dt)
   for (R_xlen_t j = 0; j < xlength(*dt); ++j) {
     SEXP thisCol = VECTOR_ELT(*dt, j);
-    if (isNull(thisCol))  // null columns not added to target
-      continue;
-  
     SEXP colDim = getAttrib(thisCol, R_DimSymbol);
-    if (isNull(colDim)) {
-      // Single column, add pointer to new flattend data.table in the right spot
-      SET_VECTOR_ELT(*newdt, *jtarget, thisCol);
-      // Add column name
-      SEXP dtcn = getAttrib(thisCol, R_NamesSymbol); // names(dt)
-      SET_STRING_ELT(*newcn, *jtarget, STRING_ELT(dtcn, j)); // names(newdt)[jtarget] <- names(dt)[j]
-      // Increment column index in the new flattened data.table
-      (*jtarget)++;
-    } else if (TYPEOF(thisCol) == VECSXP) {
+    SEXP colName = STRING_ELT(dtcn, j);
+    if (isNull(thisCol)) {
+      // Empty column, do not add to newdt
+      continue;
+    } else if (INHERITS(thisCol, char_dataframe) || INHERITS(thisCol, char_datatable)) {
       // This column is a data.table or data.frame we will recurse into
       // Make composite column names before recursing
       SEXP subdtcn = getAttrib(thisCol, R_NamesSymbol); // names(dt[,j])
-      SEXP dtcn = getAttrib(*dt, R_NamesSymbol);
-      const char *dtcnj = CHAR(STRING_ELT(dtcn, j)); // names(dt)[j]
-      
-      // Need to know the bufferwidth for the new column names
-      size_t dtcnw = strlen(dtcnj); // nchar(names(dt)[j])
-      size_t subdtcnmaxw = 0; // max(nchar(names(dt[,j])))
-      R_xlen_t subdtncol = INTEGER(colDim)[1];
-      for (R_xlen_t sj = 0; sj < subdtncol; ++sj) {
-        const char *subdtcnj = CHAR(STRING_ELT(subdtcn, sj));
-        size_t subdtcnjw = strlen(subdtcnj); // nchar(names(dt[,j])[mj])
-        subdtcnmaxw = subdtcnjw > subdtcnmaxw ? subdtcnjw : subdtcnmaxw; 
-      }
-      size_t buffwidth = dtcnw + subdtcnmaxw + 2; // size of both buffers + extra for separator and terminating \0
-      char buff[buffwidth];
-      
-      // make new composite column name
-      SEXP newsubdtcn = PROTECT(allocVector(STRSXP, subdtncol)); (*nprotect)++;
-      for (R_xlen_t sj = 0; sj < subdtncol; ++sj) {
-        const char *subdtcnj = CHAR(STRING_ELT(subdtcn, sj)); // names(dt[,j])[sj]
-        snprintf(buff, buffwidth, "%s.%s", dtcnj, subdtcnj); // paste0(names(dt)[j], ".", names(dt[,j])[sj])
-        SET_STRING_ELT(newsubdtcn, sj, mkChar(buff));
-      }
-      setAttrib(thisCol, R_NamesSymbol, newsubdtcn);
-      
+      SEXP compositecn = PROTECT(prependNames(subdtcn, colName)); (*nprotect)++;
+      setAttrib(thisCol, R_NamesSymbol, compositecn);
+
       // recurse into data.table
       flatten(&thisCol, newdt, newcn, jtarget, nprotect);
-    } else {
+    } else if (!isNull(colDim)) {
       // matrix, we have to split up vector into new columns of length mat nrow
       int matnrow = INTEGER(colDim)[0];
       int matncol = INTEGER(colDim)[1];
       int mattype = TYPEOF(thisCol);
-      SEXP matcn = STRING_ELT(getAttrib(thisCol, R_DimNamesSymbol), 1);
+      SEXP matdm = getAttrib(thisCol, R_DimNamesSymbol); // dimnames(dt[,j])
+      SEXP matcn; 
       
       // If no column names we need to make our own of the form V1, V2, ..., VN
-      if (isNull(matcn)) {
-        SEXP matcn = PROTECT(allocVector(STRSXP, matncol)); (*nprotect)++;
-        // determine buffer width based on width of max column number
-        // e.g. if matncol = 3250, then we need 6 chars for "V3250\0"
-        size_t buffwidth = 2; // extra 2 for "V" and terminating "\0"
-        for (int ndiv = matncol; ndiv > 0; ndiv /= 10) buffwidth++; 
-        char buff[buffwidth];
-        for (int mj = 0; mj < matncol; ++mj) {
-          snprintf(buff, buffwidth, "V%d", mj);
-          SET_STRING_ELT(matcn, mj, mkChar(buff));
+      if (isNull(matdm)) {
+        matcn = PROTECT(makeNames(matncol)); (*nprotect)++;
+      } else {
+        matcn = STRING_ELT(matdm, 1);
+        if (isNull(matcn)) {
+          matcn = PROTECT(makeNames(matncol)); (*nprotect)++;
         }
-      } 
-      
-      // Need to know the bufferwidth for the new column name
-      SEXP dtcn = STRING_ELT(getAttrib(*dt, R_DimNamesSymbol), 1);
-      const char *dtcnj = CHAR(STRING_ELT(dtcn, j)); // name of the column j in dt
-      size_t dtcnw = strlen(dtcnj); // nchar(colnames(dt)[j])
-      size_t matcnmaxw = 0; // max(nchar(colnames(dt[,j])))
-      for (int mj = 0; mj < matncol; ++mj) {
-        const char *matcnj = CHAR(STRING_ELT(matcn, mj));
-        size_t matcnjw = strlen(matcnj); // nchar(colnames(dt[,j])[mj])
-        matcnmaxw = matcnjw > matcnmaxw ? matcnjw : matcnmaxw; 
       }
-      size_t buffwidth = dtcnw + matcnmaxw + 2; // size of both buffers + extra for separator and terminating \0
-      char buff[buffwidth];
-      
+
+      // Make composite column names
+      SEXP compositecn = PROTECT(prependNames(matcn, colName)); (*nprotect)++;
+
+      // Iterate through each column of the matrix, copying its contents into the new column vector
       for (int mj = 0; mj < matncol; ++mj) {
-        // Iterate through each column of the matrix, copying its contents into the new column vector
         SEXP thisNewCol = PROTECT(allocVector(mattype, matnrow)); (*nprotect)++;
         R_xlen_t start = (R_xlen_t) mj * matnrow;
-        const char *ret = memrecycle(thisNewCol, R_NilValue, 0, matnrow, thisCol, start, matnrow, 0, "V1");
-        if (ret) error("Internal Error: memrecycle when unpacking matrix column"); // # nocov
-        // should not be possible to reach because TYPEOF(thisNewCol) == TYPEOF(thisCol)
-        // add new column to right place in the flattened target data.table
+        memrecycle(thisNewCol, R_NilValue, 0, matnrow, thisCol, start, matnrow, 0, "V1");
         SET_VECTOR_ELT(*newdt, *jtarget, thisNewCol);
-        // make composite column name and copy to newdt
-        const char *mjcn = CHAR(STRING_ELT(matcn, mj));
-        snprintf(buff, buffwidth, "%s.%s", dtcnj, mjcn); // e.g. if dtcnj is "A" and mjcn is "V100" then "A.V100"
-        SET_STRING_ELT(*newdt, *jtarget, mkChar(buff));
-        // Increment column index in the new flattened data.table
-        (*jtarget)++;
+        SET_STRING_ELT(*newcn, *jtarget, STRING_ELT(compositecn, mj)); // add new column name
+        (*jtarget)++; // Increment column index in the new flattened data.table
       }
+    } else {
+      // Single column, add pointer to new flattend data.table in the right spot
+      SET_VECTOR_ELT(*newdt, *jtarget, thisCol);
+      SET_STRING_ELT(*newcn, *jtarget, colName); // Add column name
+      (*jtarget)++; // Increment column index in the new flattened data.table
     } 
   }
 }
@@ -326,6 +331,13 @@ SEXP asmatrix(SEXP dt, SEXP rownames)
     }
     UNPROTECT(nprotect);
     return(ans);
+  }
+  
+  // if, somehow, the input data.table lacks names, make them
+  SEXP cn = getAttrib(dt, R_NamesSymbol); // names(dt)
+  if (isNull(cn)) {
+    cn = PROTECT(makeNames(xlength(dt))); nprotect++;
+    setAttrib(dt, R_NamesSymbol, cn);
   }
   
   // Unpack data.table if needed
