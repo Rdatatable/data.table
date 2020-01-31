@@ -241,28 +241,28 @@ rep.ITime = function (x, ...)
   y
 }
                            
-round.ITime <- function(x, digits = c("hours", "minutes")) 
+round.ITime <- function(x, units = c("hours", "minutes")) 
 {
   (setattr(switch(match.arg(digits),
-                  hours = as.integer(round(unclass(x)/3600L)*3600L),
-                  minutes = as.integer(round(unclass(x)/60L)*60L)), 
+                  hours = as.integer(round(unclass(x)/3600)*3600),
+                  minutes = as.integer(round(unclass(x)/60)*60)), 
            "class", "ITime"))
 } 
 
 trunc.ITime <- function(x, units = c("hours", "minutes")) 
 {
   (setattr(switch(match.arg(units),
-                  hours = as.integer(trunc(unclass(x)/3600L)*3600L),
-                  minutes = as.integer(trunc(unclass(x)/60L)*60L)), 
+                  hours = as.integer(trunc(unclass(x)/3600)*3600),
+                  minutes = as.integer(trunc(unclass(x)/60)*60)), 
            "class", "ITime"))
 }
 
 floor.ITime <- function(x) {
-  (setattr(as.integer(floor(unclass(x)/3600L)*3600L), "class", "ITime"))
+  (setattr(as.integer(floor(unclass(x)/3600)*3600), "class", "ITime"))
 }
 
 ceiling.ITime <- function(x) {
-  (setattr(as.integer(ceiling(unclass(x)/3600L)*3600L), "class", "ITime"))
+  (setattr(as.integer(ceiling(unclass(x)/3600)*3600), "class", "ITime"))
 }
 
 "[.ITime" = function(x, ..., drop = TRUE)
