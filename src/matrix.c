@@ -180,14 +180,15 @@ SEXP flatten(SEXP *dt, SEXP *newdt, SEXP *newcn, R_xlen_t *jtarget, int64_t *npr
       // Single column, add pointer to new flattend data.table in the right spot
       SET_VECTOR_ELT(*newdt, *jtarget, thisCol);
       // Add column name
-      SET_STRING_ELT(*newcn, *jtarget, STRING_ELT(*dt, j));
+      SEXP dtcn = getAttrib(thisCol, R_NamesSymbol); // names(dt)
+      SET_STRING_ELT(*newcn, *jtarget, STRING_ELT(dtcn, j)); // names(newdt)[jtarget] <- names(dt)[j]
       // Increment column index in the new flattened data.table
       (*jtarget)++;
     } else if (TYPEOF(thisCol) == VECSXP) {
       // This column is a data.table or data.frame we will recurse into
       // Make composite column names before recursing
       SEXP subdtcn = getAttrib(thisCol, R_NamesSymbol); // names(dt[,j])
-      SEXP dtcn = STRING_ELT(getAttrib(*dt, R_DimNamesSymbol), 1);
+      SEXP dtcn = getAttrib(*dt, R_NamesSymbol);
       const char *dtcnj = CHAR(STRING_ELT(dtcn, j)); // names(dt)[j]
       
       // Need to know the bufferwidth for the new column names
