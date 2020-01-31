@@ -131,9 +131,9 @@ void preprocess(SEXP *dt, int64_t *nprotect, int *maxType, R_xlen_t *nrow,
     // further column coercion across all columns (if thisType != maxType).
     int thisType = TYPEOF(thisCol);
     if (INHERITS(thisCol, char_integer64)) {
-      if (integer64) {
+      if (*integer64) {
         // all columns already checked are integer64, nothing left to do here
-      } else if (INHERITS(thisCol, char_integer64) && *ncol > 0 && !integer64) {
+      } else if (INHERITS(thisCol, char_integer64) && *ncol > 0 && !*integer64) {
         // This column is integer64, but at least one column checked already is not
         *coerce = true;
         *integer64 = true;
@@ -304,10 +304,11 @@ SEXP asmatrix(SEXP dt, SEXP rownames)
     if (INHERITS(rownames, char_integer64)) {
       rownames = PROTECT(asCharacterInteger64(rownames)); nprotect++;
     }
+    if (INHERITS(rownames, char_dataframe) || INHERITS(rownames, char_datatable) || 
+        !isNull(getAttrib(rownames, R_DimSymbol)))
+        error("Extracted rownames column or provided rownames.values are multi-column type (e.g. a matrix or data.table) and cannot be used as rownames");
     if (TYPEOF(rownames) == VECSXP || TYPEOF(rownames) == LISTSXP)
       warning("Extracted rownames column or provided rownames.values are a list column, so will be converted to a character representation");
-    if (!isNull(getAttrib(rownames, R_DimSymbol)))
-      error("Extracted rownames column or provided rownames.values are multi-column type (e.g. a matrix or data.table) and cannot be used as rownames");
     if (nrow != 0 && xlength(rownames) != nrow)
       error("Extracted rownames column or provided rownames.values do not match the number of rows in the matrix");
   }
@@ -368,7 +369,7 @@ SEXP asmatrix(SEXP dt, SEXP rownames)
       SEXP thisCol = VECTOR_ELT(dt, j);
       int thisnrow = length(thisCol);
       if (thisnrow != nrow) {
-        if (thisnrow % nrow != 0) { // nrow not divisible by thisnrow; error
+        if (nrow % thisnrow != 0) { // nrow not divisible by thisnrow; error
           error("Could not recycle column of length %d into nrow of %d", thisnrow, nrow);
         }
         // Allocate new column to fill with memrecycle. Add integer64 class if needed.

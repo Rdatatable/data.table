@@ -12544,7 +12544,7 @@ mat4 <- matrix(c("a", 1, 5), nrow=1, dimnames=list(c("x"), c("id", "X", "Y")))
 test(1899.14, as.matrix(DT[1,], 1), mat[1,,drop=FALSE])
 test(1899.15, as.matrix(DT[1,], "id"), mat[1,,drop=FALSE])
 test(1899.16, as.matrix(DT[1,], rownames.value="x"), mat4)
-test(1899.17, as.matrix(DT[1,], rownames.value=c("x", "y")), error="length(rownames.value)==2 but should be nrow(x)==1")
+test(1899.17, as.matrix(DT[1,], rownames.value=c("x", "y")), error="Extracted rownames column or provided rownames.values do not match the number of rows in the matrix")
 test(1899.18, as.matrix(DT, rownames=TRUE, rownames.value=1:nrow(DT)), error="rownames and rownames.value cannot both be used at the same time")
 
 # index argument for fread, #2633
@@ -16772,11 +16772,11 @@ rm(s1, s2, class2132)
 
 ## Check for appropriate errors when giving rownames to as.matrix.data.table that are mutli-column (only possible when constructed incorrectly) or list
 DT = structure(list(a=list(1,2:3,4:6,letters[1:5],list(1, "a")), d=data.table(b=6:10, c=11:15), m=matrix(16:25, ncol=2L)), class = c('data.table', 'data.frame'))
-test(2133.1, as.matrix(DT, rownames="d"), error="x[,d] has multi-column type (such as a matrix column) and cannot be used as rownames: dim(x[,d])==[5, 2]")
-test(2133.2, as.matrix(DT, rownames=2), error='x[,2] has multi-column type (such as a matrix column) and cannot be used as rownames: dim(x[,2])==[5, 2]')
+test(2133.1, as.matrix(DT, rownames="d"), error="Extracted rownames column or provided rownames.values are multi-column type")
+test(2133.2, as.matrix(DT, rownames=2), error='Extracted rownames column or provided rownames.values are multi-column type')
 mat = matrix(6:25, nrow=5, dimnames=list(DT[["a"]], c("d.b", "d.c", "m.V1", "m.V2")))
-test(2133.3, as.matrix(DT, rownames="a"), mat, warning="x[,a] is a list column, which will be coerced to a character vector when used as rownames")
-test(2133.4, as.matrix(DT, rownames=1), mat, warning='x[,1] is a list column, which will be coerced to a character vector when used as rownames')
+test(2133.3, as.matrix(DT, rownames="a"), mat, warning="Extracted rownames column or provided rownames.values are a list column")
+test(2133.4, as.matrix(DT, rownames=1), mat, warning='Extracted rownames column or provided rownames.values are a list column')
 
 ## Check C-implementations of basic matrix types not covered by previous tests
 lmat = matrix(c(TRUE, FALSE, NA, FALSE), ncol=2, dimnames=list(NULL, c("A", "B")))
