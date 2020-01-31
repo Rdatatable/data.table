@@ -215,7 +215,7 @@ SEXP flatten(SEXP *dt, SEXP *newdt, SEXP *newcn, R_xlen_t *jtarget, int64_t *npr
       flatten(&thisCol, newdt, newcn, jtarget, nprotect);
     } else {
       // matrix, we have to split up vector into new columns of length mat nrow
-      int matnrow = INTEGER(colDim)[0]
+      int matnrow = INTEGER(colDim)[0];
       int matncol = INTEGER(colDim)[1];
       int mattype = TYPEOF(thisCol);
       SEXP matcn = STRING_ELT(getAttrib(thisCol, R_DimNamesSymbol), 1);
