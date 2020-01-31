@@ -16778,14 +16778,15 @@ rm(s1, s2, class2132)
 # round, trunc, floor, and ceiling should all be 'integer' and and have class 'ITime'
 DT = data.table(time = as.ITime(seq(as.POSIXct("2020-01-01 07:00:00"), as.POSIXct("2020-01-01 09:00:00"), "67 sec")))
 
-DT[, ':='(
-  round_hour = round(time, "hour"),
-  round_min = round(time, "min"),
-  trunc_hour = trunc(time, "hour"),
-  trunc_min = trunc(time, "min"),
-  floor_hour = floor(time),
-  ceiling_hour = ceiling(time)
-)]
+DT = data.table(hour31 = as.ITime(seq(as.POSIXct("2020-01-01 07:00:40"), by = "31 min", length.out = 9)),
+                hour30 = as.ITime(seq(as.POSIXct("2020-01-01 07:00:00"), by = "30 min", length.out = 9)),
+                minute31 = as.ITime(seq(as.POSIXct("2020-01-01 07:00:00"), by = "31 sec", length.out = 9)),
+                minute30 = as.ITime(seq(as.POSIXct("2020-01-01 07:00:00"), by = "30 sec", length.out = 9))
+                )
 
-test(2133.1, TRUE, all(sapply(DT, function(x) class(x) == "ITime")))
-test(2133.2, TRUE, all(sapply(DT, function(x) typeof(unclass(x)) == "integer")))
+test(2133.1, TRUE, DT[, all(sapply(.SD, class) == "ITime")])
+test(2133.2, TRUE, DT[, all(sapply(.SD, typeof) == "integer")])
+test(2133.3, TRUE, DT[, all(round(hour31, "hour") == as.ITime(c("07:00", "08:00", "08:00", "09:00", "09:00", "10:00", "10:00", "11:00", "11:00")))])
+test(2133.4, FALSE, DT[, all(round(hour30, "hour") == as.ITime(c("07:00", "08:00", "08:00", "09:00", "09:00", "10:00", "10:00", "11:00", "11:00")))])
+test(2133.5, TRUE, DT[, all(round(minute31, "minute") == as.ITime(c("07:00:00", "07:01:00", "07:01:00", "07:02:00", "07:02:00", "07:03:00", "07:03:00", "07:04:00", "07:04:00")))])
+test(2133.6, FALSE, DT[, all(round(minute30, "minute") == as.ITime(c("07:00:00", "07:01:00", "07:01:00", "07:02:00", "07:02:00", "07:03:00", "07:03:00", "07:04:00", "07:04:00")))])
