@@ -16775,7 +16775,7 @@ rm(s1, s2, class2132)
 #  Add new tests here  #
 ########################
 
-# round, trunc, floor, and ceiling should all be 'integer' and and have class 'ITime'
+# round, trunc should all be 'integer' and and have class 'ITime'.
 DT = data.table(time = as.ITime(seq(as.POSIXct("2020-01-01 07:00:00"), as.POSIXct("2020-01-01 09:00:00"), "67 sec")))
 
 DT = data.table(hour31 = as.ITime(seq(as.POSIXct("2020-01-01 07:00:40"), by = "31 min", length.out = 9)),
