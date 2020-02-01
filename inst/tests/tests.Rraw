@@ -883,7 +883,7 @@ test(299.06, DT[2,c:=42], data.table(a=1:3,c=INT(42,42,44)))
 test(299.07, DT[,c:=rep(FALSE,nrow(DT))], data.table(a=1:3,c=FALSE))  # replace c column with logical
 test(299.08, DT[2:3,c:=c(3.14,0)], data.table(a=1:3, c=c(FALSE,TRUE,FALSE)), warning="3.14.*double.*at RHS position 1 taken as TRUE.*logical.*column 2 named 'c'")
 test(299.09, DT[2:3,c:=c(0,1)], data.table(a=1:3,c=c(FALSE,FALSE,TRUE))) # no warning
-# FR #2551 is now changed to fit in / fix bug #5442. Stricter warnings are in place now. Check tests 1294.1-34 below.
+# FR #2551 is now changed to fit in / fix bug #35. Stricter warnings are in place now. Check tests 1294.1-34 below.
 test(299.10, DT[2,c:=42], data.table(a=1:3, c=c(FALSE,TRUE,TRUE)), warning="42.0.*double.*at RHS position 1.*TRUE")
 test(299.11, DT[1,c:=42L], data.table(a=1:3, c=TRUE), warning="42.*integer.*at RHS position 1.*TRUE.*logical.*column 2 named 'c'")
 test(299.12, DT[2:3,c:=c(0L, 0L)], data.table(a=1:3,c=c(TRUE,FALSE,FALSE)))
@@ -2655,7 +2655,7 @@ test(927, DT[, if(a==2L) list(42:43,numeric()) else list(42L,3.14), by=a], data.
 
 # And the root cause of #2478: that cbind(DT,1:3) created invalid data.table with empty column
 test(928, cbind(data.table(a=1L),b=1:3), data.table(a=1L,b=1:3))
-# FR #4813 implementation resulted in changing 929 error to warning
+# FR #362 implementation resulted in changing 929 error to warning
 # test(929, cbind(data.table(a=1L,b=2:3),c=1:3), error="argument 1 (nrow 2) cannot be recycled without remainder to match longest nrow (3)")
 test(929, cbind(data.table(a=1L,b=2:3),c=1:3), data.table(a=1L, b=c(2L,3L,2L), c=1:3), warning="Item 1 has 2 rows but longest item has 3; recycled.")
 test(930, cbind(data.table(a=1L,b=2:3),c=1:4), data.table(a=1L,b=INT(2,3,2,3),c=1:4))  # TODO: warning in future
@@ -2802,11 +2802,11 @@ test(991.2, unique(dt, by=c(1,3.1)), error="is type 'double' and one or more ite
 test(991.3, unique(dt, by=2:3), dt[!duplicated(df[,c('B','C')])])
 test(991.4, unique(dt, by=c('C','D','E')), error="specify non existing column*.*D")
 
-# :=NULL on factor column in empty data.table, #4809
+# :=NULL on factor column in empty data.table, #114
 DT = data.table(A = integer(), B = factor())
 test(992, DT[, B:=NULL], data.table(A=integer()))
 
-# That including FUN= works in j=lapply, #4839
+# That including FUN= works in j=lapply, #110
 DT = as.data.table(iris)
 test(993, DT[, lapply(.SD, function(x) sum(!is.na(x), na.rm=TRUE)), by = Species],
           DT[, lapply(.SD, FUN=function(x) sum(!is.na(x), na.rm=TRUE)), by = Species])
@@ -2934,7 +2934,7 @@ if (test_bit64) test(1017.1, fread(f), copy(DT)[,A:=as.integer64(A)])
 test(1017.2, fread(f, integer64="character"), DT)
 unlink(f)
 
-# ERANGE errno handled, #4879
+# ERANGE errno handled, #106
 test(1018, identical(fread("1.46761e-313\n"), data.table(V1=1.46761e-313)))
 test(1019, fread("A\n1.23456789123456789123456999\n"), data.table(A=1.234567891234568))
 
@@ -2950,7 +2950,7 @@ test(1024, DT[6,A:=0L], error="i[[]1[]] is 6 which is out of range [[]1,nrow=5[]
 test(1024.1, DT[,c("B","B"):=NULL], error="Can't assign to the same column twice in the same query (duplicates detected).")
 test(1024.2, DT[,c(1,2,1):=NULL], error="Can't assign to the same column twice in the same query (duplicates detected).")
 
-# as.data.table.table, #4848
+# as.data.table.table, #361
 DF <- data.frame(x = c(1,1,2,NA,1,2), y = c("b", "b", "b", "a", "c", "a"), z = c(1,1,1,1,1,2), stringsAsFactors=FALSE   )
 tab1 <- as.data.table(as.data.frame(table(DF$x), stringsAsFactors=FALSE)); setattr(tab1, 'names', c("V1", "N"))
 tab2 <- as.data.table(as.data.frame(table(DF$x, DF$y), stringsAsFactors=FALSE)); setattr(tab2, 'names', c("V1", "V2", "N"))
@@ -2958,7 +2958,7 @@ tab3 <- as.data.table(as.data.frame(table(DF$x, DF$y, DF$z), stringsAsFactors=FA
 test(1025, as.data.table(table(DF$x)), tab1)
 test(1026, as.data.table(table(DF$x, DF$y)), tab2)
 test(1027.1, as.data.table(table(DF$x, DF$y, DF$z)), tab3)
-# catch printing of data.table(table()), #4847 (as.data.table should be used instead)
+# catch printing of data.table(table()), #109 (as.data.table should be used instead)
 # new, updated 14th Feb, 2015. data.table(table) now redirects to as.data.table
 test(1027.2, data.table(table(1:99)), as.data.table(table(1:99)))
 # data.table() and rbindlist() in v1.8.11 caught and removed the dim attribute.
@@ -3173,7 +3173,7 @@ Sep,33.5,19.4,15.7,11.9,0,100.8,100.8,0,12.7,12.7,0,174.1")
        error="Unknown column type 'raw' for column 'r'")
 }
 
-# sorting and grouping of Inf, -Inf, NA and NaN,  #4684, #4815 & #4883
+# sorting and grouping of Inf, -Inf, NA and NaN,  #117, #112 & #105
 DT <- data.table(x = rep(c(1, NA, NaN, Inf, -Inf), each=2))
 OUT <- data.table(x=c(1, NA, NaN, Inf, -Inf), N=2L)
 test(1040.1, DT[, .N, by=x], OUT)
@@ -3181,7 +3181,7 @@ DT <- data.table(y =c(NA, Inf, NA, -Inf, -Inf, NaN, Inf, 1, NaN, 1))
 OUT <- data.table(y = c(NA, Inf, -Inf, NaN, 1), N=2L)
 test(1040.2, DT[, .N, by=y], OUT)
 
-# rbindlist on *data.frame* input, #4648.  Somehow not test for this. (Although, #4648 was the same as #2650 fixed in v1.8.9).
+# rbindlist on *data.frame* input, #119.  Somehow not test for this. (Although, #119 was the same as #2650 fixed in v1.8.9).
 l <- list(u1=data.frame(i1=c('a', 'b', 'c'), val=1:3, stringsAsFactors=TRUE),
           u2=data.frame(i1=c('d', 'e'), val=4:5, stringsAsFactors=TRUE))
 test(1041, rbindlist(l), data.table(i1=factor(letters[1:5]),val=1:5))
@@ -3197,7 +3197,7 @@ test(1042.5, DT[c(-5, -4, -5, -5, -4)], DT[1:3], warning="Item 3 of i is -5 whic
 test(1043.1, DT[c(1, -5)], error="Item 2 of i is -5 and item 1 is 1. Cannot mix positives and negatives.")
 test(1043.2, DT[c(-1, NA)], error="Item 1 of i is -1 and item 2 is NA. Cannot mix negatives and NA.")
 
-# crash (floating point exception), when assigning null data.table() to multiple cols, #4731
+# crash (floating point exception), when assigning null data.table() to multiple cols, #116
 DT = data.table(x=1:5,y=6:10)
 test(1044, DT[3,c("x","y"):=data.table()],error="Supplied 2 columns to be assigned an empty list.*use NULL instead.*list\\(list")
 test(1045, DT[3,c("x","y"):=list()],error="Supplied 2 columns to be assigned an empty list.*use NULL instead.*list\\(list")
@@ -3256,7 +3256,7 @@ test(1071, fread(f,select="B",colClasses=list(numeric="C")), data.table(B=3:4))
 test(1072, fread(f,select="B",drop="C"), error="not both")
 test(1073, fread(f,drop=2:3), fread(f,select=c(1,4)))  # tests coercing numeric select as well
 
-# that problem printing duplicate columns doesn't return, #4788
+# that problem printing duplicate columns doesn't return, #115
 DT = data.table(V1 = c(1:1000), V2 = c(10001:11000))
 test(1074, DT[, sum(V2), by = V1], output="1000: 1000 11000")  # x has two columns both called V1 here
 
@@ -3274,7 +3274,7 @@ setkey(DT, V2)
 ff <- function(x) { set.seed(45); (sample(x)-1) %/% 10}
 test(1077, DT[, sum(V2),by=ff(V2)], DT[, sum(V2),by=list(ff(V2))])
 
-# rbindlist should discard names on columns, #4890
+# rbindlist should discard names on columns, #103
 d = data.frame(x=1:5)
 f = function(x) {suppressWarnings(DF<-data.frame(x=x, y=1:10)); setattr(DF$x,"names","a");DF}
 l = apply(d, 1, f)
@@ -3283,14 +3283,14 @@ test(1078.2, length(names(l[[2]]$x)), 10L)
 a = rbindlist(l)
 test(1078.3, a$x, rep(1:5,each=10))   # a$x would segfault before the fix to rbindlist
 
-# data.table() shouldn't retain column names, root cause of #4890
+# data.table() shouldn't retain column names, root cause of #103
 x = 1:5
 names(x) = letters[1:5]
 test(1079.1, DF<-data.frame(x=x, y=1:10), data.frame(x=rep(1:5,2),y=1:10), warning="row names.*discarded")
 test(1079.2, lapply(DF, names), list(x=NULL, y=NULL))
 test(1079.3, DT<-data.table(x=x, y=1:10), data.table(x=rep(1:5,2),y=1:10))
 test(1079.4, lapply(DT, names), list(x=NULL, y=NULL))
-# test from similar #4912 for completeness
+# test from similar #102 for completeness
 z = c(a=1,b=2,c=3)
 a = data.table(z,x=1:3)
 b = rbind(a, data.table(z=2,x=1))
@@ -3350,7 +3350,7 @@ DT <- data.table(x = 1:3)
 setnames(DT, "")
 test(1094.2, capture.output(print(DT)), c("    ", "1: 1", "2: 2", "3: 3"))
 
-# DT[!TRUE] or DT[!TRUE, which=TRUE], #4930. !TRUE still can be a recycling operation with !(all TRUE)
+# DT[!TRUE] or DT[!TRUE, which=TRUE], #98. !TRUE still can be a recycling operation with !(all TRUE)
 DT <- data.table(x=1:3, y=4:6)
 test(1095.1, DT[!TRUE], DT[FALSE])
 test(1095.2, DT[!TRUE, which=TRUE], DT[FALSE, which=TRUE])
@@ -3410,7 +3410,7 @@ test(1100, dt1[dt2,roll=-Inf,rollends=c(FALSE,TRUE)]$ind, INT(NA,NA,1,2,2,2,2,2,
   setnames(ans, substring(names(ans),1,6))
   test(1102.06, ans, data.table("0.1680"=c(NA,DT[1,b]), "0.8075"=c(DT[2,b],NA)))
 
-  # Fix for case 2 in bug report #5149 - dcast didn't aggregate properly when formula RHS has "."
+  # Fix for case 2 in bug report #71 - dcast didn't aggregate properly when formula RHS has "."
   set.seed(45)
   DT = data.table(x=rep(1:5, each=3), y=runif(15, 0, 1))
   test(1102.07, dcast(DT, x ~ ., mean, value.var="y")[,`.`:=as.integer(`.`*10000)], data.table(x=1:5, "."=INT(3972,3427,3224,4182,3994), key="x"))
@@ -3426,7 +3426,7 @@ test(1100, dt1[dt2,roll=-Inf,rollends=c(FALSE,TRUE)]$ind, INT(NA,NA,1,2,2,2,2,2,
   test(1102.12, dcast(DT, "a ~  c ", value.var="b"), error="not found or of unknown type")
   test(1102.13, dcast(DT, a ~  a, value.var="c"), error="are not found in 'data'")
 
-  # fix for #5379 - issue when factor columns on formula LHS along with `drop=FALSE`
+  # fix for #47 - issue when factor columns on formula LHS along with `drop=FALSE`
   set.seed(1L)
   DT = data.table(a=factor(sample(letters[1:3], 10, replace=TRUE), letters[1:5]),
                   b=factor(sample(tail(letters, 5), 10, replace=TRUE)))
@@ -3459,7 +3459,7 @@ test(1100, dt1[dt2,roll=-Inf,rollends=c(FALSE,TRUE)]$ind, INT(NA,NA,1,2,2,2,2,2,
   DT = data.table(x=c(1,1,1,2,2,2,1,1), y=c(1,2,3,1,2,1,1,2), z=c(1,2,3,NA,4,5,NA,NA))
   test(1102.17, dcast(DT, x~y, value.var="z", subset=.(!is.na(z))), data.table(x=c(1,2), `1`=c(1,5), `2`=c(2,4), `3`=c(3,NA), key="x"))
 
-  # FR #5675 and DOC #5676
+  # FR #335 and DOC #332
   set.seed(1L)
   DT = data.table(a=sample(10), b=2013:2014, variable=rep(c("c", "d"), each=10), value=runif(20))
   test(1102.18, names(dcast(DT, a ~ ... + b, value.var="value")), c("a", "c_2013", "c_2014", "d_2013", "d_2014"))
@@ -3607,7 +3607,7 @@ test(1109, DT[b != TRUE], DT[!(b == TRUE)])
 DT <- data.table(list = 1:6, a = 1:2)
 test(1111, DT[, lapply(.SD, sum), by = a], DT[, list(list = sum(list)), by = a])
 
-# fix for #4995. "rbind" retains key when the first argument isn't a data.table (.rbind.data.table is never run is the issue)
+# fix for #89. "rbind" retains key when the first argument isn't a data.table (.rbind.data.table is never run is the issue)
 DT <- data.table(name=c('Guff','Aw'),id=101:102,id2=1:2,key='id')
 y <- rbind(list('No','NON',0L),DT,list('Extra','XTR',3L))
 test(1112, key(y), NULL)
@@ -3624,7 +3624,7 @@ setkey(DT, L)
 test(1114, class(DT[, .SD, by = L]$N), class(DT$N))
 test(1115, class(DT[J(unique(L)), .SD, by=.EACHI]$N), class(DT$N))
 
-# Fix for #4994 - not-join quoted expression dint work...
+# Fix for #90 - not-join quoted expression didn't work...
 dt = data.table(a = 1:2, key = 'a')
 dt1 = data.table(a = 1)
 expr = quote(!dt1)
@@ -3671,15 +3671,15 @@ DT1 = data.table(a = 3:4, c = 1:2)
 
 test(1126, rbind(DT, DT1, fill = TRUE), data.table(a = 1:4, b = c(1:2, NA, NA), c = c(NA, NA, 1:2)))
 
-## check for #4959 - rbind'ing empty data.table's
+## check for #95 - rbind'ing empty data.table's
 DT = data.table(a=character())
 #test(1127, rbind(DT, DT), DT)
 
-## check for #5005
+## check for #88
 DT = data.table(a=0:2,b=3:5,key="a")
 test(1128, DT[, (function(){b})()], DT[, b])
 
-## Fix for FR #4867
+## Fix for FR #358
 DT <- data.table(x=1:5, y=6:10)
 test(1129.1, DT[, as.factor(c("x", "y")), with=FALSE], DT)
 test(1129.2, DT[, as.factor(c("x", "x")), with=FALSE], DT[, list(x, x)])

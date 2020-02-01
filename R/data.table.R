@@ -919,7 +919,7 @@ replace_dot_alias = function(e) {
         } else {
           # FR #355 - negative numeric and character indices for SDcols
           colsub = substitute(.SDcols)
-          # fix for RF#5190. colsub[[1L]] gave error when it's a symbol.
+          # fix for R-Forge #5190. colsub[[1L]] gave error when it's a symbol.
           if (is.call(colsub) && deparse(colsub[[1L]], 500L, backtick=FALSE) %chin% c("!", "-")) {
             negate_sdcols = TRUE
             colsub = colsub[[2L]]
