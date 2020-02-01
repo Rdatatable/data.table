@@ -231,8 +231,8 @@ as.POSIXct(af$itime) # uses today's date
 round(seqdates, "months")
 
 (seqtimes <- seq(as.ITime("07:00"), as.ITime("08:00"), by = 20))
-round(seqdates, "hours")
-trunc(seqdates, "hours")
+round(seqtimes, "hours")
+trunc(seqtimes, "hours")
    
 }
 \keyword{utilities}
