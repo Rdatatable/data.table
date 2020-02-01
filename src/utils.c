@@ -393,7 +393,7 @@ SEXP asCharacterITime(SEXP x, int *nprotect) {
         err = snprintf(buff, 10, "-%02d:%02d:%02d", hh, mm, ss);
       else 
         err = snprintf(buff, 9, "%02d:%02d:%02d", hh, mm, ss);
-      if (err != 0) // should not be possible, handled to silence compiler warnings
+      if (err < 0) // should not be possible, handled to silence compiler warnings
         error("Internal Error: snprintf in as.character.ITime"); // # nocov
       SET_STRING_ELT(coerced, j, mkChar(buff));
     }
