@@ -60,8 +60,8 @@ as.IDate(x, \dots)
 as.ITime(x, \dots)
 \method{as.ITime}{default}(x, \dots)
 \method{as.ITime}{POSIXlt}(x, ms = 'truncate', \dots)
-\method{round}{ITime}{x, digits = c("hours", "minutes"), \ldots}
-\method{trunc}{ITime}{x, units = c("hours", "minutes"), \ldots}
+\method{round}{ITime}(x, digits = c("hours", "minutes"), \ldots)
+\method{trunc}{ITime}(x, units = c("hours", "minutes"), \ldots)
 
 \method{as.POSIXct}{ITime}(x, tz = "UTC", date = Sys.Date(), \dots)
 \method{as.character}{ITime}(x, \dots)
