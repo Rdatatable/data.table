@@ -16845,7 +16845,7 @@ DT = structure(list(B=1:2, C=NULL, D=3:4, E=NULL), class=c("data.table", "data.f
 test(2137.2, as.matrix(DT), mat)
 
 DT = structure(list(C=NULL, E=NULL), class=c("data.table", "data.frame"))
-mat = array(NA, dim = list(0, 0), dimnames = list(NULL, NULL))
+mat = array(NA, dim = list(0, 0))
 test(2137.3, as.matrix(DT), mat)
 
 DT = structure(list(A=NULL, B=logical(0), C=NULL, D=character(0)), class=c("data.table", "data.frame"))
