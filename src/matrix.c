@@ -264,7 +264,7 @@ void flatten(SEXP *dt, SEXP *dtcn, SEXP *newdt, SEXP *newcn, R_xlen_t *jtarget, 
         SEXP thisNewCol = PROTECT(allocVector(mattype, matnrow)); (*nprotect)++;
         R_xlen_t start = (R_xlen_t) mj * matnrow;
         memrecycle(thisNewCol, R_NilValue, 0, matnrow, thisCol, start, matnrow, 0, "V1");
-        SET_VECTOR_ELT(*newdt, *jtarget, thisNewCol); UNPROTECT(1); nprotect--;
+        SET_VECTOR_ELT(*newdt, *jtarget, thisNewCol); UNPROTECT(1); (*nprotect)--;
         SET_STRING_ELT(*newcn, *jtarget, STRING_ELT(compositecn, mj)); // add new column name
         (*jtarget)++; // Increment column index in the new flattened data.table
       }
@@ -305,13 +305,14 @@ SEXP asmatrix(SEXP dt, SEXP rownames)
     if (INHERITS(rownames, char_dataframe) || INHERITS(rownames, char_datatable) || 
         !isNull(getAttrib(rownames, R_DimSymbol)))
         error("Extracted rownames column or provided rownames.values are multi-column type (e.g. a matrix or data.table) and cannot be used as rownames");
-    if (TYPEOF(rownames) == VECSXP || TYPEOF(rownames) == LISTSXP)
+    else if (TYPEOF(rownames) == VECSXP || TYPEOF(rownames) == LISTSXP)
       warning("Extracted rownames column or provided rownames.values are a list column, so will be converted to a character representation");
     SET_VECTOR_ELT(rncontainer, 0, rownames); UNPROTECT(rnstack); // coerced rownames now PROTECTED in rnContainer 
     rownames = VECTOR_ELT(rncontainer, 0);
   }
   
   // Extract column types and determine type to coerce to
+  int preprocessstack=0;
   int maxType=RAWSXP;
   R_xlen_t nrow=0;
   R_xlen_t ncol=0; 
@@ -319,14 +320,13 @@ SEXP asmatrix(SEXP dt, SEXP rownames)
   bool integer64=false; // are we coercing to integer64?
   bool unpack=false; // are there any columns to drop or unpack?
   bool recycle=false; // do any columns need recyling to nrow?
-  preprocess(&dt, &nprotect, &maxType, &nrow, &ncol, &coerce, &integer64, &unpack, &recycle);
+  preprocess(&dt, &preprocessstack, &maxType, &nrow, &ncol, &coerce, &integer64, &unpack, &recycle);
   
   // Check matrix is not larger than allowed by R
   if (ncol > R_LEN_T_MAX || nrow > R_LEN_T_MAX)
     error("R does not support matrices with more than %d columns or rows", R_LEN_T_MAX); // # nocov
   
   // Check rownames length for errors now we know nrow.
-  
   if (!isNull(rownames) && nrow != 0 && xlength(rownames) != nrow) {
     error("Extracted rownames column or provided rownames.values do not match the number of rows in the matrix");
   }
@@ -373,7 +373,7 @@ SEXP asmatrix(SEXP dt, SEXP rownames)
     colnames = getAttrib(dt, R_NamesSymbol);
   }
   // top of PROTECT stack is either 'ans' or 'newdt' (if unpack was true)
-  
+
   // Add dimension names
   SEXP dimnames = PROTECT(allocVector(VECSXP, 2)); nprotect++;
   SET_VECTOR_ELT(dimnames, 0, rownames);
@@ -385,7 +385,7 @@ SEXP asmatrix(SEXP dt, SEXP rownames)
     UNPROTECT(nprotect);
     return(ans);
   }
-  
+
   // recycle columns to match nrow if needed
   if (recycle) {
     for (R_xlen_t j = 0; j < ncol; ++j) {
@@ -410,7 +410,7 @@ SEXP asmatrix(SEXP dt, SEXP rownames)
       } 
     }
   }
-  
+
   // Identify and coerce columns as needed
   if (coerce) {
     for (int j=0; j<ncol; ++j) {
@@ -440,7 +440,7 @@ SEXP asmatrix(SEXP dt, SEXP rownames)
       }
     }
   }
-  
+
   // Copy columns into matrix, recycling memory
   switch(maxType) {
     case RAWSXP: OMP_MEMCPY(RAW, Rbyte);
