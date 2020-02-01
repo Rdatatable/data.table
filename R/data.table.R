@@ -655,7 +655,7 @@ replace_dot_alias = function(e) {
       }
       if (is.logical(j)) j <- which(j)
       if (!length(j) && !notj) return( null.data.table() )
-      if (is.factor(j)) j = as.character(j)  # fix for FR: #4867
+      if (is.factor(j)) j = as.character(j)  # fix for FR: #358
       if (is.character(j)) {
         if (notj) {
           if (anyNA(idx <- chmatch(j, names_x))) warning("column(s) not removed because not found: ", brackify(j[is.na(idx)]))
@@ -917,7 +917,7 @@ replace_dot_alias = function(e) {
           # all duplicate columns must be matched, because nothing is provided
           ansvals = chmatchdup(ansvars, names_x)
         } else {
-          # FR #4979 - negative numeric and character indices for SDcols
+          # FR #355 - negative numeric and character indices for SDcols
           colsub = substitute(.SDcols)
           # fix for RF#5190. colsub[[1L]] gave error when it's a symbol.
           if (is.call(colsub) && deparse(colsub[[1L]], 500L, backtick=FALSE) %chin% c("!", "-")) {
@@ -1480,7 +1480,7 @@ replace_dot_alias = function(e) {
     # converted the lapply(.SD, ...) to a function and used below, easier to implement FR #2722 then.
     .massageSD = function(jsub) {
       txt = as.list(jsub)[-1L]
-      if (length(names(txt))>1L) .Call(Csetcharvec, names(txt), 2L, "")  # fixes bug #4839
+      if (length(names(txt))>1L) .Call(Csetcharvec, names(txt), 2L, "")  # fixes bug #110
       fun = txt[[2L]]
       if (is.call(fun) && fun[[1L]]=="function") {
         # Fix for #2381: added SDenv$.SD to 'eval' to take care of cases like: lapply(.SD, function(x) weighted.mean(x, bla)) where "bla" is a column in DT
