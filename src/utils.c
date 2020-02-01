@@ -356,20 +356,19 @@ SEXP coerceUtf8IfNeeded(SEXP x) {
   return(ans);
 }
 
-SEXP coerceAsList(SEXP x, int len) {
+SEXP coerceAsList(SEXP x, int len, int *nprotect) {
   SEXP coerced;
-  int nprotect = 0;
   if (TYPEOF(x)==VECSXP) {
     return(x);
   } if (TYPEOF(x) == LISTSXP) {
-    coerced = PROTECT(coerceVector(x, VECSXP)); nprotect++; // top level pairlist converted to regular list
+    coerced = PROTECT(coerceVector(x, VECSXP)); (*nprotect)++; // top level pairlist converted to regular list
   } else if (isVector(x)) {
     // Allocate VECSXP container, 
-    coerced = PROTECT(allocVector(VECSXP, length(x))); nprotect++;
+    coerced = PROTECT(allocVector(VECSXP, length(x))); (*nprotect)++;
     for(int i=0; i<length(x); ++i) {
       // Allocate length-1 vector of appropriate type and set it in the right place in the VECSXP container
-      SEXP thisElement = PROTECT(allocVector(TYPEOF(x), 1)); nprotect++;
-      SET_VECTOR_ELT(coerced, i, thisElement);
+      SEXP thisElement = PROTECT(allocVector(TYPEOF(x), 1)); (*nprotect)++;
+      SET_VECTOR_ELT(coerced, i, thisElement); UNPROTECT(1); (*nprotect)--; // thisElement now PROTECTED in coerced
       
       // Copy any class attributes from x into each element of coerced
       // Must happen before memrecycle for memrecycle to handle class
@@ -389,7 +388,7 @@ SEXP coerceAsList(SEXP x, int len) {
     // to match the number of rows.
     if (len < 1) // len used here instead of length(x) because length(x) does not reflect length of target vector data.table
       error("Internal Error: len provided to C function coerceAsList must be > 0\n"); // # nocov
-    coerced = PROTECT(allocVector(VECSXP, len)); nprotect++;
+    coerced = PROTECT(allocVector(VECSXP, len)); (*nprotect)++;
     for(int i=0; i<len; ++i) {
       SET_VECTOR_ELT(coerced, i, x);
     }
@@ -398,6 +397,7 @@ SEXP coerceAsList(SEXP x, int len) {
     error("Internal error: cannot coerce type %s to list\n", type2char(TYPEOF(x))); // # nocov
   }
   
-  UNPROTECT(nprotect); // coerced, thisElement
+  // *nprotect should have been incremented by just 1 here - 'coerced' 
+  // should be at the top of the PROTECT stack.
   return(coerced);
 }

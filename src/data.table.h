@@ -233,7 +233,7 @@ bool islocked(SEXP x);
 SEXP islockedR(SEXP x);
 bool need2utf8(SEXP x);
 SEXP coerceUtf8IfNeeded(SEXP x);
-SEXP coerceAsList(SEXP x, int len);
+SEXP coerceAsList(SEXP x, int len, int *nprotect);
 
 // types.c
 char *end(char *start);

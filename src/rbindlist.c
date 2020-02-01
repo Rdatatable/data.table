@@ -514,8 +514,9 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
         if (w==-1 || !length(thisCol=VECTOR_ELT(li, w))) {  // !length for zeroCol warning above; #1871
           writeNA(target, ansloc, thisnrow);  // writeNA is integer64 aware and writes INT64_MIN
         } else {
+          int cnprotect = 0;
           if (maxType==VECSXP) {
-            thisCol = PROTECT(coerceAsList(thisCol, thisnrow)); nprotect++;
+            thisCol = coerceAsList(thisCol, thisnrow, &cnprotect); // cnprotect incremented by 0 or 1
           }
 
           // else coerces if needed within memrecycle; with a no-alloc direct coerce from 1.12.4 (PR #3909)
@@ -523,11 +524,12 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
           if (ret) warning(_("Column %d of item %d: %s"), w+1, i+1, ret);
           // e.g. when precision is lost like assigning 3.4 to integer64; test 2007.2
           // TODO: but maxType should handle that and this should never warn
+          UNPROTECT(cnprotect); // pop coerced 'thisCol' from PROTECT stack - not need now copied into 'target'.
         }
         ansloc += thisnrow;
       }
     }
   }
-  UNPROTECT(nprotect);  // ans, coercedForFactor, thisCol
+  UNPROTECT(nprotect);  // ans, coercedForFactor
   return(ans);
 }
