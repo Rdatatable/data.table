@@ -16776,13 +16776,10 @@ rm(s1, s2, class2132)
 ########################
 
 # round, trunc should all be 'integer' and and have class 'ITime'.
-DT = data.table(time = as.ITime(seq(as.POSIXct("2020-01-01 07:00:00"), as.POSIXct("2020-01-01 09:00:00"), "67 sec")))
-
 DT = data.table(hour31 = as.ITime(seq(as.POSIXct("2020-01-01 07:00:40"), by = "31 min", length.out = 9)),
                 hour30 = as.ITime(seq(as.POSIXct("2020-01-01 07:00:00"), by = "30 min", length.out = 9)),
                 minute31 = as.ITime(seq(as.POSIXct("2020-01-01 07:00:00"), by = "31 sec", length.out = 9)),
-                minute30 = as.ITime(seq(as.POSIXct("2020-01-01 07:00:00"), by = "30 sec", length.out = 9))
-                )
+                minute30 = as.ITime(seq(as.POSIXct("2020-01-01 07:00:00"), by = "30 sec", length.out = 9)))
 
 test(2133.1, TRUE, DT[, all(sapply(.SD, class) == "ITime")])
 test(2133.2, TRUE, DT[, all(sapply(.SD, typeof) == "integer")])
