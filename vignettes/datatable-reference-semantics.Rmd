@@ -277,10 +277,10 @@ str(flights[, ..char_cols])
 
 * We also could have used `(char_cols)` on the `LHS`. 
 
-Let's clean up again and make our newly made factor columns back to character columns.
+Let's clean up again and make our newly made factor columns back to character columns. This time we will make use of `.SDcols` accepting a function to return columns. In this case, `is.factor` will return the columns which are factors. For more on the **S**ubset of the **D**ata, there is also an [SD Usage vignette](https://cran.r-project.org/web/packages/data.table/vignettes/datatable-sd-usage.html).
 ```{r}
-flights[, names(.SD) := lapply(.SD, as.character), .SDcols = char_cols]
-str(flights[, ..char_cols])
+flights[, names(.SD) := lapply(.SD, as.character), .SDcols = is.factor]
+str(flights[, .SD, .SDcols = is.character])
 ```
 ## 3) `:=` and `copy()`
 
