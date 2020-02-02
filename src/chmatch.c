@@ -1,7 +1,13 @@
 #include "data.table.h"
 
 static SEXP chmatchMain(SEXP x, SEXP table, int nomatch, bool chin, bool chmatchdup) {
-  if (!isString(x) && !isNull(x)) error(_("x is type '%s' (must be 'character' or NULL)"), type2char(TYPEOF(x)));
+  if (!isString(x) && !isNull(x)) {
+    // for use in sub_*_funs from nse_utils.R
+    if (TYPEOF(x) == SYMSXP) {
+      return chmatchMain(coerceVector(x, STRSXP), table, nomatch, chin, chmatchdup);
+    }
+    error(_("x is type '%s' (must be 'character' or NULL)"), type2char(TYPEOF(x)));
+  }
   if (!isString(table) && !isNull(table)) error(_("table is type '%s' (must be 'character' or NULL)"), type2char(TYPEOF(table)));
   if (chin && chmatchdup) error(_("Internal error: either chin or chmatchdup should be true not both"));  // # nocov
   const int xlen = length(x);

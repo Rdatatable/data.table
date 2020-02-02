@@ -701,7 +701,7 @@ replace_dot_alias = function(e) {
         # may evaluate to NULL | character() | "" | list(), likely a result of a user expression where no-grouping is one case being loop'd through
         bysubl = as.list.default(bysub)
         bysuborig = bysub
-        if (is.name(bysub) && !(as.character(bysub) %chin% names_x)) {  # TO DO: names(x),names(i),and i. and x. prefixes
+        if (is.name(bysub) && !(bysub %chin% names_x)) {  # TO DO: names(x),names(i),and i. and x. prefixes
           bysub = eval(bysub, parent.frame(), parent.frame())
           # fix for # 5106 - http://stackoverflow.com/questions/19983423/why-by-on-a-vector-not-from-a-data-table-column-is-very-slow
           # case where by=y where y is not a column name, and not a call/symbol/expression, but an atomic vector outside of DT.
@@ -802,7 +802,7 @@ replace_dot_alias = function(e) {
           # the rest now fall through
         } else bynames = names(byval)
         if (is.atomic(byval)) {
-          if (is.character(byval) && length(byval)<=ncol(x) && !(is.name(bysub) && as.character(bysub) %chin% names_x) ) {
+          if (is.character(byval) && length(byval)<=ncol(x) && !(is.name(bysub) && bysub %chin% names_x) ) {
             stop("'by' appears to evaluate to column names but isn't c() or key(). Use by=list(...) if you can. Otherwise, by=eval",deparse(bysub)," should work. This is for efficiency so data.table can detect which columns are needed.")
           } else {
             # by may be a single unquoted column name but it must evaluate to list so this is a convenience to users. Could also be a single expression here such as DT[,sum(v),by=colA%%2]
@@ -865,7 +865,7 @@ replace_dot_alias = function(e) {
       #   e.g. DT[, .(a=sum(v), v, .N), by=] should create columns named a, v, N
       do_j_names = function(q) {
         if (!is.call(q) || !is.name(q[[1L]])) return(q)
-        if (as.character(q[[1L]]) %chin% c('list', '.')) {
+        if (q[[1L]] %chin% c('list', '.')) {
           q[[1L]] = quote(list)
           qlen = length(q)
           if (qlen>1L) {
@@ -1473,7 +1473,7 @@ replace_dot_alias = function(e) {
   lockBinding(".iSD",SDenv)
 
   GForce = FALSE
-  if ( getOption("datatable.optimize")>=1L && (is.call(jsub) || (is.name(jsub) && as.character(jsub)[1L] %chin% c(".SD", ".N"))) ) {  # Ability to turn off if problems or to benchmark the benefit
+  if ( getOption("datatable.optimize")>=1L && (is.call(jsub) || (is.name(jsub) && jsub[[1L]] %chin% c(".SD", ".N"))) ) {  # Ability to turn off if problems or to benchmark the benefit
     # Optimization to reduce overhead of calling lapply over and over for each group
     oldjsub = jsub
     funi = 1L # Fix for #985
@@ -1646,14 +1646,14 @@ replace_dot_alias = function(e) {
           if (dotN(q)) return(TRUE) # For #5760
           # run GForce for simple f(x) calls and f(x, na.rm = TRUE)-like calls where x is a column of .SD
           # is.symbol() is for #1369, #1974 and #2949
-          if (!(is.call(q) && is.symbol(q[[1L]]) && is.symbol(q[[2L]]) && (q1c <- as.character(q[[1L]])) %chin% gfuns)) return(FALSE)
-          if (!(q2c<-as.character(q[[2L]])) %chin% names(SDenv$.SDall) && q2c!=".I") return(FALSE)  # 875
-          if ((length(q)==2L || identical("na",substring(names(q)[3L], 1L, 2L))) && (!q1c %chin% c("head","tail"))) return(TRUE)
+          if (!(is.call(q) && is.symbol(q[[1L]]) && is.symbol(q[[2L]]) && (q1 <- q[[1L]]) %chin% gfuns)) return(FALSE)
+          if (!(q2 <- q[[2L]]) %chin% names(SDenv$.SDall) && q2 != ".I") return(FALSE)  # 875
+          if ((length(q)==2L || identical("na",substring(names(q)[3L], 1L, 2L))) && (!q1 %chin% c("head","tail"))) return(TRUE)
           # ... head-tail uses default value n=6 which as of now should not go gforce ^^
           # otherwise there must be three arguments, and only in two cases:
           #   1) head/tail(x, 1) or 2) x[n], n>0
           length(q)==3L && length(q3 <- q[[3L]])==1L && is.numeric(q3) &&
-            ( (q1c %chin% c("head", "tail") && q3==1L) || ((q1c == "[" || (q1c == "[[" && eval(call('is.atomic', q[[2L]]), envir=x))) && q3>0L) )
+            ( (q1 %chin% c("head", "tail") && q3==1L) || ((q1 == "[" || (q1 = "[[" && eval(call('is.atomic', q[[2L]]), envir=x))) && q3>0L) )
         }
         if (jsub[[1L]]=="list") {
           GForce = TRUE
