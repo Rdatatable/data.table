@@ -1032,7 +1032,7 @@ replace_dot_alias = function(e) {
             #i.e lhs is names(.SD) || setdiff(names(.SD), cols) || (cols)
             replace_names_sd = function(e, cols){
               if (length(e) == 1L) return(e)
-              if (e[[1L]] == quote(names) && e[[2L]] == quote(.SD)) return(cols)
+              if (e[[1L]] == quote(names) && is.name(e[[2L]]) && e[[2L]] == quote(.SD)) return(cols)
               for (i in seq_along(e)[-1L]) if (!is.null(e[[i]])) e[[i]] = replace_names_sd(e[[i]], cols)
               e
             }
