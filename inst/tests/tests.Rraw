@@ -16770,6 +16770,10 @@ test(2132.2, fifelse(TRUE, 1, s2),       error = "S4 class objects (except nanot
 test(2132.3, fcase(TRUE, s1, FALSE, s2), error = "S4 class objects (except nanotime) are not supported. Please see https://github.com/Rdatatable/data.table/issues/4131.")
 rm(s1, s2, class2132)
 
+# Use of (m)get does not re-order when using .SDcols, #4089
+dt = data.table(x = 1L, y = 2L, z = 3L)
+cols = c('x', 'y')
+test(2133.1, dt[, (cols) := lapply(.SD[get("x") == 1],function(x){x + 2L}), .SDcols = cols ,by = z], data.table(x = 1L + 2L, y = 2L + 2L, z = 3L))
 
 ########################
 #  Add new tests here  #
