@@ -973,7 +973,7 @@ replace_dot_alias = function(e) {
         # added 'mget' - fix for #994
         if (any(c("get", "mget") %chin% av)){
           if (verbose) 
-            cat(gettextf("'(m)get' found in j. ansvars being set to all columns. Use .SDcols or a single j=eval(macro) instead. Both will detect the columns used which is important for efficiency.\nOld ansvars: %s \n", paste(ansvars,collapse=","), domain = "R-data.table"))
+            cat(gettextf("'(m)get' found in j. ansvars being set to all columns. Use .SDcols or a single j=eval(macro) instead. Both will detect the columns used which is important for efficiency.\nOld ansvars: %s \n", brackify(ansvars), domain = "R-data.table"))
             # get('varname') is too difficult to detect which columns are used in general
             # eval(macro) column names are detected via the  if jsub[[1]]==eval switch earlier above.
 
@@ -995,7 +995,7 @@ replace_dot_alias = function(e) {
           }
           non_sdvars = setdiff(ansvars, sdvars)
           ansvals = chmatch(ansvars, names_x)
-          if (verbose) cat(gettextf("New ansvars: %s \n",paste(ansvars,collapse=","), domain = "R-data.table"))
+          if (verbose) cat(gettextf("New ansvars: %s \n", brackify(ansvars), domain = "R-data.table"))
         } else if (length(non_sdvars)) {
           # we've a situation like DT[, c(sum(V1), lapply(.SD, mean)), by=., .SDcols=...] or
           # DT[, lapply(.SD, function(x) x *v1), by=, .SDcols=...] etc.,
