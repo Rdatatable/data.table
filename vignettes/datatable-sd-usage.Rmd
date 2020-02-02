@@ -79,6 +79,8 @@ This is just for illustration and was pretty boring. In addition to accepting a 
 2. the function^{*} `patterns()` to filter by _column names_
 3. integer and logical vectors
 
+*see `?patterns` for more details
+
 This simple usage lends itself to a wide variety of highly beneficial / ubiquitous data manipulation operations:
 
 ## Column Type Conversion
