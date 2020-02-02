@@ -48,7 +48,7 @@ SEXP transpose(SEXP l, SEXP fill, SEXP ignoreArg, SEXP keepNamesArg) {
   for (int i=0; i<maxlen; ++i) {
     SET_VECTOR_ELT(ans, i+rn, allocVector(maxtype, anslen));
   }
-  const SEXP *ansp = VECTOR_PTR(ans);
+  const SEXP *ansp = SEXPPTR_RO(ans);
   for (int i=0, k=0; i<ln; ++i) {
     SEXP li = VECTOR_ELT(l, i);
     const int len = length(li);

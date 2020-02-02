@@ -1,7 +1,7 @@
 #include "data.table.h"
 
-static void subsetVectorRaw(SEXP ans, SEXP source, SEXP idx, const bool anyNA)
-// Only for use by subsetDT() or subsetVector() below, hence static
+void subsetVectorRaw(SEXP ans, SEXP source, SEXP idx, const bool anyNA)
+// Used here by subsetDT() and by dogroups.c
 {
   const int n = length(idx);
   if (length(ans)!=n) error(_("Internal error: subsetVectorRaw length(ans)==%d n=%d"), length(ans), n);
@@ -54,7 +54,7 @@ static void subsetVectorRaw(SEXP ans, SEXP source, SEXP idx, const bool anyNA)
     // TODO - discuss with Luke Tierney. Produce benchmarks on integer/double to see if it's worth making a safe
     //        API interface for package use for STRSXP.
     // Aside: setkey() is a separate special case (a permutation) and does do this in parallel without using SET_*.
-    SEXP *sp = STRING_PTR(source);
+    const SEXP *sp = SEXPPTR_RO(source);
     if (anyNA) {
       for (int i=0; i<n; i++) { int elem = idxp[i]; SET_STRING_ELT(ans, i, elem==NA_INTEGER ? NA_STRING : sp[elem-1]); }
     } else {
@@ -62,16 +62,11 @@ static void subsetVectorRaw(SEXP ans, SEXP source, SEXP idx, const bool anyNA)
     }
   } break;
   case VECSXP : {
-    // VECTOR_PTR does exist but returns 'not safe to return vector pointer' when USE_RINTERNALS is not defined.
-    // VECTOR_DATA and LIST_POINTER exist too but call VECTOR_PTR. All are clearly not intended to be used by packages.
-    // The concern is overhead inside VECTOR_ELT() biting when called repetitively in a loop like we do here. That's why
-    // we take the R API (INTEGER()[i], REAL()[i], etc) outside loops for the simple types even when not parallel. For this
-    // type list case (VECSXP) it might be that some items are ALTREP for example, so we really should use the heavier
-    // _ELT accessor (VECTOR_ELT) inside the loop in this case.
+    const SEXP *sp = SEXPPTR_RO(source);
     if (anyNA) {
-      for (int i=0; i<n; i++) { int elem = idxp[i]; SET_VECTOR_ELT(ans, i, elem==NA_INTEGER ? R_NilValue : VECTOR_ELT(source, elem-1)); }
+      for (int i=0; i<n; i++) { int elem = idxp[i]; SET_VECTOR_ELT(ans, i, elem==NA_INTEGER ? R_NilValue : sp[elem-1]); }
     } else {
-      for (int i=0; i<n; i++) {                     SET_VECTOR_ELT(ans, i, VECTOR_ELT(source, idxp[i]-1)); }
+      for (int i=0; i<n; i++) {                     SET_VECTOR_ELT(ans, i, sp[idxp[i]-1]); }
     }
   } break;
   case CPLXSXP : {

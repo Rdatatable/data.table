@@ -1,8 +1,13 @@
 #include "data.table.h"
 
 SEXP fifelseR(SEXP l, SEXP a, SEXP b, SEXP na) {
-  if (!isLogical(l))
+  if (!isLogical(l)) {
     error(_("Argument 'test' must be logical."));
+  }
+  if (  (isS4(a) && !INHERITS(a, char_nanotime))
+     || (isS4(b) && !INHERITS(b, char_nanotime)) ) {
+    error("S4 class objects (except nanotime) are not supported.");
+  }
   const int64_t len0 = xlength(l);
   const int64_t len1 = xlength(a);
   const int64_t len2 = xlength(b);
@@ -117,9 +122,9 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b, SEXP na) {
     }
   } break;
   case VECSXP : {
-    const SEXP *restrict pa = VECTOR_PTR(a);
-    const SEXP *restrict pb = VECTOR_PTR(b);
-    const SEXP *restrict pna = VECTOR_PTR(na);
+    const SEXP *restrict pa = SEXPPTR_RO(a);
+    const SEXP *restrict pb = SEXPPTR_RO(b);
+    const SEXP *restrict pna = SEXPPTR_RO(na);
     for (int64_t i=0; i<len0; ++i) {
       if (pl[i]==NA_LOGICAL) {
         if (nonna)
@@ -158,8 +163,11 @@ SEXP fcaseR(SEXP na, SEXP rho, SEXP args) {
   int *restrict p = NULL;
   n = n/2;
   for (int i=0; i<n; ++i) {
-    REPROTECT(cons = eval(VECTOR_PTR(args)[2*i], rho), Icons);
-    REPROTECT(outs = eval(VECTOR_PTR(args)[2*i+1], rho), Iouts);
+    REPROTECT(cons = eval(SEXPPTR_RO(args)[2*i], rho), Icons);
+    REPROTECT(outs = eval(SEXPPTR_RO(args)[2*i+1], rho), Iouts);
+    if (isS4(outs) && !INHERITS(outs, char_nanotime)) {
+      error("S4 class objects (except nanotime) are not supported. Please see https://github.com/Rdatatable/data.table/issues/4131.");
+    }
     if (!isLogical(cons)) {
       error("Argument #%d must be logical.", 2*i+1);
     }
@@ -310,8 +318,8 @@ SEXP fcaseR(SEXP na, SEXP rho, SEXP args) {
       }
     } break;
     case VECSXP: {
-      const SEXP *restrict pouts = VECTOR_PTR(outs);
-      const SEXP pna = VECTOR_PTR(na)[0];
+      const SEXP *restrict pouts = SEXPPTR_RO(outs);
+      const SEXP pna = SEXPPTR_RO(na)[0];
       for (int64_t j=0; j<len2; ++j) {
         idx = imask ? j : p[j];
         if (pcons[idx]==1) {
