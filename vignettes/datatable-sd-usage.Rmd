@@ -111,7 +111,7 @@ Note:
 3. `lapply()` loops through each column of the `.SD` and converts the column to a factor.
 4. We use the `.SDcols` to only select columns that have pattern of `teamID`.
 
-Again, the `.SDcols` argument is quite flexible; above, we supplied `patterns` but we could have also supplied `fkt` or any `character` vector of column names. In other situations, it is more convenient to supply an `integer` vector of column _positions_ or a `logical` vector dictating include/exclude for each column. Finally, the use of a function is very helpful.
+Again, the `.SDcols` argument is quite flexible; above, we supplied `patterns` but we could have also supplied `fkt` or any `character` vector of column names. In other situations, it is more convenient to supply an `integer` vector of column _positions_ or a `logical` vector dictating include/exclude for each column. Finally, the use of a function to filter columns is very helpful.
 
 For example, we could do the following to convert all `factor` columns to `character`:
 
