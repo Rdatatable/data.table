@@ -116,7 +116,7 @@ Again, the `.SDcols` argument is quite flexible; above, we supplied `patterns` b
 For example, we could do the following to convert all `factor` columns to `character`:
 
 ```{r sd_as_logical}
-fct_idx = Teams[, which(sapply(.SD, is.factor))] #column numbers to show the class changing
+fct_idx = Teams[, which(sapply(.SD, is.factor))] # column numbers to show the class changing
 str(Teams[[fct_idx[1L]]])
 Teams[ , names(.SD) := lapply(.SD, as.character), .SDcols = is.factor]
 str(Teams[[fct_idx[1L]]])
