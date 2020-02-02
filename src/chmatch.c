@@ -8,15 +8,25 @@ static SEXP chmatchMain(SEXP x, SEXP table, int nomatch, bool chin, bool chmatch
     }
     error(_("x is type '%s' (must be 'character' or NULL)"), type2char(TYPEOF(x)));
   }
-  if (!isString(table) && !isNull(table)) error(_("table is type '%s' (must be 'character' or NULL)"), type2char(TYPEOF(table)));
-  if (chin && chmatchdup) error(_("Internal error: either chin or chmatchdup should be true not both"));  // # nocov
+  if (!isString(table) && !isNull(table))
+    error(_("table is type '%s' (must be 'character' or NULL)"), type2char(TYPEOF(table)));
+  if (chin && chmatchdup)
+    error(_("Internal error: either chin or chmatchdup should be true not both"));  // # nocov
   const int xlen = length(x);
   const int tablelen = length(table);
   // allocations up front before savetl starts in case allocs fail
   SEXP ans = PROTECT(allocVector(chin?LGLSXP:INTSXP, xlen));
-  if (xlen==0) { UNPROTECT(1); return ans; }  // no need to look at table when x is empty
+  if (xlen==0) { // no need to look at table when x is empty
+    UNPROTECT(1);
+    return ans;
+  }
   int *ansd = INTEGER(ans);
-  if (tablelen==0) { const int val=(chin?0:nomatch), n=xlen; for (int i=0; i<n; ++i) ansd[i]=val; UNPROTECT(1); return ans; }
+  if (tablelen==0) {
+    const int val=(chin?0:nomatch), n=xlen;
+    for (int i=0; i<n; ++i) ansd[i]=val;
+    UNPROTECT(1);
+    return ans;
+  }
   // Since non-ASCII strings may be marked with different encodings, it only make sense to compare
   // the bytes under a same encoding (UTF-8) #3844 #3850
   const SEXP *xd = STRING_PTR(PROTECT(coerceUtf8IfNeeded(x)));
