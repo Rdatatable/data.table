@@ -16736,13 +16736,7 @@ x = data.table(a=1:3, b=4:6)
 test(2131, lapply(x[ , list(dt = list(.SD)), by = a]$dt, attr, '.data.table.locked'),
            list(NULL, NULL, NULL))
 
-
-########################
-#  Add new tests here  #
-########################
-
 ## make names(.SD) work - issue #795
-
 dt = data.table(a = 1:4, b = 5:8)
 
 test(2133.1, dt[, names(.SD) := lapply(.SD, '*', 2), .SDcols = 1L], data.table(a = 1:4 * 2, b = 5:8))
@@ -16764,3 +16758,8 @@ test(2133.9, dt[, paste(names(.SD), 'max', sep = '_') := lapply(.SD, max), by = 
 
 dt = data.table(a = 1:3, b = 5:7, grp = c('a', 'a', 'b'))
 test(2133.91, dt[1:2, paste(names(.SD), 'max', sep = '_') := lapply(.SD, max), by = grp], data.table(a = 1:3, b = 5:7, grp = c('a', 'a', 'b'), a_max = c(2L, 2L, NA_integer_), b_max = c(6L, 6L, NA_integer_)))
+
+########################
+#  Add new tests here  #
+########################
+
