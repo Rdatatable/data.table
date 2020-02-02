@@ -73,7 +73,7 @@ unit = "s")
 
 10. The dimensions of objects in a `list` column are now displayed, [#3671](https://github.com/Rdatatable/data.table/issues/3671). Thanks to @randomgambit for the request, and Tyson Barrett for the PR.
 
-11. Using `dt[, names(.SD) := lapply(.SD, fx)]` now works, [#795](https://github.com/Rdatatable/data.table/issues/795). Thanks to @brodieG for the report and @ColeMiller1 for PR.
+11. Using `dt[, names(.SD) := lapply(.SD, fx)]` now works, [#795](https://github.com/Rdatatable/data.table/issues/795) -- one of our [most-requested issues (see #3189)](https://github.com/Rdatatable/data.table/issues/3189). Thanks to @brodieG for the report and @ColeMiller1 for PR.
 
 ## BUG FIXES
 
