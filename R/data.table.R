@@ -2611,7 +2611,19 @@ vecseq = function(x,y,clamp) .Call(Cvecseq,x,y,clamp)
 # .Call(Caddress, x) increments NAM() when x is vector with NAM(1). Referring object within non-primitive function is enough to increment reference.
 address = function(x) .Call(Caddress, eval(substitute(x), parent.frame()))
 
-":=" = function(...) stop('Check that is.data.table(DT) == TRUE. Otherwise, := and `:=`(...) are defined for use in j, once only and in particular ways. See help(":=").')
+":=" = function(...) {
+  # detect common mistake -- use := in i after forgetting a comma to leave it blank, #4227
+  find_doteq_in_i = function(e) {
+    if (is.call(e)) {
+      if (is.symbol(e[[1L]]) && e[[1L]] == '[.data.table' && is.call(e[[3L]]) && is.symbol(e[[3L]][[1L]]) && e[[3L]][[1L]] == ':=') {
+        stop("Assignment with := is intended for use in j only, but is present in i, the first argument after [. Most often, this happens when forgetting to leave the first argument blank (e.g. DT[newvar := 5] instead of DT[ , new_var := 5]). Please double-check your syntax (see traceback() after this error for another view of this).")
+      }
+      else lapply(e[-1L], find_doteq_in_i)
+    }
+  }
+  for (calli in sys.calls()) find_doteq_in_i(calli)
+  stop('Check that is.data.table(DT) == TRUE. Otherwise, := and `:=`(...) are defined for use in j, once only and in particular ways. See help(":=").')
+}
 
 setDF = function(x, rownames=NULL) {
   if (!is.list(x)) stop("setDF only accepts data.table, data.frame or list of equal length as input")
