@@ -79,6 +79,24 @@ SEXP allNAR(SEXP x) {
   return ScalarLogical(allNA(x, /*errorForBadType=*/true));
 }
 
+/* range_int
+ * used in exprCols(v4:v2) to produce 4:2 sequence
+ * and when inverse=T to produce all columns sequence
+ */
+SEXP range_int(int from, int to) {
+  if (from==NA_INTEGER || to==NA_INTEGER)
+    error(_("internal error: NA was supplied to generate integer range")); // # nocov
+  int len = to - from;
+  int ord = len>=0 ? 1 : -1;
+  len = len * ord;
+  SEXP ans = PROTECT(allocVector(INTSXP, len+1));
+  int *ansp = INTEGER(ans);
+  for (int i=0; i<=len; i++)
+    ansp[i] = from+i*ord;
+  UNPROTECT(1);
+  return ans;
+}
+
 /* colnamesInt
  * for provided data.table (or a list-like) and a subset of its columns, it returns integer positions of those columns in DT
  * handle columns input as: integer, double, character, logical and NULL (handled as seq_along(x))
@@ -117,21 +135,16 @@ SEXP colnamesInt(SEXP x, SEXP cols, SEXP check_dups, SEXP inverse) {
         error(_("argument specifying columns is type 'double' and one or more items in it are not whole integers"));
       ricols = PROTECT(coerceVector(cols, INTSXP)); protecti++;
     }
-    if (!binverse) {
-      int *icols = INTEGER(ricols);
-      for (int i=0; i<nc; i++) {
-        if ((icols[i]>nx) || (icols[i]<1))
-          error(_("argument specifying columns specify non existing column(s): cols[%d]=%d"), i+1, icols[i]); // handles NAs also
-      }
-    } else {
+    int *icols = INTEGER(ricols);
+    for (int i=0; i<nc; i++) {
+      if ((icols[i]>nx) || (icols[i]<1))
+        error(_("argument specifying columns specify non existing column(s): cols[%d]=%d"), i+1, icols[i]); // handles NAs also
+    }
+    if (binverse) { // could be improved
       SEXP notricols = ricols;
-      SEXP ricols = PROTECT(allocVector(INTSXP, nx-nc)); protecti++;
-      int *icols = INTEGER(ricols);
-      error("todo colnamesInt inverse isInteger|isReal");
-      //for (int i=0; i<nc; i++) {
-      //  if ((icols[i]>nx) || (icols[i]<1))
-      //    error(_("argument specifying columns specify non existing column(s): cols[%d]=%d"), i+1, icols[i]); // handles NAs also
-      //}
+      SEXP allcols = PROTECT(range_int(1, nx)); protecti++;
+      SEXP setdiff_call = PROTECT(lang3(install("setdiff"), allcols, notricols)); protecti++;
+      ricols = PROTECT(eval(setdiff_call, R_GlobalEnv)); protecti++;
     }
   } else if (isString(cols)) {
     SEXP xnames = getAttrib(x, R_NamesSymbol);
@@ -198,23 +211,6 @@ SEXP replace_dot_aliasR(SEXP x) {
   return replace_dot_alias(MAYBE_REFERENCED(x) ? duplicate(x) : x);
 }
 
-/* range_int
- * used in exprCols(v4:v2) to produce 4:2 sequence
- */
-SEXP range_int(int from, int to) {
-  if (from==NA_INTEGER || to==NA_INTEGER)
-    error(_("internal error: NA was supplied to generate integer range")); // # nocov
-  int len = to - from;
-  int ord = len>=0 ? 1 : -1;
-  len = len * ord;
-  SEXP ans = PROTECT(allocVector(INTSXP, len+1));
-  int *ansp = INTEGER(ans);
-  for (int i=0; i<=len; i++)
-    ansp[i] = from+i*ord;
-  UNPROTECT(1);
-  return ans;
-}
-
 /* funCols
  * helper that calls lapply(DT, fun) to produce logical vector
  */
@@ -238,8 +234,9 @@ SEXP funCols(SEXP x, SEXP fun, SEXP rho) {
  * helper for j and .SDcols
  * handles v1, "v1", v1:v3, !"v1", -"v1", paste0("v",1:3)
  * does not evaluate only for `symbol:symbol` expression, or `symbol` when "symbol" is existing column
+ * with is updated by reference thus should be copied before being passed to this function
  */
-SEXP exprCols(SEXP x, SEXP expr, SEXP mode, /*SEXP with, */SEXP rho) {
+SEXP exprCols(SEXP x, SEXP expr, SEXP mode, SEXP with, SEXP rho) {
   int protecti=0;
   if (!isString(mode) || length(mode)!=1 || STRING_ELT(mode, 0)==NA_STRING)
     error(_("internal error: mode argument has to be character, non-NA of length 1")); // # nocov
@@ -267,11 +264,10 @@ SEXP exprCols(SEXP x, SEXP expr, SEXP mode, /*SEXP with, */SEXP rho) {
   SEXP sym_brackets = install("{");
   while (isLanguage(expr) && CAR(expr)==sym_brackets && length(expr)==2)
     expr = CADR(expr); // verify #376, 2121.2
-  SEXP sym_eval = install("eval");
+  SEXP sym_eval = install("eval"); // test num??
   if (isLanguage(expr) && CAR(expr)==sym_eval) {
-    
+    error("to do, eval call in j/.sdcols");
   }
-  //SEXP attribute_hidden do_allnames(SEXP call, SEXP op, SEXP args, SEXP env)
   if (isNull(expr))
     error(_("columns selection is NULL")); // expr=((NULL))
   // non-evaluated case: V3:V2
@@ -279,15 +275,17 @@ SEXP exprCols(SEXP x, SEXP expr, SEXP mode, /*SEXP with, */SEXP rho) {
   if (isLanguage(expr) && CAR(expr)==sym_colon) {  // 3:2, V3:V2, min(V3):min(V2)
     SEXP lhs = CADR(expr), rhs = CADDR(expr);
     if (isSymbol(lhs) && isSymbol(rhs)) { // V3:V2
-      if (inverse)
-        error("column range selection by col1:col2 is not supported with combination of negation via '!' or '-'");
       lhs = colnamesInt(x, ScalarString(PRINTNAME(lhs)), ScalarLogical(false), ScalarLogical(false)); // may raise error if lhs column does not exists
       rhs = colnamesInt(x, ScalarString(PRINTNAME(rhs)), ScalarLogical(false), ScalarLogical(false));
       if (!isInteger(lhs) || !isInteger(rhs) || length(lhs)!=1 || length(rhs)!=1 || LOGICAL(lhs)[0]==NA_LOGICAL || LOGICAL(rhs)[0]==NA_LOGICAL)
         error(_("internal error: LHS and RHS of `:` call should be integer non-NA scalars already")); // # nocov
+      SEXP ricols = PROTECT(range_int(INTEGER(lhs)[0], INTEGER(rhs)[0])); protecti++;
+      LOGICAL(with)[0] = 0;
       UNPROTECT(protecti);
-      return range_int(INTEGER(lhs)[0], INTEGER(rhs)[0]);
+      return colnamesInt(x, ricols, ScalarLogical(false), ScalarLogical(inverse)); // handle inverse
     } else {
+      Rprintf("sym_colon to evaluate later, a valid colon expression\n");
+      LOGICAL(with)[0] = 1;
       // evaluates later on: 3:2, f(V3):f(V2)
       //Rf_PrintValue(lhs);
       //Rf_PrintValue(rhs);
@@ -304,36 +302,67 @@ SEXP exprCols(SEXP x, SEXP expr, SEXP mode, /*SEXP with, */SEXP rho) {
     SEXP lpat = PROTECT(eval(LCONS(sym_do_patterns, LCONS(LCONS(sym_quote, LCONS(expr, R_NilValue)), LCONS(xnames, R_NilValue))), rho)); protecti++;
     SEXP sym_Reduce = install("Reduce");
     SEXP sym_intersect = install("intersect");
-    //cols = PROTECT(eval(LCONS(sym_Reduce, LCONS(sym_intersect, LCONS(lpat, R_NilValue))), rho)); protecti++;
+    SEXP ricols = eval(LCONS(sym_Reduce, LCONS(sym_intersect, LCONS(lpat, R_NilValue))), rho);
+    LOGICAL(with)[0] = 0;
     UNPROTECT(protecti);
-    return eval(LCONS(sym_Reduce, LCONS(sym_intersect, LCONS(lpat, R_NilValue))), rho);
+    return colnamesInt(x, ricols, ScalarLogical(false), ScalarLogical(inverse)); // handle inverse
   }
   // single symbol V2 might be also a function, to check that we need to evaluate, thus first we check if "V2" is existing column name, if not then we evaluate to see if it is a function.
-  // adding support of 'with' argument here may improve control, when with=FALSE then cols=eval(expr, rho) could be made straight away
+  // adding support of 'with' argument here may improve control, when with=FALSE then we could evaluate straight away
+  //Rprintf("symbol testing\n");
   SEXP expr_sym = R_NilValue, expr_sym_match = R_NilValue;
   if (isSymbol(expr) && mode_j) {  // V1, is.numeric
     SEXP xnames = getAttrib(x, R_NamesSymbol);
     if (isNull(xnames))
       error(_("'x' argument data.table has no names"));
     expr_sym = PROTECT(ScalarString(PRINTNAME(expr))); protecti++; // "V1", "is.numeric"
-    expr_sym_match = chmatch(expr_sym, xnames, 0);
+    expr_sym_match = PROTECT(chmatch(expr_sym, xnames, 0)); protecti++;
     if (INTEGER(expr_sym_match)[0]!=0) {
-      UNPROTECT(protecti);
-      return expr_sym_match;
+      if (inverse) {
+        LOGICAL(with)[0] = 1;
+        UNPROTECT(protecti);
+        return R_NilValue;
+      } else {
+        LOGICAL(with)[0] = 0;
+        UNPROTECT(protecti);
+        // no need to handle inverse because -V1 and !V1 should contiunue evaluation
+        //colnamesInt(x, expr_sym_match, ScalarLogical(false), ScalarLogical(inverse)); // handle inverse
+        return expr_sym_match;
+      }
     }
   }
-  // various cases where all have to be evaluated: c("V1","V2"), paste0("V",1:2), is.numeric, function(x) is.numeric(x), also `cols` symbol when there is no column named "cols"
-  SEXP value = PROTECT(eval(expr, rho)); protecti++;
+  /*
+   * there is a clash in handling j and .SDcols in the single place
+   * problem lies in the fact that .SDcols needs to evaluate to figure out that argument supplied is a function
+   * on the other hand j should not evaluate calls (other than `c`, `paste`, etc.), but just symbol (and when not already exists in dt names)
+   * because to aim is to know a set of columns that user attempts to get, not evaluate a j expression
+   */
+  SEXP value = R_NilValue;
+  // various cases where all have to be evaluated: c("V1","V2"), paste0("V",1:2), is.numeric, function(x) is.numeric(x), also `cols` symbol when there is no column named "cols" (INTEGER(expr_sym_match)[0])
+  if (mode_j) {
+    //SEXP attribute_hidden do_allnames(SEXP call, SEXP op, SEXP args, SEXP env)
+    if (true) { // TODO
+      LOGICAL(with)[0] = 1;
+      return R_NilValue;
+      //error("to do, return with=TRUE, to continue evaluation because j is not a columns selection");
+    } else {
+      /*
+       ( (!length(av<-all.vars(jsub)) || all(substring(av,1L,2L)=="..")) &&
+       root %chin% c("","c","paste","paste0","-","!") &&
+       missingby )
+       */
+      Rprintf("evaluation for j\n");
+      value = PROTECT(eval(expr, rho)); protecti++;  // evaluated value: c(2L,3L), c("V1","V2"), but not call objects anymore
+    }
+  } else if (mode_sd) {
+    //Rprintf("evaluation for .SDcols\n");
+    value = PROTECT(eval(expr, rho)); protecti++;
+  }
+  //Rprintf("post-evaluation\n");
   SEXP cols = R_NilValue;
   if (isFunction(value) && mode_sd) { // expr could be either symbol or language: f, function(x) x
     cols = PROTECT(funCols(x, expr, rho)); protecti++;
-  } else if (isSymbol(expr) && mode_j) { // handle error message consistently
-    if (isNull(expr_sym) || isNull(expr_sym_match))
-      error(_("internal error: expr symbol name, and if it matches to column names, should be known already")); // # nocov
-    cols = expr_sym;
-  } else if (isFunction(value) && mode_j) {
-    error(_("providing function as a column selection to 'j' argument is not supported, use '.SDcols' instead"));
-  } else { // evaluated value: c(2L,3L), c("V1","V2"), but not call objects anymore
+  } else {
     cols = value;
   }
   if (isNull(cols))

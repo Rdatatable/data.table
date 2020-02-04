@@ -912,7 +912,9 @@ replace_dot_alias = function(e) .Call(Creplace_dot_aliasR, e)
         } else {
           # FR #4979 - negative numeric and character indices for SDcols
           colsub = substitute(.SDcols)
-          new_ansvals = exprCols(x, colsub, ".SDcols", parent.frame())
+          with = copy(with)
+          #eval(substitute(new_ansvals <- exprCols(x, .colsub, ".SDcols", with, parent.frame()), list(.colsub=colsub)))
+          new_ansvals = NULL
           # fix for #5190. colsub[[1L]] gave error when it's a symbol.
           if (is.call(colsub) && deparse(colsub[[1L]], 500L, backtick=FALSE) %chin% c("!", "-")) {
             negate_sdcols = TRUE
@@ -922,7 +924,10 @@ replace_dot_alias = function(e) .Call(Creplace_dot_aliasR, e)
           while(is.call(colsub) && colsub[[1L]] == "(") colsub = as.list(colsub)[[-1L]]
           if (is.call(colsub) && length(colsub) == 3L && colsub[[1L]] == ":") {
             # .SDcols is of the format a:b
+            print(colsub) # debug #4231
+            print(setattr(as.list(seq_along(x)), 'names', names_x)) # debug #4231
             .SDcols = eval(colsub, setattr(as.list(seq_along(x)), 'names', names_x), parent.frame())
+            print(.SDcols) # debug #4231
           } else {
             if (is.call(colsub) && colsub[[1L]] == "patterns") {
               # each pattern gives a new filter condition, intersect the end result
@@ -959,9 +964,9 @@ replace_dot_alias = function(e) .Call(Creplace_dot_aliasR, e)
             # dups = FALSE here. DT[, .SD, .SDcols=c("x", "x")] again doesn't really help with which 'x' to keep (and if '-' which x to remove)
             ansvals = chmatch(ansvars, names_x)
           }
-          if (!isTRUE(m<-all.equal(ansvals, new_ansvals))) warning(m)
+          #if (!isTRUE(m<-all.equal(ansvals, new_ansvals))) warning(m)
           new_sdvars = new_ansvars = names_x[new_ansvals]
-          if (!isTRUE(m<-all.equal(sdvars, new_sdvars))) warning(m)
+          #if (!isTRUE(m<-all.equal(sdvars, new_sdvars))) warning(m)
         }
         # fix for long standing FR/bug, #495 and #484
         allcols = c(names_x, xdotprefix, names_i, idotprefix)
