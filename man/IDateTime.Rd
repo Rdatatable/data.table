@@ -93,6 +93,7 @@ year(x)
   \item{date}{date object convertible with \code{as.IDate}.}
   \item{time}{time-of-day object convertible with \code{as.ITime}.}
   \item{digits}{really \code{units}; one of the units listed for rounding. May be abbreviated.}
+  \item{units}{one of the units listed for truncating. May be abbreviated.}
   \item{ms}{ For \code{as.ITime} methods, what should be done with sub-second fractions of input? Valid values are \code{'truncate'} (floor), \code{'nearest'} (round), and \code{'ceil'} (ceiling). See Details. }
 }
 \details{
