@@ -1,10 +1,12 @@
 as.data.table.xts = function(x, keep.rownames = TRUE, key=NULL, ...) {
   stopifnot(requireNamespace("xts"), !missing(x), xts::is.xts(x))
+  if (length(keep.rownames) != 1L) stop("keep.rownames must be length 1")
+  if (is.na(keep.rownames)) stop("keep.rownames must not be NA")
   # as.data.frame.xts will handle copying, and
   #   the error check above ensures as.data.frame.xts is applied
   r = setDT(as.data.frame(x, row.names=NULL))
   if (identical(keep.rownames, FALSE)) return(r[])
-  index_nm = if (is.character(keep.rownames)) keep.rownames[1L] else "index"
+  index_nm = if (is.character(keep.rownames)) keep.rownames else "index"
   if (index_nm %chin% names(x)) stop(sprintf("Input xts object should not have '%s' column because it would result in duplicate column names. Rename '%s' column in xts or use `keep.rownames` to change the index col name.", index_nm, index_nm))
   r[, c(index_nm) := zoo::index(x)]
   setcolorder(r, c(index_nm, setdiff(names(r), index_nm)))
