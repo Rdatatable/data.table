@@ -16780,8 +16780,9 @@ test(2133.3, as.data.table(xts, keep.rownames = "VALUE"),
      error = "Input xts object should not have 'VALUE' column because it would result in duplicate column names. Rename 'VALUE' column in xts or use `keep.rownames` to change the index col name.")
 test(2133.4, as.data.table(xts, keep.rownames = character()),
      error = "keep.rownames must be length 1")
-test(2133.5, as.data.table(xts, keep.rownames = NA_character),
+test(2133.5, as.data.table(xts, keep.rownames = NA_character_),
      error = "keep.rownames must not be NA")
+     
 ########################
 #  Add new tests here  #
 ########################
