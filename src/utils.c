@@ -287,9 +287,15 @@ SEXP exprCols(SEXP x, SEXP expr, SEXP mode, SEXP with, SEXP rho) {
     error(_("columns selection is NULL")); // expr=((NULL))
   // non-evaluated case: V3:V2
   // single symbol V2 may or may not be evaluated, see below
-  if (isLanguage(expr) && CAR(expr)==sym_colon && ((mode_j && (!peeled || inverse)) || mode_sd)) {  // 3:2, V3:V2, min(V3):min(V2)
+  if (isLanguage(expr) && CAR(expr)==sym_colon && (
+    (mode_j && (!peeled || inverse)) || mode_sd
+  )) {  // 3:2, V3:V2, min(V3):min(V2)
     SEXP lhs = CADR(expr), rhs = CADDR(expr);
-    if ((isSymbol(lhs) && isSymbol(rhs)) || ((isInteger(lhs) || isReal(lhs)) && (isInteger(rhs) || isReal(rhs)))) {
+    if ((isLanguage(lhs) && CAR(lhs)==sym_minus && length(lhs)==2) || (isLanguage(rhs) && CAR(rhs)==sym_minus && length(rhs)==2)) // -V1:V2 is parsed as `:`(-V1, V2)
+      error("column selection mixes positives and negatives");
+    if ((isSymbol(lhs) && isSymbol(rhs)) || (
+        (isInteger(lhs) || isReal(lhs)) && (isInteger(rhs) || isReal(rhs))
+    )) {
       if (isSymbol(lhs) && isSymbol(rhs)) { // V3:V2
         lhs = colnamesInt(x, ScalarString(PRINTNAME(lhs)), ScalarLogical(false), ScalarLogical(false)); // may raise error if lhs column does not exists
         rhs = colnamesInt(x, ScalarString(PRINTNAME(rhs)), ScalarLogical(false), ScalarLogical(false));
@@ -306,7 +312,7 @@ SEXP exprCols(SEXP x, SEXP expr, SEXP mode, SEXP with, SEXP rho) {
     } else {
       Rprintf("sym_colon to evaluate later, a valid colon expression\n");
       LOGICAL(with)[0] = 1;
-      // evaluates later on: 3:2, f(V3):f(V2)
+      // evaluates later on: f(V3):f(V2)
       //Rf_PrintValue(lhs);
       //Rf_PrintValue(rhs);
     }
