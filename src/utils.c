@@ -265,7 +265,7 @@ SEXP exprCols(SEXP x, SEXP expr, SEXP mode, SEXP with, SEXP rho) {
   else
     error(_("Internal error: invalid 'mode' argument in exprCols function, should have been caught before. please report to data.table issue tracker.")); // # nocov
   // colnamesInt handles inverse selection: !cols_var, !"V2", !V2, !paste0("V",2:3)
-  bool inverse = isLanguage(expr) && (CAR(expr)==sym_bang || CAR(expr)==sym_minus); // length(expr)==2, otherwise V3-V2 will pick it up
+  bool inverse = isLanguage(expr) && (CAR(expr)==sym_bang || (CAR(expr)==sym_minus && length(expr)==2)); // length(expr)==2, otherwise V3-V2 will pick it up
   if (inverse)
     expr = CADR(expr);
   bool peeled = false;
@@ -287,11 +287,16 @@ SEXP exprCols(SEXP x, SEXP expr, SEXP mode, SEXP with, SEXP rho) {
     error(_("columns selection is NULL")); // expr=((NULL))
   // non-evaluated case: V3:V2
   // single symbol V2 may or may not be evaluated, see below
-  if (isLanguage(expr) && CAR(expr)==sym_colon) {  // 3:2, V3:V2, min(V3):min(V2)
+  if (isLanguage(expr) && CAR(expr)==sym_colon && ((mode_j && (!peeled || inverse)) || mode_sd)) {  // 3:2, V3:V2, min(V3):min(V2)
     SEXP lhs = CADR(expr), rhs = CADDR(expr);
-    if (isSymbol(lhs) && isSymbol(rhs)) { // V3:V2
-      lhs = colnamesInt(x, ScalarString(PRINTNAME(lhs)), ScalarLogical(false), ScalarLogical(false)); // may raise error if lhs column does not exists
-      rhs = colnamesInt(x, ScalarString(PRINTNAME(rhs)), ScalarLogical(false), ScalarLogical(false));
+    if ((isSymbol(lhs) && isSymbol(rhs)) || ((isInteger(lhs) || isReal(lhs)) && (isInteger(rhs) || isReal(rhs)))) {
+      if (isSymbol(lhs) && isSymbol(rhs)) { // V3:V2
+        lhs = colnamesInt(x, ScalarString(PRINTNAME(lhs)), ScalarLogical(false), ScalarLogical(false)); // may raise error if lhs column does not exists
+        rhs = colnamesInt(x, ScalarString(PRINTNAME(rhs)), ScalarLogical(false), ScalarLogical(false));
+      } else { // 3:2
+        lhs = colnamesInt(x, lhs, ScalarLogical(false), ScalarLogical(false));
+        rhs = colnamesInt(x, rhs, ScalarLogical(false), ScalarLogical(false));
+      }
       if (!isInteger(lhs) || !isInteger(rhs) || length(lhs)!=1 || length(rhs)!=1 || LOGICAL(lhs)[0]==NA_LOGICAL || LOGICAL(rhs)[0]==NA_LOGICAL)
         error(_("internal error: LHS and RHS of `:` call should be integer non-NA scalars already")); // # nocov
       SEXP ricols = PROTECT(range_int(INTEGER(lhs)[0], INTEGER(rhs)[0])); protecti++;
@@ -351,6 +356,7 @@ SEXP exprCols(SEXP x, SEXP expr, SEXP mode, SEXP with, SEXP rho) {
    * problem lies in the fact that .SDcols needs to evaluate to figure out that argument supplied is a function
    * on the other hand j should not evaluate calls (other than `c`, `paste`, etc.), but just symbol (and when not already exists in dt names)
    * because to aim is to know a set of columns that user attempts to get, not evaluate a j expression
+   * thus branching below
    */
   SEXP cols = R_NilValue;
   SEXP value = R_NilValue;
@@ -360,7 +366,7 @@ SEXP exprCols(SEXP x, SEXP expr, SEXP mode, SEXP with, SEXP rho) {
       if (isLanguage(expr) && !peeled && ( // !peeled required to escape eval of c("V1","V3") as (c("V1","V3"))
           CAR(expr)==install("c") || CAR(expr)==install("paste") || CAR(expr)==install("paste0")
       )) {
-        /* //SEXP attribute_hidden do_allnames(SEXP call, SEXP op, SEXP args, SEXP env)
+        /*
          ( (!length(av<-all.vars(jsub)) || all(substring(av,1L,2L)=="..")) &&
          root %chin% c("","c","paste","paste0","-","!") &&
          missingby )
