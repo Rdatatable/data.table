@@ -182,34 +182,43 @@ test(9999.355, exprCols(x, ((!c("V1","V3"))), ".SDcols", with, environment()), e
 test(9999.357, exprCols(x, {{!c("V1","V3")}}, "j", with, environment()), NULL)
 test(9999.358, exprCols(x, {{!c("V1","V3")}}, ".SDcols", with, environment()), error="invalid argument type")
 #test(9999.359, exprCols(x, {{!c("V1","V3")}}, "by", with, environment()), NULL)
+test(9999.361, exprCols(x, "V1,V3", "j", with, environment()), error="non existing") # multi column character scalar columns selection - only supported in by
+## TODO error message change from to
+# column(s) not found: V1,V3
+# argument specifying columns specify non existing column(s): cols[1]='V1,V3'
+test(9999.362, exprCols(x, "V1,V3", ".SDcols", with, environment()), error="non existing")
+## TODO error message change from to
+# Some items of .SDcols are not column names: [V1,V3]
+# argument specifying columns specify non existing column(s): cols[1]='V1,V3'
+#test(9999.363, exprCols(x, "V1,V3", "by", with, environment()), c(1L,3L)) # this only should work
+test(9999.364, exprCols(x, (("V1,V3")), "j", with, environment()), NULL)
+test(9999.365, exprCols(x, (("V1,V3")), ".SDcols", with, environment()), error="non existing")
+## TODO error message change from to
+# Some items of .SDcols are not column names: [V1,V3]
+# argument specifying columns specify non existing column(s): cols[1]='V1,V3'
+#test(9999.366, exprCols(x, (("V1,V3")), "by", with, environment()), NULL)
+test(9999.367, exprCols(x, {{"V1,V3"}}, "j", with, environment()), NULL)
+test(9999.368, exprCols(x, {{"V1,V3"}}, ".SDcols", with, environment()), error="non existing")
+#test(9999.369, exprCols(x, {{"V1,V3"}}, "by", with, environment()), NULL)
 #DEV
-test(9999.361, exprCols(x, "V1,V3", "j", with, environment()), 1L) # multi column character scalar columns selection - only supported in by
-test(9999.362, exprCols(x, "V1,V3", ".SDcols", with, environment()), 1L)
-#test(9999.363, exprCols(x, "V1,V3", "by", with, environment()), 1L)
-test(9999.364, exprCols(x, (("V1,V3")), "j", with, environment()), 1L)
-test(9999.365, exprCols(x, (("V1,V3")), ".SDcols", with, environment()), 1L)
-#test(9999.366, exprCols(x, (("V1,V3")), "by", with, environment()), 1L)
-test(9999.367, exprCols(x, {{"V1,V3"}}, "j", with, environment()), 1L)
-test(9999.368, exprCols(x, {{"V1,V3"}}, ".SDcols", with, environment()), 1L)
-#test(9999.369, exprCols(x, {{"V1,V3"}}, "by", with, environment()), 1L)
 test(9999.361, exprCols(x, -"V1,V3", "j", with, environment()), 1L)
 test(9999.362, exprCols(x, -"V1,V3", ".SDcols", with, environment()), 1L)
-#test(9999.363, exprCols(x, -"V1,V3", "by", with, environment()), 1L)
+#test(9999.363, exprCols(x, -"V1,V3", "by", with, environment()), error="invalid argument to unary operator")
 test(9999.364, exprCols(x, ((-"V1,V3")), "j", with, environment()), 1L)
 test(9999.365, exprCols(x, ((-"V1,V3")), ".SDcols", with, environment()), 1L)
-#test(9999.366, exprCols(x, ((-"V1,V3")), "by", with, environment()), 1L)
+#test(9999.366, exprCols(x, ((-"V1,V3")), "by", with, environment()), error="invalid argument to unary operator")
 test(9999.367, exprCols(x, {{-"V1,V3"}}, "j", with, environment()), 1L)
 test(9999.368, exprCols(x, {{-"V1,V3"}}, ".SDcols", with, environment()), 1L)
-#test(9999.369, exprCols(x, {{-"V1,V3"}}, "by", with, environment()), 1L)
+#test(9999.369, exprCols(x, {{-"V1,V3"}}, "by", with, environment()), error="invalid argument to unary operator")
 test(9999.371, exprCols(x, !"V1,V3", "j", with, environment()), 1L)
 test(9999.372, exprCols(x, !"V1,V3", ".SDcols", with, environment()), 1L)
-#test(9999.373, exprCols(x, !"V1,V3", "by", with, environment()), 1L)
+#test(9999.373, exprCols(x, !"V1,V3", "by", with, environment()), error="invalid argument type")
 test(9999.374, exprCols(x, ((!"V1,V3")), "j", with, environment()), 1L)
 test(9999.375, exprCols(x, ((!"V1,V3")), ".SDcols", with, environment()), 1L)
-#test(9999.376, exprCols(x, ((!"V1,V3")), "by", with, environment()), 1L)
+#test(9999.376, exprCols(x, ((!"V1,V3")), "by", with, environment()), error="invalid argument type")
 test(9999.377, exprCols(x, {{!"V1,V3"}}, "j", with, environment()), 1L)
 test(9999.378, exprCols(x, {{!"V1,V3"}}, ".SDcols", with, environment()), 1L)
-#test(9999.379, exprCols(x, {{!"V1,V3"}}, "by", with, environment()), 1L)
+#test(9999.379, exprCols(x, {{!"V1,V3"}}, "by", with, environment()), error="invalid argument type")
 # numeric
 test(9999.401, exprCols(x, 1L, "j", with, environment()), 1L)
 test(9999.402, exprCols(x, 1L, ".SDcols", with, environment()), 1L)
@@ -594,12 +603,13 @@ test(9999.958, exprCols(x, {{!..cols}}, ".SDcols", with, environment()), 1L)
 #test(9999.959, exprCols(x, {{!..cols}}, "by", with, environment()), 1L)
 rm(cols)
 
-# incorrect length logical
+# incorrect length logical #4115
 # incorrect length logical as variable in parent scope
 
 # TODO test for !!V3 --V3
 
 # function
+## !function
 
 # patterns
 ## !patterns

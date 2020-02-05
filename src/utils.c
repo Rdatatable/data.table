@@ -335,7 +335,7 @@ SEXP exprCols(SEXP x, SEXP expr, SEXP mode, SEXP with, SEXP rho) {
    */
   SEXP cols = R_NilValue;
   SEXP value = R_NilValue;
-  // various cases where all have to be evaluated: c("V1","V2"), paste0("V",1:2), is.numeric, function(x) is.numeric(x), also `cols` symbol when there is no column named "cols" (INTEGER(expr_sym_match)[0])
+  // various cases where all have to be evaluated: c("V1","V2"), paste0("V",1:2), is.numeric, function(x) is.numeric(x), also `cols` symbol when there is no column named "cols" (INTEGER(expr_sym_match)[0]), or already evaluated "V1"
   if (mode_j) {
     if (isLanguage(expr) || isSymbol(expr)) {
       if (isLanguage(expr) && !peeled && ( // !peeled required to escape eval of c("V1","V3") as (c("V1","V3"))
@@ -351,8 +351,13 @@ SEXP exprCols(SEXP x, SEXP expr, SEXP mode, SEXP with, SEXP rho) {
         LOGICAL(with)[0] = 1;
         return R_NilValue;
       }
-    } else {
-      value = expr; // already evaluated
+    } else { // "V1,V2" should evaluate, unless in by
+      if (!peeled) {
+        value = expr; // already evaluated
+      } else { // (("V1,V2"))
+        LOGICAL(with)[0] = 1;
+        return R_NilValue;
+      }
     }
   } else if (mode_sd) {
     value = PROTECT(eval(expr, rho)); protecti++;
