@@ -152,12 +152,31 @@ SEXP colnamesInt(SEXP x, SEXP cols, SEXP check_dups, SEXP inverse) {
       error(_("'x' argument data.table has no names"));
     ricols = PROTECT(chmatch(cols, xnames, 0)); protecti++;
     int *icols = INTEGER(ricols);
-    for (int i=0; i<nc; i++) {
-      if (icols[i]==0)
-        error(_("argument specifying columns specify non existing column(s): cols[%d]='%s'"), i+1, CHAR(STRING_ELT(cols, i))); // handles NAs also
-    }
-    if (binverse) { // could be improved
-      SEXP notricols = ricols;
+    if (!binverse) {
+      for (int i=0; i<nc; i++) {
+        if (icols[i]==0)
+          error(_("argument specifying columns specify non existing column(s): cols[%d]='%s'"), i+1, CHAR(STRING_ELT(cols, i))); // handles NAs also
+      }
+    } else { // could be improved, handling waning of DT[, -"col_not_there"] adds a lot
+      SEXP inot_cols = PROTECT(allocVector(INTSXP, nc)); protecti++;
+      int *pinot_cols = INTEGER(inot_cols);
+      int not_cols_n = 0;
+      for (int i=0; i<nc; i++) {
+        if (icols[i]==0)
+          pinot_cols[not_cols_n++] = i+1;
+      }
+      SEXP notricols = R_NilValue;
+      if (not_cols_n) {
+        SETLENGTH(inot_cols, not_cols_n);
+        SEXP not_cols = PROTECT(eval(lang3(install("["), cols, inot_cols), R_GlobalEnv)); protecti++;
+        SEXP collapse = PROTECT(lang3(install("paste"), not_cols, ScalarString(PRINTNAME(install(", "))))); protecti++;
+        SET_TAG(CDDR(collapse), install("collapse"));
+        SEXP collapsed = PROTECT(eval(collapse, R_GlobalEnv)); protecti++;
+        warning("column(s) not excluded because not found: %s", CHAR(STRING_ELT(collapsed, 0)));
+        notricols = ricols; // setdiff'ed anyway so missing cols can stay here
+      } else {
+        notricols = ricols;
+      }
       SEXP allcols = PROTECT(range_int(1, nx)); protecti++;
       SEXP setdiff_call = PROTECT(lang3(install("setdiff"), allcols, notricols)); protecti++;
       ricols = PROTECT(eval(setdiff_call, R_GlobalEnv)); protecti++;
