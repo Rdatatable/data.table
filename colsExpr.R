@@ -19,9 +19,9 @@ test(9999.115, exprCols(x, ((V1)), ".SDcols", with, environment()), error="objec
 test(9999.117, exprCols(x, {{V1}}, "j", with, environment()), 1L) # peel from {
 test(9999.118, exprCols(x, {{V1}}, ".SDcols", with, environment()), error="object 'V1' not found")
 #test(9999.119, exprCols(x, {{V1}}, "by", with, environment()), 1L)
-test(9999.121, exprCols(x, -V1, "j", with, environment()), 2:5) # minus inverse selection
+test(9999.121, exprCols(x, -V1, "j", with, environment()), NULL) # minus on column not an inverse selection
 test(9999.122, exprCols(x, -V1, ".SDcols", with, environment()), error="object 'V1' not found")
-#test(9999.123, exprCols(x, -V1, "by", with, environment()), 2:5)
+#test(9999.123, exprCols(x, -V1, "by", with, environment()), NULL)
 test(9999.124, exprCols(x, ((-V1)), "j", with, environment()), NULL) # inverse selection only works before peeling
 test(9999.125, exprCols(x, ((-V1)), ".SDcols", with, environment()), error="object 'V1' not found")
 #test(9999.126, exprCols(x, ((-V1)), "by", with, environment()), NULL)
@@ -131,12 +131,12 @@ test(9999.238, exprCols(x, {{!(V3:V1)}}, ".SDcols", with, environment()), error=
 test(9999.301, exprCols(x, "V1", "j", with, environment()), 1L) # character column selection
 test(9999.302, exprCols(x, "V1", ".SDcols", with, environment()), 1L)
 #test(9999.303, exprCols(x, "V1", "by", with, environment()), 1L)
-test(9999.304, exprCols(x, (("V1")), "j", with, environment()), 1L)
+test(9999.304, exprCols(x, (("V1")), "j", with, environment()), NULL) # peeling stops NSE
 test(9999.305, exprCols(x, (("V1")), ".SDcols", with, environment()), 1L)
-#test(9999.306, exprCols(x, (("V1")), "by", with, environment()), 1L)
-test(9999.307, exprCols(x, {{"V1"}}, "j", with, environment()), 1L)
+#test(9999.306, exprCols(x, (("V1")), "by", with, environment()), NULL)
+test(9999.307, exprCols(x, {{"V1"}}, "j", with, environment()), NULL)
 test(9999.308, exprCols(x, {{"V1"}}, ".SDcols", with, environment()), 1L)
-#test(9999.309, exprCols(x, {{"V1"}}, "by", with, environment()), 1L)
+#test(9999.309, exprCols(x, {{"V1"}}, "by", with, environment()), NULL)
 test(9999.311, exprCols(x, -"V1", "j", with, environment()), 2:5) # minus inverse character column selection
 test(9999.312, exprCols(x, -"V1", ".SDcols", with, environment()), 2:5)
 #test(9999.313, exprCols(x, -"V1", "by", with, environment()), 2:5)
