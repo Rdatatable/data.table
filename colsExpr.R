@@ -128,8 +128,7 @@ test(9999.237, exprCols(x, {{!(V3:V1)}}, "j", with, environment()), NULL)
 test(9999.238, exprCols(x, {{!(V3:V1)}}, ".SDcols", with, environment()), error="object 'V3' not found")
 #test(9999.239, exprCols(x, {{!(V3:V1)}}, "by", with, environment()), NULL)
 # character
-#TODO
-test(9999.301, exprCols(x, "V1", "j", with, environment()), 1L)
+test(9999.301, exprCols(x, "V1", "j", with, environment()), 1L) # character column selection
 test(9999.302, exprCols(x, "V1", ".SDcols", with, environment()), 1L)
 #test(9999.303, exprCols(x, "V1", "by", with, environment()), 1L)
 test(9999.304, exprCols(x, (("V1")), "j", with, environment()), 1L)
@@ -138,52 +137,53 @@ test(9999.305, exprCols(x, (("V1")), ".SDcols", with, environment()), 1L)
 test(9999.307, exprCols(x, {{"V1"}}, "j", with, environment()), 1L)
 test(9999.308, exprCols(x, {{"V1"}}, ".SDcols", with, environment()), 1L)
 #test(9999.309, exprCols(x, {{"V1"}}, "by", with, environment()), 1L)
-test(9999.311, exprCols(x, -"V1", "j", with, environment()), 1L)
-test(9999.312, exprCols(x, -"V1", ".SDcols", with, environment()), 1L)
-#test(9999.313, exprCols(x, -"V1", "by", with, environment()), 1L)
-test(9999.314, exprCols(x, ((-"V1")), "j", with, environment()), 1L)
-test(9999.315, exprCols(x, ((-"V1")), ".SDcols", with, environment()), 1L)
-#test(9999.316, exprCols(x, ((-"V1")), "by", with, environment()), 1L)
-test(9999.317, exprCols(x, {{-"V1"}}, "j", with, environment()), 1L)
-test(9999.318, exprCols(x, {{-"V1"}}, ".SDcols", with, environment()), 1L)
-#test(9999.319, exprCols(x, {{-"V1"}}, "by", with, environment()), 1L)
-test(9999.321, exprCols(x, !"V1", "j", with, environment()), 1L)
-test(9999.322, exprCols(x, !"V1", ".SDcols", with, environment()), 1L)
-#test(9999.323, exprCols(x, !"V1", "by", with, environment()), 1L)
-test(9999.324, exprCols(x, ((!"V1")), "j", with, environment()), 1L)
-test(9999.325, exprCols(x, ((!"V1")), ".SDcols", with, environment()), 1L)
-#test(9999.326, exprCols(x, ((!"V1")), "by", with, environment()), 1L)
-test(9999.327, exprCols(x, {{!"V1"}}, "j", with, environment()), 1L)
-test(9999.328, exprCols(x, {{!"V1"}}, ".SDcols", with, environment()), 1L)
-#test(9999.329, exprCols(x, {{!"V1"}}, "by", with, environment()), 1L)
-test(9999.331, exprCols(x, c("V1","V3"), "j", with, environment()), 1L)
-test(9999.332, exprCols(x, c("V1","V3"), ".SDcols", with, environment()), 1L)
-#test(9999.333, exprCols(x, c("V1","V3"), "by", with, environment()), 1L)
-test(9999.334, exprCols(x, ((c("V1","V3"))), "j", with, environment()), 1L)
-test(9999.335, exprCols(x, ((c("V1","V3"))), ".SDcols", with, environment()), 1L)
-#test(9999.336, exprCols(x, ((c("V1","V3"))), "by", with, environment()), 1L)
-test(9999.337, exprCols(x, {{c("V1","V3")}}, "j", with, environment()), 1L)
-test(9999.338, exprCols(x, {{c("V1","V3")}}, ".SDcols", with, environment()), 1L)
-#test(9999.339, exprCols(x, {{c("V1","V3")}}, patterns"by", with, environment()), 1L)
-test(9999.341, exprCols(x, -c("V1","V3"), "j", with, environment()), 1L)
-test(9999.342, exprCols(x, -c("V1","V3"), ".SDcols", with, environment()), 1L)
-#test(9999.343, exprCols(x, -c("V1","V3"), "by", with, environment()), 1L)
-test(9999.344, exprCols(x, ((-c("V1","V3"))), "j", with, environment()), 1L)
-test(9999.345, exprCols(x, ((-c("V1","V3"))), ".SDcols", with, environment()), 1L)
-#test(9999.346, exprCols(x, ((-c("V1","V3"))), "by", with, environment()), 1L)
-test(9999.347, exprCols(x, {{-c("V1","V3")}}, "j", with, environment()), 1L)
-test(9999.348, exprCols(x, {{-c("V1","V3")}}, ".SDcols", with, environment()), 1L)
-#test(9999.349, exprCols(x, {{-c("V1","V3")}}, "by", with, environment()), 1L)
-test(9999.351, exprCols(x, !c("V1","V3"), "j", with, environment()), 1L)
-test(9999.352, exprCols(x, !c("V1","V3"), ".SDcols", with, environment()), 1L)
-#test(9999.353, exprCols(x, !c("V1","V3"), "by", with, environment()), 1L)
-test(9999.354, exprCols(x, ((!c("V1","V3"))), "j", with, environment()), 1L)
-test(9999.355, exprCols(x, ((!c("V1","V3"))), ".SDcols", with, environment()), 1L)
-#test(9999.356, exprCols(x, ((!c("V1","V3"))), "by", with, environment()), 1L)
-test(9999.357, exprCols(x, {{!c("V1","V3")}}, "j", with, environment()), 1L)
-test(9999.358, exprCols(x, {{!c("V1","V3")}}, ".SDcols", with, environment()), 1L)
-#test(9999.359, exprCols(x, {{!c("V1","V3")}}, "by", with, environment()), 1L)
-test(9999.361, exprCols(x, "V1,V3", "j", with, environment()), 1L)
+test(9999.311, exprCols(x, -"V1", "j", with, environment()), 2:5) # minus inverse character column selection
+test(9999.312, exprCols(x, -"V1", ".SDcols", with, environment()), 2:5)
+#test(9999.313, exprCols(x, -"V1", "by", with, environment()), 2:5)
+test(9999.314, exprCols(x, ((-"V1")), "j", with, environment()), NULL)
+test(9999.315, exprCols(x, ((-"V1")), ".SDcols", with, environment()), error="invalid argument to unary operator")
+#test(9999.316, exprCols(x, ((-"V1")), "by", with, environment()), NULL)
+test(9999.317, exprCols(x, {{-"V1"}}, "j", with, environment()), NULL)
+test(9999.318, exprCols(x, {{-"V1"}}, ".SDcols", with, environment()), error="invalid argument to unary operator")
+#test(9999.319, exprCols(x, {{-"V1"}}, "by", with, environment()), NULL)
+test(9999.321, exprCols(x, !"V1", "j", with, environment()), 2:5) # bang inverse character column selection
+test(9999.322, exprCols(x, !"V1", ".SDcols", with, environment()), 2:5)
+#test(9999.323, exprCols(x, !"V1", "by", with, environment()), 2:5)
+test(9999.324, exprCols(x, ((!"V1")), "j", with, environment()), NULL)
+test(9999.325, exprCols(x, ((!"V1")), ".SDcols", with, environment()), error="invalid argument type")
+#test(9999.326, exprCols(x, ((!"V1")), "by", with, environment()), NULL)
+test(9999.327, exprCols(x, {{!"V1"}}, "j", with, environment()), NULL)
+test(9999.328, exprCols(x, {{!"V1"}}, ".SDcols", with, environment()), error="invalid argument type")
+#test(9999.329, exprCols(x, {{!"V1"}}, "by", with, environment()), NULL)
+test(9999.331, exprCols(x, c("V1","V3"), "j", with, environment()), c(1L,3L)) # character vector columns selection
+test(9999.332, exprCols(x, c("V1","V3"), ".SDcols", with, environment()), c(1L,3L))
+#test(9999.333, exprCols(x, c("V1","V3"), "by", with, environment()), c(1L,3L))
+test(9999.334, exprCols(x, ((c("V1","V3"))), "j", with, environment()), NULL) # wrapped character vector columns selection
+test(9999.335, exprCols(x, ((c("V1","V3"))), ".SDcols", with, environment()), c(1L,3L))
+#test(9999.336, exprCols(x, ((c("V1","V3"))), "by", with, environment()), NULL)
+test(9999.337, exprCols(x, {{c("V1","V3")}}, "j", with, environment()), NULL) # another wrapped character vector columns selection
+test(9999.338, exprCols(x, {{c("V1","V3")}}, ".SDcols", with, environment()), c(1L,3L))
+#test(9999.339, exprCols(x, {{c("V1","V3")}}, patterns"by", with, environment()), NULL)
+test(9999.341, exprCols(x, -c("V1","V3"), "j", with, environment()), c(2L,4L,5L)) # minus inverse character vector columns selection
+test(9999.342, exprCols(x, -c("V1","V3"), ".SDcols", with, environment()), c(2L,4L,5L))
+#test(9999.343, exprCols(x, -c("V1","V3"), "by", with, environment()), c(2L,4L,5L))
+test(9999.344, exprCols(x, ((-c("V1","V3"))), "j", with, environment()), NULL)
+test(9999.345, exprCols(x, ((-c("V1","V3"))), ".SDcols", with, environment()), error="invalid argument to unary operator")
+#test(9999.346, exprCols(x, ((-c("V1","V3"))), "by", with, environment()), NULL)
+test(9999.347, exprCols(x, {{-c("V1","V3")}}, "j", with, environment()), NULL)
+test(9999.348, exprCols(x, {{-c("V1","V3")}}, ".SDcols", with, environment()), error="invalid argument to unary operator")
+#test(9999.349, exprCols(x, {{-c("V1","V3")}}, "by", with, environment()), NULL)
+test(9999.351, exprCols(x, !c("V1","V3"), "j", with, environment()), c(2L,4L,5L)) # bang inverse character vector columns selection
+test(9999.352, exprCols(x, !c("V1","V3"), ".SDcols", with, environment()), c(2L,4L,5L))
+#test(9999.353, exprCols(x, !c("V1","V3"), "by", with, environment()), c(2L,4L,5L))
+test(9999.354, exprCols(x, ((!c("V1","V3"))), "j", with, environment()), NULL)
+test(9999.355, exprCols(x, ((!c("V1","V3"))), ".SDcols", with, environment()), error="invalid argument type")
+#test(9999.356, exprCols(x, ((!c("V1","V3"))), "by", with, environment()), NULL)
+test(9999.357, exprCols(x, {{!c("V1","V3")}}, "j", with, environment()), NULL)
+test(9999.358, exprCols(x, {{!c("V1","V3")}}, ".SDcols", with, environment()), error="invalid argument type")
+#test(9999.359, exprCols(x, {{!c("V1","V3")}}, "by", with, environment()), NULL)
+#DEV
+test(9999.361, exprCols(x, "V1,V3", "j", with, environment()), 1L) # multi column character scalar columns selection - only supported in by
 test(9999.362, exprCols(x, "V1,V3", ".SDcols", with, environment()), 1L)
 #test(9999.363, exprCols(x, "V1,V3", "by", with, environment()), 1L)
 test(9999.364, exprCols(x, (("V1,V3")), "j", with, environment()), 1L)
@@ -597,11 +597,12 @@ rm(cols)
 # incorrect length logical
 # incorrect length logical as variable in parent scope
 
+# TODO test for !!V3 --V3
+
 # function
 
 # patterns
 ## !patterns
-
 
 ## old tests
 

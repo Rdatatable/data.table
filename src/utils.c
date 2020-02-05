@@ -150,23 +150,17 @@ SEXP colnamesInt(SEXP x, SEXP cols, SEXP check_dups, SEXP inverse) {
     SEXP xnames = getAttrib(x, R_NamesSymbol);
     if (isNull(xnames))
       error(_("'x' argument data.table has no names"));
-    if (!binverse) {
-      ricols = PROTECT(chmatch(cols, xnames, 0)); protecti++;
-      int *icols = INTEGER(ricols);
-      for (int i=0; i<nc; i++) {
-        if (icols[i]==0)
-          error(_("argument specifying columns specify non existing column(s): cols[%d]='%s'"), i+1, CHAR(STRING_ELT(cols, i))); // handles NAs also
-      }
-    } else {
-      error("todo colnamesInt inverse isString");
-      /*SEXP xmatch = PROTECT(chmatch(xnames, cols, 0)); protecti++; // we actually need a no-match
-      int *xmatchp = INTEGER(xmatch);
-      int len = 0;
-      for (int i=0; i<length(xmatch); i++) {
-        if (xmatchp[i]==0)
-          len++; // TODO as tests for NAs!
-      }
-      ricols = PROTECT(allocVector(INTSXP, len)); protecti++;*/
+    ricols = PROTECT(chmatch(cols, xnames, 0)); protecti++;
+    int *icols = INTEGER(ricols);
+    for (int i=0; i<nc; i++) {
+      if (icols[i]==0)
+        error(_("argument specifying columns specify non existing column(s): cols[%d]='%s'"), i+1, CHAR(STRING_ELT(cols, i))); // handles NAs also
+    }
+    if (binverse) { // could be improved
+      SEXP notricols = ricols;
+      SEXP allcols = PROTECT(range_int(1, nx)); protecti++;
+      SEXP setdiff_call = PROTECT(lang3(install("setdiff"), allcols, notricols)); protecti++;
+      ricols = PROTECT(eval(setdiff_call, R_GlobalEnv)); protecti++;
     }
   } else if (isLogical(cols)) {
     int *lcols = LOGICAL(cols);
@@ -251,19 +245,21 @@ SEXP exprCols(SEXP x, SEXP expr, SEXP mode, SEXP with, SEXP rho) {
     mode_sd = true;
   else
     error(_("Internal error: invalid 'mode' argument in exprCols function, should have been caught before. please report to data.table issue tracker.")); // # nocov
-  // TODO in colnamesInt: handle inverse selection: !cols_var, !"V2", !V2, !paste0("V",2:3)
-  // but not !V3:V2, we could handle that as well but do we really want?
-  // we already have tests for !(V3:V2) so we do want to support that
-  // TODO test for !!V3
+  // colnamesInt handles inverse selection: !cols_var, !"V2", !V2, !paste0("V",2:3)
   bool inverse = isLanguage(expr) && (CAR(expr)==sym_bang || CAR(expr)==sym_minus); // length(expr)==2, otherwise V3-V2 will pick it up
   if (inverse)
     expr = CADR(expr);
+  bool peeled = false;
   SEXP sym_parenthesis = install("(");
-  while (isLanguage(expr) && CAR(expr)==sym_parenthesis)
+  while (isLanguage(expr) && CAR(expr)==sym_parenthesis) {
     expr = CADR(expr);
+    peeled = true;
+  }
   SEXP sym_brackets = install("{");
-  while (isLanguage(expr) && CAR(expr)==sym_brackets && length(expr)==2)
+  while (isLanguage(expr) && CAR(expr)==sym_brackets && length(expr)==2) {
     expr = CADR(expr); // verify #376, 2121.2
+    peeled = true;
+  }
   SEXP sym_eval = install("eval"); // test num??
   if (isLanguage(expr) && CAR(expr)==sym_eval) {
     error("to do, eval call in j/.sdcols");
@@ -337,29 +333,30 @@ SEXP exprCols(SEXP x, SEXP expr, SEXP mode, SEXP with, SEXP rho) {
    * on the other hand j should not evaluate calls (other than `c`, `paste`, etc.), but just symbol (and when not already exists in dt names)
    * because to aim is to know a set of columns that user attempts to get, not evaluate a j expression
    */
+  SEXP cols = R_NilValue;
   SEXP value = R_NilValue;
   // various cases where all have to be evaluated: c("V1","V2"), paste0("V",1:2), is.numeric, function(x) is.numeric(x), also `cols` symbol when there is no column named "cols" (INTEGER(expr_sym_match)[0])
   if (mode_j) {
-    //SEXP attribute_hidden do_allnames(SEXP call, SEXP op, SEXP args, SEXP env)
-    if (true) { // TODO
-      LOGICAL(with)[0] = 1;
-      return R_NilValue;
-      //error("to do, return with=TRUE, to continue evaluation because j is not a columns selection");
+    if (isLanguage(expr) || isSymbol(expr)) {
+      if (isLanguage(expr) && !peeled && ( // !peeled required to escape eval of c("V1","V3") as (c("V1","V3"))
+          CAR(expr)==install("c") || CAR(expr)==install("paste") || CAR(expr)==install("paste0")
+      )) {
+        /* //SEXP attribute_hidden do_allnames(SEXP call, SEXP op, SEXP args, SEXP env)
+         ( (!length(av<-all.vars(jsub)) || all(substring(av,1L,2L)=="..")) &&
+         root %chin% c("","c","paste","paste0","-","!") &&
+         missingby )
+         */
+        value = PROTECT(eval(expr, rho)); protecti++;  // evaluated value: c(2L,3L), c("V1","V2"), but not call objects anymore
+      } else {
+        LOGICAL(with)[0] = 1;
+        return R_NilValue;
+      }
     } else {
-      /*
-       ( (!length(av<-all.vars(jsub)) || all(substring(av,1L,2L)=="..")) &&
-       root %chin% c("","c","paste","paste0","-","!") &&
-       missingby )
-       */
-      Rprintf("evaluation for j\n");
-      value = PROTECT(eval(expr, rho)); protecti++;  // evaluated value: c(2L,3L), c("V1","V2"), but not call objects anymore
+      value = expr; // already evaluated
     }
   } else if (mode_sd) {
-    //Rprintf("evaluation for .SDcols\n");
     value = PROTECT(eval(expr, rho)); protecti++;
   }
-  //Rprintf("post-evaluation\n");
-  SEXP cols = R_NilValue;
   if (isFunction(value) && mode_sd) { // expr could be either symbol or language: f, function(x) x
     cols = PROTECT(funCols(x, expr, rho)); protecti++;
   } else {
