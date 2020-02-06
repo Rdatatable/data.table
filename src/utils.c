@@ -333,28 +333,70 @@ SEXP exprCols(SEXP x, SEXP expr, SEXP mode, SEXP with, SEXP rho) {
     UNPROTECT(protecti);
     return colnamesInt(x, ricols, ScalarLogical(false), ScalarLogical(inverse)); // handle inverse
   }
+  // dotdot prefix handling
+  if (mode_j && (isSymbol(expr) || isLanguage(expr)) && !peeled) {
+    //SEXP x = PROTECT(x); protecti++;
+    // all(substring(av,1L,2L)=="..")
+    SEXP jexpr = PROTECT(eval(lang2(install("expression"), expr), R_GlobalEnv)); protecti++;
+    SEXP av = PROTECT(eval(lang2(install("all.vars"), jexpr), R_GlobalEnv)); protecti++;
+    if (length(av)) {
+      SEXP av12 = PROTECT(eval(lang4(install("substring"), av, ScalarInteger(1), ScalarInteger(2)), R_GlobalEnv)); protecti++;
+      SEXP avdd = PROTECT(eval(lang3(install("=="), av12, ScalarString(PRINTNAME(install("..")))), R_GlobalEnv)); protecti++;
+      SEXP alldd = PROTECT(eval(lang2(install("all"), avdd), R_GlobalEnv)); protecti++;
+      if (LOGICAL(alldd)[0]) {
+        SEXP ddname=R_NilValue, name=R_NilValue, name_exists=R_NilValue, ddname_exists=R_NilValue;
+        SEXP av3 = PROTECT(eval(lang3(install("substring"), av, ScalarInteger(3)), R_GlobalEnv)); protecti++;
+        for (int i=0; i<length(av); i++) {
+          ddname = STRING_ELT(av, i);
+          name = STRING_ELT(av3, i); // PROTECT(eval(lang3(install("substring"), ddname, ScalarInteger(3)), R_GlobalEnv)); protecti++;
+          if (!strcmp(CHAR(STRING_ELT(name, 0)), ""))
+            error("The symbol .. is invalid. The .. prefix must be followed by at least one character.");
+          name_exists = PROTECT(eval(lang3(install("exists"), name, rho), R_GlobalEnv)); protecti++;
+          ddname_exists = PROTECT(eval(lang3(install("exists"), ddname, rho), R_GlobalEnv)); protecti++;
+          if (!LOGICAL(name_exists)[0]) {
+            if (!LOGICAL(ddname_exists)[0])
+              error("Variable '%s' is not found in calling scope. Looking in calling scope because you used the .. prefix.", CHAR(STRING_ELT(name, 0)));
+            else
+              error("Variable '%s' is not found in calling scope. Looking in calling scope because you used the .. prefix. Variable '..%S' does exist in calling scope though, so please just removed the .. prefix from that variable name in calling scope.", CHAR(STRING_ELT(name, 0)), CHAR(STRING_ELT(name, 0)));
+          } else if (LOGICAL(ddname_exists)[0])
+            warning("Both '%s' and '..%s' exist in calling scope. Please remove the '..%s' variable in calling scope for clarity.", CHAR(STRING_ELT(name, 0)), CHAR(STRING_ELT(name, 0)), CHAR(STRING_ELT(name, 0)));
+        }
+        error("TODO");
+        /*
+         ..syms = av
+         names(..syms) = ..syms
+         j = eval(
+           expr = jsub,
+           envir = lapply(substring(..syms,3L), get, pos=parent.frame()),
+           enclos = parent.frame()
+         )
+         
+         eval(jexpr, lapply(av3, get, pos=parent.frame()), enclos=parent.frame())
+         */
+        SEXP cols = R_NilValue;
+        Rprintf("success\n");
+        LOGICAL(with)[0] = 0;
+        UNPROTECT(protecti);
+        return colnamesInt(x, cols, ScalarLogical(false), ScalarLogical(inverse));
+      }
+    }
+  }
   // single symbol V2 might be also a function, to check that we need to evaluate, thus first we check if "V2" is existing column name, if not then we evaluate to see if it is a function.
   // adding support of 'with' argument here may improve control, when with=FALSE then we could evaluate straight away
-  //Rprintf("symbol testing\n");
-  SEXP expr_sym = R_NilValue, expr_sym_match = R_NilValue;
-  if (isSymbol(expr) && mode_j) {  // V1, is.numeric
+  SEXP expr_char = R_NilValue, expr_sym = R_NilValue, expr_sym_match = R_NilValue;
+  if (isSymbol(expr) && mode_j && !peeled && !inverse) {  // V1, is.numeric
     SEXP xnames = getAttrib(x, R_NamesSymbol);
     if (isNull(xnames))
       error(_("'x' argument data.table has no names"));
-    expr_sym = PROTECT(ScalarString(PRINTNAME(expr))); protecti++; // "V1", "is.numeric"
+    expr_char = PROTECT(PRINTNAME(expr)); protecti++; // charsxp
+    expr_sym = PROTECT(ScalarString(expr_char)); protecti++; // "V1", "is.numeric"
     expr_sym_match = PROTECT(chmatch(expr_sym, xnames, 0)); protecti++;
-    if (INTEGER(expr_sym_match)[0]!=0) {
-      if (inverse) {
-        LOGICAL(with)[0] = 1;
-        UNPROTECT(protecti);
-        return R_NilValue;
-      } else {
-        LOGICAL(with)[0] = 0;
-        UNPROTECT(protecti);
-        // no need to handle inverse because -V1 and !V1 should contiunue evaluation
-        //colnamesInt(x, expr_sym_match, ScalarLogical(false), ScalarLogical(inverse)); // handle inverse
-        return expr_sym_match;
-      }
+    if (INTEGER(expr_sym_match)[0]!=0) { // match against column name, just continue as with=T as it is a valid expression to be evaluated in DT scope
+      LOGICAL(with)[0] = 1;
+      UNPROTECT(protecti);
+      return R_NilValue;
+    } else { // symbol not matched
+      error("j (the 2nd argument inside [...]) is a single symbol but column name '%s' is not found. Perhaps you intended DT[, ..%s]. This difference to data.frame is deliberate and explained in FAQ 1.1.", CHAR(expr_char), CHAR(expr_char));
     }
   }
   /*

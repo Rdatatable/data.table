@@ -11,15 +11,15 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
 x = as.data.table(lapply(1:5, c))
 with = copy(NA) # copy for dev till we not duplicate yet, to ensure not to override NA value
 # symbols and : calls on symbols
-test(9999.111, exprCols(x, V1, "j", with, environment()), 1L)
+test(9999.111, exprCols(x, V1, "j", with, environment()), NULL) # NULL because it will evaluate that symbol in DT scope anyway, so with stays TRUE
 test(9999.112, exprCols(x, V1, ".SDcols", with, environment()), error="object 'V1' not found")
-#test(9999.113, exprCols(x, V1, "by", with, environment()), 1L)
-test(9999.114, exprCols(x, ((V1)), "j", with, environment()), 1L) # peel from (
+#test(9999.113, exprCols(x, V1, "by", with, environment()), NULL)
+test(9999.114, exprCols(x, ((V1)), "j", with, environment()), NULL) # peel from (, NULL because it will evaluate that symbol in DT scope anyway, so with stays TRUE
 test(9999.115, exprCols(x, ((V1)), ".SDcols", with, environment()), error="object 'V1' not found")
-#test(9999.116, exprCols(x, ((V1)), "by", with, environment()), 1L)
-test(9999.117, exprCols(x, {{V1}}, "j", with, environment()), 1L) # peel from {
+#test(9999.116, exprCols(x, ((V1)), "by", with, environment()), NULL)
+test(9999.117, exprCols(x, {{V1}}, "j", with, environment()), NULL) # peel from {, NULL because it will evaluate that symbol in DT scope anyway, so with stays TRUE
 test(9999.118, exprCols(x, {{V1}}, ".SDcols", with, environment()), error="object 'V1' not found")
-#test(9999.119, exprCols(x, {{V1}}, "by", with, environment()), 1L)
+#test(9999.119, exprCols(x, {{V1}}, "by", with, environment()), NULL)
 test(9999.121, exprCols(x, -V1, "j", with, environment()), NULL) # minus on column not an inverse selection
 test(9999.122, exprCols(x, -V1, ".SDcols", with, environment()), error="object 'V1' not found")
 #test(9999.123, exprCols(x, -V1, "by", with, environment()), NULL)
@@ -386,3 +386,32 @@ test(9999.585, exprCols(x, ((!c(TRUE,FALSE,TRUE,FALSE,FALSE))), ".SDcols", with,
 test(9999.587, exprCols(x, {{!c(TRUE,FALSE,TRUE,FALSE,FALSE)}}, "j", with, environment()), NULL)
 test(9999.588, exprCols(x, {{!c(TRUE,FALSE,TRUE,FALSE,FALSE)}}, ".SDcols", with, environment()), c(2L,4L,5L))
 #test(9999.589, exprCols(x, {{!c(TRUE,FALSE,TRUE,FALSE,FALSE)}}, "by", with, environment()), NULL)
+# character as variable in parent scope
+cols = c("V1","V3")
+test(9999.601, exprCols(x, cols, "j", with, environment()), error="column name 'cols' is not found")
+test(9999.602, exprCols(x, cols, ".SDcols", with, environment()), c(1L,3L))
+#test(9999.603, exprCols(x, cols, "by", with, environment()), error="column name 'cols' is not found")
+test(9999.604, exprCols(x, ((cols)), "j", with, environment()), NULL)
+test(9999.605, exprCols(x, ((cols)), ".SDcols", with, environment()), c(1L,3L))
+#test(9999.606, exprCols(x, ((cols)), "by", with, environment()), NULL)
+test(9999.607, exprCols(x, {{cols}}, "j", with, environment()), NULL)
+test(9999.608, exprCols(x, {{cols}}, ".SDcols", with, environment()), c(1L,3L))
+#test(9999.609, exprCols(x, {{cols}}, "by", with, environment()), NULL)
+test(9999.611, exprCols(x, -cols, "j", with, environment()), NULL)
+test(9999.612, exprCols(x, -cols, ".SDcols", with, environment()), c(2L,4L,5L))
+#test(9999.613, exprCols(x, -cols, "by", with, environment()), NULL)
+test(9999.614, exprCols(x, ((-cols)), "j", with, environment()), NULL)
+test(9999.615, exprCols(x, ((-cols)), ".SDcols", with, environment()), error="invalid argument to unary operator")
+#test(9999.616, exprCols(x, ((-cols)), "by", with, environment()), NULL)
+test(9999.617, exprCols(x, {{-cols}}, "j", with, environment()), NULL)
+test(9999.618, exprCols(x, {{-cols}}, ".SDcols", with, environment()), error="invalid argument to unary operator")
+#test(9999.619, exprCols(x, {{-cols}}, "by", with, environment()), NULL)
+test(9999.621, exprCols(x, !cols, "j", with, environment()), NULL)
+test(9999.622, exprCols(x, !cols, ".SDcols", with, environment()), c(2L,4L,5L))
+#test(9999.623, exprCols(x, !cols, "by", with, environment()), NULL)
+test(9999.624, exprCols(x, ((!cols)), "j", with, environment()), NULL)
+test(9999.625, exprCols(x, ((!cols)), ".SDcols", with, environment()), error="invalid argument type")
+#test(9999.626, exprCols(x, ((!cols)), "by", with, environment()), NULL)
+test(9999.627, exprCols(x, {{!cols}}, "j", with, environment()), NULL)
+test(9999.628, exprCols(x, {{!cols}}, ".SDcols", with, environment()), error="invalid argument type")
+#test(9999.629, exprCols(x, {{!cols}}, "by", with, environment()), NULL)
