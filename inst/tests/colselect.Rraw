@@ -248,7 +248,7 @@ test(9999.421, exprCols(x, !1L, "j", with, environment()), 2:5)
 test(9999.422, exprCols(x, !1L, ".SDcols", with, environment()), 2:5)
 #test(9999.423, exprCols(x, !1L, "by", with, environment()), 2:5)
 test(9999.424, exprCols(x, ((!1L)), "j", with, environment()), NULL)
-test(9999.425, exprCols(x, ((!1L)), ".SDcols", with, environment()), error="logical and has different length") #4115
+test(9999.425, exprCols(x, ((!1L)), ".SDcols", with, environment()), error="logical and has different length") #4115 #2178
 #test(9999.426, exprCols(x, ((!1L)), "by", with, environment()), NULL)
 test(9999.427, exprCols(x, {{!1L}}, "j", with, environment()), NULL)
 test(9999.428, exprCols(x, {{!1L}}, ".SDcols", with, environment()), error="logical and has different length")
@@ -275,7 +275,7 @@ test(9999.451, exprCols(x, !1, "j", with, environment()), 2:5)
 test(9999.452, exprCols(x, !1, ".SDcols", with, environment()), 2:5)
 #test(9999.453, exprCols(x, !1, "by", with, environment()), 2:5)
 test(9999.454, exprCols(x, ((!1)), "j", with, environment()), NULL)
-test(9999.455, exprCols(x, ((!1)), ".SDcols", with, environment()), error="logical and has different length") #4115
+test(9999.455, exprCols(x, ((!1)), ".SDcols", with, environment()), error="logical and has different length") #4115 #2178
 #test(9999.456, exprCols(x, ((!1)), "by", with, environment()), NULL)
 test(9999.457, exprCols(x, {{!1}}, "j", with, environment()), NULL)
 test(9999.458, exprCols(x, {{!1}}, ".SDcols", with, environment()), error="logical and has different length")
@@ -317,7 +317,7 @@ test(9999.491, exprCols(x, !1:2, "j", with, environment()), 3:5)
 test(9999.492, exprCols(x, !1:2, ".SDcols", with, environment()), 3:5)
 #test(9999.493, exprCols(x, !1:2, "by", with, environment()), 3:5)
 test(9999.494, exprCols(x, ((!1:2)), "j", with, environment()), NULL)
-test(9999.495, exprCols(x, ((!1:2)), ".SDcols", with, environment()), error="logical and has different length") #4115
+test(9999.495, exprCols(x, ((!1:2)), ".SDcols", with, environment()), error="logical and has different length") #4115 #2178
 #test(9999.496, exprCols(x, ((!1:2)), "by", with, environment()), NULL)
 test(9999.497, exprCols(x, {{!1:2}}, "j", with, environment()), NULL)
 test(9999.498, exprCols(x, {{!1:2}}, ".SDcols", with, environment()), error="logical and has different length")
@@ -634,11 +634,11 @@ test(9999.977, exprCols(x, !c(..c1, "V5"), "j", with, environment()), c(2L,4L))
 test(9999.978, exprCols(x, !c(..c1, "V5"), ".SDcols", with, environment()), error="object '..c1' not found")
 #test(9999.979, exprCols(x, !c(..c1, "V5"), "by", with, environment()), c(2L,4L))
 rm(c1, c2)
-# incorrect length logical #4115
+# incorrect length logical #4115 #2178
 test(9999.981, exprCols(x, c(TRUE,FALSE,TRUE,FALSE), "j", with, environment()), error="logical and has different length")
 test(9999.982, exprCols(x, c(TRUE,FALSE,TRUE,FALSE), ".SDcols", with, environment()), error="logical and has different length")
 #test(9999.983, exprCols(x, c(TRUE,FALSE,TRUE,FALSE), "by", with, environment()), error="logical and has different length")
-# incorrect length logical as variable in parent scope #4115
+# incorrect length logical as variable in parent scope #4115 #2178
 cols = c(TRUE,FALSE,TRUE,FALSE)
 test(9999.984, exprCols(x, cols, "j", with, environment()), error="column name 'cols' is not found")
 test(9999.985, exprCols(x, cols, ".SDcols", with, environment()), error="logical and has different length")

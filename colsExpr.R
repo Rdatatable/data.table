@@ -20,98 +20,62 @@ test(9999.9924, exprCols(x, !(..cols), "j", with, environment()), 2:4)
 test(9999.9925, exprCols(x, !(..cols), ".SDcols", with, environment()), error="object '..cols' not found")
 #test(9999.9926, exprCols(x, !(..cols), "by", with, environment()), 2:4)
 rm(cols)
-
-# subset DT[, c("x","x")] on DT having single x column and having duplicated x column name
-
 # function
-## !function
-
-# patterns
-## !patterns
-
-## old tests
-
 f = function(x) all(x %between% c(2L,4L))
-test(1.101, exprCols(x, f, "j", with, environment()), error="non existing column.*f")
-test(1.102, exprCols(x, function(x) all(x %between% c(2L,4L)), "j", with, environment()), error="is not supported, use '.SDcols' instead")
-test(1.103, exprCols(x, f, ".SDcols", with, environment()), c(2L,3L,4L))
-test(1.103, exprCols(x, function(x) all(x %between% c(2L,4L)), ".SDcols", with, environment()), c(2L,3L,4L))
+test(9999.9931, exprCols(x, f, "j", with, environment()), error="non existing column")
+test(9999.9932, exprCols(x, f, ".SDcols", with, environment()), 2:4)
+test(9999.9933, exprCols(x, !f, "j", with, environment()), error="invalid argument type")
+test(9999.9934, exprCols(x, !f, ".SDcols", with, environment()), c(1L,5L))
 rm(f)
-
-test(1.111, exprCols(x, c(4,2), "j", with, environment()), c(4L,2L))
-test(1.112, exprCols(x, c(4L,2L), "j", with, environment()), c(4L,2L))
-test(1.113, exprCols(x, c("V4","V2"), "j", with, environment()), c(4L,2L))
-test(1.114, exprCols(x, c(4,2), ".SDcols", with, environment()), c(4L,2L))
-test(1.115, exprCols(x, c(4L,2L), ".SDcols", with, environment()), c(4L,2L))
-test(1.116, exprCols(x, c("V4","V2"), ".SDcols", with, environment()), c(4L,2L))
-
-test(1.121, exprCols(x, V2:V4, "j", with, environment()), c(2L,3L,4L))
-test(1.122, exprCols(x, V4:V2, "j", with, environment()), c(4L,3L,2L))
-test(1.123, exprCols(x, V2:V4, ".SDcols", with, environment()), c(2L,3L,4L))
-test(1.124, exprCols(x, V4:V2, ".SDcols", with, environment()), c(4L,3L,2L))
-
-test(1.131, exprCols(x, (function()c(4L,2L))(), "j", with, environment()), c(4L,2L)) # note that this is call, not a function
-test(1.132, exprCols(x, paste0("V",c(4L,2L)), "j", with, environment()), c(4L,2L))
-test(1.133, exprCols(x, (function()c(4L,2L))(), ".SDcols", with, environment()), c(4L,2L))
-test(1.134, exprCols(x, paste0("V",c(4L,2L)), ".SDcols", with, environment()), c(4L,2L))
-
-test(1.141, exprCols(x, ((c("V4","V2"))), "j", with, environment()), c(4L,2L))
-test(1.142, exprCols(x, ((4:2)), "j", with, environment()), c(4L,3L,2L))
-test(1.143, exprCols(x, ((V4:V2)), "j", with, environment()), c(4L,3L,2L))
-test(1.144, exprCols(x, ((V4)), "j", with, environment()), 4L)
-test(1.145, exprCols(x, (("V4":"V2")), "j", with, environment()), error="NA/NaN argument", warning=c("NAs introduced by coercion","NAs introduced by coercion"))
-test(1.146, exprCols(x, ((c("V4","V2"))), ".SDcols", with, environment()), c(4L,2L))
-test(1.147, exprCols(x, ((4:2)), ".SDcols", with, environment()), c(4L,3L,2L))
-test(1.148, exprCols(x, ((V4:V2)), ".SDcols", with, environment()), c(4L,3L,2L))
-test(1.149, exprCols(x, ((V4)), ".SDcols", with, environment()), error="'V4' not found")
-test(1.150, exprCols(x, (("V4":"V2")), ".SDcols", with, environment()), error="NA/NaN argument", warning=c("NAs introduced by coercion","NAs introduced by coercion"))
-test(1.161, exprCols(x, 2:4, "j", with, environment()), c(2L,3L,4L))
-test(1.162, exprCols(x, 4:2, "j", with, environment()), c(4L,3L,2L))
-test(1.163, exprCols(x, 2:4, ".SDcols", with, environment()), c(2L,3L,4L))
-test(1.164, exprCols(x, 4:2, ".SDcols", with, environment()), c(4L,3L,2L))
-
-test(1.171, exprCols(x, is.numeric, "j", with, environment()), error="non existing column.*is.numeric")
-#test(1.172, exprCols(x, !is.numeric, "j", with, environment()), error="non existing column.*is.numeric")
-test(1.173, exprCols(x, is.numeric, ".SDcols", with, environment()), c(1L,2L,3L,4L,5L))
-#test(1.174, exprCols(x, !is.numeric, ".SDcols", with, environment()), integer())
-
-#test(1.181, exprCols(x, patterns("V2|V4"), "j", with, environment()), error="") # TODO
-#test(1.182, exprCols(x, !patterns("V2|V4"), "j", with, environment()), error="")
-#test(1.183, exprCols(x, patterns("V2|V4", "V2|V5"), "j", with, environment()), error="")
-#test(1.184, exprCols(x, !patterns("V2|V4", "V2|V5"), "j", with, environment()), error="")
+test(9999.9935, exprCols(x, function(x) all(x %between% c(2L,4L)), "j", with, environment()), NULL)
+test(9999.9936, exprCols(x, function(x) all(x %between% c(2L,4L)), ".SDcols", with, environment()), 2:4)
+test(9999.9937, exprCols(x, !function(x) all(x %between% c(2L,4L)), "j", with, environment()), error="invalid argument type")
+test(9999.9938, exprCols(x, !function(x) all(x %between% c(2L,4L)), ".SDcols", with, environment()), c(1L,5L))
+# patterns
+test(1.181, exprCols(x, patterns("V2|V4"), "j", with, environment()), error="")
+test(1.182, exprCols(x, !patterns("V2|V4"), "j", with, environment()), error="")
+test(1.183, exprCols(x, patterns("V2|V4", "V2|V5"), "j", with, environment()), error="")
+test(1.184, exprCols(x, !patterns("V2|V4", "V2|V5"), "j", with, environment()), error="")
 test(1.185, exprCols(x, patterns("V2|V4"), ".SDcols", with, environment()), c(2L,4L))
-#test(1.186, exprCols(x, !patterns("V2|V4"), ".SDcols", with, environment()), c(1L,3L,5L)) # TODO
+test(1.186, exprCols(x, !patterns("V2|V4"), ".SDcols", with, environment()), c(1L,3L,5L))
 test(1.187, exprCols(x, patterns("V2|V4", "V2|V5"), ".SDcols", with, environment()), 2L)
-#test(1.188, exprCols(x, !patterns("V2|V4", "V2|V5"), ".SDcols", with, environment()), 2L)
-
-cols = c("V1","V2")
-test(1.191, exprCols(x, cols, "j", with, environment()), c(1L,2L))
-test(1.192, exprCols(x, cols, ".SDcols", with, environment()), c(1L,2L))
-rm(cols)
+test(1.188, exprCols(x, !patterns("V2|V4", "V2|V5"), ".SDcols", with, environment()), 2L)
 patterns = c("V1","V2")
 test(1.193, exprCols(x, patterns, "j", with, environment()), c(1L,2L))
 test(1.194, exprCols(x, patterns, ".SDcols", with, environment()), c(1L,2L))
 rm(patterns)
 
+# calls
+test(1.131, exprCols(x, (function()c(4L,2L))(), "j", with, environment()), c(4L,2L)) # note that this is call, not a function
+test(1.132, exprCols(x, paste0("V",c(4L,2L)), "j", with, environment()), c(4L,2L))
+test(1.133, exprCols(x, (function()c(4L,2L))(), ".SDcols", with, environment()), c(4L,2L))
+test(1.134, exprCols(x, paste0("V",c(4L,2L)), ".SDcols", with, environment()), c(4L,2L))
+
+# colon sequence from vars
 as.data.table(lapply(1:5, c))[, 3:2]
 r1 = 3L
 r2 = 2L
 as.data.table(lapply(1:5, c))[, r1:r2]
-exprCols(x, r1:r2, with, environment()) ## BC
+exprCols(x, r1:r2, "j", with, environment())
 V1 = 3L
 V2 = 2L
 as.data.table(lapply(1:5, c))[, V1:V2]
-exprCols(x, V1:V2, with, environment())
+exprCols(x, V1:V2, "j", with, environment())
+# incorrect usage of col1:col2 selection #4235, warnings will be still there till we disabled old interface and switch fully to colselect
+test(1.111, exprCols(x, "V3":"V2", "j", with, environment()), NULL)
+test(1.111, exprCols(x, "V3":"V2", ".SDcols", with, environment()), NULL) # should raise own error!
 
-as.data.table(lapply(1:5, c))[, "V3":"V2"]
+# seqence from columns #2069
+DT[, min(var):max(var)]
 
-exprCols(x, !"V3", with, environment())
-exprCols(x, -"V3", with, environment())
-exprCols(x, V2-V3, with, environment()) # length 3 call, non-unary minus
-exprCols(x, !c("V2","V4"), with, environment())
-exprCols(x, -c("V2","V4"), with, environment())
+# non-unary minus, length 3 call
+exprCols(x, V2-V3, "j", with, environment())
 
-as.data.table(lapply(1:5, c))[, ((3:2))]
+# subset DT[, c("x","x")] on DT having single x column and having duplicated x column name
+x = data.table(V1=1L, V2=2L)
+exprCols(x, c("V1","V1"), "j", with, environment())
+x = data.table(V1=1L, V2=2L, V1=3L)
+exprCols(x, c("V1","V1"), "j", with, environment())
 
 # 4004
 iris <- as.data.table(iris)
@@ -134,15 +98,3 @@ DT[, min(t):max(t)]
 with(DT, min(t):max(t))
 DT[, seq(min(id), max(id))]
 DT[, min(t):max(t)]
-
-#2178
-DF = data.frame(a = 1, b = 2, c = 3, d = 4, e = 5)
-DF[ , c(TRUE, FALSE)]
-#   a c e
-# 1 1 3 5
-setDT(DF)
-DF[ , c(TRUE, FALSE)]
-#    a
-# 1: 1
-
-#4115
