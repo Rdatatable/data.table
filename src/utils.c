@@ -264,7 +264,6 @@ SEXP exprCols(SEXP x, SEXP expr, SEXP mode, SEXP with, SEXP rho) {
     mode_sd = true;
   else
     error(_("Internal error: invalid 'mode' argument in exprCols function, should have been caught before. please report to data.table issue tracker.")); // # nocov
-  // colnamesInt handles inverse selection: !cols_var, !"V2", !V2, !paste0("V",2:3)
   bool inverse = isLanguage(expr) && (CAR(expr)==sym_bang || (CAR(expr)==sym_minus && length(expr)==2)); // length(expr)==2, otherwise V3-V2 will pick it up
   if (inverse)
     expr = CADR(expr);
@@ -310,11 +309,8 @@ SEXP exprCols(SEXP x, SEXP expr, SEXP mode, SEXP with, SEXP rho) {
       UNPROTECT(protecti);
       return colnamesInt(x, ricols, ScalarLogical(false), ScalarLogical(inverse)); // handle inverse
     } else {
-      Rprintf("sym_colon to evaluate later, a valid colon expression\n");
+      Rprintf("sym_colon to evaluate later, a valid colon expression\n"); // evaluates later on: f(V3):f(V2)
       LOGICAL(with)[0] = 1;
-      // evaluates later on: f(V3):f(V2)
-      //Rf_PrintValue(lhs);
-      //Rf_PrintValue(rhs);
     }
   }
   // patterns will not evaluate as well because we wrap expr into quote(expr) before calling eval on do_patterns call
@@ -360,7 +356,7 @@ SEXP exprCols(SEXP x, SEXP expr, SEXP mode, SEXP with, SEXP rho) {
           } else if (LOGICAL(ddname_exists)[0])
             warning("Both '%s' and '..%s' exist in calling scope. Please remove the '..%s' variable in calling scope for clarity.", CHAR(name), CHAR(name), CHAR(name));
         }
-        SEXP lapply = lang4(install("lapply"), lang3(install("setNames"), av3, av), install("get"), rho);
+        SEXP lapply = lang4(install("lapply"), lang3(install("setNames"), av3, av), install("get"), /*pos=*/rho);
         SET_TAG(CDDDR(lapply), install("pos"));
         SEXP env = eval(lapply, rho);
         SEXP evaleval = lang3(install("substitute"), expr, env);

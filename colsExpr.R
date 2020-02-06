@@ -10,16 +10,16 @@ cc(F)
 x = as.data.table(lapply(1:5, c))
 with = copy(NA) # copy for dev till we not duplicate yet, to ensure not to override NA value
 
-#z1 = "V1"
-#z4 = "V4"
-#x[, c(..z1,..z4)]
-#x[, c(..z1,"V4")]
-
-# incorrect length logical #4115
-# incorrect length logical as variable in parent scope
-
-# test for !!V3 --V3
-# test after inverse peeling for -("V3")
+#DEV
+# test after inverse peeling for !("V5")
+test(9999.9921, exprCols(x, !("V5"), "j", with, environment()), 2:4)
+test(9999.9922, exprCols(x, !("V5"), ".SDcols", with, environment()), 2:4)
+#test(9999.9923, exprCols(x, !("V5"), "by", with, environment()), 2:4)
+cols = c("V1","V5")
+test(9999.9924, exprCols(x, !(..cols), "j", with, environment()), 2:4)
+test(9999.9925, exprCols(x, !(..cols), ".SDcols", with, environment()), error="object '..cols' not found")
+#test(9999.9926, exprCols(x, !(..cols), "by", with, environment()), 2:4)
+rm(cols)
 
 # subset DT[, c("x","x")] on DT having single x column and having duplicated x column name
 
