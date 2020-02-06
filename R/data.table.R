@@ -203,9 +203,12 @@ replace_dot_alias = function(e) .Call(Creplace_dot_aliasR, e)
   av = NULL
   jsub = NULL
   if (!missing(j)) {
+    colselect = getOption("datatable.colselect", FALSE)
     jsub = replace_dot_alias(substitute(j))
     root = if (is.call(jsub)) as.character(jsub[[1L]])[1L] else ""
     # j exprCols non-eval opt start
+    if (colselect) {
+    }
     if (root == ":" ||
         (root %chin% c("-","!") && is.call(jsub[[2L]]) && jsub[[2L]][[1L]]=="(" && is.call(jsub[[2L]][[2L]]) && jsub[[2L]][[2L]][[1L]]==":") ||
         ( (!length(av<-all.vars(jsub)) || all(substring(av,1L,2L)=="..")) &&
@@ -910,6 +913,7 @@ replace_dot_alias = function(e) .Call(Creplace_dot_aliasR, e)
           # all duplicate columns must be matched, because nothing is provided
           ansvals = chmatchdup(ansvars, names_x)
         } else {
+          colselect = getOption("datatable.colselect", FALSE)
           # FR #4979 - negative numeric and character indices for SDcols
           colsub = substitute(.SDcols)
           with = copy(with)
@@ -924,10 +928,7 @@ replace_dot_alias = function(e) .Call(Creplace_dot_aliasR, e)
           while(is.call(colsub) && colsub[[1L]] == "(") colsub = as.list(colsub)[[-1L]]
           if (is.call(colsub) && length(colsub) == 3L && colsub[[1L]] == ":") {
             # .SDcols is of the format a:b
-            print(colsub) # debug #4231
-            print(setattr(as.list(seq_along(x)), 'names', names_x)) # debug #4231
             .SDcols = eval(colsub, setattr(as.list(seq_along(x)), 'names', names_x), parent.frame())
-            print(.SDcols) # debug #4231
           } else {
             if (is.call(colsub) && colsub[[1L]] == "patterns") {
               # each pattern gives a new filter condition, intersect the end result
