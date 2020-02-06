@@ -10,35 +10,6 @@ cc(F)
 x = as.data.table(lapply(1:5, c))
 with = copy(NA) # copy for dev till we not duplicate yet, to ensure not to override NA value
 
-test(9999.631, exprCols(x, ..cols, "j", with, environment()), c(1L,3L))
-test(9999.632, exprCols(x, ..cols, ".SDcols", with, environment()), 1L)
-#test(9999.633, exprCols(x, ..cols, "by", with, environment()), c(1L,3L))
-test(9999.634, exprCols(x, ((..cols)), "j", with, environment()), NULL)
-test(9999.635, exprCols(x, ((..cols)), ".SDcols", with, environment()), 1L)
-#test(9999.636, exprCols(x, ((..cols)), "by", with, environment()), NULL)
-test(9999.637, exprCols(x, {{..cols}}, "j", with, environment()), NULL)
-test(9999.638, exprCols(x, {{..cols}}, ".SDcols", with, environment()), 1L)
-#test(9999.639, exprCols(x, {{..cols}}, "by", with, environment()), NULL)
-test(9999.641, exprCols(x, -..cols, "j", with, environment()), c(2L,4L,5L))
-test(9999.642, exprCols(x, -..cols, ".SDcols", with, environment()), 1L)
-#test(9999.643, exprCols(x, -..cols, "by", with, environment()), c(2L,4L,5L))
-test(9999.644, exprCols(x, ((-..cols)), "j", with, environment()), NULL)
-test(9999.645, exprCols(x, ((-..cols)), ".SDcols", with, environment()), 1L)
-#test(9999.646, exprCols(x, ((-..cols)), "by", with, environment()), NULL)
-test(9999.647, exprCols(x, {{-..cols}}, "j", with, environment()), NULL)
-test(9999.648, exprCols(x, {{-..cols}}, ".SDcols", with, environment()), 1L)
-#test(9999.649, exprCols(x, {{-..cols}}, "by", with, environment()), NULL)
-test(9999.651, exprCols(x, !..cols, "j", with, environment()), c(2L,4L,5L))
-test(9999.652, exprCols(x, !..cols, ".SDcols", with, environment()), 1L)
-#test(9999.653, exprCols(x, !..cols, "by", with, environment()), c(2L,4L,5L))
-test(9999.654, exprCols(x, ((!..cols)), "j", with, environment()), NULL)
-test(9999.655, exprCols(x, ((!..cols)), ".SDcols", with, environment()), 1L)
-#test(9999.656, exprCols(x, ((!..cols)), "by", with, environment()), NULL)
-test(9999.657, exprCols(x, {{!..cols}}, "j", with, environment()), NULL)
-test(9999.658, exprCols(x, {{!..cols}}, ".SDcols", with, environment()), 1L)
-#test(9999.659, exprCols(x, {{!..cols}}, "by", with, environment()), NULL)
-rm(cols)
-
 # character as variable in parent scope, variable name overlapping to column name
 V1 = c("V1", "V3")
 test(9999.701, exprCols(x, V1, "j", with, environment()), 1L)
@@ -214,6 +185,7 @@ rm(cols)
 #z1 = "V1"
 #z4 = "V4"
 #x[, c(..z1,..z4)]
+#x[, c(..z1,"V4")]
 
 # incorrect length logical #4115
 # incorrect length logical as variable in parent scope

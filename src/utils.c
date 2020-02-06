@@ -335,7 +335,6 @@ SEXP exprCols(SEXP x, SEXP expr, SEXP mode, SEXP with, SEXP rho) {
   }
   // dotdot prefix handling
   if (mode_j && (isSymbol(expr) || isLanguage(expr)) && !peeled) {
-    //SEXP x = PROTECT(x); protecti++;
     // all(substring(av,1L,2L)=="..")
     SEXP jexpr = PROTECT(eval(lang2(install("expression"), expr), R_GlobalEnv)); protecti++;
     SEXP av = PROTECT(eval(lang2(install("all.vars"), jexpr), R_GlobalEnv)); protecti++;
@@ -349,32 +348,23 @@ SEXP exprCols(SEXP x, SEXP expr, SEXP mode, SEXP with, SEXP rho) {
         for (int i=0; i<length(av); i++) {
           ddname = STRING_ELT(av, i);
           name = STRING_ELT(av3, i); // PROTECT(eval(lang3(install("substring"), ddname, ScalarInteger(3)), R_GlobalEnv)); protecti++;
-          if (!strcmp(CHAR(STRING_ELT(name, 0)), ""))
+          if (!strcmp(CHAR(name), ""))
             error("The symbol .. is invalid. The .. prefix must be followed by at least one character.");
-          name_exists = PROTECT(eval(lang3(install("exists"), name, rho), R_GlobalEnv)); protecti++;
-          ddname_exists = PROTECT(eval(lang3(install("exists"), ddname, rho), R_GlobalEnv)); protecti++;
+          name_exists = PROTECT(eval(lang3(install("exists"), ScalarString(name), rho), R_GlobalEnv)); protecti++;
+          ddname_exists = PROTECT(eval(lang3(install("exists"), ScalarString(ddname), rho), R_GlobalEnv)); protecti++;
           if (!LOGICAL(name_exists)[0]) {
             if (!LOGICAL(ddname_exists)[0])
-              error("Variable '%s' is not found in calling scope. Looking in calling scope because you used the .. prefix.", CHAR(STRING_ELT(name, 0)));
+              error("Variable '%s' is not found in calling scope. Looking in calling scope because you used the .. prefix.", CHAR(name));
             else
               error("Variable '%s' is not found in calling scope. Looking in calling scope because you used the .. prefix. Variable '..%S' does exist in calling scope though, so please just removed the .. prefix from that variable name in calling scope.", CHAR(STRING_ELT(name, 0)), CHAR(STRING_ELT(name, 0)));
           } else if (LOGICAL(ddname_exists)[0])
-            warning("Both '%s' and '..%s' exist in calling scope. Please remove the '..%s' variable in calling scope for clarity.", CHAR(STRING_ELT(name, 0)), CHAR(STRING_ELT(name, 0)), CHAR(STRING_ELT(name, 0)));
+            warning("Both '%s' and '..%s' exist in calling scope. Please remove the '..%s' variable in calling scope for clarity.", CHAR(name), CHAR(name), CHAR(name));
         }
-        error("TODO");
-        /*
-         ..syms = av
-         names(..syms) = ..syms
-         j = eval(
-           expr = jsub,
-           envir = lapply(substring(..syms,3L), get, pos=parent.frame()),
-           enclos = parent.frame()
-         )
-         
-         eval(jexpr, lapply(av3, get, pos=parent.frame()), enclos=parent.frame())
-         */
-        SEXP cols = R_NilValue;
-        Rprintf("success\n");
+        SEXP lapply = lang4(install("lapply"), lang3(install("setNames"), av3, av), install("get"), rho);
+        SET_TAG(CDDDR(lapply), install("pos"));
+        SEXP env = eval(lapply, rho);
+        SEXP evaleval = lang3(install("substitute"), expr, env);
+        SEXP cols = eval(eval(evaleval, rho), rho); // huh...
         LOGICAL(with)[0] = 0;
         UNPROTECT(protecti);
         return colnamesInt(x, cols, ScalarLogical(false), ScalarLogical(inverse));
