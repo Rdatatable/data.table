@@ -11,22 +11,6 @@ x = as.data.table(lapply(1:5, c))
 with = copy(NA) # copy for dev till we not duplicate yet, to ensure not to override NA value
 
 #DEV
-# calls
-test(1.131, exprCols(x, (function()c(4L,2L))(), "j", with, environment()), c(4L,2L)) # note that this is call, not a function
-test(1.132, exprCols(x, paste0("V",c(4L,2L)), "j", with, environment()), c(4L,2L))
-test(1.133, exprCols(x, (function()c(4L,2L))(), ".SDcols", with, environment()), c(4L,2L))
-test(1.134, exprCols(x, paste0("V",c(4L,2L)), ".SDcols", with, environment()), c(4L,2L))
-
-# colon sequence from vars
-as.data.table(lapply(1:5, c))[, 3:2]
-r1 = 3L
-r2 = 2L
-as.data.table(lapply(1:5, c))[, r1:r2]
-exprCols(x, r1:r2, "j", with, environment())
-V1 = 3L
-V2 = 2L
-as.data.table(lapply(1:5, c))[, V1:V2]
-exprCols(x, V1:V2, "j", with, environment())
 # incorrect usage of col1:col2 selection #4235, warnings will be still there till we disabled old interface and switch fully to colselect
 test(1.111, exprCols(x, "V3":"V2", "j", with, environment()), NULL)
 test(1.111, exprCols(x, "V3":"V2", ".SDcols", with, environment()), NULL) # should raise own error!

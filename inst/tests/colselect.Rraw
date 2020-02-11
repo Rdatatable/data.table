@@ -692,3 +692,23 @@ patterns = c("V1","V2")
 test(9999.9951, exprCols(x, patterns, "j", with, environment()), error="single symbol but column name")
 test(9999.9952, exprCols(x, patterns, ".SDcols", with, environment()), c(1L,2L))
 rm(patterns)
+# calls
+test(9999.9961, exprCols(x, (function()c(4L,2L))(), "j", with, environment()), NULL)
+test(9999.9962, exprCols(x, paste0("V",c(4L,2L)), "j", with, environment()), c(4L,2L))
+test(9999.9963, exprCols(x, (function()c(4L,2L))(), ".SDcols", with, environment()), c(4L,2L))
+test(9999.9964, exprCols(x, paste0("V",c(4L,2L)), ".SDcols", with, environment()), c(4L,2L))
+# colon sequence from vars or mixed
+r1 = 3L
+r2 = 2L
+test(9999.9971, exprCols(x, r1:r2, "j", with, environment()), 3:2)
+test(9999.9972, exprCols(x, r1:2L, "j", with, environment()), 3:2)
+test(9999.9973, exprCols(x, 3L:r2, "j", with, environment()), 3:2)
+test(9999.9974, exprCols(x, r1:2, "j", with, environment()), 3:2)
+test(9999.9975, exprCols(x, 3:r2, "j", with, environment()), 3:2)
+rm(r1, r2)
+V1 = 3L
+V2 = 2L
+test(9999.9976, exprCols(x, V1:V2, "j", with, environment()), 1:2)
+test(9999.9977, exprCols(x, V1:2L, "j", with, environment()), 1:2)
+test(9999.9978, exprCols(x, 3L:V2, "j", with, environment()), 3:2)
+rm(V1, V2)

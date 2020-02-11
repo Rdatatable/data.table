@@ -292,16 +292,31 @@ SEXP exprCols(SEXP x, SEXP expr, SEXP mode, SEXP with, SEXP rho) {
     SEXP lhs = CADR(expr), rhs = CADDR(expr);
     if ((isLanguage(lhs) && CAR(lhs)==sym_minus && length(lhs)==2) || (isLanguage(rhs) && CAR(rhs)==sym_minus && length(rhs)==2)) // -V1:V2 is parsed as `:`(-V1, V2)
       error("column selection mixes positives and negatives");
-    if ((isSymbol(lhs) && isSymbol(rhs)) || (
-        (isInteger(lhs) || isReal(lhs)) && (isInteger(rhs) || isReal(rhs))
-    )) {
-      if (isSymbol(lhs) && isSymbol(rhs)) { // V3:V2
-        lhs = colnamesInt(x, ScalarString(PRINTNAME(lhs)), ScalarLogical(false), ScalarLogical(false)); // may raise error if lhs column does not exists
-        rhs = colnamesInt(x, ScalarString(PRINTNAME(rhs)), ScalarLogical(false), ScalarLogical(false));
-      } else { // 3:2
-        lhs = colnamesInt(x, lhs, ScalarLogical(false), ScalarLogical(false));
-        rhs = colnamesInt(x, rhs, ScalarLogical(false), ScalarLogical(false));
+    if (
+        (isSymbol(lhs) || isInteger(lhs) || isReal(lhs)) &&
+        (isSymbol(rhs) || isInteger(rhs) || isReal(rhs))
+    ) { // V3:V2, r1:r2, r1:4L, 3L:r2
+      SEXP xnames = getAttrib(x, R_NamesSymbol);
+      if (isNull(xnames))
+        error(_("'x' argument data.table has no names"));
+      if (isSymbol(lhs)) {
+        lhs = PROTECT(ScalarString(PRINTNAME(lhs))); protecti++;
+        if (!INTEGER(chmatch(lhs, xnames, 0))[0]) {
+          SEXP getlhs = lang3(install("get"), lhs, /*envir=*/rho);
+          SET_TAG(CDDR(getlhs), install("envir"));
+          lhs = PROTECT(eval(getlhs, rho)); protecti++;
+        }
       }
+      if (isSymbol(rhs)) {
+        rhs = PROTECT(ScalarString(PRINTNAME(rhs))); protecti++;
+        if (!INTEGER(chmatch(rhs, xnames, 0))[0]) {
+          SEXP getrhs = lang3(install("get"), rhs, /*envir=*/rho);
+          SET_TAG(CDDR(getrhs), install("envir"));
+          rhs = PROTECT(eval(getrhs, rho)); protecti++;
+        }
+      }
+      lhs = colnamesInt(x, lhs, ScalarLogical(false), ScalarLogical(false));
+      rhs = colnamesInt(x, rhs, ScalarLogical(false), ScalarLogical(false));
       if (!isInteger(lhs) || !isInteger(rhs) || length(lhs)!=1 || length(rhs)!=1 || LOGICAL(lhs)[0]==NA_LOGICAL || LOGICAL(rhs)[0]==NA_LOGICAL)
         error(_("internal error: LHS and RHS of `:` call should be integer non-NA scalars already")); // # nocov
       SEXP ricols = PROTECT(range_int(INTEGER(lhs)[0], INTEGER(rhs)[0])); protecti++;
