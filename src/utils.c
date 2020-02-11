@@ -330,7 +330,7 @@ SEXP exprCols(SEXP x, SEXP expr, SEXP mode, SEXP with, SEXP rho) {
     return colnamesInt(x, ricols, ScalarLogical(false), ScalarLogical(inverse)); // handle inverse
   }
   // dotdot prefix handling
-  if (mode_j && (isSymbol(expr) || isLanguage(expr)) && !peeled) {
+  if (mode_j && (isSymbol(expr) || isLanguage(expr)) && (!peeled || inverse)) { // `|| inverse` to handle !(..cols)
     // all(substring(av,1L,2L)=="..")
     SEXP jexpr = PROTECT(eval(lang2(install("expression"), expr), R_GlobalEnv)); protecti++;
     SEXP av = PROTECT(eval(lang2(install("all.vars"), jexpr), R_GlobalEnv)); protecti++;
@@ -410,8 +410,8 @@ SEXP exprCols(SEXP x, SEXP expr, SEXP mode, SEXP with, SEXP rho) {
         LOGICAL(with)[0] = 1;
         return R_NilValue;
       }
-    } else { // "V1,V2" should evaluate, unless in by
-      if (!peeled) {
+    } else { // "V1", "V1,V2" should evaluate, unless in by, also !("V1") lands here because peeled
+      if (!peeled || inverse) {
         value = expr; // already evaluated
       } else { // (("V1,V2"))
         LOGICAL(with)[0] = 1;
