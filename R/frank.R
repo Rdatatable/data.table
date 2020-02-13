@@ -1,4 +1,4 @@
-frankv = function(x, cols=seq_along(x), order=1L, na.last=TRUE, ties.method=c("average", "first", "random", "max", "min", "dense")) {
+frankv = function(x, cols=seq_along(x), order=1L, na.last=TRUE, ties.method=c("average", "first", "last", "random", "max", "min", "dense")) {
   ties.method = match.arg(ties.method)
   if (!length(na.last)) stop('length(na.last) = 0')
   if (length(na.last) != 1L) {
@@ -48,7 +48,7 @@ frankv = function(x, cols=seq_along(x), order=1L, na.last=TRUE, ties.method=c("a
     xorder  = seq_along(x[[1L]])
   }
   ans = switch(ties.method,
-    average = , min = , max =, dense = {
+    average = , min = , max =, dense =, last = {
       rank = .Call(Cfrank, xorder, xstart, uniqlengths(xstart, length(xorder)), ties.method)
     },
     first = , random = {
@@ -65,7 +65,7 @@ frankv = function(x, cols=seq_along(x), order=1L, na.last=TRUE, ties.method=c("a
   ans
 }
 
-frank = function(x, ..., na.last=TRUE, ties.method=c("average", "first", "random", "max", "min", "dense")) {
+frank = function(x, ..., na.last=TRUE, ties.method=c("average", "first", "last", "random", "max", "min", "dense")) {
   cols = substitute(list(...))[-1L]
   if (identical(as.character(cols), "NULL")) {
     cols  = NULL
