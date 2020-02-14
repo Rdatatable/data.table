@@ -73,6 +73,8 @@ extern SEXP char_ITime;
 extern SEXP char_IDate;
 extern SEXP char_Date;
 extern SEXP char_POSIXct;
+extern SEXP char_POSIXlt;
+extern SEXP char_POSIXt;
 extern SEXP char_nanotime;
 extern SEXP char_lens;
 extern SEXP char_indices;
@@ -82,6 +84,7 @@ extern SEXP char_factor;
 extern SEXP char_ordered;
 extern SEXP char_datatable;
 extern SEXP char_dataframe;
+extern SEXP char_ff;
 extern SEXP char_NULL;
 extern SEXP sym_sorted;
 extern SEXP sym_index;
@@ -158,7 +161,7 @@ SEXP dt_na(SEXP x, SEXP cols);
 
 // assign.c
 SEXP alloccol(SEXP dt, R_len_t n, Rboolean verbose);
-const char *memrecycle(const SEXP target, const SEXP where, const int r, const int len, SEXP source, const int sourceStart, const int sourceLen, const int coln, const char *colname);
+const char *memrecycle(const SEXP target, const SEXP where, const int64_t r, const int64_t len, SEXP source, const int64_t sourceStart, const int64_t sourceLen, const int64_t coln, const char *colname);
 SEXP shallowwrapper(SEXP dt, SEXP cols);
 
 SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols,
@@ -233,6 +236,9 @@ bool islocked(SEXP x);
 SEXP islockedR(SEXP x);
 bool need2utf8(SEXP x);
 SEXP coerceUtf8IfNeeded(SEXP x);
+SEXP asCharacterInteger64(SEXP x, int *nprotect);
+SEXP asCharacterITime(SEXP x, int *nprotect);
+SEXP callRfun1(const char *name, const char *package, SEXP x, int *nprotect);
 
 // types.c
 char *end(char *start);

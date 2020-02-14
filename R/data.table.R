@@ -1870,10 +1870,9 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
       stop("length(rownames)==0 but should be a single column name or number, or NULL")
     } else {
       if (isTRUE(rownames)) {
-        if (length(key(x))>1L) {
+        if (length(key(x))>1L)
           warning("rownames is TRUE but key has multiple columns ",
                   brackify(key(x)), "; taking first column x[,1] as rownames")
-        }
         rownames = if (length(key(x))==1L) chmatch(key(x),names(x)) else 1L
       }
       else if (is.logical(rownames) || is.na(rownames)) {
@@ -1883,7 +1882,6 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
       else if (is.character(rownames)) {
         w = chmatch(rownames, names(x))
         if (is.na(w)) stop("'", rownames, "' is not a column of x")
-        rownames = w
       }
       else { # rownames is a column number already
         rownames = as.integer(rownames)
@@ -1892,73 +1890,23 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
                " which is outside the column number range [1,ncol=", ncol(x), "].")
       }
     }
-  } else if (!is.null(rownames.value)) {
-    if (length(rownames.value)!=nrow(x))
-      stop("length(rownames.value)==", length(rownames.value),
-           " but should be nrow(x)==", nrow(x))
   }
-  if (!is.null(rownames)) {
-    # extract that column and drop it.
-    rownames.value = x[[rownames]]
-    dm = dim(x) - 0:1
-    cn = names(x)[-rownames]
-    X = x[, .SD, .SDcols = cn]
-  } else {
-    dm = dim(x)
-    cn = names(x)
-    X = x
-  }
-  if (any(dm == 0L))
-    return(array(NA, dim = dm, dimnames = list(rownames.value, cn)))
-  p = dm[2L]
-  n = dm[1L]
-  collabs = as.list(cn)
+  
+  # Create shallow copy - where each element of the list X is simply a pointer to
+  # the same column in the data.table x. This means that we do not modify the 
+  # input data.table when dropping rows or coercing columns.
+  X = x
   class(X) = NULL
-  non.numeric = non.atomic = FALSE
-  all.logical = TRUE
-  for (j in seq_len(p)) {
-    if (is.ff(X[[j]])) X[[j]] = X[[j]][]   # nocov to bring the ff into memory, since we need to create a matrix in memory
-    xj = X[[j]]
-    if (length(dj <- dim(xj)) == 2L && dj[2L] > 1L) {
-      if (inherits(xj, "data.table"))
-        xj = X[[j]] = as.matrix(X[[j]])
-      dnj = dimnames(xj)[[2L]]
-      collabs[[j]] = paste(collabs[[j]], if (length(dnj) >
-        0L)
-        dnj
-      else seq_len(dj[2L]), sep = ".")
-    }
-    if (!is.logical(xj))
-      all.logical = FALSE
-    if (length(levels(xj)) > 0L || !(is.numeric(xj) || is.complex(xj) || is.logical(xj)) ||
-        (!is.null(cl <- attr(xj, "class", exact=TRUE)) && any(cl %chin%
-        c("Date", "POSIXct", "POSIXlt"))))
-      non.numeric = TRUE
-    if (!is.atomic(xj))
-      non.atomic = TRUE
+  
+  # Extract and drop the rownames column, if used
+  if (!is.null(rownames)) {
+    rownames.value = X[[rownames]]
+    X[[rownames]] = NULL
   }
-  if (non.atomic) {
-    for (j in seq_len(p)) {
-      xj = X[[j]]
-      if (is.recursive(xj)) { }
-      else X[[j]] = as.list(as.vector(xj))
-    }
-  }
-  else if (all.logical) { }
-  else if (non.numeric) {
-    for (j in seq_len(p)) {
-      if (is.character(X[[j]])) next
-      xj = X[[j]]
-      miss = is.na(xj)
-      xj = if (length(levels(xj))) as.vector(xj) else format(xj)
-      is.na(xj) = miss
-      X[[j]] = xj
-    }
-  }
-  X = unlist(X, recursive = FALSE, use.names = FALSE)
-  dim(X) <- c(n, length(X)/n)
-  dimnames(X) <- list(rownames.value, unlist(collabs, use.names = FALSE))
-  X
+  
+  # Remaining type and class coercion is handled in Casmatrix
+  ans = .Call(Casmatrix, X, rownames.value)
+  ans
 }
 
 # bug #2375. fixed. same as head.data.frame and tail.data.frame to deal with negative indices

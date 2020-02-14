@@ -198,22 +198,7 @@ as.ITime.times = function(x, ms = 'truncate', ...) {
 }
 
 as.character.ITime = format.ITime = function(x, ...) {
-  # adapted from chron's format.times
-  # Fix for #811. Thanks to @StefanFritsch for the code snippet
-  neg = x < 0L
-  x  = abs(unclass(x))
-  hh = x %/% 3600L
-  mm = (x - hh * 3600L) %/% 60L
-  # #2171 -- trunc gives numeric but %02d requires integer;
-  #   as.integer is also faster (but doesn't handle integer overflow)
-  #   http://stackoverflow.com/questions/43894077
-  ss = as.integer(x - hh * 3600L - 60L * mm)
-  res = sprintf('%02d:%02d:%02d', hh, mm, ss)
-  # Fix for #1354, so that "NA" input is handled correctly.
-  if (is.na(any(neg))) res[is.na(x)] = NA
-  neg = which(neg)
-  if (length(neg)) res[neg] = paste0("-", res[neg])
-  res
+  .Call("CasCharacterITime", x)
 }
 
 as.data.frame.ITime = function(x, ...) {

@@ -668,7 +668,7 @@ static bool anyNamed(SEXP x) {
 #define MSGSIZE 1000
 static char memrecycle_message[MSGSIZE+1]; // returned to rbindlist so it can prefix with which one of the list of data.table-like objects
 
-const char *memrecycle(const SEXP target, const SEXP where, const int start, const int len, SEXP source, const int sourceStart, const int sourceLen, const int colnum, const char *colname)
+const char *memrecycle(const SEXP target, const SEXP where, const int64_t start, const int64_t len, SEXP source, const int64_t sourceStart, const int64_t sourceLen, const int64_t colnum, const char *colname)
 // like memcpy but recycles single-item source
 // 'where' a 1-based INTEGER vector subset of target to assign to, or NULL or integer()
 // assigns to target[start:start+len-1] or target[where[start:start+len-1]] where start is 0-based
@@ -677,15 +677,15 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
 // sourceLen==1 is used in dogroups to recycle the group values into ans to match the nrow of each group's result; sourceStart is set to each group value row.
 {
   if (len<1) return NULL;
-  const int slen = sourceLen>=0 ? sourceLen : length(source);
+  const int64_t slen = sourceLen>=0 ? sourceLen : xlength(source);
   if (slen==0) return NULL;
-  if (sourceStart<0 || sourceStart+slen>length(source))
-    error(_("Internal error memrecycle: sourceStart=%d sourceLen=%d length(source)=%d"), sourceStart, sourceLen, length(source)); // # nocov
-  if (!length(where) && start+len>length(target))
-    error(_("Internal error memrecycle: start=%d len=%d length(target)=%d"), start, len, length(target)); // # nocov
-  const int soff = sourceStart;
+  if (sourceStart<0 || sourceStart+slen>xlength(source))
+    error(_("Internal error memrecycle: sourceStart=%"PRId64" sourceLen=%"PRId64" length(source)=%"PRId64""), sourceStart, sourceLen, xlength(source)); // # nocov
+  if (!xlength(where) && start+len>xlength(target))
+    error(_("Internal error memrecycle: start=%"PRId64" len=%"PRId64" length(target)=%"PRId64""), start, len, xlength(target)); // # nocov
+  const int64_t soff = sourceStart;
   if (slen>1 && slen!=len && (!isNewList(target) || isNewList(source)))
-    error(_("Internal error: recycle length error not caught earlier. slen=%d len=%d"), slen, len); // # nocov
+    error(_("Internal error: recycle length error not caught earlier. slen=%"PRId64" len=%"PRId64""), slen, len); // # nocov
   // Internal error because the column has already been added to the DT, so length mismatch should have been caught before adding the column.
   // for 5647 this used to limit slen to len, but no longer
   if (colname==NULL)
@@ -726,7 +726,7 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
         const int nlevel = length(getAttrib(target, R_LevelsSymbol));
         if (isInteger(source)) {
           const int *sd = INTEGER(source);
-          for (int i=0; i<slen; ++i) {
+          for (int64_t i=0; i<slen; ++i) {
             const int val = sd[i+soff];
             if ((val<1 && val!=NA_INTEGER) || val>nlevel) {
               error(_("Assigning factor numbers to column %d named '%s'. But %d is outside the level range [1,%d]"), colnum, colname, val, nlevel);
@@ -734,7 +734,7 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
           }
         } else {
           const double *sd = REAL(source);
-          for (int i=0; i<slen; ++i) {
+          for (int64_t i=0; i<slen; ++i) {
             const double val = sd[i+soff];
             if (!ISNAN(val) && (!R_FINITE(val) || val!=(int)val || (int)val<1 || (int)val>nlevel)) {
               error(_("Assigning factor numbers to column %d named '%s'. But %f is outside the level range [1,%d], or is not a whole number."), colnum, colname, val, nlevel);
@@ -779,17 +779,17 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
             SET_TRUELENGTH(s, -nTargetLevels-(++nAdd));
           } // else, when sourceIsString, it's normal for there to be duplicates here
         }
-        const int nSource = length(source);
+        const int64_t nSource = xlength(source);
         int *newSourceD = INTEGER(newSource);
         if (sourceIsFactor) {
           const int *sourceD = INTEGER(source);
-          for (int i=0; i<nSource; ++i) {  // convert source integers to refer to target levels
+          for (int64_t i=0; i<nSource; ++i) {  // convert source integers to refer to target levels
             const int val = sourceD[i];
             newSourceD[i] = val==NA_INTEGER ? NA_INTEGER : -TRUELENGTH(sourceLevelsD[val-1]); // retains NA factor levels here via TL(NA_STRING); e.g. ordered factor
           }
         } else {
           const SEXP *sourceD = STRING_PTR(source);
-          for (int i=0; i<nSource; ++i) {  // convert source integers to refer to target levels
+          for (int64_t i=0; i<nSource; ++i) {  // convert source integers to refer to target levels
             const SEXP val = sourceD[i];
             newSourceD[i] = val==NA_STRING ? NA_INTEGER : -TRUELENGTH(val);
           }
@@ -857,15 +857,15 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
 
 #define CHECK_RANGE(STYPE, RFUN, COND, FMT, TO) {{                                                                      \
   const STYPE *sd = (const STYPE *)RFUN(source);                                                                        \
-  for (int i=0; i<slen; ++i) {                                                                                          \
+  for (int64_t i=0; i<slen; ++i) {                                                                                          \
     const STYPE val = sd[i+soff];                                                                                       \
     if (COND) {                                                                                                         \
       const char *sType = sourceIsI64 ? "integer64" : type2char(TYPEOF(source));                                        \
       const char *tType = targetIsI64 ? "integer64" : type2char(TYPEOF(target));                                        \
       int n = snprintf(memrecycle_message, MSGSIZE,                                                                     \
-            "%"FMT" (type '%s') at RHS position %d "TO" when assigning to type '%s'", val, sType, i+1, tType);          \
+            "%"FMT" (type '%s') at RHS position %"PRId64" "TO" when assigning to type '%s'", val, sType, i+1, tType);          \
       if (colnum>0 && n>0 && n<MSGSIZE)                                                                                 \
-        snprintf(memrecycle_message+n, MSGSIZE-n, " (column %d named '%s')", colnum, colname);                          \
+        snprintf(memrecycle_message+n, MSGSIZE-n, " (column %"PRId64" named '%s')", colnum, colname);                          \
       /* string returned so that rbindlist/dogroups can prefix it with which item of its list this refers to  */        \
       break;                                                                                                            \
     }                                                                                                                   \
@@ -904,18 +904,18 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
 #undef BODY
 #define BODY(STYPE, RFUN, CTYPE, CAST, ASSIGN) {{    \
   const STYPE *sd = (const STYPE *)RFUN(source);     \
-  if (length(where)) {                               \
+  if (xlength(where)) {                               \
     if (slen==1) {                                   \
       const STYPE val = sd[soff];                    \
       const CTYPE cval = CAST;                       \
-      for (int wi=0; wi<len; ++wi) {                 \
+      for (int64_t wi=0; wi<len; ++wi) {             \
         const int w = wd[wi];                        \
         if (w<1) continue; /*0 or NA*/               \
         const int i = w-1;                           \
         ASSIGN;                                      \
       }                                              \
     } else {                                         \
-      for (int wi=0; wi<len; ++wi) {                 \
+      for (int64_t wi=0; wi<len; ++wi) {             \
         const int w = wd[wi];                        \
         if (w<1) continue;                           \
         const STYPE val = sd[wi+soff];               \
@@ -928,11 +928,11 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
     if (slen==1) {                                   \
       const STYPE val = sd[soff];                    \
       const CTYPE cval = CAST;                       \
-      for (int i=0; i<len; ++i) {                    \
+      for (int64_t i=0; i<len; ++i) {                \
         ASSIGN;                                      \
       }                                              \
     } else {                                         \
-      for (int i=0; i<len; i++) {                    \
+      for (int64_t i=0; i<len; i++) {                \
         const STYPE val = sd[i+soff];                \
         const CTYPE cval = CAST;                     \
         ASSIGN;                                      \
@@ -943,9 +943,9 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
 
 #define COERCE_ERROR(targetType) error(_("type '%s' cannot be coerced to '%s'"), type2char(TYPEOF(source)), targetType); // 'targetType' for integer64 vs double
 
-  const int off = length(where) ? 0 : start;  // off = target offset; e.g. called from rbindlist with where=R_NilValue and start!=0
-  const bool mc = length(where)==0 && slen>0 && slen==len && soff==0;  // mc=memcpy; only if types match and not for single items (a single assign faster than these non-const memcpy calls)
-  const int *wd = length(where) ? INTEGER(where)+start : NULL;
+  const int64_t off = xlength(where) ? 0 : start;  // off = target offset; e.g. called from rbindlist with where=R_NilValue and start!=0
+  const bool mc = xlength(where)==0 && slen>0 && slen==len && soff==0;  // mc=memcpy; only if types match and not for single items (a single assign faster than these non-const memcpy calls)
+  const int64_t *wd = xlength(where) ? INTEGER(where)+start : NULL;
   switch (TYPEOF(target)) {
   case RAWSXP: {
     Rbyte *td = RAW(target) + off;
@@ -1215,4 +1215,3 @@ SEXP setcharvec(SEXP x, SEXP which, SEXP newx)
   }
   return R_NilValue;
 }
-

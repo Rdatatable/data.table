@@ -356,3 +356,67 @@ SEXP coerceUtf8IfNeeded(SEXP x) {
   return(ans);
 }
 
+// Adapted from the bit64 package C function as_character_integer64
+// Allows us to be integer64 aware without the user loading the bit64 package
+SEXP asCharacterInteger64(SEXP x, int *nprotect) {
+  const int64_t lenx = xlength(x);
+  SEXP coerced = PROTECT(allocVector(STRSXP, lenx)); nprotect++;
+  long long int *px = (long long int *) REAL(x);
+  static char buff[22];
+  for (int64_t i=0; i<lenx; ++i) {
+    if (px[i]==NA_INTEGER64) {
+      SET_STRING_ELT(coerced, i, NA_STRING);
+    } else {
+      snprintf(buff, 22, "%lld", px[i]); 
+      SET_STRING_ELT(coerced, i, mkChar(buff)); 
+    }
+  }
+  return(coerced);
+}
+
+SEXP asCharacterITime(SEXP x, int *nprotect) {
+  R_xlen_t lenx = xlength(x);
+  SEXP coerced = PROTECT(allocVector(STRSXP, lenx)); nprotect++;
+  int *px = INTEGER(x);
+  static char buff[10];
+  for (R_xlen_t j=0; j < lenx; ++j) {
+    if (px[j] == NA_INTEGER) {
+      SET_STRING_ELT(coerced, j, NA_STRING);
+    } else {
+      bool neg = px[j] < 0;
+      int ax = neg ? -px[j] : px[j];
+      int hh = ax / 3600;
+      int mm = (ax - hh * 3600) / 60;
+      int ss = ax - hh * 3600 - mm * 60;
+      int err;
+      if (neg)
+        err = snprintf(buff, 10, "-%02d:%02d:%02d", hh, mm, ss);
+      else 
+        err = snprintf(buff, 9, "%02d:%02d:%02d", hh, mm, ss);
+      if (err < 0) // should not be possible, handled to silence compiler warnings
+        error("Internal Error: snprintf in as.character.ITime"); // # nocov
+      SET_STRING_ELT(coerced, j, mkChar(buff));
+    }
+  }
+  return(coerced);
+}
+
+SEXP asCharacterITime_R(SEXP x) {
+  int nprotect = 0;
+  SEXP coerced = asCharacterITime(x, &nprotect);
+  UNPROTECT(1);
+  return(coerced);
+}
+
+// Execute any R function with 1 argument.
+SEXP callRfun1(const char *name, const char *package, SEXP arg, int *nprotect) {
+  SEXP pkgEnv = findVarInFrame3(R_NamespaceRegistry, install(package), (Rboolean) true);
+  if (pkgEnv == R_UnboundValue)
+    error("Package '%s' not loaded\n", package); // # nocov
+
+  SEXP rfun = PROTECT(lang2(install(name), arg)); nprotect++;
+  int errorOccurred;
+  SEXP ret = R_tryEval(rfun, pkgEnv, &errorOccurred);
+  
+  return(ret);
+}
