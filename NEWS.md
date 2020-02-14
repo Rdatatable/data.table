@@ -73,7 +73,9 @@ unit = "s")
 
 10. The dimensions of objects in a `list` column are now displayed, [#3671](https://github.com/Rdatatable/data.table/issues/3671). Thanks to @randomgambit for the request, and Tyson Barrett for the PR.
 
-11. The `keep.rownames` argument in `as.data.table.xts` now accepts a string, which can be used for specifying the column name of the index of the xts input, [#4232](https://github.com/Rdatatable/data.table/issues/4232). Thanks to @shrektan for the request and the PR.
+11. `frank` gains `ties.method='last'`, paralleling the same in `base::order` which has been available since R 3.3.0 (April 2016), [#1689](https://github.com/Rdatatable/data.table/issues/1689). Thanks @abudis for the encouragement to accommodate this.
+
+12. The `keep.rownames` argument in `as.data.table.xts` now accepts a string, which can be used for specifying the column name of the index of the xts input, [#4232](https://github.com/Rdatatable/data.table/issues/4232). Thanks to @shrektan for the request and the PR.
 
 ## BUG FIXES
 
@@ -88,6 +90,8 @@ unit = "s")
 5. `GForce` is deactivated for `[[` on non-atomic input, part of [#4159](https://github.com/Rdatatable/data.table/issues/4159).
 
 6. `all.equal(DT, y)` no longer errors when `y` is not a data.table, [#4042](https://github.com/Rdatatable/data.table/issues/4042). Thanks to @d-sci for reporting and the PR.
+
+7. A length 1 `colClasses=NA_character_` would cause `fread` to incorrectly coerce all columns to character, [#4237](https://github.com/Rdatatable/data.table/issues/4237).
 
 ## NOTES
 
