@@ -2616,7 +2616,7 @@ address = function(x) .Call(Caddress, eval(substitute(x), parent.frame()))
   find_doteq_in_i = function(e) {
     if (is.call(e)) {
       if (is.symbol(e[[1L]]) && e[[1L]] == '[.data.table' && is.call(e[[3L]]) && is.symbol(e[[3L]][[1L]]) && e[[3L]][[1L]] == ':=') {
-        stop("Assignment with := is intended for use in j only, but is present in i, the first argument after [. Most often, this happens when forgetting to leave the first argument blank (e.g. DT[newvar := 5] instead of DT[ , new_var := 5]). Please double-check your syntax (see traceback() after this error for another view of this).")
+        stop("Operator := detected in i, the first argument after [, but is only valid in j. Most often, this happens when forgetting to leave the first argument blank (e.g. DT[newvar := 5] instead of DT[ , new_var := 5]). Please double-check your syntax (see traceback() after this error for another view of this).")
       }
       else lapply(e[-1L], find_doteq_in_i)
     }

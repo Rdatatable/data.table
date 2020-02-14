@@ -16778,5 +16778,5 @@ rm(s1, s2, class2132)
 
 # friendly error for common mistake of using := in i instead of j
 DT = data.table(a = 1)
-test(2133.1, DT[b := 2], error="Assignment with := is intended for use in j only, but is present in i")
-test(2133.2, DT[DT[mpg_per_cl := mpg/cyl], on='ast'], error="Assignment with := is intended for use in j only, but is present in i")
+test(2133.1, DT[b := 2], error="Operator := detected in i, the first argument after [, but is only valid in j")
+test(2133.2, DT[DT[mpg_per_cl := mpg/cyl], on='ast'], error="Operator := detected in i, the first argument after [, but is only valid in j")
