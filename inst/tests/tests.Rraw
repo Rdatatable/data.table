@@ -5480,8 +5480,8 @@ test_no = 1368.0
 for (i in seq_along(dt)) {
   col = dt[[i]]
   for (j in list(TRUE, FALSE, "keep")) {
-    for (k in c("average", "min", "max", "first", "last")) {
-      if (k == "random") set.seed(45L)
+    # ensure consistency with base::rank ties.methods as advertised
+    for (k in setdiff(eval(formals(base::rank)$ties.method), 'random')) {
       if (class(col) == "integer64") {
         r1 = rank(as.integer(col), ties.method=k, na.last=j)
         r2 = rank(-xtfrm(as.integer(col)), ties.method=k, na.last=j)
@@ -5490,7 +5490,6 @@ for (i in seq_along(dt)) {
         r1 = rank(col, ties.method=k, na.last=j)
         r2 = rank(-xtfrm(col), ties.method=k, na.last=j)
       }
-      if (k == "random") set.seed(45L)
       r3 = frankv(col, ties.method=k, na.last=j)
       r4 = frankv(col, order=-1L, ties.method=k, na.last=j)
 
@@ -5511,8 +5510,8 @@ if (test_bit64) dt[, DD := as.integer64(DD)]
 test_no = 1369.0
 for (i in seq_along(dt)) {
   col = dt[[i]]
-  for (k in c("average", "min", "max", "first", "last")) {
-    if (k == "random") set.seed(45L)
+  # ensure consistency with base::rank ties.methods as advertised
+  for (k in setdiff(eval(formals(base::rank)$ties.method), 'random')) {
     if (class(col) == "integer64") {
       r1 = rank(as.integer(col), ties.method=k, na.last=NA)
       r2 = rank(-xtfrm(as.integer(col)), ties.method=k, na.last=NA)
@@ -5521,7 +5520,6 @@ for (i in seq_along(dt)) {
       r1 = rank(col, ties.method=k, na.last=NA)
       r2 = rank(-xtfrm(col), ties.method=k, na.last=NA)
     }
-    if (k == "random") set.seed(45L)
     r3 = frankv(col, ties.method=k, na.last=NA)
     r4 = frankv(col, order=-1L, ties.method=k, na.last=NA)
 
