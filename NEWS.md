@@ -113,6 +113,20 @@ unit = "s")
 
 5. `frank(..., ties.method="random", na.last=NA)` now returns the same random ordering that `base::rank` does, [#4243](https://github.com/Rdatatable/data.table/pull/4243).
 
+6. The error message when mistakenly using `:=` in `i` instead of `j` has been much improved, [#4227](https://github.com/Rdatatable/data.table/issues/4227). Thanks to Hugh Parsonage for the detailed suggestion.
+
+    ```R
+    > DT = data.table(A=1:2)
+    > DT[B:=3]
+    Error: Operator := detected in i, the first argument inside DT[...], but is only valid in the second argument, j. Most often, this happens when forgetting the first comma (e.g. DT[newvar := 5] instead of DT[ , new_var := 5]). Please double-check the syntax. Run traceback(), and debugger() to get a line number.
+    > DT[,B:=3]
+    > DT
+           A     B
+       <int> <num>
+    1:     1     3
+    2:     2     3
+    ```
+
 
 # data.table [v1.12.8](https://github.com/Rdatatable/data.table/milestone/15?closed=1)  (09 Dec 2019)
 

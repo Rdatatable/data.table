@@ -2611,7 +2611,19 @@ vecseq = function(x,y,clamp) .Call(Cvecseq,x,y,clamp)
 # .Call(Caddress, x) increments NAM() when x is vector with NAM(1). Referring object within non-primitive function is enough to increment reference.
 address = function(x) .Call(Caddress, eval(substitute(x), parent.frame()))
 
-":=" = function(...) stop('Check that is.data.table(DT) == TRUE. Otherwise, := and `:=`(...) are defined for use in j, once only and in particular ways. See help(":=").')
+":=" = function(...) {
+  # detect common mistake -- using := in i due to forgetting a comma to leave it blank, #4227
+  find_doteq_in_i = function(e) {
+    if (is.call(e)) {
+      if (is.symbol(e[[1L]]) && e[[1L]] == '[.data.table' && is.call(e[[3L]]) && is.symbol(e[[3L]][[1L]]) && e[[3L]][[1L]] == ':=') {
+        stop("Operator := detected in i, the first argument inside DT[...], but is only valid in the second argument, j. Most often, this happens when forgetting the first comma (e.g. DT[newvar := 5] instead of DT[ , new_var := 5]). Please double-check the syntax. Run traceback(), and debugger() to get a line number.")
+      }
+      else lapply(e[-1L], find_doteq_in_i)
+    }
+  }
+  for (calli in sys.calls()) find_doteq_in_i(calli)
+  stop('Check that is.data.table(DT) == TRUE. Otherwise, := and `:=`(...) are defined for use in j, once only and in particular ways. See help(":=").')
+}
 
 setDF = function(x, rownames=NULL) {
   if (!is.list(x)) stop("setDF only accepts data.table, data.frame or list of equal length as input")

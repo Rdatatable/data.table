@@ -16792,7 +16792,8 @@ if (test_xts) {
   test(2133.5, as.data.table(xts, keep.rownames = NA_character_),
        error = "keep.rownames must not be NA")
 }
-     
-########################
-#  Add new tests here  #
-########################
+
+# friendlier error for common mistake of using := in i instead of j, #4227
+DT = data.table(a = 1)
+test(2134.1, DT[b := 2], error="Operator := detected in i, the first argument inside DT[...], but is only valid in the second argument, j.")
+test(2134.2, DT[DT[mpg_per_cl := mpg/cyl], on='ast'], error="Operator := detected in i, the first argument inside")
