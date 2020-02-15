@@ -109,7 +109,20 @@ unit = "s")
 
 4. `fifelse` and `fcase` notify users that S4 objects (except `nanotime`) are not supported [#4135](https://github.com/Rdatatable/data.table/issues/4135). Thanks to @torema-ed for bringing it to our attention and Morgan Jacob for the PR.
 
-5. One of the more common mistakes is accidentally using `:=` in `i` instead of `j` (like `DT[new_var := 5]`). The error in this case is now friendlier for getting you back to working code, [#4227](https://github.com/Rdatatable/data.table/issues/4227).
+5. The error message when mistakenly using `:=` in `i` instead of `j` has been much improved, [#4227](https://github.com/Rdatatable/data.table/issues/4227). Thanks to Hugh Parsonage for the detailed suggestion.
+
+    ```R
+    > DT = data.table(A=1:2)
+    > DT[B:=3]
+    Error: Operator := detected in i, the first argument inside DT[...], but is only valid in the second argument, j. Most often, this happens when forgetting the first comma (e.g. DT[newvar := 5] instead of DT[ , new_var := 5]). Please double-check the syntax. Run traceback(), and debugger() to get a line number.
+    > DT[,B:=3]
+    > DT
+           A     B
+       <int> <num>
+    1:     1     3
+    2:     2     3
+    ```
+
 
 # data.table [v1.12.8](https://github.com/Rdatatable/data.table/milestone/15?closed=1)  (09 Dec 2019)
 

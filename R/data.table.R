@@ -2612,11 +2612,11 @@ vecseq = function(x,y,clamp) .Call(Cvecseq,x,y,clamp)
 address = function(x) .Call(Caddress, eval(substitute(x), parent.frame()))
 
 ":=" = function(...) {
-  # detect common mistake -- use := in i after forgetting a comma to leave it blank, #4227
+  # detect common mistake -- using := in i due to forgetting a comma to leave it blank, #4227
   find_doteq_in_i = function(e) {
     if (is.call(e)) {
       if (is.symbol(e[[1L]]) && e[[1L]] == '[.data.table' && is.call(e[[3L]]) && is.symbol(e[[3L]][[1L]]) && e[[3L]][[1L]] == ':=') {
-        stop("Operator := detected in i, the first argument after [, but is only valid in j. Most often, this happens when forgetting to leave the first argument blank (e.g. DT[newvar := 5] instead of DT[ , new_var := 5]). Please double-check your syntax (see traceback() after this error for another view of this).")
+        stop("Operator := detected in i, the first argument inside DT[...], but is only valid in the second argument, j. Most often, this happens when forgetting the first comma (e.g. DT[newvar := 5] instead of DT[ , new_var := 5]). Please double-check the syntax. Run traceback(), and debugger() to get a line number.")
       }
       else lapply(e[-1L], find_doteq_in_i)
     }
