@@ -109,6 +109,8 @@ unit = "s")
 
 4. `fifelse` and `fcase` notify users that S4 objects (except `nanotime`) are not supported [#4135](https://github.com/Rdatatable/data.table/issues/4135). Thanks to @torema-ed for bringing it to our attention and Morgan Jacob for the PR.
 
+5. `frank(..., ties.method="random", na.last=NA)` now returns the same random ordering that `base::rank` does, [#4243](https://github.com/Rdatatable/data.table/pull/4243).
+
 
 # data.table [v1.12.8](https://github.com/Rdatatable/data.table/milestone/15?closed=1)  (09 Dec 2019)
 
