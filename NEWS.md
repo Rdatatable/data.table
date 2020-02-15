@@ -75,6 +75,8 @@ unit = "s")
 
 11. `frank` gains `ties.method='last'`, paralleling the same in `base::order` which has been available since R 3.3.0 (April 2016), [#1689](https://github.com/Rdatatable/data.table/issues/1689). Thanks @abudis for the encouragement to accommodate this.
 
+12. The `keep.rownames` argument in `as.data.table.xts` now accepts a string, which can be used for specifying the column name of the index of the xts input, [#4232](https://github.com/Rdatatable/data.table/issues/4232). Thanks to @shrektan for the request and the PR.
+
 ## BUG FIXES
 
 1. A NULL timezone on POSIXct was interpreted by `as.IDate` and `as.ITime` as UTC rather than the session's default timezone (`tz=""`) , [#4085](https://github.com/Rdatatable/data.table/issues/4085).
@@ -109,7 +111,9 @@ unit = "s")
 
 4. `fifelse` and `fcase` notify users that S4 objects (except `nanotime`) are not supported [#4135](https://github.com/Rdatatable/data.table/issues/4135). Thanks to @torema-ed for bringing it to our attention and Morgan Jacob for the PR.
 
-5. The error message when mistakenly using `:=` in `i` instead of `j` has been much improved, [#4227](https://github.com/Rdatatable/data.table/issues/4227). Thanks to Hugh Parsonage for the detailed suggestion.
+5. `frank(..., ties.method="random", na.last=NA)` now returns the same random ordering that `base::rank` does, [#4243](https://github.com/Rdatatable/data.table/pull/4243).
+
+6. The error message when mistakenly using `:=` in `i` instead of `j` has been much improved, [#4227](https://github.com/Rdatatable/data.table/issues/4227). Thanks to Hugh Parsonage for the detailed suggestion.
 
     ```R
     > DT = data.table(A=1:2)
