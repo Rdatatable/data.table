@@ -5480,7 +5480,8 @@ test_no = 1368.0
 for (i in seq_along(dt)) {
   col = dt[[i]]
   for (j in list(TRUE, FALSE, "keep")) {
-    for (k in c("average", "min", "max", "first")) {
+    # ensure consistency with base::rank ties.methods as advertised
+    for (k in eval(formals(base::rank)$ties.method)) {
       if (k == "random") set.seed(45L)
       if (class(col) == "integer64") {
         r1 = rank(as.integer(col), ties.method=k, na.last=j)
@@ -5511,7 +5512,8 @@ if (test_bit64) dt[, DD := as.integer64(DD)]
 test_no = 1369.0
 for (i in seq_along(dt)) {
   col = dt[[i]]
-  for (k in c("average", "min", "max", "first")) {
+  # ensure consistency with base::rank ties.methods as advertised
+  for (k in eval(formals(base::rank)$ties.method)) {  # 'random' on now with tweak to match base in #4243
     if (k == "random") set.seed(45L)
     if (class(col) == "integer64") {
       r1 = rank(as.integer(col), ties.method=k, na.last=NA)
@@ -10698,6 +10700,12 @@ test(1743.01, sapply(fread("a,b\n3,a", colClasses=c(NA, "factor")), class), c(a=
 test(1743.02, sapply(fread("a,b\n3,a", colClasses=c(NA, NA)), class), c(a="integer", b="character"))
 test(1743.03, fread("a,b\n1,a", colClasses=c(NA, TRUE)), error="colClasses is.*logical.*but it has some TRUE or FALSE.*not allowed")
 test(1743.04, fread("a,b\n1,a", colClasses=c("character", "factor")), data.table(a="1", b=factor("a")))
+
+# and the length-1 character case; #4237
+test(1743.041, fread("a,b\n1,a", colClasses=NA_character_), data.table(a=1L, b="a"))
+test(1743.042, fread("a,b\n1,a", colClasses=""), data.table(a=1L, b="a"))
+test(1743.043, fread("a\n1", colClasses=NA_character_), data.table(a=1L))
+test(1743.044, fread("a\n1", colClasses=""), data.table(a=1L))
 
 # Issue #1634: 'fread doesn't check colClasses to be valid type'
 # Currently using BioGenerics, which doesn't support USE.NAMES
@@ -16770,7 +16778,22 @@ test(2132.2, fifelse(TRUE, 1, s2),       error = "S4 class objects (except nanot
 test(2132.3, fcase(TRUE, s1, FALSE, s2), error = "S4 class objects (except nanotime) are not supported. Please see https://github.com/Rdatatable/data.table/issues/4131.")
 rm(s1, s2, class2132)
 
+if (test_xts) {
+  # keep.rownames in as.data.table.xts() supports a string, #4232
+  xts = xts::xts(1:10, structure(1:10, class = "Date"))
+  colnames(xts) = "VALUE"
+  DT = as.data.table(xts, keep.rownames = "DATE", key = "DATE")
+  test(2133.1, colnames(DT), c("DATE", "VALUE"))
+  test(2133.2, key(DT), "DATE")
+  test(2133.3, as.data.table(xts, keep.rownames = "VALUE"),
+       error = "Input xts object should not have 'VALUE' column because it would result in duplicate column names. Rename 'VALUE' column in xts or use `keep.rownames` to change the index col name.")
+  test(2133.4, as.data.table(xts, keep.rownames = character()),
+       error = "keep.rownames must be length 1")
+  test(2133.5, as.data.table(xts, keep.rownames = NA_character_),
+       error = "keep.rownames must not be NA")
+}
 
-########################
-#  Add new tests here  #
-########################
+# friendlier error for common mistake of using := in i instead of j, #4227
+DT = data.table(a = 1)
+test(2134.1, DT[b := 2], error="Operator := detected in i, the first argument inside DT[...], but is only valid in the second argument, j.")
+test(2134.2, DT[DT[mpg_per_cl := mpg/cyl], on='ast'], error="Operator := detected in i, the first argument inside")
