@@ -122,9 +122,9 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b, SEXP na) {
     }
   } break;
   case VECSXP : {
-    const SEXP *restrict pa = VECTOR_PTR(a);
-    const SEXP *restrict pb = VECTOR_PTR(b);
-    const SEXP *restrict pna = VECTOR_PTR(na);
+    const SEXP *restrict pa = SEXPPTR_RO(a);
+    const SEXP *restrict pb = SEXPPTR_RO(b);
+    const SEXP *restrict pna = SEXPPTR_RO(na);
     for (int64_t i=0; i<len0; ++i) {
       if (pl[i]==NA_LOGICAL) {
         if (nonna)
@@ -149,8 +149,9 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b, SEXP na) {
 SEXP fcaseR(SEXP na, SEXP rho, SEXP args) {
   int n=length(args);
   if (n % 2) {
-    error("Please supply an even number of arguments in ..., consisting of logical condition,"
-             " resulting value pairs (in that order); received %d inputs.", n);
+    error(_("Received %d inputs; please supply an even number of arguments in ..., "
+            "consisting of logical condition, resulting value pairs (in that order). "
+            "Note that the default argument must be named explicitly, e.g., default=0"), n);
   }
   int nprotect = 0, l = 0;
   int64_t len0=0, len1=0, len2=0, idx=0;
@@ -163,8 +164,8 @@ SEXP fcaseR(SEXP na, SEXP rho, SEXP args) {
   int *restrict p = NULL;
   n = n/2;
   for (int i=0; i<n; ++i) {
-    REPROTECT(cons = eval(VECTOR_PTR(args)[2*i], rho), Icons);
-    REPROTECT(outs = eval(VECTOR_PTR(args)[2*i+1], rho), Iouts);
+    REPROTECT(cons = eval(SEXPPTR_RO(args)[2*i], rho), Icons);
+    REPROTECT(outs = eval(SEXPPTR_RO(args)[2*i+1], rho), Iouts);
     if (isS4(outs) && !INHERITS(outs, char_nanotime)) {
       error("S4 class objects (except nanotime) are not supported. Please see https://github.com/Rdatatable/data.table/issues/4131.");
     }
@@ -318,8 +319,8 @@ SEXP fcaseR(SEXP na, SEXP rho, SEXP args) {
       }
     } break;
     case VECSXP: {
-      const SEXP *restrict pouts = VECTOR_PTR(outs);
-      const SEXP pna = VECTOR_PTR(na)[0];
+      const SEXP *restrict pouts = SEXPPTR_RO(outs);
+      const SEXP pna = SEXPPTR_RO(na)[0];
       for (int64_t j=0; j<len2; ++j) {
         idx = imask ? j : p[j];
         if (pcons[idx]==1) {

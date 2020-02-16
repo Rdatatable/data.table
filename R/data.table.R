@@ -57,7 +57,7 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL, str
   nd = name_dots(...)
   names(x) = nd$vnames
   if (length(x)==0L) return( null.data.table() )
-  if (length(x)==1L && (is.null(x[[1L]]) || (is.list(x[[1L]]) && length(x[[1L]])==0L))) return( null.data.table() ) #5377
+  if (length(x)==1L && (is.null(x[[1L]]) || (is.list(x[[1L]]) && length(x[[1L]])==0L))) return( null.data.table() ) #48
   ans = as.data.table.list(x, keep.rownames=keep.rownames, check.names=check.names, .named=nd$.named)  # see comments inside as.data.table.list re copies
   if (!is.null(key)) {
     if (!is.character(key)) stop("key argument of data.table() must be character")
@@ -92,7 +92,7 @@ replace_dot_alias = function(e) .Call(Creplace_dot_aliasR, e)
 .massagei = function(x) {
   # J alias for list as well in i, just if the first symbol
   # if x = substitute(base::order) then as.character(x[[1L]]) == c("::", "base", "order")
-  if (is.call(x) && as.character(x[[1L]])[[1L]] %chin% c("J","."))
+  if (x %iscall% c("J","."))
     x[[1L]] = quote(list)
   x
 }
@@ -121,12 +121,12 @@ replace_dot_alias = function(e) .Call(Creplace_dot_aliasR, e)
   # test explicitly if the caller is [.data.table (even stronger test. TO DO.)
   # the drop=NULL is to sink drop argument when dispatching to [.data.frame; using '...' stops test 147
   if (!cedta()) {
-    # Fix for #5070 (to do)
+    # Fix for #500 (to do)
     Nargs = nargs() - (!missing(drop))
     ans = if (Nargs<3L) { `[.data.frame`(x,i) }  # drop ignored anyway by DF[i]
         else if (missing(drop)) `[.data.frame`(x,i,j)
         else `[.data.frame`(x,i,j,drop)
-    # added is.data.table(ans) check to fix bug #5069
+    # added is.data.table(ans) check to fix bug #81
     if (!missing(i) & is.data.table(ans)) setkey(ans,NULL)  # See test 304
     return(ans)
   }
@@ -210,7 +210,7 @@ replace_dot_alias = function(e) .Call(Creplace_dot_aliasR, e)
     if (colselect) {
     }
     if (root == ":" ||
-        (root %chin% c("-","!") && is.call(jsub[[2L]]) && jsub[[2L]][[1L]]=="(" && is.call(jsub[[2L]][[2L]]) && jsub[[2L]][[2L]][[1L]]==":") ||
+        (root %chin% c("-","!") && jsub[[2L]] %iscall% '(' && jsub[[2L]][[2L]] %iscall% ':') ||
         ( (!length(av<-all.vars(jsub)) || all(substring(av,1L,2L)=="..")) &&
           root %chin% c("","c","paste","paste0","-","!") &&
           missingby )) {   # test 763. TODO: likely that !missingby iff with==TRUE (so, with can be removed)
@@ -253,7 +253,7 @@ replace_dot_alias = function(e) .Call(Creplace_dot_aliasR, e)
       if (length(jsub) == 2L) {
         jsub = jsub[[2L]]  # to allow {} wrapping of := e.g. [,{`:=`(...)},] [#376]
         root = if (is.call(jsub)) as.character(jsub[[1L]])[1L] else ""
-      } else if (length(jsub) > 2L && is.call(jsub[[2L]]) && jsub[[2L]][[1L]] == ":=") {
+      } else if (length(jsub) > 2L && jsub[[2L]] %iscall% ":=") {
         #2142 -- j can be {} and have length 1
         stop("You have wrapped := with {} which is ok but then := must be the only thing inside {}. You have something else inside {} as well. Consider placing the {} on the RHS of := instead; e.g. DT[,someCol:={tmpVar1<-...;tmpVar2<-...;tmpVar1*tmpVar2}")
       }
@@ -318,17 +318,17 @@ replace_dot_alias = function(e) .Call(Creplace_dot_aliasR, e)
        assign(".N", nrow(x), envir=parent.frame(), inherits=FALSE)
        remove.N = TRUE
     }
-    if (is.call(isub) && isub[[1L]]=="eval") {  # TO DO: or ..()
+    if (isub %iscall% "eval") {  # TO DO: or ..()
       isub = eval(.massagei(isub[[2L]]), parent.frame(), parent.frame())
       if (is.expression(isub)) isub=isub[[1L]]
     }
-    if (is.call(isub) && isub[[1L]] == as.name("!")) {
+    if (isub %iscall% "!") {
       notjoin = TRUE
       if (!missingnomatch) stop("not-join '!' prefix is present on i but nomatch is provided. Please remove nomatch.");
       nomatch = 0L
       isub = isub[[2L]]
       # #932 related so that !(v1 == 1) becomes v1 == 1 instead of (v1 == 1) after removing "!"
-      if (is.call(isub) && isub[[1L]] == "(" && !is.name(isub[[2L]]))
+      if (isub %iscall% "(" && !is.name(isub[[2L]]))
         isub = isub[[2L]]
     }
 
@@ -351,7 +351,12 @@ replace_dot_alias = function(e) .Call(Creplace_dot_aliasR, e)
     else if (!is.name(isub)) {
       ienv = new.env(parent=parent.frame())
       if (getOption("datatable.optimize")>=1L) assign("order", forder, ienv)
-      i = tryCatch(eval(.massagei(isub), x, ienv), error=function(e) .checkTypos(e, names_x))
+      i = tryCatch(eval(.massagei(isub), x, ienv), error=function(e) {
+        if (grepl(":=.*defined for use in j.*only", e$message))
+          stop("Operator := detected in i, the first argument inside DT[...], but is only valid in the second argument, j. Most often, this happens when forgetting the first comma (e.g. DT[newvar := 5] instead of DT[ , new_var := 5]). Please double-check the syntax. Run traceback(), and debugger() to get a line number.")
+        else
+          .checkTypos(e, names_x)
+      })
     } else {
       # isub is a single symbol name such as B in DT[B]
       i = try(eval(isub, parent.frame(), parent.frame()), silent=TRUE)
@@ -622,7 +627,7 @@ replace_dot_alias = function(e) .Call(Creplace_dot_aliasR, e)
     # j was substituted before dealing with i so that := can set allow.cartesian=FALSE (#800) (used above in i logic)
     if (is.null(jsub)) return(NULL)
 
-    if (!with && is.call(jsub) && jsub[[1L]]==":=") {
+    if (!with && jsub %iscall% ":=") {
       # TODO: make these both errors (or single long error in both cases) in next release.
       # i.e. using with=FALSE together with := at all will become an error. Eventually with will be removed.
       if (is.null(names(jsub)) && is.name(jsub[[2L]])) {
@@ -636,14 +641,13 @@ replace_dot_alias = function(e) .Call(Creplace_dot_aliasR, e)
 
     if (!with) {
       # missingby was already checked above before dealing with i
-      if (is.call(jsub) && length(jsub)==2L && as.character(jsub[[1L]]) %chin% c("!", "-")) {  # length 2 to only match unary, #2109
+      if (jsub %iscall% c("!", "-") && length(jsub)==2L) {  # length 2 to only match unary, #2109
         notj = TRUE
         jsub = jsub[[2L]]
       } else notj = FALSE
       # fix for #1216, make sure the parentheses are peeled from expr of the form (((1:4)))
-      while (is.call(jsub) && jsub[[1L]] == "(") jsub = as.list(jsub)[[-1L]]
-      if (is.call(jsub) && length(jsub) == 3L && jsub[[1L]] == ":") {
-        # below parent.frame() handles var1:var2 scoped from parent scope, still not evaluates
+      while (jsub %iscall% "(") jsub = as.list(jsub)[[-1L]]
+      if (jsub %iscall% ":" && length(jsub)==3L) {
         j = eval(jsub, setattr(as.list(seq_along(x)), 'names', names_x), parent.frame()) # else j will be evaluated for the first time on next line
       } else {
         names(..syms) = ..syms
@@ -651,7 +655,7 @@ replace_dot_alias = function(e) .Call(Creplace_dot_aliasR, e)
       }
       if (is.logical(j)) j <- which(j)
       if (!length(j) && !notj) return( null.data.table() )
-      if (is.factor(j)) j = as.character(j)  # fix for FR: #4867
+      if (is.factor(j)) j = as.character(j)  # fix for FR: #358
       if (is.character(j)) {
         if (notj) {
           if (anyNA(idx <- chmatch(j, names_x))) warning("column(s) not removed because not found: ", brackify(j[is.na(idx)]))
@@ -697,7 +701,7 @@ replace_dot_alias = function(e) .Call(Creplace_dot_aliasR, e)
         # may evaluate to NULL | character() | "" | list(), likely a result of a user expression where no-grouping is one case being loop'd through
         bysubl = as.list.default(bysub)
         bysuborig = bysub
-        if (is.name(bysub) && !(as.character(bysub) %chin% names_x)) {  # TO DO: names(x),names(i),and i. and x. prefixes
+        if (is.name(bysub) && !(bysub %chin% names_x)) {  # TO DO: names(x),names(i),and i. and x. prefixes
           bysub = eval(bysub, parent.frame(), parent.frame())
           # fix for # 5106 - http://stackoverflow.com/questions/19983423/why-by-on-a-vector-not-from-a-data-table-column-is-very-slow
           # case where by=y where y is not a column name, and not a call/symbol/expression, but an atomic vector outside of DT.
@@ -709,7 +713,7 @@ replace_dot_alias = function(e) .Call(Creplace_dot_aliasR, e)
           bysub = replace_dot_alias(bysub) # fix for #1298
           if (is.expression(bysub)) bysub=bysub[[1L]]
           bysubl = as.list.default(bysub)
-        } else if (is.call(bysub) && as.character(bysub[[1L]]) %chin% c("c","key","names", "intersect", "setdiff")) {
+        } else if (bysub %iscall% c("c","key","names", "intersect", "setdiff")) {
           # catch common cases, so we don't have to copy x[irows] for all columns
           # *** TO DO ***: try() this eval first (as long as not list() or .()) and see if it evaluates to column names
           # to avoid the explicit c,key,names which already misses paste("V",1:10) for example
@@ -719,11 +723,11 @@ replace_dot_alias = function(e) .Call(Creplace_dot_aliasR, e)
           tt = eval(bysub, parent.frame(), parent.frame())
           if (!is.character(tt)) stop("by=c(...), key(...) or names(...) must evaluate to 'character'")
           bysub=tt
-        } else if (is.call(bysub) && !as.character(bysub[[1L]]) %chin% c("list", "as.list", "{", ".", ":")) {
+        } else if (is.call(bysub) && !(bysub[[1L]] %chin% c("list", "as.list", "{", ".", ":"))) {
           # potential use of function, ex: by=month(date). catch it and wrap with "(", because we need to set "bysameorder" to FALSE as we don't know if the function will return ordered results just because "date" is ordered. Fixes #2670.
           bysub = as.call(c(as.name('('), list(bysub)))
           bysubl = as.list.default(bysub)
-        } else if (is.call(bysub) && bysub[[1L]] == ".") bysub[[1L]] = quote(list)
+        } else if (bysub %iscall% ".") bysub[[1L]] = quote(list)
 
         if (mode(bysub) == "character") {
           if (length(grep(",", bysub, fixed = TRUE))) {
@@ -759,7 +763,7 @@ replace_dot_alias = function(e) .Call(Creplace_dot_aliasR, e)
         }
 
         if (is.null(irows)) {
-          if (is.call(bysub) && length(bysub) == 3L && bysub[[1L]] == ":" && is.name(bysub[[2L]]) && is.name(bysub[[3L]])) {
+          if (bysub %iscall% ':' && length(bysub)==3L && is.name(bysub[[2L]]) && is.name(bysub[[3L]])) {
             byval = eval(bysub, setattr(as.list(seq_along(x)), 'names', names_x), parent.frame())
             byval = as.list(x)[byval]
           } else byval = eval(bysub, x, parent.frame())
@@ -780,7 +784,7 @@ replace_dot_alias = function(e) .Call(Creplace_dot_aliasR, e)
             if (verbose) cat("i clause present but columns used in by not detected. Having to subset all columns before evaluating 'by': '",deparse(by),"'\n",sep="")
             xss = x[irows,nomatch=nomatch,mult=mult,roll=roll,rollends=rollends]
           }
-          if (is.call(bysub) && length(bysub) == 3L && bysub[[1L]] == ":") {
+          if (bysub %iscall% ':' && length(bysub)==3L) {
             byval = eval(bysub, setattr(as.list(seq_along(xss)), 'names', names(xss)), parent.frame())
             byval = as.list(xss)[byval]
           } else byval = eval(bysub, xss, parent.frame())
@@ -798,7 +802,7 @@ replace_dot_alias = function(e) .Call(Creplace_dot_aliasR, e)
           # the rest now fall through
         } else bynames = names(byval)
         if (is.atomic(byval)) {
-          if (is.character(byval) && length(byval)<=ncol(x) && !(is.name(bysub) && as.character(bysub) %chin% names_x) ) {
+          if (is.character(byval) && length(byval)<=ncol(x) && !(is.name(bysub) && bysub %chin% names_x) ) {
             stop("'by' appears to evaluate to column names but isn't c() or key(). Use by=list(...) if you can. Otherwise, by=eval",deparse(bysub)," should work. This is for efficiency so data.table can detect which columns are needed.")
           } else {
             # by may be a single unquoted column name but it must evaluate to list so this is a convenience to users. Could also be a single expression here such as DT[,sum(v),by=colA%%2]
@@ -861,7 +865,7 @@ replace_dot_alias = function(e) .Call(Creplace_dot_aliasR, e)
       #   e.g. DT[, .(a=sum(v), v, .N), by=] should create columns named a, v, N
       do_j_names = function(q) {
         if (!is.call(q) || !is.name(q[[1L]])) return(q)
-        if (as.character(q[[1L]]) %chin% c('list', '.')) {
+        if (q[[1L]] %chin% c('list', '.')) {
           q[[1L]] = quote(list)
           qlen = length(q)
           if (qlen>1L) {
@@ -914,23 +918,20 @@ replace_dot_alias = function(e) .Call(Creplace_dot_aliasR, e)
           ansvals = chmatchdup(ansvars, names_x)
         } else {
           colselect = getOption("datatable.colselect", FALSE)
-          # FR #4979 - negative numeric and character indices for SDcols
+          # FR #355 - negative numeric and character indices for SDcols
           colsub = substitute(.SDcols)
-          with = copy(with)
-          #eval(substitute(new_ansvals <- exprCols(x, .colsub, ".SDcols", with, parent.frame()), list(.colsub=colsub)))
-          new_ansvals = NULL
-          # fix for #5190. colsub[[1L]] gave error when it's a symbol.
-          if (is.call(colsub) && deparse(colsub[[1L]], 500L, backtick=FALSE) %chin% c("!", "-")) {
+          # fix for R-Forge #5190. colsub[[1L]] gave error when it's a symbol.
+          if (colsub %iscall% c("!", "-")) {
             negate_sdcols = TRUE
             colsub = colsub[[2L]]
           } else negate_sdcols = FALSE
           # fix for #1216, make sure the parentheses are peeled from expr of the form (((1:4)))
-          while(is.call(colsub) && colsub[[1L]] == "(") colsub = as.list(colsub)[[-1L]]
-          if (is.call(colsub) && length(colsub) == 3L && colsub[[1L]] == ":") {
+          while(colsub %iscall% "(") colsub = as.list(colsub)[[-1L]]
+          if (colsub %iscall% ':' && length(colsub)==3L) {
             # .SDcols is of the format a:b
             .SDcols = eval(colsub, setattr(as.list(seq_along(x)), 'names', names_x), parent.frame())
           } else {
-            if (is.call(colsub) && colsub[[1L]] == "patterns") {
+            if (colsub %iscall% 'patterns') {
               # each pattern gives a new filter condition, intersect the end result
               .SDcols = Reduce(intersect, do_patterns(colsub, names_x))
             } else {
@@ -1001,14 +1002,14 @@ replace_dot_alias = function(e) .Call(Creplace_dot_aliasR, e)
         }
 
         # Do not include z in .SD when dt[, z := {.SD; get("x")}, .SDcols = "y"] (#2326, #2338)
-        if (is.call(jsub) && length(jsub[[1L]]) == 1L && jsub[[1L]] == ":=" && is.symbol(jsub[[2L]])) {
+        if (jsub %iscall% ':=' && is.symbol(jsub[[2L]])) {
           jsub_lhs_symbol = as.character(jsub[[2L]])
             if (jsub_lhs_symbol %chin% non_sdvars) {
             sdvars = setdiff(sdvars, jsub_lhs_symbol)
           }
         }
         allcols = c(names_x, xdotprefix, names_i, idotprefix)
-        ansvars = setdiff(allcols, bynames) # fix for bug #5443
+        ansvars = setdiff(allcols, bynames) # fix for bug #34
         non_sdvars = setdiff(ansvars, sdvars)
         ansvals = chmatch(ansvars, names_x)
         if (verbose) cat("New:",paste(ansvars,collapse=","),"\n")
@@ -1108,7 +1109,7 @@ replace_dot_alias = function(e) .Call(Creplace_dot_aliasR, e)
             setalloccol(x, n, verbose=verbose)   # always assigns to calling scope; i.e. this scope
             if (is.name(name)) {
               assign(as.character(name),x,parent.frame(),inherits=TRUE)
-            } else if (is.call(name) && (name[[1L]] == "$" || name[[1L]] == "[[") && is.name(name[[2L]])) {
+            } else if (name %iscall% c('$', '[[') && is.name(name[[2L]])) {
               k = eval(name[[2L]], parent.frame(), parent.frame())
               if (is.list(k)) {
                 origj = j = if (name[[1L]] == "$") as.character(name[[3L]]) else eval(name[[3L]], parent.frame(), parent.frame())
@@ -1248,7 +1249,7 @@ replace_dot_alias = function(e) .Call(Creplace_dot_aliasR, e)
           if (keylen && (ichk || is.logical(i) || (.Call(CisOrderedSubset, irows, nrow(x)) && ((roll == FALSE) || length(irows) == 1L)))) # see #1010. don't set key when i has no key, but irows is ordered and roll != FALSE
             setattr(ans,"sorted",head(key(x),keylen))
         }
-        setattr(ans, "class", class(x)) # fix for #5296
+        setattr(ans, "class", class(x)) # fix for #64
         setattr(ans, "row.names", .set_row_names(nrow(ans)))
         setalloccol(ans)
       }
@@ -1289,7 +1290,7 @@ replace_dot_alias = function(e) .Call(Creplace_dot_aliasR, e)
 
     # copy 'jval' when required
     # More speedup - only check + copy if irows is NULL
-    # Temp fix for #921 - check address and copy *after* evaluating 'jval'.  #5114 also related.
+    # Temp fix for #921 - check address and copy *after* evaluating 'jval'.  #75 also related.
     if (is.null(irows)) {
       if (!is.list(jval)) { # performance improvement when i-arg is S4, but not list, #1438, Thanks @DCEmilberg.
         jcpy = address(jval) %in% vapply_1c(SDenv$.SD, address) # %chin% errors when RHS is list()
@@ -1298,7 +1299,7 @@ replace_dot_alias = function(e) .Call(Creplace_dot_aliasR, e)
         jval = copy(jval)
       } else if ( length(jcpy <- which(vapply_1c(jval, address) %chin% vapply_1c(SDenv, address))) ) {
         for (jidx in jcpy) jval[[jidx]] = copy(jval[[jidx]])
-      } else if (is.call(jsub) && jsub[[1L]] == "get") {
+      } else if (jsub %iscall% 'get') {
         jval = copy(jval) # fix for #1212
       }
     }
@@ -1308,7 +1309,7 @@ replace_dot_alias = function(e) .Call(Creplace_dot_aliasR, e)
       .Call(Cassign,x,irows,cols,newnames,jval)
       return(suppPrint(x))
     }
-    if ((is.call(jsub) && is.list(jval) && jsub[[1L]] != "get" && !is.object(jval)) || !missingby) {
+    if ((is.call(jsub) && jsub[[1L]] != "get" && is.list(jval) && !is.object(jval)) || !missingby) {
       # is.call: selecting from a list column should return list
       # is.object: for test 168 and 168.1 (S4 object result from ggplot2::qplot). Just plain list results should result in data.table
 
@@ -1328,7 +1329,7 @@ replace_dot_alias = function(e) .Call(Creplace_dot_aliasR, e)
     }
 
     if (is.data.table(jval)) {
-      setattr(jval, 'class', class(x)) # fix for #5296
+      setattr(jval, 'class', class(x)) # fix for #64
       if (haskey(x) && all(key(x) %chin% names(jval)) && suppressWarnings(is.sorted(jval, by=key(x))))  # TO DO: perhaps this usage of is.sorted should be allowed internally then (tidy up and make efficient)
         setattr(jval, 'sorted', key(x))
       if (any(sapply(jval, is.null))) stop("Internal error: j has created a data.table result containing a NULL column") # nocov
@@ -1376,7 +1377,7 @@ replace_dot_alias = function(e) .Call(Creplace_dot_aliasR, e)
     bysameorder = haskey(i) || (is.sorted(f__) && ((roll == FALSE) || length(f__) == 1L)) # Fix for #1010
     ##  'av' correct here ??  *** TO DO ***
     xjisvars = intersect(av, names_x[rightcols])  # no "x." for xvars.
-    # if 'get' is in 'av' use all cols in 'i', fix for bug #5443
+    # if 'get' is in 'av' use all cols in 'i', fix for bug #34
     # added 'mget' - fix for #994
     jisvars = if (any(c("get", "mget") %chin% av)) names_i else intersect(gsub("^i[.]","", setdiff(av, xjisvars)), names_i)
     # JIS (non join cols) but includes join columns too (as there are named in i)
@@ -1476,20 +1477,20 @@ replace_dot_alias = function(e) .Call(Creplace_dot_aliasR, e)
   lockBinding(".iSD",SDenv)
 
   GForce = FALSE
-  if ( getOption("datatable.optimize")>=1L && (is.call(jsub) || (is.name(jsub) && as.character(jsub)[1L] %chin% c(".SD", ".N"))) ) {  # Ability to turn off if problems or to benchmark the benefit
+  if ( getOption("datatable.optimize")>=1L && (is.call(jsub) || (is.name(jsub) && jsub %chin% c(".SD", ".N"))) ) {  # Ability to turn off if problems or to benchmark the benefit
     # Optimization to reduce overhead of calling lapply over and over for each group
     oldjsub = jsub
     funi = 1L # Fix for #985
     # converted the lapply(.SD, ...) to a function and used below, easier to implement FR #2722 then.
     .massageSD = function(jsub) {
       txt = as.list(jsub)[-1L]
-      if (length(names(txt))>1L) .Call(Csetcharvec, names(txt), 2L, "")  # fixes bug #4839
+      if (length(names(txt))>1L) .Call(Csetcharvec, names(txt), 2L, "")  # fixes bug #110
       fun = txt[[2L]]
-      if (is.call(fun) && fun[[1L]]=="function") {
+      if (fun %iscall% "function") {
         # Fix for #2381: added SDenv$.SD to 'eval' to take care of cases like: lapply(.SD, function(x) weighted.mean(x, bla)) where "bla" is a column in DT
         # http://stackoverflow.com/questions/13441868/data-table-and-stratified-means
         # adding this does not compromise in speed (that is, not any lesser than without SDenv$.SD)
-        # replaced SDenv$.SD to SDenv to deal with Bug #5007 reported by Ricardo (Nice catch!)
+        # replaced SDenv$.SD to SDenv to deal with Bug #87 reported by Ricardo (Nice catch!)
         thisfun = paste0("..FUN", funi) # Fix for #985
         assign(thisfun,eval(fun, SDenv, SDenv), SDenv)  # to avoid creating function() for each column of .SD
         lockBinding(thisfun,SDenv)
@@ -1592,7 +1593,7 @@ replace_dot_alias = function(e) .Call(Creplace_dot_aliasR, e)
                 jvnames = c(jvnames, jn__)
                 jsubl[[i_]] = jl__
               }
-            } else if (is.call(this) && length(this) > 1L && as.character(this[[1L]]) %chin% optfuns) {
+            } else if (this %iscall% optfuns && length(this)>1L) {
               jvnames = c(jvnames, if (is.null(names(jsubl))) "" else names(jsubl)[i_])
             } else if ( length(this) == 3L && (this[[1L]] == "[" || this[[1L]] == "head") &&
                     this[[2L]] == ".SD" && (is.numeric(this[[3L]]) || this[[3L]] == ".N") ) {
@@ -1633,30 +1634,30 @@ replace_dot_alias = function(e) .Call(Creplace_dot_aliasR, e)
       else
         cat("lapply optimization is on, j unchanged as '",deparse(jsub,width.cutoff=200L, nlines=1L),"'\n",sep="")
     }
-    dotN = function(x) is.name(x) && x==".N" # For #5760. TODO: Rprof() showed dotN() may be the culprit if iterated (#1470)?; avoid the == which converts each x to character?
+    dotN = function(x) is.name(x) && x==".N" # For #334. TODO: Rprof() showed dotN() may be the culprit if iterated (#1470)?; avoid the == which converts each x to character?
     # FR #971, GForce kicks in on all subsets, no joins yet. Although joins could work with
     # nomatch=0L even now.. but not switching it on yet, will deal it separately.
     if (getOption("datatable.optimize")>=2L && !is.data.table(i) && !byjoin && length(f__) && !length(lhs)) {
       if (!length(ansvars) && !use.I) {
         GForce = FALSE
-        if ( (is.name(jsub) && jsub == ".N") || (is.call(jsub) && length(jsub)==2L && jsub[[1L]]== "list" && jsub[[2L]] == ".N") ) {
+        if ( (is.name(jsub) && jsub==".N") || (jsub %iscall% 'list' && length(jsub)==2L && jsub[[2L]]==".N") ) {
           GForce = TRUE
           if (verbose) cat("GForce optimized j to '",deparse(jsub, width.cutoff=200L, nlines=1L),"'\n",sep="")
         }
       } else {
         # Apply GForce
         .gforce_ok = function(q) {
-          if (dotN(q)) return(TRUE) # For #5760
+          if (dotN(q)) return(TRUE) # For #334
           # run GForce for simple f(x) calls and f(x, na.rm = TRUE)-like calls where x is a column of .SD
           # is.symbol() is for #1369, #1974 and #2949
-          if (!(is.call(q) && is.symbol(q[[1L]]) && is.symbol(q[[2L]]) && (q1c <- as.character(q[[1L]])) %chin% gfuns)) return(FALSE)
-          if (!(q2c<-as.character(q[[2L]])) %chin% names(SDenv$.SDall) && q2c!=".I") return(FALSE)  # 875
-          if ((length(q)==2L || identical("na",substring(names(q)[3L], 1L, 2L))) && (!q1c %chin% c("head","tail"))) return(TRUE)
+          if (!(is.call(q) && is.symbol(q[[1L]]) && is.symbol(q[[2L]]) && (q1 <- q[[1L]]) %chin% gfuns)) return(FALSE)
+          if (!(q2 <- q[[2L]]) %chin% names(SDenv$.SDall) && q2 != ".I") return(FALSE)  # 875
+          if ((length(q)==2L || identical("na",substring(names(q)[3L], 1L, 2L))) && (!q1 %chin% c("head","tail"))) return(TRUE)
           # ... head-tail uses default value n=6 which as of now should not go gforce ^^
           # otherwise there must be three arguments, and only in two cases:
           #   1) head/tail(x, 1) or 2) x[n], n>0
           length(q)==3L && length(q3 <- q[[3L]])==1L && is.numeric(q3) &&
-            ( (q1c %chin% c("head", "tail") && q3==1L) || ((q1c == "[" || (q1c == "[[" && eval(call('is.atomic', q[[2L]]), envir=x))) && q3>0L) )
+            ( (q1 %chin% c("head", "tail") && q3==1L) || ((q1 == "[" || (q1 == "[[" && eval(call('is.atomic', q[[2L]]), envir=x))) && q3>0L) )
         }
         if (jsub[[1L]]=="list") {
           GForce = TRUE
@@ -1667,7 +1668,7 @@ replace_dot_alias = function(e) .Call(Creplace_dot_aliasR, e)
         if (GForce) {
           if (jsub[[1L]]=="list")
             for (ii in seq_along(jsub)[-1L]) {
-              if (dotN(jsub[[ii]])) next; # For #5760
+              if (dotN(jsub[[ii]])) next; # For #334
               jsub[[ii]][[1L]] = as.name(paste0("g", jsub[[ii]][[1L]]))
               if (length(jsub[[ii]])==3L) jsub[[ii]][[3L]] = eval(jsub[[ii]][[3L]], parent.frame())  # tests 1187.2 & 1187.4
             }
@@ -1685,11 +1686,8 @@ replace_dot_alias = function(e) .Call(Creplace_dot_aliasR, e)
       oldjsub = jsub
       if (jsub[[1L]]=="list") {
         # Addressing #1369, #2949 and #1974. This used to be 30s (vs 0.5s) with 30K elements items in j, #1470. Could have been dotN() and/or the for-looped if()
-        todo = sapply(jsub, function(x) {
-          is.call(x) && is.symbol(x[[1L]]) && x[[1L]]=="mean"
-          # jsub[[1]]=="list" so the first item will always be FALSE
-          # is.symbol() for when expanded function definition is used instead of function names; #1369 results in (function(x) sum(x)) as jsub[[.]] from dcast.data.table
-        })
+        # jsub[[1]]=="list" so the first item of todo will always be FALSE
+        todo = sapply(jsub, `%iscall%`, 'mean')
         if (any(todo)) {
           w = which(todo)
           jsub[w] = lapply(jsub[w], .optmean)
@@ -1748,7 +1746,7 @@ replace_dot_alias = function(e) .Call(Creplace_dot_aliasR, e)
   if (GForce) {
     thisEnv = new.env()  # not parent=parent.frame() so that gsum is found
     for (ii in ansvars) assign(ii, x[[ii]], thisEnv)
-    assign(".N", len__, thisEnv) # For #5760
+    assign(".N", len__, thisEnv) # For #334
     #fix for #1683
     if (use.I) assign(".I", seq_len(nrow(x)), thisEnv)
     ans = gforce(thisEnv, jsub, o__, f__, len__, irows) # irows needed for #971.
@@ -1801,7 +1799,7 @@ replace_dot_alias = function(e) .Call(Creplace_dot_aliasR, e)
     return(ans)
   }
   setattr(ans,"row.names",.set_row_names(length(ans[[1L]])))
-  setattr(ans,"class",class(x)) # fix for #5296
+  setattr(ans,"class",class(x)) # fix for #64
   if (is.null(names(ans))) {
     # Efficiency gain of dropping names has been successful. Ordinarily this will run.
     if (is.null(jvnames)) jvnames = character(length(ans)-length(bynames))
@@ -2539,7 +2537,7 @@ setcolorder = function(x, neworder=key(x))
   if (is.character(neworder) && anyDuplicated(names(x)))
     stop("x has some duplicated column name(s): ", paste(names(x)[duplicated(names(x))], collapse=","), ". Please remove or rename the duplicate(s) and try again.")
   # if (!is.data.table(x)) stop("x is not a data.table")
-  neworder = colnamesInt(x, neworder, check_dups=TRUE)
+  neworder = colnamesInt(x, neworder, check_dups=FALSE)  # dups are now checked inside Csetcolorder below
   if (length(neworder) != length(x)) {
     #if shorter than length(x), pad by the missing
     #  elements (checks below will catch other mistakes)
@@ -2614,7 +2612,10 @@ vecseq = function(x,y,clamp) .Call(Cvecseq,x,y,clamp)
 # .Call(Caddress, x) increments NAM() when x is vector with NAM(1). Referring object within non-primitive function is enough to increment reference.
 address = function(x) .Call(Caddress, eval(substitute(x), parent.frame()))
 
-":=" = function(...) stop('Check that is.data.table(DT) == TRUE. Otherwise, := and `:=`(...) are defined for use in j, once only and in particular ways. See help(":=").')
+":=" = function(...) {
+  # this error is detected when eval'ing isub and replaced with a more helpful one when using := in i due to forgetting a comma, #4227
+  stop('Check that is.data.table(DT) == TRUE. Otherwise, := and `:=`(...) are defined for use in j, once only and in particular ways. See help(":=").')
+}
 
 setDF = function(x, rownames=NULL) {
   if (!is.list(x)) stop("setDF only accepts data.table, data.frame or list of equal length as input")
@@ -2748,7 +2749,7 @@ setDT = function(x, keep.rownames=FALSE, key=NULL, check.names=FALSE) {
   if (is.name(name)) {
     name = as.character(name)
     assign(name, x, parent.frame(), inherits=TRUE)
-  } else if (is.call(name) && (name[[1L]] == "$" || name[[1L]] == "[[") && is.name(name[[2L]])) {
+  } else if (name %iscall% c('$', '[[') && is.name(name[[2L]])) {
     # common case is call from 'lapply()'
     k = eval(name[[2L]], parent.frame(), parent.frame())
     if (is.list(k)) {
@@ -2828,7 +2829,7 @@ rleidv = function(x, cols=seq_along(x), prefix=NULL) {
 #     (2) edit .gforce_ok (defined within `[`) to catch which j will apply the new function
 #     (3) define the gfun = function() R wrapper
 gfuns = c("[", "[[", "head", "tail", "first", "last", "sum", "mean", "prod",
-          "median", "min", "max", "var", "sd", ".N") # added .N for #5760
+          "median", "min", "max", "var", "sd", ".N") # added .N for #334
 `g[` = `g[[` = function(x, n) .Call(Cgnthvalue, x, as.integer(n)) # n is of length=1 here.
 ghead = function(x, n) .Call(Cghead, x, as.integer(n)) # n is not used at the moment
 gtail = function(x, n) .Call(Cgtail, x, as.integer(n)) # n is not used at the moment
@@ -3015,10 +3016,10 @@ isReallyReal = function(x) {
   #'         'ops': integer vector. Gives the indices of the operators that connect the columns in x and i.
   ops = c("==", "<=", "<", ">=", ">", "!=")
   pat = paste0("(", ops, ")", collapse="|")
-  if (is.call(onsub) && onsub[[1L]] == "eval") {
+  if (onsub %iscall% 'eval') {
     onsub = eval(onsub[[2L]], parent.frame(2L), parent.frame(2L))
   }
-  if (is.call(onsub) && as.character(onsub[[1L]]) %chin% c("list", ".")) {
+  if (onsub %iscall% c('list', '.')) {
     spat = paste0("[ ]+(", pat, ")[ ]+")
     onsub = lapply(as.list(onsub)[-1L], function(x) gsub(spat, "\\1", deparse(x, width.cutoff=500L)))
     onsub = as.call(c(quote(c), onsub))

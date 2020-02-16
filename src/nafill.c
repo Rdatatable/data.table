@@ -121,16 +121,26 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, S
   SEXP ans = R_NilValue;
   ans_t *vans = (ans_t *)R_alloc(nx, sizeof(ans_t));
   for (R_len_t i=0; i<nx; i++) {
-    inx[i] = xlength(VECTOR_ELT(x, i));
-    dx[i] = REAL(VECTOR_ELT(x, i));
-    ix[i] = INTEGER(VECTOR_ELT(x, i));
-    i64x[i] = (int64_t *)REAL(VECTOR_ELT(x, i));
+    const SEXP xi = VECTOR_ELT(x, i);
+    inx[i] = xlength(xi);
+    // not sure why these pointers are being constructed like this; TODO: simplify structure
+    if (isReal(xi)) {
+      dx[i] = REAL(xi);
+      i64x[i] = (int64_t *)REAL(xi);
+      ix[i] = NULL;
+    } else {
+      ix[i] = INTEGER(xi);
+      dx[i] = NULL;
+      i64x[i] = NULL;
+    }
   }
   if (!binplace) {
     ans = PROTECT(allocVector(VECSXP, nx)); protecti++;
     for (R_len_t i=0; i<nx; i++) {
       SET_VECTOR_ELT(ans, i, allocVector(TYPEOF(VECTOR_ELT(x, i)), inx[i]));
-      vans[i] = ((ans_t) { .dbl_v=REAL(VECTOR_ELT(ans, i)), .int_v=INTEGER(VECTOR_ELT(ans, i)), .int64_v=(int64_t *)REAL(VECTOR_ELT(ans, i)), .status=0, .message={"\0","\0","\0","\0"} });
+      const SEXP ansi = VECTOR_ELT(ans, i);
+      const void *p = isReal(ansi) ? (void *)REAL(ansi) : (void *)INTEGER(ansi);
+      vans[i] = ((ans_t) { .dbl_v=(double *)p, .int_v=(int *)p, .int64_v=(int64_t *)p, .status=0, .message={"\0","\0","\0","\0"} });
     }
   } else {
     for (R_len_t i=0; i<nx; i++) {

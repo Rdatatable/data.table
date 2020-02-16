@@ -241,7 +241,7 @@ SEXP alloccolwrapper(SEXP dt, SEXP overAllocArg, SEXP verbose) {
   SEXP ans = PROTECT(alloccol(dt, length(dt)+overAlloc, LOGICAL(verbose)[0]));
 
   for(R_len_t i = 0; i < LENGTH(ans); i++) {
-    // clear names; also excluded by copyMostAttrib(). Primarily for data.table and as.data.table, but added here centrally (see #4890).
+    // clear names; also excluded by copyMostAttrib(). Primarily for data.table and as.data.table, but added here centrally (see #103).
     setAttrib(VECTOR_ELT(ans, i), R_NamesSymbol, R_NilValue);
 
     // But don't clear dim and dimnames. Because as from 1.12.4 we keep the matrix column as-is and ask user to use as.data.table to
@@ -502,7 +502,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
     } else {                 // existing column
       targetcol = VECTOR_ELT(dt,coln);
     }
-    const char *ret = memrecycle(targetcol, rows, 0, targetlen, thisvalue, coln+1, CHAR(STRING_ELT(names, coln)));
+    const char *ret = memrecycle(targetcol, rows, 0, targetlen, thisvalue, 0, -1, coln+1, CHAR(STRING_ELT(names, coln)));
     if (ret) warning(ret);
   }
 
@@ -668,14 +668,22 @@ static bool anyNamed(SEXP x) {
 #define MSGSIZE 1000
 static char memrecycle_message[MSGSIZE+1]; // returned to rbindlist so it can prefix with which one of the list of data.table-like objects
 
-const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source, int colnum, const char *colname)
+const char *memrecycle(const SEXP target, const SEXP where, const int start, const int len, SEXP source, const int sourceStart, const int sourceLen, const int colnum, const char *colname)
 // like memcpy but recycles single-item source
 // 'where' a 1-based INTEGER vector subset of target to assign to, or NULL or integer()
 // assigns to target[start:start+len-1] or target[where[start:start+len-1]] where start is 0-based
+// if sourceLen==-1 then all of source is used (if it is 1 item then it is recycled, or its length must match) for convenience to avoid
+//   having to use length(source) (repeating source expression) in each call
+// sourceLen==1 is used in dogroups to recycle the group values into ans to match the nrow of each group's result; sourceStart is set to each group value row.
 {
   if (len<1) return NULL;
-  int slen = length(source);
+  const int slen = sourceLen>=0 ? sourceLen : length(source);
   if (slen==0) return NULL;
+  if (sourceStart<0 || sourceStart+slen>length(source))
+    error(_("Internal error memrecycle: sourceStart=%d sourceLen=%d length(source)=%d"), sourceStart, sourceLen, length(source)); // # nocov
+  if (!length(where) && start+len>length(target))
+    error(_("Internal error memrecycle: start=%d len=%d length(target)=%d"), start, len, length(target)); // # nocov
+  const int soff = sourceStart;
   if (slen>1 && slen!=len && (!isNewList(target) || isNewList(source)))
     error(_("Internal error: recycle length error not caught earlier. slen=%d len=%d"), slen, len); // # nocov
   // Internal error because the column has already been added to the DT, so length mismatch should have been caught before adding the column.
@@ -685,8 +693,7 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source,
   *memrecycle_message = '\0';
   int protecti=0;
   if (isNewList(source)) {
-    // A list() column; i.e. target is a column of pointers to SEXPs rather than the much more common case
-    // where memrecycle copies the DATAPTR data to the atomic target from the atomic source.
+    // A list() column; i.e. target is a column of pointers to SEXPs rather than the more common case of numbers in an atomic vector.
     // If any item within the list is NAMED then take a fresh copy. So far this has occurred from dogroups.c when
     // j returns .BY or similar specials as-is within a list(). Those specials are static inside
     // dogroups so if we don't copy now the last value written to them by dogroups becomes repeated in the result;
@@ -697,6 +704,7 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source,
     // If source is already not named (because j already created a fresh unnamed vector within a list()) we don't want to
     // duplicate unnecessarily, hence checking for named rather than duplicating always.
     // See #481, #1270 and tests 1341.* fail without this copy.
+    // ********** This might go away now that we copy properly in dogroups.c **********
     if (anyNamed(source)) {
       source = PROTECT(copyAsPlain(source)); protecti++;
     }
@@ -719,7 +727,7 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source,
         if (isInteger(source)) {
           const int *sd = INTEGER(source);
           for (int i=0; i<slen; ++i) {
-            const int val = sd[i];
+            const int val = sd[i+soff];
             if ((val<1 && val!=NA_INTEGER) || val>nlevel) {
               error(_("Assigning factor numbers to column %d named '%s'. But %d is outside the level range [1,%d]"), colnum, colname, val, nlevel);
             }
@@ -727,7 +735,7 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source,
         } else {
           const double *sd = REAL(source);
           for (int i=0; i<slen; ++i) {
-            const double val = sd[i];
+            const double val = sd[i+soff];
             if (!ISNAN(val) && (!R_FINITE(val) || val!=(int)val || (int)val<1 || (int)val>nlevel)) {
               error(_("Assigning factor numbers to column %d named '%s'. But %f is outside the level range [1,%d], or is not a whole number."), colnum, colname, val, nlevel);
             }
@@ -850,7 +858,7 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source,
 #define CHECK_RANGE(STYPE, RFUN, COND, FMT, TO) {{                                                                      \
   const STYPE *sd = (const STYPE *)RFUN(source);                                                                        \
   for (int i=0; i<slen; ++i) {                                                                                          \
-    const STYPE val = sd[i];                                                                                            \
+    const STYPE val = sd[i+soff];                                                                                       \
     if (COND) {                                                                                                         \
       const char *sType = sourceIsI64 ? "integer64" : type2char(TYPEOF(source));                                        \
       const char *tType = targetIsI64 ? "integer64" : type2char(TYPEOF(target));                                        \
@@ -898,7 +906,7 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source,
   const STYPE *sd = (const STYPE *)RFUN(source);     \
   if (length(where)) {                               \
     if (slen==1) {                                   \
-      const STYPE val = sd[0];                       \
+      const STYPE val = sd[soff];                    \
       const CTYPE cval = CAST;                       \
       for (int wi=0; wi<len; ++wi) {                 \
         const int w = wd[wi];                        \
@@ -910,7 +918,7 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source,
       for (int wi=0; wi<len; ++wi) {                 \
         const int w = wd[wi];                        \
         if (w<1) continue;                           \
-        const STYPE val = sd[wi];                    \
+        const STYPE val = sd[wi+soff];               \
         const CTYPE cval = CAST;                     \
         const int i = w-1;                           \
         ASSIGN;                                      \
@@ -918,14 +926,14 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source,
     }                                                \
   } else {                                           \
     if (slen==1) {                                   \
-      const STYPE val = sd[0];                       \
+      const STYPE val = sd[soff];                    \
       const CTYPE cval = CAST;                       \
       for (int i=0; i<len; ++i) {                    \
         ASSIGN;                                      \
       }                                              \
     } else {                                         \
       for (int i=0; i<len; i++) {                    \
-        const STYPE val = sd[i];                     \
+        const STYPE val = sd[i+soff];                \
         const CTYPE cval = CAST;                     \
         ASSIGN;                                      \
       }                                              \
@@ -936,7 +944,7 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source,
 #define COERCE_ERROR(targetType) error(_("type '%s' cannot be coerced to '%s'"), type2char(TYPEOF(source)), targetType); // 'targetType' for integer64 vs double
 
   const int off = length(where) ? 0 : start;  // off = target offset; e.g. called from rbindlist with where=R_NilValue and start!=0
-  const bool mc = length(where)==0 && slen==len;  // mc=memcpy; only used if types match too
+  const bool mc = length(where)==0 && slen>0 && slen==len && soff==0;  // mc=memcpy; only if types match and not for single items (a single assign faster than these non-const memcpy calls)
   const int *wd = length(where) ? INTEGER(where)+start : NULL;
   switch (TYPEOF(target)) {
   case RAWSXP: {
@@ -1063,7 +1071,7 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source,
     if (TYPEOF(source)!=VECSXP && TYPEOF(source)!=EXPRSXP)
       BODY(SEXP, &, SEXP, val,           SET_VECTOR_ELT(target, off+i, cval))
     else
-      BODY(SEXP, VECTOR_PTR, SEXP, val,  SET_VECTOR_ELT(target, off+i, cval))
+      BODY(SEXP, SEXPPTR_RO, SEXP, val,  SET_VECTOR_ELT(target, off+i, cval))
   default :
     error(_("Unsupported column type in assign.c:memrecycle '%s'"), type2char(TYPEOF(target)));  // # nocov
   }
@@ -1208,33 +1216,3 @@ SEXP setcharvec(SEXP x, SEXP which, SEXP newx)
   return R_NilValue;
 }
 
-SEXP setcolorder(SEXP x, SEXP o)
-{
-  SEXP names = getAttrib(x, R_NamesSymbol);
-  const int *od = INTEGER(o), ncol=LENGTH(x);
-  if (isNull(names)) error(_("dt passed to setcolorder has no names"));
-  if (ncol != LENGTH(names))
-    error(_("Internal error: dt passed to setcolorder has %d columns but %d names"), ncol, LENGTH(names));  // # nocov
-
-  // Double-check here at C level that o[] is a strict permutation of 1:ncol. Reordering columns by reference makes no
-  // difference to generations/refcnt so we can write behind barrier in this very special case of strict permutation.
-  bool *seen = Calloc(ncol, bool);
-  for (int i=0; i<ncol; ++i) {
-    if (od[i]==NA_INTEGER || od[i]<1 || od[i]>ncol)
-      error(_("Internal error: o passed to Csetcolorder contains an NA or out-of-bounds"));  // # nocov
-    if (seen[od[i]-1])
-      error(_("Internal error: o passed to Csetcolorder contains a duplicate"));             // # nocov
-    seen[od[i]-1] = true;
-  }
-  Free(seen);
-
-  SEXP *tmp = Calloc(ncol, SEXP);
-  SEXP *xd = VECTOR_PTR(x), *namesd = STRING_PTR(names);
-  for (int i=0; i<ncol; ++i) tmp[i] = xd[od[i]-1];
-  memcpy(xd, tmp, ncol*sizeof(SEXP)); // sizeof is type size_t so no overflow here
-  for (int i=0; i<ncol; ++i) tmp[i] = namesd[od[i]-1];
-  memcpy(namesd, tmp, ncol*sizeof(SEXP));
-  // No need to change key (if any); sorted attribute is column names not positions
-  Free(tmp);
-  return(R_NilValue);
-}

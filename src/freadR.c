@@ -241,7 +241,7 @@ static void applyDrop(SEXP items, int8_t *type, int ncol, int dropSource) {
   UNPROTECT(1);
 }
 
-bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, int ncol)
+bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, const int ncol)
 {
   // use typeSize superfluously to avoid not-used warning; otherwise could move typeSize from fread.h into fread.c
   if (typeSize[CT_BOOL8_N]!=1) STOP(_("Internal error: typeSize[CT_BOOL8_N] != 1")); // # nocov
@@ -308,27 +308,23 @@ bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, int ncol)
     SET_VECTOR_ELT(RCHK, 2, colClassesAs=allocVector(STRSXP, ncol));  // if any, this attached to the DT for R level to call as_ methods on
     if (isString(colClassesSxp)) {
       SEXP typeEnum_idx = PROTECT(chmatch(colClassesSxp, typeRName_sxp, NUT));
-      if (LENGTH(colClassesSxp)==1) {
-        signed char newType = typeEnum[INTEGER(typeEnum_idx)[0]-1];
-        if (newType == CT_DROP) STOP(_("colClasses='NULL' is not permitted; i.e. to drop all columns and load nothing"));
-        for (int i=0; i<ncol; i++) if (type[i]!=CT_DROP) type[i]=newType;   // freadMain checks bump up only not down
-        if (INTEGER(typeEnum_idx)[0]==NUT) for (int i=0; i<ncol; i++) SET_STRING_ELT(colClassesAs, i, STRING_ELT(colClassesSxp,0));
-      } else if (selectColClasses==false) {
-        if (LENGTH(colClassesSxp)!=ncol)
+      if (selectColClasses==false) {
+        if (LENGTH(colClassesSxp)!=ncol && LENGTH(colClassesSxp)!=1)
           STOP(_("colClasses= is an unnamed vector of types, length %d, but there are %d columns in the input. To specify types for a subset of columns, you can use "
                  "a named vector, list format, or specify types using select= instead of colClasses=. Please see examples in ?fread."), LENGTH(colClassesSxp), ncol);
+        const int mask = LENGTH(colClassesSxp)==1 ? 0 : INT_MAX;  // to have one consistent loop/logic for the length-1 recycling case too; #4237
         for (int i=0; i<ncol; ++i) {
           if (type[i]==CT_DROP) continue;                    // user might have specified the type of all columns including those dropped with drop=
-          SEXP tt = STRING_ELT(colClassesSxp,i);
+          const SEXP tt = STRING_ELT(colClassesSxp, i&mask); // mask recycles colClassesSxp when it's length-1
           if (tt==NA_STRING || tt==R_BlankString) continue;  // user is ok with inherent type for this column
-          int w = INTEGER(typeEnum_idx)[i];
-          type[i] = typeEnum[w-1];
-          if (w==NUT) SET_STRING_ELT(colClassesAs, i, STRING_ELT(colClassesSxp,i));
+          int w = INTEGER(typeEnum_idx)[i&mask];
+          type[i] = typeEnum[w-1];                           // freadMain checks bump up only not down
+          if (w==NUT) SET_STRING_ELT(colClassesAs, i, tt);
         }
       } else { // selectColClasses==true
         if (!selectInts) STOP(_("Internal error: selectInts is NULL but selectColClasses is true"));
-        if (length(selectSxp)!=length(colClassesSxp)) STOP(_("Internal error: length(selectSxp)!=length(colClassesSxp) but selectColClasses is true"));
         const int n = length(colClassesSxp);
+        if (length(selectSxp)!=n) STOP(_("Internal error: length(selectSxp)!=length(colClassesSxp) but selectColClasses is true"));
         for (int i=0; i<n; ++i) {
           SEXP tt = STRING_ELT(colClassesSxp,i);
           if (tt==NA_STRING || tt==R_BlankString) continue;
@@ -510,7 +506,7 @@ void pushBuffer(ThreadLocalFreadParsingContext *ctx)
   // While the string columns are happening other threads before me can be copying their non-string buffers to the
   // final DT and other threads after me can be filling their buffers too.
   // rowSize is passed in because it will be different (much smaller) on the reread covering any type exception columns
-  // locals passed in on stack so openmp knows that no synchonization is required
+  // locals passed in on stack so openmp knows that no synchronization is required
 
   // the byte position of this column in the first row of the row-major buffer
   if (nStringCols) {
@@ -561,29 +557,29 @@ void pushBuffer(ThreadLocalFreadParsingContext *ctx)
     resj++;
     if (type[j]!=CT_STRING && type[j]>0) {
       if (thisSize == 8) {
-        char *dest = (char *)DATAPTR(VECTOR_ELT(DT, resj)) + DTi*8;
-        char *src8 = (char*)buff8 + off8;
-        for (int i=0; i<nRows; i++) {
-          memcpy(dest, src8, 8);
+        double *dest = (double *)REAL(VECTOR_ELT(DT, resj)) + DTi;
+        const char *src8 = (char*)buff8 + off8;
+        for (int i=0; i<nRows; ++i) {
+          *dest = *(double *)src8;
           src8 += rowSize8;
-          dest += 8;
+          dest++;
         }
       } else
       if (thisSize == 4) {
-        char *dest = (char *)DATAPTR(VECTOR_ELT(DT, resj)) + DTi*4;
-        char *src4 = (char*)buff4 + off4;
+        int *dest = (int *)INTEGER(VECTOR_ELT(DT, resj)) + DTi;
+        const char *src4 = (char*)buff4 + off4;
         // debug line for #3369 ... if (DTi>2638000) printf("freadR.c:460: thisSize==4, resj=%d, %"PRIu64", %d, %d, j=%d, done=%d\n", resj, (uint64_t)DTi, off4, rowSize4, j, done);
-        for (int i=0; i<nRows; i++) {
-          memcpy(dest, src4, 4);
+        for (int i=0; i<nRows; ++i) {
+          *dest = *(int *)src4;
           src4 += rowSize4;
-          dest += 4;
+          dest++;
         }
       } else
       if (thisSize == 1) {
         if (type[j] > CT_BOOL8_L) STOP(_("Field size is 1 but the field is of type %d\n"), type[j]);
-        Rboolean *dest = (Rboolean *)((char *)DATAPTR(VECTOR_ELT(DT, resj)) + DTi*sizeof(Rboolean));
-        char *src1 = (char*)buff1 + off1;
-        for (int i=0; i<nRows; i++) {
+        Rboolean *dest = (Rboolean *)LOGICAL(VECTOR_ELT(DT, resj)) + DTi;
+        const char *src1 = (char*)buff1 + off1;
+        for (int i=0; i<nRows; ++i) {
           int8_t v = *(int8_t *)src1;
           *dest = (v==INT8_MIN ? NA_INTEGER : v);
           src1 += rowSize1;
