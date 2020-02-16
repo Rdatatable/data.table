@@ -3,8 +3,6 @@
 // #include <signal.h> // the debugging machinery + breakpoint aidee
 // raise(SIGINT);
 
-extern SEXP char_integer64;
-
 SEXP dt_na(SEXP x, SEXP cols) {
   int n=0, elem;
 
@@ -70,54 +68,65 @@ SEXP dt_na(SEXP x, SEXP cols) {
 }
 
 SEXP frank(SEXP xorderArg, SEXP xstartArg, SEXP xlenArg, SEXP ties_method) {
-  int i=0, j=0, k=0, n;
-  int *xstart = INTEGER(xstartArg), *xlen = INTEGER(xlenArg), *xorder = INTEGER(xorderArg);
-  enum {MEAN, MAX, MIN, DENSE, SEQUENCE} ties = MEAN; // RUNLENGTH
+  const int *xstart = INTEGER(xstartArg), *xlen = INTEGER(xlenArg), *xorder = INTEGER(xorderArg);
+  enum {MEAN, MAX, MIN, DENSE, SEQUENCE, LAST} ties; // RUNLENGTH
 
-  if (!strcmp(CHAR(STRING_ELT(ties_method, 0)), "average"))  ties = MEAN;
-  else if (!strcmp(CHAR(STRING_ELT(ties_method, 0)), "max")) ties = MAX;
-  else if (!strcmp(CHAR(STRING_ELT(ties_method, 0)), "min")) ties = MIN;
-  else if (!strcmp(CHAR(STRING_ELT(ties_method, 0)), "dense")) ties = DENSE;
-  else if (!strcmp(CHAR(STRING_ELT(ties_method, 0)), "sequence")) ties = SEQUENCE;
-  // else if (!strcmp(CHAR(STRING_ELT(ties_method, 0)), "runlength")) ties = RUNLENGTH;
+  const char *pties = CHAR(STRING_ELT(ties_method, 0));
+  if (!strcmp(pties, "average"))  ties = MEAN;
+  else if (!strcmp(pties, "max")) ties = MAX;
+  else if (!strcmp(pties, "min")) ties = MIN;
+  else if (!strcmp(pties, "dense")) ties = DENSE;
+  else if (!strcmp(pties, "sequence")) ties = SEQUENCE;
+  else if (!strcmp(pties, "last")) ties = LAST;
+  // else if (!strcmp(pties, "runlength")) ties = RUNLENGTH;
   else error(_("Internal error: invalid ties.method for frankv(), should have been caught before. please report to data.table issue tracker")); // # nocov
-  n = length(xorderArg);
-  SEXP ans = (ties == MEAN) ? PROTECT(allocVector(REALSXP, n)) : PROTECT(allocVector(INTSXP, n));
-  int *ians = INTEGER(ans);
-  double *dans = REAL(ans);
-  if (n > 0) {
+  const int n = length(xorderArg);
+  SEXP ans = PROTECT(allocVector(ties==MEAN ? REALSXP : INTSXP, n));
+  int *ians=NULL;
+  double *dans=NULL;
+  if (ties==MEAN) dans=REAL(ans); else ians=INTEGER(ans);
+  if (n>0) {
     switch (ties) {
     case MEAN :
-      for (i = 0; i < length(xstartArg); i++) {
-        for (j = xstart[i]-1; j < xstart[i]+xlen[i]-1; j++)
+      for (int i=0; i<length(xstartArg); ++i) {
+        for (int j=xstart[i]-1; j<xstart[i]+xlen[i]-1; ++j)
           dans[xorder[j]-1] = (2*xstart[i]+xlen[i]-1)/2.0;
       }
       break;
     case MAX :
-      for (i = 0; i < length(xstartArg); i++) {
-        for (j = xstart[i]-1; j < xstart[i]+xlen[i]-1; j++)
+      for (int i=0; i<length(xstartArg); ++i) {
+        for (int j=xstart[i]-1; j<xstart[i]+xlen[i]-1; ++j)
           ians[xorder[j]-1] = xstart[i]+xlen[i]-1;
       }
       break;
     case MIN :
-      for (i = 0; i < length(xstartArg); i++) {
-        for (j = xstart[i]-1; j < xstart[i]+xlen[i]-1; j++)
+      for (int i=0; i<length(xstartArg); ++i) {
+        for (int j=xstart[i]-1; j<xstart[i]+xlen[i]-1; ++j)
           ians[xorder[j]-1] = xstart[i];
       }
       break;
-    case DENSE :
-      k=1;
-      for (i = 0; i < length(xstartArg); i++) {
-        for (j = xstart[i]-1; j < xstart[i]+xlen[i]-1; j++)
+    case DENSE : {
+      int k=1;
+      for (int i=0; i<length(xstartArg); ++i) {
+        for (int j=xstart[i]-1; j<xstart[i]+xlen[i]-1; ++j)
           ians[xorder[j]-1] = k;
-        k++;
+        ++k;
+      }
+    } break;
+    case SEQUENCE :
+      for (int i=0; i<length(xstartArg); ++i) {
+        int k=1;
+        for (int j=xstart[i]-1; j<xstart[i]+xlen[i]-1; ++j)
+          ians[xorder[j]-1] = k++;
       }
       break;
-    case SEQUENCE :
-      for (i = 0; i < length(xstartArg); i++) {
-        k=1;
-        for (j = xstart[i]-1; j < xstart[i]+xlen[i]-1; j++)
-          ians[xorder[j]-1] = k++;
+    case LAST :
+      for (int i=0; i<length(xstartArg); ++i) {
+        // alternatively, also loop k from xstart[i]+xlen[i]-1 and decrement
+        int offset = 2*xstart[i]+xlen[i]-2;
+        for (int j=xstart[i]-1; j<xstart[i]+xlen[i]-1; ++j) {
+          ians[xorder[j]-1] = offset-j;
+        }
       }
       break;
     // case RUNLENGTH :

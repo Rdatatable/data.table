@@ -8,7 +8,6 @@ SEXP fcast(SEXP lhs, SEXP val, SEXP nrowArg, SEXP ncolArg, SEXP idxArg, SEXP fil
   int nrows=INTEGER(nrowArg)[0], ncols=INTEGER(ncolArg)[0];
   int nlhs=length(lhs), nval=length(val), *idx = INTEGER(idxArg);
   SEXP target;
-  bool isfill = true;
 
   SEXP ans = PROTECT(allocVector(VECSXP, nlhs + (nval * ncols)));
   // set lhs cols
@@ -21,13 +20,12 @@ SEXP fcast(SEXP lhs, SEXP val, SEXP nrowArg, SEXP ncolArg, SEXP idxArg, SEXP fil
     SEXP thisfill = fill;
     int nprotect = 0;
     if (isNull(fill)) {
-      isfill = false;
       if (LOGICAL(is_agg)[0]) {
         thisfill = PROTECT(allocNAVector(TYPEOF(thiscol), 1)); nprotect++;
       } else thisfill = VECTOR_ELT(fill_d, i);
     }
-    if (isfill && TYPEOF(fill) != TYPEOF(thiscol)) {
-      thisfill = PROTECT(coerceVector(fill, TYPEOF(thiscol))); nprotect++;
+    if (TYPEOF(thisfill) != TYPEOF(thiscol)) {
+      thisfill = PROTECT(coerceVector(thisfill, TYPEOF(thiscol))); nprotect++;
     }
     switch (TYPEOF(thiscol)) {
     case INTSXP:
