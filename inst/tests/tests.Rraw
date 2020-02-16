@@ -14850,12 +14850,43 @@ if (test_yaml) {  # csvy; #1701
   
   # Extra arguments in yaml
   data = data.table(x = 1, y = 100)
-  file = tempfile()
+  file = tmpfile()
+  
   fwrite(data, file, yaml =  list(something_else = "o hai!"))
   x = fread(file, yaml = TRUE)
   unlink(file)
   test(2125.01, attr(x, "yaml_metadata")$something_else, "o hai!")
-  test(2125.02, attr(x, "yaml_metadata")$schema$fields[[1]]$name, "x")
+  test(2125.02, attr(x, "yaml_metadata")$schema, NULL)
+  
+  
+  fwrite(data, file, yaml = TRUE)
+  x = fread(file, yaml = TRUE)
+  unlink(file)
+  test(2125.03, attr(x, "yaml_metadata")$schema$fields[[1]]$name, "x")
+  
+  
+  fwrite(data, file, yaml = list(TRUE))
+  x = fread(file, yaml = TRUE)
+  unlink(file)
+  test(2125.04, attr(x, "yaml_metadata")$schema$fields[[1]]$name, "x")
+  
+  
+  fwrite(data, file, yaml = list(TRUE, something_else = "o hai!"))
+  x = fread(file, yaml = TRUE)
+  unlink(file)
+  test(2125.05, attr(x, "yaml_metadata")$schema$fields[[1]]$name, "x")
+  test(2125.06, attr(x, "yaml_metadata")$something_else, "o hai!")
+  
+  
+  fwrite(data, file, yaml =  list(TRUE, something_else = "o hai!", this_is_true = TRUE))
+  x = fread(file, yaml = TRUE)
+  unlink(file)
+  test(2125.07, attr(x, "yaml_metadata")$schema$fields[[1]]$name, "x")
+  test(2125.08, attr(x, "yaml_metadata")$something_else, "o hai!")
+  test(2125.09, attr(x, "yaml_metadata")$this_is_true, TRUE)
+  
+  test(2125.10, fwrite(data, file, yaml =  list(TRUE, "unnamed_stuff")), error = "unnamed")
+
 }
 
 # fcast coverage

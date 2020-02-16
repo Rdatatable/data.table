@@ -124,6 +124,37 @@ do_patterns = function(pat_sub, all_cols) {
   return(matched)
 }
 
+
+generate_yaml = function(x, col.names = TRUE, sep = ",", sep2 = "", 
+                          eol = if (.Platform$OS.type=="windows") "\r\n" else "\n",
+                          na = "", dec = "", qmethod = "double", 
+                          logical01 = getOption("datatable.logical01", FALSE)) {
+  schema_vec = sapply(x, class)
+  # multi-class objects reduced to first class
+  if (is.list(schema_vec)) schema_vec = sapply(schema_vec, `[`, 1L)
+  # as.vector strips names
+  schema_vec = list(name=names(schema_vec), type=as.vector(schema_vec))
+  list(
+    source = sprintf('R[v%s.%s]::data.table[v%s]::fwrite',
+                     R.version$major, R.version$minor, format(tryCatch(utils::packageVersion('data.table'), error=function(e) 'DEV'))),
+    creation_time_utc = format(Sys.time(), tz='UTC'),
+    schema = list(
+      fields = lapply(
+        seq_along(x),
+        function(i) list(name=schema_vec$name[i], type=schema_vec$type[i])
+      )
+    ),
+    header = col.names, 
+    sep = sep,
+    sep2 = sep2, 
+    eol = eol, 
+    na.strings = na,
+    dec = dec,
+    qmethod = qmethod, 
+    logical01 = logical01
+  )
+}
+
 # check UTC status
 is_utc = function(tz) {
   # via grep('UTC|GMT', OlsonNames(), value = TRUE); ordered by "prior" frequency
