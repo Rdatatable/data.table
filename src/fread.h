@@ -242,7 +242,7 @@ int freadMain(freadMainArgs args);
  *    the CSV file. Normally, this function should return `true`.
  */
 bool userOverride(int8_t *types, lenOff *colNames, const char *anchor,
-                  int ncol);
+                  const int ncol);
 
 
 /**

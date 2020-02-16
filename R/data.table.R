@@ -356,7 +356,12 @@ replace_dot_alias = function(e) {
     else if (!is.name(isub)) {
       ienv = new.env(parent=parent.frame())
       if (getOption("datatable.optimize")>=1L) assign("order", forder, ienv)
-      i = tryCatch(eval(.massagei(isub), x, ienv), error=function(e) .checkTypos(e, names_x))
+      i = tryCatch(eval(.massagei(isub), x, ienv), error=function(e) {
+        if (grepl(":=.*defined for use in j.*only", e$message))
+          stop("Operator := detected in i, the first argument inside DT[...], but is only valid in the second argument, j. Most often, this happens when forgetting the first comma (e.g. DT[newvar := 5] instead of DT[ , new_var := 5]). Please double-check the syntax. Run traceback(), and debugger() to get a line number.")
+        else
+          .checkTypos(e, names_x)
+      })
     } else {
       # isub is a single symbol name such as B in DT[B]
       i = try(eval(isub, parent.frame(), parent.frame()), silent=TRUE)
@@ -2609,7 +2614,10 @@ vecseq = function(x,y,clamp) .Call(Cvecseq,x,y,clamp)
 # .Call(Caddress, x) increments NAM() when x is vector with NAM(1). Referring object within non-primitive function is enough to increment reference.
 address = function(x) .Call(Caddress, eval(substitute(x), parent.frame()))
 
-":=" = function(...) stop('Check that is.data.table(DT) == TRUE. Otherwise, := and `:=`(...) are defined for use in j, once only and in particular ways. See help(":=").')
+":=" = function(...) {
+  # this error is detected when eval'ing isub and replaced with a more helpful one when using := in i due to forgetting a comma, #4227
+  stop('Check that is.data.table(DT) == TRUE. Otherwise, := and `:=`(...) are defined for use in j, once only and in particular ways. See help(":=").')
+}
 
 setDF = function(x, rownames=NULL) {
   if (!is.list(x)) stop("setDF only accepts data.table, data.frame or list of equal length as input")
