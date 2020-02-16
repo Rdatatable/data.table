@@ -82,33 +82,36 @@ fwrite = function(x, file="", append=FALSE, quote="auto",
       return(invisible())
     }
   }
-  write_yaml <- yaml == TRUE || (is.list(yaml) && length(yaml) != 0)
+  write_yaml = isTRUE(yaml) || (is.list(yaml) && length(yaml) != 0L)
   yaml = if (!write_yaml) "" else {
     if (!requireNamespace('yaml', quietly=TRUE))
       stop("'data.table' relies on the package 'yaml' to write the file header; please add this to your library with install.packages('yaml') and try again.") # nocov
-    schema_vec = sapply(x, class)
-    # multi-class objects reduced to first class
-    if (is.list(schema_vec)) schema_vec = sapply(schema_vec, `[`, 1L)
-    # as.vector strips names
-    schema_vec = list(name=names(schema_vec), type=as.vector(schema_vec))
-    yaml_header = list(
-      source = sprintf('R[v%s.%s]::data.table[v%s]::fwrite',
-                       R.version$major, R.version$minor, format(tryCatch(utils::packageVersion('data.table'), error=function(e) 'DEV'))),
-      creation_time_utc = format(Sys.time(), tz='UTC'),
-      schema = list(
-        fields = lapply(
-          seq_along(x),
-          function(i) list(name=schema_vec$name[i], type=schema_vec$type[i])
-        )
-      ),
-      header=col.names, sep=sep, sep2=sep2, eol=eol, na.strings=na,
-      dec=dec, qmethod=qmethod, logical01=logical01
-    )
-    if (is.list(yaml)) {
-      yaml_header <- c(yaml_header, yaml)  
+    
+    if (isTRUE(yaml)) {
+      yaml = generate_yaml(x = x, col.names = col.names, sep = sep, 
+                            sep2 = sep2, eol = eol, na = na, dec = dec, 
+                            qmethod = qmethod, logical01 = logical01)  
+    } else {
+      names = names(yaml)
+      if (is.null(names)) {
+        names = rep("", length(yaml))
+      }
+      unnamed = names == ""
+      true_yaml = vapply_1b(yaml, isTRUE)
+      
+      generated_yaml = unnamed & true_yaml
+      if (any(unnamed & !true_yaml)) {
+        stop("`yaml` contains unnamed elements that are not `TRUE`")
+      }
+      if (any(generated_yaml)) {
+        yaml_header = generate_yaml(x = x, col.names = col.names, sep = sep, 
+                                    sep2 = sep2, eol = eol, na = na, dec = dec, 
+                                    qmethod = qmethod, logical01 = logical01)  
+        yaml = c(yaml_header, yaml[!generated_yaml])
+      }
     }
     
-    paste0('---', eol, yaml::as.yaml(yaml_header, line.sep=eol), '---', eol) # NB: as.yaml adds trailing newline
+    paste0('---', eol, yaml::as.yaml(yaml, line.sep=eol), '---', eol) # NB: as.yaml adds trailing newline
   }
   file = enc2native(file) # CfwriteR cannot handle UTF-8 if that is not the native encoding, see #3078.
   .Call(CfwriteR, x, file, sep, sep2, eol, na, dec, quote, qmethod=="escape", append,
@@ -116,4 +119,3 @@ fwrite = function(x, file="", append=FALSE, quote="auto",
         showProgress, is_gzip, bom, yaml, verbose)
   invisible()
 }
-
