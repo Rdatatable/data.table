@@ -406,7 +406,7 @@ test(9999.615, exprCols(x, ((-cols)), ".SDcols", with, environment()), error="in
 test(9999.617, exprCols(x, {{-cols}}, "j", with, environment()), NULL)
 test(9999.618, exprCols(x, {{-cols}}, ".SDcols", with, environment()), error="invalid argument to unary operator")
 #test(9999.619, exprCols(x, {{-cols}}, "by", with, environment()), NULL)
-test(9999.621, exprCols(x, !cols, "j", with, environment()), NULL)
+test(9999.621, exprCols(x, !cols, "j", with, environment()), NULL) # will error later when evaluating j #2059
 test(9999.622, exprCols(x, !cols, ".SDcols", with, environment()), c(2L,4L,5L))
 #test(9999.623, exprCols(x, !cols, "by", with, environment()), NULL)
 test(9999.624, exprCols(x, ((!cols)), "j", with, environment()), NULL)
@@ -712,3 +712,26 @@ test(9999.9976, exprCols(x, V1:V2, "j", with, environment()), 1:2)
 test(9999.9977, exprCols(x, V1:2L, "j", with, environment()), 1:2)
 test(9999.9978, exprCols(x, 3L:V2, "j", with, environment()), 3:2)
 rm(V1, V2)
+# incorrect usage of col1:col2 selection
+test(9999.9981, exprCols(x, "V3":"V2", "j", with, environment()), NULL)
+test(9999.9982, exprCols(x, "V3":"V2", ".SDcols", with, environment()), error="NA/NaN argument", warning=c("NAs","NAs")) # #4235
+# seqence from columns #2069 breaking change
+var = c(3L,4L,2L)
+test(9999.9983, exprCols(x, min(var):max(var), "j", with, environment()), NULL)
+test(9999.9984, exprCols(x, min(var):max(var), ".SDcols", with, environment()), 2:4)
+test(9999.9985, exprCols(x, min(V1):max(V5), "j", with, environment()), NULL)
+test(9999.9986, exprCols(x, min(V1):max(V5), ".SDcols", with, environment()), error="object 'V1' not found") # breaking change because .SDcols is currently evaluated in DT being an enclosing scope, which IMO is bad
+y = x+10L
+test(9999.9987, exprCols(y, min(V1):max(V5), "j", with, environment()), NULL)
+test(9999.9988, exprCols(x, min(V1):max(V5), ".SDcols", with, environment()), error="object 'V1' not found")
+# non-unary minus, length 3 call
+test(9999.9989, exprCols(x, V2-V3, "j", with, environment()), NULL)
+# any expression to with=F... quite likely it will be a breaking change in some revdeps #4004
+test(9999.9990, exprCols(x, c("V1", paste0("V",2:3)), "j", with, environment()), 1:3) # x[, c("V1", paste0("V",2:3))]
+test(9999.9991, exprCols(x, c("V1", grep("V2|V3", names(x), value=TRUE)), "j", with, environment()), 1:3) # x[, c("V1", grep("V2|V3", names(x), value=TRUE))]
+test(9999.9992, exprCols(x, c("V1", paste0("V",2:3)), ".SDcols", with, environment()), 1:3)
+test(9999.9993, exprCols(x, c("V1", grep("V2|V3", names(x), value=TRUE)), ".SDcols", with, environment()), 1:3)
+# duplicated columns
+x = data.table(V1=1L, V2=2L, V1=3L)
+test(9999.9994, exprCols(x, c("V1","V1"), "j", with, environment()), c(1L,1L))
+test(9999.9995, exprCols(x, c("V1","V1"), ".SD", with, environment()), c(1L,1L))

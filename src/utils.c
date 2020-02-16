@@ -323,9 +323,10 @@ SEXP exprCols(SEXP x, SEXP expr, SEXP mode, SEXP with, SEXP rho) {
       LOGICAL(with)[0] = 0;
       UNPROTECT(protecti);
       return colnamesInt(x, ricols, ScalarLogical(false), ScalarLogical(inverse)); // handle inverse
-    } else {
-      Rprintf("sym_colon to evaluate later, a valid colon expression\n"); // evaluates later on: f(V3):f(V2)
+    } else if (mode_j) {
       LOGICAL(with)[0] = 1;
+      UNPROTECT(protecti);
+      return R_NilValue;
     }
   }
   // patterns will not evaluate as well because we wrap expr into quote(expr) before calling eval on do_patterns call
