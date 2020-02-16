@@ -55,13 +55,13 @@ between = function(x, lower, upper, incbounds=TRUE, NAbounds=TRUE, check=FALSE) 
 # %between% is vectorised, #534.
 "%between%" = function(x, y) {
   ysub = substitute(y)
-  if (sub_is_fun(ysub, ".")) {
+  if (ysub %iscall% ".") {
     ysub[[1L]]=quote(list)
     y = eval.parent(ysub)
   }
   if ((l <- length(y)) != 2L) {
     stop("RHS has length() ", l, "; expecting length 2. ",
-         if (sub_is_fun(ysub, 'c'))
+         if (ysub %iscall% 'c')
            sprintf("Perhaps you meant %s? ",
                    capture.output(print(`[[<-`(ysub, 1L, quote(list))))),
          "The first element should be the lower bound(s); ",

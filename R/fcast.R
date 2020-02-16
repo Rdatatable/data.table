@@ -39,9 +39,9 @@ check_formula = function(formula, varnames, valnames) {
 
 deparse_formula = function(expr, varnames, allvars) {
   lvars = lapply(expr, function(this) {
-    if (sub_is_fun(this, '+')) {
-        unlist(deparse_formula(as.list(this)[-1L], varnames, allvars))
-    } else if (is.name(this) && this == quote(`...`)) {
+    if (this %iscall% '+') {
+      unlist(deparse_formula(as.list(this)[-1L], varnames, allvars))
+    } else if (is.name(this) && this==quote(`...`)) {
       subvars = setdiff(varnames, allvars)
       lapply(subvars, as.name)
     } else this
@@ -61,11 +61,11 @@ value_vars = function(value.var, varnames) {
 }
 
 aggregate_funs = function(funs, vals, sep="_", ...) {
-  if (sub_is_fun(funs, 'eval'))
+  if (funs %iscall% 'eval')
     funs = eval(funs[[2L]], parent.frame(2L), parent.frame(2L))
-  if (sub_in_funs(funs, c('c', 'list'))) {
+  if (funs %iscall% c('c', 'list')) {
     funs = lapply(as.list(funs)[-1L], function(x) {
-      if (sub_in_funs(x, c('c', 'list'))) as.list(x)[-1L] else x
+      if (x %iscall% c('c', 'list')) as.list(x)[-1L] else x
     })
   } else funs = eval(funs, parent.frame(2L), parent.frame(2L))
   if(is.function(funs)) funs = list(funs) # needed for cases as shown in test#1700.1
