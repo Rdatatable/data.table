@@ -184,7 +184,7 @@ SEXP colnamesInt(SEXP x, SEXP cols, SEXP check_dups, SEXP inverse) {
   } else if (isLogical(cols)) {
     int *lcols = LOGICAL(cols);
     ricols = PROTECT(allocVector(INTSXP, nc)); protecti++;
-    int *icols = LOGICAL(ricols);
+    int *icols = INTEGER(ricols);
     int ntrue = 0;
     for (int i=0; i<nc; i++) {
       if (lcols[i]==NA_LOGICAL)
@@ -317,7 +317,7 @@ SEXP exprCols(SEXP x, SEXP expr, SEXP mode, SEXP with, SEXP rho) {
       }
       lhs = colnamesInt(x, lhs, ScalarLogical(false), ScalarLogical(false));
       rhs = colnamesInt(x, rhs, ScalarLogical(false), ScalarLogical(false));
-      if (!isInteger(lhs) || !isInteger(rhs) || length(lhs)!=1 || length(rhs)!=1 || LOGICAL(lhs)[0]==NA_LOGICAL || LOGICAL(rhs)[0]==NA_LOGICAL)
+      if (!isInteger(lhs) || !isInteger(rhs) || length(lhs)!=1 || length(rhs)!=1)
         error(_("internal error: LHS and RHS of `:` call should be integer non-NA scalars already")); // # nocov
       SEXP ricols = PROTECT(range_int(INTEGER(lhs)[0], INTEGER(rhs)[0])); protecti++;
       LOGICAL(with)[0] = 0;
