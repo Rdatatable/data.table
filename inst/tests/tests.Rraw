@@ -249,13 +249,13 @@ test(71, TESTDT[eval(SJ(a)),v,by=.EACHI], data.table(a="d",v=3:6,key="a"))
 test(72, TESTDT[eval(CJ(a)),v,by=.EACHI], data.table(a="d",v=3:6,key="a"))
 test(73, TESTDT[,v], 1:7)   # still old behaviour for 1 year. WhenJsymbol option was set to FALSE at the top of this file
 test(74, TESTDT[,3], data.table(v=1:7))
-test(74.1, TESTDT[,4], error="outside the column number range.*1,ncol=3")
+test(74.1, TESTDT[,4], error="outside the column number range.*1,ncol=3") ## colselect upgrade error
 test(74.2, TESTDT[,3L], data.table(v=1:7))
-test(74.3, TESTDT[,0], null.data.table())
+test(74.3, TESTDT[,0], null.data.table()) ## ... handle?
 test(75, TESTDT[,"v"], data.table(v=1:7))
 test(76, TESTDT[,2:3], TESTDT[,2:3,with=FALSE])
 test(77, TESTDT[,2:3,with=FALSE], data.table(b=c("e","e","f","f","i","i","b"),v=1:7))
-test(78, TESTDT[,c("b","v")], data.table(b=c("e","e","f","f","i","i","b"),v=1:7))
+test(78, TESTDT[,c("b","v")], data.table(b=c("e","e","f","f","i","i","b"),v=1:7)) ## todo
 colsVar = c("b","v")
 test(79.1, TESTDT[,colsVar], error="column name 'colsVar' is not found")
 test(79.2, TESTDT[,colsVar,with=FALSE], ans<-data.table(b=c("e","e","f","f","i","i","b"),v=1:7))
@@ -430,7 +430,7 @@ a = data.table(x=factor(letters[rep(1:5, each =2)], levels=letters[5:1]),
                z=1:10)
 test(152, is.sorted(levels(a$x)), FALSE)
 test(153, is.sorted(levels(a$y)), FALSE)
-test(154, a[,sum(z),by=x][1,paste(x,V1)], "a 3")  # ad hoc by doesn't sort the groups so 'a' (5th level) should be first
+test(154, a[,sum(z),by=x][1,paste(x,V1)], "a 3")  # ad hoc by doesn't sort the groups so 'a' (5th level) should be first ## colselect todo
 setkey(a,x)    # 'e' (level 1) should come first now.
 test(155, is.sorted(levels(a$x)), FALSE)
 test(156, is.sorted(levels(a$y)), FALSE)

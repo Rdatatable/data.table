@@ -340,7 +340,7 @@ SEXP exprCols(SEXP x, SEXP expr, SEXP mode, SEXP with, SEXP rho) {
     SEXP lpat = PROTECT(eval(LCONS(sym_do_patterns, LCONS(LCONS(sym_quote, LCONS(expr, R_NilValue)), LCONS(xnames, R_NilValue))), rho)); protecti++;
     SEXP sym_Reduce = install("Reduce");
     SEXP sym_intersect = install("intersect");
-    SEXP ricols = eval(LCONS(sym_Reduce, LCONS(sym_intersect, LCONS(lpat, R_NilValue))), rho);
+    SEXP ricols = PROTECT(eval(LCONS(sym_Reduce, LCONS(sym_intersect, LCONS(lpat, R_NilValue))), rho)); protecti++;
     LOGICAL(with)[0] = 0;
     UNPROTECT(protecti);
     return colnamesInt(x, ricols, ScalarLogical(false), ScalarLogical(inverse)); // handle inverse
@@ -401,6 +401,11 @@ SEXP exprCols(SEXP x, SEXP expr, SEXP mode, SEXP with, SEXP rho) {
       error("j (the 2nd argument inside [...]) is a single symbol but column name '%s' is not found. Perhaps you intended DT[, ..%s]. This difference to data.frame is deliberate and explained in FAQ 1.1.", CHAR(expr_char), CHAR(expr_char));
     }
   }
+  if (isInteger(expr) || isReal(expr) || isString(expr)) { // 3 ## test 74
+    LOGICAL(with)[0] = 0;
+    UNPROTECT(protecti);
+    return colnamesInt(x, expr, ScalarLogical(false), ScalarLogical(inverse));
+  }
   /*
    * there is a clash in handling j and .SDcols in the single place
    * problem lies in the fact that .SDcols needs to evaluate to figure out that argument supplied is a function
@@ -424,6 +429,7 @@ SEXP exprCols(SEXP x, SEXP expr, SEXP mode, SEXP with, SEXP rho) {
         value = PROTECT(eval(expr, rho)); protecti++;  // evaluated value: c(2L,3L), c("V1","V2"), but not call objects anymore
       } else {
         LOGICAL(with)[0] = 1;
+        UNPROTECT(protecti);
         return R_NilValue;
       }
     } else { // "V1", "V1,V2" should evaluate, unless in by, also !("V1") lands here because peeled
@@ -431,6 +437,7 @@ SEXP exprCols(SEXP x, SEXP expr, SEXP mode, SEXP with, SEXP rho) {
         value = expr; // already evaluated
       } else { // (("V1,V2"))
         LOGICAL(with)[0] = 1;
+        UNPROTECT(protecti);
         return R_NilValue;
       }
     }
@@ -444,6 +451,7 @@ SEXP exprCols(SEXP x, SEXP expr, SEXP mode, SEXP with, SEXP rho) {
   }
   if (isNull(cols))
     error("internal error: cols should not be NULL by now"); // # or could be NULL when .SD provided, but eval(.SD) may already resolve that, no nocov for now
+  LOGICAL(with)[0] = 0;
   UNPROTECT(protecti);
   return colnamesInt(x, cols, ScalarLogical(false), ScalarLogical(inverse));
 }

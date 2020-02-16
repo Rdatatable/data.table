@@ -203,14 +203,22 @@ replace_dot_alias = function(e) .Call(Creplace_dot_aliasR, e)
   av = NULL
   jsub = NULL
   if (!missing(j)) {
-    colselect = getOption("datatable.colselect", FALSE)
     jsub = replace_dot_alias(substitute(j))
     root = if (is.call(jsub)) as.character(jsub[[1L]])[1L] else ""
     # j exprCols non-eval opt start
-    if (colselect) {
+    colselect = getOption("datatable.colselect", FALSE)
+    if (colselect && !identical(with, FALSE)) {
       with = copy(with)
       ..syms = NULL
+      if (identical(jsub, as.name("xjisvars"))) { ## SDenv$.xSD = x[min(nrow(i), 1L), xjisvars, with=FALSE] ## test 18.1
+        print(sys.call())
+        stop("some nasty recursive [ call problem")
+      }
+      #print("jsub:"); print(jsub);
+      #print("with:"); print(with)
       sel = .Call(CexprCols, x, jsub, "j", with, parent.frame())
+      #print("sel:"); print(sel)
+      #print("post with:"); print(with)
       if (!with) {
         if (is.null(sel))
           stop("internal error")
@@ -218,6 +226,7 @@ replace_dot_alias = function(e) .Call(Creplace_dot_aliasR, e)
           ..syms = av
         jsub = sel
       }
+      #print("post jsub:"); print(jsub);
     } else if (root == ":" ||
         (root %chin% c("-","!") && jsub[[2L]] %iscall% '(' && jsub[[2L]][[2L]] %iscall% ':') ||
         ( (!length(av<-all.vars(jsub)) || all(substring(av,1L,2L)=="..")) &&
