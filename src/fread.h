@@ -30,7 +30,7 @@ typedef enum {
 
 extern int8_t typeSize[NUMTYPE];
 extern const char typeName[NUMTYPE][10];
-extern const long double pow10lookup[701];
+extern const long double pow10lookup[601];
 extern const uint8_t hexdigits[256];
 
 
