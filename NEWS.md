@@ -127,7 +127,7 @@ unit = "s")
     2:     2     3
     ```
 
-7. Added some more explanation/examples for how to use `.BY` to `?data.table`, [#1363](https://github.com/Rdatatable/data.table/issues/1363). `.BY`, in a grouping setting (when using `by=`). We are always striving to improve our documentation so we appreciate several StackOverflow users who made it clear this object is under-explained.
+7. Added more explanation/examples to `?data.table` for how to use `.BY`, [#1363](https://github.com/Rdatatable/data.table/issues/1363).
 
 
 # data.table [v1.12.8](https://github.com/Rdatatable/data.table/milestone/15?closed=1)  (09 Dec 2019)

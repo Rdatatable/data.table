@@ -376,13 +376,11 @@ DT[, .I[1], by=x]                       # row number in DT corresponding to each
 DT[, grp := .GRP, by=x]                 # add a group counter column
 DT[ , dput(.BY), by=.(x,y)]             # .BY is a list of singletons for each group
 X[, DT[.BY, y, on="x"], by=x]           # join within each group
-tdir = tempdir()
-DT[ , {
-  out_file = file.path(
-    tdir, paste0('x=', .BY$x), 'dt.csv' # write each group to a different directory
-  )
-  fwrite(.SD, out_file)
+DT[, {
+  # write each group to a different file
+  fwrite(.SD, file.path(tempdir(), paste0('x=', .BY$x, '.csv')))
 }, by=x]
+dir(tempdir())
 
 # add/update/delete by reference (see ?assign)
 print(DT[, z:=42L])                   # add new column by reference
