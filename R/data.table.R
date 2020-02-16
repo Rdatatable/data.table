@@ -208,8 +208,17 @@ replace_dot_alias = function(e) .Call(Creplace_dot_aliasR, e)
     root = if (is.call(jsub)) as.character(jsub[[1L]])[1L] else ""
     # j exprCols non-eval opt start
     if (colselect) {
-    }
-    if (root == ":" ||
+      with = copy(with)
+      ..syms = NULL
+      sel = .Call(CexprCols, x, jsub, "j", with, parent.frame())
+      if (!with) {
+        if (is.null(sel))
+          stop("internal error")
+        if (all(substring(av<-all.vars(jsub),1L,2L)=="..")) ## might be needed later on
+          ..syms = av
+        jsub = sel
+      }
+    } else if (root == ":" ||
         (root %chin% c("-","!") && jsub[[2L]] %iscall% '(' && jsub[[2L]][[2L]] %iscall% ':') ||
         ( (!length(av<-all.vars(jsub)) || all(substring(av,1L,2L)=="..")) &&
           root %chin% c("","c","paste","paste0","-","!") &&
@@ -249,6 +258,8 @@ replace_dot_alias = function(e) .Call(Creplace_dot_aliasR, e)
       if (!with && !exists(as.character(jsub), where=parent.frame()))
         stop("Variable '",jsub,"' is not found in calling scope. Looking in calling scope because you set with=FALSE. Also, please use .. symbol prefix and remove with=FALSE.")
     }
+    # j exprCols opt end
+    if (!identical(with, FALSE)) { # escape with=F
     if (root=="{") {
       if (length(jsub) == 2L) {
         jsub = jsub[[2L]]  # to allow {} wrapping of := e.g. [,{`:=`(...)},] [#376]
@@ -270,7 +281,6 @@ replace_dot_alias = function(e) .Call(Creplace_dot_aliasR, e)
         as.character(jsub[[1L]])[1L]
       } else ""
     }
-    # j exprCols opt end
     if (root == ":=") {
       allow.cartesian=TRUE   # (see #800)
       if (!missing(i) && keyby)
@@ -280,6 +290,7 @@ replace_dot_alias = function(e) .Call(Creplace_dot_aliasR, e)
         nomatch=0L
       }
     }
+    } ## end of escape for with=F
   }
 
   # setdiff removes duplicate entries, which'll create issues with duplicated names. Use %chin% instead.
@@ -920,6 +931,12 @@ replace_dot_alias = function(e) .Call(Creplace_dot_aliasR, e)
           colselect = getOption("datatable.colselect", FALSE)
           # FR #355 - negative numeric and character indices for SDcols
           colsub = substitute(.SDcols)
+          if (colselect) {
+            sel = .Call(CexprCols, x, colsub, ".SDcols", copy(with), parent.frame())
+            if (is.null(sel))
+              stop("internal error")
+            sdvars = ansvars = names_x[sel]
+          } else {
           # fix for R-Forge #5190. colsub[[1L]] gave error when it's a symbol.
           if (colsub %iscall% c("!", "-")) {
             negate_sdcols = TRUE
@@ -966,9 +983,7 @@ replace_dot_alias = function(e) .Call(Creplace_dot_aliasR, e)
             # dups = FALSE here. DT[, .SD, .SDcols=c("x", "x")] again doesn't really help with which 'x' to keep (and if '-' which x to remove)
             ansvals = chmatch(ansvars, names_x)
           }
-          #if (!isTRUE(m<-all.equal(ansvals, new_ansvals))) warning(m)
-          new_sdvars = new_ansvars = names_x[new_ansvals]
-          #if (!isTRUE(m<-all.equal(sdvars, new_sdvars))) warning(m)
+          } ## end of sdcols escape
         }
         # fix for long standing FR/bug, #495 and #484
         allcols = c(names_x, xdotprefix, names_i, idotprefix)

@@ -42,9 +42,10 @@ as well.}
 \item{fromLast}{ logical indicating if duplication should be considered from
 the reverse side, i.e., the last (or rightmost) of identical elements would
 correspond to \code{duplicated = FALSE}.}
-\item{by}{\code{character} or \code{integer} vector indicating which combinations
-of columns from \code{x} to use for uniqueness checks. By default all columns
-are being used. That was changed recently for consistency to data.frame methods.
+\item{by}{\code{character}, \code{integer} or \code{logical} vector indicating
+which combinations of columns from \code{x} to use for uniqueness checks. By
+default all columns are being used. That was changed recently for consistency to
+data.frame methods.
 In version \code{< 1.9.8} default was \code{key(x)}.}
 \item{na.rm}{Logical (default is \code{FALSE}). Should missing values (including
 \code{NaN}) be removed?}

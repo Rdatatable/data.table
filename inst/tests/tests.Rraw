@@ -4467,8 +4467,8 @@ test(1249.3, DT[order(x,y)], DT)
 set.seed(1L)
 DT <- data.table(x=sample(3,10,TRUE), y=sample(2,10,TRUE), key="x")
 test(1250.1, duplicated(DT, by=NULL), duplicated.data.frame(DT))
-test(1250.2, duplicated(DT, by=FALSE), error="argument specifying columns must be character or numeric")
-test(1250.3, duplicated(DT, by=TRUE), error="argument specifying columns must be character or numeric")
+test(1250.2, duplicated(DT, by=FALSE), error="argument specifying columns is logical and has different length than number of columns in a table")
+test(1250.3, duplicated(DT, by=TRUE), error="argument specifying columns is logical and has different length than number of columns in a table")
 
 # more tests for DT[order(...)] - now testing 'decreasing=FALSE/TRUE' argument
 set.seed(1L)
