@@ -32,14 +32,14 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
     int j = INTEGER(grpcols)[i]-1;
     SET_VECTOR_ELT(BY, i, allocVector(TYPEOF(VECTOR_ELT(groups, j)),
       nrowgroups ? 1 : 0)); // TODO: might be able to be 1 always but 0 when 'groups' are integer(0) seem sensible. #2440 was involved in the past.
-    // Fix for #5437, by cols with attributes when also used in `j` lost the attribute.
+    // Fix for #36, by cols with attributes when also used in `j` lost the attribute.
     copyMostAttrib(VECTOR_ELT(groups, j), VECTOR_ELT(BY,i));  // not names, otherwise test 778 would fail
     SET_STRING_ELT(bynames, i, STRING_ELT(getAttrib(groups,R_NamesSymbol), j));
     defineVar(install(CHAR(STRING_ELT(bynames,i))), VECTOR_ELT(BY,i), env);      // by vars can be used by name in j as well as via .BY
     if (SIZEOF(VECTOR_ELT(BY,i))==0)
       error(_("Internal error: unsupported size-0 type '%s' in column %d of 'by' should have been caught earlier"), type2char(TYPEOF(VECTOR_ELT(BY, i))), i+1); // #nocov
   }
-  setAttrib(BY, R_NamesSymbol, bynames); // Fix for #5415 - BY doesn't retain names anymore
+  setAttrib(BY, R_NamesSymbol, bynames); // Fix for #42 - BY doesn't retain names anymore
   R_LockBinding(sym_BY, env);
   if (isNull(jiscols) && (length(bynames)!=length(groups) || length(bynames)!=length(grpcols))) error(_("!length(bynames)[%d]==length(groups)[%d]==length(grpcols)[%d]"),length(bynames),length(groups),length(grpcols));
   // TO DO: check this check above.
@@ -56,7 +56,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
   defineVar(install(".I"), I = PROTECT(allocVector(INTSXP, maxGrpSize)), env); nprotect++;
   R_LockBinding(install(".I"), env);
 
-  SEXP dtnames = PROTECT(getAttrib(dt, R_NamesSymbol)); nprotect++; // added here to fix #4990 - `:=` did not issue recycling warning during "by"
+  SEXP dtnames = PROTECT(getAttrib(dt, R_NamesSymbol)); nprotect++; // added here to fix #91 - `:=` did not issue recycling warning during "by"
   // fetch rownames of .SD.  rownames[1] is set to -thislen for each group, in case .SD is passed to
   // non data.table aware package that uses rownames
   for (s = ATTRIB(SD); s != R_NilValue && TAG(s)!=R_RowNamesSymbol; s = CDR(s));  // getAttrib0 basically but that's hidden in attrib.c
@@ -101,7 +101,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
   for(int i=0; i<ngrp; ++i) {   // even for an empty i table, ngroup is length 1 (starts is value 0), for consistency of empty cases
 
     if (istarts[i]==0 && (i<ngrp-1 || estn>-1)) continue;
-    // Previously had replaced (i>0 || !isNull(lhs)) with i>0 to fix #5376
+    // Previously had replaced (i>0 || !isNull(lhs)) with i>0 to fix #49
     // The above is now to fix #1993, see test 1746.
     // In cases were no i rows match, '|| estn>-1' ensures that the last empty group creates an empty result.
     // TODO: revisit and tidy
@@ -217,7 +217,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
         if (vlen>1 && vlen!=grpn) {
           SEXP colname = isNull(VECTOR_ELT(dt, INTEGER(lhs)[j]-1)) ? STRING_ELT(newnames, INTEGER(lhs)[j]-origncol-1) : STRING_ELT(dtnames,INTEGER(lhs)[j]-1);
           error(_("Supplied %d items to be assigned to group %d of size %d in column '%s'. The RHS length must either be 1 (single values are ok) or match the LHS length exactly. If you wish to 'recycle' the RHS please use rep() explicitly to make this intent clear to readers of your code."),vlen,i+1,grpn,CHAR(colname));
-          // e.g. in #4990 `:=` did not issue recycling warning during grouping. Now it is error not warning.
+          // e.g. in #91 `:=` did not issue recycling warning during grouping. Now it is error not warning.
         }
       }
       int n = LENGTH(VECTOR_ELT(dt, 0));

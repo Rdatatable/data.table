@@ -200,8 +200,8 @@ forder = function(..., na.last=TRUE, decreasing=FALSE)
   # We intercept the unevaluated expressions and massage them before evaluating in with(DT) scope or not depending on the first item.
   for (i in seq.int(2L, length(sub))) {
     v = sub[[i]]
-    while (is.call(v) && length(v)==2L && ((s<-v[[1L]])=="-" || s=="+")) {
-      if (s=="-") asc[i-1L] = -asc[i-1L]
+    while (v %iscall% c('-', '+') && length(v)==2L) {
+      if (v[[1L]] == "-") asc[i-1L] = -asc[i-1L]
       sub[[i]] = v = v[[2L]]  # remove the leading +/- which is the 2nd item since length(v)==2; i.e. monadic +/-
     }
   }
