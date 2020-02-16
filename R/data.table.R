@@ -57,7 +57,7 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL, str
   nd = name_dots(...)
   names(x) = nd$vnames
   if (length(x)==0L) return( null.data.table() )
-  if (length(x)==1L && (is.null(x[[1L]]) || (is.list(x[[1L]]) && length(x[[1L]])==0L))) return( null.data.table() ) #5377
+  if (length(x)==1L && (is.null(x[[1L]]) || (is.list(x[[1L]]) && length(x[[1L]])==0L))) return( null.data.table() ) #48
   ans = as.data.table.list(x, keep.rownames=keep.rownames, check.names=check.names, .named=nd$.named)  # see comments inside as.data.table.list re copies
   if (!is.null(key)) {
     if (!is.character(key)) stop("key argument of data.table() must be character")
@@ -131,12 +131,12 @@ replace_dot_alias = function(e) {
   # test explicitly if the caller is [.data.table (even stronger test. TO DO.)
   # the drop=NULL is to sink drop argument when dispatching to [.data.frame; using '...' stops test 147
   if (!cedta()) {
-    # Fix for #5070 (to do)
+    # Fix for #500 (to do)
     Nargs = nargs() - (!missing(drop))
     ans = if (Nargs<3L) { `[.data.frame`(x,i) }  # drop ignored anyway by DF[i]
         else if (missing(drop)) `[.data.frame`(x,i,j)
         else `[.data.frame`(x,i,j,drop)
-    # added is.data.table(ans) check to fix bug #5069
+    # added is.data.table(ans) check to fix bug #81
     if (!missing(i) & is.data.table(ans)) setkey(ans,NULL)  # See test 304
     return(ans)
   }
@@ -660,7 +660,7 @@ replace_dot_alias = function(e) {
       }
       if (is.logical(j)) j <- which(j)
       if (!length(j) && !notj) return( null.data.table() )
-      if (is.factor(j)) j = as.character(j)  # fix for FR: #4867
+      if (is.factor(j)) j = as.character(j)  # fix for FR: #358
       if (is.character(j)) {
         if (notj) {
           if (anyNA(idx <- chmatch(j, names_x))) warning("column(s) not removed because not found: ", brackify(j[is.na(idx)]))
@@ -922,9 +922,9 @@ replace_dot_alias = function(e) {
           # all duplicate columns must be matched, because nothing is provided
           ansvals = chmatchdup(ansvars, names_x)
         } else {
-          # FR #4979 - negative numeric and character indices for SDcols
+          # FR #355 - negative numeric and character indices for SDcols
           colsub = substitute(.SDcols)
-          # fix for #5190. colsub[[1L]] gave error when it's a symbol.
+          # fix for R-Forge #5190. colsub[[1L]] gave error when it's a symbol.
           if (colsub %iscall% c("!", "-")) {
             negate_sdcols = TRUE
             colsub = colsub[[2L]]
@@ -1010,7 +1010,7 @@ replace_dot_alias = function(e) {
           }
         }
         allcols = c(names_x, xdotprefix, names_i, idotprefix)
-        ansvars = setdiff(allcols, bynames) # fix for bug #5443
+        ansvars = setdiff(allcols, bynames) # fix for bug #34
         non_sdvars = setdiff(ansvars, sdvars)
         ansvals = chmatch(ansvars, names_x)
         if (verbose) cat("New:",paste(ansvars,collapse=","),"\n")
@@ -1250,7 +1250,7 @@ replace_dot_alias = function(e) {
           if (keylen && (ichk || is.logical(i) || (.Call(CisOrderedSubset, irows, nrow(x)) && ((roll == FALSE) || length(irows) == 1L)))) # see #1010. don't set key when i has no key, but irows is ordered and roll != FALSE
             setattr(ans,"sorted",head(key(x),keylen))
         }
-        setattr(ans, "class", class(x)) # fix for #5296
+        setattr(ans, "class", class(x)) # fix for #64
         setattr(ans, "row.names", .set_row_names(nrow(ans)))
         setalloccol(ans)
       }
@@ -1291,7 +1291,7 @@ replace_dot_alias = function(e) {
 
     # copy 'jval' when required
     # More speedup - only check + copy if irows is NULL
-    # Temp fix for #921 - check address and copy *after* evaluating 'jval'.  #5114 also related.
+    # Temp fix for #921 - check address and copy *after* evaluating 'jval'.  #75 also related.
     if (is.null(irows)) {
       if (!is.list(jval)) { # performance improvement when i-arg is S4, but not list, #1438, Thanks @DCEmilberg.
         jcpy = address(jval) %in% vapply_1c(SDenv$.SD, address) # %chin% errors when RHS is list()
@@ -1330,7 +1330,7 @@ replace_dot_alias = function(e) {
     }
 
     if (is.data.table(jval)) {
-      setattr(jval, 'class', class(x)) # fix for #5296
+      setattr(jval, 'class', class(x)) # fix for #64
       if (haskey(x) && all(key(x) %chin% names(jval)) && suppressWarnings(is.sorted(jval, by=key(x))))  # TO DO: perhaps this usage of is.sorted should be allowed internally then (tidy up and make efficient)
         setattr(jval, 'sorted', key(x))
       if (any(sapply(jval, is.null))) stop("Internal error: j has created a data.table result containing a NULL column") # nocov
@@ -1378,7 +1378,7 @@ replace_dot_alias = function(e) {
     bysameorder = haskey(i) || (is.sorted(f__) && ((roll == FALSE) || length(f__) == 1L)) # Fix for #1010
     ##  'av' correct here ??  *** TO DO ***
     xjisvars = intersect(av, names_x[rightcols])  # no "x." for xvars.
-    # if 'get' is in 'av' use all cols in 'i', fix for bug #5443
+    # if 'get' is in 'av' use all cols in 'i', fix for bug #34
     # added 'mget' - fix for #994
     jisvars = if (any(c("get", "mget") %chin% av)) names_i else intersect(gsub("^i[.]","", setdiff(av, xjisvars)), names_i)
     # JIS (non join cols) but includes join columns too (as there are named in i)
@@ -1485,13 +1485,13 @@ replace_dot_alias = function(e) {
     # converted the lapply(.SD, ...) to a function and used below, easier to implement FR #2722 then.
     .massageSD = function(jsub) {
       txt = as.list(jsub)[-1L]
-      if (length(names(txt))>1L) .Call(Csetcharvec, names(txt), 2L, "")  # fixes bug #4839
+      if (length(names(txt))>1L) .Call(Csetcharvec, names(txt), 2L, "")  # fixes bug #110
       fun = txt[[2L]]
       if (fun %iscall% "function") {
         # Fix for #2381: added SDenv$.SD to 'eval' to take care of cases like: lapply(.SD, function(x) weighted.mean(x, bla)) where "bla" is a column in DT
         # http://stackoverflow.com/questions/13441868/data-table-and-stratified-means
         # adding this does not compromise in speed (that is, not any lesser than without SDenv$.SD)
-        # replaced SDenv$.SD to SDenv to deal with Bug #5007 reported by Ricardo (Nice catch!)
+        # replaced SDenv$.SD to SDenv to deal with Bug #87 reported by Ricardo (Nice catch!)
         thisfun = paste0("..FUN", funi) # Fix for #985
         assign(thisfun,eval(fun, SDenv, SDenv), SDenv)  # to avoid creating function() for each column of .SD
         lockBinding(thisfun,SDenv)
@@ -1635,7 +1635,7 @@ replace_dot_alias = function(e) {
       else
         cat("lapply optimization is on, j unchanged as '",deparse(jsub,width.cutoff=200L, nlines=1L),"'\n",sep="")
     }
-    dotN = function(x) is.name(x) && x==".N" # For #5760. TODO: Rprof() showed dotN() may be the culprit if iterated (#1470)?; avoid the == which converts each x to character?
+    dotN = function(x) is.name(x) && x==".N" # For #334. TODO: Rprof() showed dotN() may be the culprit if iterated (#1470)?; avoid the == which converts each x to character?
     # FR #971, GForce kicks in on all subsets, no joins yet. Although joins could work with
     # nomatch=0L even now.. but not switching it on yet, will deal it separately.
     if (getOption("datatable.optimize")>=2L && !is.data.table(i) && !byjoin && length(f__) && !length(lhs)) {
@@ -1648,7 +1648,7 @@ replace_dot_alias = function(e) {
       } else {
         # Apply GForce
         .gforce_ok = function(q) {
-          if (dotN(q)) return(TRUE) # For #5760
+          if (dotN(q)) return(TRUE) # For #334
           # run GForce for simple f(x) calls and f(x, na.rm = TRUE)-like calls where x is a column of .SD
           # is.symbol() is for #1369, #1974 and #2949
           if (!(is.call(q) && is.symbol(q[[1L]]) && is.symbol(q[[2L]]) && (q1 <- q[[1L]]) %chin% gfuns)) return(FALSE)
@@ -1669,7 +1669,7 @@ replace_dot_alias = function(e) {
         if (GForce) {
           if (jsub[[1L]]=="list")
             for (ii in seq_along(jsub)[-1L]) {
-              if (dotN(jsub[[ii]])) next; # For #5760
+              if (dotN(jsub[[ii]])) next; # For #334
               jsub[[ii]][[1L]] = as.name(paste0("g", jsub[[ii]][[1L]]))
               if (length(jsub[[ii]])==3L) jsub[[ii]][[3L]] = eval(jsub[[ii]][[3L]], parent.frame())  # tests 1187.2 & 1187.4
             }
@@ -1747,7 +1747,7 @@ replace_dot_alias = function(e) {
   if (GForce) {
     thisEnv = new.env()  # not parent=parent.frame() so that gsum is found
     for (ii in ansvars) assign(ii, x[[ii]], thisEnv)
-    assign(".N", len__, thisEnv) # For #5760
+    assign(".N", len__, thisEnv) # For #334
     #fix for #1683
     if (use.I) assign(".I", seq_len(nrow(x)), thisEnv)
     ans = gforce(thisEnv, jsub, o__, f__, len__, irows) # irows needed for #971.
@@ -1800,7 +1800,7 @@ replace_dot_alias = function(e) {
     return(ans)
   }
   setattr(ans,"row.names",.set_row_names(length(ans[[1L]])))
-  setattr(ans,"class",class(x)) # fix for #5296
+  setattr(ans,"class",class(x)) # fix for #64
   if (is.null(names(ans))) {
     # Efficiency gain of dropping names has been successful. Ordinarily this will run.
     if (is.null(jvnames)) jvnames = character(length(ans)-length(bynames))
@@ -2830,7 +2830,7 @@ rleidv = function(x, cols=seq_along(x), prefix=NULL) {
 #     (2) edit .gforce_ok (defined within `[`) to catch which j will apply the new function
 #     (3) define the gfun = function() R wrapper
 gfuns = c("[", "[[", "head", "tail", "first", "last", "sum", "mean", "prod",
-          "median", "min", "max", "var", "sd", ".N") # added .N for #5760
+          "median", "min", "max", "var", "sd", ".N") # added .N for #334
 `g[` = `g[[` = function(x, n) .Call(Cgnthvalue, x, as.integer(n)) # n is of length=1 here.
 ghead = function(x, n) .Call(Cghead, x, as.integer(n)) # n is not used at the moment
 gtail = function(x, n) .Call(Cgtail, x, as.integer(n)) # n is not used at the moment
