@@ -16797,3 +16797,10 @@ if (test_xts) {
 DT = data.table(a = 1)
 test(2134.1, DT[b := 2], error="Operator := detected in i, the first argument inside DT[...], but is only valid in the second argument, j.")
 test(2134.2, DT[DT[mpg_per_cl := mpg/cyl], on='ast'], error="Operator := detected in i, the first argument inside")
+
+# new .NGRP symbol, #1206 #3060
+DT = data.table(grp1 = rep(1:4, each = 2L), grp2 = rep(1:2, 4L))
+test(2135.1, DT[ , .NGRP], 1L)
+test(2135.2, DT[ , .NGRP, by = grp1]$NGRP, rep(4L, 4L))
+test(2135.3, DT[ , .NGRP, by = grp2]$NGRP, rep(2L, 2L))
+test(2135.4, DT[ , .NGRP, by = .(grp1, grp2)]$NGRP, rep(8L, 8L))
