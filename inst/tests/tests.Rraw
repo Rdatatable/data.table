@@ -16659,7 +16659,7 @@ test(2127.16, fcase(test_vec1, factor("a", levels=letters[1:3]), test_vec2, fact
 test(2127.17, fcase(test_vec1, as.raw(1), test_vec2, as.raw(0)), error="Type raw is not supported.")
 test(2127.18, fcase(test_vec1, factor("a", levels=letters[1]), test_vec2, factor("b", levels=letters[1:3])), error="Argument #2 and argument #4 are both factor but their levels are different.")
 test(2127.19, fcase(test_vec1, factor("a", levels=letters[1:2]), test_vec2, factor("b", levels=letters[1:2]),default=factor("c", levels=letters[1:3])), error="Resulting value and 'default' are both type factor but their levels are different.")
-test(2127.20, fcase(test_vec1, 1L:10L, test_vec2, 3L:12L, test_vec2), error="Please supply an even number of arguments in ..., consisting of logical condition, resulting value pairs (in that order); received 5 inputs.")
+test(2127.20, fcase(test_vec1, 1L:10L, test_vec2, 3L:12L, test_vec2), error="Received 5 inputs; please supply an even number of arguments in ..., consisting of logical condition, resulting value pairs (in that order). Note that the default argument must be named explicitly, e.g., default=0")
 test(2127.21, fcase(test_vec1, 1L, test_vec2, 3), error="Argument #4 is of type double, however argument #2 is of type integer. Please make sure all output values have the same type.")
 test(2127.22, fcase(test_vec1, "FALSE", test_vec2, TRUE), error="Argument #4 is of type logical, however argument #2 is of type character. Please make sure all output values have the same type.")
 test(2127.23, fcase(test_vec1, "FALSE", test_vec2, 5L), error="Argument #4 is of type integer, however argument #2 is of type character. Please make sure all output values have the same type.")
