@@ -4,8 +4,8 @@
 \alias{rank}
 \title{Fast rank}
 \description{
-  Similar to \code{base::rank} but \emph{much faster}. And it accepts vectors, lists, data.frames or data.tables as input. In addition to the \code{ties.method} possibilities provided by \code{base::rank}, it also provides \code{ties.method="dense"}.
-  
+  Similar to \code{base::rank} but \emph{much faster}. And it accepts vectors, lists, \code{data.frame}s or \code{data.table}s as input. In addition to the \code{ties.method} possibilities provided by \code{base::rank}, it also provides \code{ties.method="dense"}.
+
   Like \code{\link{forder}}, sorting is done in "C-locale"; in particular, this may affect how capital/lowercase letters are ranked. See Details on \code{forder} for more.
 
   \code{bit64::integer64} type is also supported.
@@ -13,10 +13,10 @@
 
 \usage{
 frank(x, \dots, na.last=TRUE, ties.method=c("average",
-  "first", "random", "max", "min", "dense"))
+  "first", "last", "random", "max", "min", "dense"))
 
 frankv(x, cols=seq_along(x), order=1L, na.last=TRUE,
-      ties.method=c("average", "first", "random",
+      ties.method=c("average", "first", "last", "random",
         "max", "min", "dense"))
 
 }
@@ -33,7 +33,7 @@ frankv(x, cols=seq_along(x), order=1L, na.last=TRUE,
 
   \code{frank} is not limited to vectors. It accepts \code{data.table}s (and \code{list}s and \code{data.frame}s) as well. It accepts unquoted column names (with names preceded with a \code{-} sign for descending order, even on character vectors), for e.g., \code{frank(DT, a, -b, c, ties.method="first")} where \code{a,b,c} are columns in \code{DT}. The equivalent in \code{frankv} is the \code{order} argument.
 
-  In addition to the \code{ties.method} values possible using base's \code{\link[base]{rank}}, it also provides another additional argument \emph{"dense"} which returns the ranks without any gaps in the ranking. See examples.
+  In addition to the \code{ties.method} values possible using base's \code{\link[base]{rank}}, it also provides another additional argument \code{"dense"} which returns the ranks without any gaps in the ranking. See examples.
 }
 \value{
   A numeric vector of length equal to \code{NROW(x)} (unless \code{na.last = NA}, when missing values are removed). The vector is of integer type unless \code{ties.method = "average"} when it is of double type (irrespective of ties).
