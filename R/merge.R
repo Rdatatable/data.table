@@ -75,7 +75,7 @@ merge.data.table = function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FAL
         yy = cbind(yy, x[tmp, othercolsx, with = FALSE])
       }
       # empty data.tables (nrow =0, ncol>0) doesn't skip names anymore in new rbindlist
-      # takes care of #5672 without having to save names. This is how it should be, IMHO.
+      # takes care of #24 without having to save names. This is how it should be, IMHO.
       dt = rbind(dt, yy, use.names=FALSE)
     }
   }
