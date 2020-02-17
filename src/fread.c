@@ -648,9 +648,9 @@ static void StrtoI64(FieldParseContext *ctx)
 // TODO: review ERANGE checks and tests; that range outside [1.7e-308,1.7e+308] coerces to [0.0,Inf]
 /*
 f = "~/data.table/src/freadLookups.h"
-cat("const long double pow10lookup[701] = {\n", file=f, append=FALSE)
-for (i in (-350):(349)) cat("1.0E",i,"L,\n", sep="", file=f, append=TRUE)
-cat("1.0E350L\n};\n", file=f, append=TRUE)
+cat("const long double pow10lookup[601] = {\n", file=f, append=FALSE)
+for (i in (-300):(299)) cat("1.0E",i,"L,\n", sep="", file=f, append=TRUE)
+cat("1.0E300L\n};\n", file=f, append=TRUE)
 */
 
 
@@ -767,11 +767,23 @@ static void parse_double_regular(FieldParseContext *ctx)
     }
     e += Eneg? -E : E;
   }
-  e += 350; // lookup table is arranged from -350 (0) to +350 (700)
-  if (e<0 || e>700) goto fail;
+  if (e<-350 || e>350) goto fail;
 
-  double r = (double)((long double)acc * pow10lookup[e]);
-  *target = neg? -r : r;
+  long double r = (long double)acc;
+  if (e < -300 || e > 300) {
+    // Handle extra precision by pre-multiplying the result by pow(10, extra),
+    // and then remove extra from e.
+    // This avoids having to store very small or very large constants that may
+    // fail to be encoded by the compiler, even though the values can actually
+    // be stored correctly.
+    int_fast8_t extra = e < 0 ? e + 300 : e - 300;
+    r *= pow10lookup[extra + 300];
+    e -= extra;
+  }
+  e += 300; // lookup table is arranged from -300 (0) to +300 (600)
+
+  r *= pow10lookup[e];
+  *target = (double)(neg? -r : r);
   *(ctx->ch) = ch;
   return;
 

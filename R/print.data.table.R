@@ -71,10 +71,10 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
   toprint=format.data.table(toprint, na.encode=FALSE, timezone = timezone, ...)  # na.encode=FALSE so that NA in character cols print as <NA>
   require_bit64_if_needed(x)
 
-  # FR #5020 - add row.names = logical argument to print.data.table
+  # FR #353 - add row.names = logical argument to print.data.table
   if (isTRUE(row.names)) rownames(toprint)=paste0(format(rn,right=TRUE,scientific=FALSE),":") else rownames(toprint)=rep.int("", nrow(toprint))
   if (is.null(names(x)) || all(names(x) == ""))
-    # fixes bug #97 (RF#4934) and #545 (RF#5253)
+    # fixes bug #97 and #545
     colnames(toprint)=rep("", ncol(toprint))
   if (isTRUE(class) && col.names != "none") {
     #Matching table for most common types & their abbreviations
@@ -122,7 +122,7 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
   if (nrow(toprint)>20L && col.names == "auto")
     # repeat colnames at the bottom if over 20 rows so you don't have to scroll up to see them
     #   option to shut this off per request of Oleg Bondar on SO, #1482
-    toprint=rbind(toprint, matrix(if (quote) old else colnames(toprint), nrow=1L)) # fixes bug #4934
+    toprint=rbind(toprint, matrix(if (quote) old else colnames(toprint), nrow=1L)) # fixes bug #97
   if (col.names == "none") {
     cut_top(print(toprint, right=TRUE, quote=quote))
   } else {
@@ -143,7 +143,7 @@ format.data.table = function (x, ..., justify="none", timezone = FALSE) {
     if (is.null(x))  # NULL item in a list column
       ""
     else if (is.atomic(x) || inherits(x,"formula")) # FR #2591 - format.data.table issue with columns of class "formula"
-      paste(c(format(head(x, 6L), justify=justify, ...), if (length(x) > 6L) "..."), collapse=",")  # fix for #5435 - format has to be added here...
+      paste(c(format(head(x, 6L), justify=justify, ...), if (length(x) > 6L) "..."), collapse=",")  # fix for #37 - format has to be added here...
     else
       paste0("<", class(x)[1L], paste_dims(x), ">")
   }
@@ -170,7 +170,7 @@ format.data.table = function (x, ..., justify="none", timezone = FALSE) {
     if (!is.null(dim(col))) return("<multi-column>")
     if(timezone) col = format.timezone(col)
     if (is.list(col)) col = vapply_1c(col, format.item)
-    else col = format(char.trunc(col), justify=justify, ...) # added an else here to fix #5435
+    else col = format(char.trunc(col), justify=justify, ...) # added an else here to fix #37
     col
   },...))
 }

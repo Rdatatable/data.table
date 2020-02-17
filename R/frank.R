@@ -1,4 +1,4 @@
-frankv = function(x, cols=seq_along(x), order=1L, na.last=TRUE, ties.method=c("average", "first", "random", "max", "min", "dense")) {
+frankv = function(x, cols=seq_along(x), order=1L, na.last=TRUE, ties.method=c("average", "first", "last", "random", "max", "min", "dense")) {
   ties.method = match.arg(ties.method)
   if (!length(na.last)) stop('length(na.last) = 0')
   if (length(na.last) != 1L) {
@@ -32,11 +32,14 @@ frankv = function(x, cols=seq_along(x), order=1L, na.last=TRUE, ties.method=c("a
     nas  = x[[ncol(x)]]
   }
   if (ties.method == "random") {
-    v = stats::runif(nrow(x))
     if (is.na(na.last)) {
       idx = which_(nas, FALSE)
-      set(x, idx, '..stats_runif..', v[idx])
-    } else set(x, NULL, '..stats_runif..', v)
+      n = length(idx)  # changed in #4243 to match base R to pass test 1369
+    } else {
+      idx = NULL
+      n = nrow(x)
+    }
+    set(x, idx, '..stats_runif..', stats::runif(n))
     order = if (length(order) == 1L) c(rep(order, length(cols)), 1L) else c(order, 1L)
     cols = c(cols, ncol(x))
   }
@@ -48,7 +51,7 @@ frankv = function(x, cols=seq_along(x), order=1L, na.last=TRUE, ties.method=c("a
     xorder  = seq_along(x[[1L]])
   }
   ans = switch(ties.method,
-    average = , min = , max =, dense = {
+    average = , min = , max =, dense =, last = {
       rank = .Call(Cfrank, xorder, xstart, uniqlengths(xstart, length(xorder)), ties.method)
     },
     first = , random = {
@@ -65,7 +68,7 @@ frankv = function(x, cols=seq_along(x), order=1L, na.last=TRUE, ties.method=c("a
   ans
 }
 
-frank = function(x, ..., na.last=TRUE, ties.method=c("average", "first", "random", "max", "min", "dense")) {
+frank = function(x, ..., na.last=TRUE, ties.method=c("average", "first", "last", "random", "max", "min", "dense")) {
   cols = substitute(list(...))[-1L]
   if (identical(as.character(cols), "NULL")) {
     cols  = NULL
