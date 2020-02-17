@@ -83,12 +83,13 @@ fwrite = function(x, file="", append=FALSE, quote="auto",
     }
   }
   write_yaml = isTRUE(yaml) || (is.list(yaml) && length(yaml) != 0L)
-  yaml = if (!write_yaml) "" else {
+  yaml_text = ""
+  if (write_yaml) {
     if (!requireNamespace('yaml', quietly=TRUE))
       stop("'data.table' relies on the package 'yaml' to write the file header; please add this to your library with install.packages('yaml') and try again.") # nocov
     
     if (isTRUE(yaml)) {
-      yaml = generate_yaml(x = x, col.names = col.names, sep = sep, 
+      yaml_text = generate_yaml(x = x, col.names = col.names, sep = sep, 
                            sep2 = sep2, eol = eol, na = na, dec = dec, 
                            qmethod = qmethod, logical01 = logical01)  
     } else {
@@ -103,19 +104,20 @@ fwrite = function(x, file="", append=FALSE, quote="auto",
       if (any(unnamed & !true_yaml)) {
         stop("`yaml` contains unnamed elements that are not `TRUE`")
       }
+      yaml_text <- yaml[!generated_yaml]
       if (any(generated_yaml)) {
         yaml_header = generate_yaml(x = x, col.names = col.names, sep = sep, 
                                     sep2 = sep2, eol = eol, na = na, dec = dec, 
                                     qmethod = qmethod, logical01 = logical01)  
-        yaml = c(yaml_header, yaml[!generated_yaml])
+        yaml_text = c(yaml_header, yaml_text)
       }
     }
     
-    paste0('---', eol, yaml::as.yaml(yaml, line.sep=eol), '---', eol) # NB: as.yaml adds trailing newline
+    yaml_text = paste0('---', eol, yaml::as.yaml(yaml_text, line.sep = eol), '---', eol) # NB: as.yaml adds trailing newline 
   }
   file = enc2native(file) # CfwriteR cannot handle UTF-8 if that is not the native encoding, see #3078.
   .Call(CfwriteR, x, file, sep, sep2, eol, na, dec, quote, qmethod=="escape", append,
         row.names, col.names, logical01, scipen, dateTimeAs, buffMB, nThread,
-        showProgress, is_gzip, bom, yaml, verbose)
+        showProgress, is_gzip, bom, yaml_text, verbose)
   invisible()
 }
