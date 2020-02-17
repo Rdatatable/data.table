@@ -28,6 +28,10 @@ Authors@R: c(
   person("Francois","Cocquemas",   role="ctb"),
   person("Matthieu","Gomez",       role="ctb"),
   person("Philippe","Chataignon",  role="ctb"),
+  person("Nello","Blaser",         role="ctb"),
+  person("Dmitry","Selivanov",     role="ctb"),
+  person("Andrey","Riabushenko",   role="ctb"),
+  person("Cheng","Lee",            role="ctb"),
   person("Declan","Groves",        role="ctb"),
   person("Daniel","Possenriede",   role="ctb"),
   person("Felipe","Parages",       role="ctb"),
@@ -44,7 +48,14 @@ Authors@R: c(
   person("Morgan","Jacob",         role="ctb"),
   person("Michael","Schubmehl",    role="ctb"),
   person("Davis","Vaughan",        role="ctb"),
-  person("Toby","Hocking",         role="ctb"))
+  person("Toby","Hocking",         role="ctb"),
+  person("Leonardo","Silvestri",   role="ctb"),
+  person("Tyson","Barrett",        role="ctb"),
+  person("Jim","Hester",           role="ctb"),
+  person("Anthony","Damico",       role="ctb"),
+  person("Sebastian","Freundt",    role="ctb"),
+  person("David","Simons",         role="ctb"),
+  person("Elliott","Sales de Andrade", role="ctb"))
 Depends: R (>= 3.1.0)
 Imports: methods
 Suggests: bit64, curl, R.utils, knitr, xts, nanotime, zoo, yaml

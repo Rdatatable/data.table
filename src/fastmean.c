@@ -36,13 +36,13 @@ SEXP fastmean(SEXP args)
   if (length(args)>2) {
     tmp = CADDR(args);
     if (!isLogical(tmp) || LENGTH(tmp)!=1 || LOGICAL(tmp)[0]==NA_LOGICAL)
-      error("narm should be TRUE or FALSE");  // # nocov ; [.data.table should construct the .External call correctly
+      error(_("narm should be TRUE or FALSE"));  // # nocov ; [.data.table should construct the .External call correctly
     narm=LOGICAL(tmp)[0];
   }
   PROTECT(ans = allocNAVector(REALSXP, 1));
   copyMostAttrib(x, ans);
   if (!isInteger(x) && !isReal(x) && !isLogical(x)) {
-    error("fastmean was passed type %s, not numeric or logical", type2char(TYPEOF(x)));
+    error(_("fastmean was passed type %s, not numeric or logical"), type2char(TYPEOF(x)));
   }
   l = LENGTH(x);
   if (narm) {
@@ -80,7 +80,7 @@ SEXP fastmean(SEXP args)
       REAL(ans)[0] = (double) s;
       break;
     default:
-      error("Internal error: type '%s' not caught earlier in fastmean", type2char(TYPEOF(x)));  // # nocov
+      error(_("Internal error: type '%s' not caught earlier in fastmean"), type2char(TYPEOF(x)));  // # nocov
     }
   } else {  // narm==FALSE
     switch(TYPEOF(x)) {
@@ -108,7 +108,7 @@ SEXP fastmean(SEXP args)
       REAL(ans)[0] = (double) s;
       break;
     default:
-      error("Internal error: type '%s' not caught earlier in fastmean", type2char(TYPEOF(x)));  // # nocov
+      error(_("Internal error: type '%s' not caught earlier in fastmean"), type2char(TYPEOF(x)));  // # nocov
     }
   }
   UNPROTECT(1);

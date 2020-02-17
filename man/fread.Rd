@@ -117,7 +117,7 @@ When \code{input} begins with http://, https://, ftp://, ftps://, or file://, \c
 
 \bold{Shell commands:}
 
-\code{fread} accepts shell commands for convenience. The input command is run and its output written to a file in \code{tmpdir} (\code{link{tempdir}()} by default) to which \code{fread} is applied "as normal". The details are platform dependent -- \code{system} is used on UNIX environments, \code{shell} otherwise; see \code{\link[base]{system}}.
+\code{fread} accepts shell commands for convenience. The input command is run and its output written to a file in \code{tmpdir} (\code{\link{tempdir}()} by default) to which \code{fread} is applied "as normal". The details are platform dependent -- \code{system} is used on UNIX environments, \code{shell} otherwise; see \code{\link[base]{system}}.
 
 }
 \value{

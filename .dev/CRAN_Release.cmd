@@ -1,4 +1,70 @@
 ###############################################
+#  Updating translations
+###############################################
+
+# 1) Update messages for new release
+## (a) Update C template file: src/data.table.pot
+##     ideally, we are including _() wrapping in
+##     new PRs throughout dev cycle, and this step
+##     becomes about tying up loose ends
+## Appending _() char array wrapping to all messages
+##   that might be shown to the user. This step is slightly
+##   too greedy, as it includes too many msg, some of which
+##   need not be translated [more work to do here to make
+##   this less manual] some things to watch out for:
+##     * quote embedded (and escaped) within message [could be fixed with smarter regex]
+##     * multi-line implicit-concat arrays (in C, `"a" "b"` is the same as `"ab"`) should be wrapped "on the outside" not individually
+##     * `data.table` shares some of its `src` with `pydatatable`, so the requirement to `#include <R.h>` before the `#define _` macro meant we need to be careful about including this macro only in the R headers for these files (hence I created `po.h`)
+##     * Can't use `_()` _inside_ another functional macro. Only wrap the string passed to the macro later.
+for MSG in error warning DTWARN DTPRINT Rprintf STOP Error;
+  do for SRC_FILE in src/*.c;
+    # no inplace -i in default mac sed
+    do sed -E "s/$MSG[(]("[^"]*")/$MSG(_(\1)/g" $SRC_FILE > out;
+    mv out $SRC_FILE;
+  done
+done
+
+## checking for other lines calling these that didn't get _()-wrapped
+for MSG in error warning DTWARN DTPRINT Rprintf STOP Error;
+  do grep -Er "\b$MSG[(]" src --include=*.c | grep -v _ | grep -Ev "(?://|[*]).*$MSG[(]"
+
+## similar, but a bit more manual to check snprintf usage
+
+## look for char array that haven't been covered yet
+grep -Er '"[^"]+"' src --include=*.c | grep -Fv '_("' | grep -v "#include" | grep -v '//.*".*"'
+
+## look for lines starting with a char array (likely continued from prev line & can be combined)
+grep -Er '^\s*"' src/*.c
+
+## Now extract these messages with xgettext
+cd src
+xgettext --keyword=_ -o data.table.pot *.c
+cd ..
+
+## (b) Update R template file: src/R-data.table.pot
+## much easier, once the update_pkg_po bug is fixed
+R --no-save
+## a bug fix in R still hadn't made the 2019-12-12 release,
+##   so run the following to source the corrected function manually
+STEM='https://raw.githubusercontent.com/wch/r-source/trunk/src/library/tools/R'
+source(file.path(STEM, 'utils.R'))
+source(file.path(STEM, 'xgettext.R'))
+source(file.path(STEM, 'translations.R'))
+## shouldn't be any errors from this...
+update_pkg_po('.')
+q()
+
+# 2) Open a PR with the new templates & contact the translators
+#   * zh_CN:
+## Translators to submit commits with translations to this PR
+##   [or perhaps, if we get several languages, each to open
+##    its own PR and merge to main translation PR]
+
+## 3) Check validity
+##   update_pkg_po('.') to be run again for the PR
+##     [can this be done via Travis?]
+
+###############################################
 #  Basic checks
 ###############################################
 
@@ -40,13 +106,16 @@ grep --exclude="./src/openmp-utils.c" omp_get_max_threads ./src/*
 grep "pragma omp parallel" ./src/*.c | grep -v getDTthreads
 
 # Update documented list of places where openMP parallelism is used: c.f. ?openmp
-grep -Elr "#pragma omp (?:for|parallel)" src | sort
+grep -Elr "[pP]ragma.*omp" src | sort
 
 # Ensure all .Call's first argument are unquoted.
 grep "[.]Call(\"" ./R/*.R
 
 # Make sure all \dots calls in the manual are parsed as ...
-Rscript -e "setwd('man'); unlist(sapply(list.files('.'), function(rd) rapply(tools::parse_Rd(rd), grep, pattern='dots', value=TRUE)))"
+Rscript -e "setwd('man'); unlist(sapply(list.files('.'), function(rd) rapply(tools::parse_Rd(rd), grep, pattern='dots', fixed = TRUE, value=TRUE)))"
+
+# No unused macros in the manual (e.g. code{} instead of \code{})
+grep -Enr "\b[^\a-z][a-z]+\{[^}]+\}" man
 
 # Ensure no Rprintf in init.c
 grep "Rprintf" ./src/init.c
@@ -93,6 +162,9 @@ grep -n "[^A-Za-z0-9]F[^A-Za-z0-9]" ./inst/tests/tests.Rraw
 # 1) tolerance=0 usages in setops.R are valid numeric 0, as are anything in strings
 # 2) leave the rollends default using roll>=0 though; comments in PR #3803
 grep -Enr "^[^#]*(?:\[|==|>|<|>=|<=|,|\(|\+)\s*[-]?[0-9]+[^0-9L:.e]" R | grep -Ev "stop|warning|tolerance"
+
+# Never use ifelse. fifelse for vectors when necessary (nothing yet)
+ grep -Enr "\bifelse" R
 
 # No system.time in main tests.Rraw. Timings should be in benchmark.Rraw
 grep -n "system[.]time" ./inst/tests/tests.Rraw
@@ -526,4 +598,3 @@ When CRAN's email contains "Pretest results OK pending a manual inspection" (or 
 8. Push to master with this consistent commit message: "1.12.8 on CRAN. Bump to 1.12.9"
 9. Take sha from step 8 and run `git tag 1.12.8 34796cd1524828df9bf13a174265cb68a09fcd77` then `git push origin 1.12.8` (not `git push --tags` according to https://stackoverflow.com/a/5195913/403310)
 ######
-

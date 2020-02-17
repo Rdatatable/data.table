@@ -18,8 +18,8 @@
 
 ---
 
-**26 December 2019<br>
-Efficiency in data processing: data.table basics - Jan Gorecki, [Mumbai R@IISA 2019](https://r-iisa2019.rbind.io/)**
+**30 January 2020<br>
+List-columns in data.table - Tyson Barrett, [rstudio::conf(2020L)](https://rstudio.com/conference/)**
 <br>
 
 ---
@@ -44,7 +44,7 @@ Efficiency in data processing: data.table basics - Jan Gorecki, [Mumbai R@IISA 2
 * fast and feature rich **reshaping** data: **[`?dcast`](https://rdatatable.gitlab.io/data.table/reference/dcast.data.table.html)** (_pivot/wider/spread_) and **[`?melt`](https://rdatatable.gitlab.io/data.table/reference/melt.data.table.html)** (_unpivot/longer/gather_)
 * **any R function from any R package** can be used in queries not just the subset of functions made available by a database backend, also columns of type `list` are supported
 * has **[no dependencies](https://en.wikipedia.org/wiki/Dependency_hell)** at all other than base R itself, for simpler production/maintenance
-* the R dependency is **as old as possible for as long as possible** and we continuously test against that version; e.g. v1.11.0 released on 5 May 2018 bumped the dependency up from 5 year old R 3.0.0 to 4 year old R 3.1.0
+* the R dependency is **as old as possible for as long as possible**, dated April 2014, and we continuously test against that version; e.g. v1.11.0 released on 5 May 2018 bumped the dependency up from 5 year old R 3.0.0 to 4 year old R 3.1.0
 
 ## Installation
 
@@ -90,7 +90,7 @@ DT[Petal.Width > 1.0, mean(Petal.Length), by = Species]
 
 ## Community
 
-`data.table` is widely used by the R community. As of July 2019, it was used by over 680 CRAN and Bioconductor packages and was the [9th most starred](http://www.r-pkg.org/starred) R package on GitHub. If you need help, the `data.table` community is active StackOverflow, with nearly [9,000 questions](http://stackoverflow.com/questions/tagged/data.table).
+`data.table` is widely used by the R community. It is being directly used by hundreds of CRAN and Bioconductor packages, and indirectly by thousands. It is one of the [top most starred](http://www.r-pkg.org/starred) R package on GitHub. If you need help, the `data.table` community is active on [StackOverflow](http://stackoverflow.com/questions/tagged/data.table).
 
 ### Stay up-to-date
 

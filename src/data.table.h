@@ -1,13 +1,20 @@
 #include "dt_stdio.h"  // PRId64 and PRIu64
 #include <R.h>
-#define USE_RINTERNALS
+#include <Rversion.h>
+#if !defined(R_VERSION) || R_VERSION < R_Version(3, 5, 0)  // R-exts$6.14
+#  define ALTREP(x) 0     // #2866
+#  define USE_RINTERNALS  // #3301
+#  define DATAPTR_RO(x) ((const void *)DATAPTR(x))
+#endif
 #include <Rinternals.h>
-// #include <signal.h> // the debugging machinery + breakpoint aidee
-// raise(SIGINT);
+#define SEXPPTR_RO(x) ((const SEXP *)DATAPTR_RO(x))  // to avoid overhead of looped STRING_ELT and VECTOR_ELT
 #include <stdint.h>    // for uint64_t rather than unsigned long long
 #include <stdbool.h>
 #include "myomp.h"
 #include "types.h"
+#include "po.h"
+// #include <signal.h> // the debugging machinery + breakpoint aidee
+// raise(SIGINT);
 
 // data.table depends on R>=3.0.0 when R_xlen_t was introduced
 // Before R 3.0.0, RLEN used to be switched to R_len_t as R_xlen_t wasn't available.
@@ -27,12 +34,12 @@ typedef R_xlen_t RLEN;
 #define TYPEORDER(x) typeorder[x]
 
 #ifdef MIN
-#undef MIN
+#  undef MIN
 #endif
 #define MIN(a,b) (((a)<(b))?(a):(b))
 
 #ifdef MAX
-#undef MAX
+#  undef MAX
 #endif
 #define MAX(a,b) (((a)>(b))?(a):(b))
 
@@ -42,10 +49,10 @@ typedef R_xlen_t RLEN;
 
 // Backport macros added to R in 2017 so we don't need to update dependency from R 3.0.0
 #ifndef MAYBE_SHARED
-# define MAYBE_SHARED(x) (NAMED(x) > 1)
+#  define MAYBE_SHARED(x) (NAMED(x) > 1)
 #endif
 #ifndef MAYBE_REFERENCED
-# define MAYBE_REFERENCED(x) ( NAMED(x) > 0 )
+#  define MAYBE_REFERENCED(x) ( NAMED(x) > 0 )
 #endif
 
 // If we find a non-ASCII, non-NA, non-UTF8 encoding, we try to convert it to UTF8. That is, marked non-ascii/non-UTF8 encodings will
@@ -59,10 +66,6 @@ typedef R_xlen_t RLEN;
 // timing the impact and manually avoiding (is there an IS_ASCII on the character vector rather than testing each item every time?)
 #define NEED2UTF8(s) !(IS_ASCII(s) || (s)==NA_STRING || IS_UTF8(s))
 #define ENC2UTF8(s) (!NEED2UTF8(s) ? (s) : mkCharCE(translateCharUTF8(s), CE_UTF8))
-
-#ifndef ALTREP
-#define ALTREP(x) 0  // for R<3.5.0, see issue #2866 and grep for "ALTREP" to see comments where it's used
-#endif
 
 // init.c
 extern SEXP char_integer64;
@@ -113,7 +116,6 @@ SEXP allocNAVectorLike(SEXP x, R_len_t n);
 void writeNA(SEXP v, const int from, const int n);
 void savetl_init(), savetl(SEXP s), savetl_end();
 int checkOverAlloc(SEXP x);
-SEXP setcolorder(SEXP x, SEXP o);
 
 // forder.c
 int StrCmp(SEXP x, SEXP y);
@@ -123,8 +125,10 @@ int getNumericRounding_C();
 
 // reorder.c
 SEXP reorder(SEXP x, SEXP order);
+SEXP setcolorder(SEXP x, SEXP o);
 
 // subset.c
+void subsetVectorRaw(SEXP ans, SEXP source, SEXP idx, const bool anyNA);
 SEXP subsetVector(SEXP x, SEXP idx);
 
 // fcast.c
@@ -154,7 +158,7 @@ SEXP dt_na(SEXP x, SEXP cols);
 
 // assign.c
 SEXP alloccol(SEXP dt, R_len_t n, Rboolean verbose);
-const char *memrecycle(SEXP target, SEXP where, int r, int len, SEXP source, int coln, const char *colname);
+const char *memrecycle(const SEXP target, const SEXP where, const int r, const int len, SEXP source, const int sourceStart, const int sourceLen, const int coln, const char *colname);
 SEXP shallowwrapper(SEXP dt, SEXP cols);
 
 SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols,
@@ -202,9 +206,9 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
 SEXP frollapplyR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP align, SEXP rho);
 
 // nafill.c
-void nafillDouble(double *x, uint_fast64_t nx, unsigned int type, double fill, ans_t *ans, bool verbose);
+void nafillDouble(double *x, uint_fast64_t nx, unsigned int type, double fill, bool nan_is_na, ans_t *ans, bool verbose);
 void nafillInteger(int32_t *x, uint_fast64_t nx, unsigned int type, int32_t fill, ans_t *ans, bool verbose);
-SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP inplace, SEXP cols, SEXP verbose);
+SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, SEXP cols);
 
 // between.c
 SEXP between(SEXP x, SEXP lower, SEXP upper, SEXP incbounds, SEXP NAbounds, SEXP check);
@@ -234,3 +238,7 @@ SEXP coerceUtf8IfNeeded(SEXP x);
 char *end(char *start);
 void ansMsg(ans_t *ans, int n, bool verbose, const char *func);
 SEXP testMsgR(SEXP status, SEXP x, SEXP k);
+
+//fifelse.c
+SEXP fifelseR(SEXP l, SEXP a, SEXP b, SEXP na);
+SEXP fcaseR(SEXP na, SEXP rho, SEXP args);

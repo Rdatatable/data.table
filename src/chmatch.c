@@ -1,20 +1,56 @@
 #include "data.table.h"
 
 static SEXP chmatchMain(SEXP x, SEXP table, int nomatch, bool chin, bool chmatchdup) {
-  if (!isString(x) && !isNull(x)) error("x is type '%s' (must be 'character' or NULL)", type2char(TYPEOF(x)));
-  if (!isString(table) && !isNull(table)) error("table is type '%s' (must be 'character' or NULL)", type2char(TYPEOF(table)));
-  if (chin && chmatchdup) error("Internal error: either chin or chmatchdup should be true not both");  // # nocov
-  // allocations up front before savetl starts
-  SEXP ans = PROTECT(allocVector(chin?LGLSXP:INTSXP, length(x)));
-  if (!length(x)) { UNPROTECT(1); return ans; }  // no need to look at table when x is empty
+  if (!isString(table) && !isNull(table))
+    error(_("table is type '%s' (must be 'character' or NULL)"), type2char(TYPEOF(table)));
+  if (chin && chmatchdup)
+    error(_("Internal error: either chin or chmatchdup should be true not both"));  // # nocov
+  SEXP sym = NULL;
+  const int xlen = length(x);
+  if (TYPEOF(x) == SYMSXP) {
+    if (xlen!=1)
+      error(_("Internal error: length of SYMSXP is %d not 1"), xlen); // # nocov
+    sym = PRINTNAME(x);  // so we can do &sym to get a length 1 (const SEXP *)STRING_PTR(x) and save an alloc for coerce to STRSXP
+  } else if (!isString(x) && !isSymbol(x) && !isNull(x)) {
+    if (chin && !isVectorAtomic(x)) {
+      return ScalarLogical(FALSE);
+      // commonly type 'language' returns FALSE here, to make %iscall% simpler; e.g. #1369 results in (function(x) sum(x)) as jsub[[.]] from dcast.data.table
+    } else {
+      error(_("x is type '%s' (must be 'character' or NULL)"), type2char(TYPEOF(x)));
+    }
+  }
+  // allocations up front before savetl starts in case allocs fail
+  SEXP ans = PROTECT(allocVector(chin?LGLSXP:INTSXP, xlen));
+  if (xlen==0) { // no need to look at table when x is empty (including null)
+    UNPROTECT(1);
+    return ans;
+  }
   int *ansd = INTEGER(ans);
-  if (!length(table)) { const int val=(chin?0:nomatch), n=LENGTH(x); for (int i=0; i<n; ++i) ansd[i]=val; UNPROTECT(1); return ans; }
+  const int tablelen = length(table);
+  if (tablelen==0) {
+    const int val=(chin?0:nomatch), n=xlen;
+    for (int i=0; i<n; ++i) ansd[i]=val;
+    UNPROTECT(1);
+    return ans;
+  }
   // Since non-ASCII strings may be marked with different encodings, it only make sense to compare
   // the bytes under a same encoding (UTF-8) #3844 #3850
-  const SEXP *xd = STRING_PTR(PROTECT(coerceUtf8IfNeeded(x)));
+  const SEXP *xd = isSymbol(x) ? &sym : STRING_PTR(PROTECT(coerceUtf8IfNeeded(x)));
   const SEXP *td = STRING_PTR(PROTECT(coerceUtf8IfNeeded(table)));
+  const int nprotect = 2 + !isSymbol(x); // ans, xd, td
+  if (xlen==1) {
+    ansd[0] = nomatch;
+    for (int i=0; i<tablelen; ++i) {
+      if (td[i]==xd[0]) {
+        ansd[0] = chin ? 1 : i+1;
+        break; // short-circuit early; if there are dups in table the first is returned
+      }
+    }
+    UNPROTECT(nprotect);
+    return ans;
+  }
+  // else xlen>1; nprotect is const above since no more R allocations should occur after this point
   savetl_init();
-  const int xlen = length(x);
   for (int i=0; i<xlen; i++) {
     SEXP s = xd[i];
     const int tl = TRUELENGTH(s);
@@ -27,11 +63,10 @@ static SEXP chmatchMain(SEXP x, SEXP table, int nomatch, bool chin, bool chmatch
       // We rely on that 0-initialization, and that R's internal hash is positive.
       // # nocov start
       savetl_end();
-      error("Internal error: CHARSXP '%s' has a negative truelength (%d). Please file an issue on the data.table tracker.", CHAR(s), tl);
+      error(_("Internal error: CHARSXP '%s' has a negative truelength (%d). Please file an issue on the data.table tracker."), CHAR(s), tl);
       // # nocov end
     }
   }
-  const int tablelen = length(table);
   int nuniq=0;
   for (int i=0; i<tablelen; ++i) {
     SEXP s = td[i];
@@ -57,7 +92,7 @@ static SEXP chmatchMain(SEXP x, SEXP table, int nomatch, bool chin, bool chmatch
       // # nocov start
       for (int i=0; i<tablelen; i++) SET_TRUELENGTH(td[i], 0);
       savetl_end();
-      error("Failed to allocate %"PRIu64" bytes working memory in chmatchdup: length(table)=%d length(unique(table))=%d", ((uint64_t)tablelen*2+nuniq)*sizeof(int), tablelen, nuniq);
+      error(_("Failed to allocate %"PRIu64" bytes working memory in chmatchdup: length(table)=%d length(unique(table))=%d"), ((uint64_t)tablelen*2+nuniq)*sizeof(int), tablelen, nuniq);
       // # nocov end
     }
     for (int i=0; i<tablelen; ++i) counts[-TRUELENGTH(td[i])-1]++;
@@ -89,8 +124,8 @@ static SEXP chmatchMain(SEXP x, SEXP table, int nomatch, bool chin, bool chmatch
   for (int i=0; i<tablelen; i++)
     SET_TRUELENGTH(td[i], 0);  // reinstate 0 rather than leave the -i-1
   savetl_end();
-  UNPROTECT(3);  // ans, xd, td
-  return(ans);
+  UNPROTECT(nprotect);  // ans, xd, td
+  return ans;
 }
 
 // for internal use from C :

@@ -1,9 +1,6 @@
-
-PKG_CFLAGS = $(SHLIB_OPENMP_CFLAGS)
-PKG_LIBS = $(SHLIB_OPENMP_CFLAGS) -lz
+PKG_CFLAGS = @openmp_cflags@
+PKG_LIBS = @openmp_cflags@ -lz
 
 all: $(SHLIB)
-	mv $(SHLIB) datatable$(SHLIB_EXT)
+	if [ "$(SHLIB)" != "datatable$(SHLIB_EXT)" ]; then mv $(SHLIB) datatable$(SHLIB_EXT); fi
 	if [ "$(OS)" != "Windows_NT" ] && [ `uname -s` = 'Darwin' ]; then install_name_tool -id datatable$(SHLIB_EXT) datatable$(SHLIB_EXT); fi
-
-
