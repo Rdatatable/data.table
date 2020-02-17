@@ -99,6 +99,8 @@ unit = "s")
 
 9. `fread` improves handling of very small (<1e-300) or very large (>1e+300) floating point numbers on non-x86 architectures (specifically ppc64le and armv7hl). Thanks to @QuLogic for reporting and fixing, [PR#4165](https://github.com/Rdatatable/data.table/pull/4165).
 
+10. When updating by reference, the use of `get` could result in columns being re-ordered silently, [#4089](https://github.com/Rdatatable/data.table/issues/4089). Thanks to @dmongin for reporting and Cole Miller for the fix.
+
 ## NOTES
 
 0. Retrospective license change permission was sought from and granted by 4 contributors who were missed in [PR#2456](https://github.com/Rdatatable/data.table/pull/2456), [#4140](https://github.com/Rdatatable/data.table/pull/4140). We had used [GitHub's contributor page](https://github.com/Rdatatable/data.table/graphs/contributors) which omits 3 of these due to invalid email addresses, unlike GitLab's contributor page which includes the ids. The 4th omission was a PR to a script which should not have been excluded; a script is code too. We are sorry these contributors were not properly credited before. They have now been added to the contributors list as displayed on CRAN. All the contributors of code to data.table hold its copyright jointly; your contributions belong to you. You contributed to data.table when it had a particular license at that time, and you contributed on that basis. This is why in the last license change, all contributors of code were consulted and each had a veto.

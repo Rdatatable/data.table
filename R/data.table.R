@@ -973,7 +973,35 @@ replace_dot_alias = function(e) {
         }
         # fix for long standing FR/bug, #495 and #484
         allcols = c(names_x, xdotprefix, names_i, idotprefix)
-        if ( length(non_sdvars <- setdiff(intersect(av, allcols), c(bynames, ansvars))) ) {
+        non_sdvars = setdiff(intersect(av, allcols), c(bynames, ansvars))
+      
+        # added 'mget' - fix for #994
+        if (any(c("get", "mget") %chin% av)){
+          if (verbose) 
+            cat(gettextf("'(m)get' found in j. ansvars being set to all columns. Use .SDcols or a single j=eval(macro) instead. Both will detect the columns used which is important for efficiency.\nOld ansvars: %s \n", brackify(ansvars), domain = "R-data.table"))
+            # get('varname') is too difficult to detect which columns are used in general
+            # eval(macro) column names are detected via the  if jsub[[1]]==eval switch earlier above.
+
+          # Do not include z in .SD when dt[, z := {.SD; get("x")}, .SDcols = "y"] (#2326, #2338)
+          if (is.call(jsub) && length(jsub[[1L]]) == 1L && jsub[[1L]] == ":="){
+            if (is.symbol(jsub[[2L]])) {
+              jsub_lhs_symbol = as.character(jsub[[2L]])
+              if (jsub_lhs_symbol %chin% non_sdvars) {
+                sdvars = setdiff(sdvars, jsub_lhs_symbol)
+              }
+            } 
+          }
+          
+          if (missing(.SDcols)) {
+            ansvars = setdiff(allcols, bynames) # fix for bug #5443
+          } else {
+            # fixes #4089 - if .SDcols was already evaluated, we do not want the order of the columns to change.
+            ansvars = union(ansvars, setdiff(setdiff(allcols, ansvars), bynames)) 
+          }
+          non_sdvars = setdiff(ansvars, sdvars)
+          ansvals = chmatch(ansvars, names_x)
+          if (verbose) cat(gettextf("New ansvars: %s \n", brackify(ansvars), domain = "R-data.table"))
+        } else if (length(non_sdvars)) {
           # we've a situation like DT[, c(sum(V1), lapply(.SD, mean)), by=., .SDcols=...] or
           # DT[, lapply(.SD, function(x) x *v1), by=, .SDcols=...] etc.,
           ansvars = union(ansvars, non_sdvars)
@@ -992,29 +1020,6 @@ replace_dot_alias = function(e) {
         ansvals = chmatch(ansvars, names_x)
       }
       # if (!length(ansvars)) Leave ansvars empty. Important for test 607.
-
-      # TODO remove as (m)get is now folded in above.
-      # added 'mget' - fix for #994
-      if (any(c("get", "mget") %chin% av)) {
-        if (verbose) {
-          cat("'(m)get' found in j. ansvars being set to all columns. Use .SDcols or a single j=eval(macro) instead. Both will detect the columns used which is important for efficiency.\nOld:", paste(ansvars,collapse=","),"\n")
-          # get('varname') is too difficult to detect which columns are used in general
-          # eval(macro) column names are detected via the  if jsub[[1]]==eval switch earlier above.
-        }
-
-        # Do not include z in .SD when dt[, z := {.SD; get("x")}, .SDcols = "y"] (#2326, #2338)
-        if (jsub %iscall% ':=' && is.symbol(jsub[[2L]])) {
-          jsub_lhs_symbol = as.character(jsub[[2L]])
-            if (jsub_lhs_symbol %chin% non_sdvars) {
-            sdvars = setdiff(sdvars, jsub_lhs_symbol)
-          }
-        }
-        allcols = c(names_x, xdotprefix, names_i, idotprefix)
-        ansvars = setdiff(allcols, bynames) # fix for bug #34
-        non_sdvars = setdiff(ansvars, sdvars)
-        ansvals = chmatch(ansvars, names_x)
-        if (verbose) cat("New:",paste(ansvars,collapse=","),"\n")
-      }
 
       lhs = NULL
       newnames = NULL
