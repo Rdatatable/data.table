@@ -2345,21 +2345,18 @@ copy = function(x) {
   newx = .Call(Ccopy,x)  # copies at length but R's duplicate() also copies truelength over.
                          # TO DO: inside Ccopy it could reset tl to 0 or length, but no matter as selfrefok detects it
                          # TO DO: revisit duplicate.c in R 3.0.3 and see where it's at
-  if (!is.data.table(x)) {
-    # fix for #1476. TODO: find if a cleaner fix is possible..
-    if (is.list(x)) {
-      anydt = vapply_1b(x, is.data.table, use.names=FALSE)
-      if (sum(anydt)) {
-        newx[anydt] = lapply(newx[anydt], function(x) {
-          .Call(C_unlock, x)
-          setalloccol(x)
-        })
-      }
+
+  reallocate = function(y) {
+    if (is.data.table(y)) {
+      .Call(C_unlock, y)
+      setalloccol(y)
+    } else if (is.list(y)) {
+      y[] = lapply(y, reallocate)
     }
-    return(newx)   # e.g. in as.data.table.list() the list is copied before changing to data.table
+    y
   }
-  .Call(C_unlock, newx)
-  setalloccol(newx)
+
+  reallocate(newx)
 }
 
 .shallow = function(x, cols = NULL, retain.key = FALSE, unlock = FALSE) {
