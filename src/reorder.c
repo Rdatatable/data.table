@@ -60,7 +60,7 @@ SEXP reorder(SEXP x, SEXP order)
 
   for (int i=0; i<ncol; ++i) {
     const SEXP v = isNewList(x) ? VECTOR_ELT(x,i) : x;
-    const size_t size = SIZEOF(v);    // size_t, otherwise #5305 (integer overflow in memcpy)
+    const size_t size = SIZEOF(v);    // size_t, otherwise #61 (integer overflow in memcpy)
     if (size==4) {
       const int *restrict vd = DATAPTR_RO(v);
       int *restrict tmp = (int *)TMP;
