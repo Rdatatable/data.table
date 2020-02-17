@@ -1,6 +1,6 @@
 # data.table continuous integration and deployment
 
-On each Pull Request opened in GitHub we run Travis CI and Appveyor to provide prompt feedback about the status of PR. Our main CI pipeline runs on GitLab CI. GitLab repository automatically mirrors our GitHub repository and runs pipeline on `master` branch. It tests more environments and different configurations. It publish variety of artifacts.
+On each Pull Request opened in GitHub we run Travis CI and Appveyor to provide prompt feedback about the status of PR. Our main CI pipeline runs on GitLab CI. GitLab repository automatically mirrors our GitHub repository and runs pipeline on `master` branch. It tests more environments and different configurations. It publish variety of artifacts. Windows jobs are being run on our private windows CI runner.
 
 ## Environments
 

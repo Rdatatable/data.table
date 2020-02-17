@@ -241,7 +241,7 @@ static void applyDrop(SEXP items, int8_t *type, int ncol, int dropSource) {
   UNPROTECT(1);
 }
 
-bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, int ncol)
+bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, const int ncol)
 {
   // use typeSize superfluously to avoid not-used warning; otherwise could move typeSize from fread.h into fread.c
   if (typeSize[CT_BOOL8_N]!=1) STOP(_("Internal error: typeSize[CT_BOOL8_N] != 1")); // # nocov
@@ -308,27 +308,23 @@ bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, int ncol)
     SET_VECTOR_ELT(RCHK, 2, colClassesAs=allocVector(STRSXP, ncol));  // if any, this attached to the DT for R level to call as_ methods on
     if (isString(colClassesSxp)) {
       SEXP typeEnum_idx = PROTECT(chmatch(colClassesSxp, typeRName_sxp, NUT));
-      if (LENGTH(colClassesSxp)==1) {
-        signed char newType = typeEnum[INTEGER(typeEnum_idx)[0]-1];
-        if (newType == CT_DROP) STOP(_("colClasses='NULL' is not permitted; i.e. to drop all columns and load nothing"));
-        for (int i=0; i<ncol; i++) if (type[i]!=CT_DROP) type[i]=newType;   // freadMain checks bump up only not down
-        if (INTEGER(typeEnum_idx)[0]==NUT) for (int i=0; i<ncol; i++) SET_STRING_ELT(colClassesAs, i, STRING_ELT(colClassesSxp,0));
-      } else if (selectColClasses==false) {
-        if (LENGTH(colClassesSxp)!=ncol)
+      if (selectColClasses==false) {
+        if (LENGTH(colClassesSxp)!=ncol && LENGTH(colClassesSxp)!=1)
           STOP(_("colClasses= is an unnamed vector of types, length %d, but there are %d columns in the input. To specify types for a subset of columns, you can use "
                  "a named vector, list format, or specify types using select= instead of colClasses=. Please see examples in ?fread."), LENGTH(colClassesSxp), ncol);
+        const int mask = LENGTH(colClassesSxp)==1 ? 0 : INT_MAX;  // to have one consistent loop/logic for the length-1 recycling case too; #4237
         for (int i=0; i<ncol; ++i) {
           if (type[i]==CT_DROP) continue;                    // user might have specified the type of all columns including those dropped with drop=
-          SEXP tt = STRING_ELT(colClassesSxp,i);
+          const SEXP tt = STRING_ELT(colClassesSxp, i&mask); // mask recycles colClassesSxp when it's length-1
           if (tt==NA_STRING || tt==R_BlankString) continue;  // user is ok with inherent type for this column
-          int w = INTEGER(typeEnum_idx)[i];
-          type[i] = typeEnum[w-1];
-          if (w==NUT) SET_STRING_ELT(colClassesAs, i, STRING_ELT(colClassesSxp,i));
+          int w = INTEGER(typeEnum_idx)[i&mask];
+          type[i] = typeEnum[w-1];                           // freadMain checks bump up only not down
+          if (w==NUT) SET_STRING_ELT(colClassesAs, i, tt);
         }
       } else { // selectColClasses==true
         if (!selectInts) STOP(_("Internal error: selectInts is NULL but selectColClasses is true"));
-        if (length(selectSxp)!=length(colClassesSxp)) STOP(_("Internal error: length(selectSxp)!=length(colClassesSxp) but selectColClasses is true"));
         const int n = length(colClassesSxp);
+        if (length(selectSxp)!=n) STOP(_("Internal error: length(selectSxp)!=length(colClassesSxp) but selectColClasses is true"));
         for (int i=0; i<n; ++i) {
           SEXP tt = STRING_ELT(colClassesSxp,i);
           if (tt==NA_STRING || tt==R_BlankString) continue;
