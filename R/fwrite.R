@@ -89,8 +89,8 @@ fwrite = function(x, file="", append=FALSE, quote="auto",
     
     if (isTRUE(yaml)) {
       yaml = generate_yaml(x = x, col.names = col.names, sep = sep, 
-                            sep2 = sep2, eol = eol, na = na, dec = dec, 
-                            qmethod = qmethod, logical01 = logical01)  
+                           sep2 = sep2, eol = eol, na = na, dec = dec, 
+                           qmethod = qmethod, logical01 = logical01)  
     } else {
       names = names(yaml)
       if (is.null(names)) {
