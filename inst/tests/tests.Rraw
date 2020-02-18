@@ -11184,8 +11184,14 @@ test(1764.2, format(structure(NA_integer_, class = "ITime")), NA_character_)
 # IDateTime error when tzone is NULL, #1973
 x = as.POSIXct('2017-03-17', tz="UTC")
 attr(x, 'tzone') = NULL
-test(1765, print(IDateTime(x)), output=".*idate.*itime.*1: 2017-03-1[67]",
-           ignore.warning="timedatectl") # R 3.4's Sys.timezone() raises this warning in docker, #4182
+test(1765.1, print(IDateTime(x)), output=".*idate.*itime.*1: 2017-03-1[67]",
+             ignore.warning="timedatectl") # R 3.4's Sys.timezone() raises this warning in docker, #4182
+
+# test test's ignore.warning
+test(1765.2, {warning("foo"); 4L}, 4L, ignore.warning="foo")
+test(1765.3, {warning("foo"); 4L}, 4L, ignore.warning="Foo", warning="foo")
+test(1765.4, {warning("foobar1"); warning("foobar2"); warning("FOO"); 4L}, 4L, ignore.warning="bar", warning="FOO")
+test(1765.5, {warning("foobar1"); warning("foobar2"); warning("FOO"); 4L}, 4L, ignore.warning="2", warning=c("foobar1","FOO"))
 
 # print(null.data.table()) should not output NULL as well, #1852
 # use capture.output() in this case rather than output= to ensure NULL is not output
