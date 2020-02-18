@@ -16900,25 +16900,15 @@ dt2 = structure(list(A=NULL, B=1:2, C=NULL, D=3:4, E=NULL), class=c("data.table"
 mat = as.matrix(dt)
 test(2139.3, dt, dt2) # null columns should not be dropped after as.matrix
 
-dt = structure(list(B=1:2, C=NULL, D=3:4, E=NULL), class=c("data.table", "data.frame"))
-dt2 = structure(list(B=1:2, C=NULL, D=3:4, E=NULL), class=c("data.table", "data.frame"))
-mat = as.matrix(dt)
-test(2139.4, dt, dt2) # null columns should not be dropped after as.matrix
-
-dt = structure(list(A=NULL, C=NULL), class=c("data.table", "data.frame"))
-dt2 = structure(list(A=NULL, C=NULL), class=c("data.table", "data.frame"))
-mat = as.matrix(dt)
-test(2139.5, dt, dt2) # null columns should not be dropped after as.matrix
-
 dt = structure(list(A=1:6, B=1:2), class=c("data.table", "data.frame"))  # DT[,B]  is c(1,2)
 dt2 = structure(list(A=1:6, B=1:2), class=c("data.table", "data.frame"))  # DT[,B]  is c(1,2)
 mat = as.matrix(dt)
-test(2139.6, dt, dt2) # recycling of dt$B to length dt$A in as.matrix should not modify input dt$B.
+test(2139.4, dt, dt2) # recycling of dt$B to length dt$A in as.matrix should not modify input dt$B.
 
 dt = structure(list(a=list(1,2:3,4:6,letters[1:5],list(1, "a")), d=data.table(b=6:10, c=11:15), m=matrix(16:25, ncol=2L)), class = c('data.table', 'data.frame'))
 dt2 = structure(list(a=list(1,2:3,4:6,letters[1:5],list(1, "a")), d=data.table(b=6:10, c=11:15), m=matrix(16:25, ncol=2L)), class = c('data.table', 'data.frame'))
 mat = as.matrix(dt)
-test(2139.7, dt, dt2) # flattening data.table and matrix columns should not modify input dt
+test(2139.5, dt, dt2) # flattening data.table and matrix columns should not modify input dt
 
 ########################
 #  Add new tests here  #
