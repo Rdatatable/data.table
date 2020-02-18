@@ -922,54 +922,10 @@ replace_dot_alias = function(e) {
           # all duplicate columns must be matched, because nothing is provided
           ansvals = chmatchdup(ansvars, names_x)
         } else {
-          # FR #355 - negative numeric and character indices for SDcols
           colsub = substitute(.SDcols)
-          # fix for R-Forge #5190. colsub[[1L]] gave error when it's a symbol.
-          if (colsub %iscall% c("!", "-")) {
-            negate_sdcols = TRUE
-            colsub = colsub[[2L]]
-          } else negate_sdcols = FALSE
-          # fix for #1216, make sure the parentheses are peeled from expr of the form (((1:4)))
-          while(colsub %iscall% "(") colsub = as.list(colsub)[[-1L]]
-          if (colsub %iscall% ':' && length(colsub)==3L) {
-            # .SDcols is of the format a:b
-            .SDcols = eval(colsub, setattr(as.list(seq_along(x)), 'names', names_x), parent.frame())
-          } else {
-            if (colsub %iscall% 'patterns') {
-              # each pattern gives a new filter condition, intersect the end result
-              .SDcols = Reduce(intersect, do_patterns(colsub, names_x))
-            } else {
-              .SDcols = eval(colsub, parent.frame(), parent.frame())
-              # allow filtering via function in .SDcols, #3950
-              if (is.function(.SDcols)) {
-                .SDcols = lapply(x, .SDcols)
-                if (any(idx <- vapply_1i(.SDcols, length) > 1L | vapply_1c(.SDcols, typeof) != 'logical' | vapply_1b(.SDcols, anyNA)))
-                  stop("When .SDcols is a function, it is applied to each column; the output of this function must be a non-missing boolean scalar signalling inclusion/exclusion of the column. However, these conditions were not met for: ", brackify(names(x)[idx]))
-                .SDcols = unlist(.SDcols, use.names = FALSE)
-              }
-            }
-          }
-          if (anyNA(.SDcols))
-            stop(".SDcols missing at the following indices: ", brackify(which(is.na(.SDcols))))
-          if (is.logical(.SDcols)) {
-            ansvals = which_(rep(.SDcols, length.out=length(x)), !negate_sdcols)
-            ansvars = sdvars = names_x[ansvals]
-          } else if (is.numeric(.SDcols)) {
-            .SDcols = as.integer(.SDcols)
-            # if .SDcols is numeric, use 'dupdiff' instead of 'setdiff'
-            if (length(unique(sign(.SDcols))) > 1L) stop(".SDcols is numeric but has both +ve and -ve indices")
-            if (any(idx <- abs(.SDcols)>ncol(x) | abs(.SDcols)<1L))
-              stop(".SDcols is numeric but out of bounds [1, ", ncol(x), "] at: ", brackify(which(idx)))
-            ansvars = sdvars = if (negate_sdcols) dupdiff(names_x[-.SDcols], bynames) else names_x[.SDcols]
-            ansvals = if (negate_sdcols) setdiff(seq_along(names(x)), c(.SDcols, which(names(x) %chin% bynames))) else .SDcols
-          } else {
-            if (!is.character(.SDcols)) stop(".SDcols should be column numbers or names")
-            if (!all(idx <- .SDcols %chin% names_x))
-              stop("Some items of .SDcols are not column names: ", brackify(.SDcols[!idx]))
-            ansvars = sdvars = if (negate_sdcols) setdiff(names_x, c(.SDcols, bynames)) else .SDcols
-            # dups = FALSE here. DT[, .SD, .SDcols=c("x", "x")] again doesn't really help with which 'x' to keep (and if '-' which x to remove)
-            ansvals = chmatch(ansvars, names_x)
-          }
+          ansvals = col_helper(x, colsub, ".SDcols")
+          if (attr(ansvals, "negate")) ansvals = setdiff(ansvals,  which(names_x %chin% bynames))
+          ansvars = sdvars = names_x[ansvals]
         }
         # fix for long standing FR/bug, #495 and #484
         allcols = c(names_x, xdotprefix, names_i, idotprefix)
