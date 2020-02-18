@@ -16884,6 +16884,42 @@ if (test_bit64) {
   test(2138.3, as.matrix(DT, rownames="A"), mat)
 }
 
+# Check input data.table is not modified by reference in as.matrix
+dt = data.table(rn=letters[1:3], A=1:3, B=4:6)
+dt2 = copy(dt)
+mat = as.matrix(dt, rownames="rn")
+test(2139.1, dt, dt2) # rn column taken as rownames should still be in dt
+
+dt = data.table(rn=letters[1:3], A=1:3, B=4:6)
+dt2 = copy(dt)
+mat = as.matrix(dt)
+test(2139.2, dt, dt2) # column type coercion should not modify input dt
+
+dt = structure(list(A=NULL, B=1:2, C=NULL, D=3:4, E=NULL), class=c("data.table", "data.frame"))
+dt2 = copy(dt)
+mat = as.matrix(dt)
+test(2139.3, dt, dt2) # null columns should not be dropped after as.matrix
+
+dt = structure(list(B=1:2, C=NULL, D=3:4, E=NULL), class=c("data.table", "data.frame"))
+dt2 = copy(dt)
+mat = as.matrix(dt)
+test(2139.4, dt, dt2) # null columns should not be dropped after as.matrix
+
+dt = structure(list(A=NULL, C=NULL), class=c("data.table", "data.frame"))
+dt2 = copy(dt)
+mat = as.matrix(dt)
+test(2139.5, dt, dt2) # null columns should not be dropped after as.matrix
+
+dt = structure(list(A=1:6, B=1:2), class=c("data.table", "data.frame"))  # DT[,B]  is c(1,2)
+dt2 = copy(dt)
+mat = as.matrix(dt)
+test(2139.6, dt, dt2) # recycling of dt$B to length dt$A in as.matrix should not modify input dt$B.
+
+dt = structure(list(a=list(1,2:3,4:6,letters[1:5],list(1, "a")), d=data.table(b=6:10, c=11:15), m=matrix(16:25, ncol=2L)), class = c('data.table', 'data.frame'))
+dt2 = copy(dt)
+mat = as.matrix(dt)
+test(2139.7, dt, dt2) # flattening data.table and matrix columns should not modify input dt
+
 ########################
 #  Add new tests here  #
 ########################

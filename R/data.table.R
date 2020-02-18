@@ -1894,7 +1894,7 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
   
   # Create shallow copy - where each element of the list X is simply a pointer to
   # the same column in the data.table x. This means that we do not modify the 
-  # input data.table when dropping rows or coercing columns.
+  # input data.table when dropping rows or coercing columns. See tests #2139.XXX
   X = x
   class(X) = NULL
   
