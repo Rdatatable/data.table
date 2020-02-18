@@ -78,12 +78,12 @@ bool toCharacterFactorPOSIX(SEXP *thisCol, int *nprotect) {
  *
  * Where there are data.table or data.frame columns this function recurses.
  */
-void preprocess(SEXP *dt, int *nprotect, int *maxType, R_xlen_t *nrow, 
-                R_xlen_t *ncol, bool *coerce, bool *integer64, 
+void preprocess(SEXP *dt, int *nprotect, int *maxType, int64_t *nrow, 
+                int64_t *ncol, bool *coerce, bool *integer64, 
                 bool *unpack, bool *recycle) {
   for (int j=0; j<xlength(*dt); ++j) {
     SEXP thisCol = VECTOR_ELT(*dt, j);
-    R_xlen_t thisnrow = xlength(thisCol);
+    int64_t thisnrow = xlength(thisCol);
     
     // Check for empty columns or multi-dimension columns, which mean we will have to unpack and flatten
     SEXP colDim = getAttrib(thisCol, R_DimSymbol);
@@ -99,7 +99,7 @@ void preprocess(SEXP *dt, int *nprotect, int *maxType, R_xlen_t *nrow,
     } else if (!isNull(colDim)) {
       // matrix or multidimensional array
       *unpack=true;
-      R_xlen_t dims=xlength(colDim);
+      int64_t dims=xlength(colDim);
       if (dims > 2)
         error("Cannot unpack array column with %d dimensions", dims);
       thisnrow = INTEGER(colDim)[0];
@@ -170,16 +170,16 @@ void preprocess(SEXP *dt, int *nprotect, int *maxType, R_xlen_t *nrow,
 }
 
 // Make a vector of names of the format V1, V2, V3, ..., VN
-SEXP makeNames(R_xlen_t n, int *nprotect) {
+SEXP makeNames(int64_t n, int *nprotect) {
   SEXP names = PROTECT(allocVector(STRSXP, n)); (*nprotect)++;
   
   // determine buffer width based on width of n
   size_t buffwidth = 2;
-  for (R_xlen_t ndiv = n; ndiv > 0; ndiv /= 10) buffwidth++; 
+  for (int64_t ndiv = n; ndiv > 0; ndiv /= 10) buffwidth++; 
   char buff[buffwidth];
   
   // Make names 
-  for (R_xlen_t i = 0; i < n; ++i) {
+  for (int64_t i = 0; i < n; ++i) {
     snprintf(buff, buffwidth, "V%"PRId64"", i+1);
     SET_STRING_ELT(names, i, mkChar(buff));
   }
@@ -189,7 +189,7 @@ SEXP makeNames(R_xlen_t n, int *nprotect) {
 // Add a prefix to a character vector, separated by a "."
 // I.e. for concatenating names of a multi-dimensional column
 SEXP prependNames(SEXP names, SEXP prefixArg, int *nprotect) {
-  R_xlen_t len = xlength(names);
+  int64_t len = xlength(names);
   SEXP ans = PROTECT(allocVector(STRSXP, len)); (*nprotect)++;
   const char *prefix = CHAR(prefixArg);
   
@@ -198,7 +198,7 @@ SEXP prependNames(SEXP names, SEXP prefixArg, int *nprotect) {
    * well as the size of the prefix. */
   size_t prefixw = strlen(prefix); // nchar(prefix)
   size_t namesmaxw = 0; 
-  for (R_xlen_t i = 0; i < len; ++i) {
+  for (int64_t i = 0; i < len; ++i) {
     const char *namei = CHAR(STRING_ELT(names, i));
     size_t namew = strlen(namei); // nchar(names[i])
     namesmaxw = namew > namesmaxw ? namew : namesmaxw; 
@@ -207,7 +207,7 @@ SEXP prependNames(SEXP names, SEXP prefixArg, int *nprotect) {
   char buff[buffwidth];
   
   // make new composite column name
-  for (R_xlen_t i = 0; i < len; ++i) {
+  for (int64_t i = 0; i < len; ++i) {
     const char *namei = CHAR(STRING_ELT(names, i));
     snprintf(buff, buffwidth, "%s.%s", prefix, namei);
     SET_STRING_ELT(ans, i, mkChar(buff));
@@ -218,8 +218,8 @@ SEXP prependNames(SEXP names, SEXP prefixArg, int *nprotect) {
 /* Recurse through a data.table, extracting any multi dimensional columns 
  * into their single columns in the top level data.table
  */
-void flatten(SEXP *dt, SEXP *dtcn, SEXP *newdt, SEXP *newcn, R_xlen_t *jtarget, int *nprotect) {
-  for (R_xlen_t j = 0; j < xlength(*dt); ++j) {
+void flatten(SEXP *dt, SEXP *dtcn, SEXP *newdt, SEXP *newcn, int64_t *jtarget, int *nprotect) {
+  for (int64_t j = 0; j < xlength(*dt); ++j) {
     SEXP thisCol = VECTOR_ELT(*dt, j);
     SEXP colDim = getAttrib(thisCol, R_DimSymbol);
     SEXP colName = STRING_ELT(*dtcn, j);
@@ -262,7 +262,7 @@ void flatten(SEXP *dt, SEXP *dtcn, SEXP *newdt, SEXP *newcn, R_xlen_t *jtarget, 
       // Iterate through each column of the matrix, copying its contents into the new column vector
       for (int mj = 0; mj < matncol; ++mj) {
         SEXP thisNewCol = PROTECT(allocVector(mattype, matnrow)); (*nprotect)++;
-        R_xlen_t start = (R_xlen_t) mj * matnrow;
+        int64_t start = (int64_t) mj * matnrow;
         memrecycle(thisNewCol, R_NilValue, 0, matnrow, thisCol, start, matnrow, 0, "V1");
         SET_VECTOR_ELT(*newdt, *jtarget, thisNewCol); UNPROTECT(1); (*nprotect)--;
         SET_STRING_ELT(*newcn, *jtarget, STRING_ELT(compositecn, mj)); // add new column name
@@ -314,8 +314,8 @@ SEXP asmatrix(SEXP dt, SEXP rownames)
   // Extract column types and determine type to coerce to
   int preprocessstack=0;
   int maxType=RAWSXP;
-  R_xlen_t nrow=0;
-  R_xlen_t ncol=0; 
+  int64_t nrow=0;
+  int64_t ncol=0; 
   bool coerce=false; // if no columns need coercing, can just use memcpy
   bool integer64=false; // are we coercing to integer64?
   bool unpack=false; // are there any columns to drop or unpack?
@@ -363,7 +363,7 @@ SEXP asmatrix(SEXP dt, SEXP rownames)
   if (unpack) {
     SEXP newdt = PROTECT(allocVector(VECSXP, ncol)); nprotect++;
     SEXP newcn = PROTECT(allocVector(STRSXP, ncol)); nprotect++;
-    R_xlen_t j = 0;
+    int64_t j = 0;
     int flprotect=0; // protect stack counter for flatten
     flatten(&dt, &colnames, &newdt, &newcn, &j, &flprotect);
     setAttrib(newdt, R_NamesSymbol, newcn);
@@ -388,7 +388,7 @@ SEXP asmatrix(SEXP dt, SEXP rownames)
 
   // recycle columns to match nrow if needed
   if (recycle) {
-    for (R_xlen_t j = 0; j < ncol; ++j) {
+    for (int64_t j = 0; j < ncol; ++j) {
       SEXP thisCol = VECTOR_ELT(dt, j);
       int thisnrow = length(thisCol);
       if (thisnrow != nrow) {

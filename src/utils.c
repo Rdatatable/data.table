@@ -375,11 +375,11 @@ SEXP asCharacterInteger64(SEXP x, int *nprotect) {
 }
 
 SEXP asCharacterITime(SEXP x, int *nprotect) {
-  R_xlen_t lenx = xlength(x);
+  int64_t lenx = xlength(x);
   SEXP coerced = PROTECT(allocVector(STRSXP, lenx)); nprotect++;
   int *px = INTEGER(x);
   static char buff[10];
-  for (R_xlen_t j=0; j < lenx; ++j) {
+  for (int64_t j=0; j < lenx; ++j) {
     if (px[j] == NA_INTEGER) {
       SET_STRING_ELT(coerced, j, NA_STRING);
     } else {
