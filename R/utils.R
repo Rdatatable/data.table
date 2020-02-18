@@ -220,7 +220,7 @@ col_helper = function(x, colsub, origin_call = NULL) {
   if (is.logical(cols)) {
     if (length(cols) != x_len) {
       ## TODO change to error in 2022
-      warning("When ", origin_call, " is a logical vector, each column should have a TRUE or FALSE entry. Vector is repeated. Warning will change to error in 2022.")
+      warning("When ", origin_call, " is a logical vector, each column should have a TRUE or FALSE entry. Vector will be repeated to length of data.table. Warning will change to error in year 2022.")
       cols = rep(cols, length.out = x_len)
     }
     cols = which_(cols)
