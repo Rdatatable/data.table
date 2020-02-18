@@ -2457,12 +2457,14 @@ setattr = function(x,name,value) {
   invisible(x)
 }
 
-setlevels = function(x, value) {
-  if (anyDuplicated(value) == 0) {
-    invisible(.Call(Csetlevels, x, as.character(value), value))
-  } else {
-    stop("'value' has duplicated value. Please make sure no duplicated values are introduced.")
+setlevels = function(x, old, new) {
+  if (missing(old)) {
+    old = levels(x)
   }
+  if (missing(new)) {
+    stop("Argument 'new' is missing.")
+  }
+  invisible(.Call(Csetlevels_impl, x, old, new))
 }
 
 setnames = function(x,old,new,skip_absent=FALSE) {

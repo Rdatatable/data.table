@@ -81,7 +81,13 @@ unit = "s")
 
 14. Added support for `round()` and `trunc()` to extend functionality of `ITime`. `round()` and `trunc()` can be used with argument units: "hours" or "minutes". Thanks to @JensPederM for the suggestion and PR.
 
-15. New function `setlevels` existed already at the C level but was not exposed to users [#2219](https://github.com/Rdatatable/data.table/issues/2219). Thanks to Morgan Jacob for the PR.
+15. New function `setlevels(x, old, new)` written in C by Morgan Jacob [#2219](https://github.com/Rdatatable/data.table/issues/2219).
+
+```R
+x = factor(c("A", "A", "B", "B", "B", "C")) # factor vector with levels A B C
+setlevels(x, new = c("X", "Y", "Z"))        # set factor levels to: X Y Z
+setlevels(x, old = "X", new = "A")          # set factor levels X to A
+```
 
 ## BUG FIXES
 

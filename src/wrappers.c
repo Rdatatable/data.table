@@ -40,9 +40,6 @@ SEXP setattrib(SEXP x, SEXP name, SEXP value)
 // fix for #1142 - duplicated levels for factors
 SEXP setlevels(SEXP x, SEXP levels, SEXP ulevels) {
 
-  if (!isFactor(x)) {
-    return(x);
-  }
   R_len_t nx = length(x);
   SEXP xchar, newx;
   xchar = PROTECT(allocVector(STRSXP, nx));
@@ -55,6 +52,45 @@ SEXP setlevels(SEXP x, SEXP levels, SEXP ulevels) {
   setAttrib(x, R_LevelsSymbol, ulevels);
   UNPROTECT(2);
   return(x);
+}
+
+SEXP setlevels_impl(SEXP x, SEXP old_lvl, SEXP new_lvl) {
+  if (any_duplicated(old_lvl, FALSE)) {
+    error("'old' has duplicated value. Please make sure no duplicated values are introduced.");
+  }
+  if (any_duplicated(new_lvl, FALSE)) {
+    error("'new' has duplicated value. Please make sure no duplicated values are introduced.");
+  }
+  if (!isFactor(x)) {
+    error("'setlevels' must be passed a factor.");
+  }
+  if (TYPEOF(old_lvl) != STRSXP) {
+    error("Type of 'old' must be character.");
+  }
+  if (TYPEOF(new_lvl) != STRSXP) {
+    error("Type of 'new' must be character.");
+  }
+  const int64_t nlvl = xlength(old_lvl);
+  if (nlvl != xlength(new_lvl)) {
+    error("'old' and 'new' are not the same length.");
+  }
+  int nprotect = 0;
+  SEXP xchar = PROTECT(getAttrib(x, R_LevelsSymbol)); nprotect++;
+  const int64_t nx = xlength(xchar);
+  for (int64_t j=0; j<nlvl; ++j) {
+    for (int64_t i=0; i<nx; ++i) {
+      if (STRING_ELT(xchar, i) == STRING_ELT(old_lvl, j)) {
+        SET_STRING_ELT(xchar, i, STRING_ELT(new_lvl, j));
+        goto label;
+      }
+    }
+    error("Element '%s' of 'old' does not exist in 'x'.", CHAR(STRING_ELT(old_lvl, j)));
+    label:;
+  }
+  SEXP ans = PROTECT(duplicate(x)); nprotect++;
+  setAttrib(ans, R_LevelsSymbol, xchar);
+  UNPROTECT(nprotect);
+  return ans;
 }
 
 SEXP copy(SEXP x)

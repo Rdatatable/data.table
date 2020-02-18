@@ -9,7 +9,7 @@
 \usage{
 setattr(x,name,value)
 setnames(x,old,new,skip_absent=FALSE)
-setlevels(x, value)
+setlevels(x, old, new)
 }
 \arguments{
   \item{x}{ \code{setnames} accepts \code{data.frame} and \code{data.table}. \code{setattr} accepts any input; e.g, list, columns of a \code{data.frame} or \code{data.table}. \code{setlevels} is specific to factors.}
@@ -81,8 +81,9 @@ f()
 attr(DT,"myFlag")   # TRUE
 attr(DT,"myFlag2")  # NULL
 
-x = as.factor(c("A", "A", "B", "B", "B", "C")) # factor vector with levels A B C
-setlevels(x, c("X", "Y", "Z"))                 # set factor levels to: X Y Z
+x = factor(c("A", "A", "B", "B", "B", "C")) # factor vector with levels A B C
+setlevels(x, new = c("X", "Y", "Z"))        # set factor levels to: X Y Z
+setlevels(x, old = "X", new = "A")          # set factor levels X to A
 
 }
 \keyword{ data }

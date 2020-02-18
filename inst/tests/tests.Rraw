@@ -16848,6 +16848,15 @@ A = data.table(A=as.complex(rep(NA, 5)))
 test(2138.4, rbind(A,B), data.table(A=c(as.character(A$A), B$A)))
 
 # setlevels, #2219
-test(2139.1, setlevels(as.factor(c("A", "A", "B", "B", "B", "C")), c("X", "Y", "Z")), as.factor(c("X", "X", "Y", "Y", "Y", "Z")))
-test(2139.2, setlevels(c("A", "A", "B", "B", "B", "C"), c("X", "Y", "Z")), c("A", "A", "B", "B", "B", "C"))  # TODO:  warning/error that input is not a factor?
-test(2139.3, setlevels(as.factor(c("A", "A", "B", "B", "B", "C")), c("X", "X", "Y", "Z")), error = "'value' has duplicated value. Please make sure no duplicated values are introduced.")
+test(2139.01, setlevels(factor(c("A", "A", "B", "B", "B", "C")), c("A", "B", "C"), c("X", "Y", "Z")), factor(c("X", "X", "Y", "Y", "Y", "Z")))
+test(2139.02, setlevels(factor(c("A", "A", "B", "B", "B", "C")), c("A", "B"), c("X", "Y", "Z")), error = "'old' and 'new' are not the same length.")
+test(2139.03, setlevels(factor(c("A", "A", "B", "B", "B", "C")), c("A", "B", "B"), c("X", "Y", "Z")), error = "'old' has duplicated value. Please make sure no duplicated values are introduced.")
+test(2139.04, setlevels(factor(c("A", "A", "B", "B", "B", "C")), c("A", "B", "C"), c("X", "X", "Z")), error = "'new' has duplicated value. Please make sure no duplicated values are introduced.")
+test(2139.05, setlevels(factor(c("A", "A", "B", "B", "B", "C")), c("A"), c("X")), factor(c("X", "X", "B", "B", "B", "C"), levels = c("X", "B", "C")))
+test(2139.06, setlevels(factor(c(1, 1, 2, 2, 2, 3)), c("1","2","3"), c("X","Y","Z")), factor(c("X", "X", "Y", "Y", "Y", "Z")))
+test(2139.07, setlevels(factor(c(1, 1, 2, 2, 2, 3)), 1:3, c("X","Y","Z")), error = "Type of 'old' must be character.")
+test(2139.08, setlevels(factor(c(1, 1, 2, 2, 2, 3)), c("1","2","3"), 1:3), error = "Type of 'new' must be character.")
+test(2139.09, setlevels(factor(c("A", "A", "B", "B", "B", "C")), new = c("X", "Y", "Z")), factor(c("X", "X", "Y", "Y", "Y", "Z")))
+test(2139.10, setlevels(factor(c("A", "A", "B", "B", "B", "C")), c("A", "B", "D"), c("X", "Y", "Z")), error = "Element 'D' of 'old' does not exist in 'x'.")
+test(2139.11, setlevels(factor(c("A", "A", "B", "B", "B", "C"))), error = "Argument 'new' is missing.")
+test(2139.12, setlevels(c("A", "A", "B", "B", "B", "C"), c("A", "B", "C"), c("X", "Y", "Z")), error = "'setlevels' must be passed a factor.")

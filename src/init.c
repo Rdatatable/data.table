@@ -89,6 +89,7 @@ SEXP transpose();
 SEXP anyNA();
 SEXP isReallyReal();
 SEXP setlevels();
+SEXP setlevels_impl();
 SEXP rleid();
 SEXP gmedian();
 SEXP gtail();
@@ -175,6 +176,7 @@ R_CallMethodDef callMethods[] = {
 {"CanyNA", (DL_FUNC) &anyNA, -1},
 {"CisReallyReal", (DL_FUNC) &isReallyReal, -1},
 {"Csetlevels", (DL_FUNC) &setlevels, -1},
+{"Csetlevels_impl", (DL_FUNC) &setlevels_impl, -1},
 {"Crleid", (DL_FUNC) &rleid, -1},
 {"Cgmedian", (DL_FUNC) &gmedian, -1},
 {"Cgtail", (DL_FUNC) &gtail, -1},
