@@ -341,7 +341,7 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
     if (type=="warning" && length(observed) && !is.null(ignore.warning)) {
       # if a warning containing this string occurs, ignore it. First need for #4182 where warning about 'timedatectl' only
       # occurs in R 3.4, and maybe only on docker too not for users running test.data.table().
-      stopifnot(length(ignore.warning)==1L, is.character(ignore.warning), !is.na(ignore.character), nchar(ignore.warning)>=1L)
+      stopifnot(length(ignore.warning)==1L, is.character(ignore.warning), !is.na(ignore.warning), nchar(ignore.warning)>=1L)
       observed = grep(ignore.warning, observed, value=TRUE, invert=TRUE)
     }
     if (length(expected) != length(observed)) {
