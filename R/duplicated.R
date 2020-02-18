@@ -11,10 +11,10 @@ duplicated.data.table = function(x, incomparables=FALSE, fromLast=FALSE, by=seq_
     by = key(x)
     stop(error_oldUniqueByKey)
   }
-  if (nrow(x) == 0L || ncol(x) == 0L) return(logical(0L)) # fix for bug #5582
+  if (nrow(x) == 0L || ncol(x) == 0L) return(logical(0L)) # fix for bug #28
   if (is.na(fromLast) || !is.logical(fromLast)) stop("'fromLast' must be TRUE or FALSE")
   query = .duplicated.helper(x, by)
-  # fix for bug #5405 - unique on null data table returns error (because of 'forderv')
+  # fix for bug #44 - unique on null data table returns error (because of 'forderv')
   # however, in this case we can bypass having to go to forderv at all.
   if (!length(query$by)) return(logical(0L))
 
@@ -93,7 +93,7 @@ unique.data.table = function(x, incomparables=FALSE, fromLast=FALSE, by=seq_alon
   list(use.keyprefix=use.keyprefix, by=names(x)[cols])
 }
 
-# FR #5172 anyDuplicated.data.table
+# FR #350 anyDuplicated.data.table
 # Note that base's anyDuplicated is faster than any(duplicated(.)) (for vectors) - for data.frames it still pastes before calling duplicated
 # In that sense, this anyDuplicated is *not* the same as base's - meaning it's not a different implementation
 # This is just a wrapper. That being said, it should be incredibly fast on data.tables (due to data.table's fast forder)
