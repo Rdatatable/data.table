@@ -16835,3 +16835,14 @@ test(2137.07, TRUE, DT[, all(trunc(hour30, "hours") == as.ITime(c("07:00", "07:0
 test(2137.08, TRUE, DT[, all(trunc(hour31, "hours") == as.ITime(c("07:00", "07:00", "08:00", "08:00", "09:00", "09:00", "10:00", "10:00", "11:00")))])
 test(2137.09, TRUE, DT[, all(trunc(minute30, "minutes") == as.ITime(c("07:00:00", "07:00:00", "07:01:00", "07:01:00", "07:02:00", "07:02:00", "07:03:00", "07:03:00", "07:04:00")))])
 test(2137.10, TRUE, DT[, all(trunc(minute31, "minutes") == as.ITime(c("07:00:00", "07:00:00", "07:01:00", "07:01:00", "07:02:00", "07:02:00", "07:03:00", "07:03:00", "07:04:00")))])
+
+# Complex to character conversion in rbindlist, #4202
+A = data.table(A=complex(real = 1:3, imaginary=c(0, -1, 1)))
+B = data.table(A=c('qwe', 'asd'))
+test(2138.1, rbind(A,B), data.table(A=c(as.character(A$A), B$A)))
+A = data.table(A=c(complex(real = 1:3, imaginary=c(0, -1, 1)), NA))
+test(2138.2, rbind(A,B), data.table(A=c(as.character(A$A), B$A)))
+A = data.table(A=c(complex(real = 1:3, imaginary=c(0, -1, 1)), NaN))
+test(2138.3, rbind(A,B), data.table(A=c(as.character(A$A), B$A)))
+A = data.table(A=as.complex(rep(NA, 5)))
+test(2138.4, rbind(A,B), data.table(A=c(as.character(A$A), B$A)))
