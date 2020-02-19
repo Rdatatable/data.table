@@ -146,15 +146,6 @@ void preprocess(SEXP *dt, int *nprotect, int *maxType, int64_t *nrow,
       } 
     } else if (thisType == *maxType) {
       // nothing to do, can continue to next column
-    } else if (thisType == RAWSXP) {
-      // The matrix can only be raw type if ALL columns are raw, otherwise we cast to STRSXP
-      if (*ncol == 0) {
-        *maxType = RAWSXP;
-      } else if (*maxType != RAWSXP) {
-        *coerce = true;
-        if (*maxType != VECSXP)
-          *maxType = STRSXP;
-      }
     } else if (TYPEORDER(thisType)>TYPEORDER(VECSXP)) {
       // non-atomic non-list types are coerced / wrapped in list, see #4196
       *maxType=VECSXP;
@@ -167,12 +158,21 @@ void preprocess(SEXP *dt, int *nprotect, int *maxType, int64_t *nrow,
       // if any previous column is integer64, then maxType must be STRSXP if any numeric or complex cols
       if (*integer64 && thisType != VECSXP && TYPEORDER(thisType) > TYPEORDER(INTSXP))
         *maxType = STRSXP;
+      // if this column is RAWSXP and any previous column is not, then maxType must be STRSXP
+      else if (*ncol > 0 && *maxType != VECSXP && thisType == RAWSXP)
+        *maxType = STRSXP;
+      // if maxType is RAWSXP and this type is not, then maxType must also be STRSXP
+      else if (*ncol > 0 && *maxType == RAWSXP && thisType != RAWSXP)
+        *maxType = STRSXP;
       else
         *maxType=thisType;
     } else if (*ncol > 0) {
-      // TYPEORDER(thisType) < TYPEORDER(*maxType), 
-      // no change to maxType, but this col is different to previous so coercion required
+      // TYPEORDER(thisType) < TYPEORDER(*maxType)
+      // this col is different to previous so coercion required
       *coerce=true;
+      // maxType remains the same unless thisType is RAWSXP, in which case we need to coerce to string
+      if (*maxType != VECSXP && thisType == RAWSXP)
+        *maxType = STRSXP;
     }
     (*ncol)++;
   }
