@@ -141,7 +141,7 @@ format.data.table = function (x, ..., justify="none", timezone = FALSE) {
   }
   format.item = function(x) {
     if (is.null(x))  # NULL item in a list column
-      ""
+      "NULL"
     else if (is.atomic(x) || inherits(x,"formula")) # FR #2591 - format.data.table issue with columns of class "formula"
       paste(c(format(head(x, 6L), justify=justify, ...), if (length(x) > 6L) "..."), collapse=",")  # fix for #37 - format has to be added here...
     else
