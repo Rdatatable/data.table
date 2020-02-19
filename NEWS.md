@@ -145,6 +145,7 @@ unit = "s")
 
 7. Added more explanation/examples to `?data.table` for how to use `.BY`, [#1363](https://github.com/Rdatatable/data.table/issues/1363).
 
+8. The documentation for the `fill` argument in `rbind()` and `rbindlist()` now notes the expected behaviour for missing `list` columns when `fill=TRUE`. For clarity, `NULL` entries in `list` columns are now also shown as `NULL` instead of empty when showing the contents of a data.table [#4199](https://github.com/Rdatatable/data.table/pull/4199).
 
 # data.table [v1.12.8](https://github.com/Rdatatable/data.table/milestone/15?closed=1)  (09 Dec 2019)
 
