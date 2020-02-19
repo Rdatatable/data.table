@@ -104,8 +104,6 @@ void preprocess(SEXP *dt, int *nprotect, int *maxType, int64_t *nrow,
         error("Cannot unpack array column with %d dimensions", dims);
       thisnrow = INTEGER(colDim)[0];
       (*ncol) += INTEGER(colDim)[1]; 
-    } else {
-      (*ncol)++;
     }
     
     // Check for nrow mismatch
@@ -176,6 +174,7 @@ void preprocess(SEXP *dt, int *nprotect, int *maxType, int64_t *nrow,
       // no change to maxType, but this col is different to previous so coercion required
       *coerce=true;
     }
+    (*ncol)++;
   }
 }
 
