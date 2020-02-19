@@ -153,8 +153,9 @@ void preprocess(SEXP *dt, int *nprotect, int *maxType, int64_t *nrow,
       if (*ncol == 0) {
         *maxType = RAWSXP;
       } else if (*maxType != RAWSXP) {
-        *maxType = STRSXP;
         *coerce = true;
+        if (*maxType != VECSXP)
+          *maxType = STRSXP;
       }
     } else if (TYPEORDER(thisType)>TYPEORDER(VECSXP)) {
       // non-atomic non-list types are coerced / wrapped in list, see #4196
