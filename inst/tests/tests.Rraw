@@ -16789,14 +16789,14 @@ test(2134.2, as.matrix(cdt), cmat)
 ## Test bit64 conversion in as.matrix
 if (test_bit64) {
   # integer64 with logical, raw, or integer should be coerced to integer64
-  i64_mat <- matrix(as.integer64(c(1,0,NA,1:9)), nrow=3, ncol=4, dimnames=list(NULL, LETTERS[1:4]))
-  DT = data.table(A=c(TRUE, FALSE, NA), B=1:3, C=as.raw(4:6), D=as.integer64(7:9))
+  i64_mat <- matrix(as.integer64(c(1,0,NA,1:6)), nrow=3, ncol=3, dimnames=list(NULL, LETTERS[1:3]))
+  DT = data.table(A=c(TRUE, FALSE, NA), B=1:3, C=as.integer64(4:6))
   test(2135.1, as.matrix(DT), i64_mat) # should be integer64 aware, but class not added
   
-  # integer64 with numeric and/or complex should be coerced to character - 
+  # integer64 with raw, numeric and/or complex should be coerced to character - 
   # large integers (>32 bits) cannot be converted to numeric or complex
-  mat = matrix(c("0", "1", "0.1", "0.2", "1+0i", "2+1i"), ncol=3, dimnames=list(NULL, c("A", "B", "C")))
-  DT = data.table(A=as.integer64(0:1), B=c(0.1, 0.2), C=complex(real=1:2, imaginary=0:1))
+  mat = matrix(c("0", "1", "0.1", "0.2", "1+0i", "2+1i", "02", "03"), ncol=4, dimnames=list(NULL, LETTERS[1:4]))
+  DT = data.table(A=as.integer64(0:1), B=c(0.1, 0.2), C=complex(real=1:2, imaginary=0:1), D=as.raw(2:3))
   test(2135.2, as.matrix(DT), mat)
   
   # But not if any non-atomic columns
