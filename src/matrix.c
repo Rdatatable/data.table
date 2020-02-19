@@ -150,18 +150,19 @@ void preprocess(SEXP *dt, int *nprotect, int *maxType, int64_t *nrow,
       // nothing to do, can continue to next column
     } else if (TYPEORDER(thisType)>TYPEORDER(VECSXP)) {
       // non-atomic non-list types are coerced / wrapped in list, see #4196
-      *coerce = true;
       *maxType=VECSXP;
+      if (*ncol > 0)
+        *coerce = true;
     } else if (TYPEORDER(thisType)>TYPEORDER(*maxType)) {
       // otherwise if this column is higher in typeorder list, set this type as maxType
-      if (j > 0) 
+      if (*ncol > 0) 
         *coerce = true;
       // if any previous column is integer64, then maxType must be STRSXP if any numeric or complex cols
       if (*integer64 && thisType != VECSXP && TYPEORDER(thisType) > TYPEORDER(INTSXP))
         *maxType = STRSXP;
       else
         *maxType=thisType;
-    } else {
+    } else if (*ncol > 0) {
       // TYPEORDER(thisType) < TYPEORDER(*maxType), 
       // no change to maxType, but this col is different to previous so coercion required
       *coerce=true;
