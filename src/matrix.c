@@ -82,9 +82,12 @@ void preprocess(SEXP *dt, int *nprotect, int *maxType, int64_t *nrow,
                 int64_t *ncol, bool *coerce, bool *integer64, 
                 bool *unpack, bool *recycle) {
   for (int j=0; j<xlength(*dt); ++j) {
+    // Extract this column for checks
     SEXP thisCol = VECTOR_ELT(*dt, j);
-    int64_t thisnrow = xlength(thisCol);
-    
+    int64_t thisnrow; // how many rows does this column occupy?
+    int thisType; // what is the type of this column?
+    bool thisI64; // does this column have class integer64?
+
     // Check for empty columns or multi-dimension columns, which mean we will have to unpack and flatten
     SEXP colDim = getAttrib(thisCol, R_DimSymbol);
     if (isNull(thisCol)) {
@@ -102,17 +105,27 @@ void preprocess(SEXP *dt, int *nprotect, int *maxType, int64_t *nrow,
       int64_t dims=xlength(colDim);
       if (dims > 2)
         error("Cannot unpack array column with %d dimensions", dims);
+      
+      // How many rows does this column have?
       thisnrow = INTEGER(colDim)[0];
+      
+      // if first column initialize maxType and nrow.
+      if (*ncol == 0) {
+        *maxType = TYPEOF(thisCol);
+        *nrow = thisnrow;
+      } 
+      // If not the first column, compare number of rows to nrow to see if we need to recycle
+      else if (thisnrow != *nrow) {
+        *nrow = *nrow > thisnrow ? *nrow : thisnrow;
+        *recycle = true; // can't determine whether recyclable until we know max nrow
+      }
+      
+      // increment the column counter by the number of columns in the matrix
       (*ncol) += INTEGER(colDim)[1]; 
+      
+      continue; // no more checks for matrixcolumns
     }
-    
-    // Check for nrow mismatch
-    if (*ncol == 0) {
-      *nrow = thisnrow;
-    } else if (thisnrow != *nrow) {
-      *nrow = *nrow > thisnrow ? *nrow : thisnrow;
-      *recycle = true; // can't determine whether recyclable until we know max nrow
-    }
+    // From here on, we're always dealing with a column that is a vector/list (doesn't have dimensions)
     
     // Load ff column into memory
     if (INHERITS(thisCol, char_ff)) {
@@ -120,61 +133,105 @@ void preprocess(SEXP *dt, int *nprotect, int *maxType, int64_t *nrow,
       SET_VECTOR_ELT(*dt, j, thisCol); UNPROTECT(1); (*nprotect)--; // 'thisCol' now PROTECTED by dt
     }
     
-    // do any mandatory coercions (e.g. factor to character)
+    // Coerce factor and date/time to character (always happens regardless of target matrix type)
     if (toCharacterFactorPOSIX(&thisCol, nprotect)) {
       SET_VECTOR_ELT(*dt, j, thisCol); UNPROTECT(1); (*nprotect)--; // 'thisCol' now PROTECTED by dt
     }
     
-    // Determine the maximum type for matrix and whether we will need to do any
-    // further column coercion across all columns (if thisType != maxType).
-    int thisType = TYPEOF(thisCol);
-    if (INHERITS(thisCol, char_integer64)) {
-      if (*integer64) {
-        // all columns already checked are integer64, nothing left to do here
-      } else if (*ncol > 0 && !*integer64) {
+    // Now we can determine length and type of this column
+    thisnrow = xlength(thisCol);
+    thisType = TYPEOF(thisCol);
+    thisI64 = INHERITS(thisCol, char_integer64);
+    
+    // If this is the first column we use it to initialize maxType and nrow
+    if (*ncol == 0) {
+      // initialize nrow and increment column counter
+      *nrow = thisnrow;
+      (*ncol)++; 
+      
+      // initialize maxType to type of column
+      if (INHERITS(thisCol, char_integer64)) {
+        *integer64 = true;
+        *maxType = REALSXP;
+      } else {
+        *maxType = thisType;
+      }
+      
+      continue; // no more checks required on first column
+    }
+    // For remaining columns we need to check for nrow mismatch and compare column type to maxType
+    
+    // Increment column counter
+    (*ncol)++;
+    
+    // Check for nrow mismatch
+    if (thisnrow != *nrow) {
+      *nrow = *nrow > thisnrow ? *nrow : thisnrow;
+      *recycle = true; // can't determine whether recyclable until we know max nrow
+    }
+  
+    // Compare column type to maxType to determine whether maxType needs to change and later column coercion is required
+    if (TYPEORDER(thisType)>TYPEORDER(VECSXP)) {
+      // Non-atomic non-list types are wrapped in a list, see #4196
+      *maxType=VECSXP;
+      *coerce = true;
+    } else if (thisType == VECSXP) {
+      // This column is a list. In this case, all columns become wrapped in list
+      // If the maxType isn't already VECSXP, then a previous column is not a list,
+      // so we need to set the maxType and let asmatrix know we need to coerce these 
+      // columns later.
+      if (*maxType != VECSXP) {
+        *maxType = VECSXP;
+        *coerce = true;
+      }
+    } else if (thisType == RAWSXP) {
+      // raw is handled specially: matrix can only be raw type if all columns are raw
+      // otherwise columns are coerced to character, or if maxType is VECSXP, then each
+      // element of the raw column becomes an element of a list.
+      if (*maxType != RAWSXP && *maxType != VECSXP) {
+        *maxType = STRSXP;
+        *coerce = true;
+      }
+    } else if (*maxType == RAWSXP && thisType != RAWSXP) {
+      // a previous column is raw, but this column is a non-raw vector. Must coerce to STRSXP.
+      *coerce = true;
+      *maxType = STRSXP;
+      
+      // if this column is integer64 we also need to flag that there is at least one integer64 column
+      if (thisI64)
+        *integer64 = true;
+      
+    } else if (thisI64) {
+      // This column has class "integer64" (type is REALSXP). Only integer and logical columns 
+      // can be coerced to integer64. Integer64 columns cannot be coerced to numeric or complex,
+      // so if maxType is either of these, then the maxType becomes STRSXP (integer64 coerced to
+      // character vector). 
+      if (!*integer64) { 
         // This column is integer64, but at least one column checked already is not
         *coerce = true;
         *integer64 = true;
-        if (*maxType != VECSXP && TYPEORDER(*maxType) > TYPEORDER(INTSXP))
-          *maxType = STRSXP; // numeric and complex cannot be coerced to int64, must coerce to character
-        else if (TYPEORDER(*maxType) < TYPEORDER(REALSXP))
-          *maxType = REALSXP;
-      } else if (*ncol == 0) {
-        // This column is integer64 and it is the first column checked
-        *integer64 = true;
-        *maxType = REALSXP;
-      } 
-    } else if (thisType == *maxType) {
-      // nothing to do, can continue to next column
-    } else if (TYPEORDER(thisType)>TYPEORDER(VECSXP)) {
-      // non-atomic non-list types are coerced / wrapped in list, see #4196
-      *maxType=VECSXP;
-      if (*ncol > 0)
-        *coerce = true;
-    } else if (TYPEORDER(thisType)>TYPEORDER(*maxType)) {
-      // otherwise if this column is higher in typeorder list, set this type as maxType
-      if (*ncol > 0) 
-        *coerce = true;
-      // if any previous column is integer64, then maxType must be STRSXP if any numeric or complex cols
-      if (*integer64 && thisType != VECSXP && TYPEORDER(thisType) > TYPEORDER(INTSXP))
+        if (*maxType == REALSXP || *maxType == CPLXSXP)
+          *maxType = STRSXP; // integer64 cannot be coerced to numeric or complex, must coerce to character
+        else if (*maxType == LGLSXP || *maxType == INTSXP)
+          *maxType = REALSXP; // logical and integer can be coerced to integer64
+        // else *maxType == VECSXP, in which case no change to maxType and integer64 column elements wrapped in list
+      }
+    }  else if (TYPEORDER(thisType)>TYPEORDER(*maxType)) {
+      // the type of this column is higher in the typeorder list than maxType, 
+      // so we need to change maxType and flag that we will need to do column coercion
+      *coerce = true;
+      
+      // if any previous column is integer64, then maxType must be STRSXP if this column is numeric or complex
+      if (*integer64 && (thisType == REALSXP || thisType == CPLXSXP))
         *maxType = STRSXP;
-      // if this column is RAWSXP and any previous column is not, then maxType must be STRSXP
-      else if (*ncol > 0 && *maxType != VECSXP && thisType == RAWSXP)
-        *maxType = STRSXP;
-      // if maxType is RAWSXP and this type is not, then maxType must also be STRSXP
-      else if (*ncol > 0 && *maxType == RAWSXP && thisType != RAWSXP)
-        *maxType = STRSXP;
-      else
+      // otherwise the type of this column becomes the maxType
+      else 
         *maxType=thisType;
-    } else if (*ncol > 0) {
-      // TYPEORDER(thisType) < TYPEORDER(*maxType)
-      // this col is different to previous so coercion required
+      
+    } else if (TYPEORDER(thisType)<TYPEORDER(*maxType)) {
+      // this column is different to a previous column, but lower in the typeorder list so coercion required
       *coerce=true;
-      // maxType remains the same unless thisType is RAWSXP, in which case we need to coerce to string
-      if (*maxType != VECSXP && thisType == RAWSXP)
-        *maxType = STRSXP;
     }
-    (*ncol)++;
   }
 }
 
@@ -322,9 +379,9 @@ SEXP asmatrix(SEXP dt, SEXP rownames)
   
   // Extract column types and determine type to coerce to
   int preprocessstack=0;
-  int maxType=LGLSXP;
-  int64_t nrow=0;
-  int64_t ncol=0; 
+  int maxType=-1; // initialised to type of first column by preprocess()
+  int64_t nrow=-1; // initialised to length of first column by preprocess()
+  int64_t ncol=0;  // Incremented by preprocess() based on columns encountered (some may be NULL or multi-column)
   bool coerce=false; // if no columns need coercing, can just use memcpy
   bool integer64=false; // are we coercing to integer64?
   bool unpack=false; // are there any columns to drop or unpack?
