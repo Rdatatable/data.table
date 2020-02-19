@@ -148,6 +148,14 @@ void preprocess(SEXP *dt, int *nprotect, int *maxType, int64_t *nrow,
       } 
     } else if (thisType == *maxType) {
       // nothing to do, can continue to next column
+    } else if (thisType == RAWSXP) {
+      // The matrix can only be raw type if ALL columns are raw, otherwise we cast to STRSXP
+      if (*ncol == 0) {
+        *maxType = RAWSXP;
+      } else if (*maxType != RAWSXP) {
+        *maxType = STRSXP;
+        *coerce = true;
+      }
     } else if (TYPEORDER(thisType)>TYPEORDER(VECSXP)) {
       // non-atomic non-list types are coerced / wrapped in list, see #4196
       *maxType=VECSXP;
