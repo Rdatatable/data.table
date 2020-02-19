@@ -314,7 +314,7 @@ SEXP asmatrix(SEXP dt, SEXP rownames)
   
   // Extract column types and determine type to coerce to
   int preprocessstack=0;
-  int maxType=RAWSXP;
+  int maxType=LGLSXP;
   int64_t nrow=0;
   int64_t ncol=0; 
   bool coerce=false; // if no columns need coercing, can just use memcpy
