@@ -945,7 +945,7 @@ const char *memrecycle(const SEXP target, const SEXP where, const int64_t start,
 
   const int64_t off = xlength(where) ? 0 : start;  // off = target offset; e.g. called from rbindlist with where=R_NilValue and start!=0
   const bool mc = xlength(where)==0 && slen>0 && slen==len && soff==0;  // mc=memcpy; only if types match and not for single items (a single assign faster than these non-const memcpy calls)
-  const int64_t *wd = xlength(where) ? INTEGER(where)+start : NULL;
+  const int *wd = xlength(where) ? INTEGER(where)+start : NULL;
   switch (TYPEOF(target)) {
   case RAWSXP: {
     Rbyte *td = RAW(target) + off;
