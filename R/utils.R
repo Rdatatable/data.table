@@ -129,16 +129,24 @@ generate_yaml = function(x, col.names = TRUE, sep = ",", sep2 = "",
                           eol = if (.Platform$OS.type == "windows") "\r\n" else "\n",
                           na = "", dec = "", qmethod = "double", 
                           logical01 = getOption("datatable.logical01", FALSE)) {
-  schema_vec = sapply(x, class, simplify = FALSE)
+  fields = sapply(seq_along(x), function(i) {
+    attrs <- attributes(x[[i]])
+    attrs <- attrs[!(names(attrs) %in% "class")]
+    
+    ret <- list(name = colnames(x)[i],
+                type = class(x[[i]])[[1]])  # multi-class objects reduced to first class
+    
+    if (!is.null(attrs)) {
+      ret <- c(ret, list(attributes = attrs))
+    }
+    return(ret)
+  }, simplify = FALSE)
+  
   list(
     source = sprintf('R[v%s.%s]::data.table[v%s]::fwrite',
                      R.version$major, R.version$minor, format(tryCatch(utils::packageVersion('data.table'), error=function(e) 'DEV'))),
     creation_time_utc = format(Sys.time(), tz='UTC'),
-    schema = list(
-      fields = lapply(seq_along(x), function(i) {
-        list(name = names(schema_vec)[i], type = schema_vec[[i]][[1L]]) # multi-class objects reduced to first class
-      })
-    ),
+    schema = list(fields = fields), 
     header = col.names,
     sep = sep,
     sep2 = sep2, 

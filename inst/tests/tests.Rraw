@@ -14862,7 +14862,18 @@ if (test_yaml) {  # csvy; #1701
   test(2125.09, attr(x, "yaml_metadata")$this_is_true, TRUE)
   
   test(2125.10, fwrite(data, file, yaml =  list(TRUE, "unnamed_stuff")), error = "unnamed")
-
+  
+  
+  data = data.table(x = 1, y = 100, 
+                    c = factor(letters[1:3], levels = letters[1:4]), 
+                    date = Sys.Date())
+  attr(data$x, "attr") <- "attribute"
+  fwrite(data, file, yaml = TRUE)
+  x = fread(file, yaml = TRUE)
+  unlink(file)
+  
+  test(2126.01, levels(x$c), letters[1:4])
+  test(2126.02, attr(data$x, "attr"), "attribute")
 }
 
 # fcast coverage
