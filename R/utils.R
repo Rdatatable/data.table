@@ -136,7 +136,7 @@ generate_yaml = function(x, col.names = TRUE, sep = ",", sep2 = "",
     ret <- list(name = colnames(x)[i],
                 type = class(x[[i]])[[1]])  # multi-class objects reduced to first class
     
-    if (!is.null(attrs)) {
+    if (!is.null(attrs) & length(attrs != 0)) {
       ret <- c(ret, list(attributes = attrs))
     }
     return(ret)
