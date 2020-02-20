@@ -284,7 +284,6 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir())
   if (check.names) {
     setattr(ans, 'names', make.names(names(ans), unique=TRUE))
   }
-
   colClassesAs = attr(ans, "colClassesAs", exact=TRUE)   # should only be present if one or more are != ""
   for (j in which(colClassesAs!="")) {       # # 1634
     v = .subset2(ans, j)

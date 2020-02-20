@@ -14874,6 +14874,10 @@ if (test_yaml) {  # csvy; #1701
   
   test(2126.01, levels(x$c), letters[1:4])
   test(2126.02, attr(data$x, "attr"), "attribute")
+  
+  fwrite(data, file, yaml = TRUE)
+  test(2126.03, fread(file, yaml = FALSE), x)
+  unlink(file)
 }
 
 # fcast coverage
