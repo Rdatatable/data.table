@@ -305,6 +305,11 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir())
         return(v)
       },
       error = fun)
+    
+    if (yaml) {
+      attributes(new_v) <- c(attributes(new_v), yaml_header$schema$fields[[j]]$attributes)
+    }
+    
     set(ans, j = j, value = new_v)  # aside: new_v == v if the coercion was aborted
   }
   setattr(ans, "colClassesAs", NULL)
