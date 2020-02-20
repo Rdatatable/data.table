@@ -379,8 +379,8 @@ SEXP asmatrix(SEXP dt, SEXP rownames)
   
   // Extract column types and determine type to coerce to
   int preprocessstack=0;
-  int maxType=-1; // initialised to type of first column by preprocess()
-  int64_t nrow=-1; // initialised to length of first column by preprocess()
+  int maxType=LGLSXP; // initialised to type of first column by preprocess(), LGLSXP if empty matrix
+  int64_t nrow=0; // initialised to length of first column by preprocess(), 0 rows if emtpy matrix
   int64_t ncol=0;  // Incremented by preprocess() based on columns encountered (some may be NULL or multi-column)
   bool coerce=false; // if no columns need coercing, can just use memcpy
   bool integer64=false; // are we coercing to integer64?
@@ -398,10 +398,8 @@ SEXP asmatrix(SEXP dt, SEXP rownames)
   }
   
   // If no columns, nrow is dictated by rownames
-  if (ncol == 0) {
+  if (ncol == 0)
     nrow = isNull(rownames) ? 0 : xlength(rownames);
-    maxType = LGLSXP; // empty matrix should be logical not raw
-  }
 
   // allocate matrix
   SEXP ans = PROTECT(allocMatrix(maxType, nrow, ncol)); nprotect++; // should only be 'rnContainer' and 'ans' on PROTECT stack
