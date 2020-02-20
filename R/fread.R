@@ -305,10 +305,6 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir())
       },
       error = fun)
     
-    if (yaml) {
-      attributes(new_v) <- c(attributes(new_v), yaml_header$schema$fields[[j]]$attributes)
-    }
-    
     set(ans, j = j, value = new_v)  # aside: new_v == v if the coercion was aborted
   }
   setattr(ans, "colClassesAs", NULL)
@@ -334,7 +330,13 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir())
     }
     setkeyv(ans, key)
   }
-  if (yaml) setattr(ans, 'yaml_metadata', yaml_header)
+  if (yaml) {
+    setattr(ans, 'yaml_metadata', yaml_header)
+    
+    for (j in seq_along(ans)) {
+      attributes(ans[[j]]) <- c(attributes(ans[[j]]), yaml_header$schema$fields[[j]]$attributes)
+    }
+  } 
   if (!is.null(index) && data.table) {
     if (!all(sapply(index, is.character)))
       stop("index argument of data.table() must be a character vector naming columns (NB: col.names are applied before this)")
