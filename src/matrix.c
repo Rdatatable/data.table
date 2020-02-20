@@ -454,7 +454,7 @@ SEXP asmatrix(SEXP dt, SEXP rownames)
   if (recycle) {
     for (int64_t j = 0; j < ncol; ++j) {
       SEXP thisCol = VECTOR_ELT(dt, j);
-      int thisnrow = length(thisCol);
+      int64_t thisnrow = xlength(thisCol);
       if (thisnrow != nrow) {
         if (nrow % thisnrow != 0) { // nrow not divisible by thisnrow; error
           error("Could not recycle column of length %d into nrow of %d", thisnrow, nrow);
