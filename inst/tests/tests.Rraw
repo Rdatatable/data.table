@@ -6968,8 +6968,8 @@ test(1497, DT[, .SD, .SDcols = !c("a", "c")], DT[, !c("a", "c"), with=FALSE])
 
 # Fix for #1060
 DT = data.table(x=1, y=2, z=3, a=4, b=5, c=6)
-test(1498.1, DT[, .SD, .SDcols=c(TRUE,FALSE)], DT[, c("x", "z", "b"), with=FALSE], warning = "When .SDcols is a logical vector, each column should have a TRUE or FALSE entry. Vector will be repeated to length of data.table. Warning will change to error in year 2022.")
-test(1498.2, DT[, .SD, .SDcols=!c(TRUE,FALSE)], DT[, !c("x", "z", "b"), with=FALSE], warning = "When .SDcols is a logical vector, each column should have a TRUE or FALSE entry. Vector will be repeated to length of data.table. Warning will change to error in year 2022.")
+test(1498.1, DT[, .SD, .SDcols=c(TRUE,FALSE)], DT[, c("x", "z", "b"), with=FALSE], warning = "When .SDcols is a logical vector, each column should have a TRUE or FALSE entry.")
+test(1498.2, DT[, .SD, .SDcols=!c(TRUE,FALSE)], DT[, !c("x", "z", "b"), with=FALSE], warning = "When .SDcols is a logical vector, each column should have a TRUE or FALSE entry.")
 
 # Fix for #1072
 dt <- data.table(group1 = "a", group2 = "z", value  = 1)
@@ -16828,3 +16828,15 @@ test(2137.07, TRUE, DT[, all(trunc(hour30, "hours") == as.ITime(c("07:00", "07:0
 test(2137.08, TRUE, DT[, all(trunc(hour31, "hours") == as.ITime(c("07:00", "07:00", "08:00", "08:00", "09:00", "09:00", "10:00", "10:00", "11:00")))])
 test(2137.09, TRUE, DT[, all(trunc(minute30, "minutes") == as.ITime(c("07:00:00", "07:00:00", "07:01:00", "07:01:00", "07:02:00", "07:02:00", "07:03:00", "07:03:00", "07:04:00")))])
 test(2137.10, TRUE, DT[, all(trunc(minute31, "minutes") == as.ITime(c("07:00:00", "07:00:00", "07:01:00", "07:01:00", "07:02:00", "07:02:00", "07:03:00", "07:03:00", "07:04:00")))])
+
+# Test additional .SDcols functionality
+dt = as.data.table(lapply(1:5, c))
+test(2139.1, dt[, .SD, .SDcols = TRUE], dt)
+test(2139.2, dt[, .SD, .SDcols = V1], dt[, .(V1)])
+test(2139.3, dt[, .SD, .SDcols = (-1L)], dt[, .(V2, V3, V4, V5)])
+V1 = "V2"
+test(2139.4, dt[, .SD, .SDcols = V1], dt[, .(V1)])
+test(2139.5, dt[, .SD, .SDcols = (V1)], dt[, .(V2)])
+test(2139.6, dt[, .SD, .SDcols = "V1":V1], error = "When selecting a range of columns in the var_1:var_2 format, quotation marks should not be used. Instead of \"V1\":V1 try V1:V1")
+test(2139.7, dt[, .SD, .SDcols = V1:V6], error = "Not all columns were found in the .SDcols column select statement: [V1:V6]")
+test(2139.8, dt[, .SD, .SDcols = c(TRUE, FALSE)], dt[, .(V1, V3, V5)], warning = "When .SDcols is a logical vector, each column should have a TRUE or FALSE entry.")
