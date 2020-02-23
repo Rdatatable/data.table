@@ -196,9 +196,7 @@ col_helper = function(x, colsub, mode = NA_character_) {
       cols = eval(colsub, parent.frame(2L), parent.frame(2L))
     }
   } else {
-    # if colsub is also a name in the list, we prioritize it over anything in the environment
-    if (!exists(cols <- as.character(colsub), where = x)) 
-      cols = eval(colsub, parent.frame(2L), parent.frame(2L))
+    cols = eval(colsub, parent.frame(2L), parent.frame(2L))
   }
   
   # allow filtering via function in .SDcols, #3950
@@ -213,9 +211,7 @@ col_helper = function(x, colsub, mode = NA_character_) {
     stop(gettextf("%s missing at the following indices: %s", mode, brackify(which(is.na(cols)))))
   
   if (is.logical(cols)) {
-    if ((col_len <- length(cols)) == 1L) {
-      cols = rep(cols, length.out = x_len)
-    } else if (col_len != x_len) {
+    if ((col_len <- length(cols)) != x_len) {
       ## TODO change to error in 2022
       warning(gettextf("When %s is a logical vector, each column should have a TRUE or FALSE entry. The current logical vector of length %d will be repeated to length of data.table. Warning will change to error in the next verion.", mode, col_len, domain = "R-data.table"))
       cols = rep(cols, length.out = x_len)
