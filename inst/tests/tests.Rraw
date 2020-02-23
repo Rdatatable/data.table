@@ -16849,11 +16849,11 @@ test(2138.4, rbind(A,B), data.table(A=c(as.character(A$A), B$A)))
 
 # Test additional .SDcols functionality
 dt = as.data.table(lapply(1:5, c))
-test(2139.1, dt[, .SD, .SDcols = TRUE], dt)
-test(2139.2, dt[, .SD, .SDcols = V1], dt[, .(V1)])
+test(2139.1, dt[, .SD, .SDcols = V2 - V1], error = "object 'V2' not found")
+test(2139.2, dt[, .SD, .SDcols = V1], error = "object 'V1' not found")
 test(2139.3, dt[, .SD, .SDcols = (-1L)], dt[, .(V2, V3, V4, V5)])
 V1 = "V2"
-test(2139.4, dt[, .SD, .SDcols = V1], dt[, .(V1)])
+test(2139.4, dt[, .SD, .SDcols = V1], dt[, .(V2)])
 test(2139.5, dt[, .SD, .SDcols = (V1)], dt[, .(V2)])
 test(2139.6, dt[, .SD, .SDcols = "V1":V1], error = "When selecting a range of columns in the var_1:var_2 format, quotation marks should not be used. Instead of \"V1\":V1 try V1:V1")
 test(2139.7, dt[, .SD, .SDcols = V1:V6], error = "Not all columns were found in the .SDcols column select statement: [V1:V6]")
