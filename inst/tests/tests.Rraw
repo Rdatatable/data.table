@@ -5798,7 +5798,7 @@ test(1380, DT[a==TRUE], DT[3:4])
 # Fix #847, as.data.table.list and character(0) issue
 x <- data.table(a=character(0), b=character(0), c=numeric(0))
 setkey(x, a, b)
-test(1381, x[J("foo", character(0)), nomatch=0L], x, warning="Item 2 has 0 rows but longest item has 1; filled with NA")
+test(1381, x[J("foo", character(0)), nomatch=0L], x)
 
 # Fix for #813 and #758
 DT = data.table(x = 1:2)
