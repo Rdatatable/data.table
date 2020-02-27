@@ -8277,6 +8277,8 @@ test(1606, fread("2,\n1,a,b", fill=TRUE), data.table(V1=2:1, V2=c("","a"), V3=c(
 dt = data.table(resp=c(1:5))
 wide = copy(list(metrics = dt))$metrics # copy here copies the list of data.table and therefore didn't overallocate before..
 test(1607, wide[, id := .I], data.table(resp = 1:5, id = 1:5))
+wide = copy(list(a = list(b = dt)))$a$b # check again on doubly nested list
+test(1607.1, wide[, id := .I], data.table(resp = 1:5, id = 1:5))
 
 # better fix for #1462, + improved error message (if this better fix fails)
 # no need for quote="" and sep="\t"..
@@ -11193,7 +11195,14 @@ test(1764.2, format(structure(NA_integer_, class = "ITime")), NA_character_)
 # IDateTime error when tzone is NULL, #1973
 x = as.POSIXct('2017-03-17', tz="UTC")
 attr(x, 'tzone') = NULL
-test(1765, print(IDateTime(x)), output=".*idate.*itime.*1: 2017-03-1[67]")
+test(1765.1, print(IDateTime(x)), output=".*idate.*itime.*1: 2017-03-1[67]",
+             ignore.warning="timedatectl") # R 3.4's Sys.timezone() raises this warning in docker, #4182
+
+# test test's ignore.warning
+test(1765.2, {warning("foo"); 4L}, 4L, ignore.warning="foo")
+test(1765.3, {warning("foo"); 4L}, 4L, ignore.warning="Foo", warning="foo")
+test(1765.4, {warning("foobar1"); warning("foobar2"); warning("FOO"); 4L}, 4L, ignore.warning="bar", warning="FOO")
+test(1765.5, {warning("foobar1"); warning("foobar2"); warning("FOO"); 4L}, 4L, ignore.warning="2", warning=c("foobar1","FOO"))
 
 # print(null.data.table()) should not output NULL as well, #1852
 # use capture.output() in this case rather than output= to ensure NULL is not output
@@ -16809,26 +16818,58 @@ test(2135.2, DT[ , .NGRP, by = grp1]$NGRP, rep(4L, 4L))
 test(2135.3, DT[ , .NGRP, by = grp2]$NGRP, rep(2L, 2L))
 test(2135.4, DT[ , .NGRP, by = .(grp1, grp2)]$NGRP, rep(8L, 8L))
 
+# Use of (m)get does not re-order when using .SDcols, #4089
+dt = data.table(x = 1L, y = 2L, z = 3L)
+cols = c('x', 'y')
+test(2136, dt[, (cols) := lapply(.SD[get("x") == 1],function(x){x + 2L}), .SDcols = cols ,by = z], data.table(x = 1L + 2L, y = 2L + 2L, z = 3L))
+
+# round, trunc should all be 'integer' and and have class 'ITime', #4207
+DT = data.table(hour31   = as.ITime(seq(as.POSIXct("2020-01-01 07:00:40"), by = "31 min", length.out = 9)),
+                hour30   = as.ITime(seq(as.POSIXct("2020-01-01 07:00:00"), by = "30 min", length.out = 9)),
+                minute31 = as.ITime(seq(as.POSIXct("2020-01-01 07:00:00"), by = "31 sec", length.out = 9)),
+                minute30 = as.ITime(seq(as.POSIXct("2020-01-01 07:00:00"), by = "30 sec", length.out = 9)))
+test(2137.01, TRUE, DT[, all(sapply(.SD, class) == "ITime")])
+test(2137.02, TRUE, DT[, all(sapply(.SD, typeof) == "integer")])
+test(2137.03, FALSE, DT[, all(round(hour30, "hours") == as.ITime(c("07:00", "08:00", "08:00", "09:00", "09:00", "10:00", "10:00", "11:00", "11:00")))])
+test(2137.04, TRUE, DT[, all(round(hour31, "hours") == as.ITime(c("07:00", "08:00", "08:00", "09:00", "09:00", "10:00", "10:00", "11:00", "11:00")))])
+test(2137.05, FALSE, DT[, all(round(minute30, "minutes") == as.ITime(c("07:00:00", "07:01:00", "07:01:00", "07:02:00", "07:02:00", "07:03:00", "07:03:00", "07:04:00", "07:04:00")))])
+test(2137.06, TRUE, DT[, all(round(minute31, "minutes") == as.ITime(c("07:00:00", "07:01:00", "07:01:00", "07:02:00", "07:02:00", "07:03:00", "07:03:00", "07:04:00", "07:04:00")))])
+test(2137.07, TRUE, DT[, all(trunc(hour30, "hours") == as.ITime(c("07:00", "07:00", "08:00", "08:00", "09:00", "09:00", "10:00", "10:00", "11:00")))])
+test(2137.08, TRUE, DT[, all(trunc(hour31, "hours") == as.ITime(c("07:00", "07:00", "08:00", "08:00", "09:00", "09:00", "10:00", "10:00", "11:00")))])
+test(2137.09, TRUE, DT[, all(trunc(minute30, "minutes") == as.ITime(c("07:00:00", "07:00:00", "07:01:00", "07:01:00", "07:02:00", "07:02:00", "07:03:00", "07:03:00", "07:04:00")))])
+test(2137.10, TRUE, DT[, all(trunc(minute31, "minutes") == as.ITime(c("07:00:00", "07:00:00", "07:01:00", "07:01:00", "07:02:00", "07:02:00", "07:03:00", "07:03:00", "07:04:00")))])
+
+# Complex to character conversion in rbindlist, #4202
+A = data.table(A=complex(real = 1:3, imaginary=c(0, -1, 1)))
+B = data.table(A=c('qwe', 'asd'))
+test(2138.1, rbind(A,B), data.table(A=c(as.character(A$A), B$A)))
+A = data.table(A=c(complex(real = 1:3, imaginary=c(0, -1, 1)), NA))
+test(2138.2, rbind(A,B), data.table(A=c(as.character(A$A), B$A)))
+A = data.table(A=c(complex(real = 1:3, imaginary=c(0, -1, 1)), NaN))
+test(2138.3, rbind(A,B), data.table(A=c(as.character(A$A), B$A)))
+A = data.table(A=as.complex(rep(NA, 5)))
+test(2138.4, rbind(A,B), data.table(A=c(as.character(A$A), B$A)))
+
 # make names(.SD) work - issue #795
 dt = data.table(a = 1:4, b = 5:8)
 
-test(2136.1, dt[, names(.SD) := lapply(.SD, '*', 2), .SDcols = 1L], data.table(a = 1:4 * 2, b = 5:8))
-test(2136.2, dt[, names(.SD) := lapply(.SD, '*', 2), .SDcols = 2L], data.table(a = 1:4 * 2, b = 5:8 * 2))
-test(2136.3, dt[, names(.SD) := lapply(.SD, as.integer)], data.table(a = as.integer(1:4 * 2), b = as.integer(5:8 * 2)))
-test(2136.4, dt[1L, names(.SD) := lapply(.SD, '+', 2L)], data.table(a = as.integer(c(4, 2:4 * 2)), b = as.integer(c(12, 6:8 * 2))))
-test(2136.5, dt[, setdiff(names(.SD), 'a') := NULL], data.table(a = as.integer(c(4, 2:4 * 2))))
-test(2136.6, dt[, c(names(.SD)) := NULL], null.data.table())
+test(2137.1, dt[, names(.SD) := lapply(.SD, '*', 2), .SDcols = 1L], data.table(a = 1:4 * 2, b = 5:8))
+test(2137.2, dt[, names(.SD) := lapply(.SD, '*', 2), .SDcols = 2L], data.table(a = 1:4 * 2, b = 5:8 * 2))
+test(2137.3, dt[, names(.SD) := lapply(.SD, as.integer)], data.table(a = as.integer(1:4 * 2), b = as.integer(5:8 * 2)))
+test(2137.4, dt[1L, names(.SD) := lapply(.SD, '+', 2L)], data.table(a = as.integer(c(4, 2:4 * 2)), b = as.integer(c(12, 6:8 * 2))))
+test(2137.5, dt[, setdiff(names(.SD), 'a') := NULL], data.table(a = as.integer(c(4, 2:4 * 2))))
+test(2137.6, dt[, c(names(.SD)) := NULL], null.data.table())
 
 dt = data.table(a = 1:4, b = 5:8, grp = c('a', 'a', 'b', 'c'))
-test(2136.7, dt[, names(.SD) := lapply(.SD, max), by = grp], data.table(a = c(2L, 2L, 3L, 4L), b = c(6L, 6L, 7L, 8L), grp = c('a', 'a', 'b', 'c')))
+test(2137.7, dt[, names(.SD) := lapply(.SD, max), by = grp], data.table(a = c(2L, 2L, 3L, 4L), b = c(6L, 6L, 7L, 8L), grp = c('a', 'a', 'b', 'c')))
 
 dt = data.table(a = 1:4, b = 5:8, grp = c('a', 'a', 'b', 'c'))
 keep = c('a', 'b')
-test(2136.8, dt[, names(.SD) := NULL, .SDcols = !keep], data.table(a = 1:4, b = 5:8))
+test(2137.8, dt[, names(.SD) := NULL, .SDcols = !keep], data.table(a = 1:4, b = 5:8))
 
 dt = data.table(a = 1:4, b = 5:8, grp = c('a', 'a', 'b', 'c'))
-test(2136.9, dt[, paste(names(.SD), 'max', sep = '_') := lapply(.SD, max), by = grp] , data.table(a = 1:4, b = 5:8, grp = c('a', 'a', 'b', 'c'))[, paste(c('a','b'), 'max', sep = '_') := lapply(.SD, max), by = grp])
+test(2137.9, dt[, paste(names(.SD), 'max', sep = '_') := lapply(.SD, max), by = grp] , data.table(a = 1:4, b = 5:8, grp = c('a', 'a', 'b', 'c'))[, paste(c('a','b'), 'max', sep = '_') := lapply(.SD, max), by = grp])
 
 dt = data.table(a = 1:3, b = 5:7, grp = c('a', 'a', 'b'))
-test(2136.91, dt[1:2, paste(names(.SD), 'max', sep = '_') := lapply(.SD, max), by = grp], data.table(a = 1:3, b = 5:7, grp = c('a', 'a', 'b'), a_max = c(2L, 2L, NA_integer_), b_max = c(6L, 6L, NA_integer_)))
-test(2136.92, dt[, names(.SD(2)) := lapply(.SD, .I)], error = "could not find function \".SD\"")
+test(2137.91, dt[1:2, paste(names(.SD), 'max', sep = '_') := lapply(.SD, max), by = grp], data.table(a = 1:3, b = 5:7, grp = c('a', 'a', 'b'), a_max = c(2L, 2L, NA_integer_), b_max = c(6L, 6L, NA_integer_)))
+test(2137.92, dt[, names(.SD(2)) := lapply(.SD, .I)], error = "could not find function \".SD\"")

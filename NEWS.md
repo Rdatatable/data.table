@@ -79,7 +79,9 @@ unit = "s")
 
 13. New symbol `.NGRP` available in `j`, [#1206](https://github.com/Rdatatable/data.table/issues/1206). `.GRP` (the group number) was already available taking values from `1` to `.NGRP`. The number of groups, `.NGRP`, might be useful in `j` to calculate a percentage of groups processed so far, or to do something different for the last or penultimate group, for example.
 
-14. Using `dt[, names(.SD) := lapply(.SD, fx)]` now works, [#795](https://github.com/Rdatatable/data.table/issues/795) -- one of our [most-requested issues (see #3189)](https://github.com/Rdatatable/data.table/issues/3189). Thanks to @brodieG for the report and @ColeMiller1 for PR.
+14. Added support for `round()` and `trunc()` to extend functionality of `ITime`. `round()` and `trunc()` can be used with argument units: "hours" or "minutes". Thanks to @JensPederM for the suggestion and PR.
+
+15. Using `dt[, names(.SD) := lapply(.SD, fx)]` now works, [#795](https://github.com/Rdatatable/data.table/issues/795) -- one of our [most-requested issues (see #3189)](https://github.com/Rdatatable/data.table/issues/3189). Thanks to @brodieG for the report and @ColeMiller1 for PR.
 
 ## BUG FIXES
 
@@ -100,6 +102,12 @@ unit = "s")
 8. An `fwrite` error message could include a garbled number and cause test 1737.5 to fail, [#3492](https://github.com/Rdatatable/data.table/issues/3492). Thanks to @QuLogic for debugging the issue on ARMv7hl, and the PR fixing it.
 
 9. `fread` improves handling of very small (<1e-300) or very large (>1e+300) floating point numbers on non-x86 architectures (specifically ppc64le and armv7hl). Thanks to @QuLogic for reporting and fixing, [PR#4165](https://github.com/Rdatatable/data.table/pull/4165).
+
+10. When updating by reference, the use of `get` could result in columns being re-ordered silently, [#4089](https://github.com/Rdatatable/data.table/issues/4089). Thanks to @dmongin for reporting and Cole Miller for the fix.
+
+11. `copy()` now overallocates deeply nested lists of `data.table`s, [#4205](https://github.com/Rdatatable/data.table/issues/4205). Thanks to @d-sci for reporting and the PR.
+
+12. `rbindlist` no longer errors when coercing complex vectors to character vectors, [#4202](https://github.com/Rdatatable/data.table/issues/4202). Thanks to @sritchie73 for reporting and the PR.
 
 ## NOTES
 

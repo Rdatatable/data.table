@@ -973,7 +973,33 @@ replace_dot_alias = function(e) {
         }
         # fix for long standing FR/bug, #495 and #484
         allcols = c(names_x, xdotprefix, names_i, idotprefix)
-        if ( length(non_sdvars <- setdiff(intersect(av, allcols), c(bynames, ansvars))) ) {
+        non_sdvars = setdiff(intersect(av, allcols), c(bynames, ansvars))
+
+        # added 'mget' - fix for #994
+        if (any(c("get", "mget") %chin% av)){
+          if (verbose)
+            cat(gettextf("'(m)get' found in j. ansvars being set to all columns. Use .SDcols or a single j=eval(macro) instead. Both will detect the columns used which is important for efficiency.\nOld ansvars: %s \n", brackify(ansvars), domain = "R-data.table"))
+            # get('varname') is too difficult to detect which columns are used in general
+            # eval(macro) column names are detected via the  if jsub[[1]]==eval switch earlier above.
+
+          # Do not include z in .SD when dt[, z := {.SD; get("x")}, .SDcols = "y"] (#2326, #2338)
+          if (jsub %iscall% ":=" && is.symbol(jsub[[2L]])) {
+            jsub_lhs_symbol = as.character(jsub[[2L]])
+            if (jsub_lhs_symbol %chin% non_sdvars) {
+              sdvars = setdiff(sdvars, jsub_lhs_symbol)
+            }
+          }
+
+          if (missing(.SDcols)) {
+            ansvars = setdiff(allcols, bynames) # fix for bug #34
+          } else {
+            # fixes #4089 - if .SDcols was already evaluated, we do not want the order of the columns to change.
+            ansvars = union(ansvars, setdiff(setdiff(allcols, ansvars), bynames))
+          }
+          non_sdvars = setdiff(ansvars, sdvars)
+          ansvals = chmatch(ansvars, names_x)
+          if (verbose) cat(gettextf("New ansvars: %s \n", brackify(ansvars), domain = "R-data.table"))
+        } else if (length(non_sdvars)) {
           # we've a situation like DT[, c(sum(V1), lapply(.SD, mean)), by=., .SDcols=...] or
           # DT[, lapply(.SD, function(x) x *v1), by=, .SDcols=...] etc.,
           ansvars = union(ansvars, non_sdvars)
@@ -992,29 +1018,6 @@ replace_dot_alias = function(e) {
         ansvals = chmatch(ansvars, names_x)
       }
       # if (!length(ansvars)) Leave ansvars empty. Important for test 607.
-
-      # TODO remove as (m)get is now folded in above.
-      # added 'mget' - fix for #994
-      if (any(c("get", "mget") %chin% av)) {
-        if (verbose) {
-          cat("'(m)get' found in j. ansvars being set to all columns. Use .SDcols or a single j=eval(macro) instead. Both will detect the columns used which is important for efficiency.\nOld:", paste(ansvars,collapse=","),"\n")
-          # get('varname') is too difficult to detect which columns are used in general
-          # eval(macro) column names are detected via the  if jsub[[1]]==eval switch earlier above.
-        }
-
-        # Do not include z in .SD when dt[, z := {.SD; get("x")}, .SDcols = "y"] (#2326, #2338)
-        if (jsub %iscall% ':=' && is.symbol(jsub[[2L]])) {
-          jsub_lhs_symbol = as.character(jsub[[2L]])
-            if (jsub_lhs_symbol %chin% non_sdvars) {
-            sdvars = setdiff(sdvars, jsub_lhs_symbol)
-          }
-        }
-        allcols = c(names_x, xdotprefix, names_i, idotprefix)
-        ansvars = setdiff(allcols, bynames) # fix for bug #34
-        non_sdvars = setdiff(ansvars, sdvars)
-        ansvals = chmatch(ansvars, names_x)
-        if (verbose) cat("New:",paste(ansvars,collapse=","),"\n")
-      }
 
       lhs = NULL
       newnames = NULL
@@ -2348,21 +2351,18 @@ copy = function(x) {
   newx = .Call(Ccopy,x)  # copies at length but R's duplicate() also copies truelength over.
                          # TO DO: inside Ccopy it could reset tl to 0 or length, but no matter as selfrefok detects it
                          # TO DO: revisit duplicate.c in R 3.0.3 and see where it's at
-  if (!is.data.table(x)) {
-    # fix for #1476. TODO: find if a cleaner fix is possible..
-    if (is.list(x)) {
-      anydt = vapply_1b(x, is.data.table, use.names=FALSE)
-      if (sum(anydt)) {
-        newx[anydt] = lapply(newx[anydt], function(x) {
-          .Call(C_unlock, x)
-          setalloccol(x)
-        })
-      }
+
+  reallocate = function(y) {
+    if (is.data.table(y)) {
+      .Call(C_unlock, y)
+      setalloccol(y)
+    } else if (is.list(y)) {
+      y[] = lapply(y, reallocate)
     }
-    return(newx)   # e.g. in as.data.table.list() the list is copied before changing to data.table
+    y
   }
-  .Call(C_unlock, newx)
-  setalloccol(newx)
+
+  reallocate(newx)
 }
 
 .shallow = function(x, cols = NULL, retain.key = FALSE, unlock = FALSE) {
