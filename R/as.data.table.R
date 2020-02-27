@@ -152,7 +152,9 @@ as.data.table.list = function(x,
   ncol = sum(eachncol)  # hence removes NULL items silently (no error or warning), #842.
   if (ncol==0L) return(null.data.table())
   nrow = max(eachnrow)
-  if (any(eachnrow==0L) && all(eachnrow<=1L)) nrow = 0L
+  # only check the atomic and nonNULL type because NULL will be ignored while non-atomic (e.g., list) is always recycled
+  atomic_nonnull = vapply(x, function(xi) is.atomic(xi) && !is.null(xi), TRUE)
+  if (any(eachnrow[atomic_nonnull]==0L) && all(eachnrow<=1L)) nrow = 0L
   ans = vector("list",ncol)  # always return a new VECSXP
   recycle = function(x, nrow) {
     if (length(x)==nrow) {
