@@ -152,6 +152,7 @@ as.data.table.list = function(x,
   ncol = sum(eachncol)  # hence removes NULL items silently (no error or warning), #842.
   if (ncol==0L) return(null.data.table())
   nrow = max(eachnrow)
+  if (any(eachnrow==0L) && all(eachnrow<=1L)) nrow = 0L
   ans = vector("list",ncol)  # always return a new VECSXP
   recycle = function(x, nrow) {
     if (length(x)==nrow) {
