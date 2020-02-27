@@ -16848,5 +16848,9 @@ A = data.table(A=as.complex(rep(NA, 5)))
 test(2138.4, rbind(A,B), data.table(A=c(as.character(A$A), B$A)))
 
 # fcase supports vector default values, #4258
-test(2139.1, fcase(c(TRUE, FALSE, NA, NA), 1:4, default = 11:14), c(1L, 12:14))
-test(2139.2, fcase(c(TRUE, FALSE, NA, NA), 1:4, default = 11:13), error = "Length of 'default' must be 1 or 4.")
+test(2139.1, fcase(c(TRUE, FALSE, NA, NA), 1:4, default = 11:13), error = "Length of 'default' must be 1 or 4.")
+test(2139.2, fcase(c(TRUE, FALSE, NA, NA), 1:4, default = 11:14), c(1L, 12:14)) # int
+test(2139.3, fcase(c(TRUE, FALSE, NA, NA), 1:4 + 0.1, default = 11:14 + 0.1), c(1L, 12:14) + 0.1) # double
+test(2139.4, fcase(c(TRUE, FALSE, NA, NA), as.character(1:4), default = as.character(11:14)), as.character(c(1L, 12:14))) # string
+test(2139.5, fcase(c(TRUE, FALSE, NA, NA), as.list(1:4), default = as.list(11:14)), as.list(c(1L, 12:14))) # list
+test(2139.6, fcase(c(TRUE, FALSE, NA, NA), (1:4)+1i, default = (11:14)+1i), c(1L, 12:14)+1i) # complex
