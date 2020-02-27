@@ -160,7 +160,7 @@ SEXP fcaseR(SEXP na, SEXP rho, SEXP args) {
   PROTECT_WITH_INDEX(cons, &Icons); nprotect++;
   PROTECT_WITH_INDEX(outs, &Iouts); nprotect++;
   SEXPTYPE type0;
-  bool nonna = !isNull(na), imask = true, scalarna = xlength(na) == 1;;
+  bool nonna = !isNull(na), imask = true, scalarna = xlength(na) == 1;
   int *restrict p = NULL;
   n = n/2;
   for (int i=0; i<n; ++i) {
