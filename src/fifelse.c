@@ -160,7 +160,7 @@ SEXP fcaseR(SEXP na, SEXP rho, SEXP args) {
   PROTECT_WITH_INDEX(cons, &Icons); nprotect++;
   PROTECT_WITH_INDEX(outs, &Iouts); nprotect++;
   SEXPTYPE type0;
-  bool nonna = !isNull(na), imask = true;
+  bool nonna = !isNull(na), imask = true, scalarna = xlength(na) == 1;;
   int *restrict p = NULL;
   n = n/2;
   for (int i=0; i<n; ++i) {
@@ -179,11 +179,11 @@ SEXP fcaseR(SEXP na, SEXP rho, SEXP args) {
       type0 = TYPEOF(outs);
       value0 = outs;
       if (nonna) {
-        if (xlength(na) != 1) {
-          error("Length of 'default' must be 1.");
+        if (!scalarna && xlength(na) != len0) {
+          error("Length of 'default' must be 1 or %d.", len0);
         }
         SEXPTYPE tn = TYPEOF(na);
-        if (tn == LGLSXP && LOGICAL(na)[0]==NA_LOGICAL) {
+        if (tn == LGLSXP && scalarna && LOGICAL(na)[0]==NA_LOGICAL) {
           nonna = false;
         } else {
           if (tn != type0) {
@@ -241,14 +241,14 @@ SEXP fcaseR(SEXP na, SEXP rho, SEXP args) {
     case LGLSXP: {
       const int *restrict pouts = LOGICAL(outs);
       int *restrict pans = LOGICAL(ans);
-      const int pna = nonna ? LOGICAL(na)[0] : NA_LOGICAL;
       for (int64_t j=0; j<len2; ++j) {
         idx = imask ? j : p[j];
         if (pcons[idx]==1) {
           pans[idx] = pouts[idx & amask];
         } else {
           if (imask) {
-            pans[j] = pna;
+            const int pna = LOGICAL(na)[scalarna?0:j];
+            pans[j] = nonna ? pna : NA_LOGICAL;;
           }
           p[l++] = idx;
         }
@@ -257,13 +257,13 @@ SEXP fcaseR(SEXP na, SEXP rho, SEXP args) {
     case INTSXP: {
       const int *restrict pouts = INTEGER(outs);
       int *restrict pans = INTEGER(ans);
-      const int pna = nonna ? INTEGER(na)[0] : NA_INTEGER;
       for (int64_t j=0; j<len2; ++j) {
         idx = imask ? j : p[j];
         if (pcons[idx]==1) {
           pans[idx] = pouts[idx & amask];
         } else {
           if (imask) {
+            const int pna = nonna ? INTEGER(na)[scalarna?0:j] : NA_INTEGER;
             pans[j] = pna;
           }
           p[l++] = idx;
@@ -274,13 +274,13 @@ SEXP fcaseR(SEXP na, SEXP rho, SEXP args) {
       const double *restrict pouts = REAL(outs);
       double *restrict pans = REAL(ans);
       const double na_double = Rinherits(outs, char_integer64) ? NA_INT64_D : NA_REAL;
-      const double pna = nonna ? REAL(na)[0] : na_double;
       for (int64_t j=0; j<len2; ++j) {
         idx = imask ? j : p[j];
         if (pcons[idx]==1) {
           pans[idx] = pouts[idx & amask];
         } else {
           if (imask) {
+            const double pna = nonna ? REAL(na)[scalarna?0:j] : na_double;
             pans[j] = pna;
           }
           p[l++] = idx;
@@ -290,13 +290,13 @@ SEXP fcaseR(SEXP na, SEXP rho, SEXP args) {
     case CPLXSXP: {
       const Rcomplex *restrict pouts = COMPLEX(outs);
       Rcomplex *restrict pans = COMPLEX(ans);
-      const Rcomplex pna = nonna ? COMPLEX(na)[0] : NA_CPLX;
       for (int64_t j=0; j<len2; ++j) {
         idx = imask ? j : p[j];
         if (pcons[idx]==1) {
           pans[idx] = pouts[idx & amask];
         } else {
           if (imask) {
+            const Rcomplex pna = nonna ? COMPLEX(na)[scalarna?0:j] : NA_CPLX;
             pans[j] = pna;
           }
           p[l++] = idx;
@@ -305,13 +305,13 @@ SEXP fcaseR(SEXP na, SEXP rho, SEXP args) {
     } break;
     case STRSXP: {
       const SEXP *restrict pouts = STRING_PTR(outs);
-      const SEXP pna = nonna ? STRING_PTR(na)[0] : NA_STRING;
       for (int64_t j=0; j<len2; ++j) {
         idx = imask ? j : p[j];
         if (pcons[idx]==1) {
           SET_STRING_ELT(ans, idx, pouts[idx & amask]);
         } else {
           if (imask) {
+            const SEXP pna = nonna ? STRING_PTR(na)[scalarna?0:j] : NA_STRING;
             SET_STRING_ELT(ans, idx, pna);
           }
           p[l++] = idx;
@@ -320,13 +320,13 @@ SEXP fcaseR(SEXP na, SEXP rho, SEXP args) {
     } break;
     case VECSXP: {
       const SEXP *restrict pouts = SEXPPTR_RO(outs);
-      const SEXP pna = SEXPPTR_RO(na)[0];
       for (int64_t j=0; j<len2; ++j) {
         idx = imask ? j : p[j];
         if (pcons[idx]==1) {
           SET_VECTOR_ELT(ans, idx, pouts[idx & amask]);
         } else {
           if (imask && nonna) {
+            const SEXP pna = SEXPPTR_RO(na)[scalarna?0:j];
             SET_VECTOR_ELT(ans, idx, pna);
           }
           p[l++] = idx;
