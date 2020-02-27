@@ -81,6 +81,8 @@ unit = "s")
 
 14. Added support for `round()` and `trunc()` to extend functionality of `ITime`. `round()` and `trunc()` can be used with argument units: "hours" or "minutes". Thanks to @JensPederM for the suggestion and PR.
 
+15. `as.data.table.list` now always recyles the scalar when only scalar and zero-length atomic vector exists. It means that `data.table(A = 1, B = double())` now returns a zero-row data.table object and `DT[J(character(), 1), VALUE]` returns a zero-length vector, which are expected in most cases, [#3727](https://github.com/Rdatatable/data.table/issues/3727). Thanks to @shrektan for the suggestion and PR.
+
 ## BUG FIXES
 
 1. A NULL timezone on POSIXct was interpreted by `as.IDate` and `as.ITime` as UTC rather than the session's default timezone (`tz=""`) , [#4085](https://github.com/Rdatatable/data.table/issues/4085).
