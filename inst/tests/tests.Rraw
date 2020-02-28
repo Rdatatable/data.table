@@ -16821,10 +16821,10 @@ cols = c('x', 'y')
 test(2136, dt[, (cols) := lapply(.SD[get("x") == 1],function(x){x + 2L}), .SDcols = cols ,by = z], data.table(x = 1L + 2L, y = 2L + 2L, z = 3L))
 
 # round, trunc should all be 'integer' and and have class 'ITime', #4207
-DT = data.table(hour31   = as.ITime(seq(as.POSIXct("2020-01-01 07:00:40", tz = "UTC"), by = "31 min", length.out = 9)),
-                hour30   = as.ITime(seq(as.POSIXct("2020-01-01 07:00:00", tz = "UTC"), by = "30 min", length.out = 9)),
-                minute31 = as.ITime(seq(as.POSIXct("2020-01-01 07:00:00", tz = "UTC"), by = "31 sec", length.out = 9)),
-                minute30 = as.ITime(seq(as.POSIXct("2020-01-01 07:00:00", tz = "UTC"), by = "30 sec", length.out = 9)))
+DT = data.table(hour31   = as.ITime(seq(as.POSIXct("2020-01-01 07:00:40"), by = "31 min", length.out = 9)),
+                hour30   = as.ITime(seq(as.POSIXct("2020-01-01 07:00:00"), by = "30 min", length.out = 9)),
+                minute31 = as.ITime(seq(as.POSIXct("2020-01-01 07:00:00"), by = "31 sec", length.out = 9)),
+                minute30 = as.ITime(seq(as.POSIXct("2020-01-01 07:00:00"), by = "30 sec", length.out = 9)))
 test(2137.01, TRUE, DT[, all(sapply(.SD, class) == "ITime")])
 test(2137.02, TRUE, DT[, all(sapply(.SD, typeof) == "integer")])
 test(2137.03, FALSE, DT[, all(round(hour30, "hours") == as.ITime(c("07:00", "08:00", "08:00", "09:00", "09:00", "10:00", "10:00", "11:00", "11:00")))])
