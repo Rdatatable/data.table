@@ -154,13 +154,13 @@ SEXP fcaseR(SEXP na, SEXP rho, SEXP args) {
               "Note that the default argument must be named explicitly, e.g., default=0"), n);
   }
   int nprotect = 0, l = 0;
-  int64_t len0=0, len1=0, len2=0, idx=0;
+  int64_t len0=0, len1=0, len2=0, idx=0, lena = xlength(na);
   SEXP ans = R_NilValue, value0 = R_NilValue, tracker = R_NilValue, cons = R_NilValue, outs = R_NilValue;
   PROTECT_INDEX Icons, Iouts;
   PROTECT_WITH_INDEX(cons, &Icons); nprotect++;
   PROTECT_WITH_INDEX(outs, &Iouts); nprotect++;
   SEXPTYPE type0;
-  bool nonna = !isNull(na), imask = true, scalarna = xlength(na) == 1;
+  bool nonna = !isNull(na), imask = true, amask = false;
   int *restrict p = NULL;
   n = n/2;
   for (int i=0; i<n; ++i) {
@@ -178,35 +178,40 @@ SEXP fcaseR(SEXP na, SEXP rho, SEXP args) {
       len2 = len0;
       type0 = TYPEOF(outs);
       value0 = outs;
+      amask = lena != len0;
       if (nonna) {
-        if (!scalarna && xlength(na) != len0) {
-          error(_("Length of 'default' must be 1 or %d."), len0);
+        if (lena != 1 && amask) {
+          error(_("Length of 'default' must be 1 or %"PRId64"."), len0);
         }
         SEXPTYPE tn = TYPEOF(na);
-        if (tn == LGLSXP && scalarna && LOGICAL(na)[0]==NA_LOGICAL) {
+        if (tn == LGLSXP && LOGICAL(na)[0]==NA_LOGICAL && lena==1) {
           nonna = false;
         } else {
           if (tn != type0) {
             error(_("Resulting value is of type %s but 'default' is of type %s. "
                       "Please make sure that both arguments have the same type."), type2char(type0), type2char(tn));
           }
-          if (!R_compute_identical(PROTECT(getAttrib(outs,R_ClassSymbol)),  PROTECT(getAttrib(na,R_ClassSymbol)), 0)) {
+          if (!R_compute_identical(PROTECT(getAttrib(outs,R_ClassSymbol)), PROTECT(getAttrib(na,R_ClassSymbol)), 0)) {
             error(_("Resulting value has different class than 'default'. "
                       "Please make sure that both arguments have the same class."));
           }
           UNPROTECT(2);
           if (isFactor(outs)) {
-            if (!R_compute_identical(PROTECT(getAttrib(outs,R_LevelsSymbol)),  PROTECT(getAttrib(na,R_LevelsSymbol)), 0)) {
+            if (!R_compute_identical(PROTECT(getAttrib(outs,R_LevelsSymbol)), PROTECT(getAttrib(na,R_LevelsSymbol)), 0)) {
               error(_("Resulting value and 'default' are both type factor but their levels are different."));
             }
             UNPROTECT(2);
           }
         }
       }
-      ans = PROTECT(allocVector(type0, len0)); nprotect++;
-      tracker = PROTECT(allocVector(INTSXP, len0)); nprotect++;
-      p = INTEGER(tracker);
+      if (lena == len0 && nonna) {
+        ans = PROTECT(duplicate(na)); nprotect++;
+      } else {
+        ans = PROTECT(allocVector(type0, len0)); nprotect++;
+      }
       copyMostAttrib(outs, ans);
+      tracker = PROTECT(allocVector(INTSXP, len0)); nprotect++;
+      p = INTEGER(tracker);     
     } else {
       imask = false;
       l = 0;
@@ -241,14 +246,14 @@ SEXP fcaseR(SEXP na, SEXP rho, SEXP args) {
     case LGLSXP: {
       const int *restrict pouts = LOGICAL(outs);
       int *restrict pans = LOGICAL(ans);
+      const int pna = nonna ? LOGICAL(na)[0] : NA_LOGICAL;
       for (int64_t j=0; j<len2; ++j) {
         idx = imask ? j : p[j];
         if (pcons[idx]==1) {
           pans[idx] = pouts[idx & amask];
         } else {
-          if (imask) {
-            const int pna = LOGICAL(na)[scalarna?0:j];
-            pans[j] = nonna ? pna : NA_LOGICAL;;
+          if (imask && amask) {
+            pans[j] = pna;
           }
           p[l++] = idx;
         }
@@ -257,13 +262,13 @@ SEXP fcaseR(SEXP na, SEXP rho, SEXP args) {
     case INTSXP: {
       const int *restrict pouts = INTEGER(outs);
       int *restrict pans = INTEGER(ans);
+      const int pna = nonna ? INTEGER(na)[0] : NA_INTEGER;
       for (int64_t j=0; j<len2; ++j) {
         idx = imask ? j : p[j];
         if (pcons[idx]==1) {
           pans[idx] = pouts[idx & amask];
         } else {
-          if (imask) {
-            const int pna = nonna ? INTEGER(na)[scalarna?0:j] : NA_INTEGER;
+          if (imask && amask) {
             pans[j] = pna;
           }
           p[l++] = idx;
@@ -274,13 +279,13 @@ SEXP fcaseR(SEXP na, SEXP rho, SEXP args) {
       const double *restrict pouts = REAL(outs);
       double *restrict pans = REAL(ans);
       const double na_double = Rinherits(outs, char_integer64) ? NA_INT64_D : NA_REAL;
+      const double pna = nonna ? REAL(na)[0] : na_double;
       for (int64_t j=0; j<len2; ++j) {
         idx = imask ? j : p[j];
         if (pcons[idx]==1) {
           pans[idx] = pouts[idx & amask];
         } else {
-          if (imask) {
-            const double pna = nonna ? REAL(na)[scalarna?0:j] : na_double;
+          if (imask && amask) {
             pans[j] = pna;
           }
           p[l++] = idx;
@@ -290,13 +295,13 @@ SEXP fcaseR(SEXP na, SEXP rho, SEXP args) {
     case CPLXSXP: {
       const Rcomplex *restrict pouts = COMPLEX(outs);
       Rcomplex *restrict pans = COMPLEX(ans);
+      const Rcomplex pna = nonna ? COMPLEX(na)[0] : NA_CPLX;
       for (int64_t j=0; j<len2; ++j) {
         idx = imask ? j : p[j];
         if (pcons[idx]==1) {
           pans[idx] = pouts[idx & amask];
         } else {
-          if (imask) {
-            const Rcomplex pna = nonna ? COMPLEX(na)[scalarna?0:j] : NA_CPLX;
+          if (imask && amask) {
             pans[j] = pna;
           }
           p[l++] = idx;
@@ -305,13 +310,13 @@ SEXP fcaseR(SEXP na, SEXP rho, SEXP args) {
     } break;
     case STRSXP: {
       const SEXP *restrict pouts = STRING_PTR(outs);
+      const SEXP pna = nonna ? STRING_PTR(na)[0] : NA_STRING;
       for (int64_t j=0; j<len2; ++j) {
         idx = imask ? j : p[j];
         if (pcons[idx]==1) {
           SET_STRING_ELT(ans, idx, pouts[idx & amask]);
         } else {
-          if (imask) {
-            const SEXP pna = nonna ? STRING_PTR(na)[scalarna?0:j] : NA_STRING;
+          if (imask && amask) {
             SET_STRING_ELT(ans, idx, pna);
           }
           p[l++] = idx;
@@ -320,13 +325,13 @@ SEXP fcaseR(SEXP na, SEXP rho, SEXP args) {
     } break;
     case VECSXP: {
       const SEXP *restrict pouts = SEXPPTR_RO(outs);
+      const SEXP pna = SEXPPTR_RO(na)[0];
       for (int64_t j=0; j<len2; ++j) {
         idx = imask ? j : p[j];
         if (pcons[idx]==1) {
           SET_VECTOR_ELT(ans, idx, pouts[idx & amask]);
         } else {
-          if (imask && nonna) {
-            const SEXP pna = SEXPPTR_RO(na)[scalarna?0:j];
+          if (imask && nonna && amask) {
             SET_VECTOR_ELT(ans, idx, pna);
           }
           p[l++] = idx;
