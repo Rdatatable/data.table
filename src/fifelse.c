@@ -215,9 +215,9 @@ SEXP fcaseR(SEXP na, SEXP rho, SEXP args) {
     } else {
       imask = false;
       l = 0;
-      if (xlength(cons) != len0) {
+      if (xlength(cons) != len0 && xlength(cons) != 1) {
         error(_("Argument #%d has a different length than argument #1. "
-                  "Please make sure all logical conditions have the same length."),
+                  "Please make sure all logical conditions have the same length or length 1."),
                   i*2+1);
       }
       if (TYPEOF(outs) != type0) {
@@ -241,7 +241,7 @@ SEXP fcaseR(SEXP na, SEXP rho, SEXP args) {
     if (len1 != len0 && len1 != 1) {
       error(_("Length of output value #%d must either be 1 or length of logical condition."), i*2+2);
     }
-    int64_t amask = len1>1 ? INT64_MAX : 0;
+    int64_t amask = len1>1 ? INT64_MAX : 0, conmask = xlength(cons)>1 ? INT64_MAX : 0;
     switch(TYPEOF(outs)) {
     case LGLSXP: {
       const int *restrict pouts = LOGICAL(outs);
@@ -249,7 +249,7 @@ SEXP fcaseR(SEXP na, SEXP rho, SEXP args) {
       const int pna = nonna ? LOGICAL(na)[0] : NA_LOGICAL;
       for (int64_t j=0; j<len2; ++j) {
         idx = imask ? j : p[j];
-        if (pcons[idx]==1) {
+        if (pcons[idx & conmask]==1) {
           pans[idx] = pouts[idx & amask];
         } else {
           if (imask && namask) {
@@ -265,7 +265,7 @@ SEXP fcaseR(SEXP na, SEXP rho, SEXP args) {
       const int pna = nonna ? INTEGER(na)[0] : NA_INTEGER;
       for (int64_t j=0; j<len2; ++j) {
         idx = imask ? j : p[j];
-        if (pcons[idx]==1) {
+        if (pcons[idx & conmask]==1) {
           pans[idx] = pouts[idx & amask];
         } else {
           if (imask && namask) {
@@ -282,7 +282,7 @@ SEXP fcaseR(SEXP na, SEXP rho, SEXP args) {
       const double pna = nonna ? REAL(na)[0] : na_double;
       for (int64_t j=0; j<len2; ++j) {
         idx = imask ? j : p[j];
-        if (pcons[idx]==1) {
+        if (pcons[idx & conmask]==1) {
           pans[idx] = pouts[idx & amask];
         } else {
           if (imask && namask) {
@@ -298,7 +298,7 @@ SEXP fcaseR(SEXP na, SEXP rho, SEXP args) {
       const Rcomplex pna = nonna ? COMPLEX(na)[0] : NA_CPLX;
       for (int64_t j=0; j<len2; ++j) {
         idx = imask ? j : p[j];
-        if (pcons[idx]==1) {
+        if (pcons[idx & conmask]==1) {
           pans[idx] = pouts[idx & amask];
         } else {
           if (imask && namask) {
@@ -313,7 +313,7 @@ SEXP fcaseR(SEXP na, SEXP rho, SEXP args) {
       const SEXP pna = nonna ? STRING_PTR(na)[0] : NA_STRING;
       for (int64_t j=0; j<len2; ++j) {
         idx = imask ? j : p[j];
-        if (pcons[idx]==1) {
+        if (pcons[idx & conmask]==1) {
           SET_STRING_ELT(ans, idx, pouts[idx & amask]);
         } else {
           if (imask && namask) {
@@ -328,7 +328,7 @@ SEXP fcaseR(SEXP na, SEXP rho, SEXP args) {
       const SEXP pna = SEXPPTR_RO(na)[0];
       for (int64_t j=0; j<len2; ++j) {
         idx = imask ? j : p[j];
-        if (pcons[idx]==1) {
+        if (pcons[idx & conmask]==1) {
           SET_VECTOR_ELT(ans, idx, pouts[idx & amask]);
         } else {
           if (imask && nonna && namask) {
