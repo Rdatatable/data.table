@@ -335,7 +335,7 @@ SEXP fcaseR(SEXP rho, SEXP args) {
       }
     } break;
     default:
-      error(_("Type %s is not supported."), type2char(TYPEOF(outs)));
+      error(_("Type %s is not supported."), type2char(TYPEOF(ans)));
     }
     if (l==0) {
       break;
