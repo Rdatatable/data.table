@@ -160,7 +160,7 @@ SEXP fcaseR(SEXP na, SEXP rho, SEXP args) {
   PROTECT_WITH_INDEX(cons, &Icons); nprotect++;
   PROTECT_WITH_INDEX(outs, &Iouts); nprotect++;
   SEXPTYPE type0;
-  bool nonna = !isNull(na), imask = true, amask = false;
+  bool nonna = !isNull(na), imask = true, namask = false;
   int *restrict p = NULL;
   n = n/2;
   for (int i=0; i<n; ++i) {
@@ -178,9 +178,9 @@ SEXP fcaseR(SEXP na, SEXP rho, SEXP args) {
       len2 = len0;
       type0 = TYPEOF(outs);
       value0 = outs;
-      amask = lena != len0;
+      namask = lena != len0;
       if (nonna) {
-        if (lena != 1 && amask) {
+        if (lena != 1 && namask) {
           error(_("Length of 'default' must be 1 or %"PRId64"."), len0);
         }
         SEXPTYPE tn = TYPEOF(na);
@@ -252,7 +252,7 @@ SEXP fcaseR(SEXP na, SEXP rho, SEXP args) {
         if (pcons[idx]==1) {
           pans[idx] = pouts[idx & amask];
         } else {
-          if (imask && amask) {
+          if (imask && namask) {
             pans[j] = pna;
           }
           p[l++] = idx;
@@ -268,7 +268,7 @@ SEXP fcaseR(SEXP na, SEXP rho, SEXP args) {
         if (pcons[idx]==1) {
           pans[idx] = pouts[idx & amask];
         } else {
-          if (imask && amask) {
+          if (imask && namask) {
             pans[j] = pna;
           }
           p[l++] = idx;
@@ -285,7 +285,7 @@ SEXP fcaseR(SEXP na, SEXP rho, SEXP args) {
         if (pcons[idx]==1) {
           pans[idx] = pouts[idx & amask];
         } else {
-          if (imask && amask) {
+          if (imask && namask) {
             pans[j] = pna;
           }
           p[l++] = idx;
@@ -301,7 +301,7 @@ SEXP fcaseR(SEXP na, SEXP rho, SEXP args) {
         if (pcons[idx]==1) {
           pans[idx] = pouts[idx & amask];
         } else {
-          if (imask && amask) {
+          if (imask && namask) {
             pans[j] = pna;
           }
           p[l++] = idx;
@@ -316,7 +316,7 @@ SEXP fcaseR(SEXP na, SEXP rho, SEXP args) {
         if (pcons[idx]==1) {
           SET_STRING_ELT(ans, idx, pouts[idx & amask]);
         } else {
-          if (imask && amask) {
+          if (imask && namask) {
             SET_STRING_ELT(ans, idx, pna);
           }
           p[l++] = idx;
@@ -331,7 +331,7 @@ SEXP fcaseR(SEXP na, SEXP rho, SEXP args) {
         if (pcons[idx]==1) {
           SET_VECTOR_ELT(ans, idx, pouts[idx & amask]);
         } else {
-          if (imask && nonna && amask) {
+          if (imask && nonna && namask) {
             SET_VECTOR_ELT(ans, idx, pna);
           }
           p[l++] = idx;
