@@ -188,8 +188,7 @@ shouldPrint = function(x) {
 # for removing the head (column names) of matrix output entirely,
 #   as opposed to printing a blank line, for excluding col.names per PR #1483
 # be sure to remove colnames from any row where they exist, #4270
-cut_colnames = function(x)
-  cat(grep("^\\s*(?:[0-9]+:|---)", capture.output(x), value = TRUE), sep = '\n')
+cut_colnames = function(x) cat(grep("^\\s*(?:[0-9]+:|---)", capture.output(x), value = TRUE), sep = '\n')
 
 # for printing the dims for list columns #3671; used by format.data.table()
 paste_dims = function(x) {
