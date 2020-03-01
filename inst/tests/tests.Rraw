@@ -16558,8 +16558,6 @@ t0 = as.POSIXct('2019-10-01')
 test(2124.1, format(as.ITime(t0)), '00:00:00')
 test(2124.2, format(as.IDate(t0)), '2019-10-01')
 Sys.setenv(TZ=oldtz)
-# This line is necessary due to a bug of R on macOS. Otherwise, `as.POSIXct()` will produce unexpected results. See https://github.com/Rdatatable/data.table/pull/4261#issuecomment-592484510 for details.
-as.POSIXct("2020-01-01 07:00:40", tz = Sys.timezone())
 
 # trunc.cols in print.data.table, #4074
 old_width = options("width" = 40)
