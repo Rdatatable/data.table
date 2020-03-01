@@ -25,7 +25,7 @@ merge.data.table = function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FAL
   nm_x = names(x)
   nm_y = names(y)
   if (anyDuplicated(nm_x)) stop(gettextf("%s has some duplicated column name(s): %s. Please remove or rename the duplicate(s) and try again.", "x", brackify(nm_x[duplicated(nm_x)]), domain="R-data.table"))
-  if (anyDuplicated(names(y))) stop(gettextf("%s has some duplicated column name(s): %s. Please remove or rename the duplicate(s) and try again.", "y", brackify(nm_y[duplicated(nm_y)]), domain="R-data.table"))
+  if (anyDuplicated(nm_y)) stop(gettextf("%s has some duplicated column name(s): %s. Please remove or rename the duplicate(s) and try again.", "y", brackify(nm_y[duplicated(nm_y)]), domain="R-data.table"))
 
   ## set up 'by'/'by.x'/'by.y'
   if ( (!is.null(by.x) || !is.null(by.y)) && length(by.x)!=length(by.y) )
