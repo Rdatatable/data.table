@@ -20,7 +20,7 @@ as.data.table.Date = as.data.table.ITime = function(x, keep.rownames=FALSE, key=
   tt = deparse(substitute(x))[1L]
   nm = names(x)
   # FR #2356 - transfer names of named vector as "rn" column if required
-  if (!identical(keep.rownames, FALSE) & !is.null(nm))
+  if (!identical(keep.rownames, FALSE) && !is.null(nm))
     x = list(nm, unname(x))
   else x = list(x)
   if (tt == make.names(tt)) {

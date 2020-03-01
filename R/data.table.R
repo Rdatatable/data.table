@@ -137,7 +137,7 @@ replace_dot_alias = function(e) {
         else if (missing(drop)) `[.data.frame`(x,i,j)
         else `[.data.frame`(x,i,j,drop)
     # added is.data.table(ans) check to fix bug #81
-    if (!missing(i) & is.data.table(ans)) setkey(ans,NULL)  # See test 304
+    if (!missing(i) && is.data.table(ans)) setkey(ans,NULL)  # See test 304
     return(ans)
   }
   if (!missing(verbose)) {
@@ -1598,7 +1598,8 @@ replace_dot_alias = function(e) {
                 jl__ = as.list(jsubl[[i_]])[-1L] # just keep the '.' from list(.)
                 jn__ = if (is.null(names(jl__))) rep("", length(jl__)) else names(jl__)
                 idx  = unlist(lapply(jl__, function(x) is.name(x) && x == ".I"))
-                if (any(idx)) jn__[idx & (jn__ == "")] = "I"
+                if (any(idx))
+                  jn__[idx & !nzchar(jn__)] = "I"
                 jvnames = c(jvnames, jn__)
                 jsubl[[i_]] = jl__
               }
