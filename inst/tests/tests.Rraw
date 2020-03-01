@@ -2310,8 +2310,8 @@ test(827.1, names(a[b]), c("User ID","Blah Blah","Yadda Yadda"))
 # setcolorder and merge check for dup column names, #2193(ii)
 setnames(DT2,"b","a")
 test(828, setcolorder(DT2,c("a","b")), error="x has some duplicated column name(s): a. Please remove or rename")
-test(829, merge(DT1,DT2), error="y has some duplicated column name(s): a. Please remove or rename")
-test(830, merge(DT2,DT1), error="x has some duplicated column name(s): a. Please remove or rename")
+test(829, merge(DT1,DT2), error="y has some duplicated column name(s): [a]. Please remove or rename")
+test(830, merge(DT2,DT1), error="x has some duplicated column name(s): [a]. Please remove or rename")
 
 # attribs such as "comments" should be retained, #2270
 DT1 <- data.table(id = seq.int(1, 10), A = LETTERS[1:10], key = "id")
@@ -8251,10 +8251,18 @@ DT2 = data.table(id1=c("c", "w", "b"), val=50:52)
 test(1600.2, names(DT1[DT2, .(id1=id1, val=val, bla=sum(z1, na.rm=TRUE)), on="id1"]), c("id1", "val", "bla"))
 
 # warn when merge empty data.table #597
-test(1601.1, merge(data.table(a=1),data.table(a=1), by="a"), data.table(a=1, key="a"))
-test(1601.2, tryCatch(merge(data.table(a=1),data.table(NULL), by="a"), warning = function(w) w$message), "You are trying to join data.tables where 'y' argument is 0 columns data.table.")
-test(1601.3, tryCatch(merge(data.table(NULL),data.table(a=1), by="a"), warning = function(w) w$message), "You are trying to join data.tables where 'x' argument is 0 columns data.table.")
-test(1601.4, tryCatch(merge(data.table(NULL),data.table(NULL), by="a"), warning = function(w) w$message), "You are trying to join data.tables where 'x' and 'y' arguments are 0 columns data.table.")
+DT0 = data.table(NULL)
+DT1 = data.table(a=1)
+test(1601.1, merge(DT1, DT1, by="a"), setkey(copy(DT1)))
+test(1601.2, merge(DT1, DT0, by="a"),
+     warning="You are trying to join data.tables where 'y' has 0 columns.",
+     error="Elements listed in `by`")
+test(1601.3, merge(DT0, DT1, by="a"),
+     warning="You are trying to join data.tables where 'x' has 0 columns.",
+     error="Elements listed in `by`")
+test(1601.4, merge(DT0, DT0, by="a"),
+     warning="You are trying to join data.tables where 'x' and 'y' have 0 columns.",
+     error="Elements listed in `by`")
 
 # fix for #1549
 d1 <- data.table(v1=1:2,x=x)
