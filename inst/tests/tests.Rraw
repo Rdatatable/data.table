@@ -15869,7 +15869,7 @@ test(2074.31, dcast(DT, V1 ~ z, fun.aggregate=eval(quote(length)), value.var='z'
 test(2074.32, fwrite(DT, logical01=TRUE, logicalAsInt=TRUE), error="logicalAsInt has been renamed")
 
 # merge.data.table
-test(2074.33, merge(DT, DT, by.x = 1i, by.y=1i), error="A non-empty vector of column names are required")
+test(2074.33, merge(DT, DT, by.x = 1i, by.y=1i), error="A non-empty vector of column names is required")
 
 # shift naming
 test(2074.34, shift(list(a=1:5, b=6:10), give.names=TRUE), list(a_lag_1=c(NA, 1:4), b_lag_1=c(NA, 6:9)))
@@ -16852,4 +16852,4 @@ A = data.table(A='a')
 B = data.table(B='b')
 test(2139.1, A[B, on=character(0)], error = "'on' argument should be a named atomic vector")
 test(2139.2, merge(A, B, by=character(0)                                     ), error = "non-empty vector of column names for `by` is required.")
-test(2139.3, merge(A, B,                 by.x=character(0), by.y=character(0)), error = "non-empty vector of column names are required")
+test(2139.3, merge(A, B,                 by.x=character(0), by.y=character(0)), error = "non-empty vector of column names is required")
