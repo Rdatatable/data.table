@@ -22,7 +22,7 @@ merge.data.table = function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FAL
     warning("Supplied both `by` and `by.x/by.y`. `by` argument will be ignored.")
   if (!is.null(by.x)) {
     if (length(by.x) == 0L || !is.character(by.x) || !is.character(by.y))
-      stop("A non-empty vector of column names are required for `by.x` and `by.y`.")
+      stop("A non-empty vector of column names is required for `by.x` and `by.y`.")
     if (!all(by.x %chin% names(x)))
       stop("Elements listed in `by.x` must be valid column names in x.")
     if (!all(by.y %chin% names(y)))
