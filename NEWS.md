@@ -107,7 +107,7 @@ unit = "s")
 
 12. `rbindlist` no longer errors when coercing complex vectors to character vectors, [#4202](https://github.com/Rdatatable/data.table/issues/4202). Thanks to @sritchie73 for reporting and the PR.
 
-13. `X[Y, on=character(0)]` and `merge(X, Y, by.x=character(0), by.y=character(0))` no longer crash. Thanks to @tlapak for the PR.
+13. `X[Y, on=character(0)]` and `merge(X, Y, by.x=character(0), by.y=character(0))` no longer crash, [#4272](https://github.com/Rdatatable/data.table/pull/4272). Thanks to @tlapak for the PR.
 
 ## NOTES
 
