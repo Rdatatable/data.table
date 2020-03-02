@@ -2457,14 +2457,14 @@ setattr = function(x,name,value) {
   invisible(x)
 }
 
-setlevels = function(x, old, new) {
+setlevels = function(x, old, new, skip_absent=FALSE) {
   if (missing(old)) {
     old = levels(x)
   }
   if (missing(new)) {
     stop("Argument 'new' is missing.")
   }
-  invisible(.Call(Csetlevels_impl, x, old, new))
+  invisible(.Call(Csetlevels_impl, x, old, new,skip_absent))
 }
 
 setnames = function(x,old,new,skip_absent=FALSE) {

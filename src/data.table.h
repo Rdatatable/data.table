@@ -245,3 +245,6 @@ SEXP testMsgR(SEXP status, SEXP x, SEXP k);
 //fifelse.c
 SEXP fifelseR(SEXP l, SEXP a, SEXP b, SEXP na);
 SEXP fcaseR(SEXP na, SEXP rho, SEXP args);
+
+// wrapper.c
+SEXP setlevels_impl(SEXP x, SEXP old_lvl, SEXP new_lvl, SEXP skip_absent);

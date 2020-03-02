@@ -54,26 +54,30 @@ SEXP setlevels(SEXP x, SEXP levels, SEXP ulevels) {
   return(x);
 }
 
-SEXP setlevels_impl(SEXP x, SEXP old_lvl, SEXP new_lvl) {
+SEXP setlevels_impl(SEXP x, SEXP old_lvl, SEXP new_lvl, SEXP skip_absent) {
+  if (!IS_TRUE_OR_FALSE(skip_absent)) {
+    error(_("Argument 'skip_absent' must be TRUE or FALSE and length 1."));
+  }
   if (any_duplicated(old_lvl, FALSE)) {
-    error("'old' has duplicated value. Please make sure no duplicated values are introduced.");
+    error(_("'old' has duplicated value. Please make sure no duplicated values are introduced."));
   }
   if (any_duplicated(new_lvl, FALSE)) {
-    error("'new' has duplicated value. Please make sure no duplicated values are introduced.");
+    error(_("'new' has duplicated value. Please make sure no duplicated values are introduced."));
   }
   if (!isFactor(x)) {
-    error("'setlevels' must be passed a factor.");
+    error(_("'setlevels' must be passed a factor."));
   }
   if (TYPEOF(old_lvl) != STRSXP) {
-    error("Type of 'old' must be character.");
+    error(_("Type of 'old' must be character."));
   }
   if (TYPEOF(new_lvl) != STRSXP) {
-    error("Type of 'new' must be character.");
+    error(_("Type of 'new' must be character."));
   }
   const int64_t nlvl = xlength(old_lvl);
   if (nlvl != xlength(new_lvl)) {
-    error("'old' and 'new' are not the same length.");
+    error(_("'old' and 'new' are not the same length."));
   }
+  const bool absent = !LOGICAL(skip_absent)[0];
   int nprotect = 0;
   SEXP xchar = PROTECT(getAttrib(x, R_LevelsSymbol)); nprotect++;
   const int64_t nx = xlength(xchar);
@@ -84,7 +88,9 @@ SEXP setlevels_impl(SEXP x, SEXP old_lvl, SEXP new_lvl) {
         goto label;
       }
     }
-    error("Element '%s' of 'old' does not exist in 'x'.", CHAR(STRING_ELT(old_lvl, j)));
+    if (absent) {
+      error(_("Element '%s' of 'old' does not exist in 'x'."), CHAR(STRING_ELT(old_lvl, j)));
+    }
     label:;
   }
   SEXP ans = PROTECT(duplicate(x)); nprotect++;

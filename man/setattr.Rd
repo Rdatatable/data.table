@@ -9,7 +9,7 @@
 \usage{
 setattr(x,name,value)
 setnames(x,old,new,skip_absent=FALSE)
-setlevels(x, old, new)
+setlevels(x,old,new,skip_absent=FALSE)
 }
 \arguments{
   \item{x}{ \code{setnames} accepts \code{data.frame} and \code{data.table}. \code{setattr} accepts any input; e.g, list, columns of a \code{data.frame} or \code{data.table}. \code{setlevels} is specific to factors.}
