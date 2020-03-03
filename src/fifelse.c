@@ -356,7 +356,7 @@ SEXP psumR(SEXP na, SEXP args) {
   SEXPTYPE anstype = TYPEOF(SEXPPTR_RO(args)[0]);
   const int64_t len0 = xlength(SEXPPTR_RO(args)[0]);
   if (anstype != INTSXP && anstype != REALSXP) {
-    error(_("Argument %d is of type %s. Only integer and double types are supported."), 2, type2char(anstype));
+    error(_("Argument %d is of type %s. Only integer and double types are supported."), 1, type2char(anstype));
   }
   for (int i = 1; i < n; ++i) {
     SEXPTYPE type = TYPEOF(SEXPPTR_RO(args)[i]);
@@ -368,7 +368,7 @@ SEXP psumR(SEXP na, SEXP args) {
     if (len1 != len0) {
       error(_("Argument %d is of length %"PRId64" but argument %d is of length %"PRId64". "
       "If you wish to 'recycle' your argument, please use rep() to make this intent "
-      "clear to the readers of your code."), i+1, 2, len1, len0);
+      "clear to the readers of your code."), i+1, len1, 1, len0);
     }
     if (typeorder[type] > typeorder[anstype]) {
       anstype = type;
@@ -439,7 +439,7 @@ SEXP pprodR(SEXP na, SEXP args) {
   SEXPTYPE anstype = TYPEOF(SEXPPTR_RO(args)[0]);
   const int64_t len0 = xlength(SEXPPTR_RO(args)[0]);
   if (anstype != INTSXP && anstype != REALSXP) {
-    error(_("Argument %d is of type %s. Only integer and double types are supported."), 2, type2char(anstype));
+    error(_("Argument %d is of type %s. Only integer and double types are supported."), 1, type2char(anstype));
   }
   for (int i = 1; i < n; ++i) {
     SEXPTYPE type = TYPEOF(SEXPPTR_RO(args)[i]);
@@ -451,7 +451,7 @@ SEXP pprodR(SEXP na, SEXP args) {
     if (len1 != len0) {
       error(_("Argument %d is of length %"PRId64" but argument %d is of length %"PRId64". "
       "If you wish to 'recycle' your argument, please use rep() to make this intent "
-      "clear to the readers of your code."), i+1, len1, 2, len0);
+      "clear to the readers of your code."), i+1, len1, 1, len0);
     }
     if (typeorder[type] > typeorder[anstype]) {
       anstype = type;
