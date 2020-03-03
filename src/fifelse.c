@@ -149,8 +149,9 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b, SEXP na) {
 SEXP fcaseR(SEXP na, SEXP rho, SEXP args) {
   int n=length(args);
   if (n % 2) {
-    error("Please supply an even number of arguments in ..., consisting of logical condition,"
-             " resulting value pairs (in that order); received %d inputs.", n);
+    error(_("Received %d inputs; please supply an even number of arguments in ..., "
+            "consisting of logical condition, resulting value pairs (in that order). "
+            "Note that the default argument must be named explicitly, e.g., default=0"), n);
   }
   int nprotect = 0, l = 0;
   int64_t len0=0, len1=0, len2=0, idx=0;

@@ -265,7 +265,7 @@ SEXP subsetDT(SEXP x, SEXP rows, SEXP cols) { // API change needs update NEWS.md
   copyMostAttrib(x, ans);
   // most means all except R_NamesSymbol, R_DimSymbol and R_DimNamesSymbol
   // includes row.names (oddly, given other dims aren't) and "sorted" dealt with below
-  // class is also copied here which retains superclass name in class vector as has been the case for many years; e.g. tests 1228.* for #5296
+  // class is also copied here which retains superclass name in class vector as has been the case for many years; e.g. tests 1228.* for #64
 
   SET_TRUELENGTH(ans, LENGTH(ans));
   SETLENGTH(ans, LENGTH(cols));
