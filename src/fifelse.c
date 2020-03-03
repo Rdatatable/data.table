@@ -351,20 +351,20 @@ SEXP topnR(SEXP vec, SEXP n, SEXP dec) {
   const int64_t len1 = xlength(vec);
   
   if (isS4(vec) && !INHERITS(vec, char_nanotime)) {
-    error("S4 class objects (excluding nanotime) are not supported.");
+    error(_("S4 class objects (excluding nanotime) are not supported."));
   }
   if (len0 > 1000) {
-    error("Function 'topn' is not built for large value of 'n'. The algorithm is made for small values. Please prefer the 'order' function if you want to proceed with such large value.");
+    error(_("Function 'topn' is not built for large value of 'n'. The algorithm is made for small values. Please prefer the 'order' function if you want to proceed with such large value."));
   }
   if (len0 > len1) {
-    warning("'n' is larger than length of 'vec'. 'n' will be set to length of 'vec'.");
+    warning(_("'n' is larger than length of 'vec'. 'n' will be set to length of 'vec'."));
     len0 = len1;
   }
   if (len0 < 1) {
-    error("Please enter a positive integer larger or equal to 1.");
+    error(_("Please enter a positive integer larger or equal to 1."));
   }
   if (!IS_TRUE_OR_FALSE(dec)) {
-    error("Argument 'decreasing' must be TRUE or FALSE and length 1.");
+    error(_("Argument 'decreasing' must be TRUE or FALSE and length 1."));
   }
   
   const bool vdec = LOGICAL(dec)[0];
@@ -448,7 +448,7 @@ SEXP topnR(SEXP vec, SEXP n, SEXP dec) {
       }
     } break;
     default:
-      error("Type %s is not supported.", type2char(tvec));
+      error(_("Type %s is not supported."), type2char(tvec));
     }
   } else {
     switch(tvec) {
@@ -528,7 +528,7 @@ SEXP topnR(SEXP vec, SEXP n, SEXP dec) {
       }
     } break;
     default:
-      error("Type %s is not supported.", type2char(tvec));
+      error(_("Type %s is not supported."), type2char(tvec));
     }
   }
   UNPROTECT(nprotect);
