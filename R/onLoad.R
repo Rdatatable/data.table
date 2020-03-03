@@ -59,7 +59,7 @@
     if (class(ss)[1L]!="{") ss = as.call(c(as.name("{"), ss))
     if (!length(grep("data.table", ss[[2L]], fixed = TRUE))) {
       ss = ss[c(1L, NA, 2L:length(ss))]
-      ss[[2L]] = parse(text=paste0("for (x in list(...)) { if (inherits(x,'data.table')) return(",prefix,".rbind.data.table(...)) }"))[[1L]] # fix for #4995
+      ss[[2L]] = parse(text=paste0("for (x in list(...)) { if (inherits(x,'data.table')) return(",prefix,".rbind.data.table(...)) }"))[[1L]] # fix for #89
       body(tt)=ss
       (unlockBinding)("rbind.data.frame",baseenv())
       assign("rbind.data.frame",tt,envir=asNamespace("base"),inherits=FALSE)
