@@ -350,8 +350,11 @@ SEXP psumR(SEXP na, SEXP args) {
     error(_("Argument 'na.rm' must be TRUE or FALSE and length 1."));
   }
   const int n=length(args);
-  if (n <= 1) {
-    error(_("Please supply at least 2 arguments. (%d argument supplied)"), n);
+  if (n < 1) {
+    error(_("Please supply at least 1 argument. (%d argument supplied)"), n);
+  }
+  if (n == 1) {
+    return SEXPPTR_RO(args)[0];
   }
   SEXPTYPE anstype = TYPEOF(SEXPPTR_RO(args)[0]);
   const int64_t len0 = xlength(SEXPPTR_RO(args)[0]);
@@ -433,8 +436,11 @@ SEXP pprodR(SEXP na, SEXP args) {
     error(_("Argument 'na.rm' must be TRUE or FALSE and length 1."));
   }
   const int n=length(args);
-  if (n <= 1) {
-    error(_("Please supply at least 2 arguments. %d argument supplied."), n);
+  if (n < 1) {
+    error(_("Please supply at least 1 argument. (%d argument supplied)"), n);
+  }
+  if (n == 1) {
+    return SEXPPTR_RO(args)[0];
   }
   SEXPTYPE anstype = TYPEOF(SEXPPTR_RO(args)[0]);
   const int64_t len0 = xlength(SEXPPTR_RO(args)[0]);
