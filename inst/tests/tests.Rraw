@@ -16849,5 +16849,5 @@ test(2138.4, rbind(A,B), data.table(A=c(as.character(A$A), B$A)))
 
 # compatible branches might seem incompatible if the condition is global: #4274
 DT = data.table(a=1L)
-test(2139, DT[ , if (TRUE) .(a=1) else .(a=1, b=2)], DT,
+test(2139, DT[ , if (TRUE) .(a=1L) else .(a=1L, b=2L)], DT,
      warning='j may not evaluate to the same number of columns for each group')
