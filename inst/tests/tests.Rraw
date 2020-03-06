@@ -16846,3 +16846,7 @@ A = data.table(A=c(complex(real = 1:3, imaginary=c(0, -1, 1)), NaN))
 test(2138.3, rbind(A,B), data.table(A=c(as.character(A$A), B$A)))
 A = data.table(A=as.complex(rep(NA, 5)))
 test(2138.4, rbind(A,B), data.table(A=c(as.character(A$A), B$A)))
+
+# missing j was only caught in groupingsets, leading to unexpected error message
+DT = data.table(a = 1)
+test(2139, cube(DT, by = 'a'), error = "Argument 'j' is required")
