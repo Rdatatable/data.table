@@ -16847,7 +16847,7 @@ test(2138.3, rbind(A,B), data.table(A=c(as.character(A$A), B$A)))
 A = data.table(A=as.complex(rep(NA, 5)))
 test(2138.4, rbind(A,B), data.table(A=c(as.character(A$A), B$A)))
 
-# fifelse supports vector na arguments and corece NA to other types
+# by @shrektan: fifelse supports vector na arguments and corece NA to other types
 test(2139.01, fifelse(c(TRUE, FALSE, TRUE, NA), 1L, 2L, 1.0), c(1, 2, 1, 1))
 test(2139.02, fifelse(c(TRUE, FALSE, TRUE, NA), 1, 2, 1L), c(1, 2, 1, 1))
 test(2139.03, fifelse(c(TRUE, FALSE, TRUE, NA), 1:4, 11:14, 101:104), c(1L, 12L, 3L, 104L))
@@ -16860,3 +16860,7 @@ test(2139.09, fifelse(c(TRUE, FALSE, TRUE, NA), NA, NA, NA_character_), rep(NA_c
 test(2139.10, fifelse(c(TRUE, FALSE, TRUE, NA), NA, NA, 101:104), c(NA, NA, NA, 104L))
 test(2139.11, fifelse(c(TRUE, FALSE, TRUE, NA), NA, 11:14, NA), c(NA, 12L, NA, NA))
 test(2139.12, fifelse(c(TRUE, FALSE, TRUE, NA), NA, NA, as.Date("2020-01-01")), as.Date(c(NA, NA, NA, "2020-01-01")))
+test(2139.13, fifelse(TRUE, 1L, 2.0, "a"), error="'na' is of type character but 'no' is double. Please") # smart error message
+test(2139.14, fifelse(TRUE, NA, 2, as.Date("2019-07-07")),  error="'no' has different class than 'na'. Please")
+test(2139.15, fifelse(TRUE, NA, factor('a'), factor('a', levels = c('a','b'))), error="'no' and 'na' are both type factor but their levels are different")
+test(2139.16, fifelse(c(NA, NA), 1L, 2L, NULL), c(NA_integer_, NA_integer_)) # NULL `na` is treated as NA 
