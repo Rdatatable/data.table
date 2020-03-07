@@ -166,12 +166,12 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b, SEXP na) {
     const SEXP *restrict pb;  if (!na_b) pb  = SEXPPTR_RO(b);
     const SEXP *restrict pna; if (!na_n) pna = SEXPPTR_RO(na);
     for (int64_t i=0; i<len0; ++i) {
-      if (pl[i] == NA_LOGICAL && !na_n) {
-        SET_VECTOR_ELT(ans, i, pna[i & nmask]);
-      } else if (pl[i]==0 && !na_b) {
-        SET_VECTOR_ELT(ans, i, pb[i & bmask]);
-      } else if (pl[i]==1 && !na_a) {
-        SET_VECTOR_ELT(ans, i, pa[i & amask]);
+      if (pl[i] == NA_LOGICAL) {
+        if (!na_n) SET_VECTOR_ELT(ans, i, pna[i & nmask]);
+      } else if (pl[i]==0) {
+        if (!na_b) SET_VECTOR_ELT(ans, i, pb[i & bmask]);
+      } else if (pl[i]==1) {
+        if (!na_a) SET_VECTOR_ELT(ans, i, pa[i & amask]);
       }
     }
   } break;
