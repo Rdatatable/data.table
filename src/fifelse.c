@@ -44,26 +44,38 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b, SEXP na) {
       error(_("'na' is of type %s but expect %s."), type2char(tn), type2char(tans));
   }
   
-  if (!na_a && !na_b && !R_compute_identical(PROTECT(getAttrib(a,R_ClassSymbol)), PROTECT(getAttrib(b,R_ClassSymbol)), 0))
-    error(_("'yes' has different class than 'no'. Please make sure that both arguments have the same class."));
-  UNPROTECT(2);
-  if (!na_a && !na_n && !R_compute_identical(PROTECT(getAttrib(a,R_ClassSymbol)), PROTECT(getAttrib(na,R_ClassSymbol)), 0))
-    error(_("'yes' has different class than 'na'. Please make sure that both arguments have the same class."));
-  UNPROTECT(2);
-  if (!na_b && !na_n && !R_compute_identical(PROTECT(getAttrib(b,R_ClassSymbol)), PROTECT(getAttrib(na,R_ClassSymbol)), 0))
-    error(_("'no' has different class than 'na'. Please make sure that both arguments have the same class."));
-  UNPROTECT(2);
+  if (!na_a && !na_b) {
+    if (!R_compute_identical(PROTECT(getAttrib(a,R_ClassSymbol)), PROTECT(getAttrib(b,R_ClassSymbol)), 0))
+      error(_("'yes' has different class than 'no'. Please make sure that both arguments have the same class."));
+    UNPROTECT(2);
+  }
+  if (!na_a && !na_n) {
+    if (!R_compute_identical(PROTECT(getAttrib(a,R_ClassSymbol)), PROTECT(getAttrib(na,R_ClassSymbol)), 0))
+      error(_("'yes' has different class than 'na'. Please make sure that both arguments have the same class."));
+    UNPROTECT(2);
+  }
+  if (!na_b && !na_n) {
+    if (!R_compute_identical(PROTECT(getAttrib(b,R_ClassSymbol)), PROTECT(getAttrib(na,R_ClassSymbol)), 0))
+      error(_("'no' has different class than 'na'. Please make sure that both arguments have the same class."));
+    UNPROTECT(2);
+  }
   
   if (isFactor(a) || isFactor(b)) {
-    if (!na_a && !na_b && !R_compute_identical(PROTECT(getAttrib(a,R_LevelsSymbol)), PROTECT(getAttrib(b,R_LevelsSymbol)), 0))
-      error(_("'yes' and 'no' are both type factor but their levels are different."));
-    UNPROTECT(2);
-    if (!na_a && !na_n && !R_compute_identical(PROTECT(getAttrib(a,R_LevelsSymbol)), PROTECT(getAttrib(na,R_LevelsSymbol)), 0))
-      error(_("'yes' and 'na' are both type factor but their levels are different."));
-    UNPROTECT(2);
-    if (!na_b && !na_n && !R_compute_identical(PROTECT(getAttrib(b,R_LevelsSymbol)), PROTECT(getAttrib(na,R_LevelsSymbol)), 0))
-      error(_("'no' and 'na' are both type factor but their levels are different."));
-    UNPROTECT(2);
+    if (!na_a && !na_b) {
+      if (!R_compute_identical(PROTECT(getAttrib(a,R_LevelsSymbol)), PROTECT(getAttrib(b,R_LevelsSymbol)), 0))
+        error(_("'yes' and 'no' are both type factor but their levels are different."));
+      UNPROTECT(2);  
+    }
+    if (!na_a && !na_n) {
+      if (!R_compute_identical(PROTECT(getAttrib(a,R_LevelsSymbol)), PROTECT(getAttrib(na,R_LevelsSymbol)), 0))
+        error(_("'yes' and 'na' are both type factor but their levels are different."));
+      UNPROTECT(2);
+    }
+    if (!na_b && !na_n) {
+      if (!R_compute_identical(PROTECT(getAttrib(b,R_LevelsSymbol)), PROTECT(getAttrib(na,R_LevelsSymbol)), 0))
+        error(_("'no' and 'na' are both type factor but their levels are different."));
+      UNPROTECT(2);
+    }
   }
 
   if (!na_a && len1!=1 && len1!=len0)
