@@ -22,26 +22,26 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b, SEXP na) {
   int nprotect = 0;
   SEXPTYPE tans = !na_a ? ta : !na_b ? tb : !na_n ? tn : LGLSXP;
   if (!(na_a && na_b && na_n)) {
+    SEXPTYPE ta0 = ta, tb0 = tb, tn0 = tn; // record the original type for error message use
     if (!na_b && tans==INTSXP && tb==REALSXP) tans = tb;
     if (!na_n && tans==INTSXP && tn==REALSXP) tans = tn;
     if (!na_a && tans==REALSXP && ta==INTSXP) {
       a = PROTECT(coerceVector(a, REALSXP)); nprotect++;
       ta = REALSXP;
     }
-    if (!na_a && tans != ta) 
-      error(_("'yes' is of type %s but expect %s."), type2char(ta), type2char(tans));
+    // it's not possible that non-NA `yes`' type will be different from `tans`
     if (!na_b && tans==REALSXP && tb==INTSXP) {
       b = PROTECT(coerceVector(b, REALSXP)); nprotect++;
       tb = REALSXP;
     }
     if (!na_b && tans != tb) 
-      error(_("'no' is of type %s but expect %s."), type2char(tb), type2char(tans));
+      error(_("'no' is of type %s but '%s' is %s. Please make all arguments have the same type."), type2char(tb0), tans==ta0 ? "yes" : "na", tans==ta0 ? type2char(ta0) : type2char(tn0));
     if (!na_n && tans==REALSXP && tn==INTSXP) {
       na = PROTECT(coerceVector(na, REALSXP)); nprotect++;
       tn = REALSXP;
     }
     if (!na_n && tans != tn) 
-      error(_("'na' is of type %s but expect %s."), type2char(tn), type2char(tans));
+      error(_("'na' is of type %s but '%s' is %s. Please make all arguments have the same type."), type2char(tn0), tans==ta0 ? "yes" : "no", tans==ta0 ? type2char(ta0) : type2char(tb0));
   }
   
   if (!na_a && !na_b) {
