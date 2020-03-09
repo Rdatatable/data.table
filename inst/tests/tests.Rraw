@@ -16846,3 +16846,29 @@ A = data.table(A=c(complex(real = 1:3, imaginary=c(0, -1, 1)), NaN))
 test(2138.3, rbind(A,B), data.table(A=c(as.character(A$A), B$A)))
 A = data.table(A=as.complex(rep(NA, 5)))
 test(2138.4, rbind(A,B), data.table(A=c(as.character(A$A), B$A)))
+
+# rowwisely creating a data.table
+# header splited by ","
+DT = data.table(
+  "A, B",
+  1, "a",
+  .rowwise = TRUE
+)
+test(2139.1, DT, data.table(A = 1, B = "a"))
+# vectorized header
+DT = data.table(
+  c("A", "B"),
+  1, "a",
+  .rowwise = TRUE
+)
+test(2139.2, DT, data.table(A = 1, B = "a"))
+# error if no header
+test(2139.3, data.table(1,"a",.rowwise=TRUE), error = "The first argument must be a non-empty character vector when")
+# error if body is not multiple length of the header
+test(2139.4, data.table("A,B,C", 1,"a",2,"b",3, .rowwise=TRUE), error = "There're 3 columns but the number of cells is 5, which is not an integer multiple of the columns")
+# create list element automatically
+test(2139.5, data.table("A",list(1),.rowwise=TRUE), data.table(A=list(1)))
+test(2139.6, data.table("A",1:2,.rowwise=TRUE), data.table(A=list(1:2)))
+test(2139.7, data.table("A",double(),.rowwise=TRUE), data.table(A=list(double())))
+# pass the key argument
+test(2139.8, data.table("A,B",1,2,key="A,B",.rowwise=TRUE), data.table(A=1,B=2,key="A,B"))

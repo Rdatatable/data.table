@@ -18,7 +18,7 @@
    Tip: one of the \emph{quickest} ways to learn the features is to type \code{example(data.table)} and study the output at the prompt.
 }
 \usage{
-data.table(\dots, keep.rownames=FALSE, check.names=FALSE, key=NULL, stringsAsFactors=FALSE)
+data.table(\dots, keep.rownames=FALSE, check.names=FALSE, key=NULL, stringsAsFactors=FALSE, .rowwise=FALSE)
 
 \method{[}{data.table}(x, i, j, by, keyby, with = TRUE,
   nomatch = getOption("datatable.nomatch", NA),
@@ -44,6 +44,8 @@ data.table(\dots, keep.rownames=FALSE, check.names=FALSE, key=NULL, stringsAsFac
 
     \item{stringsAsFactors}{Logical (default is \code{FALSE}). Convert all \code{character} columns to \code{factor}s?}
 
+    \item{.rowwise}{Logical (default is \code{FALSE}}. Allow creating a \code{data.table} object rowwisely. For example, \code{data.table("A,B", 1,"a", 2,"b", .rowwise=TRUE)}.
+    
     \item{x}{ A \code{data.table}.}
 
     \item{i}{ Integer, logical or character vector, single column numeric \code{matrix}, expression of column names, \code{list}, \code{data.frame} or \code{data.table}.
@@ -243,6 +245,14 @@ is.list(DF)                    # TRUE
 is.list(DT)                    # TRUE
 
 is.data.frame(DT)              # TRUE
+
+# you can also generate a data.table rowwisely
+data.table(
+ "A, B, C",
+  1,"a",2:3,
+  2,"b",list(5),
+  .rowwise=TRUE
+)
 
 tables()
 

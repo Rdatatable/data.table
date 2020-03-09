@@ -49,8 +49,31 @@ null.data.table = function() {
   setalloccol(ans)
 }
 
-data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL, stringsAsFactors=FALSE)
+rowwiseDT = function(header, ..., key=NULL) {
+  if (!is.character(header) || length(header) == 0L) 
+    stop("The first argument must be a non-empty character vector when creating data.table rowwisely")
+  if (length(header) == 1L)
+    header = trimws(strsplit(header, split = ",", fixed = TRUE)[[1L]])
+  ncol = length(header)
+  body = list(...)
+  if (length(body) %% ncol != 0L) {
+    stop(sprintf("There're %d columns but the number of cells is %d, which is not an integer multiple of the columns", ncol, length(body)))
+  }
+  # make all the non-scalar elements to a list
+  body = lapply(body, function(x) if (length(x) != 1L) list(x) else x)
+  body = split(body, rep(seq_len(length(body) / ncol), each = ncol))
+  ans = rbindlist(body)
+  setnames(ans, header)
+  if (!is.null(key)) {
+    key = trimws(strsplit(key, split = ",", fixed = TRUE)[[1L]])
+    setkeyv(ans, key)
+  }
+  ans
+}
+
+data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL, stringsAsFactors=FALSE, .rowwise=FALSE)
 {
+  if (isTRUE(.rowwise)) return(rowwiseDT(..., key=key))
   # NOTE: It may be faster in some circumstances for users to create a data.table by creating a list l
   #       first, and then setattr(l,"class",c("data.table","data.frame")) and forgo checking.
   x = list(...)   # list() doesn't copy named inputs as from R >= 3.1.0 (a very welcome change)
