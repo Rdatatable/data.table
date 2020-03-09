@@ -62,7 +62,7 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL, str
   if (!is.null(key)) {
     if (!is.character(key)) stop("key argument of data.table() must be character")
     if (length(key)==1L) {
-      key = trimws(strsplit(key,split=",")[[1L]])
+      key = trimws(strsplit(key,split=",",fixed=TRUE)[[1L]])
       # eg key="A,B"; a syntax only useful in key argument to data.table(), really.
     }
     setkeyv(ans,key)
