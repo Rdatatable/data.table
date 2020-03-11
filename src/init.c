@@ -85,6 +85,7 @@ SEXP lookup();
 SEXP overlaps();
 SEXP whichwrapper();
 SEXP shift();
+SEXP lagby();
 SEXP transpose();
 SEXP anyNA();
 SEXP isReallyReal();
@@ -171,6 +172,7 @@ R_CallMethodDef callMethods[] = {
 {"Coverlaps", (DL_FUNC) &overlaps, -1},
 {"Cwhichwrapper", (DL_FUNC) &whichwrapper, -1},
 {"Cshift", (DL_FUNC) &shift, -1},
+{"Clagby", (DL_FUNC) &lagby, -1},
 {"Ctranspose", (DL_FUNC) &transpose, -1},
 {"CanyNA", (DL_FUNC) &anyNA, -1},
 {"CisReallyReal", (DL_FUNC) &isReallyReal, -1},

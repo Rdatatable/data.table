@@ -37,3 +37,23 @@ setnafill = function(x, type=c("const","locf","nocb"), fill=NA, nan=NA, cols=seq
     warning("argument 'fill' ignored, only make sense for type='const'")
   invisible(.Call(CnafillR, x, type, fill, nan_is_na(nan), TRUE, cols))
 }
+
+lagby = function(..., by, fill) {
+  lagbyv(list(...), by, fill)
+}
+
+lagbyv = function(x, by, fill) {
+  if (missing(fill)) {
+	  fill = lapply(x, function(s) as(NA, class(s)))
+	}
+	if (length(fill)!=length(x)) stop("fill needs to be same length as x for filling first group.")
+	if (!identical(lapply(x, class), lapply(fill, class))) {
+	  #coerce fill to same classes as x
+		fill = Map(function(s, cls) as(s, cls), fill, class(x))
+	}
+	if (is.atomic(x)) {
+	  x = as_list(x)
+	}
+	ans = .Call(Clagby, x, by, fill)
+	ans
+}
