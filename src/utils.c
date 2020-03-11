@@ -64,7 +64,7 @@ bool allNA(SEXP x, bool errorForBadType) {
     return true;
   case CPLXSXP: {
     const Rcomplex *xd = COMPLEX(x);
-    for (int i=0; i<n; ++i) if (!ISNAN_COMPLEX(xd[i])) { 
+    for (int i=0; i<n; ++i) if (!ISNAN_COMPLEX(xd[i])) {
       return false;
     }
     return true;
@@ -120,7 +120,7 @@ SEXP colnamesInt(SEXP x, SEXP cols, SEXP check_dups) {
     int *icols = INTEGER(ricols);
     for (int i=0; i<nc; i++) {
       if ((icols[i]>nx) || (icols[i]<1))
-        error(_("argument specifying columns specify non existing column(s): cols[%d]=%d"), i+1, icols[i]); // handles NAs also
+        error(_("argument specifying received non-existing column(s): cols[%d]=%d"), i+1, icols[i]); // handles NAs also
     }
   } else if (isString(cols)) {
     SEXP xnames = PROTECT(getAttrib(x, R_NamesSymbol)); protecti++;
@@ -130,13 +130,13 @@ SEXP colnamesInt(SEXP x, SEXP cols, SEXP check_dups) {
     int *icols = INTEGER(ricols);
     for (int i=0; i<nc; i++) {
       if (icols[i]==0)
-        error(_("argument specifying columns specify non existing column(s): cols[%d]='%s'"), i+1, CHAR(STRING_ELT(cols, i))); // handles NAs also
+        error(_("argument specifying columns received non-existing column(s): cols[%d]='%s'"), i+1, CHAR(STRING_ELT(cols, i))); // handles NAs also
     }
   } else {
     error(_("argument specifying columns must be character or numeric"));
   }
   if (LOGICAL(check_dups)[0] && any_duplicated(ricols, FALSE))
-    error(_("argument specifying columns specify duplicated column(s)"));
+    error(_("argument specifying columns specify received duplicate column(s)"));
   UNPROTECT(protecti);
   return ricols;
 }

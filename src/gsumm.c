@@ -562,7 +562,7 @@ SEXP gsum(SEXP x, SEXP narmArg, SEXP warnOverflowArg)
     }
   } break;
   default:
-    error(_("Type '%s' not supported by GForce sum (gsum). Either add the prefix base::sum(.) or turn off GForce optimization using options(datatable.optimize=1)"), type2char(TYPEOF(x)));
+    error(_("Type '%s' is not supported by GForce %s. Either add the prefix %s or turn off GForce optimization using options(datatable.optimize=1)"), type2char(TYPEOF(x)), "sum (gsum)", "base::sum(.)");
   }
   copyMostAttrib(x, ans);
   if (verbose) { Rprintf(_("%.3fs\n"), wallclock()-started); }
@@ -647,7 +647,7 @@ SEXP gmean(SEXP x, SEXP narm)
   } break;
   default:
     free(s); free(c); // # nocov because it already stops at gsum, remove nocov if gmean will support a type that gsum wont
-    error(_("Type '%s' not supported by GForce mean (gmean) na.rm=TRUE. Either add the prefix base::mean(.) or turn off GForce optimization using options(datatable.optimize=1)"), type2char(TYPEOF(x))); // # nocov
+    error(_("Type '%s' is not supported by GForce %s. Either add the prefix %s or turn off GForce optimization using options(datatable.optimize=1)"), type2char(TYPEOF(x)), "mean (gmean)", "base::mean(.)") // # nocov
   }
   switch(TYPEOF(x)) {
   case LGLSXP: case INTSXP: case REALSXP: {
@@ -791,7 +791,7 @@ SEXP gmin(SEXP x, SEXP narm)
     error(_("Type 'complex' has no well-defined min"));
     break;
   default:
-    error(_("Type '%s' not supported by GForce min (gmin). Either add the prefix base::min(.) or turn off GForce optimization using options(datatable.optimize=1)"), type2char(TYPEOF(x)));
+    error(_("Type '%s' is not supported by GForce %s. Either add the prefix %s or turn off GForce optimization using options(datatable.optimize=1)"), type2char(TYPEOF(x)), "min (gmin)", "base::min(.)")
   }
   copyMostAttrib(x, ans); // all but names,dim and dimnames. And if so, we want a copy here, not keepattr's SET_ATTRIB.
   UNPROTECT(protecti);  // ans + maybe 1 coerced ans
@@ -937,7 +937,7 @@ SEXP gmax(SEXP x, SEXP narm)
     error(_("Type 'complex' has no well-defined max"));
     break;
   default:
-    error(_("Type '%s' not supported by GForce max (gmax). Either add the prefix base::max(.) or turn off GForce optimization using options(datatable.optimize=1)"), type2char(TYPEOF(x)));
+    error(_("Type '%s' is not supported by GForce %s. Either add the prefix %s or turn off GForce optimization using options(datatable.optimize=1)"), type2char(TYPEOF(x)), "max (gmax)", "base::max(.)")
   }
   copyMostAttrib(x, ans); // all but names,dim and dimnames. And if so, we want a copy here, not keepattr's SET_ATTRIB.
   UNPROTECT(protecti);
@@ -989,7 +989,7 @@ SEXP gmedian(SEXP x, SEXP narmArg) {
     }}
     break;
   default:
-    error(_("Type '%s' not supported by GForce median (gmedian). Either add the prefix stats::median(.) or turn off GForce optimization using options(datatable.optimize=1)"), type2char(TYPEOF(x)));
+    error(_("Type '%s' is not supported by GForce %s. Either add the prefix %s or turn off GForce optimization using options(datatable.optimize=1)"), type2char(TYPEOF(x)), "median (gmedian)", "stats::median(.)")
   }
   if (!isInt64) copyMostAttrib(x, ans);
   // else the integer64 class needs to be dropped since double is always returned by gmedian
@@ -1070,7 +1070,7 @@ SEXP glast(SEXP x) {
     }
     break;
   default:
-    error(_("Type '%s' not supported by GForce tail (gtail). Either add the prefix utils::tail(.) or turn off GForce optimization using options(datatable.optimize=1)"), type2char(TYPEOF(x)));
+    error(_("Type '%s' is not supported by GForce %s. Either add the prefix %s or turn off GForce optimization using options(datatable.optimize=1)"), type2char(TYPEOF(x)), "tail (gtail)", "utils::tail(.)")
   }
   copyMostAttrib(x, ans);
   UNPROTECT(1);
@@ -1150,7 +1150,7 @@ SEXP gfirst(SEXP x) {
     }
     break;
   default:
-    error(_("Type '%s' not supported by GForce head (ghead). Either add the prefix utils::head(.) or turn off GForce optimization using options(datatable.optimize=1)"), type2char(TYPEOF(x)));
+    error(_("Type '%s' is not supported by GForce %s. Either add the prefix %s or turn off GForce optimization using options(datatable.optimize=1)"), type2char(TYPEOF(x)), "head (ghead)", "utils::head(.)")
   }
   copyMostAttrib(x, ans);
   UNPROTECT(1);
@@ -1247,7 +1247,7 @@ SEXP gnthvalue(SEXP x, SEXP valArg) {
     }
     break;
   default:
-    error(_("Type '%s' not supported by GForce subset `[` (gnthvalue). Either add the prefix utils::head(.) or turn off GForce optimization using options(datatable.optimize=1)"), type2char(TYPEOF(x)));
+    error(_("Type '%s' is not supported by GForce %s. Either add the prefix %s or turn off GForce optimization using options(datatable.optimize=1)"), type2char(TYPEOF(x)), "subset `[` (gnthvalue)", "utils::head(.)")
   }
   copyMostAttrib(x, ans);
   UNPROTECT(1);
@@ -1379,9 +1379,9 @@ SEXP gvarsd1(SEXP x, SEXP narm, Rboolean isSD)
     break;
   default:
       if (!isSD) {
-        error(_("Type '%s' not supported by GForce var (gvar). Either add the prefix stats::var(.) or turn off GForce optimization using options(datatable.optimize=1)"), type2char(TYPEOF(x)));
+        error(_("Type '%s' is not supported by GForce %s. Either add the prefix %s or turn off GForce optimization using options(datatable.optimize=1)"), type2char(TYPEOF(x)), "var (gvar)", "stats::var(.)")
       } else {
-        error(_("Type '%s' not supported by GForce sd (gsd). Either add the prefix stats::sd(.) or turn off GForce optimization using options(datatable.optimize=1)"), type2char(TYPEOF(x)));
+        error(_("Type '%s' is not supported by GForce %s. Either add the prefix %s or turn off GForce optimization using options(datatable.optimize=1)"), type2char(TYPEOF(x)), "sd (gsd)", "stats::sd(.)")
       }
   }
   // no copyMostAttrib(x, ans) since class (e.g. Date) unlikely applicable to sd/var
@@ -1443,7 +1443,7 @@ SEXP gprod(SEXP x, SEXP narm)
     break;
   default:
     free(s);
-    error(_("Type '%s' not supported by GForce prod (gprod). Either add the prefix base::prod(.) or turn off GForce optimization using options(datatable.optimize=1)"), type2char(TYPEOF(x)));
+    error(_("Type '%s' is not supported by GForce %s. Either add the prefix %s or turn off GForce optimization using options(datatable.optimize=1)"), type2char(TYPEOF(x)), "prod (gprod)", "base::prod(.)")
   }
   free(s);
   copyMostAttrib(x, ans);

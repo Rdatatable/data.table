@@ -108,7 +108,7 @@ SEXP fsort(SEXP x, SEXP verboseArg) {
   if (!isLogical(verboseArg) || LENGTH(verboseArg)!=1 || LOGICAL(verboseArg)[0]==NA_LOGICAL)
     error(_("verbose must be TRUE or FALSE"));
   Rboolean verbose = LOGICAL(verboseArg)[0];
-  if (!isNumeric(x)) error(_("x must be a vector of type 'double' currently"));
+  if (!isNumeric(x)) error(_("x must be a vector of type double currently"));
   // TODO: not only detect if already sorted, but if it is, just return x to save the duplicate
 
   SEXP ansVec = PROTECT(allocVector(REALSXP, xlength(x)));

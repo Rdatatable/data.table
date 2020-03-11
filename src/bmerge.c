@@ -407,7 +407,7 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
   }
     break;
   default:
-    error(_("Type '%s' not supported for joining/merging"), type2char(TYPEOF(xc)));
+    error(_("Type '%s' is not supported for joining/merging"), type2char(TYPEOF(xc)));
   }
   if (xlow<xupp-1) { // if value found, low and upp surround it, unlike standard binary search where low falls on it
     if (col<ncol-1) {

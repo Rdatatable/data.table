@@ -135,7 +135,7 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b, SEXP na) {
     }
   } break;
   default:
-    error(_("Type %s is not supported."), type2char(ta));
+    error(_("Type '%s' is not supported"), type2char(ta));
   }
 
   SEXP l_names = PROTECT(getAttrib(l, R_NamesSymbol)); nprotect++;
@@ -334,7 +334,7 @@ SEXP fcaseR(SEXP na, SEXP rho, SEXP args) {
       }
     } break;
     default:
-      error("Type %s is not supported.", type2char(TYPEOF(outs)));
+      error(_("Type '%s' is not supported"), type2char(TYPEOF(outs)));
     }
     if (l==0) {
       break;
