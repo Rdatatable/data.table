@@ -59,13 +59,13 @@ rowwiseDT = function(..., key=NULL) {
   if (!identical(header_pos, seq_along(header_pos)))
     stop("Header must be the first N arguments")
   header = nms[header_pos]
-  ncol = length(header)
+  ncols = length(header)
   body = lapply(x[-header_pos], eval, envir = parent.frame())
-  if (length(body) %% ncol != 0L) 
-    stop(sprintf("There're %d columns but the number of cells is %d, which is not an integer multiple of the columns", ncol, length(body)))
+  if (length(body) %% ncols != 0L) 
+    stop(sprintf("There're %d columns but the number of cells is %d, which is not an integer multiple of the columns", ncols, length(body)))
   # make all the non-scalar elements to a list
   body = lapply(body, function(x) if (length(x) != 1L) list(x) else x)
-  body = split(body, rep(seq_len(length(body) / ncol), each = ncol))
+  body = split(body, rep(seq_len(length(body) / ncols), each = ncols))
   ans = rbindlist(body)
   setnames(ans, header)
   if (!is.null(key)) {
