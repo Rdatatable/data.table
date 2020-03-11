@@ -16868,5 +16868,5 @@ test(2139.08, rowwiseDT(A=,B=,1,2,key="A,B"), data.table(A=1,B=2,key="A,B"))
 # error if named argument is in the middle
 test(2139.09, rowwiseDT(A=,B=,1,2,C=,4), error="Header must be the first N arguments")
 # evaluate arguments in the correct frame
-ncol = 1e6
-test(2139.10, rowwiseDT(A=,ncol), data.table(A=ncol))
+ncols = 1e6
+test(2139.10, rowwiseDT(A=,ncols), data.table(A=ncols))
