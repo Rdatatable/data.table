@@ -49,16 +49,20 @@ null.data.table = function() {
   setalloccol(ans)
 }
 
-rowwiseDT = function(header, ..., key=NULL) {
-  if (!is.character(header) || length(header) == 0L) 
-    stop("The first argument must be a non-empty character vector when creating data.table rowwisely")
-  if (length(header) == 1L)
-    header = trimws(strsplit(header, split = ",", fixed = TRUE)[[1L]])
+rowwiseDT = function(..., key=NULL) {
+  x = substitute(list(...))[-1L]
+  if (is.null(nms <- names(x)))
+    stop("Must provide at least one column (use `name=`)")
+  header_pos = which(nzchar(nms))
+  if (any(nzchar(x[header_pos])))
+    stop("Named arguments must be empty")
+  if (!identical(header_pos, seq_along(header_pos)))
+    stop("Header must be the first N arguments")
+  header = nms[header_pos]
   ncol = length(header)
-  body = list(...)
-  if (length(body) %% ncol != 0L) {
+  body = lapply(x[-header_pos], eval, envir = parent.frame())
+  if (length(body) %% ncol != 0L) 
     stop(sprintf("There're %d columns but the number of cells is %d, which is not an integer multiple of the columns", ncol, length(body)))
-  }
   # make all the non-scalar elements to a list
   body = lapply(body, function(x) if (length(x) != 1L) list(x) else x)
   body = split(body, rep(seq_len(length(body) / ncol), each = ncol))
