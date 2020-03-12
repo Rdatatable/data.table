@@ -120,7 +120,7 @@ SEXP colnamesInt(SEXP x, SEXP cols, SEXP check_dups) {
     int *icols = INTEGER(ricols);
     for (int i=0; i<nc; i++) {
       if ((icols[i]>nx) || (icols[i]<1))
-        error(_("argument specifying received non-existing column(s): cols[%d]=%d"), i+1, icols[i]); // handles NAs also
+        error(_("argument specifying columns received non-existing column(s): cols[%d]=%d"), i+1, icols[i]); // handles NAs also
     }
   } else if (isString(cols)) {
     SEXP xnames = PROTECT(getAttrib(x, R_NamesSymbol)); protecti++;
@@ -136,7 +136,7 @@ SEXP colnamesInt(SEXP x, SEXP cols, SEXP check_dups) {
     error(_("argument specifying columns must be character or numeric"));
   }
   if (LOGICAL(check_dups)[0] && any_duplicated(ricols, FALSE))
-    error(_("argument specifying columns specify received duplicate column(s)"));
+    error(_("argument specifying columns received duplicate column(s)"));
   UNPROTECT(protecti);
   return ricols;
 }
@@ -277,7 +277,7 @@ SEXP copyAsPlain(SEXP x) {
     for (R_xlen_t i=0; i<n; ++i) SET_VECTOR_ELT(ans, i, xp[i]);  // # nocov
   } break;                                                       // # nocov
   default:
-    error(_("Internal error: unsupported type '%s' passed to copyAsPlain()"), type2char(TYPEOF(x))); // # nocov
+    error(_("Internal error: type '%s' not supported in %s"), type2char(TYPEOF(x)), "copyAsPlain()"); // # nocov
   }
   copyMostAttrib(x, ans); // e.g. factor levels, class etc, but not names, dim or dimnames
   if (ALTREP(ans))

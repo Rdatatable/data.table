@@ -671,7 +671,7 @@ SEXP gmean(SEXP x, SEXP narm)
     }
   } break;
   default:
-    error(_("Internal error: unsupported type at the end of gmean")); // # nocov
+    error(_("Internal error: type '%s' not supported in %s"), type2char(TYPEOF(x)), "gmean"); // # nocov
   }
   free(s); free(si); free(c);
   copyMostAttrib(x, ans);

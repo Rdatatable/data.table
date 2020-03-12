@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: data.table 1.12.9\n"
-"POT-Creation-Date: 2019-12-31 13:02\n"
+"POT-Creation-Date: 2020-03-12 10:33\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -304,6 +304,9 @@ msgstr ""
 msgid "not-join '!' prefix is present on i but nomatch is provided. Please remove nomatch."
 msgstr ""
 
+msgid "Operator := detected in i, the first argument inside DT[...], but is only valid in the second argument, j. Most often, this happens when forgetting the first comma (e.g. DT[newvar := 5] instead of DT[ , new_var := 5]). Please double-check the syntax. Run traceback(), and debugger() to get a line number."
+msgstr ""
+
 msgid "is not found in calling scope"
 msgstr ""
 
@@ -443,6 +446,12 @@ msgid ".SDcols should be column numbers or names"
 msgstr ""
 
 msgid "Some items of .SDcols are not column names:"
+msgstr ""
+
+msgid "'(m)get' found in j. ansvars being set to all columns. Use .SDcols or a single j=eval(macro) instead. Both will detect the columns used which is important for efficiency.\nOld ansvars: %s"
+msgstr ""
+
+msgid "New ansvars: %s"
 msgstr ""
 
 msgid "This j doesn't use .SD but .SDcols has been supplied. Ignoring .SDcols. See ?data.table."
@@ -1609,9 +1618,6 @@ msgstr ""
 msgid "None of the datasets should contain a column named '.seqn'"
 msgstr ""
 
-msgid "'target' and 'current' must both be data.tables"
-msgstr ""
-
 msgid "Internal error: ncol(current)==ncol(target) was checked above"
 msgstr ""
 
@@ -1732,7 +1738,13 @@ msgstr ""
 msgid "not found: ["
 msgstr ""
 
-msgid "Input xts object should not have 'index' column because it would result in duplicate column names. Rename 'index' column in xts or use `keep.rownames=FALSE` and add index manually as another column."
+msgid "keep.rownames must be length 1"
+msgstr ""
+
+msgid "keep.rownames must not be NA"
+msgstr ""
+
+msgid "Input xts object should not have '%s' column because it would result in duplicate column names. Rename '%s' column in xts or use `keep.rownames` to change the index col name."
 msgstr ""
 
 msgid "data.table must have a time based column in first position, use `setcolorder` function to change the order, or see ?timeBased for supported types"

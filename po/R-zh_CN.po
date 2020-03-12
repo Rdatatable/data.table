@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: data.table 1.12.5\n"
-"POT-Creation-Date: 2019-12-31 13:02\n"
+"POT-Creation-Date: 2020-03-12 10:33\n"
 "PO-Revision-Date: 2019-11-16 18:37+0800\n"
 "Last-Translator: Xianying Tan <shrektan@126.com>\n"
 "Language-Team: Mandarin\n"
@@ -387,6 +387,14 @@ msgid ""
 msgstr ""
 "not-join '!' 前缀在 i 中存在，但是 nomatch 也被提供了。需要移除nomatch。"
 
+msgid ""
+"Operator := detected in i, the first argument inside DT[...], but is only "
+"valid in the second argument, j. Most often, this happens when forgetting "
+"the first comma (e.g. DT[newvar := 5] instead of DT[ , new_var := 5]). "
+"Please double-check the syntax. Run traceback(), and debugger() to get a "
+"line number."
+msgstr ""
+
 msgid "is not found in calling scope"
 msgstr "不存在调用环境里"
 
@@ -593,6 +601,16 @@ msgstr ".SDcols 应为列数或是列名"
 
 msgid "Some items of .SDcols are not column names:"
 msgstr ".SDcols 中的部份项目不是列名:"
+
+msgid ""
+"'(m)get' found in j. ansvars being set to all columns. Use .SDcols or a "
+"single j=eval(macro) instead. Both will detect the columns used which is "
+"important for efficiency.\n"
+"Old ansvars: %s"
+msgstr ""
+
+msgid "New ansvars: %s"
+msgstr ""
 
 msgid ""
 "This j doesn't use .SD but .SDcols has been supplied. Ignoring .SDcols. See ?"
@@ -2216,9 +2234,6 @@ msgstr "' 然而 y 中对应的项是：'"
 msgid "None of the datasets should contain a column named '.seqn'"
 msgstr "所有的数据集都不应该包含名为 '.seqn' 的列"
 
-msgid "'target' and 'current' must both be data.tables"
-msgstr "'target' 和 'current' 都必须是 data.table"
-
 msgid "Internal error: ncol(current)==ncol(target) was checked above"
 msgstr "内部错误：ncol(current)==ncol(target) 之前已经检查"
 
@@ -2363,13 +2378,19 @@ msgstr "Pattern"
 msgid "not found: ["
 msgstr "未找到: ["
 
-msgid ""
-"Input xts object should not have 'index' column because it would result in "
-"duplicate column names. Rename 'index' column in xts or use `keep."
-"rownames=FALSE` and add index manually as another column."
+msgid "keep.rownames must be length 1"
+msgstr "keep.rownames 的长度必须为 1"
+
+msgid "keep.rownames must not be NA"
 msgstr ""
-"输入的xts对象不能含有'index'列，因这会导致出现重复的列名。请尝试重新命名xts中"
-"的'index'列或者使用`keep.rownames=FALSE`并手动添加index为另外的列"
+
+msgid ""
+"Input xts object should not have '%s' column because it would result in "
+"duplicate column names. Rename '%s' column in xts or use `keep.rownames` to "
+"change the index col name."
+msgstr ""
+"输入的xts对象不能含有'%s'列，因这会导致出现重复的列名。请尝试重新命名xts中"
+"的'%s'列或者使用`keep.rownames=FALSE`并手动添加index为另外的列"
 
 msgid ""
 "data.table must have a time based column in first position, use "
