@@ -610,14 +610,16 @@ void fwriteMain(fwriteMainArgs args)
   qmethodEscape = args.qmethodEscape;
   squashDateTime = args.squashDateTime;
 
-  if (args.buffMB<1 || args.buffMB>1024) STOP(_("buffMB=%d outside [1,1024]"), args.buffMB);
+  if (args.buffMB<1 || args.buffMB>1024)
+    STOP(_("buffMB=%d outside [1,1024]"), args.buffMB);
   size_t buffSize = (size_t)1024*1024*args.buffMB;
 
   int eolLen=strlen(args.eol), naLen=strlen(args.na);
   // Aside: codacy wants strnlen but strnlen is not in C99 (neither is strlen_s). To pass `gcc -std=c99 -Wall -pedantic`
   //        we'd need `#define _POSIX_C_SOURCE 200809L` before #include <string.h> but that seems a step too far
   //        and platform specific. We prefer to be pure C99.
-  if (eolLen<=0) STOP(_("eol must be 1 or more bytes (usually either \\n or \\r\\n) but is length %d"), eolLen);
+  if (eolLen<=0)
+    STOP(_("eol must be 1 or more bytes (usually either \\n or \\r\\n) but is length %d"), eolLen);
 
   if (verbose) {
     DTPRINT(_("Column writers: "));
@@ -710,7 +712,8 @@ void fwriteMain(fwriteMainArgs args)
   }
   if (headerLen) {
     char *buff = malloc(headerLen);
-    if (!buff) STOP(_("Unable to allocate %d MiB for header: %s"), headerLen / 1024 / 1024, strerror(errno));
+    if (!buff)
+      STOP(_("Unable to allocate %d MiB for header: %s"), headerLen / 1024 / 1024, strerror(errno));
     char *ch = buff;
     if (args.bom) {*ch++=(char)0xEF; *ch++=(char)0xBB; *ch++=(char)0xBF; }  // 3 appears above (search for "bom")
     memcpy(ch, args.yaml, yamlLen);
@@ -761,7 +764,8 @@ void fwriteMain(fwriteMainArgs args)
         // # nocov start
         int errwrite = errno; // capture write errno now incase close fails with a different errno
         CLOSE(f);
-        if (ret1) STOP(_("Compress gzip error: %d"), ret1);
+        if (ret1)
+          STOP(_("Compress gzip error: %d"), ret1);
         else      STOP(_("%s: '%s'"), strerror(errwrite), args.filename);
         // # nocov end
       }
@@ -770,7 +774,8 @@ void fwriteMain(fwriteMainArgs args)
   if (verbose) DTPRINT(_("done in %.3fs\n"), 1.0*(wallclock()-t0));
   if (args.nrow == 0) {
     if (verbose) DTPRINT(_("No data rows present (nrow==0)\n"));
-    if (f!=-1 && CLOSE(f)) STOP(_("%s: '%s'"), strerror(errno), args.filename);
+    if (f!=-1 && CLOSE(f))
+      STOP(_("%s: '%s'"), strerror(errno), args.filename);
     return;
   }
 
