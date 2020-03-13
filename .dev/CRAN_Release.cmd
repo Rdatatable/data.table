@@ -157,7 +157,7 @@ grep -P "\t" ./src/*.c
 #   (1) in a comment (pattern: after // or after \s*[*]
 #   (2) in '} else error(' pattern (if else is covered, so is the error)
 #   (3) in #define macros
-for type in error warning STOP; do
+for type in error warning STOP DTWARN; do
   grep -Enr "\b$type[(]" src --include=*.c | grep -Ev "^src\/[a-zA-Z-]+[.]c:[0-9]+:\s*(?:(?:[}]?\s*else\s*)?$type|#define|[*]|.*\/\/.*$type)"
 done
 
