@@ -64,7 +64,7 @@ bool allNA(SEXP x, bool errorForBadType) {
     return true;
   case CPLXSXP: {
     const Rcomplex *xd = COMPLEX(x);
-    for (int i=0; i<n; ++i) if (!ISNAN_COMPLEX(xd[i])) { 
+    for (int i=0; i<n; ++i) if (!ISNAN_COMPLEX(xd[i])) {
       return false;
     }
     return true;
@@ -142,7 +142,8 @@ SEXP colnamesInt(SEXP x, SEXP cols, SEXP check_dups) {
 }
 
 void coerceFill(SEXP fill, double *dfill, int32_t *ifill, int64_t *i64fill) {
-  if (xlength(fill) != 1) error(_("%s: fill argument must be length 1"), __func__);
+  if (xlength(fill) != 1)
+    error(_("%s: fill argument must be length 1"), __func__);
   if (isInteger(fill)) {
     if (INTEGER(fill)[0]==NA_INTEGER) {
       ifill[0] = NA_INTEGER; dfill[0] = NA_REAL; i64fill[0] = NA_INTEGER64;

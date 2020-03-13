@@ -11,12 +11,16 @@ SEXP uniqlist(SEXP l, SEXP order)
   // (maximum length the number of rows) and the length returned in anslen.
   // No NA in order which is guaranteed since internal-only. Used at R level internally (Cuniqlist) but is not and should not be exported.
   // DONE: ans is now grown
-  if (!isNewList(l)) error(_("Internal error: uniqlist has not been passed a list of columns")); // # nocov
+  if (!isNewList(l))
+    error(_("Internal error: uniqlist has not been passed a list of columns")); // # nocov
   R_len_t ncol = length(l);
   R_len_t nrow = length(VECTOR_ELT(l,0));
-  if (!isInteger(order)) error(_("Internal error: uniqlist has been passed a non-integer order")); // # nocov
-  if (LENGTH(order)<1) error(_("Internal error: uniqlist has been passed a length-0 order")); // # nocov
-  if (LENGTH(order)>1 && LENGTH(order)!=nrow) error(_("Internal error: uniqlist has been passed length(order)==%d but nrow==%d"), LENGTH(order), nrow); // # nocov
+  if (!isInteger(order))
+    error(_("Internal error: uniqlist has been passed a non-integer order")); // # nocov
+  if (LENGTH(order)<1)
+    error(_("Internal error: uniqlist has been passed a length-0 order")); // # nocov
+  if (LENGTH(order)>1 && LENGTH(order)!=nrow)
+    error(_("Internal error: uniqlist has been passed length(order)==%d but nrow==%d"), LENGTH(order), nrow); // # nocov
   bool via_order = INTEGER(order)[0] != -1;  // has an ordering vector been passed in that we have to hop via? Don't use MISSING() here as it appears unstable on Windows
 
   unsigned long long *ulv; // for numeric check speed-up
@@ -145,8 +149,10 @@ SEXP uniqlist(SEXP l, SEXP order)
 
 SEXP uniqlengths(SEXP x, SEXP n) {
   // seems very similar to rbindlist.c:uniq_lengths. TODO: centralize into common function
-  if (TYPEOF(x) != INTSXP) error(_("Input argument 'x' to 'uniqlengths' must be an integer vector"));
-  if (TYPEOF(n) != INTSXP || length(n) != 1) error(_("Input argument 'n' to 'uniqlengths' must be an integer vector of length 1"));
+  if (TYPEOF(x) != INTSXP)
+    error(_("Input argument 'x' to 'uniqlengths' must be an integer vector"));
+  if (TYPEOF(n) != INTSXP || length(n) != 1)
+    error(_("Input argument 'n' to 'uniqlengths' must be an integer vector of length 1"));
   R_len_t len = length(x);
   SEXP ans = PROTECT(allocVector(INTSXP, len));
   for (R_len_t i=1; i<len; i++) {
@@ -164,14 +170,17 @@ SEXP rleid(SEXP l, SEXP cols) {
   R_xlen_t nrow = xlength(VECTOR_ELT(l, 0));
   R_len_t ncol = length(l), lencols = length(cols);
   if (!nrow || !ncol) return(allocVector(INTSXP, 0));
-  if (!isInteger(cols) || lencols==0) error(_("cols must be an integer vector with length >= 1"));
+  if (!isInteger(cols) || lencols==0)
+    error(_("cols must be an integer vector with length >= 1"));
   int *icols = INTEGER(cols);
   for (int i=0; i<lencols; i++) {
     int elem = icols[i];
-    if (elem<1 || elem>ncol) error(_("Item %d of cols is %d which is outside range of l [1,length(l)=%d]"), i+1, elem, ncol);
+    if (elem<1 || elem>ncol)
+      error(_("Item %d of cols is %d which is outside range of l [1,length(l)=%d]"), i+1, elem, ncol);
   }
   for (int i=1; i<ncol; i++) {
-    if (xlength(VECTOR_ELT(l,i)) != nrow) error(_("All elements to input list must be of same length. Element [%d] has length %"PRIu64" != length of first element = %"PRIu64"."), i+1, (uint64_t)xlength(VECTOR_ELT(l,i)), (uint64_t)nrow);
+    if (xlength(VECTOR_ELT(l,i)) != nrow)
+      error(_("All elements to input list must be of same length. Element [%d] has length %"PRIu64" != length of first element = %"PRIu64"."), i+1, (uint64_t)xlength(VECTOR_ELT(l,i)), (uint64_t)nrow);
   }
   SEXP ans = PROTECT(allocVector(INTSXP, nrow));
   int *ians = INTEGER(ans);
@@ -252,16 +261,19 @@ SEXP rleid(SEXP l, SEXP cols) {
 SEXP nestedid(SEXP l, SEXP cols, SEXP order, SEXP grps, SEXP resetvals, SEXP multArg) {
   Rboolean byorder = (length(order)>0);
   SEXP v, ans;
-  if (!isNewList(l) || length(l) < 1) error(_("Internal error: nestedid was not passed a list length 1 or more")); // # nocov
+  if (!isNewList(l) || length(l) < 1)
+    error(_("Internal error: nestedid was not passed a list length 1 or more")); // # nocov
   R_len_t nrows = length(VECTOR_ELT(l,0)), ncols = length(cols);
   if (nrows==0) return(allocVector(INTSXP, 0));
   R_len_t thisi, previ, ansgrpsize=1000, nansgrp=0;
   R_len_t *ansgrp = Calloc(ansgrpsize, R_len_t), starts, grplen; // #3401 fix. Needs to be Calloc due to Realloc below .. else segfaults.
   R_len_t ngrps = length(grps);
   bool *i64 = (bool *)R_alloc(ncols, sizeof(bool));
-  if (ngrps==0) error(_("Internal error: nrows[%d]>0 but ngrps==0"), nrows); // # nocov
+  if (ngrps==0)
+    error(_("Internal error: nrows[%d]>0 but ngrps==0"), nrows); // # nocov
   R_len_t resetctr=0, rlen = length(resetvals) ? INTEGER(resetvals)[0] : 0;
-  if (!isInteger(cols) || ncols == 0) error(_("cols must be an integer vector of positive length"));
+  if (!isInteger(cols) || ncols == 0)
+    error(_("cols must be an integer vector of positive length"));
   // mult arg
   enum {ALL, FIRST, LAST} mult = ALL;
   if (!strcmp(CHAR(STRING_ELT(multArg, 0)), "all")) mult = ALL;
@@ -346,8 +358,10 @@ SEXP nestedid(SEXP l, SEXP cols, SEXP order, SEXP grps, SEXP resetvals, SEXP mul
 
 SEXP uniqueNlogical(SEXP x, SEXP narmArg) {
   // single pass; short-circuit and return as soon as all 3 values are found
-  if (!isLogical(x)) error(_("x is not a logical vector"));
-  if (!isLogical(narmArg) || length(narmArg)!=1 || INTEGER(narmArg)[0]==NA_INTEGER) error(_("na.rm must be TRUE or FALSE"));
+  if (!isLogical(x))
+    error(_("x is not a logical vector"));
+  if (!isLogical(narmArg) || length(narmArg)!=1 || INTEGER(narmArg)[0]==NA_INTEGER)
+    error(_("na.rm must be TRUE or FALSE"));
   bool narm = LOGICAL(narmArg)[0]==1;
   const R_xlen_t n = xlength(x);
   if (n==0)

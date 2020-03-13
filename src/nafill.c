@@ -187,7 +187,8 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, S
     case INTSXP : {
       nafillInteger(ix[i], inx[i], itype, ifill, &vans[i], verbose);
     } break;
-    default: error(_("Internal error: invalid type argument in nafillR function, should have been caught before. Please report to data.table issue tracker.")); // # nocov
+    default:
+      error(_("Internal error: invalid type argument in nafillR function, should have been caught before. Please report to data.table issue tracker.")); // # nocov
     }
   }
   if (verbose)

@@ -9,7 +9,8 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
   if (!isLogical(usenamesArg) || LENGTH(usenamesArg)!=1)
     error(_("use.names= should be TRUE, FALSE, or not used (\"check\" by default)"));  // R levels converts "check" to NA
   if (!length(l)) return(l);
-  if (TYPEOF(l) != VECSXP) error(_("Input to rbindlist must be a list. This list can contain data.tables, data.frames or plain lists."));
+  if (TYPEOF(l) != VECSXP)
+    error(_("Input to rbindlist must be a list. This list can contain data.tables, data.frames or plain lists."));
   Rboolean usenames = LOGICAL(usenamesArg)[0];
   const bool fill = LOGICAL(fillArg)[0];
   if (fill && usenames!=TRUE) {
@@ -17,7 +18,8 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
     usenames=TRUE;
   }
   const bool idcol = !isNull(idcolArg);
-  if (idcol && (!isString(idcolArg) || LENGTH(idcolArg)!=1)) error(_("Internal error: rbindlist.c idcol is not a single string"));  // # nocov
+  if (idcol && (!isString(idcolArg) || LENGTH(idcolArg)!=1))
+    error(_("Internal error: rbindlist.c idcol is not a single string"));  // # nocov
   int ncol=0, first=0;
   int64_t nrow=0, upperBoundUniqueNames=1;
   bool anyNames=false;
@@ -28,7 +30,8 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
     eachMax[i] = 0;
     SEXP li = VECTOR_ELT(l, i);
     if (isNull(li)) continue;
-    if (TYPEOF(li) != VECSXP) error(_("Item %d of input is not a data.frame, data.table or list"), i+1);
+    if (TYPEOF(li) != VECSXP)
+      error(_("Item %d of input is not a data.frame, data.table or list"), i+1);
     const int thisncol = length(li);
     if (!thisncol) continue;
     // delete as now more flexible ... if (fill && isNull(getAttrib(li, R_NamesSymbol))) error(_("When fill=TRUE every item of the input must have column names. Item %d does not."), i+1);
@@ -36,17 +39,20 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
       if (thisncol>ncol) ncol=thisncol;  // this section initializes ncol with max ncol. ncol may be increased when usenames is accounted for further down
     } else {
       if (ncol==0) { ncol=thisncol; first=i; }
-      else if (thisncol!=ncol) error(_("Item %d has %d columns, inconsistent with item %d which has %d columns. To fill missing columns use fill=TRUE."), i+1, thisncol, first+1, ncol);
+      else if (thisncol!=ncol)
+        error(_("Item %d has %d columns, inconsistent with item %d which has %d columns. To fill missing columns use fill=TRUE."), i+1, thisncol, first+1, ncol);
     }
     int nNames = length(getAttrib(li, R_NamesSymbol));
-    if (nNames>0 && nNames!=thisncol) error(_("Item %d has %d columns but %d column names. Invalid object."), i+1, thisncol, nNames);
+    if (nNames>0 && nNames!=thisncol)
+      error(_("Item %d has %d columns but %d column names. Invalid object."), i+1, thisncol, nNames);
     if (nNames>0) anyNames=true;
     upperBoundUniqueNames += nNames;
     int maxLen=0, whichMax=0;
     for (int j=0; j<thisncol; ++j) { int tt=length(VECTOR_ELT(li,j)); if (tt>maxLen) { maxLen=tt; whichMax=j; } }
     for (int j=0; j<thisncol; ++j) {
       int tt = length(VECTOR_ELT(li, j));
-      if (tt>1 && tt!=maxLen) error(_("Column %d of item %d is length %d inconsistent with column %d which is length %d. Only length-1 columns are recycled."), j+1, i+1, tt, whichMax+1, maxLen);
+      if (tt>1 && tt!=maxLen)
+        error(_("Column %d of item %d is length %d inconsistent with column %d which is length %d. Only length-1 columns are recycled."), j+1, i+1, tt, whichMax+1, maxLen);
       if (tt==0 && maxLen>0 && numZero++==0) { firstZeroCol = j; firstZeroItem=i; }
     }
     eachMax[i] = maxLen;
@@ -59,8 +65,10 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
             firstZeroCol+1, ch, firstZeroItem+1, numZero-1, numZero==2?"":"s");
   }
   if (nrow==0 && ncol==0) return(R_NilValue);
-  if (nrow>INT32_MAX) error(_("Total rows in the list is %"PRId64" which is larger than the maximum number of rows, currently %d"), (int64_t)nrow, INT32_MAX);
-  if (usenames==TRUE && !anyNames) error(_("use.names=TRUE but no item of input list has any names"));
+  if (nrow>INT32_MAX)
+    error(_("Total rows in the list is %"PRId64" which is larger than the maximum number of rows, currently %d"), (int64_t)nrow, INT32_MAX);
+  if (usenames==TRUE && !anyNames)
+    error(_("use.names=TRUE but no item of input list has any names"));
 
   int *colMap=NULL; // maps each column in final result to the column of each list item
   if (usenames==TRUE || usenames==NA_LOGICAL) {
@@ -68,7 +76,8 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
     // when use.names==NA we also proceed here as if use.names was TRUE to save new code and then check afterwards the map is 1:ncol for every item
     // first find number of unique column names present; i.e. length(unique(unlist(lapply(l,names))))
     SEXP *uniq = (SEXP *)malloc(upperBoundUniqueNames * sizeof(SEXP));  // upperBoundUniqueNames was initialized with 1 to ensure this is defined (otherwise 0 when no item has names)
-    if (!uniq) error(_("Failed to allocate upper bound of %"PRId64" unique column names [sum(lapply(l,ncol))]"), (int64_t)upperBoundUniqueNames);
+    if (!uniq)
+      error(_("Failed to allocate upper bound of %"PRId64" unique column names [sum(lapply(l,ncol))]"), (int64_t)upperBoundUniqueNames);
     savetl_init();
     int nuniq=0;
     for (int i=0; i<LENGTH(l); i++) {
@@ -188,7 +197,8 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
     // for (int i=0; i<LENGTH(l); ++i) { for (int j=0; j<ncol; ++j) Rprintf(_("%2d "),colMap[i*ncol + j]);  Rprintf(_("\n")); }
   }
 
-  if (fill && usenames==NA_LOGICAL) error(_("Internal error: usenames==NA but fill=TRUE. usenames should have been set to TRUE earlier with warning."));
+  if (fill && usenames==NA_LOGICAL)
+    error(_("Internal error: usenames==NA but fill=TRUE. usenames should have been set to TRUE earlier with warning."));
   if (!fill && (usenames==TRUE || usenames==NA_LOGICAL)) {
     // Ensure no missings in both cases, and (when usenames==NA) all columns in same order too
     // We proceeded earlier as if fill was true, so varying ncol items will have missings here
@@ -203,19 +213,22 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
         if (w==-1) {
           int missi = i;
           while (colMap[i*ncol + j]==-1 && i<LENGTH(l)) i++;
-          if (i==LENGTH(l)) error(_("Internal error: could not find the first column name not present in earlier item"));
+          if (i==LENGTH(l))
+            error(_("Internal error: could not find the first column name not present in earlier item"));
           SEXP s = getAttrib(VECTOR_ELT(l, i), R_NamesSymbol);
           int w2 = colMap[i*ncol + j];
           const char *str = isString(s) ? CHAR(STRING_ELT(s,w2)) : "";
           snprintf(buff, 1000, _("Column %d ['%s'] of item %d is missing in item %d. Use fill=TRUE to fill with NA (NULL for list columns), or use.names=FALSE to ignore column names.%s"),
                         w2+1, str, i+1, missi+1, extra );
-          if (usenames==TRUE) error(buff);
+          if (usenames==TRUE)
+            error(buff);
           i = LENGTH(l); // break from outer i loop
           break;         // break from inner j loop
         }
         if (w!=j && usenames==NA_LOGICAL) {
           SEXP s = getAttrib(VECTOR_ELT(l, i), R_NamesSymbol);
-          if (!isString(s) || i==0) error(_("Internal error: usenames==NA but an out-of-order name has been found in an item with no names or the first item. [%d]"), i);
+          if (!isString(s) || i==0)
+            error(_("Internal error: usenames==NA but an out-of-order name has been found in an item with no names or the first item. [%d]"), i);
           snprintf(buff, 1000, _("Column %d ['%s'] of item %d appears in position %d in item %d. Set use.names=TRUE to match by column name, or use.names=FALSE to ignore column names.%s"),
                                w+1, CHAR(STRING_ELT(s,w)), i+1, j+1, i, extra);
           i = LENGTH(l);
@@ -231,7 +244,8 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
         const char *o = isNull(opt) ? "message" : CHAR(STRING_ELT(opt,0));
         if      (strcmp(o,"message")==0) { eval(PROTECT(lang2(install("message"),PROTECT(ScalarString(mkChar(buff))))), R_GlobalEnv); UNPROTECT(2); }
         else if (strcmp(o,"warning")==0) warning(buff);
-        else if (strcmp(o,"error")==0)   error(buff);
+        else if (strcmp(o,"error")==0)
+          error(buff);
         else if (strcmp(o,"none")!=0)    warning(_("options()$datatable.rbindlist.check=='%s' which is not 'message'|'warning'|'error'|'none'. See news item 5 in v1.12.2."), o);
       }
     }
@@ -295,7 +309,8 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
       // Use >= for #546 -- TYPEORDER=0 for both LGLSXP and EXPRSXP (but also NULL)
       if (TYPEORDER(thisType)>=TYPEORDER(maxType) && !isNull(thisCol)) maxType=thisType;
       if (isFactor(thisCol)) {
-        if (isNull(getAttrib(thisCol,R_LevelsSymbol))) error(_("Column %d of item %d has type 'factor' but has no levels; i.e. malformed."), w+1, i+1);
+        if (isNull(getAttrib(thisCol,R_LevelsSymbol)))
+          error(_("Column %d of item %d has type 'factor' but has no levels; i.e. malformed."), w+1, i+1);
         factor = true;
         if (isOrdered(thisCol)) {
           orderedFactor = true;
@@ -359,7 +374,10 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
         const SEXP *sd = STRING_PTR(longestLevels);
         nLevel = allocLevel = longestLen;
         levelsRaw = (SEXP *)malloc(nLevel * sizeof(SEXP));
-        if (!levelsRaw) { savetl_end(); error(_("Failed to allocate working memory for %d ordered factor levels of result column %d"), nLevel, idcol+j+1); }
+        if (!levelsRaw) {
+          savetl_end();
+          error(_("Failed to allocate working memory for %d ordered factor levels of result column %d"), nLevel, idcol+j+1);
+        }
         for (int k=0; k<longestLen; ++k) {
           SEXP s = sd[k];
           if (TRUELENGTH(s)>0) savetl(s);

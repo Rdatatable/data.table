@@ -150,14 +150,16 @@ SEXP freadR(
   args.skipEmptyLines = LOGICAL(skipEmptyLinesArg)[0];
   args.fill = LOGICAL(fillArg)[0];
   args.showProgress = LOGICAL(showProgressArg)[0];
-  if (INTEGER(nThreadArg)[0]<1) error(_("nThread(%d)<1"), INTEGER(nThreadArg)[0]);
+  if (INTEGER(nThreadArg)[0]<1)
+    error(_("nThread(%d)<1"), INTEGER(nThreadArg)[0]);
   args.nth = (uint32_t)INTEGER(nThreadArg)[0];
   args.verbose = verbose;
   args.warningsAreErrors = warningsAreErrors;
   args.keepLeadingZeros = LOGICAL(keepLeadingZerosArgs)[0];
 
   // === extras used for callbacks ===
-  if (!isString(integer64Arg) || LENGTH(integer64Arg)!=1) error(_("'integer64' must be a single character string"));
+  if (!isString(integer64Arg) || LENGTH(integer64Arg)!=1)
+    error(_("'integer64' must be a single character string"));
   const char *tt = CHAR(STRING_ELT(integer64Arg,0));
   if (strcmp(tt, "integer64")==0) {
     readInt64As = CT_INT64;

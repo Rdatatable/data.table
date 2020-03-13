@@ -12,13 +12,19 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
   clock_t tstart=0, tblock[10]={0}; int nblock[10]={0};
   const bool verbose = LOGICAL(verboseArg)[0]==1;
 
-  if (!isInteger(order)) error(_("Internal error: order not integer vector")); // # nocov
-  if (TYPEOF(starts) != INTSXP) error(_("Internal error: starts not integer")); // # nocov
-  if (TYPEOF(lens) != INTSXP) error(_("Internal error: lens not integer")); // # nocov
+  if (!isInteger(order))
+    error(_("Internal error: order not integer vector")); // # nocov
+  if (TYPEOF(starts) != INTSXP)
+    error(_("Internal error: starts not integer")); // # nocov
+  if (TYPEOF(lens) != INTSXP)
+    error(_("Internal error: lens not integer")); // # nocov
   // starts can now be NA (<0): if (INTEGER(starts)[0]<0 || INTEGER(lens)[0]<0) error(_("starts[1]<0 or lens[1]<0"));
-  if (!isNull(jiscols) && LENGTH(order) && !LOGICAL(on)[0]) error(_("Internal error: jiscols not NULL but o__ has length")); // # nocov
-  if (!isNull(xjiscols) && LENGTH(order) && !LOGICAL(on)[0]) error(_("Internal error: xjiscols not NULL but o__ has length")); // # nocov
-  if(!isEnvironment(env)) error(_("'env' should be an environment"));
+  if (!isNull(jiscols) && LENGTH(order) && !LOGICAL(on)[0])
+    error(_("Internal error: jiscols not NULL but o__ has length")); // # nocov
+  if (!isNull(xjiscols) && LENGTH(order) && !LOGICAL(on)[0])
+    error(_("Internal error: xjiscols not NULL but o__ has length")); // # nocov
+  if(!isEnvironment(env))
+    error(_("'env' should be an environment"));
   ngrp = length(starts);  // the number of groups  (nrow(groups) will be larger when by)
   ngrpcols = length(grpcols);
   nrowgroups = length(VECTOR_ELT(groups,0));
@@ -41,7 +47,8 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
   }
   setAttrib(BY, R_NamesSymbol, bynames); // Fix for #42 - BY doesn't retain names anymore
   R_LockBinding(sym_BY, env);
-  if (isNull(jiscols) && (length(bynames)!=length(groups) || length(bynames)!=length(grpcols))) error(_("!length(bynames)[%d]==length(groups)[%d]==length(grpcols)[%d]"),length(bynames),length(groups),length(grpcols));
+  if (isNull(jiscols) && (length(bynames)!=length(groups) || length(bynames)!=length(grpcols)))
+    error(_("!length(bynames)[%d]==length(groups)[%d]==length(grpcols)[%d]"),length(bynames),length(groups),length(grpcols));
   // TO DO: check this check above.
 
   N =   PROTECT(findVar(install(".N"), env));   nprotect++; // PROTECT for rchk
@@ -60,14 +67,17 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
   // fetch rownames of .SD.  rownames[1] is set to -thislen for each group, in case .SD is passed to
   // non data.table aware package that uses rownames
   for (s = ATTRIB(SD); s != R_NilValue && TAG(s)!=R_RowNamesSymbol; s = CDR(s));  // getAttrib0 basically but that's hidden in attrib.c
-  if (s==R_NilValue) error(_("row.names attribute of .SD not found"));
+  if (s==R_NilValue)
+    error(_("row.names attribute of .SD not found"));
   rownames = CAR(s);
-  if (!isInteger(rownames) || LENGTH(rownames)!=2 || INTEGER(rownames)[0]!=NA_INTEGER) error(_("row.names of .SD isn't integer length 2 with NA as first item; i.e., .set_row_names(). [%s %d %d]"),type2char(TYPEOF(rownames)),LENGTH(rownames),INTEGER(rownames)[0]);
+  if (!isInteger(rownames) || LENGTH(rownames)!=2 || INTEGER(rownames)[0]!=NA_INTEGER)
+    error(_("row.names of .SD isn't integer length 2 with NA as first item; i.e., .set_row_names(). [%s %d %d]"),type2char(TYPEOF(rownames)),LENGTH(rownames),INTEGER(rownames)[0]);
 
   // fetch names of .SD and prepare symbols. In case they are copied-on-write by user assigning to those variables
   // using <- in j (which is valid, useful and tested), they are repointed to the .SD cols for each group.
   SEXP names = PROTECT(getAttrib(SDall, R_NamesSymbol)); nprotect++;
-  if (length(names) != length(SDall)) error(_("length(names)!=length(SD)"));
+  if (length(names) != length(SDall))
+    error(_("length(names)!=length(SD)"));
   SEXP *nameSyms = (SEXP *)R_alloc(length(names), sizeof(SEXP));
   for(int i=0; i<length(SDall); ++i) {
     if (SIZEOF(VECTOR_ELT(SDall, i))==0)
@@ -81,7 +91,8 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
   if (length(SDall)) origSDnrow = length(VECTOR_ELT(SDall, 0));
 
   SEXP xknames = PROTECT(getAttrib(xSD, R_NamesSymbol)); nprotect++;
-  if (length(xknames) != length(xSD)) error(_("length(xknames)!=length(xSD)"));
+  if (length(xknames) != length(xSD))
+    error(_("length(xknames)!=length(xSD)"));
   SEXP *xknameSyms = (SEXP *)R_alloc(length(xknames), sizeof(SEXP));
   for(int i=0; i<length(xSD); ++i) {
     if (SIZEOF(VECTOR_ELT(xSD, i))==0)
@@ -89,8 +100,10 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
     xknameSyms[i] = install(CHAR(STRING_ELT(xknames, i)));
   }
 
-  if (length(iSD)!=length(jiscols)) error(_("length(iSD)[%d] != length(jiscols)[%d]"),length(iSD),length(jiscols));
-  if (length(xSD)!=length(xjiscols)) error(_("length(xSD)[%d] != length(xjiscols)[%d]"),length(xSD),length(xjiscols));
+  if (length(iSD)!=length(jiscols))
+    error(_("length(iSD)[%d] != length(jiscols)[%d]"),length(iSD),length(jiscols));
+  if (length(xSD)!=length(xjiscols))
+    error(_("length(xSD)[%d] != length(xjiscols)[%d]"),length(xSD),length(xjiscols));
 
   SEXP listwrap = PROTECT(allocVector(VECSXP, 1)); nprotect++;
   Rboolean jexpIsSymbolOtherThanSD = (isSymbol(jexp) && strcmp(CHAR(PRINTNAME(jexp)),".SD")!=0);  // test 559
@@ -227,7 +240,8 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
         RHS = VECTOR_ELT(jval,j%LENGTH(jval));
         if (isNull(target)) {
           // first time adding to new column
-          if (TRUELENGTH(dt) < colj+1) error(_("Internal error: Trying to add new column by reference but tl is full; setalloccol should have run first at R level before getting to this point in dogroups")); // # nocov
+          if (TRUELENGTH(dt) < colj+1)
+            error(_("Internal error: Trying to add new column by reference but tl is full; setalloccol should have run first at R level before getting to this point in dogroups")); // # nocov
           target = PROTECT(allocNAVectorLike(RHS, n));
           // Even if we could know reliably to switch from allocNAVectorLike to allocVector for slight speedup, user code could still
           // contain a switched halt, and in that case we'd want the groups not yet done to have NA rather than 0 or uninitialized.
@@ -249,7 +263,8 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
     }
     maxn = 0;
     if (njval==0) njval = LENGTH(jval);   // for first group, then the rest (when non 0) must conform to the first >0 group
-    if (njval!=LENGTH(jval)) error(_("j doesn't evaluate to the same number of columns for each group"));  // this would be a problem even if we unlisted afterwards. This way the user finds out earlier though so he can fix and rerun sooner.
+    if (njval!=LENGTH(jval))
+      error(_("j doesn't evaluate to the same number of columns for each group"));  // this would be a problem even if we unlisted afterwards. This way the user finds out earlier though so he can fix and rerun sooner.
     for (int j=0; j<njval; ++j) {
       int k = length(VECTOR_ELT(jval,j));  // might be NULL, so length not LENGTH
       maxn = k>maxn ? k : maxn;
@@ -309,7 +324,8 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
       } else {
         estn = ((double)ngrp/i)*1.1*(ansloc+maxn);
         if (verbose) Rprintf(_("dogroups: growing from %d to %d rows\n"), length(VECTOR_ELT(ans,0)), estn);
-        if (length(ans) != ngrpcols + njval) error(_("dogroups: length(ans)[%d]!=ngrpcols[%d]+njval[%d]"),length(ans),ngrpcols,njval);
+        if (length(ans) != ngrpcols + njval)
+          error(_("dogroups: length(ans)[%d]!=ngrpcols[%d]+njval[%d]"),length(ans),ngrpcols,njval);
         for (int j=0; j<length(ans); ++j) SET_VECTOR_ELT(ans, j, growVector(VECTOR_ELT(ans,j), estn));
       }
     }
@@ -361,7 +377,8 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
   for (int j=0; j<length(SDall); ++j) SETLENGTH(VECTOR_ELT(SDall,j), origSDnrow);
   SETLENGTH(I, origIlen);
   if (verbose) {
-    if (nblock[0] && nblock[1]) error(_("Internal error: block 0 [%d] and block 1 [%d] have both run"), nblock[0], nblock[1]); // # nocov
+    if (nblock[0] && nblock[1])
+      error(_("Internal error: block 0 [%d] and block 1 [%d] have both run"), nblock[0], nblock[1]); // # nocov
     int w = nblock[1]>0;
     Rprintf(_("\n  %s took %.3fs for %d groups\n"), w ? "collecting discontiguous groups" : "memcpy contiguous groups",
                           1.0*tblock[w]/CLOCKS_PER_SEC, nblock[w]);
@@ -389,7 +406,8 @@ SEXP growVector(SEXP x, const R_len_t newlen)
   // * much shorter and faster
   SEXP newx;
   R_len_t len = length(x);
-  if (isNull(x)) error(_("growVector passed NULL"));
+  if (isNull(x))
+    error(_("growVector passed NULL"));
   PROTECT(newx = allocVector(TYPEOF(x), newlen));   // TO DO: R_realloc(?) here?
   if (newlen < len) len=newlen;   // i.e. shrink
   switch (TYPEOF(x)) {

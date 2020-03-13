@@ -374,8 +374,10 @@ static uint64_t dmask=0;
 SEXP setNumericRounding(SEXP droundArg)
 // init.c has initial call with default of 2
 {
-  if (!isInteger(droundArg) || LENGTH(droundArg)!=1) error(_("Must an integer or numeric vector length 1"));
-  if (INTEGER(droundArg)[0] < 0 || INTEGER(droundArg)[0] > 2) error(_("Must be 2, 1 or 0"));
+  if (!isInteger(droundArg) || LENGTH(droundArg)!=1)
+    error(_("Must an integer or numeric vector length 1"));
+  if (INTEGER(droundArg)[0] < 0 || INTEGER(droundArg)[0] > 2)
+    error(_("Must be 2, 1 or 0"));
   dround = INTEGER(droundArg)[0];
   dmask = dround ? 1 << (8*dround-1) : 0;
   return R_NilValue;
@@ -1307,11 +1309,14 @@ SEXP isOrderedSubset(SEXP x, SEXP nrowArg)
 // specialized for use in [.data.table only
 // Ignores 0s but heeds NAs and any out-of-range (which result in NA)
 {
-  if (!isNull(x) && !isInteger(x)) error(_("x must be either NULL or an integer vector"));
+  if (!isNull(x) && !isInteger(x))
+    error(_("x must be either NULL or an integer vector"));
   if (length(x)<=1) return(ScalarLogical(TRUE));  // a single NA when length(x)==1 is ordered (e.g. tests 128 & 130) otherwise anyNA => FALSE
-  if (!isInteger(nrowArg) || LENGTH(nrowArg)!=1) error(_("nrow must be integer vector length 1"));
+  if (!isInteger(nrowArg) || LENGTH(nrowArg)!=1)
+    error(_("nrow must be integer vector length 1"));
   const int nrow = INTEGER(nrowArg)[0];
-  if (nrow<0) error(_("nrow==%d but must be >=0"), nrow);
+  if (nrow<0)
+    error(_("nrow==%d but must be >=0"), nrow);
   const int *xd = INTEGER(x), xlen=LENGTH(x);
   for (int i=0, last=INT_MIN; i<xlen; ++i) {
     int elem = xd[i];
@@ -1328,7 +1333,8 @@ SEXP binary(SEXP x)
 {
   char buffer[69];
   int j;
-  if (!isReal(x)) error(_("x must be type 'double'"));
+  if (!isReal(x))
+    error(_("x must be type 'double'"));
   SEXP ans = PROTECT(allocVector(STRSXP, LENGTH(x)));
   uint64_t *xd = (uint64_t *)REAL(x);
   for (int i=0; i<LENGTH(x); i++) {

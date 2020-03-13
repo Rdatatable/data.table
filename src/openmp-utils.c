@@ -64,7 +64,8 @@ static const char *mygetenv(const char *name, const char *unset) {
 }
 
 SEXP getDTthreads_R(SEXP verbose) {
-  if (!isLogical(verbose) || LENGTH(verbose)!=1 || INTEGER(verbose)[0]==NA_LOGICAL) error(_("'verbose' must be TRUE or FALSE"));
+  if (!isLogical(verbose) || LENGTH(verbose)!=1 || INTEGER(verbose)[0]==NA_LOGICAL)
+    error(_("'verbose' must be TRUE or FALSE"));
   if (LOGICAL(verbose)[0]) {
     #ifndef _OPENMP
       Rprintf(_("This installation of data.table has not been compiled with OpenMP support.\n"));
@@ -102,9 +103,11 @@ SEXP setDTthreads(SEXP threads, SEXP restore_after_fork, SEXP percent) {
     // reflect that and a call to setDTthreads(threads=NULL) will update DTthreads.
   } else {
     int n=0, protecti=0;
-    if (length(threads)!=1) error(_("threads= must be either NULL (default) or a single number. It has length %d"), length(threads));
+    if (length(threads)!=1)
+      error(_("threads= must be either NULL (default) or a single number. It has length %d"), length(threads));
     if (isReal(threads)) { threads = PROTECT(coerceVector(threads, INTSXP)); protecti++; }
-    if (!isInteger(threads)) error(_("threads= must be either NULL (default) or type integer/numeric"));
+    if (!isInteger(threads))
+      error(_("threads= must be either NULL (default) or type integer/numeric"));
     if ((n=INTEGER(threads)[0]) < 0) {  // <0 catches NA too since NA is negative (INT_MIN)
       error(_("threads= must be either NULL or a single integer >= 0. See ?setDTthreads."));
     }
@@ -114,7 +117,8 @@ SEXP setDTthreads(SEXP threads, SEXP restore_after_fork, SEXP percent) {
       error(_("Internal error: percent= must be TRUE or FALSE at C level"));  // # nocov
     }
     if (LOGICAL(percent)[0]) {
-      if (n<2 || n>100) error(_("Internal error: threads==%d should be between 2 and 100 (percent=TRUE at C level)."), n);  // # nocov
+      if (n<2 || n>100)
+        error(_("Internal error: threads==%d should be between 2 and 100 (percent=TRUE at C level)."), n);  // # nocov
       n = num_procs*n/100;  // if 0 it will be reset to 1 in the imax() below
     } else {
       if (n==0 || n>num_procs) n = num_procs; // setDTthreads(0) == setDTthread(percent=100); i.e. use all logical CPUs (the default in 1.12.0 and before, from 1.12.2 it's 50%)
