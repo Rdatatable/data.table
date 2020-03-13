@@ -39,20 +39,32 @@ setnafill = function(x, type=c("const","locf","nocb"), fill=NA, nan=NA, cols=seq
 }
 
 lagby = function(..., by, fill) {
-  lagbyv(list(...), by, fill)
+	x = list(...)
+  lagbyv(x, by, fill)
 }
 
 lagbyv = function(x, by, fill) {
-  if (missing(fill)) {
-	  fill = lapply(x, function(s) as(NA, class(s)))
-	}
-	if (length(fill)!=length(x)) stop("fill needs to be same length as x for filling first group.")
-	if (!identical(lapply(x, class), lapply(fill, class))) {
-	  #coerce fill to same classes as x
-		fill = Map(function(s, cls) as(s, cls), fill, class(x))
-	}
-	if (is.atomic(x)) {
-	  x = as_list(x)
+  if (missing(fill) && is.list(x))
+    fill = as.list(rep(NA_real_, length(x)))
+	else if (missing(fill) && is.atomic(x))
+		fill = list(NA_real_)
+	if (any(lapply(fill, length)!=1L))
+		stop("Each element in fill must be of length 1L.")
+	if (is.list(x) && length(fill)!=length(x))
+	  stop("fill needs to be same length as x for filling first group.")
+  if (is.list(x) && any(lapply(x, length)!=length(by)))
+    stop("Column(s) ", paste(which(lapply(x, length)!=length(by)), collapse=", "), " must have same length as by.")
+	if (!is.list(x) && length(x) != length(by))
+		stop("x must be same length as by.")
+	#in case a factor is filled with a new level
+	if (is.list(x)) {
+		for (k in seq_along(x)) {
+			if (is.factor(x[[k]])) {
+				levels(x[[k]]) = c(levels(x[[k]]), fill[[k]])
+			}
+		}
+	} else if (is.factor(x)) {
+		levels(x) = c(levels(x), fill[[1L]])
 	}
 	ans = .Call(Clagby, x, by, fill)
 	ans
