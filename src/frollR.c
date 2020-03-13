@@ -46,7 +46,7 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
   if (xlength(k) == 0)                                          // check that window is non zero length
     error(_("n must be non 0 length"));
 
-  if (!isLogical(adaptive) || length(adaptive) != 1 || LOGICAL(adaptive)[0] == NA_LOGICAL)
+  if (!IS_TRUE_OR_FALSE(adaptive))
     error(_("%s must be TRUE or FALSE"), "adaptive");
   bool badaptive = LOGICAL(adaptive)[0];
 

@@ -236,7 +236,8 @@ int checkOverAlloc(SEXP x)
 }
 
 SEXP alloccolwrapper(SEXP dt, SEXP overAllocArg, SEXP verbose) {
-  if (!isLogical(verbose) || length(verbose)!=1) error(_("%s must be TRUE or FALSE"), "verbose");
+  if (!IS_TRUE_OR_FALSE(verbose))
+    error(_("%s must be TRUE or FALSE"), "verbose");
   int overAlloc = checkOverAlloc(overAllocArg);
   SEXP ans = PROTECT(alloccol(dt, length(dt)+overAlloc, LOGICAL(verbose)[0]));
 

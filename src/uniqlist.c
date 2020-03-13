@@ -347,7 +347,8 @@ SEXP nestedid(SEXP l, SEXP cols, SEXP order, SEXP grps, SEXP resetvals, SEXP mul
 SEXP uniqueNlogical(SEXP x, SEXP narmArg) {
   // single pass; short-circuit and return as soon as all 3 values are found
   if (!isLogical(x)) error(_("x is not a logical vector"));
-  if (!isLogical(narmArg) || length(narmArg)!=1 || INTEGER(narmArg)[0]==NA_INTEGER) error(_("%s must be TRUE or FALSE"), "na.rm");
+  if (!IS_TRUE_OR_FALSE(narmArg))
+    error(_("%s must be TRUE or FALSE"), "na.rm");
   bool narm = LOGICAL(narmArg)[0]==1;
   const R_xlen_t n = xlength(x);
   if (n==0)
