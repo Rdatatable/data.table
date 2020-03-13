@@ -98,7 +98,7 @@ SEXP colnamesInt(SEXP x, SEXP cols, SEXP check_dups) {
   if (!isNewList(x))
     error(_("'x' argument must be data.table compatible"));
   if (!IS_TRUE_OR_FALSE(check_dups))
-    error(_("'check_dups' argument must be TRUE or FALSE"));
+    error(_("%s must be TRUE or FALSE"), "check_dups");
   int protecti = 0;
   R_len_t nx = length(x);
   R_len_t nc = length(cols);

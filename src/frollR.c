@@ -47,7 +47,7 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
     error(_("n must be non 0 length"));
 
   if (!isLogical(adaptive) || length(adaptive) != 1 || LOGICAL(adaptive)[0] == NA_LOGICAL)
-    error(_("adaptive must be TRUE or FALSE"));
+    error(_("%s must be TRUE or FALSE"), "adaptive");
   bool badaptive = LOGICAL(adaptive)[0];
 
   R_len_t nk = 0;                                               // number of rolling windows, for adaptive might be atomic to be wrapped into list, 0 for clang -Wall
@@ -101,7 +101,7 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
   }
 
   if (!IS_TRUE_OR_FALSE(narm))
-    error(_("na.rm must be TRUE or FALSE"));
+    error(_("%s must be TRUE or FALSE"), "na.rm");
 
   if (!isLogical(hasna) || length(hasna)!=1)
     error(_("hasNA must be TRUE, FALSE or NA"));

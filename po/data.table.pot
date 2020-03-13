@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: data.table 1.12.9\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2020-03-13 10:35+0800\n"
+"POT-Creation-Date: 2020-03-13 11:05+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -66,7 +66,7 @@ msgid ""
 "traceback() to data.table issue tracker."
 msgstr ""
 
-#: assign.c:205
+#: assign.c:205 assign.c:304
 #, c-format
 msgid "Internal error: length of names (%d) is not length of dt (%d)"
 msgstr ""
@@ -123,8 +123,12 @@ msgstr ""
 msgid "getOption('datatable.alloc')==%d.  It must be >=0 and not NA."
 msgstr ""
 
-#: assign.c:239 fsort.c:109 openmp-utils.c:67
-msgid "verbose must be TRUE or FALSE"
+#: assign.c:239 between.c:16 between.c:22 forder.c:467 forder.c:470 frollR.c:50
+#: frollR.c:104 fsort.c:109 gsumm.c:342 gsumm.c:577 gsumm.c:686 gsumm.c:805
+#: gsumm.c:950 gsumm.c:1261 gsumm.c:1402 nafill.c:182 openmp-utils.c:67
+#: uniqlist.c:350 utils.c:101
+#, c-format
+msgid "%s must be TRUE or FALSE"
 msgstr ""
 
 #: assign.c:287
@@ -148,11 +152,6 @@ msgstr ""
 
 #: assign.c:302
 msgid "dt passed to assign has no names"
-msgstr ""
-
-#: assign.c:304
-#, c-format
-msgid "Internal error in assign: length of names (%d) is not length of dt (%d)"
 msgstr ""
 
 #: assign.c:306
@@ -580,16 +579,8 @@ msgid ""
 "%d. Each should be either length 1 or the length of the longest."
 msgstr ""
 
-#: between.c:16
-msgid "incbounds must be TRUE or FALSE"
-msgstr ""
-
 #: between.c:19
 msgid "NAbounds must be TRUE or NA"
-msgstr ""
-
-#: between.c:22
-msgid "check must be TRUE or FALSE"
 msgstr ""
 
 #: between.c:64
@@ -878,8 +869,8 @@ msgstr ""
 msgid "Internal error: xjiscols not NULL but o__ has length"
 msgstr ""
 
-#: dogroups.c:21
-msgid "'env' should be an environment"
+#: dogroups.c:21 gsumm.c:43
+msgid "env is not an environment"
 msgstr ""
 
 #: dogroups.c:40
@@ -1458,14 +1449,6 @@ msgstr ""
 msgid "Column %d is length %d which differs from length of column 1 (%d)\n"
 msgstr ""
 
-#: forder.c:467
-msgid "retGrp must be TRUE or FALSE"
-msgstr ""
-
-#: forder.c:470
-msgid "sort must be TRUE or FALSE"
-msgstr ""
-
 #: forder.c:473
 msgid "At least one of retGrp= or sort= must be TRUE"
 msgstr ""
@@ -1743,9 +1726,9 @@ msgstr ""
 msgid "  Opening file %s\n"
 msgstr ""
 
-#: fread.c:1212
+#: fread.c:1212 fread.c:1237
 #, c-format
-msgid "file not found: %s"
+msgid "File not found: %s"
 msgstr ""
 
 #: fread.c:1216
@@ -1761,11 +1744,6 @@ msgstr ""
 #: fread.c:1220 fread.c:1248
 #, c-format
 msgid "  File opened, size = %s.\n"
-msgstr ""
-
-#: fread.c:1237
-#, c-format
-msgid "File not found: %s"
 msgstr ""
 
 #: fread.c:1243
@@ -2711,10 +2689,6 @@ msgstr ""
 msgid "n must be non 0 length"
 msgstr ""
 
-#: frollR.c:50
-msgid "adaptive must be TRUE or FALSE"
-msgstr ""
-
 #: frollR.c:58
 msgid "n must be integer, list is accepted for adaptive TRUE"
 msgstr ""
@@ -2729,11 +2703,6 @@ msgstr ""
 
 #: frollR.c:81 frollR.c:93
 msgid "n must be integer vector or list of integer vectors"
-msgstr ""
-
-#: frollR.c:104 gsumm.c:342 gsumm.c:577 gsumm.c:686 gsumm.c:805 gsumm.c:950
-#: gsumm.c:1261 gsumm.c:1402 uniqlist.c:350
-msgid "na.rm must be TRUE or FALSE"
 msgstr ""
 
 #: frollR.c:107
@@ -3093,10 +3062,6 @@ msgstr ""
 msgid ""
 "sep ('%c'), sep2 ('%c') and dec ('%c') must all be different. Column %d is a "
 "list column."
-msgstr ""
-
-#: gsumm.c:43
-msgid "env is not an environment"
 msgstr ""
 
 #: gsumm.c:45 gsumm.c:46 gsumm.c:47
@@ -4067,10 +4032,6 @@ msgstr ""
 
 #: utils.c:99
 msgid "'x' argument must be data.table compatible"
-msgstr ""
-
-#: utils.c:101
-msgid "'check_dups' argument must be TRUE or FALSE"
 msgstr ""
 
 #: utils.c:117

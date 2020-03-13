@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: data.table 1.12.5\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2020-03-13 10:35+0800\n"
+"POT-Creation-Date: 2020-03-13 11:05+0800\n"
 "PO-Revision-Date: 2019-11-18 00:26-04\n"
 "Last-Translator: Yuhang Chen <yuhangchen0802@gmail.com>\n"
 "Language-Team: Mandarin\n"
@@ -65,7 +65,7 @@ msgstr ""
 "传递给alloccol的dt没有类型属性，请报告traceback()的运行结果给data.table的问题"
 "跟踪器issue tracker"
 
-#: assign.c:205
+#: assign.c:205 assign.c:304
 #, c-format
 msgid "Internal error: length of names (%d) is not length of dt (%d)"
 msgstr "内部错误： 列名列表(%d)长度与dt(%d)的长度不等"
@@ -131,9 +131,13 @@ msgstr "getOption('datatable.alloc')结果为长度%d的数值向量其长度应
 msgid "getOption('datatable.alloc')==%d.  It must be >=0 and not NA."
 msgstr "getOption('datatable.alloc')值为%d, 其必须大于等于零且不能为NA"
 
-#: assign.c:239 fsort.c:109 openmp-utils.c:67
-msgid "verbose must be TRUE or FALSE"
-msgstr "verbose参数必须为TRUE或FALSE"
+#: assign.c:239 between.c:16 between.c:22 forder.c:467 forder.c:470 frollR.c:50
+#: frollR.c:104 fsort.c:109 gsumm.c:342 gsumm.c:577 gsumm.c:686 gsumm.c:805
+#: gsumm.c:950 gsumm.c:1261 gsumm.c:1402 nafill.c:182 openmp-utils.c:67
+#: uniqlist.c:350 utils.c:101
+#, c-format
+msgid "%s must be TRUE or FALSE"
+msgstr " %s 参数必须为 TRUE 或 FALSE"
 
 #: assign.c:287
 msgid "assign has been passed a NULL dt"
@@ -159,11 +163,6 @@ msgstr "内部错误： 传递给赋值操作的dt不是data.table或data.frame�
 #: assign.c:302
 msgid "dt passed to assign has no names"
 msgstr "传递给赋值操作的dt没有命名"
-
-#: assign.c:304
-#, c-format
-msgid "Internal error in assign: length of names (%d) is not length of dt (%d)"
-msgstr "赋值的内部错误： names的长度(%d)与dt的长度(%d)不匹配"
 
 #: assign.c:306
 msgid ""
@@ -648,17 +647,9 @@ msgstr ""
 "向量长度不一致：length(x)==%d length(lower)==%d length(upper)==%d。每一个向量"
 "要么是长度为一或者是等于最长向量的长度。"
 
-#: between.c:16
-msgid "incbounds must be TRUE or FALSE"
-msgstr "incbounds 必须是 TRUE (真) 或者是 FALSE (假)"
-
 #: between.c:19
 msgid "NAbounds must be TRUE or NA"
 msgstr "NAbounds 必须是 TRUE (真) 或者是 FALSE (假)"
-
-#: between.c:22
-msgid "check must be TRUE or FALSE"
-msgstr "check 必须是 TRUE (真) 或者是 FALSE (假)"
 
 #: between.c:64
 #, c-format
@@ -956,9 +947,9 @@ msgstr "内部错误：jiscols 非 NULL，但 o__ 长度不为0"
 msgid "Internal error: xjiscols not NULL but o__ has length"
 msgstr "内部错误：jiscols 非 NULL，但 o__ 长度不为0"
 
-#: dogroups.c:21
-msgid "'env' should be an environment"
-msgstr "'env' 应该是一个环境"
+#: dogroups.c:21 gsumm.c:43
+msgid "env is not an environment"
+msgstr "env不是环境"
 
 #: dogroups.c:40
 #, c-format
@@ -1580,14 +1571,6 @@ msgstr "内部错误：参数 'by' 的值%d超出[1，%d]的范围"
 msgid "Column %d is length %d which differs from length of column 1 (%d)\n"
 msgstr "列%d的长度是%d，与第1列的长度(%d)不同\n"
 
-#: forder.c:467
-msgid "retGrp must be TRUE or FALSE"
-msgstr "retGrp 的参数是逻辑值，必须是 TRUE 或 FALSE"
-
-#: forder.c:470
-msgid "sort must be TRUE or FALSE"
-msgstr " sort 的参数是逻辑值，必须是 TRUE 或 FALSE"
-
 #: forder.c:473
 msgid "At least one of retGrp= or sort= must be TRUE"
 msgstr "retGrp 和sort 的参数中，至少一个必须是 TRUE"
@@ -1873,10 +1856,10 @@ msgstr "内部错误：字符输入的最后一个字节不是 \\0"
 msgid "  Opening file %s\n"
 msgstr "打开文件 %s\n"
 
-#: fread.c:1212
+#: fread.c:1212 fread.c:1237
 #, c-format
-msgid "file not found: %s"
-msgstr "文件未找到： %s"
+msgid "File not found: %s"
+msgstr "文件没有找到：%s"
 
 #: fread.c:1216
 #, c-format
@@ -1892,11 +1875,6 @@ msgstr "文件是空的：%s"
 #, c-format
 msgid "  File opened, size = %s.\n"
 msgstr "文件已打开，大小为 %s.\n"
-
-#: fread.c:1237
-#, c-format
-msgid "File not found: %s"
-msgstr "文件没有找到：%s"
 
 #: fread.c:1243
 #, c-format
@@ -2915,10 +2893,6 @@ msgstr ""
 msgid "n must be non 0 length"
 msgstr "n 必须不是0长度"
 
-#: frollR.c:50
-msgid "adaptive must be TRUE or FALSE"
-msgstr "adaptive 必须是 TRUE 或者 FALSE"
-
 #: frollR.c:58
 msgid "n must be integer, list is accepted for adaptive TRUE"
 msgstr "n 必须是整数, 或者当adaptive TRUE时也可以是列表"
@@ -2934,11 +2908,6 @@ msgstr "n 必须是正整数 (> 0)"
 #: frollR.c:81 frollR.c:93
 msgid "n must be integer vector or list of integer vectors"
 msgstr "n 必须是整数向量 或者由整数向量组成的列表"
-
-#: frollR.c:104 gsumm.c:342 gsumm.c:577 gsumm.c:686 gsumm.c:805 gsumm.c:950
-#: gsumm.c:1261 gsumm.c:1402 uniqlist.c:350
-msgid "na.rm must be TRUE or FALSE"
-msgstr "na.rm 必须是 TRUE 或者 FALSE"
 
 #: frollR.c:107
 msgid "hasNA must be TRUE, FALSE or NA"
@@ -2959,8 +2928,8 @@ msgid ""
 "Internal error: invalid %s argument in %s function should have been caught "
 "earlier. Please report to the data.table issue tracker."
 msgstr ""
-"内部错误：在 %s 函数内无效的 %s 参数, 该错误理应已被捕获，请向data.table"
-"的issue通道报告"
+"内部错误：在 %s 函数内无效的 %s 参数, 该错误理应已被捕获，请向data.table的"
+"issue通道报告"
 
 #: frollR.c:122
 msgid ""
@@ -3328,10 +3297,6 @@ msgid ""
 "sep ('%c'), sep2 ('%c') and dec ('%c') must all be different. Column %d is a "
 "list column."
 msgstr "sep ('%c'), sep2 ('%c') 和 dec ('%c') 必须都不相同. 列 %d 是一个空列表"
-
-#: gsumm.c:43
-msgid "env is not an environment"
-msgstr "env不是环境"
 
 #: gsumm.c:45 gsumm.c:46 gsumm.c:47
 #, c-format
@@ -4394,10 +4359,6 @@ msgstr "allNA() 不支持'%s'类型"
 #: utils.c:99
 msgid "'x' argument must be data.table compatible"
 msgstr "'x' 必须为data.table支持的类型"
-
-#: utils.c:101
-msgid "'check_dups' argument must be TRUE or FALSE"
-msgstr "参数'check_dups'必须为TRUE或者是FALSE"
 
 #: utils.c:117
 msgid ""

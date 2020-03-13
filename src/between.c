@@ -13,13 +13,13 @@ SEXP between(SEXP x, SEXP lower, SEXP upper, SEXP incbounds, SEXP NAboundsArg, S
   }
   const int longestBound = MAX(nl, nu);  // just for when check=TRUE
   if (!isLogical(incbounds) || LOGICAL(incbounds)[0]==NA_LOGICAL)
-    error(_("incbounds must be TRUE or FALSE"));
+    error(_("%s must be TRUE or FALSE"), "incbounds");
   const bool open = !LOGICAL(incbounds)[0];
   if (!isLogical(NAboundsArg) || LOGICAL(NAboundsArg)[0]==FALSE)
     error(_("NAbounds must be TRUE or NA"));
   const bool NAbounds = LOGICAL(NAboundsArg)[0]==TRUE;
   if (!isLogical(checkArg) || LOGICAL(checkArg)[0]==NA_LOGICAL)
-    error(_("check must be TRUE or FALSE"));
+    error(_("%s must be TRUE or FALSE"), "check");
   const bool check = LOGICAL(checkArg)[0];
   const bool verbose = GetVerbose();
 
