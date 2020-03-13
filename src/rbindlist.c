@@ -243,10 +243,12 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
         }
         const char *o = isNull(opt) ? "message" : CHAR(STRING_ELT(opt,0));
         if      (strcmp(o,"message")==0) { eval(PROTECT(lang2(install("message"),PROTECT(ScalarString(mkChar(buff))))), R_GlobalEnv); UNPROTECT(2); }
-        else if (strcmp(o,"warning")==0) warning(buff);
+        else if (strcmp(o,"warning")==0)
+          warning(buff);
         else if (strcmp(o,"error")==0)
           error(buff);
-        else if (strcmp(o,"none")!=0)    warning(_("options()$datatable.rbindlist.check=='%s' which is not 'message'|'warning'|'error'|'none'. See news item 5 in v1.12.2."), o);
+        else if (strcmp(o,"none")!=0)
+          warning(_("options()$datatable.rbindlist.check=='%s' which is not 'message'|'warning'|'error'|'none'. See news item 5 in v1.12.2."), o);
       }
     }
   }
@@ -538,7 +540,8 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
           }
           // else coerces if needed within memrecycle; with a no-alloc direct coerce from 1.12.4 (PR #3909)
           const char *ret = memrecycle(target, R_NilValue, ansloc, thisnrow, thisCol, 0, -1, idcol+j+1, foundName);
-          if (ret) warning(_("Column %d of item %d: %s"), w+1, i+1, ret);
+          if (ret)
+            warning(_("Column %d of item %d: %s"), w+1, i+1, ret);
           // e.g. when precision is lost like assigning 3.4 to integer64; test 2007.2
           // TODO: but maxType should handle that and this should never warn
         }

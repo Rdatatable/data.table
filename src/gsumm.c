@@ -412,7 +412,8 @@ SEXP gsum(SEXP x, SEXP narmArg, SEXP warnOverflowArg)
     //Rprintf(_("gsum int took %.3f\n"), wallclock()-started);
     if (overflow) {
       UNPROTECT(1); // discard the result with overflow
-      if (warnOverflow) warning(_("The sum of an integer column for a group was more than type 'integer' can hold so the result has been coerced to 'numeric' automatically for convenience."));
+      if (warnOverflow)
+        warning(_("The sum of an integer column for a group was more than type 'integer' can hold so the result has been coerced to 'numeric' automatically for convenience."));
       ans = PROTECT(allocVector(REALSXP, ngrp));
       double *restrict ansp = REAL(ans);
       memset(ansp, 0, ngrp*sizeof(double));

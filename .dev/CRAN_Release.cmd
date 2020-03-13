@@ -157,7 +157,9 @@ grep -P "\t" ./src/*.c
 #   (1) in a comment (pattern: after // or after \s*[*]
 #   (2) in '} else error(' pattern (if else is covered, so is the error)
 #   (3) in #define macros
-grep -Enr "\berror[(]" src --include=*.c | grep -Ev "^src/[a-zA-Z-]+[.]c:[0-9]+:\s*(?:error|(?:[}]\s*)?else error|#define|[*]|.*//.*error)"
+for type in error warning; do
+  grep -Enr "\b$type[(]" src --include=*.c | grep -Ev "^src\/[a-zA-Z-]+[.]c:[0-9]+:\s*(?:(?:[}]?\s*else\s*)?$type|#define|[*]|.*\/\/.*$type)"
+done
 
 # No T or F symbols in tests.Rraw. 24 valid F (quoted, column name or in data) and 1 valid T at the time of writing
 grep -n "[^A-Za-z0-9]T[^A-Za-z0-9]" ./inst/tests/tests.Rraw
