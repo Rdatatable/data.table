@@ -116,7 +116,7 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
   else if (!strcmp(CHAR(STRING_ELT(align, 0)), "left"))
     ialign = -1;
   else
-    error(_("Internal error: invalid align argument in rolling function, should have been caught before. please report to data.table issue tracker.")); // # nocov
+    error(_("Internal error: invalid %s argument in %s function should have been caught earlier. Please report to the data.table issue tracker."), "align", "rolling"); // # nocov
 
   if (badaptive && ialign!=1)
     error(_("using adaptive TRUE and align argument different than 'right' is not implemented"));
@@ -148,7 +148,7 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
   } else if (!strcmp(CHAR(STRING_ELT(fun, 0)), "sum")) {
     sfun = SUM;
   } else {
-    error(_("Internal error: invalid fun argument in rolling function, should have been caught before. please report to data.table issue tracker.")); // # nocov
+    error(_("Internal error: invalid %s argument in %s function should have been caught earlier. Please report to the data.table issue tracker."), "fun", "rolling"); // # nocov
   }
 
   if (length(fill) != 1)
@@ -182,7 +182,7 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
   else if (!strcmp(CHAR(STRING_ELT(algo, 0)), "exact"))
     ialgo = 1;                                                  // exact = 1
   else
-    error(_("Internal error: invalid algo argument in rolling function, should have been caught before. please report to data.table issue tracker.")); // # nocov
+    error(_("Internal error: invalid %s argument in %s function should have been caught earlier. Please report to the data.table issue tracker."), "algo", "rolling"); // # nocov
 
   int* iik = NULL;
   if (!badaptive) {
@@ -272,7 +272,7 @@ SEXP frollapplyR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP align, SEXP rho) {
   } else if (!strcmp(CHAR(STRING_ELT(align, 0)), "left")) {
     ialign = -1;
   } else {
-    error(_("Internal error: invalid align argument in rolling function, should have been caught before. please report to data.table issue tracker.")); // # nocov
+    error(_("Internal error: invalid %s argument in %s function should have been caught earlier. Please report to the data.table issue tracker."), "align", "rolling"); // # nocov
   }
 
   if (length(fill) != 1)

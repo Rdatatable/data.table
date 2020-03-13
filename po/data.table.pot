@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: data.table 1.12.9\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2020-03-12 10:56+0800\n"
+"POT-Creation-Date: 2020-03-13 10:35+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -2746,10 +2746,12 @@ msgid ""
 "NA values use hasNA TRUE, otherwise leave it as default NA"
 msgstr ""
 
-#: frollR.c:119 frollR.c:275
+#: frollR.c:119 frollR.c:151 frollR.c:185 frollR.c:275 nafill.c:159
+#: nafill.c:191
+#, c-format
 msgid ""
-"Internal error: invalid align argument in rolling function, should have been "
-"caught before. please report to data.table issue tracker."
+"Internal error: invalid %s argument in %s function should have been caught "
+"earlier. Please report to the data.table issue tracker."
 msgstr ""
 
 #: frollR.c:122
@@ -2777,24 +2779,12 @@ msgid ""
 "to number of observations provided in 'x'"
 msgstr ""
 
-#: frollR.c:151
-msgid ""
-"Internal error: invalid fun argument in rolling function, should have been "
-"caught before. please report to data.table issue tracker."
-msgstr ""
-
 #: frollR.c:155 frollR.c:279 nafill.c:162 shift.c:21
 msgid "fill must be a vector of length 1"
 msgstr ""
 
 #: frollR.c:169 frollR.c:292
 msgid "fill must be numeric"
-msgstr ""
-
-#: frollR.c:185
-msgid ""
-"Internal error: invalid algo argument in rolling function, should have been "
-"caught before. please report to data.table issue tracker."
 msgstr ""
 
 #: frollR.c:190
@@ -3173,13 +3163,15 @@ msgstr ""
 msgid "%.3fs\n"
 msgstr ""
 
-#: gsumm.c:345
-msgid "sum is not meaningful for factors."
+#: gsumm.c:345 gsumm.c:579 gsumm.c:688 gsumm.c:807 gsumm.c:952 gsumm.c:1263
+#: gsumm.c:1404
+#, c-format
+msgid "%s is not meaningful for factors."
 msgstr ""
 
 #: gsumm.c:349
 #, c-format
-msgid "This gsum took (narm=%s) ... "
+msgid "This gsum (narm=%s) took ... "
 msgstr ""
 
 #: gsumm.c:350 gsumm.c:606 gsumm.c:693 gsumm.c:812 gsumm.c:955 gsumm.c:1005
@@ -3207,10 +3199,6 @@ msgstr ""
 msgid ""
 "GForce mean can only be applied to columns, not .SD or similar. Likely "
 "you're looking for 'DT[,lapply(.SD,mean),by=,.SDcols=]'. See ?data.table."
-msgstr ""
-
-#: gsumm.c:579
-msgid "mean is not meaningful for factors."
 msgstr ""
 
 #: gsumm.c:599
@@ -3246,10 +3234,6 @@ msgid ""
 "likely, you may be looking for 'DT[,lapply(.SD,min),by=,.SDcols=]'"
 msgstr ""
 
-#: gsumm.c:688
-msgid "min is not meaningful for factors."
-msgstr ""
-
 #: gsumm.c:717 gsumm.c:850
 msgid ""
 "No non-missing values found in at least one group. Coercing to numeric type "
@@ -3280,10 +3264,6 @@ msgid ""
 "likely, you may be looking for 'DT[,lapply(.SD,max),by=,.SDcols=]'"
 msgstr ""
 
-#: gsumm.c:807
-msgid "max is not meaningful for factors."
-msgstr ""
-
 #: gsumm.c:930
 msgid ""
 "No non-missing values found in at least one group. Returning '-Inf' for such "
@@ -3301,10 +3281,6 @@ msgid ""
 "median(.SD) or turn off GForce optimization using options(datatable."
 "optimize=1). More likely, you may be looking for 'DT[,lapply(.SD,median),"
 "by=,.SDcols=]'"
-msgstr ""
-
-#: gsumm.c:952
-msgid "median is not meaningful for factors."
 msgstr ""
 
 #: gsumm.c:1161
@@ -3336,20 +3312,12 @@ msgid ""
 "to do this."
 msgstr ""
 
-#: gsumm.c:1263
-msgid "var/sd is not meaningful for factors."
-msgstr ""
-
 #: gsumm.c:1403
 msgid ""
 "GForce prod can only be applied to columns, not .SD or similar. To multiply "
 "all items in a list such as .SD, either add the prefix base::prod(.SD) or "
 "turn off GForce optimization using options(datatable.optimize=1). More "
 "likely, you may be looking for 'DT[,lapply(.SD,prod),by=,.SDcols=]'"
-msgstr ""
-
-#: gsumm.c:1404
-msgid "prod is not meaningful for factors."
 msgstr ""
 
 #: gsumm.c:1411
@@ -3439,6 +3407,10 @@ msgid ""
 "architecture greater than 64bit yet."
 msgstr ""
 
+#: init.c:246
+msgid "... failed. Please forward this message to maintainer('data.table')."
+msgstr ""
+
 #: init.c:247
 #, c-format
 msgid "Checking NA_INTEGER [%d] == INT_MIN [%d] %s"
@@ -3449,19 +3421,10 @@ msgstr ""
 msgid "Checking NA_INTEGER [%d] == NA_LOGICAL [%d] %s"
 msgstr ""
 
-#: init.c:249
+#: init.c:249 init.c:250 init.c:252 init.c:255 init.c:256 init.c:257 init.c:258
+#: init.c:259 init.c:260 init.c:261
 #, c-format
-msgid "Checking sizeof(int) [%d] is 4 %s"
-msgstr ""
-
-#: init.c:250
-#, c-format
-msgid "Checking sizeof(double) [%d] is 8 %s"
-msgstr ""
-
-#: init.c:252
-#, c-format
-msgid "Checking sizeof(long long) [%d] is 8 %s"
+msgid "Checking sizeof(%s) [%d] is %d %s"
 msgstr ""
 
 #: init.c:253
@@ -3472,41 +3435,6 @@ msgstr ""
 #: init.c:254
 #, c-format
 msgid "Checking sizeof(SEXP) [%d] == sizeof(pointer) [%d] %s"
-msgstr ""
-
-#: init.c:255
-#, c-format
-msgid "Checking sizeof(uint64_t) [%d] is 8 %s"
-msgstr ""
-
-#: init.c:256
-#, c-format
-msgid "Checking sizeof(int64_t) [%d] is 8 %s"
-msgstr ""
-
-#: init.c:257
-#, c-format
-msgid "Checking sizeof(signed char) [%d] is 1 %s"
-msgstr ""
-
-#: init.c:258
-#, c-format
-msgid "Checking sizeof(int8_t) [%d] is 1 %s"
-msgstr ""
-
-#: init.c:259
-#, c-format
-msgid "Checking sizeof(uint8_t) [%d] is 1 %s"
-msgstr ""
-
-#: init.c:260
-#, c-format
-msgid "Checking sizeof(int16_t) [%d] is 2 %s"
-msgstr ""
-
-#: init.c:261
-#, c-format
-msgid "Checking sizeof(uint16_t) [%d] is 2 %s"
 msgstr ""
 
 #: init.c:264
@@ -3595,13 +3523,7 @@ msgstr ""
 msgid "'x' argument must be numeric type, or list/data.table of numeric types"
 msgstr ""
 
-#: nafill.c:159 nafill.c:190
-msgid ""
-"Internal error: invalid type argument in nafillR function, should have been "
-"caught before. Please report to data.table issue tracker."
-msgstr ""
-
-#: nafill.c:206
+#: nafill.c:207
 #, c-format
 msgid "%s: parallel processing of %d column(s) took %.3fs\n"
 msgstr ""
