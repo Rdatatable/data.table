@@ -246,7 +246,7 @@ void attribute_visible R_init_datatable(DllInfo *info)
   setSizes();
   const char *msg = "... failed. Please forward this message to maintainer('data.table').";
   if ((int)NA_INTEGER != (int)INT_MIN)
-    error(_("Checking NA_INTEGER [%d] == INT_MIN [%d] %s"), NA_INTEGER, INT_MIN, msg);
+    error(_("Checking NA_INTEGER [%d] == INT_MIN [%d] %s"), NA_INTEGER, INT_MIN, msg); // # nocov
   if ((int)NA_INTEGER != (int)NA_LOGICAL)
     error(_("Checking NA_INTEGER [%d] == NA_LOGICAL [%d] %s"), NA_INTEGER, NA_LOGICAL, msg);
   if (sizeof(int) != 4)
@@ -277,9 +277,9 @@ void attribute_visible R_init_datatable(DllInfo *info)
 
   SEXP tmp = PROTECT(allocVector(INTSXP,2));
   if (LENGTH(tmp)!=2)
-    error(_("Checking LENGTH(allocVector(INTSXP,2)) [%d] is 2 %s"), LENGTH(tmp), msg);
+    error(_("Checking LENGTH(allocVector(INTSXP,2)) [%d] is 2 %s"), LENGTH(tmp), msg); // # nocov
   if (TRUELENGTH(tmp)!=0)
-    error(_("Checking TRUELENGTH(allocVector(INTSXP,2)) [%d] is 0 %s"), TRUELENGTH(tmp), msg);
+    error(_("Checking TRUELENGTH(allocVector(INTSXP,2)) [%d] is 0 %s"), TRUELENGTH(tmp), msg); // # nocov
   UNPROTECT(1);
 
   // According to IEEE (http://en.wikipedia.org/wiki/IEEE_754-1985#Zero) we can rely on 0.0 being all 0 bits.
@@ -287,19 +287,19 @@ void attribute_visible R_init_datatable(DllInfo *info)
   int i = 314;
   memset(&i, 0, sizeof(int));
   if (i != 0)
-    error(_("Checking memset(&i,0,sizeof(int)); i == (int)0 %s"), msg);
+    error(_("Checking memset(&i,0,sizeof(int)); i == (int)0 %s"), msg); // # nocov
   unsigned int ui = 314;
   memset(&ui, 0, sizeof(unsigned int));
   if (ui != 0)
-    error(_("Checking memset(&ui, 0, sizeof(unsigned int)); ui == (unsigned int)0 %s"), msg);
+    error(_("Checking memset(&ui, 0, sizeof(unsigned int)); ui == (unsigned int)0 %s"), msg); // # nocov
   double d = 3.14;
   memset(&d, 0, sizeof(double));
   if (d != 0.0)
-    error(_("Checking memset(&d, 0, sizeof(double)); d == (double)0.0 %s"), msg);
+    error(_("Checking memset(&d, 0, sizeof(double)); d == (double)0.0 %s"), msg); // # nocov
   long double ld = 3.14;
   memset(&ld, 0, sizeof(long double));
   if (ld != 0.0)
-    error(_("Checking memset(&ld, 0, sizeof(long double)); ld == (long double)0.0 %s"), msg);
+    error(_("Checking memset(&ld, 0, sizeof(long double)); ld == (long double)0.0 %s"), msg); // # nocov
 
   // Check unsigned cast used in fread.c. This isn't overflow/underflow, just cast.
   if ((uint_fast8_t)('0'-'/') != 1)
@@ -315,18 +315,18 @@ void attribute_visible R_init_datatable(DllInfo *info)
   NA_INT64_LL = LLONG_MIN;
   NA_INT64_D = LLtoD(NA_INT64_LL);
   if (NA_INT64_LL != DtoLL(NA_INT64_D))
-    error(_("Conversion of NA_INT64 via double failed %"PRId64"!=%"PRId64), (int64_t)NA_INT64_LL, (int64_t)DtoLL(NA_INT64_D));
+    error(_("Conversion of NA_INT64 via double failed %"PRId64"!=%"PRId64), (int64_t)NA_INT64_LL, (int64_t)DtoLL(NA_INT64_D)); // # nocov
   // LLONG_MIN when punned to double is the sign bit set and then all zeros in exponent and significand i.e. -0.0
   //   That's why we must never test for NA_INT64_D using == in double type. Must always DtoLL and compare long long types.
   //   Assigning NA_INT64_D to a REAL is ok however.
   if (NA_INT64_D != 0.0)
-    error(_("NA_INT64_D (negative -0.0) is not == 0.0."));
+    error(_("NA_INT64_D (negative -0.0) is not == 0.0.")); // # nocov
   if (NA_INT64_D != -0.0)
-    error(_("NA_INT64_D (negative -0.0) is not ==-0.0."));
+    error(_("NA_INT64_D (negative -0.0) is not ==-0.0.")); // # nocov
   if (ISNAN(NA_INT64_D))
-    error(_("ISNAN(NA_INT64_D) is TRUE but should not be"));
+    error(_("ISNAN(NA_INT64_D) is TRUE but should not be")); // # nocov
   if (isnan(NA_INT64_D))
-    error(_("isnan(NA_INT64_D) is TRUE but should not be"));
+    error(_("isnan(NA_INT64_D) is TRUE but should not be")); // # nocov
 
   NA_CPLX.r = NA_REAL;  // NA_REAL is defined as R_NaReal which is not a strict constant and thus initializer {NA_REAL, NA_REAL} can't be used in .h
   NA_CPLX.i = NA_REAL;  // https://github.com/Rdatatable/data.table/pull/3689/files#r304117234
@@ -425,7 +425,7 @@ extern int *_Last_updated;  // assign.c
 
 SEXP initLastUpdated(SEXP var) {
   if (!isInteger(var) || LENGTH(var)!=1)
-    error(_(".Last.value in namespace is not a length 1 integer"));
+    error(_("Internal error: .Last.value in namespace is not a length 1 integer")); // # nocov
   _Last_updated = INTEGER(var);
   return R_NilValue;
 }

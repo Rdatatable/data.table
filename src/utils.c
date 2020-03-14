@@ -206,7 +206,7 @@ inline bool INHERITS(SEXP x, SEXP char_) {
   // Thread safe in the limited sense of correct and intended usage :
   // i) no API call such as install() or mkChar() must be passed in.
   // ii) no attrib writes must be possible in other threads.
-  SEXP klass;
+  SEXP klass; // klass not class at request of pydatatable because class is reserved word in C++, PR #3129
   if (isString(klass = getAttrib(x, R_ClassSymbol))) {
     for (int i=0; i<LENGTH(klass); i++) {
       if (STRING_ELT(klass, i) == char_) return true;

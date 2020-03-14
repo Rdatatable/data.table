@@ -198,15 +198,14 @@ static SEXP shallow(SEXP dt, SEXP cols, R_len_t n)
 
 SEXP alloccol(SEXP dt, R_len_t n, Rboolean verbose)
 {
-  SEXP names, klass;   // klass not class at request of pydatatable because class is reserved word in C++, PR #3129
+  SEXP names;
   R_len_t l, tl;
   if (isNull(dt))
-    error(_("alloccol has been passed a NULL dt"));
+    error(_("object passed to alloccol is NULL"));
   if (TYPEOF(dt) != VECSXP)
-    error(_("dt passed to alloccol isn't type VECSXP"));
-  klass = getAttrib(dt, R_ClassSymbol);
-  if (isNull(klass))
-    error(_("dt passed to alloccol has no class attribute. Please report result of traceback() to data.table issue tracker."));
+    error(_("object passed to alloccol isn't type VECSXP"));
+  if (isNull(getAttrib(dt, R_ClassSymbol)))
+    error(_("Internal error: data.table passed to alloccol has no class attribute and is not NULL. Please report result of traceback() to data.table issue tracker."));
   l = LENGTH(dt);
   names = getAttrib(dt,R_NamesSymbol);
   // names may be NULL when null.data.table() passes list() to alloccol for example.
@@ -299,9 +298,9 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
   const char *c1, *tc1, *tc2;
   int *buf, newKeyLength, indexNo;
   if (isNull(dt))
-    error(_("assign has been passed a NULL dt"));
+    error(_("object passed to assign is NULL"));
   if (TYPEOF(dt) != VECSXP)
-    error(_("dt passed to assign isn't type VECSXP"));
+    error(_("object passed to assign isn't type VECSXP"));
   if (islocked(dt))
     error(_(".SD is locked. Updating .SD by reference using := or set are reserved for future use. Use := in j directly. Or use copy(.SD) as a (slow) last resort, until shallow() is exported."));
 
@@ -316,7 +315,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
   oldncol = LENGTH(dt);
   SEXP names = PROTECT(getAttrib(dt, R_NamesSymbol)); protecti++;
   if (isNull(names))
-    error(_("dt passed to assign has no names"));
+    error(_("data.table passed to assign has no names"));
   if (length(names)!=oldncol)
     error(_("Internal error in assign: length of names (%d) is not length of dt (%d)"),length(names),oldncol); // # nocov
   if (isNull(dt)) {
@@ -393,7 +392,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
   if (any_duplicated(cols,FALSE))
     error(_("Can't assign to the same column twice in the same query (duplicates detected)."));
   if (!isNull(newcolnames) && !isString(newcolnames))
-    error(_("newcolnames is supplied but isn't a character vector"));
+    error(_("Internal error: newcolnames is supplied but isn't a character vector")); // # nocov
   bool RHS_list_of_columns = TYPEOF(values)==VECSXP && length(cols)>1;  // initial value; may be revised below
   if (verbose) Rprintf(_("RHS_list_of_columns == %s\n"), RHS_list_of_columns ? "true" : "false");
   if (TYPEOF(values)==VECSXP && length(cols)==1 && length(values)==1) {
@@ -422,8 +421,13 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
     if (coln<1 || coln>oldncol+length(newcolnames)) {
       if (!isDataTable)
         error(_("Item %d of column numbers in j is %d which is outside range [1,ncol=%d]. set() on a data.frame is for changing existing columns, not adding new ones. Please use a data.table for that."), i+1, coln, oldncol);
-      else
-        error(_("Item %d of column numbers in j is %d which is outside range [1,ncol=%d]. Use column names instead in j to add new columns."), i+1, coln, oldncol);
+      else {
+        if (oldncol >= 1) {
+          error(_("Item %d of column numbers in j is %d which is outside range [1,ncol=%d]. Use column names instead in j to add new columns."), i+1, coln, oldncol);
+        } else {
+          error(_("Input data.table has no columns. Use column names in j instead to add new columns."));
+        }
+      }
     }
     coln--;
     SEXP thisvalue = RHS_list_of_columns ? VECTOR_ELT(values, i) : values;
@@ -1230,21 +1234,25 @@ void savetl_end() {
   nsaved = nalloc = 0;
 }
 
+// Not exposed to users and only called from:
+//   [.data.table->.massageSD
+//   setnames
 SEXP setcharvec(SEXP x, SEXP which, SEXP newx)
 {
-  int w;
   if (!isString(x))
-    error(_("x must be a character vector"));
+    error(_("Internal error: x must be a character vector in setcharvec")); // # nocov
   if (!isInteger(which))
-    error(_("'which' must be an integer vector"));
+    error(_("Internal error: 'which' must be an integer vector in setcharvec")); // # nocov
   if (!isString(newx))
-    error(_("'new' must be a character vector"));
+    error(_("Internal error: 'new' must be a character vector in setcharvec")); // # nocov
   if (LENGTH(newx)!=LENGTH(which))
-    error(_("'new' is length %d. Should be the same as length of 'which' (%d)"),LENGTH(newx),LENGTH(which));
+    error(_("Internal error: 'new' is length %d. Should be the same as length of 'which' (%d) in setcharvec"),LENGTH(newx),LENGTH(which)); // # nocov
+  int *wp = INTEGER(which);
+  int n = LENGTH(x);s
   for (int i=0; i<LENGTH(which); i++) {
-    w = INTEGER(which)[i];
-    if (w==NA_INTEGER || w<1 || w>LENGTH(x))
-      error(_("Item %d of 'which' is %d which is outside range of the length %d character vector"), i+1,w,LENGTH(x));
+    int w = wp[i];
+    if (w==NA_INTEGER || w<1 || w>n)
+      error(_("Internal error: Item %d of 'which' is %d which is outside range of the length %d character vector in setcharvec"), i+1,w,LENGTH(x)); // # nocov
     SET_STRING_ELT(x, w-1, STRING_ELT(newx, i));
   }
   return R_NilValue;
