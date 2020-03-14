@@ -53,7 +53,7 @@ lagbyv = function(x, by, fill) {
 	if (is.list(x) && length(fill)!=length(x))
 	  stop("fill needs to be same length as x for filling first group.")
   if (is.list(x) && any(lapply(x, length)!=length(by)))
-    stop("Column(s) ", paste(which(lapply(x, length)!=length(by)), collapse=", "), " must have same length as by.")
+    stop("Element(s) ", paste(which(lapply(x, length)!=length(by)), collapse=", "), " in x must have same length as by.")
 	if (!is.list(x) && length(x) != length(by))
 		stop("x must be same length as by.")
 	#in case a factor is filled with a new level
