@@ -9,7 +9,7 @@ substitute2 = function(expr, env, char.as.name=FALSE, sub.names=TRUE) {
   env.names = names(env)
   if (is.null(env.names)) {
     stop("'env' argument does not have names")
-  } else if (any(!nzchar(env.names))) {
+  } else if (!all(nzchar(env.names))) {
     stop("'env' argument has an zero char names")
   }
   if (isTRUE(char.as.name)) {
