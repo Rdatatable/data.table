@@ -211,7 +211,7 @@ R_CallMethodDef callMethods[] = {
 {"CfrollapplyR", (DL_FUNC) &frollapplyR, -1},
 {"CtestMsgR", (DL_FUNC) &testMsgR, -1},
 {"C_allNAR", (DL_FUNC) &allNAR, -1},
-{"Creplace_namesR", (DL_FUNC) &replace_namesR, -1},
+{"Csubstitute_call_arg_namesR", (DL_FUNC) &substitute_call_arg_namesR, -1},
 {NULL, NULL, 0}
 };
 

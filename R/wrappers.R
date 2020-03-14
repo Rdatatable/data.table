@@ -12,10 +12,3 @@ colnamesInt = function(x, cols, check_dups=FALSE) .Call(CcolnamesInt, x, cols, c
 coerceFill = function(x) .Call(CcoerceFillR, x)
 
 testMsg = function(status=0L, nx=2L, nk=2L) .Call(CtestMsgR, as.integer(status)[1L], as.integer(nx)[1L], as.integer(nk)[1L])
-
-replace_names = function(expr, env) {
-  #replace_names(quote(.(fvar1=fun(var1, arg1=TRUE), charhead=head(var2, 1L))), sapply(list(var1="myIntCol", fvar1="a_col", var2="myCharCol", fun="sum", arg1="na.rm"), as.symbol))
-  stopifnot(is.list(env), as.logical(length(env)), !is.null(names(env)), #sapply(env, is.character), sapply(env, nzchar), sapply(env, length)==1L,
-            is.language(expr))
-  .Call(Creplace_namesR, expr, env)
-}

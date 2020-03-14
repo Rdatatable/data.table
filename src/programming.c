@@ -1,34 +1,30 @@
 #include "data.table.h"
 
-void replace_names(SEXP expr, SEXP env) {
+static void substitute_call_arg_names(SEXP expr, SEXP env) {
   R_len_t len = length(expr);
-  if (!isNull(expr) && len && isLanguage(expr)) { // isLanguage is R's is.call
-    SEXP exprnames = getAttrib(expr, R_NamesSymbol);
-    if (!isNull(exprnames)) {
-      SEXP envnames = getAttrib(env, R_NamesSymbol);
-      SEXP matches = PROTECT(chmatch(exprnames, envnames, 0));
-      int *imatches = INTEGER(matches);
-      const SEXP *sexpr = SEXPPTR_RO(exprnames);
-      const SEXP *senv = SEXPPTR_RO(env);
-      SEXP tmp = expr;
-      for (int i=0; i<len; i++) {
+  if (len && isLanguage(expr)) { // isLanguage is R's is.call
+    SEXP arg_names = getAttrib(expr, R_NamesSymbol);
+    if (!isNull(arg_names)) {
+      SEXP env_names = getAttrib(env, R_NamesSymbol);
+      int *imatches = INTEGER(PROTECT(chmatch(arg_names, env_names, 0)));
+      //const SEXP *expr_arg_names = SEXPPTR_RO(arg_names); // only for print, to be removed
+      const SEXP *env_sub = SEXPPTR_RO(env);
+      int i = 0;
+      for (SEXP tmp=expr; tmp!=R_NilValue; tmp=CDR(tmp)) {
         if (imatches[i]) {
-          Rprintf("substitute: %s -> %s\n", CHAR(sexpr[i]), CHAR(PRINTNAME(senv[imatches[i]-1])));
-          SET_TAG(tmp, senv[imatches[i]-1]);
+          //Rprintf("substitute names: %s -> %s\n", CHAR(expr_arg_names[i]), CHAR(PRINTNAME(env_sub[imatches[i]-1]))); // to be removed
+          SET_TAG(tmp, env_sub[imatches[i]-1]);
         }
-        tmp = CDR(tmp);
+        i++;
+        substitute_call_arg_names(CADR(tmp), env); // try substitute names in child calls
       }
-      UNPROTECT(1); // matches
-      // update also nested calls
-      for (SEXP t=expr; t!=R_NilValue; t=CDR(t))
-        replace_names(CADR(t), env);
+      UNPROTECT(1); // chmatch
     }
   }
 }
-SEXP replace_namesR(SEXP expr, SEXP env) {
-  // move R's checks here, escape for 0 length, etc
+SEXP substitute_call_arg_namesR(SEXP expr, SEXP env) {
   SEXP ans = PROTECT(MAYBE_REFERENCED(expr) ? duplicate(expr) : expr);
-  replace_names(ans, env); // updates in-place
+  substitute_call_arg_names(ans, env); // updates in-place
   UNPROTECT(1);
   return ans;
 }

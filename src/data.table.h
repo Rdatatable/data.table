@@ -247,4 +247,4 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b, SEXP na);
 SEXP fcaseR(SEXP na, SEXP rho, SEXP args);
 
 // programming.c
-SEXP replace_namesR(SEXP expr, SEXP env);
+SEXP substitute_call_arg_namesR(SEXP expr, SEXP env);
