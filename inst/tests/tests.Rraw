@@ -16898,3 +16898,4 @@ test(2139.52, lagbyv(list(1:2, 1:4), 1:3), error="Element(s) 1, 2 in x must have
 test(2139.53, lagbyv(1:4, 1:4, fill=list(1:2, 2)), error="Each element in fill must be of length 1L.")
 test(2139.54, lagbyv(as.raw(1:4), by=g), error="Unsupported type 'raw'")
 test(2139.55, lagbyv(mean, by=2L, fill=0L), error="type 'closure' passed to x in lagbyv(). Must be a vector, list, data.frame or data.table")
+test(2139.56, lagbyv(x, by=g, fill=length), error="type 'builtin' passed to fill in lagbyv(). Must be a list")

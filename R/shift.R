@@ -48,7 +48,7 @@ lagbyv = function(x, by, fill) {
     fill = as.list(rep(NA_real_, length(x)))
 	else if (missing(fill) && is.atomic(x))
 		fill = list(NA_real_)
-	if (any(lapply(fill, length)!=1L))
+	if (is.list(fill) && any(lapply(fill, length)!=1L))
 		stop("Each element in fill must be of length 1L.")
 	if (is.list(x) && length(fill)!=length(x))
 	  stop("fill needs to be same length as x for filling first group.")
