@@ -106,7 +106,7 @@ SEXP setcolorder(SEXP x, SEXP o)
   SEXP names = getAttrib(x, R_NamesSymbol);
   const int ncol=LENGTH(x);
   if (isNull(names))
-    error(_("dt passed to setcolorder has no names"));
+    error(_("data.table passed to setcolorder has no names"));
   if (ncol != LENGTH(names))
     error(_("Internal error: dt passed to setcolorder has %d columns but %d names"), ncol, LENGTH(names));  // # nocov
   SEXP tt = PROTECT(allocVector(VECSXP, 2));

@@ -5,7 +5,7 @@ void subsetVectorRaw(SEXP ans, SEXP source, SEXP idx, const bool anyNA)
 {
   const int n = length(idx);
   if (length(ans)!=n)
-    error(_("Internal error: subsetVectorRaw length(ans)==%d n=%d"), length(ans), n);
+    error(_("Internal error: subsetVectorRaw length(ans)==%d n=%d"), length(ans), n); // # nocov
 
   const int *restrict idxp = INTEGER(idx);
   // anyNA refers to NA _in idx_; if there's NA in the data (source) that's just regular data to be copied

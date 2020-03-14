@@ -121,7 +121,7 @@ SEXP gforce(SEXP env, SEXP jsub, SEXP o, SEXP f, SEXP l, SEXP irowsArg) {
     int *counts = calloc(nBatch*highSize, sizeof(int));  // TODO: cache-line align and make highSize a multiple of 64
     int *TMP   = malloc(nrow*2*sizeof(int));
     if (!counts || !TMP )
-      error(_("Internal error: Failed to allocate counts or TMP when assigning g in gforce"));
+      error(_("Internal error: Failed to allocate counts or TMP when assigning g in gforce")); // # nocov
     #pragma omp parallel for num_threads(getDTthreads())   // schedule(dynamic,1)
     for (int b=0; b<nBatch; b++) {
       const int howMany = b==nBatch-1 ? lastBatchSize : batchSize;
@@ -623,11 +623,11 @@ SEXP gmean(SEXP x, SEXP narm)
 
   long double *s = calloc(ngrp, sizeof(long double)), *si=NULL;  // s = sum; si = sum imaginary just for complex
   if (!s)
-    error(_("Unable to allocate %d * %d bytes for sum in gmean na.rm=TRUE"), ngrp, sizeof(long double));
+    error(_("Unable to allocate %d * %d bytes for sum in gmean na.rm=TRUE"), ngrp, sizeof(long double)); // # nocov
 
   int *c = calloc(ngrp, sizeof(int));
   if (!c)
-    error(_("Unable to allocate %d * %d bytes for counts in gmean na.rm=TRUE"), ngrp, sizeof(int));
+    error(_("Unable to allocate %d * %d bytes for counts in gmean na.rm=TRUE"), ngrp, sizeof(int)); // # nocov
 
   switch(TYPEOF(x)) {
   case LGLSXP: case INTSXP: {
@@ -654,7 +654,7 @@ SEXP gmean(SEXP x, SEXP narm)
     const Rcomplex *xd = COMPLEX(x);
     si = calloc(ngrp, sizeof(long double));
     if (!si)
-      error(_("Unable to allocate %d * %d bytes for si in gmean na.rm=TRUE"), ngrp, sizeof(long double));
+      error(_("Unable to allocate %d * %d bytes for si in gmean na.rm=TRUE"), ngrp, sizeof(long double)); // # nocov
     for (int i=0; i<n; i++) {
       int thisgrp = grp[i];
       int ix = (irowslen == -1) ? i : irows[i]-1;
@@ -1454,7 +1454,7 @@ SEXP gprod(SEXP x, SEXP narm)
     error(_("nrow [%d] != length(x) [%d] in %s"), nrow, n, "gprod");
   long double *s = malloc(ngrp * sizeof(long double));
   if (!s)
-    error(_("Unable to allocate %d * %d bytes for gprod"), ngrp, sizeof(long double));
+    error(_("Unable to allocate %d * %d bytes for gprod"), ngrp, sizeof(long double)); // # nocov
   for (i=0; i<ngrp; i++) s[i] = 1.0;
   ans = PROTECT(allocVector(REALSXP, ngrp));
   switch(TYPEOF(x)) {

@@ -16871,6 +16871,12 @@ txt = 'a,b\n1,2'
 test(2139.14, fread(txt, sep=',', quote=','), error="sep == quote (',') is not allowed")
 test(2139.15, fread(txt, dec='&'), error="dec='&' not allowed")
 test(2139.16, fread(txt, quote='.', dec='.'), error="quote == dec ('.') is not allowed")
+test(2139.17, fread(txt, integer64=letters), error="'integer64' must be a single character string")
+test(2139.18, fread(txt, colClasses = list()), error="colClasses is type list but has no names")
 
-test(2139.17, setNumericRounding(1:2), error="Rounding level must be a length-1 integer or numeric vector")
-test(2139.18, setNumericRounding(-1), error="Rounding level must be 2, 1 or 0")
+test(2139.19, setNumericRounding(1:2), error="Rounding level must be a length-1 integer or numeric vector")
+test(2139.20, setNumericRounding(-1), error="Rounding level must be 2, 1 or 0")
+
+DT = data.table(1L)
+names(DT) = NULL
+test(2139.21, setcolorder(DT, 1L), error="data.table passed to setcolorder has no names")

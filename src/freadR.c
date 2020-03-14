@@ -332,10 +332,10 @@ bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, const int 
         }
       } else { // selectColClasses==true
         if (!selectInts)
-          STOP(_("Internal error: selectInts is NULL but selectColClasses is true"));
+          STOP(_("Internal error: selectInts is NULL but selectColClasses is true")); // # nocov
         const int n = length(colClassesSxp);
         if (length(selectSxp)!=n)
-          STOP(_("Internal error: length(selectSxp)!=length(colClassesSxp) but selectColClasses is true"));
+          STOP(_("Internal error: length(selectSxp)!=length(colClassesSxp) but selectColClasses is true")); // # nocov
         for (int i=0; i<n; ++i) {
           SEXP tt = STRING_ELT(colClassesSxp,i);
           if (tt==NA_STRING || tt==R_BlankString) continue;

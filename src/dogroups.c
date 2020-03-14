@@ -68,10 +68,10 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
   // non data.table aware package that uses rownames
   for (s = ATTRIB(SD); s != R_NilValue && TAG(s)!=R_RowNamesSymbol; s = CDR(s));  // getAttrib0 basically but that's hidden in attrib.c
   if (s==R_NilValue)
-    error(_("row.names attribute of .SD not found"));
+    error(_("Internal error: row.names attribute of .SD not found")); // # nocov
   rownames = CAR(s);
   if (!isInteger(rownames) || LENGTH(rownames)!=2 || INTEGER(rownames)[0]!=NA_INTEGER)
-    error(_("row.names of .SD isn't integer length 2 with NA as first item; i.e., .set_row_names(). [%s %d %d]"),type2char(TYPEOF(rownames)),LENGTH(rownames),INTEGER(rownames)[0]);
+    error(_("Internal error: row.names of .SD isn't integer length 2 with NA as first item; i.e., .set_row_names(). [%s %d %d]"), type2char(TYPEOF(rownames)), LENGTH(rownames), INTEGER(rownames)[0]); // # nocov
 
   // fetch names of .SD and prepare symbols. In case they are copied-on-write by user assigning to those variables
   // using <- in j (which is valid, useful and tested), they are repointed to the .SD cols for each group.

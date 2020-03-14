@@ -173,7 +173,7 @@ SEXP fsort(SEXP x, SEXP verboseArg) {
 
   R_xlen_t *counts = calloc(nBatch*MSBsize, sizeof(R_xlen_t));
   if (counts==NULL)
-    error(_("Unable to allocate working memory"));
+    error(_("Unable to allocate working memory")); // # nocov
   // provided MSBsize>=9, each batch is a multiple of at least one 4k page, so no page overlap
   // TODO: change all calloc, malloc and free to Calloc and Free to be robust to error() and catch ooms.
 
