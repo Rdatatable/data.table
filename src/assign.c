@@ -1248,7 +1248,7 @@ SEXP setcharvec(SEXP x, SEXP which, SEXP newx)
   if (LENGTH(newx)!=LENGTH(which))
     error(_("Internal error: 'new' is length %d. Should be the same as length of 'which' (%d) in setcharvec"),LENGTH(newx),LENGTH(which)); // # nocov
   int *wp = INTEGER(which);
-  int n = LENGTH(x);s
+  int n = LENGTH(x);
   for (int i=0; i<LENGTH(which); i++) {
     int w = wp[i];
     if (w==NA_INTEGER || w<1 || w>n)
