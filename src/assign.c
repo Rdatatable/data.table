@@ -205,7 +205,7 @@ SEXP alloccol(SEXP dt, R_len_t n, Rboolean verbose)
   if (TYPEOF(dt) != VECSXP)
     error(_("object passed to alloccol isn't type VECSXP"));
   if (isNull(getAttrib(dt, R_ClassSymbol)))
-    error(_("Internal error: data.table passed to alloccol has no class attribute and is not NULL. Please report result of traceback() to data.table issue tracker."));
+    error(_("Internal error: data.table passed to alloccol has no class attribute and is not NULL. Please report result of traceback() to data.table issue tracker.")); // # nocov
   l = LENGTH(dt);
   names = getAttrib(dt,R_NamesSymbol);
   // names may be NULL when null.data.table() passes list() to alloccol for example.

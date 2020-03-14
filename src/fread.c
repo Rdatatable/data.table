@@ -434,7 +434,7 @@ void copyFile(size_t fileSize, const char *msg, bool verbose)  // only called in
   double tt = wallclock();
   mmp_copy = (char *)malloc((size_t)fileSize + 1/* extra \0 */);
   if (!mmp_copy)
-    STOP(_("Unable to allocate %s of contiguous virtual RAM. %s allocation."), filesize_to_str(fileSize), msg);
+    STOP(_("Unable to allocate %s of contiguous virtual RAM. %s allocation."), filesize_to_str(fileSize), msg); // # nocov
   memcpy(mmp_copy, mmp, fileSize);
   sof = mmp_copy;
   eof = (char *)mmp_copy + fileSize;
@@ -1180,8 +1180,9 @@ int freadMain(freadMainArgs _args) {
   quote = args.quote;
   if (args.sep == quote && quote!='\0')
     STOP(_("sep == quote ('%c') is not allowed"), quote);
-  if (dec=='\0')
-    STOP(_("dec='' not allowed. Should be '.' or ','"));
+  if (dec != '.' && dec != ',') {
+    STOP(_("dec='%c' not allowed. Should be '.' or ','"), dec);
+  }
   if (args.sep == dec)
     STOP(_("sep == dec ('%c') is not allowed"), dec);
   if (quote == dec)
@@ -1666,7 +1667,7 @@ int freadMain(freadMainArgs _args) {
   type =    (int8_t *)malloc((size_t)ncol * sizeof(int8_t));
   tmpType = (int8_t *)malloc((size_t)ncol * sizeof(int8_t));  // used i) in sampling to not stop on errors when bad jump point and ii) when accepting user overrides
   if (!type || !tmpType)
-    STOP(_("Failed to allocate 2 x %d bytes for type and tmpType: %s"), ncol, strerror(errno));
+    STOP(_("Failed to allocate 2 x %d bytes for type and tmpType: %s"), ncol, strerror(errno)); // # nocov
 
   int8_t type0 = 1;
   while (disabled_parsers[type0]) type0++;
@@ -1894,7 +1895,7 @@ int freadMain(freadMainArgs _args) {
   } else {
     colNames = (lenOff*) calloc((size_t)ncol, sizeof(lenOff));
     if (!colNames)
-      STOP(_("Unable to allocate %d*%d bytes for column name pointers: %s"), ncol, sizeof(lenOff), strerror(errno));
+      STOP(_("Unable to allocate %d*%d bytes for column name pointers: %s"), ncol, sizeof(lenOff), strerror(errno)); // # nocov
     if (sep==' ') while (*ch==' ') ch++;
     void *targets[9] = {NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, colNames + autoFirstColName};
     FieldParseContext fctx = {
@@ -2034,7 +2035,7 @@ int freadMain(freadMainArgs _args) {
   if (initialBuffRows < 10) initialBuffRows = 10;
 
   if (initialBuffRows > INT32_MAX)
-    STOP(_("Buffer size %"PRId64" is too large\n"), (int64_t)initialBuffRows);
+    STOP(_("Buffer size %"PRId64" is too large\n"), (int64_t)initialBuffRows); // # nocov
   nth = imin(nJumps, nth);
 
   if (verbose) DTPRINT(_("[11] Read the data\n"));

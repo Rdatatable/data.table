@@ -104,7 +104,7 @@ static void push(const int *x, const int n) {
     gs_thread_alloc[me] = (newn < nrow/3) ? (1+(newn*2)/4096)*4096 : nrow;  // [2|3] to not overflow and 3 not 2 to avoid allocating close to nrow (nrow groups occurs when all size 1 groups)
     gs_thread[me] = realloc(gs_thread[me], gs_thread_alloc[me]*sizeof(int));
     if (gs_thread[me]==NULL)
-      STOP(_("Failed to realloc thread private group size buffer to %d*4bytes"), (int)gs_thread_alloc[me]);
+      STOP(_("Failed to realloc thread private group size buffer to %d*4bytes"), (int)gs_thread_alloc[me]);  // # nocov
   }
   memcpy(gs_thread[me]+gs_thread_n[me], x, n*sizeof(int));
   gs_thread_n[me] += n;
@@ -119,7 +119,7 @@ static void flush() {
     gs_alloc = (newn < nrow/3) ? (1+(newn*2)/4096)*4096 : nrow;
     gs = realloc(gs, gs_alloc*sizeof(int));
     if (gs==NULL)
-      STOP(_("Failed to realloc group size result to %d*4bytes"), (int)gs_alloc);
+      STOP(_("Failed to realloc group size result to %d*4bytes"), (int)gs_alloc); // # nocov
   }
   memcpy(gs+gs_n, gs_thread[me], n*sizeof(int));
   gs_n += n;
@@ -263,7 +263,7 @@ static void cradix_r(SEXP *xsub, int n, int radix)
     return;
   }
   if (thiscounts[0] != 0)
-    STOP(_("Logical error. counts[0]=%d in cradix but should have been decremented to 0. radix=%d"), thiscounts[0], radix);
+    STOP(_("Internal error. counts[0]=%d in cradix but should have been decremented to 0. radix=%d"), thiscounts[0], radix); // # nocov
   itmp = 0;
   for (int i=1; i<256; i++) {
     if (thiscounts[i] == 0) continue;
@@ -279,10 +279,10 @@ static void cradix(SEXP *x, int n)
 {
   cradix_counts = (int *)calloc(ustr_maxlen*256, sizeof(int));  // counts for the letters of left-aligned strings
   if (!cradix_counts)
-    STOP(_("Failed to alloc cradix_counts"));
+    STOP(_("Failed to alloc cradix_counts")); // # nocov
   cradix_xtmp = (SEXP *)malloc(ustr_n*sizeof(SEXP));
   if (!cradix_xtmp)
-    STOP(_("Failed to alloc cradix_tmp"));
+    STOP(_("Failed to alloc cradix_tmp")); // # nocov
   cradix_r(x, n, 0);
   free(cradix_counts); cradix_counts=NULL;
   free(cradix_xtmp);   cradix_xtmp=NULL;
@@ -385,9 +385,9 @@ SEXP setNumericRounding(SEXP droundArg)
 // init.c has initial call with default of 2
 {
   if (!isInteger(droundArg) || LENGTH(droundArg)!=1)
-    error(_("Must an integer or numeric vector length 1"));
+    error(_("Rounding level must be a length-1 integer or numeric vector"));
   if (INTEGER(droundArg)[0] < 0 || INTEGER(droundArg)[0] > 2)
-    error(_("Must be 2, 1 or 0"));
+    error(_("Rounding level must be 2, 1 or 0"));
   dround = INTEGER(droundArg)[0];
   dmask = dround ? 1 << (8*dround-1) : 0;
   return R_NilValue;
@@ -738,13 +738,13 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
   TMP =  (int *)malloc(nth*UINT16_MAX*sizeof(int)); // used by counting sort (my_n<=65536) in radix_r()
   UGRP = (uint8_t *)malloc(nth*256);                // TODO: align TMP and UGRP to cache lines (and do the same for stack allocations too)
   if (!TMP || !UGRP /*|| TMP%64 || UGRP%64*/)
-    STOP(_("Failed to allocate TMP or UGRP or they weren't cache line aligned: nth=%d"), nth);
+    STOP(_("Failed to allocate TMP or UGRP or they weren't cache line aligned: nth=%d"), nth); // # nocov
   if (retgrp) {
     gs_thread = calloc(nth, sizeof(int *));     // thread private group size buffers
     gs_thread_alloc = calloc(nth, sizeof(int));
     gs_thread_n = calloc(nth, sizeof(int));
     if (!gs_thread || !gs_thread_alloc || !gs_thread_n)
-      STOP(_("Could not allocate (very tiny) group size thread buffers"));
+      STOP(_("Could not allocate (very tiny) group size thread buffers")); // # nocov
   }
   if (nradix) {
     radix_r(0, nrow-1, 0);  // top level recursive call: (from, to, radix)
@@ -1065,7 +1065,7 @@ void radix_r(const int from, const int to, const int radix) {
   uint8_t  *ugrps =  malloc(nBatch*256*sizeof(uint8_t));
   int      *ngrps =  calloc(nBatch    ,sizeof(int));
   if (!counts || !ugrps || !ngrps)
-    STOP(_("Failed to allocate parallel counts. my_n=%d, nBatch=%d"), my_n, nBatch);
+    STOP(_("Failed to allocate parallel counts. my_n=%d, nBatch=%d"), my_n, nBatch); // # nocov
 
   bool skip=true;
   const int n_rem = nradix-radix-1;   // how many radix are remaining after this one
@@ -1175,7 +1175,7 @@ void radix_r(const int from, const int to, const int radix) {
   if (!skip) {
     int *TMP = malloc(my_n * sizeof(int));
     if (!TMP)
-      STOP(_("Unable to allocate TMP for my_n=%d items in parallel batch counting"), my_n);
+      STOP(_("Unable to allocate TMP for my_n=%d items in parallel batch counting"), my_n); // # nocov
     #pragma omp parallel for num_threads(getDTthreads())
     for (int batch=0; batch<nBatch; batch++) {
       const int *restrict      my_starts = starts + batch*256;

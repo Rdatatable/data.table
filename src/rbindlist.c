@@ -10,7 +10,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
     error(_("use.names= should be TRUE, FALSE, or not used (\"check\" by default)"));  // R levels converts "check" to NA
   if (!length(l)) return(l);
   if (TYPEOF(l) != VECSXP)
-    error(_("Input to rbindlist must be a list. This list can contain data.tables, data.frames or plain lists."));
+    error(_("Internal error: input to rbindlist must be a list. Should have been caught earlier")); // # nocov
   Rboolean usenames = LOGICAL(usenamesArg)[0];
   const bool fill = LOGICAL(fillArg)[0];
   if (fill && usenames!=TRUE) {
@@ -44,7 +44,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
     }
     int nNames = length(getAttrib(li, R_NamesSymbol));
     if (nNames>0 && nNames!=thisncol)
-      error(_("Item %d has %d columns but %d column names. Invalid object."), i+1, thisncol, nNames);
+      error(_("Internal error: item %d has %d columns but %d column names. Invalid object."), i+1, thisncol, nNames); // # nocov
     if (nNames>0) anyNames=true;
     upperBoundUniqueNames += nNames;
     int maxLen=0, whichMax=0;
@@ -77,7 +77,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
     // first find number of unique column names present; i.e. length(unique(unlist(lapply(l,names))))
     SEXP *uniq = (SEXP *)malloc(upperBoundUniqueNames * sizeof(SEXP));  // upperBoundUniqueNames was initialized with 1 to ensure this is defined (otherwise 0 when no item has names)
     if (!uniq)
-      error(_("Failed to allocate upper bound of %"PRId64" unique column names [sum(lapply(l,ncol))]"), (int64_t)upperBoundUniqueNames);
+      error(_("Failed to allocate upper bound of %"PRId64" unique column names [sum(lapply(l,ncol))]"), (int64_t)upperBoundUniqueNames); // # nocov
     savetl_init();
     int nuniq=0;
     for (int i=0; i<LENGTH(l); i++) {
@@ -198,7 +198,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
   }
 
   if (fill && usenames==NA_LOGICAL)
-    error(_("Internal error: usenames==NA but fill=TRUE. usenames should have been set to TRUE earlier with warning."));
+    error(_("Internal error: usenames==NA but fill=TRUE. usenames should have been set to TRUE earlier with warning.")); // # nocov
   if (!fill && (usenames==TRUE || usenames==NA_LOGICAL)) {
     // Ensure no missings in both cases, and (when usenames==NA) all columns in same order too
     // We proceeded earlier as if fill was true, so varying ncol items will have missings here
@@ -214,7 +214,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
           int missi = i;
           while (colMap[i*ncol + j]==-1 && i<LENGTH(l)) i++;
           if (i==LENGTH(l))
-            error(_("Internal error: could not find the first column name not present in earlier item"));
+            error(_("Internal error: could not find the first column name not present in earlier item")); // # nocov
           SEXP s = getAttrib(VECTOR_ELT(l, i), R_NamesSymbol);
           int w2 = colMap[i*ncol + j];
           const char *str = isString(s) ? CHAR(STRING_ELT(s,w2)) : "";
@@ -228,7 +228,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
         if (w!=j && usenames==NA_LOGICAL) {
           SEXP s = getAttrib(VECTOR_ELT(l, i), R_NamesSymbol);
           if (!isString(s) || i==0)
-            error(_("Internal error: usenames==NA but an out-of-order name has been found in an item with no names or the first item. [%d]"), i);
+            error(_("Internal error: usenames==NA but an out-of-order name has been found in an item with no names or the first item. [%d]"), i); // # nocov
           snprintf(buff, 1000, _("Column %d ['%s'] of item %d appears in position %d in item %d. Set use.names=TRUE to match by column name, or use.names=FALSE to ignore column names.%s"),
                                w+1, CHAR(STRING_ELT(s,w)), i+1, j+1, i, extra);
           i = LENGTH(l);
@@ -376,10 +376,10 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
         const SEXP *sd = STRING_PTR(longestLevels);
         nLevel = allocLevel = longestLen;
         levelsRaw = (SEXP *)malloc(nLevel * sizeof(SEXP));
-        if (!levelsRaw) {
+        if (!levelsRaw) { // # nocov start
           savetl_end();
           error(_("Failed to allocate working memory for %d ordered factor levels of result column %d"), nLevel, idcol+j+1);
-        }
+        } // # nocov end
         for (int k=0; k<longestLen; ++k) {
           SEXP s = sd[k];
           if (TRUELENGTH(s)>0) savetl(s);

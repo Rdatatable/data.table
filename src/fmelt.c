@@ -18,7 +18,7 @@ SEXP set_diff(SEXP x, int n) {
   if (TYPEOF(x) != INTSXP)
     error(_("'x' must be an integer"));
   if (n <= 0)
-    error(_("'n' must be a positive integer"));
+    error(_("Internal error: n must be a positive integer in set_diff")); // # nocov
   SEXP table = PROTECT(seq_int(n, 1));       // TODO: using match to 1:n seems odd here, why use match at all
   SEXP xmatch = PROTECT(match(x, table, 0)); // Old comment:took a while to realise: matches vec against x - thanks to comment from Matt in assign.c!
   const int *ixmatch = INTEGER(xmatch);
@@ -168,10 +168,13 @@ SEXP checkVars(SEXP DT, SEXP id, SEXP measure, Rboolean verbose) {
       else continue;
     }
     unqtmp = PROTECT(allocVector(INTSXP, targetcols)); protecti++;
+    int *up = INTEGER(unqtmp);
+    int *tp = INTEGER(tmp);
+    int *bp = LOGICAL(booltmp);
     u = 0;
     for (i=0; i<length(booltmp); i++) {
-      if (!LOGICAL(booltmp)[i]) {
-        INTEGER(unqtmp)[u++] = INTEGER(tmp)[i];
+      if (!bp[i]) {
+        up[u++] = tp[i];
       }
     }
     tmp2 = PROTECT(set_diff(unqtmp, ncol)); protecti++;
@@ -196,17 +199,22 @@ SEXP checkVars(SEXP DT, SEXP id, SEXP measure, Rboolean verbose) {
       tmp = PROTECT(unlist_(tmp2)); protecti++;
     }
     booltmp = PROTECT(duplicated(tmp, FALSE)); protecti++;
+    int *tp = INTEGER(tmp);
+    int *bp = LOGICAL(booltmp);
     for (i=0; i<length(tmp); i++) {
-      if (INTEGER(tmp)[i] <= 0 || INTEGER(tmp)[i] > ncol)
+      if (tp[i] <= 0 || tp[i] > ncol)
         error(_("One or more values in 'measure.vars' is invalid."));
-      else if (!LOGICAL(booltmp)[i]) targetcols++;
+      else if (!bp[i]) targetcols++;
       else continue;
     }
     unqtmp = PROTECT(allocVector(INTSXP, targetcols)); protecti++;
+    int *up = INTEGER(unqtmp);
+    tp = INTEGER(tmp);
+    bp = LOGICAL(booltmp);
     u = 0;
     for (i=0; i<length(booltmp); i++) {
-      if (!LOGICAL(booltmp)[i]) {
-        INTEGER(unqtmp)[u++] = INTEGER(tmp)[i];
+      if (!bp[i]) {
+        up[u++] = tp[i];
       }
     }
     idcols = PROTECT(set_diff(unqtmp, ncol)); protecti++;

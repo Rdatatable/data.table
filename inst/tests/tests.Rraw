@@ -16851,7 +16851,7 @@ test(2138.4, rbind(A,B), data.table(A=c(as.character(A$A), B$A)))
 test(2139.01, getDTthreads(8L), error="'verbose' must be TRUE or FALSE")
 test(2139.02, setDTthreads(1:2), error='threads= must be either NULL.*length 2')
 test(2139.03, setDTthreads(1+0i), error='threads= must be either NULL.*type integer/numeric')
-DT = data.table(1)
+DT = data.table(1L)
 invisible(alloc.col(DT, 10010L))
 test(2139.04, alloc.col(DT), DT, warning='greater than 10,000 items over-allocated')
 test(2139.05, alloc.col(DT, verbose = 1L), error="verbose must be TRUE or FALSE")
@@ -16860,10 +16860,19 @@ test(2139.07, set(1L, NULL, 1L, 1L), error="object passed to assign isn't type V
 names(DT) = NULL
 test(2139.08, set(DT, NULL, 1L, 2L), error="data.table passed to assign has no names")
 test(2139.09, alloc.col(NULL), error="object passed to alloccol is NULL")
-test(2139.10, set(NULL, NULL, 1L, 1L), error="object passed to assign is NULL")
+test(2139.10, alloc.col(1L), error="object passed to allocco isn't type VECSXP")
+test(2139.11, set(NULL, NULL, 1L, 1L), error="object passed to assign is NULL")
 setDF(DT)
 names(DT) = 'V1'
-test(2139.11, set(DT, NULL, 'V2', 2L), error="set() on a data.frame is for changing existing columns")
+test(2139.12, set(DT, NULL, 'V2', 2L), error="set() on a data.frame is for changing existing columns")
 setDT(DT)
 invisible(alloc.col(DT, 10010L))
-test(2139.12, set(DT, NULL, 'V2', 2L), DT, warning="greater than 10,000 items over-allocated")
+test(2139.13, set(DT, NULL, 'V2', 2L), DT, warning="greater than 10,000 items over-allocated")
+
+txt = 'a,b\n1,2'
+test(2139.14, fread(txt, sep=',', quote=','), error="sep == quote (',') is not allowed")
+test(2139.15, fread(txt, dec='&'), error="dec='&' not allowed")
+test(2139.16, fread(txt, quote='.', dec='.'), error="quote == dec ('.') is not allowed")
+
+test(2139.17, setNumericRounding(1:2), error="Rounding level must be a length-1 integer or numeric vector")
+test(2139.18, setNumericRounding(-1), error="Rounding level must be 2, 1 or 0")

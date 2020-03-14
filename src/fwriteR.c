@@ -39,7 +39,7 @@ int getMaxStringLen(const SEXP *col, const int64_t n) {
 int getMaxCategLen(SEXP col) {
   col = getAttrib(col, R_LevelsSymbol);
   if (!isString(col))
-    error(_("Internal error: col passed to getMaxCategLen is missing levels"));
+    error(_("Internal error: col passed to getMaxCategLen is missing levels")); // # nocov
   return getMaxStringLen( STRING_PTR(col), LENGTH(col) );
 }
 
@@ -170,7 +170,7 @@ SEXP fwriteR(
   )
 {
   if (!isNewList(DF))
-    error(_("fwrite must be passed an object of type list; e.g. data.frame, data.table"));
+    error(_("Internal error: fwrite received non-list input; this should have been caught earlier.")); // # nocov
   fwriteMainArgs args;
   args.is_gzip = LOGICAL(is_gzip_Arg)[0];
   args.bom = LOGICAL(bom_Arg)[0];
