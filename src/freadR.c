@@ -322,9 +322,9 @@ bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, const int 
           if (w==NUT) SET_STRING_ELT(colClassesAs, i, tt);
         }
       } else { // selectColClasses==true
-        if (!selectInts) INTERNAL_STOP("selectInts is NULL but selectColClasses is true");
+        if (!selectInts) INTERNAL_STOP("selectInts is NULL but selectColClasses is true"); // # nocov
         const int n = length(colClassesSxp);
-        if (length(selectSxp)!=n) INTERNAL_STOP("length(selectSxp)!=length(colClassesSxp) but selectColClasses is true");
+        if (length(selectSxp)!=n) INTERNAL_STOP("length(selectSxp)!=length(colClassesSxp) but selectColClasses is true"); // # nocov
         for (int i=0; i<n; ++i) {
           SEXP tt = STRING_ELT(colClassesSxp,i);
           if (tt==NA_STRING || tt==R_BlankString) continue;
