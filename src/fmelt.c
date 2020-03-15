@@ -16,7 +16,7 @@ SEXP seq_int(int n, int start) {
 // very specific "set_diff" for integers
 SEXP set_diff(SEXP x, int n) {
   if (TYPEOF(x) != INTSXP)
-    error(_("'x' must be an integer"));
+    error(_("Internal error: 'x' must be an integer")); // # nocov
   if (n <= 0)
     error(_("Internal error: n must be a positive integer in set_diff")); // # nocov
   SEXP table = PROTECT(seq_int(n, 1));       // TODO: using match to 1:n seems odd here, why use match at all
@@ -71,9 +71,9 @@ SEXP concat(SEXP vec, SEXP idx) {
   int nidx=length(idx);
 
   if (TYPEOF(vec) != STRSXP)
-    error(_("concat: 'vec must be a character vector"));
+    error(_("Internal error in concat: 'vec must be a character vector")); // # nocov
   if (!isInteger(idx) || length(idx) < 0)
-    error(_("concat: 'idx' must be an integer vector of length >= 0"));
+    error(_("Internal error in concat: 'idx' must be an integer vector of length >= 0")); // # nocov
   const int *iidx = INTEGER(idx);
   for (int i=0; i<length(idx); ++i) {
     if (iidx[i] < 0 || iidx[i] > length(vec))
@@ -681,7 +681,7 @@ SEXP getidcols(SEXP DT, SEXP dtnames, Rboolean verbose, struct processData *data
     }
       break;
     default :
-      error(_("Unknown column type '%s' for column '%s' in 'data'"), type2char(TYPEOF(thiscol)), CHAR(STRING_ELT(dtnames, INTEGER(data->idcols)[i]-1)));
+      error(_("Internal error: unknown column type '%s' for column '%s' in 'data'"), type2char(TYPEOF(thiscol)), CHAR(STRING_ELT(dtnames, INTEGER(data->idcols)[i]-1))); // # nocov
     }
   }
   UNPROTECT(1);
@@ -693,19 +693,19 @@ SEXP fmelt(SEXP DT, SEXP id, SEXP measure, SEXP varfactor, SEXP valfactor, SEXP 
   Rboolean narm=FALSE, verbose=FALSE;
 
   if (!isNewList(DT))
-    error(_("Input is not of type VECSXP, expected a data.table, data.frame or list"));
+    error(_("Internal error: input is not of type VECSXP, expected a data.table, data.frame or list")); // # nocov
   if (!isLogical(valfactor))
-    error(_("Argument 'value.factor' should be logical TRUE/FALSE"));
+    error(_("Internal error: 'value.factor' should be logical TRUE/FALSE")); // # nocov
   if (!isLogical(varfactor))
-    error(_("Argument 'variable.factor' should be logical TRUE/FALSE"));
+    error(_("Internal error: 'variable.factor' should be logical TRUE/FALSE")); // # nocov
   if (!isLogical(narmArg))
-    error(_("Argument 'na.rm' should be logical TRUE/FALSE."));
+    error(_("Internal error: 'na.rm' should be logical TRUE/FALSE.")); // # nocov
   if (!isString(varnames))
     error(_("Argument 'variable.name' must be a character vector"));
   if (!isString(valnames))
     error(_("Argument 'value.name' must be a character vector"));
   if (!isLogical(verboseArg))
-    error(_("Argument 'verbose' should be logical TRUE/FALSE"));
+    error(_("Internal error: argument 'verbose' should be logical TRUE/FALSE")); // # nocov
   if (LOGICAL(verboseArg)[0] == TRUE) verbose = TRUE;
   int ncol = LENGTH(DT);
   if (!ncol) {
@@ -715,7 +715,7 @@ SEXP fmelt(SEXP DT, SEXP id, SEXP measure, SEXP varfactor, SEXP valfactor, SEXP 
   int protecti=0;
   dtnames = PROTECT(getAttrib(DT, R_NamesSymbol)); protecti++;
   if (isNull(dtnames))
-    error(_("names(data) is NULL. Please report to data.table-help"));
+    error(_("Internal error: names(data) is NULL. Please report to data.table-help")); // # nocov
   if (LOGICAL(narmArg)[0] == TRUE) narm = TRUE;
   if (LOGICAL(verboseArg)[0] == TRUE) verbose = TRUE;
   struct processData data;

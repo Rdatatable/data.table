@@ -32,9 +32,9 @@ SEXP reorder(SEXP x, SEXP order)
     ncol = 1;
   }
   if (!isInteger(order))
-    error(_("order must be an integer vector"));
+    error(_("Internal error: order must be an integer vector")); // # nocov
   if (length(order) != nrow)
-    error(_("nrow(x)[%d]!=length(order)[%d]"),nrow,length(order));
+    error(_("Internal error: nrow(x)[%d]!=length(order)[%d]"), nrow, length(order)); // # nocov
   int nprotect = 0;
   if (ALTREP(order)) { order=PROTECT(copyAsPlain(order)); nprotect++; }  // TODO: if it's an ALTREP sequence some optimizations are possible rather than expand
 
