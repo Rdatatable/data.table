@@ -689,7 +689,7 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
   // Internal error because the column has already been added to the DT, so length mismatch should have been caught before adding the column.
   // for 5647 this used to limit slen to len, but no longer
   if (colname==NULL)
-    INTERNAL_ERROR("memrecycle has received NULL colname"); // # nocov
+    INTERNAL_ERROR("received NULL colname"); // # nocov
   *memrecycle_message = '\0';
   int protecti=0;
   if (isNewList(source)) {

@@ -53,7 +53,7 @@ SEXP lookup(SEXP ux, SEXP xlen, SEXP indices, SEXP gaps, SEXP overlaps, SEXP mul
           if (count[i]) type_count[i] = 1;
       }
       break;
-    default: INTERNAL_ERRORF("unknown type in mult=%d in lookup: %d", mult, type); // #nocov
+    default: INTERNAL_ERRORF("unknown type in mult=%d: %d", mult, type); // #nocov
     }
     break;
 
@@ -118,10 +118,10 @@ SEXP lookup(SEXP ux, SEXP xlen, SEXP indices, SEXP gaps, SEXP overlaps, SEXP mul
         }
       }
       break;
-    default: INTERNAL_ERRORF("unknown type in mult=%d in lookup: %d", mult, type); // #nocov
+    default: INTERNAL_ERRORF("unknown type in mult=%d: %d", mult, type); // #nocov
     }
     break;
-  default: INTERNAL_ERRORF("unknown mult in lookup: %d", mult); // #nocov
+  default: INTERNAL_ERRORF("unknown mult: %d", mult); // #nocov
   }
   pass1 = clock() - start;
   if (LOGICAL(verbose)[0])
@@ -209,10 +209,10 @@ SEXP lookup(SEXP ux, SEXP xlen, SEXP indices, SEXP gaps, SEXP overlaps, SEXP mul
         //         INTEGER(tt)[j] = INTEGER(vv)[j];
         // }
         break; // #nocov
-      default: INTERNAL_ERRORF("unknown type in mult=%d in lookup should have been caught earlier: %d", mult, type); // #nocov
+      default: INTERNAL_ERRORF("unknown type in mult=%d should have been caught earlier: %d", mult, type); // #nocov
       }
      break;
-    default: INTERNAL_ERRORF("unknown mult in lookup: %d", mult); // #nocov
+    default: INTERNAL_ERRORF("unknown mult: %d", mult); // #nocov
     }
   }
   pass3 = clock() - start;
