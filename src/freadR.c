@@ -151,7 +151,7 @@ SEXP freadR(
   args.fill = LOGICAL(fillArg)[0];
   args.showProgress = LOGICAL(showProgressArg)[0];
   if (INTEGER(nThreadArg)[0]<1)
-    error(_("nThread(%d)<1"), INTEGER(nThreadArg)[0]);
+    error(_("Internal error: nThread(%d)<1"), INTEGER(nThreadArg)[0]); // # nocov
   args.nth = (uint32_t)INTEGER(nThreadArg)[0];
   args.verbose = verbose;
   args.warningsAreErrors = warningsAreErrors;
@@ -590,7 +590,7 @@ void pushBuffer(ThreadLocalFreadParsingContext *ctx)
       } else
       if (thisSize == 1) {
         if (type[j] > CT_BOOL8_L)
-          STOP(_("Field size is 1 but the field is of type %d\n"), type[j]);
+          STOP(_("Internal error: field size is 1 but the field is of type %d\n"), type[j]); // # nocov
         Rboolean *dest = (Rboolean *)LOGICAL(VECTOR_ELT(DT, resj)) + DTi;
         const char *src1 = (char*)buff1 + off1;
         for (int i=0; i<nRows; ++i) {

@@ -93,7 +93,7 @@ SEXP expandAltRep(SEXP x)
   // See extensive discussion in issue #2866
 
   if (TYPEOF(x) != VECSXP)
-    error(_("x isn't a VECSXP"));
+    error(_("Internal error: x isn't a VECSXP")); // # nocov
   for (int i=0; i<LENGTH(x); i++) {
     SEXP col = VECTOR_ELT(x,i);
     if (ALTREP(col)) {
