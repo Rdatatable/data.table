@@ -34,7 +34,7 @@ typedef R_xlen_t RLEN;
 #define TYPEORDER(x) typeorder[x]
 
 #define INTERNAL_ERROR(s) error("%s %s: %s. %s", _("Internal error in"), __func__, s, _("Please report to the data.table issues tracker"))
-#define INTERNAL_ERRORF(f, ...) error("%s %s: %s. %s", _("Internal error in"), __func__, printf(f, __VA_ARGS__), _("Please report to the data.table issues tracker"))
+#define INTERNAL_ERRORF(f, ...) error("%s %s: %s. %s", _("Internal error in"), __func__, sprintf(f, __VA_ARGS__), _("Please report to the data.table issues tracker"))
 
 #ifdef MIN
 #  undef MIN
