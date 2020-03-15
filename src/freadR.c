@@ -137,7 +137,7 @@ SEXP freadR(
   } else INTERNAL_STOP("skip not integer or string"); // # nocov
 
   if (!isNull(NAstringsArg) && !isString(NAstringsArg))
-    INTERNAL_STOPF("NAstringsArg is type '%s'. R level catches this", type2char(TYPEOF(NAstringsArg)));  // # nocov
+    INTERNAL_STOP("NAstringsArg is type '%s'. R level catches this", type2char(TYPEOF(NAstringsArg)));  // # nocov
   int nnas = length(NAstringsArg);
   const char **NAstrings = (const char **)R_alloc((nnas + 1), sizeof(char*));  // +1 for the final NULL to save a separate nna variable
   for (int i=0; i<nnas; i++)
@@ -585,7 +585,7 @@ void pushBuffer(ThreadLocalFreadParsingContext *ctx)
           src1 += rowSize1;
           dest++;
         }
-      } else INTERNAL_STOPF("unexpected field of size %d\n", thisSize);  // # nocov
+      } else INTERNAL_STOP("unexpected field of size %d\n", thisSize);  // # nocov
       done++;
     }
     off8 += (size[j] & 8);

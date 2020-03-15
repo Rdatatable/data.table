@@ -96,7 +96,7 @@ typedef struct FieldParseContext {
 // Forward declarations
 static void Field(FieldParseContext *ctx);
 
-#define ASSERT(cond, msg, ...) if (!(cond)) INTERNAL_STOPF(msg, __VA_ARGS__) // # nocov
+#define ASSERT(cond, msg, ...) if (!(cond)) INTERNAL_STOP(msg, __VA_ARGS__) // # nocov
 
 
 
@@ -202,7 +202,7 @@ static char *typeLetter = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopq
 
 static char *typesAsString(int ncol) {
   int nLetters = strlen(typeLetter);
-  if (NUMTYPE>nLetters) INTERNAL_STOPF("NUMTYPE(%d) > nLetters(%d)", NUMTYPE, nLetters); // # nocov
+  if (NUMTYPE>nLetters) INTERNAL_STOP("NUMTYPE(%d) > nLetters(%d)", NUMTYPE, nLetters); // # nocov
   static char str[101];
   int i=0;
   if (ncol<=100) {
@@ -1586,10 +1586,10 @@ int freadMain(freadMainArgs _args) {
     }
   }
 
-  if (ncol<1 || row1line<1) INTERNAL_STOPF("ncol==%d line==%d after detecting sep, ncol and first line", ncol, row1line); // # nocov
+  if (ncol<1 || row1line<1) INTERNAL_STOP("ncol==%d line==%d after detecting sep, ncol and first line", ncol, row1line); // # nocov
   int tt = countfields(&ch);
   ch = pos; // move back to start of line since countfields() moved to next
-  if (!fill && tt!=ncol) INTERNAL_STOPF("first line has field count %d but expecting %d", tt, ncol); // # nocov
+  if (!fill && tt!=ncol) INTERNAL_STOP("first line has field count %d but expecting %d", tt, ncol); // # nocov
   if (verbose) {
     DTPRINT(_("  Detected %d columns on line %d. This line is either column names or first data row. Line starts as: <<%s>>\n"),
             tt, row1line, strlim(pos, 30));
@@ -1829,7 +1829,7 @@ int freadMain(freadMainArgs _args) {
               (uint64_t)allocnrow, (uint64_t)estnrow, (int)(100.0*allocnrow/estnrow-100.0));
       DTPRINT(_("  =====\n"));
     } else {
-      if (sampleLines > allocnrow) INTERNAL_STOPF("sampleLines(%"PRIu64") > allocnrow(%"PRIu64")", (uint64_t)sampleLines, (uint64_t)allocnrow); // # nocov
+      if (sampleLines > allocnrow) INTERNAL_STOP("sampleLines(%"PRIu64") > allocnrow(%"PRIu64")", (uint64_t)sampleLines, (uint64_t)allocnrow); // # nocov
     }
   }
   if (nrowLimit < allocnrow) {
@@ -1875,7 +1875,7 @@ int freadMain(freadMainArgs _args) {
     }
     if (eol(&ch)) pos = ++ch;
     else if (*ch=='\0') pos = ch;
-    else INTERNAL_STOPF("reading colnames ending on '%c'", *ch); // # nocov
+    else INTERNAL_STOP("reading colnames ending on '%c'", *ch); // # nocov
     // now on first data row (row after column names)
     // when fill=TRUE and column names shorter (test 1635.2), leave calloc initialized lenOff.len==0
   }
@@ -2009,7 +2009,7 @@ int freadMain(freadMainArgs _args) {
       nth = omp_get_num_threads();
       if (me!=0) {
         // # nocov start
-        snprintf(internalErr, internalErrSize, _("Internal error: Master thread is not thread 0 but thread %d.\n"), me);
+        snprintf(internalErr, internalErrSize, "Master thread is not thread 0 but thread %d.\n", me);
         stopTeam = true;
         // # nocov end
       }
@@ -2266,7 +2266,7 @@ int freadMain(freadMainArgs _args) {
         }
         else if (headPos!=thisJumpStart) {
            // # nocov start
-          snprintf(internalErr, internalErrSize, _("Internal error: invalid head position. jump=%d, headPos=%p, thisJumpStart=%p, sof=%p"), jump, (void*)headPos, (void*)thisJumpStart, (void*)sof);
+          snprintf(internalErr, internalErrSize, _("invalid head position. jump=%d, headPos=%p, thisJumpStart=%p, sof=%p", jump, (void*)headPos, (void*)thisJumpStart, (void*)sof);
           stopTeam = true;
           // # nocov end
         }
@@ -2332,7 +2332,7 @@ int freadMain(freadMainArgs _args) {
 
   if (stopTeam) {
     if (internalErr[0]!='\0') {
-      STOP("%s", internalErr);  // # nocov
+      INTERNAL_STOP("%s", internalErr);  // # nocov
     }
     stopTeam = false;
 
