@@ -216,7 +216,7 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
           fadaptiverollsum(ialgo, dx[i], inx[i], &dans[i*nk+j], ikl[j], dfill, bnarm, ihasna, verbose);
         break;
       default:
-        INTERNAL_ERRORF("Unknown sfun value: %d", sfun); // #nocov
+        INTERNAL_ERRORF("Unknown sfun value: %d", sfun); // # nocov
       }
     }
   }

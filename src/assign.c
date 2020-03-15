@@ -764,7 +764,7 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
             // # nocov start
             for (int j=0; j<k; ++j) SET_TRUELENGTH(s, 0);  // wipe our negative usage and restore 0
             savetl_end();                                  // then restore R's own usage (if any)
-            INTERNAL_ERROR("levels of target are either not unique or have truelength<0");
+            INTERNAL_ERROR("levels of target are either not unique or have truelength<0"); // # nocov
             // # nocov end
           }
           SET_TRUELENGTH(s, -k-1);

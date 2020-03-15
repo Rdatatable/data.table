@@ -4,7 +4,7 @@ void subsetVectorRaw(SEXP ans, SEXP source, SEXP idx, const bool anyNA)
 // Used here by subsetDT() and by dogroups.c
 {
   const int n = length(idx);
-  if (length(ans)!=n) INTERNAL_ERRORF("subsetVectorRaw length(ans)==%d n=%d", length(ans), n);
+  if (length(ans)!=n) INTERNAL_ERRORF("length(ans)==%d n=%d", length(ans), n); // # nocov
 
   const int *restrict idxp = INTEGER(idx);
   // anyNA refers to NA _in idx_; if there's NA in the data (source) that's just regular data to be copied

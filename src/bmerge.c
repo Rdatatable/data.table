@@ -268,7 +268,7 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
       case LT : xupp = xlow + 1; xlow = xlowIn; break;
       case GE : if (ival.i != NA_INTEGER) xupp = xuppIn; break;
       case GT : xlow = xupp - 1; if (ival.i != NA_INTEGER) xupp = xuppIn; break;
-      default : INTERNAL_ERRORF("unrecognized value op[col]=%d for column '%s'", op[col], type2char(TYPEOF(xc))); // #nocov
+      default : INTERNAL_ERRORF("unrecognized value op[col]=%d for column '%s'", op[col], type2char(TYPEOF(xc))); // # nocov
       }
       // for LE/LT cases, we need to ensure xlow excludes NA indices, != EQ is checked above already
       if (op[col] <= 3 && xlow<xupp-1 && ival.i != NA_INTEGER && INTEGER(xc)[XIND(xlow+1)] == NA_INTEGER) {
@@ -376,7 +376,7 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
       case LT : xupp = xlow + 1; if (!isivalNA) xlow = xlowIn; break;
       case GE : if (!isivalNA) xupp = xuppIn; break;
       case GT : xlow = xupp - 1; if (!isivalNA) xupp = xuppIn; break;
-      default : INTERNAL_ERRORF("Unrecognized value op[col]=%d in column '%s'", op[col], type2char(TYPEOF(xc))); // #nocov
+      default : INTERNAL_ERRORF("Unrecognized value op[col]=%d in column '%s'", op[col], type2char(TYPEOF(xc))); // # nocov
       }
       // for LE/LT cases, we need to ensure xlow excludes NA indices, != EQ is checked above already
       if (op[col] <= 3 && xlow<xupp-1 && !isivalNA && (!isInt64 ? ISNAN(dxc[XIND(xlow+1)]) : (DtoLL(dxc[XIND(xlow+1)]) == NA_INT64_LL))) {

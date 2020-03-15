@@ -188,7 +188,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
     // for (int i=0; i<LENGTH(l); ++i) { for (int j=0; j<ncol; ++j) Rprintf(_("%2d "),colMap[i*ncol + j]);  Rprintf(_("\n")); }
   }
 
-  if (fill && usenames==NA_LOGICAL) INTERNAL_ERROR("usenames==NA but fill=TRUE. usenames should have been set to TRUE earlier with warning.");
+  if (fill && usenames==NA_LOGICAL) INTERNAL_ERROR("usenames==NA but fill=TRUE. usenames should have been set to TRUE earlier with warning."); // # nocov
   if (!fill && (usenames==TRUE || usenames==NA_LOGICAL)) {
     // Ensure no missings in both cases, and (when usenames==NA) all columns in same order too
     // We proceeded earlier as if fill was true, so varying ncol items will have missings here
@@ -203,7 +203,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
         if (w==-1) {
           int missi = i;
           while (colMap[i*ncol + j]==-1 && i<LENGTH(l)) i++;
-          if (i==LENGTH(l)) INTERNAL_ERROR("could not find the first column name not present in earlier item");
+          if (i==LENGTH(l)) INTERNAL_ERROR("could not find the first column name not present in earlier item"); // # nocov
           SEXP s = getAttrib(VECTOR_ELT(l, i), R_NamesSymbol);
           int w2 = colMap[i*ncol + j];
           const char *str = isString(s) ? CHAR(STRING_ELT(s,w2)) : "";
@@ -215,7 +215,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
         }
         if (w!=j && usenames==NA_LOGICAL) {
           SEXP s = getAttrib(VECTOR_ELT(l, i), R_NamesSymbol);
-          if (!isString(s) || i==0) INTERNAL_ERRORF("usenames==NA but an out-of-order name has been found in an item with no names or the first item. [%d]", i);
+          if (!isString(s) || i==0) INTERNAL_ERRORF("usenames==NA but an out-of-order name has been found in an item with no names or the first item. [%d]", i); // # nocov
           snprintf(buff, 1000, _("Column %d ['%s'] of item %d appears in position %d in item %d. Set use.names=TRUE to match by column name, or use.names=FALSE to ignore column names.%s"),
                                w+1, CHAR(STRING_ELT(s,w)), i+1, j+1, i, extra);
           i = LENGTH(l);
