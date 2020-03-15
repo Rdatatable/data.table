@@ -320,7 +320,7 @@ SEXP overlaps(SEXP ux, SEXP imatches, SEXP multArg, SEXP typeArg, SEXP nomatchAr
           ++totlen;
       }
       break;
-    default: INTERNAL_ERRORF("unknown type in mult=ALL in overlaps: %d", mult, type); // #nocov
+    default: INTERNAL_ERRORF("unknown type in mult=ALL: %d", type); // #nocov
     }
   } else totlen = rows;
   end1 = clock() - start;
@@ -461,7 +461,7 @@ SEXP overlaps(SEXP ux, SEXP imatches, SEXP multArg, SEXP typeArg, SEXP nomatchAr
          }
       }
       break;
-    default: INTERNAL_ERRORF("unknown type in mult=%d in overlaps: %d", mult, type); // #nocov
+    default: INTERNAL_ERRORF("unknown type in mult=%d: %d", mult, type); // #nocov
     }
     break;
 
@@ -568,7 +568,7 @@ SEXP overlaps(SEXP ux, SEXP imatches, SEXP multArg, SEXP typeArg, SEXP nomatchAr
         }
       }
       break;
-    default: INTERNAL_ERRORF("unknown type in mult=%d in overlaps: %d", mult, type); // #nocov
+    default: INTERNAL_ERRORF("unknown type in mult=%d: %d", mult, type); // #nocov
     }
     break;
 
@@ -717,10 +717,10 @@ SEXP overlaps(SEXP ux, SEXP imatches, SEXP multArg, SEXP typeArg, SEXP nomatchAr
          }
       }
       break;
-    default: INTERNAL_ERRORF("unknown type in mult=%d in overlaps: %d", mult, type); // #nocov
+    default: INTERNAL_ERRORF("unknown type in mult=%d: %d", mult, type); // #nocov
     }
     break;
-  default: INTERNAL_ERRORF("unknown mult in overlaps: %d", mult); // #nocov
+  default: INTERNAL_ERRORF("unknown mult: %d", mult); // #nocov
   }
   end2 = clock() - start;
   if (LOGICAL(verbose)[0])

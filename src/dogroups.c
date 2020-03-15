@@ -409,7 +409,7 @@ SEXP growVector(SEXP x, const R_len_t newlen)
       SET_VECTOR_ELT(newx, i, xd[i]);
   } break;
   default :
-    INTERNAL_ERRORF("growVector doesn't support type '%s'", type2char(TYPEOF(x)));  // # nocov
+    INTERNAL_ERRORF("type '%s' not supported", type2char(TYPEOF(x)));  // # nocov
   }
   // if (verbose) Rprintf(_("Growing vector from %d to %d items of type '%s'\n"), len, newlen, type2char(TYPEOF(x)));
   // Would print for every column if here. Now just up in dogroups (one msg for each table grow).

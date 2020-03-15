@@ -116,7 +116,7 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
   else if (!strcmp(CHAR(STRING_ELT(align, 0)), "left"))
     ialign = -1;
   else
-    INTERNAL_ERROR("invalid align argument in rolling function, should have been caught before"); // # nocov
+    INTERNAL_ERROR("invalid align argument, should have been caught before"); // # nocov
 
   if (badaptive && ialign!=1)
     error(_("using adaptive TRUE and align argument different than 'right' is not implemented"));
@@ -148,7 +148,7 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
   } else if (!strcmp(CHAR(STRING_ELT(fun, 0)), "sum")) {
     sfun = SUM;
   } else {
-    INTERNAL_ERROR("invalid fun argument in rolling function, should have been caught before"); // # nocov
+    INTERNAL_ERROR("invalid fun argument, should have been caught before"); // # nocov
   }
 
   if (length(fill) != 1)
@@ -182,7 +182,7 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
   else if (!strcmp(CHAR(STRING_ELT(algo, 0)), "exact"))
     ialgo = 1;                                                  // exact = 1
   else
-    INTERNAL_ERROR("invalid algo argument in rolling function, should have been caught before"); // # nocov
+    INTERNAL_ERROR("invalid algo argument, should have been caught before"); // # nocov
 
   int* iik = NULL;
   if (!badaptive) {
@@ -216,7 +216,7 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
           fadaptiverollsum(ialgo, dx[i], inx[i], &dans[i*nk+j], ikl[j], dfill, bnarm, ihasna, verbose);
         break;
       default:
-        INTERNAL_ERRORF("Unknown sfun value in froll: %d", sfun); // #nocov
+        INTERNAL_ERRORF("Unknown sfun value: %d", sfun); // #nocov
       }
     }
   }
@@ -272,7 +272,7 @@ SEXP frollapplyR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP align, SEXP rho) {
   } else if (!strcmp(CHAR(STRING_ELT(align, 0)), "left")) {
     ialign = -1;
   } else {
-    INTERNAL_ERROR("invalid align argument in rolling function, should have been caught before"); // # nocov
+    INTERNAL_ERROR("invalid align argument, should have been caught before"); // # nocov
   }
 
   if (length(fill) != 1)

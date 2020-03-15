@@ -4,12 +4,12 @@ static void finalizer(SEXP p)
 {
   SEXP x;
   R_len_t n, l, tl;
-  if(!R_ExternalPtrAddr(p)) INTERNAL_ERROR("finalizer hasn't received an ExternalPtr"); // # nocov
+  if(!R_ExternalPtrAddr(p)) INTERNAL_ERROR("didn't receive an ExternalPtr"); // # nocov
   p = R_ExternalPtrTag(p);
-  if (!isString(p)) INTERNAL_ERROR("finalizer's ExternalPtr doesn't see names in tag"); // # nocov
+  if (!isString(p)) INTERNAL_ERROR("ExternalPtr doesn't see names in tag"); // # nocov
   l = LENGTH(p);
   tl = TRUELENGTH(p);
-  if (l<0 || tl<l) INTERNAL_ERRORF("finalizer sees l=%d, tl=%d", l, tl); // # nocov
+  if (l<0 || tl<l) INTERNAL_ERRORF("l=%d, tl=%d", l, tl); // # nocov
   n = tl-l;
   if (n==0) {
     // gc's ReleaseLargeFreeVectors() will have reduced R_LargeVallocSize by the correct amount
@@ -213,7 +213,7 @@ SEXP alloccol(SEXP dt, R_len_t n, Rboolean verbose)
   tl = TRUELENGTH(dt);
   // R <= 2.13.2 and we didn't catch uninitialized tl somehow
   if (tl<0) INTERNAL_ERROR("tl of class is marked but tl<0."); // # nocov
-  if (tl>0 && tl<l) INTERNAL_ERRORF("please report (including result of sessionInfo()) to data.table issue tracker: tl (%d) < l (%d) but tl of class is marked.", tl, l); // # nocov
+  if (tl>0 && tl<l) INTERNAL_ERRORF("tl (%d) < l (%d) but tl of class is marked.", tl, l); // # nocov
   if (tl>l+10000) warning(_("tl (%d) is greater than 10,000 items over-allocated (l = %d). If you didn't set the datatable.alloccol option to be very large, please report to data.table issue tracker including the result of sessionInfo()."),tl,l);
   if (n>tl) return(shallow(dt,R_NilValue,n)); // usual case (increasing alloc)
   if (n<tl && verbose) Rprintf(_("Attempt to reduce allocation from %d to %d ignored. Can only increase allocation via shallow copy. Please do not use DT[...]<- or DT$someCol<-. Use := inside DT[...] instead."),tl,n);
@@ -295,7 +295,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
   // For data.frame, can use set() on existing columns but not add new ones because DF are not over-allocated.
   bool isDataTable = INHERITS(dt, char_datatable);
   if (!isDataTable && !INHERITS(dt, char_dataframe))
-    INTERNAL_ERROR("dt passed to Cassign is not a data.table or data.frame");  // # nocov
+    INTERNAL_ERROR("dt is not a data.table or data.frame");  // # nocov
 
   oldncol = LENGTH(dt);
   SEXP names = PROTECT(getAttrib(dt, R_NamesSymbol)); protecti++;
@@ -445,11 +445,11 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
 
     if (oldtncol<oldncol) {
       if (oldtncol==0) error(_("This data.table has either been loaded from disk (e.g. using readRDS()/load()) or constructed manually (e.g. using structure()). Please run setDT() or setalloccol() on it first (to pre-allocate space for new columns) before assigning by reference to it."));   // #2996
-      INTERNAL_ERRORF("oldtncol(%d) < oldncol(%d). Please report to data.table issue tracker, including result of sessionInfo().", oldtncol, oldncol); // # nocov
+      INTERNAL_ERRORF("oldtncol(%d) < oldncol(%d)", oldtncol, oldncol); // # nocov
     }
     if (oldtncol>oldncol+10000L) warning(_("truelength (%d) is greater than 10,000 items over-allocated (length = %d). See ?truelength. If you didn't set the datatable.alloccol option very large, please report to data.table issue tracker including the result of sessionInfo()."),oldtncol, oldncol);
     if (oldtncol < oldncol+LENGTH(newcolnames))
-      INTERNAL_ERRORF("DT passed to assign has not been allocated enough column slots. l=%d, tl=%d, adding %d", oldncol, oldtncol, LENGTH(newcolnames));  // # nocov
+      INTERNAL_ERRORF("input dt has not been allocated enough column slots. l=%d, tl=%d, adding %d", oldncol, oldtncol, LENGTH(newcolnames));  // # nocov
     if (!selfrefnamesok(dt,verbose))
       error(_("It appears that at some earlier point, names of this data.table have been reassigned. Please ensure to use setnames() rather than names<- or colnames<-. Otherwise, please report to data.table issue tracker."));  // # nocov
       // Can growVector at this point easily enough, but it shouldn't happen in first place so leave it as
@@ -1120,7 +1120,7 @@ void writeNA(SEXP v, const int from, const int n)
     for (int i=from; i<=to; ++i) SET_VECTOR_ELT(v, i, R_NilValue);
     break;
   default :
-    INTERNAL_ERRORF("writeNA passed a vector of type '%s'", type2char(TYPEOF(v)));  // # nocov
+    INTERNAL_ERRORF("Unsupported type '%s' for v", type2char(TYPEOF(v)));  // # nocov
   }
 }
 
