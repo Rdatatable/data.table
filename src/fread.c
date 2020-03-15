@@ -2266,7 +2266,7 @@ int freadMain(freadMainArgs _args) {
         }
         else if (headPos!=thisJumpStart) {
            // # nocov start
-          snprintf(internalErr, internalErrSize, _("invalid head position. jump=%d, headPos=%p, thisJumpStart=%p, sof=%p", jump, (void*)headPos, (void*)thisJumpStart, (void*)sof);
+          snprintf(internalErr, internalErrSize, "invalid head position. jump=%d, headPos=%p, thisJumpStart=%p, sof=%p", jump, (void*)headPos, (void*)thisJumpStart, (void*)sof);
           stopTeam = true;
           // # nocov end
         }
