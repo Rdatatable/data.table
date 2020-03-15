@@ -331,7 +331,7 @@ SEXP subsetVector(SEXP x, SEXP idx) { // idx is 1-based passed from R level
   if (isNull(x))
     INTERNAL_ERROR("NULL can not be subset. It is invalid for a data.table to contain a NULL column.");      // # nocov
   if (check_idx(idx, length(x), &anyNA, &orderedSubset) != NULL)
-    INTERNAL_ERROR("CsubsetVector is internal-use-only but has received negatives, zeros or out-of-range");  // # nocov
+    INTERNAL_ERROR("idx values negatives, zeros or out-of-range");  // # nocov
   SEXP ans = PROTECT(allocVector(TYPEOF(x), length(idx))); nprotect++;
   copyMostAttrib(x, ans);
   subsetVectorRaw(ans, x, idx, anyNA);

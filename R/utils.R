@@ -15,7 +15,6 @@ isTRUEorFALSE = function(x) is.logical(x) && length(x)==1L && !is.na(x)
 allNA = function(x) .Call(C_allNAR, x)
 # helper for nan argument (e.g. nafill): TRUE -> treat NaN as NA
 nan_is_na = function(x) {
-  internal_error('hi')
   if (length(x) != 1L) stop("Argument 'nan' must be length 1")
   if (identical(x, NA) || identical(x, NA_real_)) return(TRUE)
   if (identical(x, NaN)) return(FALSE)
