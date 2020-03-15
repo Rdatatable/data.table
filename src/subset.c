@@ -258,7 +258,7 @@ SEXP subsetDT(SEXP x, SEXP rows, SEXP cols) { // API change needs update NEWS.md
     rows = PROTECT(convertNegAndZeroIdx(rows, max, ScalarLogical(TRUE))); nprotect++;
     const char *err = check_idx(rows, nrow, &anyNA, &orderedSubset);
     if (err!=NULL)
-      error(err);
+      error(err); // # nocov
   }
 
   if (!isInteger(cols))
@@ -266,7 +266,7 @@ SEXP subsetDT(SEXP x, SEXP rows, SEXP cols) { // API change needs update NEWS.md
   for (int i=0; i<LENGTH(cols); i++) {
     int this = INTEGER(cols)[i];
     if (this<1 || this>LENGTH(x))
-      error(_("Item %d of 'cols' is %d which is outside 1-based range [1,ncol(x)=%d]"), i+1, this, LENGTH(x));
+      error(_("Internal error: item %d of 'cols' is %d which is outside 1-based range [1,ncol(x)=%d]"), i+1, this, LENGTH(x)); // # nocov
   }
 
   int overAlloc = checkOverAlloc(GetOption(install("datatable.alloccol"), R_NilValue));

@@ -16924,3 +16924,9 @@ test(2139.53, which_(1L, FALSE), error="Argument to 'which' must be logical")
 
 test(2139.54, melt(data.table(1), variable.name=1), error="Argument 'variable.name' must be a character vector")
 test(2139.55, melt(data.table(1), value.name=1), error="Argument 'value.name' must be a character vector")
+
+DT1 = data.table(a=1)
+DT2 = data.table(a=2)
+test(2139.56, bmerge(DT1, DT2, 1, 1, roll = 'a', rollends = TRUE, verbose = TRUE, ops = NULL, nomatch = NULL, mult = 'all'), error="roll is character but not 'nearest'")
+
+test(2139.57, fsort(-1), error="Cannot yet handle negatives")

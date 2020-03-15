@@ -109,7 +109,7 @@ SEXP fsort(SEXP x, SEXP verboseArg) {
     error(_("verbose must be TRUE or FALSE"));
   Rboolean verbose = LOGICAL(verboseArg)[0];
   if (!isNumeric(x))
-    error(_("x must be a vector of type 'double' currently"));
+    error(_("Internal error: x must be a vector of type 'double' currently")); // # nocov
   // TODO: not only detect if already sorted, but if it is, just return x to save the duplicate
 
   SEXP ansVec = PROTECT(allocVector(REALSXP, xlength(x)));

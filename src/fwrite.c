@@ -611,7 +611,7 @@ void fwriteMain(fwriteMainArgs args)
   squashDateTime = args.squashDateTime;
 
   if (args.buffMB<1 || args.buffMB>1024)
-    STOP(_("buffMB=%d outside [1,1024]"), args.buffMB);
+    STOP(_("Internal error: buffMB=%d outside [1,1024]"), args.buffMB); // # nocov
   size_t buffSize = (size_t)1024*1024*args.buffMB;
 
   int eolLen=strlen(args.eol), naLen=strlen(args.na);
@@ -619,7 +619,7 @@ void fwriteMain(fwriteMainArgs args)
   //        we'd need `#define _POSIX_C_SOURCE 200809L` before #include <string.h> but that seems a step too far
   //        and platform specific. We prefer to be pure C99.
   if (eolLen<=0)
-    STOP(_("eol must be 1 or more bytes (usually either \\n or \\r\\n) but is length %d"), eolLen);
+    STOP(_("Internal error: eol must be 1 or more bytes (usually either \\n or \\r\\n) but is length %d"), eolLen); // # nocov
 
   if (verbose) {
     DTPRINT(_("Column writers: "));
@@ -713,7 +713,7 @@ void fwriteMain(fwriteMainArgs args)
   if (headerLen) {
     char *buff = malloc(headerLen);
     if (!buff)
-      STOP(_("Unable to allocate %d MiB for header: %s"), headerLen / 1024 / 1024, strerror(errno));
+      STOP(_("Unable to allocate %d MiB for header: %s"), headerLen / 1024 / 1024, strerror(errno)); // # nocov
     char *ch = buff;
     if (args.bom) {*ch++=(char)0xEF; *ch++=(char)0xBB; *ch++=(char)0xBF; }  // 3 appears above (search for "bom")
     memcpy(ch, args.yaml, yamlLen);
@@ -775,7 +775,7 @@ void fwriteMain(fwriteMainArgs args)
   if (args.nrow == 0) {
     if (verbose) DTPRINT(_("No data rows present (nrow==0)\n"));
     if (f!=-1 && CLOSE(f))
-      STOP(_("%s: '%s'"), strerror(errno), args.filename);
+      STOP(_("%s: '%s'"), strerror(errno), args.filename); // # nocov
     return;
   }
 

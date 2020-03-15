@@ -62,13 +62,13 @@ SEXP bmerge(SEXP iArg, SEXP xArg, SEXP icolsArg, SEXP xcolsArg, SEXP isorted, SE
     if (xcols[col]==NA_INTEGER)
       error(_("Internal error. xcols[%d] is NA"), col); // # nocov
     if (icols[col]>LENGTH(i) || icols[col]<1)
-      error(_("icols[%d]=%d outside range [1,length(i)=%d]"), col, icols[col], LENGTH(i));
+      error(_("Internal error: icols[%d]=%d outside range [1,length(i)=%d]"), col, icols[col], LENGTH(i)); // # nocov
     if (xcols[col]>LENGTH(x) || xcols[col]<1)
-      error(_("xcols[%d]=%d outside range [1,length(x)=%d]"), col, xcols[col], LENGTH(x));
+      error(_("Internal error: xcols[%d]=%d outside range [1,length(x)=%d]"), col, xcols[col], LENGTH(x)); // # nocov
     int it = TYPEOF(VECTOR_ELT(i, icols[col]-1));
     int xt = TYPEOF(VECTOR_ELT(x, xcols[col]-1));
     if (iN && it!=xt)
-      error(_("typeof x.%s (%s) != typeof i.%s (%s)"), CHAR(STRING_ELT(getAttrib(x,R_NamesSymbol),xcols[col]-1)), type2char(xt), CHAR(STRING_ELT(getAttrib(i,R_NamesSymbol),icols[col]-1)), type2char(it));
+      error(_("Internal error: typeof x.%s (%s) != typeof i.%s (%s)"), CHAR(STRING_ELT(getAttrib(x, R_NamesSymbol), xcols[col]-1)), type2char(xt), CHAR(STRING_ELT(getAttrib(i, R_NamesSymbol), icols[col]-1)), type2char(it)); // # nocov
   }
   // raise(SIGINT);
 
@@ -110,7 +110,7 @@ SEXP bmerge(SEXP iArg, SEXP xArg, SEXP icolsArg, SEXP xcolsArg, SEXP isorted, SE
 
   // nqmaxgrpArg
   if (!isInteger(nqmaxgrpArg) || length(nqmaxgrpArg) != 1 || INTEGER(nqmaxgrpArg)[0] <= 0)
-    error(_("Intrnal error: nqmaxgrpArg is not a positive length-1 integer vector")); // # nocov
+    error(_("Internal error: nqmaxgrpArg is not a positive length-1 integer vector")); // # nocov
   nqmaxgrp = INTEGER(nqmaxgrpArg)[0];
   if (nqmaxgrp>1 && mult == ALL) {
     // non-equi case with mult=ALL, may need reallocation
