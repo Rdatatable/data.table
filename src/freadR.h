@@ -20,5 +20,9 @@ void __halt(bool warn, const char *format, ...);   // see freadR.c
 #define DTPRINT     Rprintf
 #define DTWARN(...) warningsAreErrors ? __halt(1, __VA_ARGS__) : warning(__VA_ARGS__)
 
+static char internal_error_buff[128];
+#define INTERNAL_STOP(s) STOP("%s %s: %s. %s", _("Internal error in"), __func__, s, _("Please report to the data.table issues tracker"))
+#define INTERNAL_STOPF(f, ...) STOP("%s %s: %s. %s", _("Internal error in"), __func__, snprintf(internal_error_buff, 128, f, __VA_ARGS__), _("Please report to the data.table issues tracker"))
+
 #endif
 
