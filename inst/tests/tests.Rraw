@@ -36,6 +36,7 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
   groupingsets.data.table = data.table:::groupingsets.data.table
   guess = data.table:::guess
   INT = data.table:::INT
+  internal_error = data.table:::internal_error
   is_na = data.table:::is_na
   is.sorted = data.table:::is.sorted
   isReallyReal = data.table:::isReallyReal
@@ -16846,3 +16847,9 @@ A = data.table(A=c(complex(real = 1:3, imaginary=c(0, -1, 1)), NaN))
 test(2138.3, rbind(A,B), data.table(A=c(as.character(A$A), B$A)))
 A = data.table(A=as.complex(rep(NA, 5)))
 test(2138.4, rbind(A,B), data.table(A=c(as.character(A$A), B$A)))
+
+# coverage for internal_error wrapper
+test(2139.1, internal_error("broken"), error="Internal error.*broken")
+test(2139.2, internal_error("broken %d%s", 1, "2"), error="Internal error.*broken 12")
+foo = function(...) internal_error("broken")
+test(2139.3, foo(), error="Internal error in foo: broken")
