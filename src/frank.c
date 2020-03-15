@@ -6,8 +6,8 @@
 SEXP dt_na(SEXP x, SEXP cols) {
   int n=0, elem;
 
-  if (!isNewList(x)) error(_("Internal error. Argument 'x' to Cdt_na is type '%s' not 'list'"), type2char(TYPEOF(x))); // # nocov
-  if (!isInteger(cols)) error(_("Internal error. Argument 'cols' to Cdt_na is type '%s' not 'integer'"), type2char(TYPEOF(cols))); // # nocov
+  if (!isNewList(x)) INTERNAL_ERRORF("Argument 'x' to Cdt_na is type '%s' not 'list'", type2char(TYPEOF(x))); // # nocov
+  if (!isInteger(cols)) INTERNAL_ERRORF("Argument 'cols' to Cdt_na is type '%s' not 'integer'", type2char(TYPEOF(cols))); // # nocov
   for (int i=0; i<LENGTH(cols); ++i) {
     elem = INTEGER(cols)[i];
     if (elem<1 || elem>LENGTH(x))
@@ -79,7 +79,7 @@ SEXP frank(SEXP xorderArg, SEXP xstartArg, SEXP xlenArg, SEXP ties_method) {
   else if (!strcmp(pties, "sequence")) ties = SEQUENCE;
   else if (!strcmp(pties, "last")) ties = LAST;
   // else if (!strcmp(pties, "runlength")) ties = RUNLENGTH;
-  else error(_("Internal error: invalid ties.method for frankv(), should have been caught before. please report to data.table issue tracker")); // # nocov
+  else INTERNAL_ERROR("invalid ties.method for frankv(), should have been caught before"); // # nocov
   const int n = length(xorderArg);
   SEXP ans = PROTECT(allocVector(ties==MEAN ? REALSXP : INTSXP, n));
   int *ians=NULL;
@@ -136,7 +136,7 @@ SEXP frank(SEXP xorderArg, SEXP xstartArg, SEXP xlenArg, SEXP ties_method) {
     //       INTEGER(ans)[xorder[j]-1] = k++;
     //   }
     //   break;
-    default: error(_("Internal error: unknown ties value in frank: %d"), ties); // #nocov
+    default: INTERNAL_ERRORF("unknown ties value in frank: %d", ties); // #nocov
     }
   }
   UNPROTECT(1);
@@ -147,8 +147,8 @@ SEXP frank(SEXP xorderArg, SEXP xstartArg, SEXP xlenArg, SEXP ties_method) {
 SEXP anyNA(SEXP x, SEXP cols) {
   int i, j, n=0, elem;
 
-  if (!isNewList(x)) error(_("Internal error. Argument 'x' to CanyNA is type '%s' not 'list'"), type2char(TYPEOF(x))); // #nocov
-  if (!isInteger(cols)) error(_("Internal error. Argument 'cols' to CanyNA is type '%s' not 'integer'"), type2char(TYPEOF(cols))); // # nocov
+  if (!isNewList(x)) INTERNAL_ERRORF("Argument 'x' to CanyNA is type '%s' not 'list'", type2char(TYPEOF(x))); // #nocov
+  if (!isInteger(cols)) INTERNAL_ERRORF("Argument 'cols' to CanyNA is type '%s' not 'integer'", type2char(TYPEOF(cols))); // # nocov
   for (i=0; i<LENGTH(cols); i++) {
     elem = INTEGER(cols)[i];
     if (elem<1 || elem>LENGTH(x))

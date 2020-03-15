@@ -66,7 +66,7 @@ SEXP gforce(SEXP env, SEXP jsub, SEXP o, SEXP f, SEXP l, SEXP irowsArg) {
   if (LENGTH(o) && LENGTH(o)!=nrow) error(_("o has length %d but sum(l)=%d"), LENGTH(o), nrow);
   {
     SEXP tt = getAttrib(o, install("maxgrpn"));
-    if (length(tt)==1 && INTEGER(tt)[0]!=maxgrpn) error(_("Internal error: o's maxgrpn attribute mismatches recalculated maxgrpn")); // # nocov
+    if (length(tt)==1 && INTEGER(tt)[0]!=maxgrpn) INTERNAL_ERROR("o's maxgrpn attribute mismatches recalculated maxgrpn"); // # nocov
   }
 
   int nb = nbit(ngrp-1);
@@ -86,8 +86,7 @@ SEXP gforce(SEXP env, SEXP jsub, SEXP o, SEXP f, SEXP l, SEXP irowsArg) {
   // TODO: enable stress-test mode in tests only (#3205) which can be turned off by default in release to decrease overhead on small data
   //       if that is established to be biting (it may be fine).
   if (nBatch<1 || batchSize<1 || lastBatchSize<1) {
-    error(_("Internal error: nrow=%d  ngrp=%d  nbit=%d  shift=%d  highSize=%d  nBatch=%d  batchSize=%d  lastBatchSize=%d\n"),  // # nocov
-           nrow, ngrp, nb, shift, highSize, nBatch, batchSize, lastBatchSize);                                              // # nocov
+    INTERNAL_ERRORF("nrow=%d  ngrp=%d  nbit=%d  shift=%d  highSize=%"PRIu64"  nBatch=%"PRIu64"  batchSize=%"PRIu64"  lastBatchSize=%"PRIu64, nrow, ngrp, nb, shift, (uint64_t)highSize, (uint64_t)nBatch, (uint64_t)batchSize, (uint64_t)lastBatchSize); // # nocov                                            // # nocov
   }
   // initial population of g:
   #pragma omp parallel for num_threads(getDTthreads())
@@ -113,7 +112,7 @@ SEXP gforce(SEXP env, SEXP jsub, SEXP o, SEXP f, SEXP l, SEXP irowsArg) {
     //Rprintf(_("When assigning grp[o] = g, highSize=%d  nb=%d  shift=%d  nBatch=%d\n"), highSize, nb, shift, nBatch);
     int *counts = calloc(nBatch*highSize, sizeof(int));  // TODO: cache-line align and make highSize a multiple of 64
     int *TMP   = malloc(nrow*2*sizeof(int));
-    if (!counts || !TMP ) error(_("Internal error: Failed to allocate counts or TMP when assigning g in gforce"));
+    if (!counts || !TMP ) INTERNAL_ERROR("Failed to allocate counts or TMP when assigning g in gforce"); // # nocov
     #pragma omp parallel for num_threads(getDTthreads())   // schedule(dynamic,1)
     for (int b=0; b<nBatch; b++) {
       const int howMany = b==nBatch-1 ? lastBatchSize : batchSize;
@@ -596,7 +595,7 @@ SEXP gmean(SEXP x, SEXP narm)
       }
     } break;
     default :
-      error(_("Internal error: gsum returned type '%s'. typeof(x) is '%s'"), type2char(TYPEOF(ans)), type2char(TYPEOF(x))); // # nocov
+      INTERNAL_ERRORF("gsum returned type '%s'. typeof(x) is '%s'", type2char(TYPEOF(ans)), type2char(TYPEOF(x))); // # nocov
     }
     UNPROTECT(protecti);
     return(ans);
@@ -671,7 +670,7 @@ SEXP gmean(SEXP x, SEXP narm)
     }
   } break;
   default:
-    error(_("Internal error: unsupported type at the end of gmean")); // # nocov
+    INTERNAL_ERROR("unsupported type at the end of gmean"); // # nocov
   }
   free(s); free(si); free(c);
   copyMostAttrib(x, ans);
@@ -1158,18 +1157,18 @@ SEXP gfirst(SEXP x) {
 }
 
 SEXP gtail(SEXP x, SEXP valArg) {
-  if (!isInteger(valArg) || LENGTH(valArg)!=1 || INTEGER(valArg)[0]!=1) error(_("Internal error, gtail is only implemented for n=1. This should have been caught before. please report to data.table issue tracker.")); // # nocov
+  if (!isInteger(valArg) || LENGTH(valArg)!=1 || INTEGER(valArg)[0]!=1) INTERNAL_ERROR("gtail is only implemented for n=1"); // # nocov
   return (glast(x));
 }
 
 SEXP ghead(SEXP x, SEXP valArg) {
-  if (!isInteger(valArg) || LENGTH(valArg)!=1 || INTEGER(valArg)[0]!=1) error(_("Internal error, ghead is only implemented for n=1. This should have been caught before. please report to data.table issue tracker.")); // # nocov
+  if (!isInteger(valArg) || LENGTH(valArg)!=1 || INTEGER(valArg)[0]!=1) INTERNAL_ERROR("ghead is only implemented for n=1"); // # nocov
   return (gfirst(x));
 }
 
 SEXP gnthvalue(SEXP x, SEXP valArg) {
 
-  if (!isInteger(valArg) || LENGTH(valArg)!=1 || INTEGER(valArg)[0]<=0) error(_("Internal error, `g[` (gnthvalue) is only implemented single value subsets with positive index, e.g., .SD[2]. This should have been caught before. please report to data.table issue tracker.")); // # nocov
+  if (!isInteger(valArg) || LENGTH(valArg)!=1 || INTEGER(valArg)[0]<=0) INTERNAL_ERROR("`g[` (gnthvalue) is only implemented single value subsets with positive index, e.g., .SD[2]"); // # nocov
   R_len_t i,k, val=INTEGER(valArg)[0];
   int n = (irowslen == -1) ? length(x) : irowslen;
   SEXP ans;

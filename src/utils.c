@@ -64,7 +64,7 @@ bool allNA(SEXP x, bool errorForBadType) {
     return true;
   case CPLXSXP: {
     const Rcomplex *xd = COMPLEX(x);
-    for (int i=0; i<n; ++i) if (!ISNAN_COMPLEX(xd[i])) { 
+    for (int i=0; i<n; ++i) if (!ISNAN_COMPLEX(xd[i])) {
       return false;
     }
     return true;
@@ -277,11 +277,11 @@ SEXP copyAsPlain(SEXP x) {
     for (R_xlen_t i=0; i<n; ++i) SET_VECTOR_ELT(ans, i, xp[i]);  // # nocov
   } break;                                                       // # nocov
   default:
-    error(_("Internal error: unsupported type '%s' passed to copyAsPlain()"), type2char(TYPEOF(x))); // # nocov
+    INTERNAL_ERRORF("unsupported type '%s' passed to copyAsPlain()", type2char(TYPEOF(x))); // # nocov
   }
   copyMostAttrib(x, ans); // e.g. factor levels, class etc, but not names, dim or dimnames
   if (ALTREP(ans))
-    error(_("Internal error: type '%s' passed to copyAsPlain() but it seems copyMostAttrib() retains ALTREP attributes"), type2char(TYPEOF(x))); // # nocov
+    INTERNAL_ERRORF("type '%s' passed to copyAsPlain() but it seems copyMostAttrib() retains ALTREP attributes", type2char(TYPEOF(x))); // # nocov
   UNPROTECT(1);
   return ans;
 }

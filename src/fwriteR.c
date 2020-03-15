@@ -38,7 +38,7 @@ int getMaxStringLen(const SEXP *col, const int64_t n) {
 
 int getMaxCategLen(SEXP col) {
   col = getAttrib(col, R_LevelsSymbol);
-  if (!isString(col)) error(_("Internal error: col passed to getMaxCategLen is missing levels"));
+  if (!isString(col)) INTERNAL_ERROR("col passed to getMaxCategLen is missing levels");
   return getMaxStringLen( STRING_PTR(col), LENGTH(col) );
 }
 
@@ -72,7 +72,7 @@ void writeList(SEXP *col, int64_t row, char **pch) {
   SEXP v = col[row];
   int32_t wf = whichWriter(v);
   if (TYPEOF(v)==VECSXP || wf==INT32_MIN || isFactor(v)) {
-    error(_("Internal error: getMaxListItemLen should have caught this up front."));  // # nocov
+    INTERNAL_ERROR("getMaxListItemLen should have caught this up front.");  // # nocov
   }
   char *ch = *pch;
   write_chars(sep2start, &ch);

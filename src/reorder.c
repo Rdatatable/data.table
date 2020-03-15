@@ -25,7 +25,7 @@ SEXP reorder(SEXP x, SEXP order)
   } else {
     if (SIZEOF(x)!=4 && SIZEOF(x)!=8 && SIZEOF(x)!=16)
       error(_("reorder accepts vectors but this non-VECSXP is type '%s' which isn't yet supported (SIZEOF=%d)"), type2char(TYPEOF(x)), SIZEOF(x));
-    if (ALTREP(x)) error(_("Internal error in reorder.c: cannot reorder an ALTREP vector. Please see NEWS item 2 in v1.11.4 and report this as a bug.")); // # nocov
+    if (ALTREP(x)) INTERNAL_ERROR("cannot reorder an ALTREP vector (see NEWS item 2 in v1.11.4)"); // # nocov
     maxSize = SIZEOF(x);
     nrow = length(x);
     ncol = 1;
@@ -104,7 +104,7 @@ SEXP setcolorder(SEXP x, SEXP o)
   const int ncol=LENGTH(x);
   if (isNull(names)) error(_("dt passed to setcolorder has no names"));
   if (ncol != LENGTH(names))
-    error(_("Internal error: dt passed to setcolorder has %d columns but %d names"), ncol, LENGTH(names));  // # nocov
+    INTERNAL_ERRORF("dt passed to setcolorder has %d columns but %d names", ncol, LENGTH(names));  // # nocov
   SEXP tt = PROTECT(allocVector(VECSXP, 2));
   SET_VECTOR_ELT(tt, 0, names);
   SET_VECTOR_ELT(tt, 1, x);

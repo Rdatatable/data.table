@@ -72,7 +72,7 @@ SEXP concat(SEXP vec, SEXP idx) {
   const int *iidx = INTEGER(idx);
   for (int i=0; i<length(idx); ++i) {
     if (iidx[i] < 0 || iidx[i] > length(vec))
-      error(_("Internal error in concat: 'idx' must take values between 0 and length(vec); 0 <= idx <= %d"), length(vec)); // # nocov
+      INTERNAL_ERRORF("'idx' must take values between 0 and length(vec); 0 <= idx <= %d", length(vec)); // # nocov
   }
   PROTECT(v = allocVector(STRSXP, nidx > 5 ? 5 : nidx));
   for (int i=0; i<length(v); ++i) {
@@ -326,10 +326,10 @@ static SEXP combineFactorLevels(SEXP factorLevels, SEXP target, int * factorType
   int maxlevels=0, nitem=length(factorLevels);
   for (int i=0; i<nitem; ++i) {
     SEXP this = VECTOR_ELT(factorLevels, i);
-    if (!isString(this)) error(_("Internal error: combineFactorLevels in fmelt.c expects all-character input"));  // # nocov
+    if (!isString(this)) INTERNAL_ERROR("combineFactorLevels in fmelt.c expects all-character input");  // # nocov
     maxlevels+=length(this);
   }
-  if (!isString(target)) error(_("Internal error: combineFactorLevels in fmelt.c expects a character target to factorize"));  // # nocov
+  if (!isString(target)) INTERNAL_ERROR("combineFactorLevels in fmelt.c expects a character target to factorize");  // # nocov
   int nrow = length(target);
   SEXP ans = PROTECT(allocVector(INTSXP, nrow));
   SEXP *levelsRaw = (SEXP *)R_alloc(maxlevels, sizeof(SEXP));  // allocate for worst-case all-unique levels
@@ -511,7 +511,7 @@ SEXP getvarcols(SEXP DT, SEXP dtnames, Rboolean varfactor, Rboolean verbose, str
   SEXP ansvars=PROTECT(allocVector(VECSXP, 1)); protecti++;
   SEXP target;
   if (data->lvalues==1 && length(VECTOR_ELT(data->valuecols, 0)) != data->lmax)
-    error(_("Internal error: fmelt.c:getvarcols %d %d"), length(VECTOR_ELT(data->valuecols, 0)), data->lmax);  // # nocov
+    INTERNAL_ERRORF("getvarcols %d %d", length(VECTOR_ELT(data->valuecols, 0)), data->lmax);  // # nocov
   if (!varfactor) {
     SET_VECTOR_ELT(ansvars, 0, target=allocVector(STRSXP, data->totlen));
     if (data->lvalues == 1) {

@@ -1,10 +1,8 @@
 #include "data.table.h"
 
 SEXP coalesce(SEXP x, SEXP inplaceArg) {
-  if (TYPEOF(x)!=VECSXP)
-    error(_("Internal error in coalesce.c: input is list(...) at R level")); // # nocov
-  if (!IS_TRUE_OR_FALSE(inplaceArg))
-    error(_("Internal error in coalesce.c: argument 'inplaceArg' must be TRUE or FALSE")); // # nocov
+  if (TYPEOF(x)!=VECSXP) INTERNAL_ERROR("input is list(...) at R level"); // # nocov
+  if (!IS_TRUE_OR_FALSE(inplaceArg)) INTERNAL_ERROR("argument 'inplaceArg' must be TRUE or FALSE"); // # nocov
   const bool inplace = LOGICAL(inplaceArg)[0];
   const bool verbose = GetVerbose();
   int nprotect = 0;

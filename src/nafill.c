@@ -156,7 +156,7 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, S
   else if (!strcmp(CHAR(STRING_ELT(type, 0)), "nocb"))
     itype = 2;
   else
-    error(_("Internal error: invalid type argument in nafillR function, should have been caught before. Please report to data.table issue tracker.")); // # nocov
+    INTERNAL_ERROR("invalid type argument in nafillR function, should have been caught before. Please report to data.table issue tracker."); // # nocov
 
   if (itype==0 && length(fill)!=1)
     error(_("fill must be a vector of length 1"));
@@ -187,7 +187,7 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, S
     case INTSXP : {
       nafillInteger(ix[i], inx[i], itype, ifill, &vans[i], verbose);
     } break;
-    default: error(_("Internal error: invalid type argument in nafillR function, should have been caught before. Please report to data.table issue tracker.")); // # nocov
+    default: INTERNAL_ERROR("invalid type argument in nafillR function, should have been caught before. Please report to data.table issue tracker."); // # nocov
     }
   }
   if (verbose)
