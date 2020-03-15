@@ -100,7 +100,7 @@ int getMaxListItemLen(const SEXP *col, const int64_t n) {
     }
     int width = writerMaxLen[wf];
     if (width==0) {
-      if (wf!=WF_String) STOP(_("Internal error: row %"PRId64" of list column has no max length method implemented"), i+1); // # nocov
+      if (wf!=WF_String) INTERNAL_ERROR("row %"PRId64" of list column has no max length method implemented", i+1); // # nocov
       const int l = LENGTH(this);
       for (int j=0; j<l; ++j) width+=LENGTH(STRING_ELT(this, j));
     } else {
