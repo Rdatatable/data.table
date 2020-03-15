@@ -251,7 +251,7 @@ replace_dot_alias = function(e) {
         ..syms = av
       }
     } else if (is.name(jsub)) {
-      if (substring(jsub, 1L, 2L) == "..") stop("Internal error:  DT[, ..var] should be dealt with by the branch above now.") # nocov
+      if (substring(jsub, 1L, 2L) == "..") internal_error("DT[, ..var] should be dealt with by the branch above now.") # nocov
       if (!with && !exists(as.character(jsub), where=parent.frame()))
         stop("Variable '",jsub,"' is not found in calling scope. Looking in calling scope because you set with=FALSE. Also, please use .. symbol prefix and remove with=FALSE.")
     }
@@ -488,11 +488,9 @@ replace_dot_alias = function(e) {
           # unnecessary construction of logical vectors
           if (identical(nomatch, 0L) && allLen1) irows = irows[irows != 0L]
         } else {
-          if (length(xo) && missing(on))
-            stop("Internal error. Cannot by=.EACHI when joining to a secondary key, yet") # nocov
+          if (length(xo) && missing(on)) internal_error("Cannot by=.EACHI when joining to a secondary key, yet") # nocov
           # since f__ refers to xo later in grouping, so xo needs to be passed through to dogroups too.
-          if (length(irows))
-            stop("Internal error. irows has length in by=.EACHI") # nocov
+          if (length(irows)) internal_error("irows has length in by=.EACHI") # nocov
         }
         if (nqbyjoin) {
           irows = if (length(xo)) xo[irows] else irows
@@ -576,7 +574,7 @@ replace_dot_alias = function(e) {
       }
     }
     if (notjoin) {
-      if (byjoin || !is.integer(irows) || is.na(nomatch)) stop("Internal error: notjoin but byjoin or !integer or nomatch==NA") # nocov
+      if (byjoin || !is.integer(irows) || is.na(nomatch)) internal_error("notjoin but byjoin or !integer or nomatch==NA") # nocov
       irows = irows[irows!=0L]
       if (verbose) {last.started.at=proc.time()[3L];cat("Inverting irows for notjoin done in ... ");flush.console()}
       i = irows = if (length(irows)) seq_len(nrow(x))[-irows] else NULL  # NULL meaning all rows i.e. seq_len(nrow(x))
@@ -774,7 +772,7 @@ replace_dot_alias = function(e) {
           } else byval = eval(bysub, x, parent.frame())
         } else {
           # length 0 when i returns no rows
-          if (!is.integer(irows)) stop("Internal error: irows isn't integer") # nocov
+          if (!is.integer(irows)) internal_error("irows isn't integer") # nocov
           # Passing irows as i to x[] below has been troublesome in a rare edge case.
           # irows may contain NA, 0, negatives and >nrow(x) here. That's all ok.
           # But we may need i join column values to be retained (where those rows have no match), hence we tried eval(isub)
@@ -860,7 +858,7 @@ replace_dot_alias = function(e) {
 
       jvnames = NULL
       drop_dot = function(x) {
-        if (length(x)!=1L) stop("Internal error: drop_dot passed ",length(x)," items")  # nocov
+        if (length(x)!=1L) internal_error("drop_dot passed %d items", length(x))  # nocov
         if (identical(substring(x<-as.character(x), 1L, 1L), ".") && x %chin% c(".N", ".I", ".GRP", ".NGRP", ".BY"))
           substring(x, 2L)
         else
@@ -1120,7 +1118,7 @@ replace_dot_alias = function(e) {
                 if (is.character(j)) {
                   if (length(j)!=1L) stop("Cannot assign to an under-allocated recursively indexed list -- L[[i]][,:=] syntax is only valid when i is length 1, but it's length ", length(j))
                   j = match(j, names(k))
-                  if (is.na(j)) stop("Internal error -- item '", origj, "' not found in names of list") # nocov
+                  if (is.na(j)) internal_error("item '%s' not found in names of list", origj) # nocov
                 }
                 .Call(Csetlistelt,k,as.integer(j), x)
               } else if (is.environment(k) && exists(as.character(name[[3L]]), k)) {
@@ -1149,7 +1147,7 @@ replace_dot_alias = function(e) {
         xcolsAns = seq_along(ansvars)
         icols = icolsAns = integer()
       } else {
-        if (!length(leftcols)) stop("Internal error -- column(s) not found: ", paste(ansvars[wna],collapse=", ")) # nocov
+        if (!length(leftcols)) internal_error("column(s) not found: %s", brackify(ansvars[wna])) # nocov
         xcols = w[!wna]
         xcolsAns = which(!wna)
         map = c(seq_along(i), leftcols)   # this map is to handle dups in leftcols, #3635
@@ -1162,7 +1160,7 @@ replace_dot_alias = function(e) {
           if (any(w2na <- is.na(w2))) {
             ivars[leftcols] = paste0("i.",ivars[leftcols])
             w2[w2na] = chmatch(ansvars[wna][w2na], ivars)
-            if (any(w2na <- is.na(w2))) stop("Internal error -- column(s) not found: ", paste(ansvars[wna][w2na],sep=", ")) # nocov
+            if (any(w2na <- is.na(w2))) internal_error("column(s) not found: %s", brackify(ansvars[wna][w2na])) # nocov
           }
         }
         icols = w2
@@ -1203,7 +1201,7 @@ replace_dot_alias = function(e) {
       if (!(length(i) && length(icols))) {
         # new in v1.12.0 to redirect to CsubsetDT in this case
         if (!identical(xcolsAns, seq_along(xcolsAns)) || length(xcols)!=length(xcolsAns) || length(ansvars)!=length(xcolsAns)) {
-          stop("Internal error: xcolAns does not pass checks: ", length(xcolsAns), length(ansvars), length(xcols), paste(xcolsAns,collapse=","))   # nocov
+          internal_error("xcolsAns does not pass checks: xcolsAns=%s / length(xcols)=%d / length(ansvars)=%d", brackify(xcolsAns), length(xcols), length(ansvars))   # nocov
         }
         # Retained from old R way below (test 1542.01 checks shallow at this point)
         # ' Temp fix for #921 - skip COPY until after evaluating 'jval' (scroll down).
@@ -1213,7 +1211,7 @@ replace_dot_alias = function(e) {
       } else {
         # length(i) && length(icols)
         if (is.null(irows)) {
-          stop("Internal error: irows is NULL when making join result at R level. Should no longer happen now we use CsubsetDT earlier.")  # nocov
+          internal_error("irows is NULL when making join result at R level. Should no longer happen now that we use CsubsetDT earlier")  # nocov
           # TODO: Make subsetDT do a shallow copy when irows is NULL (it currently copies). Then copy only when user uses := or set* on the result
           # by using NAMED/REFCNT on columns, with warning if they copy. Since then, even foo = DT$b would cause the next set or := to copy that
           # column (so the warning is needed). To tackle that, we could have our own DT.NAMED attribute, perhaps.
@@ -1338,7 +1336,7 @@ replace_dot_alias = function(e) {
       setattr(jval, 'class', class(x)) # fix for #64
       if (haskey(x) && all(key(x) %chin% names(jval)) && suppressWarnings(is.sorted(jval, by=key(x))))  # TO DO: perhaps this usage of is.sorted should be allowed internally then (tidy up and make efficient)
         setattr(jval, 'sorted', key(x))
-      if (any(sapply(jval, is.null))) stop("Internal error: j has created a data.table result containing a NULL column") # nocov
+      if (any(sapply(jval, is.null))) internal_error("j has created a data.table result containing a NULL column") # nocov
     }
     return(jval)
   }
@@ -1398,7 +1396,7 @@ replace_dot_alias = function(e) {
 
   } else {
     # Find the groups, using 'byval' ...
-    if (missingby) stop("Internal error: by= is missing")   # nocov
+    if (missingby) internal_error("by= is missing")   # nocov
 
     if (length(byval) && length(byval[[1L]])) {
       if (!bysameorder && isFALSE(byindex)) {
@@ -1439,10 +1437,10 @@ replace_dot_alias = function(e) {
           if (verbose) {cat("Finding groups using uniqlist on key ... ");flush.console()}
           f__ = uniqlist(byval)
         } else {
-          if (!is.character(byindex) || length(byindex)!=1L) stop("Internal error: byindex not the index name")  # nocov
+          if (!is.character(byindex) || length(byindex)!=1L) internal_error("byindex not the index name")  # nocov
           if (verbose) {cat("Finding groups using uniqlist on index '", byindex, "' ... ", sep="");flush.console()}
           o__ = getindex(x, byindex)
-          if (is.null(o__)) stop("Internal error: byindex not found")  # nocov
+          if (is.null(o__)) internal_reror("byindex not found")  # nocov
           f__ = uniqlist(byval, order=o__)
         }
         if (verbose) {
@@ -1742,7 +1740,7 @@ replace_dot_alias = function(e) {
   # for #971, added !GForce. if (GForce) we do it much more (memory) efficiently than subset of order vector below.
   if (length(irows) && !isTRUE(irows) && !GForce) {
     # any zeros in irows were removed by convertNegAndZeroIdx earlier above; no need to check for zeros again. Test 1058-1061 check case #2758.
-    if (length(o__) && length(irows)!=length(o__)) stop("Internal error: length(irows)!=length(o__)") # nocov
+    if (length(o__) && length(irows)!=length(o__)) internal_error("length(irows)!=length(o__)") # nocov
     o__ = if (length(o__)) irows[o__]  # better do this once up front (even though another alloc) than deep repeated branch in dogroups.c
           else irows
   } # else grporder is left bound to same o__ memory (no cost of copy)
@@ -1812,8 +1810,7 @@ replace_dot_alias = function(e) {
   if (is.null(names(ans))) {
     # Efficiency gain of dropping names has been successful. Ordinarily this will run.
     if (is.null(jvnames)) jvnames = character(length(ans)-length(bynames))
-    if (length(bynames)+length(jvnames)!=length(ans))
-      stop("Internal error: jvnames is length ",length(jvnames), " but ans is ",length(ans)," and bynames is ", length(bynames)) # nocov
+    if (length(bynames)+length(jvnames)!=length(ans)) internal_error("jvnames is length %d but ans is %d and bynames is %d", length(jvnames), length(ans), length(bynames)) # nocov
     ww = which(jvnames=="")
     if (any(ww)) jvnames[ww] = paste0("V",ww)
     setattr(ans, "names", c(bynames, jvnames))
@@ -2512,7 +2509,7 @@ setnames = function(x,old,new,skip_absent=FALSE) {
       i = i[w]
     }
     if (!length(new)) return(invisible(x)) # no changes
-    if (length(i) != length(new)) stop("Internal error: length(i)!=length(new)") # nocov
+    if (length(i) != length(new)) internal_error("length(i)!=length(new)") # nocov
   }
   # update the key if the column name being change is in the key
   m = chmatch(names(x)[i], key(x))
@@ -2946,7 +2943,7 @@ isReallyReal = function(x) {
     on = c(on, setNames(paste0(col, validOps$on[validOps$op == operator], col), col))
     ## loop continues with remainingIsub
   }
-  if (length(i) == 0L) stop("Internal error in .isFastSubsettable. Please report to data.table developers") # nocov
+  if (length(i) == 0L) internal_error("length(i) == 0") # nocov
   ## convert i to data.table with all combinations in rows.
   if(length(i) > 1L && prod(vapply_1i(i, length)) > 1e4){
     ## CJ would result in more than 1e4 rows. This would be inefficient, especially memory-wise #2635

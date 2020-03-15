@@ -81,7 +81,7 @@ setkeyv = function(x, cols, verbose=getOption("datatable.verbose"), physical=TRU
     .xi = x[[i]]  # [[ is copy on write, otherwise checking type would be copying each column
     if (!typeof(.xi) %chin% ORDERING_TYPES) stop("Column '",i,"' is type '",typeof(.xi),"' which is not supported as a key column type, currently.")
   }
-  if (!is.character(cols) || length(cols)<1L) stop("Internal error. 'cols' should be character at this point in setkey; please report.") # nocov
+  if (!is.character(cols) || length(cols)<1L) internal_error("'cols' should be character at this point in setkey") # nocov
 
   newkey = paste0(cols, collapse="__")
   if (!any(indices(x) == newkey)) {
@@ -127,9 +127,7 @@ indices = function(x, vectors = FALSE) {
 getindex = function(x, name) {
   # name can be "col", or "col1__col2", or c("col1","col2")
   ans = attr(attr(x, 'index', exact=TRUE), paste0("__",name,collapse=""), exact=TRUE)
-  if (!is.null(ans) && (!is.integer(ans) || (length(ans)!=nrow(x) && length(ans)!=0L))) {
-    stop("Internal error: index '",name,"' exists but is invalid")   # nocov
-  }
+  if (!is.null(ans) && (!is.integer(ans) || (length(ans)!=nrow(x) && length(ans)!=0L))) internal_error("index '%s' exists but is invalid", name)   # nocov
   ans
 }
 
@@ -295,7 +293,7 @@ setorderv = function(x, cols = colnames(x), order=1L, na.last=FALSE)
     .xi = x[[i]]  # [[ is copy on write, otherwise checking type would be copying each column
     if (!typeof(.xi) %chin% ORDERING_TYPES) stop("Column '",i,"' is type '",typeof(.xi),"' which is not supported for ordering currently.")
   }
-  if (!is.character(cols) || length(cols)<1L) stop("Internal error. 'cols' should be character at this point in setkey; please report.") # nocov
+  if (!is.character(cols) || length(cols)<1L) internal_error("'cols' should be character at this point in setkey") # nocov
 
   o = forderv(x, cols, sort=TRUE, retGrp=FALSE, order=order, na.last=na.last)
   if (length(o)) {

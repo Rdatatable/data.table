@@ -88,8 +88,7 @@ round.IDate = function (x, digits=c("weeks", "months", "quarters", "years"), ...
   if (nargs() == 1L)
     return(e1)
   # TODO: investigate Ops.IDate method a la Ops.difftime
-  if (inherits(e1, "difftime") || inherits(e2, "difftime"))
-    stop("Internal error -- difftime objects may not be added to IDate, but Ops dispatch should have intervened to prevent this") # nocov
+  if (inherits(e1, "difftime") || inherits(e2, "difftime")) internal_error("difftime objects may not be added to IDate, but Ops dispatch should have intervened to prevent this") # nocov
   if (isReallyReal(e1) || isReallyReal(e2)) {
     return(`+.Date`(e1, e2))
     # IDate doesn't support fractional days; revert to base Date
@@ -104,12 +103,10 @@ round.IDate = function (x, digits=c("weeks", "months", "quarters", "years"), ...
     if (inherits(e1, 'Date')) return(base::`-.Date`(e1, e2))
     stop("can only subtract from \"IDate\" objects")
   }
-  if (storage.mode(e1) != "integer")
-    stop("Internal error: storage mode of IDate is somehow no longer integer") # nocov
+  if (storage.mode(e1) != "integer") internal_error("storage mode of IDate is somehow no longer integer") # nocov
   if (nargs() == 1L)
     stop("unary - is not defined for \"IDate\" objects")
-  if (inherits(e2, "difftime"))
-    stop("Internal error -- difftime objects may not be subtracted from IDate, but Ops dispatch should have intervened to prevent this") # nocov
+  if (inherits(e2, "difftime")) internal_error("difftime objects may not be subtracted from IDate, but Ops dispatch should have intervened to prevent this") # nocov
 
   if ( isReallyReal(e2) ) {
     # IDate deliberately doesn't support fractional days so revert to base Date
@@ -240,20 +237,20 @@ rep.ITime = function (x, ...)
   class(y) = "ITime"   # unlass and rep could feasibly not copy, hence use class<- not setattr()
   y
 }
-                           
-round.ITime <- function(x, digits = c("hours", "minutes"), ...) 
+
+round.ITime <- function(x, digits = c("hours", "minutes"), ...)
 {
   (setattr(switch(match.arg(digits),
                   hours = as.integer(round(unclass(x)/3600)*3600),
-                  minutes = as.integer(round(unclass(x)/60)*60)), 
+                  minutes = as.integer(round(unclass(x)/60)*60)),
            "class", "ITime"))
-} 
+}
 
-trunc.ITime <- function(x, units = c("hours", "minutes"), ...) 
+trunc.ITime <- function(x, units = c("hours", "minutes"), ...)
 {
   (setattr(switch(match.arg(units),
                   hours = as.integer(unclass(x)%/%3600*3600),
-                  minutes = as.integer(unclass(x)%/%60*60)), 
+                  minutes = as.integer(unclass(x)%/%60*60)),
            "class", "ITime"))
 }
 

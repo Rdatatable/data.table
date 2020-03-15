@@ -15,10 +15,21 @@ isTRUEorFALSE = function(x) is.logical(x) && length(x)==1L && !is.na(x)
 allNA = function(x) .Call(C_allNAR, x)
 # helper for nan argument (e.g. nafill): TRUE -> treat NaN as NA
 nan_is_na = function(x) {
+  internal_error('hi')
   if (length(x) != 1L) stop("Argument 'nan' must be length 1")
   if (identical(x, NA) || identical(x, NA_real_)) return(TRUE)
   if (identical(x, NaN)) return(FALSE)
   stop("Argument 'nan' must be NA or NaN")
+}
+
+# domain='data.table' to force sharing of msg template from C
+internal_error = function(...) {
+  e1 = gettext("Internal error in", domain="data.table")
+  e2 = deparse(head(tail(sys.calls(), 2L), 1L)[[1L]][[1L]])
+  e3 = do.call(sprintf, list(...))
+  e4 = gettext("Please report to the data.table issues tracker", domain="data.table")
+  e = paste0(e1, ' ', e2, ': ', e3, '. ', e4)
+  stop(e, call. = FALSE, domain = NA)
 }
 
 if (base::getRversion() < "3.2.0") {  # Apr 2015

@@ -140,8 +140,7 @@ all.equal.data.table = function(target, current, trim.levels=TRUE, check.attribu
     # else mode() is so that integer==numeric, like base all.equal does.
     targetTypes = vapply_1c(target, squashClass)
     currentTypes = vapply_1c(current, squashClass)
-    if (length(targetTypes) != length(currentTypes))
-      stop("Internal error: ncol(current)==ncol(target) was checked above") # nocov
+    if (length(targetTypes) != length(currentTypes)) internal_error("ncol(current)==ncol(target) was checked above") # nocov
     if (any( d<-(targetTypes != currentTypes))) {
       w = head(which(d),3L)
       return(paste0("Datasets have different column classes. First 3: ",paste(
@@ -255,8 +254,7 @@ all.equal.data.table = function(target, current, trim.levels=TRUE, check.attribu
       # trim.levels moved here
       x = target[[i]]
       y = current[[i]]
-      if (xor(is.factor(x),is.factor(y)))
-        stop("Internal error: factor type mismatch should have been caught earlier") # nocov
+      if (xor(is.factor(x),is.factor(y))) internal_error("factor type mismatch should have been caught earlier") # nocov
       cols.r = TRUE
       if (is.factor(x)) {
         if (!identical(levels(x),levels(y))) {
