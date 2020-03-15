@@ -150,7 +150,7 @@ SEXP uniqlist(SEXP l, SEXP order)
 SEXP uniqlengths(SEXP x, SEXP n) {
   // seems very similar to rbindlist.c:uniq_lengths. TODO: centralize into common function
   if (TYPEOF(x) != INTSXP)
-    error(_("Input argument 'x' to 'uniqlengths' must be an integer vector"));
+    error(_("Internal error: argument 'x' to 'uniqlengths' must be an integer vector")); // # nocov
   if (TYPEOF(n) != INTSXP || length(n) != 1)
     error(_("Input argument 'n' to 'uniqlengths' must be an integer vector of length 1"));
   R_len_t len = length(x);
@@ -171,12 +171,12 @@ SEXP rleid(SEXP l, SEXP cols) {
   R_len_t ncol = length(l), lencols = length(cols);
   if (!nrow || !ncol) return(allocVector(INTSXP, 0));
   if (!isInteger(cols) || lencols==0)
-    error(_("cols must be an integer vector with length >= 1"));
+    error(_("Internal error: cols must be an integer vector with length >= 1")); // # nocov
   int *icols = INTEGER(cols);
   for (int i=0; i<lencols; i++) {
     int elem = icols[i];
     if (elem<1 || elem>ncol)
-      error(_("Item %d of cols is %d which is outside range of l [1,length(l)=%d]"), i+1, elem, ncol);
+      error(_("Internal error: Item %d of cols is %d which is outside range of l [1,length(l)=%d]"), i+1, elem, ncol); // # nocov
   }
   for (int i=1; i<ncol; i++) {
     if (xlength(VECTOR_ELT(l,i)) != nrow)
@@ -359,7 +359,7 @@ SEXP nestedid(SEXP l, SEXP cols, SEXP order, SEXP grps, SEXP resetvals, SEXP mul
 SEXP uniqueNlogical(SEXP x, SEXP narmArg) {
   // single pass; short-circuit and return as soon as all 3 values are found
   if (!isLogical(x))
-    error(_("x is not a logical vector"));
+    error(_("Internal error: x is not a logical vector")); // # nocov
   if (!isLogical(narmArg) || length(narmArg)!=1 || INTEGER(narmArg)[0]==NA_INTEGER)
     error(_("na.rm must be TRUE or FALSE"));
   bool narm = LOGICAL(narmArg)[0]==1;

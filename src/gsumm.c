@@ -41,14 +41,14 @@ SEXP gforce(SEXP env, SEXP jsub, SEXP o, SEXP f, SEXP l, SEXP irowsArg) {
   double started = wallclock();
   const bool verbose = GetVerbose();
   if (TYPEOF(env) != ENVSXP)
-    error(_("env is not an environment"));
+    error(_("Internal error: env is not an environment")); // # nocov
   // The type of jsub is pretty flexbile in R, so leave checking to eval() below.
   if (!isInteger(o))
-    error(_("%s is not an integer vector"), "o");
+    error(_("%s is not an integer vector"), "o"); // # nocov
   if (!isInteger(f))
-    error(_("%s is not an integer vector"), "f");
+    error(_("%s is not an integer vector"), "f"); // # nocov
   if (!isInteger(l))
-    error(_("%s is not an integer vector"), "l");
+    error(_("%s is not an integer vector"), "l"); // # nocov
   if (isNull(irowsArg)) {
     irows = NULL;
     irowslen = -1;
@@ -60,7 +60,7 @@ SEXP gforce(SEXP env, SEXP jsub, SEXP o, SEXP f, SEXP l, SEXP irowsArg) {
   else error(_("irowsArg is neither an integer vector nor NULL"));  // # nocov
   ngrp = LENGTH(l);
   if (LENGTH(f) != ngrp)
-    error(_("length(f)=%d != length(l)=%d"), LENGTH(f), ngrp);
+    error(_("Internal error: length(f)=%d != length(l)=%d"), LENGTH(f), ngrp); // # nocov
   nrow=0;
   grpsize = INTEGER(l);
   maxgrpn = 0;
@@ -69,7 +69,7 @@ SEXP gforce(SEXP env, SEXP jsub, SEXP o, SEXP f, SEXP l, SEXP irowsArg) {
     if (grpsize[i]>maxgrpn) maxgrpn = grpsize[i];  // old comment to be checked: 'needed for #2046 and #2111 when maxgrpn attribute is not attached to empty o'
   }
   if (LENGTH(o) && LENGTH(o)!=nrow)
-    error(_("o has length %d but sum(l)=%d"), LENGTH(o), nrow);
+    error(_("Internal error: o has length %d but sum(l)=%d"), LENGTH(o), nrow); // # nocov
   {
     SEXP tt = getAttrib(o, install("maxgrpn"));
     if (length(tt)==1 && INTEGER(tt)[0]!=maxgrpn)
@@ -358,7 +358,7 @@ SEXP gsum(SEXP x, SEXP narmArg, SEXP warnOverflowArg)
   const bool verbose=GetVerbose();
   if (verbose) Rprintf(_("This gsum took (narm=%s) ... "), narm?"TRUE":"FALSE");
   if (nrow != n)
-    error(_("nrow [%d] != length(x) [%d] in %s"), nrow, n, "gsum");
+    error(_("Internal error: nrow [%d] != length(x) [%d] in %s"), nrow, n, "gsum"); // # nocov
   bool anyNA=false;
   SEXP ans;
   switch(TYPEOF(x)) {
@@ -619,7 +619,7 @@ SEXP gmean(SEXP x, SEXP narm)
   // na.rm=TRUE.  Similar to gsum, but we need to count the non-NA as well for the divisor
   const int n = (irowslen == -1) ? length(x) : irowslen;
   if (nrow != n)
-    error(_("nrow [%d] != length(x) [%d] in %s"), nrow, n, "gsum");
+    error(_("Internal error: nrow [%d] != length(x) [%d] in %s"), nrow, n, "gsum"); // # nocov
 
   long double *s = calloc(ngrp, sizeof(long double)), *si=NULL;  // s = sum; si = sum imaginary just for complex
   if (!s)
@@ -713,7 +713,7 @@ SEXP gmin(SEXP x, SEXP narm)
   //clock_t start = clock();
   SEXP ans;
   if (nrow != n)
-    error(_("nrow [%d] != length(x) [%d] in %s"), nrow, n, "gmin");
+    error(_("Internal error: nrow [%d] != length(x) [%d] in %s"), nrow, n, "gmin"); // # nocov
   int protecti=0;
   switch(TYPEOF(x)) {
   case LGLSXP: case INTSXP:
@@ -836,7 +836,7 @@ SEXP gmax(SEXP x, SEXP narm)
   //clock_t start = clock();
   SEXP ans;
   if (nrow != n)
-    error(_("nrow [%d] != length(x) [%d] in %s"), nrow, n, "gmax");
+    error(_("Internal error: nrow [%d] != length(x) [%d] in %s"), nrow, n, "gmax"); // # nocov
 
   // TODO rework gmax in the same way as gmin and remove this *update
   char *update = (char *)R_alloc(ngrp, sizeof(char));
@@ -983,7 +983,7 @@ SEXP gmedian(SEXP x, SEXP narmArg) {
   const bool isInt64 = INHERITS(x, char_integer64), narm = LOGICAL(narmArg)[0];
   int n = (irowslen == -1) ? length(x) : irowslen;
   if (nrow != n)
-    error(_("nrow [%d] != length(x) [%d] in %s"), nrow, n, "gmedian");
+    error(_("Internal error: nrow [%d] != length(x) [%d] in %s"), nrow, n, "gmedian"); // # nocov
   SEXP ans = PROTECT(allocVector(REALSXP, ngrp));
   double *ansd = REAL(ans);
   switch(TYPEOF(x)) {
@@ -1034,7 +1034,7 @@ SEXP glast(SEXP x) {
   int n = (irowslen == -1) ? length(x) : irowslen;
   SEXP ans;
   if (nrow != n)
-    error(_("nrow [%d] != length(x) [%d] in %s"), nrow, n, "gtail");
+    error(_("Internal error: nrow [%d] != length(x) [%d] in %s"), nrow, n, "gtail"); // # nocov
   switch(TYPEOF(x)) {
   case LGLSXP: {
     const int *ix = LOGICAL(x);
@@ -1115,7 +1115,7 @@ SEXP gfirst(SEXP x) {
   int n = (irowslen == -1) ? length(x) : irowslen;
   SEXP ans;
   if (nrow != n)
-    error(_("nrow [%d] != length(x) [%d] in %s"), nrow, n, "ghead");
+    error(_("Internal error: nrow [%d] != length(x) [%d] in %s"), nrow, n, "ghead"); // # nocov
   switch(TYPEOF(x)) {
   case LGLSXP: {
     int const *ix = LOGICAL(x);
@@ -1210,7 +1210,7 @@ SEXP gnthvalue(SEXP x, SEXP valArg) {
   int n = (irowslen == -1) ? length(x) : irowslen;
   SEXP ans;
   if (nrow != n)
-    error(_("nrow [%d] != length(x) [%d] in %s"), nrow, n, "ghead");
+    error(_("Internal error: nrow [%d] != length(x) [%d] in %s"), nrow, n, "ghead"); // # nocov
   switch(TYPEOF(x)) {
   case LGLSXP: {
     const int *ix = LOGICAL(x);
@@ -1304,7 +1304,7 @@ SEXP gvarsd1(SEXP x, SEXP narm, Rboolean isSD)
   long double m, s, v;
   R_len_t i, j, ix, thisgrpsize = 0, n = (irowslen == -1) ? length(x) : irowslen;
   if (nrow != n)
-    error(_("nrow [%d] != length(x) [%d] in %s"), nrow, n, "gvar");
+    error(_("Internal error: nrow [%d] != length(x) [%d] in %s"), nrow, n, "gvar"); // # nocov
   SEXP sub, ans = PROTECT(allocVector(REALSXP, ngrp));
   Rboolean ans_na;
   switch(TYPEOF(x)) {
@@ -1451,7 +1451,7 @@ SEXP gprod(SEXP x, SEXP narm)
   //clock_t start = clock();
   SEXP ans;
   if (nrow != n)
-    error(_("nrow [%d] != length(x) [%d] in %s"), nrow, n, "gprod");
+    error(_("Internal error: nrow [%d] != length(x) [%d] in %s"), nrow, n, "gprod"); // # nocov
   long double *s = malloc(ngrp * sizeof(long double));
   if (!s)
     error(_("Unable to allocate %d * %d bytes for gprod"), ngrp, sizeof(long double)); // # nocov
