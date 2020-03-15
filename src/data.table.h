@@ -33,8 +33,9 @@ typedef R_xlen_t RLEN;
 #define SIZEOF(x) sizes[TYPEOF(x)]
 #define TYPEORDER(x) typeorder[x]
 
+static char internal_error_buff[128];
 #define INTERNAL_ERROR(s) error("%s %s: %s. %s", _("Internal error in"), __func__, s, _("Please report to the data.table issues tracker"))
-#define INTERNAL_ERRORF(f, ...) error("%s %s: %s. %s", _("Internal error in"), __func__, sprintf(f, __VA_ARGS__), _("Please report to the data.table issues tracker"))
+#define INTERNAL_ERRORF(f, ...) error("%s %s: %s. %s", _("Internal error in"), __func__, snprintf(internal_error_buff, 128, f, __VA_ARGS__), _("Please report to the data.table issues tracker"))
 
 #ifdef MIN
 #  undef MIN
