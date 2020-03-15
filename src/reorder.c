@@ -104,7 +104,7 @@ SEXP setcolorder(SEXP x, SEXP o)
   const int ncol=LENGTH(x);
   if (isNull(names)) error(_("dt passed to setcolorder has no names"));
   if (ncol != LENGTH(names))
-    INTERNAL_ERRORF("dt passed to setcolorder has %d columns but %d names", ncol, LENGTH(names));  // # nocov
+    INTERNAL_ERROR("dt passed to setcolorder has %d columns but %d names", ncol, LENGTH(names));  // # nocov
   SEXP tt = PROTECT(allocVector(VECSXP, 2));
   SET_VECTOR_ELT(tt, 0, names);
   SET_VECTOR_ELT(tt, 1, x);

@@ -86,7 +86,7 @@ SEXP gforce(SEXP env, SEXP jsub, SEXP o, SEXP f, SEXP l, SEXP irowsArg) {
   // TODO: enable stress-test mode in tests only (#3205) which can be turned off by default in release to decrease overhead on small data
   //       if that is established to be biting (it may be fine).
   if (nBatch<1 || batchSize<1 || lastBatchSize<1) {
-    INTERNAL_ERRORF("nrow=%d  ngrp=%d  nbit=%d  shift=%d  highSize=%"PRIu64"  nBatch=%"PRIu64"  batchSize=%"PRIu64"  lastBatchSize=%"PRIu64, nrow, ngrp, nb, shift, (uint64_t)highSize, (uint64_t)nBatch, (uint64_t)batchSize, (uint64_t)lastBatchSize); // # nocov                                            // # nocov
+    INTERNAL_ERROR("nrow=%d  ngrp=%d  nbit=%d  shift=%d  highSize=%"PRIu64"  nBatch=%"PRIu64"  batchSize=%"PRIu64"  lastBatchSize=%"PRIu64, nrow, ngrp, nb, shift, (uint64_t)highSize, (uint64_t)nBatch, (uint64_t)batchSize, (uint64_t)lastBatchSize); // # nocov                                            // # nocov
   }
   // initial population of g:
   #pragma omp parallel for num_threads(getDTthreads())
@@ -595,7 +595,7 @@ SEXP gmean(SEXP x, SEXP narm)
       }
     } break;
     default :
-      INTERNAL_ERRORF("returned type '%s', but typeof(x) is '%s'", type2char(TYPEOF(ans)), type2char(TYPEOF(x))); // # nocov
+      INTERNAL_ERROR("returned type '%s', but typeof(x) is '%s'", type2char(TYPEOF(ans)), type2char(TYPEOF(x))); // # nocov
     }
     UNPROTECT(protecti);
     return(ans);

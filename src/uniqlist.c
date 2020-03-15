@@ -16,7 +16,7 @@ SEXP uniqlist(SEXP l, SEXP order)
   R_len_t nrow = length(VECTOR_ELT(l,0));
   if (!isInteger(order)) INTERNAL_ERROR("order is non-integer"); // # nocov
   if (LENGTH(order)<1) INTERNAL_ERROR("order is length-0"); // # nocov
-  if (LENGTH(order)>1 && LENGTH(order)!=nrow) INTERNAL_ERRORF("length(order)==%d but nrow==%d", LENGTH(order), nrow); // # nocov
+  if (LENGTH(order)>1 && LENGTH(order)!=nrow) INTERNAL_ERROR("length(order)==%d but nrow==%d", LENGTH(order), nrow); // # nocov
   bool via_order = INTEGER(order)[0] != -1;  // has an ordering vector been passed in that we have to hop via? Don't use MISSING() here as it appears unstable on Windows
 
   unsigned long long *ulv; // for numeric check speed-up
@@ -259,7 +259,7 @@ SEXP nestedid(SEXP l, SEXP cols, SEXP order, SEXP grps, SEXP resetvals, SEXP mul
   R_len_t *ansgrp = Calloc(ansgrpsize, R_len_t), starts, grplen; // #3401 fix. Needs to be Calloc due to Realloc below .. else segfaults.
   R_len_t ngrps = length(grps);
   bool *i64 = (bool *)R_alloc(ncols, sizeof(bool));
-  if (ngrps==0) INTERNAL_ERRORF("nrows[%d]>0 but ngrps==0", nrows); // # nocov
+  if (ngrps==0) INTERNAL_ERROR("nrows[%d]>0 but ngrps==0", nrows); // # nocov
   R_len_t resetctr=0, rlen = length(resetvals) ? INTEGER(resetvals)[0] : 0;
   if (!isInteger(cols) || ncols == 0) error(_("cols must be an integer vector of positive length"));
   // mult arg

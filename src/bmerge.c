@@ -47,15 +47,15 @@ SEXP bmerge(SEXP iArg, SEXP xArg, SEXP icolsArg, SEXP xcolsArg, SEXP isorted, SE
   i = iArg; x = xArg;  // set globals so bmerge_r can see them.
   if (!isInteger(icolsArg)) INTERNAL_ERROR("icols is not integer vector"); // # nocov
   if (!isInteger(xcolsArg)) INTERNAL_ERROR("xcols is not integer vector"); // # nocov
-  if (LENGTH(icolsArg) > LENGTH(xcolsArg)) INTERNAL_ERRORF("length(icols) [%d] > length(xcols) [%d]", LENGTH(icolsArg), LENGTH(xcolsArg)); // # nocov
+  if (LENGTH(icolsArg) > LENGTH(xcolsArg)) INTERNAL_ERROR("length(icols) [%d] > length(xcols) [%d]", LENGTH(icolsArg), LENGTH(xcolsArg)); // # nocov
   icols = INTEGER(icolsArg);
   xcols = INTEGER(xcolsArg);
   xN = LENGTH(x) ? LENGTH(VECTOR_ELT(x,0)) : 0;
   iN = ilen = anslen = LENGTH(i) ? LENGTH(VECTOR_ELT(i,0)) : 0;
   ncol = LENGTH(icolsArg);    // there may be more sorted columns in x than involved in the join
   for(int col=0; col<ncol; col++) {
-    if (icols[col]==NA_INTEGER) INTERNAL_ERRORF("icols[%d] is NA", col); // # nocov
-    if (xcols[col]==NA_INTEGER) INTERNAL_ERRORF("xcols[%d] is NA", col); // # nocov
+    if (icols[col]==NA_INTEGER) INTERNAL_ERROR("icols[%d] is NA", col); // # nocov
+    if (xcols[col]==NA_INTEGER) INTERNAL_ERROR("xcols[%d] is NA", col); // # nocov
     if (icols[col]>LENGTH(i) || icols[col]<1) error(_("icols[%d]=%d outside range [1,length(i)=%d]"), col, icols[col], LENGTH(i));
     if (xcols[col]>LENGTH(x) || xcols[col]<1) error(_("xcols[%d]=%d outside range [1,length(x)=%d]"), col, xcols[col], LENGTH(x));
     int it = TYPEOF(VECTOR_ELT(i, icols[col]-1));
@@ -268,7 +268,7 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
       case LT : xupp = xlow + 1; xlow = xlowIn; break;
       case GE : if (ival.i != NA_INTEGER) xupp = xuppIn; break;
       case GT : xlow = xupp - 1; if (ival.i != NA_INTEGER) xupp = xuppIn; break;
-      default : INTERNAL_ERRORF("unrecognized value op[col]=%d for column '%s'", op[col], type2char(TYPEOF(xc))); // # nocov
+      default : INTERNAL_ERROR("unrecognized value op[col]=%d for column '%s'", op[col], type2char(TYPEOF(xc))); // # nocov
       }
       // for LE/LT cases, we need to ensure xlow excludes NA indices, != EQ is checked above already
       if (op[col] <= 3 && xlow<xupp-1 && ival.i != NA_INTEGER && INTEGER(xc)[XIND(xlow+1)] == NA_INTEGER) {
@@ -376,7 +376,7 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
       case LT : xupp = xlow + 1; if (!isivalNA) xlow = xlowIn; break;
       case GE : if (!isivalNA) xupp = xuppIn; break;
       case GT : xlow = xupp - 1; if (!isivalNA) xupp = xuppIn; break;
-      default : INTERNAL_ERRORF("Unrecognized value op[col]=%d in column '%s'", op[col], type2char(TYPEOF(xc))); // # nocov
+      default : INTERNAL_ERROR("Unrecognized value op[col]=%d in column '%s'", op[col], type2char(TYPEOF(xc))); // # nocov
       }
       // for LE/LT cases, we need to ensure xlow excludes NA indices, != EQ is checked above already
       if (op[col] <= 3 && xlow<xupp-1 && !isivalNA && (!isInt64 ? ISNAN(dxc[XIND(xlow+1)]) : (DtoLL(dxc[XIND(xlow+1)]) == NA_INT64_LL))) {

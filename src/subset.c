@@ -4,7 +4,7 @@ void subsetVectorRaw(SEXP ans, SEXP source, SEXP idx, const bool anyNA)
 // Used here by subsetDT() and by dogroups.c
 {
   const int n = length(idx);
-  if (length(ans)!=n) INTERNAL_ERRORF("length(ans)==%d n=%d", length(ans), n); // # nocov
+  if (length(ans)!=n) INTERNAL_ERROR("length(ans)==%d n=%d", length(ans), n); // # nocov
 
   const int *restrict idxp = INTEGER(idx);
   // anyNA refers to NA _in idx_; if there's NA in the data (source) that's just regular data to be copied
@@ -80,7 +80,7 @@ void subsetVectorRaw(SEXP ans, SEXP source, SEXP idx, const bool anyNA)
     PARLOOP(0)
   } break;
   default :
-    INTERNAL_ERRORF("column type '%s' not supported by data.table subset, but all known types are supported", type2char(TYPEOF(source)));  // # nocov
+    INTERNAL_ERROR("column type '%s' not supported by data.table subset, but all known types are supported", type2char(TYPEOF(source)));  // # nocov
   }
 }
 
@@ -89,7 +89,7 @@ static const char *check_idx(SEXP idx, int max, bool *anyNA_out, bool *orderedSu
 // error if any negatives, zeros or >max since they should have been dealt with by convertNegAndZeroIdx() called ealier at R level.
 // single cache efficient sweep with prefetch, so very low priority to go parallel
 {
-  if (!isInteger(idx)) INTERNAL_ERRORF("'idx' is type '%s' not 'integer'", type2char(TYPEOF(idx))); // # nocov
+  if (!isInteger(idx)) INTERNAL_ERROR("'idx' is type '%s' not 'integer'", type2char(TYPEOF(idx))); // # nocov
   bool anyLess=false, anyNA=false;
   int last = INT32_MIN;
   int *idxp = INTEGER(idx), n=LENGTH(idx);
@@ -113,11 +113,11 @@ SEXP convertNegAndZeroIdx(SEXP idx, SEXP maxArg, SEXP allowOverMax)
   // + a little more efficient than negativeSubscript in src/main/subscript.c (it's private to R so we can't call it anyway)
   // allowOverMaxArg is false when := (test 1024), otherwise true for selecting
 
-  if (!isInteger(idx)) INTERNAL_ERRORF("'idx' is type '%s' not 'integer'", type2char(TYPEOF(idx))); // # nocov
-  if (!isInteger(maxArg) || length(maxArg)!=1) INTERNAL_ERRORF("'maxArg' is type '%s' and length %d, should be an integer singleton", type2char(TYPEOF(maxArg)), length(maxArg)); // # nocov
+  if (!isInteger(idx)) INTERNAL_ERROR("'idx' is type '%s' not 'integer'", type2char(TYPEOF(idx))); // # nocov
+  if (!isInteger(maxArg) || length(maxArg)!=1) INTERNAL_ERROR("'maxArg' is type '%s' and length %d, should be an integer singleton", type2char(TYPEOF(maxArg)), length(maxArg)); // # nocov
   if (!isLogical(allowOverMax) || LENGTH(allowOverMax)!=1 || LOGICAL(allowOverMax)[0]==NA_LOGICAL) INTERNAL_ERROR("allowOverMax must be TRUE/FALSE");  // # nocov
   int max = INTEGER(maxArg)[0], n=LENGTH(idx);
-  if (max<0) INTERNAL_ERRORF("max is %d, must be >= 0.", max); // # nocov    includes NA which will print as INT_MIN
+  if (max<0) INTERNAL_ERROR("max is %d, must be >= 0.", max); // # nocov    includes NA which will print as INT_MIN
   int *idxp = INTEGER(idx);
 
   bool stop = false;
@@ -239,7 +239,7 @@ static void checkCol(SEXP col, int colNum, int nrow, SEXP x)
 
 SEXP subsetDT(SEXP x, SEXP rows, SEXP cols) { // API change needs update NEWS.md and man/cdt.Rd
   int nprotect=0;
-  if (!isNewList(x)) INTERNAL_ERRORF("Argument 'x' is type '%s' not 'list'", type2char(TYPEOF(rows))); // # nocov
+  if (!isNewList(x)) INTERNAL_ERROR("Argument 'x' is type '%s' not 'list'", type2char(TYPEOF(rows))); // # nocov
   if (!length(x)) return(x);  // return empty list
 
   const int nrow = length(VECTOR_ELT(x,0));
@@ -252,7 +252,7 @@ SEXP subsetDT(SEXP x, SEXP rows, SEXP cols) { // API change needs update NEWS.md
     if (err!=NULL) error(err);
   }
 
-  if (!isInteger(cols)) INTERNAL_ERRORF("Argument 'cols' is type '%s' not 'integer'", type2char(TYPEOF(cols))); // # nocov
+  if (!isInteger(cols)) INTERNAL_ERROR("Argument 'cols' is type '%s' not 'integer'", type2char(TYPEOF(cols))); // # nocov
   for (int i=0; i<LENGTH(cols); i++) {
     int this = INTEGER(cols)[i];
     if (this<1 || this>LENGTH(x)) error(_("Item %d of 'cols' is %d which is outside 1-based range [1,ncol(x)=%d]"), i+1, this, LENGTH(x));

@@ -215,7 +215,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
         }
         if (w!=j && usenames==NA_LOGICAL) {
           SEXP s = getAttrib(VECTOR_ELT(l, i), R_NamesSymbol);
-          if (!isString(s) || i==0) INTERNAL_ERRORF("usenames==NA but an out-of-order name has been found in an item with no names or the first item. [%d]", i); // # nocov
+          if (!isString(s) || i==0) INTERNAL_ERROR("usenames==NA but an out-of-order name has been found in an item with no names or the first item. [%d]", i); // # nocov
           snprintf(buff, 1000, _("Column %d ['%s'] of item %d appears in position %d in item %d. Set use.names=TRUE to match by column name, or use.names=FALSE to ignore column names.%s"),
                                w+1, CHAR(STRING_ELT(s,w)), i+1, j+1, i, extra);
           i = LENGTH(l);
@@ -323,7 +323,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
     if (!foundName) { static char buff[12]; sprintf(buff,"V%d",j+1), SET_STRING_ELT(ansNames, idcol+j, mkChar(buff)); foundName=buff; }
     if (factor) maxType=INTSXP;  // if any items are factors then a factor is created (could be an option)
     if (int64 && maxType!=REALSXP)
-      INTERNAL_ERRORF("column %d of result is determined to be integer64 but maxType=='%s' != REALSXP", j+1, type2char(maxType)); // # nocov
+      INTERNAL_ERROR("column %d of result is determined to be integer64 but maxType=='%s' != REALSXP", j+1, type2char(maxType)); // # nocov
     SEXP target;
     SET_VECTOR_ELT(ans, idcol+j, target=allocVector(maxType, nrow));  // does not initialize logical & numerics, but does initialize character and list
     if (!factor) copyMostAttrib(firstCol, target); // all but names,dim and dimnames; mainly for class. And if so, we want a copy here, not keepattr's SET_ATTRIB.

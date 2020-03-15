@@ -9,7 +9,7 @@ static void finalizer(SEXP p)
   if (!isString(p)) INTERNAL_ERROR("ExternalPtr doesn't see names in tag"); // # nocov
   l = LENGTH(p);
   tl = TRUELENGTH(p);
-  if (l<0 || tl<l) INTERNAL_ERRORF("l=%d, tl=%d", l, tl); // # nocov
+  if (l<0 || tl<l) INTERNAL_ERROR("l=%d, tl=%d", l, tl); // # nocov
   n = tl-l;
   if (n==0) {
     // gc's ReleaseLargeFreeVectors() will have reduced R_LargeVallocSize by the correct amount
@@ -202,18 +202,18 @@ SEXP alloccol(SEXP dt, R_len_t n, Rboolean verbose)
   names = getAttrib(dt,R_NamesSymbol);
   // names may be NULL when null.data.table() passes list() to alloccol for example.
   // So, careful to use length() on names, not LENGTH().
-  if (length(names)!=l) INTERNAL_ERRORF("length of names (%d) is not length of dt (%d)", length(names),l); // # nocov
+  if (length(names)!=l) INTERNAL_ERROR("length of names (%d) is not length of dt (%d)", length(names),l); // # nocov
   if (!selfrefok(dt,verbose))
     return shallow(dt,R_NilValue,(n>l) ? n : l);  // e.g. test 848 and 851 in R > 3.0.2
     // added (n>l) ? ... for #970, see test 1481.
   // TO DO:  test realloc names if selfrefnamesok (users can setattr(x,"name") themselves for example.
   // if (TRUELENGTH(getAttrib(dt,R_NamesSymbol))!=tl)
-  //    INTERNAL_ERRORF("tl of dt passes checks, but tl of names (%d) != tl of dt (%d)", tl, TRUELENGTH(getAttrib(dt,R_NamesSymbol))); // # nocov
+  //    INTERNAL_ERROR("tl of dt passes checks, but tl of names (%d) != tl of dt (%d)", tl, TRUELENGTH(getAttrib(dt,R_NamesSymbol))); // # nocov
 
   tl = TRUELENGTH(dt);
   // R <= 2.13.2 and we didn't catch uninitialized tl somehow
   if (tl<0) INTERNAL_ERROR("tl of class is marked but tl<0."); // # nocov
-  if (tl>0 && tl<l) INTERNAL_ERRORF("tl (%d) < l (%d) but tl of class is marked.", tl, l); // # nocov
+  if (tl>0 && tl<l) INTERNAL_ERROR("tl (%d) < l (%d) but tl of class is marked.", tl, l); // # nocov
   if (tl>l+10000) warning(_("tl (%d) is greater than 10,000 items over-allocated (l = %d). If you didn't set the datatable.alloccol option to be very large, please report to data.table issue tracker including the result of sessionInfo()."),tl,l);
   if (n>tl) return(shallow(dt,R_NilValue,n)); // usual case (increasing alloc)
   if (n<tl && verbose) Rprintf(_("Attempt to reduce allocation from %d to %d ignored. Can only increase allocation via shallow copy. Please do not use DT[...]<- or DT$someCol<-. Use := inside DT[...] instead."),tl,n);
@@ -301,7 +301,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
   SEXP names = PROTECT(getAttrib(dt, R_NamesSymbol)); protecti++;
   if (isNull(names)) error(_("dt passed to assign has no names"));
   if (length(names)!=oldncol)
-    INTERNAL_ERRORF("length of names (%d) is not length of dt (%d)", length(names), oldncol); // # nocov
+    INTERNAL_ERROR("length of names (%d) is not length of dt (%d)", length(names), oldncol); // # nocov
   if (isNull(dt)) {
     error(_("data.table is NULL; malformed. A null data.table should be an empty list. typeof() should always return 'list' for data.table.")); // # nocov
     // Not possible to test because R won't permit attributes be attached to NULL (which is good and we like); warning from R 3.4.0+ tested by 944.5
@@ -417,7 +417,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
     if (coln+1 > oldncol && TYPEOF(thisvalue)!=VECSXP) {  // list() is ok for new columns
       newcolnum = coln-length(names);
       if (newcolnum<0 || newcolnum>=length(newcolnames))
-        INTERNAL_ERRORF("length(newcolnames)=%d, length(names)=%d, coln=%d", length(newcolnames), length(names), coln); // # nocov
+        INTERNAL_ERROR("length(newcolnames)=%d, length(names)=%d, coln=%d", length(newcolnames), length(names), coln); // # nocov
       if (isNull(thisvalue)) {
         warning(_("Column '%s' does not exist to remove"),CHAR(STRING_ELT(newcolnames,newcolnum)));
         continue;
@@ -445,17 +445,17 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
 
     if (oldtncol<oldncol) {
       if (oldtncol==0) error(_("This data.table has either been loaded from disk (e.g. using readRDS()/load()) or constructed manually (e.g. using structure()). Please run setDT() or setalloccol() on it first (to pre-allocate space for new columns) before assigning by reference to it."));   // #2996
-      INTERNAL_ERRORF("oldtncol(%d) < oldncol(%d)", oldtncol, oldncol); // # nocov
+      INTERNAL_ERROR("oldtncol(%d) < oldncol(%d)", oldtncol, oldncol); // # nocov
     }
     if (oldtncol>oldncol+10000L) warning(_("truelength (%d) is greater than 10,000 items over-allocated (length = %d). See ?truelength. If you didn't set the datatable.alloccol option very large, please report to data.table issue tracker including the result of sessionInfo()."),oldtncol, oldncol);
     if (oldtncol < oldncol+LENGTH(newcolnames))
-      INTERNAL_ERRORF("input dt has not been allocated enough column slots. l=%d, tl=%d, adding %d", oldncol, oldtncol, LENGTH(newcolnames));  // # nocov
+      INTERNAL_ERROR("input dt has not been allocated enough column slots. l=%d, tl=%d, adding %d", oldncol, oldtncol, LENGTH(newcolnames));  // # nocov
     if (!selfrefnamesok(dt,verbose))
       error(_("It appears that at some earlier point, names of this data.table have been reassigned. Please ensure to use setnames() rather than names<- or colnames<-. Otherwise, please report to data.table issue tracker."));  // # nocov
       // Can growVector at this point easily enough, but it shouldn't happen in first place so leave it as
       // strong error message for now.
     else if (TRUELENGTH(names) != oldtncol)
-      INTERNAL_ERRORF("selfrefnames is ok but tl names [%"PRIu64"] != tl [%d]", (uint64_t)TRUELENGTH(names), oldtncol);  // # nocov
+      INTERNAL_ERROR("selfrefnames is ok but tl names [%"PRIu64"] != tl [%d]", (uint64_t)TRUELENGTH(names), oldtncol);  // # nocov
     SETLENGTH(dt, oldncol+LENGTH(newcolnames));
     SETLENGTH(names, oldncol+LENGTH(newcolnames));
     for (i=0; i<LENGTH(newcolnames); i++)
@@ -635,7 +635,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
     R_isort(tt, ndelete);  // sort the column-numbers-to-delete into ascending order
     for (int i=0; i<ndelete-1; ++i) {
       if (tt[i]>=tt[i+1])
-        INTERNAL_ERRORF("%d column numbers to delete not now in strictly increasing order. No-dups were checked earlier.", ndelete); // # nocov
+        INTERNAL_ERROR("%d column numbers to delete not now in strictly increasing order. No-dups were checked earlier.", ndelete); // # nocov
     }
     for (int i=tt[0], j=1, k=tt[0]+1;  i<ndt-ndelete;  ++i, ++k) {  // i moves up from the first non-deleted column and is the target of write
       while (j<ndelete && k==tt[j]) { j++; k++; }                   // move k up to the next non-deleted column; j is the next position in tt
@@ -680,12 +680,12 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
   const int slen = sourceLen>=0 ? sourceLen : length(source);
   if (slen==0) return NULL;
   if (sourceStart<0 || sourceStart+slen>length(source))
-    INTERNAL_ERRORF("sourceStart=%d sourceLen=%d length(source)=%d", sourceStart, sourceLen, length(source)); // # nocov
+    INTERNAL_ERROR("sourceStart=%d sourceLen=%d length(source)=%d", sourceStart, sourceLen, length(source)); // # nocov
   if (!length(where) && start+len>length(target))
-    INTERNAL_ERRORF("start=%d len=%d length(target)=%d", start, len, length(target)); // # nocov
+    INTERNAL_ERROR("start=%d len=%d length(target)=%d", start, len, length(target)); // # nocov
   const int soff = sourceStart;
   if (slen>1 && slen!=len && (!isNewList(target) || isNewList(source)))
-    INTERNAL_ERRORF("recycle length error not caught earlier. slen=%d len=%d", slen, len); // # nocov
+    INTERNAL_ERROR("recycle length error not caught earlier. slen=%d len=%d", slen, len); // # nocov
   // Internal error because the column has already been added to the DT, so length mismatch should have been caught before adding the column.
   // for 5647 this used to limit slen to len, but no longer
   if (colname==NULL)
@@ -1120,7 +1120,7 @@ void writeNA(SEXP v, const int from, const int n)
     for (int i=from; i<=to; ++i) SET_VECTOR_ELT(v, i, R_NilValue);
     break;
   default :
-    INTERNAL_ERRORF("Unsupported type '%s' for v", type2char(TYPEOF(v)));  // # nocov
+    INTERNAL_ERROR("Unsupported type '%s' for v", type2char(TYPEOF(v)));  // # nocov
   }
 }
 
@@ -1151,7 +1151,7 @@ static R_len_t *savedtl=NULL, nalloc=0, nsaved=0;
 
 void savetl_init() {
   if (nsaved || nalloc || saveds || savedtl) {
-    INTERNAL_ERRORF("savetl_init checks failed (%d %d %p %p)", nsaved, nalloc, (void *)saveds, (void *)savedtl); // # nocov
+    INTERNAL_ERROR("savetl_init checks failed (%d %d %p %p)", nsaved, nalloc, (void *)saveds, (void *)savedtl); // # nocov
   }
   nsaved = 0;
   nalloc = 100;
@@ -1168,7 +1168,7 @@ void savetl(SEXP s)
   if (nsaved==nalloc) {
     if (nalloc==INT_MAX) {
       savetl_end();                                                                                                     // # nocov
-      INTERNAL_ERRORF("reached maximum %d items for savetl", nalloc); // # nocov
+      INTERNAL_ERROR("reached maximum %d items for savetl", nalloc); // # nocov
     }
     nalloc = nalloc>(INT_MAX/2) ? INT_MAX : nalloc*2;
     char *tmp = (char *)realloc(saveds, nalloc*sizeof(SEXP));

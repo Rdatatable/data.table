@@ -187,7 +187,7 @@ SEXP between(SEXP x, SEXP lower, SEXP upper, SEXP incbounds, SEXP NAboundsArg, S
     if (verbose) Rprintf(_("between non-parallel processing of character took %8.3fs\n"), omp_get_wtime()-tic);
   } break;
   default:
-    INTERNAL_ERRORF("unsupported type '%s' should have been caught at R level", type2char(TYPEOF(x)));  // # nocov
+    INTERNAL_ERROR("unsupported type '%s' should have been caught at R level", type2char(TYPEOF(x)));  // # nocov
   }
   UNPROTECT(nprotect);
   return ans;

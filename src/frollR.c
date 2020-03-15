@@ -187,7 +187,7 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
   int* iik = NULL;
   if (!badaptive) {
     if (!isInteger(ik))
-      INTERNAL_ERRORF("badaptive=%d but ik is not integer", badaptive); // # nocov
+      INTERNAL_ERROR("badaptive=%d but ik is not integer", badaptive); // # nocov
     iik = INTEGER(ik);                                          // pointer to non-adaptive window width, still can be vector when doing multiple windows
   } else {
     // ik is still R_NilValue from initialization. But that's ok as it's only needed below when !badaptive.
@@ -216,7 +216,7 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
           fadaptiverollsum(ialgo, dx[i], inx[i], &dans[i*nk+j], ikl[j], dfill, bnarm, ihasna, verbose);
         break;
       default:
-        INTERNAL_ERRORF("Unknown sfun value: %d", sfun); // # nocov
+        INTERNAL_ERROR("Unknown sfun value: %d", sfun); // # nocov
       }
     }
   }

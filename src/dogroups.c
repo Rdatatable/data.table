@@ -37,7 +37,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
     SET_STRING_ELT(bynames, i, STRING_ELT(getAttrib(groups,R_NamesSymbol), j));
     defineVar(install(CHAR(STRING_ELT(bynames,i))), VECTOR_ELT(BY,i), env);      // by vars can be used by name in j as well as via .BY
     if (SIZEOF(VECTOR_ELT(BY,i))==0)
-      INTERNAL_ERRORF("unsupported size-0 type '%s' in column %d of 'by' should have been caught earlier", type2char(TYPEOF(VECTOR_ELT(BY, i))), i+1); // # nocov
+      INTERNAL_ERROR("unsupported size-0 type '%s' in column %d of 'by' should have been caught earlier", type2char(TYPEOF(VECTOR_ELT(BY, i))), i+1); // # nocov
   }
   setAttrib(BY, R_NamesSymbol, bynames); // Fix for #42 - BY doesn't retain names anymore
   R_LockBinding(sym_BY, env);
@@ -71,7 +71,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
   SEXP *nameSyms = (SEXP *)R_alloc(length(names), sizeof(SEXP));
   for(int i=0; i<length(SDall); ++i) {
     if (SIZEOF(VECTOR_ELT(SDall, i))==0)
-      INTERNAL_ERRORF("size-0 type %d in .SD column %d should have been caught earlier", TYPEOF(VECTOR_ELT(SDall, i)), i); // # nocov
+      INTERNAL_ERROR("size-0 type %d in .SD column %d should have been caught earlier", TYPEOF(VECTOR_ELT(SDall, i)), i); // # nocov
     nameSyms[i] = install(CHAR(STRING_ELT(names, i)));
     // fixes http://stackoverflow.com/questions/14753411/why-does-data-table-lose-class-definition-in-sd-after-group-by
     copyMostAttrib(VECTOR_ELT(dt,INTEGER(dtcols)[i]-1), VECTOR_ELT(SDall,i));  // not names, otherwise test 778 would fail
@@ -85,7 +85,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
   SEXP *xknameSyms = (SEXP *)R_alloc(length(xknames), sizeof(SEXP));
   for(int i=0; i<length(xSD); ++i) {
     if (SIZEOF(VECTOR_ELT(xSD, i))==0)
-      INTERNAL_ERRORF("type %d in .xSD column %d should have been caught by now", TYPEOF(VECTOR_ELT(xSD, i)), i); // # nocov
+      INTERNAL_ERROR("type %d in .xSD column %d should have been caught by now", TYPEOF(VECTOR_ELT(xSD, i)), i); // # nocov
     xknameSyms[i] = install(CHAR(STRING_ELT(xknames, i)));
   }
 
@@ -361,7 +361,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
   for (int j=0; j<length(SDall); ++j) SETLENGTH(VECTOR_ELT(SDall,j), origSDnrow);
   SETLENGTH(I, origIlen);
   if (verbose) {
-    if (nblock[0] && nblock[1]) INTERNAL_ERRORF("block 0 [%d] and block 1 [%d] have both run", nblock[0], nblock[1]); // # nocov
+    if (nblock[0] && nblock[1]) INTERNAL_ERROR("block 0 [%d] and block 1 [%d] have both run", nblock[0], nblock[1]); // # nocov
     int w = nblock[1]>0;
     Rprintf(_("\n  %s took %.3fs for %d groups\n"), w ? "collecting discontiguous groups" : "memcpy contiguous groups",
                           1.0*tblock[w]/CLOCKS_PER_SEC, nblock[w]);
@@ -409,7 +409,7 @@ SEXP growVector(SEXP x, const R_len_t newlen)
       SET_VECTOR_ELT(newx, i, xd[i]);
   } break;
   default :
-    INTERNAL_ERRORF("type '%s' not supported", type2char(TYPEOF(x)));  // # nocov
+    INTERNAL_ERROR("type '%s' not supported", type2char(TYPEOF(x)));  // # nocov
   }
   // if (verbose) Rprintf(_("Growing vector from %d to %d items of type '%s'\n"), len, newlen, type2char(TYPEOF(x)));
   // Would print for every column if here. Now just up in dogroups (one msg for each table grow).

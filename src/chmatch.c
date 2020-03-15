@@ -9,7 +9,7 @@ static SEXP chmatchMain(SEXP x, SEXP table, int nomatch, bool chin, bool chmatch
   const int xlen = length(x);
   if (TYPEOF(x) == SYMSXP) {
     if (xlen!=1)
-      INTERNAL_ERRORF("length of SYMSXP is %d not 1", xlen); // # nocov
+      INTERNAL_ERROR("length of SYMSXP is %d not 1", xlen); // # nocov
     sym = PRINTNAME(x);  // so we can do &sym to get a length 1 (const SEXP *)STRING_PTR(x) and save an alloc for coerce to STRSXP
   } else if (!isString(x) && !isSymbol(x) && !isNull(x)) {
     if (chin && !isVectorAtomic(x)) {
@@ -63,7 +63,7 @@ static SEXP chmatchMain(SEXP x, SEXP table, int nomatch, bool chin, bool chmatch
       // We rely on that 0-initialization, and that R's internal hash is positive.
       // # nocov start
       savetl_end();
-      INTERNAL_ERRORF("CHARSXP '%s' has a negative truelength (%d)", CHAR(s), tl); // # nocov
+      INTERNAL_ERROR("CHARSXP '%s' has a negative truelength (%d)", CHAR(s), tl); // # nocov
       // # nocov end
     }
   }
