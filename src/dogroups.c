@@ -24,7 +24,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
   if (!isNull(xjiscols) && LENGTH(order) && !LOGICAL(on)[0])
     error(_("Internal error: xjiscols not NULL but o__ has length")); // # nocov
   if(!isEnvironment(env))
-    error(_("'env' should be an environment"));
+    error(_("Internal error: 'env' should be an environment")); // # nocov
   ngrp = length(starts);  // the number of groups  (nrow(groups) will be larger when by)
   ngrpcols = length(grpcols);
   nrowgroups = length(VECTOR_ELT(groups,0));
@@ -48,7 +48,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
   setAttrib(BY, R_NamesSymbol, bynames); // Fix for #42 - BY doesn't retain names anymore
   R_LockBinding(sym_BY, env);
   if (isNull(jiscols) && (length(bynames)!=length(groups) || length(bynames)!=length(grpcols)))
-    error(_("!length(bynames)[%d]==length(groups)[%d]==length(grpcols)[%d]"),length(bynames),length(groups),length(grpcols));
+    error(_("Internal error: !length(bynames)[%d]==length(groups)[%d]==length(grpcols)[%d]"), length(bynames), length(groups), length(grpcols)); // # nocov
   // TO DO: check this check above.
 
   N =   PROTECT(findVar(install(".N"), env));   nprotect++; // PROTECT for rchk
@@ -77,7 +77,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
   // using <- in j (which is valid, useful and tested), they are repointed to the .SD cols for each group.
   SEXP names = PROTECT(getAttrib(SDall, R_NamesSymbol)); nprotect++;
   if (length(names) != length(SDall))
-    error(_("length(names)!=length(SD)"));
+    error(_("Internal erro: length(names)!=length(.SD)")); // # nocov
   SEXP *nameSyms = (SEXP *)R_alloc(length(names), sizeof(SEXP));
   for(int i=0; i<length(SDall); ++i) {
     if (SIZEOF(VECTOR_ELT(SDall, i))==0)
@@ -92,7 +92,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
 
   SEXP xknames = PROTECT(getAttrib(xSD, R_NamesSymbol)); nprotect++;
   if (length(xknames) != length(xSD))
-    error(_("length(xknames)!=length(xSD)"));
+    error(_("Internal error: length(xknames)!=length(xSD)")); // # nocov
   SEXP *xknameSyms = (SEXP *)R_alloc(length(xknames), sizeof(SEXP));
   for(int i=0; i<length(xSD); ++i) {
     if (SIZEOF(VECTOR_ELT(xSD, i))==0)
@@ -101,9 +101,9 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
   }
 
   if (length(iSD)!=length(jiscols))
-    error(_("length(iSD)[%d] != length(jiscols)[%d]"),length(iSD),length(jiscols));
+    error(_("Internal error: length(iSD)[%d] != length(jiscols)[%d]"), length(iSD), length(jiscols)); // # nocov
   if (length(xSD)!=length(xjiscols))
-    error(_("length(xSD)[%d] != length(xjiscols)[%d]"),length(xSD),length(xjiscols));
+    error(_("Internal error: length(xSD)[%d] != length(xjiscols)[%d]"), length(xSD), length(xjiscols)); // # nocov
 
   SEXP listwrap = PROTECT(allocVector(VECSXP, 1)); nprotect++;
   Rboolean jexpIsSymbolOtherThanSD = (isSymbol(jexp) && strcmp(CHAR(PRINTNAME(jexp)),".SD")!=0);  // test 559
@@ -325,7 +325,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
         estn = ((double)ngrp/i)*1.1*(ansloc+maxn);
         if (verbose) Rprintf(_("dogroups: growing from %d to %d rows\n"), length(VECTOR_ELT(ans,0)), estn);
         if (length(ans) != ngrpcols + njval)
-          error(_("dogroups: length(ans)[%d]!=ngrpcols[%d]+njval[%d]"),length(ans),ngrpcols,njval);
+          error(_("Internal error in dogroups: length(ans)[%d]!=ngrpcols[%d]+njval[%d]"), length(ans), ngrpcols, njval); // # nocov
         for (int j=0; j<length(ans); ++j) SET_VECTOR_ELT(ans, j, growVector(VECTOR_ELT(ans,j), estn));
       }
     }
@@ -407,7 +407,7 @@ SEXP growVector(SEXP x, const R_len_t newlen)
   SEXP newx;
   R_len_t len = length(x);
   if (isNull(x))
-    error(_("growVector passed NULL"));
+    error(_("Internal error: growVector passed NULL")); // # nocov
   PROTECT(newx = allocVector(TYPEOF(x), newlen));   // TO DO: R_realloc(?) here?
   if (newlen < len) len=newlen;   // i.e. shrink
   switch (TYPEOF(x)) {

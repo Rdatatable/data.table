@@ -25,7 +25,7 @@ SEXP vecseq(SEXP x, SEXP len, SEXP clamp)
     reslen += ilen[i];
   }
   if (!isNull(clamp)) {
-    if (!isNumeric(clamp) || LENGTH(clamp)!=1)
+    if (TYPEOF(clamp) != REALSXP || LENGTH(clamp)!=1)
       error(_("clamp must be a double vector length 1"));
     double limit = REAL(clamp)[0];
     if (limit<0)

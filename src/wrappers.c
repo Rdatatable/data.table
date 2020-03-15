@@ -65,12 +65,12 @@ SEXP setlistelt(SEXP l, SEXP i, SEXP value)
   R_len_t i2;
   // Internal use only. So that := can update elements of a list of data.table, #2204. Just needed to overallocate/grow the VECSXP.
   if (!isNewList(l))
-    error(_("First argument to setlistelt must be a list()"));
+    error(_("Internal error: first argument to setlistelt must be a list()")); // # nocov
   if (!isInteger(i) || LENGTH(i)!=1)
-    error(_("Second argument to setlistelt must a length 1 integer vector"));
+    error(_("Internal error: second argument to setlistelt must a length 1 integer vector")); // # nocov
   i2 = INTEGER(i)[0];
   if (LENGTH(l) < i2 || i2<1)
-    error(_("i (%d) is outside the range of items [1,%d]"),i2,LENGTH(l));
+    error(_("Internal error: i (%d) is outside the range of items [1,%d]"), i2, LENGTH(l)); // # nocov
   SET_VECTOR_ELT(l, i2-1, value);
   return(R_NilValue);
 }

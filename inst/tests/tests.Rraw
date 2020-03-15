@@ -54,6 +54,7 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
   test = data.table:::test
   uniqlengths = data.table:::uniqlengths
   uniqlist = data.table:::uniqlist
+  veqseq = data.table:::vecseq
   which_ = data.table:::which_
   which.first = data.table:::which.first
   which.last = data.table:::which.last
@@ -16909,3 +16910,9 @@ test(2139.42, DT[ , prod(b, na.rm=1), by=a], error="na.rm must be TRUE or FALSE"
 test(2139.43, DT[ , prod(l), by=a], error="GForce prod can only be applied to columns, not .SD or similar")
 test(2139.44, DT[ , prod(f), by=a], error="prod is not meaningful for factors")
 options(old)
+
+test(2139.45, vecseq(NA, NA, NA), error="x must be an integer vector")
+test(2139.46, vecseq(1L, NA, NA), error="len must be an integer vector")
+test(2139.47, vecseq(1L, 1:2, NA), error="x and len must be the same length")
+test(2139.48, vecseq(1L, 1L, 1L), error="clamp must be a double vector length 1")
+test(2139.49, vecseq(1L, 1L, -1), error="clamp must be positive")
