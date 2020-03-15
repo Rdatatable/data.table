@@ -17,7 +17,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
     usenames=TRUE;
   }
   const bool idcol = !isNull(idcolArg);
-  if (idcol && (!isString(idcolArg) || LENGTH(idcolArg)!=1)) INTERNAL_ERROR("rbindlist.c idcol is not a single string");  // # nocov
+  if (idcol && (!isString(idcolArg) || LENGTH(idcolArg)!=1)) INTERNAL_ERROR("idcol is not a single string");  // # nocov
   int ncol=0, first=0;
   int64_t nrow=0, upperBoundUniqueNames=1;
   bool anyNames=false;

@@ -19,14 +19,14 @@ SEXP lookup(SEXP ux, SEXP xlen, SEXP indices, SEXP gaps, SEXP overlaps, SEXP mul
   if (!strcmp(CHAR(STRING_ELT(multArg, 0)), "all"))  mult = ALL;
   else if (!strcmp(CHAR(STRING_ELT(multArg, 0)), "first")) mult = FIRST;
   else if (!strcmp(CHAR(STRING_ELT(multArg, 0)), "last")) mult = LAST;
-  else INTERNAL_ERROR("invalid value for 'mult'; this should have been caught before. please report to data.table issue tracker"); // # nocov
+  else INTERNAL_ERROR("invalid value for 'mult'; this should have been caught before"); // # nocov
 
   if (!strcmp(CHAR(STRING_ELT(typeArg, 0)), "any"))  type = ANY;
   else if (!strcmp(CHAR(STRING_ELT(typeArg, 0)), "within")) type = WITHIN;
   else if (!strcmp(CHAR(STRING_ELT(typeArg, 0)), "start")) type = START;
   else if (!strcmp(CHAR(STRING_ELT(typeArg, 0)), "end")) type = END;
   else if (!strcmp(CHAR(STRING_ELT(typeArg, 0)), "equal")) type = EQUAL;
-  else INTERNAL_ERROR("invalid value for 'type'; this should have been caught before. please report to data.table issue tracker"); // # nocov
+  else INTERNAL_ERROR("invalid value for 'type'; this should have been caught before"); // # nocov
 
   // For reference: uxcols-1 = type_count, uxcols-2 = count, uxcols-3 = type_lookup, uxcols-4 = lookup
   // first pass: calculate lengths first

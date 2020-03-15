@@ -80,7 +80,7 @@ void subsetVectorRaw(SEXP ans, SEXP source, SEXP idx, const bool anyNA)
     PARLOOP(0)
   } break;
   default :
-    INTERNAL_ERRORF("column type '%s' not supported by data.table subset. All known types are supported so please report as bug.", type2char(TYPEOF(source)));  // # nocov
+    INTERNAL_ERRORF("column type '%s' not supported by data.table subset, but all known types are supported", type2char(TYPEOF(source)));  // # nocov
   }
 }
 
@@ -239,7 +239,7 @@ static void checkCol(SEXP col, int colNum, int nrow, SEXP x)
 
 SEXP subsetDT(SEXP x, SEXP rows, SEXP cols) { // API change needs update NEWS.md and man/cdt.Rd
   int nprotect=0;
-  if (!isNewList(x)) INTERNAL_ERRORF("Argument 'x' to CsubsetDT is type '%s' not 'list'", type2char(TYPEOF(rows))); // # nocov
+  if (!isNewList(x)) INTERNAL_ERRORF("Argument 'x' is type '%s' not 'list'", type2char(TYPEOF(rows))); // # nocov
   if (!length(x)) return(x);  // return empty list
 
   const int nrow = length(VECTOR_ELT(x,0));
@@ -252,7 +252,7 @@ SEXP subsetDT(SEXP x, SEXP rows, SEXP cols) { // API change needs update NEWS.md
     if (err!=NULL) error(err);
   }
 
-  if (!isInteger(cols)) INTERNAL_ERRORF("Argument 'cols' to Csubset is type '%s' not 'integer'", type2char(TYPEOF(cols))); // # nocov
+  if (!isInteger(cols)) INTERNAL_ERRORF("Argument 'cols' is type '%s' not 'integer'", type2char(TYPEOF(cols))); // # nocov
   for (int i=0; i<LENGTH(cols); i++) {
     int this = INTEGER(cols)[i];
     if (this<1 || this>LENGTH(x)) error(_("Item %d of 'cols' is %d which is outside 1-based range [1,ncol(x)=%d]"), i+1, this, LENGTH(x));

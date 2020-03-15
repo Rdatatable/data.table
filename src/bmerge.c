@@ -86,7 +86,7 @@ SEXP bmerge(SEXP iArg, SEXP xArg, SEXP icolsArg, SEXP xcolsArg, SEXP isorted, SE
   if (!strcmp(CHAR(STRING_ELT(multArg, 0)), "all")) mult = ALL;
   else if (!strcmp(CHAR(STRING_ELT(multArg, 0)), "first")) mult = FIRST;
   else if (!strcmp(CHAR(STRING_ELT(multArg, 0)), "last")) mult = LAST;
-  else INTERNAL_ERROR("invalid value for 'mult'. please report to data.table issue tracker"); // # nocov
+  else INTERNAL_ERROR("invalid value for 'mult'"); // # nocov
 
   // opArg
   if (!isInteger(opArg) || length(opArg) != ncol)

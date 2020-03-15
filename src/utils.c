@@ -277,11 +277,11 @@ SEXP copyAsPlain(SEXP x) {
     for (R_xlen_t i=0; i<n; ++i) SET_VECTOR_ELT(ans, i, xp[i]);  // # nocov
   } break;                                                       // # nocov
   default:
-    INTERNAL_ERRORF("unsupported type '%s' passed to copyAsPlain()", type2char(TYPEOF(x))); // # nocov
+    INTERNAL_ERRORF("unsupported type '%s'", type2char(TYPEOF(x))); // # nocov
   }
   copyMostAttrib(x, ans); // e.g. factor levels, class etc, but not names, dim or dimnames
   if (ALTREP(ans))
-    INTERNAL_ERRORF("type '%s' passed to copyAsPlain() but it seems copyMostAttrib() retains ALTREP attributes", type2char(TYPEOF(x))); // # nocov
+    INTERNAL_ERRORF("it seems copyMostAttrib() retains ALTREP attributes for type '%s'", type2char(TYPEOF(x))); // # nocov
   UNPROTECT(1);
   return ans;
 }

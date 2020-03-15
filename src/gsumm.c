@@ -112,7 +112,7 @@ SEXP gforce(SEXP env, SEXP jsub, SEXP o, SEXP f, SEXP l, SEXP irowsArg) {
     //Rprintf(_("When assigning grp[o] = g, highSize=%d  nb=%d  shift=%d  nBatch=%d\n"), highSize, nb, shift, nBatch);
     int *counts = calloc(nBatch*highSize, sizeof(int));  // TODO: cache-line align and make highSize a multiple of 64
     int *TMP   = malloc(nrow*2*sizeof(int));
-    if (!counts || !TMP ) INTERNAL_ERROR("Failed to allocate counts or TMP when assigning g in gforce"); // # nocov
+    if (!counts || !TMP ) INTERNAL_ERROR("Failed to allocate counts or TMP when assigning g"); // # nocov
     #pragma omp parallel for num_threads(getDTthreads())   // schedule(dynamic,1)
     for (int b=0; b<nBatch; b++) {
       const int howMany = b==nBatch-1 ? lastBatchSize : batchSize;
@@ -595,7 +595,7 @@ SEXP gmean(SEXP x, SEXP narm)
       }
     } break;
     default :
-      INTERNAL_ERRORF("gsum returned type '%s'. typeof(x) is '%s'", type2char(TYPEOF(ans)), type2char(TYPEOF(x))); // # nocov
+      INTERNAL_ERRORF("returned type '%s', but typeof(x) is '%s'", type2char(TYPEOF(ans)), type2char(TYPEOF(x))); // # nocov
     }
     UNPROTECT(protecti);
     return(ans);
@@ -1157,18 +1157,18 @@ SEXP gfirst(SEXP x) {
 }
 
 SEXP gtail(SEXP x, SEXP valArg) {
-  if (!isInteger(valArg) || LENGTH(valArg)!=1 || INTEGER(valArg)[0]!=1) INTERNAL_ERROR("gtail is only implemented for n=1"); // # nocov
+  if (!isInteger(valArg) || LENGTH(valArg)!=1 || INTEGER(valArg)[0]!=1) INTERNAL_ERROR("only implemented for n=1"); // # nocov
   return (glast(x));
 }
 
 SEXP ghead(SEXP x, SEXP valArg) {
-  if (!isInteger(valArg) || LENGTH(valArg)!=1 || INTEGER(valArg)[0]!=1) INTERNAL_ERROR("ghead is only implemented for n=1"); // # nocov
+  if (!isInteger(valArg) || LENGTH(valArg)!=1 || INTEGER(valArg)[0]!=1) INTERNAL_ERROR("only implemented for n=1"); // # nocov
   return (gfirst(x));
 }
 
 SEXP gnthvalue(SEXP x, SEXP valArg) {
 
-  if (!isInteger(valArg) || LENGTH(valArg)!=1 || INTEGER(valArg)[0]<=0) INTERNAL_ERROR("`g[` (gnthvalue) is only implemented single value subsets with positive index, e.g., .SD[2]"); // # nocov
+  if (!isInteger(valArg) || LENGTH(valArg)!=1 || INTEGER(valArg)[0]<=0) INTERNAL_ERROR("only implemented single value subsets with positive index, e.g., .SD[2]"); // # nocov
   R_len_t i,k, val=INTEGER(valArg)[0];
   int n = (irowslen == -1) ? length(x) : irowslen;
   SEXP ans;

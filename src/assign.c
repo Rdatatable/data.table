@@ -1151,7 +1151,7 @@ static R_len_t *savedtl=NULL, nalloc=0, nsaved=0;
 
 void savetl_init() {
   if (nsaved || nalloc || saveds || savedtl) {
-    INTERNAL_ERRORF("savetl_init checks failed (%d %d %p %p). please report to data.table issue tracker.", nsaved, nalloc, saveds, savedtl); // # nocov
+    INTERNAL_ERRORF("savetl_init checks failed (%d %d %p %p)", nsaved, nalloc, saveds, savedtl); // # nocov
   }
   nsaved = 0;
   nalloc = 100;
@@ -1168,7 +1168,7 @@ void savetl(SEXP s)
   if (nsaved==nalloc) {
     if (nalloc==INT_MAX) {
       savetl_end();                                                                                                     // # nocov
-      INTERNAL_ERRORF("reached maximum %d items for savetl. Please report to data.table issue tracker.", nalloc); // # nocov
+      INTERNAL_ERRORF("reached maximum %d items for savetl", nalloc); // # nocov
     }
     nalloc = nalloc>(INT_MAX/2) ? INT_MAX : nalloc*2;
     char *tmp = (char *)realloc(saveds, nalloc*sizeof(SEXP));

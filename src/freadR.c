@@ -134,7 +134,7 @@ SEXP freadR(
     args.skipString = CHAR(STRING_ELT(skipArg,0));  // LENGTH==1 was checked at R level
   } else if (isInteger(skipArg)) {
     args.skipNrow = (int64_t)INTEGER(skipArg)[0];
-  } else INTERNAL_ERROR("skip not integer or string in freadR.c"); // # nocov
+  } else INTERNAL_ERROR("skip not integer or string"); // # nocov
 
   if (!isNull(NAstringsArg) && !isString(NAstringsArg))
     INTERNAL_ERRORF("NAstringsArg is type '%s'. R level catches this", type2char(TYPEOF(NAstringsArg)));  // # nocov

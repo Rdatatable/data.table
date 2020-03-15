@@ -11,12 +11,12 @@ SEXP uniqlist(SEXP l, SEXP order)
   // (maximum length the number of rows) and the length returned in anslen.
   // No NA in order which is guaranteed since internal-only. Used at R level internally (Cuniqlist) but is not and should not be exported.
   // DONE: ans is now grown
-  if (!isNewList(l)) INTERNAL_ERROR("uniqlist has not been passed a list of columns"); // # nocov
+  if (!isNewList(l)) INTERNAL_ERROR("l is not a list of columns"); // # nocov
   R_len_t ncol = length(l);
   R_len_t nrow = length(VECTOR_ELT(l,0));
-  if (!isInteger(order)) INTERNAL_ERROR("uniqlist has been passed a non-integer order"); // # nocov
-  if (LENGTH(order)<1) INTERNAL_ERROR("uniqlist has been passed a length-0 order"); // # nocov
-  if (LENGTH(order)>1 && LENGTH(order)!=nrow) INTERNAL_ERRORF("uniqlist has been passed length(order)==%d but nrow==%d", LENGTH(order), nrow); // # nocov
+  if (!isInteger(order)) INTERNAL_ERROR("order is non-integer"); // # nocov
+  if (LENGTH(order)<1) INTERNAL_ERROR("order is length-0"); // # nocov
+  if (LENGTH(order)>1 && LENGTH(order)!=nrow) INTERNAL_ERRORF("length(order)==%d but nrow==%d", LENGTH(order), nrow); // # nocov
   bool via_order = INTEGER(order)[0] != -1;  // has an ordering vector been passed in that we have to hop via? Don't use MISSING() here as it appears unstable on Windows
 
   unsigned long long *ulv; // for numeric check speed-up
@@ -252,7 +252,7 @@ SEXP rleid(SEXP l, SEXP cols) {
 SEXP nestedid(SEXP l, SEXP cols, SEXP order, SEXP grps, SEXP resetvals, SEXP multArg) {
   Rboolean byorder = (length(order)>0);
   SEXP v, ans;
-  if (!isNewList(l) || length(l) < 1) INTERNAL_ERROR("nestedid was not passed a list length 1 or more"); // # nocov
+  if (!isNewList(l) || length(l) < 1) INTERNAL_ERROR("l is not a list length 1 or more"); // # nocov
   R_len_t nrows = length(VECTOR_ELT(l,0)), ncols = length(cols);
   if (nrows==0) return(allocVector(INTSXP, 0));
   R_len_t thisi, previ, ansgrpsize=1000, nansgrp=0;

@@ -63,7 +63,7 @@ static SEXP chmatchMain(SEXP x, SEXP table, int nomatch, bool chin, bool chmatch
       // We rely on that 0-initialization, and that R's internal hash is positive.
       // # nocov start
       savetl_end();
-      INTERNAL_ERRORF("CHARSXP '%s' has a negative truelength (%d). Please file an issue on the data.table tracker.", CHAR(s), tl);
+      INTERNAL_ERRORF("CHARSXP '%s' has a negative truelength (%d)", CHAR(s), tl);
       // # nocov end
     }
   }
