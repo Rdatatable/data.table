@@ -455,7 +455,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
       // Can growVector at this point easily enough, but it shouldn't happen in first place so leave it as
       // strong error message for now.
     else if (TRUELENGTH(names) != oldtncol)
-      INTERNAL_ERRORF("selfrefnames is ok but tl names [%d] != tl [%d]", TRUELENGTH(names), oldtncol);  // # nocov
+      INTERNAL_ERRORF("selfrefnames is ok but tl names [%"PRIu64"] != tl [%d]", (uint64_t)TRUELENGTH(names), oldtncol);  // # nocov
     SETLENGTH(dt, oldncol+LENGTH(newcolnames));
     SETLENGTH(names, oldncol+LENGTH(newcolnames));
     for (i=0; i<LENGTH(newcolnames); i++)
@@ -1151,7 +1151,7 @@ static R_len_t *savedtl=NULL, nalloc=0, nsaved=0;
 
 void savetl_init() {
   if (nsaved || nalloc || saveds || savedtl) {
-    INTERNAL_ERRORF("savetl_init checks failed (%d %d %p %p)", nsaved, nalloc, saveds, savedtl); // # nocov
+    INTERNAL_ERRORF("savetl_init checks failed (%d %d %p %p)", nsaved, nalloc, (void *)saveds, (void *)savedtl); // # nocov
   }
   nsaved = 0;
   nalloc = 100;
