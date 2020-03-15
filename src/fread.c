@@ -1602,7 +1602,7 @@ int freadMain(freadMainArgs _args) {
     if (fileSize%4096==0) {
       const char *msg = _("This file is very unusual: it's one single column, ends with 2 or more end-of-line (representing several NA at the end), and is a multiple of 4096, too.");
       if (verbose) DTPRINT(_("  Copying file in RAM. %s\n"), msg);
-      ASSERT(mmp_copy==NULL, "mmp has already been copied due to abrupt non-eol ending, so it does not end with 2 or more eol.", 1/*dummy arg for macro*/); // #nocov
+      ASSERT(mmp_copy==NULL, "mmp has already been copied due to abrupt non-eol ending, so it does not end with 2 or more eol.%s", ""/*dummy arg for macro*/); // #nocov
       copyFile(fileSize, msg, verbose);
       pos = sof + (pos-(const char *)mmp);
       firstJumpEnd = sof + (firstJumpEnd-(const char *)mmp);
@@ -2347,7 +2347,7 @@ int freadMain(freadMainArgs _args) {
     }
     if (restartTeam) {
       if (verbose) DTPRINT(_("  Restarting team from jump %d. nSwept==%d quoteRule==%d\n"), jump0, nSwept, quoteRule);
-      ASSERT(nSwept>0 || quoteRuleBumpedCh!=NULL, "team restart but nSwept==%d and quoteRuleBumpedCh==%p", nSwept, quoteRuleBumpedCh); // # nocov
+      ASSERT(nSwept>0 || quoteRuleBumpedCh!=NULL, "team restart but nSwept==%d and quoteRuleBumpedCh==%p", nSwept, (void *)quoteRuleBumpedCh); // # nocov
       goto read;
     }
     // else nrowLimit applied and stopped early normally
