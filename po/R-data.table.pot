@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: data.table 1.12.9\n"
-"POT-Creation-Date: 2019-12-31 13:02\n"
+"POT-Creation-Date: 2020-03-15 20:35\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -13,22 +13,13 @@ msgstr ""
 msgid "data.table package loaded. When developing don't load package"
 msgstr ""
 
-msgid "Internal error -- difftime objects may not be added to IDate, but Ops dispatch should have intervened to prevent this"
-msgstr ""
-
 msgid "binary + is not defined for \"IDate\" objects"
 msgstr ""
 
 msgid "can only subtract from \"IDate\" objects"
 msgstr ""
 
-msgid "Internal error: storage mode of IDate is somehow no longer integer"
-msgstr ""
-
 msgid "unary - is not defined for \"IDate\" objects"
-msgstr ""
-
-msgid "Internal error -- difftime objects may not be subtracted from IDate, but Ops dispatch should have intervened to prevent this"
 msgstr ""
 
 msgid "Valid options for ms are 'truncate',"
@@ -286,9 +277,6 @@ msgstr ""
 msgid "' variable in calling scope for clarity."
 msgstr ""
 
-msgid "Internal error:  DT[, ..var] should be dealt with by the branch above now."
-msgstr ""
-
 msgid "' is not found in calling scope. Looking in calling scope because you set with=FALSE. Also, please use .. symbol prefix and remove with=FALSE."
 msgstr ""
 
@@ -304,6 +292,9 @@ msgstr ""
 msgid "not-join '!' prefix is present on i but nomatch is provided. Please remove nomatch."
 msgstr ""
 
+msgid "Operator := detected in i, the first argument inside DT[...], but is only valid in the second argument, j. Most often, this happens when forgetting the first comma (e.g. DT[newvar := 5] instead of DT[ , new_var := 5]). Please double-check the syntax. Run traceback(), and debugger() to get a line number."
+msgstr ""
+
 msgid "is not found in calling scope"
 msgstr ""
 
@@ -317,12 +308,6 @@ msgid "When i is a data.table (or character vector), the columns to join by must
 msgstr ""
 
 msgid "Attempting to do natural join but no common columns in provided tables"
-msgstr ""
-
-msgid "Internal error. Cannot by=.EACHI when joining to a secondary key, yet"
-msgstr ""
-
-msgid "Internal error. irows has length in by=.EACHI"
 msgstr ""
 
 msgid "logical error. i is not a data.table, but 'on' argument is provided."
@@ -341,9 +326,6 @@ msgid "but there are"
 msgstr ""
 
 msgid "rows. Recycling of logical i is no longer allowed as it hides more bugs than is worth the rare convenience. Explicitly use rep(...,length=.N) if you really need to recycle."
-msgstr ""
-
-msgid "Internal error: notjoin but byjoin or !integer or nomatch==NA"
 msgstr ""
 
 msgid "with=FALSE together with := was deprecated in v1.9.4 released Oct 2014. Please wrap the LHS of := with parentheses; e.g., DT[,(myVar):=sum(b),by=a] to assign to column name(s) held in variable myVar. See ?':=' for other examples. As warned in 2014, this is now a warning."
@@ -382,9 +364,6 @@ msgstr ""
 msgid "but one or more items include a comma. Either pass a vector of column names (which can contain spaces, but no commas), or pass a vector length 1 containing comma separated column names. See ?data.table for other possibilities."
 msgstr ""
 
-msgid "Internal error: irows isn't integer"
-msgstr ""
-
 msgid "'by' appears to evaluate to column names but isn't c() or key(). Use by=list(...) if you can. Otherwise, by=eval"
 msgstr ""
 
@@ -404,12 +383,6 @@ msgid ". Do not quote column names. Usage: DT[,sum(colC),by=list(colA,month(colB
 msgstr ""
 
 msgid "The items in the 'by' or 'keyby' list are length(s) (%s). Each must be length %d; the same length as there are rows in x (after subsetting if i is provided)."
-msgstr ""
-
-msgid "Internal error: drop_dot passed"
-msgstr ""
-
-msgid "items"
 msgstr ""
 
 msgid "Item %d of the .() or list() passed to j is missing"
@@ -445,6 +418,12 @@ msgstr ""
 msgid "Some items of .SDcols are not column names:"
 msgstr ""
 
+msgid "'(m)get' found in j. ansvars being set to all columns. Use .SDcols or a single j=eval(macro) instead. Both will detect the columns used which is important for efficiency.\nOld ansvars: %s"
+msgstr ""
+
+msgid "New ansvars: %s"
+msgstr ""
+
 msgid "This j doesn't use .SD but .SDcols has been supplied. Ignoring .SDcols. See ?data.table."
 msgstr ""
 
@@ -469,25 +448,10 @@ msgstr ""
 msgid "Cannot assign to an under-allocated recursively indexed list -- L[[i]][,:=] syntax is only valid when i is length 1, but it's length"
 msgstr ""
 
-msgid "Internal error -- item '"
-msgstr ""
-
-msgid "' not found in names of list"
-msgstr ""
-
-msgid "Internal error -- column(s) not found:"
-msgstr ""
-
 msgid "strptime() usage detected and wrapped with as.POSIXct(). This is to minimize the chance of assigning POSIXlt columns, which use 40+ bytes to store one date (versus 8 for POSIXct). Use as.POSIXct() (which will call strptime() as needed internally) to avoid this warning."
 msgstr ""
 
 msgid "' is not found in calling scope. Looking in calling scope because this symbol was prefixed with .. in the j= parameter."
-msgstr ""
-
-msgid "Internal error: xcolAns does not pass checks:"
-msgstr ""
-
-msgid "Internal error: irows is NULL when making join result at R level. Should no longer happen now we use CsubsetDT earlier."
 msgstr ""
 
 msgid "j (the 2nd argument inside [...]) is a single symbol but column name '"
@@ -499,9 +463,6 @@ msgstr ""
 msgid "]. This difference to data.frame is deliberate and explained in FAQ 1.1."
 msgstr ""
 
-msgid "Internal error: j has created a data.table result containing a NULL column"
-msgstr ""
-
 msgid "The column '.N' can't be grouped because it conflicts with the special .N variable. Try setnames(DT,'.N','N') first."
 msgstr ""
 
@@ -511,31 +472,10 @@ msgstr ""
 msgid "logical error. i is not data.table, but mult='all' and 'by'=.EACHI"
 msgstr ""
 
-msgid "Internal error: by= is missing"
-msgstr ""
-
-msgid "Internal error: byindex not the index name"
-msgstr ""
-
-msgid "Internal error: byindex not found"
-msgstr ""
-
 msgid "Unable to optimize call to mean() and could be very slow. You must name 'na.rm' like that otherwise if you do mean(x,TRUE) the TRUE is taken to mean 'trim' which is the 2nd argument of mean. 'trim' is not yet optimized."
 msgstr ""
 
-msgid "Internal error: length(irows)!=length(o__)"
-msgstr ""
-
 msgid "The setkey() normally performed by keyby= has been skipped (as if by= was used) because := is being used together with keyby= but the keyby= contains some expressions. To avoid this warning, use by= instead, or provide existing column names to keyby=."
-msgstr ""
-
-msgid "Internal error: jvnames is length"
-msgstr ""
-
-msgid "but ans is"
-msgstr ""
-
-msgid "and bynames is"
 msgstr ""
 
 msgid "rownames and rownames.value cannot both be used at the same time"
@@ -709,9 +649,6 @@ msgstr ""
 msgid ". Consider skip_absent=TRUE."
 msgstr ""
 
-msgid "Internal error: length(i)!=length(new)"
-msgstr ""
-
 msgid "x has some duplicated column name(s):"
 msgstr ""
 
@@ -817,9 +754,6 @@ msgstr ""
 msgid "). For robustness, no recycling is allowed (other than of length 1 RHS). Consider %in% instead."
 msgstr ""
 
-msgid "Internal error in .isFastSubsettable. Please report to data.table developers"
-msgstr ""
-
 msgid "'on' argument should be a named atomic vector of column names indicating which columns in 'i' should be joined with which columns in 'x'."
 msgstr ""
 
@@ -914,9 +848,6 @@ msgid "Can not cast an empty data.table"
 msgstr ""
 
 msgid "Aggregate function missing, defaulting to 'length'"
-msgstr ""
-
-msgid "Internal error -- empty rhsnames in dcast; please report"
 msgstr ""
 
 msgid "The melt generic in data.table has been passed a"
@@ -1498,15 +1429,6 @@ msgstr ""
 msgid "' which is not supported as a key column type, currently."
 msgstr ""
 
-msgid "Internal error. 'cols' should be character at this point in setkey; please report."
-msgstr ""
-
-msgid "Internal error: index '"
-msgstr ""
-
-msgid "' exists but is invalid"
-msgstr ""
-
 msgid "Use 'if (length(o <- forderv(DT,by))) ...' for efficiency in one step, so you have o as well if not sorted."
 msgstr ""
 
@@ -1609,12 +1531,6 @@ msgstr ""
 msgid "None of the datasets should contain a column named '.seqn'"
 msgstr ""
 
-msgid "'target' and 'current' must both be data.tables"
-msgstr ""
-
-msgid "Internal error: ncol(current)==ncol(target) was checked above"
-msgstr ""
-
 msgid "None of the datasets to compare should contain a column named '.seqn'"
 msgstr ""
 
@@ -1628,9 +1544,6 @@ msgid "Duplicate rows in datasets, numeric columns and ignore.row.order cannot b
 msgstr ""
 
 msgid "Factor columns and ignore.row.order cannot be used with non 0 tolerance argument"
-msgstr ""
-
-msgid "Internal error: factor type mismatch should have been caught earlier"
 msgstr ""
 
 msgid "argument 'fill' ignored, only make sense for type='const'"
@@ -1720,6 +1633,12 @@ msgstr ""
 msgid "Argument 'nan' must be NA or NaN"
 msgstr ""
 
+msgid "Internal error in"
+msgstr ""
+
+msgid "Please report to the data.table issues tracker"
+msgstr ""
+
 msgid "x not boolean"
 msgstr ""
 
@@ -1732,7 +1651,13 @@ msgstr ""
 msgid "not found: ["
 msgstr ""
 
-msgid "Input xts object should not have 'index' column because it would result in duplicate column names. Rename 'index' column in xts or use `keep.rownames=FALSE` and add index manually as another column."
+msgid "keep.rownames must be length 1"
+msgstr ""
+
+msgid "keep.rownames must not be NA"
+msgstr ""
+
+msgid "Input xts object should not have '%s' column because it would result in duplicate column names. Rename '%s' column in xts or use `keep.rownames` to change the index col name."
 msgstr ""
 
 msgid "data.table must have a time based column in first position, use `setcolorder` function to change the order, or see ?timeBased for supported types"

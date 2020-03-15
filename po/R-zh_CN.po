@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: data.table 1.12.5\n"
-"POT-Creation-Date: 2019-12-31 13:02\n"
+"POT-Creation-Date: 2020-03-15 20:35\n"
 "PO-Revision-Date: 2019-11-16 18:37+0800\n"
 "Last-Translator: Xianying Tan <shrektan@126.com>\n"
 "Language-Team: Mandarin\n"
@@ -14,30 +14,14 @@ msgstr ""
 msgid "data.table package loaded. When developing don't load package"
 msgstr "data.table包已载入, 开发时无需载入"
 
-msgid ""
-"Internal error -- difftime objects may not be added to IDate, but Ops "
-"dispatch should have intervened to prevent this"
-msgstr ""
-"内部错误 -- 'difftime'对象可能不能被添加到IDate类型但是正确操作应该防止此行为"
-"发生"
-
 msgid "binary + is not defined for \"IDate\" objects"
 msgstr "没有为\"IDate\" 对象定义的'+'操作"
 
 msgid "can only subtract from \"IDate\" objects"
 msgstr "只能从\"IDate\"对象中减去"
 
-msgid "Internal error: storage mode of IDate is somehow no longer integer"
-msgstr "内部错误： IDate的存储模式不为整型"
-
 msgid "unary - is not defined for \"IDate\" objects"
 msgstr "没有为\"IDate\" 对象定义的一元的'-'操作"
-
-msgid ""
-"Internal error -- difftime objects may not be subtracted from IDate, but Ops "
-"dispatch should have intervened to prevent this"
-msgstr ""
-"内部错误 -- 不能与IDate类型中减去'difftime'对象但是正确操作应该防止此行为发生"
 
 msgid "Valid options for ms are 'truncate',"
 msgstr "'ms'有效的选项为'truncate'"
@@ -351,10 +335,6 @@ msgid "' variable in calling scope for clarity."
 msgstr "这个调用环境里的变量以方便理解"
 
 msgid ""
-"Internal error:  DT[, ..var] should be dealt with by the branch above now."
-msgstr "内部错误: DT[, ..var]应该被分支处理中。"
-
-msgid ""
 "' is not found in calling scope. Looking in calling scope because you set "
 "with=FALSE. Also, please use .. symbol prefix and remove with=FALSE."
 msgstr ""
@@ -386,6 +366,14 @@ msgid ""
 "nomatch."
 msgstr ""
 "not-join '!' 前缀在 i 中存在，但是 nomatch 也被提供了。需要移除nomatch。"
+
+msgid ""
+"Operator := detected in i, the first argument inside DT[...], but is only "
+"valid in the second argument, j. Most often, this happens when forgetting "
+"the first comma (e.g. DT[newvar := 5] instead of DT[ , new_var := 5]). "
+"Please double-check the syntax. Run traceback(), and debugger() to get a "
+"line number."
+msgstr ""
 
 msgid "is not found in calling scope"
 msgstr "不存在调用环境里"
@@ -422,12 +410,6 @@ msgstr ""
 msgid "Attempting to do natural join but no common columns in provided tables"
 msgstr "尝试进行自然连接然而并没有找到表格中相同的列"
 
-msgid "Internal error. Cannot by=.EACHI when joining to a secondary key, yet"
-msgstr "内部错误：目前尚无法对次键使用by=.EACH命令"
-
-msgid "Internal error. irows has length in by=.EACHI"
-msgstr "内部错误：by=.EACHI 中 irows 有长度"
-
 msgid "logical error. i is not a data.table, but 'on' argument is provided."
 msgstr "逻辑错误。当 i 并非一个 data.table时，不应提供'on'参数"
 
@@ -450,9 +432,6 @@ msgid ""
 msgstr ""
 "行。不再允许布尔值 i 循环补齐，尽管这样有些许便利，但会隐藏更多的 bug，得不偿"
 "失。若确实需要循环补齐，请直接使用 rep(...,length=.N)。"
-
-msgid "Internal error: notjoin but byjoin or !integer or nomatch==NA"
-msgstr "内部错误。原因可能为：notjoin 而非 byjoin；非整数；nomatch 为空"
 
 msgid ""
 "with=FALSE together with := was deprecated in v1.9.4 released Oct 2014. "
@@ -508,9 +487,6 @@ msgstr ""
 "包含逗号），或传入一个长度为1，由逗号分隔的列名组成的向量输入 ?data.table查看"
 "其他的选项。"
 
-msgid "Internal error: irows isn't integer"
-msgstr "内部错误：irows 不是整型"
-
 msgid ""
 "'by' appears to evaluate to column names but isn't c() or key(). Use "
 "by=list(...) if you can. Otherwise, by=eval"
@@ -548,12 +524,6 @@ msgid ""
 msgstr ""
 "在'by'或'keyby'列表中的项长度为 %s。每一项的长度须均为%d，即应与 x （或经 i "
 "筛选后的子集）中所包含行数相同。"
-
-msgid "Internal error: drop_dot passed"
-msgstr "内部错误：drop_dot 传入的参数有"
-
-msgid "items"
-msgstr "项"
 
 msgid "Item %d of the .() or list() passed to j is missing"
 msgstr "传递给j的 .() 或 list()中第%d项缺失"
@@ -593,6 +563,16 @@ msgstr ".SDcols 应为列数或是列名"
 
 msgid "Some items of .SDcols are not column names:"
 msgstr ".SDcols 中的部份项目不是列名:"
+
+msgid ""
+"'(m)get' found in j. ansvars being set to all columns. Use .SDcols or a "
+"single j=eval(macro) instead. Both will detect the columns used which is "
+"important for efficiency.\n"
+"Old ansvars: %s"
+msgstr ""
+
+msgid "New ansvars: %s"
+msgstr "新的 ansvars: %s"
 
 msgid ""
 "This j doesn't use .SD but .SDcols has been supplied. Ignoring .SDcols. See ?"
@@ -648,15 +628,6 @@ msgstr ""
 "无法指定配置不足的递归索引列表-- L[[i]][,:=] 语法只有在 i 长度为1时有效，但它"
 "的長度"
 
-msgid "Internal error -- item '"
-msgstr "内部错误 -- 项目 '"
-
-msgid "' not found in names of list"
-msgstr "' 未能在名称列表中找到"
-
-msgid "Internal error -- column(s) not found:"
-msgstr "内部错误 -- 找不到此列:"
-
 msgid ""
 "strptime() usage detected and wrapped with as.POSIXct(). This is to minimize "
 "the chance of assigning POSIXlt columns, which use 40+ bytes to store one "
@@ -674,16 +645,6 @@ msgstr ""
 "' 未能在调用范围 (calling scope) 中找到，请查看调用范围因为  j= 的参数以 .. "
 "作为前缀"
 
-msgid "Internal error: xcolAns does not pass checks:"
-msgstr "内部错误 : xcolAns 无法通过检查:"
-
-msgid ""
-"Internal error: irows is NULL when making join result at R level. Should no "
-"longer happen now we use CsubsetDT earlier."
-msgstr ""
-"内部错误 : 在 R 生成连接结果时，irows为 NULL 我们已使用了 CsubsetDT，现在不应"
-"该再发生了"
-
 msgid "j (the 2nd argument inside [...]) is a single symbol but column name '"
 msgstr "j ( [...] 中的第二顺位参数) 是单个符号而列名 '"
 
@@ -693,10 +654,6 @@ msgstr "' 未被找到，也许你打算 DT[, .."
 msgid ""
 "]. This difference to data.frame is deliberate and explained in FAQ 1.1."
 msgstr "] ，在FAQ 1.1 中有解释dat.table与data.frame的差别"
-
-msgid ""
-"Internal error: j has created a data.table result containing a NULL column"
-msgstr "内部错误 : j 创建了一个有列为 NULL 的 data.table"
 
 msgid ""
 "The column '.N' can't be grouped because it conflicts with the special .N "
@@ -715,15 +672,6 @@ msgstr ""
 msgid "logical error. i is not data.table, but mult='all' and 'by'=.EACHI"
 msgstr "逻辑错误: i 不是data.table，但 mult='all' 及 'by'=.EACHI"
 
-msgid "Internal error: by= is missing"
-msgstr "内部错误 : 缺少 by="
-
-msgid "Internal error: byindex not the index name"
-msgstr "内部错误 : byindex 不是索引名称"
-
-msgid "Internal error: byindex not found"
-msgstr "内部错误 : 找不到 byindex"
-
 msgid ""
 "Unable to optimize call to mean() and could be very slow. You must name 'na."
 "rm' like that otherwise if you do mean(x,TRUE) the TRUE is taken to mean "
@@ -732,9 +680,6 @@ msgstr ""
 "无法优化对 mean() 的调用，这可能导致运行非常缓慢您必须使用 na.rm=TRUE，否则如"
 "果您直接使用 mean(x,TRUE)会被认定为 trim=TRUE，trim 是 mean() 中尚未被优化的"
 "第二顺位参数"
-
-msgid "Internal error: length(irows)!=length(o__)"
-msgstr "内部错误：length(irows)!=length(o__)"
 
 msgid ""
 "The setkey() normally performed by keyby= has been skipped (as if by= was "
@@ -745,15 +690,6 @@ msgstr ""
 "因为`:=`与`keyby=`一起使用且`keyby=`含有表达式, 所以代码跳过了一般`keyby=`会"
 "执行的`setkey()` -- 代码只执行了`by=`。若要避免此警告, 请使用`by=`, 或者提供"
 "`keyby=`现有的列名"
-
-msgid "Internal error: jvnames is length"
-msgstr "内部错误:jvnames 是长度"
-
-msgid "but ans is"
-msgstr "但是ans(答案)是"
-
-msgid "and bynames is"
-msgstr "同时bynames是"
 
 msgid "rownames and rownames.value cannot both be used at the same time"
 msgstr "rownames和rownames.value 不能同时使用"
@@ -958,9 +894,6 @@ msgstr "在列名中未找到 'old' 有关项"
 msgid ". Consider skip_absent=TRUE."
 msgstr "尝试 skip_absent=TRUE"
 
-msgid "Internal error: length(i)!=length(new)"
-msgstr "内部错误:length(i)!=length(new)"
-
 msgid "x has some duplicated column name(s):"
 msgstr "x 有多个重复列名:"
 
@@ -1108,10 +1041,6 @@ msgstr ""
 "环。考虑改用 %in% 。"
 
 msgid ""
-"Internal error in .isFastSubsettable. Please report to data.table developers"
-msgstr ".isFastSubsettable 产生了内部错误。请向 data.table 开发者报告"
-
-msgid ""
 "'on' argument should be a named atomic vector of column names indicating "
 "which columns in 'i' should be joined with which columns in 'x'."
 msgstr ""
@@ -1230,9 +1159,6 @@ msgstr "无法转换一个空的data.table"
 
 msgid "Aggregate function missing, defaulting to 'length'"
 msgstr "聚合函数缺失，将默认采用'length'"
-
-msgid "Internal error -- empty rhsnames in dcast; please report"
-msgstr "内部错误：dcast 中 rhsnames 为空；请报告"
 
 msgid "The melt generic in data.table has been passed a"
 msgstr "data.table 中的 melt 泛型函数被传递了"
@@ -2079,17 +2005,6 @@ msgid "' which is not supported as a key column type, currently."
 msgstr "目前不是一种被支持的列类型"
 
 msgid ""
-"Internal error. 'cols' should be character at this point in setkey; please "
-"report."
-msgstr "内部错误： 目前在setkey中，'cols'应该是字符类型, 请报告"
-
-msgid "Internal error: index '"
-msgstr "内部错误：索引"
-
-msgid "' exists but is invalid"
-msgstr "存在但无效"
-
-msgid ""
 "Use 'if (length(o <- forderv(DT,by))) ...' for efficiency in one step, so "
 "you have o as well if not sorted."
 msgstr ""
@@ -2216,12 +2131,6 @@ msgstr "' 然而 y 中对应的项是：'"
 msgid "None of the datasets should contain a column named '.seqn'"
 msgstr "所有的数据集都不应该包含名为 '.seqn' 的列"
 
-msgid "'target' and 'current' must both be data.tables"
-msgstr "'target' 和 'current' 都必须是 data.table"
-
-msgid "Internal error: ncol(current)==ncol(target) was checked above"
-msgstr "内部错误：ncol(current)==ncol(target) 之前已经检查"
-
 msgid "None of the datasets to compare should contain a column named '.seqn'"
 msgstr "所有参与比较的数据集都不应该包含名为 '.seqn' 的列"
 
@@ -2248,9 +2157,6 @@ msgid ""
 "Factor columns and ignore.row.order cannot be used with non 0 tolerance "
 "argument"
 msgstr "因子列和 ignore.row.order 都不能与非 0 的容差（tolerance）参数同时使用"
-
-msgid "Internal error: factor type mismatch should have been caught earlier"
-msgstr "内部错误：此时不匹配的因子类型应已被发现"
 
 msgid "argument 'fill' ignored, only make sense for type='const'"
 msgstr "参数 'fill' 将被忽略，因其仅当 type='const'时有意义"
@@ -2344,6 +2250,12 @@ msgstr "参数 'nan' 的长度必须为 1"
 msgid "Argument 'nan' must be NA or NaN"
 msgstr "参数 'nan' 必须为 NA 或 NaN"
 
+msgid "Internal error in"
+msgstr "内部错误在"
+
+msgid "Please report to the data.table issues tracker"
+msgstr "请将此问题汇报给 data.table 问题追踪器。"
+
 msgid "x not boolean"
 msgstr "x并非布尔值"
 
@@ -2363,13 +2275,19 @@ msgstr "Pattern"
 msgid "not found: ["
 msgstr "未找到: ["
 
-msgid ""
-"Input xts object should not have 'index' column because it would result in "
-"duplicate column names. Rename 'index' column in xts or use `keep."
-"rownames=FALSE` and add index manually as another column."
+msgid "keep.rownames must be length 1"
+msgstr "keep.rownames 的长度必须为 1"
+
+msgid "keep.rownames must not be NA"
 msgstr ""
-"输入的xts对象不能含有'index'列，因这会导致出现重复的列名。请尝试重新命名xts中"
-"的'index'列或者使用`keep.rownames=FALSE`并手动添加index为另外的列"
+
+msgid ""
+"Input xts object should not have '%s' column because it would result in "
+"duplicate column names. Rename '%s' column in xts or use `keep.rownames` to "
+"change the index col name."
+msgstr ""
+"输入的xts对象不能含有'%s'列，因这会导致出现重复的列名。请尝试重新命名xts中"
+"的'%s'列或者使用`keep.rownames=FALSE`并手动添加index为另外的列"
 
 msgid ""
 "data.table must have a time based column in first position, use "
