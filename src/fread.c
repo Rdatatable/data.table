@@ -1222,12 +1222,12 @@ int freadMain(freadMainArgs _args) {
         STOP(_("file not found: %s"), fnam); // # nocov
       struct stat stat_buf;
       if (fstat(fd, &stat_buf) == -1) {
-        close(fd);                                                     // # nocov
+        close(fd);                                                        // # nocov
         STOP(_("Opened file ok but couldn't obtain its size: %s"), fnam); // # nocov
       }
       fileSize = (size_t) stat_buf.st_size;
       if (fileSize == 0) {
-        close(fd);
+        close(fd);                          // # nocov
         STOP(_("File is empty: %s"), fnam); // # nocov
       }
       if (verbose) DTPRINT(_("  File opened, size = %s.\n"), filesize_to_str(fileSize));
