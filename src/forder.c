@@ -1283,7 +1283,7 @@ SEXP fsorted(SEXP x)
   const int n = length(x);
   if (n <= 1) return(ScalarLogical(TRUE));
   if (!isVectorAtomic(x))
-    STOP(_("is.sorted (R level) and fsorted (C level) only to be used on vectors. If needed on a list/data.table, you'll need the order anyway if not sorted, so use if (length(o<-forder(...))) for efficiency in one step, or equivalent at C level"));
+    STOP(_("Internal error: is.sorted (R level) and fsorted (C level) only to be used on vectors. If needed on a list/data.table, you'll need the order anyway if not sorted, so use if (length(o<-forder(...))) for efficiency in one step, or equivalent at C level")); // # nocov
   int i=1;
   switch(TYPEOF(x)) {
   case INTSXP : case LGLSXP : {
@@ -1325,13 +1325,13 @@ SEXP isOrderedSubset(SEXP x, SEXP nrowArg)
 // Ignores 0s but heeds NAs and any out-of-range (which result in NA)
 {
   if (!isNull(x) && !isInteger(x))
-    error(_("x must be either NULL or an integer vector"));
+    error(_("Internal error: x must be either NULL or an integer vector")); // # nocov
   if (length(x)<=1) return(ScalarLogical(TRUE));  // a single NA when length(x)==1 is ordered (e.g. tests 128 & 130) otherwise anyNA => FALSE
   if (!isInteger(nrowArg) || LENGTH(nrowArg)!=1)
-    error(_("nrow must be integer vector length 1"));
+    error(_("Internal error: nrow must be integer vector length 1")); // # nocov
   const int nrow = INTEGER(nrowArg)[0];
   if (nrow<0)
-    error(_("nrow==%d but must be >=0"), nrow);
+    error(_("Internal error: nrow==%d but must be >=0"), nrow); // # nocov
   const int *xd = INTEGER(x), xlen=LENGTH(x);
   for (int i=0, last=INT_MIN; i<xlen; ++i) {
     int elem = xd[i];

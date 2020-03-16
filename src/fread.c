@@ -1219,7 +1219,7 @@ int freadMain(freadMainArgs _args) {
     #ifndef WIN32
       int fd = open(fnam, O_RDONLY);
       if (fd==-1)
-        STOP(_("file not found: %s"),fnam);
+        STOP(_("file not found: %s"), fnam); // # nocov
       struct stat stat_buf;
       if (fstat(fd, &stat_buf) == -1) {
         close(fd);                                                     // # nocov
@@ -1228,7 +1228,7 @@ int freadMain(freadMainArgs _args) {
       fileSize = (size_t) stat_buf.st_size;
       if (fileSize == 0) {
         close(fd);
-        STOP(_("File is empty: %s"), fnam);
+        STOP(_("File is empty: %s"), fnam); // # nocov
       }
       if (verbose) DTPRINT(_("  File opened, size = %s.\n"), filesize_to_str(fileSize));
 
@@ -1798,7 +1798,7 @@ int freadMain(freadMainArgs _args) {
       type =    (int8_t *)realloc(type,    (size_t)tt * sizeof(int8_t));
       tmpType = (int8_t *)realloc(tmpType, (size_t)tt * sizeof(int8_t));
       if (!type || !tmpType)
-        STOP(_("Failed to realloc 2 x %d bytes for type and tmpType: %s"), tt, strerror(errno));
+        STOP(_("Failed to realloc 2 x %d bytes for type and tmpType: %s"), tt, strerror(errno)); // # nocov
       for (int j=ncol; j<tt; j++) { tmpType[j] = type[j] = type0; }
       ncol = tt;
     }
@@ -1950,7 +1950,7 @@ int freadMain(freadMainArgs _args) {
   rowSize8 = 0;
   size = (int8_t *)malloc((size_t)ncol * sizeof(int8_t));  // TODO: remove size[] when we implement Pasha's idea to += size inside processor
   if (!size)
-    STOP(_("Failed to allocate %d bytes for size array: %s"), ncol, strerror(errno));
+    STOP(_("Failed to allocate %d bytes for size array: %s"), ncol, strerror(errno)); // # nocov
   nStringCols = 0;
   nNonStringCols = 0;
   for (int j=0; j<ncol; j++) {

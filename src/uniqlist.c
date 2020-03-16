@@ -273,7 +273,7 @@ SEXP nestedid(SEXP l, SEXP cols, SEXP order, SEXP grps, SEXP resetvals, SEXP mul
     error(_("Internal error: nrows[%d]>0 but ngrps==0"), nrows); // # nocov
   R_len_t resetctr=0, rlen = length(resetvals) ? INTEGER(resetvals)[0] : 0;
   if (!isInteger(cols) || ncols == 0)
-    error(_("cols must be an integer vector of positive length"));
+    error(_("Internal error: cols must be an integer vector of positive length")); // # nocov
   // mult arg
   enum {ALL, FIRST, LAST} mult = ALL;
   if (!strcmp(CHAR(STRING_ELT(multArg, 0)), "all")) mult = ALL;

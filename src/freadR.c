@@ -349,10 +349,10 @@ bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, const int 
       UNPROTECT(1); // typeEnum_idx
     } else {
       if (!isNewList(colClassesSxp))
-        STOP(_("colClasses is type '%s' but should be list or character"), type2char(TYPEOF(colClassesSxp)));
+        STOP(_("Internal error: colClasses is type '%s' but should be list or character"), type2char(TYPEOF(colClassesSxp)));
       SEXP listNames = PROTECT(getAttrib(colClassesSxp, R_NamesSymbol));  // rchk wanted this protected
       if (!length(listNames))
-        STOP(_("colClasses is type list but has no names"));
+        STOP(_("Internal error: colClasses is type list but has no names"));
       SEXP typeEnum_idx = PROTECT(chmatch(listNames, typeRName_sxp, NUT));
 
       int *selectRankD = NULL, rank = 1;
