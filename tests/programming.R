@@ -73,3 +73,24 @@ f(
     out_col_name = "sum_x"
   )
 )
+
+# data.table i, j, by
+d = data.table(a = 2:1, b = 1:4)
+d[var3%in%values, .(var1 = f(var2)), by=var3,
+  env=list(var1="res", var2="b", f="sum", var3="a", values=0:3),
+  verbose=TRUE]
+
+# data.table symbols and chars
+d = data.table(a = c("b","a"), b = 1:4)
+d[var3%in%values, .(var1 = f(var2)), keyby=var3,
+  env=list(var1="res", var2="b", f="sum", var3="a", values=I(c("a","b","c"))),
+  verbose=TRUE]
+d[var3%in%values, .(var1 = f(var2)), keyby=var3,
+  env=I(list(var1=as.name("res"), var2=as.name("b"), f=as.name("sum"), var3=as.name("a"), values=c("a","b","c"))),
+  verbose=TRUE]
+
+# test that AsIs class removed
+class(substitute2(var3%in%values, list(var3="a", values=I(c("a","b","c"))))[[3L]]) == "character"
+class(substitute2(var3%in%values, I(list(var3=as.name("a"), values=c("a","b","c"))))[[3L]]) == "character"
+class(substitute2(var3%in%values, list(var3="a", values=I(1:3)))[[3L]]) == "integer"
+class(substitute2(var3%in%values, I(list(var3=as.name("a"), values=c(1:3))))[[3L]]) == "integer"
