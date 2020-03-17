@@ -105,3 +105,9 @@ class(substitute2(var3%in%values, I(list(var3=as.name("a"), values=c(1:3))))[[3L
 # char.as.name=TRUE but env is AsIs
 #TODO
 #remove char.as.name arg from API and keep I() interface only?
+
+# get and mget use cases
+#TODO
+
+# use DT[, var, env=list(var=quote(.(sum_x=sum(x)))] rather than dt[, eval(var)]?
+#TODO
