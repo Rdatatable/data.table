@@ -1,4 +1,8 @@
-substitute2 = function(expr, env, char.as.name=FALSE, sub.names=TRUE) {
+is.AsIs = function(x) {
+  inherits(x, "AsIs")
+}
+
+substitute2 = function(expr, env, char.as.name=!is.AsIs(env), sub.names=TRUE) {
   if (missing(env)) {
     stop("TODO")
   } else if (is.environment(env)) {
@@ -13,17 +17,26 @@ substitute2 = function(expr, env, char.as.name=FALSE, sub.names=TRUE) {
     stop("'env' argument has an zero char names")
   }
   if (isTRUE(char.as.name)) {
+    asis = vapply(env, is.AsIs, FALSE)
     char = vapply(env, is.character, FALSE)
-    if (any(char)) {
-      if (any(non.scalar.char <- lengths(env[char])!=1L)) {
-        stop("'char.as.name' was used but the following character elements provided in 'env' are not scalar: ",
+    toname = !asis & char
+    if (any(toname)) {
+      lens = vapply(env, length, 0L)
+      if (any(non.scalar.char <- lens[toname]!=1L)) {
+        stop("'char.as.name' was used but the following character objects provided in 'env' are not scalar, if you need them as character vector rather a name, then use 'I' function: ",
              paste(names(non.scalar.char)[non.scalar.char], collapse=", "))
       }
-      env[char] = lapply(env[char], as.name)
+      env[toname] = lapply(env[toname], as.name)
     }
   }
-  expr.sub = eval(substitute(substitute(expr, env)))
+  # R substitute
+  expr.sub = eval(substitute(
+    substitute(.expr, env),
+    env = list(.expr = substitute(expr))
+  ))
+  # new arg names substitute
   if (isTRUE(sub.names)) {
+    #cat("entering substitute_call_arg_namesR\n")
     .Call(Csubstitute_call_arg_namesR, expr.sub, env)
   } else {
     expr.sub
