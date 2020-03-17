@@ -4,7 +4,7 @@ is.AsIs = function(x) {
 
 substitute2 = function(expr, env, char.as.name=!is.AsIs(env), sub.names=TRUE) {
   if (missing(env)) {
-    stop("TODO")
+    stop("TODO, as of now 'env' should not be missing")
   } else if (is.environment(env)) {
     env = as.list(env, all.names=TRUE) ## todo: try to use environment rather than list
   } else if (!is.list(env)) {

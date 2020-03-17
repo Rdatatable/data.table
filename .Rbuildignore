@@ -25,6 +25,7 @@
 ^.*\.Rproj$
 ^\.Rproj\.user$
 ^\.idea$
+^\.libs$
 
 ^.*\.dll$
 

@@ -1,9 +1,7 @@
-if (exists("cc")) { ## dev mode
-  cc()
-} else {
-  library(data.table)
-  substitute2 = data.table:::substitute2
-}
+library(data.table)
+substitute2 = data.table:::substitute2
+
+# cc() ## dev mode
 
 # simple
 substitute2(list(var = val), env = list(var="my_var", val=5L))
@@ -13,13 +11,19 @@ substitute2(list(var = val), env = list(var="my_var", val=I("my_val")))
 substitute2(list(var = val), env = I(list(var=as.name("my_var"), val="my_val")))
 
 # test non-scalar char
-substitute2(list(var = val), env = list(var="my_var", val=c("a","b")))
+try(
+  substitute2(list(var = val), env = list(var="my_var", val=c("a","b")))
+)
 substitute2(list(var = val), env = list(var="my_var", val=I(c("a","b"))))
 substitute2(list(var = val), env = I(list(var=as.name("my_var"), val=c("a","b"))))
 
 # test non-symbol
-substitute2(list(var = val), env = list(var=I("my_var"), val="my_val"))
-substitute2(list(var = val), env = I(list(var="my_var", val="my_val")))
+try(
+  substitute2(list(var = val), env = list(var=I("my_var"), val="my_val"))
+)
+try(
+  substitute2(list(var = val), env = I(list(var="my_var", val="my_val")))
+)
 
 # complex use case
 substitute2(
@@ -94,3 +98,10 @@ class(substitute2(var3%in%values, list(var3="a", values=I(c("a","b","c"))))[[3L]
 class(substitute2(var3%in%values, I(list(var3=as.name("a"), values=c("a","b","c"))))[[3L]]) == "character"
 class(substitute2(var3%in%values, list(var3="a", values=I(1:3)))[[3L]]) == "integer"
 class(substitute2(var3%in%values, I(list(var3=as.name("a"), values=c(1:3))))[[3L]]) == "integer"
+
+# NA tests, especially NA_character_
+#TODO
+
+# char.as.name=TRUE but env is AsIs
+#TODO
+#remove char.as.name arg from API and keep I() interface only?
