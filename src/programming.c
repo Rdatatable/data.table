@@ -12,8 +12,11 @@ static void substitute_call_arg_names(SEXP expr, SEXP env) {
       int i = 0;
       for (SEXP tmp=expr; tmp!=R_NilValue; tmp=CDR(tmp)) {
         if (imatches[i]) {
-          //Rprintf("substitute names: %s -> %s\n", CHAR(expr_arg_names[i]), CHAR(PRINTNAME(env_sub[imatches[i]-1]))); // debug
-          SET_TAG(tmp, env_sub[imatches[i]-1]);
+          SEXP sym = env_sub[imatches[i]-1];
+          if (!isSymbol(sym))
+            error("Attempting to substitute '%s' element with object of type '%s' but it has to be symbol type when substituting name of the call argument, functions 'as.name' and 'I' can be used to work out proper substitution, see ?substitute2", CHAR(STRING_ELT(arg_names, i)), type2char(TYPEOF(sym)));
+          //Rprintf("substitute names: %s -> %s\n", CHAR(expr_arg_names[i]), CHAR(PRINTNAME(sym))); // debug
+          SET_TAG(tmp, sym);
         }
         i++;
         substitute_call_arg_names(CADR(tmp), env); // substitute arg names in child calls

@@ -19,14 +19,13 @@ substitute2 = function(expr, env, char.as.name=!is.AsIs(env), sub.names=TRUE) {
   if (isTRUE(char.as.name)) {
     asis = vapply(env, is.AsIs, FALSE)
     char = vapply(env, is.character, FALSE)
-    toname = !asis & char
-    if (any(toname)) {
-      lens = vapply(env, length, 0L)
-      if (any(non.scalar.char <- lens[toname]!=1L)) {
+    to.name = !asis & char
+    if (any(to.name)) {
+      if (any(non.scalar.char <- vapply(env[to.name], length, 0L)!=1L)) {
         stop("'char.as.name' was used but the following character objects provided in 'env' are not scalar, if you need them as character vector rather a name, then use 'I' function: ",
              paste(names(non.scalar.char)[non.scalar.char], collapse=", "))
       }
-      env[toname] = lapply(env[toname], as.name)
+      env[to.name] = lapply(env[to.name], as.name)
     }
   }
   # R substitute

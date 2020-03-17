@@ -9,8 +9,17 @@ if (exists("cc")) { ## dev mode
 substitute2(list(var = val), env = list(var="my_var", val=5L))
 
 # AsIs way to handle char.to.name argument
-substitute2(list(var = val), env = I(list(var=as.name("my_var"), val="my_val")))
 substitute2(list(var = val), env = list(var="my_var", val=I("my_val")))
+substitute2(list(var = val), env = I(list(var=as.name("my_var"), val="my_val")))
+
+# test non-scalar char
+substitute2(list(var = val), env = list(var="my_var", val=c("a","b")))
+substitute2(list(var = val), env = list(var="my_var", val=I(c("a","b"))))
+substitute2(list(var = val), env = I(list(var=as.name("my_var"), val=c("a","b"))))
+
+# test non-symbol
+substitute2(list(var = val), env = list(var=I("my_var"), val="my_val"))
+substitute2(list(var = val), env = I(list(var="my_var", val="my_val")))
 
 # complex use case
 substitute2(
