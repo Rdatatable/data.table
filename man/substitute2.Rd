@@ -1,6 +1,9 @@
 \name{substitute2}
 \alias{substitute2}
+\alias{substitute}
 \alias{is.AsIs}
+\alias{AsIs}
+\alias{I}
 \title{ Substitute expression }
 \description{
   Experimental, more robust version of base R \code{\link[base]{substitute}} function. \code{is.AsIs} is a helper function to check if \code{x} inherits from \emph{AsIs} class.

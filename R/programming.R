@@ -8,13 +8,17 @@ substitute2 = function(expr, env, char.as.name=!is.AsIs(env), sub.names=TRUE) {
   } else if (is.environment(env)) {
     env = as.list(env, all.names=TRUE) ## todo: try to use environment rather than list
   } else if (!is.list(env)) {
-    stop("'env' must be a list of an environment")
+    stop("'env' must be a list or an environment")
   }
   env.names = names(env)
   if (is.null(env.names)) {
     stop("'env' argument does not have names")
   } else if (!all(nzchar(env.names))) {
-    stop("'env' argument has an zero char names")
+    stop("'env' argument has zero char names")
+  } else if (anyNA(env.names)) {
+    stop("'env' argument has NA names")
+  } else if (anyDuplicated(env.names)) {
+    stop("'env' argument has duplicated names")
   }
   if (isTRUE(char.as.name)) {
     asis = vapply(env, is.AsIs, FALSE)
@@ -22,15 +26,18 @@ substitute2 = function(expr, env, char.as.name=!is.AsIs(env), sub.names=TRUE) {
     to.name = !asis & char
     if (any(to.name)) { ## turns "my_name" character scalar into `my_name` symbol, for convenience
       if (any(non.scalar.char <- vapply(env[to.name], length, 0L)!=1L)) {
-        stop("'char.as.name' was used but the following character objects provided in 'env' are not scalar, if you need them as character vector rather a name, then use 'I' function: ",
+        stop("'char.as.name' was used but the following character objects provided in 'env' are not scalar objects, if you need them as character vector rather a name, then use 'I' function: ",
              paste(names(non.scalar.char)[non.scalar.char], collapse=", "))
       }
       env[to.name] = lapply(env[to.name], as.name)
-      env[asis] = lapply(env[asis], function(x) {  ## removes any AsIs class
+    }
+    if (any(asis)) {
+      rm.AsIs = function(x) { ## removes any AsIs class
         cl = oldClass(x)
         oldClass(x) = cl[cl!="AsIs"]
         x
-      })
+      }
+      env[asis] = lapply(env[asis], rm.AsIs)
     }
   }
   # R substitute
@@ -40,7 +47,6 @@ substitute2 = function(expr, env, char.as.name=!is.AsIs(env), sub.names=TRUE) {
   ))
   # new arg names substitute
   if (isTRUE(sub.names)) {
-    #cat("entering substitute_call_arg_namesR\n")
     .Call(Csubstitute_call_arg_namesR, expr.sub, env)
   } else {
     expr.sub

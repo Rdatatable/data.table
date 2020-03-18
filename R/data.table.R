@@ -232,7 +232,7 @@ replace_dot_alias = function(e) {
         substitute2(.j, env),
         list(.j = substitute(j))
       ))
-      if (verbose) cat("Argument 'j' after substitute: ", paste(deparse(jsub, width.cutoff=500L), collapse=" "), "\n", sep="")
+      if (verbose) cat("Argument 'j'  after substitute: ", paste(deparse(jsub, width.cutoff=500L), collapse=" "), "\n", sep="")
     }
     jsub = replace_dot_alias(jsub)
     root = if (is.call(jsub)) as.character(jsub[[1L]])[1L] else ""
@@ -317,7 +317,7 @@ replace_dot_alias = function(e) {
         substitute2(.i, env),
         list(.i = substitute(i))
       ))
-      if (verbose) cat("Argument 'i' after substitute: ", paste(deparse(isub, width.cutoff=500L), collapse=" "), "\n", sep="")
+      if (verbose) cat("Argument 'i'  after substitute: ", paste(deparse(isub, width.cutoff=500L), collapse=" "), "\n", sep="")
     }
     xo = NULL
     if (identical(isub, NA)) {
