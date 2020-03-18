@@ -3,11 +3,10 @@
 \alias{is.AsIs}
 \title{ Substitute expression }
 \description{
-  Experimental, improved version of base R \code{\link[base]{substitute}} function. \code{is.AsIs} is just a helper function to check if \code{x} inherits \emph{AsIs} class.
+  Experimental, more robust version of base R \code{\link[base]{substitute}} function. \code{is.AsIs} is a helper function to check if \code{x} inherits from \emph{AsIs} class.
 }
 \usage{
 substitute2(expr, env, char.as.name=!is.AsIs(env), sub.names=TRUE)
-
 is.AsIs(x)
 }
 \arguments{
@@ -25,7 +24,12 @@ Quoted expression having variables substituted.
 }
 \seealso{ \code{\link[base]{substitute}}, \code{\link[base]{I}} }
 \examples{
-substitute2 = data.table:::substitute2
+## base R substitute vs substitute2
+substitute(var1, list(var1 = "c1"))
+substitute2(var1, list(var1 = I("c1")))
+
+substitute(var1, list(var1 = as.name("c1")))
+substitute(var1, list(var1 = "c1"))
 
 substitute(list(var1 = var2), list(var1 = "c1", var2 = 5L))
 substitute2(list(var1 = var2), list(var1 = "c1", var2 = 5L))

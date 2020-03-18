@@ -1,5 +1,4 @@
 library(data.table)
-substitute2 = data.table:::substitute2
 
 # cc() ## dev mode
 
