@@ -822,7 +822,11 @@ replace_dot_alias = function(e) {
         if (!is.list(byval)) stop("'by' or 'keyby' must evaluate to a vector or a list of vectors (where 'list' includes data.table and data.frame which are lists, too)")
         if (length(byval)==1L && is.null(byval[[1L]])) bynull=TRUE #3530 when by=(function()NULL)()
         if (!bynull) for (jj in seq_len(length(byval))) {
-          if (!typeof(byval[[jj]]) %chin% ORDERING_TYPES) stop("column or expression ",jj," of 'by' or 'keyby' is type ",typeof(byval[[jj]]),". Do not quote column names. Usage: DT[,sum(colC),by=list(colA,month(colB))]")
+          if (!(this_type <- typeof(byval[[jj]])) %chin% ORDERING_TYPES) {
+            if (this_type == 'list')
+              stop(gettextf("Column or expression %d of 'by' or 'keyby' is a list. In data.table, aggregation requires sorting by the grouping key, and lists can't be sorted in general. If you don't care about sort order, you might try converting the list to a string representation which can be sorted, e.g.  by = sapply(list_col, toString).", jj, domain="R-data.table"), domain = NA)
+            stop(gettextf("Column or expression %d of 'by' or 'keyby' is type '%s'. In data.table, aggregation requires sorting by the grouping key, and our internals don't support this type. If you have a compelling use case, please file an issue to support this type; as a workaround, consider converting the column to a sortable type (e.g. character), taking care to maintain distinctness in the process.", jj, this_type, domain="R-data.table"), domain=NA)
+          }
         }
         tt = vapply_1i(byval,length)
         if (any(tt!=xnrow)) stop(gettextf("The items in the 'by' or 'keyby' list are length(s) (%s). Each must be length %d; the same length as there are rows in x (after subsetting if i is provided).", paste(tt, collapse=","), xnrow, domain='R-data.table'))

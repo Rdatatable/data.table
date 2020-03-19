@@ -145,6 +145,8 @@ unit = "s")
 
 7. Added more explanation/examples to `?data.table` for how to use `.BY`, [#1363](https://github.com/Rdatatable/data.table/issues/1363).
 
+8. Improved the error message for attempting to group by a `list` column, [#4308](https://github.com/Rdatatable/data.table/issues/4308). Thanks @sindribaldur for reaching out about the unclear message. We don't offer `by=list_column` support because grouping in `data.table` requires sorting, and sort order on lists is not well-defined. Other frameworks accomplish group-by-list by doing equality comparisons (e.g. with hashing) and sorting arbitrarily; please add your support and use case in related issue [#1597](https://github.com/Rdatatable/data.table/issues/1597) if your work would benefit substantially from this.
+
 
 # data.table [v1.12.8](https://github.com/Rdatatable/data.table/milestone/15?closed=1)  (09 Dec 2019)
 
