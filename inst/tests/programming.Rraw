@@ -5,6 +5,7 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
 } else {
   require(data.table)
   test = data.table:::test
+  is.AsIs = data.table:::is.AsIs
 }
 
 # AsIs
@@ -86,11 +87,6 @@ test(2.93, substitute2(.(v), list(1L, 2L)), error="'env' argument does not have 
 test(2.94, substitute2(.(v), structure(list(1L,2L), names=c("","v"))), error="'env' argument has zero char names")
 test(2.95, substitute2(.(v), structure(list(1,2), names=c(NA,"v"))), error="'env' argument has NA names")
 test(2.96, substitute2(.(v), list(v=1,v=2)), error="'env' argument has duplicated names")
-
-# char.as.name=TRUE but env is AsIs ## TODO consider removing `char.as.name` arg from API and keep I() interface only
-#TODO
-# sub.names escape, fall back to R substitute ## TODO consider removing `sub.names` arg from API and document to use base R substitute instead
-test(2.99, substitute2(list(nm = v), list(nm = "new_name", v = "col"), sub.names=FALSE), quote(list(nm = col)))
 
 # substitute2 re-use inside another function
 f = function(expr, env) {

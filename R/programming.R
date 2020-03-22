@@ -2,7 +2,7 @@ is.AsIs = function(x) {
   inherits(x, "AsIs")
 }
 
-substitute2 = function(expr, env, char.as.name=!is.AsIs(env), sub.names=TRUE) {
+substitute2 = function(expr, env) {
   if (missing(env)) {
     stop("TODO, as of now 'env' should not be missing")
   } else if (is.environment(env)) {
@@ -20,7 +20,7 @@ substitute2 = function(expr, env, char.as.name=!is.AsIs(env), sub.names=TRUE) {
   } else if (anyDuplicated(env.names)) {
     stop("'env' argument has duplicated names")
   }
-  if (isTRUE(char.as.name)) {
+  if (!is.AsIs(env)) {
     asis = vapply(env, is.AsIs, FALSE)
     char = vapply(env, is.character, FALSE)
     to.name = !asis & char
@@ -45,10 +45,6 @@ substitute2 = function(expr, env, char.as.name=!is.AsIs(env), sub.names=TRUE) {
     substitute(.expr, env),
     env = list(.expr = substitute(expr))
   ))
-  # new arg names substitute
-  if (isTRUE(sub.names)) {
-    .Call(Csubstitute_call_arg_namesR, expr.sub, env)
-  } else {
-    expr.sub
-  }
+  # call arg names substitute
+  .Call(Csubstitute_call_arg_namesR, expr.sub, env)
 }
