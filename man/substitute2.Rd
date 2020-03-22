@@ -4,7 +4,7 @@
 \alias{I}
 \title{ Substitute expression }
 \description{
-  Experimental, more robust version of base R \code{\link[base]{substitute}}.
+  Experimental, more robust and more user-friendly version of base R \code{\link[base]{substitute}}.
 }
 \usage{
 substitute2(expr, env)
@@ -14,7 +14,7 @@ substitute2(expr, env)
 \item{env}{ Environment or a list from which variables will be taken to inject into \code{expr}. }
 }
 \details{
-  By default function will turn any character objects into symbols. In case character is of length 2 or more, it will raise an error. Behaviour can be changed by wrapping \code{env} into \code{\link[base]{I}} call. In such a case any symbols must be explicitly created, for example using \code{as.name} function. Alternatively it is possible to wrap single elements of \code{env} into \code{\link[base]{I}} call, then only those elements will retain their original class. See examples below.
+  Function will turn any character elements of \code{env} argument into symbols. In case character is of length 2 or more, it will raise an error. Behaviour can be changed by wrapping \code{env} into \code{\link[base]{I}} call. In such case any symbols must be explicitly created, for example using \code{as.name} function. Alternatively it is possible to wrap elements of \code{env} into \code{\link[base]{I}} call, not the whole list, then only those elements will retain their original class.
 }
 \value{
 Quoted expression having variables substituted.
@@ -49,7 +49,7 @@ if (getRversion() >= "4.0.0") {
   substitute2(lapply(some_list, sum), list(some_list = some_list))
 }
 
-## using substitute2 from inside a function
+## using substitute2 from another function
 f = function(expr, env) {
   eval(substitute(
     substitute2(.expr, env),
