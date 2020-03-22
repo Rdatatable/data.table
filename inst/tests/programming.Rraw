@@ -68,15 +68,28 @@ test(2.36, class(qc[[3L]]), "AsIs")
 qc = substitute2(var3%in%values, I(list(var3="a", values=I(1:3))))
 test(2.37, qc, substitute("a" %in% .v, list(.v=I(1:3))))
 test(2.38, class(qc[[3L]]), "AsIs")
-# substitute2 non-scalar char
+# substitute2 non-scalar char as name
 test(2.41, substitute2(list(var = val), env = list(var="my_var", val=c("a","b"))), error="are not scalar")
 test(2.42, substitute2(list(var = val), env = list(var="my_var", val=I(c("a","b")))), substitute(list(my_var=.v), list(.v=c("a","b")))) ## note that quote(list(my_var=c("a","b")))) will not work because 'c("a","b")' will be a 'language' class (a 'c()' call), but we need to have it as 'character' class instead
 test(2.43, substitute2(list(var = val), env = I(list(var=as.name("my_var"), val=c("a","b")))), substitute(list(my_var=.v), list(.v=c("a","b"))))
-# substitute2 non-symbol as name
+# substitute2 non-symbol
 test(2.44, substitute2(list(var = val), env = list(var=I("my_var"), val="my_val")), error="type 'character' but it has to be 'symbol'")
 test(2.45, substitute2(list(var = val), env = I(list(var="my_var", val="my_val"))), error="type 'character' but it has to be 'symbol'")
 test(2.46, substitute2(.(v1=v2), list(v1=1L, v2=2L)), error="type 'integer' but it has to be 'symbol'")
 test(2.47, substitute2(.(v1=v2), list(v1=FALSE, v2=2L)), error="type 'logical' but it has to be 'symbol'")
+# substitute2 NA_character_ becomes valid 'NA' name
+test(2.48, substitute2(.(v1 = v2), list(v1 = NA_character_, v2 = NA_character_, "." = "list")), quote(list(`NA` = `NA`)))
+qc = substitute2(.(v1 = v2), list(v1 = NA_character_, v2 = I(NA_character_), "." = "list"))
+test(2.49, qc, quote(list(`NA` = NA_character_)))
+test(2.50, eval(qc), list("NA" = NA_character_))
+# substitute2 duplicate matches
+test(2.51, substitute2(list(v1=v2, v1=v2), env=list(v1="nm",v2=2L,v3=3L)), quote(list(nm = 2L, nm = 2L)))
+test(2.52, substitute2(list(v1=v2, v1=v3), env=list(v1="nm",v2=2L,v3=3L)), quote(list(nm = 2L, nm = 3L)))
+# substitute2 nested unnamed call
+test(2.53, substitute2(c(list(v1=v2, v1=v2)), env=list(v1="nm",v2=2L,v3=3L)), quote(c(list(nm = 2L, nm = 2L))))
+test(2.54, substitute2(c(list(v1=v2, v1=v3)), env=list(v1="nm",v2=2L,v3=3L)), quote(c(list(nm = 2L, nm = 3L))))
+# TODO substitute2 during join
+
 # substitute2 env as environment class
 env = as.environment(list(v=1L, .v=2L))
 test(2.81, substitute2(.(v, .v), env), quote(.(1L, 2L)))
@@ -143,8 +156,28 @@ test(4.032, as.logical(grep("Argument 'by' after substitute: a", out, fixed=TRUE
 test(4.033, as.logical(grep("Argument 'j'  after substitute: .(res = sum(b))", out, fixed=TRUE)), TRUE)
 test(4.034, as.logical(grep("Argument 'i'  after substitute: a %in% c(\"b\", \"c\")", out, fixed=TRUE)), TRUE)
 
+# TODO special symbols
+#".SD"
+#".N", ".EACHI"
+#I(list(j=as.name(".SD")))
+#I(list(j=as.name(".N"), by=as.name(".EACHI")))
+
 # get and mget use cases
-#TODO
+d = as.data.table(lapply(1:5, rep, 2L))
+setnames(d, paste0("c",1:5))
+v1 = "c1"; v2 = "c2"; v3 = "c3"; v4 = "c4"; v5 = "c5"
+### TODO report/review get-mget issues
+## note that d[, get(v1)] is wrong here, it translates to d[, c1] while it should be d[, "c1"]
+## d[, mget(v1)] is handling that fine, compare both! might have been used for convenience but it breaks consistency
+test(4.051, d[, v1, env=list(v1=v1)], c(1L,1L))                          ## symbol c1
+test(4.052, d[, v1, env=list(v1=I(v1))], data.table(c1=c(1L,1L)))        ## character "c1"
+test(4.053, d[, v1, env=list(v1=I(v1))], d[, mget(v1)])                  ## character "c1", works against mget only
+test(4.054, d[, v1v2, env=list(v1v2=I(c(v1,v2)))], d[, mget(c(v1, v2))]) ## character c("c1","c2")
+test(4.055, d[, .(v1), env=list(v1=v1)], data.table(c1=c(1L,1L)))                        ## d[, .(get(v1))] - (m)get would return unnamed columns
+test(4.056, d[, .(v1, v2), env=list(v1=v1, v2=v2)], data.table(c1=c(1L,1L),c2=c(2L,2L))) ## d[, .(get(v1), get(v2))]
+test(4.057, d[, .(sum(v1)), env=list(v1=v1)], d[, .(sum(get(v1)))])
+test(4.058, d[, lapply(vN, sum), env=list(vN=substitute2(list(v1=v1, v3=v3), list(v1=v1, v3=v3)))], d[, lapply(mget(c(v1,v3)), sum)])
+test(4.059, d[, c(list(c1=c1, c2=c2), list(v3=v3), list(v4=v4, v5=v5)), env=list(v3=v3,v4=v4,v5=v5)], d) ## d[, c(list(c1, c2), list(get(v3)), mget(c(v4,v5)))] - some are unnamed
 
 # use DT[, var, env=list(var=quote(.(sum_x=sum(x)))] rather than dt[, eval(var)]?
 #TODO

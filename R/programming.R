@@ -1,6 +1,11 @@
 is.AsIs = function(x) {
   inherits(x, "AsIs")
 }
+rm.AsIs = function(x) {
+  cl = oldClass(x)
+  oldClass(x) = cl[cl!="AsIs"]
+  x
+}
 
 substitute2 = function(expr, env) {
   if (missing(env)) {
@@ -26,17 +31,12 @@ substitute2 = function(expr, env) {
     to.name = !asis & char
     if (any(to.name)) { ## turns "my_name" character scalar into `my_name` symbol, for convenience
       if (any(non.scalar.char <- vapply(env[to.name], length, 0L)!=1L)) {
-        stop("'char.as.name' was used but the following character objects provided in 'env' are not scalar objects, if you need them as character vector rather a name, then use 'I' function: ",
+        stop("Character objects provided in 'env' are not scalar objects, if you need them as character vector rather than a name, then use wrap it into 'I' call: ",
              paste(names(non.scalar.char)[non.scalar.char], collapse=", "))
       }
       env[to.name] = lapply(env[to.name], as.name)
     }
     if (any(asis)) {
-      rm.AsIs = function(x) { ## removes any AsIs class
-        cl = oldClass(x)
-        oldClass(x) = cl[cl!="AsIs"]
-        x
-      }
       env[asis] = lapply(env[asis], rm.AsIs)
     }
   }
