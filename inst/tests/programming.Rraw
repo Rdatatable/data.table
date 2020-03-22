@@ -331,13 +331,9 @@ exp = as.data.table(list(
 ))
 test(102.05, cor_dt, exp)
 cor_xy3 = function(xdt, ydt, x, y) { ## cor matrix of existing columns and dynamically in-place merged columns
-  # still can't easily program without constructing a call
-  xdt[ydt, `:=`(
-    y1 = y1,
-    y5 = y5,
-    y10 = y10,
-    y20 = y20
-  ), on = .(symbol, date)]
+  qc = as.call(lapply(setNames(c(":=", ycols), c("",ycols)), as.name))
+  xdt[ydt, j, on = .(symbol, date),
+      env = list(j=qc)]
   on.exit(xdt[, (ycols) := NULL])
   xdt[, cor(.SD), .SDcols = c(x, y)]
 }
