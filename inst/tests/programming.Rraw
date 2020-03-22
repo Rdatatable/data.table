@@ -6,6 +6,7 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
   require(data.table)
   test = data.table:::test
   is.AsIs = data.table:::is.AsIs
+  rm.AsIs = data.table:::rm.AsIs
 }
 
 # AsIs
@@ -19,6 +20,10 @@ test(1.07, is.AsIs(structure(list(NULL), class="an_S3")), FALSE) ## S3
 test(1.08, is.AsIs(I(structure(list(NULL), class="an_S3"))), TRUE)
 test(1.09, is.AsIs(getClass("MethodDefinition")), FALSE) ## S4
 test(1.10, is.AsIs(I(getClass("MethodDefinition"))), TRUE)
+test(1.11, is.AsIs(rm.AsIs(1L)), FALSE)
+test(1.12, is.AsIs(rm.AsIs(I(1L))), FALSE)
+test(1.13, is.AsIs(rm.AsIs(list(1L))), FALSE)
+test(1.14, is.AsIs(rm.AsIs(I(list(1L)))), FALSE)
 
 # substitute2 simple
 test(2.01, substitute2(list(var = val), env = list(var="my_var", val=5L)), quote(list(my_var = 5L)))
@@ -142,33 +147,35 @@ out = capture.output(ans <- d[var3%in%values, .(var1 = f(var2)), keyby=var3,
 test(4.02, ans, data.table(a=c("a","b"), res=c(6L,4L), key="a"))
 out = grep("Argument.*substitute", out, value=TRUE)
 test(4.021, length(out), 3L) # we expect i, j, by only here, ensure about that
-test(4.022, as.logical(grep("Argument 'by' after substitute: a", out, fixed=TRUE)), TRUE)
-test(4.023, as.logical(grep("Argument 'j'  after substitute: .(res = sum(b))", out, fixed=TRUE)), TRUE)
-test(4.024, as.logical(grep("Argument 'i'  after substitute: a %in% c(\"a\", \"b\", \"c\")", out, fixed=TRUE)), TRUE)
+test(4.022, "Argument 'by' after substitute: a" %in% out, TRUE)
+test(4.023, "Argument 'j'  after substitute: .(res = sum(b))" %in% out, TRUE)
+test(4.024, "Argument 'i'  after substitute: a %in% c(\"a\", \"b\", \"c\")" %in% out, TRUE)
 out = capture.output(ans <- d[var3%in%values, .(var1 = f(var2)), keyby=var3,
   env=I(list(var1=as.name("res"), var2=as.name("b"), f=as.name("sum"), var3=as.name("a"), values=c("b","c"))),
   verbose=TRUE])
-out = grep("Argument.*substitute", out, value=TRUE)
 test(4.03, ans, data.table(a=c("b"), res=c(4L), key="a"))
+out = grep("Argument.*substitute", out, value=TRUE)
 test(4.031, length(out), 3L)
-test(4.032, as.logical(grep("Argument 'by' after substitute: a", out, fixed=TRUE)), TRUE)
-test(4.033, as.logical(grep("Argument 'j'  after substitute: .(res = sum(b))", out, fixed=TRUE)), TRUE)
-test(4.034, as.logical(grep("Argument 'i'  after substitute: a %in% c(\"b\", \"c\")", out, fixed=TRUE)), TRUE)
+test(4.032, "Argument 'by' after substitute: a" %in% out, TRUE)
+test(4.033, "Argument 'j'  after substitute: .(res = sum(b))" %in% out, TRUE)
+test(4.034, "Argument 'i'  after substitute: a %in% c(\"b\", \"c\")" %in% out, TRUE)
 # substitute2 during join
 d1 = data.table(id1=1:4, v1=5)
 d2 = data.table(id1=c(0L,2:3), v1=6)
 out = capture.output(ans <- d1[d2, on="id1<=id1", .(c1, c2, c3, c4), env=list(c1="x.id1", c2="i.id1", c3="x.v1", c4="i.v1"), verbose=TRUE])
-out = grep("Argument.*substitute", out, value=TRUE)
 test(4.041, ans, data.table(x.id1=c(NA,1:2,1:3), i.id1=c(0L,2L,2L,3L,3L,3L), x.v1=c(NA,rep(5,5)), i.v1=rep(6,6)))
-test(4.042, as.logical(grep("Argument 'j'  after substitute: .(x.id1, i.id1, x.v1, i.v1)", out, fixed=TRUE)), TRUE)
+out = grep("Argument.*substitute", out, value=TRUE)
+test(4.042, length(out), 2L) ## 2L because i is non-missing attempt to substitute is made
+test(4.043, "Argument 'j'  after substitute: .(x.id1, i.id1, x.v1, i.v1)" %in% out, TRUE)
 d1 = data.table(id1=c(2L,4L,2L,4L), v1=5)
 d2 = data.table(id1=c(0L,2:3), v1=6)
 out = capture.output(ans <- d1[dd, on="id1<=id1", .(sum(c3), sum(c4)), by=by, env=list(dd="d2", c3="x.v1", c4="i.v1", by=".EACHI"), verbose=TRUE])
+test(4.044, ans, data.table(id1=c(0L,2L,3L), V1=c(NA,10,10), V2=c(6,6,6)))
 out = grep("Argument.*substitute", out, value=TRUE)
-test(4.043, ans, data.table(id1=c(0L,2L,3L), V1=c(NA,10,10), V2=c(6,6,6)))
-test(4.044, as.logical(grep("Argument 'by' after substitute: .EACHI", out, fixed=TRUE)), TRUE)
-test(4.045, as.logical(grep("Argument 'j'  after substitute: .(sum(x.v1), sum(i.v1))", out, fixed=TRUE)), TRUE)
-test(4.046, as.logical(grep("Argument 'i'  after substitute: d2", out, fixed=TRUE)), TRUE)
+test(4.045, length(out), 3L)
+test(4.046, "Argument 'by' after substitute: .EACHI" %in% out, TRUE)
+test(4.047, "Argument 'j'  after substitute: .(sum(x.v1), sum(i.v1))" %in% out, TRUE)
+test(4.048, "Argument 'i'  after substitute: d2" %in% out, TRUE)
 # substitute special symbols
 d = data.table(V1=1:2, V2=1:4)
 test(4.051, d[, j, by, env=list(j=".N", by="V1")], data.table(V1=c(1L,2L), N=c(2L,2L)))
