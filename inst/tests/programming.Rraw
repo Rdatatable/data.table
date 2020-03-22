@@ -186,9 +186,6 @@ test(4.054, d[, .(op, fun(col)), by=by, env=list(op=".N", fun="sum", col="V2", b
 d = as.data.table(lapply(1:5, rep, 2L))
 setnames(d, paste0("c",1:5))
 v1 = "c1"; v2 = "c2"; v3 = "c3"; v4 = "c4"; v5 = "c5"
-### TODO report/review get-mget issues
-## note that d[, get(v1)] is wrong here, it translates to d[, c1] while it should be d[, "c1"]
-## d[, mget(v1)] is handling that fine, compare both! might have been used for convenience but it breaks consistency
 test(4.061, d[, v1, env=list(v1=v1)], c(1L,1L))                          ## symbol c1
 test(4.062, d[, v1, env=list(v1=I(v1))], data.table(c1=c(1L,1L)))        ## character "c1"
 test(4.063, d[, v1, env=list(v1=I(v1))], d[, mget(v1)])                  ## character "c1", works against mget only
@@ -198,9 +195,26 @@ test(4.066, d[, .(v1, v2), env=list(v1=v1, v2=v2)], data.table(c1=c(1L,1L),c2=c(
 test(4.067, d[, .(sum(v1)), env=list(v1=v1)], d[, .(sum(get(v1)))])
 test(4.068, d[, lapply(vN, sum), env=list(vN=substitute2(list(v1=v1, v3=v3), list(v1=v1, v3=v3)))], d[, lapply(mget(c(v1,v3)), sum)])
 test(4.069, d[, c(list(c1=c1, c2=c2), list(v3=v3), list(v4=v4, v5=v5)), env=list(v3=v3,v4=v4,v5=v5)], d) ## d[, c(list(c1, c2), list(get(v3)), mget(c(v4,v5)))] - some are unnamed
+# addresses: weird exception when by contains get #1985
+tb = data.table(x=c(1,2), y=c(3,4), z=c(5,6), w=c("a","b"))
+test(4.101, tb[w != "b", .(x=sum(x)), by=.(y, zz=.z), env=list(.z="z")], data.table(y=3, zz=5, x=1))
+dtIris = as.data.table(iris)
+speciesVar = "Species"
+test(4.102, dtIris[Sepal.Length > 4, .N, by = .(var = .speciesVar, Petal.Width), env = list(.speciesVar = speciesVar)], dtIris[Sepal.Length > 4, .N, by = .(var = Species, Petal.Width)])
 
 # use DT[, var, env=list(var=quote(.(sum_x=sum(x)))] rather than dt[, eval(var)]?
 #TODO
+#2432 Add Programmable NSE
+#1180 eval doesn't work on join columns
+#dt1 = data.table(a = 1, key = 'a')
+#dt2 = data.table(a = 1, b = list(quote(5*a)), key = 'a')
+#this works:
+#dt1[dt2][, eval(b[[1]], .SD)]
+##[1] 5
+# this doesn't (but should produce exact same result as above)
+#dt1[dt2, eval(b[[1]], .SD)]
+#Error in eval(b[[1]], .SD) : object 'b' not found
+#dt1[dt2, eval(b[[1]], mget(names(dt2)))]
 
 # contributed use cases
 # renkun-ken
