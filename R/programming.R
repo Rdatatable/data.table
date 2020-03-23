@@ -9,11 +9,16 @@ rm.AsIs = function(x) {
 
 substitute2 = function(expr, env) {
   if (missing(env)) {
-    stop("TODO, as of now 'env' should not be missing")
+    stop("'env' must not be missing")
+  } else if (is.null(env)) {
+    # null is fine, will be escaped few lines below
   } else if (is.environment(env)) {
     env = as.list(env, all.names=TRUE) ## todo: try to use environment rather than list
   } else if (!is.list(env)) {
     stop("'env' must be a list or an environment")
+  }
+  if (!length(env)) {
+    return(substitute(expr))
   }
   env.names = names(env)
   if (is.null(env.names)) {

@@ -98,8 +98,11 @@ test(2.54, substitute2(c(list(v1=v2, v1=v3)), env=list(v1="nm",v2=2L,v3=3L)), qu
 # substitute2 env as environment class
 env = as.environment(list(v=1L, .v=2L))
 test(2.81, substitute2(.(v, .v), env), quote(.(1L, 2L)))
-# substitute2 invalid 'env' error coverage
-test(2.91, substitute2(.()), error="TODO, as of now 'env' should not be missing") ## TODO
+# substitute2 env various corner cases
+test(2.901, substitute2(.(v), NULL), quote(.(v)))
+test(2.902, substitute2(.(v), list()), quote(.(v)))
+test(2.903, substitute2(.(v), emptyenv()), quote(.(v)))
+test(2.91, substitute2(.()), error="'env' must not be missing")
 test(2.92, substitute2(v, c(v=1L)), error="'env' must be a list or an environment")
 test(2.93, substitute2(.(v), list(1L, 2L)), error="'env' argument does not have names")
 test(2.94, substitute2(.(v), structure(list(1L,2L), names=c("","v"))), error="'env' argument has zero char names")
