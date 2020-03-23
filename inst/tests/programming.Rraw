@@ -1,3 +1,4 @@
+#grep -Enr "#[0-9]" programming.Rraw
 require(methods)
 if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
   if ((tt<-compiler::enableJIT(-1))>0)
@@ -176,6 +177,15 @@ test(4.045, length(out), 3L)
 test(4.046, "Argument 'by' after substitute: .EACHI" %in% out, TRUE)
 test(4.047, "Argument 'j'  after substitute: .(sum(x.v1), sum(i.v1))" %in% out, TRUE)
 test(4.048, "Argument 'i'  after substitute: d2" %in% out, TRUE)
+dt1 = data.table(x = letters[1:5], y = 1:5)
+dt2 = data.table(x = letters[1:3], y = 11:13)
+target_v = "y"
+source_v = paste0("i.", target_v)
+on_v = "x"
+out = capture.output(invisible(dt1[dt2, target_v := source_v, on = on_v, env = list(target_v = target_v, source_v = source_v), verbose=TRUE]))
+out = grep("Argument.*substitute", out, value=TRUE)
+test(4.049, length(out), 2L)
+test(4.050, dt1, data.table(x = c("a", "b", "c", "d", "e"), y = c(11L, 12L, 13L, 4L, 5L)))
 # substitute special symbols
 d = data.table(V1=1:2, V2=1:4)
 test(4.051, d[, j, by, env=list(j=".N", by="V1")], data.table(V1=c(1L,2L), N=c(2L,2L)))
