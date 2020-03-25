@@ -11,10 +11,18 @@ substitute2(expr, env)
 }
 \arguments{
 \item{expr}{ Unevaluated expression in which substitution has to take place. }
-\item{env}{ Environment or a list from which variables will be taken to inject into \code{expr}. }
+\item{env}{ List or an environment from which variables will be taken to inject into \code{expr}. }
 }
 \details{
-  Function will turn any character elements of \code{env} argument into symbols. In case character is of length 2 or more, it will raise an error. Behaviour can be changed by wrapping \code{env} into \code{\link[base]{I}} call. In such case any symbols must be explicitly created, for example using \code{as.name} function. Alternatively it is possible to wrap elements of \code{env} into \code{\link[base]{I}} call, not the whole list, then only those elements will retain their original class.
+  Function will turn any character elements of \code{env} argument into symbols. In case character is of length 2 or more, it will raise an error. Behaviour can be changed by wrapping \code{env} into \code{\link[base]{I}} call. In such case any symbols must be explicitly created, for example using \code{as.name} function. Alternatively it is possible to wrap elements of \code{env} into \code{\link[base]{I}} call individually, not the whole list, then only those elements will retain their original class.
+
+Comparing to base R \code{\link[base]{substitute}}, \code{substitute2} function:
+\enumerate{
+\item substitutes calls argument names as well.
+\item automatically converts character elements of \code{env} argument to symbols.
+\item does not accept missing \code{env} argument.
+\item evaluates \code{env} argument.
+}
 }
 \value{
 Quoted expression having variables substituted.

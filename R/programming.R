@@ -13,7 +13,7 @@ substitute2 = function(expr, env) {
   } else if (is.null(env)) {
     # null is fine, will be escaped few lines below
   } else if (is.environment(env)) {
-    env = as.list(env, all.names=TRUE) ## todo: try to use environment rather than list
+    env = as.list(env, all.names=TRUE) ## todo: try to use environment rather than list, then we don't have to evaluate env at start, see test 2.80
   } else if (!is.list(env)) {
     stop("'env' must be a list or an environment")
   }
@@ -36,7 +36,7 @@ substitute2 = function(expr, env) {
     to.name = !asis & char
     if (any(to.name)) { ## turns "my_name" character scalar into `my_name` symbol, for convenience
       if (any(non.scalar.char <- vapply(env[to.name], length, 0L)!=1L)) {
-        stop("Character objects provided in 'env' are not scalar objects, if you need them as character vector rather than a name, then use wrap it into 'I' call: ",
+        stop("Character objects provided in 'env' are not scalar objects, if you need them as character vector rather than a name, then use wrap each into 'I' call: ",
              paste(names(non.scalar.char)[non.scalar.char], collapse=", "))
       }
       env[to.name] = lapply(env[to.name], as.name)

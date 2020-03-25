@@ -96,8 +96,20 @@ test(2.53, substitute2(c(list(v1=v2, v1=v2)), env=list(v1="nm",v2=2L,v3=3L)), qu
 test(2.54, substitute2(c(list(v1=v2, v1=v3)), env=list(v1="nm",v2=2L,v3=3L)), quote(c(list(nm = 2L, nm = 3L))))
 
 # substitute2 env as environment class
-env = as.environment(list(v=1L, .v=2L))
-test(2.81, substitute2(.(v, .v), env), quote(.(1L, 2L)))
+e = as.environment(list(v=1L, .v=2L))
+test(2.81, substitute2(.(v, .v), e), quote(.(1L, 2L)))
+# unline in base R substitute, the env arg is always evaluated
+e = new.env()
+delayedAssign("a_promise", stop("I am the error"), assign.env=e)
+e$x = 5L
+promises = function(env) {
+  f = function(x, env) eval(substitute(substitute(.x, env), list(.x=x)))
+  sym = lapply(setNames(nm=ls(env)), as.name)
+  lapply(sym, f, env)
+}
+test(2.820, promises(e), list(a_promise=quote(stop("I am the error")), x=5L))
+test(2.821, substitute(x + 1L, e), quote(5L + 1L))
+test(2.822, substitute2(x + 1L, e), error="I am the error", ignore.warning="restarting interrupted promise evaluation")
 # substitute2 env various corner cases
 test(2.901, substitute2(.(v), NULL), quote(.(v)))
 test(2.902, substitute2(.(v), list()), quote(.(v)))
@@ -199,9 +211,9 @@ test(4.054, d[, .(op, fun(col)), by=by, env=list(op=".N", fun="sum", col="V2", b
 d = as.data.table(lapply(1:5, rep, 2L))
 setnames(d, paste0("c",1:5))
 v1 = "c1"; v2 = "c2"; v3 = "c3"; v4 = "c4"; v5 = "c5"
-test(4.061, d[, v1, env=list(v1=v1)], c(1L,1L))                          ## symbol c1
+test(4.061, d[, v1, env=list(v1=v1)], d[, get(v1)])                      ## symbol c1
 test(4.062, d[, v1, env=list(v1=I(v1))], data.table(c1=c(1L,1L)))        ## character "c1"
-test(4.063, d[, v1, env=list(v1=I(v1))], d[, mget(v1)])                  ## character "c1", works against mget only
+test(4.063, d[, list(v1), env=list(v1=v1)], d[, mget(v1)])               ## symbol c1 in list
 test(4.064, d[, v1v2, env=list(v1v2=I(c(v1,v2)))], d[, mget(c(v1, v2))]) ## character c("c1","c2")
 test(4.065, d[, .(v1), env=list(v1=v1)], data.table(c1=c(1L,1L)))                        ## d[, .(get(v1))] - (m)get would return unnamed columns
 test(4.066, d[, .(v1, v2), env=list(v1=v1, v2=v2)], data.table(c1=c(1L,1L),c2=c(2L,2L))) ## d[, .(get(v1), get(v2))]
@@ -246,7 +258,10 @@ dat = data.table(x_one=1:10, x_two=1:10, y_one=1:10, y_two=1:10)
 f = function(vars) as.call(c(as.name("list"), lapply(setNames(vars, paste(vars,"out",sep="_")), function(var) substitute2(one-two, list(one=paste(var,"one",sep="_"), two=paste(var,"two",sep="_"))))))
 test(4.111, dat[, j, env=list(j = f(c("x","y")))], dat[, list(x_out = x_one - x_two, y_out = y_one - y_two)])
 
+#######################
 # contributed use cases
+#######################
+
 # renkun-ken
 dt = as.data.table(list( ## RNGversion("3.5.0"); set.seed(108); round(numeric(), 4)
   symbol = c(1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 2L, 2L, 2L, 2L, 2L, 2L, 2L, 2L, 2L, 2L, 3L, 3L, 3L, 3L, 3L, 3L, 3L, 3L, 3L, 3L),
