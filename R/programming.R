@@ -13,7 +13,7 @@ substitute2 = function(expr, env) {
   } else if (is.null(env)) {
     # null is fine, will be escaped few lines below
   } else if (is.environment(env)) {
-    env = as.list(env, all.names=TRUE) ## todo: try to use environment rather than list, then we don't have to evaluate env at start, see test 2.80
+    env = as.list(env, all.names=TRUE) ## todo: try to use environment rather than list, then we don't have to evaluate env at start, see test 2.822
   } else if (!is.list(env)) {
     stop("'env' must be a list or an environment")
   }
