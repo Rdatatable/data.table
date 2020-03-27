@@ -21,7 +21,7 @@ Comparing to base R \code{\link[base]{substitute}}, \code{substitute2} function:
 \item substitutes calls argument names as well.
 \item automatically converts character elements of \code{env} argument to symbols.
 \item does not accept missing \code{env} argument.
-\item evaluates \code{env} argument.
+\item evaluates elements of \code{env} argument.
 }
 }
 \value{

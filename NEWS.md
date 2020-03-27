@@ -81,6 +81,37 @@ unit = "s")
 
 14. Added support for `round()` and `trunc()` to extend functionality of `ITime`. `round()` and `trunc()` can be used with argument units: "hours" or "minutes". Thanks to @JensPederM for the suggestion and PR.
 
+15. New interface for _programming on data.table_ has been added. It is built using base R `substitute`-like interface via new `env` argument to `[.data.table`. For details of substitution see new vignette *programming on data.table* and `?substitute2` manual.
+
+```r
+DT = data.table(x = 1:5, y = 5:1)
+
+# parameters
+in_col_name = "x"
+fun = "sum"
+fun_arg1 = "na.rm"
+fun_arg1val = TRUE
+out_col_name = "sum_x"
+
+# parametrized query
+#DT[, .(out_col_name = fun(in_col_name, fun_arg1=fun_arg1val))]
+
+# desired query
+DT[, .(sum_x = sum(x, na.rm=TRUE))]
+
+# new interface
+DT[, .(out_col_name = fun(in_col_name, fun_arg1=fun_arg1val)),
+  env = list(
+    in_col_name = "x",
+    fun = "sum",
+    fun_arg1 = "na.rm",
+    fun_arg1val = TRUE,
+    out_col_name = "sum_x"
+  )]
+```
+
+Addresses [#2655](https://github.com/Rdatatable/data.table/issues/2655) any many other linked issues. Thanks to numerous users for filling requests for a better flexibility in parametrizing data.table queries.
+
 ## BUG FIXES
 
 1. A NULL timezone on POSIXct was interpreted by `as.IDate` and `as.ITime` as UTC rather than the session's default timezone (`tz=""`) , [#4085](https://github.com/Rdatatable/data.table/issues/4085).
