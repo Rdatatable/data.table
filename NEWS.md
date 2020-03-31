@@ -93,7 +93,7 @@ fun_arg1 = "na.rm"
 fun_arg1val = TRUE
 out_col_name = "sum_x"
 
-# parametrized query
+# parameterized query
 #DT[, .(out_col_name = fun(in_col_name, fun_arg1=fun_arg1val))]
 
 # desired query
@@ -110,7 +110,7 @@ DT[, .(out_col_name = fun(in_col_name, fun_arg1=fun_arg1val)),
   )]
 ```
 
-Addresses [#2655](https://github.com/Rdatatable/data.table/issues/2655) any many other linked issues. Thanks to numerous users for filling requests for a better flexibility in parametrizing data.table queries.
+Addresses [#2655](https://github.com/Rdatatable/data.table/issues/2655) any many other linked issues. Thanks to numerous users for filling requests for a better flexibility in parameterizing data.table queries.
 
 ## BUG FIXES
 
