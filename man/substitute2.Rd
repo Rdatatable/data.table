@@ -4,30 +4,34 @@
 \alias{I}
 \title{ Substitute expression }
 \description{
-  Experimental, more robust and more user-friendly version of base R \code{\link[base]{substitute}}.
+  Experimental, more robust, and more user-friendly version of base R \code{\link[base]{substitute}}.
 }
 \usage{
-substitute2(expr, env)
+  substitute2(expr, env)
 }
 \arguments{
-\item{expr}{ Unevaluated expression in which substitution has to take place. }
-\item{env}{ List or an environment from which variables will be taken to inject into \code{expr}. }
+  \item{expr}{ Unevaluated expression in which substitution has to take place. }
+  \item{env}{ List, or an environment that will be coerced to list, from which variables will be taken to inject into \code{expr}. }
 }
 \details{
-  Function will turn any character elements of \code{env} argument into symbols. In case character is of length 2 or more, it will raise an error. Behaviour can be changed by wrapping \code{env} into \code{\link[base]{I}} call. In such case any symbols must be explicitly created, for example using \code{as.name} function. Alternatively it is possible to wrap elements of \code{env} into \code{\link[base]{I}} call individually, not the whole list, then only those elements will retain their original class.
+  For convenience function will turn any character elements of \code{env} argument into symbols. In case if character is of length 2 or more, it will raise an error. It will also turn any list elements into list calls instead. Behaviour can be changed by wrapping \code{env} into \code{\link[base]{I}} call. In such case any symbols must be explicitly created, for example using \code{as.name} function. Alternatively it is possible to wrap particular elements of \code{env} into \code{\link[base]{I}} call, then only those elements will retain their original class.
 
-Comparing to base R \code{\link[base]{substitute}}, \code{substitute2} function:
+  Comparing to base R \code{\link[base]{substitute}}, \code{substitute2} function:
 \enumerate{
-\item substitutes calls argument names as well.
-\item automatically converts character elements of \code{env} argument to symbols.
-\item does not accept missing \code{env} argument.
-\item evaluates elements of \code{env} argument.
+  \item substitutes calls argument names as well
+  \item by default converts character elements of \code{env} argument to symbols
+  \item by default converts list elements of \code{env} argument to list calls
+  \item does not accept missing \code{env} argument
+  \item evaluates elements of \code{env} argument
 }
+}
+\note{
+  Conversion of \emph{character to symbol} and \emph{list to list call} works recursively for each list element in \code{env} list. If this behaviour is not desired for your use case, we would like to hear about that via our issue tracker. For the present moment there is an option to disable that: \code{options(datatable.enlist=FALSE)}. This option is provided only for debugging and will be removed in future. Please do not write code that depends on it, but use \code{\link[base]{I}} calls instead.
 }
 \value{
-Quoted expression having variables substituted.
+  Quoted expression having variables and call argument names substituted.
 }
-\seealso{ \code{\link[base]{substitute}}, \code{\link[base]{I}} }
+\seealso{ \code{\link[base]{substitute}}, \code{\link[base]{I}}, \code{\link[base]{call}}, \code{\link[base]{name}}, \code{\link[base]{eval}} }
 \examples{
 ## base R substitute vs substitute2
 substitute(list(var1 = var2), list(var1 = "c1", var2 = 5L))
@@ -43,19 +47,23 @@ substitute2(var1, list(var1 = "c1")) ## turn character into symbol, for convenie
 substitute2(list(var1 = var2), list(var1 = "c1", var2 = I("some_character")))
 substitute2(list(var1 = var2), I(list(var1 = as.name("c1"), var2 = "some_character")))
 
-## character to symbol coerce will not be done for character stored inside a list
-substitute2(lapply(some_list, sum), list(some_list = list("V1","V2")))
-## those has to be substituted before
-some_list = substitute2(list(v1, v2), list(v1="V1", v2="V2"))
-substitute2(lapply(some_list, sum), list(some_list = some_list))
-## in case of a character list of arbitrary length
-some_list = as.call(lapply(c("list", c("V1","V2")), as.name))
-substitute2(lapply(some_list, sum), list(some_list = some_list))
-## or from R 4.0.0 also bquote splice functionality
-if (getRversion() >= "4.0.0") {
-  some_list = bquote(list(..(lapply(c("V1","V2"), as.name))), splice=TRUE)
-  substitute2(lapply(some_list, sum), list(some_list = some_list))
-}
+## list elements are enlist'ed into list calls
+(cl1 = substitute(f(lst), list(lst = list(1L, 2L))))
+(cl2 = substitute2(f(lst), I(list(lst = list(1L, 2L)))))
+(cl3 = substitute2(f(lst), list(lst = I(list(1L, 2L)))))
+(cl4 = substitute2(f(lst), list(lst = quote(list(1L, 2L)))))
+(cl5 = substitute2(f(lst), list(lst = list(1L, 2L))))
+cl1[[2L]] ## base R substitute with list element
+cl2[[2L]] ## same
+cl3[[2L]] ## same
+cl4[[2L]] ## desired
+cl5[[2L]] ## automatically
+
+## character to name and list into list calls works recursively
+(cl1 = substitute2(f(lst), list(lst = list(1L, list(2L)))))
+(cl2 = substitute2(f(lst), I(list(lst = list(1L, list(2L)))))) ## unless I() used
+last(cl1[[2L]]) ## enlisted recursively
+last(cl2[[2L]]) ## AsIs
 
 ## using substitute2 from another function
 f = function(expr, env) {
