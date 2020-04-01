@@ -77,7 +77,7 @@ as.list.IDate = function(x, ...) NextMethod()
 round.IDate = function (x, digits=c("weeks", "months", "quarters", "years"), ...) {
   units = match.arg(digits)
   as.IDate(switch(units,
-          weeks  = round(x, "year") + 7L * (yday(x) %/% 7L),
+          weeks  = round(x, "year") + 7L * ((yday(x) - 1L) %/% 7L),
           months = ISOdate(year(x), month(x), 1L),
           quarters = ISOdate(year(x), 3L * (quarter(x)-1L) + 1L, 1L),
           years = ISOdate(year(x), 1L, 1L)))
@@ -240,20 +240,20 @@ rep.ITime = function (x, ...)
   class(y) = "ITime"   # unlass and rep could feasibly not copy, hence use class<- not setattr()
   y
 }
-                           
-round.ITime <- function(x, digits = c("hours", "minutes"), ...) 
+
+round.ITime <- function(x, digits = c("hours", "minutes"), ...)
 {
   (setattr(switch(match.arg(digits),
                   hours = as.integer(round(unclass(x)/3600)*3600),
-                  minutes = as.integer(round(unclass(x)/60)*60)), 
+                  minutes = as.integer(round(unclass(x)/60)*60)),
            "class", "ITime"))
-} 
+}
 
-trunc.ITime <- function(x, units = c("hours", "minutes"), ...) 
+trunc.ITime <- function(x, units = c("hours", "minutes"), ...)
 {
   (setattr(switch(match.arg(units),
                   hours = as.integer(unclass(x)%/%3600*3600),
-                  minutes = as.integer(unclass(x)%/%60*60)), 
+                  minutes = as.integer(unclass(x)%/%60*60)),
            "class", "ITime"))
 }
 
