@@ -28,7 +28,7 @@ Also note that \code{data.table} always reorders in "C-locale" (see Details). To
 
 \usage{
 setorder(x, \dots, na.last=FALSE)
-setorderv(x, cols = colnames(x), order=1L, na.last=FALSE)
+setorderv(x, cols = colnames(x), order=1L, na.last=FALSE, neworder)
 # optimised to use data.table's internal fast order
 # x[order(., na.last=TRUE)]
 }
@@ -48,6 +48,7 @@ when \code{b} is of type \code{character} as well. }
 \code{na.last=NA} is valid only for \code{x[order(., na.last)]} and its
 default is \code{TRUE}. \code{setorder} and \code{setorderv} only accept
 \code{TRUE}/\code{FALSE} with default \code{FALSE}. }
+\item{neworder}{ Integer vector, strict permutation of \code{1:nrow(x)}, no repeats, zeros, NAs, also known as a \emph{shuffle}. }
 }
 \details{
 \code{data.table} implements its own fast radix-based ordering. See the references for some exposition on the concept of radix sort.
@@ -115,7 +116,6 @@ If you require a copy, take a copy first (using \code{DT2 = copy(DT)}). See
   \code{\link{setDF}}, \code{\link{copy}}, \code{\link{setNumericRounding}}
 }
 \examples{
-
 set.seed(45L)
 DT = data.table(A=sample(3, 10, TRUE),
          B=sample(letters[1:3], 10, TRUE), C=sample(10))
@@ -125,6 +125,15 @@ setorder(DT, A, -B)
 
 # same as above, but using setorderv
 setorderv(DT, c("A", "B"), c(1, -1))
+
+# neworder
+DT = data.table(id1 = c("a","b","c","d"), v1 = rnorm(4))
+
+# move first row to the end
+setorderv(DT, neworder = c(2:4,1L))
+
+# random order
+setorderv(DT, neworder = sample(nrow(DT)))
 }
 \keyword{ data }
 

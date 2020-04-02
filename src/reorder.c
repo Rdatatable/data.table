@@ -2,7 +2,7 @@
 
 SEXP reorder(SEXP x, SEXP order)
 {
-  // For internal use only by setkey().
+  // For internal use by setkeyv and setorderv
   // 'order' must be a strict permutation of 1:n; i.e. no repeats, zeros, NAs. Also known as a shuffle.
   // If only a small subset in the middle is reordered, the ends are moved in to avoid wasteful work.
   // x may be a vector, or a list of same-length vectors (typically a data.table).
@@ -52,7 +52,8 @@ SEXP reorder(SEXP x, SEXP order)
               i+1, idx[i], length(order));
     // This should run in reasonable time because although 'seen' is random write, it is writing to just 1 byte * nrow
     // which is relatively small and has a good chance of fitting in cache.
-    // A worry mitigated by this check is a user passing their own incorrect ordering using ::: to reach this internal.
+    // A worry mitigated by this check is a user passing their own incorrect ordering using ::: to reach this internal - it happened to be used on SO already so is likely to happen
+    // There is also new arg to setorderv which is likely to hit this
     // This check is once up front, and then idx is applied to all the columns which is where the most time is spent.
   }
 

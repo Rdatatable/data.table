@@ -81,6 +81,20 @@ unit = "s")
 
 14. Added support for `round()` and `trunc()` to extend functionality of `ITime`. `round()` and `trunc()` can be used with argument units: "hours" or "minutes". Thanks to @JensPederM for the suggestion and PR.
 
+15. Function `setorderv` gets new argument `neworder` where user can specify custom ordering directly, [#4012](https://github.com/Rdatatable/data.table/issues/4012).
+
+```r
+DT = data.table(id1 = c("a","b","c","d"), v1 = rnorm(4))
+
+# move first row to the end
+setorderv(DT, neworder = c(2:4,1L))
+DT
+
+# random order
+setorderv(DT, neworder = sample(nrow(DT)))
+DT
+```
+
 ## BUG FIXES
 
 1. A NULL timezone on POSIXct was interpreted by `as.IDate` and `as.ITime` as UTC rather than the session's default timezone (`tz=""`) , [#4085](https://github.com/Rdatatable/data.table/issues/4085).

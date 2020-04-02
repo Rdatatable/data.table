@@ -274,30 +274,43 @@ setorder = function(x, ..., na.last=FALSE)
   setorderv(x, cols, order, na.last)
 }
 
-setorderv = function(x, cols = colnames(x), order=1L, na.last=FALSE)
-{
-  if (is.null(cols)) return(x)
+setorderv = function(x, cols = colnames(x), order=1L, na.last=FALSE, neworder) {
   if (!is.data.frame(x)) stop("x must be a data.frame or data.table")
-  na.last = as.logical(na.last)
-  if (is.na(na.last) || !length(na.last)) stop('na.last must be logical TRUE/FALSE')
-  if (!is.character(cols)) stop("cols is not a character vector. Please see further information in ?setorder.")
-  if (!length(cols)) {
-    warning("cols is a character vector of zero length. Use NULL instead, or wrap with suppressWarnings() to avoid this warning.")
-    return(x)
-  }
-  if (!all(nzchar(cols))) stop("cols contains some blanks.")     # TODO: probably I'm checking more than necessary here.. there are checks in 'forderv' as well
-  # remove backticks from cols
-  cols = gsub("`", "", cols, fixed = TRUE)
-  miss = !(cols %chin% colnames(x))
-  if (any(miss)) stop("some columns are not in the data.table: ", paste(cols[miss], collapse=","))
-  if (".xi" %chin% colnames(x)) stop("x contains a column called '.xi'. Conflicts with internal use by data.table.")
-  for (i in cols) {
-    .xi = x[[i]]  # [[ is copy on write, otherwise checking type would be copying each column
-    if (!typeof(.xi) %chin% ORDERING_TYPES) stop("Column '",i,"' is type '",typeof(.xi),"' which is not supported for ordering currently.")
-  }
-  if (!is.character(cols) || length(cols)<1L) stop("Internal error. 'cols' should be character at this point in setkey; please report.") # nocov
+  if (is.null(cols) || !length(x)) return(x)
+  if (!missing(neworder)) {
+    if (!missing(cols))
+      stop("Provide either cols or neworder, not both")
+    if (!missing(order))
+      warning("Argument order is ignored when neworder argument was provided")
+    if (!missing(na.last))
+      warning("Argument na.last is ignored when neworder argument was provided")
+    if (length(neworder) != nrow(x))
+      stop("Provided neworder is a different length than nrow of provided data.table")
+    if (!is.integer(neworder) && is.numeric(neworder))
+      neworder = as.integer(neworder)
+    o = neworder
+  } else {
+    na.last = as.logical(na.last)
+    if (is.na(na.last) || !length(na.last)) stop('na.last must be logical TRUE/FALSE')
+    if (!is.character(cols)) stop("cols is not a character vector. Please see further information in ?setorder.")
+    if (!length(cols)) {
+      warning("cols is a character vector of zero length. Use NULL instead, or wrap with suppressWarnings() to avoid this warning.")
+      return(x)
+    }
+    if (!all(nzchar(cols))) stop("cols contains some blanks.")     # TODO: probably I'm checking more than necessary here.. there are checks in 'forderv' as well
+    # remove backticks from cols
+    cols = gsub("`", "", cols, fixed = TRUE)
+    miss = !(cols %chin% colnames(x))
+    if (any(miss)) stop("some columns are not in the data.table: ", paste(cols[miss], collapse=","))
+    if (".xi" %chin% colnames(x)) stop("x contains a column called '.xi'. Conflicts with internal use by data.table.")
+    for (i in cols) {
+      .xi = x[[i]]  # [[ is copy on write, otherwise checking type would be copying each column
+      if (!typeof(.xi) %chin% ORDERING_TYPES) stop("Column '",i,"' is type '",typeof(.xi),"' which is not supported for ordering currently.")
+    }
+    if (!is.character(cols) || length(cols)<1L) stop("Internal error. 'cols' should be character at this point in setkey; please report.") # nocov
 
-  o = forderv(x, cols, sort=TRUE, retGrp=FALSE, order=order, na.last=na.last)
+    o = forderv(x, cols, sort=TRUE, retGrp=FALSE, order=order, na.last=na.last)
+  }
   if (length(o)) {
     .Call(Creorder, x, o)
     if (is.data.frame(x) & !is.data.table(x)) {
