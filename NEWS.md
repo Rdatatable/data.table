@@ -145,6 +145,8 @@ unit = "s")
 
 7. Added more explanation/examples to `?data.table` for how to use `.BY`, [#1363](https://github.com/Rdatatable/data.table/issues/1363).
 
+8. When attempting to add, modify or delete a column with `DT[, lhs := rhs]` or `set(DT, , lhs, rhs)` a zero length `lhs` object will no longer raise a warning, [#4086](https://github.com/Rdatatable/data.table/issues/4086).
+
 
 # data.table [v1.12.8](https://github.com/Rdatatable/data.table/milestone/15?closed=1)  (09 Dec 2019)
 
