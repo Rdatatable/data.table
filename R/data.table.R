@@ -165,7 +165,7 @@ replace_dot_alias = function(e) {
     missingby = TRUE # for tests 359 & 590 where passing by=NULL results in data.table not vector
   }
   if (!missingby && missing(j)) {
-    warning("Ignoring key/keyby because 'j' is not supplied");
+    warning("Ignoring by/keyby because 'j' is not supplied");
     by = NULL
     keyby = FALSE
   }
