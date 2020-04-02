@@ -16847,6 +16847,6 @@ test(2138.3, rbind(A,B), data.table(A=c(as.character(A$A), B$A)))
 A = data.table(A=as.complex(rep(NA, 5)))
 test(2138.4, rbind(A,B), data.table(A=c(as.character(A$A), B$A)))
 
-# Used to be uncaught which lead to a segfault down the line, #4116
+# Used to be uncaught which lead to a segfault down the line, #4166
 dt = data.table(a=list(1:2, 3))
 test(2139, dt[, a:=1:3], error="Supplied 3 items to be assigned to 2 items of column 'a'.*please use rep")
