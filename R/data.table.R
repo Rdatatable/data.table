@@ -125,7 +125,7 @@ replace_dot_alias = function(e) {
   }
 }
 
-"[.data.table" = function (x, i, j, by, keyby, with=TRUE, nomatch=getOption("datatable.nomatch", NA), mult="all", roll=FALSE, rollends=if (roll=="nearest") c(TRUE,TRUE) else if (roll>=0) c(FALSE,TRUE) else c(TRUE,FALSE), which=FALSE, .SDcols, verbose=getOption("datatable.verbose"), allow.cartesian=getOption("datatable.allow.cartesian"), drop=NULL, on=NULL)
+"[.data.table" = function (x, i, j, by, keyby=FALSE, with=TRUE, nomatch=getOption("datatable.nomatch", NA), mult="all", roll=FALSE, rollends=if (roll=="nearest") c(TRUE,TRUE) else if (roll>=0) c(FALSE,TRUE) else c(TRUE,FALSE), which=FALSE, .SDcols, verbose=getOption("datatable.verbose"), allow.cartesian=getOption("datatable.allow.cartesian"), drop=NULL, on=NULL)
 {
   # ..selfcount <<- ..selfcount+1  # in dev, we check no self calls, each of which doubles overhead, or could
   # test explicitly if the caller is [.data.table (even stronger test. TO DO.)
@@ -147,17 +147,27 @@ replace_dot_alias = function(e) {
     on.exit(options(oldverbose))
   }
   .global$print=""
-  missingby = missing(by) && missing(keyby)  # for tests 359 & 590 where passing by=NULL results in data.table not vector
-  if (!missing(keyby)) {
-    if (!missing(by)) stop("Provide either by= or keyby= but not both")
-    if (missing(j)) { warning("Ignoring keyby= because j= is not supplied"); keyby=NULL; }
-    by=bysub=substitute(keyby)
-    keyby=TRUE
-    # Assign to 'by' so that by is no longer missing and we can proceed as if there were one by
-  } else {
-    if (!missing(by) && missing(j)) { warning("Ignoring by= because j= is not supplied"); by=NULL; }
-    by=bysub= if (missing(by)) NULL else substitute(by)
-    keyby=FALSE
+  if (!missing(by) && missing(keyby)) { # by alone
+    by = bysub = substitute(by)
+    keyby = FALSE
+    missingby = FALSE
+  } else if (missing(by) && !missing(keyby)) { # keyby alone
+    by = bysub = substitute(keyby)
+    keyby = TRUE
+    missingby = FALSE
+  } else if (!missing(by) && !missing(keyby)) { # by + logical keyby
+    by = bysub = substitute(by)
+    if (!isTRUEorFALSE(keyby))
+      stop("When by and keyby are both provided, keyby must be TRUE or FALSE")
+    missingby = FALSE
+  } else { # no by/keyby
+    by = bysub = NULL
+    missingby = TRUE # for tests 359 & 590 where passing by=NULL results in data.table not vector
+  }
+  if (!missingby && missing(j)) {
+    warning("Ignoring key/keyby because 'j' is not supplied");
+    by = NULL
+    keyby = FALSE
   }
   bynull = !missingby && is.null(by) #3530
   byjoin = !is.null(by) && is.symbol(bysub) && bysub==".EACHI"
@@ -2313,11 +2323,11 @@ split.data.table = function(x, f, drop = FALSE, by, sorted = FALSE, keep.by = TR
     list(.ll.tech.split=list(.expr)),
     list(.expr = if (join) quote(if(.N == 0L) .SD[0L] else .SD) else as.name(".SD")) # simplify when `nomatch` accept NULL #857 ?
   )
-  by.or.keyby = if (join) "by" else c("by"[!sorted], "keyby"[sorted])[1L]
-  dtq[[by.or.keyby]] = substitute( # retain order, for `join` and `sorted` it will use order of `i` data.table instead of `keyby`.
+  dtq[["by"]] = substitute( # retain order, for `join` and `sorted` it will use order of `i` data.table instead of `keyby`.
     .expr,
-    list(.expr = if(join) {as.name(".EACHI")} else if (flatten) by else .by)
+    list(.expr = if (join) as.name(".EACHI") else if (flatten) by else .by)
   )
+  dtq[["keyby"]] = if (join) FALSE else sorted
   dtq[[".SDcols"]] = if (keep.by) names(x) else setdiff(names(x), if (flatten) by else .by)
   if (join) dtq[["on"]] = if (flatten) by else .by
   dtq = as.call(dtq)

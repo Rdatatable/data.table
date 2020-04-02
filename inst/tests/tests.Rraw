@@ -1576,7 +1576,7 @@ test(534, names(transform(data.table('a b'=1), `c d`=`a b`)), c("a b","c d"))
 
 # Test keyby, new in v1.8.0
 DT = data.table(a=INT(1,3,1,2,3,2),b=1:2,c=1:3,v=1:6)
-test(535, DT[,sum(v),by=a, keyby=a], error="not both")
+test(535, DT[,sum(v),by=a, keyby=a], error="keyby must be TRUE or FALSE") # updated after #4307
 test(536, DT[,sum(v),by=a], data.table(a=c(1L,3L,2L),V1=c(4L,7L,10L)))  # retains appearance order
 ans = data.table(a=1:3,V1=c(4L,10L,7L),key="a")
 test(537, DT[,sum(v),keyby=a], ans)
@@ -13695,12 +13695,12 @@ test(1967.49, x[ , list(5) := 6], error = 'LHS of := must be a symbol')
 test(1967.50, x[ , 1 + 3i := 6], error = "LHS of := isn't column names")
 test(1967.511, x[ , .(5L), by = .EACHI, mult = 'all'], error='logical error. i is not data.table')
 test(1967.512, x[1+3i], error='i has evaluated to type complex. Expecting logical, integer or double')
-test(1967.521, x[1:2, by=a], x[1:2,], warning="Ignoring by= because j= is not supplied")
-test(1967.522, x[, by=a],    x,       warning=c("Ignoring by= because j= is not supplied","i and j are both missing.*upgraded to error in future"))
-test(1967.523, x[by=a],      x,       warning=c("Ignoring by= because j= is not supplied","i and j are both missing.*upgraded to error in future"))
-test(1967.524, x[1:2, keyby=a], x[1:2,], warning="Ignoring keyby= because j= is not supplied")
-test(1967.525, x[, keyby=a],    x,       warning=c("Ignoring keyby= because j= is not supplied","i and j are both missing.*upgraded to error in future"))
-test(1967.526, x[keyby=a],      x,       warning=c("Ignoring keyby= because j= is not supplied","i and j are both missing.*upgraded to error in future"))
+test(1967.521, x[1:2, by=a], x[1:2,], warning="Ignoring by/keby because 'j' is not supplied")
+test(1967.522, x[, by=a],    x,       warning=c("Ignoring by/keyby because 'j' is not supplied","i and j are both missing.*upgraded to error in future"))
+test(1967.523, x[by=a],      x,       warning=c("Ignoring by/keyby because 'j' is not supplied","i and j are both missing.*upgraded to error in future"))
+test(1967.524, x[1:2, keyby=a], x[1:2,], warning="Ignoring by/keyby because 'j' is not supplied")
+test(1967.525, x[, keyby=a],    x,       warning=c("Ignoring by/keyby because 'j' is not supplied","i and j are both missing.*upgraded to error in future"))
+test(1967.526, x[keyby=a],      x,       warning=c("Ignoring by/keyby because 'j' is not supplied","i and j are both missing.*upgraded to error in future"))
 
 test(1967.53, as.matrix(x, rownames = 2:3),
      error = 'length(rownames)==2 but')
@@ -16846,3 +16846,8 @@ A = data.table(A=c(complex(real = 1:3, imaginary=c(0, -1, 1)), NaN))
 test(2138.3, rbind(A,B), data.table(A=c(as.character(A$A), B$A)))
 A = data.table(A=as.complex(rep(NA, 5)))
 test(2138.4, rbind(A,B), data.table(A=c(as.character(A$A), B$A)))
+
+# allow to use `keyby` arg as a sort flag, together with `by` argument #4307
+DT = data.table(a=2:1, b=3:2, d=4:3)
+test(2139.1, DT[, .SD, by = "a"], DT[, .SD, by = "a", keyby = FALSE])
+test(2139.2, DT[, .SD, keyby = "a"], DT[, .SD, by = "a", keyby = TRUE])
