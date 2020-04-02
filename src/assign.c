@@ -432,8 +432,9 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
       error(_("Can't assign to column '%s' (type 'factor') a value of type '%s' (not character, factor, integer or numeric)"),
             CHAR(STRING_ELT(names,coln)),type2char(TYPEOF(thisvalue)));
     }
-    if (nrow>0 && targetlen>0 && vlen>1 && vlen!=targetlen && (TYPEOF(existing)!=VECSXP || TYPEOF(thisvalue)==VECSXP)) {
-      // note that isNewList(R_NilValue) is true so it needs to be TYPEOF(existing)!=VECSXP above
+    if (nrow>0 && targetlen>0 && vlen>1 && vlen!=targetlen && !(TYPEOF(existing)==VECSXP && targetlen==1)) {
+      // We allow assigning objects of arbitrary to single items of list columns for convenience.
+      // Note that isNewList(R_NilValue) is true so it needs to be !(TYPEOF(existing)==VECSXP) above
       error(_("Supplied %d items to be assigned to %d items of column '%s'. If you wish to 'recycle' the RHS please use rep() to make this intent clear to readers of your code."), vlen, targetlen, CHAR(colnam));
     }
   }
