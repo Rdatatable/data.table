@@ -17,7 +17,7 @@ test.data.table(script = "tests.Rraw", verbose = FALSE, pkg = ".",
 \item{showProgress}{ Output 'Running test <n> ...\\r' at the start of each test? }
 }
 \details{
-  Runs a series of tests. These can be used to see features and examples of usage, too. Running test.data.table will tell you the full location of the test file(s) to open.
+  Runs a series of tests. These can be used to see features and examples of usage, too. Running test.data.table will tell you the full location of the test file(s) to open. Test should be run in a clean environment.
 
   Setting \code{silent=TRUE} sets \code{showProgress=FALSE} too, via the default of \code{showProgress}.
 }
