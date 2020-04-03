@@ -107,7 +107,7 @@ unit = "s")
 
 12. `rbindlist` no longer errors when coercing complex vectors to character vectors, [#4202](https://github.com/Rdatatable/data.table/issues/4202). Thanks to @sritchie73 for reporting and the PR.
 
-13. Attempting to replace an existing list column with a vector of the wrong length no longer leads to a segfault later, [#4166](https://github.com/Rdatatable/data.table/issues/4166). Thanks to @fklirono for reporting and to @tlapak for the PR.
+13. Attempting to replace an existing list column with a vector of the wrong length no longer leads to a segfault later, [#4166](https://github.com/Rdatatable/data.table/issues/4166). Subassigning a non-list vector would also lead to a segfault. The elements are now 'coerced' by individually wrapping them in `list()`. Thanks to @fklirono for the initial report and to @tlapak for the PR.
 
 ## NOTES
 
