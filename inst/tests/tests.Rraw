@@ -16862,3 +16862,6 @@ test(2139.10, dt[0:1, nomatch=NULL], data.table(x=1L))
 test(2139.11, dt[-1L, nomatch=NULL], data.table(x=2:4))
 test(2139.12, data.table()[1L, nomatch=NULL], data.table())
 test(2139.13, data.table()[-1L, nomatch=NULL], data.table(), warning="there are only 0 rows")
+test(2139.14, dt[-c(1L,0L)], data.table(x=2:4)) # codecov gap, not related to nomatch
+test(2139.15, dt[-c(1L,0L), nomatch=NULL], data.table(x=2:4))
+
