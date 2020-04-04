@@ -567,8 +567,10 @@ replace_dot_alias = function(e) {
         else stop("i evaluates to a logical vector length ", length(i), " but there are ", nrow(x), " rows. Recycling of logical i is no longer allowed as it hides more bugs than is worth the rare convenience. Explicitly use rep(...,length=.N) if you really need to recycle.")
       } else {
         irows = as.integer(i)  # e.g. DT[c(1,3)] and DT[c(-1,-3)] ok but not DT[c(1,-3)] (caught as error)
-        irows = .Call(CconvertNegAndZeroIdx, irows, nrow(x), is.null(jsub) || root!=":=")  # last argument is allowOverMax (NA when selecting, error when assigning)
-        # simplifies logic from here on: can assume positive subscripts (no zeros)
+        irows = .Call(CconvertNegAndZeroIdx, irows, nrow(x),
+                      is.null(jsub) || root!=":=",   # allowOverMax (NA when selecting, error when assigning)
+                      identical(nomatch,0L))         # nomatchArg, keeps only shuffle #3109
+        # simplifies logic from here on: can assume positive subscripts (no zeros), for a nomatch=0L also no NAs
         # maintains Arun's fix for #2697 (test 1042)
         # efficient in C with more detailed helpful messages when user mixes positives and negatives
         # falls through quickly (no R level allocs) if all items are within range [1,max] with no zeros or negatives

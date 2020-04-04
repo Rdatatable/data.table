@@ -106,42 +106,68 @@ static const char *check_idx(SEXP idx, int max, bool *anyNA_out, bool *orderedSu
   return NULL;
 }
 
-SEXP convertNegAndZeroIdx(SEXP idx, SEXP maxArg, SEXP allowOverMax)
+SEXP convertNegAndZeroIdx(SEXP idx, SEXP maxArg, SEXP allowOverMax, SEXP nomatchArg)
 {
   // called from [.data.table to massage user input, creating a new strictly positive idx if there are any negatives or zeros
   // + more precise and helpful error messages telling user exactly where the problem is (saving user debugging time)
   // + a little more efficient than negativeSubscript in src/main/subscript.c (it's private to R so we can't call it anyway)
   // allowOverMaxArg is false when := (test 1024), otherwise true for selecting
+  // nomatchArg is true (nomatch==0L) when we want to skip nomatch'ing rows, it also excludes NAs #3109
 
   if (!isInteger(idx)) error(_("Internal error. 'idx' is type '%s' not 'integer'"), type2char(TYPEOF(idx))); // # nocov
   if (!isInteger(maxArg) || length(maxArg)!=1) error(_("Internal error. 'maxArg' is type '%s' and length %d, should be an integer singleton"), type2char(TYPEOF(maxArg)), length(maxArg)); // # nocov
   if (!isLogical(allowOverMax) || LENGTH(allowOverMax)!=1 || LOGICAL(allowOverMax)[0]==NA_LOGICAL) error(_("Internal error: allowOverMax must be TRUE/FALSE"));  // # nocov
-  int max = INTEGER(maxArg)[0], n=LENGTH(idx);
+  if (!isLogical(nomatchArg) || LENGTH(nomatchArg)!=1 || LOGICAL(nomatchArg)[0]==NA_LOGICAL) error(_("Internal error: nomatchArg must be TRUE/FALSE"));  // # nocov
+  int max = INTEGER(maxArg)[0], n=LENGTH(idx), nomatch = LOGICAL(nomatchArg)[0];
   if (max<0) error(_("Internal error. max is %d, must be >= 0."), max); // # nocov    includes NA which will print as INT_MIN
   int *idxp = INTEGER(idx);
 
   bool stop = false;
-  #pragma omp parallel for num_threads(getDTthreads())
-  for (int i=0; i<n; i++) {
-    if (stop) continue;
-    int elem = idxp[i];
-    if ((elem<1 && elem!=NA_INTEGER) || elem>max) stop=true;
+  if (!nomatch) {
+    #pragma omp parallel for num_threads(getDTthreads())
+    for (int i=0; i<n; i++) {
+      if (stop)
+        continue;
+      int elem = idxp[i];
+      if ((elem<1 && elem!=NA_INTEGER) || elem>max)
+        stop = true;
+    }
+  } else { // nomatch
+    #pragma omp parallel for num_threads(getDTthreads())
+    for (int i=0; i<n; i++) {
+      if (stop)
+        continue;
+      int elem = idxp[i];
+      if (elem<1 || elem>max)
+        stop = true;
+    }
   }
-  if (!stop) return(idx); // most common case to return early: no 0, no negative; all idx either NA or in range [1-max]
+  if (!stop)
+    return(idx); // most common case to return early: no 0, no negative; all idx either NA (for !nomatch) or in range [1-max]
 
   // ---------
-  // else massage the input to a standard idx where all items are either NA or in range [1,max] ...
+  // else massage the input to a standard idx where all items are either NA (for !nomatch) or in range [1,max] ...
 
-  int countNeg=0, countZero=0, countNA=0, firstOverMax=0;
+  int countNeg=0, countZero=0, countNA=0, countOverMax=0, firstOverMax=0;
   for (int i=0; i<n; i++) {
     int elem = idxp[i];
-    if (elem==NA_INTEGER) countNA++;
-    else if (elem<0) countNeg++;
-    else if (elem==0) countZero++;
-    else if (elem>max && firstOverMax==0) firstOverMax=i+1;
+    if (elem==NA_INTEGER)
+      countNA++;
+    else if (elem<0)
+      countNeg++;
+    else if (elem==0)
+      countZero++;
+    else if (elem>max) {
+      countOverMax++;
+      if (firstOverMax==0)
+        firstOverMax=i+1;
+    }
   }
   if (firstOverMax && LOGICAL(allowOverMax)[0]==FALSE) {
     error(_("i[%d] is %d which is out of range [1,nrow=%d]"), firstOverMax, idxp[firstOverMax-1], max);
+  }
+  if (countNeg && nomatch) {
+    error(_("i argument must not be negative when used together with nomatch=NULL"));
   }
 
   int countPos = n-countNeg-countZero-countNA;
@@ -149,8 +175,10 @@ SEXP convertNegAndZeroIdx(SEXP idx, SEXP maxArg, SEXP allowOverMax)
     int i=0, firstNeg=0, firstPos=0;
     while (i<n && (firstNeg==0 || firstPos==0)) {
       int elem = idxp[i];
-      if (firstPos==0 && elem>0) firstPos=i+1;
-      if (firstNeg==0 && elem<0 && elem!=NA_INTEGER) firstNeg=i+1;
+      if (firstPos==0 && elem>0)
+        firstPos=i+1;
+      if (firstNeg==0 && elem<0 && elem!=NA_INTEGER)
+        firstNeg=i+1;
       i++;
     }
     error(_("Item %d of i is %d and item %d is %d. Cannot mix positives and negatives."), firstNeg, idxp[firstNeg-1], firstPos, idxp[firstPos-1]);
@@ -159,40 +187,56 @@ SEXP convertNegAndZeroIdx(SEXP idx, SEXP maxArg, SEXP allowOverMax)
     int i=0, firstNeg=0, firstNA=0;
     while (i<n && (firstNeg==0 || firstNA==0)) {
       int elem = idxp[i];
-      if (firstNeg==0 && elem<0 && elem!=NA_INTEGER) firstNeg=i+1;
-      if (firstNA==0 && elem==NA_INTEGER) firstNA=i+1;
+      if (firstNeg==0 && elem<0 && elem!=NA_INTEGER)
+        firstNeg=i+1;
+      if (firstNA==0 && elem==NA_INTEGER)
+        firstNA=i+1;
       i++;
     }
     error(_("Item %d of i is %d and item %d is NA. Cannot mix negatives and NA."), firstNeg, idxp[firstNeg-1], firstNA);
   }
 
   SEXP ans;
-  if (countNeg==0) {
+  if (nomatch) { // also countNeg==0 checked before
+    ans = PROTECT(allocVector(INTSXP, n-countZero-countNA-countOverMax));
+    int *ansp = INTEGER(ans);
+    for (int i=0, ansi=0; i<n; i++) {
+      int elem = idxp[i];
+      if (elem<1 || elem>max)
+        continue;
+      ansp[ansi++] = elem;
+    }
+  } else if (countNeg==0) {
     // just zeros to remove, or >max to convert to NA
     ans = PROTECT(allocVector(INTSXP, n - countZero));
     int *ansp = INTEGER(ans);
     for (int i=0, ansi=0; i<n; i++) {
       int elem = idxp[i];
-      if (elem==0) continue;
+      if (elem==0)
+        continue;
       ansp[ansi++] = elem>max ? NA_INTEGER : elem;
     }
   } else {
     // idx is all negative without any NA but perhaps some zeros
     bool *keep = (bool *)R_alloc(max, sizeof(bool));    // 4 times less memory that INTSXP in src/main/subscript.c
-    for (int i=0; i<max; i++) keep[i] = true;
+    for (int i=0; i<max; i++)
+      keep[i] = true;
     int countRemoved=0, countDup=0, countBeyond=0;   // idx=c(-10,-5,-10) removing row 10 twice
     int firstBeyond=0, firstDup=0;
     for (int i=0; i<n; i++) {
       int elem = -idxp[i];
-      if (elem==0) continue;
+      if (elem==0)
+        continue;
       if (elem>max) {
         countBeyond++;
-        if (firstBeyond==0) firstBeyond=i+1;
+        if (firstBeyond==0)
+          firstBeyond=i+1;
         continue;
       }
       if (!keep[elem-1]) {
         countDup++;
-        if (firstDup==0) firstDup=i+1;
+        if (firstDup==0)
+          firstDup=i+1;
       } else {
         keep[elem-1] = false;
         countRemoved++;
@@ -206,7 +250,8 @@ SEXP convertNegAndZeroIdx(SEXP idx, SEXP maxArg, SEXP allowOverMax)
     ans = PROTECT(allocVector(INTSXP, ansn));
     int *ansp = INTEGER(ans);
     for (int i=0, ansi=0; i<max; i++) {
-      if (keep[i]) ansp[ansi++] = i+1;
+      if (keep[i])
+        ansp[ansi++] = i+1;
     }
   }
   UNPROTECT(1);
@@ -247,7 +292,7 @@ SEXP subsetDT(SEXP x, SEXP rows, SEXP cols) { // API change needs update NEWS.md
   bool anyNA=false, orderedSubset=true;   // true for when rows==null (meaning all rows)
   if (!isNull(rows) && check_idx(rows, nrow, &anyNA, &orderedSubset)!=NULL) {
     SEXP max = PROTECT(ScalarInteger(nrow)); nprotect++;
-    rows = PROTECT(convertNegAndZeroIdx(rows, max, ScalarLogical(TRUE))); nprotect++;
+    rows = PROTECT(convertNegAndZeroIdx(rows, max, ScalarLogical(TRUE), ScalarLogical(FALSE))); nprotect++;
     const char *err = check_idx(rows, nrow, &anyNA, &orderedSubset);
     if (err!=NULL) error(err);
   }

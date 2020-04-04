@@ -81,6 +81,17 @@ unit = "s")
 
 14. Added support for `round()` and `trunc()` to extend functionality of `ITime`. `round()` and `trunc()` can be used with argument units: "hours" or "minutes". Thanks to @JensPederM for the suggestion and PR.
 
+15. It is now possible to use `nomatch=NULL` argument and integer `i` to specify rows to subset but return only those rows which exists in data.table, closes [#3109](https://github.com/Rdatatable/data.table/issues/3109), [#3666](https://github.com/Rdatatable/data.table/issues/3666). Thanks @mllg and @hadley for feature request.
+
+```r
+DT = data.table(x = 1:4)
+DT[c(1L, NA_integer_, 3L, 5L), nomatch = 0L]
+#       x
+#   <int>
+#1:     1
+#2:     3
+```
+
 ## BUG FIXES
 
 1. A NULL timezone on POSIXct was interpreted by `as.IDate` and `as.ITime` as UTC rather than the session's default timezone (`tz=""`) , [#4085](https://github.com/Rdatatable/data.table/issues/4085).

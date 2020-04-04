@@ -16846,3 +16846,18 @@ A = data.table(A=c(complex(real = 1:3, imaginary=c(0, -1, 1)), NaN))
 test(2138.3, rbind(A,B), data.table(A=c(as.character(A$A), B$A)))
 A = data.table(A=as.complex(rep(NA, 5)))
 test(2138.4, rbind(A,B), data.table(A=c(as.character(A$A), B$A)))
+
+# Respect `nomatch = 0L` for integer i #3109, also #3666
+dt = data.table(x = 1:4)
+test(2139.01, dt[c(1L, 5L, NA_integer_)], data.table(x=c(1L,NA_integer_,NA_integer_))) # test the default nomatch
+test(2139.02, dt[c(1L, 5L, NA_integer_), nomatch=NULL], data.table(x = 1L))
+test(2139.03, dt[c(1L, 5L, NA_integer_), x, nomatch=NULL], 1L)
+test(2139.04, dt[c(1:4,1:4), nomatch=NULL], data.table(x=c(1:4,1:4))) # early stopping convertNegAndZeroIdx
+test(2139.05, dt[c(1:4,-1L), nomatch=NULL], error="i argument must not be negative")
+test(2139.06, dt[c(1:4,NA_integer_,-1L), nomatch=NULL], error="i argument must not be negative")
+test(2139.07, dt[NA, nomatch=NULL], data.table(x=integer()))
+test(2139.08, dt[0L, nomatch=NULL], data.table(x=integer()))
+test(2139.09, dt[0:1, nomatch=NULL], data.table(x=1L))
+test(2139.10, dt[-1L, nomatch=NULL], error="i argument must not be negative")
+test(2139.11, data.table()[1L, nomatch=NULL], data.table())
+test(2139.12, data.table()[-1L, nomatch=NULL], error="i argument must not be negative")
