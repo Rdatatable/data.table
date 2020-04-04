@@ -1333,6 +1333,8 @@ replace_dot_alias = function(e) {
       if (!is.null(jvnames) && !all(jvnames=="")) setattr(jval, 'names', jvnames)  # e.g. jvnames=="N" for DT[,.N,]
       jval = as.data.table.list(jval, .named=NULL)
     }
+    # should drop the AsIs class #4326
+    if (inherits(jval, "AsIs")) class(jval) = setdiff(class(jval), "AsIs")
 
     if (is.data.table(jval)) {
       setattr(jval, 'class', class(x)) # fix for #64

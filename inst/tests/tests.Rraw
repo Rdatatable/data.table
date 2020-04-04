@@ -16854,4 +16854,4 @@ ok1 = DT[, list(lm.fit(cbind(x), y))][["V1"]]
 ok2 = DT[, I(lm.fit(cbind(x), y))]
 test(2139.1, class(bad), c("data.table","data.frame"))
 test(2139.2, class(ok1), "list")
-#test(2139.3, class(ok2), "list") ## TODO, AsIs class should be removed
+test(2139.3, class(ok2), "list") ## AsIs class should be removed
