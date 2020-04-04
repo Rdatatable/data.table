@@ -85,7 +85,7 @@ unit = "s")
 
 ```r
 DT = data.table(x = 1:4)
-DT[c(1L, NA_integer_, 3L, 5L), nomatch = 0L]
+DT[c(1L, NA_integer_, 3L, 5L), nomatch = NULL]
 #       x
 #   <int>
 #1:     1
