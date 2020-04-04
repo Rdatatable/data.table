@@ -166,9 +166,6 @@ SEXP convertNegAndZeroIdx(SEXP idx, SEXP maxArg, SEXP allowOverMax, SEXP nomatch
   if (firstOverMax && LOGICAL(allowOverMax)[0]==FALSE) {
     error(_("i[%d] is %d which is out of range [1,nrow=%d]"), firstOverMax, idxp[firstOverMax-1], max);
   }
-  if (countNeg && nomatch) {
-    error(_("i argument must not be negative when used together with nomatch=NULL"));
-  }
 
   int countPos = n-countNeg-countZero-countNA;
   if (countPos && countNeg) {
@@ -197,24 +194,26 @@ SEXP convertNegAndZeroIdx(SEXP idx, SEXP maxArg, SEXP allowOverMax, SEXP nomatch
   }
 
   SEXP ans;
-  if (nomatch) { // also countNeg==0 checked before
-    ans = PROTECT(allocVector(INTSXP, n-countZero-countNA-countOverMax));
-    int *ansp = INTEGER(ans);
-    for (int i=0, ansi=0; i<n; i++) {
-      int elem = idxp[i];
-      if (elem<1 || elem>max)
-        continue;
-      ansp[ansi++] = elem;
-    }
-  } else if (countNeg==0) {
-    // just zeros to remove, or >max to convert to NA
-    ans = PROTECT(allocVector(INTSXP, n - countZero));
-    int *ansp = INTEGER(ans);
-    for (int i=0, ansi=0; i<n; i++) {
-      int elem = idxp[i];
-      if (elem==0)
-        continue;
-      ansp[ansi++] = elem>max ? NA_INTEGER : elem;
+  if (countNeg==0) {
+    if (nomatch) {
+      ans = PROTECT(allocVector(INTSXP, n-countZero-countNA-countOverMax));
+      int *ansp = INTEGER(ans);
+      for (int i=0, ansi=0; i<n; i++) {
+        int elem = idxp[i];
+        if (elem<1 || elem>max)
+          continue;
+        ansp[ansi++] = elem;
+      }
+    } else {
+      // just zeros to remove, or >max to convert to NA
+      ans = PROTECT(allocVector(INTSXP, n - countZero));
+      int *ansp = INTEGER(ans);
+      for (int i=0, ansi=0; i<n; i++) {
+        int elem = idxp[i];
+        if (elem==0)
+          continue;
+        ansp[ansi++] = elem>max ? NA_INTEGER : elem;
+      }
     }
   } else {
     // idx is all negative without any NA but perhaps some zeros
