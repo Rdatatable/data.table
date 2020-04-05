@@ -16846,3 +16846,7 @@ A = data.table(A=c(complex(real = 1:3, imaginary=c(0, -1, 1)), NaN))
 test(2138.3, rbind(A,B), data.table(A=c(as.character(A$A), B$A)))
 A = data.table(A=as.complex(rep(NA, 5)))
 test(2138.4, rbind(A,B), data.table(A=c(as.character(A$A), B$A)))
+
+# fread attempt to read non-existing txt.gz file gives meaningful error message #3136
+test(2139.1, fread("not_existing_file.txt.gz", nrows = 100, colClasses = 'character', fill=TRUE), error="File.*does not exist or is non-readable")
+
