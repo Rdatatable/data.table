@@ -370,17 +370,11 @@ SEXP protectAsIs(SEXP x, bool dblist) {
   if (!inherits(x, "AsIs")) return x; 
   int nprotect = 0;
   SEXP oldclass = PROTECT(getAttrib(x, R_ClassSymbol)); ++nprotect;
-  if (oldclass == R_NilValue) { // it should never be true as inherits(x, "AsIs") == true
-    UNPROTECT(nprotect);
-    return x;
-  }
+  // no need to check the NULL case as inherits(x, "AsIs") == true
   int n = 0;
   for (int i = 0; i < LENGTH(oldclass); ++i) {
-    if (!strcmp(CHAR(STRING_ELT(oldclass, i)), "AsIs")) ++n;
-  }
-  if (n == 0) { // it should never be true as inherits(x, "AsIs") == true
-    UNPROTECT(nprotect);
-    return x;
+    if (!strcmp(CHAR(STRING_ELT(oldclass, i)), "AsIs")) 
+      ++n;
   }
   SEXP newclass = PROTECT(allocVector(STRSXP, LENGTH(oldclass) - n)); ++nprotect;
   n = 0;
