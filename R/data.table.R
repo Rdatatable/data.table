@@ -1342,7 +1342,8 @@ replace_dot_alias = function(e) {
     }
     
     # should drop the AsIs class #4326
-    if (inherits(jval, "AsIs")) class(jval) = setdiff(class(jval), "AsIs")
+    if (inherits(jval, "AsIs")) 
+      setattr(jval, "class", setdiff(class(jval), "AsIs"))
     
     return(jval)
   }
