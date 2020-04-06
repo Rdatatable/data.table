@@ -236,7 +236,7 @@ bool islocked(SEXP x);
 SEXP islockedR(SEXP x);
 bool need2utf8(SEXP x);
 SEXP coerceUtf8IfNeeded(SEXP x);
-SEXP protectAsIs(SEXP x, bool dblist);
+SEXP preserveAsIs(SEXP x, bool dblist);
 
 // types.c
 char *end(char *start);

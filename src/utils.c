@@ -366,7 +366,7 @@ SEXP coerceUtf8IfNeeded(SEXP x) {
 // #4327 this function converts an AsIs object x to list(x) or list(list(x))
 // so that they can be preserved "as is". In addition, the "AsIs" class
 // will be removed.
-SEXP protectAsIs(SEXP x, bool dblist) {
+SEXP preserveAsIs(SEXP x, bool twolists) {
   if (!inherits(x, "AsIs")) return x; 
   int nprotect = 0;
   SEXP oldclass = PROTECT(getAttrib(x, R_ClassSymbol)); ++nprotect;
@@ -386,7 +386,7 @@ SEXP protectAsIs(SEXP x, bool dblist) {
   setAttrib(x, R_ClassSymbol, newclass);
   SEXP out = PROTECT(allocVector(VECSXP, 1)); ++nprotect;
   SET_VECTOR_ELT(out, 0, x);
-  if (dblist) {
+  if (twolists) {
     SEXP out2 = PROTECT(allocVector(VECSXP, 1)); ++nprotect;
     SET_VECTOR_ELT(out2, 0, out);
     out = out2;

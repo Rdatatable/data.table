@@ -190,13 +190,13 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
     }
     // #4327 AsIs object should be treated specially. So we wrap it into a list then remove the AsIs class.
     if (inherits(jval, "AsIs")) {
-      jval = PROTECT(protectAsIs(jval, true)); ++nprotect; // must wrap the result into list(list(.)) 
+      jval = PROTECT(preserveAsIs(jval, true)); ++nprotect; // must wrap the result into list(list(.)) 
       // otherwise data.table assumes its a regular result
     } else if (TYPEOF(jval) == VECSXP) {
       for (int j=0; j<LENGTH(jval); ++j) {
         if (inherits(VECTOR_ELT(jval,j), "AsIs")) {
           // it's safe to not protect as SET_VECTOR_ELT does no allocation
-          SET_VECTOR_ELT(jval, j, protectAsIs(VECTOR_ELT(jval,j), false));
+          SET_VECTOR_ELT(jval, j, preserveAsIs(VECTOR_ELT(jval,j), false));
         }
       }
     }
