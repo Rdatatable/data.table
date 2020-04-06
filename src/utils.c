@@ -363,3 +363,38 @@ SEXP coerceUtf8IfNeeded(SEXP x) {
   return(ans);
 }
 
+SEXP protectAsIs(SEXP x, bool dblist) {
+  if (!inherits(x, "AsIs")) return x; 
+  int nprotect = 0;
+  SEXP oldclass = PROTECT(getAttrib(x, R_ClassSymbol)); ++nprotect;
+  if (oldclass == R_NilValue) { // it should never be reached 
+    UNPROTECT(nprotect);
+    return x;
+  }
+  int n = 0;
+  for (int i = 0; i < LENGTH(oldclass); ++i) {
+    if (!strcmp(CHAR(STRING_ELT(oldclass, i)), "AsIs")) ++n;
+  }
+  if (n == 0) { // it should never be reached
+    UNPROTECT(nprotect);
+    return x;
+  }
+  SEXP newclass = PROTECT(allocVector(STRSXP, LENGTH(oldclass) - n)); ++nprotect;
+  n = 0;
+  for (int i = 0; i < LENGTH(oldclass); ++i) {
+    if (strcmp(CHAR(STRING_ELT(oldclass, i)), "AsIs")) {
+      SET_STRING_ELT(newclass, n, STRING_ELT(oldclass, i));
+      ++n;
+    }
+  }
+  setAttrib(x, R_ClassSymbol, newclass);
+  SEXP out = PROTECT(allocVector(VECSXP, 1)); ++nprotect;
+  SET_VECTOR_ELT(out, 0, x);
+  if (dblist) {
+    SEXP out2 = PROTECT(allocVector(VECSXP, 1)); ++nprotect;
+    SET_VECTOR_ELT(out2, 0, out);
+    out = out2;
+  }
+  UNPROTECT(nprotect);
+  return out;
+}
