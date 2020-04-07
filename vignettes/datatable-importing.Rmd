@@ -118,7 +118,7 @@ aggr = function (x) {
 }
 ```
 
-The case for `data.table`'s special symbols (`.SD`, `.BY`, `.N`, `.I`, `.GRP`, and `.EACHI`; see `?.N`) and assignment operator (`:=`) is slightly different. You should import whichever of these values you use from `data.table`'s namespace to protect against any issues arising from the unlikely scenario that we change the exported value of these in the future, e.g. if you want to use `.N`, `.I`, and `:=`, a minimal `NAMESPACE` would have:
+The case for `data.table`'s special symbols (`.SD`, `.BY`, `.N`, `.I`, `.GRP`, `.NGRP`, and `.EACHI`; see `?.N`) and assignment operator (`:=`) is slightly different. You should import whichever of these values you use from `data.table`'s namespace to protect against any issues arising from the unlikely scenario that we change the exported value of these in the future, e.g. if you want to use `.N`, `.I`, and `:=`, a minimal `NAMESPACE` would have:
 
 ```r
 importFrom(data.table, .N, .I, ':=')
@@ -189,7 +189,11 @@ If this is anyway your preferred approach to package development, please define 
 
 ## Further information on dependencies
 
-For more canonical documentation of defining packages dependency check the official manual: [Writing R Extensions](https://cran.r-project.org/doc/manuals/r-release/R-exts.html)
+For more canonical documentation of defining packages dependency check the official manual: [Writing R Extensions](https://cran.r-project.org/doc/manuals/r-release/R-exts.html).
+
+## Importing data.table C routines
+
+Some of internally used C routines are now exported on C level thus can be used in R packages directly from their C code. See [`?cdt`](https://rdatatable.gitlab.io/data.table/reference/cdt.html) for details and [Writing R Extensions](https://cran.r-project.org/doc/manuals/r-release/R-exts.html) _Linking to native routines in other packages_ section for usage.
 
 ## Importing from non-R Applications {non-r-API}
 

@@ -13,6 +13,13 @@ if (base::getRversion() < "3.5.0") {
 isTRUEorNA    = function(x) is.logical(x) && length(x)==1L && (is.na(x) || x)
 isTRUEorFALSE = function(x) is.logical(x) && length(x)==1L && !is.na(x)
 allNA = function(x) .Call(C_allNAR, x)
+# helper for nan argument (e.g. nafill): TRUE -> treat NaN as NA
+nan_is_na = function(x) {
+  if (length(x) != 1L) stop("Argument 'nan' must be length 1")
+  if (identical(x, NA) || identical(x, NA_real_)) return(TRUE)
+  if (identical(x, NaN)) return(FALSE)
+  stop("Argument 'nan' must be NA or NaN")
+}
 
 if (base::getRversion() < "3.2.0") {  # Apr 2015
   isNamespaceLoaded = function(x) x %chin% loadedNamespaces()
@@ -116,6 +123,17 @@ do_patterns = function(pat_sub, all_cols) {
 
   return(matched)
 }
+
+# check UTC status
+is_utc = function(tz) {
+  # via grep('UTC|GMT', OlsonNames(), value = TRUE); ordered by "prior" frequency
+  utc_tz = c("UTC", "GMT", "Etc/UTC", "Etc/GMT", "GMT-0", "GMT+0", "GMT0")
+  if (is.null(tz)) tz = Sys.timezone()
+  return(tz %chin% utc_tz)
+}
+
+# very nice idea from Michael to avoid expression repetition (risk) in internal code, #4226
+"%iscall%" = function(e, f) { is.call(e) && e[[1L]] %chin% f }
 
 # nocov start #593 always return a data.table
 edit.data.table = function(name, ...) {

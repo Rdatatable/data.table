@@ -1,22 +1,40 @@
 #include "data.table.h"
 
-void nafillDouble(double *x, uint_fast64_t nx, unsigned int type, double fill, ans_t *ans, bool verbose) {
+void nafillDouble(double *x, uint_fast64_t nx, unsigned int type, double fill, bool nan_is_na, ans_t *ans, bool verbose) {
   double tic=0.0;
   if (verbose)
     tic = omp_get_wtime();
   if (type==0) { // const
-    for (uint_fast64_t i=0; i<nx; i++) {
-      ans->dbl_v[i] = ISNA(x[i]) ? fill : x[i];
+    if (nan_is_na) {
+      for (uint_fast64_t i=0; i<nx; i++) {
+        ans->dbl_v[i] = ISNAN(x[i]) ? fill : x[i];
+      }
+    } else {
+      for (uint_fast64_t i=0; i<nx; i++) {
+        ans->dbl_v[i] = ISNA(x[i]) ? fill : x[i];
+      }
     }
   } else if (type==1) { // locf
     ans->dbl_v[0] = x[0];
-    for (uint_fast64_t i=1; i<nx; i++) {
-      ans->dbl_v[i] = ISNA(x[i]) ? ans->dbl_v[i-1] : x[i];
+    if (nan_is_na) {
+      for (uint_fast64_t i=1; i<nx; i++) {
+        ans->dbl_v[i] = ISNAN(x[i]) ? ans->dbl_v[i-1] : x[i];
+      }
+    } else {
+      for (uint_fast64_t i=1; i<nx; i++) {
+        ans->dbl_v[i] = ISNA(x[i]) ? ans->dbl_v[i-1] : x[i];
+      }
     }
   } else if (type==2) { // nocb
     ans->dbl_v[nx-1] = x[nx-1];
-    for (int_fast64_t i=nx-2; i>=0; i--) {
-      ans->dbl_v[i] = ISNA(x[i]) ? ans->dbl_v[i+1] : x[i];
+    if (nan_is_na) {
+      for (int_fast64_t i=nx-2; i>=0; i--) {
+        ans->dbl_v[i] = ISNAN(x[i]) ? ans->dbl_v[i+1] : x[i];
+      }
+    } else {
+      for (int_fast64_t i=nx-2; i>=0; i--) {
+        ans->dbl_v[i] = ISNA(x[i]) ? ans->dbl_v[i+1] : x[i];
+      }
     }
   }
   if (verbose)
@@ -67,11 +85,9 @@ void nafillInteger64(int64_t *x, uint_fast64_t nx, unsigned int type, int64_t fi
     snprintf(ans->message[0], 500, "%s: took %.3fs\n", __func__, omp_get_wtime()-tic);
 }
 
-SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP inplace, SEXP cols, SEXP verbose) {
+SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, SEXP cols) {
   int protecti=0;
-  if (!IS_TRUE_OR_FALSE(verbose))
-    error("verbose must be TRUE or FALSE");
-  bool bverbose = LOGICAL(verbose)[0];
+  const bool verbose = GetVerbose();
 
   if (!xlength(obj))
     return(obj);
@@ -80,9 +96,9 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP inplace, SEXP cols, SEXP verbo
   SEXP x = R_NilValue;
   if (isVectorAtomic(obj)) {
     if (binplace)
-      error("'x' argument is atomic vector, in-place update is supported only for list/data.table");
+      error(_("'x' argument is atomic vector, in-place update is supported only for list/data.table"));
     else if (!isReal(obj) && !isInteger(obj))
-      error("'x' argument must be numeric type, or list/data.table of numeric types");
+      error(_("'x' argument must be numeric type, or list/data.table of numeric types"));
     x = PROTECT(allocVector(VECSXP, 1)); protecti++; // wrap into list
     SET_VECTOR_ELT(x, 0, obj);
   } else {
@@ -92,7 +108,7 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP inplace, SEXP cols, SEXP verbo
     for (int i=0; i<length(ricols); i++) {
       SEXP this_col = VECTOR_ELT(obj, icols[i]-1);
       if (!isReal(this_col) && !isInteger(this_col))
-        error("'x' argument must be numeric type, or list/data.table of numeric types");
+        error(_("'x' argument must be numeric type, or list/data.table of numeric types"));
       SET_VECTOR_ELT(x, i, this_col);
     }
   }
@@ -105,16 +121,26 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP inplace, SEXP cols, SEXP verbo
   SEXP ans = R_NilValue;
   ans_t *vans = (ans_t *)R_alloc(nx, sizeof(ans_t));
   for (R_len_t i=0; i<nx; i++) {
-    inx[i] = xlength(VECTOR_ELT(x, i));
-    dx[i] = REAL(VECTOR_ELT(x, i));
-    ix[i] = INTEGER(VECTOR_ELT(x, i));
-    i64x[i] = (int64_t *)REAL(VECTOR_ELT(x, i));
+    const SEXP xi = VECTOR_ELT(x, i);
+    inx[i] = xlength(xi);
+    // not sure why these pointers are being constructed like this; TODO: simplify structure
+    if (isReal(xi)) {
+      dx[i] = REAL(xi);
+      i64x[i] = (int64_t *)REAL(xi);
+      ix[i] = NULL;
+    } else {
+      ix[i] = INTEGER(xi);
+      dx[i] = NULL;
+      i64x[i] = NULL;
+    }
   }
   if (!binplace) {
     ans = PROTECT(allocVector(VECSXP, nx)); protecti++;
     for (R_len_t i=0; i<nx; i++) {
       SET_VECTOR_ELT(ans, i, allocVector(TYPEOF(VECTOR_ELT(x, i)), inx[i]));
-      vans[i] = ((ans_t) { .dbl_v=REAL(VECTOR_ELT(ans, i)), .int_v=INTEGER(VECTOR_ELT(ans, i)), .int64_v=(int64_t *)REAL(VECTOR_ELT(ans, i)), .status=0, .message={"\0","\0","\0","\0"} });
+      const SEXP ansi = VECTOR_ELT(ans, i);
+      const void *p = isReal(ansi) ? (void *)REAL(ansi) : (void *)INTEGER(ansi);
+      vans[i] = ((ans_t) { .dbl_v=(double *)p, .int_v=(int *)p, .int64_v=(int64_t *)p, .status=0, .message={"\0","\0","\0","\0"} });
     }
   } else {
     for (R_len_t i=0; i<nx; i++) {
@@ -130,10 +156,10 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP inplace, SEXP cols, SEXP verbo
   else if (!strcmp(CHAR(STRING_ELT(type, 0)), "nocb"))
     itype = 2;
   else
-    error("Internal error: invalid type argument in nafillR function, should have been caught before. Please report to data.table issue tracker."); // # nocov
+    error(_("Internal error: invalid type argument in nafillR function, should have been caught before. Please report to data.table issue tracker.")); // # nocov
 
   if (itype==0 && length(fill)!=1)
-    error("fill must be a vector of length 1");
+    error(_("fill must be a vector of length 1"));
 
   double dfill=NA_REAL;
   int32_t ifill=NA_INTEGER;
@@ -142,7 +168,7 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP inplace, SEXP cols, SEXP verbo
     coerceFill(fill, &dfill, &ifill, &i64fill);
 
   double tic=0.0, toc=0.0;
-  if (bverbose)
+  if (verbose)
     tic = omp_get_wtime();
   #pragma omp parallel for if (nx>1) num_threads(getDTthreads())
   for (R_len_t i=0; i<nx; i++) {
@@ -150,18 +176,21 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP inplace, SEXP cols, SEXP verbo
     switch (TYPEOF(this_x)) {
     case REALSXP : {
       if (INHERITS(this_x, char_integer64) || INHERITS(this_x, char_nanotime)) {  // inside parallel region so can't call Rinherits()
-        nafillInteger64(i64x[i], inx[i], itype, i64fill, &vans[i], bverbose);
+        nafillInteger64(i64x[i], inx[i], itype, i64fill, &vans[i], verbose);
       } else {
-        nafillDouble(dx[i], inx[i], itype, dfill, &vans[i], bverbose);
+        if (!IS_TRUE_OR_FALSE(nan_is_na_arg))
+          error("nan_is_na must be TRUE or FALSE"); // # nocov
+        bool nan_is_na = LOGICAL(nan_is_na_arg)[0];
+        nafillDouble(dx[i], inx[i], itype, dfill, nan_is_na, &vans[i], verbose);
       }
     } break;
     case INTSXP : {
-      nafillInteger(ix[i], inx[i], itype, ifill, &vans[i], bverbose);
+      nafillInteger(ix[i], inx[i], itype, ifill, &vans[i], verbose);
     } break;
-    default: error("Internal error: invalid type argument in nafillR function, should have been caught before. Please report to data.table issue tracker."); // # nocov
+    default: error(_("Internal error: invalid type argument in nafillR function, should have been caught before. Please report to data.table issue tracker.")); // # nocov
     }
   }
-  if (bverbose)
+  if (verbose)
     toc = omp_get_wtime();
 
   if (!binplace) {
@@ -171,10 +200,10 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP inplace, SEXP cols, SEXP verbo
     }
   }
 
-  ansMsg(vans, nx, bverbose, __func__);
+  ansMsg(vans, nx, verbose, __func__);
 
-  if (bverbose)
-    Rprintf("%s: parallel processing of %d column(s) took %.3fs\n", __func__, nx, toc-tic);
+  if (verbose)
+    Rprintf(_("%s: parallel processing of %d column(s) took %.3fs\n"), __func__, nx, toc-tic);
 
   UNPROTECT(protecti);
   if (binplace) {

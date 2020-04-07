@@ -7,24 +7,24 @@
 Developer helper script providing `cc` function. If one starts R session in `data.table` project root directory `.dev/cc.R` file should be automatically sourced (due to local `.Rprofile` file) making `cc()` (and `dd()`) function available straightaway.
 
 ```r
-cc(test=TRUE, clean=FALSE, debug=FALSE, omp=!debug, cc_dir, path=Sys.getenv("PROJ_PATH"), CC="gcc")
+cc(test=FALSE, clean=FALSE, debug=FALSE, omp=!debug, cc_dir, path=Sys.getenv("PROJ_PATH"), CC="gcc")
 ```
 
-Use `cc` to re-compile all C sources and attach all `data.table` R functions (including non-exported ones).
-By default `cc(test=TRUE)` will also run main test script `"tests.Rraw"`, so one may want to use `cc(F)` to re-compile and attach newly modified code but not run any test script. As of now running main tests with `cc()` requires to uninstall package to avoid S4 classes namespace issues (see [#3808](https://github.com/Rdatatable/data.table/issues/3808)).
+Use `cc()` to re-compile all C sources and attach all `data.table` R functions (including non-exported ones).
+One might want to re-compile and run main test script `"tests.Rraw"` automatically, then `cc(test=TRUE)` should be used. As of now running main tests with `cc(T)` requires to uninstall package to avoid S4 classes namespace issues (see [#3808](https://github.com/Rdatatable/data.table/issues/3808)).
 When working on a bigger feature, one may want to put new unit tests into dedicated test file, then `cc("feature.Rraw")` can be used to run only chosen test script.
 
 Usage of `cc()` from `R`:
 ```r
-# run test
+# re-compile and attach
 cc()
-# change some files, run test
+# change some files, re-compile and re-attach
 cc()
-# compile, reload but not test
-cc(F)
-# clean, compile, reload but not test
+# compile, reload and run main test script
+cc(T)
+# clean, compile, reload
 cc(F, T)
-# clean, compile using specific compiler version, reload but not test
+# clean, compile using specific compiler version, reload
 cc(F, T, CC="gcc-8")
 ```
 

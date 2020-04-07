@@ -41,12 +41,12 @@ static int scipen;
 static bool squashDateTime=false;      // 0=ISO(yyyy-mm-dd) 1=squash(yyyymmdd)
 static bool verbose=false;
 
-extern const char *getString(void *, int64_t);
-extern const int getStringLen(void *, int64_t);
-extern const int getMaxStringLen(void *, int64_t);
-extern const int getMaxCategLen(void *);
-extern const int getMaxListItemLen(void *, int64_t);
-extern const char *getCategString(void *, int64_t);
+extern const char *getString(const void *, int64_t);
+extern int getStringLen(const void *, int64_t);
+extern int getMaxStringLen(const void *, int64_t);
+extern int getMaxCategLen(const void *);
+extern int getMaxListItemLen(const void *, int64_t);
+extern const char *getCategString(const void *, int64_t);
 extern double wallclock(void);
 
 inline void write_chars(const char *x, char **pch)
@@ -229,7 +229,7 @@ void writeFloat64(double *col, int64_t row, char **pch)
     uint64_t l = y * SIZE_SF;  // low magnitude mult 10^NUM_SF
     // l now contains NUM_SF+1 digits as integer where repeated /10 below is accurate
 
-    // if (verbose) Rprintf("\nTRACE: acc=%.20Le ; y=%.20Le ; l=%"PRIu64" ; e=%d     ", acc, y, l, exp);
+    // if (verbose) Rprintf(_("\nTRACE: acc=%.20Le ; y=%.20Le ; l=%"PRIu64" ; e=%d     "), acc, y, l, exp);
 
     if (l%10 >= 5) l+=10; // use the last digit to round
     l /= 10;
@@ -542,12 +542,12 @@ static inline void write_string(const char *x, char **pch)
   *pch = ch;
 }
 
-void writeString(void *col, int64_t row, char **pch)
+void writeString(const void *col, int64_t row, char **pch)
 {
   write_string(getString(col, row), pch);
 }
 
-void writeCategString(void *col, int64_t row, char **pch)
+void writeCategString(const void *col, int64_t row, char **pch)
 {
   write_string(getCategString(col, row), pch);
 }
@@ -581,6 +581,15 @@ int compressbuff(z_stream *stream, void* dest, size_t *destLen, const void* sour
   return err == Z_STREAM_END ? Z_OK : err;
 }
 
+void print_z_stream(const z_stream *s)   // temporary tracing function for #4099
+{
+  const unsigned char *byte = (unsigned char *)s;
+  for (int i=0; i<sizeof(z_stream); ++i) {
+    DTPRINT("%02x ", byte[i]);
+  }
+  DTPRINT("\n");
+}
+
 void fwriteMain(fwriteMainArgs args)
 {
   double startTime = wallclock();
@@ -601,26 +610,26 @@ void fwriteMain(fwriteMainArgs args)
   qmethodEscape = args.qmethodEscape;
   squashDateTime = args.squashDateTime;
 
-  if (args.buffMB<1 || args.buffMB>1024) STOP("buffMB=%d outside [1,1024]", args.buffMB);
+  if (args.buffMB<1 || args.buffMB>1024) STOP(_("buffMB=%d outside [1,1024]"), args.buffMB);
   size_t buffSize = (size_t)1024*1024*args.buffMB;
 
   int eolLen=strlen(args.eol), naLen=strlen(args.na);
   // Aside: codacy wants strnlen but strnlen is not in C99 (neither is strlen_s). To pass `gcc -std=c99 -Wall -pedantic`
   //        we'd need `#define _POSIX_C_SOURCE 200809L` before #include <string.h> but that seems a step too far
   //        and platform specific. We prefer to be pure C99.
-  if (eolLen<=0) STOP("eol must be 1 or more bytes (usually either \\n or \\r\\n) but is length %d", eolLen);
+  if (eolLen<=0) STOP(_("eol must be 1 or more bytes (usually either \\n or \\r\\n) but is length %d"), eolLen);
 
   if (verbose) {
-    DTPRINT("Column writers: ");
+    DTPRINT(_("Column writers: "));
     if (args.ncol<=50) {
-      for (int j=0; j<args.ncol; j++) DTPRINT("%d ", args.whichFun[j]);
+      for (int j=0; j<args.ncol; j++) DTPRINT(_("%d "), args.whichFun[j]);
     } else {
-      for (int j=0; j<30; j++) DTPRINT("%d ", args.whichFun[j]);
-      DTPRINT("... ");
-      for (int j=args.ncol-10; j<args.ncol; j++) DTPRINT("%d ", args.whichFun[j]);
+      for (int j=0; j<30; j++) DTPRINT(_("%d "), args.whichFun[j]);
+      DTPRINT(_("... "));
+      for (int j=args.ncol-10; j<args.ncol; j++) DTPRINT(_("%d "), args.whichFun[j]);
     }
-    DTPRINT("\nargs.doRowNames=%d args.rowNames=%d doQuote=%d args.nrow=%"PRId64" args.ncol=%d eolLen=%d\n",
-          args.doRowNames, args.rowNames, doQuote, (int64_t)args.nrow, args.ncol, eolLen);
+    DTPRINT(_("\nargs.doRowNames=%d args.rowNames=%d doQuote=%d args.nrow=%"PRId64" args.ncol=%d eolLen=%d\n"),
+          args.doRowNames, args.rowNames, doQuote, args.nrow, args.ncol, eolLen);
   }
 
   // Calculate upper bound for line length. Numbers use a fixed maximum (e.g. 12 for integer) while strings find the longest
@@ -652,14 +661,14 @@ void fwriteMain(fwriteMainArgs args)
         width = getMaxListItemLen(args.columns[j], args.nrow);
         break;
       default:
-        STOP("Internal error: type %d has no max length method implemented", args.whichFun[j]);  // # nocov
+        STOP(_("Internal error: type %d has no max length method implemented"), args.whichFun[j]);  // # nocov
       }
     }
     if (args.whichFun[j]==WF_Float64 && args.scipen>0) width+=MIN(args.scipen,350); // clamp width to IEEE754 max to avoid scipen=99999 allocating buffer larger than can ever be written
     if (width<naLen) width = naLen;
     maxLineLen += width*2;  // *2 in case the longest string is all quotes and they all need to be escaped
   }
-  if (verbose) DTPRINT("maxLineLen=%"PRIu64". Found in %.3fs\n", (uint64_t)maxLineLen, 1.0*(wallclock()-t0));
+  if (verbose) DTPRINT(_("maxLineLen=%"PRIu64". Found in %.3fs\n"), (uint64_t)maxLineLen, 1.0*(wallclock()-t0));
 
   int f=0;
   if (*args.filename=='\0') {
@@ -679,8 +688,8 @@ void fwriteMain(fwriteMainArgs args)
       // # nocov start
       int erropen = errno;
       STOP(access( args.filename, F_OK ) != -1 ?
-           "%s: '%s'. Failed to open existing file for writing. Do you have write permission to it? Is this Windows and does another process such as Excel have it open?" :
-           "%s: '%s'. Unable to create new file for writing (it does not exist already). Do you have permission to write here, is there space on the disk and does the path exist?",
+           _("%s: '%s'. Failed to open existing file for writing. Do you have write permission to it? Is this Windows and does another process such as Excel have it open?") :
+           _("%s: '%s'. Unable to create new file for writing (it does not exist already). Do you have permission to write here, is there space on the disk and does the path exist?"),
            strerror(erropen), args.filename);
       // # nocov end
     }
@@ -688,9 +697,9 @@ void fwriteMain(fwriteMainArgs args)
 
   int yamlLen = strlen(args.yaml);
   if (verbose) {
-    DTPRINT("Writing bom (%s), yaml (%d characters) and column names (%s) ... ",
+    DTPRINT(_("Writing bom (%s), yaml (%d characters) and column names (%s) ... "),
             args.bom?"true":"false", yamlLen, args.colNames?"true":"false");
-    if (f==-1) DTPRINT("\n");
+    if (f==-1) DTPRINT(_("\n"));
   }
   size_t headerLen = 0;
   if (args.bom) headerLen += 3;
@@ -701,7 +710,7 @@ void fwriteMain(fwriteMainArgs args)
   }
   if (headerLen) {
     char *buff = malloc(headerLen);
-    if (!buff) STOP("Unable to allocate %d MiB for header: %s", headerLen / 1024 / 1024, strerror(errno));
+    if (!buff) STOP(_("Unable to allocate %d MiB for header: %s"), headerLen / 1024 / 1024, strerror(errno));
     char *ch = buff;
     if (args.bom) {*ch++=(char)0xEF; *ch++=(char)0xBB; *ch++=(char)0xBF; }  // 3 appears above (search for "bom")
     memcpy(ch, args.yaml, yamlLen);
@@ -729,16 +738,18 @@ void fwriteMain(fwriteMainArgs args)
         z_stream stream;
         if(init_stream(&stream)) {
           free(buff);                                    // # nocov
-          STOP("Can't allocate gzip stream structure");  // # nocov
+          STOP(_("Can't allocate gzip stream structure"));  // # nocov
         }
+        if (verbose) {DTPRINT("z_stream for header (1): "); print_z_stream(&stream);}
         size_t zbuffSize = deflateBound(&stream, headerLen);
         char *zbuff = malloc(zbuffSize);
         if (!zbuff) {
           free(buff);                                                                                   // # nocov
-          STOP("Unable to allocate %d MiB for zbuffer: %s", zbuffSize / 1024 / 1024, strerror(errno));  // # nocov
+          STOP(_("Unable to allocate %d MiB for zbuffer: %s"), zbuffSize / 1024 / 1024, strerror(errno));  // # nocov
         }
         size_t zbuffUsed = zbuffSize;
         ret1 = compressbuff(&stream, zbuff, &zbuffUsed, buff, (size_t)(ch-buff));
+        if (verbose) {DTPRINT("z_stream for header (2): "); print_z_stream(&stream);}
         if (ret1==Z_OK) ret2 = WRITE(f, zbuff, (int)zbuffUsed);
         deflateEnd(&stream);
         free(zbuff);
@@ -750,16 +761,16 @@ void fwriteMain(fwriteMainArgs args)
         // # nocov start
         int errwrite = errno; // capture write errno now incase close fails with a different errno
         CLOSE(f);
-        if (ret1) STOP("Compress gzip error: %d", ret1);
-        else      STOP("%s: '%s'", strerror(errwrite), args.filename);
+        if (ret1) STOP(_("Compress gzip error: %d"), ret1);
+        else      STOP(_("%s: '%s'"), strerror(errwrite), args.filename);
         // # nocov end
       }
     }
   }
-  if (verbose) DTPRINT("done in %.3fs\n", 1.0*(wallclock()-t0));
+  if (verbose) DTPRINT(_("done in %.3fs\n"), 1.0*(wallclock()-t0));
   if (args.nrow == 0) {
-    if (verbose) DTPRINT("No data rows present (nrow==0)\n");
-    if (f!=-1 && CLOSE(f)) STOP("%s: '%s'", strerror(errno), args.filename);
+    if (verbose) DTPRINT(_("No data rows present (nrow==0)\n"));
+    if (f!=-1 && CLOSE(f)) STOP(_("%s: '%s'"), strerror(errno), args.filename);
     return;
   }
 
@@ -776,8 +787,8 @@ void fwriteMain(fwriteMainArgs args)
   int nth = args.nth;
   if (numBatches < nth) nth = numBatches;
   if (verbose) {
-    DTPRINT("Writing %"PRId64" rows in %d batches of %d rows (each buffer size %dMB, showProgress=%d, nth=%d)\n",
-            (int64_t)args.nrow, numBatches, rowsPerBatch, args.buffMB, args.showProgress, nth);
+    DTPRINT(_("Writing %"PRId64" rows in %d batches of %d rows (each buffer size %dMB, showProgress=%d, nth=%d)\n"),
+            args.nrow, numBatches, rowsPerBatch, args.buffMB, args.showProgress, nth);
   }
   t0 = wallclock();
 
@@ -789,7 +800,7 @@ void fwriteMain(fwriteMainArgs args)
   if(args.is_gzip){
     z_stream stream;
     if(init_stream(&stream))
-      STOP("Can't allocate gzip stream structure"); // # nocov
+      STOP(_("Can't allocate gzip stream structure")); // # nocov
     zbuffSize = deflateBound(&stream, buffSize);
     deflateEnd(&stream);
   }
@@ -819,6 +830,8 @@ void fwriteMain(fwriteMainArgs args)
   char failed_msg[1001] = "";  // to hold zlib's msg; copied out of zlib in ordered section just in case the msg is allocated within zlib
   int failed_write = 0;    // same. could use +ve and -ve in the same code but separate it out to trace Solaris problem, #3931
 
+  if (nth>1) verbose=false; // printing isn't thread safe (there's a temporary print in compressbuff for tracing solaris; #4099)
+
   #pragma omp parallel num_threads(nth)
   {
     int me = omp_get_thread_num();
@@ -835,6 +848,7 @@ void fwriteMain(fwriteMainArgs args)
         failed = true;              // # nocov
         my_failed_compress = -998;  // # nocov
       }
+      if (verbose) {DTPRINT("z_stream for data (1): "); print_z_stream(&mystream);}
     }
 
     #pragma omp for ordered schedule(dynamic)
@@ -866,7 +880,9 @@ void fwriteMain(fwriteMainArgs args)
       // compress buffer if gzip
       if (args.is_gzip && !failed) {
         myzbuffUsed = zbuffSize;
+        if (verbose) {DTPRINT("z_stream for data (2): "); print_z_stream(&mystream);}
         int ret = compressbuff(&mystream, myzBuff, &myzbuffUsed, myBuff, (size_t)(ch-myBuff));
+        if (verbose) {DTPRINT("z_stream for data (3): "); print_z_stream(&mystream);}
         if (ret) { failed=true; my_failed_compress=ret; }
         else deflateReset(&mystream);
       }
@@ -905,7 +921,7 @@ void fwriteMain(fwriteMainArgs args)
               if (verbose && !hasPrinted) DTPRINT("\n");
               DTPRINT("\rWritten %.1f%% of %"PRId64" rows in %d secs using %d thread%s. "
                       "maxBuffUsed=%d%%. ETA %d secs.      ",
-                       (100.0*end)/args.nrow, (int64_t)args.nrow, (int)(now-startTime), nth, nth==1?"":"s",
+                       (100.0*end)/args.nrow, args.nrow, (int)(now-startTime), nth, nth==1?"":"s",
                        maxBuffUsedPC, ETA);
               // TODO: use progress() as in fread
               nextTime = now+1;
@@ -947,13 +963,13 @@ void fwriteMain(fwriteMainArgs args)
       DTPRINT("\r                                                                       "
               "                                                              \r");
     } else {       // don't clear any potentially helpful output before error
-      DTPRINT("\n");
+      DTPRINT(_("\n"));
     }
     // # nocov end
   }
 
   if (f!=-1 && CLOSE(f) && !failed)
-    STOP("%s: '%s'", strerror(errno), args.filename);  // # nocov
+    STOP(_("%s: '%s'"), strerror(errno), args.filename);  // # nocov
   // quoted '%s' in case of trailing spaces in the filename
   // If a write failed, the line above tries close() to clean up, but that might fail as well. So the
   // '&& !failed' is to not report the error as just 'closing file' but the next line for more detail
@@ -961,13 +977,12 @@ void fwriteMain(fwriteMainArgs args)
   if (failed) {
     // # nocov start
     if (failed_compress)
-      STOP("zlib %s (zlib.h %s) deflate() returned error %d with z_stream->msg==\"%s\" Z_FINISH=%d Z_BLOCK=%d. %s",
+      STOP(_("zlib %s (zlib.h %s) deflate() returned error %d with z_stream->msg==\"%s\" Z_FINISH=%d Z_BLOCK=%d. %s"),
            zlibVersion(), ZLIB_VERSION, failed_compress, failed_msg, Z_FINISH, Z_BLOCK,
-           verbose ? "Please include the full output above and below this message in your data.table bug report."
-                   : "Please retry fwrite() with verbose=TRUE and include the full output with your data.table bug report.");
+           verbose ? _("Please include the full output above and below this message in your data.table bug report.")
+                   : _("Please retry fwrite() with verbose=TRUE and include the full output with your data.table bug report."));
     if (failed_write)
       STOP("%s: '%s'", strerror(failed_write), args.filename);
     // # nocov end
   }
 }
-

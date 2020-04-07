@@ -45,38 +45,38 @@ SEXP bmerge(SEXP iArg, SEXP xArg, SEXP icolsArg, SEXP xcolsArg, SEXP isorted, SE
 
   // iArg, xArg, icolsArg and xcolsArg
   i = iArg; x = xArg;  // set globals so bmerge_r can see them.
-  if (!isInteger(icolsArg)) error("Internal error: icols is not integer vector"); // # nocov
-  if (!isInteger(xcolsArg)) error("Internal error: xcols is not integer vector"); // # nocov
-  if (LENGTH(icolsArg) > LENGTH(xcolsArg)) error("Internal error: length(icols) [%d] > length(xcols) [%d]", LENGTH(icolsArg), LENGTH(xcolsArg)); // # nocov
+  if (!isInteger(icolsArg)) error(_("Internal error: icols is not integer vector")); // # nocov
+  if (!isInteger(xcolsArg)) error(_("Internal error: xcols is not integer vector")); // # nocov
+  if (LENGTH(icolsArg) > LENGTH(xcolsArg)) error(_("Internal error: length(icols) [%d] > length(xcols) [%d]"), LENGTH(icolsArg), LENGTH(xcolsArg)); // # nocov
   icols = INTEGER(icolsArg);
   xcols = INTEGER(xcolsArg);
-  xN = LENGTH(VECTOR_ELT(x,0));
-  iN = ilen = anslen = LENGTH(VECTOR_ELT(i,0));
+  xN = LENGTH(x) ? LENGTH(VECTOR_ELT(x,0)) : 0;
+  iN = ilen = anslen = LENGTH(i) ? LENGTH(VECTOR_ELT(i,0)) : 0;
   ncol = LENGTH(icolsArg);    // there may be more sorted columns in x than involved in the join
   for(int col=0; col<ncol; col++) {
-    if (icols[col]==NA_INTEGER) error("Internal error. icols[%d] is NA", col); // # nocov
-    if (xcols[col]==NA_INTEGER) error("Internal error. xcols[%d] is NA", col); // # nocov
-    if (icols[col]>LENGTH(i) || icols[col]<1) error("icols[%d]=%d outside range [1,length(i)=%d]", col, icols[col], LENGTH(i));
-    if (xcols[col]>LENGTH(x) || xcols[col]<1) error("xcols[%d]=%d outside range [1,length(x)=%d]", col, xcols[col], LENGTH(x));
+    if (icols[col]==NA_INTEGER) error(_("Internal error. icols[%d] is NA"), col); // # nocov
+    if (xcols[col]==NA_INTEGER) error(_("Internal error. xcols[%d] is NA"), col); // # nocov
+    if (icols[col]>LENGTH(i) || icols[col]<1) error(_("icols[%d]=%d outside range [1,length(i)=%d]"), col, icols[col], LENGTH(i));
+    if (xcols[col]>LENGTH(x) || xcols[col]<1) error(_("xcols[%d]=%d outside range [1,length(x)=%d]"), col, xcols[col], LENGTH(x));
     int it = TYPEOF(VECTOR_ELT(i, icols[col]-1));
     int xt = TYPEOF(VECTOR_ELT(x, xcols[col]-1));
-    if (iN && it!=xt) error("typeof x.%s (%s) != typeof i.%s (%s)", CHAR(STRING_ELT(getAttrib(x,R_NamesSymbol),xcols[col]-1)), type2char(xt), CHAR(STRING_ELT(getAttrib(i,R_NamesSymbol),icols[col]-1)), type2char(it));
+    if (iN && it!=xt) error(_("typeof x.%s (%s) != typeof i.%s (%s)"), CHAR(STRING_ELT(getAttrib(x,R_NamesSymbol),xcols[col]-1)), type2char(xt), CHAR(STRING_ELT(getAttrib(i,R_NamesSymbol),icols[col]-1)), type2char(it));
   }
   // raise(SIGINT);
 
   // rollArg, rollendsArg
   roll = 0.0; rollToNearest = FALSE;
   if (isString(rollarg)) {
-    if (strcmp(CHAR(STRING_ELT(rollarg,0)),"nearest") != 0) error("roll is character but not 'nearest'");
-    if (TYPEOF(VECTOR_ELT(i, icols[ncol-1]-1))==STRSXP) error("roll='nearest' can't be applied to a character column, yet.");
+    if (strcmp(CHAR(STRING_ELT(rollarg,0)),"nearest") != 0) error(_("roll is character but not 'nearest'"));
+    if (TYPEOF(VECTOR_ELT(i, icols[ncol-1]-1))==STRSXP) error(_("roll='nearest' can't be applied to a character column, yet."));
     roll=1.0; rollToNearest=TRUE;       // the 1.0 here is just any non-0.0, so roll!=0.0 can be used later
   } else {
-    if (!isReal(rollarg)) error("Internal error: roll is not character or double"); // # nocov
+    if (!isReal(rollarg)) error(_("Internal error: roll is not character or double")); // # nocov
     roll = REAL(rollarg)[0];   // more common case (rolling forwards or backwards) or no roll when 0.0
   }
   rollabs = fabs(roll);
   if (!isLogical(rollendsArg) || LENGTH(rollendsArg) != 2)
-    error("rollends must be a length 2 logical vector");
+    error(_("rollends must be a length 2 logical vector"));
   rollends = LOGICAL(rollendsArg);
 
   // nomatch arg
@@ -86,20 +86,20 @@ SEXP bmerge(SEXP iArg, SEXP xArg, SEXP icolsArg, SEXP xcolsArg, SEXP isorted, SE
   if (!strcmp(CHAR(STRING_ELT(multArg, 0)), "all")) mult = ALL;
   else if (!strcmp(CHAR(STRING_ELT(multArg, 0)), "first")) mult = FIRST;
   else if (!strcmp(CHAR(STRING_ELT(multArg, 0)), "last")) mult = LAST;
-  else error("Internal error: invalid value for 'mult'. please report to data.table issue tracker"); // # nocov
+  else error(_("Internal error: invalid value for 'mult'. please report to data.table issue tracker")); // # nocov
 
   // opArg
   if (!isInteger(opArg) || length(opArg) != ncol)
-    error("Internal error: opArg is not an integer vector of length equal to length(on)"); // # nocov
+    error(_("Internal error: opArg is not an integer vector of length equal to length(on)")); // # nocov
   op = INTEGER(opArg);
   if (!isInteger(nqgrpArg))
-    error("Internal error: nqgrpArg must be an integer vector"); // # nocov
+    error(_("Internal error: nqgrpArg must be an integer vector")); // # nocov
   nqgrp = nqgrpArg; // set global for bmerge_r
   scols = (!length(nqgrpArg)) ? 0 : -1; // starting col index, -1 is external group column for non-equi join case
 
   // nqmaxgrpArg
   if (!isInteger(nqmaxgrpArg) || length(nqmaxgrpArg) != 1 || INTEGER(nqmaxgrpArg)[0] <= 0)
-    error("Intrnal error: nqmaxgrpArg is not a positive length-1 integer vector"); // # nocov
+    error(_("Intrnal error: nqmaxgrpArg is not a positive length-1 integer vector")); // # nocov
   nqmaxgrp = INTEGER(nqmaxgrpArg)[0];
   if (nqmaxgrp>1 && mult == ALL) {
     // non-equi case with mult=ALL, may need reallocation
@@ -108,7 +108,7 @@ SEXP bmerge(SEXP iArg, SEXP xArg, SEXP icolsArg, SEXP xcolsArg, SEXP isorted, SE
     retLength = Calloc(anslen, int);
     retIndex = Calloc(anslen, int);
     if (retFirst==NULL || retLength==NULL || retIndex==NULL)
-      error("Internal error in allocating memory for non-equi join"); // # nocov
+      error(_("Internal error in allocating memory for non-equi join")); // # nocov
     // initialise retIndex here directly, as next loop is meant for both equi and non-equi joins
     for (int j=0; j<anslen; j++) retIndex[j] = j+1;
   } else { // equi joins (or) non-equi join but no multiple matches
@@ -153,7 +153,7 @@ SEXP bmerge(SEXP iArg, SEXP xArg, SEXP icolsArg, SEXP xcolsArg, SEXP isorted, SE
   // xo arg
   xo = NULL;
   if (length(xoArg)) {
-    if (!isInteger(xoArg)) error("Internal error: xoArg is not an integer vector"); // # nocov
+    if (!isInteger(xoArg)) error(_("Internal error: xoArg is not an integer vector")); // # nocov
     xo = INTEGER(xoArg);
   }
 
@@ -268,7 +268,7 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
       case LT : xupp = xlow + 1; xlow = xlowIn; break;
       case GE : if (ival.i != NA_INTEGER) xupp = xuppIn; break;
       case GT : xlow = xupp - 1; if (ival.i != NA_INTEGER) xupp = xuppIn; break;
-      default : error("Internal error in bmerge_r for '%s' column. Unrecognized value op[col]=%d", type2char(TYPEOF(xc)), op[col]); // #nocov
+      default : error(_("Internal error in bmerge_r for '%s' column. Unrecognized value op[col]=%d"), type2char(TYPEOF(xc)), op[col]); // #nocov
       }
       // for LE/LT cases, we need to ensure xlow excludes NA indices, != EQ is checked above already
       if (op[col] <= 3 && xlow<xupp-1 && ival.i != NA_INTEGER && INTEGER(xc)[XIND(xlow+1)] == NA_INTEGER) {
@@ -300,7 +300,7 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
   }
     break;
   case STRSXP : {
-    if (op[col] != EQ) error("Only '==' operator is supported for columns of type %s.", type2char(TYPEOF(xc)));
+    if (op[col] != EQ) error(_("Only '==' operator is supported for columns of type %s."), type2char(TYPEOF(xc)));
     ival.s = ENC2UTF8(STRING_ELT(ic,ir));
     while(xlow < xupp-1) {
       int mid = xlow + (xupp-xlow)/2;
@@ -376,7 +376,7 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
       case LT : xupp = xlow + 1; if (!isivalNA) xlow = xlowIn; break;
       case GE : if (!isivalNA) xupp = xuppIn; break;
       case GT : xlow = xupp - 1; if (!isivalNA) xupp = xuppIn; break;
-      default : error("Internal error in bmerge_r for '%s' column. Unrecognized value op[col]=%d", type2char(TYPEOF(xc)), op[col]); // #nocov
+      default : error(_("Internal error in bmerge_r for '%s' column. Unrecognized value op[col]=%d"), type2char(TYPEOF(xc)), op[col]); // #nocov
       }
       // for LE/LT cases, we need to ensure xlow excludes NA indices, != EQ is checked above already
       if (op[col] <= 3 && xlow<xupp-1 && !isivalNA && (!isInt64 ? ISNAN(dxc[XIND(xlow+1)]) : (DtoLL(dxc[XIND(xlow+1)]) == NA_INT64_LL))) {
@@ -407,7 +407,7 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
   }
     break;
   default:
-    error("Type '%s' not supported for joining/merging", type2char(TYPEOF(xc)));
+    error(_("Type '%s' not supported for joining/merging"), type2char(TYPEOF(xc)));
   }
   if (xlow<xupp-1) { // if value found, low and upp surround it, unlike standard binary search where low falls on it
     if (col<ncol-1) {
@@ -465,7 +465,7 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
     }
   } else if (roll!=0.0 && col==ncol-1) {
     // runs once per i row (not each search test), so not hugely time critical
-    if (xlow != xupp-1 || xlow<xlowIn || xupp>xuppIn) error("Internal error: xlow!=xupp-1 || xlow<xlowIn || xupp>xuppIn"); // # nocov
+    if (xlow != xupp-1 || xlow<xlowIn || xupp>xuppIn) error(_("Internal error: xlow!=xupp-1 || xlow<xlowIn || xupp>xuppIn")); // # nocov
     if (rollToNearest) {   // value of roll ignored currently when nearest
       if ( (!lowmax || xlow>xlowIn) && (!uppmax || xupp<xuppIn) ) {
         if (  ( TYPEOF(ic)==REALSXP && REAL(ic)[ir]-REAL(xc)[XIND(xlow)] <= REAL(xc)[XIND(xupp)]-REAL(ic)[ir] ) // TODO remove macro here requires bigger rewrite

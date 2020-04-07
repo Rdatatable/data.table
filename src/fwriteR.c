@@ -19,14 +19,14 @@ const char *getString(SEXP *col, int64_t row) {   // TODO: inline for use in fwr
   return x==NA_STRING ? NULL : CHAR(x);
 }
 
-const int getStringLen(SEXP *col, int64_t row) {
+int getStringLen(SEXP *col, int64_t row) {
   return LENGTH(col[row]);  // LENGTH of CHARSXP is nchar
 }
 
-const int getMaxStringLen(const SEXP *col, const int64_t n) {
+int getMaxStringLen(const SEXP *col, const int64_t n) {
   int max=0;
   SEXP last=NULL;
-  for (int i=0; i<n; ++i) {
+  for (int64_t i=0; i<n; ++i) {
     SEXP this = *col++;
     if (this==last) continue; // no point calling LENGTH() again on the same string; LENGTH is unlikely as fast as single pointer compare
     int thisnchar = LENGTH(this);
@@ -36,9 +36,9 @@ const int getMaxStringLen(const SEXP *col, const int64_t n) {
   return max;
 }
 
-const int getMaxCategLen(SEXP col) {
+int getMaxCategLen(SEXP col) {
   col = getAttrib(col, R_LevelsSymbol);
-  if (!isString(col)) error("Internal error: col passed to getMaxCategLen is missing levels");
+  if (!isString(col)) error(_("Internal error: col passed to getMaxCategLen is missing levels"));
   return getMaxStringLen( STRING_PTR(col), LENGTH(col) );
 }
 
@@ -72,11 +72,11 @@ void writeList(SEXP *col, int64_t row, char **pch) {
   SEXP v = col[row];
   int32_t wf = whichWriter(v);
   if (TYPEOF(v)==VECSXP || wf==INT32_MIN || isFactor(v)) {
-    error("Internal error: getMaxListItemLen should have caught this up front.");  // # nocov
+    error(_("Internal error: getMaxListItemLen should have caught this up front."));  // # nocov
   }
   char *ch = *pch;
   write_chars(sep2start, &ch);
-  void *data = (void *)DATAPTR(v);
+  const void *data = DATAPTR_RO(v);
   writer_fun_t fun = funs[wf];
   for (int j=0; j<LENGTH(v); j++) {
     (*fun)(data, j, &ch);
@@ -87,20 +87,20 @@ void writeList(SEXP *col, int64_t row, char **pch) {
   *pch = ch;
 }
 
-const int getMaxListItemLen(const SEXP *col, const int64_t n) {
+int getMaxListItemLen(const SEXP *col, const int64_t n) {
   int max=0;
   SEXP last=NULL;
-  for (int i=0; i<n; ++i) {
+  for (int64_t i=0; i<n; ++i) {
     SEXP this = *col++;
     if (this==last) continue; // no point calling LENGTH() again on the same string; LENGTH is unlikely as fast as single pointer compare
     int32_t wf = whichWriter(this);
     if (TYPEOF(this)==VECSXP || wf==INT32_MIN || isFactor(this)) {
-      error("Row %d of list column is type '%s' - not yet implemented. fwrite() can write list columns containing items which are atomic vectors of" \
-            " type logical, integer, integer64, double, complex and character.", i+1, isFactor(this) ? "factor" : type2char(TYPEOF(this)));
+      error(_("Row %"PRId64" of list column is type '%s' - not yet implemented. fwrite() can write list columns containing items which are atomic vectors of type logical, integer, integer64, double, complex and character."),
+            i+1, isFactor(this) ? "factor" : type2char(TYPEOF(this)));
     }
     int width = writerMaxLen[wf];
     if (width==0) {
-      if (wf!=WF_String) STOP("Internal error: row %d of list column has no max length method implemented", i+1); // # nocov
+      if (wf!=WF_String) STOP(_("Internal error: row %"PRId64" of list column has no max length method implemented"), i+1); // # nocov
       const int l = LENGTH(this);
       for (int j=0; j<l; ++j) width+=LENGTH(STRING_ELT(this, j));
     } else {
@@ -167,7 +167,7 @@ SEXP fwriteR(
   SEXP verbose_Arg
   )
 {
-  if (!isNewList(DF)) error("fwrite must be passed an object of type list; e.g. data.frame, data.table");
+  if (!isNewList(DF)) error(_("fwrite must be passed an object of type list; e.g. data.frame, data.table"));
   fwriteMainArgs args;
   args.is_gzip = LOGICAL(is_gzip_Arg)[0];
   args.bom = LOGICAL(bom_Arg)[0];
@@ -176,7 +176,7 @@ SEXP fwriteR(
   args.filename = CHAR(STRING_ELT(filename_Arg, 0));
   args.ncol = length(DF);
   if (args.ncol==0) {
-    warning("fwrite was passed an empty list of no columns. Nothing to write.");
+    warning(_("fwrite was passed an empty list of no columns. Nothing to write."));
     return R_NilValue;
   }
   args.nrow = length(VECTOR_ELT(DF, 0));
@@ -209,12 +209,10 @@ SEXP fwriteR(
     }
   }
 
-  // allocate new `columns` vector. Although this could be DATAPTR(DFcoerced) directly, it can't
-  // because there's an offset on each column that points to (DATAPTR for each column) which fread.c
-  // would need to know. Rather than have the complication of a new offset variable, we just alloc a
-  // new vetcors of pointers directly. It won't make a difference to speed because only this new
-  // vector need be used by fread.c.  It just uses a tiny bit more memory (ncol * 8 bytes).
-  args.columns = (void *)R_alloc(args.ncol, sizeof(SEXP));
+  // allocate new `columns` vector and fetch the DATAPTR_RO() offset once up front here to reduce the complexity
+  // in fread.c needing to know about the size of R's header, or calling R API. It won't be slower because only
+  // this new vector of pointers is used by fread.c, but it does use a tiny bit more memory (ncol * 8 bytes).
+  args.columns = (void *)R_alloc(args.ncol, sizeof(const void *));
 
   args.funs = funs;  // funs declared statically at the top of this file
 
@@ -230,19 +228,20 @@ SEXP fwriteR(
   int firstListColumn = 0;
   for (int j=0; j<args.ncol; j++) {
     SEXP column = VECTOR_ELT(DFcoerced, j);
-    if (args.nrow != length(column))
-      error("Column %d's length (%d) is not the same as column 1's length (%d)", j+1, length(column), args.nrow);
+    if (args.nrow != length(column)) {
+      error(_("Column %d's length (%d) is not the same as column 1's length (%"PRId64")"), j+1, length(column), args.nrow);
+    }
     int32_t wf = whichWriter(column);
     if (wf<0) {
-      error("Column %d's type is '%s' - not yet implemented in fwrite.", j+1, type2char(TYPEOF(column)));
+      error(_("Column %d's type is '%s' - not yet implemented in fwrite."), j+1, type2char(TYPEOF(column)));
     }
-    args.columns[j] = (wf==WF_CategString ? column : (void *)DATAPTR(column));
+    args.columns[j] = (wf==WF_CategString ? column : DATAPTR_RO(column));
     args.whichFun[j] = (uint8_t)wf;
     if (TYPEOF(column)==VECSXP && firstListColumn==0) firstListColumn = j+1;
   }
 
   SEXP cn = getAttrib(DF, R_NamesSymbol);
-  args.colNames = (LOGICAL(colNames_Arg)[0] && isString(cn)) ? (void *)DATAPTR(cn) : NULL;
+  args.colNames = (LOGICAL(colNames_Arg)[0] && isString(cn)) ? DATAPTR_RO(cn) : NULL;
 
   // user may want row names even when they don't exist (implied row numbers as row names)
   // so we need a separate boolean flag as well as the row names should they exist (rare)
@@ -251,7 +250,7 @@ SEXP fwriteR(
   if (args.doRowNames) {
     SEXP rn = PROTECT(getAttrib(DF, R_RowNamesSymbol));
     protecti++;
-    args.rowNames = isString(rn) ? (void *)DATAPTR(rn) : NULL;
+    args.rowNames = isString(rn) ? DATAPTR_RO(rn) : NULL;
   }
 
   args.sep = *CHAR(STRING_ELT(sep_Arg, 0));  // DO NOT DO: allow multichar separator (bad idea)
@@ -259,15 +258,15 @@ SEXP fwriteR(
   args.dec = *CHAR(STRING_ELT(dec_Arg,0));
 
   if (!firstListColumn) {
-    if (args.verbose) Rprintf("No list columns are present. Setting sep2='' otherwise quote='auto' would quote fields containing sep2.\n");
+    if (args.verbose) Rprintf(_("No list columns are present. Setting sep2='' otherwise quote='auto' would quote fields containing sep2.\n"));
     args.sep2 = sep2 = '\0';
   } else {
     if (args.verbose) {
-      Rprintf("If quote='auto', fields will be quoted if the field contains either sep ('%c') or sep2 ('%c') because column %d is a list column.\n",
+      Rprintf(_("If quote='auto', fields will be quoted if the field contains either sep ('%c') or sep2 ('%c') because column %d is a list column.\n"),
               args.sep, args.sep2, firstListColumn );
     }
     if (args.dec==args.sep || args.dec==args.sep2 || args.sep==args.sep2) {
-      error("sep ('%c'), sep2 ('%c') and dec ('%c') must all be different. Column %d is a list column.",
+      error(_("sep ('%c'), sep2 ('%c') and dec ('%c') must all be different. Column %d is a list column."),
             args.sep, args.sep2, args.dec, firstListColumn);
     }
   }
@@ -290,4 +289,3 @@ SEXP fwriteR(
   UNPROTECT(protecti);
   return(R_NilValue);
 }
-

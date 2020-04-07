@@ -29,7 +29,7 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir()
 }
 \arguments{
   \item{input}{ A single character string. The value is inspected and deferred to either \code{file=} (if no \\n present), \code{text=} (if at least one \\n is present) or \code{cmd=} (if no \\n is present, at least one space is present, and it isn't a file name). Exactly one of \code{input=}, \code{file=}, \code{text=}, or \code{cmd=} should be used in the same call. }
-  \item{file}{ File name in working directory, path to file (passed through \code{\link[base]{path.expand}} for convenience), or a URL starting http://, file://, etc. Compressed files ending \code{.gz} and \code{.bz2} are supported if the \code{R.utils} package is installed. }
+  \item{file}{ File name in working directory, path to file (passed through \code{\link[base]{path.expand}} for convenience), or a URL starting http://, file://, etc. Compressed files with extension \file{.gz} and \file{.bz2} are supported if the \code{R.utils} package is installed. }
   \item{text}{ The input data itself as a character vector of one or more lines, for example as returned by \code{readLines()}. }
   \item{cmd}{ A shell command that pre-processes the file; e.g. \code{fread(cmd=paste("grep",word,"filename")}. See Details. }
   \item{sep}{ The separator between columns. Defaults to the character in the set \code{[,\\t |;:]} that separates the sample of rows into the most number of lines with the same number of fields. Use \code{NULL} or \code{""} to specify no separator; i.e. each line a single character column like \code{base::readLines} does.}
@@ -117,7 +117,7 @@ When \code{input} begins with http://, https://, ftp://, ftps://, or file://, \c
 
 \bold{Shell commands:}
 
-\code{fread} accepts shell commands for convenience. The input command is run and its output written to a file in \code{tmpdir} (\code{link{tempdir}()} by default) to which \code{fread} is applied "as normal". The details are platform dependent -- \code{system} is used on UNIX environments, \code{shell} otherwise; see \code{\link[base]{system}}.
+\code{fread} accepts shell commands for convenience. The input command is run and its output written to a file in \code{tmpdir} (\code{\link{tempdir}()} by default) to which \code{fread} is applied "as normal". The details are platform dependent -- \code{system} is used on UNIX environments, \code{shell} otherwise; see \code{\link[base]{system}}.
 
 }
 \value{
@@ -310,4 +310,3 @@ fread("http://stat-computing.org/dataexpo/2009/1987.csv.bz2")
 }
 }
 \keyword{ data }
-

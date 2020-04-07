@@ -9,6 +9,7 @@ Rplots.pdf
 *-Ex.R
 data.table_*.tar.gz
 data.table.Rcheck
+src/Makevars
 
 # Emacs IDE files
 .emacs.desktop

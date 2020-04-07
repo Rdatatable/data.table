@@ -16,7 +16,7 @@ void fadaptiverollmean(unsigned int algo, double *x, uint64_t nx, ans_t *ans, in
     fadaptiverollmeanExact(x, nx, ans, k, fill, narm, hasna, verbose);
   }
   if (verbose)
-    snprintf(end(ans->message[0]), 500, "%s: processing algo %u took %.3fs\n", __func__, algo, omp_get_wtime()-tic);
+    snprintf(end(ans->message[0]), 500, _("%s: processing algo %u took %.3fs\n"), __func__, algo, omp_get_wtime()-tic);
   // implicit n_message limit discussed here: https://github.com/Rdatatable/data.table/issues/3423#issuecomment-487722586
 }
 /* fast adaptive rolling mean - fast
@@ -26,13 +26,13 @@ void fadaptiverollmean(unsigned int algo, double *x, uint64_t nx, ans_t *ans, in
  */
 void fadaptiverollmeanFast(double *x, uint64_t nx, ans_t *ans, int *k, double fill, bool narm, int hasna, bool verbose) {
   if (verbose)
-    snprintf(end(ans->message[0]), 500, "fadaptiverollmeanFast: running for input length %"PRIu64", hasna %d, narm %d\n", (uint64_t)nx, hasna, (int) narm);
+    snprintf(end(ans->message[0]), 500, _("%s: running for input length %"PRIu64", hasna %d, narm %d\n"), "fadaptiverollmeanFast", (uint64_t)nx, hasna, (int) narm);
   bool truehasna = hasna>0;                                     // flag to re-run if NAs detected
   long double w = 0.0;
   double *cs = malloc(nx*sizeof(double));                       // cumsum vector, same as double cs[nx] but no segfault
   if (!cs) {                                                    // # nocov start
     ans->status = 3;                                            // raise error
-    snprintf(ans->message[3], 500, "%s: Unable to allocate memory for cumsum", __func__);
+    snprintf(ans->message[3], 500, _("%s: Unable to allocate memory for cumsum"), __func__);
     free(cs);
     return;
   }                                                             // # nocov end
@@ -55,10 +55,10 @@ void fadaptiverollmeanFast(double *x, uint64_t nx, ans_t *ans, int *k, double fi
     } else {                                                    // update truehasna flag if NAs detected
       if (hasna==-1) {                                          // raise warning
         ans->status = 2;
-        snprintf(end(ans->message[2]), 500, "%s: hasNA=FALSE used but NA (or other non-finite) value(s) are present in input, use default hasNA=NA to avoid this warning", __func__);
+        snprintf(end(ans->message[2]), 500, _("%s: hasNA=FALSE used but NA (or other non-finite) value(s) are present in input, use default hasNA=NA to avoid this warning"), __func__);
       }
       if (verbose)
-        snprintf(end(ans->message[0]), 500, "%s: NA (or other non-finite) value(s) are present in input, re-running with extra care for NAs\n", __func__);
+        snprintf(end(ans->message[0]), 500, _("%s: NA (or other non-finite) value(s) are present in input, re-running with extra care for NAs\n"), __func__);
       w = 0.0;
       truehasna = true;
     }
@@ -68,7 +68,7 @@ void fadaptiverollmeanFast(double *x, uint64_t nx, ans_t *ans, int *k, double fi
     uint64_t *cn = malloc(nx*sizeof(uint64_t));                 // cumulative NA counter, used the same way as cumsum, same as uint64_t cn[nx] but no segfault
     if (!cn) {                                                  // # nocov start
       ans->status = 3;                                          // raise error
-      snprintf(ans->message[3], 500, "%s: Unable to allocate memory for cum NA counter", __func__);
+      snprintf(ans->message[3], 500, _("%s: Unable to allocate memory for cum NA counter"), __func__);
       free(cs);
       free(cn);
       return;
@@ -111,7 +111,7 @@ void fadaptiverollmeanFast(double *x, uint64_t nx, ans_t *ans, int *k, double fi
  */
 void fadaptiverollmeanExact(double *x, uint64_t nx, ans_t *ans, int *k, double fill, bool narm, int hasna, bool verbose) {
   if (verbose)
-    snprintf(end(ans->message[0]), 500, "fadaptiverollmeanExact: running in parallel for input length %"PRIu64", hasna %d, narm %d\n", (uint64_t)nx, hasna, (int) narm);
+    snprintf(end(ans->message[0]), 500, _("%s: running in parallel for input length %"PRIu64", hasna %d, narm %d\n"), "fadaptiverollmeanExact", (uint64_t)nx, hasna, (int) narm);
   bool truehasna = hasna>0;                                     // flag to re-run if NAs detected
   if (!truehasna || !narm) {                                    // narm=FALSE handled here as NAs properly propagated in exact algo
     #pragma omp parallel for num_threads(getDTthreads())
@@ -144,13 +144,13 @@ void fadaptiverollmeanExact(double *x, uint64_t nx, ans_t *ans, int *k, double f
     if (truehasna) {
       if (hasna==-1) {                                          // raise warning
         ans->status = 2;
-        snprintf(end(ans->message[2]), 500, "%s: hasNA=FALSE used but NA (or other non-finite) value(s) are present in input, use default hasNA=NA to avoid this warning", __func__);
+        snprintf(end(ans->message[2]), 500, _("%s: hasNA=FALSE used but NA (or other non-finite) value(s) are present in input, use default hasNA=NA to avoid this warning"), __func__);
       }
       if (verbose) {
         if (narm) {
-          snprintf(end(ans->message[0]), 500, "%s: NA (or other non-finite) value(s) are present in input, re-running with extra care for NAs\n", __func__);
+          snprintf(end(ans->message[0]), 500, _("%s: NA (or other non-finite) value(s) are present in input, re-running with extra care for NAs\n"), __func__);
         } else {
-          snprintf(end(ans->message[0]), 500, "%s: NA (or other non-finite) value(s) are present in input, na.rm was FALSE so in 'exact' implementation NAs were handled already, no need to re-run\n", __func__);
+          snprintf(end(ans->message[0]), 500, _("%s: NA (or other non-finite) value(s) are present in input, na.rm was FALSE so in 'exact' implementation NAs were handled already, no need to re-run\n"), __func__);
         }
       }
     }
@@ -211,17 +211,17 @@ void fadaptiverollsum(unsigned int algo, double *x, uint64_t nx, ans_t *ans, int
     fadaptiverollsumExact(x, nx, ans, k, fill, narm, hasna, verbose);
   }
   if (verbose)
-    snprintf(end(ans->message[0]), 500, "%s: processing algo %u took %.3fs\n", __func__, algo, omp_get_wtime()-tic);
+    snprintf(end(ans->message[0]), 500, _("%s: processing algo %u took %.3fs\n"), __func__, algo, omp_get_wtime()-tic);
 }
 void fadaptiverollsumFast(double *x, uint64_t nx, ans_t *ans, int *k, double fill, bool narm, int hasna, bool verbose) {
   if (verbose)
-    snprintf(end(ans->message[0]), 500, "fadaptiverollsumFast: running for input length %"PRIu64", hasna %d, narm %d\n", (uint64_t)nx, hasna, (int) narm);
+    snprintf(end(ans->message[0]), 500, _("%s: running for input length %"PRIu64", hasna %d, narm %d\n"), "fadaptiverollsumFast", (uint64_t)nx, hasna, (int) narm);
   bool truehasna = hasna>0;
   long double w = 0.0;
   double *cs = malloc(nx*sizeof(double));
   if (!cs) {                                                    // # nocov start
     ans->status = 3;
-    snprintf(ans->message[3], 500, "%s: Unable to allocate memory for cumsum", __func__);
+    snprintf(ans->message[3], 500, _("%s: Unable to allocate memory for cumsum"), __func__);
     free(cs);
     return;
   }                                                             // # nocov end
@@ -244,10 +244,10 @@ void fadaptiverollsumFast(double *x, uint64_t nx, ans_t *ans, int *k, double fil
     } else {
       if (hasna==-1) {
         ans->status = 2;
-        snprintf(end(ans->message[2]), 500, "%s: hasNA=FALSE used but NA (or other non-finite) value(s) are present in input, use default hasNA=NA to avoid this warning", __func__);
+        snprintf(end(ans->message[2]), 500, _("%s: hasNA=FALSE used but NA (or other non-finite) value(s) are present in input, use default hasNA=NA to avoid this warning"), __func__);
       }
       if (verbose)
-        snprintf(end(ans->message[0]), 500, "%s: NA (or other non-finite) value(s) are present in input, re-running with extra care for NAs\n", __func__);
+        snprintf(end(ans->message[0]), 500, _("%s: NA (or other non-finite) value(s) are present in input, re-running with extra care for NAs\n"), __func__);
       w = 0.0;
       truehasna = true;
     }
@@ -257,7 +257,7 @@ void fadaptiverollsumFast(double *x, uint64_t nx, ans_t *ans, int *k, double fil
     uint64_t *cn = malloc(nx*sizeof(uint64_t));
     if (!cn) {                                                  // # nocov start
       ans->status = 3;
-      snprintf(ans->message[3], 500, "%s: Unable to allocate memory for cum NA counter", __func__);
+      snprintf(ans->message[3], 500, _("%s: Unable to allocate memory for cum NA counter"), __func__);
       free(cs);
       free(cn);
       return;
@@ -295,7 +295,7 @@ void fadaptiverollsumFast(double *x, uint64_t nx, ans_t *ans, int *k, double fil
 }
 void fadaptiverollsumExact(double *x, uint64_t nx, ans_t *ans, int *k, double fill, bool narm, int hasna, bool verbose) {
   if (verbose)
-    snprintf(end(ans->message[0]), 500, "fadaptiverollsumExact: running in parallel for input length %"PRIu64", hasna %d, narm %d\n", (uint64_t)nx, hasna, (int) narm);
+    snprintf(end(ans->message[0]), 500, _("%s: running in parallel for input length %"PRIu64", hasna %d, narm %d\n"), "fadaptiverollsumExact", (uint64_t)nx, hasna, (int) narm);
   bool truehasna = hasna>0;
   if (!truehasna || !narm) {
     #pragma omp parallel for num_threads(getDTthreads())
@@ -323,13 +323,13 @@ void fadaptiverollsumExact(double *x, uint64_t nx, ans_t *ans, int *k, double fi
     if (truehasna) {
       if (hasna==-1) {
         ans->status = 2;
-        snprintf(end(ans->message[2]), 500, "%s: hasNA=FALSE used but NA (or other non-finite) value(s) are present in input, use default hasNA=NA to avoid this warning", __func__);
+        snprintf(end(ans->message[2]), 500, _("%s: hasNA=FALSE used but NA (or other non-finite) value(s) are present in input, use default hasNA=NA to avoid this warning"), __func__);
       }
       if (verbose) {
         if (narm) {
-          snprintf(end(ans->message[0]), 500, "%s: NA (or other non-finite) value(s) are present in input, re-running with extra care for NAs\n", __func__);
+          snprintf(end(ans->message[0]), 500, _("%s: NA (or other non-finite) value(s) are present in input, re-running with extra care for NAs\n"), __func__);
         } else {
-          snprintf(end(ans->message[0]), 500, "%s: NA (or other non-finite) value(s) are present in input, na.rm was FALSE so in 'exact' implementation NAs were handled already, no need to re-run\n", __func__);
+          snprintf(end(ans->message[0]), 500, _("%s: NA (or other non-finite) value(s) are present in input, na.rm was FALSE so in 'exact' implementation NAs were handled already, no need to re-run\n"), __func__);
         }
       }
     }

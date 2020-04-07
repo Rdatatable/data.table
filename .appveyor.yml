@@ -14,7 +14,7 @@ skip_branch_with_pr: true
 
 environment:
   global:
-    CRAN: http://cloud.r-project.org/
+    CRAN: http://cloud.r-project.org
     WARNINGS_ARE_ERRORS: 1
     R_CHECK_ARGS: --no-manual
 # R_CHECK_ARGS specified in order to turn off --as-cran (on by default) as that can be slow
@@ -25,12 +25,14 @@ environment:
 # Default GCC_PATH appears to be gcc-4.6.3 which is now unsupported as from Rtools.exe v3.4.
     _R_CHECK_NO_STOP_ON_TEST_ERROR_: true
 # continue tests even if some script failed
+    _R_CHECK_TESTS_NLINES_: 0
+# Block truncation of any error messages in R CMD check
 
   matrix:
 
   - R_VERSION: release  # the single Windows.zip binary (both 32bit/64bit) that users following dev version of installation instructions should click
 
-  - R_VERSION: devel   # temporarily off pending R-devel fix of slowdown from 5min to 20-30min (slowing down data.table dev) in July 2019 possibly due to r76734.
+#  - R_VERSION: devel   # When off it's to speed up dev cycle; R-devel is still checked but by GLCI on a roughly hourly cycle.
 
 before_build:
   - cmd: ECHO no Revision metadata added to DESCRIPTION
