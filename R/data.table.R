@@ -58,6 +58,7 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL, str
   names(x) = nd$vnames
   if (length(x)==0L) return( null.data.table() )
   if (length(x)==1L && (is.null(x[[1L]]) || (is.list(x[[1L]]) && length(x[[1L]])==0L))) return( null.data.table() ) #48
+  if (missing(check.names)) check.names = NULL ## inherit missingness #3193
   ans = as.data.table.list(x, keep.rownames=keep.rownames, check.names=check.names, .named=nd$.named)  # see comments inside as.data.table.list re copies
   if (!is.null(key)) {
     if (!is.character(key)) stop("key argument of data.table() must be character")

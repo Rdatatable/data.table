@@ -16846,3 +16846,13 @@ A = data.table(A=c(complex(real = 1:3, imaginary=c(0, -1, 1)), NaN))
 test(2138.3, rbind(A,B), data.table(A=c(as.character(A$A), B$A)))
 A = data.table(A=as.complex(rep(NA, 5)))
 test(2138.4, rbind(A,B), data.table(A=c(as.character(A$A), B$A)))
+
+# Create a data.table when one vector is transposed doesn't respect the name defined by user #4124
+test(2139.1, data.table(a=1:2, b=matrix(1:2)), data.table(a=1:2, b=1:2))
+test(2139.2, names(data.table(a=1:2, b=matrix(1:2))), names(data.frame(a=1:2, b=matrix(1:2))))
+test(2139.3, data.table(a=1L[0L], b=matrix(1L)[0L]), data.table(a=1L[0L], b=1L[0L])) # length 0
+test(2139.4, names(data.table(a=1L[0L], b=matrix(1L)[0L])), names(data.frame(a=1L[0L], b=matrix(1L)[0L])))
+# data.table(vector, matrix) can return duplicate column names #3193
+is.unq = function(x) length(unique(x)) == length(x)
+test(2139.5, is.unq(names(data.table(1:5, matrix(6:15, nrow = 5L)))))
+test(2139.6, is.unq(names(data.table(1L[0L], matrix(6:15, nrow=5L)[0L]))))

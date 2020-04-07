@@ -127,7 +127,8 @@ as.data.table.list = function(x,
   n = length(x)
   eachnrow = integer(n)          # vector of lengths of each column. may not be equal if silent repetition is required.
   eachncol = integer(n)
-  missing.check.names = missing(check.names)
+  missing.check.names = missing(check.names) || is.null(check.names) # is.null for #3193
+  if (missing.check.names) check.names = FALSE
   origListNames = if (missing(.named)) names(x) else NULL  # as.data.table called directly, not from inside data.table() which provides .named, #3854
   for (i in seq_len(n)) {
     xi = x[[i]]
@@ -138,7 +139,11 @@ as.data.table.list = function(x,
       xi = x[[i]] = as.POSIXct(xi)
     } else if (is.matrix(xi) || is.data.frame(xi)) {
       if (!is.data.table(xi)) {
-        xi = x[[i]] = as.data.table(xi, keep.rownames=keep.rownames)  # we will never allow a matrix to be a column; always unpack the columns
+        if (is.matrix(xi) && NCOL(xi)<=1L) { # 1 column matrix naming #4124
+          xi = x[[i]] = c(xi)
+        } else {
+          xi = x[[i]] = as.data.table(xi, keep.rownames=keep.rownames)  # we will never allow a matrix to be a column; always unpack the columns
+        }
       }
       # else avoid dispatching to as.data.table.data.table (which exists and copies)
     } else if (is.table(xi)) {
