@@ -16846,3 +16846,7 @@ A = data.table(A=c(complex(real = 1:3, imaginary=c(0, -1, 1)), NaN))
 test(2138.3, rbind(A,B), data.table(A=c(as.character(A$A), B$A)))
 A = data.table(A=as.complex(rep(NA, 5)))
 test(2138.4, rbind(A,B), data.table(A=c(as.character(A$A), B$A)))
+
+# replacedot might fail in by when referring to unscoped variable & verbose #3196
+x = data.table(i1 = c(234L, 250L, 169L, 234L, 147L, 96L, 96L, 369L, 147L, 96L), i4 = c(79L, 113L, 270L, -121L, 113L, 113L, -121L, 179L, -228L, 113L), v = 0)
+test(2139.1, {capture.output(ans <- x[1:5, sum(v), by = .(i5 = 1:5 %% 2L), verbose=TRUE]); ans}, data.table(i5=1:0, V1=c(0,0)))
