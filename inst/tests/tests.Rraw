@@ -16846,3 +16846,7 @@ A = data.table(A=c(complex(real = 1:3, imaginary=c(0, -1, 1)), NaN))
 test(2138.3, rbind(A,B), data.table(A=c(as.character(A$A), B$A)))
 A = data.table(A=as.complex(rep(NA, 5)))
 test(2138.4, rbind(A,B), data.table(A=c(as.character(A$A), B$A)))
+
+# zero-length 'cols' in na.omit.data.table() results in empty table #2514
+d = data.table(x = c(NA, TRUE, FALSE))
+test(2139.1, na.omit(d, cols = character()), d)
