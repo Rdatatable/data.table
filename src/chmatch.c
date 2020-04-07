@@ -1,70 +1,75 @@
 #include "data.table.h"
 
-#define ENC_KNOWN(x) (LEVELS(x) & 76)
-// LATIN1_MASK (1<<2) | UTF8_MASK (1<<3) | ASCII_MASK (1<<6)
-
-static SEXP match_logical(SEXP table, SEXP x) {
-  R_len_t i;
-  SEXP ans, m;
-  ans = PROTECT(allocVector(LGLSXP, length(x)));
-  m = PROTECT(match(table, x, 0)); // nomatch=0
-  for (i=0; i<length(x); i++)
-    INTEGER(ans)[i] = INTEGER(m)[i] > 0;
-  UNPROTECT(2);
-  return(ans);
-}
-
 static SEXP chmatchMain(SEXP x, SEXP table, int nomatch, bool chin, bool chmatchdup) {
-  if (!isString(x) && !isNull(x)) error("x is type '%s' (must be 'character' or NULL)", type2char(TYPEOF(x)));
-  if (!isString(table) && !isNull(table)) error("table is type '%s' (must be 'character' or NULL)", type2char(TYPEOF(table)));
-  if (chin && chmatchdup) error("Internal error: either chin or chmatchdup should be true not both");  // # nocov
-  // allocations up front before savetl starts
-  SEXP ans = PROTECT(allocVector(chin?LGLSXP:INTSXP, length(x)));
-  if (!length(x)) { UNPROTECT(1); return ans; }  // no need to look at table when x is empty
-  int *ansd = INTEGER(ans);
-  if (!length(table)) { const int val=(chin?0:nomatch), n=LENGTH(x); for (int i=0; i<n; ++i) ansd[i]=val; UNPROTECT(1); return ans; }
-  savetl_init();
-  const SEXP *xd = STRING_PTR(x);
+  if (!isString(table) && !isNull(table))
+    error(_("table is type '%s' (must be 'character' or NULL)"), type2char(TYPEOF(table)));
+  if (chin && chmatchdup)
+    error(_("Internal error: either chin or chmatchdup should be true not both"));  // # nocov
+  SEXP sym = NULL;
   const int xlen = length(x);
+  if (TYPEOF(x) == SYMSXP) {
+    if (xlen!=1)
+      error(_("Internal error: length of SYMSXP is %d not 1"), xlen); // # nocov
+    sym = PRINTNAME(x);  // so we can do &sym to get a length 1 (const SEXP *)STRING_PTR(x) and save an alloc for coerce to STRSXP
+  } else if (!isString(x) && !isSymbol(x) && !isNull(x)) {
+    if (chin && !isVectorAtomic(x)) {
+      return ScalarLogical(FALSE);
+      // commonly type 'language' returns FALSE here, to make %iscall% simpler; e.g. #1369 results in (function(x) sum(x)) as jsub[[.]] from dcast.data.table
+    } else {
+      error(_("x is type '%s' (must be 'character' or NULL)"), type2char(TYPEOF(x)));
+    }
+  }
+  // allocations up front before savetl starts in case allocs fail
+  SEXP ans = PROTECT(allocVector(chin?LGLSXP:INTSXP, xlen));
+  if (xlen==0) { // no need to look at table when x is empty (including null)
+    UNPROTECT(1);
+    return ans;
+  }
+  int *ansd = INTEGER(ans);
+  const int tablelen = length(table);
+  if (tablelen==0) {
+    const int val=(chin?0:nomatch), n=xlen;
+    for (int i=0; i<n; ++i) ansd[i]=val;
+    UNPROTECT(1);
+    return ans;
+  }
+  // Since non-ASCII strings may be marked with different encodings, it only make sense to compare
+  // the bytes under a same encoding (UTF-8) #3844 #3850
+  const SEXP *xd = isSymbol(x) ? &sym : STRING_PTR(PROTECT(coerceUtf8IfNeeded(x)));
+  const SEXP *td = STRING_PTR(PROTECT(coerceUtf8IfNeeded(table)));
+  const int nprotect = 2 + !isSymbol(x); // ans, xd, td
+  if (xlen==1) {
+    ansd[0] = nomatch;
+    for (int i=0; i<tablelen; ++i) {
+      if (td[i]==xd[0]) {
+        ansd[0] = chin ? 1 : i+1;
+        break; // short-circuit early; if there are dups in table the first is returned
+      }
+    }
+    UNPROTECT(nprotect);
+    return ans;
+  }
+  // else xlen>1; nprotect is const above since no more R allocations should occur after this point
+  savetl_init();
   for (int i=0; i<xlen; i++) {
     SEXP s = xd[i];
-    if (s != NA_STRING && ENC_KNOWN(s) != 64) { // PREV: s != NA_STRING && !ENC_KNOWN(s) - changed to fix for bug #5159. The previous fix
-                       // dealt with UNKNOWN encodings. But we could have the same string, where both are in different
-                       // encodings than ASCII (ex: UTF8 and Latin1). To fix this, we'll to resort to 'match' if not ASCII.
-                       // This takes care of all anomalies. It's unfortunate the 'chmatch' can't be used in these cases...
-                       // // fix for the 2nd part of bug #5159
-
-      // explanation for PREV case: (still useful to keep it here)
-      // symbols (i.e. as.name() or as.symbol()) containing non-ascii characters (>127) seem to be 'unknown' encoding in R.
-      // The same string in different encodings (where unknown encoding is different to known, too) are different
-      // CHARSXP pointers; this chmatch relies on pointer equality only. We tried mkChar(CHAR(s)) [ what install() does ]
-      // but this impacted the fastest cases too much. Hence fall back to match() on the first unknown encoding detected
-      // since match() considers the same string in different encodings as equal (but slower). See #2538 and #4818.
+    const int tl = TRUELENGTH(s);
+    if (tl>0) {
+      savetl(s);  // R's internal hash (which is positive); save it
+      SET_TRUELENGTH(s,0);
+    } else if (tl<0) {
+      // R 2.14.0+ initializes truelength to 0 (before that it was uninitialized/random).
+      // Now that data.table depends on R 3.1.0+, that is after 2.14.0 too.
+      // We rely on that 0-initialization, and that R's internal hash is positive.
+      // # nocov start
       savetl_end();
-      UNPROTECT(1);
-      return (chin ? match_logical(table, x) : match(table, x, nomatch));
+      error(_("Internal error: CHARSXP '%s' has a negative truelength (%d). Please file an issue on the data.table tracker."), CHAR(s), tl);
+      // # nocov end
     }
-    if (TRUELENGTH(s)>0) savetl(s);
-    // as from v1.8.0 we assume R's internal hash is positive. So in R < 2.14.0 we
-    // don't save the uninitialised truelengths that by chance are negative, but
-    // will save if positive. Hence R >= 2.14.0 may be faster and preferred now that R
-    // initializes truelength to 0 from R 2.14.0.
-    SET_TRUELENGTH(s,0);   // TODO: do we need to set to zero first (we can rely on R 3.1.0 now)?
   }
-  const int tablelen = length(table);
-  const SEXP *td = STRING_PTR(table);
   int nuniq=0;
   for (int i=0; i<tablelen; ++i) {
     SEXP s = td[i];
-    if (s != NA_STRING && ENC_KNOWN(s) != 64) { // changed !ENC_KNOWN(s) to !ASCII(s) - check above for explanation
-      // This branch is now covered by tests 2004.*. However, is this branch redundant? It means there were no non-ascii encodings
-      // in x since the fallback above to match() didn't happen when x was checked. If that was the case in x, then it means none of the
-      // x values can match to table anyway. Can't we just drop this branch then? (TODO)
-      for (int j=0; j<i; ++j) SET_TRUELENGTH(td[j],0);  // reinstate 0 rather than leave the -i-1
-      savetl_end();
-      UNPROTECT(1);
-      return (chin ? match_logical(table, x) : match(table, x, nomatch));
-    }
     int tl = TRUELENGTH(s);
     if (tl>0) { savetl(s); tl=0; }
     if (tl==0) SET_TRUELENGTH(s, chmatchdup ? -(++nuniq) : -i-1); // first time seen this string in table
@@ -87,7 +92,7 @@ static SEXP chmatchMain(SEXP x, SEXP table, int nomatch, bool chin, bool chmatch
       // # nocov start
       for (int i=0; i<tablelen; i++) SET_TRUELENGTH(td[i], 0);
       savetl_end();
-      error("Failed to allocate %lld bytes working memory in chmatchdup: length(table)=%d length(unique(table))=%d", (tablelen*2+nuniq)*sizeof(int), tablelen, nuniq);
+      error(_("Failed to allocate %"PRIu64" bytes working memory in chmatchdup: length(table)=%d length(unique(table))=%d"), ((uint64_t)tablelen*2+nuniq)*sizeof(int), tablelen, nuniq);
       // # nocov end
     }
     for (int i=0; i<tablelen; ++i) counts[-TRUELENGTH(td[i])-1]++;
@@ -119,8 +124,8 @@ static SEXP chmatchMain(SEXP x, SEXP table, int nomatch, bool chin, bool chmatch
   for (int i=0; i<tablelen; i++)
     SET_TRUELENGTH(td[i], 0);  // reinstate 0 rather than leave the -i-1
   savetl_end();
-  UNPROTECT(1);
-  return(ans);
+  UNPROTECT(nprotect);  // ans, xd, td
+  return ans;
 }
 
 // for internal use from C :

@@ -3,8 +3,6 @@
 \title{Fast CSV writer}
 \description{
 As \code{write.csv} but much faster (e.g. 2 seconds versus 1 minute) and just as flexible. Modern machines almost surely have more than one CPU so \code{fwrite} uses them; on all operating systems including Linux, Mac and Windows.
-
-This is new functionality as of Nov 2016. We may need to refine argument names and defaults.
 }
 \usage{
 fwrite(x, file = "", append = FALSE, quote = "auto",
@@ -14,9 +12,13 @@ fwrite(x, file = "", append = FALSE, quote = "auto",
   qmethod = c("double","escape"),
   logical01 = getOption("datatable.logical01", FALSE),  # due to change to TRUE; see NEWS
   logicalAsInt = logical01,  # deprecated
+  scipen = getOption('scipen', 0L),
   dateTimeAs = c("ISO","squash","epoch","write.csv"),
   buffMB = 8L, nThread = getDTthreads(verbose),
   showProgress = getOption("datatable.showProgress", interactive()),
+  compress = c("auto", "none", "gzip"),
+  yaml = FALSE,
+  bom = FALSE,
   verbose = getOption("datatable.verbose", FALSE))
 }
 \arguments{
@@ -38,6 +40,7 @@ fwrite(x, file = "", append = FALSE, quote = "auto",
       }}
   \item{logical01}{Should \code{logical} values be written as \code{1} and \code{0} rather than \code{"TRUE"} and \code{"FALSE"}?}
   \item{logicalAsInt}{Deprecated. Old name for `logical01`. Name change for consistency with `fread` for which `logicalAsInt` would not make sense.}
+  \item{scipen}{ \code{integer} In terms of printing width, how much of a bias should there be towards printing whole numbers rather than scientific notation? See Details. }
   \item{dateTimeAs}{ How \code{Date}/\code{IDate}, \code{ITime} and \code{POSIXct} items are written.
       \itemize{
 	\item{"ISO" (default) - \code{2016-09-12}, \code{18:12:16} and \code{2016-09-12T18:12:16.999999Z}. 0, 3 or 6 digits of fractional seconds are printed if and when present for convenience, regardless of any R options such as \code{digits.secs}. The idea being that if milli and microseconds are present then you most likely want to retain them. R's internal UTC representation is written faithfully to encourage ISO standards, stymie timezone ambiguity and for speed. An option to consider is to start R in the UTC timezone simply with \code{"$ TZ='UTC' R"} at the shell (NB: it must be one or more spaces between \code{TZ='UTC'} and \code{R}, anything else will be silently ignored; this TZ setting applies just to that R process) or \code{Sys.setenv(TZ='UTC')} at the R prompt and then continue as if UTC were local time.}
@@ -52,10 +55,34 @@ fwrite(x, file = "", append = FALSE, quote = "auto",
   \item{buffMB}{The buffer size (MB) per thread in the range 1 to 1024, default 8MB. Experiment to see what works best for your data on your hardware.}
   \item{nThread}{The number of threads to use. Experiment to see what works best for your data on your hardware.}
   \item{showProgress}{ Display a progress meter on the console? Ignored when \code{file==""}. }
+  \item{compress}{If \code{compress = "auto"} and if \code{file} ends in \code{.gz} then output format is gzipped csv else csv. If \code{compress = "none"}, output format is always csv. If \code{compress = "gzip"} then format is gzipped csv. Output to the console is never gzipped even if \code{compress = "gzip"}. By default, \code{compress = "auto"}.}
+  \item{yaml}{If \code{TRUE}, \code{fwrite} will output a CSVY file, that is, a CSV file with metadata stored as a YAML header, using \code{\link[yaml]{as.yaml}}. See \code{Details}. }
+  \item{bom}{If \code{TRUE} a BOM (Byte Order Mark) sequence (EF BB BF) is added at the beginning of the file; format 'UTF-8 with BOM'.}
   \item{verbose}{Be chatty and report timings?}
 }
 \details{
 \code{fwrite} began as a community contribution with \href{https://github.com/Rdatatable/data.table/pull/1613}{pull request #1613} by Otto Seiskari. This gave Matt Dowle the impetus to specialize the numeric formatting and to parallelize: \url{http://blog.h2o.ai/2016/04/fast-csv-writing-for-r/}. Final items were tracked in \href{https://github.com/Rdatatable/data.table/issues/1664}{issue #1664} such as automatic quoting, \code{bit64::integer64} support, decimal/scientific formatting exactly matching \code{write.csv} between 2.225074e-308 and 1.797693e+308 to 15 significant figures, \code{row.names}, dates (between 0000-03-01 and 9999-12-31), times and \code{sep2} for \code{list} columns where each cell can itself be a vector.
+
+To save space, \code{fwrite} prefers to write wide numeric values in scientific notation -- e.g. \code{10000000000} takes up much more space than \code{1e+10}. Most file readers (e.g. \code{\link{fread}}) understand scientific notation, so there's no fidelity loss. Like in base R, users can control this by specifying the \code{scipen} argument, which follows the same rules as \code{\link[base]{options}('scipen')}. \code{fwrite} will see how much space a value will take to write in scientific vs. decimal notation, and will only write in scientific notation if the latter is more than \code{scipen} characters wider. For \code{10000000000}, then, \code{1e+10} will be written whenever \code{scipen<6}.
+
+\bold{CSVY Support:}
+
+The following fields will be written to the header of the file and surrounded by \code{---} on top and bottom:
+
+  \itemize{
+    \item{ \code{source} - Contains the R version and \code{data.table} version used to write the file }
+    \item{ \code{creation_time_utc} - Current timestamp in UTC time just before the header is written }
+    \item{ \code{schema} with element \code{fields} giving \code{name}-\code{type} (\code{class}) pairs for the table; multi-class objects (e.g. \code{c('POSIXct', 'POSIXt')}) will have their first class written. }
+    \item{ \code{header} - same as \code{col.names} (which is \code{header} on input) }
+    \item{ \code{sep} }
+    \item{ \code{sep2} }
+    \item{ \code{eol} }
+    \item{ \code{na.strings} - same as \code{na} }
+    \item{ \code{dec} }
+    \item{ \code{qmethod} }
+    \item{ \code{logical01} }
+  }
+
 }
 \seealso{
   \code{\link{setDTthreads}}, \code{\link{fread}}, \code{\link[utils:write.table]{write.csv}}, \code{\link[utils:write.table]{write.table}}, \href{https://CRAN.R-project.org/package=bit64}{\code{bit64::integer64}}

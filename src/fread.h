@@ -1,8 +1,9 @@
 #ifndef dt_FREAD_H
 #define dt_FREAD_H
-#include <stdint.h>  // uint32_t
-#include <stdlib.h>  // size_t
-#include <stdbool.h> // bool
+#include "dt_stdio.h"  // PRId64
+#include <stdint.h>    // uint32_t
+#include <stdlib.h>    // size_t
+#include <stdbool.h>   // bool
 #include "myomp.h"
 #ifdef DTPY
   #include "py_fread.h"
@@ -29,7 +30,7 @@ typedef enum {
 
 extern int8_t typeSize[NUMTYPE];
 extern const char typeName[NUMTYPE][10];
-extern const long double pow10lookup[701];
+extern const long double pow10lookup[601];
 extern const uint8_t hexdigits[256];
 
 
@@ -241,7 +242,7 @@ int freadMain(freadMainArgs args);
  *    the CSV file. Normally, this function should return `true`.
  */
 bool userOverride(int8_t *types, lenOff *colNames, const char *anchor,
-                  int ncol);
+                  const int ncol);
 
 
 /**

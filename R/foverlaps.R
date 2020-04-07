@@ -1,10 +1,10 @@
-foverlaps <- function(x, y, by.x=if (!is.null(key(x))) key(x) else key(y), by.y=key(y), maxgap=0L, minoverlap=1L, type=c("any", "within", "start", "end", "equal"), mult=c("all", "first", "last"), nomatch=getOption("datatable.nomatch"), which=FALSE, verbose=getOption("datatable.verbose")) {
+foverlaps = function(x, y, by.x=if (!is.null(key(x))) key(x) else key(y), by.y=key(y), maxgap=0L, minoverlap=1L, type=c("any", "within", "start", "end", "equal"), mult=c("all", "first", "last"), nomatch=getOption("datatable.nomatch", NA), which=FALSE, verbose=getOption("datatable.verbose")) {
 
   if (!is.data.table(y) || !is.data.table(x)) stop("y and x must both be data.tables. Use `setDT()` to convert list/data.frames to data.tables by reference or as.data.table() to convert to data.tables by copying.")
   maxgap = as.integer(maxgap); minoverlap = as.integer(minoverlap)
   which = as.logical(which)
-  if (is.null(nomatch)) nomatch = 0L
-  nomatch = as.integer(nomatch)
+  .unsafe.opt() #3585
+  nomatch = if (is.null(nomatch)) 0L else as.integer(nomatch)
   if (!length(maxgap) || length(maxgap) != 1L || is.na(maxgap) || maxgap < 0L)
     stop("maxgap must be a non-negative integer value of length 1")
   if (!length(minoverlap) || length(minoverlap) != 1L || is.na(minoverlap) || minoverlap < 1L)
@@ -72,23 +72,22 @@ foverlaps <- function(x, y, by.x=if (!is.null(key(x))) key(x) else key(y), by.y=
     } else stop("All entries in column ", yintervals[1L], " should be <= corresponding entries in column ", yintervals[2L], " in data.table 'y'.")
   }
   # POSIXct interval cols error check
-  is.POSIXct <- function(x) inherits(x, "POSIXct")
-  posx_chk <- c(is.POSIXct(xval1), is.POSIXct(xval2), is.POSIXct(yval1), is.POSIXct(yval2))
+  posx_chk = sapply(list(xval1, xval2, yval1, yval2), inherits, 'POSIXct')
   if (any(posx_chk) && !all(posx_chk)) {
     stop("Some interval cols are of type POSIXct while others are not. Please ensure all interval cols are (or are not) of POSIXct type")
   }
   # #1143, mismatched timezone
-  getTZ <- function(x) if (is.null(tz <- attr(x, "tzone"))) "" else tz # "" == NULL AFAICT
-  tzone_chk <- c(getTZ(xval1), getTZ(xval2), getTZ(yval1), getTZ(yval2))
-  if (any(tzone_chk != tzone_chk[1L])) {
-    warning("POSIXct interval cols have mixed timezones. Overlaps are performed on the internal numerical representation of POSIXct objects, therefore printed values may give the impression that values don't overlap but their internal representations will. Please ensure that POSIXct type interval cols have identical 'tzone' attributes to avoid confusion.")
+  getTZ = function(x) if (is.null(tz <- attr(x, "tzone", exact=TRUE))) "" else tz # "" == NULL AFAICT
+  tzone_chk = c(getTZ(xval1), getTZ(xval2), getTZ(yval1), getTZ(yval2))
+  if (length(unique(tzone_chk)) > 1L) {
+    warning("POSIXct interval cols have mixed timezones. Overlaps are performed on the internal numerical representation of POSIXct objects (always in UTC epoch time), therefore printed values may give the impression that values don't overlap but their internal representations do Please ensure that POSIXct type interval cols have identical 'tzone' attributes to avoid confusion.")
   }
   ## see NOTES below:
   yclass = c(class(yval1), class(yval2))
   isdouble = FALSE; isposix = FALSE
   if ( any(c("numeric", "POSIXct") %chin% yclass) ) {
     # next representive double > x under the given precision (48,56 or 64-bit in data.table) = x*incr
-    dt_eps <- function() {
+    dt_eps = function() {
       bits = floor(log2(.Machine$double.eps))
       2 ^ (bits + (getNumericRounding() * 8L))
     }
@@ -99,25 +98,25 @@ foverlaps <- function(x, y, by.x=if (!is.null(key(x))) key(x) else key(y), by.y=
   origx = x; x = shallow(x, by.x)
   origy = y; y = shallow(y, by.y)
   roll = switch(type, start=, end=, equal= 0.0, any=, within= +Inf)
-  make_call <- function(names, fun=NULL) {
+  make_call = function(names, fun=NULL) {
     if (is.character(names))
       names = lapply(names, as.name)
     call = c(substitute(fun, list(fun=fun)), names)
     if (!is.null(fun)) as.call(call) else call
   }
-  construct <- function(icols, mcols, type=type) {
+  construct = function(icols, mcols, type=type) {
     icall = make_call(icols)
     setattr(icall, 'names', icols)
     mcall = make_call(mcols, quote(c))
     if (type %chin% c("within", "any")) {
       mcall[[3L]] = substitute(
         # datetimes before 1970-01-01 are represented as -ve numerics, #3349
-        if (isposix) unclass(val)*(1 + sign(unclass(val))*dt_eps())
+        if (isposix) unclass(val)*(1L + sign(unclass(val))*dt_eps())
         else if (isdouble) {
           # fix for #1006 - 0.0 occurs in both start and end
           # better fix for 0.0, and other -ves. can't use 'incr'
           # hopefully this doesn't open another can of worms
-          (val+dt_eps())*(1 + sign(val)*dt_eps())
+          (val+dt_eps())*(1L + sign(val)*dt_eps())
         }
         else val+1L, # +1L is for integer/IDate/Date class, for examples
         list(val = mcall[[3L]]))
@@ -132,14 +131,14 @@ foverlaps <- function(x, y, by.x=if (!is.null(key(x))) key(x) else key(y), by.y=
   uy = unique(y[, eval(call)])
   setkey(uy)[, `:=`(lookup = list(list(integer(0L))), type_lookup = list(list(integer(0L))), count=0L, type_count=0L)]
   if (verbose) {cat(timetaken(last.started.at),"\n"); flush.console()}
-  matches <- function(ii, xx, del, ...) {
+  matches = function(ii, xx, del, ...) {
     cols = setdiff(names(xx), del)
-    xx = .shallow(xx, cols, retain.key = FALSE)
-    ans = bmerge(xx, ii, seq_along(xx), seq_along(xx), integer(0), mult=mult, ops=rep(1L, length(xx)), integer(0), 1L, verbose=verbose, ...)
+    xx = .shallow(xx, cols, retain.key = TRUE)
+    ans = bmerge(xx, ii, seq_along(xx), seq_along(xx), mult=mult, ops=rep(1L, length(xx)), verbose=verbose, ...)
     # vecseq part should never run here, but still...
     if (ans$allLen1) ans$starts else vecseq(ans$starts, ans$lens, NULL) # nocov
   }
-  indices <- function(x, y, intervals, ...) {
+  indices = function(x, y, intervals, ...) {
     if (type == "start") {
       sidx = eidx = matches(x, y, intervals[2L], rollends=c(FALSE,FALSE), ...) ## TODO: eidx can be set to integer(0L)
     } else if (type == "end") {

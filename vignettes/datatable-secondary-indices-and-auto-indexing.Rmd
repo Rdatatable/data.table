@@ -1,7 +1,7 @@
 ---
 title: "Secondary indices and auto indexing"
 date: "`r Sys.Date()`"
-output: 
+output:
   rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{Secondary indices and auto indexing}
@@ -73,10 +73,10 @@ names(attributes(flights))
 ```
 
 * `setindex` and `setindexv()` allows adding a secondary index to the data.table.
-* Originally it was `set2key` until data.table 1.9.6, then [changed to current names](https://github.com/Rdatatable/data.table/issues/1442).
+
 * Note that `flights` is **not** physically reordered in increasing order of `origin`, as would have been the case with `setkey()`.
 
-* Also note that the attribute `index` has been added to `flights`. 
+* Also note that the attribute `index` has been added to `flights`.
 
 * `setindex(flights, NULL)` would remove all secondary indices.
 
@@ -111,15 +111,15 @@ a) computing the order vector for the column(s) provided, here, `origin`, and
 
 b) reordering the entire data.table, by reference, based on the order vector computed.
 
-# 
+#
 
-Computing the order isn't the time consuming part, since data.table uses true radix sorting on integer, character and numeric vectors. However reordering the data.table could be time consuming (depending on the number of rows and columns). 
+Computing the order isn't the time consuming part, since data.table uses true radix sorting on integer, character and numeric vectors. However reordering the data.table could be time consuming (depending on the number of rows and columns).
 
 Unless our task involves repeated subsetting on the same column, fast key based subsetting could effectively be nullified by the time to reorder, depending on our data.table dimensions.
 
 #### -- There can be only one `key` at the most
 
-Now if we would like to repeat the same operation but on `dest` column instead, for the value "LAX", then we have to `setkey()`, *again*. 
+Now if we would like to repeat the same operation but on `dest` column instead, for the value "LAX", then we have to `setkey()`, *again*.
 
 ```{r, eval = FALSE}
 ## not run
@@ -127,7 +127,7 @@ setkey(flights, dest)
 flights["LAX"]
 ```
 
-And this reorders `flights` by `dest`, *again*. What we would really like is to be able to perform the fast subsetting by eliminating the reordering step. 
+And this reorders `flights` by `dest`, *again*. What we would really like is to be able to perform the fast subsetting by eliminating the reordering step.
 
 And this is precisely what *secondary indices* allow for!
 
@@ -145,11 +145,11 @@ As we will see in the next section, the `on` argument provides several advantage
 
 * allows easy reuse of existing indices by just checking the attributes.
 
-* allows for a cleaner syntax by having the columns on which the subset is performed as part of the syntax. This makes the code easier to follow when looking at it at a later point. 
+* allows for a cleaner syntax by having the columns on which the subset is performed as part of the syntax. This makes the code easier to follow when looking at it at a later point.
 
     Note that `on` argument can also be used on keyed subsets as well. In fact, we encourage to provide the `on` argument even when subsetting using keys for better readability.
 
-# 
+#
 
 ## 2. Fast subsetting using `on` argument and secondary indices
 
@@ -161,7 +161,7 @@ As we will see in the next section, the `on` argument provides several advantage
 flights["JFK", on = "origin"]
 
 ## alternatively
-# flights[.("JFK"), on = "origin"] (or) 
+# flights[.("JFK"), on = "origin"] (or)
 # flights[list("JFK"), on = "origin"]
 ```
 
@@ -276,9 +276,9 @@ flights[.(c("LGA", "JFK", "EWR"), "XNA"), mult = "last", on = c("origin", "dest"
 
 ## 3. Auto indexing
 
-First we looked at how to fast subset using binary search using *keys*. Then we figured out that we could improve performance even further and have more cleaner syntax by using secondary indices. 
+First we looked at how to fast subset using binary search using *keys*. Then we figured out that we could improve performance even further and have more cleaner syntax by using secondary indices.
 
-That is what *auto indexing* does. At the moment, it is only implemented for binary operators `==` and `%in%`. An index is automatically created *and* saved as an attribute. That is, unlike the `on` argument which computes the index on the fly each time (unless one already exists), a secondary index is created here. 
+That is what *auto indexing* does. At the moment, it is only implemented for binary operators `==` and `%in%`. An index is automatically created *and* saved as an attribute. That is, unlike the `on` argument which computes the index on the fly each time (unless one already exists), a secondary index is created here.
 
 Let's start by creating a data.table big enough to highlight the advantage.
 
@@ -312,15 +312,15 @@ The time to subset the first time is the time to create the index + the time to 
 system.time(dt[x %in% 1989:2012])
 ```
 
-* Running the first time took `r sprintf("%.3f", t1["elapsed"])` seconds where as the second time took `r sprintf("%.3f", t2["elapsed"])` seconds. 
+* Running the first time took `r sprintf("%.3f", t1["elapsed"])` seconds where as the second time took `r sprintf("%.3f", t2["elapsed"])` seconds.
 
 * Auto indexing can be disabled by setting the global argument `options(datatable.auto.index = FALSE)`.
 
 * Disabling auto indexing still allows to use indices created explicitly with `setindex` or `setindexv`. You can disable indices fully by setting global argument `options(datatable.use.index = FALSE)`.
 
-# 
+#
 
-In recent version we extended auto indexing to expressions involving more than one column (combined with `&` operator). In the future, we plan to extend binary search to work with more binary operators like `<`, `<=`, `>` and `>=`.  
+In recent version we extended auto indexing to expressions involving more than one column (combined with `&` operator). In the future, we plan to extend binary search to work with more binary operators like `<`, `<=`, `>` and `>=`.
 
 We will discuss fast *subsets* using keys and secondary indices to *joins* in the next vignette, *"Joins and rolling joins"*.
 
