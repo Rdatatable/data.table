@@ -6,7 +6,7 @@ bool isRealReallyInt(SEXP x) {
   double *dx = REAL(x);
   while (i<n &&
          ( ISNA(dx[i]) ||
-         ( R_FINITE(dx[i]) && dx[i] == (int64_t)(dx[i])))) {
+         ( R_FINITE(dx[i]) && dx[i] == (int)(dx[i])))) {
     i++;
   }
   return i==n;
