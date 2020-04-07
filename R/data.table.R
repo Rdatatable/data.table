@@ -2379,14 +2379,9 @@ split.data.table <- function(x, f, drop = FALSE, by, sorted = FALSE, keep.by = T
   setattr(ll, "names", nm)
   # handle nested split
   if (flatten || length(by) == 1L) {
-    # over-greedy allocation of column pointers led
-    #   split.data.table to be quite slow; more conservative
-    #   request for memory for each element of ll (#2950)
-    n = max(32L, ncol(x))
-    verbose = getOption('datatable.verbose')
     for (i in seq_along(ll)) { # speed up lapply(ll, setDT) #2950
       d = ll[[i]]
-      alloc.col(d, n = n, verbose = verbose)
+      alloc.col(d)
       setattr(d, ".data.table.locked", NULL)
       .Call(Csetlistelt, ll, i, d)
     }
