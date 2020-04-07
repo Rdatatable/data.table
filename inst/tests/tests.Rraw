@@ -16846,3 +16846,8 @@ A = data.table(A=c(complex(real = 1:3, imaginary=c(0, -1, 1)), NaN))
 test(2138.3, rbind(A,B), data.table(A=c(as.character(A$A), B$A)))
 A = data.table(A=as.complex(rep(NA, 5)))
 test(2138.4, rbind(A,B), data.table(A=c(as.character(A$A), B$A)))
+
+# (some?) eval expressions have issues with := #1181
+dt1 = data.table(a = 1, key = 'a')
+dt2 = data.table(c = 1, fn = list(quote(5*a)), key = 'c')
+test(2139.1, dt1[, n := eval(dt2[a]$fn[[1]], .SD)][], data.table(a = 1, n = 5, key="a"))
