@@ -37,7 +37,7 @@ It takes the second argument and evaluates it inside the scope of the first argu
 
 ## Problem description
 
-Problem of this kind of interface is that we cannot easily parameterize the code that uses it. It is because expressions passed to those functions are substituted before being evaluated. Those substituted expressions are different when they are passed by user interactivel from those that passed as arguments of another function.
+Problem of this kind of interface is that we cannot easily parameterize the code that uses it. It is because expressions passed to those functions are substituted before being evaluated. Those substituted expressions are different when they are passed by user interactively from those that passed as arguments of another function.
 
 ### Example
 
@@ -299,7 +299,7 @@ str(substitute2(j, env = list(j = as.list(cols))))
 
 For more detailed explanation on that matter please see examples in [`substitute2` manual](https://rdatatable.gitlab.io/data.table/library/data.table/html/substitute2.html).
 
-### Substitution a complex query
+### Substitution of a complex query
 
 Let's take as an example more complex function that calculates root mean square.
 
@@ -366,7 +366,7 @@ DT[, j, env = list(j = j)]
 
 ## Retired interfaces
 
-In `[.data.table` it is also possible to use other interfaces for variable substitution, or passing quoted expressions. Those are `get` and `mget` for inline injection of variables by providing their names as character, and `eval` that tells `[.data.table` that expression we passed into an argument is a quoted expression, so should be handled differently. Those interfaces are now considered as retired and use of the new `env` argument is recommended.
+In `[.data.table` it is also possible to use other interfaces for variable substitution, or passing quoted expressions. Those are `get` and `mget` for inline injection of variables by providing their names as character, and `eval` that tells `[.data.table` that expression we passed into an argument is a quoted expression, so should be handled differently. Those interfaces should be considered as retired and we recommended to use new `env` argument instead.
 
 ### `get`
 
@@ -400,7 +400,7 @@ DT[, lapply(v, mean),
 
 ### `eval`
 
-Here instead of using `eval` function we just provide quoted expression into the element of `env` argument.
+Instead of using `eval` function we can provide quoted expression into the element of `env` argument, no extra `eval` call is needed then.
 
 ```{r old_eval}
 cl = quote(
