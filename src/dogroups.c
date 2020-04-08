@@ -41,7 +41,6 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
   }
   setAttrib(BY, R_NamesSymbol, bynames); // Fix for #42 - BY doesn't retain names anymore
   R_LockBinding(sym_BY, env);
-
   if (isNull(jiscols) && (length(bynames)!=length(groups) || length(bynames)!=length(grpcols))) error(_("!length(bynames)[%d]==length(groups)[%d]==length(grpcols)[%d]"),length(bynames),length(groups),length(grpcols));
   // TO DO: check this check above.
 
