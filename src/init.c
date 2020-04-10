@@ -149,7 +149,7 @@ R_CallMethodDef callMethods[] = {
 {"CexpandAltRep", (DL_FUNC) &expandAltRep, -1},
 {"Cfmelt", (DL_FUNC) &fmelt, -1},
 {"Cfcast", (DL_FUNC) &fcast, -1},
-{"Cuniqlist", (DL_FUNC) &uniqlist, -1},
+{"Cuniq", (DL_FUNC) &uniq, -1},
 {"Cuniqlengths", (DL_FUNC) &uniqlengths, -1},
 {"Cforder", (DL_FUNC) &forder, -1},
 {"Cfsorted", (DL_FUNC) &fsorted, -1},

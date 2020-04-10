@@ -1,6 +1,6 @@
 #include "data.table.h"
 
-/* uniqlist macros */
+/* uniq macros */
 #define COMPARE1                                                              \
 prev = *vd;                                                                   \
 for (int i=1; i<nrow; i++) {                                                  \
@@ -24,36 +24,33 @@ for (int i=1; i<nrow; i++) {                                                  \
   prev = elem;                                                                \
 }
 
-// DONE: return 'uniqlist' as a vector (same as duplist) and write a separate function to get group sizes
-// Also improvements for numeric type with a hack of checking unsigned int (to overcome NA/NaN/Inf/-Inf comparisons) (> 2x speed-up)
-SEXP uniqlist(SEXP l, SEXP order)
-{
-  // This works like UNIX uniq as referred to by ?base::unique; i.e., it
-  // drops immediately repeated rows but doesn't drop duplicates of any
-  // previous row. Unless, order is provided, then it also drops any previous
-  // row. l must be a list of same length vectors ans is allocated first
-  // (maximum length the number of rows) and the length returned in anslen.
-  // No NA in order which is guaranteed since internal-only. Used at R level internally (Cuniqlist) but is not and should not be exported.
-  // DONE: ans is now grown
-  if (!isNewList(l))
-    error(_("Internal error: uniqlist has not been passed a list of columns")); // # nocov
-
-  R_len_t ncol = length(l);
-  R_len_t nrow = length(VECTOR_ELT(l,0));
+SEXP uniq(SEXP x, SEXP order) {
+  if (!isNewList(x))
+    error(_("'x' must be a data.table type object"));
   if (!isInteger(order))
-    error(_("Internal error: uniqlist has been passed a non-integer order")); // # nocov
-  if (LENGTH(order)<1)
-    error(_("Internal error: uniqlist has been passed a length-0 order")); // # nocov
-  if (LENGTH(order)>1 && LENGTH(order)!=nrow)
-    error(_("Internal error: uniqlist has been passed length(order)==%d but nrow==%d"), LENGTH(order), nrow); // # nocov
-  bool via_order = INTEGER(order)[0] != -1;  // has an ordering vector been passed in that we have to hop via? Don't use MISSING() here as it appears unstable on Windows
-
-  unsigned long long *ulv; // for numeric check speed-up
+    error(_("'order' must be an integer, you should be more careful when using internal=TRUE"));
+  const bool verbose = GetVerbose();
+  double tic = 0;
+  if (verbose)
+    tic = omp_get_wtime();
+  R_len_t ncol = length(x);
+  R_len_t nrow = length(VECTOR_ELT(x,0));
+  if (!ncol || !nrow) {
+    SEXP ans = PROTECT(allocVector(INTSXP, 0));
+    if (verbose)
+      Rprintf(_("uniq: took %.3fs\n"), omp_get_wtime()-tic);
+    UNPROTECT(1);
+    return(ans);
+  }
+  bool via_order = LENGTH(order) > 0;
+  if (via_order && LENGTH(order)!=nrow)
+    error(_("uniq has been passed length(order)==%d but nrow==%d"), LENGTH(order), nrow);
+  unsigned long long *ulv; // for numeric check speed-up (to overcome NA/NaN/Inf/-Inf comparisons) (> 2x speed-up)
   R_len_t isize=1000, len=1;
   int *iidx = Calloc(isize, int); // for 'idx'
   iidx[0] = 1; // first row is always the first of the first group
   if (ncol==1) {
-    SEXP v = VECTOR_ELT(l,0);
+    SEXP v = VECTOR_ELT(x,0);
     const int *o = INTEGER(order);  // only used when via_order is true
     switch(TYPEOF(v)) {
     case INTSXP : case LGLSXP : {
@@ -102,14 +99,14 @@ SEXP uniqlist(SEXP l, SEXP order)
     R_len_t previ, thisi = via_order ? INTEGER(order)[0]-1 : 0;
     bool *i64 = (bool *)R_alloc(ncol, sizeof(bool));
     for (int i=0; i<ncol; i++)
-      i64[i] = Rinherits(VECTOR_ELT(l,i),char_integer64);
+      i64[i] = Rinherits(VECTOR_ELT(x,i),char_integer64);
     for (int i=1; i<nrow; i++) {
       previ = thisi;
       thisi = via_order ? INTEGER(order)[i]-1 : i;
       int j = ncol;  // the last column varies the most frequently so check that first and work backwards
       bool same = true; // flag to indicate if the values in a row are same as the previous row, if flag false then we can move on to next group
       while (--j>=0 && same) {
-        SEXP v = VECTOR_ELT(l,j);
+        SEXP v = VECTOR_ELT(x,j);
         switch (TYPEOF(v)) {
         case INTSXP : case LGLSXP : { // NA_INTEGER==NA_LOGICAL checked in init.c
           same = INTEGER(v)[thisi]==INTEGER(v)[previ];
@@ -142,9 +139,11 @@ SEXP uniqlist(SEXP l, SEXP order)
       } // almost like COMPARE2 but no last line: prev = elem
     }
   }
-  SEXP ans =  PROTECT(allocVector(INTSXP, len));
+  SEXP ans = PROTECT(allocVector(INTSXP, len));
   memcpy(INTEGER(ans), iidx, sizeof(int)*len); // sizeof is of type size_t - no integer overflow issues
   Free(iidx);
+  if (verbose)
+    Rprintf(_("uniq: took %.3fs\n"), omp_get_wtime()-tic);
   UNPROTECT(1);
   return(ans);
 }

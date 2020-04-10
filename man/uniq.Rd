@@ -1,0 +1,35 @@
+\name{uniq}
+\alias{uniq}
+\alias{uniqlist}
+\title{ Consecutively unique rows }
+\description{
+  Finds the consecutively unique rows.
+}
+\usage{
+uniq(x, order, internal=FALSE)
+}
+\arguments{
+  \item{x}{ data.table type object. }
+  \item{order}{ integer vector order of \code{x}. }
+  \item{internal}{ logical flag, escapes checks of \code{order} argument. }
+}
+\details{
+  Works like UNIX \emph{uniq} as referred to by \code{\link[base]{unique}}; i.e., it drops immediately repeated rows but doesn't drop duplicates of any previous row. Unless \code{order} is provided, then it also drops any previous row.
+  Function should be considered experimental. Argument \code{internal} should not be set to \code{FALSE} unless \code{order} is a \emph{shuffle} (strict permutation of \code{1:nrow(x)}, sorted, no duplicates, no NAs).
+}
+\value{
+  Integer vector corresponding to rows which are consecutively unique.
+}
+\seealso{ \code{\link{data.table}}, \code{\link{rleid}} }
+\examples{
+uniq(data.table())
+uniq(data.table(x=integer()))
+uniq(data.table(x=integer(), y=integer()))
+uniq(data.table(x=1L))
+uniq(data.table(x=1L, y=1L))
+uniq(data.table(x=1:2))
+uniq(data.table(x=1:2, y=1:2))
+uniq(data.table(x=1:2)[c(1L,1:2)])
+uniq(data.table(x=1:2, y=1:2)[c(1L,1:2)])
+}
+\keyword{ data }
