@@ -1,8 +1,15 @@
 #include "data.table.h"
 
-SEXP cbindlist(SEXP x) {
+SEXP cbindlist(SEXP x, SEXP copyArg) {
   if (!isNewList(x))
     error("'x' must be a list");
+  if (!IS_TRUE_OR_FALSE(copyArg))
+    error("'copy' must be TRUE or FALSE");
+  bool copy = (bool)LOGICAL(copyArg)[0];
+  const bool verbose = GetVerbose();
+  double tic = 0;
+  if (verbose)
+    tic = omp_get_wtime();
   int nx = length(x);
   int *nnx = (int*)R_alloc(sizeof(int), nx);
   int nans = 0;
@@ -25,11 +32,14 @@ SEXP cbindlist(SEXP x) {
     SEXP thisx = VECTOR_ELT(x, i);
     SEXP thisnames = getAttrib(thisx, R_NamesSymbol);
     for (int j=0; j<nnx[i]; ++j, ++ians) {
-      SET_VECTOR_ELT(ans, ians, duplicate(VECTOR_ELT(thisx, j)));
+      SEXP thisxcol = VECTOR_ELT(thisx, j);
+      SET_VECTOR_ELT(ans, ians, copy ? duplicate(thisxcol) : thisxcol);
       SET_STRING_ELT(names, ians, STRING_ELT(thisnames, j));
     }
   }
   setAttrib(ans, R_NamesSymbol, names);
+  if (verbose)
+    Rprintf("cbindlist: took %.3fs\n", omp_get_wtime()-tic);
   UNPROTECT(2);
   return ans;
 }

@@ -1,5 +1,5 @@
-cbindlist = function(x) {
-  ans = .Call(Ccbindlist, x)
+cbindlist = function(x, copy=TRUE) {
+  ans = .Call(Ccbindlist, x, copy)
   setDT(ans)
   ans
 }

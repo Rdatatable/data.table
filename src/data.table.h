@@ -247,4 +247,4 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b, SEXP na);
 SEXP fcaseR(SEXP na, SEXP rho, SEXP args);
 
 // mergelist.c
-SEXP cbindlist(SEXP x);
+SEXP cbindlist(SEXP x, SEXP copyArg);
