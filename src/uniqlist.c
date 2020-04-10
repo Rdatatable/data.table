@@ -1,5 +1,29 @@
 #include "data.table.h"
 
+/* uniqlist macros */
+#define COMPARE1                                                              \
+prev = *vd;                                                                   \
+for (int i=1; i<nrow; i++) {                                                  \
+  elem = *++vd;                                                               \
+  if (elem!=prev
+
+#define COMPARE1_VIA_ORDER                                                    \
+prev = vd[*o -1];                                                             \
+for (int i=1; i<nrow; i++) {                                                  \
+  elem = vd[*++o -1];                                                         \
+  if (elem!=prev
+
+#define COMPARE2                                                              \
+  ) {                                                                         \
+    iidx[len++] = i+1;                                                        \
+    if (len>=isize) {                                                         \
+      isize = MIN(nrow, (size_t)(1.1*(double)isize*((double)nrow/i)));        \
+      iidx = Realloc(iidx, isize, int);                                       \
+    }                                                                         \
+  }                                                                           \
+  prev = elem;                                                                \
+}
+
 // DONE: return 'uniqlist' as a vector (same as duplist) and write a separate function to get group sizes
 // Also improvements for numeric type with a hack of checking unsigned int (to overcome NA/NaN/Inf/-Inf comparisons) (> 2x speed-up)
 SEXP uniqlist(SEXP l, SEXP order)
@@ -11,48 +35,26 @@ SEXP uniqlist(SEXP l, SEXP order)
   // (maximum length the number of rows) and the length returned in anslen.
   // No NA in order which is guaranteed since internal-only. Used at R level internally (Cuniqlist) but is not and should not be exported.
   // DONE: ans is now grown
-  if (!isNewList(l)) error(_("Internal error: uniqlist has not been passed a list of columns")); // # nocov
+  if (!isNewList(l))
+    error(_("Internal error: uniqlist has not been passed a list of columns")); // # nocov
+
   R_len_t ncol = length(l);
   R_len_t nrow = length(VECTOR_ELT(l,0));
-  if (!isInteger(order)) error(_("Internal error: uniqlist has been passed a non-integer order")); // # nocov
-  if (LENGTH(order)<1) error(_("Internal error: uniqlist has been passed a length-0 order")); // # nocov
-  if (LENGTH(order)>1 && LENGTH(order)!=nrow) error(_("Internal error: uniqlist has been passed length(order)==%d but nrow==%d"), LENGTH(order), nrow); // # nocov
+  if (!isInteger(order))
+    error(_("Internal error: uniqlist has been passed a non-integer order")); // # nocov
+  if (LENGTH(order)<1)
+    error(_("Internal error: uniqlist has been passed a length-0 order")); // # nocov
+  if (LENGTH(order)>1 && LENGTH(order)!=nrow)
+    error(_("Internal error: uniqlist has been passed length(order)==%d but nrow==%d"), LENGTH(order), nrow); // # nocov
   bool via_order = INTEGER(order)[0] != -1;  // has an ordering vector been passed in that we have to hop via? Don't use MISSING() here as it appears unstable on Windows
 
   unsigned long long *ulv; // for numeric check speed-up
-  SEXP v, ans;
-  R_len_t len, thisi, previ, isize=1000;
+  R_len_t isize=1000, len=1;
   int *iidx = Calloc(isize, int); // for 'idx'
-  len = 1;
   iidx[0] = 1; // first row is always the first of the first group
-
   if (ncol==1) {
-
-#define COMPARE1                                                                 \
-      prev = *vd;                                                                \
-      for (int i=1; i<nrow; i++) {                                               \
-        elem = *++vd;                                                            \
-        if (elem!=prev
-
-#define COMPARE1_VIA_ORDER                                                       \
-      prev = vd[*o -1];                                                          \
-      for (int i=1; i<nrow; i++) {                                               \
-        elem = vd[*++o -1];                                                      \
-        if (elem!=prev
-
-#define COMPARE2                                                                 \
-                        ) {                                                      \
-          iidx[len++] = i+1;                                                     \
-          if (len>=isize) {                                                      \
-            isize = MIN(nrow, (size_t)(1.1*(double)isize*((double)nrow/i)));     \
-            iidx = Realloc(iidx, isize, int);                                    \
-          }                                                                      \
-        }                                                                        \
-        prev = elem;                                                             \
-      }
-
     SEXP v = VECTOR_ELT(l,0);
-    int *o = INTEGER(order);  // only used when via_order is true
+    const int *o = INTEGER(order);  // only used when via_order is true
     switch(TYPEOF(v)) {
     case INTSXP : case LGLSXP : {
       const int *vd=INTEGER(v);
@@ -78,7 +80,7 @@ SEXP uniqlist(SEXP l, SEXP order)
       const uint64_t *vd=(const uint64_t *)REAL(v);
       uint64_t prev, elem;
       // grouping by integer64 makes sense (ids). grouping by float supported but a good use-case for that is harder to imagine
-      if (getNumericRounding_C()==0 /*default*/ || inherits(v, "integer64")) {
+      if (getNumericRounding_C()==0 /*default*/ || Rinherits(v,char_integer64)) {
         if (via_order) {
           COMPARE1_VIA_ORDER COMPARE2
         } else {
@@ -92,51 +94,55 @@ SEXP uniqlist(SEXP l, SEXP order)
         }
       }
     } break;
-    default :
-      error(_("Type '%s' not supported"), type2char(TYPEOF(v)));  // # nocov
+    default : {
+      error(_("Type '%s' not supported"), type2char(TYPEOF(v)));
     }
-  } else {
-    // ncol>1
-    thisi = via_order ? INTEGER(order)[0]-1 : 0;
+    }
+  } else { // ncol>1
+    R_len_t previ, thisi = via_order ? INTEGER(order)[0]-1 : 0;
     bool *i64 = (bool *)R_alloc(ncol, sizeof(bool));
-    for (int i=0; i<ncol; i++) i64[i] = INHERITS(VECTOR_ELT(l,i), char_integer64);
+    for (int i=0; i<ncol; i++)
+      i64[i] = Rinherits(VECTOR_ELT(l,i),char_integer64);
     for (int i=1; i<nrow; i++) {
       previ = thisi;
       thisi = via_order ? INTEGER(order)[i]-1 : i;
       int j = ncol;  // the last column varies the most frequently so check that first and work backwards
-      bool b = true;
-      while (--j>=0 && b) {
-        v=VECTOR_ELT(l,j);
+      bool same = true; // flag to indicate if the values in a row are same as the previous row, if flag false then we can move on to next group
+      while (--j>=0 && same) {
+        SEXP v = VECTOR_ELT(l,j);
         switch (TYPEOF(v)) {
-        case INTSXP : case LGLSXP :  // NA_INTEGER==NA_LOGICAL checked in init.c
-          b=INTEGER(v)[thisi]==INTEGER(v)[previ]; break;
-        case STRSXP :
+        case INTSXP : case LGLSXP : { // NA_INTEGER==NA_LOGICAL checked in init.c
+          same = INTEGER(v)[thisi]==INTEGER(v)[previ];
+        } break;
+        case STRSXP : {
           // fix for #469, when key is set, duplicated calls uniqlist, where encoding
           // needs to be taken care of.
-          b=ENC2UTF8(STRING_ELT(v,thisi))==ENC2UTF8(STRING_ELT(v,previ)); break;  // marked non-utf8 encodings are converted to utf8 so as to match properly when inputs are of different encodings.
-        case REALSXP :
+          same = ENC2UTF8(STRING_ELT(v,thisi))==ENC2UTF8(STRING_ELT(v,previ));
+        } break;  // marked non-utf8 encodings are converted to utf8 so as to match properly when inputs are of different encodings.
+        case REALSXP : {
           ulv = (unsigned long long *)REAL(v);
-          b = ulv[thisi] == ulv[previ]; // (gives >=2x speedup)
-          if (!b && !i64[j]) {
-            b = dtwiddle(ulv, thisi) == dtwiddle(ulv, previ);
+          same = ulv[thisi] == ulv[previ]; // (gives >=2x speedup)
+          if (!same && !i64[j]) {
+            same = dtwiddle(ulv, thisi) == dtwiddle(ulv, previ);
             // could store LHS for use next time as RHS (to save calling dtwiddle twice). However: i) there could be multiple double columns so vector of RHS would need
             // to be stored, ii) many short-circuit early before the if (!b) anyway (negating benefit) and iii) we may not have needed LHS this time so logic would be complex.
           }
-          break;
-        default :
-          error(_("Type '%s' not supported"), type2char(TYPEOF(v)));  // # nocov
+        } break;
+        default : {
+          error(_("Type '%s' not supported"), type2char(TYPEOF(v)));
+        }
         }
       }
-      if (!b) {
+      if (!same) {
         iidx[len++] = i+1;
         if (len >= isize) {
           isize = MIN(nrow, (size_t)(1.1*(double)isize*((double)nrow/i)));
           iidx = Realloc(iidx, isize, int);
         }
-      }
+      } // almost like COMPARE2 but no last line: prev = elem
     }
   }
-  PROTECT(ans = allocVector(INTSXP, len));
+  SEXP ans =  PROTECT(allocVector(INTSXP, len));
   memcpy(INTEGER(ans), iidx, sizeof(int)*len); // sizeof is of type size_t - no integer overflow issues
   Free(iidx);
   UNPROTECT(1);
