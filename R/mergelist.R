@@ -16,16 +16,15 @@ mergelist = function(x, on, how) {
   stopifnot(is.character(how), length(how)==1L, how %chin% c("inner","left","right","full"))
   nomatch = NA
   if (how=="full") { # full outer join
-    i = lapply(x, function(x) x[, on, with=FALSE])
-    i = unique(rbindlist(i))
+    i = lapply(x, .shallow, cols=on)
+    i = funique(rbindlist(i, use.names=FALSE)) # forder to deal with 1+ DTs #925
   } else if (how=="inner") { # inner join
-    i = lapply(x, function(x) x[, on, with=FALSE])
+    i = lapply(x, .shallow, cols=on)
     i = Reduce(fintersect, i)
-    nomatch = NULL
   } else if (how=="left") { # left outer join
-    i = x[[1L]][, unique(.SD), .SDcols=on]
+    i = funique(.shallow(x[[1L]], cols=on))
   } else if (how=="right") { # right outer join
-    i = x[[length(x)]][, unique(.SD), .SDcols=on]
+    i = funique(.shallow(x[[length(x)]], cols=on))
   }
   expand = function(x, i, on, nomatch) x[i, on=on, nomatch=nomatch, mult="first", .SD, .SDcols=setdiff(names(x), on)]
   cbindlist(c(list(i), lapply(x, expand, i=i, on=on, nomatch=nomatch)), copy=FALSE)
