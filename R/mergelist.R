@@ -6,8 +6,8 @@ cbindlist = function(x, copy=TRUE) {
 
 mergelist = function(x, on, how) {
   # note that 'mult' is fixed to "first"
-  # expand/subset each data.table by joining to complete column set specified in 'on'
-  # all DT share the same order and row count so we can safely stuck them by cbind
+  # expand or subset each DT by joining to complete columns set specified in 'on'
+  # now all DT share the same order and row count so we can safely stack them by cbind
   stopifnot(is.list(x))
   if (!length(x)) return(x)
   stopifnot(vapply(x, is.data.table, FALSE))
