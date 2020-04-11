@@ -34,7 +34,7 @@ SEXP reorder(SEXP x, SEXP order) {
   if (!isInteger(order))
     error(_("order must be an integer vector"));
   if (length(order) != nrow)
-    error(_("nrow(x)[%d]!=length(order)[%d]"),nrow,length(order));
+    error(_("order length must be equal to nrow of x: nrow(x)[%d]!=length(order)[%d]"),nrow,length(order));
   int nprotect = 0;
   if (ALTREP(order)) {
     order=PROTECT(copyAsPlain(order)); nprotect++;

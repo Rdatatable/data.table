@@ -284,8 +284,6 @@ setorderv = function(x, cols = colnames(x), order=1L, na.last=FALSE, neworder) {
       warning("Argument order is ignored when neworder argument was provided")
     if (!missing(na.last))
       warning("Argument na.last is ignored when neworder argument was provided")
-    if (length(neworder) != nrow(x))
-      stop("Provided neworder is a different length than nrow of provided data.table")
     if (!is.integer(neworder) && is.numeric(neworder))
       neworder = as.integer(neworder)
     o = neworder
