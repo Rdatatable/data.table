@@ -13266,9 +13266,8 @@ test(1962.0091, anyDuplicated(DT, by = NULL), 2L)
 test(1962.0092, uniqueN(DT, by = NULL), 3L)
 
 ## uniqlist.R
-test(1962.010, uniqlist(1:5),
-     error = 'not type list')
-test(1962.011, uniqlist(list()), list(0L))
+test(1962.010, uniqlist(1:5), error = 'must be a data.table type')
+test(1962.011, uniqlist(list()), integer())
 
 ## merge.R
 DT1 = data.table(a = 1:3, V = 'a')

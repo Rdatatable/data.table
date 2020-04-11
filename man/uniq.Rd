@@ -31,5 +31,13 @@ uniq(data.table(x=1:2))
 uniq(data.table(x=1:2, y=1:2))
 uniq(data.table(x=1:2)[c(1L,1:2)])
 uniq(data.table(x=1:2, y=1:2)[c(1L,1:2)])
+
+# order argument
+x = data.table(id = 1:8, v = rep(1:2, each=4))
+uniq(x[,"v"])
+x = x[c(1:2,7:8,3:4,5:6)]
+uniq(x[,"v"])
+o = order(x$id)
+uniq(x[,"v"], order=o)
 }
 \keyword{ data }
