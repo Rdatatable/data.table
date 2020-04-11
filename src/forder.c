@@ -1257,48 +1257,63 @@ void radix_r(const int from, const int to, const int radix) {
 }
 
 
-SEXP fsorted(SEXP x)
-{
+SEXP fsorted(SEXP x) {
   // Just checks if ordered and returns FALSE early if not. Does not return ordering if so, unlike forder.
   // Always increasing order with NA's first
   // Similar to base:is.unsorted but accepts NA at the beginning (standard in data.table and considered sorted) rather than returning NA when NA present.
   // TODO: test in big steps first to return faster if unsortedness is at the end (a common case of rbind'ing data to end)
   // These are all sequential access to x, so very quick and cache efficient. Could be parallel by checking continuity at batch boundaries.
+  if (!isVectorAtomic(x))
+    STOP(_("internal error: is.sorted got list/NULL/unsupported type object on input thus should be handled on R level but reached C level fsorted")); // # nocov
   const int n = length(x);
-  if (n <= 1) return(ScalarLogical(TRUE));
-  if (!isVectorAtomic(x)) STOP(_("is.sorted (R level) and fsorted (C level) only to be used on vectors. If needed on a list/data.table, you'll need the order anyway if not sorted, so use if (length(o<-forder(...))) for efficiency in one step, or equivalent at C level"));
+  if (n <= 1)
+    return(ScalarLogical(TRUE));
   int i=1;
   switch(TYPEOF(x)) {
   case INTSXP : case LGLSXP : {
     int *xd = INTEGER(x);
-    while (i<n && xd[i]>=xd[i-1]) i++;
+    while (i<n && xd[i]>=xd[i-1])
+      i++;
   } break;
-  case REALSXP :
-    if (inherits(x,"integer64")) {
+  case REALSXP : {
+    if (Rinherits(x,char_integer64)) {
       int64_t *xd = (int64_t *)REAL(x);
-      while (i<n && xd[i]>=xd[i-1]) i++;
+      while (i<n && xd[i]>=xd[i-1])
+        i++;
     } else {
       double *xd = REAL(x);
-      while (i<n && dtwiddle(xd,i)>=dtwiddle(xd,i-1)) i++;
+      while (i<n && dtwiddle(xd,i)>=dtwiddle(xd,i-1))
+        i++;
     }
-    break;
+  } break;
   case STRSXP : {
     SEXP *xd = STRING_PTR(x);
     i = 0;
-    while (i<n && xd[i]==NA_STRING) i++;
+    while (i<n && xd[i]==NA_STRING)
+      i++;
     bool need = NEED2UTF8(xd[i]);
     i++; // pass over first non-NA_STRING
     while (i<n) {
-      if (xd[i]==xd[i-1]) {i++; continue;}
-      if (xd[i]==NA_STRING) break;
-      if (!need) need = NEED2UTF8(xd[i]);
-      if ((need ? strcmp(CHAR(ENC2UTF8(xd[i])), CHAR(ENC2UTF8(xd[i-1]))) :
-                  strcmp(CHAR(xd[i]), CHAR(xd[i-1]))) < 0) break;
+      if (xd[i]==xd[i-1]) {
+        i++; continue;
+      }
+      if (xd[i]==NA_STRING)
+        break;
+      if (!need)
+        need = NEED2UTF8(xd[i]);
+      if (need) {
+        if (strcmp(CHAR(ENC2UTF8(xd[i])), CHAR(ENC2UTF8(xd[i-1]))) < 0)
+          break;
+      } else {
+        if (strcmp(CHAR(xd[i]), CHAR(xd[i-1])) < 0)
+          break;
+      }
       i++;
     }
   } break;
-  default :
+  default : {
     STOP(_("type '%s' is not yet supported"), type2char(TYPEOF(x)));
+  }
   }
   return ScalarLogical(i==n);
 }
