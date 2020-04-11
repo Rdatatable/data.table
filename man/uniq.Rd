@@ -40,7 +40,7 @@ uniq(x[,"v"])
 o = order(x$id)
 uniq(x[,"v"], order=o)
 
-if (!anyDuplicated(o) && !anyNA(o) && between(o, 1L, nrow(x))) {
+if (!anyDuplicated(o) && !anyNA(o) && all(between(o, 1L, nrow(x)))) {
   uniq(x[,"v"], order=o, internal=TRUE)
 }
 }
