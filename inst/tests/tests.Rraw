@@ -67,6 +67,7 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
                                         # masked by which package?
                                         # =================================
   setattr = data.table::setattr         # bit
+  is.sorted = data.table::is.sorted     # bit
   shift = data.table::shift             # IRanges, GenomicRanges
   between = data.table::between         # plm
   second = data.table::second           # S4Vectors
