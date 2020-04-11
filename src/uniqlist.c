@@ -7,6 +7,12 @@ for (int i=1; i<nrow; i++) {                                                  \
   elem = *++vd;                                                               \
   if (elem!=prev
 
+/* segfault in COMPARE1_VIA_ORDER when using internal=TRUE (disabled test 1150.441)
+ * uniq(data.table(a=1:3), order=c(1L,NA,3L), internal=TRUE) # where NA is any int not in 1:nrow(x)
+ * could be avoided by extra check, line change
+ * from:  elem = vd[*++o -1];
+ * into:  int oi = *++o; if (oi < 1 || oi > nrow) error("internal error: *++o not in range of 1:nrow(x)\n"); elem = vd[oi -1];
+ */
 #define COMPARE1_VIA_ORDER                                                    \
 prev = vd[*o -1];                                                             \
 for (int i=1; i<nrow; i++) {                                                  \

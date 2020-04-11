@@ -21,13 +21,18 @@ uniqlist = function (l, order = -1L) {
 uniq = function(x, order=integer(), internal=FALSE) {
   if (!isTRUE(internal) && !missing(order)) {
     if (!is.integer(order))
-      stop("'order' must be an integer")
-    if (length(order) != nrow2(x))
-      stop("'order' must be same length as nrow of 'x'")
-    if (anyDuplicated(order))
-      stop("'order' should not contain duplicates")
-    if (anyNA(order))
-      stop("'order' should not contain NAs")
+      order = as.integer(order)
+    if (length(order)) {
+      len = nrow2(x)
+      if (length(order) != len)
+        stop("'order' must be same length as nrow of 'x'")
+      if (anyDuplicated(order))
+        stop("'order' must not contain duplicates")
+      if (anyNA(order))
+        stop("'order' must not contain NAs")
+      if (any(!between(order, 1L, len)))
+        stop("'order' must be in range of 1:nrow(x)")
+    }
   }
   .Call(Cuniq, x, order)
 }
