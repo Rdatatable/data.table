@@ -12,7 +12,7 @@ uniqlist = function (l, order = -1L) {
   # those are only for backward compatibility, probably not really used anywhere, will keep 1962.010 and 1962.011 happy
   if (!is.list(l)) stop("l not type list")
   if (!length(l)) return(list(0L))
-  # this is for compatibility to new uniq.c code
+  # this is for compatibility to new uniq C code
   if (identical(order, -1L)) order = integer()
 
   uniq(l, order, internal=TRUE)

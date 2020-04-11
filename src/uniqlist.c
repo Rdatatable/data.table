@@ -156,9 +156,9 @@ SEXP uniq(SEXP x, SEXP order) {
 
 SEXP uniqlengths(SEXP x, SEXP n) {
   if (!isInteger(x))
-    error(_("Input argument 'x' to 'uniqlengths' must be an integer vector"));
+    error(_("internal error: Input argument 'x' to 'uniqlengths' must be an integer vector")); // # nocov
   if (!isInteger(x) || length(n)!=1 || INTEGER(n)[0]==NA_INTEGER)
-    error(_("Input argument 'n' to 'uniqlengths' must be an integer vector of length 1 non NA"));
+    error(_("internal error: Input argument 'n' to 'uniqlengths' must be an integer vector of length 1 non NA")); // # nocov
   R_len_t len = length(x);
   SEXP ans = PROTECT(allocVector(INTSXP, len));
   const int *xp = INTEGER(x);
@@ -362,7 +362,7 @@ SEXP nestedid(SEXP l, SEXP cols, SEXP order, SEXP grps, SEXP resetvals, SEXP mul
 SEXP uniqueNlogical(SEXP x, SEXP narmArg) {
   // single pass; short-circuit and return as soon as all 3 values are found
   if (!isLogical(x))
-    error(_("x is not a logical vector"));
+    error(_("internal error: x is not a logical vector")); // # nocov
   if (!IS_TRUE_OR_FALSE(narmArg))
     error(_("na.rm must be TRUE or FALSE"));
   bool narm = LOGICAL(narmArg)[0]==1;
