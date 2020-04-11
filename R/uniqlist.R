@@ -3,11 +3,18 @@ nrow2 = function(x) {
   if (is.data.table(x)) nrow(x) else if (is.list(x)) length(x[[1L]]) else stop("nrow2 expects data.table or list")
 }
 
-uniqlist = function (l, order=integer()) {
+uniqlist = function (l, order = -1L) {
   # used in "[.data.table" when doing groupby (!byjoin) to find the groups using byval
   # (length(byval) && length(byval[[1L]])) && (bysameorder || byindex)
   # and in duplicated.data.table when
   # haskey(x) && length(by) <= length(key(x)) && all(head(key(x), length(by)) == by)
+
+  # those are only for backward compatibility, probably not really used anywhere, will keep 1962.010 and 1962.011 happy
+  if (!is.list(l)) stop("l not type list")
+  if (!length(l)) return(list(0L))
+  # this is for compatibility to new uniq.c code
+  if (identical(order, -1L)) order = integer()
+
   uniq(l, order, internal=TRUE)
 }
 
