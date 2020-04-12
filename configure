@@ -80,10 +80,7 @@ if [ "$R_NO_OPENMP" = "1" ]; then
 fi
 
 # Clean up.
-rm -f test-omp.c
-rm -f test-omp.o
-rm -f test-omp.so
-rm -f a.out
+rm -f test-omp.{c,o,so} a.out
 
 # Write to Makevars
 if [ "$R_NO_OPENMP" = "1" ]; then
