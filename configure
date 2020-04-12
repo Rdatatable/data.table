@@ -81,6 +81,7 @@ fi
 
 # Clean up.
 rm -f test-omp.c
+rm -f test-omp.o
 rm -f test-omp.so
 rm -f a.out
 
