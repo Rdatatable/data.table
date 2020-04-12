@@ -4030,6 +4030,8 @@ test(1162.32, is.sorted(1:5, retOrd=TRUE), error="retOrd works only for data.tab
 test(1162.33, is.sorted(1:5, by="a"), error="but 'by' is supplied")
 test(1162.34, is.sorted(expression(1:5)), error="unsupported type")
 test(1162.35, is.sorted(as.raw(1:5)), error="is not yet supported")
+test(1162.36, is.sorted(c("a",NA,"c")), FALSE)
+test(1162.37, is.sorted(c("a","fa\xE7ile","b")), FALSE)
 
 # FR #351 - last on length=0 arguments
 x <- character(0)
