@@ -16846,3 +16846,9 @@ A = data.table(A=c(complex(real = 1:3, imaginary=c(0, -1, 1)), NaN))
 test(2138.3, rbind(A,B), data.table(A=c(as.character(A$A), B$A)))
 A = data.table(A=as.complex(rep(NA, 5)))
 test(2138.4, rbind(A,B), data.table(A=c(as.character(A$A), B$A)))
+
+# test key with by =col1:col4 #4285
+DT <- data.table( col1 = c(1, 1, 1), col2 = c("a", "b", "a"), col3 = c("A", "B", "A"), col4 = c(2, 2, 2),
+                  key = c("col1", "col4"))
+
+test(2139.1, DT[ .N, by = col1:col4], DT[, .N, by = c("col1", "col2", "col3", "col4")])
