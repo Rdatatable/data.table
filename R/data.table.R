@@ -749,7 +749,8 @@ replace_dot_alias = function(e) {
         allbyvars = intersect(all.vars(bysub), names_x)
         orderedirows = .Call(CisOrderedSubset, irows, nrow(x))  # TRUE when irows is NULL (i.e. no i clause). Similar but better than is.sorted(f__)
         bysameorder = byindex = FALSE
-        if (all(vapply_1b(bysubl, is.name))) {
+        if (!bysub %iscall% ":" && ##Fix #4285
+            all(vapply_1b(bysubl, is.name))) {
           bysameorder = orderedirows && haskey(x) && length(allbyvars) && identical(allbyvars,head(key(x),length(allbyvars)))
           # either bysameorder or byindex can be true but not both. TODO: better name for bysameorder might be bykeyx
           if (!bysameorder && keyby && !length(irows) && isTRUE(getOption("datatable.use.index"))) {
