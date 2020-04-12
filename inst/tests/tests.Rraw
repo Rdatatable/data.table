@@ -16850,10 +16850,17 @@ test(2138.4, rbind(A,B), data.table(A=c(as.character(A$A), B$A)))
 # Used to be uncaught which lead to a segfault down the line, #4166
 dt = data.table(a=list(1:2, 3, 4))
 test(2139.1, dt[, a:=1:4], error="Supplied 4 items to be assigned to 3 items of column 'a'.*please use rep")
-# Subassigning into a list column with a non-list object of matching length would also segfault, now wrapped in list
-test(2139.2, dt[1:2, a:=1:2            ]$a,    list(1L, 2L, 4))
-test(2139.3, dt[1:2, a:=as.numeric(1:2)]$a,    list(1, 2, 4))
-test(2139.4, dt[1:2, a:=c(TRUE, FALSE) ]$a,    list(TRUE, FALSE, 4))
-test(2139.5, dt[1:2, a:=c('a', 'b') ]$a   ,    list('a', 'b', 4))
-# Preserve attributes
-test(2139.6, dt[1:2, a:=as.IDate(1:2)]$a, list(as.IDate(1), as.IDate(2), 4))
+# Subassigning into a list column with a non-list object of matching length would also segfault, 
+# now wrapped in list, preserve attributes
+test(2139.2, dt[1:2, a:=structure(c(1L, 2L), att='t')          ]$a, list(structure(1L, att='t'),            structure(2L, att='t'),            4))
+test(2139.3, dt[1:2, a:=structure(c(1, 2), att='t')            ]$a, list(structure(1, att='t'),             structure(2, att='t'),             4))
+test(2139.4, dt[1:2, a:=structure(as.raw(c(1, 2)), att='t')    ]$a, list(structure(as.raw(1), att='t'),     structure(as.raw(2), att='t'),     4))
+test(2139.5, dt[1:2, a:=structure(as.complex(c(1, 2)), att='t')]$a, list(structure(as.complex(1), att='t'), structure(as.complex(2), att='t'), 4))
+test(2139.6, dt[1:2, a:=structure(c(TRUE, FALSE), att='t')     ]$a, list(structure(TRUE, att='t'),          structure(FALSE, att='t'),         4))
+test(2139.7, dt[1:2, a:=structure(c('a', 'b'), att='t')        ]$a, list(structure('a', att='t'),           structure('b', att='t'),           4))
+# integer64 is a double decorated with class 'integer64'
+if (test_bit64) {
+  test(2139.8, dt[1:2, a:=as.integer64(1:2)                    ]$a, list(as.integer64(1),                   as.integer64(2),                   4))
+}
+# Non-supported type
+test(2139.9, dt[1:2, a:=call('sum', 1)], error="type 'language' cannot be coerced to 'list'")
