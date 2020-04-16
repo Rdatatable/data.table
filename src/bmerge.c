@@ -1,5 +1,5 @@
 #include "data.table.h"
-#include <signal.h> // the debugging machinery + breakpoint aidee
+//#include <signal.h> // the debugging machinery + breakpoint aidee
 
 /*
 Implements binary search (a.k.a. divide and conquer).
@@ -45,33 +45,44 @@ SEXP bmerge(SEXP iArg, SEXP xArg, SEXP icolsArg, SEXP xcolsArg, SEXP isorted, SE
 
   // iArg, xArg, icolsArg and xcolsArg
   i = iArg; x = xArg;  // set globals so bmerge_r can see them.
-  if (!isInteger(icolsArg)) error(_("Internal error: icols is not integer vector")); // # nocov
-  if (!isInteger(xcolsArg)) error(_("Internal error: xcols is not integer vector")); // # nocov
-  if (LENGTH(icolsArg) > LENGTH(xcolsArg)) error(_("Internal error: length(icols) [%d] > length(xcols) [%d]"), LENGTH(icolsArg), LENGTH(xcolsArg)); // # nocov
+  if (!isInteger(icolsArg))
+    error(_("Internal error: icols is not integer vector")); // # nocov
+  if (!isInteger(xcolsArg))
+    error(_("Internal error: xcols is not integer vector")); // # nocov
+  if (LENGTH(icolsArg) > LENGTH(xcolsArg))
+    error(_("Internal error: length(icols) [%d] > length(xcols) [%d]"), LENGTH(icolsArg), LENGTH(xcolsArg)); // # nocov
   icols = INTEGER(icolsArg);
   xcols = INTEGER(xcolsArg);
   xN = LENGTH(x) ? LENGTH(VECTOR_ELT(x,0)) : 0;
   iN = ilen = anslen = LENGTH(i) ? LENGTH(VECTOR_ELT(i,0)) : 0;
   ncol = LENGTH(icolsArg);    // there may be more sorted columns in x than involved in the join
-  for(int col=0; col<ncol; col++) {
-    if (icols[col]==NA_INTEGER) error(_("Internal error. icols[%d] is NA"), col); // # nocov
-    if (xcols[col]==NA_INTEGER) error(_("Internal error. xcols[%d] is NA"), col); // # nocov
-    if (icols[col]>LENGTH(i) || icols[col]<1) error(_("icols[%d]=%d outside range [1,length(i)=%d]"), col, icols[col], LENGTH(i));
-    if (xcols[col]>LENGTH(x) || xcols[col]<1) error(_("xcols[%d]=%d outside range [1,length(x)=%d]"), col, xcols[col], LENGTH(x));
+  for (int col=0; col<ncol; col++) {
+    if (icols[col]==NA_INTEGER)
+      error(_("Internal error. icols[%d] is NA"), col); // # nocov
+    if (xcols[col]==NA_INTEGER)
+      error(_("Internal error. xcols[%d] is NA"), col); // # nocov
+    if (icols[col]>LENGTH(i) || icols[col]<1)
+      error(_("icols[%d]=%d outside range [1,length(i)=%d]"), col, icols[col], LENGTH(i));
+    if (xcols[col]>LENGTH(x) || xcols[col]<1)
+      error(_("xcols[%d]=%d outside range [1,length(x)=%d]"), col, xcols[col], LENGTH(x));
     int it = TYPEOF(VECTOR_ELT(i, icols[col]-1));
     int xt = TYPEOF(VECTOR_ELT(x, xcols[col]-1));
-    if (iN && it!=xt) error(_("typeof x.%s (%s) != typeof i.%s (%s)"), CHAR(STRING_ELT(getAttrib(x,R_NamesSymbol),xcols[col]-1)), type2char(xt), CHAR(STRING_ELT(getAttrib(i,R_NamesSymbol),icols[col]-1)), type2char(it));
+    if (iN && it!=xt)
+      error(_("typeof x.%s (%s) != typeof i.%s (%s)"), CHAR(STRING_ELT(getAttrib(x,R_NamesSymbol),xcols[col]-1)), type2char(xt), CHAR(STRING_ELT(getAttrib(i,R_NamesSymbol),icols[col]-1)), type2char(it));
   }
   // raise(SIGINT);
 
   // rollArg, rollendsArg
   roll = 0.0; rollToNearest = FALSE;
   if (isString(rollarg)) {
-    if (strcmp(CHAR(STRING_ELT(rollarg,0)),"nearest") != 0) error(_("roll is character but not 'nearest'"));
-    if (TYPEOF(VECTOR_ELT(i, icols[ncol-1]-1))==STRSXP) error(_("roll='nearest' can't be applied to a character column, yet."));
+    if (strcmp(CHAR(STRING_ELT(rollarg,0)),"nearest") != 0)
+      error(_("roll is character but not 'nearest'"));
+    if (TYPEOF(VECTOR_ELT(i, icols[ncol-1]-1))==STRSXP)
+      error(_("roll='nearest' can't be applied to a character column, yet."));
     roll=1.0; rollToNearest=TRUE;       // the 1.0 here is just any non-0.0, so roll!=0.0 can be used later
   } else {
-    if (!isReal(rollarg)) error(_("Internal error: roll is not character or double")); // # nocov
+    if (!isReal(rollarg))
+      error(_("Internal error: roll is not character or double")); // # nocov
     roll = REAL(rollarg)[0];   // more common case (rolling forwards or backwards) or no roll when 0.0
   }
   rollabs = fabs(roll);
@@ -83,10 +94,14 @@ SEXP bmerge(SEXP iArg, SEXP xArg, SEXP icolsArg, SEXP xcolsArg, SEXP isorted, SE
   nomatch = INTEGER(nomatchArg)[0];
 
   // mult arg
-  if (!strcmp(CHAR(STRING_ELT(multArg, 0)), "all")) mult = ALL;
-  else if (!strcmp(CHAR(STRING_ELT(multArg, 0)), "first")) mult = FIRST;
-  else if (!strcmp(CHAR(STRING_ELT(multArg, 0)), "last")) mult = LAST;
-  else error(_("Internal error: invalid value for 'mult'. please report to data.table issue tracker")); // # nocov
+  if (!strcmp(CHAR(STRING_ELT(multArg, 0)), "all"))
+    mult = ALL;
+  else if (!strcmp(CHAR(STRING_ELT(multArg, 0)), "first"))
+    mult = FIRST;
+  else if (!strcmp(CHAR(STRING_ELT(multArg, 0)), "last"))
+    mult = LAST;
+  else
+    error(_("Internal error: invalid value for 'mult'. please report to data.table issue tracker")); // # nocov
 
   // opArg
   if (!isInteger(opArg) || length(opArg) != ncol)
@@ -110,7 +125,8 @@ SEXP bmerge(SEXP iArg, SEXP xArg, SEXP icolsArg, SEXP xcolsArg, SEXP isorted, SE
     if (retFirst==NULL || retLength==NULL || retIndex==NULL)
       error(_("Internal error in allocating memory for non-equi join")); // # nocov
     // initialise retIndex here directly, as next loop is meant for both equi and non-equi joins
-    for (int j=0; j<anslen; j++) retIndex[j] = j+1;
+    for (int j=0; j<anslen; j++)
+      retIndex[j] = j+1;
   } else { // equi joins (or) non-equi join but no multiple matches
     retFirstArg = PROTECT(allocVector(INTSXP, anslen));
     retFirst = INTEGER(retFirstArg);
@@ -123,8 +139,14 @@ SEXP bmerge(SEXP iArg, SEXP xArg, SEXP icolsArg, SEXP xcolsArg, SEXP isorted, SE
   for (int j=0; j<anslen; j++) {
     // defaults need to populated here as bmerge_r may well not touch many locations, say if the last row of i is before the first row of x.
     retFirst[j] = nomatch;   // default to no match for NA goto below
-    // retLength[j] = 0;   // TO DO: do this to save the branch below and later branches at R level to set .N to 0
-    retLength[j] = nomatch==0 ? 0 : 1;
+  }
+  // retLength[j] = 0;   // TO DO: do this to save the branch below and later branches at R level to set .N to 0
+  if (nomatch==0) {
+    for (int j=0; j<anslen; j++)
+      retLength[j] = 0;
+  } else { // nomatch==NA
+    for (int j=0; j<anslen; j++)
+      retLength[j] = 1;
   }
 
   // allLen1Arg
@@ -140,20 +162,23 @@ SEXP bmerge(SEXP iArg, SEXP xArg, SEXP icolsArg, SEXP xcolsArg, SEXP isorted, SE
 
   // isorted arg
   o = NULL;
-  if (!LOGICAL(isorted)[0]) {
-    SEXP order = PROTECT(allocVector(INTSXP, length(icolsArg)));
-    protecti++;
-    for (int j=0; j<LENGTH(order); j++) INTEGER(order)[j]=1;   // rep(1L, length(icolsArg))
-    SEXP oSxp = PROTECT(forder(i, icolsArg, ScalarLogical(FALSE), ScalarLogical(TRUE), order, ScalarLogical(FALSE)));
-    protecti++;
+  if (!LOGICAL(isorted)[0]) { // this opt is already handled in new lazy forder, probably different PR, so leave it as is
+    SEXP order = PROTECT(allocVector(INTSXP, length(icolsArg))); protecti++;
+    for (int j=0; j<LENGTH(order); j++)
+      INTEGER(order)[j]=1;   // rep(1L, length(icolsArg))
+    SEXP oSxp = PROTECT(forder(i, icolsArg, ScalarLogical(FALSE), ScalarLogical(TRUE), order, ScalarLogical(FALSE))); protecti++;
     // TODO - split head of forder into C-level callable
-    if (!LENGTH(oSxp)) o = NULL; else o = INTEGER(oSxp);
+    if (!LENGTH(oSxp))
+      o = NULL;
+    else
+      o = INTEGER(oSxp);
   }
 
   // xo arg
   xo = NULL;
   if (length(xoArg)) {
-    if (!isInteger(xoArg)) error(_("Internal error: xoArg is not an integer vector")); // # nocov
+    if (!isInteger(xoArg))
+      error(_("Internal error: xoArg is not an integer vector")); // # nocov
     xo = INTEGER(xoArg);
   }
 
@@ -211,12 +236,18 @@ static uint64_t i64twiddle(void *p, int i)
   // Always ascending and NA first (0) when used by bmerge
 }
 
-void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisgrp, int lowmax, int uppmax)
+static inline bool isDoubleNA(double x, bool isInt64) {
+  if (!isInt64)
+    return ISNAN(x);
+  else
+    return DtoLL(x) == NA_INT64_LL;
+}
+
+void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisgrp, int lowmax, int uppmax) {
 // col is >0 and <=ncol-1 if this range of [xlow,xupp] and [ilow,iupp] match up to but not including that column
 // lowmax=1 if xlowIn is the lower bound of this group (needed for roll)
 // uppmax=1 if xuppIn is the upper bound of this group (needed for roll)
 // new: col starts with -1 for non-equi joins, which gathers rows from nested id group counter 'thisgrp'
-{
   int xlow=xlowIn, xupp=xuppIn, ilow=ilowIn, iupp=iuppIn, j, k, ir, lir, tmp, tmplow, tmpupp;
   ir = lir = ilow + (iupp-ilow)/2;           // lir = logical i row.
   if (o) ir = o[lir]-1;                      // ir = the actual i row if i were ordered
@@ -235,7 +266,7 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
     const int *iic = (col>-1) ? INTEGER(ic) : NULL;
     const int *ixc = INTEGER(xc);
     ival.i = (col>-1) ? iic[ir] : thisgrp;
-    while(xlow < xupp-1) {
+    while (xlow < xupp-1) {
       int mid = xlow + (xupp-xlow)/2;   // Same as (xlow+xupp)/2 but without risk of overflow
       xval.i = ixc[XIND(mid)];
       if (xval.i<ival.i) {          // relies on NA_INTEGER == INT_MIN, tested in init.c
@@ -248,15 +279,21 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
         // TO DO?: not if mult=first|last and col<ncol-1
         tmplow = mid;
         tmpupp = mid;
-        while(tmplow<xupp-1) {
+        while (tmplow<xupp-1) {
           int mid = tmplow + (xupp-tmplow)/2;
           xval.i = ixc[XIND(mid)];
-          if (xval.i == ival.i) tmplow=mid; else xupp=mid;
+          if (xval.i == ival.i)
+            tmplow=mid;
+          else
+            xupp=mid;
         }
-        while(xlow<tmpupp-1) {
+        while (xlow<tmpupp-1) {
           int mid = xlow + (tmpupp-xlow)/2;
           xval.i = ixc[XIND(mid)];
-          if (xval.i == ival.i) tmpupp=mid; else xlow=mid;
+          if (xval.i == ival.i)
+            tmpupp=mid;
+          else
+            xlow=mid;
         }
         // xlow and xupp now surround the group in xc, we only need this range for the next column
         break;
@@ -264,11 +301,25 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
     }
     if (col>-1 && op[col] != EQ) {
       switch (op[col]) {
-      case LE : xlow = xlowIn; break;
-      case LT : xupp = xlow + 1; xlow = xlowIn; break;
-      case GE : if (ival.i != NA_INTEGER) xupp = xuppIn; break;
-      case GT : xlow = xupp - 1; if (ival.i != NA_INTEGER) xupp = xuppIn; break;
-      default : error(_("Internal error in bmerge_r for '%s' column. Unrecognized value op[col]=%d"), type2char(TYPEOF(xc)), op[col]); // #nocov
+      case LE : {
+        xlow = xlowIn;
+      } break;
+      case LT : {
+        xupp = xlow + 1;
+        xlow = xlowIn;
+      } break;
+      case GE : {
+        if (ival.i != NA_INTEGER)
+          xupp = xuppIn;
+      } break;
+      case GT : {
+        xlow = xupp - 1;
+        if (ival.i != NA_INTEGER)
+          xupp = xuppIn;
+      } break;
+      default : {
+        error(_("Internal error in bmerge_r for '%s' column. Unrecognized value op[col]=%d"), type2char(TYPEOF(xc)), op[col]); // #nocov
+      }
       }
       // for LE/LT cases, we need to ensure xlow excludes NA indices, != EQ is checked above already
       if (op[col] <= 3 && xlow<xupp-1 && ival.i != NA_INTEGER && INTEGER(xc)[XIND(xlow+1)] == NA_INTEGER) {
@@ -276,7 +327,10 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
         while (tmplow < tmpupp-1) {
           int mid = tmplow + (tmpupp-tmplow)/2;
           xval.i = ixc[XIND(mid)];
-          if (xval.i == NA_INTEGER) tmplow = mid; else tmpupp = mid;
+          if (xval.i == NA_INTEGER)
+            tmplow = mid;
+          else
+            tmpupp = mid;
         }
         xlow = tmplow; // tmplow is the index of last NA value
       }
@@ -284,40 +338,52 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
     tmplow = lir;
     tmpupp = lir;
     if (col>-1) {
-      while(tmplow<iupp-1) {   // TO DO: could double up from lir rather than halving from iupp
+      while (tmplow<iupp-1) {   // TO DO: could double up from lir rather than halving from iupp
         int mid = tmplow + (iupp-tmplow)/2;
         xval.i = iic[ o ? o[mid]-1 : mid ];   // reuse xval to search in i
-        if (xval.i == ival.i) tmplow=mid; else iupp=mid;
+        if (xval.i == ival.i)
+          tmplow=mid;
+        else
+          iupp=mid;
         // if we could guarantee ivals to be *always* sorted for all columns independently (= max(nestedid) = 1), then we can speed this up by 2x by adding checks for GE,GT,LE,LT separately.
       }
-      while(ilow<tmpupp-1) {
+      while (ilow<tmpupp-1) {
         int mid = ilow + (tmpupp-ilow)/2;
         xval.i = iic[ o ? o[mid]-1 : mid ];
-        if (xval.i == ival.i) tmpupp=mid; else ilow=mid;
+        if (xval.i == ival.i)
+          tmpupp=mid;
+        else
+          ilow=mid;
       }
     }
     // ilow and iupp now surround the group in ic, too
-  }
-    break;
+  } break;
   case STRSXP : {
-    if (op[col] != EQ) error(_("Only '==' operator is supported for columns of type %s."), type2char(TYPEOF(xc)));
+    if (op[col] != EQ)
+      error(_("Only '==' operator is supported for columns of type %s."), type2char(TYPEOF(xc)));
     ival.s = ENC2UTF8(STRING_ELT(ic,ir));
-    while(xlow < xupp-1) {
+    while (xlow < xupp-1) {
       int mid = xlow + (xupp-xlow)/2;
       xval.s = ENC2UTF8(STRING_ELT(xc, XIND(mid)));
       tmp = StrCmp(xval.s, ival.s);  // uses pointer equality first, NA_STRING are allowed and joined to, then uses strcmp on CHAR().
       if (tmp == 0) {                // TO DO: deal with mixed encodings and locale optionally
         tmplow = mid;
         tmpupp = mid;
-        while(tmplow<xupp-1) {
+        while (tmplow<xupp-1) {
           int mid = tmplow + (xupp-tmplow)/2;
           xval.s = ENC2UTF8(STRING_ELT(xc, XIND(mid)));
-          if (ival.s == xval.s) tmplow=mid; else xupp=mid;  // the == here handles encodings as well. Marked non-utf8 encodings are converted to utf-8 using ENC2UTF8.
+          if (ival.s == xval.s)
+            tmplow=mid;
+          else
+            xupp=mid;  // the == here handles encodings as well. Marked non-utf8 encodings are converted to utf-8 using ENC2UTF8.
         }
-        while(xlow<tmpupp-1) {
+        while (xlow<tmpupp-1) {
           int mid = xlow + (tmpupp-xlow)/2;
           xval.s = ENC2UTF8(STRING_ELT(xc, XIND(mid)));
-          if (ival.s == xval.s) tmpupp=mid; else xlow=mid;  // see above re ==
+          if (ival.s == xval.s)
+            tmpupp=mid;
+          else
+            xlow=mid;  // see above re ==
         }
         break;
       } else if (tmp < 0) {
@@ -328,17 +394,23 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
     }
     tmplow = lir;
     tmpupp = lir;
-    while(tmplow<iupp-1) {
+    while (tmplow<iupp-1) {
       int mid = tmplow + (iupp-tmplow)/2;
       xval.s = ENC2UTF8(STRING_ELT(ic, o ? o[mid]-1 : mid));
-      if (xval.s == ival.s) tmplow=mid; else iupp=mid;   // see above re ==
+      if (xval.s == ival.s)
+        tmplow=mid;
+      else
+        iupp=mid;   // see above re ==
     }
-    while(ilow<tmpupp-1) {
+    while (ilow<tmpupp-1) {
       int mid = ilow + (tmpupp-ilow)/2;
       xval.s = ENC2UTF8(STRING_ELT(ic, o ? o[mid]-1 : mid));
-      if (xval.s == ival.s) tmpupp=mid; else ilow=mid;   // see above re ==
+      if (xval.s == ival.s)
+        tmpupp=mid;
+      else
+        ilow=mid;   // see above re ==
     }
-  }  break;
+  } break;
   case REALSXP : {
     double *dic = REAL(ic);
     double *dxc = REAL(xc);
@@ -346,7 +418,7 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
     uint64_t (*twiddle)(void *, int) = isInt64 ? &i64twiddle : &dtwiddle;
     // TODO: remove this last remaining use of i64twiddle.
     ival.ull = twiddle(dic, ir);
-    while(xlow < xupp-1) {
+    while (xlow < xupp-1) {
       int mid = xlow + (xupp-xlow)/2;
       xval.ull = twiddle(dxc, XIND(mid));
       if (xval.ull<ival.ull) {
@@ -356,35 +428,61 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
       } else { // xval.ull == ival.ull)
         tmplow = mid;
         tmpupp = mid;
-        while(tmplow<xupp-1) {
+        while (tmplow<xupp-1) {
           int mid = tmplow + (xupp-tmplow)/2;
           xval.ull = twiddle(dxc, XIND(mid));
-          if (xval.ull == ival.ull) tmplow=mid; else xupp=mid;
+          if (xval.ull == ival.ull)
+            tmplow=mid;
+          else
+            xupp=mid;
         }
-        while(xlow<tmpupp-1) {
+        while (xlow<tmpupp-1) {
           int mid = xlow + (tmpupp-xlow)/2;
           xval.ull = twiddle(dxc, XIND(mid));
-          if (xval.ull == ival.ull) tmpupp=mid; else xlow=mid;
+          if (xval.ull == ival.ull)
+            tmpupp=mid;
+          else
+            xlow=mid;
         }
         break;
       }
     }
     if (col>-1 && op[col] != EQ) {
-      Rboolean isivalNA = !isInt64 ? ISNAN(dic[ir]) : (DtoLL(dic[ir]) == NA_INT64_LL);
+      bool isivalNA = isDoubleNA(dic[ir], isInt64);
       switch (op[col]) {
-      case LE : if (!isivalNA) xlow = xlowIn; break;
-      case LT : xupp = xlow + 1; if (!isivalNA) xlow = xlowIn; break;
-      case GE : if (!isivalNA) xupp = xuppIn; break;
-      case GT : xlow = xupp - 1; if (!isivalNA) xupp = xuppIn; break;
-      default : error(_("Internal error in bmerge_r for '%s' column. Unrecognized value op[col]=%d"), type2char(TYPEOF(xc)), op[col]); // #nocov
+      case LE : {
+        if (!isivalNA)
+          xlow = xlowIn;
+      } break;
+      case LT : {
+        xupp = xlow + 1;
+        if (!isivalNA)
+          xlow = xlowIn;
+      } break;
+      case GE : {
+        if (!isivalNA)
+          xupp = xuppIn;
+      } break;
+      case GT : {
+        xlow = xupp - 1;
+        if (!isivalNA)
+          xupp = xuppIn;
+      } break;
+      default : {
+        error(_("Internal error in bmerge_r for '%s' column. Unrecognized value op[col]=%d"), type2char(TYPEOF(xc)), op[col]); // #nocov
       }
+      }
+
       // for LE/LT cases, we need to ensure xlow excludes NA indices, != EQ is checked above already
-      if (op[col] <= 3 && xlow<xupp-1 && !isivalNA && (!isInt64 ? ISNAN(dxc[XIND(xlow+1)]) : (DtoLL(dxc[XIND(xlow+1)]) == NA_INT64_LL))) {
+      if (op[col] <= 3 && xlow<xupp-1 && !isivalNA && isDoubleNA(dxc[XIND(xlow+1)], isInt64)) {
         tmplow = xlow; tmpupp = xupp;
         while (tmplow < tmpupp-1) {
           int mid = tmplow + (tmpupp-tmplow)/2;
           xval.d = REAL(xc)[XIND(mid)];
-          if (!isInt64 ? ISNAN(xval.d) : xval.ll == NA_INT64_LL) tmplow = mid; else tmpupp = mid;
+          if (!isInt64 ? ISNAN(xval.d) : xval.ll == NA_INT64_LL)
+            tmplow = mid;
+          else
+            tmpupp = mid;
         }
         xlow = tmplow; // tmplow is the index of last NA value
       }
@@ -392,22 +490,28 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
     tmplow = lir;
     tmpupp = lir;
     if (col>-1) {
-      while(tmplow<iupp-1) {
+      while (tmplow<iupp-1) {
         int mid = tmplow + (iupp-tmplow)/2;
         xval.ull = twiddle(dic, o ? o[mid]-1 : mid);
-        if (xval.ull == ival.ull) tmplow=mid; else iupp=mid;
+        if (xval.ull == ival.ull)
+          tmplow=mid;
+        else
+          iupp=mid;
       }
-      while(ilow<tmpupp-1) {
+      while (ilow<tmpupp-1) {
         int mid = ilow + (tmpupp-ilow)/2;
         xval.ull = twiddle(dic, o ? o[mid]-1 : mid);
-        if (xval.ull == ival.ull) tmpupp=mid; else ilow=mid;
+        if (xval.ull == ival.ull)
+          tmpupp=mid;
+        else
+          ilow=mid;
       }
     }
     // ilow and iupp now surround the group in ic, too
-  }
-    break;
-  default:
+  } break;
+  default: {
     error(_("Type '%s' not supported for joining/merging"), type2char(TYPEOF(xc)));
+  }
   }
   if (xlow<xupp-1) { // if value found, low and upp surround it, unlike standard binary search where low falls on it
     if (col<ncol-1) {
@@ -415,11 +519,12 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
       // final two 1's are lowmax and uppmax
     } else {
       int len = xupp-xlow-1;
-      if (mult==ALL && len>1) allLen1[0] = FALSE;
+      if (mult==ALL && len>1)
+        allLen1[0] = FALSE;
       if (nqmaxgrp == 1) {
         for (j=ilow+1; j<iupp; j++) {   // usually iterates once only for j=ir
           k = o ? o[j]-1 : j;
-          retFirst[k] = (mult != LAST) ? xlow+2 : xupp; // extra +1 for 1-based indexing at R level
+          retFirst[k] = (mult != LAST) ? xlow+2 : xupp; // extra +1 for 1-based indexing at R level // this fills up starts field from bmerge
           retLength[k]= (mult == ALL) ? len : 1;
           // retIndex initialisation is taken care of in bmerge and doesn't change for thisgrp=1
         }
@@ -520,34 +625,38 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
       // >=2 equal values in the last column being rolling to the same point.
       for (j=ilow+1; j<iupp; j++) {
         // will rewrite retFirst[ir] to itself, but that's ok
-        if (o) k=o[j]-1; else k=j;
+        if (o)
+          k=o[j]-1;
+        else
+          k=j;
         retFirst[k] = retFirst[ir];
         retLength[k]= retLength[ir];
       }
     }
   }
   switch (op[col]) {
-  case EQ:
+  case EQ: {
     if (ilow>ilowIn && (xlow>xlowIn || ((roll!=0.0 || op[col] != EQ) && col==ncol-1)))
       bmerge_r(xlowIn, xlow+1, ilowIn, ilow+1, col, 1, lowmax, uppmax && xlow+1==xuppIn);
     if (iupp<iuppIn && (xupp<xuppIn || ((roll!=0.0 || op[col] != EQ) && col==ncol-1)))
       bmerge_r(xupp-1, xuppIn, iupp-1, iuppIn, col, 1, lowmax && xupp-1==xlowIn, uppmax);
-    break;
-  case LE: case LT:
+  } break;
+  case LE: case LT: {
     // roll is not yet implemented
     if (ilow>ilowIn)
       bmerge_r(xlowIn, xuppIn, ilowIn, ilow+1, col, 1, lowmax, uppmax && xlow+1==xuppIn);
     if (iupp<iuppIn)
       bmerge_r(xlowIn, xuppIn, iupp-1, iuppIn, col, 1, lowmax && xupp-1==xlowIn, uppmax);
-    break;
-  case GE: case GT:
+  } break;
+  case GE: case GT: {
     // roll is not yet implemented
     if (ilow>ilowIn)
       bmerge_r(xlowIn, xuppIn, ilowIn, ilow+1, col, 1, lowmax, uppmax && xlow+1==xuppIn);
     if (iupp<iuppIn)
       bmerge_r(xlowIn, xuppIn, iupp-1, iuppIn, col, 1, lowmax && xupp-1==xlowIn, uppmax);
-    break;
-  default : break;  // do nothing
+  } break;
+  default : {
+    break;  // do nothing
+  }
   }
 }
-
