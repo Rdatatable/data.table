@@ -11,14 +11,14 @@ SEXP cbindlist(SEXP x, SEXP copyArg) {
   if (verbose)
     tic = omp_get_wtime();
   int nx = length(x);
-  int *nnx = (int*)R_alloc(sizeof(int), nx);
+  int *nnx = (int*)R_alloc(nx, sizeof(int));
   int nans = 0;
-  R_xlen_t nr;
+  R_len_t nr;
   for (int i=0; i<nx; ++i) {
     SEXP thisx = VECTOR_ELT(x, i);
     if (!INHERITS(thisx, char_datatable))
       error("The %d element of 'x' list is not a data.table", i+1);
-    R_xlen_t thisnr = length(VECTOR_ELT(thisx, 0));
+    R_len_t thisnr = length(VECTOR_ELT(thisx, 0));
     if (!i)
       nr = thisnr;
     else if (nr != thisnr)
