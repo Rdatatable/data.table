@@ -62,9 +62,9 @@ SEXP bmerge(SEXP iArg, SEXP xArg, SEXP icolsArg, SEXP xcolsArg, SEXP isorted, SE
     if (xcols[col]==NA_INTEGER)
       error(_("Internal error. xcols[%d] is NA"), col); // # nocov
     if (icols[col]>LENGTH(i) || icols[col]<1)
-      error(_("icols[%d]=%d outside range [1,length(i)=%d]"), col, icols[col], LENGTH(i));
+      error(_("internal error: icols[%d]=%d outside range [1,length(i)=%d]"), col, icols[col], LENGTH(i)); // # nocov
     if (xcols[col]>LENGTH(x) || xcols[col]<1)
-      error(_("xcols[%d]=%d outside range [1,length(x)=%d]"), col, xcols[col], LENGTH(x));
+      error(_("internal error: xcols[%d]=%d outside range [1,length(x)=%d]"), col, xcols[col], LENGTH(x)); // # nocov
     int it = TYPEOF(VECTOR_ELT(i, icols[col]-1));
     int xt = TYPEOF(VECTOR_ELT(x, xcols[col]-1));
     if (iN && it!=xt)
@@ -76,7 +76,7 @@ SEXP bmerge(SEXP iArg, SEXP xArg, SEXP icolsArg, SEXP xcolsArg, SEXP isorted, SE
   roll = 0.0; rollToNearest = FALSE;
   if (isString(rollarg)) {
     if (strcmp(CHAR(STRING_ELT(rollarg,0)),"nearest") != 0)
-      error(_("roll is character but not 'nearest'"));
+      error(_("internal error: roll is character but not 'nearest'")); // # nocov
     if (TYPEOF(VECTOR_ELT(i, icols[ncol-1]-1))==STRSXP)
       error(_("roll='nearest' can't be applied to a character column, yet."));
     roll=1.0; rollToNearest=TRUE;       // the 1.0 here is just any non-0.0, so roll!=0.0 can be used later
