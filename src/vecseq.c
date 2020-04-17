@@ -44,3 +44,26 @@ SEXP vecseq(SEXP x, SEXP len, SEXP clamp) {
   UNPROTECT(1);
   return(ans);
 }
+
+SEXP seqexp(SEXP x) {
+  // each 1:length(x) is repeated number of times the value of x
+  // takes int x= 1,1,2,1,3,2,1
+  // expands into int ans= 1,2,3,3,4,5,5,5,6,6,7
+  // TODO handle integer overflow?
+  if (!isInteger(x))
+    error("internal error: 'x' must be an integer"); // # nocov
+  int *xp = INTEGER(x), nx = LENGTH(x), nans = 0;
+  for (int i=0; i<nx; ++i)
+    nans += xp[i];
+  SEXP ans = PROTECT(allocVector(INTSXP, nans));
+  int *ansp = INTEGER(ans);
+  for (int i=0, ians=0; i<nx; ++i) {
+    int thisx = xp[i];
+    for (int j=0; j<thisx; ++j) {
+      int thisi = i+1;
+      ansp[ians++] = thisi;
+    }
+  }
+  UNPROTECT(1);
+  return ans;
+}

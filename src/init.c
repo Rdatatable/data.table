@@ -30,6 +30,8 @@ SEXP sym_verbose;
 SEXP SelfRefSymbol;
 SEXP sym_inherits;
 SEXP sym_datatable_locked;
+SEXP sym_rownames;
+SEXP sym_alloccol;
 double NA_INT64_D;
 long long NA_INT64_LL;
 Rcomplex NA_CPLX;
@@ -58,6 +60,7 @@ SEXP fwriteR();
 SEXP reorder();
 SEXP rbindlist();
 SEXP vecseq();
+SEXP seqexp();
 SEXP setlistelt();
 SEXP address();
 SEXP expandAltRep();
@@ -144,6 +147,7 @@ R_CallMethodDef callMethods[] = {
 {"Creorder", (DL_FUNC) &reorder, -1},
 {"Crbindlist", (DL_FUNC) &rbindlist, -1},
 {"Cvecseq", (DL_FUNC) &vecseq, -1},
+{"Cseqexp", (DL_FUNC) &seqexp, -1},
 {"Csetlistelt", (DL_FUNC) &setlistelt, -1},
 {"Caddress", (DL_FUNC) &address, -1},
 {"CexpandAltRep", (DL_FUNC) &expandAltRep, -1},
@@ -345,6 +349,8 @@ void attribute_visible R_init_datatable(DllInfo *info)
   SelfRefSymbol = install(".internal.selfref");
   sym_inherits = install("inherits");
   sym_datatable_locked = install(".data.table.locked");
+  sym_rownames = install("row.names");
+  sym_alloccol = install("datatable.alloccol");
 
   initDTthreads();
   avoid_openmp_hang_within_fork();

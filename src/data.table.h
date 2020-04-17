@@ -96,6 +96,8 @@ extern SEXP sym_verbose;
 extern SEXP SelfRefSymbol;
 extern SEXP sym_inherits;
 extern SEXP sym_datatable_locked;
+extern SEXP sym_rownames;
+extern SEXP sym_alloccol;
 extern double NA_INT64_D;
 extern long long NA_INT64_LL;
 extern Rcomplex NA_CPLX;  // initialized in init.c; see there for comments
@@ -119,6 +121,7 @@ SEXP allocNAVectorLike(SEXP x, R_len_t n);
 void writeNA(SEXP v, const int from, const int n);
 void savetl_init(), savetl(SEXP s), savetl_end();
 int checkOverAlloc(SEXP x);
+SEXP alloccolwrapper(SEXP dt, SEXP overAllocArg, SEXP verbose);
 
 // forder.c
 int StrCmp(SEXP x, SEXP y);
@@ -139,6 +142,7 @@ SEXP int_vec_init(R_len_t n, int val);
 
 // vecseq.c
 SEXP vecseq(SEXP x, SEXP len, SEXP clamp);
+SEXP seqexp(SEXP x);
 
 // uniqlist.c
 SEXP uniqlist(SEXP l, SEXP order);
