@@ -522,10 +522,10 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
     } else {
       int len = xupp-xlow-1;
       if (len>1) {
-        if (mult==ERR)
+        if (mult==ALL)
+          allLen1[0] = FALSE;                           // bmerge()$allLen1
+        else if (mult==ERR)
           error("mult='error' and multiple matches during merge");
-        else if (mult==ALL)
-          allLen1[0] = FALSE;                             // bmerge()$allLen1
       }
       if (nqmaxgrp == 1) {
         for (j=ilow+1; j<iupp; j++) {   // usually iterates once only for j=ir
