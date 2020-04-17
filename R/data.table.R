@@ -183,7 +183,7 @@ replace_dot_alias = function(e) {
     }
     return(x)
   }
-  if (!mult %chin% c("first","last","all")) stop("mult argument can only be 'first', 'last' or 'all'")
+  if (!mult %chin% c("first","last","all","error")) stop("mult argument can only be 'first', 'last', 'all' or 'error'")
   missingroll = missing(roll)
   if (length(roll)!=1L || is.na(roll)) stop("roll must be a single TRUE, FALSE, positive/negative integer/double including +Inf and -Inf or 'nearest'")
   if (is.character(roll)) {
@@ -442,7 +442,7 @@ replace_dot_alias = function(e) {
         ops = rep(1L, length(leftcols))
       }
       # Implementation for not-join along with by=.EACHI, #604
-      if (notjoin && (byjoin || mult != "all")) { # mult != "all" needed for #1571
+      if (notjoin && (byjoin || (mult=="first" || mult=="last"))) { # mult != "all" needed for #1571
         notjoin = FALSE
         if (verbose) {last.started.at=proc.time();cat("not-join called with 'by=.EACHI'; Replacing !i with i=setdiff_(x,i) ...");flush.console()}
         orignames = copy(names(i))
@@ -453,6 +453,7 @@ replace_dot_alias = function(e) {
       }
       i = .shallow(i, retain.key = TRUE)
       ans = bmerge(i, x, leftcols, rightcols, roll, rollends, nomatch, mult, ops, verbose=verbose)
+      if (mult=="error") mult="all" ## there was no multiple matches so we can proceed as if 'all'
       xo = ans$xo ## to make it available for further use.
       # temp fix for issue spotted by Jan, test #1653.1. TODO: avoid this
       # 'setorder', as there's another 'setorder' in generating 'irows' below...
