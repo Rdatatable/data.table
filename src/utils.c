@@ -363,3 +363,69 @@ SEXP coerceUtf8IfNeeded(SEXP x) {
   return(ans);
 }
 
+static SEXP char2_dtdf() {
+  SEXP char2_dtdf = PROTECT(allocVector(STRSXP, 2));
+  SET_STRING_ELT(char2_dtdf, 0, char_datatable);
+  SET_STRING_ELT(char2_dtdf, 1, char_dataframe);
+  UNPROTECT(1);
+  return char2_dtdf;
+}
+
+int NROW(SEXP x) {
+  if (!LENGTH(x))
+    return 0;
+  return length(VECTOR_ELT(x, 0));
+}
+
+int NCOL(SEXP x) {
+  return LENGTH(x);
+}
+
+static SEXP set_row_names(int n) {
+  SEXP ans = R_NilValue;
+  if (n) {
+    ans = PROTECT(allocVector(INTSXP, 2));
+    INTEGER(ans)[0] = NA_INTEGER;
+    INTEGER(ans)[1] = -n;
+  } else {
+    ans = PROTECT(allocVector(INTSXP, 0));
+  }
+  UNPROTECT(1);
+  return ans;
+}
+
+SEXP setDT(SEXP x) {
+  if (!isNewList(x))
+    error("internal error: C setDT should be called only on a list"); // # nocov
+  setAttrib(x, R_ClassSymbol, char2_dtdf());
+  setAttrib(x, sym_rownames, set_row_names(NROW(x)));
+  return alloccolwrapper(x, GetOption(sym_alloccol, R_NilValue), GetOption(sym_verbose, R_NilValue));
+}
+
+bool isDataTable(SEXP x) {
+  return INHERITS(x, char_datatable);
+}
+
+static inline bool equalLens(SEXP x) {
+  int n = LENGTH(x);
+  if (n < 2)
+    return true;
+  for (int i=1; i<n; ++i) {
+    if (xlength(VECTOR_ELT(x, i)) != xlength(VECTOR_ELT(x, i-1)))
+      return false;
+  }
+  return true;
+}
+
+bool perhapsDataTable(SEXP x) {
+  return INHERITS(x, char_datatable) || INHERITS(x, char_dataframe) || (
+      isNewList(x) && equalLens(x)
+  );
+}
+
+SEXP perhapsDataTableR(SEXP x) {
+  SEXP ans = PROTECT(allocVector(LGLSXP, 1));
+  LOGICAL(ans)[0] = (int)perhapsDataTable(x);
+  UNPROTECT(1);
+  return ans;
+}

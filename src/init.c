@@ -216,6 +216,7 @@ R_CallMethodDef callMethods[] = {
 {"CtestMsgR", (DL_FUNC) &testMsgR, -1},
 {"C_allNAR", (DL_FUNC) &allNAR, -1},
 {"Ccbindlist", (DL_FUNC) &cbindlist, -1},
+{"CperhapsDataTableR", (DL_FUNC) &perhapsDataTableR, -1},
 {NULL, NULL, 0}
 };
 

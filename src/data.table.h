@@ -240,6 +240,12 @@ bool islocked(SEXP x);
 SEXP islockedR(SEXP x);
 bool need2utf8(SEXP x);
 SEXP coerceUtf8IfNeeded(SEXP x);
+int NROW(SEXP x);
+int NCOL(SEXP x);
+SEXP setDT(SEXP x);
+bool isDataTable(SEXP x);
+bool perhapsDataTable(SEXP x);
+SEXP perhapsDataTableR(SEXP x);
 
 // types.c
 char *end(char *start);
