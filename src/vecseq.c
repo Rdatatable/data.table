@@ -46,10 +46,10 @@ SEXP vecseq(SEXP x, SEXP len, SEXP clamp) {
 }
 
 SEXP seqexp(SEXP x) {
-  // each 1:length(x) is repeated number of times the value of x
-  // takes int x= 1,1,2,1,3,2,1
-  // expands into int ans= 1,2,3,3,4,5,5,5,6,6,7
-  // TODO handle integer overflow?
+  // function(x) unlist(lapply(seq_along(x), function(i) rep(i, x[[i]])))
+  // used to expand bmerge()$lens
+  // input:  1,1,2,  1,3,    1,0,1,2
+  // output: 1,2,3,3,4,5,5,5,6,  8,9,9
   if (!isInteger(x))
     error("internal error: 'x' must be an integer"); // # nocov
   int *xp = INTEGER(x), nx = LENGTH(x), nans = 0;
