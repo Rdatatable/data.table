@@ -398,7 +398,7 @@ static SEXP set_row_names(int n) {
   return ans;
 }
 
-// setDT(x)
+// setDT(x) ## not in-place!
 SEXP setDT(SEXP x) {
   if (!isNewList(x))
     error("internal error: C setDT should be called only on a list"); // # nocov

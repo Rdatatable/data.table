@@ -59,10 +59,9 @@ SEXP seqexp(SEXP x) {
   int *ansp = INTEGER(ans);
   for (int i=0, ians=0; i<nx; ++i) {
     int thisx = xp[i];
-    for (int j=0; j<thisx; ++j) {
-      int thisi = i+1;
+    int thisi = i+1; // R's 1-based index
+    for (int j=0; j<thisx; ++j)
       ansp[ians++] = thisi;
-    }
   }
   UNPROTECT(1);
   return ans;
