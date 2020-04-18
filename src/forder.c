@@ -414,10 +414,9 @@ uint64_t dtwiddle(void *p, int i)
 
 void radix_r(const int from, const int to, const int radix);
 
-SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, SEXP naArg)
+SEXP forderDo(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, SEXP naArg) {
 // sortGroups TRUE from setkey and regular forder, FALSE from by= for efficiency so strings don't have to be sorted and can be left in appearance order
 // when sortGroups is TRUE, ascArg contains +1/-1 for ascending/descending of each by column; when FALSE ascArg is ignored
-{
 
 #ifdef TIMING_ON
   memset(tblock, 0, MAX_NTH*NBLOCK*sizeof(double));
@@ -798,6 +797,111 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
     }
   }
   #endif
+  return ans;
+}
+
+// all(x==1L)
+static bool all1(SEXP x) {
+  if (!isInteger(x))
+    error("internal error: all1 got non-integer"); // # nocov
+  int *xp = INTEGER(x);
+  for (int i=0; i<LENGTH(x); ++i) {
+    if (xp[i] != 1)
+      return false;
+  }
+  return true;
+}
+
+// identical(cols, head(chmatch(key(x), names(x)), length(cols)))
+bool colsKeyHead(SEXP x, SEXP cols) {
+  if (!isNewList(x))
+    error("internal error: 'x' must be a list"); // # nocov
+  if (!isInteger(cols))
+    error("internal error: 'cols' must be an integer"); // # nocov
+  SEXP key = getAttrib(x, sym_sorted);
+  if (isNull(key) || (length(key) < length(cols)))
+    return false;
+  SEXP names =  getAttrib(x, R_NamesSymbol);
+  SEXP keynames = PROTECT(chmatch(key, names, 0));
+  int *keynamesp = INTEGER(keynames), *colsp = INTEGER(cols);
+  for (int i=0; i<LENGTH(cols); ++i) {
+    if (colsp[i]!=keynamesp[i]) {
+      UNPROTECT(1);
+      return false;
+    }
+  }
+  UNPROTECT(1);
+  return true;
+}
+
+// paste0("__", cols, collapse="")
+SEXP idxName(SEXP cols) {
+  if (!isString(cols))
+    error("internal error: 'cols' must be a character"); // # nocov
+  SEXP char_underscore2 = PROTECT(ScalarString(mkChar("__")));
+  SEXP char_empty = PROTECT(ScalarString(mkChar("")));
+  SEXP sym_paste0 = install("paste0");
+  SEXP call_paste0 = PROTECT(lang4(sym_paste0, char_underscore2, cols, char_empty));
+  SET_TAG(CDDDR(call_paste0), install("collapse"));
+  SEXP ans = PROTECT(eval(call_paste0, R_GlobalEnv));
+  UNPROTECT(4);
+  return ans;
+}
+
+// attr(attr(x, "index"), idxName(names(x)[cols]))
+SEXP getIndex(SEXP x, SEXP cols) {
+  if (!isInteger(cols))
+    error("internal error: 'cols' must be an integer"); // # nocov
+  SEXP index = getAttrib(x, sym_index);
+  if (isNull(index))
+    return index;
+  SEXP idx_names = PROTECT(subsetVector(getAttrib(x, R_NamesSymbol), cols));
+  SEXP name_idx = PROTECT(idxName(idx_names));
+  SEXP sym_idx = install(CHAR(STRING_ELT(name_idx, 0)));
+  SEXP idx = getAttrib(index, sym_idx);
+  UNPROTECT(2);
+  return idx;
+}
+
+SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, SEXP naArg) {
+  const bool verbose = GetVerbose();
+  int protecti = 0;
+  double tic=0.0;
+  if (verbose)
+    tic = omp_get_wtime();
+  bool argsOK = isNewList(DT) &&
+    !LOGICAL(retGrpArg)[0] &&
+    LOGICAL(sortGroupsArg)[0] &&
+    !LOGICAL(naArg)[0] &&
+    all1(ascArg); // we could provide extra flag when we call forderv internally so we know argsOK==true
+
+  int opt = -1; // -1=unknown, 0=none, 1=keyOpt, 2=idxOpt
+  SEXP ans = R_NilValue;
+  if (!argsOK)
+    opt = 0;
+
+  if (opt == -1) {
+    if (colsKeyHead(DT, by)) {
+      opt = 1; // keyOpt
+      ans = PROTECT(allocVector(INTSXP, 0)); protecti++;
+    }
+  }
+
+  if (opt == -1) {
+    SEXP idx = getIndex(DT, by);
+    if (!isNull(idx)) {
+      opt = 2; // idxOpt
+      ans = idx;
+    }
+  }
+
+  if (opt < 1) {
+    ans = PROTECT(forderDo(DT, by, retGrpArg, sortGroupsArg, ascArg, naArg)); protecti++;
+  }
+
+  if (verbose)
+    Rprintf("forder: opt=%d, took %.3fs\n", opt, omp_get_wtime()-tic);
+  UNPROTECT(protecti);
   return ans;
 }
 
