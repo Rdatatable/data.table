@@ -883,6 +883,9 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
   if (!isLogical(lazyArg) || LENGTH(lazyArg) != 1)
     error("lazy must be logical TRUE, FALSE or NA of length 1");
 
+  if (!length(DT))
+    return allocVector(INTSXP, 0);
+
   int opt = -1; // -1=unknown, 0=none, 1=keyOpt, 2=idxOpt
   if (LOGICAL(lazyArg)[0]==NA_LOGICAL) {
     if (isNewList(DT) &&
