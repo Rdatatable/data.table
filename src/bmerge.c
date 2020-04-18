@@ -38,6 +38,10 @@ static Rboolean rollToNearest=FALSE;
 void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisgrp, int lowmax, int uppmax);
 
 SEXP bmerge(SEXP iArg, SEXP xArg, SEXP icolsArg, SEXP xcolsArg, SEXP xoArg, SEXP rollarg, SEXP rollendsArg, SEXP nomatchArg, SEXP multArg, SEXP opArg, SEXP nqgrpArg, SEXP nqmaxgrpArg) {
+  const bool verbose = GetVerbose();
+  double tic=0.0, tic0=0.0;
+  if (verbose)
+    tic = omp_get_wtime();
   int xN, iN, protecti=0;
   ctr=0; // needed for non-equi join case
   SEXP retFirstArg, retLengthArg, retIndexArg, allLen1Arg, allGrp1Arg;
@@ -157,10 +161,14 @@ SEXP bmerge(SEXP iArg, SEXP xArg, SEXP icolsArg, SEXP xcolsArg, SEXP xoArg, SEXP
 
   // start bmerge
   if (iN) {
+    if (verbose)
+      tic0 = omp_get_wtime();
     // embarassingly parallel if we've storage space for nqmaxgrp*iN
     for (int kk=0; kk<nqmaxgrp; kk++) {
       bmerge_r(-1,xN,-1,iN,scols,kk+1,1,1);
     }
+    if (verbose)
+      Rprintf("bmerge: looping bmerge_r took %.3fs\n", omp_get_wtime()-tic0);
   }
   ctr += iN;
   if (nqmaxgrp > 1 && mult == ALL) {
@@ -191,6 +199,8 @@ SEXP bmerge(SEXP iArg, SEXP xArg, SEXP icolsArg, SEXP xcolsArg, SEXP xoArg, SEXP
     Free(retLength);
     Free(retIndex);
   }
+  if (verbose)
+    Rprintf("bmerge: took %.3fs\n", omp_get_wtime()-tic);
   UNPROTECT(protecti);
   return (ans);
 }
