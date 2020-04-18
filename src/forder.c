@@ -921,7 +921,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
     }
   }
 
-  if (opt == -1) {
+  if (opt == -1 && LOGICAL(GetOption(install("datatable.use.index"), R_NilValue))[0]==TRUE) {
     SEXP idx = getIndex(DT, by);
     if (!isNull(idx)) {
       opt = 2; // idxOpt
