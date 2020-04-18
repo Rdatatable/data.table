@@ -164,16 +164,14 @@ SEXP bmerge(SEXP iArg, SEXP xArg, SEXP icolsArg, SEXP xcolsArg, SEXP isorted, SE
 
   // isorted arg
   o = NULL;
-  if (!LOGICAL(isorted)[0]) { // this opt is already handled in new lazy forder, probably different PR, so leave it as is
-    SEXP order = PROTECT(allocVector(INTSXP, length(icolsArg))); protecti++;
-    for (int j=0; j<LENGTH(order); j++)
-      INTEGER(order)[j]=1;   // rep(1L, length(icolsArg))
-    SEXP oSxp = PROTECT(forder(i, icolsArg, ScalarLogical(FALSE), ScalarLogical(TRUE), order, ScalarLogical(FALSE))); protecti++;
+  if (!LOGICAL(isorted)[0]) {
+    SEXP order = PROTECT(allocVector(INTSXP, length(icolsArg)));
+    protecti++;
+    for (int j=0; j<LENGTH(order); j++) INTEGER(order)[j]=1;   // rep(1L, length(icolsArg))
+    SEXP oSxp = PROTECT(forder(i, icolsArg, ScalarLogical(FALSE), ScalarLogical(TRUE), order, ScalarLogical(FALSE)));
+    protecti++;
     // TODO - split head of forder into C-level callable
-    if (!LENGTH(oSxp))
-      o = NULL;
-    else
-      o = INTEGER(oSxp);
+    if (!LENGTH(oSxp)) o = NULL; else o = INTEGER(oSxp);
   }
 
   // xo arg
