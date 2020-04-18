@@ -16964,3 +16964,5 @@ test(2139.91, forderv(d, "b"), 2:1, output="forder.*opt=-1.*took")
 test(2139.92, forderv(d, "b", lazy=FALSE), 2:1, output="forder.*opt=0.*took")
 options(op2)
 options(op)
+test(2139.99, forderv(data.table(a=1), lazy=c(TRUE, TRUE)), error="lazy must be")
+

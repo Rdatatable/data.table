@@ -871,7 +871,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
   if (verbose)
     tic = omp_get_wtime();
   if (isNull(DT))
-    error("DT is NULL"); // # nocov
+    error("DT is NULL");
   if (!IS_TRUE_OR_FALSE(retGrpArg))
     error("retGrp must be TRUE or FALSE");
   if (!IS_TRUE_OR_FALSE(sortGroupsArg))
@@ -879,7 +879,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
   if (!isLogical(naArg) || LENGTH(naArg) != 1)
     error("na.last must be logical TRUE, FALSE or NA of length 1");
   if (!isInteger(ascArg))
-    error("order must be integer");
+    error("order must be integer"); // # nocov # coerced to int in R
   if (!isLogical(lazyArg) || LENGTH(lazyArg) != 1)
     error("lazy must be logical TRUE, FALSE or NA of length 1");
 
