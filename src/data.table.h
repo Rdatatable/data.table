@@ -124,7 +124,7 @@ int checkOverAlloc(SEXP x);
 int StrCmp(SEXP x, SEXP y);
 uint64_t dtwiddle(void *p, int i);
 SEXP forderDo(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP naArg);
-SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP naArg); // lazy wrapper to forderDo
+SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP naArg, SEXP lazyArg); // lazy wrapper to forderDo
 int getNumericRounding_C();
 
 // reorder.c
@@ -171,7 +171,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols,
                 SEXP on, SEXP verbose);
 
 // bmerge.c
-SEXP bmerge(SEXP iArg, SEXP xArg, SEXP icolsArg, SEXP xcolsArg, SEXP isorted,
+SEXP bmerge(SEXP iArg, SEXP xArg, SEXP icolsArg, SEXP xcolsArg,
                 SEXP xoArg, SEXP rollarg, SEXP rollendsArg, SEXP nomatchArg,
                 SEXP multArg, SEXP opArg, SEXP nqgrpArg, SEXP nqmaxgrpArg);
 

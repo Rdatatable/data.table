@@ -447,7 +447,7 @@ SEXP forderDo(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg,
       Rprintf(_("forder.c received %d rows and %d columns\n"), length(VECTOR_ELT(DT,0)), length(DT));
   }
   if (!length(DT))
-    STOP(_("Internal error: DT is an empty list() of 0 columns"));  // # nocov  should have been caught be colnamesInt, test 2099.1
+    STOP(_("Internal error: DT is an empty list() of 0 columns"));  // # nocov # caught in lazy forder
   if (!isInteger(by) || !LENGTH(by))
     STOP(_("Internal error: DT has %d columns but 'by' is either not integer or is length 0"), length(DT));  // # nocov  colnamesInt catches, 2099.2
   if (!isInteger(ascArg) || LENGTH(ascArg)!=LENGTH(by))
@@ -462,16 +462,16 @@ SEXP forderDo(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg,
       STOP(_("Column %d is length %d which differs from length of column 1 (%d)\n"), INTEGER(by)[i], length(VECTOR_ELT(DT, INTEGER(by)[i]-1)), nrow);
     if (TYPEOF(VECTOR_ELT(DT, by_i-1)) == CPLXSXP) n_cplx++;
   }
-  if (!isLogical(retGrpArg) || LENGTH(retGrpArg)!=1 || INTEGER(retGrpArg)[0]==NA_LOGICAL)
-    STOP(_("retGrp must be TRUE or FALSE"));
+  if (!IS_TRUE_OR_FALSE(retGrpArg))
+    STOP(_("retGrp must be TRUE or FALSE")); // # nocov # covered in lazy forder
   retgrp = LOGICAL(retGrpArg)[0]==TRUE;
-  if (!isLogical(sortGroupsArg) || LENGTH(sortGroupsArg)!=1 || INTEGER(sortGroupsArg)[0]==NA_LOGICAL )
-    STOP(_("sort must be TRUE or FALSE"));
+  if (!IS_TRUE_OR_FALSE(sortGroupsArg))
+    STOP(_("sort must be TRUE or FALSE")); // # nocov # covered in lazy forder
   sortType = LOGICAL(sortGroupsArg)[0]==TRUE;   // if sortType is 1, it is later flipped between +1/-1 according to ascArg. Otherwise ascArg is ignored when sortType==0
   if (!retgrp && !sortType)
     STOP(_("At least one of retGrp= or sort= must be TRUE"));
   if (!isLogical(naArg) || LENGTH(naArg) != 1)
-    STOP(_("na.last must be logical TRUE, FALSE or NA of length 1"));
+    STOP(_("na.last must be logical TRUE, FALSE or NA of length 1")); // # nocov # covered in lazy forder
   nalast = (LOGICAL(naArg)[0] == NA_LOGICAL) ? -1 : LOGICAL(naArg)[0]; // 1=na last, 0=na first (default), -1=remove na
 
   if (nrow==0) {
@@ -863,22 +863,53 @@ SEXP getIndex(SEXP x, SEXP cols) {
   return idx;
 }
 
-SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, SEXP naArg) {
+// lazy forder, re-use existing key or index if possible, otherwise call forderDo
+SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, SEXP naArg, SEXP lazyArg) {
   const bool verbose = GetVerbose();
   int protecti = 0;
   double tic=0.0;
   if (verbose)
     tic = omp_get_wtime();
-  bool argsOK = isNewList(DT) &&
-    !LOGICAL(retGrpArg)[0] &&
-    LOGICAL(sortGroupsArg)[0] &&
-    !LOGICAL(naArg)[0] &&
-    all1(ascArg); // we could provide extra flag when we call forderv internally so we know argsOK==true
+  if (isNull(DT))
+    error("DT is NULL"); // # nocov
+  if (!IS_TRUE_OR_FALSE(retGrpArg))
+    error("retGrp must be TRUE or FALSE");
+  if (!IS_TRUE_OR_FALSE(sortGroupsArg))
+    error("sort must be TRUE or FALSE");
+  if (!isLogical(naArg) || LENGTH(naArg) != 1)
+    error("na.last must be logical TRUE, FALSE or NA of length 1");
+  if (!isInteger(ascArg))
+    error("order must be integer");
+  if (!isLogical(lazyArg) || LENGTH(lazyArg) != 1)
+    error("lazy must be logical TRUE, FALSE or NA of length 1");
 
   int opt = -1; // -1=unknown, 0=none, 1=keyOpt, 2=idxOpt
-  SEXP ans = R_NilValue;
-  if (!argsOK)
+  if (LOGICAL(lazyArg)[0]==NA_LOGICAL) {
+    if (isNewList(DT) &&
+        !LOGICAL(retGrpArg)[0] &&
+        LOGICAL(sortGroupsArg)[0] &&
+        !LOGICAL(naArg)[0] &&
+        all1(ascArg)) {
+      opt = -1;
+    } else {
+      opt = 0;
+    }
+  } else if (LOGICAL(lazyArg)[0]) {
+    if (!isNewList(DT))
+      error("internal error: lazy set to TRUE but DT is not a list"); // # nocov
+    if (LOGICAL(retGrpArg)[0])
+      error("internal error: lazy set to TRUE but retGrp is TRUE"); // # nocov # proposal to change that: #4346
+    if (!LOGICAL(sortGroupsArg)[0])
+      error("internal error: lazy set to TRUE but sort is FALSE"); // # nocov
+    if (LOGICAL(naArg)[0]!=FALSE)
+      error("internal error: lazy set to TRUE but na.last is not FALSE"); // # nocov
+    if (!all1(ascArg))
+      error("internal error: lazy set to TRUE but order is not all 1"); // # nocov
+    opt = -1;
+  } else if (!LOGICAL(lazyArg)[0]) {
     opt = 0;
+  }
+  SEXP ans = R_NilValue;
 
   if (opt == -1) {
     if (colsKeyHead(DT, by)) {

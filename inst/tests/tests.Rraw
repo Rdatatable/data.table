@@ -13364,7 +13364,7 @@ test(1962.0461, forderv(DT, order = c(1L, -1L)),       error="Either order= is n
 test(1962.0462, forderv(DT, order = 2L),               error='Item 1 of order (ascending/descending) is 2. Must be +1 or -1')
 test(1962.0471, forderv(mean),                         error="'x' argument must be data.table compatible")
 test(1962.0472, forderv(DT, by=mean),                  error="argument specifying columns must be character or numeric")
-test(1962.0473, forderv(NULL),                         error="DT is an empty list() of 0 columns")
+test(1962.0473, forderv(NULL),                         error="DT is NULL")
 
 setDF(DT)
 test(1962.0481, forder(DT), 3:1)

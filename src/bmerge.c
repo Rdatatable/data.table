@@ -37,7 +37,7 @@ static Rboolean rollToNearest=FALSE;
 
 void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisgrp, int lowmax, int uppmax);
 
-SEXP bmerge(SEXP iArg, SEXP xArg, SEXP icolsArg, SEXP xcolsArg, SEXP isorted, SEXP xoArg, SEXP rollarg, SEXP rollendsArg, SEXP nomatchArg, SEXP multArg, SEXP opArg, SEXP nqgrpArg, SEXP nqmaxgrpArg) {
+SEXP bmerge(SEXP iArg, SEXP xArg, SEXP icolsArg, SEXP xcolsArg, SEXP xoArg, SEXP rollarg, SEXP rollendsArg, SEXP nomatchArg, SEXP multArg, SEXP opArg, SEXP nqgrpArg, SEXP nqmaxgrpArg) {
   int xN, iN, protecti=0;
   ctr=0; // needed for non-equi join case
   SEXP retFirstArg, retLengthArg, retIndexArg, allLen1Arg, allGrp1Arg;
@@ -138,17 +138,15 @@ SEXP bmerge(SEXP iArg, SEXP xArg, SEXP icolsArg, SEXP xcolsArg, SEXP isorted, SE
   allGrp1[0] = TRUE;
   protecti += 2;
 
-  // isorted arg
-  o = NULL;
-  if (!LOGICAL(isorted)[0]) {
-    SEXP order = PROTECT(allocVector(INTSXP, length(icolsArg)));
-    protecti++;
-    for (int j=0; j<LENGTH(order); j++) INTEGER(order)[j]=1;   // rep(1L, length(icolsArg))
-    SEXP oSxp = PROTECT(forder(i, icolsArg, ScalarLogical(FALSE), ScalarLogical(TRUE), order, ScalarLogical(FALSE)));
-    protecti++;
-    // TODO - split head of forder into C-level callable
-    if (!LENGTH(oSxp)) o = NULL; else o = INTEGER(oSxp);
-  }
+  SEXP order = PROTECT(allocVector(INTSXP, length(icolsArg)));
+  protecti++;
+  for (int j=0; j<LENGTH(order); j++)
+    INTEGER(order)[j]=1;   // rep(1L, length(icolsArg))
+  SEXP oSxp = PROTECT(forder(i, icolsArg, ScalarLogical(FALSE), ScalarLogical(TRUE), order, ScalarLogical(FALSE), ScalarLogical(TRUE))); protecti++;
+  if (!LENGTH(oSxp))
+    o = NULL;
+  else
+    o = INTEGER(oSxp);
 
   // xo arg
   xo = NULL;
