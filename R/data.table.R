@@ -125,7 +125,7 @@ replace_dot_alias = function(e) {
   }
 }
 
-"[.data.table" = function (x, i, j, by, keyby, with=TRUE, nomatch=getOption("datatable.nomatch", NA), mult, roll=FALSE, rollends=if (roll=="nearest") c(TRUE,TRUE) else if (roll>=0) c(FALSE,TRUE) else c(TRUE,FALSE), which=FALSE, .SDcols, verbose=getOption("datatable.verbose"), allow.cartesian=getOption("datatable.allow.cartesian"), drop=NULL, on=NULL)
+"[.data.table" = function (x, i, j, by, keyby, with=TRUE, nomatch=getOption("datatable.nomatch", NA), mult="all", roll=FALSE, rollends=if (roll=="nearest") c(TRUE,TRUE) else if (roll>=0) c(FALSE,TRUE) else c(TRUE,FALSE), which=FALSE, .SDcols, verbose=getOption("datatable.verbose"), allow.cartesian=getOption("datatable.allow.cartesian"), drop=NULL, on=NULL)
 {
   # ..selfcount <<- ..selfcount+1  # in dev, we check no self calls, each of which doubles overhead, or could
   # test explicitly if the caller is [.data.table (even stronger test. TO DO.)
@@ -183,12 +183,7 @@ replace_dot_alias = function(e) {
     }
     return(x)
   }
-  missingmult = missing(mult)
-  if (!missingmult) {
-    if (!mult %chin% c("first","last","all","error")) stop("mult argument can only be 'first', 'last', 'all' or 'error'")
-  } else {
-    mult = "all"
-  }
+  if (!mult %chin% c("first","last","all","error")) stop("mult argument can only be 'first', 'last', 'all' or 'error'")
   missingroll = missing(roll)
   if (length(roll)!=1L || is.na(roll)) stop("roll must be a single TRUE, FALSE, positive/negative integer/double including +Inf and -Inf or 'nearest'")
   if (is.character(roll)) {
@@ -217,7 +212,6 @@ replace_dot_alias = function(e) {
   ..syms = NULL
   av = NULL
   jsub = NULL
-  jassign = FALSE
   if (!missing(j)) {
     jsub = replace_dot_alias(substitute(j))
     root = if (is.call(jsub)) as.character(jsub[[1L]])[1L] else ""
@@ -290,7 +284,6 @@ replace_dot_alias = function(e) {
         warning("nomatch isn't relevant together with :=, ignoring nomatch")
         nomatch=0L
       }
-      jassign = TRUE
     }
   }
 
@@ -449,7 +442,7 @@ replace_dot_alias = function(e) {
         ops = rep(1L, length(leftcols))
       }
       # Implementation for not-join along with by=.EACHI, #604
-      if (notjoin && (byjoin || (mult=="first" || mult=="last"))) { # mult != "all|error" needed for #1571
+      if (notjoin && (byjoin || (mult=="first" || mult=="last"))) { # mult != "all" needed for #1571
         notjoin = FALSE
         if (verbose) {last.started.at=proc.time();cat("not-join called with 'by=.EACHI'; Replacing !i with i=setdiff_(x,i) ...");flush.console()}
         orignames = copy(names(i))
@@ -459,22 +452,8 @@ replace_dot_alias = function(e) {
         setattr(i, 'sorted', names(i)) # since 'x' has key set, this'll always be sorted
       }
       i = .shallow(i, retain.key = TRUE)
-      if (!missingmult && jassign && missingby) { ## if we just could swap x and i for jassign, all 'mult' cases, dups check via ans$allLens1 would already work
-        if (mult=="first") stop("Argument mult='first' during update-on-join not yet implemented")
-        else if (mult=="all") {
-          warning("Argument 'mult' during update-on-join must not be equal to 'all'. For backward compatibility it will be set to 'last'. To avoid this warning do not use mult arg or provide value other than 'all'.")
-          mult = "last"
-        } # mult=="error" # handled after bmerge, not instantly
-      }
       ans = bmerge(i, x, leftcols, rightcols, roll, rollends, nomatch, mult, ops, verbose=verbose)
-      dups = NULL # so we can re-use later
-      if (jassign && missingby && mult!="last" && (dups<-anyDuplicated(ans$starts, incomparables = c(0L, NA_integer_)))) { # warn here if duplicated matches occured, as proposed in #3747, ask users to use mult='last' explicitly
-        if (missingmult)
-          warning("During update-on-join there were multiple matches, in such case the last matching row will be used to lookup the value from. To avoid this warning use mult argument 'last' (default), 'first' (not yet implemented) or 'error'.")
-        else if (mult=="error")
-          stop("mult='error' and multiple matches during merge") # same error as in bmerge
-      }
-      if (mult=="error") mult="all" ## there were no multiple matches (error would have been raised already) so we can proceed as if 'all', or probably even as if any first or last as well
+      if (mult=="error") mult="all" ## there was no multiple matches so we can proceed as if 'all'
       xo = ans$xo ## to make it available for further use.
       # temp fix for issue spotted by Jan, test #1653.1. TODO: avoid this
       # 'setorder', as there's another 'setorder' in generating 'irows' below...
@@ -501,7 +480,7 @@ replace_dot_alias = function(e) {
           irows = if (allLen1) f__ else vecseq(f__,len__,
             if (allow.cartesian ||
                 notjoin || # #698. When notjoin=TRUE, ignore allow.cartesian. Rows in answer will never be > nrow(x).
-                !(if (!is.null(dups)) dups else anyDuplicated(f__, incomparables = c(0L, NA_integer_)))) {
+                !anyDuplicated(f__, incomparables = c(0L, NA_integer_))) {
               NULL # #742. If 'i' has no duplicates, ignore
             } else as.double(nrow(x)+nrow(i))) # rows in i might not match to x so old max(nrow(x),nrow(i)) wasn't enough. But this limit now only applies when there are duplicates present so the reason now for nrow(x)+nrow(i) is just to nail it down and be bigger than max(nrow(x),nrow(i)).
           if (verbose) {cat(timetaken(last.started.at),"\n"); flush.console()}
