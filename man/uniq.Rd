@@ -17,7 +17,7 @@ uniq(x, order=integer())
   Works like UNIX \emph{uniq} as referred to by \code{\link[base]{unique}}; i.e., it drops immediately repeated rows but doesn't drop duplicates of any previous row. Unless \code{order} is provided, then it also drops any previous row.
 }
 \note{
-  It is an undefined behavior when \code{order} argument contains duplicates. It was designed to take what the \code{\link[base]{order} function returns. We do not check for duplicates, although we still check for values to be in range \code{1:nrow(x)} and non-NA, to avoid \emph{segfault} exception.
+  It is an undefined behavior when \code{order} argument contains duplicates. It was designed to take what the \code{\link[base]{order}} function returns. We do not check for duplicates, although we still check for values to be in range \code{1:nrow(x)} and non-NA, to avoid \emph{segfault} exception.
 }
 \value{
   Integer vector corresponding to rows which are consecutively unique.
