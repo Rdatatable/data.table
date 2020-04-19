@@ -48,6 +48,7 @@ SEXP vecseq(SEXP x, SEXP len, SEXP clamp) {
 SEXP seqexp(SEXP x) {
   // function(x) unlist(lapply(seq_along(x), function(i) rep(i, x[[i]])))
   // used to expand bmerge()$lens
+  // replaces rep.int(indices__, len__) where indices__ was seq_along(x)
   // input:  1,1,2,  1,3,    1,0,1,2
   // output: 1,2,3,3,4,5,5,5,6,  8,9,9
   if (!isInteger(x))
