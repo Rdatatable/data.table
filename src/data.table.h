@@ -141,7 +141,7 @@ SEXP int_vec_init(R_len_t n, int val);
 SEXP vecseq(SEXP x, SEXP len, SEXP clamp);
 
 // uniqlist.c
-SEXP uniq(SEXP x, SEXP order);
+SEXP uniq(SEXP x, SEXP order, SEXP safe);
 SEXP uniqlengths(SEXP x, SEXP n);
 
 // chmatch.c

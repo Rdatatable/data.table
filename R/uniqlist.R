@@ -15,26 +15,27 @@ uniqlist = function (l, order = -1L) {
   # this is for compatibility to new uniq C code
   if (identical(order, -1L)) order = integer()
 
-  uniq(l, order, internal=TRUE)
+  funiq(l, order, safe=FALSE)
 }
 
-uniq = function(x, order=integer(), internal=FALSE) {
-  if (!isTRUE(internal) && !missing(order)) {
-    if (!is.integer(order))
+uniq = function(x, order=integer()) {
+  if (!is.list(x))
+    stop("'x' must be a data.table type object");
+  if (!is.integer(order)) {
+    if (is.numeric(order))
       order = as.integer(order)
-    if (length(order)) {
-      len = nrow2(x)
-      if (length(order) != len)
-        stop("'order' must be same length as nrow of 'x'")
-      if (anyDuplicated(order))
-        stop("'order' must not contain duplicates")
-      if (anyNA(order))
-        stop("'order' must not contain NAs")
-      if (any(!between(order, 1L, len)))
-        stop("'order' must be in range of 1:nrow(x)")
-    }
+    else
+      stop("'order' must be an integer")
   }
-  .Call(Cuniq, x, order)
+  if (length(order) && length(order)!=nrow2(x))
+    stop("'order' must be same length as nrow of 'x'")
+  funiq(x, order, safe=TRUE)
+}
+
+# use safe=F when you are sure that 'order' is in 1:nrow(x)
+# otherwise it segfaults, thus internal
+funiq = function(x, order=integer(), safe=FALSE) {
+  .Call(Cuniq, x, order, safe)
 }
 
 # implemented for returning the lengths of groups obtained from uniqlist (for internal use only)

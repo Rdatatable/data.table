@@ -1,22 +1,26 @@
 #include "data.table.h"
 
 /* uniq macros */
+
 #define COMPARE1                                                              \
 prev = *vd;                                                                   \
 for (int i=1; i<nrow; i++) {                                                  \
   elem = *++vd;                                                               \
   if (elem!=prev
 
-/* segfault in COMPARE1_VIA_ORDER when using internal=TRUE (disabled test 1150.441)
- * uniq(data.table(a=1:3), order=c(1L,NA,3L), internal=TRUE) # where NA is any int not in 1:nrow(x)
- * could be avoided by extra check, line change
- * from:  elem = vd[*++o -1];
- * into:  int oi = *++o; if (oi < 1 || oi > nrow) error("internal error: *++o not in range of 1:nrow(x)\n"); elem = vd[oi -1];
- */
 #define COMPARE1_VIA_ORDER                                                    \
 prev = vd[*o -1];                                                             \
 for (int i=1; i<nrow; i++) {                                                  \
   elem = vd[*++o -1];                                                         \
+  if (elem!=prev
+
+#define COMPARE1_VIA_ORDER_SAFE                                               \
+prev = vd[*o -1];                                                             \
+for (int i=1; i<nrow; i++) {                                                  \
+  int oi = *++o;                                                              \
+  if (oi < 1 || oi > nrow)                                                    \
+    error("'order' must be in range 1:nrow(x)");                              \
+  elem = vd[oi -1];                                                           \
   if (elem!=prev
 
 #define COMPARE2                                                              \
@@ -30,11 +34,15 @@ for (int i=1; i<nrow; i++) {                                                  \
   prev = elem;                                                                \
 }
 
-SEXP uniq(SEXP x, SEXP order) {
+SEXP uniq(SEXP x, SEXP order, SEXP safe) {
+  // safe=true ensure no segfault using COMPARE1_VIA_ORDER_SAFE
+  // safe=false is not available in public API
   if (!isNewList(x))
-    error(_("'x' must be a data.table type object"));
+    error(_("internal error: 'x' must be a data.table type object"));
   if (!isInteger(order))
-    error(_("'order' must be an integer, you should be more careful when using internal=TRUE"));
+    error(_("internal error: 'order' must be an integer"));
+  if (!IS_TRUE_OR_FALSE(safe))
+    error(_("internal error: 'safe' must be TRUE or FALSE"));
   const bool verbose = GetVerbose();
   double tic = 0;
   if (verbose)
@@ -49,20 +57,34 @@ SEXP uniq(SEXP x, SEXP order) {
     return(ans);
   }
   bool via_order = LENGTH(order) > 0;
+  bool via_order_safe = via_order && LOGICAL(safe)[0];
   if (via_order && LENGTH(order)!=nrow)
-    error(_("uniq has been passed length(order)==%d but nrow==%d"), LENGTH(order), nrow);
+    error(_("internal error: uniq has been passed length(order)==%d but nrow==%d"), LENGTH(order), nrow);
+  const int *o = INTEGER(order);  // only used when via_order[_safe] is true
+  if (nrow==1) {
+    if (via_order && o[0]!=1)
+      error("'order' must be in range 1:nrow(x)");
+    SEXP ans = PROTECT(allocVector(INTSXP, 1));
+    INTEGER(ans)[0] = 1;
+    if (verbose)
+      Rprintf(_("uniq: took %.3fs\n"), omp_get_wtime()-tic);
+    UNPROTECT(1);
+    return(ans);
+  }
+  
   unsigned long long *ulv; // for numeric check speed-up (to overcome NA/NaN/Inf/-Inf comparisons) (> 2x speed-up)
   R_len_t isize=1000, len=1;
   int *iidx = Calloc(isize, int); // for 'idx'
   iidx[0] = 1; // first row is always the first of the first group
   if (ncol==1) {
     SEXP v = VECTOR_ELT(x,0);
-    const int *o = INTEGER(order);  // only used when via_order is true
     switch(TYPEOF(v)) {
     case INTSXP : case LGLSXP : {
       const int *vd=INTEGER(v);
       int prev, elem;
-      if (via_order) {
+      if (via_order_safe) {
+        COMPARE1_VIA_ORDER_SAFE COMPARE2
+      } else if (via_order) {
         // ad hoc by (order passed in)
         COMPARE1_VIA_ORDER COMPARE2
       } else {
@@ -73,7 +95,9 @@ SEXP uniq(SEXP x, SEXP order) {
     case STRSXP : {
       const SEXP *vd=STRING_PTR(v);
       SEXP prev, elem;
-      if (via_order) {
+      if (via_order_safe) {
+        COMPARE1_VIA_ORDER_SAFE && ENC2UTF8(elem)!=ENC2UTF8(prev) COMPARE2
+      } else if (via_order) {
         COMPARE1_VIA_ORDER && ENC2UTF8(elem)!=ENC2UTF8(prev) COMPARE2   // but most of the time they are equal, so ENC2UTF8 doesn't need to be called
       } else {
         COMPARE1           && ENC2UTF8(elem)!=ENC2UTF8(prev) COMPARE2
@@ -84,13 +108,17 @@ SEXP uniq(SEXP x, SEXP order) {
       uint64_t prev, elem;
       // grouping by integer64 makes sense (ids). grouping by float supported but a good use-case for that is harder to imagine
       if (getNumericRounding_C()==0 /*default*/ || Rinherits(v,char_integer64)) {
-        if (via_order) {
+        if (via_order_safe) {
+          COMPARE1_VIA_ORDER_SAFE COMPARE2
+        } else if (via_order) {
           COMPARE1_VIA_ORDER COMPARE2
         } else {
           COMPARE1           COMPARE2
         }
       } else {
-        if (via_order) {
+        if (via_order_safe) {
+          COMPARE1_VIA_ORDER_SAFE && dtwiddle(&elem, 0)!=dtwiddle(&prev, 0) COMPARE2
+        } else if (via_order) {
           COMPARE1_VIA_ORDER && dtwiddle(&elem, 0)!=dtwiddle(&prev, 0) COMPARE2
         } else {
           COMPARE1           && dtwiddle(&elem, 0)!=dtwiddle(&prev, 0) COMPARE2
@@ -102,13 +130,20 @@ SEXP uniq(SEXP x, SEXP order) {
     }
     }
   } else { // ncol>1
-    R_len_t previ, thisi = via_order ? INTEGER(order)[0]-1 : 0;
+    R_len_t previ, thisi = via_order ? o[0]-1 : 0;
     bool *i64 = (bool *)R_alloc(ncol, sizeof(bool));
     for (int i=0; i<ncol; i++)
       i64[i] = Rinherits(VECTOR_ELT(x,i),char_integer64);
     for (int i=1; i<nrow; i++) {
       previ = thisi;
-      thisi = via_order ? INTEGER(order)[i]-1 : i;
+      if (!via_order) {
+        thisi = i;
+      } else {
+        int oi = o[i];
+        if (via_order_safe && (oi < 1 || oi > nrow))
+          error("'order' must be in range 1:nrow(x)");
+        thisi = oi-1;
+      }
       int j = ncol;  // the last column varies the most frequently so check that first and work backwards
       bool same = true; // flag to indicate if the values in a row are same as the previous row, if flag false then we can move on to next group
       while (--j>=0 && same) {

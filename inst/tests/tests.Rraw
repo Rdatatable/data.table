@@ -54,6 +54,7 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
   test = data.table:::test
   uniqlengths = data.table:::uniqlengths
   uniqlist = data.table:::uniqlist
+  funiq = data.table:::funiq
   nrow2 = data.table:::nrow2
   which_ = data.table:::which_
   which.first = data.table:::which.first
@@ -3902,32 +3903,38 @@ x = x[c(1:2,7:8,3:4,5:6)]
 test(1150.12, uniq(x[,"v"]), c(1L,3L,5L,7L))
 o = order(x$id)
 test(1150.13, uniq(x[,"v"], order=o), c(1L,5L))
-test(1150.21, uniq(1:5), error="must be a data.table type") # error code cov
-test(1150.22, uniq(list(b = as.raw(1:5))), error="not supported")
-test(1150.23, uniq(list(a = 1:2, b = as.raw(1:5))), error="not supported")
-test(1150.31, uniq(x[,"v"], order=as.numeric(o)), c(1L,5L)) # 'order' exceptions internal=FALSE
-test(1150.32, uniq(x[,"v"], order=o[-1L]), error="must be same length as nrow of 'x'")
-test(1150.33, uniq(x[,"v"], order=c(o[1:6],o[c(2L,7L)])), error="must not contain duplicates")
-test(1150.34, uniq(x[,"v"], order=c(o[1:6],o[c(NA,7L)])), error="must not contain NAs")
-test(1150.35, uniq(x[,"v"], order=c(o[1:6],o[7L]+10L,o[8L])), error="must be in range")
-test(1150.36, uniq(x[,"v"], order=c(o[1:6],o[7L]-10L,o[8L])), error="must be in range")
-test(1150.41, uniq(x[,"v"], order=as.numeric(o), internal=TRUE), error="must be an integer") # 'order' exceptions internal=TRUE
-test(1150.42, uniq(x[,"v"], order=o[-1L], internal=TRUE), error="has been passed length.*nrow")
-test(1150.43, uniq(x[,"v"], order=c(o[1:6],o[c(2L,7L)]), internal=TRUE), c(1L,5L,7L,8L)) ## unhandled bad usage! thus internal
-#test(1150.441, uniq(x[,"v"], order=c(o[1:6],o[c(NA,7L)]), internal=TRUE), error="must not contain NAs") ## unhandled bad usage! thus internal # segfault, see uniqlist.c:COMPARE1_VIA_ORDER
-test(1150.442, uniq(x[c(o[1:6],o[c(NA,7L)]), "v"], internal=TRUE), c(1L,5L,7L,8L)) ## this is ok as are not using 'order' arg
-test(1150.45, uniq(x[,"v"], order=c(o[1:6],o[7L]+10L,o[8L]), internal=TRUE), c(1L,5L,7L,8L)) ## unhandled bad usage! thus internal
-test(1150.46, uniq(x[,"v"], order=c(o[1:6],o[7L]-10L,o[8L]), internal=TRUE), c(1L,5L,7L,8L)) ## unhandled bad usage! thus internal
-x = data.table(id = 1:8, v = rep(1:2, each=4)) # changed behaviour of 'order' special case
+x = data.table(id = 1:8, v = rep(1:2, each=4), w=1L)
+o = order(x$id)
+test(1150.21, uniq(1:5), error="must be a data.table type object")
+test(1150.22, funiq(1:5), error="internal.*must be a data.table type object")
+test(1150.23, uniq(x[,"v"], order=as.numeric(o)), c(1L,5L))
+test(1150.24, funiq(x[,"v"], order=as.numeric(o)), error="internal.*must be an integer")
+test(1150.25, uniq(x[,"v"], order="a"), error="must be an integer")
+test(1150.26, uniq(x[,"v"], order=o[-1L]), error="must be same length as nrow")
+test(1150.27, funiq(x[,"v"], order=o[-1L]), error="internal.*has been passed length.*nrow")
+test(1150.28, uniq(list(b = as.raw(1:5))), error="not supported")
+test(1150.29, uniq(list(a = 1:2, b = as.raw(1:5))), error="not supported")
+test(1150.30, funiq(x[,"v"], safe=NA), error="must be TRUE or FALSE")
+test(1150.31, uniq(x[,"v"], order=c(o[1:6],o[c(NA,7L)])), error="must be in range")
+test(1150.32, uniq(x[,"v"], order=c(o[1:6],o[7L]+10L,o[8L])), error="must be in range")
+test(1150.33, uniq(x[,"v"], order=c(o[1:6],o[7L]-10L,o[8L])), error="must be in range")
+test(1150.34, uniq(x[,c("v","w")], order=c(o[1:6],o[c(NA,7L)])), error="must be in range")
+test(1150.35, funiq(x[,"v"], order=c(o[1:6],o[c(NA,7L)]), safe=TRUE), error="must be in range") ## trying safe=F would segfault!
+test(1150.36, funiq(x[,"v"], order=c(o[1:6],o[7L]+10L,o[8L]), safe=TRUE), error="must be in range")
+test(1150.37, funiq(x[,"v"], order=c(o[1:6],o[7L]-10L,o[8L]), safe=TRUE), error="must be in range")
+test(1150.38, funiq(x[,c("v","w")], order=c(o[1:6],o[c(NA,7L)]), safe=TRUE), error="must be in range")
+test(1150.39, uniq(x[,"v"], order=c(o[1:6],o[c(2L,7L)])), c(1L,5L,7L,8L)) ## duplicates in 'order' undefined behavior, see note in ?uniq, seems to behave like: uniq(x[c(o[1:6],o[c(2L,7L)]),"v"])
+test(1150.40, uniq(x[,c("v","w")], order=c(o[1:6],o[c(2L,7L)])), c(1L,5L,7L,8L))
+x = data.table(id = 1:8, v = rep(1:2, each=4)) # changed behavior of 'order' special case
 o = order(x$id)
 test(1150.51, uniq(x[,"v"], order=o), c(1L,5L))
 test(1150.52, uniq(x[,"v"], order=integer()), c(1L,5L))
 test(1150.53, uniq(x[,"v"], order=-1L), error="must be same length as nrow")
 test(1150.54, uniq(x[1L,"v"], order=-1L), error="must be in range")
-test(1150.61, uniq(x[,"v"], order=o, internal=TRUE), c(1L,5L))
-test(1150.62, uniq(x[,"v"], order=integer(), internal=TRUE), c(1L,5L))
-test(1150.63, uniq(x[,"v"], order=-1L, internal=TRUE), error="has been passed length.*nrow")
-test(1150.64, uniq(x[1L,"v"], order=-1L, internal=TRUE), 1L) ## unhandled bad usage! thus internal
+test(1150.61, funiq(x[,"v"], order=o), c(1L,5L))
+test(1150.62, funiq(x[,"v"], order=integer()), c(1L,5L))
+test(1150.63, funiq(x[,"v"], order=-1L), error="has been passed length.*nrow")
+test(1150.64, funiq(x[1L,"v"], order=-1L), error="must be in range")
 test(1150.71, uniqlist(x[,"v"], order=o), c(1L,5L))
 test(1150.72, uniqlist(x[,"v"], order=integer()), c(1L,5L))
 test(1150.73, uniqlist(x[,"v"], order=-1L), c(1L,5L))
@@ -3935,7 +3942,8 @@ test(1150.74, uniqlist(x[1L,"v"], order=-1L), 1L)
 op = options(datatable.verbose=TRUE)
 test(1150.91, uniq(data.table()), integer(), output="took")
 test(1150.92, uniq(data.table(x=integer())), integer(), output="took")
-test(1150.93, uniq(data.table(x=1:2)), 1:2, output="took")
+test(1150.93, uniq(data.table(x=1L)), 1L, output="took")
+test(1150.94, uniq(data.table(x=1:2)), 1:2, output="took")
 options(op)
 test(1150.96, nrow2(list()), 0L) # nrow2 helper tests
 test(1150.97, nrow2(list(x=1:10, b=1:5)), 10L)

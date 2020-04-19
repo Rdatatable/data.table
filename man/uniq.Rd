@@ -1,21 +1,23 @@
 \name{uniq}
 \alias{uniq}
 \alias{uniqlist}
+\alias{funiq}
 \title{ Consecutively unique rows }
 \description{
   Finds the consecutively unique rows.
 }
 \usage{
-uniq(x, order, internal=FALSE)
+uniq(x, order=integer())
 }
 \arguments{
   \item{x}{ data.table type object. }
-  \item{order}{ integer vector order of \code{x}. }
-  \item{internal}{ logical flag, escapes checks of \code{order} argument. }
+    \item{order}{ integer vector order of \code{x}, must not contain duplicates. }
 }
 \details{
   Works like UNIX \emph{uniq} as referred to by \code{\link[base]{unique}}; i.e., it drops immediately repeated rows but doesn't drop duplicates of any previous row. Unless \code{order} is provided, then it also drops any previous row.
-  Function should be considered experimental. Argument \code{internal} should not be set to \code{FALSE} unless \code{order} is a \emph{shuffle} (strict permutation of \code{1:nrow(x)}, no duplicates, no NAs). Anyone setting \code{internal} to \code{TRUE} is obligated to check the \code{order} argument beforehand, otherwise \emph{segfault} exception is likely to happen and terminate R process abnormally.
+}
+\note{
+  It is an undefined behavior when \code{order} argument contains duplicates. It was designed to take what the \code{\link[base]{order} function returns. We do not check for duplicates, although we still check for values to be in range \code{1:nrow(x)} and non-NA, to avoid \emph{segfault} exception.
 }
 \value{
   Integer vector corresponding to rows which are consecutively unique.
@@ -37,11 +39,12 @@ x = data.table(id = 1:8, v = rep(1:2, each=4))
 uniq(x[,"v"])
 x = x[c(1:2,7:8,3:4,5:6)]
 uniq(x[,"v"])
+
 o = order(x$id)
 uniq(x[,"v"], order=o)
-
-if (!anyDuplicated(o) && !anyNA(o) && all(between(o, 1L, nrow(x)))) {
-  uniq(x[,"v"], order=o, internal=TRUE)
+# or if we are not sure if 'o' has no duplicates
+if (!anyDuplicated(o)) {
+  uniq(x[,"v"], order=o)
 }
 }
 \keyword{ data }
