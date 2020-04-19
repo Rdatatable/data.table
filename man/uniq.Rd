@@ -11,7 +11,7 @@ uniq(x, order=integer())
 }
 \arguments{
   \item{x}{ data.table type object. }
-    \item{order}{ integer vector order of \code{x}, must not contain duplicates. }
+  \item{order}{ integer vector order of \code{x}, must not contain duplicates. }
 }
 \details{
   Works like UNIX \emph{uniq} as referred to by \code{\link[base]{unique}}; i.e., it drops immediately repeated rows but doesn't drop duplicates of any previous row. Unless \code{order} is provided, then it also drops any previous row.
