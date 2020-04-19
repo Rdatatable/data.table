@@ -863,6 +863,11 @@ SEXP getIndex(SEXP x, SEXP cols) {
   return idx;
 }
 
+// isTRUE(getOption("datatable.use.index"))
+bool GetUseIndex() {
+  return LOGICAL(GetOption(install("datatable.use.index"), R_NilValue))[0]==TRUE;
+}
+
 // lazy forder, re-use existing key or index if possible, otherwise call forderDo
 SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, SEXP naArg, SEXP lazyArg) {
   const bool verbose = GetVerbose();
@@ -921,7 +926,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
     }
   }
 
-  if (opt == -1 && LOGICAL(GetOption(install("datatable.use.index"), R_NilValue))[0]==TRUE) {
+  if (opt == -1 && GetUseIndex()) {
     SEXP idx = getIndex(DT, by);
     if (!isNull(idx)) {
       opt = 2; // idxOpt
