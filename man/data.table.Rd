@@ -22,7 +22,7 @@ data.table(\dots, keep.rownames=FALSE, check.names=FALSE, key=NULL, stringsAsFac
 
 \method{[}{data.table}(x, i, j, by, keyby, with = TRUE,
   nomatch = getOption("datatable.nomatch", NA),
-  mult = "all",
+  mult,
   roll = FALSE,
   rollends = if (roll=="nearest") c(TRUE,TRUE)
              else if (roll>=0) c(FALSE,TRUE)
@@ -57,7 +57,7 @@ data.table(\dots, keep.rownames=FALSE, check.names=FALSE, key=NULL, stringsAsFac
         If \code{i} is a \code{data.table}, the columns in \code{i} to be matched against \code{x} can be specified using one of these ways:
 
         \itemize{
-            \item{\code{on} argument (see below). It allows for both \code{equi-} and the newly implemented \code{non-equi} joins.}
+            \item{\code{on} argument (see below). It allows for both \emph{equi} and \emph{non-equi} joins.}
 
             \item{If not, \code{x} \emph{must be keyed}. Key can be set using \code{\link{setkey}}. If \code{i} is also keyed, then first \emph{key} column of \code{i} is matched against first \emph{key} column of \code{x}, second against second, etc..
 
@@ -67,9 +67,9 @@ data.table(\dots, keep.rownames=FALSE, check.names=FALSE, key=NULL, stringsAsFac
         }
         Using \code{on=} is recommended (even during keyed joins) as it helps understand the code better and also allows for \emph{non-equi} joins.
 
-        When the binary operator \code{==} alone is used, an \emph{equi} join is performed. In SQL terms, \code{x[i]} then performs a \emph{right join} by default. \code{i} prefixed with \code{!} signals a \emph{not-join} or \emph{not-select}.
+        When the binary operator \code{==} alone is used, an \emph{equi} join is performed. In SQL terms, \code{x[i]} then performs a \emph{right outer join} by default. \code{i} prefixed with \code{!} signals a \emph{not-join} or \emph{not-select}.
 
-        Support for \emph{non-equi} join was recently implemented, which allows for other binary operators \code{>=, >, <= and <}.
+        Support for \emph{non-equi} join is implemented, which allows for other binary operators \code{>=, >, <= and <}.
 
         See \href{../doc/datatable-keys-fast-subset.html}{\code{vignette("datatable-keys-fast-subset")}} and \href{../doc/datatable-secondary-indices-and-auto-indexing.html}{\code{vignette("datatable-secondary-indices-and-auto-indexing")}}.
 
@@ -118,7 +118,7 @@ data.table(\dots, keep.rownames=FALSE, check.names=FALSE, key=NULL, stringsAsFac
 
     \item{nomatch}{ When a row in \code{i} has no match to \code{x}, \code{nomatch=NA} (default) means \code{NA} is returned. \code{NULL} (or \code{0} for backward compatibility) means no rows will be returned for that row of \code{i}. Use \code{options(datatable.nomatch=NULL)} to change the default value (used when \code{nomatch} is not supplied).}
 
-    \item{mult}{ When \code{i} is a \code{list} (or \code{data.frame} or \code{data.table}) and \emph{multiple} rows in \code{x} match to the row in \code{i}, \code{mult} controls which are returned: \code{"all"} (default), \code{"first"} or \code{"last"}.}
+    \item{mult}{ When \code{i} is a \code{list} (or \code{data.frame} or \code{data.table}) and \emph{multiple} rows in \code{x} match to the row in \code{i}, \code{mult} controls which are returned: \code{"all"}, \code{"first"}, \code{"last"} or \code{"error"}. Default is \code{"all"} unless \emph{update-on-join} (join and \code{:=}) is performed, then \code{mult} is \code{"last"}. }
 
     \item{roll}{ When \code{i} is a \code{data.table} and its row matches to all but the last \code{x} join column, and its value in the last \code{i} join column falls in a gap (including after the last observation in \code{x} for that group), then:
 
@@ -216,7 +216,7 @@ A \code{data.table} is a \code{list} of vectors, just like a \code{data.frame}. 
 \item it has enhanced functionality in \code{[.data.table} for fast joins of keyed tables, fast aggregation, fast last observation carried forward (LOCF) and fast add/modify/delete of columns by reference with no copy at all.
 }
 
-See the \code{see also} section for the several other \emph{methods} that are available for operating on data.tables efficiently.
+See the \emph{see also} section for the several other \emph{methods} that are available for operating on data.tables efficiently.
 
 }
 \references{
