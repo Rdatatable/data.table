@@ -72,11 +72,11 @@ setkeyv = function(x, cols, verbose=getOption("datatable.verbose"), physical=TRU
   newkey = paste0(cols, collapse="__")
   if (verbose) {
     # we now also retGrp=TRUE #4387 for !physical
-    tt = suppressMessages(system.time(o <- forderv(x, cols, sort=TRUE, retGrp=!physical)))  # system.time does a gc, so we don't want this always on, until refcnt is on by default in R
+    tt = suppressMessages(system.time(o <- forderv(x, cols, sort=TRUE, retGrp=!physical, lazy=TRUE)))  # system.time does a gc, so we don't want this always on, until refcnt is on by default in R
     # suppress needed for tests 644 and 645 in verbose mode
     cat("forder took", tt["user.self"]+tt["sys.self"], "sec\n")
   } else {
-    o = forderv(x, cols, sort=TRUE, retGrp=!physical)
+    o = forderv(x, cols, sort=TRUE, retGrp=!physical, lazy=TRUE)
   }
   if (!physical) { # index saved from C forderLazy already
     return(invisible(x))
