@@ -110,7 +110,7 @@ getindex = function(x, name) {
   if (!is.null(ans) && (!is.integer(ans) || (length(ans)!=nrow(x) && length(ans)!=0L))) {
     stop("Internal error: index '",name,"' exists but is invalid")   # nocov
   }
-  ans
+  c(ans) ## drop starts and maxgrpn attributes
 }
 
 haskey = function(x) !is.null(key(x))
