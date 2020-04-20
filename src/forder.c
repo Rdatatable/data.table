@@ -954,6 +954,8 @@ SEXP forderLazy(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascAr
   if (opt == -1 && !retGrp && colsKeyHead(DT, by)) {
     opt = 1; // keyOpt
     ans = PROTECT(allocVector(INTSXP, 0)); protecti++;
+    if (verbose)
+      Rprintf("forder: using key: %s\n", CHAR(STRING_ELT(idxName(DT, by), 0)));
   }
 
   if (opt == -1 && GetUseIndex()) {
@@ -969,8 +971,11 @@ SEXP forderLazy(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascAr
         setAttrib(idx, sym_starts, R_NilValue);
         setAttrib(idx, sym_maxgrpn, R_NilValue);
       } // else: !hasGrp && retGrp: need to compute groups as they are not in index
-      if (opt == 2)
+      if (opt == 2) {
         ans = idx;
+        if (verbose)
+          Rprintf("forder: using existing index: %s\n", CHAR(STRING_ELT(idxName(DT, by), 0)));
+      }
     }
   }
 
