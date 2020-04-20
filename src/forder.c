@@ -943,7 +943,7 @@ SEXP forderLazy(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascAr
       opt = -1;
     } else {
       if (verbose)
-        Rprintf("forder: opt not possible: is.data.table(DT)=%d, sortGroups=%d, !na=%d, all1(ascArg)=%d\n", INHERITS(DT,char_datatable), sortGroups, !na, all1(ascArg));
+        Rprintf("forderLazy: opt not possible: is.data.table(DT)=%d, sortGroups=%d, !na=%d, all1(ascArg)=%d\n", INHERITS(DT,char_datatable), sortGroups, !na, all1(ascArg));
       opt = 0;
     }
   } else if (lazy) {
@@ -965,7 +965,7 @@ SEXP forderLazy(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascAr
     opt = 1; // keyOpt
     ans = PROTECT(allocVector(INTSXP, 0)); protecti++;
     if (verbose)
-      Rprintf("forder: using key: %s\n", CHAR(STRING_ELT(idxName(DT, by), 0)));
+      Rprintf("forderLazy: using key: %s\n", CHAR(STRING_ELT(idxName(DT, by), 0)));
   }
 
   if (opt == -1 && GetUseIndex()) {
@@ -984,7 +984,7 @@ SEXP forderLazy(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascAr
       if (opt == 2) {
         ans = idx;
         if (verbose)
-          Rprintf("forder: using existing index: %s\n", CHAR(STRING_ELT(idxName(DT, by), 0)));
+          Rprintf("forderLazy: using existing index: %s\n", CHAR(STRING_ELT(idxName(DT, by), 0)));
       }
     }
   }
@@ -995,12 +995,12 @@ SEXP forderLazy(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascAr
         GetUseIndex() && GetAutoIndex()) {
       putIndex(DT, by, ans);
       if (verbose)
-        Rprintf("forder: setting index (retGrp=%d) on DT: %s\n", retGrp, CHAR(STRING_ELT(idxName(DT, by), 0)));
+        Rprintf("forderLazy: setting index (retGrp=%d) on DT: %s\n", retGrp, CHAR(STRING_ELT(idxName(DT, by), 0)));
     }
   }
 
   if (verbose)
-    Rprintf("forder: opt=%d, took %.3fs\n", opt, omp_get_wtime()-tic);
+    Rprintf("forderLazy: opt=%d, took %.3fs\n", opt, omp_get_wtime()-tic);
   UNPROTECT(protecti);
   return ans;
 }
