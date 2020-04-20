@@ -881,7 +881,8 @@ void putIndex(SEXP x, SEXP cols, SEXP o) {
   }
   SEXP name_idx = PROTECT(idxName(x, cols));
   SEXP sym_idx = install(CHAR(STRING_ELT(name_idx, 0)));
-  if (!isNull(getAttrib(index, sym_idx)))
+  SEXP idx = getAttrib(index, sym_idx);
+  if (!isNull(idx) && !isNull(getAttrib(idx, sym_starts))) // we override retGrp=F index with retGrp=T index
     error("internal error: trying to put index but it was already there, that should have been escaped before");
   setAttrib(index, sym_idx, o);
   UNPROTECT(1);
@@ -982,6 +983,7 @@ SEXP forderLazy(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascAr
         Rprintf("forder: setting index (retGrp=%d) on DT: %s\n", retGrp, CHAR(STRING_ELT(idxName(DT, by), 0)));
     }
   }
+
   if (verbose)
     Rprintf("forder: opt=%d, took %.3fs\n", opt, omp_get_wtime()-tic);
   UNPROTECT(protecti);
