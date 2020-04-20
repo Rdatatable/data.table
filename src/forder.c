@@ -839,7 +839,10 @@ bool colsKeyHead(SEXP x, SEXP cols) {
 SEXP idxName(SEXP x, SEXP cols) {
   if (!isInteger(cols))
     error("internal error: 'cols' must be an integer"); // # nocov
-  SEXP idx_names = PROTECT(subsetVector(getAttrib(x, R_NamesSymbol), cols));
+  SEXP dt_names = getAttrib(x, R_NamesSymbol);
+  if (!isString(dt_names))
+    error("internal error: 'DT' has no names"); // # nocov
+  SEXP idx_names = PROTECT(subsetVector(dt_names, cols));
   SEXP char_underscore2 = PROTECT(ScalarString(mkChar("__")));
   SEXP char_empty = PROTECT(ScalarString(mkChar("")));
   SEXP sym_paste0 = install("paste0");
@@ -923,17 +926,18 @@ SEXP forderLazy(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascAr
 
   int opt = -1; // -1=unknown, 0=none, 1=keyOpt, 2=idxOpt
   if (lazy==NA_LOGICAL) {
-    if (isNewList(DT) && sortGroups && !na &&
+    if (INHERITS(DT, char_datatable) && // unnamed list should not be optimized
+        sortGroups && !na &&
         all1(ascArg)) { // could ascArg=-1 be handled by a rev()?
       opt = -1;
     } else {
       if (verbose)
-        Rprintf("forder: opt not possible: isNewList(DT)=%d, sortGroups=%d, !na=%d, all1(ascArg)=%d\n", isNewList(DT), sortGroups, !na, all1(ascArg));
+        Rprintf("forder: opt not possible: is.data.table(DT)=%d, sortGroups=%d, !na=%d, all1(ascArg)=%d\n", INHERITS(DT,char_datatable), sortGroups, !na, all1(ascArg));
       opt = 0;
     }
   } else if (lazy) {
-    if (!isNewList(DT))
-      error("internal error: lazy set to TRUE but DT is not a list"); // # nocov
+    if (!INHERITS(DT,char_datatable))
+      error("internal error: lazy set to TRUE but DT is not a data.table"); // # nocov
     if (!sortGroups)
       error("internal error: lazy set to TRUE but sort is FALSE"); // # nocov
     if (na)
@@ -978,7 +982,6 @@ SEXP forderLazy(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascAr
         Rprintf("forder: setting index (retGrp=%d) on DT: %s\n", retGrp, CHAR(STRING_ELT(idxName(DT, by), 0)));
     }
   }
-
   if (verbose)
     Rprintf("forder: opt=%d, took %.3fs\n", opt, omp_get_wtime()-tic);
   UNPROTECT(protecti);
