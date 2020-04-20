@@ -107,7 +107,8 @@ SEXP uniq(SEXP x, SEXP order, SEXP safe) {
       const uint64_t *vd=(const uint64_t *)REAL(v);
       uint64_t prev, elem;
       // grouping by integer64 makes sense (ids). grouping by float supported but a good use-case for that is harder to imagine
-      if (getNumericRounding_C()==0 /*default*/ || Rinherits(v,char_integer64)) {
+      if (getNumericRounding_C()==0 /*default*/ ||
+          Rinherits(v,char_integer64)) {
         if (via_order_safe) {
           COMPARE1_VIA_ORDER_SAFE COMPARE2
         } else if (via_order) {

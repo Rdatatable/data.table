@@ -3925,12 +3925,15 @@ test(1150.37, funiq(x[,"v"], order=c(o[1:6],o[7L]-10L,o[8L]), safe=TRUE), error=
 test(1150.38, funiq(x[,c("v","w")], order=c(o[1:6],o[c(NA,7L)]), safe=TRUE), error="must be in range")
 test(1150.39, uniq(x[,"v"], order=c(o[1:6],o[c(2L,7L)])), c(1L,5L,7L,8L)) ## duplicates in 'order' undefined behavior, see note in ?uniq, seems to behave like: uniq(x[c(o[1:6],o[c(2L,7L)]),"v"])
 test(1150.40, uniq(x[,c("v","w")], order=c(o[1:6],o[c(2L,7L)])), c(1L,5L,7L,8L))
-test(1150.41, uniq(data.table(x = c("a","a","b","b","c"))), c(1L,3L,5L)) ## test coverage
+test(1150.41, uniq(data.table(x = c("a","a","b","b","c")), order=1:5), c(1L,3L,5L)) ## test coverage
 old = getNumericRounding()
 setNumericRounding(0)
-test(1150.42, uniq(data.table(x = c(1,1,2,2,3))), c(1L,3L,5L))
+test(1150.42, uniq(data.table(x = c(1,1,2,2,3)), order=1:5), c(1L,3L,5L))
 setNumericRounding(2)
-test(1150.43, uniq(data.table(x = c(1,1,2,2,3))), c(1L,3L,5L))
+test(1150.43, uniq(data.table(x = c(1,1,2,2,3)), order=1:5), c(1L,3L,5L))
+if (test_bit64) {
+  test(1150.44, uniq(data.table(x = as.integer64(c(1,1,2,2,3))), order=1:5), c(1L,3L,5L))
+}
 setNumericRounding(old)
 x = data.table(id = 1:8, v = rep(1:2, each=4)) # changed behavior of 'order' special case
 o = order(x$id)
