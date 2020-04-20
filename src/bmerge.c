@@ -146,7 +146,7 @@ SEXP bmerge(SEXP iArg, SEXP xArg, SEXP icolsArg, SEXP xcolsArg, SEXP xoArg, SEXP
   protecti++;
   for (int j=0; j<LENGTH(order); j++)
     INTEGER(order)[j]=1;   // rep(1L, length(icolsArg))
-  SEXP oSxp = PROTECT(forder(i, icolsArg, ScalarLogical(FALSE), ScalarLogical(TRUE), order, ScalarLogical(FALSE), ScalarLogical(TRUE))); protecti++;
+  SEXP oSxp = PROTECT(forderLazy(i, icolsArg, ScalarLogical(FALSE), ScalarLogical(TRUE), order, ScalarLogical(FALSE), ScalarLogical(TRUE))); protecti++;
   if (!LENGTH(oSxp))
     o = NULL;
   else

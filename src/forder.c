@@ -414,9 +414,10 @@ uint64_t dtwiddle(void *p, int i)
 
 void radix_r(const int from, const int to, const int radix);
 
-SEXP forderDo(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, SEXP naArg) {
+SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, SEXP naArg)
 // sortGroups TRUE from setkey and regular forder, FALSE from by= for efficiency so strings don't have to be sorted and can be left in appearance order
 // when sortGroups is TRUE, ascArg contains +1/-1 for ascending/descending of each by column; when FALSE ascArg is ignored
+{
 
 #ifdef TIMING_ON
   memset(tblock, 0, MAX_NTH*NBLOCK*sizeof(double));
@@ -868,8 +869,8 @@ bool GetUseIndex() {
   return LOGICAL(GetOption(install("datatable.use.index"), R_NilValue))[0]==TRUE;
 }
 
-// lazy forder, re-use existing key or index if possible, otherwise call forderDo
-SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, SEXP naArg, SEXP lazyArg) {
+// lazy forder, re-use existing key or index if possible, otherwise call forder
+SEXP forderLazy(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, SEXP naArg, SEXP lazyArg) {
   const bool verbose = GetVerbose();
   int protecti = 0;
   double tic=0.0;
@@ -935,7 +936,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
   }
 
   if (opt < 1) {
-    ans = PROTECT(forderDo(DT, by, retGrpArg, sortGroupsArg, ascArg, naArg)); protecti++;
+    ans = PROTECT(forder(DT, by, retGrpArg, sortGroupsArg, ascArg, naArg)); protecti++;
   }
 
   if (verbose)
