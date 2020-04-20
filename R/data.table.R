@@ -497,7 +497,7 @@ replace_dot_alias = function(e) {
         if (nqbyjoin) {
           irows = if (length(xo)) xo[irows] else irows
           xo = setorder(setDT(list(indices=rep.int(indices__, len__), irows=irows)))[["irows"]]
-          ans = .Call(CnqRecreateIndices, xo, len__, indices__, max(indices__))
+          ans = .Call(CnqRecreateIndices, xo, len__, indices__, max(indices__), nomatch) # issue#4388 fix
           f__ = ans[[1L]]; len__ = ans[[2L]]
           allLen1 = FALSE # TODO; should this always be FALSE?
           irows = NULL # important to reset
