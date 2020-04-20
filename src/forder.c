@@ -451,8 +451,16 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
     STOP(_("Internal error: DT is an empty list() of 0 columns"));  // # nocov # caught in lazy forder
   if (!isInteger(by) || !LENGTH(by))
     STOP(_("Internal error: DT has %d columns but 'by' is either not integer or is length 0"), length(DT));  // # nocov  colnamesInt catches, 2099.2
-  if (!isInteger(ascArg) || LENGTH(ascArg)!=LENGTH(by))
-    STOP(_("Either order= is not integer or its length (%d) is different to by='s length (%d)"), LENGTH(ascArg), LENGTH(by)); // # nocov
+  if (!isInteger(ascArg))
+    STOP(_("internal error: 'order' must be integer")); // # nocov
+  if (LENGTH(ascArg) != LENGTH(by)) {
+    if (LENGTH(ascArg)!=1)
+      STOP(_(("'order' length (%d) is different to by='s length (%d)"), LENGTH(ascArg), LENGTH(by));
+    SEXP recycleAscArg = PROTECT(allocVector(INTSXP, LENGTH(by))); n_protect++;
+    for (int j=0; j<LENGTH(recycleAscArg); j++)
+      INTEGER(recycleAscArg)[j] = INTEGER(ascArg)[0];
+    ascArg = recycleAscArg;
+  }
   nrow = length(VECTOR_ELT(DT,0));
   int n_cplx = 0;
   for (int i=0; i<LENGTH(by); i++) {
@@ -907,8 +915,6 @@ SEXP forderLazy(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascAr
     tic = omp_get_wtime();
   if (isNull(DT))
     error("DT is NULL");
-  if (!isInteger(by))
-    error("'by' must be integer");
   if (!IS_TRUE_OR_FALSE(retGrpArg))
     error("retGrp must be TRUE or FALSE");
   bool retGrp = (bool)LOGICAL(retGrpArg)[0];
@@ -920,14 +926,6 @@ SEXP forderLazy(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascAr
   bool na = (bool)LOGICAL(naArg)[0];
   if (!isInteger(ascArg))
     error("order must be integer"); // # nocov # coerced to int in R
-  if (LENGTH(ascArg) != LENGTH(by)) {
-    if (LENGTH(ascArg)!=1)
-      error("'order' length (%d) is different to by='s length (%d)", LENGTH(ascArg), LENGTH(by));
-    SEXP recycleAscArg = PROTECT(allocVector(INTSXP, LENGTH(by))); protecti++;
-    for (int j=0; j<LENGTH(recycleAscArg); j++)
-      INTEGER(recycleAscArg)[j] = INTEGER(ascArg)[0];
-    ascArg = recycleAscArg;
-  }
   if (!isLogical(lazyArg) || LENGTH(lazyArg) != 1)
     error("lazy must be logical TRUE, FALSE or NA of length 1");
   int lazy = LOGICAL(lazyArg)[0];
