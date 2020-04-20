@@ -56,23 +56,9 @@ setkeyv = function(x, cols, verbose=getOption("datatable.verbose"), physical=TRU
   miss = !(cols %chin% colnames(x))
   if (any(miss)) stop("some columns are not in the data.table: ", paste(cols[miss], collapse=","))
 
-  ## determine, whether key is already present:
-  if (identical(key(x),cols)) {
-    if (!physical) {
-      ## create index as integer() because already sorted by those columns
-      if (is.null(attr(x, "index", exact=TRUE))) setattr(x, "index", integer())
-      setattr(attr(x, "index", exact=TRUE), paste0("__", cols, collapse=""), integer())
-    }
-    return(invisible(x))
-  } else if(identical(head(key(x), length(cols)), cols)){
-    if (!physical) {
-      ## create index as integer() because already sorted by those columns
-      if (is.null(attr(x, "index", exact=TRUE))) setattr(x, "index", integer())
-      setattr(attr(x, "index", exact=TRUE), paste0("__", cols, collapse=""), integer())
-    } else {
-      ## key is present but x has a longer key. No sorting needed, only attribute is changed to shorter key.
-      setattr(x,"sorted",cols)
-    }
+  if (physical && identical(head(key(x), length(cols)), cols)){ ## for !physical we need to compute groups as well #4387
+    ## key is present but x has a longer key. No sorting needed, only attribute is changed to shorter key.
+    setattr(x,"sorted",cols)
     return(invisible(x))
   }
 
@@ -84,25 +70,19 @@ setkeyv = function(x, cols, verbose=getOption("datatable.verbose"), physical=TRU
   if (!is.character(cols) || length(cols)<1L) stop("Internal error. 'cols' should be character at this point in setkey; please report.") # nocov
 
   newkey = paste0(cols, collapse="__")
-  if (!any(indices(x) == newkey)) {
-    if (verbose) {
-      tt = suppressMessages(system.time(o <- forderv(x, cols, sort=TRUE, retGrp=FALSE)))  # system.time does a gc, so we don't want this always on, until refcnt is on by default in R
-      # suppress needed for tests 644 and 645 in verbose mode
-      cat("forder took", tt["user.self"]+tt["sys.self"], "sec\n")
-    } else {
-      o = forderv(x, cols, sort=TRUE, retGrp=FALSE)
-    }
+  if (verbose) {
+    # we now also retGrp=TRUE #4387 for !physical
+    tt = suppressMessages(system.time(o <- forderv(x, cols, sort=TRUE, retGrp=!physical)))  # system.time does a gc, so we don't want this always on, until refcnt is on by default in R
+    # suppress needed for tests 644 and 645 in verbose mode
+    cat("forder took", tt["user.self"]+tt["sys.self"], "sec\n")
   } else {
-    if (verbose) cat("setkey on columns ", brackify(cols), " using existing index '", newkey, "'\n", sep="")
-    o = getindex(x, newkey)
+    o = forderv(x, cols, sort=TRUE, retGrp=!physical)
   }
-  if (!physical) {
-    if (is.null(attr(x, "index", exact=TRUE))) setattr(x, "index", integer())
-    setattr(attr(x, "index", exact=TRUE), paste0("__", cols, collapse=""), o)
+  if (!physical) { # index saved from C forderLazy already
     return(invisible(x))
   }
-  setattr(x,"index",NULL)   # TO DO: reorder existing indexes likely faster than rebuilding again. Allow optionally. Simpler for now to clear.
   if (length(o)) {
+    setattr(x,"index",NULL)   # TO DO: reorder existing indexes likely faster than rebuilding again. Allow optionally. Simpler for now to clear. Only when order changes.
     if (verbose) { last.started.at = proc.time() }
     .Call(Creorder,x,o)
     if (verbose) { cat("reorder took", timetaken(last.started.at), "\n"); flush.console() }
@@ -172,7 +152,7 @@ is.sorted = function(x, by=seq_along(x)) {
 }
 
 ORDERING_TYPES = c('logical', 'integer', 'double', 'complex', 'character')
-forderv = function(x, by=seq_along(x), retGrp=FALSE, sort=TRUE, order=1L, na.last=FALSE, lazy=NA) {
+forderv = function(x, by=seq_along(x), retGrp=FALSE, sort=TRUE, order=1L, na.last=FALSE, lazy=getOption("datatable.forder.lazy",NA)) {
   if (is.atomic(x)) {  # including forderv(NULL) which returns error consistent with base::order(NULL),
     if (!missing(by) && !is.null(by)) stop("x is a single vector, non-NULL 'by' doesn't make sense")
     by = NULL
