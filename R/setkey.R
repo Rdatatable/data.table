@@ -155,16 +155,24 @@ setreordervec = function(x, order) .Call(Creorder, x, order)
 # The others (order, sort.int etc) are turned off to protect ourselves from using them internally, for speed and for
 # consistency; e.g., consistent twiddling of numeric/integer64, NA at the beginning of integer, locale ordering of character vectors.
 
-is.sorted = function(x, by=seq_along(x)) {
+is.sorted = function(x, by=seq_along(x), retOrd=FALSE) {
   if (is.list(x)) {
-    warning("Use 'if (length(o <- forderv(DT,by))) ...' for efficiency in one step, so you have o as well if not sorted.")
+    # for efficient use via retOrd argument see note in ?is.sorted
     # could pass through a flag for forderv to return early on first FALSE. But we don't need that internally
     # since internally we always then need ordering, an it's better in one step. Don't want inefficiency to creep in.
-    # This is only here for user/debugging use to check/test valid keys; e.g. data.table:::is.sorted(DT,by)
-    0L == length(forderv(x,by,retGrp=FALSE,sort=TRUE))
-  } else {
+    o = forderv(x,by,retGrp=FALSE,sort=TRUE)
+    ans = 0L == length(o)
+    if (isTRUE(retOrd))
+      ans = setattr(copy(ans), "order", o)
+    ans
+  } else if (is.null(x)) { # NULL does not satisfy C isVectorAtomic
+    NA
+  } else if (is.atomic(x)) {
+    if (isTRUE(retOrd)) stop("retOrd works only for data.table/list input")
     if (!missing(by)) stop("x is vector but 'by' is supplied")
     .Call(Cfsorted, x)
+  } else {
+    stop("'x' argument is of unsupported type")
   }
   # Cfsorted could be named CfIsSorted, but since "sorted" is an adjective not verb, it's clear; e.g., Cfsort would sort it ("sort" is verb).
   # Return value of TRUE/FALSE is relied on in [.data.table quite a bit on vectors. Simple. Stick with that (rather than -1/0/+1)

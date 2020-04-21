@@ -37,7 +37,6 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
   guess = data.table:::guess
   INT = data.table:::INT
   is_na = data.table:::is_na
-  is.sorted = data.table:::is.sorted
   isReallyReal = data.table:::isReallyReal
   melt.data.table = data.table:::melt.data.table  # for test 1953.4
   null.data.table = data.table:::null.data.table
@@ -68,6 +67,7 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
                                         # masked by which package?
                                         # =================================
   setattr = data.table::setattr         # bit
+  is.sorted = data.table::is.sorted     # bit
   shift = data.table::shift             # IRanges, GenomicRanges
   between = data.table::between         # plm
   second = data.table::second           # S4Vectors
@@ -3988,7 +3988,7 @@ y <- copy(x)
 setreordervec(y, o)
 test(1161.3, x[o], y)
 
-# tests for setreordervec
+# tests for is.sorted
 DT <- data.table(x=sample(c(NA, -10:10), 2e2, TRUE),
       y=sample(c(NA, NaN, -Inf, Inf, -10:10), 2e2, TRUE),
       z=sample(c(NA, letters), 2e2, TRUE))
@@ -4014,8 +4014,24 @@ test(1162.09, length(forderv(DT, by=2:3)), 0L)
 setkey(DT)
 # test number 1162.10 skipped because if it fails it confusingly prints out as 1662.1 not 1662.10
 test(1162.10, length(forderv(DT, by=1:3)), 0L)
-test(1162.11, is.sorted(DT, by=1:3), TRUE, warning="Use.*forderv.*for efficiency in one step, so you have o as well if not sorted")
-test(1162.12, is.sorted(DT, by=2:1), FALSE, warning="Use.*forderv.*for efficiency in one step, so you have o as well if not sorted")
+test(1162.11, is.sorted(DT, by=1:3), TRUE)
+test(1162.12, is.sorted(DT, by=2:1), FALSE)
+x = as.data.table(iris) # is.sorted now exported #2325
+test(1162.21, is.sorted(x, by="Species"), TRUE)
+ans = is.sorted(x, by="Sepal.Length", retOrd=TRUE)
+test(1162.22, identical(ans, FALSE), FALSE)
+test(1162.23, isFALSE(ans), TRUE)
+test(1162.24, is.integer(attr(ans, "order")))
+o = attr(ans, "order")
+test(1162.25, x[o], x[order(Sepal.Length)])
+test(1162.26, is.sorted(x[o], by="Sepal.Length"))
+test(1162.31, is.sorted(NULL), NA)
+test(1162.32, is.sorted(1:5, retOrd=TRUE), error="retOrd works only for data.table/list input")
+test(1162.33, is.sorted(1:5, by="a"), error="but 'by' is supplied")
+test(1162.34, is.sorted(expression(1:5)), error="unsupported type")
+test(1162.35, is.sorted(as.raw(1:5)), error="is not yet supported")
+test(1162.36, is.sorted(c("a",NA,"c")), FALSE)
+test(1162.37, is.sorted(c("a","fa\xE7ile","b")), FALSE)
 
 # FR #351 - last on length=0 arguments
 x <- character(0)

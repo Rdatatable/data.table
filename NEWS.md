@@ -81,6 +81,8 @@ unit = "s")
 
 14. Added support for `round()` and `trunc()` to extend functionality of `ITime`. `round()` and `trunc()` can be used with argument units: "hours" or "minutes". Thanks to @JensPederM for the suggestion and PR.
 
+15. New function `is.sorted` is now exported. It is fast routine for checking sortedness of data.table type objects or atomic vectors, [#2325](https://github.com/Rdatatable/data.table/issues/2325). Thanks to @franknarf1 for feature request. For more details about usage see function manual [`?is.sorted`](https://rdatatable.gitlab.io/data.table/library/data.table/html/is.sorted.html).
+
 ## BUG FIXES
 
 1. A NULL timezone on POSIXct was interpreted by `as.IDate` and `as.ITime` as UTC rather than the session's default timezone (`tz=""`) , [#4085](https://github.com/Rdatatable/data.table/issues/4085).
