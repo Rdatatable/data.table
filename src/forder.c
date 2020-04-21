@@ -985,11 +985,13 @@ SEXP forderLazy(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascAr
           (hasGrp && retGrp)) {
         opt = 2; // idxOpt retGrp==hasGrp, if condition unfolded for codecov
       } else if (hasGrp && !retGrp) {
-        opt = 2; // idxOpt but need to drop groups
-        idx = copyAsPlain(idx); // we could shallow copy here
+        idx = copyAsPlain(idx);
         setAttrib(idx, sym_starts, R_NilValue);
         setAttrib(idx, sym_maxgrpn, R_NilValue);
-      } // else: !hasGrp && retGrp: need to compute groups as they are not in index
+        opt = 2; // idxOpt but need to drop groups
+      } else { // !hasGrp && retGrp
+        Rprintf("forderLazy: index found but no retGrp: %s\n", CHAR(STRING_ELT(idxName(DT, by), 0)));
+      }
       if (opt == 2) {
         ans = idx;
         if (verbose)
