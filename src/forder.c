@@ -455,7 +455,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
     STOP(_("internal error: 'order' must be integer")); // # nocov
   if (LENGTH(ascArg) != LENGTH(by)) {
     if (LENGTH(ascArg)!=1)
-      STOP(_(("'order' length (%d) is different to by='s length (%d)"), LENGTH(ascArg), LENGTH(by));
+      STOP(_("'order' length (%d) is different to by='s length (%d)"), LENGTH(ascArg), LENGTH(by));
     SEXP recycleAscArg = PROTECT(allocVector(INTSXP, LENGTH(by))); n_protect++;
     for (int j=0; j<LENGTH(recycleAscArg); j++)
       INTEGER(recycleAscArg)[j] = INTEGER(ascArg)[0];
