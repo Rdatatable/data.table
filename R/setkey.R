@@ -79,7 +79,7 @@ setkeyv = function(x, cols, verbose=getOption("datatable.verbose"), physical=TRU
     o = forderv(x, cols, sort=TRUE, retGrp=!physical, lazy=TRUE)
   }
   if (!physical) { # index COULD BE saved from C forderLazy already, but disabled for now
-    if (!getOption("datatable.forder.auto.index", FALSE)) {
+    if (!isTRUE(getOption("datatable.forder.auto.index"))) {
       if (is.null(attr(x, "index", exact=TRUE))) setattr(x, "index", integer())
       setattr(attr(x, "index", exact=TRUE), paste0("__", cols, collapse=""), o)
     }
