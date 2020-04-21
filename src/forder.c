@@ -898,12 +898,23 @@ void putIndex(SEXP x, SEXP cols, SEXP o) {
 
 // isTRUE(getOption("datatable.use.index"))
 bool GetUseIndex() {
-  return LOGICAL(GetOption(install("datatable.use.index"), R_NilValue))[0]==TRUE;
+  SEXP opt = GetOption(install("datatable.use.index"), R_NilValue);
+  if (!IS_TRUE_OR_FALSE(opt))
+    error("'datatable.use.index' option must be TRUE or FALSE");
+  return LOGICAL(opt)[0];
 }
 
 // isTRUE(getOption("datatable.auto.index"))
 bool GetAutoIndex() {
-  return LOGICAL(GetOption(install("datatable.auto.index"), R_NilValue))[0]==TRUE;
+  // for now temporarily 'forder.auto.index' not 'auto.index' to disabled it by default
+  // because it writes attr on .SD which is re-used by all groups leading to incorrect results
+  // DT[, .(uN=uniqueN(.SD)), by=A]
+  SEXP opt = GetOption(install("datatable.forder.auto.index"), R_NilValue);
+  if (isNull(opt))
+    return false;
+  if (!IS_TRUE_OR_FALSE(opt))
+    error("'datatable.forder.auto.index' option must be TRUE or FALSE");
+  return LOGICAL(opt)[0];
 }
 
 // lazy forder, re-use existing key or index if possible, otherwise call forder
@@ -990,7 +1001,8 @@ SEXP forderLazy(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascAr
   if (opt < 1) {
     ans = PROTECT(forder(DT, by, retGrpArg, sortGroupsArg, ascArg, naArg)); protecti++;
     if (opt == -1 && // opt==0 means that arguments (na.last,..) were not of type index, or lazy=FALSE
-        GetUseIndex() && GetAutoIndex()) {
+        GetUseIndex() &&
+        GetAutoIndex()) { // disabled by default, use datatable.forder.auto.index=T to enable, do not export/document, use for debugging only
       putIndex(DT, by, ans);
       if (verbose)
         Rprintf("forderLazy: setting index (retGrp=%d) on DT: %s\n", retGrp, CHAR(STRING_ELT(idxName(DT, by), 0)));

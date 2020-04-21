@@ -6105,7 +6105,7 @@ test(1419.61, DT$a, c(1,1,2,3,4,5,6,7,8,9))
 setkey(DT, NULL)
 setindex(DT, a)
 test(1419.62, setkey(DT, a, verbose=TRUE), data.table(a=c(1,1:9), aaa=c(1,1,2,2,1,2,2,2,1,2), key="a"),
-              output="setkey on columns [a] using existing index 'a'")  # checks also that the prior index a is dropped (because y is keyed with no index)
+              output="using existing index: __a")
 
 # setkey picks correct index of multiple indexes (e.g. exact=TRUE is used in internals)
 DT = data.table(a =   c(3,3,4,4,5,6,1,1,7,2),
@@ -6120,7 +6120,7 @@ setindex(DT, aaa, a)
 setindex(DT, aaa)   # this aaa not previous aaa_a should be used by setkey(DT,aaa); i.e. ensure no partial matching
 test(1419.65, allIndicesValid(DT), TRUE)
 test(1419.66, setkey(DT, aaa, verbose=TRUE), data.table(a=c(1,3,3,6,1,2,4,4,5,7), aaa=c(1,1,1,1,2,2,2,2,2,2), bbb=c(1,1,1,1,0,1,2,0,1,1), key="aaa"),
-              output="setkey on columns [aaa] using existing index 'aaa'")  # checks that all indexes are dropped (aaa_a too)
+              output="using existing index: __aaa")  # checks that all indexes are dropped (aaa_a too)
 
 # setnames updates secondary key
 DT = data.table(a=1:5,b=10:6)
@@ -11450,7 +11450,7 @@ test(1775.3, capture.output(print(DT2, print.keys = TRUE)),
 setkey(DT2, a)
 setindexv(DT2, c("b","a"))
 test(1775.4, capture.output(print(DT2, print.keys = TRUE)),
-     c("Key: <a>", "Index: <b__a>", "   a b", "1: 1 4", "2: 2 5", "3: 3 6"))
+     c("Key: <a>", "Indices: <b__a>, <b>", "   a b", "1: 1 4", "2: 2 5", "3: 3 6")) ## index 'b' is still good, so we now keep it
 
 # dev regression #2285
 cat("A  B  C\n1  2  3\n4  5  6", file=f<-tempfile())
@@ -12527,7 +12527,7 @@ test(1896.6, nrow(DT[, .N, by = .(y, z, x)]), 5L)
 DT = data.table(a = c(3, 2, 1, 2, 3), b = c(1, 2, 1, 1, 2))
 setindexv(DT, list('a', c('a', 'b')))
 test(1897.1, indices(DT), c("a", "a__b"))
-test(1897.2, attributes(attr(DT, 'index')),
+test(1897.2, lapply(attributes(attr(DT, 'index')), c), ## lapply(, c) to ensure no starts, maxgrpn attributes
      list(`__a` = c(3L, 2L, 4L, 1L, 5L),
           `__a__b` = c(3L, 4L, 2L, 1L, 5L)))
 
@@ -12567,9 +12567,9 @@ test(1899.18, as.matrix(DT, rownames=TRUE, rownames.value=1:nrow(DT)), error="ro
 
 # index argument for fread, #2633
 DT_str = c('a,b\n3,1\n2,2\n1,1\n2,1\n3,2')
-test(1900.1, attributes(attr(fread(DT_str, index = 'a'), 'index')),
+test(1900.1, lapply(attributes(attr(fread(DT_str, index = 'a'), 'index')), c),
      list(`__a` = c(3L, 2L, 4L, 1L, 5L)))
-test(1900.2, attributes(attr(fread(DT_str, index = list('a,b', c('b', 'a'), 'a')), 'index')),
+test(1900.2, lapply(attributes(attr(fread(DT_str, index = list('a,b', c('b', 'a'), 'a')), 'index')), c),
      list(`__a__b` = c(3L, 4L, 2L, 1L, 5L),
           `__b__a` = c(3L, 4L, 1L, 2L, 5L),
           `__a` = c(3L, 2L, 4L, 1L, 5L)))
@@ -12580,7 +12580,7 @@ test(1900.4, fread(DT_str, index = list('a', 1L)),
 # col.names applied before index
 test(1900.5, fread(DT_str, col.names = c('c', 'd'), index = 'a'),
      error = 'some columns are not in the data.table')
-test(1900.6, attributes(attr(fread(DT_str, index = c('a', 'b')), 'index')),
+test(1900.6, lapply(attributes(attr(fread(DT_str, index = c('a', 'b')), 'index')), c),
      list(`__a__b` = c(3L, 4L, 2L, 1L, 5L)))
 
 # . within bquote shouldn't be swapped to list, #1912

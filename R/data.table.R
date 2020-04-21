@@ -2994,7 +2994,12 @@ isReallyReal = function(x) {
     if (!getOption("datatable.auto.index")) return(NULL)
     if (verbose) {cat("Creating new index '", paste0(names(i), collapse = "__"),"'\n",sep="");flush.console()}
     if (verbose) {last.started.at=proc.time();cat("Creating index", paste0(names(i), collapse = "__"), "done in ... ");flush.console()}
-    idx = forderv(x, names(i), sort=TRUE, retGrp=FALSE, lazy=TRUE)
+    if (!getOption("datatable.forder.auto.index", FALSE)) { ## forder can write index, but disabled for now
+      setindexv(x, names(i))
+      idx = attr(attr(x, "index", exact=TRUE), paste0("__", names(i), collapse = ""), exact=TRUE)
+    } else {
+      idx = forderv(x, names(i), sort=TRUE, retGrp=FALSE, lazy=TRUE)
+    }
     if (verbose) {cat(timetaken(last.started.at),"\n");flush.console()}
     if (verbose) {cat("Optimized subsetting with index '", paste0(names(i), collapse = "__"),"'\n",sep="");flush.console()}
     idxCols = names(i)
