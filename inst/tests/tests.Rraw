@@ -16974,7 +16974,7 @@ test(2139.94, forderv(d, "x", retGrp=TRUE), structure(2:1, starts=1:2, maxgrpn=1
 d = data.table(x = 2:1)
 op2 = options("datatable.forder.auto.index"=TRUE)
 test(2139.95, d[x==1L], data.table(x=1L), output="forder.*setting index.*retGrp=0")
-test(2139.96, forderv(DT, "x", retGrp=TRUE), output="forder.*setting index.*retGrp=1")
+test(2139.96, forderv(d, "x", retGrp=TRUE), output="forder.*setting index.*retGrp=1")
 options(op2)
 test(2139.99, forderv(data.table(a=1), lazy=c(TRUE, TRUE)), error="lazy must be")
 options(op)
