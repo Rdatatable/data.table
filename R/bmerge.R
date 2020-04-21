@@ -150,13 +150,14 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
     # TODO: could check/reuse secondary indices, but we need 'starts' attribute as well!
     xo = forderv(x, xcols, retGrp=TRUE)
     if (verbose) {cat(timetaken(last.started.at),"\n"); flush.console()}
+    setStartsSeq(xo, nrow(x)) # could skip that once uniqlist.c:nestedid will be able to optimize (all rows are unique, maxgpn==1)
     xg = attr(xo, 'starts', exact=TRUE)
     resetcols = head(xcols, non_equi-1L)
     if (length(resetcols)) {
       # TODO: can we get around having to reorder twice here?
       # or at least reuse previous order?
       if (verbose) {last.started.at=proc.time();cat("  Generating group lengths ... ");flush.console()}
-      resetlen = attr(forderv(x, resetcols, retGrp=TRUE), 'starts', exact=TRUE)
+      resetlen = attr(setStartsSeq(forderv(x, resetcols, retGrp=TRUE), nrow(x)), 'starts', exact=TRUE)
       resetlen = .Call(Cuniqlengths, resetlen, nrow(x))
       if (verbose) {cat("done in",timetaken(last.started.at),"\n"); flush.console()}
     } else resetlen = integer(0L)

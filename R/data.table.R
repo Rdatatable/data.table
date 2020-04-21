@@ -3113,3 +3113,16 @@ isReallyReal = function(x) {
   names(on) = xCols
   return(list(on = on, ops = idx_op))
 }
+
+setStartsSeq = function(o, len) {
+  if (!is.integer(len))
+    stop("internal error: 'len' must be integer") # nocov
+  s = attr(o, "starts", TRUE)
+  if (is.null(s) || !is.integer(s))
+    stop("internal error: should be called on forderv calls that uses retGrp=TRUE so results must have an integer 'starts' attribute") # nocov
+  if (!len || length(s))
+    return(invisible(o))
+  if (!identical(attr(o, 'maxgrpn', exact=TRUE), 1L))
+    stop("internal error: attr(forderv(retGrp=T),'starts') is integer(0) but maxgrpn is not 1L") # nocov
+  setattr(o, "starts", vecseq(1L,len,NULL))
+}

@@ -326,7 +326,7 @@ CJ = function(..., sorted = TRUE, unique = FALSE)
     if (sorted) {
       if (!is.atomic(y)) stop("'sorted' is TRUE but element ", i, " is non-atomic, which can't be sorted; try setting sorted = FALSE")
       o = forderv(y, retGrp=TRUE)
-      thisdups = attr(o, 'maxgrpn', exact=TRUE)>1L
+      thisdups = attr(o, 'maxgrpn', exact=TRUE)>1L ## no need setStartsSeq(o, length(y))
       if (thisdups) {
         dups = TRUE
         if (length(o)) l[[i]] = if (unique) y[o[attr(o, "starts", exact=TRUE)]] else y[o]

@@ -772,14 +772,22 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
     SEXP tt;
     int final_gs_n = (gs_n==0) ? gs_thread_n[0] : gs_n;   // TODO: find a neater way to do this
     int *final_gs  = (gs_n==0) ? gs_thread[0] : gs;
-    setAttrib(ans, sym_starts, tt = allocVector(INTSXP, final_gs_n));
+    bool grpFullSeq = nrow==final_gs_n; // attr(, "starts")==integer() rather than seq_len(nrow)
+    setAttrib(ans, sym_starts, tt = allocVector(INTSXP, grpFullSeq ? 0 : final_gs_n));
     int *ss = INTEGER(tt);
     int maxgrpn = 0;
-    for (int i=0, tmp=1; i<final_gs_n; i++) {
-      int elem = final_gs[i];
-      if (elem>maxgrpn) maxgrpn=elem;
-      ss[i]=tmp;
-      tmp+=elem;
+    if (grpFullSeq) {
+      for (int i=0; i<final_gs_n; i++) {
+        int elem = final_gs[i];
+        if (elem>maxgrpn) maxgrpn=elem;
+      }
+    } else {
+      for (int i=0, tmp=1; i<final_gs_n; i++) {
+        int elem = final_gs[i];
+        if (elem>maxgrpn) maxgrpn=elem;
+        ss[i]=tmp;
+        tmp+=elem;
+      }
     }
     setAttrib(ans, sym_maxgrpn, ScalarInteger(maxgrpn));
   }

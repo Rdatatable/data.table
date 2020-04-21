@@ -48,6 +48,7 @@ unique.data.table = function(x, incomparables=FALSE, fromLast=FALSE, by=seq_alon
   # there isn't any need in unique() to call uniqlist like duplicated does; uniqlist returns a new nrow(x) vector anyway and isn't
   # as efficient as forderv returning empty o when input is already ordered
   if (attr(o, 'maxgrpn', exact=TRUE) == 1L) return(copy(x))  # return copy so that unique(x)[, col := val] doesn't affect original data.table, #3383.
+  # no need setStartsSeq(o, nrow(x))
   f = attr(o, "starts", exact=TRUE)
   if (fromLast) f = cumsum(uniqlengths(f, nrow(x)))
   if (length(o)) f = o[f]
@@ -126,6 +127,7 @@ uniqueN = function(x, by = if (is.list(x)) seq_along(x) else NULL, na.rm=FALSE) 
     x = as_list(x)
   }
   o = forderv(x, by=by, retGrp=TRUE, na.last=if (!na.rm) FALSE else NA)
+  setStartsSeq(o, length(x[[1L]]))
   starts = attr(o, 'starts', exact=TRUE)
   if (!na.rm) {
     length(starts)

@@ -352,6 +352,7 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir())
 # simplified but faster version of `factor()` for internal use.
 as_factor = function(x) {
   lev = forderv(x, retGrp = TRUE, na.last = NA)
+  setStartsSeq(lev, length(x))
   # get levels, also take care of all sorted condition
   lev = if (length(lev)) x[lev[attributes(lev)$starts]] else x[attributes(lev)$starts]
   ans = chmatch(x, lev)

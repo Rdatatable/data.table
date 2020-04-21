@@ -172,6 +172,7 @@ dcast.data.table = function(data, formula, fun.aggregate = NULL, sep = "_", ...,
   }
   order_ = function(x) {
     o = forderv(x, retGrp=TRUE, sort=TRUE)
+    setStartsSeq(o, length(x))
     idx = attr(o, 'starts', exact=TRUE)
     if (!length(o)) o = seq_along(x)
     o[idx] # subsetVector retains attributes, using R's subset for now
