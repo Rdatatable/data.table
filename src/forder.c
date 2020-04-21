@@ -809,214 +809,6 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
   return ans;
 }
 
-// all(x==1L)
-static bool all1(SEXP x) {
-  if (!isInteger(x))
-    error("internal error: all1 got non-integer"); // # nocov
-  int *xp = INTEGER(x);
-  for (int i=0; i<LENGTH(x); ++i) {
-    if (xp[i] != 1)
-      return false;
-  }
-  return true;
-}
-
-// identical(cols, head(chmatch(key(x), names(x)), length(cols)))
-bool colsKeyHead(SEXP x, SEXP cols) {
-  if (!isNewList(x))
-    error("internal error: 'x' must be a list"); // # nocov
-  if (!isInteger(cols))
-    error("internal error: 'cols' must be an integer"); // # nocov
-  SEXP key = getAttrib(x, sym_sorted);
-  if (isNull(key) || (length(key) < length(cols)))
-    return false;
-  SEXP names =  getAttrib(x, R_NamesSymbol);
-  SEXP keynames = PROTECT(chmatch(key, names, 0));
-  int *keynamesp = INTEGER(keynames), *colsp = INTEGER(cols);
-  for (int i=0; i<LENGTH(cols); ++i) {
-    if (colsp[i]!=keynamesp[i]) {
-      UNPROTECT(1);
-      return false;
-    }
-  }
-  UNPROTECT(1);
-  return true;
-}
-
-// paste0("__", names(x)[cols], collapse="")
-SEXP idxName(SEXP x, SEXP cols) {
-  if (!isInteger(cols))
-    error("internal error: 'cols' must be an integer"); // # nocov
-  SEXP dt_names = getAttrib(x, R_NamesSymbol);
-  if (!isString(dt_names))
-    error("internal error: 'DT' has no names"); // # nocov
-  SEXP idx_names = PROTECT(subsetVector(dt_names, cols));
-  SEXP char_underscore2 = PROTECT(ScalarString(mkChar("__")));
-  SEXP char_empty = PROTECT(ScalarString(mkChar("")));
-  SEXP sym_paste0 = install("paste0");
-  SEXP call_paste0 = PROTECT(lang4(sym_paste0, char_underscore2, idx_names, char_empty));
-  SET_TAG(CDDDR(call_paste0), install("collapse"));
-  SEXP ans = PROTECT(eval(call_paste0, R_GlobalEnv));
-  UNPROTECT(5);
-  return ans;
-}
-
-// attr(attr(x, "index"), idxName(x, cols))
-SEXP getIndex(SEXP x, SEXP cols) {
-  if (!isInteger(cols))
-    error("internal error: 'cols' must be an integer"); // # nocov
-  SEXP index = getAttrib(x, sym_index);
-  if (isNull(index))
-    return index;
-  SEXP name_idx = PROTECT(idxName(x, cols));
-  SEXP sym_idx = install(CHAR(STRING_ELT(name_idx, 0)));
-  SEXP idx = getAttrib(index, sym_idx);
-  UNPROTECT(1);
-  return idx;
-}
-
-// attr(attr(x, "index"), idxName(x, cols)) <- o
-void putIndex(SEXP x, SEXP cols, SEXP o) {
-  if (!isInteger(cols))
-    error("internal error: 'cols' must be an integer"); // # nocov
-  if (!isInteger(o))
-    error("internal error: 'o' must be an integer"); // # nocov
-  SEXP index = getAttrib(x, sym_index);
-  if (isNull(index)) {
-    index = PROTECT(allocVector(INTSXP, 0));
-    setAttrib(x, sym_index, index);
-    UNPROTECT(1);
-  }
-  SEXP name_idx = PROTECT(idxName(x, cols));
-  SEXP sym_idx = install(CHAR(STRING_ELT(name_idx, 0)));
-  SEXP idx = getAttrib(index, sym_idx);
-  if (!isNull(idx) && !isNull(getAttrib(idx, sym_starts))) // we override retGrp=F index with retGrp=T index
-    error("internal error: trying to put index but it was already there, that should have been escaped before");
-  setAttrib(index, sym_idx, o);
-  UNPROTECT(1);
-}
-
-// isTRUE(getOption("datatable.use.index"))
-bool GetUseIndex() {
-  SEXP opt = GetOption(install("datatable.use.index"), R_NilValue);
-  if (!IS_TRUE_OR_FALSE(opt))
-    error("'datatable.use.index' option must be TRUE or FALSE");
-  return LOGICAL(opt)[0];
-}
-
-// isTRUE(getOption("datatable.auto.index"))
-bool GetAutoIndex() {
-  // for now temporarily 'forder.auto.index' not 'auto.index' to disabled it by default
-  // because it writes attr on .SD which is re-used by all groups leading to incorrect results
-  // DT[, .(uN=uniqueN(.SD)), by=A]
-  SEXP opt = GetOption(install("datatable.forder.auto.index"), R_NilValue);
-  if (isNull(opt))
-    return false;
-  if (!IS_TRUE_OR_FALSE(opt))
-    error("'datatable.forder.auto.index' option must be TRUE or FALSE");
-  return LOGICAL(opt)[0];
-}
-
-// lazy forder, re-use existing key or index if possible, otherwise call forder
-SEXP forderLazy(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, SEXP naArg, SEXP lazyArg) {
-  const bool verbose = GetVerbose();
-  int protecti = 0;
-  double tic=0.0;
-  if (verbose)
-    tic = omp_get_wtime();
-  if (isNull(DT))
-    error("DT is NULL");
-  if (!IS_TRUE_OR_FALSE(retGrpArg))
-    error("retGrp must be TRUE or FALSE");
-  bool retGrp = (bool)LOGICAL(retGrpArg)[0];
-  if (!IS_TRUE_OR_FALSE(sortGroupsArg))
-    error("sort must be TRUE or FALSE");
-  bool sortGroups = (bool)LOGICAL(sortGroupsArg)[0];
-  if (!isLogical(naArg) || LENGTH(naArg) != 1)
-    error("na.last must be logical TRUE, FALSE or NA of length 1");
-  bool na = (bool)LOGICAL(naArg)[0];
-  if (!isInteger(ascArg))
-    error("order must be integer"); // # nocov # coerced to int in R
-  if (!isLogical(lazyArg) || LENGTH(lazyArg) != 1)
-    error("lazy must be logical TRUE, FALSE or NA of length 1");
-  int lazy = LOGICAL(lazyArg)[0];
-
-  if (!length(DT))
-    return allocVector(INTSXP, 0);
-
-  int opt = -1; // -1=unknown, 0=none, 1=keyOpt, 2=idxOpt
-  if (lazy==NA_LOGICAL) {
-    if (INHERITS(DT, char_datatable) && // unnamed list should not be optimized
-        sortGroups && !na &&
-        all1(ascArg)) { // could ascArg=-1 be handled by a rev()?
-      opt = -1;
-    } else {
-      if (verbose)
-        Rprintf("forderLazy: opt not possible: is.data.table(DT)=%d, sortGroups=%d, !na=%d, all1(ascArg)=%d\n", INHERITS(DT,char_datatable), sortGroups, !na, all1(ascArg));
-      opt = 0;
-    }
-  } else if (lazy) {
-    if (!INHERITS(DT,char_datatable))
-      error("internal error: lazy set to TRUE but DT is not a data.table"); // # nocov
-    if (!sortGroups)
-      error("internal error: lazy set to TRUE but sort is FALSE"); // # nocov
-    if (na)
-      error("internal error: lazy set to TRUE but na.last is not FALSE"); // # nocov
-    if (!all1(ascArg))
-      error("internal error: lazy set to TRUE but order is not all 1"); // # nocov
-    opt = -1;
-  } else if (!lazy) {
-    opt = 0;
-  }
-  SEXP ans = R_NilValue;
-
-  if (opt == -1 && !retGrp && colsKeyHead(DT, by)) {
-    opt = 1; // keyOpt
-    ans = PROTECT(allocVector(INTSXP, 0)); protecti++;
-    if (verbose)
-      Rprintf("forderLazy: using key: %s\n", CHAR(STRING_ELT(idxName(DT, by), 0)));
-  }
-
-  if (opt == -1 && GetUseIndex()) {
-    SEXP idx = getIndex(DT, by);
-    if (!isNull(idx)) {
-      bool hasGrp = !isNull(getAttrib(idx, sym_starts));
-      if ((!hasGrp && !retGrp) ||
-          (hasGrp && retGrp)) {
-        opt = 2; // idxOpt retGrp==hasGrp, if condition unfolded for codecov
-      } else if (hasGrp && !retGrp) {
-        idx = copyAsPlain(idx);
-        setAttrib(idx, sym_starts, R_NilValue);
-        setAttrib(idx, sym_maxgrpn, R_NilValue);
-        opt = 2; // idxOpt but need to drop groups
-      } else { // !hasGrp && retGrp
-        Rprintf("forderLazy: index found but no retGrp: %s\n", CHAR(STRING_ELT(idxName(DT, by), 0)));
-      }
-      if (opt == 2) {
-        ans = idx;
-        if (verbose)
-          Rprintf("forderLazy: using existing index: %s\n", CHAR(STRING_ELT(idxName(DT, by), 0)));
-      }
-    }
-  }
-
-  if (opt < 1) {
-    ans = PROTECT(forder(DT, by, retGrpArg, sortGroupsArg, ascArg, naArg)); protecti++;
-    if (opt == -1 && // opt==0 means that arguments (na.last,..) were not of type index, or lazy=FALSE
-        GetUseIndex() &&
-        GetAutoIndex()) { // disabled by default, use datatable.forder.auto.index=T to enable, do not export/document, use for debugging only
-      putIndex(DT, by, ans);
-      if (verbose)
-        Rprintf("forderLazy: setting index (retGrp=%d) on DT: %s\n", retGrp, CHAR(STRING_ELT(idxName(DT, by), 0)));
-    }
-  }
-
-  if (verbose)
-    Rprintf("forderLazy: opt=%d, took %.3fs\n", opt, omp_get_wtime()-tic);
-  UNPROTECT(protecti);
-  return ans;
-}
-
 static bool sort_ugrp(uint8_t *x, const int n)
 // x contains n unique bytes; sort them in-place using insert sort
 // always ascending. desc and nalast are done in WRITE_KEY because columns may cross byte boundaries
@@ -1562,3 +1354,204 @@ SEXP binary(SEXP x)
   return ans;
 }
 
+// all(x==1L)
+static bool all1(SEXP x) {
+  if (!isInteger(x))
+    error("internal error: all1 got non-integer"); // # nocov
+  int *xp = INTEGER(x);
+  for (int i=0; i<LENGTH(x); ++i) {
+    if (xp[i] != 1)
+      return false;
+  }
+  return true;
+}
+
+// identical(cols, head(chmatch(key(x), names(x)), length(cols)))
+bool colsKeyHead(SEXP x, SEXP cols) {
+  if (!isNewList(x))
+    error("internal error: 'x' must be a list"); // # nocov
+  if (!isInteger(cols))
+    error("internal error: 'cols' must be an integer"); // # nocov
+  SEXP key = getAttrib(x, sym_sorted);
+  if (isNull(key) || (length(key) < length(cols)))
+    return false;
+  SEXP names =  getAttrib(x, R_NamesSymbol);
+  SEXP keynames = PROTECT(chmatch(key, names, 0));
+  int *keynamesp = INTEGER(keynames), *colsp = INTEGER(cols);
+  for (int i=0; i<LENGTH(cols); ++i) {
+    if (colsp[i]!=keynamesp[i]) {
+      UNPROTECT(1);
+      return false;
+    }
+  }
+  UNPROTECT(1);
+  return true;
+}
+
+// paste0("__", names(x)[cols], collapse="")
+SEXP idxName(SEXP x, SEXP cols) {
+  if (!isInteger(cols))
+    error("internal error: 'cols' must be an integer"); // # nocov
+  SEXP dt_names = getAttrib(x, R_NamesSymbol);
+  if (!isString(dt_names))
+    error("internal error: 'DT' has no names"); // # nocov
+  SEXP idx_names = PROTECT(subsetVector(dt_names, cols));
+  SEXP char_underscore2 = PROTECT(ScalarString(mkChar("__")));
+  SEXP char_empty = PROTECT(ScalarString(mkChar("")));
+  SEXP sym_paste0 = install("paste0");
+  SEXP call_paste0 = PROTECT(lang4(sym_paste0, char_underscore2, idx_names, char_empty));
+  SET_TAG(CDDDR(call_paste0), install("collapse"));
+  SEXP ans = PROTECT(eval(call_paste0, R_GlobalEnv));
+  UNPROTECT(5);
+  return ans;
+}
+
+// attr(attr(x, "index"), idxName(x, cols))
+SEXP getIndex(SEXP x, SEXP cols) {
+  if (!isInteger(cols))
+    error("internal error: 'cols' must be an integer"); // # nocov
+  SEXP index = getAttrib(x, sym_index);
+  if (isNull(index))
+    return index;
+  SEXP name_idx = PROTECT(idxName(x, cols));
+  SEXP sym_idx = install(CHAR(STRING_ELT(name_idx, 0)));
+  SEXP idx = getAttrib(index, sym_idx);
+  UNPROTECT(1);
+  return idx;
+}
+
+// attr(attr(x, "index"), idxName(x, cols)) <- o
+void putIndex(SEXP x, SEXP cols, SEXP o) {
+  if (!isInteger(cols))
+    error("internal error: 'cols' must be an integer"); // # nocov
+  if (!isInteger(o))
+    error("internal error: 'o' must be an integer"); // # nocov
+  SEXP index = getAttrib(x, sym_index);
+  if (isNull(index)) {
+    index = PROTECT(allocVector(INTSXP, 0));
+    setAttrib(x, sym_index, index);
+    UNPROTECT(1);
+  }
+  SEXP name_idx = PROTECT(idxName(x, cols));
+  SEXP sym_idx = install(CHAR(STRING_ELT(name_idx, 0)));
+  SEXP idx = getAttrib(index, sym_idx);
+  if (!isNull(idx) && !isNull(getAttrib(idx, sym_starts))) // we override retGrp=F index with retGrp=T index
+    error("internal error: trying to put index but it was already there, that should have been escaped before"); // # nocov
+  setAttrib(index, sym_idx, o);
+  UNPROTECT(1);
+}
+
+// isTRUE(getOption("datatable.use.index"))
+bool GetUseIndex() {
+  SEXP opt = GetOption(install("datatable.use.index"), R_NilValue);
+  if (!IS_TRUE_OR_FALSE(opt))
+    error("'datatable.use.index' option must be TRUE or FALSE"); // # nocov
+  return LOGICAL(opt)[0];
+}
+
+// isTRUE(getOption("datatable.auto.index"))
+bool GetAutoIndex() {
+  // for now temporarily 'forder.auto.index' not 'auto.index' to disabled it by default
+  // because it writes attr on .SD which is re-used by all groups leading to incorrect results
+  // DT[, .(uN=uniqueN(.SD)), by=A]
+  SEXP opt = GetOption(install("datatable.forder.auto.index"), R_NilValue);
+  if (isNull(opt))
+    return false;
+  if (!IS_TRUE_OR_FALSE(opt))
+    error("'datatable.forder.auto.index' option must be TRUE or FALSE"); // # nocov
+  return LOGICAL(opt)[0];
+}
+
+// lazy forder, re-use existing key or index if possible, otherwise call forder
+SEXP forderLazy(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, SEXP naArg, SEXP lazyArg) {
+  const bool verbose = GetVerbose();
+  int protecti = 0;
+  double tic=0.0;
+  if (verbose)
+    tic = omp_get_wtime();
+  if (isNull(DT))
+    error("DT is NULL");
+  if (!IS_TRUE_OR_FALSE(retGrpArg))
+    error("retGrp must be TRUE or FALSE");
+  bool retGrp = (bool)LOGICAL(retGrpArg)[0];
+  if (!IS_TRUE_OR_FALSE(sortGroupsArg))
+    error("sort must be TRUE or FALSE");
+  bool sortGroups = (bool)LOGICAL(sortGroupsArg)[0];
+  if (!isLogical(naArg) || LENGTH(naArg) != 1)
+    error("na.last must be logical TRUE, FALSE or NA of length 1");
+  bool na = (bool)LOGICAL(naArg)[0];
+  if (!isInteger(ascArg))
+    error("order must be integer"); // # nocov # coerced to int in R
+  if (!isLogical(lazyArg) || LENGTH(lazyArg) != 1)
+    error("lazy must be logical TRUE, FALSE or NA of length 1");
+  int lazy = LOGICAL(lazyArg)[0];
+  if (!length(DT))
+    return allocVector(INTSXP, 0);
+  int opt = -1; // -1=unknown, 0=none, 1=keyOpt, 2=idxOpt
+  if (lazy==NA_LOGICAL) {
+    if (INHERITS(DT, char_datatable) && // unnamed list should not be optimized
+        sortGroups && !na &&
+        all1(ascArg)) { // could ascArg=-1 be handled by a rev()?
+      opt = -1;
+    } else {
+      if (verbose)
+        Rprintf("forderLazy: opt not possible: is.data.table(DT)=%d, sortGroups=%d, !na=%d, all1(ascArg)=%d\n", INHERITS(DT,char_datatable), sortGroups, !na, all1(ascArg));
+      opt = 0;
+    }
+  } else if (lazy) {
+    if (!INHERITS(DT,char_datatable))
+      error("internal error: lazy set to TRUE but DT is not a data.table"); // # nocov
+    if (!sortGroups)
+      error("internal error: lazy set to TRUE but sort is FALSE"); // # nocov
+    if (na)
+      error("internal error: lazy set to TRUE but na.last is not FALSE"); // # nocov
+    if (!all1(ascArg))
+      error("internal error: lazy set to TRUE but order is not all 1"); // # nocov
+    opt = -1;
+  } else if (!lazy) {
+    opt = 0;
+  }
+  SEXP ans = R_NilValue;
+  if (opt == -1 && !retGrp && colsKeyHead(DT, by)) {
+    opt = 1; // keyOpt
+    ans = PROTECT(allocVector(INTSXP, 0)); protecti++;
+    if (verbose)
+      Rprintf("forderLazy: using key: %s\n", CHAR(STRING_ELT(idxName(DT, by), 0)));
+  }
+  if (opt == -1 && GetUseIndex()) {
+    SEXP idx = getIndex(DT, by);
+    if (!isNull(idx)) {
+      bool hasGrp = !isNull(getAttrib(idx, sym_starts));
+      if ((!hasGrp && !retGrp) ||
+          (hasGrp && retGrp)) {
+        opt = 2; // idxOpt retGrp==hasGrp, if condition unfolded for codecov
+      } else if (hasGrp && !retGrp) {
+        idx = copyAsPlain(idx);
+        setAttrib(idx, sym_starts, R_NilValue);
+        setAttrib(idx, sym_maxgrpn, R_NilValue);
+        opt = 2; // idxOpt but need to drop groups
+      } else { // !hasGrp && retGrp
+        Rprintf("forderLazy: index found but no retGrp: %s\n", CHAR(STRING_ELT(idxName(DT, by), 0)));
+      }
+      if (opt == 2) {
+        ans = idx;
+        if (verbose)
+          Rprintf("forderLazy: using existing index: %s\n", CHAR(STRING_ELT(idxName(DT, by), 0)));
+      }
+    }
+  }
+  if (opt < 1) {
+    ans = PROTECT(forder(DT, by, retGrpArg, sortGroupsArg, ascArg, naArg)); protecti++;
+    if (opt == -1 && // opt==0 means that arguments (na.last,..) were not of type index, or lazy=FALSE
+        GetUseIndex() &&
+        GetAutoIndex()) { // disabled by default, use datatable.forder.auto.index=T to enable, do not export/document, use for debugging only
+      putIndex(DT, by, ans);
+      if (verbose)
+        Rprintf("forderLazy: setting index (retGrp=%d) on DT: %s\n", retGrp, CHAR(STRING_ELT(idxName(DT, by), 0)));
+    }
+  }
+  if (verbose)
+    Rprintf("forderLazy: opt=%d, took %.3fs\n", opt, omp_get_wtime()-tic);
+  UNPROTECT(protecti);
+  return ans;
+}
