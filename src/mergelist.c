@@ -10,22 +10,25 @@ SEXP cbindlist(SEXP x, SEXP copyArg) {
   double tic = 0;
   if (verbose)
     tic = omp_get_wtime();
-  int nx = length(x);
-  int *nnx = (int*)R_alloc(nx, sizeof(int));
-  int nans = 0;
-  R_len_t nr;
+  int nx = length(x), nans = 0, nr, *nnx = (int*)R_alloc(nx, sizeof(int));
+  bool recycle = false;
   for (int i=0; i<nx; ++i) {
     SEXP thisx = VECTOR_ELT(x, i);
-    if (!INHERITS(thisx, char_datatable))
-      error("The %d element of 'x' list is not a data.table", i+1);
-    R_len_t thisnr = length(VECTOR_ELT(thisx, 0));
+    if (!perhapsDataTable(thisx))
+      error("The %d element of 'x' list is not a data.table type", i+1);
+    int thisnr = NROW(thisx);
     if (!i)
       nr = thisnr;
-    else if (nr != thisnr)
-      error("The %d element of 'x' has nrow different than previous ones, ", i+1);
-    nnx[i] = length(thisx);
+    else if (nr != thisnr) {
+      if (!copy)
+        error("For copy=FALSE all tables in 'x' has to have equal nrow, element %d has different nrow than the previous element", i+1);
+      recycle = true;
+    }
+    nnx[i] = NCOL(thisx);
     nans += nnx[i];
   }
+  if (recycle)
+    error("Recycling rows for objects of different nrow is not yet implemented"); // dont we have a routines for that already somewhere?
   SEXP ans = PROTECT(allocVector(VECSXP, nans));
   SEXP names = PROTECT(allocVector(STRSXP, nans));
   for (int i=0, ians=0; i<nx; ++i) {
@@ -38,6 +41,7 @@ SEXP cbindlist(SEXP x, SEXP copyArg) {
     }
   }
   setAttrib(ans, R_NamesSymbol, names);
+  ans = setDT(ans); // this is not really in-place!
   if (verbose)
     Rprintf("cbindlist: took %.3fs\n", omp_get_wtime()-tic);
   UNPROTECT(2);
