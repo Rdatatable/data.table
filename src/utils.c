@@ -424,11 +424,14 @@ static inline bool equalLens(SEXP x) {
   return true;
 }
 
-// inherits(x, "data.table") || inherits(x, "data.frame") || (is.list(x) && equalLens(x))
+// is.list(x) && equalLens(x) && !is.null(names(x))
+bool isDataList(SEXP x) {
+  return isNewList(x) && equalLens(x) && !isNull(getAttrib(x, R_NamesSymbol));
+}
+
+// inherits(x, "data.table") || inherits(x, "data.frame") || isDataList(x)
 bool perhapsDataTable(SEXP x) {
-  return INHERITS(x, char_datatable) || INHERITS(x, char_dataframe) || (
-      isNewList(x) && equalLens(x)
-  );
+  return INHERITS(x, char_datatable) || INHERITS(x, char_dataframe) || isDataList(x);
 }
 SEXP perhapsDataTableR(SEXP x) {
   SEXP ans = PROTECT(allocVector(LGLSXP, 1));
