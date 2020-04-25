@@ -1,0 +1,334 @@
+---
+title: "Joins in data.table"
+date: "`r Sys.Date()`"
+output:
+  rmarkdown::html_vignette:
+vignette: >
+  %\VignetteIndexEntry{Joins in data.table}
+  %\VignetteEngine{knitr::rmarkdown}
+  \usepackage[utf8]{inputenc}
+---
+
+```{r, echo = FALSE, message = FALSE}
+require(data.table)
+require(nycflights13)
+knitr::opts_chunk$set(
+  comment = "#",
+    error = FALSE,
+     tidy = FALSE,
+    cache = FALSE,
+ collapse = TRUE
+)
+```
+
+This vignette introduces `data.table`'s manner of performing equi-joins, that is, whose predicates are based on equality `=`. This join will be updated with other types of joins - overlapping, non-equi-joins, and rolling joins when the content is ready.
+
+The vignette assumes familiarity with the `data.table` syntax. If that is not the case, please read the “Introduction to data.table”, “Reference semantics” and "Keys and fast binary search based subset" vignettes first.
+
+***
+
+## Loading exemplar datasets
+
+Let's first load `data.table`,
+
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+library(data.table)
+options(datatable.print.class = TRUE) # To show the column type
+options(datatable.print.trunc.cols = TRUE)  # to limit printing
+options(datatable.print.nrows = 5)   # Limit output to 10 rows
+```
+
+In this vignette, we shall use the `nycflights13` dataset. Since the tables in the package aren't stored as `data.tables`s, they shall need to be converted, and can be done as so:
+
+```{r results = "hide"}
+library(nycflights13)
+
+table_names = data(package = "nycflights13")$results[, "Item"]
+
+lapply(table_names, function(x) {
+  assign(x, setDT(copy(get(x))), envir = .GlobalEnv)
+})
+```
+
+To get an idea of what these datasets contain, you may try `?flights`.
+
+## Introduction to the equi-join syntax
+
+`data.table`'s syntax is designed to be *consistent* and *concise*, *fluid* in terms of limiting the number of functions it provides, and inherently capable of *automatically optimizing* operations internally, efficient in terms of both speed and memory.
+
+It is with this in mind that the syntax for joins aligns with that for most other `data.table` operations. The simplest join syntax for a `data.table` join is:
+
+```{r eval = FALSE}
+# If keyed
+X[Y]
+
+# If not keyed, assuming keys
+# a and b respectively
+X[Y, on = "a == b"]
+```
+
+This can be read as **return the rows of `X` looking it up in `Y`**. Values of `X` that are absent in `Y` are returned as `NA`. To avoid this behaviour, one can use the `nomatch = NULL` parameter (more on this later).
+
+We are *intentionally* avoiding coining joins as "left" or "right" at this stage, whose motive will become clear as we proceed.
+
+## Basic joins
+
+The `flights` table provides the `air_time` of a flight, for each `carrier`. The `carrier` column values are coded.
+
+```{r}
+head(flights[, .(carrier, air_time)])
+```
+
+Let's identify the total `air_time` of each `carrier` in the flights dataset, but replace the coded values with their actual names from the `airlines` table.
+
+```{r}
+head(airlines)
+```
+
+This can be done by first leveraging the most important bit of information in the introduction vignette, **as long as `j-expression` returns a `list`, each element of the list will be converted to a column in the resulting `data.table`**.
+
+```{r}
+# Since the key columns are the same in both
+airlines[flights, .(name, air_time), on = "carrier"]
+```
+
+Notice how only two specific columns are specified in the join statement. This is intentional design - memory is created only for the columns used in the `j-expression`, and standard recycling rules apply. This ensures that **only** the required columns are merged, instead of a wasteful join of all columns followed by another subset[^1].
+
+We need to, in addition, calculate the sum of `air_time` to be able to answer the question posed earlier. To do this, we can *chain* commands, and write as so:
+
+```{r}
+airlines[flights, .(name, air_time), on = "carrier"][
+  , .(air_time = sum(air_time, na.rm = TRUE)), name]
+```
+
+The `on` keyword is not required if the tables are keyed - i.e. the following code will still work:
+
+```{r}
+setkey(flights, carrier)
+setkey(airlines, carrier)
+
+airlines[flights, .(name, air_time)][
+  , .(air_time = sum(air_time, na.rm = TRUE)), name]
+
+```
+
+How do you decide what to use - `on` or `setkey` and a join? We've covered that [here](#setkey_or_on).
+
+### Aggregation on join: by = .EACHI
+
+The added overhead of calculating the new key might be helpful for larger tables. Further, for cases where an immediate aggergation is required, the special symbol `.EACHI` can be used in `by` to perform a *grouping by each `i`* [^2], as so:
+
+```{r}
+flights[airlines, .(name, air_time = sum(air_time, na.rm = TRUE)), by = .EACHI]
+```
+
+Notice that we had to reverse the order of the two tables above, because we were now performing a grouping on the joining column of `airlines`, and aggregating by it - we want one value per `carrier`. If you are unclear about this, try keeping the order unchanged and run the code.
+
+You cannot (yet) aggregate by a field absent in the join.
+
+## Adding column by reference
+
+The walrus operator `:=` is used in previous `data.table` vignettes to add columns by reference to an existing table, without creating a copy, thus saving memory (and speed). The same ability is extended to joins. The general syntax is the same, although with one major difference.
+
+```{r eval = FALSE}
+X[Y, new_col := old_col, on = "a == b"]
+```
+
+Here, because `X` is updated by *reference*, the syntax changes definition to updating the rows of `X` where there is a match in `Y`, and not matching otherwise.
+
+Carrying onward our previous example:
+
+```{r}
+# This creates a copy of flights in memory
+flights_copy1 = copy(flights) 
+
+flights_copy1[airlines, carrier_name := name, on = "carrier"]
+flights_copy1[, .(carrier, carrier_name, air_time)]
+```
+
+The column `name` from `airlines` has been added by *reference* to `flights` without creating a copy of it (which the earlier operation without `:=` did). 
+
+Note that this operation does not check for duplicate assignments for efficiency. If multiple values are passed for assignment to the same index, assignment to this index will occur repeatedly and sequentially, and is mentioned in the documentation for `set`. This is where the operation is not strictly a "left join". Traditional joining methods will be covered later.
+
+## Joining multiple columns by reference
+
+### By using the functional form of `:=`
+
+What if we needed to join multiple columns? For instance, we may be interested in the the manufacturer, year of manufacture, and the speed of the planes. These can be found in the `planes` dataset, under `manufacturer`, `year` and `model` respectively.
+
+```{r}
+flights_copy2 <- copy(flights)
+
+flights_copy2[planes, on = "tailnum",
+             `:=`(manufacturer = manufacturer,
+                  manfact_year = i.year,
+                  speed        = speed)]
+
+flights_copy2[, .(carrier, tailnum, manufacturer, manfact_year, speed)]
+```
+
+Notice how `i.` was prefixed to `year` - this is to indicate to `data.table` that the column is to be taken from the `i` table, `planes`. This prevents ambiguity on matching column names in `x` (which is `flights_copy`) and `i`.
+
+Also, the `on` keyword has been placed prior to the `j-expression`, and this makes it extra clear on which column(s) the join is taking place.
+
+### Adding multiple columns programatically
+
+The above method can quickly become cumbersome for multiple columns. We can fall to base R's `get` and `mget` functions, which can lookup one and more respectively, object(s) by name in the environment of the function call. 
+
+```{r}
+# Pulling in a different set of columns
+pull_cols = c("type", "model", "engine")
+
+flights_copy2[planes, on = "tailnum",
+              (pull_cols) := mget(paste0("i.", pull_cols))]
+
+flights_copy2[, .(carrier, tailnum, type, model, engine)]
+```
+
+We use `i.` on all the column names to avoid ambiguity, and then reference them in the scope of the `i` table through `mget`. We need to use `(pull_cols)` to force `data.table` to treat it as a vector of character names, else we'll have a column called `pull_cols` joined in the table. When you only need one column, you can use `get` instead.
+
+## Update by join
+
+Oftentimes, we may need to update values in one table cognizant of another. Let's calculate the actual speed of a record in the `flights` table.
+
+```{r}
+flights[, speed := distance / air_time * 60]
+```
+
+Suppose we have to replace the `speed` calculated above for the flights of interest with the average cruising speed from `planes`, *only where present*. In addition, we are also asked to replace the values where the `speed` is below `80` with `NA`. We can do that with:
+
+
+```{r}
+flights[planes, on = "tailnum",
+        speed := fcase(!is.na(i.speed), as.numeric(i.speed),
+                       speed >= 80, speed,
+                       default = NA_real_)]
+
+flights[, .(year, month, day, dep_time, carrier, flight, tailnum, speed)]
+```
+
+There are a few things happening in a small part of the code. We break it down as so:
+
+1. First, `flights` is joined to `planes` on `tailnum` as done previously.
+2. Second, the `fcase` function is used.
+    * This is analogus to SQL's `CASE WHEN` expression and `dplyr::case_when`
+    * `fcase` is lazily evaluated - the second condition is not evaluated unless the first is `FALSE`, the default is not evaluated unless the first two are `FALSE` and so on.
+    * Conceptually, it is identical to a nested `fifelse`, but in implementation, it is faster owing to lazy evaluation.
+    * The `as.numeric` and `NA_real_` are required owing to `fcase`'s requirement that outputs should be of the same type. Check `?NA` for more information on the different *types of * `NA` values available.
+3. Third, it uses `i.` to dissociate `speed` from `flights` and `planes`, as done previously.
+
+We thus cover how we can perform a *update-on-join* very efficiently - no additional columns are added (which would have been required in a traditional `merge`, and the code remains concise. Another important point to note is that since `speed` is already defined, `data.table` throws an error if a join changes the data type of the column - you will need to use the appropriate `as.*` method to avoid the error.
+
+## Obtaining traditional joins in `data.table`
+
+`data.table`'s join by reference techniques are for typical use cases, emphasized for speed and memory efficiency. Sometimes we may still require traditional cases of left, right, full, inner, and cross joins.
+
+First, we create exemplar tables to demonstrate the various joins that can be performed:
+
+```{r}
+X = data.table(small = letters[1:15], key_x = 1:15)
+Y = data.table(caps = c(LETTERS[1:10], LETTERS[19:20]),
+               month = month.name[1:12],
+               key_y = c(1:10, 19:20))
+```
+
+### Right, left, inner, anti and semi-joins
+
+A typical right join can be obtained by:
+
+```{r}
+X[Y, on = "key_x == key_y"]
+```
+
+For a left join, reverse the positions of the two tables:
+
+```{r}
+Y[X, on = "key_y == key_x"]
+```
+
+For an inner join, use the `nomatch = NULL` paramter.
+
+```{r}
+Y[X, on = "key_y == key_x", nomatch = NULL]
+# The below produces the same result, but columns are ordered differently
+# X[Y, on = "key_x == key_y", nomatch = NULL]
+```
+
+An anti-join can be performed by:
+
+```{r}
+X[!Y, on = "key_x == key_y"]
+```
+
+And a semi-join is an *anti*-anti join:
+
+```{r}
+X[!X[!Y, on = "key_x == key_y"], on = "key_x"]
+```
+
+In addition, `data.table` provides the ability to join by common columns, the so called natural join, using `.NATURAL` in the `on` argument.
+
+### Performing full joins and using `merge`
+
+Full joins are memory intensive - avoid it unless you really need to perform it. `data.table` recommends using the `merge` function from base R (it calls `merge.data.table` for `data.table` objects, and is significantly faster than base):
+
+```{r}
+merge(X, Y, by.x = "key_x", by.y = "key_y", all = TRUE)
+```
+
+Alternately, you can also use the following esoteric approach for a faster[^4] full join:
+
+```{r}
+unique_keys = unique(c(X[, key_x], Y[, key_y]))
+
+setkey(Y, key_y)
+
+# Keys are NULLed upon first join
+X[Y[J(unique_keys)], on = "key_x == key_y"]
+
+```
+
+#### Using `merge`
+
+Base R's `merge` can be used for all the traditional left, right, inner etc. type of joins - they will not be as efficient as `data.table`'s `[` operator. Below is a table summary of the syntax comparisons using `data.table`'s `[` and R's `merge` (assuming only one key, `key` for simplicity):
+
+| Join              | `data.table`                       | `merge`                                  |
+|-------------------|:----------------------------------|:----------------------------------------|
+| Left  | `Y[X, on = "key"]`                 | `merge(X, Y, by = "key", all.x = TRUE)`  |
+| Right  | `X[Y, on = "key"]`                 | `merge(X, Y, by = "key", all.y = FALSE)` |
+| Inner `X` on `Y` | `X[Y, on = "key", nomatch = NULL]` | `merge(X, Y, by = "key")`                |
+| Full  | (check above)                                | `merge(X, Y, by = "key", all = TRUE)`    |
+
+### Cross Joins
+
+To perform cross join efficiently in data.table, use the `CJ` command.
+
+```{r}
+CJ(x = letters[1:10], y = LETTERS[1:10])
+```
+
+This can then be further joined with parent tables, if any, to bring in the columns of interest.
+
+## Protection for potential misspecified joins - `allow.cartesian`
+
+When multiple matches exist for every row in `x` in `i`, then `data.table` prevents a join when the number of rows in the output exceeds a certain value (`nrow(x) + nrow(i)`), so as to prevent unintentional "cartersian products". Here, the word "cartesian" is used loosely to indicate a *large multiplication of data*. To over-ride this when you are certain that you want such a join, specify `allow.cartesian = TRUE`.
+
+## <a name="setkey_or_on"></a>To `setkey` or to `on`?
+
+We provide three reasons[^3]:
+
+1. For large tables that require successive joins, `setkey`, which *physically* reorders the table in memory, becomes the bottleneck in performance as opposed to the actual join, and for smaller tables, the difference is insignificant.
+
+2. For cases of adding columns by *reference*, `on` is often more performant than `setkey`, because no reordering of the table is required in memory.
+
+3. Finally, usage of `on` makes for much cleaner code where it is possible to clearly distinguish the syntax as an operation involving two `data.table`s.
+
+for our recommendation of:
+
+> In most cases there shouldn't be a need to set keys anymore. We recommend using `on` wherever possible, unless setting key has a dramatic improvement in performance that you'd like to exploit.
+
+
+[^1]:https://stackoverflow.com/questions/12773822/why-does-xy-join-of-data-tables-not-allow-a-full-outer-join-or-a-left-join
+[^2]: [data.table FAQ 1.12](https://cran.r-project.org/web/packages/data.table/vignettes/datatable-faq.html)
+[^3]:https://stackoverflow.com/questions/20039335/what-is-the-purpose-of-setting-a-key-in-data-table
+[^4]:https://stackoverflow.com/questions/12773822/why-does-xy-join-of-data-tables-not-allow-a-full-outer-join-or-a-left-join
