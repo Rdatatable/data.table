@@ -33,7 +33,7 @@ sourceDir = function(path=getwd(), trace = TRUE, ...) {
   if(trace) cat("\n")
 }
 
-cc = function(test=FALSE, clean=FALSE, debug=FALSE, omp=!debug, cc_dir, path=Sys.getenv("PROJ_PATH"), CC="gcc") {
+cc = function(test=FALSE, clean=FALSE, debug=FALSE, omp=!debug, cc_dir, path=Sys.getenv("PROJ_PATH"), CC="gcc", quiet=FALSE) {
   if (!missing(cc_dir)) {
     warning("'cc_dir' arg is deprecated, use 'path' argument or 'PROJ_PATH' env var instead")
     path = cc_dir
@@ -57,13 +57,13 @@ cc = function(test=FALSE, clean=FALSE, debug=FALSE, omp=!debug, cc_dir, path=Sys
   old = getwd()
   on.exit(setwd(old))
   setwd(file.path(path,"src"))
-  cat(getwd(),"\n")
+  if (!quiet) cat(getwd(),"\n")
   if (clean) system("rm *.o *.so")
   OMP = if (omp) "" else "no-"
   if (debug) {
-    ret = system(sprintf("MAKEFLAGS='-j CC=%s PKG_CFLAGS=-f%sopenmp CFLAGS=-std=c99\\ -O0\\ -ggdb\\ -pedantic' R CMD SHLIB -d -o datatable.so *.c", CC, OMP))
+    ret = system(ignore.stdout=quiet, sprintf("MAKEFLAGS='-j CC=%s PKG_CFLAGS=-f%sopenmp CFLAGS=-std=c99\\ -O0\\ -ggdb\\ -pedantic' R CMD SHLIB -d -o datatable.so *.c", CC, OMP))
   } else {
-    ret = system(sprintf("MAKEFLAGS='-j CC=%s CFLAGS=-f%sopenmp\\ -std=c99\\ -O3\\ -pipe\\ -Wall\\ -pedantic\\ -fno-common' R CMD SHLIB -o datatable.so *.c", CC, OMP))
+    ret = system(ignore.stdout=quiet, sprintf("MAKEFLAGS='-j CC=%s CFLAGS=-f%sopenmp\\ -std=c99\\ -O3\\ -pipe\\ -Wall\\ -pedantic\\ -fno-common' R CMD SHLIB -o datatable.so *.c", CC, OMP))
     # TODO add -Wextra too?
   }
   if (ret) return()
@@ -79,7 +79,7 @@ cc = function(test=FALSE, clean=FALSE, debug=FALSE, omp=!debug, cc_dir, path=Sys
     assign(xx$.Call[[i]]$name,  xx$.Call[[i]]$address, envir=.GlobalEnv)
   for (i in seq_along(xx$.External))
     assign(xx$.External[[i]]$name,  xx$.External[[i]]$address, envir=.GlobalEnv)
-  sourceDir(paste0(path,"/R"))
+  sourceDir(paste0(path,"/R"), trace=!quiet)
   if (base::getRversion()<"4.0.0") rm(list=c("rbind.data.table","cbind.data.table"), envir=.GlobalEnv) # 3968 follow up
   assign("testDir", function(x)paste0(path,"/inst/tests/",x), envir=.GlobalEnv)
   .onLoad()
