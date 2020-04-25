@@ -107,7 +107,9 @@ unit = "s")
 
 12. `rbindlist` no longer errors when coercing complex vectors to character vectors, [#4202](https://github.com/Rdatatable/data.table/issues/4202). Thanks to @sritchie73 for reporting and the PR.
 
-13. Self-referential objects could create a stack overflow, [#4396](https://github.com/Rdatatable/data.table/issues/4396). Thanks @tdhock for the reproducible example.
+13. A relatively rare case of segfault when combining non-equi joins with `by=.EACHI` is now fixed, closes [#4388](https://github.com/Rdatatable/data.table/issues/4388).
+
+14. Self-referential objects could create a stack overflow, [#4396](https://github.com/Rdatatable/data.table/issues/4396). Thanks @tdhock for the reproducible example.
 
 ## NOTES
 
