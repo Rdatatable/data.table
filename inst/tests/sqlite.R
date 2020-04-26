@@ -104,6 +104,7 @@ join.sql.equal = function(l, on, how="inner", mult="all", allow.cartesian=TRUE, 
     r = all.equal(dt, dt2, ignore.row.order=TRUE, ignore.col.order=TRUE)
     ## check it is symetric
     if (!isTRUE(r)) {
+      message("symmetric test failed!!")
       if (.debug) browser()
       stop("mergelist is not symmetric for ", how)
     }
@@ -346,7 +347,7 @@ stopifnot( ## right + mult
   join.sql.equal(l, on="id1", how="right", mult="all",   ans=data.table(id1=c(2L,2:3), v1=c(2L,2L,NA), v2=1:3)),
   join.sql.equal(l, on="id1", how="right", mult="first", ans=data.table(id1=c(2L,2:3), v1=c(2L,2L,NA), v2=1:3)),
   join.sql.equal(l, on="id1", how="right", mult="last",  ans=data.table(id1=c(2L,2:3), v1=c(2L,2L,NA), v2=1:3)),
-  join.sql.equal(l, on="id1", how="right", mult="error", err=FALSE) ## no dups in LHS
+  join.sql.equal(l, on="id1", how="right", mult="error", ans=data.table(id1=c(2L,2:3), v1=c(2L,2L,NA), v2=1:3), err=FALSE) ## no dups in LHS
 )
 stopifnot( ## full + mult
   join.sql.equal(l, on="id1", how="full",  mult="all",   ans=data.table(id1=c(1:2,2:3), v1=c(1:2,2L,NA), v2=c(NA,1:3))),
@@ -367,7 +368,7 @@ stopifnot( ## left + mult
   join.sql.equal(l, on="id1", how="left",  mult="all",   ans=data.table(id1=c(1:2,2L), v1=1:3, v2=c(NA,1L,1L))),
   join.sql.equal(l, on="id1", how="left",  mult="first", ans=data.table(id1=c(1:2,2L), v1=1:3, v2=c(NA,1L,1L))),
   join.sql.equal(l, on="id1", how="left",  mult="last",  ans=data.table(id1=c(1:2,2L), v1=1:3, v2=c(NA,1L,1L))),
-  join.sql.equal(l, on="id1", how="left",  mult="error", err=FALSE) ## no dups in RHS
+  join.sql.equal(l, on="id1", how="left",  mult="error", ans=data.table(id1=c(1:2,2L), v1=1:3, v2=c(NA,1L,1L)), err=FALSE) ## no dups in RHS
 )
 stopifnot( ## right + mult
   join.sql.equal(l, on="id1", how="right", mult="all",   ans=data.table(id1=c(2L,2:3), v1=c(2:3,NA), v2=c(1L,1:2))),
@@ -380,6 +381,33 @@ stopifnot( ## full + mult
   join.sql.equal(l, on="id1", how="full",  mult="first", ans=data.table(id1=1:3, v1=c(1:2,NA), v2=c(NA,1:2))),
   join.sql.equal(l, on="id1", how="full",  mult="last",  ans=data.table(id1=1:3, v1=c(1L,3L,NA), v2=c(NA,1:2))),
   join.sql.equal(l, on="id1", how="full",  mult="error", err=TRUE)
+)
+
+## no dups, 1:1 match, all are equals below
+l = list(lhs = data.table(id1=1:2, v1=1:2), rhs = data.table(id1=1:2, v2=1:2))
+stopifnot( ## inner + mult
+  join.sql.equal(l, on="id1", how="inner", mult="all",   ans=data.table(id1=1:2, v1=1:2, v2=1:2)),
+  join.sql.equal(l, on="id1", how="inner", mult="first", ans=data.table(id1=1:2, v1=1:2, v2=1:2)),
+  join.sql.equal(l, on="id1", how="inner", mult="last",  ans=data.table(id1=1:2, v1=1:2, v2=1:2)),
+  join.sql.equal(l, on="id1", how="inner", mult="error", ans=data.table(id1=1:2, v1=1:2, v2=1:2), err=FALSE)
+)
+stopifnot( ## left + mult
+  join.sql.equal(l, on="id1", how="left",  mult="all",   ans=data.table(id1=1:2, v1=1:2, v2=1:2)),
+  join.sql.equal(l, on="id1", how="left",  mult="first", ans=data.table(id1=1:2, v1=1:2, v2=1:2)),
+  join.sql.equal(l, on="id1", how="left",  mult="last",  ans=data.table(id1=1:2, v1=1:2, v2=1:2)),
+  join.sql.equal(l, on="id1", how="left",  mult="error", ans=data.table(id1=1:2, v1=1:2, v2=1:2), err=FALSE)
+)
+stopifnot( ## right + mult
+  join.sql.equal(l, on="id1", how="right", mult="all",   ans=data.table(id1=1:2, v1=1:2, v2=1:2)),
+  join.sql.equal(l, on="id1", how="right", mult="first", ans=data.table(id1=1:2, v1=1:2, v2=1:2)),
+  join.sql.equal(l, on="id1", how="right", mult="last",  ans=data.table(id1=1:2, v1=1:2, v2=1:2)),
+  join.sql.equal(l, on="id1", how="right", mult="error", ans=data.table(id1=1:2, v1=1:2, v2=1:2), err=FALSE)
+)
+stopifnot( ## full + mult
+  join.sql.equal(l, on="id1", how="full",  mult="all",   ans=data.table(id1=1:2, v1=1:2, v2=1:2)),
+  join.sql.equal(l, on="id1", how="full",  mult="first", ans=data.table(id1=1:2, v1=1:2, v2=1:2)),
+  join.sql.equal(l, on="id1", how="full",  mult="last",  ans=data.table(id1=1:2, v1=1:2, v2=1:2)),
+  join.sql.equal(l, on="id1", how="full",  mult="error", ans=data.table(id1=1:2, v1=1:2, v2=1:2), err=FALSE)
 )
 
 cat("design tests passed\n")
