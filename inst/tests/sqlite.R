@@ -99,6 +99,15 @@ join.sql.equal = function(l, on, how="inner", mult="all", allow.cartesian=TRUE, 
   s = paste0(s,";\n")
   # run data.table and SQLite
   dt = mergelist(list(lhs[,!"row_id"], rhs[,!"row_id"]), on=on, how=how, mult=mult)
+  if (how %in% c("inner","full")) {
+    dt2 = mergelist(list(rhs[,!"row_id"], lhs[,!"row_id"]), on=on, how=how, mult=mult)
+    r = all.equal(dt, dt2, ignore.row.order=TRUE, ignore.col.order=TRUE)
+    ## check it is symetric
+    if (!isTRUE(r)) {
+      if (.debug) browser()
+      stop("mergelist is not symmetric for ", how)
+    }
+  }
   sq = try(silent=TRUE, as.data.table(DBI::dbGetQuery(conn, s)))
   if (inherits(sq, "try-error")) {
     if (.debug) browser()
