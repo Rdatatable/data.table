@@ -177,7 +177,7 @@ imatch = function(x, i, on, nomatch, mult, verbose, allow.cartesian, notjoin=FAL
 }
 
 # atomic join between two tables
-mergepair = function(lhs, rhs, on, how, mult, lhs.cols, rhs.cols, copy, verbose) {
+mergepair = function(lhs, rhs, on, how, mult, lhs.cols, rhs.cols, copy, allow.cartesian, verbose) {
   if (is.null(on)) {
     if (how=="left") on = key(rhs)
     else if (how=="right") on = key(lhs)
@@ -186,21 +186,18 @@ mergepair = function(lhs, rhs, on, how, mult, lhs.cols, rhs.cols, copy, verbose)
       stop("'on' is missing and necessary keys were not present")
   }
   if (how!="right") { ## join-to, join-from
-    jnfm = lhs; fm.cols = lhs.cols
-    jnto = rhs; to.cols = rhs.cols
+    jnfm = lhs; fm.cols = lhs.cols; jnto = rhs; to.cols = rhs.cols
   } else {
-    jnfm = rhs; fm.cols = rhs.cols
-    jnto = lhs; to.cols = lhs.cols
+    jnfm = rhs; fm.cols = rhs.cols; jnto = lhs; to.cols = lhs.cols
   }
-  allow.cartesian = TRUE
   nomatch = if (how=="inner") 0L else NA_integer_
+
   if (mult!="all" && (how=="inner" || how=="full")) { ## for inner|full join we apply mult on both tables, bmerge do only 'i' table
     if (mult=="first" || mult=="last") {
       jnfm = fdistinct(jnfm, on=on, mult=mult, cols=fm.cols, copy=FALSE) ## might not copy when already unique by 'on'
     } else if (mult=="error") {
       ## we do this branch only to raise error from bmerge, we cannot use forder to just find duplicates because those duplicates might not have matching rows in another table
       imatch(x=jnfm, i=jnto, on=on, nomatch=nomatch, mult=mult, verbose=verbose, allow.cartesian=allow.cartesian, void=TRUE)
-      ## TODO test we actually need this branch
     }
   }
 
@@ -236,17 +233,10 @@ mergepair = function(lhs, rhs, on, how, mult, lhs.cols, rhs.cols, copy, verbose)
     }
   } else { # how=="full"
     ## we made left join already, proceed to right join
-    jnfm = rhs; fm.cols = rhs.cols
-    jnto = lhs; to.cols = lhs.cols
-    if (mult!="all") {
-      if (mult=="first" || mult=="last") {
-        jnfm = fdistinct(jnfm, on=on, mult=mult, cols=fm.cols, copy=FALSE)
-      } else if (mult=="error") {
-        ## we do this branch only to raise error from bmerge, we cannot use forder to just find duplicates because those duplicates might not have matching rows in another table
-        imatch(x=jnfm, i=jnto, on=on, nomatch=nomatch, mult=mult, verbose=verbose, allow.cartesian=allow.cartesian, void=TRUE)
-        ## TODO test we actually need this branch
-      }
-    }
+    jnfm = rhs; fm.cols = rhs.cols; jnto = lhs; to.cols = lhs.cols
+    if (mult=="first" || mult=="last")
+      jnfm = fdistinct(jnfm, on=on, mult=mult, cols=fm.cols, copy=FALSE)
+    ## mult=="error" check not needed anymore, both sides has been already checked
 
     bns = imatch(x=jnto, i=jnfm, on=on, nomatch=0L, mult=mult, verbose=verbose, allow.cartesian=allow.cartesian, notjoin=TRUE)
 
@@ -280,6 +270,7 @@ mergepair = function(lhs, rhs, on, how, mult, lhs.cols, rhs.cols, copy, verbose)
 # copy=NA
 mergelist = function(l, on, cols, how=c("inner","left","right","full"), mult=c("all","first","last","error"), copy=TRUE) {
   verbose = getOption("datatable.verbose")
+  allow.cartesian = TRUE
   if (verbose) p = proc.time()[[3L]]
   if (!is.list(l) || is.data.frame(l))
     stop("'l' must be a list")
@@ -337,7 +328,8 @@ mergelist = function(l, on, cols, how=c("inner","left","right","full"), mult=c("
       lhs = out, rhs = l[[rhs.i]],
       on = on, how = how, mult = mult,
       #on = on[[join.i]], how = how[[join.i]], mult = mult[[join.i]], ## vectorized params TODO
-      lhs.cols = out.cols, rhs.cols = cols[[rhs.i]], copy = FALSE, verbose = verbose
+      lhs.cols = out.cols, rhs.cols = cols[[rhs.i]], copy = FALSE,
+      allow.cartesian = allow.cartesian, verbose = verbose
     )
     out.cols = copy(names(out))
   }
