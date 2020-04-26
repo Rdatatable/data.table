@@ -1,7 +1,7 @@
 #include "data.table.h"
 
 SEXP cbindlist(SEXP x, SEXP copyArg) {
-  if (!isNewList(x))
+  if (!isNewList(x) || INHERITS(x, char_dataframe))
     error("'x' must be a list");
   if (!IS_TRUE_OR_FALSE(copyArg))
     error("'copy' must be TRUE or FALSE");
