@@ -246,6 +246,15 @@ data = function(case) {
   } else if (case == 18L) {
     lhs = data.table(id = sample(1e2L, 1e2L, TRUE), v1=1:1e2)
     rhs = data.table(id = sample(10L, 20L, TRUE), v2=1:1e2)
+  } else if (case==19L) {
+    lhs = as.data.table(list(id=sample(1e3), v1=1:1e3))
+    rhs = as.data.table(list(id=sample(1e3), v2=1:1e3))
+  } else if (case==20L) {
+    lhs = as.data.table(list(id=sample(1e3*2L, 1e3), v1=1:1e3))
+    rhs = as.data.table(list(id=sample(1e3*2L, 1e3), v2=1:1e3))
+  } else if (case==21L) {
+    lhs = as.data.table(list(id=sample(1e3, 1e3*2L, TRUE), v1=1:1e3))
+    rhs = as.data.table(list(id=sample(1e3, 1e3*2L, TRUE), v2=1:1e3))
   } else stop("case not found")
   list(lhs=lhs, rhs=rhs)
 }
@@ -455,7 +464,7 @@ cat("design tests passed\n")
 # tests ----
 
 if (!interactive()) {
-  y = batch.join.sql.equal(cases=c(1:18), on="id", hows=c("inner","left","right","full"), mults=c("all","first","last"))
+  y = batch.join.sql.equal(cases=1:21, on="id", hows=c("inner","left","right","full"), mults=c("all","first","last"))
   y = rapply(y, isTRUE)
   if (!all(y))
     stop(sprintf("join tests failed for %s cases:\n%s", sum(!y), paste("  ", names(y)[!y], collapse="\n")))
