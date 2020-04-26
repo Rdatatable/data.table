@@ -59,7 +59,7 @@ fdistinct = function(x, on=key(x), mult=c("first","last"), cols=seq_along(x), co
 }
 
 # extra layer between mergepair and bmerge
-imatch = function(x, i, on, nomatch, mult, verbose, allow.cartesian=FALSE) {
+imatch = function(x, i, on, nomatch, mult, verbose, allow.cartesian) {
   icols = colnamesInt(i, on, check_dups=TRUE)
   xcols = colnamesInt(x, on, check_dups=TRUE)
   ans = bmerge(i, x, icols, xcols, roll = 0, rollends = c(FALSE, TRUE), nomatch = nomatch, mult = mult, ops=1L, verbose=verbose)
@@ -109,6 +109,7 @@ imatch = function(x, i, on, nomatch, mult, verbose, allow.cartesian=FALSE) {
   ans
 }
 
+# atomic join between two tables
 mergepair = function(lhs, rhs, on, how, mult, lhs.cols, rhs.cols, copy, verbose) {
   if (is.null(on)) {
     if (how=="left") on = key(rhs)

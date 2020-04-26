@@ -31,7 +31,9 @@
 \note{
   Using \code{how="right"} is sub-efficient. Whenever possible, it is better to swap elements of \code{l} and use \code{how="left"} instead.
 
-  Using \code{how="inner"} or \code{mult="full"} together with \code{mult!="all"} is sub-efficient. Unlike during join in \code{[.data.table}, it will apply \code{mult} on both tables. It is to ensure that join in symmetric, so \emph{LHS} and \emph{RHS} tables can be swapped regardless of \code{mult} argument. Note that it is always possible to apply \code{mult}-like filtering manually and join using \code{mult="all}, or outer join and apply filter afterwards.
+  Using \code{how="inner"} or \code{mult="full"} together with \code{mult!="all"} is sub-efficient. Unlike during join in \code{[.data.table}, it will apply \code{mult} on both tables. It is to ensure that join in symmetric, so \emph{LHS} and \emph{RHS} tables can be swapped, regardless of \code{mult} argument. It is always possible to apply \code{mult}-like filter manually and join using \code{mult="all}.
+
+  It is possible to use \code{mult="error"} to raise exception when multiple rows in \emph{join-to} table match to the row in \emph{join-from} table. It should not be used to just detect duplicates, as duplicates might not have matching row, and in such case exception will not be raised.
 }
 \value{
   A new \code{data.table} based on the merged objects. Eventually when \code{copy} is \code{FALSE}, then resulting object will share columns with \code{l[[1L]]} table. When \code{copy} is \code{NA}, then resulting object might additionally share columns with remaining tables of \code{l}. }
