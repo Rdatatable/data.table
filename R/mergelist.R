@@ -25,16 +25,15 @@ hasindex = function(x, by, retGrp=FALSE) {
   return(!is.null(attr(idx, "starts", TRUE)))
 }
 
-# multer applies mult='first|last'
+# fdistinct applies mult='first|last'
 # for mult='first' it is unique(x, by=on)[, cols, with=FALSE]
 # it may not copy when copy=FALSE and x is unique by 'on'
-multer = function(x, on, mult, cols=seq_along(x), copy=TRUE) {
+fdistinct = function(x, on=key(x), mult=c("first","last"), cols=seq_along(x), copy=TRUE) {
   if (!perhaps.data.table(x))
     stop("'x' must be data.table type object")
   if (!is.character(on) || !length(on) || anyNA(on) || any(!on%chin%names(x)))
     stop("'on' must be character column names of 'x' argument")
-  if (!is.character(mult) || length(mult)!=1L || is.na(mult) || !(mult=="first" || mult=="last"))
-    stop("'mult' must be 'first' or 'last'")
+  mult = match.arg(mult)
   if (is.null(cols))
     cols = seq_along(x)
   else if (!(is.character(cols) || is.integer(cols)) || !length(cols) || anyNA(cols))
@@ -137,7 +136,7 @@ mergelist = function(l, on, cols, how=c("inner","left","right","full"), mult=c("
   n = length(l)
   if (n<2L) {
     if (isTRUE(copy)) l = copy(l)
-    if (verbose) cat(sprintf("mergelist: took %.3fs\n", proc.time()[[3L]]-p))
+    if (verbose) cat(sprintf("mergelist: took %.3fs\n", n, proc.time()[[3L]]-p))
     return(l)
   }
   if (missing(on) || is.null(on)) {
@@ -185,9 +184,9 @@ mergelist = function(l, on, cols, how=c("inner","left","right","full"), mult=c("
   }
   allow.cartesian = TRUE
   nomatch = if (how=="inner") 0L else NA_integer_
-  if (how=="inner" && mult!="all") { ## for inner join we apply mult on both tables, bmerge do only 'i' table
+  if (mult!="all" && (how=="inner" || how=="full")) { ## for inner|full join we apply mult on both tables, bmerge do only 'i' table
     if (mult=="first" || mult=="last") {
-      jnfm = multer(jnfm, on=on, mult=mult, cols=fm.cols, copy=FALSE) ## might not copy when unique by 'on'
+      jnfm = fdistinct(jnfm, on=on, mult=mult, cols=fm.cols, copy=FALSE) ## might not copy when already unique by 'on'
     } else if (mult=="error") {
       ## we do this branch only to raise error from bmerge, we cannot use forder to just find duplicates because those duplicates might not have matching rows in another table
       imatch(x = jnfm, i = jnto, on = on, nomatch = nomatch, mult = mult, verbose = verbose, allow.cartesian = allow.cartesian)
@@ -242,6 +241,15 @@ mergelist = function(l, on, cols, how=c("inner","left","right","full"), mult=c("
     ## we made left join already, proceed to right join
     jnfm = rhs; fm.cols = rhs.cols
     jnto = lhs; to.cols = lhs.cols
+    if (mult!="all") {
+      if (mult=="first" || mult=="last") {
+        jnfm = fdistinct(jnfm, on=on, mult=mult, cols=fm.cols, copy=FALSE)
+      } else if (mult=="error") {
+        ## we do this branch only to raise error from bmerge, we cannot use forder to just find duplicates because those duplicates might not have matching rows in another table
+        imatch(x = jnfm, i = jnto, on = on, nomatch = nomatch, mult = mult, verbose = verbose, allow.cartesian = allow.cartesian)
+        ## TODO test we actually need this branch
+      }
+    }
     bns = imatch(x = jnto, i = jnfm, on = on,
                  nomatch = 0L, ## notjoin
                  mult = mult, verbose = verbose,
@@ -260,10 +268,10 @@ mergelist = function(l, on, cols, how=c("inner","left","right","full"), mult=c("
       out = cbindlist(list(out_i, out_x), copy=FALSE)
       cpr = TRUE ## we havn't even materialize right side here
     } else {
-      if (length(ni)==nrow(rhs)) { ## short circuit, do not copy via CsubsetDT
-        out_r = .shallow(rhs, cols=someCols(rhs, rhs.cols, keep=on), retain.key=FALSE, unlock=FALSE)
+      if (length(ni)==nrow(jnfm)) { ## short circuit, do not copy via CsubsetDT
+        out_r = .shallow(jnfm, cols=someCols(jnfm, fm.cols, keep=on), retain.key=FALSE, unlock=FALSE)
       } else {
-        out_r = .Call(CsubsetDT, rhs, ni, someCols(rhs, rhs.cols, keep=on))
+        out_r = .Call(CsubsetDT, jnfm, ni, someCols(jnfm, fm.cols, keep=on))
         cpr = TRUE
       }
       out_l = cbindlist(list(out_i, out_x), copy=FALSE)
@@ -271,7 +279,7 @@ mergelist = function(l, on, cols, how=c("inner","left","right","full"), mult=c("
       cpi = cpx = cpr = TRUE ## all are being copied in rbindlist
     }
   }
-  if (verbose) cat(sprintf("mergelist: took %.3fs\n", proc.time()[[3L]]-p))
+  if (verbose) cat(sprintf("mergelist: merging %d tables, took %.3fs\n", proc.time()[[3L]]-p))
   out
 }
 
