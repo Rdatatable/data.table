@@ -99,20 +99,23 @@ join.sql.equal = function(l, on, how="inner", mult="all", allow.cartesian=TRUE, 
   s = paste0(s,";\n")
   # run data.table and SQLite
   dt = mergelist(list(lhs[,!"row_id"], rhs[,!"row_id"]), on=on, how=how, mult=mult)
+  sq = try(silent=TRUE, as.data.table(DBI::dbGetQuery(conn, s)))
+  if (inherits(sq, "try-error")) {
+    if (.debug) {message("error during sql statement"); browser()}
+    stop("error during sql statement")
+  }
+  if (!is.data.table(dt) || !is.data.table(sq)) {
+    if (.debug) {message("dt and sq must be data.table already"); browser()}
+    stop("dt and sq must be data.table already")
+  }
   if (how %in% c("inner","full")) {
     dt2 = mergelist(list(rhs[,!"row_id"], lhs[,!"row_id"]), on=on, how=how, mult=mult)
     r = all.equal(dt, dt2, ignore.row.order=TRUE, ignore.col.order=TRUE)
     ## check it is symetric
     if (!isTRUE(r)) {
-      message("symmetric test failed!!")
-      if (.debug) browser()
+      if (.debug) {message("mergelist is not symmetric for ", how); browser()}
       stop("mergelist is not symmetric for ", how)
     }
-  }
-  sq = try(silent=TRUE, as.data.table(DBI::dbGetQuery(conn, s)))
-  if (inherits(sq, "try-error")) {
-    if (.debug) browser()
-    stop("error during sql statement")
   }
   # compare results
   a = all.equal.data.table(dt, sq, ignore.row.order=TRUE)
@@ -185,6 +188,7 @@ batch.join.sql.equal = function(cases, on, hows=c("inner","left","right","full")
   ans
 }
 data = function(case) {
+  set.seed(108)
   if (case == 1L) {         # 2 match
     lhs = data.table(id = c(1L,5L,3L,7L), v1=1:4)
     rhs = data.table(id = c(2L,4L,3L,5L), v2=1:4)
@@ -233,6 +237,15 @@ data = function(case) {
     # does not raise error on mult="error" because dups '13' does not have matching rows!
     lhs = data.table(id = as.integer(c(17,14,11,10,5,1,19,7,16,15)), v1=1:10)
     rhs = data.table(id = as.integer(c(6,20,13,1,8,13,3,10,17,9)), v2=1:10)
+  }  else if (case == 16L) {
+    lhs = data.table(id = sample(10L, 10L, TRUE), v1=1:10)
+    rhs = data.table(id = sample(10L, 10L, TRUE), v2=1:10)
+  } else if (case == 17L) {
+    lhs = data.table(id = sample(1e2L, 1e2L, TRUE), v1=1:1e2)
+    rhs = data.table(id = sample(1e2L, 1e2L, TRUE), v2=1:1e2)
+  } else if (case == 18L) {
+    lhs = data.table(id = sample(1e2L, 1e2L, TRUE), v1=1:1e2)
+    rhs = data.table(id = sample(10L, 20L, TRUE), v2=1:1e2)
   } else stop("case not found")
   list(lhs=lhs, rhs=rhs)
 }
@@ -410,12 +423,39 @@ stopifnot( ## full + mult
   join.sql.equal(l, on="id1", how="full",  mult="error", ans=data.table(id1=1:2, v1=1:2, v2=1:2), err=FALSE)
 )
 
+## cross join duplicates
+l = list(lhs = data.table(id1=c(1L,1L), v1=1:2), rhs = data.table(id1=c(1L,1L), v2=1:2))
+stopifnot( ## inner + mult
+  join.sql.equal(l, on="id1", how="inner", mult="all",   ans=data.table(id1=c(1L,1L,1L,1L), v1=c(1L,1:2,2L), v2=c(1:2,1:2))),
+  join.sql.equal(l, on="id1", how="inner", mult="first", ans=data.table(id1=1L, v1=1L, v2=1L)),
+  join.sql.equal(l, on="id1", how="inner", mult="last",  ans=data.table(id1=1L, v1=2L, v2=2L)),
+  join.sql.equal(l, on="id1", how="inner", mult="error", err=TRUE)
+)
+stopifnot( ## left + mult
+  join.sql.equal(l, on="id1", how="left",  mult="all",   ans=data.table(id1=c(1L,1L,1L,1L), v1=c(1L,1:2,2L), v2=c(1:2,1:2))),
+  join.sql.equal(l, on="id1", how="left",  mult="first", ans=data.table(id1=c(1L,1L), v1=1:2, v2=c(1L,1L))),
+  join.sql.equal(l, on="id1", how="left",  mult="last",  ans=data.table(id1=c(1L,1L), v1=1:2, v2=c(2L,2L))),
+  join.sql.equal(l, on="id1", how="left",  mult="error", err=TRUE)
+)
+stopifnot( ## right + mult
+  join.sql.equal(l, on="id1", how="right", mult="all",   ans=data.table(id1=c(1L,1L,1L,1L), v1=c(1L,1:2,2L), v2=c(1:2,1:2))),
+  join.sql.equal(l, on="id1", how="right", mult="first", ans=data.table(id1=c(1L,1L), v1=c(1L,1L), v2=1:2)),
+  join.sql.equal(l, on="id1", how="right", mult="last",  ans=data.table(id1=c(1L,1L), v1=c(2L,2L), v2=1:2)),
+  join.sql.equal(l, on="id1", how="right", mult="error", err=TRUE)
+)
+stopifnot( ## full + mult
+  join.sql.equal(l, on="id1", how="full",  mult="all",   ans=data.table(id1=c(1L,1L,1L,1L), v1=c(1L,1:2,2L), v2=c(1:2,1:2))),
+  join.sql.equal(l, on="id1", how="full",  mult="first", ans=data.table(id1=1L, v1=1L, v2=1L)),
+  join.sql.equal(l, on="id1", how="full",  mult="last",  ans=data.table(id1=1L, v1=2L, v2=2L)),
+  join.sql.equal(l, on="id1", how="full",  mult="error", err=TRUE)
+)
+
 cat("design tests passed\n")
 
 # tests ----
 
 if (!interactive()) {
-  y = batch.join.sql.equal(cases=c(1:15), on="id", hows=c("inner","left","right","full"), mults=c("all","first","last"))
+  y = batch.join.sql.equal(cases=c(1:18), on="id", hows=c("inner","left","right","full"), mults=c("all","first","last"))
   y = rapply(y, isTRUE)
   if (!all(y))
     stop(sprintf("join tests failed for %s cases:\n%s", sum(!y), paste("  ", names(y)[!y], collapse="\n")))
