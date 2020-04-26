@@ -40,7 +40,8 @@ fdistinct = function(x, on=key(x), mult=c("first","last"), cols=seq_along(x), co
     stop("'cols' must be non-zero length, non-NA, integer or character columns of 'x' argument")
   if (!is.logical(copy) || length(copy)!=1L || is.na(copy))
     stop("'copy' must be TRUE or FALSE")
-  ## do no compute sort=F for mult="first" if index (sort=T) already available, sort=T is needed for mult="last", this short circuit will work after #4386 because it requires retGrp=T
+  ## do not compute sort=F for mult="first" if index (sort=T) already available, sort=T is needed only for mult="last"
+  ## this short circuit will work after #4386 because it requires retGrp=T
   sort = hasindex(x, by=on, retGrp=TRUE) || mult!="first"
   o = forderv(x, by=on, sort=sort, retGrp=TRUE)
   if (attr(o, "maxgrpn", TRUE) <= 1L) {
@@ -58,11 +59,19 @@ fdistinct = function(x, on=key(x), mult=c("first","last"), cols=seq_along(x), co
   .Call(CsubsetDT, x, f, someCols(x, cols, keep=on))
 }
 
-# extra layer between mergepair and bmerge
-imatch = function(x, i, on, nomatch, mult, verbose, allow.cartesian) {
+# extra layer over bmerge to provide ready to use flags and row index
+# could be re-used in [.data.table to simplify merges there
+imatch = function(x, i, on, nomatch, mult, verbose, allow.cartesian, notjoin=FALSE, void=FALSE) {
+  inner = identical(nomatch, 0L)
+  if (void && mult!="error")
+    stop("internal error: void must be used with mult='error'") # nocov
+  if (notjoin && !inner)
+    stop("internal error: not join must be used with nomatch=0L") # nocov
   icols = colnamesInt(i, on, check_dups=TRUE)
   xcols = colnamesInt(x, on, check_dups=TRUE)
-  ans = bmerge(i, x, icols, xcols, roll = 0, rollends = c(FALSE, TRUE), nomatch = nomatch, mult = mult, ops=1L, verbose=verbose)
+  ans = bmerge(i, x, icols, xcols, roll=0, rollends=c(FALSE, TRUE), nomatch=nomatch, mult=mult, ops=1L, verbose=verbose)
+  if (void) ## void=T is only for the case when we want raise error for mult='error', and that would happen in above line
+    return(invisible(NULL))
   # nocov start ## this is going to be removed because it is expensive
   if (!identical(ans$indices, integer()))
     stop("internal error: bmerge()$indices should be integer()")
@@ -106,7 +115,65 @@ imatch = function(x, i, on, nomatch, mult, verbose, allow.cartesian) {
   if (length(xo) && length(irows))
     irows = xo[irows]
   ans$irows = irows
-  ans
+
+  ## new object to return, irows will be now xrows because we use it to subset x
+  irows = xrows = NULL ## NULL means 1:nrow
+  hasSub = hasMult = NA
+  if (notjoin) {
+    #hasMult = FALSE ## is it valid? we probably assume fdistinct on input here
+    ni = which(ans$starts==0L) ## can be integer(), then means 0-rows subset
+    hasSub = length(ni)!=nrow(i)
+    if (hasSub) {
+      if (length(ni)>nrow(i)) stop("internal error: not join but index to subset i is longer than nrow(i)") # nocov
+      irows = ni
+    }
+  } else if (inner) {
+    hasMult = mult=="all" && !ans$allLen1
+    hasSub = length(ans$irows)!=nrow(i) ## this holds because of above allLen1 branch: f__[as.logical(len__)]
+  } else {
+    #if (mult!="all") hasMult = FALSE ## no?
+    hasMult = mult=="all" && !ans$allLen1
+    if (!hasMult && uniqueN( ## DEV
+      x[on=on, unique(i,by=on)],
+      by=on)!=nrow(x[on=on, unique(i,by=on)])) {
+      #message("hasMult is false but there were mult matches!!")
+      #browser()
+      #stop("hasMult is false but there were mult matches!!")
+      hasMult = TRUE
+    }
+    hasSub = hasMult
+  }
+  if (!notjoin) {
+    if (hasMult || hasSub) {
+      #if (!inner && mult!="all") browser() #stop("internal error: is.na(nomatch) && mult!='all' but multiple matches returned") # nocov
+      irows = seqexp(ans$lens)
+      xrows = ans$irows
+    } else {
+      xrows = ans$irows
+    }
+    ## validation
+    len.i = if (is.null(irows)) nrow(i) else length(irows)
+    len.x = if (is.null(xrows)) nrow(x) else length(xrows)
+    if (len.i!=len.x) {
+      message("imatch out len.i != len.x")
+      browser()
+      stop("imatch out len.i != len.x")
+    }
+  }
+  #(!length(ans$xo) && (
+  #  (inner && length(ans$irows)==nrow(x)) ||
+  #    (!inner &&
+  #       !anyNA(ans$irows) && ## no matches
+  #       !anyDuplicated(ans$starts, incomparables = c(0L, NA_integer_)))
+  #)) ## multiple matches on non-mult side
+  return(list(
+    ans = ans, ## old bmerge data, we will not use it in mergelist
+    notjoin = notjoin,
+    inner = inner,
+    hasMult = hasMult,
+    irows = irows,
+    xrows = xrows
+  ))
 }
 
 # atomic join between two tables
@@ -132,53 +199,40 @@ mergepair = function(lhs, rhs, on, how, mult, lhs.cols, rhs.cols, copy, verbose)
       jnfm = fdistinct(jnfm, on=on, mult=mult, cols=fm.cols, copy=FALSE) ## might not copy when already unique by 'on'
     } else if (mult=="error") {
       ## we do this branch only to raise error from bmerge, we cannot use forder to just find duplicates because those duplicates might not have matching rows in another table
-      imatch(x = jnfm, i = jnto, on = on, nomatch = nomatch, mult = mult, verbose = verbose, allow.cartesian = allow.cartesian)
+      imatch(x=jnfm, i=jnto, on=on, nomatch=nomatch, mult=mult, verbose=verbose, allow.cartesian=allow.cartesian, void=TRUE)
       ## TODO test we actually need this branch
     }
   }
-  ans = imatch(x = jnto, i = jnfm, on = on,
-               nomatch = nomatch,
-               mult = mult, verbose = verbose,
-               allow.cartesian = allow.cartesian)
 
-  if (ans$allLen1 && (how!="inner" || (
-    how=="inner" && length(ans$irows)==nrow(jnfm)
-    ))) { ## no duplicate matches
-    out_i = .shallow(jnfm, cols=fm.cols, retain.key=TRUE, unlock=TRUE)
-    cpi = FALSE ## short circuit, do not copy via CsubsetDT
-  } else { ## multiple matches, so mult=="all"
-    if (how!="inner" && mult!="all") stop("internal error: how!='inner'' && mult!='all' but multiple matches returned") # nocov
-    out_i = .Call(CsubsetDT, jnfm, seqexp(ans$lens), someCols(jnfm, fm.cols, keep=on))
-    cpi = TRUE
-  }
-  if (!cpi && (how=="inner" || ( ## we still need to copy because we dont want copiness to be depends on the data, and how='inner' has to copy always
-    copy && how!="full" ## how='full' will copy later on in rbindlist
-  ))) {
-    out_i = copy(out_i)
-    cpi = TRUE
-  }
+  ## binary merge
+  ans = imatch(x=jnto, i=jnfm, on=on, nomatch=nomatch, mult=mult, verbose=verbose, allow.cartesian=allow.cartesian)
 
-  ## TODO: short circuit on x, !copy for how=left, useful only when `on` values are exactly the same in x and i, so cbindlist would be enough rather than mergelist
-  if (!length(ans$xo) && FALSE) { ## condition `!length(ans$xo)` is not enough
-    out_x = .shallow(jnto, cols=someCols(jnto, to.cols, drop=on), retain.key=TRUE, unlock=TRUE)
-    cpx = FALSE
-  } else {
-    out_x = .Call(CsubsetDT, jnto, ans$irows, someCols(jnto, to.cols, drop=on))
-    cpx = TRUE
-  }
-  if (!cpi && (how=="inner" || ( ## we still need to copy because we dont want copiness to be depends on the data, and how='inner' has to copy always
-    copy && how!="full" ## how='full' will copy later on in rbindlist
-  ))) {
-    out_x = copy(out_x)
-    cpx = TRUE
-  }
-  ## TODO: add copy=NA, for how=left only, when we want enforce copy of RHS (x) always, but keep LHS (i) not copied
+  ## i side
+  cp.i = !is.null(ans$irows)
+  out.i = if (!cp.i)
+    .shallow(jnfm, cols=someCols(jnfm, fm.cols, keep=on), retain.key=TRUE)
+  else
+    .Call(CsubsetDT, jnfm, ans$irows, someCols(jnfm, fm.cols, keep=on))
 
-  if (how!="full") { ## not for 'full' because we need to ensure it is copied, there are 2 levels of short circuit and we need to copy only once, so we handle out (out_l) in how=full branch
+  ## x side
+  cp.x = !is.null(ans$xrows)
+  out.x = if (!cp.x)
+    .shallow(jnto, cols=someCols(jnto, to.cols, drop=on))
+  else
+    .Call(CsubsetDT, jnto, ans$xrows, someCols(jnto, to.cols, drop=on))
+
+  if (how!="full") {
+    ## ensure copy ## TODO: copy=NA
+    if (!cp.i && isTRUE(copy))
+      out.i = copy(out.i)
+    if (!cp.x && isTRUE(copy))
+      out.x = copy(out.x)
+
+    ## stack i and x
     if (how=="right") {
-      out = cbindlist(list(.shallow(out_i, cols=on), out_x, .shallow(out_i, cols=someCols(jnfm, fm.cols, drop=on))), copy=FALSE) ## arrange columns: i.on, x.cols, i.cols
+      out = cbindlist(list(.shallow(out.i, cols=on), out.x, .shallow(out.i, cols=someCols(jnfm, fm.cols, drop=on))), copy=FALSE) ## arrange columns: i.on, x.cols, i.cols
     } else {
-      out = cbindlist(list(out_i, out_x), copy=FALSE)
+      out = cbindlist(list(out.i, out.x), copy=FALSE)
     }
   } else { # how=="full"
     ## we made left join already, proceed to right join
@@ -189,37 +243,30 @@ mergepair = function(lhs, rhs, on, how, mult, lhs.cols, rhs.cols, copy, verbose)
         jnfm = fdistinct(jnfm, on=on, mult=mult, cols=fm.cols, copy=FALSE)
       } else if (mult=="error") {
         ## we do this branch only to raise error from bmerge, we cannot use forder to just find duplicates because those duplicates might not have matching rows in another table
-        imatch(x = jnfm, i = jnto, on = on, nomatch = nomatch, mult = mult, verbose = verbose, allow.cartesian = allow.cartesian)
+        imatch(x=jnfm, i=jnto, on=on, nomatch=nomatch, mult=mult, verbose=verbose, allow.cartesian=allow.cartesian, void=TRUE)
         ## TODO test we actually need this branch
       }
     }
-    bns = imatch(x = jnto, i = jnfm, on = on,
-                 nomatch = 0L, ## notjoin
-                 mult = mult, verbose = verbose,
-                 allow.cartesian = allow.cartesian)
-    ni = which(bns$starts==0L) ## not join
-    cpr = FALSE # copied r flag
-    if (!length(ni)) { ## short circuit to avoid rbindlist to empty sets
-      if (!cpi) {
-        out_i = copy(out_i)
-        cpi = TRUE
-      }
-      if (!cpx) {
-        out_x = copy(out_x)
-        cpx = TRUE
-      }
-      out = cbindlist(list(out_i, out_x), copy=FALSE)
-      cpr = TRUE ## we havn't even materialize right side here
-    } else {
-      if (length(ni)==nrow(jnfm)) { ## short circuit, do not copy via CsubsetDT
-        out_r = .shallow(jnfm, cols=someCols(jnfm, fm.cols, keep=on), retain.key=FALSE, unlock=FALSE)
-      } else {
-        out_r = .Call(CsubsetDT, jnfm, ni, someCols(jnfm, fm.cols, keep=on))
-        cpr = TRUE
-      }
-      out_l = cbindlist(list(out_i, out_x), copy=FALSE)
-      out = rbindlist(list(out_l, out_r), use.names=TRUE, fill=TRUE)
-      cpi = cpx = cpr = TRUE ## all are being copied in rbindlist
+
+    bns = imatch(x=jnto, i=jnfm, on=on, nomatch=0L, mult=mult, verbose=verbose, allow.cartesian=allow.cartesian, notjoin=TRUE)
+
+    ## right join
+    cp.r = !is.null(bns$irows)
+    out.r = if (!cp.r)
+      .shallow(jnfm, cols=someCols(jnfm, fm.cols, keep=on))
+    else
+      .Call(CsubsetDT, jnfm, bns$irows, someCols(jnfm, fm.cols, keep=on))
+
+    if (!nrow(out.r)) { ## short circuit to avoid rbindlist to empty sets
+      ## ensure copy ## TODO: copy=NA
+      if (!cp.i && isTRUE(copy))
+        out.i = copy(out.i)
+      if (!cp.x && isTRUE(copy))
+        out.x = copy(out.x)
+      out = cbindlist(list(out.i, out.x), copy=FALSE)
+    } else { ## all might still not be copied, rbindlist will do
+      out.l = cbindlist(list(out.i, out.x), copy=FALSE)
+      out = rbindlist(list(out.l, out.r), use.names=TRUE, fill=TRUE)
     }
   }
   out
@@ -284,10 +331,13 @@ mergelist = function(l, on, cols, how=c("inner","left","right","full"), mult=c("
   l.mem = lapply(l, vapply, address, "")
   out = l[[1L]]
   out.cols = cols[[1L]]
-  for (jnto.i in seq_len(n)[-1L]) {
+  for (join.i in seq_len(n-1L)) {
+    rhs.i = join.i + 1L
     out = mergepair(
-      lhs = out, rhs = l[[jnto.i]], on = on, how = how, mult = mult,
-      lhs.cols = out.cols, rhs.cols = cols[[jnto.i]], copy = FALSE, verbose = verbose
+      lhs = out, rhs = l[[rhs.i]],
+      on = on, how = how, mult = mult,
+      #on = on[[join.i]], how = how[[join.i]], mult = mult[[join.i]], ## vectorized params TODO
+      lhs.cols = out.cols, rhs.cols = cols[[rhs.i]], copy = FALSE, verbose = verbose
     )
     out.cols = copy(names(out))
   }
