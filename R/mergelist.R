@@ -117,8 +117,8 @@ imatch = function(x, i, on, nomatch, mult, verbose, allow.cartesian, notjoin=FAL
   ans$irows = irows
 
   ## new object to return, irows will be now xrows because we use it to subset x
-  irows = xrows = NULL ## NULL means 1:nrow
-  hasSub = hasMult = NA
+  irows = xrows = NULL   ## row locations to subset i and x tables, NULL means 1:nrow
+  hasSub = hasMult = NA  ## flag for subset and multiple matches
   if (notjoin) {
     #hasMult = FALSE ## is it valid? we probably assume fdistinct on input here
     ni = which(ans$starts==0L) ## can be integer(), then means 0-rows subset
@@ -127,23 +127,28 @@ imatch = function(x, i, on, nomatch, mult, verbose, allow.cartesian, notjoin=FAL
       if (length(ni)>nrow(i)) stop("internal error: not join but index to subset i is longer than nrow(i)") # nocov
       irows = ni
     }
-  } else if (inner) {
-    hasMult = mult=="all" && !ans$allLen1
-    hasSub = length(ans$irows)!=nrow(i) ## this holds because of above allLen1 branch: f__[as.logical(len__)]
-  } else {
-    #if (mult!="all") hasMult = FALSE ## no?
-    hasMult = mult=="all" && !ans$allLen1
-    if (!hasMult && uniqueN( ## DEV
-      x[on=on, unique(i,by=on)],
-      by=on)!=nrow(x[on=on, unique(i,by=on)])) {
-      #message("hasMult is false but there were mult matches!!")
-      #browser()
-      #stop("hasMult is false but there were mult matches!!")
-      hasMult = TRUE
+  } else { ## inner or outer
+    #(!length(ans$xo) && (
+    #  (inner && length(ans$irows)==nrow(x)) ||
+    #    (!inner &&
+    #       !anyNA(ans$irows) && ## no matches
+    #       !anyDuplicated(ans$starts, incomparables = c(0L, NA_integer_)))
+    #)) ## multiple matches on non-mult side
+    if (inner) {
+      hasMult = mult=="all" && !ans$allLen1
+      hasSub = length(ans$irows)!=nrow(i) ## this holds because of above allLen1 branch: f__[as.logical(len__)]
+    } else {
+      #if (mult!="all") hasMult = FALSE ## no?
+      hasMult = mult=="all" && !ans$allLen1
+      if (!hasMult && uniqueN( ## DEV
+        x[on=on, unique(i,by=on)],
+        by=on)!=nrow(x[on=on, unique(i,by=on)])) {
+        #if (interactive()) {#message("hasMult is false but there were mult matches!!"); browser()}
+        #stop("hasMult is false but there were mult matches!!")
+        hasMult = TRUE
+      }
+      hasSub = hasMult
     }
-    hasSub = hasMult
-  }
-  if (!notjoin) {
     if (hasMult || hasSub) {
       #if (!inner && mult!="all") browser() #stop("internal error: is.na(nomatch) && mult!='all' but multiple matches returned") # nocov
       irows = seqexp(ans$lens)
@@ -155,21 +160,17 @@ imatch = function(x, i, on, nomatch, mult, verbose, allow.cartesian, notjoin=FAL
     len.i = if (is.null(irows)) nrow(i) else length(irows)
     len.x = if (is.null(xrows)) nrow(x) else length(xrows)
     if (len.i!=len.x) {
-      message("imatch out len.i != len.x")
-      browser()
+      if (interactive()) {message("imatch out len.i != len.x"); browser()}
       stop("imatch out len.i != len.x")
     }
-  }
-  #(!length(ans$xo) && (
-  #  (inner && length(ans$irows)==nrow(x)) ||
-  #    (!inner &&
-  #       !anyNA(ans$irows) && ## no matches
-  #       !anyDuplicated(ans$starts, incomparables = c(0L, NA_integer_)))
-  #)) ## multiple matches on non-mult side
+  } ## end of 'inner or outer' branch
   return(list(
-    ans = ans, ## old bmerge data, we will not use it in mergelist
+    ## old bmerge data, we will not use it in mergelist
+    ans = ans,
+    ## this is known to caller
     notjoin = notjoin,
     inner = inner,
+    ## this is computed from bmerge
     hasMult = hasMult,
     irows = irows,
     xrows = xrows
@@ -204,14 +205,14 @@ mergepair = function(lhs, rhs, on, how, mult, lhs.cols, rhs.cols, copy, allow.ca
   ## binary merge
   ans = imatch(x=jnto, i=jnfm, on=on, nomatch=nomatch, mult=mult, verbose=verbose, allow.cartesian=allow.cartesian)
 
-  ## i side
+  ## make i side
   cp.i = !is.null(ans$irows)
   out.i = if (!cp.i)
     .shallow(jnfm, cols=someCols(jnfm, fm.cols, keep=on), retain.key=TRUE)
   else
     .Call(CsubsetDT, jnfm, ans$irows, someCols(jnfm, fm.cols, keep=on))
 
-  ## x side
+  ## make x side
   cp.x = !is.null(ans$xrows)
   out.x = if (!cp.x)
     .shallow(jnto, cols=someCols(jnto, to.cols, drop=on))
@@ -219,10 +220,9 @@ mergepair = function(lhs, rhs, on, how, mult, lhs.cols, rhs.cols, copy, allow.ca
     .Call(CsubsetDT, jnto, ans$xrows, someCols(jnto, to.cols, drop=on))
 
   if (how!="full") {
-    ## ensure copy ## TODO: copy=NA
     if (!cp.i && isTRUE(copy))
       out.i = copy(out.i)
-    if (!cp.x && isTRUE(copy))
+    if (!cp.x && !is.na(copy))
       out.x = copy(out.x)
 
     ## stack i and x
@@ -238,9 +238,10 @@ mergepair = function(lhs, rhs, on, how, mult, lhs.cols, rhs.cols, copy, allow.ca
       jnfm = fdistinct(jnfm, on=on, mult=mult, cols=fm.cols, copy=FALSE)
     ## mult=="error" check not needed anymore, both sides has been already checked
 
+    ## binary merge not join
     bns = imatch(x=jnto, i=jnfm, on=on, nomatch=0L, mult=mult, verbose=verbose, allow.cartesian=allow.cartesian, notjoin=TRUE)
 
-    ## right join
+    ## make not join side
     cp.r = !is.null(bns$irows)
     out.r = if (!cp.r)
       .shallow(jnfm, cols=someCols(jnfm, fm.cols, keep=on))
@@ -248,10 +249,9 @@ mergepair = function(lhs, rhs, on, how, mult, lhs.cols, rhs.cols, copy, allow.ca
       .Call(CsubsetDT, jnfm, bns$irows, someCols(jnfm, fm.cols, keep=on))
 
     if (!nrow(out.r)) { ## short circuit to avoid rbindlist to empty sets
-      ## ensure copy ## TODO: copy=NA
       if (!cp.i && isTRUE(copy))
         out.i = copy(out.i)
-      if (!cp.x && isTRUE(copy))
+      if (!cp.x && !is.na(copy))
         out.x = copy(out.x)
       out = cbindlist(list(out.i, out.x), copy=FALSE)
     } else { ## all might still not be copied, rbindlist will do
@@ -263,11 +263,10 @@ mergepair = function(lhs, rhs, on, how, mult, lhs.cols, rhs.cols, copy, allow.ca
 }
 
 # TODO:
-# review retain.key in .shallow
 # rework imatch: rm allow.cartesian?
 # missing on, key of join-to
 # vectorized length(l)-1L: on, how, mult
-# copy=NA
+# copy unit tests, mergelist and mergepair
 mergelist = function(l, on, cols, how=c("inner","left","right","full"), mult=c("all","first","last","error"), copy=TRUE) {
   verbose = getOption("datatable.verbose")
   allow.cartesian = TRUE
@@ -334,16 +333,12 @@ mergelist = function(l, on, cols, how=c("inner","left","right","full"), mult=c("
     out.cols = copy(names(out))
   }
   out.mem = vapply(out, address, "")
-  ## TODO
-  if (isTRUE(copy) && FALSE) {
-    if (any(out.mem %chin% unlist(l.mem, recursive=FALSE)))
-      stop("Some columns have not been copied")
-  } else if (FALSE) {
-    copied = out.mem[intersect(names(out.mem), names(l.mem[[1L]]))]
-    if (any(!copied %chin% l.mem[[1L]]))
-      stop("copy!=TRUE but not all columns from first list elements has been copied")
-    if (!is.na(copy) && any(out.mem %chin% unlist(l.mem[-1L], recursive=FALSE)))
-      stop("copy=FALSE but some of tables in list, excluding first one, has been copied")
+  if (!is.na(copy)) {
+    cp = names(out.mem)[out.mem %chin% unlist(if (copy) l.mem else l.mem[-1L], recursive=FALSE)]
+    if (length(cp)) {
+      if (verbose) cat(sprintf("mergelist: copy %d columns\n", length(cp)))
+      set(out, NULL, cp, copy(unclass(out)[cp]))
+    }
   }
   if (verbose) cat(sprintf("mergelist: merging %d tables, took %.3fs\n", proc.time()[[3L]]-p))
   out

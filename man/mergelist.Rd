@@ -15,10 +15,10 @@
   \item{cols}{ \code{list} of \code{character} vectors corresponding to tables in \code{l}. }
   \item{how}{ \code{character} ???scalar???, controls how to merge tables. Allowed values are \code{"inner"} (default), \code{"left"}, \code{"right"}, \code{"full"}. }
   \item{mult}{ \code{character} ???scalar???, controls how to proceed when multiple rows in \emph{join-to} table match to the row in \emph{join-from} table. Allowed values are \code{"all"} (default), \code{"first"}, \code{"last"}, \code{"error"}. }
-  \item{copy}{ \code{logical}, when \code{TRUE} (default) it will always copy \emph{LHS} and \emph{RHS} tables. When \code{copy} is \code{NA}, then \emph{LHS} is never copied, and \emph{RHS} is not copied whenever possible (join columns are identical). When \code{copy} is \code{FALSE}, then \emph{LHS} is never copied, and \emph{RHS} is always copied. Using \code{copy} other than \code{TRUE} requires \code{how=="left" && mult!="all"}. }
+  \item{copy}{ \code{logical}, behavior is described in \emph{Value} section below. Using \code{copy} other than \code{TRUE} (default) requires \code{how=="left" && mult!="all"}. }
 }
 \details{
-  Merging is performed sequentially, for \code{l} of 3 tables, it will behave like \code{merge(merge(l[[1L]], l[[2L]]), l[[3L]])}.
+  Merging is performed sequentially, for \code{l} of 3 tables, it will do something like \code{merge(merge(l[[1L]], l[[2L]]), l[[3L]])}.
 
   Terms \emph{join-to} and \emph{join-from} depends on \code{how} argument:
   \enumerate{
@@ -28,15 +28,15 @@
     \item{ \code{how="full"}: performs \emph{left} and \emph{right} joins and then binds results together, terms applies to both tables. }
   }
 }
+\value{
+  A new \code{data.table} based on the merged objects. Eventually when \code{copy} is \code{FALSE}, then resulting object will share columns with \code{l[[1L]]} table. When \code{copy} is \code{NA}, then resulting object might additionally share columns with remaining tables of \code{l}. }
+}
 \note{
   Using \code{how="right"} is sub-efficient. Whenever possible, it is better to swap elements of \code{l} and use \code{how="left"} instead.
 
   Using \code{how="inner"} or \code{mult="full"} together with \code{mult!="all"} is sub-efficient. Unlike during join in \code{[.data.table}, it will apply \code{mult} on both tables. It is to ensure that join in symmetric, so \emph{LHS} and \emph{RHS} tables can be swapped, regardless of \code{mult} argument. It is always possible to apply \code{mult}-like filter manually and join using \code{mult="all}.
 
   It is possible to use \code{mult="error"} to raise exception when multiple rows in \emph{join-to} table match to the row in \emph{join-from} table. It should not be used to just detect duplicates, as duplicates might not have matching row, and in such case exception will not be raised.
-}
-\value{
-  A new \code{data.table} based on the merged objects. Eventually when \code{copy} is \code{FALSE}, then resulting object will share columns with \code{l[[1L]]} table. When \code{copy} is \code{NA}, then resulting object might additionally share columns with remaining tables of \code{l}. }
 }
 \seealso{
   \code{\link{[.data.table}}, \code{\link{merge.data.table}}
