@@ -10,21 +10,23 @@ SEXP cbindlist(SEXP x, SEXP copyArg) {
   double tic = 0;
   if (verbose)
     tic = omp_get_wtime();
-  int nx = length(x), nans = 0, nr, *nnx = (int*)R_alloc(nx, sizeof(int));
+  int nx = length(x), nans = 0, nr = -1, *nnx = (int*)R_alloc(nx, sizeof(int));
   bool recycle = false;
   for (int i=0; i<nx; ++i) {
     SEXP thisx = VECTOR_ELT(x, i);
     if (!perhapsDataTable(thisx))
       error("The %d element of 'x' list is not a data.table type", i+1);
+    nnx[i] = NCOL(thisx);
+    if (!nnx[i])
+      continue;
     int thisnr = NROW(thisx);
-    if (!i)
+    if (nr < 0) // first (non-zero length table) iteration
       nr = thisnr;
     else if (nr != thisnr) {
       if (!copy)
-        error("For copy=FALSE all tables in 'x' has to have equal nrow, element %d has different nrow than the previous element", i+1);
+        error("For copy=FALSE all non-zero length tables in 'l' has to have equal nrow, element %d has different nrow (%d) than the previous non-zero length element nrow (%d)", i+1, thisnr, nr);
       recycle = true;
     }
-    nnx[i] = NCOL(thisx);
     nans += nnx[i];
   }
   if (recycle)

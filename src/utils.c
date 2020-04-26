@@ -424,9 +424,9 @@ static inline bool equalLens(SEXP x) {
   return true;
 }
 
-// is.list(x) && equalLens(x) && !is.null(names(x))
+// is.list(x) && equalLens(x) && (!length(x) || !is.null(names(x)))
 bool isDataList(SEXP x) {
-  return isNewList(x) && equalLens(x) && !isNull(getAttrib(x, R_NamesSymbol));
+  return isNewList(x) && (!LENGTH(x) || (equalLens(x) && !isNull(getAttrib(x, R_NamesSymbol))));
 }
 
 // inherits(x, "data.table") || inherits(x, "data.frame") || isDataList(x)
