@@ -35,7 +35,7 @@ update.dev.pkg = function(object="data.table", repo="https://Rdatatable.gitlab.i
   # update.dev.pkg fails on windows R 4.0.0, we have to unload package namespace before installing new version #4403
   on.exit({
     if (upg) {
-      unloadNamespace(pkg)
+      unloadNamespace(pkg) ## hopefully will release dll lock on Windows
       utils::install.packages(pkg, repos=repo, type=type, lib=lib, ...)
     }
     cat(sprintf("R %s package %s %s (%s)\n",
