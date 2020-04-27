@@ -700,4 +700,41 @@ d
 ```
 
 # Integer based date and time classes
-## `IDate`, `ITime`, `IDateTime`##
+## `IDate`, `ITime`, `IDateTime`
+
+[Background from ?IDateTime and NEWS. I see no problem of repeating the most important part of the help text rather verbatim?]
+
+Date and time classes with integer storage allows for fast sorting and grouping, and allows dates and times to be used as keys more easily.
+
+[Somewhere this should be mentioned:]
+`as.POSIX.lt` columns are not supported ("POSIXlt column type detected and converted to POSIXct.")  
+
+## `IDate`
+
+### Create `IDate` object
+
+`as.IDate`:
+1-2 examples with standard unambiguous format,
+1-2 examples with non-standard unambiguous format, i.e. the use of `format`
+Mind the `locale`! Mention the pitfall of dates with names of the days and months, albeit not `data.table` specific. Perhaps refer to [strptime, as.POSIXct and as.Date return unexpected NA
+](https://stackoverflow.com/questions/13726894/strptime-as-posixct-and-as-date-return-unexpected-na)
+
+
+### Methods for `IDate`
+`mean`, `cut`, `seq`, `c`, `rep`, `split`, `round`
+
+## `ITime`
+
+### Create `ITime` 
+
+### Methods for `ITime`
+`round`, `trunc`
+
+# Extraction functions
+`second`, `minute`, `hour`, `yday`, `wday`, `mday`, `week`, `month`, `quarter`, and `year`
+
+Most of the extraction functions are straightforward. But: 
+
+Note difference with `as.POSIXlt(x)$yday`, `as.POSIXlt(x)$wday, `as.POSIXlt(x)$mon` are all 0-based, here they are 1-based. 
+
+`week` may be a source of confusion. Perhaps expand on the different conventions and use/refer to the nice summary by @UweBlock here: [bug in week means first week only has 6 days?](https://github.com/Rdatatable/data.table/issues/2611#issuecomment-367619640).  Table in appendix?
