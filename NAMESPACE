@@ -56,6 +56,8 @@ export(nafill)
 export(setnafill)
 export(.Last.updated)
 export(fcoalesce)
+export(cbindlist)
+export(mergelist)
 
 S3method("[", data.table)
 S3method("[<-", data.table)
