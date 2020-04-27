@@ -714,6 +714,7 @@ Date and time classes with integer storage allows for fast sorting and grouping,
 ### Create `IDate` object
 
 `as.IDate`:
+
 1-2 examples with standard unambiguous format,
 1-2 examples with non-standard unambiguous format, i.e. the use of `format`
 Mind the `locale`! Mention the pitfall of dates with names of the days and months, albeit not `data.table` specific. Perhaps refer to [strptime, as.POSIXct and as.Date return unexpected NA
@@ -733,8 +734,7 @@ Mind the `locale`! Mention the pitfall of dates with names of the days and month
 # Extraction functions
 `second`, `minute`, `hour`, `yday`, `wday`, `mday`, `week`, `month`, `quarter`, and `year`
 
-Most of the extraction functions are straightforward. But: 
+[Most of the extraction functions are straightforward, but may expand a bit on yday/wday/mon and week:]  
+Note difference with `as.POSIXlt(x)$yday`, `as.POSIXlt(x)$wday`, `as.POSIXlt(x)$mon` are all 0-based, here they are 1-based. 
 
-Note difference with `as.POSIXlt(x)$yday`, `as.POSIXlt(x)$wday, `as.POSIXlt(x)$mon` are all 0-based, here they are 1-based. 
-
-`week` may be a source of confusion. Perhaps expand on the different conventions and use/refer to the nice summary by @UweBlock here: [bug in week means first week only has 6 days?](https://github.com/Rdatatable/data.table/issues/2611#issuecomment-367619640).  Table in appendix?
+`week` may be a source of confusion. Different conventions: perhaps use/refer to the nice summary by @UweBlock here: [bug in week means first week only has 6 days?](https://github.com/Rdatatable/data.table/issues/2611#issuecomment-367619640).  Table in Appendix?
