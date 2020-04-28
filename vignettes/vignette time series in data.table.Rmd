@@ -704,7 +704,7 @@ d
 
 [Background from ?IDateTime and NEWS. I see no problem of using the most important parts rather verbatim?]
 
-`IDate` and `ITime` are date and time classes with integer storage. They were introduced in `data.table` to allow for fast sorting and grouping, and to facilitate the use of dates and times as keys. Please note that these classes are still experimental. In this section different methods to create object of class `IDate` and `ITime` are described. Then some of the convenience functions to extract various parts of the date-time object are demonstrated.   
+`IDate` and `ITime` are date and time classes with integer storage. Using integer storage allows dates and times to be used as data table keys, which enables fast sorting and grouping. Please note that these classes are still experimental. In this section different methods to create object of class `IDate` and `ITime` are described. Then some of the convenience functions to extract various parts of the date-time object are demonstrated.   
 
 
 ## `IDate`
@@ -720,11 +720,10 @@ Below a string in "standard format" is converted to `IDate`. We also show that t
 
 ```{r, idate_standard_format}
 
-idate <- as.IDate("2020-04-28")
+(idate <- as.IDate("2020-04-28"))
 class(idate)
 typeof(idate)
 ```
-
 
 When the input string is not in a standard unambiguous format, the `format` argument is used for conversion specification. Here is an example of an input in a format typically used in the US ("month-day-year"):
 
@@ -734,7 +733,16 @@ as.IDate("04/28/2018", format = "%m/%m/%Y")
 
 Note that if your string contains abbreviated weekday or abbreviated month name, the corresponding conversion specifications, `%a` and `%b` refer to the names _in the current locale on this platform_. Thus, if weekdays and month names in the string differ from those in the current locale, `as.IDate` will fail to parse the string and `NA` is returned. For more details, see [strptime, as.POSIXct and as.Date return unexpected NA](https://stackoverflow.com/questions/13726894/strptime-as-posixct-and-as-date-return-unexpected-na)
 
-The input can also be a numeric object, which is then added to the default `origin` of "1970-01-01":
+Conversion methods from and to `Date` and `POSIXct` objects are provided, e.g.:
+
+```{r, posix}
+(datetime <- as.POSIXct("2020-04-28 10:30:45", tz = "UTC"))
+(idate <- as.IDate(datetime))
+as.POSIXct(idate)
+```
+
+
+Finally, the input can also be a numeric object, which is then added to the default `origin` of "1970-01-01":
 
 ```{r, idate_num}
 as.IDate(1L)
@@ -742,14 +750,33 @@ as.IDate(1L)
 as.IDate(1L, origin = "2020-05-01")
 ```
 
-`Date` and `POSIXct` objects can also be coerced to `IDate` using `as.IDate`.
 
 ### Methods for `IDate`
-`mean`, `cut`, `seq`, `c`, `rep`, `split`, `round`
+
+Methods for `IDate` includes `mean`, `cut`, `seq`, `c`, and `rep`. The is also a `round`, which can round to weeks, months, quarters and years, specified in the `digit` argument. 
+
+```{r, seq_round_idate}
+(dates <- seq(from = as.IDate("2020-04-10"), to = as.IDate("2020-05-30"), by = "2 weeks"))
+round(dates, "month")
+```
+
 
 ## `ITime`
 
+`ITime` is a time-of-day class stored as the integer number of seconds in the day. 
+
 ### Create `ITime` 
+
+To create an `ITime` object we use `as.ITime`. It accepts `character`, `numeric`, `POSIXct` and `POSIXlt` as input, e.g.:
+
+```{r, itime_char}
+
+(time <- as.ITime("10:45:20"))
+class(time)
+typeof(time)
+
+as.ITime(as.POSIXct("2020-04-28 10:30:45"))
+```
 
 ### Methods for `ITime`
 `round`, `trunc`
@@ -763,6 +790,6 @@ Note difference with `as.POSIXlt(x)$yday`, `as.POSIXlt(x)$wday`, `as.POSIXlt(x)$
 `week` may be a source of confusion. Different conventions: perhaps use/refer to the nice summary by @UweBlock here: [bug in week means first week only has 6 days?](https://github.com/Rdatatable/data.table/issues/2611#issuecomment-367619640).  Table in Appendix?
 
 
-[Somewhere this should be mentioned. Probabl]
+[Somewhere this should be mentioned]
 `as.POSIX.lt` columns are not supported ("POSIXlt column type detected and converted to POSIXct.")  
 
