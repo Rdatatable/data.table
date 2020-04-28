@@ -110,7 +110,8 @@ join.sql.equal = function(l, on, how="inner", mult="all", allow.cartesian=TRUE, 
   }
   if (how %in% c("inner","full")) {
     dt2 = mergelist(list(rhs[,!"row_id"], lhs[,!"row_id"]), on=on, how=how, mult=mult)
-    r = all.equal(dt, dt2, ignore.row.order=TRUE, ignore.col.order=TRUE)
+    setcolorder(dt2, neworder=names(dt))
+    r = all.equal(dt, dt2, ignore.row.order=TRUE)
     ## check it is symetric
     if (!isTRUE(r)) {
       if (.debug) {message("mergelist is not symmetric for ", how); browser()}
