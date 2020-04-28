@@ -141,7 +141,7 @@ SEXP subsetVector(SEXP x, SEXP idx);
 SEXP int_vec_init(R_len_t n, int val);
 
 // vecseq.c
-SEXP vecseq(SEXP x, SEXP len, SEXP clamp);
+SEXP vecseq(SEXP x, SEXP len, SEXP clamp, SEXP all1Arg);
 SEXP seqexp(SEXP x);
 
 // uniqlist.c

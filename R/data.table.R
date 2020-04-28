@@ -2613,7 +2613,7 @@ rbindlist = function(l, use.names="check", fill=FALSE, idcol=NULL) {
   setDT(ans)[]
 }
 
-vecseq = function(x,y,clamp) .Call(Cvecseq,x,y,clamp)
+vecseq = function(x,y,clamp,all1=FALSE) .Call(Cvecseq,x,y,clamp,all1) ## all1 default TRUE pass all tests, should we switch the default?
 
 # .Call(Caddress, x) increments NAM() when x is vector with NAM(1). Referring object within non-primitive function is enough to increment reference.
 address = function(x) .Call(Caddress, eval(substitute(x), parent.frame()))
