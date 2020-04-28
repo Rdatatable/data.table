@@ -702,24 +702,47 @@ d
 # Integer based date and time classes
 ## `IDate`, `ITime`, `IDateTime`
 
-[Background from ?IDateTime and NEWS. I see no problem of repeating the most important part of the help text rather verbatim?]
+[Background from ?IDateTime and NEWS. I see no problem of using the most important parts rather verbatim?]
 
-Date and time classes with integer storage allows for fast sorting and grouping, and allows dates and times to be used as keys more easily.
+`IDate` and `ITime` are date and time classes with integer storage. They were introduced in `data.table` to allow for fast sorting and grouping, and allow dates and times to be used as keys more easily. Please note that these classes are still experimental. In this section different methods to create object of class `IDate` and `ITime` are described. Then some of the convenience functions to extract various parts of the date-time object are demonstrated.   
 
-[Somewhere this should be mentioned:]
-`as.POSIX.lt` columns are not supported ("POSIXlt column type detected and converted to POSIXct.")  
 
 ## `IDate`
 
-### Create `IDate` object
+`IDate` is a date class which inherits from `Date` in `base` R, except that the storage mode is `integer`. `IDate` can replace for `Date` in almost all situations, and functions that accepts `Date` objects generally work for `IDate` objects too. 
 
-`as.IDate`:
 
-1-2 examples with standard unambiguous format,
-1-2 examples with non-standard unambiguous format, i.e. the use of `format`
-Mind the `locale`! Mention the pitfall of dates with names of the days and months, albeit not `data.table` specific. Perhaps refer to [strptime, as.POSIXct and as.Date return unexpected NA
-](https://stackoverflow.com/questions/13726894/strptime-as-posixct-and-as-date-return-unexpected-na)
+### Create `IDate` object: `as.IDate`
 
+To create an `IDate` object, the function `as.IDate` is used. For input objects of class `character`, two "standard unambiguous formats" are recognized, just as in `as.Date`: `%Y-%m-%d` or `%Y/%m/%d` (e.g. `"2020-04-28"` or `"2020/04/28"`), where `%Y` is year with century, `%m` month as decimal number, and `%d` is day of the month as decimal number (see Details section in `?strptime` for a full description of conversion specifications).
+
+Below a string in "standard format" is converted to `IDate`. We also show that the class is both `IDate` and `Date`, and that the storage mode is `integer`:  
+
+```{r, idate_standard_format}
+
+idate <- as.IDate("2020-04-28")
+class(idate)
+typeof(idate)
+```
+
+
+When the input string is not in a standard unambiguous format, the `format` argument is used for conversion specification. Here is an example of an input in a format typically used in the US ("month-day-year"):
+
+```{r, idate_us_date}
+as.IDate("04/28/2018", format = "%m/%m/%Y") 
+```
+
+Note that if your string contains abbreviated weekday or abbreviated month name, the corresponding conversion specifications, `%a` and `%b` refers to the names _in the current locale on this platform_. Thus, if weekdays and month names in the string differ from those in the current locale, `as.IDate` will fail to parse the string and `NA` is returned. For more details, see [strptime, as.POSIXct and as.Date return unexpected NA](https://stackoverflow.com/questions/13726894/strptime-as-posixct-and-as-date-return-unexpected-na)
+
+The input can also be a numeric object, which is then added to the default `origin` of "1970-01-01":
+
+```{r, idate_num}
+as.IDate(1L)
+
+as.IDate(1L, origin = "2020-05-01")
+```
+
+`Date` and `POSIXct` objects can also be coerced to `IDate` using `as.IDate`.
 
 ### Methods for `IDate`
 `mean`, `cut`, `seq`, `c`, `rep`, `split`, `round`
@@ -738,3 +761,8 @@ Mind the `locale`! Mention the pitfall of dates with names of the days and month
 Note difference with `as.POSIXlt(x)$yday`, `as.POSIXlt(x)$wday`, `as.POSIXlt(x)$mon` are all 0-based, here they are 1-based. 
 
 `week` may be a source of confusion. Different conventions: perhaps use/refer to the nice summary by @UweBlock here: [bug in week means first week only has 6 days?](https://github.com/Rdatatable/data.table/issues/2611#issuecomment-367619640).  Table in Appendix?
+
+
+[Somewhere this should be mentioned. Probabl]
+`as.POSIX.lt` columns are not supported ("POSIXlt column type detected and converted to POSIXct.")  
+
