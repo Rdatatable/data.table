@@ -704,12 +704,12 @@ d
 
 [Background from ?IDateTime and NEWS. I see no problem of using the most important parts rather verbatim?]
 
-`IDate` and `ITime` are date and time classes with integer storage. They were introduced in `data.table` to allow for fast sorting and grouping, and allow dates and times to be used as keys more easily. Please note that these classes are still experimental. In this section different methods to create object of class `IDate` and `ITime` are described. Then some of the convenience functions to extract various parts of the date-time object are demonstrated.   
+`IDate` and `ITime` are date and time classes with integer storage. They were introduced in `data.table` to allow for fast sorting and grouping, and to facilitate the use of dates and times as keys. Please note that these classes are still experimental. In this section different methods to create object of class `IDate` and `ITime` are described. Then some of the convenience functions to extract various parts of the date-time object are demonstrated.   
 
 
 ## `IDate`
 
-`IDate` is a date class which inherits from `Date` in `base` R, except that the storage mode is `integer`. `IDate` can replace for `Date` in almost all situations, and functions that accepts `Date` objects generally work for `IDate` objects too. 
+`IDate` is a date class which inherits from `Date` in `base` R, except that the storage mode is `integer`. `IDate` can replace `Date` in almost all situations, and functions which accept `Date` objects generally work for `IDate` objects too. 
 
 
 ### Create `IDate` object: `as.IDate`
@@ -732,7 +732,7 @@ When the input string is not in a standard unambiguous format, the `format` argu
 as.IDate("04/28/2018", format = "%m/%m/%Y") 
 ```
 
-Note that if your string contains abbreviated weekday or abbreviated month name, the corresponding conversion specifications, `%a` and `%b` refers to the names _in the current locale on this platform_. Thus, if weekdays and month names in the string differ from those in the current locale, `as.IDate` will fail to parse the string and `NA` is returned. For more details, see [strptime, as.POSIXct and as.Date return unexpected NA](https://stackoverflow.com/questions/13726894/strptime-as-posixct-and-as-date-return-unexpected-na)
+Note that if your string contains abbreviated weekday or abbreviated month name, the corresponding conversion specifications, `%a` and `%b` refer to the names _in the current locale on this platform_. Thus, if weekdays and month names in the string differ from those in the current locale, `as.IDate` will fail to parse the string and `NA` is returned. For more details, see [strptime, as.POSIXct and as.Date return unexpected NA](https://stackoverflow.com/questions/13726894/strptime-as-posixct-and-as-date-return-unexpected-na)
 
 The input can also be a numeric object, which is then added to the default `origin` of "1970-01-01":
 
