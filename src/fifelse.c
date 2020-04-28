@@ -155,7 +155,9 @@ SEXP fcaseR(SEXP na, SEXP rho, SEXP args) {
   }
   int nprotect = 0, l = 0;
   int64_t len0=0, len1=0, len2=0, idx=0;
-  SEXP ans = R_NilValue, value0 = R_NilValue, tracker = R_NilValue, cons = R_NilValue, outs = R_NilValue;
+  SEXP ans = R_NilValue, tracker = R_NilValue, cons = R_NilValue, outs = R_NilValue;
+  SEXP v0class = R_NilValue, v0levels = R_NilValue;
+  bool v0factor = false;
   PROTECT_INDEX Icons, Iouts;
   PROTECT_WITH_INDEX(cons, &Icons); nprotect++;
   PROTECT_WITH_INDEX(outs, &Iouts); nprotect++;
@@ -177,7 +179,11 @@ SEXP fcaseR(SEXP na, SEXP rho, SEXP args) {
       len0 = xlength(cons);
       len2 = len0;
       type0 = TYPEOF(outs);
-      value0 = outs;
+      v0class = PROTECT(getAttrib(outs,R_ClassSymbol)); nprotect++;
+      v0factor = isFactor(outs);
+      if (v0factor) {
+        v0levels = PROTECT(getAttrib(outs,R_LevelsSymbol)); nprotect++;
+      }
       if (nonna) {
         if (xlength(na) != 1) {
           error("Length of 'default' must be 1.");
@@ -220,16 +226,16 @@ SEXP fcaseR(SEXP na, SEXP rho, SEXP args) {
                  "Please make sure all output values have the same type.",
                  i*2+2, type2char(TYPEOF(outs)), type2char(type0));
       }
-      if (!R_compute_identical(PROTECT(getAttrib(value0,R_ClassSymbol)),  PROTECT(getAttrib(outs,R_ClassSymbol)), 0)) {
+      if (!R_compute_identical(v0class, PROTECT(getAttrib(outs,R_ClassSymbol)), 0)) {
         error("Argument #%d has different class than argument #2, "
                  "Please make sure all output values have the same class.", i*2+2);
       }
-      UNPROTECT(2);
-      if (isFactor(value0)) {
-        if (!R_compute_identical(PROTECT(getAttrib(value0,R_LevelsSymbol)),  PROTECT(getAttrib(outs,R_LevelsSymbol)), 0)) {
+      UNPROTECT(1);
+      if (v0factor) {
+        if (!R_compute_identical(v0levels, PROTECT(getAttrib(outs,R_LevelsSymbol)), 0)) {
           error("Argument #2 and argument #%d are both factor but their levels are different.", i*2+2);
         }
-        UNPROTECT(2);
+        UNPROTECT(1);
       }
     }
     len1 = xlength(outs);
