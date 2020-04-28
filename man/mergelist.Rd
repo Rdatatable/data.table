@@ -42,5 +42,12 @@
   \code{\link{[.data.table}}, \code{\link{merge.data.table}}
 }
 \examples{
+#X = lapply(1:4, function(i) as.data.table(setNames(list(i+0:1, i), c("id",letters[i]))))
+#mergelist(X, on="id", how="left")
+
+## denormalize star schema
+
+## denormalize snowflake schema
+
 }
 \keyword{ data }

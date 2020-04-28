@@ -15,7 +15,7 @@ SEXP cbindlist(SEXP x, SEXP copyArg) {
   for (int i=0; i<nx; ++i) {
     SEXP thisx = VECTOR_ELT(x, i);
     if (!perhapsDataTable(thisx))
-      error("The %d element of 'x' list is not a data.table type", i+1);
+      error("The %d element of 'x' list is not of data.table type", i+1);
     nnx[i] = NCOL(thisx);
     if (!nnx[i])
       continue;
@@ -30,7 +30,7 @@ SEXP cbindlist(SEXP x, SEXP copyArg) {
     nans += nnx[i];
   }
   if (recycle)
-    error("Recycling rows for objects of different nrow is not yet implemented"); // dont we have a routines for that already somewhere?
+    error("Rows recycling for objects of different nrow is not yet implemented"); // dont we have a routines for that already somewhere?
   SEXP ans = PROTECT(allocVector(VECSXP, nans));
   SEXP names = PROTECT(allocVector(STRSXP, nans));
   for (int i=0, ians=0; i<nx; ++i) {
@@ -43,7 +43,7 @@ SEXP cbindlist(SEXP x, SEXP copyArg) {
     }
   }
   setAttrib(ans, R_NamesSymbol, names);
-  ans = setDT(ans); // this is not really in-place!
+  //ans = setDT(ans); // this is not really in-place!
   if (verbose)
     Rprintf("cbindlist: took %.3fs\n", omp_get_wtime()-tic);
   UNPROTECT(2);

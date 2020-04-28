@@ -363,15 +363,6 @@ SEXP coerceUtf8IfNeeded(SEXP x) {
   return(ans);
 }
 
-// c("data.table","data.frame")
-static SEXP char2_dtdf() {
-  SEXP char2_dtdf = PROTECT(allocVector(STRSXP, 2));
-  SET_STRING_ELT(char2_dtdf, 0, char_datatable);
-  SET_STRING_ELT(char2_dtdf, 1, char_dataframe);
-  UNPROTECT(1);
-  return char2_dtdf;
-}
-
 // if (length(x)) length(x[[1L]]) else 0L
 int NROW(SEXP x) {
   if (!LENGTH(x))
@@ -382,6 +373,15 @@ int NROW(SEXP x) {
 // length(x)
 int NCOL(SEXP x) {
   return LENGTH(x);
+}
+
+// c("data.table","data.frame")
+static SEXP char2_dtdf() {
+  SEXP char2_dtdf = PROTECT(allocVector(STRSXP, 2));
+  SET_STRING_ELT(char2_dtdf, 0, char_datatable);
+  SET_STRING_ELT(char2_dtdf, 1, char_dataframe);
+  UNPROTECT(1);
+  return char2_dtdf;
 }
 
 // .set_row_names(x)
