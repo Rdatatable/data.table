@@ -147,7 +147,7 @@ join.sql.equal = function(l, on, how="inner", mult="all", allow.cartesian=TRUE, 
   isTRUE(a)
 }
 
-batch.join.sql.equal = function(cases, on, hows=c("inner","left","right","full"), mults=c("all","first","last")) {
+batch.join.sql.equal = function(cases, on, hows=c("inner","left","right","full"), mults=c("all","first","last"), .debug=FALSE) {
   if ("error" %in% mults) stop("mult=error is not supported")
   p = proc.time()[[3L]]
   conn = DBI::dbConnect(RSQLite::SQLite())
@@ -177,7 +177,7 @@ batch.join.sql.equal = function(cases, on, hows=c("inner","left","right","full")
           dup_n = dup_n+1L
           next #warning("Some tests are duplicated, so far ", dup_n)
         }
-        ans[[case]][[how]][[mult]] = join.sql.equal(list(lhs=lhs, rhs=rhs), on=on, how=how, mult=mult, .conn=conn, .drop=FALSE, .debug=FALSE)
+        ans[[case]][[how]][[mult]] = join.sql.equal(list(lhs=lhs, rhs=rhs), on=on, how=how, mult=mult, .conn=conn, .drop=FALSE, .debug=.debug)
       }
     }
     DBI::dbSendQuery(conn, "DROP TABLE lhs;")
@@ -465,7 +465,7 @@ cat("design tests passed\n")
 # tests ----
 
 if (!interactive()) {
-  y = batch.join.sql.equal(cases=1:21, on="id", hows=c("inner","left","right","full"), mults=c("all","first","last"))
+  y = batch.join.sql.equal(cases=1:21, on="id", hows=c("inner","left","right","full"), mults=c("all","first","last"), .debug=interactive())
   y = rapply(y, isTRUE)
   if (!all(y))
     stop(sprintf("join tests failed for %s cases:\n%s", sum(!y), paste("  ", names(y)[!y], collapse="\n")))
