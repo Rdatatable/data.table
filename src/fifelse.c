@@ -156,13 +156,16 @@ SEXP fcaseR(SEXP na, SEXP rho, SEXP args) {
   int nprotect = 0, l = 0;
   int64_t len0=0, len1=0, len2=0, idx=0;
   SEXP ans = R_NilValue, value0 = R_NilValue, tracker = R_NilValue, cons = R_NilValue, outs = R_NilValue;
+  PROTECT_INDEX Icons, Iouts;
+  PROTECT_WITH_INDEX(cons, &Icons); nprotect++;
+  PROTECT_WITH_INDEX(outs, &Iouts); nprotect++;
   SEXPTYPE type0;
   bool nonna = !isNull(na), imask = true;
   int *restrict p = NULL;
   n = n/2;
   for (int i=0; i<n; ++i) {
-    cons = PROTECT(eval(SEXPPTR_RO(args)[2*i], rho)); nprotect++;
-    outs = PROTECT(eval(SEXPPTR_RO(args)[2*i+1], rho)); nprotect++;
+    REPROTECT(cons = eval(SEXPPTR_RO(args)[2*i], rho), Icons);
+    REPROTECT(outs = eval(SEXPPTR_RO(args)[2*i+1], rho), Iouts);
     if (isS4(outs) && !INHERITS(outs, char_nanotime)) {
       error("S4 class objects (except nanotime) are not supported. Please see https://github.com/Rdatatable/data.table/issues/4131.");
     }
