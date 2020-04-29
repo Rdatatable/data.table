@@ -1,6 +1,6 @@
 #include "data.table.h"
 
-SEXP vecseq(SEXP x, SEXP len, SEXP clamp, SEXP all1Arg) {
+SEXP vecseq(SEXP x, SEXP len, SEXP clamp) {
   // Name taken from bit::vecseq, but,
   //   * implemented in C rather than R
   //   * takes len rather than y endpoints
@@ -8,30 +8,20 @@ SEXP vecseq(SEXP x, SEXP len, SEXP clamp, SEXP all1Arg) {
   //   * Adds clamp to prevent very large vectors being created (unless allow.cartesian=TRUE)
   // Specially for use by [.data.table after binary search. Now so specialized that for general use
   // bit::vecseq is recommended (Jens has coded it in C now).
-  //   * all1Arg returns input when all(len==1)
 
   if (!isInteger(x))
     error(_("x must be an integer vector"));
   if (!isInteger(len))
     error(_("len must be an integer vector"));
-  if (!IS_TRUE_OR_FALSE(all1Arg))
-    error(_("all1 must be TRUE or FALSE"));
   if (LENGTH(x) != LENGTH(len))
     error(_("x and len must be the same length"));
   const int *ix = INTEGER(x);
   const int *ilen = INTEGER(len), nlen=LENGTH(len);
   int reslen = 0;
-  bool hasZero = false;
   for (int i=0; i<nlen; ++i) {
-    int thislen = ilen[i];
-    if (!thislen)
-      hasZero = true;
-    if (INT_MAX-reslen < thislen)
+    if (INT_MAX-reslen < ilen[i])
       error(_("Join results in more than 2^31 rows (internal vecseq reached physical limit). Very likely misspecified join. Check for duplicate key values in i each of which join to the same group in x over and over again. If that's ok, try by=.EACHI to run j for each group to avoid the large allocation. Otherwise, please search for this error message in the FAQ, Wiki, Stack Overflow and data.table issue tracker for advice."));
-    reslen += thislen;
-  }
-  if (!hasZero && reslen==nlen && LOGICAL(all1Arg)[0]) { // short-circuit, if no zeros and reslen match to length, then all must be 1
-    return x;
+    reslen += ilen[i];
   }
   if (!isNull(clamp)) {
     if (!isNumeric(clamp) || LENGTH(clamp)!=1)
@@ -73,7 +63,7 @@ SEXP seqexp(SEXP x) {
       hasZero = true;
     nans += thisx;
   }
-  if (!hasZero && nans==nx) // short-circuit, if no zeros and nans match to length, then all must be 1
+  if (!hasZero && nans==nx) // short-circuit: if !hasZeros && nans=length(x), then all must be 1
     return R_NilValue;
   SEXP ans = PROTECT(allocVector(INTSXP, nans));
   int *ansp = INTEGER(ans);
