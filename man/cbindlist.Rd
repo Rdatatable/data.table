@@ -14,7 +14,7 @@
   \item{copy}{ \code{logical}, decides if columns has to be copied into resulting object (default) or just referred. }
 }
 \details{
-  Column bind only stacks input elements. Works like \code{\link{data.table()}} function but takes \code{list} type on input. Zero-columns tables in \code{l} are ommited. Tables in \code{l} should have matching row count, recycling of rows is not yet implemented.
+  Column bind only stacks input elements. Works like \code{\link{data.table}} function but takes \code{list} type on input. Zero-columns tables in \code{l} are ommited. Tables in \code{l} should have matching row count, recycling of rows is not yet implemented.
 }
 \value{
   A new \code{data.table} based on the stacked objects. Eventually when \code{copy} is \code{FALSE}, then resulting object will share columns with \code{l} table.

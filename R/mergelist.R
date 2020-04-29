@@ -62,43 +62,28 @@ fdistinct = function(x, on=key(x), mult=c("first","last"), cols=seq_along(x), co
 }
 
 # extra layer over bmerge to provide ready to use row index (or NULL for 1:nrow)
-# NULL to avoid extra copies in downstream code, it turned out that avoiding copies precisely is costly and enormously complicates code
-# could be re-used in [.data.table to simplify merges there
+# NULL to avoid extra copies in downstream code, it turned out that avoiding copies precisely is costly and enormously complicates code, will be easier to handle 1:nrow in subsetDT
 # we don't use semi join in mergelist so is not tested, anti join is used in full outer join
 dtmatch = function(x, i, on, nomatch, mult, verbose, allow.cartesian, semi=FALSE, anti=FALSE, void=FALSE) {
   nrow = function(x) if (is.null(ans<-base::nrow(x))) stop("nrow called on a list? not good") else ans
   inner = identical(nomatch, 0L)
   if (void && mult!="error")
     stop("internal error: void must be used with mult='error'") # nocov
-  if ((semi || anti) && !inner)
-    stop("internal error: semi and anti joins must be used with nomatch=0L") # nocov
+  if (semi || anti) {
+    if (semi && anti)
+      stop("internal error: semi and anti cannot be used together") # nocov
+    if (!inner)
+      stop("internal error: semi and anti joins must be used with nomatch=0L") # nocov
+  }
   icols = colnamesInt(i, on, check_dups=TRUE)
   xcols = colnamesInt(x, on, check_dups=TRUE)
   ans = bmerge(i, x, icols, xcols, roll=0, rollends=c(FALSE, TRUE), nomatch=nomatch, mult=mult, ops=1L, verbose=verbose)
   if (void) ## void=T is only for the case when we want raise error for mult='error', and that would happen in above line
     return(invisible(NULL))
 
-  if (DEVEL<-FALSE) { ## some of those adds an overhead, keep it like this for documentation
-    # nocov start
-    if (!identical(ans$indices, integer()))
-      stop("internal error: bmerge()$indices should be integer()")
-    if (!isTRUE(ans$allGrp1))
-      stop("internal error: bmerge()$allGrp1 should be TRUE")
-    if (mult!="all" && !ans$allLen1)
-      stop("internal error: bmerge()$allLen1 should be TRUE for mult!='all'")
-    if (mult!="all" && is.na(nomatch) && any(ans$lens!=1L))
-      stop("internal error: bmerge()$lens should be all 1L for mult!='all' && nomatch==NA")
-    if (mult!="all" && identical(nomatch, 0L) && any(!ans$lens%in%c(0L,1L)))
-      stop("internal error: bmerge()$lens should be all 0L or 1L for mult!='all' && nomatch==0L")
-    # nocov end
-  }
-
   ## semi and anti short-circuit
-  if (semi || anti) {
-    ## we subset i rather than x, thus assign to irows, not to xrows
-    irows = which(if (semi) ans$lens!=0L else ans$lens==0L)
-    return(list(ans = ans, irows = irows))
-  }
+  if (semi || anti) ## we will subset i rather than x, thus assign to irows, not to xrows
+    return(list(ans=ans, irows=which(if (semi) ans$lens!=0L else ans$lens==0L)))
 
   ## xrows, join-to
   xrows = if (ans$allLen1) ans$starts else vecseq(ans$starts, ans$lens, NULL)
@@ -107,7 +92,7 @@ dtmatch = function(x, i, on, nomatch, mult, verbose, allow.cartesian, semi=FALSE
   len.x = length(xrows)
 
   ## irows, join-from
-  irows = if (!(ans$allLen1 && (!inner || length(xrows)==length(ans$starts)))) seqexp(ans$lens)
+  irows = if (!(ans$allLen1 && (!inner || len.x==length(ans$starts)))) seqexp(ans$lens)
   len.i = if (is.null(irows)) nrow(i) else length(irows)
 
   if (length(ans$xo) && length(xrows))
@@ -115,10 +100,10 @@ dtmatch = function(x, i, on, nomatch, mult, verbose, allow.cartesian, semi=FALSE
   len.x = length(xrows)
 
   if (len.i!=len.x) {
-    if (interactive()) {message("dtmatch out len.i != len.x"); browser()}
-    stop("dtmatch out len.i != len.x")
+    if (interactive()) {message("dtmatinternal error: ch out len.i != len.x"); browser()}  # nocov
+    stop("internal error: dtmatch out len.i != len.x") # nocov
   }
-  return(list(ans = ans, irows = irows, xrows = xrows))
+  return(list(ans=ans, irows=irows, xrows=xrows))
 }
 
 # atomic join between two tables
@@ -201,7 +186,8 @@ mergepair = function(lhs, rhs, on, how, mult, lhs.cols=names(lhs), rhs.cols=name
     } else { ## all might still not be copied, rbindlist will do
       out.l = .Call(Ccbindlist, list(out.i, out.x), FALSE)
       ## we could replace rbindlist for new alloc of nrow(out.l)+nrow(out.r) and then memcpy into it
-      out = rbindlist(list(out.l, out.r), use.names=TRUE, fill=TRUE)
+      ## rbindlist overalloc, and returns dt rather than a list
+      out = c(rbindlist(list(out.l, out.r), use.names=TRUE, fill=TRUE))
     }
   }
   out

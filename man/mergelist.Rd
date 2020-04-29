@@ -1,13 +1,14 @@
 \name{mergelist}
 \alias{mergelist}
-\alias{merge}
-\alias{merge.data.table}
 \title{Merge multiple data.tables}
 \description{
   Faster merge of multiple \code{data.table}s.
 }
 \usage{
-  mergelist(l, on, cols, how=c("inner","left","right","full"), mult=c("all","first","last","error"), copy=TRUE)
+  mergelist(l, on, cols,
+    how = c("inner","left","right","full"),
+    mult = c("all","first","last","error"),
+    copy = TRUE)
 }
 \arguments{
   \item{l}{ \code{list} of \code{data.table}s to merge. }
@@ -23,13 +24,13 @@
   Terms \emph{join-to} and \emph{join-from} depends on \code{how} argument:
   \enumerate{
     \item{ \code{how="inner"}: treats \emph{LHS} and \emph{RHS} tables equally, terms applies to both tables. }
-    \item{ \code{how="left"}: \emph{join-to} is \emph{RHS}, \emhp{join-from} is \emph{LHS}. }
-    \item{ \code{how="right"}: \emph{join-to} is \emph{LHS}, \emhp{join-from} is \emph{RHS}. }
+    \item{ \code{how="left"}: \emph{join-to} is \emph{RHS}, \emph{join-from} is \emph{LHS}. }
+    \item{ \code{how="right"}: \emph{join-to} is \emph{LHS}, \emph{join-from} is \emph{RHS}. }
     \item{ \code{how="full"}: performs \emph{left} and \emph{right} joins and then binds results together, terms applies to both tables. }
   }
 }
 \value{
-  A new \code{data.table} based on the merged objects. Eventually when \code{copy} is \code{FALSE}, then resulting object will share columns with \code{l[[1L]]} table. When \code{copy} is \code{NA}, then resulting object might additionally share columns with remaining tables of \code{l}. }
+  A new \code{data.table} based on the merged objects. Eventually when \code{copy} is \code{FALSE}, then resulting object will share columns with \code{l[[1L]]} table. When \code{copy} is \code{NA}, then resulting object might eventually share columns with remaining tables of \code{l}.
 }
 \note{
   Using \code{how="right"} is sub-efficient. Whenever possible, it is better to swap elements of \code{l} and use \code{how="left"} instead.
