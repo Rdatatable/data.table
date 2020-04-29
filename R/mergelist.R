@@ -62,11 +62,11 @@ fdistinct = function(x, on=key(x), mult=c("first","last"), cols=seq_along(x), co
 }
 
 # extra layer over bmerge to provide ready to use row index (or NULL for 1:nrow)
+# NULL to avoid extra copies in downstream code, it turned out that avoiding copies precisely is costly and enormously complicates code
 # could be re-used in [.data.table to simplify merges there
 # we don't use semi join in mergelist so is not tested, anti join is used in full outer join
 dtmatch = function(x, i, on, nomatch, mult, verbose, allow.cartesian, semi=FALSE, anti=FALSE, void=FALSE) {
-  DEVEL = getOption("datatable.dtmatch.devel",TRUE); gc=FALSE
-  if (DEVEL) nrow = function(x) if (is.null(ans<-base::nrow(x))) stop("nrow called on a list? not good") else ans
+  nrow = function(x) if (is.null(ans<-base::nrow(x))) stop("nrow called on a list? not good") else ans
   inner = identical(nomatch, 0L)
   if (void && mult!="error")
     stop("internal error: void must be used with mult='error'") # nocov
@@ -78,7 +78,7 @@ dtmatch = function(x, i, on, nomatch, mult, verbose, allow.cartesian, semi=FALSE
   if (void) ## void=T is only for the case when we want raise error for mult='error', and that would happen in above line
     return(invisible(NULL))
 
-  if (DEVEL) { ## some of those adds an overhead, keep it like this for documentation
+  if (DEVEL<-FALSE) { ## some of those adds an overhead, keep it like this for documentation
     # nocov start
     if (!identical(ans$indices, integer()))
       stop("internal error: bmerge()$indices should be integer()")
@@ -100,90 +100,19 @@ dtmatch = function(x, i, on, nomatch, mult, verbose, allow.cartesian, semi=FALSE
     return(list(ans = ans, irows = irows))
   }
 
-  ## xrows, join-from
-  xrows = NULL
-  if (inner) {
-    if (DEVEL && ans$allLen1) {
-      ## for inner && allLen1      means lens=0|1
-      stopifnot(ans$lens%in%c(0L,1L))
-      #all(ans$lens) ## this still has coerceVector to LGLSXP which copies one by one
-      sc = system.time(opt<-length(tmp<-ans$starts[as.logical(ans$lens)])!=length(ans$starts), gcFirst = gc)[[3L]] ## needs length(ans$xo) as well??
-      if (opt) {
-        rt = system.time(ref<-vecseq(ans$starts, ans$lens, NULL), gcFirst = gc)[[3L]]
-        if (!identical(tmp, ref))
-          stop("dtmatch: xrows: inner: cannot use short-circuit because results does not match")
-        if (sc < rt && sc > 0.05) {
-          message(sprintf("dtmatch: xrows: inner: short-circuit starts[as.logical(lens)] is actually faster (%.3f) than vecseq (%.3f)", sc, rt))
-          if (interactive()) browser()
-        }
-      }
-    } ## vecseq faster than short-circuit via ans$starts[as.logical(ans$lens)]
-    xrows = vecseq(ans$starts, ans$lens, NULL, all1=TRUE)
-  } else {
-    if (DEVEL && mult!="all") {
-      ## for outer && mult!="all"  means lens=1
-      stopifnot(ans$lens==1L)
-      opt = TRUE
-      sc = system.time(tmp<-ans$starts, gcFirst = gc)[[3L]] ## this needs to be extended!! TODO
-      if (opt) {
-        rt = system.time(ref<-vecseq(ans$starts, ans$lens, NULL), gcFirst = gc)[[3L]]
-        if (!identical(tmp, ref))
-          stop("dtmatch: xrows: outer: cannot use short-circuit because results does not match")
-        if (sc > rt && rt > 0.05) {
-          message(sprintf("dtmatch: xrows: outer: short-circuit ans$starts is actually slower (%.3f) than vecseq (%.3f)", sc, rt))
-          if (interactive()) browser()
-        }
-      }
-    } ## ans$starts must be faster than vecseq(ans$start, ...), so we use it
-    xrows = if (mult!="all") ans$starts else vecseq(ans$starts, ans$lens, NULL, all1=TRUE)
-  }
-  if (length(ans$xo) && length(xrows)) {
-    if (is.null(xrows)) stop("trying to revert to original order using NULL, very bad")
-    xrows = ans$xo[xrows]
-  }
-  len.x = if (is.null(xrows)) nrow(x) else length(xrows)
+  ## xrows, join-to
+  xrows = if (ans$allLen1) ans$starts else vecseq(ans$starts, ans$lens, NULL)
+  if (mult=="all" && inner && ans$allLen1) xrows = xrows[xrows != 0L]
+  if (mult!="all" && inner) xrows = xrows[ans$lens > 0L]
+  len.x = length(xrows)
 
-  ## irows, join-to
-  irows = NULL
-  if (inner) {
-    if (DEVEL && ans$allLen1) {
-      ## for inner && allLen1      means lens=0|1
-      ## && len.x==nrow(i)         means lens=1  bc xrows=starts[as.logical(lens)]
-      stopifnot(all(ans$len%in%c(0L,1L)))
-      sc = system.time(opt<-len.x==nrow(i), gcFirst = gc)[[3L]]
-      if (opt) {
-        stopifnot(all(ans$len==1L))
-        rt = system.time(ref<-seqexp(ans$lens), gcFirst = gc)[[3L]]
-        if (!identical(NULL, ref))
-          stop("dtmatch: irows: inner: cannot use short-circuit because results does not match")
-        if (sc > rt && rt > 0.05) {
-          message(sprintf("dtmatch: irows: inner: short-circuit ans$allLen1 && len.x==nrow(i) is actually slower (%.3f) than seqexp (%.3f)", sc, rt))
-          if (interactive()) browser()
-        }
-      }
-    } ## short-circuit should be faster than seqexp, so we use it
-    irows = if (!(ans$allLen1 && len.x==nrow(i))) seqexp(ans$lens)
-  } else { ## outer
-    if (DEVEL && mult=="all") {
-      if (!ans$allLen1) stopifnot(any(ans$len>1L))
-      #sc = system.time(tmp<-if (opt<-!(!ans$allLen1 || (ans$allLen1 && anyDuplicated(ans$starts, incomparables=c(0L,NA_integer_))))) ans$starts[as.logical(ans$lens)], gcFirst = gc)[[3L]]
-      #if (opt) {
-      #  rt = system.time(ref<-seqexp(ans$lens), gcFirst = gc)[[3L]]
-      #  if (!identical(tmp, ref))
-      #    stop("dtmatch: irows: outer: cannot use short-circuit because results does not match")
-      #  if (sc < rt && sc > 0.05) {
-      #    message(sprintf("dtmatch: irows: outer: short-circuit anyDuplicated is actually faster (%.3f) than seqexp (%.3f)", sc, rt))
-      #    if (interactive()) browser()
-      #  }
-      #}
-    } ## seqexp faster than short-circuit via ans$starts[as.logical(ans$lens)]
-    #irows = if (mult=="all") ans$starts[as.logical(ans$lens)] #seqexp(ans$lens)
-    hasMult = !ans$allLen1
-    hasDups = !hasMult && anyDuplicated(ans$starts, incomparables=c(0L,NA_integer_))
-    if (hasMult || hasDups)
-      irows = seqexp(ans$lens)
-  }
+  ## irows, join-from
+  irows = if (!(ans$allLen1 && (!inner || length(xrows)==length(ans$starts)))) seqexp(ans$lens)
   len.i = if (is.null(irows)) nrow(i) else length(irows)
+
+  if (length(ans$xo) && length(xrows))
+    xrows = ans$xo[xrows]
+  len.x = length(xrows)
 
   if (len.i!=len.x) {
     if (interactive()) {message("dtmatch out len.i != len.x"); browser()}
