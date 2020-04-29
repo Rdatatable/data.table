@@ -375,7 +375,7 @@ int NCOL(SEXP x) {
   return LENGTH(x);
 }
 
-// c("data.table","data.frame")
+/*// c("data.table","data.frame")
 static SEXP char2_dtdf() {
   SEXP char2_dtdf = PROTECT(allocVector(STRSXP, 2));
   SET_STRING_ELT(char2_dtdf, 0, char_datatable);
@@ -405,7 +405,7 @@ SEXP setDT(SEXP x) {
   setAttrib(x, R_ClassSymbol, char2_dtdf());
   setAttrib(x, sym_rownames, set_row_names(NROW(x)));
   return alloccolwrapper(x, GetOption(sym_alloccol, R_NilValue), GetOption(sym_verbose, R_NilValue));
-}
+}*/
 
 // inherits(x, "data.table")
 bool isDataTable(SEXP x) {
