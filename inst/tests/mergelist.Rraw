@@ -356,4 +356,4 @@ expected = list(
 ## SQLite reference tests can be launched via
 
 ### Rscript -e 'install.packages(c("DBI","RSQLite"), repos="https://jangorecki.gitlab.io/rsqlite")'
-### Rscript inst/tests/sqlite.R
+### Rscript inst/tests/sqlite.Rraw
