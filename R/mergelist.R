@@ -147,24 +147,11 @@ mergepair = function(lhs, rhs, on, how, mult, lhs.cols=names(lhs), rhs.cols=name
   cp.i = cp.i || !is.null(ans$irows)
 
   ## make x side
-  out.x = if (is.null(ans$xrows))
-    stop("codecov was here?") #.shallow(jnto, cols=someCols(jnto, to.cols, drop=on)) ## codecov shows we were here but xrows=NULL is not possible as of now, see codecov debug chunk below
+  out.x = if (is.null(ans$xrows)) ## as of now xrows cannot be NULL #4409 thus nocov below
+    .shallow(jnto, cols=someCols(jnto, to.cols, drop=on)) # nocov ## as of now nocov does not make difference here r-lib/covr#279
   else
     .Call(CsubsetDT, jnto, ans$xrows, someCols(jnto, to.cols, drop=on))
   cp.x = !is.null(ans$xrows)
-
-  ## debug chunk for codecov to see if `{` makes difference
-  if (FALSE)
-    cat("no!\n")
-  nul = if (FALSE)
-    0L
-  else
-    1L
-  nul = if (FALSE) {
-    0L
-  } else {
-    1L
-  }
 
   if (how!="full") {
     if (!cp.i && copy)
