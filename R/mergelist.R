@@ -90,8 +90,7 @@ dtmatch = function(x, i, on, nomatch, mult, verbose, allow.cartesian, semi=FALSE
 
   ## xrows, join-to
   xrows = if (ans$allLen1) ans$starts else vecseq(ans$starts, ans$lens, NULL)
-  if (mult=="all" && inner && ans$allLen1) xrows = xrows[xrows != 0L]
-  if (mult!="all" && inner) xrows = xrows[ans$lens > 0L]
+  if (inner && ans$allLen1) xrows = xrows[as.logical(ans$lens)]
   len.x = length(xrows)
 
   ## irows, join-from
