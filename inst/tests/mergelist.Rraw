@@ -10,17 +10,6 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
 }
 
 addresses = function(x) vapply(x, address, "")
-noCopy = function(ans, lhs, rhs) all(!addresses(ans) %chin% c(addresses(lhs), addresses(rhs)))
-lhsCopy = function(ans, lhs) if (nrow(lhs)) all(addresses(lhs) %chin% addresses(ans)) else TRUE
-rhsNoCopy = function(ans, rhs) if (nrow(rhs)) all(!addresses(rhs) %chin% addresses(ans)) else TRUE
-test.copy = function(ans, lhs, rhs, how, copy, should=character(), shouldnot=character()) {
-  if (isTRUE(copy)) return(noCopy(ans, lhs, rhs))
-  if (how=="right") { tmp=lhs; lhs=rhs; rhs=tmp; rm(tmp) } ## handle right join swap
-  if (how %in% shouldnot) return(!noCopy(ans, lhs, rhs))
-  if (how %in% should) return(noCopy(ans, lhs, rhs))
-  if (!is.na(copy)) return(lhsCopy(ans, lhs) && rhsNoCopy(ans, rhs))
-  return(lhsCopy(ans, lhs))
-}
 
 # cbindlist
 
@@ -37,6 +26,7 @@ ans = cbindlist(l, copy=FALSE)
 expected = setDT(c(l$d1, l$d2, l$d3))
 test(11.03, ans, expected)
 test(11.04, length(intersect(addresses(ans), addresses(expected))), ncol(expected))
+rm(expected)
 # codecov
 test(12.01, cbindlist(data.frame(a=1L), data.frame(b=1L)), error="must be a list")
 test(12.02, cbindlist(TRUE, FALSE), error="must be a list")
@@ -47,11 +37,22 @@ test(12.06, cbindlist(list(data.table(a=1L), data.table(b=1:2))), error="recycli
 op = options(datatable.verbose=TRUE)
 test(12.07, cbindlist(list(data.table(a=1:2), data.table(b=1:2))), data.table(a=1:2, b=1:2), output="cbindlist.*took")
 options(op)
-rm(expected)
+test(12.08, cbindlist(list(data.table(), data.table(a=1:2), data.table(b=1:2))), data.table(a=1:2, b=1:2))
 
 # mergepair
 
-## test copy-ness argument, in mergepair copyness if always for join-from table, not always lhs, in mergepair copy!=TRUE will only be allowed for how='left' so lhs=join-from holds, that is why swap tables in test.copy
+## test copy-ness argument in mergepair
+
+copied = function(ans, l) {
+  all(!addresses(ans) %chin% c(addresses(l$lhs), addresses(l$rhs)))
+}
+notcopied = function(ans, l, how, unless=character()) {
+  if (how %chin% unless) return(copied(ans, l))
+  if (how=="full") return( ## either side nocopy is fine
+    all(addresses(l$lhs) %chin% addresses(ans)) || all(addresses(l$rhs) %chin% addresses(ans))
+  )
+  all(addresses(if (how=="right") l$rhs else l$lhs) %chin% addresses(ans))
+}
 
 ### LHS equal to RHS: no copy in all cases
 num = 21.000
@@ -64,21 +65,15 @@ for (how in c("inner","left","right","full")) {
   num = trunc(num*10)/10 + 0.1
   for (mult in c("all","first","last","error")) {
     num = trunc(num*100)/100 + 0.01
-    ## copy=TRUE: no shared columns
-    test(num<-num+0.001, ans <- mergepair(l$lhs, l$rhs, on="id1", how=how, mult=mult, copy=TRUE), expected)
-    test(num<-num+0.001, test.copy(ans, l$lhs, l$rhs, how=how, copy=TRUE))
-    ## copy=FALSE: LHS shared but no RHS
-    test(num<-num+0.001, ans <- mergepair(l$lhs, l$rhs, on="id1", how=how, mult=mult, copy=FALSE), expected)
-    test(num<-num+0.001, test.copy(ans, l$lhs, l$rhs, how=how, copy=FALSE))
-    ## copy=NA: at least LHS shared
-    test(num<-num+0.001, ans <- mergepair(l$lhs, l$rhs, on="id1", how=how, mult=mult, copy=NA), expected)
-    test(num<-num+0.001, test.copy(ans, l$lhs, l$rhs, how=how, copy=NA))
+    test(num<-num+0.001, ans <- mergepair(l$lhs, l$rhs, on="id1", how=how, mult=mult, copy=TRUE), expected) ## copy=TRUE: no shared columns
+    test(num<-num+0.001, copied(ans, l))
+    test(num<-num+0.001, ans <- mergepair(l$lhs, l$rhs, on="id1", how=how, mult=mult, copy=FALSE), expected) ## copy=FALSE: LHS shared but no RHS
+    test(num<-num+0.001, notcopied(ans, l, how=how))
   }
 }
-
 ### RHS includes LHS: no copy in inner, left, right
 num = 22.000
-should = "full"
+unless = "full"
 l = list(
   lhs = data.table(id1=1:2, v1=1:2),
   rhs = data.table(id1=1:3, v2=1:3)
@@ -93,21 +88,15 @@ for (how in c("inner","left","right","full")) {
   num = trunc(num*10)/10 + 0.1
   for (mult in c("all","first","last","error")) {
     num = trunc(num*100)/100 + 0.01
-    ## copy=TRUE: no shared columns
     test(num<-num+0.001, ans <- mergepair(l$lhs, l$rhs, on="id1", how=how, mult=mult, copy=TRUE), expected[[how]])
-    test(num<-num+0.001, test.copy(ans, l$lhs, l$rhs, how=how, copy=TRUE))
-    ## copy=FALSE: LHS shared but no RHS
+    test(num<-num+0.001, copied(ans, l))
     test(num<-num+0.001, ans <- mergepair(l$lhs, l$rhs, on="id1", how=how, mult=mult, copy=FALSE), expected[[how]])
-    test(num<-num+0.001, test.copy(ans, l$lhs, l$rhs, how=how, copy=FALSE, should=should))
-    ## copy=NA: at least LHS shared
-    test(num<-num+0.001, ans <- mergepair(l$lhs, l$rhs, on="id1", how=how, mult=mult, copy=NA), expected[[how]])
-    test(num<-num+0.001, test.copy(ans, l$lhs, l$rhs, how=how, copy=NA, should=should))
+    test(num<-num+0.001, notcopied(ans, l, how=how, unless=unless))
   }
 }
-
 ### LHS includes RHS: no copy in left, right, full
 num = 23.000
-should = "inner"
+unless = "inner"
 l = list(
   lhs = data.table(id1=1:3, v1=1:3),
   rhs = data.table(id1=1:2, v2=1:2)
@@ -122,21 +111,15 @@ for (how in c("inner","left","right","full")) {
   num = trunc(num*10)/10 + 0.1
   for (mult in c("all","first","last","error")) {
     num = trunc(num*100)/100 + 0.01
-    ## copy=TRUE: no shared columns
     test(num<-num+0.001, ans <- mergepair(l$lhs, l$rhs, on="id1", how=how, mult=mult, copy=TRUE), expected[[how]])
-    test(num<-num+0.001, test.copy(ans, l$lhs, l$rhs, how=how, copy=TRUE))
-    ## copy=FALSE: LHS shared but no RHS
+    test(num<-num+0.001, copied(ans, l))
     test(num<-num+0.001, ans <- mergepair(l$lhs, l$rhs, on="id1", how=how, mult=mult, copy=FALSE), expected[[how]])
-    test(num<-num+0.001, test.copy(ans, l$lhs, l$rhs, how=how, copy=FALSE, should=should))
-    ## copy=NA: at least LHS shared
-    test(num<-num+0.001, ans <- mergepair(l$lhs, l$rhs, on="id1", how=how, mult=mult, copy=NA), expected[[how]])
-    test(num<-num+0.001, test.copy(ans, l$lhs, l$rhs, how=how, copy=NA, should=should))
+    test(num<-num+0.001, notcopied(ans, l, how=how, unless=unless))
   }
 }
-
 ### LHS single nonmatch RHS on both sides: no copy in left, right
 num = 24.000
-should = c("inner","full")
+unless = c("inner","full")
 l = list(
   lhs = data.table(id1=3:1, v1=1:3),
   rhs = data.table(id1=c(4L,2:1), v2=1:3)
@@ -151,21 +134,15 @@ for (how in c("inner","left","right","full")) {
   num = trunc(num*10)/10 + 0.1
   for (mult in c("all","first","last","error")) {
     num = trunc(num*100)/100 + 0.01
-    ## copy=TRUE: no shared columns
     test(num<-num+0.001, ans <- mergepair(l$lhs, l$rhs, on="id1", how=how, mult=mult, copy=TRUE), expected[[how]])
-    test(num<-num+0.001, test.copy(ans, l$lhs, l$rhs, how=how, copy=TRUE))
-    ## copy=FALSE: LHS shared but no RHS
+    test(num<-num+0.001, copied(ans, l))
     test(num<-num+0.001, ans <- mergepair(l$lhs, l$rhs, on="id1", how=how, mult=mult, copy=FALSE), expected[[how]])
-    test(num<-num+0.001, test.copy(ans, l$lhs, l$rhs, how=how, copy=FALSE, should=should))
-    ## copy=NA: at least LHS shared
-    test(num<-num+0.001, ans <- mergepair(l$lhs, l$rhs, on="id1", how=how, mult=mult, copy=NA), expected[[how]])
-    test(num<-num+0.001, test.copy(ans, l$lhs, l$rhs, how=how, copy=NA, should=should))
+    test(num<-num+0.001, notcopied(ans, l, how=how, unless=unless))
   }
 }
-
 ### LHS zero match RHS: no copy in left, right
 num = 25.000
-should = c("inner","full")
+unless = c("inner","full")
 l = list(
   lhs = data.table(id1=2:1, v1=1:2),
   rhs = data.table(id1=3:4, v2=1:2)
@@ -180,21 +157,15 @@ for (how in c("inner","left","right","full")) {
   num = trunc(num*10)/10 + 0.1
   for (mult in c("all","first","last","error")) {
     num = trunc(num*100)/100 + 0.01
-    ## copy=TRUE: no shared columns
     test(num<-num+0.001, ans <- mergepair(l$lhs, l$rhs, on="id1", how=how, mult=mult, copy=TRUE), expected[[how]])
-    test(num<-num+0.001, test.copy(ans, l$lhs, l$rhs, how=how, copy=TRUE))
-    ## copy=FALSE: LHS shared but no RHS
+    test(num<-num+0.001, copied(ans, l))
     test(num<-num+0.001, ans <- mergepair(l$lhs, l$rhs, on="id1", how=how, mult=mult, copy=FALSE), expected[[how]])
-    test(num<-num+0.001, test.copy(ans, l$lhs, l$rhs, how=how, copy=FALSE, should=should))
-    ## copy=NA: at least LHS shared
-    test(num<-num+0.001, ans <- mergepair(l$lhs, l$rhs, on="id1", how=how, mult=mult, copy=NA), expected[[how]])
-    test(num<-num+0.001, test.copy(ans, l$lhs, l$rhs, how=how, copy=NA, should=should))
+    test(num<-num+0.001, notcopied(ans, l, how=how, unless=unless))
   }
 }
-
 ### LHS and RHS zero nrow: no copies
 num = 26.000
-should = character()
+unless = character()
 l = list(
   lhs = data.table(id1=integer(), v1=integer()),
   rhs = data.table(id1=integer(), v2=integer())
@@ -209,20 +180,15 @@ for (how in c("inner","left","right","full")) {
   num = trunc(num*10)/10 + 0.1
   for (mult in c("all","first","last","error")) {
     num = trunc(num*100)/100 + 0.01
-    ## copy=TRUE: no shared columns
     test(num<-num+0.001, ans <- mergepair(l$lhs, l$rhs, on="id1", how=how, mult=mult, copy=TRUE), expected[[how]])
-    test(num<-num+0.001, test.copy(ans, l$lhs, l$rhs, how=how, copy=TRUE))
-    ## copy=FALSE: LHS shared but no RHS
+    test(num<-num+0.001, copied(ans, l))
     test(num<-num+0.001, ans <- mergepair(l$lhs, l$rhs, on="id1", how=how, mult=mult, copy=FALSE), expected[[how]])
-    test(num<-num+0.001, test.copy(ans, l$lhs, l$rhs, how=how, copy=FALSE, should=should))
-    ## copy=NA: at least LHS shared
-    test(num<-num+0.001, ans <- mergepair(l$lhs, l$rhs, on="id1", how=how, mult=mult, copy=NA), expected[[how]])
-    test(num<-num+0.001, test.copy(ans, l$lhs, l$rhs, how=how, copy=NA, should=should))
+    test(num<-num+0.001, notcopied(ans, l, how=how, unless=unless))
   }
 }
-
-### LHS has zero nrow
+### LHS has zero nrow: no copies
 num = 27.000
+unless = character()
 l = list(
   lhs = data.table(id1=integer(), v1=integer()),
   rhs = data.table(id1=2:1, v2=1:2)
@@ -237,21 +203,15 @@ for (how in c("inner","left","right","full")) {
   num = trunc(num*10)/10 + 0.1
   for (mult in c("all","first","last","error")) {
     num = trunc(num*100)/100 + 0.01
-    ## copy=TRUE: no shared columns
     test(num<-num+0.001, ans <- mergepair(l$lhs, l$rhs, on="id1", how=how, mult=mult, copy=TRUE), expected[[how]])
-    test(num<-num+0.001, test.copy(ans, l$lhs, l$rhs, how=how, copy=TRUE))
-    ## copy=FALSE: LHS shared but no RHS
+    test(num<-num+0.001, copied(ans, l))
     test(num<-num+0.001, ans <- mergepair(l$lhs, l$rhs, on="id1", how=how, mult=mult, copy=FALSE), expected[[how]])
-    test(num<-num+0.001, test.copy(ans, l$lhs, l$rhs, how=how, copy=FALSE, should="full")) ## rhs should be copied here, because copy=F copy rhs
-    ## copy=NA: at least LHS shared
-    test(num<-num+0.001, ans <- mergepair(l$lhs, l$rhs, on="id1", how=how, mult=mult, copy=NA), expected[[how]])
-    test(num<-num+0.001, test.copy(ans, l$lhs, l$rhs, how=how, copy=NA, shouldnot="full")) ## rhs is identical, does not need to be copied
+    test(num<-num+0.001, notcopied(ans, l, how=how, unless=unless))
   }
 }
-
-### RHS has zero nrow: copy inner
+### RHS has zero nrow
 num = 28.000
-should = "inner"
+unless = "inner"
 l = list(
   lhs = data.table(id1=2:1, v1=1:2),
   rhs = data.table(id1=integer(), v2=integer())
@@ -266,15 +226,10 @@ for (how in c("inner","left","right","full")) {
   num = trunc(num*10)/10 + 0.1
   for (mult in c("all","first","last","error")) {
     num = trunc(num*100)/100 + 0.01
-    ## copy=TRUE: no shared columns
     test(num<-num+0.001, ans <- mergepair(l$lhs, l$rhs, on="id1", how=how, mult=mult, copy=TRUE), expected[[how]])
-    test(num<-num+0.001, test.copy(ans, l$lhs, l$rhs, how=how, copy=TRUE))
-    ## copy=FALSE: LHS shared but no RHS
+    test(num<-num+0.001, copied(ans, l))
     test(num<-num+0.001, ans <- mergepair(l$lhs, l$rhs, on="id1", how=how, mult=mult, copy=FALSE), expected[[how]])
-    test(num<-num+0.001, test.copy(ans, l$lhs, l$rhs, how=how, copy=FALSE, should=should))
-    ## copy=NA: at least LHS shared
-    test(num<-num+0.001, ans <- mergepair(l$lhs, l$rhs, on="id1", how=how, mult=mult, copy=NA), expected[[how]])
-    test(num<-num+0.001, test.copy(ans, l$lhs, l$rhs, how=how, copy=NA, should=should))
+    test(num<-num+0.001, notcopied(ans, l, how=how, unless=unless))
   }
 }
 
@@ -283,29 +238,22 @@ for (how in c("inner","left","right","full")) {
 ## no duplicates
 
 ### LHS equal to RHS
-#num = 121.000
-#l = list(
-#  lhs = data.table(id1=1:2, v1=1:2),
-#  rhs = data.table(id1=1:2, v2=1:2)
-#)
-#expected = list(id1=1:2, v1=1:2, v2=1:2)
-#for (how in c("inner","left","right","full")) {
-#  num = trunc(num*10)/10 + 0.1
-#  for (mult in c("all","first","last","error")) {
-#    num = trunc(num*100)/100 + 0.01
-#    ## copy=TRUE: no shared columns
-#    test(num<-num+0.001, ans <- mergepair(l$lhs, l$rhs, on="id1", how=how, mult=mult, copy=TRUE), expected)
-#    test(num<-num+0.001, test.copy(ans, l$lhs, l$rhs, how=how, copy=TRUE))
-#    ## copy=FALSE: LHS shared but no RHS
-#    test(num<-num+0.001, ans <- mergepair(l$lhs, l$rhs, on="id1", how=how, mult=mult, copy=FALSE), expected)
-#    test(num<-num+0.001, test.copy(ans, l$lhs, l$rhs, how=how, copy=FALSE))
-#    ## copy=NA: at least LHS shared
-#    test(num<-num+0.001, ans <- mergepair(l$lhs, l$rhs, on="id1", how=how, mult=mult, copy=NA), expected)
-#    test(num<-num+0.001, test.copy(ans, l$lhs, l$rhs, how=how, copy=NA))
-#  }
-#}
+l = list(
+  lhs = data.table(id1=1:2, v1=1:2),
+  rhs = data.table(id1=1:2, v2=1:2)
+)
+expected = data.table(id1=1:2, v1=1:2, v2=1:2)
+test(121.01, mergelist(l, on="id1", how="inner", mult="all"), expected)
+test(121.02, mergelist(l, on="id1", how="left", mult="all"), expected)
+test(121.03, mergelist(l, on="id1", how="right", mult="all"), expected)
+test(121.04, mergelist(l, on="id1", how="full", mult="all"), expected)
+# copy
+ans = mergelist(l, on="id1", how="left", mult="error", copy=TRUE)
+test(121.11, copied(ans, l))
+ans = mergelist(l, on="id1", how="left", mult="error", copy=FALSE)
+test(121.12, notcopied(ans, l, how="left"))
 
-## duplicate matches, those tests have matching tests vs SQLite
+## duplicate matches, see sqlite.Rraw for tests vs SQLite db
 
 ### duplicates in RHS and LHS
 num = 221.00
@@ -313,43 +261,38 @@ l = list(
   lhs = data.table(id1=c(1:3,3L), v1=1:4),
   rhs = data.table(id1=c(1L,1L,3:4), v2=1:4)
 )
-expected = list(
-  inner = list(
-    all = data.table(id1=c(1L,1L,3L,3L), v1=c(1L,1L,3L,4L), v2=c(1:3,3L)),
-    first = data.table(id1=c(1L,3L), v1=c(1L,3L), v2=c(1L,3L)),
-    last = data.table(id1=c(1L,3L), v1=c(1L,4L), v2=2:3),
-    error = NULL
-  ),
-  left = list(
-    all = data.table(id1=c(1L,1:3,3L), v1=c(1L,1:4), v2=c(1:2,NA,3L,3L)),
-    first = data.table(id1=c(1:3,3L), v1=1:4, v2=c(1L,NA,3L,3L)),
-    last = data.table(id1=c(1:3,3L), v1=1:4, v2=c(2L,NA,3L,3L)),
-    error = NULL
-  ),
-  right = list(
-    all = data.table(id1=c(1L,1L,3L,3:4), v1=c(1L,1L,3:4,NA), v2=c(1:3,3:4)),
-    first = data.table(id1=c(1L,1L,3:4), v1=c(1L,1L,3L,NA), v2=1:4),
-    last = data.table(id1=c(1L,1L,3:4), v1=c(1L,1L,4L,NA), v2=1:4),
-    error = NULL
-  ),
-  full = list(
-    all = data.table(id1=c(1L,1:3,3:4), v1=c(1L,1:4,NA), v2=c(1:2,NA,3L,3:4)),
-    first = data.table(id1=1:4, v1=c(1:3,NA), v2=c(1L,NA,3:4)),
-    last = data.table(id1=1:4, v1=c(1:2,4L,NA), v2=c(2L,NA,3:4)),
-    error = NULL
-  )
-)
-#for (how in c("inner","left","right","full")) {
-#  num = trunc(num*10)/10 + 0.1
-#  for (mult in c("all","first","last","error")) {
-#    num = trunc(num*100)/100 + 0.01
-#    if (is.null(expected[[how]][[mult]])) {
-#      test(num, mergelist(l, on="id1", how=how, mult=mult), error="multiple matches during merge")
-#    } else {
-#      test(num, mergelist(l, on="id1", how=how, mult=mult), expected[[how]][[mult]])
-#    }
-#  }
-#}
+expected = list(inner = list(
+  all = data.table(id1=c(1L,1L,3L,3L), v1=c(1L,1L,3L,4L), v2=c(1:3,3L)),
+  first = data.table(id1=c(1L,3L), v1=c(1L,3L), v2=c(1L,3L)),
+  last = data.table(id1=c(1L,3L), v1=c(1L,4L), v2=2:3),
+  error = NULL
+), left = list(
+  all = data.table(id1=c(1L,1:3,3L), v1=c(1L,1:4), v2=c(1:2,NA,3L,3L)),
+  first = data.table(id1=c(1:3,3L), v1=1:4, v2=c(1L,NA,3L,3L)),
+  last = data.table(id1=c(1:3,3L), v1=1:4, v2=c(2L,NA,3L,3L)),
+  error = NULL
+), right = list(
+  all = data.table(id1=c(1L,1L,3L,3:4), v1=c(1L,1L,3:4,NA), v2=c(1:3,3:4)),
+  first = data.table(id1=c(1L,1L,3:4), v1=c(1L,1L,3L,NA), v2=1:4),
+  last = data.table(id1=c(1L,1L,3:4), v1=c(1L,1L,4L,NA), v2=1:4),
+  error = NULL
+), full = list(
+  all = data.table(id1=c(1L,1:3,3:4), v1=c(1L,1:4,NA), v2=c(1:2,NA,3L,3:4)),
+  first = data.table(id1=1:4, v1=c(1:3,NA), v2=c(1L,NA,3:4)),
+  last = data.table(id1=1:4, v1=c(1:2,4L,NA), v2=c(2L,NA,3:4)),
+  error = NULL
+))
+for (how in c("inner","left","right","full")) {
+  num = trunc(num*10)/10 + 0.1
+  for (mult in c("all","first","last","error")) {
+    num = trunc(num*100)/100 + 0.01
+    if (is.null(expected[[how]][[mult]])) {
+      test(num<-num+0.001, mergelist(l, on="id1", how=how, mult=mult), error="multiple matches during merge")
+    } else {
+      test(num<-num+0.001, mergelist(l, on="id1", how=how, mult=mult), expected[[how]][[mult]])
+    }
+  }
+}
 
 ## test exceeding overalloc for a table
 

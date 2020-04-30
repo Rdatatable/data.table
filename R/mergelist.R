@@ -40,11 +40,11 @@ fdistinct = function(x, on=key(x), mult=c("first","last"), cols=seq_along(x), co
     cols = seq_along(x)
   else if (!(is.character(cols) || is.integer(cols)) || !length(cols) || anyNA(cols))
     stop("'cols' must be non-zero length, non-NA, integer or character columns of 'x' argument")
-  if (!is.logical(copy) || length(copy)!=1L || is.na(copy))
+  if (!isTRUEorFALSE(copy))
     stop("'copy' must be TRUE or FALSE")
   ## do not compute sort=F for mult="first" if index (sort=T) already available, sort=T is needed only for mult="last"
   ## this short circuit will work after #4386 because it requires retGrp=T
-  sort = hasindex(x, by=on, retGrp=TRUE) || mult!="first"
+  sort = mult!="first" || hasindex(x, by=on, retGrp=TRUE)
   o = forderv(x, by=on, sort=sort, retGrp=TRUE)
   if (attr(o, "maxgrpn", TRUE) <= 1L) {
     ans = .shallow(x, someCols(x, cols, keep=on), retain.key=TRUE)
@@ -61,7 +61,7 @@ fdistinct = function(x, on=key(x), mult=c("first","last"), cols=seq_along(x), co
   .Call(CsubsetDT, x, f, someCols(x, cols, keep=on))
 }
 
-# extra layer over bmerge to provide ready to use row index (or NULL for 1:nrow)
+# extra layer over bmerge to provide ready to use row indices (or NULL for 1:nrow)
 # NULL to avoid extra copies in downstream code, it turned out that avoiding copies precisely is costly and enormously complicates code, will be easier to handle 1:nrow in subsetDT
 # we don't use semi join in mergelist so is not tested, anti join is used in full outer join
 dtmatch = function(x, i, on, nomatch, mult, verbose, allow.cartesian, semi=FALSE, anti=FALSE, void=FALSE) {
@@ -80,6 +80,8 @@ dtmatch = function(x, i, on, nomatch, mult, verbose, allow.cartesian, semi=FALSE
   ans = bmerge(i, x, icols, xcols, roll=0, rollends=c(FALSE, TRUE), nomatch=nomatch, mult=mult, ops=1L, verbose=verbose)
   if (void) ## void=T is only for the case when we want raise error for mult='error', and that would happen in above line
     return(invisible(NULL))
+  else if (!allow.cartesian && mult=="all")
+    invisible() ## TODO
 
   ## semi and anti short-circuit
   if (semi || anti) { ## we will subset i rather than x, thus assign to irows, not to xrows
@@ -91,7 +93,7 @@ dtmatch = function(x, i, on, nomatch, mult, verbose, allow.cartesian, semi=FALSE
   ## xrows, join-to
   xrows = if (ans$allLen1) ans$starts else vecseq(ans$starts, ans$lens, NULL)
   if (inner && ans$allLen1) xrows = xrows[as.logical(ans$lens)]
-  len.x = length(xrows)
+  len.x = length(xrows) ## cannot optimize xrows to NULL, that would mean ans$starts rather than 1:nrow, edge case when ans$starts==1:nrow is not worth it
 
   ## irows, join-from
   irows = if (!(ans$allLen1 && (!inner || len.x==length(ans$starts)))) seqexp(ans$lens)
@@ -101,10 +103,9 @@ dtmatch = function(x, i, on, nomatch, mult, verbose, allow.cartesian, semi=FALSE
     xrows = ans$xo[xrows]
   len.x = length(xrows)
 
-  if (len.i!=len.x) {
-    if (interactive()) {message("dtmatinternal error: ch out len.i != len.x"); browser()}  # nocov
+  if (len.i!=len.x)
     stop("internal error: dtmatch out len.i != len.x") # nocov
-  }
+
   return(list(ans=ans, irows=irows, xrows=xrows))
 }
 
@@ -124,9 +125,11 @@ mergepair = function(lhs, rhs, on, how, mult, lhs.cols=names(lhs), rhs.cols=name
   }
   nomatch = if (how=="inner") 0L else NA_integer_
 
+  cp.i = FALSE ## copy marker of out.i
   if (mult!="all" && (how=="inner" || how=="full")) { ## for inner|full join we apply mult on both tables, bmerge do only 'i' table
     if (mult=="first" || mult=="last") {
       jnfm = fdistinct(jnfm, on=on, mult=mult, cols=fm.cols, copy=FALSE) ## might not copy when already unique by 'on'
+      cp.i = nrow(jnfm)!=nrow(lhs) ## nrow(lhs) bc how='inner|full' so jnfm=lhs
     } else if (mult=="error") {
       ## we do this branch only to raise error from bmerge, we cannot use forder to just find duplicates because those duplicates might not have matching rows in another table
       dtmatch(x=jnfm, i=jnto, on=on, nomatch=nomatch, mult=mult, verbose=verbose, allow.cartesian=allow.cartesian, void=TRUE)
@@ -137,64 +140,79 @@ mergepair = function(lhs, rhs, on, how, mult, lhs.cols=names(lhs), rhs.cols=name
   ans = dtmatch(x=jnto, i=jnfm, on=on, nomatch=nomatch, mult=mult, verbose=verbose, allow.cartesian=allow.cartesian)
 
   ## make i side
-  cp.i = !is.null(ans$irows)
-  out.i = if (!cp.i)
+  out.i = if (is.null(ans$irows))
     .shallow(jnfm, cols=someCols(jnfm, fm.cols, keep=on), retain.key=TRUE)
   else
     .Call(CsubsetDT, jnfm, ans$irows, someCols(jnfm, fm.cols, keep=on))
+  cp.i = cp.i || !is.null(ans$irows)
 
   ## make x side
-  cp.x = !is.null(ans$xrows)
-  out.x = if (!cp.x)
-    .shallow(jnto, cols=someCols(jnto, to.cols, drop=on))
+  out.x = if (is.null(ans$xrows))
+    stop("codecov was here?") #.shallow(jnto, cols=someCols(jnto, to.cols, drop=on)) ## codecov shows we were here but xrows=NULL is not possible as of now, see codecov debug chunk below
   else
     .Call(CsubsetDT, jnto, ans$xrows, someCols(jnto, to.cols, drop=on))
+  cp.x = !is.null(ans$xrows)
+
+  ## debug chunk for codecov to see if `{` makes difference
+  if (FALSE)
+    cat("no!\n")
+  nul = if (FALSE)
+    0L
+  else
+    1L
+  nul = if (FALSE) {
+    0L
+  } else {
+    1L
+  }
 
   if (how!="full") {
-    if (!cp.i && isTRUE(copy))
+    if (!cp.i && copy)
       out.i = copy(out.i)
-    if (!cp.x && !is.na(copy))
+    if (!cp.x && copy)
       out.x = copy(out.x)
 
     ## stack i and x
-    if (how=="right") {
-      out = .Call(Ccbindlist, list(.shallow(out.i, cols=on), out.x, .shallow(out.i, cols=someCols(jnfm, fm.cols, drop=on))), FALSE) ## arrange columns: i.on, x.cols, i.cols
-    } else {
-      out = .Call(Ccbindlist, list(out.i, out.x), FALSE)
-    }
+    out = if (how=="right")
+      .Call(Ccbindlist, list(.shallow(out.i, cols=on), out.x, .shallow(out.i, cols=someCols(jnfm, fm.cols, drop=on))), FALSE) ## arrange columns: i.on, x.cols, i.cols
+    else
+      .Call(Ccbindlist, list(out.i, out.x), FALSE)
   } else { # how=="full"
-    ## we made left join already, proceed to right join, actually just swap tbls and inner
+    ## we made left join above, proceed to right join, actually just swap tbls and inner
     jnfm = rhs; fm.cols = rhs.cols; jnto = lhs; to.cols = lhs.cols
-    if (mult=="first" || mult=="last")
+    cp.r = FALSE
+    if (mult=="first" || mult=="last") {
       jnfm = fdistinct(jnfm, on=on, mult=mult, cols=fm.cols, copy=FALSE)
+      cp.r = nrow(jnfm)!=nrow(rhs) ## nrow(rhs) bc jnfm=rhs
+    }
     ## mult=="error" check not needed anymore, both sides has been already checked
 
     ## binary merge anti join
     bns = dtmatch(x=jnto, i=jnfm, on=on, nomatch=0L, mult=mult, verbose=verbose, allow.cartesian=allow.cartesian, anti=TRUE)
 
     ## make anti join side
-    cp.r = !is.null(bns$irows)
-    out.r = if (!cp.r)
+    out.r = if (is.null(bns$irows))
       .shallow(jnfm, cols=someCols(jnfm, fm.cols, keep=on))
     else
       .Call(CsubsetDT, jnfm, bns$irows, someCols(jnfm, fm.cols, keep=on))
+    cp.r = cp.r || !is.null(bns$irows)
 
     ## short circuit to avoid rbindlist to empty sets
     if (!nrow(out.r)) { ## possibly also !nrow(out.i)
-      if (!cp.i && isTRUE(copy))
+      if (!cp.i && copy)
         out.i = copy(out.i)
-      if (!cp.x && !is.na(copy))
+      if (!cp.x && copy)
         out.x = copy(out.x)
       out = .Call(Ccbindlist, list(out.i, out.x), FALSE)
     } else if (!nrow(out.i)) { ## but not !nrow(out.r)
-      if (!cp.r && !is.na(copy))
+      if (!cp.r && copy)
         out.r = copy(out.r)
       if (length(add<-setdiff(names(out.i), names(out.r)))) { ## add missing columns of proper types NA
         set(out.r, NULL, add, lapply(unclass(out.i)[add], `[`, 1L)) ## we could change to cbindlist once it will recycle
         setcolorder(out.r, neworder=names(out.i))
       }
       out = c(out.r) ## we want list
-    } else { ## all might still not be copied, rbindlist will copy
+    } else { ## all might have not been copied yet, rbindlist will copy
       out.l = .Call(Ccbindlist, list(out.i, out.x), FALSE)
       ## we could replace rbindlist for new alloc of nrow(out.l)+nrow(out.r) and then memcpy into it
       ## rbindlist overalloc, and returns dt rather than a list
@@ -208,30 +226,33 @@ mergepair = function(lhs, rhs, on, how, mult, lhs.cols=names(lhs), rhs.cols=name
 # rework dtmatch: rm allow.cartesian?
 # missing on, key of join-to
 # vectorized length(l)-1L: on, how, mult
-# copy!=TRUE unit tests, mergelist and mergepair
-mergelist = function(l, on, cols, how=c("inner","left","right","full"), mult=c("all","first","last","error"), copy=TRUE) {
+# copy=FALSE unit tests, mergelist and mergepair
+mergelist = function(l, on, cols, how=c("inner","left","right","full"), mult=c("all","first","last","error"), copy=TRUE, allow.cartesian=TRUE) {
   verbose = getOption("datatable.verbose")
-  allow.cartesian = TRUE
-  if (verbose) p = proc.time()[[3L]]
+  if (verbose)
+    p = proc.time()[[3L]]
   if (!is.list(l) || is.data.frame(l))
     stop("'l' must be a list")
+  if (!isTRUEorFALSE(copy))
+    stop("'copy' must be TRUE or FALSE")
+  if (!isTRUEorFALSE(allow.cartesian))
+    stop("'allow.cartesian' must be TRUE or FALSE")
+  if (!allow.cartesian)
+    stop("allow.cartesian=FALSE not yet implemented")
   how = match.arg(how)
-  if (!is.logical(copy) || length(copy)!=1)
-    stop("'copy' must be logical of length 1")
-  if (is.na(copy))
-    stop("'copy' NA not yet implemented")
   mult = match.arg(mult)
-  if (!isTRUE(copy) && (
+  if (!copy && (
     how!="left" ||
     !(mult=="first" || mult=="last" || mult=="error")
   ))
-    stop("copy!=TRUE is possible only for how='left' and mult='first|last|error'")
+    stop("copy=FALSE is works only for how='left' and mult='first|last|error'")
   if (any(!vapply(l, perhaps.data.table, FALSE)))
     stop("Every element of 'l' list must be data.table type object")
   n = length(l)
   if (n<2L) {
-    if (isTRUE(copy)) l = copy(l)
-    if (verbose) cat(sprintf("mergelist: took %.3fs\n", n, proc.time()[[3L]]-p))
+    if (copy) l = copy(l)
+    if (verbose)
+      cat(sprintf("mergelist: merging %d tables, took %.3fs\n", n, proc.time()[[3L]]-p))
     return(l)
   }
   if (missing(on) || is.null(on)) {
@@ -270,21 +291,17 @@ mergelist = function(l, on, cols, how=c("inner","left","right","full"), mult=c("
       on = on, how = how, mult = mult,
       #on = on[[join.i]], how = how[[join.i]], mult = mult[[join.i]], ## vectorized params TODO
       lhs.cols = out.cols, rhs.cols = cols[[rhs.i]],
-      copy = NA, ## avoid any copies inside, will copy once below
+      copy = FALSE, ## avoid any copies inside, will copy once below
       allow.cartesian = allow.cartesian, verbose = verbose
     )
     out.cols = copy(names(out))
   }
   out.mem = vapply(out, address, "")
   setDT(out)
-  if (!is.na(copy)) {
-    cp = names(out.mem)[out.mem %chin% unlist(if (copy) l.mem else l.mem[-1L], recursive=FALSE)]
-    if (length(cp)) {
-      if (verbose) cat(sprintf("mergelist: copy %d columns\n", length(cp)))
-      set(out, NULL, cp, copy(unclass(out)[cp]))
-    }
-  }
-  if (verbose) cat(sprintf("mergelist: merging %d tables, took %.3fs\n", proc.time()[[3L]]-p))
+  if (length(cp <- names(out.mem)[out.mem %chin% unlist(if (copy) l.mem else l.mem[-1L], recursive=FALSE)]))
+    set(out, NULL, cp, copy(unclass(out)[cp]))
+  if (verbose)
+    cat(sprintf("mergelist: merging %d tables, took %.3fs\n", n, proc.time()[[3L]]-p))
   out
 }
 
