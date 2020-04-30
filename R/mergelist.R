@@ -93,7 +93,7 @@ dtmatch = function(x, i, on, nomatch, mult, verbose, allow.cartesian, semi=FALSE
   ## xrows, join-to
   xrows = if (ans$allLen1) ans$starts else vecseq(ans$starts, ans$lens, NULL)
   if (inner && ans$allLen1) xrows = xrows[as.logical(ans$lens)]
-  len.x = length(xrows) ## cannot optimize xrows to NULL, that would mean ans$starts rather than 1:nrow, edge case when ans$starts==1:nrow is not worth it
+  len.x = length(xrows) ## as of now cannot optimize to NULL, search for #4409 here
 
   ## irows, join-from
   irows = if (!(ans$allLen1 && (!inner || len.x==length(ans$starts)))) seqexp(ans$lens)
@@ -148,7 +148,7 @@ mergepair = function(lhs, rhs, on, how, mult, lhs.cols=names(lhs), rhs.cols=name
 
   ## make x side
   out.x = if (is.null(ans$xrows)) ## as of now xrows cannot be NULL #4409 thus nocov below
-    .shallow(jnto, cols=someCols(jnto, to.cols, drop=on)) # nocov ## as of now nocov does not make difference here r-lib/covr#279
+    stop("internal error: dtmatch()$xrows returned NULL, #4409 been resolved but related code has not been updated? please report to issue tracker") #.shallow(jnto, cols=someCols(jnto, to.cols, drop=on)) # nocov ## as of now nocov does not make difference r-lib/covr#279
   else
     .Call(CsubsetDT, jnto, ans$xrows, someCols(jnto, to.cols, drop=on))
   cp.x = !is.null(ans$xrows)
@@ -156,9 +156,8 @@ mergepair = function(lhs, rhs, on, how, mult, lhs.cols=names(lhs), rhs.cols=name
   if (how!="full") {
     if (!cp.i && copy)
       out.i = copy(out.i)
-    if (!cp.x && copy)
-      out.x = copy(out.x)
-
+    #if (!cp.x && copy) ## as of now cp.x always TRUE, search for #4409 here
+    #  out.x = copy(out.x)
     ## stack i and x
     out = if (how=="right")
       .Call(Ccbindlist, list(.shallow(out.i, cols=on), out.x, .shallow(out.i, cols=someCols(jnfm, fm.cols, drop=on))), FALSE) ## arrange columns: i.on, x.cols, i.cols
@@ -188,8 +187,8 @@ mergepair = function(lhs, rhs, on, how, mult, lhs.cols=names(lhs), rhs.cols=name
     if (!nrow(out.r)) { ## possibly also !nrow(out.i)
       if (!cp.i && copy)
         out.i = copy(out.i)
-      if (!cp.x && copy)
-        out.x = copy(out.x)
+      #if (!cp.x && copy) ## as of now cp.x always TRUE, search for #4409 here
+      #  out.x = copy(out.x)
       out = .Call(Ccbindlist, list(out.i, out.x), FALSE)
     } else if (!nrow(out.i)) { ## but not !nrow(out.r)
       if (!cp.r && copy)
@@ -213,7 +212,6 @@ mergepair = function(lhs, rhs, on, how, mult, lhs.cols=names(lhs), rhs.cols=name
 # rework dtmatch: rm allow.cartesian?
 # missing on, key of join-to
 # vectorized length(l)-1L: on, how, mult
-# copy=FALSE unit tests, mergelist and mergepair
 mergelist = function(l, on, cols, how=c("inner","left","right","full"), mult=c("all","first","last","error"), copy=TRUE) {
   allow.cartesian = TRUE
   verbose = getOption("datatable.verbose")
@@ -238,10 +236,11 @@ mergelist = function(l, on, cols, how=c("inner","left","right","full"), mult=c("
     stop("Every element of 'l' list must be data.table type object")
   n = length(l)
   if (n<2L) {
-    if (copy) l = copy(l)
+    out = if (!n) l else l[[1L]]
+    if (copy) out = copy(out)
     if (verbose)
-      cat(sprintf("mergelist: merging %d tables, took %.3fs\n", n, proc.time()[[3L]]-p))
-    return(l)
+      cat(sprintf("mergelist: merging %d table(s), took %.3fs\n", n, proc.time()[[3L]]-p))
+    return(out)
   }
   if (missing(on) || is.null(on)) {
     haskeyv = vapply(l, haskey, TRUE)

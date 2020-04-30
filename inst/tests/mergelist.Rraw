@@ -7,9 +7,30 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
   require(data.table)
   test = data.table:::test
   mergepair = data.table:::mergepair
+  perhaps.data.table = data.table:::perhaps.data.table
+  fdistinct = data.table:::fdistinct
 }
 
 addresses = function(x) vapply(x, address, "")
+
+test(1.01, perhaps.data.table(list()))
+test(1.02, perhaps.data.table(list(a=1:2)))
+test(1.03, perhaps.data.table(list(a=1:2, b=1:2)))
+test(1.04, perhaps.data.table(list(1:2, 1:2)), FALSE)
+
+test(2.01, fdistinct(list(x=c(1L,1:2), b=1:2), on="x", mult="last"), error="must be data.table type object")
+test(2.02, fdistinct(data.table(x=c(1L,1:2)), on="z", mult="last"), error="must be character column names of")
+test(2.03, fdistinct(data.table(x=c(1L,1:2)), on="x", mult="last", cols=character()), error="must be non-zero length, non-NA, integer or character columns of")
+test(2.04, fdistinct(data.table(x=c(1L,1:2, y=1:3)), on="x", mult="last", copy=NA), error="must be TRUE or FALSE")
+d = data.table(x=1:2, y=1:2)
+test(2.05, ans<-fdistinct(d, on="x", mult="last"), d)
+test(2.06, intersect(addresses(ans), addresses(d)), character())
+test(2.07, ans<-fdistinct(d, on="x", mult="last", copy=FALSE), d)
+test(2.08, addresses(ans), addresses(d))
+d = data.table(x=c(2:1,2L), y=1:3)
+test(2.09, fdistinct(d, on="x", mult="first"), data.table(x=2:1, y=1:2))
+test(2.10, fdistinct(d, on="x", mult="last"), data.table(x=1:2, y=2:3))
+rm(d)
 
 # cbindlist
 
@@ -38,6 +59,7 @@ op = options(datatable.verbose=TRUE)
 test(12.07, cbindlist(list(data.table(a=1:2), data.table(b=1:2))), data.table(a=1:2, b=1:2), output="cbindlist.*took")
 options(op)
 test(12.08, cbindlist(list(data.table(), data.table(a=1:2), data.table(b=1:2))), data.table(a=1:2, b=1:2))
+test(12.09, cbindlist(list(data.table(), data.table(a=1:2), list(b=1:2))), data.table(a=1:2, b=1:2))
 
 # mergepair
 
@@ -234,6 +256,27 @@ for (how in c("inner","left","right","full")) {
 }
 
 # mergelist
+
+test(101.01, mergelist(data.table(x=1L), on="x"), error="must be a list")
+test(101.02, mergelist(list(data.table(x=1L)), on="x", copy=NA), error="must be TRUE or FALSE")
+test(101.03, mergelist(list(data.table(x=1L)), on="x", copy=FALSE), error="works only for")
+test(101.04, mergelist(list(data.table(x=1L), list(x=1:2, y=1L)), on="x"), error="must be data.table type object")
+l = list(d<-data.table(x=1:2))
+test(101.05, ans<-mergelist(l, on="x", how="left", mult="first"), d)
+test(101.06, intersect(addresses(d), addresses(ans)), character())
+test(101.07, ans<-mergelist(l, on="x", how="left", mult="first", copy=FALSE), d)
+test(101.08, addresses(d), addresses(ans))
+op = options("datatable.verbose"=TRUE)
+test(101.09, mergelist(l, on="x"), d, output="mergelist.*1 table.*took")
+options(op)
+l = list(d1<-data.table(x=1:2), d2<-data.table(x=2:3))
+test(101.10, mergelist(l, on=character()), error="must be non zero length character")
+op = options("datatable.verbose"=TRUE)
+test(101.11, mergelist(l, on="x"), data.table(x=2L), output="mergelist.*2 tables.*took")
+options(op)
+##TODO
+#on=NULL, join using keys
+#cols, take only subset of columns
 
 ## no duplicates
 

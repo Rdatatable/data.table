@@ -244,6 +244,8 @@ int NROW(SEXP x);
 int NCOL(SEXP x);
 SEXP setDT(SEXP x);
 bool isDataTable(SEXP x);
+bool isDataFrame(SEXP x);
+bool isDataList(SEXP x);
 bool perhapsDataTable(SEXP x);
 SEXP perhapsDataTableR(SEXP x);
 

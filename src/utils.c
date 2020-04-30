@@ -412,6 +412,11 @@ bool isDataTable(SEXP x) {
   return INHERITS(x, char_datatable);
 }
 
+// inherits(x, "data.frame")
+bool isDataFrame(SEXP x) {
+  return INHERITS(x, char_dataframe);
+}
+
 // if (length(x)>1L) length(unique(vapply(x, length, 0L)))==1L else TRUE
 static inline bool equalLens(SEXP x) {
   int n = LENGTH(x);
@@ -429,9 +434,9 @@ bool isDataList(SEXP x) {
   return isNewList(x) && (!LENGTH(x) || (equalLens(x) && !isNull(getAttrib(x, R_NamesSymbol))));
 }
 
-// inherits(x, "data.table") || inherits(x, "data.frame") || isDataList(x)
+// isDataTable(x) || isDataFrame(x) || isDataList(x)
 bool perhapsDataTable(SEXP x) {
-  return INHERITS(x, char_datatable) || INHERITS(x, char_dataframe) || isDataList(x);
+  return isDataTable(x) || isDataFrame(x) || isDataList(x);
 }
 SEXP perhapsDataTableR(SEXP x) {
   SEXP ans = PROTECT(allocVector(LGLSXP, 1));
