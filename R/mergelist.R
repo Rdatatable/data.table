@@ -227,7 +227,8 @@ mergepair = function(lhs, rhs, on, how, mult, lhs.cols=names(lhs), rhs.cols=name
 # missing on, key of join-to
 # vectorized length(l)-1L: on, how, mult
 # copy=FALSE unit tests, mergelist and mergepair
-mergelist = function(l, on, cols, how=c("inner","left","right","full"), mult=c("all","first","last","error"), copy=TRUE, allow.cartesian=TRUE) {
+mergelist = function(l, on, cols, how=c("inner","left","right","full"), mult=c("all","first","last","error"), copy=TRUE) {
+  allow.cartesian = TRUE
   verbose = getOption("datatable.verbose")
   if (verbose)
     p = proc.time()[[3L]]
@@ -245,7 +246,7 @@ mergelist = function(l, on, cols, how=c("inner","left","right","full"), mult=c("
     how!="left" ||
     !(mult=="first" || mult=="last" || mult=="error")
   ))
-    stop("copy=FALSE is works only for how='left' and mult='first|last|error'")
+    stop("copy=FALSE works only for how='left' and mult='first|last|error'")
   if (any(!vapply(l, perhaps.data.table, FALSE)))
     stop("Every element of 'l' list must be data.table type object")
   n = length(l)
