@@ -116,8 +116,9 @@ mergepair = function(lhs, rhs, on, how, mult, lhs.cols=names(lhs), rhs.cols=name
     else if (how=="right") on = key(lhs)
     else on = onkeys(key(lhs), key(rhs))
     if (is.null(on))
-      stop("'on' is missing and necessary keys were not present")
+      stop("'on' is missing and necessary key is not present")
   }
+
   if (how!="right") { ## join-to, join-from
     jnfm = lhs; fm.cols = lhs.cols; jnto = rhs; to.cols = rhs.cols
   } else {
@@ -160,7 +161,7 @@ mergepair = function(lhs, rhs, on, how, mult, lhs.cols=names(lhs), rhs.cols=name
     #  out.x = copy(out.x)
     ## stack i and x
     out = if (how=="right")
-      .Call(Ccbindlist, list(.shallow(out.i, cols=on), out.x, .shallow(out.i, cols=someCols(jnfm, fm.cols, drop=on))), FALSE) ## arrange columns: i.on, x.cols, i.cols
+      .Call(Ccbindlist, list(.shallow(out.i, cols=on), out.x, .shallow(out.i, cols=setdiff(names(out.i), on))), FALSE) ## arrange columns: i.on, x.cols, i.cols
     else
       .Call(Ccbindlist, list(out.i, out.x), FALSE)
   } else { # how=="full"
@@ -209,7 +210,7 @@ mergepair = function(lhs, rhs, on, how, mult, lhs.cols=names(lhs), rhs.cols=name
 }
 
 # TODO:
-# rework dtmatch: rm allow.cartesian?
+# allow.cartesian
 # missing on, key of join-to
 # vectorized length(l)-1L: on, how, mult
 mergelist = function(l, on, cols, how=c("inner","left","right","full"), mult=c("all","first","last","error"), copy=TRUE) {
@@ -244,9 +245,12 @@ mergelist = function(l, on, cols, how=c("inner","left","right","full"), mult=c("
   }
   if (missing(on) || is.null(on)) {
     haskeyv = vapply(l, haskey, TRUE)
-    ## TODO: first LHS tables does not need to be keyed
-    if (any(!haskeyv))
-      stop("'on' is missing but not all tables are keyed")
+    if (!( ## list valid keys below
+      (how=="left" && all(haskeyv[-1L])) ||
+      (how=="right" && all(haskeyv[-2L])) || ## TODO
+      ((how=="inner" || how=="full") && any(haskeyv)) ## missing key will be caught in mergepair
+    ))
+      stop("'on' is missing and necessary keys are not present")
     on = NULL
   } else if (!is.character(on) || !length(on)) {
     stop("'on' must be non zero length character")
