@@ -147,6 +147,8 @@ unit = "s")
 
 7. Added more explanation/examples to `?data.table` for how to use `.BY`, [#1363](https://github.com/Rdatatable/data.table/issues/1363).
 
+8. Also added some aliases redirecting to `?data.table`: `?"."`, `?".."`, `?".("`, and `?".()"` all point to that help page, [#4385](https://github.com/Rdatatable/data.table/issues/4385) and [#4407](https://github.com/Rdatatable/data.table/issues/4407). This will help new (and maybe some experienced!) users of `data.table` find the documentation for these convenience features available within `[]`. Recall that `.` is an alias for `list` inside `i`, `j`, and `by`, and `..var` forces `data.table` to look for `var` in the calling environment, as opposed to a column of the table.
+
 
 # data.table [v1.12.8](https://github.com/Rdatatable/data.table/milestone/15?closed=1)  (09 Dec 2019)
 

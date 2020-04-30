@@ -5,6 +5,10 @@
 \alias{Ops.data.table}
 \alias{is.na.data.table}
 \alias{[.data.table}
+\alias{.}
+\alias{.(}
+\alias{.()}
+\alias{..}
 \title{ Enhanced data.frame }
 \description{
    \code{data.table} \emph{inherits} from \code{data.frame}. It offers fast and memory efficient: file reader and writer, aggregations, updates, equi, non-equi, rolling, range and interval joins, in a short and flexible syntax, for faster development.
