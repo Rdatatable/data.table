@@ -82,8 +82,11 @@ dtmatch = function(x, i, on, nomatch, mult, verbose, allow.cartesian, semi=FALSE
     return(invisible(NULL))
 
   ## semi and anti short-circuit
-  if (semi || anti) ## we will subset i rather than x, thus assign to irows, not to xrows
-    return(list(ans=ans, irows=which(if (semi) ans$lens!=0L else ans$lens==0L)))
+  if (semi || anti) { ## we will subset i rather than x, thus assign to irows, not to xrows
+    irows = which(if (semi) ans$lens!=0L else ans$lens==0L)
+    if (length(irows)==length(ans$lens)) irows = NULL
+    return(list(ans=ans, irows=irows))
+  }
 
   ## xrows, join-to
   xrows = if (ans$allLen1) ans$starts else vecseq(ans$starts, ans$lens, NULL)
@@ -177,13 +180,22 @@ mergepair = function(lhs, rhs, on, how, mult, lhs.cols=names(lhs), rhs.cols=name
     else
       .Call(CsubsetDT, jnfm, bns$irows, someCols(jnfm, fm.cols, keep=on))
 
-    if (!nrow(out.r)) { ## short circuit to avoid rbindlist to empty sets
+    ## short circuit to avoid rbindlist to empty sets
+    if (!nrow(out.r)) { ## possibly also !nrow(out.i)
       if (!cp.i && isTRUE(copy))
         out.i = copy(out.i)
       if (!cp.x && !is.na(copy))
         out.x = copy(out.x)
       out = .Call(Ccbindlist, list(out.i, out.x), FALSE)
-    } else { ## all might still not be copied, rbindlist will do
+    } else if (!nrow(out.i)) { ## but not !nrow(out.r)
+      if (!cp.r && !is.na(copy))
+        out.r = copy(out.r)
+      if (length(add<-setdiff(names(out.i), names(out.r)))) { ## add missing columns of proper types NA
+        set(out.r, NULL, add, lapply(unclass(out.i)[add], `[`, 1L)) ## we could change to cbindlist once it will recycle
+        setcolorder(out.r, neworder=names(out.i))
+      }
+      out = c(out.r) ## we want list
+    } else { ## all might still not be copied, rbindlist will copy
       out.l = .Call(Ccbindlist, list(out.i, out.x), FALSE)
       ## we could replace rbindlist for new alloc of nrow(out.l)+nrow(out.r) and then memcpy into it
       ## rbindlist overalloc, and returns dt rather than a list

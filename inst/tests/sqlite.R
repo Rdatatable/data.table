@@ -286,13 +286,13 @@ stopifnot( ## left + mult
   join.sql.equal(l, on="id1", how="left",  mult="error", err=TRUE)
 )
 stopifnot( ## right + mult
-  join.sql.equal(l, on="id1", how="right", mult="all",   ans=data.table(id1=c(1L,1L,3,3:4), v1=c(1L,1L,3:4,NA), v2=c(1:3,3:4))),
+  join.sql.equal(l, on="id1", how="right", mult="all",   ans=data.table(id1=c(1L,1L,3L,3:4), v1=c(1L,1L,3:4,NA), v2=c(1:3,3:4))),
   join.sql.equal(l, on="id1", how="right", mult="first", ans=data.table(id1=c(1L,1L,3:4), v1=c(1L,1L,3L,NA), v2=1:4)),
   join.sql.equal(l, on="id1", how="right", mult="last",  ans=data.table(id1=c(1L,1L,3:4), v1=c(1L,1L,4L,NA), v2=1:4)),
   join.sql.equal(l, on="id1", how="right", mult="error", err=TRUE)
 )
 stopifnot( ## full + mult
-  join.sql.equal(l, on="id1", how="full",  mult="all",   ans=data.table(id1=c(1L,1L,3L,3L,4L,2L), v1=c(1L,1L,3:4,NA,2L), v2=c(1:3,3:4,NA))),
+  join.sql.equal(l, on="id1", how="full",  mult="all",   ans=data.table(id1=c(1L,1:3,3:4), v1=c(1L,1:4,NA), v2=c(1:2,NA,3L,3:4))),
   join.sql.equal(l, on="id1", how="full",  mult="first", ans=data.table(id1=1:4, v1=c(1:3,NA), v2=c(1L,NA,3:4))),
   join.sql.equal(l, on="id1", how="full",  mult="last",  ans=data.table(id1=1:4, v1=c(1:2,4L,NA), v2=c(2L,NA,3:4))),
   join.sql.equal(l, on="id1", how="full",  mult="error", err=TRUE)
