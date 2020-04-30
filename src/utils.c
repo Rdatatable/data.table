@@ -366,7 +366,7 @@ SEXP coerceUtf8IfNeeded(SEXP x) {
 // if (length(x)) length(x[[1L]]) else 0L
 int NROW(SEXP x) {
   if (!LENGTH(x))
-    return 0;
+    return 0; // # nocov # not yet reached from anywhere, cbindlist uses it but escapes for !NCOL(x)
   return length(VECTOR_ELT(x, 0));
 }
 
