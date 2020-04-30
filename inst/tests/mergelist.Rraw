@@ -8,6 +8,7 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
   test = data.table:::test
   mergepair = data.table:::mergepair
   perhaps.data.table = data.table:::perhaps.data.table
+  hasindex = data.table:::hasindex
   fdistinct = data.table:::fdistinct
 }
 
@@ -30,6 +31,16 @@ test(2.08, addresses(ans), addresses(d))
 d = data.table(x=c(2:1,2L), y=1:3)
 test(2.09, fdistinct(d, on="x", mult="first"), data.table(x=2:1, y=1:2))
 test(2.10, fdistinct(d, on="x", mult="last"), data.table(x=1:2, y=2:3))
+setattr(attr(setattr(d, "index", integer()), "index", TRUE), "__x", forderv(d, "x", retGrp=TRUE)) ## retGrp=T index #4386
+test(2.11, fdistinct(d, on="x", mult="first"), data.table(x=2:1, y=1:2))
+test(3.01, hasindex(d, "x"))
+test(3.02, hasindex(d, "x", retGrp=TRUE))
+setattr(attr(setattr(d, "index", integer()), "index", TRUE), "__x", forderv(d, "x"))              ## retGrp=F index #4386
+test(3.03, hasindex(d, "x"))
+test(3.04, !hasindex(d, "x", retGrp=TRUE))
+setattr(d, "index", NULL)
+test(3.05, !hasindex(d, "x"))
+test(3.06, !hasindex(d, "x", retGrp=TRUE))
 rm(d)
 
 # cbindlist
