@@ -10,6 +10,7 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
   perhaps.data.table = data.table:::perhaps.data.table
   hasindex = data.table:::hasindex
   fdistinct = data.table:::fdistinct
+  forderv = data.table:::forderv
 }
 
 addresses = function(x) vapply(x, address, "")
