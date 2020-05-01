@@ -8,8 +8,10 @@ cbindlist = function(l, copy=TRUE) {
 onkeys = function(x, y) {
   if (is.null(x) && !is.null(y)) y
   else if (!is.null(x) && is.null(y)) x
-  else if (!is.null(x) && !is.null(y)) {if (length(x)>=length(y)) intersect(y, x) else intersect(x, y)} ## align order to shorter vector
-  else NULL
+  else if (!is.null(x) && !is.null(y)) {
+    if (length(x)>=length(y)) intersect(y, x) ## align order to shorter|rhs key
+    else intersect(x, y)
+  } else NULL
 }
 someCols = function(x, cols, drop=character(), keep=character()) {
   keep = colnamesInt(x, keep)
