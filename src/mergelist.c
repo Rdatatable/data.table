@@ -43,7 +43,6 @@ SEXP cbindlist(SEXP x, SEXP copyArg) {
     }
   }
   setAttrib(ans, R_NamesSymbol, names);
-  //ans = setDT(ans); // this is not really in-place!
   if (verbose)
     Rprintf("cbindlist: took %.3fs\n", omp_get_wtime()-tic);
   UNPROTECT(2);

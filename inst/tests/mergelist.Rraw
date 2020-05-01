@@ -15,6 +15,8 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
 
 addresses = function(x) vapply(x, address, "")
 
+# internal helpers
+
 test(1.01, perhaps.data.table(list()))
 test(1.02, perhaps.data.table(list(a=1:2)))
 test(1.03, perhaps.data.table(list(a=1:2, b=1:2)))
@@ -34,6 +36,7 @@ test(2.09, fdistinct(d, on="x", mult="first"), data.table(x=2:1, y=1:2))
 test(2.10, fdistinct(d, on="x", mult="last"), data.table(x=1:2, y=2:3))
 setattr(attr(setattr(d, "index", integer()), "index", TRUE), "__x", forderv(d, "x", retGrp=TRUE)) ## retGrp=T index #4386
 test(2.11, fdistinct(d, on="x", mult="first"), data.table(x=2:1, y=1:2))
+
 test(3.01, hasindex(d, "x"))
 test(3.02, hasindex(d, "x", retGrp=TRUE))
 setattr(attr(setattr(d, "index", integer()), "index", TRUE), "__x", forderv(d, "x"))              ## retGrp=F index #4386
@@ -42,6 +45,9 @@ test(3.04, !hasindex(d, "x", retGrp=TRUE))
 setattr(d, "index", NULL)
 test(3.05, !hasindex(d, "x"))
 test(3.06, !hasindex(d, "x", retGrp=TRUE))
+setattr(d, "index", integer())
+test(3.07, !hasindex(d, "x"))
+test(3.08, !hasindex(d, "x", retGrp=TRUE))
 rm(d)
 
 # cbindlist
@@ -288,6 +294,7 @@ test(101.10, mergelist(l, on=character()), error="must be non zero length charac
 op = options("datatable.verbose"=TRUE)
 test(101.11, mergelist(l, on="x"), data.table(x=2L), output="mergelist.*2 tables.*took")
 options(op)
+test(101.12, mergelist(l, on="xx"), error="specify columns to join that are not present in any table")
 
 ## missing on argument
 l = list(data.table(x=1:2), data.table(x=2:3))
@@ -310,6 +317,11 @@ test(102.31, mergelist(l, how="inner"), data.table(x=2L))
 test(102.32, mergelist(l, how="left"), data.table(x=1:2))
 test(102.33, mergelist(l, how="right"), data.table(x=2:3))
 test(102.34, mergelist(l, how="full"), data.table(x=1:3))
+l = list(data.table(x=1:2, y=1:2, z=1:2, zz=1:2, key=c("y","x","z","zz")), data.table(a=2:3, b=2:3, x=2:3, y=2:3, key=c("x","y","a")))
+test(102.41, mergelist(l, how="inner"), data.table(x=2L, y=2L, z=2L, zz=2L, a=2L, b=2L)) ## key len 2+ to take intersect, and align order, for inner and full
+test(102.42, mergelist(l, how="left"), error="specify columns to join that are not present in LHS table")
+test(102.43, mergelist(l, how="right"), error="specify columns to join that are not present in RHS table")
+test(102.44, mergelist(l, how="full"), data.table(x=1:3, y=1:3, z=c(1:2,NA), zz=c(1:2,NA), a=c(NA,2:3), b=c(NA,2:3)))
 
 ## cols argument
 l = list(data.table(id1=1:2, v1=1:2, v2=2:1, key="id1"), data.table(id1=2:3, v3=1:2, v4=2:1, key="id1"))

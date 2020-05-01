@@ -77,7 +77,7 @@ dtmatch = function(x, i, on, nomatch, mult, verbose, allow.cartesian, semi=FALSE
   }
   icols = colnamesInt(i, on, check_dups=TRUE)
   xcols = colnamesInt(x, on, check_dups=TRUE)
-  ans = bmerge(i, x, icols, xcols, roll=0, rollends=c(FALSE, TRUE), nomatch=nomatch, mult=mult, ops=1L, verbose=verbose)
+  ans = bmerge(i, x, icols, xcols, roll=0, rollends=c(FALSE, TRUE), nomatch=nomatch, mult=mult, ops=rep.int(1L, length(on)), verbose=verbose)
   if (void) ## void=T is only for the case when we want raise error for mult='error', and that would happen in above line
     return(invisible(NULL))
   else if (!allow.cartesian && mult=="all")
@@ -116,9 +116,12 @@ mergepair = function(lhs, rhs, on, how, mult, lhs.cols=names(lhs), rhs.cols=name
     else if (how=="right") on = key(lhs)
     else on = onkeys(key(lhs), key(rhs))
     if (is.null(on))
-      stop("'on' is missing and necessary key is not present")
+      stop("internal error: 'on' is missing and necessary key is not present, that should have been cought already in mergelist, please report to issue tracker") # nocov
   }
-
+  if (any(bad.on <- !on %chin% names(lhs)))
+    stop("'on' argument specify columns to join that are not present in LHS table: ", paste(on[bad.on], collapse=", "))
+  if (any(bad.on <- !on %chin% names(rhs)))
+    stop("'on' argument specify columns to join that are not present in RHS table: ", paste(on[bad.on], collapse=", "))
   if (how!="right") { ## join-to, join-from
     jnfm = lhs; fm.cols = lhs.cols; jnto = rhs; to.cols = rhs.cols
   } else {
@@ -159,7 +162,6 @@ mergepair = function(lhs, rhs, on, how, mult, lhs.cols=names(lhs), rhs.cols=name
       out.i = copy(out.i)
     #if (!cp.x && copy) ## as of now cp.x always TRUE, search for #4409 here
     #  out.x = copy(out.x)
-    ## stack i and x
     out = if (how=="right")
       .Call(Ccbindlist, list(.shallow(out.i, cols=on), out.x, .shallow(out.i, cols=setdiff(names(out.i), on))), FALSE) ## arrange columns: i.on, x.cols, i.cols
     else
@@ -171,8 +173,7 @@ mergepair = function(lhs, rhs, on, how, mult, lhs.cols=names(lhs), rhs.cols=name
     if (mult=="first" || mult=="last") {
       jnfm = fdistinct(jnfm, on=on, mult=mult, cols=fm.cols, copy=FALSE)
       cp.r = nrow(jnfm)!=nrow(rhs) ## nrow(rhs) bc jnfm=rhs
-    }
-    ## mult=="error" check not needed anymore, both sides has been already checked
+    } ## mult=="error" check not needed anymore, both sides has been already checked
 
     ## binary merge anti join
     bns = dtmatch(x=jnto, i=jnfm, on=on, nomatch=0L, mult=mult, verbose=verbose, allow.cartesian=allow.cartesian, anti=TRUE)
@@ -201,9 +202,7 @@ mergepair = function(lhs, rhs, on, how, mult, lhs.cols=names(lhs), rhs.cols=name
       out = c(out.r) ## we want list
     } else { ## all might have not been copied yet, rbindlist will copy
       out.l = .Call(Ccbindlist, list(out.i, out.x), FALSE)
-      ## we could replace rbindlist for new alloc of nrow(out.l)+nrow(out.r) and then memcpy into it
-      ## rbindlist overalloc, and returns dt rather than a list
-      out = c(rbindlist(list(out.l, out.r), use.names=TRUE, fill=TRUE))
+      out = c(rbindlist(list(out.l, out.r), use.names=TRUE, fill=TRUE)) ## we could replace rbindlist for new alloc of nrow(out.l)+nrow(out.r) and then memcpy into it, we dont need overalloc or dt class here
     }
   }
   out
@@ -211,7 +210,6 @@ mergepair = function(lhs, rhs, on, how, mult, lhs.cols=names(lhs), rhs.cols=name
 
 # TODO:
 # allow.cartesian
-# missing on, key of join-to
 # vectorized length(l)-1L: on, how, mult
 mergelist = function(l, on, cols, how=c("inner","left","right","full"), mult=c("all","first","last","error"), copy=TRUE) {
   allow.cartesian = TRUE
@@ -247,15 +245,16 @@ mergelist = function(l, on, cols, how=c("inner","left","right","full"), mult=c("
     haskeyv = vapply(l, haskey, TRUE)
     if (!( ## list valid keys below
       (how=="left" && all(haskeyv[-1L])) ||
-      (how=="right" && all(haskeyv[-2L])) || ## TODO
-      ((how=="inner" || how=="full") && any(haskeyv)) ## missing key will be caught in mergepair
+      (how=="right" && all(haskeyv[-n])) ||
+      ((how=="inner" || how=="full") && any(haskeyv[1:2]) && all(haskeyv[-(1:2)]))
     ))
       stop("'on' is missing and necessary keys are not present")
     on = NULL
   } else if (!is.character(on) || !length(on)) {
     stop("'on' must be non zero length character")
   } else if (any(vapply(l, function(x, on) any(!on %chin% names(x)), on=on, FALSE))) {
-    stop("'on' argument specify columns to join that are not present in every table") ## TODO this should not be needed!! we can merge those columns later on, i.e. denormalizing snowflake
+    if (any(bad.on <- !on %chin% unique(unlist(lapply(l, names)))))
+    stop("'on' argument specify columns to join that are not present in any table: ", paste(on[bad.on], collapse=", "))
   }
   if (missing(cols) || is.null(cols)) {
     cols = vector("list", n)
@@ -271,7 +270,6 @@ mergelist = function(l, on, cols, how=c("inner","left","right","full"), mult=c("
       stop("'cols' specify columns not present in corresponding table")
   }
 
-  stopifnot(length(l) == 2L) ## dev
   l.mem = lapply(l, vapply, address, "")
   out = l[[1L]]
   out.cols = cols[[1L]]
