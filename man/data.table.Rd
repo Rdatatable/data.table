@@ -31,7 +31,7 @@ data.table(\dots, keep.rownames=FALSE, check.names=FALSE, key=NULL, stringsAsFac
   .SDcols,
   verbose = getOption("datatable.verbose"),                   # default: FALSE
   allow.cartesian = getOption("datatable.allow.cartesian"),   # default: FALSE
-  drop = NULL, on = NULL)
+  drop = NULL, on = NULL, having)
 }
 \arguments{
     \item{\dots}{ Just as \code{\dots} in \code{\link{data.frame}}. Usual recycling rules are applied to vectors of different lengths to create a list of equal length vectors.}
@@ -170,6 +170,8 @@ data.table(\dots, keep.rownames=FALSE, check.names=FALSE, key=NULL, stringsAsFac
         }
         See examples as well as \href{../doc/datatable-secondary-indices-and-auto-indexing.html}{\code{vignette("datatable-secondary-indices-and-auto-indexing")}}.
     }
+
+   \item{having}{ Expression which evaluates to a logical vector of length 1 for each group. Currently only GForce functions are optimized.}
 }
 \details{
 \code{data.table} builds on base \R functionality to reduce 2 types of time:\cr
