@@ -16853,3 +16853,16 @@ A = data.table(A=c(complex(real = 1:3, imaginary=c(0, -1, 1)), NaN))
 test(2138.3, rbind(A,B), data.table(A=c(as.character(A$A), B$A)))
 A = data.table(A=as.complex(rep(NA, 5)))
 test(2138.4, rbind(A,B), data.table(A=c(as.character(A$A), B$A)))
+
+# which = NA yields incorrect results #4303
+customers = data.table(ID = c(
+  108924851L, 105257553L, 118054200L, 108365953L,
+  116642294L, 100419961L, 115677488L, 100405475L,
+  119246064L, 100383251L
+))
+orders = data.table(ID = c(105257553L))
+test(2139.1, customers[orders, on = .(ID), which = NA], integer())
+orders = data.table(ID = c(105257554L))
+test(2139.2, customers[orders, on = .(ID), which = NA], 1L)
+orders = data.table(ID = c(105257554L, 108924851L))
+test(2139.3, customers[orders, on = .(ID), which = NA], 1L)
