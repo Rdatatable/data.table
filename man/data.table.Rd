@@ -171,7 +171,7 @@ data.table(\dots, keep.rownames=FALSE, check.names=FALSE, key=NULL, stringsAsFac
         See examples as well as \href{../doc/datatable-secondary-indices-and-auto-indexing.html}{\code{vignette("datatable-secondary-indices-and-auto-indexing")}}.
     }
 
-   \item{having}{ Expression which evaluates to a logical vector of length 1 for each group. Currently only GForce functions are optimized.}
+   \item{having}{ \code{FALSE} Expression which evaluates to a logical vector of length 1 for each group. Currently only GForce functions are optimized.}
 }
 \details{
 \code{data.table} builds on base \R functionality to reduce 2 types of time:\cr
