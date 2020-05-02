@@ -125,7 +125,7 @@ replace_dot_alias = function(e) {
   }
 }
 
-"[.data.table" = function (x, i, j, by, keyby, with=TRUE, nomatch=getOption("datatable.nomatch", NA), mult="all", roll=FALSE, rollends=if (roll=="nearest") c(TRUE,TRUE) else if (roll>=0) c(FALSE,TRUE) else c(TRUE,FALSE), which=FALSE, .SDcols, verbose=getOption("datatable.verbose"), allow.cartesian=getOption("datatable.allow.cartesian"), drop=NULL, on=NULL)
+"[.data.table" = function (x, i, j, by, keyby, with=TRUE, nomatch=getOption("datatable.nomatch", NA), mult="all", roll=FALSE, rollends=if (roll=="nearest") c(TRUE,TRUE) else if (roll>=0) c(FALSE,TRUE) else c(TRUE,FALSE), which=FALSE, .SDcols, verbose=getOption("datatable.verbose"), allow.cartesian=getOption("datatable.allow.cartesian"), drop=NULL, on=NULL, having)
 {
   # ..selfcount <<- ..selfcount+1  # in dev, we check no self calls, each of which doubles overhead, or could
   # test explicitly if the caller is [.data.table (even stronger test. TO DO.)
@@ -1377,6 +1377,7 @@ replace_dot_alias = function(e) {
     # The groupings come instead from each row of the i data.table.
     # Much faster for a few known groups vs a 'by' for all followed by a subset
     if (!is.data.table(i)) stop("logical error. i is not data.table, but mult='all' and 'by'=.EACHI")
+    if (!missing(having)) stop("having argument is not supported with 'by' = .EACHI")
     byval = i
     bynames = if (missing(on)) head(key(x),length(leftcols)) else names(on)
     allbyvars = NULL
@@ -1454,6 +1455,75 @@ replace_dot_alias = function(e) {
         len__ = uniqlengths(f__, xnrow)
         # TO DO: combine uniqlist and uniquelengths into one call.  Or, just set len__ to NULL when dogroups infers that.
         if (verbose) { cat(timetaken(last.started.at),"\n"); flush.console() }
+      }
+      
+      if (!missing(having)) {
+        
+        .HavingEnv = new.env()
+        .HavingEnv$.N = len__
+        
+        having_sub = substitute(having)
+        av_having = all.vars(having_sub)
+        
+        if (!length(av_having <- setdiff(av_having, ".N"))) { # only .N has been assigned and no need to go to gForce
+          lgl_ans = eval(having_sub, envir = .HavingEnv)
+        } else {
+          .HavingEnv$o__ = o__
+          .HavingEnv$f__ = f__
+          .HavingEnv$len__ = len__
+          .HavingEnv$irows = irows
+          
+          for (av in av_having) {
+            assign(av, x[[av]], .HavingEnv)
+          }
+          lgl_ans = group_eval_tree(having_sub, .HavingEnv, use.GForce = TRUE)
+        }
+        
+        SD_only = jsub == as.name(".SD")
+        inds = .Call(Cvecseq_having, f__, len__, lgl_ans, retGrps = !SD_only)
+        
+        # inds are :
+        #  NULL means all groups were true and there is no additional subsetting
+        #  integer(0) means all groups were false and an empty datatable would be returned
+        #  an integer vector - if retGrps == T then there are recalculated len__, and f__ attributes
+        
+        if (verbose) print(inds)
+        
+        if (SD_only){
+          if (is.null(inds)) {
+            return(x)
+          }
+          if (!length(inds)) {
+            return(x[inds])
+          } else {
+            if (!length(o__))
+              return(x[inds])
+            else 
+              return(x[o__[inds]])
+          }
+        } else {
+          stop("Currently the having argument only supports returning .SD in the j expression.")
+        }
+        
+        ## TODO support more than just j = .SD
+        # if (!is.null(inds)) {
+        #   if (!length(inds)) {
+        #     f__=NULL
+        #     len__=0L
+        #     bysameorder=TRUE   # for test 724
+        #   } else {
+        #     if (is.null(irows)) {
+        #       irows = inds
+        #     } else {
+        #       irows = irows[inds]
+        #     }
+        #     if (length(o__)) {
+        #       o__ = o__[inds]
+        #     }
+        #     f__ = attr(inds, "starts", exact = TRUE)
+        #     len__ = attr(inds, "grplen", exact = TRUE)
+        #   }
+        # } 
       }
     } else {
       f__=NULL
@@ -3108,4 +3178,34 @@ isReallyReal = function(x) {
   on = iCols
   names(on) = xCols
   return(list(on = on, ops = idx_op))
+}
+
+group_eval_tree = function(e, env, init = TRUE, one_per_group = TRUE, use.GForce = TRUE) {
+  if (length(e) == 1L) {
+    if (is.atomic(e) || exists(as.character(e), env)) {
+      ans = e
+    } else {
+      ans = eval(e, env)
+    }
+  } else {
+    fx = e[[1L]]
+    is_GForced = FALSE
+    if (use.GForce && as.character(fx) %chin% gfuns) {
+      e[[1L]] = as.name(paste0("g", e[[1L]]))
+      e[[-1L]] = group_eval_tree(e[[-1L]], env, FALSE, one_per_group, use.GForce)
+      ans = gforce(env, e, env$o__, env$f__, env$len__, env$irows)[[1L]]
+    } else if (is.primitive(eval(fx))) { 
+      ## basically we have white-listed functions. Still need to verify approach 
+      ## but we want to allow +, -, *, etc., to be run without grouping
+      e[-1] = lapply(e[-1], group_eval_tree, env, FALSE, one_per_group, use.GForce)
+      if (init) 
+        ans = eval(e, env) 
+      else 
+        ans = e
+    } else {
+      stop('function is not supported') ## TODO make a simplified doGroups 
+      # ans = do.call(as.character(fx), lapply(e[-1L], group_eval_tree, env, FALSE, one_per_group, use.GForce), envir = env)
+    }
+  }
+  return(ans)
 }
