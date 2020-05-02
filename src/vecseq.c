@@ -40,3 +40,78 @@ SEXP vecseq(SEXP x, SEXP len, SEXP clamp)
   return(ans);
 }
 
+SEXP vecseq_having(SEXP x, SEXP len, SEXP having, SEXP retGrps) {
+
+  if (!isInteger(x)) error(_("x must be an integer vector"));
+  if (!isInteger(len)) error(_("len must be an integer vector"));
+  if (!isLogical(having)) error(_("having must be a logical vector"));
+  if (!isLogical(retGrps)) error(_("retGrps must be a logical vector"));
+  
+  if (LENGTH(x) != LENGTH(len)) error(_("x and len must be the same length"));
+  if (LENGTH(x) != LENGTH(having)) error(_("x and having must be the same length"));
+  if (LENGTH(retGrps) > 1) error(_("retGrps must be a logical vector of length 1"));
+  
+  const int *ihaving = INTEGER(having); 
+  const int *ix = INTEGER(x);
+  const int *ilen = INTEGER(len), nlen=LENGTH(len);
+  
+  int reslen = 0;
+  int total_true = 0;
+  
+  for (int i = 0; i < nlen; ++i) {
+    if (ihaving[i]) {
+      reslen += ilen[i];
+      total_true++;
+    }
+  }
+  
+  if (reslen == 0) return(allocVector(INTSXP, 0));
+  if (total_true == nlen) return(R_NilValue);
+  
+  SEXP ans = PROTECT(allocVector(INTSXP, reslen));
+  int *ians = INTEGER(ans);
+  
+  const bool retGrp = LOGICAL(retGrps)[0] == TRUE;
+  
+  if (retGrp) {
+    SEXP tt, vv;
+    
+    setAttrib(ans, sym_starts, tt = allocVector(INTSXP, total_true));
+    setAttrib(ans, sym_grplen, vv = allocVector(INTSXP, total_true));
+
+    int *ss = INTEGER(tt);
+    int *ww = INTEGER(vv);
+        
+    int k = 0;
+    int l = 0;
+    int total = 1;
+    
+    for (int i=0; i<nlen; ++i) {
+      if (!ihaving[i]) continue;
+      int thisx = ix[i];
+      ss[l] = total;
+      total += ilen[i];
+      ww[l] = ilen[i];
+      l++;
+      for (int j=0; j<ilen[i]; ++j) {
+        ians[k++] = thisx++;
+      }
+    }
+    
+    UNPROTECT(1);
+    return(ans);
+    
+  } else {
+    int k = 0;
+    for (int i=0; i<nlen; ++i) {
+      if (!ihaving[i]) continue;
+      int thisx = ix[i];
+      for (int j=0; j<ilen[i]; ++j) {
+        ians[k++] = thisx++;
+      }
+    }
+    
+    UNPROTECT(1);
+    return(ans);
+  }
+}
