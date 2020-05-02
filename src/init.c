@@ -25,6 +25,7 @@ SEXP sym_index;
 SEXP sym_BY;
 SEXP sym_starts, char_starts;
 SEXP sym_maxgrpn;
+SEXP sym_grplen;
 SEXP sym_colClassesAs;
 SEXP sym_verbose;
 SEXP SelfRefSymbol;
@@ -119,6 +120,7 @@ SEXP lock();
 SEXP unlock();
 SEXP islockedR();
 SEXP allNAR();
+SEXP vecseq_having();
 
 // .Externals
 SEXP fastmean();
@@ -211,6 +213,7 @@ R_CallMethodDef callMethods[] = {
 {"CfrollapplyR", (DL_FUNC) &frollapplyR, -1},
 {"CtestMsgR", (DL_FUNC) &testMsgR, -1},
 {"C_allNAR", (DL_FUNC) &allNAR, -1},
+{"Cvecseq_having", (DL_FUNC) &vecseq_having, -1},
 {NULL, NULL, 0}
 };
 
@@ -339,6 +342,7 @@ void attribute_visible R_init_datatable(DllInfo *info)
   sym_index   = install("index");
   sym_BY      = install(".BY");
   sym_maxgrpn = install("maxgrpn");
+  sym_grplen  = install("grplen");
   sym_colClassesAs = install("colClassesAs");
   sym_verbose = install("datatable.verbose");
   SelfRefSymbol = install(".internal.selfref");
