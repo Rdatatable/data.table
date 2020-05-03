@@ -96,8 +96,6 @@ extern SEXP sym_verbose;
 extern SEXP SelfRefSymbol;
 extern SEXP sym_inherits;
 extern SEXP sym_datatable_locked;
-extern SEXP sym_rownames;
-extern SEXP sym_alloccol;
 extern double NA_INT64_D;
 extern long long NA_INT64_LL;
 extern Rcomplex NA_CPLX;  // initialized in init.c; see there for comments

@@ -11,7 +11,7 @@ onkeys = function(x, y) {
   else if (!is.null(x) && !is.null(y)) {
     if (length(x)>=length(y)) intersect(y, x) ## align order to shorter|rhs key
     else intersect(x, y)
-  } else NULL
+  } else NULL # nocov ## internal error is being called later in mergepair
 }
 someCols = function(x, cols, drop=character(), keep=character()) {
   keep = colnamesInt(x, keep)
