@@ -28,6 +28,7 @@ vignettes/plots/figures
 *.o
 *.so
 *.dll
+*.dSYM
 
 *~
 .DS_Store
