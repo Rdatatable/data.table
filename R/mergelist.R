@@ -86,10 +86,10 @@ dtmatch = function(x, i, on, nomatch, mult, verbose, join.many, semi=FALSE, anti
     irows = which(if (semi) ans$lens!=0L else ans$lens==0L) ## we will subset i rather than x, thus assign to irows, not to xrows
     if (length(irows)==length(ans$lens)) irows = NULL
     return(list(ans=ans, irows=irows))
-  } else if (mult=="all" && !ans$allLen1 && !join.many && ( ## join.many, like allow.cartesian, check
-    !(length(ans$starts)==1L && ans$lens==nrow(x)) || ## special case of scalar i match to const duplicated x, not handled by anyDuplicate: data.table(x=c(1L,1L))[data.table(x=1L), on="x"]
+  } else if (mult=="all" && !ans$allLen1 && !join.many && ## join.many, like allow.cartesian, check
+    !(length(ans$starts)==1L && ans$lens==nrow(x)) && ## special case of scalar i match to const duplicated x, not handled by anyDuplicate: data.table(x=c(1L,1L))[data.table(x=1L), on="x"]
     anyDuplicated(ans$starts, incomparables=c(0L,NA_integer_))
-  ))
+  )
     stop("Joining resulted in many-to-many join. Perform quality check on your data, use mult!='all', or set 'datatable.join.many' option to TRUE to allow rows explosion.")
 
   ## xrows, join-to
