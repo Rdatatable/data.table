@@ -169,13 +169,13 @@ mergepair = function(lhs, rhs, on, how, mult, lhs.cols=names(lhs), rhs.cols=name
     else
       .Call(Ccbindlist, list(out.i, out.x), FALSE)
   } else { # how=="full"
-    ## we made left join above, proceed to right join, actually just swap tbls and inner
+    ## we made left join above, proceed to right join, actually just swap tbls and antijoin
     jnfm = rhs; fm.cols = rhs.cols; jnto = lhs; to.cols = lhs.cols
     cp.r = FALSE
     if (mult=="first" || mult=="last") {
       jnfm = fdistinct(jnfm, on=on, mult=mult, cols=fm.cols, copy=FALSE)
       cp.r = nrow(jnfm)!=nrow(rhs) ## nrow(rhs) bc jnfm=rhs
-    } ## mult=="error" check not needed anymore, both sides has been already checked
+    } ## mult=="error" check not needed anymore, both sides will be checked
 
     ## binary merge anti join
     bns = dtmatch(x=jnto, i=jnfm, on=on, nomatch=0L, mult=mult, verbose=verbose, join.many=join.many, anti=TRUE)

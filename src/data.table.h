@@ -119,7 +119,6 @@ SEXP allocNAVectorLike(SEXP x, R_len_t n);
 void writeNA(SEXP v, const int from, const int n);
 void savetl_init(), savetl(SEXP s), savetl_end();
 int checkOverAlloc(SEXP x);
-SEXP alloccolwrapper(SEXP dt, SEXP overAllocArg, SEXP verbose);
 
 // forder.c
 int StrCmp(SEXP x, SEXP y);
@@ -240,7 +239,6 @@ bool need2utf8(SEXP x);
 SEXP coerceUtf8IfNeeded(SEXP x);
 int NROW(SEXP x);
 int NCOL(SEXP x);
-SEXP setDT(SEXP x);
 bool isDataTable(SEXP x);
 bool isDataFrame(SEXP x);
 bool isDataList(SEXP x);
