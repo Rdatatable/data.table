@@ -8059,6 +8059,11 @@ dt = data.table(a=1:3)
 dt[ , l := .(list(1, 2, 3))]
 test(1581.16, dt[ , .(l = l[[1L]]), by=a, verbose=TRUE],
      dt[ , l := unlist(l)], output='(GForce FALSE)')
+# make sure not to apply when `[[` is applied to a nested call, #4413
+DT = data.table(f1=c("a","b"), f2=c("x","y"))
+l = list(a = c(x = "ax", y = "ay"), b = c(x = "bx", y = "by"))
+test(1581.17, DT[ , as.list(l[[f1]])[[f2]], by=c("f1","f2")],
+     data.table(f1 = c("a", "b"), f2 = c("x", "y"), V1 = c("ax", "by")))
 
 # handle NULL value correctly #1429
 test(1582, uniqueN(NULL), 0L)
