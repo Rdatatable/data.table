@@ -66,7 +66,7 @@ fdistinct = function(x, on=key(x), mult=c("first","last"), cols=seq_along(x), co
 # extra layer over bmerge to provide ready to use row indices (or NULL for 1:nrow)
 # NULL to avoid extra copies in downstream code, it turned out that avoiding copies precisely is costly and enormously complicates code, will be easier to handle 1:nrow in subsetDT
 # we don't use semi join in mergelist so is not tested, anti join is used in full outer join
-dtmatch = function(x, i, on, nomatch, mult, verbose, allow.cartesian, semi=FALSE, anti=FALSE, void=FALSE) {
+dtmatch = function(x, i, on, nomatch, mult, verbose, join.many, semi=FALSE, anti=FALSE, void=FALSE) {
   nrow = function(x) if (is.null(ans<-base::nrow(x))) stop("nrow called on a list? not good") else ans
   inner = identical(nomatch, 0L)
   if (void && mult!="error")
@@ -80,17 +80,17 @@ dtmatch = function(x, i, on, nomatch, mult, verbose, allow.cartesian, semi=FALSE
   icols = colnamesInt(i, on, check_dups=TRUE)
   xcols = colnamesInt(x, on, check_dups=TRUE)
   ans = bmerge(i, x, icols, xcols, roll=0, rollends=c(FALSE, TRUE), nomatch=nomatch, mult=mult, ops=rep.int(1L, length(on)), verbose=verbose)
-  if (void) ## void=T is only for the case when we want raise error for mult='error', and that would happen in above line
+  if (void) { ## void=T is only for the case when we want raise error for mult='error', and that would happen in above line
     return(invisible(NULL))
-  else if (!allow.cartesian && mult=="all")
-    invisible() ## TODO
-
-  ## semi and anti short-circuit
-  if (semi || anti) { ## we will subset i rather than x, thus assign to irows, not to xrows
-    irows = which(if (semi) ans$lens!=0L else ans$lens==0L)
+  } else if (semi || anti) { ## semi and anti short-circuit
+    irows = which(if (semi) ans$lens!=0L else ans$lens==0L) ## we will subset i rather than x, thus assign to irows, not to xrows
     if (length(irows)==length(ans$lens)) irows = NULL
     return(list(ans=ans, irows=irows))
-  }
+  } else if (mult=="all" && !ans$allLen1 && !join.many && ( ## join.many, like allow.cartesian, check
+    !(length(ans$starts)==1L && ans$lens==nrow(x)) || ## special case of scalar i match to const duplicated x, not handled by anyDuplicate: data.table(x=c(1L,1L))[data.table(x=1L), on="x"]
+    anyDuplicated(ans$starts, incomparables=c(0L,NA_integer_))
+  ))
+    stop("Joining resulted in many-to-many join. Perform quality check on your data, use mult!='all', or set 'datatable.join.many' option to TRUE to allow rows explosion.")
 
   ## xrows, join-to
   xrows = if (ans$allLen1) ans$starts else vecseq(ans$starts, ans$lens, NULL)
@@ -112,7 +112,7 @@ dtmatch = function(x, i, on, nomatch, mult, verbose, allow.cartesian, semi=FALSE
 }
 
 # atomic join between two tables
-mergepair = function(lhs, rhs, on, how, mult, lhs.cols=names(lhs), rhs.cols=names(rhs), copy=TRUE, allow.cartesian=FALSE, verbose=FALSE) {
+mergepair = function(lhs, rhs, on, how, mult, lhs.cols=names(lhs), rhs.cols=names(rhs), copy=TRUE, join.many=TRUE, verbose=FALSE) {
   if (is.null(on)) {
     if (how=="left") on = key(rhs)
     else if (how=="right") on = key(lhs)
@@ -138,12 +138,12 @@ mergepair = function(lhs, rhs, on, how, mult, lhs.cols=names(lhs), rhs.cols=name
       cp.i = nrow(jnfm)!=nrow(lhs) ## nrow(lhs) bc how='inner|full' so jnfm=lhs
     } else if (mult=="error") {
       ## we do this branch only to raise error from bmerge, we cannot use forder to just find duplicates because those duplicates might not have matching rows in another table
-      dtmatch(x=jnfm, i=jnto, on=on, nomatch=nomatch, mult=mult, verbose=verbose, allow.cartesian=allow.cartesian, void=TRUE)
+      dtmatch(x=jnfm, i=jnto, on=on, nomatch=nomatch, mult=mult, verbose=verbose, join.many=join.many, void=TRUE)
     }
   }
 
   ## binary merge
-  ans = dtmatch(x=jnto, i=jnfm, on=on, nomatch=nomatch, mult=mult, verbose=verbose, allow.cartesian=allow.cartesian)
+  ans = dtmatch(x=jnto, i=jnfm, on=on, nomatch=nomatch, mult=mult, verbose=verbose, join.many=join.many)
 
   ## make i side
   out.i = if (is.null(ans$irows))
@@ -178,7 +178,7 @@ mergepair = function(lhs, rhs, on, how, mult, lhs.cols=names(lhs), rhs.cols=name
     } ## mult=="error" check not needed anymore, both sides has been already checked
 
     ## binary merge anti join
-    bns = dtmatch(x=jnto, i=jnfm, on=on, nomatch=0L, mult=mult, verbose=verbose, allow.cartesian=allow.cartesian, anti=TRUE)
+    bns = dtmatch(x=jnto, i=jnfm, on=on, nomatch=0L, mult=mult, verbose=verbose, join.many=join.many, anti=TRUE)
 
     ## make anti join side
     out.r = if (is.null(bns$irows))
@@ -210,11 +210,7 @@ mergepair = function(lhs, rhs, on, how, mult, lhs.cols=names(lhs), rhs.cols=name
   out
 }
 
-# TODO:
-# allow.cartesian
-# vectorized length(l)-1L: on, how, mult
-mergelist = function(l, on, cols, how=c("inner","left","right","full"), mult=c("all","first","last","error"), copy=TRUE) {
-  allow.cartesian = TRUE
+mergelist = function(l, on, cols, how=c("left","inner","full","right"), mult=c("error","all","first","last"), copy=TRUE, join.many=getOption("datatable.join.many")) {
   verbose = getOption("datatable.verbose")
   if (verbose)
     p = proc.time()[[3L]]
@@ -222,10 +218,8 @@ mergelist = function(l, on, cols, how=c("inner","left","right","full"), mult=c("
     stop("'l' must be a list")
   if (!isTRUEorFALSE(copy))
     stop("'copy' must be TRUE or FALSE")
-  if (!isTRUEorFALSE(allow.cartesian))
-    stop("'allow.cartesian' must be TRUE or FALSE")
-  if (!allow.cartesian)
-    stop("allow.cartesian=FALSE not yet implemented")
+  if (!isTRUEorFALSE(join.many))
+    stop("'join.many' must be TRUE or FALSE")
   how = match.arg(how)
   mult = match.arg(mult)
   if (!copy && (
@@ -271,6 +265,7 @@ mergelist = function(l, on, cols, how=c("inner","left","right","full"), mult=c("
     if (any(mapply(function(x, icols) any(!icols %chin% names(x)), l[!skip], cols[!skip])))
       stop("'cols' specify columns not present in corresponding table")
   }
+  ## TODO handle duplicates in on, cols arguments, names within each table, and names accross all tables, after cols filtering
 
   l.mem = lapply(l, vapply, address, "")
   out = l[[1L]]
@@ -283,7 +278,7 @@ mergelist = function(l, on, cols, how=c("inner","left","right","full"), mult=c("
       #on = on[[join.i]], how = how[[join.i]], mult = mult[[join.i]], ## vectorized params TODO
       lhs.cols = out.cols, rhs.cols = cols[[rhs.i]],
       copy = FALSE, ## avoid any copies inside, will copy once below
-      allow.cartesian = allow.cartesian, verbose = verbose
+      join.many = join.many, verbose = verbose
     )
     out.cols = copy(names(out))
   }

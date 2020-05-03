@@ -81,6 +81,7 @@
        "datatable.print.keys"="FALSE",         # for print.data.table
        "datatable.print.trunc.cols"="FALSE",   # for print.data.table
        "datatable.allow.cartesian"="FALSE",    # datatable.<argument name>
+       "datatable.join.many"="TRUE",           # mergelist, [.data.table #4383 #914
        "datatable.dfdispatchwarn"="TRUE",                   # not a function argument
        "datatable.warnredundantby"="TRUE",                  # not a function argument
        "datatable.alloccol"="1024L",           # argument 'n' of alloc.col. Over-allocate 1024 spare column slots
