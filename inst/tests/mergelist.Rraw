@@ -101,7 +101,7 @@ l = list(
   lhs = data.table(id1=1:2, v1=1:2),
   rhs = data.table(id1=1:2, v2=1:2)
 )
-expected = list(id1=1:2, v1=1:2, v2=1:2)
+expected = data.table(id1=1:2, v1=1:2, v2=1:2)
 for (how in c("inner","left","right","full")) {
   num = trunc(num*10)/10 + 0.1
   for (mult in c("all","first","last","error")) {
@@ -120,10 +120,10 @@ l = list(
   rhs = data.table(id1=1:3, v2=1:3)
 )
 expected = list(
-  inner = list(id1=1:2, v1=1:2, v2=1:2),
-  left = list(id1=1:2, v1=1:2, v2=1:2),
-  right = list(id1=1:3, v1=c(1:2,NA), v2=1:3),
-  full = list(id1=1:3, v1=c(1:2,NA), v2=1:3)
+  inner = data.table(id1=1:2, v1=1:2, v2=1:2),
+  left = data.table(id1=1:2, v1=1:2, v2=1:2),
+  right = data.table(id1=1:3, v1=c(1:2,NA), v2=1:3),
+  full = data.table(id1=1:3, v1=c(1:2,NA), v2=1:3)
 )
 for (how in c("inner","left","right","full")) {
   num = trunc(num*10)/10 + 0.1
@@ -143,10 +143,10 @@ l = list(
   rhs = data.table(id1=1:2, v2=1:2)
 )
 expected = list(
-  inner = list(id1=1:2, v1=1:2, v2=1:2),
-  left = list(id1=1:3, v1=1:3, v2=c(1:2,NA)),
-  right = list(id1=1:2, v1=1:2, v2=1:2),
-  full = list(id1=1:3, v1=1:3, v2=c(1:2,NA))
+  inner = data.table(id1=1:2, v1=1:2, v2=1:2),
+  left = data.table(id1=1:3, v1=1:3, v2=c(1:2,NA)),
+  right = data.table(id1=1:2, v1=1:2, v2=1:2),
+  full = data.table(id1=1:3, v1=1:3, v2=c(1:2,NA))
 )
 for (how in c("inner","left","right","full")) {
   num = trunc(num*10)/10 + 0.1
@@ -166,10 +166,10 @@ l = list(
   rhs = data.table(id1=c(4L,2:1), v2=1:3)
 )
 expected = list(
-  inner = list(id1=2:1, v1=2:3, v2=2:3),
-  left = list(id1=3:1, v1=1:3, v2=c(NA,2:3)),
-  right = list(id1=c(4L,2:1), v1=c(NA,2:3), v2=1:3),
-  full = list(id1=c(3:1,4L), v1=c(1:3,NA), v2=c(NA,2:3,1L))
+  inner = data.table(id1=2:1, v1=2:3, v2=2:3),
+  left = data.table(id1=3:1, v1=1:3, v2=c(NA,2:3)),
+  right = data.table(id1=c(4L,2:1), v1=c(NA,2:3), v2=1:3),
+  full = data.table(id1=c(3:1,4L), v1=c(1:3,NA), v2=c(NA,2:3,1L))
 )
 for (how in c("inner","left","right","full")) {
   num = trunc(num*10)/10 + 0.1
@@ -189,10 +189,10 @@ l = list(
   rhs = data.table(id1=3:4, v2=1:2)
 )
 expected = list(
-  inner = list(id1=integer(), v1=integer(), v2=integer()),
-  left = list(id1=2:1, v1=1:2, v2=c(NA_integer_,NA)),
-  right = list(id1=3:4, v1=c(NA_integer_,NA), v2=1:2),
-  full = list(id1=c(2:1,3:4), v1=c(1:2,NA,NA), v2=c(NA,NA,1:2))
+  inner = data.table(id1=integer(), v1=integer(), v2=integer()),
+  left = data.table(id1=2:1, v1=1:2, v2=c(NA_integer_,NA)),
+  right = data.table(id1=3:4, v1=c(NA_integer_,NA), v2=1:2),
+  full = data.table(id1=c(2:1,3:4), v1=c(1:2,NA,NA), v2=c(NA,NA,1:2))
 )
 for (how in c("inner","left","right","full")) {
   num = trunc(num*10)/10 + 0.1
@@ -212,10 +212,10 @@ l = list(
   rhs = data.table(id1=integer(), v2=integer())
 )
 expected = list(
-  inner = list(id1=integer(), v1=integer(), v2=integer()),
-  left = list(id1=integer(), v1=integer(), v2=integer()),
-  right = list(id1=integer(), v1=integer(), v2=integer()),
-  full = list(id1=integer(), v1=integer(), v2=integer())
+  inner = data.table(id1=integer(), v1=integer(), v2=integer()),
+  left = data.table(id1=integer(), v1=integer(), v2=integer()),
+  right = data.table(id1=integer(), v1=integer(), v2=integer()),
+  full = data.table(id1=integer(), v1=integer(), v2=integer())
 )
 for (how in c("inner","left","right","full")) {
   num = trunc(num*10)/10 + 0.1
@@ -235,10 +235,10 @@ l = list(
   rhs = data.table(id1=2:1, v2=1:2)
 )
 expected = list(
-  inner = list(id1=integer(), v1=integer(), v2=integer()),
-  left = list(id1=integer(), v1=integer(), v2=integer()),
-  right = list(id1=2:1, v1=c(NA_integer_,NA), v2=1:2),
-  full = list(id1=2:1, v1=c(NA_integer_,NA), v2=1:2)
+  inner = data.table(id1=integer(), v1=integer(), v2=integer()),
+  left = data.table(id1=integer(), v1=integer(), v2=integer()),
+  right = data.table(id1=2:1, v1=c(NA_integer_,NA), v2=1:2),
+  full = data.table(id1=2:1, v1=c(NA_integer_,NA), v2=1:2)
 )
 for (how in c("inner","left","right","full")) {
   num = trunc(num*10)/10 + 0.1
@@ -258,10 +258,10 @@ l = list(
   rhs = data.table(id1=integer(), v2=integer())
 )
 expected = list(
-  inner = list(id1=integer(), v1=integer(), v2=integer()),
-  left = list(id1=2:1, v1=1:2, v2=c(NA_integer_,NA)),
-  right = list(id1=integer(), v1=integer(), v2=integer()),
-  full = list(id1=2:1, v1=1:2, v2=c(NA_integer_,NA))
+  inner = data.table(id1=integer(), v1=integer(), v2=integer()),
+  left = data.table(id1=2:1, v1=1:2, v2=c(NA_integer_,NA)),
+  right = data.table(id1=integer(), v1=integer(), v2=integer()),
+  full = data.table(id1=2:1, v1=1:2, v2=c(NA_integer_,NA))
 )
 for (how in c("inner","left","right","full")) {
   num = trunc(num*10)/10 + 0.1
@@ -280,7 +280,7 @@ for (how in c("inner","left","right","full")) {
 test(101.01, mergelist(data.table(x=1L), on="x"), error="must be a list")
 test(101.02, mergelist(list(data.table(x=1L)), on="x", copy=NA), error="must be TRUE or FALSE")
 test(101.03, mergelist(list(data.table(x=1L)), how="inner", on="x", copy=FALSE), error="works only for")
-test(101.04, mergelist(list(data.table(x=1L), list(x=1:2, y=1L)), on="x"), error="must be data.table type object")
+test(101.04, mergelist(list(data.table(x=1L), list(x=1:2, y=1L)), on="x"), error="must be data.table objects")
 l = list(d<-data.table(x=1:2))
 test(101.05, ans<-mergelist(l, on="x", how="left", mult="first"), d)
 test(101.06, intersect(addresses(d), addresses(ans)), character())
@@ -438,6 +438,14 @@ test(104.24, l$to[l$fm, on="x"], error="many-to-many join")
 options(datatable.join.many=TRUE)
 test(104.25, l$to[l$fm, on="x"], error="Check for duplicate key values")
 test(104.26, mergelist(l, on="x", how="left", mult="all"), l$to[l$fm, on="x", allow.cartesian=TRUE])
+
+## 3+ tables mergelist
+
+l = list(data.table(x=3:1, v1=1:3), data.table(x=2:1, v2=1:2), data.table(x=3:2, v3=1:2))
+test(111.01, mergelist(l, on="x", how="left"), data.table(x=3:1, v1=1:3, v2=c(NA,1:2), v3=c(1:2,NA)))
+test(111.02, mergelist(l, on="x", how="inner"), data.table(x=2L, v1=2L, v2=1L, v3=2L))
+test(111.03, mergelist(l, on="x", how="right"), data.table(x=3:2, v1=c(NA,2L), v2=c(NA,1L), v3=1:2))
+test(111.04, mergelist(l, on="x", how="full"), data.table(x=3:1, v1=1:3, v2=c(NA,1:2), v3=c(1:2,NA)))
 
 ## merge no duplicates
 

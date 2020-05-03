@@ -201,13 +201,13 @@ mergepair = function(lhs, rhs, on, how, mult, lhs.cols=names(lhs), rhs.cols=name
         set(out.r, NULL, add, lapply(unclass(out.i)[add], `[`, 1L)) ## we could change to cbindlist once it will recycle
         setcolorder(out.r, neworder=names(out.i))
       }
-      out = c(out.r) ## we want list
+      out = out.r
     } else { ## all might have not been copied yet, rbindlist will copy
       out.l = .Call(Ccbindlist, list(out.i, out.x), FALSE)
-      out = c(rbindlist(list(out.l, out.r), use.names=TRUE, fill=TRUE)) ## we could replace rbindlist for new alloc of nrow(out.l)+nrow(out.r) and then memcpy into it, we dont need overalloc or dt class here
+      out = rbindlist(list(out.l, out.r), use.names=TRUE, fill=TRUE) ## we could replace rbindlist for new alloc of nrow(out.l)+nrow(out.r) and then memcpy into it, we dont need overalloc here
     }
   }
-  out
+  setDT(out) ## no need to overalloc so would be better as list, but bmerge wants DT, and just set class will not do, selfrefok will warn, thus setDT
 }
 
 mergelist = function(l, on, cols, how=c("left","inner","full","right"), mult=c("error","all","first","last"), copy=TRUE, join.many=getOption("datatable.join.many")) {
@@ -227,8 +227,8 @@ mergelist = function(l, on, cols, how=c("left","inner","full","right"), mult=c("
     !(mult=="first" || mult=="last" || mult=="error")
   ))
     stop("copy=FALSE works only for how='left' and mult='first|last|error'")
-  if (any(!vapply(l, perhaps.data.table, FALSE)))
-    stop("Every element of 'l' list must be data.table type object")
+  if (any(!vapply(l, is.data.table, FALSE)))
+    stop("Every element of 'l' list must be data.table objects")
   n = length(l)
   if (n<2L) {
     out = if (!n) l else l[[1L]]
