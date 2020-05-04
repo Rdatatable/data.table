@@ -1400,7 +1400,6 @@ replace_dot_alias = function(e) {
   } else {
     # Find the groups, using 'byval' ...
     if (missingby) stop("Internal error: by= is missing")   # nocov
-
     if (length(byval) && length(byval[[1L]])) {
       if (!bysameorder && isFALSE(byindex)) {
         if (verbose) {last.started.at=proc.time();cat("Finding groups using forderv ... ");flush.console()}
@@ -1479,28 +1478,24 @@ replace_dot_alias = function(e) {
           lgl_ans = group_eval_tree(having_sub, .HavingEnv, use.GForce = TRUE)
         }
         
+        if (verbose) stop(gettextf("Of the %d original groups, %d evaluated to TRUE in having", length(f__), sum(lgl_ans), domain="R-data.table")) 
+        
         SD_only = jsub == as.name(".SD")
-        inds = .Call(Cvecseq_having, f__, len__, lgl_ans, retGrps = !SD_only)
+        inds = .Call(Cvecseq_having, f__, len__, lgl_ans, retGrpArg = !SD_only)
         
-        # inds are :
-        #  NULL means all groups were true and there is no additional subsetting
-        #  integer(0) means all groups were false and an empty datatable would be returned
-        #  an integer vector - if retGrps == T then there are recalculated len__, and f__ attributes
-        
-        if (verbose) print(inds)
-        
-        if (SD_only){
-          if (is.null(inds)) {
-            return(x)
-          }
-          if (!length(inds)) {
-            return(x[inds])
-          } else {
-            if (!length(o__))
-              return(x[inds])
-            else 
-              return(x[o__[inds]])
-          }
+        if (!is.null(inds)) {
+          if (length(o__))
+            inds = o__[inds]
+        }
+
+        if (SD_only) {
+          ## TODO make these subsets more performant. 
+          ## byval already has irows accounted for but sdvars do not
+          ## This way seems to be memory intensive
+          if (is.null(irows))
+            return(as.data.table(c(byval, x[, sdvars, with = FALSE]))[inds])
+          else
+            return(as.data.table(c(byval, x[irows, sdvars, with = FALSE]))[inds])
         } else {
           stop("Currently the having argument only supports returning .SD in the j expression.")
         }
@@ -3181,11 +3176,27 @@ isReallyReal = function(x) {
 }
 
 group_eval_tree = function(e, env, init = TRUE, one_per_group = TRUE, use.GForce = TRUE) {
+  ## Recursive function to determine what can ignore groupings or have gforce optimizations.
+  
+  ## Let's say e = sum(x) > global_var
+  ##  where 
+  ##    -- x has been assigned to our environment env
+  ##    -- global_var exists in the scope of env but not assigned (i.e., env$global_var does not work) 
+  
+  ## This function will continually evaluate the expression and
+  ## when it sees x, it will determine that there is no need to immediately evaluate it.
+  ## Instead, we can wait to evaluate x until we're back to sum(x). Therefore, 
+  ## this function would return expression x for this iteration.
+  
+  ## On the other hand, global_var will not be seen directly in the env. Therefore, 
+  ## we attempt to eval to see if it existed up a level from the original env assignment.
+  ## The function would either return the value of global_var or, if not found, error.
+  
   if (length(e) == 1L) {
     if (is.atomic(e) || exists(as.character(e), env)) {
       ans = e
     } else {
-      ans = eval(e, env)
+      ans = eval(e, env) 
     }
   } else {
     fx = e[[1L]]
