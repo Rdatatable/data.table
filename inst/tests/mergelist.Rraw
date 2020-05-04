@@ -14,6 +14,16 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
 }
 
 addresses = function(x) vapply(x, address, "")
+copied = function(ans, l) {
+  all(!addresses(ans) %chin% c(addresses(l$lhs), addresses(l$rhs)))
+}
+notcopied = function(ans, l, how="left", unless=character()) {
+  if (how %chin% unless) return(copied(ans, l))
+  if (how=="full") return( ## either side nocopy is fine
+    all(addresses(l$lhs) %chin% addresses(ans)) || all(addresses(l$rhs) %chin% addresses(ans))
+  )
+  all(addresses(if (how=="right") l$rhs else l$lhs) %chin% addresses(ans))
+}
 
 # internal helpers
 
@@ -83,17 +93,6 @@ test(12.10, cbindlist(list(data.table(a=integer()), list(b=integer()))), data.ta
 # mergepair
 
 ## test copy-ness argument in mergepair
-
-copied = function(ans, l) {
-  all(!addresses(ans) %chin% c(addresses(l$lhs), addresses(l$rhs)))
-}
-notcopied = function(ans, l, how, unless=character()) {
-  if (how %chin% unless) return(copied(ans, l))
-  if (how=="full") return( ## either side nocopy is fine
-    all(addresses(l$lhs) %chin% addresses(ans)) || all(addresses(l$rhs) %chin% addresses(ans))
-  )
-  all(addresses(if (how=="right") l$rhs else l$lhs) %chin% addresses(ans))
-}
 
 ### LHS equal to RHS: no copy in all cases
 num = 21.000
@@ -441,38 +440,97 @@ test(104.26, mergelist(l, on="x", how="left", mult="all"), l$to[l$fm, on="x", al
 
 ## 3+ tables mergelist
 
-l = list(data.table(x=3:1, v1=1:3), data.table(x=2:1, v2=1:2), data.table(x=3:2, v3=1:2))
-test(111.01, mergelist(l, on="x", how="left"), data.table(x=3:1, v1=1:3, v2=c(NA,1:2), v3=c(1:2,NA)))
-test(111.02, mergelist(l, on="x", how="inner"), data.table(x=2L, v1=2L, v2=1L, v3=2L))
-test(111.03, mergelist(l, on="x", how="right"), data.table(x=3:2, v1=c(NA,2L), v2=c(NA,1L), v3=1:2))
-test(111.04, mergelist(l, on="x", how="full"), data.table(x=3:1, v1=1:3, v2=c(NA,1:2), v3=c(1:2,NA)))
+### 3 tables
+l = list(data.table(id1=3:1, v1=1:3), data.table(id1=2:1, v2=1:2), data.table(id1=3:2, v3=1:2))
+test(111.01, mergelist(l, on="id1", how="left"), data.table(id1=3:1, v1=1:3, v2=c(NA,1:2), v3=c(1:2,NA)))
+test(111.02, mergelist(l, on="id1", how="inner"), data.table(id1=2L, v1=2L, v2=1L, v3=2L))
+test(111.03, mergelist(l, on="id1", how="right"), data.table(id1=3:2, v1=c(NA,2L), v2=c(NA,1L), v3=1:2))
+test(111.04, mergelist(l, on="id1", how="full"), data.table(id1=3:1, v1=1:3, v2=c(NA,1:2), v3=c(1:2,NA)))
+test(111.05, copied(mergelist(l, on="id1", how="left", mult="error", copy=TRUE), l))
+test(111.06, notcopied(mergelist(l, on="id1", how="left", mult="error", copy=FALSE), l))
 
-## merge no duplicates
+## mergelist no duplicates
 
 ### LHS equal to RHS
-l = list(
-  lhs = data.table(id1=1:2, v1=1:2),
-  rhs = data.table(id1=1:2, v2=1:2)
-)
+l = list(lhs = data.table(id1=1:2, v1=1:2), rhs = data.table(id1=1:2, v2=1:2))
 expected = data.table(id1=1:2, v1=1:2, v2=1:2)
 test(121.01, mergelist(l, on="id1", how="inner", mult="all"), expected)
 test(121.02, mergelist(l, on="id1", how="left", mult="all"), expected)
 test(121.03, mergelist(l, on="id1", how="right", mult="all"), expected)
 test(121.04, mergelist(l, on="id1", how="full", mult="all"), expected)
-# copy
-ans = mergelist(l, on="id1", how="left", mult="error", copy=TRUE)
-test(121.11, copied(ans, l))
-ans = mergelist(l, on="id1", how="left", mult="error", copy=FALSE)
-test(121.12, notcopied(ans, l, how="left"))
+test(121.05, copied(mergelist(l, on="id1", how="left", mult="error", copy=TRUE), l))
+test(121.06, notcopied(mergelist(l, on="id1", how="left", mult="error", copy=FALSE), l))
+### Single match
+l = list(lhs = data.table(id1=1:2, v1=1:2), rhs = data.table(id1=c(1L,3L), v2=1:2))
+test(121.11, mergelist(l, on="id1", how="inner", mult="all"), data.table(id1=1L, v1=1L, v2=1L))
+test(121.12, mergelist(l, on="id1", how="left", mult="all"), data.table(id1=1:2, v1=1:2, v2=c(1L,NA)))
+test(121.13, mergelist(l, on="id1", how="right", mult="all"), data.table(id1=c(1L,3L), v1=c(1L,NA), v2=1:2))
+test(121.14, mergelist(l, on="id1", how="full", mult="all"), data.table(id1=1:3, v1=c(1:2,NA), v2=c(1L,NA,2L)))
+test(121.15, copied(mergelist(l, on="id1", how="left", mult="error", copy=TRUE), l))
+test(121.16, notcopied(mergelist(l, on="id1", how="left", mult="error", copy=FALSE), l))
+### Two matches
+l = list(lhs = data.table(id1=1:3, v1=1:3), rhs = data.table(id1=2:4, v2=1:3))
+test(121.21, mergelist(l, on="id1", how="inner", mult="all"), data.table(id1=2:3, v1=2:3, v2=1:2))
+test(121.22, mergelist(l, on="id1", how="left", mult="all"), data.table(id1=1:3, v1=1:3, v2=c(NA,1:2)))
+test(121.23, mergelist(l, on="id1", how="right", mult="all"), data.table(id1=2:4, v1=c(2:3,NA), v2=1:3))
+test(121.24, mergelist(l, on="id1", how="full", mult="all"), data.table(id1=1:4, v1=c(1:3,NA), v2=c(NA,1:3)))
+test(121.25, copied(mergelist(l, on="id1", how="left", mult="error", copy=TRUE), l))
+test(121.26, notcopied(mergelist(l, on="id1", how="left", mult="error", copy=FALSE), l))
+### Zero match
+l = list(lhs = data.table(id1=1:2, v1=1:2), rhs = data.table(id1=4:3, v2=1:2))
+test(121.31, mergelist(l, on="id1", how="inner", mult="all"), data.table(id1=integer(), v1=integer(), v2=integer()))
+test(121.32, mergelist(l, on="id1", how="left", mult="all"), data.table(id1=1:2, v1=1:2, v2=c(NA_integer_,NA)))
+test(121.33, mergelist(l, on="id1", how="right", mult="all"), data.table(id1=4:3, v1=c(NA_integer_,NA), v2=1:2))
+test(121.34, mergelist(l, on="id1", how="full", mult="all"), data.table(id1=c(1:2,4:3), v1=c(1:2,NA,NA), v2=c(NA,NA,1:2)))
+test(121.35, copied(mergelist(l, on="id1", how="left", mult="error", copy=TRUE), l))
+test(121.36, notcopied(mergelist(l, on="id1", how="left", mult="error", copy=FALSE), l))
+### LHS within RHS
+l = list(lhs = data.table(id1=1:4, v1=1:4), rhs = data.table(id1=3:2, v2=1:2))
+test(121.41, mergelist(l, on="id1", how="inner", mult="all"), data.table(id1=2:3, v1=2:3, v2=2:1))
+test(121.42, mergelist(l, on="id1", how="left", mult="all"), data.table(id1=1:4, v1=1:4, v2=c(NA,2:1,NA)))
+test(121.43, mergelist(l, on="id1", how="right", mult="all"), data.table(id1=3:2, v1=3:2, v2=1:2))
+test(121.44, mergelist(l, on="id1", how="full", mult="all"), data.table(id1=1:4, v1=1:4, v2=c(NA,2:1,NA)))
+test(121.45, copied(mergelist(l, on="id1", how="left", mult="error", copy=TRUE), l))
+test(121.46, notcopied(mergelist(l, on="id1", how="left", mult="error", copy=FALSE), l))
+### RHS within LHS
+l = list(lhs = data.table(id1=3:2, v1=1:2), rhs = data.table(id1=1:4, v2=1:4))
+test(121.51, mergelist(l, on="id1", how="inner", mult="all"), data.table(id1=3:2, v1=1:2, v2=3:2))
+test(121.52, mergelist(l, on="id1", how="left", mult="all"), data.table(id1=3:2, v1=1:2, v2=3:2))
+test(121.53, mergelist(l, on="id1", how="right", mult="all"), data.table(id1=1:4, v1=c(NA,2:1,NA), v2=1:4))
+test(121.54, mergelist(l, on="id1", how="full", mult="all"), data.table(id1=c(3:1,4L), v1=c(1:2,NA,NA), v2=c(3:1,4L)))
+test(121.55, copied(mergelist(l, on="id1", how="left", mult="error", copy=TRUE), l))
+test(121.56, notcopied(mergelist(l, on="id1", how="left", mult="error", copy=FALSE), l))
+### RHS zero rows
+l = list(lhs = data.table(id1=3:2, v1=1:2), rhs = data.table(id1=integer(), v2=integer()))
+test(121.61, mergelist(l, on="id1", how="inner", mult="all"), data.table(id1=integer(), v1=integer(), v2=integer()))
+test(121.62, mergelist(l, on="id1", how="left", mult="all"), data.table(id1=3:2, v1=1:2, v2=c(NA_integer_,NA)))
+test(121.63, mergelist(l, on="id1", how="right", mult="all"), data.table(id1=integer(), v1=integer(), v2=integer()))
+test(121.64, mergelist(l, on="id1", how="full", mult="all"), data.table(id1=3:2, v1=1:2, v2=c(NA_integer_,NA)))
+test(121.65, copied(mergelist(l, on="id1", how="left", mult="error", copy=TRUE), l))
+test(121.66, notcopied(mergelist(l, on="id1", how="left", mult="error", copy=FALSE), l))
+### LHS zero rows
+l = list(lhs = data.table(id1=integer(), v1=integer()), rhs = data.table(id1=2:1, v2=1:2))
+test(121.71, mergelist(l, on="id1", how="inner", mult="all"), data.table(id1=integer(), v1=integer(), v2=integer()))
+test(121.72, mergelist(l, on="id1", how="left", mult="all"), data.table(id1=integer(), v1=integer(), v2=integer()))
+test(121.73, mergelist(l, on="id1", how="right", mult="all"), data.table(id1=2:1, v1=c(NA_integer_,NA), v2=1:2))
+test(121.74, mergelist(l, on="id1", how="full", mult="all"), data.table(id1=2:1, v1=c(NA_integer_,NA), v2=1:2))
+test(121.75, copied(mergelist(l, on="id1", how="left", mult="error", copy=TRUE), l))
+test(121.76, notcopied(mergelist(l, on="id1", how="left", mult="error", copy=FALSE), l))
+### LHS and RHS zero rows
+l = list(lhs = data.table(id1=integer(), v1=integer()), rhs = data.table(id1=integer(), v2=integer()))
+expected = data.table(id1=integer(), v1=integer(), v2=integer())
+test(121.81, mergelist(l, on="id1", how="inner", mult="all"), expected)
+test(121.82, mergelist(l, on="id1", how="left", mult="all"), expected)
+test(121.83, mergelist(l, on="id1", how="right", mult="all"), expected)
+test(121.84, mergelist(l, on="id1", how="full", mult="all"), expected)
+test(121.85, copied(mergelist(l, on="id1", how="left", mult="error", copy=TRUE), l))
+test(121.86, notcopied(mergelist(l, on="id1", how="left", mult="error", copy=FALSE), l))
 
-## duplicate matches, see sqlite.Rraw for tests vs SQLite db
+## mergelist duplicate matches, see sqlite.Rraw for tests vs SQLite db
 
-### duplicates in RHS and LHS
+### duplicates in RHS and LHS matched in both sides
 num = 221.00
-l = list(
-  lhs = data.table(id1=c(1:3,3L), v1=1:4),
-  rhs = data.table(id1=c(1L,1L,3:4), v2=1:4)
-)
+l = list(lhs = data.table(id1=c(1:3,3L), v1=1:4), rhs = data.table(id1=c(1L,1L,3:4), v2=1:4))
 expected = list(inner = list(
   all = data.table(id1=c(1L,1L,3L,3L), v1=c(1L,1L,3L,4L), v2=c(1:3,3L)),
   first = data.table(id1=c(1L,3L), v1=c(1L,3L), v2=c(1L,3L)),
@@ -492,6 +550,222 @@ expected = list(inner = list(
   all = data.table(id1=c(1L,1:3,3:4), v1=c(1L,1:4,NA), v2=c(1:2,NA,3L,3:4)),
   first = data.table(id1=1:4, v1=c(1:3,NA), v2=c(1L,NA,3:4)),
   last = data.table(id1=1:4, v1=c(1:2,4L,NA), v2=c(2L,NA,3:4)),
+  error = NULL
+))
+for (how in c("inner","left","right","full")) {
+  num = trunc(num*10)/10 + 0.1
+  for (mult in c("all","first","last","error")) {
+    num = trunc(num*100)/100 + 0.01
+    if (is.null(expected[[how]][[mult]])) {
+      test(num<-num+0.001, mergelist(l, on="id1", how=how, mult=mult), error="multiple matches during merge")
+    } else {
+      test(num<-num+0.001, mergelist(l, on="id1", how=how, mult=mult), expected[[how]][[mult]])
+    }
+  }
+}
+
+## duplicates in RHS
+num = 222.00
+l = list(lhs = data.table(id1=1:2, v1=1:2), rhs = data.table(id1=c(2L,2:3), v2=1:3))
+expected = list(inner = list(
+  all = data.table(id1=c(2L,2L), v1=c(2L,2L), v2=1:2),
+  first = data.table(id1=2L, v1=2L, v2=1L),
+  last = data.table(id1=2L, v1=2L, v2=2L),
+  error = NULL
+), left = list(
+  all = data.table(id1=c(1:2,2L), v1=c(1:2,2L), v2=c(NA,1:2)),
+  first = data.table(id1=1:2, v1=1:2, v2=c(NA,1L)),
+  last = data.table(id1=1:2, v1=1:2, v2=c(NA,2L)),
+  error = NULL
+), right = list(
+  all = data.table(id1=c(2L,2:3), v1=c(2L,2L,NA), v2=1:3),
+  first = data.table(id1=c(2L,2:3), v1=c(2L,2L,NA), v2=1:3),
+  last = data.table(id1=c(2L,2:3), v1=c(2L,2L,NA), v2=1:3),
+  error = data.table(id1=c(2L,2:3), v1=c(2L,2L,NA), v2=1:3)
+), full = list(
+  all = data.table(id1=c(1:2,2:3), v1=c(1:2,2L,NA), v2=c(NA,1:3)),
+  first = data.table(id1=c(1:2,3L), v1=c(1:2,NA), v2=c(NA,1L,3L)),
+  last = data.table(id1=c(1:2,3L), v1=c(1:2,NA), v2=c(NA,2:3)),
+  error = NULL
+))
+for (how in c("inner","left","right","full")) {
+  num = trunc(num*10)/10 + 0.1
+  for (mult in c("all","first","last","error")) {
+    num = trunc(num*100)/100 + 0.01
+    if (is.null(expected[[how]][[mult]])) {
+      test(num<-num+0.001, mergelist(l, on="id1", how=how, mult=mult), error="multiple matches during merge")
+    } else {
+      test(num<-num+0.001, mergelist(l, on="id1", how=how, mult=mult), expected[[how]][[mult]])
+    }
+  }
+}
+
+### duplicates in LHS
+num = 223.00
+l = list(lhs = data.table(id1=c(1:2,2L), v1=1:3), rhs = data.table(id1=2:3, v2=1:2))
+expected = list(inner = list(
+  all = data.table(id1=c(2L,2L), v1=2:3, v2=c(1L,1L)),
+  first = data.table(id1=2L, v1=2L, v2=1L),
+  last = data.table(id1=2L, v1=3L, v2=1L),
+  error = NULL
+), left = list(
+  all = data.table(id1=c(1:2,2L), v1=1:3, v2=c(NA,1L,1L)),
+  first = data.table(id1=c(1:2,2L), v1=1:3, v2=c(NA,1L,1L)),
+  last = data.table(id1=c(1:2,2L), v1=1:3, v2=c(NA,1L,1L)),
+  error = data.table(id1=c(1:2,2L), v1=1:3, v2=c(NA,1L,1L))
+), right = list(
+  all = data.table(id1=c(2L,2:3), v1=c(2:3,NA), v2=c(1L,1:2)),
+  first = data.table(id1=2:3, v1=c(2L,NA), v2=1:2),
+  last = data.table(id1=2:3, v1=c(3L,NA), v2=1:2),
+  error = NULL
+), full = list(
+  all = data.table(id1=c(1:2,2:3), v1=c(1:3,NA), v2=c(NA,1L,1:2)),
+  first = data.table(id1=1:3, v1=c(1:2,NA), v2=c(NA,1:2)),
+  last = data.table(id1=1:3, v1=c(1L,3L,NA), v2=c(NA,1:2)),
+  error = NULL
+))
+for (how in c("inner","left","right","full")) {
+  num = trunc(num*10)/10 + 0.1
+  for (mult in c("all","first","last","error")) {
+    num = trunc(num*100)/100 + 0.01
+    if (is.null(expected[[how]][[mult]])) {
+      test(num<-num+0.001, mergelist(l, on="id1", how=how, mult=mult), error="multiple matches during merge")
+    } else {
+      test(num<-num+0.001, mergelist(l, on="id1", how=how, mult=mult), expected[[how]][[mult]])
+    }
+  }
+}
+
+### duplicates in RHS and LHS, some RHS dups does not have matches in LHS
+num = 224.00
+l = list(lhs = data.table(id1=c(1:3,3L), v1=1:4), rhs = data.table(id1=c(1L,1L,3:4,4L), v2=1:5))
+expected = list(inner = list(
+  all = data.table(id1=c(1L,1L,3L,3L), v1=c(1L,1L,3L,4L), v2=c(1:3,3L)),
+  first = data.table(id1=c(1L,3L), v1=c(1L,3L), v2=c(1L,3L)),
+  last = data.table(id1=c(1L,3L), v1=c(1L,4L), v2=2:3),
+  error = NULL
+), left = list(
+  all = data.table(id1=c(1L,1:3,3L), v1=c(1L,1:4), v2=c(1:2,NA,3L,3L)),
+  first = data.table(id1=c(1:3,3L), v1=1:4, v2=c(1L,NA,3L,3L)),
+  last = data.table(id1=c(1:3,3L), v1=1:4, v2=c(2L,NA,3L,3L)),
+  error = NULL
+), right = list(
+  all = data.table(id1=c(1L,1L,3L,3L,4L,4L), v1=c(1L,1L,3L,4L,NA,NA), v2=c(1:3,3:5)),
+  first = data.table(id1=c(1L,1L,3L,4L,4L), v1=c(1L,1L,3L,NA,NA), v2=1:5),
+  last = data.table(id1=c(1L,1L,3L,4L,4L), v1=c(1L,1L,4L,NA,NA), v2=1:5),
+  error = NULL
+), full = list(
+  all = data.table(id1=c(1L,1:3,3:4,4L), v1=c(1L,1:4,NA,NA), v2=c(1:2,NA,3L,3:5)),
+  first = data.table(id1=1:4, v1=c(1:3,NA), v2=c(1L,NA,3:4)),
+  last = data.table(id1=1:4, v1=c(1:2,4L,NA), v2=c(2L,NA,3L,5L)),
+  error = NULL
+))
+for (how in c("inner","left","right","full")) {
+  num = trunc(num*10)/10 + 0.1
+  for (mult in c("all","first","last","error")) {
+    num = trunc(num*100)/100 + 0.01
+    if (is.null(expected[[how]][[mult]])) {
+      test(num<-num+0.001, mergelist(l, on="id1", how=how, mult=mult), error="multiple matches during merge")
+    } else {
+      test(num<-num+0.001, mergelist(l, on="id1", how=how, mult=mult), expected[[how]][[mult]])
+    }
+  }
+}
+
+### duplicates in RHS and LHS, some LHS dups does not have matches in RHS
+num = 225.00
+l = list(lhs = data.table(id1=c(1L,1L,3:4,4L), v1=1:5), rhs = data.table(id1=c(1:3,3L), v2=1:4))
+expected = list(inner = list(
+  all = data.table(id1=c(1L,1L,3L,3L), v1=c(1:3,3L), v2=c(1L,1L,3:4)),
+  first = data.table(id1=c(1L,3L), v1=c(1L,3L), v2=c(1L,3L)),
+  last = data.table(id1=c(1L,3L), v1=2:3, v2=c(1L,4L)),
+  error = NULL
+), left = list(
+  all = data.table(id1=c(1L,1L,3L,3L,4L,4L), v1=c(1:3,3:5), v2=c(1L,1L,3L,4L,NA,NA)),
+  first = data.table(id1=c(1L,1L,3L,4L,4L), v1=1:5, v2=c(1L,1L,3L,NA,NA)),
+  last = data.table(id1=c(1L,1L,3L,4L,4L), v1=1:5, v2=c(1L,1L,4L,NA,NA)),
+  error = NULL
+), right = list(
+  all = data.table(id1=c(1L,1:3,3L), v1=c(1:2,NA,3L,3L), v2=c(1L,1:4)),
+  first = data.table(id1=c(1:3,3L), v1=c(1L,NA,3L,3L), v2=1:4),
+  last = data.table(id1=c(1:3,3L), v1=c(2L,NA,3L,3L), v2=1:4),
+  error = NULL
+), full = list(
+  all = data.table(id1=c(1L,1L,3L,3:4,4L,2L), v1=c(1:3,3:5,NA), v2=c(1L,1L,3:4,NA,NA,2L)),
+  first = data.table(id1=c(1L,3:4,2L), v1=c(1L,3:4,NA), v2=c(1L,3L,NA,2L)),
+  last = data.table(id1=c(1L,3:4,2L), v1=c(2:3,5L,NA), v2=c(1L,4L,NA,2L)),
+  error = NULL
+))
+for (how in c("inner","left","right","full")) {
+  num = trunc(num*10)/10 + 0.1
+  for (mult in c("all","first","last","error")) {
+    num = trunc(num*100)/100 + 0.01
+    if (is.null(expected[[how]][[mult]])) {
+      test(num<-num+0.001, mergelist(l, on="id1", how=how, mult=mult), error="multiple matches during merge")
+    } else {
+      test(num<-num+0.001, mergelist(l, on="id1", how=how, mult=mult), expected[[how]][[mult]])
+    }
+  }
+}
+
+### cartesian match, dups on both sides of match
+num = 226.00
+l = list(lhs = data.table(id1=c(1L,1:2), v1=1:3), rhs = data.table(id1=c(1L,1L,3L), v2=1:3))
+expected = list(inner = list(
+  all = data.table(id1=c(1L,1L,1L,1L), v1=c(1L,1:2,2L), v2=c(1:2,1:2)),
+  first = data.table(id1=1L, v1=1L, v2=1L),
+  last = data.table(id1=1L, v1=2L, v2=2L),
+  error = NULL
+), left = list(
+  all = data.table(id1=c(1L,1L,1L,1L,2L), v1=c(1L,1L,2L,2L,3L), v2=c(1:2,1:2,NA)),
+  first = data.table(id1=c(1L,1:2), v1=1:3, v2=c(1L,1L,NA)),
+  last = data.table(id1=c(1L,1:2), v1=1:3, v2=c(2L,2L,NA)),
+  error = NULL
+), right = list(
+  all = data.table(id1=c(1L,1L,1L,1L,3L), v1=c(1:2,1:2,NA), v2=c(1L,1:2,2:3)),
+  first = data.table(id1=c(1L,1L,3L), v1=c(1L,1L,NA), v2=1:3),
+  last = data.table(id1=c(1L,1L,3L), v1=c(2L,2L,NA), v2=1:3),
+  error = NULL
+), full = list(
+  all = data.table(id1=c(1L,1L,1L,1:3), v1=c(1L,1:2,2:3,NA), v2=c(1:2,1:2,NA,3L)),
+  first = data.table(id1=1:3, v1=c(1L,3L,NA), v2=c(1L,NA,3L)),
+  last = data.table(id1=1:3, v1=c(2L,3L,NA), v2=c(2L,NA,3L)),
+  error = NULL
+))
+for (how in c("inner","left","right","full")) {
+  num = trunc(num*10)/10 + 0.1
+  for (mult in c("all","first","last","error")) {
+    num = trunc(num*100)/100 + 0.01
+    if (is.null(expected[[how]][[mult]])) {
+      test(num<-num+0.001, mergelist(l, on="id1", how=how, mult=mult), error="multiple matches during merge")
+    } else {
+      test(num<-num+0.001, mergelist(l, on="id1", how=how, mult=mult), expected[[how]][[mult]])
+    }
+  }
+}
+
+### cross join duplicates
+num = 227.00
+l = list(lhs = data.table(id1=c(1L,1L), v1=1:2), rhs = data.table(id1=c(1L,1L), v2=1:2))
+expected = list(inner = list(
+  all = data.table(id1=c(1L,1L,1L,1L), v1=c(1L,1:2,2L), v2=c(1:2,1:2)),
+  first = data.table(id1=1L, v1=1L, v2=1L),
+  last = data.table(id1=1L, v1=2L, v2=2L),
+  error = NULL
+), left = list(
+  all = data.table(id1=c(1L,1L,1L,1L), v1=c(1L,1:2,2L), v2=c(1:2,1:2)),
+  first = data.table(id1=c(1L,1L), v1=1:2, v2=c(1L,1L)),
+  last = data.table(id1=c(1L,1L), v1=1:2, v2=c(2L,2L)),
+  error = NULL
+), right = list(
+  all = data.table(id1=c(1L,1L,1L,1L), v1=c(1:2,1:2), v2=c(1L,1:2,2L)),
+  first = data.table(id1=c(1L,1L), v1=c(1L,1L), v2=1:2),
+  last = data.table(id1=c(1L,1L), v1=c(2L,2L), v2=1:2),
+  error = NULL
+), full = list(
+  all = data.table(id1=c(1L,1L,1L,1L), v1=c(1L,1:2,2L), v2=c(1:2,1:2)),
+  first = data.table(id1=1L, v1=1L, v2=1L),
+  last = data.table(id1=1L, v1=2L, v2=2L),
   error = NULL
 ))
 for (how in c("inner","left","right","full")) {

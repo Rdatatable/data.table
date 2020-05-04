@@ -256,216 +256,44 @@ data = function(case) {
   } else if (case==21L) {
     lhs = as.data.table(list(id=sample(1e3, 1e3*2L, TRUE), v1=1:1e3))
     rhs = as.data.table(list(id=sample(1e3, 1e3*2L, TRUE), v2=1:1e3))
+  } else if (case==22L) { ## LHS equals RHS
+    lhs = data.table(id=1:2, v1=1:2)
+    rhs = data.table(id=1:2, v2=1:2)
+  } else if (case==23L) { ## cross join
+    lhs = data.table(id=c(1L,1L), v1=1:2)
+    rhs = data.table(id=c(1L,1L), v2=1:2)
+  } else if (case==24L) { ## cartesian match, dups on both sides of match
+    lhs = data.table(id=c(1L,1:2), v1=1:3)
+    rhs = data.table(id=c(1L,1L,3L), v2=1:3)
+  } else if (case==25L) { ## duplicates in RHS
+    lhs = data.table(id=1:2, v1=1:2)
+    rhs = data.table(id=c(2L,2:3), v2=1:3)
+  } else if (case==26L) { ## duplicates in RHS and LHS, some RHS dups does not have matches in LHS (merge.data.table+mult fails)
+    lhs = data.table(id=c(1:3,3L), v1=1:4)
+    rhs = data.table(id=c(1L,1L,3:4,4L), v2=1:5)
+  } else if (case==27L) { ## duplicates in RHS and LHS, some LHS dups does not have matches in RHS
+    lhs = data.table(id=c(1L,1L,3:4,4L), v1=1:5)
+    rhs = data.table(id=c(1:3,3L), v2=1:4)
+  } else if (case==28L) { ## duplicates in RHS and LHS
+    lhs = data.table(id=c(1:3,3L), v1=1:4)
+    rhs = data.table(id=c(1L,1L,3:4), v2=1:4)
+  } else if (case==29L) { ## duplicates in RHS
+    lhs = data.table(id=1:2, v1=1:2)
+    rhs = data.table(id=c(2L,2:3), v2=1:3)
+  } else if (case==30L) { ## duplicates in LHS
+    lhs = data.table(id=c(1:2,2L), v1=1:3)
+    rhs = data.table(id=2:3, v2=1:2)
+  } else if (case==31L) {
+    lhs = data.table(id=integer(), v1=integer())
+    rhs = data.table(id=integer(), v2=integer())
   } else stop("case not found")
   list(lhs=lhs, rhs=rhs)
 }
 
-# design ----
-
-## no duplicates
-l = list(lhs = data.table(id1=1:2, v1=1:2), rhs = data.table(id1=c(1L,3L), v2=1:2))
-stopifnot( ## how
-  join.sql.equal(l, on="id1", how="inner", ans=data.table(id1=1L, v1=1L, v2=1L)),
-  join.sql.equal(l, on="id1", how="left",  ans=data.table(id1=1:2, v1=1:2, v2=c(1L,NA))),
-  join.sql.equal(l, on="id1", how="right", ans=data.table(id1=c(1L,3L), v1=c(1L,NA), v2=1:2)),
-  join.sql.equal(l, on="id1", how="full",  ans=data.table(id1=1:3, v1=c(1:2,NA), v2=c(1L,NA,2L)))
-)
-
-## duplicates in RHS and LHS
-l = list(lhs = data.table(id1=c(1:3,3L), v1=1:4), rhs = data.table(id1=c(1L,1L,3:4), v2=1:4))
-stopifnot( ## inner + mult
-  join.sql.equal(l, on="id1", how="inner", mult="all",   ans=data.table(id1=c(1L,1L,3L,3L), v1=c(1L,1L,3L,4L), v2=c(1:3,3L))),
-  join.sql.equal(l, on="id1", how="inner", mult="first", ans=data.table(id1=c(1L,3L), v1=c(1L,3L), v2=c(1L,3L))),
-  join.sql.equal(l, on="id1", how="inner", mult="last",  ans=data.table(id1=c(1L,3L), v1=c(1L,4L), v2=2:3)),
-  join.sql.equal(l, on="id1", how="inner", mult="error", err=TRUE)
-)
-stopifnot( ## left + mult
-  join.sql.equal(l, on="id1", how="left",  mult="all",   ans=data.table(id1=c(1L,1:3,3L), v1=c(1L,1:4), v2=c(1:2,NA,3L,3L))),
-  join.sql.equal(l, on="id1", how="left",  mult="first", ans=data.table(id1=c(1:3,3L), v1=1:4, v2=c(1L,NA,3L,3L))),
-  join.sql.equal(l, on="id1", how="left",  mult="last",  ans=data.table(id1=c(1:3,3L), v1=1:4, v2=c(2L,NA,3L,3L))),
-  join.sql.equal(l, on="id1", how="left",  mult="error", err=TRUE)
-)
-stopifnot( ## right + mult
-  join.sql.equal(l, on="id1", how="right", mult="all",   ans=data.table(id1=c(1L,1L,3L,3:4), v1=c(1L,1L,3:4,NA), v2=c(1:3,3:4))),
-  join.sql.equal(l, on="id1", how="right", mult="first", ans=data.table(id1=c(1L,1L,3:4), v1=c(1L,1L,3L,NA), v2=1:4)),
-  join.sql.equal(l, on="id1", how="right", mult="last",  ans=data.table(id1=c(1L,1L,3:4), v1=c(1L,1L,4L,NA), v2=1:4)),
-  join.sql.equal(l, on="id1", how="right", mult="error", err=TRUE)
-)
-stopifnot( ## full + mult
-  join.sql.equal(l, on="id1", how="full",  mult="all",   ans=data.table(id1=c(1L,1:3,3:4), v1=c(1L,1:4,NA), v2=c(1:2,NA,3L,3:4))),
-  join.sql.equal(l, on="id1", how="full",  mult="first", ans=data.table(id1=1:4, v1=c(1:3,NA), v2=c(1L,NA,3:4))),
-  join.sql.equal(l, on="id1", how="full",  mult="last",  ans=data.table(id1=1:4, v1=c(1:2,4L,NA), v2=c(2L,NA,3:4))),
-  join.sql.equal(l, on="id1", how="full",  mult="error", err=TRUE)
-)
-
-## duplicates in RHS and LHS, but RHS dups does not have matches in LHS (merge.data.table+mult fails)
-l = list(lhs = data.table(id1=c(1:3,3L), v1=1:4), rhs = data.table(id1=c(1L,1L,3:4,4L), v2=1:5))
-stopifnot( ## inner + mult
-  join.sql.equal(l, on="id1", how="inner", mult="all",   ans=data.table(id1=c(1L,1L,3L,3L), v1=c(1L,1L,3L,4L), v2=c(1:3,3L))),
-  join.sql.equal(l, on="id1", how="inner", mult="first", ans=data.table(id1=c(1L,3L), v1=c(1L,3L), v2=c(1L,3L))),
-  join.sql.equal(l, on="id1", how="inner", mult="last",  ans=data.table(id1=c(1L,3L), v1=c(1L,4L), v2=2:3)),
-  join.sql.equal(l, on="id1", how="inner", mult="error", err=TRUE)
-)
-stopifnot( ## left + mult
-  join.sql.equal(l, on="id1", how="left",  mult="all",   ans=data.table(id1=c(1L,1:3,3L), v1=c(1L,1:4), v2=c(1:2,NA,3L,3L))),
-  join.sql.equal(l, on="id1", how="left",  mult="first", ans=data.table(id1=c(1:3,3L), v1=1:4, v2=c(1L,NA,3L,3L))),
-  join.sql.equal(l, on="id1", how="left",  mult="last",  ans=data.table(id1=c(1:3,3L), v1=1:4, v2=c(2L,NA,3L,3L))),
-  join.sql.equal(l, on="id1", how="left",  mult="error", err=TRUE)
-)
-stopifnot( ## right + mult
-  join.sql.equal(l, on="id1", how="right", mult="all",   ans=data.table(id1=c(1L,1L,3L,3L,4L,4L), v1=c(1L,1L,3L,4L,NA,NA), v2=c(1:3,3:5))),
-  join.sql.equal(l, on="id1", how="right", mult="first", ans=data.table(id1=c(1L,1L,3L,4L,4L), v1=c(1L,1L,3L,NA,NA), v2=1:5)),
-  join.sql.equal(l, on="id1", how="right", mult="last",  ans=data.table(id1=c(1L,1L,3L,4L,4L), v1=c(1L,1L,4L,NA,NA), v2=1:5)),
-  join.sql.equal(l, on="id1", how="right", mult="error", err=TRUE)
-)
-stopifnot( ## full + mult
-  join.sql.equal(l, on="id1", how="full",  mult="all",   ans=data.table(id1=c(1L,1:3,3:4,4L), v1=c(1L,1:4,NA,NA), v2=c(1:2,NA,3L,3:5))),
-  join.sql.equal(l, on="id1", how="full",  mult="first", ans=data.table(id1=1:4, v1=c(1:3,NA), v2=c(1L,NA,3:4))),
-  join.sql.equal(l, on="id1", how="full",  mult="last",  ans=data.table(id1=1:4, v1=c(1:2,4L,NA), v2=c(2L,NA,3L,5L))),
-  join.sql.equal(l, on="id1", how="full",  mult="error", err=TRUE)
-)
-
-## cartesian match, dups on both sides of match
-l = list(lhs = data.table(id1=c(1L,1:2), v1=1:3), rhs = data.table(id1=c(1L,1L,3L), v2=1:3))
-stopifnot( ## inner + mult
-  join.sql.equal(l, on="id1", how="inner", mult="all",   ans=data.table(id1=c(1L,1L,1L,1L), v1=c(1L,1:2,2L), v2=c(1:2,1:2))),
-  join.sql.equal(l, on="id1", how="inner", mult="first", ans=data.table(id1=1L, v1=1L, v2=1L)),
-  join.sql.equal(l, on="id1", how="inner", mult="last",  ans=data.table(id1=1L, v1=2L, v2=2L)),
-  join.sql.equal(l, on="id1", how="inner", mult="error", err=TRUE)
-)
-stopifnot( ## left + mult
-  join.sql.equal(l, on="id1", how="left",  mult="all",   ans=data.table(id1=c(1L,1L,1L,1L,2L), v1=c(1L,1L,2L,2L,3L), v2=c(1:2,1:2,NA))),
-  join.sql.equal(l, on="id1", how="left",  mult="first", ans=data.table(id1=c(1L,1:2), v1=1:3, v2=c(1L,1L,NA))),
-  join.sql.equal(l, on="id1", how="left",  mult="last",  ans=data.table(id1=c(1L,1:2), v1=1:3, v2=c(2L,2L,NA))),
-  join.sql.equal(l, on="id1", how="left",  mult="error", err=TRUE)
-)
-stopifnot( ## right + mult
-  join.sql.equal(l, on="id1", how="right", mult="all",   ans=data.table(id1=c(1L,1L,1L,1L,3L), v1=c(1L,1L,2L,2L,NA), v2=c(1:2,1:2,NA))),
-  join.sql.equal(l, on="id1", how="right", mult="first", ans=data.table(id1=c(1L,1L,3L), v1=c(1L,1L,NA), v2=1:3)),
-  join.sql.equal(l, on="id1", how="right", mult="last",  ans=data.table(id1=c(1L,1L,3L), v1=c(2L,2L,NA), v2=1:3)),
-  join.sql.equal(l, on="id1", how="right", mult="error", err=TRUE)
-)
-stopifnot( ## full + mult
-  join.sql.equal(l, on="id1", how="full",  mult="all",   ans=data.table(id1=c(1L,1L,1L,1:3), v1=c(1L,1:2,2:3,NA), v2=c(1:2,1:2,NA,3L))),
-  join.sql.equal(l, on="id1", how="full",  mult="first", ans=data.table(id1=1:3, v1=c(1L,3L,NA), v2=c(1L,NA,3L))),
-  join.sql.equal(l, on="id1", how="full",  mult="last",  ans=data.table(id1=1:3, v1=c(2L,3L,NA), v2=c(2L,NA,3L))),
-  join.sql.equal(l, on="id1", how="full",  mult="error", err=TRUE)
-)
-
-## duplicates in RHS
-l = list(lhs = data.table(id1=1:2, v1=1:2), rhs = data.table(id1=c(2L,2:3), v2=1:3))
-stopifnot( ## inner + mult
-  join.sql.equal(l, on="id1", how="inner", mult="all",   ans=data.table(id1=c(2L,2L), v1=c(2L,2L), v2=1:2)),
-  join.sql.equal(l, on="id1", how="inner", mult="first", ans=data.table(id1=2L, v1=2L, v2=1L)),
-  join.sql.equal(l, on="id1", how="inner", mult="last",  ans=data.table(id1=2L, v1=2L, v2=2L)),
-  join.sql.equal(l, on="id1", how="inner", mult="error", err=TRUE)
-)
-stopifnot( ## left + mult
-  join.sql.equal(l, on="id1", how="left",  mult="all",   ans=data.table(id1=c(1:2,2L), v1=c(1:2,2L), v2=c(NA,1:2))),
-  join.sql.equal(l, on="id1", how="left",  mult="first", ans=data.table(id1=1:2, v1=1:2, v2=c(NA,1L))),
-  join.sql.equal(l, on="id1", how="left",  mult="last",  ans=data.table(id1=1:2, v1=1:2, v2=c(NA,2L))),
-  join.sql.equal(l, on="id1", how="left",  mult="error", err=TRUE)
-)
-stopifnot( ## right + mult
-  join.sql.equal(l, on="id1", how="right", mult="all",   ans=data.table(id1=c(2L,2:3), v1=c(2L,2L,NA), v2=1:3)),
-  join.sql.equal(l, on="id1", how="right", mult="first", ans=data.table(id1=c(2L,2:3), v1=c(2L,2L,NA), v2=1:3)),
-  join.sql.equal(l, on="id1", how="right", mult="last",  ans=data.table(id1=c(2L,2:3), v1=c(2L,2L,NA), v2=1:3)),
-  join.sql.equal(l, on="id1", how="right", mult="error", ans=data.table(id1=c(2L,2:3), v1=c(2L,2L,NA), v2=1:3), err=FALSE) ## no dups in LHS
-)
-stopifnot( ## full + mult
-  join.sql.equal(l, on="id1", how="full",  mult="all",   ans=data.table(id1=c(1:2,2:3), v1=c(1:2,2L,NA), v2=c(NA,1:3))),
-  join.sql.equal(l, on="id1", how="full",  mult="first", ans=data.table(id1=c(1:2,3L), v1=c(1:2,NA), v2=c(NA,1L,3L))),
-  join.sql.equal(l, on="id1", how="full",  mult="last",  ans=data.table(id1=c(1:2,3L), v1=c(1:2,NA), v2=c(NA,2:3))),
-  join.sql.equal(l, on="id1", how="full",  mult="error", err=TRUE)
-)
-
-## duplicates in LHS
-l = list(lhs = data.table(id1=c(1:2,2L), v1=1:3), rhs = data.table(id1=2:3, v2=1:2))
-stopifnot( ## inner + mult
-  join.sql.equal(l, on="id1", how="inner", mult="all",   ans=data.table(id1=c(2L,2L), v1=2:3, v2=c(1L,1L))),
-  join.sql.equal(l, on="id1", how="inner", mult="first", ans=data.table(id1=2L, v1=2L, v2=1L)),
-  join.sql.equal(l, on="id1", how="inner", mult="last",  ans=data.table(id1=2L, v1=3L, v2=1L)),
-  join.sql.equal(l, on="id1", how="inner", mult="error", err=TRUE)
-)
-stopifnot( ## left + mult
-  join.sql.equal(l, on="id1", how="left",  mult="all",   ans=data.table(id1=c(1:2,2L), v1=1:3, v2=c(NA,1L,1L))),
-  join.sql.equal(l, on="id1", how="left",  mult="first", ans=data.table(id1=c(1:2,2L), v1=1:3, v2=c(NA,1L,1L))),
-  join.sql.equal(l, on="id1", how="left",  mult="last",  ans=data.table(id1=c(1:2,2L), v1=1:3, v2=c(NA,1L,1L))),
-  join.sql.equal(l, on="id1", how="left",  mult="error", ans=data.table(id1=c(1:2,2L), v1=1:3, v2=c(NA,1L,1L)), err=FALSE) ## no dups in RHS
-)
-stopifnot( ## right + mult
-  join.sql.equal(l, on="id1", how="right", mult="all",   ans=data.table(id1=c(2L,2:3), v1=c(2:3,NA), v2=c(1L,1:2))),
-  join.sql.equal(l, on="id1", how="right", mult="first", ans=data.table(id1=2:3, v1=c(2L,NA), v2=1:2)),
-  join.sql.equal(l, on="id1", how="right", mult="last",  ans=data.table(id1=2:3, v1=c(3L,NA), v2=1:2)),
-  join.sql.equal(l, on="id1", how="right", mult="error", err=TRUE)
-)
-stopifnot( ## full + mult
-  join.sql.equal(l, on="id1", how="full",  mult="all",   ans=data.table(id1=c(1:2,2:3), v1=c(1:3,NA), v2=c(NA,1L,1:2))),
-  join.sql.equal(l, on="id1", how="full",  mult="first", ans=data.table(id1=1:3, v1=c(1:2,NA), v2=c(NA,1:2))),
-  join.sql.equal(l, on="id1", how="full",  mult="last",  ans=data.table(id1=1:3, v1=c(1L,3L,NA), v2=c(NA,1:2))),
-  join.sql.equal(l, on="id1", how="full",  mult="error", err=TRUE)
-)
-
-## no dups, 1:1 match, all are equals below
-l = list(lhs = data.table(id1=1:2, v1=1:2), rhs = data.table(id1=1:2, v2=1:2))
-stopifnot( ## inner + mult
-  join.sql.equal(l, on="id1", how="inner", mult="all",   ans=data.table(id1=1:2, v1=1:2, v2=1:2)),
-  join.sql.equal(l, on="id1", how="inner", mult="first", ans=data.table(id1=1:2, v1=1:2, v2=1:2)),
-  join.sql.equal(l, on="id1", how="inner", mult="last",  ans=data.table(id1=1:2, v1=1:2, v2=1:2)),
-  join.sql.equal(l, on="id1", how="inner", mult="error", ans=data.table(id1=1:2, v1=1:2, v2=1:2), err=FALSE)
-)
-stopifnot( ## left + mult
-  join.sql.equal(l, on="id1", how="left",  mult="all",   ans=data.table(id1=1:2, v1=1:2, v2=1:2)),
-  join.sql.equal(l, on="id1", how="left",  mult="first", ans=data.table(id1=1:2, v1=1:2, v2=1:2)),
-  join.sql.equal(l, on="id1", how="left",  mult="last",  ans=data.table(id1=1:2, v1=1:2, v2=1:2)),
-  join.sql.equal(l, on="id1", how="left",  mult="error", ans=data.table(id1=1:2, v1=1:2, v2=1:2), err=FALSE)
-)
-stopifnot( ## right + mult
-  join.sql.equal(l, on="id1", how="right", mult="all",   ans=data.table(id1=1:2, v1=1:2, v2=1:2)),
-  join.sql.equal(l, on="id1", how="right", mult="first", ans=data.table(id1=1:2, v1=1:2, v2=1:2)),
-  join.sql.equal(l, on="id1", how="right", mult="last",  ans=data.table(id1=1:2, v1=1:2, v2=1:2)),
-  join.sql.equal(l, on="id1", how="right", mult="error", ans=data.table(id1=1:2, v1=1:2, v2=1:2), err=FALSE)
-)
-stopifnot( ## full + mult
-  join.sql.equal(l, on="id1", how="full",  mult="all",   ans=data.table(id1=1:2, v1=1:2, v2=1:2)),
-  join.sql.equal(l, on="id1", how="full",  mult="first", ans=data.table(id1=1:2, v1=1:2, v2=1:2)),
-  join.sql.equal(l, on="id1", how="full",  mult="last",  ans=data.table(id1=1:2, v1=1:2, v2=1:2)),
-  join.sql.equal(l, on="id1", how="full",  mult="error", ans=data.table(id1=1:2, v1=1:2, v2=1:2), err=FALSE)
-)
-
-## cross join duplicates
-l = list(lhs = data.table(id1=c(1L,1L), v1=1:2), rhs = data.table(id1=c(1L,1L), v2=1:2))
-stopifnot( ## inner + mult
-  join.sql.equal(l, on="id1", how="inner", mult="all",   ans=data.table(id1=c(1L,1L,1L,1L), v1=c(1L,1:2,2L), v2=c(1:2,1:2))),
-  join.sql.equal(l, on="id1", how="inner", mult="first", ans=data.table(id1=1L, v1=1L, v2=1L)),
-  join.sql.equal(l, on="id1", how="inner", mult="last",  ans=data.table(id1=1L, v1=2L, v2=2L)),
-  join.sql.equal(l, on="id1", how="inner", mult="error", err=TRUE)
-)
-stopifnot( ## left + mult
-  join.sql.equal(l, on="id1", how="left",  mult="all",   ans=data.table(id1=c(1L,1L,1L,1L), v1=c(1L,1:2,2L), v2=c(1:2,1:2))),
-  join.sql.equal(l, on="id1", how="left",  mult="first", ans=data.table(id1=c(1L,1L), v1=1:2, v2=c(1L,1L))),
-  join.sql.equal(l, on="id1", how="left",  mult="last",  ans=data.table(id1=c(1L,1L), v1=1:2, v2=c(2L,2L))),
-  join.sql.equal(l, on="id1", how="left",  mult="error", err=TRUE)
-)
-stopifnot( ## right + mult
-  join.sql.equal(l, on="id1", how="right", mult="all",   ans=data.table(id1=c(1L,1L,1L,1L), v1=c(1L,1:2,2L), v2=c(1:2,1:2))),
-  join.sql.equal(l, on="id1", how="right", mult="first", ans=data.table(id1=c(1L,1L), v1=c(1L,1L), v2=1:2)),
-  join.sql.equal(l, on="id1", how="right", mult="last",  ans=data.table(id1=c(1L,1L), v1=c(2L,2L), v2=1:2)),
-  join.sql.equal(l, on="id1", how="right", mult="error", err=TRUE)
-)
-stopifnot( ## full + mult
-  join.sql.equal(l, on="id1", how="full",  mult="all",   ans=data.table(id1=c(1L,1L,1L,1L), v1=c(1L,1:2,2L), v2=c(1:2,1:2))),
-  join.sql.equal(l, on="id1", how="full",  mult="first", ans=data.table(id1=1L, v1=1L, v2=1L)),
-  join.sql.equal(l, on="id1", how="full",  mult="last",  ans=data.table(id1=1L, v1=2L, v2=2L)),
-  join.sql.equal(l, on="id1", how="full",  mult="error", err=TRUE)
-)
-
-cat("design tests passed\n")
-
 # tests ----
 
 if (!interactive()) {
-  y = batch.join.sql.equal(cases=1:21, on="id", hows=c("inner","left","right","full"), mults=c("all","first","last"), .debug=interactive())
+  y = batch.join.sql.equal(cases=1:31, on="id", hows=c("inner","left","right","full"), mults=c("all","first","last"), .debug=interactive())
   y = rapply(y, isTRUE)
   if (!all(y))
     stop(sprintf("join tests failed for %s cases:\n%s", sum(!y), paste("  ", names(y)[!y], collapse="\n")))
