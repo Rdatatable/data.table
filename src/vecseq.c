@@ -40,16 +40,16 @@ SEXP vecseq(SEXP x, SEXP len, SEXP clamp)
   return(ans);
 }
 
-SEXP vecseq_having(SEXP x, SEXP len, SEXP having, SEXP retGrps) {
+SEXP vecseq_having(SEXP x, SEXP len, SEXP having, SEXP retGrpArg) {
 
   if (!isInteger(x)) error(_("x must be an integer vector"));
   if (!isInteger(len)) error(_("len must be an integer vector"));
   if (!isLogical(having)) error(_("having must be a logical vector"));
-  if (!isLogical(retGrps)) error(_("retGrps must be a logical vector"));
+  if (!isLogical(retGrpArg)) error(_("retGrpArg must be a logical vector"));
   
   if (LENGTH(x) != LENGTH(len)) error(_("x and len must be the same length"));
   if (LENGTH(x) != LENGTH(having)) error(_("x and having must be the same length"));
-  if (LENGTH(retGrps) > 1) error(_("retGrps must be a logical vector of length 1"));
+  if (LENGTH(retGrpArg) > 1) error(_("retGrpArg must be a logical vector of length 1"));
   
   const int *ihaving = INTEGER(having); 
   const int *ix = INTEGER(x);
@@ -66,12 +66,11 @@ SEXP vecseq_having(SEXP x, SEXP len, SEXP having, SEXP retGrps) {
   }
   
   if (reslen == 0) return(allocVector(INTSXP, 0));
-  if (total_true == nlen) return(R_NilValue);
-  
+
   SEXP ans = PROTECT(allocVector(INTSXP, reslen));
   int *ians = INTEGER(ans);
   
-  const bool retGrp = LOGICAL(retGrps)[0] == TRUE;
+  const bool retGrp = LOGICAL(retGrpArg)[0] == TRUE;
   
   if (retGrp) {
     SEXP tt, vv;
@@ -97,10 +96,8 @@ SEXP vecseq_having(SEXP x, SEXP len, SEXP having, SEXP retGrps) {
         ians[k++] = thisx++;
       }
     }
-    
     UNPROTECT(1);
     return(ans);
-    
   } else {
     int k = 0;
     for (int i=0; i<nlen; ++i) {
@@ -110,7 +107,6 @@ SEXP vecseq_having(SEXP x, SEXP len, SEXP having, SEXP retGrps) {
         ians[k++] = thisx++;
       }
     }
-    
     UNPROTECT(1);
     return(ans);
   }
