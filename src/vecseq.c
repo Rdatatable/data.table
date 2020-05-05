@@ -70,7 +70,9 @@ SEXP vecseq_having(SEXP x, SEXP len, SEXP having, SEXP retGrpArg) {
   SEXP ans = PROTECT(allocVector(INTSXP, reslen));
   int *ians = INTEGER(ans);
   
-  const bool retGrp = LOGICAL(retGrpArg)[0] == TRUE;
+  bool retGrp = LOGICAL(retGrpArg)[0] == TRUE;
+  if (retGrp)
+    retGrp = total_true != nlen; //no need to recalculate f__ and lens__ if there are no subsets
   
   if (retGrp) {
     SEXP tt, vv;
