@@ -1472,6 +1472,8 @@ replace_dot_alias = function(e) {
           .HavingEnv$len__ = len__
           .HavingEnv$irows = irows
           
+          av_having = intersect(av_having, names_x)
+          
           for (av in av_having) {
             assign(av, x[[av]], .HavingEnv)
           }
@@ -1482,20 +1484,15 @@ replace_dot_alias = function(e) {
         
         SD_only = jsub == as.name(".SD")
         inds = .Call(Cvecseq_having, f__, len__, lgl_ans, retGrpArg = !SD_only)
-        
-        if (!is.null(inds)) {
-          if (length(o__))
+
+        if (length(o__))
             inds = o__[inds]
-        }
 
         if (SD_only) {
           ## TODO make these subsets more performant. 
           ## byval already has irows accounted for but sdvars do not
-          ## This way seems to be memory intensive
-          if (is.null(irows))
-            return(as.data.table(c(byval, x[, sdvars, with = FALSE]))[inds])
-          else
-            return(as.data.table(c(byval, x[irows, sdvars, with = FALSE]))[inds])
+          return(setDT(c(lapply(byval, function(vec) .Call(CsubsetVector, vec, inds)),
+                          .Call(CsubsetDT, x, if (is.null(irows)) inds else irows[inds], chmatch(sdvars, names_x)))))
         } else {
           stop("Currently the having argument only supports returning .SD in the j expression.")
         }
