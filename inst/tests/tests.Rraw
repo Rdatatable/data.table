@@ -16853,3 +16853,11 @@ A = data.table(A=c(complex(real = 1:3, imaginary=c(0, -1, 1)), NaN))
 test(2138.3, rbind(A,B), data.table(A=c(as.character(A$A), B$A)))
 A = data.table(A=as.complex(rep(NA, 5)))
 test(2138.4, rbind(A,B), data.table(A=c(as.character(A$A), B$A)))
+
+# which=NA inconsistent with ?data.table #4411
+DT = data.table(A = c(NA, 3, 5, 0, 1, 2), B = c("foo", "foo", "foo", "bar", "bar", "bar"))
+test(2139.1, DT[A > 1, which = NA], c(1L,4:5))
+test(2139.2, DT[A > -1, which = NA], 1L)
+test(2139.3, DT[A > -1 | is.na(A), which = NA], integer())
+test(2139.4, DT[A > 10, which = NA], seq_len(nrow(DT)))
+test(2139.5, DT[!(A > 1), which = NA], c(1:3,6L)) # matches DT[A <= 1, which = NA]
