@@ -56,34 +56,34 @@ build: ## build data.table sources as tar.gz archive
   <<: *artifacts
 
 .test-install-deps: &install-deps
-- Rscript -e 'source(".ci/ci.R"); install.packages(dcf.dependencies("DESCRIPTION", which="most"), quiet=TRUE)'
+  - Rscript -e 'source(".ci/ci.R"); install.packages(dcf.dependencies("DESCRIPTION", which="most"), quiet=TRUE)'
 .test-install-deps-win: &install-deps-win
-- Rscript.exe -e "source('.ci/ci.R'); install.packages(dcf.dependencies('DESCRIPTION', which='most'), quiet=TRUE)"
+  - Rscript.exe -e "source('.ci/ci.R'); install.packages(dcf.dependencies('DESCRIPTION', which='most'), quiet=TRUE)"
 
 .test-cp-src: &cp-src
-- cp $(ls -1t bus/build/cran/src/contrib/data.table_*.tar.gz | head -n 1) .
+  - cp $(ls -1t bus/build/cran/src/contrib/data.table_*.tar.gz | head -n 1) .
 .test-cp-src-win: &cp-src-win
-- cp.exe $(ls.exe -1t bus/build/cran/src/contrib/data.table_*.tar.gz | head.exe -n 1) .
+  - cp.exe $(ls.exe -1t bus/build/cran/src/contrib/data.table_*.tar.gz | head.exe -n 1) .
 
 .test-mv-src: &mv-src
-- mkdir -p bus/$CI_BUILD_NAME && mv $(ls -1t data.table_*.tar.gz | head -n 1) bus/$CI_BUILD_NAME
+  - mkdir -p bus/$CI_BUILD_NAME && mv $(ls -1t data.table_*.tar.gz | head -n 1) bus/$CI_BUILD_NAME
 .test-mv-src-win: &mv-src-win
-- mkdir.exe -p bus/$CI_BUILD_NAME; mv.exe $(ls.exe -1t data.table_*.tar.gz | head.exe -n 1) bus/$CI_BUILD_NAME
+  - mkdir.exe -p bus/$CI_BUILD_NAME; mv.exe $(ls.exe -1t data.table_*.tar.gz | head.exe -n 1) bus/$CI_BUILD_NAME
 
 .test-rm-src: &rm-src
-- rm $(ls -1t data.table_*.tar.gz | head -n 1)
+  - rm $(ls -1t data.table_*.tar.gz | head -n 1)
 .test-rm-src-win: &rm-src-win
-- rm.exe $(ls.exe -1t data.table_*.tar.gz | head.exe -n 1)
+  - rm.exe $(ls.exe -1t data.table_*.tar.gz | head.exe -n 1)
 
 .test-mv-bin-win: &mv-bin-win
-- mkdir.exe -p cran/bin/windows/contrib/$R_BIN_VERSION; mv.exe $(ls.exe -1t data.table_*.zip | head.exe -n 1) cran/bin/windows/contrib/$R_BIN_VERSION
+  - mkdir.exe -p cran/bin/windows/contrib/$R_BIN_VERSION; mv.exe $(ls.exe -1t data.table_*.zip | head.exe -n 1) cran/bin/windows/contrib/$R_BIN_VERSION
 
 .test-install-r-rel-win: &install-r-rel-win
-- curl.exe -s -o ../R-win.exe https://cloud.r-project.org/bin/windows/base/R-4.0.0-win.exe; Start-Process -FilePath ..\R-win.exe -ArgumentList "/VERYSILENT /DIR=C:\R" -NoNewWindow -Wait
+  - curl.exe -s -o ../R-win.exe https://cloud.r-project.org/bin/windows/base/R-4.0.0-win.exe; Start-Process -FilePath ..\R-win.exe -ArgumentList "/VERYSILENT /DIR=C:\R" -NoNewWindow -Wait
 .test-install-r-dev-win: &install-r-dev-win
-- curl.exe -s -o ../R-devel.exe https://cloud.r-project.org/bin/windows/base/R-devel-win.exe; Start-Process -FilePath ..\R-devel.exe -ArgumentList "/VERYSILENT /DIR=C:\R" -NoNewWindow -Wait
+  - curl.exe -s -o ../R-devel.exe https://cloud.r-project.org/bin/windows/base/R-devel-win.exe; Start-Process -FilePath ..\R-devel.exe -ArgumentList "/VERYSILENT /DIR=C:\R" -NoNewWindow -Wait
 .test-install-rtools-win: &install-rtools-win
-- curl.exe -s -o ../rtools.exe https://cloud.r-project.org/bin/windows/Rtools/rtools40-x86_64.exe; Start-Process -FilePath ..\rtools.exe -ArgumentList "/VERYSILENT /DIR=C:\rtools40" -NoNewWindow -Wait
+  - curl.exe -s -o ../rtools.exe https://cloud.r-project.org/bin/windows/Rtools/rtools40-x86_64.exe; Start-Process -FilePath ..\rtools.exe -ArgumentList "/VERYSILENT /DIR=C:\rtools40" -NoNewWindow -Wait
 
 .test-template: &test
   stage: test
