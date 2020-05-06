@@ -60,20 +60,30 @@ build: ## build data.table sources as tar.gz archive
 .test-install-deps-win: &install-deps-win
 - Rscript.exe -e "source('.ci/ci.R'); install.packages(dcf.dependencies('DESCRIPTION', which='most'), quiet=TRUE)"
 
-.test-copy-src: &copy-src
+.test-cp-src: &cp-src
 - cp $(ls -1t bus/build/cran/src/contrib/data.table_*.tar.gz | head -n 1) .
-.test-copy-src-win: &copy-src-win
+.test-cp-src-win: &cp-src-win
 - cp.exe $(ls.exe -1t bus/build/cran/src/contrib/data.table_*.tar.gz | head.exe -n 1) .
 
-.test-move-src: &move-src
+.test-mv-src: &mv-src
 - mkdir -p bus/$CI_BUILD_NAME && mv $(ls -1t data.table_*.tar.gz | head -n 1) bus/$CI_BUILD_NAME
-.test-move-src-win: &move-src-win
+.test-mv-src-win: &mv-src-win
 - mkdir.exe -p bus/$CI_BUILD_NAME; mv.exe $(ls.exe -1t data.table_*.tar.gz | head.exe -n 1) bus/$CI_BUILD_NAME
 
-.test-cleanup-src: &cleanup-src
+.test-rm-src: &rm-src
 - rm $(ls -1t data.table_*.tar.gz | head -n 1)
-.test-cleanup-src-win: &cleanup-src-win
+.test-rm-src-win: &rm-src-win
 - rm.exe $(ls.exe -1t data.table_*.tar.gz | head.exe -n 1)
+
+.test-mv-bin-win: &mv-bin-win
+- mkdir.exe -p cran/bin/windows/contrib/$R_BIN_VERSION; mv.exe $(ls.exe -1t data.table_*.zip | head.exe -n 1) cran/bin/windows/contrib/$R_BIN_VERSION
+
+.test-install-r-rel-win: &install-r-rel-win
+- curl.exe -s -o ../R-win.exe https://cloud.r-project.org/bin/windows/base/R-4.0.0-win.exe; Start-Process -FilePath ..\R-win.exe -ArgumentList "/VERYSILENT /DIR=C:\R" -NoNewWindow -Wait
+.test-install-r-dev-win: &install-r-dev-win
+- curl.exe -s -o ../R-devel.exe https://cloud.r-project.org/bin/windows/base/R-devel-win.exe; Start-Process -FilePath ..\R-devel.exe -ArgumentList "/VERYSILENT /DIR=C:\R" -NoNewWindow -Wait
+.test-install-rtools-win: &install-rtools-win
+- curl.exe -s -o ../rtools.exe https://cloud.r-project.org/bin/windows/Rtools/rtools40-x86_64.exe; Start-Process -FilePath ..\rtools.exe -ArgumentList "/VERYSILENT /DIR=C:\rtools40" -NoNewWindow -Wait
 
 .test-template: &test
   stage: test
@@ -94,13 +104,13 @@ build: ## build data.table sources as tar.gz archive
     _R_CHECK_CRAN_INCOMING_REMOTE_: "FALSE"
   before_script:
     - *install-deps
-    - *copy-src
+    - *cp-src
     - rm -r bus
   script:
-    - *move-src
+    - *mv-src
     - cd bus/$CI_BUILD_NAME
     - R CMD check --as-cran --no-manual $(ls -1t data.table_*.tar.gz | head -n 1)
-    - *cleanup-src
+    - *rm-src
 
 .test-win-template: &test-win
   <<: *test
@@ -125,16 +135,16 @@ test-rel-lin: ## most comprehensive tests, force all suggests, also integration 
     TEST_DATA_TABLE_WITH_OTHER_PACKAGES: "TRUE"
   before_script:
     - Rscript -e 'source(".ci/ci.R"); install.packages(dcf.dependencies(c("DESCRIPTION","inst/tests/tests-DESCRIPTION"), which="all"), quiet=TRUE)'
-    - *copy-src
+    - *cp-src
     - rm -r bus
     - mkdir -p ~/.R
     - echo 'CFLAGS=-g -O3 -flto -fno-common -Wunused-result -fopenmp -Wall -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2' > ~/.R/Makevars
     - echo 'CXXFLAGS=-g -O3 -flto -fno-common -Wunused-result -fopenmp -Wall -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2' >> ~/.R/Makevars
   script:
-    - *move-src
+    - *mv-src
     - cd bus/$CI_BUILD_NAME
     - R CMD check $(ls -1t data.table_*.tar.gz | head -n 1)
-    - *cleanup-src
+    - *rm-src
     - (! grep "warning:" data.table.Rcheck/00install.out)
 
 test-rel-vanilla-lin: ## minimal, no suggested deps, no vignettes or manuals, measure memory, using gcc -O0 -fno-openmp
@@ -143,16 +153,16 @@ test-rel-vanilla-lin: ## minimal, no suggested deps, no vignettes or manuals, me
   variables:
     TEST_DATA_TABLE_MEMTEST: "TRUE"
   before_script:
-    - *copy-src
+    - *cp-src
     - rm -r bus
     - mkdir -p ~/.R
     - echo 'CFLAGS=-g -O0 -fno-openmp -Wall -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2' > ~/.R/Makevars
     - echo 'CXXFLAGS=-g -O0 -fno-openmp -Wall -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2' >> ~/.R/Makevars
   script:
-    - *move-src
+    - *mv-src
     - cd bus/$CI_BUILD_NAME
     - R CMD check --no-manual --ignore-vignettes $(ls -1t data.table_*.tar.gz | head -n 1)
-    - *cleanup-src
+    - *rm-src
 
 test-rel-cran-lin: ## R-release on Linux, extra NOTEs check and build pdf manual thus not from cran-lin template
   <<: *test-lin
@@ -163,16 +173,16 @@ test-rel-cran-lin: ## R-release on Linux, extra NOTEs check and build pdf manual
     _R_CHECK_CRAN_INCOMING_TARBALL_THRESHOLD_: "7500000" ## effective from R 4.1.0, then 00check.log can be checked for "OK" rather than "1 NOTE"
   before_script:
     - *install-deps
-    - *copy-src
+    - *cp-src
     - rm -r bus
     - mkdir -p ~/.R
     - echo 'CFLAGS=-g0 -O2 -fopenmp -Wall -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2'> ~/.R/Makevars ## -g0 because -g increases datatable.so size from 0.5MB to 1.5MB and breaches 'installed package size <= 5MB' note
     - echo 'CXXFLAGS=-g0 -O2 -fopenmp -Wall -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2' >> ~/.R/Makevars
   script:
-    - *move-src
+    - *mv-src
     - cd bus/$CI_BUILD_NAME
     - R CMD check --as-cran $(ls -1t data.table_*.tar.gz | head -n 1)
-    - *cleanup-src
+    - *rm-src
     - >-
         Rscript -e 'l=tail(readLines("data.table.Rcheck/00check.log"), 1L); if (!identical(l, "Status: 1 NOTE")) stop("Last line of ", shQuote("00check.log"), " is not ", shQuote("Status: 1 NOTE"), " (size of tarball) but ", shQuote(l)) else q("no")'
 
@@ -197,60 +207,54 @@ test-rel-win: ## R-release on Windows, test and build binaries
   variables:
     R_BIN_VERSION: "4.0"
   before_script:
-    - curl.exe -s -o ../R-win.exe https://cloud.r-project.org/bin/windows/base/R-4.0.0-win.exe
-    - Start-Process -FilePath ..\R-win.exe -ArgumentList "/VERYSILENT /DIR=C:\R" -NoNewWindow -Wait
-    - curl.exe -s -o ../rtools.exe https://cloud.r-project.org/bin/windows/Rtools/rtools40-x86_64.exe
-    - Start-Process -FilePath ..\rtools.exe -ArgumentList "/VERYSILENT /DIR=C:\rtools40" -NoNewWindow -Wait
+    - *install-r-rel-win
+    - *install-rtools-win
     - $ENV:PATH = "C:\R\bin;C:\rtools40\usr\bin;$ENV:PATH"
     - *install-deps-win
-    - *copy-src-win
+    - *cp-src-win
     - rm.exe -r bus
   script:
-    - *move-src-win
+    - *mv-src-win
     - cd bus/$CI_BUILD_NAME
     - R.exe CMD check --no-manual $(ls.exe -1t data.table_*.tar.gz | head.exe -n 1)
     - R.exe CMD INSTALL --build $(ls.exe -1t data.table_*.tar.gz | head.exe -n 1)
-    - mkdir.exe -p cran/bin/windows/contrib/$R_BIN_VERSION
-    - mv.exe $(ls.exe -1t data.table_*.zip | head.exe -n 1) cran/bin/windows/contrib/$R_BIN_VERSION
-    - *cleanup-src-win
+    - *rm-src-win
+    - *mv-bin-win
 
 test-dev-win: ## R-devel on Windows
   <<: *test-win
   variables:
     R_BIN_VERSION: "4.1"
   before_script:
-    - curl.exe -s -o ../R-devel.exe https://cloud.r-project.org/bin/windows/base/R-devel-win.exe
-    - Start-Process -FilePath ..\R-devel.exe -ArgumentList "/VERYSILENT /DIR=C:\R" -NoNewWindow -Wait
-    - curl.exe -s -o ../rtools.exe https://cloud.r-project.org/bin/windows/Rtools/rtools40-x86_64.exe
-    - Start-Process -FilePath ..\rtools.exe -ArgumentList "/VERYSILENT /DIR=C:\rtools40" -NoNewWindow -Wait
+    - *install-r-dev-win
+    - *install-rtools-win
     - $ENV:PATH = "C:\R\bin;C:\rtools40\usr\bin;$ENV:PATH"
     - *install-deps-win
-    - *copy-src-win
+    - *cp-src-win
     - rm.exe -r bus
   script:
-    - *move-src-win
+    - *mv-src-win
     - cd bus/$CI_BUILD_NAME
     - R.exe CMD check --no-manual --ignore-vignettes $(ls.exe -1t data.table_*.tar.gz | head.exe -n 1)
     - R.exe CMD INSTALL --build $(ls.exe -1t data.table_*.tar.gz | head.exe -n 1)
-    - mkdir.exe -p cran/bin/windows/contrib/$R_BIN_VERSION
-    - mv.exe $(ls.exe -1t data.table_*.zip | head.exe -n 1) cran/bin/windows/contrib/$R_BIN_VERSION
-    - *cleanup-src-win
+    - *rm-src-win
+    - *mv-bin-win
 
 #test-rel-osx: ## R-release on MacOS, no macosx runner yet
 #  variables:
 #    R_BIN_VERSION: "4.0"
 #  before_script:
 #    - *install-deps
-#    - *copy-src
+#    - *cp-src
 #    - rm -r bus
 #  script:
-#    - *move-src
+#    - *mv-src
 #    - cd bus/$CI_BUILD_NAME
 #    - R CMD check $(ls -1t data.table_*.tar.gz | head -n 1)
 #    - R CMD INSTALL --build $(ls -1t data.table_*.tar.gz | head -n 1)
 #    - mkdir -p cran/bin/macosx/el-capitan/contrib/$R_BIN_VERSION
 #    - mv $(ls -1t data.table_*.tgz | head -n 1) cran/bin/macosx/el-capitan/contrib/$R_BIN_VERSION
-#    - *cleanup-src
+#    - *rm-src
 
 integration: ## merging all artifacts to produce single R repository, documentation and website
   stage: integration
@@ -259,7 +263,6 @@ integration: ## merging all artifacts to produce single R repository, documentat
     - linux
   only:
     - master
-    - ci2
   dependencies:
     - mirror-packages
     - build
