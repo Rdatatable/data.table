@@ -198,8 +198,11 @@ mergepair = function(lhs, rhs, on, how, mult, lhs.cols=names(lhs), rhs.cols=name
       if (!cp.r && copy)
         out.r = copy(out.r)
       if (length(add<-setdiff(names(out.i), names(out.r)))) { ## add missing columns of proper types NA
-        set(out.r, NULL, add, lapply(unclass(out.i)[add], `[`, 1L)) ## we could change to cbindlist once it will recycle
-        setcolorder(out.r, neworder=names(out.i))
+        #set(out.r, NULL, add, lapply(unclass(out.i)[add], `[`, 1L)) ## 291.04 overalloc fail during set()
+        neworder = copy(names(out.i))
+        out.i = lapply(unclass(out.i)[add], `[`, seq_len(nrow(out.r))) ## we can remove that once cbindlist will recycle, note that we need out.r not to be copied
+        out.r = .Call(Ccbindlist, list(out.r, out.i), FALSE)
+        setcolorder(out.r, neworder=neworder)
       }
       out = out.r
     } else { ## all might have not been copied yet, rbindlist will copy

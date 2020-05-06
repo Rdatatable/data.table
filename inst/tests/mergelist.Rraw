@@ -563,7 +563,6 @@ for (how in c("inner","left","right","full")) {
     }
   }
 }
-
 ## duplicates in RHS
 num = 222.00
 l = list(lhs = data.table(id1=1:2, v1=1:2), rhs = data.table(id1=c(2L,2:3), v2=1:3))
@@ -599,7 +598,6 @@ for (how in c("inner","left","right","full")) {
     }
   }
 }
-
 ### duplicates in LHS
 num = 223.00
 l = list(lhs = data.table(id1=c(1:2,2L), v1=1:3), rhs = data.table(id1=2:3, v2=1:2))
@@ -635,7 +633,6 @@ for (how in c("inner","left","right","full")) {
     }
   }
 }
-
 ### duplicates in RHS and LHS, some RHS dups does not have matches in LHS
 num = 224.00
 l = list(lhs = data.table(id1=c(1:3,3L), v1=1:4), rhs = data.table(id1=c(1L,1L,3:4,4L), v2=1:5))
@@ -671,7 +668,6 @@ for (how in c("inner","left","right","full")) {
     }
   }
 }
-
 ### duplicates in RHS and LHS, some LHS dups does not have matches in RHS
 num = 225.00
 l = list(lhs = data.table(id1=c(1L,1L,3:4,4L), v1=1:5), rhs = data.table(id1=c(1:3,3L), v2=1:4))
@@ -707,7 +703,6 @@ for (how in c("inner","left","right","full")) {
     }
   }
 }
-
 ### cartesian match, dups on both sides of match
 num = 226.00
 l = list(lhs = data.table(id1=c(1L,1:2), v1=1:3), rhs = data.table(id1=c(1L,1L,3L), v2=1:3))
@@ -743,7 +738,6 @@ for (how in c("inner","left","right","full")) {
     }
   }
 }
-
 ### cross join duplicates
 num = 227.00
 l = list(lhs = data.table(id1=c(1L,1L), v1=1:2), rhs = data.table(id1=c(1L,1L), v2=1:2))
@@ -780,7 +774,36 @@ for (how in c("inner","left","right","full")) {
   }
 }
 
-## test exceeding overalloc for a table
+## NAs in join columns
+
+### LHS equal to RHS and having NA on
+l = list(lhs = data.table(id1=c(1:2,NA), v1=1:3), rhs = data.table(id1=c(1:2,NA), v2=1:3))
+expected = data.table(id1=c(1:2,NA), v1=1:3, v2=1:3)
+test(251.01, mergelist(l, on="id1", how="inner", mult="all"), expected)
+test(251.02, mergelist(l, on="id1", how="left", mult="all"), expected)
+test(251.03, mergelist(l, on="id1", how="right", mult="all"), expected)
+test(251.04, mergelist(l, on="id1", how="full", mult="all"), expected)
+test(251.05, copied(mergelist(l, on="id1", how="left", mult="error", copy=TRUE), l))
+test(251.06, notcopied(mergelist(l, on="id1", how="left", mult="error", copy=FALSE), l))
+### Single match and RHS having NA on
+l = list(lhs = data.table(id1=1:2, v1=1:2), rhs = data.table(id1=c(1L,NA,3L), v2=1:3))
+test(251.11, mergelist(l, on="id1", how="inner", mult="all"), data.table(id1=1L, v1=1L, v2=1L))
+test(251.12, mergelist(l, on="id1", how="left", mult="all"), data.table(id1=1:2, v1=1:2, v2=c(1L,NA)))
+test(251.13, mergelist(l, on="id1", how="right", mult="all"), data.table(id1=c(1L,NA,3L), v1=c(1L,NA,NA), v2=1:3))
+test(251.14, mergelist(l, on="id1", how="full", mult="all"), data.table(id1=c(1:2,NA,3L), v1=c(1:2,NA,NA), v2=c(1L,NA,2:3)))
+test(251.15, copied(mergelist(l, on="id1", how="left", mult="error", copy=TRUE), l))
+test(251.16, notcopied(mergelist(l, on="id1", how="left", mult="error", copy=FALSE), l))
+
+## exceeds overalloc for a table
+
+ac = getOption("datatable.alloccol")
+l = list(lhs = as.data.table(c(list(id1=integer()), setNames(replicate(ac+10L,integer()), paste0("v",seq_len(ac+10L))))), rhs=data.table(id1=2:1))
+test(291.01, mergelist(l, on="id1", how="inner", mult="all"), l$lhs[0L])
+test(291.02, mergelist(l, on="id1", how="left", mult="all"), l$lhs[0L])
+test(291.03, mergelist(l, on="id1", how="right", mult="all"), l$lhs[1:2][, "id1" := 2:1][])
+test(291.04, mergelist(l, on="id1", how="full", mult="all"), rbindlist(l, use.names=TRUE, fill=TRUE)) ## test overalloc for how=="full" && !nrow(out.i) && nrow(out.r) && length(add<-setdiff(names(out.i), names(out.r)))
+test(291.05, copied(mergelist(l, on="id1", how="left", mult="error", copy=TRUE), l))
+test(291.06, notcopied(mergelist(l, on="id1", how="left", mult="error", copy=FALSE), l))
 
 ## SQLite reference tests can be launched via
 
