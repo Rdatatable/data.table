@@ -1400,6 +1400,7 @@ replace_dot_alias = function(e) {
   } else {
     # Find the groups, using 'byval' ...
     if (missingby) stop("Internal error: by= is missing")   # nocov
+    
     if (length(byval) && length(byval[[1L]])) {
       if (!bysameorder && isFALSE(byindex)) {
         if (verbose) {last.started.at=proc.time();cat("Finding groups using forderv ... ");flush.console()}
@@ -1487,35 +1488,26 @@ replace_dot_alias = function(e) {
 
         if (length(o__))
             inds = o__[inds]
-
+        
+        byval = lapply(byval, function(vec) .Call(CsubsetVector, vec, inds))
+        irows = if (is.null(irows)) inds else irows[inds]
+  
         if (SD_only) {
-          ## TODO make these subsets more performant. 
-          ## byval already has irows accounted for but sdvars do not
-          return(setDT(c(lapply(byval, function(vec) .Call(CsubsetVector, vec, inds)),
-                          .Call(CsubsetDT, x, if (is.null(irows)) inds else irows[inds], chmatch(sdvars, names_x)))))
+          return(setDT(c(byval, .Call(CsubsetDT, x, irows, chmatch(sdvars, names_x)))))
         } else {
-          stop("Currently the having argument only supports returning .SD in the j expression.")
+          if ((jsub_is_name <- is.name(jsub)) || jsub %iscall% "list") {
+            cols = chmatch(all.vars(if (jsub_is_name) jsub else jsub[-1L], functions = TRUE), names_x)
+            if (anyNA(cols)) 
+              stop("only col names or .SD supported when using having")
+            else
+              return(setDT(c(byval, .Call(CsubsetDT, x, irows, cols))))
+          } 
         }
         
-        ## TODO support more than just j = .SD
-        # if (!is.null(inds)) {
-        #   if (!length(inds)) {
-        #     f__=NULL
-        #     len__=0L
-        #     bysameorder=TRUE   # for test 724
-        #   } else {
-        #     if (is.null(irows)) {
-        #       irows = inds
-        #     } else {
-        #       irows = irows[inds]
-        #     }
-        #     if (length(o__)) {
-        #       o__ = o__[inds]
-        #     }
-        #     f__ = attr(inds, "starts", exact = TRUE)
-        #     len__ = attr(inds, "grplen", exact = TRUE)
-        #   }
-        # } 
+        ## having should have short circuited by now
+        stop("only col names or .SD supported when using having")
+        
+        ## TODO support even more???
       }
     } else {
       f__=NULL
