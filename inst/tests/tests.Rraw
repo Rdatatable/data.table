@@ -16853,3 +16853,14 @@ A = data.table(A=c(complex(real = 1:3, imaginary=c(0, -1, 1)), NaN))
 test(2138.3, rbind(A,B), data.table(A=c(as.character(A$A), B$A)))
 A = data.table(A=as.complex(rep(NA, 5)))
 test(2138.4, rbind(A,B), data.table(A=c(as.character(A$A), B$A)))
+
+# shallow copy of .SD must be unlocked for frank using na.last=NA or ties.method='random', #4429
+DT = data.table(a=1:10)
+test(2139.1, DT[ , frankv(.SD, ties.method='average', na.last=NA)], as.double(1:10))
+test(2139.2, DT[ , frankv(.SD, ties.method='random')], 1:10)
+# coverage tests for some issues discovered on the way
+DT[ , c('..na_prefix..', '..stats_runif..') := 1L]
+test(2139.3, DT[ , frankv(.SD, ties.method='average', na.last=NA)],
+     error="Input column '..na_prefix..' conflicts")
+test(2139.4, DT[ , frankv(.SD, ties.method='random')],
+     error="Input column '..stats_runif..' conflicts")

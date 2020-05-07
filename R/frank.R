@@ -22,10 +22,13 @@ frankv = function(x, cols=seq_along(x), order=1L, na.last=TRUE, ties.method=c("a
     if (!length(cols))
       stop("x is a list, 'cols' can not be 0-length")
   }
-  x = .shallow(x, cols) # shallow copy even if list..
+  # need to unlock for #4429
+  x = .shallow(x, cols, unlock = TRUE) # shallow copy even if list..
   setDT(x)
   cols = seq_along(cols)
   if (is.na(na.last)) {
+    if ("..na_prefix.." %chin% names(x))
+      stop("Input column '..na_prefix..' conflicts with data.table internal usage; please rename")
     set(x, j = "..na_prefix..", value = is_na(x, cols))
     order = if (length(order) == 1L) c(1L, rep(order, length(cols))) else c(1L, order)
     cols = c(ncol(x), cols)
@@ -39,6 +42,8 @@ frankv = function(x, cols=seq_along(x), order=1L, na.last=TRUE, ties.method=c("a
       idx = NULL
       n = nrow(x)
     }
+    if ('..stats_runif..' %chin% names(x))
+      stop("Input column '..stats_runif..' conflicts with data.table internal usage; please rename")
     set(x, idx, '..stats_runif..', stats::runif(n))
     order = if (length(order) == 1L) c(rep(order, length(cols)), 1L) else c(order, 1L)
     cols = c(cols, ncol(x))
