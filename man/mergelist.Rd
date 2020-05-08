@@ -55,32 +55,94 @@
   \code{\link{[.data.table}}, \code{\link{merge.data.table}}
 }
 \examples{
-#X = lapply(1:4, function(i) as.data.table(setNames(list(i+0:1, i), c("id",letters[i]))))
-#mergelist(X, on="id", how="left")
+l = list(
+  data.table(id1 = c(1:4,2:5), v1 = 1:8),
+  data.table(id1 = 2:3, v2 = 1:2),
+  data.table(id1 = 3:5, v3 = 1:3)
+)
+mergelist(l, on="id1")
 
-## detecting duplicates
-#x = data.table()
-#y = data.table()
-#on = "id1"
-### detecting duplicates for mult='error'
-#mergelist(on=on, list(
-#x,
-#y[,.N,by=on][N>1L]
-#))
-### detecting duplicates for join.many=FALSE
-#on = "id1"
-#mergelist(on=on, list(
-#x[,.N,by=on][N>1L],
-#y[,.N,by=on][N>1L]
-#))
+## using keys
+l = list(
+  data.table(id1 = c(1:4,2:5), v1 = 1:8),
+  data.table(id1 = 3:5, id2 = 1:3, v2 = 1:3, key="id1"),
+  data.table(id2 = 1:4, v3 = 4:1, key="id2")
+)
+mergelist(l)
 
-## temporal join 'last'
+## select columns
+l = list(
+  data.table(id1 = c(1:4,2:5), v1 = 1:8, v2 = 8:1),
+  data.table(id1 = 3:5, v3 = 1:3, v4 = 3:1, v5 = 1L, key="id1")
+)
+mergelist(l, cols = list(NULL, c("v3","v5")))
 
-## temporal join 'as of'
+## detecting duplicates matches
+l = list(
+  data.table(id1=c(1:4,2:5), v1=1:8), ## dups in LHS are fine
+  data.table(id1=c(2:3,2L), v2=1:3),  ## dups in RHS
+  data.table(id1=3:5, v3=1:3)
+)
+#mergelist(l, on="id1") ## mult='error' and multiple matches during merge
+lapply(l[-1L], function(d) copy(d)[,cnt:=.N,by="id1"][cnt>1L])
 
 ## denormalize star schema
 
+### make fact and two dimensions
+
+gt = state.x77[,"Population"]
+gt = data.table(state_id=seq_along(state.name), p=gt[state.name]/sum(gt), k=1L)
+tt = as.IDate(paste0(as.integer(time(uspop)),"-01-01"))
+tt = as.data.table(stats::approx(tt, c(uspop), tt[1L]:tt[length(tt)]))
+tt = tt[, .(date=as.IDate(x), time_id=seq_along(x), pop=y, k=1L)]
+fact = tt[gt, on="k", allow.cartesian=TRUE,
+          .(state_id=i.state_id, time_id=x.time_id, population = x.pop * i.p)]
+setkeyv(fact, c("state_id","time_id"))
+
+time = data.table(key = "time_id",
+  time_id = seq_along(tt$date), date = tt$date,
+  month_id = month(tt$date), month = month.name[month(tt$date)],
+  year_id = year(tt$date)-1789L, year = as.character(year(tt$date)),
+  week_id = week(tt$date), week = as.character(week(tt$date)),
+  weekday_id = wday(tt$date)-1L, weekday = weekdays(tt$date)
+)[weekday_id==0L, weekday_id:=7L][]
+
+geog = data.table(key = "state_id",
+  state_id = seq_along(state.abb), state_abb = state.abb, state_name = state.name,
+  division_id = as.integer(state.division),
+  division_name = as.character(state.division),
+  region_id = as.integer(state.region),
+  region_name = as.character(state.region)
+)
+
+X = list(fact, time, geog)
+ans = mergelist(X)
+
+rm(gt, tt, ans)
+
 ## denormalize snowflake schema
 
+make.lvl = function(x, cols) {
+  stopifnot(is.data.table(x))
+  lvl = x[, unique(.SD), .SDcols=cols]
+  setkeyv(lvl, cols[1L])
+  setindexv(lvl, as.list(cols))
+}
+time = list(
+  date = make.lvl(time, c("time_id","date","year_id","month_id","week_id",
+                          "weekday_id")).
+  weekday = make.lvl(time, c("weekday_id","weekday")),
+  week = make.lvl(time, c("week_id","week")),
+  month = make.lvl(time, c("month_id","month")),
+  year = make.lvl(time, c("year_id","year"))
+)
+geog = list(
+  state = make.lvl(geog, c("state_id","state_abb","state_name","division_id")),
+  division = make.lvl(geog, c("division_id","division_name","region_id")),
+  region = make.lvl(geog, c("region_id","region_name"))
+)
+
+X = c(list(fact=fact), time, geog)
+ans = mergelist(X)
 }
 \keyword{ data }
