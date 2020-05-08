@@ -90,6 +90,12 @@ test(12.08, cbindlist(list(data.table(), data.table(a=1:2), data.table(b=1:2))),
 test(12.09, cbindlist(list(data.table(), data.table(a=1:2), list(b=1:2))), data.table(a=1:2, b=1:2))
 test(12.10, cbindlist(list(data.table(a=integer()), list(b=integer()))), data.table(a=integer(), b=integer()))
 
+## duplicated names
+test(13.01, cbindlist(list(data.table(a=1L, b=2L), data.table(b=3L, d=4L))), data.table(a=1L, b=2L, b=3L, d=4L))
+ans = cbindlist(list(setindexv(data.table(a=2:1, b=1:2),"a"), data.table(a=1:2, b=2:1, key="a"), data.table(a=2:1, b=1:2)))
+test(13.02, ans, data.table(a=2:1, b=1:2, a=1:2, b=2:1, a=2:1, b=1:2))
+test(13.03, indices(ans), NULL)
+
 ## retain indices
 d = data.table(x=1:2, y=2:1, z=2:1, v1=1:2) ## ensure setDT will retain key and indices when it is called on the list, bc Ccbindlist returns list
 setkeyv(d, "x"); setindexv(d, list("y", "z"))

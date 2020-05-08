@@ -38,7 +38,6 @@ SEXP cbindlist(SEXP x, SEXP copyArg) {
     error("'x' must be a list");
   if (!IS_TRUE_OR_FALSE(copyArg))
     error("'copy' must be TRUE or FALSE");
-  // TODO check for duplicated names
   bool copy = (bool)LOGICAL(copyArg)[0];
   const bool verbose = GetVerbose();
   double tic = 0;

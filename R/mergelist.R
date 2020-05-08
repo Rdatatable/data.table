@@ -1,5 +1,9 @@
 cbindlist = function(l, copy=TRUE) {
   ans = .Call(Ccbindlist, l, copy)
+  if (anyDuplicated(names(ans))) { ## invalidate key and index
+    setattr(ans, "sorted", NULL)
+    setattr(ans, "index", integer())
+  }
   setDT(ans)
   ans
 }
@@ -64,10 +68,9 @@ fdistinct = function(x, on=key(x), mult=c("first","last"), cols=seq_along(x), co
 }
 
 # extra layer over bmerge to provide ready to use row indices (or NULL for 1:nrow)
-# NULL to avoid extra copies in downstream code, it turned out that avoiding copies precisely is costly and enormously complicates code, will be easier to handle 1:nrow in subsetDT
+# NULL to avoid extra copies in downstream code, it turned out that avoiding copies precisely is costly and enormously complicates code, need #4409 and/or handle 1:nrow in subsetDT
 # we don't use semi join in mergelist so is not tested, anti join is used in full outer join
 dtmatch = function(x, i, on, nomatch, mult, verbose, join.many, semi=FALSE, anti=FALSE, void=FALSE) {
-  nrow = function(x) if (is.null(ans<-base::nrow(x))) stop("nrow called on a list? not good") else ans
   inner = identical(nomatch, 0L)
   if (void && mult!="error")
     stop("internal error: void must be used with mult='error'") # nocov
