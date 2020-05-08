@@ -1526,7 +1526,11 @@ SEXP forderLazy(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascAr
           (hasGrp && retGrp)) {
         opt = 2; // idxOpt retGrp==hasGrp, if condition unfolded for codecov
       } else if (hasGrp && !retGrp) {
-        idx = copyAsPlain(idx);
+        // shallow_duplicate is faster than copyAsPlain, but shallow_duplicate is AFAIK good for VECSXP, not for INTSXP
+        // it is still the bottleneck in this opt, it is now better to call retGrp=TRUE and just not use those extra arguments
+        // can we do better here? real shallow for INTSXP? If we could just re-point data pointer... like we do for DT columns
+        // SEXP new; INTEGER(new) = INTEGER(idx); setAttrib(new, ..., R_NilValue)
+        idx = shallow_duplicate(idx);
         setAttrib(idx, sym_starts, R_NilValue);
         setAttrib(idx, sym_maxgrpn, R_NilValue);
         opt = 2; // idxOpt but need to drop groups
