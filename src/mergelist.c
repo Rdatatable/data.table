@@ -67,6 +67,7 @@ SEXP cbindlist(SEXP x, SEXP copyArg) {
     error("Rows recycling for objects of different nrow is not yet implemented"); // dont we have a routines for that already somewhere?
   SEXP ans = PROTECT(allocVector(VECSXP, nans));
   SEXP index = PROTECT(allocVector(INTSXP, 0));
+  SEXP key = R_NilValue;
   setAttrib(ans, sym_index, index);
   SEXP names = PROTECT(allocVector(STRSXP, nans));
   for (int i=0, ians=0; i<nx; ++i) {
@@ -78,8 +79,11 @@ SEXP cbindlist(SEXP x, SEXP copyArg) {
       SET_STRING_ELT(names, ians, STRING_ELT(thisnames, j));
     }
     mergeIndexAttrib(index, getAttrib(thisx, sym_index));
+    if (isNull(key)) // first key is retained
+      key = getAttrib(thisx, sym_sorted);
   }
   setAttrib(ans, R_NamesSymbol, names);
+  setAttrib(ans, sym_sorted, key);
   if (verbose)
     Rprintf("cbindlist: took %.3fs\n", omp_get_wtime()-tic);
   UNPROTECT(3);

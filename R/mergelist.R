@@ -118,12 +118,12 @@ mergepair = function(lhs, rhs, on, how, mult, lhs.cols=names(lhs), rhs.cols=name
     else if (how=="right") on = key(lhs)
     else on = onkeys(key(lhs), key(rhs))
     if (is.null(on))
-      stop("internal error: 'on' is missing and necessary key is not present, that should have been cought already in mergelist, please report to issue tracker") # nocov
+      stop("internal error: 'on' is missing, keys were probably dropped in sequence of merges, please provide reproducible example to our issue tracker") # nocov
   }
   if (any(bad.on <- !on %chin% names(lhs)))
-    stop("'on' argument specify columns to join that are not present in LHS table: ", paste(on[bad.on], collapse=", "))
+    stop(sprintf("'on' argument specify columns to join (%s) that are not present in LHS table (%s)", paste(on[bad.on], collapse=", "), paste(names(lhs), collapse=", ")))
   if (any(bad.on <- !on %chin% names(rhs)))
-    stop("'on' argument specify columns to join that are not present in RHS table: ", paste(on[bad.on], collapse=", "))
+    stop(sprintf("'on' argument specify columns to join (%s) that are not present in RHS table (%s): ", paste(on[bad.on], collapse=", "), paste(names(rhs), collapse=", ")))
   if (how!="right") { ## join-to, join-from
     jnfm = lhs; fm.cols = lhs.cols; jnto = rhs; to.cols = rhs.cols
   } else {
@@ -136,8 +136,7 @@ mergepair = function(lhs, rhs, on, how, mult, lhs.cols=names(lhs), rhs.cols=name
     if (mult=="first" || mult=="last") {
       jnfm = fdistinct(jnfm, on=on, mult=mult, cols=fm.cols, copy=FALSE) ## might not copy when already unique by 'on'
       cp.i = nrow(jnfm)!=nrow(lhs) ## nrow(lhs) bc how='inner|full' so jnfm=lhs
-    } else if (mult=="error") {
-      ## we do this branch only to raise error from bmerge, we cannot use forder to just find duplicates because those duplicates might not have matching rows in another table
+    } else if (mult=="error") { ## we do this branch only to raise error from bmerge, we cannot use forder to just find duplicates because those duplicates might not have matching rows in another table
       dtmatch(x=jnfm, i=jnto, on=on, nomatch=nomatch, mult=mult, verbose=verbose, join.many=join.many, void=TRUE)
     }
   }
@@ -154,20 +153,16 @@ mergepair = function(lhs, rhs, on, how, mult, lhs.cols=names(lhs), rhs.cols=name
 
   ## make x side
   out.x = if (is.null(ans$xrows)) ## as of now xrows cannot be NULL #4409 thus nocov below
-    stop("internal error: dtmatch()$xrows returned NULL, #4409 been resolved but related code has not been updated? please report to issue tracker") #.shallow(jnto, cols=someCols(jnto, to.cols, drop=on)) # nocov ## as of now nocov does not make difference r-lib/covr#279
+    stop("internal error: dtmatch()$xrows returned NULL, #4409 been resolved but related code has not been updated? please report to issue tracker") #.shallow(jnto, cols=someCols(jnto, to.cols, drop=on), retain.key=TRUE) # nocov ## as of now nocov does not make difference r-lib/covr#279
   else
     .Call(CsubsetDT, jnto, ans$xrows, someCols(jnto, to.cols, drop=on))
   cp.x = !is.null(ans$xrows)
 
   if (how!="full") {
-    if (!cp.i && copy)
-      out.i = copy(out.i)
-    #if (!cp.x && copy) ## as of now cp.x always TRUE, search for #4409 here
-    #  out.x = copy(out.x)
-    out = if (how=="right")
-      .Call(Ccbindlist, list(.shallow(out.i, cols=on), out.x, .shallow(out.i, cols=setdiff(names(out.i), on))), FALSE) ## arrange columns: i.on, x.cols, i.cols
-    else
-      .Call(Ccbindlist, list(out.i, out.x), FALSE)
+    if (!cp.i && copy) out.i = copy(out.i)
+    #if (!cp.x && copy) out.x = copy(out.x) ## as of now cp.x always TRUE, search for #4409 here
+    out = .Call(Ccbindlist, list(out.i, out.x), FALSE)
+    if (how=="right") setcolorder(out, neworder=c(on, names(out.x))) ## arrange columns: i.on, x.cols, i.cols
   } else { # how=="full"
     ## we made left join above, proceed to right join, actually just swap tbls and antijoin
     jnfm = rhs; fm.cols = rhs.cols; jnto = lhs; to.cols = lhs.cols
@@ -182,24 +177,20 @@ mergepair = function(lhs, rhs, on, how, mult, lhs.cols=names(lhs), rhs.cols=name
 
     ## make anti join side
     out.r = if (is.null(bns$irows))
-      .shallow(jnfm, cols=someCols(jnfm, fm.cols, keep=on), retain.key=FALSE) ## could eventually retain.key, so 105.10 has index, but it so much an edge case that it is not worth it
+      .shallow(jnfm, cols=someCols(jnfm, fm.cols, keep=on), retain.key=TRUE) ## retain.key is used only in the edge case when !nrow(out.i)
     else
       .Call(CsubsetDT, jnfm, bns$irows, someCols(jnfm, fm.cols, keep=on))
     cp.r = cp.r || !is.null(bns$irows)
 
-    ## short circuit to avoid rbindlist to empty sets
+    ## short circuit to avoid rbindlist to empty sets and retains keys
     if (!nrow(out.r)) { ## possibly also !nrow(out.i)
-      if (!cp.i && copy)
-        out.i = copy(out.i)
-      #if (!cp.x && copy) ## as of now cp.x always TRUE, search for #4409 here
-      #  out.x = copy(out.x)
+      if (!cp.i && copy) out.i = copy(out.i)
+      #if (!cp.x && copy) out.x = copy(out.x) ## as of now cp.x always TRUE, search for #4409 here
       out = .Call(Ccbindlist, list(out.i, out.x), FALSE)
     } else if (!nrow(out.i)) { ## but not !nrow(out.r)
-      if (!cp.r && copy)
-        out.r = copy(out.r)
+      if (!cp.r && copy) out.r = copy(out.r)
       if (length(add<-setdiff(names(out.i), names(out.r)))) { ## add missing columns of proper types NA
-        #set(out.r, NULL, add, lapply(unclass(out.i)[add], `[`, 1L)) ## 291.04 overalloc fail during set()
-        neworder = copy(names(out.i))
+        neworder = copy(names(out.i)) #set(out.r, NULL, add, lapply(unclass(out.i)[add], `[`, 1L)) ## 291.04 overalloc exceed fail during set()
         out.i = lapply(unclass(out.i)[add], `[`, seq_len(nrow(out.r))) ## we can remove that once cbindlist will recycle, note that we need out.r not to be copied
         out.r = .Call(Ccbindlist, list(out.r, out.i), FALSE)
         setcolorder(out.r, neworder=neworder)
@@ -225,11 +216,8 @@ mergelist = function(l, on, cols, how=c("left","inner","full","right"), mult=c("
     stop("'join.many' must be TRUE or FALSE")
   how = match.arg(how)
   mult = match.arg(mult)
-  if (!copy && (
-    how!="left" ||
-    !(mult=="first" || mult=="last" || mult=="error")
-  ))
-    stop("copy=FALSE works only for how='left' and mult='first|last|error'")
+  if (!copy && !(mult=="first" || mult=="last" || mult=="error"))
+    stop("copy=FALSE works only for mult='first|last|error'")
   if (any(!vapply(l, is.data.table, FALSE)))
     stop("Every element of 'l' list must be data.table objects")
   n = length(l)
@@ -251,8 +239,7 @@ mergelist = function(l, on, cols, how=c("left","inner","full","right"), mult=c("
     on = NULL
   } else if (!is.character(on) || !length(on)) {
     stop("'on' must be non zero length character")
-  } else if (any(vapply(l, function(x, on) any(!on %chin% names(x)), on=on, FALSE))) {
-    if (any(bad.on <- !on %chin% unique(unlist(lapply(l, names)))))
+  } else if (any(bad.on <- !on %chin% unique(unlist(lapply(l, names))))) {
     stop("'on' argument specify columns to join that are not present in any table: ", paste(on[bad.on], collapse=", "))
   }
   if (missing(cols) || is.null(cols)) {
@@ -278,7 +265,7 @@ mergelist = function(l, on, cols, how=c("left","inner","full","right"), mult=c("
     out = mergepair(
       lhs = out, rhs = l[[rhs.i]],
       on = on, how = how, mult = mult,
-      #on = on[[join.i]], how = how[[join.i]], mult = mult[[join.i]], ## vectorized params TODO
+      #on = on[[join.i]], how = how[[join.i]], mult = mult[[join.i]], ## not yet implemented
       lhs.cols = out.cols, rhs.cols = cols[[rhs.i]],
       copy = FALSE, ## avoid any copies inside, will copy once below
       join.many = join.many, verbose = verbose
@@ -286,7 +273,7 @@ mergelist = function(l, on, cols, how=c("left","inner","full","right"), mult=c("
     out.cols = copy(names(out))
   }
   out.mem = vapply(out, address, "")
-  if (length(cp <- names(out.mem)[out.mem %chin% unlist(if (copy) l.mem else l.mem[-1L], recursive=FALSE)]))
+  if (copy && length(cp <- names(out.mem)[out.mem %chin% unique(unlist(l.mem, recursive=FALSE))]))
     .Call(CcopyCols, out, colnamesInt(out, cp))
   if (verbose)
     cat(sprintf("mergelist: merging %d tables, took %.3fs\n", n, proc.time()[[3L]]-p))

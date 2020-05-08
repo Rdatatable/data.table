@@ -17,7 +17,7 @@
   \item{cols}{ \code{list} of \code{character} vectors corresponding to tables in \code{l}. }
   \item{how}{ \code{character} scalar, controls how to merge tables. Allowed values are \code{"left"} (default), \code{"inner"}, \code{"full"}, \code{"right"}. }
   \item{mult}{ \code{character} scalar, controls how to proceed when multiple rows in \emph{join-to} table match to the row in \emph{join-from} table. Allowed values are \code{"error"} (default), \code{"all"}, \code{"first"}, \code{"last"}. See examples on how to detect duplicated matches. Using \code{"all"} is recommended together with \code{join.many=FALSE}, unless rows explosion or cartesian product are intended. }
-  \item{copy}{ \code{logical}, defaults to \code{TRUE}, when \code{FALSE}, then resulting object will share columns with \code{l[[1L]]} table. Using \code{FALSE} requires \code{how=="left" && mult!="all"}. }
+  \item{copy}{ \code{logical}, defaults to \code{TRUE}, when \code{FALSE}, then resulting object will share columns with tables in \code{l}. Using \code{FALSE} works only for \emph{left} or \emph{right} outer joins and \code{mult!="all"}. }
   \item{join.many}{ \code{logical}, defaults to \code{TRUE}, when \code{FALSE} and \code{mult="all"}, then extra check is made to ensure no \emph{many-to-many} matches exists between tables, and if they are, then exception is raised. Works similarly to \code{allow.cartesian} option in \code{[.data.table} but is more strict. An option \code{"datatable.join.many"} can be used to control that globally, for \code{mergelist} and \code{[.data.table}. }
 }
 \details{
@@ -42,13 +42,13 @@
     \item{ \code{how="left|right"}: key columns of \emph{join-to} table. }
     \item{ \code{how="inner|full"}: if only one table has key, then this key is used, if both tables have key, then \code{intersect(key(lhs), key(rhs))}, having its order aligned to shorter key. }
   }
+
+  When joining tables that are not directly linked to single table, e.g. snowflake schema, \emph{right} outer join can be used to fully utilize potential of existing indices, see examples.
 }
 \value{
   A new \code{data.table} based on the merged objects.
 }
 \note{
-  Using \code{how="right"} is sub-efficient. Whenever possible, it is better to swap elements of \code{l} and use \code{how="left"} instead.
-
   Using \code{how="inner"} or \code{mult="full"} together with \code{mult!="all"} is sub-efficient. Unlike during join in \code{[.data.table}, it will apply \code{mult} on both tables. It is to ensure that join in symmetric, so \emph{LHS} and \emph{RHS} tables can be swapped, regardless of \code{mult} argument. It is always possible to apply \code{mult}-like filter manually and join using \code{mult="all"}.
 
   Using \code{join.many=FALSE} is sub-efficient. Note that it only takes effect when \code{mult="all"}. If input data are verified to not have duplicated matches, then this can safely use the default \code{TRUE}. Otherwise for \code{mult="all"} merges it is recommended to use \code{join.many=FALSE}, unless of course \emph{many-to-many} join, that duplicates rows, is intended.
@@ -96,13 +96,13 @@ gt = state.x77[,"Population"]
 gt = data.table(state_id=seq_along(state.name), p=gt[state.name]/sum(gt), k=1L)
 tt = as.IDate(paste0(as.integer(time(uspop)),"-01-01"))
 tt = as.data.table(stats::approx(tt, c(uspop), tt[1L]:tt[length(tt)]))
-tt = tt[, .(date=as.IDate(x), time_id=seq_along(x), pop=y, k=1L)]
+tt = tt[, .(date=as.IDate(x), date_id=seq_along(x), pop=y, k=1L)]
 fact = tt[gt, on="k", allow.cartesian=TRUE,
-          .(state_id=i.state_id, time_id=x.time_id, population = x.pop * i.p)]
-setkeyv(fact, c("state_id","time_id"))
+          .(state_id=i.state_id, date_id=x.date_id, population = x.pop * i.p)]
+setkeyv(fact, c("state_id","date_id"))
 
-time = data.table(key = "time_id",
-  time_id = seq_along(tt$date), date = tt$date,
+time = data.table(key = "date_id",
+  date_id = seq_along(tt$date), date = tt$date,
   month_id = month(tt$date), month = month.name[month(tt$date)],
   year_id = year(tt$date)-1789L, year = as.character(year(tt$date)),
   week_id = week(tt$date), week = as.character(week(tt$date)),
@@ -117,10 +117,10 @@ geog = data.table(key = "state_id",
   region_name = as.character(state.region)
 )
 
-X = list(fact, time, geog)
-ans = mergelist(X)
+l = list(fact, time, geog)
+ans = mergelist(l)
 
-rm(gt, tt, ans)
+rm(gt, tt, l, ans)
 
 ## denormalize snowflake schema
 
@@ -131,7 +131,7 @@ make.lvl = function(x, cols) {
   setindexv(lvl, as.list(cols))
 }
 time = list(
-  date = make.lvl(time, c("time_id","date","year_id","month_id","week_id",
+  date = make.lvl(time, c("date_id","date","year_id","month_id","week_id",
                           "weekday_id")),
   weekday = make.lvl(time, c("weekday_id","weekday")),
   week = make.lvl(time, c("week_id","week")),
@@ -144,7 +144,20 @@ geog = list(
   region = make.lvl(geog, c("region_id","region_name"))
 )
 
-X = c(list(fact=fact), time, geog)
-ans = mergelist(X)
+l = c(list(fact=fact), time, geog)
+ans = mergelist(l) ## only join to first level of each hierarchy will use index
+
+rm(ans)
+ans = mergelist(list( ## use indices on every join
+  fact,
+  mergelist(time), ## date lvl has indices to all time hierarchies
+  mergelist(rev(geog), how="right") ## right outer join will retain keys
+))
+
+rm(ans)
+ans = mergelist(copy=FALSE, list( ## same but even faster, copy=FALSE
+  fact, mergelist(copy=FALSE, time),
+  mergelist(copy=FALSE, rev(geog), how="right")
+))
 }
 \keyword{ data }
