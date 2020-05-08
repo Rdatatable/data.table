@@ -120,6 +120,7 @@ SEXP lock();
 SEXP unlock();
 SEXP islockedR();
 SEXP allNAR();
+SEXP copyCols();
 
 // .Externals
 SEXP fastmean();
@@ -215,6 +216,7 @@ R_CallMethodDef callMethods[] = {
 {"C_allNAR", (DL_FUNC) &allNAR, -1},
 {"Ccbindlist", (DL_FUNC) &cbindlist, -1},
 {"CperhapsDataTableR", (DL_FUNC) &perhapsDataTableR, -1},
+{"CcopyCols", (DL_FUNC) &copyCols, -1},
 {NULL, NULL, 0}
 };
 

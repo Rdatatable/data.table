@@ -111,6 +111,8 @@ join.sql.equal = function(l, on, how="inner", mult="all", allow.cartesian=TRUE, 
   if (how %in% c("inner","full")) {
     dt2 = mergelist(list(rhs[,!"row_id"], lhs[,!"row_id"]), on=on, how=how, mult=mult)
     setcolorder(dt2, neworder=names(dt))
+    setattr(dt, "index", integer())
+    setattr(dt2, "index", integer())
     r = all.equal(dt, dt2, ignore.row.order=TRUE)
     ## check it is symetric
     if (!isTRUE(r)) {
@@ -118,6 +120,8 @@ join.sql.equal = function(l, on, how="inner", mult="all", allow.cartesian=TRUE, 
       stop("mergelist is not symmetric for ", how)
     }
   }
+  setattr(sq, "index", integer())
+  setattr(dt, "index", integer())
   # compare results
   a = all.equal.data.table(dt, sq, ignore.row.order=TRUE)
   b = all.equal.data.table(dt, sq, ignore.row.order=TRUE, ignore.col.order=TRUE)
@@ -292,11 +296,11 @@ data = function(case) {
 
 # tests ----
 
+y = batch.join.sql.equal(cases=1:31, on="id", hows=c("inner","left","right","full"), mults=c("all","first","last"), .debug=interactive())
+y = rapply(y, isTRUE)
+if (!all(y))
+  stop(sprintf("join tests failed for %s cases:\n%s", sum(!y), paste("  ", names(y)[!y], collapse="\n")))
+cat("done\n")
 if (!interactive()) {
-  y = batch.join.sql.equal(cases=1:31, on="id", hows=c("inner","left","right","full"), mults=c("all","first","last"), .debug=interactive())
-  y = rapply(y, isTRUE)
-  if (!all(y))
-    stop(sprintf("join tests failed for %s cases:\n%s", sum(!y), paste("  ", names(y)[!y], collapse="\n")))
-  cat("done\n")
   q("no")
 }

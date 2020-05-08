@@ -90,6 +90,27 @@ test(12.08, cbindlist(list(data.table(), data.table(a=1:2), data.table(b=1:2))),
 test(12.09, cbindlist(list(data.table(), data.table(a=1:2), list(b=1:2))), data.table(a=1:2, b=1:2))
 test(12.10, cbindlist(list(data.table(a=integer()), list(b=integer()))), data.table(a=integer(), b=integer()))
 
+## retain indices
+d = data.table(x=1:2, y=2:1, z=2:1, v1=1:2) ## ensure setDT will retain index when it is called on the list, bc Ccbindlist returns list
+setkeyv(d, "x"); setindexv(d, list("y", "z"))
+a = attributes(d)
+attributes(d) = a[!names(a) %in% c("class",".internal.selfref","row.names")]
+test(21.01, class(d), "list")
+setDT(d)
+test(21.02, key(d), "x")
+test(21.03, hasindex(d, "y") && hasindex(d, "z"))
+l = list(
+  data.table(id1=1:5, id2=5:1, id3=1:5, v1=1:5),
+  data.table(id4=5:1, id5=1:5, v2=1:5),
+  data.table(id6=5:1, id7=1:5, v3=1:5),
+  data.table(id8=5:1, id9=5:1, v4=1:5)
+)
+setkeyv(l[[1L]], "id1"); setindexv(l[[1L]], list("id1", "id2", "id3", c("id1","id2","id3"))); setindexv(l[[3L]], list("id6", "id7")); setindexv(l[[4L]], "id9")
+ii = lapply(l, indices)
+ans = cbindlist(l)
+test(21.04, indices(ans), c("id1","id2","id3","id1__id2__id3","id6","id7","id9"))
+test(21.05, ii, lapply(l, indices))
+
 # mergepair
 
 ## test copy-ness argument in mergepair
@@ -437,6 +458,27 @@ test(104.24, l$to[l$fm, on="x"], error="many-to-many join")
 options(datatable.join.many=TRUE)
 test(104.25, l$to[l$fm, on="x"], error="Check for duplicate key values")
 test(104.26, mergelist(l, on="x", how="left", mult="all"), l$to[l$fm, on="x", allow.cartesian=TRUE])
+
+## retain index
+
+l = list(data.table(id1=1:3, id2=c(2L,1L,2L), v1=1:3), data.table(id1=3:1, v2=1:3))
+setindexv(l[[1L]], "id2")
+ans = mergelist(l, on="id1")
+test(105.01, ans, data.table(id1=1:3, id2=c(2L,1L,2L), v1=1:3, v2=3:1))
+test(105.02, copied(ans, l))
+test(105.03, hasindex(ans, "id2"))
+ans = mergelist(l, on="id1", how="left", copy=FALSE)
+test(105.04, ans, data.table(id1=1:3, id2=c(2L,1L,2L), v1=1:3, v2=3:1))
+test(105.05, notcopied(ans, l))
+test(105.06, hasindex(ans, "id2"))
+test(105.07, hasindex(mergelist(l, on="id1", how="full"), "id2"))
+l = list(data.table(id1=1:3, id2=c(2L,1L,2L), v1=1:3), data.table(id1=4:1, v2=1:4))
+test(105.08, !hasindex(mergelist(l, on="id1", how="full"), "id2"))
+l = list(data.table(id1=integer(), v1=integer()), data.table(id1=2:1, v2=1:2))
+setindexv(l[[2L]], "id1")
+ans = mergelist(l, on="id1", how="full")
+test(105.09, ans, data.table(id1=2:1, v1=c(NA_integer_,NA), v2=1:2))
+test(105.10, !hasindex(ans, "id1")) ## .shallow(., retain.key=FALSE) - handling such an edge case is not worth
 
 ## 3+ tables mergelist
 

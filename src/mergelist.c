@@ -1,10 +1,44 @@
 #include "data.table.h"
 
+// set(x, NULL, cols, copy(unclass(x)[cols])) ## but keeps the index
+SEXP copyCols(SEXP x, SEXP cols) {
+  if (!isDataTable(x))
+    error("'x' must be a data.table"); // # nocov
+  if (!isInteger(cols))
+    error("'cols' must be integer"); // # nocov
+  int nx = length(x), ncols = LENGTH(cols), *colsp = INTEGER(cols);
+  if (!nx || !ncols)
+    return R_NilValue;
+  for (int i=0; i<ncols; ++i) {
+    int thiscol = colsp[i]-1;
+    SET_VECTOR_ELT(x, thiscol, duplicate(VECTOR_ELT(x, thiscol)));
+  }
+  return R_NilValue;
+}
+
+void mergeIndexAttrib(SEXP to, SEXP from) {
+  if (!isInteger(to) || LENGTH(to)!=0)
+    error("'to' must be integer() already"); // # nocov
+  if (isNull(from))
+    return;
+  SEXP t = ATTRIB(to), f = ATTRIB(from);
+  if (isNull(f))
+    return;
+  if (isNull(t))
+    SET_ATTRIB(to, shallow_duplicate(f));
+  else {
+    for (t = ATTRIB(to); CDR(t) != R_NilValue; t = CDR(t));
+    SETCDR(t, shallow_duplicate(f));
+  }
+  return;
+}
+
 SEXP cbindlist(SEXP x, SEXP copyArg) {
   if (!isNewList(x) || INHERITS(x, char_dataframe))
     error("'x' must be a list");
   if (!IS_TRUE_OR_FALSE(copyArg))
     error("'copy' must be TRUE or FALSE");
+  // TODO check for duplicated names
   bool copy = (bool)LOGICAL(copyArg)[0];
   const bool verbose = GetVerbose();
   double tic = 0;
@@ -32,6 +66,8 @@ SEXP cbindlist(SEXP x, SEXP copyArg) {
   if (recycle)
     error("Rows recycling for objects of different nrow is not yet implemented"); // dont we have a routines for that already somewhere?
   SEXP ans = PROTECT(allocVector(VECSXP, nans));
+  SEXP index = PROTECT(allocVector(INTSXP, 0));
+  setAttrib(ans, sym_index, index);
   SEXP names = PROTECT(allocVector(STRSXP, nans));
   for (int i=0, ians=0; i<nx; ++i) {
     SEXP thisx = VECTOR_ELT(x, i);
@@ -41,10 +77,11 @@ SEXP cbindlist(SEXP x, SEXP copyArg) {
       SET_VECTOR_ELT(ans, ians, copy ? duplicate(thisxcol) : thisxcol);
       SET_STRING_ELT(names, ians, STRING_ELT(thisnames, j));
     }
+    mergeIndexAttrib(index, getAttrib(thisx, sym_index));
   }
   setAttrib(ans, R_NamesSymbol, names);
   if (verbose)
     Rprintf("cbindlist: took %.3fs\n", omp_get_wtime()-tic);
-  UNPROTECT(2);
+  UNPROTECT(3);
   return ans;
 }

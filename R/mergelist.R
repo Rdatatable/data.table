@@ -30,7 +30,7 @@ hasindex = function(x, by, retGrp=FALSE) {
 }
 
 # fdistinct applies mult='first|last'
-# for mult='first' it is unique(x, by=on)[, cols, with=FALSE]
+# for mult='first' it is unique(x, by=on)[, c(on, cols), with=FALSE]
 # it may not copy when copy=FALSE and x is unique by 'on'
 fdistinct = function(x, on=key(x), mult=c("first","last"), cols=seq_along(x), copy=TRUE) {
   if (!perhaps.data.table(x))
@@ -182,7 +182,7 @@ mergepair = function(lhs, rhs, on, how, mult, lhs.cols=names(lhs), rhs.cols=name
 
     ## make anti join side
     out.r = if (is.null(bns$irows))
-      .shallow(jnfm, cols=someCols(jnfm, fm.cols, keep=on))
+      .shallow(jnfm, cols=someCols(jnfm, fm.cols, keep=on), retain.key=FALSE) ## could eventually retain.key, so 105.10 has index, but it so much an edge case that it is not worth it
     else
       .Call(CsubsetDT, jnfm, bns$irows, someCols(jnfm, fm.cols, keep=on))
     cp.r = cp.r || !is.null(bns$irows)
@@ -286,9 +286,8 @@ mergelist = function(l, on, cols, how=c("left","inner","full","right"), mult=c("
     out.cols = copy(names(out))
   }
   out.mem = vapply(out, address, "")
-  setDT(out)
   if (length(cp <- names(out.mem)[out.mem %chin% unlist(if (copy) l.mem else l.mem[-1L], recursive=FALSE)]))
-    set(out, NULL, cp, copy(unclass(out)[cp]))
+    .Call(CcopyCols, out, colnamesInt(out, cp))
   if (verbose)
     cat(sprintf("mergelist: merging %d tables, took %.3fs\n", n, proc.time()[[3L]]-p))
   out
