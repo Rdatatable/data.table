@@ -21,6 +21,8 @@
   \item{join.many}{ \code{logical}, defaults to \code{TRUE}, when \code{FALSE} and \code{mult="all"}, then extra check is made to ensure no \emph{many-to-many} matches exists between tables, and if they are, then exception is raised. Works similarly to \code{allow.cartesian} option in \code{[.data.table} but is more strict. An option \code{"datatable.join.many"} can be used to control that globally, for \code{mergelist} and \code{[.data.table}. }
 }
 \details{
+  Function should be considered experimental.
+
   Merging is performed sequentially, for \code{l} of 3 tables, it will do something like \code{merge(merge(l[[1L]], l[[2L]]), l[[3L]])}. Merging supports only \emph{equi-join} and column names to join on must be common in both tables.
 
   \emph{Not yet implemented:} arguments \code{on}, \code{how}, \code{mult}, \code{join.many} could be lists as well, each of length \code{length(l)-1L}, to provide argument to be used for each single tables pair to merge.
