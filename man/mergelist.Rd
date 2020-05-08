@@ -130,7 +130,7 @@ make.lvl = function(x, cols) {
 }
 time = list(
   date = make.lvl(time, c("time_id","date","year_id","month_id","week_id",
-                          "weekday_id")).
+                          "weekday_id")),
   weekday = make.lvl(time, c("weekday_id","weekday")),
   week = make.lvl(time, c("week_id","week")),
   month = make.lvl(time, c("month_id","month")),
