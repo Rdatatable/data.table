@@ -223,9 +223,11 @@ mergelist = function(l, on, cols, how=c("left","inner","full","right"), mult=c("
     stop("copy=FALSE works only for mult='first|last|error'")
   if (any(!vapply(l, is.data.table, FALSE)))
     stop("Every element of 'l' list must be data.table objects")
+  if (any(!vapply(l, length, 0L)))
+    stop("Tables in 'l' argument must be non-zero columns tables")
   n = length(l)
   if (n<2L) {
-    out = if (!n) l else l[[1L]]
+    out = if (!n) as.data.table(l) else l[[1L]]
     if (copy) out = copy(out)
     if (verbose)
       cat(sprintf("mergelist: merging %d table(s), took %.3fs\n", n, proc.time()[[3L]]-p))

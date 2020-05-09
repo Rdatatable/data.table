@@ -329,6 +329,10 @@ options(op)
 test(101.12, mergelist(l, on="xx"), error="specify columns to join that are not present in any table")
 test(101.13, mergelist(l, on="x", join.many=NA), error="must be TRUE or FALSE")
 test(101.14, mergelist(list(data.table(a=1L), data.table(a=c(1L,1L))), on="a", mult="all"), data.table(a=c(1L,1L))) ## copyCols(, cols=integer())
+test(101.15, mergelist(list()), data.table())
+test(101.16, mergelist(list(data.table())), error="must be non-zero columns tables")
+test(101.17, mergelist(list(data.table(), data.table())), error="must be non-zero columns tables")
+test(101.18, mergelist(list(data.table(a=integer()), data.table(a=integer())), on="a"), data.table(a=integer()))
 
 ## missing on argument
 l = list(data.table(x=1:2), data.table(x=2:3))
