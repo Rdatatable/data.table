@@ -20,7 +20,7 @@
   A new \code{data.table} based on the stacked objects. Eventually when \code{copy} is \code{FALSE}, then resulting object will share columns with \code{l} table.
 }
 \note{
-  If output object has any duplicate names, then key and indices are automatically removed.
+  If output object has any duplicate names, then key and indices are removed.
 }
 \seealso{
   \code{\link{data.table}}, \code{\link{rbindlist}}, \code{\link{mergelist}}

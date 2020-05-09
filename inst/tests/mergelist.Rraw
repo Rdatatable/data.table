@@ -75,26 +75,31 @@ ans = cbindlist(l, copy=FALSE)
 expected = setDT(c(l$d1, l$d2, l$d3))
 test(11.03, ans, expected)
 test(11.04, length(intersect(addresses(ans), addresses(expected))), ncol(expected))
+test(11.05, cbindlist(list(data.table(a=1L), data.table(), data.table(d=2L), data.table(f=3L))), data.table(a=1L,d=2L,f=3L))
 rm(expected)
-# codecov
+## codecov
 test(12.01, cbindlist(data.frame(a=1L), data.frame(b=1L)), error="must be a list")
 test(12.02, cbindlist(TRUE, FALSE), error="must be a list")
 test(12.03, cbindlist(list(), NA), error="must be TRUE or FALSE")
 test(12.04, cbindlist(list(data.table(a=1L), 1L)), error="is not of data.table type")
-test(12.05, cbindlist(list(data.table(a=1L), data.table(b=1:2)), copy=FALSE), error="has to have equal nrow")
-test(12.06, cbindlist(list(data.table(a=1L), data.table(b=1:2))), error="recycling.*not yet implemented")
 op = options(datatable.verbose=TRUE)
-test(12.07, cbindlist(list(data.table(a=1:2), data.table(b=1:2))), data.table(a=1:2, b=1:2), output="cbindlist.*took")
+test(12.05, cbindlist(list(data.table(a=1:2), data.table(b=1:2))), data.table(a=1:2, b=1:2), output="cbindlist.*took")
 options(op)
-test(12.08, cbindlist(list(data.table(), data.table(a=1:2), data.table(b=1:2))), data.table(a=1:2, b=1:2))
-test(12.09, cbindlist(list(data.table(), data.table(a=1:2), list(b=1:2))), data.table(a=1:2, b=1:2))
-test(12.10, cbindlist(list(data.table(a=integer()), list(b=integer()))), data.table(a=integer(), b=integer()))
-
+test(12.06, cbindlist(list(data.table(), data.table(a=1:2), data.table(b=1:2))), data.table(a=1:2, b=1:2))
+test(12.07, cbindlist(list(data.table(), data.table(a=1:2), list(b=1:2))), data.table(a=1:2, b=1:2))
+test(12.08, cbindlist(list(data.table(a=integer()), list(b=integer()))), data.table(a=integer(), b=integer()))
 ## duplicated names
-test(13.01, cbindlist(list(data.table(a=1L, b=2L), data.table(b=3L, d=4L))), data.table(a=1L, b=2L, b=3L, d=4L))
+test(12.09, cbindlist(list(data.table(a=1L, b=2L), data.table(b=3L, d=4L))), data.table(a=1L, b=2L, b=3L, d=4L))
 ans = cbindlist(list(setindexv(data.table(a=2:1, b=1:2),"a"), data.table(a=1:2, b=2:1, key="a"), data.table(a=2:1, b=1:2)))
-test(13.02, ans, data.table(a=2:1, b=1:2, a=1:2, b=2:1, a=2:1, b=1:2))
-test(13.03, indices(ans), NULL)
+test(12.10, ans, data.table(a=2:1, b=1:2, a=1:2, b=2:1, a=2:1, b=1:2))
+test(12.11, indices(ans), NULL)
+## recycling, first ensure cbind recycling that we want to match to
+test(12.12, cbind(data.table(x=integer()), data.table(a=1:2)), data.table(x=c(NA_integer_,NA), a=1:2))
+test(12.13, cbind(data.table(x=1L), data.table(a=1:2)), data.table(x=c(1L,1L), a=1:2))
+test(12.14, cbindlist(list(data.table(a=integer()), data.table(b=1:2))), error="recycling.*not yet implemented")
+test(12.15, cbindlist(list(data.table(a=1L), data.table(b=1:2))), error="recycling.*not yet implemented")
+test(12.16, cbindlist(list(data.table(a=integer()), data.table(b=1:2)), copy=FALSE), error="has to have equal nrow")
+test(12.17, cbindlist(list(data.table(a=1L), data.table(b=1:2)), copy=FALSE), error="has to have equal nrow")
 
 ## retain indices
 d = data.table(x=1:2, y=2:1, z=2:1, v1=1:2) ## ensure setDT will retain key and indices when it is called on the list, bc Ccbindlist returns list
