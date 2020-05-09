@@ -16847,8 +16847,8 @@ test(2138.3, rbind(A,B), data.table(A=c(as.character(A$A), B$A)))
 A = data.table(A=as.complex(rep(NA, 5)))
 test(2138.4, rbind(A,B), data.table(A=c(as.character(A$A), B$A)))
 
-# Should return zero-length data.table if all elements are length 1,0 and at least one is length zero. In short, should recyle the scalar instead of the zero-length vector when both exists, #3727
-test(2139.1, data.table(A=double(),B=1.0), data.table(A=double(),B=double()))
+# Should return zero-nrow data.table if any non-null&atomic element is length 0 #3727
+test(2139.1, data.table(A=double(),B=1:2), data.table(A=double(),B=double()))
 DT <- data.table(CODE = c('a', 'b'), DATE = 1:2, VALUE = c(1.3, 1.5), key = c('CODE', 'DATE'))
 test(2139.2, DT[J(character(), 1), VALUE], double()) # because "J" is a wrapper of list()
 test(2139.3, data.table(A=NULL,B=1.0), data.table(B=1.0)) # NULL is omited

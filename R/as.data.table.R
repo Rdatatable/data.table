@@ -154,8 +154,8 @@ as.data.table.list = function(x,
   nrow = max(eachnrow)
   # only check the atomic and nonNULL type because NULL will be ignored while non-atomic (e.g., list) is always recycled
   atomic_nonnull = vapply(x, function(xi) is.atomic(xi) && !is.null(xi), TRUE)
-  # #3727 if all the inputs are scalar or length-zero, the output should be zero since we should always recycle the scalar
-  if (any(eachnrow[atomic_nonnull]==0L) && all(eachnrow<=1L)) nrow = 0L
+  # #3727 if any atomic and nonnull element is length-zero, the output should be zero
+  if (any(eachnrow[atomic_nonnull]==0L)) nrow = 0L
   ans = vector("list",ncol)  # always return a new VECSXP
   recycle = function(x, nrow) {
     if (length(x)==nrow) {
