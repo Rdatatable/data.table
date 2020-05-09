@@ -17,7 +17,7 @@
   Column bind only stacks input elements. Works like \code{\link{data.table}} function but takes \code{list} type on input. Zero-columns tables in \code{l} are ommited. Tables in \code{l} should have matching row count, recycling of rows is not yet implemented. Indices of the input tables are transferred to the resulting table, as well as a \emph{key} of the first keyed table.
 }
 \value{
-  A new \code{data.table} based on the stacked objects. Eventually when \code{copy} is \code{FALSE}, then resulting object will share columns with \code{l} table.
+  A new \code{data.table} based on the stacked objects. Eventually when \code{copy} is \code{FALSE}, then resulting object will share columns with \code{l} tables.
 }
 \note{
   If output object has any duplicate names, then key and indices are removed.

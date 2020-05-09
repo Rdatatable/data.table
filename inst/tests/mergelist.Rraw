@@ -121,7 +121,7 @@ ii = lapply(l, indices)
 ans = cbindlist(l)
 test(21.04, key(ans), "id1")
 test(21.05, indices(ans), c("id1","id2","id3","id1__id2__id3","id6","id7","id9"))
-test(21.06, ii, lapply(l, indices))
+test(21.06, ii, lapply(l, indices)) ## this tests that original indices have not been touched, shallow_duplicate in mergeIndexAttrib
 
 # mergepair
 
