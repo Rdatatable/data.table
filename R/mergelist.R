@@ -276,8 +276,8 @@ mergelist = function(l, on, cols, how=c("left","inner","full","right"), mult=c("
     out.cols = copy(names(out))
   }
   out.mem = vapply(out, address, "")
-  if (copy && length(cp <- names(out.mem)[out.mem %chin% unique(unlist(l.mem, recursive=FALSE))]))
-    .Call(CcopyCols, out, colnamesInt(out, cp))
+  if (copy)
+    .Call(CcopyCols, out, colnamesInt(out, names(out.mem)[out.mem %chin% unique(unlist(l.mem, recursive=FALSE))]))
   if (verbose)
     cat(sprintf("mergelist: merging %d tables, took %.3fs\n", n, proc.time()[[3L]]-p))
   out

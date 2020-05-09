@@ -328,6 +328,7 @@ test(101.11, mergelist(l, on="x"), data.table(x=1:2), output="mergelist.*2 table
 options(op)
 test(101.12, mergelist(l, on="xx"), error="specify columns to join that are not present in any table")
 test(101.13, mergelist(l, on="x", join.many=NA), error="must be TRUE or FALSE")
+test(101.14, mergelist(list(data.table(a=1L), data.table(a=c(1L,1L))), on="a", mult="all"), data.table(a=c(1L,1L))) ## copyCols(, cols=integer())
 
 ## missing on argument
 l = list(data.table(x=1:2), data.table(x=2:3))
