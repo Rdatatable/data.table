@@ -25,7 +25,7 @@
 
   Merging is performed sequentially, for \code{l} of 3 tables, it will do something like \code{merge(merge(l[[1L]], l[[2L]]), l[[3L]])}. Merging supports only \emph{equi-join} and column names to join on must be common in both tables.
 
-  \emph{Not yet implemented:} arguments \code{on}, \code{how}, \code{mult}, \code{join.many} could be lists as well, each of length \code{length(l)-1L}, to provide argument to be used for each single tables pair to merge.
+  Arguments \code{on}, \code{how} (not yet implemented), \code{mult} (not yet implemented), \code{join.many} could be lists as well, each of length \code{length(l)-1L}, to provide argument to be used for each single tables pair to merge.
 
   Terms \emph{join-to} and \emph{join-from} depends on \code{how} argument:
   \enumerate{
@@ -43,7 +43,7 @@
     \item{ \code{how="inner|full"}: if only one table has key, then this key is used, if both tables have key, then \code{intersect(key(lhs), key(rhs))}, having its order aligned to shorter key. }
   }
 
-  When joining tables that are not directly linked to single table, e.g. snowflake schema, \emph{right} outer join can be used to fully utilize potential of existing indices, see examples.
+  When joining tables that are not directly linked to single table, e.g. snowflake schema, \emph{right} outer join can be used to optimize the sequence of merges, see examples.
 }
 \value{
   A new \code{data.table} based on the merged objects.

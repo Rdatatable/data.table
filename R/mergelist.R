@@ -121,12 +121,12 @@ mergepair = function(lhs, rhs, on, how, mult, lhs.cols=names(lhs), rhs.cols=name
     else if (how=="right") on = key(lhs)
     else on = onkeys(key(lhs), key(rhs))
     if (is.null(on))
-      stop("internal error: 'on' is missing, keys were probably dropped in sequence of merges, please provide reproducible example to our issue tracker") # nocov
+      stop("internal error: 'on' is missing, keys were probably dropped in sequence of merges, please submit reproducible example to issue tracker") # nocov
   }
   if (any(bad.on <- !on %chin% names(lhs)))
-    stop(sprintf("'on' argument specify columns to join (%s) that are not present in LHS table (%s)", paste(on[bad.on], collapse=", "), paste(names(lhs), collapse=", ")))
+    stop(sprintf("'on' argument specify columns to join [%s] that are not present in LHS table [%s]", paste(on[bad.on], collapse=", "), paste(names(lhs), collapse=", ")))
   if (any(bad.on <- !on %chin% names(rhs)))
-    stop(sprintf("'on' argument specify columns to join (%s) that are not present in RHS table (%s): ", paste(on[bad.on], collapse=", "), paste(names(rhs), collapse=", ")))
+    stop(sprintf("'on' argument specify columns to join [%s] that are not present in RHS table [%s]", paste(on[bad.on], collapse=", "), paste(names(rhs), collapse=", ")))
   if (how!="right") { ## join-to, join-from
     jnfm = lhs; fm.cols = lhs.cols; jnto = rhs; to.cols = rhs.cols
   } else {
@@ -160,6 +160,10 @@ mergepair = function(lhs, rhs, on, how, mult, lhs.cols=names(lhs), rhs.cols=name
   else
     .Call(CsubsetDT, jnto, ans$xrows, someCols(jnto, to.cols, drop=on))
   cp.x = !is.null(ans$xrows)
+
+  ## ensure no duplicated column names in merge results
+  if (any(dup.i<-names(out.i) %chin% names(out.x)))
+    stop("merge result has duplicated column names, use 'cols' argument or rename columns in 'l' tables, duplicated column(s): ", paste(names(out.i)[dup.i], collapse=", "))
 
   if (how!="full") {
     if (!cp.i && copy) out.i = copy(out.i)
@@ -213,19 +217,18 @@ mergelist = function(l, on, cols, how=c("left","inner","full","right"), mult=c("
     p = proc.time()[[3L]]
   if (!is.list(l) || is.data.frame(l))
     stop("'l' must be a list")
-  if (!isTRUEorFALSE(copy))
-    stop("'copy' must be TRUE or FALSE")
-  if (!isTRUEorFALSE(join.many))
-    stop("'join.many' must be TRUE or FALSE")
-  how = match.arg(how)
-  mult = match.arg(mult)
-  if (!copy && !(mult=="first" || mult=="last" || mult=="error"))
-    stop("copy=FALSE works only for mult='first|last|error'")
   if (any(!vapply(l, is.data.table, FALSE)))
     stop("Every element of 'l' list must be data.table objects")
   if (any(!vapply(l, length, 0L)))
     stop("Tables in 'l' argument must be non-zero columns tables")
+  if (!isTRUEorFALSE(copy))
+    stop("'copy' must be TRUE or FALSE")
   n = length(l)
+  if (is.list(mult))
+    stop("'mult' list not yet implemented")
+  mult = match.arg(mult)
+  if (!copy && !(mult=="first" || mult=="last" || mult=="error"))
+    stop("copy=FALSE works only for mult='first|last|error'")
   if (n<2L) {
     out = if (!n) as.data.table(l) else l[[1L]]
     if (copy) out = copy(out)
@@ -233,6 +236,14 @@ mergelist = function(l, on, cols, how=c("left","inner","full","right"), mult=c("
       cat(sprintf("mergelist: merging %d table(s), took %.3fs\n", n, proc.time()[[3L]]-p))
     return(out)
   }
+  if (!(is.list(join.many) && length(join.many)==n-1L && all(vapply(join.many, isTRUEorFALSE, NA)))
+      && !isTRUEorFALSE(join.many))
+    stop("'join.many' must be TRUE or FALSE, or a list of such which length must be length(l)-1L")
+  if (!is.list(join.many))
+    join.many = replicate(n-1L, join.many, simplify=FALSE)
+  if (is.list(how))
+    stop("'how' list not yet implemented")
+  how = match.arg(how)
   if (missing(on) || is.null(on)) {
     haskeyv = vapply(l, haskey, TRUE)
     if (!( ## list valid keys below
@@ -241,12 +252,19 @@ mergelist = function(l, on, cols, how=c("left","inner","full","right"), mult=c("
       ((how=="inner" || how=="full") && any(haskeyv[1:2]) && all(haskeyv[-(1:2)]))
     ))
       stop("'on' is missing and necessary keys are not present")
-    on = NULL
-  } else if (!is.character(on) || !length(on)) {
-    stop("'on' must be non zero length character")
-  } else if (any(bad.on <- !on %chin% unique(unlist(lapply(l, names))))) {
-    stop("'on' argument specify columns to join that are not present in any table: ", paste(on[bad.on], collapse=", "))
+    on = vector("list", n-1L)
+  } else {
+    if (!(is.list(on) && length(on)==n-1L && all(vapply(on, is.character, NA)) && all(vapply(on, length, 0L)) && all(!vapply(on, anyDuplicated, 0L)) && !anyNA(on, recursive=TRUE))
+        && !(is.character(on) && length(on) && !anyDuplicated(on) && !anyNA(on))) {
+      stop("'on' must be non-zero length, non-NA, non-duplicated, character, or a list of such which length must be length(l)-1L")
+    } else if (any(bad.on <- !unlist(on, use.names=FALSE) %chin% unique(unlist(lapply(l, names))))) {
+      stop("'on' argument specify columns to join that are not present in any table: ", paste(unlist(on, use.names=FALSE)[bad.on], collapse=", "))
+    }
+    if (is.character(on))
+      on = replicate(n-1L, on, simplify=FALSE)
   }
+  if (any(vapply(l, function(x) anyDuplicated(names(x)), 0L)))
+    stop("Some of the tables in 'l' have duplicated column names")
   if (missing(cols) || is.null(cols)) {
     cols = vector("list", n)
   } else {
@@ -255,12 +273,11 @@ mergelist = function(l, on, cols, how=c("left","inner","full","right"), mult=c("
     if (length(cols) != n)
       stop("'cols' must be same length as 'l'")
     skip = vapply(cols, is.null, FALSE)
-    if (any(!vapply(cols[!skip], is.character, FALSE)))
-      stop("'cols' must be a list of character vectors, or eventually NULLs")
+    if (any(!vapply(cols[!skip], function(x) is.character(x) && !anyNA(x) && !anyDuplicated(x), FALSE)))
+      stop("'cols' must be a list of non-zero length, non-NA, non-duplicated, character vectors, or eventually NULLs (all columns)")
     if (any(mapply(function(x, icols) any(!icols %chin% names(x)), l[!skip], cols[!skip])))
       stop("'cols' specify columns not present in corresponding table")
   }
-  ## TODO handle duplicates in on, cols arguments, names within each table, and names accross all tables, after cols filtering
 
   l.mem = lapply(l, vapply, address, "")
   out = l[[1L]]
@@ -269,11 +286,13 @@ mergelist = function(l, on, cols, how=c("left","inner","full","right"), mult=c("
     rhs.i = join.i + 1L
     out = mergepair(
       lhs = out, rhs = l[[rhs.i]],
-      on = on, how = how, mult = mult,
-      #on = on[[join.i]], how = how[[join.i]], mult = mult[[join.i]], ## not yet implemented
+      on = on[[join.i]],
+      how = how, mult = mult,
+      #how = how[[join.i]], mult = mult[[join.i]], ## not yet implemented
       lhs.cols = out.cols, rhs.cols = cols[[rhs.i]],
       copy = FALSE, ## avoid any copies inside, will copy once below
-      join.many = join.many, verbose = verbose
+      join.many = join.many[[join.i]],
+      verbose = verbose
     )
     out.cols = copy(names(out))
   }

@@ -322,7 +322,7 @@ op = options("datatable.verbose"=TRUE)
 test(101.09, mergelist(l, on="x"), d, output="mergelist.*1 table.*took")
 options(op)
 l = list(data.table(x=1:2), data.table(x=2:3))
-test(101.10, mergelist(l, on=character()), error="must be non zero length character")
+test(101.10, mergelist(l, on=character()), error="must be non-zero length, non-NA, non-duplicated")
 op = options("datatable.verbose"=TRUE)
 test(101.11, mergelist(l, on="x"), data.table(x=1:2), output="mergelist.*2 tables.*took")
 options(op)
@@ -333,6 +333,23 @@ test(101.15, mergelist(list()), data.table())
 test(101.16, mergelist(list(data.table())), error="must be non-zero columns tables")
 test(101.17, mergelist(list(data.table(), data.table())), error="must be non-zero columns tables")
 test(101.18, mergelist(list(data.table(a=integer()), data.table(a=integer())), on="a"), data.table(a=integer()))
+test(101.19, mergelist(list(data.table(a=1L), data.table(a=1L, b=1L, b=1L)), on="a"), error="have duplicated column names")
+test(101.20, mergelist(list(data.table(a=1L, b=1L), data.table(a=1L, b=2L)), on="a"), error="merge result has duplicated column names")
+test(101.21, mergelist(list(data.table(a=1L, b=1L), data.table(a=1L, b=2L)), on="a", cols=list(NULL, character())), data.table(a=1L, b=1L))
+test(101.22, mergelist(list(data.table(a=1L, d=1L), data.table(a=1L, b=2L)), on="a", cols=list(NULL, c("a",NA))), error="must be a list of non-zero length, non-NA, non-duplicated, character vectors")
+test(101.23, mergelist(list(data.table(a=1L, d=1L), data.table(a=1L, b=2L)), on="a", cols=list(NULL, c("a","a"))), error="must be a list of non-zero length, non-NA, non-duplicated, character vectors")
+test(101.24, mergelist(list(data.table(a=1L, d=1L), data.table(a=1L, b=2L)), on="a", join.many=list(TRUE, TRUE)), error="must be TRUE or FALSE, or a list of such which length must be")
+test(101.25, mergelist(list(data.table(a=1L, d=1L), data.table(a=1L, b=2L)), on="a", join.many=list(NA)), error="must be TRUE or FALSE, or a list of such which length must be")
+test(101.26, mergelist(list(data.table(a=1L, d=1L), data.table(a=1L, b=2L)), on=c("a","a")), error="non-zero length, non-NA, non-duplicated, character, or a list")
+test(101.27, mergelist(list(data.table(a=1L, d=1L), data.table(a=1L, b=2L)), on=c("a",NA)), error="non-zero length, non-NA, non-duplicated, character, or a list")
+test(101.28, mergelist(list(data.table(a=1L, d=1L), data.table(a=1L, b=2L), data.table(a=1L)), on=list("a", c("a",NA))), error="non-zero length, non-NA, non-duplicated, character, or a list")
+test(101.29, mergelist(list(data.table(a=1L, d=1L), data.table(a=1L, b=2L), data.table(a=1L)), on=list("a", NULL)), error="non-zero length, non-NA, non-duplicated, character, or a list")
+test(101.30, mergelist(list(data.table(a=1L, d=1L), data.table(a=1L, b=2L), data.table(a=1L)), on=list("a", c("a","a"))), error="non-zero length, non-NA, non-duplicated, character, or a list")
+test(101.31, mergelist(list(data.table(a=1L, d=1L), data.table(a=1L, b=2L)), on=list("a","a")), error="non-zero length, non-NA, non-duplicated, character, or a list")
+test(101.32, mergelist(list(data.table(a=1L, d=1L), data.table(a=1L, b=2L)), on="a", cols=list(NULL, c("a","a"))), error="list of non-zero length, non-NA, non-duplicated, character vectors, or eventually NULL")
+test(101.33, mergelist(list(data.table(a=1L, d=1L), data.table(a=1L, b=2L)), on="a", cols=list(NULL, c("a",NA))), error="list of non-zero length, non-NA, non-duplicated, character vectors, or eventually NULL")
+test(101.34, mergelist(list(data.table(a=1L, d=1L), data.table(a=1L, b=2L)), on="a", cols=list(NULL, c("a","a"))), error="list of non-zero length, non-NA, non-duplicated, character vectors, or eventually NULL")
+test(101.35, mergelist(list(data.table(a=1L, d=1L), data.table(a=1L, b=2L)), on="a", cols=list(NULL)), error="must be same length")
 
 ## missing on argument
 l = list(data.table(x=1:2), data.table(x=2:3))
@@ -365,7 +382,7 @@ test(102.51, mergelist(l, how="inner"), data.table(x=2L, a=2L, y=2L, z=2L, key=c
 test(102.52, mergelist(l, how="left"), error="specify columns to join.*that are not present in LHS table")
 test(102.53, mergelist(l, how="right"), error="specify columns to join.*that are not present in RHS table")
 test(102.54, mergelist(l, how="full"), data.table(x=1:3, a=c(1:2,NA), y=c(NA,2:3), z=c(NA,2:3)))
-# missing on, cascade join fields
+## missing on, cascade join fields
 l = list(
   fact = data.table(id=1:16, state_id=1:8, population=1, key="id"),
   state = data.table(state_id=1:8, division_id=1:4, key="state_id"),
@@ -399,6 +416,10 @@ test(102.634, mergelist(rev(l), how="right"), error="multiple matches during mer
 test(102.635, nrow(ans2<-mergelist(rev(l), how="right", mult="all")), 24L)
 test(102.636, all.equal(ans1, ans2, ignore.col.order=TRUE))
 rm(ans1, ans2)
+## on list
+test(102.71, mergelist(list(data.table(x=1L, y=2L), data.table(a=1L, y=2L), data.table(a=1L, z=2L)), on=list("y","a")), data.table(a=1L, y=2L, x=1L, z=2L))
+test(102.72, mergelist(list(data.table(x=1L, y=2L), data.table(a=1L, y=2L, b=3L), data.table(a=1L, b=3L, z=2L)), on=list("y",c("a","b"))), data.table(a=1L, b=3L, y=2L, x=1L, z=2L))
+test(102.73, mergelist(list(data.table(x=1L, y=2L), data.table(a=1L, y=2L, b=3L), data.table(a=1L, b=3L, z=2L)), on=list("y",c("a","x"))), error="specify columns to join.*that are not present in RHS table")
 
 ## cols argument
 l = list(data.table(id1=1:2, v1=1:2, v2=2:1, key="id1"), data.table(id1=2:3, v3=1:2, v4=2:1, key="id1"))
@@ -408,7 +429,7 @@ test(103.03, mergelist(l, how="right"), data.table(id1=2:3, v1=c(2L,NA), v2=c(1L
 test(103.04, mergelist(l, how="full"), data.table(id1=1:3, v1=c(1:2,NA), v2=c(2:1,NA), v3=c(NA,1:2), v4=c(NA,2:1)))
 test(103.11, mergelist(l, how="inner", cols="v2"), error="must be a list")
 test(103.12, mergelist(l, how="inner", cols=list("v2")), error="must be same length as")
-test(103.13, mergelist(l, how="inner", cols=list("v2",2L)), error="must be a list of character vectors.*NULL")
+test(103.13, mergelist(l, how="inner", cols=list("v2",2L)), error="must be a list of non-zero length, non-NA, non-duplicated, character vectors, or eventually NULL")
 test(103.14, mergelist(l, how="inner", cols=list("v2","v5")), error="specify columns not present in corresponding table")
 cols = list(c("v1","v2"), c("v3","v4"))
 test(103.21, mergelist(l, how="inner", cols=cols), data.table(id1=2L, v1=2L, v2=1L, v3=1L, v4=2L, key="id1"))
@@ -462,7 +483,6 @@ test(103.71, mergelist(l, how="right", cols=cols), data.table(id1=2:3, key="id1"
 test(103.72, mergelist(l, how="full", cols=cols), data.table(id1=1:3))
 
 ## join.many argument #4383
-
 d = function(n) as.data.table(list(x=rep(1L, n)))
 l = list(fm=d(1), to=d(1))
 test(104.01, mergelist(l, on="x", how="left"), l$to[l$fm, on="x"])
@@ -509,39 +529,55 @@ test(104.24, l$to[l$fm, on="x"], error="many-to-many join")
 options(datatable.join.many=TRUE)
 test(104.25, l$to[l$fm, on="x"], error="Check for duplicate key values")
 test(104.26, mergelist(l, on="x", how="left", mult="all"), l$to[l$fm, on="x", allow.cartesian=TRUE])
+## join.many list
+test(104.31, mergelist(list(data.table(id1=c(1L,1L), v1=1:2), data.table(id1=c(1L,1L), v2=1:2), data.table(id1=1L, v3=1L)), on="id1", mult="all", join.many=list(TRUE,FALSE)), data.table(id1=c(1L,1L,1L,1L), v1=c(1L,1:2,2L), v2=c(1:2,1:2), v3=c(1L,1L,1L,1L)))
+test(104.32, mergelist(list(data.table(id1=c(1L,1L), v1=1:2), data.table(id1=c(1L,1L), v2=1:2), data.table(id1=1L, v3=1L)), on="id1", mult="all", join.many=list(TRUE,TRUE)), data.table(id1=c(1L,1L,1L,1L), v1=c(1L,1:2,2L), v2=c(1:2,1:2), v3=c(1L,1L,1L,1L)))
+test(104.33, mergelist(list(data.table(id1=c(1L,1L), v1=1:2), data.table(id1=c(1L,1L), v2=1:2), data.table(id1=1L, v3=1L)), on="id1", mult="all", join.many=list(FALSE,TRUE)), error="Joining resulted in many-to-many join")
+test(104.34, mergelist(list(data.table(id1=c(1L,1L), v1=1:2), data.table(id1=c(1L,1L), v2=1:2), data.table(id1=1L, v3=1L)), on="id1", mult="all", join.many=list(TRUE,NA)), error="must be TRUE or FALSE, or a list of such")
+
+## how list
+test(105.01, mergelist(list(data.table(a=1L, d=1L), data.table(a=1L, b=2L)), on="a", how=list()), error="list not yet implemented")
+Persons = data.table(PersonName=c("Alice","Bob","Charles"), key="PersonName")
+Pets = data.table(PetName=c("Rover","Lassie","Fifi"), PersonName=c("Alice","Alice","Charles"), key="PetName")
+PetAccessories = data.table(AccessoryName=c("Ball","Bone","Mouse"), PetName=c("Rover","Rover","Fifi"), key="AccessoryName")
+expected = data.table(PetName=c("Rover","Rover",NA,"Fifi"), PersonName=c("Alice","Alice","Bob","Charles"), AccessoryName=c("Ball","Bone",NA,"Mouse"))
+test(105.11, Pets[PetAccessories, on="PetName", nomatch=NULL][Persons, on="PersonName"], expected) ## test [.data.table
+#test(105.12, mergelist(list(Pets, PetAccessories, Persons), how=list("inner","right"), on=list("PetName", "PersonName")), expected)
+
+## mult list
+test(106.01, mergelist(list(data.table(a=1L, d=1L), data.table(a=1L, b=2L)), on="a", mult=list()), error="list not yet implemented")
 
 ## retain index
-
 l = list(data.table(id1=1:3, id2=c(2L,1L,2L), v1=1:3), data.table(id1=3:1, v2=1:3))
 setkeyv(l[[1L]], "id1"); setindexv(l[[1L]], "id2")
 ans = mergelist(l, on="id1")
-test(105.01, ans, data.table(id1=1:3, id2=c(2L,1L,2L), v1=1:3, v2=3:1, key="id1"))
-test(105.02, copied(ans, l))
-test(105.03, hasindex(ans, "id2"))
+test(110.01, ans, data.table(id1=1:3, id2=c(2L,1L,2L), v1=1:3, v2=3:1, key="id1"))
+test(110.02, copied(ans, l))
+test(110.03, hasindex(ans, "id2"))
 ans = mergelist(l, on="id1", how="left", copy=FALSE)
-test(105.04, ans, data.table(id1=1:3, id2=c(2L,1L,2L), v1=1:3, v2=3:1, key="id1"))
-test(105.05, notcopied(ans, l))
-test(105.06, hasindex(ans, "id2"))
+test(110.04, ans, data.table(id1=1:3, id2=c(2L,1L,2L), v1=1:3, v2=3:1, key="id1"))
+test(110.05, notcopied(ans, l))
+test(110.06, hasindex(ans, "id2"))
 ans = mergelist(l, on="id1", how="full")
-test(105.07, ans, data.table(id1=1:3, id2=c(2L,1L,2L), v1=1:3, v2=3:1, key="id1"))
-test(105.08, hasindex(ans, "id2"))
+test(110.07, ans, data.table(id1=1:3, id2=c(2L,1L,2L), v1=1:3, v2=3:1, key="id1"))
+test(110.08, hasindex(ans, "id2"))
 l = list(data.table(id1=1:3, id2=c(2L,1L,2L), v1=1:3, key="id1"), data.table(id1=4:1, v2=1:4))
-test(105.09, !hasindex(mergelist(l, on="id1", how="full"), "id2")) ## no index because size changes
+test(110.09, !hasindex(mergelist(l, on="id1", how="full"), "id2")) ## no index because size changes
 l = list(data.table(id1=integer(), v1=integer()), data.table(id1=1:2, id2=2:1, v2=1:2))
 setkeyv(l[[2L]], "id1"); setindexv(l[[2L]], "id2")
 ans = mergelist(l, on="id1", how="full")
-test(105.10, ans, data.table(id1=1:2, v1=c(NA_integer_,NA), id2=2:1, v2=1:2, key="id1"))
-test(105.11, hasindex(ans, "id2"))
+test(110.10, ans, data.table(id1=1:2, v1=c(NA_integer_,NA), id2=2:1, v2=1:2, key="id1"))
+test(110.11, hasindex(ans, "id2"))
 l = list(data.table(id1=3:1, v1=1:3), data.table(id1=1:3, id2=c(2L,1L,2L), v2=1:3))
 setkeyv(l[[2L]], "id1"); setindexv(l[[2L]], "id2")
 ans = mergelist(l, on="id1", how="right")
-test(105.12, ans, data.table(id1=1:3, v1=3:1, id2=c(2L,1L,2L), v2=1:3, key="id1"))
-test(105.13, copied(ans, l))
-test(105.14, hasindex(ans, "id2"))
+test(110.12, ans, data.table(id1=1:3, v1=3:1, id2=c(2L,1L,2L), v2=1:3, key="id1"))
+test(110.13, copied(ans, l))
+test(110.14, hasindex(ans, "id2"))
 ans = mergelist(l, on="id1", how="right", copy=FALSE)
-test(105.15, ans, data.table(id1=1:3, v1=3:1, id2=c(2L,1L,2L), v2=1:3, key="id1"))
-test(105.16, notcopied(ans, l, how="right"))
-test(105.17, hasindex(ans, "id2"))
+test(110.15, ans, data.table(id1=1:3, v1=3:1, id2=c(2L,1L,2L), v2=1:3, key="id1"))
+test(110.16, notcopied(ans, l, how="right"))
+test(110.17, hasindex(ans, "id2"))
 
 ## 3+ tables mergelist
 
@@ -553,37 +589,6 @@ test(111.03, mergelist(l, on="id1", how="right"), data.table(id1=3:2, v1=c(NA,2L
 test(111.04, mergelist(l, on="id1", how="full"), data.table(id1=3:1, v1=1:3, v2=c(NA,1:2), v3=c(1:2,NA)))
 test(111.05, copied(mergelist(l, on="id1", how="left", mult="error", copy=TRUE), l))
 test(111.06, notcopied(mergelist(l, on="id1", how="left", mult="error", copy=FALSE), l))
-
-### use index
-fact = data.table(id=1:16, state_id=1:8, date_id=1:4, population=1, key="id")
-time = list(
-  date = data.table(date_id=1:4, month_id=1:2, year_id=1:2, key="date_id"),
-  month = data.table(month_id=1:2, key="month_id"),
-  year = data.table(year_id=1:2, key="year_id")
-)
-geog = list(
-  state = data.table(state_id=1:8, division_id=1:4, key="state_id"),
-  division = data.table(division_id=1:4, region_id=1:2, key="division_id"),
-  region = data.table(region_id=1:2, key="region_id")
-)
-setindexv(fact, list("state_id", "date_id"))
-setindexv(time[["date"]], list("month_id", "year_id"))
-setindexv(geog[["division"]], "region_id")
-setindexv(geog[["state"]], "division_id")
-ans = mergelist(c(list(fact), time, geog)) ## only join to first level of each hierarchy will use index
-#test(112.01)
-ans = mergelist(list( ## use indices on every join
-  fact,
-  mergelist(time), ## date lvl has indices to all time hierarchies
-  mergelist(rev(geog), how="right") ## right outer join will retain keys
-))
-#test(112.01)
-ans = mergelist(copy=FALSE, list( ## same but even faster, copy=FALSE
-  fact, mergelist(copy=FALSE, time),
-  mergelist(copy=FALSE, rev(geog), how="right")
-))
-#test(112.01)
-rm(fact, ans)
 
 ## mergelist no duplicates
 
