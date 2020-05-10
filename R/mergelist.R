@@ -70,7 +70,7 @@ fdistinct = function(x, on=key(x), mult=c("first","last"), cols=seq_along(x), co
 # extra layer over bmerge to provide ready to use row indices (or NULL for 1:nrow)
 # NULL to avoid extra copies in downstream code, it turned out that avoiding copies precisely is costly and enormously complicates code, need #4409 and/or handle 1:nrow in subsetDT
 # we don't use semi join in mergelist so is not tested, anti join is used in full outer join
-dtmatch = function(x, i, on, nomatch, mult, verbose, join.many, semi=FALSE, anti=FALSE, void=FALSE) {
+dtmerge = function(x, i, on, nomatch, mult, verbose, join.many, semi=FALSE, anti=FALSE, void=FALSE) {
   inner = identical(nomatch, 0L)
   if (void && mult!="error")
     stop("internal error: void must be used with mult='error'") # nocov
@@ -109,7 +109,7 @@ dtmatch = function(x, i, on, nomatch, mult, verbose, join.many, semi=FALSE, anti
   len.x = length(xrows)
 
   if (len.i!=len.x)
-    stop("internal error: dtmatch out len.i != len.x") # nocov
+    stop("internal error: dtmerge out len.i != len.x") # nocov
 
   return(list(ans=ans, irows=irows, xrows=xrows))
 }
@@ -140,12 +140,12 @@ mergepair = function(lhs, rhs, on, how, mult, lhs.cols=names(lhs), rhs.cols=name
       jnfm = fdistinct(jnfm, on=on, mult=mult, cols=fm.cols, copy=FALSE) ## might not copy when already unique by 'on'
       cp.i = nrow(jnfm)!=nrow(lhs) ## nrow(lhs) bc how='inner|full' so jnfm=lhs
     } else if (mult=="error") { ## we do this branch only to raise error from bmerge, we cannot use forder to just find duplicates because those duplicates might not have matching rows in another table
-      dtmatch(x=jnfm, i=jnto, on=on, nomatch=nomatch, mult=mult, verbose=verbose, join.many=join.many, void=TRUE)
+      dtmerge(x=jnfm, i=jnto, on=on, nomatch=nomatch, mult=mult, verbose=verbose, join.many=join.many, void=TRUE)
     }
   }
 
   ## binary merge
-  ans = dtmatch(x=jnto, i=jnfm, on=on, nomatch=nomatch, mult=mult, verbose=verbose, join.many=join.many)
+  ans = dtmerge(x=jnto, i=jnfm, on=on, nomatch=nomatch, mult=mult, verbose=verbose, join.many=join.many)
 
   ## make i side
   out.i = if (is.null(ans$irows))
@@ -156,7 +156,7 @@ mergepair = function(lhs, rhs, on, how, mult, lhs.cols=names(lhs), rhs.cols=name
 
   ## make x side
   out.x = if (is.null(ans$xrows)) ## as of now xrows cannot be NULL #4409 thus nocov below
-    stop("internal error: dtmatch()$xrows returned NULL, #4409 been resolved but related code has not been updated? please report to issue tracker") #.shallow(jnto, cols=someCols(jnto, to.cols, drop=on), retain.key=TRUE) # nocov ## as of now nocov does not make difference r-lib/covr#279
+    stop("internal error: dtmerge()$xrows returned NULL, #4409 been resolved but related code has not been updated? please report to issue tracker") #.shallow(jnto, cols=someCols(jnto, to.cols, drop=on), retain.key=TRUE) # nocov ## as of now nocov does not make difference r-lib/covr#279
   else
     .Call(CsubsetDT, jnto, ans$xrows, someCols(jnto, to.cols, drop=on))
   cp.x = !is.null(ans$xrows)
@@ -180,7 +180,7 @@ mergepair = function(lhs, rhs, on, how, mult, lhs.cols=names(lhs), rhs.cols=name
     } ## mult=="error" check not needed anymore, both sides will be checked
 
     ## binary merge anti join
-    bns = dtmatch(x=jnto, i=jnfm, on=on, nomatch=0L, mult=mult, verbose=verbose, join.many=join.many, anti=TRUE)
+    bns = dtmerge(x=jnto, i=jnfm, on=on, nomatch=0L, mult=mult, verbose=verbose, join.many=join.many, anti=TRUE)
 
     ## make anti join side
     out.r = if (is.null(bns$irows))
