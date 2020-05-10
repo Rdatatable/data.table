@@ -158,7 +158,7 @@ mergepair = function(lhs, rhs, on, how, mult, lhs.cols=names(lhs), rhs.cols=name
     if (mult=="first" || mult=="last") {
       jnfm = fdistinct(jnfm, on=on, mult=mult, cols=fm.cols, copy=FALSE) ## might not copy when already unique by 'on'
       cp.i = nrow(jnfm)!=nrow(lhs) ## nrow(lhs) bc how='inner|full' so jnfm=lhs
-    } else if (mult=="error") { ## we do this branch only to raise error from bmerge, we cannot use forder to just find duplicates because those duplicates might not have matching rows in another table
+    } else if (mult=="error" && how!="full") { ## we do this branch only to raise error from bmerge, we cannot use forder to just find duplicates because those duplicates might not have matching rows in another table, full join checks that later anyway
       dtmerge(x=jnfm, i=jnto, on=on, how=how, mult=mult, verbose=verbose, join.many=join.many, void=TRUE)
     }
   }
@@ -200,7 +200,7 @@ mergepair = function(lhs, rhs, on, how, mult, lhs.cols=names(lhs), rhs.cols=name
     if (mult=="first" || mult=="last") {
       jnfm = fdistinct(jnfm, on=on, mult=mult, cols=fm.cols, copy=FALSE)
       cp.r = nrow(jnfm)!=nrow(rhs) ## nrow(rhs) bc jnfm=rhs
-    } ## mult=="error" check not needed anymore, both sides will be checked ## have been already AFAIU
+    } ## mult=="error" check was made on one side already, below we do on the second side, test 101.43
 
     ## binary merge anti join
     bns = dtmerge(x=jnto, i=jnfm, on=on, how="anti", mult=if (mult!="all") mult, verbose=verbose, join.many=join.many)
