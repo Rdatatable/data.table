@@ -74,8 +74,6 @@ dtmerge = function(x, i, on, how, mult, join.many, void=FALSE, verbose) {
   nomatch0 = identical(nomatch, 0L)
   if (is.null(mult))
     mult = switch(how, "semi"=, "anti"= "last", "cross"= "all", "inner"=, "left"=, "right"=, "full"= "error")
-  if (is.null(join.many))
-    join.many = TRUE
   if (void && mult!="error")
     stop("internal error: void must be used with mult='error'") # nocov
   if (how=="cross") { ## short-circuit bmerge results only for cross join
@@ -141,8 +139,6 @@ mergepair = function(lhs, rhs, on, how, mult, lhs.cols=names(lhs), rhs.cols=name
         stop(sprintf("'on' argument specify columns to join [%s] that are not present in RHS table [%s]", paste(on[bad.on], collapse=", "), paste(names(rhs), collapse=", ")))
     } else if (is.null(on)) {
       on = character() ## cross join only
-    } else if (!is.character(on) || length(on)) {
-      stop("'on' argument in cross join must be length 0 character")
     }
   } ## on
   {
@@ -153,14 +149,13 @@ mergepair = function(lhs, rhs, on, how, mult, lhs.cols=names(lhs), rhs.cols=name
     }
   } ## join-to and join-from tables and columns (right outer join swap)
 
+  ## ensure symmetric join for inner|full join, apply mult on both tables, bmerge do only 'x' table
   cp.i = FALSE ## copy marker of out.i
-  if (mult!="all" && (how=="inner" || how=="full")) { ## for inner|full join we apply mult on both tables, bmerge do only 'x' table
-    if (mult=="first" || mult=="last") {
-      jnfm = fdistinct(jnfm, on=on, mult=mult, cols=fm.cols, copy=FALSE) ## might not copy when already unique by 'on'
-      cp.i = nrow(jnfm)!=nrow(lhs) ## nrow(lhs) bc how='inner|full' so jnfm=lhs
-    } else if (mult=="error" && how!="full") { ## we do this branch only to raise error from bmerge, we cannot use forder to just find duplicates because those duplicates might not have matching rows in another table, full join checks that later anyway
-      dtmerge(x=jnfm, i=jnto, on=on, how=how, mult=mult, verbose=verbose, join.many=join.many, void=TRUE)
-    }
+  if ((how=="inner" || how=="full") && !is.null(mult) && (mult=="first" || mult=="last")) {
+    jnfm = fdistinct(jnfm, on=on, mult=mult, cols=fm.cols, copy=FALSE) ## might not copy when already unique by 'on'
+    cp.i = nrow(jnfm)!=nrow(lhs) ## nrow(lhs) bc how='inner|full' so jnfm=lhs
+  } else if (how=="inner" && (is.null(mult) || mult=="error")) { ## we do this branch only to raise error from bmerge, we cannot use forder to just find duplicates because those duplicates might not have matching rows in another table, full join checks mult='error' during two non-void bmerges
+    dtmerge(x=jnfm, i=jnto, on=on, how=how, mult=mult, verbose=verbose, join.many=join.many, void=TRUE)
   }
 
   ## binary merge
@@ -175,7 +170,7 @@ mergepair = function(lhs, rhs, on, how, mult, lhs.cols=names(lhs), rhs.cols=name
 
   ## make x side
   if (how=="semi" || how=="anti") {
-    out.x = list(); cp.x = TRUE #stop("semi and anti joins not yet implemented")
+    out.x = list(); cp.x = TRUE
   } else {
     out.x = if (is.null(ans$xrows)) ## as of now xrows cannot be NULL #4409 thus nocov below
       stop("internal error: dtmerge()$xrows returned NULL, #4409 been resolved but related code has not been updated? please report to issue tracker") #.shallow(jnto, cols=someCols(jnto, to.cols, drop=on), retain.key=TRUE) # nocov ## as of now nocov does not make difference r-lib/covr#279
@@ -187,6 +182,7 @@ mergepair = function(lhs, rhs, on, how, mult, lhs.cols=names(lhs), rhs.cols=name
       stop("merge result has duplicated column names, use 'cols' argument or rename columns in 'l' tables, duplicated column(s): ", paste(names(out.i)[dup.i], collapse=", "))
   }
 
+  ## stack i and x
   if (how!="full") {
     if (!cp.i && copy) out.i = copy(out.i)
     #if (!cp.x && copy) out.x = copy(out.x) ## as of now cp.x always TRUE, search for #4409 here
@@ -197,13 +193,13 @@ mergepair = function(lhs, rhs, on, how, mult, lhs.cols=names(lhs), rhs.cols=name
     jnfm = rhs; fm.cols = rhs.cols; jnto = lhs; to.cols = lhs.cols
 
     cp.r = FALSE
-    if (mult=="first" || mult=="last") {
+    if (!is.null(mult) && (mult=="first" || mult=="last")) {
       jnfm = fdistinct(jnfm, on=on, mult=mult, cols=fm.cols, copy=FALSE)
       cp.r = nrow(jnfm)!=nrow(rhs) ## nrow(rhs) bc jnfm=rhs
     } ## mult=="error" check was made on one side already, below we do on the second side, test 101.43
 
     ## binary merge anti join
-    bns = dtmerge(x=jnto, i=jnfm, on=on, how="anti", mult=if (mult!="all") mult, verbose=verbose, join.many=join.many)
+    bns = dtmerge(x=jnto, i=jnfm, on=on, how="anti", mult=if (!is.null(mult) && mult!="all") mult, verbose=verbose, join.many=join.many)
 
     ## make anti join side
     out.r = if (is.null(bns$irows))
@@ -234,7 +230,7 @@ mergepair = function(lhs, rhs, on, how, mult, lhs.cols=names(lhs), rhs.cols=name
   setDT(out)
 }
 
-mergelist = function(l, on, cols, how=c("left","inner","full","right","semi","anti","cross"), mult=c("error","all","first","last"), copy=TRUE, join.many=getOption("datatable.join.many")) {
+mergelist = function(l, on, cols, how=c("left","inner","full","right","semi","anti","cross"), mult, copy=TRUE, join.many=getOption("datatable.join.many")) {
   verbose = getOption("datatable.verbose")
   if (verbose)
     p = proc.time()[[3L]]
@@ -265,19 +261,21 @@ mergelist = function(l, on, cols, how=c("left","inner","full","right","semi","an
       stop("'join.many' must be TRUE or FALSE, or a list of such which length must be length(l)-1L")
   } ## join.many
   {
+    if (missing(mult))
+      mult = NULL
     if (!is.list(mult))
-      mult = rep(list(match.arg(mult)), n-1L)
-    if (length(mult)!=n-1L || any(!vapply(mult, function(x) is.character(x) && length(x)==1L && !anyNA(x) && x%chin%c("error","all","first","last"), NA)))
-      stop("'mult' must be one of [error, all, first, last], or a list of such which length must be length(l)-1L")
+      mult = rep(list(mult), n-1L)
+    if (length(mult)!=n-1L || any(!vapply(mult, function(x) is.null(x) || (is.character(x) && length(x)==1L && !anyNA(x) && x%chin%c("error","all","first","last")), NA)))
+      stop("'mult' must be one of [error, all, first, last] or NULL, or a list of such which length must be length(l)-1L")
   } ## mult
   {
+    if (missing(how) || is.null(how))
+      how = match.arg(how)
     if (!is.list(how))
-      how = rep(list(match.arg(how)), n-1L)
+      how = rep(list(how), n-1L)
     if (length(how)!=n-1L || any(!vapply(how, function(x) is.character(x) && length(x)==1L && !anyNA(x) && x%chin%c("left","inner","full","right","semi","anti","cross"), NA)))
       stop("'how' must be one of [left, inner, full, right, semi, anti, cross], or a list of such which length must be length(l)-1L")
   } ## how
-  if (!copy && any(unlist(mult)=="all"))
-    stop("copy=FALSE works only for mult='first|last|error'")
   {
     if (missing(cols) || is.null(cols)) {
       cols = vector("list", n)

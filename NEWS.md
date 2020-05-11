@@ -83,6 +83,8 @@ unit = "s")
 
 15. New function `cbindlist` has been implemented and exported. Works like `cbind` but takes `list` of data.tables on input, closes [#2576](https://github.com/Rdatatable/data.table/issues/2576).
 
+16. New function `mergelist` has been implemented and exported. Works like `merge` but takes `list` of data.tables on input and `merge` them in `Reduce` fashion. Supports `how` (_left, inner, full, right, semi, anti, cross_) joins and `mult` argument, closes [#599](https://github.com/Rdatatable/data.table/issues/599).
+
 ## BUG FIXES
 
 1. A NULL timezone on POSIXct was interpreted by `as.IDate` and `as.ITime` as UTC rather than the session's default timezone (`tz=""`) , [#4085](https://github.com/Rdatatable/data.table/issues/4085).

@@ -311,7 +311,7 @@ for (how in c("inner","left","right","full")) {
 ## coverage
 test(101.01, mergelist(data.table(x=1L), on="x"), error="must be a list")
 test(101.02, mergelist(list(data.table(x=1L)), on="x", copy=NA), error="must be TRUE or FALSE")
-test(101.03, mergelist(list(data.table(x=1L), data.table(x=1L)), mult="all", on="x", copy=FALSE), error="works only for")
+test(101.03, mergelist(list(data.table(x=1L), data.table(x=1L)), how="cross", on="y"), error="cross join must be used with zero-length on, mult='all', join.many=TRUE")
 test(101.04, mergelist(list(data.table(x=1L), list(x=1:2, y=1L)), on="x"), error="must be data.table objects")
 l = list(d<-data.table(x=1:2))
 test(101.05, ans<-mergelist(l, on="x", how="left", mult="first"), d)
@@ -350,9 +350,18 @@ test(101.32, mergelist(list(data.table(a=1L, d=1L), data.table(a=1L, b=2L)), on=
 test(101.33, mergelist(list(data.table(a=1L, d=1L), data.table(a=1L, b=2L)), on="a", cols=list(NULL, c("a",NA))), error="list of non-zero length, non-NA, non-duplicated, character vectors, or eventually NULL")
 test(101.34, mergelist(list(data.table(a=1L, d=1L), data.table(a=1L, b=2L)), on="a", cols=list(NULL, c("a","a"))), error="list of non-zero length, non-NA, non-duplicated, character vectors, or eventually NULL")
 test(101.35, mergelist(list(data.table(a=1L, d=1L), data.table(a=1L, b=2L)), on="a", cols=list(NULL)), error="must be same length")
+test(101.36, mergelist(list(data.table(x=1L), data.table(y=1L)), how="cross", mult="first"), error="cross join must be used with zero-length on, mult='all', join.many=TRUE")
+test(101.37, mergelist(list(data.table(x=1L), data.table(y=1L)), how="cross", join.many=FALSE), error="cross join must be used with zero-length on, mult='all', join.many=TRUE")
+test(101.38, mergelist(list(data.table(x=1L), data.table(x=1L)), how="semi", on="x", mult="all"), error="semi and anti joins must be used with mult!='all'")
+test(101.39, mergelist(list(data.table(x=1L), data.table(x=1L)), how="anti", on="x", mult="all"), error="semi and anti joins must be used with mult!='all'")
 test(101.41, mergelist(list(data.table(id1=c(3:2,2L), v1=1:3), data.table(id1=c(2L,2:1), v2=1:3)), how="full", on="id1", mult="error"), error="multiple matches during merge")
 test(101.42, mergelist(list(data.table(id1=3:2, v1=1:2), data.table(id1=c(2L,2:1), v2=1:3)), how="full", on="id1", mult="error"), error="multiple matches during merge")
 test(101.43, mergelist(list(data.table(id1=c(3:2,2L), v1=1:3), data.table(id1=2:1, v2=2:3)), how="full", on="id1", mult="error"), error="multiple matches during merge") ## how="full" mult="error" confirm that second binary merge anti join 'bns', is covering both sides error, this test doesnt ensure about that but serves a data that has been used for debugging with extra 'cat("before|after bns\n")'
+test(101.44, mergelist(list(data.table(x=1L), data.table(x=1L)), on="x", mult="bad"), error="'mult' must be one of [error, all, first, last] or NULL, or a list")
+test(101.45, mergelist(list(data.table(x=1:2), data.table(x=1L, v2=1L)), on="x"), data.table(x=1:2, v2=c(1L,NA))) ## match.arg sets how="left", only when missing or NULL, otherwise we do own check
+test(101.46, mergelist(list(data.table(x=1:2), data.table(x=1L, v2=1L)), on="x", how=NULL), data.table(x=1:2, v2=c(1L,NA))) ## still match.arg
+test(101.47, mergelist(list(data.table(x=1L), data.table(x=1L)), on="x", how="bad"), error="'how' must be one of [left, inner, full, right, semi, anti, cross], or a list")
+test(101.48, mergelist(list(data.table(x=1L), data.table(x=1L)), on="x", how=list("bad")), error="'how' must be one of [left, inner, full, right, semi, anti, cross], or a list")
 
 ## missing on argument
 l = list(data.table(x=1:2), data.table(x=2:3))
@@ -552,8 +561,8 @@ test(105.12, mergelist(list(Pets, PetAccessories, Persons), how=list("inner","ri
 ## mult list
 test(106.01, mergelist(list(data.table(a=1:2, b=1:2), data.table(a=c(1L,1L), d=1:2), data.table(a=c(1L,1L), f=1:2)), on="a", how="left", mult=list("last","first")), data.table(a=1:2, b=1:2, d=c(2L,NA), f=c(1L,NA)))
 test(106.02, mergelist(list(data.table(a=1:2, b=1:2), data.table(a=c(1L,1L), d=1:2), data.table(a=c(1L,1L), f=1:2)), on="a", how="left", mult=list("last","error")), error="multiple matches during merge")
-### mult default
-#TODO
+test(106.81, mergelist(list(data.table(a=1:2), data.table(b=1:2)), how="cross"), data.table(a=c(1L,1:2,2L), b=c(1:2,1:2))) ### mult default
+test(106.82, mergelist(list(data.table(a=1:2), data.table(b=1:2), data.table(a=1:2, b=1:2)), how=list("cross","anti"), on=list(character(), c("a","b"))), data.table(a=1:2, b=2:1)) ## cool, isnt it?
 
 ## semi join
 l = list(data.table(x=c(1L,1L,1:2), y=c("a","a","a","b")), data.table(x=c(1L,1L), z=10:11))
@@ -562,16 +571,13 @@ l = list(data.table(x=c(1L,3L,1:2,2L), y=c("a","c","a","b","b")), data.table(x=3
 test(107.02, mergelist(l, how="semi", on="x", mult="first"), data.table(x=c(3:2,2L), y=c("c","b","b"))) ## order of x, not i
 l = list(data.table(id=c(3L,1L,2L,1L,1L), g=c("A","A","B","B","A"), v=(1:5)*10), data.table(id=c(1L,1:3), g="A"))
 test(107.11, mergelist(l, how="semi", on=c("id","g"), mult="first"), l[[1L]][ sort(unique(l[[1L]][l[[2L]], on=names(l[[2L]]), nomatch=0L, which=TRUE]))])
-### mult='last' default
-#TODO
+test(107.81, mergelist(list(data.table(a=1:2), data.table(b=1:2), data.table(a=1:2, b=1:2)), how=list("cross","semi"), on=list(character(), c("a","b"))), data.table(a=1:2, b=1:2)) ### mult default
 
 ## anti join
 l = list(data.table(x=c(1L,1:2,2L), y=c("a","a","b","b")), data.table(x=c(1L,1L), z=10:11))
 test(108.01, mergelist(l, how="anti", on="x", mult="first"), data.table(x=c(2L,2L), y=c("b","b")))
 l = list(data.table(x=c(1L,3L,1:2,2L), y=c("a","c","a","b","b")), data.table(x=c(4L,1L), z=10:11))
 test(108.02, mergelist(l, how="anti", on="x", mult="first"), data.table(x=c(3:2,2L), y=c("c","b","b"))) ## order of x, not i
-### mult='last' default
-#TODO
 
 ## cross join
 l = list(data.table(v1=1:2, v2=1:4), data.table(v3=1:3, v4=1:6))
@@ -585,8 +591,6 @@ expected = data.table(v1=integer(), v2=integer(), v3=integer(), v4=integer())
 test(109.03, mergelist(list(data.table(v1=1:2, v2=1:4), data.table(v3=integer(), v4=integer())), how="cross", mult="all"), expected)
 test(109.04, mergelist(list(data.table(v1=integer(), v2=integer()), data.table(v3=1:3, v4=1:6)), how="cross", mult="all"), expected)
 test(109.05, mergelist(list(data.table(v1=integer(), v2=integer()), data.table(v3=integer(), v4=integer())), how="cross", mult="all"), expected)
-### mult='all' default
-#TODO
 
 ## retain index
 l = list(data.table(id1=1:3, id2=c(2L,1L,2L), v1=1:3), data.table(id1=3:1, v2=1:3))

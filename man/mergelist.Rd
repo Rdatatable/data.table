@@ -7,8 +7,7 @@
 \usage{
   mergelist(l, on, cols,
     how = c("left","inner","full","right","semi","anti","cross"),
-    mult = c("error","all","first","last"),
-    copy = TRUE,
+    mult, copy = TRUE,
     join.many = getOption("datatable.join.many"))
 }
 \arguments{
@@ -16,8 +15,8 @@
   \item{on}{ \code{character} of columns to merge on, when missing, then \emph{key} of \emph{join-to} table is used. }
   \item{cols}{ \code{list} of \code{character} vectors corresponding to tables in \code{l}. }
   \item{how}{ \code{character} scalar, controls how to merge tables. Allowed values are \code{"left"} (default), \code{"inner"}, \code{"full"}, \code{"right"}, \code{"semi"}, \code{"anti"}, \code{"cross"}. }
-  \item{mult}{ \code{character} scalar, controls how to proceed when multiple rows in \emph{join-to} table match to the row in \emph{join-from} table. Allowed values are \code{"error"} (default), \code{"all"}, \code{"first"}, \code{"last"}. See examples on how to detect duplicated matches. Using \code{"all"} is recommended together with \code{join.many=FALSE}, unless rows explosion or cartesian product are intended. }
-  \item{copy}{ \code{logical}, defaults to \code{TRUE}, when \code{FALSE}, then resulting object will share columns with tables in \code{l}. Using \code{FALSE} works only for \emph{left} or \emph{right} outer joins and \code{mult!="all"}. }
+  \item{mult}{ \code{character} scalar, controls how to proceed when multiple rows in \emph{join-to} table match to the row in \emph{join-from} table. Allowed values are \code{"error"}, \code{"all"}, \code{"first"}, \code{"last"}. Default depends on \code{how}, described in \emph{details} below. See examples on how to detect duplicated matches. Using \code{"all"} is recommended together with \code{join.many=FALSE}, unless rows explosion or cartesian product are intended. }
+  \item{copy}{ \code{logical}, defaults to \code{TRUE}, when \code{FALSE}, then resulting object may share columns with tables in \code{l}, depending on matches. }
   \item{join.many}{ \code{logical}, defaults to \code{TRUE}, when \code{FALSE} and \code{mult="all"}, then extra check is made to ensure no \emph{many-to-many} matches exists between tables, and if they are, then exception is raised. Works similarly to \code{allow.cartesian} option in \code{[.data.table} but is more strict. An option \code{"datatable.join.many"} can be used to control that globally, for \code{mergelist} and \code{[.data.table}. }
 }
 \details{
@@ -34,7 +33,14 @@
     \item{ \code{how="right"}: \emph{join-to} is \emph{LHS}, \emph{join-from} is \emph{RHS}. }
   }
 
-  Using \code{mult="error"} (default) will raise exception when multiple rows in \emph{join-to} table match to the row in \emph{join-from} table. It should not be used to just detect duplicates, as duplicates might not have matching row, and in such case exception will not be raised.
+  Using \code{mult="error"} will raise exception when multiple rows in \emph{join-to} table match to the row in \emph{join-from} table. It should not be used to just detect duplicates, as duplicates might not have matching row, and in such case exception will not be raised.
+
+  Default value for argument \code{mult} depends on \code{how} argument:
+  \enumerate{
+    \item{ \code{how="left|inner|full|right"}: sets \code{mult="error"}. }
+    \item{ \code{how="semi|anti""}: sets \code{mult="last"}, although works same as \code{mult="first"}. }
+    \item{ \code{how="cross"}: sets \code{mult="all"}. }
+  }
 
   When \code{on} argument is missing, then columns to join on will be decided based on \emph{key} depending on \code{how} argument:
   \enumerate{
