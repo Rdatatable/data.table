@@ -568,7 +568,8 @@ test(106.82, mergelist(list(data.table(a=1:2), data.table(b=1:2), data.table(a=1
 l = list(data.table(x=c(1L,1L,1:2), y=c("a","a","a","b")), data.table(x=c(1L,1L), z=10:11))
 test(107.01, mergelist(l, how="semi", on="x", mult="first"), data.table(x=c(1L,1L,1L), y=c("a","a","a")))
 l = list(data.table(x=c(1L,3L,1:2,2L), y=c("a","c","a","b","b")), data.table(x=3:2, z=10:11))
-test(107.02, mergelist(l, how="semi", on="x", mult="first"), data.table(x=c(3:2,2L), y=c("c","b","b"))) ## order of x, not i
+test(107.02, mergelist(l, how="semi", on="x", mult="first"), data.table(x=c(3:2,2L), y=c("c","b","b"))) ## rows order of x, not i
+test(107.03, mergelist(list(data.table(id1=1:4, id2=4:1, v1=1L), data.table(id2=3:5, v2=2L)), on="id2", how="semi"), data.table(id1=1:2, id2=4:3, v1=1L)) ## columns order of x, not i
 l = list(data.table(id=c(3L,1L,2L,1L,1L), g=c("A","A","B","B","A"), v=(1:5)*10), data.table(id=c(1L,1:3), g="A"))
 test(107.11, mergelist(l, how="semi", on=c("id","g"), mult="first"), l[[1L]][ sort(unique(l[[1L]][l[[2L]], on=names(l[[2L]]), nomatch=0L, which=TRUE]))])
 test(107.81, mergelist(list(data.table(a=1:2), data.table(b=1:2), data.table(a=1:2, b=1:2)), how=list("cross","semi"), on=list(character(), c("a","b"))), data.table(a=1:2, b=1:2)) ### mult default
@@ -577,7 +578,8 @@ test(107.81, mergelist(list(data.table(a=1:2), data.table(b=1:2), data.table(a=1
 l = list(data.table(x=c(1L,1:2,2L), y=c("a","a","b","b")), data.table(x=c(1L,1L), z=10:11))
 test(108.01, mergelist(l, how="anti", on="x", mult="first"), data.table(x=c(2L,2L), y=c("b","b")))
 l = list(data.table(x=c(1L,3L,1:2,2L), y=c("a","c","a","b","b")), data.table(x=c(4L,1L), z=10:11))
-test(108.02, mergelist(l, how="anti", on="x", mult="first"), data.table(x=c(3:2,2L), y=c("c","b","b"))) ## order of x, not i
+test(108.02, mergelist(l, how="anti", on="x", mult="first"), data.table(x=c(3:2,2L), y=c("c","b","b"))) ## rows order of x, not i
+test(108.03, mergelist(list(data.table(id1=1:4, id2=4:1, v1=1L), data.table(id2=3:5, v2=2L)), on="id2", how="anti"), data.table(id1=3:4, id2=2:1, v1=1L)) ## columns order of x, not i
 
 ## cross join
 l = list(data.table(v1=1:2, v2=1:4), data.table(v3=1:3, v4=1:6))

@@ -17,11 +17,13 @@ onkeys = function(x, y) {
     else intersect(x, y)
   } else NULL # nocov ## internal error is being called later in mergepair
 }
-someCols = function(x, cols, drop=character(), keep=character()) {
+someCols = function(x, cols, drop=character(), keep=character(), retain.order=FALSE) {
   keep = colnamesInt(x, keep)
   drop = colnamesInt(x, drop)
   cols = colnamesInt(x, cols)
-  union(keep, setdiff(cols, drop))
+  ans = union(keep, setdiff(cols, drop))
+  if (!retain.order) return(ans)
+  intersect(colnamesInt(x, NULL), ans)
 }
 hasindex = function(x, by, retGrp=FALSE) {
   index = attr(x, "index", TRUE)
@@ -124,12 +126,14 @@ dtmerge = function(x, i, on, how, mult, join.many, void=FALSE, verbose) {
 
 # atomic join between two tables
 mergepair = function(lhs, rhs, on, how, mult, lhs.cols=names(lhs), rhs.cols=names(rhs), copy=TRUE, join.many=TRUE, verbose=FALSE) {
+  semianti = how=="semi" || how=="anti"
+  innerfull = how=="inner" || how=="full"
   {
     if (how!="cross") {
       if (is.null(on)) {
-        if (how=="left" || how=="semi" || how=="anti") on = key(rhs)
+        if (how=="left" || semianti) on = key(rhs)
         else if (how=="right") on = key(lhs)
-        else if (how=="inner" || how=="full") on = onkeys(key(lhs), key(rhs))
+        else if (innerfull) on = onkeys(key(lhs), key(rhs))
         if (is.null(on))
           stop("'on' is missing and necessary key is not present")
       }
@@ -151,7 +155,7 @@ mergepair = function(lhs, rhs, on, how, mult, lhs.cols=names(lhs), rhs.cols=name
 
   ## ensure symmetric join for inner|full join, apply mult on both tables, bmerge do only 'x' table
   cp.i = FALSE ## copy marker of out.i
-  if ((how=="inner" || how=="full") && !is.null(mult) && (mult=="first" || mult=="last")) {
+  if ((innerfull) && !is.null(mult) && (mult=="first" || mult=="last")) {
     jnfm = fdistinct(jnfm, on=on, mult=mult, cols=fm.cols, copy=FALSE) ## might not copy when already unique by 'on'
     cp.i = nrow(jnfm)!=nrow(lhs) ## nrow(lhs) bc how='inner|full' so jnfm=lhs
   } else if (how=="inner" && (is.null(mult) || mult=="error")) { ## we do this branch only to raise error from bmerge, we cannot use forder to just find duplicates because those duplicates might not have matching rows in another table, full join checks mult='error' during two non-void bmerges
@@ -163,13 +167,13 @@ mergepair = function(lhs, rhs, on, how, mult, lhs.cols=names(lhs), rhs.cols=name
 
   ## make i side
   out.i = if (is.null(ans$irows))
-    .shallow(jnfm, cols=someCols(jnfm, fm.cols, keep=on), retain.key=TRUE)
+    .shallow(jnfm, cols=someCols(jnfm, fm.cols, keep=on, retain.order=semianti), retain.key=TRUE)
   else
-    .Call(CsubsetDT, jnfm, ans$irows, someCols(jnfm, fm.cols, keep=on))
+    .Call(CsubsetDT, jnfm, ans$irows, someCols(jnfm, fm.cols, keep=on, retain.order=semianti))
   cp.i = cp.i || !is.null(ans$irows)
 
   ## make x side
-  if (how=="semi" || how=="anti") {
+  if (semianti) {
     out.x = list(); cp.x = TRUE
   } else {
     out.x = if (is.null(ans$xrows)) ## as of now xrows cannot be NULL #4409 thus nocov below
