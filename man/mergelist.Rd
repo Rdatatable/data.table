@@ -12,7 +12,7 @@
 }
 \arguments{
   \item{l}{ \code{list} of \code{data.table}s to merge. }
-  \item{on}{ \code{character} of columns to merge on, when missing, then \emph{key} of \emph{join-to} table is used. }
+  \item{on}{ \code{character} vector of column names to merge on, shared across all inputs; when missing, the \emph{key} of \emph{join-to} table is used. }
   \item{cols}{ \code{list} of \code{character} vectors corresponding to tables in \code{l}. }
   \item{how}{ \code{character} scalar, controls how to merge tables. Allowed values are \code{"left"} (default), \code{"inner"}, \code{"full"}, \code{"right"}, \code{"semi"}, \code{"anti"}, \code{"cross"}. See Details. }
   \item{mult}{ \code{character} scalar, controls how to proceed when multiple rows in \emph{join-to} table match to the row in \emph{join-from} table. Allowed values are \code{"error"}, \code{"all"}, \code{"first"}, \code{"last"}. Default depends on \code{how}, described in \emph{details} below. See examples on how to detect duplicated matches. Using \code{"all"} is recommended together with \code{join.many=FALSE}, unless rows explosion or cartesian product are intended. }
