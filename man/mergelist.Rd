@@ -38,7 +38,7 @@
   Default value for argument \code{mult} depends on \code{how} argument:
   \enumerate{
     \item{ \code{how="left|inner|full|right"}: sets \code{mult="error"}. }
-    \item{ \code{how="semi|anti""}: sets \code{mult="last"}, although works same as \code{mult="first"}. }
+    \item{ \code{how="semi|anti"}: sets \code{mult="last"}, although works same as \code{mult="first"}. }
     \item{ \code{how="cross"}: sets \code{mult="all"}. }
   }
 
