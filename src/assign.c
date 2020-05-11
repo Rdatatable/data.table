@@ -152,7 +152,10 @@ static SEXP shallow(SEXP dt, SEXP cols, R_len_t n)
   R_len_t i,l;
   int protecti=0;
   SEXP newdt = PROTECT(allocVector(VECSXP, n)); protecti++;   // to do, use growVector here?
-  SHALLOW_DUPLICATE_ATTRIB(newdt, dt);
+  SET_ATTRIB(newdt, shallow_duplicate(ATTRIB(dt)));
+  SET_OBJECT(newdt, OBJECT(dt));
+  //SHALLOW_DUPLICATE_ATTRIB(newdt, dt);  // SHALLOW_DUPLICATE_ATTRIB would be a bit neater but is only available from R 3.3.0
+  
   // TO DO: keepattr() would be faster, but can't because shallow isn't merely a shallow copy. It
   //        also increases truelength. Perhaps make that distinction, then, and split out, but marked
   //        so that the next change knows to duplicate.
