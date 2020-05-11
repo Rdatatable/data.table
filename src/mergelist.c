@@ -48,7 +48,7 @@ SEXP cbindlist(SEXP x, SEXP copyArg) {
   for (int i=0; i<nx; ++i) {
     SEXP thisx = VECTOR_ELT(x, i);
     if (!perhapsDataTable(thisx))
-      error("The %d element of 'x' list is not of data.table type", i+1);
+      error("The %d element of 'l' list is not of data.table type", i+1);
     nnx[i] = NCOL(thisx);
     if (!nnx[i])
       continue;

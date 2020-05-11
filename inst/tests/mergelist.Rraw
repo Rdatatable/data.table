@@ -994,4 +994,4 @@ test(291.06, notcopied(mergelist(l, on="id1", how="left", mult="error", copy=FAL
 ## SQLite reference tests can be launched via
 
 ### Rscript -e 'install.packages(c("DBI","RSQLite"), repos="https://jangorecki.gitlab.io/rsqlite")'
-### Rscript inst/tests/sqlite.Rraw
+### Rscript -e 'library(data.table); source("inst/tests/sqlite.Rraw.manual")'

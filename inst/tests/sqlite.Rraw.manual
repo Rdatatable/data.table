@@ -6,10 +6,6 @@ if (!all(
 ))
   stop('Use RSQLite which is up-to-date and lightweight:\ninstall.packages(c("DBI","RSQLite"), repos="https://jangorecki.gitlab.io/rsqlite")')
 
-# as of now run by: Rscript inst/tests/sqlite.R
-#library(data.table); shallow = data.table:::shallow
-cc(quiet=TRUE)
-
 # funs ----
 
 # produce SQL statement
@@ -84,8 +80,8 @@ join.sql.equal = function(l, on, how="inner", mult="all", allow.cartesian=TRUE, 
     return(TRUE)
   }
   # row_id column required as SQL is not ordered, creating on R side
-  if (!"row_id" %in% names(lhs)) lhs = shallow(lhs)[, "row_id" := seq_len(.N)]
-  if (!"row_id" %in% names(rhs)) rhs = shallow(rhs)[, "row_id" := seq_len(.N)]
+  if (!"row_id" %in% names(lhs)) lhs = copy(lhs)[, "row_id" := seq_len(.N)]
+  if (!"row_id" %in% names(rhs)) rhs = copy(rhs)[, "row_id" := seq_len(.N)]
   # preparing sql environment
   conn = if (new.conn <- missing(.conn)) DBI::dbConnect(RSQLite::SQLite()) else .conn
   if (.drop) {
@@ -123,10 +119,10 @@ join.sql.equal = function(l, on, how="inner", mult="all", allow.cartesian=TRUE, 
   setattr(sq, "index", integer())
   setattr(dt, "index", integer())
   # compare results
-  a = all.equal.data.table(dt, sq, ignore.row.order=TRUE)
-  b = all.equal.data.table(dt, sq, ignore.row.order=TRUE, ignore.col.order=TRUE)
+  a = all.equal(dt, sq, ignore.row.order=TRUE)
+  b = all.equal(dt, sq, ignore.row.order=TRUE, ignore.col.order=TRUE)
   if (!missing(ans)) {
-    r = all.equal.data.table(ans, sq, ignore.row.order=TRUE)
+    r = all.equal(ans, sq, ignore.row.order=TRUE)
     if (!isTRUE(r)) {
       if (.debug) browser()
       stop("sql does not match to reference answer")
@@ -167,8 +163,8 @@ batch.join.sql.equal = function(cases, on, hows=c("inner","left","right","full")
     try(DBI::dbSendQuery(conn, "DROP TABLE lhs;"), silent = TRUE)
     try(DBI::dbSendQuery(conn, "DROP TABLE rhs;"), silent = TRUE)
     # row_id column required as SQL is not ordered, creating on R side
-    if (!"row_id" %in% names(lhs)) lhs = shallow(lhs)[, "row_id" := seq_len(.N)]
-    if (!"row_id" %in% names(rhs)) rhs = shallow(rhs)[, "row_id" := seq_len(.N)]
+    if (!"row_id" %in% names(lhs)) lhs = copy(lhs)[, "row_id" := seq_len(.N)]
+    if (!"row_id" %in% names(rhs)) rhs = copy(rhs)[, "row_id" := seq_len(.N)]
     DBI::dbWriteTable(conn, name="lhs", value=lhs)
     DBI::dbWriteTable(conn, name="rhs", value=rhs)
     len = prod(length(cases), length(hows), length(mults))
@@ -301,6 +297,3 @@ y = rapply(y, isTRUE)
 if (!all(y))
   stop(sprintf("join tests failed for %s cases:\n%s", sum(!y), paste("  ", names(y)[!y], collapse="\n")))
 cat("done\n")
-if (!interactive()) {
-  q("no")
-}

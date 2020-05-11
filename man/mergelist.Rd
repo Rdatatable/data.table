@@ -12,19 +12,19 @@
 }
 \arguments{
   \item{l}{ \code{list} of \code{data.table}s to merge. }
-  \item{on}{ \code{character} vector of column names to merge on, shared across all inputs; when missing, the \emph{key} of \emph{join-to} table is used. }
-  \item{cols}{ \code{list} of \code{character} vectors corresponding to tables in \code{l}. }
+  \item{on}{ \code{character} vector of column names to merge on; when missing, the \emph{key} of \emph{join-to} table is used. }
+  \item{cols}{ \code{list} of \code{character} column names corresponding to tables in \code{l}, used to subset columns during merges. }
   \item{how}{ \code{character} scalar, controls how to merge tables. Allowed values are \code{"left"} (default), \code{"inner"}, \code{"full"}, \code{"right"}, \code{"semi"}, \code{"anti"}, \code{"cross"}. See Details. }
   \item{mult}{ \code{character} scalar, controls how to proceed when multiple rows in \emph{join-to} table match to the row in \emph{join-from} table. Allowed values are \code{"error"}, \code{"all"}, \code{"first"}, \code{"last"}. Default depends on \code{how}, described in \emph{details} below. See examples on how to detect duplicated matches. Using \code{"all"} is recommended together with \code{join.many=FALSE}, unless rows explosion or cartesian product are intended. }
   \item{copy}{ \code{logical}, defaults to \code{TRUE}, when \code{FALSE}, then resulting object may share columns with tables in \code{l}, depending on matches. }
-  \item{join.many}{ \code{logical}, defaults to \code{TRUE}, when \code{FALSE} and \code{mult="all"}, then extra check is made to ensure no \emph{many-to-many} matches exists between tables, and if they are, then exception is raised. Works similarly to \code{allow.cartesian} option in \code{[.data.table} but is more strict. An option \code{"datatable.join.many"} can be used to control that globally, for \code{mergelist} and \code{[.data.table}. }
+  \item{join.many}{ \code{logical}, defaults to \code{getOption("datatable.join.many")}, which is \code{TRUE} by default; when \code{FALSE} and \code{mult="all"}, then extra check is made to ensure no \emph{many-to-many} matches exist between tables, and if they exist, then exception is raised. Works similarly to \code{allow.cartesian} option in \code{[.data.table} but is more strict. An option \code{"datatable.join.many"} controls that globally for \code{mergelist} and \code{[.data.table}. }
 }
 \details{
-  Function should be considered experimental.
+  Function should be considered experimental. Users are encouraged to provide feedback in our issue tracker.
 
   Merging is performed sequentially, for \code{l} of 3 tables, it will do something like \code{merge(merge(l[[1L]], l[[2L]]), l[[3L]])}. Merging does not support \emph{non-equi joins}, column names to merge on must be common in both tables on each merge.
 
-  Arguments \code{on}, \code{how}, \code{mult}, \code{join.many} could be lists as well, each of length \code{length(l)-1L}, to provide argument to be used for each single tables pair to merge.
+  Arguments \code{on}, \code{how}, \code{mult}, \code{join.many} could be lists as well, each of length \code{length(l)-1L}, to provide argument to be used for each single tables pair to merge, see examples.
 
   Terms \emph{join-to} and \emph{join-from} depends on \code{how} argument:
   \enumerate{
@@ -84,18 +84,29 @@ l = list(
 )
 mergelist(l, cols = list(NULL, c("v3","v5")))
 
+## different arguments for each merge pair
+l = list(
+  data.table(id1=1:4, id2=4:1),
+  data.table(id1=c(1:3,1:2), v2=c(1L,1L,1:2,2L)),
+  data.table(id2=4:5)
+)
+mergelist(l,
+  on = list("id1", "id2"),     ## first merge on id1, second on id2
+  how = list("inner", "anti"), ## first inner join, second anti join
+  mult = list("last", NULL))   ## use default 'mult' in second join
+
 ## detecting duplicates matches
 l = list(
   data.table(id1=c(1:4,2:5), v1=1:8), ## dups in LHS are fine
   data.table(id1=c(2:3,2L), v2=1:3),  ## dups in RHS
   data.table(id1=3:5, v3=1:3)
 )
-#mergelist(l, on="id1") ## mult='error' and multiple matches during merge
-lapply(l[-1L], function(d) copy(d)[,cnt:=.N,by="id1"][cnt>1L])
+#mergelist(l, on="id1") # ERROR: mult='error' and multiple matches during merge
+lapply(l[-1L], `[`, j = if (.N>1L) .SD, by = "id1") ## duplicated rows
 
-## denormalize star schema
+## 'star schema' and 'snowflake schema' examples
 
-### make fact and two dimensions
+### populate fact: US population by state and date
 
 gt = state.x77[,"Population"]
 gt = data.table(state_id=seq_along(state.name), p=gt[state.name]/sum(gt), k=1L)
@@ -106,6 +117,8 @@ fact = tt[gt, on="k", allow.cartesian=TRUE,
           .(state_id=i.state_id, date_id=x.date_id, population = x.pop * i.p)]
 setkeyv(fact, c("state_id","date_id"))
 
+### populate dimensions: time and geography
+
 time = data.table(key = "date_id",
   date_id = seq_along(tt$date), date = tt$date,
   month_id = month(tt$date), month = month.name[month(tt$date)],
@@ -113,21 +126,23 @@ time = data.table(key = "date_id",
   week_id = week(tt$date), week = as.character(week(tt$date)),
   weekday_id = wday(tt$date)-1L, weekday = weekdays(tt$date)
 )[weekday_id==0L, weekday_id:=7L][]
-
 geog = data.table(key = "state_id",
-  state_id = seq_along(state.abb), state_abb = state.abb, state_name = state.name,
+  state_id = seq_along(state.name), state_abb=state.abb, state_name=state.name,
   division_id = as.integer(state.division),
   division_name = as.character(state.division),
   region_id = as.integer(state.region),
   region_name = as.character(state.region)
 )
+rm(gt, tt)
+
+### denormalize 'star schema'
 
 l = list(fact, time, geog)
 ans = mergelist(l)
 
-rm(gt, tt, l, ans)
+rm(l, ans)
 
-## denormalize snowflake schema
+### turn 'star schema' into 'snowflake schema'
 
 make.lvl = function(x, cols) {
   stopifnot(is.data.table(x))
@@ -149,12 +164,14 @@ geog = list(
   region = make.lvl(geog, c("region_id","region_name"))
 )
 
-## left join all
+### denormalize 'snowflake schema'
+
+#### left join all
 l = c(list(fact=fact), time, geog)
 ans = mergelist(l)
 
 rm(ans)
-## merge hierarchies alone, reduce sizes to merge for geog dimension
+#### merge hierarchies alone, reduce sizes in merges of geog dimension
 ans = mergelist(list(
   fact,
   mergelist(time),
@@ -162,11 +179,11 @@ ans = mergelist(list(
 ))
 
 rm(ans)
-## same but even faster, copy=FALSE
-ans = mergelist(copy=FALSE, list(
+#### same but no unnecessary copies
+ans = mergelist(list(
   fact,
-  mergelist(copy=FALSE, time),
-  mergelist(copy=FALSE, rev(geog), how="right")
+  mergelist(time, copy=FALSE),
+  mergelist(rev(geog), how="right", copy=FALSE)
 ))
 }
 \keyword{ data }

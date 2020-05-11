@@ -375,7 +375,9 @@ int NCOL(SEXP x) {
   return LENGTH(x);
 }
 
-/*// c("data.table","data.frame")
+/*
+  Below commented out functions will be uncommented when addressing #4439
+// c("data.table","data.frame")
 static SEXP char2_dtdf() {
   SEXP char2_dtdf = PROTECT(allocVector(STRSXP, 2));
   SET_STRING_ELT(char2_dtdf, 0, char_datatable);
@@ -422,8 +424,9 @@ static inline bool equalLens(SEXP x) {
   int n = LENGTH(x);
   if (n < 2)
     return true;
+  R_xlen_t nr = xlength(VECTOR_ELT(x, 0));
   for (int i=1; i<n; ++i) {
-    if (xlength(VECTOR_ELT(x, i)) != xlength(VECTOR_ELT(x, i-1)))
+    if (xlength(VECTOR_ELT(x, i)) != nr)
       return false;
   }
   return true;
