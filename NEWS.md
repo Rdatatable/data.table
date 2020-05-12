@@ -145,6 +145,7 @@ unit = "s")
 
 7. Added more explanation/examples to `?data.table` for how to use `.BY`, [#1363](https://github.com/Rdatatable/data.table/issues/1363).
 
+8. Internal function `shallow()` no longer makes a copy of (secondary) indices if present [#4440](https://github.com/Rdatatable/data.table/pull/4440). This eliminates a small time and memory overhead when indices are present that was mainly noticeable when performing many operations, such as joins in a loop. Thanks to @renkun-ken for the initial report [#4311](https://github.com/Rdatatable/data.table/issues/4311) and @tlapak for the PR.
 
 # data.table [v1.12.8](https://github.com/Rdatatable/data.table/milestone/15?closed=1)  (09 Dec 2019)
 
