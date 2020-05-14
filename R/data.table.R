@@ -251,7 +251,7 @@ replace_dot_alias = function(e) {
         ..syms = av
       }
     } else if (is.name(jsub)) {
-      if (startsWith(jsub, "..")) stop("Internal error:  DT[, ..var] should be dealt with by the branch above now.") # nocov
+      if (startsWith(as.character(jsub), "..")) stop("Internal error:  DT[, ..var] should be dealt with by the branch above now.") # nocov
       if (!with && !exists(as.character(jsub), where=parent.frame()))
         stop("Variable '",jsub,"' is not found in calling scope. Looking in calling scope because you set with=FALSE. Also, please use .. symbol prefix and remove with=FALSE.")
     }
@@ -1180,7 +1180,7 @@ replace_dot_alias = function(e) {
 
   syms = all.vars(jsub)
   syms = syms[ startsWith(syms, "..") ]
-  syms = syms[ !startsWith(syms, ".") ]  # exclude ellipsis
+  syms = syms[ substr(syms, 3L, 3L) != "." ]  # exclude ellipsis
   for (sym in syms) {
     if (sym %chin% names_x) {
       # if "..x" exists as column name, use column, for backwards compatibility; e.g. package socialmixr in rev dep checks #2779
@@ -1661,7 +1661,7 @@ replace_dot_alias = function(e) {
           # is.symbol() is for #1369, #1974 and #2949
           if (!(is.call(q) && is.symbol(q[[1L]]) && is.symbol(q[[2L]]) && (q1 <- q[[1L]]) %chin% gfuns)) return(FALSE)
           if (!(q2 <- q[[2L]]) %chin% names(SDenv$.SDall) && q2 != ".I") return(FALSE)  # 875
-          if ((length(q)==2L || startsWith(names(q)[3L], "na")) && (!q1 %chin% c("head","tail"))) return(TRUE)
+          if ((length(q)==2L || (!is.null(names(q)) && startsWith(names(q)[3L], "na"))) && (!q1 %chin% c("head","tail"))) return(TRUE)
           # ... head-tail uses default value n=6 which as of now should not go gforce ^^
           # otherwise there must be three arguments, and only in two cases:
           #   1) head/tail(x, 1) or 2) x[n], n>0
