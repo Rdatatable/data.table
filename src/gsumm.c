@@ -989,49 +989,6 @@ SEXP gmax(SEXP x, SEXP narm)
         }
       }
     }
-  /*case REALSXP:
-    ans = PROTECT(allocVector(REALSXP, ngrp)); protecti++;
-    const bool isInt64 = INHERITS(x, char_integer64);
-    double *ansp = REAL(ans);
-    int64_t *xi64p = (int64_t *)REAL(x);
-    double *xp = REAL(x);
-    for (i=0; i<ngrp; i++) ansp[i] = 0;
-    if (!LOGICAL(narm)[0]) {
-      for (i=0; i<n; i++) {
-        thisgrp = grp[i];
-        ix = (irowslen == -1) ? i : irows[i]-1;
-        if ( !ISNA(xp[ix]) && !ISNA(ansp[thisgrp]) ) {
-          if ( update[thisgrp] != 1 || ansp[thisgrp] < xp[ix] ||
-             (ISNAN(xp[ix]) && !ISNAN(ansp[thisgrp])) ) { // #1461
-            ansp[thisgrp] = xp[ix];
-            if (update[thisgrp] != 1) update[thisgrp] = 1;
-          }
-        } else ansp[thisgrp] = NA_REAL;
-      }
-    } else {
-      for (i=0; i<n; i++) {
-        thisgrp = grp[i];
-        ix = (irowslen == -1) ? i : irows[i]-1;
-        Rprintf("i=%d\tix=%d\tISNAN(xp[ix])=%d\n", i, ix, ISNAN(xp[ix]));
-        if ( !ISNAN(xp[ix]) ) { // #1461
-          if ( update[thisgrp] != 1 || ansp[thisgrp] < xp[ix] ) {
-            ansp[thisgrp] = xp[ix];
-            if (update[thisgrp] != 1) update[thisgrp] = 1;
-          }
-        } else {
-          if (update[thisgrp] != 1) {
-            ansp[thisgrp] = -R_PosInf;
-          }
-        }
-      }
-      // everything taken care of already. Just warn if all NA groups have occurred at least once
-      for (i=0; i<ngrp; i++) {
-        if (update[i] != 1)  { // equivalent of REAL(ans)[thisgrp] == -R_PosInf
-          warning(_("No non-missing values found in at least one group. Returning '-Inf' for such groups to be consistent with base"));
-          break;
-        }
-      }
-    }*/
     break;
   case CPLXSXP:
     error(_("Type 'complex' has no well-defined max"));
