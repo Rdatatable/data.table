@@ -50,8 +50,8 @@ SEXP psum(SEXP x, SEXP narmArg) {
       for (int j=0; j<J; j++) {
         double *xjp = REAL(VECTOR_ELT(x, j));
         for (int i=0; i<n; i++) {
-          if (xjp[i] != NA_REAL) {
-            outp[i] = outp[i] == NA_REAL ? xjp[i] : outp[i] + xjp[i];
+          if (!ISNAN(xjp[i])) {
+            outp[i] = ISNAN(outp[i]) ? xjp[i] : outp[i] + xjp[i];
           }
         }
       }
