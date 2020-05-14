@@ -775,7 +775,7 @@ SEXP gmin(SEXP x, SEXP narm)
         }
         for (i=0; i<ngrp; i++) {
           if (ansp[i] == NA_INTEGER64) {
-            warning(_("No non-missing values found in at least one group. Returning 'MAX_INTEGER64' for such groups to be consistent with bit64::max.integer64"));
+            warning(_("No non-missing values found in at least one group. Returning '%"PRId64"' for such groups to be consistent with bit64::max.integer64"), MAX_INTEGER64);
             ansp[i++] = MAX_INTEGER64;
             for (; i<ngrp; i++) if (ansp[i] == NA_INTEGER64) ansp[i] = MAX_INTEGER64;
             break;
@@ -944,8 +944,8 @@ SEXP gmax(SEXP x, SEXP narm)
         }
         for (i=0; i<ngrp; i++) {
           if (ansp[i] == NA_INTEGER64) {
-            warning(_("No non-missing values found in at least one group. Returning '-MAX_INTEGER64' for such groups to be consistent with bit64::min.integer64"));
-            ansp[i++] =  -MAX_INTEGER64;
+            warning(_("No non-missing values found in at least one group. Returning '%"PRId64"' for such groups to be consistent with bit64::min.integer64"), -MAX_INTEGER64);
+            ansp[i++] = -MAX_INTEGER64;
             for (; i<ngrp; i++) if (ansp[i] == NA_INTEGER64) ansp[i] = -MAX_INTEGER64;
             break;
           }
