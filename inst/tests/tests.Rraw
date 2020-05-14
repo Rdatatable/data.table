@@ -16853,3 +16853,22 @@ A = data.table(A=c(complex(real = 1:3, imaginary=c(0, -1, 1)), NaN))
 test(2138.3, rbind(A,B), data.table(A=c(as.character(A$A), B$A)))
 A = data.table(A=as.complex(rep(NA, 5)))
 test(2138.4, rbind(A,B), data.table(A=c(as.character(A$A), B$A)))
+
+# gmin/gmax + NA values + na.rm, #4444
+if (test_bit64) {
+  DT = data.table(grp=c(1L, 1L, 1L, 2L), i64=as.integer64(c(NA, 1:3)))
+  old = options(datatable.optimize=2L)
+  test(2139.1, DT[ , min(i64), by=grp], data.table(grp=1:2, V1=as.integer64(c(NA, 3))))
+  test(2139.2, DT[ , min(i64, na.rm=TRUE), by=grp], data.table(grp=1:2, V1=as.integer64(c(1, 3))))
+  test(2139.3, DT[ , max(i64), by=grp], data.table(grp=1:2, V1=as.integer64(c(NA, 3))))
+  test(2139.4, DT[ , max(i64, na.rm=TRUE), by=grp], data.table(grp=1:2, V1=as.integer64(2:3)))
+  # force an all-NA group
+  DT[ , i64 := rev(i64)]
+  i64_default_min = suppressWarnings(min(as.integer64(NA), na.rm=TRUE))
+  i64_default_max = suppressWarnings(max(as.integer64(NA), na.rm=TRUE))
+  test(2139.5, DT[ , min(i64, na.rm=TRUE), by=grp], data.table(grp=1:2, V1=c(as.integer64(1), i64_default_min)),
+       warning="No non-missing values found in at least one group")
+  test(2139.6, DT[ , max(i64, na.rm=TRUE), by=grp], data.table(grp=1:2, V1=c(as.integer64(3), i64_default_max)),
+       warning="No non-missing values found in at least one group")
+  options(old)
+}

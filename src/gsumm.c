@@ -761,28 +761,62 @@ SEXP gmin(SEXP x, SEXP narm)
     break;
   case REALSXP:
     ans = PROTECT(allocVector(REALSXP, ngrp)); protecti++;
-    if (!LOGICAL(narm)[0]) {
-      for (i=0; i<ngrp; i++) REAL(ans)[i] = R_PosInf;
-      for (i=0; i<n; i++) {
-        thisgrp = grp[i];
-        ix = (irowslen == -1) ? i : irows[i]-1;
-        if (ISNAN(REAL(x)[ix]) || REAL(x)[ix] < REAL(ans)[thisgrp])
-          REAL(ans)[thisgrp] = REAL(x)[ix];
+    if (INHERITS(x, char_integer64)) {
+      int64_t *ansp = (int64_t *)REAL(ans);
+      int64_t *xp = (int64_t *)REAL(x);
+      if (LOGICAL(narm)[0]) {
+        for (i=0; i<ngrp; i++) ansp[i] = NA_INTEGER64;
+        for (i=0; i<n; i++) {
+          thisgrp = grp[i];
+          ix = (irowslen == -1) ? i : irows[i]-1;
+          if (xp[ix] == NA_INTEGER64) continue;
+          if (ansp[thisgrp] == NA_INTEGER64 || xp[ix] < ansp[thisgrp])
+            ansp[thisgrp] = xp[ix];
+        }
+        for (i=0; i<ngrp; i++) {
+          if (ansp[i] == NA_INTEGER64) {
+            warning(_("No non-missing values found in at least one group. Returning 'MAX_INTEGER64' for such groups to be consistent with bit64::max.integer64"));
+            ansp[i++] = MAX_INTEGER64;
+            for (; i<ngrp; i++) if (ansp[i] == NA_INTEGER64) ansp[i] = MAX_INTEGER64;
+            break;
+          }
+        }
+      } else { // na.rm=FALSE
+        for (i=0; i<ngrp; i++) ansp[i] = MAX_INTEGER64;
+        for (i=0; i<n; i++) {
+          thisgrp = grp[i];
+          ix = (irowslen == -1) ? i : irows[i]-1;
+          if (xp[ix] == NA_INTEGER64 || xp[ix] < ansp[thisgrp])
+            ansp[thisgrp] = xp[ix];
+        }
       }
-    } else {
-      for (i=0; i<ngrp; i++) REAL(ans)[i] = NA_REAL;
-      for (i=0; i<n; i++) {
-        thisgrp = grp[i];
-        ix = (irowslen == -1) ? i : irows[i]-1;
-        if (ISNAN(REAL(x)[ix])) continue;
-        if (ISNAN(REAL(ans)[thisgrp]) || REAL(x)[ix] < REAL(ans)[thisgrp])
-          REAL(ans)[thisgrp] = REAL(x)[ix];
-      }
-      for (i=0; i<ngrp; i++) {
-        if (ISNAN(REAL(ans)[i])) {
-          warning(_("No non-missing values found in at least one group. Returning 'Inf' for such groups to be consistent with base"));
-          for (; i<ngrp; i++) if (ISNAN(REAL(ans)[i])) REAL(ans)[i] = R_PosInf;
-          break;
+    } else { // non-int64
+      double *ansp = REAL(ans);
+      double *xp = REAL(x);
+      if (LOGICAL(narm)[0]) {
+        for (i=0; i<ngrp; i++) ansp[i] = NA_REAL;
+        for (i=0; i<n; i++) {
+          thisgrp = grp[i];
+          ix = (irowslen == -1) ? i : irows[i]-1;
+          if (ISNAN(xp[ix])) continue;
+          if (ISNAN(ansp[thisgrp]) || xp[ix] < ansp[thisgrp])
+            ansp[thisgrp] = xp[ix];
+        }
+        for (i=0; i<ngrp; i++) {
+          if (ISNAN(ansp[i])) {
+            warning(_("No non-missing values found in at least one group. Returning 'Inf' for such groups to be consistent with base"));
+            ansp[i++] = R_PosInf;
+            for (; i<ngrp; i++) if (ISNAN(ansp[i])) ansp[i] = R_PosInf;
+            break;
+          }
+        }
+      } else { // na.rm=FALSE
+        for (i=0; i<ngrp; i++) ansp[i] = R_PosInf;
+        for (i=0; i<n; i++) {
+          thisgrp = grp[i];
+          ix = (irowslen == -1) ? i : irows[i]-1;
+          if (ISNAN(xp[ix]) || xp[ix] < ansp[thisgrp])
+            ansp[thisgrp] = xp[ix];
         }
       }
     }
@@ -896,31 +930,97 @@ SEXP gmax(SEXP x, SEXP narm)
     break;
   case REALSXP:
     ans = PROTECT(allocVector(REALSXP, ngrp)); protecti++;
-    for (i=0; i<ngrp; i++) REAL(ans)[i] = 0;
+    if (INHERITS(x, char_integer64)) {
+      int64_t *ansp = (int64_t *)REAL(ans);
+      int64_t *xp = (int64_t *)REAL(x);
+      if (LOGICAL(narm)[0]) {
+        for (i=0; i<ngrp; i++) ansp[i] = NA_INTEGER64;
+        for (i=0; i<n; i++) {
+          thisgrp = grp[i];
+          ix = (irowslen == -1) ? i : irows[i]-1;
+          if (xp[ix] == NA_INTEGER64) continue;
+          if (ansp[thisgrp] == NA_INTEGER64 || xp[ix] > ansp[thisgrp])
+            ansp[thisgrp] = xp[ix];
+        }
+        for (i=0; i<ngrp; i++) {
+          if (ansp[i] == NA_INTEGER64) {
+            warning(_("No non-missing values found in at least one group. Returning '-MAX_INTEGER64' for such groups to be consistent with bit64::min.integer64"));
+            ansp[i++] =  -MAX_INTEGER64;
+            for (; i<ngrp; i++) if (ansp[i] == NA_INTEGER64) ansp[i] = -MAX_INTEGER64;
+            break;
+          }
+        }
+      } else { // na.rm=FALSE
+        for (i=0; i<ngrp; i++) ansp[i] = -MAX_INTEGER64;
+        for (i=0; i<n; i++) {
+          thisgrp = grp[i];
+          ix = (irowslen == -1) ? i : irows[i]-1;
+          if (xp[ix] == -MAX_INTEGER64 || xp[ix] > ansp[thisgrp])
+            ansp[thisgrp] = xp[ix];
+        }
+      }
+    } else { // non-int64
+      double *ansp = REAL(ans);
+      double *xp = REAL(x);
+      if (LOGICAL(narm)[0]) {
+        for (i=0; i<ngrp; i++) ansp[i] = NA_REAL;
+        for (i=0; i<n; i++) {
+          thisgrp = grp[i];
+          ix = (irowslen == -1) ? i : irows[i]-1;
+          if (ISNAN(xp[ix])) continue;
+          if (ISNAN(ansp[thisgrp]) || xp[ix] > ansp[thisgrp])
+            ansp[thisgrp] = xp[ix];
+        }
+        for (i=0; i<ngrp; i++) {
+          if (ISNAN(ansp[i])) {
+            warning(_("No non-missing values found in at least one group. Returning '-Inf' for such groups to be consistent with base"));
+            ansp[i++] = R_NegInf;
+            for (; i<ngrp; i++) if (ISNAN(ansp[i])) ansp[i] = R_NegInf;
+            break;
+          }
+        }
+      } else { // na.rm=FALSE
+        for (i=0; i<ngrp; i++) ansp[i] = R_NegInf;
+        for (i=0; i<n; i++) {
+          thisgrp = grp[i];
+          ix = (irowslen == -1) ? i : irows[i]-1;
+          if (ISNAN(xp[ix]) || xp[ix] > ansp[thisgrp])
+            ansp[thisgrp] = xp[ix];
+        }
+      }
+    }
+  /*case REALSXP:
+    ans = PROTECT(allocVector(REALSXP, ngrp)); protecti++;
+    const bool isInt64 = INHERITS(x, char_integer64);
+    double *ansp = REAL(ans);
+    int64_t *xi64p = (int64_t *)REAL(x);
+    double *xp = REAL(x);
+    for (i=0; i<ngrp; i++) ansp[i] = 0;
     if (!LOGICAL(narm)[0]) {
       for (i=0; i<n; i++) {
         thisgrp = grp[i];
         ix = (irowslen == -1) ? i : irows[i]-1;
-        if ( !ISNA(REAL(x)[ix]) && !ISNA(REAL(ans)[thisgrp]) ) {
-          if ( update[thisgrp] != 1 || REAL(ans)[thisgrp] < REAL(x)[ix] ||
-             (ISNAN(REAL(x)[ix]) && !ISNAN(REAL(ans)[thisgrp])) ) { // #1461
-            REAL(ans)[thisgrp] = REAL(x)[ix];
+        if ( !ISNA(xp[ix]) && !ISNA(ansp[thisgrp]) ) {
+          if ( update[thisgrp] != 1 || ansp[thisgrp] < xp[ix] ||
+             (ISNAN(xp[ix]) && !ISNAN(ansp[thisgrp])) ) { // #1461
+            ansp[thisgrp] = xp[ix];
             if (update[thisgrp] != 1) update[thisgrp] = 1;
           }
-        } else REAL(ans)[thisgrp] = NA_REAL;
+        } else ansp[thisgrp] = NA_REAL;
       }
     } else {
       for (i=0; i<n; i++) {
         thisgrp = grp[i];
         ix = (irowslen == -1) ? i : irows[i]-1;
-        if ( !ISNAN(REAL(x)[ix]) ) { // #1461
-          if ( update[thisgrp] != 1 || REAL(ans)[thisgrp] < REAL(x)[ix] ) {
-            REAL(ans)[thisgrp] = REAL(x)[ix];
+        Rprintf("i=%d\tix=%d\tISNAN(xp[ix])=%d\n", i, ix, ISNAN(xp[ix]));
+        if ( !ISNAN(xp[ix]) ) { // #1461
+          if ( update[thisgrp] != 1 || ansp[thisgrp] < xp[ix] ) {
+            ansp[thisgrp] = xp[ix];
             if (update[thisgrp] != 1) update[thisgrp] = 1;
           }
         } else {
           if (update[thisgrp] != 1) {
-            REAL(ans)[thisgrp] = -R_PosInf;
+            ansp[thisgrp] = -R_PosInf;
           }
         }
       }
@@ -931,7 +1031,7 @@ SEXP gmax(SEXP x, SEXP narm)
           break;
         }
       }
-    }
+    }*/
     break;
   case CPLXSXP:
     error(_("Type 'complex' has no well-defined max"));
