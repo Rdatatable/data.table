@@ -213,6 +213,7 @@ R_CallMethodDef callMethods[] = {
 {"CtestMsgR", (DL_FUNC) &testMsgR, -1},
 {"C_allNAR", (DL_FUNC) &allNAR, -1},
 {"Cpsum", (DL_FUNC) &psum, -1},
+{"Cpprod", (DL_FUNC) &pprod, -1},
 {NULL, NULL, 0}
 };
 

@@ -9,6 +9,7 @@ fifelse = function(test, yes, no, na=NA) .Call(CfifelseR, test, yes, no, na)
 fcase   = function(..., default=NA) .Call(CfcaseR, default, parent.frame(), as.list(substitute(list(...)))[-1L])
 
 psum = function(..., na.rm=FALSE) .Call(Cpsum, list(...), na.rm)
+pprod = function(..., na.rm=FALSE) .Call(Cpprod, list(...), na.rm)
 
 colnamesInt = function(x, cols, check_dups=FALSE) .Call(CcolnamesInt, x, cols, check_dups)
 coerceFill = function(x) .Call(CcoerceFillR, x)

@@ -221,6 +221,7 @@ SEXP coalesce(SEXP x, SEXP inplace);
 
 // psum.c
 SEXP psum(SEXP x, SEXP narmArg);
+SEXP pprod(SEXP x, SEXP narmArg);
 
 // utils.c
 bool isRealReallyInt(SEXP x);
