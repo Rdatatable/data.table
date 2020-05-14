@@ -109,7 +109,7 @@ unit = "s")
 
 13. A relatively rare case of segfault when combining non-equi joins with `by=.EACHI` is now fixed, closes [#4388](https://github.com/Rdatatable/data.table/issues/4388).
 
-14. `GForce` handles `integer64` input correctly for `min` and `max` with missing values, [#4444](https://github.com/Rdatatable/data.table/issues/4388). Thanks @go-see for the report.
+14. `GForce` handles `integer64` input correctly for `min` and `max` with missing values, [#4444](https://github.com/Rdatatable/data.table/issues/4444). Thanks @go-see for the report.
 
 ## NOTES
 
