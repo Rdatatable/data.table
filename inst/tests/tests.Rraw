@@ -3408,7 +3408,7 @@ test(1100, dt1[dt2,roll=-Inf,rollends=c(FALSE,TRUE)]$ind, INT(NA,NA,1,2,2,2,2,2,
   set.seed(3)
   DT = data.table(a=5:1, b=runif(5))
   ans = dcast(DT, a ~ b, value.var="b")[c(4,.N), c(2,6)]
-  setnames(ans, substring(names(ans),1,6))
+  setnames(ans, substr(names(ans), 1L, 6L))
   test(1102.06, ans, data.table("0.1680"=c(NA,DT[1,b]), "0.8075"=c(DT[2,b],NA)))
 
   # Fix for case 2 in bug report #71 - dcast didn't aggregate properly when formula RHS has "."
@@ -7253,7 +7253,7 @@ test(1530.4, which.last(x), tail(which(x), 1L))
 set.seed(2L)
 x = apply(matrix(sample(letters, 12), nrow=2), 1, paste, collapse="")
 y = factor(sample(c(letters[1:5], x), 20, TRUE))
-xsub = substring(x, 1L, 1L)
+xsub = substr(x, 1L, 1L)
 test(1532.1, y %like% xsub[1L], grepl(xsub[1L], y))
 test(1532.2, y %like% xsub[2L], grepl(xsub[2L], y))
 test(1532.3, like(y, xsub[1L]), grepl(xsub[1L], y))
@@ -9435,7 +9435,7 @@ nqjoin_test <- function(x, y, k=1L, test_no, mult="all") {
   runcmb = as.data.table(runcmb[, 1:min(100L, ncol(runcmb)), drop=FALSE]) # max 100 combinations to test
   runops = lapply(runcmb, function(cols) {
     thisops = sample(ops, k, TRUE)
-    thisops[substring(cols,1,1)=="c"] = "=="
+    thisops[startsWith(cols, "c")] = "=="
     thisops
   })
   is_only_na <- function(x) is.na(x) & !is.nan(x)

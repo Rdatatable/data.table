@@ -164,7 +164,10 @@ grep -n "[^A-Za-z0-9]F[^A-Za-z0-9]" ./inst/tests/tests.Rraw
 grep -Enr "^[^#]*(?:\[|==|>|<|>=|<=|,|\(|\+)\s*[-]?[0-9]+[^0-9L:.e]" R | grep -Ev "stop|warning|tolerance"
 
 # Never use ifelse. fifelse for vectors when necessary (nothing yet)
- grep -Enr "\bifelse" R
+grep -Enr "\bifelse" R
+
+# substring is always slower than substr. use cases of substring over substr are limited
+grep -Fnr "substring" R
 
 # No system.time in main tests.Rraw. Timings should be in benchmark.Rraw
 grep -n "system[.]time" ./inst/tests/tests.Rraw
