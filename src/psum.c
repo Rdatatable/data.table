@@ -26,6 +26,9 @@ SEXP psum(SEXP x, SEXP narmArg) {
     case LGLSXP: case INTSXP:
       break;
     case REALSXP:
+      if (INHERITS(xj, char_integer64)) {
+        error(_("integer64 input not supported"));
+      }
       outtype = REALSXP;
       break;
     default:
