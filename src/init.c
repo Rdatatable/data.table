@@ -120,6 +120,9 @@ SEXP unlock();
 SEXP islockedR();
 SEXP allNAR();
 SEXP psum();
+SEXP pprod();
+SEXP pany();
+SEXP pall();
 
 // .Externals
 SEXP fastmean();
