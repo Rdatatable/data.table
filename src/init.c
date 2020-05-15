@@ -214,6 +214,7 @@ R_CallMethodDef callMethods[] = {
 {"C_allNAR", (DL_FUNC) &allNAR, -1},
 {"Cpsum", (DL_FUNC) &psum, -1},
 {"Cpprod", (DL_FUNC) &pprod, -1},
+{"Cpany", (DL_FUNC) &pany, -1},
 {NULL, NULL, 0}
 };
 
