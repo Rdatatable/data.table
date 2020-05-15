@@ -9,8 +9,14 @@ SEXP psum(SEXP x, SEXP narmArg) {
   if (J == 0) {
     error(_("Empty input"));
   } else if (J == 1) {
-    // na.rm doesn't matter -- input --> output
-    return duplicate(VECTOR_ELT(x, 0));
+    SEXP xj0 = VECTOR_ELT(x, 0);
+    if (TYPEOF(xj0) == VECSXP) { // e.g. psum(.SD)
+      x = duplicate(xj0);
+      J = LENGTH(xj0);
+    } else {
+      // na.rm doesn't matter -- input --> output
+      return duplicate(xj0);
+    }
   }
   SEXPTYPE outtype = INTSXP;
   int n = -1;
