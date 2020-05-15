@@ -11,6 +11,7 @@ fcase   = function(..., default=NA) .Call(CfcaseR, default, parent.frame(), as.l
 psum = function(..., na.rm=FALSE) .Call(Cpsum, list(...), na.rm)
 pprod = function(..., na.rm=FALSE) .Call(Cpprod, list(...), na.rm)
 pany = function(..., na.rm=FALSE) .Call(Cpany, list(...), na.rm)
+pall = function(..., na.rm=FALSE) .Call(Cpall, list(...), na.rm)
 
 colnamesInt = function(x, cols, check_dups=FALSE) .Call(CcolnamesInt, x, cols, check_dups)
 coerceFill = function(x) .Call(CcoerceFillR, x)

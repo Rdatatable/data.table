@@ -242,7 +242,7 @@ SEXP psum(SEXP x, SEXP narmArg) {
       SEXP xj0 = VECTOR_ELT(x, 0);
       int nj0 = LENGTH(xj0);
       switch (TYPEOF(xj0)) {
-      case INTSXP: {
+      case LGLSXP: case INTSXP: {
         int *xj0p = INTEGER(xj0);
         for (int i=0; i<n; i++) outp[i].r = (double)xj0p[nj0 == 1 ? 0 : i];
       } break;
@@ -566,7 +566,7 @@ SEXP pprod(SEXP x, SEXP narmArg) {
       SEXP xj0 = VECTOR_ELT(x, 0);
       int nj0 = LENGTH(xj0);
       switch (TYPEOF(xj0)) {
-      case INTSXP: {
+      case LGLSXP: case INTSXP: {
         int *xj0p = INTEGER(xj0);
         for (int i=0; i<n; i++) outp[i].r = (double)xj0p[nj0 == 1 ? 0 : i];
       } break;
@@ -761,7 +761,7 @@ SEXP pany(SEXP x, SEXP narmArg) {
     SEXP xj0 = VECTOR_ELT(x, 0);
     int nj0 = LENGTH(xj0);
     switch (TYPEOF(xj0)) {
-    case INTSXP: {
+    case LGLSXP: case INTSXP: {
       int *xj0p = INTEGER(xj0);
       for (int i=0; i<n; i++) outp[i] = xj0p[nj0 == 1 ? 0 : i] == 0 ? 0 : 1;
     } break;
@@ -818,6 +818,191 @@ SEXP pany(SEXP x, SEXP narmArg) {
               outp[i] = NA_LOGICAL;
             } else if (outp[i] == 0 && (xjp[xi].r != 0 || xjp[xi].i != 0)) {
               outp[i] = 1;
+            }
+          }
+        }
+      } break;
+      default:
+        error(_("Internal error: should have caught non-INTSXP/REALSXP input by now"));
+      }
+    }
+  }
+
+  UNPROTECT(1);
+  return out;
+}
+
+SEXP pall(SEXP x, SEXP narmArg) {
+  if (!isNewList(x)) error(_("Internal error: x must be a list"));
+  if (!isLogical(narmArg) || LENGTH(narmArg)!=1 || LOGICAL(narmArg)[0]==NA_LOGICAL) error(_("na.rm must be TRUE or FALSE"));
+
+  int J=LENGTH(x);
+  if (J == 0) {
+    error(_("Empty input"));
+  } else if (J == 1) {
+    SEXP xj0 = VECTOR_ELT(x, 0);
+    if (TYPEOF(xj0) == VECSXP) {
+      x = duplicate(xj0);
+      J = LENGTH(xj0);
+    } else {
+      // maybe need to do coercion to logical
+      if (TYPEOF(xj0) == LGLSXP) {
+        return duplicate(xj0);
+      } else {
+        SEXP out = PROTECT(coerceVector(xj0, LGLSXP));
+        UNPROTECT(1);
+        return out;
+      }
+    }
+  }
+  int n = -1;
+  for (int j=0; j<J; j++) {
+    SEXP xj=VECTOR_ELT(x, j);
+    switch(TYPEOF(xj)) {
+    case LGLSXP: case INTSXP:
+      if (isFactor(xj)) {
+        error(_("pall not meaningful for factors"));
+      }
+      break;
+    case REALSXP:
+      if (INHERITS(xj, char_integer64)) {
+        error(_("integer64 input not supported"));
+      }
+      break;
+    case CPLXSXP:
+      break;
+    default:
+      error(_("Only logical, numeric & complex inputs are supported for %s"), "pall");
+    }
+    if (n >= 0) {
+      int nj = LENGTH(xj);
+      if (n == 1 && nj > 1) {
+        n = nj; // singleton comes first, vector comes later [psum(1, 1:4)]
+      } else if (nj != 1 && nj != n) {
+        error(_("Inconsistent input lengths -- first found %d, but %d element has length %d. Only singletons will be recycled."), n, j+1, nj);
+      }
+    } else { // initialize
+      n = LENGTH(xj);
+    }
+  }
+
+  SEXP out = PROTECT(allocVector(LGLSXP, n));
+  int *outp = LOGICAL(out);
+  if (n == 0) {
+    UNPROTECT(1);
+    return(out);
+  }
+  if (LOGICAL(narmArg)[0]) {
+    // initialize to NA to facilitate all-NA rows --> NA output
+    writeNA(out, 0, n);
+    for (int j=0; j<J; j++) {
+      SEXP xj = VECTOR_ELT(x, j);
+      int nj = LENGTH(xj);
+      switch (TYPEOF(xj)) {
+      case LGLSXP: case INTSXP: {
+        int *xjp = INTEGER(xj);
+        for (int i=0; i<n; i++) {
+          int xi = nj == 1 ? 0 : i;
+          if (xjp[xi] != NA_INTEGER) {
+            if (outp[i] == NA_LOGICAL) {
+              outp[i] = xjp[xi] == 0 ? 0 : 1;
+            } else if (outp[i] == 1 && xjp[xi] == 0) { // no change if already 0 or next is 1
+              outp[i] = 0;
+              }
+            }
+          }
+        } break;
+        case REALSXP: {
+          double *xjp = REAL(xj);
+          for (int i=0; i<n; i++) {
+            int xi = nj == 1 ? 0 : i;
+            if (!ISNAN(xjp[xi])) {
+              if (outp[i] == NA_LOGICAL) {
+                outp[i] = xjp[xi] == 0 ? 0 : 1;
+              } else if (outp[i] == 1 && xjp[xi] == 0) {
+                outp[i] = 1;
+              }
+            }
+          }
+        } break;
+        case CPLXSXP: {
+          Rcomplex *xjp = COMPLEX(xj);
+          for (int i=0; i<n; i++) {
+            int xi = nj == 1 ? 0 : i;
+            if (!ISNAN_COMPLEX(xjp[xi])) {
+              if (outp[i] == NA_LOGICAL) {
+                outp[i] = xjp[xi].r == 0 && xjp[xi].i == 0 ? 0 : 1;
+              } else if (outp[i] == 1 && xjp[xi].r == 0 && xjp[xi].i == 0) { // no change if already 0 or next is 1
+                outp[i] = 0;
+              }
+            }
+          }
+        } break;
+        default:
+          error(_("Internal error: should have caught non-INTSXP/REALSXP input by now"));
+        }
+      }
+  } else { // na.rm=FALSE
+    SEXP xj0 = VECTOR_ELT(x, 0);
+    int nj0 = LENGTH(xj0);
+    switch (TYPEOF(xj0)) {
+    case LGLSXP: case INTSXP: {
+      int *xj0p = INTEGER(xj0);
+      for (int i=0; i<n; i++) outp[i] = xj0p[nj0 == 1 ? 0 : i] == 0 ? 0 : 1;
+    } break;
+    case REALSXP: {
+      double *xj0p = REAL(xj0);
+      for (int i=0; i<n; i++) outp[i] = xj0p[nj0 == 1 ? 0 : i] == 0 ? 0 : 1;
+    } break;
+    case CPLXSXP: {
+      Rcomplex *xj0p = COMPLEX(xj0);
+      for (int i=0; i<n; i++) {
+        int idx = nj0 == 1 ? 0 : i;
+        outp[i] = xj0p[idx].r == 0 && xj0p[idx].i == 0 ? 0 : 1;
+      }
+    } break;
+    default:
+      error(_("Internal error: should have caught non-INTSXP/REALSXP input by now"));
+    }
+    for (int j=1; j<J; j++) {
+      SEXP xj=VECTOR_ELT(x, j);
+      int nj = LENGTH(xj);
+      switch (TYPEOF(xj)) {
+      case LGLSXP: case INTSXP: {
+        int *xjp = INTEGER(xj);
+        for (int i=0; i<n; i++) {
+          if (outp[i] != NA_LOGICAL) {
+            int xi = nj == 1 ? 0 : i;
+            if (xjp[xi] == NA_INTEGER) {
+              outp[i] = NA_LOGICAL;
+            } else if (outp[i] == 1 && xjp[xi] == 0) {
+              outp[i] = 0;
+            }
+          }
+        }
+      } break;
+      case REALSXP: {
+        double *xjp = REAL(xj);
+        for (int i=0; i<n; i++) {
+          if (outp[i] != NA_LOGICAL) {
+            int xi = nj == 1 ? 0 : i;
+            if (ISNAN(xjp[xi])) {
+              outp[i] = NA_LOGICAL;
+            } else if (outp[i] == 1 && xjp[xi] == 0) {
+              outp[i] = 0;
+            }
+          }
+        }
+      } break;
+      case CPLXSXP: {
+        Rcomplex *xjp = COMPLEX(xj);
+        for (int i=0; i<n; i++) {
+          if (outp[i] != NA_LOGICAL) {
+            int xi = nj == 1 ? 0 : i;
+            if (ISNAN_COMPLEX(xjp[xi])) {
+              outp[i] = NA_LOGICAL;
+            } else if (outp[i] == 1 && xjp[xi].r == 0 && xjp[xi].i == 0) {
+              outp[i] = 0;
             }
           }
         }

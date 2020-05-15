@@ -223,6 +223,7 @@ SEXP coalesce(SEXP x, SEXP inplace);
 SEXP psum(SEXP x, SEXP narmArg);
 SEXP pprod(SEXP x, SEXP narmArg);
 SEXP pany(SEXP x, SEXP narmArg);
+SEXP pall(SEXP x, SEXP narmArg);
 
 // utils.c
 bool isRealReallyInt(SEXP x);
