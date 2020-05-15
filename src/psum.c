@@ -37,6 +37,10 @@ SEXP psum(SEXP x, SEXP narmArg) {
 
   // TODO: support int->double conversion
   SEXP out = PROTECT(allocVector(outtype, n));
+  if (n == 0) {
+    UNPROTECT(1);
+    return(out);
+  }
   if (LOGICAL(narmArg)[0]) {
     // initialize to NA to facilitate all-NA rows --> NA output
     writeNA(out, 0, n);
@@ -158,6 +162,10 @@ SEXP pprod(SEXP x, SEXP narmArg) {
 
   // TODO: support int->double conversion
   SEXP out = PROTECT(allocVector(outtype, n));
+  if (n == 0) {
+    UNPROTECT(1);
+    return(out);
+  }
   if (LOGICAL(narmArg)[0]) {
     // initialize to NA to facilitate all-NA rows --> NA output
     writeNA(out, 0, n);
