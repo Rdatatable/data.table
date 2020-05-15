@@ -24,6 +24,9 @@ SEXP psum(SEXP x, SEXP narmArg) {
     SEXP xj=VECTOR_ELT(x, j);
     switch(TYPEOF(xj)) {
     case LGLSXP: case INTSXP:
+      if (isFactor(xj)) {
+        error(_("psum not meaningful for factors"));
+      }
       break;
     case REALSXP:
       if (INHERITS(xj, char_integer64)) {
