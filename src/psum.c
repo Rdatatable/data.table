@@ -42,7 +42,7 @@ SEXP psum(SEXP x, SEXP narmArg) {
       }
       break;
     default:
-      error(_("Only numeric inputs are supported for psum"));
+      error(_("Only numeric & complex inputs are supported for psum"));
     }
     if (n >= 0) {
       int nj = LENGTH(xj);
@@ -330,7 +330,7 @@ SEXP pprod(SEXP x, SEXP narmArg) {
     error(_("Empty input"));
   } else if (J == 1) {
     SEXP xj0 = VECTOR_ELT(x, 0);
-    if (TYPEOF(xj0) == VECSXP) { // e.g. psum(.SD)
+    if (TYPEOF(xj0) == VECSXP) { // e.g. pprod(.SD)
       x = duplicate(xj0);
       J = LENGTH(xj0);
     } else {
@@ -345,7 +345,7 @@ SEXP pprod(SEXP x, SEXP narmArg) {
     switch(TYPEOF(xj)) {
     case LGLSXP: case INTSXP:
       if (isFactor(xj)) {
-        error(_("psum not meaningful for factors"));
+        error(_("pprod not meaningful for factors"));
       }
       break;
     case REALSXP:
@@ -362,12 +362,12 @@ SEXP pprod(SEXP x, SEXP narmArg) {
       }
       break;
     default:
-      error(_("Only numeric inputs are supported for psum"));
+      error(_("Only numeric and complex inputs are supported for pprod"));
     }
     if (n >= 0) {
       int nj = LENGTH(xj);
       if (n == 1 && nj > 1) {
-        n = nj; // singleton comes first, vector comes later [psum(1, 1:4)]
+        n = nj; // singleton comes first, vector comes later [pprod(1, 1:4)]
       } else if (nj != 1 && nj != n) {
         error(_("Inconsistent input lengths -- first found %d, but %d element has length %d. Only singletons will be recycled."), n, j+1, nj);
       }
@@ -397,10 +397,11 @@ SEXP pprod(SEXP x, SEXP narmArg) {
             if (outp[i] == NA_INTEGER) {
               outp[i] = xjp[xi];
             } else {
-              if (INT_MAX - xjp[xi] < outp[i] || INT_MIN - xjp[xi] < outp[i]) { // overflow
+              if ((outp[i] > 0 && (xjp[xi] > INT_MAX/outp[i] || xjp[xi] < INT_MIN/outp[i])) || // overflow -- be careful of inequalities and flipping signs
+                  (outp[i] < 0 && (xjp[xi] < INT_MAX/outp[i] || xjp[xi] > INT_MIN/outp[i]))) {
                 error(_("Inputs have exceeded .Machine$integer.max=%d in absolute value; please cast to numeric first and try again"), INT_MAX);
               }
-              outp[i] += xjp[xi];
+              outp[i] *= xjp[xi];
             }
           } // else remain as NA
         }
@@ -417,7 +418,7 @@ SEXP pprod(SEXP x, SEXP narmArg) {
           for (int i=0; i<n; i++) {
             int xi = nj == 1 ? 0 : i;
             if (xjp[xi] != NA_INTEGER) {
-              outp[i] = ISNAN(outp[i]) ? (double)xjp[xi] : outp[i] + (double)xjp[xi];
+              outp[i] = ISNAN(outp[i]) ? (double)xjp[xi] : outp[i] * (double)xjp[xi];
             }
           }
         } break;
@@ -426,7 +427,7 @@ SEXP pprod(SEXP x, SEXP narmArg) {
           for (int i=0; i<n; i++) {
             int xi = nj == 1 ? 0 : i;
             if (!ISNAN(xjp[xi])) {
-              outp[i] = ISNAN(outp[i]) ? xjp[xi] : outp[i] + xjp[xi];
+              outp[i] = ISNAN(outp[i]) ? xjp[xi] : outp[i] * xjp[xi];
             }
           }
         } break;
@@ -450,7 +451,8 @@ SEXP pprod(SEXP x, SEXP narmArg) {
                 outp[i].r = (double)xjp[xi];
                 outp[i].i = 0;
               } else {
-                outp[i].r += (double)xjp[xi];
+                outp[i].r *= (double)xjp[xi];
+                outp[i].i *= (double)xjp[xi];
               }
             }
           }
@@ -464,7 +466,8 @@ SEXP pprod(SEXP x, SEXP narmArg) {
                 outp[i].r = xjp[xi];
                 outp[i].i = 0;
               } else {
-                outp[i].r += xjp[xi];
+                outp[i].r *= xjp[xi];
+                outp[i].i *= xjp[xi];
               }
             }
           }
@@ -476,8 +479,8 @@ SEXP pprod(SEXP x, SEXP narmArg) {
             // can construct complex vectors with !is.na(Re) & is.na(Im) --
             //   seems dubious to me, since print(z) only shows NA, not 3 + NAi
             if (!ISNAN_COMPLEX(xjp[xi])) {
-              outp[i].r = ISNAN(outp[i].r) ? xjp[xi].r : outp[i].r + xjp[xi].r;
-              outp[i].i = ISNAN(outp[i].i) ? xjp[xi].i : outp[i].i + xjp[xi].i;
+              outp[i].r = ISNAN(outp[i].r) ? xjp[xi].r : outp[i].r * xjp[xi].r - outp[i].i * xjp[xi].i;
+              outp[i].i = ISNAN(outp[i].i) ? xjp[xi].i : outp[i].i * xjp[xi].r + outp[i].r * xjp[xi].i;
             }
           }
         } break;
@@ -508,11 +511,12 @@ SEXP pprod(SEXP x, SEXP narmArg) {
           int xi = nj == 1 ? 0 : i;
           if (xjp[xi] == NA_INTEGER) {
             outp[i] = NA_INTEGER;
-          } else if (INT_MAX - xjp[xi] < outp[i] || INT_MIN - xjp[xi] < outp[i]) {
+          } else if ((outp[i] > 0 && (xjp[xi] > INT_MAX/outp[i] || xjp[xi] < INT_MIN/outp[i])) || // overflow -- be careful of inequalities and flipping signs
+                     (outp[i] < 0 && (xjp[xi] < INT_MAX/outp[i] || xjp[xi] > INT_MIN/outp[i]))) {
             warning(_("Inputs have exceeded .Machine$integer.max=%d in absolute value; returning NA. Please cast to numeric first to avoid this."), INT_MAX);
             outp[i] = NA_INTEGER;
           } else {
-            outp[i] += xjp[i];
+            outp[i] *= xjp[i];
           }
         }
       }
@@ -539,7 +543,7 @@ SEXP pprod(SEXP x, SEXP narmArg) {
               continue;
             }
             int xi = nj == 1 ? 0 : i;
-            outp[i] = xjp[xi] == NA_INTEGER ? NA_REAL : outp[i] + (double)xjp[xi];
+            outp[i] = xjp[xi] == NA_INTEGER ? NA_REAL : outp[i] * (double)xjp[xi];
           }
         } break;
         case REALSXP: {
@@ -549,7 +553,7 @@ SEXP pprod(SEXP x, SEXP narmArg) {
               continue;
             }
             int xi = nj == 1 ? 0 : i;
-            outp[i] = ISNAN(xjp[xi]) ? NA_REAL : outp[i] + xjp[xi];
+            outp[i] = ISNAN(xjp[xi]) ? NA_REAL : outp[i] * xjp[xi];
           }
         } break;
         default:
@@ -593,7 +597,8 @@ SEXP pprod(SEXP x, SEXP narmArg) {
                 outp[i].r = NA_REAL;
                 outp[i].i = NA_REAL;
               } else {
-                outp[i].r += (double)xjp[xi];
+                outp[i].r *= (double)xjp[xi];
+                outp[i].i *= (double)xjp[xi];
               }
             }
           }
@@ -607,7 +612,8 @@ SEXP pprod(SEXP x, SEXP narmArg) {
                 outp[i].r = NA_REAL;
                 outp[i].i = NA_REAL;
               } else {
-                outp[i].r += xjp[xi];
+                outp[i].r *= xjp[xi];
+                outp[i].i *= xjp[xi];
               }
             }
           }
@@ -621,8 +627,8 @@ SEXP pprod(SEXP x, SEXP narmArg) {
                 outp[i].r = NA_REAL;
                 outp[i].i = NA_REAL;
               } else {
-                outp[i].r += xjp[xi].r;
-                outp[i].i += xjp[xi].i;
+                outp[i].r = outp[i].r * xjp[xi].r - outp[i].i * xjp[xi].i;
+                outp[i].i = outp[i].r * xjp[xi].i + outp[i].i * xjp[xi].r;
               }
             }
           }
