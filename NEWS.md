@@ -81,6 +81,8 @@ unit = "s")
 
 14. Added support for `round()` and `trunc()` to extend functionality of `ITime`. `round()` and `trunc()` can be used with argument units: "hours" or "minutes". Thanks to @JensPederM for the suggestion and PR.
 
+15. New rowwise functions `psum`, `pprod`, `pany`, and `pall`, [#3467](https://github.com/Rdatatable/data.table/issues/1206). These take a sequence of inputs and apply the named function (e.g. `psum` -> `sum`) element-wise; logical, integer, numeric, and complex input are supported. This is analogous to existing `base::pmin` and `base::pmax` that similarly perform element-wise `min` and `max`; we hope that by demonstrating utility these new functions would eventually be included in `base` as well. The list was chosen to align with the set of `"Summary"` functions listed in `?groupGeneric`; `prange` was excluded because, as compared with the others, each element produces 2 outputs instead of 1. `psum(list(...), na.rm)` is treated the same as `psum(..., na.rm)` for convenience, so that `psum(.SD)` works.
+
 ## BUG FIXES
 
 1. A NULL timezone on POSIXct was interpreted by `as.IDate` and `as.ITime` as UTC rather than the session's default timezone (`tz=""`) , [#4085](https://github.com/Rdatatable/data.table/issues/4085).
