@@ -43,7 +43,6 @@ SEXP psum(SEXP x, SEXP narmArg) {
     }
   }
 
-  // TODO: support int->double conversion
   SEXP out = PROTECT(allocVector(outtype, n));
   if (n == 0) {
     UNPROTECT(1);
@@ -61,7 +60,14 @@ SEXP psum(SEXP x, SEXP narmArg) {
         for (int i=0; i<n; i++) {
           int xi = nj == 1 ? 0 : i; // recycling for singletons
           if (xjp[xi] != NA_INTEGER) { // NA_LOGICAL is the same
-            outp[i] = outp[i] == NA_INTEGER ? xjp[xi] : outp[i] + xjp[xi];
+            if (outp[i] == NA_INTEGER) {
+              outp[i] = xjp[xi];
+            } else {
+              if (INT_MAX - xjp[xi] < outp[i] || INT_MIN - xjp[xi] < outp[i]) { // overflow
+                error(_("Inputs have exceeded .Machine$integer.max=%d in absolute value; please cast to numeric first and try again"), INT_MAX);
+              }
+              outp[i] += xjp[xi];
+            }
           } // else remain as NA
         }
       }
@@ -106,8 +112,18 @@ SEXP psum(SEXP x, SEXP narmArg) {
         int nj = LENGTH(xj);
         int *xjp = INTEGER(xj);
         for (int i=0; i<n; i++) {
-          int xi = nj == 1 ? 0 : i;
-          outp[i] = outp[i] == NA_INTEGER || xjp[xi] == NA_INTEGER ? NA_INTEGER : outp[i] + xjp[xi];
+          if (outp[i] == NA_INTEGER) {
+            continue;
+          } else {
+            int xi = nj == 1 ? 0 : i;
+            if (xjp[xi] == NA_INTEGER) {
+              outp[i] = NA_INTEGER;
+            } else if (INT_MAX - xjp[xi] < outp[i] || INT_MIN - xjp[xi] < outp[i]) {
+              warning(_("Inputs have exceeded .Machine$integer.max=%d in absolute value; returning NA. Please cast to numeric first to avoid this."), INT_MAX);
+            } else {
+              outp[i] += xjp[i];
+            }
+          }
         }
       }
     } else { // REALSXP
