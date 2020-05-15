@@ -32,7 +32,14 @@ SEXP psum(SEXP x, SEXP narmArg) {
       if (INHERITS(xj, char_integer64)) {
         error(_("integer64 input not supported"));
       }
-      outtype = REALSXP;
+      if (outtype == INTSXP) { // bump if this is the first numeric we've seen
+        outtype = REALSXP;
+      }
+      break;
+    case CPLXSXP:
+      if (outtype != CPLXSXP) { // only bump if we're not already complex
+        outtype = CPLXSXP;
+      }
       break;
     default:
       error(_("Only numeric inputs are supported for psum"));
@@ -57,7 +64,8 @@ SEXP psum(SEXP x, SEXP narmArg) {
   if (LOGICAL(narmArg)[0]) {
     // initialize to NA to facilitate all-NA rows --> NA output
     writeNA(out, 0, n);
-    if (outtype == INTSXP) {
+    switch (outtype) {
+    case INTSXP: {
       int *outp = INTEGER(out);
       for (int j=0; j<J; j++) {
         SEXP xj = VECTOR_ELT(x, j);
@@ -77,7 +85,8 @@ SEXP psum(SEXP x, SEXP narmArg) {
           } // else remain as NA
         }
       }
-    } else { // REALSXP; special handling depending on whether each input is int/numeric
+    } break;
+    case REALSXP: { // REALSXP; special handling depending on whether each input is int/numeric
       double *outp = REAL(out);
       for (int j=0; j<J; j++) {
         SEXP xj = VECTOR_ELT(x, j);
@@ -105,9 +114,64 @@ SEXP psum(SEXP x, SEXP narmArg) {
           error(_("Internal error: should have caught non-INTSXP/REALSXP input by now"));
         }
       }
+    } break;
+    case CPLXSXP: {
+      Rcomplex *outp = COMPLEX(out);
+      for (int j=0; j<J; j++) {
+        SEXP xj = VECTOR_ELT(x, j);
+        int nj = LENGTH(xj);
+        switch (TYPEOF(xj)) {
+        case LGLSXP: case INTSXP: { // integer/numeric only increment the real part
+          int *xjp = INTEGER(xj);
+          for (int i=0; i<n; i++) {
+            int xi = nj == 1 ? 0 : i;
+            if (xjp[xi] != NA_INTEGER) {
+              if (ISNAN_COMPLEX(outp[i])) {
+                outp[i].r = (double)xjp[xi];
+                outp[i].i = 0;
+              } else {
+                outp[i].r += (double)xjp[xi];
+              }
+            }
+          }
+        } break;
+        case REALSXP: {
+          double *xjp = REAL(xj);
+          for (int i=0; i<n; i++) {
+            int xi = nj == 1 ? 0 : i;
+            if (!ISNAN(xjp[xi])) {
+              if (ISNAN_COMPLEX(outp[i])) {
+                outp[i].r = xjp[xi];
+                outp[i].i = 0;
+              } else {
+                outp[i].r += xjp[xi];
+              }
+            }
+          }
+        } break;
+        case CPLXSXP: {
+          Rcomplex *xjp = COMPLEX(xj);
+          for (int i=0; i<n; i++) {
+            int xi = nj == 1 ? 0 : i;
+            // can construct complex vectors with !is.na(Re) & is.na(Im) --
+            //   seems dubious to me, since print(z) only shows NA, not 3 + NAi
+            if (!ISNAN_COMPLEX(xjp[xi])) {
+              outp[i].r = ISNAN(outp[i].r) ? xjp[xi].r : outp[i].r + xjp[xi].r;
+              outp[i].i = ISNAN(outp[i].i) ? xjp[xi].i : outp[i].i + xjp[xi].i;
+            }
+          }
+        } break;
+        default:
+          error(_("Internal error: should have caught non-INTSXP/REALSXP input by now"));
+        }
+      }
+    } break;
+    default:
+      error(_("Internal error: should have caught non-INTSXP/REALSXP input by now"));
     }
   } else { // na.rm=FALSE
-    if (outtype == INTSXP) {
+    switch (outtype) {
+    case INTSXP: {
       int *outp = INTEGER(out);
       SEXP xj0 = VECTOR_ELT(x, 0);
       int nj0 = LENGTH(xj0);
@@ -120,19 +184,20 @@ SEXP psum(SEXP x, SEXP narmArg) {
         for (int i=0; i<n; i++) {
           if (outp[i] == NA_INTEGER) {
             continue;
+          }
+          int xi = nj == 1 ? 0 : i;
+          if (xjp[xi] == NA_INTEGER) {
+            outp[i] = NA_INTEGER;
+          } else if (INT_MAX - xjp[xi] < outp[i] || INT_MIN - xjp[xi] < outp[i]) {
+            warning(_("Inputs have exceeded .Machine$integer.max=%d in absolute value; returning NA. Please cast to numeric first to avoid this."), INT_MAX);
+            outp[i] = NA_INTEGER;
           } else {
-            int xi = nj == 1 ? 0 : i;
-            if (xjp[xi] == NA_INTEGER) {
-              outp[i] = NA_INTEGER;
-            } else if (INT_MAX - xjp[xi] < outp[i] || INT_MIN - xjp[xi] < outp[i]) {
-              warning(_("Inputs have exceeded .Machine$integer.max=%d in absolute value; returning NA. Please cast to numeric first to avoid this."), INT_MAX);
-            } else {
-              outp[i] += xjp[i];
-            }
+            outp[i] += xjp[i];
           }
         }
       }
-    } else { // REALSXP
+    } break;
+    case REALSXP: {
       double *outp = REAL(out);
       SEXP xj0 = VECTOR_ELT(x, 0);
       int nj0 = LENGTH(xj0);
@@ -150,21 +215,105 @@ SEXP psum(SEXP x, SEXP narmArg) {
         case LGLSXP: case INTSXP: {
           int *xjp = INTEGER(xj);
           for (int i=0; i<n; i++) {
+            if (ISNAN(outp[i])) {
+              continue;
+            }
             int xi = nj == 1 ? 0 : i;
-            outp[i] = outp[i] == NA_REAL || xjp[xi] == NA_INTEGER ? NA_REAL : outp[i] + (double)xjp[xi];
+            outp[i] = xjp[xi] == NA_INTEGER ? NA_REAL : outp[i] + (double)xjp[xi];
           }
         } break;
         case REALSXP: {
           double *xjp = REAL(xj);
           for (int i=0; i<n; i++) {
+            if (ISNAN(outp[i])) {
+              continue;
+            }
             int xi = nj == 1 ? 0 : i;
-            outp[i] = outp[i] == NA_REAL || xjp[xi] == NA_REAL ? NA_REAL : outp[i] + xjp[xi];
+            outp[i] = ISNAN(xjp[xi]) ? NA_REAL : outp[i] + xjp[xi];
           }
         } break;
         default:
           error(_("Internal error: should have caught non-INTSXP/REALSXP input by now"));
         }
       }
+    } break;
+    case CPLXSXP: {
+      Rcomplex *outp = COMPLEX(out);
+      SEXP xj0 = VECTOR_ELT(x, 0);
+      int nj0 = LENGTH(xj0);
+      switch (TYPEOF(xj0)) {
+      case INTSXP: {
+        int *xj0p = INTEGER(xj0);
+        for (int i=0; i<n; i++) outp[i].r = (double)xj0p[nj0 == 1 ? 0 : i];
+      } break;
+      case REALSXP: {
+        double *xj0p = REAL(xj0);
+        for (int i=0; i<n; i++) outp[i].r = xj0p[nj0 == 1 ? 0 : i];
+      } break;
+      case CPLXSXP: {
+        Rcomplex *xj0p = COMPLEX(xj0);
+        for (int i=0; i<n; i++) {
+          outp[i].r = xj0p[nj0 == 1 ? 0 : i].r;
+          outp[i].i = xj0p[nj0 == 1 ? 0 : i].i;
+        }
+      } break;
+      default:
+        error(_("Internal error: should have caught non-INTSXP/REALSXP input by now"));
+      }
+      for (int j=1; j<J; j++) {
+        SEXP xj=VECTOR_ELT(x, j);
+        int nj = LENGTH(xj);
+        switch (TYPEOF(xj)) {
+        case LGLSXP: case INTSXP: {
+          int *xjp = INTEGER(xj);
+          for (int i=0; i<n; i++) {
+            if (!ISNAN_COMPLEX(outp[i])) {
+              int xi = nj == 1 ? 0 : i;
+              if (xjp[xi] == NA_INTEGER) {
+                outp[i].r = NA_REAL;
+                outp[i].i = NA_REAL;
+              } else {
+                outp[i].r += (double)xjp[xi];
+              }
+            }
+          }
+        } break;
+        case REALSXP: {
+          double *xjp = REAL(xj);
+          for (int i=0; i<n; i++) {
+            if (!ISNAN_COMPLEX(outp[i])) {
+              int xi = nj == 1 ? 0 : i;
+              if (ISNAN(xjp[xi])) {
+                outp[i].r = NA_REAL;
+                outp[i].i = NA_REAL;
+              } else {
+                outp[i].r += xjp[xi];
+              }
+            }
+          }
+        } break;
+        case CPLXSXP: {
+          Rcomplex *xjp = COMPLEX(xj);
+          for (int i=0; i<n; i++) {
+            if (!ISNAN_COMPLEX(outp[i])) {
+              int xi = nj == 1 ? 0 : i;
+              if (ISNAN_COMPLEX(xjp[xi])) {
+                outp[i].r = NA_REAL;
+                outp[i].i = NA_REAL;
+              } else {
+                outp[i].r += xjp[xi].r;
+                outp[i].i += xjp[xi].i;
+              }
+            }
+          }
+        } break;
+        default:
+          error(_("Internal error: should have caught non-INTSXP/REALSXP input by now"));
+        }
+      }
+    } break;
+    default:
+      error(_("Internal error: should have caught non-INTSXP/REALSXP input by now"));
     }
   }
 
