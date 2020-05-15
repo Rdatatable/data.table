@@ -23,7 +23,7 @@ SEXP psum(SEXP x, SEXP narmArg) {
   for (int j=0; j<J; j++) {
     SEXP xj=VECTOR_ELT(x, j);
     switch(TYPEOF(xj)) {
-    case INTSXP:
+    case LGLSXP: case INTSXP:
       break;
     case REALSXP:
       outtype = REALSXP;
@@ -57,10 +57,10 @@ SEXP psum(SEXP x, SEXP narmArg) {
       for (int j=0; j<J; j++) {
         SEXP xj = VECTOR_ELT(x, j);
         int nj = LENGTH(xj);
-        int *xjp = INTEGER(xj);
+        int *xjp = INTEGER(xj); // INTEGER is the same as LOGICAL
         for (int i=0; i<n; i++) {
           int xi = nj == 1 ? 0 : i; // recycling for singletons
-          if (xjp[xi] != NA_INTEGER) {
+          if (xjp[xi] != NA_INTEGER) { // NA_LOGICAL is the same
             outp[i] = outp[i] == NA_INTEGER ? xjp[xi] : outp[i] + xjp[xi];
           } // else remain as NA
         }
@@ -71,7 +71,7 @@ SEXP psum(SEXP x, SEXP narmArg) {
         SEXP xj = VECTOR_ELT(x, j);
         int nj = LENGTH(xj);
         switch (TYPEOF(xj)) {
-        case INTSXP: {
+        case LGLSXP: case INTSXP: {
           int *xjp = INTEGER(xj);
           for (int i=0; i<n; i++) {
             int xi = nj == 1 ? 0 : i;
@@ -125,7 +125,7 @@ SEXP psum(SEXP x, SEXP narmArg) {
         SEXP xj=VECTOR_ELT(x, j);
         int nj = LENGTH(xj);
         switch (TYPEOF(xj)) {
-        case INTSXP: {
+        case LGLSXP: case INTSXP: {
           int *xjp = INTEGER(xj);
           for (int i=0; i<n; i++) {
             int xi = nj == 1 ? 0 : i;
