@@ -942,7 +942,7 @@ SEXP pall(SEXP x, SEXP narmArg) {
               if (outp[i] == NA_LOGICAL) {
                 outp[i] = xjp[xi] == 0 ? 0 : 1;
               } else if (outp[i] == 1 && xjp[xi] == 0) {
-                outp[i] = 1;
+                outp[i] = 0;
               }
             }
           }
