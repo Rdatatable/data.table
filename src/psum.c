@@ -2,7 +2,7 @@
 
 // like base::p{max,min}, but for sum
 SEXP psum(SEXP x, SEXP narmArg) {
-  if (!isNewList(x)) error(_("Internal error: x must be a list"));
+  if (!isNewList(x)) error(_("Internal error: x must be a list")); // # nocov
   if (!isLogical(narmArg) || LENGTH(narmArg)!=1 || LOGICAL(narmArg)[0]==NA_LOGICAL) error(_("na.rm must be TRUE or FALSE"));
 
   int J=LENGTH(x);
@@ -78,7 +78,7 @@ SEXP psum(SEXP x, SEXP narmArg) {
               outp[i] = xjp[xi];
             } else {
               if ((xjp[xi] > 0 && INT_MAX - xjp[xi] < outp[i]) ||
-                  (xjp[xi] < 0 && INT_MIN - xjp[xi] < outp[i])) { // overflow
+                  (xjp[xi] < 0 && INT_MIN - xjp[xi] > outp[i])) { // overflow
                 error(_("Inputs have exceeded .Machine$integer.max=%d in absolute value; please cast to numeric first and try again"), INT_MAX);
               }
               outp[i] += xjp[xi];
@@ -112,7 +112,7 @@ SEXP psum(SEXP x, SEXP narmArg) {
           }
         } break;
         default:
-          error(_("Internal error: should have caught non-INTSXP/REALSXP input by now"));
+          error(_("Internal error: should have caught non-INTSXP/REALSXP input by now")); // # nocov
         }
       }
     } break;
@@ -163,12 +163,12 @@ SEXP psum(SEXP x, SEXP narmArg) {
           }
         } break;
         default:
-          error(_("Internal error: should have caught non-INTSXP/REALSXP input by now"));
+          error(_("Internal error: should have caught non-INTSXP/REALSXP input by now")); // # nocov
         }
       }
     } break;
     default:
-      error(_("Internal error: should have caught non-INTSXP/REALSXP input by now"));
+      error(_("Internal error: should have caught non-INTSXP/REALSXP input by now")); // # nocov
     }
   } else { // na.rm=FALSE
     switch (outtype) {
@@ -190,7 +190,7 @@ SEXP psum(SEXP x, SEXP narmArg) {
           if (xjp[xi] == NA_INTEGER) {
             outp[i] = NA_INTEGER;
           } else if ((xjp[xi] > 0 && INT_MAX - xjp[xi] < outp[i]) ||
-                     (xjp[xi] < 0 && INT_MIN - xjp[xi] < outp[i])) {
+                     (xjp[xi] < 0 && INT_MIN - xjp[xi] > outp[i])) {
             warning(_("Inputs have exceeded .Machine$integer.max=%d in absolute value; returning NA. Please cast to numeric first to avoid this."), INT_MAX);
             outp[i] = NA_INTEGER;
           } else {
@@ -235,7 +235,7 @@ SEXP psum(SEXP x, SEXP narmArg) {
           }
         } break;
         default:
-          error(_("Internal error: should have caught non-INTSXP/REALSXP input by now"));
+          error(_("Internal error: should have caught non-INTSXP/REALSXP input by now")); // # nocov
         }
       }
     } break;
@@ -260,7 +260,7 @@ SEXP psum(SEXP x, SEXP narmArg) {
         }
       } break;
       default:
-        error(_("Internal error: should have caught non-INTSXP/REALSXP input by now"));
+        error(_("Internal error: should have caught non-INTSXP/REALSXP input by now")); // # nocov
       }
       for (int j=1; j<J; j++) {
         SEXP xj=VECTOR_ELT(x, j);
@@ -310,12 +310,12 @@ SEXP psum(SEXP x, SEXP narmArg) {
           }
         } break;
         default:
-          error(_("Internal error: should have caught non-INTSXP/REALSXP input by now"));
+          error(_("Internal error: should have caught non-INTSXP/REALSXP input by now")); // # nocov
         }
       }
     } break;
     default:
-      error(_("Internal error: should have caught non-INTSXP/REALSXP input by now"));
+      error(_("Internal error: should have caught non-INTSXP/REALSXP input by now")); // # nocov
     }
   }
 
@@ -324,7 +324,7 @@ SEXP psum(SEXP x, SEXP narmArg) {
 }
 
 SEXP pprod(SEXP x, SEXP narmArg) {
-  if (!isNewList(x)) error(_("Internal error: x must be a list"));
+  if (!isNewList(x)) error(_("Internal error: x must be a list")); // # nocov
   if (!isLogical(narmArg) || LENGTH(narmArg)!=1 || LOGICAL(narmArg)[0]==NA_LOGICAL) error(_("na.rm must be TRUE or FALSE"));
 
   int J=LENGTH(x);
@@ -434,7 +434,7 @@ SEXP pprod(SEXP x, SEXP narmArg) {
           }
         } break;
         default:
-          error(_("Internal error: should have caught non-INTSXP/REALSXP input by now"));
+          error(_("Internal error: should have caught non-INTSXP/REALSXP input by now")); // # nocov
         }
       }
     } break;
@@ -493,12 +493,12 @@ SEXP pprod(SEXP x, SEXP narmArg) {
           }
         } break;
         default:
-          error(_("Internal error: should have caught non-INTSXP/REALSXP input by now"));
+          error(_("Internal error: should have caught non-INTSXP/REALSXP input by now")); // # nocov
         }
       }
     } break;
     default:
-      error(_("Internal error: should have caught non-INTSXP/REALSXP input by now"));
+      error(_("Internal error: should have caught non-INTSXP/REALSXP input by now")); // # nocov
     }
   } else { // na.rm=FALSE
     switch (outtype) {
@@ -565,7 +565,7 @@ SEXP pprod(SEXP x, SEXP narmArg) {
           }
         } break;
         default:
-          error(_("Internal error: should have caught non-INTSXP/REALSXP input by now"));
+          error(_("Internal error: should have caught non-INTSXP/REALSXP input by now")); // # nocov
         }
       }
     } break;
@@ -590,7 +590,7 @@ SEXP pprod(SEXP x, SEXP narmArg) {
         }
       } break;
       default:
-        error(_("Internal error: should have caught non-INTSXP/REALSXP input by now"));
+        error(_("Internal error: should have caught non-INTSXP/REALSXP input by now")); // # nocov
       }
       for (int j=1; j<J; j++) {
         SEXP xj=VECTOR_ELT(x, j);
@@ -643,12 +643,12 @@ SEXP pprod(SEXP x, SEXP narmArg) {
           }
         } break;
         default:
-          error(_("Internal error: should have caught non-INTSXP/REALSXP input by now"));
+          error(_("Internal error: should have caught non-INTSXP/REALSXP input by now")); // # nocov
         }
       }
     } break;
     default:
-      error(_("Internal error: should have caught non-INTSXP/REALSXP input by now"));
+      error(_("Internal error: should have caught non-INTSXP/REALSXP input by now")); // # nocov
     }
   }
 
@@ -657,7 +657,7 @@ SEXP pprod(SEXP x, SEXP narmArg) {
 }
 
 SEXP pany(SEXP x, SEXP narmArg) {
-  if (!isNewList(x)) error(_("Internal error: x must be a list"));
+  if (!isNewList(x)) error(_("Internal error: x must be a list")); // # nocov
   if (!isLogical(narmArg) || LENGTH(narmArg)!=1 || LOGICAL(narmArg)[0]==NA_LOGICAL) error(_("na.rm must be TRUE or FALSE"));
 
   int J=LENGTH(x);
@@ -763,7 +763,7 @@ SEXP pany(SEXP x, SEXP narmArg) {
           }
         } break;
         default:
-          error(_("Internal error: should have caught non-INTSXP/REALSXP input by now"));
+          error(_("Internal error: should have caught non-INTSXP/REALSXP input by now")); // # nocov
         }
       }
   } else { // na.rm=FALSE
@@ -793,7 +793,7 @@ SEXP pany(SEXP x, SEXP narmArg) {
       }
     } break;
     default:
-      error(_("Internal error: should have caught non-INTSXP/REALSXP input by now"));
+      error(_("Internal error: should have caught non-INTSXP/REALSXP input by now")); // # nocov
     }
     for (int j=1; j<J; j++) {
       SEXP xj=VECTOR_ELT(x, j);
@@ -833,7 +833,7 @@ SEXP pany(SEXP x, SEXP narmArg) {
         }
       } break;
       default:
-        error(_("Internal error: should have caught non-INTSXP/REALSXP input by now"));
+        error(_("Internal error: should have caught non-INTSXP/REALSXP input by now")); // # nocov
       }
     }
   }
@@ -843,7 +843,7 @@ SEXP pany(SEXP x, SEXP narmArg) {
 }
 
 SEXP pall(SEXP x, SEXP narmArg) {
-  if (!isNewList(x)) error(_("Internal error: x must be a list"));
+  if (!isNewList(x)) error(_("Internal error: x must be a list")); // # nocov
   if (!isLogical(narmArg) || LENGTH(narmArg)!=1 || LOGICAL(narmArg)[0]==NA_LOGICAL) error(_("na.rm must be TRUE or FALSE"));
 
   int J=LENGTH(x);
@@ -949,7 +949,7 @@ SEXP pall(SEXP x, SEXP narmArg) {
           }
         } break;
         default:
-          error(_("Internal error: should have caught non-INTSXP/REALSXP input by now"));
+          error(_("Internal error: should have caught non-INTSXP/REALSXP input by now")); // # nocov
         }
       }
   } else { // na.rm=FALSE
@@ -979,7 +979,7 @@ SEXP pall(SEXP x, SEXP narmArg) {
       }
     } break;
     default:
-      error(_("Internal error: should have caught non-INTSXP/REALSXP input by now"));
+      error(_("Internal error: should have caught non-INTSXP/REALSXP input by now")); // # nocov
     }
     for (int j=1; j<J; j++) {
       SEXP xj=VECTOR_ELT(x, j);
@@ -1019,7 +1019,7 @@ SEXP pall(SEXP x, SEXP narmArg) {
         }
       } break;
       default:
-        error(_("Internal error: should have caught non-INTSXP/REALSXP input by now"));
+        error(_("Internal error: should have caught non-INTSXP/REALSXP input by now")); // # nocov
       }
     }
   }

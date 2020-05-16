@@ -17006,6 +17006,20 @@ for (FUN in c('psum', 'pprod', 'pany', 'pall')) {
 M = .Machine$integer.max
 test(TEST+testi/1000+.001, psum(M-5L, 10L), NA_integer_, warning="Inputs have exceeded .Machine$integer.max")
 test(TEST+testi/1000+.002, psum(M-5L, -10L), M-15L)
+test(TEST+testi/1000+.003, psum(-M+5L, -10L), NA_integer_, warning="Inputs have exceeded .Machine$integer.max")
+test(TEST+testi/1000+.004, psum(-M+5L, 10L), 15L-M)
+test(TEST+testi/1000+.005, psum(M-5L, 10L, na.rm=TRUE), error="Inputs have exceeded .Machine$integer.max")
+test(TEST+testi/1000+.006, psum(M-5L, -10L, na.rm=TRUE), M-15L)
+test(TEST+testi/1000+.007, psum(-M+5L, -10L, na.rm=TRUE), error="Inputs have exceeded .Machine$integer.max")
+test(TEST+testi/1000+.008, psum(-M+5L, 10L, na.rm=TRUE), 15L-M)
+test(TEST+testi/1000+.009, pprod(as.integer(M/2L), 5L), NA_integer_, warning="Inputs have exceeded .Machine$integer.max")
+test(TEST+testi/1000+.010, pprod(as.integer(M/2L), 2L), M-1L)
+test(TEST+testi/1000+.011, pprod(-as.integer(M/2L), -5L), NA_integer_, warning="Inputs have exceeded .Machine$integer.max")
+test(TEST+testi/1000+.012, pprod(-as.integer(M/2L), 2L), 1L-M)
+test(TEST+testi/1000+.013, pprod(as.integer(M/2L), 5L, na.rm=TRUE), error="Inputs have exceeded .Machine$integer.max")
+test(TEST+testi/1000+.014, pprod(as.integer(M/2L), -2L, na.rm=TRUE), 1L-M)
+test(TEST+testi/1000+.015, pprod(-as.integer(M/2L), -5L, na.rm=TRUE), error="Inputs have exceeded .Machine$integer.max")
+test(TEST+testi/1000+.016, pprod(-as.integer(M/2L), 2L, na.rm=TRUE), 1L-M)
 
 if (test_bit64) {
   i64 = as.integer64(1)
