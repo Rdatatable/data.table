@@ -98,7 +98,7 @@ SEXP psum(SEXP x, SEXP narmArg) {
           for (int i=0; i<n; i++) {
             int xi = nj == 1 ? 0 : i;
             if (xjp[xi] != NA_INTEGER) {
-              outp[i] = ISNAN(outp[i]) ? (double)xjp[xi] : outp[i] + (double)xjp[xi];
+              outp[i] = ISNAN(outp[i]) ? xjp[xi] : outp[i] + xjp[xi];
             }
           }
         } break;
@@ -128,10 +128,10 @@ SEXP psum(SEXP x, SEXP narmArg) {
             int xi = nj == 1 ? 0 : i;
             if (xjp[xi] != NA_INTEGER) {
               if (ISNAN_COMPLEX(outp[i])) {
-                outp[i].r = (double)xjp[xi];
+                outp[i].r = xjp[xi];
                 outp[i].i = 0;
               } else {
-                outp[i].r += (double)xjp[xi];
+                outp[i].r += xjp[xi];
               }
             }
           }
@@ -205,8 +205,8 @@ SEXP psum(SEXP x, SEXP narmArg) {
       int nj0 = LENGTH(xj0);
       if (TYPEOF(xj0) == INTSXP) {
         int *xj0p = INTEGER(xj0);
-        for (int i=0; i<n; i++) outp[i] = (double)xj0p[nj0 == 1 ? 0 : i];
-      } else { // x[[1]] must be REALSXP in current logic
+        for (int i=0; i<n; i++) outp[i] = xj0p[nj0 == 1 ? 0 : i];
+      } else {
         double *xj0p = REAL(xj0);
         for (int i=0; i<n; i++) outp[i] = xj0p[nj0 == 1 ? 0 : i];
       }
@@ -221,7 +221,7 @@ SEXP psum(SEXP x, SEXP narmArg) {
               continue;
             }
             int xi = nj == 1 ? 0 : i;
-            outp[i] = xjp[xi] == NA_INTEGER ? NA_REAL : outp[i] + (double)xjp[xi];
+            outp[i] = xjp[xi] == NA_INTEGER ? NA_REAL : outp[i] + xjp[xi];
           }
         } break;
         case REALSXP: {
@@ -246,7 +246,7 @@ SEXP psum(SEXP x, SEXP narmArg) {
       switch (TYPEOF(xj0)) {
       case LGLSXP: case INTSXP: {
         int *xj0p = INTEGER(xj0);
-        for (int i=0; i<n; i++) outp[i].r = (double)xj0p[nj0 == 1 ? 0 : i];
+        for (int i=0; i<n; i++) outp[i].r = xj0p[nj0 == 1 ? 0 : i];
       } break;
       case REALSXP: {
         double *xj0p = REAL(xj0);
@@ -275,7 +275,7 @@ SEXP psum(SEXP x, SEXP narmArg) {
                 outp[i].r = NA_REAL;
                 outp[i].i = NA_REAL;
               } else {
-                outp[i].r += (double)xjp[xi];
+                outp[i].r += xjp[xi];
               }
             }
           }
@@ -420,7 +420,7 @@ SEXP pprod(SEXP x, SEXP narmArg) {
           for (int i=0; i<n; i++) {
             int xi = nj == 1 ? 0 : i;
             if (xjp[xi] != NA_INTEGER) {
-              outp[i] = ISNAN(outp[i]) ? (double)xjp[xi] : outp[i] * (double)xjp[xi];
+              outp[i] = ISNAN(outp[i]) ? xjp[xi] : outp[i] * xjp[xi];
             }
           }
         } break;
@@ -450,11 +450,11 @@ SEXP pprod(SEXP x, SEXP narmArg) {
             int xi = nj == 1 ? 0 : i;
             if (xjp[xi] != NA_INTEGER) {
               if (ISNAN_COMPLEX(outp[i])) {
-                outp[i].r = (double)xjp[xi];
+                outp[i].r = xjp[xi];
                 outp[i].i = 0;
               } else {
-                outp[i].r *= (double)xjp[xi];
-                outp[i].i *= (double)xjp[xi];
+                outp[i].r *= xjp[xi];
+                outp[i].i *= xjp[xi];
               }
             }
           }
@@ -529,7 +529,7 @@ SEXP pprod(SEXP x, SEXP narmArg) {
       int nj0 = LENGTH(xj0);
       if (TYPEOF(xj0) == INTSXP) {
         int *xj0p = INTEGER(xj0);
-        for (int i=0; i<n; i++) outp[i] = (double)xj0p[nj0 == 1 ? 0 : i];
+        for (int i=0; i<n; i++) outp[i] = xj0p[nj0 == 1 ? 0 : i];
       } else { // x[[1]] must be REALSXP in current logic
         double *xj0p = REAL(xj0);
         for (int i=0; i<n; i++) outp[i] = xj0p[nj0 == 1 ? 0 : i];
@@ -545,7 +545,7 @@ SEXP pprod(SEXP x, SEXP narmArg) {
               continue;
             }
             int xi = nj == 1 ? 0 : i;
-            outp[i] = xjp[xi] == NA_INTEGER ? NA_REAL : outp[i] * (double)xjp[xi];
+            outp[i] = xjp[xi] == NA_INTEGER ? NA_REAL : outp[i] * xjp[xi];
           }
         } break;
         case REALSXP: {
@@ -570,7 +570,7 @@ SEXP pprod(SEXP x, SEXP narmArg) {
       switch (TYPEOF(xj0)) {
       case LGLSXP: case INTSXP: {
         int *xj0p = INTEGER(xj0);
-        for (int i=0; i<n; i++) outp[i].r = (double)xj0p[nj0 == 1 ? 0 : i];
+        for (int i=0; i<n; i++) outp[i].r = xj0p[nj0 == 1 ? 0 : i];
       } break;
       case REALSXP: {
         double *xj0p = REAL(xj0);
@@ -599,8 +599,8 @@ SEXP pprod(SEXP x, SEXP narmArg) {
                 outp[i].r = NA_REAL;
                 outp[i].i = NA_REAL;
               } else {
-                outp[i].r *= (double)xjp[xi];
-                outp[i].i *= (double)xjp[xi];
+                outp[i].r *= xjp[xi];
+                outp[i].i *= xjp[xi];
               }
             }
           }
