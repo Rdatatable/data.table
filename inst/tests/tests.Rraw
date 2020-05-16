@@ -16921,6 +16921,7 @@ for (FUN in c('psum', 'pprod', 'pany', 'pall')) {
   do_ptest(i3, na.rm=TRUE)
   do_ptest(i1, i2)
   do_ptest(i1, i2, na.rm=TRUE)
+  do_ptest(i3, i1)
   do_ptest(i1, i2, i3)
   do_ptest(i1, i2, i3, na.rm=TRUE)
   do_ptest(i5)
@@ -16974,16 +16975,20 @@ for (FUN in c('psum', 'pprod', 'pany', 'pall')) {
   do_ptest(i1, d2)
   do_ptest(i1, d2, na.rm=TRUE)
   do_ptest(i1, d2, i3)
+  do_ptest(d3, i1)
+  do_ptest(z1, i3)
   do_ptest(d1, i2, d3, na.rm=TRUE)
   do_ptest(d1, i5, na.rm=TRUE)
   do_ptest(i3, d4, i5, na.rm=TRUE)
   do_ptest(i1, z2, l3, d4)
   do_ptest(d2, z1)
-  do_ptest(z4, i2, d5, l2, na.rm=TRUE)
+  do_ptest(z3, i2, d5, l2, na.rm=TRUE)
+  do_ptest(z3, d2, na.rm=TRUE)
   do_ptest(d3, z4, l1, na.rm=TRUE)
 
   ## singleton inputs
   do_ptest(i1, 1L)
+  do_ptest(1L, i1)
   do_ptest(i1, i3, 2L, na.rm = TRUE)
   do_ptest(i5, 4L, na.rm = TRUE)
   do_ptest(i1, d3, 2L, na.rm = TRUE)
@@ -17002,7 +17007,7 @@ for (FUN in c('psum', 'pprod', 'pany', 'pall')) {
   test(TEST+testi/1000+.002, eval(call(FUN, f1, f1)), error='not meaningful for factor')
   test(TEST+testi/1000+.003, eval(call(FUN, r1, r1)), error='Only logical, numeric and complex inputs')
   test(TEST+testi/1000+.004, eval(call(FUN, 1:5, 1:3)), error="Inconsistent input lengths")
-  test(TEST+testi/1000+.005, eval(call(FUN, logical())), logical())
+  test(TEST+testi/1000+.005, eval(call(FUN, logical(), logical())), logical())
   testi = testi+5
 }
 
