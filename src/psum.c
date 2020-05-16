@@ -42,7 +42,7 @@ SEXP psum(SEXP x, SEXP narmArg) {
       }
       break;
     default:
-      error(_("Only logical, numeric & complex inputs are supported for %s"), "psum");
+      error(_("Only logical, numeric and complex inputs are supported for %s"), "psum");
     }
     if (n >= 0) {
       int nj = LENGTH(xj);
@@ -246,11 +246,17 @@ SEXP psum(SEXP x, SEXP narmArg) {
       switch (TYPEOF(xj0)) {
       case LGLSXP: case INTSXP: {
         int *xj0p = INTEGER(xj0);
-        for (int i=0; i<n; i++) outp[i].r = xj0p[nj0 == 1 ? 0 : i];
+        for (int i=0; i<n; i++) {
+          outp[i].r = xj0p[nj0 == 1 ? 0 : i];
+          outp[i].i = 0;
+        }
       } break;
       case REALSXP: {
         double *xj0p = REAL(xj0);
-        for (int i=0; i<n; i++) outp[i].r = xj0p[nj0 == 1 ? 0 : i];
+        for (int i=0; i<n; i++) {
+          outp[i].r = xj0p[nj0 == 1 ? 0 : i];
+          outp[i].i = 0;
+        }
       } break;
       case CPLXSXP: {
         Rcomplex *xj0p = COMPLEX(xj0);
@@ -576,11 +582,17 @@ SEXP pprod(SEXP x, SEXP narmArg) {
       switch (TYPEOF(xj0)) {
       case LGLSXP: case INTSXP: {
         int *xj0p = INTEGER(xj0);
-        for (int i=0; i<n; i++) outp[i].r = xj0p[nj0 == 1 ? 0 : i];
+        for (int i=0; i<n; i++) {
+          outp[i].r = xj0p[nj0 == 1 ? 0 : i];
+          outp[i].i = 0;
+        }
       } break;
       case REALSXP: {
         double *xj0p = REAL(xj0);
-        for (int i=0; i<n; i++) outp[i].r = xj0p[nj0 == 1 ? 0 : i];
+        for (int i=0; i<n; i++) {
+          outp[i].r = xj0p[nj0 == 1 ? 0 : i];
+          outp[i].i = 0;
+        }
       } break;
       case CPLXSXP: {
         Rcomplex *xj0p = COMPLEX(xj0);
@@ -696,7 +708,7 @@ SEXP pany(SEXP x, SEXP narmArg) {
     case CPLXSXP:
       break;
     default:
-      error(_("Only logical, numeric & complex inputs are supported for %s"), "pany");
+      error(_("Only logical, numeric and complex inputs are supported for %s"), "pany");
     }
     if (n >= 0) {
       int nj = LENGTH(xj);
@@ -882,7 +894,7 @@ SEXP pall(SEXP x, SEXP narmArg) {
     case CPLXSXP:
       break;
     default:
-      error(_("Only logical, numeric & complex inputs are supported for %s"), "pall");
+      error(_("Only logical, numeric and complex inputs are supported for %s"), "pall");
     }
     if (n >= 0) {
       int nj = LENGTH(xj);
