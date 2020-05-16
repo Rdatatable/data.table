@@ -772,17 +772,24 @@ SEXP pany(SEXP x, SEXP narmArg) {
     switch (TYPEOF(xj0)) {
     case LGLSXP: case INTSXP: {
       int *xj0p = INTEGER(xj0);
-      for (int i=0; i<n; i++) outp[i] = xj0p[nj0 == 1 ? 0 : i] == 0 ? 0 : 1;
+      for (int i=0; i<n; i++) {
+        int xi = nj0 == 1 ? 0 : i;
+        outp[i] = xj0p[xi] == 0 ? 0 : (xj0p[xi] == NA_INTEGER ? NA_LOGICAL : 1);
+      }
     } break;
     case REALSXP: {
       double *xj0p = REAL(xj0);
-      for (int i=0; i<n; i++) outp[i] = xj0p[nj0 == 1 ? 0 : i] == 0 ? 0 : 1;
+      for (int i=0; i<n; i++) {
+        int xi = nj0 == 1 ? 0 : i;
+        outp[i] = xj0p[xi] == 0 ? 0 : (ISNAN(xj0p[xi]) ? NA_LOGICAL : 1);
+      }
     } break;
     case CPLXSXP: {
       Rcomplex *xj0p = COMPLEX(xj0);
       for (int i=0; i<n; i++) {
-        int idx = nj0 == 1 ? 0 : i;
-        outp[i] = xj0p[idx].r == 0 && xj0p[idx].i == 0 ? 0 : 1;
+        int xi = nj0 == 1 ? 0 : i;
+        outp[i] = xj0p[xi].r == 0 && xj0p[xi].i == 0 ? 0 :
+              (ISNAN(xj0p[xi].r || ISNAN(xj0p[xi].i)) ? NA_LOGICAL : 1);
       }
     } break;
     default:
@@ -795,39 +802,33 @@ SEXP pany(SEXP x, SEXP narmArg) {
       case LGLSXP: case INTSXP: {
         int *xjp = INTEGER(xj);
         for (int i=0; i<n; i++) {
-          if (outp[i] != NA_LOGICAL) {
-            int xi = nj == 1 ? 0 : i;
-            if (xjp[xi] == NA_INTEGER) {
-              outp[i] = NA_LOGICAL;
-            } else if (outp[i] == 0 && xjp[xi] != 0) {
-              outp[i] = 1;
-            }
+          int xi = nj == 1 ? 0 : i;
+          if (xjp[xi] == NA_INTEGER && outp[i] != NA_LOGICAL) {
+            outp[i] = NA_LOGICAL;
+          } else if (outp[i] != 1 && xjp[xi] != 0) { // outp[i] NA also erased by xjp[xi] != 0
+            outp[i] = 1;
           }
         }
       } break;
       case REALSXP: {
         double *xjp = REAL(xj);
         for (int i=0; i<n; i++) {
-          if (outp[i] != NA_LOGICAL) {
-            int xi = nj == 1 ? 0 : i;
-            if (ISNAN(xjp[xi])) {
-              outp[i] = NA_LOGICAL;
-            } else if (outp[i] == 0 && xjp[xi] != 0) {
-              outp[i] = 1;
-            }
+          int xi = nj == 1 ? 0 : i;
+          if (ISNAN(xjp[xi]) && outp[i] != NA_LOGICAL) {
+            outp[i] = NA_LOGICAL;
+          } else if (outp[i] != 1 && xjp[xi] != 0) {
+            outp[i] = 1;
           }
         }
       } break;
       case CPLXSXP: {
         Rcomplex *xjp = COMPLEX(xj);
         for (int i=0; i<n; i++) {
-          if (outp[i] != NA_LOGICAL) {
-            int xi = nj == 1 ? 0 : i;
-            if (ISNAN_COMPLEX(xjp[xi])) {
-              outp[i] = NA_LOGICAL;
-            } else if (outp[i] == 0 && (xjp[xi].r != 0 || xjp[xi].i != 0)) {
-              outp[i] = 1;
-            }
+          int xi = nj == 1 ? 0 : i;
+          if (ISNAN_COMPLEX(xjp[xi]) && outp[i] != NA_LOGICAL) {
+            outp[i] = NA_LOGICAL;
+          } else if (outp[i] !=1 && (xjp[xi].r != 0 || xjp[xi].i != 0)) {
+            outp[i] = 1;
           }
         }
       } break;
@@ -957,17 +958,24 @@ SEXP pall(SEXP x, SEXP narmArg) {
     switch (TYPEOF(xj0)) {
     case LGLSXP: case INTSXP: {
       int *xj0p = INTEGER(xj0);
-      for (int i=0; i<n; i++) outp[i] = xj0p[nj0 == 1 ? 0 : i] == 0 ? 0 : 1;
+      for (int i=0; i<n; i++) {
+        int xi = nj0 == 1 ? 0 : i;
+        outp[i] = xj0p[xi] == 0 ? 0 : (xj0p[xi] == NA_INTEGER ? NA_LOGICAL : 1);
+      }
     } break;
     case REALSXP: {
       double *xj0p = REAL(xj0);
-      for (int i=0; i<n; i++) outp[i] = xj0p[nj0 == 1 ? 0 : i] == 0 ? 0 : 1;
+      for (int i=0; i<n; i++) {
+        int xi = nj0 == 1 ? 0 : i;
+        outp[i] = xj0p[xi] == 0 ? 0 : (ISNAN(xj0p[xi]) ? NA_LOGICAL : 1);
+      }
     } break;
     case CPLXSXP: {
       Rcomplex *xj0p = COMPLEX(xj0);
       for (int i=0; i<n; i++) {
-        int idx = nj0 == 1 ? 0 : i;
-        outp[i] = xj0p[idx].r == 0 && xj0p[idx].i == 0 ? 0 : 1;
+        int xi = nj0 == 1 ? 0 : i;
+        outp[i] = xj0p[xi].r == 0 && xj0p[xi].i == 0 ? 0 :
+              (ISNAN(xj0p[xi].r || ISNAN(xj0p[xi].i)) ? NA_LOGICAL : 1);
       }
     } break;
     default:

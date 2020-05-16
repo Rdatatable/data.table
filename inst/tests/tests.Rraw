@@ -16888,6 +16888,7 @@ get_manual = function(FUN, ELEMENT) {
   function(..., na.rm=FALSE) {
     l = list(...)
     if (length(l) == 1L && is.list(l[[1L]])) l = l[[1L]]
+    if (length(l) == 1L && (identical(FUN, `|`) || identical(FUN, `&`))) l[[1L]] = as.logical(l[[1L]])
     if (na.rm) {
       # TODO: nafill to support complex input, then use nafill here
       out = Reduce(FUN, lapply(l, function(x) {x[is.na(x)] = as(ELEMENT, typeof(x)); x}))
