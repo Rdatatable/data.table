@@ -203,11 +203,11 @@ SEXP psum(SEXP x, SEXP narmArg) {
       double *outp = REAL(out);
       SEXP xj0 = VECTOR_ELT(x, 0);
       int nj0 = LENGTH(xj0);
-      if (TYPEOF(xj0) == INTSXP) {
-        int *xj0p = INTEGER(xj0);
+      if (TYPEOF(xj0) == REALSXP) {
+        double *xj0p = REAL(xj0);
         for (int i=0; i<n; i++) outp[i] = xj0p[nj0 == 1 ? 0 : i];
       } else {
-        double *xj0p = REAL(xj0);
+        int *xj0p = INTEGER(xj0);
         for (int i=0; i<n; i++) outp[i] = xj0p[nj0 == 1 ? 0 : i];
       }
       for (int j=1; j<J; j++) {
@@ -539,11 +539,11 @@ SEXP pprod(SEXP x, SEXP narmArg) {
       double *outp = REAL(out);
       SEXP xj0 = VECTOR_ELT(x, 0);
       int nj0 = LENGTH(xj0);
-      if (TYPEOF(xj0) == INTSXP) {
-        int *xj0p = INTEGER(xj0);
-        for (int i=0; i<n; i++) outp[i] = xj0p[nj0 == 1 ? 0 : i];
-      } else { // x[[1]] must be REALSXP in current logic
+      if (TYPEOF(xj0) == REALSXP) {
         double *xj0p = REAL(xj0);
+        for (int i=0; i<n; i++) outp[i] = xj0p[nj0 == 1 ? 0 : i];
+      } else {
+        int *xj0p = INTEGER(xj0);
         for (int i=0; i<n; i++) outp[i] = xj0p[nj0 == 1 ? 0 : i];
       }
       for (int j=1; j<J; j++) {

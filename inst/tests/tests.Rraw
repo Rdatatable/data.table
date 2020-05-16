@@ -16856,7 +16856,7 @@ test(2138.4, rbind(A,B), data.table(A=c(as.character(A$A), B$A)))
 
 # psum, pprod, pany, pall
 i1 = 1:10
-i2 = 10:1
+i2 = 9:0
 i3 = replace(i1, 5:6, NA)
 i4 = replace(i2, 6:9, NA)
 i5 = replace(i1, seq_along(i1), NA)
@@ -16867,7 +16867,7 @@ d3 = as.numeric(i3)
 d4 = as.numeric(i4)
 d5 = as.numeric(i5)
 
-l1 = as.logical(i1)
+l1 = 1:10 < 4
 l2 = !as.logical(i2)
 l3 = as.logical(i3)
 l4 = 1:10 > 5
@@ -16985,6 +16985,13 @@ for (FUN in c('psum', 'pprod', 'pany', 'pall')) {
   do_ptest(z3, i2, d5, l2, na.rm=TRUE)
   do_ptest(z3, d2, na.rm=TRUE)
   do_ptest(d3, z4, l1, na.rm=TRUE)
+  do_ptest(l1, d1, na.rm=TRUE)
+  do_ptest(l1, z1, na.rm=TRUE)
+  do_ptest(l1, i3)
+  do_ptest(l1, d3)
+  do_ptest(l1, z3)
+  do_ptest(l3, d3)
+  do_ptest(l3, d2, na.rm=TRUE)
 
   ## singleton inputs
   do_ptest(i1, 1L)
@@ -16997,6 +17004,8 @@ for (FUN in c('psum', 'pprod', 'pany', 'pall')) {
   do_ptest(z1, 1L)
   do_ptest(z1, 1)
   do_ptest(z1, 1-4i)
+  do_ptest(l3, 0+0i)
+  do_ptest(l3, 0+0i, na.rm=TRUE)
 
   ## psum(list(...), na.rm)
   do_ptest(list(i1, i2, i3, d3))
