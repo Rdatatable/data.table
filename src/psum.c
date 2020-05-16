@@ -988,39 +988,33 @@ SEXP pall(SEXP x, SEXP narmArg) {
       case LGLSXP: case INTSXP: {
         int *xjp = INTEGER(xj);
         for (int i=0; i<n; i++) {
-          if (outp[i] != NA_LOGICAL) {
-            int xi = nj == 1 ? 0 : i;
-            if (xjp[xi] == NA_INTEGER) {
-              outp[i] = NA_LOGICAL;
-            } else if (outp[i] == 1 && xjp[xi] == 0) {
-              outp[i] = 0;
-            }
+          int xi = nj == 1 ? 0 : i;
+          if (xjp[xi] == NA_INTEGER && outp[i] == 1) { // NA stays NA, 0 stays 0
+            outp[i] = NA_LOGICAL;
+          } else if (outp[i] != 0 && xjp[xi] == 0) { // NA and 1 become 0
+            outp[i] = 0;
           }
         }
       } break;
       case REALSXP: {
         double *xjp = REAL(xj);
         for (int i=0; i<n; i++) {
-          if (outp[i] != NA_LOGICAL) {
-            int xi = nj == 1 ? 0 : i;
-            if (ISNAN(xjp[xi])) {
-              outp[i] = NA_LOGICAL;
-            } else if (outp[i] == 1 && xjp[xi] == 0) {
-              outp[i] = 0;
-            }
+          int xi = nj == 1 ? 0 : i;
+          if (ISNAN(xjp[xi]) && outp[i] == 1) {
+            outp[i] = NA_LOGICAL;
+          } else if (outp[i] != 0 && xjp[xi] == 0) {
+            outp[i] = 0;
           }
         }
       } break;
       case CPLXSXP: {
         Rcomplex *xjp = COMPLEX(xj);
         for (int i=0; i<n; i++) {
-          if (outp[i] != NA_LOGICAL) {
-            int xi = nj == 1 ? 0 : i;
-            if (ISNAN_COMPLEX(xjp[xi])) {
-              outp[i] = NA_LOGICAL;
-            } else if (outp[i] == 1 && xjp[xi].r == 0 && xjp[xi].i == 0) {
-              outp[i] = 0;
-            }
+          int xi = nj == 1 ? 0 : i;
+          if (ISNAN_COMPLEX(xjp[xi]) && outp[i] == 1) {
+            outp[i] = NA_LOGICAL;
+          } else if (outp[i] != 0 && xjp[xi].r == 0 && xjp[xi].i == 0) {
+            outp[i] = 0;
           }
         }
       } break;
