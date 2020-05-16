@@ -16881,7 +16881,7 @@ z5 = complex(real = d4, imaginary = d2)
 
 TEST=2139
 testi = 0
-manual_env = new.environment()
+manual_env = new.env()
 # function factory
 get_manual = function(FUN) {
   function(..., na.rm=FALSE) {
