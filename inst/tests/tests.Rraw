@@ -17007,7 +17007,8 @@ for (FUN in c('psum', 'pprod', 'pany', 'pall')) {
   test(TEST+testi/1000+.002, eval(call(FUN, f1, f1)), error='not meaningful for factor')
   test(TEST+testi/1000+.003, eval(call(FUN, r1, r1)), error='Only logical, numeric and complex inputs')
   test(TEST+testi/1000+.004, eval(call(FUN, 1:5, 1:3)), error="Inconsistent input lengths")
-  test(TEST+testi/1000+.005, eval(call(FUN, logical(), logical())), logical())
+  test(TEST+testi/1000+.005, eval(call(FUN, logical(), logical())),
+       if (FUN %chin% c('psum', 'pprod')) integer() else logical())
   testi = testi+5
 }
 
