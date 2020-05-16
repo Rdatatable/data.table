@@ -248,14 +248,14 @@ SEXP psum(SEXP x, SEXP narmArg) {
         int *xj0p = INTEGER(xj0);
         for (int i=0; i<n; i++) {
           outp[i].r = xj0p[nj0 == 1 ? 0 : i];
-          outp[i].i = 0;
+          outp[i].i = xj0p[nj0 == 1 ? 0 : i] == NA_INTEGER ? NA_REAL : 0;
         }
       } break;
       case REALSXP: {
         double *xj0p = REAL(xj0);
         for (int i=0; i<n; i++) {
           outp[i].r = xj0p[nj0 == 1 ? 0 : i];
-          outp[i].i = 0;
+          outp[i].i = ISNAN(xj0p[nj0 == 1 ? 0 : i]) ? NA_REAL : 0;
         }
       } break;
       case CPLXSXP: {
@@ -584,14 +584,14 @@ SEXP pprod(SEXP x, SEXP narmArg) {
         int *xj0p = INTEGER(xj0);
         for (int i=0; i<n; i++) {
           outp[i].r = xj0p[nj0 == 1 ? 0 : i];
-          outp[i].i = 0;
+          outp[i].i = xj0p[nj0 == 1 ? 0 : i] == NA_INTEGER ? NA_REAL : 0;
         }
       } break;
       case REALSXP: {
         double *xj0p = REAL(xj0);
         for (int i=0; i<n; i++) {
           outp[i].r = xj0p[nj0 == 1 ? 0 : i];
-          outp[i].i = 0;
+          outp[i].i = ISNAN(xj0p[nj0 == 1 ? 0 : i]) ? NA_REAL : 0;
         }
       } break;
       case CPLXSXP: {
@@ -818,7 +818,7 @@ SEXP pany(SEXP x, SEXP narmArg) {
           if (xjp[xi] == NA_INTEGER && outp[i] == 0) {
             outp[i] = NA_LOGICAL;
           } else if (outp[i] != 1 && xjp[xi] != 0) { // outp[i] NA also erased by xjp[xi] != 0
-            outp[i] = 1;
+            outp[i] = xjp[xi] == NA_LOGICAL ? xjp[xi] : 1;
           }
         }
       } break;
@@ -829,7 +829,7 @@ SEXP pany(SEXP x, SEXP narmArg) {
           if (ISNAN(xjp[xi]) && outp[i] == 0) {
             outp[i] = NA_LOGICAL;
           } else if (outp[i] != 1 && xjp[xi] != 0) {
-            outp[i] = 1;
+            outp[i] = ISNAN(xjp[xi]) ? NA_LOGICAL : 1;
           }
         }
       } break;
@@ -839,8 +839,8 @@ SEXP pany(SEXP x, SEXP narmArg) {
           int xi = nj == 1 ? 0 : i;
           if (ISNAN_COMPLEX(xjp[xi]) && outp[i] == 0) {
             outp[i] = NA_LOGICAL;
-          } else if (outp[i] !=1 && (xjp[xi].r != 0 || xjp[xi].i != 0)) {
-            outp[i] = 1;
+          } else if (outp[i] != 1 && (xjp[xi].r != 0 || xjp[xi].i != 0)) {
+            outp[i] = ISNAN(xjp[xi].r) ? NA_LOGICAL : 1;
           }
         }
       } break;
