@@ -25,7 +25,7 @@ SEXP psum(SEXP x, SEXP narmArg) {
     switch(TYPEOF(xj)) {
     case LGLSXP: case INTSXP:
       if (isFactor(xj)) {
-        error(_("psum not meaningful for factors"));
+        error(_("%s not meaningful for factors"), "psum");
       }
       break;
     case REALSXP:
@@ -347,7 +347,7 @@ SEXP pprod(SEXP x, SEXP narmArg) {
     switch(TYPEOF(xj)) {
     case LGLSXP: case INTSXP:
       if (isFactor(xj)) {
-        error(_("pprod not meaningful for factors"));
+        error(_("%s not meaningful for factors"), "pprod");
       }
       break;
     case REALSXP:
@@ -685,7 +685,7 @@ SEXP pany(SEXP x, SEXP narmArg) {
     switch(TYPEOF(xj)) {
     case LGLSXP: case INTSXP:
       if (isFactor(xj)) {
-        error(_("pany not meaningful for factors"));
+        error(_("%s not meaningful for factors"), "pany");
       }
       break;
     case REALSXP:
@@ -871,7 +871,7 @@ SEXP pall(SEXP x, SEXP narmArg) {
     switch(TYPEOF(xj)) {
     case LGLSXP: case INTSXP:
       if (isFactor(xj)) {
-        error(_("pall not meaningful for factors"));
+        error(_("%s not meaningful for factors"), "pall");
       }
       break;
     case REALSXP:

@@ -16879,6 +16879,9 @@ z3 = complex(real = d3, imaginary = d4)
 z4 = complex(real = d1, imaginary = d5)
 z5 = complex(real = d4, imaginary = d2)
 
+f1 = factor(1)
+r1 = as.raw(0)
+
 TEST=2139
 testi = 0
 manual_env = new.env()
@@ -16989,4 +16992,25 @@ for (FUN in c('psum', 'pprod', 'pany', 'pall')) {
   ## psum(list(...), na.rm)
   do_ptest(list(i1, i2, i3, d3))
   do_ptest(list(i1, i5, d2), na.rm = TRUE)
+
+  ## some validation errors shared over all p* functions
+  test(TEST+testi/1000+.001, eval(call(FUN)), error='Empty input')
+  test(TEST+testi/1000+.002, eval(call(FUN, f1, f1)), error='not meaningful for factor')
+  test(TEST+testi/1000+.003, eval(call(FUN, r1, r1)), error='Only logical, numeric & complex inputs')
+  test(TEST+testi/1000+.004, eval(call(FUN, 1:5, 1:3)), error="Inconsistent input lengths")
+  test(TEST+testi/1000+.005, eval(call(FUN, logical())), logical())
+  testi = testi+5
+}
+
+## edge cases, errors, etc.
+M = .Machine$integer.max
+test(TEST+testi/1000+.001, psum(M-5L, 10L), NA_integer_, warning="Inputs have exceeded .Machine$integer.max")
+test(TEST+testi/1000+.002, psum(M-5L, -10L), M-15L)
+
+if (test_bit64) {
+  i64 = as.integer64(1)
+  test(TEST + testi/1000 + .001, psum(i64, i64), error="integer64 input not supported")
+  test(TEST + testi/1000 + .002, pprod(i64, i64), error="integer64 input not supported")
+  test(TEST + testi/1000 + .003, pany(i64, i64), error="integer64 input not supported")
+  test(TEST + testi/1000 + .004, pall(i64, i64), error="integer64 input not supported")
 }
