@@ -16882,31 +16882,32 @@ z5 = complex(real = d4, imaginary = d2)
 TEST=2139
 testi = 0
 manual_env = new.env()
+test_env = environment()
 # function factory
-get_manual = function(FUN) {
+get_manual = function(FUN, ELEMENT) {
   function(..., na.rm=FALSE) {
     l = list(...)
     if (length(l) == 1L && is.list(l[[1L]])) l = l[[1L]]
     if (na.rm) {
       # TODO: nafill to support complex input, then use nafill here
-      out = Reduce(FUN, lapply(l, function(x) {x[is.na(x)] = as(0, typeof(x)); x}))
+      out = Reduce(FUN, lapply(l, function(x) {x[is.na(x)] = as(ELEMENT, typeof(x)); x}))
       is.na(out) = Reduce(`&`, lapply(l, is.na))
       return(out)
     }
     Reduce(FUN, l)
   }
 }
-manual_env$psum = get_manual(`+`)
-manual_env$pprod = get_manual(`*`)
-manual_env$pany = get_manual(`|`)
-manual_env$pall = get_manual(`&`)
+manual_env$psum = get_manual(`+`, 0)
+manual_env$pprod = get_manual(`*`, 1)
+manual_env$pany = get_manual(`|`, 0)
+manual_env$pall = get_manual(`&`, 1)
 
 for (FUN in c('psum', 'pprod', 'pany', 'pall')) {
   # define here --> get FUN from parent
   do_ptest = function(..., na.rm=FALSE) {
     q = do.call(call, c(list(FUN), list(...), list(na.rm = na.rm)))
     testi <<- testi + 1
-    test(TEST + testi/1000, eval(q), eval(q, envir=manual_env))
+    test(TEST + testi/1000, eval(q, envir=test_env), eval(q, envir=manual_env))
   }
 
   ### integer input

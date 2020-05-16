@@ -481,8 +481,14 @@ SEXP pprod(SEXP x, SEXP narmArg) {
             // can construct complex vectors with !is.na(Re) & is.na(Im) --
             //   seems dubious to me, since print(z) only shows NA, not 3 + NAi
             if (!ISNAN_COMPLEX(xjp[xi])) {
-              outp[i].r = ISNAN(outp[i].r) ? xjp[xi].r : outp[i].r * xjp[xi].r - outp[i].i * xjp[xi].i;
-              outp[i].i = ISNAN(outp[i].i) ? xjp[xi].i : outp[i].i * xjp[xi].r + outp[i].r * xjp[xi].i;
+              if (ISNAN(outp[i].r) || ISNAN(outp[i].i)) {
+                outp[i].r = xjp[xi].r;
+                outp[i].i = xjp[xi].i;
+              } else {
+                double tmp=outp[i].r; // can't simultaneously assign Re&Im, need to remember Re pre-update
+                outp[i].r = outp[i].r * xjp[xi].r - outp[i].i * xjp[xi].i;
+                outp[i].i = outp[i].i * xjp[xi].r + tmp * xjp[xi].i;
+              }
             }
           }
         } break;
@@ -518,7 +524,7 @@ SEXP pprod(SEXP x, SEXP narmArg) {
             warning(_("Inputs have exceeded .Machine$integer.max=%d in absolute value; returning NA. Please cast to numeric first to avoid this."), INT_MAX);
             outp[i] = NA_INTEGER;
           } else {
-            outp[i] *= xjp[i];
+            outp[i] *= xjp[xi];
           }
         }
       }
@@ -629,8 +635,9 @@ SEXP pprod(SEXP x, SEXP narmArg) {
                 outp[i].r = NA_REAL;
                 outp[i].i = NA_REAL;
               } else {
+                double tmp=outp[i].r; // see na.rm=TRUE branch
                 outp[i].r = outp[i].r * xjp[xi].r - outp[i].i * xjp[xi].i;
-                outp[i].i = outp[i].r * xjp[xi].i + outp[i].i * xjp[xi].r;
+                outp[i].i = tmp * xjp[xi].i + outp[i].i * xjp[xi].r;
               }
             }
           }
