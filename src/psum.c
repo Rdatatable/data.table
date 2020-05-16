@@ -194,7 +194,7 @@ SEXP psum(SEXP x, SEXP narmArg) {
             warning(_("Inputs have exceeded .Machine$integer.max=%d in absolute value; returning NA. Please cast to numeric first to avoid this."), INT_MAX);
             outp[i] = NA_INTEGER;
           } else {
-            outp[i] += xjp[i];
+            outp[i] += xjp[xi];
           }
         }
       }
