@@ -803,7 +803,7 @@ SEXP pany(SEXP x, SEXP narmArg) {
         int *xjp = INTEGER(xj);
         for (int i=0; i<n; i++) {
           int xi = nj == 1 ? 0 : i;
-          if (xjp[xi] == NA_INTEGER && outp[i] != NA_LOGICAL) {
+          if (xjp[xi] == NA_INTEGER && outp[i] == 0) {
             outp[i] = NA_LOGICAL;
           } else if (outp[i] != 1 && xjp[xi] != 0) { // outp[i] NA also erased by xjp[xi] != 0
             outp[i] = 1;
@@ -814,7 +814,7 @@ SEXP pany(SEXP x, SEXP narmArg) {
         double *xjp = REAL(xj);
         for (int i=0; i<n; i++) {
           int xi = nj == 1 ? 0 : i;
-          if (ISNAN(xjp[xi]) && outp[i] != NA_LOGICAL) {
+          if (ISNAN(xjp[xi]) && outp[i] == 0) {
             outp[i] = NA_LOGICAL;
           } else if (outp[i] != 1 && xjp[xi] != 0) {
             outp[i] = 1;
@@ -825,7 +825,7 @@ SEXP pany(SEXP x, SEXP narmArg) {
         Rcomplex *xjp = COMPLEX(xj);
         for (int i=0; i<n; i++) {
           int xi = nj == 1 ? 0 : i;
-          if (ISNAN_COMPLEX(xjp[xi]) && outp[i] != NA_LOGICAL) {
+          if (ISNAN_COMPLEX(xjp[xi]) && outp[i] == 0) {
             outp[i] = NA_LOGICAL;
           } else if (outp[i] !=1 && (xjp[xi].r != 0 || xjp[xi].i != 0)) {
             outp[i] = 1;
