@@ -2,27 +2,30 @@
 
 // like base::p{max,min}, but for sum
 SEXP psum(SEXP x, SEXP narmArg) {
-  if (!isNewList(x)) error(_("Internal error: x must be a list")); // # nocov
+  if (!isNewList(x))
+    error(_("Internal error: x must be a list")); // # nocov
 
+  SEXP xj;
   int J=LENGTH(x);
   if (J == 0) {
     error(_("Empty input"));
   } else if (J == 1) {
-    SEXP xj0 = VECTOR_ELT(x, 0);
-    if (TYPEOF(xj0) == VECSXP) { // e.g. psum(.SD)
-      return psum(xj0, narmArg);
+    xj = VECTOR_ELT(x, 0);
+    if (TYPEOF(xj) == VECSXP) { // e.g. psum(.SD)
+      return psum(xj, narmArg);
     } else {
       // na.rm doesn't matter -- input --> output
-      return duplicate(xj0);
+      return duplicate(xj);
     }
   }
 
-  if (!isLogical(narmArg) || LENGTH(narmArg)!=1 || LOGICAL(narmArg)[0]==NA_LOGICAL) error(_("na.rm must be TRUE or FALSE"));
+  if (!isLogical(narmArg) || LENGTH(narmArg)!=1 || LOGICAL(narmArg)[0]==NA_LOGICAL)
+    error(_("na.rm must be TRUE or FALSE"));
 
   SEXPTYPE outtype = INTSXP;
-  int n = -1;
+  int n = -1, nj, xi;
   for (int j=0; j<J; j++) {
-    SEXP xj=VECTOR_ELT(x, j);
+    xj = VECTOR_ELT(x, j);
     switch(TYPEOF(xj)) {
     case LGLSXP: case INTSXP:
       if (isFactor(xj)) {
@@ -46,7 +49,7 @@ SEXP psum(SEXP x, SEXP narmArg) {
       error(_("Only logical, numeric and complex inputs are supported for %s"), "psum");
     }
     if (n >= 0) {
-      int nj = LENGTH(xj);
+      nj = LENGTH(xj);
       if (n == 1 && nj > 1) {
         n = nj; // singleton comes first, vector comes later [psum(1, 1:4)]
       } else if (nj != 1 && nj != n) {
@@ -67,13 +70,13 @@ SEXP psum(SEXP x, SEXP narmArg) {
     writeNA(out, 0, n);
     switch (outtype) {
     case INTSXP: {
-      int *outp = INTEGER(out);
+      int *outp = INTEGER(out), *xjp;
       for (int j=0; j<J; j++) {
-        SEXP xj = VECTOR_ELT(x, j);
-        int nj = LENGTH(xj);
-        int *xjp = INTEGER(xj); // INTEGER is the same as LOGICAL
+        xj = VECTOR_ELT(x, j);
+        nj = LENGTH(xj);
+        xjp = INTEGER(xj); // INTEGER is the same as LOGICAL
         for (int i=0; i<n; i++) {
-          int xi = nj == 1 ? 0 : i; // recycling for singletons
+          xi = nj == 1 ? 0 : i; // recycling for singletons
           if (xjp[xi] != NA_INTEGER) { // NA_LOGICAL is the same
             if (outp[i] == NA_INTEGER) {
               outp[i] = xjp[xi];
@@ -89,24 +92,24 @@ SEXP psum(SEXP x, SEXP narmArg) {
       }
     } break;
     case REALSXP: { // REALSXP; special handling depending on whether each input is int/numeric
-      double *outp = REAL(out);
+      double *outp = REAL(out), *xjp; // since outtype is REALSXP, there's at least one REAL column
       for (int j=0; j<J; j++) {
-        SEXP xj = VECTOR_ELT(x, j);
-        int nj = LENGTH(xj);
+        xj = VECTOR_ELT(x, j);
+        nj = LENGTH(xj);
         switch (TYPEOF(xj)) {
         case LGLSXP: case INTSXP: {
           int *xjp = INTEGER(xj);
           for (int i=0; i<n; i++) {
-            int xi = nj == 1 ? 0 : i;
+            xi = nj == 1 ? 0 : i;
             if (xjp[xi] != NA_INTEGER) {
               outp[i] = ISNAN(outp[i]) ? xjp[xi] : outp[i] + xjp[xi];
             }
           }
         } break;
         case REALSXP: {
-          double *xjp = REAL(xj);
+          xjp = REAL(xj);
           for (int i=0; i<n; i++) {
-            int xi = nj == 1 ? 0 : i;
+            xi = nj == 1 ? 0 : i;
             if (!ISNAN(xjp[xi])) {
               outp[i] = ISNAN(outp[i]) ? xjp[xi] : outp[i] + xjp[xi];
             }
@@ -118,15 +121,15 @@ SEXP psum(SEXP x, SEXP narmArg) {
       }
     } break;
     case CPLXSXP: {
-      Rcomplex *outp = COMPLEX(out);
+      Rcomplex *outp = COMPLEX(out), *xjp;
       for (int j=0; j<J; j++) {
-        SEXP xj = VECTOR_ELT(x, j);
-        int nj = LENGTH(xj);
+        xj = VECTOR_ELT(x, j);
+        nj = LENGTH(xj);
         switch (TYPEOF(xj)) {
         case LGLSXP: case INTSXP: { // integer/numeric only increment the real part
           int *xjp = INTEGER(xj);
           for (int i=0; i<n; i++) {
-            int xi = nj == 1 ? 0 : i;
+            xi = nj == 1 ? 0 : i;
             if (xjp[xi] != NA_INTEGER) {
               if (ISNAN_COMPLEX(outp[i])) {
                 outp[i].r = xjp[xi];
@@ -140,7 +143,7 @@ SEXP psum(SEXP x, SEXP narmArg) {
         case REALSXP: {
           double *xjp = REAL(xj);
           for (int i=0; i<n; i++) {
-            int xi = nj == 1 ? 0 : i;
+            xi = nj == 1 ? 0 : i;
             if (!ISNAN(xjp[xi])) {
               if (ISNAN_COMPLEX(outp[i])) {
                 outp[i].r = xjp[xi];
@@ -152,9 +155,9 @@ SEXP psum(SEXP x, SEXP narmArg) {
           }
         } break;
         case CPLXSXP: {
-          Rcomplex *xjp = COMPLEX(xj);
+          xjp = COMPLEX(xj);
           for (int i=0; i<n; i++) {
-            int xi = nj == 1 ? 0 : i;
+            xi = nj == 1 ? 0 : i;
             // can construct complex vectors with !is.na(Re) & is.na(Im) --
             //   seems dubious to me, since print(z) only shows NA, not 3 + NAi
             if (!ISNAN_COMPLEX(xjp[xi])) {
@@ -174,20 +177,20 @@ SEXP psum(SEXP x, SEXP narmArg) {
   } else { // na.rm=FALSE
     switch (outtype) {
     case INTSXP: {
-      int *outp = INTEGER(out);
-      SEXP xj0 = VECTOR_ELT(x, 0);
-      int nj0 = LENGTH(xj0);
-      int *xj0p = INTEGER(xj0);
-      for (int i=0; i<n; i++) outp[i] = xj0p[nj0 == 1 ? 0 : i];
+      int *outp = INTEGER(out), *xjp;
+      xj = VECTOR_ELT(x, 0);
+      nj = LENGTH(xj);
+      xjp = INTEGER(xj);
+      for (int i=0; i<n; i++) outp[i] = xjp[nj == 1 ? 0 : i];
       for (int j=1; j<J; j++) { // J>=2 by now
-        SEXP xj = VECTOR_ELT(x, j);
-        int nj = LENGTH(xj);
-        int *xjp = INTEGER(xj);
+        xj = VECTOR_ELT(x, j);
+        nj = LENGTH(xj);
+        xjp = INTEGER(xj);
         for (int i=0; i<n; i++) {
           if (outp[i] == NA_INTEGER) {
             continue;
           }
-          int xi = nj == 1 ? 0 : i;
+          xi = nj == 1 ? 0 : i;
           if (xjp[xi] == NA_INTEGER) {
             outp[i] = NA_INTEGER;
           } else if ((xjp[xi] > 0 && INT_MAX - xjp[xi] < outp[i]) ||
@@ -201,19 +204,22 @@ SEXP psum(SEXP x, SEXP narmArg) {
       }
     } break;
     case REALSXP: {
-      double *outp = REAL(out);
-      SEXP xj0 = VECTOR_ELT(x, 0);
-      int nj0 = LENGTH(xj0);
-      if (TYPEOF(xj0) == REALSXP) {
-        double *xj0p = REAL(xj0);
-        for (int i=0; i<n; i++) outp[i] = xj0p[nj0 == 1 ? 0 : i];
+      double *outp = REAL(out), *xjp;
+      xj = VECTOR_ELT(x, 0);
+      nj = LENGTH(xj);
+      if (TYPEOF(xj) == REALSXP) {
+        xjp = REAL(xj);
+        for (int i=0; i<n; i++) outp[i] = xjp[nj == 1 ? 0 : i];
       } else {
-        int *xj0p = INTEGER(xj0);
-        for (int i=0; i<n; i++) outp[i] = xj0p[nj0 == 1 ? 0 : i];
+        int *xjp = INTEGER(xj);
+        for (int i=0; i<n; i++) {
+          xi = nj == 1 ? 0 : i;
+          outp[i] = xjp[xi] == NA_INTEGER ? NA_REAL : xjp[xi];
+        }
       }
       for (int j=1; j<J; j++) {
-        SEXP xj=VECTOR_ELT(x, j);
-        int nj = LENGTH(xj);
+        xj = VECTOR_ELT(x, j);
+        nj = LENGTH(xj);
         switch (TYPEOF(xj)) {
         case LGLSXP: case INTSXP: {
           int *xjp = INTEGER(xj);
@@ -221,17 +227,17 @@ SEXP psum(SEXP x, SEXP narmArg) {
             if (ISNAN(outp[i])) {
               continue;
             }
-            int xi = nj == 1 ? 0 : i;
+            xi = nj == 1 ? 0 : i;
             outp[i] = xjp[xi] == NA_INTEGER ? NA_REAL : outp[i] + xjp[xi];
           }
         } break;
         case REALSXP: {
-          double *xjp = REAL(xj);
+          xjp = REAL(xj);
           for (int i=0; i<n; i++) {
             if (ISNAN(outp[i])) {
               continue;
             }
-            int xi = nj == 1 ? 0 : i;
+            xi = nj == 1 ? 0 : i;
             outp[i] = ISNAN(xjp[xi]) ? NA_REAL : outp[i] + xjp[xi];
           }
         } break;
@@ -241,43 +247,46 @@ SEXP psum(SEXP x, SEXP narmArg) {
       }
     } break;
     case CPLXSXP: {
-      Rcomplex *outp = COMPLEX(out);
-      SEXP xj0 = VECTOR_ELT(x, 0);
-      int nj0 = LENGTH(xj0);
-      switch (TYPEOF(xj0)) {
+      Rcomplex *outp = COMPLEX(out), *xjp;
+      xj = VECTOR_ELT(x, 0);
+      nj = LENGTH(xj);
+      switch (TYPEOF(xj)) {
       case LGLSXP: case INTSXP: {
-        int *xj0p = INTEGER(xj0);
+        int *xjp = INTEGER(xj);
         for (int i=0; i<n; i++) {
-          outp[i].r = xj0p[nj0 == 1 ? 0 : i];
-          outp[i].i = xj0p[nj0 == 1 ? 0 : i] == NA_INTEGER ? NA_REAL : 0;
+          xi = nj == 1 ? 0 : i;
+          outp[i].r = xjp[xi] == NA_INTEGER ? NA_REAL : xjp[xi];
+          outp[i].i = xjp[xi] == NA_INTEGER ? NA_REAL : 0;
         }
       } break;
       case REALSXP: {
-        double *xj0p = REAL(xj0);
+        double *xjp = REAL(xj);
         for (int i=0; i<n; i++) {
-          outp[i].r = xj0p[nj0 == 1 ? 0 : i];
-          outp[i].i = ISNAN(xj0p[nj0 == 1 ? 0 : i]) ? NA_REAL : 0;
+          xi = nj == 1 ? 0 : i;
+          outp[i].r = xjp[xi];
+          outp[i].i = ISNAN(xjp[xi]) ? NA_REAL : 0;
         }
       } break;
       case CPLXSXP: {
-        Rcomplex *xj0p = COMPLEX(xj0);
+        xjp = COMPLEX(xj);
         for (int i=0; i<n; i++) {
-          outp[i].r = xj0p[nj0 == 1 ? 0 : i].r;
-          outp[i].i = xj0p[nj0 == 1 ? 0 : i].i;
+          xi = nj == 1 ? 0 : i;
+          outp[i].r = xjp[xi].r;
+          outp[i].i = xjp[xi].i;
         }
       } break;
       default:
         error(_("Internal error: should have caught non-INTSXP/REALSXP input by now")); // # nocov
       }
       for (int j=1; j<J; j++) {
-        SEXP xj=VECTOR_ELT(x, j);
-        int nj = LENGTH(xj);
+        xj = VECTOR_ELT(x, j);
+        nj = LENGTH(xj);
         switch (TYPEOF(xj)) {
         case LGLSXP: case INTSXP: {
           int *xjp = INTEGER(xj);
           for (int i=0; i<n; i++) {
             if (!ISNAN_COMPLEX(outp[i])) {
-              int xi = nj == 1 ? 0 : i;
+              xi = nj == 1 ? 0 : i;
               if (xjp[xi] == NA_INTEGER) {
                 outp[i].r = NA_REAL;
                 outp[i].i = NA_REAL;
@@ -291,7 +300,7 @@ SEXP psum(SEXP x, SEXP narmArg) {
           double *xjp = REAL(xj);
           for (int i=0; i<n; i++) {
             if (!ISNAN_COMPLEX(outp[i])) {
-              int xi = nj == 1 ? 0 : i;
+              xi = nj == 1 ? 0 : i;
               if (ISNAN(xjp[xi])) {
                 outp[i].r = NA_REAL;
                 outp[i].i = NA_REAL;
@@ -302,10 +311,10 @@ SEXP psum(SEXP x, SEXP narmArg) {
           }
         } break;
         case CPLXSXP: {
-          Rcomplex *xjp = COMPLEX(xj);
+          xjp = COMPLEX(xj);
           for (int i=0; i<n; i++) {
             if (!ISNAN_COMPLEX(outp[i])) {
-              int xi = nj == 1 ? 0 : i;
+              xi = nj == 1 ? 0 : i;
               if (ISNAN_COMPLEX(xjp[xi])) {
                 outp[i].r = NA_REAL;
                 outp[i].i = NA_REAL;
@@ -331,7 +340,8 @@ SEXP psum(SEXP x, SEXP narmArg) {
 }
 
 SEXP pprod(SEXP x, SEXP narmArg) {
-  if (!isNewList(x)) error(_("Internal error: x must be a list")); // # nocov
+  if (!isNewList(x))
+    error(_("Internal error: x must be a list")); // # nocov
 
   int J=LENGTH(x);
   if (J == 0) {
@@ -346,7 +356,8 @@ SEXP pprod(SEXP x, SEXP narmArg) {
     }
   }
 
-  if (!isLogical(narmArg) || LENGTH(narmArg)!=1 || LOGICAL(narmArg)[0]==NA_LOGICAL) error(_("na.rm must be TRUE or FALSE"));
+  if (!isLogical(narmArg) || LENGTH(narmArg)!=1 || LOGICAL(narmArg)[0]==NA_LOGICAL)
+    error(_("na.rm must be TRUE or FALSE"));
 
   SEXPTYPE outtype = INTSXP;
   int n = -1;
@@ -695,7 +706,8 @@ SEXP pprod(SEXP x, SEXP narmArg) {
 }
 
 SEXP pany(SEXP x, SEXP narmArg) {
-  if (!isNewList(x)) error(_("Internal error: x must be a list")); // # nocov
+  if (!isNewList(x))
+    error(_("Internal error: x must be a list")); // # nocov
 
   int J=LENGTH(x);
   if (J == 0) {
@@ -716,7 +728,8 @@ SEXP pany(SEXP x, SEXP narmArg) {
     }
   }
 
-  if (!isLogical(narmArg) || LENGTH(narmArg)!=1 || LOGICAL(narmArg)[0]==NA_LOGICAL) error(_("na.rm must be TRUE or FALSE"));
+  if (!isLogical(narmArg) || LENGTH(narmArg)!=1 || LOGICAL(narmArg)[0]==NA_LOGICAL)
+    error(_("na.rm must be TRUE or FALSE"));
 
   int n = -1;
   for (int j=0; j<J; j++) {
@@ -882,7 +895,8 @@ SEXP pany(SEXP x, SEXP narmArg) {
 }
 
 SEXP pall(SEXP x, SEXP narmArg) {
-  if (!isNewList(x)) error(_("Internal error: x must be a list")); // # nocov
+  if (!isNewList(x))
+    error(_("Internal error: x must be a list")); // # nocov
 
   int J=LENGTH(x);
   if (J == 0) {
@@ -903,7 +917,8 @@ SEXP pall(SEXP x, SEXP narmArg) {
     }
   }
 
-  if (!isLogical(narmArg) || LENGTH(narmArg)!=1 || LOGICAL(narmArg)[0]==NA_LOGICAL) error(_("na.rm must be TRUE or FALSE"));
+  if (!isLogical(narmArg) || LENGTH(narmArg)!=1 || LOGICAL(narmArg)[0]==NA_LOGICAL)
+    error(_("na.rm must be TRUE or FALSE"));
 
   int n = -1;
   for (int j=0; j<J; j++) {

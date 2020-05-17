@@ -16992,6 +16992,7 @@ for (FUN in c('psum', 'pprod', 'pany', 'pall')) {
   do_ptest(l1, z3)
   do_ptest(l3, d3)
   do_ptest(l3, d2, na.rm=TRUE)
+  do_ptest(i3, d1)
 
   ## singleton inputs
   do_ptest(i1, 1L)
