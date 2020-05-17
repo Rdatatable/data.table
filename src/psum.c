@@ -804,7 +804,7 @@ SEXP pany(SEXP x, SEXP narmArg) {
       for (int i=0; i<n; i++) {
         int xi = nj0 == 1 ? 0 : i;
         outp[i] = xj0p[xi].r == 0 && xj0p[xi].i == 0 ? 0 :
-              (ISNAN(xj0p[xi].r || ISNAN(xj0p[xi].i)) ? NA_LOGICAL : 1);
+              (ISNAN(xj0p[xi].r) || ISNAN(xj0p[xi].i) ? NA_LOGICAL : 1);
       }
     } break;
     default:
@@ -991,7 +991,7 @@ SEXP pall(SEXP x, SEXP narmArg) {
       for (int i=0; i<n; i++) {
         int xi = nj0 == 1 ? 0 : i;
         outp[i] = xj0p[xi].r == 0 && xj0p[xi].i == 0 ? 0 :
-              (ISNAN(xj0p[xi].r || ISNAN(xj0p[xi].i)) ? NA_LOGICAL : 1);
+              (ISNAN(xj0p[xi].r) || ISNAN(xj0p[xi].i) ? NA_LOGICAL : 1);
       }
     } break;
     default:
