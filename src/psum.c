@@ -3,7 +3,6 @@
 // like base::p{max,min}, but for sum
 SEXP psum(SEXP x, SEXP narmArg) {
   if (!isNewList(x)) error(_("Internal error: x must be a list")); // # nocov
-  if (!isLogical(narmArg) || LENGTH(narmArg)!=1 || LOGICAL(narmArg)[0]==NA_LOGICAL) error(_("na.rm must be TRUE or FALSE"));
 
   int J=LENGTH(x);
   if (J == 0) {
@@ -11,13 +10,15 @@ SEXP psum(SEXP x, SEXP narmArg) {
   } else if (J == 1) {
     SEXP xj0 = VECTOR_ELT(x, 0);
     if (TYPEOF(xj0) == VECSXP) { // e.g. psum(.SD)
-      x = duplicate(xj0);
-      J = LENGTH(xj0);
+      return psum(xj0, narmArg);
     } else {
       // na.rm doesn't matter -- input --> output
       return duplicate(xj0);
     }
   }
+
+  if (!isLogical(narmArg) || LENGTH(narmArg)!=1 || LOGICAL(narmArg)[0]==NA_LOGICAL) error(_("na.rm must be TRUE or FALSE"));
+
   SEXPTYPE outtype = INTSXP;
   int n = -1;
   for (int j=0; j<J; j++) {
@@ -331,21 +332,22 @@ SEXP psum(SEXP x, SEXP narmArg) {
 
 SEXP pprod(SEXP x, SEXP narmArg) {
   if (!isNewList(x)) error(_("Internal error: x must be a list")); // # nocov
-  if (!isLogical(narmArg) || LENGTH(narmArg)!=1 || LOGICAL(narmArg)[0]==NA_LOGICAL) error(_("na.rm must be TRUE or FALSE"));
 
   int J=LENGTH(x);
   if (J == 0) {
     error(_("Empty input"));
   } else if (J == 1) {
     SEXP xj0 = VECTOR_ELT(x, 0);
-    if (TYPEOF(xj0) == VECSXP) { // e.g. pprod(.SD)
-      x = duplicate(xj0);
-      J = LENGTH(xj0);
+    if (TYPEOF(xj0) == VECSXP) {
+      return pprod(xj0, narmArg);
     } else {
       // na.rm doesn't matter -- input --> output
       return duplicate(xj0);
     }
   }
+
+  if (!isLogical(narmArg) || LENGTH(narmArg)!=1 || LOGICAL(narmArg)[0]==NA_LOGICAL) error(_("na.rm must be TRUE or FALSE"));
+
   SEXPTYPE outtype = INTSXP;
   int n = -1;
   for (int j=0; j<J; j++) {
@@ -670,16 +672,14 @@ SEXP pprod(SEXP x, SEXP narmArg) {
 
 SEXP pany(SEXP x, SEXP narmArg) {
   if (!isNewList(x)) error(_("Internal error: x must be a list")); // # nocov
-  if (!isLogical(narmArg) || LENGTH(narmArg)!=1 || LOGICAL(narmArg)[0]==NA_LOGICAL) error(_("na.rm must be TRUE or FALSE"));
 
   int J=LENGTH(x);
   if (J == 0) {
     error(_("Empty input"));
   } else if (J == 1) {
     SEXP xj0 = VECTOR_ELT(x, 0);
-    if (TYPEOF(xj0) == VECSXP) { // e.g. psum(.SD)
-      x = duplicate(xj0);
-      J = LENGTH(xj0);
+    if (TYPEOF(xj0) == VECSXP) {
+      return pany(xj0, narmArg);
     } else {
       // maybe need to do coercion to logical
       if (TYPEOF(xj0) == LGLSXP) {
@@ -691,6 +691,9 @@ SEXP pany(SEXP x, SEXP narmArg) {
       }
     }
   }
+
+  if (!isLogical(narmArg) || LENGTH(narmArg)!=1 || LOGICAL(narmArg)[0]==NA_LOGICAL) error(_("na.rm must be TRUE or FALSE"));
+
   int n = -1;
   for (int j=0; j<J; j++) {
     SEXP xj=VECTOR_ELT(x, j);
@@ -856,7 +859,6 @@ SEXP pany(SEXP x, SEXP narmArg) {
 
 SEXP pall(SEXP x, SEXP narmArg) {
   if (!isNewList(x)) error(_("Internal error: x must be a list")); // # nocov
-  if (!isLogical(narmArg) || LENGTH(narmArg)!=1 || LOGICAL(narmArg)[0]==NA_LOGICAL) error(_("na.rm must be TRUE or FALSE"));
 
   int J=LENGTH(x);
   if (J == 0) {
@@ -864,8 +866,7 @@ SEXP pall(SEXP x, SEXP narmArg) {
   } else if (J == 1) {
     SEXP xj0 = VECTOR_ELT(x, 0);
     if (TYPEOF(xj0) == VECSXP) {
-      x = duplicate(xj0);
-      J = LENGTH(xj0);
+      return pall(xj0, narmArg);
     } else {
       // maybe need to do coercion to logical
       if (TYPEOF(xj0) == LGLSXP) {
@@ -877,6 +878,9 @@ SEXP pall(SEXP x, SEXP narmArg) {
       }
     }
   }
+
+  if (!isLogical(narmArg) || LENGTH(narmArg)!=1 || LOGICAL(narmArg)[0]==NA_LOGICAL) error(_("na.rm must be TRUE or FALSE"));
+
   int n = -1;
   for (int j=0; j<J; j++) {
     SEXP xj=VECTOR_ELT(x, j);
