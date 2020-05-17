@@ -17039,7 +17039,13 @@ test(TEST+testi/1000+.013, pprod(as.integer(M/2L), 5L, na.rm=TRUE), error="Input
 test(TEST+testi/1000+.014, pprod(as.integer(M/2L), -2L, na.rm=TRUE), 1L-M)
 test(TEST+testi/1000+.015, pprod(-as.integer(M/2L), -5L, na.rm=TRUE), error="Inputs have exceeded .Machine$integer.max")
 test(TEST+testi/1000+.016, pprod(-as.integer(M/2L), 2L, na.rm=TRUE), 1L-M)
-testi = testi+16
+
+# INT_MIN/-1 overflows int, so the overflow condition in pprod needs to separately account
+#   for starting from a product of -1
+test(TEST+testi/1000+.017, pprod(-1L, 10L), -10L)
+test(TEST+testi/1000+.018, pprod(-1L, 10L, na.rm=TRUE), -10L)
+
+testi = testi+18
 
 if (test_bit64) {
   i64 = as.integer64(1)

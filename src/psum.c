@@ -408,7 +408,8 @@ SEXP pprod(SEXP x, SEXP narmArg) {
               outp[i] = xjp[xi];
             } else {
               if ((outp[i] > 0 && (xjp[xi] > INT_MAX/outp[i] || xjp[xi] < INT_MIN/outp[i])) || // overflow -- be careful of inequalities and flipping signs
-                  (outp[i] < 0 && (xjp[xi] < INT_MAX/outp[i] || xjp[xi] > INT_MIN/outp[i]))) {
+                  (outp[i] == -1 && (xjp[xi] > INT_MAX || xjp[xi] <= INT_MIN)) ||              // ASSUMPTION: INT_MIN= -INT_MAX - 1
+                  (outp[i] < -1 && (xjp[xi] < INT_MAX/outp[i] || xjp[xi] > INT_MIN/outp[i]))) {
                 error(_("Inputs have exceeded .Machine$integer.max=%d in absolute value; please cast to numeric first and try again"), INT_MAX);
               }
               outp[i] *= xjp[xi];
@@ -527,12 +528,17 @@ SEXP pprod(SEXP x, SEXP narmArg) {
           int xi = nj == 1 ? 0 : i;
           if (xjp[xi] == NA_INTEGER) {
             outp[i] = NA_INTEGER;
-          } else if ((outp[i] > 0 && (xjp[xi] > INT_MAX/outp[i] || xjp[xi] < INT_MIN/outp[i])) || // overflow -- be careful of inequalities and flipping signs
-                     (outp[i] < 0 && (xjp[xi] < INT_MAX/outp[i] || xjp[xi] > INT_MIN/outp[i]))) {
-            warning(_("Inputs have exceeded .Machine$integer.max=%d in absolute value; returning NA. Please cast to numeric first to avoid this."), INT_MAX);
-            outp[i] = NA_INTEGER;
+          } else if (outp[i] == 0) {
+            continue; // 0 is a steady state, except when xjp[xi] is missing
           } else {
-            outp[i] *= xjp[xi];
+            if ((outp[i] > 0 && (xjp[xi] > INT_MAX/outp[i] || xjp[xi] < INT_MIN/outp[i])) || // overflow -- be careful of inequalities and flipping signs
+                (outp[i] == -1 && (xjp[xi] > INT_MAX || xjp[xi] <= INT_MIN)) ||              // ASSUMPTION: INT_MIN= -INT_MAX - 1
+                (outp[i] < -1 && (xjp[xi] < INT_MAX/outp[i] || xjp[xi] > INT_MIN/outp[i]))) {
+              warning(_("Inputs have exceeded .Machine$integer.max=%d in absolute value; returning NA. Please cast to numeric first to avoid this."), INT_MAX);
+              outp[i] = NA_INTEGER;
+            } else {
+              outp[i] *= xjp[xi];
+            }
           }
         }
       }
@@ -559,7 +565,13 @@ SEXP pprod(SEXP x, SEXP narmArg) {
               continue;
             }
             int xi = nj == 1 ? 0 : i;
-            outp[i] = xjp[xi] == NA_INTEGER ? NA_REAL : outp[i] * xjp[xi];
+            if (xjp[xi] == NA_INTEGER) {
+              outp[i] = NA_REAL;
+            } else if (outp[i] == 0) {
+              continue;
+            } else {
+              outp[i] *= xjp[xi];
+            }
           }
         } break;
         case REALSXP: {
@@ -569,7 +581,13 @@ SEXP pprod(SEXP x, SEXP narmArg) {
               continue;
             }
             int xi = nj == 1 ? 0 : i;
-            outp[i] = ISNAN(xjp[xi]) ? NA_REAL : outp[i] * xjp[xi];
+            if (ISNAN(xjp[xi])) {
+              outp[i] = NA_REAL;
+            } else if (outp[i] == 0) {
+              continue;
+            } else {
+              outp[i] *= xjp[xi];
+            }
           }
         } break;
         default:
@@ -618,6 +636,8 @@ SEXP pprod(SEXP x, SEXP narmArg) {
               if (xjp[xi] == NA_INTEGER) {
                 outp[i].r = NA_REAL;
                 outp[i].i = NA_REAL;
+              } else if (outp[i].r == 0 && outp[i].i == 0) {
+                continue;
               } else {
                 outp[i].r *= xjp[xi];
                 outp[i].i *= xjp[xi];
@@ -633,6 +653,8 @@ SEXP pprod(SEXP x, SEXP narmArg) {
               if (ISNAN(xjp[xi])) {
                 outp[i].r = NA_REAL;
                 outp[i].i = NA_REAL;
+              } else if (outp[i].r == 0 && outp[i].i == 0) {
+                continue;
               } else {
                 outp[i].r *= xjp[xi];
                 outp[i].i *= xjp[xi];
@@ -648,6 +670,8 @@ SEXP pprod(SEXP x, SEXP narmArg) {
               if (ISNAN_COMPLEX(xjp[xi])) {
                 outp[i].r = NA_REAL;
                 outp[i].i = NA_REAL;
+              } else if (outp[i].r == 0 && outp[i].i == 0) {
+                continue;
               } else {
                 double tmp=outp[i].r; // see na.rm=TRUE branch
                 outp[i].r = outp[i].r * xjp[xi].r - outp[i].i * xjp[xi].i;
