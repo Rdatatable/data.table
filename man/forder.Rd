@@ -1,4 +1,5 @@
 \name{forder}
+\alias{forder}
 \alias{order}
 \alias{fastorder}
 \alias{forderv}
@@ -57,6 +58,10 @@
   \code{\link{setkey}}, \code{\link{setorder}}, \code{\link{fsort}}
 }
 \examples{
+## not yet exported
+forder = data.table:::forder
+forderv = data.table:::forderv
+
 x = 1:5
 d = data.table(x)
 forder(x)
