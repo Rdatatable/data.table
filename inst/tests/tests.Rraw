@@ -16911,6 +16911,16 @@ test(TEST+0.41, notOutput=opt.msg, d[order(NULL), verbose=TRUE], error="order ar
 test(TEST+0.42, notOutput=opt.msg, d[order(1,,2,NULL), verbose=TRUE], error="order argument 2, 4 is NULL or empty")
 test(TEST+0.43, notOutput=opt.msg, d[order(NULL, na.last=FALSE), verbose=TRUE], error="order argument 1 is NULL or empty")
 test(TEST+0.44, notOutput=opt.msg, d[order(na.last=FALSE, NULL), verbose=TRUE], error="order argument 1 is NULL or empty")
+if ("lazy" %chin% formalArgs(forderv)) { ## this tests kicks in when #4386 merged
+  d = data.table(x=3:1, y=c(2L,1L,3L), z=1:3)
+  test(TEST+0.81, output="forder.*opt=-1", d[order(x, na.last=FALSE), verbose=TRUE], d[3:1])
+  setindexv(d, list("x","y","z",c("x","y","z"),c("y","z")))
+  test(TEST+0.82, output="forder.*opt=2", d[order(x, na.last=FALSE), verbose=TRUE], d[3:1])
+  test(TEST+0.83, output="forder.*opt=2", d[order(x, y, z, na.last=FALSE), verbose=TRUE], d[3:1])
+  test(TEST+0.84, output="forder.*opt=2", d[order(z, na.last=FALSE), verbose=TRUE], d)
+  setkeyv(d, "z")
+  test(TEST+0.85, output="forder.*opt=1", d[order(z, na.last=FALSE), verbose=TRUE], d)
+}
 # method and decreasing properly handled in in forder #4456
 d = data.table(x=2:1); ans = data.table(x=1:2)
 test(TEST+0.91, output=opt.msg, d[order(x, method="radix"), verbose=TRUE], ans)                           # forderv
