@@ -13748,7 +13748,7 @@ test(1967.69, !any(grepl('forder.c', verbose_output, fixed = TRUE)))
 test(1967.70, any(grepl('[1] 5', verbose_output, fixed = TRUE)))
 options('datatable.optimize' = 1L)
 test(1967.71, x[order(a), .N, verbose = TRUE], 5L,
-     output = "forder.c received 5 rows and 1 column")
+     output = "forder.c received 5 rows and 2 columns") ## this is now optimized to forderv(x, by="a") changing verbose output #4459
 setkey(x)
 test(1967.72, x[x, .N, on = 'a', verbose = TRUE], 5L,
      output = "on= matches existing key")
