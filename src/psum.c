@@ -779,54 +779,110 @@ SEXP pany(SEXP x, SEXP narmArg) {
   if (LOGICAL(narmArg)[0]) {
     // initialize to NA to facilitate all-NA rows --> NA output
     writeNA(out, 0, n);
+    /* Logic table for any, na.rm=TRUE. > -_> do nothing; @b --> update to b
+     *    | x: ||  0 |  1 | NA |
+     *    +----||----|----|----|
+     *  o |  0 ||  > | @1 |  > |
+     *  u |  1 ||  > |  > |  > |
+     *  t | NA || @0 | @1 |  > |
+     */
     for (int j=0; j<J; j++) {
       xj = VECTOR_ELT(x, j);
       nj = LENGTH(xj);
       switch (TYPEOF(xj)) {
       case LGLSXP: case INTSXP: {
         int *xjp = INTEGER(xj);
-        for (int i=0; i<n; i++) {
-          xi = nj == 1 ? 0 : i;
-          if (xjp[xi] != NA_INTEGER) {
-            if (outp[i] == NA_LOGICAL) {
-              outp[i] = xjp[xi] == 0 ? 0 : 1;
-            } else if (outp[i] == 0 && xjp[xi] != 0) { // no change if already 1 or next is 0
-              outp[i] = 1;
-              }
-            }
+        // for any, if there's a scalar 1, we're done, otherwise, skip
+        if (nj == 1) {
+          if (xjp[0] == NA_INTEGER)
+            continue;
+          if (xjp[0] != 0) {
+            for (int i=0; i<n; i++) outp[i] = 1;
+            break;
           }
-        } break;
-        case REALSXP: {
-          double *xjp = REAL(xj);
           for (int i=0; i<n; i++) {
-            xi = nj == 1 ? 0 : i;
-            if (!ISNAN(xjp[xi])) {
-              if (outp[i] == NA_LOGICAL) {
-                outp[i] = xjp[xi] == 0 ? 0 : 1;
-              } else if (outp[i] == 0 && xjp[xi] != 0) {
-                outp[i] = 1;
-              }
+            if (outp[i] == NA_INTEGER) {
+              outp[i] = 0;
             }
           }
-        } break;
-        case CPLXSXP: {
-          Rcomplex *xjp = COMPLEX(xj);
-          for (int i=0; i<n; i++) {
-            xi = nj == 1 ? 0 : i;
-            if (!ISNAN_COMPLEX(xjp[xi])) {
-              if (outp[i] == NA_LOGICAL) {
-                outp[i] = xjp[xi].r == 0 && xjp[xi].i == 0 ? 0 : 1;
-              } else if (outp[i] == 0 && (xjp[xi].r != 0 || xjp[xi].i != 0)) { // no change if already 1 or next is 0
-                outp[i] = 1;
-              }
-            }
-          }
-        } break;
-        default:
-          error(_("Internal error: should have caught non-INTSXP/REALSXP input by now")); // # nocov
+          continue;
         }
+        for (int i=0; i<n; i++) {
+          if (outp[i] == 1 || xjp[i] == NA_INTEGER)
+            continue;
+          if (xjp[i] != 0) {
+            outp[i] = 1;
+            continue;
+          }
+          // besides maybe in edge cases, it's faster to just
+          //   write 0 than branch on outp[i]==NA
+          outp[i] = 0;
+        }
+      } break;
+      case REALSXP: {
+        double *xjp = REAL(xj);
+        if (nj == 1) {
+          if (ISNAN(xjp[0]))
+            continue;
+          if (xjp[0] != 0) {
+            for (int i=0; i<n; i++) outp[i] = 1;
+            break;
+          }
+          for (int i=0; i<n; i++) {
+            if (outp[i] == NA_INTEGER) {
+              outp[i] = 0;
+            }
+          }
+          continue;
+        }
+        for (int i=0; i<n; i++) {
+          if (outp[i] == 1 || ISNAN(xjp[i]))
+            continue;
+          if (xjp[i] != 0) {
+            outp[i] = 1;
+            continue;
+          }
+          outp[i] = 0;
+        }
+      } break;
+      case CPLXSXP: {
+        Rcomplex *xjp = COMPLEX(xj);
+        if (nj == 1) {
+          if (ISNAN_COMPLEX(xjp[0]))
+            continue;
+          if (xjp[0].r != 0 || xjp[0].i != 0) {
+            for (int i=0; i<n; i++) outp[i] = 1;
+            break;
+          }
+          for (int i=0; i<n; i++) {
+            if (outp[i] == NA_INTEGER) {
+              outp[i] = 0;
+            }
+          }
+          continue;
+        }
+        for (int i=0; i<n; i++) {
+          if (outp[i] == 1 || ISNAN_COMPLEX(xjp[i]))
+            continue;
+          if (xjp[i].r != 0 || xjp[i].i != 0) {
+            outp[i] = 1;
+            continue;
+          }
+          outp[i] = 0;
+        }
+      } break;
+      default:
+        error(_("Internal error: should have caught non-INTSXP/REALSXP input by now")); // # nocov
       }
+    }
   } else { // na.rm=FALSE
+    /* Logic table for any, na.rm=FALSE. > -_> do nothing; @b --> update to b
+     *    | x: || 0 |  1 |  NA |
+     *    +----||---|----|-----|
+     *  o |  0 || > | @1 | @NA |
+     *  u |  1 || > |  > |   > |
+     *  t | NA || > | @1 |   > |
+     */
     xj = VECTOR_ELT(x, 0);
     nj = LENGTH(xj);
     switch (TYPEOF(xj)) {
@@ -849,7 +905,7 @@ SEXP pany(SEXP x, SEXP narmArg) {
       for (int i=0; i<n; i++) {
         xi = nj == 1 ? 0 : i;
         outp[i] = xjp[xi].r == 0 && xjp[xi].i == 0 ? 0 :
-              (ISNAN(xjp[xi].r) || ISNAN(xjp[xi].i) ? NA_LOGICAL : 1);
+          (ISNAN(xjp[xi].r) || ISNAN(xjp[xi].i) ? NA_LOGICAL : 1);
       }
     } break;
     default:
@@ -861,35 +917,86 @@ SEXP pany(SEXP x, SEXP narmArg) {
       switch (TYPEOF(xj)) {
       case LGLSXP: case INTSXP: {
         int *xjp = INTEGER(xj);
-        for (int i=0; i<n; i++) {
-          xi = nj == 1 ? 0 : i;
-          if (xjp[xi] == NA_INTEGER && outp[i] == 0) {
-            outp[i] = NA_LOGICAL;
-          } else if (outp[i] != 1 && xjp[xi] != 0) { // outp[i] NA also erased by xjp[xi] != 0
-            outp[i] = xjp[xi] == NA_LOGICAL ? xjp[xi] : 1;
+        if (nj == 1) {
+          if (xjp[0] == 0)
+            continue;
+          if (xjp[0] == NA_INTEGER) {
+            for (int i=0; i<n; i++) {
+              if (outp[i] == 0) {
+                outp[i] = NA_INTEGER;
+              }
+            }
+            continue;
           }
+          // xjp[0] is 1
+          for (int i=0; i<n; i++) outp[i] = 1;
+          break;
+        }
+        for (int i=0; i<n; i++) {
+          if (outp[i] == 1 || xjp[i] == 0)
+            continue;
+          if (xjp[i] == NA_INTEGER) {
+            // write even if it's already NA_INTEGER
+            outp[i] = NA_INTEGER;
+            continue;
+          }
+          outp[i] = 1;
         }
       } break;
       case REALSXP: {
         double *xjp = REAL(xj);
-        for (int i=0; i<n; i++) {
-          xi = nj == 1 ? 0 : i;
-          if (ISNAN(xjp[xi]) && outp[i] == 0) {
-            outp[i] = NA_LOGICAL;
-          } else if (outp[i] != 1 && xjp[xi] != 0) {
-            outp[i] = ISNAN(xjp[xi]) ? NA_LOGICAL : 1;
+        if (nj == 1) {
+          if (xjp[0] == 0)
+            continue;
+          if (ISNAN(xjp[0])) {
+            for (int i=0; i<n; i++) {
+              if (outp[i] == 0) {
+                outp[i] = NA_INTEGER;
+              }
+            }
+            continue;
           }
+          // xjp[0] is non-zero, non-NA
+          for (int i=0; i<n; i++) outp[i] = 1;
+          break;
+        }
+        for (int i=0; i<n; i++) {
+          if (outp[i] == 1 || xjp[i] == 0)
+            continue;
+          if (ISNAN(xjp[i])) {
+            // write even if it's already NA_INTEGER
+            outp[i] = NA_INTEGER;
+            continue;
+          }
+          outp[i] = 1;
         }
       } break;
       case CPLXSXP: {
         Rcomplex *xjp = COMPLEX(xj);
-        for (int i=0; i<n; i++) {
-          xi = nj == 1 ? 0 : i;
-          if (ISNAN_COMPLEX(xjp[xi]) && outp[i] == 0) {
-            outp[i] = NA_LOGICAL;
-          } else if (outp[i] != 1 && (xjp[xi].r != 0 || xjp[xi].i != 0)) {
-            outp[i] = ISNAN(xjp[xi].r) ? NA_LOGICAL : 1;
+        if (nj == 1) {
+          if (xjp[0].r == 0 && xjp[0].i == 0)
+            continue;
+          if (ISNAN_COMPLEX(xjp[0])) {
+            for (int i=0; i<n; i++) {
+              if (outp[i] == 0) {
+                outp[i] = NA_INTEGER;
+              }
+            }
+            continue;
           }
+          // xjp[0] is non-zero, non-NA
+          for (int i=0; i<n; i++) outp[i] = 1;
+          break;
+        }
+        for (int i=0; i<n; i++) {
+          if (outp[i] == 1 || (xjp[i].r == 0 && xjp[i].i == 0))
+            continue;
+          if (ISNAN_COMPLEX(xjp[i])) {
+            // write even if it's already NA_INTEGER
+            outp[i] = NA_INTEGER;
+            continue;
+          }
+          outp[i] = 1;
         }
       } break;
       default:
@@ -969,54 +1076,110 @@ SEXP pall(SEXP x, SEXP narmArg) {
   if (LOGICAL(narmArg)[0]) {
     // initialize to NA to facilitate all-NA rows --> NA output
     writeNA(out, 0, n);
+    /* Logic table for all, na.rm=TRUE. > -_> do nothing; @b --> update to b
+     *    | x: ||  0 |  1 | NA |
+     *    +----||----|----|----|
+     *  o |  0 ||  > |  > |  > |
+     *  u |  1 || @0 |  > |  > |
+     *  t | NA || @0 | @1 |  > |
+     */
     for (int j=0; j<J; j++) {
       xj = VECTOR_ELT(x, j);
       nj = LENGTH(xj);
       switch (TYPEOF(xj)) {
       case LGLSXP: case INTSXP: {
         int *xjp = INTEGER(xj);
-        for (int i=0; i<n; i++) {
-          xi = nj == 1 ? 0 : i;
-          if (xjp[xi] != NA_INTEGER) {
-            if (outp[i] == NA_LOGICAL) {
-              outp[i] = xjp[xi] == 0 ? 0 : 1;
-            } else if (outp[i] == 1 && xjp[xi] == 0) { // no change if already 0 or next is 1
-              outp[i] = 0;
-              }
-            }
+        // for all, if there's a scalar 0, we're done, otherwise, skip
+        if (nj == 1) {
+          if (xjp[0] == NA_INTEGER)
+            continue;
+          if (xjp[0] == 0) {
+            for (int i=0; i<n; i++) outp[i] = 0;
+            break;
           }
-        } break;
-        case REALSXP: {
-          double *xjp = REAL(xj);
           for (int i=0; i<n; i++) {
-            xi = nj == 1 ? 0 : i;
-            if (!ISNAN(xjp[xi])) {
-              if (outp[i] == NA_LOGICAL) {
-                outp[i] = xjp[xi] == 0 ? 0 : 1;
-              } else if (outp[i] == 1 && xjp[xi] == 0) {
-                outp[i] = 0;
-              }
+            if (outp[i] == NA_INTEGER) {
+              outp[i] = 1;
             }
           }
-        } break;
-        case CPLXSXP: {
-          Rcomplex *xjp = COMPLEX(xj);
-          for (int i=0; i<n; i++) {
-            xi = nj == 1 ? 0 : i;
-            if (!ISNAN_COMPLEX(xjp[xi])) {
-              if (outp[i] == NA_LOGICAL) {
-                outp[i] = xjp[xi].r == 0 && xjp[xi].i == 0 ? 0 : 1;
-              } else if (outp[i] == 1 && xjp[xi].r == 0 && xjp[xi].i == 0) { // no change if already 0 or next is 1
-                outp[i] = 0;
-              }
-            }
-          }
-        } break;
-        default:
-          error(_("Internal error: should have caught non-INTSXP/REALSXP input by now")); // # nocov
+          continue;
         }
+        for (int i=0; i<n; i++) {
+          if (outp[i] == 0 || xjp[i] == NA_INTEGER)
+            continue;
+          if (xjp[i] == 0) {
+            outp[i] = 0;
+            continue;
+          }
+          // besides maybe in edge cases, it's faster to just
+          //   write 1 than branch on outp[i]==NA
+          outp[i] = 1;
+        }
+      } break;
+      case REALSXP: {
+        double *xjp = REAL(xj);
+        if (nj == 1) {
+          if (ISNAN(xjp[0]))
+            continue;
+          if (xjp[0] == 0) {
+            for (int i=0; i<n; i++) outp[i] = 0;
+            break;
+          }
+          for (int i=0; i<n; i++) {
+            if (outp[i] == NA_INTEGER) {
+              outp[i] = 1;
+            }
+          }
+          continue;
+        }
+        for (int i=0; i<n; i++) {
+          if (outp[i] == 0 || ISNAN(xjp[i]))
+            continue;
+          if (xjp[i] == 0) {
+            outp[i] = 0;
+            continue;
+          }
+          outp[i] = 1;
+        }
+      } break;
+      case CPLXSXP: {
+        Rcomplex *xjp = COMPLEX(xj);
+        if (nj == 1) {
+          if (ISNAN_COMPLEX(xjp[0]))
+            continue;
+          if (xjp[0].r == 0 && xjp[0].i == 0) {
+            for (int i=0; i<n; i++) outp[i] = 0;
+            break;
+          }
+          for (int i=0; i<n; i++) {
+            if (outp[i] == NA_INTEGER) {
+              outp[i] = 1;
+            }
+          }
+          continue;
+        }
+        for (int i=0; i<n; i++) {
+          if (outp[i] == 0 || ISNAN_COMPLEX(xjp[i]))
+            continue;
+          if (xjp[i].r == 0 && xjp[i].i == 0) {
+            outp[i] = 0;
+            continue;
+          }
+          outp[i] = 1;
+        }
+      } break;
+      default:
+        error(_("Internal error: should have caught non-INTSXP/REALSXP input by now")); // # nocov
       }
+    }
   } else { // na.rm=FALSE
+    /* Logic table for all, na.rm=FALSE. > -_> do nothing; @b --> update to b
+     *    | x: ||  0 | 1 |  NA |
+     *    +----||----|---|-----|
+     *  o |  0 ||  > | > |   > |
+     *  u |  1 || @0 | > | @NA |
+     *  t | NA || @0 | > |   > |
+     */
     xj = VECTOR_ELT(x, 0);
     nj = LENGTH(xj);
     switch (TYPEOF(xj)) {
@@ -1039,7 +1202,7 @@ SEXP pall(SEXP x, SEXP narmArg) {
       for (int i=0; i<n; i++) {
         xi = nj == 1 ? 0 : i;
         outp[i] = xjp[xi].r == 0 && xjp[xi].i == 0 ? 0 :
-              (ISNAN(xjp[xi].r) || ISNAN(xjp[xi].i) ? NA_LOGICAL : 1);
+          (ISNAN(xjp[xi].r) || ISNAN(xjp[xi].i) ? NA_LOGICAL : 1);
       }
     } break;
     default:
@@ -1051,34 +1214,94 @@ SEXP pall(SEXP x, SEXP narmArg) {
       switch (TYPEOF(xj)) {
       case LGLSXP: case INTSXP: {
         int *xjp = INTEGER(xj);
+        if (nj == 1) {
+          if (xjp[0] == NA_INTEGER) {
+            for (int i=0; i<n; i++) {
+              if (outp[i] != 0) {
+                outp[i] = NA_LOGICAL;
+              }
+            }
+            continue;
+          }
+          if (xjp[0] != 0)
+            continue;
+          // xjp[0] is 0
+          for (int i=0; i<n; i++) outp[i] = 0;
+          break;
+        }
         for (int i=0; i<n; i++) {
-          xi = nj == 1 ? 0 : i;
-          if (xjp[xi] == NA_INTEGER && outp[i] == 1) { // NA stays NA, 0 stays 0
-            outp[i] = NA_LOGICAL;
-          } else if (outp[i] != 0 && xjp[xi] == 0) { // NA and 1 become 0
+          if (outp[i] == 0)
+            continue;
+          if (xjp[i] == 0) {
             outp[i] = 0;
+            continue;
+          }
+          if (xjp[i] == NA_INTEGER) {
+            // write even if it's already NA_INTEGER
+            outp[i] = NA_INTEGER;
+            continue;
           }
         }
       } break;
       case REALSXP: {
         double *xjp = REAL(xj);
+        if (nj == 1) {
+          if (ISNAN(xjp[0])) {
+            for (int i=0; i<n; i++) {
+              if (outp[i] != 0) {
+                outp[i] = NA_LOGICAL;
+              }
+            }
+            continue;
+          }
+          if (xjp[0] != 0)
+            continue;
+          // xjp[0] is 0
+          for (int i=0; i<n; i++) outp[i] = 0;
+          break;
+        }
         for (int i=0; i<n; i++) {
-          xi = nj == 1 ? 0 : i;
-          if (ISNAN(xjp[xi]) && outp[i] == 1) {
-            outp[i] = NA_LOGICAL;
-          } else if (outp[i] != 0 && xjp[xi] == 0) {
+          if (outp[i] == 0)
+            continue;
+          if (xjp[i] == 0) {
             outp[i] = 0;
+            continue;
+          }
+          if (ISNAN(xjp[i])) {
+            // write even if it's already NA_INTEGER
+            outp[i] = NA_INTEGER;
+            continue;
           }
         }
       } break;
       case CPLXSXP: {
         Rcomplex *xjp = COMPLEX(xj);
+        if (nj == 1) {
+          if (ISNAN_COMPLEX(xjp[0])) {
+            for (int i=0; i<n; i++) {
+              if (outp[i] != 0) {
+                outp[i] = NA_LOGICAL;
+              }
+            }
+            continue;
+          }
+          if (xjp[0].r != 0 || xjp[0].i != 0)
+            continue;
+          // xjp[0] is 0
+          for (int i=0; i<n; i++) outp[i] = 0;
+          break;
+        }
         for (int i=0; i<n; i++) {
-          xi = nj == 1 ? 0 : i;
-          if (ISNAN_COMPLEX(xjp[xi]) && outp[i] == 1) {
-            outp[i] = NA_LOGICAL;
-          } else if (outp[i] != 0 && xjp[xi].r == 0 && xjp[xi].i == 0) {
+          if (outp[i] == 0)
+            continue;
+          if (xjp[i].r == 0 && xjp[i].i == 0) {
             outp[i] = 0;
+            continue;
+          }
+          if (ISNAN_COMPLEX(xjp[i])) {
+            // write even if it's already NA_INTEGER
+            outp[i] = NA_INTEGER;
+            continue;
           }
         }
       } break;
