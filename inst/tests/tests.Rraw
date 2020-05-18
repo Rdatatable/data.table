@@ -16916,7 +16916,7 @@ test(TEST+0.46, notOutput=opt.msg, d[order(x, decreasing=NA), verbose=TRUE], err
 test(TEST+0.47, notOutput=opt.msg, d[order(x, y, decreasing=c(FALSE,FALSE,FALSE)), verbose=TRUE], error="must be either length 1, or length of the variables.*order")
 test(TEST+0.48, notOutput=opt.msg, d[order(x, na.last=1L), verbose=TRUE], error="must be logical TRUE, FALSE or NA of length 1")
 test(TEST+0.49, notOutput=opt.msg, data.table(x=as.raw(1:2))[order(x), verbose=TRUE], error="order is type 'raw', not yet supported")
-test(TEST+0.50, notOutput=opt.msg, d[order(x, y, method="auto"), verbose=TRUE], d[3:1])
+test(TEST+0.50, notOutput=opt.msg, d[order(x, y, method=as.character("auto")), verbose=TRUE], d[3:1])
 v1 = c(4L,1L,NA,2L) # forder removes 0 for NAs
 d1 = data.table(v1)
 test(TEST+0.51, forder(v1, na.last=NA), c(2L,4L,1L))
