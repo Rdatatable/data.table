@@ -219,7 +219,8 @@ forder = function(..., na.last=TRUE, decreasing=FALSE, method=c("auto","shell","
   } else {
     data = eval(sub, parent.frame(), parent.frame())
   }
-  stopifnot(is.logical(decreasing), !anyNA(decreasing))
+  if (!is.logical(decreasing) || anyNA(decreasing)) stop("'decreasing' must be logical non-NA")
+  if (length(decreasing)!=1L && length(decreasing)!=length(data)) stop("'decreasing' must be either length 1, or length of the variables passed to [f]order")
   asc[decreasing] = -(asc[decreasing])
   o = forderv(data, seq_along(data), sort=TRUE, retGrp=FALSE, order=asc, na.last=na.last)
   if (!length(o) && length(data)>=1L) seq_along(data[[1L]]) else o

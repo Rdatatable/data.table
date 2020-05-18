@@ -139,9 +139,9 @@ replace_dot_alias = function(e) {
     ## escape for any unsupported type
     supported = c("integer","double","logical","character","complex")
     if (any(vapply(order.vars, function(v) !typeof(dt[[v]])%chin%supported, NA))) return(x)
-    ## decreasing recycle
+    ## decreasing recycle, outsource raising error
     decreasing = if (is.null(decreasing)) rep(FALSE, length(order.vars)) else {
-      if (!(length(decreasing)==1L || length(decreasing)==length(order.vars))) stop("'decreasing' must be either length 1, or length of the variables passed to order")
+      if (length(decreasing)!=1L && length(decreasing)!=length(order.vars)) return(x)
       if (length(decreasing)==1L && length(order.vars)>1L) decreasing = rep(decreasing, length(order.vars)) else decreasing
     }
     ## forderv arguments
