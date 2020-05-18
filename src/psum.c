@@ -15,7 +15,7 @@ SEXP psum(SEXP x, SEXP narmArg) {
       return psum(xj, narmArg);
     } else {
       // na.rm doesn't matter -- input --> output
-      return duplicate(xj);
+      return xj;
     }
   }
 
@@ -353,7 +353,7 @@ SEXP pprod(SEXP x, SEXP narmArg) {
       return pprod(xj, narmArg);
     } else {
       // na.rm doesn't matter -- input --> output
-      return duplicate(xj);
+      return xj;
     }
   }
 
@@ -727,7 +727,7 @@ SEXP pany(SEXP x, SEXP narmArg) {
     } else {
       // maybe need to do coercion to logical
       if (TYPEOF(xj) == LGLSXP) {
-        return duplicate(xj);
+        return xj;
       } else {
         out = PROTECT(coerceVector(xj, LGLSXP));
         UNPROTECT(1);
@@ -917,7 +917,7 @@ SEXP pall(SEXP x, SEXP narmArg) {
     } else {
       // maybe need to do coercion to logical
       if (TYPEOF(xj) == LGLSXP) {
-        return duplicate(xj);
+        return xj;
       } else {
         out = PROTECT(coerceVector(xj, LGLSXP));
         UNPROTECT(1);
