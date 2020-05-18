@@ -43,7 +43,7 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
     # nocov start
     fn2 = paste0(fn,".bz2")
     if (!file.exists(file.path(fulldir, fn2)))
-      stop("Neither ",fn," or ",fn2," exist in ",fulldir)
+      stop(gettextf("Neither %s nor %s exist in %s",fn, fn2, fulldir, domain="R-data.table"))
     fn = fn2
     # nocov end
     # sys.source() below accepts .bz2 directly.
@@ -235,7 +235,7 @@ gc_mem = function() {
   # nocov end
 }
 
-test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,notOutput=NULL) {
+test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,notOutput=NULL,ignore.warning=NULL) {
   # Usage:
   # i) tests that x equals y when both x and y are supplied, the most common usage
   # ii) tests that x is TRUE when y isn't supplied
@@ -338,6 +338,12 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
   if (!fail) for (type in c("warning","error","message")) {
     observed = actual[[type]]
     expected = get(type)
+    if (type=="warning" && length(observed) && !is.null(ignore.warning)) {
+      # if a warning containing this string occurs, ignore it. First need for #4182 where warning about 'timedatectl' only
+      # occurs in R 3.4, and maybe only on docker too not for users running test.data.table().
+      stopifnot(length(ignore.warning)==1L, is.character(ignore.warning), !is.na(ignore.warning), nchar(ignore.warning)>=1L)
+      observed = grep(ignore.warning, observed, value=TRUE, invert=TRUE)
+    }
     if (length(expected) != length(observed)) {
       # nocov start
       cat("Test ",numStr," produced ",length(observed)," ",type,"s but expected ",length(expected),"\n",sep="")

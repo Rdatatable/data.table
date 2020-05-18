@@ -1,6 +1,6 @@
 # is x[i] in between lower[i] and upper[i] ?
 between = function(x, lower, upper, incbounds=TRUE, NAbounds=TRUE, check=FALSE) {
-  if (is.logical(x)) stop("between has been x of type logical")
+  if (is.logical(x)) stop("between has been passed an argument x of type logical")
   if (is.logical(lower)) lower = as.integer(lower)   # typically NA (which is logical type)
   if (is.logical(upper)) upper = as.integer(upper)   # typically NA (which is logical type)
   is.px = function(x) inherits(x, "POSIXct")
@@ -55,13 +55,13 @@ between = function(x, lower, upper, incbounds=TRUE, NAbounds=TRUE, check=FALSE) 
 # %between% is vectorised, #534.
 "%between%" = function(x, y) {
   ysub = substitute(y)
-  if (is.call(ysub) && ysub[[1L]]==".") {
+  if (ysub %iscall% ".") {
     ysub[[1L]]=quote(list)
     y = eval.parent(ysub)
   }
   if ((l <- length(y)) != 2L) {
     stop("RHS has length() ", l, "; expecting length 2. ",
-         if (is.call(ysub) && ysub[[1L]] == 'c')
+         if (ysub %iscall% 'c')
            sprintf("Perhaps you meant %s? ",
                    capture.output(print(`[[<-`(ysub, 1L, quote(list))))),
          "The first element should be the lower bound(s); ",

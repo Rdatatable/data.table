@@ -62,6 +62,13 @@ bool allNA(SEXP x, bool errorForBadType) {
       }
     }
     return true;
+  case CPLXSXP: {
+    const Rcomplex *xd = COMPLEX(x);
+    for (int i=0; i<n; ++i) if (!ISNAN_COMPLEX(xd[i])) { 
+      return false;
+    }
+    return true;
+  }
   case STRSXP: {
     const SEXP *xd = STRING_PTR(x);
     for (int i=0; i<n; ++i)    if (xd[i]!=NA_STRING) {
@@ -70,7 +77,7 @@ bool allNA(SEXP x, bool errorForBadType) {
     return true;
   }}
   if (!errorForBadType) return false;
-  error("Unsupported type '%s' passed to allNA()", type2char(TYPEOF(x)));  // e.g. VECSXP; tests 2116.16-18
+  error(_("Unsupported type '%s' passed to allNA()"), type2char(TYPEOF(x)));  // e.g. VECSXP; tests 2116.16-18
   // turned off allNA list support for now to avoid accidentally using it internally where we did not intend; allNA not yet exported
   //   https://github.com/Rdatatable/data.table/pull/3909#discussion_r329065950
 }
@@ -89,9 +96,9 @@ SEXP allNAR(SEXP x) {
  */
 SEXP colnamesInt(SEXP x, SEXP cols, SEXP check_dups) {
   if (!isNewList(x))
-    error("'x' argument must be data.table compatible");
+    error(_("'x' argument must be data.table compatible"));
   if (!IS_TRUE_OR_FALSE(check_dups))
-    error("'check_dups' argument must be TRUE or FALSE");
+    error(_("'check_dups' argument must be TRUE or FALSE"));
   int protecti = 0;
   R_len_t nx = length(x);
   R_len_t nc = length(cols);
@@ -107,35 +114,35 @@ SEXP colnamesInt(SEXP x, SEXP cols, SEXP check_dups) {
       ricols = cols;
     } else if (isReal(cols)) {
       if (!isRealReallyInt(cols))
-        error("argument specifying columns is type 'double' and one or more items in it are not whole integers");
+        error(_("argument specifying columns is type 'double' and one or more items in it are not whole integers"));
       ricols = PROTECT(coerceVector(cols, INTSXP)); protecti++;
     }
     int *icols = INTEGER(ricols);
     for (int i=0; i<nc; i++) {
       if ((icols[i]>nx) || (icols[i]<1))
-        error("argument specifying columns specify non existing column(s): cols[%d]=%d", i+1, icols[i]); // handles NAs also
+        error(_("argument specifying columns specify non existing column(s): cols[%d]=%d"), i+1, icols[i]); // handles NAs also
     }
   } else if (isString(cols)) {
     SEXP xnames = PROTECT(getAttrib(x, R_NamesSymbol)); protecti++;
     if (isNull(xnames))
-      error("'x' argument data.table has no names");
+      error(_("'x' argument data.table has no names"));
     ricols = PROTECT(chmatch(cols, xnames, 0)); protecti++;
     int *icols = INTEGER(ricols);
     for (int i=0; i<nc; i++) {
       if (icols[i]==0)
-        error("argument specifying columns specify non existing column(s): cols[%d]='%s'", i+1, CHAR(STRING_ELT(cols, i))); // handles NAs also
+        error(_("argument specifying columns specify non existing column(s): cols[%d]='%s'"), i+1, CHAR(STRING_ELT(cols, i))); // handles NAs also
     }
   } else {
-    error("argument specifying columns must be character or numeric");
+    error(_("argument specifying columns must be character or numeric"));
   }
   if (LOGICAL(check_dups)[0] && any_duplicated(ricols, FALSE))
-    error("argument specifying columns specify duplicated column(s)");
+    error(_("argument specifying columns specify duplicated column(s)"));
   UNPROTECT(protecti);
   return ricols;
 }
 
 void coerceFill(SEXP fill, double *dfill, int32_t *ifill, int64_t *i64fill) {
-  if (xlength(fill) != 1) error("%s: fill argument must be length 1", __func__);
+  if (xlength(fill) != 1) error(_("%s: fill argument must be length 1"), __func__);
   if (isInteger(fill)) {
     if (INTEGER(fill)[0]==NA_INTEGER) {
       ifill[0] = NA_INTEGER; dfill[0] = NA_REAL; i64fill[0] = NA_INTEGER64;
@@ -168,7 +175,7 @@ void coerceFill(SEXP fill, double *dfill, int32_t *ifill, int64_t *i64fill) {
   } else if (isLogical(fill) && LOGICAL(fill)[0]==NA_LOGICAL) {
     ifill[0] = NA_INTEGER; dfill[0] = NA_REAL; i64fill[0] = NA_INTEGER64;
   } else {
-    error("%s: fill argument must be numeric", __func__);
+    error(_("%s: fill argument must be numeric"), __func__);
   }
 }
 SEXP coerceFillR(SEXP fill) {
@@ -266,15 +273,15 @@ SEXP copyAsPlain(SEXP x) {
     for (R_xlen_t i=0; i<n; ++i) SET_STRING_ELT(ans, i, xp[i]);
   } break;
   case VECSXP: {
-    const SEXP *xp=VECTOR_PTR(x);                                // # nocov
+    const SEXP *xp=SEXPPTR_RO(x);                                // # nocov
     for (R_xlen_t i=0; i<n; ++i) SET_VECTOR_ELT(ans, i, xp[i]);  // # nocov
   } break;                                                       // # nocov
   default:
-    error("Internal error: unsupported type '%s' passed to copyAsPlain()", type2char(TYPEOF(x))); // # nocov
+    error(_("Internal error: unsupported type '%s' passed to copyAsPlain()"), type2char(TYPEOF(x))); // # nocov
   }
   copyMostAttrib(x, ans); // e.g. factor levels, class etc, but not names, dim or dimnames
   if (ALTREP(ans))
-    error("Internal error: type '%s' passed to copyAsPlain() but it seems copyMostAttrib() retains ALTREP attributes", type2char(TYPEOF(x))); // # nocov
+    error(_("Internal error: type '%s' passed to copyAsPlain() but it seems copyMostAttrib() retains ALTREP attributes"), type2char(TYPEOF(x))); // # nocov
   UNPROTECT(1);
   return ans;
 }
@@ -285,7 +292,7 @@ void copySharedColumns(SEXP x) {
   bool *shared = (bool *)R_alloc(ncol, sizeof(bool)); // on R heap in case alloc fails
   int *savetl = (int *)R_alloc(ncol, sizeof(int));  // on R heap for convenience but could be a calloc
   int nShared=0, thistl=0;
-  const SEXP *xp = VECTOR_PTR(x);
+  const SEXP *xp = SEXPPTR_RO(x);
   for (int i=0; i<ncol; ++i) {
     SEXP thiscol = xp[i];
     if (ALTREP(thiscol) || (thistl=TRUELENGTH(thiscol))<0) {
@@ -309,7 +316,7 @@ void copySharedColumns(SEXP x) {
       if (shared[i])
         SET_VECTOR_ELT(x, i, copyAsPlain(VECTOR_ELT(x, i)));
     }
-    if (GetVerbose()) Rprintf("Found and copied %d column%s with a shared memory address\n", nShared, nShared>1?"s":"");
+    if (GetVerbose()) Rprintf(_("Found and copied %d column%s with a shared memory address\n"), nShared, nShared>1?"s":"");
     // GetVerbose() (slightly expensive call of all options) called here only when needed
   }
 }
@@ -355,3 +362,4 @@ SEXP coerceUtf8IfNeeded(SEXP x) {
   UNPROTECT(1);
   return(ans);
 }
+

@@ -1,6 +1,6 @@
 # data.table continuous integration and deployment
 
-On each Pull Request opened in GitHub we run Travis CI and Appveyor to provide prompt feedback about the status of PR. Our main CI pipeline runs on GitLab CI. GitLab repository automatically mirrors our GitHub repository and runs pipeline on `master` branch. It tests more environments and different configurations. It publish variety of artifacts.
+On each Pull Request opened in GitHub we run Travis CI and Appveyor to provide prompt feedback about the status of PR. Our main CI pipeline runs on GitLab CI. GitLab repository automatically mirrors our GitHub repository and runs pipeline on `master` branch. It tests more environments and different configurations. It publish variety of artifacts. Windows jobs are being run on our private windows CI runner.
 
 ## Environments
 
@@ -8,10 +8,12 @@ On each Pull Request opened in GitHub we run Travis CI and Appveyor to provide p
 
 Test jobs:
 - `test-rel-lin` - `r-release` on Linux, most comprehensive test environment, `-O3 -flto -fno-common -Wunused-result`, extra check for no compilation warnings, includes testing [_with other packages_](./../inst/tests/other.Rraw) ([extended suggests](./../inst/tests/tests-DESCRIPTION))
-- `test-rel-cran-lin` - `--as-cran` on Linux, `-g0`, extra check for `Status: OK` in `R CMD check`
+- `test-rel-cran-lin` - `--as-cran` on Linux, `-g0`, extra check for final status of `R CMD check` where we allow one NOTE (_size of tarball_).
 - `test-dev-cran-lin` - `r-devel` and `--as-cran` on Linux, `--enable-strict-barrier --disable-long-double`
 - `test-rel-vanilla-lin` - `r-release` on Linux, no suggested deps, no OpenMP, `-O0`, tracks memory usage during tests
 - `test-310-cran-lin` - R 3.1.0 on Linux
+- `test-344-cran-lin` - R 3.4.4 on Linux
+- `test-350-cran-lin` - R 3.5.0 on Linux, no `r-recommended`
 - `test-rel-win` - `r-release` on Windows
 - `test-dev-win` - `r-devel` on Windows
 - `test-rel-osx` - MacOSX build not yet deployed, see [#3326](https://github.com/Rdatatable/data.table/issues/3326) for status

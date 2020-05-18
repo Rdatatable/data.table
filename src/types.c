@@ -52,7 +52,7 @@ void testRaiseMsg(ans_t *ans, int istatus, bool verbose) {
 }
 SEXP testMsgR(SEXP status, SEXP x, SEXP k) {
   if (!isInteger(status) || !isInteger(x) || !isInteger(k))
-    error("internal error: status, nx, nk must be integer"); // # nocov
+    error(_("internal error: status, nx, nk must be integer")); // # nocov
   int protecti = 0;
   const bool verbose = GetVerbose();
   int istatus = INTEGER(status)[0], nx = INTEGER(x)[0], nk = INTEGER(k)[0];
@@ -61,7 +61,7 @@ SEXP testMsgR(SEXP status, SEXP x, SEXP k) {
   SEXP ans = PROTECT(allocVector(VECSXP, nk * nx)); protecti++;
   ans_t *vans = (ans_t *)R_alloc(nx*nk, sizeof(ans_t));
   if (verbose)
-    Rprintf("%s: allocating memory for results %dx%d\n", __func__, nx, nk);
+    Rprintf(_("%s: allocating memory for results %dx%d\n"), __func__, nx, nk);
   for (R_len_t i=0; i<nx; i++) {
     for (R_len_t j=0; j<nk; j++) {
       SET_VECTOR_ELT(ans, i*nk+j, allocVector(INTSXP, 1));

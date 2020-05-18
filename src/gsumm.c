@@ -40,11 +40,11 @@ static int nbit(int n)
 SEXP gforce(SEXP env, SEXP jsub, SEXP o, SEXP f, SEXP l, SEXP irowsArg) {
   double started = wallclock();
   const bool verbose = GetVerbose();
-  if (TYPEOF(env) != ENVSXP) error("env is not an environment");
+  if (TYPEOF(env) != ENVSXP) error(_("env is not an environment"));
   // The type of jsub is pretty flexbile in R, so leave checking to eval() below.
-  if (!isInteger(o)) error("o is not an integer vector");
-  if (!isInteger(f)) error("f is not an integer vector");
-  if (!isInteger(l)) error("l is not an integer vector");
+  if (!isInteger(o)) error(_("%s is not an integer vector"), "o");
+  if (!isInteger(f)) error(_("%s is not an integer vector"), "f");
+  if (!isInteger(l)) error(_("%s is not an integer vector"), "l");
   if (isNull(irowsArg)) {
     irows = NULL;
     irowslen = -1;
@@ -53,9 +53,9 @@ SEXP gforce(SEXP env, SEXP jsub, SEXP o, SEXP f, SEXP l, SEXP irowsArg) {
     irows = INTEGER(irowsArg);
     irowslen = LENGTH(irowsArg);
   }
-  else error("irowsArg is neither an integer vector nor NULL");  // # nocov
+  else error(_("irowsArg is neither an integer vector nor NULL"));  // # nocov
   ngrp = LENGTH(l);
-  if (LENGTH(f) != ngrp) error("length(f)=%d != length(l)=%d", LENGTH(f), ngrp);
+  if (LENGTH(f) != ngrp) error(_("length(f)=%d != length(l)=%d"), LENGTH(f), ngrp);
   nrow=0;
   grpsize = INTEGER(l);
   maxgrpn = 0;
@@ -63,10 +63,10 @@ SEXP gforce(SEXP env, SEXP jsub, SEXP o, SEXP f, SEXP l, SEXP irowsArg) {
     nrow+=grpsize[i];
     if (grpsize[i]>maxgrpn) maxgrpn = grpsize[i];  // old comment to be checked: 'needed for #2046 and #2111 when maxgrpn attribute is not attached to empty o'
   }
-  if (LENGTH(o) && LENGTH(o)!=nrow) error("o has length %d but sum(l)=%d", LENGTH(o), nrow);
+  if (LENGTH(o) && LENGTH(o)!=nrow) error(_("o has length %d but sum(l)=%d"), LENGTH(o), nrow);
   {
     SEXP tt = getAttrib(o, install("maxgrpn"));
-    if (length(tt)==1 && INTEGER(tt)[0]!=maxgrpn) error("Internal error: o's maxgrpn attribute mismatches recalculated maxgrpn"); // # nocov
+    if (length(tt)==1 && INTEGER(tt)[0]!=maxgrpn) error(_("Internal error: o's maxgrpn attribute mismatches recalculated maxgrpn")); // # nocov
   }
 
   int nb = nbit(ngrp-1);
@@ -86,7 +86,7 @@ SEXP gforce(SEXP env, SEXP jsub, SEXP o, SEXP f, SEXP l, SEXP irowsArg) {
   // TODO: enable stress-test mode in tests only (#3205) which can be turned off by default in release to decrease overhead on small data
   //       if that is established to be biting (it may be fine).
   if (nBatch<1 || batchSize<1 || lastBatchSize<1) {
-    error("Internal error: nrow=%d  ngrp=%d  nbit=%d  shift=%d  highSize=%d  nBatch=%d  batchSize=%d  lastBatchSize=%d\n",  // # nocov
+    error(_("Internal error: nrow=%d  ngrp=%d  nbit=%d  shift=%d  highSize=%d  nBatch=%d  batchSize=%d  lastBatchSize=%d\n"),  // # nocov
            nrow, ngrp, nb, shift, highSize, nBatch, batchSize, lastBatchSize);                                              // # nocov
   }
   // initial population of g:
@@ -95,7 +95,7 @@ SEXP gforce(SEXP env, SEXP jsub, SEXP o, SEXP f, SEXP l, SEXP irowsArg) {
     int *elem = grp + fp[g]-1;
     for (int j=0; j<grpsize[g]; j++)  elem[j] = g;
   }
-  if (verbose) { Rprintf("gforce initial population of grp took %.3f\n", wallclock()-started); started=wallclock(); }
+  if (verbose) { Rprintf(_("gforce initial population of grp took %.3f\n"), wallclock()-started); started=wallclock(); }
   isunsorted = 0;
   if (LENGTH(o)) {
     isunsorted = 1; // for gmedian
@@ -110,10 +110,10 @@ SEXP gforce(SEXP env, SEXP jsub, SEXP o, SEXP f, SEXP l, SEXP irowsArg) {
     int nb = nbit(nrow-1);
     int shift = MAX(nb-8, 0);  // TODO: experiment nb/2.  Here it doesn't have to be /2 currently.
     int highSize = ((nrow-1)>>shift) + 1;
-    //Rprintf("When assigning grp[o] = g, highSize=%d  nb=%d  shift=%d  nBatch=%d\n", highSize, nb, shift, nBatch);
+    //Rprintf(_("When assigning grp[o] = g, highSize=%d  nb=%d  shift=%d  nBatch=%d\n"), highSize, nb, shift, nBatch);
     int *counts = calloc(nBatch*highSize, sizeof(int));  // TODO: cache-line align and make highSize a multiple of 64
     int *TMP   = malloc(nrow*2*sizeof(int));
-    if (!counts || !TMP ) error("Internal error: Failed to allocate counts or TMP when assigning g in gforce");
+    if (!counts || !TMP ) error(_("Internal error: Failed to allocate counts or TMP when assigning g in gforce"));
     #pragma omp parallel for num_threads(getDTthreads())   // schedule(dynamic,1)
     for (int b=0; b<nBatch; b++) {
       const int howMany = b==nBatch-1 ? lastBatchSize : batchSize;
@@ -137,7 +137,7 @@ SEXP gforce(SEXP env, SEXP jsub, SEXP o, SEXP f, SEXP l, SEXP irowsArg) {
         *p   = my_g[i];
       }
     }
-    //Rprintf("gforce assign TMP (o,g) pairs took %.3f\n", wallclock()-started); started=wallclock();
+    //Rprintf(_("gforce assign TMP (o,g) pairs took %.3f\n"), wallclock()-started); started=wallclock();
     #pragma omp parallel for num_threads(getDTthreads())
     for (int h=0; h<highSize; h++) {  // very important that high is first loop here
       for (int b=0; b<nBatch; b++) {
@@ -151,7 +151,7 @@ SEXP gforce(SEXP env, SEXP jsub, SEXP o, SEXP f, SEXP l, SEXP irowsArg) {
     }
     free(counts);
     free(TMP);
-    //Rprintf("gforce assign TMP [ (o,g) pairs ] back to grp took %.3f\n", wallclock()-started); started=wallclock();
+    //Rprintf(_("gforce assign TMP [ (o,g) pairs ] back to grp took %.3f\n"), wallclock()-started); started=wallclock();
   }
 
   high = (uint16_t *)R_alloc(nrow, sizeof(uint16_t));  // maybe better to malloc to avoid R's heap, but safer to R_alloc since it's done via eval()
@@ -191,13 +191,13 @@ SEXP gforce(SEXP env, SEXP jsub, SEXP o, SEXP f, SEXP l, SEXP irowsArg) {
     // counts is now cumulated within batch (with ending values) and we leave it that way
     // memcpy(counts + b*256, myCounts, 256*sizeof(int));  // save cumulate for later, first bucket contains position of next. For ease later in the very last batch.
   }
-  if (verbose) { Rprintf("gforce assign high and low took %.3f\n", wallclock()-started); started=wallclock(); }
+  if (verbose) { Rprintf(_("gforce assign high and low took %.3f\n"), wallclock()-started); started=wallclock(); }
 
   oo = INTEGER(o);
   ff = INTEGER(f);
 
   SEXP ans = PROTECT( eval(jsub, env) );
-  if (verbose) { Rprintf("gforce eval took %.3f\n", wallclock()-started); started=wallclock(); }
+  if (verbose) { Rprintf(_("gforce eval took %.3f\n"), wallclock()-started); started=wallclock(); }
   // if this eval() fails with R error, R will release grp for us. Which is why we use R_alloc above.
   if (isVectorAtomic(ans)) {
     SEXP tt = PROTECT(allocVector(VECSXP, 1));
@@ -213,7 +213,7 @@ void *gather(SEXP x, bool *anyNA)
 {
   double started=wallclock();
   const bool verbose = GetVerbose();
-  if (verbose) Rprintf("gather took ... ");
+  if (verbose) Rprintf(_("gather took ... "));
   switch (TYPEOF(x)) {
   case LGLSXP: case INTSXP: {
     const int *restrict thisx = INTEGER(x);
@@ -331,23 +331,23 @@ void *gather(SEXP x, bool *anyNA)
     }
   } break;
   default :
-    error("gather implemented for INTSXP, REALSXP, and CPLXSXP but not '%s'", type2char(TYPEOF(x)));   // # nocov
+    error(_("gather implemented for INTSXP, REALSXP, and CPLXSXP but not '%s'"), type2char(TYPEOF(x)));   // # nocov
   }
-  if (verbose) { Rprintf("%.3fs\n", wallclock()-started); }
+  if (verbose) { Rprintf(_("%.3fs\n"), wallclock()-started); }
   return gx;
 }
 
 SEXP gsum(SEXP x, SEXP narmArg, SEXP warnOverflowArg)
 {
-  if (!isLogical(narmArg) || LENGTH(narmArg)!=1 || LOGICAL(narmArg)[0]==NA_LOGICAL) error("na.rm must be TRUE or FALSE");
+  if (!isLogical(narmArg) || LENGTH(narmArg)!=1 || LOGICAL(narmArg)[0]==NA_LOGICAL) error(_("na.rm must be TRUE or FALSE"));
   const bool narm = LOGICAL(narmArg)[0];
   const bool warnOverflow = LOGICAL(warnOverflowArg)[0];
-  if (inherits(x, "factor")) error("sum is not meaningful for factors.");
+  if (inherits(x, "factor")) error(_("sum is not meaningful for factors."));
   const int n = (irowslen == -1) ? length(x) : irowslen;
   double started = wallclock();
   const bool verbose=GetVerbose();
-  if (verbose) Rprintf("This gsum took (narm=%s) ... ", narm?"TRUE":"FALSE");
-  if (nrow != n) error("nrow [%d] != length(x) [%d] in gsum", nrow, n);
+  if (verbose) Rprintf(_("This gsum took (narm=%s) ... "), narm?"TRUE":"FALSE");
+  if (nrow != n) error(_("nrow [%d] != length(x) [%d] in %s"), nrow, n, "gsum");
   bool anyNA=false;
   SEXP ans;
   switch(TYPEOF(x)) {
@@ -398,10 +398,10 @@ SEXP gsum(SEXP x, SEXP narmArg, SEXP warnOverflowArg)
         }
       }
     }
-    //Rprintf("gsum int took %.3f\n", wallclock()-started);
+    //Rprintf(_("gsum int took %.3f\n"), wallclock()-started);
     if (overflow) {
       UNPROTECT(1); // discard the result with overflow
-      if (warnOverflow) warning("The sum of an integer column for a group was more than type 'integer' can hold so the result has been coerced to 'numeric' automatically for convenience.");
+      if (warnOverflow) warning(_("The sum of an integer column for a group was more than type 'integer' can hold so the result has been coerced to 'numeric' automatically for convenience."));
       ans = PROTECT(allocVector(REALSXP, ngrp));
       double *restrict ansp = REAL(ans);
       memset(ansp, 0, ngrp*sizeof(double));
@@ -562,10 +562,10 @@ SEXP gsum(SEXP x, SEXP narmArg, SEXP warnOverflowArg)
     }
   } break;
   default:
-    error("Type '%s' not supported by GForce sum (gsum). Either add the prefix base::sum(.) or turn off GForce optimization using options(datatable.optimize=1)", type2char(TYPEOF(x)));
+    error(_("Type '%s' not supported by GForce sum (gsum). Either add the prefix base::sum(.) or turn off GForce optimization using options(datatable.optimize=1)"), type2char(TYPEOF(x)));
   }
   copyMostAttrib(x, ans);
-  if (verbose) { Rprintf("%.3fs\n", wallclock()-started); }
+  if (verbose) { Rprintf(_("%.3fs\n"), wallclock()-started); }
   UNPROTECT(1);
   return(ans);
 }
@@ -574,9 +574,9 @@ SEXP gmean(SEXP x, SEXP narm)
 {
   SEXP ans=R_NilValue;
   //clock_t start = clock();
-  if (!isLogical(narm) || LENGTH(narm)!=1 || LOGICAL(narm)[0]==NA_LOGICAL) error("na.rm must be TRUE or FALSE");
-  if (!isVectorAtomic(x)) error("GForce mean can only be applied to columns, not .SD or similar. Likely you're looking for 'DT[,lapply(.SD,mean),by=,.SDcols=]'. See ?data.table.");
-  if (inherits(x, "factor")) error("mean is not meaningful for factors.");
+  if (!isLogical(narm) || LENGTH(narm)!=1 || LOGICAL(narm)[0]==NA_LOGICAL) error(_("na.rm must be TRUE or FALSE"));
+  if (!isVectorAtomic(x)) error(_("GForce mean can only be applied to columns, not .SD or similar. Likely you're looking for 'DT[,lapply(.SD,mean),by=,.SDcols=]'. See ?data.table."));
+  if (inherits(x, "factor")) error(_("mean is not meaningful for factors."));
   if (!LOGICAL(narm)[0]) {
     int protecti=0;
     ans = PROTECT(gsum(x, narm, /*#986, warnOverflow=*/ScalarLogical(FALSE))); protecti++;
@@ -596,20 +596,20 @@ SEXP gmean(SEXP x, SEXP narm)
       }
     } break;
     default :
-      error("Internal error: gsum returned type '%s'. typeof(x) is '%s'", type2char(TYPEOF(ans)), type2char(TYPEOF(x))); // # nocov
+      error(_("Internal error: gsum returned type '%s'. typeof(x) is '%s'"), type2char(TYPEOF(ans)), type2char(TYPEOF(x))); // # nocov
     }
     UNPROTECT(protecti);
     return(ans);
   }
   // na.rm=TRUE.  Similar to gsum, but we need to count the non-NA as well for the divisor
   const int n = (irowslen == -1) ? length(x) : irowslen;
-  if (nrow != n) error("nrow [%d] != length(x) [%d] in gsum", nrow, n);
+  if (nrow != n) error(_("nrow [%d] != length(x) [%d] in %s"), nrow, n, "gsum");
 
   long double *s = calloc(ngrp, sizeof(long double)), *si=NULL;  // s = sum; si = sum imaginary just for complex
-  if (!s) error("Unable to allocate %d * %d bytes for sum in gmean na.rm=TRUE", ngrp, sizeof(long double));
+  if (!s) error(_("Unable to allocate %d * %d bytes for sum in gmean na.rm=TRUE"), ngrp, sizeof(long double));
 
   int *c = calloc(ngrp, sizeof(int));
-  if (!c) error("Unable to allocate %d * %d bytes for counts in gmean na.rm=TRUE", ngrp, sizeof(int));
+  if (!c) error(_("Unable to allocate %d * %d bytes for counts in gmean na.rm=TRUE"), ngrp, sizeof(int));
 
   switch(TYPEOF(x)) {
   case LGLSXP: case INTSXP: {
@@ -635,7 +635,7 @@ SEXP gmean(SEXP x, SEXP narm)
   case CPLXSXP: {
     const Rcomplex *xd = COMPLEX(x);
     si = calloc(ngrp, sizeof(long double));
-    if (!si) error("Unable to allocate %d * %d bytes for si in gmean na.rm=TRUE", ngrp, sizeof(long double));
+    if (!si) error(_("Unable to allocate %d * %d bytes for si in gmean na.rm=TRUE"), ngrp, sizeof(long double));
     for (int i=0; i<n; i++) {
       int thisgrp = grp[i];
       int ix = (irowslen == -1) ? i : irows[i]-1;
@@ -647,7 +647,7 @@ SEXP gmean(SEXP x, SEXP narm)
   } break;
   default:
     free(s); free(c); // # nocov because it already stops at gsum, remove nocov if gmean will support a type that gsum wont
-    error("Type '%s' not supported by GForce mean (gmean) na.rm=TRUE. Either add the prefix base::mean(.) or turn off GForce optimization using options(datatable.optimize=1)", type2char(TYPEOF(x))); // # nocov
+    error(_("Type '%s' not supported by GForce mean (gmean) na.rm=TRUE. Either add the prefix base::mean(.) or turn off GForce optimization using options(datatable.optimize=1)"), type2char(TYPEOF(x))); // # nocov
   }
   switch(TYPEOF(x)) {
   case LGLSXP: case INTSXP: case REALSXP: {
@@ -671,11 +671,11 @@ SEXP gmean(SEXP x, SEXP narm)
     }
   } break;
   default:
-    error("Internal error: unsupported type at the end of gmean"); // # nocov
+    error(_("Internal error: unsupported type at the end of gmean")); // # nocov
   }
   free(s); free(si); free(c);
   copyMostAttrib(x, ans);
-  // Rprintf("this gmean na.rm=TRUE took %8.3f\n", 1.0*(clock()-start)/CLOCKS_PER_SEC);
+  // Rprintf(_("this gmean na.rm=TRUE took %8.3f\n"), 1.0*(clock()-start)/CLOCKS_PER_SEC);
   UNPROTECT(1);
   return(ans);
 }
@@ -683,14 +683,14 @@ SEXP gmean(SEXP x, SEXP narm)
 // gmin
 SEXP gmin(SEXP x, SEXP narm)
 {
-  if (!isLogical(narm) || LENGTH(narm)!=1 || LOGICAL(narm)[0]==NA_LOGICAL) error("na.rm must be TRUE or FALSE");
-  if (!isVectorAtomic(x)) error("GForce min can only be applied to columns, not .SD or similar. To find min of all items in a list such as .SD, either add the prefix base::min(.SD) or turn off GForce optimization using options(datatable.optimize=1). More likely, you may be looking for 'DT[,lapply(.SD,min),by=,.SDcols=]'");
-  if (inherits(x, "factor") && !inherits(x, "ordered")) error("min is not meaningful for factors.");
+  if (!isLogical(narm) || LENGTH(narm)!=1 || LOGICAL(narm)[0]==NA_LOGICAL) error(_("na.rm must be TRUE or FALSE"));
+  if (!isVectorAtomic(x)) error(_("GForce min can only be applied to columns, not .SD or similar. To find min of all items in a list such as .SD, either add the prefix base::min(.SD) or turn off GForce optimization using options(datatable.optimize=1). More likely, you may be looking for 'DT[,lapply(.SD,min),by=,.SDcols=]'"));
+  if (inherits(x, "factor") && !inherits(x, "ordered")) error(_("min is not meaningful for factors."));
   R_len_t i, ix, thisgrp=0;
   int n = (irowslen == -1) ? length(x) : irowslen;
   //clock_t start = clock();
   SEXP ans;
-  if (nrow != n) error("nrow [%d] != length(x) [%d] in gmin", nrow, n);
+  if (nrow != n) error(_("nrow [%d] != length(x) [%d] in %s"), nrow, n, "gmin");
   int protecti=0;
   switch(TYPEOF(x)) {
   case LGLSXP: case INTSXP:
@@ -714,7 +714,7 @@ SEXP gmin(SEXP x, SEXP narm)
       }
       for (i=0; i<ngrp; i++) {
         if (INTEGER(ans)[i] == NA_INTEGER) {
-          warning("No non-missing values found in at least one group. Coercing to numeric type and returning 'Inf' for such groups to be consistent with base");
+          warning(_("No non-missing values found in at least one group. Coercing to numeric type and returning 'Inf' for such groups to be consistent with base"));
           ans = PROTECT(coerceVector(ans, REALSXP)); protecti++;
           for (i=0; i<ngrp; i++) {
             if (ISNA(REAL(ans)[i])) REAL(ans)[i] = R_PosInf;
@@ -753,7 +753,7 @@ SEXP gmin(SEXP x, SEXP narm)
       }
       for (i=0; i<ngrp; i++) {
         if (STRING_ELT(ans, i)==NA_STRING) {
-          warning("No non-missing values found in at least one group. Returning 'NA' for such groups to be consistent with base");
+          warning(_("No non-missing values found in at least one group. Returning 'NA' for such groups to be consistent with base"));
           break;
         }
       }
@@ -780,7 +780,7 @@ SEXP gmin(SEXP x, SEXP narm)
       }
       for (i=0; i<ngrp; i++) {
         if (ISNAN(REAL(ans)[i])) {
-          warning("No non-missing values found in at least one group. Returning 'Inf' for such groups to be consistent with base");
+          warning(_("No non-missing values found in at least one group. Returning 'Inf' for such groups to be consistent with base"));
           for (; i<ngrp; i++) if (ISNAN(REAL(ans)[i])) REAL(ans)[i] = R_PosInf;
           break;
         }
@@ -788,28 +788,28 @@ SEXP gmin(SEXP x, SEXP narm)
     }
     break;
   case CPLXSXP:
-    error("Type 'complex' has no well-defined min");
+    error(_("Type 'complex' has no well-defined min"));
     break;
   default:
-    error("Type '%s' not supported by GForce min (gmin). Either add the prefix base::min(.) or turn off GForce optimization using options(datatable.optimize=1)", type2char(TYPEOF(x)));
+    error(_("Type '%s' not supported by GForce min (gmin). Either add the prefix base::min(.) or turn off GForce optimization using options(datatable.optimize=1)"), type2char(TYPEOF(x)));
   }
   copyMostAttrib(x, ans); // all but names,dim and dimnames. And if so, we want a copy here, not keepattr's SET_ATTRIB.
   UNPROTECT(protecti);  // ans + maybe 1 coerced ans
-  // Rprintf("this gmin took %8.3f\n", 1.0*(clock()-start)/CLOCKS_PER_SEC);
+  // Rprintf(_("this gmin took %8.3f\n"), 1.0*(clock()-start)/CLOCKS_PER_SEC);
   return(ans);
 }
 
 // gmax
 SEXP gmax(SEXP x, SEXP narm)
 {
-  if (!isLogical(narm) || LENGTH(narm)!=1 || LOGICAL(narm)[0]==NA_LOGICAL) error("na.rm must be TRUE or FALSE");
-  if (!isVectorAtomic(x)) error("GForce max can only be applied to columns, not .SD or similar. To find max of all items in a list such as .SD, either add the prefix base::max(.SD) or turn off GForce optimization using options(datatable.optimize=1). More likely, you may be looking for 'DT[,lapply(.SD,max),by=,.SDcols=]'");
-  if (inherits(x, "factor") && !inherits(x, "ordered")) error("max is not meaningful for factors.");
+  if (!isLogical(narm) || LENGTH(narm)!=1 || LOGICAL(narm)[0]==NA_LOGICAL) error(_("na.rm must be TRUE or FALSE"));
+  if (!isVectorAtomic(x)) error(_("GForce max can only be applied to columns, not .SD or similar. To find max of all items in a list such as .SD, either add the prefix base::max(.SD) or turn off GForce optimization using options(datatable.optimize=1). More likely, you may be looking for 'DT[,lapply(.SD,max),by=,.SDcols=]'"));
+  if (inherits(x, "factor") && !inherits(x, "ordered")) error(_("max is not meaningful for factors."));
   R_len_t i, ix, thisgrp=0;
   int n = (irowslen == -1) ? length(x) : irowslen;
   //clock_t start = clock();
   SEXP ans;
-  if (nrow != n) error("nrow [%d] != length(x) [%d] in gmax", nrow, n);
+  if (nrow != n) error(_("nrow [%d] != length(x) [%d] in %s"), nrow, n, "gmax");
 
   // TODO rework gmax in the same way as gmin and remove this *update
   char *update = (char *)R_alloc(ngrp, sizeof(char));
@@ -847,7 +847,7 @@ SEXP gmax(SEXP x, SEXP narm)
       }
       for (i=0; i<ngrp; i++) {
         if (update[i] != 1)  {// equivalent of INTEGER(ans)[thisgrp] == NA_INTEGER
-          warning("No non-missing values found in at least one group. Coercing to numeric type and returning 'Inf' for such groups to be consistent with base");
+          warning(_("No non-missing values found in at least one group. Coercing to numeric type and returning 'Inf' for such groups to be consistent with base"));
           ans = PROTECT(coerceVector(ans, REALSXP)); protecti++;
           for (i=0; i<ngrp; i++) {
             if (update[i] != 1) REAL(ans)[i] = -R_PosInf;
@@ -888,7 +888,7 @@ SEXP gmax(SEXP x, SEXP narm)
       }
       for (i=0; i<ngrp; i++) {
         if (update[i] != 1)  {// equivalent of INTEGER(ans)[thisgrp] == NA_INTEGER
-          warning("No non-missing values found in at least one group. Returning 'NA' for such groups to be consistent with base");
+          warning(_("No non-missing values found in at least one group. Returning 'NA' for such groups to be consistent with base"));
           break;
         }
       }
@@ -927,32 +927,32 @@ SEXP gmax(SEXP x, SEXP narm)
       // everything taken care of already. Just warn if all NA groups have occurred at least once
       for (i=0; i<ngrp; i++) {
         if (update[i] != 1)  { // equivalent of REAL(ans)[thisgrp] == -R_PosInf
-          warning("No non-missing values found in at least one group. Returning '-Inf' for such groups to be consistent with base");
+          warning(_("No non-missing values found in at least one group. Returning '-Inf' for such groups to be consistent with base"));
           break;
         }
       }
     }
     break;
   case CPLXSXP:
-    error("Type 'complex' has no well-defined max");
+    error(_("Type 'complex' has no well-defined max"));
     break;
   default:
-    error("Type '%s' not supported by GForce max (gmax). Either add the prefix base::max(.) or turn off GForce optimization using options(datatable.optimize=1)", type2char(TYPEOF(x)));
+    error(_("Type '%s' not supported by GForce max (gmax). Either add the prefix base::max(.) or turn off GForce optimization using options(datatable.optimize=1)"), type2char(TYPEOF(x)));
   }
   copyMostAttrib(x, ans); // all but names,dim and dimnames. And if so, we want a copy here, not keepattr's SET_ATTRIB.
   UNPROTECT(protecti);
-  // Rprintf("this gmax took %8.3f\n", 1.0*(clock()-start)/CLOCKS_PER_SEC);
+  // Rprintf(_("this gmax took %8.3f\n"), 1.0*(clock()-start)/CLOCKS_PER_SEC);
   return(ans);
 }
 
 // gmedian, always returns numeric type (to avoid as.numeric() wrap..)
 SEXP gmedian(SEXP x, SEXP narmArg) {
-  if (!isLogical(narmArg) || LENGTH(narmArg)!=1 || LOGICAL(narmArg)[0]==NA_LOGICAL) error("na.rm must be TRUE or FALSE");
-  if (!isVectorAtomic(x)) error("GForce median can only be applied to columns, not .SD or similar. To find median of all items in a list such as .SD, either add the prefix stats::median(.SD) or turn off GForce optimization using options(datatable.optimize=1). More likely, you may be looking for 'DT[,lapply(.SD,median),by=,.SDcols=]'");
-  if (inherits(x, "factor")) error("median is not meaningful for factors.");
+  if (!isLogical(narmArg) || LENGTH(narmArg)!=1 || LOGICAL(narmArg)[0]==NA_LOGICAL) error(_("na.rm must be TRUE or FALSE"));
+  if (!isVectorAtomic(x)) error(_("GForce median can only be applied to columns, not .SD or similar. To find median of all items in a list such as .SD, either add the prefix stats::median(.SD) or turn off GForce optimization using options(datatable.optimize=1). More likely, you may be looking for 'DT[,lapply(.SD,median),by=,.SDcols=]'"));
+  if (inherits(x, "factor")) error(_("median is not meaningful for factors."));
   const bool isInt64 = INHERITS(x, char_integer64), narm = LOGICAL(narmArg)[0];
   int n = (irowslen == -1) ? length(x) : irowslen;
-  if (nrow != n) error("nrow [%d] != length(x) [%d] in gmedian", nrow, n);
+  if (nrow != n) error(_("nrow [%d] != length(x) [%d] in %s"), nrow, n, "gmedian");
   SEXP ans = PROTECT(allocVector(REALSXP, ngrp));
   double *ansd = REAL(ans);
   switch(TYPEOF(x)) {
@@ -989,8 +989,7 @@ SEXP gmedian(SEXP x, SEXP narmArg) {
     }}
     break;
   default:
-    error("Type '%s' not supported by GForce median (gmedian). Either add the prefix stats::median(.) or turn "
-          "off GForce optimization using options(datatable.optimize=1)", type2char(TYPEOF(x)));
+    error(_("Type '%s' not supported by GForce median (gmedian). Either add the prefix stats::median(.) or turn off GForce optimization using options(datatable.optimize=1)"), type2char(TYPEOF(x)));
   }
   if (!isInt64) copyMostAttrib(x, ans);
   // else the integer64 class needs to be dropped since double is always returned by gmedian
@@ -1003,7 +1002,7 @@ SEXP glast(SEXP x) {
   R_len_t i,k;
   int n = (irowslen == -1) ? length(x) : irowslen;
   SEXP ans;
-  if (nrow != n) error("nrow [%d] != length(x) [%d] in gtail", nrow, n);
+  if (nrow != n) error(_("nrow [%d] != length(x) [%d] in %s"), nrow, n, "gtail");
   switch(TYPEOF(x)) {
   case LGLSXP: {
     const int *ix = LOGICAL(x);
@@ -1071,7 +1070,7 @@ SEXP glast(SEXP x) {
     }
     break;
   default:
-    error("Type '%s' not supported by GForce tail (gtail). Either add the prefix utils::tail(.) or turn off GForce optimization using options(datatable.optimize=1)", type2char(TYPEOF(x)));
+    error(_("Type '%s' not supported by GForce tail (gtail). Either add the prefix utils::tail(.) or turn off GForce optimization using options(datatable.optimize=1)"), type2char(TYPEOF(x)));
   }
   copyMostAttrib(x, ans);
   UNPROTECT(1);
@@ -1083,7 +1082,7 @@ SEXP gfirst(SEXP x) {
   R_len_t i,k;
   int n = (irowslen == -1) ? length(x) : irowslen;
   SEXP ans;
-  if (nrow != n) error("nrow [%d] != length(x) [%d] in ghead", nrow, n);
+  if (nrow != n) error(_("nrow [%d] != length(x) [%d] in %s"), nrow, n, "ghead");
   switch(TYPEOF(x)) {
   case LGLSXP: {
     int const *ix = LOGICAL(x);
@@ -1151,7 +1150,7 @@ SEXP gfirst(SEXP x) {
     }
     break;
   default:
-    error("Type '%s' not supported by GForce head (ghead). Either add the prefix utils::head(.) or turn off GForce optimization using options(datatable.optimize=1)", type2char(TYPEOF(x)));
+    error(_("Type '%s' not supported by GForce head (ghead). Either add the prefix utils::head(.) or turn off GForce optimization using options(datatable.optimize=1)"), type2char(TYPEOF(x)));
   }
   copyMostAttrib(x, ans);
   UNPROTECT(1);
@@ -1159,22 +1158,22 @@ SEXP gfirst(SEXP x) {
 }
 
 SEXP gtail(SEXP x, SEXP valArg) {
-  if (!isInteger(valArg) || LENGTH(valArg)!=1 || INTEGER(valArg)[0]!=1) error("Internal error, gtail is only implemented for n=1. This should have been caught before. please report to data.table issue tracker."); // # nocov
+  if (!isInteger(valArg) || LENGTH(valArg)!=1 || INTEGER(valArg)[0]!=1) error(_("Internal error, gtail is only implemented for n=1. This should have been caught before. please report to data.table issue tracker.")); // # nocov
   return (glast(x));
 }
 
 SEXP ghead(SEXP x, SEXP valArg) {
-  if (!isInteger(valArg) || LENGTH(valArg)!=1 || INTEGER(valArg)[0]!=1) error("Internal error, ghead is only implemented for n=1. This should have been caught before. please report to data.table issue tracker."); // # nocov
+  if (!isInteger(valArg) || LENGTH(valArg)!=1 || INTEGER(valArg)[0]!=1) error(_("Internal error, ghead is only implemented for n=1. This should have been caught before. please report to data.table issue tracker.")); // # nocov
   return (gfirst(x));
 }
 
 SEXP gnthvalue(SEXP x, SEXP valArg) {
 
-  if (!isInteger(valArg) || LENGTH(valArg)!=1 || INTEGER(valArg)[0]<=0) error("Internal error, `g[` (gnthvalue) is only implemented single value subsets with positive index, e.g., .SD[2]. This should have been caught before. please report to data.table issue tracker."); // # nocov
+  if (!isInteger(valArg) || LENGTH(valArg)!=1 || INTEGER(valArg)[0]<=0) error(_("Internal error, `g[` (gnthvalue) is only implemented single value subsets with positive index, e.g., .SD[2]. This should have been caught before. please report to data.table issue tracker.")); // # nocov
   R_len_t i,k, val=INTEGER(valArg)[0];
   int n = (irowslen == -1) ? length(x) : irowslen;
   SEXP ans;
-  if (nrow != n) error("nrow [%d] != length(x) [%d] in ghead", nrow, n);
+  if (nrow != n) error(_("nrow [%d] != length(x) [%d] in %s"), nrow, n, "ghead");
   switch(TYPEOF(x)) {
   case LGLSXP: {
     const int *ix = LOGICAL(x);
@@ -1190,9 +1189,9 @@ SEXP gnthvalue(SEXP x, SEXP valArg) {
   }
     break;
   case INTSXP: {
-    const int *ix = LOGICAL(x);
+    const int *ix = INTEGER(x);
     ans = PROTECT(allocVector(INTSXP, ngrp));
-    int *ians = LOGICAL(ans);
+    int *ians = INTEGER(ans);
     for (i=0; i<ngrp; i++) {
       if (val > grpsize[i]) { INTEGER(ans)[i] = NA_INTEGER; continue; }
       k = ff[i]+val-2;
@@ -1248,7 +1247,7 @@ SEXP gnthvalue(SEXP x, SEXP valArg) {
     }
     break;
   default:
-    error("Type '%s' not supported by GForce subset `[` (gnthvalue). Either add the prefix utils::head(.) or turn off GForce optimization using options(datatable.optimize=1)", type2char(TYPEOF(x)));
+    error(_("Type '%s' not supported by GForce subset `[` (gnthvalue). Either add the prefix utils::head(.) or turn off GForce optimization using options(datatable.optimize=1)"), type2char(TYPEOF(x)));
   }
   copyMostAttrib(x, ans);
   UNPROTECT(1);
@@ -1259,12 +1258,12 @@ SEXP gnthvalue(SEXP x, SEXP valArg) {
 // implemented this similar to gmedian to balance well between speed and memory usage. There's one extra allocation on maximum groups and that's it.. and that helps speed things up extremely since we don't have to collect x's values for each group for each step (mean, residuals, mean again and then variance).
 SEXP gvarsd1(SEXP x, SEXP narm, Rboolean isSD)
 {
-  if (!isLogical(narm) || LENGTH(narm)!=1 || LOGICAL(narm)[0]==NA_LOGICAL) error("na.rm must be TRUE or FALSE");
-  if (!isVectorAtomic(x)) error("GForce var/sd can only be applied to columns, not .SD or similar. For the full covariance matrix of all items in a list such as .SD, either add the prefix stats::var(.SD) (or stats::sd(.SD)) or turn off GForce optimization using options(datatable.optimize=1). Alternatively, if you only need the diagonal elements, 'DT[,lapply(.SD,var),by=,.SDcols=]' is the optimized way to do this.");
-  if (inherits(x, "factor")) error("var/sd is not meaningful for factors.");
+  if (!isLogical(narm) || LENGTH(narm)!=1 || LOGICAL(narm)[0]==NA_LOGICAL) error(_("na.rm must be TRUE or FALSE"));
+  if (!isVectorAtomic(x)) error(_("GForce var/sd can only be applied to columns, not .SD or similar. For the full covariance matrix of all items in a list such as .SD, either add the prefix stats::var(.SD) (or stats::sd(.SD)) or turn off GForce optimization using options(datatable.optimize=1). Alternatively, if you only need the diagonal elements, 'DT[,lapply(.SD,var),by=,.SDcols=]' is the optimized way to do this."));
+  if (inherits(x, "factor")) error(_("var/sd is not meaningful for factors."));
   long double m, s, v;
   R_len_t i, j, ix, thisgrpsize = 0, n = (irowslen == -1) ? length(x) : irowslen;
-  if (nrow != n) error("nrow [%d] != length(x) [%d] in gvar", nrow, n);
+  if (nrow != n) error(_("nrow [%d] != length(x) [%d] in %s"), nrow, n, "gvar");
   SEXP sub, ans = PROTECT(allocVector(REALSXP, ngrp));
   Rboolean ans_na;
   switch(TYPEOF(x)) {
@@ -1380,9 +1379,9 @@ SEXP gvarsd1(SEXP x, SEXP narm, Rboolean isSD)
     break;
   default:
       if (!isSD) {
-        error("Type '%s' not supported by GForce var (gvar). Either add the prefix stats::var(.) or turn off GForce optimization using options(datatable.optimize=1)", type2char(TYPEOF(x)));
+        error(_("Type '%s' not supported by GForce var (gvar). Either add the prefix stats::var(.) or turn off GForce optimization using options(datatable.optimize=1)"), type2char(TYPEOF(x)));
       } else {
-        error("Type '%s' not supported by GForce sd (gsd). Either add the prefix stats::sd(.) or turn off GForce optimization using options(datatable.optimize=1)", type2char(TYPEOF(x)));
+        error(_("Type '%s' not supported by GForce sd (gsd). Either add the prefix stats::sd(.) or turn off GForce optimization using options(datatable.optimize=1)"), type2char(TYPEOF(x)));
       }
   }
   // no copyMostAttrib(x, ans) since class (e.g. Date) unlikely applicable to sd/var
@@ -1400,16 +1399,16 @@ SEXP gsd(SEXP x, SEXP narm) {
 
 SEXP gprod(SEXP x, SEXP narm)
 {
-  if (!isLogical(narm) || LENGTH(narm)!=1 || LOGICAL(narm)[0]==NA_LOGICAL) error("na.rm must be TRUE or FALSE");
-  if (!isVectorAtomic(x)) error("GForce prod can only be applied to columns, not .SD or similar. To multiply all items in a list such as .SD, either add the prefix base::prod(.SD) or turn off GForce optimization using options(datatable.optimize=1). More likely, you may be looking for 'DT[,lapply(.SD,prod),by=,.SDcols=]'");
-  if (inherits(x, "factor")) error("prod is not meaningful for factors.");
+  if (!isLogical(narm) || LENGTH(narm)!=1 || LOGICAL(narm)[0]==NA_LOGICAL) error(_("na.rm must be TRUE or FALSE"));
+  if (!isVectorAtomic(x)) error(_("GForce prod can only be applied to columns, not .SD or similar. To multiply all items in a list such as .SD, either add the prefix base::prod(.SD) or turn off GForce optimization using options(datatable.optimize=1). More likely, you may be looking for 'DT[,lapply(.SD,prod),by=,.SDcols=]'"));
+  if (inherits(x, "factor")) error(_("prod is not meaningful for factors."));
   int i, ix, thisgrp;
   int n = (irowslen == -1) ? length(x) : irowslen;
   //clock_t start = clock();
   SEXP ans;
-  if (nrow != n) error("nrow [%d] != length(x) [%d] in gprod", nrow, n);
+  if (nrow != n) error(_("nrow [%d] != length(x) [%d] in %s"), nrow, n, "gprod");
   long double *s = malloc(ngrp * sizeof(long double));
-  if (!s) error("Unable to allocate %d * %d bytes for gprod", ngrp, sizeof(long double));
+  if (!s) error(_("Unable to allocate %d * %d bytes for gprod"), ngrp, sizeof(long double));
   for (i=0; i<ngrp; i++) s[i] = 1.0;
   ans = PROTECT(allocVector(REALSXP, ngrp));
   switch(TYPEOF(x)) {
@@ -1444,11 +1443,11 @@ SEXP gprod(SEXP x, SEXP narm)
     break;
   default:
     free(s);
-    error("Type '%s' not supported by GForce prod (gprod). Either add the prefix base::prod(.) or turn off GForce optimization using options(datatable.optimize=1)", type2char(TYPEOF(x)));
+    error(_("Type '%s' not supported by GForce prod (gprod). Either add the prefix base::prod(.) or turn off GForce optimization using options(datatable.optimize=1)"), type2char(TYPEOF(x)));
   }
   free(s);
   copyMostAttrib(x, ans);
   UNPROTECT(1);
-  // Rprintf("this gprod took %8.3f\n", 1.0*(clock()-start)/CLOCKS_PER_SEC);
+  // Rprintf(_("this gprod took %8.3f\n"), 1.0*(clock()-start)/CLOCKS_PER_SEC);
   return(ans);
 }
