@@ -11937,7 +11937,14 @@ DT2[, DT2_ID := .I][, (cols) := lapply(.SD, as.Date), .SDcols=cols]
 ans1 = DT2[DT1, on=.(RANDOM_STRING, START_DATE <= DATE, EXPIRY_DATE >= DATE), .N, by=.EACHI ]$N > 0L
 tmp  = DT1[DT2, on=.(RANDOM_STRING, DATE >= START_DATE, DATE <= EXPIRY_DATE), which=TRUE, nomatch=0L]
 ans2 = DT1[, DT1_ID %in% tmp]
-test(1848, ans1, ans2)
+test(1848.1, ans1, ans2)
+
+# Fix for #4388; related to #2275 fix
+x <- data.table(id = "a", t = as.ITime(c(31140L, 31920L, 31860L, 31680L, 31200L, 31380L, 31020L, 31260L, 31320L, 31560L, 31080L, 31800L, 31500L, 31440L, 31740L, 31620L)), s = c(37.19, 37.10, 37.10, 37.10, 37.1, 24.81, 61.99, 37.1, 37.1, 37.38, 49.56, 73.89, 37.38, 24.81, 37.01, 37.38), val = c(40L, 53L, 52L, 49L, 41L, 44L, 38L, 42L, 43L, 47L, 39L, 51L, 46L, 45L, 50L, 48L))
+y <- data.table(id = c("a", "b"), t1 = as.ITime(c(31020L, 42240L)), t2 = as.ITime(c(31920L, 43140L)), s1 = c(0L, 0L),
+  s2 = c(200, 200))
+# testing that it doesn't segfault
+test(1848.2, x[y, on=.(id, s >= s1, s <= s2, t >= t1, t <= t2), .(val), by=.EACHI, nomatch=0L, allow.cartesian=TRUE]$val, x$val)
 
 # when last field is quoted contains sep and select= is used too, #2464
 test(1849.1, fread('Date,Description,Amount,Balance\n20150725,abcd,"$3,004","$5,006"', select=c("Date", "Description", "Amount")),
@@ -13366,18 +13373,19 @@ test(1962.0471, forderv(mean),                         error="'x' argument must 
 test(1962.0472, forderv(DT, by=mean),                  error="argument specifying columns must be character or numeric")
 test(1962.0473, forderv(NULL),                         error="DT is NULL")
 
-setDF(DT)
-test(1962.0481, forder(DT), 3:1)
-L = as.list(DT)
-test(1962.0482, forder(L), 3:1)
-test(1962.0483, forder(), NULL)
-setDT(DT)
-test(1962.049, forder(DT[ , 0L]), error = 'Attempting to order a 0-column')
-test(1962.050, forder(DT, decreasing = NA), error = 'isTRUEorFALSE(decreasing) is not TRUE')
-test(1962.051, forder(DT, decreasing = 1.4), error = 'isTRUEorFALSE(decreasing) is not TRUE')
-test(1962.052, forder(DT, NULL), 3:1)
-test(1962.053, forder(DT), 3:1)
-test(1962.054, forder(DT, ), 3:1)
+## made inactive by #4346: forder should not accept list, but forderv should
+#setDF(DT)
+#test(1962.0481, forder(DT), 3:1)
+#L = as.list(DT)
+#test(1962.0482, forder(L), 3:1)
+#test(1962.0483, forder(), NULL)
+#setDT(DT)
+#test(1962.049, forder(DT[ , 0L]), error = 'Attempting to order a 0-column')
+#test(1962.050, forder(DT, decreasing = NA), error = 'isTRUEorFALSE(decreasing) is not TRUE')
+#test(1962.051, forder(DT, decreasing = 1.4), error = 'isTRUEorFALSE(decreasing) is not TRUE')
+#test(1962.052, forder(DT, NULL), 3:1)
+#test(1962.053, forder(DT), 3:1)
+#test(1962.054, forder(DT, ), 3:1)
 
 test(1962.055, fsort(as.double(DT$a), internal = TRUE),
      error = 'Internal code should not be being called on type double')
@@ -13740,7 +13748,7 @@ test(1967.69, !any(grepl('forder.c', verbose_output, fixed = TRUE)))
 test(1967.70, any(grepl('[1] 5', verbose_output, fixed = TRUE)))
 options('datatable.optimize' = 1L)
 test(1967.71, x[order(a), .N, verbose = TRUE], 5L,
-     output = "forder.c received 5 rows and 1 column")
+     output = "forder.c received 5 rows and 2 columns") ## this is now optimized to forderv(x, by="a") changing verbose output #4459
 setkey(x)
 test(1967.72, x[x, .N, on = 'a', verbose = TRUE], 5L,
      output = "on= matches existing key")
@@ -16978,3 +16986,94 @@ test(2139.96, forderv(d, "x", retGrp=TRUE), output="forder.*setting index.*retGr
 options(op2)
 test(2139.99, forderv(data.table(a=1), lazy=c(TRUE, TRUE)), error="lazy must be")
 options(op)
+
+# optimize order() to forderv(); evaluates: decreasing, method, na.last. #3023, possibly #3261 as well
+TEST = 2140
+opt.msg = "order call in 'i' optimized to 'forderv.*"
+# test base R order arguments because we rely on that during order->forderv optimization
+order.args = c("...", "na.last", "decreasing", "method")
+if (base::getRversion() < "3.3.0") order.args = setdiff(order.args, "method")
+test(TEST+0.01, formalArgs(base::order), order.args) # we need base:: prefix because bit64 masks order
+test(TEST+0.02, isTRUE(formals(base::order)$na.last)) # quite unlikely that would be changed, but doesnt hurt to test
+# test new optimization
+d = data.table(x=3:1, y=c(2L,1L,3L), z=1:3)
+ix = with(d, order(x, z=y))
+test(TEST+0.11, output=opt.msg, d[order(x, z=y, na.last=TRUE), verbose=TRUE], d[ix]) # named dots are fine
+ix = with(d, order(x, z=I(y)))
+test(TEST+0.12, notOutput=opt.msg, d[order(x, z=I(y), na.last=TRUE), verbose=TRUE], d[ix]) # calls arent fine because we would need to evaluate dots
+ix = with(d, order(x, I(y)))
+test(TEST+0.13, notOutput=opt.msg, d[order(x, I(y), na.last=TRUE), verbose=TRUE], d[ix]) # unnamed as well wont work
+ix = with(d, order(x, y, decreasing=c(FALSE,FALSE)))
+test(TEST+0.14, output=opt.msg, d[order(x, y, decreasing=c(FALSE,FALSE)), verbose=TRUE], d[ix]) # decreasing evaluated
+ix = with(d, order(x, y, na.last=TRUE))
+test(TEST+0.15, output=opt.msg, d[order(x, y, na.last=TRUE), verbose=TRUE], d[ix])
+ix = with(d, order(y, x, na.last=TRUE))
+test(TEST+0.16, output=opt.msg, d[order(y, x, na.last=TRUE), verbose=TRUE], d[ix])
+ix = with(d, order(x, y, na.last=FALSE))
+test(TEST+0.17, output=opt.msg, d[order(x, y, na.last=as.logical(FALSE)), verbose=TRUE], d[ix]) ## evaluates na.last
+ix = with(d, order(y, x, na.last=FALSE))
+test(TEST+0.18, output=opt.msg, d[order(y, x, na.last=as.logical(FALSE)), verbose=TRUE], d[ix])
+ix = with(d, order(y, x, decreasing=TRUE))
+test(TEST+0.19, output=opt.msg, d[order(-y, -x), verbose=TRUE], d[ix])
+test(TEST+0.20, output=opt.msg, d[order(y, x, decreasing=TRUE), verbose=TRUE], d[ix])
+test(TEST+0.21, output=opt.msg, d[order(+y, +x, decreasing=TRUE), verbose=TRUE], d[ix])
+ix = with(d, order(y, x, decreasing=c(FALSE,FALSE)))
+test(TEST+0.22, output=opt.msg, d[order(-y, -x, decreasing=c(TRUE,TRUE)), verbose=TRUE], d[ix])
+test(TEST+0.23, output=opt.msg, d[order(y, x, decreasing=c(FALSE,FALSE)), verbose=TRUE], d[ix])
+test(TEST+0.24, output=opt.msg, d[order(+y, +x, decreasing=c(FALSE,FALSE)), verbose=TRUE], d[ix])
+test(TEST+0.25, output=opt.msg, d[order(+y, -x, decreasing=c(FALSE,TRUE)), verbose=TRUE], d[ix])
+test(TEST+0.26, output=opt.msg, d[order(-y, +x, decreasing=c(TRUE,FALSE)), verbose=TRUE], d[ix])
+ix = with(d, order(x, decreasing=FALSE))
+test(TEST+0.27, output=opt.msg, d[order(-x, decreasing=TRUE), verbose=TRUE], d[ix])
+test(TEST+0.28, output=opt.msg, d[order(x), verbose=TRUE], d[ix])
+ix = with(d, order(x, decreasing=TRUE))
+test(TEST+0.29, output=opt.msg, d[order(x, decreasing=TRUE), verbose=TRUE], d[ix])
+test(TEST+0.30, output=opt.msg, d[order(-x), verbose=TRUE], d[ix])
+ix = with(d, order(x))
+test(TEST+0.31, output=opt.msg, d[order(-++-++x), verbose=TRUE], d[ix])
+ix = with(d, order(x, decreasing=TRUE))
+test(TEST+0.32, output=opt.msg, d[order(-++-++x, decreasing=TRUE), verbose=TRUE], d[ix])
+ix = with(d, order(x, y, x))
+test(TEST+0.33, notOutput=opt.msg, output="forder.c", d[order(x, y, x), verbose=TRUE], d[ix]) # test duplicated order vars redirect to forder
+ix = with(d, order())
+test(TEST+0.34, notOutput=opt.msg, d[order(), verbose=TRUE], d[ix]) # zero length input
+ix = with(d, order(na.last=FALSE))
+test(TEST+0.35, notOutput=opt.msg, d[order(na.last=FALSE), verbose=TRUE], d[ix])
+test(TEST+0.41, notOutput=opt.msg, d[order(NULL), verbose=TRUE], error="order argument 1 is NULL or empty")
+test(TEST+0.42, notOutput=opt.msg, d[order(1,,2,NULL), verbose=TRUE], error="order argument 2, 4 is NULL or empty")
+test(TEST+0.43, notOutput=opt.msg, d[order(NULL, na.last=FALSE), verbose=TRUE], error="order argument 1 is NULL or empty")
+test(TEST+0.44, notOutput=opt.msg, d[order(na.last=FALSE, NULL), verbose=TRUE], error="order argument 1 is NULL or empty")
+test(TEST+0.45, notOutput=opt.msg, d[order(x, decreasing=1L), verbose=TRUE], error="'decreasing' must be logical non-NA")
+test(TEST+0.46, notOutput=opt.msg, d[order(x, decreasing=NA), verbose=TRUE], error="'decreasing' must be logical non-NA")
+test(TEST+0.47, notOutput=opt.msg, d[order(x, y, decreasing=c(FALSE,FALSE,FALSE)), verbose=TRUE], error="must be either length 1, or length of the variables.*order")
+test(TEST+0.48, notOutput=opt.msg, d[order(x, na.last=1L), verbose=TRUE], error="must be logical TRUE, FALSE or NA of length 1")
+test(TEST+0.49, notOutput=opt.msg, data.table(x=as.raw(1:2))[order(x), verbose=TRUE], error="order is type 'raw', not yet supported")
+test(TEST+0.50, notOutput=opt.msg, d[order(x, y, method="auto"), verbose=TRUE], d[3:1])
+if ("lazy" %chin% formalArgs(forderv)) { ## this tests kicks in when #4386 merged
+  # `order` could utilize existing index #3023
+  d = data.table(x=3:1, y=c(2L,1L,3L), z=1:3)
+  test(TEST+0.81, output="forder.*opt=-1", d[order(x, na.last=FALSE), verbose=TRUE], d[3:1])
+  setindexv(d, list("x","y","z",c("x","y","z"),c("y","z")))
+  test(TEST+0.82, output="forder.*opt=2", d[order(x, na.last=FALSE), verbose=TRUE], d[3:1])
+  test(TEST+0.83, output="forder.*opt=2", d[order(x, y, z, na.last=FALSE), verbose=TRUE], d[3:1])
+  test(TEST+0.84, output="forder.*opt=2", d[order(z, na.last=FALSE), verbose=TRUE], d)
+  setkeyv(d, "z")
+  test(TEST+0.85, output="forder.*opt=1", d[order(z, na.last=FALSE), verbose=TRUE], d)
+  # `DT[order(.), ...]` could create index on DT #3261
+  d = data.table(x=3:1, y=c(2L,1L,3L), z=1:3)
+  op2 = options("datatable.forder.auto.index"=TRUE)
+  test(TEST+0.86, output="forder.*opt=-1", d[order(x, na.last=FALSE), verbose=TRUE], d[3:1])
+  test(TEST+0.87, output="forder.*opt=2", d[order(x, na.last=FALSE), verbose=TRUE], d[3:1])
+  options(op2)
+}
+# method and decreasing properly handled in in forder #4456
+d = data.table(x=2:1); ans = data.table(x=1:2)
+test(TEST+0.91, output=opt.msg, d[order(x, method="radix"), verbose=TRUE], ans)                           # forderv
+test(TEST+0.92, notOutput=opt.msg, output="forder.c", d[order(((x)), method="radix"), verbose=TRUE], ans) # forder
+test(TEST+0.93, notOutput="forder.*", d[order(x, method="auto"), verbose=TRUE], ans)                      # base::order
+test(TEST+0.94, output=opt.msg, data.table(x=2:1, y=2L)[order(x, y, decreasing=c(FALSE,FALSE)), verbose=TRUE], data.table(x=1:2,y=2L))
+test(TEST+0.95, notOutput=opt.msg, output="forder.c", data.table(x=2:1, y=2L)[order((x), y, decreasing=c(FALSE,FALSE)), verbose=TRUE], data.table(x=1:2, y=2L))
+d = data.table(x=3:1, y=c(2L,1L,3L), z=1:3)
+ix = with(d, order(x, y, decreasing=c(FALSE,FALSE)))
+test(TEST+0.96, d[with(d, order(x, y, decreasing=c(FALSE,FALSE)))], d[ix]) ## order masked with forder
+

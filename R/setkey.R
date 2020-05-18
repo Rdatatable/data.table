@@ -168,18 +168,18 @@ forderv = function(x, by=seq_along(x), retGrp=FALSE, sort=TRUE, order=1L, na.las
   .Call(CforderLazy, x, by, retGrp, sort, order, na.last, lazy)  # returns integer() if already sorted, regardless of sort=TRUE|FALSE
 }
 
-forder = function(..., na.last=TRUE, decreasing=FALSE)
+forder = function(..., na.last=TRUE, decreasing=FALSE, method=c("auto","shell","radix"))
 {
+  if (!missing(method) && !identical(method, "radix")) return(base::order(...=..., na.last=na.last, decreasing=decreasing, method=method))
   sub = substitute(list(...))
   tt = sapply(sub, function(x) is.null(x) || (is.symbol(x) && !nzchar(x)))
-  if (any(tt)) sub[tt] = NULL  # remove any NULL or empty arguments; e.g. test 1962.052: forder(DT, NULL) and forder(DT, )
+  if (any(tt)) stop("[f]order argument ", paste(which(tt)-1L, collapse=", "), " is NULL or empty") # raises error consistent to base::order, invalidates  e.g. test 1962.052: forder(DT, NULL) and forder(DT, )
   if (length(sub)<2L) return(NULL)  # forder() with no arguments returns NULL consistent with base::order
   asc = rep.int(1L, length(sub)-1L)  # ascending (1) or descending (-1) per column
   # the idea here is to intercept - (and unusual --+ deriving from built expressions) before vectors in forder(DT, -colA, colB) so that :
   # 1) - on character vector works; ordinarily in R that fails with type error
   # 2) each column/expression can have its own +/- more easily that having to use a separate decreasing=TRUE/FALSE
   # 3) we can pass the decreasing (-) flag to C and avoid what normally happens in R; i.e. allocate a new vector and apply - to every element first
-  # We intercept the unevaluated expressions and massage them before evaluating in with(DT) scope or not depending on the first item.
   for (i in seq.int(2L, length(sub))) {
     v = sub[[i]]
     while (v %iscall% c('-', '+') && length(v)==2L) {
@@ -201,10 +201,11 @@ forder = function(..., na.last=TRUE, decreasing=FALSE)
   } else {
     data = eval(sub, parent.frame(), parent.frame())
   }
-  stopifnot(isTRUEorFALSE(decreasing))
-  o = forderv(data, seq_along(data), sort=TRUE, retGrp=FALSE, order= if (decreasing) -asc else asc, na.last)
-  if (!length(o) && length(data)>=1L) o = seq_along(data[[1L]]) else o
-  o
+  if (!is.logical(decreasing) || anyNA(decreasing)) stop("'decreasing' must be logical non-NA")
+  if (length(decreasing)!=1L && length(decreasing)!=length(data)) stop("'decreasing' must be either length 1, or length of the variables passed to [f]order")
+  asc[decreasing] = -(asc[decreasing])
+  o = forderv(data, seq_along(data), sort=TRUE, retGrp=FALSE, order=asc, na.last=na.last)
+  if (!length(o) && length(data)>=1L) seq_along(data[[1L]]) else o
 }
 
 fsort = function(x, decreasing=FALSE, na.last=FALSE, internal=FALSE, verbose=FALSE, ...)
