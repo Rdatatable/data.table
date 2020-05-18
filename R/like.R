@@ -6,7 +6,7 @@ like = function(vector, pattern, ...) {
     as.integer(vector) %in% grep(pattern, levels(vector), ...)
   } else {
     # most usually character, but integer and numerics will be silently coerced by grepl
-    grepl(pattern, vector, ignore.case = ...)
+    grepl(pattern, vector, ...)
   }
 }
 
