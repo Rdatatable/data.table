@@ -16859,10 +16859,11 @@ test(2138.4, rbind(A,B), data.table(A=c(as.character(A$A), B$A)))
 TEST = 2139
 opt.msg = "order call in 'i' optimized to 'forderv.*"
 # test base R order arguments because we rely on that during order->forderv optimization
+test(TEST+0.01, environmentName(environment(order)), "base") ## debug travis and appveyor
 order.args = c("...", "na.last", "decreasing", "method")
 if (base::getRversion() < "3.3.0") order.args = setdiff(order.args, "method")
-test(TEST+0.01, formalArgs(order), order.args)
-test(TEST+0.02, isTRUE(formals(order)$na.last)) # quite unlikely that would be changed, but doesnt hurt to test
+if (!test(TEST+0.02, formalArgs(order), order.args)) cat(head(order), sep="\n")
+test(TEST+0.03, isTRUE(formals(order)$na.last)) # quite unlikely that would be changed, but doesnt hurt to test
 # test new optimization
 d = data.table(x=3:1, y=c(2L,1L,3L), z=1:3)
 ix = with(d, order(x, z=y))
