@@ -16774,7 +16774,7 @@ if (test_bit64) {
   A = data.table(A=list(1, 2:3, 4))
   B = data.table(A=as.integer64(5:7))
   target = data.table(A=list(1, 2:3, 4, as.integer64(5), as.integer64(6), as.integer64(7)))
-  test(2129.6, rbind(A,B), target) # list of atomic vectors should preserve class
+  test(2129.7, rbind(A,B), target) # list of atomic vectors should preserve class
 }
 
 # print dims in list-colrmns, #3671
