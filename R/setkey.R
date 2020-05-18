@@ -223,7 +223,8 @@ forder = function(..., na.last=TRUE, decreasing=FALSE, method=c("auto","shell","
   if (length(decreasing)!=1L && length(decreasing)!=length(data)) stop("'decreasing' must be either length 1, or length of the variables passed to [f]order")
   asc[decreasing] = -(asc[decreasing])
   o = forderv(data, seq_along(data), sort=TRUE, retGrp=FALSE, order=asc, na.last=na.last)
-  if (!length(o) && length(data)>=1L) seq_along(data[[1L]]) else o
+  o = if (!length(o) && length(data)>=1L) seq_along(data[[1L]]) else o
+  if (is.na(na.last)) o[as.logical(o)] else o ## remove zeros, as base order #4346
 }
 
 fsort = function(x, decreasing=FALSE, na.last=FALSE, internal=FALSE, verbose=FALSE, ...)
