@@ -26,7 +26,7 @@
   \item{by}{ A \code{character} vector of column names of \code{x} by which to order. By default, find order over all columns; Do not add \code{"-"} prefixes here, use \code{order} argument instead. }
   \item{retGrp}{ \code{logical} defaults to \code{FALSE}. When \code{TRUE} then resulting object will carry extra attributes \code{starts} and \code{maxgrpn}.  }
   \item{sort}{ \code{logical} defaults to \code{TRUE}. When \code{FALSE} then results will be only identifying the groups and not returning the order. }
-  \item{order}{ An \code{integer} vector with only possible values of \code{1} and \code{-1}, corresponding to ascending and descending order. The length of \code{order} must be either \code{1} or equal to that of \code{cols}. If \code{length(order)==1}, it is recycled to \code{length(by)}. }
+  \item{order}{ An \code{integer} vector with only possible values of \code{1} and \code{-1}, corresponding to ascending and descending order. The length of \code{order} must be either \code{1} or equal to that of \code{cols}. If \code{length(order)==1}, it is recycled to \code{length(by)}. It is ignored for \code{sort==FALSE}. }
 }
 \details{
   \code{data.table} implements its own fast \emph{radix}-based ordering. See the references for some exposition on the concept of \emph{radix} sort.
