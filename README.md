@@ -16,14 +16,6 @@
 
 `data.table` provides a high-performance version of [base R](https://www.r-project.org/about.html)'s `data.frame` with syntax and feature enhancements for ease of use, convenience and programming speed.
 
----
-
-**30 January 2020<br>
-List-columns in data.table - Tyson Barrett, [rstudio::conf(2020L)](https://rstudio.com/conference/)**
-<br>
-
----
-
 ## Why `data.table`?
 
 * concise syntax: fast to type, fast to read
