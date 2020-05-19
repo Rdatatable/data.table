@@ -147,6 +147,8 @@ unit = "s")
 
 7. Added more explanation/examples to `?data.table` for how to use `.BY`, [#1363](https://github.com/Rdatatable/data.table/issues/1363).
 
+8. Change of `c.POSIXct` method planned for R 4.1.0 impacted `foverlaps` function that could raise `'origin' must be supplied` error. Fix for planned change has been provided in [#4428](https://github.com/Rdatatable/data.table/pull/4428).
+
 
 # data.table [v1.12.8](https://github.com/Rdatatable/data.table/milestone/15?closed=1)  (09 Dec 2019)
 
