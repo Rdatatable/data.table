@@ -113,20 +113,20 @@ replace_dot_alias = function(e) {
       if (!is.character(method)) method = eval(method, ienv)
       if (!identical(method, "radix")) return(x)
     }
-    ## escape invalid decreasing, outsource raising error
+    ## escape invalid decreasing
     if ("decreasing" %chin% call.nm) {
       decreasing = x[["decreasing"]]
       if (!is.logical(decreasing)) decreasing = eval(decreasing, ienv)
-      if (!is.logical(decreasing) || !length(decreasing) || anyNA(decreasing)) return(x)
+      if (!is.logical(decreasing) || !length(decreasing) || anyNA(decreasing)) return(x) ## outsource raising error
     } else decreasing = NULL
-    ## escape invalid na.last, outsource raising error
+    ## escape invalid na.last
     if ("na.last" %chin% call.nm) {
       na.last = x[["na.last"]]
       if (!is.logical(na.last)) na.last = eval(na.last, ienv)
-      if (!is.logical(na.last)) return(x)
+      if (!is.logical(na.last)) return(x) ## outsource raising error
     } else na.last = TRUE
     ## decompose variables in dots
-    order.args = c("decreasing","method","na.last") ## formalArgs(order) - "..."
+    order.args = c("decreasing","method","na.last") ## formalArgs(order) - "...", tested in main.Rraw
     order.call = if (!is.null(call.nm)) x[!call.nm %chin% order.args] else x
     dots = as.list(order.call[-1])
     ## escapy empty input
@@ -138,11 +138,11 @@ replace_dot_alias = function(e) {
     if (any(!order.vars %chin% names(dt))) return(x)
     ## escape for any unsupported type
     supported = c("integer","double","logical","character","complex")
-    if (any(vapply(order.vars, function(v) !typeof(dt[[v]])%chin%supported, NA))) return(x)
-    ## decreasing recycle, outsource raising error
+    if (any(vapply(order.vars, function(v) !typeof(dt[[v]])%chin%supported, NA))) return(x) ## outsource raising error
+    ## decreasing recycle
     decreasing = if (is.null(decreasing)) rep(FALSE, length(order.vars)) else {
-      if (length(decreasing)!=1L && length(decreasing)!=length(order.vars)) return(x)
-      if (length(decreasing)==1L && length(order.vars)>1L) decreasing = rep(decreasing, length(order.vars)) else decreasing
+      if (length(decreasing)!=1L && length(decreasing)!=length(order.vars)) return(x) ## outsource raising error
+      if (length(decreasing)==1L && length(order.vars)>1L) rep(decreasing, length(order.vars)) else decreasing
     }
     ## forderv arguments
     by = vector("character", length(order.vars))
