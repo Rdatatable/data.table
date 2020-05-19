@@ -16853,3 +16853,16 @@ A = data.table(A=c(complex(real = 1:3, imaginary=c(0, -1, 1)), NaN))
 test(2138.3, rbind(A,B), data.table(A=c(as.character(A$A), B$A)))
 A = data.table(A=as.complex(rep(NA, 5)))
 test(2138.4, rbind(A,B), data.table(A=c(as.character(A$A), B$A)))
+
+# test compatibility of endsWith backport & base::endsWith
+if (exists('endsWith', 'package:base')) {
+  DTendsWith = function(x, stub) {n = nchar(x); substr(x, n-nchar(stub)+1L, n) == stub}
+  BSendsWith = base::endsWith
+  test(2139.1, DTendsWith('abcd', 'd'), BSendsWith('abcd', 'd'))
+  test(2139.2, DTendsWith(letters, 'e'), BSendsWith(letters, 'e'))
+  test(2139.3, DTendsWith(NA_character_, 'a'), BSendsWith(NA_character_, 'a'))
+  test(2139.4, DTendsWith(character(), 'a'), BSendsWith(character(), 'a'))
+  # file used in encoding tests
+  txt = readLines(testDir("issue_563_fread.txt"))
+  test(2139.5, DTendsWith(txt, 'B'), BSendsWith(txt, 'B'))
+}
