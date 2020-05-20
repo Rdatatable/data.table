@@ -1576,10 +1576,10 @@ SEXP forderLazy(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP sortGro
         } else if (!hasGrp && retGrp && !hasStats && retStats) {
           if (verbose)
             Rprintf("forderLazy: index found but not for retGrp and retStats: %s\n", CHAR(STRING_ELT(idxName(DT, by), 0)));
-        } else if (!hasGrp && retGrp && hasStats) {
+        } else if (!hasGrp && retGrp) {
           if (verbose)
             Rprintf("forderLazy: index found but not for retGrp: %s\n", CHAR(STRING_ELT(idxName(DT, by), 0)));
-        } else if (hasGrp && !hasStats && retStats) {
+        } else if (!hasStats && retStats) {
           if (verbose)
             Rprintf("forderLazy: index found but not for retStats: %s\n", CHAR(STRING_ELT(idxName(DT, by), 0)));
         } else {
