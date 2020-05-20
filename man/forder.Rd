@@ -22,7 +22,7 @@
   \item{na.last}{ \code{logical}. If \code{TRUE}, missing values in the data are placed last (default for \code{forder}); if \code{FALSE} they are placed first (default for \code{forderv}); if \code{NA} they are removed. }
   \item{decreasing}{ \code{logical} defaults to \code{FALSE}. When \code{TRUE} then it finds descending order in data, or when combined with \code{"-"} prefixes it will invert the order. Scalar will be recycled to match the number of arguments passed to \dots. }
   \item{method}{ \code{character} defaults to \code{"radix"}, any other value will redirect computation to \code{base::order}. }
-  \item{x}{ A \code{data.table}. }
+  \item{x}{ A \code{data.table}, or atomic types. }
   \item{by}{ A \code{character} vector of column names of \code{x} by which to order. By default, find order over all columns; Do not add \code{"-"} prefixes here, use \code{order} argument instead. }
   \item{retGrp}{ \code{logical} defaults to \code{FALSE}. When \code{TRUE} then resulting object will carry extra attributes \code{starts} and \code{maxgrpn}.  }
   \item{sort}{ \code{logical} defaults to \code{TRUE}. When \code{FALSE} then results will be only identifying the groups and not returning the order. }
@@ -35,7 +35,7 @@
 
   \code{bit64::integer64} type is also supported for finding order.
 
-  Queries like \code{x[order(...)]} are optimised internally to use \code{data.table}'s fast order. Moreover queries \code{x[order(..., na.last=FALSE)]} can re-use existing indices.
+  Queries like \code{x[order(...)]} are optimised internally to use \code{data.table}'s fast order. Moreover queries \code{x[order(..., na.last=FALSE)]} can re-use existing indices, and queries \code{x[order(...)]} can re-use existing indices if there are no missing values in columns passed to order by.
 }
 \note{
   Using \emph{C-locale} makes the behaviour of ordering in \code{data.table} more consistent across sessions and locales. The behaviour of \code{base::order} depends on assumptions about the locale of the R session. In English locales, \code{"america" < "BRAZIL"} is \code{TRUE} by default but false if you either type \code{Sys.setlocale(locale="C")} or the R session has been started in a C locale for you -- which can happen on servers/services since the locale comes from the environment the R session was started in. By contrast, \code{"america" < "BRAZIL"} is always \code{FALSE} in \code{data.table} regardless of the way your R session was started.
