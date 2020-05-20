@@ -66,8 +66,8 @@ static int8_t *type = NULL, *tmpType = NULL, *size = NULL;
 static lenOff *colNames = NULL;
 static freadMainArgs args;  // global for use by DTPRINT
 
-const char typeName[NUMTYPE][10] = {"drop", "bool8", "bool8", "bool8", "bool8", "int32", "int64", "float64", "float64", "float64", "string"};
-int8_t     typeSize[NUMTYPE]     = { 0,      1,       1,       1,       1,       4,       8,       8,         8,         8,         8      };
+const char typeName[NUMTYPE][10] = {"drop", "bool8", "bool8", "bool8", "bool8", "int32", "int64", "float64", "float64", "float64", "float64", "string"};
+int8_t     typeSize[NUMTYPE]     = { 0,      1,       1,       1,       1,       4,       8,       8,         8,         8,         8       , 8       };
 
 // In AIX, NAN and INFINITY don't qualify as constant literals. Refer: PR #3043
 // So we assign them through below init function.
@@ -571,11 +571,9 @@ static void Field(FieldParseContext *ctx)
   }
 }
 
-
-static void StrtoI32(FieldParseContext *ctx)
+static void str_to_i32_core(const char **pch, int32_t *target)
 {
-  const char *ch = *(ctx->ch);
-  int32_t *target = (int32_t*) ctx->targets[sizeof(int32_t)];
+  const char *ch = *pch;
 
   if (*ch=='0' && args.keepLeadingZeros && (uint_fast8_t)(ch[1]-'0')<10) return;
   bool neg = *ch=='-';
@@ -605,10 +603,15 @@ static void StrtoI32(FieldParseContext *ctx)
   //     (acc==0 && ch-start==1) ) {
   if ((sf || ch>start) && sf<=10 && acc<=INT32_MAX) {
     *target = neg ? -(int32_t)acc : (int32_t)acc;
-    *(ctx->ch) = ch;
+    *pch = ch;
   } else {
     *target = NA_INT32;  // empty field ideally, contains NA and fall through to check if NA (in which case this write is important), or just plain invalid
   }
+}
+
+static void StrtoI32(FieldParseContext *ctx)
+{
+  str_to_i32_core(ctx->ch, (int32_t*) ctx->targets[sizeof(int32_t)]);
 }
 
 
@@ -669,11 +672,10 @@ cat("1.0E300L\n};\n", file=f, append=TRUE)
  * of precision, for example `1.2439827340958723094785103` will not be parsed
  * as a double.
  */
-static void parse_double_regular(FieldParseContext *ctx)
+static void parse_double_regular_core(const char **pch, double *target)
 {
   #define FLOAT_MAX_DIGITS 18
-  const char *ch = *(ctx->ch);
-  double *target = (double*) ctx->targets[sizeof(double)];
+  const char *ch = *pch;
 
   if (*ch=='0' && args.keepLeadingZeros && (uint_fast8_t)(ch[1]-'0')<10) return;
   bool neg, Eneg;
@@ -784,13 +786,16 @@ static void parse_double_regular(FieldParseContext *ctx)
 
   r *= pow10lookup[e];
   *target = (double)(neg? -r : r);
-  *(ctx->ch) = ch;
+  *pch = ch;
   return;
 
   fail:
     *target = NA_FLOAT64;
 }
 
+static void parse_double_regular(FieldParseContext *ctx) {
+  parse_double_regular_core(ctx->ch, (double*) ctx->targets[sizeof(double)]);
+}
 
 
 /**
@@ -937,6 +942,71 @@ static void parse_double_hexadecimal(FieldParseContext *ctx)
     *target = NA_FLOAT64;
 }
 
+/*
+f = 'src/freadLookups.h'
+cat('const double cumSecondsCycleYears[401] = {\n', file=f, append=TRUE)
+t = format(as.double(difftime(as.Date(sprintf('%04d-01-01', 1600:1999)), .Date(0), units='secs')))
+rows = paste0(apply(matrix(t, ncol = 4L, byrow = TRUE), 1L, paste, collapse = ', '), ',\n')
+cat(rows, sep='', file=f, append=TRUE)
+cat(146097*86400, '// total seconds in 400 years\n};\n', sep = '', file=f, append=TRUE)
+*/
+static void parse_iso8601_timestamp(FieldParseContext *ctx)
+{
+  const char *ch = *(ctx->ch);
+  double *target = (double*) ctx->targets[sizeof(double)];
+
+  int32_t year, month, day, hour, minute;
+  double second;
+
+  str_to_i32_core(&ch, &year);
+  bool isLeapYear = year % 4 == 0 && (year % 100 != 0 || year/100 % 4 == 0);
+
+  if (year == NA_INT32 || *ch != '-')
+    goto fail;
+  ch++;
+
+  str_to_i32_core(&ch, &month);
+  if (month == NA_INT32 || month < 1 || month > 12 || *ch != '-')
+    goto fail;
+  ch++;
+
+  str_to_i32_core(&ch, &day);
+  if (day == NA_INT32 || day < 1 || (day > (isLeapYear ? leapYearDays[month-1] : normYearDays[month-1])) || (*ch != ' ' && *ch != 'T'))
+    goto fail;
+  ch++;
+
+  str_to_i32_core(&ch, &hour);
+  if (hour == NA_INT32 || hour < 0 || hour > 23 || *ch != ':')
+    goto fail;
+  ch++;
+
+  str_to_i32_core(&ch, &minute);
+  if (minute == NA_INT32 || minute < 0 || minute > 59 || *ch != ':')
+    goto fail;
+  ch++;
+
+  parse_double_regular_core(&ch, &second);
+  if (second == NA_FLOAT64 || second < 0 || second >= 60)
+    goto fail;
+  if (*ch == 'Z') {
+    ch++;
+  } else if (ch[0] == '+' && ch[1] == '0' && ch[2] == '0' &&
+    ch[3] == ':' && ch[4] == '0' && ch[5] == '0') {
+    ch += 6;
+  }
+
+  *target =
+    (year/400 - 4)*cumSecondsCycleYears[400] + // seconds to beginning of 400-year cycle
+    cumSecondsCycleYears[year % 400] + // seconds to beginning of year within 400-year cycle
+    (isLeapYear ? cumSecondsCycleMonthsLeap[month-1] : cumSecondsCycleMonthsNorm[month-1]) + // seconds to beginning of month within year
+    86400*(day-1) + 3600*hour + 60*minute + second; // seconds within month
+
+  *(ctx->ch) = ch;
+  return;
+
+  fail:
+    *target = NA_FLOAT64;
+}
 
 /* Parse numbers 0 | 1 as boolean and ,, as NA (fwrite's default) */
 static void parse_bool_numeric(FieldParseContext *ctx)
@@ -1005,7 +1075,13 @@ static void parse_bool_lowercase(FieldParseContext *ctx)
 }
 
 
-
+/* How to register a new parser
+ *  (1) Write the parser
+ *  (2) Add it to fun array here
+ *  (3) Extend disabled_parsers, typeName, and typeSize here as appropriate
+ *  (4) Extend colType typdef in fread.h as appropriate
+ *  (5) Extend typeSxp, typeRName, typeEnum in freadR.c as appropriate
+ */
 typedef void (*reader_fun_t)(FieldParseContext *ctx);
 static reader_fun_t fun[NUMTYPE] = {
   (reader_fun_t) &Field,
@@ -1018,10 +1094,11 @@ static reader_fun_t fun[NUMTYPE] = {
   (reader_fun_t) &parse_double_regular,
   (reader_fun_t) &parse_double_extended,
   (reader_fun_t) &parse_double_hexadecimal,
+  (reader_fun_t) &parse_iso8601_timestamp,
   (reader_fun_t) &Field
 };
 
-static int disabled_parsers[NUMTYPE] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+static int disabled_parsers[NUMTYPE] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
 static int detect_types( const char **pch, int8_t type[], int ncol, bool *bumped) {
   // used in sampling column types and whether column names are present

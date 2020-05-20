@@ -24,6 +24,7 @@ typedef enum {
   CT_FLOAT64,     // double (64-bit IEEE 754 float)
   CT_FLOAT64_EXT, // double, with NAN/INF literals
   CT_FLOAT64_HEX, // double, in hexadecimal format
+  CT_ISO8601,     // double, as read from a timestamp in ISO-8601 time
   CT_STRING,      // lenOff struct below
   NUMTYPE         // placeholder for the number of types including drop; used for allocation and loop bounds
 } colType;
