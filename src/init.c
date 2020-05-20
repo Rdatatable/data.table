@@ -25,6 +25,8 @@ SEXP sym_index;
 SEXP sym_BY;
 SEXP sym_starts, char_starts;
 SEXP sym_maxgrpn;
+SEXP sym_hasna;
+SEXP sym_hasinfnan;
 SEXP sym_colClassesAs;
 SEXP sym_verbose;
 SEXP SelfRefSymbol;
@@ -339,6 +341,8 @@ void attribute_visible R_init_datatable(DllInfo *info)
   sym_index   = install("index");
   sym_BY      = install(".BY");
   sym_maxgrpn = install("maxgrpn");
+  sym_hasna   = install("hasna");
+  sym_hasinfnan = install("hasinfnan");
   sym_colClassesAs = install("colClassesAs");
   sym_verbose = install("datatable.verbose");
   SelfRefSymbol = install(".internal.selfref");

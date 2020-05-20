@@ -91,6 +91,8 @@ extern SEXP sym_index;
 extern SEXP sym_BY;
 extern SEXP sym_starts, char_starts;
 extern SEXP sym_maxgrpn;
+extern SEXP sym_hasna;
+extern SEXP sym_hasinfnan;
 extern SEXP sym_colClassesAs;
 extern SEXP sym_verbose;
 extern SEXP SelfRefSymbol;
@@ -123,8 +125,8 @@ int checkOverAlloc(SEXP x);
 // forder.c
 int StrCmp(SEXP x, SEXP y);
 uint64_t dtwiddle(void *p, int i);
-SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP naArg);
-SEXP forderLazy(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP naArg, SEXP lazyArg); // lazy wrapper to forder
+SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP sortGroupsArg, SEXP ascArg, SEXP naArg);
+SEXP forderLazy(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP sortGroupsArg, SEXP ascArg, SEXP naArg, SEXP lazyArg); // lazy wrapper to forder
 int getNumericRounding_C();
 
 // reorder.c

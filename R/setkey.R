@@ -156,7 +156,7 @@ is.sorted = function(x, by=seq_along(x)) {
 }
 
 ORDERING_TYPES = c('logical', 'integer', 'double', 'complex', 'character')
-forderv = function(x, by=seq_along(x), retGrp=FALSE, sort=TRUE, order=1L, na.last=FALSE, lazy=getOption("datatable.forder.lazy",NA)) {
+forderv = function(x, by=seq_along(x), retGrp=FALSE, retStats=retGrp, sort=TRUE, order=1L, na.last=FALSE, lazy=getOption("datatable.forder.lazy",NA)) {
   if (is.atomic(x)) {  # including forderv(NULL) which returns error consistent with base::order(NULL),
     if (!missing(by) && !is.null(by)) stop("x is a single vector, non-NULL 'by' doesn't make sense")
     by = NULL
@@ -165,7 +165,7 @@ forderv = function(x, by=seq_along(x), retGrp=FALSE, sort=TRUE, order=1L, na.las
     by = colnamesInt(x, by, check_dups=FALSE)
   }
   order = as.integer(order) # length and contents of order being +1/-1 is checked at C level
-  .Call(CforderLazy, x, by, retGrp, sort, order, na.last, lazy)  # returns integer() if already sorted, regardless of sort=TRUE|FALSE
+  .Call(CforderLazy, x, by, retGrp, retStats, sort, order, na.last, lazy)  # returns integer() if already sorted, regardless of sort=TRUE|FALSE
 }
 
 forder = function(..., na.last=TRUE, decreasing=FALSE)
@@ -202,7 +202,7 @@ forder = function(..., na.last=TRUE, decreasing=FALSE)
     data = eval(sub, parent.frame(), parent.frame())
   }
   stopifnot(isTRUEorFALSE(decreasing))
-  o = forderv(data, seq_along(data), sort=TRUE, retGrp=FALSE, order= if (decreasing) -asc else asc, na.last)
+  o = forderv(data, seq_along(data), retGrp=FALSE, retStats=FALSE, sort=TRUE, order=if (decreasing) -asc else asc, na.last=na.last)
   if (!length(o) && length(data)>=1L) o = seq_along(data[[1L]]) else o
   o
 }

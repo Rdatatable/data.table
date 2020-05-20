@@ -142,7 +142,7 @@ SEXP bmerge(SEXP iArg, SEXP xArg, SEXP icolsArg, SEXP xcolsArg, SEXP xoArg, SEXP
   allGrp1[0] = TRUE;
   protecti += 2;
 
-  SEXP oSxp = PROTECT(forderLazy(i, icolsArg, ScalarLogical(FALSE), ScalarLogical(TRUE), ScalarInteger(1), ScalarLogical(FALSE), ScalarLogical(TRUE))); protecti++;
+  SEXP oSxp = PROTECT(forderLazy(i, icolsArg, ScalarLogical(FALSE), ScalarLogical(FALSE), ScalarLogical(TRUE), ScalarInteger(1), ScalarLogical(FALSE), ScalarLogical(TRUE))); protecti++;
   if (!LENGTH(oSxp))
     o = NULL;
   else
