@@ -1538,7 +1538,7 @@ SEXP forderLazy(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP sortGro
     opt = 0;
   }
   SEXP ans = R_NilValue;
-  if (opt == -1 && !retGrp && colsKeyHead(DT, by)) {
+  if (opt == -1 && !na && !retGrp && colsKeyHead(DT, by)) {
     opt = 1; // keyOpt
     ans = PROTECT(allocVector(INTSXP, 0)); protecti++;
     if (verbose)

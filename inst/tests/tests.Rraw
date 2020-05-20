@@ -13147,7 +13147,7 @@ test(1953.4, melt.data.table(DT, id.vars = 'id', measure.vars = 'a'),
 
 # appearance order of two low-cardinality columns that were squashed in pr#3124
 DT = data.table(A=INT(1,3,2,3,2), B=1:5)  # respect groups in 1st column (3's and 2's)
-test(1954, forderv(DT, sort=FALSE, retGrp=TRUE), structure(INT(1,2,4,3,5), starts=1:5, maxgrpn=1L))
+test(1954, forderv(DT, sort=FALSE, retGrp=TRUE), structure(INT(1,2,4,3,5), starts=1:5, maxgrpn=1L, hasna=0L, hasinfnan=0L))
 
 # skip values that are not present in old, #3030
 DT <- data.table(a=1, b=2, d=3)
@@ -14103,12 +14103,12 @@ test(1993.1, foverlaps(xp, yp, nomatch = 0L, which=TRUE), data.table(xid=1L, yid
 test(1993.2, foverlaps(xp, yp, by.x=c("day", "year")), error="Some interval cols are of type POSIXct while others are not")
 
 # forderv NaN,Inf and Inf when at most 1 finite value is present, #3381. These broke in v1.12.0. They pass in v1.11.8.
-test(1994.1, forderv(c(NaN, Inf, -Inf), retGrp=TRUE), structure(INT(1,3,2), starts=1:3, maxgrpn=1L))
-test(1994.2, forderv(c(-Inf, 0, Inf), retGrp=TRUE),   structure(integer(), starts=1:3, maxgrpn=1L))
-test(1994.3, forderv(c(-Inf, Inf), retGrp=TRUE),      structure(integer(), starts=1:2, maxgrpn=1L))
-test(1994.4, forderv(c(Inf, -Inf), retGrp=TRUE),      structure(2:1, starts=1:2, maxgrpn=1L))
-test(1994.5, forderv(c(0, NaN), retGrp=TRUE),         structure(2:1, starts=1:2, maxgrpn=1L))
-test(1994.6, forderv(c(NaN, 0), retGrp=TRUE),         structure(integer(), starts=1:2, maxgrpn=1L))
+test(1994.1, forderv(c(NaN, Inf, -Inf), retGrp=TRUE), structure(INT(1,3,2), starts=1:3, maxgrpn=1L, hasna=0L, hasinfnan=1L))
+test(1994.2, forderv(c(-Inf, 0, Inf), retGrp=TRUE),   structure(integer(), starts=1:3, maxgrpn=1L, hasna=0L, hasinfnan=1L))
+test(1994.3, forderv(c(-Inf, Inf), retGrp=TRUE),      structure(integer(), starts=1:2, maxgrpn=1L, hasna=0L, hasinfnan=1L))
+test(1994.4, forderv(c(Inf, -Inf), retGrp=TRUE),      structure(2:1, starts=1:2, maxgrpn=1L, hasna=0L, hasinfnan=1L))
+test(1994.5, forderv(c(0, NaN), retGrp=TRUE),         structure(2:1, starts=1:2, maxgrpn=1L, hasna=0L, hasinfnan=1L))
+test(1994.6, forderv(c(NaN, 0), retGrp=TRUE),         structure(integer(), starts=1:2, maxgrpn=1L, hasna=0L, hasinfnan=1L))
 test(1994.7, data.table(A=c(-Inf,21,Inf),V=1:3)[,sum(V),by=A]$V1, 1:3)
 
 # 0 length items should not result in no-recycle error, #3386
@@ -16936,9 +16936,9 @@ test(2139.61, forderv(d, c("a","b"), retGrp=TRUE), ab, output="forder.*opt=2.*to
 test(2139.62, forderv(d, c("a","b"), retGrp=TRUE, lazy=FALSE), ab, output="forder.*opt=0.*took")
 test(2139.63, forderv(d, c("b","a"), retGrp=TRUE), ba, output="forder.*opt=2.*took")
 test(2139.64, forderv(d, c("b","a"), retGrp=TRUE, lazy=FALSE), ba, output="forder.*opt=0.*took")
-test(2139.65, forderv(d, c("a","b"), na.last=TRUE), integer(), output="forder.*opt=0.*took")
+test(2139.65, forderv(d, c("a","b"), na.last=TRUE), integer(), output="forder.*opt=2.*took") # via hasnan index attribute
 test(2139.66, forderv(d, c("a","b"), na.last=TRUE, lazy=FALSE), integer(), output="forder.*opt=0.*took")
-test(2139.67, forderv(d, c("b","a"), na.last=TRUE), 2:1, output="forder.*opt=0.*took")
+test(2139.67, forderv(d, c("b","a"), na.last=TRUE), 2:1, output="forder.*opt=2.*took") # via hasnan index attribute
 test(2139.68, forderv(d, c("b","a"), na.last=TRUE, lazy=FALSE), 2:1, output="forder.*opt=0.*took")
 test(2139.69, forderv(d, c("a","b"), sort=FALSE, retGrp=TRUE), ab, output="forder.*opt=0.*took")
 test(2139.70, forderv(d, c("a","b"), sort=FALSE, retGrp=TRUE, lazy=FALSE), ab, output="forder.*opt=0.*took")
@@ -16957,6 +16957,7 @@ test(2139.82, forderv(1:2, lazy=FALSE), integer(), output="forder.*opt=0.*took")
 test(2139.83, forderv(2:1), 2:1, output="forder.*opt=0.*took")
 test(2139.84, forderv(2:1, lazy=FALSE), 2:1, output="forder.*opt=0.*took")
 options(datatable.verbose=FALSE)
+#test(2139.851) # tests for NAs and na.last arg
 d = copy(dd)
 setindexv(d, "b")
 options(datatable.verbose=TRUE)
