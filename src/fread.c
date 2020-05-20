@@ -66,8 +66,8 @@ static int8_t *type = NULL, *tmpType = NULL, *size = NULL;
 static lenOff *colNames = NULL;
 static freadMainArgs args;  // global for use by DTPRINT
 
-const char typeName[NUMTYPE][10] = {"drop", "bool8", "bool8", "bool8", "bool8", "int32", "int64", "float64", "float64", "float64", "float64", "string"};
-int8_t     typeSize[NUMTYPE]     = { 0,      1,       1,       1,       1,       4,       8,       8,         8,         8,         8       , 8       };
+const char typeName[NUMTYPE][10] = {"drop", "bool8", "bool8", "bool8", "bool8", "int32", "int64", "float64", "float64", "float64", "int32", "float64", "string"};
+int8_t     typeSize[NUMTYPE]     = { 0,      1,       1,       1,       1,       4,       8,       8,         8,         8,         4,       8       , 8       };
 
 // In AIX, NAN and INFINITY don't qualify as constant literals. Refer: PR #3043
 // So we assign them through below init function.
@@ -944,25 +944,28 @@ static void parse_double_hexadecimal(FieldParseContext *ctx)
 
 /*
 f = 'src/freadLookups.h'
-cat('const double cumSecondsCycleYears[401] = {\n', file=f, append=TRUE)
-t = format(as.double(difftime(as.Date(sprintf('%04d-01-01', 1600:1999)), .Date(0), units='secs')))
+cat('const double cumDaysCycleYears[401] = {\n', file=f, append=TRUE)
+t = format(as.double(difftime(as.Date(sprintf('%04d-01-01', 1600:1999)), .Date(0), units='days')))
 rows = paste0(apply(matrix(t, ncol = 4L, byrow = TRUE), 1L, paste, collapse = ', '), ',\n')
 cat(rows, sep='', file=f, append=TRUE)
-cat(146097*86400, '// total seconds in 400 years\n};\n', sep = '', file=f, append=TRUE)
+cat(146097, '// total days in 400 years\n};\n', sep = '', file=f, append=TRUE)
 */
-static void parse_iso8601_timestamp(FieldParseContext *ctx)
+static void parse_iso8601_date_core(const char **pch, int32_t *target)
 {
-  const char *ch = *(ctx->ch);
-  double *target = (double*) ctx->targets[sizeof(double)];
+  const char *ch = *pch;
 
-  int32_t year, month, day, hour, minute;
-  double second;
+  int32_t year, month, day;
 
   str_to_i32_core(&ch, &year);
-  bool isLeapYear = year % 4 == 0 && (year % 100 != 0 || year/100 % 4 == 0);
 
-  if (year == NA_INT32 || *ch != '-')
+  // .Date(.Machine$integer.max*c(-1, 1)):
+  //  -5877641-06-24 -- 5881580-07-11
+  //  rather than fiddle with dates within those terminal years (unlikely
+  //  to be showing up in data sets any time soon), just truncate towards 0
+  if (year == NA_INT32 || year < 5877640 || year > 5881579 || *ch != '-')
     goto fail;
+
+  bool isLeapYear = year % 4 == 0 && (year % 100 != 0 || year/100 % 4 == 0);
   ch++;
 
   str_to_i32_core(&ch, &month);
@@ -971,7 +974,37 @@ static void parse_iso8601_timestamp(FieldParseContext *ctx)
   ch++;
 
   str_to_i32_core(&ch, &day);
-  if (day == NA_INT32 || day < 1 || (day > (isLeapYear ? leapYearDays[month-1] : normYearDays[month-1])) || (*ch != ' ' && *ch != 'T'))
+  if (day == NA_INT32 || day < 1 ||
+      (day > (isLeapYear ? leapYearDays[month-1] : normYearDays[month-1])))
+    goto fail;
+
+  *target =
+    (year/400 - 4)*cumDaysCycleYears[400] + // days to beginning of 400-year cycle
+    cumDaysCycleYears[year % 400] + // days to beginning of year within 400-year cycle
+    (isLeapYear ? cumDaysCycleMonthsLeap[month-1] : cumDaysCycleMonthsNorm[month-1]) + // days to beginning of month within year
+    day-1; // day within month (subtract 1: 1970-01-01 -> 0)
+
+  *pch = ch;
+  return;
+
+  fail:
+    *target = NA_FLOAT64;
+}
+
+static void parse_iso8601_date(FieldParseContext *ctx) {
+  parse_iso8601_date_core(ctx->ch, (int32_t*) ctx->targets[sizeof(int32_t)]);
+}
+
+static void parse_iso8601_timestamp(FieldParseContext *ctx)
+{
+  const char *ch = *(ctx->ch);
+  double *target = (double*) ctx->targets[sizeof(double)];
+
+  int32_t date, hour, minute;
+  double second;
+
+  parse_iso8601_date_core(&ch, &date);
+  if (date == NA_INT32 || (*ch != ' ' && *ch != 'T'))
     goto fail;
   ch++;
 
@@ -995,11 +1028,7 @@ static void parse_iso8601_timestamp(FieldParseContext *ctx)
     ch += 6;
   }
 
-  *target =
-    (year/400 - 4)*cumSecondsCycleYears[400] + // seconds to beginning of 400-year cycle
-    cumSecondsCycleYears[year % 400] + // seconds to beginning of year within 400-year cycle
-    (isLeapYear ? cumSecondsCycleMonthsLeap[month-1] : cumSecondsCycleMonthsNorm[month-1]) + // seconds to beginning of month within year
-    86400*(day-1) + 3600*hour + 60*minute + second; // seconds within month
+  *target = 86400*date + 3600*hour + 60*minute + second;
 
   *(ctx->ch) = ch;
   return;
@@ -1094,11 +1123,12 @@ static reader_fun_t fun[NUMTYPE] = {
   (reader_fun_t) &parse_double_regular,
   (reader_fun_t) &parse_double_extended,
   (reader_fun_t) &parse_double_hexadecimal,
+  (reader_fun_t) &parse_iso8601_date,
   (reader_fun_t) &parse_iso8601_timestamp,
   (reader_fun_t) &Field
 };
 
-static int disabled_parsers[NUMTYPE] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+static int disabled_parsers[NUMTYPE] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
 static int detect_types( const char **pch, int8_t type[], int ncol, bool *bumped) {
   // used in sampling column types and whether column names are present
