@@ -1606,6 +1606,7 @@ SEXP forderLazy(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP sortGro
   if (opt < 1) {
     ans = PROTECT(forder(DT, by, retGrpArg, retStatsArg, sortGroupsArg, ascArg, naArg)); protecti++;
     if (opt == -1 && // opt==0 means that arguments (sort, asc) were not of type index, or lazy=FALSE
+        (!na || (retStats && !idxHasNA(ans))) && // lets create index even if na.last=T used but no NAs detected!
         GetUseIndex() &&
         GetAutoIndex()) { // disabled by default, use datatable.forder.auto.index=T to enable, do not export/document, use for debugging only
       putIndex(DT, by, ans);
