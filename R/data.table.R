@@ -1373,11 +1373,13 @@ replace_dot_alias = function(e) {
     } else return(base::`-.POSIXt`(e1, e2))
   }
 
+  do_having = !missing(having)
+  
   if (byjoin) {
     # The groupings come instead from each row of the i data.table.
     # Much faster for a few known groups vs a 'by' for all followed by a subset
     if (!is.data.table(i)) stop("logical error. i is not data.table, but mult='all' and 'by'=.EACHI")
-    if (!missing(having)) stop("having argument is not supported with 'by' = .EACHI")
+    if (do_having) stop("having argument is not supported with 'by' = .EACHI") ## could change to allow .N as it may be help for non-equi joins
     byval = i
     bynames = if (missing(on)) head(key(x),length(leftcols)) else names(on)
     allbyvars = NULL
@@ -1455,22 +1457,21 @@ replace_dot_alias = function(e) {
         len__ = uniqlengths(f__, xnrow)
         # TO DO: combine uniqlist and uniquelengths into one call.  Or, just set len__ to NULL when dogroups infers that.
         if (verbose) { cat(timetaken(last.started.at),"\n"); flush.console() }
+        
       }
       
-      if (!missing(having)) {
-        
-        .HavingEnv = new.env()
-        .HavingEnv$.N = len__
+      if (do_having) {
         
         having_sub = substitute(having)
         av_having = all.vars(having_sub)
         
         if (!length(av_having <- setdiff(av_having, ".N"))) { # only .N has been assigned and no need to go to gForce
-          lgl_ans = eval(having_sub, envir = .HavingEnv)
+          lgl_ans = eval(having_sub, envir = list(.N = len__))
         } else {
+          .HavingEnv = new.env()
+          .HavingEnv$.N = .HavingEnv$len__ = len__
           .HavingEnv$o__ = o__
           .HavingEnv$f__ = f__
-          .HavingEnv$len__ = len__
           .HavingEnv$irows = irows
           
           av_having = intersect(av_having, names_x)
@@ -1481,33 +1482,42 @@ replace_dot_alias = function(e) {
           lgl_ans = group_eval_tree(having_sub, .HavingEnv, use.GForce = TRUE)
         }
         
-        if (verbose) stop(gettextf("Of the %d original groups, %d evaluated to TRUE in having", length(f__), sum(lgl_ans), domain="R-data.table")) 
+        if (verbose) sprintf("Of the %d original groups, %d evaluated to TRUE in having", length(f__), sum(lgl_ans))
         
-        SD_only = jsub == as.name(".SD")
-        inds = .Call(Cvecseq_having, f__, len__, lgl_ans, retGrpArg = !SD_only)
+        ## We will short circuit: 
+        ##    dt[, .SD, by, having]
+        ##    dt[, V1, by, having]
+        ##    dt[, .(V1), by, having]
+        if (jsub == as.name(".SD")) {
+          cols = chmatch(sdvars, names_x)
+          subset_only = TRUE
+        } else if ((jsub_is_name <- is.name(jsub)) ||
+                   jsub %iscall% "list") {
+          cols = chmatch(all.vars(if (jsub_is_name) jsub else jsub[-1L], functions = TRUE), names_x)
+          subset_only = !anyNA(cols)
+        } else subset_only = FALSE
+                          
+        inds = .Call(Cvecseq_having, f__, len__, lgl_ans, retGrpArg = !subset_only, o__)
 
-        if (length(o__))
-            inds = o__[inds]
-        
-        byval = lapply(byval, function(vec) .Call(CsubsetVector, vec, inds))
-        irows = if (is.null(irows)) inds else irows[inds]
-  
-        if (SD_only) {
-          return(setDT(c(byval, .Call(CsubsetDT, x, irows, chmatch(sdvars, names_x)))))
+        if (subset_only) {
+          irows = if (is.null(irows)) inds else irows[inds]
+          return(setDT(c(lapply(byval, function(vec) .Call(CsubsetVector, vec, inds)), .Call(CsubsetDT, x, irows, cols))))
         } else {
-          if ((jsub_is_name <- is.name(jsub)) || jsub %iscall% "list") {
-            cols = chmatch(all.vars(if (jsub_is_name) jsub else jsub[-1L], functions = TRUE), names_x)
-            if (anyNA(cols)) 
-              stop("only col names or .SD supported when using having")
-            else
-              return(setDT(c(byval, .Call(CsubsetDT, x, irows, cols))))
-          } 
+          if (!is.null(inds)) {
+            ## TODO make this more efficient
+            ## likely need to reconsider vecseq_having as this portion is causing performance issues
+            len__ = attr(inds, "grplen", exact = TRUE)
+            f__ = attr(inds, "starts", exact = TRUE)
+            o_o_ = order(inds)
+            sorted_o = inds[o_o_]
+            irows = if (is.null(irows)) sorted_o else sort(irows[inds])
+            byval = lapply(byval, function(vec) .Call(CsubsetVector, vec, sorted_o)) ##dogroups need this; gforce could use original_f__[lgl_ans] instead of this
+            o__ = order(o_o_) ##gforce needs these; dogroups would be better off with inds
+            attr(o__, "maxgrpn") <- attr(inds, "maxgrpn", exact = TRUE)
+          } else {
+            do_having = FALSE # if is.null(inds) that means there were no subsets. This is to account that we didn't change anything.
+          }
         }
-        
-        ## having should have short circuited by now
-        stop("only col names or .SD supported when using having")
-        
-        ## TODO support even more???
       }
     } else {
       f__=NULL
