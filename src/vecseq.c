@@ -40,11 +40,14 @@ SEXP vecseq(SEXP x, SEXP len, SEXP clamp)
   return(ans);
 }
 
-SEXP vecseq_having(SEXP x, SEXP len, SEXP having, SEXP retGrpArg) {
+SEXP vecseq_having(SEXP x, SEXP len, SEXP having, SEXP retGrpArg, SEXP o__) {
 
   if (!isInteger(x)) error(_("x must be an integer vector"));
   if (!isInteger(len)) error(_("len must be an integer vector"));
   if (!isLogical(having)) error(_("having must be a logical vector"));
+  if (!isInteger(o__)) error(_("o__ must be an integer vector"));
+  //if (!isInteger(irows)) error(_("irows must be an integer vector"));
+  //if (!isLogical(isGforce)) error(_("isGforce must be a logical vector"));
   if (!isLogical(retGrpArg)) error(_("retGrpArg must be a logical vector"));
   
   if (LENGTH(x) != LENGTH(len)) error(_("x and len must be the same length"));
@@ -66,15 +69,26 @@ SEXP vecseq_having(SEXP x, SEXP len, SEXP having, SEXP retGrpArg) {
   }
   
   if (reslen == 0) return(allocVector(INTSXP, 0));
-
-  SEXP ans = PROTECT(allocVector(INTSXP, reslen));
-  int *ians = INTEGER(ans);
   
   bool retGrp = LOGICAL(retGrpArg)[0] == TRUE;
-  if (retGrp)
-    retGrp = total_true != nlen; //no need to recalculate f__ and lens__ if there are no subsets
+  if (total_true == nlen && retGrp) return(R_NilValue); //no need to recalculate if all groups are returned from having
   
+  SEXP ans = PROTECT(allocVector(INTSXP, reslen));
+  int *ians = INTEGER(ans);
+
   if (retGrp) {
+    // should return a list to minimize allocations
+    // We have the following allocations
+    //   - f__      DONE
+    //   - len__    DONE
+    //   - max_grp  DONE
+    
+    // TODO
+    //   - vec_seq_result_o = order(ans)
+    //   - irows = if (is.null(irows)) vec_seq_result_o else sort(irows[ans])
+    //   - byval = lapply(byval, `[`, ans[vec_seq_result_o])
+    //   - o__ = order(vec_seq_result_o)
+    
     SEXP tt, vv;
     
     setAttrib(ans, sym_starts, tt = allocVector(INTSXP, total_true));
@@ -86,30 +100,61 @@ SEXP vecseq_having(SEXP x, SEXP len, SEXP having, SEXP retGrpArg) {
     int k = 0;
     int l = 0;
     int total = 1;
-    
-    for (int i=0; i<nlen; ++i) {
-      if (!ihaving[i]) continue;
-      int thisx = ix[i];
-      ss[l] = total;
-      total += ilen[i];
-      ww[l] = ilen[i];
-      l++;
-      for (int j=0; j<ilen[i]; ++j) {
-        ians[k++] = thisx++;
+    int maxgrpn = 0;
+    if (LENGTH(o__)) {
+      const int *io__ = INTEGER(o__); 
+      for (int i=0; i<nlen; ++i) {
+        if (!ihaving[i]) continue;
+        int thisx = ix[i] - 1;
+        int elem = ilen[i];
+        ss[l] = total;
+        total += elem;
+        ww[l] = elem;
+        l++;
+        if (elem > maxgrpn) maxgrpn = elem;
+        for (int j = thisx; j < (thisx + ilen[i]); j++) {
+          ians[k++] = io__[j];
+        }
+      }
+    } else {
+      for (int i=0; i<nlen; ++i) {
+        if (!ihaving[i]) continue;
+        int thisx = ix[i];
+        int elem = ilen[i];
+        ss[l] = total;
+        total += elem;
+        ww[l] = elem;
+        l++;
+        if (elem > maxgrpn) maxgrpn = elem;
+        for (int j = thisx; j < (thisx + ilen[i]); j++) {
+          ians[k++] = j;
+        }
       }
     }
-    UNPROTECT(1);
-    return(ans);
+    //R_orderVector1(ians, total_true, ans, true, false);
+    setAttrib(ans, sym_maxgrpn, ScalarInteger(maxgrpn));
   } else {
     int k = 0;
-    for (int i=0; i<nlen; ++i) {
-      if (!ihaving[i]) continue;
-      int thisx = ix[i];
-      for (int j=0; j<ilen[i]; ++j) {
-        ians[k++] = thisx++;
+    if (LENGTH(o__)) {
+      const int *io__ = INTEGER(o__); 
+      for (int i=0; i<nlen; ++i) {
+        if (!ihaving[i]) continue;
+        int thisx = ix[i] - 1;
+        for (int j = thisx; j < (thisx + ilen[i]); j++) {
+          ians[k++] = io__[j];
+        }
+      }
+    } else {
+      for (int i=0; i<nlen; ++i) {
+        if (!ihaving[i]) continue;
+        int thisx = ix[i];
+        for (int j = thisx; j < (thisx + ilen[i]); j++) {
+          ians[k++] = j;
+        }
       }
     }
-    UNPROTECT(1);
-    return(ans);
   }
+  
+  UNPROTECT(1);
+  return(ans);
 }
