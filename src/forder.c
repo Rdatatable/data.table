@@ -288,7 +288,7 @@ static void range_str(SEXP *x, int n, uint64_t *out_min, uint64_t *out_max, int 
 // group numbers are left in truelength to be fetched by WRITE_KEY
 {
   int na_count=0;
-  bool any_notascii=false, any_notutf8=false;
+  bool anynotascii=false, anynotutf8=false;
   if (ustr_n!=0) STOP(_("Internal error: ustr isn't empty when starting range_str: ustr_n=%d, ustr_alloc=%d"), ustr_n, ustr_alloc);  // # nocov
   if (ustr_maxlen!=0) STOP(_("Internal error: ustr_maxlen isn't 0 when starting range_str"));  // # nocov
   // savetl_init() has already been called at the start of forder
@@ -316,22 +316,22 @@ static void range_str(SEXP *x, int n, uint64_t *out_min, uint64_t *out_max, int 
       SET_TRUELENGTH(s, -ustr_n);  // unique in any order is fine. first-appearance order is achieved later in count_group
       if (LENGTH(s)>ustr_maxlen) ustr_maxlen=LENGTH(s);
       if (!IS_ASCII(s)) {
-        if (!any_notascii)
-          any_notascii=true;
-        if (!any_notutf8 && !IS_UTF8(s))
-          any_notutf8=true;
+        if (!anynotascii)
+          anynotascii=true;
+        if (!anynotutf8 && !IS_UTF8(s))
+          anynotutf8=true;
       }
     }
   }
   *out_na_count = na_count;
-  *out_anynotascii = any_notascii;
-  *out_anynotutf8 = any_notutf8;
+  *out_anynotascii = anynotascii;
+  *out_anynotutf8 = anynotutf8;
   if (ustr_n==0) {  // all na
     *out_min = 0;
     *out_max = 0;
     return;
   }
-  if (any_notutf8) {
+  if (anynotutf8) {
     SEXP ustr2 = PROTECT(allocVector(STRSXP, ustr_n));
     for (int i=0; i<ustr_n; i++) SET_STRING_ELT(ustr2, i, ENC2UTF8(ustr[i]));
     SEXP *ustr3 = (SEXP *)malloc(ustr_n * sizeof(SEXP));
@@ -504,8 +504,8 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP sortGroupsA
       setAttrib(ans, sym_maxgrpn, ScalarInteger(0));
     }
     if (retstats) {
-      setAttrib(ans, sym_hasna, ScalarInteger(0));
-      setAttrib(ans, sym_hasinfnan, ScalarInteger(0));
+      setAttrib(ans, sym_anyna, ScalarInteger(0));
+      setAttrib(ans, sym_anyinfnan, ScalarInteger(0));
       setAttrib(ans, sym_anynotascii, ScalarInteger(0));
       setAttrib(ans, sym_anynotutf8, ScalarInteger(0));
     }
@@ -534,14 +534,14 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP sortGroupsA
   bool complexRerun = false;   // see comments below in CPLXSXP case
   SEXP CplxPart = R_NilValue;
   if (n_cplx) { CplxPart=PROTECT(allocVector(REALSXP, nrow)); n_protect++; } // one alloc is reused for each part
-  int any_na=0, any_infnan=0, anynotascii=0, anynotutf8=0;; // collect more statistics about the data #2879, allow optimize of order(na.last=TRUE) as well #3023
+  int any_na=0, any_infnan=0, any_notascii=0, any_notutf8=0;; // collect more statistics about the data #2879, allow optimize of order(na.last=TRUE) as well #3023
   TEND(2);
   for (int col=0; col<ncol; col++) {
     // Rprintf(_("Finding range of column %d ...\n"), col);
     SEXP x = VECTOR_ELT(DT,INTEGER(by)[col]-1);
     uint64_t min=0, max=0;     // min and max of non-NA finite values
     int na_count=0, infnan_count=0;
-    bool any_notascii=false, any_notutf8=false;
+    bool anynotascii=false, anynotutf8=false;
     if (sortType) {
       sortType=INTEGER(ascArg)[col];  // if sortType!=0 (not first-appearance) then +1/-1 comes from ascArg.
       if (sortType!=1 && sortType!=-1)
@@ -584,7 +584,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP sortGroupsA
       break;
     case STRSXP :
       // need2utf8 now happens inside range_str on the uniques
-      range_str(STRING_PTR(x), nrow, &min, &max, &na_count, &any_notascii, &any_notutf8);
+      range_str(STRING_PTR(x), nrow, &min, &max, &na_count, &anynotascii, &anynotutf8);
       break;
     default:
       STOP(_("Column %d passed to [f]order is type '%s', not yet supported."), col+1, type2char(TYPEOF(x)));
@@ -594,10 +594,10 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP sortGroupsA
       any_na = 1; // may be written multiple times, for each column that has NA, but thats fine
     if (infnan_count>0)
       any_infnan = 1;
-    if (any_notascii)
-      anynotascii = 1;
-    if (any_notutf8)
-      anynotutf8 = 1;
+    if (anynotascii)
+      any_notascii = 1;
+    if (anynotutf8)
+      any_notutf8 = 1;
     if (na_count==nrow || (min>0 && min==max && na_count==0 && infnan_count==0)) {
       // all same value; skip column as nothing to do;  [min,max] is just of finite values (excludes +Inf,-Inf,NaN and NA)
       if (na_count==nrow && nalast==-1) { for (int i=0; i<nrow; i++) anso[i]=0; }
@@ -813,10 +813,10 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP sortGroupsA
     setAttrib(ans, sym_maxgrpn, ScalarInteger(maxgrpn));
   }
   if (retstats) {
-    setAttrib(ans, sym_hasna, ScalarInteger(any_na));
-    setAttrib(ans, sym_hasinfnan, ScalarInteger(any_infnan));
-    setAttrib(ans, sym_anynotascii, ScalarInteger(anynotascii));
-    setAttrib(ans, sym_anynotutf8, ScalarInteger(anynotutf8));
+    setAttrib(ans, sym_anyna, ScalarInteger(any_na));
+    setAttrib(ans, sym_anyinfnan, ScalarInteger(any_infnan));
+    setAttrib(ans, sym_anynotascii, ScalarInteger(any_notascii));
+    setAttrib(ans, sym_anynotutf8, ScalarInteger(any_notutf8));
   }
 
   cleanup();
@@ -1497,9 +1497,9 @@ bool GetAutoIndex() {
   return LOGICAL(opt)[0];
 }
 
-// attr(idx, "hasna")>0 || attr(idx, "hasinfnan")>0
-bool idxHasNA(SEXP idx) {
-  return INTEGER(getAttrib(idx, sym_hasna))[0]>0 || INTEGER(getAttrib(idx, sym_hasinfnan))[0]>0;
+// attr(idx, "anyna")>0 || attr(idx, "anyinfnan")>0
+bool idxAnyNF(SEXP idx) {
+  return INTEGER(getAttrib(idx, sym_anyna))[0]>0 || INTEGER(getAttrib(idx, sym_anyinfnan))[0]>0;
 }
 
 // lazy forder, re-use existing key or index if possible, otherwise call forder
@@ -1564,12 +1564,12 @@ SEXP forderLazy(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP sortGro
   if (opt == -1 && GetUseIndex()) {
     SEXP idx = getIndex(DT, by);
     if (!isNull(idx)) {
-      bool hasStats = !isNull(getAttrib(idx, sym_hasna));
+      bool hasStats = !isNull(getAttrib(idx, sym_anyna));
       if (!na ||                           // na.last=FALSE
-          (hasStats && !idxHasNA(idx))) {  // na.last=TRUE && !anyNA
+          (hasStats && !idxAnyNF(idx))) {  // na.last=TRUE && !anyNA
         bool hasGrp = !isNull(getAttrib(idx, sym_starts));
         if (hasGrp && !hasStats)
-          error("internal error: index has 'starts' attribute but not 'hasna', please report to issue tracker"); // # nocov
+          error("internal error: index has 'starts' attribute but not 'anyna', please report to issue tracker"); // # nocov
         if (hasGrp==retGrp && hasStats==retStats) {
           opt = 2; // idxOpt
         } else if (
@@ -1586,8 +1586,8 @@ SEXP forderLazy(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP sortGro
             setAttrib(idx, sym_maxgrpn, R_NilValue);
           }
           if (hasStats && !retStats) {
-            setAttrib(idx, sym_hasna, R_NilValue);
-            setAttrib(idx, sym_hasinfnan, R_NilValue);
+            setAttrib(idx, sym_anyna, R_NilValue);
+            setAttrib(idx, sym_anyinfnan, R_NilValue);
             setAttrib(idx, sym_anynotascii, R_NilValue);
             setAttrib(idx, sym_anynotutf8, R_NilValue);
           }
@@ -1608,7 +1608,7 @@ SEXP forderLazy(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP sortGro
         if (!hasStats) {
           if (verbose)
             Rprintf("forderLazy: index found but na.last=TRUE and no stats available: %s\n", CHAR(STRING_ELT(idxName(DT, by), 0)));
-        } else if (idxHasNA(idx)) {
+        } else if (idxAnyNF(idx)) {
           if (verbose)
             Rprintf("forderLazy: index found but na.last=TRUE and NAs present: %s\n", CHAR(STRING_ELT(idxName(DT, by), 0)));
         } else {
@@ -1625,7 +1625,7 @@ SEXP forderLazy(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP sortGro
   if (opt < 1) {
     ans = PROTECT(forder(DT, by, retGrpArg, retStatsArg, sortGroupsArg, ascArg, naArg)); protecti++;
     if (opt == -1 && // opt==0 means that arguments (sort, asc) were not of type index, or lazy=FALSE
-        (!na || (retStats && !idxHasNA(ans))) && // lets create index even if na.last=T used but no NAs detected!
+        (!na || (retStats && !idxAnyNF(ans))) && // lets create index even if na.last=T used but no NAs detected!
         GetUseIndex() &&
         GetAutoIndex()) { // disabled by default, use datatable.forder.auto.index=T to enable, do not export/document, use for debugging only
       putIndex(DT, by, ans);
