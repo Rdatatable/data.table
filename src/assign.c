@@ -154,6 +154,7 @@ static SEXP shallow(SEXP dt, SEXP cols, R_len_t n)
   SEXP newdt = PROTECT(allocVector(VECSXP, n)); protecti++;   // to do, use growVector here?
   SET_ATTRIB(newdt, shallow_duplicate(ATTRIB(dt)));
   SET_OBJECT(newdt, OBJECT(dt));
+  IS_S4_OBJECT(dt) ? SET_S4_OBJECT(newdt) : UNSET_S4_OBJECT(newdt);  // To support S4 objects that incude data.table
   //SHALLOW_DUPLICATE_ATTRIB(newdt, dt);  // SHALLOW_DUPLICATE_ATTRIB would be a bit neater but is only available from R 3.3.0
   
   // TO DO: keepattr() would be faster, but can't because shallow isn't merely a shallow copy. It
