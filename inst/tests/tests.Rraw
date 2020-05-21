@@ -16861,7 +16861,7 @@ dt = data.table(grp = c(2L, 1L, 2L, 1L), x = letters[sample(4L)])
 test(2139.02, dt[, .SD, by = grp, having = .N > 0L], dt[, .SD, grp])
 
 n = 1e5
-grps = 1e3
+grps = 1e4
 dt = data.table(x = sample(grps, n, TRUE), y = runif(n))
 test(2139.03, dt[, .SD, by = x, having = .N > 5L],  dt[dt[, .I[.N > 5L], by = x]$V1])
 #outside_var = 5L
