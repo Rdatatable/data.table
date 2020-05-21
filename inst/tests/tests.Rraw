@@ -10773,9 +10773,9 @@ test(1743.241, fread("a,b,c\n2,2,f", colClasses = list(character="c", integer="b
 test(1743.242, fread("a,b,c\n2,2,f", colClasses = c("integer", "integer", "factor"), drop="a"), data.table(b=2L, c=factor("f")))
 
 ## POSIXct
-test(1743.25, fread("a,b,c\n2015-06-01 11:00:00,1,ae", colClasses=c("POSIXct","integer","character")), data.table(a=as.POSIXct("2015-06-01 11:00:00"),b=1L,c="ae"))
+test(1743.25, fread("a,b,c\n2015-06-01 11:00:00,1,ae", colClasses=c("POSIXct","integer","character")), data.table(a=as.POSIXct("2015-06-01 11:00:00", tz='UTC'),b=1L,c="ae"))
 test(1743.26, fread("a,b,c,d,e,f,g,h\n1,k,2015-06-01 11:00:00,a,1.5,M,9,0", colClasses=list(POSIXct="c", character="b"), drop=c("a","b"), logical01=TRUE),
-              ans<-data.table(c=as.POSIXct("2015-06-01 11:00:00"), d="a", e=1.5, f="M", g=9L, h=FALSE))
+              ans<-data.table(c=as.POSIXct("2015-06-01 11:00:00", tz='UTC'), d="a", e=1.5, f="M", g=9L, h=FALSE))
 test(1743.27, fread("a,b,c,d,e,f,g,h\n1,k,2015-06-01 11:00:00,a,1.5,M,9,0", colClasses=list(POSIXct="c", character=2), drop=c("a","b"), logical01=TRUE),
               ans)
 

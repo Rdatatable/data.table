@@ -965,6 +965,7 @@ static void parse_iso8601_date_core(const char **pch, int32_t *target)
   if (year == NA_INT32 || year < -5877640 || year > 5881579 || *ch != '-')
     goto fail;
 
+  // Multiples of 4, excluding 3/4 of centuries
   bool isLeapYear = year % 4 == 0 && (year % 100 != 0 || year/100 % 4 == 0);
   ch++;
 
