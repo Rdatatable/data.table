@@ -944,7 +944,7 @@ static void parse_double_hexadecimal(FieldParseContext *ctx)
 
 /*
 f = 'src/freadLookups.h'
-cat('const double cumDaysCycleYears[401] = {\n', file=f, append=TRUE)
+cat('const uint8_t cumDaysCycleYears[401] = {\n', file=f, append=TRUE)
 t = format(as.double(difftime(as.Date(sprintf('%04d-01-01', 1600:1999)), .Date(0), units='days')))
 rows = paste0(apply(matrix(t, ncol = 4L, byrow = TRUE), 1L, paste, collapse = ', '), ',\n')
 cat(rows, sep='', file=f, append=TRUE)

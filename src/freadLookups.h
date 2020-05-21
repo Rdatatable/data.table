@@ -27,11 +27,11 @@ const uint8_t hexdigits[256] = {
 };
 
 const uint8_t normYearDays[12] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
-const double cumDaysCycleMonthsNorm[12] = {
+const uint16_t cumDaysCycleMonthsNorm[12] = {
   0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334
 };
 const uint8_t leapYearDays[12] = {31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
-const double cumDaysCycleMonthsLeap[12] = {
+const uint16_t cumDaysCycleMonthsLeap[12] = {
   0, 31, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335
 };
 
@@ -39,7 +39,7 @@ const double cumDaysCycleMonthsLeap[12] = {
 //   to facilitate working with 1970-01-01 UTC epoch time, days are expressed
 //   relative to 1970 % 400. 401st element is 365*400+100-3,
 //   the total number of days in 400 years [100 leap years - 3 non-leap centuries]
-const double cumDaysCycleYears[401] = {
+const int32_t cumDaysCycleYears[401] = {
 -135140, -134774, -134409, -134044,
 -133679, -133313, -132948, -132583,
 -132218, -131852, -131487, -131122,
