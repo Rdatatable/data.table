@@ -23,7 +23,7 @@ SEXP psum(SEXP x, SEXP narmArg) {
     error(_("na.rm must be TRUE or FALSE"));
 
   SEXPTYPE outtype = INTSXP;
-  int n = -1, nj, xi;
+  int n = -1, nj;
   for (int j=0; j<J; j++) {
     xj = VECTOR_ELT(x, j);
     switch(TYPEOF(xj)) {
@@ -74,18 +74,18 @@ SEXP psum(SEXP x, SEXP narmArg) {
       for (int j=0; j<J; j++) {
         xj = VECTOR_ELT(x, j);
         nj = LENGTH(xj);
+        const int mask = nj == 1 ? 0 : INT_MAX;
         xjp = INTEGER(xj); // INTEGER is the same as LOGICAL
         for (int i=0; i<n; i++) {
-          xi = nj == 1 ? 0 : i; // recycling for singletons
-          if (xjp[xi] != NA_INTEGER) { // NA_LOGICAL is the same
+          if (xjp[i & mask] != NA_INTEGER) { // NA_LOGICAL is the same
             if (outp[i] == NA_INTEGER) {
-              outp[i] = xjp[xi];
+              outp[i] = xjp[i & mask];
             } else {
-              if ((xjp[xi] > 0 && INT_MAX - xjp[xi] < outp[i]) ||
-                  (xjp[xi] < 0 && INT_MIN - xjp[xi] > outp[i])) { // overflow
+              if ((xjp[i & mask] > 0 && INT_MAX - xjp[i & mask] < outp[i]) ||
+                  (xjp[i & mask] < 0 && INT_MIN - xjp[i & mask] > outp[i])) { // overflow
                 error(_("Inputs have exceeded .Machine$integer.max=%d in absolute value; please cast to numeric first and try again"), INT_MAX);
               }
-              outp[i] += xjp[xi];
+              outp[i] += xjp[i & mask];
             }
           } // else remain as NA
         }
@@ -96,22 +96,21 @@ SEXP psum(SEXP x, SEXP narmArg) {
       for (int j=0; j<J; j++) {
         xj = VECTOR_ELT(x, j);
         nj = LENGTH(xj);
+        const int mask = nj == 1 ? 0 : INT_MAX;
         switch (TYPEOF(xj)) {
         case LGLSXP: case INTSXP: {
           int *xjp = INTEGER(xj);
           for (int i=0; i<n; i++) {
-            xi = nj == 1 ? 0 : i;
-            if (xjp[xi] != NA_INTEGER) {
-              outp[i] = ISNAN(outp[i]) ? xjp[xi] : outp[i] + xjp[xi];
+            if (xjp[i & mask] != NA_INTEGER) {
+              outp[i] = ISNAN(outp[i]) ? xjp[i & mask] : outp[i] + xjp[i & mask];
             }
           }
         } break;
         case REALSXP: {
           xjp = REAL(xj);
           for (int i=0; i<n; i++) {
-            xi = nj == 1 ? 0 : i;
-            if (!ISNAN(xjp[xi])) {
-              outp[i] = ISNAN(outp[i]) ? xjp[xi] : outp[i] + xjp[xi];
+            if (!ISNAN(xjp[i & mask])) {
+              outp[i] = ISNAN(outp[i]) ? xjp[i & mask] : outp[i] + xjp[i & mask];
             }
           }
         } break;
@@ -125,17 +124,17 @@ SEXP psum(SEXP x, SEXP narmArg) {
       for (int j=0; j<J; j++) {
         xj = VECTOR_ELT(x, j);
         nj = LENGTH(xj);
+        const int mask = nj == 1 ? 0 : INT_MAX;
         switch (TYPEOF(xj)) {
         case LGLSXP: case INTSXP: { // integer/numeric only increment the real part
           int *xjp = INTEGER(xj);
           for (int i=0; i<n; i++) {
-            xi = nj == 1 ? 0 : i;
-            if (xjp[xi] != NA_INTEGER) {
+            if (xjp[i & mask] != NA_INTEGER) {
               if (ISNAN_COMPLEX(outp[i])) {
-                outp[i].r = xjp[xi];
+                outp[i].r = xjp[i & mask];
                 outp[i].i = 0;
               } else {
-                outp[i].r += xjp[xi];
+                outp[i].r += xjp[i & mask];
               }
             }
           }
@@ -143,13 +142,12 @@ SEXP psum(SEXP x, SEXP narmArg) {
         case REALSXP: {
           double *xjp = REAL(xj);
           for (int i=0; i<n; i++) {
-            xi = nj == 1 ? 0 : i;
-            if (!ISNAN(xjp[xi])) {
+            if (!ISNAN(xjp[i & mask])) {
               if (ISNAN_COMPLEX(outp[i])) {
-                outp[i].r = xjp[xi];
+                outp[i].r = xjp[i & mask];
                 outp[i].i = 0;
               } else {
-                outp[i].r += xjp[xi];
+                outp[i].r += xjp[i & mask];
               }
             }
           }
@@ -157,12 +155,11 @@ SEXP psum(SEXP x, SEXP narmArg) {
         case CPLXSXP: {
           xjp = COMPLEX(xj);
           for (int i=0; i<n; i++) {
-            xi = nj == 1 ? 0 : i;
             // can construct complex vectors with !is.na(Re) & is.na(Im) --
             //   seems dubious to me, since print(z) only shows NA, not 3 + NAi
-            if (!ISNAN_COMPLEX(xjp[xi])) {
-              outp[i].r = ISNAN(outp[i].r) ? xjp[xi].r : outp[i].r + xjp[xi].r;
-              outp[i].i = ISNAN(outp[i].i) ? xjp[xi].i : outp[i].i + xjp[xi].i;
+            if (!ISNAN_COMPLEX(xjp[i & mask])) {
+              outp[i].r = ISNAN(outp[i].r) ? xjp[i & mask].r : outp[i].r + xjp[i & mask].r;
+              outp[i].i = ISNAN(outp[i].i) ? xjp[i & mask].i : outp[i].i + xjp[i & mask].i;
             }
           }
         } break;
@@ -180,25 +177,26 @@ SEXP psum(SEXP x, SEXP narmArg) {
       int *outp = INTEGER(out), *xjp;
       xj = VECTOR_ELT(x, 0);
       nj = LENGTH(xj);
+      const int mask = nj == 1 ? 0 : INT_MAX;
       xjp = INTEGER(xj);
-      for (int i=0; i<n; i++) outp[i] = xjp[nj == 1 ? 0 : i];
+      for (int i=0; i<n; i++) outp[i] = xjp[i & mask];
       for (int j=1; j<J; j++) { // J>=2 by now
         xj = VECTOR_ELT(x, j);
         nj = LENGTH(xj);
+        const int mask = nj == 1 ? 0 : INT_MAX;
         xjp = INTEGER(xj);
         for (int i=0; i<n; i++) {
           if (outp[i] == NA_INTEGER) {
             continue;
           }
-          xi = nj == 1 ? 0 : i;
-          if (xjp[xi] == NA_INTEGER) {
+          if (xjp[i & mask] == NA_INTEGER) {
             outp[i] = NA_INTEGER;
-          } else if ((xjp[xi] > 0 && INT_MAX - xjp[xi] < outp[i]) ||
-                     (xjp[xi] < 0 && INT_MIN - xjp[xi] > outp[i])) {
+          } else if ((xjp[i & mask] > 0 && INT_MAX - xjp[i & mask] < outp[i]) ||
+                     (xjp[i & mask] < 0 && INT_MIN - xjp[i & mask] > outp[i])) {
             warning(_("Inputs have exceeded .Machine$integer.max=%d in absolute value; returning NA. Please cast to numeric first to avoid this."), INT_MAX);
             outp[i] = NA_INTEGER;
           } else {
-            outp[i] += xjp[xi];
+            outp[i] += xjp[i & mask];
           }
         }
       }
@@ -207,19 +205,20 @@ SEXP psum(SEXP x, SEXP narmArg) {
       double *outp = REAL(out), *xjp;
       xj = VECTOR_ELT(x, 0);
       nj = LENGTH(xj);
+      const int mask = nj == 1 ? 0 : INT_MAX;
       if (TYPEOF(xj) == REALSXP) {
         xjp = REAL(xj);
         for (int i=0; i<n; i++) outp[i] = xjp[nj == 1 ? 0 : i];
       } else {
         int *xjp = INTEGER(xj);
         for (int i=0; i<n; i++) {
-          xi = nj == 1 ? 0 : i;
-          outp[i] = xjp[xi] == NA_INTEGER ? NA_REAL : xjp[xi];
+          outp[i] = xjp[i & mask] == NA_INTEGER ? NA_REAL : xjp[i & mask];
         }
       }
       for (int j=1; j<J; j++) {
         xj = VECTOR_ELT(x, j);
         nj = LENGTH(xj);
+        const int mask = nj == 1 ? 0 : INT_MAX;
         switch (TYPEOF(xj)) {
         case LGLSXP: case INTSXP: {
           int *xjp = INTEGER(xj);
@@ -227,8 +226,7 @@ SEXP psum(SEXP x, SEXP narmArg) {
             if (ISNAN(outp[i])) {
               continue;
             }
-            xi = nj == 1 ? 0 : i;
-            outp[i] = xjp[xi] == NA_INTEGER ? NA_REAL : outp[i] + xjp[xi];
+            outp[i] = xjp[i & mask] == NA_INTEGER ? NA_REAL : outp[i] + xjp[i & mask];
           }
         } break;
         case REALSXP: {
@@ -237,8 +235,7 @@ SEXP psum(SEXP x, SEXP narmArg) {
             if (ISNAN(outp[i])) {
               continue;
             }
-            xi = nj == 1 ? 0 : i;
-            outp[i] = ISNAN(xjp[xi]) ? NA_REAL : outp[i] + xjp[xi];
+            outp[i] = ISNAN(xjp[i & mask]) ? NA_REAL : outp[i] + xjp[i & mask];
           }
         } break;
         default:
@@ -250,29 +247,27 @@ SEXP psum(SEXP x, SEXP narmArg) {
       Rcomplex *outp = COMPLEX(out), *xjp;
       xj = VECTOR_ELT(x, 0);
       nj = LENGTH(xj);
+      const int mask = nj == 1 ? 0 : INT_MAX;
       switch (TYPEOF(xj)) {
       case LGLSXP: case INTSXP: {
         int *xjp = INTEGER(xj);
         for (int i=0; i<n; i++) {
-          xi = nj == 1 ? 0 : i;
-          outp[i].r = xjp[xi] == NA_INTEGER ? NA_REAL : xjp[xi];
-          outp[i].i = xjp[xi] == NA_INTEGER ? NA_REAL : 0;
+          outp[i].r = xjp[i & mask] == NA_INTEGER ? NA_REAL : xjp[i & mask];
+          outp[i].i = xjp[i & mask] == NA_INTEGER ? NA_REAL : 0;
         }
       } break;
       case REALSXP: {
         double *xjp = REAL(xj);
         for (int i=0; i<n; i++) {
-          xi = nj == 1 ? 0 : i;
-          outp[i].r = xjp[xi];
-          outp[i].i = ISNAN(xjp[xi]) ? NA_REAL : 0;
+          outp[i].r = xjp[i & mask];
+          outp[i].i = ISNAN(xjp[i & mask]) ? NA_REAL : 0;
         }
       } break;
       case CPLXSXP: {
         xjp = COMPLEX(xj);
         for (int i=0; i<n; i++) {
-          xi = nj == 1 ? 0 : i;
-          outp[i].r = xjp[xi].r;
-          outp[i].i = xjp[xi].i;
+          outp[i].r = xjp[i & mask].r;
+          outp[i].i = xjp[i & mask].i;
         }
       } break;
       default:
@@ -281,17 +276,17 @@ SEXP psum(SEXP x, SEXP narmArg) {
       for (int j=1; j<J; j++) {
         xj = VECTOR_ELT(x, j);
         nj = LENGTH(xj);
+        const int mask = nj == 1 ? 0 : INT_MAX;
         switch (TYPEOF(xj)) {
         case LGLSXP: case INTSXP: {
           int *xjp = INTEGER(xj);
           for (int i=0; i<n; i++) {
             if (!ISNAN_COMPLEX(outp[i])) {
-              xi = nj == 1 ? 0 : i;
-              if (xjp[xi] == NA_INTEGER) {
+              if (xjp[i & mask] == NA_INTEGER) {
                 outp[i].r = NA_REAL;
                 outp[i].i = NA_REAL;
               } else {
-                outp[i].r += xjp[xi];
+                outp[i].r += xjp[i & mask];
               }
             }
           }
@@ -300,12 +295,11 @@ SEXP psum(SEXP x, SEXP narmArg) {
           double *xjp = REAL(xj);
           for (int i=0; i<n; i++) {
             if (!ISNAN_COMPLEX(outp[i])) {
-              xi = nj == 1 ? 0 : i;
-              if (ISNAN(xjp[xi])) {
+              if (ISNAN(xjp[i & mask])) {
                 outp[i].r = NA_REAL;
                 outp[i].i = NA_REAL;
               } else {
-                outp[i].r += xjp[xi];
+                outp[i].r += xjp[i & mask];
               }
             }
           }
@@ -314,13 +308,12 @@ SEXP psum(SEXP x, SEXP narmArg) {
           xjp = COMPLEX(xj);
           for (int i=0; i<n; i++) {
             if (!ISNAN_COMPLEX(outp[i])) {
-              xi = nj == 1 ? 0 : i;
-              if (ISNAN_COMPLEX(xjp[xi])) {
+              if (ISNAN_COMPLEX(xjp[i & mask])) {
                 outp[i].r = NA_REAL;
                 outp[i].i = NA_REAL;
               } else {
-                outp[i].r += xjp[xi].r;
-                outp[i].i += xjp[xi].i;
+                outp[i].r += xjp[i & mask].r;
+                outp[i].i += xjp[i & mask].i;
               }
             }
           }
@@ -361,7 +354,7 @@ SEXP pprod(SEXP x, SEXP narmArg) {
     error(_("na.rm must be TRUE or FALSE"));
 
   SEXPTYPE outtype = INTSXP;
-  int n = -1, nj, xi;
+  int n = -1, nj;
   for (int j=0; j<J; j++) {
     xj = VECTOR_ELT(x, j);
     switch(TYPEOF(xj)) {
@@ -412,19 +405,19 @@ SEXP pprod(SEXP x, SEXP narmArg) {
       for (int j=0; j<J; j++) {
         xj = VECTOR_ELT(x, j);
         nj = LENGTH(xj);
+        const int mask = nj == 1 ? 0 : INT_MAX;
         xjp = INTEGER(xj); // INTEGER is the same as LOGICAL
         for (int i=0; i<n; i++) {
-          xi = nj == 1 ? 0 : i; // recycling for singletons
-          if (xjp[xi] != NA_INTEGER) { // NA_LOGICAL is the same
+          if (xjp[i & mask] != NA_INTEGER) { // NA_LOGICAL is the same
             if (outp[i] == NA_INTEGER) {
-              outp[i] = xjp[xi];
+              outp[i] = xjp[i & mask];
             } else {
-              if ((outp[i] > 0 && (xjp[xi] > INT_MAX/outp[i] || xjp[xi] < INT_MIN/outp[i])) || // overflow -- be careful of inequalities and flipping signs
-                  (outp[i] == -1 && (xjp[xi] > INT_MAX || xjp[xi] <= INT_MIN)) ||              // ASSUMPTION: INT_MIN= -INT_MAX - 1
-                  (outp[i] < -1 && (xjp[xi] < INT_MAX/outp[i] || xjp[xi] > INT_MIN/outp[i]))) {
+              if ((outp[i] > 0 && (xjp[i & mask] > INT_MAX/outp[i] || xjp[i & mask] < INT_MIN/outp[i])) || // overflow -- be careful of inequalities and flipping signs
+                  (outp[i] == -1 && (xjp[i & mask] > INT_MAX || xjp[i & mask] <= INT_MIN)) ||              // ASSUMPTION: INT_MIN= -INT_MAX - 1
+                  (outp[i] < -1 && (xjp[i & mask] < INT_MAX/outp[i] || xjp[i & mask] > INT_MIN/outp[i]))) {
                 error(_("Inputs have exceeded .Machine$integer.max=%d in absolute value; please cast to numeric first and try again"), INT_MAX);
               }
-              outp[i] *= xjp[xi];
+              outp[i] *= xjp[i & mask];
             }
           } // else remain as NA
         }
@@ -435,22 +428,21 @@ SEXP pprod(SEXP x, SEXP narmArg) {
       for (int j=0; j<J; j++) {
         xj = VECTOR_ELT(x, j);
         nj = LENGTH(xj);
+        const int mask = nj == 1 ? 0 : INT_MAX;
         switch (TYPEOF(xj)) {
         case LGLSXP: case INTSXP: {
           int *xjp = INTEGER(xj);
           for (int i=0; i<n; i++) {
-            xi = nj == 1 ? 0 : i;
-            if (xjp[xi] != NA_INTEGER) {
-              outp[i] = ISNAN(outp[i]) ? xjp[xi] : outp[i] * xjp[xi];
+            if (xjp[i & mask] != NA_INTEGER) {
+              outp[i] = ISNAN(outp[i]) ? xjp[i & mask] : outp[i] * xjp[i & mask];
             }
           }
         } break;
         case REALSXP: {
           xjp = REAL(xj);
           for (int i=0; i<n; i++) {
-            xi = nj == 1 ? 0 : i;
-            if (!ISNAN(xjp[xi])) {
-              outp[i] = ISNAN(outp[i]) ? xjp[xi] : outp[i] * xjp[xi];
+            if (!ISNAN(xjp[i & mask])) {
+              outp[i] = ISNAN(outp[i]) ? xjp[i & mask] : outp[i] * xjp[i & mask];
             }
           }
         } break;
@@ -464,18 +456,18 @@ SEXP pprod(SEXP x, SEXP narmArg) {
       for (int j=0; j<J; j++) {
         xj = VECTOR_ELT(x, j);
         nj = LENGTH(xj);
+        const int mask = nj == 1 ? 0 : INT_MAX;
         switch (TYPEOF(xj)) {
         case LGLSXP: case INTSXP: { // integer/numeric only increment the real part
           int *xjp = INTEGER(xj);
           for (int i=0; i<n; i++) {
-            xi = nj == 1 ? 0 : i;
-            if (xjp[xi] != NA_INTEGER) {
+            if (xjp[i & mask] != NA_INTEGER) {
               if (ISNAN_COMPLEX(outp[i])) {
-                outp[i].r = xjp[xi];
+                outp[i].r = xjp[i & mask];
                 outp[i].i = 0;
               } else {
-                outp[i].r *= xjp[xi];
-                outp[i].i *= xjp[xi];
+                outp[i].r *= xjp[i & mask];
+                outp[i].i *= xjp[i & mask];
               }
             }
           }
@@ -483,14 +475,13 @@ SEXP pprod(SEXP x, SEXP narmArg) {
         case REALSXP: {
           double *xjp = REAL(xj);
           for (int i=0; i<n; i++) {
-            xi = nj == 1 ? 0 : i;
-            if (!ISNAN(xjp[xi])) {
+            if (!ISNAN(xjp[i & mask])) {
               if (ISNAN_COMPLEX(outp[i])) {
-                outp[i].r = xjp[xi];
+                outp[i].r = xjp[i & mask];
                 outp[i].i = 0;
               } else {
-                outp[i].r *= xjp[xi];
-                outp[i].i *= xjp[xi];
+                outp[i].r *= xjp[i & mask];
+                outp[i].i *= xjp[i & mask];
               }
             }
           }
@@ -498,17 +489,16 @@ SEXP pprod(SEXP x, SEXP narmArg) {
         case CPLXSXP: {
           xjp = COMPLEX(xj);
           for (int i=0; i<n; i++) {
-            xi = nj == 1 ? 0 : i;
             // can construct complex vectors with !is.na(Re) & is.na(Im) --
             //   seems dubious to me, since print(z) only shows NA, not 3 + NAi
-            if (!ISNAN_COMPLEX(xjp[xi])) {
+            if (!ISNAN_COMPLEX(xjp[i & mask])) {
               if (ISNAN(outp[i].r) || ISNAN(outp[i].i)) {
-                outp[i].r = xjp[xi].r;
-                outp[i].i = xjp[xi].i;
+                outp[i].r = xjp[i & mask].r;
+                outp[i].i = xjp[i & mask].i;
               } else {
                 double tmp=outp[i].r; // can't simultaneously assign Re&Im, need to remember Re pre-update
-                outp[i].r = outp[i].r * xjp[xi].r - outp[i].i * xjp[xi].i;
-                outp[i].i = outp[i].i * xjp[xi].r + tmp * xjp[xi].i;
+                outp[i].r = outp[i].r * xjp[i & mask].r - outp[i].i * xjp[i & mask].i;
+                outp[i].i = outp[i].i * xjp[i & mask].r + tmp * xjp[i & mask].i;
               }
             }
           }
@@ -527,29 +517,30 @@ SEXP pprod(SEXP x, SEXP narmArg) {
       int *outp = INTEGER(out), *xjp;
       xj = VECTOR_ELT(x, 0);
       nj = LENGTH(xj);
+      const int mask = nj == 1 ? 0 : INT_MAX;
       xjp = INTEGER(xj);
-      for (int i=0; i<n; i++) outp[i] = xjp[nj == 1 ? 0 : i];
+      for (int i=0; i<n; i++) outp[i] = xjp[i & mask];
       for (int j=1; j<J; j++) { // J>=2 by now
         xj = VECTOR_ELT(x, j);
         nj = LENGTH(xj);
+        const int mask = nj == 1 ? 0 : INT_MAX;
         xjp = INTEGER(xj);
         for (int i=0; i<n; i++) {
           if (outp[i] == NA_INTEGER) {
             continue;
           }
-          xi = nj == 1 ? 0 : i;
-          if (xjp[xi] == NA_INTEGER) {
+          if (xjp[i & mask] == NA_INTEGER) {
             outp[i] = NA_INTEGER;
           } else if (outp[i] == 0) {
-            continue; // 0 is a steady state, except when xjp[xi] is missing
+            continue; // 0 is a steady state, except when xjp[i & mask] is missing
           } else {
-            if ((outp[i] > 0 && (xjp[xi] > INT_MAX/outp[i] || xjp[xi] < INT_MIN/outp[i])) || // overflow -- be careful of inequalities and flipping signs
-                (outp[i] == -1 && (xjp[xi] > INT_MAX || xjp[xi] <= INT_MIN)) ||              // ASSUMPTION: INT_MIN= -INT_MAX - 1
-                (outp[i] < -1 && (xjp[xi] < INT_MAX/outp[i] || xjp[xi] > INT_MIN/outp[i]))) {
+            if ((outp[i] > 0 && (xjp[i & mask] > INT_MAX/outp[i] || xjp[i & mask] < INT_MIN/outp[i])) || // overflow -- be careful of inequalities and flipping signs
+                (outp[i] == -1 && (xjp[i & mask] > INT_MAX || xjp[i & mask] <= INT_MIN)) ||              // ASSUMPTION: INT_MIN= -INT_MAX - 1
+                (outp[i] < -1 && (xjp[i & mask] < INT_MAX/outp[i] || xjp[i & mask] > INT_MIN/outp[i]))) {
               warning(_("Inputs have exceeded .Machine$integer.max=%d in absolute value; returning NA. Please cast to numeric first to avoid this."), INT_MAX);
               outp[i] = NA_INTEGER;
             } else {
-              outp[i] *= xjp[xi];
+              outp[i] *= xjp[i & mask];
             }
           }
         }
@@ -559,19 +550,20 @@ SEXP pprod(SEXP x, SEXP narmArg) {
       double *outp = REAL(out), *xjp;
       xj = VECTOR_ELT(x, 0);
       nj = LENGTH(xj);
+      const int mask = nj == 1 ? 0 : INT_MAX;
       if (TYPEOF(xj) == REALSXP) {
         xjp = REAL(xj);
         for (int i=0; i<n; i++) outp[i] = xjp[nj == 1 ? 0 : i];
       } else {
         int *xjp = INTEGER(xj);
         for (int i=0; i<n; i++) {
-          xi = nj == 1 ? 0 : i;
-          outp[i] = xjp[xi] == NA_INTEGER ? NA_REAL : xjp[xi];
+          outp[i] = xjp[i & mask] == NA_INTEGER ? NA_REAL : xjp[i & mask];
         }
       }
       for (int j=1; j<J; j++) {
         xj = VECTOR_ELT(x, j);
         nj = LENGTH(xj);
+        const int mask = nj == 1 ? 0 : INT_MAX;
         switch (TYPEOF(xj)) {
         case LGLSXP: case INTSXP: {
           int *xjp = INTEGER(xj);
@@ -579,13 +571,12 @@ SEXP pprod(SEXP x, SEXP narmArg) {
             if (ISNAN(outp[i])) {
               continue;
             }
-            xi = nj == 1 ? 0 : i;
-            if (xjp[xi] == NA_INTEGER) {
+            if (xjp[i & mask] == NA_INTEGER) {
               outp[i] = NA_REAL;
             } else if (outp[i] == 0) {
               continue;
             } else {
-              outp[i] *= xjp[xi];
+              outp[i] *= xjp[i & mask];
             }
           }
         } break;
@@ -595,13 +586,12 @@ SEXP pprod(SEXP x, SEXP narmArg) {
             if (ISNAN(outp[i])) {
               continue;
             }
-            xi = nj == 1 ? 0 : i;
-            if (ISNAN(xjp[xi])) {
+            if (ISNAN(xjp[i & mask])) {
               outp[i] = NA_REAL;
             } else if (outp[i] == 0) {
               continue;
             } else {
-              outp[i] *= xjp[xi];
+              outp[i] *= xjp[i & mask];
             }
           }
         } break;
@@ -614,29 +604,27 @@ SEXP pprod(SEXP x, SEXP narmArg) {
       Rcomplex *outp = COMPLEX(out), *xjp;
       xj = VECTOR_ELT(x, 0);
       nj = LENGTH(xj);
+      const int mask = nj == 1 ? 0 : INT_MAX;
       switch (TYPEOF(xj)) {
       case LGLSXP: case INTSXP: {
         int *xjp = INTEGER(xj);
         for (int i=0; i<n; i++) {
-          xi = nj == 1 ? 0 : i;
-          outp[i].r = xjp[xi];
-          outp[i].i = xjp[xi] == NA_INTEGER ? NA_REAL : 0;
+          outp[i].r = xjp[i & mask];
+          outp[i].i = xjp[i & mask] == NA_INTEGER ? NA_REAL : 0;
         }
       } break;
       case REALSXP: {
         double *xjp = REAL(xj);
         for (int i=0; i<n; i++) {
-          xi = nj == 1 ? 0 : i;
-          outp[i].r = xjp[xi];
-          outp[i].i = ISNAN(xjp[xi]) ? NA_REAL : 0;
+          outp[i].r = xjp[i & mask];
+          outp[i].i = ISNAN(xjp[i & mask]) ? NA_REAL : 0;
         }
       } break;
       case CPLXSXP: {
         xjp = COMPLEX(xj);
         for (int i=0; i<n; i++) {
-          xi = nj == 1 ? 0 : i;
-          outp[i].r = xjp[xi].r;
-          outp[i].i = xjp[xi].i;
+          outp[i].r = xjp[i & mask].r;
+          outp[i].i = xjp[i & mask].i;
         }
       } break;
       default:
@@ -645,20 +633,20 @@ SEXP pprod(SEXP x, SEXP narmArg) {
       for (int j=1; j<J; j++) {
         xj = VECTOR_ELT(x, j);
         nj = LENGTH(xj);
+        const int mask = nj == 1 ? 0 : INT_MAX;
         switch (TYPEOF(xj)) {
         case LGLSXP: case INTSXP: {
           int *xjp = INTEGER(xj);
           for (int i=0; i<n; i++) {
             if (!ISNAN_COMPLEX(outp[i])) {
-              xi = nj == 1 ? 0 : i;
-              if (xjp[xi] == NA_INTEGER) {
+              if (xjp[i & mask] == NA_INTEGER) {
                 outp[i].r = NA_REAL;
                 outp[i].i = NA_REAL;
               } else if (outp[i].r == 0 && outp[i].i == 0) {
                 continue;
               } else {
-                outp[i].r *= xjp[xi];
-                outp[i].i *= xjp[xi];
+                outp[i].r *= xjp[i & mask];
+                outp[i].i *= xjp[i & mask];
               }
             }
           }
@@ -667,15 +655,14 @@ SEXP pprod(SEXP x, SEXP narmArg) {
           double *xjp = REAL(xj);
           for (int i=0; i<n; i++) {
             if (!ISNAN_COMPLEX(outp[i])) {
-              xi = nj == 1 ? 0 : i;
-              if (ISNAN(xjp[xi])) {
+              if (ISNAN(xjp[i & mask])) {
                 outp[i].r = NA_REAL;
                 outp[i].i = NA_REAL;
               } else if (outp[i].r == 0 && outp[i].i == 0) {
                 continue;
               } else {
-                outp[i].r *= xjp[xi];
-                outp[i].i *= xjp[xi];
+                outp[i].r *= xjp[i & mask];
+                outp[i].i *= xjp[i & mask];
               }
             }
           }
@@ -684,16 +671,15 @@ SEXP pprod(SEXP x, SEXP narmArg) {
           xjp = COMPLEX(xj);
           for (int i=0; i<n; i++) {
             if (!ISNAN_COMPLEX(outp[i])) {
-              xi = nj == 1 ? 0 : i;
-              if (ISNAN_COMPLEX(xjp[xi])) {
+              if (ISNAN_COMPLEX(xjp[i & mask])) {
                 outp[i].r = NA_REAL;
                 outp[i].i = NA_REAL;
               } else if (outp[i].r == 0 && outp[i].i == 0) {
                 continue;
               } else {
                 double tmp=outp[i].r; // see na.rm=TRUE branch
-                outp[i].r = outp[i].r * xjp[xi].r - outp[i].i * xjp[xi].i;
-                outp[i].i = tmp * xjp[xi].i + outp[i].i * xjp[xi].r;
+                outp[i].r = outp[i].r * xjp[i & mask].r - outp[i].i * xjp[i & mask].i;
+                outp[i].i = tmp * xjp[i & mask].i + outp[i].i * xjp[i & mask].r;
               }
             }
           }
@@ -739,7 +725,7 @@ SEXP pany(SEXP x, SEXP narmArg) {
   if (!isLogical(narmArg) || LENGTH(narmArg)!=1 || LOGICAL(narmArg)[0]==NA_LOGICAL)
     error(_("na.rm must be TRUE or FALSE"));
 
-  int n = -1, nj, xi;
+  int n = -1, nj;
   for (int j=0; j<J; j++) {
     xj = VECTOR_ELT(x, j);
     switch(TYPEOF(xj)) {
@@ -885,27 +871,25 @@ SEXP pany(SEXP x, SEXP narmArg) {
      */
     xj = VECTOR_ELT(x, 0);
     nj = LENGTH(xj);
+    const int mask = nj == 1 ? 0 : INT_MAX;
     switch (TYPEOF(xj)) {
     case LGLSXP: case INTSXP: {
       int *xjp = INTEGER(xj);
       for (int i=0; i<n; i++) {
-        xi = nj == 1 ? 0 : i;
-        outp[i] = xjp[xi] == 0 ? 0 : (xjp[xi] == NA_INTEGER ? NA_LOGICAL : 1);
+        outp[i] = xjp[i & mask] == 0 ? 0 : (xjp[i & mask] == NA_INTEGER ? NA_LOGICAL : 1);
       }
     } break;
     case REALSXP: {
       double *xjp = REAL(xj);
       for (int i=0; i<n; i++) {
-        xi = nj == 1 ? 0 : i;
-        outp[i] = xjp[xi] == 0 ? 0 : (ISNAN(xjp[xi]) ? NA_LOGICAL : 1);
+        outp[i] = xjp[i & mask] == 0 ? 0 : (ISNAN(xjp[i & mask]) ? NA_LOGICAL : 1);
       }
     } break;
     case CPLXSXP: {
       Rcomplex *xjp = COMPLEX(xj);
       for (int i=0; i<n; i++) {
-        xi = nj == 1 ? 0 : i;
-        outp[i] = xjp[xi].r == 0 && xjp[xi].i == 0 ? 0 :
-          (ISNAN(xjp[xi].r) || ISNAN(xjp[xi].i) ? NA_LOGICAL : 1);
+        outp[i] = xjp[i & mask].r == 0 && xjp[i & mask].i == 0 ? 0 :
+          (ISNAN(xjp[i & mask].r) || ISNAN(xjp[i & mask].i) ? NA_LOGICAL : 1);
       }
     } break;
     default:
@@ -1036,7 +1020,7 @@ SEXP pall(SEXP x, SEXP narmArg) {
   if (!isLogical(narmArg) || LENGTH(narmArg)!=1 || LOGICAL(narmArg)[0]==NA_LOGICAL)
     error(_("na.rm must be TRUE or FALSE"));
 
-  int n = -1, nj, xi;
+  int n = -1, nj;
   for (int j=0; j<J; j++) {
     xj = VECTOR_ELT(x, j);
     switch(TYPEOF(xj)) {
@@ -1129,6 +1113,7 @@ SEXP pall(SEXP x, SEXP narmArg) {
             if (outp[i] == NA_INTEGER) {
               outp[i] = 1;
             }
+            continue;
           }
           continue;
         }
@@ -1155,6 +1140,7 @@ SEXP pall(SEXP x, SEXP narmArg) {
             if (outp[i] == NA_INTEGER) {
               outp[i] = 1;
             }
+            continue;
           }
           continue;
         }
@@ -1182,27 +1168,25 @@ SEXP pall(SEXP x, SEXP narmArg) {
      */
     xj = VECTOR_ELT(x, 0);
     nj = LENGTH(xj);
+    const int mask = nj == 1 ? 0 : INT_MAX;
     switch (TYPEOF(xj)) {
     case LGLSXP: case INTSXP: {
       int *xjp = INTEGER(xj);
       for (int i=0; i<n; i++) {
-        xi = nj == 1 ? 0 : i;
-        outp[i] = xjp[xi] == 0 ? 0 : (xjp[xi] == NA_INTEGER ? NA_LOGICAL : 1);
+        outp[i] = xjp[i & mask] == 0 ? 0 : (xjp[i & mask] == NA_INTEGER ? NA_LOGICAL : 1);
       }
     } break;
     case REALSXP: {
       double *xjp = REAL(xj);
       for (int i=0; i<n; i++) {
-        xi = nj == 1 ? 0 : i;
-        outp[i] = xjp[xi] == 0 ? 0 : (ISNAN(xjp[xi]) ? NA_LOGICAL : 1);
+        outp[i] = xjp[i & mask] == 0 ? 0 : (ISNAN(xjp[i & mask]) ? NA_LOGICAL : 1);
       }
     } break;
     case CPLXSXP: {
       Rcomplex *xjp = COMPLEX(xj);
       for (int i=0; i<n; i++) {
-        xi = nj == 1 ? 0 : i;
-        outp[i] = xjp[xi].r == 0 && xjp[xi].i == 0 ? 0 :
-          (ISNAN(xjp[xi].r) || ISNAN(xjp[xi].i) ? NA_LOGICAL : 1);
+        outp[i] = xjp[i & mask].r == 0 && xjp[i & mask].i == 0 ? 0 :
+          (ISNAN(xjp[i & mask].r) || ISNAN(xjp[i & mask].i) ? NA_LOGICAL : 1);
       }
     } break;
     default:
