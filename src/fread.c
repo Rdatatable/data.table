@@ -962,7 +962,7 @@ static void parse_iso8601_date_core(const char **pch, int32_t *target)
   //  -5877641-06-24 -- 5881580-07-11
   //  rather than fiddle with dates within those terminal years (unlikely
   //  to be showing up in data sets any time soon), just truncate towards 0
-  if (year == NA_INT32 || year < 5877640 || year > 5881579 || *ch != '-')
+  if (year == NA_INT32 || year < -5877640 || year > 5881579 || *ch != '-')
     goto fail;
 
   bool isLeapYear = year % 4 == 0 && (year % 100 != 0 || year/100 % 4 == 0);
@@ -1021,14 +1021,35 @@ static void parse_iso8601_timestamp(FieldParseContext *ctx)
   parse_double_regular_core(&ch, &second);
   if (second == NA_FLOAT64 || second < 0 || second >= 60)
     goto fail;
+
+
+  int32_t tz_hour = 0, tz_minute = 0;
   if (*ch == 'Z') {
-    ch++;
-  } else if (ch[0] == '+' && ch[1] == '0' && ch[2] == '0' &&
-    ch[3] == ':' && ch[4] == '0' && ch[5] == '0') {
-    ch += 6;
+    ch++; // "Zulu time"=UTC
+  } else {
+    if (*ch == ' ')
+      ch++;
+    if (*ch == '+' || *ch == '-') {
+      // two recognized formats: [+-]AA:BB and [+-]AABB
+      str_to_i32_core(&ch, &tz_hour);
+      if (tz_hour == NA_INT32 || abs(tz_hour) > 2400)
+        goto fail;
+      if (abs(tz_hour) >= 100) { // +AABB
+        tz_minute = tz_hour % 100;
+        tz_hour /= 100;
+      } else {
+        if (*ch != ':')
+          goto fail;
+        str_to_i32_core(&ch, &tz_minute);
+        if (tz_minute == NA_INT32)
+          goto fail;
+      }
+    }
   }
 
-  *target = 86400*date + 3600*hour + 60*minute + second;
+  //Rprintf("date=%d\thour=%d\tz_hour=%d\tminute=%d\ttz_minute=%d\tsecond=%.1f\n", date, hour, tz_hour, minute, tz_minute, second);
+  // cast upfront needed to prevent silent overflow
+  *target = 86400*(double)date + 3600*(hour - tz_hour) + 60*(minute - tz_minute) + second;
 
   *(ctx->ch) = ch;
   return;

@@ -463,6 +463,22 @@ size_t allocateDT(int8_t *typeArg, int8_t *sizeArg, int ncolArg, int ndrop, size
         SEXP tt = PROTECT(ScalarString(char_integer64));
         setAttrib(thiscol, R_ClassSymbol, tt);
         UNPROTECT(1);
+      } else if (type[i] == CT_ISO8601_DATE) {
+        SEXP tt = PROTECT(allocVector(STRSXP, 2));
+        SET_STRING_ELT(tt, 0, char_IDate);
+        SET_STRING_ELT(tt, 1, char_Date);
+        setAttrib(thiscol, R_ClassSymbol, tt);
+        UNPROTECT(1);
+      } else if (type[i] == CT_ISO8601_TIME) {
+        SEXP tt = PROTECT(allocVector(STRSXP, 2));
+        SET_STRING_ELT(tt, 0, char_POSIXct);
+        SET_STRING_ELT(tt, 1, mkChar("POSIXt"));
+        setAttrib(thiscol, R_ClassSymbol, tt);
+
+        SEXP tz = PROTECT(ScalarString(mkChar("UTC")));
+        SEXP s_tzone = install("tzone");
+        setAttrib(thiscol, s_tzone, tz);
+        UNPROTECT(2);
       }
       SET_TRUELENGTH(thiscol, allocNrow);
       DTbytes += SIZEOF(thiscol)*allocNrow;
