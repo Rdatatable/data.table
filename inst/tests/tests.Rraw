@@ -16853,3 +16853,9 @@ A = data.table(A=c(complex(real = 1:3, imaginary=c(0, -1, 1)), NaN))
 test(2138.3, rbind(A,B), data.table(A=c(as.character(A$A), B$A)))
 A = data.table(A=as.complex(rep(NA, 5)))
 test(2138.4, rbind(A,B), data.table(A=c(as.character(A$A), B$A)))
+
+# internal error when specifying .SDcols #4231
+test(2139.1, as.data.table(as.list(1:2))[, .SD,.SDcols=(-1L)], data.table(V2=2L))
+test(2139.2, as.data.table(as.list(1:2))[, .SD,.SDcols=(-(1L))], data.table(V2=2L))
+test(2139.3, as.data.table(as.list(1:3))[, .SD,.SDcols=(-1L)], data.table(V2=2L, V3=3L))
+test(2139.4, data.table(V1=-1L, V2=-2L, V3=-3L)[,.SD,.SDcols=-V2:-V1], error="not found")
