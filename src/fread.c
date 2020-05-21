@@ -1022,7 +1022,6 @@ static void parse_iso8601_timestamp(FieldParseContext *ctx)
   if (second == NA_FLOAT64 || second < 0 || second >= 60)
     goto fail;
 
-
   int32_t tz_hour = 0, tz_minute = 0;
   if (*ch == 'Z') {
     ch++; // "Zulu time"=UTC
@@ -1030,19 +1029,25 @@ static void parse_iso8601_timestamp(FieldParseContext *ctx)
     if (*ch == ' ')
       ch++;
     if (*ch == '+' || *ch == '-') {
-      // two recognized formats: [+-]AA:BB and [+-]AABB
+      const char *start = ch; // facilitates distinguishing +04, +0004, +0000, +00:00
+      // three recognized formats: [+-]AA:BB, [+-]AABB, and [+-]AA
       str_to_i32_core(&ch, &tz_hour);
-      if (tz_hour == NA_INT32 || abs(tz_hour) > 2400)
+      if (tz_hour == NA_INT32)
         goto fail;
-      if (abs(tz_hour) >= 100) { // +AABB
+      if (ch - start == 5 && tz_hour != 0) { // +AABB
+        if (abs(tz_hour) > 2400)
+          goto fail;
         tz_minute = tz_hour % 100;
         tz_hour /= 100;
-      } else {
-        if (*ch != ':')
+      } else if (ch - start == 3) {
+        if (abs(tz_hour) > 24)
           goto fail;
-        str_to_i32_core(&ch, &tz_minute);
-        if (tz_minute == NA_INT32)
-          goto fail;
+        if (*ch == ':') {
+          ch++;
+          str_to_i32_core(&ch, &tz_minute);
+          if (tz_minute == NA_INT32)
+            goto fail;
+        }
       }
     }
   }
