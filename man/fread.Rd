@@ -2,11 +2,11 @@
 \alias{fread}
 \title{ Fast and friendly file finagler }
 \description{
-   Similar to \code{read.table} but faster and more convenient. All controls such as \code{sep}, \code{colClasses} and \code{nrows} are automatically detected. \code{bit64::integer64} types are also detected and read directly without needing to read as character before converting.
+   Similar to \code{read.table} but faster and more convenient. All controls such as \code{sep}, \code{colClasses} and \code{nrows} are automatically detected.
 
-   Dates are read as character currently. They can be converted afterwards using the excellent \code{fasttime} package or standard base functions.
+   \code{bit64::integer64}, \code{\link{IDate}}, and \code{\link{POSIXct}} types are also detected and read directly without needing to read as character before converting.
 
-   `fread` is for \emph{regular} delimited files; i.e., where every row has the same number of columns. In future, secondary separator (\code{sep2}) may be specified \emph{within} each column. Such columns will be read as type \code{list} where each cell is itself a vector.
+   \code{fread} is for \emph{regular} delimited files; i.e., where every row has the same number of columns. In future, secondary separator (\code{sep2}) may be specified \emph{within} each column. Such columns will be read as type \code{list} where each cell is itself a vector.
 }
 \usage{
 fread(input, file, text, cmd, sep="auto", sep2="auto", dec=".", quote="\"",

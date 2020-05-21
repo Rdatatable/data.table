@@ -81,6 +81,8 @@ unit = "s")
 
 14. Added support for `round()` and `trunc()` to extend functionality of `ITime`. `round()` and `trunc()` can be used with argument units: "hours" or "minutes". Thanks to @JensPederM for the suggestion and PR.
 
+15. `fread` now supports native parsing of standard date and time formats (date like `%Y-%m-%d` and time like `%Y-%m-%d %H:%M:%OS` and in [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601) format, i.e. like `%Y-%m-%dT%H:%M:%OS%Z`, where `%Z` is a time zone marker such as `Z` for UTC or `+%H:%M`/`%H%M` to encode a UTC offset). Detected dates are returned as `data.table`'s `integer`-backed `IDate` class (see `?IDate`), and detected times are returned as `POSIXct` columns with time zone set to `UTC` (with offset indicated by `%Z` applied). To display this column in the time zone of your choosing, recall that time zones in `POSIXct` vectors are just printing artifacts -- all `POSIXct` columns use "numeric seconds since 1970-01-01 00:00:00 UTC" as the underlying representation, and the time zone is only applied when `print` (or `format`) is invoked. As such, changing time zones can be done near instantaneously & with no copies by `setattr(tzcol, 'tzone', 'Asia/Yangon')` (or any other time zone available in `OlsonNames()`).
+
 ## BUG FIXES
 
 1. A NULL timezone on POSIXct was interpreted by `as.IDate` and `as.ITime` as UTC rather than the session's default timezone (`tz=""`) , [#4085](https://github.com/Rdatatable/data.table/issues/4085).
