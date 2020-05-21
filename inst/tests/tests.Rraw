@@ -16886,3 +16886,16 @@ test(2139.05, fread(tmp), copy(DT)[ , times := times - 4500])
 
 fwrite(copy(DT)[ , times := format(times, '%FT%T+01')], tmp)
 test(2139.06, fread(tmp), copy(DT)[ , times := times - 3600])
+
+## invalid tz specifiers
+fwrite(copy(DT)[ , times := format(times, '%FT%T+3600')], tmp)
+test(2139.07, fread(tmp), copy(DT)[ , times := format(times, '%FT%T+3600')])
+
+fwrite(copy(DT)[ , times := format(times, '%FT%T+36')], tmp)
+test(2139.08, fread(tmp), copy(DT)[ , times := format(times, '%FT%T+36')])
+
+fwrite(copy(DT)[ , times := format(times, '%FT%T+XXX')], tmp)
+test(2139.09, fread(tmp), copy(DT)[ , times := format(times, '%FT%T+XXX')])
+
+fwrite(copy(DT)[ , times := format(times, '%FT%T+00:XX')], tmp)
+test(2139.10, fread(tmp), copy(DT)[ , times := format(times, '%FT%T+00:XX')])
