@@ -27,6 +27,8 @@ SEXP sym_starts, char_starts;
 SEXP sym_maxgrpn;
 SEXP sym_hasna;
 SEXP sym_hasinfnan;
+SEXP sym_anynotascii;
+SEXP sym_anynotutf8;
 SEXP sym_colClassesAs;
 SEXP sym_verbose;
 SEXP SelfRefSymbol;
@@ -343,6 +345,8 @@ void attribute_visible R_init_datatable(DllInfo *info)
   sym_maxgrpn = install("maxgrpn");
   sym_hasna   = install("hasna");
   sym_hasinfnan = install("hasinfnan");
+  sym_anynotascii = install("anynotascii");
+  sym_anynotutf8 = install("anynotutf8");
   sym_colClassesAs = install("colClassesAs");
   sym_verbose = install("datatable.verbose");
   SelfRefSymbol = install(".internal.selfref");

@@ -93,6 +93,8 @@ extern SEXP sym_starts, char_starts;
 extern SEXP sym_maxgrpn;
 extern SEXP sym_hasna;
 extern SEXP sym_hasinfnan;
+extern SEXP sym_anynotascii;
+extern SEXP sym_anynotutf8;
 extern SEXP sym_colClassesAs;
 extern SEXP sym_verbose;
 extern SEXP SelfRefSymbol;

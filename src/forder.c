@@ -30,7 +30,8 @@
 
 // #define TIMING_ON
 
-static bool retgrp = true, retstats = true; // return group sizes as well as the ordering vector? If so then use gs, gsalloc and gsn :
+static bool retgrp = true;          // return group sizes as well as the ordering vector? If so then use gs, gsalloc and gsn :
+static bool retstats = true;        // return extra flags for any NA, NaN, -Inf, +Inf, non-ASCII, non-UTF8
 static int nrow = 0;                // used as group size stack allocation limit (when all groups are 1 row)
 static int *gs = NULL;              // gs = final groupsizes e.g. 23,12,87,2,1,34,...
 static int gs_alloc = 0;            // allocated size of gs
@@ -283,11 +284,11 @@ static void cradix(SEXP *x, int n)
   free(cradix_xtmp);   cradix_xtmp=NULL;
 }
 
-static void range_str(SEXP *x, int n, uint64_t *out_min, uint64_t *out_max, int *out_na_count)
+static void range_str(SEXP *x, int n, uint64_t *out_min, uint64_t *out_max, int *out_na_count, bool *out_anynotascii, bool *out_anynotutf8)
 // group numbers are left in truelength to be fetched by WRITE_KEY
 {
   int na_count=0;
-  bool anyneedutf8=false;
+  bool any_notascii=false, any_notutf8=false;
   if (ustr_n!=0) STOP(_("Internal error: ustr isn't empty when starting range_str: ustr_n=%d, ustr_alloc=%d"), ustr_n, ustr_alloc);  // # nocov
   if (ustr_maxlen!=0) STOP(_("Internal error: ustr_maxlen isn't 0 when starting range_str"));  // # nocov
   // savetl_init() has already been called at the start of forder
@@ -314,16 +315,23 @@ static void range_str(SEXP *x, int n, uint64_t *out_min, uint64_t *out_max, int 
       ustr[ustr_n++] = s;
       SET_TRUELENGTH(s, -ustr_n);  // unique in any order is fine. first-appearance order is achieved later in count_group
       if (LENGTH(s)>ustr_maxlen) ustr_maxlen=LENGTH(s);
-      if (!anyneedutf8 && NEED2UTF8(s)) anyneedutf8=true;
+      if (!IS_ASCII(s)) {
+        if (!any_notascii)
+          any_notascii=true;
+        if (!any_notutf8 && !IS_UTF8(s))
+          any_notutf8=true;
+      }
     }
   }
   *out_na_count = na_count;
+  *out_anynotascii = any_notascii;
+  *out_anynotutf8 = any_notutf8;
   if (ustr_n==0) {  // all na
     *out_min = 0;
     *out_max = 0;
     return;
   }
-  if (anyneedutf8) {
+  if (any_notutf8) {
     SEXP ustr2 = PROTECT(allocVector(STRSXP, ustr_n));
     for (int i=0; i<ustr_n; i++) SET_STRING_ELT(ustr2, i, ENC2UTF8(ustr[i]));
     SEXP *ustr3 = (SEXP *)malloc(ustr_n * sizeof(SEXP));
@@ -498,6 +506,8 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP sortGroupsA
     if (retstats) {
       setAttrib(ans, sym_hasna, ScalarInteger(0));
       setAttrib(ans, sym_hasinfnan, ScalarInteger(0));
+      setAttrib(ans, sym_anynotascii, ScalarInteger(0));
+      setAttrib(ans, sym_anynotutf8, ScalarInteger(0));
     }
     UNPROTECT(n_protect);
     return ans;
@@ -524,13 +534,14 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP sortGroupsA
   bool complexRerun = false;   // see comments below in CPLXSXP case
   SEXP CplxPart = R_NilValue;
   if (n_cplx) { CplxPart=PROTECT(allocVector(REALSXP, nrow)); n_protect++; } // one alloc is reused for each part
-  int any_na=0, any_infnan=0; // collect more statistics about the data #2879, allow optimize of order(na.last=TRUE) as well #3023
+  int any_na=0, any_infnan=0, anynotascii=0, anynotutf8=0;; // collect more statistics about the data #2879, allow optimize of order(na.last=TRUE) as well #3023
   TEND(2);
   for (int col=0; col<ncol; col++) {
     // Rprintf(_("Finding range of column %d ...\n"), col);
     SEXP x = VECTOR_ELT(DT,INTEGER(by)[col]-1);
     uint64_t min=0, max=0;     // min and max of non-NA finite values
     int na_count=0, infnan_count=0;
+    bool any_notascii=false, any_notutf8=false;
     if (sortType) {
       sortType=INTEGER(ascArg)[col];  // if sortType!=0 (not first-appearance) then +1/-1 comes from ascArg.
       if (sortType!=1 && sortType!=-1)
@@ -573,7 +584,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP sortGroupsA
       break;
     case STRSXP :
       // need2utf8 now happens inside range_str on the uniques
-      range_str(STRING_PTR(x), nrow, &min, &max, &na_count);
+      range_str(STRING_PTR(x), nrow, &min, &max, &na_count, &any_notascii, &any_notutf8);
       break;
     default:
       STOP(_("Column %d passed to [f]order is type '%s', not yet supported."), col+1, type2char(TYPEOF(x)));
@@ -583,6 +594,10 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP sortGroupsA
       any_na = 1; // may be written multiple times, for each column that has NA, but thats fine
     if (infnan_count>0)
       any_infnan = 1;
+    if (any_notascii)
+      anynotascii = 1;
+    if (any_notutf8)
+      anynotutf8 = 1;
     if (na_count==nrow || (min>0 && min==max && na_count==0 && infnan_count==0)) {
       // all same value; skip column as nothing to do;  [min,max] is just of finite values (excludes +Inf,-Inf,NaN and NA)
       if (na_count==nrow && nalast==-1) { for (int i=0; i<nrow; i++) anso[i]=0; }
@@ -800,6 +815,8 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP sortGroupsA
   if (retstats) {
     setAttrib(ans, sym_hasna, ScalarInteger(any_na));
     setAttrib(ans, sym_hasinfnan, ScalarInteger(any_infnan));
+    setAttrib(ans, sym_anynotascii, ScalarInteger(anynotascii));
+    setAttrib(ans, sym_anynotutf8, ScalarInteger(anynotutf8));
   }
 
   cleanup();
@@ -1571,6 +1588,8 @@ SEXP forderLazy(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP sortGro
           if (hasStats && !retStats) {
             setAttrib(idx, sym_hasna, R_NilValue);
             setAttrib(idx, sym_hasinfnan, R_NilValue);
+            setAttrib(idx, sym_anynotascii, R_NilValue);
+            setAttrib(idx, sym_anynotutf8, R_NilValue);
           }
           opt = 2; // idxOpt but need to drop groups or stats
         } else if (!hasGrp && retGrp && !hasStats && retStats) {
