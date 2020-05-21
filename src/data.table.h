@@ -16,13 +16,6 @@
 // #include <signal.h> // the debugging machinery + breakpoint aidee
 // raise(SIGINT);
 
-// data.table depends on R>=3.0.0 when R_xlen_t was introduced
-// Before R 3.0.0, RLEN used to be switched to R_len_t as R_xlen_t wasn't available.
-// We could now replace all RLEN with R_xlen_t directly. Or keep RLEN for the shorter
-// name so as not to have to check closely one letter difference R_xlen_t/R_len_t. We
-// might also undefine R_len_t to ensure not to use it.
-typedef R_xlen_t RLEN;
-
 #define IS_UTF8(x)  (LEVELS(x) & 8)
 #define IS_ASCII(x) (LEVELS(x) & 64)
 #define IS_LATIN(x) (LEVELS(x) & 4)
