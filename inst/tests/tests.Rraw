@@ -16833,7 +16833,7 @@ l = list(
   hour31   = as.ITime(seq(start_time+40, by = "31 min", length.out = 9L)),
   hour30   = as.ITime(seq(start_time,    by = "30 min", length.out = 9L)),
   minute31 = as.ITime(seq(start_time,    by = "31 sec", length.out = 9L)),
-  minute30 = as.ITime(seq(start_time,    by = "30 sec", length.out = 9L)),
+  minute30 = as.ITime(seq(start_time,    by = "30 sec", length.out = 9L))
 )
 ans = list(
   a = as.ITime(c("07:00", "08:00", "08:00", "09:00", "09:00", "10:00", "10:00", "11:00", "11:00")),
