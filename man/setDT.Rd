@@ -8,13 +8,15 @@
 
 }
 \usage{
-setDT(x, keep.rownames=FALSE, key=NULL, check.names=FALSE)
+setDT(x, keep.rownames=FALSE, key=NULL, check.names=FALSE, asis=FALSE, return=FALSE)
 }
 \arguments{
   \item{x}{ A named or unnamed \code{list}, \code{data.frame} or \code{data.table}. }
   \item{keep.rownames}{ For \code{data.frame}s, \code{TRUE} retains the \code{data.frame}'s row names under a new column \code{rn}. \code{keep.rownames = "id"} names the column \code{"id"} instead. } 
   \item{key}{Character vector of one or more column names which is passed to \code{\link{setkeyv}}. It may be a single comma separated string such as \code{key="x,y,z"}, or a vector of names such as \code{key=c("x","y","z")}. }
   \item{check.names}{ Just as \code{check.names} in \code{\link{data.frame}}. }
+  \item{asis}{ Logical, setting to \code{TRUE} can be used to remove the overhead related to input checking of \code{x} argument. \code{x} is then taken \emph{as is}, thus \code{keep.rownames}, \code{key}, \code{check.names} are ignored. Use with caution. }
+  \item{return}{ Logical, setting to \code{TRUE} will make function to return new object, rather than modifying existing one. }
 }
 
 \details{
@@ -22,7 +24,9 @@ setDT(x, keep.rownames=FALSE, key=NULL, check.names=FALSE)
 }
 
 \value{
-    The input is modified by reference, and returned (invisibly) so it can be used in compound statements; e.g., \code{setDT(X)[, sum(B), by=A]}. If you require a copy, take a copy first (using \code{DT2 = copy(DT)}). See \code{?copy}.
+  The input is modified by reference, and returned (invisibly) so it can be used in compound statements; e.g., \code{setDT(X)[, sum(B), by=A]}.
+  If \code{return} argument is \code{TRUE} then input is not modified by reference, but a new \code{data.table} object is (visibly) returned from function. New object shares the columns data with \code{x} input.
+  If you require a copy, take a copy first (using \code{DT2 = copy(DT)}). See \code{?copy}.
 }
 
 \seealso{ \code{\link{data.table}}, \code{\link{as.data.table}}, \code{\link{setDF}}, \code{\link{copy}}, \code{\link{setkey}}, \code{\link{setcolorder}}, \code{\link{setattr}}, \code{\link{setnames}}, \code{\link{set}}, \code{\link{:=}}, \code{\link{setorder}}
