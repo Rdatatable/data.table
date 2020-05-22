@@ -75,7 +75,7 @@ SEXP psum(SEXP x, SEXP narmArg) {
         xj = VECTOR_ELT(x, j);
         nj = LENGTH(xj);
         const int mask = nj == 1 ? 0 : INT_MAX;
-        xjp = INTEGER(xj); // INTEGER is the same as LOGICAL
+        xjp = INTEGER(xj); // INTEGER is the same as LOGICAL, checked in init.c
         for (int i=0; i<n; i++) {
           if (xjp[i & mask] != NA_INTEGER) { // NA_LOGICAL is the same
             if (outp[i] == NA_INTEGER) {
@@ -413,7 +413,7 @@ SEXP pprod(SEXP x, SEXP narmArg) {
               outp[i] = xjp[i & mask];
             } else {
               if ((outp[i] > 0 && (xjp[i & mask] > INT_MAX/outp[i] || xjp[i & mask] < INT_MIN/outp[i])) || // overflow -- be careful of inequalities and flipping signs
-                  (outp[i] == -1 && (xjp[i & mask] > INT_MAX || xjp[i & mask] <= INT_MIN)) ||              // ASSUMPTION: INT_MIN= -INT_MAX - 1
+                  (outp[i] == -1 && (xjp[i & mask] > INT_MAX || xjp[i & mask] <= INT_MIN)) ||              // ASSUMPTION: INT_MIN= -INT_MAX - 1, checked in init.c
                   (outp[i] < -1 && (xjp[i & mask] < INT_MAX/outp[i] || xjp[i & mask] > INT_MIN/outp[i]))) {
                 error(_("Inputs have exceeded .Machine$integer.max=%d in absolute value; please cast to numeric first and try again"), INT_MAX);
               }
