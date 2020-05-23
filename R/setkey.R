@@ -353,17 +353,17 @@ CJ = function(..., sorted = TRUE, unique = FALSE)
 }
 
 # collect more statistics about the data #2879
-analyze = function(x, by) {
-  setindexv(x, by)
-  getIdx = function(x, by) { ## retain attributes, unlike getindex
-    attr(attr(x, "index", exact = TRUE), paste0("__", by, collapse = ""), exact = TRUE)
+analyze = function(x, cols, flat=FALSE) {
+  setindexv(x, cols)
+  getIdx = function(x, cols) { ## retain attributes, unlike getindex
+    attr(attr(x, "index", exact = TRUE), paste0("__", cols, collapse = ""), exact = TRUE)
   }
-  stats = function(by, x) {
-    idx = getIdx(x, by)
+  stats = function(cols, x, flat) {
+    idx = getIdx(x, cols)
     stopifnot(is.integer(idx))
-    l = list(ncols = length(by),
-             coltype = paste(vapply(by, function(col, x) typeof(x[[col]]), "", x), collapse=","),
-             colclass = paste(vapply(by, function(col, x) class(x[[col]])[1L], "", x), collapse=","),
+    l = list(ncols = length(cols),
+             coltype = paste(vapply(cols, function(col, x) typeof(x[[col]]), "", x), collapse=","),
+             colclass = paste(vapply(cols, function(col, x) class(x[[col]])[1L], "", x), collapse=","),
              sorted = !length(idx),
              uniqueN = length(attr(idx, "starts", TRUE)),
              maxgrpN = attr(idx, "maxgrpn", TRUE),
@@ -375,11 +375,13 @@ analyze = function(x, by) {
     l$unique = l$maxgrpN<=1L
     l$const = l$maxgrpN==nrow(x)
     l$allNA = l$anyNA && l$uniqueN==1L
-    ifirst = if (l$sorted) 1L else idx[1L]
-    ilast = if (l$sorted) nrow(x) else idx[length(idx)]
-    l$first = list(x[ifirst, by, with=FALSE])
-    l$last = list(x[ilast, by, with=FALSE])
+    if (!flat) {
+      ifirst = if (l$sorted) 1L else idx[1L]
+      ilast = if (l$sorted) nrow(x) else idx[length(idx)]
+      l$first = list(x[ifirst, cols, with=FALSE])
+      l$last = list(x[ilast, cols, with=FALSE])
+    }
     l
   }
-  rbindlist(lapply(setNames(by, vapply(by, paste, collapse=",", "")), stats, x), idcol="by")
+  rbindlist(lapply(setNames(cols, vapply(cols, paste, collapse=",", "")), stats, x, flat=flat), idcol="cols")
 }
