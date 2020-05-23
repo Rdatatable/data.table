@@ -81,8 +81,7 @@ SEXP psum(SEXP x, SEXP narmArg) {
             if (outp[i] == NA_INTEGER) {
               outp[i] = xjp[i & mask];
             } else {
-              if ((xjp[i & mask] > 0 && INT_MAX - xjp[i & mask] < outp[i]) ||
-                  (xjp[i & mask] < 0 && INT_MIN - xjp[i & mask] > outp[i])) { // overflow
+              if (fabs(((double)xjp[i & mask]) + outp[i]) > INT_MAX) { // overflow
                 error(_("Inputs have exceeded .Machine$integer.max=%d in absolute value; please cast to numeric first and try again"), INT_MAX);
               }
               outp[i] += xjp[i & mask];
@@ -191,8 +190,7 @@ SEXP psum(SEXP x, SEXP narmArg) {
           }
           if (xjp[i & mask] == NA_INTEGER) {
             outp[i] = NA_INTEGER;
-          } else if ((xjp[i & mask] > 0 && INT_MAX - xjp[i & mask] < outp[i]) ||
-                     (xjp[i & mask] < 0 && INT_MIN - xjp[i & mask] > outp[i])) {
+          } else if (fabs(((double)xjp[i & mask])*outp[i]) > INT_MAX) {
             warning(_("Inputs have exceeded .Machine$integer.max=%d in absolute value; returning NA. Please cast to numeric first to avoid this."), INT_MAX);
             outp[i] = NA_INTEGER;
           } else {
