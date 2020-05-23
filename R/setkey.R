@@ -352,3 +352,34 @@ CJ = function(..., sorted = TRUE, unique = FALSE)
   l
 }
 
+# collect more statistics about the data #2879
+analyze = function(x, by) {
+  setindexv(x, by)
+  getIdx = function(x, by) { ## retain attributes, unlike getindex
+    attr(attr(x, "index", exact = TRUE), paste0("__", by, collapse = ""), exact = TRUE)
+  }
+  stats = function(by, x) {
+    idx = getIdx(x, by)
+    stopifnot(is.integer(idx))
+    l = list(ncols = length(by),
+             coltype = paste(vapply(by, function(col, x) typeof(x[[col]]), "", x), collapse=","),
+             colclass = paste(vapply(by, function(col, x) class(x[[col]])[1L], "", x), collapse=","),
+             sorted = !length(idx),
+             uniqueN = length(attr(idx, "starts", TRUE)),
+             maxgrpN = attr(idx, "maxgrpn", TRUE),
+             anyNA = attr(idx, "anyna", TRUE)>0L,
+             anyInfNaN = attr(idx, "anyinfnan", TRUE)>0L,
+             anyNotASCII = attr(idx, "anynotascii", TRUE)>0L,
+             anyNotUTF8 = attr(idx, "anynotutf8", TRUE)>0L)
+    l$anyNF = l$anyNA || l$anyInfNaN
+    l$unique = l$maxgrpN<=1L
+    l$const = l$maxgrpN==nrow(x)
+    l$allNA = l$anyNA && l$uniqueN==1L
+    ifirst = if (l$sorted) 1L else idx[1L]
+    ilast = if (l$sorted) nrow(x) else idx[length(idx)]
+    l$first = list(x[ifirst, by, with=FALSE])
+    l$last = list(x[ilast, by, with=FALSE])
+    l
+  }
+  rbindlist(lapply(setNames(by, vapply(by, paste, collapse=",", "")), stats, x), idcol="by")
+}
