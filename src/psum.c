@@ -190,7 +190,7 @@ SEXP psum(SEXP x, SEXP narmArg) {
           }
           if (xjp[i & mask] == NA_INTEGER) {
             outp[i] = NA_INTEGER;
-          } else if (fabs(((double)xjp[i & mask])*outp[i]) > INT_MAX) {
+          } else if (fabs(((double)xjp[i & mask]) + outp[i]) > INT_MAX) {
             warning(_("Inputs have exceeded .Machine$integer.max=%d in absolute value; returning NA. Please cast to numeric first to avoid this."), INT_MAX);
             outp[i] = NA_INTEGER;
           } else {
