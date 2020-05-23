@@ -3109,3 +3109,68 @@ isReallyReal = function(x) {
   names(on) = xCols
   return(list(on = on, ops = idx_op))
 }
+
+is.valid = function(x, deep=TRUE, err=TRUE) {
+  fail = function(msg) {
+    if (err) stop(call.=FALSE, msg)
+    ans = setattr(copy(FALSE), "failed", msg)
+    return(ans)
+  }
+  if (!is.data.table(x)) return(fail("is not a data.table"))
+  nc = ncol(x)
+  nr = vapply(x, length, 0L)
+  nr = unique(nr) ## integer() or scalar are valid at that point
+  if (nc && length(nr)!=1L) return(fail("columns have different length"))
+  if (!nc && length(nr)) return(fail("has no columns but has rows")) # nocov ## because nrow uses our C dim that checks ncol, unlike base R where attributes are used
+  if (!selfrefok(x)) return(fail("selfref is not ok"))
+  cols = names(x)
+  key = key(x)
+  indices = indices(x, TRUE)
+  if (!nc && length(cols)) return(fail("has no columns but has names")) # nocov
+  if (!nc && !is.null(key)) return(fail("has no columns but has key"))
+  if (!nc && !is.null(indices)) return(fail("has no columns but has indices"))
+  if (!nc) return(TRUE)
+  if (!length(cols)) return(fail("has columns but no names"))
+  if (nc != length(cols)) return(fail("number of columns is different than number of column names"))
+  if (anyDuplicated(cols)) return(fail("has duplicated column names"))
+  if (anyNA(cols)) return(fail("has NA names"))
+  if (anyNA(key)) return(fail("has NA key"))
+  if (anyNA(indices)) return(fail("has NA indices"))
+  is.ascii = function(x) {
+    nna = !is.na(x)
+    ans = rep(TRUE, length(x))
+    ans[nna] = iconv(x[nna], "latin1", "ASCII") == x[nna]
+    ans
+  }
+  if (any(!is.ascii(cols))) return(fail("column names are not ASCII"))
+  if (length(key) && any(!key %chin% cols)) return(fail("key columns not exist"))
+  if (length(indices) && any(!unique(unlist(indices(d, TRUE))) %chin% cols)) return(fail("indices columns not exist"))
+  if (any(substr(cols, 1L, 2L)=="x.")) return(fail("some column has 'x.' in their names"))
+  if (any(substr(cols, 1L, 2L)=="i.")) return(fail("some column has 'i.' in their names"))
+  special = c(".GRP",".BY",".I",".NGRP",".N",".EACHI",".SD")
+  if (any(special %chin% cols)) return(fail("some column names are overlapping to our special symbols, see ?.N"))
+  if (any(vapply(x, isALTREP, NA))) return(fail("some columns are ALTREP"))
+  colSupported = function(x) {
+    dm = dim(x)
+    if (is.null(x)) return(FALSE) # nocov
+    if (length(dm) && length(dm)>1L) return(FALSE)
+    if (inherits(x, "data.frame")) return(FALSE) # nocov
+    if (inherits(x, "data.table")) return(FALSE) # nocov
+    if (is.language(x)) return(FALSE)
+    ## TODO add more for POSIXlt, etc.
+    TRUE
+  }
+  if (nc && any(!vapply(x, colSupported, NA))) return(fail("some columns are of unsupported type and should be wrapped into list"))
+  if (deep) {
+    if (length(key)) {
+      o = forderv(x, key) ## lazy=FALSE after lazy-forder merged, otherwise existing key will be re-used and always true!
+      if (length(o)) return(fail("key is invalid"))
+    }
+    if (length(indices)) {
+      for (idx_cols in indices) {
+        o = forderv(x, idx_cols) ## lazy=FALSE after lazy-forder merged, otherwise existing key will be re-used and always true!
+        if (!identical(o, getindex(x, idx_cols))) return(fail("some indices are invalid"))
+      }
+    }
+  }
+}

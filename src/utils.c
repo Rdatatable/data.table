@@ -363,3 +363,6 @@ SEXP coerceUtf8IfNeeded(SEXP x) {
   return(ans);
 }
 
+SEXP isALTREP(SEXP x) {
+  return ScalarLogical(ALTREP(x));
+}
