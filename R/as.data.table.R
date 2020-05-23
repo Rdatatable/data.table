@@ -177,8 +177,6 @@ as.data.table.list = function(x,
     if (is.null(xi)) { n_null = n_null+1L; next }
     if (eachnrow[i]>1L && nrow%%eachnrow[i]!=0L)   # in future: eachnrow[i]!=nrow
       warning("Item ", i, " has ", eachnrow[i], " rows but longest item has ", nrow, "; recycled with remainder.")
-    if (eachnrow[i]==0L && nrow>0L && is.atomic(xi))   # is.atomic to ignore list() since list() is a common way to initialize; let's not insist on list(NULL)
-      warning("Item ", i, " has 0 rows but longest item has ", nrow, "; filled with NA")  # the rep() in recycle() above creates the NA vector
     if (is.data.table(xi)) {   # matrix and data.frame were coerced to data.table above
       prefix = if (!isFALSE(.named[i]) && isTRUE(nchar(names(x)[i])>0L)) paste0(names(x)[i],".") else ""  # test 2058.12
       for (j in seq_along(xi)) {
