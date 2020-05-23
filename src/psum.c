@@ -412,9 +412,7 @@ SEXP pprod(SEXP x, SEXP narmArg) {
             if (outp[i] == NA_INTEGER) {
               outp[i] = xjp[i & mask];
             } else {
-              if ((outp[i] > 0 && (xjp[i & mask] > INT_MAX/outp[i] || xjp[i & mask] < INT_MIN/outp[i])) || // overflow -- be careful of inequalities and flipping signs
-                  (outp[i] == -1 && (xjp[i & mask] > INT_MAX || xjp[i & mask] <= INT_MIN)) ||              // ASSUMPTION: INT_MIN= -INT_MAX - 1, checked in init.c
-                  (outp[i] < -1 && (xjp[i & mask] < INT_MAX/outp[i] || xjp[i & mask] > INT_MIN/outp[i]))) {
+              if (fabs(outp[i]*((double)xjp[i & mask])) > INT_MAX) {
                 error(_("Inputs have exceeded .Machine$integer.max=%d in absolute value; please cast to numeric first and try again"), INT_MAX);
               }
               outp[i] *= xjp[i & mask];
@@ -534,9 +532,7 @@ SEXP pprod(SEXP x, SEXP narmArg) {
           } else if (outp[i] == 0) {
             continue; // 0 is a steady state, except when xjp[i & mask] is missing
           } else {
-            if ((outp[i] > 0 && (xjp[i & mask] > INT_MAX/outp[i] || xjp[i & mask] < INT_MIN/outp[i])) || // overflow -- be careful of inequalities and flipping signs
-                (outp[i] == -1 && (xjp[i & mask] > INT_MAX || xjp[i & mask] <= INT_MIN)) ||              // ASSUMPTION: INT_MIN= -INT_MAX - 1
-                (outp[i] < -1 && (xjp[i & mask] < INT_MAX/outp[i] || xjp[i & mask] > INT_MIN/outp[i]))) {
+            if (fabs(((double)xjp[i & mask])*outp[i]) > INT_MAX) {
               warning(_("Inputs have exceeded .Machine$integer.max=%d in absolute value; returning NA. Please cast to numeric first to avoid this."), INT_MAX);
               outp[i] = NA_INTEGER;
             } else {
