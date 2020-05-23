@@ -81,7 +81,7 @@ unit = "s")
 
 14. Added support for `round()` and `trunc()` to extend functionality of `ITime`. `round()` and `trunc()` can be used with argument units: "hours" or "minutes". Thanks to @JensPederM for the suggestion and PR.
 
-15. `as.data.table.list` will only recycle the scalar elements and no longer recycle the length-0 ones. It means that `data.table(A = 1:3, B = double())` now returns a zero-row data.table object so `DT[J(1:3, double()), VALUE]` returns a zero-length vector, which is expected in most cases, [#3727](https://github.com/Rdatatable/data.table/issues/3727). Thanks to @shrektan for the suggestion and PR.
+15. `as.data.table.list` now no longer recycles the length-0 element. Previously, this was recycled by filling with `NA` with a warning. It means that `data.table(A = 1:3, B = double())` now returns a zero-row data.table object so `DT[J(1:3, double()), VALUE]` returns a zero-length vector, which is expected in most cases, [#3727](https://github.com/Rdatatable/data.table/issues/3727). Thanks to @shrektan for the suggestion and PR.
 
 ## BUG FIXES
 
