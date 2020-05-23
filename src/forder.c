@@ -31,6 +31,7 @@
 // #define TIMING_ON
 
 static bool retgrp = true;          // return group sizes as well as the ordering vector? If so then use gs, gsalloc and gsn :
+static bool retstats = true;        // return extra flags for any NA, NaN, -Inf, +Inf, non-ASCII, non-UTF8
 static int nrow = 0;                // used as group size stack allocation limit (when all groups are 1 row)
 static int *gs = NULL;              // gs = final groupsizes e.g. 23,12,87,2,1,34,...
 static int gs_alloc = 0;            // allocated size of gs
@@ -283,11 +284,11 @@ static void cradix(SEXP *x, int n)
   free(cradix_xtmp);   cradix_xtmp=NULL;
 }
 
-static void range_str(SEXP *x, int n, uint64_t *out_min, uint64_t *out_max, int *out_na_count)
+static void range_str(SEXP *x, int n, uint64_t *out_min, uint64_t *out_max, int *out_na_count, bool *out_anynotascii, bool *out_anynotutf8)
 // group numbers are left in truelength to be fetched by WRITE_KEY
 {
   int na_count=0;
-  bool anyneedutf8=false;
+  bool anynotascii=false, anynotutf8=false;
   if (ustr_n!=0) STOP(_("Internal error: ustr isn't empty when starting range_str: ustr_n=%d, ustr_alloc=%d"), ustr_n, ustr_alloc);  // # nocov
   if (ustr_maxlen!=0) STOP(_("Internal error: ustr_maxlen isn't 0 when starting range_str"));  // # nocov
   // savetl_init() has already been called at the start of forder
@@ -314,16 +315,23 @@ static void range_str(SEXP *x, int n, uint64_t *out_min, uint64_t *out_max, int 
       ustr[ustr_n++] = s;
       SET_TRUELENGTH(s, -ustr_n);  // unique in any order is fine. first-appearance order is achieved later in count_group
       if (LENGTH(s)>ustr_maxlen) ustr_maxlen=LENGTH(s);
-      if (!anyneedutf8 && NEED2UTF8(s)) anyneedutf8=true;
+      if (!IS_ASCII(s)) {
+        if (!anynotascii)
+          anynotascii=true;
+        if (!anynotutf8 && !IS_UTF8(s))
+          anynotutf8=true;
+      }
     }
   }
   *out_na_count = na_count;
+  *out_anynotascii = anynotascii;
+  *out_anynotutf8 = anynotutf8;
   if (ustr_n==0) {  // all na
     *out_min = 0;
     *out_max = 0;
     return;
   }
-  if (anyneedutf8) {
+  if (anynotutf8) {
     SEXP ustr2 = PROTECT(allocVector(STRSXP, ustr_n));
     for (int i=0; i<ustr_n; i++) SET_STRING_ELT(ustr2, i, ENC2UTF8(ustr[i]));
     SEXP *ustr3 = (SEXP *)malloc(ustr_n * sizeof(SEXP));
@@ -414,7 +422,7 @@ uint64_t dtwiddle(void *p, int i)
 
 void radix_r(const int from, const int to, const int radix);
 
-SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, SEXP naArg)
+SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP sortGroupsArg, SEXP ascArg, SEXP naArg)
 // sortGroups TRUE from setkey and regular forder, FALSE from by= for efficiency so strings don't have to be sorted and can be left in appearance order
 // when sortGroups is TRUE, ascArg contains +1/-1 for ascending/descending of each by column; when FALSE ascArg is ignored
 {
@@ -448,11 +456,19 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
       Rprintf(_("forder.c received %d rows and %d columns\n"), length(VECTOR_ELT(DT,0)), length(DT));
   }
   if (!length(DT))
-    STOP(_("Internal error: DT is an empty list() of 0 columns"));  // # nocov  should have been caught be colnamesInt, test 2099.1
+    STOP(_("Internal error: DT is an empty list() of 0 columns"));  // # nocov # caught in lazy forder
   if (!isInteger(by) || !LENGTH(by))
     STOP(_("Internal error: DT has %d columns but 'by' is either not integer or is length 0"), length(DT));  // # nocov  colnamesInt catches, 2099.2
-  if (!isInteger(ascArg) || LENGTH(ascArg)!=LENGTH(by))
-    STOP(_("Either order= is not integer or its length (%d) is different to by='s length (%d)"), LENGTH(ascArg), LENGTH(by));
+  if (!isInteger(ascArg))
+    STOP(_("internal error: 'order' must be integer")); // # nocov
+  if (LENGTH(ascArg) != LENGTH(by)) {
+    if (LENGTH(ascArg)!=1)
+      STOP(_("'order' length (%d) is different to by='s length (%d)"), LENGTH(ascArg), LENGTH(by));
+    SEXP recycleAscArg = PROTECT(allocVector(INTSXP, LENGTH(by))); n_protect++;
+    for (int j=0; j<LENGTH(recycleAscArg); j++)
+      INTEGER(recycleAscArg)[j] = INTEGER(ascArg)[0];
+    ascArg = recycleAscArg;
+  }
   nrow = length(VECTOR_ELT(DT,0));
   int n_cplx = 0;
   for (int i=0; i<LENGTH(by); i++) {
@@ -463,16 +479,21 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
       STOP(_("Column %d is length %d which differs from length of column 1 (%d)\n"), INTEGER(by)[i], length(VECTOR_ELT(DT, INTEGER(by)[i]-1)), nrow);
     if (TYPEOF(VECTOR_ELT(DT, by_i-1)) == CPLXSXP) n_cplx++;
   }
-  if (!isLogical(retGrpArg) || LENGTH(retGrpArg)!=1 || INTEGER(retGrpArg)[0]==NA_LOGICAL)
-    STOP(_("retGrp must be TRUE or FALSE"));
+  if (!IS_TRUE_OR_FALSE(retGrpArg))
+    STOP(_("retGrp must be TRUE or FALSE")); // # nocov # covered in lazy forder
   retgrp = LOGICAL(retGrpArg)[0]==TRUE;
-  if (!isLogical(sortGroupsArg) || LENGTH(sortGroupsArg)!=1 || INTEGER(sortGroupsArg)[0]==NA_LOGICAL )
-    STOP(_("sort must be TRUE or FALSE"));
+  if (!IS_TRUE_OR_FALSE(retStatsArg))
+    STOP(_("retStats must be TRUE or FALSE")); // # nocov # covered in lazy forder
+  retstats = LOGICAL(retStatsArg)[0]==TRUE;
+  if (!retstats && retgrp)
+    error("retStats must be TRUE whenever retGrp is TRUE"); // # nocov # covered in lazy forder
+  if (!IS_TRUE_OR_FALSE(sortGroupsArg))
+    STOP(_("sort must be TRUE or FALSE")); // # nocov # covered in lazy forder
   sortType = LOGICAL(sortGroupsArg)[0]==TRUE;   // if sortType is 1, it is later flipped between +1/-1 according to ascArg. Otherwise ascArg is ignored when sortType==0
   if (!retgrp && !sortType)
     STOP(_("At least one of retGrp= or sort= must be TRUE"));
   if (!isLogical(naArg) || LENGTH(naArg) != 1)
-    STOP(_("na.last must be logical TRUE, FALSE or NA of length 1"));
+    STOP(_("na.last must be logical TRUE, FALSE or NA of length 1")); // # nocov # covered in lazy forder
   nalast = (LOGICAL(naArg)[0] == NA_LOGICAL) ? -1 : LOGICAL(naArg)[0]; // 1=na last, 0=na first (default), -1=remove na
 
   if (nrow==0) {
@@ -481,6 +502,12 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
     if (retgrp) {
       setAttrib(ans, sym_starts, allocVector(INTSXP, 0));
       setAttrib(ans, sym_maxgrpn, ScalarInteger(0));
+    }
+    if (retstats) {
+      setAttrib(ans, sym_anyna, ScalarInteger(0));
+      setAttrib(ans, sym_anyinfnan, ScalarInteger(0));
+      setAttrib(ans, sym_anynotascii, ScalarInteger(0));
+      setAttrib(ans, sym_anynotutf8, ScalarInteger(0));
     }
     UNPROTECT(n_protect);
     return ans;
@@ -507,12 +534,14 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
   bool complexRerun = false;   // see comments below in CPLXSXP case
   SEXP CplxPart = R_NilValue;
   if (n_cplx) { CplxPart=PROTECT(allocVector(REALSXP, nrow)); n_protect++; } // one alloc is reused for each part
+  int any_na=0, any_infnan=0, any_notascii=0, any_notutf8=0;; // collect more statistics about the data #2879, allow optimize of order(na.last=TRUE) as well #3023
   TEND(2);
   for (int col=0; col<ncol; col++) {
     // Rprintf(_("Finding range of column %d ...\n"), col);
     SEXP x = VECTOR_ELT(DT,INTEGER(by)[col]-1);
     uint64_t min=0, max=0;     // min and max of non-NA finite values
     int na_count=0, infnan_count=0;
+    bool anynotascii=false, anynotutf8=false;
     if (sortType) {
       sortType=INTEGER(ascArg)[col];  // if sortType!=0 (not first-appearance) then +1/-1 comes from ascArg.
       if (sortType!=1 && sortType!=-1)
@@ -555,12 +584,20 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
       break;
     case STRSXP :
       // need2utf8 now happens inside range_str on the uniques
-      range_str(STRING_PTR(x), nrow, &min, &max, &na_count);
+      range_str(STRING_PTR(x), nrow, &min, &max, &na_count, &anynotascii, &anynotutf8);
       break;
     default:
       STOP(_("Column %d passed to [f]order is type '%s', not yet supported."), col+1, type2char(TYPEOF(x)));
     }
     TEND(3);
+    if (na_count>0)
+      any_na = 1; // may be written multiple times, for each column that has NA, but thats fine
+    if (infnan_count>0)
+      any_infnan = 1;
+    if (anynotascii)
+      any_notascii = 1;
+    if (anynotutf8)
+      any_notutf8 = 1;
     if (na_count==nrow || (min>0 && min==max && na_count==0 && infnan_count==0)) {
       // all same value; skip column as nothing to do;  [min,max] is just of finite values (excludes +Inf,-Inf,NaN and NA)
       if (na_count==nrow && nalast==-1) { for (int i=0; i<nrow; i++) anso[i]=0; }
@@ -774,6 +811,12 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
       tmp+=elem;
     }
     setAttrib(ans, sym_maxgrpn, ScalarInteger(maxgrpn));
+  }
+  if (retstats) {
+    setAttrib(ans, sym_anyna, ScalarInteger(any_na));
+    setAttrib(ans, sym_anyinfnan, ScalarInteger(any_infnan));
+    setAttrib(ans, sym_anynotascii, ScalarInteger(any_notascii));
+    setAttrib(ans, sym_anynotutf8, ScalarInteger(any_notutf8));
   }
 
   cleanup();
@@ -1346,3 +1389,252 @@ SEXP binary(SEXP x)
   return ans;
 }
 
+// all(x==1L)
+static bool all1(SEXP x) {
+  if (!isInteger(x))
+    error("internal error: all1 got non-integer"); // # nocov
+  int *xp = INTEGER(x);
+  for (int i=0; i<LENGTH(x); ++i) {
+    if (xp[i] != 1)
+      return false;
+  }
+  return true;
+}
+
+// identical(cols, head(chmatch(key(x), names(x)), length(cols)))
+bool colsKeyHead(SEXP x, SEXP cols) {
+  if (!isNewList(x))
+    error("internal error: 'x' must be a list"); // # nocov
+  if (!isInteger(cols))
+    error("internal error: 'cols' must be an integer"); // # nocov
+  SEXP key = getAttrib(x, sym_sorted);
+  if (isNull(key) || (length(key) < length(cols)))
+    return false;
+  SEXP names =  getAttrib(x, R_NamesSymbol);
+  SEXP keynames = PROTECT(chmatch(key, names, 0));
+  int *keynamesp = INTEGER(keynames), *colsp = INTEGER(cols);
+  for (int i=0; i<LENGTH(cols); ++i) {
+    if (colsp[i]!=keynamesp[i]) {
+      UNPROTECT(1);
+      return false;
+    }
+  }
+  UNPROTECT(1);
+  return true;
+}
+
+// paste0("__", names(x)[cols], collapse="")
+SEXP idxName(SEXP x, SEXP cols) {
+  if (!isInteger(cols))
+    error("internal error: 'cols' must be an integer"); // # nocov
+  SEXP dt_names = getAttrib(x, R_NamesSymbol);
+  if (!isString(dt_names))
+    error("internal error: 'DT' has no names"); // # nocov
+  SEXP idx_names = PROTECT(subsetVector(dt_names, cols));
+  SEXP char_underscore2 = PROTECT(ScalarString(mkChar("__")));
+  SEXP char_empty = PROTECT(ScalarString(mkChar("")));
+  SEXP sym_paste0 = install("paste0");
+  SEXP call_paste0 = PROTECT(lang4(sym_paste0, char_underscore2, idx_names, char_empty));
+  SET_TAG(CDDDR(call_paste0), install("collapse"));
+  SEXP ans = PROTECT(eval(call_paste0, R_GlobalEnv));
+  UNPROTECT(5);
+  return ans;
+}
+
+// attr(attr(x, "index"), idxName(x, cols))
+SEXP getIndex(SEXP x, SEXP cols) {
+  if (!isInteger(cols))
+    error("internal error: 'cols' must be an integer"); // # nocov
+  SEXP index = getAttrib(x, sym_index);
+  if (isNull(index))
+    return index;
+  SEXP name_idx = PROTECT(idxName(x, cols));
+  SEXP sym_idx = install(CHAR(STRING_ELT(name_idx, 0)));
+  SEXP idx = getAttrib(index, sym_idx);
+  UNPROTECT(1);
+  return idx;
+}
+
+// attr(attr(x, "index"), idxName(x, cols)) <- o
+void putIndex(SEXP x, SEXP cols, SEXP o) {
+  if (!isInteger(cols))
+    error("internal error: 'cols' must be an integer"); // # nocov
+  if (!isInteger(o))
+    error("internal error: 'o' must be an integer"); // # nocov
+  SEXP index = getAttrib(x, sym_index);
+  if (isNull(index)) {
+    index = PROTECT(allocVector(INTSXP, 0));
+    setAttrib(x, sym_index, index);
+    UNPROTECT(1);
+  }
+  SEXP name_idx = PROTECT(idxName(x, cols));
+  SEXP sym_idx = install(CHAR(STRING_ELT(name_idx, 0)));
+  SEXP idx = getAttrib(index, sym_idx);
+  if (!isNull(idx) && !isNull(getAttrib(idx, sym_starts))) // we override retGrp=F index with retGrp=T index
+    error("internal error: trying to put index but it was already there, that should have been escaped before"); // # nocov
+  setAttrib(index, sym_idx, o);
+  UNPROTECT(1);
+}
+
+// isTRUE(getOption("datatable.use.index"))
+bool GetUseIndex() {
+  SEXP opt = GetOption(install("datatable.use.index"), R_NilValue);
+  if (!IS_TRUE_OR_FALSE(opt))
+    error("'datatable.use.index' option must be TRUE or FALSE"); // # nocov
+  return LOGICAL(opt)[0];
+}
+
+// isTRUE(getOption("datatable.auto.index"))
+bool GetAutoIndex() {
+  // for now temporarily 'forder.auto.index' not 'auto.index' to disabled it by default
+  // because it writes attr on .SD which is re-used by all groups leading to incorrect results
+  // DT[, .(uN=uniqueN(.SD)), by=A]
+  SEXP opt = GetOption(install("datatable.forder.auto.index"), R_NilValue);
+  if (isNull(opt))
+    return false;
+  if (!IS_TRUE_OR_FALSE(opt))
+    error("'datatable.forder.auto.index' option must be TRUE or FALSE"); // # nocov
+  return LOGICAL(opt)[0];
+}
+
+// attr(idx, "anyna")>0 || attr(idx, "anyinfnan")>0
+bool idxAnyNF(SEXP idx) {
+  return INTEGER(getAttrib(idx, sym_anyna))[0]>0 || INTEGER(getAttrib(idx, sym_anyinfnan))[0]>0;
+}
+
+// lazy forder, re-use existing key or index if possible, otherwise call forder
+SEXP forderLazy(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP sortGroupsArg, SEXP ascArg, SEXP naArg, SEXP lazyArg) {
+  const bool verbose = GetVerbose();
+  int protecti = 0;
+  double tic=0.0;
+  if (verbose)
+    tic = omp_get_wtime();
+  if (isNull(DT))
+    error("DT is NULL");
+  if (!IS_TRUE_OR_FALSE(retGrpArg))
+    error("retGrp must be TRUE or FALSE");
+  bool retGrp = (bool)LOGICAL(retGrpArg)[0];
+  if (!IS_TRUE_OR_FALSE(retStatsArg))
+    error("retStats must be TRUE or FALSE");
+  bool retStats = (bool)LOGICAL(retStatsArg)[0];
+  if (!retStats && retGrp)
+    error("retStats must be TRUE whenever retGrp is TRUE"); // retStats doesnt cost anything and it will be much easier to optimize use of index
+  if (!IS_TRUE_OR_FALSE(sortGroupsArg))
+    error("sort must be TRUE or FALSE");
+  bool sortGroups = (bool)LOGICAL(sortGroupsArg)[0];
+  if (!isLogical(naArg) || LENGTH(naArg) != 1)
+    error("na.last must be logical TRUE, FALSE or NA of length 1");
+  bool na = (bool)LOGICAL(naArg)[0];
+  if (!isInteger(ascArg))
+    error("order must be integer"); // # nocov # coerced to int in R
+  if (!isLogical(lazyArg) || LENGTH(lazyArg) != 1)
+    error("lazy must be logical TRUE, FALSE or NA of length 1");
+  int lazy = LOGICAL(lazyArg)[0];
+  if (!length(DT))
+    return allocVector(INTSXP, 0);
+  int opt = -1; // -1=unknown, 0=none, 1=keyOpt, 2=idxOpt
+  if (lazy==NA_LOGICAL) {
+    if (INHERITS(DT, char_datatable) && // unnamed list should not be optimized
+        sortGroups &&
+        all1(ascArg)) { // could ascArg=-1 be handled by a rev()?
+      opt = -1;
+    } else {
+      if (verbose)
+        Rprintf("forderLazy: opt not possible: is.data.table(DT)=%d, sortGroups=%d, all1(ascArg)=%d\n", INHERITS(DT,char_datatable), sortGroups, all1(ascArg));
+      opt = 0;
+    }
+  } else if (lazy) {
+    if (!INHERITS(DT,char_datatable))
+      error("internal error: lazy set to TRUE but DT is not a data.table"); // # nocov
+    if (!sortGroups)
+      error("internal error: lazy set to TRUE but sort is FALSE"); // # nocov
+    if (!all1(ascArg))
+      error("internal error: lazy set to TRUE but order is not all 1"); // # nocov
+    opt = -1;
+  } else if (!lazy) {
+    opt = 0;
+  }
+  SEXP ans = R_NilValue;
+  if (opt == -1 && !na && !retGrp && colsKeyHead(DT, by)) {
+    opt = 1; // keyOpt
+    ans = PROTECT(allocVector(INTSXP, 0)); protecti++;
+    if (verbose)
+      Rprintf("forderLazy: using key: %s\n", CHAR(STRING_ELT(idxName(DT, by), 0)));
+  }
+  if (opt == -1 && GetUseIndex()) {
+    SEXP idx = getIndex(DT, by);
+    if (!isNull(idx)) {
+      bool hasStats = !isNull(getAttrib(idx, sym_anyna));
+      if (!na ||                           // na.last=FALSE
+          (hasStats && !idxAnyNF(idx))) {  // na.last=TRUE && !anyNA
+        bool hasGrp = !isNull(getAttrib(idx, sym_starts));
+        if (hasGrp && !hasStats)
+          error("internal error: index has 'starts' attribute but not 'anyna', please report to issue tracker"); // # nocov
+        if (hasGrp==retGrp && hasStats==retStats) {
+          opt = 2; // idxOpt
+        } else if (
+            (hasGrp && !retGrp && !(!hasStats && retStats)) || // !hasStats should never happen when hasGrp
+              (hasStats && !retStats && !(!hasGrp && retGrp))
+          ) {
+          // shallow_duplicate is faster than copyAsPlain, but shallow_duplicate is AFAIK good for VECSXP, not for INTSXP
+          // it is still the bottleneck in this opt, it is better to call retGrp=TRUE and just not use those extra attributes
+          // can we do better here? real shallow for INTSXP? If we could just re-point data pointer... like we do for DT columns
+          // SEXP new; INTEGER(new) = INTEGER(idx); setAttrib(new, ..., R_NilValue)
+          idx = shallow_duplicate(idx);
+          if (hasGrp && !retGrp) {
+            setAttrib(idx, sym_starts, R_NilValue);
+            setAttrib(idx, sym_maxgrpn, R_NilValue);
+          }
+          if (hasStats && !retStats) {
+            setAttrib(idx, sym_anyna, R_NilValue);
+            setAttrib(idx, sym_anyinfnan, R_NilValue);
+            setAttrib(idx, sym_anynotascii, R_NilValue);
+            setAttrib(idx, sym_anynotutf8, R_NilValue);
+          }
+          opt = 2; // idxOpt but need to drop groups or stats
+        } else if (!hasGrp && retGrp && !hasStats && retStats) {
+          if (verbose)
+            Rprintf("forderLazy: index found but not for retGrp and retStats: %s\n", CHAR(STRING_ELT(idxName(DT, by), 0)));
+        } else if (!hasGrp && retGrp) {
+          if (verbose)
+            Rprintf("forderLazy: index found but not for retGrp: %s\n", CHAR(STRING_ELT(idxName(DT, by), 0)));
+        } else if (!hasStats && retStats) {
+          if (verbose)
+            Rprintf("forderLazy: index found but not for retStats: %s\n", CHAR(STRING_ELT(idxName(DT, by), 0)));
+        } else {
+          error("internal error: lazy forder index optimization unhandled branch of retGrp-retStats, please report to issue tracker"); // # nocov
+        }
+      } else {
+        if (!hasStats) {
+          if (verbose)
+            Rprintf("forderLazy: index found but na.last=TRUE and no stats available: %s\n", CHAR(STRING_ELT(idxName(DT, by), 0)));
+        } else if (idxAnyNF(idx)) {
+          if (verbose)
+            Rprintf("forderLazy: index found but na.last=TRUE and NAs present: %s\n", CHAR(STRING_ELT(idxName(DT, by), 0)));
+        } else {
+          error("internal error: lazy forder index optimization unhandled branch of last.na=T, please report to issue tracker"); // # nocov
+        }
+      }
+      if (opt == 2) {
+        ans = idx;
+        if (verbose)
+          Rprintf("forderLazy: using existing index: %s\n", CHAR(STRING_ELT(idxName(DT, by), 0)));
+      }
+    }
+  }
+  if (opt < 1) {
+    ans = PROTECT(forder(DT, by, retGrpArg, retStatsArg, sortGroupsArg, ascArg, naArg)); protecti++;
+    if (opt == -1 && // opt==0 means that arguments (sort, asc) were not of type index, or lazy=FALSE
+        (!na || (retStats && !idxAnyNF(ans))) && // lets create index even if na.last=T used but no NAs detected!
+        GetUseIndex() &&
+        GetAutoIndex()) { // disabled by default, use datatable.forder.auto.index=T to enable, do not export/document, use for debugging only
+      putIndex(DT, by, ans);
+      if (verbose)
+        Rprintf("forderLazy: setting index (retGrp=%d, retStats=%d) on DT: %s\n", retGrp, retStats, CHAR(STRING_ELT(idxName(DT, by), 0)));
+    }
+  }
+  if (verbose)
+    Rprintf("forderLazy: opt=%d, took %.3fs\n", opt, omp_get_wtime()-tic);
+  UNPROTECT(protecti);
+  return ans;
+}

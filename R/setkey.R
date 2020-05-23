@@ -56,23 +56,9 @@ setkeyv = function(x, cols, verbose=getOption("datatable.verbose"), physical=TRU
   miss = !(cols %chin% colnames(x))
   if (any(miss)) stop("some columns are not in the data.table: ", paste(cols[miss], collapse=","))
 
-  ## determine, whether key is already present:
-  if (identical(key(x),cols)) {
-    if (!physical) {
-      ## create index as integer() because already sorted by those columns
-      if (is.null(attr(x, "index", exact=TRUE))) setattr(x, "index", integer())
-      setattr(attr(x, "index", exact=TRUE), paste0("__", cols, collapse=""), integer())
-    }
-    return(invisible(x))
-  } else if(identical(head(key(x), length(cols)), cols)){
-    if (!physical) {
-      ## create index as integer() because already sorted by those columns
-      if (is.null(attr(x, "index", exact=TRUE))) setattr(x, "index", integer())
-      setattr(attr(x, "index", exact=TRUE), paste0("__", cols, collapse=""), integer())
-    } else {
-      ## key is present but x has a longer key. No sorting needed, only attribute is changed to shorter key.
-      setattr(x,"sorted",cols)
-    }
+  if (physical && identical(head(key(x), length(cols)), cols)){ ## for !physical we need to compute groups as well #4387
+    ## key is present but x has a longer key. No sorting needed, only attribute is changed to shorter key.
+    setattr(x,"sorted",cols)
     return(invisible(x))
   }
 
@@ -84,25 +70,23 @@ setkeyv = function(x, cols, verbose=getOption("datatable.verbose"), physical=TRU
   if (!is.character(cols) || length(cols)<1L) stop("Internal error. 'cols' should be character at this point in setkey; please report.") # nocov
 
   newkey = paste0(cols, collapse="__")
-  if (!any(indices(x) == newkey)) {
-    if (verbose) {
-      tt = suppressMessages(system.time(o <- forderv(x, cols, sort=TRUE, retGrp=FALSE)))  # system.time does a gc, so we don't want this always on, until refcnt is on by default in R
-      # suppress needed for tests 644 and 645 in verbose mode
-      cat("forder took", tt["user.self"]+tt["sys.self"], "sec\n")
-    } else {
-      o = forderv(x, cols, sort=TRUE, retGrp=FALSE)
-    }
+  if (verbose) {
+    # we now also retGrp=TRUE #4387 for !physical
+    tt = suppressMessages(system.time(o <- forderv(x, cols, sort=TRUE, retGrp=!physical, lazy=TRUE)))  # system.time does a gc, so we don't want this always on, until refcnt is on by default in R
+    # suppress needed for tests 644 and 645 in verbose mode
+    cat("forder took", tt["user.self"]+tt["sys.self"], "sec\n")
   } else {
-    if (verbose) cat("setkey on columns ", brackify(cols), " using existing index '", newkey, "'\n", sep="")
-    o = getindex(x, newkey)
+    o = forderv(x, cols, sort=TRUE, retGrp=!physical, lazy=TRUE)
   }
-  if (!physical) {
-    if (is.null(attr(x, "index", exact=TRUE))) setattr(x, "index", integer())
-    setattr(attr(x, "index", exact=TRUE), paste0("__", cols, collapse=""), o)
+  if (!physical) { # index COULD BE saved from C forderLazy already, but disabled for now
+    if (!isTRUE(getOption("datatable.forder.auto.index"))) {
+      if (is.null(attr(x, "index", exact=TRUE))) setattr(x, "index", integer())
+      setattr(attr(x, "index", exact=TRUE), paste0("__", cols, collapse=""), o)
+    }
     return(invisible(x))
   }
-  setattr(x,"index",NULL)   # TO DO: reorder existing indexes likely faster than rebuilding again. Allow optionally. Simpler for now to clear.
   if (length(o)) {
+    setattr(x,"index",NULL)   # TO DO: reorder existing indexes likely faster than rebuilding again. Allow optionally. Simpler for now to clear. Only when order changes.
     if (verbose) { last.started.at = proc.time() }
     .Call(Creorder,x,o)
     if (verbose) { cat("reorder took", timetaken(last.started.at), "\n"); flush.console() }
@@ -130,7 +114,7 @@ getindex = function(x, name) {
   if (!is.null(ans) && (!is.integer(ans) || (length(ans)!=nrow(x) && length(ans)!=0L))) {
     stop("Internal error: index '",name,"' exists but is invalid")   # nocov
   }
-  ans
+  c(ans) ## drop starts and maxgrpn attributes
 }
 
 haskey = function(x) !is.null(key(x))
@@ -172,18 +156,16 @@ is.sorted = function(x, by=seq_along(x)) {
 }
 
 ORDERING_TYPES = c('logical', 'integer', 'double', 'complex', 'character')
-forderv = function(x, by=seq_along(x), retGrp=FALSE, sort=TRUE, order=1L, na.last=FALSE)
-{
+forderv = function(x, by=seq_along(x), retGrp=FALSE, retStats=retGrp, sort=TRUE, order=1L, na.last=FALSE, lazy=getOption("datatable.forder.lazy",NA)) {
   if (is.atomic(x)) {  # including forderv(NULL) which returns error consistent with base::order(NULL),
     if (!missing(by) && !is.null(by)) stop("x is a single vector, non-NULL 'by' doesn't make sense")
     by = NULL
   } else {
     if (!length(x)) return(integer(0L)) # e.g. forderv(data.table(NULL)) and forderv(list()) return integer(0L))
     by = colnamesInt(x, by, check_dups=FALSE)
-    if (length(order) == 1L) order = rep(order, length(by))
   }
   order = as.integer(order) # length and contents of order being +1/-1 is checked at C level
-  .Call(Cforder, x, by, retGrp, sort, order, na.last)  # returns integer() if already sorted, regardless of sort=TRUE|FALSE
+  .Call(CforderLazy, x, by, retGrp, retStats, sort, order, na.last, lazy)  # returns integer() if already sorted, regardless of sort=TRUE|FALSE
 }
 
 forder = function(..., na.last=TRUE, decreasing=FALSE)
@@ -220,7 +202,7 @@ forder = function(..., na.last=TRUE, decreasing=FALSE)
     data = eval(sub, parent.frame(), parent.frame())
   }
   stopifnot(isTRUEorFALSE(decreasing))
-  o = forderv(data, seq_along(data), sort=TRUE, retGrp=FALSE, order= if (decreasing) -asc else asc, na.last)
+  o = forderv(data, seq_along(data), retGrp=FALSE, retStats=FALSE, sort=TRUE, order=if (decreasing) -asc else asc, na.last=na.last)
   if (!length(o) && length(data)>=1L) o = seq_along(data[[1L]]) else o
   o
 }
@@ -370,3 +352,36 @@ CJ = function(..., sorted = TRUE, unique = FALSE)
   l
 }
 
+# collect more statistics about the data #2879
+analyze = function(x, cols, flat=FALSE) {
+  setindexv(x, cols)
+  getIdx = function(x, cols) { ## retain attributes, unlike getindex
+    attr(attr(x, "index", exact = TRUE), paste0("__", cols, collapse = ""), exact = TRUE)
+  }
+  stats = function(cols, x, flat) {
+    idx = getIdx(x, cols)
+    stopifnot(is.integer(idx))
+    l = list(ncols = length(cols),
+             coltype = paste(vapply(cols, function(col, x) typeof(x[[col]]), "", x), collapse=","),
+             colclass = paste(vapply(cols, function(col, x) class(x[[col]])[1L], "", x), collapse=","),
+             sorted = !length(idx),
+             uniqueN = length(attr(idx, "starts", TRUE)),
+             maxgrpN = attr(idx, "maxgrpn", TRUE),
+             anyNA = attr(idx, "anyna", TRUE)>0L,
+             anyInfNaN = attr(idx, "anyinfnan", TRUE)>0L,
+             anyNotASCII = attr(idx, "anynotascii", TRUE)>0L,
+             anyNotUTF8 = attr(idx, "anynotutf8", TRUE)>0L)
+    l$anyNF = l$anyNA || l$anyInfNaN
+    l$unique = l$maxgrpN<=1L
+    l$const = l$maxgrpN==nrow(x)
+    l$allNA = l$anyNA && l$uniqueN==1L
+    if (!flat) {
+      ifirst = if (l$sorted) 1L else idx[1L]
+      ilast = if (l$sorted) nrow(x) else idx[length(idx)]
+      l$first = list(x[ifirst, cols, with=FALSE])
+      l$last = list(x[ilast, cols, with=FALSE])
+    }
+    l
+  }
+  rbindlist(lapply(setNames(cols, vapply(cols, paste, collapse=",", "")), stats, x, flat=flat), idcol="cols")
+}

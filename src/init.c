@@ -25,6 +25,10 @@ SEXP sym_index;
 SEXP sym_BY;
 SEXP sym_starts, char_starts;
 SEXP sym_maxgrpn;
+SEXP sym_anyna;
+SEXP sym_anyinfnan;
+SEXP sym_anynotascii;
+SEXP sym_anynotutf8;
 SEXP sym_colClassesAs;
 SEXP sym_verbose;
 SEXP SelfRefSymbol;
@@ -151,7 +155,7 @@ R_CallMethodDef callMethods[] = {
 {"Cfcast", (DL_FUNC) &fcast, -1},
 {"Cuniqlist", (DL_FUNC) &uniqlist, -1},
 {"Cuniqlengths", (DL_FUNC) &uniqlengths, -1},
-{"Cforder", (DL_FUNC) &forder, -1},
+{"CforderLazy", (DL_FUNC) &forderLazy, -1},
 {"Cfsorted", (DL_FUNC) &fsorted, -1},
 {"Cgforce", (DL_FUNC) &gforce, -1},
 {"Cgsum", (DL_FUNC) &gsum, -1},
@@ -339,6 +343,10 @@ void attribute_visible R_init_datatable(DllInfo *info)
   sym_index   = install("index");
   sym_BY      = install(".BY");
   sym_maxgrpn = install("maxgrpn");
+  sym_anyna   = install("anyna");
+  sym_anyinfnan = install("anyinfnan");
+  sym_anynotascii = install("anynotascii");
+  sym_anynotutf8 = install("anynotutf8");
   sym_colClassesAs = install("colClassesAs");
   sym_verbose = install("datatable.verbose");
   SelfRefSymbol = install(".internal.selfref");

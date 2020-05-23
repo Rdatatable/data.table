@@ -2992,13 +2992,16 @@ isReallyReal = function(x) {
   if (is.null(idx)){
     ## if nothing else helped, auto create a new index that can be used
     if (!getOption("datatable.auto.index")) return(NULL)
-    if (verbose) {cat("Creating new index '", paste0(names(i), collapse = "__"),"'\n",sep="");flush.console()}
-    if (verbose) {last.started.at=proc.time();cat("Creating index", paste0(names(i), collapse = "__"), "done in ... ");flush.console()}
-    setindexv(x, names(i))
-    if (verbose) {cat(timetaken(last.started.at),"\n");flush.console()}
-    if (verbose) {cat("Optimized subsetting with index '", paste0(names(i), collapse = "__"),"'\n",sep="");flush.console()}
-    idx = attr(attr(x, "index", exact=TRUE), paste0("__", names(i), collapse = ""), exact=TRUE)
     idxCols = names(i)
+    if (verbose) {cat("Creating new index '", paste0(idxCols, collapse = "__"),"'\n",sep="");flush.console()}
+    if (verbose) {last.started.at=proc.time();cat("Creating index", paste0(idxCols, collapse = "__"), "done in ... ");flush.console()}
+    idx = forderv(x, idxCols, sort=TRUE, retGrp=FALSE, lazy=TRUE)
+    if (!isTRUE(getOption("datatable.forder.auto.index"))) { ## forder can write index, but disabled for now
+      if (is.null(attr(x, "index", exact=TRUE))) setattr(x, "index", integer())
+      setattr(attr(x, "index", exact=TRUE), paste0("__", idxCols, collapse=""), idx)
+    }
+    if (verbose) {cat(timetaken(last.started.at),"\n");flush.console()}
+    if (verbose) {cat("Optimized subsetting with index '", paste0(idxCols, collapse = "__"),"'\n",sep="");flush.console()}
   }
   if(!is.null(idxCols)){
     setkeyv(i, idxCols)

@@ -37,7 +37,11 @@ static Rboolean rollToNearest=FALSE;
 
 void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisgrp, int lowmax, int uppmax);
 
-SEXP bmerge(SEXP iArg, SEXP xArg, SEXP icolsArg, SEXP xcolsArg, SEXP isorted, SEXP xoArg, SEXP rollarg, SEXP rollendsArg, SEXP nomatchArg, SEXP multArg, SEXP opArg, SEXP nqgrpArg, SEXP nqmaxgrpArg) {
+SEXP bmerge(SEXP iArg, SEXP xArg, SEXP icolsArg, SEXP xcolsArg, SEXP xoArg, SEXP rollarg, SEXP rollendsArg, SEXP nomatchArg, SEXP multArg, SEXP opArg, SEXP nqgrpArg, SEXP nqmaxgrpArg) {
+  const bool verbose = GetVerbose();
+  double tic=0.0, tic0=0.0;
+  if (verbose)
+    tic = omp_get_wtime();
   int xN, iN, protecti=0;
   ctr=0; // needed for non-equi join case
   SEXP retFirstArg, retLengthArg, retIndexArg, allLen1Arg, allGrp1Arg;
@@ -138,17 +142,11 @@ SEXP bmerge(SEXP iArg, SEXP xArg, SEXP icolsArg, SEXP xcolsArg, SEXP isorted, SE
   allGrp1[0] = TRUE;
   protecti += 2;
 
-  // isorted arg
-  o = NULL;
-  if (!LOGICAL(isorted)[0]) {
-    SEXP order = PROTECT(allocVector(INTSXP, length(icolsArg)));
-    protecti++;
-    for (int j=0; j<LENGTH(order); j++) INTEGER(order)[j]=1;   // rep(1L, length(icolsArg))
-    SEXP oSxp = PROTECT(forder(i, icolsArg, ScalarLogical(FALSE), ScalarLogical(TRUE), order, ScalarLogical(FALSE)));
-    protecti++;
-    // TODO - split head of forder into C-level callable
-    if (!LENGTH(oSxp)) o = NULL; else o = INTEGER(oSxp);
-  }
+  SEXP oSxp = PROTECT(forderLazy(i, icolsArg, ScalarLogical(FALSE), ScalarLogical(FALSE), ScalarLogical(TRUE), ScalarInteger(1), ScalarLogical(FALSE), ScalarLogical(TRUE))); protecti++;
+  if (!LENGTH(oSxp))
+    o = NULL;
+  else
+    o = INTEGER(oSxp);
 
   // xo arg
   xo = NULL;
@@ -159,10 +157,14 @@ SEXP bmerge(SEXP iArg, SEXP xArg, SEXP icolsArg, SEXP xcolsArg, SEXP isorted, SE
 
   // start bmerge
   if (iN) {
+    if (verbose)
+      tic0 = omp_get_wtime();
     // embarassingly parallel if we've storage space for nqmaxgrp*iN
     for (int kk=0; kk<nqmaxgrp; kk++) {
       bmerge_r(-1,xN,-1,iN,scols,kk+1,1,1);
     }
+    if (verbose)
+      Rprintf("bmerge: looping bmerge_r took %.3fs\n", omp_get_wtime()-tic0);
   }
   ctr += iN;
   if (nqmaxgrp > 1 && mult == ALL) {
@@ -193,6 +195,8 @@ SEXP bmerge(SEXP iArg, SEXP xArg, SEXP icolsArg, SEXP xcolsArg, SEXP isorted, SE
     Free(retLength);
     Free(retIndex);
   }
+  if (verbose)
+    Rprintf("bmerge: took %.3fs\n", omp_get_wtime()-tic);
   UNPROTECT(protecti);
   return (ans);
 }
