@@ -153,7 +153,7 @@ as.data.table.list = function(x,
   if (ncol==0L) return(null.data.table())
   nrow = max(eachnrow)
   # only check the atomic and nonNULL type because NULL will be ignored while non-atomic (e.g., list) is always recycled
-  atomic_nonnull = vapply(x, function(xi) is.atomic(xi) && !is.null(xi), TRUE)
+  atomic_nonnull = vapply_1b(x, function(xi) is.atomic(xi) && !is.null(xi))
   # #3727 if any atomic and nonnull element is length-zero, the output should be zero
   if (any(eachnrow[atomic_nonnull]==0L)) nrow = 0L
   ans = vector("list",ncol)  # always return a new VECSXP
