@@ -16,14 +16,12 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b, SEXP na) {
   int nprotect = 0;
 
   if (ta != tb) {
-    if (ta == INTSXP && tb == REALSXP) {
-      SEXP tmp = PROTECT(coerceVector(a, REALSXP)); nprotect++;
-      a = tmp;
-      ta = REALSXP;
-    } else if (ta == REALSXP && tb == INTSXP) {
-      SEXP tmp = PROTECT(coerceVector(b, REALSXP)); nprotect++;
-      b = tmp;
-      tb = REALSXP;
+    if (TYPEORDER(ta)<TYPEORDER(tb)) {
+      a = PROTECT(coerceAsR(a, b)); nprotect++;
+      ta = tb;
+    } else if (TYPEORDER(ta)>TYPEORDER(tb)) {
+      b = PROTECT(coerceAsR(b, a)); nprotect++;
+      tb = ta;
     } else {
       error(_("'yes' is of type %s but 'no' is of type %s. Please make sure that both arguments have the same type."), type2char(ta), type2char(tb));
     }
