@@ -1605,9 +1605,6 @@ int freadMain(freadMainArgs _args) {
       row1line += topSkip;
     }
   }
-  if (sep == ',' && dec == '\0') { // if sep=',' detected, don't attempt to detect dec [NB: . is not par of seps]
-    dec = '.';
-  }
 
   if (ncol<1 || row1line<1) STOP(_("Internal error: ncol==%d line==%d after detecting sep, ncol and first line"), ncol, row1line); // # nocov
   int tt = countfields(&ch);
@@ -1639,7 +1636,7 @@ int freadMain(freadMainArgs _args) {
   }
 
   //*********************************************************************************************
-  // [7] Detect column types, good nrow estimate and whether first row is column names
+  // [7] Detect column types, dec, good nrow estimate and whether first row is column names
   //*********************************************************************************************
   int nJumps;             // How many jumps to use when pre-scanning the file
   int64_t sampleLines;     // How many lines were sampled during the initial pre-scan
@@ -1649,12 +1646,19 @@ int freadMain(freadMainArgs _args) {
   double meanLineLen=0.0; // Average length (in bytes) of a single line in the input file
   size_t bytesRead=0;     // Bytes in the data section (i.e. excluding column names, header and footer, if any)
   {
-  if (verbose) DTPRINT(_("[07] Detect column types, good nrow estimate and whether first row is column names\n"));
+  if (verbose) DTPRINT(_("[07] Detect column types, dec, good nrow estimate and whether first row is column names\n"));
   if (verbose && args.header!=NA_BOOL8) DTPRINT(_("  'header' changed by user from 'auto' to %s\n"), args.header?"true":"false");
 
   type =    (int8_t *)malloc((size_t)ncol * sizeof(int8_t));
   tmpType = (int8_t *)malloc((size_t)ncol * sizeof(int8_t));  // used i) in sampling to not stop on errors when bad jump point and ii) when accepting user overrides
   if (!type || !tmpType) STOP(_("Failed to allocate 2 x %d bytes for type and tmpType: %s"), ncol, strerror(errno));
+
+  if (sep == ',' && dec == '\0') { // if sep=',' detected, don't attempt to detect dec [NB: . is not par of seps]
+    if (verbose) {
+      DTPRINT(_("  sep=',' so dec set to '.'\n"));
+    }
+    dec = '.';
+  }
 
   int8_t type0 = 1;
   while (disabled_parsers[type0]) type0++;
@@ -1740,6 +1744,9 @@ int freadMain(freadMainArgs _args) {
     }
     if (dec == '\0') {
       dec = linesForDecDot < 0 ? ',' : '.'; // in a tie, dec=. is more likely
+      if (verbose) {
+        DTPRINT(_("  dec='%c' detected based on a balance of %d parsed fields\n"), dec, abs(linesForDecDot));
+      }
     }
 
     if (bumped) {
@@ -1763,6 +1770,9 @@ int freadMain(freadMainArgs _args) {
     detect_types(&ch, tmpType, ncol, &bumped);
     if (dec == '\0') {
       dec = linesForDecDot < 0 ? ',' : '.';
+      if (verbose) {
+        DTPRINT(_("  dec='%c' detected based on a balance of %d parsed fields\n"), dec, abs(linesForDecDot));
+      }
     }
     if (sampleLines>0) for (int j=0; j<ncol; j++) {
       if (tmpType[j]==CT_STRING && type[j]<CT_STRING) {

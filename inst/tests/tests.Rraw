@@ -16853,18 +16853,22 @@ A = data.table(A=as.complex(rep(NA, 5)))
 test(2138.4, rbind(A,B), data.table(A=c(as.character(A$A), B$A)))
 
 # automatic detection of dec=',' for #2431
-DT = data.table(
-  a = letters,
-  b = 1:26/6,
-  c = 1:26
-)
+DT = data.table(a = letters, b = 1:26/6, c = 1:26)
 ## auto-detect dec=','
-fwrite(DT, f <- tempfile(), dec = ',', sep = ';')
+fwrite(DT, f <- tempfile(), dec=',', sep=';')
 test(2139.1, fread(f), DT)
 
-fwrite(DT, f, dec = ',', sep = '|')
+fwrite(DT, f, dec=',', sep='|')
 test(2139.2, fread(f), DT)
 
 ## auto-detect dec='.'
 fwrite(DT, f)
 test(2139.3, fread(f), DT)
+
+## verbose output
+test(2139.4, fread(f, verbose=TRUE), DT, output="sep=',' so dec set to '.'")
+
+fwrite(DT, f, dec=',', sep=';')
+test(2139.5, fread(f, verbose=TRUE), DT, output="dec=',' detected based on a balance of 18")
+
+test(2139.6, fread('a;b\n1,14;5', verbose=TRUE), data.table(a=1.14, b=5L), output="dec=',' detected based on a balance of 1 ")
