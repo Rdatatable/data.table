@@ -16851,3 +16851,17 @@ A = data.table(A=c(complex(real = 1:3, imaginary=c(0, -1, 1)), NaN))
 test(2138.3, rbind(A,B), data.table(A=c(as.character(A$A), B$A)))
 A = data.table(A=as.complex(rep(NA, 5)))
 test(2138.4, rbind(A,B), data.table(A=c(as.character(A$A), B$A)))
+
+# automatic detection of dec=',' for #2431
+DT = data.table(
+  a = letters,
+  b = 1:26/6,
+  c = 1:26
+)
+## auto-detect dec=','
+fwrite(DT, f <- tempfile(), dec = ',', sep = ';')
+test(2139.1, fread(f), DT)
+
+## auto-detect dec='.'
+fwrite(DT, f)
+test(2139.2, fread(f), DT)

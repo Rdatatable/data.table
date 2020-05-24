@@ -81,9 +81,11 @@ unit = "s")
 
 14. Added support for `round()` and `trunc()` to extend functionality of `ITime`. `round()` and `trunc()` can be used with argument units: "hours" or "minutes". Thanks to @JensPederM for the suggestion and PR.
 
+15. `fread` now supports automatic detection of `dec` (as either `.` or `,`, the latter being [common in many places in Europe, Africa, and South America](https://en.wikipedia.org/wiki/Decimal_separator)); this behavior is now the default, i.e. `dec='auto'`, [#2431](https://github.com/Rdatatable/data.table/issues/2431). This was our #2 most-requested issue. See [#3189](https://github.com/Rdatatable/data.table/issues/3189) and please do peruse this list and show support to the issues that would help you the most as we continue to use this metric to help prioritize development.
+
 ## BUG FIXES
 
-1. A NULL timezone on POSIXct was interpreted by `as.IDate` and `as.ITime` as UTC rather than the session's default timezone (`tz=""`) , [#4085](https://github.com/Rdatatable/data.table/issues/4085).
+1. A NULL timezone on POSIXct was interpreted by `as.IDate` and `as.ITime` as UTC rather than the session's default timezone (`tz=""`), [#4085](https://github.com/Rdatatable/data.table/issues/4085).
 
 2. `DT[i]` could segfault when `i` is a zero-column `data.table`, [#4060](https://github.com/Rdatatable/data.table/issues/4060). Thanks @shrektan for reporting and fixing.
 
