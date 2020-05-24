@@ -32,7 +32,7 @@ static const char *sof, *eof;
 static char sep;
 static char whiteChar; // what to consider as whitespace to skip: ' ', '\t' or 0 means both (when sep!=' ' && sep!='\t')
 static char quote, dec;
-static int linesForDecDot;
+static int linesForDecDot; // when dec='auto', track the balance of fields in favor of dec='.' vs dec=',', ties go to '.'
 static bool eol_one_r;  // only true very rarely for \r-only files
 
 // Quote rule:
@@ -1047,7 +1047,7 @@ static int detect_types( const char **pch, int8_t type[], int ncol, bool *bumped
     skip_white(&ch);
     const char *fieldStart = ch;
     while (tmpType[field]<=CT_STRING) {
-      if (autoDec && IS_DEC_TYPE(tmpType[field]) && dec == '\0') {
+      if (autoDec && IS_DEC_TYPE(tmpType[field]) && dec == '\0') { // guess . first
         dec = '.';
       }
 
@@ -1074,18 +1074,18 @@ static int detect_types( const char **pch, int8_t type[], int ncol, bool *bumped
         }
       }
       ch = fieldStart;
-      if (autoDec && IS_DEC_TYPE(tmpType[field]) && dec == '.') {
+      if (autoDec && IS_DEC_TYPE(tmpType[field]) && dec == '.') { // . didn't parse a double; try ,
         dec = ',';
         continue;
       }
       while (++tmpType[field]<CT_STRING && disabled_parsers[tmpType[field]]) {};
       *bumped = true;
     }
-    if (autoDec && dec != '\0') {
-      if (IS_DEC_TYPE(tmpType[field])) {
+    if (autoDec && dec != '\0') { // double was attempted
+      if (IS_DEC_TYPE(tmpType[field])) { // double succeeded
         linesForDecDot += dec == '.' ? 1 : -1;
       }
-      dec = '\0';
+      dec = '\0'; // reset for next parse
     }
     field++;
     if (sep==' ' && *ch==sep) {
@@ -1605,7 +1605,7 @@ int freadMain(freadMainArgs _args) {
       row1line += topSkip;
     }
   }
-  if (sep == ',' && dec == '\0') {
+  if (sep == ',' && dec == '\0') { // if sep=',' detected, don't attempt to detect dec [NB: . is not par of seps]
     dec = '.';
   }
 
@@ -1739,7 +1739,7 @@ int freadMain(freadMainArgs _args) {
       }
     }
     if (dec == '\0') {
-      dec = linesForDecDot < 0 ? ',' : '.';
+      dec = linesForDecDot < 0 ? ',' : '.'; // in a tie, dec=. is more likely
     }
 
     if (bumped) {
@@ -1757,7 +1757,7 @@ int freadMain(freadMainArgs _args) {
     for (int j=0; j<ncol; j++) tmpType[j]=type0;   // reuse tmpType
     bool bumped=false;
 
-    if (dec == '\0') {
+    if (dec == '\0') { // in files without jumps, dec could still be undecided
       linesForDecDot = 0;
     }
     detect_types(&ch, tmpType, ncol, &bumped);
