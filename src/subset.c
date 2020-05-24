@@ -13,13 +13,13 @@ void subsetVectorRaw(SEXP ans, SEXP source, SEXP idx, const bool anyNA)
 
   #define PARLOOP(_NAVAL_)                                        \
   if (anyNA) {                                                    \
-    _Pragma("omp parallel for num_threads(getDTthreads())")       \
+    _Pragma("omp parallel for if (n>=getDTthreads()) num_threads(getDTthreads())")       \
     for (int i=0; i<n; i++) {                                     \
       int elem = idxp[i];                                         \
       ap[i] = elem==NA_INTEGER ? _NAVAL_ : sp[elem-1];            \
     }                                                             \
   } else {                                                        \
-    _Pragma("omp parallel for num_threads(getDTthreads())")       \
+    _Pragma("omp parallel for if (n>=getDTthreads()) num_threads(getDTthreads())")       \
     for (int i=0; i<n; i++) {                                     \
       ap[i] = sp[idxp[i]-1];                                      \
     }                                                             \
@@ -121,7 +121,7 @@ SEXP convertNegAndZeroIdx(SEXP idx, SEXP maxArg, SEXP allowOverMax)
   int *idxp = INTEGER(idx);
 
   bool stop = false;
-  #pragma omp parallel for num_threads(getDTthreads())
+  #pragma omp parallel for if (n>=getDTthreads()) num_threads(getDTthreads())
   for (int i=0; i<n; i++) {
     if (stop) continue;
     int elem = idxp[i];
