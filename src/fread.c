@@ -1605,6 +1605,9 @@ int freadMain(freadMainArgs _args) {
       row1line += topSkip;
     }
   }
+  if (sep == ',' && dec == '\0') {
+    dec = '.';
+  }
 
   if (ncol<1 || row1line<1) STOP(_("Internal error: ncol==%d line==%d after detecting sep, ncol and first line"), ncol, row1line); // # nocov
   int tt = countfields(&ch);
