@@ -7,7 +7,7 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
   test = data.table:::test
   INT = data.table:::INT
   colnamesInt = data.table:::colnamesInt
-  coerceFill = data.table:::coerceFill
+  coerceAs = data.table:::coerceAs
 }
 
 sugg = c(
@@ -120,7 +120,7 @@ test(3.03, setnafill(x, "locf"), error="in-place update is supported only for li
 test(3.04, nafill(letters[1:5], fill=0), error="must be numeric type, or list/data.table")
 test(3.05, setnafill(list(letters[1:5]), fill=0), error="must be numeric type, or list/data.table")
 test(3.06, nafill(x, fill=1:2), error="fill must be a vector of length 1")
-test(3.07, nafill(x, fill="asd"), error="fill argument must be numeric")
+#test(3.07, nafill(x, fill="asd"), error="fill argument must be numeric")
 
 # colnamesInt helper
 dt = data.table(a=1, b=2, d=3)
@@ -160,32 +160,33 @@ if (test_bit64) {
 }
 options(old)
 
-# coerceFill
+# coerceAs
 if (test_bit64) {
-  test(6.01, coerceFill(1:2), error="fill argument must be length 1")
-  test(6.02, coerceFill("a"), error="fill argument must be numeric")
+  coerceFill = function(x) lapply(list(1L, 1.0, as.integer64(1)), coerceAs, x=x)
+  #test(6.01, coerceFill(1:2), error="fill argument must be length 1")
+  #test(6.02, coerceFill("a"), error="fill argument must be numeric")
   test(6.11, identical(coerceFill(NA), list(NA_integer_, NA_real_, as.integer64(NA))))
   test(6.21, identical(coerceFill(3L), list(3L, 3, as.integer64(3))))
   test(6.22, identical(coerceFill(0L), list(0L, 0, as.integer64(0))))
   test(6.23, identical(coerceFill(NA_integer_), list(NA_integer_, NA_real_, as.integer64(NA))))
   test(6.31, identical(coerceFill(as.integer64(3)), list(3L, 3, as.integer64(3))))
-  test(6.32, identical(coerceFill(as.integer64(3000000003)), list(NA_integer_, 3000000003, as.integer64("3000000003"))))
+  test(6.32, identical(coerceFill(as.integer64(3000000003)), list(NA_integer_, 3000000003, as.integer64("3000000003"))), warning="memrecycle raises warning.*out-of-range")
   test(6.33, identical(coerceFill(as.integer64(0)), list(0L, 0, as.integer64(0))))
   test(6.34, identical(coerceFill(as.integer64(NA)), list(NA_integer_, NA_real_, as.integer64(NA))))
   test(6.41, identical(coerceFill(3), list(3L, 3, as.integer64(3))))
   test(6.42, identical(coerceFill(0), list(0L, 0, as.integer64(0))))
   test(6.43, identical(coerceFill(NA_real_), list(NA_integer_, NA_real_, as.integer64(NA))))
   test(6.44, identical(coerceFill(NaN), list(NA_integer_, NaN, as.integer64(NA))))
-  test(6.45, identical(coerceFill(Inf), list(NA_integer_, Inf, as.integer64(NA))))
-  test(6.46, identical(coerceFill(-Inf), list(NA_integer_, -Inf, as.integer64(NA))))
-  test(6.47, identical(coerceFill(-(2^62)), list(NA_integer_, -(2^62), as.integer64("-4611686018427387904"))))
-  test(6.48, identical(coerceFill(-(2^64)), list(NA_integer_, -(2^64), as.integer64(NA))))
+  test(6.45, identical(coerceFill(Inf), list(NA_integer_, Inf, as.integer64(NA))), warning=c("precision lost","precision lost"))
+  test(6.46, identical(coerceFill(-Inf), list(NA_integer_, -Inf, as.integer64(NA))), warning=c("precision lost","precision lost"))
+  test(6.47, identical(coerceFill(-(2^62)), list(NA_integer_, -(2^62), as.integer64("-4611686018427387904"))), warning=c("precision lost","precision lost"))
+  test(6.48, identical(coerceFill(-(2^64)), list(NA_integer_, -(2^64), as.integer64(NA))), warning=c("precision lost","precision lost"))
   test(6.49, identical(coerceFill(x<-as.integer64(-2147483647)), list(-2147483647L, -2147483647, x)))
-  test(6.50, identical(coerceFill(x<-as.integer64(-2147483648)), list(NA_integer_, -2147483648, x)))
-  test(6.51, identical(coerceFill(x<-as.integer64(-2147483649)), list(NA_integer_, -2147483649, x)))
+  test(6.50, identical(coerceFill(x<-as.integer64(-2147483648)), list(NA_integer_, -2147483648, x)), warning="memrecycle raises warning.*out-of-range")
+  test(6.51, identical(coerceFill(x<-as.integer64(-2147483649)), list(NA_integer_, -2147483649, x)), warning="memrecycle raises warning.*out-of-range")
   test(6.52, identical(coerceFill(-2147483647), list(-2147483647L, -2147483647, as.integer64("-2147483647"))))
   test(6.53, identical(coerceFill(-2147483648), list(NA_integer_, -2147483648,  as.integer64("-2147483648"))))
-  test(6.54, identical(coerceFill(-2147483649), list(NA_integer_, -2147483649,  as.integer64("-2147483649"))))
+  test(6.54, identical(coerceFill(-2147483649), list(NA_integer_, -2147483649,  as.integer64("-2147483649"))), warning=c("precision lost","precision lost"))
 }
 
 # nan argument to treat NaN as NA in nafill, #4020
@@ -203,3 +204,6 @@ test(7.07, setnafill(DT, fill=0, cols=1L), copy(DT)[ , a := ans1])
 test(7.08, setnafill(DT, fill=0, nan=NaN), copy(DT)[ , c('a', 'b') := .(ans1, ans2)])
 test(7.09, nafill(x, fill=0, nan=c(NA, NaN)), error="Argument 'nan' must be length 1")
 test(7.10, nafill(x, fill=0, nan=Inf), error="Argument 'nan' must be NA or NaN")
+
+# new tests for fill list
+#TODO

@@ -141,61 +141,6 @@ SEXP colnamesInt(SEXP x, SEXP cols, SEXP check_dups) {
   return ricols;
 }
 
-void coerceFill(SEXP fill, double *dfill, int32_t *ifill, int64_t *i64fill) {
-  if (xlength(fill) != 1) error(_("%s: fill argument must be length 1"), __func__);
-  if (isInteger(fill)) {
-    if (INTEGER(fill)[0]==NA_INTEGER) {
-      ifill[0] = NA_INTEGER; dfill[0] = NA_REAL; i64fill[0] = NA_INTEGER64;
-    } else {
-      ifill[0] = INTEGER(fill)[0];
-      dfill[0] = (double)(INTEGER(fill)[0]);
-      i64fill[0] = (int64_t)(INTEGER(fill)[0]);
-    }
-  } else if (isReal(fill)) {
-    if (Rinherits(fill,char_integer64)) {  // Rinherits true for nanotime
-      int64_t rfill = ((int64_t *)REAL(fill))[0];
-      if (rfill==NA_INTEGER64) {
-        ifill[0] = NA_INTEGER; dfill[0] = NA_REAL; i64fill[0] = NA_INTEGER64;
-      } else {
-        ifill[0] = (rfill>INT32_MAX || rfill<=INT32_MIN) ? NA_INTEGER : (int32_t)rfill;
-        dfill[0] = (double)rfill;
-        i64fill[0] = rfill;
-      }
-    } else {
-      double rfill = REAL(fill)[0];
-      if (ISNAN(rfill)) {
-        // NA -> NA, NaN -> NaN
-        ifill[0] = NA_INTEGER; dfill[0] = rfill; i64fill[0] = NA_INTEGER64;
-      } else {
-        ifill[0] = (!R_FINITE(rfill) || rfill>INT32_MAX || rfill<=INT32_MIN) ? NA_INTEGER : (int32_t)rfill;
-        dfill[0] = rfill;
-        i64fill[0] = (!R_FINITE(rfill) || rfill>(double)INT64_MAX || rfill<=(double)INT64_MIN) ? NA_INTEGER64 : (int64_t)rfill;
-      }
-    }
-  } else if (isLogical(fill) && LOGICAL(fill)[0]==NA_LOGICAL) {
-    ifill[0] = NA_INTEGER; dfill[0] = NA_REAL; i64fill[0] = NA_INTEGER64;
-  } else {
-    error(_("%s: fill argument must be numeric"), __func__);
-  }
-}
-SEXP coerceFillR(SEXP fill) {
-  int protecti=0;
-  double dfill=NA_REAL;
-  int32_t ifill=NA_INTEGER;
-  int64_t i64fill=NA_INTEGER64;
-  coerceFill(fill, &dfill, &ifill, &i64fill);
-  SEXP ans = PROTECT(allocVector(VECSXP, 3)); protecti++;
-  SET_VECTOR_ELT(ans, 0, allocVector(INTSXP, 1));
-  SET_VECTOR_ELT(ans, 1, allocVector(REALSXP, 1));
-  SET_VECTOR_ELT(ans, 2, allocVector(REALSXP, 1));
-  INTEGER(VECTOR_ELT(ans, 0))[0] = ifill;
-  REAL(VECTOR_ELT(ans, 1))[0] = dfill;
-  ((int64_t *)REAL(VECTOR_ELT(ans, 2)))[0] = i64fill;
-  setAttrib(VECTOR_ELT(ans, 2), R_ClassSymbol, ScalarString(char_integer64));
-  UNPROTECT(protecti);
-  return ans;
-}
-
 inline bool INHERITS(SEXP x, SEXP char_) {
   // Thread safe inherits() by pre-calling install() in init.c and then
   // passing those char_* in here for simple and fast non-API pointer compare.
@@ -363,3 +308,30 @@ SEXP coerceUtf8IfNeeded(SEXP x) {
   return(ans);
 }
 
+void coerceAs(SEXP x, SEXP as, SEXP out) {
+  if (!isVectorAtomic(x))
+    error("'x' is not atomic");
+  if (!isVectorAtomic(as))
+    error("'as' is not atomic");
+  if (TYPEOF(out)!=TYPEOF(as))
+    error("type of 'out' is not the same as type of 'as'");
+  if (LENGTH(out)!=LENGTH(x))
+    error("length of 'out' is not the same as length of 'x'");
+  const char *ret = memrecycle(/*target=*/out, /*where=*/R_NilValue, /*start=*/0, /*len=*/LENGTH(x), /*source=*/x, /*sourceStart=*/0, /*sourceLen=*/-1, /*colnum=*/-1, /*colname=*/"not applicable");
+  if (ret) warning(_("memrecycle raises warning: %s"), ret);
+}
+
+SEXP coerceAsR(SEXP x, SEXP as) {
+  if (!isVectorAtomic(x))
+    error("'x' is not atomic");
+  if (!isVectorAtomic(as))
+    error("'as' is not atomic");
+  if (isNewList(as))
+    error("'as' is a list");
+  int protecti=0;
+  int len = LENGTH(x);
+  SEXP ans = PROTECT(allocNAVectorLike(as, len)); protecti++;
+  coerceAs(x, as, ans);
+  UNPROTECT(protecti);
+  return ans;
+}

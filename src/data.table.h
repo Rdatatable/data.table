@@ -217,8 +217,6 @@ bool isRealReallyInt(SEXP x);
 SEXP isReallyReal(SEXP x);
 bool allNA(SEXP x, bool errorForBadType);
 SEXP colnamesInt(SEXP x, SEXP cols, SEXP check_dups);
-void coerceFill(SEXP fill, double *dfill, int32_t *ifill, int64_t *i64fill);
-SEXP coerceFillR(SEXP fill);
 bool INHERITS(SEXP x, SEXP char_);
 bool Rinherits(SEXP x, SEXP char_);
 SEXP copyAsPlain(SEXP x);
@@ -229,6 +227,8 @@ bool islocked(SEXP x);
 SEXP islockedR(SEXP x);
 bool need2utf8(SEXP x);
 SEXP coerceUtf8IfNeeded(SEXP x);
+void coerceAs(SEXP x, SEXP as, SEXP out);
+SEXP coerceAsR(SEXP x, SEXP as);
 
 // types.c
 char *end(char *start);

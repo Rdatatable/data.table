@@ -199,7 +199,6 @@ R_CallMethodDef callMethods[] = {
 {"CdllVersion", (DL_FUNC) &dllVersion, -1},
 {"CnafillR", (DL_FUNC) &nafillR, -1},
 {"CcolnamesInt", (DL_FUNC) &colnamesInt, -1},
-{"CcoerceFillR", (DL_FUNC) &coerceFillR, -1},
 {"CinitLastUpdated", (DL_FUNC) &initLastUpdated, -1},
 {"Ccj", (DL_FUNC) &cj, -1},
 {"Ccoalesce", (DL_FUNC) &coalesce, -1},
@@ -211,6 +210,7 @@ R_CallMethodDef callMethods[] = {
 {"CfrollapplyR", (DL_FUNC) &frollapplyR, -1},
 {"CtestMsgR", (DL_FUNC) &testMsgR, -1},
 {"C_allNAR", (DL_FUNC) &allNAR, -1},
+{"CcoerceAsR", (DL_FUNC) &coerceAsR, -1},
 {NULL, NULL, 0}
 };
 
