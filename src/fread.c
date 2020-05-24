@@ -32,6 +32,7 @@ static const char *sof, *eof;
 static char sep;
 static char whiteChar; // what to consider as whitespace to skip: ' ', '\t' or 0 means both (when sep!=' ' && sep!='\t')
 static char quote, dec;
+static int linesForDecDot;
 static bool eol_one_r;  // only true very rarely for \r-only files
 
 // Quote rule:
@@ -1040,11 +1041,16 @@ static int detect_types( const char **pch, int8_t type[], int ncol, bool *bumped
   skip_white(&ch);
   if (eol(&ch)) return 0;  // empty line
   int field=0;
+  const bool autoDec = dec == '\0';
   while (field<ncol) {
     // DTPRINT(_("<<%s>>(%d)"), strlim(ch,20), quoteRule);
     skip_white(&ch);
     const char *fieldStart = ch;
     while (tmpType[field]<=CT_STRING) {
+      if (autoDec && IS_DEC_TYPE(tmpType[field]) && dec == '\0') {
+        dec = '.';
+      }
+
       fun[tmpType[field]](&fctx);
       if (end_of_field(ch)) break;
       skip_white(&ch);
@@ -1068,8 +1074,18 @@ static int detect_types( const char **pch, int8_t type[], int ncol, bool *bumped
         }
       }
       ch = fieldStart;
+      if (autoDec && IS_DEC_TYPE(tmpType[field]) && dec == '.') {
+        dec = ',';
+        continue;
+      }
       while (++tmpType[field]<CT_STRING && disabled_parsers[tmpType[field]]) {};
       *bumped = true;
+    }
+    if (autoDec && dec != '\0') {
+      if (IS_DEC_TYPE(tmpType[field])) {
+        linesForDecDot += dec == '.' ? 1 : -1;
+      }
+      dec = '\0';
     }
     field++;
     if (sep==' ' && *ch==sep) {
@@ -1176,9 +1192,8 @@ int freadMain(freadMainArgs _args) {
   dec = args.dec;
   quote = args.quote;
   if (args.sep == quote && quote!='\0') STOP(_("sep == quote ('%c') is not allowed"), quote);
-  if (dec=='\0') STOP(_("dec='' not allowed. Should be '.' or ','"));
-  if (args.sep == dec) STOP(_("sep == dec ('%c') is not allowed"), dec);
-  if (quote == dec) STOP(_("quote == dec ('%c') is not allowed"), dec);
+  if (args.sep == dec && dec != '\0') STOP(_("sep == dec ('%c') is not allowed"), dec);
+  if (quote == dec && dec != '\0') STOP(_("quote == dec ('%c') is not allowed"), dec);
   // since quote=='\0' when user passed quote="", the logic in this file uses '*ch==quote && quote' otherwise
   //   the ending \0 at eof could be treated as a quote (test xxx)
 
@@ -1688,6 +1703,7 @@ int freadMain(freadMainArgs _args) {
     if (ch>=eof) break;                // The 9th jump could reach the end in the same situation and that's ok. As long as the end is sampled is what we want.
     bool bumped = false;  // did this jump find any different types; to reduce verbose output to relevant lines
     int jumpLine = 0;    // line from this jump point start
+    linesForDecDot = 0;
 
     while(ch<eof && jumpLine++<jumpLines) {
       const char *lineStart = ch;
@@ -1719,6 +1735,10 @@ int freadMain(freadMainArgs _args) {
         bumped = false;  // detect_types() only updates &bumped when it's true. So reset to false here.
       }
     }
+    if (dec == '\0') {
+      dec = linesForDecDot < 0 ? ',' : '.';
+    }
+
     if (bumped) {
       // when jump>0, apply the bumps (if any) at the end of the successfully completed jump sample
       ASSERT(jump>0, "jump(%d)>0", jump);
@@ -1733,7 +1753,14 @@ int freadMain(freadMainArgs _args) {
   if (args.header==NA_BOOL8) {
     for (int j=0; j<ncol; j++) tmpType[j]=type0;   // reuse tmpType
     bool bumped=false;
+
+    if (dec == '\0') {
+      linesForDecDot = 0;
+    }
     detect_types(&ch, tmpType, ncol, &bumped);
+    if (dec == '\0') {
+      dec = linesForDecDot < 0 ? ',' : '.';
+    }
     if (sampleLines>0) for (int j=0; j<ncol; j++) {
       if (tmpType[j]==CT_STRING && type[j]<CT_STRING) {
         // includes an all-blank column with a string at the top; e.g. test 1870.1 and 1870.2

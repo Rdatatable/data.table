@@ -1,5 +1,5 @@
 fread = function(
-input="", file=NULL, text=NULL, cmd=NULL, sep="auto", sep2="auto", dec=".", quote="\"", nrows=Inf, header="auto",
+input="", file=NULL, text=NULL, cmd=NULL, sep="auto", sep2="auto", dec="auto", quote="\"", nrows=Inf, header="auto",
 na.strings=getOption("datatable.na.strings","NA"), stringsAsFactors=FALSE, verbose=getOption("datatable.verbose",FALSE),
 skip="__auto__", select=NULL, drop=NULL, colClasses=NULL, integer64=getOption("datatable.integer64","integer64"),
 col.names, check.names=FALSE, encoding="unknown", strip.white=TRUE, fill=FALSE, blank.lines.skip=FALSE, key=NULL, index=NULL,
@@ -16,7 +16,8 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir())
     else if (sep=="auto") sep=""      # sep=="" at C level means auto sep
     else stopifnot( nchar(sep)==1L )  # otherwise an actual character to use as sep
   }
-  stopifnot( is.character(dec), length(dec)==1L, nchar(dec)==1L )
+  stopifnot( is.character(dec), length(dec)==1L)
+  if (dec == "auto") dec = "" else stopifnot(nchar(dec) == 1L)
   # handle encoding, #563
   if (length(encoding) != 1L || !encoding %chin% c("unknown", "UTF-8", "Latin-1")) {
     stop("Argument 'encoding' must be 'unknown', 'UTF-8' or 'Latin-1'.")
