@@ -1,6 +1,5 @@
 # `i` argument could get with=FALSE #4485
 wither = function(with) {
-  ## this retains backward compatibility of with argument
   w = list(i=NA, j=NA)
   if (!is.logical(with)) stop("'with' must be logical")
   lw = length(with)
@@ -14,7 +13,7 @@ wither = function(with) {
     w[["j"]] = with["j"]
   } else {
     if (lw==1L) {
-      #w[["j"]] = with ## we don't do this line for backward compatibility, new 'with' optimization kicks in only for length 2 'with' or named 'with'
+      #w[["j"]] = with ## we don't do this line for backward compatibility, new 'with' optimization kicks in only for length 2 'with' or named 'with', been escaped already thus # nocov
     } else {
       w[["i"]] = with[1L]
       w[["j"]] = with[2L]
