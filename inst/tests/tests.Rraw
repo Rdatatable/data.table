@@ -16861,3 +16861,12 @@ A = data.table(A=c(complex(real = 1:3, imaginary=c(0, -1, 1)), NaN))
 test(2138.3, rbind(A,B), data.table(A=c(as.character(A$A), B$A)))
 A = data.table(A=as.complex(rep(NA, 5)))
 test(2138.4, rbind(A,B), data.table(A=c(as.character(A$A), B$A)))
+
+# Set allow.cartesian = TRUE when non-equi #4489
+
+set.seed(2)
+dt = data.table(time = 1:8, v = sample(8))
+dt[time == 2L, v := 2L]
+d[time == 7L, v := 7L]
+
+test(2139.1, dt[dt, on = .(time > time, v > v), .N, by = .EACHI], data.table(time = 1:8, v = INT(5,2,6,1,8,4,7,3), N = INT(3,5,2,4,0,1,0,0)))
