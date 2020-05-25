@@ -317,7 +317,7 @@ void coerceAs(SEXP x, SEXP as, SEXP out) {
     error("type of 'out' is not the same as type of 'as'");
   if (LENGTH(out)!=LENGTH(x))
     error("length of 'out' is not the same as length of 'x'");
-  const char *ret = memrecycle(/*target=*/out, /*where=*/R_NilValue, /*start=*/0, /*len=*/LENGTH(x), /*source=*/x, /*sourceStart=*/0, /*sourceLen=*/-1, /*colnum=*/-1, /*colname=*/"not applicable");
+  const char *ret = memrecycle(/*target=*/out, /*where=*/R_NilValue, /*start=*/0, /*len=*/LENGTH(x), /*source=*/x, /*sourceStart=*/0, /*sourceLen=*/-1, /*colnum=*/0, /*colname=*/"", /*quiet=*/true);
   if (ret) warning(_("memrecycle raises warning: %s"), ret);
 }
 

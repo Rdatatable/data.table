@@ -502,7 +502,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
     } else {                 // existing column
       targetcol = VECTOR_ELT(dt,coln);
     }
-    const char *ret = memrecycle(targetcol, rows, 0, targetlen, thisvalue, 0, -1, coln+1, CHAR(STRING_ELT(names, coln)));
+    const char *ret = memrecycle(targetcol, rows, 0, targetlen, thisvalue, 0, -1, coln+1, CHAR(STRING_ELT(names, coln)), /*quiet=*/false);
     if (ret) warning(ret);
   }
 
@@ -668,7 +668,7 @@ static bool anyNamed(SEXP x) {
 #define MSGSIZE 1000
 static char memrecycle_message[MSGSIZE+1]; // returned to rbindlist so it can prefix with which one of the list of data.table-like objects
 
-const char *memrecycle(const SEXP target, const SEXP where, const int start, const int len, SEXP source, const int sourceStart, const int sourceLen, const int colnum, const char *colname)
+const char *memrecycle(const SEXP target, const SEXP where, const int start, const int len, SEXP source, const int sourceStart, const int sourceLen, const int colnum, const char *colname, bool quiet)
 // like memcpy but recycles single-item source
 // 'where' a 1-based INTEGER vector subset of target to assign to, or NULL or integer()
 // assigns to target[start:start+len-1] or target[where[start:start+len-1]] where start is 0-based
@@ -844,7 +844,7 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
             type2char(TYPEOF(target)), colnum, colname);
     source = PROTECT(coerceVector(source, TYPEOF(target))); protecti++;
   } else if ((TYPEOF(target)!=TYPEOF(source) || targetIsI64!=sourceIsI64) && !isNewList(target)) {
-    if (GetVerbose()) {
+    if (!quiet && GetVerbose()) {
       // only take the (small) cost of GetVerbose() (search of options() list) when types don't match
       Rprintf(_("Zero-copy coerce when assigning '%s' to '%s' column %d named '%s'.\n"),
               sourceIsI64 ? "integer64" : type2char(TYPEOF(source)),
