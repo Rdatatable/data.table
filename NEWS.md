@@ -109,7 +109,7 @@ unit = "s")
 
 13. A relatively rare case of segfault when combining non-equi joins with `by=.EACHI` is now fixed, closes [#4388](https://github.com/Rdatatable/data.table/issues/4388).
 
-14. Non-equi joins now automatically set allow.cartesian to `TRUE`. Closes [4489](https://github.com/Rdatatable/data.table/issues/4489)
+14. Non-equi joins now automatically set allow.cartesian to `TRUE`. Closes [4489](https://github.com/Rdatatable/data.table/issues/4489). Thanks to @Henrik-P for reporting.
 
 ## NOTES
 
