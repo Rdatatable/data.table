@@ -28,7 +28,7 @@ test(1.04, nafill(x, fill=5), INT(5,5,3,4,5,5,7,8,5,5))
 test(1.05, nafill(x, fill=NA_integer_), x)
 test(1.06, nafill(x, fill=NA), x)
 test(1.07, nafill(x, fill=NA_real_), x)
-test(1.08, nafill(x, fill=Inf), x, warning="memrecycle raises warning: inf")
+test(1.08, nafill(x, fill=Inf), x, warning="precision lost")
 test(1.09, nafill(x, fill=NaN), x)
 y = x/2
 test(1.11, nafill(y, "locf"), c(NA,NA,3,4,4,4,7,8,8,8)/2)
@@ -229,3 +229,13 @@ if (test_bit64) {
   test(9.33, nafill(x, "locf", -1), seti64(nafill(x, "locf"), 1:2, as.integer64(-1)))
   test(9.34, nafill(x, "nocb", -1), seti64(nafill(x, "nocb"), 5:6, as.integer64(-1)))
 }
+
+# nafill, setnafill for character, factor and other types #3992
+## logical
+## character
+## factor
+## Date
+## POSIXct
+## IDate
+## ITime
+## nanotime
