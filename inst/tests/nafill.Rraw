@@ -120,7 +120,7 @@ test(3.03, setnafill(x, "locf"), error="in-place update is supported only for li
 test(3.04, nafill(letters[1:5], fill=0), error="must be numeric type, or list/data.table")
 test(3.05, setnafill(list(letters[1:5]), fill=0), error="must be numeric type, or list/data.table")
 test(3.06, nafill(x, fill=1:2), error="fill must be a vector of length 1")
-#test(3.07, nafill(x, fill="asd"), error="fill argument must be numeric")
+test(3.07, nafill(x, fill="asd"), x, warning=c("Coercing 'character' RHS to 'integer'","NAs introduced by coercion"))
 
 # colnamesInt helper
 dt = data.table(a=1, b=2, d=3)
