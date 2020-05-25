@@ -16,7 +16,7 @@ setnafill(x, type=c("const","locf","nocb"), fill=NA, nan=NA, cols=seq_along(x))
 \arguments{
   \item{x}{ vector, list, data.frame or data.table of numeric columns. }
   \item{type}{ character, one of \emph{"const"}, \emph{"locf"} or \emph{"nocb"}. Defaults to \code{"const"}. }
-  \item{fill}{ numeric or integer, value to be used to fill when \code{type=="const"}. }
+  \item{fill}{ numeric or integer, value to be used to fill. }
   \item{nan}{ (numeric \code{x} only) Either \code{NaN} or \code{NA}; if the former, \code{NaN} is treated as distinct from \code{NA}, otherwise, they are treated the same during replacement? }
   \item{cols}{ numeric or character vector specifying columns to be updated. }
 }

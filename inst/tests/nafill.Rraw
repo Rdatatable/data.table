@@ -114,8 +114,8 @@ test(2.08, unname(l), list(c(1:2,18052L,4:5), structure(c(1,2,18052,4,5), class=
 
 # exceptions test coverage
 x = 1:10
-test(3.01, nafill(x, "locf", fill=0L), nafill(x, "locf"), warning="argument 'fill' ignored")
-test(3.02, setnafill(list(copy(x)), "locf", fill=0L), setnafill(list(copy(x)), "locf"), warning="argument 'fill' ignored")
+test(3.01, nafill(x, "locf", fill=0L), x)
+test(3.02, setnafill(list(copy(x)), "locf", fill=0L), list(x))
 test(3.03, setnafill(x, "locf"), error="in-place update is supported only for list")
 test(3.04, nafill(letters[1:5], fill=0), error="must be numeric type, or list/data.table")
 test(3.05, setnafill(list(letters[1:5]), fill=0), error="must be numeric type, or list/data.table")
@@ -207,3 +207,25 @@ test(7.10, nafill(x, fill=0, nan=Inf), error="Argument 'nan' must be NA or NaN")
 
 # new tests for fill list
 #TODO
+
+# Extend functionality of nafill to use 'fill' argument for all types #3594
+test(9.01, nafill(c(NA,1,NA,NA,5,3,NA,0), type="locf", fill=-1), `[<-`(nafill(c(NA,1,NA,NA,5,3,NA,0), type="locf"), 1L, -1))
+x = xx = c(rep(NA,2),3:4,rep(NA,2))
+test(9.11, nafill(x, "locf", 0), `[<-`(nafill(x, "locf"), 1:2, 0L))
+test(9.12, nafill(x, "nocb", 0), `[<-`(nafill(x, "nocb"), 5:6, 0L))
+test(9.13, nafill(x, "locf", -1), `[<-`(nafill(x, "locf"), 1:2, -1L))
+test(9.14, nafill(x, "nocb", -1), `[<-`(nafill(x, "nocb"), 5:6, -1L))
+x = as.double(xx)
+test(9.21, nafill(x, "locf", 0), `[<-`(nafill(x, "locf"), 1:2, 0))
+test(9.22, nafill(x, "nocb", 0), `[<-`(nafill(x, "nocb"), 5:6, 0))
+test(9.23, nafill(x, "locf", -1), `[<-`(nafill(x, "locf"), 1:2, -1))
+test(9.24, nafill(x, "nocb", -1), `[<-`(nafill(x, "nocb"), 5:6, -1))
+if (test_bit64) {
+  x = as.integer64(xx)
+  # `[<-.integer64` does not work
+  seti64 = function(x, i, value) {x[i] = value; x}
+  test(9.31, nafill(x, "locf", 0), seti64(nafill(x, "locf"), 1:2, as.integer64(0)))
+  test(9.32, nafill(x, "nocb", 0), seti64(nafill(x, "nocb"), 5:6, as.integer64(0)))
+  test(9.33, nafill(x, "locf", -1), seti64(nafill(x, "locf"), 1:2, as.integer64(-1)))
+  test(9.34, nafill(x, "nocb", -1), seti64(nafill(x, "nocb"), 5:6, as.integer64(-1)))
+}

@@ -15,23 +15,25 @@ void nafillDouble(double *x, uint_fast64_t nx, unsigned int type, double fill, b
       }
     }
   } else if (type==1) { // locf
-    ans->dbl_v[0] = x[0];
     if (nan_is_na) {
+      ans->dbl_v[0] = ISNAN(x[0]) ? fill : x[0];
       for (uint_fast64_t i=1; i<nx; i++) {
         ans->dbl_v[i] = ISNAN(x[i]) ? ans->dbl_v[i-1] : x[i];
       }
     } else {
+      ans->dbl_v[0] = ISNA(x[0]) ? fill : x[0];
       for (uint_fast64_t i=1; i<nx; i++) {
         ans->dbl_v[i] = ISNA(x[i]) ? ans->dbl_v[i-1] : x[i];
       }
     }
   } else if (type==2) { // nocb
-    ans->dbl_v[nx-1] = x[nx-1];
     if (nan_is_na) {
+      ans->dbl_v[nx-1] = ISNAN(x[nx-1]) ? fill : x[nx-1];
       for (int_fast64_t i=nx-2; i>=0; i--) {
         ans->dbl_v[i] = ISNAN(x[i]) ? ans->dbl_v[i+1] : x[i];
       }
     } else {
+      ans->dbl_v[nx-1] = ISNA(x[nx-1]) ? fill : x[nx-1];
       for (int_fast64_t i=nx-2; i>=0; i--) {
         ans->dbl_v[i] = ISNA(x[i]) ? ans->dbl_v[i+1] : x[i];
       }
@@ -49,12 +51,12 @@ void nafillInteger(int32_t *x, uint_fast64_t nx, unsigned int type, int32_t fill
       ans->int_v[i] = x[i]==NA_INTEGER ? fill : x[i];
     }
   } else if (type==1) { // locf
-    ans->int_v[0] = x[0];
+    ans->int_v[0] = x[0]==NA_INTEGER ? fill : x[0];
     for (uint_fast64_t i=1; i<nx; i++) {
       ans->int_v[i] = x[i]==NA_INTEGER ? ans->int_v[i-1] : x[i];
     }
   } else if (type==2) { // nocb
-    ans->int_v[nx-1] = x[nx-1];
+    ans->int_v[nx-1] = x[nx-1]==NA_INTEGER ? fill : x[nx-1];
     for (int_fast64_t i=nx-2; i>=0; i--) {
       ans->int_v[i] = x[i]==NA_INTEGER ? ans->int_v[i+1] : x[i];
     }
@@ -71,12 +73,12 @@ void nafillInteger64(int64_t *x, uint_fast64_t nx, unsigned int type, int64_t fi
       ans->int64_v[i] = x[i]==NA_INTEGER64 ? fill : x[i];
     }
   } else if (type==1) { // locf
-    ans->int64_v[0] = x[0];
+    ans->int64_v[0] = x[0]==NA_INTEGER64 ? fill : x[0];
     for (uint_fast64_t i=1; i<nx; i++) {
       ans->int64_v[i] = x[i]==NA_INTEGER64 ? ans->int64_v[i-1] : x[i];
     }
   } else if (type==2) { // nocb
-    ans->int64_v[nx-1] = x[nx-1];
+    ans->int64_v[nx-1] = x[nx-1]==NA_INTEGER64 ? fill : x[nx-1];
     for (int_fast64_t i=nx-2; i>=0; i--) {
       ans->int64_v[i] = x[i]==NA_INTEGER64 ? ans->int64_v[i+1] : x[i];
     }
@@ -166,11 +168,12 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, S
   else
     error(_("Internal error: invalid type argument in nafillR function, should have been caught before. Please report to data.table issue tracker.")); // # nocov
 
+  bool hasFill = !isLogical(fill) || LOGICAL(fill)[0]!=NA_LOGICAL;
   bool *isInt64 = (bool *)R_alloc(nx, sizeof(bool));
   for (R_len_t i=0; i<nx; i++)
     isInt64[i] = Rinherits(VECTOR_ELT(x, i), char_integer64);
   const void **fillp = (const void **)R_alloc(nx, sizeof(void*)); // fill is (or will be) a list of length nx of matching types, scalar values for each column, this pointer points to each of those columns data pointers
-  if (itype==0) {
+  if (hasFill) {
     if (nx!=length(fill) && length(fill)!=1)
       error(_("fill must be a vector of length 1 or a list of length of x"));
     if (!isNewList(fill)) {
@@ -191,13 +194,13 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, S
     switch (TYPEOF(VECTOR_ELT(x, i))) {
     case REALSXP : {
       if (isInt64[i]) {
-        nafillInteger64(i64x[i], inx[i], itype, itype==0 ? ((int64_t *)fillp[i])[0] : (int64_t) 0, &vans[i], verbose);
+        nafillInteger64(i64x[i], inx[i], itype, hasFill ? ((int64_t *)fillp[i])[0] : NA_INTEGER64, &vans[i], verbose);
       } else {
-        nafillDouble(dx[i], inx[i], itype, itype==0 ? ((double *)fillp[i])[0] : (double) 0, nan_is_na, &vans[i], verbose);
+        nafillDouble(dx[i], inx[i], itype, hasFill ? ((double *)fillp[i])[0] : NA_REAL, nan_is_na, &vans[i], verbose);
       }
     } break;
     case INTSXP : {
-      nafillInteger(ix[i], inx[i], itype, itype==0 ? ((int32_t *)fillp[i])[0] : (int32_t) 0, &vans[i], verbose);
+      nafillInteger(ix[i], inx[i], itype, hasFill ? ((int32_t *)fillp[i])[0] : NA_INTEGER, &vans[i], verbose);
     } break;
     }
   }
