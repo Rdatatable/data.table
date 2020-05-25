@@ -170,6 +170,8 @@ replace_dot_alias = function(e) {
       } else {
         return(.Call(CsubsetDT, x, i, j))
       }
+    } else {
+      with = w[["j"]]
     }
   }
   missingby = missing(by) && missing(keyby)  # for tests 359 & 590 where passing by=NULL results in data.table not vector
