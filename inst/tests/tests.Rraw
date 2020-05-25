@@ -8120,7 +8120,7 @@ test(1588.7, dt[ch>"c"], dt[4:6])  # coverage of a return(NULL) in .prepareFastS
 
 # data.table operates consistently independent of locale, but it's R that changes and is sensitive to it.
 #   Because keys/indexes depend on a sort order. If a data.table is stored on disk with a key
-#   created in a locale-sensitive order and then loaded by another R session in a different locale, the ability to re-use existing sortedness
+#   created in a locale-sensitive order and then loaded by another R session in a different locale, the ability to reuse existing sortedness
 #   will break because the order would depend on the locale. Which is why data.table is deliberately C-locale only. For consistency and simpler
 #   internals for robustness to reduce the change of errors and to avoid that class of bug. It would be possible to have locale-sensitive keys
 #   and indexes but we've, so far, decided not to, for those reasons.
@@ -8137,12 +8137,20 @@ Encoding(x1) = "latin1"
 x2 = iconv(x1, "latin1", "UTF-8")
 test(1590.01, identical(x1,x2))
 test(1590.02, x1==x2)
-test(1590.03, forderv(    c(x2,x1,x1,x2)), integer())     # desirable consistent result given data.table's needs
-test(1590.04, base::order(c(x2,x1,x1,x2)), INT(1,4,2,3))  # different result in base R under C locale even though identical(x1,x2)
+test(1590.03, forderv(    c(x2,x1,x1,x2)), integer())     # desirable consistent result given identical(x1, x2)
+                                                          #           ^^ data.table consistent over time regardless of which version of R or locale
+baseR = base::order(c(x2,x1,x1,x2))
+  # Even though C locale and identical(x1,x2), base R considers the encoding too; i.e. orders the same-encoding together.
+  # In R <= 4.0.0, base R put x2 (UTF-8) before x1 (latin1).
+  # Then in R-devel around May 2020, R-devel on Windows started putting x1 before x2.
+  # Jan emailed R-devel on 23 May 2020. PR#xxxx retained this test of base R but relaxed the encoding to be in either order.
+  # It's good to know that baseR changed. We still want to know in future if base R changes again (so we relaxed 1590.04 and 1590.07 rather than remove them).
+test(1590.04, identical(baseR, INT(1,4,2,3)) || identical(baseR, INT(2,3,1,4)))
 Encoding(x2) = "unknown"
 test(1590.05, x1!=x2)
 test(1590.06, forderv(    c(x2,x1,x1,x2)), INT(1,4,2,3))  # consistent with Windows-1252 result, tested further below
-test(1590.07, base::order(c(x2,x1,x1,x2)), INT(2,3,1,4))  # different result; base R is encoding-sensitive in C-locale
+baseR = base::order(c(x2,x1,x1,x2))
+test(1590.07, identical(baseR, INT(1,4,2,3)) || identical(baseR, INT(2,3,1,4)))
 Sys.setlocale("LC_CTYPE", ctype)
 Sys.setlocale("LC_COLLATE", collate)
 test(1590.08, Sys.getlocale(), oldlocale)  # checked restored locale fully back to how it was before this test
