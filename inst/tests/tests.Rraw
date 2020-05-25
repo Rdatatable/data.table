@@ -16853,3 +16853,5 @@ B = data.table(B='b')
 test(2139.1, A[B, on=character(0)], error = "'on' argument should be a named atomic vector")
 test(2139.2, merge(A, B, by=character(0)                                     ), error = "non-empty vector of column names for `by` is required.")
 test(2139.3, merge(A, B,                 by.x=character(0), by.y=character(0)), error = "non-empty vector of column names is required")
+# Also shouldn't crash when using internal functions
+test(2139.4, bmerge(A, B, integer(), integer(), 0, c(FALSE, TRUE), NA, 'all', integer(), FALSE), error = 'icols and xcols must be non-empty')
