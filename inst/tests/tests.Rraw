@@ -8143,7 +8143,7 @@ baseR = base::order(c(x2,x1,x1,x2))
   # Even though C locale and identical(x1,x2), base R considers the encoding too; i.e. orders the same-encoding together.
   # In R <= 4.0.0, base R put x2 (UTF-8) before x1 (latin1).
   # Then in R-devel around May 2020, R-devel on Windows started putting x1 before x2.
-  # Jan emailed R-devel on 23 May 2020. PR#xxxx retained this test of base R but relaxed the encoding to be in either order.
+  # Jan emailed R-devel on 23 May 2020. PR#4492 retained this test of base R but relaxed the encoding to be in either order.
   # It's good to know that baseR changed. We still want to know in future if base R changes again (so we relaxed 1590.04 and 1590.07 rather than remove them).
 test(1590.04, identical(baseR, INT(1,4,2,3)) || identical(baseR, INT(2,3,1,4)))
 Encoding(x2) = "unknown"
