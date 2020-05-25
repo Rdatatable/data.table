@@ -247,6 +247,9 @@ static inline void skip_white(const char **pch) {
  */
 static inline bool eol(const char **pch) {
   const char *ch = *pch;
+  if (*ch == '#') {
+    while (*ch != '\r' && *ch != '\n') ch++;
+  }
   // we call eol() when we expect to be on an eol(), so optimize as if we are on an eol
   while (*ch=='\r') ch++;  // commonly happens once on Windows for type 2
   if (*ch=='\n') {
