@@ -147,6 +147,26 @@ replace_dot_alias = function(e) {
     on.exit(options(oldverbose))
   }
   .global$print=""
+  # with2 #4485
+  w = if (missing(with)) list(i=NA, j=NA) else wither(with)
+  # this checks for valid negation usage in 'j' should be removed after some time, it is here to ensure newcomers to this feature will use it correctly
+  if (isFALSE(w$j) && !identical(as.integer(getOption("datatable.with",1L)), 2L) && hasNot(subj<-substitute(j)) &&
+      !with_j_valid(subj, env=parent.frame(), verbose=verbose)) stop("internal error: with_j_valid should have raised an error already") # nocov #w$j = NA
+  nr = nrow(x)
+  nc = length(x)
+  if (isFALSE(w$i) && !missing(i)) i = with_i(i, len=nr, verbose=verbose)
+  if (isFALSE(w$j) && !missing(j)) j = with_j(j, len=nc, x=x, verbose=verbose)
+  if ((isFALSE(w$i) && missing(j)) || (isFALSE(w$j) && missing(i)) || (isFALSE(w$i) && isFALSE(w$j))) {
+    if (missing(i)) i = seq_len(nr)
+    if (missing(j)) j = seq_len(nc)
+    if (verbose)
+      cat("with=FALSE short-circuit return\n")
+    if (isTRUE(which)) {
+      return(i)
+    } else {
+      return(.Call(CsubsetDT, x, i, j))
+    }
+  }
   missingby = missing(by) && missing(keyby)  # for tests 359 & 590 where passing by=NULL results in data.table not vector
   if (!missing(keyby)) {
     if (!missing(by)) stop("Provide either by= or keyby= but not both")
