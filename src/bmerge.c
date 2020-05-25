@@ -47,6 +47,8 @@ SEXP bmerge(SEXP iArg, SEXP xArg, SEXP icolsArg, SEXP xcolsArg, SEXP isorted, SE
   i = iArg; x = xArg;  // set globals so bmerge_r can see them.
   if (!isInteger(icolsArg)) error(_("Internal error: icols is not integer vector")); // # nocov
   if (!isInteger(xcolsArg)) error(_("Internal error: xcols is not integer vector")); // # nocov
+  if (LENGTH(icolsArg) == 0 || LENGTH(xcolsArg) == 0)
+	  error(_("Internal error: icols and xcols must be non-empty vectors."));
   if (LENGTH(icolsArg) > LENGTH(xcolsArg)) error(_("Internal error: length(icols) [%d] > length(xcols) [%d]"), LENGTH(icolsArg), LENGTH(xcolsArg)); // # nocov
   icols = INTEGER(icolsArg);
   xcols = INTEGER(xcolsArg);
