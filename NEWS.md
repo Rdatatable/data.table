@@ -109,7 +109,7 @@ unit = "s")
 
 13. A relatively rare case of segfault when combining non-equi joins with `by=.EACHI` is now fixed, closes [#4388](https://github.com/Rdatatable/data.table/issues/4388).
 
-14. Columns selection with `.SDcols` provided via `:` now peels outer parentheses when using negation `!` or `-` inside of it. One other use case reached internal error has been caught more early, closes [#4231](https://github.com/Rdatatable/data.table/issues/4231). Below are examples errors:
+14. Columns selection with `.SDcols` provided via `:` now peels outer parentheses when using negation `!` or `-` inside of it. One other use case reached internal error has been caught more early, closes [#4231](https://github.com/Rdatatable/data.table/issues/4231). Additionally logical vector in `.SDcols` of length different than number of columns will now raise warning, [#4115](https://github.com/Rdatatable/data.table/issues/4115). Below are examples errors:
 ```r
 data.table(1,2)[, .SD,.SDcols=(-1L)]
 #Error in colnamesInt(x, cols, check_dups = FALSE) :

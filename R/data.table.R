@@ -954,6 +954,7 @@ replace_dot_alias = function(e) {
           if (anyNA(.SDcols))
             stop(".SDcols missing at the following indices: ", brackify(which(is.na(.SDcols))))
           if (is.logical(.SDcols)) {
+            if (length(.SDcols)!=length(x)) warning("logical vector in .SDcols should have equal length to number of columns in input table")
             ansvals = which_(rep(.SDcols, length.out=length(x)), !negate_sdcols)
             ansvars = sdvars = names_x[ansvals]
           } else if (is.numeric(.SDcols)) {
