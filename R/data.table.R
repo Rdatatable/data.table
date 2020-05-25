@@ -429,9 +429,6 @@ replace_dot_alias = function(e) {
         on = on_ops[[1L]]
         ops = on_ops[[2L]]
         if (any(ops > 1L)) { ## fix for #4489;  ops = c("==", "<=", "<", ">=", ">", "!=")
-          ## include new warning? warning seems obnoxious. Tests affected with warning:
-          #### 1654, 1655.4, 1655.5, 1660.1, 1660.2, 1682.1, 1682.2, 1682.3, 1682.4, 1682.5, 1682.6, 1682.7, 1683.1, 1683.2, 1845.1, 1845.2, 1846.1, 1846.2, 1872.13, 1948.01, 1948.02, 1948.03, 1948.04, 1948.05, 1948.06, 1948.09, 1967.73, 1967.74, 1984.02, 1989.1, 2062.1, 2062.2, 2092.3, 2105.1, 2105.2
-          # if (!allow.cartesian) warning("allow.cartesian is FALSE but non-equi join detected. Non-equi joins typically result in more rows. Therefore, allow.cartesian is being changed to TRUE")
           allow.cartesian = TRUE
         }
         # TODO: collect all '==' ops first to speeden up Cnestedid
