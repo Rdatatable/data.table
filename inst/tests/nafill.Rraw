@@ -28,7 +28,7 @@ test(1.04, nafill(x, fill=5), INT(5,5,3,4,5,5,7,8,5,5))
 test(1.05, nafill(x, fill=NA_integer_), x)
 test(1.06, nafill(x, fill=NA), x)
 test(1.07, nafill(x, fill=NA_real_), x)
-test(1.08, nafill(x, fill=Inf), x)
+test(1.08, nafill(x, fill=Inf), x, warning="memrecycle raises warning: inf")
 test(1.09, nafill(x, fill=NaN), x)
 y = x/2
 test(1.11, nafill(y, "locf"), c(NA,NA,3,4,4,4,7,8,8,8)/2)

@@ -169,15 +169,7 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, S
   bool *isInt64 = (bool *)R_alloc(nx, sizeof(bool));
   for (R_len_t i=0; i<nx; i++)
     isInt64[i] = Rinherits(VECTOR_ELT(x, i), char_integer64);
-  SEXP Fd = PROTECT(allocVector(REALSXP, nx)); protecti++;
-  SEXP Fi32 = PROTECT(allocVector(INTSXP, nx)); protecti++;
-  SEXP Fi64 = PROTECT(allocVector(REALSXP, nx)); protecti++;
-  SEXP tt = PROTECT(ScalarString(char_integer64));
-  setAttrib(Fi64, R_ClassSymbol, tt);
-  UNPROTECT(1);
-  double *fd = REAL(Fd);
-  int32_t *fi32 = INTEGER(Fi32);
-  int64_t *fi64 = (int64_t *)REAL(Fi64);
+  const void **fillp = (const void **)R_alloc(nx, sizeof(void*)); // fill is (or will be) a list of length nx of matching types, scalar values for each column, this pointer points to each of those columns data pointers
   if (itype==0) {
     if (nx!=length(fill) && length(fill)!=1)
       error(_("fill must be a vector of length 1 or a list of length of x"));
@@ -190,17 +182,8 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, S
     if (!isNewList(fill))
       error("internal error: 'fill' should be recycled as list already"); // # nocov
     for (R_len_t i=0; i<nx; i++) {
-      const SEXP this_x = VECTOR_ELT(x, i);
-      const SEXP *fillp = SEXPPTR_RO(fill);
-      if (isInt64[i]) {
-        memrecycle(/*target=*/Fi64, /*where=*/R_NilValue, /*start=*/i, /*len=*/1, /*source=*/fillp[i], /*sourceStart=*/0, /*sourceLen=*/1, /*colnum=*/-1, /*colname=*/"not applicable");
-      } else if (isInteger(this_x)) {
-        memrecycle(/*target=*/Fi32, /*where=*/R_NilValue, /*start=*/i, /*len=*/1, /*source=*/fillp[i], /*sourceStart=*/0, /*sourceLen=*/1, /*colnum=*/-1, /*colname=*/"not applicable");
-      } else if (isReal(this_x)) {
-        memrecycle(/*target=*/Fd, /*where=*/R_NilValue, /*start=*/i, /*len=*/1, /*source=*/fillp[i], /*sourceStart=*/0, /*sourceLen=*/1, /*colnum=*/-1, /*colname=*/"not applicable");
-      } else {
-        error("internal error: other types not yet implemented"); // # nocov
-      }
+      SET_VECTOR_ELT(fill, i, coerceAsR(VECTOR_ELT(fill, i), VECTOR_ELT(x, i)));
+      fillp[i] = SEXPPTR_RO(VECTOR_ELT(fill, i)); // do like this so we can use in parallel region
     }
   }
   #pragma omp parallel for if (nx>1) num_threads(getDTthreads())
@@ -208,13 +191,13 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, S
     switch (TYPEOF(VECTOR_ELT(x, i))) {
     case REALSXP : {
       if (isInt64[i]) {
-        nafillInteger64(i64x[i], inx[i], itype, fi64[i], &vans[i], verbose);
+        nafillInteger64(i64x[i], inx[i], itype, itype==0 ? ((int64_t *)fillp[i])[0] : (int64_t) 0, &vans[i], verbose);
       } else {
-        nafillDouble(dx[i], inx[i], itype, fd[i], nan_is_na, &vans[i], verbose);
+        nafillDouble(dx[i], inx[i], itype, itype==0 ? ((double *)fillp[i])[0] : (double) 0, nan_is_na, &vans[i], verbose);
       }
     } break;
     case INTSXP : {
-      nafillInteger(ix[i], inx[i], itype, fi32[i], &vans[i], verbose);
+      nafillInteger(ix[i], inx[i], itype, itype==0 ? ((int32_t *)fillp[i])[0] : (int32_t) 0, &vans[i], verbose);
     } break;
     }
   }
