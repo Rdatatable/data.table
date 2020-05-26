@@ -1452,9 +1452,8 @@ int freadMain(freadMainArgs _args) {
     ch = pos;
   } else {
     int nseps;
-    // default seps in order of preference. See ?fread.
-    // seps[] not *seps for writeability (http://stackoverflow.com/a/164258/403310)
-    char seps[] = ",|;\t ";
+    char seps[]=",|;\t ";  // default seps in order of preference. See ?fread.
+                           // seps[] not *seps for writeability (http://stackoverflow.com/a/164258/403310)
     if (dec == ',') {
       // Remove , if user specifies dec=',', #4483
       for (int i=0; i<strlen(seps); i++) seps[i] = seps[i+1];
