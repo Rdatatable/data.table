@@ -1336,7 +1336,7 @@ replace_dot_alias = function(e) {
 
     if (is.data.table(jval)) {
       # should set the parent class only when jval is a plain data.table #4324
-      if (setequal(class(jval), c('data.table', 'data.frame'))) 
+      if (identical(class(jval), c('data.table', 'data.frame'))) 
         setattr(jval, 'class', class(x)) # fix for #64
       if (haskey(x) && all(key(x) %chin% names(jval)) && suppressWarnings(is.sorted(jval, by=key(x))))  # TO DO: perhaps this usage of is.sorted should be allowed internally then (tidy up and make efficient)
         setattr(jval, 'sorted', key(x))
