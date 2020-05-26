@@ -104,23 +104,24 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, S
   bool nan_is_na = LOGICAL(nan_is_na_arg)[0];
 
   SEXP x = R_NilValue;
-  if (isVectorAtomic(obj)) {
+  bool obj_scalar = isVectorAtomic(obj);
+  if (obj_scalar) {
     if (binplace)
       error(_("'x' argument is atomic vector, in-place update is supported only for list/data.table"));
     else if (!isReal(obj) && !isInteger(obj))
       error(_("'x' argument must be numeric type, or list/data.table of numeric types"));
-    x = PROTECT(allocVector(VECSXP, 1)); protecti++; // wrap into list
-    SET_VECTOR_ELT(x, 0, obj);
-  } else {
-    SEXP ricols = PROTECT(colnamesInt(obj, cols, ScalarLogical(TRUE))); protecti++; // nafill cols=NULL which turns into seq_along(obj)
-    x = PROTECT(allocVector(VECSXP, length(ricols))); protecti++;
-    int *icols = INTEGER(ricols);
-    for (int i=0; i<length(ricols); i++) {
-      SEXP this_col = VECTOR_ELT(obj, icols[i]-1);
-      if (!isReal(this_col) && !isInteger(this_col))
-        error(_("'x' argument must be numeric type, or list/data.table of numeric types"));
-      SET_VECTOR_ELT(x, i, this_col);
-    }
+    SEXP obj1 = obj;
+    obj = PROTECT(allocVector(VECSXP, 1)); protecti++; // wrap into list
+    SET_VECTOR_ELT(obj, 0, obj1);
+  }
+  SEXP ricols = PROTECT(colnamesInt(obj, cols, ScalarLogical(TRUE))); protecti++; // nafill cols=NULL which turns into seq_along(obj)
+  x = PROTECT(allocVector(VECSXP, length(ricols))); protecti++;
+  int *icols = INTEGER(ricols);
+  for (int i=0; i<length(ricols); i++) {
+    SEXP this_col = VECTOR_ELT(obj, icols[i]-1);
+    if (!isReal(this_col) && !isInteger(this_col))
+      error(_("'x' argument must be numeric type, or list/data.table of numeric types"));
+    SET_VECTOR_ELT(x, i, this_col);
   }
   R_len_t nx = length(x);
 
@@ -210,6 +211,13 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, S
       if (!isNull(ATTRIB(VECTOR_ELT(x, i))))
         copyMostAttrib(VECTOR_ELT(x, i), VECTOR_ELT(ans, i));
     }
+    SEXP obj_names = getAttrib(obj, R_NamesSymbol); // copy names
+    if (!isNull(obj_names)) {
+      SEXP ans_names = PROTECT(allocVector(STRSXP, length(ans))); protecti++;
+      for (int i=0; i<length(ricols); i++)
+        SET_STRING_ELT(ans_names, i, STRING_ELT(obj_names, icols[i]-1));
+      setAttrib(ans, R_NamesSymbol, ans_names);
+    }
   }
 
   ansMsg(vans, nx, verbose, __func__);
@@ -221,6 +229,6 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, S
   if (binplace) {
     return obj;
   } else {
-    return isVectorAtomic(obj) && length(ans) == 1 ? VECTOR_ELT(ans, 0) : ans;
+    return obj_scalar && length(ans) == 1 ? VECTOR_ELT(ans, 0) : ans;
   }
 }
