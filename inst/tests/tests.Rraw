@@ -14855,40 +14855,40 @@ if (test_yaml) {  # csvy; #1701
   fwrite(data, file, yaml =  list(something_else = "o hai!"))
   x = fread(file, yaml = TRUE)
   unlink(file)
-  test(2125.01, attr(x, "yaml_metadata")$something_else, "o hai!")
-  test(2125.02, attr(x, "yaml_metadata")$schema, NULL)
+  test(2139.01, attr(x, "yaml_metadata")$something_else, "o hai!")
+  test(2139.02, attr(x, "yaml_metadata")$schema, NULL)
   
   
   fwrite(data, file, yaml = TRUE)
   x = fread(file, yaml = TRUE)
   unlink(file)
-  test(2125.03, attr(x, "yaml_metadata")$schema$fields[[1]]$name, "x")
+  test(2139.03, attr(x, "yaml_metadata")$schema$fields[[1]]$name, "x")
   
   
   fwrite(data, file, yaml = list(TRUE))
   x = fread(file, yaml = TRUE)
   unlink(file)
-  test(2125.04, attr(x, "yaml_metadata")$schema$fields[[1]]$name, "x")
+  test(2139.04, attr(x, "yaml_metadata")$schema$fields[[1]]$name, "x")
   
   
   fwrite(data, file, yaml = list(TRUE, something_else = "o hai!"))
   x = fread(file, yaml = TRUE)
   unlink(file)
-  test(2125.05, attr(x, "yaml_metadata")$schema$fields[[1]]$name, "x")
-  test(2125.06, attr(x, "yaml_metadata")$something_else, "o hai!")
+  test(2139.05, attr(x, "yaml_metadata")$schema$fields[[1]]$name, "x")
+  test(2139.06, attr(x, "yaml_metadata")$something_else, "o hai!")
   
   
   fwrite(data, file, yaml =  list(TRUE, something_else = "o hai!", this_is_true = TRUE))
   x = fread(file, yaml = TRUE)
   unlink(file)
-  test(2125.07, attr(x, "yaml_metadata")$schema$fields[[1]]$name, "x")
-  test(2125.08, attr(x, "yaml_metadata")$something_else, "o hai!")
-  test(2125.09, attr(x, "yaml_metadata")$this_is_true, TRUE)
+  test(2139.07, attr(x, "yaml_metadata")$schema$fields[[1]]$name, "x")
+  test(2139.08, attr(x, "yaml_metadata")$something_else, "o hai!")
+  test(2139.09, attr(x, "yaml_metadata")$this_is_true, TRUE)
   
-  test(2125.10, fwrite(data, file, yaml =  list(TRUE, "unnamed_stuff")), error = "unnamed")
+  test(2139.10, fwrite(data, file, yaml =  list(TRUE, "unnamed_stuff")), error = "unnamed")
   
   
-  data = data.table(x = 1, y = 100, 
+  data = data.table(x = 1L, y = 100L, 
                     c = factor(letters[1:3], levels = letters[1:4]), 
                     date = Sys.Date())
   attr(data$x, "attr") <- "attribute"
@@ -14896,11 +14896,14 @@ if (test_yaml) {  # csvy; #1701
   x = fread(file, yaml = TRUE)
   unlink(file)
   
-  test(2126.01, levels(x$c), letters[1:4])
-  test(2126.02, attr(data$x, "attr"), "attribute")
+  test(2139.11, levels(x$c), letters[1:4])
+  test(2139.12, attr(data$x, "attr"), "attribute")
   
-  fwrite(data, file, yaml = TRUE)
-  test(2126.03, fread(file, yaml = FALSE), x)
+  attr(data$x, "attr") <- NULL
+  data$c = as.character(data$c)
+  data$date = as.character(data$date)
+  
+  test(2139.13, fread(file, yaml = FALSE), data)
   unlink(file)
 }
 
@@ -16704,12 +16707,7 @@ test(2125.09, capture.output(print(DT, trunc.cols=TRUE)),
 test(2125.10, capture.output(print(DT, trunc.cols=TRUE, class=TRUE)),
      "4 variables not shown: [a <char>, b <char>, c <char>, d <char>]")
 options(old_width)
-# Extra arguments in yaml
-data = data.table(x = 1, y = 100)
-file = tempfile()
-fwrite(data, file, yaml =  list(something_else = "o hai!"))
-x = fread(file, yaml = TRUE)
-test(2125, attr(x, "yaml_metadata")$something_else, "o hai!")
+
 
 # segfault when i is NULL or zero-column, #4060
 DT = data.table(A="a", key="A")
