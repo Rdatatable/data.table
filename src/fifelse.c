@@ -17,10 +17,10 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b, SEXP na) {
 
   if (ta != tb) {
     if (TYPEORDER(ta)<TYPEORDER(tb)) {
-      a = PROTECT(coerceAsR(a, b)); nprotect++;
+      a = PROTECT(coerceAs(a, b, ScalarLogical(TRUE))); nprotect++;
       ta = tb;
     } else if (TYPEORDER(ta)>TYPEORDER(tb)) {
-      b = PROTECT(coerceAsR(b, a)); nprotect++;
+      b = PROTECT(coerceAs(b, a, ScalarLogical(TRUE))); nprotect++;
       tb = ta;
     }
     if (TYPEOF(a)!=TYPEOF(b))

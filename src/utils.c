@@ -308,20 +308,39 @@ SEXP coerceUtf8IfNeeded(SEXP x) {
   return(ans);
 }
 
-void coerceAs(SEXP x, SEXP as, SEXP out) {
-  if (!isVectorAtomic(x))
-    error("'x' is not atomic");
-  if (!isVectorAtomic(as))
-    error("'as' is not atomic");
-  if (TYPEOF(out)!=TYPEOF(as))
-    error("type of 'out' is not the same as type of 'as'");
-  if (LENGTH(out)!=LENGTH(x))
-    error("length of 'out' is not the same as length of 'x'");
-  const char *ret = memrecycle(/*target=*/out, /*where=*/R_NilValue, /*start=*/0, /*len=*/LENGTH(x), /*source=*/x, /*sourceStart=*/0, /*sourceLen=*/-1, /*colnum=*/0, /*colname=*/"", /*quiet=*/true);
-  if (ret) warning(_("memrecycle raises warning: %s"), ret);
+static inline SEXP CLASSOF(SEXP x) {
+  switch(TYPEOF(x)) {
+  case NILSXP: {
+    return(ScalarString(char_NULL));
+  } break;
+  case LGLSXP: {
+    return(ScalarString(char_logical));
+  } break;
+  case INTSXP: {
+    return(ScalarString(INHERITS(x, char_ITime) ? char_ITime : (INHERITS(x, char_IDate) ? char_IDate : (INHERITS(x, char_ordered) ? char_ordered : (INHERITS(x, char_factor) ? char_factor : char_integer)))));
+  } break;
+  case REALSXP: {
+    return(ScalarString(Rinherits(x, char_nanotime) ? char_nanotime : (Rinherits(x, char_integer64) ? char_integer64 : (INHERITS(x, char_POSIXct) ? char_POSIXct : (INHERITS(x, char_Date) ? char_Date : char_double)))));
+  } break;
+  case STRSXP : {
+    return(ScalarString(char_character));
+  } break;
+  case CPLXSXP : {
+    return(ScalarString(char_complex));
+  } break;
+  case RAWSXP : {
+    return(ScalarString(char_raw));
+  } break;
+  case VECSXP : {
+    return(ScalarString(INHERITS(x, char_datatable) ? char_datatable : (INHERITS(x, char_dataframe) ? char_dataframe : char_list)));
+  } break;
+  default:
+    error(_("Type %s is not supported."), type2char(TYPEOF(x))); // # nocov
+  }
+  return(ScalarString(NA_STRING)); // # nocov
 }
-
-SEXP coerceAsR(SEXP x, SEXP as) {
+SEXP coerceAs(SEXP x, SEXP as, SEXP copyArg) {
+  // copyArg does not update in place, but only IF an object is of the same type-class as class to be coerced, it will return with no copy
   if (!isVectorAtomic(x))
     error("'x' is not atomic");
   if (!isVectorAtomic(as))
@@ -329,9 +348,13 @@ SEXP coerceAsR(SEXP x, SEXP as) {
   if (isNewList(as))
     error("'as' is a list");
   int protecti=0;
+  bool copy = LOGICAL(copyArg)[0];
+  if (!copy && TYPEOF(x)==TYPEOF(as) && CLASSOF(x)==CLASSOF(as))
+    return(x);
   int len = LENGTH(x);
   SEXP ans = PROTECT(allocNAVectorLike(as, len)); protecti++;
-  coerceAs(x, as, ans);
+  const char *ret = memrecycle(/*target=*/ans, /*where=*/R_NilValue, /*start=*/0, /*len=*/LENGTH(x), /*source=*/x, /*sourceStart=*/0, /*sourceLen=*/-1, /*colnum=*/0, /*colname=*/"", /*quiet=*/true);
+  if (ret) warning(_("memrecycle raises warning: %s"), ret);
   UNPROTECT(protecti);
   return ans;
 }

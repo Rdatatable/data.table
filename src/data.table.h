@@ -79,6 +79,13 @@ extern SEXP char_ordered;
 extern SEXP char_datatable;
 extern SEXP char_dataframe;
 extern SEXP char_NULL;
+extern SEXP char_logical;
+extern SEXP char_integer;
+extern SEXP char_double;
+extern SEXP char_character;
+extern SEXP char_complex;
+extern SEXP char_list;
+extern SEXP char_raw;
 extern SEXP sym_sorted;
 extern SEXP sym_index;
 extern SEXP sym_BY;
@@ -227,8 +234,7 @@ bool islocked(SEXP x);
 SEXP islockedR(SEXP x);
 bool need2utf8(SEXP x);
 SEXP coerceUtf8IfNeeded(SEXP x);
-void coerceAs(SEXP x, SEXP as, SEXP out);
-SEXP coerceAsR(SEXP x, SEXP as);
+SEXP coerceAs(SEXP x, SEXP as, SEXP copyArg);
 
 // types.c
 char *end(char *start);
