@@ -52,7 +52,7 @@ null.data.table = function() {
 rowwiseDT = function(...) {
   x = substitute(list(...))[-1L]
   if (is.null(nms <- names(x)))
-    stop("Must provide at least one column (use `name=`)")
+    stop("Must provide at least one column (use `name=`). See ?rowwiseDT for details")
   header_pos = which(nzchar(nms))
   if (any(nzchar(x[header_pos])))
     stop("Named arguments must be empty")
