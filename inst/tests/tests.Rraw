@@ -14894,7 +14894,7 @@ if (test_yaml) {  # csvy; #1701
   attr(data$x, "attr") <- "attribute"
   fwrite(data, file, yaml = TRUE)
   x = fread(file, yaml = TRUE)
-  unlink(file)
+
   
   test(2139.11, levels(x$c), letters[1:4])
   test(2139.12, attr(data$x, "attr"), "attribute")
