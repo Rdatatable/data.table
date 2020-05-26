@@ -16849,6 +16849,6 @@ test(2138.4, rbind(A,B), data.table(A=c(as.character(A$A), B$A)))
 
 # fix#4324 should touch the jval's class only when it's a plain data.table
 A = data.table(COL = 'dt')
-class(A) <- c('newclass', class(A))
+class(A) = c('newclass', class(A))
 DT = data.table(LIST_COL = list(A, A))
 test(2139, class(DT[1, LIST_COL[[1]]]), class(A))
