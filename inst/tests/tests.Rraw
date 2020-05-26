@@ -16864,8 +16864,7 @@ test(2138.4, rbind(A,B), data.table(A=c(as.character(A$A), B$A)))
 
 # Set allow.cartesian = TRUE when non-equi #4489
 
-set.seed(2)
-dt = data.table(time = 1:8, v = sample(8))
+dt = data.table(time = 1:8, v = INT(5,7,6,1,8,4,2,3))
 dt[time == 2L, v := 2L]
 dt[time == 7L, v := 7L]
 
