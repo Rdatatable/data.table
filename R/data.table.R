@@ -62,7 +62,7 @@ rowwiseDT = function(...) {
   ncols = length(header)
   body = lapply(x[-header_pos], eval, envir = parent.frame())
   if (length(body) %% ncols != 0L) 
-    stop(sprintf("There're %d columns but the number of cells is %d, which is not an integer multiple of the columns", ncols, length(body)))
+    stop(gettextf("There're %d columns but the number of cells is %d, which is not an integer multiple of the columns", ncols, length(body), domain="R-data.table"))
   # make all the non-scalar elements to a list
   body = lapply(body, function(x) if (length(x) != 1L) list(x) else x)
   body = split(body, rep(seq_len(length(body) / ncols), each = ncols))
