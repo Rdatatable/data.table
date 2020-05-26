@@ -81,6 +81,9 @@ unit = "s")
 
 14. Added support for `round()` and `trunc()` to extend functionality of `ITime`. `round()` and `trunc()` can be used with argument units: "hours" or "minutes". Thanks to @JensPederM for the suggestion and PR.
 
+15. The `yaml` argument in `fread` now accepts a list which will be used to populate the yaml header of the generated csv file. Thanks to @eliocamp for the PR.
+
+
 ## BUG FIXES
 
 1. A NULL timezone on POSIXct was interpreted by `as.IDate` and `as.ITime` as UTC rather than the session's default timezone (`tz=""`) , [#4085](https://github.com/Rdatatable/data.table/issues/4085).

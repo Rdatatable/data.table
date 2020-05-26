@@ -57,7 +57,8 @@ Authors@R: c(
   person("David","Simons",         role="ctb"),
   person("Elliott","Sales de Andrade", role="ctb"),
   person("Cole","Miller",          role="ctb"),
-  person("@JenspederM","",         role="ctb"))
+  person("@JenspederM","",         role="ctb"),
+  person("Elio", "Campitelli",      role="ctb"))
 Depends: R (>= 3.1.0)
 Imports: methods
 Suggests: bit64, curl, R.utils, knitr, xts, nanotime, zoo, yaml
