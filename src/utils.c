@@ -308,37 +308,33 @@ SEXP coerceUtf8IfNeeded(SEXP x) {
   return(ans);
 }
 
-static inline SEXP CLASSOF(SEXP x) {
-  switch(TYPEOF(x)) {
-  case NILSXP: {
-    return(ScalarString(char_NULL));
-  } break;
-  case LGLSXP: {
-    return(ScalarString(char_logical));
-  } break;
-  case INTSXP: {
-    return(ScalarString(INHERITS(x, char_ITime) ? char_ITime : (INHERITS(x, char_IDate) ? char_IDate : (INHERITS(x, char_ordered) ? char_ordered : (INHERITS(x, char_factor) ? char_factor : char_integer)))));
-  } break;
-  case REALSXP: {
-    return(ScalarString(Rinherits(x, char_nanotime) ? char_nanotime : (Rinherits(x, char_integer64) ? char_integer64 : (INHERITS(x, char_POSIXct) ? char_POSIXct : (INHERITS(x, char_Date) ? char_Date : char_double)))));
-  } break;
-  case STRSXP : {
-    return(ScalarString(char_character));
-  } break;
-  case CPLXSXP : {
-    return(ScalarString(char_complex));
-  } break;
-  case RAWSXP : {
-    return(ScalarString(char_raw));
-  } break;
-  case VECSXP : {
-    return(ScalarString(INHERITS(x, char_datatable) ? char_datatable : (INHERITS(x, char_dataframe) ? char_dataframe : char_list)));
-  } break;
-  default:
-    error(_("Type %s is not supported."), type2char(TYPEOF(x))); // # nocov
+SEXP class1(SEXP x) {
+  SEXP cl = getAttrib(x, R_ClassSymbol);
+  if (length(cl))
+    return(STRING_ELT(cl, 0));
+  SEXP d = getAttrib(x, R_DimSymbol);
+  int nd = length(d);
+  if (nd) {
+    if (nd==2)
+      return(mkChar("matrix"));
+    else
+      return(mkChar("array"));
   }
-  return(ScalarString(NA_STRING)); // # nocov
+  SEXPTYPE t = TYPEOF(x);
+  switch(t) {
+  case CLOSXP: case SPECIALSXP: case BUILTINSXP:
+    return(mkChar("function"));
+  case REALSXP:
+    return(mkChar("numeric"));
+  case SYMSXP:
+    return(mkChar("name"));
+  case LANGSXP:
+    return(mkChar("call"));
+  default:
+    return(type2str(t));
+  }
 }
+
 SEXP coerceAs(SEXP x, SEXP as, SEXP copyArg) {
   // copyArg does not update in place, but only IF an object is of the same type-class as class to be coerced, it will return with no copy
   if (!isVectorAtomic(x))
@@ -347,14 +343,12 @@ SEXP coerceAs(SEXP x, SEXP as, SEXP copyArg) {
     error("'as' is not atomic");
   if (isNewList(as))
     error("'as' is a list");
-  int protecti=0;
-  bool copy = LOGICAL(copyArg)[0];
-  if (!copy && TYPEOF(x)==TYPEOF(as) && CLASSOF(x)==CLASSOF(as))
+  if (!LOGICAL(copyArg)[0] && TYPEOF(x)==TYPEOF(as) && class1(x)==class1(as))
     return(x);
   int len = LENGTH(x);
-  SEXP ans = PROTECT(allocNAVectorLike(as, len)); protecti++;
-  const char *ret = memrecycle(/*target=*/ans, /*where=*/R_NilValue, /*start=*/0, /*len=*/LENGTH(x), /*source=*/x, /*sourceStart=*/0, /*sourceLen=*/-1, /*colnum=*/0, /*colname=*/"", /*quiet=*/true);
-  if (ret) warning(_("memrecycle raises warning: %s"), ret);
-  UNPROTECT(protecti);
+  SEXP ans = PROTECT(allocNAVectorLike(as, len));
+  const char *ret = memrecycle(/*target=*/ans, /*where=*/R_NilValue, /*start=*/0, /*len=*/LENGTH(x), /*source=*/x, /*sourceStart=*/0, /*sourceLen=*/-1, /*colnum=*/0, /*colname=*/"");
+  if (ret) warning(_("%s"), ret);
+  UNPROTECT(1);
   return ans;
 }

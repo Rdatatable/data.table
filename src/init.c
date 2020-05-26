@@ -385,10 +385,10 @@ inline double LLtoD(long long x) {
   return u.d;
 }
 
-bool GetVerbose() {
+int GetVerbose() {
   // don't call repetitively; save first in that case
   SEXP opt = GetOption(sym_verbose, R_NilValue);
-  return isLogical(opt) && LENGTH(opt)==1 && LOGICAL(opt)[0]==1;
+  return (isLogical(opt) || isInteger(opt)) && LENGTH(opt)==1 && INTEGER(opt)[0];
 }
 
 // # nocov start

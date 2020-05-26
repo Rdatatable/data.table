@@ -126,7 +126,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
     }
 
     for (int j=0; j<length(iSD); ++j) {   // either this or the next for() will run, not both
-      memrecycle(VECTOR_ELT(iSD,j), R_NilValue, 0, 1, VECTOR_ELT(groups, INTEGER(jiscols)[j]-1), i, 1, j+1, "Internal error assigning to iSD", /*quiet=*/false);
+      memrecycle(VECTOR_ELT(iSD,j), R_NilValue, 0, 1, VECTOR_ELT(groups, INTEGER(jiscols)[j]-1), i, 1, j+1, "Internal error assigning to iSD");
       // we're just use memrecycle here to assign a single value
     }
     // igrp determines the start of the current group in rows of dt (0 based).
@@ -134,7 +134,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
     // Otherwise, igrp needs to be determined from starts, potentially taking care about the order if present.
     igrp = !isNull(jiscols) ? i : (length(grporder) ? INTEGER(grporder)[istarts[i]-1]-1 : istarts[i]-1);
     if (igrp>=0 && nrowgroups) for (int j=0; j<length(BY); ++j) {    // igrp can be -1 so 'if' is important, otherwise memcpy crash
-      memrecycle(VECTOR_ELT(BY,j), R_NilValue, 0, 1, VECTOR_ELT(groups, INTEGER(grpcols)[j]-1), igrp, 1, j+1, "Internal error assigning to BY", /*quiet=*/false);
+      memrecycle(VECTOR_ELT(BY,j), R_NilValue, 0, 1, VECTOR_ELT(groups, INTEGER(grpcols)[j]-1), igrp, 1, j+1, "Internal error assigning to BY");
     }
     if (istarts[i] == NA_INTEGER || (LENGTH(order) && iorder[ istarts[i]-1 ]==NA_INTEGER)) {
       for (int j=0; j<length(SDall); ++j) {
@@ -163,9 +163,9 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
         for (int j=0; j<grpn; ++j) iI[j] = rownum+j+1;
         if (rownum>=0) {
           for (int j=0; j<length(SDall); ++j)
-            memrecycle(VECTOR_ELT(SDall,j), R_NilValue, 0, grpn, VECTOR_ELT(dt, INTEGER(dtcols)[j]-1), rownum, grpn, j+1, "Internal error assigning to SDall", /*quiet=*/false);
+            memrecycle(VECTOR_ELT(SDall,j), R_NilValue, 0, grpn, VECTOR_ELT(dt, INTEGER(dtcols)[j]-1), rownum, grpn, j+1, "Internal error assigning to SDall");
           for (int j=0; j<length(xSD); ++j)
-            memrecycle(VECTOR_ELT(xSD,j), R_NilValue, 0, 1, VECTOR_ELT(dt, INTEGER(xjiscols)[j]-1), rownum, 1, j+1, "Internal error assigning to xSD", /*quiet=*/false);
+            memrecycle(VECTOR_ELT(xSD,j), R_NilValue, 0, 1, VECTOR_ELT(dt, INTEGER(xjiscols)[j]-1), rownum, 1, j+1, "Internal error assigning to xSD");
         }
         if (verbose) { tblock[0] += clock()-tstart; nblock[0]++; }
       } else {
@@ -239,7 +239,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
           SET_STRING_ELT(dtnames, colj, STRING_ELT(newnames, colj-origncol));
           copyMostAttrib(RHS, target); // attributes of first group dominate; e.g. initial factor levels come from first group
         }
-        const char *warn = memrecycle(target, order, INTEGER(starts)[i]-1, grpn, RHS, 0, -1, 0, "", /*quiet=*/false);
+        const char *warn = memrecycle(target, order, INTEGER(starts)[i]-1, grpn, RHS, 0, -1, 0, "");
         // can't error here because length mismatch already checked for all jval columns before starting to add any new columns
         if (warn)
           warning(_("Group %d column '%s': %s"), i+1, CHAR(STRING_ELT(dtnames, colj)), warn);
@@ -315,7 +315,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
     }
     // write the group values to ans, recycled to match the nrow of the result for this group ...
     for (int j=0; j<ngrpcols; ++j) {
-      memrecycle(VECTOR_ELT(ans,j), R_NilValue, ansloc, maxn, VECTOR_ELT(groups, INTEGER(grpcols)[j]-1), igrp, 1, j+1, "Internal error recycling group values", /*quiet=*/false);
+      memrecycle(VECTOR_ELT(ans,j), R_NilValue, ansloc, maxn, VECTOR_ELT(groups, INTEGER(grpcols)[j]-1), igrp, 1, j+1, "Internal error recycling group values");
     }
     // Now copy jval into ans ...
     for (int j=0; j<njval; ++j) {
@@ -338,7 +338,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
         if (thislen>1 && thislen!=maxn && grpn>0) {  // grpn>0 for grouping empty tables; test 1986
           error(_("Supplied %d items for column %d of group %d which has %d rows. The RHS length must either be 1 (single values are ok) or match the LHS length exactly. If you wish to 'recycle' the RHS please use rep() explicitly to make this intent clear to readers of your code."), thislen, j+1, i+1, maxn);
         }
-        memrecycle(target, R_NilValue, thisansloc, maxn, source, 0, -1, 0, "", /*quiet=*/false);
+        memrecycle(target, R_NilValue, thisansloc, maxn, source, 0, -1, 0, "");
       }
     }
     ansloc += maxn;
