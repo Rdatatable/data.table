@@ -10,11 +10,8 @@ rowwiseDT(...)
 \arguments{
   \item{...}{ Arguments that defines the structure of a \code{data.table}. The column names must be specified as \code{col=} and may only appear before the data. See the examples section for details. }
 }
-\details{
-If the length of any value is not one (i.e., not scalar), the whole column will be converted to a list column.
-}
 \value{
-A \code{data.table} object.
+A \code{data.table} object. The default is for each column to return as a vector. However, if any column has a length that is not one (e.g., \code{list(1, 2)}), the whole column will be converted to a list column.
 }
 \seealso{
   \code{\link{data.table}}
