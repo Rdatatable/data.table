@@ -1,63 +1,90 @@
 #include "data.table.h"
 
-// DONE: return 'uniqlist' as a vector (same as duplist) and write a separate function to get group sizes
-// Also improvements for numeric type with a hack of checking unsigned int (to overcome NA/NaN/Inf/-Inf comparisons) (> 2x speed-up)
-SEXP uniqlist(SEXP l, SEXP order)
-{
-  // This works like UNIX uniq as referred to by ?base::unique; i.e., it
-  // drops immediately repeated rows but doesn't drop duplicates of any
-  // previous row. Unless, order is provided, then it also drops any previous
-  // row. l must be a list of same length vectors ans is allocated first
-  // (maximum length the number of rows) and the length returned in anslen.
-  // No NA in order which is guaranteed since internal-only. Used at R level internally (Cuniqlist) but is not and should not be exported.
-  // DONE: ans is now grown
-  if (!isNewList(l)) error(_("Internal error: uniqlist has not been passed a list of columns")); // # nocov
-  R_len_t ncol = length(l);
-  R_len_t nrow = length(VECTOR_ELT(l,0));
-  if (!isInteger(order)) error(_("Internal error: uniqlist has been passed a non-integer order")); // # nocov
-  if (LENGTH(order)<1) error(_("Internal error: uniqlist has been passed a length-0 order")); // # nocov
-  if (LENGTH(order)>1 && LENGTH(order)!=nrow) error(_("Internal error: uniqlist has been passed length(order)==%d but nrow==%d"), LENGTH(order), nrow); // # nocov
-  bool via_order = INTEGER(order)[0] != -1;  // has an ordering vector been passed in that we have to hop via? Don't use MISSING() here as it appears unstable on Windows
+/* uniq macros */
 
-  unsigned long long *ulv; // for numeric check speed-up
-  SEXP v, ans;
-  R_len_t len, thisi, previ, isize=1000;
+#define COMPARE1                                                              \
+prev = *vd;                                                                   \
+for (int i=1; i<nrow; i++) {                                                  \
+  elem = *++vd;                                                               \
+  if (elem!=prev
+
+#define COMPARE1_VIA_ORDER                                                    \
+prev = vd[*o -1];                                                             \
+for (int i=1; i<nrow; i++) {                                                  \
+  elem = vd[*++o -1];                                                         \
+  if (elem!=prev
+
+#define COMPARE1_VIA_ORDER_SAFE                                               \
+prev = vd[*o -1];                                                             \
+for (int i=1; i<nrow; i++) {                                                  \
+  int oi = *++o;                                                              \
+  if (oi < 1 || oi > nrow)                                                    \
+    error("'order' must be in range 1:nrow(x)");                              \
+  elem = vd[oi -1];                                                           \
+  if (elem!=prev
+
+#define COMPARE2                                                              \
+  ) {                                                                         \
+    iidx[len++] = i+1;                                                        \
+    if (len>=isize) {                                                         \
+      isize = MIN(nrow, (size_t)(1.1*(double)isize*((double)nrow/i)));        \
+      iidx = Realloc(iidx, isize, int);                                       \
+    }                                                                         \
+  }                                                                           \
+  prev = elem;                                                                \
+}
+
+SEXP uniq(SEXP x, SEXP order, SEXP safe) {
+  // safe=true ensure no segfault using COMPARE1_VIA_ORDER_SAFE
+  // safe=false is not available in public API
+  if (!isNewList(x))
+    error(_("internal error: 'x' must be a data.table type object"));
+  if (!isInteger(order))
+    error(_("internal error: 'order' must be an integer"));
+  if (!IS_TRUE_OR_FALSE(safe))
+    error(_("internal error: 'safe' must be TRUE or FALSE"));
+  const bool verbose = GetVerbose();
+  double tic = 0;
+  if (verbose)
+    tic = omp_get_wtime();
+  R_len_t ncol = length(x);
+  R_len_t nrow = length(VECTOR_ELT(x,0));
+  if (!ncol || !nrow) {
+    SEXP ans = PROTECT(allocVector(INTSXP, 0));
+    if (verbose)
+      Rprintf(_("uniq: took %.3fs\n"), omp_get_wtime()-tic);
+    UNPROTECT(1);
+    return(ans);
+  }
+  bool via_order = LENGTH(order) > 0;
+  bool via_order_safe = via_order && LOGICAL(safe)[0];
+  if (via_order && LENGTH(order)!=nrow)
+    error(_("internal error: uniq has been passed length(order)==%d but nrow==%d"), LENGTH(order), nrow);
+  const int *o = INTEGER(order);  // only used when via_order[_safe] is true
+  if (nrow==1) {
+    if (via_order && o[0]!=1)
+      error("'order' must be in range 1:nrow(x)");
+    SEXP ans = PROTECT(allocVector(INTSXP, 1));
+    INTEGER(ans)[0] = 1;
+    if (verbose)
+      Rprintf(_("uniq: took %.3fs\n"), omp_get_wtime()-tic);
+    UNPROTECT(1);
+    return(ans);
+  }
+  
+  unsigned long long *ulv; // for numeric check speed-up (to overcome NA/NaN/Inf/-Inf comparisons) (> 2x speed-up)
+  R_len_t isize=1000, len=1;
   int *iidx = Calloc(isize, int); // for 'idx'
-  len = 1;
   iidx[0] = 1; // first row is always the first of the first group
-
   if (ncol==1) {
-
-#define COMPARE1                                                                 \
-      prev = *vd;                                                                \
-      for (int i=1; i<nrow; i++) {                                               \
-        elem = *++vd;                                                            \
-        if (elem!=prev
-
-#define COMPARE1_VIA_ORDER                                                       \
-      prev = vd[*o -1];                                                          \
-      for (int i=1; i<nrow; i++) {                                               \
-        elem = vd[*++o -1];                                                      \
-        if (elem!=prev
-
-#define COMPARE2                                                                 \
-                        ) {                                                      \
-          iidx[len++] = i+1;                                                     \
-          if (len>=isize) {                                                      \
-            isize = MIN(nrow, (size_t)(1.1*(double)isize*((double)nrow/i)));     \
-            iidx = Realloc(iidx, isize, int);                                    \
-          }                                                                      \
-        }                                                                        \
-        prev = elem;                                                             \
-      }
-
-    SEXP v = VECTOR_ELT(l,0);
-    int *o = INTEGER(order);  // only used when via_order is true
+    SEXP v = VECTOR_ELT(x,0);
     switch(TYPEOF(v)) {
     case INTSXP : case LGLSXP : {
       const int *vd=INTEGER(v);
       int prev, elem;
-      if (via_order) {
+      if (via_order_safe) {
+        COMPARE1_VIA_ORDER_SAFE COMPARE2
+      } else if (via_order) {
         // ad hoc by (order passed in)
         COMPARE1_VIA_ORDER COMPARE2
       } else {
@@ -68,7 +95,9 @@ SEXP uniqlist(SEXP l, SEXP order)
     case STRSXP : {
       const SEXP *vd=STRING_PTR(v);
       SEXP prev, elem;
-      if (via_order) {
+      if (via_order_safe) {
+        COMPARE1_VIA_ORDER_SAFE && ENC2UTF8(elem)!=ENC2UTF8(prev) COMPARE2
+      } else if (via_order) {
         COMPARE1_VIA_ORDER && ENC2UTF8(elem)!=ENC2UTF8(prev) COMPARE2   // but most of the time they are equal, so ENC2UTF8 doesn't need to be called
       } else {
         COMPARE1           && ENC2UTF8(elem)!=ENC2UTF8(prev) COMPARE2
@@ -78,81 +107,103 @@ SEXP uniqlist(SEXP l, SEXP order)
       const uint64_t *vd=(const uint64_t *)REAL(v);
       uint64_t prev, elem;
       // grouping by integer64 makes sense (ids). grouping by float supported but a good use-case for that is harder to imagine
-      if (getNumericRounding_C()==0 /*default*/ || inherits(v, "integer64")) {
-        if (via_order) {
+      if (getNumericRounding_C()==0 /*default*/ ||
+          Rinherits(v,char_integer64)) {
+        if (via_order_safe) {
+          COMPARE1_VIA_ORDER_SAFE COMPARE2
+        } else if (via_order) {
           COMPARE1_VIA_ORDER COMPARE2
         } else {
           COMPARE1           COMPARE2
         }
       } else {
-        if (via_order) {
+        if (via_order_safe) {
+          COMPARE1_VIA_ORDER_SAFE && dtwiddle(&elem, 0)!=dtwiddle(&prev, 0) COMPARE2
+        } else if (via_order) {
           COMPARE1_VIA_ORDER && dtwiddle(&elem, 0)!=dtwiddle(&prev, 0) COMPARE2
         } else {
           COMPARE1           && dtwiddle(&elem, 0)!=dtwiddle(&prev, 0) COMPARE2
         }
       }
     } break;
-    default :
-      error(_("Type '%s' not supported"), type2char(TYPEOF(v)));  // # nocov
+    default : {
+      error(_("Type '%s' not supported"), type2char(TYPEOF(v)));
     }
-  } else {
-    // ncol>1
-    thisi = via_order ? INTEGER(order)[0]-1 : 0;
+    }
+  } else { // ncol>1
+    R_len_t previ, thisi = via_order ? o[0]-1 : 0;
     bool *i64 = (bool *)R_alloc(ncol, sizeof(bool));
-    for (int i=0; i<ncol; i++) i64[i] = INHERITS(VECTOR_ELT(l,i), char_integer64);
+    for (int i=0; i<ncol; i++)
+      i64[i] = Rinherits(VECTOR_ELT(x,i),char_integer64);
     for (int i=1; i<nrow; i++) {
       previ = thisi;
-      thisi = via_order ? INTEGER(order)[i]-1 : i;
+      if (!via_order) {
+        thisi = i;
+      } else {
+        int oi = o[i];
+        if (via_order_safe && (oi < 1 || oi > nrow))
+          error("'order' must be in range 1:nrow(x)");
+        thisi = oi-1;
+      }
       int j = ncol;  // the last column varies the most frequently so check that first and work backwards
-      bool b = true;
-      while (--j>=0 && b) {
-        v=VECTOR_ELT(l,j);
+      bool same = true; // flag to indicate if the values in a row are same as the previous row, if flag false then we can move on to next group
+      while (--j>=0 && same) {
+        SEXP v = VECTOR_ELT(x,j);
         switch (TYPEOF(v)) {
-        case INTSXP : case LGLSXP :  // NA_INTEGER==NA_LOGICAL checked in init.c
-          b=INTEGER(v)[thisi]==INTEGER(v)[previ]; break;
-        case STRSXP :
+        case INTSXP : case LGLSXP : { // NA_INTEGER==NA_LOGICAL checked in init.c
+          same = INTEGER(v)[thisi]==INTEGER(v)[previ];
+        } break;
+        case STRSXP : {
           // fix for #469, when key is set, duplicated calls uniqlist, where encoding
           // needs to be taken care of.
-          b=ENC2UTF8(STRING_ELT(v,thisi))==ENC2UTF8(STRING_ELT(v,previ)); break;  // marked non-utf8 encodings are converted to utf8 so as to match properly when inputs are of different encodings.
-        case REALSXP :
+          same = ENC2UTF8(STRING_ELT(v,thisi))==ENC2UTF8(STRING_ELT(v,previ));
+        } break;  // marked non-utf8 encodings are converted to utf8 so as to match properly when inputs are of different encodings.
+        case REALSXP : {
           ulv = (unsigned long long *)REAL(v);
-          b = ulv[thisi] == ulv[previ]; // (gives >=2x speedup)
-          if (!b && !i64[j]) {
-            b = dtwiddle(ulv, thisi) == dtwiddle(ulv, previ);
+          same = ulv[thisi] == ulv[previ]; // (gives >=2x speedup)
+          if (!same && !i64[j]) {
+            same = dtwiddle(ulv, thisi) == dtwiddle(ulv, previ);
             // could store LHS for use next time as RHS (to save calling dtwiddle twice). However: i) there could be multiple double columns so vector of RHS would need
             // to be stored, ii) many short-circuit early before the if (!b) anyway (negating benefit) and iii) we may not have needed LHS this time so logic would be complex.
           }
-          break;
-        default :
-          error(_("Type '%s' not supported"), type2char(TYPEOF(v)));  // # nocov
+        } break;
+        default : {
+          error(_("Type '%s' not supported"), type2char(TYPEOF(v)));
+        }
         }
       }
-      if (!b) {
+      if (!same) {
         iidx[len++] = i+1;
         if (len >= isize) {
           isize = MIN(nrow, (size_t)(1.1*(double)isize*((double)nrow/i)));
           iidx = Realloc(iidx, isize, int);
         }
-      }
+      } // almost like COMPARE2 but no last line: prev = elem
     }
   }
-  PROTECT(ans = allocVector(INTSXP, len));
+  SEXP ans = PROTECT(allocVector(INTSXP, len));
   memcpy(INTEGER(ans), iidx, sizeof(int)*len); // sizeof is of type size_t - no integer overflow issues
   Free(iidx);
+  if (verbose)
+    Rprintf(_("uniq: took %.3fs\n"), omp_get_wtime()-tic);
   UNPROTECT(1);
   return(ans);
 }
 
 SEXP uniqlengths(SEXP x, SEXP n) {
-  // seems very similar to rbindlist.c:uniq_lengths. TODO: centralize into common function
-  if (TYPEOF(x) != INTSXP) error(_("Input argument 'x' to 'uniqlengths' must be an integer vector"));
-  if (TYPEOF(n) != INTSXP || length(n) != 1) error(_("Input argument 'n' to 'uniqlengths' must be an integer vector of length 1"));
+  if (!isInteger(x))
+    error(_("internal error: Input argument 'x' to 'uniqlengths' must be an integer vector")); // # nocov
+  if (!isInteger(x) || length(n)!=1 || INTEGER(n)[0]==NA_INTEGER)
+    error(_("internal error: Input argument 'n' to 'uniqlengths' must be an integer vector of length 1 non NA")); // # nocov
   R_len_t len = length(x);
   SEXP ans = PROTECT(allocVector(INTSXP, len));
-  for (R_len_t i=1; i<len; i++) {
-    INTEGER(ans)[i-1] = INTEGER(x)[i] - INTEGER(x)[i-1];
+  const int *xp = INTEGER(x);
+  int *ansp = INTEGER(ans);
+  for (R_len_t i=1; i<len; ++i) {
+    ansp[i-1] = xp[i] - xp[i-1];
   }
-  if (len>0) INTEGER(ans)[len-1] = INTEGER(n)[0] - INTEGER(x)[len-1] + 1;
+  if (len>0)
+    ansp[len-1] = INTEGER(n)[0] - xp[len-1] + 1;
   UNPROTECT(1);
   return(ans);
 }
@@ -346,8 +397,10 @@ SEXP nestedid(SEXP l, SEXP cols, SEXP order, SEXP grps, SEXP resetvals, SEXP mul
 
 SEXP uniqueNlogical(SEXP x, SEXP narmArg) {
   // single pass; short-circuit and return as soon as all 3 values are found
-  if (!isLogical(x)) error(_("x is not a logical vector"));
-  if (!isLogical(narmArg) || length(narmArg)!=1 || INTEGER(narmArg)[0]==NA_INTEGER) error(_("na.rm must be TRUE or FALSE"));
+  if (!isLogical(x))
+    error(_("internal error: x is not a logical vector")); // # nocov
+  if (!IS_TRUE_OR_FALSE(narmArg))
+    error(_("na.rm must be TRUE or FALSE"));
   bool narm = LOGICAL(narmArg)[0]==1;
   const R_xlen_t n = xlength(x);
   if (n==0)
@@ -356,16 +409,27 @@ SEXP uniqueNlogical(SEXP x, SEXP narmArg) {
   R_xlen_t i=0;
   const int *ix = LOGICAL(x);
   while (++i<n && ix[i]==first);
-  if (i==n)
-    return ScalarInteger(first==NA_INTEGER && narm ? 0 : 1); // all one value
+  if (i==n) { // all values the same
+    if (first==NA_INTEGER && narm) {
+      return ScalarInteger(0);
+    } else {
+      return ScalarInteger(1);
+    }
+  }
   Rboolean second = ix[i];
   // we've found 2 different values (first and second). Which one didn't we find? Then just look for that.
   // NA_LOGICAL == INT_MIN checked in init.c
-  const int third = (first+second == 1) ? NA_LOGICAL : ( first+second == INT_MIN ? TRUE : FALSE );
+  int third;
+  if (first+second == 1) {
+    third = NA_LOGICAL;
+  } else {
+    third = first+second == INT_MIN;
+  }
   if (third==NA_LOGICAL && narm)
-    return ScalarInteger(2);  // TRUE and FALSE found before any NA, but na.rm=TRUE so we're done
-  while (++i<n) if (ix[i]==third)
-    return ScalarInteger(3-narm);
+    return ScalarInteger(2); // TRUE and FALSE found before any NA, but na.rm=TRUE so we're done
+  while (++i<n) {
+    if (ix[i]==third)
+      return ScalarInteger(3-narm);
+  }
   return ScalarInteger(2-(narm && third!=NA_LOGICAL));
 }
-
