@@ -109,7 +109,7 @@ unit = "s")
 
 13. A relatively rare case of segfault when combining non-equi joins with `by=.EACHI` is now fixed, closes [#4388](https://github.com/Rdatatable/data.table/issues/4388).
 
-14. Fix the issue that the class may get modified, when `j` returns an object whose class is inherited from data.table. This was a regression in v1.9.4. Thanks to @HJAllen for reporting and @shrektan for the PR.
+14. Fix the issue that the class may get modified, when `j` returns an object whose class is inherited from data.table, [#4324](https://github.com/Rdatatable/data.table/issues/4324). This was a regression in v1.9.4. Thanks to @HJAllen for reporting and @shrektan for the PR.
 
 ## NOTES
 
