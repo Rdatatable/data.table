@@ -16863,10 +16863,8 @@ test(2139.04, rowwiseDT(A=,B=,C=, 1,"a",2,"b",3), error = "There're 3 columns bu
 test(2139.05, rowwiseDT(A=,list(1)), data.table(A=list(1)))
 test(2139.06, rowwiseDT(A=,1:2), data.table(A=list(1:2)))
 test(2139.07, rowwiseDT(A=,double()), data.table(A=list(double())))
-# pass the key argument
-test(2139.08, rowwiseDT(A=,B=,1,2,key="A,B"), data.table(A=1,B=2,key="A,B"))
 # error if named argument is in the middle
-test(2139.09, rowwiseDT(A=,B=,1,2,C=,4), error="Header must be the first N arguments")
+test(2139.08, rowwiseDT(A=,B=,1,2,C=,4), error="Header must be the first N arguments")
 # evaluate arguments in the correct frame
 ncols = 1e6
-test(2139.10, rowwiseDT(A=,ncols), data.table(A=ncols))
+test(2139.09, rowwiseDT(A=,ncols), data.table(A=ncols))

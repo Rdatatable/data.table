@@ -49,7 +49,7 @@ null.data.table = function() {
   setalloccol(ans)
 }
 
-rowwiseDT = function(..., key=NULL) {
+rowwiseDT = function(...) {
   x = substitute(list(...))[-1L]
   if (is.null(nms <- names(x)))
     stop("Must provide at least one column (use `name=`)")
@@ -68,10 +68,6 @@ rowwiseDT = function(..., key=NULL) {
   body = split(body, rep(seq_len(length(body) / ncols), each = ncols))
   ans = rbindlist(body)
   setnames(ans, header)
-  if (!is.null(key)) {
-    key = trimws(strsplit(key, split = ",", fixed = TRUE)[[1L]])
-    setkeyv(ans, key)
-  }
   ans
 }
 
