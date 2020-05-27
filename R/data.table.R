@@ -1337,7 +1337,7 @@ replace_dot_alias = function(e) {
     if (is.data.table(jval)) {
       setattr(jval, 'class', class(x)) # fix for #64
       if (haskey(x) && 
-          all(key(x) == names(jval)) && ## order of names should matter for the key; %chin% wouldn't care about order!
+          all(key(x) %chin% names(jval)) &&
           ((is.null(irows) && jsub %iscall% "list" && all(vapply_1b(as.list(jsub)[-1L], is.name))) || ##fix for #4498
            suppressWarnings(is.sorted(jval, by=key(x))))
           )  # TO DO: perhaps this usage of is.sorted should be allowed internally then (tidy up and make efficient)
