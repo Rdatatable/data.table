@@ -45,7 +45,7 @@ which.last = function(x)
 
 require_bit64_if_needed = function(DT) {
   # called in fread and print.data.table
-  if (!isNamespaceLoaded("bit64") && any(sapply(DT,inherits,"integer64"))) {
+  if (!isNamespaceLoaded("bit64") && any(vapply_1b(DT, inherits, "integer64"))) {
     # nocov start
     # a test was attempted to cover the requireNamespace() by using unloadNamespace() first, but that fails when nanotime is loaded because nanotime also uses bit64
     if (!requireNamespace("bit64",quietly=TRUE)) {
@@ -84,7 +84,7 @@ name_dots = function(...) {
   }
   notnamed = vnames==""
   if (any(notnamed)) {
-    syms = sapply(dot_sub, is.symbol)  # save the deparse() in most cases of plain symbol
+    syms = vapply_1b(dot_sub, is.symbol)  # save the deparse() in most cases of plain symbol
     for (i in which(notnamed)) {
       tmp = if (syms[i]) as.character(dot_sub[[i]]) else deparse(dot_sub[[i]])[1L]
       if (tmp == make.names(tmp)) vnames[i]=tmp

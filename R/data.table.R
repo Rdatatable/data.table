@@ -1338,7 +1338,7 @@ replace_dot_alias = function(e) {
       setattr(jval, 'class', class(x)) # fix for #64
       if (haskey(x) && all(key(x) %chin% names(jval)) && suppressWarnings(is.sorted(jval, by=key(x))))  # TO DO: perhaps this usage of is.sorted should be allowed internally then (tidy up and make efficient)
         setattr(jval, 'sorted', key(x))
-      if (any(sapply(jval, is.null))) stop("Internal error: j has created a data.table result containing a NULL column") # nocov
+      if (any(vapply_1b(jval, is.null))) stop("Internal error: j has created a data.table result containing a NULL column") # nocov
     }
     return(jval)
   }
