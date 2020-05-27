@@ -284,7 +284,7 @@ if (test_bit64) {
   test(10.86, coerceAs("1", x), x, output="character[character] into double[integer64]")
 }
 if (test_nanotime) {
-  x = as.nanotime(1L)
+  x = nanotime(1L)
   test(10.91, coerceAs(x, 1), 1, output="double[nanotime] into double[numeric]")
   test(10.92, coerceAs(x, 1L), 1L, output="double[nanotime] into integer[integer]")
   test(10.93, coerceAs(x, "1"), error="please use as.character") #output="double[nanotime] into character[character]") # not yet implemented
