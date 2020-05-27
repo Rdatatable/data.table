@@ -260,8 +260,9 @@ test(10.14, coerceAs(1, factor("x", levels=c("x","y"))), factor("x", levels=c("x
 test(10.15, coerceAs(2, factor("x", levels=c("x","y"))), factor("y", levels=c("x","y")), output="double[numeric] into integer[factor]")
 test(10.16, coerceAs(1:2, factor(c("x","y"))), factor(c("x","y")), output="integer[integer] into integer[factor]")
 test(10.17, coerceAs(1:3, factor(c("x","y"))), output="integer[integer] into integer[factor]", error="factor numbers.*3 is outside the level range")
-test(10.18, coerceAs(factor("x"), factor(c("x","y"))), factor("x", levels=c("x","y")))
-test(10.19, coerceAs(factor("x"), factor(c("x","y")), copy=FALSE), factor("x", levels=c("x","y"))) ## copy=F has copyMostAttrib
+test(10.18, coerceAs(c(1,2,3), factor(c("x","y"))), output="double[numeric] into integer[factor]", error="factor numbers.*3.000000 is outside the level range")
+test(10.19, coerceAs(factor("x"), factor(c("x","y"))), factor("x", levels=c("x","y")))
+test(10.20, coerceAs(factor("x"), factor(c("x","y")), copy=FALSE), factor("x", levels=c("x","y"))) ## copy=F has copyMostAttrib
 a = structure("a", class="a")
 b = structure("b", class="b")
 test(10.21, coerceAs(a, b), structure("a", class="b"), output="character[a] into character[b]")
@@ -282,6 +283,10 @@ if (test_bit64) {
   test(10.84, coerceAs(1, x), x, output="double[numeric] into double[integer64]")
   test(10.85, coerceAs(1L, x), x, output="integer[integer] into double[integer64]")
   test(10.86, coerceAs("1", x), x, output="character[character] into double[integer64]")
+  options(datatable.verbose=3L)
+  test(10.87, coerceAs(x, 1L), 1L, output=c("double[integer64] into integer[integer]","Zero-copy coerce when assigning 'integer64' to 'integer'"))
+  test(10.88, coerceAs(1L, x), x, output=c("integer[integer] into double[integer64]","Zero-copy coerce when assigning 'integer' to 'integer64'"))
+  options(datatable.verbose=2L)
 }
 if (test_nanotime) {
   x = nanotime(1L)

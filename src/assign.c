@@ -844,7 +844,7 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
   } else if (isNewList(source) && !isNewList(target)) {
     if (targetIsI64) {
       if (nocol)
-        error(_("Cannot coerce 'list' RHS to 'integer64' to match the target type."));
+        error(_("Cannot coerce 'list' RHS to 'integer64' to match the target type.")); // # nocov because coerceAs does not accept lists
       else
         error(_("Cannot coerce 'list' RHS to 'integer64' to match the type of the target column (column %d named '%s')."), colnum, colname);
       // because R's coerceVector doesn't know about integer64
