@@ -1336,13 +1336,25 @@ replace_dot_alias = function(e) {
 
     if (is.data.table(jval)) {
       setattr(jval, 'class', class(x)) # fix for #64
-      if (haskey(x) && 
-          all(key(x) %chin% names(jval)) &&
-          ((is.null(irows) && jsub %iscall% "list" && all(vapply_1b(as.list(jsub)[-1L], is.name))) || ##fix for #4498
-           suppressWarnings(is.sorted(jval, by=key(x))))
-          )  # TO DO: perhaps this usage of is.sorted should be allowed internally then (tidy up and make efficient)
+      # can jval be sorted by the same key as x? improved for #4498
+      get_shared_keys = function(jsub, jvnames, key) {
+        if (is.null(key)) return(NULL)
+        if (!jsub %iscall% "list") return(NULL)
+        jnames = as.character(Filter(is.name, jsub)[-1L])
+        key_idx = chmatch(key, jnames)
+        missing_keys = which(is.na(key_idx))
+        if (length(missing_keys) && missing_keys[1L] == 1L) return(NULL)
+        if (!length(missing_keys)) return(jvnames[key_idx])
+        return(jvnames[head(key_idx, missing_keys[1L] - 1L)])
+      }
+      shared_keys = get_shared_keys(jsub, jvnames, key(x))
+      if (is.null(irows) && !is.null(shared_keys)) {
+        setattr(jval, 'sorted', shared_keys)
+        # potentially inefficient backup -- check if jval is sorted by key(x)
+      } else if (haskey(x) && all(key(x) %chin% names(jval)) && suppressWarnings(is.sorted(jval, by=key(x)))) { # TO DO: perhaps this usage of is.sorted should be allowed internally then (tidy up and make efficient)
         setattr(jval, 'sorted', key(x))
-      if (any(sapply(jval, is.null))) stop("Internal error: j has created a data.table result containing a NULL column") # nocov
+      }
+      if (any(vapply_1b(jval, is.null))) stop("Internal error: j has created a data.table result containing a NULL column") # nocov
     }
     return(jval)
   }

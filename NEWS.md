@@ -109,7 +109,7 @@ unit = "s")
 
 13. A relatively rare case of segfault when combining non-equi joins with `by=.EACHI` is now fixed, closes [#4388](https://github.com/Rdatatable/data.table/issues/4388).
 
-14. Selecting keyed list columns will retain key without a performance penalty, closes [#4498](https://github.com/Rdatatable/data.table/issues/4498). Thanks to @MichaelChirico for report.
+14. Selecting keyed list columns will retain key without a performance penalty, closes [#4498](https://github.com/Rdatatable/data.table/issues/4498). Thanks to @user9439449 on StackOverflow for the report.
 
 ## NOTES
 
