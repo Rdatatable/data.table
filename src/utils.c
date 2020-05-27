@@ -343,12 +343,20 @@ SEXP coerceAs(SEXP x, SEXP as, SEXP copyArg) {
     error("'as' is not atomic");
   if (isNewList(as))
     error("'as' is a list");
-  if (!LOGICAL(copyArg)[0] && TYPEOF(x)==TYPEOF(as) && class1(x)==class1(as))
+  bool verbose = GetVerbose()>=2; // verbose level 2 required
+  if (!LOGICAL(copyArg)[0] && TYPEOF(x)==TYPEOF(as) && class1(x)==class1(as)) {
+    if (verbose)
+      Rprintf("copy=false and input already of expected type and class %s[%s]\n", type2char(TYPEOF(x)), CHAR(class1(x)));
+    copyMostAttrib(as, x); // factor levels are same for copy=T|F
     return(x);
+  }
   int len = LENGTH(x);
   SEXP ans = PROTECT(allocNAVectorLike(as, len));
+  if (verbose)
+    Rprintf("Coercing %s[%s] into %s[%s]\n", type2char(TYPEOF(x)), CHAR(class1(x)), type2char(TYPEOF(as)), CHAR(class1(as)));
   const char *ret = memrecycle(/*target=*/ans, /*where=*/R_NilValue, /*start=*/0, /*len=*/LENGTH(x), /*source=*/x, /*sourceStart=*/0, /*sourceLen=*/-1, /*colnum=*/0, /*colname=*/"");
-  if (ret) warning(_("%s"), ret);
+  if (ret)
+    warning(_("%s"), ret);
   UNPROTECT(1);
   return ans;
 }

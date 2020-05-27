@@ -881,7 +881,7 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
       const char *tType = targetIsI64 ? "integer64" : type2char(TYPEOF(target));                                        \
       int n = snprintf(memrecycle_message, MSGSIZE,                                                                     \
             "%"FMT" (type '%s') at RHS position %d "TO" when assigning to type '%s'", val, sType, i+1, tType);          \
-      if (colnum>0 && n>0 && n<MSGSIZE)                                                                                 \
+      if (!nocol && n>0 && n<MSGSIZE)                                                                                   \
         snprintf(memrecycle_message+n, MSGSIZE-n, " (column %d named '%s')", colnum, colname);                          \
       /* string returned so that rbindlist/dogroups can prefix it with which item of its list this refers to  */        \
       break;                                                                                                            \
