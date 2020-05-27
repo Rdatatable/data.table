@@ -318,6 +318,18 @@ test(11.067, d[, .(v1, v2), env=list(v1=v1, v2=v2)], data.table(c1=c(1L,1L),c2=c
 test(11.068, d[, .(sum(v1)), env=list(v1=v1)], d[, .(sum(get(v1)))])
 test(11.069, d[, lapply(vN, sum), env=list(vN=as.list(setNames(nm = c(v1, v3))))], d[, lapply(mget(c(v1,v3)), sum)])
 test(11.070, d[, c(list(c1=c1, c2=c2), list(v3=v3), list(v4=v4, v5=v5)), env=list(v3=v3,v4=v4,v5=v5)], d) ## d[, c(list(c1, c2), list(get(v3)), mget(c(v4,v5)))] - some are unnamed
+# empty input
+d = data.table(x=1:2, y=1:4)
+test(11.081, d[.i, env=list(.i=substitute()), verbose=TRUE], d, notOutput="after substitute")
+test(11.082, d[.i, .j, .by, env=list(.i=substitute(), .j=substitute(), .by=substitute()), verbose=TRUE], d, notOutput="after substitute")
+f = function(x, i, j, by) {
+  x[.i, .j, .by, env=list(.i=substitute(i), .j=substitute(j), .by=substitute(by)), verbose=TRUE]
+}
+test(11.083, f(d), d)
+test(11.084, f(d, 1), d[1], output="Argument 'i'  after substitute", notOutput="Argument 'j'  after substitute")
+test(11.085, f(d,, 1), d[,1], output="Argument 'j'  after substitute", notOutput="Argument 'i'  after substitute")
+test(11.086, f(d, 1, 1), d[1, 1], output="Argument 'j'  after substitute.*Argument 'i'  after substitute")
+
 #1985 weird exception when by contains get
 tb = data.table(x=c(1,2), y=c(3,4), z=c(5,6), w=c("a","b"))
 test(11.101, tb[w != "b", .(x=sum(x)), by=.(y, zz=.z), env=list(.z="z")], data.table(y=3, zz=5, x=1))

@@ -156,7 +156,7 @@ replace_dot_alias = function(e) {
         substitute2(.keyby, env),
         list(.keyby = substitute(keyby))
       ))
-      if (verbose) cat("Argument 'by' after substitute: ", paste(deparse(bysub, width.cutoff=500L), collapse=" "), "\n", sep="")
+      if (missing(by)) {missingby=TRUE; by=bysub=NULL} else if (verbose) cat("Argument 'by' after substitute: ", paste(deparse(bysub, width.cutoff=500L), collapse=" "), "\n", sep="")
     }
     keyby=TRUE
     # Assign to 'by' so that by is no longer missing and we can proceed as if there were one by
@@ -168,7 +168,7 @@ replace_dot_alias = function(e) {
           substitute2(.by, env),
           list(.by = substitute(by))
         ))
-        if (verbose) cat("Argument 'by' after substitute: ", paste(deparse(bysub, width.cutoff=500L), collapse=" "), "\n", sep="")
+        if (missing(by)) {missingby=TRUE; by=bysub=NULL} else if (verbose) cat("Argument 'by' after substitute: ", paste(deparse(bysub, width.cutoff=500L), collapse=" "), "\n", sep="")
       }
     }
     keyby=FALSE
@@ -232,8 +232,10 @@ replace_dot_alias = function(e) {
         substitute2(.j, env),
         list(.j = substitute(j))
       ))
-      if (verbose) cat("Argument 'j'  after substitute: ", paste(deparse(jsub, width.cutoff=500L), collapse=" "), "\n", sep="")
+      if (missing(jsub)) {j = substitute(); jsub=NULL} else if (verbose) cat("Argument 'j'  after substitute: ", paste(deparse(jsub, width.cutoff=500L), collapse=" "), "\n", sep="")
     }
+  }
+  if (!missing(j)) {
     jsub = replace_dot_alias(jsub)
     root = if (is.call(jsub)) as.character(jsub[[1L]])[1L] else ""
     if (root == ":" ||
@@ -310,15 +312,17 @@ replace_dot_alias = function(e) {
 
   # setdiff removes duplicate entries, which'll create issues with duplicated names. Use %chin% instead.
   dupdiff = function(x, y) x[!x %chin% y]
-
+  isub = NULL
   if (!missing(i)) {
     if (is.null(env)) isub = substitute(i) else {
       isub = eval(substitute(
         substitute2(.i, env),
         list(.i = substitute(i))
       ))
-      if (verbose) cat("Argument 'i'  after substitute: ", paste(deparse(isub, width.cutoff=500L), collapse=" "), "\n", sep="")
+      if (missing(isub)) {i = substitute(); isub=NULL} else if (verbose) cat("Argument 'i'  after substitute: ", paste(deparse(isub, width.cutoff=500L), collapse=" "), "\n", sep="")
     }
+  }
+  if (!missing(i)) {
     xo = NULL
     if (identical(isub, NA)) {
       # only possibility *isub* can be NA (logical) is the symbol NA itself; i.e. DT[NA]

@@ -73,6 +73,8 @@ substitute2 = function(expr, env) {
     substitute(.expr, env),
     env = list(.expr = substitute(expr))
   ))
+  if (missing(expr.sub))
+    return(substitute()) ## nested emptiness
   # substitute call argument names
   .Call(Csubstitute_call_arg_namesR, expr.sub, env)
 }
