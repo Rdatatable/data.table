@@ -388,7 +388,9 @@ inline double LLtoD(long long x) {
 int GetVerbose() {
   // don't call repetitively; save first in that case
   SEXP opt = GetOption(sym_verbose, R_NilValue);
-  return (isLogical(opt) || isInteger(opt)) && LENGTH(opt)==1 && INTEGER(opt)[0];
+  if (!(isLogical(opt) || isInteger(opt)) && LENGTH(opt)==1 && INTEGER(opt)[0]!=NA_INTEGER)
+    error("invalid verbose argument");
+  return INTEGER(opt)[0];
 }
 
 // # nocov start
