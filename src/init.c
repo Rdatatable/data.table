@@ -20,13 +20,6 @@ SEXP char_ordered;
 SEXP char_datatable;
 SEXP char_dataframe;
 SEXP char_NULL;
-SEXP char_logical;
-SEXP char_integer;
-SEXP char_double;
-SEXP char_character;
-SEXP char_complex;
-SEXP char_list;
-SEXP char_raw;
 SEXP sym_sorted;
 SEXP sym_index;
 SEXP sym_BY;
@@ -329,13 +322,6 @@ void attribute_visible R_init_datatable(DllInfo *info)
   char_datatable = PRINTNAME(install("data.table"));
   char_dataframe = PRINTNAME(install("data.frame"));
   char_NULL =      PRINTNAME(install("NULL"));
-  char_logical =   PRINTNAME(install("logical"));
-  char_integer =   PRINTNAME(install("integer"));
-  char_double =    PRINTNAME(install("double"));
-  char_character = PRINTNAME(install("character"));
-  char_complex =   PRINTNAME(install("complex"));
-  char_list =      PRINTNAME(install("list"));
-  char_raw =       PRINTNAME(install("raw"));
 
   if (TYPEOF(char_integer64) != CHARSXP) {
     // checking one is enough in case of any R-devel changes
