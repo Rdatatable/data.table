@@ -76,6 +76,7 @@ test(2.13, substitute2(
 const1 = function() 1L
 test(2.21, substitute2(list(nm = fun()), env=list(a="b", fun="const1", nm="int1")), quote(list(int1=const1())))
 test(2.22, substitute2(.(), env=list(a="b", fun="const1", nm="int1")), quote(.()))
+test(2.23, identical(substitute2(), substitute()))
 # substitute2 AsIs class properly removed or kept
 test(2.31, class(substitute2(var3%in%values, list(var3="a", values=I(c("a","b","c"))))[[3L]]), "character")
 test(2.32, class(substitute2(var3%in%values, I(list(var3=as.name("a"), values=c("a","b","c"))))[[3L]]), "character")

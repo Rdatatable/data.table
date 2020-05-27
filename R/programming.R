@@ -42,6 +42,8 @@ enlist = function(x) {
 }
 
 substitute2 = function(expr, env) {
+  if (missing(expr))
+    return(substitute())
   if (missing(env)) {
     stop("'env' must not be missing")
   } else if (is.null(env)) {
