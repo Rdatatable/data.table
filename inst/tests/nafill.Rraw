@@ -249,3 +249,9 @@ if (test_bit64) {
 ## IDate
 ## ITime
 ## nanotime
+
+# related to !is.integer(verbose)
+test(99.1, data.table(a=1,b=2)[1,1, verbose=1], error="verbose must be logical or integer")
+test(99.2, data.table(a=1,b=2)[1,1, verbose=1:2], error="verbose must be length 1 non-NA")
+test(99.3, data.table(a=1,b=2)[1,1, verbose=NA], error="verbose must be length 1 non-NA")
+
