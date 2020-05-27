@@ -232,6 +232,23 @@ require(data.table)
 test.data.table()
 q("no")
 
+# test no partial matching errors in examples
+R
+options(
+  warn = 2L,
+  warnPartialMatchArgs = TRUE,
+  warnPartialMatchAttr = TRUE,
+  warnPartialMatchDollar = TRUE
+)
+for (f in list.files('man', full.names = TRUE)) {
+    l = readLines(f)
+    if (!any(grepl(r'(\examples)', l, fixed=TRUE))) next
+    nm = gsub(r'(\\name\{([^}]*)\})', '\\1', grep(r'(\\name)', l, value=TRUE))
+    cat('Running examples for topic', nm, '\n\n')
+    example(nm, package='data.table', character.only = TRUE, local=FALSE)
+}
+q('no')
+
 R
 remove.packages("xml2")    # we checked the URLs; don't need to do it again (many minutes)
 require(data.table)
