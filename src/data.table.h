@@ -23,8 +23,8 @@
 #define IS_FALSE(x) (TYPEOF(x)==LGLSXP && LENGTH(x)==1 && LOGICAL(x)[0]==FALSE)
 #define IS_TRUE_OR_FALSE(x) (TYPEOF(x)==LGLSXP && LENGTH(x)==1 && LOGICAL(x)[0]!=NA_LOGICAL)
 
-#define SIZEOF(x) sizes[TYPEOF(x)]
-#define TYPEORDER(x) typeorder[x]
+#define SIZEOF(x) __sizes[TYPEOF(x)]
+#define TYPEORDER(x) __typeorder[x]
 
 #ifdef MIN
 #  undef MIN
@@ -92,8 +92,8 @@ extern SEXP sym_datatable_locked;
 extern double NA_INT64_D;
 extern long long NA_INT64_LL;
 extern Rcomplex NA_CPLX;  // initialized in init.c; see there for comments
-extern size_t sizes[100];  // max appears to be FUNSXP = 99, see Rinternals.h
-extern size_t typeorder[100];
+extern size_t __sizes[100];     // max appears to be FUNSXP = 99, see Rinternals.h
+extern size_t __typeorder[100]; // __ prefix otherwise if we use these names directly, the SIZEOF define ends up using the local one
 
 long long DtoLL(double x);
 double LLtoD(long long x);
@@ -115,7 +115,7 @@ int checkOverAlloc(SEXP x);
 
 // forder.c
 int StrCmp(SEXP x, SEXP y);
-uint64_t dtwiddle(void *p, int i);
+uint64_t dtwiddle(const void *p, int i);
 SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP naArg);
 int getNumericRounding_C();
 

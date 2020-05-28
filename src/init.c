@@ -33,8 +33,8 @@ SEXP sym_datatable_locked;
 double NA_INT64_D;
 long long NA_INT64_LL;
 Rcomplex NA_CPLX;
-size_t sizes[100];
-size_t typeorder[100];
+size_t __sizes[100];
+size_t __typeorder[100];
 
 // .Calls
 SEXP setattrib();
@@ -221,15 +221,15 @@ R_ExternalMethodDef externalMethods[] = {
 };
 
 static void setSizes() {
-  for (int i=0; i<100; ++i) { sizes[i]=0; typeorder[i]=0; }
+  for (int i=0; i<100; ++i) { __sizes[i]=0; __typeorder[i]=0; }
   // only these types are currently allowed as column types :
-  sizes[LGLSXP] =  sizeof(int);       typeorder[LGLSXP] =  0;
-  sizes[RAWSXP] =  sizeof(Rbyte);     typeorder[RAWSXP] =  1;
-  sizes[INTSXP] =  sizeof(int);       typeorder[INTSXP] =  2;   // integer and factor
-  sizes[REALSXP] = sizeof(double);    typeorder[REALSXP] = 3;   // numeric and integer64
-  sizes[CPLXSXP] = sizeof(Rcomplex);  typeorder[CPLXSXP] = 4;
-  sizes[STRSXP] =  sizeof(SEXP *);    typeorder[STRSXP] =  5;
-  sizes[VECSXP] =  sizeof(SEXP *);    typeorder[VECSXP] =  6;   // list column
+  __sizes[LGLSXP] =  sizeof(int);       __typeorder[LGLSXP] =  0;
+  __sizes[RAWSXP] =  sizeof(Rbyte);     __typeorder[RAWSXP] =  1;
+  __sizes[INTSXP] =  sizeof(int);       __typeorder[INTSXP] =  2;   // integer and factor
+  __sizes[REALSXP] = sizeof(double);    __typeorder[REALSXP] = 3;   // numeric and integer64
+  __sizes[CPLXSXP] = sizeof(Rcomplex);  __typeorder[CPLXSXP] = 4;
+  __sizes[STRSXP] =  sizeof(SEXP *);    __typeorder[STRSXP] =  5;
+  __sizes[VECSXP] =  sizeof(SEXP *);    __typeorder[VECSXP] =  6;   // list column
   if (sizeof(char *)>8) error(_("Pointers are %d bytes, greater than 8. We have not tested on any architecture greater than 64bit yet."), sizeof(char *));
   // One place we need the largest sizeof is the working memory malloc in reorder.c
 }
