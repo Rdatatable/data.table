@@ -162,7 +162,7 @@ is.sorted = function(x, by=NULL) {
   } else {
     if (!missing(by)) stop("x is vector but 'by' is supplied")
   }
-  .Call(Cfsorted, x, by)
+  .Call(Cfsorted, x, as.integer(by))
   # Cfsorted could be renamed Cissorted, and is.sorted could be exported
   # Return value of TRUE/FALSE is relied on in [.data.table quite a bit on vectors. Simple. Stick with that (rather than -1/0/+1)
 }

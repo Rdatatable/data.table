@@ -4016,6 +4016,19 @@ setkey(DT)
 test(1162.10, length(forderv(DT, by=1:3)), 0L)
 test(1162.11, is.sorted(DT, by=1:3), TRUE)
 test(1162.12, is.sorted(DT, by=2:1), FALSE)
+test(1162.13, is.sorted(DT), TRUE)
+DT = data.table(A=INT(1,1,2), B=c(NA,"a",NA))
+test(1162.14, is.sorted(DT), TRUE)
+test(1162.15, is.sorted(DT, by=c("B","A")), FALSE)
+DT = data.table(A=INT(1,1,2), B=c("a",NA,NA))
+test(1162.16, is.sorted(DT), FALSE)
+test(1162.17, is.sorted(DT, by=2), FALSE)
+if (test_bit64) {
+  DT[, A:=as.integer64(A)]
+  test(1162.18, is.sorted(DT, by="A"), TRUE)
+  DT[2, A:=NA]
+  test(1162.19, is.sorted(DT, by="A"), FALSE)
+}
 
 # FR #351 - last on length=0 arguments
 x <- character(0)
