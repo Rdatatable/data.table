@@ -4025,9 +4025,10 @@ test(1162.16, is.sorted(DT), FALSE)
 test(1162.17, is.sorted(DT, by=2), FALSE)
 if (test_bit64) {
   DT[, A:=as.integer64(A)]
-  test(1162.18, is.sorted(DT, by="A"), TRUE)
-  DT[2, A:=NA]
-  test(1162.19, is.sorted(DT, by="A"), FALSE)
+  test(1162.18, is.sorted(DT, by="A"), TRUE)  # tests the single-column special case
+  test(1162.19, is.sorted(DT), FALSE)         # tests the 2-column case branch for integer64
+  DT[2, B:="b"]
+  test(1162.20, is.sorted(DT), TRUE)
 }
 
 # FR #351 - last on length=0 arguments
