@@ -1340,7 +1340,10 @@ replace_dot_alias = function(e) {
       get_shared_keys = function(jsub, jvnames, sdvars, key) {
         if (is.null(key)) return(NULL)
         if (!((SD_only <- jsub == quote(.SD))|| jsub %iscall% "list")) return(NULL)
-        jnames = if (SD_only) sdvars else as.character(Filter(is.name, jsub)[-1L])
+        if (SD_only) 
+          jvnames = jnames = sdvars
+        else
+          jnames = as.character(Filter(is.name, jsub)[-1L])
         key_idx = chmatch(key, jnames)
         missing_keys = which(is.na(key_idx))
         if (length(missing_keys) && missing_keys[1L] == 1L) return(NULL)
