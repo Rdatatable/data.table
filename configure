@@ -3,9 +3,9 @@
 # Find R compilers
 CC=`${R_HOME}/bin/R CMD config CC`
 CFLAGS=`${R_HOME}/bin/R CMD config CFLAGS`
-# compiler and flags to 'compilation' file
-echo "CC=${CC}" > inst/compilation
-echo "CFLAGS=${CFLAGS}" >> inst/compilation
+# compiler and flags to 'cc' file
+echo "CC=${CC}" > inst/cc
+echo "CFLAGS=${CFLAGS}" >> inst/cc
 
 # compiler info to output #3291
 if [ "$CC"=~"gcc" ]; then
