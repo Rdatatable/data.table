@@ -4030,6 +4030,12 @@ if (test_bit64) {
   DT[2, B:="b"]
   test(1162.20, is.sorted(DT), TRUE)
 }
+utf8_strings = c("\u00a1tas", "\u00de")
+latin1_strings = iconv(utf8_strings, from="UTF-8", to="latin1")
+DT = data.table(A=c(utf8_strings, latin1_strings), B=1:4)
+test(1162.21, is.sorted(DT), FALSE)
+setkey(DT)
+test(1162.22, is.sorted(DT), TRUE)
 
 # FR #351 - last on length=0 arguments
 x <- character(0)

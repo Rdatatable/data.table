@@ -1366,7 +1366,7 @@ SEXP fsorted(SEXP x, SEXP by)
         } else {
           ok = (NEED2UTF8(p[0]) || NEED2UTF8(p[-1]) ?  // TODO: provide user option to choose ascii-only mode
                 strcmp(CHAR(ENC2UTF8(p[0])), CHAR(ENC2UTF8(p[-1]))) :
-                strcmp(CHAR(p[0]), CHAR(p[-1]))) > 0;
+                strcmp(CHAR(p[0]), CHAR(p[-1]))) >= 0;
         }
       } break;
       default :
