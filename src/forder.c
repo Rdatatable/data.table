@@ -1257,19 +1257,20 @@ void radix_r(const int from, const int to, const int radix) {
 }
 
 
-SEXP fsorted(SEXP x, SEXP by)
+SEXP issorted(SEXP x, SEXP by)
 {
   // Just checks if ordered and returns FALSE early if not. Does not return ordering if so, unlike forder.
   // Always increasing order with NA's first
-  // Similar to base:is.unsorted but accepts NA at the beginning (standard in data.table and considered sorted) rather than returning NA when NA present.
+  // Similar to base:is.unsorted but accepts NA at the beginning (standard in data.table and considered sorted) rather than
+  // returning NA when NA present, and is multi-column.
   // TODO: test in big steps first to return faster if unsortedness is at the end (a common case of rbind'ing data to end)
-  // These are all sequential access to x, so very quick and cache efficient. Could be parallel by checking continuity at batch boundaries.
+  // These are all sequential access to x, so quick and cache efficient. Could be parallel by checking continuity at batch boundaries.
   
-  if (!isNull(by) && !isInteger(by)) STOP(_("Internal error: fsorted 'by' must be NULL or integer vector"));
+  if (!isNull(by) && !isInteger(by)) STOP(_("Internal error: issorted 'by' must be NULL or integer vector"));
   if (isVectorAtomic(x) || length(by)==1) {
     // one-column special case is very common so specialize it by avoiding column-type switches inside the row-loop later
     if (length(by)==1) {
-      if (INTEGER(by)[0]<1 || INTEGER(by)[0]>length(x)) STOP(_("fsorted 'by' [%d] out of range [1,%d]"), INTEGER(by)[0], length(x));
+      if (INTEGER(by)[0]<1 || INTEGER(by)[0]>length(x)) STOP(_("issorted 'by' [%d] out of range [1,%d]"), INTEGER(by)[0], length(x));
       x = VECTOR_ELT(x, INTEGER(by)[0]-1);
     }
     const int n = length(x);
@@ -1319,7 +1320,7 @@ SEXP fsorted(SEXP x, SEXP by)
   int *types =                (int *)R_alloc(ncol, sizeof(int));
   for (int j=0; j<ncol; ++j) {
     int c = INTEGER(by)[j];
-    if (c<1 || c>length(x)) STOP(_("fsorted 'by' [%d] out of range [1,%d]"), c, length(x));
+    if (c<1 || c>length(x)) STOP(_("issorted 'by' [%d] out of range [1,%d]"), c, length(x));
     SEXP col = VECTOR_ELT(x, c-1);
     sizes[j] = SIZEOF(col);
     switch(TYPEOF(col)) {

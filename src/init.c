@@ -66,7 +66,7 @@ SEXP fcast();
 SEXP uniqlist();
 SEXP uniqlengths();
 SEXP forder();
-SEXP fsorted();
+SEXP issorted();
 SEXP gforce();
 SEXP gsum();
 SEXP gmean();
@@ -152,7 +152,7 @@ R_CallMethodDef callMethods[] = {
 {"Cuniqlist", (DL_FUNC) &uniqlist, -1},
 {"Cuniqlengths", (DL_FUNC) &uniqlengths, -1},
 {"Cforder", (DL_FUNC) &forder, -1},
-{"Cfsorted", (DL_FUNC) &fsorted, -1},
+{"Cissorted", (DL_FUNC) &issorted, -1},
 {"Cgforce", (DL_FUNC) &gforce, -1},
 {"Cgsum", (DL_FUNC) &gsum, -1},
 {"Cgmean", (DL_FUNC) &gmean, -1},
