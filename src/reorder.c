@@ -1,8 +1,7 @@
 #include "data.table.h"
 
-SEXP reorder(SEXP x, SEXP order)
-{
-  // For internal use only by setkey().
+SEXP reorder(SEXP x, SEXP order) {
+  // For internal use by setkeyv and setorderv
   // 'order' must be a strict permutation of 1:n; i.e. no repeats, zeros, NAs. Also known as a shuffle.
   // If only a small subset in the middle is reordered, the ends are moved in to avoid wasteful work.
   // x may be a vector, or a list of same-length vectors (typically a data.table).
@@ -19,29 +18,39 @@ SEXP reorder(SEXP x, SEXP order)
         error(_("Column %d is length %d which differs from length of column 1 (%d). Invalid data.table."), i+1, length(v), nrow);
       if (SIZEOF(v) > maxSize)
         maxSize=SIZEOF(v);
-      if (ALTREP(v)) SET_VECTOR_ELT(x, i, copyAsPlain(v));
+      if (ALTREP(v))
+        SET_VECTOR_ELT(x, i, copyAsPlain(v));
     }
     copySharedColumns(x); // otherwise two columns which point to the same vector would be reordered and then re-reordered, issues linked in PR#3768
   } else {
     if (SIZEOF(x)!=4 && SIZEOF(x)!=8 && SIZEOF(x)!=16)
       error(_("reorder accepts vectors but this non-VECSXP is type '%s' which isn't yet supported (SIZEOF=%d)"), type2char(TYPEOF(x)), SIZEOF(x));
-    if (ALTREP(x)) error(_("Internal error in reorder.c: cannot reorder an ALTREP vector. Please see NEWS item 2 in v1.11.4 and report this as a bug.")); // # nocov
+    if (ALTREP(x))
+      error(_("Internal error in reorder.c: cannot reorder an ALTREP vector. Please see NEWS item 2 in v1.11.4 and report this as a bug.")); // # nocov
     maxSize = SIZEOF(x);
     nrow = length(x);
     ncol = 1;
   }
-  if (!isInteger(order)) error(_("order must be an integer vector"));
-  if (length(order) != nrow) error(_("nrow(x)[%d]!=length(order)[%d]"),nrow,length(order));
+  if (!isInteger(order))
+    error(_("order must be an integer vector"));
+  if (length(order) != nrow)
+    error(_("order length must be equal to nrow of x: nrow(x)[%d]!=length(order)[%d]"),nrow,length(order));
   int nprotect = 0;
-  if (ALTREP(order)) { order=PROTECT(copyAsPlain(order)); nprotect++; }  // TODO: if it's an ALTREP sequence some optimizations are possible rather than expand
+  if (ALTREP(order)) {
+    order=PROTECT(copyAsPlain(order)); nprotect++;
+  }  // TODO: if it's an ALTREP sequence some optimizations are possible rather than expand
 
   const int *restrict idx = INTEGER(order);
   int i=0;
-  while (i<nrow && idx[i] == i+1) ++i;
+  while (i<nrow && idx[i] == i+1)
+    ++i;
   const int start=i;
-  if (start==nrow) { UNPROTECT(nprotect); return R_NilValue; }  // input is 1:n, nothing to do
+  if (start==nrow) {
+    UNPROTECT(nprotect); return R_NilValue;
+  }  // input is 1:n, nothing to do
   i = nrow-1;
-  while (idx[i] == i+1) --i;
+  while (idx[i] == i+1)
+    --i;
   const int end=i, nmid=end-start+1;
 
   uint8_t *seen = (uint8_t *)R_alloc(nmid, sizeof(uint8_t)); // detect duplicates
@@ -52,7 +61,8 @@ SEXP reorder(SEXP x, SEXP order)
               i+1, idx[i], length(order));
     // This should run in reasonable time because although 'seen' is random write, it is writing to just 1 byte * nrow
     // which is relatively small and has a good chance of fitting in cache.
-    // A worry mitigated by this check is a user passing their own incorrect ordering using ::: to reach this internal.
+    // A worry mitigated by this check is a user passing their own incorrect ordering using ::: to reach this internal - it happened to be used on SO already so is likely to happen
+    // There is also new arg to setorderv which is likely to hit this
     // This check is once up front, and then idx is applied to all the columns which is where the most time is spent.
   }
 
@@ -98,11 +108,11 @@ SEXP reorder(SEXP x, SEXP order)
   return R_NilValue;
 }
 
-SEXP setcolorder(SEXP x, SEXP o)
-{
+SEXP setcolorder(SEXP x, SEXP o) {
   SEXP names = getAttrib(x, R_NamesSymbol);
   const int ncol=LENGTH(x);
-  if (isNull(names)) error(_("dt passed to setcolorder has no names"));
+  if (isNull(names))
+    error(_("dt passed to setcolorder has no names"));
   if (ncol != LENGTH(names))
     error(_("Internal error: dt passed to setcolorder has %d columns but %d names"), ncol, LENGTH(names));  // # nocov
   SEXP tt = PROTECT(allocVector(VECSXP, 2));
@@ -112,4 +122,3 @@ SEXP setcolorder(SEXP x, SEXP o)
   UNPROTECT(1);
   return R_NilValue;
 }
-
