@@ -212,6 +212,12 @@ SEXP between(SEXP x, SEXP lower, SEXP upper, SEXP incbounds, SEXP NAbounds, SEXP
 // coalesce.c
 SEXP coalesce(SEXP x, SEXP inplace);
 
+// psum.c
+SEXP psum(SEXP x, SEXP narmArg);
+SEXP pprod(SEXP x, SEXP narmArg);
+SEXP pany(SEXP x, SEXP narmArg);
+SEXP pall(SEXP x, SEXP narmArg);
+
 // utils.c
 bool isRealReallyInt(SEXP x);
 SEXP isReallyReal(SEXP x);

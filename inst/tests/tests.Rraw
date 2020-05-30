@@ -16881,3 +16881,205 @@ A = data.table(A=c(complex(real = 1:3, imaginary=c(0, -1, 1)), NaN))
 test(2138.3, rbind(A,B), data.table(A=c(as.character(A$A), B$A)))
 A = data.table(A=as.complex(rep(NA, 5)))
 test(2138.4, rbind(A,B), data.table(A=c(as.character(A$A), B$A)))
+
+# psum, pprod, pany, pall
+i1 = 1:10
+i2 = 9:0
+i3 = replace(i1, 5:6, NA)
+i4 = replace(i2, 6:9, NA)
+i5 = replace(i1, seq_along(i1), NA)
+
+d1 = as.numeric(i1)
+d2 = as.numeric(i2)
+d3 = as.numeric(i3)
+d4 = as.numeric(i4)
+d5 = as.numeric(i5)
+
+l1 = 1:10 < 4
+l2 = !as.logical(i2)
+l3 = as.logical(i3)
+l4 = 1:10 > 5
+l5 = `is.na<-`(l4, c(3L, 8L))
+
+z1 = complex(real = d1, imaginary = d2)
+z2 = complex(real = d1, imaginary = d3)
+z3 = complex(real = d3, imaginary = d4)
+z4 = complex(real = d1, imaginary = d5)
+z5 = complex(real = d4, imaginary = d2)
+
+f1 = factor(1)
+r1 = as.raw(0)
+
+TEST=2139
+testi = 0
+manual_env = new.env()
+test_env = environment()
+# function factory
+get_manual = function(FUN, ELEMENT) {
+  function(..., na.rm=FALSE) {
+    l = list(...)
+    if (length(l) == 1L && is.list(l[[1L]])) l = l[[1L]]
+    if (length(l) == 1L && (identical(FUN, `|`) || identical(FUN, `&`))) l[[1L]] = as.logical(l[[1L]])
+    if (na.rm) {
+      # TODO: nafill to support complex input, then use nafill here
+      out = Reduce(FUN, lapply(l, function(x) {x[is.na(x)] = as(ELEMENT, typeof(x)); x}))
+      is.na(out) = Reduce(`&`, lapply(l, is.na))
+      return(out)
+    }
+    Reduce(FUN, l)
+  }
+}
+manual_env$psum = get_manual(`+`, 0)
+manual_env$pprod = get_manual(`*`, 1)
+manual_env$pany = get_manual(`|`, 0)
+manual_env$pall = get_manual(`&`, 1)
+
+for (FUN in c('psum', 'pprod', 'pany', 'pall')) {
+  # define here --> get FUN from parent
+  do_ptest = function(..., na.rm=FALSE) {
+    q = do.call(call, c(list(FUN), list(...), list(na.rm = na.rm)))
+    testi <<- testi + 1
+    test(TEST + testi/1000, eval(q, envir=test_env), eval(q, envir=manual_env))
+  }
+
+  ### integer input
+  do_ptest(i1)
+  do_ptest(i3)
+  do_ptest(i1, na.rm=TRUE)
+  do_ptest(i3, na.rm=TRUE)
+  do_ptest(i1, i2)
+  do_ptest(i1, i2, na.rm=TRUE)
+  do_ptest(i3, i1)
+  do_ptest(i1, i2, i3)
+  do_ptest(i1, i2, i3, na.rm=TRUE)
+  do_ptest(i5)
+  do_ptest(i5, na.rm=TRUE)
+  do_ptest(i1, i5, na.rm=TRUE)
+  do_ptest(i3, i4, i5, na.rm=TRUE)
+
+  ### numeric input
+  do_ptest(d1)
+  do_ptest(d3)
+  do_ptest(d1, na.rm=TRUE)
+  do_ptest(d3, na.rm=TRUE)
+  do_ptest(d1, d2)
+  do_ptest(d1, d2, na.rm=TRUE)
+  do_ptest(d1, d2, d3)
+  do_ptest(d1, d2, d3, na.rm=TRUE)
+  do_ptest(d5)
+  do_ptest(d5, na.rm=TRUE)
+  do_ptest(d1, d5, na.rm=TRUE)
+  do_ptest(d3, d4, d5, na.rm=TRUE)
+
+  ### logical input
+  do_ptest(l1)
+  do_ptest(l3)
+  do_ptest(l1, na.rm=TRUE)
+  do_ptest(l3, na.rm=TRUE)
+  do_ptest(l1, l2)
+  do_ptest(l1, l2, na.rm=TRUE)
+  do_ptest(l1, l2, l3)
+  do_ptest(l1, l2, l3, na.rm=TRUE)
+  do_ptest(l5)
+  do_ptest(l5, na.rm=TRUE)
+  do_ptest(l1, l5, na.rm=TRUE)
+  do_ptest(l3, l4, l5, na.rm=TRUE)
+
+  ### complex input
+  do_ptest(z1)
+  do_ptest(z3)
+  do_ptest(z1, na.rm=TRUE)
+  do_ptest(z3, na.rm=TRUE)
+  do_ptest(z1, z2)
+  do_ptest(z1, z2, na.rm=TRUE)
+  do_ptest(z1, z2, z3)
+  do_ptest(z1, z2, z3, na.rm=TRUE)
+  do_ptest(z5)
+  do_ptest(z5, na.rm=TRUE)
+  do_ptest(z1, z5, na.rm=TRUE)
+  do_ptest(z3, z4, z5, na.rm=TRUE)
+
+  ## mixing types
+  do_ptest(i1, d2)
+  do_ptest(i1, d2, na.rm=TRUE)
+  do_ptest(i1, d2, i3)
+  do_ptest(d3, i1)
+  do_ptest(z1, i3)
+  do_ptest(d1, i2, d3, na.rm=TRUE)
+  do_ptest(d1, i5, na.rm=TRUE)
+  do_ptest(i3, d4, i5, na.rm=TRUE)
+  do_ptest(i1, z2, l3, d4)
+  do_ptest(d2, z1)
+  do_ptest(z3, i2, d5, l2, na.rm=TRUE)
+  do_ptest(z3, d2, na.rm=TRUE)
+  do_ptest(d3, z4, l1, na.rm=TRUE)
+  do_ptest(l1, d1, na.rm=TRUE)
+  do_ptest(l1, z1, na.rm=TRUE)
+  do_ptest(l1, i3)
+  do_ptest(l1, d3)
+  do_ptest(l1, z3)
+  do_ptest(l3, d3)
+  do_ptest(l3, d2, na.rm=TRUE)
+  do_ptest(i3, d1)
+
+  ## singleton inputs
+  do_ptest(i1, 1L)
+  do_ptest(1L, i1)
+  do_ptest(i1, i3, 2L, na.rm = TRUE)
+  do_ptest(i5, 4L, na.rm = TRUE)
+  do_ptest(i1, d3, 2L, na.rm = TRUE)
+  do_ptest(i1, d3, 4)
+  do_ptest(z1, TRUE)
+  do_ptest(z1, 1L)
+  do_ptest(z1, 1)
+  do_ptest(z1, 1-4i)
+  do_ptest(l3, 0+0i)
+  do_ptest(l3, 0+0i, na.rm=TRUE)
+
+  ## psum(list(...), na.rm)
+  do_ptest(list(i1, i2, i3, d3))
+  do_ptest(list(i1, i5, d2), na.rm = TRUE)
+
+  ## some validation errors shared over all p* functions
+  test(TEST+testi/1000+.001, eval(call(FUN)), error='Empty input')
+  test(TEST+testi/1000+.002, eval(call(FUN, f1, f1)), error='not meaningful for factor')
+  test(TEST+testi/1000+.003, eval(call(FUN, r1, r1)), error='Only logical, numeric and complex inputs')
+  test(TEST+testi/1000+.004, eval(call(FUN, 1:5, 1:3)), error="Inconsistent input lengths")
+  test(TEST+testi/1000+.005, eval(call(FUN, logical(), logical())),
+       if (FUN %chin% c('psum', 'pprod')) integer() else logical())
+  testi = testi+5
+}
+
+## edge cases, errors, etc.
+M = .Machine$integer.max
+test(TEST+testi/1000+.001, psum(M-5L, 10L), NA_integer_, warning="Inputs have exceeded .Machine$integer.max")
+test(TEST+testi/1000+.002, psum(M-5L, -10L), M-15L)
+test(TEST+testi/1000+.003, psum(-M+5L, -10L), NA_integer_, warning="Inputs have exceeded .Machine$integer.max")
+test(TEST+testi/1000+.004, psum(-M+5L, 10L), 15L-M)
+test(TEST+testi/1000+.005, psum(M-5L, 10L, na.rm=TRUE), error="Inputs have exceeded .Machine$integer.max")
+test(TEST+testi/1000+.006, psum(M-5L, -10L, na.rm=TRUE), M-15L)
+test(TEST+testi/1000+.007, psum(-M+5L, -10L, na.rm=TRUE), error="Inputs have exceeded .Machine$integer.max")
+test(TEST+testi/1000+.008, psum(-M+5L, 10L, na.rm=TRUE), 15L-M)
+test(TEST+testi/1000+.009, pprod(as.integer(M/2L), 5L), NA_integer_, warning="Inputs have exceeded .Machine$integer.max")
+test(TEST+testi/1000+.010, pprod(as.integer(M/2L), 2L), M-1L)
+test(TEST+testi/1000+.011, pprod(-as.integer(M/2L), -5L), NA_integer_, warning="Inputs have exceeded .Machine$integer.max")
+test(TEST+testi/1000+.012, pprod(-as.integer(M/2L), 2L), 1L-M)
+test(TEST+testi/1000+.013, pprod(as.integer(M/2L), 5L, na.rm=TRUE), error="Inputs have exceeded .Machine$integer.max")
+test(TEST+testi/1000+.014, pprod(as.integer(M/2L), -2L, na.rm=TRUE), 1L-M)
+test(TEST+testi/1000+.015, pprod(-as.integer(M/2L), -5L, na.rm=TRUE), error="Inputs have exceeded .Machine$integer.max")
+test(TEST+testi/1000+.016, pprod(-as.integer(M/2L), 2L, na.rm=TRUE), 1L-M)
+
+# INT_MIN/-1 overflows int, so the overflow condition in pprod needs to separately account
+#   for starting from a product of -1
+test(TEST+testi/1000+.017, pprod(-1L, 10L), -10L)
+test(TEST+testi/1000+.018, pprod(-1L, 10L, na.rm=TRUE), -10L)
+
+testi = testi+18
+
+if (test_bit64) {
+  i64 = as.integer64(1)
+  test(TEST + testi/1000 + .001, psum(i64, i64), error="integer64 input not supported")
+  test(TEST + testi/1000 + .002, pprod(i64, i64), error="integer64 input not supported")
+  test(TEST + testi/1000 + .003, pany(i64, i64), error="integer64 input not supported")
+  test(TEST + testi/1000 + .004, pall(i64, i64), error="integer64 input not supported")
+}

@@ -119,6 +119,10 @@ SEXP lock();
 SEXP unlock();
 SEXP islockedR();
 SEXP allNAR();
+SEXP psum();
+SEXP pprod();
+SEXP pany();
+SEXP pall();
 
 // .Externals
 SEXP fastmean();
@@ -211,6 +215,10 @@ R_CallMethodDef callMethods[] = {
 {"CfrollapplyR", (DL_FUNC) &frollapplyR, -1},
 {"CtestMsgR", (DL_FUNC) &testMsgR, -1},
 {"C_allNAR", (DL_FUNC) &allNAR, -1},
+{"Cpsum", (DL_FUNC) &psum, -1},
+{"Cpprod", (DL_FUNC) &pprod, -1},
+{"Cpany", (DL_FUNC) &pany, -1},
+{"Cpall", (DL_FUNC) &pall, -1},
 {NULL, NULL, 0}
 };
 
@@ -245,6 +253,7 @@ void attribute_visible R_init_datatable(DllInfo *info)
   setSizes();
   const char *msg = "... failed. Please forward this message to maintainer('data.table').";
   if ((int)NA_INTEGER != (int)INT_MIN) error(_("Checking NA_INTEGER [%d] == INT_MIN [%d] %s"), NA_INTEGER, INT_MIN, msg);
+  if ((int)INT_MIN != (int)(-INT_MAX-1)) error(_("Checking INT_MAX + 1 [%.0f] == -INT_MIN [%.0f] %s"), (double)(INT_MAX)+1, -(double)INT_MIN);
   if ((int)NA_INTEGER != (int)NA_LOGICAL) error(_("Checking NA_INTEGER [%d] == NA_LOGICAL [%d] %s"), NA_INTEGER, NA_LOGICAL, msg);
   if (sizeof(int) != 4) error(_("Checking sizeof(int) [%d] is 4 %s"), sizeof(int), msg);
   if (sizeof(double) != 8) error(_("Checking sizeof(double) [%d] is 8 %s"), sizeof(double), msg);     // 8 on both 32bit and 64bit
