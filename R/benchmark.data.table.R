@@ -10,11 +10,13 @@ benchmark.data.table = function(script="benchmarks.Rraw", rbin="Rscript", desc=c
   ths = ths[ths>0L]
   cat("benchmark.data.table() running: ", names(fn), "\n", sep="")
   init = proc.time()[[3L]]
-  for (lib in libs) {
-    for (th in ths) {
-      cmd = sprintf("R_LIBS_USER=%s R_DATATABLE_NUM_THREADS=%s R_DATATABLE_NUM_PROCS_PERCENT=100 %s %s%s", lib, th, rbin, fn, desc)
-      cat(cmd,"\n",sep="")
-      system(cmd)
+  for (bin in rbin) {
+    for (lib in libs) {
+      for (th in ths) {
+        cmd = sprintf("R_LIBS_USER=%s R_DATATABLE_NUM_THREADS=%s R_DATATABLE_NUM_PROCS_PERCENT=100 %s %s%s", lib, th, bin, fn, desc)
+        cat(cmd,"\n",sep="")
+        system(cmd)
+      }
     }
   }
   t = proc.time()[[3L]]
