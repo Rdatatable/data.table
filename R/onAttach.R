@@ -27,7 +27,7 @@
     if (!.Call(ChasOpenMP))
       packageStartupMessage("**********\nThis installation of data.table has not detected OpenMP support. It should still work but in single-threaded mode.",
         " If this is a Mac, please ensure you are using R>=3.4.0 and have followed our Mac instructions here: https://github.com/Rdatatable/data.table/wiki/Installation.",
-        " This warning message should not occur on Windows or Linux. If it does, please file a GitHub issue.\n**********")
+        " Unless OpenMP disabled during compilation, this warning message should not occur on Windows or Linux. If it does, please file a GitHub issue.\n**********")
   }
 }
 
