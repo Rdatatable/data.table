@@ -1,17 +1,28 @@
-benchmark.data.table = function(script="benchmarks.Rraw", pct=100, th=2, rbin="Rscript", desc=character()) {
+benchmark.data.table = function(script="benchmarks.Rraw", rbin="Rscript", desc=character()) {
   stopifnot(length(script)==1L)
   # make revision && make build && make install && R -q -e 'data.table:::benchmark.data.table()'
   fn = setNames(file.path("inst","benchmarks", script), script) ## this path only for development, finally use system.file(package="data.table", "benchmarks", script)
   desc = if (length(desc)) paste0(" ", desc) else ""
+  mth = max.th()
+  ths = unique(c(1L, as.integer(mth * c(0.1,0.25,0.5,0.75,1))))
+  ths = ths[ths>0L]
   cat("benchmark.data.table() running: ", names(fn), "\n", sep="")
   init = proc.time()[[3L]]
-  for (p in pct) {
-    cmd = sprintf("R_DATATABLE_NUM_PROCS_PERCENT=%s R_DATATABLE_NUM_THREADS=%s %s %s%s", p, th, rbin, fn, desc)
+  for (th in ths) {
+    cmd = sprintf("R_DATATABLE_NUM_THREADS=%s R_DATATABLE_NUM_PROCS_PERCENT=100 %s %s%s", th, rbin, fn, desc)
+    cat(cmd,"\n",sep="")
     system(cmd)
   }
   t = proc.time()[[3L]]
   cat("Benchmarks in ", names(fn), " completed in ", trunc(t-init), "s\n", sep="")
   invisible(TRUE)
+}
+
+max.th = function() {
+  old = setDTthreads(0L)
+  th = getDTthreads()
+  setDTthreads(old)
+  th
 }
 
 omp = function() {
