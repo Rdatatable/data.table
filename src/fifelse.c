@@ -16,15 +16,17 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b, SEXP na) {
   int nprotect = 0;
 
   if (ta != tb) {
-    if (TYPEORDER(ta)<TYPEORDER(tb)) {
-      a = PROTECT(coerceAs(a, b, ScalarLogical(TRUE))); nprotect++;
-      ta = tb;
-    } else if (TYPEORDER(ta)>TYPEORDER(tb)) {
-      b = PROTECT(coerceAs(b, a, ScalarLogical(TRUE))); nprotect++;
-      tb = ta;
+    if (ta == INTSXP && tb == REALSXP) {
+      SEXP tmp = PROTECT(coerceVector(a, REALSXP)); nprotect++;
+      a = tmp;
+      ta = REALSXP;
+    } else if (ta == REALSXP && tb == INTSXP) {
+      SEXP tmp = PROTECT(coerceVector(b, REALSXP)); nprotect++;
+      b = tmp;
+      tb = REALSXP;
+    } else {
+      error(_("'yes' is of type %s but 'no' is of type %s. Please make sure that both arguments have the same type."), type2char(ta), type2char(tb));
     }
-    if (TYPEOF(a)!=TYPEOF(b))
-      error(_("internal error: 'yes' is of type %s but 'no' is of type %s. Type should have been coerced already."), type2char(TYPEOF(a)), type2char(TYPEOF(b))); // # nocov
   }
 
   if (!R_compute_identical(PROTECT(getAttrib(a,R_ClassSymbol)), PROTECT(getAttrib(b,R_ClassSymbol)), 0))
