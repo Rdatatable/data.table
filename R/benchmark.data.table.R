@@ -1,7 +1,7 @@
 benchmark.data.table = function(script="benchmarks.Rraw", rbin="Rscript", desc=character(), libs=NULL) {
   stopifnot(length(script)==1L)
   # make revision && Rscript inst/benchmarks/boot.R ## install to various libs with various compilation flags
-  # R -q -e 'data.table:::benchmark.data.table(libs=list.dirs("library/gcc"))'
+  # R -q -e 'data.table:::benchmark.data.table(libs=list.dirs("library/gcc", recursive=FALSE))'
   fn = setNames(file.path("inst","benchmarks", script), script) ## this path only for development, ultimately use system.file(package="data.table", "benchmarks", script)
   desc = if (length(desc)) paste0(" ", desc) else ""
   if (is.null(libs)) libs = .libPaths()[1L]

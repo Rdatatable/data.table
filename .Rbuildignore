@@ -30,3 +30,4 @@
 
 ^bus$
 ^pkgdown$
+^library$
