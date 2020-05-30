@@ -16881,3 +16881,28 @@ A = data.table(A=c(complex(real = 1:3, imaginary=c(0, -1, 1)), NaN))
 test(2138.3, rbind(A,B), data.table(A=c(as.character(A$A), B$A)))
 A = data.table(A=as.complex(rep(NA, 5)))
 test(2138.4, rbind(A,B), data.table(A=c(as.character(A$A), B$A)))
+
+# test having:   FR #788     PR #4412
+dt = data.table(grp = c(1L, 2L, 1L, 2L), x = letters[sample(4L)])
+test(2139.01, dt[, .SD, by = grp, having = .N > 0L], dt[, .SD, grp])
+dt = data.table(grp = c(2L, 1L, 2L, 1L), x = letters[sample(4L)])
+test(2139.02, dt[, .SD, by = grp, having = .N > 0L], dt[, .SD, grp])
+
+n = 1e5
+grps = 1e4
+dt = data.table(x = sample(grps, n, TRUE), y = runif(n))
+test(2139.03, dt[, .SD, by = x, having = .N > 5L],  dt[dt[, .I[.N > 5L], by = x]$V1])
+#outside_var = 5L
+#test(2139.04, dt[, .SD, by = x, having = .N > outside_var],  dt[dt[, .I[.N > 5L], by = x]$V1]) ## this works in normal global environment but fails here. 
+test(2139.05, dt[, y, by = x, having = .N > 5L], dt[dt[, .I[.N > 5L], by = x]$V1])
+test(2139.051, dt[, .(y), by = x, having = .N > 5L], dt[dt[, .I[.N > 5L], by = x]$V1])
+test(2139.052, dt[, sum(y), by = x, having = .N > 5L], dt[, if (.N > 5L) sum(y), by = x])
+test(2139.053, dt[, .(y, sum(y)), by = x, having = .N > 5L], dt[, if (.N > 5L) .(y, sum(y)), by = x])
+test(2139.06, dt[, .SD, by = x, having = which.max(y) > 3L], error = "function is not supported")
+test(2139.061, dt[, .SD, by = x, having = max(y) > 0.9], dt[dt[, .I[max(y) > 0.9], by = x]$V1])
+dt <- as.data.table(iris) 
+
+test(2139.07, dt[, .SD, by = Species, having = .N > 40L], dt[, .SD, by = Species])
+test(2139.08, dt[, .SD, by = Species, having = .N < 40L], dt[0L, .SD, by = Species])
+test(2139.09, dt[-(1:5), .SD, by = Species, having = .N > 44L], dt[-(1:5), .SD, by = Species])
+test(2139.10, dt[-(1:5), .SD, by = Species, having = .N > 45L], dt[-(1:50), .SD, by = Species])

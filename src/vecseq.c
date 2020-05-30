@@ -40,3 +40,121 @@ SEXP vecseq(SEXP x, SEXP len, SEXP clamp)
   return(ans);
 }
 
+SEXP vecseq_having(SEXP x, SEXP len, SEXP having, SEXP retGrpArg, SEXP o__) {
+
+  if (!isInteger(x)) error(_("x must be an integer vector"));
+  if (!isInteger(len)) error(_("len must be an integer vector"));
+  if (!isLogical(having)) error(_("having must be a logical vector"));
+  if (!isInteger(o__)) error(_("o__ must be an integer vector"));
+  //if (!isInteger(irows)) error(_("irows must be an integer vector"));
+  //if (!isLogical(isGforce)) error(_("isGforce must be a logical vector"));
+  if (!isLogical(retGrpArg)) error(_("retGrpArg must be a logical vector"));
+  
+  if (LENGTH(x) != LENGTH(len)) error(_("x and len must be the same length"));
+  if (LENGTH(x) != LENGTH(having)) error(_("x and having must be the same length"));
+  if (LENGTH(retGrpArg) > 1) error(_("retGrpArg must be a logical vector of length 1"));
+  
+  const int *ihaving = INTEGER(having); 
+  const int *ix = INTEGER(x);
+  const int *ilen = INTEGER(len), nlen=LENGTH(len);
+  
+  int reslen = 0;
+  int total_true = 0;
+  
+  for (int i = 0; i < nlen; ++i) {
+    if (ihaving[i]) {
+      reslen += ilen[i];
+      total_true++;
+    }
+  }
+  
+  if (reslen == 0) return(allocVector(INTSXP, 0));
+  
+  bool retGrp = LOGICAL(retGrpArg)[0] == TRUE;
+  if (total_true == nlen && retGrp) return(R_NilValue); //no need to recalculate if all groups are returned from having
+  
+  SEXP ans = PROTECT(allocVector(INTSXP, reslen));
+  int *ians = INTEGER(ans);
+
+  if (retGrp) {
+    // should return a list to minimize allocations
+    // We have the following allocations
+    //   - f__      DONE
+    //   - len__    DONE
+    //   - max_grp  DONE
+    
+    // TODO
+    //   - vec_seq_result_o = order(ans)
+    //   - irows = if (is.null(irows)) vec_seq_result_o else sort(irows[ans])
+    //   - byval = lapply(byval, `[`, ans[vec_seq_result_o])
+    //   - o__ = order(vec_seq_result_o)
+    
+    SEXP tt, vv;
+    
+    setAttrib(ans, sym_starts, tt = allocVector(INTSXP, total_true));
+    setAttrib(ans, sym_grplen, vv = allocVector(INTSXP, total_true));
+
+    int *ss = INTEGER(tt);
+    int *ww = INTEGER(vv);
+        
+    int k = 0;
+    int l = 0;
+    int total = 1;
+    int maxgrpn = 0;
+    if (LENGTH(o__)) {
+      const int *io__ = INTEGER(o__); 
+      for (int i=0; i<nlen; ++i) {
+        if (!ihaving[i]) continue;
+        int thisx = ix[i] - 1;
+        int elem = ilen[i];
+        ss[l] = total;
+        total += elem;
+        ww[l] = elem;
+        l++;
+        if (elem > maxgrpn) maxgrpn = elem;
+        for (int j = thisx; j < (thisx + ilen[i]); j++) {
+          ians[k++] = io__[j];
+        }
+      }
+    } else {
+      for (int i=0; i<nlen; ++i) {
+        if (!ihaving[i]) continue;
+        int thisx = ix[i];
+        int elem = ilen[i];
+        ss[l] = total;
+        total += elem;
+        ww[l] = elem;
+        l++;
+        if (elem > maxgrpn) maxgrpn = elem;
+        for (int j = thisx; j < (thisx + ilen[i]); j++) {
+          ians[k++] = j;
+        }
+      }
+    }
+    //R_orderVector1(ians, total_true, ans, true, false);
+    setAttrib(ans, sym_maxgrpn, ScalarInteger(maxgrpn));
+  } else {
+    int k = 0;
+    if (LENGTH(o__)) {
+      const int *io__ = INTEGER(o__); 
+      for (int i=0; i<nlen; ++i) {
+        if (!ihaving[i]) continue;
+        int thisx = ix[i] - 1;
+        for (int j = thisx; j < (thisx + ilen[i]); j++) {
+          ians[k++] = io__[j];
+        }
+      }
+    } else {
+      for (int i=0; i<nlen; ++i) {
+        if (!ihaving[i]) continue;
+        int thisx = ix[i];
+        for (int j = thisx; j < (thisx + ilen[i]); j++) {
+          ians[k++] = j;
+        }
+      }
+    }
+  }
+  
+  UNPROTECT(1);
+  return(ans);
+}
