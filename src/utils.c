@@ -323,13 +323,13 @@ SEXP class1(SEXP x) {
   SEXPTYPE t = TYPEOF(x);
   switch(t) {
   case CLOSXP: case SPECIALSXP: case BUILTINSXP:
-    return(mkChar("function"));
+    return(mkChar("function")); // # nocov
   case REALSXP:
     return(mkChar("numeric"));
   case SYMSXP:
-    return(mkChar("name"));
+    return(mkChar("name")); // # nocov
   case LANGSXP:
-    return(mkChar("call"));
+    return(mkChar("call")); // # nocov
   default:
     return(type2str(t));
   }
@@ -341,13 +341,15 @@ SEXP coerceAs(SEXP x, SEXP as, SEXP copyArg) {
     error("'x' is not atomic");
   if (!isVectorAtomic(as))
     error("'as' is not atomic");
-  if (isNewList(as))
-    error("'as' is a list");
+  if (!isNull(getAttrib(x, R_DimSymbol)))
+    error("'x' must not be matrix or array");
+  if (!isNull(getAttrib(as, R_DimSymbol)))
+    error("'as' must not be matrix or array");
   bool verbose = GetVerbose()>=2; // verbose level 2 required
   if (!LOGICAL(copyArg)[0] && TYPEOF(x)==TYPEOF(as) && class1(x)==class1(as)) {
     if (verbose)
       Rprintf("copy=false and input already of expected type and class %s[%s]\n", type2char(TYPEOF(x)), CHAR(class1(x)));
-    copyMostAttrib(as, x); // factor levels are same for copy=T|F
+    copyMostAttrib(as, x); // so attrs like factor levels are same for copy=T|F
     return(x);
   }
   int len = LENGTH(x);
