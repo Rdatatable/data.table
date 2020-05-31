@@ -7,11 +7,11 @@ CFLAGS=`${R_HOME}/bin/R CMD config CFLAGS`
 echo "CC=${CC}" > inst/cc
 echo "CFLAGS=${CFLAGS}" >> inst/cc
 
-# compiler info to output #3291
-if [ "$CC"=~"gcc" ]; then
+# gcc compiler info to output #3291
+case $CC in gcc*)
   GCCV=`${CC} -dumpfullversion -dumpversion`
   echo "$CC $GCCV"
-fi
+esac
 
 # Let's keep this simple. If pkg-config is available, use it. Otherwise print
 # the helpful message to aid user if compilation does fail. Note 25 of R-exts:
