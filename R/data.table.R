@@ -99,11 +99,71 @@ replace_dot_alias = function(e) {
   e
 }
 
-.massagei = function(x) {
+.massagei = function(x, dt=NULL, verbose=FALSE, ienv=NULL) {
   # J alias for list as well in i, just if the first symbol
   # if x = substitute(base::order) then as.character(x[[1L]]) == c("::", "base", "order")
   if (x %iscall% c("J","."))
     x[[1L]] = quote(list)
+  # optimize order() to forderv(); evaluates: decreasing, method, na.last. #3023, possibly #3261 as well
+  if (!is.null(dt) && getOption("datatable.optimize")>=1L && x%iscall%"order") {
+    call.nm = names(x)
+    ## escape unsupported method
+    if ("method" %chin% call.nm) {
+      method = x[["method"]]
+      if (!is.character(method)) method = eval(method, ienv)
+      if (!identical(method, "radix")) return(x)
+    }
+    ## escape invalid decreasing
+    if ("decreasing" %chin% call.nm) {
+      decreasing = x[["decreasing"]]
+      if (!is.logical(decreasing)) decreasing = eval(decreasing, ienv)
+      if (!is.logical(decreasing) || !length(decreasing) || anyNA(decreasing)) return(x) ## outsource raising error
+    } else decreasing = NULL
+    ## escape invalid na.last
+    if ("na.last" %chin% call.nm) {
+      na.last = x[["na.last"]]
+      if (!is.logical(na.last)) na.last = eval(na.last, ienv)
+      if (!is.logical(na.last)) return(x) ## outsource raising error
+    } else na.last = TRUE
+    ## decompose variables in dots
+    order.args = c("decreasing","method","na.last") ## formalArgs(order) - "...", tested in main.Rraw
+    order.call = if (!is.null(call.nm)) x[!call.nm %chin% order.args] else x
+    dots = as.list(order.call[-1])
+    ## escapy empty input
+    if (!length(dots)) return(x)
+    order.vars = all.vars(order.call)
+    ## escape constant order(x, 1L)
+    if (length(dots)!=length(order.vars)) return(x)
+    ## escape for any non-dt var
+    if (any(!order.vars %chin% names(dt))) return(x)
+    ## escape for any unsupported type
+    supported = c("integer","double","logical","character","complex")
+    if (any(vapply(order.vars, function(v) !typeof(dt[[v]])%chin%supported, NA))) return(x) ## outsource raising error
+    ## decreasing recycle
+    decreasing = if (is.null(decreasing)) rep(FALSE, length(order.vars)) else {
+      if (length(decreasing)!=1L && length(decreasing)!=length(order.vars)) return(x) ## outsource raising error
+      if (length(decreasing)==1L && length(order.vars)>1L) rep(decreasing, length(order.vars)) else decreasing
+    }
+    ## forderv arguments
+    by = vector("character", length(order.vars))
+    order = rep.int(1L, length(order.vars))
+    order[decreasing] = -1L
+    ## language objects for each of order dots element
+    for (i in seq_along(dots)) {
+      dot = dots[[i]]
+      while (dot %iscall% c("-", "+") && length(dot)==2L) {
+        if (dot[[1L]]=="-") order[i] = -order[i]
+        dot = dot[[2L]]
+      }
+      if (is.symbol(dot)) {
+        var = as.character(dot)
+        if (!var %chin% order.vars) stop("internal error: a dots element is symbol but is not any of order.vars, should have been caught already") # nocov
+        by[i] = var
+      } else return(x)
+    }
+    x = as.call(list(quote(forderv), quote(x), by=by, retGrp=FALSE, sort=TRUE, order=order, na.last=na.last))
+    if (verbose) cat(sprintf("order call in 'i' optimized to '%s'\n", deparse(x, width.cutoff=500L)[1L]))
+  }
   x
 }
 
@@ -355,8 +415,13 @@ replace_dot_alias = function(e) {
     }
     else if (!is.name(isub)) {
       ienv = new.env(parent=parent.frame())
+      isub = .massagei(isub, dt=x, verbose=verbose, ienv=ienv)
+      ## this functionality has been moved to .massagei+forderv (#3023) branch below, but this forder will be still used when a variable in `order` is not a DT column, or order(x, (y)), order(-(x)), etc
       if (getOption("datatable.optimize")>=1L) assign("order", forder, ienv)
-      i = tryCatch(eval(.massagei(isub), x, ienv), error=function(e) {
+      i = if (is.call(isub) && isub[[1L]]==quote(forderv)) { ## order has been optimized to forderv #3023
+        fo = eval(isub) ## forderv(x, ...)
+        if (!length(fo)) seq_len(nrow(x)) else fo
+      } else tryCatch(eval(isub, x, ienv), error=function(e) {
         if (grepl(":=.*defined for use in j.*only", e$message))
           stop("Operator := detected in i, the first argument inside DT[...], but is only valid in the second argument, j. Most often, this happens when forgetting the first comma (e.g. DT[newvar := 5] instead of DT[ , new_var := 5]). Please double-check the syntax. Run traceback(), and debugger() to get a line number.")
         else

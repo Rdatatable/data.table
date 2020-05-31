@@ -1,10 +1,6 @@
 \name{setorder}
 \alias{setorder}
 \alias{setorderv}
-\alias{order}
-\alias{fastorder}
-\alias{forder}
-\alias{forderv}
 
 \title{Fast row reordering of a data.table by reference}
 \description{
