@@ -1,0 +1,41 @@
+require(methods)
+if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
+  if ((tt<-compiler::enableJIT(-1))>0)
+    cat("This is dev mode and JIT is enabled (level ", tt, ") so there will be a brief pause around the first test.\n", sep="")
+} else {
+  require(data.table)
+  test = data.table:::test
+}
+
+sugg = c(
+  "bit64",
+  "nanotime"
+)
+for (s in sugg) {
+  assign(paste0("test_",s), loaded<-suppressWarnings(suppressMessages(require(s, character.only=TRUE))))
+  if (!loaded) cat("\n**** Suggested package",s,"is not installed. Tests using it will be skipped.\n\n")
+}
+
+
+options(datatable.auto.index=FALSE)
+
+#fwhich = data.table:::fwhich
+
+set.seed(108)
+wh = function(x) {
+p = substitute(identical(which(.x, useNames=FALSE), fwhich(.x)), list(.x=substitute(x)))
+print(p)
+eval(p)
+}
+
+x = c(1:3,2:1,1:4,1L,1:2)
+fwhich(x==1L)
+
+x = sample.int(10L, 100L, TRUE)
+fwhich(x==1L)
+test(1, wh(x==9L), output="which_eq")
+test(1, wh(x==1L), output="which_eq")
+x[sample.int(100L, 10L)] = NA
+test(1, wh(is.na(x)), output="which_eq")
+
+#x==a&b

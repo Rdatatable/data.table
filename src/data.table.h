@@ -242,7 +242,7 @@ SEXP coerceUtf8IfNeeded(SEXP x);
 void which_eq(SEXP x, int *iwhich, int *nwhich, SEXP val, bool negate, int *y, int ny);
 void which_in(SEXP x, int *iwhich, int *nwhich, SEXP val, bool negate, int *y, int ny);
 void which_op(SEXP e, SEXP x, int *iwhich, int *nwhich, SEXP val, int *y, int ny);
-SEXP fwhichR(SEXP expr, SEXP rho);
+SEXP fwhichR(SEXP expr, SEXP rhoArg);
 SEXP which_eqR(SEXP x, SEXP val, SEXP negate, SEXP intersect); // for testing and benchmarking only
 void fsintersect(int *x, int nx, int *y, int ny, int *out, int *nans); // for testing and benchmarking only
 SEXP fsintersectR(SEXP x, SEXP y); // for testing and benchmarking only
