@@ -109,6 +109,7 @@ foverlaps = function(x, y, by.x=if (!is.null(key(x))) key(x) else key(y), by.y=k
     setattr(icall, 'names', icols)
     mcall = make_call(mcols, quote(c))
     if (type %chin% c("within", "any")) {
+      if (isposix) mcall[[2L]] = call("unclass", mcall[[2L]]) # fix for R-devel change in c.POSIXct
       mcall[[3L]] = substitute(
         # datetimes before 1970-01-01 are represented as -ve numerics, #3349
         if (isposix) unclass(val)*(1L + sign(unclass(val))*dt_eps())
@@ -128,7 +129,7 @@ foverlaps = function(x, y, by.x=if (!is.null(key(x))) key(x) else key(y), by.y=k
               within =, equal = yintervals)
   call = construct(head(ynames, -2L), uycols, type)
   if (verbose) {last.started.at=proc.time();cat("unique() + setkey() operations done in ...");flush.console()}
-  uy = unique(y[, eval(call)])
+  uy = unique(y[, eval(call)]) # this started to fail from R 4.1 due to c(POSIXct, numeric)
   setkey(uy)[, `:=`(lookup = list(list(integer(0L))), type_lookup = list(list(integer(0L))), count=0L, type_count=0L)]
   if (verbose) {cat(timetaken(last.started.at),"\n"); flush.console()}
   matches = function(ii, xx, del, ...) {
