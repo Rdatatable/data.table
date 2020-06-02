@@ -205,7 +205,7 @@ static union {
   SEXP s;
 } ival, xval;
 
-static uint64_t i64twiddle(void *p, int i)
+static uint64_t i64twiddle(const void *p, int i)
 {
   return ((uint64_t *)p)[i] ^ 0x8000000000000000;
   // Always ascending and NA first (0) when used by bmerge
@@ -343,7 +343,7 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
     double *dic = REAL(ic);
     double *dxc = REAL(xc);
     isInt64 = INHERITS(xc, char_integer64);
-    uint64_t (*twiddle)(void *, int) = isInt64 ? &i64twiddle : &dtwiddle;
+    uint64_t (*twiddle)(const void *, int) = isInt64 ? &i64twiddle : &dtwiddle;
     // TODO: remove this last remaining use of i64twiddle.
     ival.ull = twiddle(dic, ir);
     while(xlow < xupp-1) {
