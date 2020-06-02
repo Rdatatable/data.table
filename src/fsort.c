@@ -117,7 +117,7 @@ SEXP fsort(SEXP x, SEXP verboseArg) {
   // allocate early in case fails if not enough RAM
   // TODO: document this is much cheaper than a copy followed by in-place.
 
-  int nth = getDTthreads(0, 0);
+  int nth = getDTthreads(OMP_ALL, 0);
   int nBatch=nth*2;  // at least nth; more to reduce last-man-home; but not too large to keep counts small in cache
   if (verbose) Rprintf(_("nth=%d, nBatch=%d\n"),nth,nBatch);
 
