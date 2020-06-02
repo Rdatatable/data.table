@@ -170,7 +170,7 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, S
   double tic=0.0, toc=0.0;
   if (verbose)
     tic = omp_get_wtime();
-  #pragma omp parallel for if (nx>1) num_threads(getDTthreads())
+  #pragma omp parallel for num_threads(getDTthreads(OMP_BATCH, nx))
   for (R_len_t i=0; i<nx; i++) {
     SEXP this_x = VECTOR_ELT(x, i);
     switch (TYPEOF(this_x)) {

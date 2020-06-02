@@ -63,6 +63,11 @@
 #define NEED2UTF8(s) !(IS_ASCII(s) || (s)==NA_STRING || IS_UTF8(s))
 #define ENC2UTF8(s) (!NEED2UTF8(s) ? (s) : mkCharCE(translateCharUTF8(s), CE_UTF8))
 
+// Types used to dynamically limit DT threads when passing to num_threads
+#define OMP_BATCH 2 // limit to number of iterations (batches)
+#define OMP_ROWS 1  // limit to number of iterations (rows) divided by R_DATATABLE_ITER_PER_THREAD
+#define OMP_ALL 0   // do not limit
+
 // init.c
 extern SEXP char_integer64;
 extern SEXP char_ITime;
@@ -177,7 +182,7 @@ double wallclock();
 
 // openmp-utils.c
 void initDTthreads();
-int getDTthreads();
+int getDTthreads(int type, int iters);
 void avoid_openmp_hang_within_fork();
 
 // froll.c
