@@ -8084,6 +8084,8 @@ DT = data.table(f1=c("a","b"), f2=c("x","y"))
 l = list(a = c(x = "ax", y = "ay"), b = c(x = "bx", y = "by"))
 test(1581.17, DT[ , as.list(l[[f1]])[[f2]], by=c("f1","f2")],
      data.table(f1 = c("a", "b"), f2 = c("x", "y"), V1 = c("ax", "by")))
+test(1581.18, DT[, v:=l[[f1]][f2], by=c("f1","f2")],
+     data.table(f1=c("a","b"), f2=c("x","y"), v=c("ax", "by")))
 
 # handle NULL value correctly #1429
 test(1582, uniqueN(NULL), 0L)
