@@ -218,7 +218,7 @@ all.equal.data.table = function(target, current, trim.levels=TRUE, check.attribu
     jn.on = copy(names(target)) # default, possible altered later on
     dbl.cols = vapply_1c(target,typeof)=="double"
     if (!identical(tolerance, 0)) {
-      if (all(!dbl.cols)) { # dbl.cols handles (removed) "all character columns" (char.cols) case as well
+      if (!any(dbl.cols)) { # dbl.cols handles (removed) "all character columns" (char.cols) case as well
         tolerance = 0
       } else {
         jn.on = jn.on[c(which(!dbl.cols), which(dbl.cols))] # double column must be last for rolling join

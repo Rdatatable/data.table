@@ -111,7 +111,7 @@ unit = "s")
 
 14. Selecting key columns could incur a large speed penalty, [#4498](https://github.com/Rdatatable/data.table/issues/4498). Thanks to @Jesper on Stack Overflow for the report.
 
-15. `all.equal(DT1, DT2, ignore.row.order=TRUE)` now properly handles NAs, [#4422](https://github.com/Rdatatable/data.table/issues/4422).
+15. `all.equal(DT1, DT2, ignore.row.order=TRUE)` could return TRUE incorrectly in the presence of NAs, [#4422](https://github.com/Rdatatable/data.table/issues/4422).
 
 ## NOTES
 
