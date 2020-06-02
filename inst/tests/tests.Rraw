@@ -4014,8 +4014,28 @@ test(1162.09, length(forderv(DT, by=2:3)), 0L)
 setkey(DT)
 # test number 1162.10 skipped because if it fails it confusingly prints out as 1662.1 not 1662.10
 test(1162.10, length(forderv(DT, by=1:3)), 0L)
-test(1162.11, is.sorted(DT, by=1:3), TRUE, warning="Use.*forderv.*for efficiency in one step, so you have o as well if not sorted")
-test(1162.12, is.sorted(DT, by=2:1), FALSE, warning="Use.*forderv.*for efficiency in one step, so you have o as well if not sorted")
+test(1162.11, is.sorted(DT, by=1:3), TRUE)
+test(1162.12, is.sorted(DT, by=2:1), FALSE)
+test(1162.13, is.sorted(DT), TRUE)
+DT = data.table(A=INT(1,1,2), B=c(NA,"a",NA))
+test(1162.14, is.sorted(DT), TRUE)
+test(1162.15, is.sorted(DT, by=c("B","A")), FALSE)
+DT = data.table(A=INT(1,1,2), B=c("a",NA,NA))
+test(1162.16, is.sorted(DT), FALSE)
+test(1162.17, is.sorted(DT, by=2), FALSE)
+if (test_bit64) {
+  DT[, A:=as.integer64(A)]
+  test(1162.18, is.sorted(DT, by="A"), TRUE)  # tests the single-column special case
+  test(1162.19, is.sorted(DT), FALSE)         # tests the 2-column case branch for integer64
+  DT[2, B:="b"]
+  test(1162.20, is.sorted(DT), TRUE)
+}
+utf8_strings = c("\u00a1tas", "\u00de")
+latin1_strings = iconv(utf8_strings, from="UTF-8", to="latin1")
+DT = data.table(A=c(utf8_strings, latin1_strings), B=1:4)
+test(1162.21, is.sorted(DT), FALSE)
+setkey(DT)
+test(1162.22, is.sorted(DT), TRUE)
 
 # FR #351 - last on length=0 arguments
 x <- character(0)
@@ -8120,7 +8140,7 @@ test(1588.7, dt[ch>"c"], dt[4:6])  # coverage of a return(NULL) in .prepareFastS
 
 # data.table operates consistently independent of locale, but it's R that changes and is sensitive to it.
 #   Because keys/indexes depend on a sort order. If a data.table is stored on disk with a key
-#   created in a locale-sensitive order and then loaded by another R session in a different locale, the ability to re-use existing sortedness
+#   created in a locale-sensitive order and then loaded by another R session in a different locale, the ability to reuse existing sortedness
 #   will break because the order would depend on the locale. Which is why data.table is deliberately C-locale only. For consistency and simpler
 #   internals for robustness to reduce the change of errors and to avoid that class of bug. It would be possible to have locale-sensitive keys
 #   and indexes but we've, so far, decided not to, for those reasons.
@@ -8137,12 +8157,20 @@ Encoding(x1) = "latin1"
 x2 = iconv(x1, "latin1", "UTF-8")
 test(1590.01, identical(x1,x2))
 test(1590.02, x1==x2)
-test(1590.03, forderv(    c(x2,x1,x1,x2)), integer())     # desirable consistent result given data.table's needs
-test(1590.04, base::order(c(x2,x1,x1,x2)), INT(1,4,2,3))  # different result in base R under C locale even though identical(x1,x2)
+test(1590.03, forderv(    c(x2,x1,x1,x2)), integer())     # desirable consistent result given identical(x1, x2)
+                                                          #           ^^ data.table consistent over time regardless of which version of R or locale
+baseR = base::order(c(x2,x1,x1,x2))
+  # Even though C locale and identical(x1,x2), base R<=4.0.0 considers the encoding too; i.e. orders the encoding together x2 (UTF-8) before x1 (latin1).
+  # Then around May 2020, R-devel (but just on Windows) started either respecting identical() like data.table has always done, or put latin1 before UTF-8.
+  # Jan emailed R-devel on 23 May 2020.
+  # We relaxed 1590.04 and 1590.07 (tests of base R behaviour) rather than remove them, PR#4492 and its follow-up. But these two tests
+  # are so relaxed now that they barely testing anything. It appears base R behaviour is undefined in this rare case of identical strings in different encodings.
+test(1590.04, identical(baseR, INT(1,4,2,3)) || identical(baseR, INT(2,3,1,4)) || identical(baseR, 1:4))
 Encoding(x2) = "unknown"
 test(1590.05, x1!=x2)
 test(1590.06, forderv(    c(x2,x1,x1,x2)), INT(1,4,2,3))  # consistent with Windows-1252 result, tested further below
-test(1590.07, base::order(c(x2,x1,x1,x2)), INT(2,3,1,4))  # different result; base R is encoding-sensitive in C-locale
+baseR = base::order(c(x2,x1,x1,x2))
+test(1590.07, identical(baseR, INT(1,4,2,3)) || identical(baseR, INT(2,3,1,4)) || identical(baseR, 1:4))
 Sys.setlocale("LC_CTYPE", ctype)
 Sys.setlocale("LC_COLLATE", collate)
 test(1590.08, Sys.getlocale(), oldlocale)  # checked restored locale fully back to how it was before this test
