@@ -113,6 +113,8 @@ unit = "s")
 
 15. `all.equal(DT1, DT2, ignore.row.order=TRUE)` could return TRUE incorrectly in the presence of NAs, [#4422](https://github.com/Rdatatable/data.table/issues/4422).
 
+16. Non-equi joins now automatically set `allow.cartesian=TRUE`, [4489](https://github.com/Rdatatable/data.table/issues/4489). Thanks to @Henrik-P for reporting.
+
 ## NOTES
 
 0. Retrospective license change permission was sought from and granted by 4 contributors who were missed in [PR#2456](https://github.com/Rdatatable/data.table/pull/2456), [#4140](https://github.com/Rdatatable/data.table/pull/4140). We had used [GitHub's contributor page](https://github.com/Rdatatable/data.table/graphs/contributors) which omits 3 of these due to invalid email addresses, unlike GitLab's contributor page which includes the ids. The 4th omission was a PR to a script which should not have been excluded; a script is code too. We are sorry these contributors were not properly credited before. They have now been added to the contributors list as displayed on CRAN. All the contributors of code to data.table hold its copyright jointly; your contributions belong to you. You contributed to data.table when it had a particular license at that time, and you contributed on that basis. This is why in the last license change, all contributors of code were consulted and each had a veto.

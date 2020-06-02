@@ -428,6 +428,9 @@ replace_dot_alias = function(e) {
         on_ops = .parse_on(substitute(on), isnull_inames)
         on = on_ops[[1L]]
         ops = on_ops[[2L]]
+        if (any(ops > 1L)) { ## fix for #4489;  ops = c("==", "<=", "<", ">=", ">", "!=")
+          allow.cartesian = TRUE
+        }
         # TODO: collect all '==' ops first to speeden up Cnestedid
         rightcols = colnamesInt(x, names(on), check_dups=FALSE)
         leftcols  = colnamesInt(i, unname(on), check_dups=FALSE)

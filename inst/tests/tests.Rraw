@@ -16882,7 +16882,13 @@ test(2138.3, rbind(A,B), data.table(A=c(as.character(A$A), B$A)))
 A = data.table(A=as.complex(rep(NA, 5)))
 test(2138.4, rbind(A,B), data.table(A=c(as.character(A$A), B$A)))
 
-# all.equal ignore row order improperly handle NAs #4422
+# all.equal ignore row order improperly handle NAs, #4422
 d1 = data.table(a=1:2, b=c(1L,NA))
 d2 = data.table(a=1:2, b=1:2)
-test(2139.1, all.equal(d1, d2, ignore.row.order=TRUE), "Dataset 'current' has rows not present in 'target'")
+test(2139, all.equal(d1, d2, ignore.row.order=TRUE), "Dataset 'current' has rows not present in 'target'")
+
+# Set allow.cartesian = TRUE when non-equi, #4489
+dt = data.table(time = 1:8, v = INT(5,7,6,1,8,4,2,3))
+dt[time == 2L, v := 2L]
+dt[time == 7L, v := 7L]
+test(2140, dt[dt, on=.(time>time, v>v), .N, by=.EACHI], data.table(time=1:8, v=INT(5,2,6,1,8,4,7,3), N=INT(3,5,2,4,0,1,0,0)))
