@@ -1541,7 +1541,7 @@ replace_dot_alias = function(e) {
       # g[[ only applies to atomic input, for now, was causing #4159
       subopt = length(jsub) == 3L &&
         (jsub[[1L]] == "[" ||
-           (jsub[[1L]] == "[[" && eval(call('is.atomic', jsub[[2L]]), envir = x))) &&
+           (jsub[[1L]] == "[[" && is.name(jsub[[2L]]) && eval(call('is.atomic', jsub[[2L]]), envir = x))) &&
         (is.numeric(jsub[[3L]]) || jsub[[3L]] == ".N")
       headopt = jsub[[1L]] == "head" || jsub[[1L]] == "tail"
       firstopt = jsub[[1L]] == "first" || jsub[[1L]] == "last" # fix for #2030
