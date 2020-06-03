@@ -14,8 +14,8 @@
 #include "types.h"
 #include "po.h"
 #ifdef WIN32  // positional specifiers (%n$) used in translations; #4402
-#  define snprintf _snprintf_p
-#  define sprintf  _sprintf_p
+#  define snprintf _sprintf_p  // the non-n one in Windows takes n anyway so there's no separate _snprintf_f
+#  define sprintf(dest, format, ...)  _sprintf_p(dest, INT_MAX, format, ...)
 #endif
 // #include <signal.h> // the debugging machinery + breakpoint aidee
 // raise(SIGINT);
