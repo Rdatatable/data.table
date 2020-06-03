@@ -13,6 +13,10 @@
 #include "myomp.h"
 #include "types.h"
 #include "po.h"
+#ifdef WIN32  // positional specifiers (%n$) used in translations; #4402
+#  define snprintf _snprintf_p
+#  define sprintf  _sprintf_p
+#endif
 // #include <signal.h> // the debugging machinery + breakpoint aidee
 // raise(SIGINT);
 
