@@ -252,4 +252,58 @@ options(datatable.verbose=FALSE)
 
 # TODO: type=double NA/NaN support
 
-# end ----
+# example benchmark from post ----
+
+library(data.table)
+fwhich = data.table:::fwhich
+options(datatable.auto.index=FALSE)
+
+sample_all = function(unq_n, size) {
+  stopifnot(unq_n <= size)
+  unq_sub = seq_len(unq_n)
+  sample(c(unq_sub, sample(unq_sub, size=max(size-unq_n, 0), replace=TRUE)))
+}
+set.seed(108)
+N = 1e4L # timings for 1e8L, 20th, 6 GB mem required
+foo = data.table(
+  x = sample_all(N/10L, N),
+  y = sample_all(N/10L, N),
+  z = sample_all(N/10L, N)
+)
+invisible({foo[c(1L,N)]; foo[c(1L,N)]; foo[c(1L,N)]}) # warmup
+if (N==1e3L) {
+  s1 = 45L; s2 = 28L; s3 = 91L
+} else if (N==1e4L) {
+  s1 = 638L; s2 = 975L; s3 = 930L
+} else if (N==1e6L) { #foo[.N/2L]
+  s1 = 80332L; s2 = 8563L; s3 = 63039L
+} else if (N==1e8L) {
+  s1 = 7065182L; s2 = 7013931L; s3 = 8875689L
+}
+mid = as.integer(seq(as.integer(N*0.05), as.integer(N*0.95))) # mid ~0.9 obs
+wh = function(x) eval(substitute(identical(which(.x, useNames=FALSE), fwhich(.x)), list(.x=substitute(x))), parent.frame())
+
+## easy
+system.time(foo[x==s1][y==s2][z==s3])
+system.time(foo[x==s1 & y==s2 & z==s3])
+system.time(foo[fwhich(x==s1 & y==s2 & z==s3)])
+with(foo, wh(x==s1 & y==s2 & z==s3))
+
+## hard
+system.time(foo[x%in%mid][y%in%mid][z%in%mid])
+system.time(foo[x%in%mid & y%in%mid & z%in%mid])
+system.time(foo[fwhich(x%in%mid & y%in%mid & z%in%mid)])
+# TOO SLOW!
+with(foo, wh(x%in%mid & y%in%mid & z%in%mid))
+
+## !easy
+system.time(foo[x!=s1][y!=s2][z!=s3])
+system.time(foo[x!=s1 & y!=s2 & z!=s3])
+system.time(foo[fwhich(x!=s1 & y!=s2 & z!=s3)])
+with(foo, wh(x!=s1 & y!=s2 & z!=s3))
+
+## !hard
+system.time(foo[!x%in%mid][!y%in%mid][!z%in%mid])
+system.time(foo[!x%in%mid & !y%in%mid & !z%in%mid])
+system.time(foo[fwhich(!x%in%mid & !y%in%mid & !z%in%mid)])
+with(foo, wh(!x%in%mid & !y%in%mid & !z%in%mid))

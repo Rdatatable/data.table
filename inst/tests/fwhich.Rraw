@@ -5,6 +5,7 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
 } else {
   require(data.table)
   test = data.table:::test
+  fwhich = data.table:::fwhich
 }
 
 sugg = c(
@@ -16,26 +17,13 @@ for (s in sugg) {
   if (!loaded) cat("\n**** Suggested package",s,"is not installed. Tests using it will be skipped.\n\n")
 }
 
-
 options(datatable.auto.index=FALSE)
 
-#fwhich = data.table:::fwhich
-
 set.seed(108)
-wh = function(x) {
-p = substitute(identical(which(.x, useNames=FALSE), fwhich(.x)), list(.x=substitute(x)))
-print(p)
-eval(p)
-}
-
-x = c(1:3,2:1,1:4,1L,1:2)
-fwhich(x==1L)
-
-x = sample.int(10L, 100L, TRUE)
-fwhich(x==1L)
-test(1, wh(x==9L), output="which_eq")
-test(1, wh(x==1L), output="which_eq")
-x[sample.int(100L, 10L)] = NA
-test(1, wh(is.na(x)), output="which_eq")
-
-#x==a&b
+wh = function(x) eval(substitute(identical(which(.x, useNames=FALSE), fwhich(.x)), list(.x=substitute(x))), parent.frame())
+options(datatable.verbose=FALSE)
+N = 1e6L
+x = sample.int(3L, N, TRUE)
+y = sample.int(3L, N, TRUE)
+z = sample.int(3L, N, TRUE)
+test(1, wh(x==1L & y==2L & z==3L))
