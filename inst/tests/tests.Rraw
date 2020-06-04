@@ -16932,6 +16932,6 @@ Sys.setenv(LANGUAGE=old)
 # this doesn't work for me and Chinese persists, hence putting this at the end of this script for now
 
 print(.libPaths())
-test(2142, system2("R", input="q('no')", args="--no-save"), 0L)
+test(2142, system2("R", input="q('no')", args="--no-save", env="LANGUAGE=zh_CN"), 0L)
 
 
