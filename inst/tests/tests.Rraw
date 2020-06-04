@@ -16926,10 +16926,12 @@ if (.Platform$OS.type=="windows") {
   }
 } else {
   Sys.setenv(LANGUAGE = "zh_CN")
-  test(2141.02, rbind(DT,list(c=4L,a=7L)), error="2.*1.*c.*1")
+  test(2141.02, rbind(DT,list(c=4L,a=7L)), error="2.*1.*c.*1")   # won't pass when run via cc though; TODO: turn off from cc()
 }
 Sys.setenv(LANGUAGE=old)
 # this doesn't work for me and Chinese persists, hence putting this at the end of this script for now
 
+print(.libPaths())
+test(2142, system2("R", input="q('no')", args="--no-save"), 0L)
 
 
