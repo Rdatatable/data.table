@@ -12,3 +12,9 @@ colnamesInt = function(x, cols, check_dups=FALSE) .Call(CcolnamesInt, x, cols, c
 coerceFill = function(x) .Call(CcoerceFillR, x)
 
 testMsg = function(status=0L, nx=2L, nk=2L) .Call(CtestMsgR, as.integer(status)[1L], as.integer(nx)[1L], as.integer(nk)[1L])
+
+#fsjoin = function(x, y) .Call(CsjoinR, x, y)
+fijoin = function(x, y) {
+  ans = .Call(CijoinR, x, y)
+  ans[3:4]
+}
