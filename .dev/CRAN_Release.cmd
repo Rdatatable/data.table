@@ -304,13 +304,14 @@ cd R-devel  # used for revdep testing: .dev/revdep.R.
 ./configure CFLAGS="-O2 -Wall -pedantic"
 make
 
-# use latest available below `apt-cache search gcc-` or `clang-`
-cd ../R-devel-strict-clang
-./configure --without-recommended-packages --disable-byte-compiled-packages --disable-openmp --enable-strict-barrier --disable-long-double CC="clang-8 -fsanitize=undefined,address -fno-sanitize=float-divide-by-zero -fno-omit-frame-pointer"
+# use latest available `apt-cache search gcc-` or `clang-`
+cd ~/build/R-devel-strict-clang
+./configure --without-recommended-packages --disable-byte-compiled-packages --disable-openmp --enable-strict-barrier --disable-long-double CC="clang-10 -fsanitize=undefined,address -fno-sanitize=float-divide-by-zero -fno-omit-frame-pointer"
 make
 
-cd ../R-devel-strict-gcc
-./configure --without-recommended-packages --disable-byte-compiled-packages --disable-openmp --enable-strict-barrier --disable-long-double CC="gcc-8 -fsanitize=undefined,address -fno-sanitize=float-divide-by-zero -fno-omit-frame-pointer"
+cd ~/build/R-devel-strict-gcc
+# gcc-10 (in dev currently) failed to build R, so using regular gcc-9 (9.3.0 as per focal/Pop!_OS 20.04)
+./configure --without-recommended-packages --disable-byte-compiled-packages --disable-openmp --enable-strict-barrier --disable-long-double CC="gcc-9 -fsanitize=undefined,address -fno-sanitize=float-divide-by-zero -fno-omit-frame-pointer"
 make
 
 # See R-exts#4.3.3
