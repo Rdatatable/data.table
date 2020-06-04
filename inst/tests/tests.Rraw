@@ -16917,7 +16917,22 @@ test(2141.1, rbind(DT,list(c=4L,a=7L)), error="Column 1 ['c'] of item 2 is missi
 old = Sys.getenv("LANGUAGE")
 Sys.setenv(LANGUAGE = if (.Platform$OS.type=="windows") "Chinese (Simplified)_China.936" else "zh_CN")
 test(2141.2, rbind(DT,list(c=4L,a=7L)), error="2.*1.*c.*1") # arguments different order
+Sys.setenv(LANGUAGE = if (.Platform$OS.type=="windows") "zh-cn" else "zh_CN")
+test(2141.3, rbind(DT,list(c=4L,a=7L)), error="2.*1.*c.*1")
+Sys.setenv(LANGUAGE = if (.Platform$OS.type=="windows") "chinese-simplified" else "zh_CN")
+test(2141.4, rbind(DT,list(c=4L,a=7L)), error="2.*1.*c.*1")
+Sys.setenv(LANGUAGE = if (.Platform$OS.type=="windows") "zh-CN" else "zh_CN")
+test(2141.5, rbind(DT,list(c=4L,a=7L)), error="2.*1.*c.*1")
+Sys.setenv(LANGUAGE = if (.Platform$OS.type=="windows") "zh_CN" else "zh_CN")
+test(2141.6, rbind(DT,list(c=4L,a=7L)), error="2.*1.*c.*1")
+Sys.setenv(LANGUAGE = if (.Platform$OS.type=="windows") "zh" else "zh_CN")
+test(2141.7, rbind(DT,list(c=4L,a=7L)), error="2.*1.*c.*1")
+Sys.setenv(LANGUAGE = if (.Platform$OS.type=="windows") "ZH" else "zh_CN")
+test(2141.8, rbind(DT,list(c=4L,a=7L)), error="2.*1.*c.*1")
+Sys.setenv(LANGUAGE = if (.Platform$OS.type=="windows") "zh_cn" else "zh_CN")
+test(2141.9, rbind(DT,list(c=4L,a=7L)), error="2.*1.*c.*1")
 Sys.setenv(LANGUAGE=old)
 # this doesn't work for me and Chinese persists, hence putting this at the end of this script for now
+
 
 
