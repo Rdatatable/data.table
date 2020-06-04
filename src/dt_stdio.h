@@ -23,6 +23,7 @@
 #define DT_STDIO_H
 #if defined(__MINGW32__) || (defined __MINGW64__)
   #define __USE_MINGW_ANSI_STDIO 1
+  #define _XOPEN_SOURCE 1
   #include <stdio.h>
   #define PRId64 "lld"
   #define PRIu64 "llu"
