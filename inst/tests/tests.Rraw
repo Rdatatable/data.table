@@ -16936,6 +16936,9 @@ if (.Platform$OS.type=="windows") local({
     else
       Sys.unsetenv('LANGUAGE')
   }, add = TRUE)
+  # to see if it's Chinese message that's printed
+  try(rbindlist(list(a = 1), list(b = 1, c = 2)))
+  # should trigger segfault here
   test(2142, rbind(DT,list(c=4L,a=7L)), error="2.*1.*c.*1")
 })
 
