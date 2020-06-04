@@ -16913,24 +16913,21 @@ test(2140, dt[dt, on=.(time>time, v>v), .N, by=.EACHI], data.table(time=1:8, v=I
 
 # repeat of test 450 for #4402
 DT = data.table(a=1:3,b=4:6)
-test(2141.1, rbind(DT,list(c=4L,a=7L)), error="Column 1 ['c'] of item 2 is missing in item 1")
+test(2141.01, rbind(DT,list(c=4L,a=7L)), error="Column 1 ['c'] of item 2 is missing in item 1")
 old = Sys.getenv("LANGUAGE")
-Sys.setenv(LANGUAGE = if (.Platform$OS.type=="windows") "Chinese (Simplified)_China.936" else "zh_CN")
-test(2141.2, rbind(DT,list(c=4L,a=7L)), error="2.*1.*c.*1") # arguments different order
-Sys.setenv(LANGUAGE = if (.Platform$OS.type=="windows") "zh-cn" else "zh_CN")
-test(2141.3, rbind(DT,list(c=4L,a=7L)), error="2.*1.*c.*1")
-Sys.setenv(LANGUAGE = if (.Platform$OS.type=="windows") "chinese-simplified" else "zh_CN")
-test(2141.4, rbind(DT,list(c=4L,a=7L)), error="2.*1.*c.*1")
-Sys.setenv(LANGUAGE = if (.Platform$OS.type=="windows") "zh-CN" else "zh_CN")
-test(2141.5, rbind(DT,list(c=4L,a=7L)), error="2.*1.*c.*1")
-Sys.setenv(LANGUAGE = if (.Platform$OS.type=="windows") "zh_CN" else "zh_CN")
-test(2141.6, rbind(DT,list(c=4L,a=7L)), error="2.*1.*c.*1")
-Sys.setenv(LANGUAGE = if (.Platform$OS.type=="windows") "zh" else "zh_CN")
-test(2141.7, rbind(DT,list(c=4L,a=7L)), error="2.*1.*c.*1")
-Sys.setenv(LANGUAGE = if (.Platform$OS.type=="windows") "ZH" else "zh_CN")
-test(2141.8, rbind(DT,list(c=4L,a=7L)), error="2.*1.*c.*1")
-Sys.setenv(LANGUAGE = if (.Platform$OS.type=="windows") "zh_cn" else "zh_CN")
-test(2141.9, rbind(DT,list(c=4L,a=7L)), error="2.*1.*c.*1")
+if (.Platform$OS.type=="windows") {
+  i = 2L
+  for (lang in c("Chinese_China.1252", "Chinese_China.936", "Chinese (Simplified)_China.936", "Chinese (Simplified)_China.1252",
+               "zh-cn", "zh-CN", "zh_CN", "zh", "ZH", "zh_cn", "Chinese - China", "Chinese_China", "Chinese-China")) {
+    Sys.setenv(LANGUAGE = lang)
+    Sys.setenv(LANG = lang)
+    test(2141+i/100, rbind(DT,list(c=4L,a=7L)), error="2.*1.*c.*1") # arguments different order
+    i = i+1L
+  }
+} else {
+  Sys.setenv(LANGUAGE = "zh_CN")
+  test(2141.02, rbind(DT,list(c=4L,a=7L)), error="2.*1.*c.*1")
+}
 Sys.setenv(LANGUAGE=old)
 # this doesn't work for me and Chinese persists, hence putting this at the end of this script for now
 
