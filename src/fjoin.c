@@ -24,10 +24,10 @@ SEXP joinOut(int matchn, int *starts_x, int *lens_x, int *starts_y, int *lens_y)
   SET_STRING_ELT(ansnames, 1, mkChar("lens_x"));
   //int *lens_x_p = INTEGER(VECTOR_ELT(ans, 1));
   SET_VECTOR_ELT(ans, 2, allocVector(INTSXP, matchn));
-  SET_STRING_ELT(ansnames, 2, mkChar("starts_y"));
+  SET_STRING_ELT(ansnames, 2, mkChar("starts"));
   int *starts_y_p = INTEGER(VECTOR_ELT(ans, 2));
   SET_VECTOR_ELT(ans, 3, allocVector(INTSXP, matchn));
-  SET_STRING_ELT(ansnames, 3, mkChar("lens_y"));
+  SET_STRING_ELT(ansnames, 3, mkChar("lens"));
   int *lens_y_p = INTEGER(VECTOR_ELT(ans, 3));
   for (int i=0; i<matchn; ++i) {
     //starts_x_p[i] = starts_x[i];
@@ -101,8 +101,11 @@ SEXP sjoinR(SEXP x, SEXP y) {
 /*
  * fast indexed join
  * sort-merge join
+ * 
+ * split whole 1:nx_starts into numbers of buckets equal to threads
+ * each thread do binary merge x of first and last element, and then sort-merge to a subset of y defined by those matches
  */
-void ijoin(int *x, int nx, int *x_o, bool x_ord, int *x_starts, int nx_starts,
+void fjoin(int *x, int nx, int *x_o, bool x_ord, int *x_starts, int nx_starts,
            int *y, int ny, int *y_o, bool y_ord, int *y_starts, int ny_starts,
            joinhow how,
            bool *match, int *matchn,
@@ -110,7 +113,7 @@ void ijoin(int *x, int nx, int *x_o, bool x_ord, int *x_starts, int nx_starts,
            int *starts_y, int *lens_y) {
   if (how != left)
     error("only left join implemented so far");
-  if (!x_ord || !y_ord)
+  if (!x_ord)
     error("support for already unsorted not yet implemented");
   bool unq_x = nx_starts==nx, unq_y = ny_starts==ny;
   //int imatch = 0;
@@ -127,67 +130,107 @@ void ijoin(int *x, int nx, int *x_o, bool x_ord, int *x_starts, int nx_starts,
     y_lens[ny_starts-1] = ny-y_starts[ny_starts-1];
   }
 
-  int i=0, j=0, is=0, js=0;
-  if (how==left && unq_x && unq_y) {
-    while (i<nx && j<ny) {
-      int x_i = x[i], y_j = y[j];
-      if (x_i == y_j) {
-        starts_y[i] = j+1; lens_y[i] = 1;
-        i++;
+  int i=0, j=0, is=0, js=0, x_i, y_j;
+  if (x_ord && y_ord) {
+    if (how==left && unq_x && unq_y) {
+      while (i<nx && j<ny) {
+        x_i = x[i], y_j = y[j];
+        if (x_i == y_j) {
+          starts_y[i] = j+1; lens_y[i] = 1;
+          i++;
+        } else if (x_i < y_j) i++; else if (x_i > y_j) j++;
       }
-      else if (x_i < y_j) i++;
-      else if (x_i > y_j) j++;
-    }
-  } else if (how==left && unq_y) {
-    while (is<nx_starts && j<ny) {
-      int i = x_starts[is]-1;
-      int x_i = x[i], y_j = y[j];
-      if (x_i == y_j) {
-        int j1 = j+1;
-        for (int ii=0; ii<x_lens[is]; ++ii) {
-          starts_y[i+ii] = j1; lens_y[i+ii] = 1;
-        }
-        is++;
+    } else if (how==left && unq_y) {
+      while (is<nx_starts && j<ny) {
+        i = x_starts[is]-1;
+        x_i = x[i], y_j = y[j];
+        if (x_i == y_j) {
+          int j1 = j+1;
+          for (int ii=0; ii<x_lens[is]; ++ii) {
+            starts_y[i+ii] = j1; lens_y[i+ii] = 1;
+          }
+          is++;
+        } else if (x_i < y_j) is++; else if (x_i > y_j) j++;
       }
-      else if (x_i < y_j) is++;
-      else if (x_i > y_j) j++;
-    }
-  } else if (how==left && unq_x) {
-    while (i<nx && js<ny_starts) {
-      int j = y_starts[js]-1;
-      int x_i = x[i], y_j = y[j];
-      if (x_i == y_j) {
-        starts_y[i] = j+1;
-        lens_y[i] = y_lens[js];
-        i++;
+    } else if (how==left && unq_x) {
+      while (i<nx && js<ny_starts) {
+        j = y_starts[js]-1;
+        x_i = x[i], y_j = y[j];
+        if (x_i == y_j) {
+          starts_y[i] = j+1;
+          lens_y[i] = y_lens[js];
+          i++;
+        } else if (x_i < y_j) i++; else if (x_i > y_j) js++;
       }
-      else if (x_i < y_j) i++;
-      else if (x_i > y_j) js++;
-    }
-  } else if (how==left) {
-    while (is<nx_starts && js<ny_starts) {
-      int i = x_starts[is]-1, j = y_starts[js]-1;
-      int x_i = x[i], y_j = y[j];
-      if (x_i == y_j) {
-        int j1 = j+1;
-        for (int ii=0; ii<x_lens[is]; ++ii) {
-          starts_y[i+ii] = j1; lens_y[i+ii] = y_lens[js];
-        }
-        is++;
+    } else if (how==left) {
+      while (is<nx_starts && js<ny_starts) {
+        i = x_starts[is]-1, j = y_starts[js]-1;
+        x_i = x[i], y_j = y[j];
+        if (x_i == y_j) {
+          int j1 = j+1;
+          for (int ii=0; ii<x_lens[is]; ++ii) {
+            starts_y[i+ii] = j1; lens_y[i+ii] = y_lens[js];
+          }
+          is++;
+        } else if (x_i < y_j) is++; else if (x_i > y_j) js++;
       }
-      else if (x_i < y_j) is++;
-      else if (x_i > y_j) js++;
     }
-  } else if (how==inner && unq_x && unq_y) {
-    
-  } else if (how==full && unq_x && unq_y) {
-    
+  } else if (x_ord) {
+    if (how==left && unq_x && unq_y) {
+      while (i<nx && j<ny) {
+        x_i = x[i], y_j = y[y_o[j]-1];
+        if (x_i == y_j) {
+          starts_y[i] = j+1; lens_y[i] = 1;
+          i++;
+        } else if (x_i < y_j) i++; else if (x_i > y_j) j++;
+      }
+    } else if (how==left && unq_y) {
+      while (is<nx_starts && j<ny) {
+        i = x_starts[is]-1;
+        x_i = x[i], y_j = y[y_o[j]-1];
+        //Rprintf("x[x_starts[%d]-1]=%d; y[y_o[%d]-1]=%d\n", is, x[i], j, y[y_o[j]-1]);
+        if (x_i == y_j) {
+          int j1 = j+1;
+          for (int ii=0; ii<x_lens[is]; ++ii) {
+            //Rprintf("starts_y[%d+%d]=%d\n", i, ii, j1);
+            starts_y[i+ii] = j1; lens_y[i+ii] = 1;
+          }
+          is++;
+        } else if (x_i < y_j) is++; else if (x_i > y_j) j++;
+      }
+    } else if (how==left && unq_x) {
+      while (i<nx && js<ny_starts) {
+        j = y_starts[js]-1;
+        x_i = x[i], y_j = y[y_o[j]-1];
+        if (x_i == y_j) {
+          starts_y[i] = j+1;
+          lens_y[i] = y_lens[js];
+          i++;
+        } else if (x_i < y_j) i++; else if (x_i > y_j) js++;
+      }
+    } else if (how==left) {
+      while (is<nx_starts && js<ny_starts) {
+        i = x_starts[is]-1, j = y_starts[js]-1;
+        x_i = x[i], y_j = y[y_o[j]-1];
+        if (x_i == y_j) {
+          int j1 = j+1;
+          for (int ii=0; ii<x_lens[is]; ++ii) {
+            starts_y[i+ii] = j1; lens_y[i+ii] = y_lens[js];
+          }
+          is++;
+        } else if (x_i < y_j) is++; else if (x_i > y_j) js++;
+      }
+    }
+  } else if (y_ord) {
+    error("dev");
+  } else {
+    error("devVVV");
+    //Rprintf("x_i=%d; y[y_o[j]-1]= y[y_o[%d]-1]= y[%d-1]= y[%d]= %d\n", x[i], j, y_o[j], y_o[j]-1, y[y_o[j]-1]);
   }
-  
   matchn[0] = nx;
 }
 
-SEXP ijoinR(SEXP x, SEXP y) {
+SEXP fjoinR(SEXP x, SEXP y) {
   if (!isInteger(x) || !isInteger(y))
     error("must be integer");
   int nx = LENGTH(x), ny = LENGTH(y);
@@ -208,7 +251,7 @@ SEXP ijoinR(SEXP x, SEXP y) {
   t_alloc = omp_get_wtime() - t_alloc;
   double t_ijoin = omp_get_wtime();
   //            *x, nx,           *x_o,            x_ord,         *x_starts,        nx_starts,
-  ijoin(INTEGER(x), nx, INTEGER(x_idx), LENGTH(x_idx)==0, INTEGER(x_starts), LENGTH(x_starts),
+  fjoin(INTEGER(x), nx, INTEGER(x_idx), LENGTH(x_idx)==0, INTEGER(x_starts), LENGTH(x_starts),
         INTEGER(y), ny, INTEGER(y_idx), LENGTH(y_idx)==0, INTEGER(y_starts), LENGTH(y_starts),
         left, match, &matchn,
         starts_x, lens_x, starts_y, lens_y);

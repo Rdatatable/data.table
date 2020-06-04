@@ -13,8 +13,8 @@ coerceFill = function(x) .Call(CcoerceFillR, x)
 
 testMsg = function(status=0L, nx=2L, nk=2L) .Call(CtestMsgR, as.integer(status)[1L], as.integer(nx)[1L], as.integer(nk)[1L])
 
-#fsjoin = function(x, y) .Call(CsjoinR, x, y)
-fijoin = function(x, y) {
-  ans = .Call(CijoinR, x, y)
+fjoin = function(x, y) {
+  ans = .Call(CfjoinR, x, y)
+  ans[[4L]][is.na(ans[[3L]])] = 1L
   ans[3:4]
 }

@@ -1,0 +1,57 @@
+require(methods)
+
+if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
+  if ((tt<-compiler::enableJIT(-1))>0)
+    cat("This is dev mode and JIT is enabled (level ", tt, ") so there will be a brief pause around the first test.\n", sep="")
+} else {
+  require(data.table)
+  test = data.table:::test
+  fjoin = data.table:::fjoin
+  bmerge = data.table:::bmerge
+  forderv = data.table:::forderv
+}
+check = function(x, y) {
+  a = d(x, y)
+  b = fjoin(x, y)
+  na = is.na(a[["starts"]])
+  fail = !identical(a[["starts"]][!na], b[["starts_y"]][!na])
+  fail = fail || !identical(a[["lens"]][!na], b[["lens_y"]][!na])
+  if (fail) {
+    if (interactive() && length(x) < 20L) {
+      out = capture.output(print(list(d=a, fj=b)))
+      stop("starts are not equal: ", out)
+    }
+    stop("starts are not equal")
+  }
+  invisible(TRUE)
+}
+
+
+d = function(x, y) bmerge(data.table(x=x), data.table(y=y), 1L, 1L, roll=0, rollends=c(FALSE, TRUE), nomatch=NA_integer_, mult="all", ops=1L, verbose=FALSE)[1:2]
+
+x = c(1L,2L,3L,4L)
+y = c(2L,3L,5L)
+test(1.01, fjoin(x, y), d(x, y))
+x = c(1L,2L,3L,3L,4L)
+y = c(2L,3L,5L)
+test(1.02, fjoin(x, y), d(x, y))
+x = c(1L,2L,3L,4L)
+y = c(2L,3L,3L,5L)
+test(1.03, fjoin(x, y), d(x, y))
+x = c(1L,2L,3L,3L,4L)
+y = c(2L,3L,3L,5L)
+test(1.04, fjoin(x, y), d(x, y))
+
+# y unsorted
+x = c(1L,2L,3L,4L)
+y = c(2L,5L,3L)
+test(2.01, fjoin(x, y), d(x, y))
+x = c(1L,2L,3L,3L,4L)
+y = c(3L,2L,5L)
+test(2.02, fjoin(x, y), d(x, y))
+x = c(1L,2L,3L,4L)
+y = c(5L,3L,2L,3L)
+test(2.03, fjoin(x, y), d(x, y))
+x = c(1L,2L,3L,3L,4L)
+y = c(5L,3L,3L,2L)
+test(2.04, fjoin(x, y), d(x, y))
