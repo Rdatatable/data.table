@@ -113,8 +113,6 @@ void fjoin(int *x, int nx, int *x_o, bool x_ord, int *x_starts, int nx_starts,
            int *starts_y, int *lens_y) {
   if (how != left)
     error("only left join implemented so far");
-  if (!x_ord)
-    error("support for already unsorted not yet implemented");
   bool unq_x = nx_starts==nx, unq_y = ny_starts==ny;
   //int imatch = 0;
   
@@ -222,9 +220,19 @@ void fjoin(int *x, int nx, int *x_o, bool x_ord, int *x_starts, int nx_starts,
       }
     }
   } else if (y_ord) {
-    error("dev");
+    error("y_ord not yet implemented");
   } else {
-    error("devVVV");
+    if (how==left && unq_x && unq_y) {
+      while (i<nx && j<ny) {
+        x_i = x[x_o[i]-1], y_j = y[y_o[j]-1];
+        if (x_i == y_j) {
+          starts_y[i] = j+1; lens_y[i] = 1;
+          i++;
+        } else if (x_i < y_j) i++; else if (x_i > y_j) j++;
+      }
+    } else {
+      error("dev: !x_ord && !y_ord && (!unq_x || !unq_y)");
+    }
     //Rprintf("x_i=%d; y[y_o[j]-1]= y[y_o[%d]-1]= y[%d-1]= y[%d]= %d\n", x[i], j, y_o[j], y_o[j]-1, y[y_o[j]-1]);
   }
   matchn[0] = nx;
