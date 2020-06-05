@@ -14,7 +14,7 @@
 #include "types.h"
 #include "po.h"
 #ifdef WIN32  // positional specifiers (%n$) used in translations; #4402
-#  define snprintf trio_vsnprintf  // the non-n one in Windows takes n anyway so there's no separate _snprintf_f
+#  define snprintf dt_win_snprintf  // see our snprintf.c; tried and failed to link to _sprintf_p on Windows
 #endif
 #define sprintf USE_SNPRINTF_NOT_SPRINTF  // prevent use of sprintf in data.table source; force us to use n always
 
@@ -243,3 +243,7 @@ SEXP testMsgR(SEXP status, SEXP x, SEXP k);
 //fifelse.c
 SEXP fifelseR(SEXP l, SEXP a, SEXP b, SEXP na);
 SEXP fcaseR(SEXP na, SEXP rho, SEXP args);
+
+//snprintf.c
+int dt_win_snprintf(char *dest, size_t n, const char *fmt, ...);
+
