@@ -120,12 +120,14 @@ void fjoin(int *x, int nx, int *x_o, bool x_ord, int *x_starts, int nx_starts,
   if (!unq_x) {
     x_lens = (int *)R_alloc(nx_starts, sizeof(int)); // #4395
     for (int i=0; i<nx_starts-1; ++i) x_lens[i] = x_starts[i+1]-x_starts[i];
-    x_lens[nx_starts-1] = nx-x_starts[nx_starts-1];
+    //Rprintf("nx=%d; x_starts[nx_starts-1]=%d\n", nx, x_starts[nx_starts-1]);
+    x_lens[nx_starts-1] = nx-x_starts[nx_starts-1]+1;
+    //for (int i=0; i<nx_starts; ++i) Rprintf("x_lens[%d]=%d\n", i, x_lens[i]);
   }
   if (!unq_y) {
     y_lens = (int *)R_alloc(ny_starts, sizeof(int));
     for (int i=0; i<ny_starts-1; ++i) y_lens[i] = y_starts[i+1]-y_starts[i];
-    y_lens[ny_starts-1] = ny-y_starts[ny_starts-1];
+    y_lens[ny_starts-1] = ny-y_starts[ny_starts-1]+1;
   }
 
   int i=0, j=0, is=0, js=0, x_i, y_j;
@@ -226,7 +228,7 @@ void fjoin(int *x, int nx, int *x_o, bool x_ord, int *x_starts, int nx_starts,
       while (i<nx && j<ny) {
         x_i = x[x_o[i]-1], y_j = y[y_o[j]-1];
         if (x_i == y_j) {
-          starts_y[i] = j+1; lens_y[i] = 1;
+          starts_y[x_o[i]-1] = j+1; lens_y[x_o[i]-1] = 1;
           i++;
         } else if (x_i < y_j) i++; else if (x_i > y_j) j++;
       }

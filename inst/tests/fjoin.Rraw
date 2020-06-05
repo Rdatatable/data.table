@@ -29,6 +29,7 @@ check = function(x, y) {
 
 d = function(x, y) bmerge(data.table(x=x), data.table(y=y), 1L, 1L, roll=0, rollends=c(FALSE, TRUE), nomatch=NA_integer_, mult="all", ops=1L, verbose=FALSE)[1:2]
 
+## x y sorted
 x = c(1L,2L,3L,4L)
 y = c(2L,3L,5L)
 test(1.01, fjoin(x, y), d(x, y))
@@ -42,7 +43,7 @@ x = c(1L,2L,3L,3L,4L)
 y = c(2L,3L,3L,5L)
 test(1.04, fjoin(x, y), d(x, y))
 
-# y unsorted
+## y unsorted
 x = c(1L,2L,3L,4L)
 y = c(2L,5L,3L)
 test(2.01, fjoin(x, y), d(x, y))
@@ -56,7 +57,61 @@ x = c(1L,2L,3L,3L,4L)
 y = c(5L,3L,3L,2L)
 test(2.04, fjoin(x, y), d(x, y))
 
-# x, y unsorted
-x = c(4L,2L,3L,1L)
+#...
+
+## xy unsorted
+x = c(4L,1L,3L,2L)
 y = c(2L,5L,3L)
-test(2.01, fjoin(x, y), d(x, y))
+test(4.01, fjoin(x, y), d(x, y))
+
+#...
+
+## xy sorted
+ssa = function(unq_n, size, sort=FALSE) {
+  stopifnot(unq_n <= size)
+  unq_sub = seq_len(unq_n)
+  ans = sample(c(unq_sub, sample(unq_sub, size=max(size-unq_n, 0), replace=TRUE)))
+  if (unq_n==size) stopifnot(uniqueN(ans)==length(ans))
+  if (sort) sort(ans) else ans
+}
+N = 1e2
+x = ssa(N, N, sort=TRUE)
+y = ssa(N, N, sort=TRUE)
+test(11.01, fjoin(x, y), d(x, y))
+x = ssa(N, N*1.1, sort=TRUE)
+y = ssa(N, N, sort=TRUE)
+test(11.02, fjoin(x, y), d(x, y))
+x = ssa(N, N, sort=TRUE)
+y = ssa(N, N*1.1, sort=TRUE)
+test(11.03, fjoin(x, y), d(x, y))
+x = ssa(N, N*1.1, sort=TRUE)
+y = ssa(N, N*1.1, sort=TRUE)
+test(11.04, fjoin(x, y), d(x, y))
+
+## y unsorted
+x = ssa(N, N, sort=TRUE)
+y = ssa(N, N)
+test(12.01, fjoin(x, y), d(x, y))
+x = ssa(N, N*1.1, sort=TRUE)
+y = ssa(N, N)
+test(12.02, fjoin(x, y), d(x, y))
+x = ssa(N, N, sort=TRUE)
+y = ssa(N, N*1.1)
+test(12.03, fjoin(x, y), d(x, y))
+x = ssa(N, N*1.1, sort=TRUE)
+y = ssa(N, N*1.1)
+test(12.04, fjoin(x, y), d(x, y))
+
+## xy unsorted
+x = ssa(N, N)
+y = ssa(N, N)
+test(14.01, fjoin(x, y), d(x, y))
+#x = ssa(N, N*1.1)
+#y = ssa(N, N)
+#test(14.02, fjoin(x, y), d(x, y))
+#x = ssa(N, N)
+#y = ssa(N, N*1.1)
+#test(14.03, fjoin(x, y), d(x, y))
+#x = ssa(N, N*1.1)
+#y = ssa(N, N*1.1)
+#test(14.04, fjoin(x, y), d(x, y))
