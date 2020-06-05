@@ -16938,11 +16938,12 @@ if (.Platform$OS.type=="windows") local({
     else
       Sys.unsetenv('LANGUAGE')
   }, add = TRUE)
-  # to see if it's Chinese message that's printed
-  try(rbindlist(list(a = 1), list(b = 1, c = 2)))
-  # triggered segfault here in #4402, Windows-only under translation
-  test(2143, rbind(DT,list(c=4L,a=7L)), error="2.*1.*c.*1")  # argument order changes under translation
+  # triggered segfault here in #4402, Windows-only under translation.
+  # test that the argument order changes correctly (the 'item 2' moves to the beginning of the message)
+  # since the argument order changes in this example (and that was the crash) we don't need to test
+  # the display of the Chinese characters here. Thanks to @shrektan for all his help on this.
+  test(2143, rbind(DT,list(c=4L,a=7L)), error="2.*1.*c.*1")
 })
-test(2144, rbind(DT,list(c=4L,a=7L)), error="Column 1 ['c'] of item 2 is missing in item 1") # test back to English
+# test back to English (the argument order is back to 1,c,2,1)
+test(2144, rbind(DT,list(c=4L,a=7L)), error="Column 1 ['c'] of item 2 is missing in item 1") 
 
-# this doesn't work for me and Chinese persists, hence putting this at the end of this script for now

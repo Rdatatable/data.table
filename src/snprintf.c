@@ -9,7 +9,7 @@
 // positionals via format massage. Just on Windows, all snprintf calls are replaced with
 // this dt_win_snprintf via a #define in data.table.h. The goal of this massage is to be
 // as light and minimal as possible.
-// In C is it is impossible, portably, to reorder a va_list (sadly).
+// In C it is not possible, portably, to reorder a va_list (sadly).
 // In C you must past the correct type to va_arg(), so even to navigate va_list you
 // must parse and rely on fmt. But we don't want to reimplement all the types and modifiers.
 // Hence, reordering the specifiers, passing the va_list to the library, and then
@@ -57,7 +57,7 @@ int dt_win_snprintf(char *dest, size_t n, const char *fmt, ...)
     ch = strstr(fmt, posstr);
   }
   int narg = pos-1;
-  vsnprintf(buff, n, dest, ap); // dest used as tmp here, holds reordered specifiers same order as arglist
+  vsnprintf(buff, n, dest, ap); // dest used as tmp here, holds reordered specifiers same order as ap
   // All the hard formatting work and va_arg type navigation has now been done by the C library
   // Now we just need to put the string results for each argument back into the desired positions
   // First create lookups so we can loop through fmt once replacing the specifiers as they appear
