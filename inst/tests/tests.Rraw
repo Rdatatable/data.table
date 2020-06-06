@@ -16639,6 +16639,9 @@ options(old_width)
 DT = data.table(A="a", key="A")
 test(2126.1, DT[J(NULL)], DT[0])
 test(2126.2, DT[data.table()], DT[0])
+# additional segfault when i is NULL and roll = 'nearest'
+test(2126.3, DT[J(NULL), roll = 'nearest'], DT[0])
+test(2126.4, DT[data.table(), roll = 'nearest'], DT[0])
 
 # fcase, #3823
 test_vec1 = -5L:5L < 0L
