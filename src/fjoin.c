@@ -26,12 +26,13 @@ static int min_i_match(int *y, int ny, int *y_o, bool y_ord, int val) {
   error("not yet handled in min_i_match");
 }
 
-int uniqueN(int *x, int nx) { // x have 0:(nx-1) elements
-  int ans=0;
+// helper to count how many threads were used
+int unqN(int *x, int nx) { // x have 0:(nx-1) values
+  int ans = 0;
   uint8_t *seen = (uint8_t *)R_alloc(nx, sizeof(uint8_t));
   memset(seen, 0, nx*sizeof(uint8_t));
   for (int i=0; i<nx; ++i) {
-    if(!seen[x[i]]++) ans++;
+    if (!seen[x[i]]++) ans++;
   }
   return ans;
 }
@@ -77,21 +78,37 @@ void fjoinC(int *x, int nx, int *x_starts, int nx_starts,
   //int b2_min_i = x_starts[nx_starts/2+1]-1, b2_max_i = max_i;
   //Rprintf("x: 1[%d-%d]\n", b1_min_i, b1_max_i);
   //Rprintf("x: 2[%d-%d]\n", b2_min_i, b2_max_i);
+  
+  
+  int *xs, *ys, nxs, nys;
+  xs = x_starts + 0*sizeof(int);
+  nxs = nx_starts;
+  ys = y_starts + 0*sizeof(int);
+  nys = ny_starts;
+  
+  int *th = (int *)R_alloc(nBatch, sizeof(int)); // report number of used threads
   t_batch = omp_get_wtime() - t_batch;
   
-  //int min_y = y[y_starts[0]-1];
-  //int max_y = y[y_starts[nx_starts-1]-1];
-  //Rprintf("min_x=%d; max_x=%d; min_y=%d, max_y=%d\n", min_x, max_x, min_y, max_y);
-  int *th = (int *)R_alloc(nBatch, sizeof(int)); // debug thread utilization
-  //bool skip=false;
   double t_join = omp_get_wtime();
-  //#pragma omp parallel for schedule(dynamic) num_threads(getDTthreads())
+  //#pragma omp parallel for schedule(dynamic) num_threads(nth)
   for (int b=0; b<nBatch; ++b) {
-    //int *xs, *ys, nxs, nys;
-    //xs = x_starts + 1*sizeof(int);
-    // fjoin1(/*local in*/xs, nxs, ys, nys, /*global in*/x, x_lens, /*out*/start_y, lens_y);
+    // fjoin1(/*local in*/xs, nxs, ys, nys, /*global in*/x, x_lens, y, y_lens, /*out*/start_y, lens_y);
     int i=0, j=0, is=0, js=0, x_i, y_j;
-    while (is<nx_starts && js<ny_starts) {
+    while (is<nxs && js<nys) {
+      //Rprintf("============= is=%d\n", is);
+      i = xs[is]-1, j = ys[js]-1;
+      x_i = x[i], y_j = y[j];
+      if (x_i == y_j) {
+        //Rprintf("x[%d]==y[%d]: %d\n", i, j, x_i);
+        int j1 = j+1;
+        for (int ii=0; ii<x_lens[is]; ++ii) {
+          //Rprintf("starts_y[%d]=%d\n", i+ii, j1);
+          starts_y[i+ii] = j1; lens_y[i+ii] = y_lens[js];
+        }
+        is++;
+      } else if (x_i < y_j) is++; else if (x_i > y_j) js++;
+    }
+    /*while (is<nx_starts && js<ny_starts) {
       //Rprintf("============= is=%d\n", is);
       i = x_starts[is]-1, j = y_starts[js]-1;
       x_i = x[i], y_j = y[j];
@@ -104,7 +121,7 @@ void fjoinC(int *x, int nx, int *x_starts, int nx_starts,
         }
         is++;
       } else if (x_i < y_j) is++; else if (x_i > y_j) js++;
-    }
+    }*/
     th[b] = omp_get_thread_num();
   }
   t_join = omp_get_wtime() - t_join;
@@ -176,7 +193,7 @@ void fjoinC(int *x, int nx, int *x_starts, int nx_starts,
     }
     //Rprintf("x_i=%d; y[y_o[j]-1]= y[y_o[%d]-1]= y[%d-1]= y[%d]= %d\n", x[i], j, y_o[j], y_o[j]-1, y[y_o[j]-1]);
   }
-  Rprintf("fjoinC: lens %.3fs; batch %.3fs; join %.3fs; used %d th\n", t_lens, t_batch, t_join, uniqueN(th, nBatch));
+  Rprintf("fjoinC: lens %.3fs; batch %.3fs; join %.3fs; used %d th\n", t_lens, t_batch, t_join, unqN(th, nBatch));
   matchn[0] = nx;
 }
 
