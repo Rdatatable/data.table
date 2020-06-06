@@ -16945,5 +16945,15 @@ if (.Platform$OS.type=="windows") local({
   test(2143, rbind(DT,list(c=4L,a=7L)), error="2.*1.*c.*1")
 })
 # test back to English (the argument order is back to 1,c,2,1)
-test(2144, rbind(DT,list(c=4L,a=7L)), error="Column 1 ['c'] of item 2 is missing in item 1") 
+test(2144, rbind(DT,list(c=4L,a=7L)), error="Column 1 ['c'] of item 2 is missing in item 1")
 
+# as.data.table.list edits list elements, so must be sure
+#   x does not use some other `[[` method, #4526
+x = data.frame(a = 1:5)
+x$b = matrix(6:15, ncol=2L)
+class(x) = c('foo', 'data.frame')
+`[[.foo` = function(x, i) {
+  if (any(sapply(x, inherits, 'data.table'))) stop('failure')
+  as.list(x)[[i]]
+}
+test(2145, as.data.table(x), data.table(a=1:5, b.V1=6:10, b.V2=11:15))
