@@ -13,15 +13,13 @@
 #include "myomp.h"
 #include "types.h"
 #include "po.h"
+#ifdef WIN32  // positional specifiers (%n$) used in translations; #4402
+#  define snprintf dt_win_snprintf  // see our snprintf.c; tried and failed to link to _sprintf_p on Windows
+#endif
+#define sprintf USE_SNPRINTF_NOT_SPRINTF  // prevent use of sprintf in data.table source; force us to use n always
+
 // #include <signal.h> // the debugging machinery + breakpoint aidee
 // raise(SIGINT);
-
-// data.table depends on R>=3.0.0 when R_xlen_t was introduced
-// Before R 3.0.0, RLEN used to be switched to R_len_t as R_xlen_t wasn't available.
-// We could now replace all RLEN with R_xlen_t directly. Or keep RLEN for the shorter
-// name so as not to have to check closely one letter difference R_xlen_t/R_len_t. We
-// might also undefine R_len_t to ensure not to use it.
-typedef R_xlen_t RLEN;
 
 #define IS_UTF8(x)  (LEVELS(x) & 8)
 #define IS_ASCII(x) (LEVELS(x) & 64)
@@ -30,8 +28,8 @@ typedef R_xlen_t RLEN;
 #define IS_FALSE(x) (TYPEOF(x)==LGLSXP && LENGTH(x)==1 && LOGICAL(x)[0]==FALSE)
 #define IS_TRUE_OR_FALSE(x) (TYPEOF(x)==LGLSXP && LENGTH(x)==1 && LOGICAL(x)[0]!=NA_LOGICAL)
 
-#define SIZEOF(x) sizes[TYPEOF(x)]
-#define TYPEORDER(x) typeorder[x]
+#define SIZEOF(x) __sizes[TYPEOF(x)]
+#define TYPEORDER(x) __typeorder[x]
 
 #ifdef MIN
 #  undef MIN
@@ -99,8 +97,8 @@ extern SEXP sym_datatable_locked;
 extern double NA_INT64_D;
 extern long long NA_INT64_LL;
 extern Rcomplex NA_CPLX;  // initialized in init.c; see there for comments
-extern size_t sizes[100];  // max appears to be FUNSXP = 99, see Rinternals.h
-extern size_t typeorder[100];
+extern size_t __sizes[100];     // max appears to be FUNSXP = 99, see Rinternals.h
+extern size_t __typeorder[100]; // __ prefix otherwise if we use these names directly, the SIZEOF define ends up using the local one
 
 long long DtoLL(double x);
 double LLtoD(long long x);
@@ -122,7 +120,7 @@ int checkOverAlloc(SEXP x);
 
 // forder.c
 int StrCmp(SEXP x, SEXP y);
-uint64_t dtwiddle(void *p, int i);
+uint64_t dtwiddle(const void *p, int i);
 SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP naArg);
 int getNumericRounding_C();
 
@@ -245,3 +243,7 @@ SEXP testMsgR(SEXP status, SEXP x, SEXP k);
 //fifelse.c
 SEXP fifelseR(SEXP l, SEXP a, SEXP b, SEXP na);
 SEXP fcaseR(SEXP na, SEXP rho, SEXP args);
+
+//snprintf.c
+int dt_win_snprintf(char *dest, size_t n, const char *fmt, ...);
+

@@ -216,13 +216,12 @@ all.equal.data.table = function(target, current, trim.levels=TRUE, check.attribu
       tolerance = 0
     }
     jn.on = copy(names(target)) # default, possible altered later on
-    char.cols = vapply_1c(target,typeof)=="character"
-    if (!identical(tolerance, 0)) { # handling character columns only for tolerance!=0
-      if (all(char.cols)) {
-        msg = c(msg, "Both datasets have character columns only, together with ignore.row.order this force 'tolerance' argument to 0, for character columns it does not have effect")
+    dbl.cols = vapply_1c(target,typeof)=="double"
+    if (!identical(tolerance, 0)) {
+      if (!any(dbl.cols)) { # dbl.cols handles (removed) "all character columns" (char.cols) case as well
         tolerance = 0
-      } else if (any(char.cols)) { # character col cannot be the last one during rolling join
-        jn.on = jn.on[c(which(char.cols), which(!char.cols))]
+      } else {
+        jn.on = jn.on[c(which(!dbl.cols), which(dbl.cols))] # double column must be last for rolling join
       }
     }
     if (target_dup && current_dup) {
