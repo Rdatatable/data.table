@@ -3,7 +3,10 @@
 /*
  * sort-merge join
  * 
- * split whole 1:nx_starts into batches and do sort-merge join on each batch separately
+ * join on a single integer column
+ * sort LHS and RHS
+ * split LHS into equal batches, RHS into corresponding batches by matching upper-lower bounds of LHS batches
+ * parallel sort-merge join
  */
 
 // those helpers need to be binary search! last matching, and first matching index
@@ -39,6 +42,7 @@ int unqN(int *x, int nx) { // x have 0:(nx-1) values
 
 // count of duplicated entries
 void grpLens(int *starts, int n_starts, int n, /*output*/int *lens) { // #4395
+  #pragma omp parallel for schedule(static) num_threads(getDTthreads())
   for (int i=0; i<n_starts-1; ++i)
     lens[i] = starts[i+1]-starts[i];
   lens[n_starts-1] = n - starts[n_starts-1]+1;
@@ -66,10 +70,8 @@ void smjoin1(int *xs, int *xl, int nxs, int *ys, int *yl, int nys, int *x, int *
 }
 
 void smjoinC(int *x, int nx, int *x_starts, int nx_starts,
-            int *y, int ny, int *y_starts, int ny_starts,
-            bool *match, int *matchn,
-            int *starts_x, int *lens_x,
-            int *starts_y, int *lens_y) {
+             int *y, int ny, int *y_starts, int ny_starts,
+             int *matchn, int *starts_y, int *lens_y) {
   bool unq_x = nx_starts==nx, unq_y = ny_starts==ny;
   int *x_lens=0, *y_lens=0;
 
@@ -89,73 +91,32 @@ void smjoinC(int *x, int nx, int *x_starts, int nx_starts,
   int nth = getDTthreads();
   int nBatch = nth*2;
   int *th = (int *)R_alloc(nBatch, sizeof(int)); // report threads used
-
   size_t batchSize = (nx_starts-1)/nBatch + 1;
   size_t lastBatchSize = nx_starts - (nBatch-1)*batchSize;
   //Rprintf("batchSize=%d; lastBatchSize=%d\n", batchSize, lastBatchSize);
-  int *nxsB = (int *)R_alloc(nBatch, sizeof(int));
-  int **xsB = (int **)R_alloc(nBatch, sizeof(int*));
-  int **xlB = (int **)R_alloc(nBatch, sizeof(int*));
-  int *nysB = (int *)R_alloc(nBatch, sizeof(int));
-  int **ysB = (int **)R_alloc(nBatch, sizeof(int*));
-  int **ylB = (int **)R_alloc(nBatch, sizeof(int*));
+  int *nxsB = (int *)R_alloc(nBatch, sizeof(int)), **xsB = (int **)R_alloc(nBatch, sizeof(int*)), **xlB = (int **)R_alloc(nBatch, sizeof(int*));
+  int *nysB = (int *)R_alloc(nBatch, sizeof(int)), **ysB = (int **)R_alloc(nBatch, sizeof(int*)), **ylB = (int **)R_alloc(nBatch, sizeof(int*));
   for (int b=0; b<nBatch-1; ++b) {
-    nxsB[b] = batchSize;
-    xsB[b] = x_starts + b*batchSize;
-    xlB[b] = x_lens + b*batchSize;
+    nxsB[b] = batchSize; xsB[b] = x_starts + b*batchSize; xlB[b] = x_lens + b*batchSize;
     int y_min = min_i_match(y, y_starts, ny_starts, x[xsB[b][0]-1]);
     int y_max = max_i_match(y, y_starts, ny_starts, x[xsB[b][nxsB[b]-1]-1]);
-    nysB[b] = y_max - y_min + 1;
-    ysB[b] = y_starts + y_min;
-    ylB[b] = y_lens + y_min;
+    nysB[b] = y_max - y_min + 1; ysB[b] = y_starts + y_min; ylB[b] = y_lens + y_min;
   }
-  nxsB[nBatch-1] = lastBatchSize;
-  xsB[nBatch-1] = x_starts + nx_starts-lastBatchSize;
-  xlB[nBatch-1] = x_lens + nx_starts-lastBatchSize;
+  nxsB[nBatch-1] = lastBatchSize; xsB[nBatch-1] = x_starts + nx_starts-lastBatchSize; xlB[nBatch-1] = x_lens + nx_starts-lastBatchSize;
   int y_min = min_i_match(y, y_starts, ny_starts, x[xsB[nBatch-1][0]-1]);
   int y_max = max_i_match(y, y_starts, ny_starts, x[xsB[nBatch-1][nxsB[nBatch-1]-1]-1]);
-  nysB[nBatch-1] = y_max - y_min + 1;
-  ysB[nBatch-1] = y_starts + y_min;
-  ylB[nBatch-1] = y_lens + y_min;
+  nysB[nBatch-1] = y_max - y_min + 1; ysB[nBatch-1] = y_starts + y_min; ylB[nBatch-1] = y_lens + y_min;
   //for (int b=0; b<nBatch; ++b) Rprintf("b=%d:\n  nx=%d; xs[0]=%d; xl[0]=%d; x[xs[0]-1]=%d\n  ny=%d; ys[0]=%d; yl[0]=%d; y[ys[0]-1]=%d\n", b, nxsB[b], xsB[b][0], xlB[b][0], x[xsB[b][0]-1], nysB[b], ysB[b][0], ylB[b][0], y[ysB[b][0]-1]);
-
-  // these are 2 batches hardcoded logic, replaced by the above, still keep in case debugging needed
-  /*int b1_nxs = batchSize, b2_nxs = nx_starts-b1_nxs;
-  int *b1_xs = x_starts, *b2_xs = x_starts + b1_nxs;
-  int *b1_xl = x_lens, *b2_xl = x_lens + b1_nxs;
-  //Rprintf("b2_xs[0]: (x_starts + b1_nxs)[0]=%d\n", (x_starts + b1_nxs)[0]);
-  //Rprintf("xsB[1][0]: (x_starts + nx_starts-lastBatchSize)[0]=%d\n", (x_starts + nx_starts-lastBatchSize)[0]);
-  //Rprintf("\nb1_nxs=%d; nx_starts=%d; lastBatchSize=%d\n\n", b1_nxs, nx_starts, lastBatchSize);
-  //Rprintf("batch sizes nx: b1=%d; b2=%d\nidx of first in batch: x_starts[0]: b1=%d; b2=%d\nfirst value in batch: x[x_starts[0]-1]: b1=%d; b2=%d\n\n",
-  //                      b1_nxs, b2_nxs,                                 b1_xs[0], b2_xs[0],                         x[b1_xs[0]-1], x[b2_xs[0]-1]);
-  
-  //Rprintf("finding bounds of b1 y starts indices\n\n");
-  int b1_ylow = min_i_match(y, y_starts, ny_starts, x[b1_xs[0]-1]);
-  int b1_yupp = max_i_match(y, y_starts, ny_starts, x[b1_xs[b1_nxs-1]-1]);
-  //Rprintf("\nb1_ylow=%d; b1_yupp=%d\ny[y_starts[b1_ylow]-1]=%d; y[ny_starts[b1_yupp]-1]=%d\n", b1_ylow, b1_yupp, y[y_starts[b1_ylow]-1], y[y_starts[b1_yupp]-1]);
-  int b2_ylow = min_i_match(y, y_starts, ny_starts, x[b2_xs[0]-1]);
-  int b2_yupp = max_i_match(y, y_starts, ny_starts, x[b2_xs[b2_nxs-1]-1]);
-  //Rprintf("\nb2_ylow=%d; b2_yupp=%d\ny[y_starts[b2_ylow]-1]=%d; y[ny_starts[b2_yupp]-1]=%d\n", b2_ylow, b2_yupp, y[y_starts[b2_ylow]-1], y[y_starts[b2_yupp]-1]);
-
-  int b1_nys = b1_yupp-b1_ylow+1, b2_nys = b2_yupp-b2_ylow+1;
-  int *b1_ys = y_starts, *b2_ys = y_starts + b1_nys;
-  int *b1_yl = y_lens, *b2_yl = y_lens + b1_nys;
-  //Rprintf("batch sizes ny: b1=%d; b2=%d\nidx of first in batch: y_starts[0]: b1=%d; b2=%d\nfirst value in batch: y[y_starts[0]-1]: b1=%d; b2=%d\n\n",
-  //        b1_nys, b2_nys,                                 b1_ys[0], b2_ys[0],                         y[b1_ys[0]-1], y[b2_ys[0]-1]);
-   */
   t_batch = omp_get_wtime() - t_batch;
-  //error("dev");
 
   double t_join = omp_get_wtime();
   #pragma omp parallel for schedule(dynamic) num_threads(nth)
   for (int b=0; b<nBatch; ++b) {
     smjoin1(
-      /*batch specific input: shifted pointers and their size*/
-      xsB[b], xlB[b], nxsB[b], ysB[b], ylB[b], nysB[b],
-      /*common input*/
-      x, y,
-      /*common output*/
-      starts_y, lens_y);
+      xsB[b], xlB[b], nxsB[b], ysB[b], ylB[b], nysB[b], // batch specific input: shifted pointers and their sizes
+      x, y,                                             // common input
+      starts_y, lens_y                                  // common output
+    );
     th[b] = omp_get_thread_num();
   }
   t_join = omp_get_wtime() - t_join;
@@ -165,105 +126,96 @@ void smjoinC(int *x, int nx, int *x_starts, int nx_starts,
   matchn[0] = nx;
 }
 
-SEXP sortInt(SEXP x, SEXP idx) {
-  if (!LENGTH(idx))
-    error("already sorted, should be escaped");
-  SEXP ans = PROTECT(allocVector(INTSXP, LENGTH(x)));
-  int *xp = INTEGER(x), *idxp = INTEGER(idx), *ansp = INTEGER(ans);
+void sortInt(int *x, int nx, int *idx, int *ans) {
   #pragma omp parallel for schedule(static) num_threads(getDTthreads())
-  for (int i=0; i<LENGTH(x); ++i)
-    ansp[i] = xp[idxp[i]-1];
-  UNPROTECT(1);
-  return ans;
+  for (int i=0; i<nx; ++i)
+    ans[i] = x[idx[i]-1];
+  return;
 }
 
-SEXP joinOut(int matchn, int *starts_x, int *lens_x, int *starts_y, int *lens_y, bool x_ord, int *x_o_idx) {
-  SEXP ans = PROTECT(allocVector(VECSXP, 4)), ansnames;
-  setAttrib(ans, R_NamesSymbol, ansnames=allocVector(STRSXP, 4));
-  SET_VECTOR_ELT(ans, 0, allocVector(INTSXP, 0));
-  SET_STRING_ELT(ansnames, 0, mkChar("starts_x"));
-  //int *starts_x_p = INTEGER(VECTOR_ELT(ans, 0));
-  SET_VECTOR_ELT(ans, 1, allocVector(INTSXP, 0));
-  SET_STRING_ELT(ansnames, 1, mkChar("lens_x"));
-  //int *lens_x_p = INTEGER(VECTOR_ELT(ans, 1));
-  SET_VECTOR_ELT(ans, 2, allocVector(INTSXP, matchn));
-  SET_STRING_ELT(ansnames, 2, mkChar("starts"));
-  int *starts_y_p = INTEGER(VECTOR_ELT(ans, 2));
-  SET_VECTOR_ELT(ans, 3, allocVector(INTSXP, matchn));
-  SET_STRING_ELT(ansnames, 3, mkChar("lens"));
-  int *lens_y_p = INTEGER(VECTOR_ELT(ans, 3));
-  if (!x_ord) {
-    for (int i=0; i<matchn; ++i) {
-      //starts_x_p[i] = starts_x[i];
-      //lens_x_p[i] = lens_x[i];
-      starts_y_p[i] = starts_y[x_o_idx[i]-1];
-      lens_y_p[i] = lens_y[x_o_idx[i]-1];
-    }
+SEXP joinOut(int n, int *starts, int *lens, bool x_ord, SEXP out_starts, SEXP out_lens, int *xoop) {
+  SEXP ans = PROTECT(allocVector(VECSXP, 2)), ansnames;
+  setAttrib(ans, R_NamesSymbol, ansnames=allocVector(STRSXP, 2));
+  SET_STRING_ELT(ansnames, 0, char_starts);
+  SET_STRING_ELT(ansnames, 1, char_lens);
+  if (x_ord) {
+    SET_VECTOR_ELT(ans, 0, out_starts);
+    SET_VECTOR_ELT(ans, 1, out_lens);
   } else {
-    for (int i=0; i<matchn; ++i) {
-      //starts_x_p[i] = starts_x[i];
-      //lens_x_p[i] = lens_x[i];
-      starts_y_p[i] = starts_y[i];
-      lens_y_p[i] = lens_y[i];
-    }
+    SET_VECTOR_ELT(ans, 0, allocVector(INTSXP, n));
+    SET_VECTOR_ELT(ans, 1, allocVector(INTSXP, n));
+    sortInt(starts, n, xoop, INTEGER(VECTOR_ELT(ans, 0)));
+    sortInt(lens, n, xoop, INTEGER(VECTOR_ELT(ans, 1)));
   }
   UNPROTECT(1);
   return ans;
 }
 
-SEXP smjoinR(SEXP x, SEXP y, SEXP how) {
+SEXP smjoinR(SEXP x, SEXP y, SEXP x_idx, SEXP y_idx) {
 
   if (!isInteger(x) || !isInteger(y))
     error("must be integer");
   int protecti=0, nx = LENGTH(x), ny = LENGTH(y);
 
   double t_index = omp_get_wtime();
-  SEXP x_idx = PROTECT(forder(x, R_NilValue, ScalarLogical(TRUE), ScalarLogical(TRUE), ScalarInteger(1), ScalarLogical(FALSE))); protecti++;
-  SEXP y_idx = PROTECT(forder(y, R_NilValue, ScalarLogical(TRUE), ScalarLogical(TRUE), ScalarInteger(1), ScalarLogical(FALSE))); protecti++;
+  if (isNull(x_idx)) {
+    x_idx = PROTECT(forder(x, R_NilValue, ScalarLogical(TRUE), ScalarLogical(TRUE), ScalarInteger(1), ScalarLogical(FALSE))); protecti++;
+  }
+  if (isNull(y_idx)) {
+    y_idx = PROTECT(forder(y, R_NilValue, ScalarLogical(TRUE), ScalarLogical(TRUE), ScalarInteger(1), ScalarLogical(FALSE))); protecti++;
+  }
   SEXP x_starts = getAttrib(x_idx, sym_starts);
   SEXP y_starts = getAttrib(y_idx, sym_starts);
+  if (isNull(x_starts) || isNull(y_starts))
+    error("Indices provided to smjoin must carry 'starts' attribute");
   t_index = omp_get_wtime() - t_index;
 
-  bool x_ord = LENGTH(x_idx)==0, y_ord = LENGTH(y_idx)==0;
-  SEXP x_o_idx = R_NilValue;
   double t_sort = omp_get_wtime();
+  bool x_ord = !LENGTH(x_idx), y_ord = !LENGTH(y_idx);
+  SEXP xoo = R_NilValue; // order of an order of x
+  int *xp, *yp, *xoop=0;
   if (!x_ord) {
-    x = PROTECT(sortInt(x, x_idx)); protecti++;
-    x_o_idx = PROTECT(forder(x_idx, R_NilValue, /*retGrp=*/ScalarLogical(FALSE), ScalarLogical(TRUE), ScalarInteger(1), ScalarLogical(FALSE))); protecti++;
-  }
+    xp = (int *)R_alloc(nx, sizeof(int));
+    sortInt(INTEGER(x), nx, INTEGER(x_idx), xp);
+    xoo = PROTECT(forder(x_idx, R_NilValue, /*retGrp=*/ScalarLogical(FALSE), ScalarLogical(TRUE), ScalarInteger(1), ScalarLogical(FALSE))); protecti++;
+    xoop = INTEGER(xoo);
+  } else xp = INTEGER(x);
   if (!y_ord) {
-    y = PROTECT(sortInt(y, y_idx)); protecti++;
-  }
+    yp = (int *)R_alloc(ny, sizeof(int));
+    sortInt(INTEGER(y), ny, INTEGER(y_idx), yp);
+  } else yp = INTEGER(y);
   t_sort = omp_get_wtime() - t_sort;
 
   double t_alloc = omp_get_wtime();
-  int ans_n = nx;
-  bool *match = (bool *)R_alloc(0, sizeof(bool)); // not sure if we need this
-  int matchn = 0;
-  int *starts_x = (int *)R_alloc(0, sizeof(int));
-  int *lens_x = (int *)R_alloc(0, sizeof(int));
-  int *starts_y = (int *)R_alloc(ans_n, sizeof(int));
-  int *lens_y = (int *)R_alloc(ans_n, sizeof(int));
-  for (int i=0; i<ans_n; ++i) /*starts_x[i] = lens_x[i] = */starts_y[i] = lens_y[i] = NA_INTEGER;
+  SEXP out_starts = R_NilValue, out_lens = R_NilValue;
+  int *starts=0, *lens=0;
+  if (x_ord) { // we dont need to reorder results so can save one allocation
+    out_starts = PROTECT(allocVector(INTSXP, nx)); protecti++;
+    out_lens = PROTECT(allocVector(INTSXP, nx)); protecti++;
+    starts = INTEGER(out_starts);
+    lens = INTEGER(out_lens);
+  } else {
+    starts = (int *)R_alloc(nx, sizeof(int));
+    lens = (int *)R_alloc(nx, sizeof(int));
+  }
+  #pragma omp parallel for schedule(static) num_threads(getDTthreads())
+  for (int i=0; i<nx; ++i)
+    starts[i] = lens[i] = NA_INTEGER;
   t_alloc = omp_get_wtime() - t_alloc;
 
   double t_smjoin = omp_get_wtime();
+  int matchn = 0; // not yet used
   smjoinC(
-    INTEGER(x), nx, INTEGER(x_starts), LENGTH(x_starts),
-    INTEGER(y), ny, INTEGER(y_starts), LENGTH(y_starts),
-    match, &matchn,
-    starts_x, lens_x, starts_y, lens_y
+    xp, nx, INTEGER(x_starts), LENGTH(x_starts),
+    yp, ny, INTEGER(y_starts), LENGTH(y_starts),
+    &matchn, starts, lens
   );
   t_smjoin = omp_get_wtime() - t_smjoin;
 
   double t_ans = omp_get_wtime();
-  SEXP ans = R_NilValue;
-  if (!x_ord) {
-    ans = joinOut(matchn, starts_x, lens_x, starts_y, lens_y, x_ord, INTEGER(x_o_idx));
-  } else {
-    ans = joinOut(matchn, starts_x, lens_x, starts_y, lens_y, x_ord, /*anything*/starts_x);
-  }
+  SEXP ans = joinOut(matchn, starts, lens, x_ord, out_starts, out_lens, xoop); // usually also sorts inside
   t_ans = omp_get_wtime() - t_ans;
+
   Rprintf("smjoinR: index %.3fs; sort %.3fs; alloc %.3fs; smjoinC %.3fs; ans %.3fs\n", t_index, t_sort, t_alloc, t_smjoin, t_ans);
   UNPROTECT(protecti);
   return ans;
