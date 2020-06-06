@@ -6,7 +6,7 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
 } else {
   require(data.table)
   test = data.table:::test
-  fjoin = data.table:::fjoin
+  smjoin = data.table:::smjoin
   bmerge = data.table:::bmerge
   forderv = data.table:::forderv
 }
@@ -16,37 +16,37 @@ d = function(x, y) bmerge(data.table(x=x), data.table(y=y), 1L, 1L, roll=0, roll
 ## x y sorted
 x = c(1L,2L,3L,4L)
 y = c(2L,3L,5L)
-test(1.01, fjoin(x, y), d(x, y))
+test(1.01, smjoin(x, y), d(x, y))
 x = c(1L,2L,3L,3L,4L)
 y = c(2L,3L,5L)
-test(1.02, fjoin(x, y), d(x, y))
+test(1.02, smjoin(x, y), d(x, y))
 x = c(1L,2L,3L,4L)
 y = c(2L,3L,3L,5L)
-test(1.03, fjoin(x, y), d(x, y))
+test(1.03, smjoin(x, y), d(x, y))
 x = c(1L,2L,3L,3L,4L)
 y = c(2L,3L,3L,5L)
-test(1.04, fjoin(x, y), d(x, y))
+test(1.04, smjoin(x, y), d(x, y))
 
 ## y unsorted
 x = c(1L,2L,3L,4L)
 y = c(2L,5L,3L)
-test(2.01, fjoin(x, y), d(x, y))
+test(2.01, smjoin(x, y), d(x, y))
 x = c(1L,2L,3L,3L,4L)
 y = c(3L,2L,5L)
-test(2.02, fjoin(x, y), d(x, y))
+test(2.02, smjoin(x, y), d(x, y))
 x = c(1L,2L,3L,4L)
 y = c(5L,3L,2L,3L)
-test(2.03, fjoin(x, y), d(x, y))
+test(2.03, smjoin(x, y), d(x, y))
 x = c(1L,2L,3L,3L,4L)
 y = c(5L,3L,3L,2L)
-test(2.04, fjoin(x, y), d(x, y))
+test(2.04, smjoin(x, y), d(x, y))
 
 #...
 
 ## xy unsorted
 x = c(4L,1L,3L,2L)
 y = c(2L,5L,3L)
-test(4.01, fjoin(x, y), d(x, y))
+test(4.01, smjoin(x, y), d(x, y))
 
 #...
 
@@ -61,41 +61,41 @@ ssa = function(unq_n, size, sort=FALSE) {
 N = 1e2L
 x = ssa(N, N, sort=TRUE)
 y = ssa(N, N, sort=TRUE)
-test(11.01, fjoin(x, y), d(x, y))
+test(11.01, smjoin(x, y), d(x, y))
 x = ssa(N, N*1.1, sort=TRUE)
 y = ssa(N, N, sort=TRUE)
-test(11.02, fjoin(x, y), d(x, y))
+test(11.02, smjoin(x, y), d(x, y))
 x = ssa(N, N, sort=TRUE)
 y = ssa(N, N*1.1, sort=TRUE)
-test(11.03, fjoin(x, y), d(x, y))
+test(11.03, smjoin(x, y), d(x, y))
 x = ssa(N, N*1.1, sort=TRUE)
 y = ssa(N, N*1.1, sort=TRUE)
-test(11.04, fjoin(x, y), d(x, y))
+test(11.04, smjoin(x, y), d(x, y))
 
 ## y unsorted
 x = ssa(N, N, sort=TRUE)
 y = ssa(N, N)
-test(12.01, fjoin(x, y), d(x, y))
+test(12.01, smjoin(x, y), d(x, y))
 x = ssa(N, N*1.1, sort=TRUE)
 y = ssa(N, N)
-test(12.02, fjoin(x, y), d(x, y))
+test(12.02, smjoin(x, y), d(x, y))
 x = ssa(N, N, sort=TRUE)
 y = ssa(N, N*1.1)
-test(12.03, fjoin(x, y), d(x, y))
+test(12.03, smjoin(x, y), d(x, y))
 x = ssa(N, N*1.1, sort=TRUE)
 y = ssa(N, N*1.1)
-test(12.04, fjoin(x, y), d(x, y))
+test(12.04, smjoin(x, y), d(x, y))
 
 ## xy unsorted
 x = ssa(N, N)
 y = ssa(N, N)
-test(14.01, fjoin(x, y), d(x, y))
+test(14.01, smjoin(x, y), d(x, y))
 x = ssa(N, N*1.1)
 y = ssa(N, N)
-test(14.02, fjoin(x, y), d(x, y))
+test(14.02, smjoin(x, y), d(x, y))
 x = ssa(N, N)
 y = ssa(N, N*1.1)
-test(14.03, fjoin(x, y), d(x, y))
+test(14.03, smjoin(x, y), d(x, y))
 x = ssa(N, N*1.1)
 y = ssa(N, N*1.1)
-test(14.04, fjoin(x, y), d(x, y))
+test(14.04, smjoin(x, y), d(x, y))
