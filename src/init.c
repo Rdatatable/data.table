@@ -15,6 +15,11 @@ SEXP char_lens;
 SEXP char_indices;
 SEXP char_allLen1;
 SEXP char_allGrp1;
+SEXP char_xo;
+SEXP char_io;
+SEXP char_lhsLen1;
+SEXP char_xyLen1;
+SEXP char_nMatch;
 SEXP char_factor;
 SEXP char_ordered;
 SEXP char_datatable;
@@ -119,7 +124,7 @@ SEXP lock();
 SEXP unlock();
 SEXP islockedR();
 SEXP allNAR();
-SEXP smjoinR();
+SEXP smergeR();
 
 // .Externals
 SEXP fastmean();
@@ -212,7 +217,7 @@ R_CallMethodDef callMethods[] = {
 {"CfrollapplyR", (DL_FUNC) &frollapplyR, -1},
 {"CtestMsgR", (DL_FUNC) &testMsgR, -1},
 {"C_allNAR", (DL_FUNC) &allNAR, -1},
-{"CsmjoinR", (DL_FUNC) &smjoinR, -1},
+{"CsmergeR", (DL_FUNC) &smergeR, -1},
 {NULL, NULL, 0}
 };
 
@@ -319,6 +324,11 @@ void attribute_visible R_init_datatable(DllInfo *info)
   char_indices =   PRINTNAME(install("indices"));
   char_allLen1 =   PRINTNAME(install("allLen1"));
   char_allGrp1 =   PRINTNAME(install("allGrp1"));
+  char_xo =        PRINTNAME(install("xo"));
+  char_io =        PRINTNAME(install("io"));
+  char_lhsLen1 =   PRINTNAME(install("lhsLen1"));
+  char_xyLen1 =    PRINTNAME(install("xyLen1"));
+  char_nMatch =    PRINTNAME(install("nMatch"));
   char_factor =    PRINTNAME(install("factor"));
   char_ordered =   PRINTNAME(install("ordered"));
   char_datatable = PRINTNAME(install("data.table"));

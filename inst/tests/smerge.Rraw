@@ -1,0 +1,129 @@
+require(methods)
+
+if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
+  if ((tt<-compiler::enableJIT(-1))>0)
+    cat("This is dev mode and JIT is enabled (level ", tt, ") so there will be a brief pause around the first test.\n", sep="")
+} else {
+  require(data.table)
+  test = data.table:::test
+  smerge = data.table:::smerge
+  bmerge = data.table:::bmerge
+  forderv = data.table:::forderv
+}
+
+bm = function(x, y) {
+  ans = bmerge(data.table(x=x), data.table(y=y), 1L, 1L, roll=0, rollends=c(FALSE, TRUE), nomatch=NA_integer_, mult="all", ops=1L, verbose=FALSE)
+  ## if undefining SMERGE_ALL
+  #ans[c("starts","lens")]
+  ans
+}
+sm = function(x, y) {
+  ans = smerge(x, y)
+  ans = ans[c("starts","lens","indices","allLen1","allGrp1","xo")] ## drop extra stats
+  ans[["xo"]] = c(ans[["xo"]])                                     ## removes starts and maxgrpn, and possibly others in future
+  ## if undefining SMERGE_ALL
+  #ans[c("starts","lens")]
+  ans
+}
+
+## x y sorted
+x = c(1L,2L,3L,4L)
+y = c(2L,3L,5L)
+test(1.01, sm(x, y), bm(x, y))
+x = c(1L,2L,3L,3L,4L)
+y = c(2L,3L,5L)
+test(1.02, sm(x, y), bm(x, y))
+x = c(1L,2L,3L,4L)
+y = c(2L,3L,3L,5L)
+test(1.03, sm(x, y), bm(x, y))
+x = c(1L,2L,3L,3L,4L)
+y = c(2L,3L,3L,5L)
+test(1.04, sm(x, y), bm(x, y))
+
+## y unsorted
+x = c(1L,2L,3L,4L)
+y = c(2L,5L,3L)
+test(2.01, sm(x, y), bm(x, y))
+x = c(1L,2L,3L,3L,4L)
+y = c(3L,2L,5L)
+test(2.02, sm(x, y), bm(x, y))
+x = c(1L,2L,3L,4L)
+y = c(5L,3L,2L,3L)
+test(2.03, sm(x, y), bm(x, y))
+x = c(1L,2L,3L,3L,4L)
+y = c(5L,3L,3L,2L)
+test(2.04, sm(x, y), bm(x, y))
+
+#...
+
+## xy unsorted
+x = c(4L,1L,3L,2L)
+y = c(2L,5L,3L)
+test(4.01, sm(x, y), bm(x, y))
+
+#...
+
+## xy sorted
+ssa = function(unq_n, size, sort=FALSE) {
+  stopifnot(unq_n <= size)
+  unq_sub = seq_len(unq_n)
+  ans = sample(c(unq_sub, sample(unq_sub, size=max(size-unq_n, 0), replace=TRUE)))
+  if (unq_n==size) stopifnot(uniqueN(ans)==length(ans))
+  if (sort) sort(ans) else ans
+}
+N = 1e2L
+x = ssa(N, N, sort=TRUE)
+y = ssa(N, N, sort=TRUE)
+test(11.01, sm(x, y), bm(x, y))
+x = ssa(N, N*1.1, sort=TRUE)
+y = ssa(N, N, sort=TRUE)
+test(11.02, sm(x, y), bm(x, y))
+x = ssa(N, N, sort=TRUE)
+y = ssa(N, N*1.1, sort=TRUE)
+test(11.03, sm(x, y), bm(x, y))
+x = ssa(N, N*1.1, sort=TRUE)
+y = ssa(N, N*1.1, sort=TRUE)
+test(11.04, sm(x, y), bm(x, y))
+
+## y unsorted
+x = ssa(N, N, sort=TRUE)
+y = ssa(N, N)
+test(12.01, sm(x, y), bm(x, y))
+x = ssa(N, N*1.1, sort=TRUE)
+y = ssa(N, N)
+test(12.02, sm(x, y), bm(x, y))
+x = ssa(N, N, sort=TRUE)
+y = ssa(N, N*1.1)
+test(12.03, sm(x, y), bm(x, y))
+x = ssa(N, N*1.1, sort=TRUE)
+y = ssa(N, N*1.1)
+test(12.04, sm(x, y), bm(x, y))
+
+## xy unsorted
+x = ssa(N, N)
+y = ssa(N, N)
+test(14.01, sm(x, y), bm(x, y))
+x = ssa(N, N*1.1)
+y = ssa(N, N)
+test(14.02, sm(x, y), bm(x, y))
+x = ssa(N, N)
+y = ssa(N, N*1.1)
+test(14.03, sm(x, y), bm(x, y))
+x = ssa(N, N*1.1)
+y = ssa(N, N*1.1)
+test(14.04, sm(x, y), bm(x, y))
+
+# sparse
+x = sample(2e2L, 1e2L) ## may fail when no matches!
+y = sample(2e2L, 1e2L)
+test(21.01, sm(x, y), bm(x, y))
+x = sample(2e2L, 1e2L, TRUE)
+y = sample(2e2L, 1e2L, TRUE)
+test(21.02, sm(x, y), bm(x, y))
+
+d1 = data.table(x=x, v1=seq_along(x))
+d2 = data.table(y=y, v2=seq_along(y))
+options(datatable.smerge=FALSE, datatable.verbose=TRUE) ## verbose=2L after #4491
+test(101.01, expected <- d1[d2, on="x==y"], output="bmerge", notOutput="smerge")
+options(datatable.smerge=TRUE)
+test(101.02, d1[d2, on="x==y"], expected, output="smerge", notOutput="bmerge")

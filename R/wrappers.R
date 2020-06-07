@@ -13,8 +13,4 @@ coerceFill = function(x) .Call(CcoerceFillR, x)
 
 testMsg = function(status=0L, nx=2L, nk=2L) .Call(CtestMsgR, as.integer(status)[1L], as.integer(nx)[1L], as.integer(nk)[1L])
 
-smjoin = function(x, y, x.idx=NULL, y.idx=NULL) {
-  ans = .Call(CsmjoinR, x, y, x.idx, y.idx)
-  ans[["lens"]][is.na(ans[["starts"]])] = 1L
-  ans
-}
+smerge = function(x, y, x.idx=NULL, y.idx=NULL) .Call(CsmergeR, x, y, x.idx, y.idx)

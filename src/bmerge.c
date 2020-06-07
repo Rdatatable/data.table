@@ -175,18 +175,20 @@ SEXP bmerge(SEXP iArg, SEXP xArg, SEXP icolsArg, SEXP xcolsArg, SEXP isorted, SE
     memcpy(INTEGER(retLengthArg), retLength, sizeof(int)*ctr);
     memcpy(INTEGER(retIndexArg), retIndex, sizeof(int)*ctr);
   }
-  SEXP ans = PROTECT(allocVector(VECSXP, 5)); protecti++;
-  SEXP ansnames = PROTECT(allocVector(STRSXP, 5)); protecti++;
+  SEXP ans = PROTECT(allocVector(VECSXP, 6)); protecti++;
+  SEXP ansnames = PROTECT(allocVector(STRSXP, 6)); protecti++;
   SET_VECTOR_ELT(ans, 0, retFirstArg);
   SET_VECTOR_ELT(ans, 1, retLengthArg);
   SET_VECTOR_ELT(ans, 2, retIndexArg);
   SET_VECTOR_ELT(ans, 3, allLen1Arg);
   SET_VECTOR_ELT(ans, 4, allGrp1Arg);
+  SET_VECTOR_ELT(ans, 5, xoArg);
   SET_STRING_ELT(ansnames, 0, char_starts);  // changed from mkChar to char_ to pass the grep in CRAN_Release.cmd
   SET_STRING_ELT(ansnames, 1, char_lens);
   SET_STRING_ELT(ansnames, 2, char_indices);
   SET_STRING_ELT(ansnames, 3, char_allLen1);
   SET_STRING_ELT(ansnames, 4, char_allGrp1);
+  SET_STRING_ELT(ansnames, 5, char_xo);
   setAttrib(ans, R_NamesSymbol, ansnames);
   if (nqmaxgrp > 1 && mult == ALL) {
     Free(retFirst);

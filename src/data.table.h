@@ -79,6 +79,11 @@ extern SEXP char_lens;
 extern SEXP char_indices;
 extern SEXP char_allLen1;
 extern SEXP char_allGrp1;
+extern SEXP char_xo;
+extern SEXP char_io;
+extern SEXP char_lhsLen1;
+extern SEXP char_xyLen1;
+extern SEXP char_nMatch;
 extern SEXP char_factor;
 extern SEXP char_ordered;
 extern SEXP char_datatable;
@@ -245,4 +250,4 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b, SEXP na);
 SEXP fcaseR(SEXP na, SEXP rho, SEXP args);
 
 // smjoin.c
-SEXP smjoinR(SEXP x, SEXP y, SEXP x_idx, SEXP y_idx);
+SEXP smergeR(SEXP x, SEXP y, SEXP x_idx, SEXP y_idx);

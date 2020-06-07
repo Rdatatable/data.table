@@ -1,6 +1,19 @@
 
 bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbose)
 {
+  if (length(icols)==1L && length(xcols)==1L && is.integer(i[[icols]]) && is.integer(x[[xcols]]) ## single column integer
+      && isTRUE(getOption("datatable.smerge"))                     ## enable option
+      && identical(nomatch, NA_integer_)                           ## for now only outer join
+      && identical(mult, "all")                                    ## for now only mult='all'
+      && identical(ops, 1L)                                        ## equi join
+      && identical(roll, 0) && identical(rollends, c(FALSE, TRUE)) ## non-rolling join
+      ) {
+    if (verbose) {last.started.at=proc.time();cat("Starting smerge ...\n");flush.console()}
+    ans = smerge(x=i[[icols]], y=x[[xcols]])
+    if (verbose) {cat("smerge done in",timetaken(last.started.at),"\n"); flush.console()}
+    ans$xo = c(ans$xo) ## drop starts and maxgrpn
+    return(ans[c("starts","lens","indices","allLen1","allGrp1","xo")])
+  }
   callersi = i
   i = shallow(i)
   # Just before the call to bmerge() in [.data.table there is a shallow() copy of i to prevent coercions here
@@ -180,9 +193,7 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
   if (verbose) {last.started.at=proc.time();cat("Starting bmerge ...\n");flush.console()}
   ans = .Call(Cbmerge, i, x, as.integer(icols), as.integer(xcols), io, xo, roll, rollends, nomatch, mult, ops, nqgrp, nqmaxgrp)
   if (verbose) {cat("bmerge done in",timetaken(last.started.at),"\n"); flush.console()}
-  # TO DO: xo could be moved inside Cbmerge
 
-  ans$xo = xo  # for further use by [.data.table
   return(ans)
 }
 
