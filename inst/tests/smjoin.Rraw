@@ -99,3 +99,11 @@ test(14.03, smjoin(x, y), d(x, y))
 x = ssa(N, N*1.1)
 y = ssa(N, N*1.1)
 test(14.04, smjoin(x, y), d(x, y))
+
+# sparse
+x = sample(2e2L, 1e2L)
+y = sample(2e2L, 1e2L)
+test(21.01, smjoin(x, y), d(x, y))
+x = sample(2e2L, 1e2L, TRUE)
+y = sample(2e2L, 1e2L, TRUE)
+test(21.02, smjoin(x, y), d(x, y))
