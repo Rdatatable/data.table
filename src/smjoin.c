@@ -30,16 +30,16 @@ void grpLens(int *starts, int n_starts, int n, /*output*/int *lens) { // #4395
 }
 
 // workhorse join that runs in parallel on batches
-void smjoin1(int *xs, int *xl, int nxs, int *ys, int *yl, int nys, int *x, int *y, int *starts_y, int *lens_y) {
+void smjoin1(int *xs, int *xl, int nxs, int *ys, int *yl, int nys, int *x, int *y, int *starts, int *lens) {
   int i=0, j=0, is=0, js=0, x_i, y_j;
   while (is<nxs && js<nys) { //Rprintf("============= is=%d\n", is);
     i = xs[is]-1, j = ys[js]-1;
     x_i = x[i], y_j = y[j];
     if (x_i == y_j) { //Rprintf("x[%d]==y[%d]: %d\n", i, j, x_i);
       int j1 = j+1; //Rprintf("x_lens[is]=x_lens[%d]=%d\n",is,xl[is]);
-      for (int ii=0; ii<xl[is]; ++ii) { //Rprintf("starts_y[%d]=%d\n", i+ii, j1);
-        starts_y[i+ii] = j1;
-        lens_y[i+ii] = yl[js];
+      for (int ii=0; ii<xl[is]; ++ii) { //Rprintf("starts[%d]=%d\n", i+ii, j1);
+        starts[i+ii] = j1;
+        lens[i+ii] = yl[js];
       }
       is++;
     }
@@ -124,7 +124,7 @@ static int rollbs(int *x, int *ix, int nix, int val, int side) {
 
 void smjoinC(int *x, int nx, int *x_starts, int nx_starts,
              int *y, int ny, int *y_starts, int ny_starts,
-             int *matchn, int *starts_y, int *lens_y) {
+             int *matchn, int *starts, int *lens) {
 
   bool verbose = true;
   bool unq_x = nx_starts==nx, unq_y = ny_starts==ny;
@@ -145,7 +145,7 @@ void smjoinC(int *x, int nx, int *x_starts, int nx_starts,
   double t_batch = omp_get_wtime(); // this section needs comprehensive testing for correctness of rollbs!
   int nth = getDTthreads();
   int nBatch = 0; // for a single threaded or small unq count use single batch
-  if (nth == 1 || nx_starts < 4) {
+  if (nth == 1 || nx_starts < 4) { // this is 4 only for testing, will be probably 1024
     nBatch = 1;
   } else {
     nBatch = nth * 2;
@@ -190,7 +190,7 @@ void smjoinC(int *x, int nx, int *x_starts, int nx_starts,
     smjoin1(
       xsB[b], xlB[b], nxsB[b], ysB[b], ylB[b], nysB[b], // batch specific input: shifted pointers and their sizes
       x, y,                                             // common input
-      starts_y, lens_y                                  // common output
+      starts, lens                                      // common output
     );
     th[b] = omp_get_thread_num();
   }
