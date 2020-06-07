@@ -1357,7 +1357,7 @@ replace_dot_alias = function(e) {
       if (is.null(irows) && !is.null(shared_keys)) {
         setattr(jval, 'sorted', shared_keys)
         # potentially inefficient backup -- check if jval is sorted by key(x)
-      } else if (haskey(x) && all(key(x) %chin% names(jval)) && is.sorted(jval, by=key(x)))
+      } else if (haskey(x) && all(key(x) %chin% names(jval)) && is.sorted(jval, by=key(x))) {
         setattr(jval, 'sorted', key(x))
       }
       if (any(vapply_1b(jval, is.null))) stop("Internal error: j has created a data.table result containing a NULL column") # nocov
