@@ -1391,6 +1391,8 @@ replace_dot_alias = function(e) {
     jisvars = if (any(c("get", "mget") %chin% av)) names_i else intersect(gsub("^i[.]","", setdiff(av, xjisvars)), names_i)
     # JIS (non join cols) but includes join columns too (as there are named in i)
     if (length(jisvars)) {
+      if (!nrow(i))
+        stop("internal error: doing byjoin but i has 0 rows") # nocov #4364
       tt = min(nrow(i),1L)
       SDenv$.iSD = i[tt,jisvars,with=FALSE]
       for (ii in jisvars) {
