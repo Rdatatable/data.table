@@ -164,7 +164,7 @@ int dt_win_snprintf(char *dest, size_t n, const char *fmt, ...)
   int nc=0;  // as per C99 standard: how many chars would be written if output isn't curtailed at n-1
              // since we are replacing snprintf with dt_win_snprintf it has to conform to same result
   while (*ch!='\0') {
-    const int space = MAX(n-1-nc, 0);  // space remaining
+    const int space = nc>=n-1 ? 0 : n-1-nc; // space remaining
     if (*ch!='%')   { if (space) *ch2++=*ch; ch++; nc++; continue; }  // copy non-specifier to the result as-is
     if (ch[1]=='%') { if (space) *ch2++='%'; ch+=2; nc++; continue; }  // interpret %% as a single %
     const int pos = atoi(ch+1);  // valid position already checked above
