@@ -1,16 +1,16 @@
 // For translations (#4402) we need positional specifiers (%n$), a non-C99 POSIX extension.
 // On Linux and Mac, standard snprintf supports positional specifiers.
-// On Windows, we tried many things but just couldn't achieve it. This may be why R uses
-// a third party library, trio, on Windows. But R does not expose trio for use by packages.
-// So ...
-// Rather than require compile flags (such as _XOPEN_SOURCE or POSIX_C_SOURCE), or require
-// linking to particular Windows libraries which may be fragile over time depending on
-// user's environments, we use the standard C99 features here. To do so, we simulate
+// On Windows, we tried many things but just couldn't achieve linking to _sprintf_p. Even
+// if we managed that on AppVeyor we may have fragility in the future on Windows given
+// varying Windows versions, compile environments/flags, and dll libraries. This may be
+// why R uses a third party library, trio, on Windows. But R does not expose trio for use
+// by packages.
+// So, in this file we use standard C99 features to support %n$. We simulate
 // positionals via format massage. Just on Windows, all snprintf calls are replaced with
 // this dt_win_snprintf via a #define in data.table.h. The goal of this massage is to be
 // as light and minimal as possible.
 // In C it is not possible, portably, to reorder a va_list (sadly).
-// In C you must past the correct type to va_arg(), so even to navigate va_list you
+// In C you must pass the correct type to va_arg(). So even to navigate va_list you
 // must parse and rely on fmt. But we don't want to reimplement all the types and modifiers.
 // Hence, reordering the specifiers, passing the va_list to the library, and then
 // putting the output strings into the desired order afterwards.
@@ -148,6 +148,7 @@ int dt_win_snprintf(char *dest, size_t n, const char *fmt, ...)
     snprintf(dest, n, "snprintf: clib error %d", res);
     free(spec);
     free(buff);
+    return -1;
     // # nocov end
   }
   // now we just need to put the string results for each arg back into the desired positions
@@ -213,8 +214,8 @@ SEXP test_dt_win_snprintf()
   if (strlen(buff)!=9 || strcmp(buff, "442223355"))                                 error("dt_win_snprintf test 9 failed: %s", buff);
   if (res!=13) /* should return what would have been written if not chopped */      error("dt_win_snprintf test 10 failed: %d", res);
   
-  dt_win_snprintf(buff, 47, "%l", 3);
-  if (strlen(buff)!=46 || strcmp(buff, "snprintf %l    does not end with recognized ty"))  error("dt_win_snprintf test 11 failed: %s", buff);
+  dt_win_snprintf(buff, 39, "%l", 3);
+  if (strlen(buff)!=38 || strcmp(buff, "snprintf %l    does not end with recog"))   error("dt_win_snprintf test 11 failed: %s", buff);
   
   dt_win_snprintf(buff, 19, "%l", 3);
   if (strlen(buff)!=18 || strcmp(buff, "snprintf %l    doe"))                       error("dt_win_snprintf test 12 failed: %s", buff);
