@@ -92,10 +92,10 @@ int dt_win_snprintf(char *dest, size_t n, const char *fmt, ...)
   specAlloc += narg*NDELIM + 1;  // +1 for final '\0'
   char *spec = (char *)malloc(specAlloc);  // not R_alloc as we need to be thread-safe
   if (!spec) {
-    // nocov start
+    // # nocov start
     snprintf(dest, n, "snprintf: %d byte spec alloc failed", (int)specAlloc);
     return -1;
-    // nocov end
+    // # nocov end
   }
   char *ch2 = spec;
   for (int i=0; i<narg; ++i) {
@@ -113,11 +113,11 @@ int dt_win_snprintf(char *dest, size_t n, const char *fmt, ...)
   }
   char *buff = malloc(n); // for the result of the specifiers
   if (!buff) {
-    // nocov start
+    // # nocov start
     snprintf(dest, n, "snprintf: %d byte buff alloc failed", (int)n);
     free(spec);
     return -1;
-    // nocov end
+    // # nocov end
   }
   // now spec contains the specifiers (minus their $n parts) in the same oder as ap
   int res = vsnprintf(buff, n, spec, ap); // C library does all the (non-positional) hard work here
@@ -126,29 +126,29 @@ int dt_win_snprintf(char *dest, size_t n, const char *fmt, ...)
     // C99 standard states that vsnprintf returns the size that would be big enough
     char *new = realloc(buff, res+1);
     if (!new) {
-      // nocov start
+      // # nocov start
       snprintf(dest, n, "snprintf: %d byte buff realloc failed", (int)res+1);
       free(spec);
       free(buff);
       return -1;
-      // nocov end
+      // # nocov end
     }
     buff = new;
     int newres = vsnprintf(buff, res+1, spec, ap);  // try again; test 9
     if (newres!=res) {
-      // nocov start
+      // # nocov start
       snprintf(dest, n, "snprintf: second vsnprintf %d != %d", newres, res);
       free(spec);
       free(buff);
       return -1;
-      // nocov end
+      // # nocov end
     }
   } else if (res<1) { // negative is error, cover 0 as error too here
-    // nocov start
+    // # nocov start
     snprintf(dest, n, "snprintf: clib error %d", res);
     free(spec);
     free(buff);
-    // nocov end
+    // # nocov end
   }
   // now we just need to put the string results for each arg back into the desired positions
   // create lookups so we can loop through fmt once replacing the specifiers as they appear
@@ -206,7 +206,7 @@ SEXP test_dt_win_snprintf()
   dt_win_snprintf(buff, 40, "long format string more than n==%d chopped", 40); // regular library (no %n$) chops to 39 chars + '/0'
   if (strlen(buff)!=39 || strcmp(buff, "long format string more than n==40 chop"))  error("dt_win_snprintf test 7 failed: %s", buff);
   
-  dt_win_snprintf(buff, 40, "long %3$s %2$s more than n==%1$d chopped", 40, "string", "format"); // same with dt_win_sprintf
+  dt_win_snprintf(buff, 40, "long %3$s %2$s more than n==%1$d chopped", 40, "string", "format"); // same with dt_win_snprintf
   if (strlen(buff)!=39 || strcmp(buff, "long format string more than n==40 chop"))  error("dt_win_snprintf test 8 failed: %s", buff);
   
   int res = dt_win_snprintf(buff, 10, "%4$d%2$d%3$d%5$d%1$d", 111, 222, 33, 44, 555); // fmt longer than n
