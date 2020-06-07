@@ -245,7 +245,7 @@ void smergeC(int *x, int nx, int *x_starts, int nx_starts,
   //Rprintf("nBatch=%d; batchSize=%d; lastBatchSize=%d\n", nBatch, batchSize, lastBatchSize);
   int *nxsB = (int *)R_alloc(nBatch, sizeof(int)), **xsB = (int **)R_alloc(nBatch, sizeof(int*)), **xlB = (int **)R_alloc(nBatch, sizeof(int*));
   int *nysB = (int *)R_alloc(nBatch, sizeof(int)), **ysB = (int **)R_alloc(nBatch, sizeof(int*)), **ylB = (int **)R_alloc(nBatch, sizeof(int*));
-  bool do_not_set_to_false = true; int y_min2, y_max2;
+  bool do_not_set_to_false = false; int y_min2, y_max2;
   //#pragma omp parallel for schedule(dynamic) num_threads(nth)
   for (int b=0; b<nBatch-1; ++b) {
     nxsB[b] = batchSize; xsB[b] = x_starts + b*batchSize; xlB[b] = x_lens + b*batchSize;
