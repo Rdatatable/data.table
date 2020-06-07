@@ -16,6 +16,9 @@
 #ifdef WIN32  // positional specifiers (%n$) used in translations; #4402
 #  define snprintf dt_win_snprintf  // see our snprintf.c; tried and failed to link to _sprintf_p on Windows
 #endif
+#ifdef sprintf
+#undef sprintf
+#endif
 #define sprintf USE_SNPRINTF_NOT_SPRINTF  // prevent use of sprintf in data.table source; force us to use n always
 
 // #include <signal.h> // the debugging machinery + breakpoint aidee
