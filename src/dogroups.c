@@ -47,6 +47,8 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
   N =   PROTECT(findVar(install(".N"), env));   nprotect++; // PROTECT for rchk
   GRP = PROTECT(findVar(install(".GRP"), env)); nprotect++;
   iSD = PROTECT(findVar(install(".iSD"), env)); nprotect++; // 1-row and possibly no cols (if no i variables are used via JIS)
+  if (length(iSD) && !length(VECTOR_ELT(iSD, 0)))
+    error("internal error dogroups: iSD is a zero rows data.table"); // # nocov
   xSD = PROTECT(findVar(install(".xSD"), env)); nprotect++;
   R_len_t maxGrpSize = 0;
   const int *ilens = INTEGER(lens), n=LENGTH(lens);

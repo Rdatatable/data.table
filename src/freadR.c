@@ -252,7 +252,7 @@ bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, const int 
     SEXP elem;
     if (colNames==NULL || colNames[i].len<=0) {
       char buff[12];
-      sprintf(buff,"V%d",i+1);
+      snprintf(buff,12,"V%d",i+1);
       elem = mkChar(buff);  // no PROTECT as passed immediately to SET_STRING_ELT
     } else {
       elem = mkCharLenCE(anchor+colNames[i].off, colNames[i].len, ienc);  // no PROTECT as passed immediately to SET_STRING_ELT
