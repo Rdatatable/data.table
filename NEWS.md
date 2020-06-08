@@ -157,6 +157,7 @@ unit = "s")
 
 9. `data.table::update.dev.pkg()` now unloads the `data.table` namespace to alleviate a DLL lock issue on Windows, [#4403](https://github.com/Rdatatable/data.table/issues/4403). Thanks to @drag5 for reporting.
 
+10. Starting from 4.0.0, data.table is using R's `rbind` and `cbind` methods, as described in v1.12.6 news entry. Support for R 3.x.x is resolved when processing `NAMESPACE` file, at install time, or at the time of building package binaries. As a result, users on R 3.x.x, if installing from binaries, must use binaries built by R 3.x.x, and users on R 4.x.x, if installing from binaries, must use binaries built by R 4.x.x. Users will see `package ‘data.table’ was built under R version...` warning when this happen. Thanks to @vinhdizzo for reporting in [#4528](https://github.com/Rdatatable/data.table/issues/4528).
 
 # data.table [v1.12.8](https://github.com/Rdatatable/data.table/milestone/15?closed=1)  (09 Dec 2019)
 
