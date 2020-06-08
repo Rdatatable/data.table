@@ -1,6 +1,7 @@
 
 bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbose)
 {
+  smergeOpt = FALSE
   if (length(icols)==1L && length(xcols)==1L && is.integer(i[[icols]]) && is.integer(x[[xcols]]) ## single column integer
       && isTRUE(getOption("datatable.smerge"))                     ## enable option
       && identical(nomatch, NA_integer_)                           ## for now only outer join
@@ -9,14 +10,15 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
       && identical(roll, 0) && identical(rollends, c(FALSE, TRUE)) ## non-rolling join
       ) {
     getIdxGrp = function(x, cols) { ## get index only if retGrp=T
+      if (!isTRUE(getOption("datatable.use.index"))) return()
       if (is.numeric(cols)) cols = names(x)[cols]
       idx = attr(attr(x, "index", exact=TRUE), paste0("__", cols, collapse=""), exact=TRUE)
       if (!is.null(attr(idx, "starts", exact=TRUE))) idx
     }
     if (verbose) {last.started.at=proc.time();cat("Starting smerge ...\n");flush.console()}
-    ans = smerge(x=i[[icols]], y=x[[xcols]], x.idx=getIdxGrp(i, icols), y.idx=getIdxGrp(x, xcols), out.bmerge=TRUE)
+    smans = smerge(x=i[[icols]], y=x[[xcols]], x.idx=getIdxGrp(i, icols), y.idx=getIdxGrp(x, xcols), out.bmerge=TRUE)
     if (verbose) {cat("smerge done in",timetaken(last.started.at),"\n"); flush.console()}
-    return(ans)
+    smergeOpt = TRUE
   }
   callersi = i
   i = shallow(i)
@@ -147,7 +149,7 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
     } else {
       xo = NULL
       if (isTRUE(getOption("datatable.use.index"))) {
-        xo = getindex(x, names(x)[xcols])
+        xo = c(getindex(x, names(x)[xcols])) ## c takes care of future #4386
         if (verbose && !is.null(xo)) cat("on= matches existing index, using index\n")
       }
       if (is.null(xo)) {
@@ -198,6 +200,10 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
   ans = .Call(Cbmerge, i, x, as.integer(icols), as.integer(xcols), io, xo, roll, rollends, nomatch, mult, ops, nqgrp, nqmaxgrp)
   if (verbose) {cat("bmerge done in",timetaken(last.started.at),"\n"); flush.console()}
 
+  if (smergeOpt && !identical(ans, smans)) {
+    (if (!interactive()) stop else message)("bmerge opt to smerge produced different results")
+    browser()
+  }
   return(ans)
 }
 

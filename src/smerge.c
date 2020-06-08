@@ -208,7 +208,7 @@ static struct smBatch *batching(int nBatch,
   struct smBatch *B = (struct smBatch *)R_alloc(nBatch, sizeof(struct smBatch));
   size_t batchSize = (nx_starts-1)/nBatch + 1;
   size_t lastBatchSize = nx_starts - (nBatch-1)*batchSize;
-  bool extra_validate = false; // validates against very slow m[in|ax]_i_match // #DEV
+  bool extra_validate = true; // validates against very slow m[in|ax]_i_match // #DEV
   for (int b=0; b<nBatch; ++b) {
     if (b<nBatch-1) {
       B[b].xs = x_starts + b*batchSize; B[b].xl = x_lens + b*batchSize; B[b].nxs = batchSize;
@@ -252,6 +252,18 @@ static int unqNth(int *x, int nx) { // x have 0:(nx-1) values
   return ans;
 }
 
+// helper for verbose messages to print what was actually computed
+static const char *verboseDone(bool x, bool y, const char *not_xy, const char *not_x, const char *not_y, const char *xy) {
+  if (!x && !y)
+    return(not_xy);
+  else if (!x && y)
+    return(not_x);
+  else if (x && !y)
+    return(not_y);
+  else
+    return(xy);
+}
+
 // count of duplicated entries
 void grpLens(int *starts, int n_starts, int n, /*output*/int *lens) { // #4395
 #pragma omp parallel for schedule(static) num_threads(getDTthreads())
@@ -280,12 +292,12 @@ void smergeC(int *x, int nx, int *x_starts, int nx_starts,
     grpLens(y_starts, ny_starts, ny, y_lens);
   }
   if (verbose>0)
-    Rprintf("smergeC: grpLens took %.3fs\n", omp_get_wtime() - t);
+    Rprintf("smergeC: grpLens %s took %.3fs\n", verboseDone(!unq_x, !unq_y, "(already unique)", "(y)", "(x)", "(x, y)"), omp_get_wtime() - t);
 
   t = omp_get_wtime(); // this section needs comprehensive testing for correctness of rollbs! whole section of breaking batches should probably be isolated into own function
   int nth = getDTthreads();
   int nBatch = 0; // for a single threaded or small unq count use single batch
-  if (nth == 1 || nx_starts < 1024) { // this is 4 only for testing, will be probably 1024 // #DEV
+  if (nth == 1 || nx_starts < 4) { // this is 4 only for testing, will be probably 1024 // #DEV
     nBatch = 1;
   } else {
     nBatch = nth * 2;
@@ -310,7 +322,7 @@ void smergeC(int *x, int nx, int *x_starts, int nx_starts,
   }
   x_lens1[0] = (int)xlens1; y_lens1[0] = (int)ylens1; xy_lens1[0] = (int)xylens1; n_match[0] = nmatch;
   if (verbose>0)
-    Rprintf("smergeC: %d calls to smerge using %d/%d threads took %.3fs\n", nBatch, unqNth(th, nBatch), nth, omp_get_wtime() - t);
+    Rprintf("smergeC: %d calls to smerge using %d/%d threads took %.3fs\n", nBatch, unqNth(th, nBatch), nth, omp_get_wtime() - t); // all threads may not always be used bc schedule(dynamic)
 
   return;
 }
@@ -392,7 +404,7 @@ SEXP smergeR(SEXP x, SEXP y, SEXP x_idx, SEXP y_idx, SEXP out_bmerge) {
   if (isNull(x_starts) || isNull(y_starts))
     error("Indices provided to smerge must carry 'starts' attribute");
   if (verbose>0)
-    Rprintf("smergeR: index took %.3fs\n", omp_get_wtime() - t);
+    Rprintf("smergeR: index %s took %.3fs\n", verboseDone(do_x_idx, do_y_idx, "(already indexed)", "(y)", "(x)", "(x, y)"), omp_get_wtime() - t);
 
   t = omp_get_wtime();
   bool x_ord = !LENGTH(x_idx), y_ord = !LENGTH(y_idx);
@@ -410,7 +422,7 @@ SEXP smergeR(SEXP x, SEXP y, SEXP x_idx, SEXP y_idx, SEXP out_bmerge) {
     yp = INTEGER(y);
   }
   if (verbose>0)
-    Rprintf("smergeR: sort took %.3fs\n", omp_get_wtime() - t);
+    Rprintf("smergeR: sort %s took %.3fs\n", verboseDone(!x_ord, !y_ord, "(already sorted)", "(y)", "(x)", "(x, y)"), omp_get_wtime() - t);
 
   t = omp_get_wtime();
   SEXP out_starts = R_NilValue, out_lens = R_NilValue;
@@ -457,7 +469,7 @@ SEXP smergeR(SEXP x, SEXP y, SEXP x_idx, SEXP y_idx, SEXP out_bmerge) {
   t = omp_get_wtime();
   SEXP ans = outSmergeR(nx, starts, lens, x_ord, out_starts, out_lens, x_idx, y_idx, n_matchr, x_lens1, y_lens1, xy_lens1, (bool)LOGICAL(out_bmerge)[0]);
   if (verbose>0)
-    Rprintf("smergeR: outSmerge (unsort) took %.3fs\n", omp_get_wtime() - t);
+    Rprintf("smergeR: outSmerge %s took %.3fs\n", x_ord ? "(was sorted)" : "(unsort)", omp_get_wtime() - t);
   if (verbose>0)
     Rprintf("smergeR: all took %.3fs\n", omp_get_wtime() - t_total);
 

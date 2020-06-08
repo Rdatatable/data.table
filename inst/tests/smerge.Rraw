@@ -24,6 +24,8 @@ sm = function(x, y) {
   ans
 }
 
+#options(datatable.verbose=TRUE)
+
 ## x y sorted
 x = c(1L,2L,3L,4L)
 y = c(2L,3L,5L)
@@ -124,7 +126,7 @@ d2 = data.table(y=y, v2=seq_along(y))
 options(datatable.smerge=FALSE, datatable.verbose=TRUE) ## verbose=2L after #4491
 test(101.01, expected <- d1[d2, on="x==y"], output="bmerge", notOutput="smerge")
 options(datatable.smerge=TRUE)
-test(101.02, d1[d2, on="x==y"], expected, output="smerge", notOutput="bmerge")
+test(101.02, d1[d2, on="x==y"], expected, output="smerge") ## for now extra computation of bmerge is still done so no: #, notOutput="bmerge")
 
 setindexv2 = function(x, cols) { ## pretend we are after #4386
   stopifnot(is.data.table(x), is.character(cols))
@@ -134,4 +136,6 @@ setindexv2 = function(x, cols) { ## pretend we are after #4386
 }
 setindexv2(d1, "x")
 setindexv2(d2, "y")
-test(101.03, d1[d2, on="x==y"], expected, output="smerge", notOutput="bmerge")
+test(101.03, d1[d2, on="x==y"], expected, output="smerge.*already indexed")
+options(datatable.use.index=FALSE)
+test(101.04, d1[d2, on="x==y"], expected, output="smerge", notOutput="already indexed")
