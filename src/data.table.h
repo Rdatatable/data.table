@@ -250,4 +250,4 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b, SEXP na);
 SEXP fcaseR(SEXP na, SEXP rho, SEXP args);
 
 // smjoin.c
-SEXP smergeR(SEXP x, SEXP y, SEXP x_idx, SEXP y_idx);
+SEXP smergeR(SEXP x, SEXP y, SEXP x_idx, SEXP y_idx, SEXP out_bmerge);

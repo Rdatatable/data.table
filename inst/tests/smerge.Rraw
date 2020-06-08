@@ -12,17 +12,15 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
 }
 
 bm = function(x, y) {
+  stopifnot(is.integer(x), is.integer(y))
   ans = bmerge(data.table(x=x), data.table(y=y), 1L, 1L, roll=0, rollends=c(FALSE, TRUE), nomatch=NA_integer_, mult="all", ops=1L, verbose=FALSE)
-  ## if undefining SMERGE_ALL
-  #ans[c("starts","lens")]
+  ## if undefining SMERGE_STATS then we have to ignore allLen1 as well
   ans
 }
 sm = function(x, y) {
-  ans = smerge(x, y)
-  ans = ans[c("starts","lens","indices","allLen1","allGrp1","xo")] ## drop extra stats
-  ans[["xo"]] = c(ans[["xo"]])                                     ## removes starts and maxgrpn, and possibly others in future
-  ## if undefining SMERGE_ALL
-  #ans[c("starts","lens")]
+  stopifnot(is.integer(x), is.integer(y))
+  ans = smerge(x, y, out.bmerge=TRUE)
+  ## if undefining SMERGE_STATS then we have to ignore allLen1 as well
   ans
 }
 
@@ -127,3 +125,13 @@ options(datatable.smerge=FALSE, datatable.verbose=TRUE) ## verbose=2L after #449
 test(101.01, expected <- d1[d2, on="x==y"], output="bmerge", notOutput="smerge")
 options(datatable.smerge=TRUE)
 test(101.02, d1[d2, on="x==y"], expected, output="smerge", notOutput="bmerge")
+
+setindexv2 = function(x, cols) { ## pretend we are after #4386
+  stopifnot(is.data.table(x), is.character(cols))
+  if (is.null(attr(x, "index", TRUE))) setattr(x, "index", integer())
+  setattr(attr(x, "index", TRUE), paste0("__", cols, collapse="__"), forderv(x, cols, retGrp=TRUE))
+  invisible(x)
+}
+setindexv2(d1, "x")
+setindexv2(d2, "y")
+test(101.03, d1[d2, on="x==y"], expected, output="smerge", notOutput="bmerge")

@@ -8,11 +8,15 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
       && identical(ops, 1L)                                        ## equi join
       && identical(roll, 0) && identical(rollends, c(FALSE, TRUE)) ## non-rolling join
       ) {
+    getIdxGrp = function(x, cols) { ## get index only if retGrp=T
+      if (is.numeric(cols)) cols = names(x)[cols]
+      idx = attr(attr(x, "index", exact=TRUE), paste0("__", cols, collapse=""), exact=TRUE)
+      if (!is.null(attr(idx, "starts", exact=TRUE))) idx
+    }
     if (verbose) {last.started.at=proc.time();cat("Starting smerge ...\n");flush.console()}
-    ans = smerge(x=i[[icols]], y=x[[xcols]])
+    ans = smerge(x=i[[icols]], y=x[[xcols]], x.idx=getIdxGrp(i, icols), y.idx=getIdxGrp(x, xcols), out.bmerge=TRUE)
     if (verbose) {cat("smerge done in",timetaken(last.started.at),"\n"); flush.console()}
-    ans$xo = c(ans$xo) ## drop starts and maxgrpn
-    return(ans[c("starts","lens","indices","allLen1","allGrp1","xo")])
+    return(ans)
   }
   callersi = i
   i = shallow(i)

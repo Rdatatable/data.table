@@ -8,50 +8,42 @@
  * split LHS into equal batches, RHS into corresponding batches by matching upper-lower bounds of LHS batches
  * parallel sort-merge join
  *
- * for a maximum speed collecting of following statistics can be disabled by undefine SMERGE_ALL
+ * for a maximum speed collecting of following statistics can be disabled by undefine SMERGE_STATS
  * y_len1/y_lens1/allLen1:       signals if there where multiple matches in RHS of join, ['s _x_ table
  * x_len1/x_lens1/lhsLen1:       signals if multiple matches in LHS of join, ['s _i_ table
  * xy_len1/xy_lens1/xlLen1:      signals if "many to many" matches between LHS and RHS
  * cnt/nmatch/n_match/n_matchr:  count of matches, taking multiple matches into account, uint64_t
  */
-#define SMERGE_ALL
+#define SMERGE_STATS
 
-// helper to count how many threads were used
-int unqN(int *x, int nx) { // x have 0:(nx-1) values
-  int ans = 0;
-  uint8_t *seen = (uint8_t *)R_alloc(nx, sizeof(uint8_t));
-  memset(seen, 0, nx*sizeof(uint8_t));
-  for (int i=0; i<nx; ++i) {
-    if (!seen[x[i]]++) ans++;
-  }
-  return ans;
-}
-
-// count of duplicated entries
-void grpLens(int *starts, int n_starts, int n, /*output*/int *lens) { // #4395
-  #pragma omp parallel for schedule(static) num_threads(getDTthreads())
-  for (int i=0; i<n_starts-1; ++i)
-    lens[i] = starts[i+1]-starts[i];
-  lens[n_starts-1] = n - starts[n_starts-1]+1;
-  return;
-}
+// shifted pointers so each batch knows where to start and end
+struct smBatch {
+  int *xs; // x's starts: indices on which unique values can be found
+  int *xl; // x's lens:   counts of each unique value
+  int nxs; // x's starts length
+  int *ys; // same for y
+  int *yl;
+  int nys;
+};
 
 // workhorse join that runs in parallel on batches
-void smerge1(int *xs, int *xl, int nxs, int *ys, int *yl, int nys,
-             int *x, bool unq_x, int *y, bool unq_y,
-             int *starts, int *lens,
-             uint64_t *nmatch, bool *xlens1, bool *ylens1, bool *xylens1) {
+void smerge(struct smBatch *batch,
+            int *x, bool unq_x, int *y, bool unq_y,
+            int *starts, int *lens,
+            uint64_t *nmatch, bool *xlens1, bool *ylens1, bool *xylens1) {
+  int *xs=batch->xs, *xl=batch->xl, nxs=batch->nxs;
+  int *ys=batch->ys, *yl=batch->yl, nys=batch->nys;
   int i=0, j=0, is=0, js=0, x_i, y_j;
   uint64_t cnt=0;
   bool xlen1 = true, ylen1 = true, xylen1 = true;
-  if (unq_x && unq_y) { //Rprintf("smerge1: unq_x && unq_y\n");
+  if (unq_x && unq_y) { //Rprintf("smerge: unq_x && unq_y\n");
     while (i<nxs && j<nys) {
       x_i = x[i], y_j = y[j];
       if (x_i == y_j) {
         starts[i] = j+1;
         lens[i] = 1;
         i++;
-#ifdef SMERGE_ALL
+#ifdef SMERGE_STATS
         cnt++;
 #endif
       } else if (x_i < y_j) {
@@ -60,7 +52,7 @@ void smerge1(int *xs, int *xl, int nxs, int *ys, int *yl, int nys,
         j++;
       }
     }
-  } else if (unq_x) { //Rprintf("smerge1: unq_x && !unq_y\n");
+  } else if (unq_x) { //Rprintf("smerge: unq_x && !unq_y\n");
     while (i<nxs && js<nys) {
       j = ys[js]-1;
       x_i = x[i], y_j = y[j];
@@ -69,7 +61,7 @@ void smerge1(int *xs, int *xl, int nxs, int *ys, int *yl, int nys,
         int yl1 = yl[js];
         lens[i] = yl1;
         i++;
-#ifdef SMERGE_ALL
+#ifdef SMERGE_STATS
         if (ylen1 && yl1>1)
           ylen1 = false;
         cnt += (uint64_t)yl1;
@@ -80,7 +72,7 @@ void smerge1(int *xs, int *xl, int nxs, int *ys, int *yl, int nys,
         js++;
       }
     }
-  } else if (unq_y) { //Rprintf("smerge1: !unq_x && unq_y\n");
+  } else if (unq_y) { //Rprintf("smerge: !unq_x && unq_y\n");
     while (is<nxs && j<nys) {
       i = xs[is]-1;
       x_i = x[i], y_j = y[j];
@@ -92,7 +84,7 @@ void smerge1(int *xs, int *xl, int nxs, int *ys, int *yl, int nys,
           lens[i+ii] = 1;
         }
         is++;
-#ifdef SMERGE_ALL
+#ifdef SMERGE_STATS
         if (xlen1 && xl1>1)
           xlen1 = false;
         cnt += (uint64_t)xl1;
@@ -103,7 +95,7 @@ void smerge1(int *xs, int *xl, int nxs, int *ys, int *yl, int nys,
         j++;
       }
     }
-  } else { //Rprintf("smerge1: !unq_x && !unq_y\n");
+  } else { //Rprintf("smerge: !unq_x && !unq_y\n");
     while (is<nxs && js<nys) { //Rprintf("============= is=%d\n", is);
       i = xs[is]-1, j = ys[js]-1;
       x_i = x[i], y_j = y[j];
@@ -115,7 +107,7 @@ void smerge1(int *xs, int *xl, int nxs, int *ys, int *yl, int nys,
           lens[i+ii] = yl1;
         }
         is++;
-#ifdef SMERGE_ALL
+#ifdef SMERGE_STATS
         if (xlen1 && xl1>1)
           xlen1 = false;
         if (ylen1 && yl1>1)
@@ -135,11 +127,10 @@ void smerge1(int *xs, int *xl, int nxs, int *ys, int *yl, int nys,
   return;
 }
 
-// those two helpers function may be removed once we will confirm rollbs works as expected, they find last matching, and first matching index
+// those two helpers needs to be removed once we will confirm rollbs works as expected, they find "first/last within" index
 static int max_i_match(int *y, int *y_starts, int ny_starts, int val) {
   int i;
-  for (i=0; i<ny_starts; ++i) {
-    //Rprintf("max_i_match: y[y_starts[%d]-1] >= val: %d >= %d\n", i, y[y_starts[i]-1], val);
+  for (i=0; i<ny_starts; ++i) { //Rprintf("max_i_match: y[y_starts[%d]-1] >= val: %d >= %d\n", i, y[y_starts[i]-1], val);
     if (y[y_starts[i]-1]==val) return(i);
     else if (y[y_starts[i]-1]>val) return(i-1);
   }
@@ -147,8 +138,7 @@ static int max_i_match(int *y, int *y_starts, int ny_starts, int val) {
 }
 static int min_i_match(int *y, int *y_starts, int ny_starts, int val) {
   int i;
-  for (i=ny_starts-1; i>=0; --i) {
-    //Rprintf("min_i_match: y[y_starts[%d]-1] <= val: %d <= %d\n", i, y[y_starts[i]-1], val);
+  for (i=ny_starts-1; i>=0; --i) { //Rprintf("min_i_match: y[y_starts[%d]-1] <= val: %d <= %d\n", i, y[y_starts[i]-1], val);
     if (y[y_starts[i]-1]==val) return(i);
     else if (y[y_starts[i]-1]<val) return(i+1);
   }
@@ -160,32 +150,32 @@ static int min_i_match(int *y, int *y_starts, int ny_starts, int val) {
  * side -1: lower bound; side 1: upper bound
  */
 static int rollbs(int *x, int *ix, int nix, int val, int side) {
-  bool verbose = false; // develd debug only
-  if (verbose) Rprintf("rollbs: side=%d; val=%d\n", side, val);
+  int verbose = 0; // devel debug only
+  if (verbose>0) Rprintf("rollbs: side=%d; val=%d\n", side, val);
   if (side < 0) { // lower bound early stopping
     if (x[ix[0]-1] == val) {
-      if (verbose) Rprintf("rollbs: min elements %d match\n", val);
+      if (verbose>0) Rprintf("rollbs: min elements %d match\n", val);
       return 0;
     }
     if (x[ix[nix-1]-1] < val) {
-      if (verbose) Rprintf("rollbs: max element %d is still smaller than %d\n", x[ix[nix-1]-1], val);
+      if (verbose>0) Rprintf("rollbs: max element %d is still smaller than %d\n", x[ix[nix-1]-1], val);
       return -1;
     }
     if (x[ix[0]-1] > val) {
-      if (verbose) Rprintf("rollbs: min element %d is bigger than %d\n", x[ix[0]-1], val);
+      if (verbose>0) Rprintf("rollbs: min element %d is bigger than %d\n", x[ix[0]-1], val);
       return 0;
     }
   } else if (side > 0) { // upper bound early stopping
     if (x[ix[nix-1]-1] == val) {
-      if (verbose) Rprintf("rollbs: max elements %d match\n", val);
+      if (verbose>0) Rprintf("rollbs: max elements %d match\n", val);
       return nix-1;
     }
     if (x[ix[0]-1] > val) {
-      if (verbose) Rprintf("rollbs: min element %d is still bigger than %d\n", x[ix[0]-1], val);
+      if (verbose>0) Rprintf("rollbs: min element %d is still bigger than %d\n", x[ix[0]-1], val);
       return -1;
     }
     if (x[ix[nix-1]-1] < val) {
-      if (verbose) Rprintf("rollbs: max element %d is smaller than %d\n", x[ix[nix-1]-1], val);
+      if (verbose>0) Rprintf("rollbs: max element %d is smaller than %d\n", x[ix[nix-1]-1], val);
       return nix-1;
     }
   }
@@ -193,7 +183,7 @@ static int rollbs(int *x, int *ix, int nix, int val, int side) {
   while (lower<=upper) {
     i = lower + (upper-lower)/2;
     int thisx = x[ix[i]-1];
-    //if (verbose) Rprintf("rollbs: x[ix[%d]-1]=%d ?? %d\n", i, thisx, val);
+    //if (verbose>0) Rprintf("rollbs: x[ix[%d]-1]=%d ?? %d\n", i, thisx, val);
     if (thisx==val)
       return(i);
     else if (thisx < val)
@@ -201,28 +191,89 @@ static int rollbs(int *x, int *ix, int nix, int val, int side) {
     else if (thisx > val)
       upper = i-1;
   }
-  if (verbose) Rprintf("rollbs: nomatch: i=%d; this=%d; lower=%d, upper=%d; side=%d\n", i, x[ix[i]-1], lower, upper, side);
+  if (verbose>0) Rprintf("rollbs: nomatch: i=%d; this=%d; lower=%d, upper=%d; side=%d\n", i, x[ix[i]-1], lower, upper, side);
   if (side < 0) // anyone to stress test this logic?
     return lower;
   else
     return upper;
 }
 
+// cuts x_starts into equal batches and binary search corresponding y_starts ranges
+struct smBatch *batching(int nBatch,
+                         int *x, int nx, int *x_starts, int nx_starts, int *x_lens,
+                         int *y, int ny, int *y_starts, int ny_starts, int *y_lens,
+                         int verbose) {
+  if (verbose>0)
+    Rprintf("batching: %d batches of sorted x y: x[1]<=y[1] && x[nx]>=y[ny]:\n", nBatch);
+  struct smBatch *B = (struct smBatch *)R_alloc(nBatch, sizeof(struct smBatch));
+  size_t batchSize = (nx_starts-1)/nBatch + 1;
+  size_t lastBatchSize = nx_starts - (nBatch-1)*batchSize;
+  bool extra_validate = true; // validates against very slow m[in|ax]_i_match // #DEV
+  for (int b=0; b<nBatch; ++b) {
+    if (b<nBatch-1) {
+      B[b].xs = x_starts + b*batchSize; B[b].xl = x_lens + b*batchSize; B[b].nxs = batchSize;
+    } else { // last batch
+      B[b].xs = x_starts + nx_starts-lastBatchSize; B[b].xl = x_lens + nx_starts-lastBatchSize; B[b].nxs = lastBatchSize;
+    }
+    int x_i_min = B[b].xs[0];
+    int x_i_max = B[b].xs[B[b].nxs-1];
+    int y_i_min = rollbs(y, y_starts, ny_starts, x[x_i_min-1], -1);
+    int y_i_max = rollbs(y, y_starts, ny_starts, x[x_i_max-1], 1);
+    if (extra_validate) {
+      int y_i_min2 = min_i_match(y, y_starts, ny_starts, x[x_i_min-1]);
+      int y_i_max2 = max_i_match(y, y_starts, ny_starts, x[x_i_max-1]);
+      if (y_i_min!=y_i_min2)
+        error("y lower bound different: %d vs %d", y_i_min2, y_i_min);
+      if (y_i_max!=y_i_max2)
+        error("y upper bound different: %d vs %d", y_i_max2, y_i_max);
+    }
+    B[b].ys = y_starts + y_i_min; B[b].yl = y_lens + y_i_min; B[b].nys = y_i_max - y_i_min + 1;
+  }
+  if (verbose>0) { // print smBatch objects, 1-indexed! x y sorted! for debugging and verbose
+    for (int b=0; b<nBatch; ++b) {
+      int x_i_min = B[b].xs[0], y_i_min = B[b].ys[0];
+      int x_i_max = B[b].xs[B[b].nxs-1], y_i_max = B[b].ys[B[b].nys-1];
+      Rprintf("#### batch[%d]: unq n: x=%d, y=%d\n", b+1, B[b].nxs, B[b].nys);
+      Rprintf("## lower: x[%d]: %d <= %d :y[%d]\n", x_i_min, x[x_i_min-1], y[y_i_min-1], y_i_min);
+      Rprintf("## upper: x[%d]: %d >= %d :y[%d]\n", x_i_max, x[x_i_max-1], y[y_i_max-1], y_i_max);
+    }
+  }
+  return B;
+}
+
+// helper to count how many threads were used
+int unqNth(int *x, int nx) { // x have 0:(nx-1) values
+  int ans = 0;
+  uint8_t *seen = (uint8_t *)R_alloc(nx, sizeof(uint8_t));
+  memset(seen, 0, nx*sizeof(uint8_t));
+  for (int i=0; i<nx; ++i) {
+    if (!seen[x[i]]++) ans++;
+  }
+  return ans;
+}
+
+// count of duplicated entries
+void grpLens(int *starts, int n_starts, int n, /*output*/int *lens) { // #4395
+#pragma omp parallel for schedule(static) num_threads(getDTthreads())
+  for (int i=0; i<n_starts-1; ++i)
+    lens[i] = starts[i+1]-starts[i];
+  lens[n_starts-1] = n - starts[n_starts-1]+1;
+  return;
+}
+
+// pure C smerge: takes already sorted input, compute grpLens, prepare batches, smerge in parallel
 void smergeC(int *x, int nx, int *x_starts, int nx_starts,
              int *y, int ny, int *y_starts, int ny_starts,
              int *starts, int *lens,
              uint64_t *n_match, int *x_lens1, int *y_lens1, int *xy_lens1,
              int verbose) {
 
-  bool unq_x = nx_starts==nx, unq_y = ny_starts==ny;
+  double t = omp_get_wtime();
   int *x_lens = 0, *y_lens = 0;
-  double t = 0;
-
-  t = omp_get_wtime();
-  if (!unq_x) { // else true as we dont yet have branches for unq cases
-    x_lens = (int *)R_alloc(nx_starts, sizeof(int)); // #4395
+  bool unq_x = nx_starts==nx, unq_y = ny_starts==ny;
+  if (!unq_x) {
+    x_lens = (int *)R_alloc(nx_starts, sizeof(int)); // remove after #4395
     grpLens(x_starts, nx_starts, nx, x_lens);
-    //for (int i=0; i<nx_starts; ++i) Rprintf("x_lens[%d]=%d\n", i, x_lens[i]);
   }
   if (!unq_y) {
     y_lens = (int *)R_alloc(ny_starts, sizeof(int));
@@ -234,43 +285,13 @@ void smergeC(int *x, int nx, int *x_starts, int nx_starts,
   t = omp_get_wtime(); // this section needs comprehensive testing for correctness of rollbs! whole section of breaking batches should probably be isolated into own function
   int nth = getDTthreads();
   int nBatch = 0; // for a single threaded or small unq count use single batch
-  if (nth == 1 || nx_starts < 4) { // this is 4 only for testing, will be probably 1024
+  if (nth == 1 || nx_starts < 4) { // this is 4 only for testing, will be probably 1024 // #DEV
     nBatch = 1;
   } else {
     nBatch = nth * 2;
   }
   int *th = (int *)R_alloc(nBatch, sizeof(int)); // report threads used
-  size_t batchSize = (nx_starts-1)/nBatch + 1;
-  size_t lastBatchSize = nx_starts - (nBatch-1)*batchSize;
-  //Rprintf("nBatch=%d; batchSize=%d; lastBatchSize=%d\n", nBatch, batchSize, lastBatchSize);
-  int *nxsB = (int *)R_alloc(nBatch, sizeof(int)), **xsB = (int **)R_alloc(nBatch, sizeof(int*)), **xlB = (int **)R_alloc(nBatch, sizeof(int*));
-  int *nysB = (int *)R_alloc(nBatch, sizeof(int)), **ysB = (int **)R_alloc(nBatch, sizeof(int*)), **ylB = (int **)R_alloc(nBatch, sizeof(int*));
-  bool do_not_set_to_false = false; int y_min2, y_max2;
-  //#pragma omp parallel for schedule(dynamic) num_threads(nth)
-  for (int b=0; b<nBatch-1; ++b) {
-    nxsB[b] = batchSize; xsB[b] = x_starts + b*batchSize; xlB[b] = x_lens + b*batchSize;
-    if (do_not_set_to_false) y_min2 = min_i_match(y, y_starts, ny_starts, x[xsB[b][0]-1]);
-    if (do_not_set_to_false) y_max2 = max_i_match(y, y_starts, ny_starts, x[xsB[b][nxsB[b]-1]-1]);
-    //Rprintf("nxsB[b]=%d; y_min=%d; y_max=%d\n", nxsB[b], y_min, y_max);
-    int y_min = rollbs(y, y_starts, ny_starts, x[xsB[b][0]-1], -1);
-    int y_max = rollbs(y, y_starts, ny_starts, x[xsB[b][nxsB[b]-1]-1], 1);
-    //Rprintf("nxsB[b]=%d; y_mn2=%d; y_mx2=%d\n", nxsB[b], y_min2, y_max2);
-    if (do_not_set_to_false && y_min!=y_min2) error("y_min different: %d vs %d", y_min2, y_min);
-    if (do_not_set_to_false && y_max!=y_max2) error("y_max different: %d vs %d", y_max2, y_max);
-    nysB[b] = y_max - y_min + 1; ysB[b] = y_starts + y_min; ylB[b] = y_lens + y_min;
-  }
-  int b = nBatch-1;
-  nxsB[b] = lastBatchSize; xsB[b] = x_starts + nx_starts-lastBatchSize; xlB[b] = x_lens + nx_starts-lastBatchSize;
-  if (do_not_set_to_false) y_min2 = min_i_match(y, y_starts, ny_starts, x[xsB[b][0]-1]);
-  if (do_not_set_to_false) y_max2 = max_i_match(y, y_starts, ny_starts, x[xsB[b][nxsB[b]-1]-1]);
-  //Rprintf("nxsB[b]=%d; y_min=%d; y_max=%d\n", nxsB[b], y_min, y_max);
-  int y_min = rollbs(y, y_starts, ny_starts, x[xsB[b][0]-1], -1);
-  int y_max = rollbs(y, y_starts, ny_starts, x[xsB[b][nxsB[b]-1]-1], 1);
-  //Rprintf("nxsB[b]=%d; y_mn2=%d; y_mx2=%d\n", nxsB[b], y_min2, y_max2);
-  if (do_not_set_to_false && y_min!=y_min2) error("y_min different: %d vs %d", y_min2, y_min);
-  if (do_not_set_to_false && y_max!=y_max2) error("y_max different: %d vs %d", y_max2, y_max);
-  nysB[b] = y_max - y_min + 1; ysB[b] = y_starts + y_min; ylB[b] = y_lens + y_min;
-  //for (int b=0; b<nBatch; ++b) Rprintf("b=%d:\n  nx=%d; xs[0]=%d; xl[0]=%d; x[xs[0]-1]=%d\n  ny=%d; ys[0]=%d; yl[0]=%d; y[ys[0]-1]=%d\n", b, nxsB[b], xsB[b][0], xlB[b][0], x[xsB[b][0]-1], nysB[b], ysB[b][0], ylB[b][0], y[ysB[b][0]-1]);
+  struct smBatch *B = batching(nBatch, x, nx, x_starts, nx_starts, x_lens, y, ny, y_starts, ny_starts, y_lens, verbose-1);
   if (verbose>0)
     Rprintf("smergeC: preparing %d batches took %.3fs\n", nBatch, omp_get_wtime() - t);
 
@@ -279,18 +300,17 @@ void smergeC(int *x, int nx, int *x_starts, int nx_starts,
   uint64_t nmatch = 0;
   #pragma omp parallel for schedule(dynamic) reduction(&&:xlens1,ylens1,xylens1) reduction(+:nmatch) num_threads(nth)
   for (int b=0; b<nBatch; ++b) {
-    smerge1(
-      xsB[b], xlB[b], nxsB[b], ysB[b], ylB[b], nysB[b], // batch specific input: shifted pointers and their sizes
-      x, unq_x, y, unq_y,                               // common input
-      starts, lens,                                     // common output
-      &nmatch, &xlens1, &ylens1, &xylens1               // common reduction
+    smerge(
+      &B[b],                              // batch input
+      x, unq_x, y, unq_y,                 // common input
+      starts, lens,                       // common output
+      &nmatch, &xlens1, &ylens1, &xylens1 // common reduction output
     );
     th[b] = omp_get_thread_num();
   }
   x_lens1[0] = (int)xlens1; y_lens1[0] = (int)ylens1; xy_lens1[0] = (int)xylens1; n_match[0] = nmatch;
-  //for (int b=0; b<nBatch; ++b) Rprintf("th[%d]=%d\n", b, th[b]); // threads utilization for each batch
   if (verbose>0)
-    Rprintf("smergeC: %d calls to smerge1 using %d/%d threads took %.3fs\n", nBatch, unqN(th, nBatch), nth, omp_get_wtime() - t);
+    Rprintf("smergeC: %d calls to smerge using %d/%d threads took %.3fs\n", nBatch, unqNth(th, nBatch), nth, omp_get_wtime() - t);
 
   return;
 }
@@ -302,23 +322,17 @@ void sortInt(int *x, int nx, int *idx, int *ans) {
   return;
 }
 
-// this produce output consistent to bmerge, note that bmerge i,x is smerge x,y
-SEXP joinOut(int n, int *starts, int *lens, bool x_ord,
-             SEXP out_starts, SEXP out_lens,
-             SEXP x_idx, SEXP y_idx,
-             SEXP n_match, SEXP x_lens1, SEXP y_lens1, SEXP xy_lens1) {
-  SEXP ans = PROTECT(allocVector(VECSXP, 10)), ansnames;
-  setAttrib(ans, R_NamesSymbol, ansnames=allocVector(STRSXP, 10));
+// for bmerge=true this produce bmerge consistent output, note that bmerge i,x is smerge x,y
+SEXP outSmergeR(int n, int *starts, int *lens, bool x_ord,
+                SEXP out_starts, SEXP out_lens, // used only when x was sorted, saves one allocation
+                SEXP x_idx, SEXP y_idx,
+                SEXP n_match, SEXP x_lens1, SEXP y_lens1, SEXP xy_lens1,
+                bool bmerge) {
+  int out_len = bmerge ? 6 : 10;
+  SEXP ans = PROTECT(allocVector(VECSXP, out_len)), ansnames;
+  setAttrib(ans, R_NamesSymbol, ansnames=allocVector(STRSXP, out_len));
   SET_STRING_ELT(ansnames, 0, char_starts);
   SET_STRING_ELT(ansnames, 1, char_lens);
-  SET_STRING_ELT(ansnames, 2, char_indices); SET_VECTOR_ELT(ans, 2, allocVector(INTSXP, 0)); // const for equi join
-  SET_STRING_ELT(ansnames, 3, char_allLen1); SET_VECTOR_ELT(ans, 3, y_lens1);
-  SET_STRING_ELT(ansnames, 4, char_allGrp1); SET_VECTOR_ELT(ans, 4, ScalarLogical(true));    // const for equi join
-  SET_STRING_ELT(ansnames, 5, char_xo);      SET_VECTOR_ELT(ans, 5, y_idx);
-  SET_STRING_ELT(ansnames, 6, char_io);      SET_VECTOR_ELT(ans, 6, x_idx);
-  SET_STRING_ELT(ansnames, 7, char_lhsLen1); SET_VECTOR_ELT(ans, 7, x_lens1);
-  SET_STRING_ELT(ansnames, 8, char_xyLen1);  SET_VECTOR_ELT(ans, 8, xy_lens1);
-  SET_STRING_ELT(ansnames, 9, char_nMatch);  SET_VECTOR_ELT(ans, 9, n_match);
   if (x_ord) {
     SET_VECTOR_ELT(ans, 0, out_starts);
     SET_VECTOR_ELT(ans, 1, out_lens);
@@ -330,19 +344,40 @@ SEXP joinOut(int n, int *starts, int *lens, bool x_ord,
     sortInt(lens, n, INTEGER(xoo), INTEGER(VECTOR_ELT(ans, 1)));
     UNPROTECT(1);
   }
+  SET_STRING_ELT(ansnames, 2, char_indices); SET_VECTOR_ELT(ans, 2, allocVector(INTSXP, 0)); // const for equi join
+  SET_STRING_ELT(ansnames, 3, char_allLen1); SET_VECTOR_ELT(ans, 3, y_lens1);
+  SET_STRING_ELT(ansnames, 4, char_allGrp1); SET_VECTOR_ELT(ans, 4, ScalarLogical(true));    // const for equi join
+  if (bmerge) {
+    y_idx = shallow_duplicate(y_idx); // possibly improve after #4467
+    setAttrib(y_idx, sym_starts, R_NilValue);
+    setAttrib(y_idx, sym_maxgrpn, R_NilValue);
+    //setAttrib(y_idx, sym_anyna, R_NilValue); // enable after #4386
+    //setAttrib(y_idx, sym_anyinfnan, R_NilValue);
+    //setAttrib(y_idx, sym_anynotascii, R_NilValue);
+    //setAttrib(y_idx, sym_anynotutf8, R_NilValue);
+  }
+  SET_STRING_ELT(ansnames, 5, char_xo); SET_VECTOR_ELT(ans, 5, y_idx);
+  if (!bmerge) {
+    SET_STRING_ELT(ansnames, 6, char_io);      SET_VECTOR_ELT(ans, 6, x_idx);
+    SET_STRING_ELT(ansnames, 7, char_lhsLen1); SET_VECTOR_ELT(ans, 7, x_lens1);
+    SET_STRING_ELT(ansnames, 8, char_xyLen1);  SET_VECTOR_ELT(ans, 8, xy_lens1);
+    SET_STRING_ELT(ansnames, 9, char_nMatch);  SET_VECTOR_ELT(ans, 9, n_match);
+  }
   UNPROTECT(1);
   return ans;
 }
 
-SEXP smergeR(SEXP x, SEXP y, SEXP x_idx, SEXP y_idx) {
+SEXP smergeR(SEXP x, SEXP y, SEXP x_idx, SEXP y_idx, SEXP out_bmerge) {
 
-  const int verbose = GetVerbose()*2; // remove *2 after #4491
+  double t_total = omp_get_wtime();
+  const int verbose = GetVerbose()*3; // remove *3 after #4491
   if (!isInteger(x) || !isInteger(y))
     error("'x' and 'y' must be integer");
+  if (!IS_TRUE_OR_FALSE(out_bmerge))
+    error("'out.bmerge' must be TRUE or FALSE");
   int protecti = 0, nx = LENGTH(x), ny = LENGTH(y);
-  double t = 0;
 
-  t = omp_get_wtime();
+  double t = omp_get_wtime();
   bool do_x_idx = isNull(x_idx), do_y_idx = isNull(y_idx);
   if (do_x_idx) {
     x_idx = PROTECT(forder(x, R_NilValue, ScalarLogical(TRUE), ScalarLogical(TRUE), ScalarInteger(1), ScalarLogical(FALSE))); protecti++; // verbose=verbose-2L after #4533
@@ -409,19 +444,21 @@ SEXP smergeR(SEXP x, SEXP y, SEXP x_idx, SEXP y_idx) {
     &n_match, INTEGER(x_lens1), INTEGER(y_lens1), INTEGER(xy_lens1),
     verbose-1
   );
-  if (n_match > DBL_MAX) {
+  if (n_match > (uint64_t)DBL_MAX) {
     REAL(n_matchr)[0] = NA_REAL;
     warning("count of matches exceeds DBL_MAX, returning NA in 'nMatch' field");
   } else {
     REAL(n_matchr)[0] = (double)n_match;
   }
   if (verbose>0)
-    Rprintf("smergeR: smergeC of %d x %d => %"PRIu64" took %.3fs\n", nx, ny, n_match, omp_get_wtime() - t);
+    Rprintf("smergeR: smergeC of %d x %d = %"PRIu64"; took %.3fs\n", nx, ny, n_match, omp_get_wtime() - t);
 
   t = omp_get_wtime();
-  SEXP ans = joinOut(nx, starts, lens, x_ord, out_starts, out_lens, x_idx, y_idx, n_matchr, x_lens1, y_lens1, xy_lens1);
+  SEXP ans = outSmergeR(nx, starts, lens, x_ord, out_starts, out_lens, x_idx, y_idx, n_matchr, x_lens1, y_lens1, xy_lens1, (bool)LOGICAL(out_bmerge)[0]);
   if (verbose>0)
-    Rprintf("smergeR: joinOut (unsort) took %.3fs\n", omp_get_wtime() - t);
+    Rprintf("smergeR: outSmerge (unsort) took %.3fs\n", omp_get_wtime() - t);
+  if (verbose>0)
+    Rprintf("smergeR: all took %.3fs\n", omp_get_wtime() - t_total);
 
   UNPROTECT(protecti);
   return ans;
