@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: data.table 1.12.5\n"
-"POT-Creation-Date: 2019-12-31 13:02\n"
+"POT-Creation-Date: 2020-06-09 00:06\n"
 "PO-Revision-Date: 2019-11-16 18:37+0800\n"
 "Last-Translator: Xianying Tan <shrektan@126.com>\n"
 "Language-Team: Mandarin\n"
@@ -387,6 +387,14 @@ msgid ""
 msgstr ""
 "not-join '!' 前缀在 i 中存在，但是 nomatch 也被提供了。需要移除nomatch。"
 
+msgid ""
+"Operator := detected in i, the first argument inside DT[...], but is only "
+"valid in the second argument, j. Most often, this happens when forgetting "
+"the first comma (e.g. DT[newvar := 5] instead of DT[ , new_var := 5]). "
+"Please double-check the syntax. Run traceback(), and debugger() to get a "
+"line number."
+msgstr ""
+
 msgid "is not found in calling scope"
 msgstr "不存在调用环境里"
 
@@ -593,6 +601,16 @@ msgstr ".SDcols 应为列数或是列名"
 
 msgid "Some items of .SDcols are not column names:"
 msgstr ".SDcols 中的部份项目不是列名:"
+
+msgid ""
+"'(m)get' found in j. ansvars being set to all columns. Use .SDcols or a "
+"single j=eval(macro) instead. Both will detect the columns used which is "
+"important for efficiency.\n"
+"Old ansvars: %s"
+msgstr ""
+
+msgid "New ansvars: %s"
+msgstr "新的 ansvars: %s"
 
 msgid ""
 "This j doesn't use .SD but .SDcols has been supplied. Ignoring .SDcols. See ?"
@@ -1091,21 +1109,12 @@ msgstr "x 是单个向量，非空的 'cols' 没有意义。"
 msgid "x is a list, 'cols' cannot be 0-length."
 msgstr "x 是一个列表（list），'cols' 长度不能为0。"
 
-msgid "RHS of"
-msgstr "右手侧（RHS）"
-
-msgid "is length"
-msgstr "长度为"
-
-msgid "which is not 1 or nrow ("
-msgstr "其非 1 或 总行数 nrow ("
-
 msgid ""
-"). For robustness, no recycling is allowed (other than of length 1 RHS). "
-"Consider %in% instead."
+"RHS of %s is length %d which is not 1 or nrow (%d). For robustness, no "
+"recycling is allowed (other than of length 1 RHS). Consider %%in%% instead."
 msgstr ""
-")。考虑到程序的稳健性，只有在右侧元素长度为 1 的情况下，我们才会对之进行循"
-"环。考虑改用 %in% 。"
+"%s 的右手侧 (RHS) 长度为 %d, 其非 1 或 总行数 nrow (%d)。考虑到程序的稳健性，只有在右侧元素长度为 1 的情况下，我们才会对之进行循"
+"环。考虑改用 %%in%% 。"
 
 msgid ""
 "Internal error in .isFastSubsettable. Please report to data.table developers"
@@ -2089,13 +2098,6 @@ msgstr "内部错误：索引"
 msgid "' exists but is invalid"
 msgstr "存在但无效"
 
-msgid ""
-"Use 'if (length(o <- forderv(DT,by))) ...' for efficiency in one step, so "
-"you have o as well if not sorted."
-msgstr ""
-"请使用'if (length(o <- forderv(DT,by))) ...' , 以便在一步中拥有较好的效率，同"
-"时如果你还未排序，你也获得了变量o"
-
 msgid "x is vector but 'by' is supplied"
 msgstr "x是一个向量， 但是参数'by'被提供"
 
@@ -2215,9 +2217,6 @@ msgstr "' 然而 y 中对应的项是：'"
 
 msgid "None of the datasets should contain a column named '.seqn'"
 msgstr "所有的数据集都不应该包含名为 '.seqn' 的列"
-
-msgid "'target' and 'current' must both be data.tables"
-msgstr "'target' 和 'current' 都必须是 data.table"
 
 msgid "Internal error: ncol(current)==ncol(target) was checked above"
 msgstr "内部错误：ncol(current)==ncol(target) 之前已经检查"
@@ -2363,13 +2362,19 @@ msgstr "Pattern"
 msgid "not found: ["
 msgstr "未找到: ["
 
-msgid ""
-"Input xts object should not have 'index' column because it would result in "
-"duplicate column names. Rename 'index' column in xts or use `keep."
-"rownames=FALSE` and add index manually as another column."
+msgid "keep.rownames must be length 1"
 msgstr ""
-"输入的xts对象不能含有'index'列，因这会导致出现重复的列名。请尝试重新命名xts中"
-"的'index'列或者使用`keep.rownames=FALSE`并手动添加index为另外的列"
+
+msgid "keep.rownames must not be NA"
+msgstr ""
+
+msgid ""
+"Input xts object should not have '%s' column because it would result in "
+"duplicate column names. Rename '%s' column in xts or use `keep.rownames` to "
+"change the index column name."
+msgstr ""
+"输入的xts对象不能含有'%s'列，因这会导致出现重复的列名。请尝试重新命名xts中"
+"的'%s'列或者使用`keep.rownames`并手动添加index为另外的列"
 
 msgid ""
 "data.table must have a time based column in first position, use "
