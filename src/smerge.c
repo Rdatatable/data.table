@@ -27,11 +27,11 @@ struct smBatch {
 };
 
 // workhorse join that runs in parallel on batches
-void smerge(struct smBatch *batch,
-            int *x, bool unq_x, int *y, bool unq_y,
-            int *starts, int *lens,
-            uint64_t *nmatch, bool *xlens1, bool *ylens1, bool *xylens1) {
-  int *xs=batch->xs, *xl=batch->xl, nxs=batch->nxs;
+static void smerge(struct smBatch *batch,
+                   int *x, bool unq_x, int *y, bool unq_y,
+                   int *starts, int *lens,
+                   uint64_t *nmatch, bool *xlens1, bool *ylens1, bool *xylens1) {
+  int *xs=batch->xs, *xl=batch->xl, nxs=batch->nxs; // unpack smBatch struct
   int *ys=batch->ys, *yl=batch->yl, nys=batch->nys;
   int i=0, j=0, is=0, js=0, x_i, y_j;
   uint64_t cnt=0;
@@ -199,16 +199,16 @@ static int rollbs(int *x, int *ix, int nix, int val, int side) {
 }
 
 // cuts x_starts into equal batches and binary search corresponding y_starts ranges
-struct smBatch *batching(int nBatch,
-                         int *x, int nx, int *x_starts, int nx_starts, int *x_lens,
-                         int *y, int ny, int *y_starts, int ny_starts, int *y_lens,
-                         int verbose) {
+static struct smBatch *batching(int nBatch,
+                                int *x, int nx, int *x_starts, int nx_starts, int *x_lens,
+                                int *y, int ny, int *y_starts, int ny_starts, int *y_lens,
+                                int verbose) {
   if (verbose>0)
     Rprintf("batching: %d batches of sorted x y: x[1]<=y[1] && x[nx]>=y[ny]:\n", nBatch);
   struct smBatch *B = (struct smBatch *)R_alloc(nBatch, sizeof(struct smBatch));
   size_t batchSize = (nx_starts-1)/nBatch + 1;
   size_t lastBatchSize = nx_starts - (nBatch-1)*batchSize;
-  bool extra_validate = true; // validates against very slow m[in|ax]_i_match // #DEV
+  bool extra_validate = false; // validates against very slow m[in|ax]_i_match // #DEV
   for (int b=0; b<nBatch; ++b) {
     if (b<nBatch-1) {
       B[b].xs = x_starts + b*batchSize; B[b].xl = x_lens + b*batchSize; B[b].nxs = batchSize;
@@ -242,7 +242,7 @@ struct smBatch *batching(int nBatch,
 }
 
 // helper to count how many threads were used
-int unqNth(int *x, int nx) { // x have 0:(nx-1) values
+static int unqNth(int *x, int nx) { // x have 0:(nx-1) values
   int ans = 0;
   uint8_t *seen = (uint8_t *)R_alloc(nx, sizeof(uint8_t));
   memset(seen, 0, nx*sizeof(uint8_t));
@@ -285,7 +285,7 @@ void smergeC(int *x, int nx, int *x_starts, int nx_starts,
   t = omp_get_wtime(); // this section needs comprehensive testing for correctness of rollbs! whole section of breaking batches should probably be isolated into own function
   int nth = getDTthreads();
   int nBatch = 0; // for a single threaded or small unq count use single batch
-  if (nth == 1 || nx_starts < 4) { // this is 4 only for testing, will be probably 1024 // #DEV
+  if (nth == 1 || nx_starts < 1024) { // this is 4 only for testing, will be probably 1024 // #DEV
     nBatch = 1;
   } else {
     nBatch = nth * 2;
@@ -322,7 +322,7 @@ void sortInt(int *x, int nx, int *idx, int *ans) {
   return;
 }
 
-// for bmerge=true this produce bmerge consistent output, note that bmerge i,x is smerge x,y
+// wrap results into list, bmerge=true this produce bmerge consistent output, note that bmerge i,x is smerge x,y
 SEXP outSmergeR(int n, int *starts, int *lens, bool x_ord,
                 SEXP out_starts, SEXP out_lens, // used only when x was sorted, saves one allocation
                 SEXP x_idx, SEXP y_idx,
@@ -367,6 +367,7 @@ SEXP outSmergeR(int n, int *starts, int *lens, bool x_ord,
   return ans;
 }
 
+// main interface from R
 SEXP smergeR(SEXP x, SEXP y, SEXP x_idx, SEXP y_idx, SEXP out_bmerge) {
 
   double t_total = omp_get_wtime();
