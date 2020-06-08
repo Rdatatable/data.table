@@ -15912,7 +15912,7 @@ test(2074.31, dcast(DT, V1 ~ z, fun.aggregate=eval(quote(length)), value.var='z'
 test(2074.32, fwrite(DT, logical01=TRUE, logicalAsInt=TRUE), error="logicalAsInt has been renamed")
 
 # merge.data.table
-test(2074.33, merge(DT, DT, by.x = 1i, by.y=1i), error="A non-empty vector of column names are required")
+test(2074.33, merge(DT, DT, by.x = 1i, by.y=1i), error="A non-empty vector of column names is required")
 
 # shift naming
 test(2074.34, shift(list(a=1:5, b=6:10), give.names=TRUE), list(a_lag_1=c(NA, 1:4), b_lag_1=c(NA, 6:9)))
@@ -16682,6 +16682,9 @@ options(old_width)
 DT = data.table(A="a", key="A")
 test(2126.1, DT[J(NULL)], DT[0])
 test(2126.2, DT[data.table()], DT[0])
+# additional segfault when i is NULL and roll = 'nearest'
+test(2126.3, DT[J(NULL), roll = 'nearest'], DT[0])
+test(2126.4, DT[data.table(), roll = 'nearest'], DT[0])
 
 # fcase, #3823
 test_vec1 = -5L:5L < 0L
@@ -16947,3 +16950,11 @@ if (.Platform$OS.type=="windows") local({
 # test back to English (the argument order is back to 1,c,2,1)
 test(2144, rbind(DT,list(c=4L,a=7L)), error="Column 1 ['c'] of item 2 is missing in item 1") 
 
+# Attempting to join on character(0) shouldn't crash R
+A = data.table(A='a')
+B = data.table(B='b')
+test(2145.1, A[B, on=character(0)], error = "'on' argument should be a named atomic vector")
+test(2145.2, merge(A, B, by=character(0)                                     ), error = "non-empty vector of column names for `by` is required.")
+test(2145.3, merge(A, B,                 by.x=character(0), by.y=character(0)), error = "non-empty vector of column names is required")
+# Also shouldn't crash when using internal functions
+test(2145.4, bmerge(A, B, integer(), integer(), 0, c(FALSE, TRUE), NA, 'all', integer(), FALSE), error = 'icols and xcols must be non-empty')

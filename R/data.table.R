@@ -3039,7 +3039,7 @@ isReallyReal = function(x) {
     onsub = as.call(c(quote(c), onsub))
   }
   on = eval(onsub, parent.frame(2L), parent.frame(2L))
-  if (!is.character(on))
+  if (length(on) == 0L || !is.character(on))
     stop("'on' argument should be a named atomic vector of column names indicating which columns in 'i' should be joined with which columns in 'x'.")
   ## extract the operators and potential variable names from 'on'.
   ## split at backticks to take care about variable names like `col1<=`.
