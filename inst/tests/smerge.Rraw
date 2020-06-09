@@ -19,95 +19,186 @@ bm = function(x, y) {
 }
 sm = function(x, y) {
   stopifnot(is.integer(x), is.integer(y))
+  #saveRDS(x, "~/git/data.table/x.RDS"); saveRDS(y, "~/git/data.table/y.RDS")
   ans = smerge(x, y, out.bmerge=TRUE)
   ## if undefining SMERGE_STATS then we have to ignore allLen1 as well
   ans
 }
 
+#setDTthreads(2)
 #options(datatable.verbose=TRUE)
 
+# unique and sort
 ## x y sorted
-x = c(1L,2L,3L,4L)
-y = c(2L,3L,5L)
+x = c(1L,2L,3L,4L) # unq
+y = c(2L,3L,5L)    # unq
 test(1.01, sm(x, y), bm(x, y))
 x = c(1L,2L,3L,3L,4L)
-y = c(2L,3L,5L)
+y = c(2L,3L,5L)    # unq
 test(1.02, sm(x, y), bm(x, y))
 x = c(1L,2L,3L,4L)
-y = c(2L,3L,3L,5L)
+y = c(2L,3L,3L,5L) # unq
 test(1.03, sm(x, y), bm(x, y))
 x = c(1L,2L,3L,3L,4L)
 y = c(2L,3L,3L,5L)
 test(1.04, sm(x, y), bm(x, y))
-
 ## y unsorted
-x = c(1L,2L,3L,4L)
-y = c(2L,5L,3L)
+x = c(1L,2L,3L,4L) # unq
+y = c(2L,5L,3L)    # unq
 test(2.01, sm(x, y), bm(x, y))
 x = c(1L,2L,3L,3L,4L)
-y = c(3L,2L,5L)
+y = c(3L,2L,5L)    # unq
 test(2.02, sm(x, y), bm(x, y))
-x = c(1L,2L,3L,4L)
+x = c(1L,2L,3L,4L) # unq
 y = c(5L,3L,2L,3L)
 test(2.03, sm(x, y), bm(x, y))
 x = c(1L,2L,3L,3L,4L)
 y = c(5L,3L,3L,2L)
 test(2.04, sm(x, y), bm(x, y))
-
-#...
-
+## x unsorted
+x = c(2L,3L,1L,4L) # unq
+y = c(2L,3L,5L)    # unq
+test(3.01, sm(x, y), bm(x, y))
+x = c(1L,3L,2L,4L,3L)
+y = c(2L,3L,5L)    # unq
+test(3.02, sm(x, y), bm(x, y))
+x = c(4L,2L,3L,1L)
+y = c(2L,3L,3L,5L) # unq
+test(3.03, sm(x, y), bm(x, y))
+x = c(1L,2L,4L,3L,3L)
+y = c(2L,3L,3L,5L)
+test(3.04, sm(x, y), bm(x, y))
 ## xy unsorted
-x = c(4L,1L,3L,2L)
+x = c(4L,1L,3L,2L) # unq
 y = c(2L,5L,3L)
 test(4.01, sm(x, y), bm(x, y))
+x = c(1L,3L,2L,4L,3L)
+y = c(5L,3L,2L)    # unq
+test(4.02, sm(x, y), bm(x, y))
+x = c(4L,2L,3L,1L)
+y = c(3L,3L,2L,5L) # unq
+test(4.03, sm(x, y), bm(x, y))
+x = c(1L,2L,4L,3L,3L)
+y = c(5L,2L,3L,3L)
+test(4.04, sm(x, y), bm(x, y))
 
-#...
+# ties
+x = c(1L,2L,3L,4L,5L)
+y = c(2L,4L) # within
+test(5.01, sm(x, y), bm(x, y))
+x = c(1L,2L,3L,4L,5L)
+y = c(-1L,2L,4L) # left tie
+test(5.02, sm(x, y), bm(x, y))
+x = c(1L,2L,3L,4L,5L)
+y = c(2L,4L,7L) # right tie
+test(5.03, sm(x, y), bm(x, y))
+x = c(1L,2L,3L,4L,5L)
+y = c(-1L,2L,4L,6L) # both ties
+test(5.04, sm(x, y), bm(x, y))
 
-## xy sorted
+# nomatch
+x = c(1L,3L,5L)
+y = c(2L,4L) # within nomatch
+test(6.01, sm(x, y), bm(x, y))
+x = c(1L,2L,3L,4L,5L)
+y = c(-1L,6L) # ties nomatch
+test(6.02, sm(x, y), bm(x, y))
+x = c(1L,2L,2L,2L,5L)
+y = c(2L,4L) # x duplicates single match
+test(6.03, sm(x, y), bm(x, y))
+x = c(1L,2L,2L,2L,3L,3L,4L,5L)
+y = c(2L,4L) # x duplicates multi, single match
+test(6.04, sm(x, y), bm(x, y))
+x = c(1L,2L,2L,2L,3L,4L,4L,5L)
+y = c(2L,4L) # x duplicates multi, multi match
+test(6.05, sm(x, y), bm(x, y))
+x = c(1L,2L,2L,2L,5L)
+y = c(-1L,6L) # x duplicates nomatch
+test(6.06, sm(x, y), bm(x, y))
+
+# skew
+N = 2e3L
+x = seq_len(N)
+y = c(head(x), tail(x))
+test(7.01, sm(x, y), bm(x, y))
+y = c(1:6, 750L, 1250L, 1995:2000)
+test(7.02, sm(x, y), bm(x, y))
+
+# custom cases
+x=c(39L, 41L, 41L, 37L, 86L, 93L, 20L, 34L, 38L, 21L, 79L, 84L,
+2L, 80L, 51L, 58L, 66L, 33L, 32L, 22L, 24L, 4L, 67L, 59L, 89L,
+1L, 44L, 62L, 34L, 18L, 93L, 67L, 22L, 42L, 8L, 72L, 45L, 87L,
+41L, 85L, 30L, 61L, 5L, 45L, 48L, 41L, 57L, 63L, 68L, 96L, 72L,
+62L, 14L, 84L, 57L, 43L, 6L, 49L, 33L, 68L, 2L, 18L, 69L, 41L,
+2L, 52L, 69L, 94L, 56L, 72L, 13L, 50L, 86L, 81L, 8L, 28L, 96L,
+28L, 87L, 28L, 1L, 27L, 60L, 61L, 99L, 19L, 39L, 99L, 67L, 70L,
+53L, 86L, 64L, 49L, 99L, 91L, 36L, 7L, 57L, 63L)
+y=c(44L, 50L, 47L, 26L, 44L, 11L, 18L, 60L, 9L, 96L, 25L, 59L,
+53L, 82L, 4L, 41L, 65L, 30L, 29L, 34L, 29L, 23L, 12L, 40L, 76L,
+40L, 30L, 29L, 98L, 2L, 57L, 13L, 44L, 68L, 72L, 82L, 19L, 88L,
+19L, 95L, 22L, 46L, 43L, 36L, 67L, 96L, 34L, 6L, 16L, 20L, 86L,
+65L, 89L, 78L, 36L, 95L, 19L, 67L, 65L, 99L, 59L, 77L, 16L, 50L,
+99L, 98L, 72L, 26L, 35L, 46L, 52L, 55L, 56L, 1L, 91L, 21L, 52L,
+69L, 7L, 87L, 97L, 97L, 71L, 48L, 6L, 35L, 62L, 26L, 44L, 36L,
+50L, 75L, 100L, 63L, 39L, 3L, 94L, 85L, 99L, 61L)
+test(8.01, sm(x, y), bm(x, y))
+
+# scale up
 ssa = function(unq_n, size, sort=FALSE) {
-  stopifnot(unq_n <= size)
+  if (unq_n <= size) return(sample.int(unq_n, size, TRUE))
   unq_sub = seq_len(unq_n)
   ans = sample(c(unq_sub, sample(unq_sub, size=max(size-unq_n, 0), replace=TRUE)))
-  if (unq_n==size) stopifnot(uniqueN(ans)==length(ans))
   if (sort) sort(ans) else ans
 }
 set.seed(108)
 N = 1e2L
-x = ssa(N, N, sort=TRUE)
-y = ssa(N, N, sort=TRUE)
+## xy sorted
+x = ssa(N, N, sort=TRUE) # unq
+y = ssa(N, N, sort=TRUE) # unq
 test(11.01, sm(x, y), bm(x, y))
 x = ssa(N, N*1.1, sort=TRUE)
-y = ssa(N, N, sort=TRUE)
+y = ssa(N, N, sort=TRUE) # unq
 test(11.02, sm(x, y), bm(x, y))
-x = ssa(N, N, sort=TRUE)
+x = ssa(N, N, sort=TRUE) # unq
 y = ssa(N, N*1.1, sort=TRUE)
 test(11.03, sm(x, y), bm(x, y))
 x = ssa(N, N*1.1, sort=TRUE)
 y = ssa(N, N*1.1, sort=TRUE)
 test(11.04, sm(x, y), bm(x, y))
-
 ## y unsorted
-x = ssa(N, N, sort=TRUE)
-y = ssa(N, N)
+x = ssa(N, N, sort=TRUE) # unq
+y = ssa(N, N) # unq
 test(12.01, sm(x, y), bm(x, y))
 x = ssa(N, N*1.1, sort=TRUE)
-y = ssa(N, N)
+y = ssa(N, N) # unq
 test(12.02, sm(x, y), bm(x, y))
-x = ssa(N, N, sort=TRUE)
+x = ssa(N, N, sort=TRUE) # unq
 y = ssa(N, N*1.1)
 test(12.03, sm(x, y), bm(x, y))
 x = ssa(N, N*1.1, sort=TRUE)
 y = ssa(N, N*1.1)
 test(12.04, sm(x, y), bm(x, y))
-
+## x unsorted
+x = ssa(N, N) # unq
+y = ssa(N, N, sort=TRUE) # unq
+test(13.01, sm(x, y), bm(x, y))
+x = ssa(N, N*1.1)
+y = ssa(N, N, sort=TRUE) # unq
+test(13.02, sm(x, y), bm(x, y))
+x = ssa(N, N) # unq
+y = ssa(N, N*1.1, sort=TRUE)
+test(13.03, sm(x, y), bm(x, y))
+x = ssa(N, N*1.1)
+y = ssa(N, N*1.1, sort=TRUE)
+test(13.04, sm(x, y), bm(x, y))
 ## xy unsorted
-x = ssa(N, N)
-y = ssa(N, N)
+x = ssa(N, N) # unq
+y = ssa(N, N) # unq
 test(14.01, sm(x, y), bm(x, y))
 x = ssa(N, N*1.1)
-y = ssa(N, N)
+y = ssa(N, N) # unq
 test(14.02, sm(x, y), bm(x, y))
-x = ssa(N, N)
+x = ssa(N, N) # unq
 y = ssa(N, N*1.1)
 test(14.03, sm(x, y), bm(x, y))
 x = ssa(N, N*1.1)
@@ -115,28 +206,30 @@ y = ssa(N, N*1.1)
 test(14.04, sm(x, y), bm(x, y))
 
 # sparse
-x = sample(2e2L, 1e2L) ## may fail when no matches!
-y = sample(2e2L, 1e2L)
+x = sample.int(2e2L, 1e2L)
+y = sample.int(2e2L, 1e2L)
 test(21.01, sm(x, y), bm(x, y))
-x = sample(2e2L, 1e2L, TRUE)
-y = sample(2e2L, 1e2L, TRUE)
+x = sample.int(2e2L, 1e2L, TRUE)
+y = sample.int(2e2L, 1e2L, TRUE)
 test(21.02, sm(x, y), bm(x, y))
 
-d1 = data.table(x=x, v1=seq_along(x))
-d2 = data.table(y=y, v2=seq_along(y))
+# [.data.table join
+d1 = data.table(x=sample.int(2e2L, 1e2L, TRUE), v1=seq_along(x))
+d2 = data.table(y=sample.int(2e2L, 1e2L, TRUE), v2=seq_along(y))
 options(datatable.smerge=FALSE, datatable.verbose=TRUE) ## verbose=2L after #4491
 test(101.01, expected <- d1[d2, on="x==y"], output="bmerge", notOutput="smerge")
 options(datatable.smerge=TRUE)
 test(101.02, d1[d2, on="x==y"], expected, output="smerge") ## for now extra computation of bmerge is still done so no: #, notOutput="bmerge")
-
 setindexv2 = function(x, cols) { ## pretend we are after #4386
   stopifnot(is.data.table(x), is.character(cols))
   if (is.null(attr(x, "index", TRUE))) setattr(x, "index", integer())
   setattr(attr(x, "index", TRUE), paste0("__", cols, collapse="__"), forderv(x, cols, retGrp=TRUE))
   invisible(x)
 }
-setindexv2(d1, "x")
-setindexv2(d2, "y")
+options(datatable.verbose=FALSE)
+setindexv2(d1, "x"); setindexv2(d2, "y")
+options(datatable.use.index=TRUE, datatable.verbose=TRUE)
 test(101.03, d1[d2, on="x==y"], expected, output="smerge.*already indexed")
 options(datatable.use.index=FALSE)
 test(101.04, d1[d2, on="x==y"], expected, output="smerge", notOutput="already indexed")
+options(datatable.use.index=TRUE)
