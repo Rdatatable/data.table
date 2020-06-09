@@ -71,6 +71,7 @@ ssa = function(unq_n, size, sort=FALSE) {
   if (unq_n==size) stopifnot(uniqueN(ans)==length(ans))
   if (sort) sort(ans) else ans
 }
+set.seed(108)
 N = 1e2L
 x = ssa(N, N, sort=TRUE)
 y = ssa(N, N, sort=TRUE)
