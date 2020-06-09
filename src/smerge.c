@@ -13,8 +13,11 @@
  * x_len1/x_lens1/lhsLen1:       signals if multiple matches in LHS of join, ['s _i_ table
  * xy_len1/xy_lens1/xlLen1:      signals if "many to many" matches between LHS and RHS
  * cnt/nmatch/n_match/n_matchr:  count of matches, taking multiple matches into account, uint64_t
+ *
+ * when hardcoding or changing default number of batches it is advised to undefine SMERGE_BATCHING_BALANCED
  */
 #define SMERGE_STATS
+#define SMERGE_BATCHING_BALANCED
 
 // workhorse join that runs in parallel on batches
 static void smerge(const int bx_off, const int bnx,
@@ -202,18 +205,20 @@ static void batching(const int nBatch,
                      const int *restrict y, const int ny, const int *restrict y_starts, const int ny_starts,
                      int *restrict Bx_off, int *restrict Bnx, int *restrict By_off, int *restrict Bny,
                      const int verbose) {
+#ifdef SMERGE_BATCHING_BALANCED
   //if (nBatch > nx_starts || (nx_starts/nBatch==1 && nx_starts%nBatch>0)) error("internal error: batching %d input into %d batches, number of batches should have been reduced be now", nx_starts, nBatch); // # nocov
-  //size_t batchSize = (nx_starts-1)/nBatch + 1; // this is fragile, at least when we hardcode nBatch
-  //size_t lastBatchSize = nx_starts - (nBatch-1)*batchSize;
-  size_t batchSize = nx_starts / nBatch;
-  size_t lastBatchSize = nx_starts - (nBatch-1)*batchSize; // because of the above line last batch can be anything between 1 and 2*batchSize-1
+  size_t batchSize = (nx_starts-1)/nBatch + 1; // this is fragile for arbitrary nBatch
+  bool balanced = true; // this is only for verbose message
+#else
+  size_t batchSize = nx_starts / nBatch; // last batch size can be anything between 1 and 2*batchSize-1
+  bool balanced = false;
+#endif
+  size_t lastBatchSize = nx_starts - (nBatch-1)*batchSize;
   if (verbose>0)
-    Rprintf("batching: input %d into %d batches (batchSize=%d, lastBatchSize=%d) of sorted x y: x[1]<=y[1] && x[nx]>=y[ny]:\n", nx_starts, nBatch, batchSize, lastBatchSize);
-  if (lastBatchSize==0)
-    error("internal error: lastBatchSize must not be zero"); // # nocov
-  if ((nBatch-1) * batchSize + lastBatchSize != nx_starts)
-    error("internal error: batching %d input is attempting to use invalid batches: nBatch=%d, batchSize=%d, lastBatchSize=%d", nx_starts, nBatch, batchSize, lastBatchSize); // # nocov
-  bool extra_validate = true; // validates against very slow m[in|ax]_i_match // #DEV
+    Rprintf("batching: input %d into %s %d batches (batchSize=%d, lastBatchSize=%d) of sorted x y: x[1]<=y[1] && x[nx]>=y[ny]:\n", nx_starts, balanced?"balanced":"unbalanced", nBatch, batchSize, lastBatchSize);
+  if (lastBatchSize==0 || ((nBatch-1) * batchSize + lastBatchSize != nx_starts))
+    error("internal error: batching %d input is attempting to use invalid batches: balanced=%d, nBatch=%d, batchSize=%d, lastBatchSize=%d", nx_starts, balanced?"balanced":"unbalanced", nBatch, batchSize, lastBatchSize); // # nocov
+  bool extra_validate = false; // validates against very slow m[in|ax]_i_match // this needs to be removed #DEV
   for (int b=0; b<nBatch; ++b) {
     Bx_off[b] = b<nBatch-1 ? b*batchSize : nx_starts-lastBatchSize;
     Bnx[b] = b<nBatch-1 ? batchSize : lastBatchSize;
@@ -306,8 +311,12 @@ void smergeC(const int *restrict x, const int nx, const int *restrict x_starts, 
     t = omp_get_wtime();
   int nBatch = 0;
   const int nth = getDTthreads();
-  if (nth == 1 || nx_starts < -1) { // nx_starts threshold disabled during dev
-    nBatch = 1; // any hardcoding here is likely to raise internal error in batching or segfault
+  if (nth == 1 || nx_starts < 1024) { // nx_starts threshold disabled during dev
+#ifdef SMERGE_BATCHING_BALANCED
+    nBatch = 1; // when using balanced lastBatchSize is never bigger than batchSize, any hardcoding here is likely to raise internal error in batching or segfault, testing possible with: for (i in 1:10) cc("smerge.Rraw")
+#else
+    nBatch = 1; // so if hardcoding needed, do it here, and undefine SMERGE_BATCHING_BALANCED at the top, for unbalanced batching lastBatchSize is anything between 1 and 2*batchSize-1
+#endif
   } else if (nx_starts < nth * 2) {
     nBatch = nx_starts; // stress test single row batches, will be usually escaped by branch above
   } else {
@@ -329,20 +338,17 @@ void smergeC(const int *restrict x, const int nx, const int *restrict x_starts, 
   //for (int z=0; z<nx; ++z) Rprintf("starts[%d]=%d\n", z, starts[z]);
   #pragma omp parallel for schedule(dynamic) reduction(&&:xlens1,ylens1,xylens1) reduction(+:nmatch) num_threads(nth)
   for (int b=0; b<nBatch; ++b) {
+    uint64_t bnmatch = 0; // local reduction variables
     bool bxlens1 = true, bylens1 = true, bxylens1 = true;
-    uint64_t bnmatch = 0;
     smerge(
-      Bx_off[b], Bnx[b],                  // batch input x
-      By_off[b], Bny[b],                  // batch input y
-      x, x_starts, x_lens, unq_x,         // common input x
-      y, y_starts, y_lens, unq_y,         // common input y
-      starts, lens,                       // common output
-      &bnmatch, &bxlens1, &bylens1, &bxylens1 // common reduction output
+      Bx_off[b], Bnx[b],                      // batch input x
+      By_off[b], Bny[b],                      // batch input y
+      x, x_starts, x_lens, unq_x,             // common input x
+      y, y_starts, y_lens, unq_y,             // common input y
+      starts, lens,                           // common output
+      &bnmatch, &bxlens1, &bylens1, &bxylens1 // reduction output
     );
-    nmatch += bnmatch;
-    xlens1 = xlens1 && bxlens1;
-    ylens1 = ylens1 && bylens1;
-    xylens1 = xylens1 && bxylens1;
+    nmatch += bnmatch; xlens1 = bxlens1 && xlens1; ylens1 = bylens1 && ylens1; xylens1 = bxylens1 && xylens1;
     th[b] = omp_get_thread_num();
   }
   //for (int z=0; z<nx; ++z) Rprintf("starts[%d]=%d\n", z, starts[z]);

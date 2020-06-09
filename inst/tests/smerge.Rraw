@@ -9,12 +9,14 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
   smerge = data.table:::smerge
   bmerge = data.table:::bmerge
   forderv = data.table:::forderv
+  vecseq = data.table:::vecseq
 }
 
 bm = function(x, y) {
   stopifnot(is.integer(x), is.integer(y))
   ans = bmerge(data.table(x=x), data.table(y=y), 1L, 1L, roll=0, rollends=c(FALSE, TRUE), nomatch=NA_integer_, mult="all", ops=1L, verbose=FALSE)
   ## if undefining SMERGE_STATS then we have to ignore allLen1 as well
+  ans$nMatch = as.numeric(sum(!is.na(vecseq(ans$starts, ans$lens, NULL))))
   ans
 }
 sm = function(x, y) {
@@ -22,6 +24,7 @@ sm = function(x, y) {
   #saveRDS(x, "~/git/data.table/x.RDS"); saveRDS(y, "~/git/data.table/y.RDS")
   ans = smerge(x, y, out.bmerge=TRUE)
   ## if undefining SMERGE_STATS then we have to ignore allLen1 as well
+  ans$nMatch = smerge(x, y, out.bmerge=FALSE)$nMatch
   ans
 }
 
@@ -151,7 +154,7 @@ ssa = function(unq_n, size, sort=FALSE) {
   if (sort) sort(ans) else ans
 }
 set.seed(108)
-N = 1e2L
+N = 1e4L
 ## xy sorted
 x = ssa(N, N, sort=TRUE) # unq
 y = ssa(N, N, sort=TRUE) # unq
