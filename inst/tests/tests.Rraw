@@ -16958,3 +16958,9 @@ test(2145.2, merge(A, B, by=character(0)                                     ), 
 test(2145.3, merge(A, B,                 by.x=character(0), by.y=character(0)), error = "non-empty vector of column names is required")
 # Also shouldn't crash when using internal functions
 test(2145.4, bmerge(A, B, integer(), integer(), 0, c(FALSE, TRUE), NA, 'all', integer(), FALSE), error = 'icols and xcols must be non-empty')
+
+# nrow(i)==0 by-join, #4364 (broke in dev 1.12.9)
+d0 = data.table(id=integer(), n=integer())
+d2 = data.table(id=1:2)
+test(2146, d2[d0, i.n, on="id", by=.EACHI], data.table(id=integer(), i.n=integer()))
+
