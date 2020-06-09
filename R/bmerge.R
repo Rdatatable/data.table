@@ -1,7 +1,6 @@
 
 bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbose)
 {
-  smergeOpt = FALSE
   if (length(icols)==1L && length(xcols)==1L && is.integer(i[[icols]]) && is.integer(x[[xcols]]) ## single column integer
       && isTRUE(getOption("datatable.smerge"))                     ## enable option
       && identical(nomatch, NA_integer_)                           ## for now only outer join
@@ -16,9 +15,9 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
       if (!is.null(attr(idx, "starts", exact=TRUE))) idx
     }
     if (verbose) {last.started.at=proc.time();cat("Starting smerge ...\n");flush.console()}
-    smans = smerge(x=i[[icols]], y=x[[xcols]], x.idx=getIdxGrp(i, icols), y.idx=getIdxGrp(x, xcols), out.bmerge=TRUE)
+    ans = smerge(x=i[[icols]], y=x[[xcols]], x.idx=getIdxGrp(i, icols), y.idx=getIdxGrp(x, xcols), out.bmerge=TRUE)
     if (verbose) {cat("smerge done in",timetaken(last.started.at),"\n"); flush.console()}
-    smergeOpt = TRUE
+    return(ans)
   }
   callersi = i
   i = shallow(i)
@@ -200,10 +199,6 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
   ans = .Call(Cbmerge, i, x, as.integer(icols), as.integer(xcols), io, xo, roll, rollends, nomatch, mult, ops, nqgrp, nqmaxgrp)
   if (verbose) {cat("bmerge done in",timetaken(last.started.at),"\n"); flush.console()}
 
-  if (smergeOpt && !identical(ans, smans)) {
-    (if (!interactive()) stop else message)("bmerge opt to smerge produced different results")
-    browser()
-  }
   return(ans)
 }
 
