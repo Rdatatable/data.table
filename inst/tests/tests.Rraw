@@ -16964,3 +16964,8 @@ d0 = data.table(id=integer(), n=integer())
 d2 = data.table(id=1:2)
 test(2146, d2[d0, i.n, on="id", by=.EACHI], data.table(id=integer(), i.n=integer()))
 
+# by=col1:col4 wrong result when key(DT)==c('col1','col4'), #4285
+DT = data.table(col1=c(1,1,1), col2=c("a","b","a"), col3=c("A","B","A"), col4=c(2,2,2))
+setkey(DT, col1, col4)
+test(2147.1, DT[, .N, by = col1:col4], ans<-data.table(col1=1, col2=c("a","b"), col3=c("A","B"), col4=2, N=INT(2,1)))
+test(2147.2, DT[, .N, by = c("col1", "col2", "col3", "col4")], ans)
