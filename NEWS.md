@@ -115,7 +115,9 @@ unit = "s")
 
 16. Non-equi joins now automatically set `allow.cartesian=TRUE`, [4489](https://github.com/Rdatatable/data.table/issues/4489). Thanks to @Henrik-P for reporting.
 
-17. `by = col1:col4` no longer produces incorrect result when there is a key on only ```col1``` and ```col4```, [#4285](https://github.com/Rdatatable/data.table/issues/4285). Thanks to @cbilot for reporting.
+17. `X[Y, on=character(0)]` and `merge(X, Y, by.x=character(0), by.y=character(0))` no longer crash, [#4272](https://github.com/Rdatatable/data.table/pull/4272). Thanks to @tlapak for the PR.
+
+18. `by=col1:col4` gave an incorrect result if `key(DT)==c("col1","col4")`, [#4285](https://github.com/Rdatatable/data.table/issues/4285). Thanks to @cbilot for reporting, and Cole Miller for the PR.
 
 ## NOTES
 
@@ -159,6 +161,7 @@ unit = "s")
 
 9. `data.table::update.dev.pkg()` now unloads the `data.table` namespace to alleviate a DLL lock issue on Windows, [#4403](https://github.com/Rdatatable/data.table/issues/4403). Thanks to @drag5 for reporting.
 
+10. Starting from 4.0.0, data.table is using R's `rbind` and `cbind` methods, as described in v1.12.6 news entry. Support for R 3.x.x is resolved when processing `NAMESPACE` file, at install time, or at the time of building package binaries. As a result, users on R 3.x.x, if installing from binaries, must use binaries built by R 3.x.x, and users on R 4.x.x, if installing from binaries, must use binaries built by R 4.x.x. Users will see `package ‘data.table’ was built under R version...` warning when this happen. Thanks to @vinhdizzo for reporting in [#4528](https://github.com/Rdatatable/data.table/issues/4528).
 
 # data.table [v1.12.8](https://github.com/Rdatatable/data.table/milestone/15?closed=1)  (09 Dec 2019)
 
