@@ -8,7 +8,7 @@
 
 1. `%chin%` and `chmatch(x, table)` are faster when `x` is length 1, `table` is long, and `x` occurs near the start of `table`. Thanks to Michael Chirico for the suggestion, [#4117](https://github.com/Rdatatable/data.table/pull/4117#discussion_r358378409).
 
-2. The C function `CsubsetDT` is now exported for use by other packages, [#3751](https://github.com/Rdatatable/data.table/issues/3751). Thanks to Leonardo Silvestri for the request and the PR. This uses R's `R_RegisterCCallable` and `R_GetCCallable` mechanism, [R-exts§5.4.3](https://cran.r-project.org/doc/manuals/r-devel/R-exts.html#Linking-to-native-routines-in-other-packages) and [`?cdt`](https://rdatatable.gitlab.io/data.table/reference/cdt.html).
+2. The C function `CsubsetDT` is now exported for use by other packages, [#3751](https://github.com/Rdatatable/data.table/issues/3751). Thanks to Leonardo Silvestri for the request and the PR. This uses R's `R_RegisterCCallable` and `R_GetCCallable` mechanism, [R-exts§5.4.3](https://cran.r-project.org/doc/manuals/r-devel/R-exts.html#Linking-to-native-routines-in-other-packages) and [`?cdt`](https://rdatatable.gitlab.io/data.table/reference/cdt.html). Note that organisation of our C interface will be changed in next release.
 
 3. `print` method for `data.table`s gains `trunc.cols` argument (and corresponding option `datatable.print.trunc.cols`, default `FALSE`), [#1497](https://github.com/Rdatatable/data.table/issues/1497), part of [#1523](https://github.com/Rdatatable/data.table/issues/1523). This prints only as many columns as fit in the console without wrapping to new lines (e.g., the first 5 of 80 columns) and a message that states the count and names of the variables not shown. When `class=TRUE` the message also contains the classes of the variables. `data.table` has always automatically truncated _rows_ of a table for efficiency (e.g. printing 10 rows instead of 10 million); in the future, we may do the same for _columns_ (e.g., 10 columns instead of 20,000) by changing the default for this argument. Thanks to @nverno for the initial suggestion and to @TysonStanley for the PR.
 
@@ -89,7 +89,7 @@ unit = "s")
 
 3. Dispatch of `first` and `last` functions now properly works again for `xts` objects, [#4053](https://github.com/Rdatatable/data.table/issues/4053). Thanks to @ethanbsmith for reporting.
 
-4. If `.SD` is returned as-is during grouping, it is now unlocked for downstream usage, part of [#4159](https://github.com/Rdatatable/data.table/issues/4159).
+4. If `.SD` is returned as-is during grouping, it is now unlocked for downstream usage, part of [#4159](https://github.com/Rdatatable/data.table/issues/4159). Thanks also to @mllg for detecting a problem with the initial fix here during the dev release [#4173](https://github.com/Rdatatable/data.table/issues/4173).
 
 5. `GForce` is deactivated for `[[` on non-atomic input, part of [#4159](https://github.com/Rdatatable/data.table/issues/4159).
 
@@ -106,6 +106,16 @@ unit = "s")
 11. `copy()` now overallocates deeply nested lists of `data.table`s, [#4205](https://github.com/Rdatatable/data.table/issues/4205). Thanks to @d-sci for reporting and the PR.
 
 12. `rbindlist` no longer errors when coercing complex vectors to character vectors, [#4202](https://github.com/Rdatatable/data.table/issues/4202). Thanks to @sritchie73 for reporting and the PR.
+
+13. A relatively rare case of segfault when combining non-equi joins with `by=.EACHI` is now fixed, closes [#4388](https://github.com/Rdatatable/data.table/issues/4388).
+
+14. Selecting key columns could incur a large speed penalty, [#4498](https://github.com/Rdatatable/data.table/issues/4498). Thanks to @Jesper on Stack Overflow for the report.
+
+15. `all.equal(DT1, DT2, ignore.row.order=TRUE)` could return TRUE incorrectly in the presence of NAs, [#4422](https://github.com/Rdatatable/data.table/issues/4422).
+
+16. Non-equi joins now automatically set `allow.cartesian=TRUE`, [4489](https://github.com/Rdatatable/data.table/issues/4489). Thanks to @Henrik-P for reporting.
+
+17. `X[Y, on=character(0)]` and `merge(X, Y, by.x=character(0), by.y=character(0))` no longer crash, [#4272](https://github.com/Rdatatable/data.table/pull/4272). Thanks to @tlapak for the PR.
 
 ## NOTES
 
@@ -145,6 +155,11 @@ unit = "s")
 
 7. Added more explanation/examples to `?data.table` for how to use `.BY`, [#1363](https://github.com/Rdatatable/data.table/issues/1363).
 
+8. Change of `c.POSIXct` method planned for R 4.1.0 impacted `foverlaps` function that could raise `'origin' must be supplied` error. Fix for planned change has been provided in [#4428](https://github.com/Rdatatable/data.table/pull/4428).
+
+9. `data.table::update.dev.pkg()` now unloads the `data.table` namespace to alleviate a DLL lock issue on Windows, [#4403](https://github.com/Rdatatable/data.table/issues/4403). Thanks to @drag5 for reporting.
+
+10. Starting from 4.0.0, data.table is using R's `rbind` and `cbind` methods, as described in v1.12.6 news entry. Support for R 3.x.x is resolved when processing `NAMESPACE` file, at install time, or at the time of building package binaries. As a result, users on R 3.x.x, if installing from binaries, must use binaries built by R 3.x.x, and users on R 4.x.x, if installing from binaries, must use binaries built by R 4.x.x. Users will see `package ‘data.table’ was built under R version...` warning when this happen. Thanks to @vinhdizzo for reporting in [#4528](https://github.com/Rdatatable/data.table/issues/4528).
 
 # data.table [v1.12.8](https://github.com/Rdatatable/data.table/milestone/15?closed=1)  (09 Dec 2019)
 

@@ -12,63 +12,84 @@ stages:
 
 .artifacts-template: &artifacts
   artifacts:
-    expire_in: 2 weeks
+    expire_in: 4 weeks
     when: always
     paths:
       - bus
 
-mirror-packages: # download all recursive dependencies of data.table suggests and integration suggests from inst/tests/tests-DESCRIPTION
+mirror-packages: ## mirror all recursive dependencies, source and win.binary, of data.table suggests and integration suggests from inst/tests/tests-DESCRIPTION
   stage: dependencies
   tags:
     - linux
   image: registry.gitlab.com/jangorecki/dockerfiles/r-base-dev
   cache:
     paths:
-    - bus/$CI_BUILD_NAME/cran
+      - bus/$CI_BUILD_NAME/cran
   variables:
-    R_BIN_VERSION: "3.6"
-    R_DEVEL_BIN_VERSION: "4.0"
+    R_BIN_VERSION: "4.0"
+    R_DEVEL_BIN_VERSION: "4.1"
   script:
     - echo 'source(".ci/ci.R")' >> .Rprofile
     - mkdir -p bus/$CI_BUILD_NAME/cran/src/contrib
-    # mirror R dependencies: source, win.binary
     - Rscript -e 'mirror.packages(dcf.dependencies(c("DESCRIPTION","inst/tests/tests-DESCRIPTION"), "all"), repos=c(Sys.getenv("CRAN_MIRROR"), dcf.repos("inst/tests/tests-DESCRIPTION")), repodir="bus/mirror-packages/cran")'
-    - rm bus/$CI_BUILD_NAME/cran/src/contrib/PACKAGES.rds # fallback to PACKAGES dcf so available.packages 3.4.4 works
+    - rm bus/$CI_BUILD_NAME/cran/src/contrib/PACKAGES.rds ## fallback to PACKAGES dcf so available.packages:3.4.4 works
     - Rscript -e 'sapply(simplify=FALSE, setNames(nm=Sys.getenv(c("R_BIN_VERSION","R_DEVEL_BIN_VERSION"))), function(binary.ver) mirror.packages(type="win.binary", dcf.dependencies("DESCRIPTION", "all"), repos=Sys.getenv("CRAN_MIRROR"), repodir="bus/mirror-packages/cran", binary.ver=binary.ver))'
   <<: *artifacts
 
-build: # build data.table sources as tar.gz archive
+build: ## build data.table sources as tar.gz archive
   stage: build
   tags:
     - linux
   image: registry.gitlab.com/jangorecki/dockerfiles/r-builder
   dependencies:
-  - mirror-packages
-  script:
+    - mirror-packages
+  before_script:
     - Rscript -e 'install.packages("knitr", repos=file.path("file:",normalizePath("bus/mirror-packages/cran")), quiet=TRUE)'
     - rm -r bus
     - echo "Revision:" $CI_BUILD_REF >> ./DESCRIPTION
+  script:
     - R CMD build .
     - mkdir -p bus/$CI_BUILD_NAME/cran/src/contrib
     - mv $(ls -1t data.table_*.tar.gz | head -n 1) bus/$CI_BUILD_NAME/cran/src/contrib/.
     - Rscript -e 'tools::write_PACKAGES(contrib.url("bus/build/cran"), fields="Revision", addFiles=TRUE)'
-    - rm bus/$CI_BUILD_NAME/cran/src/contrib/PACKAGES.rds # fallback to PACKAGES dcf so available.packages 3.4.4 works
+    - rm bus/$CI_BUILD_NAME/cran/src/contrib/PACKAGES.rds ## fallback to PACKAGES dcf so available.packages:3.4.4 works
   <<: *artifacts
 
-.test-copy-src: &copy-src
+.test-install-deps: &install-deps
+  - Rscript -e 'source(".ci/ci.R"); install.packages(dcf.dependencies("DESCRIPTION", which="most"), quiet=TRUE)'
+.test-install-deps-win: &install-deps-win
+  - Rscript.exe -e "source('.ci/ci.R'); install.packages(dcf.dependencies('DESCRIPTION', which='most'), quiet=TRUE)"
+
+.test-cp-src: &cp-src
   - cp $(ls -1t bus/build/cran/src/contrib/data.table_*.tar.gz | head -n 1) .
+.test-cp-src-win: &cp-src-win
+  - cp.exe $(ls.exe -1t bus/build/cran/src/contrib/data.table_*.tar.gz | head.exe -n 1) .
 
-.test-move-src: &move-src
+.test-mv-src: &mv-src
   - mkdir -p bus/$CI_BUILD_NAME && mv $(ls -1t data.table_*.tar.gz | head -n 1) bus/$CI_BUILD_NAME
+.test-mv-src-win: &mv-src-win
+  - mkdir.exe -p bus/$CI_BUILD_NAME; mv.exe $(ls.exe -1t data.table_*.tar.gz | head.exe -n 1) bus/$CI_BUILD_NAME
 
-.test-cleanup-src: &cleanup-src
+.test-rm-src: &rm-src
   - rm $(ls -1t data.table_*.tar.gz | head -n 1)
+.test-rm-src-win: &rm-src-win
+  - rm.exe $(ls.exe -1t data.table_*.tar.gz | head.exe -n 1)
+
+.test-mv-bin-win: &mv-bin-win
+  - mkdir.exe -p cran/bin/windows/contrib/$R_BIN_VERSION; mv.exe $(ls.exe -1t data.table_*.zip | head.exe -n 1) cran/bin/windows/contrib/$R_BIN_VERSION
+
+.test-install-r-rel-win: &install-r-rel-win
+  - curl.exe -s -o ../R-win.exe https://cloud.r-project.org/bin/windows/base/R-4.0.0-win.exe; Start-Process -FilePath ..\R-win.exe -ArgumentList "/VERYSILENT /DIR=C:\R" -NoNewWindow -Wait
+.test-install-r-dev-win: &install-r-dev-win
+  - curl.exe -s -o ../R-devel.exe https://cloud.r-project.org/bin/windows/base/R-devel-win.exe; Start-Process -FilePath ..\R-devel.exe -ArgumentList "/VERYSILENT /DIR=C:\R" -NoNewWindow -Wait
+.test-install-rtools-win: &install-rtools-win
+  - curl.exe -s -o ../rtools.exe https://cloud.r-project.org/bin/windows/Rtools/rtools40-x86_64.exe; Start-Process -FilePath ..\rtools.exe -ArgumentList "/VERYSILENT /DIR=C:\rtools40" -NoNewWindow -Wait
 
 .test-template: &test
   stage: test
   dependencies:
-  - mirror-packages
-  - build
+    - mirror-packages
+    - build
   <<: *artifacts
 
 .test-lin-template: &test-lin
@@ -81,160 +102,161 @@ build: # build data.table sources as tar.gz archive
   variables:
     _R_CHECK_CRAN_INCOMING_: "TRUE"
     _R_CHECK_CRAN_INCOMING_REMOTE_: "FALSE"
-  script:
-    - Rscript -e 'source(".ci/ci.R"); install.packages(dcf.dependencies("DESCRIPTION", which="most"), quiet=TRUE)'
-    - *copy-src
+  before_script:
+    - *install-deps
+    - *cp-src
     - rm -r bus
-    - *move-src
+  script:
+    - *mv-src
     - cd bus/$CI_BUILD_NAME
     - R CMD check --as-cran --no-manual $(ls -1t data.table_*.tar.gz | head -n 1)
-    - *cleanup-src
+    - *rm-src
 
 .test-win-template: &test-win
   <<: *test
   tags:
     - windows
-    - private
-  before_script:
-    - export PATH="/c/$R_DIR/bin:/c/Rtools/bin:$PATH"
-    - rm -rf /tmp/$R_DIR/library && mkdir -p /tmp/$R_DIR/library
-    - export R_LIBS_USER="/tmp/$R_DIR/library"
+    - shared-windows
 
 .test-osx-template: &test-osx
   <<: *test
   tags:
     - macosx
 
-test-rel-lin: #  most comprehensive tests, force all suggests, also integration tests, using gcc -O3 -flto -fno-common -Wunused-result
+test-rel-lin: ## most comprehensive tests, force all suggests, also integration tests, using gcc -O3 -flto -fno-common -Wunused-result
   <<: *test-lin
   image: registry.gitlab.com/jangorecki/dockerfiles/r-builder
-  variables: # unlike CRAN
+  variables:
     _R_CHECK_CRAN_INCOMING_: "FALSE"
     _R_CHECK_CRAN_INCOMING_REMOTE_: "FALSE"
     _R_CHECK_FORCE_SUGGESTS_: "TRUE"
     _R_CHECK_TESTS_NLINES_: "0"
     OPENBLAS_MAIN_FREE: "1"
     TEST_DATA_TABLE_WITH_OTHER_PACKAGES: "TRUE"
-  script:
+  before_script:
     - Rscript -e 'source(".ci/ci.R"); install.packages(dcf.dependencies(c("DESCRIPTION","inst/tests/tests-DESCRIPTION"), which="all"), quiet=TRUE)'
-    - *copy-src
+    - *cp-src
     - rm -r bus
-    - *move-src
     - mkdir -p ~/.R
     - echo 'CFLAGS=-g -O3 -flto -fno-common -Wunused-result -fopenmp -Wall -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2' > ~/.R/Makevars
     - echo 'CXXFLAGS=-g -O3 -flto -fno-common -Wunused-result -fopenmp -Wall -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2' >> ~/.R/Makevars
+  script:
+    - *mv-src
     - cd bus/$CI_BUILD_NAME
     - R CMD check $(ls -1t data.table_*.tar.gz | head -n 1)
-    - *cleanup-src
+    - *rm-src
     - (! grep "warning:" data.table.Rcheck/00install.out)
 
-test-rel-vanilla-lin: # minimal installation, no suggested deps, no vignettes or manuals, measure memory, using gcc -O0 -fno-openmp
+test-rel-vanilla-lin: ## minimal, no suggested deps, no vignettes or manuals, measure memory, using gcc -O0 -fno-openmp
   <<: *test-lin
   image: registry.gitlab.com/jangorecki/dockerfiles/r-base-dev
   variables:
     TEST_DATA_TABLE_MEMTEST: "TRUE"
   before_script:
+    - *cp-src
+    - rm -r bus
     - mkdir -p ~/.R
     - echo 'CFLAGS=-g -O0 -fno-openmp -Wall -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2' > ~/.R/Makevars
     - echo 'CXXFLAGS=-g -O0 -fno-openmp -Wall -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2' >> ~/.R/Makevars
   script:
-    - *copy-src
-    - rm -r bus
-    - *move-src
+    - *mv-src
     - cd bus/$CI_BUILD_NAME
     - R CMD check --no-manual --ignore-vignettes $(ls -1t data.table_*.tar.gz | head -n 1)
-    - *cleanup-src
+    - *rm-src
 
-test-rel-cran-lin: # currently released R on Linux, extra NOTEs check and build pdf manual thus not from cran-lin template
+test-rel-cran-lin: ## R-release on Linux, extra NOTEs check and build pdf manual thus not from cran-lin template
   <<: *test-lin
   image: registry.gitlab.com/jangorecki/dockerfiles/r-builder
   variables:
-    _R_CHECK_CRAN_INCOMING_: "TRUE"           # stricter --as-cran checks should run in dev pipelines continuously (not sure what they are though)
-    _R_CHECK_CRAN_INCOMING_REMOTE_: "FALSE"   # Other than no URL checking (takes many minutes) or 'Days since last update 0' NOTEs needed, #3284
+    _R_CHECK_CRAN_INCOMING_: "TRUE"           ## stricter --as-cran checks should run in dev pipelines continuously (not sure what they are though)
+    _R_CHECK_CRAN_INCOMING_REMOTE_: "FALSE"   ## Other than no URL checking (takes many minutes) or 'Days since last update 0' NOTEs needed, #3284
+    _R_CHECK_CRAN_INCOMING_TARBALL_THRESHOLD_: "7500000" ## effective from R 4.1.0, then 00check.log can be checked for "OK" rather than "1 NOTE"
   before_script:
+    - *install-deps
+    - *cp-src
+    - rm -r bus
     - mkdir -p ~/.R
-    - echo 'CFLAGS=-g0 -O2 -fopenmp -Wall -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2'> ~/.R/Makevars # -g0 because -g increases datatable.so size from 0.5MB to 1.5MB and breaches 'installed package size <= 5MB' note
+    - echo 'CFLAGS=-g0 -O2 -fopenmp -Wall -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2'> ~/.R/Makevars ## -g0 because -g increases datatable.so size from 0.5MB to 1.5MB and breaches 'installed package size <= 5MB' note
     - echo 'CXXFLAGS=-g0 -O2 -fopenmp -Wall -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2' >> ~/.R/Makevars
   script:
-    - Rscript -e 'source(".ci/ci.R"); install.packages(dcf.dependencies("DESCRIPTION", which="most"), quiet=TRUE)'
-    - *copy-src
-    - rm -r bus
-    - *move-src
+    - *mv-src
     - cd bus/$CI_BUILD_NAME
     - R CMD check --as-cran $(ls -1t data.table_*.tar.gz | head -n 1)
-    - *cleanup-src
+    - *rm-src
     - >-
-        Rscript -e 'l<-readLines("data.table.Rcheck/00check.log"); if (!identical(l[length(l)], "Status: 1 NOTE")) stop("Last line of ", shQuote("00check.log"), " is not ", shQuote("Status: 1 NOTE"), "(size of tarball) but ", shQuote(toString(l[length(l)]))) else q("no")'
+        Rscript -e 'l=tail(readLines("data.table.Rcheck/00check.log"), 1L); if (!identical(l, "Status: 1 NOTE")) stop("Last line of ", shQuote("00check.log"), " is not ", shQuote("Status: 1 NOTE"), " (size of tarball) but ", shQuote(l)) else q("no")'
 
-test-dev-cran-lin: # R-devel on Linux, --enable-strict-barrier --disable-long-double
+test-dev-cran-lin: ## R-devel on Linux, --enable-strict-barrier --disable-long-double
   <<: *test-cran-lin
   image: registry.gitlab.com/jangorecki/dockerfiles/r-devel
 
-test-310-cran-lin: # test stated R dependency 3.1.0
+test-310-cran-lin: ## R-3.1.0 on Linux, stated dependency of R
   <<: *test-cran-lin
   image: registry.gitlab.com/jangorecki/dockerfiles/r-3.1.0
 
-test-344-cran-lin: # test last R non-altrep version
+test-344-cran-lin: ## R-3.4.4 on Linux, last R non-altrep version
   <<: *test-cran-lin
   image: registry.gitlab.com/jangorecki/dockerfiles/r-3.4.4
 
-test-350-cran-lin: # test first R altrep version
+test-350-cran-lin: ## R-3.5.0 on Linux, first R altrep version
   <<: *test-cran-lin
   image: registry.gitlab.com/jangorecki/dockerfiles/r-3.5.0
 
-test-rel-win: # windows test and build binaries
-  <<: *test-win
-  variables:
-    R_BIN_VERSION: "3.6"
-    R_DIR: "R-3.6.0"
-  script:
-    - Rscript -e "source('.ci/ci.R'); install.packages(dcf.dependencies('DESCRIPTION', which='all'), quiet=TRUE)"
-    - *copy-src
-    - rm -r bus
-    - *move-src
-    - cd bus/$CI_BUILD_NAME
-    - R CMD check --no-manual $(ls -1t data.table_*.tar.gz | head -n 1)
-    - R CMD INSTALL --build $(ls -1t data.table_*.tar.gz | head -n 1)
-    - mkdir -p cran/bin/windows/contrib/$R_BIN_VERSION
-    - mv $(ls -1t data.table_*.zip | head -n 1) cran/bin/windows/contrib/$R_BIN_VERSION
-    - *cleanup-src
-
-test-dev-win: # R-devel on windows
+test-rel-win: ## R-release on Windows, test and build binaries
   <<: *test-win
   variables:
     R_BIN_VERSION: "4.0"
-    R_DIR: "R-devel"
-    TEST_DATA_TABLE_MEMTEST: "FALSE" # disabled as described in #3147
-  allow_failure: false
+  before_script:
+    - *install-r-rel-win
+    - *install-rtools-win
+    - $ENV:PATH = "C:\R\bin;C:\rtools40\usr\bin;$ENV:PATH"
+    - *install-deps-win
+    - *cp-src-win
+    - rm.exe -r bus
   script:
-    - Rscript -e "source('.ci/ci.R'); install.packages(dcf.dependencies('DESCRIPTION', which='all'), quiet=TRUE, contriburl=contrib.url(getOption('repos'), 'binary', ver=Sys.getenv('R_BIN_VERSION')))"
-    - *copy-src
-    - rm -r bus
-    - *move-src
+    - *mv-src-win
     - cd bus/$CI_BUILD_NAME
-    - R CMD check --no-manual --ignore-vignettes $(ls -1t data.table_*.tar.gz | head -n 1)
-    - R CMD INSTALL --build $(ls -1t data.table_*.tar.gz | head -n 1)
-    - mkdir -p cran/bin/windows/contrib/$R_BIN_VERSION
-    - mv $(ls -1t data.table_*.zip | head -n 1) cran/bin/windows/contrib/$R_BIN_VERSION
-    - *cleanup-src
+    - R.exe CMD check --no-manual $(ls.exe -1t data.table_*.tar.gz | head.exe -n 1)
+    - R.exe CMD INSTALL --build $(ls.exe -1t data.table_*.tar.gz | head.exe -n 1)
+    - *rm-src-win
+    - *mv-bin-win
 
-.test-rel-osx: # macosx test and build binaries
-  <<: *test-osx
+test-dev-win: ## R-devel on Windows
+  <<: *test-win
   variables:
-    R_BIN_VERSION: "3.6"
+    R_BIN_VERSION: "4.1"
+  before_script:
+    - *install-r-dev-win
+    - *install-rtools-win
+    - $ENV:PATH = "C:\R\bin;C:\rtools40\usr\bin;$ENV:PATH"
+    - *install-deps-win
+    - *cp-src-win
+    - rm.exe -r bus
   script:
-    - Rscript -e 'source(".ci/ci.R"); install.packages(dcf.dependencies("DESCRIPTION", which="all"), quiet=TRUE)'
-    - *copy-src
-    - rm -r bus
-    - *move-src
+    - *mv-src-win
     - cd bus/$CI_BUILD_NAME
-    - R CMD check $(ls -1t data.table_*.tar.gz | head -n 1)
-    - R CMD INSTALL --build $(ls -1t data.table_*.tar.gz | head -n 1)
-    - mkdir -p cran/bin/macosx/el-capitan/contrib/$R_BIN_VERSION
-    - mv $(ls -1t data.table_*.tgz | head -n 1) cran/bin/macosx/el-capitan/contrib/$R_BIN_VERSION
-    - *cleanup-src
+    - R.exe CMD check --no-manual --ignore-vignettes $(ls.exe -1t data.table_*.tar.gz | head.exe -n 1)
+    - R.exe CMD INSTALL --build $(ls.exe -1t data.table_*.tar.gz | head.exe -n 1)
+    - *rm-src-win
+    - *mv-bin-win
 
-integration: # merging all artifacts to produce single R repository and summaries
+#test-rel-osx: ## R-release on MacOS, no macosx runner yet
+#  variables:
+#    R_BIN_VERSION: "4.0"
+#  before_script:
+#    - *install-deps
+#    - *cp-src
+#    - rm -r bus
+#  script:
+#    - *mv-src
+#    - cd bus/$CI_BUILD_NAME
+#    - R CMD check $(ls -1t data.table_*.tar.gz | head -n 1)
+#    - R CMD INSTALL --build $(ls -1t data.table_*.tar.gz | head -n 1)
+#    - mkdir -p cran/bin/macosx/el-capitan/contrib/$R_BIN_VERSION
+#    - mv $(ls -1t data.table_*.tgz | head -n 1) cran/bin/macosx/el-capitan/contrib/$R_BIN_VERSION
+#    - *rm-src
+
+integration: ## merging all artifacts to produce single R repository, documentation and website
   stage: integration
   image: registry.gitlab.com/jangorecki/dockerfiles/r-builder
   tags:
@@ -242,45 +264,45 @@ integration: # merging all artifacts to produce single R repository and summarie
   only:
     - master
   dependencies:
-  - mirror-packages
-  - build
-  - test-rel-lin
-  - test-rel-cran-lin
-  - test-dev-cran-lin
-  - test-rel-vanilla-lin
-  - test-310-cran-lin
-  - test-344-cran-lin
-  - test-350-cran-lin
-  - test-rel-win
-  - test-dev-win
-  #- test-rel-osx
+    - mirror-packages
+    - build
+    - test-rel-lin
+    - test-rel-cran-lin
+    - test-dev-cran-lin
+    - test-rel-vanilla-lin
+    - test-310-cran-lin
+    - test-344-cran-lin
+    - test-350-cran-lin
+    - test-rel-win
+    - test-dev-win
+    #- test-rel-osx
   variables:
-    R_BIN_VERSION: "3.6"
-    R_DEVEL_BIN_VERSION: "4.0"
+    R_BIN_VERSION: "4.0"
+    R_DEVEL_BIN_VERSION: "4.1"
   script:
-    # pkgdown installs pkgs from "." so run at start to have clean root dir
+    ## pkgdown installs pkgs from "." so run at start to have clean root dir
     - apt-get update -qq && apt-get install -y libxml2-dev
     - mkdir -p /tmp/pkgdown/library
-    - R_LIBS_USER=/tmp/pkgdown/library Rscript -e 'install.packages("remotes", repos=Sys.getenv("CRAN_MIRROR"), quiet=TRUE); remotes::install_github("r-lib/pkgdown", repos=Sys.getenv("CRAN_MIRROR"), quiet=TRUE); pkgdown::build_site(override=list(destination="./pkgdown"))'
-    # html manual, vignettes, repos, cran_web, cran_checks
+    - R_LIBS_USER=/tmp/pkgdown/library Rscript -e 'install.packages("pkgdown", repos=Sys.getenv("CRAN_MIRROR"), quiet=TRUE); pkgdown::build_site(override=list(destination="./pkgdown"))'
+    ## html manual, vignettes, repos, cran_web, cran_checks
     - echo 'source(".ci/ci.R"); source(".ci/publish.R")' >> .Rprofile
-    # list of available test-* jobs dynamically based on bus/test-* directories
+    ## list of available test-* jobs dynamically based on bus/test-* directories
     - Rscript -e 'cat("\ntest.jobs <- c(\n"); cat(paste0("  \"",list.files("bus",pattern="^test-"),"\" = \"data.table\""), sep=",\n"); cat(")\n")' >> .Rprofile
     - Rscript -e 'sapply(names(test.jobs), check.test, pkg="data.table", simplify=FALSE)'
     - mkdir -p bus/$CI_BUILD_NAME
-    # delete any existing non-dev version of data.table
+    ## delete any existing non-dev version of data.table
     - rm -f bus/mirror-packages/cran/src/contrib/data.table_*.tar.gz
     - rm -f bus/mirror-packages/cran/bin/windows/contrib/$R_BIN_VERSION/data.table_*.zip
     - rm -f bus/mirror-packages/cran/bin/windows/contrib/$R_DEVEL_BIN_VERSION/data.table_*.zip
     #- rm -f bus/mirror-packages/cran/bin/macosx/el-capitan/contrib/$R_BIN_VERSION/data.table_*.tgz
     #- rm -f bus/mirror-packages/cran/bin/macosx/el-capitan/contrib/$R_DEVEL_BIN_VERSION/data.table_*.tgz
-    # merge mirror-packages and R devel packages
+    ## merge mirror-packages and R devel packages
     - mv bus/mirror-packages/cran bus/$CI_BUILD_NAME/
-    # publish package sources
+    ## publish package sources
     - mkdir -p bus/$CI_BUILD_NAME/cran/library bus/$CI_BUILD_NAME/cran/doc
     - mv $(ls -1t bus/build/cran/src/contrib/data.table_*.tar.gz | head -n 1) bus/$CI_BUILD_NAME/cran/src/contrib
     - Rscript -e 'tools::write_PACKAGES(contrib.url("bus/integration/cran", type="source"), type="source", fields="Revision", addFiles=TRUE)'
-    # publish binaries
+    ## publish binaries
     - Rscript -e 'move.bin("test-rel-win", Sys.getenv("R_BIN_VERSION"), os.type="windows")'
     - Rscript -e 'move.bin("test-dev-win", Sys.getenv("R_DEVEL_BIN_VERSION"), os.type="windows", silent=TRUE)'
     - Rscript -e 'tools::write_PACKAGES(contrib.url("bus/integration/cran", type="win.binary", ver=Sys.getenv("R_BIN_VERSION")), type="win.binary", fields="Revision", addFiles=TRUE)'
@@ -289,31 +311,31 @@ integration: # merging all artifacts to produce single R repository and summarie
     #- Rscript -e 'move.bin("test-dev-osx", Sys.getenv("R_DEVEL_BIN_VERSION"), os.type="macosx", silent=TRUE)'
     #- Rscript -e 'tools::write_PACKAGES(contrib.url("bus/integration/cran", type="mac.binary.el-capitan", ver=Sys.getenv("R_BIN_VERSION")), type="mac.binary.el-capitan", fields="Revision", addFiles=TRUE)'
     #- Rscript -e 'tools::write_PACKAGES(contrib.url("bus/integration/cran", type="mac.binary.el-capitan", ver=Sys.getenv("R_DEVEL_BIN_VERSION")), type="mac.binary.el-capitan", fields="Revision", addFiles=TRUE)'
-    # install all pkgs to render html and double check successful installation of all devel packages
+    ## install all pkgs to render html and double check successful installation of all devel packages
     - mkdir -p /tmp/opencran/library /tmp/opencran/doc/html
     - Rscript -e 'install.packages("data.table", dependencies=TRUE, lib="/tmp/opencran/library", repos=file.path("file:",normalizePath("bus/integration/cran")), INSTALL_opts="--html", quiet=TRUE)'
     - Rscript -e 'packageVersion("data.table", lib.loc="/tmp/opencran/library")'
-    # CRAN style web/CRAN_web.css
+    ## CRAN style web/CRAN_web.css
     - wget -q -P bus/integration/cran/web https://cran.r-project.org/web/CRAN_web.css
-    # web/packages/$pkg/index.html
+    ## web/packages/$pkg/index.html
     - Rscript -e 'sapply(rownames(installed.packages(lib.loc="/tmp/opencran/library", priority="NA")), package.index, lib.loc="/tmp/opencran/library")'
-    # R docs, html, css, icons
+    ## R docs, html, css, icons
     - Rscript -e 'doc.copy(repodir="/tmp/opencran")'
-    # Update packages.html, rewrite file:/ to relative path
+    ## Update packages.html, fix paths
     - Rscript -e 'setwd("/tmp/opencran/doc/html"); make.packages.html(lib.loc="../../library", docdir="/tmp/opencran/doc"); tmp<-readLines(f<-"/tmp/opencran/doc/html/packages.html"); writeLines(gsub("file:///../../library","../../library", tmp, fixed=TRUE), f)'
     - mv /tmp/opencran/doc bus/integration/cran/
-    # library html manual, vignettes
+    ## library html manual, vignettes
     - Rscript -e 'lib.copy(lib.from="/tmp/opencran/library")'
-    # web/checks/$pkg/$job: 00install.out, 00check.log, *.Rout, memtest.csv, memtest.png
+    ## web/checks/$pkg/$job 00install.out, 00check.log, *.Rout, memtest.csv, memtest.png
     - Rscript -e 'sapply(names(test.jobs), check.copy, simplify=FALSE)'
-    # web/packages/$pkg/$pkg.pdf
+    ## web/packages/$pkg/$pkg.pdf
     - Rscript -e 'pdf.copy("data.table", "test-rel-lin")'
-    # web/checks/check_results_$pkg.html
+    ## web/checks/check_results_$pkg.html
     - Rscript -e 'check.index("data.table", names(test.jobs))'
-    # pkgdown merge
+    ## pkgdown merge
     - Rscript -e 'common_files<-function(path1, path2) intersect(list.files(path1, all.files=TRUE, no..=TRUE), list.files(path2, all.files=TRUE, no..=TRUE)); msg = if (length(f<-common_files("pkgdown","bus/integration/cran"))) paste(c("Following artifacts will be overwritten by pkgdown artifacts:", paste0("  ", f)), collapse="\n") else "No overlapping files from pkgdown artifacts"; message(msg); q("no")'
     - mv pkgdown/* bus/integration/cran/
-    # cleanup artifacts from other jobs
+    ## cleanup artifacts from other jobs
     - mkdir tmpbus
     - mv bus/$CI_BUILD_NAME tmpbus
     - rm -r bus
@@ -326,9 +348,9 @@ integration: # merging all artifacts to produce single R repository and summarie
     - linux
   image: docker
   services:
-  - docker:dind
+    - docker:dind
   dependencies:
-  - build
+    - build
   before_script:
     - sed "s/SRC_IMAGE_NAME/$SRC_IMAGE_NAME/" < .ci/Dockerfile.in > Dockerfile
     - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY
@@ -337,7 +359,7 @@ integration: # merging all artifacts to produce single R repository and summarie
     - docker run --rm "$CI_REGISTRY_IMAGE/$IMAGE_NAME:$IMAGE_TAG" Rscript -e 'cat(R.version.string, "\ndata.table revision", read.dcf(system.file("DESCRIPTION", package="data.table"), fields="Revision")[[1L]], "\n"); require(data.table); test.data.table()'
     - docker push "$CI_REGISTRY_IMAGE/$IMAGE_NAME:$IMAGE_TAG"
 
-docker-r-release: # publish docker image of data.table on R-release
+docker-r-release: ## data.table on R-release
   only:
     - master
   variables:
@@ -346,7 +368,7 @@ docker-r-release: # publish docker image of data.table on R-release
     IMAGE_TAG: "latest"
   <<: *docker
 
-docker-r-release-builder: # publish on R-release and OS dependencies for building Rmd vignettes
+docker-r-release-builder: ## data.table on R-release extended for Rmd vignettes build dependencies
   only:
     - master
   variables:
@@ -355,7 +377,7 @@ docker-r-release-builder: # publish on R-release and OS dependencies for buildin
     IMAGE_TAG: "latest"
   <<: *docker
 
-docker-r-devel: # publish docker image of data.table on R-devel
+docker-r-devel: ## data.table on R-devel
   only:
     - master
   variables:
@@ -364,7 +386,7 @@ docker-r-devel: # publish docker image of data.table on R-devel
     IMAGE_TAG: "latest"
   <<: *docker
 
-docker-tags: # publish only on tagged commits, we use tags for version
+docker-tags: ## data.table on R-release fixed version images
   only:
     - tags
   variables:
@@ -373,7 +395,7 @@ docker-tags: # publish only on tagged commits, we use tags for version
     IMAGE_TAG: $CI_COMMIT_TAG
   <<: *docker
 
-pages: # publish R repository, test jobs summaries, html documentation of all packages in repo, pkgdown
+pages: ## publish R repository, test jobs summaries, html documentation of all packages in repo, pkgdown
   stage: deploy
   environment: production
   tags:
@@ -382,12 +404,12 @@ pages: # publish R repository, test jobs summaries, html documentation of all pa
     - master
   image: ubuntu
   dependencies:
-  - integration
+    - integration
   script:
     - mkdir -p public
     - cp -r bus/integration/cran/* public
     - cat public/src/contrib/PACKAGES
-  artifacts: # publish when no failure
-    expire_in: 2 weeks
+  artifacts: ## publish only when no failure
+    expire_in: 4 weeks
     paths:
       - public

@@ -1,5 +1,18 @@
 #!/usr/bin/env sh
 
+# Find R compilers
+CC=`${R_HOME}/bin/R CMD config CC`
+CFLAGS=`${R_HOME}/bin/R CMD config CFLAGS`
+# compiler and flags to 'cc' file
+echo "CC=${CC}" > inst/cc
+echo "CFLAGS=${CFLAGS}" >> inst/cc
+
+# gcc compiler info to output #3291
+case $CC in gcc*)
+  GCCV=`${CC} -dumpfullversion -dumpversion`
+  echo "$CC $GCCV"
+esac
+
 # Let's keep this simple. If pkg-config is available, use it. Otherwise print
 # the helpful message to aid user if compilation does fail. Note 25 of R-exts:
 # "[pkg-config] is available on the machines used to produce the CRAN binary packages"
@@ -52,10 +65,6 @@ fi
 version=`pkg-config --modversion zlib`
 echo "zlib ${version} is available ok"
 
-# Find R compilers
-CC=`${R_HOME}/bin/R CMD config CC`
-CFLAGS=`${R_HOME}/bin/R CMD config CFLAGS`
-
 # Test if we have a OPENMP compatible compiler
 # Aside: ${SHLIB_OPENMP_CFLAGS} does not appear to be defined at this point according to Matt's testing on
 # Linux, and R CMD config SHLIB_OPENMP_CFLAGS also returns 'no information for variable'. That's not
@@ -93,12 +102,6 @@ if [ "$R_NO_OPENMP" = "1" ]; then
 else
   echo "OpenMP supported"
   sed -e "s|@openmp_cflags@|\$(SHLIB_OPENMP_CFLAGS)|" src/Makevars.in > src/Makevars
-fi
-
-# compiler info to output #3291
-if [ "$CC"=~"gcc" ]; then
-  GCCV=`${CC} -dumpfullversion -dumpversion`
-  echo "$CC $GCCV"
 fi
 
 exit 0

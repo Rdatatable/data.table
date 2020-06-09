@@ -304,13 +304,14 @@ cd R-devel  # used for revdep testing: .dev/revdep.R.
 ./configure CFLAGS="-O2 -Wall -pedantic"
 make
 
-# use latest available below `apt cache search gcc-` or `clang-`
-cd ../R-devel-strict-clang
-./configure --without-recommended-packages --disable-byte-compiled-packages --disable-openmp --enable-strict-barrier --disable-long-double CC="clang-8 -fsanitize=undefined,address -fno-sanitize=float-divide-by-zero -fno-omit-frame-pointer"
+# use latest available `apt-cache search gcc-` or `clang-`
+cd ~/build/R-devel-strict-clang
+./configure --without-recommended-packages --disable-byte-compiled-packages --disable-openmp --enable-strict-barrier --disable-long-double CC="clang-10 -fsanitize=undefined,address -fno-sanitize=float-divide-by-zero -fno-omit-frame-pointer"
 make
 
-cd ../R-devel-strict-gcc
-./configure --without-recommended-packages --disable-byte-compiled-packages --disable-openmp --enable-strict-barrier --disable-long-double CC="gcc-8 -fsanitize=undefined,address -fno-sanitize=float-divide-by-zero -fno-omit-frame-pointer"
+cd ~/build/R-devel-strict-gcc
+# gcc-10 (in dev currently) failed to build R, so using regular gcc-9 (9.3.0 as per focal/Pop!_OS 20.04)
+./configure --without-recommended-packages --disable-byte-compiled-packages --disable-openmp --enable-strict-barrier --disable-long-double CC="gcc-9 -fsanitize=undefined,address -fno-sanitize=float-divide-by-zero -fno-omit-frame-pointer"
 make
 
 # See R-exts#4.3.3
@@ -479,7 +480,7 @@ sudo apt-get -y install r-base r-base-dev
 sudo apt-get -y build-dep r-base-dev
 sudo apt-get -y build-dep qpdf
 sudo apt-get -y install aptitude
-sudo aptitude build-dep r-cran-rgl   # leads to libglu1-mesa-dev
+sudo aptitude -y build-dep r-cran-rgl   # leads to libglu1-mesa-dev
 sudo apt-get -y build-dep r-cran-rmpi
 sudo apt-get -y build-dep r-cran-cairodevice
 sudo apt-get -y build-dep r-cran-tkrplot
@@ -490,8 +491,7 @@ sudo apt-get -y install libv8-dev
 sudo apt-get -y install gsl-bin libgsl0-dev
 sudo apt-get -y install libgtk2.0-dev netcdf-bin
 sudo apt-get -y install libcanberra-gtk-module
-sudo apt-get -y install git
-sudo apt-get -y install openjdk-8-jdk
+sudo apt-get -y install openjdk-11-jdk   # solves "fatal error: jni.h: No such file or directory"; change 11 to match "java --version"
 sudo apt-get -y install libnetcdf-dev udunits-bin libudunits2-dev
 sudo apt-get -y install tk8.6-dev
 sudo apt-get -y install clustalo  # for package LowMACA
@@ -512,7 +512,7 @@ sudo apt-get -y install libmagick++-dev  # for magick
 sudo apt-get -y install libjq-dev libprotoc-dev libprotobuf-dev and protobuf-compiler   # for protolite
 sudo apt-get -y install python-dev  # for PythonInR
 sudo apt-get -y install gdal-bin libgeos-dev  # for rgdal/raster tested via lidR
-sudo apt-get build-dep r-cran-rsymphony   # for Rsymphony: coinor-libcgl-dev coinor-libclp-dev coinor-libcoinutils-dev coinor-libosi-dev coinor-libsymphony-dev
+sudo apt-get -y build-dep r-cran-rsymphony   # for Rsymphony: coinor-libcgl-dev coinor-libclp-dev coinor-libcoinutils-dev coinor-libosi-dev coinor-libsymphony-dev
 sudo apt-get -y install libtesseract-dev libleptonica-dev tesseract-ocr-eng   # for tesseract
 sudo apt-get -y install libssl-dev libsasl2-dev
 sudo apt-get -y install biber   # for ctsem
@@ -520,6 +520,8 @@ sudo apt-get -y install libopenblas-dev  # for ivmte (+ local R build with defau
 sudo apt-get -y install libhiredis-dev  # for redux used by nodbi
 sudo apt-get -y install libzmq3-dev   # for rzmq
 sudo apt-get -y install libimage-exiftool-perl   # for camtrapR
+sudo apt-get -y install parallel   # for revdepr.R
+sudo apt-get -y install pandoc-citeproc   # for basecallQC
 sudo R CMD javareconf
 # ENDIF
 
