@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env sh
 
 # Find R compilers
 CC=`${R_HOME}/bin/R CMD config CC`
@@ -71,11 +71,28 @@ echo "zlib ${version} is available ok"
 # inconsistent with R-exts$1.2.1.1, though, which states it's 'available for use in Makevars' (so not
 # necessarily here in configure). Hence use -fopenmp directly for this detection step.
 # printf not echo to pass checkbashisms w.r.t. to the \n
-printf "#include <omp.h>\nint main () { return omp_get_num_threads(); }" | ${CC} ${CFLAGS} -fopenmp -xc - >/dev/null 2>&1 || R_NO_OPENMP=1;
-rm a.out >/dev/null 2>&1
+
+cat <<EOF > test-omp.c
+#include <omp.h>
+int main() {
+  return omp_get_num_threads();
+}
+EOF
+
+# First, try R CMD SHLIB to see if R can already compile
+# things using OpenMP without any extra help from data.table
+"${R_HOME}/bin/R" CMD SHLIB test-omp.c >/dev/null 2>&1 || R_NO_OPENMP=1
+
+if [ "$R_NO_OPENMP" = "1" ]; then
+  # Compilation failed -- try forcing -fopenmp instead.
+  "${CC}" "${CFLAGS}" -fopenmp test-omp.c || R_NO_OPENMP=1
+fi
+
+# Clean up.
+rm -f test-omp.{c,o,so} a.out
 
 # Write to Makevars
-if [ $R_NO_OPENMP ]; then
+if [ "$R_NO_OPENMP" = "1" ]; then
   echo "*** OpenMP not supported! data.table uses OpenMP to automatically"
   echo "***   parallelize operations like sorting, grouping, file reading, etc."
   echo "*** For details on how to install the necessary toolchains on your OS see:"
