@@ -148,7 +148,7 @@ test(8.01, sm(x, y), bm(x, y))
 
 # scale up
 ssa = function(unq_n, size, sort=FALSE) {
-  if (unq_n <= size) return(sample.int(unq_n, size, TRUE))
+  if (unq_n > size) return(sample.int(unq_n, size))
   unq_sub = seq_len(unq_n)
   ans = sample(c(unq_sub, sample(unq_sub, size=max(size-unq_n, 0), replace=TRUE)))
   if (sort) sort(ans) else ans
