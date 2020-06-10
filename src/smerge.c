@@ -509,7 +509,7 @@ SEXP smergeR(SEXP x, SEXP y, SEXP x_idx, SEXP y_idx, SEXP out_bmerge) {
     t = omp_get_wtime();
   SEXP ans = outSmergeR(nx, starts, lens, x_ord, out_starts, out_lens, x_idx, y_idx, n_matchr, x_lens1, y_lens1, xy_lens1, (bool)LOGICAL(out_bmerge)[0]);
   if (verbose>0)
-    Rprintf("smergeR: outSmerge %s took %.3fs\n", x_ord ? "(was sorted)" : "(unsort)", omp_get_wtime() - t);
+    Rprintf("smergeR: outSmerge %s took %.3fs\n", x_ord ? "(was sorted)" : "(alloc and unsort)", omp_get_wtime() - t);
   if (verbose>0)
     Rprintf("smergeR: all took %.3fs\n", omp_get_wtime() - t_total);
 
