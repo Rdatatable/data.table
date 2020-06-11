@@ -327,7 +327,7 @@ void smergeC(const int *restrict x, const int nx, const int *restrict x_starts, 
       &bnmatch, &bxlens1, &bylens1, &bxylens1 // reduction output
     );
     nmatch += bnmatch; xlens1 = bxlens1 && xlens1; ylens1 = bylens1 && ylens1; xylens1 = bxylens1 && xylens1;
-    th[b] = omp_get_thread_num();
+    th[b] = omp_get_thread_num(); // only to report thread utilization in verbose message
   }
   x_lens1[0] = (int)xlens1; y_lens1[0] = (int)ylens1; xy_lens1[0] = (int)xylens1; n_match[0] = nmatch;
   if (verbose>0)
