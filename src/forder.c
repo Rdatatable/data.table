@@ -215,7 +215,7 @@ int StrCmp(SEXP x, SEXP y)
   if (x == y) return 0;             // same cached pointer (including NA_STRING==NA_STRING)
   if (x == NA_STRING) return -1;    // x<y
   if (y == NA_STRING) return 1;     // x>y
-  return strcmp(CHAR(ENC2UTF8(x)), CHAR(ENC2UTF8(y)));
+  return strcmp(CHAR(ENC2UTF8(x)), CHAR(ENC2UTF8(y)));  // TODO: always calling ENC2UTF8 here could be expensive 
 }
 /* ENC2UTF8 handles encoding issues by converting all marked non-utf8 encodings alone to utf8 first. The function could be wrapped
    in the first if-statement already instead of at the last stage, but this is to ensure that all-ascii cases are handled with maximum efficiency.
@@ -394,7 +394,7 @@ int getNumericRounding_C()
 
 // for signed integers it's easy: flip sign bit to swap positives and negatives; the resulting unsigned is in the right order with INT_MIN ending up as 0
 // for floating point finite you have to flip the other bits too if it was signed: http://stereopsis.com/radix.html
-uint64_t dtwiddle(void *p, int i)
+uint64_t dtwiddle(const void *p, int i)
 {
   union {
     double d;
@@ -1257,50 +1257,127 @@ void radix_r(const int from, const int to, const int radix) {
 }
 
 
-SEXP fsorted(SEXP x)
+SEXP issorted(SEXP x, SEXP by)
 {
   // Just checks if ordered and returns FALSE early if not. Does not return ordering if so, unlike forder.
   // Always increasing order with NA's first
-  // Similar to base:is.unsorted but accepts NA at the beginning (standard in data.table and considered sorted) rather than returning NA when NA present.
+  // Similar to base:is.unsorted but accepts NA at the beginning (standard in data.table and considered sorted) rather than
+  // returning NA when NA present, and is multi-column.
   // TODO: test in big steps first to return faster if unsortedness is at the end (a common case of rbind'ing data to end)
-  // These are all sequential access to x, so very quick and cache efficient. Could be parallel by checking continuity at batch boundaries.
-  const int n = length(x);
-  if (n <= 1) return(ScalarLogical(TRUE));
-  if (!isVectorAtomic(x)) STOP(_("is.sorted (R level) and fsorted (C level) only to be used on vectors. If needed on a list/data.table, you'll need the order anyway if not sorted, so use if (length(o<-forder(...))) for efficiency in one step, or equivalent at C level"));
-  int i=1;
-  switch(TYPEOF(x)) {
-  case INTSXP : case LGLSXP : {
-    int *xd = INTEGER(x);
-    while (i<n && xd[i]>=xd[i-1]) i++;
-  } break;
-  case REALSXP :
-    if (inherits(x,"integer64")) {
-      int64_t *xd = (int64_t *)REAL(x);
+  // These are all sequential access to x, so quick and cache efficient. Could be parallel by checking continuity at batch boundaries.
+  
+  if (!isNull(by) && !isInteger(by)) STOP(_("Internal error: issorted 'by' must be NULL or integer vector"));
+  if (isVectorAtomic(x) || length(by)==1) {
+    // one-column special case is very common so specialize it by avoiding column-type switches inside the row-loop later
+    if (length(by)==1) {
+      if (INTEGER(by)[0]<1 || INTEGER(by)[0]>length(x)) STOP(_("issorted 'by' [%d] out of range [1,%d]"), INTEGER(by)[0], length(x));
+      x = VECTOR_ELT(x, INTEGER(by)[0]-1);
+    }
+    const int n = length(x);
+    if (n <= 1) return(ScalarLogical(TRUE));
+    if (!isVectorAtomic(x)) STOP(_("is.sorted does not work on list columns"));
+    int i=1;
+    switch(TYPEOF(x)) {
+    case INTSXP : case LGLSXP : {
+      int *xd = INTEGER(x);
       while (i<n && xd[i]>=xd[i-1]) i++;
-    } else {
-      double *xd = REAL(x);
-      while (i<n && dtwiddle(xd,i)>=dtwiddle(xd,i-1)) i++;
+    } break;
+    case REALSXP :
+      if (inherits(x,"integer64")) {
+        int64_t *xd = (int64_t *)REAL(x);
+        while (i<n && xd[i]>=xd[i-1]) i++;
+      } else {
+        double *xd = REAL(x);
+        while (i<n && dtwiddle(xd,i)>=dtwiddle(xd,i-1)) i++;  // TODO: change to loop over any NA or -Inf at the beginning and then proceed without dtwiddle() (but rounding)
+      }
+      break;
+    case STRSXP : {
+      SEXP *xd = STRING_PTR(x);
+      i = 0;
+      while (i<n && xd[i]==NA_STRING) i++;
+      bool need = NEED2UTF8(xd[i]);
+      i++; // pass over first non-NA_STRING
+      while (i<n) {
+        if (xd[i]==xd[i-1]) {i++; continue;}
+        if (xd[i]==NA_STRING) break;
+        if (!need) need = NEED2UTF8(xd[i]);
+        if ((need ? strcmp(CHAR(ENC2UTF8(xd[i])), CHAR(ENC2UTF8(xd[i-1]))) :
+                    strcmp(CHAR(xd[i]), CHAR(xd[i-1]))) < 0) break;
+        i++;
+      }
+    } break;
+    default :
+      STOP(_("type '%s' is not yet supported"), type2char(TYPEOF(x)));
     }
-    break;
-  case STRSXP : {
-    SEXP *xd = STRING_PTR(x);
-    i = 0;
-    while (i<n && xd[i]==NA_STRING) i++;
-    bool need = NEED2UTF8(xd[i]);
-    i++; // pass over first non-NA_STRING
-    while (i<n) {
-      if (xd[i]==xd[i-1]) {i++; continue;}
-      if (xd[i]==NA_STRING) break;
-      if (!need) need = NEED2UTF8(xd[i]);
-      if ((need ? strcmp(CHAR(ENC2UTF8(xd[i])), CHAR(ENC2UTF8(xd[i-1]))) :
-                  strcmp(CHAR(xd[i]), CHAR(xd[i-1]))) < 0) break;
-      i++;
-    }
-  } break;
-  default :
-    STOP(_("type '%s' is not yet supported"), type2char(TYPEOF(x)));
+    return ScalarLogical(i==n);
   }
-  return ScalarLogical(i==n);
+  const int ncol = length(by);
+  const R_xlen_t nrow = xlength(VECTOR_ELT(x,0));
+  // ncol>1
+  // pre-save lookups to save deep switch later for each column type
+  size_t *sizes =          (size_t *)R_alloc(ncol, sizeof(size_t));
+  const char **ptrs = (const char **)R_alloc(ncol, sizeof(char *));
+  int *types =                (int *)R_alloc(ncol, sizeof(int));
+  for (int j=0; j<ncol; ++j) {
+    int c = INTEGER(by)[j];
+    if (c<1 || c>length(x)) STOP(_("issorted 'by' [%d] out of range [1,%d]"), c, length(x));
+    SEXP col = VECTOR_ELT(x, c-1);
+    sizes[j] = SIZEOF(col);
+    switch(TYPEOF(col)) {
+    case INTSXP: case LGLSXP:
+      types[j] = 0;
+      ptrs[j] = (const char *)INTEGER(col);
+      break;
+    case REALSXP:
+      types[j] = inherits(col, "integer64") ? 2 : 1;
+      ptrs[j] = (const char *)REAL(col);
+      break;
+    case STRSXP:
+      types[j] = 3;
+      ptrs[j] = (const char *)STRING_PTR(col);
+      break;
+    default:
+      STOP(_("type '%s' is not yet supported"), type2char(TYPEOF(col)));  // # nocov
+    }
+  }
+  for (R_xlen_t i=1; i<nrow; ++i) {
+    int j = -1;
+    while (++j<ncol) {
+      size_t size = sizes[j];
+      const char *colp = ptrs[j] + size*i;
+      if (memcmp(colp, colp-size, size)==0) continue;  // in all-but-last column, we see many repeats so we can save the switch for those
+      bool ok = false;
+      switch (types[j]) {
+      case 0 : {   // INTSXP, LGLSXP
+        const int *p = (const int *)colp;
+        ok = p[0]>p[-1];
+      } break;
+      case 1: {   // regular double in REALSXP
+        const double *p = (const double *)colp;
+        ok = dtwiddle(p,0)>dtwiddle(p,-1);  // TODO: avoid dtwiddle by looping over any NA at the beginning, and remove NumericRounding.
+      } break;
+      case 2: {  // integer64 in REALSXP
+        const int64_t *p = (const int64_t *)colp;
+        ok = p[0]>p[-1];
+      } break;
+      case 3 : { // STRSXP
+        const SEXP *p = (const SEXP *)colp;
+        if (*p==NA_STRING) {
+          ok = false; // previous value not NA (otherwise memcmp would have returned equal above) so can't be ordered
+        } else {
+          ok = (NEED2UTF8(p[0]) || NEED2UTF8(p[-1]) ?  // TODO: provide user option to choose ascii-only mode
+                strcmp(CHAR(ENC2UTF8(p[0])), CHAR(ENC2UTF8(p[-1]))) :
+                strcmp(CHAR(p[0]), CHAR(p[-1]))) >= 0;
+        }
+      } break;
+      default :
+        STOP(_("type '%s' is not yet supported"), type2char(TYPEOF(x)));  // # nocov
+      }
+      if (!ok) return ScalarLogical(FALSE);  // not sorted so return early
+      break; // this item is greater than previous in this column so ignore any remaining columns on this row
+    }
+  }
+  return ScalarLogical(TRUE);
 }
 
 SEXP isOrderedSubset(SEXP x, SEXP nrowArg)

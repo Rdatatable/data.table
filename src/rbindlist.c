@@ -320,7 +320,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
       }
     }
 
-    if (!foundName) { static char buff[12]; sprintf(buff,"V%d",j+1), SET_STRING_ELT(ansNames, idcol+j, mkChar(buff)); foundName=buff; }
+    if (!foundName) { static char buff[12]; snprintf(buff,12,"V%d",j+1), SET_STRING_ELT(ansNames, idcol+j, mkChar(buff)); foundName=buff; }
     if (factor) maxType=INTSXP;  // if any items are factors then a factor is created (could be an option)
     if (int64 && maxType!=REALSXP)
       error(_("Internal error: column %d of result is determined to be integer64 but maxType=='%s' != REALSXP"), j+1, type2char(maxType)); // # nocov
@@ -379,12 +379,12 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
               const int tl = TRUELENGTH(s);
               if (tl>=last) {  // if tl>=0 then also tl>=last because last<=0
                 if (tl>=0) {
-                  sprintf(warnStr,    // not direct warning as we're inside tl region
+                  snprintf(warnStr, 1000,   // not direct warning as we're inside tl region
                   _("Column %d of item %d is an ordered factor but level %d ['%s'] is missing from the ordered levels from column %d of item %d. " \
                     "Each set of ordered factor levels should be an ordered subset of the first longest. A regular factor will be created for this column."),
                   w+1, i+1, k+1, CHAR(s), longestW+1, longestI+1);
                 } else {
-                  sprintf(warnStr,
+                  snprintf(warnStr, 1000,
                   _("Column %d of item %d is an ordered factor with '%s'<'%s' in its levels. But '%s'<'%s' in the ordered levels from column %d of item %d. " \
                     "A regular factor will be created for this column due to this ambiguity."),
                   w+1, i+1, CHAR(levelsD[k-1]), CHAR(s), CHAR(s), CHAR(levelsD[k-1]), longestW+1, longestI+1);
