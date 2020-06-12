@@ -13,4 +13,4 @@ coerceFill = function(x) .Call(CcoerceFillR, x)
 
 testMsg = function(status=0L, nx=2L, nk=2L) .Call(CtestMsgR, as.integer(status)[1L], as.integer(nx)[1L], as.integer(nk)[1L])
 
-smerge = function(x, y, x.idx=NULL, y.idx=NULL, out.bmerge=FALSE) .Call(CsmergeR, x, y, x.idx, y.idx, out.bmerge)
+smerge = function(x, y, x.idx=NULL, y.idx=NULL, mult=c("all","first","last","error"), out.bmerge=FALSE) .Call(CsmergeR, x, y, x.idx, y.idx, match.arg(mult), out.bmerge)

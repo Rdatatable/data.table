@@ -19,13 +19,17 @@
 #define SMERGE_STATS
 #define SMERGE_BATCHING_BALANCED
 
+// this only refers to RHS side: y
+enum emult{ALL, FIRST, LAST, ERR};
+
 // workhorse join that runs in parallel on batches
 static void smerge(const int bx_off, const int bnx,
                    const int by_off, const int bny,
                    const int *restrict x, const int *restrict x_starts, const int *restrict x_lens, const bool unq_x,
                    const int *restrict y, const int *restrict y_starts, const int *restrict y_lens, const bool unq_y,
                    int *restrict starts, int *restrict lens,
-                   uint64_t *nmatch, bool *xlens1, bool *ylens1, bool *xylens1) {
+                   uint64_t *nmatch, bool *xlens1, bool *ylens1, bool *xylens1,
+                   const enum emult mult) {
   uint64_t cnt = 0;
   bool xlen1 = true, ylen1 = true, xylen1 = true;
   if (unq_x && unq_y) {
@@ -49,23 +53,59 @@ static void smerge(const int bx_off, const int bnx,
   } else if (unq_x) {
     int i = bx_off, js = by_off;
     const int ni = bx_off+bnx, njs = by_off+bny;
-    while (i<ni && js<njs) {
-      const int j = y_starts[js]-1;
-      const int x_i = x[i], y_j = y[j];
-      if (x_i == y_j) {
-        starts[i] = j+1;
-        const int yl1 = y_lens[js];
-        lens[i] = yl1;
-        i++;
+    if (mult == ALL || mult == ERR) { // mult==err is raised based on ylen1 flag outside of parallel region
+      while (i<ni && js<njs) {
+        const int j = y_starts[js]-1;
+        const int x_i = x[i], y_j = y[j];
+        if (x_i == y_j) {
+          starts[i] = j+1;
+          const int yl1 = y_lens[js];
+          lens[i] = yl1;
+          i++;
 #ifdef SMERGE_STATS
-        if (ylen1 && yl1>1)
-          ylen1 = false;
-        cnt += (uint64_t)yl1;
+          if (ylen1 && yl1>1)
+            ylen1 = false;
+          cnt += (uint64_t)yl1;
 #endif
-      } else if (x_i < y_j) {
-        i++;
-      } else if (x_i > y_j) {
-        js++;
+        } else if (x_i < y_j) {
+          i++;
+        } else if (x_i > y_j) {
+          js++;
+        }
+      }
+    } else if (mult == FIRST) {
+      while (i<ni && js<njs) {
+        const int j = y_starts[js]-1;
+        const int x_i = x[i], y_j = y[j];
+        if (x_i == y_j) {
+          starts[i] = j+1;
+          lens[i] = 1; // could be pre-allocated with 1 for mult!=all?
+          i++;
+#ifdef SMERGE_STATS
+          cnt++;
+#endif
+        } else if (x_i < y_j) {
+          i++;
+        } else if (x_i > y_j) {
+          js++;
+        }
+      }
+    } else if (mult == LAST) {
+      while (i<ni && js<njs) {
+        const int j = y_starts[js]-1;
+        const int x_i = x[i], y_j = y[j];
+        if (x_i == y_j) {
+          starts[i] = j+y_lens[js]; // check if unsort will do it correctly
+          lens[i] = 1;
+          i++;
+#ifdef SMERGE_STATS
+          cnt++;
+#endif
+        } else if (x_i < y_j) {
+          i++;
+        } else if (x_i > y_j) {
+          js++;
+        }
       }
     }
   } else if (unq_y) {
@@ -96,30 +136,78 @@ static void smerge(const int bx_off, const int bnx,
   } else {
     int is = bx_off, js = by_off;
     const int nis = bx_off+bnx, njs = by_off+bny;
-    while (is<nis && js<njs) {
-      const int i = x_starts[is]-1, j = y_starts[js]-1;
-      const int x_i = x[i], y_j = y[j];
-      if (x_i == y_j) {
-        const int j1 = j+1, yl1 = y_lens[js];
-        const int xl1 = x_lens[is];
-        for (int ii=0; ii<xl1; ++ii) {
-          starts[i+ii] = j1;
-          lens[i+ii] = yl1;
+    if (mult==ALL || mult==ERR) {
+      while (is<nis && js<njs) {
+        const int i = x_starts[is]-1, j = y_starts[js]-1;
+        const int x_i = x[i], y_j = y[j];
+        if (x_i == y_j) {
+          const int j1 = j+1, yl1 = y_lens[js];
+          const int xl1 = x_lens[is];
+          for (int ii=0; ii<xl1; ++ii) {
+            starts[i+ii] = j1;
+            lens[i+ii] = yl1;
+          }
+          is++;
+  #ifdef SMERGE_STATS
+          if (xlen1 && xl1>1)
+            xlen1 = false;
+          if (ylen1 && yl1>1)
+            ylen1 = false;
+          if (xylen1 && xl1>1 && yl1>1)
+            xylen1 = false;
+          cnt += (uint64_t)xl1 * (uint64_t)yl1;
+  #endif
+        } else if (x_i < y_j) {
+          is++;
+        } else if (x_i > y_j) {
+          js++;
         }
-        is++;
+      }
+    } else if (mult==FIRST) {
+      while (is<nis && js<njs) {
+        const int i = x_starts[is]-1, j = y_starts[js]-1;
+        const int x_i = x[i], y_j = y[j];
+        if (x_i == y_j) {
+          const int j1 = j+1;
+          const int xl1 = x_lens[is];
+          for (int ii=0; ii<xl1; ++ii) {
+            starts[i+ii] = j1;
+            lens[i+ii] = 1;
+          }
+          is++;
 #ifdef SMERGE_STATS
-        if (xlen1 && xl1>1)
-          xlen1 = false;
-        if (ylen1 && yl1>1)
-          ylen1 = false;
-        if (xylen1 && xl1>1 && yl1>1)
-          xylen1 = false;
-        cnt += (uint64_t)xl1 * (uint64_t)yl1;
+          if (xlen1 && xl1>1)
+            xlen1 = false;
+          cnt += (uint64_t)xl1;
 #endif
-      } else if (x_i < y_j) {
-        is++;
-      } else if (x_i > y_j) {
-        js++;
+        } else if (x_i < y_j) {
+          is++;
+        } else if (x_i > y_j) {
+          js++;
+        }
+      }
+    } else if (mult==LAST) {
+      while (is<nis && js<njs) {
+        const int i = x_starts[is]-1, j = y_starts[js]-1;
+        const int x_i = x[i], y_j = y[j];
+        if (x_i == y_j) {
+          const int j1 = j+y_lens[js];
+          const int xl1 = x_lens[is];
+          for (int ii=0; ii<xl1; ++ii) {
+            starts[i+ii] = j1;
+            lens[i+ii] = 1;
+          }
+          is++;
+#ifdef SMERGE_STATS
+          if (xlen1 && xl1>1)
+            xlen1 = false;
+          cnt += (uint64_t)xl1;
+#endif
+        } else if (x_i < y_j) {
+          is++;
+        } else if (x_i > y_j) {
+          js++;
+        }
       }
     }
   }
@@ -270,7 +358,7 @@ void smergeC(const int *restrict x, const int nx, const int *restrict x_starts, 
              const int *restrict y, const int ny, const int *restrict y_starts, const int ny_starts,
              int *restrict starts, int *restrict lens,
              uint64_t *n_match, int *x_lens1, int *y_lens1, int *xy_lens1,
-             const int verbose) {
+             const enum emult mult, const int verbose) {
 
   double t = 0;
   if (verbose>0)
@@ -281,12 +369,12 @@ void smergeC(const int *restrict x, const int nx, const int *restrict x_starts, 
     x_lens = (int *)R_alloc(nx_starts, sizeof(int)); // remove after #4395
     grpLens(x_starts, nx_starts, nx, x_lens);
   }
-  if (!unq_y) {
+  if (!(unq_y || mult==FIRST)) {
     y_lens = (int *)R_alloc(ny_starts, sizeof(int));
     grpLens(y_starts, ny_starts, ny, y_lens);
   }
   if (verbose>0)
-    Rprintf("smergeC: grpLens %s took %.3fs\n", verboseDone(!unq_x, !unq_y, "(already unique)", "(y)", "(x)", "(x, y)"), omp_get_wtime() - t);
+    Rprintf("smergeC: grpLens %s took %.3fs\n", verboseDone(!unq_x, !(unq_y || mult==FIRST), "(x already unq, y unq or mult='first')", "(y)", "(x)", "(x, y)"), omp_get_wtime() - t);
 
   if (verbose>0)
     t = omp_get_wtime();
@@ -324,7 +412,8 @@ void smergeC(const int *restrict x, const int nx, const int *restrict x_starts, 
       x, x_starts, x_lens, unq_x,             // common input x
       y, y_starts, y_lens, unq_y,             // common input y
       starts, lens,                           // common output
-      &bnmatch, &bxlens1, &bylens1, &bxylens1 // reduction output
+      &bnmatch, &bxlens1, &bylens1, &bxylens1,// reduction output
+      mult
     );
     nmatch += bnmatch; xlens1 = bxlens1 && xlens1; ylens1 = bylens1 && ylens1; xylens1 = bxylens1 && xylens1;
     th[b] = omp_get_thread_num(); // only to report thread utilization in verbose message
@@ -332,6 +421,8 @@ void smergeC(const int *restrict x, const int nx, const int *restrict x_starts, 
   x_lens1[0] = (int)xlens1; y_lens1[0] = (int)ylens1; xy_lens1[0] = (int)xylens1; n_match[0] = nmatch;
   if (verbose>0)
     Rprintf("smergeC: %d calls to smerge using %d/%d threads took %.3fs\n", nBatch, unqNth(th, nBatch), nth, omp_get_wtime() - t); // all threads may not always be used bc schedule(dynamic)
+  if (mult==ERR && !ylens1)
+    error("mult='error' and multiple matches during merge");
 
   return;
 }
@@ -388,8 +479,23 @@ SEXP outSmergeR(const int n, const int *restrict starts, const int *restrict len
   return ans;
 }
 
+const enum emult matchMultArg(SEXP multArg) {
+  enum emult mult;
+  if (!strcmp(CHAR(STRING_ELT(multArg, 0)), "all"))
+    mult = ALL;
+  else if (!strcmp(CHAR(STRING_ELT(multArg, 0)), "first"))
+    mult = FIRST;
+  else if (!strcmp(CHAR(STRING_ELT(multArg, 0)), "last"))
+    mult = LAST;
+  else if (!strcmp(CHAR(STRING_ELT(multArg, 0)), "error"))
+    mult = ERR;
+  else
+    error(_("Internal error: invalid value for 'mult'. please report to data.table issue tracker")); // # nocov
+  return mult;
+}
+
 // main interface from R
-SEXP smergeR(SEXP x, SEXP y, SEXP x_idx, SEXP y_idx, SEXP out_bmerge) {
+SEXP smergeR(SEXP x, SEXP y, SEXP x_idx, SEXP y_idx, SEXP multArg, SEXP out_bmerge) {
 
   const int verbose = GetVerbose()*3; // remove *3 after #4491
   double t_total = 0, t = 0;
@@ -397,6 +503,9 @@ SEXP smergeR(SEXP x, SEXP y, SEXP x_idx, SEXP y_idx, SEXP out_bmerge) {
     t_total = omp_get_wtime();
   if (!isInteger(x) || !isInteger(y))
     error("'x' and 'y' must be integer");
+  if (!isString(multArg))
+    error("'mult' must be a string");
+  const enum emult mult = matchMultArg(multArg);
   if (!IS_TRUE_OR_FALSE(out_bmerge))
     error("'out.bmerge' must be TRUE or FALSE");
   const bool ans_bmerge = (bool)LOGICAL(out_bmerge)[0];
@@ -473,7 +582,7 @@ SEXP smergeR(SEXP x, SEXP y, SEXP x_idx, SEXP y_idx, SEXP out_bmerge) {
     yp, ny, INTEGER(y_starts), LENGTH(y_starts),
     starts, lens,
     &n_match, INTEGER(x_lens1), INTEGER(y_lens1), INTEGER(xy_lens1),
-    verbose-1
+    mult, verbose-1
   );
   if (n_match > (uint64_t)DBL_MAX) { // 1e9x1e9 cartesian join 1e18 still less than DBL_MAX, should we check against DBL_MAX or something lesser? we cast uinst64_t to double here
     REAL(n_matchr)[0] = NA_REAL;

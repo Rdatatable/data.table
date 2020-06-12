@@ -12,19 +12,18 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
   vecseq = data.table:::vecseq
 }
 
-bm = function(x, y) {
+bm = function(x, y, mult="all") {
   stopifnot(is.integer(x), is.integer(y))
-  ans = bmerge(data.table(x=x), data.table(y=y), 1L, 1L, roll=0, rollends=c(FALSE, TRUE), nomatch=NA_integer_, mult="all", ops=1L, verbose=FALSE)
+  ans = bmerge(data.table(x=x), data.table(y=y), 1L, 1L, roll=0, rollends=c(FALSE, TRUE), nomatch=NA_integer_, mult=mult, ops=1L, verbose=FALSE)
   ## if undefining SMERGE_STATS then we have to ignore allLen1 as well
   ans$nMatch = as.numeric(sum(!is.na(vecseq(ans$starts, ans$lens, NULL))))
   ans
 }
-sm = function(x, y) {
+sm = function(x, y, mult="all") {
   stopifnot(is.integer(x), is.integer(y))
-  #saveRDS(x, "~/git/data.table/x.RDS"); saveRDS(y, "~/git/data.table/y.RDS")
-  ans = smerge(x, y, out.bmerge=TRUE)
+  ans = smerge(x, y, mult=mult, out.bmerge=TRUE)
   ## if undefining SMERGE_STATS then we have to ignore allLen1 as well
-  ans$nMatch = smerge(x, y, out.bmerge=FALSE)$nMatch
+  ans$nMatch = smerge(x, y, mult=mult, out.bmerge=FALSE)$nMatch
   ans
 }
 
@@ -39,8 +38,8 @@ test(1.01, sm(x, y), bm(x, y))
 x = c(1L,2L,3L,3L,4L)
 y = c(2L,3L,5L)    # unq
 test(1.02, sm(x, y), bm(x, y))
-x = c(1L,2L,3L,4L)
-y = c(2L,3L,3L,5L) # unq
+x = c(1L,2L,3L,4L) # unq
+y = c(2L,3L,3L,5L)
 test(1.03, sm(x, y), bm(x, y))
 x = c(1L,2L,3L,3L,4L)
 y = c(2L,3L,3L,5L)
