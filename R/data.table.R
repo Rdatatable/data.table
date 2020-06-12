@@ -513,6 +513,7 @@ replace_dot_alias = function(e) {
         }
         # TODO: when nomatch=NA, len__ need not be allocated / set at all for mult="first"/"last"?
         # TODO: how about when nomatch=0L, can we avoid allocating then as well?
+        # if we take nomatch out from [b|s]merge then it should be easier to avoid allocation
       }
       if (length(xo) && length(irows)) {
         irows = xo[irows]   # TO DO: fsort here?

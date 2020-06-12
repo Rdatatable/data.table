@@ -39,7 +39,7 @@ static void smerge(const int bx_off, const int bnx,
       const int x_i = x[i], y_j = y[j];
       if (x_i == y_j) {
         starts[i] = j+1;
-        //lens[i] = 1; // already filled with 1's we will need this line if we change default alloc, same for unq_y branch
+        //lens[i] = 1; // already filled with 1's we will need this line if we change default alloc
         i++;
 #ifdef SMERGE_STATS
         cnt++;
@@ -53,7 +53,7 @@ static void smerge(const int bx_off, const int bnx,
   } else if (unq_x) {
     int i = bx_off, js = by_off;
     const int ni = bx_off+bnx, njs = by_off+bny;
-    if (mult == ALL || mult == ERR) { // mult==err is raised based on ylen1 flag outside of parallel region
+    if (mult == ALL || mult == ERR) { // mult==err is raised based on ylens1 flag outside of parallel region
       while (i<ni && js<njs) {
         const int j = y_starts[js]-1;
         const int x_i = x[i], y_j = y[j];
@@ -79,7 +79,7 @@ static void smerge(const int bx_off, const int bnx,
         const int x_i = x[i], y_j = y[j];
         if (x_i == y_j) {
           starts[i] = j+1;
-          lens[i] = 1; // could be pre-allocated with 1 for mult!=all?
+          //lens[i] = 1;
           i++;
 #ifdef SMERGE_STATS
           cnt++;
@@ -95,8 +95,8 @@ static void smerge(const int bx_off, const int bnx,
         const int j = y_starts[js]-1;
         const int x_i = x[i], y_j = y[j];
         if (x_i == y_j) {
-          starts[i] = j+y_lens[js]; // check if unsort will do it correctly
-          lens[i] = 1;
+          starts[i] = j+y_lens[js];
+          //lens[i] = 1;
           i++;
 #ifdef SMERGE_STATS
           cnt++;
@@ -119,7 +119,7 @@ static void smerge(const int bx_off, const int bnx,
         const int xl1 = x_lens[is];
         for (int ii=0; ii<xl1; ++ii) {
           starts[i+ii] = j1;
-          //lens[i+ii] = 1; // see comment in unq_x && unq_y branch
+          //lens[i+ii] = 1;
         }
         is++;
 #ifdef SMERGE_STATS
@@ -172,7 +172,7 @@ static void smerge(const int bx_off, const int bnx,
           const int xl1 = x_lens[is];
           for (int ii=0; ii<xl1; ++ii) {
             starts[i+ii] = j1;
-            lens[i+ii] = 1;
+            //lens[i+ii] = 1;
           }
           is++;
 #ifdef SMERGE_STATS
@@ -195,7 +195,7 @@ static void smerge(const int bx_off, const int bnx,
           const int xl1 = x_lens[is];
           for (int ii=0; ii<xl1; ++ii) {
             starts[i+ii] = j1;
-            lens[i+ii] = 1;
+            //lens[i+ii] = 1;
           }
           is++;
 #ifdef SMERGE_STATS
@@ -439,22 +439,43 @@ SEXP outSmergeR(const int n, const int *restrict starts, const int *restrict len
                 SEXP out_starts, SEXP out_lens, // used only when x was sorted, saves one allocation
                 SEXP x_idx, SEXP y_idx,
                 SEXP n_match, SEXP x_lens1, SEXP y_lens1, SEXP xy_lens1,
-                const bool bmerge) {
+                const bool multLen1, const bool bmerge) {
   int out_len = bmerge ? 6 : 10;
   SEXP ans = PROTECT(allocVector(VECSXP, out_len)), ansnames;
   setAttrib(ans, R_NamesSymbol, ansnames=allocVector(STRSXP, out_len));
   SET_STRING_ELT(ansnames, 0, char_starts);
   SET_STRING_ELT(ansnames, 1, char_lens);
-  if (x_ord) {
-    SET_VECTOR_ELT(ans, 0, out_starts);
-    SET_VECTOR_ELT(ans, 1, out_lens);
+  if (bmerge) {
+    if (x_ord) {
+      SET_VECTOR_ELT(ans, 0, out_starts);
+      SET_VECTOR_ELT(ans, 1, out_lens);
+    } else {
+      SET_VECTOR_ELT(ans, 0, allocVector(INTSXP, n));
+      SET_VECTOR_ELT(ans, 1, allocVector(INTSXP, n));
+      SEXP xoo = PROTECT(forder(x_idx, R_NilValue, /*retGrp=*/ScalarLogical(FALSE), ScalarLogical(TRUE), ScalarInteger(1), ScalarLogical(FALSE))); // verbose=verbose-2L after #4533
+      sortInt(starts, n, INTEGER(xoo), INTEGER(VECTOR_ELT(ans, 0)));
+      sortInt(lens, n, INTEGER(xoo), INTEGER(VECTOR_ELT(ans, 1)));
+      UNPROTECT(1);
+    }
   } else {
-    SET_VECTOR_ELT(ans, 0, allocVector(INTSXP, n));
-    SET_VECTOR_ELT(ans, 1, allocVector(INTSXP, n));
-    SEXP xoo = PROTECT(forder(x_idx, R_NilValue, /*retGrp=*/ScalarLogical(FALSE), ScalarLogical(TRUE), ScalarInteger(1), ScalarLogical(FALSE))); // verbose=verbose-2L after #4533
-    sortInt(starts, n, INTEGER(xoo), INTEGER(VECTOR_ELT(ans, 0)));
-    sortInt(lens, n, INTEGER(xoo), INTEGER(VECTOR_ELT(ans, 1)));
-    UNPROTECT(1);
+    const bool skipLens = !multLen1 && LOGICAL(y_lens1)[0];
+    if (skipLens) { // compact lens if ylens1, mult=first|last already has compact lens
+      out_lens = PROTECT(allocVector(INTSXP, 0));
+    }
+    if (x_ord) {
+      SET_VECTOR_ELT(ans, 0, out_starts);
+      SET_VECTOR_ELT(ans, 1, out_lens);
+    } else {
+      SET_VECTOR_ELT(ans, 0, allocVector(INTSXP, n));
+      SET_VECTOR_ELT(ans, 1, allocVector(INTSXP, LOGICAL(y_lens1)[0] ? 0 : n));
+      SEXP xoo = PROTECT(forder(x_idx, R_NilValue, /*retGrp=*/ScalarLogical(FALSE), ScalarLogical(TRUE), ScalarInteger(1), ScalarLogical(FALSE))); // verbose=verbose-2L after #4533
+      sortInt(starts, n, INTEGER(xoo), INTEGER(VECTOR_ELT(ans, 0)));
+      if (LENGTH(VECTOR_ELT(ans, 1))) // not need to unsort 1-only vector, it is now compact 0 length
+        sortInt(lens, n, INTEGER(xoo), INTEGER(VECTOR_ELT(ans, 1)));
+      UNPROTECT(1);
+    }
+    if (skipLens)
+      UNPROTECT(1);
   }
   SET_STRING_ELT(ansnames, 2, char_indices); SET_VECTOR_ELT(ans, 2, allocVector(INTSXP, 0)); // const for equi join
   SET_STRING_ELT(ansnames, 3, char_allLen1); SET_VECTOR_ELT(ans, 3, y_lens1);
@@ -506,6 +527,7 @@ SEXP smergeR(SEXP x, SEXP y, SEXP x_idx, SEXP y_idx, SEXP multArg, SEXP out_bmer
   if (!isString(multArg))
     error("'mult' must be a string");
   const enum emult mult = matchMultArg(multArg);
+  const bool multLen1 = mult==FIRST || mult==LAST;
   if (!IS_TRUE_OR_FALSE(out_bmerge))
     error("'out.bmerge' must be TRUE or FALSE");
   const bool ans_bmerge = (bool)LOGICAL(out_bmerge)[0];
@@ -551,21 +573,28 @@ SEXP smergeR(SEXP x, SEXP y, SEXP x_idx, SEXP y_idx, SEXP multArg, SEXP out_bmer
     t = omp_get_wtime();
   SEXP out_starts = R_NilValue, out_lens = R_NilValue;
   int *restrict starts=0, *restrict lens=0;
+  const int lens_len = (!multLen1 || ans_bmerge) ? nx : 0; // for mult=first|last we dont need to allocate lens
   if (x_ord) { // we dont need to reorder results so can save one allocation
     out_starts = PROTECT(allocVector(INTSXP, nx)); protecti++;
-    out_lens = PROTECT(allocVector(INTSXP, nx)); protecti++;
+    out_lens = PROTECT(allocVector(INTSXP, lens_len)); protecti++;
     starts = INTEGER(out_starts);
     lens = INTEGER(out_lens);
   } else {
     starts = (int *)R_alloc(nx, sizeof(int));
-    lens = (int *)R_alloc(nx, sizeof(int));
+    lens = (int *)R_alloc(lens_len, sizeof(int));
   }
   // this fills default values, bmerge's defaults are tricky (dictated by how they are consumed): nomatch=0 makes starts=0 not NA, lens=0 is fine there; nomatch=NA makes lens=1 not NA, starts=NA is fine there
-  const int default_lens = 1; //ans_bmerge ? 1 : NA_INTEGER; // for now keep it fixed to bmerge nomatch out: 1
-  #pragma omp parallel for schedule(static) num_threads(getDTthreads())
-  for (int i=0; i<nx; ++i) {
-    starts[i] = NA_INTEGER;
-    lens[i] = default_lens;
+  // AFAIU it make sense to take out nomatch argument from merge
+  if (multLen1 && !ans_bmerge) {
+    #pragma omp parallel for schedule(static) num_threads(getDTthreads())
+    for (int i=0; i<nx; ++i)
+      starts[i] = NA_INTEGER;
+  } else {
+    #pragma omp parallel for schedule(static) num_threads(getDTthreads())
+    for (int i=0; i<nx; ++i) {
+      starts[i] = NA_INTEGER;
+      lens[i] = 1;
+    }
   }
   uint64_t n_match = 0;
   SEXP x_lens1 = PROTECT(allocVector(LGLSXP, 1)); protecti++;
@@ -595,7 +624,7 @@ SEXP smergeR(SEXP x, SEXP y, SEXP x_idx, SEXP y_idx, SEXP multArg, SEXP out_bmer
 
   if (verbose>0)
     t = omp_get_wtime();
-  SEXP ans = outSmergeR(nx, starts, lens, x_ord, out_starts, out_lens, x_idx, y_idx, n_matchr, x_lens1, y_lens1, xy_lens1, ans_bmerge);
+  SEXP ans = outSmergeR(nx, starts, lens, x_ord, out_starts, out_lens, x_idx, y_idx, n_matchr, x_lens1, y_lens1, xy_lens1, multLen1, ans_bmerge);
   if (verbose>0)
     Rprintf("smergeR: outSmerge %s took %.3fs\n", x_ord ? "(was sorted)" : "(alloc and unsort)", omp_get_wtime() - t);
   if (verbose>0)
