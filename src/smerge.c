@@ -433,6 +433,12 @@ void sortInt(const int *restrict x, const int nx, const int *restrict idx, int *
     ans[i] = x[idx[i]-1];
   return;
 }
+void copyInt(const int *restrict x, const int nx, int *restrict ans) {
+  #pragma omp parallel for schedule(static) num_threads(getDTthreads())
+  for (int i=0; i<nx; ++i)
+    ans[i] = x[i];
+  return;
+}
 
 // wrap results into list, bmerge=true produces bmerge replacement output, note that bmerge i,x is smerge x,y (as of now)
 SEXP outSmergeR(const int n, const int *restrict starts, const int *restrict lens, const bool x_ord,
@@ -445,7 +451,7 @@ SEXP outSmergeR(const int n, const int *restrict starts, const int *restrict len
   setAttrib(ans, R_NamesSymbol, ansnames=allocVector(STRSXP, out_len));
   SET_STRING_ELT(ansnames, 0, char_starts);
   SET_STRING_ELT(ansnames, 1, char_lens);
-  if (bmerge) { // for bmerge we need still allocate, but not unsort, for !bmerge no alloc and no unsort
+  if (bmerge) { // for bmerge we still need allocate, but not unsort, for !bmerge no alloc no unsort
     if (x_ord) {
       SET_VECTOR_ELT(ans, 0, out_starts);
       SET_VECTOR_ELT(ans, 1, out_lens);
@@ -454,7 +460,10 @@ SEXP outSmergeR(const int n, const int *restrict starts, const int *restrict len
       SET_VECTOR_ELT(ans, 1, allocVector(INTSXP, n));
       SEXP xoo = PROTECT(forder(x_idx, R_NilValue, /*retGrp=*/ScalarLogical(false), ScalarLogical(true), ScalarInteger(1), ScalarLogical(false))); // verbose=verbose-2L after #4533
       sortInt(starts, n, INTEGER(xoo), INTEGER(VECTOR_ELT(ans, 0)));
-      sortInt(lens, n, INTEGER(xoo), INTEGER(VECTOR_ELT(ans, 1)));
+      if (!y_lens1) // no need to unsort 1-only vector
+        sortInt(lens, n, INTEGER(xoo), INTEGER(VECTOR_ELT(ans, 1)));
+      else
+        copyInt(lens, n, INTEGER(VECTOR_ELT(ans, 1)));
       UNPROTECT(1);
     }
   } else {
@@ -472,7 +481,7 @@ SEXP outSmergeR(const int n, const int *restrict starts, const int *restrict len
       SET_VECTOR_ELT(ans, 1, allocVector(INTSXP, y_lens1 ? 0 : n));
       SEXP xoo = PROTECT(forder(x_idx, R_NilValue, /*retGrp=*/ScalarLogical(false), ScalarLogical(true), ScalarInteger(1), ScalarLogical(false))); // verbose=verbose-2L after #4533
       sortInt(starts, n, INTEGER(xoo), INTEGER(VECTOR_ELT(ans, 0)));
-      if (!y_lens1) // not need to unsort 1-only vector, it is now compact 0 length
+      if (!y_lens1) // no need to unsort 1-only vector, it is now compact 0 length anyway
         sortInt(lens, n, INTEGER(xoo), INTEGER(VECTOR_ELT(ans, 1)));
       UNPROTECT(1);
     }
