@@ -357,7 +357,7 @@ void grpLens(const int *restrict starts, const int n_starts, const int n, int *r
 void smergeC(const int *restrict x, const int nx, const int *restrict x_starts, const int nx_starts,
              const int *restrict y, const int ny, const int *restrict y_starts, const int ny_starts,
              int *restrict starts, int *restrict lens,
-             uint64_t *n_match, int *x_lens1, int *y_lens1, int *xy_lens1,
+             uint64_t *n_match, bool *x_lens1, bool *y_lens1, bool *xy_lens1,
              const enum emult mult, const int verbose) {
 
   double t = 0;
@@ -400,8 +400,8 @@ void smergeC(const int *restrict x, const int nx, const int *restrict x_starts, 
 
   if (verbose>0)
     t = omp_get_wtime();
-  bool xlens1 = true, ylens1 = true, xylens1 = true;
   uint64_t nmatch = 0;
+  bool xlens1 = true, ylens1 = true, xylens1 = true;
   #pragma omp parallel for schedule(dynamic) reduction(&&:xlens1,ylens1,xylens1) reduction(+:nmatch) num_threads(nth)
   for (int b=0; b<nBatch; ++b) {
     uint64_t bnmatch = 0; // local reduction variables
@@ -418,7 +418,7 @@ void smergeC(const int *restrict x, const int nx, const int *restrict x_starts, 
     nmatch += bnmatch; xlens1 = bxlens1 && xlens1; ylens1 = bylens1 && ylens1; xylens1 = bxylens1 && xylens1;
     th[b] = omp_get_thread_num(); // only to report thread utilization in verbose message
   }
-  x_lens1[0] = (int)xlens1; y_lens1[0] = (int)ylens1; xy_lens1[0] = (int)xylens1; n_match[0] = nmatch;
+  x_lens1[0] = xlens1; y_lens1[0] = ylens1; xy_lens1[0] = xylens1; n_match[0] = nmatch;
   if (verbose>0)
     Rprintf("smergeC: %d calls to smerge using %d/%d threads took %.3fs\n", nBatch, unqNth(th, nBatch), nth, omp_get_wtime() - t); // all threads may not always be used bc schedule(dynamic)
   if (mult==ERR && !ylens1)
@@ -438,39 +438,41 @@ void sortInt(const int *restrict x, const int nx, const int *restrict idx, int *
 SEXP outSmergeR(const int n, const int *restrict starts, const int *restrict lens, const bool x_ord,
                 SEXP out_starts, SEXP out_lens, // used only when x was sorted, saves one allocation
                 SEXP x_idx, SEXP y_idx,
-                SEXP n_match, SEXP x_lens1, SEXP y_lens1, SEXP xy_lens1,
+                uint64_t n_match, bool x_lens1, bool y_lens1, bool xy_lens1,
                 const bool multLen1, const bool bmerge) {
-  int out_len = bmerge ? 6 : 10;
+  const int out_len = bmerge ? 6 : 10;
   SEXP ans = PROTECT(allocVector(VECSXP, out_len)), ansnames;
   setAttrib(ans, R_NamesSymbol, ansnames=allocVector(STRSXP, out_len));
   SET_STRING_ELT(ansnames, 0, char_starts);
   SET_STRING_ELT(ansnames, 1, char_lens);
-  if (bmerge) {
+  if (bmerge) { // for bmerge we need still allocate, but not unsort, for !bmerge no alloc and no unsort
     if (x_ord) {
       SET_VECTOR_ELT(ans, 0, out_starts);
       SET_VECTOR_ELT(ans, 1, out_lens);
     } else {
       SET_VECTOR_ELT(ans, 0, allocVector(INTSXP, n));
       SET_VECTOR_ELT(ans, 1, allocVector(INTSXP, n));
-      SEXP xoo = PROTECT(forder(x_idx, R_NilValue, /*retGrp=*/ScalarLogical(FALSE), ScalarLogical(TRUE), ScalarInteger(1), ScalarLogical(FALSE))); // verbose=verbose-2L after #4533
+      SEXP xoo = PROTECT(forder(x_idx, R_NilValue, /*retGrp=*/ScalarLogical(false), ScalarLogical(true), ScalarInteger(1), ScalarLogical(false))); // verbose=verbose-2L after #4533
       sortInt(starts, n, INTEGER(xoo), INTEGER(VECTOR_ELT(ans, 0)));
       sortInt(lens, n, INTEGER(xoo), INTEGER(VECTOR_ELT(ans, 1)));
       UNPROTECT(1);
     }
   } else {
-    const bool skipLens = !multLen1 && LOGICAL(y_lens1)[0];
+    const bool skipLens = !multLen1 && y_lens1;
     if (skipLens) { // compact lens if ylens1, mult=first|last already has compact lens
       out_lens = PROTECT(allocVector(INTSXP, 0));
     }
     if (x_ord) {
+      if (y_lens1 && LENGTH(out_lens))
+        error("internal error: lens should be already compact 0 length integer"); // # nocov
       SET_VECTOR_ELT(ans, 0, out_starts);
       SET_VECTOR_ELT(ans, 1, out_lens);
     } else {
       SET_VECTOR_ELT(ans, 0, allocVector(INTSXP, n));
-      SET_VECTOR_ELT(ans, 1, allocVector(INTSXP, LOGICAL(y_lens1)[0] ? 0 : n));
-      SEXP xoo = PROTECT(forder(x_idx, R_NilValue, /*retGrp=*/ScalarLogical(FALSE), ScalarLogical(TRUE), ScalarInteger(1), ScalarLogical(FALSE))); // verbose=verbose-2L after #4533
+      SET_VECTOR_ELT(ans, 1, allocVector(INTSXP, y_lens1 ? 0 : n));
+      SEXP xoo = PROTECT(forder(x_idx, R_NilValue, /*retGrp=*/ScalarLogical(false), ScalarLogical(true), ScalarInteger(1), ScalarLogical(false))); // verbose=verbose-2L after #4533
       sortInt(starts, n, INTEGER(xoo), INTEGER(VECTOR_ELT(ans, 0)));
-      if (LENGTH(VECTOR_ELT(ans, 1))) // not need to unsort 1-only vector, it is now compact 0 length
+      if (!y_lens1) // not need to unsort 1-only vector, it is now compact 0 length
         sortInt(lens, n, INTEGER(xoo), INTEGER(VECTOR_ELT(ans, 1)));
       UNPROTECT(1);
     }
@@ -478,7 +480,7 @@ SEXP outSmergeR(const int n, const int *restrict starts, const int *restrict len
       UNPROTECT(1);
   }
   SET_STRING_ELT(ansnames, 2, char_indices); SET_VECTOR_ELT(ans, 2, allocVector(INTSXP, 0)); // const for equi join
-  SET_STRING_ELT(ansnames, 3, char_allLen1); SET_VECTOR_ELT(ans, 3, y_lens1);
+  SET_STRING_ELT(ansnames, 3, char_allLen1); SET_VECTOR_ELT(ans, 3, ScalarLogical(y_lens1));
   SET_STRING_ELT(ansnames, 4, char_allGrp1); SET_VECTOR_ELT(ans, 4, ScalarLogical(true));    // const for equi join
   if (bmerge) {
     y_idx = shallow_duplicate(y_idx); // possibly improve after #4467
@@ -492,9 +494,17 @@ SEXP outSmergeR(const int n, const int *restrict starts, const int *restrict len
   SET_STRING_ELT(ansnames, 5, char_xo); SET_VECTOR_ELT(ans, 5, y_idx);
   if (!bmerge) {
     SET_STRING_ELT(ansnames, 6, char_io);      SET_VECTOR_ELT(ans, 6, x_idx);
-    SET_STRING_ELT(ansnames, 7, char_lhsLen1); SET_VECTOR_ELT(ans, 7, x_lens1);
-    SET_STRING_ELT(ansnames, 8, char_xyLen1);  SET_VECTOR_ELT(ans, 8, xy_lens1);
-    SET_STRING_ELT(ansnames, 9, char_nMatch);  SET_VECTOR_ELT(ans, 9, n_match);
+    SET_STRING_ELT(ansnames, 7, char_lhsLen1); SET_VECTOR_ELT(ans, 7, ScalarLogical(x_lens1));
+    SET_STRING_ELT(ansnames, 8, char_xyLen1);  SET_VECTOR_ELT(ans, 8, ScalarLogical(xy_lens1));
+    SEXP n_matchr = PROTECT(allocVector(REALSXP, 1));
+    if (n_match > (uint64_t)DBL_MAX) { // 1e9 x 1e9 cartesian join results 1e18 still less than DBL_MAX, should we check against DBL_MAX or something lesser? we cast uinst64_t to double here
+      REAL(n_matchr)[0] = NA_REAL;
+      warning("count of matches exceeds DBL_MAX, returning NA in 'nMatch' field");
+    } else {
+      REAL(n_matchr)[0] = (double)n_match;
+    }
+    SET_STRING_ELT(ansnames, 9, char_nMatch);  SET_VECTOR_ELT(ans, 9, n_matchr);
+    UNPROTECT(1);
   }
   UNPROTECT(1);
   return ans;
@@ -537,10 +547,10 @@ SEXP smergeR(SEXP x, SEXP y, SEXP x_idx, SEXP y_idx, SEXP multArg, SEXP out_bmer
     t = omp_get_wtime();
   const bool do_x_idx = isNull(x_idx), do_y_idx = isNull(y_idx);
   if (do_x_idx) {
-    x_idx = PROTECT(forder(x, R_NilValue, ScalarLogical(TRUE), ScalarLogical(TRUE), ScalarInteger(1), ScalarLogical(FALSE))); protecti++; // verbose=verbose-2L after #4533
+    x_idx = PROTECT(forder(x, R_NilValue, ScalarLogical(true), ScalarLogical(true), ScalarInteger(1), ScalarLogical(false))); protecti++; // verbose=verbose-2L after #4533
   }
   if (do_y_idx) {
-    y_idx = PROTECT(forder(y, R_NilValue, ScalarLogical(TRUE), ScalarLogical(TRUE), ScalarInteger(1), ScalarLogical(FALSE))); protecti++; // verbose=verbose-2L after #4533
+    y_idx = PROTECT(forder(y, R_NilValue, ScalarLogical(true), ScalarLogical(true), ScalarInteger(1), ScalarLogical(false))); protecti++; // verbose=verbose-2L after #4533
   }
   if (!isInteger(x_idx) || !isInteger(y_idx))
     error("'x.idx' and 'y.idx' must be integer");
@@ -596,35 +606,26 @@ SEXP smergeR(SEXP x, SEXP y, SEXP x_idx, SEXP y_idx, SEXP multArg, SEXP out_bmer
       lens[i] = 1;
     }
   }
-  uint64_t n_match = 0;
-  SEXP x_lens1 = PROTECT(allocVector(LGLSXP, 1)); protecti++;
-  SEXP y_lens1 = PROTECT(allocVector(LGLSXP, 1)); protecti++;
-  SEXP xy_lens1 = PROTECT(allocVector(LGLSXP, 1)); protecti++;
-  SEXP n_matchr = PROTECT(allocVector(REALSXP, 1)); protecti++;
   if (verbose>0)
     Rprintf("smergeR: alloc of size %d took %.3fs\n", nx, omp_get_wtime() - t);
 
   if (verbose>0)
     t = omp_get_wtime();
+  uint64_t n_match = 0;
+  bool x_lens1 = true, y_lens1 = true, xy_lens1 = true;
   smergeC(
     xp, nx, INTEGER(x_starts), LENGTH(x_starts),
     yp, ny, INTEGER(y_starts), LENGTH(y_starts),
     starts, lens,
-    &n_match, INTEGER(x_lens1), INTEGER(y_lens1), INTEGER(xy_lens1),
+    &n_match, &x_lens1, &y_lens1, &xy_lens1,
     mult, verbose-1
   );
-  if (n_match > (uint64_t)DBL_MAX) { // 1e9x1e9 cartesian join 1e18 still less than DBL_MAX, should we check against DBL_MAX or something lesser? we cast uinst64_t to double here
-    REAL(n_matchr)[0] = NA_REAL;
-    warning("count of matches exceeds DBL_MAX, returning NA in 'nMatch' field");
-  } else {
-    REAL(n_matchr)[0] = (double)n_match;
-  }
   if (verbose>0)
     Rprintf("smergeR: smergeC of %d x %d = %"PRIu64"; took %.3fs\n", nx, ny, n_match, omp_get_wtime() - t);
 
   if (verbose>0)
     t = omp_get_wtime();
-  SEXP ans = outSmergeR(nx, starts, lens, x_ord, out_starts, out_lens, x_idx, y_idx, n_matchr, x_lens1, y_lens1, xy_lens1, multLen1, ans_bmerge);
+  SEXP ans = outSmergeR(nx, starts, lens, x_ord, out_starts, out_lens, x_idx, y_idx, n_match, x_lens1, y_lens1, xy_lens1, multLen1, ans_bmerge);
   if (verbose>0)
     Rprintf("smergeR: outSmerge %s took %.3fs\n", x_ord ? "(was sorted)" : "(alloc and unsort)", omp_get_wtime() - t);
   if (verbose>0)
