@@ -4,7 +4,6 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
   if (length(icols)==1L && length(xcols)==1L && is.integer(i[[icols]]) && is.integer(x[[xcols]]) ## single column integer
       && isTRUE(getOption("datatable.smerge"))                     ## enable option
       && identical(nomatch, NA_integer_)                           ## for now only outer join
-      && identical(mult, "all")                                    ## for now only mult='all'
       && identical(ops, 1L)                                        ## equi join
       && identical(roll, 0) && identical(rollends, c(FALSE, TRUE)) ## non-rolling join
       ) {
