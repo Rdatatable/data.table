@@ -199,7 +199,7 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
     else if (ialgo==1)
       Rprintf(_("%s: %d column(s) and %d window(s), not entering parallel execution here because algo='exact' will compute results in parallel\n"), __func__, nx, nk);
   }
-  #pragma omp parallel for if (ialgo==0) schedule(auto) collapse(2) num_threads(getDTthreads(OMP_BATCH, nx*nk))
+  #pragma omp parallel for if (ialgo==0) schedule(auto) collapse(2) num_threads(getDTthreads(nx*nk, false))
   for (R_len_t i=0; i<nx; i++) {                                // loop over multiple columns
     for (R_len_t j=0; j<nk; j++) {                              // loop over multiple windows
       switch (sfun) {

@@ -5,8 +5,8 @@
 #include <errno.h>     // errno
 #include <ctype.h>     // isspace
 
-static int  DTthreads = -1;           // Never read directly hence static; use getDTthreads(OMP_ALL, 0). -1 so we know for sure initDTthreads() ran and set it >= 1.
-static int  DTthiters = -1;           // getDTthreads limits number of threads dynamically #4484
+static int  DTthreads = -1;   // Never read directly hence static; use getDTthreads(n, /*throttle=*/0|1). -1 so we know for sure initDTthreads() ran and set it >= 1.
+static int  DTthrottle = -1;  // Thread 1 is assigned DTthrottle iterations before a 2nd thread is utilized; #4484.
 static bool RestoreAfterFork = true;  // see #2885 in v1.12.0
 
 static int getIntEnv(const char *name, int def)
@@ -51,24 +51,20 @@ void initDTthreads() {
   ans = imin(ans, getIntEnv("OMP_THREAD_LIMIT", INT_MAX));  // user might expect `Sys.setenv(OMP_THREAD_LIMIT=2);setDTthreads()` to work. Satisfy this
   ans = imin(ans, getIntEnv("OMP_NUM_THREADS", INT_MAX));   //   expectation by reading them again now. OpenMP just reads them on startup (quite reasonably)
   DTthreads = ans;
-  int thiters = getIntEnv("R_DATATABLE_ITER_PER_THREAD", 1);// by default use multiple threads only if every thread will have at least one iteration
-  DTthiters = imax(1, thiters);
+  DTthrottle = imax(1, getIntEnv("R_DATATABLE_THROTTLE", 1024)); // 2nd thread is used only when n>1024, 3rd thread when n>2048, etc
 }
 
-int getDTthreads(int type, int iters) {
-  // this is the main getter used by all parallel regions; they specify num_threads(getDTthreads(OMP_ALL, 0))
+int getDTthreads(const int64_t n, const bool throttle) {
+  // this is the main getter used by all parallel regions; they specify num_threads(n, DTthrottle) or num_threads(n, 1); 
   // Therefore keep it light, simple and robust. Local static variable. initDTthreads() ensures 1 <= DTthreads <= omp_get_num_proc()
-  if (type == 0)
-    return DTthreads;
-
-  if (type == 2) // looping over columns or batches
-    return imin(DTthreads, iters);
-
-  if (type != 1) // looping over single column
-    error("Internal error: getDTthreads type must be 0, 1 or 2"); // # nocov
-
-  int th = imax(1, iters / DTthiters);
-  return imin(DTthreads, th);
+  // throttle is the number of iterations per thread before a second thread is utilized.
+  // throttle==1 when parallel region is already pre-chunked such as in fread; e.g. if there are 2 iterations it is intended for two
+  // threads to receive one iteration each. Otherwise, DTthrottle (by default 1024) is passed for standard loops over nrow (for example)
+  // where we leave OpenMP to batch. Passing the thottle directly avoids needing to know codes, and allows the calling parallel region
+  // to use a multiple of throttle (for example).
+  if (n<1) return 1;
+  int n2 = n>INT_MAX ? INT_MAX : n;
+  return imin(DTthreads, throttle ? 1+(n2-1)/DTthrottle : n2);
 }
 
 static const char *mygetenv(const char *name, const char *unset) {
@@ -88,51 +84,42 @@ SEXP getDTthreads_R(SEXP verbose) {
     Rprintf(_("  omp_get_num_procs()            %d\n"), omp_get_num_procs());
     Rprintf(_("  R_DATATABLE_NUM_PROCS_PERCENT  %s\n"), mygetenv("R_DATATABLE_NUM_PROCS_PERCENT", "unset (default 50)"));
     Rprintf(_("  R_DATATABLE_NUM_THREADS        %s\n"), mygetenv("R_DATATABLE_NUM_THREADS", "unset"));
-    Rprintf(_("  R_DATATABLE_ITER_PER_THREAD    %s\n"), mygetenv("R_DATATABLE_ITER_PER_THREAD", "unset"));
+    Rprintf(_("  R_DATATABLE_THROTTLE           %s\n"), mygetenv("R_DATATABLE_THROTTLE", "unset (default 1024)"));
     Rprintf(_("  omp_get_thread_limit()         %d\n"), omp_get_thread_limit());
     Rprintf(_("  omp_get_max_threads()          %d\n"), omp_get_max_threads());
     Rprintf(_("  OMP_THREAD_LIMIT               %s\n"), mygetenv("OMP_THREAD_LIMIT", "unset"));  // CRAN sets to 2
     Rprintf(_("  OMP_NUM_THREADS                %s\n"), mygetenv("OMP_NUM_THREADS", "unset"));
     Rprintf(_("  RestoreAfterFork               %s\n"), RestoreAfterFork ? "true" : "false");
-    Rprintf(_("  data.table is using %d threads and %d iterations per thread. See ?setDTthreads.\n"), getDTthreads(OMP_ALL, 0), DTthiters);
+    Rprintf(_("  data.table is using %d threads with throttle==%d. See ?setDTthreads.\n"), getDTthreads(INT_MAX, false), DTthrottle);
   }
-  return ScalarInteger(getDTthreads(OMP_ALL, 0));
+  return ScalarInteger(getDTthreads(INT_MAX, false));
 }
 
-SEXP setDTthreads(SEXP threads, SEXP restore_after_fork, SEXP percent, SEXP th_iters) {
+SEXP setDTthreads(SEXP threads, SEXP restore_after_fork, SEXP percent, SEXP throttle) {
   if (!isNull(restore_after_fork)) {
     if (!isLogical(restore_after_fork) || LOGICAL(restore_after_fork)[0]==NA_LOGICAL) {
       error(_("restore_after_fork= must be TRUE, FALSE, or NULL (default). getDTthreads(verbose=TRUE) reports the current setting.\n"));
     }
     RestoreAfterFork = LOGICAL(restore_after_fork)[0];  // # nocov
   }
-  if (!isNull(th_iters)) {
-    int protecti=0;
-    if (isReal(th_iters)) {
-      th_iters = PROTECT(coerceVector(th_iters, INTSXP)); protecti++;
-    }
-    if (!isInteger(th_iters) || LENGTH(th_iters)!=1 || INTEGER(th_iters)[0]==NA_INTEGER)
-      error(_("'th_iters' must be non-NA integer of length 1"));
-    DTthiters = imax(INTEGER(th_iters)[0], 1);
-    UNPROTECT(protecti);
+  if (length(throttle)) {
+    if (!isInteger(throttle) || LENGTH(throttle)!=1 || INTEGER(throttle)[0]<1)
+      error(_("'throttle' must be a single number, non-NA, and >=1"));
+    DTthrottle = INTEGER(throttle)[0];
   }
   int old = DTthreads;
-  if (isNull(threads) && isNull(th_iters)) {
+  if (!length(threads) && !length(throttle)) {
     initDTthreads();
     // Rerun exactly the same function used on startup (re-reads env variables); this is now default setDTthreads() behavior from 1.12.2
     // Allows robust testing of environment variables using Sys.setenv() to experiment.
     // Default  is now (as from 1.12.2) threads=NULL which re-reads environment variables.
     // If a CPU has been unplugged (high end servers allow live hardware replacement) then omp_get_num_procs() will
     // reflect that and a call to setDTthreads(threads=NULL) will update DTthreads.
-  } else if (!isNull(threads)) {
-    int n=0, protecti=0;
-    if (length(threads)!=1) error(_("threads= must be either NULL (default) or a single number. It has length %d"), length(threads));
-    if (isReal(threads)) { threads = PROTECT(coerceVector(threads, INTSXP)); protecti++; }
-    if (!isInteger(threads)) error(_("threads= must be either NULL (default) or type integer/numeric"));
-    if ((n=INTEGER(threads)[0]) < 0) {  // <0 catches NA too since NA is negative (INT_MIN)
-      error(_("threads= must be either NULL or a single integer >= 0. See ?setDTthreads."));
+  } else if (length(threads)) {
+    int n=0;
+    if (length(threads)!=1 || !isInteger(threads) || (n=INTEGER(threads)[0]) < 0) {  // <0 catches NA too since NA is negative (INT_MIN)
+      error(_("threads= must be either NULL or a single number >= 0. See ?setDTthreads."));
     }
-    UNPROTECT(protecti);
     int num_procs = imax(omp_get_num_procs(), 1); // max just in case omp_get_num_procs() returns <= 0 (perhaps error, or unsupported)
     if (!isLogical(percent) || length(percent)!=1 || LOGICAL(percent)[0]==NA_LOGICAL) {
       error(_("Internal error: percent= must be TRUE or FALSE at C level"));  // # nocov
