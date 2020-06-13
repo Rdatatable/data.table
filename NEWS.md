@@ -81,6 +81,8 @@ unit = "s")
 
 14. Added support for `round()` and `trunc()` to extend functionality of `ITime`. `round()` and `trunc()` can be used with argument units: "hours" or "minutes". Thanks to @JensPederM for the suggestion and PR.
 
+15. A new throttle feature has been introduced to speed up small data tasks that are repeated in a loop, [#3175](https://github.com/Rdatatable/data.table/issues/3175) [#3735](https://github.com/Rdatatable/data.table/issues/3735). The default throttle of 1024 means that a single thread will be used when nrow<=1024, two threads when nrow<=2048, etc. To change the default, use `setDTthreads(throttle=)`. Or use the new environment variable `R_DATATABLE_THROTTLE`. If you use `Sys.setenv()` in a running R session to change this environment variable, be sure to run an empty `setDTthreads()` call afterwards for the change to take effect; see `?setDTthreads`. The word *throttle* is used to convey that the number of threads is restricted (throttled) for small data tasks. Reducing throttle to 1 will turn off throttling and should revert behaviour to past versions (i.e. using many threads even for small data). Increasing throttle to, say, 65636 will utilize multi-threading only for larger datasets. The value 1024 is a guess. We welcome feedback and test results indicating what the best default should be.
+
 ## BUG FIXES
 
 1. A NULL timezone on POSIXct was interpreted by `as.IDate` and `as.ITime` as UTC rather than the session's default timezone (`tz=""`) , [#4085](https://github.com/Rdatatable/data.table/issues/4085).
