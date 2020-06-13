@@ -14,7 +14,7 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
       if (!is.null(attr(idx, "starts", exact=TRUE))) idx
     }
     if (verbose) {last.started.at=proc.time();cat("Starting smerge ...\n");flush.console()}
-    ans = smerge(x=i[[icols]], y=x[[xcols]], x.idx=getIdxGrp(i, icols), y.idx=getIdxGrp(x, xcols), out.bmerge=TRUE)
+    ans = smerge(x=i[[icols]], y=x[[xcols]], x.idx=getIdxGrp(i, icols), y.idx=getIdxGrp(x, xcols), mult=mult, out.bmerge=TRUE)
     if (verbose) {cat("smerge done in",timetaken(last.started.at),"\n"); flush.console()}
     return(ans)
   }
