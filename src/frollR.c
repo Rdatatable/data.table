@@ -95,7 +95,7 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
       }
     }
   }
-  int* ikl[nk];                                                 // pointers to adaptive window width
+  int **ikl = (int**)R_alloc(nk, sizeof(int*));                 // to not recalculate `length(x[[i]])` we store it in extra array
   if (badaptive) {
     for (int j=0; j<nk; j++) ikl[j] = INTEGER(VECTOR_ELT(kl, j));
   }
