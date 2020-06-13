@@ -5,7 +5,8 @@
  *
  * join on a single integer column
  * sort LHS and RHS
- * split LHS into equal batches, RHS into corresponding batches by matching upper-lower bounds of LHS batches
+ * split LHS into equal batches based on its unique values
+ * split RHS into batches by matching corresponding upper-lower bounds of LHS batches using binary search
  * parallel sort-merge join
  *
  * for a maximum speed collecting of following statistics can be disabled by undefine SMERGE_STATS
