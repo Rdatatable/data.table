@@ -81,6 +81,8 @@ unit = "s")
 
 14. Added support for `round()` and `trunc()` to extend functionality of `ITime`. `round()` and `trunc()` can be used with argument units: "hours" or "minutes". Thanks to @JensPederM for the suggestion and PR.
 
+15. Support for _cross join_ has been added inside `[.data.table` by providing `on = character()`, closes [#1717](https://github.com/Rdatatable/data.table/issues/1717).
+
 ## BUG FIXES
 
 1. A NULL timezone on POSIXct was interpreted by `as.IDate` and `as.ITime` as UTC rather than the session's default timezone (`tz=""`) , [#4085](https://github.com/Rdatatable/data.table/issues/4085).

@@ -156,7 +156,7 @@ data.table(\dots, keep.rownames=FALSE, check.names=FALSE, key=NULL, stringsAsFac
 
   \item{drop}{ Never used by \code{data.table}. Do not use. It needs to be here because \code{data.table} inherits from \code{data.frame}. See \href{../doc/datatable-faq.html}{\code{vignette("datatable-faq")}}.}
 
-  \item{on}{ Indicate which columns in \code{x} should be joined with which columns in \code{i} along with the type of binary operator to join with (see non-equi joins below on this). When specified, this overrides the keys set on \code{x} and \code{i}. When \code{.NATURAL} keyword provided then \emph{natural join} is made (join on common columns). There are multiple ways of specifying the \code{on} argument:
+  \item{on}{ Indicate which columns in \code{x} should be joined with which columns in \code{i} along with the type of binary operator to join with (see non-equi joins below on this). When specified, this overrides the keys set on \code{x} and \code{i}. When \code{.NATURAL} keyword provided then \emph{natural join} is made (join on common columns). When \code{character()} then \emph{cross join} is made. There are multiple ways of specifying the \code{on} argument:
         \itemize{
             \item{As an unnamed character vector, e.g., \code{X[Y, on=c("a", "b")]}, used when columns \code{a} and \code{b} are common to both \code{X} and \code{Y}.}
             \item{\emph{Foreign key joins}: As a \emph{named} character vector when the join columns have different names in \code{X} and \code{Y}.
