@@ -154,16 +154,16 @@ all.equal.data.table = function(target, current, trim.levels=TRUE, check.attribu
     k2 = key(current)
     if (!identical(k1, k2)) {
       return(sprintf("Datasets has different keys. 'target'%s. 'current'%s.",
-               if(length(k1)) paste0(": ", paste(k1, collapse=", ")) else " has no key",
-               if(length(k2)) paste0(": ", paste(k2, collapse=", ")) else " has no key"))
+               if(length(k1)) paste0(": ", toString(k1)) else " has no key",
+               if(length(k2)) paste0(": ", toString(k2)) else " has no key"))
     }
     # check index
     i1 = indices(target)
     i2 = indices(current)
     if (!identical(i1, i2)) {
       return(sprintf("Datasets has different indexes. 'target'%s. 'current'%s.",
-               if(length(i1)) paste0(": ", paste(i1, collapse=", ")) else " has no index",
-               if(length(i2)) paste0(": ", paste(i2, collapse=", ")) else " has no index"))
+               if(length(i1)) paste0(": ", toString(i1)) else " has no index",
+               if(length(i2)) paste0(": ", toString(i2)) else " has no index"))
     }
 
     # Trim any extra row.names attributes that came from some inheritance
@@ -254,7 +254,7 @@ all.equal.data.table = function(target, current, trim.levels=TRUE, check.attribu
       # trim.levels moved here
       x = target[[i]]
       y = current[[i]]
-      if (xor(is.factor(x),is.factor(y)))
+      if ((is.factor(x) || is.factor(y)) && !(is.factor(x) && is.factor(y)))
         stop("Internal error: factor type mismatch should have been caught earlier") # nocov
       cols.r = TRUE
       if (is.factor(x)) {
@@ -274,8 +274,12 @@ all.equal.data.table = function(target, current, trim.levels=TRUE, check.attribu
           # dealt with according to trim.levels
         }
       } else {
-        cols.r = all.equal(unclass(x), unclass(y), tolerance=tolerance, ..., check.attributes=check.attributes)
-        # classes were explicitly checked earlier above, so ignore classes here.
+        # for test 1710.5 and #4543, we want to (1) make sure we dispatch to
+        #   any existing all.equal methods for x while also (2) treating class(x)/class(y)
+        #   as attributes as regards check.attributes argument
+        cols.r = all.equal(x, y, tolerance=tolerance, ..., check.attributes=check.attributes)
+        if (!isTRUE(cols.r) && !check.attributes && isTRUE(all.equal(unclass(x), unclass(y), tolerance=tolerance, ..., check.attributes=check.attributes)))
+          cols.r = TRUE
       }
       if (!isTRUE(cols.r)) return(paste0("Column '", names(target)[i], "': ", paste(cols.r,collapse=" ")))
     }
