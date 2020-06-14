@@ -16969,3 +16969,18 @@ DT = data.table(col1=c(1,1,1), col2=c("a","b","a"), col3=c("A","B","A"), col4=c(
 setkey(DT, col1, col4)
 test(2147.1, DT[, .N, by = col1:col4], ans<-data.table(col1=1, col2=c("a","b"), col3=c("A","B"), col4=2, N=INT(2,1)))
 test(2147.2, DT[, .N, by = c("col1", "col2", "col3", "col4")], ans)
+
+# allow cross join in `[.data.table` #1717
+X=data.table(a=1:2)
+Y=data.table(b=letters[1:2])
+expected = shallow(X)[, "k":=1L][shallow(Y)[, "k":=1L], on="k"][, "k":=NULL]
+test(2148.1, X[Y, on=character()], expected)
+test(2148.2, X[Y, on=character(), .(a, b)], expected)
+test(2148.3, X[Y, on=character(), c("a", "b")], expected)
+test(2148.4, X[Y, on=character(), .(a=x.a, b=i.b)], expected)
+expected = shallow(X[0])[, "k":=integer()][shallow(Y[0])[, "k":=integer()], on="k"][, "k":=NULL]
+test(2148.5, X[0][Y[0], on=character()], expected)
+expected = shallow(X)[, "k":=1L][shallow(Y[0])[, "k":=integer()], on="k"][, "k":=NULL]
+test(2148.6, X[Y[0], on=character()], expected)
+expected = shallow(X[0])[, "k":=integer()][shallow(Y)[, "k":=1L], on="k"][, "k":=NULL]
+test(2148.7, X[0][Y, on=character()], expected)
