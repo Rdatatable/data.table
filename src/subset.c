@@ -11,15 +11,29 @@ void subsetVectorRaw(SEXP ans, SEXP source, SEXP idx, const bool anyNA)
   // negatives, zeros and out-of-bounds have already been dealt with in convertNegAndZero so we can rely
   // here on idx in range [1,length(ans)].
 
-  #define PARLOOP(_NAVAL_)                                        \
+  const int nth = getDTthreads(n, true); // #4200
+
+  #define NPARLOOP(_NAVAL_)                                       \
   if (anyNA) {                                                    \
-    _Pragma("omp parallel for num_threads(getDTthreads(n, true))") \
     for (int i=0; i<n; i++) {                                     \
       int elem = idxp[i];                                         \
       ap[i] = elem==NA_INTEGER ? _NAVAL_ : sp[elem-1];            \
     }                                                             \
   } else {                                                        \
-    _Pragma("omp parallel for num_threads(getDTthreads(n, true))") \
+    for (int i=0; i<n; i++) {                                     \
+      ap[i] = sp[idxp[i]-1];                                      \
+    }                                                             \
+  }
+
+  #define PARLOOP(_NAVAL_)                                        \
+  if (anyNA) {                                                    \
+    _Pragma("omp parallel for num_threads(nth)")                  \
+    for (int i=0; i<n; i++) {                                     \
+      int elem = idxp[i];                                         \
+      ap[i] = elem==NA_INTEGER ? _NAVAL_ : sp[elem-1];            \
+    }                                                             \
+  } else {                                                        \
+    _Pragma("omp parallel for num_threads(nth)")                  \
     for (int i=0; i<n; i++) {                                     \
       ap[i] = sp[idxp[i]-1];                                      \
     }                                                             \
@@ -33,17 +47,26 @@ void subsetVectorRaw(SEXP ans, SEXP source, SEXP idx, const bool anyNA)
   case INTSXP: case LGLSXP: {
     int *sp = INTEGER(source);
     int *ap = INTEGER(ans);
-    PARLOOP(NA_INTEGER)
+    if (nth > 1)
+      PARLOOP(NA_INTEGER)
+    else
+      NPARLOOP(NA_INTEGER)
   } break;
   case REALSXP : {
     if (INHERITS(source, char_integer64)) {
       int64_t *sp = (int64_t *)REAL(source);
       int64_t *ap = (int64_t *)REAL(ans);
-      PARLOOP(INT64_MIN)
+      if (nth > 1)
+        PARLOOP(INT64_MIN)
+      else
+        NPARLOOP(INT64_MIN)
     } else {
       double *sp = REAL(source);
       double *ap = REAL(ans);
-      PARLOOP(NA_REAL)
+      if (nth > 1)
+        PARLOOP(NA_REAL)
+      else
+        NPARLOOP(NA_REAL)
     }
   } break;
   case STRSXP : {
@@ -72,12 +95,18 @@ void subsetVectorRaw(SEXP ans, SEXP source, SEXP idx, const bool anyNA)
   case CPLXSXP : {
     Rcomplex *sp = COMPLEX(source);
     Rcomplex *ap = COMPLEX(ans);
-    PARLOOP(NA_CPLX)
+    if (nth > 1)
+      PARLOOP(NA_CPLX)
+    else
+      NPARLOOP(NA_CPLX)
   } break;
   case RAWSXP : {
     Rbyte *sp = RAW(source);
     Rbyte *ap = RAW(ans);
-    PARLOOP(0)
+    if (nth > 1)
+      PARLOOP(0)
+    else
+      NPARLOOP(0)
   } break;
   default :
     error(_("Internal error: column type '%s' not supported by data.table subset. All known types are supported so please report as bug."), type2char(TYPEOF(source)));  // # nocov
