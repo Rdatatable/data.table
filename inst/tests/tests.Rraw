@@ -14211,6 +14211,10 @@ test(1997.14, getDTthreads(), new)
 Sys.setenv(R_DATATABLE_NUM_PROCS_PERCENT=oldenv)
 test(1997.15, setDTthreads(old), new)
 test(1997.16, getDTthreads(), old)
+test(1997.17, setDTthreads(throttle=NA), error="throttle.*must be a single number, non-NA, and >=1")
+setDTthreads(throttle=65536)
+test(1997.18, getDTthreads(TRUE), output="throttle==65536")
+setDTthreads(throttle=1024)
 
 # test that a copy is being made and output is printed, #3385 after partial revert of #3281
 x = 5L
