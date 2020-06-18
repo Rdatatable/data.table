@@ -11,33 +11,17 @@ void subsetVectorRaw(SEXP ans, SEXP source, SEXP idx, const bool anyNA)
   // negatives, zeros and out-of-bounds have already been dealt with in convertNegAndZero so we can rely
   // here on idx in range [1,length(ans)].
 
-  const int nth = getDTthreads(n, true); // #4200
-
-  #define NPARLOOP(_NAVAL_)                                       \
-  if (anyNA) {                                                    \
-    for (int i=0; i<n; i++) {                                     \
-      int elem = idxp[i];                                         \
-      ap[i] = elem==NA_INTEGER ? _NAVAL_ : sp[elem-1];            \
-    }                                                             \
-  } else {                                                        \
-    for (int i=0; i<n; i++) {                                     \
-      ap[i] = sp[idxp[i]-1];                                      \
-    }                                                             \
+  #define PARLOOP                                                 \
+  for (int i=0; i<n; i++) {                                       \
+    ap[i] = sp[idxp[i]-1];                                        \
   }
 
-  #define PARLOOP(_NAVAL_)                                        \
-  if (anyNA) {                                                    \
-    _Pragma("omp parallel for num_threads(nth)")                  \
-    for (int i=0; i<n; i++) {                                     \
-      int elem = idxp[i];                                         \
-      ap[i] = elem==NA_INTEGER ? _NAVAL_ : sp[elem-1];            \
-    }                                                             \
-  } else {                                                        \
-    _Pragma("omp parallel for num_threads(nth)")                  \
-    for (int i=0; i<n; i++) {                                     \
-      ap[i] = sp[idxp[i]-1];                                      \
-    }                                                             \
+  #define PARLOOPNA(_NAVAL_)                                      \
+  for (int i=0; i<n; i++) {                                       \
+    int elem = idxp[i];                                           \
+    ap[i] = elem==NA_INTEGER ? _NAVAL_ : sp[elem-1];              \
   }
+
   // For small n such as 2,3,4 etc we hope OpenMP will be sensible inside it and not create a team with each thread doing just one item. Otherwise,
   // call overhead would be too high for highly iterated calls on very small subests. Timings were tested in #3175
   // Futher, we desire (currently at least) to stress-test the threaded code (especially in latest R-devel) on small data to reduce chance that bugs
@@ -47,26 +31,35 @@ void subsetVectorRaw(SEXP ans, SEXP source, SEXP idx, const bool anyNA)
   case INTSXP: case LGLSXP: {
     int *sp = INTEGER(source);
     int *ap = INTEGER(ans);
-    if (nth > 1)
-      PARLOOP(NA_INTEGER)
-    else
-      NPARLOOP(NA_INTEGER)
+    if (anyNA) {
+      #pragma omp parallel for num_threads(getDTthreads(n, true))
+      PARLOOPNA(NA_INTEGER)
+    } else {
+      #pragma omp parallel for num_threads(getDTthreads(n, true))
+      PARLOOP
+    }
   } break;
   case REALSXP : {
     if (INHERITS(source, char_integer64)) {
       int64_t *sp = (int64_t *)REAL(source);
       int64_t *ap = (int64_t *)REAL(ans);
-      if (nth > 1)
-        PARLOOP(INT64_MIN)
-      else
-        NPARLOOP(INT64_MIN)
+      if (anyNA) {
+        #pragma omp parallel for num_threads(getDTthreads(n, true))
+        PARLOOPNA(INT64_MIN)
+      } else {
+        #pragma omp parallel for num_threads(getDTthreads(n, true))
+        PARLOOP
+      }
     } else {
       double *sp = REAL(source);
       double *ap = REAL(ans);
-      if (nth > 1)
-        PARLOOP(NA_REAL)
-      else
-        NPARLOOP(NA_REAL)
+      if (anyNA) {
+        #pragma omp parallel for num_threads(getDTthreads(n, true))
+        PARLOOPNA(NA_REAL)
+      } else {
+        #pragma omp parallel for num_threads(getDTthreads(n, true))
+        PARLOOP
+      }
     }
   } break;
   case STRSXP : {
@@ -95,18 +88,24 @@ void subsetVectorRaw(SEXP ans, SEXP source, SEXP idx, const bool anyNA)
   case CPLXSXP : {
     Rcomplex *sp = COMPLEX(source);
     Rcomplex *ap = COMPLEX(ans);
-    if (nth > 1)
-      PARLOOP(NA_CPLX)
-    else
-      NPARLOOP(NA_CPLX)
+    if (anyNA) {
+      #pragma omp parallel for num_threads(getDTthreads(n, true))
+      PARLOOPNA(NA_CPLX)
+    } else {
+      #pragma omp parallel for num_threads(getDTthreads(n, true))
+      PARLOOP
+    }
   } break;
   case RAWSXP : {
     Rbyte *sp = RAW(source);
     Rbyte *ap = RAW(ans);
-    if (nth > 1)
-      PARLOOP(0)
-    else
-      NPARLOOP(0)
+    if (anyNA) {
+      #pragma omp parallel for num_threads(getDTthreads(n, true))
+      PARLOOPNA(0)
+    } else {
+      #pragma omp parallel for num_threads(getDTthreads(n, true))
+      PARLOOP
+    }
   } break;
   default :
     error(_("Internal error: column type '%s' not supported by data.table subset. All known types are supported so please report as bug."), type2char(TYPEOF(source)));  // # nocov
