@@ -42,7 +42,7 @@ void fadaptiverollmeanFast(double *x, uint64_t nx, ans_t *ans, int *k, double fi
       cs[i] = (double) w;
     }
     if (R_FINITE((double) w)) {                                 // no need to calc this if NAs detected as will re-calc all below in truehasna==1
-      #pragma omp parallel for num_threads(getDTthreads())
+      #pragma omp parallel for num_threads(getDTthreads(nx, true))
       for (uint64_t i=0; i<nx; i++) {                           // loop over observations to calculate final answer
         if (i+1 == k[i]) {
           ans->dbl_v[i] = cs[i]/k[i];                           // current obs window width exactly same as obs position in a vector
@@ -82,7 +82,7 @@ void fadaptiverollmeanFast(double *x, uint64_t nx, ans_t *ans, int *k, double fi
       cs[i] = (double) w;                                       // cumsum, na.rm=TRUE always, NAs handled using cum NA counter
       cn[i] = nc;                                               // cum NA counter
     }
-    #pragma omp parallel for num_threads(getDTthreads())
+    #pragma omp parallel for num_threads(getDTthreads(nx, true))
     for (uint64_t i=0; i<nx; i++) {                             // loop over observations to calculate final answer
       if (i+1 < k[i]) {                                         // partial window
         ans->dbl_v[i] = fill;
@@ -114,7 +114,7 @@ void fadaptiverollmeanExact(double *x, uint64_t nx, ans_t *ans, int *k, double f
     snprintf(end(ans->message[0]), 500, _("%s: running in parallel for input length %"PRIu64", hasna %d, narm %d\n"), "fadaptiverollmeanExact", (uint64_t)nx, hasna, (int) narm);
   bool truehasna = hasna>0;                                     // flag to re-run if NAs detected
   if (!truehasna || !narm) {                                    // narm=FALSE handled here as NAs properly propagated in exact algo
-    #pragma omp parallel for num_threads(getDTthreads())
+    #pragma omp parallel for num_threads(getDTthreads(nx, true))
     for (uint64_t i=0; i<nx; i++) {                             // loop on every observation to produce final answer
       if (narm && truehasna) {
         continue;                                               // if NAs detected no point to continue
@@ -156,7 +156,7 @@ void fadaptiverollmeanExact(double *x, uint64_t nx, ans_t *ans, int *k, double f
     }
   }
   if (truehasna && narm) {
-    #pragma omp parallel for num_threads(getDTthreads())
+    #pragma omp parallel for num_threads(getDTthreads(nx, true))
     for (uint64_t i=0; i<nx; i++) {                             // loop over observations to produce final answer
       if (i+1 < k[i]) {
         ans->dbl_v[i] = fill;                                   // partial window
@@ -231,7 +231,7 @@ void fadaptiverollsumFast(double *x, uint64_t nx, ans_t *ans, int *k, double fil
       cs[i] = (double) w;
     }
     if (R_FINITE((double) w)) {
-      #pragma omp parallel for num_threads(getDTthreads())
+      #pragma omp parallel for num_threads(getDTthreads(nx, true))
       for (uint64_t i=0; i<nx; i++) {
         if (i+1 == k[i]) {
           ans->dbl_v[i] = cs[i];
@@ -271,7 +271,7 @@ void fadaptiverollsumFast(double *x, uint64_t nx, ans_t *ans, int *k, double fil
       cs[i] = (double) w;
       cn[i] = nc;
     }
-    #pragma omp parallel for num_threads(getDTthreads())
+    #pragma omp parallel for num_threads(getDTthreads(nx, true))
     for (uint64_t i=0; i<nx; i++) {
       if (i+1 < k[i]) {
         ans->dbl_v[i] = fill;
@@ -298,7 +298,7 @@ void fadaptiverollsumExact(double *x, uint64_t nx, ans_t *ans, int *k, double fi
     snprintf(end(ans->message[0]), 500, _("%s: running in parallel for input length %"PRIu64", hasna %d, narm %d\n"), "fadaptiverollsumExact", (uint64_t)nx, hasna, (int) narm);
   bool truehasna = hasna>0;
   if (!truehasna || !narm) {
-    #pragma omp parallel for num_threads(getDTthreads())
+    #pragma omp parallel for num_threads(getDTthreads(nx, true))
     for (uint64_t i=0; i<nx; i++) {
       if (narm && truehasna) {
         continue;
@@ -335,7 +335,7 @@ void fadaptiverollsumExact(double *x, uint64_t nx, ans_t *ans, int *k, double fi
     }
   }
   if (truehasna && narm) {
-    #pragma omp parallel for num_threads(getDTthreads())
+    #pragma omp parallel for num_threads(getDTthreads(nx, true))
     for (uint64_t i=0; i<nx; i++) {
       if (i+1 < k[i]) {
         ans->dbl_v[i] = fill;
