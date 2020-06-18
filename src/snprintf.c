@@ -47,7 +47,7 @@ int dt_win_snprintf(char *dest, size_t n, const char *fmt, ...)
       // an error() call is not thread-safe; placing error in dest is better than a crash. This way
       // we have a better chance of the user reporting the strange error and we'll see it's a fmt issue
       // in the message itself.
-      snprintf(dest, n, "snprintf %-5s does not end with recognized type letter", ch);
+      snprintf(dest, n, "snpf0 %-5s does not end with recognized type letter", ch);
       return -1;
     }
     const char *d = ch+1;
@@ -58,14 +58,14 @@ int dt_win_snprintf(char *dest, size_t n, const char *fmt, ...)
       int pos = atoi(ch+1);
       if (pos<1 || pos>99) {
         // up to 99 supported here; should not need more than 99 in a message
-        snprintf(dest, n, "snprintf %.*s outside range [1,99]", (int)(d-ch+1), ch);
+        snprintf(dest, n, "snpf1 %.*s outside range [1,99]", (int)(d-ch+1), ch);
         return -1;
       }
       if (pos>narg) narg=pos;
       if (strp[pos-1]) {
         // no dups allowed because it's reasonable to not support dups, but this wrapper
         // could not cope with the same argument formatted differently; e.g. "%1$d %1$5d"
-        snprintf(dest, n, "snprintf %%%d$ appears twice", pos);
+        snprintf(dest, n, "snpf2 %%%d$ appears twice", pos);
         return -1;
       }
       strp[pos-1] = strchr(ch, '$')+1;
@@ -78,7 +78,7 @@ int dt_win_snprintf(char *dest, size_t n, const char *fmt, ...)
   }
   if (posSpec && nonPosSpec) {
     // Standards state that if one specifier uses position, they all must; good.
-    snprintf(dest, n, "snprintf some %%n$ but not all");
+    snprintf(dest, n, "snpf3 some %%n$ but not all");
     return -1;
   }
   if (!posSpec) {
@@ -93,7 +93,7 @@ int dt_win_snprintf(char *dest, size_t n, const char *fmt, ...)
   char *spec = (char *)malloc(specAlloc);  // not R_alloc as we need to be thread-safe
   if (!spec) {
     // # nocov start
-    snprintf(dest, n, "snprintf: %d byte spec alloc failed", (int)specAlloc);
+    snprintf(dest, n, "snpf4 %d byte spec alloc failed", (int)specAlloc);
     return -1;
     // # nocov end
   }
@@ -101,7 +101,7 @@ int dt_win_snprintf(char *dest, size_t n, const char *fmt, ...)
   for (int i=0; i<narg; ++i) {
     if (!strp[i] || strl[i]<1) {
       // if %n$ is present, then %[1:n]$ must all be present
-      snprintf(dest, n, "snprintf %%%d$ missing", i+1);
+      snprintf(dest, n, "snpf5 %%%d$ missing", i+1);
       free(spec);
       return -1;
     }
@@ -114,7 +114,7 @@ int dt_win_snprintf(char *dest, size_t n, const char *fmt, ...)
   char *buff = malloc(n); // for the result of the specifiers
   if (!buff) {
     // # nocov start
-    snprintf(dest, n, "snprintf: %d byte buff alloc failed", (int)n);
+    snprintf(dest, n, "snpf6 %d byte buff alloc failed", (int)n);
     free(spec);
     return -1;
     // # nocov end
@@ -127,7 +127,7 @@ int dt_win_snprintf(char *dest, size_t n, const char *fmt, ...)
     char *new = realloc(buff, res+1);
     if (!new) {
       // # nocov start
-      snprintf(dest, n, "snprintf: %d byte buff realloc failed", (int)res+1);
+      snprintf(dest, n, "snpf7 %d byte buff realloc failed", (int)res+1);
       free(spec);
       free(buff);
       return -1;
@@ -137,7 +137,7 @@ int dt_win_snprintf(char *dest, size_t n, const char *fmt, ...)
     int newres = vsnprintf(buff, res+1, spec, ap);  // try again; test 9
     if (newres!=res) {
       // # nocov start
-      snprintf(dest, n, "snprintf: second vsnprintf %d != %d", newres, res);
+      snprintf(dest, n, "snpf8 second vsnprintf %d != %d", newres, res);
       free(spec);
       free(buff);
       return -1;
@@ -145,7 +145,7 @@ int dt_win_snprintf(char *dest, size_t n, const char *fmt, ...)
     }
   } else if (res<1) { // negative is error, cover 0 as error too here
     // # nocov start
-    snprintf(dest, n, "snprintf: clib error %d", res);
+    snprintf(dest, n, "snpf9 %d clib error", res);
     free(spec);
     free(buff);
     return -1;
@@ -199,7 +199,7 @@ SEXP test_dt_win_snprintf()
   if (strcmp(buff, "hello%2$d -99      short 012$"))                                error("dt_win_snprintf test 4 failed: %s", buff);
 
   dt_win_snprintf(buff, 50, "%1$d %s", 9, "foo");
-  if (strcmp(buff, "snprintf some %n$ but not all"))                                error("dt_win_snprintf test 5 failed: %s", buff);
+  if (strcmp(buff, "snpf3 some %n$ but not all"))                                   error("dt_win_snprintf test 5 failed: %s", buff);
   
   dt_win_snprintf(buff, 50, "%%1$foo%d", 9);  // The %1$f is not a specifier because % is doubled
   if (strcmp(buff, "%1$foo9"))                                                      error("dt_win_snprintf test 6 failed: %s", buff);
@@ -215,31 +215,31 @@ SEXP test_dt_win_snprintf()
   if (res!=13) /* should return what would have been written if not chopped */      error("dt_win_snprintf test 10 failed: %d", res);
   
   dt_win_snprintf(buff, 39, "%l", 3);
-  if (strlen(buff)!=38 || strcmp(buff, "snprintf %l    does not end with recog"))   error("dt_win_snprintf test 11 failed: %s", buff);
+  if (strlen(buff)!=38 || strcmp(buff, "snpf0 %l    does not end with recogniz"))   error("dt_win_snprintf test 11 failed: %s", buff);
   
   dt_win_snprintf(buff, 19, "%l", 3);
-  if (strlen(buff)!=18 || strcmp(buff, "snprintf %l    doe"))                       error("dt_win_snprintf test 12 failed: %s", buff);
+  if (strlen(buff)!=18 || strcmp(buff, "snpf0 %l    does n"))                       error("dt_win_snprintf test 12 failed: %s", buff);
   
   dt_win_snprintf(buff, 50, "%1$d == %0$d", 1, 2);
-  if (strcmp(buff, "snprintf %0$ outside range [1,99]"))                            error("dt_win_snprintf test 13 failed: %s", buff);
+  if (strcmp(buff, "snpf1 %0$ outside range [1,99]"))                               error("dt_win_snprintf test 13 failed: %s", buff);
   
   dt_win_snprintf(buff, 50, "%1$d == %$d", 1, 2);
-  if (strcmp(buff, "snprintf %$ outside range [1,99]"))                             error("dt_win_snprintf test 14 failed: %s", buff);
+  if (strcmp(buff, "snpf1 %$ outside range [1,99]"))                                error("dt_win_snprintf test 14 failed: %s", buff);
   
   dt_win_snprintf(buff, 50, "%1$d == %100$d", 1, 2);
-  if (strcmp(buff, "snprintf %100$ outside range [1,99]"))                          error("dt_win_snprintf test 15 failed: %s", buff);
+  if (strcmp(buff, "snpf1 %100$ outside range [1,99]"))                             error("dt_win_snprintf test 15 failed: %s", buff);
   
   dt_win_snprintf(buff, 50, "%1$d == %-1$d", 1, 2);
-  if (strcmp(buff, "snprintf %-1$ outside range [1,99]"))                           error("dt_win_snprintf test 16 failed: %s", buff);
+  if (strcmp(buff, "snpf1 %-1$ outside range [1,99]"))                              error("dt_win_snprintf test 16 failed: %s", buff);
   
   dt_win_snprintf(buff, 50, "%1$d == %3$d", 1, 2, 3);
-  if (strcmp(buff, "snprintf %2$ missing"))                                         error("dt_win_snprintf test 17 failed: %s", buff);
+  if (strcmp(buff, "snpf5 %2$ missing"))                                            error("dt_win_snprintf test 17 failed: %s", buff);
   
   dt_win_snprintf(buff, 50, "%1$d == %1$d", 42);
-  if (strcmp(buff, "snprintf %1$ appears twice"))                                   error("dt_win_snprintf test 18 failed: %s", buff);
+  if (strcmp(buff, "snpf2 %1$ appears twice"))                                      error("dt_win_snprintf test 18 failed: %s", buff);
   
   dt_win_snprintf(buff, 50, "%1$d + %3$d - %2$d == %3$d", 1, 1, 2);
-  if (strcmp(buff, "snprintf %3$ appears twice"))                                   error("dt_win_snprintf test 19 failed: %s", buff);
+  if (strcmp(buff, "snpf2 %3$ appears twice"))                                      error("dt_win_snprintf test 19 failed: %s", buff);
   
   return R_NilValue;
 }
