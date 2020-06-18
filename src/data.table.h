@@ -185,7 +185,7 @@ double wallclock();
 
 // openmp-utils.c
 void initDTthreads();
-int getDTthreads();
+int getDTthreads(const int64_t n, const bool throttle);
 void avoid_openmp_hang_within_fork();
 
 // froll.c

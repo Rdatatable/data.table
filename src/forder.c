@@ -30,6 +30,7 @@
 
 // #define TIMING_ON
 
+static int nth = 1;                 // number of threads to use, throttled by default; used by cleanup() to ensure no mismatch in getDTthreads() calls
 static bool retgrp = true;          // return group sizes as well as the ordering vector? If so then use gs, gsalloc and gsn :
 static int nrow = 0;                // used as group size stack allocation limit (when all groups are 1 row)
 static int *gs = NULL;              // gs = final groupsizes e.g. 23,12,87,2,1,34,...
@@ -79,7 +80,7 @@ static void cleanup() {
   gs_alloc = 0;
   gs_n = 0;
 
-  if (gs_thread!=NULL) for (int i=0; i<getDTthreads(); i++) free(gs_thread[i]);
+  if (gs_thread!=NULL) for (int i=0; i<nth; i++) free(gs_thread[i]);
   free(gs_thread);       gs_thread=NULL;
   free(gs_thread_alloc); gs_thread_alloc=NULL;
   free(gs_thread_n);     gs_thread_n=NULL;
@@ -291,7 +292,7 @@ static void range_str(SEXP *x, int n, uint64_t *out_min, uint64_t *out_max, int 
   if (ustr_n!=0) STOP(_("Internal error: ustr isn't empty when starting range_str: ustr_n=%d, ustr_alloc=%d"), ustr_n, ustr_alloc);  // # nocov
   if (ustr_maxlen!=0) STOP(_("Internal error: ustr_maxlen isn't 0 when starting range_str"));  // # nocov
   // savetl_init() has already been called at the start of forder
-  #pragma omp parallel for num_threads(getDTthreads())
+  #pragma omp parallel for num_threads(getDTthreads(n, true))
   for(int i=0; i<n; i++) {
     SEXP s = x[i];
     if (s==NA_STRING) {
@@ -491,7 +492,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
   SEXP ans = PROTECT(allocVector(INTSXP, nrow)); n_protect++;
   anso = INTEGER(ans);
   TEND(0)
-  #pragma omp parallel for num_threads(getDTthreads())
+  #pragma omp parallel for num_threads(getDTthreads(nrow, true))
   for (int i=0; i<nrow; i++) anso[i]=i+1;   // gdb 8.1.0.20180409-git very slow here, oddly
   TEND(1)
   savetl_init();   // from now on use Error not error
@@ -650,7 +651,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
     switch(TYPEOF(x)) {
     case INTSXP : case LGLSXP : {
       int32_t *xd = INTEGER(x);
-      #pragma omp parallel for num_threads(getDTthreads())
+      #pragma omp parallel for num_threads(getDTthreads(nrow, true))
       for (int i=0; i<nrow; i++) {
         uint64_t elem=0;
         if (xd[i]==NA_INTEGER) {  // TODO: go branchless if na_count==0
@@ -665,7 +666,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
     case REALSXP :
       if (inherits(x, "integer64")) {
         int64_t *xd = (int64_t *)REAL(x);
-        #pragma omp parallel for num_threads(getDTthreads())
+        #pragma omp parallel for num_threads(getDTthreads(nrow, true))
         for (int i=0; i<nrow; i++) {
           uint64_t elem=0;
           if (xd[i]==INT64_MIN) {
@@ -678,7 +679,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
         }
       } else {
         double *xd = REAL(x);     // TODO: revisit double compression (skip bytes/mult by 10,100 etc) as currently it's often 6-8 bytes even for 3.14,3.15
-        #pragma omp parallel for num_threads(getDTthreads())
+        #pragma omp parallel for num_threads(getDTthreads(nrow, true))
         for (int i=0; i<nrow; i++) {
           uint64_t elem=0;
           if (!R_FINITE(xd[i])) {
@@ -697,7 +698,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
       break;
     case STRSXP : {
       SEXP *xd = STRING_PTR(x);
-      #pragma omp parallel for num_threads(getDTthreads())
+      #pragma omp parallel for num_threads(getDTthreads(nrow, true))
       for (int i=0; i<nrow; i++) {
         uint64_t elem=0;
         if (xd[i]==NA_STRING) {
@@ -722,7 +723,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
   Rprintf(_("nradix=%d\n"), nradix);
   #endif
 
-  int nth = getDTthreads();
+  nth = getDTthreads(nrow, true);  // this nth is relied on in cleanup()
   TMP =  (int *)malloc(nth*UINT16_MAX*sizeof(int)); // used by counting sort (my_n<=65536) in radix_r()
   UGRP = (uint8_t *)malloc(nth*256);                // TODO: align TMP and UGRP to cache lines (and do the same for stack allocations too)
   if (!TMP || !UGRP /*|| TMP%64 || UGRP%64*/) STOP(_("Failed to allocate TMP or UGRP or they weren't cache line aligned: nth=%d"), nth);
@@ -747,7 +748,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
     // Alternatively, we could try and avoid creating anso[] until it's needed, but that has similar complexity issues as (ii)
     // Note that if nalast==-1 (remove NA) anso will contain 0's for the NAs and will be considered not-sorted.
     bool stop = false;
-    #pragma omp parallel for num_threads(getDTthreads())
+    #pragma omp parallel for num_threads(getDTthreads(nrow, true))
     for (int i=0; i<nrow; i++) {
       if (stop) continue;
       if (anso[i]!=i+1) stop=true;
@@ -829,7 +830,7 @@ void radix_r(const int from, const int to, const int radix) {
     return;
   }
   else if (my_n<=256) {
-    // if (getDTthreads()==1)
+    // if nth==1
     // Rprintf(_("insert clause: radix=%d, my_n=%d, from=%d, to=%d\n"), radix, my_n, from, to);
     // insert sort with some twists:
     // i) detects if grouped; if sortType==0 can then skip
@@ -942,7 +943,7 @@ void radix_r(const int from, const int to, const int radix) {
     return;
   }
   else if (my_n<=UINT16_MAX) {    // UINT16_MAX==65535 (important not 65536)
-    // if (getDTthreads()==1) Rprintf(_("counting clause: radix=%d, my_n=%d\n"), radix, my_n);
+    // if (nth==1) Rprintf(_("counting clause: radix=%d, my_n=%d\n"), radix, my_n);
     uint16_t my_counts[256] = {0};  // Needs to be all-0 on entry. This ={0} initialization should be fast as it's on stack. Otherwise, we have to manage
                                     // a stack of counts anyway since this is called recursively and these counts are needed to make the recursive calls.
                                     // This thread-private stack alloc has no chance of false sharing and gives omp and compiler best chance.
@@ -1044,7 +1045,7 @@ void radix_r(const int from, const int to, const int radix) {
   }
   // else parallel batches. This is called recursively but only once or maybe twice before resolving to UINT16_MAX branch above
 
-  int batchSize = MIN(UINT16_MAX, 1+my_n/getDTthreads());  // (my_n-1)/nBatch + 1;   //UINT16_MAX == 65535
+  int batchSize = MIN(UINT16_MAX, 1+my_n/getDTthreads(my_n, true));  // (my_n-1)/nBatch + 1;   //UINT16_MAX == 65535
   int nBatch = (my_n-1)/batchSize + 1;   // TODO: make nBatch a multiple of nThreads?
   int lastBatchSize = my_n - (nBatch-1)*batchSize;
   uint16_t *counts = calloc(nBatch*256,sizeof(uint16_t));
@@ -1055,7 +1056,7 @@ void radix_r(const int from, const int to, const int radix) {
   bool skip=true;
   const int n_rem = nradix-radix-1;   // how many radix are remaining after this one
   TEND(16)
-  #pragma omp parallel num_threads(getDTthreads())
+  #pragma omp parallel num_threads(getDTthreads(nBatch, false))
   {
     int     *my_otmp = malloc(batchSize * sizeof(int)); // thread-private write
     uint8_t *my_ktmp = malloc(batchSize * sizeof(uint8_t) * n_rem);
@@ -1160,7 +1161,7 @@ void radix_r(const int from, const int to, const int radix) {
   if (!skip) {
     int *TMP = malloc(my_n * sizeof(int));
     if (!TMP) STOP(_("Unable to allocate TMP for my_n=%d items in parallel batch counting"), my_n);
-    #pragma omp parallel for num_threads(getDTthreads())
+    #pragma omp parallel for num_threads(getDTthreads(nBatch, false))
     for (int batch=0; batch<nBatch; batch++) {
       const int *restrict      my_starts = starts + batch*256;
       const uint16_t *restrict my_counts = counts + batch*256;
@@ -1176,7 +1177,7 @@ void radix_r(const int from, const int to, const int radix) {
     memcpy(anso+from, TMP, my_n*sizeof(int));
 
     for (int r=0; r<n_rem; r++) {    // TODO: groups of sizeof(anso)  4 byte int currently  (in future 8).  To save team startup cost (but unlikely significant anyway)
-      #pragma omp parallel for num_threads(getDTthreads())
+      #pragma omp parallel for num_threads(getDTthreads(nBatch, false))
       for (int batch=0; batch<nBatch; batch++) {
         const int *restrict      my_starts = starts + batch*256;
         const uint16_t *restrict my_counts = counts + batch*256;
@@ -1231,7 +1232,7 @@ void radix_r(const int from, const int to, const int radix) {
       // all groups are <=65535 and radix_r() will handle each one single-threaded. Therefore, this time
       // it does make sense to start a parallel team and there will be no nestedness here either.
       if (retgrp) {
-        #pragma omp parallel for ordered schedule(dynamic) num_threads(getDTthreads())
+        #pragma omp parallel for ordered schedule(dynamic) num_threads(getDTthreads(ngrp, false))
         for (int i=0; i<ngrp; i++) {
           int start = from + starts[ugrp[i]];
           radix_r(start, start+my_gs[i]-1, radix+1);
@@ -1240,7 +1241,7 @@ void radix_r(const int from, const int to, const int radix) {
         }
       } else {
         // flush() is only relevant when retgrp==true so save the redundant ordered clause
-        #pragma omp parallel for schedule(dynamic) num_threads(getDTthreads())
+        #pragma omp parallel for schedule(dynamic) num_threads(getDTthreads(ngrp, false))
         for (int i=0; i<ngrp; i++) {
           int start = from + starts[ugrp[i]];
           radix_r(start, start+my_gs[i]-1, radix+1);

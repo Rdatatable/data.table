@@ -140,7 +140,7 @@ void frollmeanExact(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool
   }
   bool truehasna = hasna>0;                                     // flag to re-run with NA support if NAs detected
   if (!truehasna || !narm) {
-    #pragma omp parallel for num_threads(getDTthreads())
+    #pragma omp parallel for num_threads(getDTthreads(nx, true))
     for (uint64_t i=k-1; i<nx; i++) {                           // loop on every observation with complete window, partial already filled in single threaded section
       if (narm && truehasna) {
         continue;                                               // if NAs detected no point to continue
@@ -178,7 +178,7 @@ void frollmeanExact(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool
     }
   }
   if (truehasna && narm) {
-    #pragma omp parallel for num_threads(getDTthreads())
+    #pragma omp parallel for num_threads(getDTthreads(nx, true))
     for (uint64_t i=k-1; i<nx; i++) {                           // loop on every observation with complete window, partial already filled in single threaded section
       long double w = 0.0;
       int nc = 0;                                               // NA counter within sliding window
@@ -338,7 +338,7 @@ void frollsumExact(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool 
   }
   bool truehasna = hasna>0;
   if (!truehasna || !narm) {
-    #pragma omp parallel for num_threads(getDTthreads())
+    #pragma omp parallel for num_threads(getDTthreads(nx, true))
     for (uint64_t i=k-1; i<nx; i++) {
       if (narm && truehasna) {
         continue;
@@ -371,7 +371,7 @@ void frollsumExact(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool 
     }
   }
   if (truehasna && narm) {
-    #pragma omp parallel for num_threads(getDTthreads())
+    #pragma omp parallel for num_threads(getDTthreads(nx, true))
     for (uint64_t i=k-1; i<nx; i++) {
       long double w = 0.0;
       int nc = 0;

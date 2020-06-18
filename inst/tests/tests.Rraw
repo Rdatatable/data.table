@@ -14188,7 +14188,7 @@ test(1996.2, d[, eval(qcall)], data.table(a=1L, b=3))
 # setDTthreads; #3435
 test(1997.01, setDTthreads(NULL, percent=75), error="Provide either threads= or percent= but not both")
 test(1997.02, setDTthreads(1L, percent=75), error="Provide either threads= or percent= but not both")
-test(1997.03, setDTthreads(-1L), error="must be either NULL or a single integer >= 0")
+test(1997.03, setDTthreads(-1L), error="threads= must be either NULL or a single number >= 0")
 test(1997.04, setDTthreads(percent=101), error="should be a number between 2 and 100")
 test(1997.05, setDTthreads(percent=1), error="should be a number between 2 and 100")
 test(1997.06, setDTthreads(percent=NULL), error="but is length 0")
@@ -14211,6 +14211,10 @@ test(1997.14, getDTthreads(), new)
 Sys.setenv(R_DATATABLE_NUM_PROCS_PERCENT=oldenv)
 test(1997.15, setDTthreads(old), new)
 test(1997.16, getDTthreads(), old)
+test(1997.17, setDTthreads(throttle=NA), error="throttle.*must be a single number, non-NA, and >=1")
+setDTthreads(throttle=65536)
+test(1997.18, getDTthreads(TRUE), output="throttle==65536")
+setDTthreads(throttle=1024)
 
 # test that a copy is being made and output is printed, #3385 after partial revert of #3281
 x = 5L
