@@ -16973,3 +16973,10 @@ DT = data.table(col1=c(1,1,1), col2=c("a","b","a"), col3=c("A","B","A"), col4=c(
 setkey(DT, col1, col4)
 test(2147.1, DT[, .N, by = col1:col4], ans<-data.table(col1=1, col2=c("a","b"), col3=c("A","B"), col4=2, N=INT(2,1)))
 test(2147.2, DT[, .N, by = c("col1", "col2", "col3", "col4")], ans)
+
+# Result matrix of comparison operators could have its colnames changed by reference, #4323
+A = data.table(x=1:2)
+B = data.table(x=1:2)
+X = A == B
+A[, y := 3:4]
+test(2148, colnames(X), c('x'))
