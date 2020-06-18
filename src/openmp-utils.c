@@ -55,16 +55,15 @@ void initDTthreads() {
 }
 
 int getDTthreads(const int64_t n, const bool throttle) {
-  // this is the main getter used by all parallel regions; they specify num_threads(n, DTthrottle) or num_threads(n, 1); 
-  // Therefore keep it light, simple and robust. Local static variable. initDTthreads() ensures 1 <= DTthreads <= omp_get_num_proc()
-  // throttle is the number of iterations per thread before a second thread is utilized.
-  // throttle==1 when parallel region is already pre-chunked such as in fread; e.g. if there are 2 iterations it is intended for two
-  // threads to receive one iteration each. Otherwise, DTthrottle (by default 1024) is passed for standard loops over nrow (for example)
-  // where we leave OpenMP to batch. Passing the thottle directly avoids needing to know codes, and allows the calling parallel region
-  // to use a multiple of throttle (for example).
-  if (n<1) return 1;
-  int n2 = n>INT_MAX ? INT_MAX : n;
-  return imin(DTthreads, throttle ? 1+(n2-1)/DTthrottle : n2);
+  // this is the main getter used by all parallel regions; they specify num_threads(n, true|false).
+  // Keep this light, simple and robust. initDTthreads() ensures 1 <= DTthreads <= omp_get_num_proc()
+  // throttle introduced in 1.12.10 (see NEWS item); #4484
+  // throttle==true  : a number of iterations per thread (DTthrottle) is applied before a second thread is utilized 
+  // throttle==false : parallel region is already pre-chunked such as in fread; e.g. two batches intended for two threads
+  if (n<1) return 1; // 0 or negative could be deliberate in calling code for edge cases where loop is not intended to run at all
+  int64_t ans = throttle ? 1+(n-1)/DTthrottle :  // 1 thread for n<=1024, 2 thread for n<=2048, etc
+                           n;                    // don't use 20 threads for just one or two batches
+  return ans>=DTthreads ? DTthreads : (int)ans;  // apply limit in static local DTthreads saved there by initDTthreads() and setDTthreads()
 }
 
 static const char *mygetenv(const char *name, const char *unset) {
@@ -135,8 +134,8 @@ SEXP setDTthreads(SEXP threads, SEXP restore_after_fork, SEXP percent, SEXP thro
     DTthreads = imax(n, 1);  // imax just in case
     // Do not call omp_set_num_threads() here. Any calls to omp_set_num_threads() affect other
     // packages and R itself too which has some OpenMP usage. Instead we set our own DTthreads
-    // static variable and read that from getDTthreads(OMP_ALL, 0).
-    // All parallel regions should include num_threads(getDTthreads(OMP_ALL, 0)) and this is ensured via
+    // static variable and read that from getDTthreads(n, throttle).
+    // All parallel regions should include num_threads(getDTthreads(n, true|false)) and this is ensured via
     // a grep in CRAN_Release.cmd.
   }
   return ScalarInteger(old);
