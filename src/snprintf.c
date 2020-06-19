@@ -21,7 +21,7 @@
 #include <ctype.h>  // isdigit
 #undef snprintf // on Windows, just in this file, we do want to use the C library's snprintf
 
-int dt_win_snprintf(char *dest, size_t n, const char *fmt, ...)
+int dt_win_snprintf(char *dest, const size_t n, const char *fmt, ...)
 {
   if (n<1) return 0;
   va_list ap;
@@ -121,8 +121,9 @@ int dt_win_snprintf(char *dest, size_t n, const char *fmt, ...)
   }
   // now spec contains the specifiers (minus their $n parts) in the same oder as ap
   int res = vsnprintf(buff, n, spec, ap); // C library does all the (non-positional) hard work here
+  va_end(ap);
   if (res>=n) {
-    // 0.01% likely: n wasn't big enough to hold result; test 9 covers this
+    // n wasn't big enough to hold result; test 9 covers this unlikely event
     // C99 standard states that vsnprintf returns the size that would be big enough
     char *new = realloc(buff, res+1);
     if (!new) {
@@ -134,7 +135,9 @@ int dt_win_snprintf(char *dest, size_t n, const char *fmt, ...)
       // # nocov end
     }
     buff = new;
+    va_start(ap, fmt); // to use ap again must reset it; #4545
     int newres = vsnprintf(buff, res+1, spec, ap);  // try again; test 9
+    va_end(ap);
     if (newres!=res) {
       // # nocov start
       snprintf(dest, n, "8 %d %d second vsnprintf", newres, res);
@@ -178,7 +181,6 @@ int dt_win_snprintf(char *dest, size_t n, const char *fmt, ...)
   *ch2='\0';
   free(spec);
   free(buff);
-  va_end(ap);
   return nc;
 }
 
