@@ -213,6 +213,7 @@ R_CallMethodDef callMethods[] = {
 {"CtestMsgR", (DL_FUNC) &testMsgR, -1},
 {"C_allNAR", (DL_FUNC) &allNAR, -1},
 {"Ctest_dt_win_snprintf", (DL_FUNC)&test_dt_win_snprintf, -1},
+{"CbmergeR", (DL_FUNC) &bmergeR, -1},
 {NULL, NULL, 0}
 };
 

@@ -163,6 +163,7 @@ SEXP bmerge(SEXP iArg, SEXP xArg, SEXP icolsArg, SEXP xcolsArg, SEXP isorted, SE
   if (iN) {
     // embarassingly parallel if we've storage space for nqmaxgrp*iN
     for (int kk=0; kk<nqmaxgrp; kk++) {
+      //Rprintf("bmerge: bmerge_r(-1,%d,-1,%d,%d,%d+1,1,1)\n", xN, iN, scols, kk);
       bmerge_r(-1,xN,-1,iN,scols,kk+1,1,1);
     }
   }
@@ -237,6 +238,7 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
     const int *iic = (col>-1) ? INTEGER(ic) : NULL;
     const int *ixc = INTEGER(xc);
     ival.i = (col>-1) ? iic[ir] : thisgrp;
+    //Rprintf("bmerge_r: entering while(xlow < xupp-1): col=%d; ir=%d; ival=%d\n", col, ir, ival.i);
     while(xlow < xupp-1) {
       int mid = xlow + (xupp-xlow)/2;   // Same as (xlow+xupp)/2 but without risk of overflow
       xval.i = ixc[XIND(mid)];
@@ -250,12 +252,15 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
         // TO DO?: not if mult=first|last and col<ncol-1
         tmplow = mid;
         tmpupp = mid;
+        //Rprintf("xval==ival, finding ival dups: two nested while loops\n");
         while(tmplow<xupp-1) {
+          //Rprintf("while(tmplow<xupp-1)\n");
           int mid = tmplow + (xupp-tmplow)/2;
           xval.i = ixc[XIND(mid)];
           if (xval.i == ival.i) tmplow=mid; else xupp=mid;
         }
         while(xlow<tmpupp-1) {
+          //Rprintf("while(xlow<tmpupp-1)\n");
           int mid = xlow + (tmpupp-xlow)/2;
           xval.i = ixc[XIND(mid)];
           if (xval.i == ival.i) tmpupp=mid; else xlow=mid;
@@ -412,6 +417,7 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
     error(_("Type '%s' not supported for joining/merging"), type2char(TYPEOF(xc)));
   }
   if (xlow<xupp-1) { // if value found, low and upp surround it, unlike standard binary search where low falls on it
+    //Rprintf("value found: if (xlow<xupp-1)\n");
     if (col<ncol-1) {
       bmerge_r(xlow, xupp, ilow, iupp, col+1, thisgrp, 1, 1);
       // final two 1's are lowmax and uppmax
@@ -528,12 +534,17 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
       }
     }
   }
+  //Rprintf("switch (op[col])\n");
   switch (op[col]) {
   case EQ:
-    if (ilow>ilowIn && (xlow>xlowIn || ((roll!=0.0 || op[col] != EQ) && col==ncol-1)))
+    if (ilow>ilowIn && (xlow>xlowIn || ((roll!=0.0 || op[col] != EQ) && col==ncol-1))) { // there is op[col]!=EQ but we are already in case EQ?!
+      //Rprintf("bmerge_r: nested bmerge_r() via: ilow>ilowIn && (xlow>xlowIn ...\n");
       bmerge_r(xlowIn, xlow+1, ilowIn, ilow+1, col, 1, lowmax, uppmax && xlow+1==xuppIn);
-    if (iupp<iuppIn && (xupp<xuppIn || ((roll!=0.0 || op[col] != EQ) && col==ncol-1)))
+    }
+    if (iupp<iuppIn && (xupp<xuppIn || ((roll!=0.0 || op[col] != EQ) && col==ncol-1))) {
+      //Rprintf("bmerge_r: nested bmerge_r() via: iupp<iuppIn && (xupp<xuppIn ...\n");
       bmerge_r(xupp-1, xuppIn, iupp-1, iuppIn, col, 1, lowmax && xupp-1==xlowIn, uppmax);
+    }
     break;
   case LE: case LT:
     // roll is not yet implemented
@@ -553,3 +564,184 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
   }
 }
 
+//void bmerg(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisgrp, int lowmax, int uppmax)
+void bmergeC(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col) {
+  int xlow=xlowIn, xupp=xuppIn, ilow=ilowIn, iupp=iuppIn;
+  int lir = ilow + (iupp-ilow)/2;           // lir = logical i row
+  int ir = o ? o[lir]-1 : lir;              // ir = the actual i row if i were ordered
+  SEXP ic = VECTOR_ELT(i,icols[col]-1);  // ic = i column
+  SEXP xc = VECTOR_ELT(x,xcols[col]-1);  // xc = x column
+  const int *iic = INTEGER(ic);
+  const int *ixc = INTEGER(xc);
+  ival.i = iic[ir];
+  //Rprintf("bmerge_r: entering while(xlow < xupp-1): col=%d; ir=%d; ival=%d\n", col, ir, ival.i);
+  while(xlow < xupp-1) {
+    int mid = xlow + (xupp-xlow)/2;   // Same as (xlow+xupp)/2 but without risk of overflow
+    xval.i = ixc[XIND(mid)];
+    if (xval.i<ival.i) {          // relies on NA_INTEGER == INT_MIN, tested in init.c
+      xlow=mid;
+    } else if (xval.i>ival.i) {   // TO DO: is *(&xlow, &xupp)[0|1]=mid more efficient than branch?
+      xupp=mid;
+    } else {
+      // xval.i == ival.i  including NA_INTEGER==NA_INTEGER
+      // branch mid to find start and end of this group in this column
+      // TO DO?: not if mult=first|last and col<ncol-1
+      int tmplow = mid;
+      int tmpupp = mid;
+      //Rprintf("xval==ival, finding ival dups: two nested while loops\n");
+      while(tmplow<xupp-1) {
+        //Rprintf("while(tmplow<xupp-1)\n");
+        int mid = tmplow + (xupp-tmplow)/2;
+        xval.i = ixc[XIND(mid)];
+        if (xval.i == ival.i) tmplow=mid; else xupp=mid;
+      }
+      while(xlow<tmpupp-1) {
+        //Rprintf("while(xlow<tmpupp-1)\n");
+        int mid = xlow + (tmpupp-xlow)/2;
+        xval.i = ixc[XIND(mid)];
+        if (xval.i == ival.i) tmpupp=mid; else xlow=mid;
+      }
+      // xlow and xupp now surround the group in xc, we only need this range for the next column
+      break;
+    }
+  }
+  int tmplow = lir;
+  while(tmplow<iupp-1) {   // TO DO: could double up from lir rather than halving from iupp
+    int mid = tmplow + (iupp-tmplow)/2;
+    xval.i = iic[ o ? o[mid]-1 : mid ];   // reuse xval to search in i
+    if (xval.i == ival.i) tmplow=mid; else iupp=mid;
+    // if we could guarantee ivals to be *always* sorted for all columns independently (= max(nestedid) = 1), then we can speed this up by 2x by adding checks for GE,GT,LE,LT separately.
+  }
+  int tmpupp = lir;
+  while(ilow<tmpupp-1) {
+    int mid = ilow + (tmpupp-ilow)/2;
+    xval.i = iic[ o ? o[mid]-1 : mid ];
+    if (xval.i == ival.i) tmpupp=mid; else ilow=mid;
+  }
+  // ilow and iupp now surround the group in ic, too
+  
+  if (xlow<xupp-1) { // if value found, low and upp surround it, unlike standard binary search where low falls on it
+    if (col<ncol-1) {
+      bmergeC(xlow, xupp, ilow, iupp, col+1);
+    } else {
+      int len = xupp-xlow-1;
+      if (mult==ALL && len>1) allLen1[0] = FALSE;
+      for (int j=ilow+1; j<iupp; j++) {   // usually iterates once only for j=ir
+        int k = o ? o[j]-1 : j;
+        retFirst[k] = (mult != LAST) ? xlow+2 : xupp; // extra +1 for 1-based indexing at R level
+        retLength[k]= (mult == ALL) ? len : 1;
+        // retIndex initialisation is taken care of in bmerge and doesn't change for thisgrp=1
+      }
+    }
+  }
+  if (ilow>ilowIn && xlow>xlowIn) {
+    //Rprintf("bmerge_r: nested bmerge_r() via: ilow>ilowIn && (xlow>xlowIn ...\n");
+    bmergeC(xlowIn, xlow+1, ilowIn, ilow+1, col);
+  }
+  if (iupp<iuppIn && xupp<xuppIn) {
+    //Rprintf("bmerge_r: nested bmerge_r() via: iupp<iuppIn && (xupp<xuppIn ...\n");
+    bmergeC(xupp-1, xuppIn, iupp-1, iuppIn, col);
+  }
+}
+
+SEXP bmergeR(SEXP iArg, SEXP xArg, SEXP icolsArg, SEXP xcolsArg, SEXP isorted, SEXP xoArg, SEXP nomatchArg, SEXP multArg) {
+  int protecti=0, verbose=0;
+  // iArg, xArg, icolsArg and xcolsArg
+  i = iArg; x = xArg;  // set globals
+  if (!isInteger(icolsArg)) error(_("Internal error: icols is not integer vector")); // # nocov
+  if (!isInteger(xcolsArg)) error(_("Internal error: xcols is not integer vector")); // # nocov
+  if ((LENGTH(icolsArg) == 0 || LENGTH(xcolsArg) == 0) && LENGTH(i) > 0) // We let through LENGTH(i) == 0 for tests 2126.*
+    error(_("Internal error: icols and xcols must be non-empty integer vectors."));
+  if (LENGTH(icolsArg) > LENGTH(xcolsArg))
+    error(_("Internal error: length(icols) [%d] > length(xcols) [%d]"), LENGTH(icolsArg), LENGTH(xcolsArg)); // # nocov
+  icols = INTEGER(icolsArg);
+  xcols = INTEGER(xcolsArg);
+  int xN = LENGTH(x) ? LENGTH(VECTOR_ELT(x,0)) : 0;
+  int iN = LENGTH(i) ? LENGTH(VECTOR_ELT(i,0)) : 0;
+  int anslen = iN;
+  ncol = LENGTH(icolsArg);    // there may be more sorted columns in x than involved in the join
+  if (verbose>0) Rprintf("bmergeR: after init\n");
+  for (int col=0; col<ncol; col++) {
+    if (verbose>0) Rprintf("bmergeR: col check col=%d\n", col);
+    if (icols[col]==NA_INTEGER) error(_("Internal error. icols[%d] is NA"), col); // # nocov
+    if (xcols[col]==NA_INTEGER) error(_("Internal error. xcols[%d] is NA"), col); // # nocov
+    if (verbose>0) Rprintf("bmergeR: col check col=%d...\n", col);
+    if (icols[col]>LENGTH(i) || icols[col]<1) error(_("icols[%d]=%d outside range [1,length(i)=%d]"), col, icols[col], LENGTH(i));
+    if (xcols[col]>LENGTH(x) || xcols[col]<1) error(_("xcols[%d]=%d outside range [1,length(x)=%d]"), col, xcols[col], LENGTH(x));
+    if (verbose>0) Rprintf("bmergeR: col check col=%d... ...\n", col);
+    int it = TYPEOF(VECTOR_ELT(i, icols[col]-1));
+    int xt = TYPEOF(VECTOR_ELT(x, xcols[col]-1));
+    if (verbose>0) Rprintf("bmergeR: col check col=%d... ... ...\n", col);
+    if (iN && it!=xt) error(_("typeof x.%s (%s) != typeof i.%s (%s)"), CHAR(STRING_ELT(getAttrib(x,R_NamesSymbol),xcols[col]-1)), type2char(xt), CHAR(STRING_ELT(getAttrib(i,R_NamesSymbol),icols[col]-1)), type2char(it));
+  }
+  if (verbose>0) Rprintf("bmergeR: after col checks\n");
+  // nomatch arg
+  nomatch = INTEGER(nomatchArg)[0];
+  
+  // mult arg
+  if (!strcmp(CHAR(STRING_ELT(multArg, 0)), "all")) mult = ALL;
+  else if (!strcmp(CHAR(STRING_ELT(multArg, 0)), "first")) mult = FIRST;
+  else if (!strcmp(CHAR(STRING_ELT(multArg, 0)), "last")) mult = LAST;
+  else error(_("Internal error: invalid value for 'mult'. please report to data.table issue tracker")); // # nocov
+  if (verbose>0) Rprintf("bmergeR: after mult checks\n");
+  if (verbose>0) Rprintf("bmergeR: before allocs\n");
+  SEXP retFirstArg = PROTECT(allocVector(INTSXP, anslen));
+  retFirst = INTEGER(retFirstArg);
+  SEXP retLengthArg = PROTECT(allocVector(INTSXP, anslen)); // TODO: no need to allocate length at all when
+  retLength = INTEGER(retLengthArg);                   // mult = "first" / "last"
+  SEXP retIndexArg = PROTECT(allocVector(INTSXP, 0));
+  retIndex = INTEGER(retIndexArg);
+  protecti += 3;
+  for (int j=0; j<anslen; j++) {
+    // defaults need to populated here as bmerge_r may well not touch many locations, say if the last row of i is before the first row of x.
+    retFirst[j] = nomatch;   // default to no match for NA goto below
+    // retLength[j] = 0;   // TO DO: do this to save the branch below and later branches at R level to set .N to 0
+    retLength[j] = nomatch==0 ? 0 : 1;
+  }
+  
+  // allLen1Arg
+  SEXP allLen1Arg = PROTECT(allocVector(LGLSXP, 1));
+  allLen1 = LOGICAL(allLen1Arg);
+  allLen1[0] = true;  // All-0 and All-NA are considered all length 1 according to R code currently. Really, it means any(length>1).
+  
+  // allGrp1Arg, if TRUE, out of all nested group ids, only one of them matches 'x'. Might be rare, but helps to be more efficient in that case.
+  SEXP allGrp1Arg = PROTECT(allocVector(LGLSXP, 1));
+  allGrp1 = LOGICAL(allGrp1Arg);
+  allGrp1[0] = true;
+  protecti += 2;
+  if (verbose>0) Rprintf("bmergeR: after allocs before forder(i)\n");
+  // isorted arg
+  o = NULL;
+  if (!LOGICAL(isorted)[0]) {
+    SEXP order = PROTECT(allocVector(INTSXP, length(icolsArg)));
+    protecti++;
+    for (int j=0; j<LENGTH(order); j++) INTEGER(order)[j]=1;   // rep(1L, length(icolsArg))
+    SEXP oSxp = PROTECT(forder(i, icolsArg, ScalarLogical(FALSE), ScalarLogical(TRUE), order, ScalarLogical(FALSE)));
+    protecti++;
+    // TODO - split head of forder into C-level callable
+    if (!LENGTH(oSxp)) o = NULL; else o = INTEGER(oSxp);
+  }
+  
+  // xo arg
+  xo = NULL;
+  if (length(xoArg)) {
+    if (!isInteger(xoArg)) error(_("Internal error: xoArg is not an integer vector")); // # nocov
+    xo = INTEGER(xoArg);
+  }
+  
+  // start bmerge
+  if (iN) {
+    if (verbose>0) Rprintf("calling bmergeC\n");
+    bmergeC(/*xlowIn=*/-1, /*xuppIn=*/xN, /*ilowIn=*/-1, /*iuppIn=*/iN, /*col=*/0);
+  }
+  if (verbose>0) Rprintf("making ans\n");
+  SEXP ans = PROTECT(allocVector(VECSXP, 5)), ansnames; protecti++;
+  setAttrib(ans, R_NamesSymbol, ansnames=allocVector(STRSXP, 5));
+  SET_VECTOR_ELT(ans, 0, retFirstArg);  SET_STRING_ELT(ansnames, 0, char_starts);
+  SET_VECTOR_ELT(ans, 1, retLengthArg); SET_STRING_ELT(ansnames, 1, char_lens);
+  SET_VECTOR_ELT(ans, 2, retIndexArg);  SET_STRING_ELT(ansnames, 2, char_indices);
+  SET_VECTOR_ELT(ans, 3, allLen1Arg);   SET_STRING_ELT(ansnames, 3, char_allLen1);
+  SET_VECTOR_ELT(ans, 4, allGrp1Arg);   SET_STRING_ELT(ansnames, 4, char_allGrp1);
+  UNPROTECT(protecti);
+  return (ans);
+}
