@@ -88,7 +88,7 @@ You can also convert existing objects to a `data.table` using `setDT()` (for `da
 
 #### Note that: {.bs-callout .bs-callout-info}
 
-* Unlike in versions of R up to, but not incuding, 4.0.0, `data.frame`s, columns of `character` type are *never* converted to `factors` by default.
+* Unlike in versions of R before 4.0.0, `data.frame`s, columns of `character` type are *never* converted to `factors` by default.
 
 * Row numbers are printed with a `:` in order to visually separate the row number from the first column.
 
