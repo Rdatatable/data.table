@@ -16882,20 +16882,29 @@ cols = c('x', 'y')
 test(2136, dt[, (cols) := lapply(.SD[get("x") == 1],function(x){x + 2L}), .SDcols = cols ,by = z], data.table(x = 1L + 2L, y = 2L + 2L, z = 3L))
 
 # round, trunc should all be 'integer' and and have class 'ITime', #4207
-DT = data.table(hour31   = as.ITime(seq(as.POSIXct("2020-01-01 07:00:40"), by = "31 min", length.out = 9)),
-                hour30   = as.ITime(seq(as.POSIXct("2020-01-01 07:00:00"), by = "30 min", length.out = 9)),
-                minute31 = as.ITime(seq(as.POSIXct("2020-01-01 07:00:00"), by = "31 sec", length.out = 9)),
-                minute30 = as.ITime(seq(as.POSIXct("2020-01-01 07:00:00"), by = "30 sec", length.out = 9)))
-test(2137.01, TRUE, DT[, all(sapply(.SD, class) == "ITime")])
-test(2137.02, TRUE, DT[, all(sapply(.SD, typeof) == "integer")])
-test(2137.03, FALSE, DT[, all(round(hour30, "hours") == as.ITime(c("07:00", "08:00", "08:00", "09:00", "09:00", "10:00", "10:00", "11:00", "11:00")))])
-test(2137.04, TRUE, DT[, all(round(hour31, "hours") == as.ITime(c("07:00", "08:00", "08:00", "09:00", "09:00", "10:00", "10:00", "11:00", "11:00")))])
-test(2137.05, FALSE, DT[, all(round(minute30, "minutes") == as.ITime(c("07:00:00", "07:01:00", "07:01:00", "07:02:00", "07:02:00", "07:03:00", "07:03:00", "07:04:00", "07:04:00")))])
-test(2137.06, TRUE, DT[, all(round(minute31, "minutes") == as.ITime(c("07:00:00", "07:01:00", "07:01:00", "07:02:00", "07:02:00", "07:03:00", "07:03:00", "07:04:00", "07:04:00")))])
-test(2137.07, TRUE, DT[, all(trunc(hour30, "hours") == as.ITime(c("07:00", "07:00", "08:00", "08:00", "09:00", "09:00", "10:00", "10:00", "11:00")))])
-test(2137.08, TRUE, DT[, all(trunc(hour31, "hours") == as.ITime(c("07:00", "07:00", "08:00", "08:00", "09:00", "09:00", "10:00", "10:00", "11:00")))])
-test(2137.09, TRUE, DT[, all(trunc(minute30, "minutes") == as.ITime(c("07:00:00", "07:00:00", "07:01:00", "07:01:00", "07:02:00", "07:02:00", "07:03:00", "07:03:00", "07:04:00")))])
-test(2137.10, TRUE, DT[, all(trunc(minute31, "minutes") == as.ITime(c("07:00:00", "07:00:00", "07:01:00", "07:01:00", "07:02:00", "07:02:00", "07:03:00", "07:03:00", "07:04:00")))])
+start_time = as.POSIXct("2020-01-01 07:00:00", tz='UTC')
+l = list(
+  hour31   = as.ITime(seq(start_time+40, by = "31 min", length.out = 9L)),
+  hour30   = as.ITime(seq(start_time,    by = "30 min", length.out = 9L)),
+  minute31 = as.ITime(seq(start_time,    by = "31 sec", length.out = 9L)),
+  minute30 = as.ITime(seq(start_time,    by = "30 sec", length.out = 9L))
+)
+ans = list(
+  a = as.ITime(c("07:00", "08:00", "08:00", "09:00", "09:00", "10:00", "10:00", "11:00", "11:00")),
+  b = as.ITime(c("07:00", "07:01", "07:01", "07:02", "07:02", "07:03", "07:03", "07:04", "07:04")),
+  c = as.ITime(c("07:00", "07:00", "08:00", "08:00", "09:00", "09:00", "10:00", "10:00", "11:00")),
+  d = as.ITime(c("07:00", "07:00", "07:01", "07:01", "07:02", "07:02", "07:03", "07:03", "07:04"))
+)
+test(2137.01, all(sapply(l, inherits, "ITime")))
+test(2137.02, all(sapply(l, typeof) == "integer"))
+test(2137.03, which(round(l$hour30, "hours") != ans$a), c(4L, 8L))
+test(2137.04, round(l$hour31, "hours"), ans$a)
+test(2137.05, which(round(l$minute30, "minutes") != ans$b), c(2L, 6L))
+test(2137.06, round(l$minute31, "minutes"), ans$b)
+test(2137.07, trunc(l$hour30, "hours"), ans$c)
+test(2137.08, trunc(l$hour31, "hours"), ans$c)
+test(2137.09, trunc(l$minute30, "minutes"), ans$d)
+test(2137.10, trunc(l$minute31, "minutes"), ans$d)
 
 # Complex to character conversion in rbindlist, #4202
 A = data.table(A=complex(real = 1:3, imaginary=c(0, -1, 1)))
