@@ -66,8 +66,8 @@ static int8_t *type = NULL, *tmpType = NULL, *size = NULL;
 static lenOff *colNames = NULL;
 static freadMainArgs args;  // global for use by DTPRINT
 
-const char typeName[NUMTYPE][10] = {"drop", "bool8", "bool8", "bool8", "bool8", "int32", "int64", "float64", "float64", "float64", "string"};
-int8_t     typeSize[NUMTYPE]     = { 0,      1,       1,       1,       1,       4,       8,       8,         8,         8,         8      };
+const char typeName[NUMTYPE][10] = {"drop", "bool8", "bool8", "bool8", "bool8", "bool8", "int32", "int64", "float64", "float64", "float64", "string"};
+int8_t     typeSize[NUMTYPE]     = { 0,      1,       1,       1,       1,      1,       4,       8,       8,         8,         8,         8      };
 
 // In AIX, NAN and INFINITY don't qualify as constant literals. Refer: PR #3043
 // So we assign them through below init function.
@@ -1004,6 +1004,21 @@ static void parse_bool_lowercase(FieldParseContext *ctx)
   }
 }
 
+/* Parse Y | y | N | n as boolean */
+static void parse_bool_yesno(FieldParseContext *ctx)
+{
+  const char *ch = *(ctx->ch);
+  int8_t *target = (int8_t*) ctx->targets[sizeof(int8_t)];
+  if (ch[0] == 'Y' || ch[0] == 'y') {
+    *target = 1;
+    *(ctx->ch) = ch + 1;
+  } else if (ch[0] == 'N' || ch[0] == 'n') {
+    *target = 0;
+    *(ctx->ch) = ch + 1;
+  } else {
+    *target = NA_BOOL8;
+  }
+}
 
 
 typedef void (*reader_fun_t)(FieldParseContext *ctx);
@@ -1013,6 +1028,7 @@ static reader_fun_t fun[NUMTYPE] = {
   (reader_fun_t) &parse_bool_uppercase,
   (reader_fun_t) &parse_bool_titlecase,
   (reader_fun_t) &parse_bool_lowercase,
+  (reader_fun_t) &parse_bool_yesno,
   (reader_fun_t) &StrtoI32,
   (reader_fun_t) &StrtoI64,
   (reader_fun_t) &parse_double_regular,
@@ -1021,7 +1037,7 @@ static reader_fun_t fun[NUMTYPE] = {
   (reader_fun_t) &Field
 };
 
-static int disabled_parsers[NUMTYPE] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+static int disabled_parsers[NUMTYPE] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
 static int detect_types( const char **pch, int8_t type[], int ncol, bool *bumped) {
   // used in sampling column types and whether column names are present

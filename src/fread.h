@@ -19,6 +19,7 @@ typedef enum {
   CT_BOOL8_U,
   CT_BOOL8_T,
   CT_BOOL8_L,
+  CT_BOOL8_Y,     // Y/N-as-bool
   CT_INT32,       // int32_t
   CT_INT64,       // int64_t
   CT_FLOAT64,     // double (64-bit IEEE 754 float)
