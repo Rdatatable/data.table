@@ -27,7 +27,7 @@ Differences over standard binary search (e.g. bsearch in stdlib.h) :
 #define GT 5
 
 static SEXP i, x, nqgrp;
-static int ncol, *icols, *xcols, *o, *xo, *retFirst, *retLength, *retIndex, *allLen1, *allGrp1, *rollends, ilen, anslen;
+static int ncol, *icols, *xcols, *o, *xo, *rollends, ilen, anslen;
 static int *op, nqmaxgrp, scols;
 static int ctr, nomatch; // populating matches for non-equi joins
 enum {ALL, FIRST, LAST} mult = ALL;
@@ -35,9 +35,99 @@ static double roll, rollabs;
 static Rboolean rollToNearest=FALSE;
 #define XIND(i) (xo ? xo[(i)]-1 : i)
 
+// output
+static int *volatile allLen1, *volatile allGrp1; // this should be private to each thread?!
+static int *restrict retFirst, *restrict retLength, *restrict retIndex;
+
+typedef union { // all const is fine for merge
+  const int *i; // logical and int
+  const double *d;
+  const SEXP *s; // string and list
+  const Rcomplex *c;
+  const Rbyte *b;
+} column_t;
+typedef struct dt_t {
+  //SEXP *x;
+  unsigned int ncol;
+  //unsigned int alloccol;
+  unsigned int nrow;
+  SEXPTYPE *types;
+  bool *int64;
+  //const char **names;
+  //const char **classes;
+  column_t *cols;
+} dt_t;
+static dt_t xdt;
+static dt_t idt;
+dt_t DTPTR_RO(SEXP x, int *cols, int ncol) {
+  dt_t dt;
+  dt.ncol = ncol;
+  dt.nrow = ncol ? length(VECTOR_ELT(x, 0)) : 0;
+  if (!ncol)
+    return dt;
+  dt.types = (SEXPTYPE*)R_alloc(ncol, sizeof(SEXPTYPE));
+  dt.int64 = (bool*)R_alloc(ncol, sizeof(bool));
+  dt.cols = (column_t*)R_alloc(ncol, sizeof(column_t));
+  for (int i=0; i<ncol; ++i) {
+    SEXP col = VECTOR_ELT(x, cols[i]-1);
+    switch (TYPEOF(col)) {
+    case INTSXP: case LGLSXP: {
+      dt.types[i] = TYPEOF(col);
+      dt.cols[i].i = INTEGER(col);
+      dt.int64[i] = false;
+    } break;
+    case REALSXP: {
+      dt.types[i] = REALSXP;
+      dt.cols[i].d = REAL(col);
+      dt.int64[i] = INHERITS(col, char_integer64);
+    } break;
+    case STRSXP: case VECSXP: {
+      dt.types[i] = TYPEOF(col);
+      dt.cols[i].s = SEXPPTR_RO(col);
+      dt.int64[i] = false;
+    } break;
+    case CPLXSXP:  {
+      dt.types[i] = CPLXSXP;
+      dt.cols[i].c = COMPLEX(col);
+      dt.int64[i] = false;
+    } break;
+    case RAWSXP : {
+      dt.types[i] = RAWSXP;
+      dt.cols[i].b = RAW(col);
+      dt.int64[i] = false;
+    } break;
+    default: error(_("Internal error: column type '%s' not supported in DTPTR_RO function. All known types are supported so please report as bug."), type2char(TYPEOF(col)));  // # nocov
+    }
+  }
+  return dt;
+}
+// thread safe(?). encoding unaware, strcmp
+// CHAR = ((const char *) STDVEC_DATAPTR(x))
+// STDVEC_DATAPTR = ((void *) (((SEXPREC_ALIGN *) (x)) + 1))
+// looks thread safe
+int strcmp2(SEXP x, SEXP y) {
+  if (x == y) return 0;             // same cached pointer (including NA_STRING==NA_STRING)
+  if (x == NA_STRING) return -1;    // x<y
+  if (y == NA_STRING) return 1;     // x>y
+  return strcmp(CHAR(x), CHAR(y));
+}
+// this need sto be private thread working val_t, is it now created in each bmergeC which is inefficient! before static global was fine, but now we need to have thread private copies
+typedef union {
+  int i;
+  double d;
+  unsigned long long ull;
+  long long ll;
+  SEXP s;
+} val_t;
+val_t xval, ival;
+static int cnt_bmergeC = 0; // count how many times used during tests
+
+void bmergeC2(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisgrp, int lowmax, int uppmax, val_t xval, val_t ival);
 void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisgrp, int lowmax, int uppmax);
 
 SEXP bmerge(SEXP iArg, SEXP xArg, SEXP icolsArg, SEXP xcolsArg, SEXP isorted, SEXP xoArg, SEXP rollarg, SEXP rollendsArg, SEXP nomatchArg, SEXP multArg, SEXP opArg, SEXP nqgrpArg, SEXP nqmaxgrpArg) {
+  const int verbose=0;
+  if (verbose>0) Rprintf("bmerge: start\n");
   int xN, iN, protecti=0;
   ctr=0; // needed for non-equi join case
   SEXP retFirstArg, retLengthArg, retIndexArg, allLen1Arg, allGrp1Arg;
@@ -64,7 +154,6 @@ SEXP bmerge(SEXP iArg, SEXP xArg, SEXP icolsArg, SEXP xcolsArg, SEXP isorted, SE
     int xt = TYPEOF(VECTOR_ELT(x, xcols[col]-1));
     if (iN && it!=xt) error(_("typeof x.%s (%s) != typeof i.%s (%s)"), CHAR(STRING_ELT(getAttrib(x,R_NamesSymbol),xcols[col]-1)), type2char(xt), CHAR(STRING_ELT(getAttrib(i,R_NamesSymbol),icols[col]-1)), type2char(it));
   }
-  // raise(SIGINT);
 
   // rollArg, rollendsArg
   roll = 0.0; rollToNearest = FALSE;
@@ -98,7 +187,6 @@ SEXP bmerge(SEXP iArg, SEXP xArg, SEXP icolsArg, SEXP xcolsArg, SEXP isorted, SE
     error(_("Internal error: nqgrpArg must be an integer vector")); // # nocov
   nqgrp = nqgrpArg; // set global for bmerge_r
   scols = (!length(nqgrpArg)) ? 0 : -1; // starting col index, -1 is external group column for non-equi join case
-
   // nqmaxgrpArg
   if (!isInteger(nqmaxgrpArg) || length(nqmaxgrpArg) != 1 || INTEGER(nqmaxgrpArg)[0] <= 0)
     error(_("Intrnal error: nqmaxgrpArg is not a positive length-1 integer vector")); // # nocov
@@ -115,11 +203,11 @@ SEXP bmerge(SEXP iArg, SEXP xArg, SEXP icolsArg, SEXP xcolsArg, SEXP isorted, SE
     for (int j=0; j<anslen; j++) retIndex[j] = j+1;
   } else { // equi joins (or) non-equi join but no multiple matches
     retFirstArg = PROTECT(allocVector(INTSXP, anslen));
-    retFirst = INTEGER(retFirstArg);
+    retFirst = (int *restrict)INTEGER(retFirstArg);
     retLengthArg = PROTECT(allocVector(INTSXP, anslen)); // TODO: no need to allocate length at all when
-    retLength = INTEGER(retLengthArg);                   // mult = "first" / "last"
+    retLength = (int *restrict)INTEGER(retLengthArg);                   // mult = "first" / "last"
     retIndexArg = PROTECT(allocVector(INTSXP, 0));
-    retIndex = INTEGER(retIndexArg);
+    retIndex = (int *restrict)INTEGER(retIndexArg);
     protecti += 3;
   }
   for (int j=0; j<anslen; j++) {
@@ -162,9 +250,39 @@ SEXP bmerge(SEXP iArg, SEXP xArg, SEXP icolsArg, SEXP xcolsArg, SEXP isorted, SE
   // start bmerge
   if (iN) {
     // embarassingly parallel if we've storage space for nqmaxgrp*iN
-    for (int kk=0; kk<nqmaxgrp; kk++) {
-      //Rprintf("bmerge: bmerge_r(-1,%d,-1,%d,%d,%d+1,1,1)\n", xN, iN, scols, kk);
-      bmerge_r(-1,xN,-1,iN,scols,kk+1,1,1);
+    if (nqmaxgrp > 1) { // may realloc inside, always do single threaded
+      for (int kk=0; kk<nqmaxgrp; kk++) {
+        //Rprintf("bmerge: bmerge_r(-1,%d,-1,%d,%d,%d+1,1,1)\n", xN, iN, scols, kk);
+        bmerge_r(-1,xN,-1,iN,scols,kk+1,1,1);
+      }
+    } else {
+      xdt = DTPTR_RO(x, xcols, ncol);
+      idt = DTPTR_RO(i, icols, ncol);
+      int nBatch = 0;
+      const int nth = getDTthreads(iN, false);
+      if (nth == 1 || iN < 1024) { // this line should be here
+      //if (nth == 1) { // this is only during dev to allow very small batches, may segfault?
+        nBatch = 1;
+      } else if (iN < nth * 2) {
+        nBatch = iN;
+      } else {
+        nBatch = nth * 2;
+      }
+      //if (verbose>0) Rprintf("calling bmergeC\n");
+      size_t batchSize = (iN-1)/nBatch + 1; // this is fragile for arbitrary nBatch
+      size_t lastBatchSize = iN - (nBatch-1)*batchSize;
+      if (verbose>0) Rprintf("iN=%d; nBatch=%d; batchSize=%d; lastBatchSize=%d\n", iN, nBatch, batchSize, lastBatchSize);
+      int *restrict th = (int *)R_alloc(nBatch, sizeof(int)); // report threads used
+      #pragma omp parallel for schedule(static) num_threads(nth) // schedule needs to be dynamic but static for devel to check thread utilization on small data
+      for (int b=0; b<nBatch; ++b) {
+        val_t xval, ival;
+        int n = b<nBatch-1 ? batchSize : lastBatchSize;
+        int offset = b<nBatch-1 ? b*batchSize : iN-lastBatchSize;
+        //Rprintf("bmerge: doing %d batch: offset=%d, batchSize=%d\n", b+1, offset, n);
+        bmergeC2(-1,xN,-1+offset,offset+n,0,1,1,1, xval, ival);
+        th[b] = omp_get_thread_num(); // only to report thread utilization in verbose message
+      }
+      if (verbose>0) {Rprintf("threads used for each batch: "); for (int b=0; b<nBatch; ++b) Rprintf("b[%d]=%d; ", b+1, th[b]); Rprintf("\n");}
     }
   }
   ctr += iN;
@@ -196,17 +314,18 @@ SEXP bmerge(SEXP iArg, SEXP xArg, SEXP icolsArg, SEXP xcolsArg, SEXP isorted, SE
     Free(retLength);
     Free(retIndex);
   }
+  if (verbose>0) Rprintf("new bmergeC used %d files so far\n", cnt_bmergeC);
   UNPROTECT(protecti);
   return (ans);
 }
 
-static union {
+/*static union {
   int i;
   double d;
   unsigned long long ull;
   long long ll;
   SEXP s;
-} ival, xval;
+} ival, xval;*/
 
 static uint64_t i64twiddle(const void *p, int i)
 {
@@ -251,15 +370,12 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
         // TO DO?: not if mult=first|last and col<ncol-1
         tmplow = mid;
         tmpupp = mid;
-        //Rprintf("xval==ival, finding ival dups: two nested while loops\n");
         while(tmplow<xupp-1) {
-          //Rprintf("while(tmplow<xupp-1)\n");
           int mid = tmplow + (xupp-tmplow)/2;
           xval.i = ixc[XIND(mid)];
           if (xval.i == ival.i) tmplow=mid; else xupp=mid;
         }
         while(xlow<tmpupp-1) {
-          //Rprintf("while(xlow<tmpupp-1)\n");
           int mid = xlow + (tmpupp-xlow)/2;
           xval.i = ixc[XIND(mid)];
           if (xval.i == ival.i) tmpupp=mid; else xlow=mid;
@@ -277,7 +393,7 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
       default : error(_("Internal error in bmerge_r for '%s' column. Unrecognized value op[col]=%d"), type2char(TYPEOF(xc)), op[col]); // #nocov
       }
       // for LE/LT cases, we need to ensure xlow excludes NA indices, != EQ is checked above already
-      if (op[col] <= 3 && xlow<xupp-1 && ival.i != NA_INTEGER && INTEGER(xc)[XIND(xlow+1)] == NA_INTEGER) {
+      if (op[col] <= 3 && xlow<xupp-1 && ival.i != NA_INTEGER && ixc[XIND(xlow+1)] == NA_INTEGER) {
         tmplow = xlow; tmpupp = xupp;
         while (tmplow < tmpupp-1) {
           int mid = tmplow + (tmpupp-tmplow)/2;
@@ -416,7 +532,6 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
     error(_("Type '%s' not supported for joining/merging"), type2char(TYPEOF(xc)));
   }
   if (xlow<xupp-1) { // if value found, low and upp surround it, unlike standard binary search where low falls on it
-    //Rprintf("value found: if (xlow<xupp-1)\n");
     if (col<ncol-1) {
       bmerge_r(xlow, xupp, ilow, iupp, col+1, thisgrp, 1, 1);
       // final two 1's are lowmax and uppmax
@@ -533,7 +648,6 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
       }
     }
   }
-  //Rprintf("switch (op[col])\n");
   switch (op[col]) {
   case EQ:
     if (ilow>ilowIn && (xlow>xlowIn || ((roll!=0.0 || op[col] != EQ) && col==ncol-1))) { // there is op[col]!=EQ but we are already in case EQ?!
@@ -563,13 +677,350 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
   }
 }
 
-typedef union {
-  int i;
-  double d;
-  unsigned long long ull;
-  long long ll;
-  SEXP s;
-} val_t;
+// we pass extra xval and ival so we dont have to initialize them in each bmerge call, they must be private, non globals
+void bmergeC2(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisgrp, int lowmax, int uppmax, val_t xval, val_t ival) {
+  // col is >0 and <=ncol-1 if this range of [xlow,xupp] and [ilow,iupp] match up to but not including that column
+  // lowmax=1 if xlowIn is the lower bound of this group (needed for roll)
+  // uppmax=1 if xuppIn is the upper bound of this group (needed for roll)
+  // new: col starts with -1 for non-equi joins, which gathers rows from nested id group counter 'thisgrp'
+  cnt_bmergeC++;
+  int xlow=xlowIn, xupp=xuppIn, ilow=ilowIn, iupp=iuppIn;
+  int lir = ilow + (iupp-ilow)/2;           // lir = logical i row.
+  int ir = o ? o[lir]-1 : lir;              // ir = the actual i row if i were ordered
+  SEXPTYPE t = xdt.types[col]; // it was checked in bmerge() that the types are equal
+  column_t ic = idt.cols[col];
+  column_t xc = xdt.cols[col];
+  if (!(col>-1)) {
+    //ic = R_NilValue;
+    //xc = nqgrp;
+    error("internal error, new bmerge should not be called for col<=-1");
+  }
+  // multiple col>-1 branches below could be removed if we decide not to handle nqjoin in this parallel bmergeC
+  bool isInt64 = xdt.int64[col];
+  switch (t) {
+  case LGLSXP : case INTSXP : {  // including factors
+    const int *iic = (col>-1) ? ic.i : NULL;
+    const int *ixc = xc.i;
+    ival.i = (col>-1) ? iic[ir] : thisgrp;
+    while(xlow < xupp-1) {
+      int mid = xlow + (xupp-xlow)/2;   // Same as (xlow+xupp)/2 but without risk of overflow
+      xval.i = ixc[XIND(mid)];
+      if (xval.i<ival.i) {          // relies on NA_INTEGER == INT_MIN, tested in init.c
+        xlow=mid;
+      } else if (xval.i>ival.i) {   // TO DO: is *(&xlow, &xupp)[0|1]=mid more efficient than branch?
+        xupp=mid;
+      } else {
+        // xval.i == ival.i  including NA_INTEGER==NA_INTEGER
+        // branch mid to find start and end of this group in this column
+        // TO DO?: not if mult=first|last and col<ncol-1
+        int tmplow = mid;
+        while(tmplow<xupp-1) {
+          int mid = tmplow + (xupp-tmplow)/2;
+          xval.i = ixc[XIND(mid)];
+          if (xval.i == ival.i) tmplow=mid; else xupp=mid;
+        }
+        int tmpupp = mid;
+        while(xlow<tmpupp-1) {
+          int mid = xlow + (tmpupp-xlow)/2;
+          xval.i = ixc[XIND(mid)];
+          if (xval.i == ival.i) tmpupp=mid; else xlow=mid;
+        }
+        // xlow and xupp now surround the group in xc, we only need this range for the next column
+        break;
+      }
+    }
+    if (col>-1) {
+      if (op[col] != EQ) {
+        switch (op[col]) {
+        case LE : xlow = xlowIn; break;
+        case LT : xupp = xlow + 1; xlow = xlowIn; break;
+        case GE : if (ival.i != NA_INTEGER) xupp = xuppIn; break;
+        case GT : xlow = xupp - 1; if (ival.i != NA_INTEGER) xupp = xuppIn; break;
+        default : error(_("Internal error in bmerge_r for '%s' column. Unrecognized value op[col]=%d"), type2char(t), op[col]); // #nocov
+        }
+        // for LE/LT cases, we need to ensure xlow excludes NA indices, != EQ is checked above already
+        if (op[col] <= 3 && xlow<xupp-1 && ival.i != NA_INTEGER && ixc[XIND(xlow+1)] == NA_INTEGER) {
+          int tmplow = xlow; int tmpupp = xupp;
+          while (tmplow < tmpupp-1) {
+            int mid = tmplow + (tmpupp-tmplow)/2;
+            xval.i = ixc[XIND(mid)];
+            if (xval.i == NA_INTEGER) tmplow = mid; else tmpupp = mid;
+          }
+          xlow = tmplow; // tmplow is the index of last NA value
+        }
+      }
+      int tmplow = lir;
+      while(tmplow<iupp-1) {   // TO DO: could double up from lir rather than halving from iupp
+        int mid = tmplow + (iupp-tmplow)/2;
+        xval.i = iic[ o ? o[mid]-1 : mid ];   // reuse xval to search in i
+        if (xval.i == ival.i) tmplow=mid; else iupp=mid;
+        // if we could guarantee ivals to be *always* sorted for all columns independently (= max(nestedid) = 1), then we can speed this up by 2x by adding checks for GE,GT,LE,LT separately.
+      }
+      int tmpupp = lir;
+      while(ilow<tmpupp-1) {
+        int mid = ilow + (tmpupp-ilow)/2;
+        xval.i = iic[ o ? o[mid]-1 : mid ];
+        if (xval.i == ival.i) tmpupp=mid; else ilow=mid;
+      }
+    }
+    // ilow and iupp now surround the group in ic, too
+  } break;
+  case STRSXP : {
+    if (op[col] != EQ) error(_("Only '==' operator is supported for columns of type %s."), type2char(t));
+    ival.s = ic.s[ir];
+    while(xlow < xupp-1) {
+      int mid = xlow + (xupp-xlow)/2;
+      xval.s = xc.s[XIND(mid)];
+      int tmp = strcmp2(xval.s, ival.s);  // uses pointer equality first, NA_STRING are allowed and joined to, then uses strcmp on CHAR().
+      if (tmp == 0) {                // TO DO: deal with mixed encodings and locale optionally
+        int tmplow = mid;
+        while(tmplow<xupp-1) {
+          int mid = tmplow + (xupp-tmplow)/2;
+          xval.s = xc.s[XIND(mid)];
+          if (ival.s == xval.s) tmplow=mid; else xupp=mid;
+        }
+        int tmpupp = mid;
+        while(xlow<tmpupp-1) {
+          int mid = xlow + (tmpupp-xlow)/2;
+          xval.s = xc.s[XIND(mid)];
+          if (ival.s == xval.s) tmpupp=mid; else xlow=mid;
+        }
+        break;
+      } else if (tmp < 0) {
+        xlow=mid;
+      } else {
+        xupp=mid;
+      }
+    }
+    int tmplow = lir;
+    while(tmplow<iupp-1) {
+      int mid = tmplow + (iupp-tmplow)/2;
+      xval.s = ic.s[o ? o[mid]-1 : mid];
+      if (xval.s == ival.s) tmplow=mid; else iupp=mid;
+    }
+    int tmpupp = lir;
+    while(ilow<tmpupp-1) {
+      int mid = ilow + (tmpupp-ilow)/2;
+      xval.s = ic.s[o ? o[mid]-1 : mid];
+      if (xval.s == ival.s) tmpupp=mid; else ilow=mid;
+    }
+  }  break;
+  case REALSXP : {
+    const double *dic = ic.d;
+    const double *dxc = xc.d;
+    uint64_t (*twiddle)(const void *, int) = isInt64 ? &i64twiddle : &dtwiddle;
+    // TODO: remove this last remaining use of i64twiddle.
+    ival.ull = twiddle(dic, ir);
+    while(xlow < xupp-1) {
+      int mid = xlow + (xupp-xlow)/2;
+      xval.ull = twiddle(dxc, XIND(mid));
+      if (xval.ull<ival.ull) {
+        xlow=mid;
+      } else if (xval.ull>ival.ull) {
+        xupp=mid;
+      } else { // xval.ull == ival.ull)
+        int tmplow = mid;
+        while(tmplow<xupp-1) {
+          int mid = tmplow + (xupp-tmplow)/2;
+          xval.ull = twiddle(dxc, XIND(mid));
+          if (xval.ull == ival.ull) tmplow=mid; else xupp=mid;
+        }
+        int tmpupp = mid;
+        while(xlow<tmpupp-1) {
+          int mid = xlow + (tmpupp-xlow)/2;
+          xval.ull = twiddle(dxc, XIND(mid));
+          if (xval.ull == ival.ull) tmpupp=mid; else xlow=mid;
+        }
+        break;
+      }
+    }
+    if (col>-1 && op[col] != EQ) {
+      bool isivalNA = !isInt64 ? ISNAN(dic[ir]) : (DtoLL(dic[ir]) == NA_INT64_LL);
+      switch (op[col]) {
+      case LE : if (!isivalNA) xlow = xlowIn; break;
+      case LT : xupp = xlow + 1; if (!isivalNA) xlow = xlowIn; break;
+      case GE : if (!isivalNA) xupp = xuppIn; break;
+      case GT : xlow = xupp - 1; if (!isivalNA) xupp = xuppIn; break;
+      default : error(_("Internal error in bmerge_r for '%s' column. Unrecognized value op[col]=%d"), type2char(t), op[col]); // #nocov
+      }
+      // for LE/LT cases, we need to ensure xlow excludes NA indices, != EQ is checked above already
+      if (op[col] <= 3 && xlow<xupp-1 && !isivalNA && (!isInt64 ? ISNAN(dxc[XIND(xlow+1)]) : (DtoLL(dxc[XIND(xlow+1)]) == NA_INT64_LL))) {
+        int tmplow = xlow; int tmpupp = xupp;
+        while (tmplow < tmpupp-1) {
+          int mid = tmplow + (tmpupp-tmplow)/2;
+          xval.d = dxc[XIND(mid)];
+          if (!isInt64 ? ISNAN(xval.d) : xval.ll == NA_INT64_LL) tmplow = mid; else tmpupp = mid;
+        }
+        xlow = tmplow; // tmplow is the index of last NA value
+      }
+    }
+    if (col>-1) {
+      int tmplow = lir;
+      while(tmplow<iupp-1) {
+        int mid = tmplow + (iupp-tmplow)/2;
+        xval.ull = twiddle(dic, o ? o[mid]-1 : mid);
+        if (xval.ull == ival.ull) tmplow=mid; else iupp=mid;
+      }
+      int tmpupp = lir;
+      while(ilow<tmpupp-1) {
+        int mid = ilow + (tmpupp-ilow)/2;
+        xval.ull = twiddle(dic, o ? o[mid]-1 : mid);
+        if (xval.ull == ival.ull) tmpupp=mid; else ilow=mid;
+      }
+    }
+    // ilow and iupp now surround the group in ic, too
+  } break;
+  default:
+    error(_("Type '%s' not supported for joining/merging"), type2char(t));
+  }
+  if (xlow<xupp-1) { // if value found, low and upp surround it, unlike standard binary search where low falls on it
+    if (col<ncol-1) {
+      bmergeC2(xlow, xupp, ilow, iupp, col+1, thisgrp, 1, 1, xval, ival);
+      // final two 1's are lowmax and uppmax
+    } else {
+      int len = xupp-xlow-1;
+      if (mult==ALL && len>1) allLen1[0] = FALSE;
+      if (nqmaxgrp == 1) {
+        for (int j=ilow+1; j<iupp; j++) {   // usually iterates once only for j=ir
+          int k = o ? o[j]-1 : j;
+          retFirst[k] = (mult != LAST) ? xlow+2 : xupp; // extra +1 for 1-based indexing at R level
+          retLength[k]= (mult == ALL) ? len : 1;
+          // retIndex initialisation is taken care of in bmerge and doesn't change for thisgrp=1
+        }
+      } else {
+        // non-equi join
+        for (int j=ilow+1; j<iupp; j++) {
+          int k = o ? o[j]-1 : j;
+          if (retFirst[k] != nomatch) {
+            if (mult == ALL) {
+              // for this irow, we've matches on more than one group
+              allGrp1[0] = FALSE;
+              retFirst[ctr+ilen] = xlow+2;
+              retLength[ctr+ilen] = len;
+              retIndex[ctr+ilen] = k+1;
+              ++ctr;
+              if (ctr+ilen >= anslen) {
+                error("AFAIU we should not reach here because it will realloc inside parallel");
+                anslen = 1.1*anslen;
+                retFirst = Realloc(retFirst, anslen, int);   // if fails, it fails inside Realloc with R error
+                retLength = Realloc(retLength, anslen, int);
+                retIndex = Realloc(retIndex, anslen, int);
+              }
+            } else if (mult == FIRST) {
+              retFirst[k] = (XIND(retFirst[k]-1) > XIND(xlow+1)) ? xlow+2 : retFirst[k];
+              retLength[k] = 1;
+            } else {
+              retFirst[k] = (XIND(retFirst[k]-1) < XIND(xupp-1)) ? xupp : retFirst[k];
+              retLength[k] = 1;
+            }
+          } else {
+            // none of the groups so far have filled in for this index. So use it!
+            if (mult == ALL) {
+              retFirst[k] = xlow+2;
+              retLength[k] = len;
+              retIndex[k] = k+1;
+              // no need to increment ctr of course
+            } else {
+              retFirst[k] = (mult == FIRST) ? xlow+2 : xupp;
+              retLength[k] = 1;
+            }
+          }
+        }
+      }
+    }
+  } else if (roll!=0.0 && col==ncol-1) {
+    // runs once per i row (not each search test), so not hugely time critical
+    if (xlow != xupp-1 || xlow<xlowIn || xupp>xuppIn) error(_("Internal error: xlow!=xupp-1 || xlow<xlowIn || xupp>xuppIn")); // # nocov
+    if (rollToNearest) {   // value of roll ignored currently when nearest
+      if ( (!lowmax || xlow>xlowIn) && (!uppmax || xupp<xuppIn) ) {
+        if (  ( t==REALSXP && ic.d[ir]-xc.d[XIND(xlow)] <= xc.d[XIND(xupp)]-ic.d[ir] )
+                || ( t<=INTSXP && ic.i[ir]-xc.i[XIND(xlow)] <= xc.i[XIND(xupp)]-ic.i[ir] )) {
+          retFirst[ir] = xlow+1;
+          retLength[ir] = 1;
+        } else {
+          retFirst[ir] = xupp+1;
+          retLength[ir] = 1;
+        }
+      } else if (uppmax && xupp==xuppIn && rollends[1]) {
+        retFirst[ir] = xlow+1;
+        retLength[ir] = 1;
+      } else if (lowmax && xlow==xlowIn && rollends[0]) {
+        retFirst[ir] = xupp+1;
+        retLength[ir] = 1;
+      }
+    } else {
+      // Regular roll=TRUE|+ve|-ve
+      // Fixed issues: #1405, #1650, #1007
+      // TODO: incorporate the twiddle logic for roll as well instead of tolerance?
+      if ( (   (roll>0.0 && (!lowmax || xlow>xlowIn) && (xupp<xuppIn || !uppmax || rollends[1]))
+                 || (roll<0.0 && xupp==xuppIn && uppmax && rollends[1]) )
+             && ( (t==REALSXP &&
+             (ival.d = ic.d[ir], xval.d = xc.d[XIND(xlow)], 1) &&
+             (( !isInt64 &&
+             (ival.d-xval.d-rollabs < 1e-6 ||
+             ival.d-xval.d == rollabs /*#1007*/))
+                || ( isInt64 &&
+                  (double)(ival.ll-xval.ll)-rollabs < 1e-6 ) ))  // cast to double for when rollabs==Inf
+                    || (t<=INTSXP && (double)(ic.i[ir]-xc.i[XIND(xlow)])-rollabs < 1e-6 )
+                    || (t==STRSXP)   )) {
+                    retFirst[ir] = xlow+1;
+        retLength[ir] = 1;
+      } else if
+        (  (  (roll<0.0 && (!uppmax || xupp<xuppIn) && (xlow>xlowIn || !lowmax || rollends[0]))
+                || (roll>0.0 && xlow==xlowIn && lowmax && rollends[0]) )
+             && (   (t==REALSXP &&
+             (ival.d = ic.d[ir], xval.d = xc.d[XIND(xupp)], 1) &&
+             (( !isInt64 &&
+             (xval.d-ival.d-rollabs < 1e-6 ||
+             xval.d-ival.d == rollabs /*#1007*/))
+                || ( isInt64 &&
+                  (double)(xval.ll-ival.ll)-rollabs < 1e-6 ) ))
+                      || (t<=INTSXP && (double)(xc.i[XIND(xupp)]-ic.i[ir])-rollabs < 1e-6 )
+                      || (t==STRSXP)   )) {
+                      retFirst[ir] = xupp+1;   // == xlow+2
+        retLength[ir] = 1;
+      }
+    }
+    if (iupp-ilow > 2 && retFirst[ir]!=NA_INTEGER) {
+      // >=2 equal values in the last column being rolling to the same point.
+      for (int j=ilow+1; j<iupp; j++) {
+        // will rewrite retFirst[ir] to itself, but that's ok
+        int k;
+        if (o) k=o[j]-1;
+        else k=j;
+        retFirst[k] = retFirst[ir];
+        retLength[k]= retLength[ir];
+      }
+    }
+  }
+  switch (op[col]) {
+  case EQ:
+    if (ilow>ilowIn && (xlow>xlowIn || (roll!=0.0 && col==ncol-1))) {
+      bmergeC2(xlowIn, xlow+1, ilowIn, ilow+1, col, 1, lowmax, uppmax && xlow+1==xuppIn, xval, ival);
+    }
+    if (iupp<iuppIn && (xupp<xuppIn || (roll!=0.0 && col==ncol-1))) {
+      bmergeC2(xupp-1, xuppIn, iupp-1, iuppIn, col, 1, lowmax && xupp-1==xlowIn, uppmax, xval, ival);
+    }
+    break;
+  case LE: case LT:
+    // roll is not yet implemented
+    if (ilow>ilowIn)
+      bmergeC2(xlowIn, xuppIn, ilowIn, ilow+1, col, 1, lowmax, uppmax && xlow+1==xuppIn, xval, ival);
+    if (iupp<iuppIn)
+      bmergeC2(xlowIn, xuppIn, iupp-1, iuppIn, col, 1, lowmax && xupp-1==xlowIn, uppmax, xval, ival);
+    break;
+  case GE: case GT:
+    // roll is not yet implemented
+    if (ilow>ilowIn)
+      bmergeC2(xlowIn, xuppIn, ilowIn, ilow+1, col, 1, lowmax, uppmax && xlow+1==xuppIn, xval, ival);
+    if (iupp<iuppIn)
+      bmergeC2(xlowIn, xuppIn, iupp-1, iuppIn, col, 1, lowmax && xupp-1==xlowIn, uppmax, xval, ival);
+    break;
+  default : break;  // do nothing
+  }
+}
+
+// DEVEL: working parallel integer only nq join only bmerge below
 
 void bmergeC(int depth, int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int *starts, int *lens, SEXP xArg, SEXP iArg, int *iArgCols, int *xArgCols, int *o, int *xo, int ncol, val_t xval, val_t ival) {
   /*
@@ -621,7 +1072,6 @@ void bmergeC(int depth, int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col,
       // branch mid to find start and end of this group in this column
       // TO DO?: not if mult=first|last and col<ncol-1
       int tmplow = mid;
-      //Rprintf("xval==ival, finding ival dups: two nested while loops\n");
       while(tmplow<xupp-1) {
         //Rprintf("while(tmplow<xupp-1)\n");
         int mid = tmplow + (xupp-tmplow)/2;
@@ -809,3 +1259,4 @@ SEXP bmergeR(SEXP iArg, SEXP xArg, SEXP icolsArg, SEXP xcolsArg, SEXP isorted, S
   UNPROTECT(protecti);
   return (ans);
 }
+

@@ -178,7 +178,7 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
   }
   intCols = function(x, cols) all(vapply(cols, function(col, x) is.integer(x[[col]]), NA, x))
   bmergeR = FALSE
-  if (TRUE
+  if (FALSE
         #&& isTRUE(getOption("datatable.bmergeR"))                    ## switch
         && length(icols)==length(xcols)                              ## avoid invalid input
         && intCols(i, icols) && intCols(x, xcols)                    ## all columns integer
