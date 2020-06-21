@@ -122,7 +122,6 @@ void savetl_init(), savetl(SEXP s), savetl_end();
 int checkOverAlloc(SEXP x);
 
 // forder.c
-int StrCmp(SEXP x, SEXP y);
 int StrCmpNE(SEXP x, SEXP y);
 uint64_t dtwiddle(const void *p, int i);
 SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP naArg);
