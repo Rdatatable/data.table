@@ -176,28 +176,10 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
     } else nqgrp = integer(0L)
     if (verbose) cat("  Found", nqmaxgrp, "non-equi group(s) ...\n")
   }
-  intCols = function(x, cols) all(vapply(cols, function(col, x) is.integer(x[[col]]), NA, x))
-  bmergeR = FALSE
-  if (FALSE
-        #&& isTRUE(getOption("datatable.bmergeR"))                    ## switch
-        && length(icols)==length(xcols)                              ## avoid invalid input
-        && intCols(i, icols) && intCols(x, xcols)                    ## all columns integer
-        #&& identical(nomatch, NA_integer_)                          ## nomatch=0L is made as post-processing
-        && all(ops==1L)                                              ## equi join
-        && identical(roll, 0) && identical(rollends, c(FALSE, TRUE)) ## non-rolling join
-        && identical(nqgrp, integer(0))
-        && identical(nqmaxgrp, 1L)
-    ) bmergeR = TRUE
-  if (bmergeR) {
-    cat("1\n", file = "~/git/data.table/bmergeR.out", append = TRUE)
-    if (verbose) {last.started.at=proc.time();cat("Starting bmergeR ...\n");flush.console()}
-    ans = .Call(CbmergeR, i, x, as.integer(icols), as.integer(xcols), io, xo, nomatch, mult)
-    if (verbose) {cat("bmergeR done in",timetaken(last.started.at),"\n"); flush.console()}
-  } else {
-    if (verbose) {last.started.at=proc.time();cat("Starting bmerge ...\n");flush.console()}
-    ans = .Call(Cbmerge, i, x, as.integer(icols), as.integer(xcols), io, xo, roll, rollends, nomatch, mult, ops, nqgrp, nqmaxgrp)
-    if (verbose) {cat("bmerge done in",timetaken(last.started.at),"\n"); flush.console()}
-  }
+
+  if (verbose) {last.started.at=proc.time();cat("Starting bmerge ...\n");flush.console()}
+  ans = .Call(CbmergeR, i, x, as.integer(icols), as.integer(xcols), io, xo, roll, rollends, nomatch, mult, ops, nqgrp, nqmaxgrp)
+  if (verbose) {cat("bmerge done in",timetaken(last.started.at),"\n"); flush.console()}
   # TO DO: xo could be moved inside Cbmerge
 
   ans$xo = xo  # for further use by [.data.table

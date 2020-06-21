@@ -38,7 +38,7 @@ size_t __typeorder[100];
 
 // .Calls
 SEXP setattrib();
-SEXP bmerge();
+SEXP bmergeR();
 SEXP assign();
 SEXP dogroups();
 SEXP copy();
@@ -127,7 +127,7 @@ SEXP fastmean();
 static const
 R_CallMethodDef callMethods[] = {
 {"Csetattrib", (DL_FUNC) &setattrib, -1},
-{"Cbmerge", (DL_FUNC) &bmerge, -1},
+{"CbmergeR", (DL_FUNC) &bmergeR, -1},
 {"Cassign", (DL_FUNC) &assign, -1},
 {"Cdogroups", (DL_FUNC) &dogroups, -1},
 {"Ccopy", (DL_FUNC) &copy, -1},
@@ -213,7 +213,6 @@ R_CallMethodDef callMethods[] = {
 {"CtestMsgR", (DL_FUNC) &testMsgR, -1},
 {"C_allNAR", (DL_FUNC) &allNAR, -1},
 {"Ctest_dt_win_snprintf", (DL_FUNC)&test_dt_win_snprintf, -1},
-{"CbmergeR", (DL_FUNC) &bmergeR, -1},
 {NULL, NULL, 0}
 };
 

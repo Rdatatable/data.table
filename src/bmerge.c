@@ -1,5 +1,4 @@
 #include "data.table.h"
-#include <signal.h> // the debugging machinery + breakpoint aidee
 
 /*
 Implements binary search (a.k.a. divide and conquer).
@@ -10,11 +9,13 @@ Differences over standard binary search (e.g. bsearch in stdlib.h) :
   o list of vectors (key of many columns) of different types
   o ties (groups)
   o NA,NAN,-Inf,+Inf are distinct values and can be joined to
-  o type double is joined within tolerance (apx 11 s.f.)
+  o type double is joined within tolerance (apx 11 s.f.) -- is this info up to date?
   o join to prevailing value (roll join a.k.a locf), forwards or backwards
   o join to nearest
   o roll the beginning and end optionally
   o limit the roll distance to a user provided value
+  o non equi joins (no != yet) since 1.9.8
+  o multi threaded
 */
 
 #define ENC_KNOWN(x) (LEVELS(x) & 12)
@@ -27,7 +28,8 @@ Differences over standard binary search (e.g. bsearch in stdlib.h) :
 #define GT 5
 
 static SEXP i, x, nqgrp;
-static int ncol, *icols, *xcols, *o, *xo, *rollends, ilen, anslen;
+static int ncol;
+static int *icols, *xcols, *o, *xo, *rollends, ilen, anslen;
 static int *op, nqmaxgrp, scols;
 static int ctr, nomatch; // populating matches for non-equi joins
 enum {ALL, FIRST, LAST} mult = ALL;
@@ -36,7 +38,7 @@ static Rboolean rollToNearest=FALSE;
 #define XIND(i) (xo ? xo[(i)]-1 : i)
 
 // output
-static int *volatile allLen1, *volatile allGrp1; // this should be private to each thread?!
+static int *volatile allLen1, *volatile allGrp1; // todo make restrict and pass to bmerge
 static int *restrict retFirst, *restrict retLength, *restrict retIndex;
 
 typedef union { // all const is fine for merge
@@ -46,7 +48,7 @@ typedef union { // all const is fine for merge
   const Rcomplex *c;
   const Rbyte *b;
 } column_t;
-typedef struct dt_t {
+typedef struct dt_t { // some fields not yet used
   //SEXP *x;
   unsigned int ncol;
   //unsigned int alloccol;
@@ -56,9 +58,13 @@ typedef struct dt_t {
   //const char **names;
   //const char **classes;
   column_t *cols;
+  //sorted
+  //indices
 } dt_t;
-static dt_t xdt;
+static dt_t xdt; // globals
 static dt_t idt;
+
+// turns data.table SEXP into dt_t which should be thread safe?
 dt_t DTPTR_RO(SEXP x, int *cols, int ncol) {
   dt_t dt;
   dt.ncol = ncol;
@@ -101,17 +107,17 @@ dt_t DTPTR_RO(SEXP x, int *cols, int ncol) {
   }
   return dt;
 }
-// thread safe(?). encoding unaware, strcmp
-// CHAR = ((const char *) STDVEC_DATAPTR(x))
-// STDVEC_DATAPTR = ((void *) (((SEXPREC_ALIGN *) (x)) + 1))
-// looks thread safe
+
+// string compare, encoding UNAWARE
+// is CHAR thread safe? looks thread safe: CHAR = ((const char *) STDVEC_DATAPTR(x)); STDVEC_DATAPTR = ((void *) (((SEXPREC_ALIGN *) (x)) + 1))
 int strcmp2(SEXP x, SEXP y) {
   if (x == y) return 0;             // same cached pointer (including NA_STRING==NA_STRING)
   if (x == NA_STRING) return -1;    // x<y
   if (y == NA_STRING) return 1;     // x>y
   return strcmp(CHAR(x), CHAR(y));
 }
-// this need sto be private thread working val_t, is it now created in each bmergeC which is inefficient! before static global was fine, but now we need to have thread private copies
+
+// this needs to be thread private val_t, creating in each bmergeC call would be inefficient(?); before parallelism static global was fine, but now we need to have thread private copies
 typedef union {
   int i;
   double d;
@@ -119,15 +125,67 @@ typedef union {
   long long ll;
   SEXP s;
 } val_t;
-val_t xval, ival;
-static int cnt_bmergeC = 0; // count how many times used during tests
+val_t xval, ival; // used in old bmerge_r, thread private ones created in parallel loop
 
-void bmergeC2(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisgrp, int lowmax, int uppmax, val_t xval, val_t ival);
-void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisgrp, int lowmax, int uppmax);
+static int cnt_bmerge = 0; // count how many times used during session, debug info for development only
 
-SEXP bmerge(SEXP iArg, SEXP xArg, SEXP icolsArg, SEXP xcolsArg, SEXP isorted, SEXP xoArg, SEXP rollarg, SEXP rollendsArg, SEXP nomatchArg, SEXP multArg, SEXP opArg, SEXP nqgrpArg, SEXP nqmaxgrpArg) {
-  const int verbose=0;
-  if (verbose>0) Rprintf("bmerge: start\n");
+// new bmerge that can be called from parallel region
+static void bmerge(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisgrp, int lowmax, int uppmax, val_t xval, val_t ival);
+
+// old bmerge to be called in single threaded mode only
+static void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisgrp, int lowmax, int uppmax);
+
+// helper for verbose messages to count how many threads were used, due to schedule dynamic not all may be used
+static int unqNth(const int *x, const int nx) { // x have 0:(nx-1) values
+  int ans = 0;
+  uint8_t *seen = (uint8_t *)R_alloc(nx, sizeof(uint8_t));
+  memset(seen, 0, nx*sizeof(uint8_t));
+  for (int i=0; i<nx; ++i) {
+    if (!seen[x[i]]++) ans++;
+  }
+  return ans;
+}
+
+// wrapper around parallel bmerge to more easily call from other places in C
+void bmergeC(dt_t i, dt_t x, int *restrict starts, int *restrict lens, int *restrict indices, int *volatile allLen1, int *volatile allGrp1, const int verbose) {
+  double t = 0;
+  // set globals
+  idt = i; xdt = x; ncol = idt.ncol;
+  retFirst = starts; retLength = lens; retIndex = indices;
+  allLen1 = allLen1; allGrp1 = allGrp1;
+  const int iN = idt.nrow, xN = xdt.nrow;
+  int nBatch = 0;
+  const int nth = getDTthreads(iN, false);
+  if (nth == 1 || iN < 1024) { // remove iN<1024 for small batches
+    nBatch = 1;
+  } else if (iN < nth * 2) {
+    nBatch = iN;
+  } else {
+    nBatch = nth * 2;
+  }
+  size_t batchSize = (iN-1)/nBatch + 1;
+  size_t lastBatchSize = iN - (nBatch-1)*batchSize;
+  if (verbose>0)
+    Rprintf("bmergeC: iN=%d; nBatch=%d; batchSize=%d; lastBatchSize=%d\n", iN, nBatch, batchSize, lastBatchSize);
+  int *restrict th = (int *)R_alloc(nBatch, sizeof(int)); // report threads used
+  if (verbose>0)
+    t = omp_get_wtime();
+  #pragma omp parallel for schedule(dynamic) num_threads(nth)
+  for (int b=0; b<nBatch; ++b) {
+    const int bN = b<nBatch-1 ? batchSize : lastBatchSize;
+    const int bOffset = b<nBatch-1 ? b*batchSize : iN-lastBatchSize;
+    val_t xval; val_t ival; // this needs to be thread private, initialize here once, and re-use in all nested bmerge calls
+    bmerge(-1, xN, -1+bOffset, bOffset+bN, 0, 1, 1, 1, xval, ival);
+    th[b] = omp_get_thread_num(); // only to report thread utilization in verbose message
+  }
+  if (verbose>0)
+    Rprintf("bmergeC: %d calls to bmerge using %d/%d threads took %.3fs\n", nBatch, unqNth(th, nBatch), nth, omp_get_wtime() - t); // all threads may not always be used bc schedule(dynamic)
+  return;
+}
+
+SEXP bmergeR(SEXP iArg, SEXP xArg, SEXP icolsArg, SEXP xcolsArg, SEXP isorted, SEXP xoArg, SEXP rollarg, SEXP rollendsArg, SEXP nomatchArg, SEXP multArg, SEXP opArg, SEXP nqgrpArg, SEXP nqmaxgrpArg) {
+  const int verbose = 0; // for debugging, hard switch, put 2 so bmergeC will print as well
+  double t = 0; // verbose timing
   int xN, iN, protecti=0;
   ctr=0; // needed for non-equi join case
   SEXP retFirstArg, retLengthArg, retIndexArg, allLen1Arg, allGrp1Arg;
@@ -210,6 +268,7 @@ SEXP bmerge(SEXP iArg, SEXP xArg, SEXP icolsArg, SEXP xcolsArg, SEXP isorted, SE
     retIndex = (int *restrict)INTEGER(retIndexArg);
     protecti += 3;
   }
+  // could be parallel! then just take out nomatch==0 branch outside of loop
   for (int j=0; j<anslen; j++) {
     // defaults need to populated here as bmerge_r may well not touch many locations, say if the last row of i is before the first row of x.
     retFirst[j] = nomatch;   // default to no match for NA goto below
@@ -252,37 +311,14 @@ SEXP bmerge(SEXP iArg, SEXP xArg, SEXP icolsArg, SEXP xcolsArg, SEXP isorted, SE
     // embarassingly parallel if we've storage space for nqmaxgrp*iN
     if (nqmaxgrp > 1) { // may realloc inside, always do single threaded
       for (int kk=0; kk<nqmaxgrp; kk++) {
-        //Rprintf("bmerge: bmerge_r(-1,%d,-1,%d,%d,%d+1,1,1)\n", xN, iN, scols, kk);
         bmerge_r(-1,xN,-1,iN,scols,kk+1,1,1);
       }
     } else {
-      xdt = DTPTR_RO(x, xcols, ncol);
-      idt = DTPTR_RO(i, icols, ncol);
-      int nBatch = 0;
-      const int nth = getDTthreads(iN, false);
-      if (nth == 1 || iN < 1024) { // this line should be here
-      //if (nth == 1) { // this is only during dev to allow very small batches, may segfault?
-        nBatch = 1;
-      } else if (iN < nth * 2) {
-        nBatch = iN;
-      } else {
-        nBatch = nth * 2;
-      }
-      //if (verbose>0) Rprintf("calling bmergeC\n");
-      size_t batchSize = (iN-1)/nBatch + 1; // this is fragile for arbitrary nBatch
-      size_t lastBatchSize = iN - (nBatch-1)*batchSize;
-      if (verbose>0) Rprintf("iN=%d; nBatch=%d; batchSize=%d; lastBatchSize=%d\n", iN, nBatch, batchSize, lastBatchSize);
-      int *restrict th = (int *)R_alloc(nBatch, sizeof(int)); // report threads used
-      #pragma omp parallel for schedule(static) num_threads(nth) // schedule needs to be dynamic but static for devel to check thread utilization on small data
-      for (int b=0; b<nBatch; ++b) {
-        val_t xval, ival;
-        int n = b<nBatch-1 ? batchSize : lastBatchSize;
-        int offset = b<nBatch-1 ? b*batchSize : iN-lastBatchSize;
-        //Rprintf("bmerge: doing %d batch: offset=%d, batchSize=%d\n", b+1, offset, n);
-        bmergeC2(-1,xN,-1+offset,offset+n,0,1,1,1, xval, ival);
-        th[b] = omp_get_thread_num(); // only to report thread utilization in verbose message
-      }
-      if (verbose>0) {Rprintf("threads used for each batch: "); for (int b=0; b<nBatch; ++b) Rprintf("b[%d]=%d; ", b+1, th[b]); Rprintf("\n");}
+      if (verbose>0)
+        t = omp_get_wtime();
+      bmergeC(DTPTR_RO(i, icols, ncol), DTPTR_RO(x, xcols, ncol), retFirst, retLength, retIndex, allLen1, allGrp1, verbose-1);
+      if (verbose>0)
+        Rprintf("bmergeR: bmergeC %d cols of %d x %d; took %.3fs\n", ncol, iN, xN, omp_get_wtime() - t);
     }
   }
   ctr += iN;
@@ -296,36 +332,21 @@ SEXP bmerge(SEXP iArg, SEXP xArg, SEXP icolsArg, SEXP xcolsArg, SEXP isorted, SE
     memcpy(INTEGER(retLengthArg), retLength, sizeof(int)*ctr);
     memcpy(INTEGER(retIndexArg), retIndex, sizeof(int)*ctr);
   }
-  SEXP ans = PROTECT(allocVector(VECSXP, 5)); protecti++;
-  SEXP ansnames = PROTECT(allocVector(STRSXP, 5)); protecti++;
-  SET_VECTOR_ELT(ans, 0, retFirstArg);
-  SET_VECTOR_ELT(ans, 1, retLengthArg);
-  SET_VECTOR_ELT(ans, 2, retIndexArg);
-  SET_VECTOR_ELT(ans, 3, allLen1Arg);
-  SET_VECTOR_ELT(ans, 4, allGrp1Arg);
-  SET_STRING_ELT(ansnames, 0, char_starts);  // changed from mkChar to char_ to pass the grep in CRAN_Release.cmd
-  SET_STRING_ELT(ansnames, 1, char_lens);
-  SET_STRING_ELT(ansnames, 2, char_indices);
-  SET_STRING_ELT(ansnames, 3, char_allLen1);
-  SET_STRING_ELT(ansnames, 4, char_allGrp1);
-  setAttrib(ans, R_NamesSymbol, ansnames);
+  SEXP ans = PROTECT(allocVector(VECSXP, 5)), ansnames; protecti++;
+  setAttrib(ans, R_NamesSymbol, ansnames=allocVector(STRSXP, 5));
+  SET_VECTOR_ELT(ans, 0, retFirstArg);  SET_STRING_ELT(ansnames, 0, char_starts);
+  SET_VECTOR_ELT(ans, 1, retLengthArg); SET_STRING_ELT(ansnames, 1, char_lens);
+  SET_VECTOR_ELT(ans, 2, retIndexArg);  SET_STRING_ELT(ansnames, 2, char_indices);
+  SET_VECTOR_ELT(ans, 3, allLen1Arg);   SET_STRING_ELT(ansnames, 3, char_allLen1);
+  SET_VECTOR_ELT(ans, 4, allGrp1Arg);   SET_STRING_ELT(ansnames, 4, char_allGrp1);
   if (nqmaxgrp > 1 && mult == ALL) {
-    Free(retFirst);
-    Free(retLength);
-    Free(retIndex);
+    Free(retFirst); Free(retLength); Free(retIndex);
   }
-  if (verbose>0) Rprintf("new bmergeC used %d files so far\n", cnt_bmergeC);
+  if (verbose>0)
+    Rprintf("bmergeR: bmerge used %d times so far\n", cnt_bmerge);
   UNPROTECT(protecti);
-  return (ans);
+  return ans;
 }
-
-/*static union {
-  int i;
-  double d;
-  unsigned long long ull;
-  long long ll;
-  SEXP s;
-} ival, xval;*/
 
 static uint64_t i64twiddle(const void *p, int i)
 {
@@ -677,16 +698,19 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
   }
 }
 
-// we pass extra xval and ival so we dont have to initialize them in each bmerge call, they must be private, non globals
-void bmergeC2(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisgrp, int lowmax, int uppmax, val_t xval, val_t ival) {
+// thread safe bmerge_r
+// we pass extra xval and ival so we dont have to initialize them in each bmerge call, they must be private, not globals
+void bmerge(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisgrp, int lowmax, int uppmax, val_t xval, val_t ival) {
   // col is >0 and <=ncol-1 if this range of [xlow,xupp] and [ilow,iupp] match up to but not including that column
   // lowmax=1 if xlowIn is the lower bound of this group (needed for roll)
   // uppmax=1 if xuppIn is the upper bound of this group (needed for roll)
   // new: col starts with -1 for non-equi joins, which gathers rows from nested id group counter 'thisgrp'
-  cnt_bmergeC++;
+  cnt_bmerge++;
   int xlow=xlowIn, xupp=xuppIn, ilow=ilowIn, iupp=iuppIn;
   int lir = ilow + (iupp-ilow)/2;           // lir = logical i row.
   int ir = o ? o[lir]-1 : lir;              // ir = the actual i row if i were ordered
+  if (xdt.types[col] != idt.types[col])
+    error("internal error: types not matching between x and i cols");
   SEXPTYPE t = xdt.types[col]; // it was checked in bmerge() that the types are equal
   column_t ic = idt.cols[col];
   column_t xc = xdt.cols[col];
@@ -695,7 +719,7 @@ void bmergeC2(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
     //xc = nqgrp;
     error("internal error, new bmerge should not be called for col<=-1");
   }
-  // multiple col>-1 branches below could be removed if we decide not to handle nqjoin in this parallel bmergeC
+  // all col>-1 branches below could be removed if we decide not to handle nqjoin in this parallel bmerge, if we want to support nqjoin then we need to deal with realloc?
   bool isInt64 = xdt.int64[col];
   switch (t) {
   case LGLSXP : case INTSXP : {  // including factors
@@ -875,7 +899,7 @@ void bmergeC2(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
   }
   if (xlow<xupp-1) { // if value found, low and upp surround it, unlike standard binary search where low falls on it
     if (col<ncol-1) {
-      bmergeC2(xlow, xupp, ilow, iupp, col+1, thisgrp, 1, 1, xval, ival);
+      bmerge(xlow, xupp, ilow, iupp, col+1, thisgrp, 1, 1, xval, ival);
       // final two 1's are lowmax and uppmax
     } else {
       int len = xupp-xlow-1;
@@ -996,267 +1020,26 @@ void bmergeC2(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
   switch (op[col]) {
   case EQ:
     if (ilow>ilowIn && (xlow>xlowIn || (roll!=0.0 && col==ncol-1))) {
-      bmergeC2(xlowIn, xlow+1, ilowIn, ilow+1, col, 1, lowmax, uppmax && xlow+1==xuppIn, xval, ival);
+      bmerge(xlowIn, xlow+1, ilowIn, ilow+1, col, 1, lowmax, uppmax && xlow+1==xuppIn, xval, ival);
     }
     if (iupp<iuppIn && (xupp<xuppIn || (roll!=0.0 && col==ncol-1))) {
-      bmergeC2(xupp-1, xuppIn, iupp-1, iuppIn, col, 1, lowmax && xupp-1==xlowIn, uppmax, xval, ival);
+      bmerge(xupp-1, xuppIn, iupp-1, iuppIn, col, 1, lowmax && xupp-1==xlowIn, uppmax, xval, ival);
     }
     break;
   case LE: case LT:
     // roll is not yet implemented
     if (ilow>ilowIn)
-      bmergeC2(xlowIn, xuppIn, ilowIn, ilow+1, col, 1, lowmax, uppmax && xlow+1==xuppIn, xval, ival);
+      bmerge(xlowIn, xuppIn, ilowIn, ilow+1, col, 1, lowmax, uppmax && xlow+1==xuppIn, xval, ival);
     if (iupp<iuppIn)
-      bmergeC2(xlowIn, xuppIn, iupp-1, iuppIn, col, 1, lowmax && xupp-1==xlowIn, uppmax, xval, ival);
+      bmerge(xlowIn, xuppIn, iupp-1, iuppIn, col, 1, lowmax && xupp-1==xlowIn, uppmax, xval, ival);
     break;
   case GE: case GT:
     // roll is not yet implemented
     if (ilow>ilowIn)
-      bmergeC2(xlowIn, xuppIn, ilowIn, ilow+1, col, 1, lowmax, uppmax && xlow+1==xuppIn, xval, ival);
+      bmerge(xlowIn, xuppIn, ilowIn, ilow+1, col, 1, lowmax, uppmax && xlow+1==xuppIn, xval, ival);
     if (iupp<iuppIn)
-      bmergeC2(xlowIn, xuppIn, iupp-1, iuppIn, col, 1, lowmax && xupp-1==xlowIn, uppmax, xval, ival);
+      bmerge(xlowIn, xuppIn, iupp-1, iuppIn, col, 1, lowmax && xupp-1==xlowIn, uppmax, xval, ival);
     break;
   default : break;  // do nothing
   }
 }
-
-// DEVEL: working parallel integer only nq join only bmerge below
-
-void bmergeC(int depth, int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int *starts, int *lens, SEXP xArg, SEXP iArg, int *iArgCols, int *xArgCols, int *o, int *xo, int ncol, val_t xval, val_t ival) {
-  /*
-   * WL binary search: finding xlow xupp
-   * once match then repeat binary search LW: UPP and LOW to find how big is matching group
-   * ?? 2 WL ?? ... "ilow and iupp now surround the group in ic, too"
-   *   finding ilow iupp
-   * xlow<xupp-1 = found match
-   * if not the last column
-   *   bmergeC(xlow,   xupp,   ilow,   iupp, col+1, ...)
-   * otherwise fill answers, has: len = xupp-xlow-1;
-   * proceed to other values in input??
-   * if (ilow>ilowIn && xlow>xlowIn): 
-   *   bmergeC(xlowIn, xlow+1, ilowIn, ilow+1, col, ...)
-   * if (iupp<iuppIn && xupp<xuppIn)
-   *   bmergeC(xupp-1, xuppIn, iupp-1, iuppIn, col, ...)
-   *
-   * starting from mid point
-   * finding any matching xlow xupp
-   * finding xlow xupp taking duplicates into account
-   * finding ilow iupp
-   * fill answer
-   * proceed to towards the edges
-   *
-   *
-   * look for parallel binary search
-   */
-  int verbose=0;
-  if (verbose>0) Rprintf("bmergeC at depth=%d\n", depth);
-  int xlow=xlowIn, xupp=xuppIn, ilow=ilowIn, iupp=iuppIn;
-  int lir = ilow + (iupp-ilow)/2;           // lir = logical i row
-  int ir = o ? o[lir]-1 : lir;              // ir = the actual i row if i were ordered
-  SEXP ic = VECTOR_ELT(iArg,iArgCols[col]-1);  // ic = i column
-  SEXP xc = VECTOR_ELT(xArg,xArgCols[col]-1);  // xc = x column
-  const int *iic = INTEGER(ic);
-  const int *ixc = INTEGER(xc);
-  ival.i = iic[ir];
-  if (verbose>0) Rprintf("bmergeC: finding xlow xupp for ival=%d\n", ival.i);
-  // finding xlow xupp
-  while(xlow < xupp-1) {
-    int mid = xlow + (xupp-xlow)/2;   // Same as (xlow+xupp)/2 but without risk of overflow
-    xval.i = ixc[XIND(mid)];
-    if (xval.i<ival.i) {          // relies on NA_INTEGER == INT_MIN, tested in init.c
-      xlow=mid;
-    } else if (xval.i>ival.i) {   // TO DO: is *(&xlow, &xupp)[0|1]=mid more efficient than branch?
-      xupp=mid;
-    } else {
-      // xval.i == ival.i  including NA_INTEGER==NA_INTEGER
-      // branch mid to find start and end of this group in this column
-      // TO DO?: not if mult=first|last and col<ncol-1
-      int tmplow = mid;
-      while(tmplow<xupp-1) {
-        //Rprintf("while(tmplow<xupp-1)\n");
-        int mid = tmplow + (xupp-tmplow)/2;
-        xval.i = ixc[XIND(mid)];
-        if (xval.i == ival.i) tmplow=mid; else xupp=mid;
-      }
-      int tmpupp = mid;
-      while(xlow<tmpupp-1) {
-        //Rprintf("while(xlow<tmpupp-1)\n");
-        int mid = xlow + (tmpupp-xlow)/2;
-        xval.i = ixc[XIND(mid)];
-        if (xval.i == ival.i) tmpupp=mid; else xlow=mid;
-      }
-      // xlow and xupp now surround the group in xc, we only need this range for the next column
-      break;
-    }
-  }
-  if (verbose>0) Rprintf("xlow=%d; xupp=%d\n", xlow, xupp);
-  // finding ilow iupp
-  int tmplow = lir;
-  while(tmplow<iupp-1) {   // TO DO: could double up from lir rather than halving from iupp
-    int mid = tmplow + (iupp-tmplow)/2;
-    xval.i = iic[ o ? o[mid]-1 : mid ];   // reuse xval to search in i
-    if (xval.i == ival.i) tmplow=mid; else iupp=mid;
-  }
-  int tmpupp = lir;
-  while(ilow<tmpupp-1) {
-    int mid = ilow + (tmpupp-ilow)/2;
-    xval.i = iic[ o ? o[mid]-1 : mid ];
-    if (xval.i == ival.i) tmpupp=mid; else ilow=mid;
-  }
-  // ilow and iupp now surround the group in ic, too
-  
-  if (verbose>0) Rprintf("ilow=%d; iupp=%d\n", ilow, iupp);
-  
-  if (xlow<xupp-1) { // if value found, low and upp surround it, unlike standard binary search where low falls on it
-    if (col<ncol-1) {
-      bmergeC(depth+1, xlow, xupp, ilow, iupp, col+1, starts, lens, xArg, iArg, iArgCols, xArgCols, o, xo, ncol, xval, ival);
-    } else {
-      int len = xupp-xlow-1;
-      if (mult==ALL && len>1) allLen1[0] = FALSE;
-      for (int j=ilow+1; j<iupp; j++) {   // usually iterates once only for j=ir
-        int k = o ? o[j]-1 : j;
-        if (verbose>0) Rprintf("writing answer for ival=%d at i[%d]\n", ival.i, k);
-        starts[k] = (mult != LAST) ? xlow+2 : xupp; // extra +1 for 1-based indexing at R level
-        lens[k] = (mult == ALL) ? len : 1;
-      }
-    }
-  }
-  if (ilow>ilowIn && xlow>xlowIn) { // some 'i' below ilow exists, repeat bmergeC with ilowIn=ilowIn, and 'x' below xlow exists as well, xlowIn=xlowIn
-    //Rprintf("bmerge_r: nested bmerge_r() via: ilow>ilowIn && (xlow>xlowIn ...\n");
-    bmergeC(depth+1, xlowIn, xlow+1, ilowIn, ilow+1, col, starts, lens, xArg, iArg, iArgCols, xArgCols, o, xo, ncol, xval, ival);
-  }
-  if (iupp<iuppIn && xupp<xuppIn) { // some i above iupp and x above xupp
-    //Rprintf("bmerge_r: nested bmerge_r() via: iupp<iuppIn && (xupp<xuppIn ...\n");
-    bmergeC(depth+1, xupp-1, xuppIn, iupp-1, iuppIn, col, starts, lens, xArg, iArg, iArgCols, xArgCols, o, xo, ncol, xval, ival);
-  }
-}
-
-SEXP bmergeR(SEXP iArg, SEXP xArg, SEXP icolsArg, SEXP xcolsArg, SEXP isorted, SEXP xoArg, SEXP nomatchArg, SEXP multArg) {
-  int protecti=0, verbose=0;
-  if (verbose>0) Rprintf("bmergeR: start\n");
-  // iArg, xArg, icolsArg and xcolsArg
-  if (!isInteger(icolsArg)) error(_("Internal error: icols is not integer vector")); // # nocov
-  if (!isInteger(xcolsArg)) error(_("Internal error: xcols is not integer vector")); // # nocov
-  if ((LENGTH(icolsArg) == 0 || LENGTH(xcolsArg) == 0) && LENGTH(i) > 0) // We let through LENGTH(i) == 0 for tests 2126.*
-    error(_("Internal error: icols and xcols must be non-empty integer vectors."));
-  if (LENGTH(icolsArg) > LENGTH(xcolsArg))
-    error(_("Internal error: length(icols) [%d] > length(xcols) [%d]"), LENGTH(icolsArg), LENGTH(xcolsArg)); // # nocov
-  int *iArgCols = INTEGER(icolsArg);
-  int *xArgCols = INTEGER(xcolsArg);
-  if (verbose>0) Rprintf("bmergeR: before redef icols xcols\n");
-  int *icols = iArgCols;
-  int *xcols = xArgCols;
-  int xN = LENGTH(xArg) ? LENGTH(VECTOR_ELT(xArg,0)) : 0;
-  int iN = LENGTH(iArg) ? LENGTH(VECTOR_ELT(iArg,0)) : 0;
-  int anslen = iN;
-  int ncol = LENGTH(icolsArg);    // there may be more sorted columns in x than involved in the join
-  if (verbose>0) Rprintf("bmergeR: after init\n");
-  for (int col=0; col<ncol; col++) {
-    if (verbose>0) Rprintf("bmergeR: col check col=%d\n", col);
-    if (icols[col]==NA_INTEGER) error(_("Internal error. icols[%d] is NA"), col); // # nocov
-    if (xcols[col]==NA_INTEGER) error(_("Internal error. xcols[%d] is NA"), col); // # nocov
-    if (verbose>0) Rprintf("bmergeR: col check col=%d...\n", col);
-    if (icols[col]>LENGTH(iArg) || icols[col]<1) error(_("icols[%d]=%d outside range [1,length(i)=%d]"), col, icols[col], LENGTH(iArg));
-    if (xcols[col]>LENGTH(xArg) || xcols[col]<1) error(_("xcols[%d]=%d outside range [1,length(x)=%d]"), col, xcols[col], LENGTH(xArg));
-    if (verbose>0) Rprintf("bmergeR: col check col=%d... ...\n", col);
-    int it = TYPEOF(VECTOR_ELT(iArg, icols[col]-1));
-    int xt = TYPEOF(VECTOR_ELT(xArg, xcols[col]-1));
-    if (verbose>0) Rprintf("bmergeR: col check col=%d... ... ...\n", col);
-    if (iN && it!=xt) error(_("typeof x.%s (%s) != typeof i.%s (%s)"), CHAR(STRING_ELT(getAttrib(xArg,R_NamesSymbol),xcols[col]-1)), type2char(xt), CHAR(STRING_ELT(getAttrib(iArg,R_NamesSymbol),icols[col]-1)), type2char(it));
-  }
-  if (verbose>0) Rprintf("bmergeR: after col checks\n");
-  
-  // mult arg
-  if (!strcmp(CHAR(STRING_ELT(multArg, 0)), "all")) mult = ALL;
-  else if (!strcmp(CHAR(STRING_ELT(multArg, 0)), "first")) mult = FIRST;
-  else if (!strcmp(CHAR(STRING_ELT(multArg, 0)), "last")) mult = LAST;
-  else error(_("Internal error: invalid value for 'mult'. please report to data.table issue tracker")); // # nocov
-  if (verbose>0) Rprintf("bmergeR: after mult checks\n");
-  if (verbose>0) Rprintf("bmergeR: before allocs\n");
-  SEXP startsArg = PROTECT(allocVector(INTSXP, anslen));
-  int *starts = INTEGER(startsArg);
-  SEXP lensArg = PROTECT(allocVector(INTSXP, anslen)); // TODO: no need to allocate length at all when
-  int *lens = INTEGER(lensArg);                   // mult = "first" / "last"
-  SEXP indexArg = PROTECT(allocVector(INTSXP, 0));
-  protecti += 3;
-  int nomatch = INTEGER(nomatchArg)[0];
-  for (int j=0; j<anslen; j++) {
-    starts[j] = nomatch;
-    lens[j] = nomatch==0 ? 0 : 1;
-  }
-  
-  // allLen1Arg
-  SEXP allLen1Arg = PROTECT(allocVector(LGLSXP, 1));
-  allLen1 = LOGICAL(allLen1Arg);
-  allLen1[0] = true;  // All-0 and All-NA are considered all length 1 according to R code currently. Really, it means any(length>1).
-  
-  // allGrp1Arg, if TRUE, out of all nested group ids, only one of them matches 'x'. Might be rare, but helps to be more efficient in that case.
-  SEXP allGrp1Arg = PROTECT(allocVector(LGLSXP, 1));
-  allGrp1 = LOGICAL(allGrp1Arg);
-  allGrp1[0] = true;
-  protecti += 2;
-  if (verbose>0) Rprintf("bmergeR: after allocs before forder(i)\n");
-  // isorted arg
-  int *o = NULL;
-  if (!LOGICAL(isorted)[0]) {
-    SEXP order = PROTECT(allocVector(INTSXP, length(icolsArg)));
-    protecti++;
-    for (int j=0; j<LENGTH(order); j++) INTEGER(order)[j]=1;   // rep(1L, length(icolsArg))
-    SEXP oSxp = PROTECT(forder(iArg, icolsArg, ScalarLogical(FALSE), ScalarLogical(TRUE), order, ScalarLogical(FALSE)));
-    protecti++;
-    // TODO - split head of forder into C-level callable
-    if (!LENGTH(oSxp)) o = NULL; else o = INTEGER(oSxp);
-  }
-  
-  // xo arg
-  int *xo = NULL;
-  if (length(xoArg)) {
-    if (!isInteger(xoArg)) error(_("Internal error: xoArg is not an integer vector")); // # nocov
-    xo = INTEGER(xoArg);
-  }
-  
-  // start bmerge
-  if (iN) {
-    int nBatch = 0;
-    const int nth = getDTthreads(iN, false);
-    //if (nth == 1) || iN < 1024) { // this line should be here
-    if (nth == 1) { // this is only during dev to allow very small batches, may segfault?
-      nBatch = 1;
-    } else if (iN < nth * 2) {
-      nBatch = iN;
-    } else {
-      nBatch = nth * 2;
-    }
-    //if (verbose>0) Rprintf("calling bmergeC\n");
-    size_t batchSize = (iN-1)/nBatch + 1; // this is fragile for arbitrary nBatch
-    size_t lastBatchSize = iN - (nBatch-1)*batchSize;
-    Rprintf("iN=%d; nBatch=%d; batchSize=%d; lastBatchSize=%d\n", iN, nBatch, batchSize, lastBatchSize);
-    int *restrict th = (int *)R_alloc(nBatch, sizeof(int)); // report threads used
-    #pragma omp parallel for schedule(static) num_threads(nth) // schedule needs to be dynamic but static for devel to check thread utilization
-    for (int b=0; b<nBatch; ++b) {
-      static val_t xval, ival;
-      //Rprintf("bmergeR: doing %d batch\n", b+1);
-      int n = b<nBatch-1 ? batchSize : lastBatchSize;
-      int offset = b<nBatch-1 ? b*batchSize : iN-lastBatchSize;
-      /*Rprintf("bmergeR: ");
-      for (int z=0; z<n; ++z) {
-        Rprintf("%d, ", INTEGER(VECTOR_ELT(iArg, 0))[o ? o[z+offset]-1 : z+offset]);
-      }
-      Rprintf("\n");*/
-      bmergeC(/*depth=*/0, /*xlowIn=*/-1, /*xuppIn=*/xN, /*ilowIn=*/-1+offset, /*iuppIn=*/offset+n, /*col=*/0, starts, lens, xArg, iArg, iArgCols, xArgCols, o, xo, ncol, xval, ival);
-      th[b] = omp_get_thread_num(); // only to report thread utilization in verbose message
-    }
-    Rprintf("threads used for each batch: "); for (int b=0; b<nBatch; ++b) Rprintf("b[%d]=%d; ", b+1, th[b]); Rprintf("\n");
-  }
-  if (verbose>0) Rprintf("making ans\n");
-  SEXP ans = PROTECT(allocVector(VECSXP, 5)), ansnames; protecti++;
-  setAttrib(ans, R_NamesSymbol, ansnames=allocVector(STRSXP, 5));
-  SET_VECTOR_ELT(ans, 0, startsArg);  SET_STRING_ELT(ansnames, 0, char_starts);
-  SET_VECTOR_ELT(ans, 1, lensArg);    SET_STRING_ELT(ansnames, 1, char_lens);
-  SET_VECTOR_ELT(ans, 2, indexArg);   SET_STRING_ELT(ansnames, 2, char_indices);
-  SET_VECTOR_ELT(ans, 3, allLen1Arg); SET_STRING_ELT(ansnames, 3, char_allLen1);
-  SET_VECTOR_ELT(ans, 4, allGrp1Arg); SET_STRING_ELT(ansnames, 4, char_allGrp1);
-  UNPROTECT(protecti);
-  return (ans);
-}
-
