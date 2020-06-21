@@ -227,13 +227,13 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
   int xlow=xlowIn, xupp=xuppIn, ilow=ilowIn, iupp=iuppIn;
   int lir = ilow + (iupp-ilow)/2;           // lir = logical i row.
   int ir = o ? o[lir]-1 : lir;              // ir = the actual i row if i were ordered
-  if (idt.types[col] != xdt.types[col])
-    error("internal error: types mismatch for i and x cols during bmerge"); // # nocov // was checked at R level already
   const bool isDataCol = col>-1; // check once for non nq join grp id internal technical, non-data, field
   const SEXPTYPE t = isDataCol ? idt.types[col] : INTSXP;
-  const bool isInt64 = idt.int64[col];
+  const bool isInt64 = isDataCol && idt.int64[col];
   column_t ic, xc;
   if (isDataCol) {
+    if (idt.types[col] != xdt.types[col])
+      error("internal error: types mismatch for i and x cols during bmerge"); // # nocov // was checked at R level already
     ic = idt.cols[col];
     xc = xdt.cols[col];
   } else {
