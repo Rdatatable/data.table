@@ -227,6 +227,14 @@ int StrCmp(SEXP x, SEXP y)
           or UTF-8 is used by user, not both. Then error if not. If ok, then can proceed with byte level. ascii is never marked known by R, but
           non-ascii (i.e. knowable encoding) could be marked unknown. Does R API provide is_ascii?
 */
+// same but NoEncoding version, to be used when we already made ENC2UTF8 on x and y, used in bmerge
+int StrCmpNE(SEXP x, SEXP y)
+{
+  if (x == y) return 0;
+  if (x == NA_STRING) return -1;
+  if (y == NA_STRING) return 1;
+  return strcmp(CHAR(x), CHAR(y));
+}
 
 static void cradix_r(SEXP *xsub, int n, int radix)
 // xsub is a unique set of CHARSXP, to be ordered by reference

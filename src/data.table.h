@@ -123,6 +123,7 @@ int checkOverAlloc(SEXP x);
 
 // forder.c
 int StrCmp(SEXP x, SEXP y);
+int StrCmpNE(SEXP x, SEXP y);
 uint64_t dtwiddle(const void *p, int i);
 SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP naArg);
 int getNumericRounding_C();
@@ -242,6 +243,7 @@ SEXP coerceUtf8IfNeeded(SEXP x);
 char *end(char *start);
 void ansMsg(ans_t *ans, int n, bool verbose, const char *func);
 SEXP testMsgR(SEXP status, SEXP x, SEXP k);
+dt_t DTPTR_RO(SEXP x, int *cols, int ncol);
 
 //fifelse.c
 SEXP fifelseR(SEXP l, SEXP a, SEXP b, SEXP na);
