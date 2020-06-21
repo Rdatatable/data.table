@@ -26,7 +26,6 @@ Differences over standard binary search (e.g. bsearch in stdlib.h) :
 #define GE 4
 #define GT 5
 
-static SEXP i, x;
 static int *nqgrp;
 static int ncol, *icols, *xcols, *o, *xo, *retFirst, *retLength, *retIndex, *allLen1, *allGrp1, *rollends, ilen, anslen;
 static int *op, nqmaxgrp, scols;
@@ -48,7 +47,7 @@ SEXP bmerge(SEXP iArg, SEXP xArg, SEXP icolsArg, SEXP xcolsArg, SEXP isorted, SE
   retFirstArg = retLengthArg = retIndexArg = R_NilValue; // suppress gcc msg
 
   // iArg, xArg, icolsArg and xcolsArg
-  i = iArg; x = xArg;  // set globals so bmerge_r can see them.
+  SEXP i = iArg, x = xArg;  // not globals anymore, bmerge_r don't need to see them anymore
   if (!isInteger(icolsArg)) error(_("Internal error: icols is not integer vector")); // # nocov
   if (!isInteger(xcolsArg)) error(_("Internal error: xcols is not integer vector")); // # nocov
   if ((LENGTH(icolsArg) == 0 || LENGTH(xcolsArg) == 0) && LENGTH(i) > 0) // We let through LENGTH(i) == 0 for tests 2126.*
