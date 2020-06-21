@@ -230,6 +230,7 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
   const bool isDataCol = col>-1; // check once for non nq join grp id internal technical, non-data, field
   const SEXPTYPE t = isDataCol ? idt.types[col] : INTSXP;
   const bool isInt64 = isDataCol && idt.int64[col];
+  const bool isLastCol = isDataCol && col==ncol-1;
   column_t ic, xc;
   if (isDataCol) {
     if (idt.types[col] != xdt.types[col])
@@ -244,7 +245,7 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
   case LGLSXP : case INTSXP : {  // including factors
     const int *iic = ic.i;
     const int *ixc = xc.i;
-    ival.i = (isDataCol) ? iic[ir] : thisgrp;
+    ival.i = isDataCol ? iic[ir] : thisgrp;
     while(xlow < xupp-1) {
       int mid = xlow + (xupp-xlow)/2;   // Same as (xlow+xupp)/2 but without risk of overflow
       xval.i = ixc[XIND(mid)];
@@ -272,26 +273,26 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
         break;
       }
     }
-    if (isDataCol && op[col] != EQ) {
-      switch (op[col]) {
-      case LE : xlow = xlowIn; break;
-      case LT : xupp = xlow + 1; xlow = xlowIn; break;
-      case GE : if (ival.i != NA_INTEGER) xupp = xuppIn; break;
-      case GT : xlow = xupp - 1; if (ival.i != NA_INTEGER) xupp = xuppIn; break;
-      default : error(_("Internal error in bmerge_r for '%s' column. Unrecognized value op[col]=%d"), type2char(t), op[col]); // #nocov
-      }
-      // for LE/LT cases, we need to ensure xlow excludes NA indices, != EQ is checked above already
-      if (op[col] <= 3 && xlow<xupp-1 && ival.i != NA_INTEGER && xc.i[XIND(xlow+1)] == NA_INTEGER) {
-        int tmplow = xlow, tmpupp = xupp;
-        while (tmplow < tmpupp-1) {
-          int mid = tmplow + (tmpupp-tmplow)/2;
-          xval.i = ixc[XIND(mid)];
-          if (xval.i == NA_INTEGER) tmplow = mid; else tmpupp = mid;
-        }
-        xlow = tmplow; // tmplow is the index of last NA value
-      }
-    }
     if (isDataCol) {
+      if (op[col] != EQ) {
+        switch (op[col]) {
+        case LE : xlow = xlowIn; break;
+        case LT : xupp = xlow + 1; xlow = xlowIn; break;
+        case GE : if (ival.i != NA_INTEGER) xupp = xuppIn; break;
+        case GT : xlow = xupp - 1; if (ival.i != NA_INTEGER) xupp = xuppIn; break;
+        default : error(_("Internal error in bmerge_r for '%s' column. Unrecognized value op[col]=%d"), type2char(t), op[col]); // #nocov
+        }
+        // for LE/LT cases, we need to ensure xlow excludes NA indices, != EQ is checked above already
+        if (op[col] <= 3 && xlow<xupp-1 && ival.i != NA_INTEGER && xc.i[XIND(xlow+1)] == NA_INTEGER) {
+          int tmplow = xlow, tmpupp = xupp;
+          while (tmplow < tmpupp-1) {
+            int mid = tmplow + (tmpupp-tmplow)/2;
+            xval.i = ixc[XIND(mid)];
+            if (xval.i == NA_INTEGER) tmplow = mid; else tmpupp = mid;
+          }
+          xlow = tmplow; // tmplow is the index of last NA value
+        }
+      }
       int tmplow = lir;
       while(tmplow<iupp-1) {   // TO DO: could double up from lir rather than halving from iupp
         int mid = tmplow + (iupp-tmplow)/2;
@@ -377,7 +378,7 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
         break;
       }
     }
-    if (isDataCol && op[col] != EQ) {
+    if (op[col] != EQ) {
       bool isivalNA = !isInt64 ? ISNAN(dic[ir]) : (DtoLL(dic[ir]) == NA_INT64_LL);
       switch (op[col]) {
       case LE : if (!isivalNA) xlow = xlowIn; break;
@@ -397,27 +398,26 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
         xlow = tmplow; // tmplow is the index of last NA value
       }
     }
-    if (isDataCol) {
-      int tmplow = lir;
-      while(tmplow<iupp-1) {
-        int mid = tmplow + (iupp-tmplow)/2;
-        xval.ull = twiddle(dic, o ? o[mid]-1 : mid);
-        if (xval.ull == ival.ull) tmplow=mid; else iupp=mid;
-      }
-      int tmpupp = lir;
-      while(ilow<tmpupp-1) {
-        int mid = ilow + (tmpupp-ilow)/2;
-        xval.ull = twiddle(dic, o ? o[mid]-1 : mid);
-        if (xval.ull == ival.ull) tmpupp=mid; else ilow=mid;
-      }
+    int tmplow = lir;
+    while(tmplow<iupp-1) {
+      int mid = tmplow + (iupp-tmplow)/2;
+      xval.ull = twiddle(dic, o ? o[mid]-1 : mid);
+      if (xval.ull == ival.ull) tmplow=mid; else iupp=mid;
+    }
+    int tmpupp = lir;
+    while(ilow<tmpupp-1) {
+      int mid = ilow + (tmpupp-ilow)/2;
+      xval.ull = twiddle(dic, o ? o[mid]-1 : mid);
+      if (xval.ull == ival.ull) tmpupp=mid; else ilow=mid;
     }
     // ilow and iupp now surround the group in ic, too
   } break;
-  default:
+  default: {
     error(_("Type '%s' not supported for joining/merging"), type2char(t));
   }
+  }
   if (xlow<xupp-1) { // if value found, low and upp surround it, unlike standard binary search where low falls on it
-    if (col<ncol-1) {
+    if (!isLastCol) {
       bmerge_r(xlow, xupp, ilow, iupp, col+1, thisgrp, 1, 1);
       // final two 1's are lowmax and uppmax
     } else {
@@ -470,7 +470,7 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
         }
       }
     }
-  } else if (roll!=0.0 && col==ncol-1) {
+  } else if (roll!=0.0 && isLastCol) {
     // runs once per i row (not each search test), so not hugely time critical
     if (xlow != xupp-1 || xlow<xlowIn || xupp>xuppIn) error(_("Internal error: xlow!=xupp-1 || xlow<xlowIn || xupp>xuppIn")); // # nocov
     if (rollToNearest) {   // value of roll ignored currently when nearest
@@ -535,9 +535,9 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
   }
   switch (op[col]) {
   case EQ:
-    if (ilow>ilowIn && (xlow>xlowIn || (roll!=0.0 && col==ncol-1)))
+    if (ilow>ilowIn && (xlow>xlowIn || (roll!=0.0 && isLastCol)))
       bmerge_r(xlowIn, xlow+1, ilowIn, ilow+1, col, 1, lowmax, uppmax && xlow+1==xuppIn);
-    if (iupp<iuppIn && (xupp<xuppIn || (roll!=0.0 && col==ncol-1)))
+    if (iupp<iuppIn && (xupp<xuppIn || (roll!=0.0 && isLastCol)))
       bmerge_r(xupp-1, xuppIn, iupp-1, iuppIn, col, 1, lowmax && xupp-1==xlowIn, uppmax);
     break;
   case LE: case LT:

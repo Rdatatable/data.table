@@ -120,10 +120,10 @@ dt_t DTPTR_RO(SEXP x, int *cols, int ncol) {
       dt.int64[i] = false;
     } break;
     case RAWSXP : {
-      dt.types[i] = RAWSXP;
+      dt.types[i] = RAWSXP; // # nocov start
       dt.cols[i].b = (const Rbyte*)RAW(col);
       dt.int64[i] = false;
-    } break;
+    } break; // # nocov end
     default: error(_("Internal error: column type '%s' not supported in DTPTR_RO function. All known types are supported so please report as bug."), type2char(TYPEOF(col)));  // # nocov
     }
   }
