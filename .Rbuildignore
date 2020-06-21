@@ -2,11 +2,12 @@
 ^data\.table_.*\.tar\.gz$
 ^vignettes/plots/figures$
 ^\.Renviron$
-^.*\.csv$
-^.*\.csvy$
-^.*\.RDS$
-^.*\.diff$
-^.*\.patch$
+^[^/]+\.R$
+^[^/]+\.csv$
+^[^/]+\.csvy$
+^[^/]+\.RDS$
+^[^/]+\.diff$
+^[^/]+\.patch$
 
 ^\.ci$
 ^\.dev$

@@ -38,6 +38,7 @@ vignettes/plots/figures
 .Renviron
 lib
 library
+*.R
 *.csv
 *.csvy
 *.RDS
