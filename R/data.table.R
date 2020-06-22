@@ -3110,7 +3110,7 @@ isReallyReal = function(x) {
   }
   idx_op = match(operators, ops, nomatch=0L)
   if (any(idx_op %in% c(0L, 6L)))
-    stop(gettextf("Invalid operators %s. Only allowed operators are %s.", brackify(operators[idx_op %in% c(0L, 6L)]), brackify(ops[1:5]), domain="R-data.table"), domain=NA)
+    stop(gettextf("Invalid join operators %s. Only allowed operators are %s.", brackify(operators[idx_op %in% c(0L, 6L)]), brackify(ops[1:5]), domain="R-data.table"), domain=NA)
   ## the final on will contain the xCol as name, the iCol as value
   on = iCols
   names(on) = xCols
