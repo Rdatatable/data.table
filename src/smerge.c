@@ -26,33 +26,29 @@ enum emult{ALL, FIRST, LAST, ERR};
 // workhorse join that runs in parallel on batches
 static void smerge(const int bx_off, const int bnx,
                    const int by_off, const int bny,
-                   const int **restrict x, const int *restrict x_starts, const int *restrict x_lens, const bool unq_x,
-                   const int **restrict y, const int *restrict y_starts, const int *restrict y_lens, const bool unq_y,
+                   const int *restrict x, const int *restrict x_starts, const int *restrict x_lens, const bool unq_x,
+                   const int *restrict y, const int *restrict y_starts, const int *restrict y_lens, const bool unq_y,
                    int *restrict starts, int *restrict lens,
                    uint64_t *nmatch, bool *xlens1, bool *ylens1, bool *xylens1,
-                   const enum emult mult, const int ncol) {
+                   const enum emult mult) {
   uint64_t cnt = 0;
   bool xlen1 = true, ylen1 = true, xylen1 = true;
   if (unq_x && unq_y) {
     int i = bx_off, j = by_off;
     const int ni = bx_off+bnx, nj = by_off+bny;
     while (i<ni && j<nj) {
-      for (int c=0; c<ncol; ++c) {
-        const int x_i = x[c][i], y_j = y[c][j];
-        if (x_i == y_j) {
-          if (c < ncol-1)
-            continue; // check next columns
-          starts[i] = j+1;
-          //lens[i] = 1; // already filled with 1's we will need this line if we change default alloc
-          i++;
-  #ifdef SMERGE_STATS
-          cnt++;
-  #endif
-        } else if (x_i < y_j) {
-          i++; break;
-        } else if (x_i > y_j) {
-          j++; break;
-        }
+      const int x_i = x[i], y_j = y[j];
+      if (x_i == y_j) {
+        starts[i] = j+1;
+        //lens[i] = 1; // already filled with 1's we will need this line if we change default alloc
+        i++;
+#ifdef SMERGE_STATS
+        cnt++;
+#endif
+      } else if (x_i < y_j) {
+        i++;
+      } else if (x_i > y_j) {
+        j++;
       }
     }
   } else if (unq_x) {
@@ -60,68 +56,56 @@ static void smerge(const int bx_off, const int bnx,
     const int ni = bx_off+bnx, njs = by_off+bny;
     if (mult == ALL || mult == ERR) { // mult==err is raised based on ylens1 flag outside of parallel region
       while (i<ni && js<njs) {
-        for (int c=0; c<ncol; ++c) {
-          const int j = y_starts[js]-1;
-          const int x_i = x[c][i], y_j = y[c][j];
-          if (x_i == y_j) {
-            if (c < ncol-1)
-              continue;
-            starts[i] = j+1;
-            const int yl1 = y_lens[js];
-            lens[i] = yl1;
-            i++;
-  #ifdef SMERGE_STATS
-            if (ylen1 && yl1>1)
-              ylen1 = false;
-            cnt += (uint64_t)yl1;
-  #endif
-          } else if (x_i < y_j) {
-            i++; break;
-          } else if (x_i > y_j) {
-            js++; break;
-          }
+        const int j = y_starts[js]-1;
+        const int x_i = x[i], y_j = y[j];
+        if (x_i == y_j) {
+          starts[i] = j+1;
+          const int yl1 = y_lens[js];
+          lens[i] = yl1;
+          i++;
+#ifdef SMERGE_STATS
+          if (ylen1 && yl1>1)
+            ylen1 = false;
+          cnt += (uint64_t)yl1;
+#endif
+        } else if (x_i < y_j) {
+          i++;
+        } else if (x_i > y_j) {
+          js++;
         }
       }
     } else if (mult == FIRST) {
       while (i<ni && js<njs) {
-        for (int c=0; c<ncol; ++c) {
-          const int j = y_starts[js]-1;
-          const int x_i = x[c][i], y_j = y[c][j];
-          if (x_i == y_j) {
-            if (c < ncol-1)
-              continue;
-            starts[i] = j+1;
-            //lens[i] = 1;
-            i++;
-  #ifdef SMERGE_STATS
-            cnt++;
-  #endif
-          } else if (x_i < y_j) {
-            i++; break;
-          } else if (x_i > y_j) {
-            js++; break;
-          }
+        const int j = y_starts[js]-1;
+        const int x_i = x[i], y_j = y[j];
+        if (x_i == y_j) {
+          starts[i] = j+1;
+          //lens[i] = 1;
+          i++;
+#ifdef SMERGE_STATS
+          cnt++;
+#endif
+        } else if (x_i < y_j) {
+          i++;
+        } else if (x_i > y_j) {
+          js++;
         }
       }
     } else if (mult == LAST) {
       while (i<ni && js<njs) {
-        for (int c=0; c<ncol; ++c) {
-          const int j = y_starts[js]-1;
-          const int x_i = x[c][i], y_j = y[c][j];
-          if (x_i == y_j) {
-            if (c < ncol-1)
-              continue;
-            starts[i] = j+y_lens[js];
-            //lens[i] = 1;
-            i++;
-  #ifdef SMERGE_STATS
-            cnt++;
-  #endif
-          } else if (x_i < y_j) {
-            i++; break;
-          } else if (x_i > y_j) {
-            js++; break;
-          }
+        const int j = y_starts[js]-1;
+        const int x_i = x[i], y_j = y[j];
+        if (x_i == y_j) {
+          starts[i] = j+y_lens[js];
+          //lens[i] = 1;
+          i++;
+#ifdef SMERGE_STATS
+          cnt++;
+#endif
+        } else if (x_i < y_j) {
+          i++;
+        } else if (x_i > y_j) {
+          js++;
         }
       }
     }
@@ -129,29 +113,25 @@ static void smerge(const int bx_off, const int bnx,
     int is = bx_off, j = by_off;
     const int nis = bx_off+bnx, nj = by_off+bny;
     while (is<nis && j<nj) {
-      for (int c=0; c<ncol; ++c) {
-        const int i = x_starts[is]-1;
-        const int x_i = x[c][i], y_j = y[c][j];
-        if (x_i == y_j) {
-          if (c < ncol-1)
-            continue;
-          const int j1 = j+1;
-          const int xl1 = x_lens[is];
-          for (int ii=0; ii<xl1; ++ii) {
-            starts[i+ii] = j1;
-            //lens[i+ii] = 1;
-          }
-          is++;
-  #ifdef SMERGE_STATS
-          if (xlen1 && xl1>1)
-            xlen1 = false;
-          cnt += (uint64_t)xl1;
-  #endif
-        } else if (x_i < y_j) {
-          is++; break;
-        } else if (x_i > y_j) {
-          j++; break;
+      const int i = x_starts[is]-1;
+      const int x_i = x[i], y_j = y[j];
+      if (x_i == y_j) {
+        const int j1 = j+1;
+        const int xl1 = x_lens[is];
+        for (int ii=0; ii<xl1; ++ii) {
+          starts[i+ii] = j1;
+          //lens[i+ii] = 1;
         }
+        is++;
+#ifdef SMERGE_STATS
+        if (xlen1 && xl1>1)
+          xlen1 = false;
+        cnt += (uint64_t)xl1;
+#endif
+      } else if (x_i < y_j) {
+        is++;
+      } else if (x_i > y_j) {
+        j++;
       }
     }
   } else {
@@ -159,87 +139,75 @@ static void smerge(const int bx_off, const int bnx,
     const int nis = bx_off+bnx, njs = by_off+bny;
     if (mult==ALL || mult==ERR) {
       while (is<nis && js<njs) {
-        for (int c=0; c<ncol; ++c) {
-          const int i = x_starts[is]-1, j = y_starts[js]-1;
-          const int x_i = x[c][i], y_j = y[c][j];
-          if (x_i == y_j) {
-            if (c < ncol-1)
-              continue;
-            const int j1 = j+1, yl1 = y_lens[js];
-            const int xl1 = x_lens[is];
-            for (int ii=0; ii<xl1; ++ii) {
-              starts[i+ii] = j1;
-              lens[i+ii] = yl1;
-            }
-            is++;
-    #ifdef SMERGE_STATS
-            if (xlen1 && xl1>1)
-              xlen1 = false;
-            if (ylen1 && yl1>1)
-              ylen1 = false;
-            if (xylen1 && xl1>1 && yl1>1)
-              xylen1 = false;
-            cnt += (uint64_t)xl1 * (uint64_t)yl1;
-    #endif
-          } else if (x_i < y_j) {
-            is++; break;
-          } else if (x_i > y_j) {
-            js++; break;
+        const int i = x_starts[is]-1, j = y_starts[js]-1;
+        const int x_i = x[i], y_j = y[j];
+        if (x_i == y_j) {
+          const int j1 = j+1, yl1 = y_lens[js];
+          const int xl1 = x_lens[is];
+          for (int ii=0; ii<xl1; ++ii) {
+            starts[i+ii] = j1;
+            lens[i+ii] = yl1;
           }
+          is++;
+  #ifdef SMERGE_STATS
+          if (xlen1 && xl1>1)
+            xlen1 = false;
+          if (ylen1 && yl1>1)
+            ylen1 = false;
+          if (xylen1 && xl1>1 && yl1>1)
+            xylen1 = false;
+          cnt += (uint64_t)xl1 * (uint64_t)yl1;
+  #endif
+        } else if (x_i < y_j) {
+          is++;
+        } else if (x_i > y_j) {
+          js++;
         }
       }
     } else if (mult==FIRST) {
       while (is<nis && js<njs) {
-        for (int c=0; c<ncol; ++c) {
-          const int i = x_starts[is]-1, j = y_starts[js]-1;
-          const int x_i = x[c][i], y_j = y[c][j];
-          if (x_i == y_j) {
-            if (c < ncol-1)
-              continue;
-            const int j1 = j+1;
-            const int xl1 = x_lens[is];
-            for (int ii=0; ii<xl1; ++ii) {
-              starts[i+ii] = j1;
-              //lens[i+ii] = 1;
-            }
-            is++;
-  #ifdef SMERGE_STATS
-            if (xlen1 && xl1>1)
-              xlen1 = false;
-            cnt += (uint64_t)xl1;
-  #endif
-          } else if (x_i < y_j) {
-            is++; break;
-          } else if (x_i > y_j) {
-            js++; break;
+        const int i = x_starts[is]-1, j = y_starts[js]-1;
+        const int x_i = x[i], y_j = y[j];
+        if (x_i == y_j) {
+          const int j1 = j+1;
+          const int xl1 = x_lens[is];
+          for (int ii=0; ii<xl1; ++ii) {
+            starts[i+ii] = j1;
+            //lens[i+ii] = 1;
           }
+          is++;
+#ifdef SMERGE_STATS
+          if (xlen1 && xl1>1)
+            xlen1 = false;
+          cnt += (uint64_t)xl1;
+#endif
+        } else if (x_i < y_j) {
+          is++;
+        } else if (x_i > y_j) {
+          js++;
         }
       }
     } else if (mult==LAST) {
       while (is<nis && js<njs) {
-        for (int c=0; c<ncol; ++c) {
-          const int i = x_starts[is]-1, j = y_starts[js]-1;
-          const int x_i = x[c][i], y_j = y[c][j];
-          if (x_i == y_j) {
-            if (c < ncol-1)
-              continue;
-            const int j1 = j+y_lens[js];
-            const int xl1 = x_lens[is];
-            for (int ii=0; ii<xl1; ++ii) {
-              starts[i+ii] = j1;
-              //lens[i+ii] = 1;
-            }
-            is++;
-  #ifdef SMERGE_STATS
-            if (xlen1 && xl1>1)
-              xlen1 = false;
-            cnt += (uint64_t)xl1;
-  #endif
-          } else if (x_i < y_j) {
-            is++; break;
-          } else if (x_i > y_j) {
-            js++; break;
+        const int i = x_starts[is]-1, j = y_starts[js]-1;
+        const int x_i = x[i], y_j = y[j];
+        if (x_i == y_j) {
+          const int j1 = j+y_lens[js];
+          const int xl1 = x_lens[is];
+          for (int ii=0; ii<xl1; ++ii) {
+            starts[i+ii] = j1;
+            //lens[i+ii] = 1;
           }
+          is++;
+#ifdef SMERGE_STATS
+          if (xlen1 && xl1>1)
+            xlen1 = false;
+          cnt += (uint64_t)xl1;
+#endif
+        } else if (x_i < y_j) {
+          is++;
+        } else if (x_i > y_j) {
+          js++;
         }
       }
     }
@@ -248,103 +216,62 @@ static void smerge(const int bx_off, const int bnx,
   return;
 }
 
-// helper when printing from batching
-void printRow(const int **restrict x, const int row, const int ncol) {
-  for (int c=0; c<ncol; ++c)
-    Rprintf("%d%s", x[c][row], c<ncol-1?",":"");
-}
-
-// helper to compare specific rows for early stopping rollbs
-int rowCmp(const int **restrict x, const int x_row, const int **restrict y, const int y_row, const int ncol) {
-  for (int c=0; c<ncol; ++c) {
-    int thisx = x[c][x_row];
-    int thisy = y[c][y_row];
-    if (thisx==thisy) {
-      if (c < ncol-1)
-        continue;
-      return 0; // rows equal
-    } else if (thisx > thisy) {
-      return 1;
-    } else if (thisx < thisy) {
-      return -1;
-    }
-  }
-  error("rowCmp got ncol=0?");
-  return 0;
-}
-
 /*
  * 'rolling nearest' binary search
  * used to find 'y' lower and upper, 0-based, bounds for each batch
  * side -1: lower bound; side 1: upper bound
  */
-static int rollbs(const int **restrict x, const int *restrict ix, const int nix, const int **restrict vals, const int vali, const int ncol, const int side) {
-  int verbose = 0; // manual devel debug only
-  if (nix<1) {
+static int rollbs(const int *restrict x, const int *restrict ix, const int nix, const int val, const int side) {
+  int verbose = 0; // devel debug only
+  if (verbose>0)
+    Rprintf("rollbs: side=%d=%s; val=%d\n", side, side<0?"min":"max", val); // # nocov
+  if (x[ix[0]-1] == val) { // common early stopping
     if (verbose>0)
-      Rprintf("rollbs: -1: empty input\n");
-    return -1;
-  }
-  if (rowCmp(x, ix[0]-1, vals, vali, ncol)==0) { // common early stopping
-    if (verbose>0) {
-      Rprintf("rollbs: 0: min element ("); printRow(x, ix[0]-1, ncol); Rprintf(") match to value ("); printRow(vals, vali, ncol); Rprintf(")\n"); // # nocov
-    }
+      Rprintf("rollbs: min elements %d match: 0\n", val); // # nocov
     return 0;
   }
-  if (rowCmp(x, ix[nix-1]-1, vals, vali, ncol)==0) {
-    if (verbose>0) {
-      Rprintf("rollbs: nix-1: max element ("); printRow(x, ix[nix-1]-1, ncol); Rprintf(") match to value ("); printRow(vals, vali, ncol); Rprintf(")\n"); // # nocov
-    }
+  if (x[ix[nix-1]-1] == val) {
+    if (verbose>0)
+      Rprintf("rollbs: max elements %d match: nix-1=%d\n", val, nix-1); // # nocov
     return nix-1;
   }
   if (side < 0) { // lower bound early stopping
-    if (rowCmp(x, ix[nix-1]-1, vals, vali, ncol)<0) {
-      if (verbose>0) {
-        Rprintf("rollbs: -1: max element ("); printRow(x, ix[nix-1]-1, ncol); Rprintf(") is still smaller than value ("); printRow(vals, vali, ncol); Rprintf(")\n"); // # nocov
-      }
+    if (x[ix[nix-1]-1] < val) {
+      if (verbose>0)
+        Rprintf("rollbs: max element %d is still smaller than %d: -1\n", x[ix[nix-1]-1], val); // # nocov
       return -1;
     }
-    if (rowCmp(x, ix[0]-1, vals, vali, ncol)>0) {
-      if (verbose>0) {
-        Rprintf("rollbs: 0: min element ("); printRow(x, ix[0]-1, ncol); Rprintf(") is bigger than value ("); printRow(vals, vali, ncol); Rprintf(")\n"); // # nocov
-      }
+    if (x[ix[0]-1] > val) {
+      if (verbose>0)
+        Rprintf("rollbs: min element %d is bigger than %d: 0\n", x[ix[0]-1], val); // # nocov
       return 0;
     }
   } else if (side > 0) { // upper bound early stopping
-    if (rowCmp(x, ix[0]-1, vals, vali, ncol)>0) {
-      if (verbose>0) {
-        Rprintf("rollbs: -1: min element ("); printRow(x, ix[0]-1, ncol); Rprintf(") is still bigger than value ("); printRow(vals, vali, ncol); Rprintf(")\n"); // # nocov
-      }
+    if (x[ix[0]-1] > val) {
+      if (verbose>0)
+        Rprintf("rollbs: min element %d is still bigger than %d: -1\n", x[ix[0]-1], val); // # nocov
       return -1;
     }
-    if (rowCmp(x, ix[nix-1]-1, vals, vali, ncol)<0) {
-      if (verbose>0) {
-        Rprintf("rollbs: nix-1: max element ("); printRow(x, ix[nix-1]-1, ncol); Rprintf(") is smaller than value ("); printRow(vals, vali, ncol); Rprintf(")\n"); // # nocov
-      }
+    if (x[ix[nix-1]-1] < val) {
+      if (verbose>0)
+        Rprintf("rollbs: max element %d is smaller than %d: nix-1=%d\n", x[ix[nix-1]-1], val, nix-1); // # nocov
       return nix-1;
     }
   }
-  int lower=0, upper=nix, i=0; // upper=nix is correct, just in case of wanting to "fix" for nix-1
-  for (int c=0; c<ncol; ++c) {
-    const int val = vals[c][vali];
-    while (lower<=upper) {
-      i = lower + (upper-lower)/2;
-      int thisx = x[c][ix[i]-1];
-      //Rprintf("rollbs: x[%d][ix[%d]-1]=%d ?? %d\n", c, i, thisx, val); // if (verbose) here would slow down while loop so need to be commented out
-      if (thisx==val) {
-        if (c<ncol-1)
-          break;
-        //Rprintf("rollbs: %d: this x %d match value %d at last column\n", i, thisx, val);
-        return(i);
-      } else if (thisx < val)
-        lower = i+1;
-      else if (thisx > val)
-        upper = i-1;
-    }
+  int lower=0, upper=nix, i=0;
+  while (lower<=upper) {
+    i = lower + (upper-lower)/2;
+    int thisx = x[ix[i]-1];
+    //Rprintf("rollbs: x[ix[%d]-1]=%d ?? %d\n", i, thisx, val); // if (verbose) here would slow down while loop so need to be commented out
+    if (thisx==val)
+      return(i);
+    else if (thisx < val)
+      lower = i+1;
+    else if (thisx > val)
+      upper = i-1;
   }
-  if (verbose>0) {
-    Rprintf("rollbs: %d: last iter %d, element (", side<0?lower:upper, i); printRow(x, ix[i]-1, ncol); Rprintf(") nomatch to value ("); printRow(vals, vali, ncol); Rprintf(")\n"); // # nocov
-  }
+  if (verbose>0)
+    Rprintf("rollbs: nomatch: i=%d; this=%d; lower=%d, upper=%d; side=%d: %d\n", i, x[ix[i]-1], lower, upper, side, side<0?lower:upper); // # nocov
   if (side < 0) // anyone to stress test this logic?
     return lower;
   else
@@ -353,10 +280,10 @@ static int rollbs(const int **restrict x, const int *restrict ix, const int nix,
 
 // cuts x_starts into equal batches and binary search corresponding y_starts ranges
 static void batching(const int nBatch,
-                     const int **restrict x, const int nx, const int *restrict x_starts, const int nx_starts,
-                     const int **restrict y, const int ny, const int *restrict y_starts, const int ny_starts,
+                     const int *restrict x, const int nx, const int *restrict x_starts, const int nx_starts,
+                     const int *restrict y, const int ny, const int *restrict y_starts, const int ny_starts,
                      int *restrict Bx_off, int *restrict Bnx, int *restrict By_off, int *restrict Bny,
-                     const int ncol, const int verbose) {
+                     const int verbose) {
 #ifdef SMERGE_BATCHING_BALANCED
   //if (nBatch > nx_starts || (nx_starts/nBatch==1 && nx_starts%nBatch>0)) error("internal error: batching %d input into %d batches, number of batches should have been reduced be now", nx_starts, nBatch); // # nocov
   size_t batchSize = (nx_starts-1)/nBatch + 1; // this is fragile for arbitrary nBatch
@@ -369,14 +296,14 @@ static void batching(const int nBatch,
   if (verbose>0)
     Rprintf("batching: input %d into %s %d batches (batchSize=%d, lastBatchSize=%d) of sorted x y: x[1]<=y[1] && x[nx]>=y[ny]:\n", nx_starts, balanced?"balanced":"unbalanced", nBatch, batchSize, lastBatchSize);
   if (lastBatchSize==0 || ((nBatch-1) * batchSize + lastBatchSize != nx_starts))
-    error("internal error: batching %d input is attempting to use invalid batches: balanced=%s, nBatch=%d, batchSize=%d, lastBatchSize=%d", nx_starts, balanced?"balanced":"unbalanced", nBatch, batchSize, lastBatchSize); // # nocov
+    error("internal error: batching %d input is attempting to use invalid batches: balanced=%d, nBatch=%d, batchSize=%d, lastBatchSize=%d", nx_starts, balanced?"balanced":"unbalanced", nBatch, batchSize, lastBatchSize); // # nocov
   for (int b=0; b<nBatch; ++b) {
     Bx_off[b] = b<nBatch-1 ? b*batchSize : nx_starts-lastBatchSize;
     Bnx[b] = b<nBatch-1 ? batchSize : lastBatchSize;
     int x_i_min = (x_starts + Bx_off[b])[0];
     int x_i_max = (x_starts + Bx_off[b])[Bnx[b]-1];
-    int y_i_min = rollbs(y, y_starts, ny_starts, x, x_i_min-1, ncol, -1);
-    int y_i_max = rollbs(y, y_starts, ny_starts, x, x_i_max-1, ncol, 1);
+    int y_i_min = rollbs(y, y_starts, ny_starts, x[x_i_min-1], -1);
+    int y_i_max = rollbs(y, y_starts, ny_starts, x[x_i_max-1], 1);
     const bool y_match = y_i_min >= 0 && y_i_max >= 0;
     By_off[b] = y_match ? y_i_min : 0;
     Bny[b] = y_match ? y_i_max - y_i_min + 1 : 0;
@@ -387,8 +314,8 @@ static void batching(const int nBatch,
       if (Bny[b] > 0) {
         int x_i_min = (x_starts + Bx_off[b])[0], x_i_max = (x_starts + Bx_off[b])[Bnx[b]-1];
         int y_i_min = (y_starts + By_off[b])[0], y_i_max = (y_starts + By_off[b])[Bny[b]-1];
-        Rprintf("## lower: x[%d]: (", x_i_min); printRow(x, x_i_min-1, ncol); Rprintf(") <= ("); printRow(y, y_i_min-1, ncol); Rprintf(") :y[%d]\n", y_i_min);
-        Rprintf("## upper: x[%d]: (", x_i_max); printRow(x, x_i_max-1, ncol); Rprintf(") >= ("); printRow(y, y_i_max-1, ncol); Rprintf(") :y[%d]\n", y_i_max);
+        Rprintf("## lower: x[%d]: %d <= %d :y[%d]\n", x_i_min, x[x_i_min-1], y[y_i_min-1], y_i_min);
+        Rprintf("## upper: x[%d]: %d >= %d :y[%d]\n", x_i_max, x[x_i_max-1], y[y_i_max-1], y_i_max);
       }
     }
   }
@@ -428,14 +355,12 @@ void grpLens(const int *restrict starts, const int n_starts, const int n, int *r
 }
 
 // pure C smerge: takes already sorted input, compute grpLens, prepare batches, smerge in parallel
-void smergeC(const int **restrict x, const int nx, const int *restrict x_starts, const int nx_starts,
-             const int **restrict y, const int ny, const int *restrict y_starts, const int ny_starts,
+void smergeC(const int *restrict x, const int nx, const int *restrict x_starts, const int nx_starts,
+             const int *restrict y, const int ny, const int *restrict y_starts, const int ny_starts,
              int *restrict starts, int *restrict lens,
              uint64_t *n_match, bool *x_lens1, bool *y_lens1, bool *xy_lens1,
-             const int ncol, const enum emult mult, const int verbose) {
+             const enum emult mult, const int verbose) {
 
-  if (!nx)
-    return;
   double t = 0;
   if (verbose>0)
     t = omp_get_wtime();
@@ -469,7 +394,7 @@ void smergeC(const int **restrict x, const int nx, const int *restrict x_starts,
   }
   int *restrict Bx_off = (int *)R_alloc(nBatch, sizeof(int)), *restrict Bnx = (int *)R_alloc(nBatch, sizeof(int));
   int *restrict By_off = (int *)R_alloc(nBatch, sizeof(int)), *restrict Bny = (int *)R_alloc(nBatch, sizeof(int));
-  batching(nBatch, x, nx, x_starts, nx_starts, y, ny, y_starts, ny_starts, Bx_off, Bnx, By_off, Bny, ncol, verbose-1);
+  batching(nBatch, x, nx, x_starts, nx_starts, y, ny, y_starts, ny_starts, Bx_off, Bnx, By_off, Bny, verbose-1);
   int *restrict th = (int *)R_alloc(nBatch, sizeof(int)); // report threads used
   if (verbose>0)
     Rprintf("smergeC: preparing %d batches took %.3fs\n", nBatch, omp_get_wtime() - t);
@@ -489,7 +414,7 @@ void smergeC(const int **restrict x, const int nx, const int *restrict x_starts,
       y, y_starts, y_lens, unq_y,             // common input y
       starts, lens,                           // common output
       &bnmatch, &bxlens1, &bylens1, &bxylens1,// reduction output
-      mult, ncol
+      mult
     );
     nmatch += bnmatch; xlens1 = bxlens1 && xlens1; ylens1 = bylens1 && ylens1; xylens1 = bxylens1 && xylens1;
     th[b] = omp_get_thread_num(); // only to report thread utilization in verbose message
@@ -610,38 +535,15 @@ const enum emult matchMultArg(SEXP multArg) {
   return mult;
 }
 
-SEXP ord1(int n) {
-  SEXP ans = PROTECT(allocVector(INTSXP, n));
-  int *ansp = INTEGER(ans);
-  for (int i=0; i<n; ++i)
-    ansp[i]=1;
-  UNPROTECT(1);
-  return ans;
-}
-
 // main interface from R
-SEXP smergeR(SEXP x, SEXP y, SEXP x_cols, SEXP y_cols, SEXP x_idx, SEXP y_idx, SEXP multArg, SEXP out_bmerge) {
+SEXP smergeR(SEXP x, SEXP y, SEXP x_idx, SEXP y_idx, SEXP multArg, SEXP out_bmerge) {
 
   const int verbose = GetVerbose()*3; // remove *3 after #4491
   double t_total = 0, t = 0;
   if (verbose>0)
     t_total = omp_get_wtime();
-  if (!isNewList(x) || !isNewList(y))
-    error("'x' and 'y' must be data.table");
-  if (!isInteger(x_cols) || !isInteger(y_cols))
-    error("'x.cols' and 'y.cols' must be integer");
-  if (LENGTH(x_cols) != LENGTH(y_cols))
-    error("'x.cols' and 'y.cols' must be equal length");
-  const int ncol = LENGTH(x_cols), nxcol = length(x), nycol = length(y);
-  if (!nxcol || !nycol)
-    error("'x' and 'y' must be non 0 length");
-  for (int i=0; i<ncol; ++i) {
-    int x_col = INTEGER(x_cols)[i], y_col = INTEGER(y_cols)[i];
-    if (!(x_col > 0 && x_col <= nxcol) || !(y_col > 0 && y_col <= nycol))
-      error("'x.cols' and 'y.cols' must specify existing columns");
-    if (!isInteger(VECTOR_ELT(x, x_col-1)) || !isInteger(VECTOR_ELT(y, y_col-1)))
-      error("columns of 'x' and 'y' to join must be integer");
-  }
+  if (!isInteger(x) || !isInteger(y))
+    error("'x' and 'y' must be integer");
   if (!isString(multArg))
     error("'mult' must be a string");
   const enum emult mult = matchMultArg(multArg);
@@ -649,16 +551,16 @@ SEXP smergeR(SEXP x, SEXP y, SEXP x_cols, SEXP y_cols, SEXP x_idx, SEXP y_idx, S
   if (!IS_TRUE_OR_FALSE(out_bmerge))
     error("'out.bmerge' must be TRUE or FALSE");
   const bool ans_bmerge = (bool)LOGICAL(out_bmerge)[0];
-  int protecti = 0, nx = LENGTH(VECTOR_ELT(x, 0)), ny = LENGTH(VECTOR_ELT(y, 0));
+  int protecti = 0, nx = LENGTH(x), ny = LENGTH(y);
 
   if (verbose>0)
     t = omp_get_wtime();
   const bool do_x_idx = isNull(x_idx), do_y_idx = isNull(y_idx);
   if (do_x_idx) {
-    x_idx = PROTECT(forder(x, x_cols, ScalarLogical(true), ScalarLogical(true), ord1(ncol), ScalarLogical(false))); protecti++; // verbose=verbose-2L after #4533
+    x_idx = PROTECT(forder(x, R_NilValue, ScalarLogical(true), ScalarLogical(true), ScalarInteger(1), ScalarLogical(false))); protecti++; // verbose=verbose-2L after #4533
   }
   if (do_y_idx) {
-    y_idx = PROTECT(forder(y, y_cols, ScalarLogical(true), ScalarLogical(true), ord1(ncol), ScalarLogical(false))); protecti++; // verbose=verbose-2L after #4533
+    y_idx = PROTECT(forder(y, R_NilValue, ScalarLogical(true), ScalarLogical(true), ScalarInteger(1), ScalarLogical(false))); protecti++; // verbose=verbose-2L after #4533
   }
   if (!isInteger(x_idx) || !isInteger(y_idx))
     error("'x.idx' and 'y.idx' must be integer");
@@ -671,24 +573,18 @@ SEXP smergeR(SEXP x, SEXP y, SEXP x_cols, SEXP y_cols, SEXP x_idx, SEXP y_idx, S
   if (verbose>0)
     t = omp_get_wtime();
   const bool x_ord = !LENGTH(x_idx), y_ord = !LENGTH(y_idx);
-  const int **restrict xp=(const int **)R_alloc(ncol, sizeof(int*)), **restrict yp=(const int **)R_alloc(ncol, sizeof(int*));
-  for (int i=0; i<ncol; ++i) {
-    SEXP this_x = VECTOR_ELT(x, INTEGER(x_cols)[i]-1);
-    if (x_ord) {
-      xp[i] = INTEGER(this_x);
-    } else {
-      int *tmp = (int *)R_alloc(nx, sizeof(int));
-      sortInt(INTEGER(this_x), nx, INTEGER(x_idx), tmp);
-      xp[i] = tmp;
-    }
-    SEXP this_y = VECTOR_ELT(y, INTEGER(y_cols)[i]-1);
-    if (y_ord) {
-      yp[i] = INTEGER(this_y);
-    } else {
-      int *tmp = (int *)R_alloc(ny, sizeof(int));
-      sortInt(INTEGER(this_y), ny, INTEGER(y_idx), tmp);
-      yp[i] = tmp;
-    }
+  int *xp, *yp;
+  if (!x_ord) {
+    xp = (int *)R_alloc(nx, sizeof(int));
+    sortInt(INTEGER(x), nx, INTEGER(x_idx), xp);
+  } else {
+    xp = INTEGER(x);
+  }
+  if (!y_ord) {
+    yp = (int *)R_alloc(ny, sizeof(int));
+    sortInt(INTEGER(y), ny, INTEGER(y_idx), yp);
+  } else {
+    yp = INTEGER(y);
   }
   if (verbose>0)
     Rprintf("smergeR: sort %s took %.3fs\n", verboseDone(!x_ord, !y_ord, "(already sorted)", "(y)", "(x)", "(x, y)"), omp_get_wtime() - t);
@@ -732,10 +628,10 @@ SEXP smergeR(SEXP x, SEXP y, SEXP x_cols, SEXP y_cols, SEXP x_idx, SEXP y_idx, S
     yp, ny, INTEGER(y_starts), LENGTH(y_starts),
     starts, lens,
     &n_match, &x_lens1, &y_lens1, &xy_lens1,
-    ncol, mult, verbose-1
+    mult, verbose-1
   );
   if (verbose>0)
-    Rprintf("smergeR: smergeC %d cols of %d x %d = %"PRIu64"; took %.3fs\n", ncol, nx, ny, n_match, omp_get_wtime() - t);
+    Rprintf("smergeR: smergeC of %d x %d = %"PRIu64"; took %.3fs\n", nx, ny, n_match, omp_get_wtime() - t);
 
   if (verbose>0)
     t = omp_get_wtime();

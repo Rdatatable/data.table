@@ -1,13 +1,10 @@
-intCols = function(x, cols) all(vapply(cols, function(col, x) is.integer(x[[col]]), NA, x))
 
 bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbose)
 {
-  if (TRUE
-      && isTRUE(getOption("datatable.smerge"))                     ## switch
-      && length(icols)==length(xcols)                              ## avoid invalid input
-      && intCols(i, icols) && intCols(x, xcols)                    ## all columns integer
-      #&& identical(nomatch, NA_integer_)                          ## nomatch=0L is made as post-processing
-      && all(ops==1L)                                              ## equi join
+  if (length(icols)==1L && length(xcols)==1L && is.integer(i[[icols]]) && is.integer(x[[xcols]]) ## single column integer
+      && isTRUE(getOption("datatable.smerge"))                     ## enable option
+      && identical(nomatch, NA_integer_)                           ## for now only outer join
+      && identical(ops, 1L)                                        ## equi join
       && identical(roll, 0) && identical(rollends, c(FALSE, TRUE)) ## non-rolling join
       ) {
     getIdxGrp = function(x, cols) { ## get index only if retGrp=T
@@ -17,18 +14,8 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
       if (!is.null(attr(idx, "starts", exact=TRUE))) idx
     }
     if (verbose) {last.started.at=proc.time();cat("Starting smerge ...\n");flush.console()}
-    ans = smerge(x=i, y=x, x.cols=icols, y.cols=xcols, x.idx=getIdxGrp(i, icols), y.idx=getIdxGrp(x, xcols), mult=mult, out.bmerge=TRUE)
-    if (identical(nomatch, 0L)) {
-      nom = is.na(ans$starts)
-      ans$starts[nom] = 0L
-      ans$lens[nom] = 0L
-    }
+    ans = smerge(x=i[[icols]], y=x[[xcols]], x.idx=getIdxGrp(i, icols), y.idx=getIdxGrp(x, xcols), mult=mult, out.bmerge=TRUE)
     if (verbose) {cat("smerge done in",timetaken(last.started.at),"\n"); flush.console()}
-    if (verbose && !isTRUE(getOption("datatable.smerge"))) { ## just to satisfy existing bmerge unit tests, when switch above commented out
-      #cat("1\n", file="~/git/smergeOptCount.out", append=TRUE) ## be sure to have this path if you comment out switch of "datatable.smerge" option, 24 times used in main.Rraw
-      cat("existing index\n")
-      cat("ad hoc\n")
-    }
     return(ans)
   }
   callersi = i

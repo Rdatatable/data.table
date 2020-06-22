@@ -12,22 +12,18 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
   vecseq = data.table:::vecseq
 }
 
-bm = function(x, y, x.cols=seq_along(x), y.cols=seq_along(y), mult="all") {
-  if (is.integer(x)) {x = data.table(x=x); x.cols=1L}
-  if (is.integer(y)) {y = data.table(y=y); y.cols=1L}
-  stopifnot(is.data.table(x), is.data.table(y))
-  ans = bmerge(x, y, x.cols, y.cols, roll=0, rollends=c(FALSE, TRUE), nomatch=NA_integer_, mult=mult, ops=rep.int(1L, length(x.cols)), verbose=FALSE)
+bm = function(x, y, mult="all") {
+  stopifnot(is.integer(x), is.integer(y))
+  ans = bmerge(data.table(x=x), data.table(y=y), 1L, 1L, roll=0, rollends=c(FALSE, TRUE), nomatch=NA_integer_, mult=mult, ops=1L, verbose=FALSE)
   ## if undefining SMERGE_STATS then we have to ignore allLen1 as well
   ans$nMatch = as.numeric(sum(!is.na(vecseq(ans$starts, ans$lens, NULL))))
   ans
 }
-sm = function(x, y, x.cols=seq_along(x), y.cols=seq_along(y), mult="all") {
-  if (is.integer(x)) {x = data.table(x=x); x.cols=1L}
-  if (is.integer(y)) {y = data.table(y=y); y.cols=1L}
-  stopifnot(is.data.table(x), is.data.table(y))
-  ans = smerge(x, y, x.cols, y.cols, mult=mult, out.bmerge=TRUE)
+sm = function(x, y, mult="all") {
+  stopifnot(is.integer(x), is.integer(y))
+  ans = smerge(x, y, mult=mult, out.bmerge=TRUE)
   ## if undefining SMERGE_STATS then we have to ignore allLen1 as well
-  ans$nMatch = smerge(x, y, x.cols, y.cols, mult=mult, out.bmerge=FALSE)$nMatch
+  ans$nMatch = smerge(x, y, mult=mult, out.bmerge=FALSE)$nMatch
   ans
 }
 
@@ -220,8 +216,8 @@ y = sample.int(2e2L, 1e2L, TRUE)
 test(21.02, sm(x, y), bm(x, y))
 
 # [.data.table join
-d1 = data.table(x=sample.int(2e2L, 1e2L, TRUE), v1=seq_len(1e2L))
-d2 = data.table(y=sample.int(2e2L, 1e2L, TRUE), v2=seq_len(1e2L))
+d1 = data.table(x=sample.int(2e2L, 1e2L, TRUE), v1=seq_along(x))
+d2 = data.table(y=sample.int(2e2L, 1e2L, TRUE), v2=seq_along(y))
 options(datatable.smerge=FALSE, datatable.verbose=TRUE) ## verbose=2L after #4491
 test(101.01, expected <- d1[d2, on="x==y"], output="bmerge", notOutput="smerge")
 options(datatable.smerge=TRUE)
