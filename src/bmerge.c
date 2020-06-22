@@ -27,8 +27,8 @@ Differences over standard binary search (e.g. bsearch in stdlib.h) :
 #define GT 5
 
 static int *nqgrp;
-static int ncol, *icols, *xcols, *o, *xo, *retFirst, *retLength, *retIndex, *allLen1, *allGrp1, *rollends, ilen, anslen;
-static int *op, nqmaxgrp, scols;
+static int ncol, *o, *xo, *retFirst, *retLength, *retIndex, *allLen1, *allGrp1, *rollends, ilen, anslen;
+static int *op, nqmaxgrp;
 static int ctr, nomatch; // populating matches for non-equi joins
 enum {ALL, FIRST, LAST} mult = ALL;
 static double roll, rollabs;
@@ -53,8 +53,8 @@ SEXP bmerge(SEXP iArg, SEXP xArg, SEXP icolsArg, SEXP xcolsArg, SEXP isorted, SE
   if ((LENGTH(icolsArg) == 0 || LENGTH(xcolsArg) == 0) && LENGTH(i) > 0) // We let through LENGTH(i) == 0 for tests 2126.*
 	  error(_("Internal error: icols and xcols must be non-empty integer vectors."));
   if (LENGTH(icolsArg) > LENGTH(xcolsArg)) error(_("Internal error: length(icols) [%d] > length(xcols) [%d]"), LENGTH(icolsArg), LENGTH(xcolsArg)); // # nocov
-  icols = INTEGER(icolsArg);
-  xcols = INTEGER(xcolsArg);
+  int *icols = INTEGER(icolsArg);
+  int *xcols = INTEGER(xcolsArg);
   xN = LENGTH(x) ? LENGTH(VECTOR_ELT(x,0)) : 0;
   iN = ilen = anslen = LENGTH(i) ? LENGTH(VECTOR_ELT(i,0)) : 0;
   ncol = LENGTH(icolsArg);    // there may be more sorted columns in x than involved in the join
@@ -99,7 +99,7 @@ SEXP bmerge(SEXP iArg, SEXP xArg, SEXP icolsArg, SEXP xcolsArg, SEXP isorted, SE
   if (!isInteger(nqgrpArg))
     error(_("Internal error: nqgrpArg must be an integer vector")); // # nocov
   nqgrp = INTEGER(nqgrpArg); // set global for bmerge_r
-  scols = (!length(nqgrpArg)) ? 0 : -1; // starting col index, -1 is external group column for non-equi join case
+  int scols = (!length(nqgrpArg)) ? 0 : -1; // starting col index, -1 is external group column for non-equi join case
 
   // nqmaxgrpArg
   if (!isInteger(nqmaxgrpArg) || length(nqmaxgrpArg) != 1 || INTEGER(nqmaxgrpArg)[0] <= 0)
