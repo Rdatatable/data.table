@@ -127,5 +127,6 @@ dt_t DTPTR_RO(SEXP x, int *cols, int ncol) {
     default: error(_("Internal error: column type '%s' not supported in DTPTR_RO function. All known types are supported so please report as bug."), type2char(TYPEOF(col)));  // # nocov
     }
   }
+  dt.index = NULL;
   return dt;
 }

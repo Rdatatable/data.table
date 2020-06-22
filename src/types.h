@@ -31,4 +31,5 @@ typedef struct dt_t { // could store pointer to SEXP itself, indices, sorted inf
   SEXPTYPE *types;
   bool *int64;
   column_t *cols;
+  const int* index;
 } dt_t;
