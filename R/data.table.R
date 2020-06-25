@@ -428,6 +428,9 @@ replace_dot_alias = function(e) {
         on_ops = .parse_on(substitute(on), isnull_inames)
         on = on_ops[[1L]]
         ops = on_ops[[2L]]
+        if (any(ops > 1L)) { ## fix for #4489;  ops = c("==", "<=", "<", ">=", ">", "!=")
+          allow.cartesian = TRUE
+        }
         # TODO: collect all '==' ops first to speeden up Cnestedid
         rightcols = colnamesInt(x, names(on), check_dups=FALSE)
         leftcols  = colnamesInt(i, unname(on), check_dups=FALSE)
@@ -460,7 +463,7 @@ replace_dot_alias = function(e) {
       allLen1 = ans$allLen1
       f__ = ans$starts
       len__ = ans$lens
-      allGrp1 = FALSE # was previously 'ans$allGrp1'. Fixing #1991. TODO: Revisit about allGrp1 possibility for speedups in certain cases when I find some time.
+      allGrp1 = all(ops==1L) # was previously 'ans$allGrp1'. Fixing #1991. TODO: Revisit about allGrp1 possibility for speedups in certain cases when I find some time.
       indices__ = if (length(ans$indices)) ans$indices else seq_along(f__) # also for #1991 fix
       # length of input nomatch (single 0 or NA) is 1 in both cases.
       # When no match, len__ is 0 for nomatch=0 and 1 for nomatch=NA, so len__ isn't .N
@@ -749,7 +752,8 @@ replace_dot_alias = function(e) {
         allbyvars = intersect(all.vars(bysub), names_x)
         orderedirows = .Call(CisOrderedSubset, irows, nrow(x))  # TRUE when irows is NULL (i.e. no i clause). Similar but better than is.sorted(f__)
         bysameorder = byindex = FALSE
-        if (all(vapply_1b(bysubl, is.name))) {
+        if (!bysub %iscall% ":" && ##Fix #4285
+            all(vapply_1b(bysubl, is.name))) {
           bysameorder = orderedirows && haskey(x) && length(allbyvars) && identical(allbyvars,head(key(x),length(allbyvars)))
           # either bysameorder or byindex can be true but not both. TODO: better name for bysameorder might be bykeyx
           if (!bysameorder && keyby && !length(irows) && isTRUE(getOption("datatable.use.index"))) {
@@ -1336,7 +1340,7 @@ replace_dot_alias = function(e) {
 
     if (is.data.table(jval)) {
       setattr(jval, 'class', class(x)) # fix for #64
-      if (haskey(x) && all(key(x) %chin% names(jval)) && suppressWarnings(is.sorted(jval, by=key(x))))  # TO DO: perhaps this usage of is.sorted should be allowed internally then (tidy up and make efficient)
+      if (haskey(x) && all(key(x) %chin% names(jval)) && is.sorted(jval, by=key(x)))
         setattr(jval, 'sorted', key(x))
       if (any(sapply(jval, is.null))) stop("Internal error: j has created a data.table result containing a NULL column") # nocov
     }
@@ -1388,7 +1392,7 @@ replace_dot_alias = function(e) {
     jisvars = if (any(c("get", "mget") %chin% av)) names_i else intersect(gsub("^i[.]","", setdiff(av, xjisvars)), names_i)
     # JIS (non join cols) but includes join columns too (as there are named in i)
     if (length(jisvars)) {
-      tt = min(nrow(i),1L)
+      tt = min(nrow(i),1L)  # min() is here for when nrow(i)==0
       SDenv$.iSD = i[tt,jisvars,with=FALSE]
       for (ii in jisvars) {
         assign(ii, SDenv$.iSD[[ii]], SDenv)
@@ -1538,7 +1542,7 @@ replace_dot_alias = function(e) {
       # g[[ only applies to atomic input, for now, was causing #4159
       subopt = length(jsub) == 3L &&
         (jsub[[1L]] == "[" ||
-           (jsub[[1L]] == "[[" && eval(call('is.atomic', jsub[[2L]]), envir = x))) &&
+           (jsub[[1L]] == "[[" && is.name(jsub[[2L]]) && eval(call('is.atomic', jsub[[2L]]), envir = x))) &&
         (is.numeric(jsub[[3L]]) || jsub[[3L]] == ".N")
       headopt = jsub[[1L]] == "head" || jsub[[1L]] == "tail"
       firstopt = jsub[[1L]] == "first" || jsub[[1L]] == "last" # fix for #2030
@@ -1766,10 +1770,13 @@ replace_dot_alias = function(e) {
     ans = .Call(Cdogroups, x, xcols, groups, grpcols, jiscols, xjiscols, grporder, o__, f__, len__, jsub, SDenv, cols, newnames, !missing(on), verbose)
   }
   # unlock any locked data.table components of the answer, #4159
-  runlock = function(x) {
-    if (is.recursive(x)) {
+  # MAX_DEPTH prevents possible infinite recursion from truly recursive object, #4173
+  #   TODO: is there an efficient way to get around this MAX_DEPTH limit?
+  MAX_DEPTH = 5L
+  runlock = function(x, current_depth = 1L) {
+    if (is.recursive(x) && current_depth <= MAX_DEPTH) {
       if (inherits(x, 'data.table')) .Call(C_unlock, x)
-      else return(lapply(x, runlock))
+      else return(lapply(x, runlock, current_depth = current_depth + 1L))
     }
     return(invisible())
   }
@@ -2254,8 +2261,8 @@ is.na.data.table = function (x) {
 Ops.data.table = function(e1, e2 = NULL)
 {
   ans = NextMethod()
-  if (cedta() && is.data.frame(ans))
-    ans = as.data.table(ans)
+  if (cedta() && is.data.frame(ans)) ans = as.data.table(ans) 
+  else if (is.matrix(ans)) colnames(ans) = copy(colnames(ans))
   ans
 }
 
@@ -3031,7 +3038,7 @@ isReallyReal = function(x) {
     onsub = as.call(c(quote(c), onsub))
   }
   on = eval(onsub, parent.frame(2L), parent.frame(2L))
-  if (!is.character(on))
+  if (length(on) == 0L || !is.character(on))
     stop("'on' argument should be a named atomic vector of column names indicating which columns in 'i' should be joined with which columns in 'x'.")
   ## extract the operators and potential variable names from 'on'.
   ## split at backticks to take care about variable names like `col1<=`.
