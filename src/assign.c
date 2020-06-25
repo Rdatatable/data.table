@@ -165,13 +165,13 @@ static SEXP shallow(SEXP dt, SEXP cols, R_len_t n)
   
   // We copy all attributes that refer to column names so that calling setnames on either
   // the original or the shallow copy doesn't break anything.
-  SEXP index = getAttrib(dt, sym_index);
+  SEXP index = PROTECT(getAttrib(dt, sym_index)); protecti++;
   setAttrib(newdt, sym_index, shallow_duplicate(index));
   
-  SEXP sorted = getAttrib(dt, sym_sorted);
+  SEXP sorted = PROTECT(getAttrib(dt, sym_sorted)); protecti++;
   setAttrib(newdt, sym_sorted, duplicate(sorted));
   
-  SEXP names = getAttrib(dt, R_NamesSymbol);
+  SEXP names = PROTECT(getAttrib(dt, R_NamesSymbol)); protecti++;
   SEXP newnames = PROTECT(allocVector(STRSXP, n)); protecti++;
   if (isNull(cols)) {
     l = LENGTH(dt);
