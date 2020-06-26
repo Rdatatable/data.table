@@ -12871,30 +12871,32 @@ ids <- sample(letters[1:3], 10, replace=TRUE)
 scores <- rnorm(10)
 dt <- data.table(id=ids, score=scores)
 dt.s4 <- new("Data.Table", data.table(id=ids, score=scores))
-test(1914.1, isS4(dt.s4))
-test(1914.2, inherits(dt.s4, 'data.table'))
+test(1914.01, isS4(dt.s4))
+test(1914.02, inherits(dt.s4, 'data.table'))
+# Test possible regression. shallow() needs to preserve the S4 bit to support S4 classes that contain data.table
+test(1914.03, isS4(shallow(dt.s4)))
 ## pull out data from S4 as.list, and compare to list from dt
 dt.s4.list <- dt.s4@.Data
 names(dt.s4.list) <- names(dt.s4)
-test(1914.3, dt.s4.list, as.list(dt))  # Underlying data not identical
+test(1914.04, dt.s4.list, as.list(dt))  # Underlying data not identical
 # simple S4 conversion-isms work
 df = data.frame(a=sample(letters, 10), b=1:10)
 dt = as.data.table(df)
-test(1914.4, identical(as(df, 'data.table'), dt))
-test(1914.5, identical(as(dt, 'data.frame'), df))
+test(1914.05, identical(as(df, 'data.table'), dt))
+test(1914.06, identical(as(dt, 'data.frame'), df))
 # data.table can be used in an S4 slot
 dt <- data.table(a=sample(letters[1:3], 10, replace=TRUE), score=rnorm(10))
 dt.comp <- new("S4Composition", data=dt)
-test(1914.6, dt.comp@data, dt)
+test(1914.07, dt.comp@data, dt)
 # S4 methods dispatch properly on data.table slots"
 dt <- data.table(a=sample(letters[1:3], 10, replace=TRUE), score=rnorm(10))
 dt.comp <- new("S4Composition", data=dt)
 setGeneric("dtGet", function(x, what) standardGeneric("dtGet"))
 setMethod("dtGet", c(x="S4Composition", what="missing"), function(x, what){x@data})
 setMethod("dtGet", c(x="S4Composition", what="ANY"), function(x, what) {x@data[[what]]})
-test(1914.7, dtGet(dt.comp), dt)  # actually
-test(1914.8, identical(dtGet(dt.comp, 1), dt[[1]]))
-test(1914.9, identical(dtGet(dt.comp, 'b'), dt$b))
+test(1914.08, dtGet(dt.comp), dt)  # actually
+test(1914.09, identical(dtGet(dt.comp, 1), dt[[1]]))
+test(1914.10, identical(dtGet(dt.comp, 'b'), dt$b))
 removeClass("Data.Table")   # so that test 1914.2 passes on the second run of cc() in dev
 removeClass("S4Composition")
 # END port of old testthat tests
@@ -14195,7 +14197,9 @@ test(1997.06, setDTthreads(percent=NULL), error="but is length 0")
 test(1997.07, setDTthreads(percent=1:2), error="but is length 2")
 test(1997.08, setDTthreads(restore_after_fork=21), error="must be TRUE, FALSE, or NULL")
 old = getDTthreads()   # (1)
-oldenv = Sys.getenv("R_DATATABLE_NUM_PROCS_PERCENT")
+oldenv1 = Sys.getenv("R_DATATABLE_NUM_PROCS_PERCENT")
+oldenv2 = Sys.getenv("R_DATATABLE_NUM_THREADS")
+Sys.setenv(R_DATATABLE_NUM_THREADS="")  # in case user has this set, so we can test PROCS_PERCENT
 Sys.setenv(R_DATATABLE_NUM_PROCS_PERCENT="3.0")
 test(1997.09, setDTthreads(), old, warning="Ignoring invalid.*Please remove any.*not a digit")
 new = getDTthreads()  # old above at (1) may not have been default. new now is.
@@ -14208,12 +14212,20 @@ test(1997.13, setDTthreads(), new)
 new = getDTthreads()
 setDTthreads(percent=75)
 test(1997.14, getDTthreads(), new)
-Sys.setenv(R_DATATABLE_NUM_PROCS_PERCENT=oldenv)
-test(1997.15, setDTthreads(old), new)
-test(1997.16, getDTthreads(), old)
-test(1997.17, setDTthreads(throttle=NA), error="throttle.*must be a single number, non-NA, and >=1")
+Sys.setenv(R_DATATABLE_NUM_PROCS_PERCENT="100")
+setDTthreads()
+allcpu = getDTthreads()
+Sys.setenv(R_DATATABLE_NUM_PROCS_PERCENT="75")
+Sys.setenv(R_DATATABLE_NUM_THREADS=allcpu)
+setDTthreads()
+test(1997.15, getDTthreads(), allcpu)
+Sys.setenv(R_DATATABLE_NUM_PROCS_PERCENT=oldenv1)
+Sys.setenv(R_DATATABLE_NUM_THREADS=oldenv2)
+test(1997.16, setDTthreads(old), allcpu)
+test(1997.17, getDTthreads(), old)
+test(1997.18, setDTthreads(throttle=NA), error="throttle.*must be a single number, non-NA, and >=1")
 setDTthreads(throttle=65536)
-test(1997.18, getDTthreads(TRUE), output="throttle==65536")
+test(1997.19, getDTthreads(TRUE), output="throttle==65536")
 setDTthreads(throttle=1024)
 
 # test that a copy is being made and output is printed, #3385 after partial revert of #3281
@@ -14574,7 +14586,7 @@ test(2023.6, DT[, .N, by = CLASS], data.table(CLASS=c("aaaa","dddd","gggg","eeee
 # more verbose timings #1265
 DT = data.table(x=c("a","b","c","b","a","c"), y=c(1,3,6,1,6,3), v=1:6)
 setindex(DT, y)
-test(2024, DT[y==6, v:=10L, verbose=TRUE], output=c("Constructing irows for.*", "Reorder irows for.*"))
+test(2024, DT[y==6, v:=10L, verbose=TRUE], output="Constructing irows for.*")
 
 # fread embedded '\0', #3400
 test(2025.01, fread(testDir("issue_3400_fread.txt"), skip=1, header=TRUE), data.table(A=INT(1,3,4), B=INT(2,2,5), C=INT(3,1,6)))
@@ -16882,20 +16894,29 @@ cols = c('x', 'y')
 test(2136, dt[, (cols) := lapply(.SD[get("x") == 1],function(x){x + 2L}), .SDcols = cols ,by = z], data.table(x = 1L + 2L, y = 2L + 2L, z = 3L))
 
 # round, trunc should all be 'integer' and and have class 'ITime', #4207
-DT = data.table(hour31   = as.ITime(seq(as.POSIXct("2020-01-01 07:00:40"), by = "31 min", length.out = 9)),
-                hour30   = as.ITime(seq(as.POSIXct("2020-01-01 07:00:00"), by = "30 min", length.out = 9)),
-                minute31 = as.ITime(seq(as.POSIXct("2020-01-01 07:00:00"), by = "31 sec", length.out = 9)),
-                minute30 = as.ITime(seq(as.POSIXct("2020-01-01 07:00:00"), by = "30 sec", length.out = 9)))
-test(2137.01, TRUE, DT[, all(sapply(.SD, class) == "ITime")])
-test(2137.02, TRUE, DT[, all(sapply(.SD, typeof) == "integer")])
-test(2137.03, FALSE, DT[, all(round(hour30, "hours") == as.ITime(c("07:00", "08:00", "08:00", "09:00", "09:00", "10:00", "10:00", "11:00", "11:00")))])
-test(2137.04, TRUE, DT[, all(round(hour31, "hours") == as.ITime(c("07:00", "08:00", "08:00", "09:00", "09:00", "10:00", "10:00", "11:00", "11:00")))])
-test(2137.05, FALSE, DT[, all(round(minute30, "minutes") == as.ITime(c("07:00:00", "07:01:00", "07:01:00", "07:02:00", "07:02:00", "07:03:00", "07:03:00", "07:04:00", "07:04:00")))])
-test(2137.06, TRUE, DT[, all(round(minute31, "minutes") == as.ITime(c("07:00:00", "07:01:00", "07:01:00", "07:02:00", "07:02:00", "07:03:00", "07:03:00", "07:04:00", "07:04:00")))])
-test(2137.07, TRUE, DT[, all(trunc(hour30, "hours") == as.ITime(c("07:00", "07:00", "08:00", "08:00", "09:00", "09:00", "10:00", "10:00", "11:00")))])
-test(2137.08, TRUE, DT[, all(trunc(hour31, "hours") == as.ITime(c("07:00", "07:00", "08:00", "08:00", "09:00", "09:00", "10:00", "10:00", "11:00")))])
-test(2137.09, TRUE, DT[, all(trunc(minute30, "minutes") == as.ITime(c("07:00:00", "07:00:00", "07:01:00", "07:01:00", "07:02:00", "07:02:00", "07:03:00", "07:03:00", "07:04:00")))])
-test(2137.10, TRUE, DT[, all(trunc(minute31, "minutes") == as.ITime(c("07:00:00", "07:00:00", "07:01:00", "07:01:00", "07:02:00", "07:02:00", "07:03:00", "07:03:00", "07:04:00")))])
+start_time = as.POSIXct("2020-01-01 07:00:00", tz='UTC')
+l = list(
+  hour31   = as.ITime(seq(start_time+40, by = "31 min", length.out = 9L)),
+  hour30   = as.ITime(seq(start_time,    by = "30 min", length.out = 9L)),
+  minute31 = as.ITime(seq(start_time,    by = "31 sec", length.out = 9L)),
+  minute30 = as.ITime(seq(start_time,    by = "30 sec", length.out = 9L))
+)
+ans = list(
+  a = as.ITime(c("07:00", "08:00", "08:00", "09:00", "09:00", "10:00", "10:00", "11:00", "11:00")),
+  b = as.ITime(c("07:00", "07:01", "07:01", "07:02", "07:02", "07:03", "07:03", "07:04", "07:04")),
+  c = as.ITime(c("07:00", "07:00", "08:00", "08:00", "09:00", "09:00", "10:00", "10:00", "11:00")),
+  d = as.ITime(c("07:00", "07:00", "07:01", "07:01", "07:02", "07:02", "07:03", "07:03", "07:04"))
+)
+test(2137.01, all(sapply(l, inherits, "ITime")))
+test(2137.02, all(sapply(l, typeof) == "integer"))
+test(2137.03, which(round(l$hour30, "hours") != ans$a), c(4L, 8L))
+test(2137.04, round(l$hour31, "hours"), ans$a)
+test(2137.05, which(round(l$minute30, "minutes") != ans$b), c(2L, 6L))
+test(2137.06, round(l$minute31, "minutes"), ans$b)
+test(2137.07, trunc(l$hour30, "hours"), ans$c)
+test(2137.08, trunc(l$hour31, "hours"), ans$c)
+test(2137.09, trunc(l$minute30, "minutes"), ans$d)
+test(2137.10, trunc(l$minute31, "minutes"), ans$d)
 
 # Complex to character conversion in rbindlist, #4202
 A = data.table(A=complex(real = 1:3, imaginary=c(0, -1, 1)))
@@ -16980,3 +17001,16 @@ B = data.table(x=1:2)
 X = A == B
 A[, y := 3:4]
 test(2148, colnames(X), c('x'))
+
+# shallow() shouldn't take a deep copy of indices, #4311
+dt <- data.table(a = c(3, 1))
+setindex(dt, a)
+dt2 <- shallow(dt)
+test(2149.1, address(attr(attr(dt, 'index'), '__a')), address(attr(attr(dt2, 'index'), '__a')))
+# Testing possible future regression. shallow() needs to copy the names of indices and keys.
+setnames(dt2, 'a', 'A')
+test(2149.2, indices(dt), 'a')
+setkey(dt, a)
+dt2 <- shallow(dt)
+setnames(dt2, 'a', 'A')
+test(2149.3, key(dt), 'a')

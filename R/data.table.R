@@ -463,7 +463,7 @@ replace_dot_alias = function(e) {
       allLen1 = ans$allLen1
       f__ = ans$starts
       len__ = ans$lens
-      allGrp1 = FALSE # was previously 'ans$allGrp1'. Fixing #1991. TODO: Revisit about allGrp1 possibility for speedups in certain cases when I find some time.
+      allGrp1 = all(ops==1L) # was previously 'ans$allGrp1'. Fixing #1991. TODO: Revisit about allGrp1 possibility for speedups in certain cases when I find some time.
       indices__ = if (length(ans$indices)) ans$indices else seq_along(f__) # also for #1991 fix
       # length of input nomatch (single 0 or NA) is 1 in both cases.
       # When no match, len__ is 0 for nomatch=0 and 1 for nomatch=NA, so len__ isn't .N

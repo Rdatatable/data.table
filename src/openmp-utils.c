@@ -20,7 +20,7 @@ static int getIntEnv(const char *name, int def)
   long int ans = strtol(val, &end, 10);  // ignores leading whitespace. If it fully consumed the string, *end=='\0' and isspace('\0')==false
   while (isspace(*end)) end++;  // ignore trailing whitespace
   if (errno || (size_t)(end-val)!=nchar || ans<1 || ans>INT_MAX) {
-    warning(_("Ignoring invalid %s==\")%s\". Not an integer >= 1. Please remove any characters that are not a digit [0-9]. See ?data.table::setDTthreads."), name, val);
+    warning(_("Ignoring invalid %s==\"%s\". Not an integer >= 1. Please remove any characters that are not a digit [0-9]. See ?data.table::setDTthreads."), name, val);
     return def;
   }
   return (int)ans;
@@ -33,23 +33,26 @@ void initDTthreads() {
   // called at package startup from init.c
   // also called by setDTthreads(threads=NULL) (default) to reread environment variables; see setDTthreads below
   // No verbosity here in this setter. Verbosity is in getDTthreads(verbose=TRUE)
-  int ans = omp_get_num_procs();  // starting point is all logical CPUs. This is a hard limit; user cannot achieve more than this.
-                                  // ifndef _OPENMP then myomp.h defines this to be 1
-  int perc = getIntEnv("R_DATATABLE_NUM_PROCS_PERCENT", 50); // use "NUM_PROCS" to use the same name as the OpenMP function this uses
-  // 50% of logical CPUs by default; half of 8 is 4 on laptop with 4 cores. Leaves plenty of room for other processes: #3395 & #3298
-  if (perc<=1 || perc>100) {
-    warning(_("Ignoring invalid R_DATATABLE_NUM_PROCS_PERCENT==%d. If used it must be an integer between 2 and 100. Default is 50. See ?setDTtheads."), perc);
-    // not allowing 1 is to catch attempts to use 1 or 1.0 to represent 100%.
-    perc = 50;
+  int ans = getIntEnv("R_DATATABLE_NUM_THREADS", INT_MIN);
+  if (ans>=1) {
+    ans = imin(ans, omp_get_num_procs());  // num_procs is a hard limit; user cannot achieve more. ifndef _OPENMP then myomp.h defines this to be 1
+  } else {
+    // Only when R_DATATABLE_NUM_THREADS is unset (or <=0) do we use PROCS_PERCENT; #4514
+    int perc = getIntEnv("R_DATATABLE_NUM_PROCS_PERCENT", 50); // use "NUM_PROCS" to use the same name as the OpenMP function this uses
+    // 50% of logical CPUs by default; half of 8 is 4 on laptop with 4 cores. Leaves plenty of room for other processes: #3395 & #3298
+    if (perc<=1 || perc>100) {
+      warning(_("Ignoring invalid R_DATATABLE_NUM_PROCS_PERCENT==%d. If used it must be an integer between 2 and 100. Default is 50. See ?setDTtheads."), perc);
+      // not allowing 1 is to catch attempts to use 1 or 1.0 to represent 100%.
+      perc = 50;
+    }
+    ans = imax(omp_get_num_procs()*perc/100, 1); // imax for when formula would result in 0.
   }
-  ans = imax(ans*perc/100, 1);
   ans = imin(ans, omp_get_thread_limit());  // honors OMP_THREAD_LIMIT when OpenMP started; e.g. CRAN sets this to 2. Often INT_MAX meaning unlimited/unset
   ans = imin(ans, omp_get_max_threads());   // honors OMP_NUM_THREADS when OpenMP started, plus reflects any omp_set_* calls made since
-  ans = imax(ans, 1);                       // just in case omp_get_* returned <= 0 for any reason
   // max_threads() -vs- num_procs(): https://software.intel.com/en-us/forums/intel-visual-fortran-compiler-for-windows/topic/302866
-  ans = imin(ans, getIntEnv("R_DATATABLE_NUM_THREADS", INT_MAX));
   ans = imin(ans, getIntEnv("OMP_THREAD_LIMIT", INT_MAX));  // user might expect `Sys.setenv(OMP_THREAD_LIMIT=2);setDTthreads()` to work. Satisfy this
   ans = imin(ans, getIntEnv("OMP_NUM_THREADS", INT_MAX));   //   expectation by reading them again now. OpenMP just reads them on startup (quite reasonably)
+  ans = imax(ans, 1);  // just in case omp_get_* returned <=0 for any reason, or the env variables above are set <=0
   DTthreads = ans;
   DTthrottle = imax(1, getIntEnv("R_DATATABLE_THROTTLE", 1024)); // 2nd thread is used only when n>1024, 3rd thread when n>2048, etc
 }
