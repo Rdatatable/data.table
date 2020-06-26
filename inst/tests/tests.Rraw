@@ -17014,3 +17014,10 @@ setkey(dt, a)
 dt2 <- shallow(dt)
 setnames(dt2, 'a', 'A')
 test(2149.3, key(dt), 'a')
+
+# Issue in X[Y,,.EACHI] when Y contains integer64 #3779
+if (test_bit64) {
+  X = data.table(x=1:3)
+  Y = data.table(x=1:2, y=as.integer64(c(10,20)))
+  test(2150.1, X[Y, `:=`(y = i.y), on = "x", by = .EACHI], data.table(x=1:3, y=as.integer64(10L,20L,NA)))
+}
