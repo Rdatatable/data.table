@@ -12871,30 +12871,32 @@ ids <- sample(letters[1:3], 10, replace=TRUE)
 scores <- rnorm(10)
 dt <- data.table(id=ids, score=scores)
 dt.s4 <- new("Data.Table", data.table(id=ids, score=scores))
-test(1914.1, isS4(dt.s4))
-test(1914.2, inherits(dt.s4, 'data.table'))
+test(1914.01, isS4(dt.s4))
+test(1914.02, inherits(dt.s4, 'data.table'))
+# Test possible regression. shallow() needs to preserve the S4 bit to support S4 classes that contain data.table
+test(1914.03, isS4(shallow(dt.s4)))
 ## pull out data from S4 as.list, and compare to list from dt
 dt.s4.list <- dt.s4@.Data
 names(dt.s4.list) <- names(dt.s4)
-test(1914.3, dt.s4.list, as.list(dt))  # Underlying data not identical
+test(1914.04, dt.s4.list, as.list(dt))  # Underlying data not identical
 # simple S4 conversion-isms work
 df = data.frame(a=sample(letters, 10), b=1:10)
 dt = as.data.table(df)
-test(1914.4, identical(as(df, 'data.table'), dt))
-test(1914.5, identical(as(dt, 'data.frame'), df))
+test(1914.05, identical(as(df, 'data.table'), dt))
+test(1914.06, identical(as(dt, 'data.frame'), df))
 # data.table can be used in an S4 slot
 dt <- data.table(a=sample(letters[1:3], 10, replace=TRUE), score=rnorm(10))
 dt.comp <- new("S4Composition", data=dt)
-test(1914.6, dt.comp@data, dt)
+test(1914.07, dt.comp@data, dt)
 # S4 methods dispatch properly on data.table slots"
 dt <- data.table(a=sample(letters[1:3], 10, replace=TRUE), score=rnorm(10))
 dt.comp <- new("S4Composition", data=dt)
 setGeneric("dtGet", function(x, what) standardGeneric("dtGet"))
 setMethod("dtGet", c(x="S4Composition", what="missing"), function(x, what){x@data})
 setMethod("dtGet", c(x="S4Composition", what="ANY"), function(x, what) {x@data[[what]]})
-test(1914.7, dtGet(dt.comp), dt)  # actually
-test(1914.8, identical(dtGet(dt.comp, 1), dt[[1]]))
-test(1914.9, identical(dtGet(dt.comp, 'b'), dt$b))
+test(1914.08, dtGet(dt.comp), dt)  # actually
+test(1914.09, identical(dtGet(dt.comp, 1), dt[[1]]))
+test(1914.10, identical(dtGet(dt.comp, 'b'), dt$b))
 removeClass("Data.Table")   # so that test 1914.2 passes on the second run of cc() in dev
 removeClass("S4Composition")
 # END port of old testthat tests
@@ -16999,3 +17001,16 @@ B = data.table(x=1:2)
 X = A == B
 A[, y := 3:4]
 test(2148, colnames(X), c('x'))
+
+# shallow() shouldn't take a deep copy of indices, #4311
+dt <- data.table(a = c(3, 1))
+setindex(dt, a)
+dt2 <- shallow(dt)
+test(2149.1, address(attr(attr(dt, 'index'), '__a')), address(attr(attr(dt2, 'index'), '__a')))
+# Testing possible future regression. shallow() needs to copy the names of indices and keys.
+setnames(dt2, 'a', 'A')
+test(2149.2, indices(dt), 'a')
+setkey(dt, a)
+dt2 <- shallow(dt)
+setnames(dt2, 'a', 'A')
+test(2149.3, key(dt), 'a')
