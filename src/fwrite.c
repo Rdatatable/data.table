@@ -7,7 +7,12 @@
 #include <math.h>      // isfinite, isnan
 #include <stdlib.h>    // abs
 #include <string.h>    // strlen, strerror
+
+#ifndef NOZLIB
 #include <zlib.h>      // for compression to .gz
+#else
+#define z_stream struct
+#endif
 
 #ifdef WIN32
 #include <sys/types.h>
@@ -552,6 +557,7 @@ void writeCategString(const void *col, int64_t row, char **pch)
   write_string(getCategString(col, row), pch);
 }
 
+#ifndef NOZLIB
 int init_stream(z_stream *stream) {
   stream->next_in = Z_NULL;
   stream->zalloc = Z_NULL;
@@ -589,6 +595,7 @@ void print_z_stream(const z_stream *s)   // temporary tracing function for #4099
   }
   DTPRINT("\n");
 }
+#endif
 
 void fwriteMain(fwriteMainArgs args)
 {
@@ -694,6 +701,10 @@ void fwriteMain(fwriteMainArgs args)
       // # nocov end
     }
   }
+  #ifdef NOZLIB
+  if (args.is_gzip)
+    STOP(_("fwrite compression requires zlib which is not present")); // # nocov
+  #endif
 
   int yamlLen = strlen(args.yaml);
   if (verbose) {
@@ -735,6 +746,7 @@ void fwriteMain(fwriteMainArgs args)
     } else {
       int ret1=0, ret2=0;
       if (args.is_gzip) {
+        #ifndef NOZLIB
         z_stream stream;
         if(init_stream(&stream)) {
           free(buff);                                    // # nocov
@@ -753,6 +765,7 @@ void fwriteMain(fwriteMainArgs args)
         if (ret1==Z_OK) ret2 = WRITE(f, zbuff, (int)zbuffUsed);
         deflateEnd(&stream);
         free(zbuff);
+        #endif
       } else {
         ret2 = WRITE(f,  buff, (int)(ch-buff));
       }
@@ -798,11 +811,13 @@ void fwriteMain(fwriteMainArgs args)
   // compute zbuffSize which is the same for each thread
   size_t zbuffSize = 0;
   if(args.is_gzip){
+    #ifndef NOZLIB
     z_stream stream;
     if(init_stream(&stream))
       STOP(_("Can't allocate gzip stream structure")); // # nocov
     zbuffSize = deflateBound(&stream, buffSize);
     deflateEnd(&stream);
+    #endif
   }
 
   errno=0;
@@ -816,6 +831,7 @@ void fwriteMain(fwriteMainArgs args)
   char *zbuffPool = NULL;
   if (args.is_gzip) {
     zbuffPool = malloc(nth*(size_t)zbuffSize);
+    #ifndef NOZLIB
     if (!zbuffPool) {
       // # nocov start
       free(buffPool);
@@ -823,11 +839,14 @@ void fwriteMain(fwriteMainArgs args)
          (size_t)zbuffSize/(1024^2), nth, errno, strerror(errno));
       // # nocov end
     }
+    #endif
   }
 
   bool failed = false;   // naked (unprotected by atomic) write to bool ok because only ever write true in this special paradigm
   int failed_compress = 0; // the first thread to fail writes their reason here when they first get to ordered section
+  #ifndef NOZLIB
   char failed_msg[1001] = "";  // to hold zlib's msg; copied out of zlib in ordered section just in case the msg is allocated within zlib
+  #endif
   int failed_write = 0;    // same. could use +ve and -ve in the same code but separate it out to trace Solaris problem, #3931
 
   if (nth>1) verbose=false; // printing isn't thread safe (there's a temporary print in compressbuff for tracing solaris; #4099)
@@ -841,6 +860,7 @@ void fwriteMain(fwriteMainArgs args)
 
     void *myzBuff = NULL;
     size_t myzbuffUsed = 0;
+    #ifndef NOZLIB
     z_stream mystream;
     if (args.is_gzip) {
       myzBuff = zbuffPool + me*zbuffSize;
@@ -850,6 +870,7 @@ void fwriteMain(fwriteMainArgs args)
       }
       if (verbose) {DTPRINT("z_stream for data (1): "); print_z_stream(&mystream);}
     }
+    #endif
 
     #pragma omp for ordered schedule(dynamic)
     for(int64_t start=0; start<args.nrow; start+=rowsPerBatch) {
@@ -878,6 +899,7 @@ void fwriteMain(fwriteMainArgs args)
         write_chars(args.eol, &ch);  // overwrite last sep with eol instead
       }
       // compress buffer if gzip
+      #ifndef NOZLIB
       if (args.is_gzip && !failed) {
         myzbuffUsed = zbuffSize;
         if (verbose) {DTPRINT("z_stream for data (2): "); print_z_stream(&mystream);}
@@ -886,13 +908,16 @@ void fwriteMain(fwriteMainArgs args)
         if (ret) { failed=true; my_failed_compress=ret; }
         else deflateReset(&mystream);
       }
+      #endif
       #pragma omp ordered
       {
         if (failed) {
           // # nocov start
           if (failed_compress==0 && my_failed_compress!=0) {
             failed_compress = my_failed_compress;
+            #ifndef NOZLIB
             if (mystream.msg!=NULL) strncpy(failed_msg, mystream.msg, 1000); // copy zlib's msg for safe use after deflateEnd just in case zlib allocated the message
+            #endif
           }
           // else another thread could have failed below while I was working or waiting above; their reason got here first
           // # nocov end
@@ -950,7 +975,9 @@ void fwriteMain(fwriteMainArgs args)
     // all threads will call this free on their buffer, even if one or more threads had malloc
     // or realloc fail. If the initial malloc failed, free(NULL) is ok and does nothing.
     if (args.is_gzip) {
+      #ifndef NOZLIB
       deflateEnd(&mystream);
+      #endif
     }
   }
   free(buffPool);
@@ -976,11 +1003,13 @@ void fwriteMain(fwriteMainArgs args)
   // from the original error.
   if (failed) {
     // # nocov start
+    #ifndef NOZLIB
     if (failed_compress)
       STOP(_("zlib %s (zlib.h %s) deflate() returned error %d with z_stream->msg==\"%s\" Z_FINISH=%d Z_BLOCK=%d. %s"),
            zlibVersion(), ZLIB_VERSION, failed_compress, failed_msg, Z_FINISH, Z_BLOCK,
            verbose ? _("Please include the full output above and below this message in your data.table bug report.")
                    : _("Please retry fwrite() with verbose=TRUE and include the full output with your data.table bug report."));
+    #endif
     if (failed_write)
       STOP("%s: '%s'", strerror(failed_write), args.filename);
     // # nocov end
