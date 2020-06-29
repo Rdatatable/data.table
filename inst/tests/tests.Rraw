@@ -25,6 +25,7 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
   binary = data.table:::binary
   bmerge = data.table:::bmerge
   brackify = data.table:::brackify
+  Ctest_dt_win_snprintf = data.table:::Ctest_dt_win_snprintf
   chmatchdup = data.table:::chmatchdup
   compactprint = data.table:::compactprint
   cube.data.table = data.table:::cube.data.table
@@ -4014,8 +4015,28 @@ test(1162.09, length(forderv(DT, by=2:3)), 0L)
 setkey(DT)
 # test number 1162.10 skipped because if it fails it confusingly prints out as 1662.1 not 1662.10
 test(1162.10, length(forderv(DT, by=1:3)), 0L)
-test(1162.11, is.sorted(DT, by=1:3), TRUE, warning="Use.*forderv.*for efficiency in one step, so you have o as well if not sorted")
-test(1162.12, is.sorted(DT, by=2:1), FALSE, warning="Use.*forderv.*for efficiency in one step, so you have o as well if not sorted")
+test(1162.11, is.sorted(DT, by=1:3), TRUE)
+test(1162.12, is.sorted(DT, by=2:1), FALSE)
+test(1162.13, is.sorted(DT), TRUE)
+DT = data.table(A=INT(1,1,2), B=c(NA,"a",NA))
+test(1162.14, is.sorted(DT), TRUE)
+test(1162.15, is.sorted(DT, by=c("B","A")), FALSE)
+DT = data.table(A=INT(1,1,2), B=c("a",NA,NA))
+test(1162.16, is.sorted(DT), FALSE)
+test(1162.17, is.sorted(DT, by=2), FALSE)
+if (test_bit64) {
+  DT[, A:=as.integer64(A)]
+  test(1162.18, is.sorted(DT, by="A"), TRUE)  # tests the single-column special case
+  test(1162.19, is.sorted(DT), FALSE)         # tests the 2-column case branch for integer64
+  DT[2, B:="b"]
+  test(1162.20, is.sorted(DT), TRUE)
+}
+utf8_strings = c("\u00a1tas", "\u00de")
+latin1_strings = iconv(utf8_strings, from="UTF-8", to="latin1")
+DT = data.table(A=c(utf8_strings, latin1_strings), B=1:4)
+test(1162.21, is.sorted(DT), FALSE)
+setkey(DT)
+test(1162.22, is.sorted(DT), TRUE)
 
 # FR #351 - last on length=0 arguments
 x <- character(0)
@@ -8059,6 +8080,13 @@ dt = data.table(a=1:3)
 dt[ , l := .(list(1, 2, 3))]
 test(1581.16, dt[ , .(l = l[[1L]]), by=a, verbose=TRUE],
      dt[ , l := unlist(l)], output='(GForce FALSE)')
+# make sure not to apply when `[[` is applied to a nested call, #4413
+DT = data.table(f1=c("a","b"), f2=c("x","y"))
+l = list(a = c(x = "ax", y = "ay"), b = c(x = "bx", y = "by"))
+test(1581.17, DT[ , as.list(l[[f1]])[[f2]], by=c("f1","f2")],
+     data.table(f1 = c("a", "b"), f2 = c("x", "y"), V1 = c("ax", "by")))
+test(1581.18, DT[, v:=l[[f1]][f2], by=c("f1","f2")],
+     data.table(f1=c("a","b"), f2=c("x","y"), v=c("ax", "by")))
 
 # handle NULL value correctly #1429
 test(1582, uniqueN(NULL), 0L)
@@ -8120,7 +8148,7 @@ test(1588.7, dt[ch>"c"], dt[4:6])  # coverage of a return(NULL) in .prepareFastS
 
 # data.table operates consistently independent of locale, but it's R that changes and is sensitive to it.
 #   Because keys/indexes depend on a sort order. If a data.table is stored on disk with a key
-#   created in a locale-sensitive order and then loaded by another R session in a different locale, the ability to re-use existing sortedness
+#   created in a locale-sensitive order and then loaded by another R session in a different locale, the ability to reuse existing sortedness
 #   will break because the order would depend on the locale. Which is why data.table is deliberately C-locale only. For consistency and simpler
 #   internals for robustness to reduce the change of errors and to avoid that class of bug. It would be possible to have locale-sensitive keys
 #   and indexes but we've, so far, decided not to, for those reasons.
@@ -8137,12 +8165,20 @@ Encoding(x1) = "latin1"
 x2 = iconv(x1, "latin1", "UTF-8")
 test(1590.01, identical(x1,x2))
 test(1590.02, x1==x2)
-test(1590.03, forderv(    c(x2,x1,x1,x2)), integer())     # desirable consistent result given data.table's needs
-test(1590.04, base::order(c(x2,x1,x1,x2)), INT(1,4,2,3))  # different result in base R under C locale even though identical(x1,x2)
+test(1590.03, forderv(    c(x2,x1,x1,x2)), integer())     # desirable consistent result given identical(x1, x2)
+                                                          #           ^^ data.table consistent over time regardless of which version of R or locale
+baseR = base::order(c(x2,x1,x1,x2))
+  # Even though C locale and identical(x1,x2), base R<=4.0.0 considers the encoding too; i.e. orders the encoding together x2 (UTF-8) before x1 (latin1).
+  # Then around May 2020, R-devel (but just on Windows) started either respecting identical() like data.table has always done, or put latin1 before UTF-8.
+  # Jan emailed R-devel on 23 May 2020.
+  # We relaxed 1590.04 and 1590.07 (tests of base R behaviour) rather than remove them, PR#4492 and its follow-up. But these two tests
+  # are so relaxed now that they barely testing anything. It appears base R behaviour is undefined in this rare case of identical strings in different encodings.
+test(1590.04, identical(baseR, INT(1,4,2,3)) || identical(baseR, INT(2,3,1,4)) || identical(baseR, 1:4))
 Encoding(x2) = "unknown"
 test(1590.05, x1!=x2)
 test(1590.06, forderv(    c(x2,x1,x1,x2)), INT(1,4,2,3))  # consistent with Windows-1252 result, tested further below
-test(1590.07, base::order(c(x2,x1,x1,x2)), INT(2,3,1,4))  # different result; base R is encoding-sensitive in C-locale
+baseR = base::order(c(x2,x1,x1,x2))
+test(1590.07, identical(baseR, INT(1,4,2,3)) || identical(baseR, INT(2,3,1,4)) || identical(baseR, 1:4))
 Sys.setlocale("LC_CTYPE", ctype)
 Sys.setlocale("LC_COLLATE", collate)
 test(1590.08, Sys.getlocale(), oldlocale)  # checked restored locale fully back to how it was before this test
@@ -12837,30 +12873,32 @@ ids <- sample(letters[1:3], 10, replace=TRUE)
 scores <- rnorm(10)
 dt <- data.table(id=ids, score=scores)
 dt.s4 <- new("Data.Table", data.table(id=ids, score=scores))
-test(1914.1, isS4(dt.s4))
-test(1914.2, inherits(dt.s4, 'data.table'))
+test(1914.01, isS4(dt.s4))
+test(1914.02, inherits(dt.s4, 'data.table'))
+# Test possible regression. shallow() needs to preserve the S4 bit to support S4 classes that contain data.table
+test(1914.03, isS4(shallow(dt.s4)))
 ## pull out data from S4 as.list, and compare to list from dt
 dt.s4.list <- dt.s4@.Data
 names(dt.s4.list) <- names(dt.s4)
-test(1914.3, dt.s4.list, as.list(dt))  # Underlying data not identical
+test(1914.04, dt.s4.list, as.list(dt))  # Underlying data not identical
 # simple S4 conversion-isms work
 df = data.frame(a=sample(letters, 10), b=1:10)
 dt = as.data.table(df)
-test(1914.4, identical(as(df, 'data.table'), dt))
-test(1914.5, identical(as(dt, 'data.frame'), df))
+test(1914.05, identical(as(df, 'data.table'), dt))
+test(1914.06, identical(as(dt, 'data.frame'), df))
 # data.table can be used in an S4 slot
 dt <- data.table(a=sample(letters[1:3], 10, replace=TRUE), score=rnorm(10))
 dt.comp <- new("S4Composition", data=dt)
-test(1914.6, dt.comp@data, dt)
+test(1914.07, dt.comp@data, dt)
 # S4 methods dispatch properly on data.table slots"
 dt <- data.table(a=sample(letters[1:3], 10, replace=TRUE), score=rnorm(10))
 dt.comp <- new("S4Composition", data=dt)
 setGeneric("dtGet", function(x, what) standardGeneric("dtGet"))
 setMethod("dtGet", c(x="S4Composition", what="missing"), function(x, what){x@data})
 setMethod("dtGet", c(x="S4Composition", what="ANY"), function(x, what) {x@data[[what]]})
-test(1914.7, dtGet(dt.comp), dt)  # actually
-test(1914.8, identical(dtGet(dt.comp, 1), dt[[1]]))
-test(1914.9, identical(dtGet(dt.comp, 'b'), dt$b))
+test(1914.08, dtGet(dt.comp), dt)  # actually
+test(1914.09, identical(dtGet(dt.comp, 1), dt[[1]]))
+test(1914.10, identical(dtGet(dt.comp, 'b'), dt$b))
 removeClass("Data.Table")   # so that test 1914.2 passes on the second run of cc() in dev
 removeClass("S4Composition")
 # END port of old testthat tests
@@ -14154,14 +14192,16 @@ test(1996.2, d[, eval(qcall)], data.table(a=1L, b=3))
 # setDTthreads; #3435
 test(1997.01, setDTthreads(NULL, percent=75), error="Provide either threads= or percent= but not both")
 test(1997.02, setDTthreads(1L, percent=75), error="Provide either threads= or percent= but not both")
-test(1997.03, setDTthreads(-1L), error="must be either NULL or a single integer >= 0")
+test(1997.03, setDTthreads(-1L), error="threads= must be either NULL or a single number >= 0")
 test(1997.04, setDTthreads(percent=101), error="should be a number between 2 and 100")
 test(1997.05, setDTthreads(percent=1), error="should be a number between 2 and 100")
 test(1997.06, setDTthreads(percent=NULL), error="but is length 0")
 test(1997.07, setDTthreads(percent=1:2), error="but is length 2")
 test(1997.08, setDTthreads(restore_after_fork=21), error="must be TRUE, FALSE, or NULL")
 old = getDTthreads()   # (1)
-oldenv = Sys.getenv("R_DATATABLE_NUM_PROCS_PERCENT")
+oldenv1 = Sys.getenv("R_DATATABLE_NUM_PROCS_PERCENT")
+oldenv2 = Sys.getenv("R_DATATABLE_NUM_THREADS")
+Sys.setenv(R_DATATABLE_NUM_THREADS="")  # in case user has this set, so we can test PROCS_PERCENT
 Sys.setenv(R_DATATABLE_NUM_PROCS_PERCENT="3.0")
 test(1997.09, setDTthreads(), old, warning="Ignoring invalid.*Please remove any.*not a digit")
 new = getDTthreads()  # old above at (1) may not have been default. new now is.
@@ -14174,9 +14214,21 @@ test(1997.13, setDTthreads(), new)
 new = getDTthreads()
 setDTthreads(percent=75)
 test(1997.14, getDTthreads(), new)
-Sys.setenv(R_DATATABLE_NUM_PROCS_PERCENT=oldenv)
-test(1997.15, setDTthreads(old), new)
-test(1997.16, getDTthreads(), old)
+Sys.setenv(R_DATATABLE_NUM_PROCS_PERCENT="100")
+setDTthreads()
+allcpu = getDTthreads()
+Sys.setenv(R_DATATABLE_NUM_PROCS_PERCENT="75")
+Sys.setenv(R_DATATABLE_NUM_THREADS=allcpu)
+setDTthreads()
+test(1997.15, getDTthreads(), allcpu)
+Sys.setenv(R_DATATABLE_NUM_PROCS_PERCENT=oldenv1)
+Sys.setenv(R_DATATABLE_NUM_THREADS=oldenv2)
+test(1997.16, setDTthreads(old), allcpu)
+test(1997.17, getDTthreads(), old)
+test(1997.18, setDTthreads(throttle=NA), error="throttle.*must be a single number, non-NA, and >=1")
+setDTthreads(throttle=65536)
+test(1997.19, getDTthreads(TRUE), output="throttle==65536")
+setDTthreads(throttle=1024)
 
 # test that a copy is being made and output is printed, #3385 after partial revert of #3281
 x = 5L
@@ -14536,7 +14588,7 @@ test(2023.6, DT[, .N, by = CLASS], data.table(CLASS=c("aaaa","dddd","gggg","eeee
 # more verbose timings #1265
 DT = data.table(x=c("a","b","c","b","a","c"), y=c(1,3,6,1,6,3), v=1:6)
 setindex(DT, y)
-test(2024, DT[y==6, v:=10L, verbose=TRUE], output=c("Constructing irows for.*", "Reorder irows for.*"))
+test(2024, DT[y==6, v:=10L, verbose=TRUE], output="Constructing irows for.*")
 
 # fread embedded '\0', #3400
 test(2025.01, fread(testDir("issue_3400_fread.txt"), skip=1, header=TRUE), data.table(A=INT(1,3,4), B=INT(2,2,5), C=INT(3,1,6)))
@@ -15878,7 +15930,7 @@ test(2074.31, dcast(DT, V1 ~ z, fun.aggregate=eval(quote(length)), value.var='z'
 test(2074.32, fwrite(DT, logical01=TRUE, logicalAsInt=TRUE), error="logicalAsInt has been renamed")
 
 # merge.data.table
-test(2074.33, merge(DT, DT, by.x = 1i, by.y=1i), error="A non-empty vector of column names are required")
+test(2074.33, merge(DT, DT, by.x = 1i, by.y=1i), error="A non-empty vector of column names is required")
 
 # shift naming
 test(2074.34, shift(list(a=1:5, b=6:10), give.names=TRUE), list(a_lag_1=c(NA, 1:4), b_lag_1=c(NA, 6:9)))
@@ -16648,6 +16700,9 @@ options(old_width)
 DT = data.table(A="a", key="A")
 test(2126.1, DT[J(NULL)], DT[0])
 test(2126.2, DT[data.table()], DT[0])
+# additional segfault when i is NULL and roll = 'nearest'
+test(2126.3, DT[J(NULL), roll = 'nearest'], DT[0])
+test(2126.4, DT[data.table(), roll = 'nearest'], DT[0])
 
 # fcase, #3823
 test_vec1 = -5L:5L < 0L
@@ -16785,8 +16840,19 @@ test(2130.03, print(DT), output=c("   x             y", "1: 1 <ex_class[3]>",   
 
 # .SD from grouping should be unlocked, part of #4159
 x = data.table(a=1:3, b=4:6)
-test(2131, lapply(x[ , list(dt = list(.SD)), by = a]$dt, attr, '.data.table.locked'),
-           list(NULL, NULL, NULL))
+test(2131.1, lapply(x[ , list(dt = list(.SD)), by = a]$dt, attr, '.data.table.locked'),
+     list(NULL, NULL, NULL))
+## truly recursive object (contains itself) can cause infinite recursion, #4173
+f = function(data) {
+  x = new.env()
+  x$a = 2
+  x$b = x
+  x
+}
+
+dt = data.table(x = rep(1:3, each = 3), y = runif(9))
+out = dt[, list(evaluated = list(f(copy(.SD)))), by = x]
+test(2131.2, class(out$evaluated[[1L]]), 'environment')
 
 # S4 object not suported in fifelse and fcase, #4135
 class2132 = setClass("class2132", slots=list(x="numeric"))
@@ -16830,20 +16896,29 @@ cols = c('x', 'y')
 test(2136, dt[, (cols) := lapply(.SD[get("x") == 1],function(x){x + 2L}), .SDcols = cols ,by = z], data.table(x = 1L + 2L, y = 2L + 2L, z = 3L))
 
 # round, trunc should all be 'integer' and and have class 'ITime', #4207
-DT = data.table(hour31   = as.ITime(seq(as.POSIXct("2020-01-01 07:00:40"), by = "31 min", length.out = 9)),
-                hour30   = as.ITime(seq(as.POSIXct("2020-01-01 07:00:00"), by = "30 min", length.out = 9)),
-                minute31 = as.ITime(seq(as.POSIXct("2020-01-01 07:00:00"), by = "31 sec", length.out = 9)),
-                minute30 = as.ITime(seq(as.POSIXct("2020-01-01 07:00:00"), by = "30 sec", length.out = 9)))
-test(2137.01, TRUE, DT[, all(sapply(.SD, class) == "ITime")])
-test(2137.02, TRUE, DT[, all(sapply(.SD, typeof) == "integer")])
-test(2137.03, FALSE, DT[, all(round(hour30, "hours") == as.ITime(c("07:00", "08:00", "08:00", "09:00", "09:00", "10:00", "10:00", "11:00", "11:00")))])
-test(2137.04, TRUE, DT[, all(round(hour31, "hours") == as.ITime(c("07:00", "08:00", "08:00", "09:00", "09:00", "10:00", "10:00", "11:00", "11:00")))])
-test(2137.05, FALSE, DT[, all(round(minute30, "minutes") == as.ITime(c("07:00:00", "07:01:00", "07:01:00", "07:02:00", "07:02:00", "07:03:00", "07:03:00", "07:04:00", "07:04:00")))])
-test(2137.06, TRUE, DT[, all(round(minute31, "minutes") == as.ITime(c("07:00:00", "07:01:00", "07:01:00", "07:02:00", "07:02:00", "07:03:00", "07:03:00", "07:04:00", "07:04:00")))])
-test(2137.07, TRUE, DT[, all(trunc(hour30, "hours") == as.ITime(c("07:00", "07:00", "08:00", "08:00", "09:00", "09:00", "10:00", "10:00", "11:00")))])
-test(2137.08, TRUE, DT[, all(trunc(hour31, "hours") == as.ITime(c("07:00", "07:00", "08:00", "08:00", "09:00", "09:00", "10:00", "10:00", "11:00")))])
-test(2137.09, TRUE, DT[, all(trunc(minute30, "minutes") == as.ITime(c("07:00:00", "07:00:00", "07:01:00", "07:01:00", "07:02:00", "07:02:00", "07:03:00", "07:03:00", "07:04:00")))])
-test(2137.10, TRUE, DT[, all(trunc(minute31, "minutes") == as.ITime(c("07:00:00", "07:00:00", "07:01:00", "07:01:00", "07:02:00", "07:02:00", "07:03:00", "07:03:00", "07:04:00")))])
+start_time = as.POSIXct("2020-01-01 07:00:00", tz='UTC')
+l = list(
+  hour31   = as.ITime(seq(start_time+40, by = "31 min", length.out = 9L)),
+  hour30   = as.ITime(seq(start_time,    by = "30 min", length.out = 9L)),
+  minute31 = as.ITime(seq(start_time,    by = "31 sec", length.out = 9L)),
+  minute30 = as.ITime(seq(start_time,    by = "30 sec", length.out = 9L))
+)
+ans = list(
+  a = as.ITime(c("07:00", "08:00", "08:00", "09:00", "09:00", "10:00", "10:00", "11:00", "11:00")),
+  b = as.ITime(c("07:00", "07:01", "07:01", "07:02", "07:02", "07:03", "07:03", "07:04", "07:04")),
+  c = as.ITime(c("07:00", "07:00", "08:00", "08:00", "09:00", "09:00", "10:00", "10:00", "11:00")),
+  d = as.ITime(c("07:00", "07:00", "07:01", "07:01", "07:02", "07:02", "07:03", "07:03", "07:04"))
+)
+test(2137.01, all(sapply(l, inherits, "ITime")))
+test(2137.02, all(sapply(l, typeof) == "integer"))
+test(2137.03, which(round(l$hour30, "hours") != ans$a), c(4L, 8L))
+test(2137.04, round(l$hour31, "hours"), ans$a)
+test(2137.05, which(round(l$minute30, "minutes") != ans$b), c(2L, 6L))
+test(2137.06, round(l$minute31, "minutes"), ans$b)
+test(2137.07, trunc(l$hour30, "hours"), ans$c)
+test(2137.08, trunc(l$hour31, "hours"), ans$c)
+test(2137.09, trunc(l$minute30, "minutes"), ans$d)
+test(2137.10, trunc(l$minute31, "minutes"), ans$d)
 
 # Complex to character conversion in rbindlist, #4202
 A = data.table(A=complex(real = 1:3, imaginary=c(0, -1, 1)))
@@ -16856,6 +16931,92 @@ test(2138.3, rbind(A,B), data.table(A=c(as.character(A$A), B$A)))
 A = data.table(A=as.complex(rep(NA, 5)))
 test(2138.4, rbind(A,B), data.table(A=c(as.character(A$A), B$A)))
 
+# all.equal ignore row order improperly handle NAs, #4422
+d1 = data.table(a=1:2, b=c(1L,NA))
+d2 = data.table(a=1:2, b=1:2)
+test(2139, all.equal(d1, d2, ignore.row.order=TRUE), "Dataset 'current' has rows not present in 'target'")
+
+# Set allow.cartesian = TRUE when non-equi, #4489
+dt = data.table(time = 1:8, v = INT(5,7,6,1,8,4,2,3))
+dt[time == 2L, v := 2L]
+dt[time == 7L, v := 7L]
+test(2140, dt[dt, on=.(time>time, v>v), .N, by=.EACHI], data.table(time=1:8, v=INT(5,2,6,1,8,4,7,3), N=INT(3,5,2,4,0,1,0,0)))
+
+# repeat of test 450 for #4402
+test(2141, .Call(Ctest_dt_win_snprintf), NULL)
+DT = data.table(a=1:3,b=4:6)
+test(2142, rbind(DT,list(c=4L,a=7L)), error="Column 1 ['c'] of item 2 is missing in item 1")
+if (.Platform$OS.type=="windows") local({
+  x = list(
+    LC_COLLATE = "Chinese (Simplified)_China.936",
+    LC_CTYPE = "Chinese (Simplified)_China.936",
+    LC_MONETARY = "Chinese (Simplified)_China.936",
+    LC_NUMERIC = "C",
+    LC_TIME = "Chinese (Simplified)_China.936"
+  )
+  for (i in seq_along(x)) {
+    lc = names(x)[[i]]
+    old = Sys.getlocale(lc)
+    Sys.setlocale(lc, x[[i]])
+    on.exit(Sys.setlocale(lc, old), add = TRUE)
+  }
+  old = Sys.getenv('LANGUAGE')
+  Sys.setenv('LANGUAGE' = 'zh_CN')
+  on.exit({
+    if (nzchar(old))
+      Sys.setenv('LANGUAGE' = old)
+    else
+      Sys.unsetenv('LANGUAGE')
+  }, add = TRUE)
+  # triggered segfault here in #4402, Windows-only under translation.
+  # test that the argument order changes correctly (the 'item 2' moves to the beginning of the message)
+  # since the argument order changes in this example (and that was the crash) we don't need to test
+  # the display of the Chinese characters here. Thanks to @shrektan for all his help on this.
+  test(2143, rbind(DT,list(c=4L,a=7L)), error="2.*1.*c.*1")
+})
+# test back to English (the argument order is back to 1,c,2,1)
+test(2144, rbind(DT,list(c=4L,a=7L)), error="Column 1 ['c'] of item 2 is missing in item 1") 
+
+# Attempting to join on character(0) shouldn't crash R
+A = data.table(A='a')
+B = data.table(B='b')
+test(2145.1, A[B, on=character(0)], error = "'on' argument should be a named atomic vector")
+test(2145.2, merge(A, B, by=character(0)                                     ), error = "non-empty vector of column names for `by` is required.")
+test(2145.3, merge(A, B,                 by.x=character(0), by.y=character(0)), error = "non-empty vector of column names is required")
+# Also shouldn't crash when using internal functions
+test(2145.4, bmerge(A, B, integer(), integer(), 0, c(FALSE, TRUE), NA, 'all', integer(), FALSE), error = 'icols and xcols must be non-empty')
+
+# nrow(i)==0 by-join, #4364 (broke in dev 1.12.9)
+d0 = data.table(id=integer(), n=integer())
+d2 = data.table(id=1:2)
+test(2146, d2[d0, i.n, on="id", by=.EACHI], data.table(id=integer(), i.n=integer()))
+
+# by=col1:col4 wrong result when key(DT)==c('col1','col4'), #4285
+DT = data.table(col1=c(1,1,1), col2=c("a","b","a"), col3=c("A","B","A"), col4=c(2,2,2))
+setkey(DT, col1, col4)
+test(2147.1, DT[, .N, by = col1:col4], ans<-data.table(col1=1, col2=c("a","b"), col3=c("A","B"), col4=2, N=INT(2,1)))
+test(2147.2, DT[, .N, by = c("col1", "col2", "col3", "col4")], ans)
+
+# Result matrix of comparison operators could have its colnames changed by reference, #4323
+A = data.table(x=1:2)
+B = data.table(x=1:2)
+X = A == B
+A[, y := 3:4]
+test(2148, colnames(X), c('x'))
+
+# shallow() shouldn't take a deep copy of indices, #4311
+dt <- data.table(a = c(3, 1))
+setindex(dt, a)
+dt2 <- shallow(dt)
+test(2149.1, address(attr(attr(dt, 'index'), '__a')), address(attr(attr(dt2, 'index'), '__a')))
+# Testing possible future regression. shallow() needs to copy the names of indices and keys.
+setnames(dt2, 'a', 'A')
+test(2149.2, indices(dt), 'a')
+setkey(dt, a)
+dt2 <- shallow(dt)
+setnames(dt2, 'a', 'A')
+test(2149.3, key(dt), 'a')
+
 # native reading of [-]?[0-9]+[-][0-9]{2}[-][0-9]{2} dates and
 #   <date>[T ][0-9]{2}[:][0-9]{2}[:][0-9]{2}(?:[.][0-9]+)?(?:Z|[+-][0-9]{2}[:]?[0-9]{2})? timestamps
 dates = as.IDate(c(9610, 19109, 19643, 20385, -1413, 9847, 4116, -11145, -2327, 1760))
@@ -16865,37 +17026,26 @@ times = .POSIXct(tz = 'UTC', c(
   1201364458.72486, 939956943.690777
 ))
 DT = data.table(dates, times)
-
 tmp = tempfile()
-
 ## ISO8601 format (%FT%TZ) by default
 fwrite(DT, tmp)
-test(2139.01, fread(tmp), DT)
-
+test(2150.01, fread(tmp), DT)
 fwrite(DT, tmp, dateTimeAs='write.csv')
-test(2139.02, fread(tmp), DT)
-
+test(2150.02, fread(tmp), DT)
 fwrite(copy(DT)[ , times := format(times, '%FT%T+00:00')], tmp)
-test(2139.03, fread(tmp), DT)
-
+test(2150.03, fread(tmp), DT)
 fwrite(copy(DT)[ , times := format(times, '%FT%T+0000')], tmp)
-test(2139.04, fread(tmp), DT)
-
+test(2150.04, fread(tmp), DT)
 fwrite(copy(DT)[ , times := format(times, '%FT%T+0115')], tmp)
-test(2139.05, fread(tmp), copy(DT)[ , times := times - 4500])
-
+test(2150.05, fread(tmp), copy(DT)[ , times := times - 4500])
 fwrite(copy(DT)[ , times := format(times, '%FT%T+01')], tmp)
-test(2139.06, fread(tmp), copy(DT)[ , times := times - 3600])
-
+test(2150.06, fread(tmp), copy(DT)[ , times := times - 3600])
 ## invalid tz specifiers
 fwrite(copy(DT)[ , times := format(times, '%FT%T+3600')], tmp)
-test(2139.07, fread(tmp), copy(DT)[ , times := format(times, '%FT%T+3600')])
-
+test(2150.07, fread(tmp), copy(DT)[ , times := format(times, '%FT%T+3600')])
 fwrite(copy(DT)[ , times := format(times, '%FT%T+36')], tmp)
-test(2139.08, fread(tmp), copy(DT)[ , times := format(times, '%FT%T+36')])
-
+test(2150.08, fread(tmp), copy(DT)[ , times := format(times, '%FT%T+36')])
 fwrite(copy(DT)[ , times := format(times, '%FT%T+XXX')], tmp)
-test(2139.09, fread(tmp), copy(DT)[ , times := format(times, '%FT%T+XXX')])
-
+test(2150.09, fread(tmp), copy(DT)[ , times := format(times, '%FT%T+XXX')])
 fwrite(copy(DT)[ , times := format(times, '%FT%T+00:XX')], tmp)
-test(2139.10, fread(tmp), copy(DT)[ , times := format(times, '%FT%T+00:XX')])
+test(2150.10, fread(tmp), copy(DT)[ , times := format(times, '%FT%T+00:XX')])

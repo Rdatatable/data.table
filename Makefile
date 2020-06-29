@@ -42,3 +42,6 @@ test:
 check:
 	_R_CHECK_CRAN_INCOMING_REMOTE_=false $(R) CMD check data.table_1.12.9.tar.gz --as-cran --ignore-vignettes --no-stop-on-test-error
 
+.PHONY: revision
+revision:
+	echo "Revision: $(shell git rev-parse HEAD)" >> DESCRIPTION

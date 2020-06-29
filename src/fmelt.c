@@ -526,7 +526,7 @@ SEXP getvarcols(SEXP DT, SEXP dtnames, Rboolean varfactor, Rboolean verbose, str
         const int thislen = data->narm ? length(VECTOR_ELT(data->naidx, j)) : data->nrow;
         if (thislen==0) continue;  // so as not to bump level
         char buff[20];
-        sprintf(buff, "%d", level++);
+        snprintf(buff, 20, "%d", level++);
         SEXP str = PROTECT(mkChar(buff));
         for (int k=0; k<thislen; ++k) SET_STRING_ELT(target, ansloc++, str);
         UNPROTECT(1);
@@ -566,7 +566,7 @@ SEXP getvarcols(SEXP DT, SEXP dtnames, Rboolean varfactor, Rboolean verbose, str
         const int thislen = data->narm ? length(VECTOR_ELT(data->naidx, j)) : data->nrow;
         if (thislen==0) continue;  // so as not to bump level
         char buff[20];
-        sprintf(buff, "%d", nlevel+1);
+        snprintf(buff, 20, "%d", nlevel+1);
         SET_STRING_ELT(levels, nlevel++, mkChar(buff));  // generate levels = 1:nlevels
         for (int k=0; k<thislen; ++k) td[ansloc++] = nlevel;
       }

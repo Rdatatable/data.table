@@ -125,7 +125,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
       defineVar(xknameSyms[j], VECTOR_ELT(xSD, j), env);
     }
 
-    for (int j=0; j<length(iSD); ++j) {   // either this or the next for() will run, not both
+    if (length(iSD) && length(VECTOR_ELT(iSD, 0))/*#4364*/) for (int j=0; j<length(iSD); ++j) {   // either this or the next for() will run, not both
       memrecycle(VECTOR_ELT(iSD,j), R_NilValue, 0, 1, VECTOR_ELT(groups, INTEGER(jiscols)[j]-1), i, 1, j+1, "Internal error assigning to iSD");
       // we're just use memrecycle here to assign a single value
     }
