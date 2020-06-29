@@ -295,7 +295,7 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir())
              "complex" = as.complex(v),
              "raw" = as_raw(v),  # Internal implementation
              "Date" = as.Date(v),
-             "POSIXct" = as.POSIXct(v),
+             # "POSIXct" = as.POSIXct(v),  # v1.13.0 now reads POSIXct directly, #4464 
              # finally:
              methods::as(v, new_class))
       },
