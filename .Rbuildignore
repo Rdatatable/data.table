@@ -1,6 +1,13 @@
 ^\.Rprofile$
 ^data\.table_.*\.tar\.gz$
 ^vignettes/plots/figures$
+^\.Renviron$
+^[^/]+\.R$
+^[^/]+\.csv$
+^[^/]+\.csvy$
+^[^/]+\.RDS$
+^[^/]+\.diff$
+^[^/]+\.patch$
 
 ^\.ci$
 ^\.dev$
@@ -30,3 +37,5 @@
 
 ^bus$
 ^pkgdown$
+^lib$
+^library$

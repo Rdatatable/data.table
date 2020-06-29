@@ -1,4 +1,3 @@
-# Source: https://github.com/github/gitignore/blob/master/R.gitignore
 # History files
 .RData
 .Rhistory
@@ -29,7 +28,19 @@ vignettes/plots/figures
 *.so
 *.dll
 
+# temp files
 *~
 .DS_Store
 .idea
 *.sw[op]
+
+# common devel objects
+.Renviron
+lib
+library
+*.R
+*.csv
+*.csvy
+*.RDS
+*.diff
+*.patch
