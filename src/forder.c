@@ -315,10 +315,11 @@ static void range_str(SEXP *x, int n, uint64_t *out_min, uint64_t *out_max, int 
       ustr[ustr_n++] = s;
       SET_TRUELENGTH(s, -ustr_n);  // unique in any order is fine. first-appearance order is achieved later in count_group
       if (LENGTH(s)>ustr_maxlen) ustr_maxlen=LENGTH(s);
-      if (!IS_ASCII(s)) {
+      if (!anynotutf8 &&    // even if anynotascii we still want to know if anynotutf8, and anynotutf8 implies anynotascii already
+            !IS_ASCII(s)) { // anynotutf8 implies anynotascii and IS_ASCII will be cheaper than IS_UTF8, so start with this one
         if (!anynotascii)
           anynotascii=true;
-        if (!anynotutf8 && !IS_UTF8(s))
+        if (!IS_UTF8(s))
           anynotutf8=true;
       }
     }
