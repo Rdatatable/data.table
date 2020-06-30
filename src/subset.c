@@ -137,13 +137,22 @@ SEXP convertNegAndZeroIdx(SEXP idx, SEXP maxArg, SEXP allowOverMax)
   int max = INTEGER(maxArg)[0], n=LENGTH(idx);
   if (max<0) error(_("Internal error. max is %d, must be >= 0."), max); // # nocov    includes NA which will print as INT_MIN
   int *idxp = INTEGER(idx);
-
+  
+  const int nth = getDTthreads(n, true); // #3735
   bool stop = false;
-  #pragma omp parallel for num_threads(getDTthreads(n, true))
-  for (int i=0; i<n; i++) {
-    if (stop) continue;
-    int elem = idxp[i];
-    if ((elem<1 && elem!=NA_INTEGER) || elem>max) stop=true;
+  if (nth == 1) {
+    for (int i = 0; i<n; i++) {
+      if (stop) break;
+      int elem = idxp[i];
+      if ((elem < 1 && elem != NA_INTEGER) || elem > max) stop = true;
+    }
+  } else {
+    #pragma omp parallel for num_threads(nth)
+    for (int i=0; i<n; i++) {
+      if (stop) continue;
+      int elem = idxp[i];
+      if ((elem<1 && elem!=NA_INTEGER) || elem>max) stop=true;
+    }
   }
   if (!stop) return(idx); // most common case to return early: no 0, no negative; all idx either NA or in range [1-max]
 
