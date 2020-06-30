@@ -329,8 +329,6 @@ replace_dot_alias = function(e) {
         if (isub %iscall% "(" && !is.name(isub[[2L]]))
           isub = isub[[2L]]
       }
-
-      if (is.null(isub)) return( null.data.table() )
       
       if (!is.language(isub)) {
         i = isub
@@ -374,6 +372,7 @@ replace_dot_alias = function(e) {
         }
       }
     }
+    if (is.null(i)) return( null.data.table() )
     if (is.matrix(i)) {
       if (is.numeric(i) && ncol(i)==1L) { # #826 - subset DT on single integer vector stored as matrix
         i = as.integer(i)
