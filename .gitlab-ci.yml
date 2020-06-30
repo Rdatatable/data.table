@@ -186,9 +186,25 @@ test-rel-cran-lin: ## R-release on Linux, extra NOTEs check and build pdf manual
     - >-
         Rscript -e 'l=tail(readLines("data.table.Rcheck/00check.log"), 1L); if (!identical(l, "Status: 1 NOTE")) stop("Last line of ", shQuote("00check.log"), " is not ", shQuote("Status: 1 NOTE"), " (size of tarball) but ", shQuote(l)) else q("no")'
 
-test-dev-cran-lin: ## R-devel on Linux, --enable-strict-barrier --disable-long-double
-  <<: *test-cran-lin
+test-dev-cran-lin: ## R-devel on Linux, --enable-strict-barrier --disable-long-double, check for new notes and compilation warnings, thus allow_failure
+  <<: *test-lin
   image: registry.gitlab.com/jangorecki/dockerfiles/r-devel
+  allow_failure: true
+  variables:
+    _R_CHECK_CRAN_INCOMING_: "TRUE"
+    _R_CHECK_CRAN_INCOMING_REMOTE_: "FALSE"
+  before_script:
+    - *install-deps
+    - *cp-src
+    - rm -r bus
+  script:
+    - *mv-src
+    - cd bus/$CI_BUILD_NAME
+    - R CMD check --as-cran --no-manual $(ls -1t data.table_*.tar.gz | head -n 1)
+    - *rm-src
+    - (! grep "warning:" data.table.Rcheck/00install.out)
+    - >-
+        Rscript -e 'l=tail(readLines("data.table.Rcheck/00check.log"), 1L); if (!identical(l, "Status: 3 NOTEs")) stop("Last line of ", shQuote("00check.log"), " is not ", shQuote("Status: 3 NOTEs"), " (size of tarball, installed package size, top-level files) but ", shQuote(l)) else q("no")'
 
 test-310-cran-lin: ## R-3.1.0 on Linux, stated dependency of R
   <<: *test-cran-lin
