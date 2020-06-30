@@ -194,6 +194,7 @@ test-dev-cran-lin: ## R-devel on Linux, --enable-strict-barrier --disable-long-d
     _R_CHECK_CRAN_INCOMING_: "TRUE"
     _R_CHECK_CRAN_INCOMING_REMOTE_: "FALSE"
   before_script:
+    - break-early
     - *install-deps
     - *cp-src
     - rm -r bus
