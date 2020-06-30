@@ -278,7 +278,6 @@ integration: ## merging all artifacts to produce single R repository, documentat
   tags:
     - linux
   only:
-    - ci5
     - master
   dependencies:
     - mirror-packages
