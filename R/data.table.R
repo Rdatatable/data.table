@@ -370,7 +370,7 @@ replace_dot_alias = function(e) {
           msg = if (inherits(col,"try-error")) " and it is not a column name either."
           else paste0(" but it is a column of type ", typeof(col),". If you wish to select rows where that column contains TRUE",
                       ", or perhaps that column contains row numbers of itself to select, try DT[(col)], DT[DT$col], or DT[col==TRUE] is particularly clear and is optimized.")
-          stop(gettextf("%s, is not found in calling scope %s When the first argument inside DT[...] is a single symbol (e.g. DT[var]), data.table looks for var in calling scope.", as.character(isub), msg, domain = "R-data.table"))
+          stop(gettextf("%s is not found in calling scope %s When the first argument inside DT[...] is a single symbol (e.g. DT[var]), data.table looks for var in calling scope.", as.character(isub), msg, domain = "R-data.table"))
         }
       }
     }
