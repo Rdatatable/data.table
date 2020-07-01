@@ -15,67 +15,71 @@ SEXP fcast(SEXP lhs, SEXP val, SEXP nrowArg, SEXP ncolArg, SEXP idxArg, SEXP fil
     SET_VECTOR_ELT(ans, i, VECTOR_ELT(lhs, i));
   }
   // get val cols
+  bool is_agg_bool = LOGICAL(is_agg)[0];
   for (int i=0; i<nval; ++i) {
-    SEXP thiscol = VECTOR_ELT(val, i);
+    const SEXP thiscol = VECTOR_ELT(val, i);
+    const SEXPTYPE thistype = TYPEOF(thiscol);
     SEXP thisfill = fill;
     int nprotect = 0;
     if (isNull(fill)) {
-      if (LOGICAL(is_agg)[0]) {
-        thisfill = PROTECT(allocNAVector(TYPEOF(thiscol), 1)); nprotect++;
-      } else thisfill = VECTOR_ELT(fill_d, i);
+      if (is_agg_bool) {
+        thisfill = PROTECT(allocNAVector(thistype, 1)); nprotect++;
+      } else {
+        thisfill = VECTOR_ELT(fill_d, i);
+      }
     }
-    if (TYPEOF(thisfill) != TYPEOF(thiscol)) {
-      thisfill = PROTECT(coerceVector(thisfill, TYPEOF(thiscol))); nprotect++;
-    }
-    switch (TYPEOF(thiscol)) {
+    thisfill = PROTECT(coerceAs(thisfill, thiscol, /*copyArg=*/ScalarLogical(false))); nprotect++;
+    switch (thistype) {
     case INTSXP:
     case LGLSXP: {
       const int *ithiscol = INTEGER(thiscol);
-      const int *ithisfill = INTEGER(thisfill);
+      const int ithisfill = INTEGER(thisfill)[0];
       for (int j=0; j<ncols; ++j) {
-        SET_VECTOR_ELT(ans, nlhs+j+i*ncols, target=allocVector(TYPEOF(thiscol), nrows) );
+        SET_VECTOR_ELT(ans, nlhs+j+i*ncols, target=allocVector(thistype, nrows) );
         int *itarget = INTEGER(target);
         copyMostAttrib(thiscol, target);
         for (int k=0; k<nrows; ++k) {
           int thisidx = idx[k*ncols + j];
-          itarget[k] = (thisidx == NA_INTEGER) ? ithisfill[0] : ithiscol[thisidx-1];
+          itarget[k] = (thisidx == NA_INTEGER) ? ithisfill : ithiscol[thisidx-1];
         }
       }
     } break;
     case REALSXP: {
       const double *dthiscol = REAL(thiscol);
-      const double *dthisfill = REAL(thisfill);
+      const double dthisfill = REAL(thisfill)[0];
       for (int j=0; j<ncols; ++j) {
-        SET_VECTOR_ELT(ans, nlhs+j+i*ncols, target=allocVector(TYPEOF(thiscol), nrows) );
+        SET_VECTOR_ELT(ans, nlhs+j+i*ncols, target=allocVector(thistype, nrows) );
         double *dtarget = REAL(target);
         copyMostAttrib(thiscol, target);
         for (int k=0; k<nrows; ++k) {
           int thisidx = idx[k*ncols + j];
-          dtarget[k] = (thisidx == NA_INTEGER) ? dthisfill[0] : dthiscol[thisidx-1];
+          dtarget[k] = (thisidx == NA_INTEGER) ? dthisfill : dthiscol[thisidx-1];
         }
       }
     } break;
-    case STRSXP:
+    case STRSXP: {
+      const SEXP sfill = STRING_ELT(thisfill, 0);
       for (int j=0; j<ncols; ++j) {
-        SET_VECTOR_ELT(ans, nlhs+j+i*ncols, target=allocVector(TYPEOF(thiscol), nrows) );
+        SET_VECTOR_ELT(ans, nlhs+j+i*ncols, target=allocVector(thistype, nrows) );
         copyMostAttrib(thiscol, target);
         for (int k=0; k<nrows; ++k) {
           int thisidx = idx[k*ncols + j];
-          SET_STRING_ELT(target, k, (thisidx == NA_INTEGER) ? STRING_ELT(thisfill, 0) : STRING_ELT(thiscol, thisidx-1));
+          SET_STRING_ELT(target, k, (thisidx == NA_INTEGER) ? sfill : STRING_ELT(thiscol, thisidx-1));
         }
       }
-      break;
-    case VECSXP:
+    } break;
+    case VECSXP: {
+      const SEXP lfill = VECTOR_ELT(thisfill, 0);
       for (int j=0; j<ncols; ++j) {
-        SET_VECTOR_ELT(ans, nlhs+j+i*ncols, target=allocVector(TYPEOF(thiscol), nrows) );
+        SET_VECTOR_ELT(ans, nlhs+j+i*ncols, target=allocVector(thistype, nrows) );
         copyMostAttrib(thiscol, target);
         for (int k=0; k<nrows; ++k) {
           int thisidx = idx[k*ncols + j];
-          SET_VECTOR_ELT(target, k, (thisidx == NA_INTEGER) ? VECTOR_ELT(thisfill, 0) : VECTOR_ELT(thiscol, thisidx-1));
+          SET_VECTOR_ELT(target, k, (thisidx == NA_INTEGER) ? lfill : VECTOR_ELT(thiscol, thisidx-1));
         }
       }
-      break;
-    default: error(_("Unsupported column type in fcast val: '%s'"), type2char(TYPEOF(thiscol))); // #nocov
+    } break;
+    default: error(_("Unsupported column type in fcast val: '%s'"), type2char(thistype)); // #nocov
     }
     UNPROTECT(nprotect);
   }
