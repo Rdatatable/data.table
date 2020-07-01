@@ -306,17 +306,17 @@ replace_dot_alias = function(e) {
     # the "eval" to be checked before `as.name("!")`. Therefore interchanged.
     if (!is.language(isub)) {
         if (identical(isub, NA)) {
-        # if (is.logical(isub) && length(isub) == 1L && is.na(isub) && !is.matrix(isub)) {
-        # only possibility *isub* can be NA (logical) is the symbol NA itself; i.e. DT[NA]
-        # replace NA in this case with NA_integer_ as that's almost surely what user intended to
-        # return a single row with NA in all columns. (DT[0] returns an empty table, with correct types.)
-        # Any expression (including length 1 vectors) that evaluates to a single NA logical will
-        # however be left as NA logical since that's important for consistency to return empty in that
-        # case; e.g. DT[Col==3] where DT is 1 row and Col contains NA.
-        # Replacing the NA symbol makes DT[NA] and DT[c(1,NA)] consistent and provides
-        # an easy way to achieve a single row of NA as users expect rather than requiring them
-        # to know and change to DT[NA_integer_].
-        i = isub=NA_integer_
+          # if (is.logical(isub) && length(isub) == 1L && is.na(isub) && !is.matrix(isub)) {
+          # only possibility *isub* can be NA (logical) is the symbol NA itself; i.e. DT[NA]
+          # replace NA in this case with NA_integer_ as that's almost surely what user intended to
+          # return a single row with NA in all columns. (DT[0] returns an empty table, with correct types.)
+          # Any expression (including length 1 vectors) that evaluates to a single NA logical will
+          # however be left as NA logical since that's important for consistency to return empty in that
+          # case; e.g. DT[Col==3] where DT is 1 row and Col contains NA.
+          # Replacing the NA symbol makes DT[NA] and DT[c(1,NA)] consistent and provides
+          # an easy way to achieve a single row of NA as users expect rather than requiring them
+          # to know and change to DT[NA_integer_].
+          i = isub=NA_integer_
         } else i = isub
     } else {
       if (isub %iscall% "eval") {  # TO DO: or ..()
@@ -370,8 +370,7 @@ replace_dot_alias = function(e) {
           msg = if (inherits(col,"try-error")) " and it is not a column name either."
           else paste0(" but it is a column of type ", typeof(col),". If you wish to select rows where that column contains TRUE",
                       ", or perhaps that column contains row numbers of itself to select, try DT[(col)], DT[DT$col], or DT[col==TRUE] is particularly clear and is optimized.")
-          stop(as.character(isub), " is not found in calling scope", msg,
-               " When the first argument inside DT[...] is a single symbol (e.g. DT[var]), data.table looks for var in calling scope.")
+          stop(gettextf("%s, is not found in calling scope %s When the first argument inside DT[...] is a single symbol (e.g. DT[var]), data.table looks for var in calling scope.", as.character(isub), msg, domain = "R-data.table"))
         }
       }
     }
@@ -393,7 +392,7 @@ replace_dot_alias = function(e) {
         else if (identical(class(i),"list")) {
           isnull_inames = is.null(names(i))
           i = as.data.table(i)
-      } else if (!is.data.table(i)) stop("i has evaluated to type list. Expecting logical, integer or double.")
+      }
       if (missing(on)) {
         if (!haskey(x)) {
           stop("When i is a data.table (or character vector), the columns to join by must be specified using 'on=' argument (see ?data.table), by keying x (i.e. sorted, and, marked as sorted, see ?setkey), or by sharing column names between x and i (i.e., a natural join). Keyed joins might have further speed benefits on very large data due to x being sorted in RAM.")
