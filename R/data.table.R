@@ -167,7 +167,10 @@ replace_dot_alias = function(e) {
     if (!missing(on)) {
       tt = eval.parent(.massagei(substitute(on)))
       if (!is.list(tt) || !length(names(tt))) {
-        warning("When on= is provided but not i=, on= must be a named list or data.table|frame, and a natural join (i.e. join on common names) is invoked. Ignoring on= which is '",class(tt)[1L],"'.")
+        warning(domain=NA, gettextf(
+          "When on= is provided but not i=, on= must be a named list or data.table|frame, and a natural join (i.e. join on common names) is invoked. Ignoring on= which is '%s'.",
+          class(tt)[1L], domain="R-data.table"
+        ))
         on = NULL
       } else {
         i = isub = tt
