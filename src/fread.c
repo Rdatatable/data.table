@@ -1001,13 +1001,13 @@ static void parse_iso8601_timestamp(FieldParseContext *ctx)
   const char *ch = *(ctx->ch);
   double *target = (double*) ctx->targets[sizeof(double)];
 
-  int32_t date, hour, minute, tz_hour = 0, tz_minute = 0;
-  double second;
+  int32_t date, hour=0, minute=0, tz_hour=0, tz_minute=0;
+  double second=0;
 
   parse_iso8601_date_core(&ch, &date);
   if (date == NA_INT32)
     goto fail;
-  if (*ch != ' ' || *ch != 'T')
+  if (*ch != ' ' && *ch != 'T')
     goto date_only;
   ch++;
 
@@ -1055,8 +1055,7 @@ static void parse_iso8601_timestamp(FieldParseContext *ctx)
   }
 
   // allows date field to be parsed as timestamp if requested in colClasses
-  date_only:
-    hour = minute = second = 0;
+  date_only: ;
 
   //Rprintf("date=%d\thour=%d\tz_hour=%d\tminute=%d\ttz_minute=%d\tsecond=%.1f\n", date, hour, tz_hour, minute, tz_minute, second);
   // cast upfront needed to prevent silent overflow
