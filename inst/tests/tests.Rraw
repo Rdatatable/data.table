@@ -10758,7 +10758,9 @@ test(1743.08, sapply(fread("a,b,c\n2017-01-01,1,1+3i", colClasses=c("Date", "int
 test(1743.09, sapply(fread("a,b,c\n2017-01-01,1,1+3i", colClasses=c("Date", "integer", "complex")), class), c(a="Date", b="integer", c="complex"))
 test(1743.10, sapply(fread("a,b,c,d\n2017-01-01,1,1+3i,05", colClasses=c("Date", "integer", "complex", NA)), class), c(a="Date",b="integer",c="complex",d="integer"))
 test(1743.11, sapply(fread("a,b,c,d\n2017-01-01,1,1+3i,05", colClasses=c("Date", "integer", "complex", "raw")), class), c(a="Date",b="integer",c="complex",d="raw"))
-test(1743.12, x = vapply(fread("a,b\n1+3i,2015-01-01", colClasses = c(NA, "IDate")), inherits, what = "IDate", FUN.VALUE = logical(1)), y = c(a=FALSE, b=TRUE))
+test(1743.121, sapply(fread("a,b\n2015-01-01,2015-01-01", colClasses=c(NA,"IDate")), inherits, what="IDate"), c(a=TRUE, b=TRUE))
+test(1743.122, fread("a,b\n2015-01-01,2015-01-01", colClasses=c("POSIXct","Date")), data.table(a=as.POSIXct("2015-01-01"), b=as.Date("2015-01-01")))
+test(1743.123, fread("a,b\n1+3i,2015-01-01", colClasses=c(NA,"IDate")), data.table(a="1+3i", b=as.IDate("2015-01-01")))
 
 ## Attempts to impose incompatible colClasses is a warning (not an error)
 ## and does not change the value of the columns
