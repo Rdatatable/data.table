@@ -1007,7 +1007,7 @@ static void parse_iso8601_timestamp(FieldParseContext *ctx)
   parse_iso8601_date_core(&ch, &date);
   if (date == NA_INT32)
     goto fail;
-  if (*ch != ' ' && *ch != 'T')
+  if (*ch != ' ' || *ch != 'T')
     goto date_only;
   ch++;
 
