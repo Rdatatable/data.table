@@ -1001,12 +1001,14 @@ static void parse_iso8601_timestamp(FieldParseContext *ctx)
   const char *ch = *(ctx->ch);
   double *target = (double*) ctx->targets[sizeof(double)];
 
-  int32_t date, hour, minute;
+  int32_t date, hour, minute, tz_hour = 0, tz_minute = 0;
   double second;
 
   parse_iso8601_date_core(&ch, &date);
-  if (date == NA_INT32 || (*ch != ' ' && *ch != 'T'))
+  if (date == NA_INT32)
     goto fail;
+  if (*ch != ' ' && *ch != 'T')
+    goto date_only;
   ch++;
 
   str_to_i32_core(&ch, &hour);
@@ -1023,7 +1025,6 @@ static void parse_iso8601_timestamp(FieldParseContext *ctx)
   if (second == NA_FLOAT64 || second < 0 || second >= 60)
     goto fail;
 
-  int32_t tz_hour = 0, tz_minute = 0;
   if (*ch == 'Z') {
     ch++; // "Zulu time"=UTC
   } else {
@@ -1052,6 +1053,10 @@ static void parse_iso8601_timestamp(FieldParseContext *ctx)
       }
     }
   }
+
+  // allows date field to be parsed as timestamp if requested in colClasses
+  date_only:
+    hour = minute = second = 0;
 
   //Rprintf("date=%d\thour=%d\tz_hour=%d\tminute=%d\ttz_minute=%d\tsecond=%.1f\n", date, hour, tz_hour, minute, tz_minute, second);
   // cast upfront needed to prevent silent overflow

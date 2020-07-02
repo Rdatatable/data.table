@@ -16977,7 +16977,7 @@ if (.Platform$OS.type=="windows") local({
   test(2143, rbind(DT,list(c=4L,a=7L)), error="2.*1.*c.*1")
 })
 # test back to English (the argument order is back to 1,c,2,1)
-test(2144, rbind(DT,list(c=4L,a=7L)), error="Column 1 ['c'] of item 2 is missing in item 1") 
+test(2144, rbind(DT,list(c=4L,a=7L)), error="Column 1 ['c'] of item 2 is missing in item 1")
 
 # Attempting to join on character(0) shouldn't crash R
 A = data.table(A='a')
@@ -17051,3 +17051,6 @@ fwrite(copy(DT)[ , times := format(times, '%FT%T+XXX')], tmp)
 test(2150.09, fread(tmp), copy(DT)[ , times := format(times, '%FT%T+XXX')])
 fwrite(copy(DT)[ , times := format(times, '%FT%T+00:XX')], tmp)
 test(2150.10, fread(tmp), copy(DT)[ , times := format(times, '%FT%T+00:XX')])
+# allow colClasses='POSIXct' to force YMD column to read as POSIXct
+test(2150.11, fread("a,b\n2015-01-01,2015-01-01", colClasses="POSIXct"),
+     data.table(a=.POSIXct(1420070400, tz='UTC'), b=.POSIXct(1420070400, tz='UTC')))
