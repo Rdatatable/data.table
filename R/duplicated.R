@@ -115,7 +115,6 @@ anyDuplicated.data.table = function(x, incomparables=FALSE, fromLast=FALSE, by=s
 # TODO: optimise uniqueN further with GForce.
 uniqueN = function(x, by = if (is.list(x)) seq_along(x) else NULL, na.rm=FALSE) { # na.rm, #1455
   if (missing(by) && is.data.table(x) && isTRUE(getOption("datatable.old.unique.by.key"))) {
-    by = key(x)
     stop(error_oldUniqueByKey)
   }
   if (is.null(x)) return(0L)
@@ -125,14 +124,16 @@ uniqueN = function(x, by = if (is.list(x)) seq_along(x) else NULL, na.rm=FALSE) 
     if (is.logical(x)) return(.Call(CuniqueNlogical, x, na.rm=na.rm))
     x = as_list(x)
   }
+  # for consistency, #4594
+  if (!length(by)) by = NULL
   o = forderv(x, by=by, retGrp=TRUE, na.last=if (!na.rm) FALSE else NA)
   starts = attr(o, 'starts', exact=TRUE)
-  if (!na.rm) {
-    length(starts)
-  } else {
+  if (na.rm) {
     # TODO: internal efficient sum
     # fix for #1771, account for already sorted input
     sum( (if (length(o)) o[starts] else starts) != 0L)
+  } else {
+    length(starts)
   }
 }
 

@@ -16973,7 +16973,7 @@ if (.Platform$OS.type=="windows") local({
   test(2143, rbind(DT,list(c=4L,a=7L)), error="2.*1.*c.*1")
 })
 # test back to English (the argument order is back to 1,c,2,1)
-test(2144, rbind(DT,list(c=4L,a=7L)), error="Column 1 ['c'] of item 2 is missing in item 1") 
+test(2144, rbind(DT,list(c=4L,a=7L)), error="Column 1 ['c'] of item 2 is missing in item 1")
 
 # Attempting to join on character(0) shouldn't crash R
 A = data.table(A='a')
@@ -17014,3 +17014,8 @@ setkey(dt, a)
 dt2 <- shallow(dt)
 setnames(dt2, 'a', 'A')
 test(2149.3, key(dt), 'a')
+
+# uniqueN(x, by=character()) gave an internal error, #4594
+#   test for consistency vs by=NULL
+DT <- data.table(idx=1:4, value="val")
+test(2150, uniqueN(DT, character(0)), uniqueN(DT, NULL))
