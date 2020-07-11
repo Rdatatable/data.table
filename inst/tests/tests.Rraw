@@ -17057,3 +17057,16 @@ test(2150.11,fread("a,b\n2015-01-01,2015-01-01", colClasses="POSIXct"),
 # some rows are date-only, some rows timestamp --> read timestamp
 test(2150.12, fread("a,b\n2015-01-01,1.1\n2015-01-02 01:02:03,1.2"),
      data.table(a = .POSIXct(1420070400 + c(0, 90123), tz="UTC"), b = c(1.1, 1.2)))
+old = options(datatable.old.fread.datetime.character=TRUE)
+test(2150.13, fread("a,b,c\n2015-01-01,2015-01-02,2015-01-03 01:02:03"),
+              data.table(a="2015-01-01", b="2015-01-02", c="2015-01-03 01:02:03"))
+test(2150.14, fread("a,b,c\n2015-01-01,2015-01-02,2015-01-03 01:02:03", colClasses=c("Date","IDate","POSIXct")),
+              ans<-data.table(a=as.Date("2015-01-01"), b=as.IDate("2015-01-02"), c=as.POSIXct("2015-01-03 01:02:03")))
+ans_print = capture.output(print(ans)) # test the tzone="UTC" internal difference does not affect display
+options(datatable.old.fread.datetime.character=NULL)
+setattr(ans$c, "tzone", "UTC")
+test(2150.15, fread("a,b,c\n2015-01-01,2015-01-02,2015-01-03 01:02:03", colClasses=c("Date","IDate","POSIXct")),
+              ans, output=ans_print)
+test(2150.16, fread("a,b,c\n2015-01-01,2015-01-02,2015-01-03 01:02:03", colClasses=c("Date",NA,NA)),
+              ans, output=ans_print)
+options(old)
