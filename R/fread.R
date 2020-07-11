@@ -297,7 +297,7 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir())
              "Date" = as.Date(v),
              # types that are recognized by freadR.c (e.g. POSIXct; #4464) result in user-override-bump at C level before reading so do not reach this switch
              # see https://github.com/Rdatatable/data.table/pull/4464#discussion_r447275278
-             "POSIXct" = error("Internal error: as.POSIXct case reached"),  # nocov
+             "POSIXct" = stop("Internal error: as.POSIXct case reached"),  # nocov
              # finally:
              methods::as(v, new_class))
       },
