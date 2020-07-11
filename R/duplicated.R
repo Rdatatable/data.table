@@ -13,10 +13,9 @@ duplicated.data.table = function(x, incomparables=FALSE, fromLast=FALSE, by=seq_
   }
   if (nrow(x) == 0L || ncol(x) == 0L) return(logical(0L)) # fix for bug #28
   if (is.na(fromLast) || !is.logical(fromLast)) stop("'fromLast' must be TRUE or FALSE")
+  # consistency of by=NULL and by=character()
+  if (!length(by)) by = NULL
   query = .duplicated.helper(x, by)
-  # fix for bug #44 - unique on null data table returns error (because of 'forderv')
-  # however, in this case we can bypass having to go to forderv at all.
-  if (!length(query$by)) return(logical(0L))
 
   if (query$use.keyprefix) {
     f = uniqlist(shallow(x, query$by))
@@ -43,6 +42,8 @@ unique.data.table = function(x, incomparables=FALSE, fromLast=FALSE, by=seq_alon
     by = key(x)
     stop(error_oldUniqueByKey)
   }
+  # by=character() is the same as by=NULL
+  if (!length(by)) by = NULL
   o = forderv(x, by=by, sort=FALSE, retGrp=TRUE)
   # if by=key(x), forderv tests for orderedness within it quickly and will short-circuit
   # there isn't any need in unique() to call uniqlist like duplicated does; uniqlist returns a new nrow(x) vector anyway and isn't

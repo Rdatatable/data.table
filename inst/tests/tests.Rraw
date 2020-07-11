@@ -13299,8 +13299,7 @@ test(1962.004, duplicated(DT, by = -1L),
      error = 'specify non existing column*.*-1')
 test(1962.005, duplicated(DT, by = 'y'),
      error = 'specify non existing column*.*y')
-test(1962.0061, duplicated(data.table(NULL)), logical(0L))
-test(1962.0062, duplicated(data.table(a = 1L), by = character()), logical())
+test(1962.006, duplicated(data.table(NULL)), logical(0L))
 
 test(1962.007, unique(DT, incomparables = TRUE),
      error = 'not used (yet)')
@@ -17018,4 +17017,7 @@ test(2149.3, key(dt), 'a')
 # uniqueN(x, by=character()) gave an internal error, #4594
 #   test for consistency vs by=NULL
 DT <- data.table(idx=1:4, value="val")
-test(2150, uniqueN(DT, character(0)), uniqueN(DT, NULL))
+test(2150.1, uniqueN(DT, character(0L)), uniqueN(DT, NULL))
+test(2150.2, unique(DT, by=character(0L)), unique(DT, by=NULL))
+test(2150.3, duplicated(DT, by=character(0L)), duplicated(DT, by=NULL))
+test(2150.4, anyDuplicated(DT, by=character(0L)), anyDuplicated(DT, by=NULL))
