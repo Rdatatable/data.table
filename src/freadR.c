@@ -44,6 +44,7 @@ static int ncol = 0;
 static int64_t dtnrows = 0;
 static bool verbose = false;
 static bool warningsAreErrors = false;
+static bool oldNoDateTime = false;
 
 
 SEXP freadR(
@@ -130,7 +131,7 @@ SEXP freadR(
   args.logical01 = LOGICAL(logical01Arg)[0];
   {
     SEXP tt = PROTECT(GetOption(sym_old_fread_datetime_character, R_NilValue));
-    args.oldNoDateTime = isLogical(tt) && LENGTH(tt)==1 && LOGICAL(tt)[0]==TRUE;
+    args.oldNoDateTime = oldNoDateTime = isLogical(tt) && LENGTH(tt)==1 && LOGICAL(tt)[0]==TRUE;
     UNPROTECT(1);
   }
   args.skipNrow=-1;
@@ -310,6 +311,11 @@ bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, const int 
   if (length(colClassesSxp)) {
     SEXP typeRName_sxp = PROTECT(allocVector(STRSXP, NUT));
     for (int i=0; i<NUT; i++) SET_STRING_ELT(typeRName_sxp, i, mkChar(typeRName[i]));
+    if (oldNoDateTime) {
+      // prevent colClasses="IDate"/"POSIXct" being recognized so that colClassesAs is assigned here ready for type massage after reading at R level; test 2150.14
+      SET_STRING_ELT(typeRName_sxp, CT_ISO8601_DATE, R_BlankString);
+      SET_STRING_ELT(typeRName_sxp, CT_ISO8601_TIME, R_BlankString);
+    }
     SET_VECTOR_ELT(RCHK, 2, colClassesAs=allocVector(STRSXP, ncol));  // if any, this attached to the DT for R level to call as_ methods on
     if (isString(colClassesSxp)) {
       SEXP typeEnum_idx = PROTECT(chmatch(colClassesSxp, typeRName_sxp, NUT));
