@@ -329,9 +329,12 @@ bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, const int 
           const SEXP tt = STRING_ELT(colClassesSxp, i&mask); // mask recycles colClassesSxp when it's length-1
           if (tt==NA_STRING || tt==R_BlankString) continue;  // user is ok with inherent type for this column
           int w = INTEGER(typeEnum_idx)[i&mask];
-          if (tt==char_POSIXct && type[i]==CT_STRING) {
+          if (tt==char_POSIXct) {
             // from v1.13.0, POSIXct is a built in type, but if the built-in doesn't support (e.g. test 1743.25 has missing tzone) then we still dispatch to as.POSIXct afterwards
-            SET_STRING_ELT(colClassesAs, i, tt);
+            if (type[i]!=CT_ISO8601_TIME) {
+              type[i]=CT_STRING; // e.g. CT_ISO8601_DATE changed to character here so that as.POSIXct treats the date-only as local time in tests 1743.122 and 2150.11
+              SET_STRING_ELT(colClassesAs, i, tt);
+            }
           } else { 
             type[i] = typeEnum[w-1];                           // freadMain checks bump up only not down
             if (w==NUT) SET_STRING_ELT(colClassesAs, i, tt);
@@ -347,8 +350,11 @@ bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, const int 
           int w = INTEGER(typeEnum_idx)[i];
           int y = selectInts[i];
           if (y==NA_INTEGER) continue;
-          if (tt==char_POSIXct && type[y-1]==CT_STRING) {
-            SET_STRING_ELT(colClassesAs, y-1, tt);
+          if (tt==char_POSIXct) {
+            if (type[y-1]!=CT_ISO8601_TIME) {
+              type[y-1]=CT_STRING;
+              SET_STRING_ELT(colClassesAs, y-1, tt);
+            }
           } else {
             type[y-1] = typeEnum[w-1];
             if (w==NUT) SET_STRING_ELT(colClassesAs, y-1, tt);
@@ -389,8 +395,8 @@ bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, const int 
               if (type[k-1]<0)
                 DTWARN(_("Column %d ('%s') appears more than once in colClasses. The second time is colClasses[[%d]][%d]."), k, CHAR(STRING_ELT(colNamesSxp,k-1)), i+1, j+1);
               else if (type[k-1]!=CT_DROP) {
-                if (type[k-1]==CT_STRING && thisType==CT_ISO8601_TIME) {
-                  // see above for comments
+                if (thisType==CT_ISO8601_TIME && type[k-1]!=CT_ISO8601_TIME) {
+                  type[k-1] = -CT_STRING; // don't use in-built UTC parser, defer to character and as.POSIXct afterwards which reads in local time
                   SET_STRING_ELT(colClassesAs, k-1, STRING_ELT(listNames,i));
                 } else {
                   type[k-1] = -thisType;     // freadMain checks bump up only not down.  Deliberately don't catch here to test freadMain; e.g. test 959
