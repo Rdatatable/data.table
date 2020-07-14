@@ -17063,20 +17063,22 @@ test(2150.10, fread(tmp), copy(DT)[ , times := format(times, '%FT%T+00:XX')])
 # allow colClasses='POSIXct' to force YMD column to read as POSIXct
 test(2150.11,fread("a,b\n2015-01-01,2015-01-01", colClasses="POSIXct"),  # local time for backwards compatibility
      data.table(a=as.POSIXct("2015-01-01"), b=as.POSIXct("2015-01-01")))
-test(2150.12, fread("a,b\n2015-01-01,1.1\n2015-01-02 01:02:03,1.2"), # no Z so as character as before v1.13.0
+test(2150.12,fread("a,b\n2015-01-01,2015-01-01", select=c(a="Date",b="POSIXct")),  # select colClasses form, for coverage
+     data.table(a=as.Date("2015-01-01"), b=as.POSIXct("2015-01-01")))
+test(2150.13, fread("a,b\n2015-01-01,1.1\n2015-01-02 01:02:03,1.2"), # no Z so as character as before v1.13.0
      data.table(a=c("2015-01-01","2015-01-02 01:02:03"), b=c(1.1, 1.2)))
 # some rows are date-only, some rows UTC-timestamp --> read the date-only in UTC too
-test(2150.13, fread("a,b\n2015-01-01,1.1\n2015-01-02T01:02:03Z,1.2"),
+test(2150.14, fread("a,b\n2015-01-01,1.1\n2015-01-02T01:02:03Z,1.2"),
      data.table(a = .POSIXct(1420070400 + c(0, 90123), tz="UTC"), b = c(1.1, 1.2)))
 old = options(datatable.old.fread.datetime.character=TRUE)
-test(2150.14, fread("a,b,c\n2015-01-01,2015-01-02,2015-01-03T01:02:03Z"),
+test(2150.15, fread("a,b,c\n2015-01-01,2015-01-02,2015-01-03T01:02:03Z"),
               data.table(a="2015-01-01", b="2015-01-02", c="2015-01-03T01:02:03Z"))
-test(2150.15, fread("a,b,c\n2015-01-01,2015-01-02,2015-01-03 01:02:03", colClasses=c("Date","IDate","POSIXct")),
+test(2150.16, fread("a,b,c\n2015-01-01,2015-01-02,2015-01-03 01:02:03", colClasses=c("Date","IDate","POSIXct")),
               ans<-data.table(a=as.Date("2015-01-01"), b=as.IDate("2015-01-02"), c=as.POSIXct("2015-01-03 01:02:03")))
 ans_print = capture.output(print(ans))
 options(datatable.old.fread.datetime.character=NULL)
-test(2150.16, fread("a,b,c\n2015-01-01,2015-01-02,2015-01-03 01:02:03", colClasses=c("Date","IDate","POSIXct")),
+test(2150.17, fread("a,b,c\n2015-01-01,2015-01-02,2015-01-03 01:02:03", colClasses=c("Date","IDate","POSIXct")),
               ans, output=ans_print)
-test(2150.17, fread("a,b,c\n2015-01-01,2015-01-02,2015-01-03 01:02:03", colClasses=c("Date",NA,NA)),
+test(2150.18, fread("a,b,c\n2015-01-01,2015-01-02,2015-01-03 01:02:03", colClasses=c("Date",NA,NA)),
               data.table(a=as.Date("2015-01-01"), b=as.IDate("2015-01-02"), c="2015-01-03 01:02:03"), output=ans_print)
 options(old)
