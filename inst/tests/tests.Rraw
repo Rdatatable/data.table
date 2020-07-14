@@ -17061,11 +17061,11 @@ test(2150.09, fread(tmp), copy(DT)[ , times := format(times, '%FT%T+XXX')])
 fwrite(copy(DT)[ , times := format(times, '%FT%T+00:XX')], tmp)
 test(2150.10, fread(tmp), copy(DT)[ , times := format(times, '%FT%T+00:XX')])
 # allow colClasses='POSIXct' to force YMD column to read as POSIXct
-test(2150.11,fread("a,b\n2015-01-01,2015-01-01", colClasses="POSIXct"),
-     data.table(a=.POSIXct(1420070400, tz='UTC'), b=.POSIXct(1420070400, tz='UTC')))
+test(2150.11,fread("a,b\n2015-01-01,2015-01-01", colClasses="POSIXct"),  # local time for backwards compatibility
+     data.table(a=as.POSIXct("2015-01-01"), b=as.POSIXct("2015-01-01")))
 test(2150.12, fread("a,b\n2015-01-01,1.1\n2015-01-02 01:02:03,1.2"), # no Z so as character as before v1.13.0
      data.table(a=c("2015-01-01","2015-01-02 01:02:03"), b=c(1.1, 1.2)))
-# some rows are date-only, some rows timestamp --> read timestamp
+# some rows are date-only, some rows UTC-timestamp --> read the date-only in UTC too
 test(2150.13, fread("a,b\n2015-01-01,1.1\n2015-01-02T01:02:03Z,1.2"),
      data.table(a = .POSIXct(1420070400 + c(0, 90123), tz="UTC"), b = c(1.1, 1.2)))
 old = options(datatable.old.fread.datetime.character=TRUE)
