@@ -1008,7 +1008,7 @@ static void parse_iso8601_timestamp(FieldParseContext *ctx)
   if (date == NA_INT32)
     goto fail;
   if (*ch != ' ' && *ch != 'T')
-    goto date_only;
+    goto fail; // date_only;  // see news for v1.13.0 and label below for comment
   ch++;
 
   str_to_i32_core(&ch, &hour);
@@ -1051,11 +1051,17 @@ static void parse_iso8601_timestamp(FieldParseContext *ctx)
             goto fail;
         }
       }
+    } else {
+      goto fail;
+      // if neither Z nor UTC offset is present, then it's local time and that's not directly supported yet; see news for v1.13.0
+      // if local time is UTC (TZ="" or TZ=="UTC") then it's UTC though and that could be fairly easily checked here
+      // tz= could also be added as new argument of fread to allow user to specify datetime is UTC where the Z or offset is missing from the data
     }
   }
 
   // allows date field to be parsed as timestamp if requested in colClasses
-  date_only: ;
+  // shouldn't be UTC by default, though, when timezone is missing. In future we can add tz= to fread, and see if TZ is set to "" or UTC
+  // date_only: ;
 
   //Rprintf("date=%d\thour=%d\tz_hour=%d\tminute=%d\ttz_minute=%d\tsecond=%.1f\n", date, hour, tz_hour, minute, tz_minute, second);
   // cast upfront needed to prevent silent overflow

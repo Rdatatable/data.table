@@ -329,8 +329,13 @@ bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, const int 
           const SEXP tt = STRING_ELT(colClassesSxp, i&mask); // mask recycles colClassesSxp when it's length-1
           if (tt==NA_STRING || tt==R_BlankString) continue;  // user is ok with inherent type for this column
           int w = INTEGER(typeEnum_idx)[i&mask];
-          type[i] = typeEnum[w-1];                           // freadMain checks bump up only not down
-          if (w==NUT) SET_STRING_ELT(colClassesAs, i, tt);
+          if (tt==char_POSIXct && type[i]==CT_STRING) {
+            // from v1.13.0, POSIXct is a built in type, but if the built-in doesn't support (e.g. test 1743.25 has missing tzone) then we still dispatch to as.POSIXct afterwards
+            SET_STRING_ELT(colClassesAs, i, tt);
+          } else { 
+            type[i] = typeEnum[w-1];                           // freadMain checks bump up only not down
+            if (w==NUT) SET_STRING_ELT(colClassesAs, i, tt);
+          }
         }
       } else { // selectColClasses==true
         if (!selectInts) STOP(_("Internal error: selectInts is NULL but selectColClasses is true"));
@@ -342,8 +347,12 @@ bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, const int 
           int w = INTEGER(typeEnum_idx)[i];
           int y = selectInts[i];
           if (y==NA_INTEGER) continue;
-          type[y-1] = typeEnum[w-1];
-          if (w==NUT) SET_STRING_ELT(colClassesAs, y-1, tt);
+          if (tt==char_POSIXct && type[y-1]==CT_STRING) {
+            SET_STRING_ELT(colClassesAs, y-1, tt);
+          } else {
+            type[y-1] = typeEnum[w-1];
+            if (w==NUT) SET_STRING_ELT(colClassesAs, y-1, tt);
+          }
         }
       }
       UNPROTECT(1); // typeEnum_idx
@@ -380,8 +389,13 @@ bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, const int 
               if (type[k-1]<0)
                 DTWARN(_("Column %d ('%s') appears more than once in colClasses. The second time is colClasses[[%d]][%d]."), k, CHAR(STRING_ELT(colNamesSxp,k-1)), i+1, j+1);
               else if (type[k-1]!=CT_DROP) {
-                type[k-1] = -thisType;     // freadMain checks bump up only not down.  Deliberately don't catch here to test freadMain; e.g. test 959
-                if (w==NUT) SET_STRING_ELT(colClassesAs, k-1, STRING_ELT(listNames,i));
+                if (type[k-1]==CT_STRING && thisType==CT_ISO8601_TIME) {
+                  // see above for comments
+                  SET_STRING_ELT(colClassesAs, k-1, STRING_ELT(listNames,i));
+                } else {
+                  type[k-1] = -thisType;     // freadMain checks bump up only not down.  Deliberately don't catch here to test freadMain; e.g. test 959
+                  if (w==NUT) SET_STRING_ELT(colClassesAs, k-1, STRING_ELT(listNames,i));
+                }
                 if (selectRankD) selectRankD[k-1] = rank++;
               }
             } else {
@@ -483,13 +497,11 @@ size_t allocateDT(int8_t *typeArg, int8_t *sizeArg, int ncolArg, int ndrop, size
       } else if (type[i] == CT_ISO8601_TIME) {
         SEXP tt = PROTECT(allocVector(STRSXP, 2));
         SET_STRING_ELT(tt, 0, char_POSIXct);
-        SET_STRING_ELT(tt, 1, mkChar("POSIXt"));
+        SET_STRING_ELT(tt, 1, char_POSIXt);
         setAttrib(thiscol, R_ClassSymbol, tt);
+        UNPROTECT(1);
 
-        SEXP tz = PROTECT(ScalarString(mkChar("UTC")));
-        SEXP s_tzone = install("tzone");
-        setAttrib(thiscol, s_tzone, tz);
-        UNPROTECT(2);
+        setAttrib(thiscol, sym_tzone, ScalarString(char_UTC)); // see news for v1.13.0
       }
       SET_TRUELENGTH(thiscol, allocNrow);
       DTbytes += SIZEOF(thiscol)*allocNrow;

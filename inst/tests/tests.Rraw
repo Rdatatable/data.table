@@ -10759,7 +10759,7 @@ test(1743.09, sapply(fread("a,b,c\n2017-01-01,1,1+3i", colClasses=c("Date", "int
 test(1743.10, sapply(fread("a,b,c,d\n2017-01-01,1,1+3i,05", colClasses=c("Date", "integer", "complex", NA)), class), c(a="Date",b="integer",c="complex",d="integer"))
 test(1743.11, sapply(fread("a,b,c,d\n2017-01-01,1,1+3i,05", colClasses=c("Date", "integer", "complex", "raw")), class), c(a="Date",b="integer",c="complex",d="raw"))
 test(1743.121, sapply(fread("a,b\n2015-01-01,2015-01-01", colClasses=c(NA,"IDate")), inherits, what="IDate"), c(a=TRUE, b=TRUE))
-test(1743.122, fread("a,b\n2015-01-01,2015-01-01", colClasses=c("POSIXct","Date")), data.table(a=as.POSIXct("2015-01-01", tz='UTC'), b=as.Date("2015-01-01")))
+test(1743.122, fread("a,b\n2015-01-01,2015-01-01", colClasses=c("POSIXct","Date")), data.table(a=as.POSIXct("2015-01-01"), b=as.Date("2015-01-01")))
 test(1743.123, fread("a,b\n1+3i,2015-01-01", colClasses=c(NA,"IDate")), data.table(a="1+3i", b=as.IDate("2015-01-01")))
 
 ## Attempts to impose incompatible colClasses is a warning (not an error)
@@ -10811,9 +10811,9 @@ test(1743.241, fread("a,b,c\n2,2,f", colClasses = list(character="c", integer="b
 test(1743.242, fread("a,b,c\n2,2,f", colClasses = c("integer", "integer", "factor"), drop="a"), data.table(b=2L, c=factor("f")))
 
 ## POSIXct
-test(1743.25, fread("a,b,c\n2015-06-01 11:00:00,1,ae", colClasses=c("POSIXct","integer","character")), data.table(a=as.POSIXct("2015-06-01 11:00:00", tz='UTC'),b=1L,c="ae"))
+test(1743.25, fread("a,b,c\n2015-06-01 11:00:00,1,ae", colClasses=c("POSIXct","integer","character")), data.table(a=as.POSIXct("2015-06-01 11:00:00"),b=1L,c="ae"))
 test(1743.26, fread("a,b,c,d,e,f,g,h\n1,k,2015-06-01 11:00:00,a,1.5,M,9,0", colClasses=list(POSIXct="c", character="b"), drop=c("a","b"), logical01=TRUE),
-              ans<-data.table(c=as.POSIXct("2015-06-01 11:00:00", tz='UTC'), d="a", e=1.5, f="M", g=9L, h=FALSE))
+              ans<-data.table(c=as.POSIXct("2015-06-01 11:00:00"), d="a", e=1.5, f="M", g=9L, h=FALSE))
 test(1743.27, fread("a,b,c,d,e,f,g,h\n1,k,2015-06-01 11:00:00,a,1.5,M,9,0", colClasses=list(POSIXct="c", character=2), drop=c("a","b"), logical01=TRUE),
               ans)
 
@@ -16978,7 +16978,7 @@ if (.Platform$OS.type=="windows") local({
   test(2143, rbind(DT,list(c=4L,a=7L)), error="2.*1.*c.*1")
 })
 # test back to English (the argument order is back to 1,c,2,1)
-test(2144, rbind(DT,list(c=4L,a=7L)), error="Column 1 ['c'] of item 2 is missing in item 1")
+test(2144, rbind(DT,list(c=4L,a=7L)), error="Column 1 ['c'] of item 2 is missing in item 1") 
 
 # Attempting to join on character(0) shouldn't crash R
 A = data.table(A='a')
@@ -17032,9 +17032,17 @@ DT = data.table(dates, times)
 tmp = tempfile()
 ## ISO8601 format (%FT%TZ) by default
 fwrite(DT, tmp)
-test(2150.01, fread(tmp), DT)
-fwrite(DT, tmp, dateTimeAs='write.csv')
-test(2150.02, fread(tmp), DT)
+test(2150.01, fread(tmp), DT)   # defaults for fwrite/fread simple and preserving
+fwrite(DT, tmp, dateTimeAs='write.csv')  # writes the UTC times as-is not local because the time column has tzone=="UTC", but without the Z marker
+test(2150.021, sapply(fread(tmp), typeof), c(dates="integer", times="character"))  # as before v1.13.0, datetime with missing timezone read as character
+oldtz = Sys.getenv("TZ", unset=NA)
+Sys.setenv(TZ="UTC")
+# as before v1.13.0, dispatches to as.POSIXct() which interprets as local time, so we need to set TZ here to get the original UTC times from the write.csv version
+tt = fread(tmp, colClasses=list(POSIXct="times"))
+test(2150.022, attr(tt$times, "tzone"), "") # as.POSIXct puts "" on the result (testing the write.csv version here with missing tzone)
+setattr(tt$times, "tzone", "UTC")
+test(2150.023, tt, DT)
+if (is.na(oldtz)) Sys.unsetenv("TZ") else Sys.setenv(TZ=oldtz)
 fwrite(copy(DT)[ , times := format(times, '%FT%T+00:00')], tmp)
 test(2150.03, fread(tmp), DT)
 fwrite(copy(DT)[ , times := format(times, '%FT%T+0000')], tmp)
@@ -17059,15 +17067,14 @@ test(2150.11,fread("a,b\n2015-01-01,2015-01-01", colClasses="POSIXct"),
 test(2150.12, fread("a,b\n2015-01-01,1.1\n2015-01-02 01:02:03,1.2"),
      data.table(a = .POSIXct(1420070400 + c(0, 90123), tz="UTC"), b = c(1.1, 1.2)))
 old = options(datatable.old.fread.datetime.character=TRUE)
-test(2150.13, fread("a,b,c\n2015-01-01,2015-01-02,2015-01-03 01:02:03"),
-              data.table(a="2015-01-01", b="2015-01-02", c="2015-01-03 01:02:03"))
+test(2150.13, fread("a,b,c\n2015-01-01,2015-01-02,2015-01-03T01:02:03Z"),
+              data.table(a="2015-01-01", b="2015-01-02", c="2015-01-03T01:02:03Z"))
 test(2150.14, fread("a,b,c\n2015-01-01,2015-01-02,2015-01-03 01:02:03", colClasses=c("Date","IDate","POSIXct")),
               ans<-data.table(a=as.Date("2015-01-01"), b=as.IDate("2015-01-02"), c=as.POSIXct("2015-01-03 01:02:03")))
-ans_print = capture.output(print(ans)) # test the tzone="UTC" internal difference does not affect display
+ans_print = capture.output(print(ans))
 options(datatable.old.fread.datetime.character=NULL)
-setattr(ans$c, "tzone", "UTC")
 test(2150.15, fread("a,b,c\n2015-01-01,2015-01-02,2015-01-03 01:02:03", colClasses=c("Date","IDate","POSIXct")),
               ans, output=ans_print)
 test(2150.16, fread("a,b,c\n2015-01-01,2015-01-02,2015-01-03 01:02:03", colClasses=c("Date",NA,NA)),
-              ans, output=ans_print)
+              data.table(a=as.Date("2015-01-01"), b=as.IDate("2015-01-02"), c="2015-01-03 01:02:03"), output=ans_print)
 options(old)
