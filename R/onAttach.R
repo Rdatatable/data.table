@@ -28,9 +28,9 @@
       packageStartupMessage("**********\n",
         "This installation of data.table has not detected OpenMP support. It should still work but in single-threaded mode.\n",
         if (Sys.info()["sysname"]=="Darwin")
-          "This is a Mac. Please read https://mac.r-project.org/openmp/. Please engage with Apple and ask them for support. Check r-datatable.com for updates, and our Mac instructions here: https://github.com/Rdatatable/data.table/wiki/Installation. After several years of reports of installation problems on Mac, it's time to gingerly point out that there have been no similar problems on Windows or Linux."
+          "This is a Mac. Please read https://mac.r-project.org/openmp/. Please engage with Apple and ask them for support. Check r-datatable.com for updates, and our Mac instructions here: https://github.com/Rdatatable/data.table/wiki/Installation. After several years of many reports of installation problems on Mac, it's time to gingerly point out that there have been no similar problems on Windows or Linux."
         else
-          paste0("This is ", Sys.info()["sysname"], ". Unless OpenMP was deliberately disabled during compilation, this warning should not occur on Windows or Linux. If it does, please file a GitHub issue."),
+          paste0("This is ", Sys.info()["sysname"], ". This warning should not normally occur on Windows or Linux where OpenMP is turned on by data.table's configure script by passing -fopenmp to the compiler. If you see this warning on Windows or Linux, please file a GitHub issue."),
         "\n**********")
   }
 }
