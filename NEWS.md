@@ -176,6 +176,8 @@ unit = "s")
 
 11. Internal function `shallow()` no longer makes a deep copy of secondary indices. This eliminates a relatively small time and memory overhead when indices are present that added up significantly when performing many operations, such as joins, in a loop or when joining in `j` by group, [#4311](https://github.com/Rdatatable/data.table/issues/4311). Many thanks to @renkun-ken for the report, and @tlapak for the investigation and PR.
 
+12. The `datatable.old.unique.by.key` option has been removed as per the 4 year schedule detailed in note 10 of v1.12.4 (Oct 2019), note 10 of v1.11.0 (May 2018), and note 1 of v1.9.8 (Nov 2016). It has been generating a helpful warning for 2 years, and helpful error for 1 year.
+
 
 # data.table [v1.12.8](https://github.com/Rdatatable/data.table/milestone/15?closed=1)  (09 Dec 2019)
 
