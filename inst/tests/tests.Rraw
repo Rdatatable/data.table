@@ -12101,9 +12101,7 @@ test(1861, address(unique(DT)) != address(DT), TRUE)
 
 # New warning for deprecated old behaviour option
 setkey(DT,A)
-options(datatable.old.unique.by.key=TRUE)
-test(1862.1, unique(DT), error="deprecated option")
-options(datatable.old.unique.by.key=NULL)
+test(1862.1, unique(DT), DT)
 test(1862.2, unique(DT,by=key(DT)), data.table(A=1:2, B=3:4, key="A"))
 
 # fix for -ve indices issue in gmedian (2046) and gvar (2111)
@@ -13289,14 +13287,10 @@ gs = groupingsets(d, j = sum(val), by = c("a", "b", "c"),
 test(1961, cb, gs)
 
 # coverage tests
-## duplicated.R
-old = options("datatable.old.unique.by.key" = TRUE)
-DT = data.table(x = c(1, 1, 3, 2), key = 'x')
-test(1962.001, duplicated(DT), error = 'deprecated option')
-test(1962.0021, anyDuplicated(DT), error = 'deprecated option')
-test(1962.0022, uniqueN(DT), error = 'deprecated option')
-options(old)
 
+# tests 1962.001 and 1962.002 were testing now removed option datatable.old.unique.by.key; see NEWS items over 4 years
+
+DT = data.table(x = c(1, 1, 3, 2), key = 'x')
 test(1962.003, duplicated(DT, fromLast = NA),
      error = 'must be TRUE or FALSE')
 test(1962.004, duplicated(DT, by = -1L),
