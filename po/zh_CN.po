@@ -4010,7 +4010,7 @@ msgid ""
 "Ignoring invalid %s==\"%s\". Not an integer >= 1. Please remove any "
 "characters that are not a digit [0-9]. See ?data.table::setDTthreads."
 msgstr ""
-"忽略无效的 %s==\")%s\". 不是一个 >= 1 的整型. 请去除任何不是[0-9]数字的字"
+"忽略无效的 %s==\"%s\". 不是一个 >= 1 的整型. 请去除任何不是[0-9]数字的字"
 "符。 查看?data.table::setDTthreads."
 
 #: openmp-utils.c:44
@@ -4097,7 +4097,7 @@ msgstr "'throttle' 须为单个非 NA 且 >= 1 的数值"
 #: openmp-utils.c:123
 msgid ""
 "threads= must be either NULL or a single number >= 0. See ?setDTthreads."
-msgstr "threads= 必须是 NULL 或者一个>=0 的整型。 查看 ?setDTthreads."
+msgstr "threads= 必须是 NULL 或者一个>=0 的数值。 查看 ?setDTthreads."
 
 #: openmp-utils.c:127
 msgid "Internal error: percent= must be TRUE or FALSE at C level"
@@ -4776,12 +4776,3 @@ msgid ""
 msgstr ""
 "dim.data.table的参数必须为一个data.table（实质为一个列表），但输入参数为%s类"
 "型"
-
-#, c-format
-#~ msgid ""
-#~ "threads= must be either NULL (default) or a single number. It has length "
-#~ "%d"
-#~ msgstr "threads= 必须是 NULL (默认值) 或者一个数字. 目前它长度为 %d"
-
-#~ msgid "threads= must be either NULL (default) or type integer/numeric"
-#~ msgstr "threads= 必须是 NULL (默认值) 或者数字/整型类型"
