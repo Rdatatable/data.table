@@ -1939,9 +1939,8 @@ msgstr ""
 "在 Mac 上出现相关安装问题的报告已数年之久，"
 "需要指出的是在 Windows 或 Linux 平台上一般不存在类似问题。"
 
-#, fuzzy
 msgid "This is"
-msgstr "这是R"
+msgstr "这是"
 
 msgid ""
 ". This warning should not normally occur on Windows or Linux where OpenMP is "
@@ -2010,7 +2009,6 @@ msgstr ""
 "选项'datatable.old.bywithoutby'已经被移除，警告了2年。它现在被忽略。 请改用"
 "by = .EACHI，然后停止使用这个选项。"
 
-#, fuzzy
 msgid ""
 "Option 'datatable.old.unique.by.key' has been removed as warned for 4 years. "
 "It is now ignored. Please use by=key(DT) instead and stop using this option."
