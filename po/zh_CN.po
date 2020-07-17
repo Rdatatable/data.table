@@ -472,11 +472,12 @@ msgstr "因为一个主列的更新，缩短索引 '%s' 到 '%s'\n"
 msgid ""
 "Internal error memrecycle: sourceStart=%d sourceLen=%d length(source)=%d"
 msgstr ""
+"memrecycle 内部错误：sourceStart=%d sourceLen=%d length(source)=%d"
 
 #: assign.c:697
 #, c-format
 msgid "Internal error memrecycle: start=%d len=%d length(target)=%d"
-msgstr ""
+msgstr "memrecycle 内部错误：start=%d len=%d length(target)=%d"
 
 #: assign.c:700
 #, c-format
@@ -841,7 +842,7 @@ msgstr "内部错误：chin 和 chmatchdup 不能同时为真"
 #: chmatch.c:12
 #, c-format
 msgid "Internal error: length of SYMSXP is %d not 1"
-msgstr ""
+msgstr "内部错误：SYMSXP的长度为 %d 而非 1"
 
 #: chmatch.c:19
 #, c-format
@@ -1189,7 +1190,7 @@ msgstr "growVector通过NULL"
 #: dogroups.c:412
 #, c-format
 msgid "Internal error: growVector doesn't support type '%s'"
-msgstr ""
+msgstr "内部错误：growVector 不支持 '%s' 类型"
 
 #: fastmean.c:39
 msgid "narm should be TRUE or FALSE"
@@ -1277,6 +1278,9 @@ msgid ""
 "consisting of logical condition, resulting value pairs (in that order). Note "
 "that the default argument must be named explicitly, e.g., default=0"
 msgstr ""
+"接收到 %d 个输入。请向 ... 中提供偶数个参数。"
+"每一参数需包含逻辑条件判断，以及对应顺序的结果值对。请注意"
+"默认参数须明确给出名字，如 default=0"
 
 #: fmelt.c:18
 msgid "'x' must be an integer"
@@ -1667,7 +1671,7 @@ msgstr "无法分配TMP给并行批处理计算的 my_n=%d 项"
 
 #: forder.c:1270
 msgid "Internal error: issorted 'by' must be NULL or integer vector"
-msgstr ""
+msgstr "内部错误：issorted 参数 'by' 须为 NULL 或一个整数向量"
 
 #: forder.c:1274 forder.c:1324
 #, c-format
@@ -1676,7 +1680,7 @@ msgstr "issorted 参数 'by' 的值%d超出[1，%d]的范围"
 
 #: forder.c:1279
 msgid "is.sorted does not work on list columns"
-msgstr ""
+msgstr "is.sorted 不支持列表（list）列"
 
 #: forder.c:1311 forder.c:1341 forder.c:1375
 #, c-format
@@ -4089,7 +4093,7 @@ msgstr ""
 
 #: openmp-utils.c:109
 msgid "'throttle' must be a single number, non-NA, and >=1"
-msgstr ""
+msgstr "'throttle' 须为单个非 NA 且 >= 1 的数值"
 
 #: openmp-utils.c:123
 #, fuzzy
@@ -4373,7 +4377,8 @@ msgstr "nrow(x)[%d] 不等于 length(order)[%d]"
 msgid ""
 "Item %d of order (%d) is either NA, out of range [1,%d], or is duplicated. "
 "The new order must be a strict permutation of 1:n"
-msgstr ""
+msgstr "排序（%2$d）的 %1$d 项为 NA，超出范围 [1,%d]，或与其他项重复。"
+"新的排序必须为 1:n 的排列"
 
 #: reorder.c:105
 msgid "dt passed to setcolorder has no names"
