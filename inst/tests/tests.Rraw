@@ -17076,3 +17076,10 @@ test(2150.17, fread("a,b,c\n2015-01-01,2015-01-02,2015-01-03 01:02:03", colClass
 test(2150.18, fread("a,b,c\n2015-01-01,2015-01-02,2015-01-03 01:02:03", colClasses=c("Date",NA,NA)),
               data.table(a=as.Date("2015-01-01"), b=as.IDate("2015-01-02"), c="2015-01-03 01:02:03"), output=ans_print)
 options(old)
+
+## Update row.names for a null.data.table on set #4597
+dt = data.table()
+test(2151.1, attr(dt[, x := 1:5], "row.names"), 1:5)
+dt = data.table()
+set(dt, j = c("v1", "v2"), value = list(1:6, 2:7))
+test(2151.2, attr(dt, "row.names"), 1:6)
