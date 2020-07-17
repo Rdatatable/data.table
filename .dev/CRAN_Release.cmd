@@ -42,15 +42,8 @@ xgettext --keyword=_ -o data.table.pot *.c
 cd ..
 
 ## (b) Update R template file: src/R-data.table.pot
-## much easier, once the update_pkg_po bug is fixed
+## much easier; note that pre-R 4.0, there may be a bug in update_pkg_po
 R --no-save
-## a bug fix in R still hadn't made the 2019-12-12 release,
-##   so run the following to source the corrected function manually
-STEM='https://raw.githubusercontent.com/wch/r-source/trunk/src/library/tools/R'
-source(file.path(STEM, 'utils.R'))
-source(file.path(STEM, 'xgettext.R'))
-source(file.path(STEM, 'translations.R'))
-## shouldn't be any errors from this...
 update_pkg_po('.')
 q()
 
@@ -556,10 +549,11 @@ ls -1 *.tar.gz | grep -E 'Chicago|dada2|flowWorkspace|LymphoSeq' | TZ='UTC' para
 #  Release to CRAN
 ###############################################
 
-Bump version to even release number in 3 places :
+Bump version to even release number in 4 places :
   1) DESCRIPTION
   2) NEWS (without 'on CRAN date' text as that's not yet known)
   3) dllVersion() at the end of init.c
+  4) po headers: top of po/*.po
 DO NOT push to GitHub. Prevents even a slim possibility of user getting premature version. Even release numbers must have been obtained from CRAN and only CRAN. There were too many support problems in the past before this procedure was brought in.
 du -k inst/tests                # 1.5MB before
 bzip2 inst/tests/*.Rraw         # compress *.Rraw just for release to CRAN; do not commit compressed *.Rraw to git

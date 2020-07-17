@@ -1876,16 +1876,14 @@ msgstr "列名"
 msgid "are duplicated in the result"
 msgstr "在结果中是重复的"
 
-#, fuzzy
 msgid "IN DEVELOPMENT built %s%s"
-msgstr "在开发版本中"
+msgstr "%s%s构建的开发版本中"
 
-#, fuzzy
 msgid ""
 "data.table %s%s using %d threads threads (see ?getDTthreads).  Latest news: "
 "r-datatable.com"
 msgstr ""
-"data.table %s 使用 %d 线程（请参阅?getDTthreads）。最新的消息：r-datatable."
+"data.table %s%s 使用 %d 线程（请参阅?getDTthreads）。最新的消息：r-datatable."
 "com"
 
 msgid "TRANSLATION CHECK"
@@ -1930,25 +1928,27 @@ msgstr ""
 "装问题的报告已数年之久，需要指出的是在 Windows 或 Linux 平台上一般不存在类似"
 "问题。"
 
-#, fuzzy
 msgid ""
 "This is %s. This warning should not normally occur on Windows or Linux where "
 "OpenMP is turned on by data.table's configure script by passing -fopenmp to "
 "the compiler. If you see this warning on Windows or Linux, please file a "
 "GitHub issue."
 msgstr ""
-"。此警告一般不应出现在 Windows 或 Linux 平台中，因为data.table 的 configure "
-"脚本中已通过向编译器传递 -fopenmp 参数启用了 OpenMP。如果你在 Windows 或 "
-"Linux 平台中发现此警告，请在 GitHub 中提交 issue。"
+"此设备为 %s。此警告一般不应出现在 Windows 或 Linux 平台中，因为data.table 的 "
+"configure 脚本中已通过向编译器传递 -fopenmp 参数启用了 OpenMP。如果你在 "
+"Windows 或 Linux 平台中发现此警告，请在 GitHub 中提交 issue。"
 
-#, fuzzy
 msgid ""
 "**********\n"
 "This installation of data.table has not detected OpenMP support. It should "
 "still work but in single-threaded mode.\n"
 "%s\n"
 "**********"
-msgstr "data.table的安装未检测到OpenMP支持。在单线程模式下应该仍能运行"
+msgstr ""
+"**********\n"
+"data.table的安装未检测到OpenMP支持。在单线程模式下应该仍能运行。\n"
+"%s\n"
+"**********"
 
 msgid ""
 "The option 'datatable.nomatch' is being used and is not set to the default "
