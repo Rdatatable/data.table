@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: data.table 1.12.9\n"
-"POT-Creation-Date: 2020-07-18 01:32\n"
+"POT-Creation-Date: 2020-07-18 01:43\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -1366,7 +1366,10 @@ msgstr ""
 msgid "are duplicated in the result"
 msgstr ""
 
-msgid "data.table %s using %d threads threads (see ?getDTthreads).  Latest news: r-datatable.com"
+msgid "IN DEVELOPMENT built %s%s"
+msgstr ""
+
+msgid "data.table %s%s using %d threads threads (see ?getDTthreads).  Latest news: r-datatable.com"
 msgstr ""
 
 msgid "TRANSLATION CHECK"
@@ -1376,6 +1379,12 @@ msgid "**********\nRunning data.table in English; package support is available i
 msgstr ""
 
 msgid "**********\nThis development version of data.table was built more than 4 weeks ago. Please update: data.table::update.dev.pkg()\n**********"
+msgstr ""
+
+msgid "This is a Mac. Please read https://mac.r-project.org/openmp/. Please engage with Apple and ask them for support. Check r-datatable.com for updates, and our Mac instructions here: https://github.com/Rdatatable/data.table/wiki/Installation. After several years of many reports of installation problems on Mac, it's time to gingerly point out that there have been no similar problems on Windows or Linux."
+msgstr ""
+
+msgid "This is %s. This warning should not normally occur on Windows or Linux where OpenMP is turned on by data.table's configure script by passing -fopenmp to the compiler. If you see this warning on Windows or Linux, please file a GitHub issue."
 msgstr ""
 
 msgid "**********\nThis installation of data.table has not detected OpenMP support. It should still work but in single-threaded mode.\n%s\n**********"

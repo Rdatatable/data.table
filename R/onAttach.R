@@ -18,10 +18,10 @@
   }
   dev = as.integer(v[1L, 3L]) %% 2L == 1L  # version number odd => dev
   if (!isTRUE(getOption("datatable.quiet"))) {   # new option in v1.12.4, #3489
+    dev_tag = if (dev) gettextf(" IN DEVELOPMENT built %s%s", d, g, domain="R-data.table") else ""
     packageStartupMessage(domain=NA, gettextf(
-      "data.table %s using %d threads threads (see ?getDTthreads).  Latest news: r-datatable.com",
-      format(v), if (dev) gettextf(" IN DEVELOPMENT built %s%s", d, g, domain="R-data.table") else "",
-      getDTthreads(verbose=FALSE), domain="R-data.table"
+      "data.table %s%s using %d threads threads (see ?getDTthreads).  Latest news: r-datatable.com",
+      format(v), dev_tag, getDTthreads(verbose=FALSE), domain="R-data.table"
     ))
     if (gettext("TRANSLATION CHECK", domain='R-data.table') != "TRANSLATION CHECK")
       packageStartupMessage(gettext("**********\nRunning data.table in English; package support is available in English only. When searching for online help, be sure to also check for the English error message. This can be obtained by looking at the po/R-<locale>.po and po/<locale>.po files in the package source, where the native language and English error messages can be found side-by-side\n**********", domain="R-data.table"), domain=NA)
@@ -29,11 +29,11 @@
       packageStartupMessage("**********\nThis development version of data.table was built more than 4 weeks ago. Please update: data.table::update.dev.pkg()\n**********")
     if (!.Call(ChasOpenMP)) {
       whoami = Sys.info()["sysname"]
+      os_tag = if (whoami == "Darwin") gettext("This is a Mac. Please read https://mac.r-project.org/openmp/. Please engage with Apple and ask them for support. Check r-datatable.com for updates, and our Mac instructions here: https://github.com/Rdatatable/data.table/wiki/Installation. After several years of many reports of installation problems on Mac, it's time to gingerly point out that there have been no similar problems on Windows or Linux.", domain="R-data.table")
+      else gettextf("This is %s. This warning should not normally occur on Windows or Linux where OpenMP is turned on by data.table's configure script by passing -fopenmp to the compiler. If you see this warning on Windows or Linux, please file a GitHub issue.", whoami, domain="R-data.table")
       packageStartupMessage(domain=NA, gettextf(
         "**********\nThis installation of data.table has not detected OpenMP support. It should still work but in single-threaded mode.\n%s\n**********",
-        if (whoami == "Darwin") gettext("This is a Mac. Please read https://mac.r-project.org/openmp/. Please engage with Apple and ask them for support. Check r-datatable.com for updates, and our Mac instructions here: https://github.com/Rdatatable/data.table/wiki/Installation. After several years of many reports of installation problems on Mac, it's time to gingerly point out that there have been no similar problems on Windows or Linux.", domain="R-data.table")
-        else gettextf("This is %s. This warning should not normally occur on Windows or Linux where OpenMP is turned on by data.table's configure script by passing -fopenmp to the compiler. If you see this warning on Windows or Linux, please file a GitHub issue.", whoami, domain="R-data.table"),
-        domain = "R-data.table"
+        os_tag, domain = "R-data.table"
       ))
     }
   }
