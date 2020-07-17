@@ -16,6 +16,9 @@
 #ifdef WIN32  // positional specifiers (%n$) used in translations; #4402
 #  define snprintf dt_win_snprintf  // see our snprintf.c; tried and failed to link to _sprintf_p on Windows
 #endif
+#ifdef sprintf
+#undef sprintf
+#endif
 #define sprintf USE_SNPRINTF_NOT_SPRINTF  // prevent use of sprintf in data.table source; force us to use n always
 
 // #include <signal.h> // the debugging machinery + breakpoint aidee
@@ -74,6 +77,8 @@ extern SEXP char_ITime;
 extern SEXP char_IDate;
 extern SEXP char_Date;
 extern SEXP char_POSIXct;
+extern SEXP char_POSIXt;
+extern SEXP char_UTC;
 extern SEXP char_nanotime;
 extern SEXP char_lens;
 extern SEXP char_indices;
@@ -94,6 +99,8 @@ extern SEXP sym_verbose;
 extern SEXP SelfRefSymbol;
 extern SEXP sym_inherits;
 extern SEXP sym_datatable_locked;
+extern SEXP sym_tzone;
+extern SEXP sym_old_fread_datetime_character;
 extern double NA_INT64_D;
 extern long long NA_INT64_LL;
 extern Rcomplex NA_CPLX;  // initialized in init.c; see there for comments
@@ -182,7 +189,7 @@ double wallclock();
 
 // openmp-utils.c
 void initDTthreads();
-int getDTthreads();
+int getDTthreads(const int64_t n, const bool throttle);
 void avoid_openmp_hang_within_fork();
 
 // froll.c

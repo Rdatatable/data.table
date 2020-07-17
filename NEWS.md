@@ -4,6 +4,11 @@
 
 # data.table [v1.12.9](https://github.com/Rdatatable/data.table/milestone/19)  (in development)
 
+## POTENTIALLY BREAKING CHANGES
+
+1. `fread` now supports native parsing of `%Y-%m-%d`, and [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601) `%Y-%m-%dT%H:%M:%OS%z`, [#4464](https://github.com/Rdatatable/data.table/pull/4464). Dates are returned as `data.table`'s `integer`-backed `IDate` class (see `?IDate`), and datetimes are returned as `POSIXct` provided either `Z` or the offset from `UTC` is present; e.g. `fwrite()` outputs UTC by default including the final `Z`. `IDate` inherits from R's `Date` and is identical other than it uses the `integer` type where (oddly) R uses the `double` type for dates (8 bytes instead of 4). Since this is a potentially breaking change, i.e. existing code may depend on dates and datetimes being read as type character as before, a temporary option is provided to restore the old behaviour should you need it: `options(datatable.old.fread.datetime.character=TRUE)`. However, in most cases, we expect existing code to still work with no changes. For example, calls already using `colClasses="POSIXct"` will now use the faster parser if the `Z` is present, otherwise R's `as.POSIXct` will be used as before which interprets datetimes that are missing the UTC marker to be in the local timezone.
+    The minor version number is bumped from 12 to 13, i.e. `v1.13.0`, where the `.0` conveys 'be-aware' as is common practice. As with any new feature, there may be bugs to fix and changes to defaults required in future. In addition to convenience, `fread` is now significantly faster in the presence of dates, and UTC-marked datetimes.
+
 ## NEW FEATURES
 
 1. `%chin%` and `chmatch(x, table)` are faster when `x` is length 1, `table` is long, and `x` occurs near the start of `table`. Thanks to Michael Chirico for the suggestion, [#4117](https://github.com/Rdatatable/data.table/pull/4117#discussion_r358378409).
@@ -81,6 +86,8 @@ unit = "s")
 
 14. Added support for `round()` and `trunc()` to extend functionality of `ITime`. `round()` and `trunc()` can be used with argument units: "hours" or "minutes". Thanks to @JensPederM for the suggestion and PR.
 
+15. A new throttle feature has been introduced to speed up small data tasks that are repeated in a loop, [#3175](https://github.com/Rdatatable/data.table/issues/3175) [#3438](https://github.com/Rdatatable/data.table/issues/3438) [#3205](https://github.com/Rdatatable/data.table/issues/3205) [#3735](https://github.com/Rdatatable/data.table/issues/3735) [#3739](https://github.com/Rdatatable/data.table/issues/3739) [#4284](https://github.com/Rdatatable/data.table/issues/4284) [#4527](https://github.com/Rdatatable/data.table/issues/4527) [#4294](https://github.com/Rdatatable/data.table/issues/4294) [#1120](https://github.com/Rdatatable/data.table/issues/1120). The default throttle of 1024 means that a single thread will be used when nrow<=1024, two threads when nrow<=2048, etc. To change the default, use `setDTthreads(throttle=)`. Or use the new environment variable `R_DATATABLE_THROTTLE`. If you use `Sys.setenv()` in a running R session to change this environment variable, be sure to run an empty `setDTthreads()` call afterwards for the change to take effect; see `?setDTthreads`. The word *throttle* is used to convey that the number of threads is restricted (throttled) for small data tasks. Reducing throttle to 1 will turn off throttling and should revert behaviour to past versions (i.e. using many threads even for small data). Increasing throttle to, say, 65536 will utilize multi-threading only for larger datasets. The value 1024 is a guess. We welcome feedback and test results indicating what the best default should be.
+
 ## BUG FIXES
 
 1. A NULL timezone on POSIXct was interpreted by `as.IDate` and `as.ITime` as UTC rather than the session's default timezone (`tz=""`) , [#4085](https://github.com/Rdatatable/data.table/issues/4085).
@@ -114,6 +121,14 @@ unit = "s")
 15. `all.equal(DT1, DT2, ignore.row.order=TRUE)` could return TRUE incorrectly in the presence of NAs, [#4422](https://github.com/Rdatatable/data.table/issues/4422).
 
 16. Non-equi joins now automatically set `allow.cartesian=TRUE`, [4489](https://github.com/Rdatatable/data.table/issues/4489). Thanks to @Henrik-P for reporting.
+
+17. `X[Y, on=character(0)]` and `merge(X, Y, by.x=character(0), by.y=character(0))` no longer crash, [#4272](https://github.com/Rdatatable/data.table/pull/4272). Thanks to @tlapak for the PR.
+
+18. `by=col1:col4` gave an incorrect result if `key(DT)==c("col1","col4")`, [#4285](https://github.com/Rdatatable/data.table/issues/4285). Thanks to @cbilot for reporting, and Cole Miller for the PR.
+
+19. Matrices resulting from logical operators or comparisons on `data.table`s, e.g. in `dta == dtb`, can no longer have their colnames changed by reference later, [#4323](https://github.com/Rdatatable/data.table/issues/4323). Thanks to @eyherabh for reporting and @tlapak for the PR.
+
+20. The environment variable `R_DATATABLE_NUM_THREADS` was being limited by `R_DATATABLE_NUM_PROCS_PERCENT` (by default 50%), [#4514](https://github.com/Rdatatable/data.table/issues/4514). It is now consistent with `setDTthreads()` and only limited by the full number of logical CPUs. For example, on a machine with 8 logical CPUs, `R_DATATABLE_NUM_THREADS=6` now results in 6 threads rather than 4 (50% of 8).
 
 ## NOTES
 
@@ -156,6 +171,12 @@ unit = "s")
 8. Change of `c.POSIXct` method planned for R 4.1.0 impacted `foverlaps` function that could raise `'origin' must be supplied` error. Fix for planned change has been provided in [#4428](https://github.com/Rdatatable/data.table/pull/4428).
 
 9. `data.table::update.dev.pkg()` now unloads the `data.table` namespace to alleviate a DLL lock issue on Windows, [#4403](https://github.com/Rdatatable/data.table/issues/4403). Thanks to @drag5 for reporting.
+
+10. Starting from 4.0.0, data.table is using R's `rbind` and `cbind` methods, as described in v1.12.6 news entry. Support for R 3.x.x is resolved when processing `NAMESPACE` file, at install time, or at the time of building package binaries. As a result, users on R 3.x.x, if installing from binaries, must use binaries built by R 3.x.x, and users on R 4.x.x, if installing from binaries, must use binaries built by R 4.x.x. Users will see `package ‘data.table’ was built under R version...` warning when this happen. Thanks to @vinhdizzo for reporting in [#4528](https://github.com/Rdatatable/data.table/issues/4528).
+
+11. Internal function `shallow()` no longer makes a deep copy of secondary indices. This eliminates a relatively small time and memory overhead when indices are present that added up significantly when performing many operations, such as joins, in a loop or when joining in `j` by group, [#4311](https://github.com/Rdatatable/data.table/issues/4311). Many thanks to @renkun-ken for the report, and @tlapak for the investigation and PR.
+
+12. The `datatable.old.unique.by.key` option has been removed as per the 4 year schedule detailed in note 10 of v1.12.4 (Oct 2019), note 10 of v1.11.0 (May 2018), and note 1 of v1.9.8 (Nov 2016). It has been generating a helpful warning for 2 years, and helpful error for 1 year.
 
 
 # data.table [v1.12.8](https://github.com/Rdatatable/data.table/milestone/15?closed=1)  (09 Dec 2019)

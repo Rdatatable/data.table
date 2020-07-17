@@ -5,6 +5,8 @@
 # git config --global difftool.prompt false
 alias gd='git difftool &> /dev/null'
 alias gdm='git difftool master &> /dev/null'
+# If meld has scrolling issues, turn off GTK animation (which I don't need anyway):
+#   https://gitlab.gnome.org/GNOME/meld/-/issues/479#note_866040
 
 alias Rdevel='~/build/R-devel/bin/R --vanilla'
 alias Rdevel-strict-gcc='~/build/R-devel-strict-gcc/bin/R --vanilla'
