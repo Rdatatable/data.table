@@ -2418,18 +2418,3 @@ msgstr "以下的列并非数值类型，将被忽略："
 msgid "%d variable not shown: %s\n"
 msgid_plural "%d variables not shown: %s\n"
 msgstr[0] "%d变量没显示: %s\n"
-
-#~ msgid "using"
-#~ msgstr "使用"
-
-#~ msgid "**********"
-#~ msgstr "**********"
-
-#~ msgid "sysname"
-#~ msgstr "sysname"
-
-#~ msgid "Darwin"
-#~ msgstr "Darwin"
-
-#~ msgid "This is"
-#~ msgstr "这是"
