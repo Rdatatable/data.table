@@ -72,7 +72,8 @@ SEXP freadR(
   SEXP colClassesArg,
   SEXP integer64Arg,
   SEXP encodingArg,
-  SEXP keepLeadingZerosArgs
+  SEXP keepLeadingZerosArgs,
+  SEXP noTZasUTC
 ) {
   verbose = LOGICAL(verboseArg)[0];
   warningsAreErrors = LOGICAL(warnings2errorsArg)[0];
@@ -161,6 +162,7 @@ SEXP freadR(
   args.verbose = verbose;
   args.warningsAreErrors = warningsAreErrors;
   args.keepLeadingZeros = LOGICAL(keepLeadingZerosArgs)[0];
+  args.noTZasUTC = LOGICAL(noTZasUTC)[0];
 
   // === extras used for callbacks ===
   if (!isString(integer64Arg) || LENGTH(integer64Arg)!=1) error(_("'integer64' must be a single character string"));
