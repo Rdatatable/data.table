@@ -17034,8 +17034,11 @@ test(2150.021, sapply(fread(tmp), typeof), c(dates="integer", times="character")
 test(2150.022, fread(tmp,tz="UTC"), DT)  # user can tell fread to interpet the unmarked datetimes as UTC
 Sys.setenv(TZ="UTC")
 test(2150.023, fread(tmp), DT)  # TZ environment variable is also recognized
-Sys.setenv(TZ="")
-test(2150.024, fread(tmp), DT)  # blank TZ env variable is recognized as UTC consistent with C and R; it's just R's tz= argument where "" means local
+if (.Platform$OS.type!="windows") {
+  Sys.setenv(TZ="")  # on Windows this unsets TZ, see ?Sys.setenv
+  test(2150.024, fread(tmp), DT)
+  # blank TZ env variable on non-Windows is recognized as UTC consistent with C and R; but R's tz= argument is the opposite and uses "" for local
+}
 Sys.unsetenv("TZ")
 tt = fread(tmp, colClasses=list(POSIXct="times"))
 test(2150.025, attr(tt$times, "tzone"), "") # as.POSIXct puts "" on the result (testing the write.csv version here with missing tzone)
