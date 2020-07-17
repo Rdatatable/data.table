@@ -17027,15 +17027,19 @@ tmp = tempfile()
 ## ISO8601 format (%FT%TZ) by default
 fwrite(DT, tmp)
 test(2150.01, fread(tmp), DT)   # defaults for fwrite/fread simple and preserving
-fwrite(DT, tmp, dateTimeAs='write.csv')  # writes the UTC times as-is not local because the time column has tzone=="UTC", but without the Z marker
-test(2150.021, sapply(fread(tmp), typeof), c(dates="integer", times="character"))  # as before v1.13.0, datetime with missing timezone read as character
+fwrite(DT, tmp, dateTimeAs='write.csv')  # as write.csv, writes the UTC times as-is not local because the time column has tzone=="UTC", but without the Z marker
 oldtz = Sys.getenv("TZ", unset=NA)
+Sys.unsetenv("TZ")
+test(2150.021, sapply(fread(tmp), typeof), c(dates="integer", times="character"))  # as before v1.13.0, datetime with missing timezone read as character
+test(2150.022, fread(tmp,tz="UTC"), DT)  # user can tell fread to interpet the unmarked datetimes as UTC
 Sys.setenv(TZ="UTC")
-# as before v1.13.0, dispatches to as.POSIXct() which interprets as local time, so we need to set TZ here to get the original UTC times from the write.csv version
+test(2150.023, fread(tmp), DT)  # TZ environment variable is also recognized
+Sys.setenv(TZ="")
+test(2150.024, fread(tmp), DT)  # blank TZ env variable is recognized as UTC consistent with C and R; it's just R's tz= argument where "" means local
+Sys.unsetenv("TZ")
 tt = fread(tmp, colClasses=list(POSIXct="times"))
-test(2150.022, attr(tt$times, "tzone"), "") # as.POSIXct puts "" on the result (testing the write.csv version here with missing tzone)
-setattr(tt$times, "tzone", "UTC")
-test(2150.023, tt, DT)
+test(2150.025, attr(tt$times, "tzone"), "") # as.POSIXct puts "" on the result (testing the write.csv version here with missing tzone)
+# the times will be different though here because as.POSIXct read them as local time.
 if (is.na(oldtz)) Sys.unsetenv("TZ") else Sys.setenv(TZ=oldtz)
 fwrite(copy(DT)[ , times := format(times, '%FT%T+00:00')], tmp)
 test(2150.03, fread(tmp), DT)

@@ -1053,10 +1053,11 @@ static void parse_iso8601_timestamp(FieldParseContext *ctx)
         }
       }
     } else {
-      goto fail;
+      if (!args.noTZasUTC)
+        goto fail;
       // if neither Z nor UTC offset is present, then it's local time and that's not directly supported yet; see news for v1.13.0
-      // if local time is UTC (TZ="" or TZ=="UTC") then it's UTC though and that could be fairly easily checked here
-      // tz= could also be added as new argument of fread to allow user to specify datetime is UTC where the Z or offset is missing from the data
+      // but user can specify that the unmarked datetimes are UTC by passing tz="UTC" 
+      // if local time is UTC (env variable TZ is "" or "UTC", not unset) then local time is UTC, and that's caught by fread at R level too
     }
   }
 
