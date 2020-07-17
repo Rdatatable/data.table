@@ -19,8 +19,9 @@
   dev = as.integer(v[1L, 3L]) %% 2L == 1L  # version number odd => dev
   if (!isTRUE(getOption("datatable.quiet"))) {   # new option in v1.12.4, #3489
     packageStartupMessage(domain=NA, gettextf(
-      "data.table %s%s using %d threads threads (see ?getDTthreads).  Latest news: r-datatable.com",
-      format(v), if (dev) paste0(" IN DEVELOPMENT built ", d, g) else "", getDTthreads(verbose=FALSE), domain="R-data.table"
+      "data.table %s using %d threads threads (see ?getDTthreads).  Latest news: r-datatable.com",
+      format(v), if (dev) gettextf(" IN DEVELOPMENT built %s%s", d, g, domain="R-data.table") else "",
+      getDTthreads(verbose=FALSE), domain="R-data.table"
     ))
     if (gettext("TRANSLATION CHECK", domain='R-data.table') != "TRANSLATION CHECK")
       packageStartupMessage(gettext("**********\nRunning data.table in English; package support is available in English only. When searching for online help, be sure to also check for the English error message. This can be obtained by looking at the po/R-<locale>.po and po/<locale>.po files in the package source, where the native language and English error messages can be found side-by-side\n**********", domain="R-data.table"), domain=NA)

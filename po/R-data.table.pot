@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: data.table 1.12.9\n"
-"POT-Creation-Date: 2020-07-18 01:23\n"
+"POT-Creation-Date: 2020-07-18 01:32\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -1366,7 +1366,7 @@ msgstr ""
 msgid "are duplicated in the result"
 msgstr ""
 
-msgid "data.table %s%s using %d threads threads (see ?getDTthreads).  Latest news: r-datatable.com"
+msgid "data.table %s using %d threads threads (see ?getDTthreads).  Latest news: r-datatable.com"
 msgstr ""
 
 msgid "TRANSLATION CHECK"

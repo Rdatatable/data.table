@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: data.table 1.12.5\n"
-"POT-Creation-Date: 2020-07-18 01:23\n"
+"POT-Creation-Date: 2020-07-18 01:32\n"
 "PO-Revision-Date: 2019-11-16 18:37+0800\n"
 "Last-Translator: Xianying Tan <shrektan@126.com>\n"
 "Language-Team: Mandarin\n"
@@ -1878,8 +1878,8 @@ msgstr "在结果中是重复的"
 
 #, fuzzy
 msgid ""
-"data.table %s%s using %d threads threads (see ?getDTthreads).  Latest news: "
-"r-datatable.com"
+"data.table %s using %d threads threads (see ?getDTthreads).  Latest news: r-"
+"datatable.com"
 msgstr "线程（请参阅?getDTthreads）。最新的消息：r-datatable.com"
 
 msgid "TRANSLATION CHECK"
