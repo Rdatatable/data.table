@@ -16868,7 +16868,7 @@ if (test_xts) {
   test(2133.1, colnames(DT), c("DATE", "VALUE"))
   test(2133.2, key(DT), "DATE")
   test(2133.3, as.data.table(xts, keep.rownames = "VALUE"),
-       error = "Input xts object should not have 'VALUE' column because it would result in duplicate column names. Rename 'VALUE' column in xts or use `keep.rownames` to change the index col name.")
+       error = "Input xts object should not have 'VALUE' column because it would result in duplicate column names. Rename 'VALUE' column in xts or use `keep.rownames` to change the index column name.")
   test(2133.4, as.data.table(xts, keep.rownames = character()),
        error = "keep.rownames must be length 1")
   test(2133.5, as.data.table(xts, keep.rownames = NA_character_),
@@ -16972,7 +16972,7 @@ if (.Platform$OS.type=="windows") local({
   test(2143, rbind(DT,list(c=4L,a=7L)), error="2.*1.*c.*1")
 })
 # test back to English (the argument order is back to 1,c,2,1)
-test(2144, rbind(DT,list(c=4L,a=7L)), error="Column 1 ['c'] of item 2 is missing in item 1") 
+test(2144, rbind(DT,list(c=4L,a=7L)), error="Column 1 ['c'] of item 2 is missing in item 1")
 
 # Attempting to join on character(0) shouldn't crash R
 A = data.table(A='a')
