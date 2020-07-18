@@ -17098,3 +17098,7 @@ if (TZnotUTC) {
               ans, output=ans_print)
 }
 options(old)
+
+# 1 is treated as . in dcast formula, #4615
+DT = data.table(a = c("s", "x"), survmean = 1:2)
+test(2151, dcast(DT, 1 ~ a, value.var='survmean'), data.table('.'='.', s=1L, x=2L, key='.'))

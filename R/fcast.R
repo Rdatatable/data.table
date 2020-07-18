@@ -39,12 +39,15 @@ check_formula = function(formula, varnames, valnames) {
 
 deparse_formula = function(expr, varnames, allvars) {
   lvars = lapply(expr, function(this) {
+    # NB: non-call/non-name (e.g. 1 in 1 ~ V2) implicitly fall through as NULL, #4615
     if (this %iscall% '+') {
       unlist(deparse_formula(as.list(this)[-1L], varnames, allvars))
-    } else if (is.name(this) && this==quote(`...`)) {
-      subvars = setdiff(varnames, allvars)
-      lapply(subvars, as.name)
-    } else this
+    } else if (is.name(this)) {
+      if (this == quote(`...`)) {
+        subvars = setdiff(varnames, allvars)
+        lapply(subvars, as.name)
+      } else this
+    }
   })
   lvars = lapply(lvars, function(x) if (length(x) && !is.list(x)) list(x) else x)
 }
