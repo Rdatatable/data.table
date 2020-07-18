@@ -19,7 +19,7 @@
   dev = as.integer(v[1L, 3L]) %% 2L == 1L  # version number odd => dev
   if (!isTRUE(getOption("datatable.quiet"))) {   # new option in v1.12.4, #3489
     v = format(v)
-    ver_tag = if (dev) gettextf("%s IN DEVELOPMENT built %s%s", d, g, domain="R-data.table") else v
+    ver_tag = if (dev) gettextf("%s IN DEVELOPMENT built %s%s", v, d, g, domain="R-data.table") else v
     packageStartupMessage(domain=NA, gettextf(
       "data.table %s using %d threads (see ?getDTthreads).  Latest news: r-datatable.com",
       ver_tag, getDTthreads(verbose=FALSE), domain="R-data.table"
