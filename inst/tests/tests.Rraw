@@ -17098,3 +17098,7 @@ if (TZnotUTC) {
               ans, output=ans_print)
 }
 options(old)
+
+# some is.list objects can't be recursed by lapply properly, leading to infinite loop in copy(), #4616
+y = person(given='Joel', family='Mossong')
+test(2151, copy(y), y)

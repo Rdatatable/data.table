@@ -2261,7 +2261,7 @@ is.na.data.table = function (x) {
 Ops.data.table = function(e1, e2 = NULL)
 {
   ans = NextMethod()
-  if (cedta() && is.data.frame(ans)) ans = as.data.table(ans) 
+  if (cedta() && is.data.frame(ans)) ans = as.data.table(ans)
   else if (is.matrix(ans)) colnames(ans) = copy(colnames(ans))
   ans
 }
@@ -2358,7 +2358,10 @@ copy = function(x) {
       .Call(C_unlock, y)
       setalloccol(y)
     } else if (is.list(y)) {
+      oldClass = class(y)
+      setattr(y, 'class', NULL)
       y[] = lapply(y, reallocate)
+      if (!identical(oldClass, 'list')) setattr(y, 'class', oldClass)
     }
     y
   }
