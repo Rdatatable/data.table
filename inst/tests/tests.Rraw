@@ -17102,3 +17102,8 @@ options(old)
 # 1 is treated as . in dcast formula, #4615
 DT = data.table(a = c("s", "x"), survmean = 1:2)
 test(2151, dcast(DT, 1 ~ a, value.var='survmean'), data.table('.'='.', s=1L, x=2L, key='.'))
+
+# list object with [[ method that returns itself (e.g. person) lead to infinite loop in copy(), #4620
+y = person(given='Joel', family='Mossong')
+test(2152, copy(y), y)
+
