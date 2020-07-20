@@ -1539,10 +1539,10 @@ replace_dot_alias = function(e) {
         jvnames = sdvars
       }
     } else if (length(as.character(jsub[[1L]])) == 1L) {  # Else expect problems with <jsub[[1L]] == >
-      # g[[ only applies to atomic input, for now, was causing #4159
+      # g[[ only applies to atomic input, for now, was causing #4159. be sure to eval with enclos=parent.frame() for #4612
       subopt = length(jsub) == 3L &&
         (jsub[[1L]] == "[" ||
-           (jsub[[1L]] == "[[" && is.name(jsub[[2L]]) && eval(call('is.atomic', jsub[[2L]]), envir = x))) &&
+           (jsub[[1L]] == "[[" && is.name(jsub[[2L]]) && eval(call('is.atomic', jsub[[2L]]), x, parent.frame()))) &&
         (is.numeric(jsub[[3L]]) || jsub[[3L]] == ".N")
       headopt = jsub[[1L]] == "head" || jsub[[1L]] == "tail"
       firstopt = jsub[[1L]] == "first" || jsub[[1L]] == "last" # fix for #2030
@@ -2261,7 +2261,7 @@ is.na.data.table = function (x) {
 Ops.data.table = function(e1, e2 = NULL)
 {
   ans = NextMethod()
-  if (cedta() && is.data.frame(ans)) ans = as.data.table(ans) 
+  if (cedta() && is.data.frame(ans)) ans = as.data.table(ans)
   else if (is.matrix(ans)) colnames(ans) = copy(colnames(ans))
   ans
 }
