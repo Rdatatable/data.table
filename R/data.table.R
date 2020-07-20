@@ -2359,7 +2359,7 @@ copy = function(x) {
       setalloccol(y)
     } else if (is.list(y)) {
       oldClass = class(y)
-      setattr(y, 'class', NULL)
+      setattr(y, 'class', NULL)  # otherwise [[.person method (which returns itself) results in infinite recursion, #4620
       y[] = lapply(y, reallocate)
       if (!identical(oldClass, 'list')) setattr(y, 'class', oldClass)
     }
