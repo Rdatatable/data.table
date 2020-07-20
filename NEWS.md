@@ -99,7 +99,7 @@ unit = "s")
 
 4. If `.SD` is returned as-is during grouping, it is now unlocked for downstream usage, part of [#4159](https://github.com/Rdatatable/data.table/issues/4159). Thanks also to @mllg for detecting a problem with the initial fix here during the dev release [#4173](https://github.com/Rdatatable/data.table/issues/4173).
 
-5. `GForce` is deactivated for `[[` on non-atomic input, part of [#4159](https://github.com/Rdatatable/data.table/issues/4159).
+5. `GForce` is deactivated for `[[` on non-atomic input, part of [#4159](https://github.com/Rdatatable/data.table/issues/4159). Thanks @hongyuanjia and @ColeMiller1 for helping debug an issue in dev with the original fix before release, [#4612](https://github.com/Rdatatable/data.table/issues/4612).
 
 6. `all.equal(DT, y)` no longer errors when `y` is not a data.table, [#4042](https://github.com/Rdatatable/data.table/issues/4042). Thanks to @d-sci for reporting and the PR.
 
