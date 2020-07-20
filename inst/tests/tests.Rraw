@@ -8088,6 +8088,13 @@ test(1581.17, DT[ , as.list(l[[f1]])[[f2]], by=c("f1","f2")],
      data.table(f1 = c("a", "b"), f2 = c("x", "y"), V1 = c("ax", "by")))
 test(1581.18, DT[, v:=l[[f1]][f2], by=c("f1","f2")],
      data.table(f1=c("a","b"), f2=c("x","y"), v=c("ax", "by")))
+# When the object being [[ is in parent.frame(), not x,
+#   need eval to have enclos=parent.frame(), #4612
+DT = data.table(id = c(1, 1, 2), value = c("a", "b", "c"))
+DT0 = copy(DT)
+fun = function (DT, tag = c("A", "B")) DT[, var := tag[[.GRP]], by = "id"]
+fun(DT)
+test(1581.19, DT, DT0[ , var := c('A', 'A', 'B')])
 
 # handle NULL value correctly #1429
 test(1582, uniqueN(NULL), 0L)
