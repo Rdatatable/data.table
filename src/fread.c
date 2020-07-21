@@ -989,7 +989,7 @@ static void parse_iso8601_date_core(const char **pch, int32_t *target)
   return;
 
   fail:
-    *target = NA_FLOAT64;
+    *target = NA_INT32;
 }
 
 static void parse_iso8601_date(FieldParseContext *ctx) {
@@ -2267,10 +2267,10 @@ int freadMain(freadMainArgs _args) {
             // DTPRINT(_("Field %d: '%.10s' as type %d  (tch=%p)\n"), j+1, tch, type[j], tch);
             fieldStart = tch;
             int8_t thisType = type[j];  // fetch shared type once. Cannot read half-written byte is one reason type's type is single byte to avoid atomic read here.
-            int8_t thisSize = size[j];
             fun[abs(thisType)](&fctx);
             if (*tch!=sep) break;
-            ((char **) targets)[thisSize] += thisSize;
+            int8_t thisSize = size[j];
+            if (thisSize) ((char **) targets)[thisSize] += thisSize;  // 'if' for when rereading to avoid undefined NULL+0 
             tch++;
             j++;
           }
@@ -2283,7 +2283,7 @@ int freadMain(freadMainArgs _args) {
           }
           else if (eol(&tch) && j<ncol) {   // j<ncol needed for #2523 (erroneous extra comma after last field)
             int8_t thisSize = size[j];
-            ((char **) targets)[thisSize] += thisSize;
+            if (thisSize) ((char **) targets)[thisSize] += thisSize;
             j++;
             if (j==ncol) { tch++; myNrow++; continue; }  // next line. Back up to while (tch<nextJumpStart). Usually happens, fastest path
           }
@@ -2384,7 +2384,8 @@ int freadMain(freadMainArgs _args) {
               } // else another thread just bumped to a (negative) higher or equal type while I was waiting, so do nothing
             }
           }
-          ((char**) targets)[size[j]] += size[j];
+          int8_t thisSize = size[j];
+          if (thisSize) ((char**) targets)[size[j]] += size[j];  // 'if' to avoid undefined NULL+=0 when rereading
           j++;
           if (*tch==sep) { tch++; continue; }
           if (fill && (*tch=='\n' || *tch=='\r' || tch==eof) && j<ncol) continue;  // reuse processors to write appropriate NA to target; saves maintenance of a type switch down here
