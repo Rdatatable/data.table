@@ -16871,7 +16871,8 @@ s1 = class2132(x=20191231)
 s2 = class2132(x=20191230)
 test(2132.1, fifelse(TRUE, s1, s2),      error = "S4 class objects (except nanotime) are not supported.")
 test(2132.2, fifelse(TRUE, 1, s2),       error = "S4 class objects (except nanotime) are not supported.")
-test(2132.3, fcase(TRUE, s1, FALSE, s2), error = "S4 class objects (except nanotime) are not supported. Please see https://github.com/Rdatatable/data.table/issues/4131.")
+test(2132.3, fcase(TRUE, s1, FALSE, s2), error = "S4 class objects (except nanotime) are not supported. Please see")
+test(2132.4, fcase(FALSE, 1, TRUE, s1),  error = "S4 class objects (except nanotime) are not supported. Please see")
 rm(s1, s2, class2132)
 
 if (test_xts) {
