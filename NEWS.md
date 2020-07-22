@@ -162,9 +162,9 @@ unit = "s")
     > DT[B:=3]
     Error: Operator := detected in i, the first argument inside DT[...], but is only valid in
            the second argument, j. Most often, this happens when forgetting the first comma
-           (e.g. DT[newvar := 5] instead of DT[ , new_var := 5]). Please double-check the
+           (e.g. DT[newvar:=5] instead of DT[, new_var:=5]). Please double-check the
            syntax. Run traceback(), and debugger() to get a line number.
-    > DT[,B:=3]
+    > DT[, B:=3]
     > DT
            A     B
        <int> <num>
@@ -178,7 +178,7 @@ unit = "s")
 
 9. `data.table::update.dev.pkg()` now unloads the `data.table` namespace to alleviate a DLL lock issue on Windows, [#4403](https://github.com/Rdatatable/data.table/issues/4403). Thanks to @drag5 for reporting.
 
-10. `data.table` packages binaries built by R 3.* should only be installed in R 3.*, and similarly `data.table` package binaries built by R 4.* should only be installed in R 4.*. Otherwise, `package ‘data.table’ was built under R version...` warning will occur and should not be ignored. This is due to a very welcome change to `rbind` and `cbind` in R 4.0.0 which enabled us to remove workarounds, see news item in v1.12.6 below in this file. To continue to support both R 3.* and R 4.*, though, `data.table`'s NAMESPACE file contains a conditional on the R major version and this is what gives rise to the requirement that the major version (3 or 4) used to build `data.table` must match the major version used to install it. Thanks to @vinhdizzo for reporting, [#4528](https://github.com/Rdatatable/data.table/issues/4528).
+10. `data.table` packages binaries built by R version `3.*.*` should only be installed in R `3.*.*`, and similarly `data.table` package binaries built by R `4.*.*` should only be installed in R `4.*.*`. Otherwise, `package ‘data.table’ was built under R version...` warning will occur and this should not be ignored. This is due to a very welcome change to `rbind` and `cbind` in R `4.0.0` which enabled us to remove workarounds, see news item in v1.12.6 below in this file. To continue to support both R `3.*.*` and R `4.*.*`, though, `data.table`'s NAMESPACE file contains a conditional on the R major version (3 or 4) and this is what gives rise to the requirement that the major version used to build `data.table` must match the major version used to install it. Thanks to @vinhdizzo for reporting, [#4528](https://github.com/Rdatatable/data.table/issues/4528).
 
 11. Internal function `shallow()` no longer makes a deep copy of secondary indices. This eliminates a relatively small time and memory overhead when indices are present that added up significantly when performing many operations, such as joins, in a loop or when joining in `j` by group, [#4311](https://github.com/Rdatatable/data.table/issues/4311). Many thanks to @renkun-ken for the report, and @tlapak for the investigation and PR.
 
