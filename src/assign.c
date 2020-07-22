@@ -318,6 +318,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
     error(_("data.table is NULL; malformed. A null data.table should be an empty list. typeof() should always return 'list' for data.table.")); // # nocov
     // Not possible to test because R won't permit attributes be attached to NULL (which is good and we like); warning from R 3.4.0+ tested by 944.5
   }
+  const int RHS_row = isNewList(values) && length(values) ? length(VECTOR_ELT(values, 0)) : length(values);
   const bool is_null_dt = LENGTH(dt) == 0; // fix for #4597; null.data.table needs row names
   const int nrow = !is_null_dt ? length(VECTOR_ELT(dt,0)) :
                                 (isNewList(values) && length(values) ? length(VECTOR_ELT(values,0)) : length(values));
