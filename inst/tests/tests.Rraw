@@ -6000,20 +6000,20 @@ test(1419.11, key(thisDT), NULL)
 ## same tests for empty DT
 ## forderv tests can be skipped for empty DT
 DT <- DT[0]
-thisDT <- copy(DT)[, x3 := 3]
+thisDT <- copy(DT)[, x3 := numeric()]
 test(1419.12, key(thisDT), NULL)
 setkeyv(DT, c("x1", "x2", "x3"))
-thisDT <- copy(DT)[, x1 := 3]
+thisDT <- copy(DT)[, x1 := numeric()]
 test(1419.13, key(thisDT), NULL)
-thisDT <- copy(DT)[, x2 := 3]
+thisDT <- copy(DT)[, x2 := numeric()]
 test(1419.14, key(thisDT), "x1")
-thisDT <- copy(DT)[, x2 := 3]
+thisDT <- copy(DT)[, x2 := numeric()]
 test(1419.15, key(thisDT), "x1")
-thisDT <- copy(DT)[, x3 := 3]
+thisDT <- copy(DT)[, x3 := numeric()]
 test(1419.16, key(thisDT), c("x1", "x2"))
-thisDT <- copy(DT)[, c("x1", "x3") := .(3,3)]
+thisDT <- copy(DT)[, c("x1", "x3") := .(numeric(), numeric())]
 test(1419.17, key(thisDT), NULL)
-thisDT <- copy(DT)[, c("x2", "x3") := .(3,3)]
+thisDT <- copy(DT)[, c("x2", "x3") := .(numeric(),numeric())]
 test(1419.18, key(thisDT), "x1")
 
 ## testing secondary index retainment on assign (#2372)
@@ -6094,25 +6094,25 @@ test(1419.46, allIndicesValid(thisDT), TRUE)
 ## on empty DT
 DT <- DT[0]
 setindex(DT, NULL)
-test(1419.47, indices(copy(DT)[, a:=1]), NULL)
+test(1419.47, indices(copy(DT)[, a:=numeric()]), NULL)
 setindex(DT, a)
 setindex(DT, a, aaa)
 setindex(DT, ab, aaa)
 setindex(DT)
 test(1419.48, allIndicesValid(DT), TRUE)
-thisDT <- copy(DT)[, a:=1][, aaa := 1][, ab := 1]
+thisDT <- copy(DT)[, a:=numeric()][, aaa := numeric()][, ab := numeric()]
 test(1419.49, indices(thisDT), NULL)
 test(1419.51, allIndicesValid(thisDT), TRUE)
-thisDT <- copy(DT)[, b := 2]
+thisDT <- copy(DT)[, b := numeric()]
 test(1419.52, indices(thisDT), c("a", "a__aaa", "ab__aaa"))
 test(1419.53, allIndicesValid(thisDT), TRUE)
-thisDT <- copy(DT)[, ab := 2]
+thisDT <- copy(DT)[, ab := numeric()]
 test(1419.54, indices(thisDT), c("a", "a__aaa", "a__aaa__b"))
 test(1419.55, allIndicesValid(thisDT), TRUE)
-thisDT <- copy(DT)[, aaa := 2]
+thisDT <- copy(DT)[, aaa := numeric()]
 test(1419.56, indices(thisDT), c("a", "ab"))
 test(1419.57, allIndicesValid(thisDT), TRUE)
-thisDT <- copy(DT)[, c("aaa", "b") := 2]
+thisDT <- copy(DT)[, c("aaa", "b") := numeric()]
 test(1419.58, indices(thisDT), c("a", "ab"))
 test(1419.59, allIndicesValid(thisDT), TRUE)
 
