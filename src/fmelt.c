@@ -91,19 +91,25 @@ SEXP concat(SEXP vec, SEXP idx) {
 
 // deal with measure.vars of type VECSXP
 SEXP measurelist(SEXP measure, SEXP dtnames) {
-  int i, n=length(measure), protecti=0;
-  SEXP ans, tmp;
-  ans = PROTECT(allocVector(VECSXP, n)); protecti++;
-  for (i=0; i<n; i++) {
-    switch(TYPEOF(VECTOR_ELT(measure, i))) {
-      case STRSXP  : tmp = PROTECT(chmatch(VECTOR_ELT(measure, i), dtnames, 0)); protecti++; break;
-      case REALSXP : tmp = PROTECT(coerceVector(VECTOR_ELT(measure, i), INTSXP)); protecti++; break;
-      case INTSXP  : tmp = VECTOR_ELT(measure, i); break;
-      default : error(_("Unknown 'measure.vars' type %s at index %d of list"), type2char(TYPEOF(VECTOR_ELT(measure, i))), i+1);
+  const int n=length(measure);
+  SEXP ans = PROTECT(allocVector(VECSXP, n));
+  for (int i=0; i<n; ++i) {
+    SEXP x = VECTOR_ELT(measure, i);
+    switch(TYPEOF(x)) {
+      case STRSXP  : 
+        SET_VECTOR_ELT(ans, i, chmatch(x, dtnames, 0));
+        break;
+      case REALSXP :
+        SET_VECTOR_ELT(ans, i, coerceVector(x, INTSXP));
+        break;
+      case INTSXP  : 
+        SET_VECTOR_ELT(ans, i, x);
+        break;
+      default :
+        error(_("Unknown 'measure.vars' type %s at index %d of list"), type2char(TYPEOF(x)), i+1);
     }
-    SET_VECTOR_ELT(ans, i, tmp);
   }
-  UNPROTECT(protecti);
+  UNPROTECT(1);
   return(ans);
 }
 

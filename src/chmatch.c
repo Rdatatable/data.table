@@ -20,9 +20,10 @@ static SEXP chmatchMain(SEXP x, SEXP table, int nomatch, bool chin, bool chmatch
     }
   }
   // allocations up front before savetl starts in case allocs fail
-  SEXP ans = PROTECT(allocVector(chin?LGLSXP:INTSXP, xlen));
+  int nprotect=0;
+  SEXP ans = PROTECT(allocVector(chin?LGLSXP:INTSXP, xlen)); nprotect++;
   if (xlen==0) { // no need to look at table when x is empty (including null)
-    UNPROTECT(1);
+    UNPROTECT(nprotect);
     return ans;
   }
   int *ansd = INTEGER(ans);
@@ -30,14 +31,18 @@ static SEXP chmatchMain(SEXP x, SEXP table, int nomatch, bool chin, bool chmatch
   if (tablelen==0) {
     const int val=(chin?0:nomatch), n=xlen;
     for (int i=0; i<n; ++i) ansd[i]=val;
-    UNPROTECT(1);
+    UNPROTECT(nprotect);
     return ans;
   }
   // Since non-ASCII strings may be marked with different encodings, it only make sense to compare
   // the bytes under a same encoding (UTF-8) #3844 #3850
-  const SEXP *xd = isSymbol(x) ? &sym : STRING_PTR(PROTECT(coerceUtf8IfNeeded(x)));
-  const SEXP *td = STRING_PTR(PROTECT(coerceUtf8IfNeeded(table)));
-  const int nprotect = 2 + !isSymbol(x); // ans, xd, td
+  SEXP *xd;
+  if (isSymbol(x)) {
+    xd = &sym;
+  } else {
+    xd = STRING_PTR(PROTECT(coerceUtf8IfNeeded(x))); nprotect++;
+  }
+  const SEXP *td = STRING_PTR(PROTECT(coerceUtf8IfNeeded(table))); nprotect++;
   if (xlen==1) {
     ansd[0] = nomatch;
     for (int i=0; i<tablelen; ++i) {
