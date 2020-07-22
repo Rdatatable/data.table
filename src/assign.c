@@ -324,7 +324,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
                                 (isNewList(values) && length(values) ? length(VECTOR_ELT(values,0)) : length(values));
   //                            ^ when null data.table the new nrow becomes the fist column added
   if (!is_null_dt && nrow == 0 && RHS_row > 0) // related to #4597; groupingsets relies on this so right now only a warning
-    warning(_("The data.table has 0 rows but there are %d rows being assigned. This warning will be upgraded to error in next release"), RHS_row);
+    warning(_("The data.table has 0 rows but there are %d rows being assigned. The value will be ignored but new column(s) will be added. This warning will be upgraded to error in the next release"), RHS_row);
   if (isNull(rows)) {
     numToDo = nrow;
     targetlen = nrow;
