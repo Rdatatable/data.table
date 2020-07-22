@@ -7,16 +7,18 @@
 ## POTENTIALLY BREAKING CHANGES
 
 1. `fread` now supports native parsing of `%Y-%m-%d`, and [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601) `%Y-%m-%dT%H:%M:%OS%z`, [#4464](https://github.com/Rdatatable/data.table/pull/4464). Dates are returned as `data.table`'s `integer`-backed `IDate` class (see `?IDate`), and datetimes are returned as `POSIXct` provided either `Z` or the offset from `UTC` is present; e.g. `fwrite()` outputs UTC by default including the final `Z`. Reminder that `IDate` inherits from R's `Date` and is identical other than it uses the `integer` type where (oddly) R uses the `double` type for dates (8 bytes instead of 4). `fread()` gains a `tz` argument to control datetime values that are missing a Z or UTC-offset (now referred to as *unmarked* datetimes); e.g. as written by `write.csv`. By default `tz=""` means, as in R, read the unmarked datetime in local time. Unless the timezone of the R session is UTC (e.g. the TZ environment variable is set to `"UTC"`, or `""` on non-Windows), unmarked datetime will then by read by `fread` as character, as before. If you have been using `colClasses="POSIXct"` that will still work using R's `as.POSIXct()` which will interpret the unmarked datetime in local time, as before, and still slowly. You can tell `fread` to read unmarked datetime as UTC, and quickly, by passing `tz="UTC"` which may be appropriate in many circumstances. Note that the default behaviour of R to read and write csv using unmarked datetime can lead to different research results when the csv file has been saved in one timezone and read in another due to observations being shifted to a different date. If you have been using `colClasses="POSIXct"` for UTC-marked datetime (e.g. as written by `fwrite` including the final `Z`) then it will automatically speed up with no changes needed.
-    Since this is a potentially breaking change, i.e. existing code may depend on dates and datetimes being read as type character as before, a temporary option is provided to restore the old behaviour should you need it: `options(datatable.old.fread.datetime.character=TRUE)`. However, in most cases, we expect existing code to still work with no changes.
+
+    Since this is a potentially breaking change, i.e. existing code may depend on dates and datetimes being read as type character as before, a temporary option is provided to restore the old behaviour: `options(datatable.old.fread.datetime.character=TRUE)`. However, in most cases, we expect existing code to still work with no changes.
+    
     The minor version number is bumped from 12 to 13, i.e. `v1.13.0`, where the `.0` conveys 'be-aware' as is common practice. As with any new feature, there may be bugs to fix and changes to defaults required in future. In addition to convenience, `fread` is now significantly faster in the presence of dates, UTC-marked datetimes, and unmarked datetime when tz="UTC" is provided.
 
 ## NEW FEATURES
 
 1. `%chin%` and `chmatch(x, table)` are faster when `x` is length 1, `table` is long, and `x` occurs near the start of `table`. Thanks to Michael Chirico for the suggestion, [#4117](https://github.com/Rdatatable/data.table/pull/4117#discussion_r358378409).
 
-2. The C function `CsubsetDT` is now exported for use by other packages, [#3751](https://github.com/Rdatatable/data.table/issues/3751). Thanks to Leonardo Silvestri for the request and the PR. This uses R's `R_RegisterCCallable` and `R_GetCCallable` mechanism, [R-exts§5.4.3](https://cran.r-project.org/doc/manuals/r-devel/R-exts.html#Linking-to-native-routines-in-other-packages) and [`?cdt`](https://rdatatable.gitlab.io/data.table/reference/cdt.html). Note that organisation of our C interface will be changed in next release.
+2. `CsubsetDT` C function is now exported for use by other packages, [#3751](https://github.com/Rdatatable/data.table/issues/3751). Thanks to Leonardo Silvestri for the request and the PR. This uses R's `R_RegisterCCallable` and `R_GetCCallable` mechanism, [R-exts§5.4.3](https://cran.r-project.org/doc/manuals/r-devel/R-exts.html#Linking-to-native-routines-in-other-packages) and [`?cdt`](https://rdatatable.gitlab.io/data.table/reference/cdt.html). Note that organization of our C interface will be changed in future.
 
-3. `print` method for `data.table`s gains `trunc.cols` argument (and corresponding option `datatable.print.trunc.cols`, default `FALSE`), [#1497](https://github.com/Rdatatable/data.table/issues/1497), part of [#1523](https://github.com/Rdatatable/data.table/issues/1523). This prints only as many columns as fit in the console without wrapping to new lines (e.g., the first 5 of 80 columns) and a message that states the count and names of the variables not shown. When `class=TRUE` the message also contains the classes of the variables. `data.table` has always automatically truncated _rows_ of a table for efficiency (e.g. printing 10 rows instead of 10 million); in the future, we may do the same for _columns_ (e.g., 10 columns instead of 20,000) by changing the default for this argument. Thanks to @nverno for the initial suggestion and to @TysonStanley for the PR.
+3. `print` method for `data.table` gains `trunc.cols` argument (and corresponding option `datatable.print.trunc.cols`, default `FALSE`), [#1497](https://github.com/Rdatatable/data.table/issues/1497), part of [#1523](https://github.com/Rdatatable/data.table/issues/1523). This prints only as many columns as fit in the console without wrapping to new lines (e.g., the first 5 of 80 columns) and a message that states the count and names of the variables not shown. When `class=TRUE` the message also contains the classes of the variables. `data.table` has always automatically truncated _rows_ of a table for efficiency (e.g. printing 10 rows instead of 10 million); in the future, we may do the same for _columns_ (e.g., 10 columns instead of 20,000) by changing the default for this argument. Thanks to @nverno for the initial suggestion and to @TysonStanley for the PR.
 
 4. `setnames(DT, new=new_names)` (i.e. explicitly named `new=` argument) now works as expected rather than an error message requesting that `old=` be supplied too, [#4041](https://github.com/Rdatatable/data.table/issues/4041). Thanks @Kodiologist for the suggestion.
 
@@ -73,7 +75,7 @@ unit = "s")
 
 7. `.SDcols=is.numeric` now works; i.e., `SDcols=` accepts a function which is used to select the columns of `.SD`, [#3950](https://github.com/Rdatatable/data.table/issues/3950). Any function (even _ad hoc_) that returns scalar `TRUE`/`FALSE` for each column will do; e.g., `.SDcols=!is.character` will return _non_-character columns (_a la_ `Negate()`). Note that `patterns=` can still be used for filtering based on the column names.
 
-8. Compiler support for OpenMP is now detected during installation, which allows data.table to compile from source (in single threaded mode) on macOS which, frustratingly, does not include OpenMP support by default, [#2161](https://github.com/Rdatatable/data.table/issues/2161), unlike Windows and Linux. A helpful message is emitted during installation from source, and on package startup as before. Many thanks to @jimhester for the PR. This was typically a problem just after release to CRAN in the few days before macOS binaries (which do support OpenMP) are made available by CRAN.
+8. Compiler support for OpenMP is now detected during installation, which allows `data.table` to compile from source (in single threaded mode) on macOS which, frustratingly, does not include OpenMP support by default, [#2161](https://github.com/Rdatatable/data.table/issues/2161), unlike Windows and Linux. A helpful message is emitted during installation from source, and on package startup as before. Many thanks to @jimhester for the PR.
 
 9. `rbindlist` now supports columns of type `expression`, [#546](https://github.com/Rdatatable/data.table/issues/546). Thanks @jangorecki for the report.
 
@@ -137,7 +139,7 @@ unit = "s")
 
 1. `as.IDate`, `as.ITime`, `second`, `minute`, and `hour` now recognize UTC equivalents for speed: GMT, GMT-0, GMT+0, GMT0, Etc/GMT, and Etc/UTC, [#4116](https://github.com/Rdatatable/data.table/issues/4116).
 
-2. `set2key`, `set2keyv`, and `key2` have been removed, as they have been warning since v1.9.8 (Nov 2016) and halting with helpful message since v1.11.0 (May 2018). When they were introduced in version 1.9.4 (Oct 2014) they were marked as 'experimental' and quickly superceded by `setindex` and `indices`.
+2. `set2key`, `set2keyv`, and `key2` have been removed, as they have been warning since v1.9.8 (Nov 2016) and halting with helpful message since v1.11.0 (May 2018). When they were introduced in version 1.9.4 (Oct 2014) they were marked as 'experimental' and quickly superseded by `setindex` and `indices`.
 
 3. `data.table` now supports messaging in simplified Chinese (locale `zh_CN`). This was the result of a monumental collaboration to translate `data.table`'s roughly 1400 warnings, errors, and verbose messages (about 16,000 words/100,000 characters) over the course of two months from volunteer translators in at least 4 time zones, most of whom are first-time `data.table` contributors and many of whom are first-time OSS contributors!
 
@@ -149,7 +151,7 @@ unit = "s")
 
     We will evaluate the feasibility (in terms of maintenance difficulty and CRAN package size limits) of offering support for other languages in later releases.
 
-4. `fifelse` and `fcase` notify users that S4 objects (except `nanotime`) are not supported [#4135](https://github.com/Rdatatable/data.table/issues/4135). Thanks to @torema-ed for bringing it to our attention and Morgan Jacob for the PR.
+4. `fifelse` and `fcase` now notify users that S4 objects (except `nanotime`) are not supported [#4135](https://github.com/Rdatatable/data.table/issues/4135). Thanks to @torema-ed for bringing it to our attention and Morgan Jacob for the PR.
 
 5. `frank(..., ties.method="random", na.last=NA)` now returns the same random ordering that `base::rank` does, [#4243](https://github.com/Rdatatable/data.table/pull/4243).
 
@@ -158,7 +160,10 @@ unit = "s")
     ```R
     > DT = data.table(A=1:2)
     > DT[B:=3]
-    Error: Operator := detected in i, the first argument inside DT[...], but is only valid in the second argument, j. Most often, this happens when forgetting the first comma (e.g. DT[newvar := 5] instead of DT[ , new_var := 5]). Please double-check the syntax. Run traceback(), and debugger() to get a line number.
+    Error: Operator := detected in i, the first argument inside DT[...], but is only valid in
+           the second argument, j. Most often, this happens when forgetting the first comma
+           (e.g. DT[newvar := 5] instead of DT[ , new_var := 5]). Please double-check the
+           syntax. Run traceback(), and debugger() to get a line number.
     > DT[,B:=3]
     > DT
            A     B
@@ -169,11 +174,11 @@ unit = "s")
 
 7. Added more explanation/examples to `?data.table` for how to use `.BY`, [#1363](https://github.com/Rdatatable/data.table/issues/1363).
 
-8. Change of `c.POSIXct` method planned for R 4.1.0 impacted `foverlaps` function that could raise `'origin' must be supplied` error. Fix for planned change has been provided in [#4428](https://github.com/Rdatatable/data.table/pull/4428).
+8. Changes upstream in R have been accomodated; e.g. `c.POSIXct` now raises `'origin' must be supplied` which impacted `foverlaps`, [#4428](https://github.com/Rdatatable/data.table/pull/4428).
 
 9. `data.table::update.dev.pkg()` now unloads the `data.table` namespace to alleviate a DLL lock issue on Windows, [#4403](https://github.com/Rdatatable/data.table/issues/4403). Thanks to @drag5 for reporting.
 
-10. Starting from 4.0.0, data.table is using R's `rbind` and `cbind` methods, as described in v1.12.6 news entry. Support for R 3.x.x is resolved when processing `NAMESPACE` file, at install time, or at the time of building package binaries. As a result, users on R 3.x.x, if installing from binaries, must use binaries built by R 3.x.x, and users on R 4.x.x, if installing from binaries, must use binaries built by R 4.x.x. Users will see `package ‘data.table’ was built under R version...` warning when this happen. Thanks to @vinhdizzo for reporting in [#4528](https://github.com/Rdatatable/data.table/issues/4528).
+10. `data.table` packages binaries built by R 3.* should only be installed in R 3.*, and similarly `data.table` package binaries built by R 4.* should only be installed in R 4.*. Otherwise, `package ‘data.table’ was built under R version...` warning will occur and should not be ignored. This is due to a very welcome change to `rbind` and `cbind` in R 4.0.0 which enabled us to remove workarounds, see news item in v1.12.6 below in this file. To continue to support both R 3.* and R 4.*, though, `data.table`'s NAMESPACE file contains a conditional on the R major version and this is what gives rise to the requirement that the major version (3 or 4) used to build `data.table` must match the major version used to install it. Thanks to @vinhdizzo for reporting, [#4528](https://github.com/Rdatatable/data.table/issues/4528).
 
 11. Internal function `shallow()` no longer makes a deep copy of secondary indices. This eliminates a relatively small time and memory overhead when indices are present that added up significantly when performing many operations, such as joins, in a loop or when joining in `j` by group, [#4311](https://github.com/Rdatatable/data.table/issues/4311). Many thanks to @renkun-ken for the report, and @tlapak for the investigation and PR.
 
