@@ -61,32 +61,40 @@ SEXP whichwrapper(SEXP x, SEXP val) {
   return which(x, LOGICAL(val)[0]);
 }
 
-// hack by calling paste using eval. could change this to strcat, but not sure about buffer size for large data.tables... Any ideas Matthew?
-SEXP concat(SEXP vec, SEXP idx) {
-
-  SEXP s, t, v;
-  int nidx=length(idx);
-
-  if (TYPEOF(vec) != STRSXP) error(_("concat: 'vec must be a character vector"));
+static const char *concat(SEXP vec, SEXP idx) {
+  if (!isString(vec)) error(_("concat: 'vec must be a character vector"));
   if (!isInteger(idx) || length(idx) < 0) error(_("concat: 'idx' must be an integer vector of length >= 0"));
+  
+  static char ans[1024];  // so only one call to concat() per calling warning/error
+  int nidx=length(idx), nvec=length(vec);
+  ans[0]='\0';
+  if (nidx==0) return ans;
   const int *iidx = INTEGER(idx);
-  for (int i=0; i<length(idx); ++i) {
-    if (iidx[i] < 0 || iidx[i] > length(vec))
-      error(_("Internal error in concat: 'idx' must take values between 0 and length(vec); 0 <= idx <= %d"), length(vec)); // # nocov
+  for (int i=0; i<nidx; ++i) {
+    if (iidx[i]<1 || iidx[i]>nvec)
+      error(_("Internal error in concat: 'idx' must take values between 1 and length(vec); 1 <= idx <= %d"), nvec); // # nocov
   }
-  PROTECT(v = allocVector(STRSXP, nidx > 5 ? 5 : nidx));
-  for (int i=0; i<length(v); ++i) {
-    SET_STRING_ELT(v, i, STRING_ELT(vec, iidx[i]-1));
+  if (nidx>4) nidx=4;  // first 4 following by ... if there are more than 4
+  int remaining=1018;  // leaving space for ", ...\0" at the end of the 1024, potentially
+  char *pos=ans;
+  int i=0;
+  for (; i<nidx; ++i) {
+    SEXP this = STRING_ELT(vec, iidx[i]-1);
+    int len = length(this);
+    if (len>remaining) break; 
+    strncpy(pos, CHAR(this), len);
+    pos+=len;
+    remaining-=len;
+    *pos++ = ',';
+    *pos++ = ' ';
   }
-  if (nidx > 5) SET_STRING_ELT(v, 4, mkChar("..."));
-  PROTECT(t = s = allocList(3));
-  SET_TYPEOF(t, LANGSXP);
-  SETCAR(t, install("paste")); t = CDR(t);
-  SETCAR(t, v); t = CDR(t);
-  SETCAR(t, mkString(", "));
-  SET_TAG(t, install("collapse"));
-  UNPROTECT(2); // v, (t,s)
-  return(eval(s, R_GlobalEnv));
+  if (length(vec)>4 || i<nidx /*4 or less but won't fit in 1024 chars*/) {
+    *pos++='.'; *pos++='.'; *pos++='.';
+  } else {
+    pos-=2; // rewind the last ", "
+  }
+  *pos='\0';
+  return ans;
 }
 
 // deal with measure.vars of type VECSXP
@@ -151,7 +159,7 @@ SEXP checkVars(SEXP DT, SEXP id, SEXP measure, Rboolean verbose) {
     }
     valuecols = PROTECT(allocVector(VECSXP, 1)); protecti++;
     SET_VECTOR_ELT(valuecols, 0, tmp);
-    warning(_("id.vars and measure.vars are internally guessed when both are 'NULL'. All non-numeric/integer/logical type columns are considered id.vars, which in this case are columns [%s]. Consider providing at least one of 'id' or 'measure' vars in future."), CHAR(STRING_ELT(concat(dtnames, idcols), 0)));
+    warning(_("id.vars and measure.vars are internally guessed when both are 'NULL'. All non-numeric/integer/logical type columns are considered id.vars, which in this case are columns [%s]. Consider providing at least one of 'id' or 'measure' vars in future."), concat(dtnames, idcols));
   } else if (!isNull(id) && isNull(measure)) {
     switch(TYPEOF(id)) {
       case STRSXP  : PROTECT(tmp = chmatch(id, dtnames, 0)); protecti++; break;
@@ -179,7 +187,7 @@ SEXP checkVars(SEXP DT, SEXP id, SEXP measure, Rboolean verbose) {
     idcols = tmp;
     if (verbose) {
       Rprintf(_("'measure.vars' is missing. Assigning all columns other than 'id.vars' columns as 'measure.vars'.\n"));
-      if (length(tmp2)) Rprintf(_("Assigned 'measure.vars' are [%s].\n"), CHAR(STRING_ELT(concat(dtnames, tmp2), 0)));
+      if (length(tmp2)) Rprintf(_("Assigned 'measure.vars' are [%s].\n"), concat(dtnames, tmp2));
     }
   } else if (isNull(id) && !isNull(measure)) {
     switch(TYPEOF(measure)) {
@@ -215,7 +223,7 @@ SEXP checkVars(SEXP DT, SEXP id, SEXP measure, Rboolean verbose) {
     }
     if (verbose) {
       Rprintf(_("'id.vars' is missing. Assigning all columns other than 'measure.vars' columns as 'id.vars'.\n"));
-      if (length(idcols)) Rprintf(_("Assigned 'id.vars' are [%s].\n"), CHAR(STRING_ELT(concat(dtnames, idcols), 0)));
+      if (length(idcols)) Rprintf(_("Assigned 'id.vars' are [%s].\n"), concat(dtnames, idcols));
     }
   } else if (!isNull(id) && !isNull(measure)) {
     switch(TYPEOF(id)) {
@@ -388,7 +396,7 @@ SEXP getvaluecols(SEXP DT, SEXP dtnames, Rboolean valfactor, Rboolean verbose, s
   for (int i=0; i<data->lvalues; ++i) {
     SEXP thisvaluecols = VECTOR_ELT(data->valuecols, i);
     if (!data->isidentical[i])
-      warning(_("'measure.vars' [%s] are not all of the same type. By order of hierarchy, the molten data value column will be of type '%s'. All measure variables not of type '%s' will be coerced too. Check DETAILS in ?melt.data.table for more on coercion.\n"), CHAR(STRING_ELT(concat(dtnames, thisvaluecols), 0)), type2char(data->maxtype[i]), type2char(data->maxtype[i]));
+      warning(_("'measure.vars' [%s] are not all of the same type. By order of hierarchy, the molten data value column will be of type '%s'. All measure variables not of type '%s' will be coerced too. Check DETAILS in ?melt.data.table for more on coercion.\n"), concat(dtnames, thisvaluecols), type2char(data->maxtype[i]), type2char(data->maxtype[i]));
     if (data->maxtype[i] == VECSXP && data->narm) {
       if (verbose) Rprintf(_("The molten data value type is a list at item %d. 'na.rm=TRUE' is ignored.\n"), i+1);
       data->narm = FALSE;
