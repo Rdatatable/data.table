@@ -62,9 +62,9 @@ SEXP whichwrapper(SEXP x, SEXP val) {
 }
 
 static const char *concat(SEXP vec, SEXP idx) {
-  if (!isString(vec)) error(_("concat: 'vec must be a character vector"));
+  if (!isString(vec)) error(_("concat: 'vec' must be a character vector"));
   if (!isInteger(idx) || length(idx) < 0) error(_("concat: 'idx' must be an integer vector of length >= 0"));
-  
+
   static char ans[1024];  // so only one call to concat() per calling warning/error
   int nidx=length(idx), nvec=length(vec);
   ans[0]='\0';
@@ -81,7 +81,7 @@ static const char *concat(SEXP vec, SEXP idx) {
   for (; i<nidx; ++i) {
     SEXP this = STRING_ELT(vec, iidx[i]-1);
     int len = length(this);
-    if (len>remaining) break; 
+    if (len>remaining) break;
     strncpy(pos, CHAR(this), len);
     pos+=len;
     remaining-=len;
@@ -104,13 +104,13 @@ SEXP measurelist(SEXP measure, SEXP dtnames) {
   for (int i=0; i<n; ++i) {
     SEXP x = VECTOR_ELT(measure, i);
     switch(TYPEOF(x)) {
-      case STRSXP  : 
+      case STRSXP  :
         SET_VECTOR_ELT(ans, i, chmatch(x, dtnames, 0));
         break;
       case REALSXP :
         SET_VECTOR_ELT(ans, i, coerceVector(x, INTSXP));
         break;
-      case INTSXP  : 
+      case INTSXP  :
         SET_VECTOR_ELT(ans, i, x);
         break;
       default :
