@@ -1,4 +1,3 @@
-# Source: https://github.com/github/gitignore/blob/master/R.gitignore
 # History files
 .RData
 .Rhistory
@@ -9,8 +8,7 @@ Rplots.pdf
 *-Ex.R
 data.table_*.tar.gz
 data.table.Rcheck
-# useful to source cc.r in your .Rprofile; see comments there
-.Rprofile
+src/Makevars
 
 # Emacs IDE files
 .emacs.desktop
@@ -23,13 +21,26 @@ data.table.Rproj
 # produced vignettes
 vignettes/*.html
 vignettes/*.pdf
+vignettes/plots/figures
 
 # object and shared objects
 *.o
 *.so
 *.dll
 
+# temp files
 *~
 .DS_Store
 .idea
 *.sw[op]
+
+# common devel objects
+.Renviron
+lib
+library
+*.R
+*.csv
+*.csvy
+*.RDS
+*.diff
+*.patch

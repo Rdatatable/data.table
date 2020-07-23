@@ -15,11 +15,10 @@ vignette: >
 require(data.table)
 knitr::opts_chunk$set(
   comment = "#",
-    error = FALSE,
-     tidy = FALSE,
-    cache = FALSE,
+  error = FALSE,
+  tidy = FALSE,
+  cache = FALSE,
   collapse = TRUE,
-  fig.path = 'plots/',
   out.width = '100%',
   dpi = 144
 )
@@ -37,7 +36,7 @@ The simpler usage of `.SD` is for column subsetting (i.e., when `.SDcols` is spe
 
 To give this a more real-world feel, rather than making up data, let's load some data sets about baseball from the [Lahman database](http://www.seanlahman.com/baseball-archive/statistics/). In typical R usage, we'd simply load these data sets from the `Lahman` R package; in this vignette, we've pre-downloaded them directly from the package's GitHub page instead.
 
-```{r download_lahman }
+```{r download_lahman}
 load('Teams.RData')
 setDT(Teams)
 Teams
@@ -106,7 +105,7 @@ The syntax to now convert these columns to `factor` is very similar -- simply ad
 ```{r assign_factors}
 Teams[ , (fkt) := lapply(.SD, factor), .SDcols = fkt]
 # print out the first column to demonstrate success
-head(Teams[[fkt[1L]]])
+head(unique(Teams[[fkt[1L]]]))
 ```
 
 Note that we must wrap `fkt` in parentheses `()` to force `data.table` to interpret this as column names, instead of trying to assign a column named `'fkt'`.
@@ -121,7 +120,7 @@ For example, we could do the following to convert all `factor` columns to `chara
 #   positions with which()
 fkt_idx = which(sapply(Teams, is.factor))
 Teams[ , (fkt_idx) := lapply(.SD, as.character), .SDcols = fkt_idx]
-head(Teams[[fkt_idx[1L]]])
+head(unique(Teams[[fkt_idx[1L]]]))
 ```
 
 Lastly, we can do pattern-based matching of columns in `.SDcols` to select all columns which contain `team` back to `factor`:
@@ -191,10 +190,7 @@ The goal is to add a column `team_performance` to the `Pitching` table that reco
 #   (in general, we should put more care into the 'ties.method' of frank)
 Pitching[G > 5, rank_in_team := frank(ERA), by = .(teamID, yearID)]
 Pitching[rank_in_team == 1, team_performance :=
-           # this should work without needing copy();
-           #   that it doesn't appears to be a bug:
-           #   https://github.com/Rdatatable/data.table/issues/1926
-           Teams[copy(.SD), Rank, on = c('teamID', 'yearID')]]
+           Teams[.SD, Rank, on = c('teamID', 'yearID')]]
 ```
 
 Note that the `x[y]` syntax returns `nrow(y)` values (i.e., it's a right join), which is why `.SD` is on the right in `Teams[.SD]` (since the RHS of `:=` in this case requires `nrow(Pitching[rank_in_team == 1])` values.

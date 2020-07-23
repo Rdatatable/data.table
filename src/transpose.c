@@ -6,17 +6,17 @@ SEXP transpose(SEXP l, SEXP fill, SEXP ignoreArg, SEXP keepNamesArg) {
 
   int nprotect=0;
   if (!isNewList(l))
-    error("l must be a list.");
+    error(_("l must be a list."));
   if (!length(l))
-    return(duplicate(l));
+    return(copyAsPlain(l));
   if (!isLogical(ignoreArg) || LOGICAL(ignoreArg)[0]==NA_LOGICAL)
-    error("ignore.empty should be logical TRUE/FALSE.");
+    error(_("ignore.empty should be logical TRUE/FALSE."));
   bool ignore = LOGICAL(ignoreArg)[0];
   if (!(isNull(keepNamesArg) || (isString(keepNamesArg) && LENGTH(keepNamesArg)==1)))
-    error("keep.names should be either NULL, or the name of the first column of the result in which to place the names of the input");
+    error(_("keep.names should be either NULL, or the name of the first column of the result in which to place the names of the input"));
   bool rn = !isNull(keepNamesArg);
   if (length(fill) != 1)
-    error("fill must be a length 1 vector, such as the default NA");
+    error(_("fill must be a length 1 vector, such as the default NA"));
   R_len_t ln = LENGTH(l);
 
   // preprocessing
@@ -25,7 +25,7 @@ SEXP transpose(SEXP l, SEXP fill, SEXP ignoreArg, SEXP keepNamesArg) {
   for (int i=0; i<ln; ++i) {
     SEXP li = VECTOR_ELT(l, i);
     if (!isVectorAtomic(li) && !isNull(li))
-      error("Item %d of list input is not an atomic vector", i+1);
+      error(_("Item %d of list input is not an atomic vector"), i+1);
     const int len = length(li);
     if (len>maxlen) maxlen=len;
     zerolen += (len==0);
@@ -48,16 +48,14 @@ SEXP transpose(SEXP l, SEXP fill, SEXP ignoreArg, SEXP keepNamesArg) {
   for (int i=0; i<maxlen; ++i) {
     SET_VECTOR_ELT(ans, i+rn, allocVector(maxtype, anslen));
   }
-  const SEXP *ansp = VECTOR_PTR(ans);
+  const SEXP *ansp = SEXPPTR_RO(ans);
   for (int i=0, k=0; i<ln; ++i) {
     SEXP li = VECTOR_ELT(l, i);
     const int len = length(li);
     if (ignore && len==0) continue;
-    bool coerce = false;
     if (TYPEOF(li) != maxtype) {
       li = PROTECT(isFactor(li) ? asCharacterFactor(li) : coerceVector(li, maxtype));
-      coerce = true;
-    }
+    } else PROTECT(li); // extra PROTECT just to help rchk by avoiding two counter variables
     switch (maxtype) {
     case LGLSXP : {
       const int *ili = LOGICAL(li);
@@ -87,9 +85,9 @@ SEXP transpose(SEXP l, SEXP fill, SEXP ignoreArg, SEXP keepNamesArg) {
       }
     } break;
     default :
-      error("Unsupported column type '%s'", type2char(maxtype));
+      error(_("Unsupported column type '%s'"), type2char(maxtype));
     }
-    if (coerce) UNPROTECT(1);
+    UNPROTECT(1); // inside the loop to save the protection stack
     k++;
   }
   UNPROTECT(nprotect);

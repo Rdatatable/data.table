@@ -106,9 +106,9 @@ SEXP fsort(SEXP x, SEXP verboseArg) {
   double t[10];
   t[0] = wallclock();
   if (!isLogical(verboseArg) || LENGTH(verboseArg)!=1 || LOGICAL(verboseArg)[0]==NA_LOGICAL)
-    error("verbose must be TRUE or FALSE");
+    error(_("verbose must be TRUE or FALSE"));
   Rboolean verbose = LOGICAL(verboseArg)[0];
-  if (!isNumeric(x)) error("x must be a vector of type 'double' currently");
+  if (!isNumeric(x)) error(_("x must be a vector of type 'double' currently"));
   // TODO: not only detect if already sorted, but if it is, just return x to save the duplicate
 
   SEXP ansVec = PROTECT(allocVector(REALSXP, xlength(x)));
@@ -117,21 +117,21 @@ SEXP fsort(SEXP x, SEXP verboseArg) {
   // allocate early in case fails if not enough RAM
   // TODO: document this is much cheaper than a copy followed by in-place.
 
-  int nth = getDTthreads();
+  int nth = getDTthreads(xlength(x), true);
   int nBatch=nth*2;  // at least nth; more to reduce last-man-home; but not too large to keep counts small in cache
-  if (verbose) Rprintf("nth=%d, nBatch=%d\n",nth,nBatch);
+  if (verbose) Rprintf(_("nth=%d, nBatch=%d\n"),nth,nBatch);
 
   size_t batchSize = (xlength(x)-1)/nBatch + 1;
   if (batchSize < 1024) batchSize = 1024; // simple attempt to work reasonably for short vector. 1024*8 = 2 4kb pages
   nBatch = (xlength(x)-1)/batchSize + 1;
-  R_xlen_t lastBatchSize = xlength(x) - (nBatch-1)*batchSize;
+  size_t lastBatchSize = xlength(x) - (nBatch-1)*batchSize;
   // could be that lastBatchSize == batchSize when i) xlength(x) is multiple of nBatch
   // and ii) for small vectors with just one batch
 
   t[1] = wallclock();
   double mins[nBatch], maxs[nBatch];
   const double *restrict xp = REAL(x);
-  #pragma omp parallel for schedule(dynamic) num_threads(nth)
+  #pragma omp parallel for schedule(dynamic) num_threads(getDTthreads(nBatch, false))
   for (int batch=0; batch<nBatch; batch++) {
     R_xlen_t thisLen = (batch==nBatch-1) ? lastBatchSize : batchSize;
     const double *restrict d = xp + batchSize*batch;
@@ -153,8 +153,8 @@ SEXP fsort(SEXP x, SEXP verboseArg) {
     if (mins[i]<min) min=mins[i];
     if (maxs[i]>max) max=maxs[i];
   }
-  if (verbose) Rprintf("Range = [%g,%g]\n", min, max);
-  if (min < 0.0) error("Cannot yet handle negatives.");
+  if (verbose) Rprintf(_("Range = [%g,%g]\n"), min, max);
+  if (min < 0.0) error(_("Cannot yet handle negatives."));
   // TODO: -0ULL should allow negatives
   //       avoid twiddle function call as expensive in recent tests (0.34 vs 2.7)
   //       possibly twiddle once to *ans, then untwiddle at the end in a fast parallel sweep
@@ -167,16 +167,17 @@ SEXP fsort(SEXP x, SEXP verboseArg) {
   int MSBNbits = maxBit > 15 ? 16 : maxBit+1;       // how many bits make up the MSB
   int shift = maxBit + 1 - MSBNbits;                // the right shift to leave the MSB bits remaining
   size_t MSBsize = 1LL<<MSBNbits;                   // the number of possible MSB values (16 bits => 65,536)
-  if (verbose) Rprintf("maxBit=%d; MSBNbits=%d; shift=%d; MSBsize=%d\n", maxBit, MSBNbits, shift, MSBsize);
+  if (verbose) Rprintf(_("maxBit=%d; MSBNbits=%d; shift=%d; MSBsize=%d\n"), maxBit, MSBNbits, shift, MSBsize);
 
   R_xlen_t *counts = calloc(nBatch*MSBsize, sizeof(R_xlen_t));
-  if (counts==NULL) error("Unable to allocate working memory");
+  if (counts==NULL) error(_("Unable to allocate working memory"));
   // provided MSBsize>=9, each batch is a multiple of at least one 4k page, so no page overlap
   // TODO: change all calloc, malloc and free to Calloc and Free to be robust to error() and catch ooms.
 
-  if (verbose) Rprintf("counts is %dMB (%d pages per nBatch=%d, batchSize=%lld, lastBatchSize=%lld)\n",
-                       nBatch*MSBsize*sizeof(R_xlen_t)/(1024*1024), nBatch*MSBsize*sizeof(R_xlen_t)/(4*1024*nBatch),
-                       nBatch, batchSize, lastBatchSize);
+  if (verbose) Rprintf(_("counts is %dMB (%d pages per nBatch=%d, batchSize=%"PRIu64", lastBatchSize=%"PRIu64")\n"),
+                       (int)(nBatch*MSBsize*sizeof(R_xlen_t)/(1024*1024)),
+                       (int)(nBatch*MSBsize*sizeof(R_xlen_t)/(4*1024*nBatch)),
+                       nBatch, (uint64_t)batchSize, (uint64_t)lastBatchSize);
   t[3] = wallclock();
   #pragma omp parallel for num_threads(nth)
   for (int batch=0; batch<nBatch; batch++) {
@@ -227,7 +228,7 @@ SEXP fsort(SEXP x, SEXP verboseArg) {
     // sort bins by size, largest first to minimise last-man-home
     R_xlen_t *msbCounts = counts + (nBatch-1)*MSBsize;
     // msbCounts currently contains the ending position of each MSB (the starting location of the next) even across empty
-    if (msbCounts[MSBsize-1] != xlength(x)) error("Internal error: counts[nBatch-1][MSBsize-1] != length(x)"); // # nocov
+    if (msbCounts[MSBsize-1] != xlength(x)) error(_("Internal error: counts[nBatch-1][MSBsize-1] != length(x)")); // # nocov
     R_xlen_t *msbFrom = malloc(MSBsize*sizeof(R_xlen_t));
     int *order = malloc(MSBsize*sizeof(int));
     R_xlen_t cumSum = 0;
@@ -243,16 +244,16 @@ SEXP fsort(SEXP x, SEXP verboseArg) {
     // TODO: time this qsort but likely insignificant.
 
     if (verbose) {
-      Rprintf("Top 5 MSB counts: "); for(int i=0; i<5; i++) Rprintf("%lld ", msbCounts[order[i]]); Rprintf("\n");
-      Rprintf("Reduced MSBsize from %d to ", MSBsize);
+      Rprintf(_("Top 5 MSB counts: ")); for(int i=0; i<5; i++) Rprintf(_("%"PRId64" "), (int64_t)msbCounts[order[i]]); Rprintf(_("\n"));
+      Rprintf(_("Reduced MSBsize from %d to "), MSBsize);
     }
     while (MSBsize>0 && msbCounts[order[MSBsize-1]] < 2) MSBsize--;
     if (verbose) {
-      Rprintf("%d by excluding 0 and 1 counts\n", MSBsize);
+      Rprintf(_("%d by excluding 0 and 1 counts\n"), MSBsize);
     }
 
     t[6] = wallclock();
-    #pragma omp parallel num_threads(getDTthreads())
+    #pragma omp parallel num_threads(getDTthreads(MSBsize, false))
     {
       R_xlen_t *counts = calloc((toBit/8 + 1)*256, sizeof(R_xlen_t));
       // each thread has its own (small) stack of counts
@@ -305,7 +306,7 @@ SEXP fsort(SEXP x, SEXP verboseArg) {
 
   double tot = t[7]-t[0];
   if (verbose) for (int i=1; i<=7; i++) {
-    Rprintf("%d: %.3f (%4.1f%%)\n", i, t[i]-t[i-1], 100.*(t[i]-t[i-1])/tot);
+    Rprintf(_("%d: %.3f (%4.1f%%)\n"), i, t[i]-t[i-1], 100.*(t[i]-t[i-1])/tot);
   }
 
   UNPROTECT(nprotect);

@@ -60,10 +60,10 @@ groupingsets.data.table = function(x, j, by, sets, .SDcols, id = FALSE, jj, ...)
     stop("All columns used in 'sets' argument must be in 'by' too. Columns used in 'sets' but not present in 'by': ", brackify(setdiff(sets.all.by, by)))
   if (id && "grouping" %chin% names(x))
     stop("When using `id=TRUE` the 'x' data.table must not have a column named 'grouping'.")
-  if (!all(sapply(sets, function(x) length(x)==uniqueN(x))))
+  if (any(sapply(sets, anyDuplicated)))
     stop("Character vectors in 'sets' list must not have duplicated column names within a single grouping set.")
-  if (!identical(lapply(sets, sort), unique(lapply(sets, sort))))
-    warning("Double counting is going to happen. Argument 'sets' should be unique without taking order into account, unless you really want double counting, then get used to that warning. Otherwise `sets=unique(lapply(sets, sort))` will do the trick.")
+  if (length(sets) > 1L && (idx<-anyDuplicated(lapply(sets, sort))))
+    warning("'sets' contains a duplicate (i.e., equivalent up to sorting) element at index ", idx, "; as such, there will be duplicate rows in the output -- note that grouping by A,B and B,A will produce the same aggregations. Use `sets=unique(lapply(sets, sort))` to eliminate duplicates.")
   # input arguments handling
   jj = if (!missing(jj)) jj else substitute(j)
   av = all.vars(jj, TRUE)
@@ -72,15 +72,7 @@ groupingsets.data.table = function(x, j, by, sets, .SDcols, id = FALSE, jj, ...)
   if (missing(.SDcols))
     .SDcols = if (".SD" %chin% av) setdiff(names(x), by) else NULL
   # 0 rows template data.table to keep colorder and type
-  if (length(by)) {
-    empty = if (length(.SDcols)) x[0L, eval(jj), by, .SDcols=.SDcols] else x[0L, eval(jj), by]
-  } else {
-    empty = if (length(.SDcols)) x[0L, eval(jj), .SDcols=.SDcols] else x[0L, eval(jj)]
-    if (!is.data.table(empty)) {
-      if (length(empty)>0) empty = empty[0L] # fix for #3173 when no grouping and j constant
-      empty = setDT(list(empty)) # improve after #648, see comment in aggregate.set
-    }
-  }
+  empty = if (length(.SDcols)) x[0L, eval(jj), by, .SDcols=.SDcols] else x[0L, eval(jj), by]
   if (id && "grouping" %chin% names(empty)) # `j` could have been evaluated to `grouping` field
     stop("When using `id=TRUE` the 'j' expression must not evaluate to a column named 'grouping'.")
   if (anyDuplicated(names(empty)) > 0L)
@@ -91,20 +83,14 @@ groupingsets.data.table = function(x, j, by, sets, .SDcols, id = FALSE, jj, ...)
     setcolorder(empty, c("grouping", by, setdiff(names(empty), c("grouping", by))))
   }
   # workaround for rbindlist fill=TRUE on integer64 #1459
-  int64.cols = vapply(empty, inherits, logical(1L), "integer64")
+  int64.cols = vapply_1b(empty, inherits, "integer64")
   int64.cols = names(int64.cols)[int64.cols]
   if (length(int64.cols) && !requireNamespace("bit64", quietly=TRUE))
     stop("Using integer64 class columns require to have 'bit64' package installed.") # nocov
   int64.by.cols = intersect(int64.cols, by)
   # aggregate function called for each grouping set
   aggregate.set = function(by.set) {
-    if (length(by.set)) {
-      r = if (length(.SDcols)) x[, eval(jj), by.set, .SDcols=.SDcols] else x[, eval(jj), by.set]
-    } else {
-      r = if (length(.SDcols)) x[, eval(jj), .SDcols=.SDcols] else x[, eval(jj)]
-      # workaround for grand total single var as data.table too, change to drop=FALSE after #648 solved
-      if (!is.data.table(r)) r = setDT(list(r))
-    }
+    r = if (length(.SDcols)) x[, eval(jj), by.set, .SDcols=.SDcols] else x[, eval(jj), by.set]
     if (id) {
       # integer bit mask of aggregation levels: http://www.postgresql.org/docs/9.5/static/functions-aggregate.html#FUNCTIONS-GROUPING-TABLE
       # 3267: strtoi("", base = 2L) output apparently unstable across platforms

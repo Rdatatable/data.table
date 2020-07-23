@@ -1,48 +1,48 @@
 #include "data.table.h"
 #include <Rdefines.h>
 
-SEXP shift(SEXP obj, SEXP k, SEXP fill, SEXP type) {
-
-  size_t size;
-  int protecti=0;
-  SEXP x, tmp=R_NilValue, elem, ans, thisfill, klass;
-  unsigned long long *dthisfill;
+SEXP shift(SEXP obj, SEXP k, SEXP fill, SEXP type)
+{
+  int nprotect=0;
   enum {LAG, LEAD/*, SHIFT, CYCLIC*/} stype = LAG; // currently SHIFT maps to LAG and CYCLIC is unimplemented (see comments in #1708)
   if (!xlength(obj)) return(obj); // NULL, list()
+  SEXP x;
   if (isVectorAtomic(obj)) {
-    x = PROTECT(allocVector(VECSXP, 1)); protecti++;
+    x = PROTECT(allocVector(VECSXP, 1)); nprotect++;
     SET_VECTOR_ELT(x, 0, obj);
   } else {
     if (!isNewList(obj))
-      error("type '%s' passed to shift(). Must be a vector, list, data.frame or data.table", type2char(TYPEOF(obj)));
+      error(_("type '%s' passed to shift(). Must be a vector, list, data.frame or data.table"), type2char(TYPEOF(obj)));
     x = obj;
   }
   if (length(fill) != 1)
-    error("fill must be a vector of length 1");
+    error(_("fill must be a vector of length 1"));
   // the following two errors should be caught by match.arg() at the R level
   if (!isString(type) || length(type) != 1)
-    error("Internal error: invalid type for shift(), should have been caught before. please report to data.table issue tracker"); // # nocov
+    error(_("Internal error: invalid type for shift(), should have been caught before. please report to data.table issue tracker")); // # nocov
   if (!strcmp(CHAR(STRING_ELT(type, 0)), "lag")) stype = LAG;
   else if (!strcmp(CHAR(STRING_ELT(type, 0)), "lead")) stype = LEAD;
   else if (!strcmp(CHAR(STRING_ELT(type, 0)), "shift")) stype = LAG; // when we get rid of nested if branches we can use SHIFT, for now it maps to LAG
-  else error("Internal error: invalid type for shift(), should have been caught before. please report to data.table issue tracker"); // # nocov
+  else error(_("Internal error: invalid type for shift(), should have been caught before. please report to data.table issue tracker")); // # nocov
 
   int nx = length(x), nk = length(k);
-  if (!isInteger(k)) error("Internal error: k must be integer"); // # nocov
+  if (!isInteger(k)) error(_("Internal error: k must be integer")); // # nocov
   const int *kd = INTEGER(k);
-  for (int i=0; i<nk; i++) if (kd[i]==NA_INTEGER) error("Item %d of n is NA", i+1);  // NA crashed (#3354); n is called k at C level
+  for (int i=0; i<nk; i++) if (kd[i]==NA_INTEGER) error(_("Item %d of n is NA"), i+1);  // NA crashed (#3354); n is called k at C level
 
-  ans = PROTECT(allocVector(VECSXP, nk * nx)); protecti++;
+  SEXP ans = PROTECT(allocVector(VECSXP, nk * nx)); nprotect++;
   for (int i=0; i<nx; i++) {
-    elem  = VECTOR_ELT(x, i);
-    size  = SIZEOF(elem);
+    SEXP elem  = VECTOR_ELT(x, i);
+    size_t size  = SIZEOF(elem);
     R_xlen_t xrows = xlength(elem);
     switch (TYPEOF(elem)) {
-    case INTSXP :
-      thisfill = PROTECT(coerceVector(fill, INTSXP)); protecti++;
-      int ifill = INTEGER(thisfill)[0];
+    case INTSXP : {
+      SEXP thisfill = PROTECT(coerceVector(fill, INTSXP));
+      const int ifill = INTEGER(thisfill)[0];
+      UNPROTECT(1);
       for (int j=0; j<nk; j++) {
         R_xlen_t thisk = MIN(abs(kd[j]), xrows);
+        SEXP tmp;
         SET_VECTOR_ELT(ans, i*nk+j, tmp=allocVector(INTSXP, xrows) );
         int *itmp = INTEGER(tmp);
         size_t tailk = xrows-thisk;
@@ -58,22 +58,24 @@ SEXP shift(SEXP obj, SEXP k, SEXP fill, SEXP type) {
         copyMostAttrib(elem, tmp);
         if (isFactor(elem)) setAttrib(tmp, R_LevelsSymbol, getAttrib(elem, R_LevelsSymbol));
       }
-      break;
+    } break;
 
-    case REALSXP :
-      klass = getAttrib(elem, R_ClassSymbol);
-      if (isString(klass) && STRING_ELT(klass, 0) == char_integer64) {
-        thisfill = PROTECT(allocVector(REALSXP, 1)); protecti++;
-        dthisfill = (unsigned long long *)REAL(thisfill);
+    case REALSXP : {
+      SEXP thisfill;
+      if (Rinherits(elem, char_integer64)) {
+        thisfill = PROTECT(allocVector(REALSXP, 1));
+        unsigned long long *dthisfill = (unsigned long long *)REAL(thisfill);
         if (INTEGER(fill)[0] == NA_INTEGER)
           dthisfill[0] = NA_INT64_LL;
         else dthisfill[0] = (unsigned long long)INTEGER(fill)[0];
       } else {
-        thisfill = PROTECT(coerceVector(fill, REALSXP)); protecti++;
+        thisfill = PROTECT(coerceVector(fill, REALSXP));
       }
-      double dfill = REAL(thisfill)[0];
+      const double dfill = REAL(thisfill)[0];
+      UNPROTECT(1); // thisfill
       for (int j=0; j<nk; j++) {
         R_xlen_t thisk = MIN(abs(kd[j]), xrows);
+        SEXP tmp;
         SET_VECTOR_ELT(ans, i*nk+j, tmp=allocVector(REALSXP, xrows) );
         double *dtmp = REAL(tmp);
         size_t tailk = xrows-thisk;
@@ -86,13 +88,15 @@ SEXP shift(SEXP obj, SEXP k, SEXP fill, SEXP type) {
         }
         copyMostAttrib(elem, tmp);
       }
-      break;
+    } break;
 
-    case CPLXSXP :
-      thisfill = PROTECT(coerceVector(fill, CPLXSXP)); protecti++;
-      Rcomplex cfill = COMPLEX(thisfill)[0];
+    case CPLXSXP : {
+      SEXP thisfill = PROTECT(coerceVector(fill, CPLXSXP));
+      const Rcomplex cfill = COMPLEX(thisfill)[0];
+      UNPROTECT(1);
       for (int j=0; j<nk; j++) {
         R_xlen_t thisk = MIN(abs(kd[j]), xrows);
+        SEXP tmp;
         SET_VECTOR_ELT(ans, i*nk+j, tmp=allocVector(CPLXSXP, xrows) );
         Rcomplex *ctmp = COMPLEX(tmp);
         size_t tailk = xrows-thisk;
@@ -105,13 +109,15 @@ SEXP shift(SEXP obj, SEXP k, SEXP fill, SEXP type) {
         }
         copyMostAttrib(elem, tmp);
       }
-      break;
+    } break;
 
-    case LGLSXP :
-      thisfill = PROTECT(coerceVector(fill, LGLSXP)); protecti++;
-      int lfill = LOGICAL(thisfill)[0];
+    case LGLSXP : {
+      SEXP thisfill = PROTECT(coerceVector(fill, LGLSXP));
+      const int lfill = LOGICAL(thisfill)[0];
+      UNPROTECT(1);
       for (int j=0; j<nk; j++) {
         R_xlen_t thisk = MIN(abs(kd[j]), xrows);
+        SEXP tmp;
         SET_VECTOR_ELT(ans, i*nk+j, tmp=allocVector(LGLSXP, xrows) );
         int *ltmp = LOGICAL(tmp);
         size_t tailk = xrows-thisk;
@@ -124,42 +130,48 @@ SEXP shift(SEXP obj, SEXP k, SEXP fill, SEXP type) {
         }
         copyMostAttrib(elem, tmp);
       }
-      break;
+    } break;
 
-    case STRSXP :
-      thisfill = PROTECT(coerceVector(fill, STRSXP)); protecti++;
+    case STRSXP : {
+      SEXP thisfill = PROTECT(coerceVector(fill, STRSXP));
+      const SEXP sfill = STRING_ELT(thisfill, 0);
       for (int j=0; j<nk; j++) {
+        SEXP tmp;
         SET_VECTOR_ELT(ans, i*nk+j, tmp=allocVector(STRSXP, xrows) );
         int thisk = abs(kd[j]);
         if ((stype == LAG && kd[j] >= 0) || (stype == LEAD && kd[j] < 0)) {
-          for (int m=0; m<xrows; m++) SET_STRING_ELT(tmp, m, (m < thisk) ? STRING_ELT(thisfill, 0) : STRING_ELT(elem, m - thisk));
+          for (int m=0; m<xrows; m++) SET_STRING_ELT(tmp, m, (m < thisk) ? sfill : STRING_ELT(elem, m - thisk));
         } else {
-          for (int m=0; m<xrows; m++) SET_STRING_ELT(tmp, m, (xrows-m <= thisk) ? STRING_ELT(thisfill, 0) : STRING_ELT(elem, m + thisk));
+          for (int m=0; m<xrows; m++) SET_STRING_ELT(tmp, m, (xrows-m <= thisk) ? sfill : STRING_ELT(elem, m + thisk));
         }
         copyMostAttrib(elem, tmp);
       }
-      break;
+      UNPROTECT(1);
+    } break;
 
-    case VECSXP :
-      thisfill = PROTECT(coerceVector(fill, VECSXP)); protecti++;
+    case VECSXP : {
+      SEXP thisfill = PROTECT(coerceVector(fill, VECSXP));
+      const SEXP vfill = VECTOR_ELT(thisfill, 0);
       for (int j=0; j<nk; j++) {
+        SEXP tmp;
         SET_VECTOR_ELT(ans, i*nk+j, tmp=allocVector(VECSXP, xrows) );
         int thisk = abs(kd[j]);
         if ((stype == LAG && kd[j] >= 0) || (stype == LEAD && kd[j] < 0)) {
-          for (int m=0; m<xrows; m++) SET_VECTOR_ELT(tmp, m, (m < thisk) ? VECTOR_ELT(thisfill, 0) : VECTOR_ELT(elem, m - thisk));
+          for (int m=0; m<xrows; m++) SET_VECTOR_ELT(tmp, m, (m < thisk) ? vfill : VECTOR_ELT(elem, m - thisk));
         } else {
-          for (int m=0; m<xrows; m++) SET_VECTOR_ELT(tmp, m, (xrows-m <= thisk) ? VECTOR_ELT(thisfill, 0) : VECTOR_ELT(elem, m + thisk));
+          for (int m=0; m<xrows; m++) SET_VECTOR_ELT(tmp, m, (xrows-m <= thisk) ? vfill : VECTOR_ELT(elem, m + thisk));
         }
         copyMostAttrib(elem, tmp);
       }
-      break;
+      UNPROTECT(1);
+    } break;
 
     default :
-      error("Unsupported type '%s'", type2char(TYPEOF(elem)));
+      error(_("Unsupported type '%s'"), type2char(TYPEOF(elem)));
     }
   }
 
-  UNPROTECT(protecti);
+  UNPROTECT(nprotect);
   return isVectorAtomic(obj) && length(ans) == 1 ? VECTOR_ELT(ans, 0) : ans;
 }
 

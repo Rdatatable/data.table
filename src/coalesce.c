@@ -2,18 +2,18 @@
 
 SEXP coalesce(SEXP x, SEXP inplaceArg) {
   if (TYPEOF(x)!=VECSXP)
-    error("Internal error in coalesce.c: input is list(...) at R level"); // # nocov
+    error(_("Internal error in coalesce.c: input is list(...) at R level")); // # nocov
   if (!IS_TRUE_OR_FALSE(inplaceArg))
-    error("Internal error in coalesce.c: argument 'inplaceArg' must be TRUE or FALSE"); // # nocov
+    error(_("Internal error in coalesce.c: argument 'inplaceArg' must be TRUE or FALSE")); // # nocov
   const bool inplace = LOGICAL(inplaceArg)[0];
   const bool verbose = GetVerbose();
   int nprotect = 0;
-  if (length(x)==0) return R_NilValue;
+  if (length(x)==0 || isNull(VECTOR_ELT(x,0))) return R_NilValue;  // coalesce(NULL, "foo") return NULL even though character type mismatches type NULL
   SEXP first;  // the first vector (it might be the first argument, or it might be the first column of a data.table|frame
   int off = 1; // when x has been pointed to the list of replacement candidates, is the first candidate in position 0 or 1 in the list
   if (TYPEOF(VECTOR_ELT(x,0)) == VECSXP) {
     if (length(x)!=1)
-      error("The first argument is a list, data.table or data.frame. In this case there should be no other arguments provided.");
+      error(_("The first argument is a list, data.table or data.frame. In this case there should be no other arguments provided."));
     x = VECTOR_ELT(x,0);
     if (length(x)==0) return R_NilValue;
     first = VECTOR_ELT(x,0);
@@ -29,25 +29,25 @@ SEXP coalesce(SEXP x, SEXP inplaceArg) {
     SEXP item = VECTOR_ELT(x, i+off);
     if (factor) {
       if (!isFactor(item))
-        error("Item 1 is a factor but item %d is not a factor. When factors are involved, all items must be factor.", i+2);
+        error(_("Item 1 is a factor but item %d is not a factor. When factors are involved, all items must be factor."), i+2);
       if (!R_compute_identical(PROTECT(getAttrib(first, R_LevelsSymbol)), PROTECT(getAttrib(item, R_LevelsSymbol)), 0))
-        error("Item %d is a factor but its levels are not identical to the first item's levels.", i+2);
+        error(_("Item %d is a factor but its levels are not identical to the first item's levels."), i+2);
       UNPROTECT(2);
     } else {
       if (isFactor(item))
-        error("Item %d is a factor but item 1 is not a factor. When factors are involved, all items must be factor.", i+2);
+        error(_("Item %d is a factor but item 1 is not a factor. When factors are involved, all items must be factor."), i+2);
     }
     if (TYPEOF(first) != TYPEOF(item))
-      error("Item %d is type %s but the first item is type %s. Please coerce before coalescing.", i+2, type2char(TYPEOF(item)), type2char(TYPEOF(first)));
+      error(_("Item %d is type %s but the first item is type %s. Please coerce before coalescing."), i+2, type2char(TYPEOF(item)), type2char(TYPEOF(first)));
     if (!R_compute_identical(PROTECT(getAttrib(first, R_ClassSymbol)), PROTECT(getAttrib(item, R_ClassSymbol)), 0))
-      error("Item %d has a different class than item 1.", i+2);
+      error(_("Item %d has a different class than item 1."), i+2);
     UNPROTECT(2);
     if (length(item)!=1 && length(item)!=nrow)
-      error("Item %d is length %d but the first item is length %d. Only singletons are recycled.", i+2, length(item), nrow);
+      error(_("Item %d is length %d but the first item is length %d. Only singletons are recycled."), i+2, length(item), nrow);
   }
   if (!inplace) {
-    first = PROTECT(duplicate(first)); nprotect++;
-    if (verbose) Rprintf("coalesce copied first item (inplace=FALSE)\n");
+    first = PROTECT(copyAsPlain(first)); nprotect++;
+    if (verbose) Rprintf(_("coalesce copied first item (inplace=FALSE)\n"));
   }
   void **valP = (void **)R_alloc(nval, sizeof(void *));
   switch(TYPEOF(first)) {
@@ -65,7 +65,7 @@ SEXP coalesce(SEXP x, SEXP inplaceArg) {
       valP[k++] = INTEGER(item);
     }
     const bool final=(finalVal!=NA_INTEGER);
-    #pragma omp parallel for num_threads(getDTthreads())
+    #pragma omp parallel for num_threads(getDTthreads(nrow, true))
     for (int i=0; i<nrow; ++i) {
       int val = xP[i];
       if (val!=NA_INTEGER) continue;
@@ -74,7 +74,7 @@ SEXP coalesce(SEXP x, SEXP inplaceArg) {
     }
   } break;
   case REALSXP: {
-    if (INHERITS(first, char_integer64) || INHERITS(first, char_nanotime)) { // integer64 and nanotime (it seem nanotime does not inherit from integer64)
+    if (Rinherits(first, char_integer64)) { // Rinherits() is true for nanotime
       int64_t *xP=(int64_t *)REAL(first), finalVal=NA_INTEGER64;
       int k=0;
       for (int j=0; j<nval; ++j) {
@@ -88,7 +88,7 @@ SEXP coalesce(SEXP x, SEXP inplaceArg) {
         valP[k++] = REAL(item);
       }
       const bool final = (finalVal!=NA_INTEGER64);
-      #pragma omp parallel for num_threads(getDTthreads())
+      #pragma omp parallel for num_threads(getDTthreads(nrow, true))
       for (int i=0; i<nrow; ++i) {
         int64_t val=xP[i];
         if (val!=NA_INTEGER64) continue;
@@ -102,19 +102,19 @@ SEXP coalesce(SEXP x, SEXP inplaceArg) {
         SEXP item = VECTOR_ELT(x, j+off);
         if (length(item)==1) {
           double tt = REAL(item)[0];
-          if (ISNA(tt)) continue;
+          if (ISNAN(tt)) continue;
           finalVal = tt;
           break;
         }
         valP[k++] = REAL(item);
       }
-      const bool final = !ISNA(finalVal);
-      #pragma omp parallel for num_threads(getDTthreads())
+      const bool final = !ISNAN(finalVal);
+      #pragma omp parallel for num_threads(getDTthreads(nrow, true))
       for (int i=0; i<nrow; ++i) {
         double val=xP[i];
-        if (!ISNA(val)) continue;
-        int j=0; while (ISNA(val) && j<k) val=((double *)valP[j++])[i];
-        if (!ISNA(val)) xP[i]=val; else if (final) xP[i]=finalVal;
+        if (!ISNAN(val)) continue;
+        int j=0; while (ISNAN(val) && j<k) val=((double *)valP[j++])[i];
+        if (!ISNAN(val)) xP[i]=val; else if (final) xP[i]=finalVal;
       }
     }
   } break;
@@ -132,7 +132,7 @@ SEXP coalesce(SEXP x, SEXP inplaceArg) {
       valP[k++] = COMPLEX(item);
     }
     const bool final = !ISNAN(finalVal.r) && !ISNAN(finalVal.i);
-    #pragma omp parallel for num_threads(getDTthreads())
+    #pragma omp parallel for num_threads(getDTthreads(nrow, true))
     for (int i=0; i<nrow; ++i) {
       Rcomplex val=xP[i];
       if (!ISNAN(val.r) && !ISNAN(val.i)) continue;
@@ -163,7 +163,7 @@ SEXP coalesce(SEXP x, SEXP inplaceArg) {
     }
   } break;
   default:
-    error("Unsupported type: %s", type2char(TYPEOF(first))); // e.g. raw is tested
+    error(_("Unsupported type: %s"), type2char(TYPEOF(first))); // e.g. raw is tested
   }
   UNPROTECT(nprotect);
   return first;

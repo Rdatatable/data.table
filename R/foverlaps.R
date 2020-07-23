@@ -72,16 +72,15 @@ foverlaps = function(x, y, by.x=if (!is.null(key(x))) key(x) else key(y), by.y=k
     } else stop("All entries in column ", yintervals[1L], " should be <= corresponding entries in column ", yintervals[2L], " in data.table 'y'.")
   }
   # POSIXct interval cols error check
-  is.POSIXct = function(x) inherits(x, "POSIXct")
-  posx_chk = c(is.POSIXct(xval1), is.POSIXct(xval2), is.POSIXct(yval1), is.POSIXct(yval2))
+  posx_chk = sapply(list(xval1, xval2, yval1, yval2), inherits, 'POSIXct')
   if (any(posx_chk) && !all(posx_chk)) {
     stop("Some interval cols are of type POSIXct while others are not. Please ensure all interval cols are (or are not) of POSIXct type")
   }
   # #1143, mismatched timezone
   getTZ = function(x) if (is.null(tz <- attr(x, "tzone", exact=TRUE))) "" else tz # "" == NULL AFAICT
   tzone_chk = c(getTZ(xval1), getTZ(xval2), getTZ(yval1), getTZ(yval2))
-  if (any(tzone_chk != tzone_chk[1L])) {
-    warning("POSIXct interval cols have mixed timezones. Overlaps are performed on the internal numerical representation of POSIXct objects, therefore printed values may give the impression that values don't overlap but their internal representations will. Please ensure that POSIXct type interval cols have identical 'tzone' attributes to avoid confusion.")
+  if (length(unique(tzone_chk)) > 1L) {
+    warning("POSIXct interval cols have mixed timezones. Overlaps are performed on the internal numerical representation of POSIXct objects (always in UTC epoch time), therefore printed values may give the impression that values don't overlap but their internal representations do Please ensure that POSIXct type interval cols have identical 'tzone' attributes to avoid confusion.")
   }
   ## see NOTES below:
   yclass = c(class(yval1), class(yval2))
@@ -110,14 +109,15 @@ foverlaps = function(x, y, by.x=if (!is.null(key(x))) key(x) else key(y), by.y=k
     setattr(icall, 'names', icols)
     mcall = make_call(mcols, quote(c))
     if (type %chin% c("within", "any")) {
+      if (isposix) mcall[[2L]] = call("unclass", mcall[[2L]]) # fix for R-devel change in c.POSIXct
       mcall[[3L]] = substitute(
         # datetimes before 1970-01-01 are represented as -ve numerics, #3349
-        if (isposix) unclass(val)*(1 + sign(unclass(val))*dt_eps())
+        if (isposix) unclass(val)*(1L + sign(unclass(val))*dt_eps())
         else if (isdouble) {
           # fix for #1006 - 0.0 occurs in both start and end
           # better fix for 0.0, and other -ves. can't use 'incr'
           # hopefully this doesn't open another can of worms
-          (val+dt_eps())*(1 + sign(val)*dt_eps())
+          (val+dt_eps())*(1L + sign(val)*dt_eps())
         }
         else val+1L, # +1L is for integer/IDate/Date class, for examples
         list(val = mcall[[3L]]))
@@ -129,7 +129,7 @@ foverlaps = function(x, y, by.x=if (!is.null(key(x))) key(x) else key(y), by.y=k
               within =, equal = yintervals)
   call = construct(head(ynames, -2L), uycols, type)
   if (verbose) {last.started.at=proc.time();cat("unique() + setkey() operations done in ...");flush.console()}
-  uy = unique(y[, eval(call)])
+  uy = unique(y[, eval(call)]) # this started to fail from R 4.1 due to c(POSIXct, numeric)
   setkey(uy)[, `:=`(lookup = list(list(integer(0L))), type_lookup = list(list(integer(0L))), count=0L, type_count=0L)]
   if (verbose) {cat(timetaken(last.started.at),"\n"); flush.console()}
   matches = function(ii, xx, del, ...) {

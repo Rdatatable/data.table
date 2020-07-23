@@ -18,11 +18,6 @@ setindexv = function(x, cols, verbose=getOption("datatable.verbose")) {
   }
 }
 
-# remove these 3 after May 2019; see discussion in #3399 and notes in v1.12.2. They were marked experimental after all.
-set2key = function(...)  stop("set2key() is now deprecated. Please use setindex() instead.")
-set2keyv = function(...) stop("set2keyv() is now deprecated. Please use setindexv() instead.")
-key2 = function(...)     stop("key2() is now deprecated. Please use indices() instead.")
-
 # upgrade to error after Mar 2020. Has already been warning since 2012, and stronger warning in Mar 2019 (note in news for 1.12.2); #3399
 "key<-" = function(x,value) {
   warning("key(x)<-value is deprecated and not supported. Please change to use setkey() with perhaps copy(). Has been warning since 2012 and will be an error in future.")
@@ -41,9 +36,15 @@ setkeyv = function(x, cols, verbose=getOption("datatable.verbose"), physical=TRU
     setattr(x,"index",NULL)  # setkey(DT,NULL) also clears secondary keys. setindex(DT,NULL) just clears secondary keys.
     return(invisible(x))
   }
+  if (!missing(verbose)) {
+    stopifnot(isTRUEorFALSE(verbose))
+    # set the global verbose option because that is fetched from C code without having to pass it through
+    oldverbose = options(datatable.verbose=verbose)
+    on.exit(options(oldverbose))
+  }
   if (!is.data.table(x)) stop("x is not a data.table")
   if (!is.character(cols)) stop("cols is not a character vector. Please see further information in ?setkey.")
-  if (physical && identical(attr(x, ".data.table.locked", exact=TRUE),TRUE)) stop("Setting a physical key on .SD is reserved for possible future use; to modify the original data's order by group. Try setindex() instead. Or, set*(copy(.SD)) as a (slow) last resort.")
+  if (physical && .Call(C_islocked, x)) stop("Setting a physical key on .SD is reserved for possible future use; to modify the original data's order by group. Try setindex() instead. Or, set*(copy(.SD)) as a (slow) last resort.")
   if (!length(cols)) {
     warning("cols is a character vector of zero length. Removed the key, but use NULL instead, or wrap with suppressWarnings() to avoid this warning.")
     setattr(x,"sorted",NULL)
@@ -102,12 +103,9 @@ setkeyv = function(x, cols, verbose=getOption("datatable.verbose"), physical=TRU
   }
   setattr(x,"index",NULL)   # TO DO: reorder existing indexes likely faster than rebuilding again. Allow optionally. Simpler for now to clear.
   if (length(o)) {
-    if (verbose) {
-      tt = suppressMessages(system.time(.Call(Creorder,x,o)))
-      cat("reorder took", tt["user.self"]+tt["sys.self"], "sec\n")
-    } else {
-      .Call(Creorder,x,o)
-    }
+    if (verbose) { last.started.at = proc.time() }
+    .Call(Creorder,x,o)
+    if (verbose) { cat("reorder took", timetaken(last.started.at), "\n"); flush.console() }
   } else {
     if (verbose) cat("x is already ordered by these columns, no need to call reorder\n")
   } # else empty integer() from forderv means x is already ordered by those cols, nothing to do.
@@ -157,93 +155,68 @@ setreordervec = function(x, order) .Call(Creorder, x, order)
 # The others (order, sort.int etc) are turned off to protect ourselves from using them internally, for speed and for
 # consistency; e.g., consistent twiddling of numeric/integer64, NA at the beginning of integer, locale ordering of character vectors.
 
-is.sorted = function(x, by=seq_along(x)) {
+is.sorted = function(x, by=NULL) {
   if (is.list(x)) {
-    warning("Use 'if (length(o <- forderv(DT,by))) ...' for efficiency in one step, so you have o as well if not sorted.")
-    # could pass through a flag for forderv to return early on first FALSE. But we don't need that internally
-    # since internally we always then need ordering, an it's better in one step. Don't want inefficiency to creep in.
-    # This is only here for user/debugging use to check/test valid keys; e.g. data.table:::is.sorted(DT,by)
-    0L == length(forderv(x,by,retGrp=FALSE,sort=TRUE))
+    if (missing(by)) by = seq_along(x)   # wouldn't make sense when x is a vector; hence by=seq_along(x) is not the argument default
+    if (is.character(by)) by = chmatch(by, names(x))
   } else {
     if (!missing(by)) stop("x is vector but 'by' is supplied")
-    .Call(Cfsorted, x)
   }
-  # Cfsorted could be named CfIsSorted, but since "sorted" is an adjective not verb, it's clear; e.g., Cfsort would sort it ("sort" is verb).
+  .Call(Cissorted, x, as.integer(by))
   # Return value of TRUE/FALSE is relied on in [.data.table quite a bit on vectors. Simple. Stick with that (rather than -1/0/+1)
-  # Important to call forder.c::fsorted here, for consistent character ordering and numeric/integer64 twiddling.
 }
 
 ORDERING_TYPES = c('logical', 'integer', 'double', 'complex', 'character')
 forderv = function(x, by=seq_along(x), retGrp=FALSE, sort=TRUE, order=1L, na.last=FALSE)
 {
-  if (!(sort || retGrp)) stop("At least one of retGrp or sort must be TRUE")
-  na.last = as.logical(na.last)
-  if (!length(na.last)) stop('length(na.last) = 0')
-  if (length(na.last) != 1L) {
-    warning("length(na.last) > 1, only the first element will be used")
-    na.last = na.last[1L]
-  }
-  # TO DO: export and document forder
-  if (is.atomic(x)) {
+  if (is.atomic(x)) {  # including forderv(NULL) which returns error consistent with base::order(NULL),
     if (!missing(by) && !is.null(by)) stop("x is a single vector, non-NULL 'by' doesn't make sense")
     by = NULL
-    if ( !missing(order) && (length(order) != 1L || !(order %in% c(1L, -1L))) )
-      stop("x is a single vector, length(order) must be =1 and it's value should be 1 (ascending) or -1 (descending).")
   } else {
-    if (!length(x)) return(integer(0L)) # to be consistent with base::order. this'll make sure forderv(NULL) will result in error
-                       # (as base does) but forderv(data.table(NULL)) and forderv(list()) will return integer(0L))
+    if (!length(x)) return(integer(0L)) # e.g. forderv(data.table(NULL)) and forderv(list()) return integer(0L))
     by = colnamesInt(x, by, check_dups=FALSE)
-    if ( (length(order) != 1L && length(order) != length(by)) || !all(order %in% c(1L, -1L)) )
-      stop("x is a list, length(order) must be either =1 or =length(by) and each value should be 1 or -1 for each column in 'by', corresponding to ascending or descending order, respectively. If length(order) == 1, it will be recycled to length(by).")
     if (length(order) == 1L) order = rep(order, length(by))
   }
-  order = as.integer(order)
+  order = as.integer(order) # length and contents of order being +1/-1 is checked at C level
   .Call(Cforder, x, by, retGrp, sort, order, na.last)  # returns integer() if already sorted, regardless of sort=TRUE|FALSE
 }
 
-forder = function(x, ..., na.last=TRUE, decreasing=FALSE)
+forder = function(..., na.last=TRUE, decreasing=FALSE)
 {
-  if (!is.data.table(x)) stop("x must be a data.table.")
-  if (ncol(x) == 0L) stop("Attempting to order a 0-column data.table.")
-  if (is.na(decreasing) || !is.logical(decreasing)) stop("'decreasing' must be logical TRUE or FALSE")
-  cols = substitute(list(...))[-1L]
-  if (identical(as.character(cols),"NULL") || !length(cols) || (length(cols) == 1L && !nzchar(cols))) return(NULL) # to provide the same output as base::order
-  ans = x
-  order = rep(1L, length(cols))
-  if (length(cols)) {
-    ans = vector("list", length(cols))
-    cols = as.list(cols)
-    xcols = names(x)
-    for (i in seq_along(cols)) {
-      v=cols[[i]]
-      if (i == 1L && is.call(v) && length(v) == 2L && v[[1L]] == "list") return(1L) # to be consistent with base, see comment below under while loop
-      while (is.call(v) && length(v) == 2L && v[[1L]] != "list") {
-        # take care of "--x", "{-x}", "(---+x)" etc., cases and also "list(y)". 'list(y)' is ambiguous though. In base, with(DT, order(x, list(y))) will error
-        # that 'arguments are not of same lengths'. But with(DT, order(list(x), list(y))) will return 1L, which is very strange. On top of that, with(DT,
-        # order(x, as.list(10:1)) would return 'unimplemented type list'. It's all very inconsistent. But we HAVE to be consistent with base HERE.
-        if (!as.character(v[[1L]]) %chin% c("+", "-")) break   # FIX for bug #5583
-        if (v[[1L]] == "-") order[i] = -order[i]
-        v = v[[-1L]]
-      }
-      if (is.name(v)) {
-        ix = chmatch(as.character(v), xcols, nomatch=0L)
-        if (ix != 0L) ans = point(ans, i, x, ix) # see 'point' in data.table.R and C-version pointWrapper in assign.c - avoid copies
-        else {
-          v = as.call(list(as.name("list"), v))
-          ans = point(ans, i, eval(v, x, parent.frame()), 1L)
-        }
-      } else {
-        if (!is.object(eval(v, x, parent.frame()))) {
-          v   = as.call(list(as.name("list"), v))
-          ans = point(ans, i, eval(v, x, parent.frame()), 1L) # eval has to make a copy here (not due to list(.), but due to ex: "4-5*y"), unavoidable.
-        } else ans = point(ans, i, list(unlist(eval(v, x, parent.frame()))), 1L)
-      } # else stop("Column arguments to order by in 'forder' should be of type name/symbol (ex: quote(x)) or call (ex: quote(-x), quote(x+5*y))")
+  sub = substitute(list(...))
+  tt = sapply(sub, function(x) is.null(x) || (is.symbol(x) && !nzchar(x)))
+  if (any(tt)) sub[tt] = NULL  # remove any NULL or empty arguments; e.g. test 1962.052: forder(DT, NULL) and forder(DT, )
+  if (length(sub)<2L) return(NULL)  # forder() with no arguments returns NULL consistent with base::order
+  asc = rep.int(1L, length(sub)-1L)  # ascending (1) or descending (-1) per column
+  # the idea here is to intercept - (and unusual --+ deriving from built expressions) before vectors in forder(DT, -colA, colB) so that :
+  # 1) - on character vector works; ordinarily in R that fails with type error
+  # 2) each column/expression can have its own +/- more easily that having to use a separate decreasing=TRUE/FALSE
+  # 3) we can pass the decreasing (-) flag to C and avoid what normally happens in R; i.e. allocate a new vector and apply - to every element first
+  # We intercept the unevaluated expressions and massage them before evaluating in with(DT) scope or not depending on the first item.
+  for (i in seq.int(2L, length(sub))) {
+    v = sub[[i]]
+    while (v %iscall% c('-', '+') && length(v)==2L) {
+      if (v[[1L]] == "-") asc[i-1L] = -asc[i-1L]
+      sub[[i]] = v = v[[2L]]  # remove the leading +/- which is the 2nd item since length(v)==2; i.e. monadic +/-
     }
   }
-  cols = seq_along(ans)
-  # Supported column types are checked at C level
-  o = forderv(ans, cols, sort=TRUE, retGrp=FALSE, order= if (decreasing) -order else order, na.last)
-  if (!length(o)) o = seq_along(ans[[1L]]) else o
+  x = eval(sub[[2L]], parent.frame(), parent.frame())
+  if (is.list(x)) {
+    if (length(x)==0L && is.data.frame(x)) stop("Attempting to order a 0-column data.table or data.frame.")
+    sub[2L] = NULL  # change list(DT, ...) to list(...)
+    if (length(sub)==1L) {
+      data = x
+    } else {
+      if (!is.data.frame(x)) stop("The first item passed to [f]order is a plain list but there are more items. It should be a data.table or data.frame.")
+      asc = asc[-1L]
+      data = eval(sub, x, parent.frame())
+    }
+  } else {
+    data = eval(sub, parent.frame(), parent.frame())
+  }
+  stopifnot(isTRUEorFALSE(decreasing))
+  o = forderv(data, seq_along(data), sort=TRUE, retGrp=FALSE, order= if (decreasing) -asc else asc, na.last)
+  if (!length(o) && length(data)>=1L) o = seq_along(data[[1L]]) else o
   o
 }
 
@@ -273,7 +246,7 @@ setorder = function(x, ..., na.last=FALSE)
 # na.last=FALSE here, to be consistent with data.table's default
 # as opposed to DT[order(.)] where na.last=TRUE, to be consistent with base
 {
-  if (!is.data.frame(x)) stop("x must be a data.frame or data.table.")
+  if (!is.data.frame(x)) stop("x must be a data.frame or data.table")
   cols = substitute(list(...))[-1L]
   if (identical(as.character(cols),"NULL")) return(x)
   if (length(cols)) {
@@ -326,7 +299,7 @@ setorderv = function(x, cols = colnames(x), order=1L, na.last=FALSE)
       setattr(x, 'row.names', rownames(x)[o])
     }
     k = key(x)
-    if (!identical(head(cols, length(k)), k) || any(head(order, length(k)) < 0))
+    if (!identical(head(cols, length(k)), k) || any(head(order, length(k)) < 0L))
       setattr(x, 'sorted', NULL) # if 'forderv' is not 0-length & key is not a same-ordered subset of cols, it means order has changed. So, set key to NULL, else retain key.
     setattr(x, 'index', NULL)  # remove secondary keys too. These could be reordered and retained, but simpler and faster to remove
   }
@@ -344,7 +317,7 @@ SJ = function(...) {
 }
 # S for Sorted, usually used in i to sort the i table
 
-# TO DO?: Use the CJ list() replication method for SJ (inside as.data.table.list?, #2109) too to avoid alloc.col
+# TO DO?: Use the CJ list() replication method for SJ (inside as.data.table.list?, #2109) too to avoid setalloccol
 
 CJ = function(..., sorted = TRUE, unique = FALSE)
 {
@@ -356,7 +329,8 @@ CJ = function(..., sorted = TRUE, unique = FALSE)
     if (is.null(vnames <- names(l))) vnames = paste0("V", seq_len(length(l)))
     else if (any(tt <- vnames=="")) vnames[tt] = paste0("V", which(tt))
   } else {
-    vnames = name_dots(...)
+    vnames = name_dots(...)$vnames
+    if (any(tt <- vnames=="")) vnames[tt] = paste0("V", which(tt))
   }
   dups = FALSE # fix for #1513
   for (i in seq_along(l)) {
@@ -378,10 +352,10 @@ CJ = function(..., sorted = TRUE, unique = FALSE)
     }
   }
   nrow = prod( vapply_1i(l, length) )  # lengths(l) will work from R 3.2.0
-  if (nrow > .Machine$integer.max) stop("Cross product of elements provided to CJ() would result in ",nrow," rows which exceeds .Machine$integer.max == ",.Machine$integer.max)
+  if (nrow > .Machine$integer.max) stop(gettextf("Cross product of elements provided to CJ() would result in %.0f rows which exceeds .Machine$integer.max == %d", nrow, .Machine$integer.max, domain='R-data.table'))
   l = .Call(Ccj, l)
   setDT(l)
-  l = alloc.col(l)  # a tiny bit wasteful to over-allocate a fixed join table (column slots only), doing it anyway for consistency since
+  l = setalloccol(l)  # a tiny bit wasteful to over-allocate a fixed join table (column slots only), doing it anyway for consistency since
                     # it's possible a user may wish to use SJ directly outside a join and would expect consistent over-allocation
   setnames(l, vnames)
   if (sorted) {

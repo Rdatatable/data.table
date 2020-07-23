@@ -30,6 +30,7 @@
 
 // #define TIMING_ON
 
+static int nth = 1;                 // number of threads to use, throttled by default; used by cleanup() to ensure no mismatch in getDTthreads() calls
 static bool retgrp = true;          // return group sizes as well as the ordering vector? If so then use gs, gsalloc and gsn :
 static int nrow = 0;                // used as group size stack allocation limit (when all groups are 1 row)
 static int *gs = NULL;              // gs = final groupsizes e.g. 23,12,87,2,1,34,...
@@ -54,14 +55,17 @@ static uint8_t **key = NULL;
 static int *anso = NULL;
 static bool notFirst=false;
 
-#define Error(...) do {cleanup(); error(__VA_ARGS__);} while(0)      // http://gcc.gnu.org/onlinedocs/cpp/Swallowing-the-Semicolon.html#Swallowing-the-Semicolon
+static char msg[1001];
+#define STOP(...) do {snprintf(msg, 1000, __VA_ARGS__); cleanup(); error(msg);} while(0)      // http://gcc.gnu.org/onlinedocs/cpp/Swallowing-the-Semicolon.html#Swallowing-the-Semicolon
+// use STOP in this file (not error()) to ensure cleanup() is called first
+// snprintf to msg first in case nrow (just as an example) is provided in the message because cleanup() sets nrow to 0
 #undef warning
 #define warning(...) Do not use warning in this file                // since it can be turned to error via warn=2
 /* Using OS realloc() in this file to benefit from (often) in-place realloc() to save copy
  * We have to trap on exit anyway to call savetl_end().
  * NB: R_alloc() would be more convenient (fails within) and robust (auto free) but there is no R_realloc(). Implementing R_realloc() would be an alloc and copy, iiuc.
  *     Calloc/Realloc needs to be Free'd, even before error() [R-exts$6.1.2]. An oom within Calloc causes a previous Calloc to leak so Calloc would still needs to be trapped anyway.
- * Therefore, using <<if (!malloc()) Error("helpful context msg")>> approach to cleanup() on error.
+ * Therefore, using <<if (!malloc()) STOP(_("helpful context msg"))>> approach to cleanup() on error.
  */
 
 static void free_ustr() {
@@ -76,7 +80,7 @@ static void cleanup() {
   gs_alloc = 0;
   gs_n = 0;
 
-  if (gs_thread!=NULL) for (int i=0; i<getDTthreads(); i++) free(gs_thread[i]);
+  if (gs_thread!=NULL) for (int i=0; i<nth; i++) free(gs_thread[i]);
   free(gs_thread);       gs_thread=NULL;
   free(gs_thread_alloc); gs_thread_alloc=NULL;
   free(gs_thread_n);     gs_thread_n=NULL;
@@ -88,7 +92,7 @@ static void cleanup() {
   free(cradix_counts); cradix_counts=NULL;
   free(cradix_xtmp);   cradix_xtmp=NULL;
   free_ustr();
-  if (key!=NULL) for (int i=0; i<nradix; i++) free(key[i]);
+  if (key!=NULL) { int i=0; while (key[i]!=NULL) free(key[i++]); }  // ==nradix, other than rare cases e.g. tests 1844.5-6 (#3940), and if a calloc fails
   free(key); key=NULL; nradix=0;
   savetl_end();  // Restore R's own usage of tl. Must run after the for loop in free_ustr() since only CHARSXP which had tl>0 (R's usage) are stored there.
 }
@@ -100,7 +104,7 @@ static void push(const int *x, const int n) {
   if (gs_thread_alloc[me] < newn) {
     gs_thread_alloc[me] = (newn < nrow/3) ? (1+(newn*2)/4096)*4096 : nrow;  // [2|3] to not overflow and 3 not 2 to avoid allocating close to nrow (nrow groups occurs when all size 1 groups)
     gs_thread[me] = realloc(gs_thread[me], gs_thread_alloc[me]*sizeof(int));
-    if (gs_thread[me]==NULL) Error("Failed to realloc thread private group size buffer to %d*4bytes", (int)gs_thread_alloc[me]);
+    if (gs_thread[me]==NULL) STOP(_("Failed to realloc thread private group size buffer to %d*4bytes"), (int)gs_thread_alloc[me]);
   }
   memcpy(gs_thread[me]+gs_thread_n[me], x, n*sizeof(int));
   gs_thread_n[me] += n;
@@ -114,7 +118,7 @@ static void flush() {
   if (gs_alloc < newn) {
     gs_alloc = (newn < nrow/3) ? (1+(newn*2)/4096)*4096 : nrow;
     gs = realloc(gs, gs_alloc*sizeof(int));
-    if (gs==NULL) Error("Failed to realloc group size result to %d*4bytes", (int)gs_alloc);
+    if (gs==NULL) STOP(_("Failed to realloc group size result to %d*4bytes"), (int)gs_alloc);
   }
   memcpy(gs+gs_n, gs_thread[me], n*sizeof(int));
   gs_n += n;
@@ -212,7 +216,7 @@ int StrCmp(SEXP x, SEXP y)
   if (x == y) return 0;             // same cached pointer (including NA_STRING==NA_STRING)
   if (x == NA_STRING) return -1;    // x<y
   if (y == NA_STRING) return 1;     // x>y
-  return strcmp(CHAR(ENC2UTF8(x)), CHAR(ENC2UTF8(y)));
+  return strcmp(CHAR(ENC2UTF8(x)), CHAR(ENC2UTF8(y)));  // TODO: always calling ENC2UTF8 here could be expensive 
 }
 /* ENC2UTF8 handles encoding issues by converting all marked non-utf8 encodings alone to utf8 first. The function could be wrapped
    in the first if-statement already instead of at the last stage, but this is to ensure that all-ascii cases are handled with maximum efficiency.
@@ -257,7 +261,7 @@ static void cradix_r(SEXP *xsub, int n, int radix)
     memset(thiscounts, 0, 256*sizeof(int));
     return;
   }
-  if (thiscounts[0] != 0) Error("Logical error. counts[0]=%d in cradix but should have been decremented to 0. radix=%d", thiscounts[0], radix);
+  if (thiscounts[0] != 0) STOP(_("Logical error. counts[0]=%d in cradix but should have been decremented to 0. radix=%d"), thiscounts[0], radix);
   itmp = 0;
   for (int i=1; i<256; i++) {
     if (thiscounts[i] == 0) continue;
@@ -272,9 +276,9 @@ static void cradix_r(SEXP *xsub, int n, int radix)
 static void cradix(SEXP *x, int n)
 {
   cradix_counts = (int *)calloc(ustr_maxlen*256, sizeof(int));  // counts for the letters of left-aligned strings
-  if (!cradix_counts) Error("Failed to alloc cradix_counts");
+  if (!cradix_counts) STOP(_("Failed to alloc cradix_counts"));
   cradix_xtmp = (SEXP *)malloc(ustr_n*sizeof(SEXP));
-  if (!cradix_xtmp) Error("Failed to alloc cradix_tmp");
+  if (!cradix_xtmp) STOP(_("Failed to alloc cradix_tmp"));
   cradix_r(x, n, 0);
   free(cradix_counts); cradix_counts=NULL;
   free(cradix_xtmp);   cradix_xtmp=NULL;
@@ -285,10 +289,10 @@ static void range_str(SEXP *x, int n, uint64_t *out_min, uint64_t *out_max, int 
 {
   int na_count=0;
   bool anyneedutf8=false;
-  if (ustr_n!=0) Error("Internal error: ustr isn't empty when starting range_str: ustr_n=%d, ustr_alloc=%d", ustr_n, ustr_alloc);  // # nocov
-  if (ustr_maxlen!=0) Error("Internal error: ustr_maxlen isn't 0 when starting range_str");  // # nocov
+  if (ustr_n!=0) STOP(_("Internal error: ustr isn't empty when starting range_str: ustr_n=%d, ustr_alloc=%d"), ustr_n, ustr_alloc);  // # nocov
+  if (ustr_maxlen!=0) STOP(_("Internal error: ustr_maxlen isn't 0 when starting range_str"));  // # nocov
   // savetl_init() has already been called at the start of forder
-  #pragma omp parallel for num_threads(getDTthreads())
+  #pragma omp parallel for num_threads(getDTthreads(n, true))
   for(int i=0; i<n; i++) {
     SEXP s = x[i];
     if (s==NA_STRING) {
@@ -306,7 +310,7 @@ static void range_str(SEXP *x, int n, uint64_t *out_min, uint64_t *out_max, int 
         ustr_alloc = (ustr_alloc==0) ? 16384 : ustr_alloc*2;  // small initial guess, negligible time to alloc 128KB (32 pages)
         if (ustr_alloc>n) ustr_alloc = n;  // clamp at n. Reaches n when fully unique (no dups)
         ustr = realloc(ustr, ustr_alloc * sizeof(SEXP));
-        if (ustr==NULL) Error("Unable to realloc %d * %d bytes in range_str", ustr_alloc, sizeof(SEXP));  // # nocov
+        if (ustr==NULL) STOP(_("Unable to realloc %d * %d bytes in range_str"), ustr_alloc, (int)sizeof(SEXP));  // # nocov
       }
       ustr[ustr_n++] = s;
       SET_TRUELENGTH(s, -ustr_n);  // unique in any order is fine. first-appearance order is achieved later in count_group
@@ -324,7 +328,7 @@ static void range_str(SEXP *x, int n, uint64_t *out_min, uint64_t *out_max, int 
     SEXP ustr2 = PROTECT(allocVector(STRSXP, ustr_n));
     for (int i=0; i<ustr_n; i++) SET_STRING_ELT(ustr2, i, ENC2UTF8(ustr[i]));
     SEXP *ustr3 = (SEXP *)malloc(ustr_n * sizeof(SEXP));
-    if (!ustr3) Error("Failed to alloc ustr3 when converting strings to UTF8");  // # nocov
+    if (!ustr3) STOP(_("Failed to alloc ustr3 when converting strings to UTF8"));  // # nocov
     memcpy(ustr3, STRING_PTR(ustr2), ustr_n*sizeof(SEXP));
     // need to reset ustr_maxlen because we need ustr_maxlen for utf8 strings
     ustr_maxlen = 0;
@@ -342,7 +346,7 @@ static void range_str(SEXP *x, int n, uint64_t *out_min, uint64_t *out_max, int 
     }
     // now use the 1-1 mapping from ustr to ustr2 to get the ordering back into original ustr, being careful to reset tl to 0
     int *tl = (int *)malloc(ustr_n * sizeof(int));
-    if (!tl) Error("Failed to alloc tl when converting strings to UTF8");  // # nocov
+    if (!tl) STOP(_("Failed to alloc tl when converting strings to UTF8"));  // # nocov
     SEXP *tt = STRING_PTR(ustr2);
     for (int i=0; i<ustr_n; i++) tl[i] = TRUELENGTH(tt[i]);   // fetches the o in ustr3 into tl which is ordered by ustr
     for (int i=0; i<ustr_n; i++) SET_TRUELENGTH(ustr3[i], 0);    // reset to 0 tl of the UTF8 (and possibly non-UTF in ustr too)
@@ -371,8 +375,8 @@ static uint64_t dmask=0;
 SEXP setNumericRounding(SEXP droundArg)
 // init.c has initial call with default of 2
 {
-  if (!isInteger(droundArg) || LENGTH(droundArg)!=1) error("Must an integer or numeric vector length 1");
-  if (INTEGER(droundArg)[0] < 0 || INTEGER(droundArg)[0] > 2) error("Must be 2, 1 or 0");
+  if (!isInteger(droundArg) || LENGTH(droundArg)!=1) error(_("Must an integer or numeric vector length 1"));
+  if (INTEGER(droundArg)[0] < 0 || INTEGER(droundArg)[0] > 2) error(_("Must be 2, 1 or 0"));
   dround = INTEGER(droundArg)[0];
   dmask = dround ? 1 << (8*dround-1) : 0;
   return R_NilValue;
@@ -391,7 +395,7 @@ int getNumericRounding_C()
 
 // for signed integers it's easy: flip sign bit to swap positives and negatives; the resulting unsigned is in the right order with INT_MIN ending up as 0
 // for floating point finite you have to flip the other bits too if it was signed: http://stereopsis.com/radix.html
-uint64_t dtwiddle(void *p, int i)
+uint64_t dtwiddle(const void *p, int i)
 {
   union {
     double d;
@@ -406,7 +410,7 @@ uint64_t dtwiddle(void *p, int i)
   }
   if (ISNAN(u.d)) return ISNA(u.d)    ? 0 /*NA*/   : 1 /*NaN*/;  // also normalises a difference between NA on 32bit R (bit 13 set) and 64bit R (bit 13 not set)
   if (isinf(u.d)) return signbit(u.d) ? 2 /*-Inf*/ : (0xffffffffffffffff>>(dround*8)) /*+Inf*/;
-  Error("Unknown non-finite value; not NA, NaN, -Inf or +Inf");  // # nocov
+  STOP(_("Unknown non-finite value; not NA, NaN, -Inf or +Inf"));  // # nocov
 }
 
 void radix_r(const int from, const int to, const int radix);
@@ -427,34 +431,49 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
   const bool verbose = GetVerbose();
 
   if (!isNewList(DT)) {
-    if (!isVectorAtomic(DT)) error("Input is not either a list of columns, or an atomic vector.");
-    if (!isNull(by)) error("Input is an atomic vector (not a list of columns) but by= is not NULL");
-    if (!isInteger(ascArg) || LENGTH(ascArg)!=1) error("Input is an atomic vector (not a list of columns) but ascArg= is not a length 1 integer");
+    if (!isVectorAtomic(DT))
+      STOP(_("Internal error: input is not either a list of columns, or an atomic vector."));  // # nocov; caught by colnamesInt at R level, test 1962.0472
+    if (!isNull(by))
+      STOP(_("Internal error: input is an atomic vector (not a list of columns) but by= is not NULL"));  // # nocov; caught at R level, test 1962.043
+    if (!isInteger(ascArg) || LENGTH(ascArg)!=1)
+      STOP(_("Input is an atomic vector (not a list of columns) but order= is not a length 1 integer"));
+    if (verbose)
+      Rprintf(_("forder.c received a vector type '%s' length %d\n"), type2char(TYPEOF(DT)), length(DT));
     SEXP tt = PROTECT(allocVector(VECSXP, 1)); n_protect++;
     SET_VECTOR_ELT(tt, 0, DT);
     DT = tt;
     by = PROTECT(allocVector(INTSXP, 1)); n_protect++;
     INTEGER(by)[0] = 1;
+  } else {
+    if (verbose)
+      Rprintf(_("forder.c received %d rows and %d columns\n"), length(VECTOR_ELT(DT,0)), length(DT));
   }
-
-  if (!length(DT)) error("DT is an empty list() of 0 columns");
-  if (!isInteger(by) || !LENGTH(by)) error("DT has %d columns but 'by' is either not integer or is length 0", length(DT));  // seq_along(x) at R level
-  if (!isInteger(ascArg) || LENGTH(ascArg)!=LENGTH(by)) error("Either 'ascArg' is not integer or its length (%d) is different to 'by's length (%d)", LENGTH(ascArg), LENGTH(by));
+  if (!length(DT))
+    STOP(_("Internal error: DT is an empty list() of 0 columns"));  // # nocov  should have been caught be colnamesInt, test 2099.1
+  if (!isInteger(by) || !LENGTH(by))
+    STOP(_("Internal error: DT has %d columns but 'by' is either not integer or is length 0"), length(DT));  // # nocov  colnamesInt catches, 2099.2
+  if (!isInteger(ascArg) || LENGTH(ascArg)!=LENGTH(by))
+    STOP(_("Either order= is not integer or its length (%d) is different to by='s length (%d)"), LENGTH(ascArg), LENGTH(by));
   nrow = length(VECTOR_ELT(DT,0));
   int n_cplx = 0;
   for (int i=0; i<LENGTH(by); i++) {
     int by_i = INTEGER(by)[i];
     if (by_i < 1 || by_i > length(DT))
-      error("internal error: 'by' value %d out of range [1,%d]", by_i, length(DT)); // # nocov # R forderv already catch that using C colnamesInt
+      STOP(_("internal error: 'by' value %d out of range [1,%d]"), by_i, length(DT)); // # nocov # R forderv already catch that using C colnamesInt
     if ( nrow != length(VECTOR_ELT(DT, by_i-1)) )
-      error("Column %d is length %d which differs from length of column 1 (%d)\n", INTEGER(by)[i], length(VECTOR_ELT(DT, INTEGER(by)[i]-1)), nrow);
+      STOP(_("Column %d is length %d which differs from length of column 1 (%d)\n"), INTEGER(by)[i], length(VECTOR_ELT(DT, INTEGER(by)[i]-1)), nrow);
     if (TYPEOF(VECTOR_ELT(DT, by_i-1)) == CPLXSXP) n_cplx++;
   }
-  if (!isLogical(retGrpArg) || LENGTH(retGrpArg)!=1 || INTEGER(retGrpArg)[0]==NA_LOGICAL) error("retGrp must be TRUE or FALSE");
+  if (!isLogical(retGrpArg) || LENGTH(retGrpArg)!=1 || INTEGER(retGrpArg)[0]==NA_LOGICAL)
+    STOP(_("retGrp must be TRUE or FALSE"));
   retgrp = LOGICAL(retGrpArg)[0]==TRUE;
-  if (!isLogical(sortGroupsArg) || LENGTH(sortGroupsArg)!=1 || INTEGER(sortGroupsArg)[0]==NA_LOGICAL ) error("sortGroups must be TRUE or FALSE");
-  if (!isLogical(naArg) || LENGTH(naArg) != 1) error("na.last must be logical TRUE, FALSE or NA of length 1");
+  if (!isLogical(sortGroupsArg) || LENGTH(sortGroupsArg)!=1 || INTEGER(sortGroupsArg)[0]==NA_LOGICAL )
+    STOP(_("sort must be TRUE or FALSE"));
   sortType = LOGICAL(sortGroupsArg)[0]==TRUE;   // if sortType is 1, it is later flipped between +1/-1 according to ascArg. Otherwise ascArg is ignored when sortType==0
+  if (!retgrp && !sortType)
+    STOP(_("At least one of retGrp= or sort= must be TRUE"));
+  if (!isLogical(naArg) || LENGTH(naArg) != 1)
+    STOP(_("na.last must be logical TRUE, FALSE or NA of length 1"));
   nalast = (LOGICAL(naArg)[0] == NA_LOGICAL) ? -1 : LOGICAL(naArg)[0]; // 1=na last, 0=na first (default), -1=remove na
 
   if (nrow==0) {
@@ -473,14 +492,16 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
   SEXP ans = PROTECT(allocVector(INTSXP, nrow)); n_protect++;
   anso = INTEGER(ans);
   TEND(0)
-  #pragma omp parallel for num_threads(getDTthreads())
+  #pragma omp parallel for num_threads(getDTthreads(nrow, true))
   for (int i=0; i<nrow; i++) anso[i]=i+1;   // gdb 8.1.0.20180409-git very slow here, oddly
   TEND(1)
   savetl_init();   // from now on use Error not error
 
   int ncol=length(by);
-  key = calloc((ncol+n_cplx)*8+1, sizeof(uint8_t *));  // needs to be before loop because part II relies on part I, column-by-column. +1 because we check NULL after last one
-  // TODO: if key==NULL Error
+  int keyAlloc = (ncol+n_cplx)*8 + 1;         // +1 for NULL to mark end; calloc to initialize with NULLs
+  key = calloc(keyAlloc, sizeof(uint8_t *));  // needs to be before loop because part II relies on part I, column-by-column.
+  if (!key)
+    STOP("Unable to allocate %"PRId64" bytes of working memory", (uint64_t)keyAlloc*sizeof(uint8_t *));  // # nocov
   nradix=0; // the current byte we're writing this column to; might be squashing into it (spare>0)
   int spare=0;  // the amount of bits remaining on the right of the current nradix byte
   bool isReal=false;
@@ -489,12 +510,16 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
   if (n_cplx) { CplxPart=PROTECT(allocVector(REALSXP, nrow)); n_protect++; } // one alloc is reused for each part
   TEND(2);
   for (int col=0; col<ncol; col++) {
-    // Rprintf("Finding range of column %d ...\n", col);
+    // Rprintf(_("Finding range of column %d ...\n"), col);
     SEXP x = VECTOR_ELT(DT,INTEGER(by)[col]-1);
     uint64_t min=0, max=0;     // min and max of non-NA finite values
     int na_count=0, infnan_count=0;
-    if (sortType) sortType=INTEGER(ascArg)[col];  // if sortType!=0 (not first-appearance) then +1/-1 comes from ascArg.
-    //Rprintf("sortType = %d\n", sortType);
+    if (sortType) {
+      sortType=INTEGER(ascArg)[col];  // if sortType!=0 (not first-appearance) then +1/-1 comes from ascArg.
+      if (sortType!=1 && sortType!=-1)
+        STOP(_("Item %d of order (ascending/descending) is %d. Must be +1 or -1."), col+1, sortType);
+    }
+    //Rprintf(_("sortType = %d\n"), sortType);
     switch(TYPEOF(x)) {
     case INTSXP : case LGLSXP :  // TODO skip LGL and assume range [0,1]
       range_i32(INTEGER(x), nrow, &min, &max, &na_count);
@@ -518,7 +543,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
         range_i64((int64_t *)REAL(x), nrow, &min, &max, &na_count);
       } else {
         if (verbose && INHERITS(x, char_Date) && INTEGER(isReallyReal(x))[0]==0) {
-          Rprintf("\n*** Column %d passed to forder is a date stored as an 8 byte double but no fractions are present. Please consider a 4 byte integer date such as IDate to save space and time.\n", col+1);
+          Rprintf(_("\n*** Column %d passed to forder is a date stored as an 8 byte double but no fractions are present. Please consider a 4 byte integer date such as IDate to save space and time.\n"), col+1);
           // Note the (slightly expensive) isReallyReal will only run when verbose is true. Prefix '***' just to make it stand out in verbose output
           // In future this could be upgraded to option warning. But I figured that's what we use verbose to do (to trace problems and look for efficiencies).
           // If an automatic coerce is desired (see discussion in #1738) then this is the point to do that in this file. Move the INTSXP case above to be
@@ -534,8 +559,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
       range_str(STRING_PTR(x), nrow, &min, &max, &na_count);
       break;
     default:
-      Error("Column %d of by= (%d) is type '%s', not yet supported. Please use the by= argument to specify columns with types that are supported. See NEWS item in v1.12.2 for more information.",
-            col+1, INTEGER(by)[col], type2char(TYPEOF(x)));
+      STOP(_("Column %d passed to [f]order is type '%s', not yet supported."), col+1, type2char(TYPEOF(x)));
     }
     TEND(3);
     if (na_count==nrow || (min>0 && min==max && na_count==0 && infnan_count==0)) {
@@ -546,7 +570,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
     }
 
     uint64_t range = max-min+1 +1/*NA*/ +isReal*3/*NaN, -Inf, +Inf*/;
-    // Rprintf("range=%llu  min=%llu  max=%llu  na_count==%d\n", range, min, max, na_count);
+    // Rprintf(_("range=%"PRIu64"  min=%"PRIu64"  max=%"PRIu64"  na_count==%d\n"), range, min, max, na_count);
 
     int maxBit=0;
     while (range) { maxBit++; range>>=1; }
@@ -578,8 +602,12 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
     }
 
     for (int b=0; b<nbyte; b++) {
-      if (key[nradix+b]==NULL)
-        key[nradix+b] = calloc(nrow, sizeof(uint8_t));  // 0 initialize so that NA's can just skip (NA is always the 0 offset)
+      if (key[nradix+b]==NULL) {
+        uint8_t *tt = calloc(nrow, sizeof(uint8_t));  // 0 initialize so that NA's can just skip (NA is always the 0 offset)
+        if (!tt)
+          STOP("Unable to allocate %"PRIu64" bytes of working memory", (uint64_t)nrow*sizeof(uint8_t)); // # nocov
+        key[nradix+b] = tt;
+      }
     }
 
     const bool asc = (sortType>=0);
@@ -595,7 +623,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
 
     const uint64_t naval = ((nalast==1) == asc) ? max+1+isReal*2 : min-1-isReal*2;
     const uint64_t nanval = ((nalast==1) == asc) ? max+2 : min-2;  // only used when isReal
-    // Rprintf("asc=%d  min2=%llu  max2=%llu  naval==%llu  nanval==%llu\n", asc, min2, max2, naval, nanval);
+    // Rprintf(_("asc=%d  min2=%"PRIu64"  max2=%"PRIu64"  naval==%"PRIu64"  nanval==%"PRIu64"\n"), asc, min2, max2, naval, nanval);
 
     // several columns could squash into 1 byte. due to this bit squashing is why we deal
     // with asc|desc here, otherwise it could be done in the ugrp sorting by reversing the ugrp insert sort
@@ -623,7 +651,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
     switch(TYPEOF(x)) {
     case INTSXP : case LGLSXP : {
       int32_t *xd = INTEGER(x);
-      #pragma omp parallel for num_threads(getDTthreads())
+      #pragma omp parallel for num_threads(getDTthreads(nrow, true))
       for (int i=0; i<nrow; i++) {
         uint64_t elem=0;
         if (xd[i]==NA_INTEGER) {  // TODO: go branchless if na_count==0
@@ -638,7 +666,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
     case REALSXP :
       if (inherits(x, "integer64")) {
         int64_t *xd = (int64_t *)REAL(x);
-        #pragma omp parallel for num_threads(getDTthreads())
+        #pragma omp parallel for num_threads(getDTthreads(nrow, true))
         for (int i=0; i<nrow; i++) {
           uint64_t elem=0;
           if (xd[i]==INT64_MIN) {
@@ -651,7 +679,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
         }
       } else {
         double *xd = REAL(x);     // TODO: revisit double compression (skip bytes/mult by 10,100 etc) as currently it's often 6-8 bytes even for 3.14,3.15
-        #pragma omp parallel for num_threads(getDTthreads())
+        #pragma omp parallel for num_threads(getDTthreads(nrow, true))
         for (int i=0; i<nrow; i++) {
           uint64_t elem=0;
           if (!R_FINITE(xd[i])) {
@@ -670,7 +698,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
       break;
     case STRSXP : {
       SEXP *xd = STRING_PTR(x);
-      #pragma omp parallel for num_threads(getDTthreads())
+      #pragma omp parallel for num_threads(getDTthreads(nrow, true))
       for (int i=0; i<nrow; i++) {
         uint64_t elem=0;
         if (xd[i]==NA_STRING) {
@@ -684,26 +712,26 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
       free_ustr();  // ustr could be left allocated and reused, but free now in case large and we're tight on ram
       break;
     default:
-       Error("Internal error: column not supported not caught earlier");  // # nocov
+       STOP(_("Internal error: column not supported, not caught earlier"));  // # nocov
     }
     nradix += nbyte-1+(spare==0);
     TEND(4)
-    // Rprintf("Written key for column %d\n", col);
+    // Rprintf(_("Written key for column %d\n"), col);
   }
   if (key[nradix]!=NULL) nradix++;  // nradix now number of bytes in key
   #ifdef TIMING_ON
-  Rprintf("nradix=%d\n", nradix);
+  Rprintf(_("nradix=%d\n"), nradix);
   #endif
 
-  int nth = getDTthreads();
+  nth = getDTthreads(nrow, true);  // this nth is relied on in cleanup()
   TMP =  (int *)malloc(nth*UINT16_MAX*sizeof(int)); // used by counting sort (my_n<=65536) in radix_r()
   UGRP = (uint8_t *)malloc(nth*256);                // TODO: align TMP and UGRP to cache lines (and do the same for stack allocations too)
-  if (!TMP || !UGRP /*|| TMP%64 || UGRP%64*/) Error("Failed to allocate TMP or UGRP or they weren't cache line aligned: nth=%d", nth);
+  if (!TMP || !UGRP /*|| TMP%64 || UGRP%64*/) STOP(_("Failed to allocate TMP or UGRP or they weren't cache line aligned: nth=%d"), nth);
   if (retgrp) {
     gs_thread = calloc(nth, sizeof(int *));     // thread private group size buffers
     gs_thread_alloc = calloc(nth, sizeof(int));
     gs_thread_n = calloc(nth, sizeof(int));
-    if (!gs_thread || !gs_thread_alloc || !gs_thread_n) Error("Could not allocate (very tiny) group size thread buffers");
+    if (!gs_thread || !gs_thread_alloc || !gs_thread_n) STOP(_("Could not allocate (very tiny) group size thread buffers"));
   }
   if (nradix) {
     radix_r(0, nrow-1, 0);  // top level recursive call: (from, to, radix)
@@ -720,7 +748,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
     // Alternatively, we could try and avoid creating anso[] until it's needed, but that has similar complexity issues as (ii)
     // Note that if nalast==-1 (remove NA) anso will contain 0's for the NAs and will be considered not-sorted.
     bool stop = false;
-    #pragma omp parallel for num_threads(getDTthreads())
+    #pragma omp parallel for num_threads(getDTthreads(nrow, true))
     for (int i=0; i<nrow; i++) {
       if (stop) continue;
       if (anso[i]!=i+1) stop=true;
@@ -764,10 +792,10 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
     int last=NBLOCK-1;
     while (last>=0 && nblock[last]==0) last--; // remove unused timing slots
     for (int i=0; i<=last; i++) {
-      Rprintf("Timing block %2d%s = %8.3f   %8d\n", i, (i>=17&&i<=19)?"(*)":"   ", tblock[i], nblock[i]);
+      Rprintf(_("Timing block %2d%s = %8.3f   %8d\n"), i, (i>=17&&i<=19)?"(*)":"   ", tblock[i], nblock[i]);
     }
     for (int i=0; i<=256; i++) {
-      if (stat[i]) Rprintf("stat[%03d]==%10zd\n", i, stat[i]);
+      if (stat[i]) Rprintf(_("stat[%03d]==%20"PRIu64"\n"), i, (uint64_t)stat[i]);
     }
   }
   #endif
@@ -802,8 +830,8 @@ void radix_r(const int from, const int to, const int radix) {
     return;
   }
   else if (my_n<=256) {
-    // if (getDTthreads()==1)
-    // Rprintf("insert clause: radix=%d, my_n=%d, from=%d, to=%d\n", radix, my_n, from, to);
+    // if nth==1
+    // Rprintf(_("insert clause: radix=%d, my_n=%d, from=%d, to=%d\n"), radix, my_n, from, to);
     // insert sort with some twists:
     // i) detects if grouped; if sortType==0 can then skip
     // ii) keeps group appearance order at byte level to minimize movement
@@ -915,7 +943,7 @@ void radix_r(const int from, const int to, const int radix) {
     return;
   }
   else if (my_n<=UINT16_MAX) {    // UINT16_MAX==65535 (important not 65536)
-    // if (getDTthreads()==1) Rprintf("counting clause: radix=%d, my_n=%d\n", radix, my_n);
+    // if (nth==1) Rprintf(_("counting clause: radix=%d, my_n=%d\n"), radix, my_n);
     uint16_t my_counts[256] = {0};  // Needs to be all-0 on entry. This ={0} initialization should be fast as it's on stack. Otherwise, we have to manage
                                     // a stack of counts anyway since this is called recursively and these counts are needed to make the recursive calls.
                                     // This thread-private stack alloc has no chance of false sharing and gives omp and compiler best chance.
@@ -1017,18 +1045,18 @@ void radix_r(const int from, const int to, const int radix) {
   }
   // else parallel batches. This is called recursively but only once or maybe twice before resolving to UINT16_MAX branch above
 
-  int batchSize = MIN(UINT16_MAX, 1+my_n/getDTthreads());  // (my_n-1)/nBatch + 1;   //UINT16_MAX == 65535
+  int batchSize = MIN(UINT16_MAX, 1+my_n/getDTthreads(my_n, true));  // (my_n-1)/nBatch + 1;   //UINT16_MAX == 65535
   int nBatch = (my_n-1)/batchSize + 1;   // TODO: make nBatch a multiple of nThreads?
   int lastBatchSize = my_n - (nBatch-1)*batchSize;
   uint16_t *counts = calloc(nBatch*256,sizeof(uint16_t));
   uint8_t  *ugrps =  malloc(nBatch*256*sizeof(uint8_t));
   int      *ngrps =  calloc(nBatch    ,sizeof(int));
-  if (!counts || !ugrps || !ngrps) Error("Failed to allocate parallel counts. my_n=%d, nBatch=%d", my_n, nBatch);
+  if (!counts || !ugrps || !ngrps) STOP(_("Failed to allocate parallel counts. my_n=%d, nBatch=%d"), my_n, nBatch);
 
   bool skip=true;
   const int n_rem = nradix-radix-1;   // how many radix are remaining after this one
   TEND(16)
-  #pragma omp parallel num_threads(getDTthreads())
+  #pragma omp parallel num_threads(getDTthreads(nBatch, false))
   {
     int     *my_otmp = malloc(batchSize * sizeof(int)); // thread-private write
     uint8_t *my_ktmp = malloc(batchSize * sizeof(uint8_t) * n_rem);
@@ -1132,8 +1160,8 @@ void radix_r(const int from, const int to, const int radix) {
   TEND(18 + notFirst*3)
   if (!skip) {
     int *TMP = malloc(my_n * sizeof(int));
-    if (!TMP) Error("Unable to allocate TMP for my_n=%d items in parallel batch counting", my_n);
-    #pragma omp parallel for num_threads(getDTthreads())
+    if (!TMP) STOP(_("Unable to allocate TMP for my_n=%d items in parallel batch counting"), my_n);
+    #pragma omp parallel for num_threads(getDTthreads(nBatch, false))
     for (int batch=0; batch<nBatch; batch++) {
       const int *restrict      my_starts = starts + batch*256;
       const uint16_t *restrict my_counts = counts + batch*256;
@@ -1149,7 +1177,7 @@ void radix_r(const int from, const int to, const int radix) {
     memcpy(anso+from, TMP, my_n*sizeof(int));
 
     for (int r=0; r<n_rem; r++) {    // TODO: groups of sizeof(anso)  4 byte int currently  (in future 8).  To save team startup cost (but unlikely significant anyway)
-      #pragma omp parallel for num_threads(getDTthreads())
+      #pragma omp parallel for num_threads(getDTthreads(nBatch, false))
       for (int batch=0; batch<nBatch; batch++) {
         const int *restrict      my_starts = starts + batch*256;
         const uint16_t *restrict my_counts = counts + batch*256;
@@ -1204,7 +1232,7 @@ void radix_r(const int from, const int to, const int radix) {
       // all groups are <=65535 and radix_r() will handle each one single-threaded. Therefore, this time
       // it does make sense to start a parallel team and there will be no nestedness here either.
       if (retgrp) {
-        #pragma omp parallel for ordered schedule(dynamic) num_threads(getDTthreads())
+        #pragma omp parallel for ordered schedule(dynamic) num_threads(getDTthreads(ngrp, false))
         for (int i=0; i<ngrp; i++) {
           int start = from + starts[ugrp[i]];
           radix_r(start, start+my_gs[i]-1, radix+1);
@@ -1213,7 +1241,7 @@ void radix_r(const int from, const int to, const int radix) {
         }
       } else {
         // flush() is only relevant when retgrp==true so save the redundant ordered clause
-        #pragma omp parallel for schedule(dynamic) num_threads(getDTthreads())
+        #pragma omp parallel for schedule(dynamic) num_threads(getDTthreads(ngrp, false))
         for (int i=0; i<ngrp; i++) {
           int start = from + starts[ugrp[i]];
           radix_r(start, start+my_gs[i]-1, radix+1);
@@ -1230,61 +1258,138 @@ void radix_r(const int from, const int to, const int radix) {
 }
 
 
-SEXP fsorted(SEXP x)
+SEXP issorted(SEXP x, SEXP by)
 {
   // Just checks if ordered and returns FALSE early if not. Does not return ordering if so, unlike forder.
   // Always increasing order with NA's first
-  // Similar to base:is.unsorted but accepts NA at the beginning (standard in data.table and considered sorted) rather than returning NA when NA present.
+  // Similar to base:is.unsorted but accepts NA at the beginning (standard in data.table and considered sorted) rather than
+  // returning NA when NA present, and is multi-column.
   // TODO: test in big steps first to return faster if unsortedness is at the end (a common case of rbind'ing data to end)
-  // These are all sequential access to x, so very quick and cache efficient. Could be parallel by checking continuity at batch boundaries.
-  const int n = length(x);
-  if (n <= 1) return(ScalarLogical(TRUE));
-  if (!isVectorAtomic(x)) Error("is.sorted (R level) and fsorted (C level) only to be used on vectors. If needed on a list/data.table, you'll need the order anyway if not sorted, so use if (length(o<-forder(...))) for efficiency in one step, or equivalent at C level");
-  int i=1;
-  switch(TYPEOF(x)) {
-  case INTSXP : case LGLSXP : {
-    int *xd = INTEGER(x);
-    while (i<n && xd[i]>=xd[i-1]) i++;
-  } break;
-  case REALSXP :
-    if (inherits(x,"integer64")) {
-      int64_t *xd = (int64_t *)REAL(x);
+  // These are all sequential access to x, so quick and cache efficient. Could be parallel by checking continuity at batch boundaries.
+  
+  if (!isNull(by) && !isInteger(by)) STOP(_("Internal error: issorted 'by' must be NULL or integer vector"));
+  if (isVectorAtomic(x) || length(by)==1) {
+    // one-column special case is very common so specialize it by avoiding column-type switches inside the row-loop later
+    if (length(by)==1) {
+      if (INTEGER(by)[0]<1 || INTEGER(by)[0]>length(x)) STOP(_("issorted 'by' [%d] out of range [1,%d]"), INTEGER(by)[0], length(x));
+      x = VECTOR_ELT(x, INTEGER(by)[0]-1);
+    }
+    const int n = length(x);
+    if (n <= 1) return(ScalarLogical(TRUE));
+    if (!isVectorAtomic(x)) STOP(_("is.sorted does not work on list columns"));
+    int i=1;
+    switch(TYPEOF(x)) {
+    case INTSXP : case LGLSXP : {
+      int *xd = INTEGER(x);
       while (i<n && xd[i]>=xd[i-1]) i++;
-    } else {
-      double *xd = REAL(x);
-      while (i<n && dtwiddle(xd,i)>=dtwiddle(xd,i-1)) i++;
+    } break;
+    case REALSXP :
+      if (inherits(x,"integer64")) {
+        int64_t *xd = (int64_t *)REAL(x);
+        while (i<n && xd[i]>=xd[i-1]) i++;
+      } else {
+        double *xd = REAL(x);
+        while (i<n && dtwiddle(xd,i)>=dtwiddle(xd,i-1)) i++;  // TODO: change to loop over any NA or -Inf at the beginning and then proceed without dtwiddle() (but rounding)
+      }
+      break;
+    case STRSXP : {
+      SEXP *xd = STRING_PTR(x);
+      i = 0;
+      while (i<n && xd[i]==NA_STRING) i++;
+      bool need = NEED2UTF8(xd[i]);
+      i++; // pass over first non-NA_STRING
+      while (i<n) {
+        if (xd[i]==xd[i-1]) {i++; continue;}
+        if (xd[i]==NA_STRING) break;
+        if (!need) need = NEED2UTF8(xd[i]);
+        if ((need ? strcmp(CHAR(ENC2UTF8(xd[i])), CHAR(ENC2UTF8(xd[i-1]))) :
+                    strcmp(CHAR(xd[i]), CHAR(xd[i-1]))) < 0) break;
+        i++;
+      }
+    } break;
+    default :
+      STOP(_("type '%s' is not yet supported"), type2char(TYPEOF(x)));
     }
-    break;
-  case STRSXP : {
-    SEXP *xd = STRING_PTR(x);
-    i = 0;
-    while (i<n && xd[i]==NA_STRING) i++;
-    bool need = NEED2UTF8(xd[i]);
-    i++; // pass over first non-NA_STRING
-    while (i<n) {
-      if (xd[i]==xd[i-1]) {i++; continue;}
-      if (xd[i]==NA_STRING) break;
-      if (!need) need = NEED2UTF8(xd[i]);
-      if ((need ? strcmp(CHAR(ENC2UTF8(xd[i])), CHAR(ENC2UTF8(xd[i-1]))) :
-                  strcmp(CHAR(xd[i]), CHAR(xd[i-1]))) < 0) break;
-      i++;
-    }
-  } break;
-  default :
-    Error("type '%s' is not yet supported", type2char(TYPEOF(x)));
+    return ScalarLogical(i==n);
   }
-  return ScalarLogical(i==n);
+  const int ncol = length(by);
+  const R_xlen_t nrow = xlength(VECTOR_ELT(x,0));
+  // ncol>1
+  // pre-save lookups to save deep switch later for each column type
+  size_t *sizes =          (size_t *)R_alloc(ncol, sizeof(size_t));
+  const char **ptrs = (const char **)R_alloc(ncol, sizeof(char *));
+  int *types =                (int *)R_alloc(ncol, sizeof(int));
+  for (int j=0; j<ncol; ++j) {
+    int c = INTEGER(by)[j];
+    if (c<1 || c>length(x)) STOP(_("issorted 'by' [%d] out of range [1,%d]"), c, length(x));
+    SEXP col = VECTOR_ELT(x, c-1);
+    sizes[j] = SIZEOF(col);
+    switch(TYPEOF(col)) {
+    case INTSXP: case LGLSXP:
+      types[j] = 0;
+      ptrs[j] = (const char *)INTEGER(col);
+      break;
+    case REALSXP:
+      types[j] = inherits(col, "integer64") ? 2 : 1;
+      ptrs[j] = (const char *)REAL(col);
+      break;
+    case STRSXP:
+      types[j] = 3;
+      ptrs[j] = (const char *)STRING_PTR(col);
+      break;
+    default:
+      STOP(_("type '%s' is not yet supported"), type2char(TYPEOF(col)));  // # nocov
+    }
+  }
+  for (R_xlen_t i=1; i<nrow; ++i) {
+    int j = -1;
+    while (++j<ncol) {
+      size_t size = sizes[j];
+      const char *colp = ptrs[j] + size*i;
+      if (memcmp(colp, colp-size, size)==0) continue;  // in all-but-last column, we see many repeats so we can save the switch for those
+      bool ok = false;
+      switch (types[j]) {
+      case 0 : {   // INTSXP, LGLSXP
+        const int *p = (const int *)colp;
+        ok = p[0]>p[-1];
+      } break;
+      case 1: {   // regular double in REALSXP
+        const double *p = (const double *)colp;
+        ok = dtwiddle(p,0)>dtwiddle(p,-1);  // TODO: avoid dtwiddle by looping over any NA at the beginning, and remove NumericRounding.
+      } break;
+      case 2: {  // integer64 in REALSXP
+        const int64_t *p = (const int64_t *)colp;
+        ok = p[0]>p[-1];
+      } break;
+      case 3 : { // STRSXP
+        const SEXP *p = (const SEXP *)colp;
+        if (*p==NA_STRING) {
+          ok = false; // previous value not NA (otherwise memcmp would have returned equal above) so can't be ordered
+        } else {
+          ok = (NEED2UTF8(p[0]) || NEED2UTF8(p[-1]) ?  // TODO: provide user option to choose ascii-only mode
+                strcmp(CHAR(ENC2UTF8(p[0])), CHAR(ENC2UTF8(p[-1]))) :
+                strcmp(CHAR(p[0]), CHAR(p[-1]))) >= 0;
+        }
+      } break;
+      default :
+        STOP(_("type '%s' is not yet supported"), type2char(TYPEOF(x)));  // # nocov
+      }
+      if (!ok) return ScalarLogical(FALSE);  // not sorted so return early
+      break; // this item is greater than previous in this column so ignore any remaining columns on this row
+    }
+  }
+  return ScalarLogical(TRUE);
 }
 
 SEXP isOrderedSubset(SEXP x, SEXP nrowArg)
 // specialized for use in [.data.table only
 // Ignores 0s but heeds NAs and any out-of-range (which result in NA)
 {
-  if (!isNull(x) && !isInteger(x)) error("x must be either NULL or an integer vector");
+  if (!isNull(x) && !isInteger(x)) error(_("x must be either NULL or an integer vector"));
   if (length(x)<=1) return(ScalarLogical(TRUE));  // a single NA when length(x)==1 is ordered (e.g. tests 128 & 130) otherwise anyNA => FALSE
-  if (!isInteger(nrowArg) || LENGTH(nrowArg)!=1) error("nrow must be integer vector length 1");
+  if (!isInteger(nrowArg) || LENGTH(nrowArg)!=1) error(_("nrow must be integer vector length 1"));
   const int nrow = INTEGER(nrowArg)[0];
-  if (nrow<0) error("nrow==%d but must be >=0", nrow);
+  if (nrow<0) error(_("nrow==%d but must be >=0"), nrow);
   const int *xd = INTEGER(x), xlen=LENGTH(x);
   for (int i=0, last=INT_MIN; i<xlen; ++i) {
     int elem = xd[i];
@@ -1301,7 +1406,7 @@ SEXP binary(SEXP x)
 {
   char buffer[69];
   int j;
-  if (!isReal(x)) error("x must be type 'double'");
+  if (!isReal(x)) error(_("x must be type 'double'"));
   SEXP ans = PROTECT(allocVector(STRSXP, LENGTH(x)));
   uint64_t *xd = (uint64_t *)REAL(x);
   for (int i=0; i<LENGTH(x); i++) {

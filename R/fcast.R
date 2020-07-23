@@ -8,9 +8,21 @@ guess = function(x) {
   return(var)
 }
 
-dcast = function(data, formula, fun.aggregate = NULL, ..., margins = NULL,
-                  subset = NULL, fill = NULL, value.var = guess(data)) {
-  UseMethod("dcast", data)
+dcast <- function(
+  data, formula, fun.aggregate = NULL, ..., margins = NULL,
+  subset = NULL, fill = NULL, value.var = guess(data)
+) {
+  if (is.data.table(data)) UseMethod("dcast", data)
+  # nocov start
+  else {
+    data_name = deparse(substitute(data))
+    ns = tryCatch(getNamespace("reshape2"), error=function(e)
+      stop("The dcast generic in data.table has been passed a ",class(data)[1L],", but data.table::dcast currently only has a method for data.tables. Please confirm your input is a data.table, with setDT(", data_name, ") or as.data.table(", data_name, "). If you intend to use a reshape2::dcast, try installing that package first, but do note that reshape2 is deprecated and you should be migrating your code away from using it."))
+    warning("The dcast generic in data.table has been passed a ", class(data)[1L], " and will attempt to redirect to the reshape2::dcast; please note that reshape2 is deprecated, and this redirection is now deprecated as well. Please do this redirection yourself like reshape2::dcast(", data_name, "). In the next version, this warning will become an error.")
+    ns$dcast(data, formula, fun.aggregate = fun.aggregate, ..., margins = margins,
+             subset = subset, fill = fill, value.var = value.var)
+  }
+  # nocov end
 }
 
 check_formula = function(formula, varnames, valnames) {
@@ -27,16 +39,13 @@ check_formula = function(formula, varnames, valnames) {
 
 deparse_formula = function(expr, varnames, allvars) {
   lvars = lapply(expr, function(this) {
-    if (is.call(this)) {
-      if (this[[1L]] == quote(`+`))
-        unlist(deparse_formula(as.list(this)[-1L], varnames, allvars))
-      else this
-    } else if (is.name(this)) {
-      if (this == quote(`...`)) {
-        subvars = setdiff(varnames, allvars)
-        lapply(subvars, as.name)
-      } else this
+    if (!is.language(this)) return(NULL)
+    if (this %iscall% '+') return(unlist(deparse_formula(this[-1L], varnames, allvars)))
+    if (is.name(this) && this == quote(`...`)) {
+      subvars = setdiff(varnames, allvars)
+      return(lapply(subvars, as.name))
     }
+    this
   })
   lvars = lapply(lvars, function(x) if (length(x) && !is.list(x)) list(x) else x)
 }
@@ -53,11 +62,11 @@ value_vars = function(value.var, varnames) {
 }
 
 aggregate_funs = function(funs, vals, sep="_", ...) {
-  if (is.call(funs) && funs[[1L]] == "eval")
+  if (funs %iscall% 'eval')
     funs = eval(funs[[2L]], parent.frame(2L), parent.frame(2L))
-  if (is.call(funs) && as.character(funs[[1L]]) %chin% c("c", "list")) {
+  if (funs %iscall% c('c', 'list')) {
     funs = lapply(as.list(funs)[-1L], function(x) {
-      if (is.call(x) && as.character(x[[1L]]) %chin% c("c", "list")) as.list(x)[-1L] else x
+      if (x %iscall% c('c', 'list')) as.list(x)[-1L] else x
     })
   } else funs = eval(funs, parent.frame(2L), parent.frame(2L))
   if(is.function(funs)) funs = list(funs) # needed for cases as shown in test#1700.1
@@ -100,6 +109,11 @@ dcast.data.table = function(data, formula, fun.aggregate = NULL, sep = "_", ...,
   if (!is.data.table(data)) stop("'data' must be a data.table.")
   drop = as.logical(rep(drop, length.out=2L))
   if (anyNA(drop)) stop("'drop' must be logical TRUE/FALSE")
+  # #2980 if explicitly providing fun.aggregate=length but not a value.var,
+  #   just use the last column (as guess(data) would do) because length will be
+  #   the same on all columns
+  if (missing(value.var) && !missing(fun.aggregate) && identical(fun.aggregate, length))
+    value.var = names(data)[ncol(data)]
   lvals = value_vars(value.var, names(data))
   valnames = unique(unlist(lvals))
   lvars = check_formula(formula, names(data), valnames)

@@ -3,11 +3,12 @@
 #else
   #define STRICT_R_HEADERS
   #include <R.h>
+  #include "po.h"
   #define STOP     error
   #define DTPRINT  Rprintf
 #endif
 
-typedef void (*writer_fun_t)(void *, int64_t, char **);
+typedef void (*writer_fun_t)(const void *, int64_t, char **);
 
 // in the order of writer_fun_t in fwriteR.c
 void writeBool8();
@@ -73,7 +74,7 @@ typedef struct fwriteMainArgs
   int ncol;
   int64_t nrow;
   // a vector of pointers to all-same-length column vectors
-  void **columns;
+  const void **columns;
   writer_fun_t *funs;      // a vector of writer_fun_t function pointers
 
   // length ncol vector containing which fun[] to use for each column
@@ -81,9 +82,9 @@ typedef struct fwriteMainArgs
   // A limit of 256 writers seems more than sufficient
   uint8_t *whichFun;
 
-  void *colNames;         // NULL means no header, otherwise ncol strings
+  const void *colNames;   // NULL means no header, otherwise ncol strings
   bool doRowNames;        // optional, likely false
-  void *rowNames;         // if doRowNames is true and rowNames is not NULL then they're used, otherwise row numbers are output.
+  const void *rowNames;   // if doRowNames is true and rowNames is not NULL then they're used, otherwise row numbers are output.
   char sep;
   char sep2;
   char dec;
@@ -96,6 +97,10 @@ typedef struct fwriteMainArgs
   int8_t doQuote;
 
   bool qmethodEscape;     // true means escape quotes using backslash, else double-up double quotes.
+  int scipen;             // same as options('scipen') in R -- used to penalize scientific notation when
+                          //   deciding to write scientific or full decimal format (e.g. in comparing
+                          //   10000000 to 1e+07, first has width 8, second has width 5; prefer the former
+                          //   iff scipen >= 3=8-5
   bool squashDateTime;
   bool append;
   int buffMB;             // [1-1024] default 8MB

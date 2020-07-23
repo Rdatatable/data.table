@@ -30,7 +30,7 @@ provides.
 \code{setindex} creates an index for the provided columns. This index is simply an
 ordering vector of the dataset's rows according to the provided columns. This order vector
 is stored as an attribute of the \code{data.table} and the dataset retains the original order
-of rows in memory. See the \href{vignettes/datatable-secondary-indices-and-auto-indexing.html}{Secondary indices and auto indexing} vignette for more details.
+of rows in memory. See the \href{../doc/datatable-secondary-indices-and-auto-indexing.html}{\code{vignette("datatable-secondary-indices-and-auto-indexing")}} for more details.
 
 \code{key} returns the \code{data.table}'s key if it exists; \code{NULL} if none exists.
 
@@ -60,6 +60,8 @@ to base R too; see \code{\link[base]{sort}}. Generally speaking we avoid any typ
 of comparison sort (other than insert sort for very small input) preferring instead
 counting sort and forwards radix. We also avoid hash tables.
 
+Note that \code{setkey} always uses "C-locale"; see the Details in the help for \code{\link{setorder}} for more on why.
+
 The sort is \emph{stable}; i.e., the order of ties (if any) is preserved.
 
 For character vectors, \code{data.table} takes advantage of R's internal global string cache, also exported as \code{\link{chorder}}.
@@ -72,7 +74,7 @@ If you use column numbers then bugs (possibly silent) can more easily creep into
 your code as time progresses if changes are made elsewhere in your code; e.g., if
 you add, remove or reorder columns in a few months time, a \code{setkey} by column
 number will then refer to a different column, possibly returning incorrect results
-with no warning. (A similar concept exists in SQL, where \code{"select * from \dots"} is considered poor programming style when a robust, maintainable system is
+with no warning. (A similar concept exists in SQL, where \code{"select * from ..."} is considered poor programming style when a robust, maintainable system is
 required.)
 
 If you really wish to use column numbers, it is possible but

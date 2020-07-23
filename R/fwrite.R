@@ -4,6 +4,7 @@ fwrite = function(x, file="", append=FALSE, quote="auto",
            qmethod=c("double","escape"),
            logical01=getOption("datatable.logical01", FALSE), # due to change to TRUE; see NEWS
            logicalAsInt=logical01,
+           scipen=getOption('scipen', 0L),
            dateTimeAs = c("ISO","squash","epoch","write.csv"),
            buffMB=8, nThread=getDTthreads(verbose),
            showProgress=getOption("datatable.showProgress", interactive()),
@@ -25,6 +26,7 @@ fwrite = function(x, file="", append=FALSE, quote="auto",
     logical01 = logicalAsInt
     logicalAsInt=NULL
   }
+  scipen = if (is.numeric(scipen)) as.integer(scipen) else 0L
   buffMB = as.integer(buffMB)
   nThread = as.integer(nThread)
   # write.csv default is 'double' so fwrite follows suit. write.table's default is 'escape'
@@ -47,7 +49,7 @@ fwrite = function(x, file="", append=FALSE, quote="auto",
     isTRUEorFALSE(bom),
     length(na) == 1L, #1725, handles NULL or character(0) input
     is.character(file) && length(file)==1L && !is.na(file),
-    length(buffMB)==1L && !is.na(buffMB) && 1L<=buffMB && buffMB<=1024,
+    length(buffMB)==1L && !is.na(buffMB) && 1L<=buffMB && buffMB<=1024L,
     length(nThread)==1L && !is.na(nThread) && nThread>=1L
     )
 
@@ -105,7 +107,7 @@ fwrite = function(x, file="", append=FALSE, quote="auto",
   }
   file = enc2native(file) # CfwriteR cannot handle UTF-8 if that is not the native encoding, see #3078.
   .Call(CfwriteR, x, file, sep, sep2, eol, na, dec, quote, qmethod=="escape", append,
-        row.names, col.names, logical01, dateTimeAs, buffMB, nThread,
+        row.names, col.names, logical01, scipen, dateTimeAs, buffMB, nThread,
         showProgress, is_gzip, bom, yaml, verbose)
   invisible()
 }

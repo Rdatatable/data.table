@@ -33,11 +33,10 @@ as.IDate.Date = function(x, ...) {
 }
 
 as.IDate.POSIXct = function(x, tz = attr(x, "tzone", exact=TRUE), ...) {
-  if (is.null(tz)) tz = "UTC"
-  if (tz %chin% c("UTC", "GMT")) {
-    (setattr(as.integer(x) %/% 86400L, "class", c("IDate", "Date")))  # %/% returns new object so can use setattr() on it; wrap with () to return visibly
-  } else
-    as.IDate(as.Date(x, tz = tz, ...))
+  if (is_utc(tz))
+    (setattr(as.integer(as.numeric(x) %/% 86400L), "class", c("IDate", "Date")))  # %/% returns new object so can use setattr() on it; wrap with () to return visibly
+  else
+    as.IDate(as.Date(x, tz =  if (is.null(tz)) '' else tz, ...))
 }
 
 as.IDate.IDate = function(x, ...) x
@@ -51,6 +50,7 @@ as.Date.IDate = function(x, ...) {
 mean.IDate =
 seq.IDate =
 c.IDate =
+cut.IDate =
 rep.IDate =
 unique.IDate =
   function(x, ...) {
@@ -137,9 +137,8 @@ as.ITime.default = function(x, ...) {
 }
 
 as.ITime.POSIXct = function(x, tz = attr(x, "tzone", exact=TRUE), ...) {
-  if (is.null(tz)) tz = "UTC"
-  if (tz %chin% c("UTC", "GMT")) as.ITime(unclass(x), ...)
-  else as.ITime(as.POSIXlt(x, tz = tz, ...), ...)
+  if (is_utc(tz)) as.ITime(unclass(x), ...)
+  else as.ITime(as.POSIXlt(x, tz = if (is.null(tz)) '' else tz, ...), ...)
 }
 
 as.ITime.numeric = function(x, ms = 'truncate', ...) {
@@ -241,6 +240,22 @@ rep.ITime = function (x, ...)
   class(y) = "ITime"   # unlass and rep could feasibly not copy, hence use class<- not setattr()
   y
 }
+                           
+round.ITime <- function(x, digits = c("hours", "minutes"), ...) 
+{
+  (setattr(switch(match.arg(digits),
+                  hours = as.integer(round(unclass(x)/3600)*3600),
+                  minutes = as.integer(round(unclass(x)/60)*60)), 
+           "class", "ITime"))
+} 
+
+trunc.ITime <- function(x, units = c("hours", "minutes"), ...) 
+{
+  (setattr(switch(match.arg(units),
+                  hours = as.integer(unclass(x)%/%3600*3600),
+                  minutes = as.integer(unclass(x)%/%60*60)), 
+           "class", "ITime"))
+}
 
 "[.ITime" = function(x, ..., drop = TRUE)
 {
@@ -303,28 +318,22 @@ as.POSIXlt.ITime = function(x, ...) {
 ###################################################################
 
 second  = function(x) {
-  if (inherits(x, 'POSIXct') && identical(attr(x, 'tzone', exact=TRUE), 'UTC')) {
-    # if we know the object is in UTC, can calculate the hour much faster
-    as.integer(x) %% 60L
-  } else {
-    as.integer(as.POSIXlt(x)$sec)
-  }
+  # if we know the object is in UTC, can calculate the hour much faster
+  if (inherits(x, 'POSIXct') && is_utc(attr(x, 'tzone', exact=TRUE))) return(as.integer(as.numeric(x) %% 60L))
+  if (inherits(x, 'ITime')) return(as.integer(x) %% 60L)
+  as.integer(as.POSIXlt(x)$sec)
 }
 minute  = function(x) {
-  if (inherits(x, 'POSIXct') && identical(attr(x, 'tzone', exact=TRUE), 'UTC')) {
-    # ever-so-slightly faster than x %% 3600L %/% 60L
-    as.integer(x) %/% 60L %% 60L
-  } else {
-    as.POSIXlt(x)$min
-  }
+  # ever-so-slightly faster than x %% 3600L %/% 60L
+  if (inherits(x, 'POSIXct') && is_utc(attr(x, 'tzone', exact=TRUE))) return(as.integer(as.numeric(x) %/% 60L %% 60L))
+  if (inherits(x, 'ITime')) return(as.integer(x) %/% 60L %% 60L)
+  as.POSIXlt(x)$min
 }
 hour = function(x) {
-  if (inherits(x, 'POSIXct') && identical(attr(x, 'tzone', exact=TRUE), 'UTC')) {
-    # ever-so-slightly faster than x %% 86400L %/% 3600L
-    as.integer(x) %/% 3600L %% 24L
-  } else {
-    as.POSIXlt(x)$hour
-  }
+  # ever-so-slightly faster than x %% 86400L %/% 3600L
+  if (inherits(x, 'POSIXct') && is_utc(attr(x, 'tzone', exact=TRUE))) return(as.integer(as.numeric(x) %/% 3600L %% 24L))
+  if (inherits(x, 'ITime')) return(as.integer(x) %/% 3600L %% 24L)
+  as.POSIXlt(x)$hour
 }
 yday    = function(x) as.POSIXlt(x)$yday + 1L
 wday    = function(x) (unclass(as.IDate(x)) + 4L) %% 7L + 1L

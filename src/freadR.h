@@ -2,12 +2,14 @@
 #define dt_FREAD_R_H
 #define STRICT_R_HEADERS   // https://cran.r-project.org/doc/manuals/r-devel/R-exts.html#Error-handling
 #include <R.h>
+#include "po.h"
 
-#define FREAD_MAIN_ARGS_EXTRA_FIELDS
+#define FREAD_MAIN_ARGS_EXTRA_FIELDS \
+  bool oldNoDateTime;
 
 #define FREAD_PUSH_BUFFERS_EXTRA_FIELDS \
-    int nStringCols; \
-    int nNonStringCols;
+  int nStringCols; \
+  int nNonStringCols;
 
 // Before error() [or warning() with options(warn=2)] call freadCleanup() to close mmp and fix :
 //   http://stackoverflow.com/questions/18597123/fread-data-table-locks-files
