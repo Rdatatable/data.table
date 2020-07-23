@@ -117,7 +117,7 @@ SEXP fsort(SEXP x, SEXP verboseArg) {
   // allocate early in case fails if not enough RAM
   // TODO: document this is much cheaper than a copy followed by in-place.
 
-  int nth = getDTthreads();
+  int nth = getDTthreads(xlength(x), true);
   int nBatch=nth*2;  // at least nth; more to reduce last-man-home; but not too large to keep counts small in cache
   if (verbose) Rprintf(_("nth=%d, nBatch=%d\n"),nth,nBatch);
 
@@ -131,7 +131,7 @@ SEXP fsort(SEXP x, SEXP verboseArg) {
   t[1] = wallclock();
   double mins[nBatch], maxs[nBatch];
   const double *restrict xp = REAL(x);
-  #pragma omp parallel for schedule(dynamic) num_threads(nth)
+  #pragma omp parallel for schedule(dynamic) num_threads(getDTthreads(nBatch, false))
   for (int batch=0; batch<nBatch; batch++) {
     R_xlen_t thisLen = (batch==nBatch-1) ? lastBatchSize : batchSize;
     const double *restrict d = xp + batchSize*batch;
@@ -253,7 +253,7 @@ SEXP fsort(SEXP x, SEXP verboseArg) {
     }
 
     t[6] = wallclock();
-    #pragma omp parallel num_threads(getDTthreads())
+    #pragma omp parallel num_threads(getDTthreads(MSBsize, false))
     {
       R_xlen_t *counts = calloc((toBit/8 + 1)*256, sizeof(R_xlen_t));
       // each thread has its own (small) stack of counts

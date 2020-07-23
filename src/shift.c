@@ -1,16 +1,14 @@
 #include "data.table.h"
 #include <Rdefines.h>
 
-SEXP shift(SEXP obj, SEXP k, SEXP fill, SEXP type) {
-
-  size_t size;
-  int protecti=0;
-  SEXP x, tmp=R_NilValue, elem, ans, thisfill;
-  unsigned long long *dthisfill;
+SEXP shift(SEXP obj, SEXP k, SEXP fill, SEXP type)
+{
+  int nprotect=0;
   enum {LAG, LEAD/*, SHIFT, CYCLIC*/} stype = LAG; // currently SHIFT maps to LAG and CYCLIC is unimplemented (see comments in #1708)
   if (!xlength(obj)) return(obj); // NULL, list()
+  SEXP x;
   if (isVectorAtomic(obj)) {
-    x = PROTECT(allocVector(VECSXP, 1)); protecti++;
+    x = PROTECT(allocVector(VECSXP, 1)); nprotect++;
     SET_VECTOR_ELT(x, 0, obj);
   } else {
     if (!isNewList(obj))
@@ -32,17 +30,19 @@ SEXP shift(SEXP obj, SEXP k, SEXP fill, SEXP type) {
   const int *kd = INTEGER(k);
   for (int i=0; i<nk; i++) if (kd[i]==NA_INTEGER) error(_("Item %d of n is NA"), i+1);  // NA crashed (#3354); n is called k at C level
 
-  ans = PROTECT(allocVector(VECSXP, nk * nx)); protecti++;
+  SEXP ans = PROTECT(allocVector(VECSXP, nk * nx)); nprotect++;
   for (int i=0; i<nx; i++) {
-    elem  = VECTOR_ELT(x, i);
-    size  = SIZEOF(elem);
+    SEXP elem  = VECTOR_ELT(x, i);
+    size_t size  = SIZEOF(elem);
     R_xlen_t xrows = xlength(elem);
     switch (TYPEOF(elem)) {
-    case INTSXP :
-      thisfill = PROTECT(coerceVector(fill, INTSXP)); protecti++;
-      int ifill = INTEGER(thisfill)[0];
+    case INTSXP : {
+      SEXP thisfill = PROTECT(coerceVector(fill, INTSXP));
+      const int ifill = INTEGER(thisfill)[0];
+      UNPROTECT(1);
       for (int j=0; j<nk; j++) {
         R_xlen_t thisk = MIN(abs(kd[j]), xrows);
+        SEXP tmp;
         SET_VECTOR_ELT(ans, i*nk+j, tmp=allocVector(INTSXP, xrows) );
         int *itmp = INTEGER(tmp);
         size_t tailk = xrows-thisk;
@@ -58,21 +58,24 @@ SEXP shift(SEXP obj, SEXP k, SEXP fill, SEXP type) {
         copyMostAttrib(elem, tmp);
         if (isFactor(elem)) setAttrib(tmp, R_LevelsSymbol, getAttrib(elem, R_LevelsSymbol));
       }
-      break;
+    } break;
 
-    case REALSXP :
+    case REALSXP : {
+      SEXP thisfill;
       if (Rinherits(elem, char_integer64)) {
-        thisfill = PROTECT(allocVector(REALSXP, 1)); protecti++;
-        dthisfill = (unsigned long long *)REAL(thisfill);
+        thisfill = PROTECT(allocVector(REALSXP, 1));
+        unsigned long long *dthisfill = (unsigned long long *)REAL(thisfill);
         if (INTEGER(fill)[0] == NA_INTEGER)
           dthisfill[0] = NA_INT64_LL;
         else dthisfill[0] = (unsigned long long)INTEGER(fill)[0];
       } else {
-        thisfill = PROTECT(coerceVector(fill, REALSXP)); protecti++;
+        thisfill = PROTECT(coerceVector(fill, REALSXP));
       }
-      double dfill = REAL(thisfill)[0];
+      const double dfill = REAL(thisfill)[0];
+      UNPROTECT(1); // thisfill
       for (int j=0; j<nk; j++) {
         R_xlen_t thisk = MIN(abs(kd[j]), xrows);
+        SEXP tmp;
         SET_VECTOR_ELT(ans, i*nk+j, tmp=allocVector(REALSXP, xrows) );
         double *dtmp = REAL(tmp);
         size_t tailk = xrows-thisk;
@@ -85,13 +88,15 @@ SEXP shift(SEXP obj, SEXP k, SEXP fill, SEXP type) {
         }
         copyMostAttrib(elem, tmp);
       }
-      break;
+    } break;
 
-    case CPLXSXP :
-      thisfill = PROTECT(coerceVector(fill, CPLXSXP)); protecti++;
-      Rcomplex cfill = COMPLEX(thisfill)[0];
+    case CPLXSXP : {
+      SEXP thisfill = PROTECT(coerceVector(fill, CPLXSXP));
+      const Rcomplex cfill = COMPLEX(thisfill)[0];
+      UNPROTECT(1);
       for (int j=0; j<nk; j++) {
         R_xlen_t thisk = MIN(abs(kd[j]), xrows);
+        SEXP tmp;
         SET_VECTOR_ELT(ans, i*nk+j, tmp=allocVector(CPLXSXP, xrows) );
         Rcomplex *ctmp = COMPLEX(tmp);
         size_t tailk = xrows-thisk;
@@ -104,13 +109,15 @@ SEXP shift(SEXP obj, SEXP k, SEXP fill, SEXP type) {
         }
         copyMostAttrib(elem, tmp);
       }
-      break;
+    } break;
 
-    case LGLSXP :
-      thisfill = PROTECT(coerceVector(fill, LGLSXP)); protecti++;
-      int lfill = LOGICAL(thisfill)[0];
+    case LGLSXP : {
+      SEXP thisfill = PROTECT(coerceVector(fill, LGLSXP));
+      const int lfill = LOGICAL(thisfill)[0];
+      UNPROTECT(1);
       for (int j=0; j<nk; j++) {
         R_xlen_t thisk = MIN(abs(kd[j]), xrows);
+        SEXP tmp;
         SET_VECTOR_ELT(ans, i*nk+j, tmp=allocVector(LGLSXP, xrows) );
         int *ltmp = LOGICAL(tmp);
         size_t tailk = xrows-thisk;
@@ -123,42 +130,48 @@ SEXP shift(SEXP obj, SEXP k, SEXP fill, SEXP type) {
         }
         copyMostAttrib(elem, tmp);
       }
-      break;
+    } break;
 
-    case STRSXP :
-      thisfill = PROTECT(coerceVector(fill, STRSXP)); protecti++;
+    case STRSXP : {
+      SEXP thisfill = PROTECT(coerceVector(fill, STRSXP));
+      const SEXP sfill = STRING_ELT(thisfill, 0);
       for (int j=0; j<nk; j++) {
+        SEXP tmp;
         SET_VECTOR_ELT(ans, i*nk+j, tmp=allocVector(STRSXP, xrows) );
         int thisk = abs(kd[j]);
         if ((stype == LAG && kd[j] >= 0) || (stype == LEAD && kd[j] < 0)) {
-          for (int m=0; m<xrows; m++) SET_STRING_ELT(tmp, m, (m < thisk) ? STRING_ELT(thisfill, 0) : STRING_ELT(elem, m - thisk));
+          for (int m=0; m<xrows; m++) SET_STRING_ELT(tmp, m, (m < thisk) ? sfill : STRING_ELT(elem, m - thisk));
         } else {
-          for (int m=0; m<xrows; m++) SET_STRING_ELT(tmp, m, (xrows-m <= thisk) ? STRING_ELT(thisfill, 0) : STRING_ELT(elem, m + thisk));
+          for (int m=0; m<xrows; m++) SET_STRING_ELT(tmp, m, (xrows-m <= thisk) ? sfill : STRING_ELT(elem, m + thisk));
         }
         copyMostAttrib(elem, tmp);
       }
-      break;
+      UNPROTECT(1);
+    } break;
 
-    case VECSXP :
-      thisfill = PROTECT(coerceVector(fill, VECSXP)); protecti++;
+    case VECSXP : {
+      SEXP thisfill = PROTECT(coerceVector(fill, VECSXP));
+      const SEXP vfill = VECTOR_ELT(thisfill, 0);
       for (int j=0; j<nk; j++) {
+        SEXP tmp;
         SET_VECTOR_ELT(ans, i*nk+j, tmp=allocVector(VECSXP, xrows) );
         int thisk = abs(kd[j]);
         if ((stype == LAG && kd[j] >= 0) || (stype == LEAD && kd[j] < 0)) {
-          for (int m=0; m<xrows; m++) SET_VECTOR_ELT(tmp, m, (m < thisk) ? VECTOR_ELT(thisfill, 0) : VECTOR_ELT(elem, m - thisk));
+          for (int m=0; m<xrows; m++) SET_VECTOR_ELT(tmp, m, (m < thisk) ? vfill : VECTOR_ELT(elem, m - thisk));
         } else {
-          for (int m=0; m<xrows; m++) SET_VECTOR_ELT(tmp, m, (xrows-m <= thisk) ? VECTOR_ELT(thisfill, 0) : VECTOR_ELT(elem, m + thisk));
+          for (int m=0; m<xrows; m++) SET_VECTOR_ELT(tmp, m, (xrows-m <= thisk) ? vfill : VECTOR_ELT(elem, m + thisk));
         }
         copyMostAttrib(elem, tmp);
       }
-      break;
+      UNPROTECT(1);
+    } break;
 
     default :
       error(_("Unsupported type '%s'"), type2char(TYPEOF(elem)));
     }
   }
 
-  UNPROTECT(protecti);
+  UNPROTECT(nprotect);
   return isVectorAtomic(obj) && length(ans) == 1 ? VECTOR_ELT(ans, 0) : ans;
 }
 

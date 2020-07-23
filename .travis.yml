@@ -1,29 +1,24 @@
 language: r
-dist: trusty
-sudo: required
+dist: bionic
 cache: packages   # to rebuild cache see tweet thread ending here https://twitter.com/jimhester_/status/1115718589804421121
 warnings_are_errors: true
-
-branches:
-  only:
-    - "master"
 
 r:
   - release
 
 os:
   - linux
-#  - osx  # Takes 13m (+9m linux = 22m total); #3357; #3326; #3331. When off it's to speed up dev cycle; CRAN_Release.cmd has a reminder to turn back on.
+  - osx  # Takes 13m (+9m linux = 22m total); #3357; #3326; #3331. When off it's to speed up dev cycle; CRAN_Release.cmd has a reminder to turn back on.
 
-before_install:
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew install llvm &&
-    export PATH="/usr/local/opt/llvm/bin:$PATH" &&
-    export LDFLAGS="-L/usr/local/opt/llvm/lib" &&
-    export CFLAGS="-I/usr/local/opt/llvm/include"; fi
+brew_packages:
+  - llvm
 
 r_packages:
   - drat      # used in .ci/deploy.sh to publish tar.gz to github.io/Rdatatable/data.table
   - covr
+
+before_install:
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then rm "/usr/local/bin/gfortran"; fi
 
 before_script:
   - echo "Revision:" $TRAVIS_COMMIT >> ./DESCRIPTION
