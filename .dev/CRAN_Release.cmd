@@ -558,7 +558,7 @@ ls -1 *.tar.gz | grep -E 'Chicago|dada2|flowWorkspace|LymphoSeq' | TZ='UTC' para
 
 Bump version to even release number in 3 places :
   1) DESCRIPTION
-  2) NEWS (without 'on CRAN date' text as that's not yet known)
+  2) NEWS; add ?closed=1 to the milestone link, don't add date yet as that published-on-CRAN date isn't yet known
   3) dllVersion() at the end of init.c
 DO NOT push to GitHub. Prevents even a slim possibility of user getting premature version. Even release numbers must have been obtained from CRAN and only CRAN. There were too many support problems in the past before this procedure was brought in.
 du -k inst/tests                # 1.5MB before
