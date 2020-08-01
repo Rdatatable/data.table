@@ -10,6 +10,7 @@
 
 ## NOTES
 
+1. Users can now find more information for `.NGRP` by typing `?.NGRP`, [#4946](https://github.com/Rdatatable/data.table/issues/4649). Thanks to @KyleHaynes for posting the issue.
 
 # data.table [v1.13.0](https://github.com/Rdatatable/data.table/milestone/17?closed=1)  (24 Jul 2020)
 
