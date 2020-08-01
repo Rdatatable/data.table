@@ -8,6 +8,8 @@
 
 ## BUG FIXES
 
+1. Extracting lists by groups had a performance regression, [#4646](https://github.com/Rdatatable/data.table/issues/4646) (e.g., `dt[, V1[[1]], by = ordered_id]` was slow). Thanks to @fabiocs8 for the report and to Cole Miller for the fix.
+
 ## NOTES
 
 
