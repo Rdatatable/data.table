@@ -8,6 +8,11 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
   INT = data.table:::INT
   colnamesInt = data.table:::colnamesInt
   coerceFill = data.table:::coerceFill
+  
+                                          # masked by which package?
+                                        # =================================
+  copy = data.table::copy               # bit
+  setattr = data.table::setattr         # bit
 }
 
 sugg = c(
