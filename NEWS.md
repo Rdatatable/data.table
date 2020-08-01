@@ -8,6 +8,8 @@
 
 ## BUG FIXES
 
+1. The new release of `bit` 4.0.0 included a new function `copy` which caused unit tests to fail. Thanks to Cole Miller for the fix. 
+
 ## NOTES
 
 
