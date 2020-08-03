@@ -77,6 +77,7 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
   melt = data.table::melt               # reshape2
   last = data.table::last               # xts
   first = data.table::first             # xts, S4Vectors
+  copy = data.table::copy               # bit64 v4; bit64 offered to rename though so this is just in case bit64 unoffers
 }
 
 # Load optional Suggests packages, which are tested by Travis for code coverage, and on CRAN
@@ -16755,11 +16756,11 @@ test(2127.24, fcase(test_vec1, as.Date("2019-10-11"), test_vec2, as.Date("2019-1
 test(2127.25, fcase(test_vec1, as.Date("2019-10-11"), test_vec2, as.Date("2019-10-14"),default=123), error="Resulting value has different class than 'default'. Please make sure that both arguments have the same class.")
 if(test_bit64) {
   i=as.integer64(1:12)+3e9
-  test(2127.26, fcase(test_vec_na1, i, test_vec_na2, i+100), c(i[1L:5L], as.integer64(NA),i[7L:12L]+100))
+  test(2127.26, fcase(test_vec_na1, i, test_vec_na2, i+100), c(i[1L:5L], as.integer64(NA),i[7L:11L]+100, as.integer64(NA)))
 }
 if(test_nanotime) {
   n=nanotime(1:12)
-  test(2127.27, fcase(test_vec_na1, n, test_vec_na2, n+100), c(n[1L:5L], nanotime(NA),n[7L:12L]+100))
+  test(2127.27, fcase(test_vec_na1, n, test_vec_na2, n+100), c(n[1L:5L], nanotime(NA),n[7L:11L]+100, as.integer64(NA)))
 }
 test(2127.28, fcase(test_vec1, rep(1L,11L), test_vec2, rep(0L,11L)), as.integer(out_vec))
 test(2127.29, fcase(test_vec1, rep(1,11L), test_vec2, rep(0,11L)), out_vec)
