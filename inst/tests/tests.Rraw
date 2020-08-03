@@ -77,7 +77,7 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
   melt = data.table::melt               # reshape2
   last = data.table::last               # xts
   first = data.table::first             # xts, S4Vectors
-  copy = data.table::copy               # bit
+  copy = data.table::copy               # bit64 v4; bit64 offered to rename though so this is just in case bit64 unoffers
 }
 
 # Load optional Suggests packages, which are tested by Travis for code coverage, and on CRAN
