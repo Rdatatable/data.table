@@ -10,7 +10,25 @@
 
 ## NOTES
 
-1. Users can now find more information for `.NGRP` by typing `?.NGRP`, [#4946](https://github.com/Rdatatable/data.table/issues/4649). Thanks to @KyleHaynes for posting the issue.
+1. `bit64` v4.0.2 released on 30th July broke `data.table`'s tests. It seems that reverse dependency testing of `bit64` (i.e. testing of the packages which use `bit64`) did not include `data.table` because `data.table` merely suggests `bit64` and does not depend on it. Like other packages on our `Suggest` list, we test `data.table` works with `bit64` in our tests. In testing of our own reverse dependencies (packages which use `data.table`) we do include packages which suggest `data.table`, although it appears it is not CRAN policy to do so. We have requested that CRAN policy be changed to include suggests in reverse dependency testing.
+
+    The first break was because `all.equal` did not work in previous versions of `bit64`; e.g.,
+
+    ```R
+    require(bit64)  
+    all.equal(as.integer64(3), as.integer64(4))
+    TRUE    # < v4.0.0
+    FALSE   # >= v4.0.0
+    ```
+
+    We feel the need to explain this in detail here because the addition of the `integer64` method for `all.equal` appears as a very brief "new feature" in `bit64`'s NEWS. We like `bit64` a lot and we know users of `data.table` also use `bit64`. They may be impacted in the same way; e.g., equality tests previously passing when they should not have passed. In our case, two `fcase` tests on `integer64` and `nanotime` started to fail upon `bit64`'s update. Fortunately, the `fcase` results were correct but the tests were comparing to an incorrect result which was incorrectly passing due to `all.equal` always returning TRUE for any `integer64` input.
+
+    The second break caused by `bit64` was the addition of a `copy` function. Since `data.table::copy` is long standing we hope that `bit64` can rename its new `copy` function. Otherwise, users of `data.table` may need to prefix every occurrence of `copy` with `data.table::copy` if they use `bit64` too. Again, this impacted `data.table`'s tests which mimic a user's environment; not `data.table` itself per se.
+
+    Thanks to Cole Miller for the PR to accomodate `bit64`'s update.
+
+2. `?.NGRP` now displays the help page as intended, [#4946](https://github.com/Rdatatable/data.table/issues/4649). Thanks to @KyleHaynes for posting the issue, and Cole Miller for the fix. `.NGRP` is a symbol new in v1.13.0; see below in this file.
+
 
 # data.table [v1.13.0](https://github.com/Rdatatable/data.table/milestone/17?closed=1)  (24 Jul 2020)
 
@@ -36,52 +54,52 @@
 
 6. New function `fcase(...,default)` implemented in C by Morgan Jacob, [#3823](https://github.com/Rdatatable/data.table/issues/3823), is inspired by SQL `CASE WHEN` which is a common tool in SQL for e.g. building labels or cutting age groups based on conditions. `fcase` is comparable to R function `dplyr::case_when` however it evaluates its arguments in a lazy way (i.e. only when needed) as shown below. Please see `?fcase` for more details.
 
-```R
-# Lazy evaluation
-x = 1:10
-data.table::fcase(
-	x < 5L, 1L,
-	x >= 5L, 3L,
-	x == 5L, stop("provided value is an unexpected one!")
-)
-# [1] 1 1 1 1 3 3 3 3 3 3
+    ```R
+    # Lazy evaluation
+    x = 1:10
+    data.table::fcase(
+	    x < 5L, 1L,
+	    x >= 5L, 3L,
+	    x == 5L, stop("provided value is an unexpected one!")
+    )
+    # [1] 1 1 1 1 3 3 3 3 3 3
 
-dplyr::case_when(
-	x < 5L ~ 1L,
-	x >= 5L ~ 3L,
-	x == 5L ~ stop("provided value is an unexpected one!")
-)
-# Error in eval_tidy(pair$rhs, env = default_env) :
-#  provided value is an unexpected one!
+    dplyr::case_when(
+	    x < 5L ~ 1L,
+	    x >= 5L ~ 3L,
+	    x == 5L ~ stop("provided value is an unexpected one!")
+    )
+    # Error in eval_tidy(pair$rhs, env = default_env) :
+    #  provided value is an unexpected one!
 
-# Benchmark
-x = sample(1:100, 3e7, replace = TRUE) # 114 MB
-microbenchmark::microbenchmark(
-dplyr::case_when(
-  x < 10L ~ 0L,
-  x < 20L ~ 10L,
-  x < 30L ~ 20L,
-  x < 40L ~ 30L,
-  x < 50L ~ 40L,
-  x < 60L ~ 50L,
-  x > 60L ~ 60L
-),
-data.table::fcase(
-  x < 10L, 0L,
-  x < 20L, 10L,
-  x < 30L, 20L,
-  x < 40L, 30L,
-  x < 50L, 40L,
-  x < 60L, 50L,
-  x > 60L, 60L
-),
-times = 5L,
-unit = "s")
-# Unit: seconds
-#               expr   min    lq  mean   median    uq    max neval
-# dplyr::case_when   11.57 11.71 12.22    11.82 12.00  14.02     5
-# data.table::fcase   1.49  1.55  1.67     1.71  1.73   1.86     5
-```
+    # Benchmark
+    x = sample(1:100, 3e7, replace = TRUE) # 114 MB
+    microbenchmark::microbenchmark(
+    dplyr::case_when(
+      x < 10L ~ 0L,
+      x < 20L ~ 10L,
+      x < 30L ~ 20L,
+      x < 40L ~ 30L,
+      x < 50L ~ 40L,
+      x < 60L ~ 50L,
+      x > 60L ~ 60L
+    ),
+    data.table::fcase(
+      x < 10L, 0L,
+      x < 20L, 10L,
+      x < 30L, 20L,
+      x < 40L, 30L,
+      x < 50L, 40L,
+      x < 60L, 50L,
+      x > 60L, 60L
+    ),
+    times = 5L,
+    unit = "s")
+    # Unit: seconds
+    #               expr   min    lq  mean   median    uq    max neval
+    # dplyr::case_when   11.57 11.71 12.22    11.82 12.00  14.02     5
+    # data.table::fcase   1.49  1.55  1.67     1.71  1.73   1.86     5
+    ```
 
 7. `.SDcols=is.numeric` now works; i.e., `SDcols=` accepts a function which is used to select the columns of `.SD`, [#3950](https://github.com/Rdatatable/data.table/issues/3950). Any function (even _ad hoc_) that returns scalar `TRUE`/`FALSE` for each column will do; e.g., `.SDcols=!is.character` will return _non_-character columns (_a la_ `Negate()`). Note that `patterns=` can still be used for filtering based on the column names.
 
