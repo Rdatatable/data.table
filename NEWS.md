@@ -14,12 +14,12 @@
 
     The first break was because `all.equal` did not work in previous versions of `bit64`; e.g.,
 
-```R
-require(bit64)  
-all.equal(as.integer64(3), as.integer64(4))
-TRUE    # < v4.0.0
-FALSE   # >= v4.0.0
-```
+    ```R
+    require(bit64)  
+    all.equal(as.integer64(3), as.integer64(4))
+    TRUE    # < v4.0.0
+    FALSE   # >= v4.0.0
+    ```
 
     We feel the need to explain this in detail here because the addition of the `integer64` method for `all.equal` appears as a very brief "new feature" in `bit64`'s NEWS. We like `bit64` a lot and we know users of `data.table` also use `bit64`. They may be impacted in the same way; e.g., equality tests previously passing when they should not have passed. In our case, two `fcase` tests on `integer64` and `nanotime` started to fail upon `bit64`'s update. Fortunately, the `fcase` results were correct but the tests were comparing to an incorrect result which was incorrectly passing due to `all.equal` always returning TRUE for any `integer64` input.
 
@@ -52,52 +52,52 @@ FALSE   # >= v4.0.0
 
 6. New function `fcase(...,default)` implemented in C by Morgan Jacob, [#3823](https://github.com/Rdatatable/data.table/issues/3823), is inspired by SQL `CASE WHEN` which is a common tool in SQL for e.g. building labels or cutting age groups based on conditions. `fcase` is comparable to R function `dplyr::case_when` however it evaluates its arguments in a lazy way (i.e. only when needed) as shown below. Please see `?fcase` for more details.
 
-```R
-# Lazy evaluation
-x = 1:10
-data.table::fcase(
-	x < 5L, 1L,
-	x >= 5L, 3L,
-	x == 5L, stop("provided value is an unexpected one!")
-)
-# [1] 1 1 1 1 3 3 3 3 3 3
+    ```R
+    # Lazy evaluation
+    x = 1:10
+    data.table::fcase(
+	    x < 5L, 1L,
+	    x >= 5L, 3L,
+	    x == 5L, stop("provided value is an unexpected one!")
+    )
+    # [1] 1 1 1 1 3 3 3 3 3 3
 
-dplyr::case_when(
-	x < 5L ~ 1L,
-	x >= 5L ~ 3L,
-	x == 5L ~ stop("provided value is an unexpected one!")
-)
-# Error in eval_tidy(pair$rhs, env = default_env) :
-#  provided value is an unexpected one!
+    dplyr::case_when(
+	    x < 5L ~ 1L,
+	    x >= 5L ~ 3L,
+	    x == 5L ~ stop("provided value is an unexpected one!")
+    )
+    # Error in eval_tidy(pair$rhs, env = default_env) :
+    #  provided value is an unexpected one!
 
-# Benchmark
-x = sample(1:100, 3e7, replace = TRUE) # 114 MB
-microbenchmark::microbenchmark(
-dplyr::case_when(
-  x < 10L ~ 0L,
-  x < 20L ~ 10L,
-  x < 30L ~ 20L,
-  x < 40L ~ 30L,
-  x < 50L ~ 40L,
-  x < 60L ~ 50L,
-  x > 60L ~ 60L
-),
-data.table::fcase(
-  x < 10L, 0L,
-  x < 20L, 10L,
-  x < 30L, 20L,
-  x < 40L, 30L,
-  x < 50L, 40L,
-  x < 60L, 50L,
-  x > 60L, 60L
-),
-times = 5L,
-unit = "s")
-# Unit: seconds
-#               expr   min    lq  mean   median    uq    max neval
-# dplyr::case_when   11.57 11.71 12.22    11.82 12.00  14.02     5
-# data.table::fcase   1.49  1.55  1.67     1.71  1.73   1.86     5
-```
+    # Benchmark
+    x = sample(1:100, 3e7, replace = TRUE) # 114 MB
+    microbenchmark::microbenchmark(
+    dplyr::case_when(
+      x < 10L ~ 0L,
+      x < 20L ~ 10L,
+      x < 30L ~ 20L,
+      x < 40L ~ 30L,
+      x < 50L ~ 40L,
+      x < 60L ~ 50L,
+      x > 60L ~ 60L
+    ),
+    data.table::fcase(
+      x < 10L, 0L,
+      x < 20L, 10L,
+      x < 30L, 20L,
+      x < 40L, 30L,
+      x < 50L, 40L,
+      x < 60L, 50L,
+      x > 60L, 60L
+    ),
+    times = 5L,
+    unit = "s")
+    # Unit: seconds
+    #               expr   min    lq  mean   median    uq    max neval
+    # dplyr::case_when   11.57 11.71 12.22    11.82 12.00  14.02     5
+    # data.table::fcase   1.49  1.55  1.67     1.71  1.73   1.86     5
+    ```
 
 7. `.SDcols=is.numeric` now works; i.e., `SDcols=` accepts a function which is used to select the columns of `.SD`, [#3950](https://github.com/Rdatatable/data.table/issues/3950). Any function (even _ad hoc_) that returns scalar `TRUE`/`FALSE` for each column will do; e.g., `.SDcols=!is.character` will return _non_-character columns (_a la_ `Negate()`). Note that `patterns=` can still be used for filtering based on the column names.
 
