@@ -10,6 +10,8 @@
 
 1. `test.data.table()` could fail the 2nd time it is run by a user in the same R session on Windows due to not resetting locale properly after testing Chinese translation, [#4630](https://github.com/Rdatatable/data.table/pull/4630). Thanks to Cole Miller for investigating and fixing.
 
+2. `i` expects a logical, integer or double. However, passing a factor to `i` as argument led to the confusing error "i has evaluated to type integer. Expecting logical, integer or double.", [#1632](https://github.com/Rdatatable/data.table/issues/1632). Thanks to @aushev for mentioning, @jangorecki for providing a test case and @ben-schwen for fixing.
+
 ## NOTES
 
 1. `bit64` v4.0.2 released on 30th July broke `data.table`'s tests. It seems that reverse dependency testing of `bit64` (i.e. testing of the packages which use `bit64`) did not include `data.table` because `data.table` merely suggests `bit64` and does not depend on it. Like other packages on our `Suggest` list, we test `data.table` works with `bit64` in our tests. In testing of our own reverse dependencies (packages which use `data.table`) we do include packages which suggest `data.table`, although it appears it is not CRAN policy to do so. We have requested that CRAN policy be changed to include suggests in reverse dependency testing.

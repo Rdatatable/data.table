@@ -17116,3 +17116,5 @@ test(2151, dcast(DT, 1 ~ a, value.var='survmean'), data.table('.'='.', s=1L, x=2
 y = person(given='Joel', family='Mossong')
 test(2152, copy(y), y)
 
+# error handling of i, when i is a factor, #1632
+test(2153, setkey(data.table(a=factor("a")))[factor("a")], error="i is a factor. Expecting logical, integer or double.")

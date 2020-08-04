@@ -550,6 +550,7 @@ replace_dot_alias = function(e) {
       }
       # TO DO: TODO: Incorporate which_ here on DT[!i] where i is logical. Should avoid i = !i (above) - inefficient.
       # i is not a data.table
+      if (is.factor(i)) stop("i is a factor. Expecting logical, integer or double.") # Added extra check for factor #1632
       if (!is.logical(i) && !is.numeric(i)) stop("i has evaluated to type ", typeof(i), ". Expecting logical, integer or double.")
       if (is.logical(i)) {
         if (length(i)==1L  # to avoid unname copy when length(i)==nrow (normal case we don't want to slow down)
