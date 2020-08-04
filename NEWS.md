@@ -25,7 +25,9 @@
 
     The second break caused by `bit64` was the addition of a `copy` function. Since `data.table::copy` is long standing we hope that `bit64` can rename its new `copy` function. Otherwise, users of `data.table` may need to prefix every occurrence of `copy` with `data.table::copy` if they use `bit64` too. Again, this impacted `data.table`'s tests which mimic a user's environment; not `data.table` itself per se.
 
-    Thanks to Cole Miller for the PR to accomodate `bit64`'s update. 
+    Thanks to Cole Miller for the PR to accomodate `bit64`'s update.
+
+2. `?.NGRP` now displays the help page as intended, [#4946](https://github.com/Rdatatable/data.table/issues/4649). Thanks to @KyleHaynes for posting the issue, and Cole Miller for the fix. `.NGRP` is a symbol new in v1.13.0; see below in this file.
 
 
 # data.table [v1.13.0](https://github.com/Rdatatable/data.table/milestone/17?closed=1)  (24 Jul 2020)
