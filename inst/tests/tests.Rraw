@@ -16970,12 +16970,8 @@ if (.Platform$OS.type=="windows") local({
     LC_NUMERIC = "C",
     LC_TIME = "Chinese (Simplified)_China.936"
   )
-  for (i in seq_along(x)) {
-    lc = names(x)[[i]]
-    old = Sys.getlocale(lc)
-    Sys.setlocale(lc, x[[i]])
-    on.exit(Sys.setlocale(lc, old), add = TRUE)
-  }
+  x_old = Map(Sys.getlocale, names(x))
+  invisible(Map(Sys.setlocale, names(x), x))
   old = Sys.getenv('LANGUAGE')
   Sys.setenv('LANGUAGE' = 'zh_CN')
   on.exit({
@@ -16983,6 +16979,7 @@ if (.Platform$OS.type=="windows") local({
       Sys.setenv('LANGUAGE' = old)
     else
       Sys.unsetenv('LANGUAGE')
+    invisible(Map(Sys.setlocale, names(x_old), x_old))
   }, add = TRUE)
   # triggered segfault here in #4402, Windows-only under translation.
   # test that the argument order changes correctly (the 'item 2' moves to the beginning of the message)
