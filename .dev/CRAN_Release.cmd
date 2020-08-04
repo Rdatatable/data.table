@@ -103,7 +103,9 @@ grep omp_set_nested ./src/*.c
 grep --exclude="./src/openmp-utils.c" omp_get_max_threads ./src/*
 
 # Ensure all #pragama omp parallel directives include a num_threads() clause
-grep "pragma omp parallel" ./src/*.c | grep -v getDTthreads
+grep -i "pragma.*omp parallel" ./src/*.c | grep -v getDTthreads
+# this will return a set of num_threads(nth) clauses; ensure that variable is not declared const for Solaris, #4638
+grep -i "const.*int.*nth" ./src/*.c
 
 # Update documented list of places where openMP parallelism is used: c.f. ?openmp
 grep -Elr "[pP]ragma.*omp" src | sort

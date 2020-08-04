@@ -11,7 +11,7 @@ void subsetVectorRaw(SEXP ans, SEXP source, SEXP idx, const bool anyNA)
   // negatives, zeros and out-of-bounds have already been dealt with in convertNegAndZero so we can rely
   // here on idx in range [1,length(ans)].
 
-  const int nth = getDTthreads(n, /*throttle=*/true);
+  int nth = getDTthreads(n, /*throttle=*/true);   // not const for Solaris, #4638
   // For small n such as 2,3,4 etc we had hoped OpenMP would be sensible inside it and not create a team
   // with each thread doing just one item. Otherwise, call overhead would be too high for highly iterated
   // calls on very small subsets. Timings were tested in #3175. However, the overhead does seem to add up
