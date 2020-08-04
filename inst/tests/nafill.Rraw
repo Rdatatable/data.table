@@ -8,6 +8,12 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
   INT = data.table:::INT
   colnamesInt = data.table:::colnamesInt
   coerceFill = data.table:::coerceFill
+                                        # masked by which package?
+                                        # =================================
+  copy = data.table::copy               # bit64;  copy is used in this file, so this line is needed
+  setattr = data.table::setattr         # bit  ;  setattr does not appear in this file, so not needed. Here in case that changes.
+                                        # use of copy and setattr within data.table's own code is not masked by other packages
+                                        # we only have to do this in test files because, like a user would, these test files run like a user
 }
 
 sugg = c(
