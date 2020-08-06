@@ -372,16 +372,17 @@ mkdir R-devel-valgrind  # separate build to avoid differences in installed packa
                         # to avoid "ASan runtime does not come first in initial library list" error; no need for LD_PRELOAD
 tar xvf R-devel.tar.gz -C R-devel-valgrind --strip-components 1
 cd R-devel-valgrind
-./configure --without-recommended-packages --disable-byte-compiled-packages --with-valgrind-instrumentation=1 CC="gcc" CFLAGS="-O0 -g -Wall -pedantic"
+./configure --without-recommended-packages --with-valgrind-instrumentation=2 --with-system-valgrind-headers CC="gcc" CFLAGS="-O2 -g -Wall -pedantic"
 make
 cd ~/GitHub/data.table
-vi ~/.R/Makevars  # make the -O0 -g line active, for info on source lines with any problems
+vi ~/.R/Makevars  # make the -O2 -g line active, for info on source lines with any problems
 Rdevel-valgrind CMD INSTALL data.table_1.13.1.tar.gz
 Rdevel-valgrind -d "valgrind --tool=memcheck --leak-check=full --track-origins=yes --show-leak-kinds=definite"
 # gctorture(TRUE)      # very slow, many days
 # gctorture2(step=100)
 print(Sys.time()); require(data.table); print(Sys.time()); started.at<-proc.time(); try(test.data.table(script="*.Rraw")); print(Sys.time()); print(timetaken(started.at))
-# 3m require; 62m test
+# 3m require; 62m test  # level 1 -O0
+# 1m require; 33m test  # level 2 -O2
 
 # Precision issues under valgrind are now avoided using test_longdouble in tests.Rraw, and exact_NaN in froll.Rraw
 # Ignore all "set address range perms" warnings :
