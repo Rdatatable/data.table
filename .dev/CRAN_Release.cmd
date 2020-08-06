@@ -368,12 +368,11 @@ print(Sys.time()); started.at<-proc.time(); try(test.data.table()); print(Sys.ti
 ###############################################
 
 cd ~/build
-rm -rf R-devel    # easiest way to remove ASAN from compiled packages in R-devel/library
-                  # to avoid "ASan runtime does not come first in initial library list" error; no need for LD_PRELOAD
-mkdir R-devel-valgrind
+mkdir R-devel-valgrind  # separate build to avoid differences in installed packages, and
+                        # to avoid "ASan runtime does not come first in initial library list" error; no need for LD_PRELOAD
 tar xvf R-devel.tar.gz -C R-devel-valgrind --strip-components 1
 cd R-devel-valgrind
-./configure --without-recommended-packages --disable-byte-compiled-packages --disable-openmp --with-valgrind-instrumentation=1 CC="gcc" CFLAGS="-O0 -g -Wall -pedantic" LIBS="-lpthread"
+./configure --without-recommended-packages --disable-byte-compiled-packages --with-valgrind-instrumentation=1 CC="gcc" CFLAGS="-O0 -g -Wall -pedantic"
 make
 cd ~/GitHub/data.table
 vi ~/.R/Makevars  # make the -O0 -g line active, for info on source lines with any problems
