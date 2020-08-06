@@ -3851,8 +3851,9 @@ DF <- as.data.frame(DT)
 test(1146.2, {set(DF, i=NULL, j=1L, value=seq_len(nrow(DF)));setattr(DF,"reference",NULL);DF}, data.frame(Time=1:nrow(BOD), demand=BOD$demand))
 test(1146.3, set(DF, i=NULL, j="bla", value=seq_len(nrow(DF))), error="set() on a data.frame is for changing existing columns, not adding new ones. Please use a data.table for that.")
 
-if (.Machine$sizeof.longdouble == 16) {
-  # To not run on CRAN's solaris-sparc 32bit where sizeof.longdouble==0
+if (isTRUE(capabilities()["long.double"])) {
+  # e.g. not on CRAN's solaris-sparc 32bit
+  # the test used to be sizeof.longdouble==0, but capabilities() is designed for this purpose
 
   old = getNumericRounding()
 
@@ -4601,10 +4602,12 @@ test(1259, DT[,.N,by=upc], data.table(upc=c(360734147771, 360734147770), N=3L))
 test(1260, DT[,.N,by=upc][order(upc)], data.table(upc=c(360734147770, 360734147771), N=3L))
 test(1261, getNumericRounding(), 1L)
 # the limit of double precision (16 s.f.) ...
-if (.Machine$sizeof.longdouble==16)
-    test(1262, length(unique(c(1.2345678901234560, 1.2345678901234561, 1.2345678901234562, 1.2345678901234563))), 2L)
-    # 2 not 4 is double precision limit which base::unique() relies on in this test
-    # valgrind will also return (3) instead of (2) here.. due to floating point precision limitation. changing the last two values to 1.2345678901234563 and 1.2345678901234564 returns 2.
+if (isTRUE(capabilities()["long.double"])) {
+  test(1262, length(unique(c(1.2345678901234560, 1.2345678901234561, 1.2345678901234562, 1.2345678901234563))), 2L)
+  # 2 not 4 is double precision limit which base::unique() relies on in this test
+  # valgrind will also return (3) instead of (2) here due to floating point precision limitation.
+  # changing the last two values to 1.2345678901234563 and 1.2345678901234564 returns 2.
+}
 DT = data.table(id=c(1.234567890123450, 1.234567890123451, 1.234567890123452, 1.234567890123453))  # one less digit is limit
 test(1263, length(unique(DT$id)), 4L)
 test(1264, DT[,.N,by=id]$N, 4L)  # 1 byte rounding isn't enough

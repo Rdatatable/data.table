@@ -370,14 +370,15 @@ print(Sys.time()); started.at<-proc.time(); try(test.data.table()); print(Sys.ti
 cd ~/build
 rm -rf R-devel    # easiest way to remove ASAN from compiled packages in R-devel/library
                   # to avoid "ASan runtime does not come first in initial library list" error; no need for LD_PRELOAD
-tar xvf R-devel.tar.gz
-cd R-devel
+mkdir R-devel-valgrind
+tar xvf R-devel.tar.gz -C R-devel-valgrind --strip-components 1
+cd R-devel-valgrind
 ./configure --without-recommended-packages --disable-byte-compiled-packages --disable-openmp --with-valgrind-instrumentation=1 CC="gcc" CFLAGS="-O0 -g -Wall -pedantic" LIBS="-lpthread"
 make
 cd ~/GitHub/data.table
 vi ~/.R/Makevars  # make the -O0 -g line active, for info on source lines with any problems
-Rdevel CMD INSTALL data.table_1.13.1.tar.gz
-Rdevel -d "valgrind --tool=memcheck --leak-check=full --track-origins=yes --show-leak-kinds=definite"
+Rdevel-valgrind CMD INSTALL data.table_1.13.1.tar.gz
+Rdevel-valgrind -d "valgrind --tool=memcheck --leak-check=full --track-origins=yes --show-leak-kinds=definite"
 # gctorture(TRUE)      # very slow, many days
 # gctorture2(step=100)
 print(Sys.time()); require(data.table); print(Sys.time()); started.at<-proc.time(); try(test.data.table()); print(Sys.time()); print(timetaken(started.at))
