@@ -381,7 +381,7 @@ Rdevel-valgrind CMD INSTALL data.table_1.13.1.tar.gz
 Rdevel-valgrind -d "valgrind --tool=memcheck --leak-check=full --track-origins=yes --show-leak-kinds=definite"
 # gctorture(TRUE)      # very slow, many days
 # gctorture2(step=100)
-print(Sys.time()); require(data.table); print(Sys.time()); started.at<-proc.time(); try(test.data.table()); print(Sys.time()); print(timetaken(started.at))
+print(Sys.time()); require(data.table); print(Sys.time()); started.at<-proc.time(); try(test.data.table(script="*.Rraw")); print(Sys.time()); print(timetaken(started.at))
 # 3m require; 62m test
 
 # Investigated and ignore :
