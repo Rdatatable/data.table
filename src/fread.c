@@ -954,7 +954,7 @@ static void parse_iso8601_date_core(const char **pch, int32_t *target)
 {
   const char *ch = *pch;
 
-  int32_t year, month, day;
+  int32_t year=0, month=0, day=0;
 
   str_to_i32_core(&ch, &year);
 
