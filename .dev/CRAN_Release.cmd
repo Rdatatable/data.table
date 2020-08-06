@@ -384,14 +384,10 @@ Rdevel-valgrind -d "valgrind --tool=memcheck --leak-check=full --track-origins=y
 print(Sys.time()); require(data.table); print(Sys.time()); started.at<-proc.time(); try(test.data.table(script="*.Rraw")); print(Sys.time()); print(timetaken(started.at))
 # 3m require; 62m test
 
-# Investigated and ignore :
-# Tests 648 and 1262 (see their comments) have single precision issues under valgrind that don't occur on CRAN, even Solaris.
-# Old comment from gsumm.c ...  // long double usage here used to result in test 648 failing when run under valgrind
-                                // http://valgrind.org/docs/manual/manual-core.html#manual-core.limits"
+# Precision issues under valgrind are now avoided using test_longdouble in tests.Rraw, and exact_NaN in froll.Rraw
 # Ignore all "set address range perms" warnings :
 #   http://stackoverflow.com/questions/13558067/what-does-this-valgrind-warning-mean-warning-set-address-range-perms
 # Ignore heap summaries around test 1705 and 1707/1708 due to the fork() test opening/closing, I guess.
-# Tests 1729.4, 1729.8, 1729.11, 1729.13 again have precision issues under valgrind only.
 # Leaks for tests 1738.5, 1739.3 but no data.table .c lines are flagged, rather libcairo.so
 #   and libfontconfig.so via GEMetricInfo and GEStrWidth in libR.so
 
