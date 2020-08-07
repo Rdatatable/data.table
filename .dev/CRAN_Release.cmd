@@ -377,7 +377,7 @@ make
 cd ~/GitHub/data.table
 vi ~/.R/Makevars  # make the -O2 -g line active, for info on source lines with any problems
 Rdevel-valgrind CMD INSTALL data.table_1.13.1.tar.gz
-Rdevel-valgrind -d "valgrind --tool=memcheck --leak-check=full --track-origins=yes --show-leak-kinds=definite,possible"
+R_DONT_USE_TK=true Rdevel-valgrind -d "valgrind --tool=memcheck --leak-check=full --track-origins=yes --show-leak-kinds=definite,possible"
 # the default for --show-leak-kinds is 'definite,possible' which we're setting explicitly here as a reminder. CRAN uses the default too.
 #   including 'reachable' (as 'all' does) generates too much output from R itself about by-design permanent blocks
 # gctorture(TRUE)      # very slow, many days
@@ -385,6 +385,7 @@ Rdevel-valgrind -d "valgrind --tool=memcheck --leak-check=full --track-origins=y
 print(Sys.time()); require(data.table); print(Sys.time()); started.at<-proc.time(); try(test.data.table(script="*.Rraw")); print(Sys.time()); print(timetaken(started.at))
 # 3m require; 62m test  # level 1 -O0
 # 1m require; 33m test  # level 2 -O2
+q() # valgrind output printed after q()
 
 # Precision issues under valgrind are now avoided using test_longdouble in tests.Rraw, and exact_NaN in froll.Rraw
 # Ignore all "set address range perms" warnings :
