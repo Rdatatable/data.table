@@ -8,7 +8,7 @@ r:
 
 os:
   - linux
-  - osx  # Takes 13m (+9m linux = 22m total); #3357; #3326; #3331. When off it's to speed up dev cycle; CRAN_Release.cmd has a reminder to turn back on.
+  # - osx  # Takes 13m (+9m linux = 22m total); #3357; #3326; #3331. When off it's to speed up dev cycle; CRAN_Release.cmd has a reminder to turn back on.
 
 brew_packages:
   - llvm

@@ -1,0 +1,24 @@
+{
+  <fontconfig>
+  Memcheck:Leak
+  ...
+  obj:*/libfontconfig.so.*
+  ...
+}
+
+{
+  <pango>
+  Memcheck:Leak
+  ...
+  obj:*libpango*.so.*
+  ...
+}
+
+{
+  <gobject>
+  Memcheck:Leak
+  ...
+  obj:*libgobject*.so.*
+  ...
+}
+
