@@ -2561,6 +2561,8 @@ setcolorder = function(x, neworder=key(x), anchor = NULL)
       #if shorter than length(x), pad by the missing
       #  elements (checks below will catch other mistakes)
       final_order = c(neworder, setdiff(seq_along(x), neworder))
+    } else {
+      final_order <- neworder
     }
   } else {
     if (!(names(anchor) %in% c("before", "after"))) {
