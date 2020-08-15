@@ -21,7 +21,7 @@ extern "C" {
 /* provided the interface for the function exported in
    ../src/init.c via R_RegisterCCallable()		*/
 
-SEXP attribute_hidden DT_subsetDT(SEXP x, SEXP rows, SEXP cols) {
+inline SEXP attribute_hidden DT_subsetDT(SEXP x, SEXP rows, SEXP cols) {
      static SEXP(*fun)(SEXP, SEXP, SEXP) =
        (SEXP(*)(SEXP,SEXP,SEXP)) R_GetCCallable("data.table", "CsubsetDT");
      return fun(x,rows,cols);
