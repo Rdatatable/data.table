@@ -1,7 +1,7 @@
 
 cedta.override = NULL  # If no need arises, will deprecate.
 
-cedta.pkgEvalsUserCode = c("gWidgetsWWW","statET","FastRWeb","slidify","rmarkdown","knitr","ezknitr","IRkernel", "rtvs")
+cedta.pkgEvalsUserCode = c("gWidgetsWWW","statET","FastRWeb","slidify","rmarkdown","knitr","ezknitr","IRkernel", "rtvs", "purrr")
 # These packages run user code in their own environment and thus do not
 # themselves Depend or Import data.table. knitr's eval is passed envir=globalenv() so doesn't
 # need to be listed here currently, but we include it in case it decides to change that.
