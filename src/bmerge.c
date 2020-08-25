@@ -47,13 +47,42 @@ SEXP bmerge(SEXP iArg, SEXP xArg, SEXP icolsArg, SEXP xcolsArg, SEXP isorted, SE
   i = iArg; x = xArg;  // set globals so bmerge_r can see them.
   if (!isInteger(icolsArg)) error(_("Internal error: icols is not integer vector")); // # nocov
   if (!isInteger(xcolsArg)) error(_("Internal error: xcols is not integer vector")); // # nocov
+  xN = LENGTH(x) ? LENGTH(VECTOR_ELT(x,0)) : 0;
+  iN = ilen = anslen = LENGTH(i) ? LENGTH(VECTOR_ELT(i,0)) : 0;
+  if (!isInteger(opArg))
+    error(_("Internal error: opArg is not an integer vector")); // # nocov
+  else if (!LENGTH(opArg)) { // escape cross join
+    if (LENGTH(icolsArg) || LENGTH(xcolsArg))
+      error("Internal error: cross join, 0 length 'on' but icols or xcols are non 0 length"); // # nocov
+    SEXP ans = PROTECT(allocVector(VECSXP, 5));
+    SEXP ansnames = PROTECT(allocVector(STRSXP, 5));
+    SET_VECTOR_ELT(ans, 0, allocVector(INTSXP, anslen));
+    SET_VECTOR_ELT(ans, 1, allocVector(INTSXP, anslen));
+    SET_VECTOR_ELT(ans, 2, allocVector(INTSXP, 0));
+    SET_VECTOR_ELT(ans, 3, ScalarLogical(xN<2 || iN<1)); // cross join to 1 row dt is still allLen1, and cross join from 0 row dt is always allLen1
+    SET_VECTOR_ELT(ans, 4, ScalarLogical(true));
+    SET_STRING_ELT(ansnames, 0, char_starts);
+    SET_STRING_ELT(ansnames, 1, char_lens);
+    SET_STRING_ELT(ansnames, 2, char_indices);
+    SET_STRING_ELT(ansnames, 3, char_allLen1);
+    SET_STRING_ELT(ansnames, 4, char_allGrp1);
+    setAttrib(ans, R_NamesSymbol, ansnames);
+    int *starts = INTEGER(VECTOR_ELT(ans, 0));
+    int *lens = INTEGER(VECTOR_ELT(ans, 1));
+    int start = xN==0 ? NA_INTEGER : 1; // nomatch=NA defaults, we test nomatch=NA for cross join in R
+    int len = xN==0 ? 1 : xN;
+    for (int i=0; i<anslen; ++i) {
+      starts[i] = start;
+      lens[i] = len;
+    }
+    UNPROTECT(2);
+    return (ans);
+  }
   if ((LENGTH(icolsArg) == 0 || LENGTH(xcolsArg) == 0) && LENGTH(i) > 0) // We let through LENGTH(i) == 0 for tests 2126.*
     error(_("Internal error: icols and xcols must be non-empty integer vectors."));
   if (LENGTH(icolsArg) > LENGTH(xcolsArg)) error(_("Internal error: length(icols) [%d] > length(xcols) [%d]"), LENGTH(icolsArg), LENGTH(xcolsArg)); // # nocov
   icols = INTEGER(icolsArg);
   xcols = INTEGER(xcolsArg);
-  xN = LENGTH(x) ? LENGTH(VECTOR_ELT(x,0)) : 0;
-  iN = ilen = anslen = LENGTH(i) ? LENGTH(VECTOR_ELT(i,0)) : 0;
   ncol = LENGTH(icolsArg);    // there may be more sorted columns in x than involved in the join
   for(int col=0; col<ncol; col++) {
     if (icols[col]==NA_INTEGER) error(_("Internal error. icols[%d] is NA"), col); // # nocov
@@ -91,7 +120,7 @@ SEXP bmerge(SEXP iArg, SEXP xArg, SEXP icolsArg, SEXP xcolsArg, SEXP isorted, SE
   else error(_("Internal error: invalid value for 'mult'. please report to data.table issue tracker")); // # nocov
 
   // opArg
-  if (!isInteger(opArg) || length(opArg) != ncol)
+  if (length(opArg) != ncol)
     error(_("Internal error: opArg is not an integer vector of length equal to length(on)")); // # nocov
   op = INTEGER(opArg);
   if (!isInteger(nqgrpArg))

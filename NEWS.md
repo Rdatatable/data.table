@@ -6,6 +6,8 @@
 
 ## NEW FEATURES
 
+1. Support for _cross join_ (a.k.a. _Cartesian join_) has been added inside `[` data.table method by providing zero length character: `DT[i, on = character()]`. One row is returned for each every row of `x` paired with every row of `i`, a total of `nrow(x) * nrow(i)` rows. Closes [#1717](https://github.com/Rdatatable/data.table/issues/1717).
+
 ## BUG FIXES
 
 1. `test.data.table()` could fail the 2nd time it is run by a user in the same R session on Windows due to not resetting locale properly after testing Chinese translation, [#4630](https://github.com/Rdatatable/data.table/pull/4630). Thanks to Cole Miller for investigating and fixing.

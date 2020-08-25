@@ -117,18 +117,18 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
   }
 
   ## after all modifications of i, check if i has a proper key on all icols
-  io = identical(icols, head(chmatch(key(i), names(i)), length(icols)))
+  io = length(icols) && identical(icols, head(chmatch(key(i), names(i)), length(icols)))
 
   ## after all modifications of x, check if x has a proper key on all xcols.
   ## If not, calculate the order. Also for non-equi joins, the order must be calculated.
-  non_equi = which.first(ops != 1L) # 1 is "==" operator
+  non_equi = which.first(ops != 1L) # 1 is "==" operator, empty means cross join
   if (is.na(non_equi)) {
+    xo = NULL
     # equi join. use existing key (#1825) or existing secondary index (#1439)
     if (identical(xcols, head(chmatch(key(x), names(x)), length(xcols)))) {
       xo = integer(0L)
       if (verbose) cat("on= matches existing key, using key\n")
-    } else {
-      xo = NULL
+    } else if (length(ops)) {
       if (isTRUE(getOption("datatable.use.index"))) {
         xo = getindex(x, names(x)[xcols])
         if (verbose && !is.null(xo)) cat("on= matches existing index, using index\n")
@@ -139,6 +139,11 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
         if (verbose) {cat("Calculated ad hoc index in",timetaken(last.started.at),"\n"); flush.console()}
         # TODO: use setindex() instead, so it's cached for future reuse
       }
+    } else { ## cross join
+      if (mult!="all")
+        stop("trying to do cross join and mult!='all'? does not make sense, please report your use case to issue tracker")
+      if (!identical(nomatch, NA_integer_) || !identical(nomatch, NA))
+        stop("trying to do cross inner join? does not make sense, please report your use case to issue tracker")
     }
     ## these variables are only needed for non-equi joins. Set them to default.
     nqgrp = integer(0L)

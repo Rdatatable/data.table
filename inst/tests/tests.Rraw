@@ -17127,3 +17127,21 @@ test(2151, dcast(DT, 1 ~ a, value.var='survmean'), data.table('.'='.', s=1L, x=2
 y = person(given='Joel', family='Mossong')
 test(2152, copy(y), y)
 
+# allow cross join in `[.data.table` #1717
+X=data.table(a=1:2)
+Y=data.table(b=letters[1:2])
+expected = shallow(X)[, "k":=1L][shallow(Y)[, "k":=1L], on="k"][, "k":=NULL]
+test(2153.01, X[Y, on=character()], expected)
+test(2153.02, X[Y, on=character(), .(a, b)], expected)
+test(2153.03, X[Y, on=character(), c("a", "b")], expected)
+test(2153.04, X[Y, on=character(), .(a=x.a, b=i.b)], expected)
+expected = shallow(X[0])[, "k":=integer()][shallow(Y[0])[, "k":=integer()], on="k"][, "k":=NULL]
+test(2153.05, X[0][Y[0], on=character()], expected)
+expected = shallow(X)[, "k":=1L][shallow(Y[0])[, "k":=integer()], on="k"][, "k":=NULL]
+test(2153.06, X[Y[0], on=character()], expected)
+expected = shallow(X[0])[, "k":=integer()][shallow(Y)[, "k":=1L], on="k"][, "k":=NULL]
+test(2153.07, X[0][Y, on=character()], expected)
+test(2153.11, data.table(a=1:2)[!data.table(b=1:2), on=character()], error="cross anti join")
+test(2153.12, data.table(a=1:2)[data.table(b=1:2), on=character(), mult="first"], error="cross join but mult")
+test(2153.13, data.table(a=1:2)[data.table(b=1:2), on=character(), .SD, by=.EACHI], error="cross join and aggregate")
+test(2153.14, data.table(a=1:2)[data.table(b=1:2), on=character(), .SD, by=b], error="cross join and group by")
