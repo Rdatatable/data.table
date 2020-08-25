@@ -435,6 +435,8 @@ replace_dot_alias = function(e) {
         if (!length(ops)) { ## cross join
           if (notjoin)
             stop("trying to do a cross anti join? does not make sense, please report your use case to issue tracker")
+          if (!identical(mult, "all"))
+            stop("trying to do a cross join but mult!='all' does not make sense, please report your use case to issue tracker")
           if (byjoin)
             stop("trying to do cross join and aggregate by .EACHI? does not make sense, please report your use case to issue tracker")
           if (!missingby)
