@@ -152,13 +152,25 @@ static SEXP shallow(SEXP dt, SEXP cols, R_len_t n)
   R_len_t i,l;
   int protecti=0;
   SEXP newdt = PROTECT(allocVector(VECSXP, n)); protecti++;   // to do, use growVector here?
-  //copyMostAttrib(dt, newdt);   // including class
-  DUPLICATE_ATTRIB(newdt, dt);
+  SET_ATTRIB(newdt, shallow_duplicate(ATTRIB(dt)));
+  SET_OBJECT(newdt, OBJECT(dt));
+  IS_S4_OBJECT(dt) ? SET_S4_OBJECT(newdt) : UNSET_S4_OBJECT(newdt);  // To support S4 objects that incude data.table
+  //SHALLOW_DUPLICATE_ATTRIB(newdt, dt);  // SHALLOW_DUPLICATE_ATTRIB would be a bit neater but is only available from R 3.3.0
+  
   // TO DO: keepattr() would be faster, but can't because shallow isn't merely a shallow copy. It
   //        also increases truelength. Perhaps make that distinction, then, and split out, but marked
   //        so that the next change knows to duplicate.
-  //        Does copyMostAttrib duplicate each attrib or does it point? It seems to point, hence DUPLICATE_ATTRIB
-  //        for now otherwise example(merge.data.table) fails (since attr(d4,"sorted") gets written by setnames).
+  //        keepattr() also merely points to the entire attrbutes list and thus doesn't allow replacing
+  //        some of its elements.
+  
+  // We copy all attributes that refer to column names so that calling setnames on either
+  // the original or the shallow copy doesn't break anything.
+  SEXP index = PROTECT(getAttrib(dt, sym_index)); protecti++;
+  setAttrib(newdt, sym_index, shallow_duplicate(index));
+  
+  SEXP sorted = PROTECT(getAttrib(dt, sym_sorted)); protecti++;
+  setAttrib(newdt, sym_sorted, duplicate(sorted));
+  
   SEXP names = PROTECT(getAttrib(dt, R_NamesSymbol)); protecti++;
   SEXP newnames = PROTECT(allocVector(STRSXP, n)); protecti++;
   if (isNull(cols)) {

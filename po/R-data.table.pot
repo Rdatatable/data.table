@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: data.table 1.12.9\n"
-"POT-Creation-Date: 2019-12-31 13:02\n"
+"POT-Creation-Date: 2020-07-17 14:38\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -304,6 +304,9 @@ msgstr ""
 msgid "not-join '!' prefix is present on i but nomatch is provided. Please remove nomatch."
 msgstr ""
 
+msgid "Operator := detected in i, the first argument inside DT[...], but is only valid in the second argument, j. Most often, this happens when forgetting the first comma (e.g. DT[newvar := 5] instead of DT[ , new_var := 5]). Please double-check the syntax. Run traceback(), and debugger() to get a line number."
+msgstr ""
+
 msgid "is not found in calling scope"
 msgstr ""
 
@@ -443,6 +446,12 @@ msgid ".SDcols should be column numbers or names"
 msgstr ""
 
 msgid "Some items of .SDcols are not column names:"
+msgstr ""
+
+msgid "'(m)get' found in j. ansvars being set to all columns. Use .SDcols or a single j=eval(macro) instead. Both will detect the columns used which is important for efficiency.\nOld ansvars: %s"
+msgstr ""
+
+msgid "New ansvars: %s"
 msgstr ""
 
 msgid "This j doesn't use .SD but .SDcols has been supplied. Ignoring .SDcols. See ?data.table."
@@ -805,16 +814,7 @@ msgstr ""
 msgid "x is a list, 'cols' cannot be 0-length."
 msgstr ""
 
-msgid "RHS of"
-msgstr ""
-
-msgid "is length"
-msgstr ""
-
-msgid "which is not 1 or nrow ("
-msgstr ""
-
-msgid "). For robustness, no recycling is allowed (other than of length 1 RHS). Consider %in% instead."
+msgid "RHS of %s is length %d which is not 1 or nrow (%d). For robustness, no recycling is allowed (other than of length 1 RHS). Consider %%in%% instead."
 msgstr ""
 
 msgid "Internal error in .isFastSubsettable. Please report to data.table developers"
@@ -1345,7 +1345,7 @@ msgstr ""
 msgid "Supplied both `by` and `by.x/by.y`. `by` argument will be ignored."
 msgstr ""
 
-msgid "A non-empty vector of column names are required for `by.x` and `by.y`."
+msgid "A non-empty vector of column names is required for `by.x` and `by.y`."
 msgstr ""
 
 msgid "Elements listed in `by.x` must be valid column names in x."
@@ -1384,13 +1384,25 @@ msgstr ""
 msgid "**********\nThis development version of data.table was built more than 4 weeks ago. Please update: data.table::update.dev.pkg()\n**********"
 msgstr ""
 
-msgid "**********\nThis installation of data.table has not detected OpenMP support. It should still work but in single-threaded mode."
+msgid "**********"
 msgstr ""
 
-msgid "If this is a Mac, please ensure you are using R>=3.4.0 and have followed our Mac instructions here: https://github.com/Rdatatable/data.table/wiki/Installation."
+msgid "This installation of data.table has not detected OpenMP support. It should still work but in single-threaded mode."
 msgstr ""
 
-msgid "This warning message should not occur on Windows or Linux. If it does, please file a GitHub issue.\n**********"
+msgid "sysname"
+msgstr ""
+
+msgid "Darwin"
+msgstr ""
+
+msgid "This is a Mac. Please read https://mac.r-project.org/openmp/. Please engage with Apple and ask them for support. Check r-datatable.com for updates, and our Mac instructions here: https://github.com/Rdatatable/data.table/wiki/Installation. After several years of many reports of installation problems on Mac, it's time to gingerly point out that there have been no similar problems on Windows or Linux."
+msgstr ""
+
+msgid "This is"
+msgstr ""
+
+msgid ". This warning should not normally occur on Windows or Linux where OpenMP is turned on by data.table's configure script by passing -fopenmp to the compiler. If you see this warning on Windows or Linux, please file a GitHub issue."
 msgstr ""
 
 msgid "The option 'datatable.nomatch' is being used and is not set to the default NA. This option is still honored for now but will be deprecated in future. Please see NEWS for 1.12.4 for detailed information and motivation. To specify inner join, please specify `nomatch=NULL` explicitly in your calls rather than changing the default using this option."
@@ -1421,6 +1433,9 @@ msgid ". The major version must match. Please reinstall data.table."
 msgstr ""
 
 msgid "Option 'datatable.old.bywithoutby' has been removed as warned for 2 years. It is now ignored. Please use by=.EACHI instead and stop using this option."
+msgstr ""
+
+msgid "Option 'datatable.old.unique.by.key' has been removed as warned for 4 years. It is now ignored. Please use by=key(DT) instead and stop using this option."
 msgstr ""
 
 msgid "Unexpected base R behaviour: list(x) has copied x"
@@ -1505,9 +1520,6 @@ msgid "Internal error: index '"
 msgstr ""
 
 msgid "' exists but is invalid"
-msgstr ""
-
-msgid "Use 'if (length(o <- forderv(DT,by))) ...' for efficiency in one step, so you have o as well if not sorted."
 msgstr ""
 
 msgid "x is vector but 'by' is supplied"
@@ -1607,9 +1619,6 @@ msgid "' but the corresponding item of y is '"
 msgstr ""
 
 msgid "None of the datasets should contain a column named '.seqn'"
-msgstr ""
-
-msgid "'target' and 'current' must both be data.tables"
 msgstr ""
 
 msgid "Internal error: ncol(current)==ncol(target) was checked above"
@@ -1732,7 +1741,13 @@ msgstr ""
 msgid "not found: ["
 msgstr ""
 
-msgid "Input xts object should not have 'index' column because it would result in duplicate column names. Rename 'index' column in xts or use `keep.rownames=FALSE` and add index manually as another column."
+msgid "keep.rownames must be length 1"
+msgstr ""
+
+msgid "keep.rownames must not be NA"
+msgstr ""
+
+msgid "Input xts object should not have '%s' column because it would result in duplicate column names. Rename '%s' column in xts or use `keep.rownames` to change the index column name."
 msgstr ""
 
 msgid "data.table must have a time based column in first position, use `setcolorder` function to change the order, or see ?timeBased for supported types"

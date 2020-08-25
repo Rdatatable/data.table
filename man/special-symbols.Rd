@@ -7,6 +7,7 @@
 \alias{.BY}
 \alias{.N}
 \alias{.EACHI}
+\alias{.NGRP}
 \title{ Special symbols }
 \description{
     \code{.SD}, \code{.BY}, \code{.N}, \code{.I}, \code{.GRP}, and \code{.NGRP} are \emph{read-only} symbols for use in \code{j}. \code{.N} can be used in \code{i} as well. See the vignettes and examples here and in \code{\link{data.table}}.

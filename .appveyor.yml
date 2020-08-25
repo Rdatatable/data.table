@@ -32,7 +32,7 @@ environment:
 
   - R_VERSION: release  # the single Windows.zip binary (both 32bit/64bit) that users following dev version of installation instructions should click
 
-#  - R_VERSION: devel   # When off it's to speed up dev cycle; R-devel is still checked but by GLCI on a roughly hourly cycle.
+  - R_VERSION: devel   # When off it's to speed up dev cycle; R-devel is still checked but by GLCI on a roughly hourly cycle. CRAN_Release.cmd has a reminder to turn back on.
 
 before_build:
   - cmd: ECHO no Revision metadata added to DESCRIPTION
