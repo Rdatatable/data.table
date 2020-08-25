@@ -429,10 +429,11 @@ replace_dot_alias = function(e) {
         on_ops = .parse_on(substitute(on), isnull_inames)
         on = on_ops[[1L]]
         ops = on_ops[[2L]]
-        if (any(ops > 1L) || !length(ops)) { ## fix for #4489;  ops = c("==", "<=", "<", ">=", ">", "!=")
+        crossjoin = !length(ops)
+        if (crossjoin || any(ops > 1L)) { ## fix for #4489;  ops = c("==", "<=", "<", ">=", ">", "!=")
           allow.cartesian = TRUE
         }
-        if (!length(ops)) { ## cross join
+        if (crossjoin) { ## cross join
           if (notjoin)
             stop("trying to do a cross anti join? does not make sense, please report your use case to issue tracker")
           if (!identical(mult, "all"))
@@ -620,23 +621,23 @@ replace_dot_alias = function(e) {
   if (missing(j)) {
     # missingby was already checked above before dealing with i
     if (!length(x)) return(null.data.table())
-    if (!length(leftcols) && length(ops)) {
+    if (!length(leftcols) && !crossjoin) {
       # basic x[i] subset, #2951
       if (is.null(irows)) return(shallow(x))   # e.g. DT[TRUE] (#3214); otherwise CsubsetDT would materialize a deep copy
       else                return(.Call(CsubsetDT, x, irows, seq_along(x)) )
     } else {
-      jisvars = names_i[if (length(ops)) -leftcols else TRUE] ## !length(ops) are cross join
+      jisvars = names_i[if (crossjoin) TRUE else -leftcols]
       tt = jisvars %chin% names_x
       if (length(tt)) jisvars[tt] = paste0("i.",jisvars[tt])
-      if (length(ops) && length(duprightcols <- rightcols[duplicated(rightcols)])) {
+      if (!crossjoin && length(duprightcols <- rightcols[duplicated(rightcols)])) {
         nx = c(names_x, names_x[duprightcols])
         rightcols = chmatchdup(names_x[rightcols], nx)
         nx = make.unique(nx)
       } else nx = names_x
       ansvars = make.unique(c(nx, jisvars))
-      icols = c(leftcols, seq_along(i)[if (length(ops)) -leftcols else TRUE])
+      icols = c(leftcols, seq_along(i)[if (crossjoin) TRUE else -leftcols])
       icolsAns = c(rightcols, seq.int(length(nx)+1L, length.out=ncol(i)-length(unique(leftcols))))
-      xcols = xcolsAns = seq_along(x)[if (length(ops)) -rightcols else TRUE]
+      xcols = xcolsAns = seq_along(x)[if (crossjoin) TRUE else -rightcols]
     }
     ansvals = chmatch(ansvars, nx)
   }
@@ -692,7 +693,7 @@ replace_dot_alias = function(e) {
           ansvals = chmatch(ansvars, names_x)   # not chmatchdup()
         }
         if (!length(ansvals)) return(null.data.table())
-        if (length(ops) && !length(leftcols)) {
+        if (!crossjoin && !length(leftcols)) {
           if (!anyNA(ansvals)) return(.Call(CsubsetDT, x, irows, ansvals))
           else stop("column(s) not found: ", paste(ansvars[is.na(ansvals)],collapse=", "))
         }
@@ -1167,7 +1168,8 @@ replace_dot_alias = function(e) {
         xcolsAns = seq_along(ansvars)
         icols = icolsAns = integer()
       } else {
-        if (length(ops) && !length(leftcols)) stop("Internal error -- column(s) not found: ", paste(ansvars[wna],collapse=", ")) # nocov
+        if (!crossjoin && !length(leftcols))
+          stop("Internal error -- column(s) not found: ", paste(ansvars[wna],collapse=", ")) # nocov
         xcols = w[!wna]
         xcolsAns = which(!wna)
         map = c(seq_along(i), leftcols)   # this map is to handle dups in leftcols, #3635
