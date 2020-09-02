@@ -2548,54 +2548,30 @@ setnames = function(x,old,new,skip_absent=FALSE) {
   invisible(x)
 }
 
-# in anchor mode user should provide a length 1 named vector: anchor = c(before/after = anchor_col_name/index)
-setcolorder = function(x, neworder=key(x), anchor = NULL)
+# before/after support created by ben-schwen@github, #4358
+setcolorder = function(x, neworder=key(x), before=NULL, after=NULL)
 {
   if (is.character(neworder) && anyDuplicated(names(x)))
     stop("x has some duplicated column name(s): ", paste(names(x)[duplicated(names(x))], collapse=","), ". Please remove or rename the duplicate(s) and try again.")
   # if (!is.data.table(x)) stop("x is not a data.table")
+  
+  if (!is.null(before) && !is.null(after))
+    stop("Provide either before= or after= or none but not both.")
+  
   neworder = colnamesInt(x, neworder, check_dups=FALSE)  # dups are now checked inside Csetcolorder below
-  # original mode without anchor
-  if (is.null(anchor)) {
-    if (length(neworder) != length(x)) {
-      #if shorter than length(x), pad by the missing
-      #  elements (checks below will catch other mistakes)
-      final_order = c(neworder, setdiff(seq_along(x), neworder))
-    } else {
-      final_order <- neworder
-    }
-  } else {
-    if (!(names(anchor) %in% c("before", "after"))) {
-      stop("anchor need to be named with 'before' or 'after'")
-    }
-    if (!(class(anchor) %in% c("character", "numeric", "integer"))) {
-      stop("anchor need to be either column name or index")
-    }
-    # always operating in index mode, consistent with original mode
-    oldorder <- seq_along(x)
-    if (class(anchor) == "character") {
-      anchor_location <- which(names(x) == anchor)
-    } else {
-      anchor_location <- which(oldorder == anchor)
-    }
-    if (length(anchor_location) == 0) {
-      stop("anchor not matching any column")
-    }
-    if (anchor_location %in% neworder) {
-      stop("anchor cannot be part of neworder")
-    }
-    # we always split columns without the moving subset into left, anchor, right, then insert the moving subset before or after anchor.
-    # : in R is seq, always return a seqence even for 1:0, or 11:10 of length 10 vector, this is not what we want.
-    slice <- function(vec, from, to) {
-      if (from > to) return(NULL) else vec[from:to]
-    }
-    left_cols <- setdiff(slice(oldorder, 1, anchor_location - 1), neworder)
-    right_cols <- setdiff(slice(oldorder, anchor_location + 1, length(oldorder)), neworder)
-    final_order <- switch(names(anchor),
-                       before = c(left_cols, neworder, anchor_location, right_cols),
-                       after =  c(left_cols, anchor_location, neworder, right_cols))
+  
+  if (!is.null(before))
+    neworder = c(setdiff(seq_len(colnamesInt(x, before) - 1L), neworder), neworder)
+  
+  if (!is.null(after))
+    neworder = c(setdiff(seq_len(colnamesInt(x, after)), neworder), neworder)
+  
+  if (length(neworder) != length(x)) {
+    #if shorter than length(x), pad by the missing
+    #  elements (checks below will catch other mistakes)
+    neworder = c(neworder, setdiff(seq_along(x), neworder))
   }
-  .Call(Csetcolorder, x, final_order)
+  .Call(Csetcolorder, x, neworder)
   invisible(x)
 }
 
