@@ -17127,3 +17127,7 @@ test(2151, dcast(DT, 1 ~ a, value.var='survmean'), data.table('.'='.', s=1L, x=2
 y = person(given='Joel', family='Mossong')
 test(2152, copy(y), y)
 
+# initial '' doesn't crash as.IDate, #4676;
+#   also imitates base R as from 4.0.2 patched
+y = c('', '2020-01-01')
+test(2153, as.IDate(y), rev(as.IDate(rev(y))))
