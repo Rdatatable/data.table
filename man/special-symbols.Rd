@@ -10,7 +10,7 @@
 \alias{.NGRP}
 \title{ Special symbols }
 \description{
-    \code{.SD}, \code{.BY}, \code{.N}, \code{.I}, \code{.GRP}, and \code{.NGRP} are \emph{read-only} symbols for use in \code{j}. \code{.N} can be used in \code{i} as well. See the vignettes and examples here and in \code{\link{data.table}}.
+    \code{.SD}, \code{.BY}, \code{.N}, \code{.I}, \code{.GRP}, and \code{.NGRP} are \emph{read-only} symbols for use in \code{j}. \code{.N} can be used in \code{i} as well. See the vignettes, Details and Examples here and in \code{\link{data.table}}.
     \code{.EACHI} is a symbol passed to \code{by}; i.e. \code{by=.EACHI}.
 }
 \details{
@@ -28,6 +28,8 @@
     }
 
     \code{.EACHI} is defined as \code{NULL} but its value is not used. Its usage is \code{by=.EACHI} (or \code{keyby=.EACHI}) which invokes grouping-by-each-row-of-i; see \code{\link{data.table}}'s \code{by} argument for more details.
+    
+    Note that \code{.N} in \code{i} is computed up-front, while that in \code{j} applies \emph{after filtering in \code{i}}. That means that even absent grouping, \code{.N} in \code{i} can be different from \code{.N} in \code{j}. See Examples.
 }
 \seealso{
     \code{\link{data.table}}, \code{\link{:=}}, \code{\link{set}}, \code{\link{datatable-optimize}}
@@ -52,5 +54,9 @@ DT[, c(.(y=max(y)), lapply(.SD, min)),
 DT[, grp := .GRP, by=x]                # add a group counter
 DT[, grp_pct := .GRP/.NGRP, by=x]      # add a group "progress" counter
 X[, DT[.BY, y, on="x"], by=x]          # join within each group
+
+# .N can be different in i and j
+DT[{cat(sprintf('in i, .N is \%d\n', .N)); a < .N/2},
+   {cat(sprintf('in j, .N is \%d\n', .N)); mean(a)}]
 }
 \keyword{ data }
