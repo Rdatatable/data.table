@@ -41,6 +41,7 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="")
     } else {
       # avoid creating a tempfile() for single strings, which can be done a lot; e.g. in the test suite.
       input = text
+      # adds a newline to single strings without \n or \r to be recognized as text and not as file #4689
       if (!length(grep("\\n|\\r", input)))
         input = paste0(input, "\n")
     }
