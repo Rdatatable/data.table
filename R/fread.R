@@ -41,6 +41,8 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="")
     } else {
       # avoid creating a tempfile() for single strings, which can be done a lot; e.g. in the test suite.
       input = text
+      if (!length(grep("\\n|\\r", input)))
+        input = paste0(input, "\n")
     }
   }
   else if (is.null(cmd)) {

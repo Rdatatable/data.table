@@ -17127,3 +17127,5 @@ test(2151, dcast(DT, 1 ~ a, value.var='survmean'), data.table('.'='.', s=1L, x=2
 y = person(given='Joel', family='Mossong')
 test(2152, copy(y), y)
 
+DT = data.table(a = logical(), b = logical(), c = logical())
+test(2153, fread(text = "a b c"), DT)
