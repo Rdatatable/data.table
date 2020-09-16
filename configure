@@ -85,6 +85,7 @@ EOF
 
 if [ "$R_NO_OPENMP" = "1" ]; then
   # Compilation failed -- try forcing -fopenmp instead.
+  R_NO_OPENMP=0
   "${CC}" "${CFLAGS}" -fopenmp test-omp.c || R_NO_OPENMP=1
 fi
 
