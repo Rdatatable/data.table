@@ -527,8 +527,7 @@ void setFinalNrow(size_t nrow) {
     if (nrow == dtnrows)
       return;
     for (int i=0; i<LENGTH(DT); i++) {
-      SETLENGTH(VECTOR_ELT(DT,i), nrow);  // TODO: realloc
-      SET_TRUELENGTH(VECTOR_ELT(DT,i), nrow);
+      SET_VECTOR_ELT(DT, i, Rf_lengthgets(VECTOR_ELT(DT, i), nrow));
     }
   }
   R_FlushConsole(); // # 2481. Just a convenient place; nothing per se to do with setFinalNrow()
