@@ -34,6 +34,12 @@ which.first = function(x)
   match(TRUE, x)
 }
 
+# backport str2lang for older versions
+if (!exists('str2lang', 'package:base')) {
+  # see base/R/parse.R -- skipping the internal checks on our internal usage
+  str2lang = function(s) parse(text = s, keep.source=FALSE)[[1L]]
+}
+
 require_bit64_if_needed = function(DT) {
   # called in fread and print.data.table
   if (!isNamespaceLoaded("bit64") && any(sapply(DT,inherits,"integer64"))) {

@@ -44,11 +44,11 @@
     # If R 3.6.2 (not yet released) includes the c|rbind S3 dispatch fix, then this workaround still works.
     tt = base::cbind.data.frame
     ss = body(tt)
-    if (class(ss)[1L]!="{") ss = as.call(c(as.name("{"), ss))
+    if (class(ss)[1L]!="{") ss = call("{", ss)
     prefix = if (!missing(pkgname)) "data.table::" else ""  # R provides the arguments when it calls .onLoad, I don't in dev/test
     if (!length(grep("data.table", ss[[2L]], fixed = TRUE))) {
       ss = ss[c(1L, NA, 2L:length(ss))]
-      ss[[2L]] = parse(text=paste0("if (!identical(class(..1),'data.frame')) for (x in list(...)) { if (inherits(x,'data.table')) return(",prefix,"data.table(...)) }"))[[1L]]
+      ss[[2L]] = str2lang(paste0("if (!identical(class(..1),'data.frame')) for (x in list(...)) { if (inherits(x,'data.table')) return(",prefix,"data.table(...)) }"))
       body(tt)=ss
       (unlockBinding)("cbind.data.frame",baseenv())
       assign("cbind.data.frame",tt,envir=asNamespace("base"),inherits=FALSE)
@@ -56,10 +56,10 @@
     }
     tt = base::rbind.data.frame
     ss = body(tt)
-    if (class(ss)[1L]!="{") ss = as.call(c(as.name("{"), ss))
+    if (class(ss)[1L]!="{") ss = call("{", ss)
     if (!length(grep("data.table", ss[[2L]], fixed = TRUE))) {
       ss = ss[c(1L, NA, 2L:length(ss))]
-      ss[[2L]] = parse(text=paste0("for (x in list(...)) { if (inherits(x,'data.table')) return(",prefix,".rbind.data.table(...)) }"))[[1L]] # fix for #89
+      ss[[2L]] = str2lang(paste0("for (x in list(...)) { if (inherits(x,'data.table')) return(",prefix,".rbind.data.table(...)) }")) # fix for #89
       body(tt)=ss
       (unlockBinding)("rbind.data.frame",baseenv())
       assign("rbind.data.frame",tt,envir=asNamespace("base"),inherits=FALSE)
@@ -89,7 +89,7 @@
        "datatable.prettyprint.char" = NULL     # FR #1091
        )
   for (i in setdiff(names(opts),names(options()))) {
-    eval(parse(text=paste0("options(",i,"=",opts[i],")")))
+    eval(str2lang(paste0("options(",i,"=",opts[i],")")))
   }
 
   if (!is.null(getOption("datatable.old.bywithoutby")))
