@@ -709,7 +709,8 @@ replace_dot_alias = function(e) {
         # may evaluate to NULL | character() | "" | list(), likely a result of a user expression where no-grouping is one case being loop'd through
         bysubl = as.list.default(bysub)
         bysuborig = bysub
-        if (is.name(bysub) && !(bysub %chin% names_x)) {  # TO DO: names(x),names(i),and i. and x. prefixes
+        # as.character here as a workaround for #4708
+        if (is.name(bysub) && !(as.character(bysub) %chin% names_x)) {  # TO DO: names(x),names(i),and i. and x. prefixes
           bysub = eval(bysub, parent.frame(), parent.frame())
           # fix for # 5106 - http://stackoverflow.com/questions/19983423/why-by-on-a-vector-not-from-a-data-table-column-is-very-slow
           # case where by=y where y is not a column name, and not a call/symbol/expression, but an atomic vector outside of DT.
@@ -746,7 +747,7 @@ replace_dot_alias = function(e) {
           if (length(backtick_idx)) bysub[backtick_idx] = paste0("`",bysub[backtick_idx],"`")
           backslash_idx = grep("\\", bysub, fixed = TRUE)
           if (length(backslash_idx)) bysub[backslash_idx] = gsub('\\', '\\\\', bysub[backslash_idx], fixed = TRUE)
-          bysub = parse(text=paste0("list(",paste(bysub,collapse=","),")"))[[1L]]
+          bysub = parse(text=paste0("list(",paste(bysub,collapse=","),")"))[[1L]] # TODO: use str2lang after R 3.6.0
           bysubl = as.list.default(bysub)
         }
         allbyvars = intersect(all.vars(bysub), names_x)

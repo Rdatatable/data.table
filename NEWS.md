@@ -12,6 +12,8 @@
 
 2. A regression in v1.13.0 resulted in installation on Mac often failing with `shared object 'datatable.so' not found`, and FreeBSD always failing with `expr: illegal option -- l`, [#4652](https://github.com/Rdatatable/data.table/issues/4652) [#4640](https://github.com/Rdatatable/data.table/issues/4640) [#4650](https://github.com/Rdatatable/data.table/issues/4650). Thanks to many for assistance including Simon Urbanek, Brian Ripley, Wes Morgan, and @ale07alvarez. There were no installation problems on Windows or Linux.
 
+3. Using a plain non-ASCII symbol as `by` works as expected, [#4708](https://github.com/Rdatatable/data.table/issues/4708). Thanks @pfv07 for the report.
+
 ## NOTES
 
 1. `bit64` v4.0.2 and `bit` v4.0.3, both released on 30th July, broke `data.table`'s tests. It seems that reverse dependency testing of `bit64` (i.e. testing of the packages which use `bit64`) did not include `data.table` because `data.table` suggests `bit64` but does not depend on it. Like other packages on our `Suggest` list, we test `data.table` works with `bit64` in our tests. In testing of our own reverse dependencies (packages which use `data.table`) we do include packages which suggest `data.table`, although it appears it is not CRAN policy to do so. We have requested that CRAN policy be improved to include suggests in reverse dependency testing.
