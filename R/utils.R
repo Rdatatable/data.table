@@ -34,15 +34,6 @@ which.first = function(x)
   match(TRUE, x)
 }
 
-# which.last
-which.last = function(x)
-{
-  if (!is.logical(x)) {
-    stop("x not boolean")
-  }
-  length(x) - match(TRUE, rev(x)) + 1L
-}
-
 require_bit64_if_needed = function(DT) {
   # called in fread and print.data.table
   if (!isNamespaceLoaded("bit64") && any(sapply(DT,inherits,"integer64"))) {
