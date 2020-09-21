@@ -747,7 +747,7 @@ replace_dot_alias = function(e) {
           if (length(backtick_idx)) bysub[backtick_idx] = paste0("`",bysub[backtick_idx],"`")
           backslash_idx = grep("\\", bysub, fixed = TRUE)
           if (length(backslash_idx)) bysub[backslash_idx] = gsub('\\', '\\\\', bysub[backslash_idx], fixed = TRUE)
-          bysub = parse(text=paste0("list(",paste(bysub,collapse=","),")"))[[1L]] # TODO: use str2lang after R 3.6.0
+          bysub = parse(text=paste0("list(",paste(bysub,collapse=","),")"))[[1L]]
           bysubl = as.list.default(bysub)
         }
         allbyvars = intersect(all.vars(bysub), names_x)
