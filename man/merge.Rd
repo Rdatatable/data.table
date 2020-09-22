@@ -19,8 +19,8 @@ Set the \code{by}, or \code{by.x} and \code{by.y} arguments explicitly to overri
 \usage{
 \method{merge}{data.table}(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FALSE,
 all.x = all, all.y = all, sort = TRUE, suffixes = c(".x", ".y"), no.dups = TRUE,
-allow.cartesian=getOption("datatable.allow.cartesian", info = FALSE),  # default FALSE
-\dots)
+allow.cartesian=getOption("datatable.allow.cartesian"),  # default FALSE
+info = FALSE, \dots)
 }
 
 \arguments{
