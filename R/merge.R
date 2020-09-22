@@ -1,9 +1,11 @@
 merge.data.table = function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FALSE, all.x = all,
-               all.y = all, sort = TRUE, suffixes = c(".x", ".y"), no.dups = TRUE, allow.cartesian=getOption("datatable.allow.cartesian"), ...) {
+               all.y = all, sort = TRUE, suffixes = c(".x", ".y"), no.dups = TRUE, allow.cartesian=getOption("datatable.allow.cartesian"), info = FALSE, ...) {
   if (!sort %in% c(TRUE, FALSE))
     stop("Argument 'sort' should be logical TRUE/FALSE")
   if (!no.dups %in% c(TRUE, FALSE))
     stop("Argument 'no.dups' should be logical TRUE/FALSE")
+  if (!info %in% c(TRUE, FALSE))
+    stop("Argument 'info' should be logical TRUE/FALSE")
   class_x = class(x)
   if (!is.data.table(y)) {
     y = as.data.table(y)
@@ -98,5 +100,15 @@ merge.data.table = function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FAL
 
   # retain custom classes of first argument that resulted in dispatch to this method, #1378
   setattr(dt, "class", class_x)
-  dt
+  if(info) {
+    cat("Rows in x:" , x[, .N, verbose = F], "\n")
+    cat("Rows in y:" , y[, .N, verbose = F], "\n")
+    cat("Matched rows:" , y[x, nomatch = NULL, on = by, allow.cartesian =
+                              allow.cartesian, verbose = F][, .N, verbose = F], "\n")
+    cat("Total rows after merge:" , dt[, .N, verbose = F], "\n")
+    dt
+  }  else {
+    dt
+  }
+
 }
