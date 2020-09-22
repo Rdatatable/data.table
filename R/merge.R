@@ -101,11 +101,11 @@ merge.data.table = function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FAL
   # retain custom classes of first argument that resulted in dispatch to this method, #1378
   setattr(dt, "class", class_x)
   if(info) {
-    cat("Rows in x:" , x[, .N, verbose = F], "\n")
-    cat("Rows in y:" , y[, .N, verbose = F], "\n")
-    cat("Matched rows:" , y[x, nomatch = NULL, on = by, allow.cartesian =
-                              allow.cartesian, verbose = F][, .N, verbose = F], "\n")
-    cat("Total rows after merge:" , dt[, .N, verbose = F], "\n")
+    message("Rows in x: " , x[, .N, verbose = F],"\n",
+   "Rows in y: " , y[, .N, verbose = F],"\n",
+    "Matched rows: " , y[x, nomatch = NULL, on = by, allow.cartesian =
+                              allow.cartesian, verbose = F][, .N, verbose = F],"\n",
+    "Total rows after merge: " , dt[, .N, verbose = F])
     dt
   }  else {
     dt
