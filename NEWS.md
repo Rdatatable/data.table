@@ -10,24 +10,26 @@
 
 1. `test.data.table()` could fail the 2nd time it is run by a user in the same R session on Windows due to not resetting locale properly after testing Chinese translation, [#4630](https://github.com/Rdatatable/data.table/pull/4630). Thanks to Cole Miller for investigating and fixing.
 
-2. Operating on columns of type `list`, e.g. `dt[, V1[[1]], by=id]`, suffered a performance regression in v1.13.0, [#4646](https://github.com/Rdatatable/data.table/issues/4646) [#4658](https://github.com/Rdatatable/data.table/issues/4658). Thanks to @fabiocs8 and @sandoronodi for the reports, and to Cole Miller for the fix.
+2. A regression in v1.13.0 resulted in installation on Mac often failing with `shared object 'datatable.so' not found`, and FreeBSD always failing with `expr: illegal option -- l`, [#4652](https://github.com/Rdatatable/data.table/issues/4652) [#4640](https://github.com/Rdatatable/data.table/issues/4640) [#4650](https://github.com/Rdatatable/data.table/issues/4650). Thanks to many for assistance including Simon Urbanek, Brian Ripley, Wes Morgan, and @ale07alvarez. There were no installation problems on Windows or Linux.
+
+3. Operating on columns of type `list`, e.g. `dt[, V1[[1]], by=id]`, suffered a performance regression in v1.13.0, [#4646](https://github.com/Rdatatable/data.table/issues/4646) [#4658](https://github.com/Rdatatable/data.table/issues/4658). Thanks to @fabiocs8 and @sandoronodi for the reports, and to Cole Miller for the fix.
 
 ## NOTES
 
-1. `bit64` v4.0.2 released on 30th July broke `data.table`'s tests. It seems that reverse dependency testing of `bit64` (i.e. testing of the packages which use `bit64`) did not include `data.table` because `data.table` merely suggests `bit64` and does not depend on it. Like other packages on our `Suggest` list, we test `data.table` works with `bit64` in our tests. In testing of our own reverse dependencies (packages which use `data.table`) we do include packages which suggest `data.table`, although it appears it is not CRAN policy to do so. We have requested that CRAN policy be changed to include suggests in reverse dependency testing.
+1. `bit64` v4.0.2 and `bit` v4.0.3, both released on 30th July, broke `data.table`'s tests. It seems that reverse dependency testing of `bit64` (i.e. testing of the packages which use `bit64`) did not include `data.table` because `data.table` suggests `bit64` but does not depend on it. Like other packages on our `Suggest` list, we test `data.table` works with `bit64` in our tests. In testing of our own reverse dependencies (packages which use `data.table`) we do include packages which suggest `data.table`, although it appears it is not CRAN policy to do so. We have requested that CRAN policy be improved to include suggests in reverse dependency testing.
 
     The first break was because `all.equal` did not work in previous versions of `bit64`; e.g.,
 
     ```R
     require(bit64)  
     all.equal(as.integer64(3), as.integer64(4))
-    TRUE    # < v4.0.0
-    FALSE   # >= v4.0.0
+    TRUE    # < v4.0.0;  incorrect
+    FALSE   # >= v4.0.0; correct because 3!=4
     ```
 
-    We feel the need to explain this in detail here because the addition of the `integer64` method for `all.equal` appears as a very brief "new feature" in `bit64`'s NEWS. We like `bit64` a lot and we know users of `data.table` also use `bit64`. They may be impacted in the same way; e.g., equality tests previously passing when they should not have passed. In our case, two `fcase` tests on `integer64` and `nanotime` started to fail upon `bit64`'s update. Fortunately, the `fcase` results were correct but the tests were comparing to an incorrect result which was incorrectly passing due to `all.equal` always returning TRUE for any `integer64` input.
+    We feel the need to explain this in detail here because the addition of the `integer64` method for `all.equal` appears as a brief new-feature in `bit64`'s NEWS. We like `bit64` a lot and we know users of `data.table` also use `bit64`. They may be impacted in the same way; e.g., equality tests previously passing when they should not have passed. In our case, two `fcase` tests started to fail upon `bit64`'s update. The `fcase` results were correct but the tests were comparing to an incorrect result. These tests were incorrectly passing due to `all.equal` always returning TRUE for any `integer64` input. Note also that `all.equal` always returned TRUE for any `nanotime` input, since `nanotime`'s underlying type is `bit64`.
 
-    The second break caused by `bit64` was the addition of a `copy` function. Since `data.table::copy` is long standing we hope that `bit64` can rename its new `copy` function. Otherwise, users of `data.table` may need to prefix every occurrence of `copy` with `data.table::copy` if they use `bit64` too. Again, this impacted `data.table`'s tests which mimic a user's environment; not `data.table` itself per se.
+    The second break caused by `bit` was the addition of a `copy` function. We did not ask, but the `bit` package kindly offered to change to a different name since `data.table::copy` is long standing. `bit` v4.0.4 released 4th August renamed `copy` to `copy_vector`. Otherwise, users of `data.table` would have needed to prefix every occurrence of `copy` with `data.table::copy` if they use `bit64` too, since `bit64` depends on `bit`. Again, this impacted `data.table`'s tests which mimic a user's environment; not `data.table` itself per se.
 
     Thanks to Cole Miller for the PR to accomodate `bit64`'s update.
 

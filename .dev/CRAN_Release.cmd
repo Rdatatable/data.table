@@ -103,7 +103,9 @@ grep omp_set_nested ./src/*.c
 grep --exclude="./src/openmp-utils.c" omp_get_max_threads ./src/*
 
 # Ensure all #pragama omp parallel directives include a num_threads() clause
-grep "pragma omp parallel" ./src/*.c | grep -v getDTthreads
+grep -i "pragma.*omp parallel" ./src/*.c | grep -v getDTthreads
+# for each num_threads(nth) above, ensure for Solaris that the variable is not declared const, #4638
+grep -i "const.*int.*nth" ./src/*.c
 
 # Update documented list of places where openMP parallelism is used: c.f. ?openmp
 grep -Elr "[pP]ragma.*omp" src | sort
@@ -366,29 +368,29 @@ print(Sys.time()); started.at<-proc.time(); try(test.data.table()); print(Sys.ti
 ###############################################
 
 cd ~/build
-rm -rf R-devel    # easiest way to remove ASAN from compiled packages in R-devel/library
-                  # to avoid "ASan runtime does not come first in initial library list" error; no need for LD_PRELOAD
-tar xvf R-devel.tar.gz
-cd R-devel
-./configure --without-recommended-packages --disable-byte-compiled-packages --disable-openmp --with-valgrind-instrumentation=1 CC="gcc" CFLAGS="-O0 -g -Wall -pedantic" LIBS="-lpthread"
+mkdir R-devel-valgrind  # separate build to avoid differences in installed packages, and
+                        # to avoid "ASan runtime does not come first in initial library list" error; no need for LD_PRELOAD
+tar xvf R-devel.tar.gz -C R-devel-valgrind --strip-components 1
+cd R-devel-valgrind
+./configure --without-recommended-packages --with-valgrind-instrumentation=2 --with-system-valgrind-headers CC="gcc" CFLAGS="-O2 -g -Wall -pedantic"
 make
 cd ~/GitHub/data.table
-vi ~/.R/Makevars  # make the -O0 -g line active, for info on source lines with any problems
-Rdevel CMD INSTALL data.table_1.13.1.tar.gz
-Rdevel -d "valgrind --tool=memcheck --leak-check=full --track-origins=yes --show-leak-kinds=definite"
+vi ~/.R/Makevars  # make the -O2 -g line active, for info on source lines with any problems
+Rdevel-valgrind CMD INSTALL data.table_1.13.1.tar.gz
+R_DONT_USE_TK=true Rdevel-valgrind -d "valgrind --tool=memcheck --leak-check=full --track-origins=yes --show-leak-kinds=definite,possible --gen-suppressions=all --suppressions=./.dev/valgrind.supp -s"
+# the default for --show-leak-kinds is 'definite,possible' which we're setting explicitly here as a reminder. CRAN uses the default too.
+#   including 'reachable' (as 'all' does) generates too much output from R itself about by-design permanent blocks
 # gctorture(TRUE)      # very slow, many days
 # gctorture2(step=100)
-print(Sys.time()); require(data.table); print(Sys.time()); started.at<-proc.time(); try(test.data.table()); print(Sys.time()); print(timetaken(started.at))
-# 3m require; 62m test
+print(Sys.time()); require(data.table); print(Sys.time()); started.at<-proc.time(); try(test.data.table(script="*.Rraw")); print(Sys.time()); print(timetaken(started.at))
+# 3m require; 62m test  # level 1 -O0
+# 1m require; 33m test  # level 2 -O2
+q() # valgrind output printed after q()
 
-# Investigated and ignore :
-# Tests 648 and 1262 (see their comments) have single precision issues under valgrind that don't occur on CRAN, even Solaris.
-# Old comment from gsumm.c ...  // long double usage here used to result in test 648 failing when run under valgrind
-                                // http://valgrind.org/docs/manual/manual-core.html#manual-core.limits"
+# Precision issues under valgrind are now avoided using test_longdouble in tests.Rraw, and exact_NaN in froll.Rraw
 # Ignore all "set address range perms" warnings :
 #   http://stackoverflow.com/questions/13558067/what-does-this-valgrind-warning-mean-warning-set-address-range-perms
 # Ignore heap summaries around test 1705 and 1707/1708 due to the fork() test opening/closing, I guess.
-# Tests 1729.4, 1729.8, 1729.11, 1729.13 again have precision issues under valgrind only.
 # Leaks for tests 1738.5, 1739.3 but no data.table .c lines are flagged, rather libcairo.so
 #   and libfontconfig.so via GEMetricInfo and GEStrWidth in libR.so
 

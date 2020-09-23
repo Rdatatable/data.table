@@ -168,7 +168,7 @@ SEXP fwriteR(
   )
 {
   if (!isNewList(DF)) error(_("fwrite must be passed an object of type list; e.g. data.frame, data.table"));
-  fwriteMainArgs args;
+  fwriteMainArgs args = {0};  // {0} to quieten valgrind's uninitialized, #4639
   args.is_gzip = LOGICAL(is_gzip_Arg)[0];
   args.bom = LOGICAL(bom_Arg)[0];
   args.yaml = CHAR(STRING_ELT(yaml_Arg, 0));

@@ -170,7 +170,7 @@ test-rel-cran-lin: ## R-release on Linux, extra NOTEs check and build pdf manual
   variables:
     _R_CHECK_CRAN_INCOMING_: "TRUE"           ## stricter --as-cran checks should run in dev pipelines continuously (not sure what they are though)
     _R_CHECK_CRAN_INCOMING_REMOTE_: "FALSE"   ## Other than no URL checking (takes many minutes) or 'Days since last update 0' NOTEs needed, #3284
-    _R_CHECK_CRAN_INCOMING_TARBALL_THRESHOLD_: "7500000" ## effective from R 4.1.0, then 00check.log can be checked for "OK" rather than "1 NOTE"
+    _R_CHECK_CRAN_INCOMING_TARBALL_THRESHOLD_: "7500000" ## effective from R 4.1.0, then 00check.log can be checked for "OK" rather than "2 NOTEs"
   before_script:
     - *install-deps
     - *cp-src
@@ -184,7 +184,7 @@ test-rel-cran-lin: ## R-release on Linux, extra NOTEs check and build pdf manual
     - R CMD check --as-cran $(ls -1t data.table_*.tar.gz | head -n 1)
     - *rm-src
     - >-
-        Rscript -e 'l=tail(readLines("data.table.Rcheck/00check.log"), 1L); if (!identical(l, "Status: 1 NOTE")) stop("Last line of ", shQuote("00check.log"), " is not ", shQuote("Status: 1 NOTE"), " (size of tarball) but ", shQuote(l)) else q("no")'
+        Rscript -e 'l=tail(readLines("data.table.Rcheck/00check.log"), 1L); if (!identical(l, "Status: 2 NOTEs")) stop("Last line of ", shQuote("00check.log"), " is not ", shQuote("Status: 2 NOTEs"), " (size of tarball) but ", shQuote(l)) else q("no")'
 
 test-dev-cran-lin: ## R-devel on Linux, --enable-strict-barrier --disable-long-double, check for new notes and compilation warnings, thus allow_failure
   <<: *test-lin
