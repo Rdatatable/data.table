@@ -12,7 +12,7 @@
 
 2. A regression in v1.13.0 resulted in installation on Mac often failing with `shared object 'datatable.so' not found`, and FreeBSD always failing with `expr: illegal option -- l`, [#4652](https://github.com/Rdatatable/data.table/issues/4652) [#4640](https://github.com/Rdatatable/data.table/issues/4640) [#4650](https://github.com/Rdatatable/data.table/issues/4650). Thanks to many for assistance including Simon Urbanek, Brian Ripley, Wes Morgan, and @ale07alvarez. There were no installation problems on Windows or Linux.
 
-3. Operating on columns of type `list`, e.g. `dt[, V1[[1]], by=id]`, suffered a performance regression in v1.13.0, [#4646](https://github.com/Rdatatable/data.table/issues/4646) [#4658](https://github.com/Rdatatable/data.table/issues/4658). Thanks to @fabiocs8 and @sandoronodi for the reports, and to Cole Miller for the fix.
+3. Operating on columns of type `list`, e.g. `dt[, V1[[1]], by=id]`, suffered a performance regression in v1.13.0, [#4646](https://github.com/Rdatatable/data.table/issues/4646) [#4658](https://github.com/Rdatatable/data.table/issues/4658). Thanks to @fabiocs8 and @sandoronodi for the detailed reports, and to Cole Miller for substantial debugging, investigation and proposals at C level which enabled the root cause to be fixed.
 
 ## NOTES
 

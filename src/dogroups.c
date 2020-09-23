@@ -94,19 +94,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
 
   SEXP listwrap = PROTECT(allocVector(VECSXP, 1)); nprotect++;
   Rboolean jexpIsSymbolOtherThanSD = (isSymbol(jexp) && strcmp(CHAR(PRINTNAME(jexp)),".SD")!=0);  // test 559
-  
-  bool do_memcpy = LENGTH(order) == 0; // TODO: improve memrecycle performance on lists
-  bool force_subset = false;
-  if (do_memcpy) {
-    for (int j = 0; j<length(SDall); j++) {
-      if (isNewList(VECTOR_ELT(dt,INTEGER(dtcols)[j]-1))) {
-        do_memcpy = false;
-        force_subset = true; // #4646 - poor memcpy performance on lists; instead use subsetVectorRaw
-        break;
-      }
-    }
-  }
-  
+
   ansloc = 0;
   const int *istarts = INTEGER(starts);
   const int *iorder = INTEGER(order);
@@ -170,7 +158,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
       if (verbose) tstart = clock();
       SETLENGTH(I, grpn);
       int *iI = INTEGER(I);
-      if (do_memcpy) {
+      if (LENGTH(order)==0) {
         const int rownum = grpn ? istarts[i]-1 : -1;
         for (int j=0; j<grpn; ++j) iI[j] = rownum+j+1;
         if (rownum>=0) {
@@ -181,11 +169,8 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
         }
         if (verbose) { tblock[0] += clock()-tstart; nblock[0]++; }
       } else {
-        const int rownum = istarts[i] - 1;
-        if (force_subset) // #4646 
-          for (int k=0; k<grpn; ++k) iI[k] = rownum+ k + 1 ;
-        else 
-          for (int k=0; k<grpn; ++k) iI[k] = iorder[ rownum + k ];
+        const int rownum = istarts[i]-1;
+        for (int k=0; k<grpn; ++k) iI[k] = iorder[rownum+k];
         for (int j=0; j<length(SDall); ++j) {
           // this is the main non-contiguous gather, and is parallel (within-column) for non-SEXP
           subsetVectorRaw(VECTOR_ELT(SDall,j), VECTOR_ELT(dt,INTEGER(dtcols)[j]-1), I, /*anyNA=*/false);
