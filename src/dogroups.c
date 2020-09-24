@@ -4,15 +4,17 @@
 #include <time.h>
 
 static bool anySpecialStatic(SEXP x) {
-  // Special refers to .SD, .BY and .I
-  // Static because these are like C static arrays which are the same memory for each group; i.e., dogroups
-  // creates .SD for the largest group once up front, overwriting the contents for each group
+  // Special refers to special symbols .BY, .I, .N, and .GRP; see special-symbols.Rd
+  // Static because these are like C static arrays which are the same memory for each group; e.g., dogroups
+  // creates .SD for the largest group once up front, overwriting the contents for each group. Their
+  // value changes across group but not their memory address. (.NGRP is also special static but its value
+  // is constant across groups so that's excluded here.)
   // This works well, other than a relatively rare case when two conditions are both true :
   //   1) the j expression returns a group column as-is without doing any aggregation
   //   2) that result is placed in a list column result
   // The list column result can then incorrectly contain the result for the last group repeated for all
-  // groups because the list column ends up holding a pointer to these special static vectors: SD, BY, I.
-  // To illustrate, consider a simplified test 1341:
+  // groups because the list column ends up holding a pointer to these special static vectors.
+  // See test 2153, and to illustrate here, consider a simplified test 1341
   // > DT
   //        x     y
   //    <int> <int>
@@ -89,7 +91,9 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
   // TO DO: check this check above.
 
   N =   PROTECT(findVar(install(".N"), env));   nprotect++; // PROTECT for rchk
+  SET_TRUELENGTH(N, -1);  // marker for anySpecialStatic(); see its comments
   GRP = PROTECT(findVar(install(".GRP"), env)); nprotect++;
+  SET_TRUELENGTH(GRP, -1);  // marker for anySpecialStatic(); see its comments
   iSD = PROTECT(findVar(install(".iSD"), env)); nprotect++; // 1-row and possibly no cols (if no i variables are used via JIS)
   xSD = PROTECT(findVar(install(".xSD"), env)); nprotect++;
   R_len_t maxGrpSize = 0;
@@ -430,6 +434,8 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
     SEXP this = VECTOR_ELT(BY, i);
     SET_TRUELENGTH(this, length(this)); // might be 0 or 1; see its allocVector above
   }
+  SET_TRUELENGTH(N, 1);
+  SET_TRUELENGTH(GRP, 1);
   if (verbose) {
     if (nblock[0] && nblock[1]) error(_("Internal error: block 0 [%d] and block 1 [%d] have both run"), nblock[0], nblock[1]); // # nocov
     int w = nblock[1]>0;
