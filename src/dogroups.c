@@ -12,7 +12,7 @@ static bool anySpecialStatic(SEXP x) {
   //   2) that result is placed in a list column result
   // The list column result can then incorrectly contain the result for the last group repeated for all
   // groups because the list column ends up holding a pointer to these special static vectors: SD, BY, I.
-  // To illustrate, consider a simplied test 1341:
+  // To illustrate, consider a simplified test 1341:
   // > DT
   //        x     y
   //    <int> <int>
