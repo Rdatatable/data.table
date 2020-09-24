@@ -3,9 +3,52 @@
 #include <fcntl.h>
 #include <time.h>
 
+static bool anySpecialStatic(SEXP x) {
+  // Special refers to .SD, .BY and .I
+  // Static because these are like C static arrays which are the same memory for each group; i.e., dogroups
+  // creates .SD for the largest group once up front, overwriting the contents for each group
+  // This works well, other than a relatively rare case when two conditions are both true :
+  //   1) the j expression returns a group column as-is without doing any aggregation
+  //   2) that result is placed in a list column result
+  // The list column result can then incorrectly contain the result for the last group repeated for all
+  // groups because the list column ends up holding a pointer to these special static vectors: SD, BY, I.
+  // To illustrate, consider a simplied test 1341:
+  // > DT
+  //        x     y
+  //    <int> <int>
+  // 1:     1     1
+  // 2:     2     2
+  // 3:     1     3
+  // 4:     2     4
+  // > DT[, .(list(y)), by=x]
+  //        x     V1
+  //    <int> <list>
+  // 1:     1    2,4  # should be 1,3
+  // 2:     2    2,4
+  //
+  // This has been fixed for a decade but the solution has changed over time.
+  //
+  // We don't wish to inspect the j expression for these cases because there are so many; e.g. user defined functions.
+  // A special symbol does not need to appear in j for the problem to occur. Using a member of .SD is enough as the example above illustrates.
+  // Using R's own reference counting could invoke too many unnecessary copies because these specials are routinely referenced.
+  // Hence we mark these specials (SD, BY, I) here in dogroups and if j's value is being assigned to a list column, we check to
+  // see if any specials are present and copy them if so.
+  // This keeps the special logic in one place in one file here. Previously this copy was done by memrecycle in assign.c but then
+  // with PR#4164 started to copy input list columns too much. Hence PR#4655 in v1.13.2 moved that copy here just where it is needed.
+  // Currently the marker is negative truelength. These specials are protected by us here and before we release them
+  // we restore the true truelength for when R starts to use vector truelength.
+  if (isVectorAtomic(x))
+    return TRUELENGTH(x)<0;
+  if (isNewList(x)) for (int i=0; i<LENGTH(x); ++i) {
+    if (anySpecialStatic(VECTOR_ELT(x,i)))
+      return true;
+  }
+  return false;
+}
+
 SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEXP xjiscols, SEXP grporder, SEXP order, SEXP starts, SEXP lens, SEXP jexp, SEXP env, SEXP lhs, SEXP newnames, SEXP on, SEXP verboseArg)
 {
-  R_len_t ngrp, nrowgroups, njval=0, ngrpcols, ansloc=0, maxn, estn=-1, thisansloc, grpn, thislen, igrp, origIlen=0, origSDnrow=0;
+  R_len_t ngrp, nrowgroups, njval=0, ngrpcols, ansloc=0, maxn, estn=-1, thisansloc, grpn, thislen, igrp;
   int nprotect=0;
   SEXP ans=NULL, jval, thiscol, BY, N, I, GRP, iSD, xSD, rownames, s, RHS, target, source;
   Rboolean wasvector, firstalloc=FALSE, NullWarnDone=FALSE;
@@ -38,6 +81,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
     defineVar(install(CHAR(STRING_ELT(bynames,i))), VECTOR_ELT(BY,i), env);      // by vars can be used by name in j as well as via .BY
     if (SIZEOF(VECTOR_ELT(BY,i))==0)
       error(_("Internal error: unsupported size-0 type '%s' in column %d of 'by' should have been caught earlier"), type2char(TYPEOF(VECTOR_ELT(BY, i))), i+1); // #nocov
+    SET_TRUELENGTH(VECTOR_ELT(BY,i), -1); // marker for anySpecialStatic(); see its comments
   }
   setAttrib(BY, R_NamesSymbol, bynames); // Fix for #42 - BY doesn't retain names anymore
   R_LockBinding(sym_BY, env);
@@ -54,6 +98,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
     if (ilens[i] > maxGrpSize) maxGrpSize = ilens[i];
   }
   defineVar(install(".I"), I = PROTECT(allocVector(INTSXP, maxGrpSize)), env); nprotect++;
+  SET_TRUELENGTH(I, -maxGrpSize);  // marker for anySpecialStatic(); see its comments
   R_LockBinding(install(".I"), env);
 
   SEXP dtnames = PROTECT(getAttrib(dt, R_NamesSymbol)); nprotect++; // added here to fix #91 - `:=` did not issue recycling warning during "by"
@@ -69,16 +114,18 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
   SEXP names = PROTECT(getAttrib(SDall, R_NamesSymbol)); nprotect++;
   if (length(names) != length(SDall)) error(_("length(names)!=length(SD)"));
   SEXP *nameSyms = (SEXP *)R_alloc(length(names), sizeof(SEXP));
+  
   for(int i=0; i<length(SDall); ++i) {
-    if (SIZEOF(VECTOR_ELT(SDall, i))==0)
-      error(_("Internal error: size-0 type %d in .SD column %d should have been caught earlier"), TYPEOF(VECTOR_ELT(SDall, i)), i); // #nocov
+    SEXP this = VECTOR_ELT(SDall, i);
+    if (SIZEOF(this)==0)
+      error(_("Internal error: size-0 type %d in .SD column %d should have been caught earlier"), TYPEOF(this), i); // #nocov
+    if (LENGTH(this) != maxGrpSize)
+      error(_("Internal error: SDall %d length = %d != %d"), i+1, LENGTH(this), maxGrpSize);
     nameSyms[i] = install(CHAR(STRING_ELT(names, i)));
     // fixes http://stackoverflow.com/questions/14753411/why-does-data-table-lose-class-definition-in-sd-after-group-by
-    copyMostAttrib(VECTOR_ELT(dt,INTEGER(dtcols)[i]-1), VECTOR_ELT(SDall,i));  // not names, otherwise test 778 would fail
+    copyMostAttrib(VECTOR_ELT(dt,INTEGER(dtcols)[i]-1), this);  // not names, otherwise test 778 would fail
+    SET_TRUELENGTH(this, -maxGrpSize);  // marker for anySpecialStatic(); see its comments
   }
-
-  origIlen = length(I);  // test 762 has length(I)==1 but nrow(SD)==0
-  if (length(SDall)) origSDnrow = length(VECTOR_ELT(SDall, 0));
 
   SEXP xknames = PROTECT(getAttrib(xSD, R_NamesSymbol)); nprotect++;
   if (length(xknames) != length(xSD)) error(_("length(xknames)!=length(xSD)"));
@@ -240,8 +287,14 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
           SET_STRING_ELT(dtnames, colj, STRING_ELT(newnames, colj-origncol));
           copyMostAttrib(RHS, target); // attributes of first group dominate; e.g. initial factor levels come from first group
         }
+        bool copied = false;
+        if (isNewList(target) && anySpecialStatic(RHS)) {  // see comments in anySpecialStatic()
+          RHS = PROTECT(duplicate(RHS));
+          copied = true;
+        }
         const char *warn = memrecycle(target, order, INTEGER(starts)[i]-1, grpn, RHS, 0, -1, 0, "");
         // can't error here because length mismatch already checked for all jval columns before starting to add any new columns
+        if (copied) UNPROTECT(1);
         if (warn)
           warning(_("Group %d column '%s': %s"), i+1, CHAR(STRING_ELT(dtnames, colj)), warn);
       }
@@ -339,7 +392,13 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
         if (thislen>1 && thislen!=maxn && grpn>0) {  // grpn>0 for grouping empty tables; test 1986
           error(_("Supplied %d items for column %d of group %d which has %d rows. The RHS length must either be 1 (single values are ok) or match the LHS length exactly. If you wish to 'recycle' the RHS please use rep() explicitly to make this intent clear to readers of your code."), thislen, j+1, i+1, maxn);
         }
+        bool copied = false;
+        if (isNewList(target) && anySpecialStatic(source)) {  // see comments in anySpecialStatic()
+          source = PROTECT(duplicate(source));
+          copied = true;
+        }
         memrecycle(target, R_NilValue, thisansloc, maxn, source, 0, -1, 0, "");
+        if (copied) UNPROTECT(1);
       }
     }
     ansloc += maxn;
@@ -359,8 +418,18 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
     }
   } else ans = R_NilValue;
   // Now reset length of .SD columns and .I to length of largest group, otherwise leak if the last group is smaller (often is).
-  for (int j=0; j<length(SDall); ++j) SETLENGTH(VECTOR_ELT(SDall,j), origSDnrow);
-  SETLENGTH(I, origIlen);
+  // Also reset truelength on specials; see comments in anySpecialStatic().
+  for (int j=0; j<length(SDall); ++j) {
+    SEXP this = VECTOR_ELT(SDall,j);
+    SETLENGTH(this, maxGrpSize);
+    SET_TRUELENGTH(this, maxGrpSize);
+  }
+  SETLENGTH(I, maxGrpSize);
+  SET_TRUELENGTH(I, maxGrpSize);
+  for (int i=0; i<length(BY); ++i) {
+    SEXP this = VECTOR_ELT(BY, i);
+    SET_TRUELENGTH(this, length(this)); // might be 0 or 1; see its allocVector above
+  }
   if (verbose) {
     if (nblock[0] && nblock[1]) error(_("Internal error: block 0 [%d] and block 1 [%d] have both run"), nblock[0], nblock[1]); // # nocov
     int w = nblock[1]>0;
