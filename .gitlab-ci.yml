@@ -2,6 +2,7 @@ variables:
   CRAN_MIRROR: "https://cloud.r-project.org"
   _R_CHECK_FORCE_SUGGESTS_: "false"
   _R_CHECK_NO_STOP_ON_TEST_ERROR_: "true"
+  _R_CHECK_SYSTEM_CLOCK_: "false"  ## https://stackoverflow.com/questions/63613301/r-cmd-check-note-unable-to-verify-current-time
 
 stages:
   - dependencies
