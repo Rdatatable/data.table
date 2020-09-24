@@ -3,6 +3,9 @@ variables:
   _R_CHECK_FORCE_SUGGESTS_: "false"
   _R_CHECK_NO_STOP_ON_TEST_ERROR_: "true"
   _R_CHECK_SYSTEM_CLOCK_: "false"  ## https://stackoverflow.com/questions/63613301/r-cmd-check-note-unable-to-verify-current-time
+  TZ: "UTC"  ## to avoid 'Failed to create bus connection' from timedatectl via Sys.timezone() on Docker with R 3.4.
+             ## Setting TZ for all GLCI jobs to isolate them from timezone. We could have a new GLCI job to test under
+             ## a non-UTC timezone, although, that's what we do routinely in dev.
 
 stages:
   - dependencies
