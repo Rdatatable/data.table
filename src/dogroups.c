@@ -80,7 +80,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
     SET_STRING_ELT(bynames, i, STRING_ELT(getAttrib(groups,R_NamesSymbol), j));
     defineVar(install(CHAR(STRING_ELT(bynames,i))), VECTOR_ELT(BY,i), env);      // by vars can be used by name in j as well as via .BY
     if (SIZEOF(VECTOR_ELT(BY,i))==0)
-      error(_("Internal error: unsupported size-0 type '%s' in column %d of 'by' should have been caught earlier"), type2char(TYPEOF(VECTOR_ELT(BY, i))), i+1); // #nocov
+      error(_("Internal error: unsupported size-0 type '%s' in column %d of 'by' should have been caught earlier"), type2char(TYPEOF(VECTOR_ELT(BY, i))), i+1); // # nocov
     SET_TRUELENGTH(VECTOR_ELT(BY,i), -1); // marker for anySpecialStatic(); see its comments
   }
   setAttrib(BY, R_NamesSymbol, bynames); // Fix for #42 - BY doesn't retain names anymore
@@ -118,9 +118,9 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
   for(int i=0; i<length(SDall); ++i) {
     SEXP this = VECTOR_ELT(SDall, i);
     if (SIZEOF(this)==0)
-      error(_("Internal error: size-0 type %d in .SD column %d should have been caught earlier"), TYPEOF(this), i); // #nocov
+      error(_("Internal error: size-0 type %d in .SD column %d should have been caught earlier"), TYPEOF(this), i); // # nocov
     if (LENGTH(this) != maxGrpSize)
-      error(_("Internal error: SDall %d length = %d != %d"), i+1, LENGTH(this), maxGrpSize);
+      error(_("Internal error: SDall %d length = %d != %d"), i+1, LENGTH(this), maxGrpSize); // # nocov
     nameSyms[i] = install(CHAR(STRING_ELT(names, i)));
     // fixes http://stackoverflow.com/questions/14753411/why-does-data-table-lose-class-definition-in-sd-after-group-by
     copyMostAttrib(VECTOR_ELT(dt,INTEGER(dtcols)[i]-1), this);  // not names, otherwise test 778 would fail
@@ -132,7 +132,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
   SEXP *xknameSyms = (SEXP *)R_alloc(length(xknames), sizeof(SEXP));
   for(int i=0; i<length(xSD); ++i) {
     if (SIZEOF(VECTOR_ELT(xSD, i))==0)
-      error(_("Internal error: type %d in .xSD column %d should have been caught by now"), TYPEOF(VECTOR_ELT(xSD, i)), i); // #nocov
+      error(_("Internal error: type %d in .xSD column %d should have been caught by now"), TYPEOF(VECTOR_ELT(xSD, i)), i); // # nocov
     xknameSyms[i] = install(CHAR(STRING_ELT(xknames, i)));
   }
 
