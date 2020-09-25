@@ -40,11 +40,13 @@ static bool anySpecialStatic(SEXP x) {
   // Currently the marker is negative truelength. These specials are protected by us here and before we release them
   // we restore the true truelength for when R starts to use vector truelength.
   const int n = length(x);
+  // use length() not LENGTH() because LENGTH() on NULL is segfault in R<3.5 where we still define USE_RINTERNALS
+  // (see data.table.h), and isNewList() is true for NULL
   if (n==0)
     return false;
   if (isVectorAtomic(x))
     return TRUELENGTH(x)<0;
-  if (isNewList(x)) for (int i=0; i<n; ++i) {  // isNewList is true for NULL so use length() not LENGTH() above because LENGTH() on NULL is segfault in R<3.5 where we still define USE_RINTERNALS
+  if (isNewList(x)) for (int i=0; i<n; ++i) {  
     if (anySpecialStatic(VECTOR_ELT(x,i)))
       return true;
   }
