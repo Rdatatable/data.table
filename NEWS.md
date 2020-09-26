@@ -35,6 +35,14 @@
 
 2. `?.NGRP` now displays the help page as intended, [#4946](https://github.com/Rdatatable/data.table/issues/4649). Thanks to @KyleHaynes for posting the issue, and Cole Miller for the fix. `.NGRP` is a symbol new in v1.13.0; see below in this file.
 
+3. Tests 163 and 2043 were failing in non-English locales such as
+   `LC_TIME=fr_FR.UTF-8` because computed values use
+   `strftime(format="%b")` which is locale-dependent e.g. `janv.`
+   whereas expected values were coded in English e.g. `Jan`,
+   [#3450](https://github.com/Rdatatable/data.table/issues/3450). Fixed
+   by changing the expected values to also be locale-dependent
+   e.g. `janv.` Thanks to @tdhock for
+   [PR#4719](https://github.com/Rdatatable/data.table/pull/4719).
 
 # data.table [v1.13.0](https://github.com/Rdatatable/data.table/milestone/17?closed=1)  (24 Jul 2020)
 
