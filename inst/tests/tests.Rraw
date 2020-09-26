@@ -3172,9 +3172,9 @@ Sep,33.5,19.4,15.7,11.9,0,100.8,100.8,0,12.7,12.7,0,174.1")
   x[, c("y1","z1"):=NA]
   test(1037.405, dim(melt(x, measure.vars=patterns("^y", "^z"))), INT(4,5))
   test(1037.406, dim(ans<-melt(x, measure.vars=patterns("^y", "^z"), na.rm=TRUE)), INT(2,5))
-  test(1037.407, ans$variable, factor(c("1","1")))
+  test(1037.407, ans$variable, factor(c("2","2"), c("1", "2")))
   test(1037.408, dim(ans<-melt(x, measure.vars=patterns("^y", "^z"), na.rm=TRUE, variable.factor=FALSE)), INT(2,5))
-  test(1037.409, ans$variable, c("1","1"))
+  test(1037.409, ans$variable, c("2","2"))
 
   test(1037.410, melt(data.table(NULL), verbose=TRUE), data.table(NULL),
        output="ncol(data) is 0. Nothing to melt")
@@ -17137,4 +17137,3 @@ test(2153.3, ans<-DT[, .(list(.NGRP)), by=x], data.table(x=1:2, V1=list(2L,2L)))
 test(2153.4, address(ans$V1[[1L]]), address(ans$V1[[2L]]))  # .NGRP doesn't change group to group so the same object can be referenced many times unlike .N and .GRP
 test(2153.5, DT[, .(list(c(0L,.N,0L))), by=x],  # c() here will create new object so this is ok anyway; i.e. address(.N) is not present in j's result
              data.table(x=1:2, V1=list(c(0L,1L,0L), c(0L,2L,0L)))) 
-

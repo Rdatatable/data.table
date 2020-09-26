@@ -538,7 +538,6 @@ SEXP getvarcols(SEXP DT, SEXP dtnames, Rboolean varfactor, Rboolean verbose, str
     } else {
       for (int j=0, ansloc=0, level=1; j<data->lmax; ++j) {
         const int thislen = data->narm ? length(VECTOR_ELT(data->naidx, j)) : data->nrow;
-        if (thislen==0) continue;  // so as not to bump level
         char buff[20];
         snprintf(buff, 20, "%d", level++);
         SEXP str = PROTECT(mkChar(buff));
@@ -546,11 +545,11 @@ SEXP getvarcols(SEXP DT, SEXP dtnames, Rboolean varfactor, Rboolean verbose, str
         UNPROTECT(1);
       }
     }
-  } else {
+  } else {// varfactor==TRUE
     SET_VECTOR_ELT(ansvars, 0, target=allocVector(INTSXP, data->totlen));
     SEXP levels;
     int *td = INTEGER(target);
-    if (data->lvalues == 1) {
+    if (data->lvalues == 1) {//single output column.
       SEXP thisvaluecols = VECTOR_ELT(data->valuecols, 0);
       int len = length(thisvaluecols);
       levels = PROTECT(allocVector(STRSXP, len)); protecti++;
@@ -573,12 +572,11 @@ SEXP getvarcols(SEXP DT, SEXP dtnames, Rboolean varfactor, Rboolean verbose, str
         const int thislen = data->narm ? length(VECTOR_ELT(data->naidx, j)) : data->nrow;
         for (int k=0; k<thislen; ++k) td[ansloc++] = md[j];
       }
-    } else {
+    } else {//multiple output columns.
       int nlevel=0;
       levels = PROTECT(allocVector(STRSXP, data->lmax)); protecti++;
       for (int j=0, ansloc=0; j<data->lmax; ++j) {
         const int thislen = data->narm ? length(VECTOR_ELT(data->naidx, j)) : data->nrow;
-        if (thislen==0) continue;  // so as not to bump level
         char buff[20];
         snprintf(buff, 20, "%d", nlevel+1);
         SET_STRING_ELT(levels, nlevel++, mkChar(buff));  // generate levels = 1:nlevels
