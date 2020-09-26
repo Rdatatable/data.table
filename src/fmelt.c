@@ -153,6 +153,10 @@ static SEXP unlist_(SEXP xint) {
   return(ans);
 }
 
+bool invalid_measure(int i, int ncol) {
+  return i != NA_INTEGER && (i <= 0 || i > ncol);
+}
+
 SEXP checkVars(SEXP DT, SEXP id, SEXP measure, Rboolean verbose) {
   int i, ncol=LENGTH(DT), targetcols=0, protecti=0, u=0, v=0;
   SEXP thiscol, idcols = R_NilValue, valuecols = R_NilValue, tmp, tmp2, booltmp, unqtmp, ans;
@@ -218,9 +222,8 @@ SEXP checkVars(SEXP DT, SEXP id, SEXP measure, Rboolean verbose) {
     }
     booltmp = PROTECT(duplicated(tmp, FALSE)); protecti++;
     for (i=0; i<length(tmp); i++) {
-      if (INTEGER(tmp)[i] != NA_INTEGER && (INTEGER(tmp)[i] <= 0 || INTEGER(tmp)[i] > ncol)){
+      if (invalid_measure(INTEGER(tmp)[i], ncol))
         error(_("One or more values in 'measure.vars' is invalid."));
-      }
       else if (!LOGICAL(booltmp)[i]) targetcols++;
       else continue;
     }
@@ -265,7 +268,7 @@ SEXP checkVars(SEXP DT, SEXP id, SEXP measure, Rboolean verbose) {
       tmp = PROTECT(unlist_(tmp2)); protecti++;
     }
     for (i=0; i<length(tmp); i++) {
-      if (INTEGER(tmp)[i] <= 0 || INTEGER(tmp)[i] > ncol)
+      if (invalid_measure(INTEGER(tmp)[i], ncol)) 
         error(_("One or more values in 'measure.vars' is invalid."));
     }
     if (isNewList(measure)) valuecols = tmp2;
