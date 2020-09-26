@@ -278,7 +278,7 @@ test-dev-win: ## R-devel on Windows
 
 integration: ## merging all artifacts to produce single R repository, documentation and website
   stage: integration
-  image: registry.gitlab.com/jangorecki/dockerfiles/r-builder
+  image: registry.gitlab.com/jangorecki/dockerfiles/r-pkgdown
   tags:
     - linux
   only:
@@ -300,10 +300,7 @@ integration: ## merging all artifacts to produce single R repository, documentat
     R_BIN_VERSION: "4.0"
     R_DEVEL_BIN_VERSION: "4.1"
   script:
-    ## pkgdown installs pkgs from "." so run at start to have clean root dir
-    - apt-get update -qq && apt-get install -y libxml2-dev libfontconfig1-dev ## fontconfig1 for #4717
-    - mkdir -p /tmp/pkgdown/library
-    - R_LIBS_USER=/tmp/pkgdown/library Rscript -e 'install.packages("pkgdown", repos=Sys.getenv("CRAN_MIRROR"), quiet=TRUE); pkgdown::build_site(override=list(destination="./pkgdown"))'
+    - Rscript -e 'pkgdown::build_site(override=list(destination="./pkgdown"))'
     ## html manual, vignettes, repos, cran_web, cran_checks
     - echo 'source(".ci/ci.R"); source(".ci/publish.R")' >> .Rprofile
     ## list of available test-* jobs dynamically based on bus/test-* directories
