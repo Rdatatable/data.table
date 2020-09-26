@@ -472,7 +472,7 @@ try(graphics.off(),silent=TRUE)
 
 # IDateTime conversion methods that ggplot2 uses (it calls as.data.frame method)
 # Since %b is e.g. "nov." in LC_TIME=fr_FR.UTF-8 locale, we need to
-# have the target/y value in these tests depend on the locale as well.
+# have the target/y value in these tests depend on the locale as well, #3450.
 NOV = format(strptime("2000-11-01", "%Y-%m-%d"), "%b")
 x = c("09:29:16","10:42:40","23:47:12","01:06:01","11:35:34","11:51:09")
 datetimes = paste0("2011 ", NOV, c(18,18,18,19,19,19), " ", x)
@@ -15070,7 +15070,7 @@ test(2042.1, DT[ , as.character(mean(date)), by=g, verbose=TRUE ],
              data.table(g=c("a","b"), V1=c("2018-01-04","2018-01-21")),
      output=msg<-"GForce is on, left j unchanged.*Old mean optimization is on, left j unchanged")
 # Since %b is e.g. "janv." in LC_TIME=fr_FR.UTF-8 locale, we need to
-# have the target/y value in these tests depend on the locale as well.
+# have the target/y value in these tests depend on the locale as well, #3450.
 Jan.2018 = format(strptime("2018-01-01", "%Y-%m-%d"), "%b-%Y")
 test(2042.2, DT[ , format(mean(date),"%b-%Y")], Jan.2018)
 test(2042.3, DT[ , format(mean(date),"%b-%Y"), by=g, verbose=TRUE ],  # just this case generated the error
