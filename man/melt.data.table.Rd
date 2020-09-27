@@ -64,7 +64,11 @@ effect.
 
 From version \code{1.9.6}, \code{melt} gains a feature with \code{measure.vars}
 accepting a list of \code{character} or \code{integer} vectors as well to melt
-into multiple columns in a single function call efficiently. The function
+into multiple columns in a single function call efficiently.
+If a vector in the list containts missing values, or is shorter than the
+max length of the list elements, then the output will include runs of
+missing values at the specified position, or at the end.
+The function
 \code{\link{patterns}} can be used to provide regular expression patterns. When
 used along with \code{melt}, if \code{cols} argument is not provided, the
 patterns will be matched against \code{names(data)}, for convenience.
@@ -133,6 +137,10 @@ melt(DT, id=1:2, measure=patterns("f_", "d_"), value.factor=TRUE, na.rm=TRUE)
 
 # return 'NA' for missing columns, 'na.rm=TRUE' ignored due to list column
 melt(DT, id=1:2, measure=patterns("l_", "c_"), na.rm=TRUE)
+
+# measure list with missing/short entries results in output with runs of NA
+DT.missing.cols <- DT[, .(d_1, d_2, c_1, f_2)]
+melt(DT.missing.cols, measure=list(d=1:2, c="c_1", f=c(NA, "f_2")))
 
 }
 \seealso{
