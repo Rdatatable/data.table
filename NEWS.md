@@ -16,25 +16,11 @@
 
 4. `fread("1.2\n", colClasses='integer')` would segfault when creating the warning message due to no column names in the output, [#4644](https://github.com/Rdatatable/data.table/issues/4644). It now warns with `Attempt to override column 1 of inherent type 'float64' down to 'int32' ignored.` When column names are present, the warning message includes the name as before; i.e., `fread("A\n1.2\n", colClasses='integer')` produces `Attempt to override column 1 <<A>> of inherent type 'float64' down to 'int32' ignored.`. Thanks to Kun Ren for reporting.
 
-
 ## NOTES
 
-1. `bit64` v4.0.2 and `bit` v4.0.3, both released on 30th July, broke `data.table`'s tests. It seems that reverse dependency testing of `bit64` (i.e. testing of the packages which use `bit64`) did not include `data.table` because `data.table` suggests `bit64` but does not depend on it. Like other packages on our `Suggest` list, we test `data.table` works with `bit64` in our tests. In testing of our own reverse dependencies (packages which use `data.table`) we do include packages which suggest `data.table`, although it appears it is not CRAN policy to do so. We have requested that CRAN policy be improved to include suggests in reverse dependency testing.
-
-    The first break was because `all.equal` did not work in previous versions of `bit64`; e.g.,
-
-    ```R
-    require(bit64)  
-    all.equal(as.integer64(3), as.integer64(4))
-    TRUE    # < v4.0.0;  incorrect
-    FALSE   # >= v4.0.0; correct because 3!=4
-    ```
-
-    We feel the need to explain this in detail here because the addition of the `integer64` method for `all.equal` appears as a brief new-feature in `bit64`'s NEWS. We like `bit64` a lot and we know users of `data.table` also use `bit64`. They may be impacted in the same way; e.g., equality tests previously passing when they should not have passed. In our case, two `fcase` tests started to fail upon `bit64`'s update. The `fcase` results were correct but the tests were comparing to an incorrect result. These tests were incorrectly passing due to `all.equal` always returning TRUE for any `integer64` input. Note also that `all.equal` always returned TRUE for any `nanotime` input, since `nanotime`'s underlying type is `bit64`.
-
-    The second break caused by `bit` was the addition of a `copy` function. We did not ask, but the `bit` package kindly offered to change to a different name since `data.table::copy` is long standing. `bit` v4.0.4 released 4th August renamed `copy` to `copy_vector`. Otherwise, users of `data.table` would have needed to prefix every occurrence of `copy` with `data.table::copy` if they use `bit64` too, since `bit64` depends on `bit`. Again, this impacted `data.table`'s tests which mimic a user's environment; not `data.table` itself per se.
-
-    Thanks to Cole Miller for the PR to accomodate `bit64`'s update.
+1. `bit64` v4.0.2 and `bit` v4.0.3, both released on 30th July, correctly broke `data.table`'s tests. Like other packages on our `Suggest` list, we check `data.table` works with `bit64` in our tests. The first break was because `all.equal` always returned `TRUE` in previous versions of `bit64`. Now that `all.equal` works for `integer64`, the incorrect test comparison was revealed. If you use `bit64`, or `nanotime` which uses `bit64`, it is highly recommended to upgrade to the latest `bit64` version. Thanks to Cole Miller for the PR to accomodate `bit64`'s update.
+    The second break caused by `bit` was the addition of a `copy` function. We did not ask, but the `bit` package kindly offered to change to a different name since `data.table::copy` is long standing. `bit` v4.0.4 released 4th August renamed `copy` to `copy_vector`. Otherwise, users of `data.table` would have needed to prefix every occurrence of `copy` with `data.table::copy` if they use `bit64` too, since `bit64` depends on (rather than importing) `bit`. Again, this impacted `data.table`'s tests which mimic a user's environment; not `data.table` itself per se.
+    We have requested that CRAN policy be modified to require that reverse dependency testing include packages which `Suggest` the package. Had this been the case, reverse dependency testing of `bit64` would have caught the impact on `data.table` before release.
 
 2. `?.NGRP` now displays the help page as intended, [#4946](https://github.com/Rdatatable/data.table/issues/4649). Thanks to @KyleHaynes for posting the issue, and Cole Miller for the fix. `.NGRP` is a symbol new in v1.13.0; see below in this file.
 
