@@ -17144,3 +17144,5 @@ test(2153.4, address(ans$V1[[1L]]), address(ans$V1[[2L]]))  # .NGRP doesn't chan
 test(2153.5, DT[, .(list(c(0L,.N,0L))), by=x],  # c() here will create new object so this is ok anyway; i.e. address(.N) is not present in j's result
              data.table(x=1:2, V1=list(c(0L,1L,0L), c(0L,2L,0L)))) 
 
+# fintersect now also preservers order of first argument like intersect, #4716
+test(2154, fintersect(data.table(x=c("b", "c", "a")), data.table(x=c("a","c")))$x, c("c", "a"))
