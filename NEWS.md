@@ -14,6 +14,8 @@
 
 3. Operating on columns of type `list`, e.g. `dt[, listCol[[1]], by=id]`, suffered a performance regression in v1.13.0, [#4646](https://github.com/Rdatatable/data.table/issues/4646) [#4658](https://github.com/Rdatatable/data.table/issues/4658). Thanks to @fabiocs8 and @sandoronodi for the detailed reports, and to Cole Miller for substantial debugging, investigation and proposals at C level which enabled the root cause to be fixed.
 
+4. When using melt with na.rm=TRUE and a list for measure.vars, variable was not incremented for groups with all missing values, which caused inconsistent results between na.rm=TRUE and FALSE, [#4455](https://github.com/Rdatatable/data.table/issues/4455). Thanks to @tdhock for reporting and fixing.
+
 ## NOTES
 
 1. `bit64` v4.0.2 and `bit` v4.0.3, both released on 30th July, broke `data.table`'s tests. It seems that reverse dependency testing of `bit64` (i.e. testing of the packages which use `bit64`) did not include `data.table` because `data.table` suggests `bit64` but does not depend on it. Like other packages on our `Suggest` list, we test `data.table` works with `bit64` in our tests. In testing of our own reverse dependencies (packages which use `data.table`) we do include packages which suggest `data.table`, although it appears it is not CRAN policy to do so. We have requested that CRAN policy be improved to include suggests in reverse dependency testing.
