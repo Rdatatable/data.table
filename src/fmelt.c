@@ -288,7 +288,7 @@ struct processData {
   SEXP RCHK;  // a 2 item list holding vars (result of checkVars) and naidx. PROTECTed up in fmelt so that preprocess() doesn't need to PROTECT. To pass rchk, #2865
   SEXP idcols, 
     valuecols, // list with one element per output/value column, each
-	       // element is an integer vector.
+               // element is an integer vector.
     naidx; // convenience pointers into RCHK[0][0], RCHK[0][1] and RCHK[1] respectively
   int *isfactor,
     *leach, // length of each element of the valuecols(measure.vars) list.
@@ -335,25 +335,25 @@ static void preprocess(SEXP DT, SEXP id, SEXP measure, SEXP varnames, SEXP valna
     for (j=0; j<data->leach[i]; j++) { // for each input column.
       int this_col_num = INTEGER(tmp)[j];
       if(this_col_num != NA_INTEGER){
-	thiscol = VECTOR_ELT(DT, this_col_num-1);
-	if (isFactor(thiscol)) {
-	  data->isfactor[i] = (isOrdered(thiscol)) ? 2 : 1;
-	  data->maxtype[i]  = STRSXP;
-	} else {
-	  type = TYPEOF(thiscol);
-	  if (type > data->maxtype[i]) data->maxtype[i] = type;
-	}
+        thiscol = VECTOR_ELT(DT, this_col_num-1);
+        if (isFactor(thiscol)) {
+          data->isfactor[i] = (isOrdered(thiscol)) ? 2 : 1;
+          data->maxtype[i]  = STRSXP;
+        } else {
+          type = TYPEOF(thiscol);
+          if (type > data->maxtype[i]) data->maxtype[i] = type;
+        }
       }
     }
     for (j=0; j<data->leach[i]; j++) {
       int this_col_num = INTEGER(tmp)[j];
       if(this_col_num != NA_INTEGER){
-	thiscol = VECTOR_ELT(DT, this_col_num-1);
-	if ( (!isFactor(thiscol) && data->maxtype[i] != TYPEOF(thiscol)) ||
-	     (isFactor(thiscol) && data->maxtype[i] != STRSXP) ) {
-	  data->isidentical[i] = 0;
-	  break;
-	}
+        thiscol = VECTOR_ELT(DT, this_col_num-1);
+        if ( (!isFactor(thiscol) && data->maxtype[i] != TYPEOF(thiscol)) ||
+             (isFactor(thiscol) && data->maxtype[i] != STRSXP) ) {
+          data->isidentical[i] = 0;
+          break;
+        }
       }
     }
   }
@@ -472,14 +472,13 @@ SEXP getvaluecols(SEXP DT, SEXP dtnames, Rboolean valfactor, Rboolean verbose, s
     bool copyattr = false;
     for (int j=0; j<data->lmax; ++j) {// for each input column.
       int thisprotecti = 0;
-      // TODO use this line of code if NA specified.
       SEXP thiscol;
       int input_column_num = INTEGER(thisvaluecols)[j];
       if (j >= data->leach[i] || // fewer indices than the max were specified.
-	  input_column_num == NA_INTEGER) { // NA was specified.
-	thiscol = allocNAVector(data->maxtype[i], data->nrow);
+          input_column_num == NA_INTEGER) { // NA was specified.
+        thiscol = allocNAVector(data->maxtype[i], data->nrow);
       }else{
-	thiscol = VECTOR_ELT(DT, input_column_num-1);
+        thiscol = VECTOR_ELT(DT, input_column_num-1);
       }
       if (!copyattr && data->isidentical[i] && !data->isfactor[i]) {
         copyMostAttrib(thiscol, target);
