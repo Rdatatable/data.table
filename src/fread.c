@@ -2064,8 +2064,9 @@ int freadMain(freadMainArgs _args) {
     if (type[j]==CT_DROP) { size[j]=0; ndrop++; continue; }
     if (type[j]<tmpType[j]) {
       if (strcmp(typeName[tmpType[j]], typeName[type[j]]) != 0) {
-        DTWARN(_("Attempt to override column %d <<%.*s>> of inherent type '%s' down to '%s' ignored. Only overrides to a higher type are currently supported. If this was intended, please coerce to the lower type afterwards."),
-               j+1, colNames[j].len, colNamesAnchor+colNames[j].off, typeName[tmpType[j]], typeName[type[j]]);
+        DTWARN(_("Attempt to override column %d%s%.*s%s of inherent type '%s' down to '%s' ignored. Only overrides to a higher type are currently supported. If this was intended, please coerce to the lower type afterwards."),
+               j+1, colNames?" <<":"", colNames?(colNames[j].len):0, colNames?(colNamesAnchor+colNames[j].off):"", colNames?">>":"", // #4644
+               typeName[tmpType[j]], typeName[type[j]]);
       }
       type[j] = tmpType[j];
       // TODO: apply overrides to lower type afterwards and warn about the loss of accuracy then (if any); e.g. "4.0" would be fine to coerce to integer with no warning since
