@@ -65,7 +65,7 @@ effect.
 From version \code{1.9.6}, \code{melt} gains a feature with \code{measure.vars}
 accepting a list of \code{character} or \code{integer} vectors as well to melt
 into multiple columns in a single function call efficiently.
-If a vector in the list containts missing values, or is shorter than the
+If a vector in the list contains missing values, or is shorter than the
 max length of the list elements, then the output will include runs of
 missing values at the specified position, or at the end.
 The function
