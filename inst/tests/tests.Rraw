@@ -471,10 +471,13 @@ test(167.3, DT[,plot(b,f),by=.(grp)], data.table(grp=integer()))
 try(graphics.off(),silent=TRUE)
 
 # IDateTime conversion methods that ggplot2 uses (it calls as.data.frame method)
-datetimes = c("2011 NOV18 09:29:16", "2011 NOV18 10:42:40", "2011 NOV18 23:47:12",
-              "2011 NOV19 01:06:01", "2011 NOV19 11:35:34", "2011 NOV19 11:51:09")
+# Since %b is e.g. "nov." in LC_TIME=fr_FR.UTF-8 locale, we need to
+# have the target/y value in these tests depend on the locale as well, #3450.
+NOV = format(strptime("2000-11-01", "%Y-%m-%d"), "%b")
+x = c("09:29:16","10:42:40","23:47:12","01:06:01","11:35:34","11:51:09")
+datetimes = paste0("2011 ", NOV, c(18,18,18,19,19,19), " ", x)
 DT = IDateTime(strptime(datetimes,"%Y %b%d %H:%M:%S"))
-test(168.1, DT[,as.data.frame(itime)], data.frame(V1=as.ITime(x<-c("09:29:16","10:42:40","23:47:12","01:06:01","11:35:34","11:51:09"))))
+test(168.1, DT[,as.data.frame(itime)], data.frame(V1=as.ITime(x)))
 test(168.2, as.character(DT[,as.POSIXct(itime,tz="UTC")]), paste(Sys.Date(), x))
 test(168.3, as.character(DT[,as.POSIXct(idate,tz="UTC")]), c("2011-11-18","2011-11-18","2011-11-18","2011-11-19","2011-11-19","2011-11-19"))
 
@@ -15065,10 +15068,13 @@ test(2041.2, DT[, median(time), by=g], DT[c(2,5),.(g=g, V1=time)])
 # 'invalid trim argument' with optimization level 1; #1876
 test(2042.1, DT[ , as.character(mean(date)), by=g, verbose=TRUE ],
              data.table(g=c("a","b"), V1=c("2018-01-04","2018-01-21")),
-             output=msg<-"GForce is on, left j unchanged.*Old mean optimization is on, left j unchanged")
-test(2042.2, DT[ , format(mean(date),"%b-%Y")], "Jan-2018")
+     output=msg<-"GForce is on, left j unchanged.*Old mean optimization is on, left j unchanged")
+# Since %b is e.g. "janv." in LC_TIME=fr_FR.UTF-8 locale, we need to
+# have the target/y value in these tests depend on the locale as well, #3450.
+Jan.2018 = format(strptime("2018-01-01", "%Y-%m-%d"), "%b-%Y")
+test(2042.2, DT[ , format(mean(date),"%b-%Y")], Jan.2018)
 test(2042.3, DT[ , format(mean(date),"%b-%Y"), by=g, verbose=TRUE ],  # just this case generated the error
-             data.table(g=c("a","b"), V1=c("Jan-2018","Jan-2018")), output=msg)
+     data.table(g=c("a","b"), V1=c(Jan.2018, Jan.2018)), output=msg)
 
 # gforce wrongly applied to external variable; #875
 DT = data.table(x=INT(1,1,1,2,2), y=1:5)
@@ -17137,3 +17143,10 @@ test(2153.3, ans<-DT[, .(list(.NGRP)), by=x], data.table(x=1:2, V1=list(2L,2L)))
 test(2153.4, address(ans$V1[[1L]]), address(ans$V1[[2L]]))  # .NGRP doesn't change group to group so the same object can be referenced many times unlike .N and .GRP
 test(2153.5, DT[, .(list(c(0L,.N,0L))), by=x],  # c() here will create new object so this is ok anyway; i.e. address(.N) is not present in j's result
              data.table(x=1:2, V1=list(c(0L,1L,0L), c(0L,2L,0L)))) 
+
+# warning message segfault when no column names present, #4644
+test(2154.1, fread("0.0\n", colClasses="integer"), data.table(V1=0.0),
+             warning="Attempt to override column 1 of inherent type 'float64' down to 'int32' ignored.*please")
+test(2154.2, fread("A\n0.0\n", colClasses="integer"), data.table(A=0.0),
+             warning="Attempt to override column 1 <<A>> of inherent type 'float64' down to 'int32' ignored.*please")
+
