@@ -16,7 +16,7 @@
 
 4. `fread("1.2\n", colClasses='integer')` would segfault when creating the warning message due to no column names in the output, [#4644](https://github.com/Rdatatable/data.table/issues/4644). It now warns with `Attempt to override column 1 of inherent type 'float64' down to 'int32' ignored.` When column names are present, the warning message includes the name as before; i.e., `fread("A\n1.2\n", colClasses='integer')` produces `Attempt to override column 1 <<A>> of inherent type 'float64' down to 'int32' ignored.`. Thanks to Kun Ren for reporting.
 
-4. When using melt with na.rm=TRUE and a list for measure.vars, variable was not incremented for groups with all missing values, which caused inconsistent results between na.rm=TRUE and FALSE, [#4455](https://github.com/Rdatatable/data.table/issues/4455). Thanks to @tdhock for reporting and fixing.
+4. `melt` with a list for `measure.vars` would output `variable` inconsistently between `na.rm=TRUE` and `FALSE`, [#4455](https://github.com/Rdatatable/data.table/issues/4455). Thanks to @tdhock for reporting and fixing.
 
 ## NOTES
 
