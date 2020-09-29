@@ -234,6 +234,12 @@ require(data.table)
 test.data.table()
 q("no")
 
+# passes under non-English LC_TIME, #2350
+LC_TIME=fr_FR.UTF-8 R
+require(data.table)
+test.data.table()
+q("no")
+
 R
 remove.packages("xml2")    # we checked the URLs; don't need to do it again (many minutes)
 require(data.table)
