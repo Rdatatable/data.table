@@ -997,9 +997,13 @@ SEXP gmedian(SEXP x, SEXP narmArg) {
   return ans;
 }
 
-SEXP glast(SEXP x) {
+SEXP glast(SEXP x, SEXP narmArg) {
+  if (!isLogical(narmArg) || LENGTH(narmArg)!=1 || LOGICAL(narmArg)[0]==NA_LOGICAL) error(_("na.rm must be TRUE or FALSE"));
+  const bool narm = LOGICAL(narmArg)[0];
+  const bool verbose=GetVerbose();
+  if (verbose) Rprintf(_("This glast took (narm=%s) ... "), narm?"TRUE":"FALSE");
 
-  R_len_t i,k;
+  R_len_t i,k,j;
   int n = (irowslen == -1) ? length(x) : irowslen;
   SEXP ans;
   if (nrow != n) error(_("nrow [%d] != length(x) [%d] in %s"), nrow, n, "gtail");
@@ -1013,6 +1017,16 @@ SEXP glast(SEXP x) {
       if (isunsorted) k = oo[k]-1;
       k = (irowslen == -1) ? k : irows[k]-1;
       ians[i] = ix[k];
+      if (narm){
+        j = 0;
+        while(j < grpsize[i]){
+          if (ix[k-j] != NA_LOGICAL){
+            ians[i] = ix[k-j];
+            break;
+          }
+          j++;
+        }
+      }
     }
   }
     break;
@@ -1025,6 +1039,16 @@ SEXP glast(SEXP x) {
       if (isunsorted) k = oo[k]-1;
       k = (irowslen == -1) ? k : irows[k]-1;
       ians[i] = ix[k];
+      if (narm){
+        j = 0;
+        while(j < grpsize[i]){
+          if (ix[k-j] != NA_INTEGER){
+            ians[i] = ix[k-j];
+            break;
+          }
+          j++;
+        }
+      }
     }
   }
     break;
@@ -1037,6 +1061,16 @@ SEXP glast(SEXP x) {
       if (isunsorted) k = oo[k]-1;
       k = (irowslen == -1) ? k : irows[k]-1;
       dans[i] = dx[k];
+      if (narm){
+        j = 0;
+        while(j < grpsize[i]){
+          if (dx[k-j] != NA_REAL){
+            dans[i] = dx[k-j];
+            break;
+          }
+          j++;
+        }
+      }
     }
   }
     break;
@@ -1049,6 +1083,17 @@ SEXP glast(SEXP x) {
       if (isunsorted) k = oo[k]-1;
       k = (irowslen == -1) ? k : irows[k]-1;
       dans[i] = dx[k];
+      if (narm){
+        j = 0;
+        while(j < grpsize[i]){
+          const Rcomplex elem = dx[k-j];
+          if (!(ISNAN(elem.i) && ISNAN(elem.r))){
+            dans[i] = dx[k-j];
+            break;
+          }
+          j++;
+        }
+      }
     }
   } break;
   case STRSXP:
@@ -1058,6 +1103,16 @@ SEXP glast(SEXP x) {
       if (isunsorted) k = oo[k]-1;
       k = (irowslen == -1) ? k : irows[k]-1;
       SET_STRING_ELT(ans, i, STRING_ELT(x, k));
+      if (narm){
+        j = 0;
+        while(j < grpsize[i]){
+          if (STRING_ELT(x, k-j) != NA_STRING){
+            SET_STRING_ELT(ans, i, STRING_ELT(x, k-j));
+            break;
+          }
+          j++;
+        }
+      }
     }
     break;
   case VECSXP:
@@ -1067,6 +1122,16 @@ SEXP glast(SEXP x) {
       if (isunsorted) k = oo[k]-1;
       k = (irowslen == -1) ? k : irows[k]-1;
       SET_VECTOR_ELT(ans, i, VECTOR_ELT(x, k));
+      if (narm){
+        j = 1;
+        while(j < grpsize[i]){
+          if (VECTOR_ELT(x, k-j) != R_NilValue){
+            SET_VECTOR_ELT(ans, i, VECTOR_ELT(x, k-j));
+            break;
+          }
+          j++;
+        }
+      }
     }
     break;
   default:
@@ -1077,9 +1142,13 @@ SEXP glast(SEXP x) {
   return(ans);
 }
 
-SEXP gfirst(SEXP x) {
+SEXP gfirst(SEXP x, SEXP narmArg) {
+  if (!isLogical(narmArg) || LENGTH(narmArg)!=1 || LOGICAL(narmArg)[0]==NA_LOGICAL) error(_("na.rm must be TRUE or FALSE"));
+  const bool narm = LOGICAL(narmArg)[0];
+  const bool verbose=GetVerbose();
+  if (verbose) Rprintf(_("This gfirst took (narm=%s) ... "), narm?"TRUE":"FALSE");
 
-  R_len_t i,k;
+  R_len_t i,k,j;
   int n = (irowslen == -1) ? length(x) : irowslen;
   SEXP ans;
   if (nrow != n) error(_("nrow [%d] != length(x) [%d] in %s"), nrow, n, "ghead");
@@ -1093,6 +1162,16 @@ SEXP gfirst(SEXP x) {
       if (isunsorted) k = oo[k]-1;
       k = (irowslen == -1) ? k : irows[k]-1;
       ians[i] = ix[k];
+      if (narm){
+        j = 0;
+        while(j < grpsize[i]){
+          if (ix[k+j] != NA_LOGICAL){
+            ians[i] = ix[k+j];
+            break;
+          }
+          j++;
+        }
+      }
     }
   }
     break;
@@ -1105,6 +1184,16 @@ SEXP gfirst(SEXP x) {
       if (isunsorted) k = oo[k]-1;
       k = (irowslen == -1) ? k : irows[k]-1;
       ians[i] = ix[k];
+      if (narm){
+        j = 0;
+        while(j < grpsize[i]){
+          if (ix[k+j] != NA_INTEGER){
+            ians[i] = ix[k+j];
+            break;
+          }
+          j++;
+        }
+      }
     }
   }
     break;
@@ -1117,6 +1206,16 @@ SEXP gfirst(SEXP x) {
       if (isunsorted) k = oo[k]-1;
       k = (irowslen == -1) ? k : irows[k]-1;
       dans[i] = dx[k];
+      if (narm){
+        j = 0;
+        while(j < grpsize[i]){
+          if (dx[k+j] != NA_REAL){
+            dans[i] = dx[k+j];
+            break;
+          }
+          j++;
+        }
+      }
     }
   }
     break;
@@ -1129,6 +1228,17 @@ SEXP gfirst(SEXP x) {
       if (isunsorted) k = oo[k]-1;
       k = (irowslen == -1) ? k : irows[k]-1;
       dans[i] = dx[k];
+      if (narm){
+        j = 0;
+        while(j < grpsize[i]){
+          const Rcomplex elem = dx[k+j];
+          if (!(ISNAN(elem.i) && ISNAN(elem.r))){
+            dans[i] = dx[k+j];
+            break;
+          }
+          j++;
+        }
+      }
     }
   } break;
   case STRSXP:
@@ -1138,6 +1248,16 @@ SEXP gfirst(SEXP x) {
       if (isunsorted) k = oo[k]-1;
       k = (irowslen == -1) ? k : irows[k]-1;
       SET_STRING_ELT(ans, i, STRING_ELT(x, k));
+      if (narm){
+        j = 0;
+        while(j < grpsize[i]){
+          if (STRING_ELT(x, k+j) != NA_STRING){
+            SET_STRING_ELT(ans, i, STRING_ELT(x, k+j));
+            break;
+          }
+          j++;
+        }
+      }
     }
     break;
   case VECSXP:
@@ -1147,6 +1267,16 @@ SEXP gfirst(SEXP x) {
       if (isunsorted) k = oo[k]-1;
       k = (irowslen == -1) ? k : irows[k]-1;
       SET_VECTOR_ELT(ans, i, VECTOR_ELT(x, k));
+      if (narm){
+        j = 1;
+        while(j < grpsize[i]){
+          if (VECTOR_ELT(x, k+j) != R_NilValue){
+            SET_VECTOR_ELT(ans, i, VECTOR_ELT(x, k+j));
+            break;
+          }
+          j++;
+        }
+      }
     }
     break;
   default:
@@ -1159,12 +1289,12 @@ SEXP gfirst(SEXP x) {
 
 SEXP gtail(SEXP x, SEXP valArg) {
   if (!isInteger(valArg) || LENGTH(valArg)!=1 || INTEGER(valArg)[0]!=1) error(_("Internal error, gtail is only implemented for n=1. This should have been caught before. please report to data.table issue tracker.")); // # nocov
-  return (glast(x));
+  return (glast(x, ScalarLogical(0)));
 }
 
 SEXP ghead(SEXP x, SEXP valArg) {
   if (!isInteger(valArg) || LENGTH(valArg)!=1 || INTEGER(valArg)[0]!=1) error(_("Internal error, ghead is only implemented for n=1. This should have been caught before. please report to data.table issue tracker.")); // # nocov
-  return (gfirst(x));
+  return (gfirst(x, ScalarLogical(0)));
 }
 
 SEXP gnthvalue(SEXP x, SEXP valArg) {

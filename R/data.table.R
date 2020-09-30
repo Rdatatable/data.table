@@ -2849,8 +2849,8 @@ gfuns = c("[", "[[", "head", "tail", "first", "last", "sum", "mean", "prod",
 `g[` = `g[[` = function(x, n) .Call(Cgnthvalue, x, as.integer(n)) # n is of length=1 here.
 ghead = function(x, n) .Call(Cghead, x, as.integer(n)) # n is not used at the moment
 gtail = function(x, n) .Call(Cgtail, x, as.integer(n)) # n is not used at the moment
-gfirst = function(x) .Call(Cgfirst, x)
-glast = function(x) .Call(Cglast, x)
+gfirst = function(x, na.rm=FALSE) .Call(Cgfirst, x, na.rm)
+glast = function(x, na.rm=FALSE) .Call(Cglast, x, na.rm)
 gsum = function(x, na.rm=FALSE) .Call(Cgsum, x, na.rm, TRUE)  # warnOverflow=TRUE, #986
 gmean = function(x, na.rm=FALSE) .Call(Cgmean, x, na.rm)
 gprod = function(x, na.rm=FALSE) .Call(Cgprod, x, na.rm)
