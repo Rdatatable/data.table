@@ -3,7 +3,7 @@
 #   reshape2 package is deprecated since December 2017, so we'll deprecate our
 #   redirection as well
 
-melt <- function(data, ..., na.rm = FALSE, value.name = "value") {
+melt = function(data, ..., na.rm = FALSE, value.name = "value") {
   if (is.data.table(data)) {
     UseMethod("melt", data)
     # if data is not data.table and reshape2 is installed, this won't dispatch to reshape2's method;
@@ -26,6 +26,46 @@ patterns = function(..., cols=character(0L)) {
   if (!is.character(p))
     stop("Input patterns must be of type character.")
   lapply(p, grep, cols)
+}
+
+pattern_list = function(pat, fun.list=list(), cols=character(0L)){
+  match.vec = regexpr(pat, cols, perl=TRUE)
+  capture.names = attr(match.vec, "capture.names")
+  if(! "column" %in% capture.names){
+    stop("need capture group named column")
+  }
+  if(any("" == capture.names)){
+    stop("each capture group needs a name (?<name>pattern)")
+  }
+  match.i = which(0 < match.vec)
+  start = attr(match.vec, "capture.start")[match.i,]
+  end = attr(match.vec, "capture.length")[match.i,]+start-1L
+  matched.names = cols[match.i]
+  names.mat = matrix(
+    matched.names,
+    nrow(start), ncol(start),
+    dimnames=list(
+      column=matched.names,
+      group=capture.names))
+  group.mat = substr(names.mat, start, end)
+  group.dt = data.table(group.mat)
+  for(group.name in names(fun.list)){
+    fun = fun.list[[group.name]]
+    set(group.dt, j=group.name, value=fun(group.dt[[group.name]]))
+  }
+  is.other = names(group.dt)!="column"
+  other.values = lapply(group.dt[, ..is.other], unique)
+  other.values$stringsAsFactors = FALSE
+  other.dt = data.table(do.call(expand.grid, other.values))
+  measure.vars = structure(list(), variable.name=other.dt)
+  column.values = unique(group.dt[["column"]])
+  for(column.val in column.values){
+    select.dt = data.table(column=column.val, other.dt)
+    measure.vars[[column.val]] = data.table(
+      match.i, group.dt
+    )[select.dt, match.i, on=names(select.dt)]
+  }
+  measure.vars
 }
 
 melt.data.table = function(data, id.vars, measure.vars, variable.name = "variable",
