@@ -31,7 +31,7 @@ non-measure columns will be assigned to it. If integer, must be positive; see De
   }
 
     For convenience/clarity in the case of multiple \code{melt}ed columns, resulting column names can be supplied as names to the elements \code{measure.vars} (in the \code{list} and \code{patterns} usages). See also \code{Examples}. }
-\item{variable.name}{name for the measured variable names column. The default name is \code{'variable'}.}
+\item{variable.name}{name (default \code{'variable'}) of output column containing information about which input column(s) were melted. If \code{measure.vars} is an integer/character vector, then each entry of this column contains the name of a melted column from \code{data}. If \code{measure.vars} is a list of integer/character vectors, then each entry of this column contains an integer indicating an index/position in each of those vectors.}
 \item{value.name}{name for the molten data values column(s). The default name is \code{'value'}. Multiple names can be provided here for the case when \code{measure.vars} is a \code{list}, though note well that the names provided in \code{measure.vars} take precedence. }
 \item{na.rm}{If \code{TRUE}, \code{NA} values will be removed from the molten
 data.}
