@@ -809,25 +809,27 @@ SEXP fmelt(SEXP DT, SEXP id, SEXP measure, SEXP varfactor, SEXP valfactor, SEXP 
     ansids  = PROTECT(getidcols(DT, dtnames, verbose, &data)); protecti++;
 
     // populate 'ans'
-    ans = PROTECT(allocVector(VECSXP, data.lids+1+data.lvalues)); protecti++; // 1 is for variable column
+    int ncol_ans = data.lids+data.lvars+data.lvalues;
+    ans = PROTECT(allocVector(VECSXP, ncol_ans)); protecti++; // 1 is for variable column
     for (int i=0; i<data.lids; i++) {
       SET_VECTOR_ELT(ans, i, VECTOR_ELT(ansids, i));
     }
-    SET_VECTOR_ELT(ans, data.lids, VECTOR_ELT(ansvars, 0));
+    for (int i=0; i<data.lvars; i++) {
+      SET_VECTOR_ELT(ans, data.lids+i, VECTOR_ELT(ansvars, i));
+    }
     for (int i=0; i<data.lvalues; i++) {
-      SET_VECTOR_ELT(ans, data.lids+1+i, VECTOR_ELT(ansvals, i));
+      SET_VECTOR_ELT(ans, data.lids+data.lvars+i, VECTOR_ELT(ansvals, i));
     }
     // fill in 'ansnames'
-    ansnames = PROTECT(allocVector(STRSXP, data.lids+data.lvars+data.lvalues)); protecti++;
+    ansnames = PROTECT(allocVector(STRSXP, ncol_ans)); protecti++;
     for (int i=0; i<data.lids; i++) {
       SET_STRING_ELT(ansnames, i, STRING_ELT(dtnames, INTEGER(data.idcols)[i]-1));
     }
     if (isNull(data.variable_table)) {
       SET_STRING_ELT(ansnames, data.lids, STRING_ELT(varnames, 0));
     } else {
-      SEXP var_tab_names = PROTECT(getAttrib(data.variable_table, R_NamesSymbol)); protecti++;
       for (int i=0; i<data.lvars; i++) {
-        SET_STRING_ELT(ansnames, data.lids+i, STRING_ELT(var_tab_names, i));
+        SET_STRING_ELT(ansnames, data.lids+i, STRING_ELT(getAttrib(data.variable_table, R_NamesSymbol), i));
       }
     }
     for (int i=0; i<data.lvalues; i++) {
