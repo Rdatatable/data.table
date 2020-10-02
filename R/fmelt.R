@@ -28,19 +28,16 @@ patterns = function(..., cols=character(0L)) {
   lapply(p, grep, cols)
 }
 
-pattern_list = function(pat, fun.list=list(), cols=character(0L)){
+pattern_match_info = function(pat, fun.list, cols){
   match.vec = regexpr(pat, cols, perl=TRUE)
   capture.names = attr(match.vec, "capture.names")
-  if(! "column" %in% capture.names){
-    stop("need capture group named column")
-  }
   if(any("" == capture.names)){
     stop("each capture group needs a name (?<name>pattern)")
   }
-  match.i = which(0 < match.vec)
-  start = attr(match.vec, "capture.start")[match.i,]
-  end = attr(match.vec, "capture.length")[match.i,]+start-1L
-  matched.names = cols[match.i]
+  measure.vars = which(0 < match.vec)
+  start = attr(match.vec, "capture.start")[measure.vars,]
+  end = attr(match.vec, "capture.length")[measure.vars,]+start-1L
+  matched.names = cols[measure.vars]
   names.mat = matrix(
     matched.names,
     nrow(start), ncol(start),
@@ -53,19 +50,70 @@ pattern_list = function(pat, fun.list=list(), cols=character(0L)){
     fun = fun.list[[group.name]]
     set(group.dt, j=group.name, value=fun(group.dt[[group.name]]))
   }
+  list(measure.vars=measure.vars, group.dt=group.dt)
+}
+
+info_to_list = function(measure.vars, group.dt){
+  if(! "column" %in% names(group.dt)){
+    stop("need capture group named column")
+  }
   is.other = names(group.dt)!="column"
   other.values = lapply(group.dt[, ..is.other], unique)
   other.values$stringsAsFactors = FALSE
   other.dt = data.table(do.call(expand.grid, other.values))
-  measure.vars = structure(list(), variable.name=other.dt)
+  measure.list = structure(list(), variable.name=other.dt)
   column.values = unique(group.dt[["column"]])
   for(column.val in column.values){
     select.dt = data.table(column=column.val, other.dt)
-    measure.vars[[column.val]] = data.table(
-      match.i, group.dt
-    )[select.dt, match.i, on=names(select.dt)]
+    measure.list[[column.val]] = data.table(
+      measure.vars, group.dt
+    )[select.dt, measure.vars, on=names(select.dt)]
   }
-  measure.vars
+  measure.list
+}
+
+pattern_list = function(pat, fun.list=list(), cols=character(0L)){
+  m.list = pattern_match_info(pat, fun.list, cols)
+  do.call(info_to_list, m.list)
+}
+
+info_to_vec = function(measure.vars, group.dt){
+  structure(measure.vars, variable.name=group.dt)
+}  
+
+pattern_vec = function(pat, fun.list=list(), cols=character(0L)){
+  m.list <- pattern_match_info(pat, fun.list, cols)
+  do.call(info_to_vec, m.list)
+}
+
+sep_call_info = function(sep, cols){
+  parent = sys.parent()
+  mcall = match.call(definition=sys.function(parent), call=sys.call(parent))
+  L = as.list(mcall)[-1]
+  fun.list = L[-which(names(L)%in%names(formals()))]
+  no.fun = names(fun.list)==""
+  names(fun.list)[no.fun] = sapply(fun.list[no.fun], paste)
+  list.of.vectors = strsplit(cols, sep, fixed=TRUE)
+  vector.lengths = sapply(list.of.vectors, length)
+  measure.vars = which(vector.lengths==max(vector.lengths))
+  mat = do.call(rbind, list.of.vectors[measure.vars])
+  colnames(mat) = names(fun.list)
+  group.dt = data.table(mat)
+  for(group.i in which(!no.fun)){
+    fun = eval(fun.list[[group.i]])
+    set(group.dt, j=group.i, value=fun(group.dt[[group.i]]))
+  }
+  list(measure.vars=measure.vars, group.dt=group.dt)
+}  
+
+sep_list = function(..., sep="_", cols){
+  sep.list = sep_call_info(sep, cols)
+  do.call(info_to_list, sep.list)
+}
+
+sep_vec = function(..., sep="_", cols){
+  sep.list = sep_call_info(sep, cols)
+  do.call(info_to_vec, sep.list)
 }
 
 melt.data.table = function(data, id.vars, measure.vars, variable.name = "variable",
