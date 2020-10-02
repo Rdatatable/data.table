@@ -17159,3 +17159,4 @@ DTid <- data.table(DT.wide, id=1)
 exid <- data.table(id=1, expected)
 test(2155.3, melt(DTid, measure.vars=list(a=c(NA,1), b=2:3), id.vars="id"), exid)
 test(2155.4, melt(DTid, measure.vars=list(a=c(NA,"a2"), b=c("b1","b2")), id.vars="id"), exid)
+test(2155.5, melt(DT.wide, measure.vars=list(a=c(NA,1), b=2:3), na.rm=TRUE)[, .(a, b)], data.table(a=2, b=2))#not testing variable because it is not computed correctly, #4455

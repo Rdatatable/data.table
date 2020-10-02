@@ -442,11 +442,13 @@ SEXP getvaluecols(SEXP DT, SEXP dtnames, Rboolean valfactor, Rboolean verbose, s
     for (int i=0; i<data->lmax; ++i) {
       SEXP tmp = PROTECT(allocVector(VECSXP, data->lvalues));
       for (int j=0; j<data->lvalues; ++j) {
-        if (i < data->leach[j]) {
-          SEXP thisvaluecols = VECTOR_ELT(data->valuecols, j);
-          SET_VECTOR_ELT(tmp, j, VECTOR_ELT(DT, INTEGER(thisvaluecols)[i]-1));
-        } else {
+	SEXP thisvaluecols = VECTOR_ELT(data->valuecols, j);
+	int input_column_num = INTEGER(thisvaluecols)[i];
+        if (j >= data->leach[j] || //fewer indices than the max were specified.
+	    input_column_num == NA_INTEGER) { //NA was specified.
           SET_VECTOR_ELT(tmp, j, allocNAVector(data->maxtype[j], data->nrow));
+        } else {
+          SET_VECTOR_ELT(tmp, j, VECTOR_ELT(DT, input_column_num-1));
         }
       }
       tmp = PROTECT(dt_na(tmp, seqcols));
