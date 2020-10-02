@@ -22,10 +22,16 @@ melt = function(data, ..., na.rm = FALSE, value.name = "value") {
 patterns = function(..., cols=character(0L)) {
   # if ... has no names, names(list(...)) will be "";
   #   this assures they'll be NULL instead
-  p = unlist(list(...), use.names = any(nzchar(names(...))))
+  L <- list(...)
+  p = unlist(L, use.names = any(nzchar(names(L))))
   if (!is.character(p))
     stop("Input patterns must be of type character.")
-  lapply(p, grep, cols)
+  matched = lapply(p, grep, cols)
+  # replace with lengths when R 3.2.0 dependency arrives
+  if (length(idx <- which(sapply(matched, length) == 0L)))
+    stop('Pattern', if (length(idx) > 1L) 's', ' not found: [',
+         paste(p[idx], collapse = ', '), ']')
+  matched
 }
 
 pattern_match_info = function(pat, fun.list, cols){
@@ -123,8 +129,11 @@ melt.data.table = function(data, id.vars, measure.vars, variable.name = "variabl
   if (missing(id.vars)) id.vars=NULL
   if (missing(measure.vars)) measure.vars = NULL
   measure.sub = substitute(measure.vars)
-  if (measure.sub %iscall% "patterns") {
-    measure.vars = do_patterns(measure.sub, names(data))
+  if (is.call(measure.sub)) {
+    eval.result = eval_with_cols(measure.sub, names(data))
+    if (!is.null(eval.result)) {
+      measure.vars = eval.result
+    }
   }
   if (is.list(measure.vars) && length(measure.vars) > 1L) {
     meas.nm = names(measure.vars)
