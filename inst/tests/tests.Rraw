@@ -17162,12 +17162,12 @@ test(2155.4, melt(DTid, measure.vars=list(a=c(NA,"a2"), b=c("b1","b2")), id.vars
 
 # new variable.name attribute for measure.vars
 measure <- data.table:::pattern_list("(?<column>[ab])(?<istr>[12])", cols=names(DTid))
-test(2155.1, melt(DTid, measure.vars=measure)[order(b)], data.table(id=1, istr=paste(c(1,2)), a=c(NA, 2), b=c(1,2)))
-test(2155.2, melt(DTid, measure.vars=structure(measure, variable.name="foo")), error="variable.name attribute of measure.vars should be either NULL or a data table")
-test(2155.3, melt(DTid, measure.vars=structure(1:3, variable.name="foo")), error="variable.name attribute of measure.vars should be either NULL or a data table")
-test(2155.4, melt(DTid, measure.vars=structure(1:3, variable.name=data.table())), error="variable.name attribute of measure.vars should be a data table with at least one column")
-test(2155.5, melt(DTid, measure.vars=structure(1:3, variable.name=data.table(x=1))), error="variable.name attribute of measure.vars should be a data table with same number of rows as max length of measure.vars vectors =3")
-test(2155.6, melt(DTid, measure.vars=structure(measure, variable.name=data.table(x=1))), error="variable.name attribute of measure.vars should be a data table with same number of rows as max length of measure.vars vectors =2")
+test(2156.1, melt(DTid, measure.vars=measure)[order(b)], data.table(id=1, istr=paste(c(1,2)), a=c(NA, 2), b=c(1,2)))
+test(2156.2, melt(DTid, measure.vars=structure(measure, variable.name="foo")), error="variable.name attribute of measure.vars should be either NULL or a data table")
+test(2156.3, melt(DTid, measure.vars=structure(1:3, variable.name="foo")), error="variable.name attribute of measure.vars should be either NULL or a data table")
+test(2156.4, melt(DTid, measure.vars=structure(1:3, variable.name=data.table())), error="variable.name attribute of measure.vars should be a data table with at least one column")
+test(2156.5, melt(DTid, measure.vars=structure(1:3, variable.name=data.table(x=1))), error="variable.name attribute of measure.vars should be a data table with same number of rows as max length of measure.vars vectors =3")
+test(2156.6, melt(DTid, measure.vars=structure(measure, variable.name=data.table(x=1))), error="variable.name attribute of measure.vars should be a data table with same number of rows as max length of measure.vars vectors =2")
 
 input <- data.table(
   school = c("A","B"),
