@@ -28,6 +28,10 @@
 
 3. `test.data.table()` failed in non-English locales such as `LC_TIME=fr_FR.UTF-8` due to `Jan` vs `janv.` in tests 168 and 2042, [#3450](https://github.com/Rdatatable/data.table/issues/3450). Thanks to @shrektan for reporting, and @tdhock for making the tests locale-aware.
 
+4. User-supplied `PKG_LIBS` and `PKG_CFLAGS` are now retained and the suggestion in https://mac.r-project.org/openmp/; i.e.,
+    `PKG_CPPFLAGS='-Xclang -fopenmp' PKG_LIBS=-lomp R CMD INSTALL data.table_<ver>.tar.gz`
+has a better chance of working on Mac.
+
 
 # data.table [v1.13.0](https://github.com/Rdatatable/data.table/milestone/17?closed=1)  (24 Jul 2020)
 
