@@ -17160,9 +17160,9 @@ exid <- data.table(id=1, expected)
 test(2155.3, melt(DTid, measure.vars=list(a=c(NA,1), b=2:3), id.vars="id"), exid)
 test(2155.4, melt(DTid, measure.vars=list(a=c(NA,"a2"), b=c("b1","b2")), id.vars="id"), exid)
 # new variable.name attribute for measure.vars
-myfun <- function(cols)cols #user-defined function for computing measure.vars.
-pattern_list = list("foo", "bar")#pattern_list below should not use this.
-test(2156.0, melt(DT.wide, measure.vars=myfun()), data.table(variable=factor(c("a2","b1","b2")), value=c(2,1,2)))
+pattern_list = function(cols)cols#user-defined function for computing measure.vars, same name as data.table:::pattern_list but user-defined version should be used.
+test(2156.0, melt(DT.wide, measure.vars=pattern_list()), data.table(variable=factor(c("a2","b1","b2")), value=c(2,1,2)))
+pattern_list = list("foo", "bar")#pattern_list below should not use this since it is not a function.
 test(2156.1, melt(DTid, measure.vars=pattern_list("(?<column>[ab])(?<istr>[12])"))[order(b)], data.table(id=1, istr=paste(c(1,2)), a=c(NA, 2), b=c(1,2)))
 test(2156.2, melt(DTid, measure.vars=structure(list(1, 2), variable.name="foo")), error="variable.name attribute of measure.vars should be either NULL or a data table")
 test(2156.3, melt(DTid, measure.vars=structure(1:3, variable.name="foo")), error="variable.name attribute of measure.vars should be either NULL or a data table")

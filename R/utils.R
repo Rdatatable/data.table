@@ -108,11 +108,13 @@ brackify = function(x, quote=FALSE) {
 eval_with_cols = function(orig_call, all_cols) {
   parent = parent.frame(2L)
   fun_uneval = orig_call[[1L]]
+  # take fun from either calling env (parent) or from data.table
   fun = tryCatch({
     maybe_fun = eval(fun_uneval, parent)
     # parent env could have a non-function with this name, which we
     # should ignore.
-    stopifnot(is.function(maybe.fun))
+    stopifnot(is.function(maybe_fun))
+    maybe_fun
   }, error=function(e) {
     eval(fun_uneval)#take function from data.table namespace.
   })
