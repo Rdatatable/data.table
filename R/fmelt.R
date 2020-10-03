@@ -34,7 +34,17 @@ patterns = function(..., cols=character(0L)) {
   matched
 }
 
-pattern_match_info = function(pat, fun.list, cols){
+pattern_list = function(pat, ..., cols=character(0L)){
+  m.list = pattern_match_info(pat, ..., cols=cols)
+  do.call(info_to_list, m.list)
+}
+
+pattern_vec = function(pat, ..., cols=character(0L)){
+  m.list <- pattern_match_info(pat, ..., cols=cols)
+  do.call(info_to_vec, m.list)
+}
+
+pattern_match_info = function(pat, cols=character(0L), ...){
   match.vec = regexpr(pat, cols, perl=TRUE)
   capture.names = attr(match.vec, "capture.names")
   if(any("" == capture.names)){
@@ -52,9 +62,24 @@ pattern_match_info = function(pat, fun.list, cols){
       group=capture.names))
   group.mat = substr(names.mat, start, end)
   group.dt = data.table(group.mat)
-  for(group.name in names(fun.list)){
+  fun.list = list(...)
+  for (group.i in seq_along(fun.list)) {
+    group.name = names(fun.list)[[group.i]]
+    if (is.null(group.name) || nchar(group.name)==0) {
+      stop("each argument to pattern_* in ... must be named")
+    }
+    if (! group.name %in% names(group.dt)) {
+      stop("each argument name to pattern_* in ... must be one of the capture group names, problem: ", group.name)
+    }
     fun = fun.list[[group.name]]
-    set(group.dt, j=group.name, value=fun(group.dt[[group.name]]))
+    if (!is.function(fun) || length(formals(fun))==0) {
+      stop("each argument to pattern_* in ... must be a function with at least one argument, problem: ", group.name)
+    }
+    group.val = fun(group.dt[[group.name]])
+    if (!(is.atomic(group.val) && length(group.val)==nrow(group.dt))) {
+      stop("each argument to pattern_* in ... must be a function that returns an atomic vector with same length as its first argument, problem: ", group.name)
+    }
+    set(group.dt, j=group.name, value=group.val)
   }
   list(measure.vars=measure.vars, group.dt=group.dt)
 }
@@ -78,19 +103,9 @@ info_to_list = function(measure.vars, group.dt){
   measure.list
 }
 
-pattern_list = function(pat, fun.list=list(), cols=character(0L)){
-  m.list = pattern_match_info(pat, fun.list, cols)
-  do.call(info_to_list, m.list)
-}
-
 info_to_vec = function(measure.vars, group.dt){
   structure(measure.vars, variable.name=group.dt)
 }  
-
-pattern_vec = function(pat, fun.list=list(), cols=character(0L)){
-  m.list <- pattern_match_info(pat, fun.list, cols)
-  do.call(info_to_vec, m.list)
-}
 
 sep_call_info = function(sep, cols){
   parent = sys.parent()
