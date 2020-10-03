@@ -3041,7 +3041,7 @@ test(1034, as.data.table(x<-as.character(sample(letters, 5))), data.table(V1=x))
   test(1035.051, ans1, melt(DT, id.vars="id", measure.vars=list(c(5, 6), c(7, 8))))
   test(1035.052, melt(DT, id.vars="id", measure.vars=list(as.raw(0))),
        error="Unknown 'measure.vars' type raw")
-  test(1035.06, ans1, melt(DT, id.vars="id", measure.vars=list(5:6, 7:8), na.rm=TRUE)) # should've no effect
+  test(1035.06, na.omit(ans1), melt(DT, id.vars="id", measure.vars=list(5:6, 7:8), na.rm=TRUE))
   test(1035.07, ans1, melt(DT, id.vars="id", measure.vars=patterns("d_", "l_")))
   # melt retains ordered factors!
   test(1035.08, melt(DT, id.vars="id", measure.vars=c("f_1", "f_2"), value.factor=TRUE)$value, factor(c(as.character(DT$f_1), as.character(DT$f_2)), ordered=TRUE))
