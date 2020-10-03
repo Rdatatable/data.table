@@ -85,7 +85,7 @@ EOF
 
 if [ "$R_NO_OPENMP" = "1" ]; then
   # Compilation failed -- try forcing -fopenmp instead.
-  "${CC}" "${CFLAGS}" -fopenmp test-omp.c || R_NO_OPENMP=1
+  ${CC} ${CFLAGS} -fopenmp test-omp.c || R_NO_OPENMP=1
 fi
 
 # Clean up.
@@ -103,5 +103,8 @@ else
   echo "OpenMP supported"
   sed -e "s|@openmp_cflags@|\$(SHLIB_OPENMP_CFLAGS)|" src/Makevars.in > src/Makevars
 fi
+# retain user supplied PKG_ env variables, #4664. See comments in Makevars.in too.
+sed -i "s|@PKG_CFLAGS@|$PKG_CFLAGS|" src/Makevars
+sed -i "s|@PKG_LIBS@|$PKG_LIBS|" src/Makevars
 
 exit 0

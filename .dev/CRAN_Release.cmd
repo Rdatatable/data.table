@@ -240,6 +240,12 @@ require(data.table)
 test.data.table()
 q("no")
 
+# User supplied PKG_CFLAGS and PKG_LIBS passed through, #4664
+# Next line from https://mac.r-project.org/openmp/. Should see the arguments passed through and then fail with gcc on linux.
+PKG_CFLAGS='-Xclang -fopenmp' PKG_LIBS=-lomp R CMD INSTALL data.table_1.13.1.tar.gz
+# Next line should work on Linux, just using superfluous and duplicate but valid parameters here to see them retained and work 
+PKG_CFLAGS='-fopenmp' PKG_LIBS=-lz R CMD INSTALL data.table_1.13.1.tar.gz
+
 R
 remove.packages("xml2")    # we checked the URLs; don't need to do it again (many minutes)
 require(data.table)
