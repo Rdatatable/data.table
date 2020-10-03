@@ -63,25 +63,29 @@ pattern_match_info = function(pat, cols=character(0L), ...){
   group.mat = substr(names.mat, start, end)
   group.dt = data.table(group.mat)
   fun.list = list(...)
+  list(measure.vars=measure.vars, group.dt=group_funs(group.dt, fun.list))
+}
+
+group_funs = function(group.dt, fun.list) {
   for (group.i in seq_along(fun.list)) {
     group.name = names(fun.list)[[group.i]]
     if (is.null(group.name) || nchar(group.name)==0) {
-      stop("each argument to pattern_* in ... must be named")
+      stop("each argument must be named")
     }
     if (! group.name %in% names(group.dt)) {
-      stop("each argument name to pattern_* in ... must be one of the capture group names, problem: ", group.name)
+      stop("each argument name must be one of the capture group names, problem: ", group.name)
     }
-    fun = fun.list[[group.name]]
-    if (!is.function(fun) || length(formals(fun))==0) {
-      stop("each argument to pattern_* in ... must be a function with at least one argument, problem: ", group.name)
+    fun = eval(fun.list[[group.name]])
+    if (!is.function(fun) || (!is.primitive(fun) && length(formals(fun))==0)) {
+      stop("each argument must be a function with at least one argument, problem: ", group.name)
     }
     group.val = fun(group.dt[[group.name]])
     if (!(is.atomic(group.val) && length(group.val)==nrow(group.dt))) {
-      stop("each argument to pattern_* in ... must be a function that returns an atomic vector with same length as its first argument, problem: ", group.name)
+      stop("each argument must be a function that returns an atomic vector with same length as its first argument, problem: ", group.name)
     }
     set(group.dt, j=group.name, value=group.val)
   }
-  list(measure.vars=measure.vars, group.dt=group.dt)
+  group.dt
 }
 
 info_to_list = function(measure.vars, group.dt){
@@ -116,15 +120,18 @@ sep_call_info = function(sep, cols){
   names(fun.list)[no.fun] = sapply(fun.list[no.fun], paste)
   list.of.vectors = strsplit(cols, sep, fixed=TRUE)
   vector.lengths = sapply(list.of.vectors, length)
-  measure.vars = which(vector.lengths==max(vector.lengths))
+  n.groups = max(vector.lengths)
+  if (n.groups != length(fun.list)) {
+    stop(
+      "number of arguments to sep_* =", length(fun.list),
+      " must be same as max number of items after splitting column names =", n.groups)
+  }
+  measure.vars = which(vector.lengths==n.groups)
   mat = do.call(rbind, list.of.vectors[measure.vars])
   colnames(mat) = names(fun.list)
   group.dt = data.table(mat)
-  for(group.i in which(!no.fun)){
-    fun = eval(fun.list[[group.i]])
-    set(group.dt, j=group.i, value=fun(group.dt[[group.i]]))
-  }
-  list(measure.vars=measure.vars, group.dt=group.dt)
+  some.funs = fun.list[which(!no.fun)]
+  list(measure.vars=measure.vars, group.dt=group_funs(group.dt, some.funs))
 }  
 
 sep_list = function(..., sep="_", cols){
