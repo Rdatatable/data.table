@@ -582,13 +582,6 @@ SEXP getvarcols(SEXP DT, SEXP dtnames, Rboolean varfactor, Rboolean verbose, str
         SET_STRING_ELT(levels, nlevel++, mkChar(buff));  // generate levels = 1:nlevels
         for (int k=0; k<thislen; ++k) td[ansloc++] = nlevel;
       }
-      if (nlevel < data->lmax) {
-        // data->narm is true and there are some all-NA items causing at least one 'if (thislen==0) continue' above
-        // shrink the levels
-        SEXP newlevels = PROTECT(allocVector(STRSXP, nlevel)); protecti++;
-        for (int i=0; i<nlevel; ++i) SET_STRING_ELT(newlevels, i, STRING_ELT(levels, i));
-        levels = newlevels;
-      }
     }
     setAttrib(target, R_LevelsSymbol, levels);
     setAttrib(target, R_ClassSymbol, ScalarString(char_factor));
