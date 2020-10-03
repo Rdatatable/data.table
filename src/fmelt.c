@@ -397,10 +397,6 @@ SEXP getvaluecols(SEXP DT, SEXP dtnames, Rboolean valfactor, Rboolean verbose, s
     SEXP thisvaluecols = VECTOR_ELT(data->valuecols, i);
     if (!data->isidentical[i])
       warning(_("'measure.vars' [%s] are not all of the same type. By order of hierarchy, the molten data value column will be of type '%s'. All measure variables not of type '%s' will be coerced too. Check DETAILS in ?melt.data.table for more on coercion.\n"), concat(dtnames, thisvaluecols), type2char(data->maxtype[i]), type2char(data->maxtype[i]));
-    if (data->maxtype[i] == VECSXP && data->narm) {
-      if (verbose) Rprintf(_("The molten data value type is a list at item %d. 'na.rm=TRUE' is ignored.\n"), i+1);
-      data->narm = FALSE;
-    }
   }
   if (data->narm) {
     SEXP seqcols = PROTECT(seq_int(data->lvalues, 1));
