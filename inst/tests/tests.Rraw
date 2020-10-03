@@ -17197,3 +17197,6 @@ test(2158.05, melt(DTid, measure.vars=pattern_list("(?<column>[ab])(?<istr>[12])
 myfac = function(x)factor(x)
 test(2158.06, melt(iris.dt, measure.vars=sep_list(column, dim="bar", sep=".")), error="each argument must be a function with at least one argument, problem: dim")
 test(2158.07, melt(iris.dt, measure.vars=sep_list(column, dim, baz, sep=".")), error="number of arguments to sep_* =3 must be same as max number of items after splitting column names =2")
+test(2158.08, melt(DTid, measure.vars=pattern_list("(?<column>[ab])([12])", istr=as.integer)), error="each capture group needs a name (?<name>pattern)")
+test(2158.08, melt(DTid, measure.vars=pattern_list("(?<letter>[ab])(?<istr>[12])", istr=as.integer)), error="need capture group named column")
+##TODO factors
