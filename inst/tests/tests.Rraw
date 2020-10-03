@@ -17150,3 +17150,20 @@ test(2154.1, fread("0.0\n", colClasses="integer"), data.table(V1=0.0),
 test(2154.2, fread("A\n0.0\n", colClasses="integer"), data.table(A=0.0),
              warning="Attempt to override column 1 <<A>> of inherent type 'float64' down to 'int32' ignored.*please")
 
+x = c("a", "a", "b", "b", "c", NA)
+y = c("a", "a", "c", "d", "d", NA)
+test(2155.01, sort(fintersect(x,y), na.last=TRUE), c("a", "c", NA))
+test(2155.02, sort(fintersect(y,x), na.last=TRUE), c("a", "c", NA))
+test(2155.03, sort(fintersect(x,y, all=TRUE), na.last=TRUE), c("a", "a", "c", NA))
+test(2155.04, sort(fintersect(y,x, all=TRUE), na.last=TRUE), c("a", "a", "c", NA))
+test(2155.05, sort(funion(x,y), na.last=TRUE), c("a", "b", "c", "d", NA))
+test(2155.06, sort(funion(y,x), na.last=TRUE), c("a", "b", "c", "d", NA))
+test(2155.07, sort(funion(x,y, all=TRUE), na.last=TRUE), c("a", "a", "a", "a", "b", "b", "c", "c", "d", "d", NA, NA))
+test(2155.08, sort(funion(y,x, all=TRUE), na.last=TRUE), c("a", "a", "a", "a", "b", "b", "c", "c", "d", "d", NA, NA))
+test(2155.09, fsetdiff(x,y), c("b"))
+test(2155.10, fsetdiff(y,x), c("d"))
+test(2155.11, fsetdiff(x,y, all=TRUE), c("b", "b"))
+test(2155.12, fsetdiff(y,x, all=TRUE), c("d", "d"))
+test(2155.13, fsetequal(x,y), FALSE)
+test(2155.14, fsetequal(x,x), TRUE)
+

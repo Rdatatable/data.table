@@ -6,6 +6,8 @@
 
 ## NEW FEATURES
 
+1. Set operations `fintersect`, `funion`, `fsetdiff` and `fseteuqal` now also support vectors as input. #3752(https://github.com/Rdatatable/data.table/issues/3752). Thanks to @shrektan for the request and thanks to Benjamin Schwendinger for the PR. 
+
 ## BUG FIXES
 
 1. `test.data.table()` could fail the 2nd time it is run by a user in the same R session on Windows due to not resetting locale properly after testing Chinese translation, [#4630](https://github.com/Rdatatable/data.table/pull/4630). Thanks to Cole Miller for investigating and fixing.

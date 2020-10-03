@@ -56,7 +56,15 @@ funique = function(x) {
   if (.seqn && ".seqn" %chin% names(x)) stop("None of the datasets should contain a column named '.seqn'")
 }
 
+vec2dt = function(fun, x, y, all=FALSE){
+  fun(setDT(list(x)), setDT(list(y)), all)[[1]]
+}
+
 fintersect = function(x, y, all=FALSE) {
+  if (is.vector(x) && is.vector(y)){
+    return(vec2dt(fintersect, x, y, all))
+  }
+
   .set_ops_arg_check(x, y, all, .seqn = TRUE)
   if (!nrow(x) || !nrow(y)) return(x[0L])
   if (all) {
@@ -71,6 +79,10 @@ fintersect = function(x, y, all=FALSE) {
 }
 
 fsetdiff = function(x, y, all=FALSE) {
+  if (is.vector(x) && is.vector(y)){
+    return(vec2dt(fsetdiff, x, y, all))
+  }
+
   .set_ops_arg_check(x, y, all, .seqn = TRUE)
   if (!nrow(x)) return(x)
   if (!nrow(y)) return(if (!all) funique(x) else x)
@@ -85,6 +97,10 @@ fsetdiff = function(x, y, all=FALSE) {
 }
 
 funion = function(x, y, all=FALSE) {
+  if (is.vector(x) && is.vector(y)){
+    return(vec2dt(funion, x, y, all))
+  }
+
   .set_ops_arg_check(x, y, all, block_list = !all)
   ans = rbindlist(list(x, y))
   if (!all) ans = funique(ans)
@@ -92,6 +108,10 @@ funion = function(x, y, all=FALSE) {
 }
 
 fsetequal = function(x, y, all=TRUE) {
+  if (is.vector(x) && is.vector(y)){
+    return(vec2dt(fsetequal, x, y, all))
+  }
+
   .set_ops_arg_check(x, y, all)
   if (!all) {
     x = funique(x)
