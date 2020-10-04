@@ -427,6 +427,16 @@ static SEXP combineFactorLevels(SEXP factorLevels, SEXP target, int * factorType
   return ans;
 }
 
+SEXP input_col_or_na(SEXP DT, struct processData* data, SEXP thisvaluecols, int out_col, int in_col) {
+  if (in_col < data->leach[out_col]) {
+    int input_column_num = INTEGER(thisvaluecols)[in_col];
+    if (input_column_num != NA_INTEGER) {
+      return VECTOR_ELT(DT, input_column_num-1);
+    }
+  }
+  return allocNAVector(data->maxtype[out_col], data->nrow);
+}  
+
 SEXP getvaluecols(SEXP DT, SEXP dtnames, Rboolean valfactor, Rboolean verbose, struct processData *data) {
   for (int i=0; i<data->lvalues; ++i) {
     SEXP thisvaluecols = VECTOR_ELT(data->valuecols, i);
@@ -442,14 +452,8 @@ SEXP getvaluecols(SEXP DT, SEXP dtnames, Rboolean valfactor, Rboolean verbose, s
     for (int i=0; i<data->lmax; ++i) {
       SEXP tmp = PROTECT(allocVector(VECSXP, data->lvalues));
       for (int j=0; j<data->lvalues; ++j) {
-	SEXP thisvaluecols = VECTOR_ELT(data->valuecols, j);
-	int input_column_num = INTEGER(thisvaluecols)[i];
-        if (j >= data->leach[j] || //fewer indices than the max were specified.
-	    input_column_num == NA_INTEGER) { //NA was specified.
-          SET_VECTOR_ELT(tmp, j, allocNAVector(data->maxtype[j], data->nrow));
-        } else {
-          SET_VECTOR_ELT(tmp, j, VECTOR_ELT(DT, input_column_num-1));
-        }
+        SEXP thisvaluecols = VECTOR_ELT(data->valuecols, j);
+        SET_VECTOR_ELT(tmp, j, input_col_or_na(DT, data, thisvaluecols, j, i));
       }
       tmp = PROTECT(dt_na(tmp, seqcols));
       SEXP w;
@@ -474,14 +478,7 @@ SEXP getvaluecols(SEXP DT, SEXP dtnames, Rboolean valfactor, Rboolean verbose, s
     bool copyattr = false;
     for (int j=0; j<data->lmax; ++j) {// for each input column.
       int thisprotecti = 0;
-      SEXP thiscol;
-      int input_column_num = INTEGER(thisvaluecols)[j];
-      if (j >= data->leach[i] || // fewer indices than the max were specified.
-          input_column_num == NA_INTEGER) { // NA was specified.
-        thiscol = allocNAVector(data->maxtype[i], data->nrow);
-      }else{
-        thiscol = VECTOR_ELT(DT, input_column_num-1);
-      }
+      SEXP thiscol = input_col_or_na(DT, data, thisvaluecols, i, j);
       if (!copyattr && data->isidentical[i] && !data->isfactor[i]) {
         copyMostAttrib(thiscol, target);
         copyattr = true;
