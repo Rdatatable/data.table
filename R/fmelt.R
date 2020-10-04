@@ -34,40 +34,49 @@ patterns = function(..., cols=character(0L)) {
   matched
 }
 
-pattern_list = function(pat, ..., cols=character(0L)){
-  m.list = pattern_match_info(pat, ..., cols=cols)
-  do.call(info_to_list, m.list)
-}
-
-pattern_vec = function(pat, ..., cols=character(0L)){
-  m.list <- pattern_match_info(pat, ..., cols=cols)
-  do.call(info_to_vec, m.list)
-}
-
-pattern_match_info = function(pat, cols=character(0L), ...){
-  match.vec = regexpr(pat, cols, perl=TRUE)
-  capture.names = attr(match.vec, "capture.names")
-  if(any("" == capture.names)){
-    stop("each capture group needs a name (?<name>pattern)")
+measure = function(..., sep, pattern, cols){
+  # 1. error checking on sep/pattern args.
+  if (missing(sep) && missing(pattern)) {
+    stop(
+      "neither sep nor pattern arguments used in measure; ",
+      "must use either sep or pattern")
   }
-  measure.vars = which(0 < match.vec)
-  start = attr(match.vec, "capture.start")[measure.vars,]
-  end = attr(match.vec, "capture.length")[measure.vars,]+start-1L
-  matched.names = cols[measure.vars]
-  names.mat = matrix(
-    matched.names,
-    nrow(start), ncol(start),
-    dimnames=list(
-      column=matched.names,
-      group=capture.names))
-  group.mat = substr(names.mat, start, end)
+  if (!missing(sep) && !missing(pattern)) {
+    stop(
+      "both sep and pattern arguments used in measure; ",
+      "must use either sep or pattern (not both)")
+  }
+  # 2. compute conversion function list with group names.
+  mcall = match.call()
+  L = as.list(mcall)[-1]
+  fun.list = L[-which(names(L)%in%names(formals()))]
+  no.fun = names(fun.list)==""
+  names(fun.list)[no.fun] = sapply(fun.list[no.fun], paste)
+  # 3. compute initial group data table, used as variable.name attribute.
+  group.mat = if (!missing(pattern)) {
+    match.vec = regexpr(pattern, cols, perl=TRUE)
+    measure.vec = which(0 < match.vec)
+    start = attr(match.vec, "capture.start")[measure.vec,]
+    end = attr(match.vec, "capture.length")[measure.vec,]+start-1L
+    matched.names = cols[measure.vec]
+    names.mat = matrix(matched.names, nrow(start), ncol(start))
+    substr(names.mat, start, end)
+  } else {
+    list.of.vectors = strsplit(cols, sep, fixed=TRUE)
+    vector.lengths = sapply(list.of.vectors, length)
+    n.groups = max(vector.lengths)
+    if (n.groups != length(fun.list)) {
+      stop(
+        "number of arguments to sep_* =", length(fun.list),
+        " must be same as max number of items after splitting column names =", n.groups)
+    }
+    measure.vec = which(vector.lengths==n.groups)
+    do.call(rbind, list.of.vectors[measure.vec])
+  }
+  colnames(group.mat) = names(fun.list)
   group.dt = data.table(group.mat)
-  fun.list = list(...)
-  list(measure.vars=measure.vars, group.dt=group_funs(group.dt, fun.list))
-}
-
-group_funs = function(group.dt, fun.list) {
-  for (group.i in seq_along(fun.list)) {
+  # 4. apply conversion functions to group data table.
+  for (group.i in which(!no.fun)) {
     group.name = names(fun.list)[[group.i]]
     if (is.null(group.name) || nchar(group.name)==0) {
       stop("each argument must be named")
@@ -75,7 +84,7 @@ group_funs = function(group.dt, fun.list) {
     if (! group.name %in% names(group.dt)) {
       stop("each argument name must be one of the capture group names, problem: ", group.name)
     }
-    fun = eval(fun.list[[group.name]])
+    fun = eval(fun.list[[group.name]], parent.frame(1L))
     if (!is.function(fun) || (!is.primitive(fun) && length(formals(fun))==0)) {
       stop("each argument must be a function with at least one argument, problem: ", group.name)
     }
@@ -85,63 +94,24 @@ group_funs = function(group.dt, fun.list) {
     }
     set(group.dt, j=group.name, value=group.val)
   }
-  group.dt
-}
-
-info_to_list = function(measure.vars, group.dt){
-  if(! "column" %in% names(group.dt)){
-    stop("need capture group named column")
+  # 5. compute measure.vars list or vector.
+  if ("column" %in% names(fun.list)) {# multiple output columns.
+    is.other = names(group.dt) != "column"
+    other.values = lapply(group.dt[, ..is.other], unique)
+    other.values$stringsAsFactors = FALSE
+    other.dt = data.table(do.call(expand.grid, other.values))
+    measure.list = structure(list(), variable.name=other.dt)
+    column.values = unique(group.dt[["column"]])
+    for(column.val in column.values){
+      select.dt = data.table(column=column.val, other.dt)
+      measure.list[[column.val]] = data.table(
+        measure.vec, group.dt
+      )[select.dt, measure.vec, on=names(select.dt)]
+    }
+    measure.list
+  } else {# single output column.
+    structure(measure.vec, variable.name=group.dt)
   }
-  is.other = names(group.dt)!="column"
-  other.values = lapply(group.dt[, ..is.other], unique)
-  other.values$stringsAsFactors = FALSE
-  other.dt = data.table(do.call(expand.grid, other.values))
-  measure.list = structure(list(), variable.name=other.dt)
-  column.values = unique(group.dt[["column"]])
-  for(column.val in column.values){
-    select.dt = data.table(column=column.val, other.dt)
-    measure.list[[column.val]] = data.table(
-      measure.vars, group.dt
-    )[select.dt, measure.vars, on=names(select.dt)]
-  }
-  measure.list
-}
-
-info_to_vec = function(measure.vars, group.dt){
-  structure(measure.vars, variable.name=group.dt)
-}  
-
-sep_call_info = function(sep, cols){
-  parent = sys.parent()
-  mcall = match.call(definition=sys.function(parent), call=sys.call(parent))
-  L = as.list(mcall)[-1]
-  fun.list = L[-which(names(L)%in%names(formals()))]
-  no.fun = names(fun.list)==""
-  names(fun.list)[no.fun] = sapply(fun.list[no.fun], paste)
-  list.of.vectors = strsplit(cols, sep, fixed=TRUE)
-  vector.lengths = sapply(list.of.vectors, length)
-  n.groups = max(vector.lengths)
-  if (n.groups != length(fun.list)) {
-    stop(
-      "number of arguments to sep_* =", length(fun.list),
-      " must be same as max number of items after splitting column names =", n.groups)
-  }
-  measure.vars = which(vector.lengths==n.groups)
-  mat = do.call(rbind, list.of.vectors[measure.vars])
-  colnames(mat) = names(fun.list)
-  group.dt = data.table(mat)
-  some.funs = fun.list[which(!no.fun)]
-  list(measure.vars=measure.vars, group.dt=group_funs(group.dt, some.funs))
-}  
-
-sep_list = function(..., sep="_", cols){
-  sep.list = sep_call_info(sep, cols)
-  do.call(info_to_list, sep.list)
-}
-
-sep_vec = function(..., sep="_", cols){
-  sep.list = sep_call_info(sep, cols)
-  do.call(info_to_vec, sep.list)
 }
 
 melt.data.table = function(data, id.vars, measure.vars, variable.name = "variable",
