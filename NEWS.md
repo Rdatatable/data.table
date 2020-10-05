@@ -8,6 +8,8 @@
 
 1. `melt.data.table()` now supports `NA` entries when specifying a list of `measure.vars`, which translate into runs of missing values in the output. Useful for melting wide data tables with some missing columns, [#4027](https://github.com/Rdatatable/data.table/issues/4027). Thanks to @vspinu for reporting, and @tdhock for implementing the changes to fmelt.
 
+2. `melt.data.table()` now supports multiple output variable columns via the `variable_table` attribute of `measure.vars`. It should be a data table with one row that describes each element of the `measure.vars` vector(s). These data/columns are copied to the output instead of the usual variable column. This is completely backwards compatible since the previous behavior (one output variable column) is used when there is no `variable_table`. New function `measure` which uses either a separator or a regex to create a `measure.vars` list/vector with `variable_table` attribute; useful for melting data that have several distinct pieces of information encoded in each column name (for details see new `?measure` and new section in reshape vignette). Thanks to TODO for reporting, #TODO, and to @tdhock for implementing the new features.
+
 ## BUG FIXES
 
 1. `test.data.table()` could fail the 2nd time it is run by a user in the same R session on Windows due to not resetting locale properly after testing Chinese translation, [#4630](https://github.com/Rdatatable/data.table/pull/4630). Thanks to Cole Miller for investigating and fixing.
