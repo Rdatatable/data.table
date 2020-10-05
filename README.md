@@ -1,5 +1,5 @@
 
-# data.table <a href="http://r-datatable.com"><img src="https://raw.githubusercontent.com/Rdatatable/data.table/master/.graphics/logo.png" align="right" height="140" /></a>
+# data.table <a href="https://rdatatable.gitlab.io/data.table"><img src="https://raw.githubusercontent.com/Rdatatable/data.table/master/.graphics/logo.png" align="right" height="140" /></a>
 
 <!-- badges: start -->
 [![CRAN status](https://cranchecks.info/badges/flavor/release/data.table)](https://cran.r-project.org/web/checks/check_results_data.table.html)
@@ -72,7 +72,7 @@ DT[Petal.Width > 1.0, mean(Petal.Length), by = Species]
 
 ### Getting started
 
-* [Introduction to data.table](https://cloud.r-project.org/web/packages/data.table/vignettes/datatable-intro.html) vignette
+* [Introduction to data.table](https://cran.r-project.org/package=data.table/vignettes/datatable-intro.html) vignette
 * [Getting started](https://github.com/Rdatatable/data.table/wiki/Getting-started) wiki page
 * [Examples](https://rdatatable.gitlab.io/data.table/reference/data.table.html#examples) produced by `example(data.table)`
 
@@ -82,7 +82,7 @@ DT[Petal.Width > 1.0, mean(Petal.Length), by = Species]
 
 ## Community
 
-`data.table` is widely used by the R community. It is being directly used by hundreds of CRAN and Bioconductor packages, and indirectly by thousands. It is one of the [top most starred](http://www.r-pkg.org/starred) R package on GitHub. If you need help, the `data.table` community is active on [StackOverflow](http://stackoverflow.com/questions/tagged/data.table).
+`data.table` is widely used by the R community. It is being directly used by hundreds of CRAN and Bioconductor packages, and indirectly by thousands. It is one of the [top most starred](https://www.r-pkg.org:443/starred) R package on GitHub. If you need help, the `data.table` community is active on [StackOverflow](https://stackoverflow.com/questions/tagged/data.table).
 
 ### Stay up-to-date
 
