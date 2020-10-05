@@ -649,28 +649,17 @@ SEXP getvarcols(SEXP DT, SEXP dtnames, Rboolean varfactor, Rboolean verbose, str
           SET_STRING_ELT(levels, nlevel++, mkChar(buff));  // generate levels = 1:nlevels
           for (int k=0; k<thislen; ++k) td[ansloc++] = nlevel;
         }
-        if (nlevel < data->lmax) {
-          // data->narm is true and there are some all-NA items causing at least one 'if (thislen==0) continue' above
-          // shrink the levels
-          SEXP newlevels = PROTECT(allocVector(STRSXP, nlevel)); protecti++;
-          for (int i=0; i<nlevel; ++i) SET_STRING_ELT(newlevels, i, STRING_ELT(levels, i));
-          levels = newlevels;
-        }
       }
       setAttrib(target, R_LevelsSymbol, levels);
       setAttrib(target, R_ClassSymbol, ScalarString(char_factor));
     }
-  } else { //variable.name table specified
+  } else { //variable_table specified
     for (int out_col_i=0; out_col_i<data->lvars; out_col_i++) {
       SEXP out_col = VECTOR_ELT(data->variable_table, out_col_i);
       SET_VECTOR_ELT(ansvars, out_col_i, target=allocVector(TYPEOF(out_col), data->totlen));
       for (int j=0, ansloc=0; j<data->lmax; ++j) {
         const int thislen = data->narm ? length(VECTOR_ELT(data->naidx, j)) : data->nrow;
         switch (TYPEOF(target)) {
-        case VECSXP :
-          for (int k=0; k<thislen; ++k)
-            SET_VECTOR_ELT(target, ansloc++, VECTOR_ELT(out_col, j));
-          break;
         case STRSXP :
           for (int k=0; k<thislen; ++k)
             SET_STRING_ELT(target, ansloc++, STRING_ELT(out_col, j));
@@ -690,7 +679,7 @@ SEXP getvarcols(SEXP DT, SEXP dtnames, Rboolean varfactor, Rboolean verbose, str
 	  }
           break;
         default :
-          error(_("Unknown column type '%s' for column '%s'."), type2char(TYPEOF(out_col)), CHAR(STRING_ELT(getAttrib(data->variable_table, R_NamesSymbol), out_col_i)));
+          error(_("variable_table does not support column type '%s' for column '%s'."), type2char(TYPEOF(out_col)), CHAR(STRING_ELT(getAttrib(data->variable_table, R_NamesSymbol), out_col_i)));
         }
       }
     }

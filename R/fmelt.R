@@ -45,8 +45,13 @@ measure = function(..., sep="_", pattern, cols, multiple.keyword="value.name") {
   mcall = match.call()
   L = as.list(mcall)[-1]
   fun.list = L[-which(names(L)%in%names(formals()))]
-  no.fun = names(fun.list)==""
-  names(fun.list)[no.fun] = sapply(fun.list[no.fun], paste)
+  user.named = names(fun.list)!=""
+  is.symb = sapply(fun.list, is.symbol)
+  bad.i = which((!user.named) & (!is.symb))
+  if (length(bad.i)) {
+    stop("each ... argument to measure must be either a symbol without argument name, or a function with argument name, problems: ", paste(bad.i, collapse=","))
+  }
+  names(fun.list)[!user.named] = sapply(fun.list[!user.named], paste)
   # 3. compute initial group data table, used as variable_table attribute.
   group.mat = if (!missing(pattern)) {
     match.vec = regexpr(pattern, cols, perl=TRUE)
@@ -78,11 +83,8 @@ measure = function(..., sep="_", pattern, cols, multiple.keyword="value.name") {
   colnames(group.mat) = names(fun.list)
   group.dt = data.table(group.mat)
   # 4. apply conversion functions to group data table.
-  for (group.i in which(!no.fun)) {
+  for (group.i in which(user.named)) {
     group.name = names(fun.list)[[group.i]]
-    if (is.null(group.name) || nchar(group.name)==0) {
-      stop("each ... argument to measure must be named")
-    }
     fun = eval(fun.list[[group.name]], parent.frame(1L))
     if (!is.function(fun) || (!is.primitive(fun) && length(formals(fun))==0)) {
       stop("each ... argument to measure must be a function with at least one argument, problem: ", group.name)
