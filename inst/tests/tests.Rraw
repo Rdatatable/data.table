@@ -17173,6 +17173,7 @@ test(2156.04, melt(DTid, measure.vars=structure(1:3, variable.name=data.table())
 test(2156.05, melt(DTid, measure.vars=structure(1:3, variable.name=data.table(x=1))), error="variable.name attribute of measure.vars should be a data table with same number of rows as max length of measure.vars vectors =3")
 test(2156.06, melt(DTid, measure.vars=structure(list(a=1, b=2:3), variable.name=data.table(x=1))), error="variable.name attribute of measure.vars should be a data table with same number of rows as max length of measure.vars vectors =2")
 # general measure errors.
+iris.dt = data.table(datasets::iris)
 test(2156.07, melt(iris.dt, measure.vars=measure(value.name, dim)), error="neither sep nor pattern arguments used in measure; must use either sep or pattern")
 test(2156.08, melt(iris.dt, measure.vars=measure(value.name, dim, sep=".", pattern="foo")), error="both sep and pattern arguments used in measure; must use either sep or pattern (not both)")
 # school example.
@@ -17190,7 +17191,6 @@ test(2156.10, melt(who, measure.vars=measure(diagnosis, gender, ages, ymin=as.nu
 wide.again = dcast(schools.tall, school ~ subject + number, value.var = c("score","sp"))
 # measure with sep=
 test(2156.11, melt(wide.again, na.rm=TRUE, measure.vars=measure(value.name, subject, number=as.integer, sep="_"))[order(score)], schools.expected)
-iris.dt = data.table(datasets::iris)
 test(2156.12, names(melt(iris.dt, measure.vars=measure(value.name, dim, sep="."))), c("Species", "dim", "Sepal", "Petal"))
 test(2156.13, names(melt(iris.dt, measure.vars=measure(part, value.name, sep="."))), c("Species", "part", "Length", "Width"))
 test(2156.14, names(melt(iris.dt, measure.vars=measure(part, dim, sep="."))), c("Species", "part", "dim", "value"))
