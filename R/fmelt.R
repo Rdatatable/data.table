@@ -34,7 +34,7 @@ patterns = function(..., cols=character(0L)) {
   matched
 }
 
-measure = function(..., sep, pattern, cols){
+measure = function(..., sep, pattern, cols, multiple.keyword="value.name") {
   # 1. error checking on sep/pattern args.
   if (missing(sep) && missing(pattern)) {
     stop(
@@ -57,9 +57,13 @@ measure = function(..., sep, pattern, cols){
     match.vec = regexpr(pattern, cols, perl=TRUE)
     measure.vec = which(0 < match.vec)
     start = attr(match.vec, "capture.start")[measure.vec,]
+    if (ncol(start) != length(fun.list)) {
+      stop(
+        "number of ... arguments to measure =", length(fun.list),
+        " must be same as number of capture groups in pattern =", ncol(start))
+    }
     end = attr(match.vec, "capture.length")[measure.vec,]+start-1L
-    matched.names = cols[measure.vec]
-    names.mat = matrix(matched.names, nrow(start), ncol(start))
+    names.mat = matrix(cols[measure.vec], nrow(start), ncol(start))
     substr(names.mat, start, end)
   } else {
     list.of.vectors = strsplit(cols, sep, fixed=TRUE)
@@ -67,7 +71,7 @@ measure = function(..., sep, pattern, cols){
     n.groups = max(vector.lengths)
     if (n.groups != length(fun.list)) {
       stop(
-        "number of arguments to sep_* =", length(fun.list),
+        "number of ... arguments to measure =", length(fun.list),
         " must be same as max number of items after splitting column names =", n.groups)
     }
     measure.vec = which(vector.lengths==n.groups)
@@ -79,31 +83,29 @@ measure = function(..., sep, pattern, cols){
   for (group.i in which(!no.fun)) {
     group.name = names(fun.list)[[group.i]]
     if (is.null(group.name) || nchar(group.name)==0) {
-      stop("each argument must be named")
-    }
-    if (! group.name %in% names(group.dt)) {
-      stop("each argument name must be one of the capture group names, problem: ", group.name)
+      stop("each ... argument to measure must be named")
     }
     fun = eval(fun.list[[group.name]], parent.frame(1L))
     if (!is.function(fun) || (!is.primitive(fun) && length(formals(fun))==0)) {
-      stop("each argument must be a function with at least one argument, problem: ", group.name)
+      stop("each ... argument to measure must be a function with at least one argument, problem: ", group.name)
     }
     group.val = fun(group.dt[[group.name]])
     if (!(is.atomic(group.val) && length(group.val)==nrow(group.dt))) {
-      stop("each argument must be a function that returns an atomic vector with same length as its first argument, problem: ", group.name)
+      stop("each ... argument to measure must be a function that returns an atomic vector with same length as its first argument, problem: ", group.name)
     }
     set(group.dt, j=group.name, value=group.val)
   }
   # 5. compute measure.vars list or vector.
-  if ("column" %in% names(fun.list)) {# multiple output columns.
-    is.other = names(group.dt) != "column"
+  if (multiple.keyword %in% names(fun.list)) {# multiple output columns.
+    is.other = names(group.dt) != multiple.keyword
     other.values = lapply(group.dt[, ..is.other], unique)
     other.values$stringsAsFactors = FALSE
     other.dt = data.table(do.call(expand.grid, other.values))
     measure.list = structure(list(), variable.name=other.dt)
-    column.values = unique(group.dt[["column"]])
+    column.values = unique(group.dt[[multiple.keyword]])
     for(column.val in column.values){
-      select.dt = data.table(column=column.val, other.dt)
+      select.dt = data.table(other.dt)
+      set(select.dt, j=multiple.keyword, value=column.val)
       measure.list[[column.val]] = data.table(
         measure.vec, group.dt
       )[select.dt, measure.vec, on=names(select.dt)]
