@@ -366,7 +366,7 @@ static void preprocess(SEXP DT, SEXP id, SEXP measure, SEXP varnames, SEXP valna
     SET_VECTOR_ELT(data->RCHK, 1, data->naidx = allocVector(VECSXP, data->lmax));
   }
   // TDH 1 Oct 2020 variable table.
-  if (VarNameSymbol == NULL) VarNameSymbol = install("variable.name");
+  if (VarNameSymbol == NULL) VarNameSymbol = install("variable_table");
   data->variable_table = getAttrib(measure, VarNameSymbol);
   if (isNull(data->variable_table)) {
     // We need to include this check first because isNewList(NULL) ==
@@ -375,14 +375,16 @@ static void preprocess(SEXP DT, SEXP id, SEXP measure, SEXP varnames, SEXP valna
   } else if (isNewList(data->variable_table)) {
     data->lvars = length(data->variable_table);
     if (data->lvars == 0) {
-      error(_("variable.name attribute of measure.vars should be a data table with at least one column"));
+      error(_("variable_table attribute of measure.vars should be a data table with at least one column"));
     }
-    int nrow = length(VECTOR_ELT(data->variable_table, 0));
-    if (data->lmax != nrow) {
-      error(_("variable.name attribute of measure.vars should be a data table with same number of rows as max length of measure.vars vectors =%d"), data->lmax);
+    for (i=0; i<length(data->variable_table); i++) {
+      int nrow = length(VECTOR_ELT(data->variable_table, i));
+      if (data->lmax != nrow) {
+	error(_("variable_table attribute of measure.vars should be a data table with same number of rows as max length of measure.vars vectors =%d"), data->lmax);
+      }
     }
   } else {//neither NULL nor DT.
-    error(_("variable.name attribute of measure.vars should be either NULL or a data table"));
+    error(_("variable_table attribute of measure.vars should be either NULL or a data table"));
   }
 }
 

@@ -34,13 +34,8 @@ patterns = function(..., cols=character(0L)) {
   matched
 }
 
-measure = function(..., sep, pattern, cols, multiple.keyword="value.name") {
+measure = function(..., sep="_", pattern, cols, multiple.keyword="value.name") {
   # 1. error checking on sep/pattern args.
-  if (missing(sep) && missing(pattern)) {
-    stop(
-      "neither sep nor pattern arguments used in measure; ",
-      "must use either sep or pattern")
-  }
   if (!missing(sep) && !missing(pattern)) {
     stop(
       "both sep and pattern arguments used in measure; ",
@@ -52,7 +47,7 @@ measure = function(..., sep, pattern, cols, multiple.keyword="value.name") {
   fun.list = L[-which(names(L)%in%names(formals()))]
   no.fun = names(fun.list)==""
   names(fun.list)[no.fun] = sapply(fun.list[no.fun], paste)
-  # 3. compute initial group data table, used as variable.name attribute.
+  # 3. compute initial group data table, used as variable_table attribute.
   group.mat = if (!missing(pattern)) {
     match.vec = regexpr(pattern, cols, perl=TRUE)
     measure.vec = which(0 < match.vec)
@@ -69,6 +64,9 @@ measure = function(..., sep, pattern, cols, multiple.keyword="value.name") {
     list.of.vectors = strsplit(cols, sep, fixed=TRUE)
     vector.lengths = sapply(list.of.vectors, length)
     n.groups = max(vector.lengths)
+    if (n.groups == 1) {
+      stop("each column name results in only one item after splitting using sep, which means that all columns would be melted; to fix please either specify melt on all columns directly without using measure, or use a different sep/pattern specification")
+    }
     if (n.groups != length(fun.list)) {
       stop(
         "number of ... arguments to measure =", length(fun.list),
@@ -101,7 +99,7 @@ measure = function(..., sep, pattern, cols, multiple.keyword="value.name") {
     other.values = lapply(group.dt[, ..is.other], unique)
     other.values$stringsAsFactors = FALSE
     other.dt = data.table(do.call(expand.grid, other.values))
-    measure.list = structure(list(), variable.name=other.dt)
+    measure.list = structure(list(), variable_table=other.dt)
     column.values = unique(group.dt[[multiple.keyword]])
     for(column.val in column.values){
       select.dt = data.table(other.dt)
@@ -112,7 +110,7 @@ measure = function(..., sep, pattern, cols, multiple.keyword="value.name") {
     }
     measure.list
   } else {# single output column.
-    structure(measure.vec, variable.name=group.dt)
+    structure(measure.vec, variable_table=group.dt)
   }
 }
 
