@@ -41,8 +41,14 @@ melt(two.iris, measure.vars = measure(value.name, dim, sep="."))
 melt(two.iris, measure.vars = measure(part, value.name, sep="."))
 # melt using either sep or pattern, converting child number to integer.
 (two.families = data.table(sex_child1="M", sex_child2="F", age_child1=10, age_child2=20))
-print(melt(two.families, measure.vars = measure(value.name, child=as.integer, sep="_child")), class=TRUE)
-print(melt(two.families, measure.vars = measure(value.name, child=as.integer, pattern="(.*)_child(.)")), class=TRUE)
+print(melt(two.families, measure.vars = measure(
+  value.name, child=as.integer,
+  sep="_child"
+)), class=TRUE)
+print(melt(two.families, measure.vars = measure(
+  value.name, child=as.integer,
+  pattern="(.*)_child(.)"
+)), class=TRUE)
 # inspired by data(who, package="tidyr")
 (who <- data.table(id=1, new_sp_m5564=2, newrel_f65=3))
 # melt to three variable columns, all character.
