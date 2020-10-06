@@ -9,6 +9,13 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
   froll = data.table:::froll
 }
 
+exact_NaN = isTRUE(capabilities()["long.double"]) && identical(as.integer(.Machine$longdouble.digits), 64L)
+if (!exact_NaN) {
+  cat("\n**** Skipping 7 NaN/NA algo='exact' tests because .Machine$longdouble.digits==", .Machine$longdouble.digits, " (!=64); e.g. under valgrind\n\n", sep="")
+  # for Matt when he runs valgrind it is 53, but 64 when running regular R
+  # froll.c uses long double and appears to require full long double accuracy in the algo='exact'
+}
+
 ## rolling features
 
 #### atomic vectors input and single window returns atomic vectors
@@ -192,7 +199,7 @@ expected = list(
   c(rep(NA_real_,4), seq(1.5,2,0.25), rep(NA_real_, 1))
 )
 test(6000.040, ans1, expected)
-test(6000.041, ans2, expected)
+if (exact_NaN) test(6000.041, ans2, expected)
 ans1 = frollmean(d, 3, align="right", na.rm=TRUE)
 ans2 = frollmean(d, 3, align="right", algo="exact", na.rm=TRUE)
 expected = list(
@@ -208,7 +215,7 @@ expected = list(
   c(rep(NA_real_,3), seq(1.5,2,0.25), rep(NA_real_, 2))
 )
 test(6000.044, ans1, expected)
-test(6000.045, ans2, expected)
+if (exact_NaN) test(6000.045, ans2, expected)
 ans1 = frollmean(d, 3, align="center", na.rm=TRUE) # x even, n odd
 ans2 = frollmean(d, 3, align="center", algo="exact", na.rm=TRUE)
 expected = list(
@@ -224,7 +231,7 @@ expected = list(
   c(rep(NA_real_,3), 1.625, 1.875, rep(NA_real_, 3))
 )
 test(6000.048, ans1, expected)
-test(6000.049, ans2, expected)
+if (exact_NaN) test(6000.049, ans2, expected)
 ans1 = frollmean(d, 4, align="center", na.rm=TRUE) # x even, n even
 ans2 = frollmean(d, 4, align="center", algo="exact", na.rm=TRUE)
 expected = list(
@@ -241,7 +248,7 @@ expected = list(
   c(rep(NA_real_,3), 1.5, 1.75, 2, rep(NA_real_, 3))
 )
 test(6000.052, ans1, expected)
-test(6000.053, ans2, expected)
+if (exact_NaN) test(6000.053, ans2, expected)
 ans1 = frollmean(de, 3, align="center", na.rm=TRUE) # x odd, n odd
 ans2 = frollmean(de, 3, align="center", algo="exact", na.rm=TRUE)
 expected = list(
@@ -257,7 +264,7 @@ expected = list(
   c(rep(NA_real_, 3), 1.625, 1.875, rep(NA_real_,4))
 )
 test(6000.056, ans1, expected)
-test(6000.057, ans2, expected)
+if (exact_NaN) test(6000.057, ans2, expected)
 ans1 = frollmean(de, 4, align="center", na.rm=TRUE) # x odd, n even
 ans2 = frollmean(de, 4, align="center", algo="exact", na.rm=TRUE)
 expected = list(
@@ -273,7 +280,7 @@ expected = list(
   c(rep(NA_real_, 2), 1.5, 1.75, 2, rep(NA_real_,3))
 )
 test(6000.060, ans1, expected)
-test(6000.061, ans2, expected)
+if (exact_NaN) test(6000.061, ans2, expected)
 ans1 = frollmean(d, 3, align="left", na.rm=TRUE)
 ans2 = frollmean(d, 3, align="left", algo="exact", na.rm=TRUE)
 expected = list(
@@ -289,7 +296,7 @@ ans1 = frollmean(d, 2:3)
 ans2 = frollmean(d, 2:3, algo="exact")
 expected = list(c(NA, NA, NA, 1.75, NA, NA), rep(NA_real_, 6), c(NA, 0.875, 1.125, NA, NA, NA), c(NA, NA, 1, NA, NA, NA))
 test(6000.064, ans1, expected)
-test(6000.065, ans2, expected)
+if (exact_NaN) test(6000.065, ans2, expected)
 ans1 = frollmean(d, 2:3, na.rm=TRUE)
 ans2 = frollmean(d, 2:3, algo="exact", na.rm=TRUE)
 expected = list(c(NA, 0.5, 1.5, 1.75, 2, 3), c(NA, NA, 1, 1.75, 1.75, 2.5), c(NA, 0.875, 1.125, 1.25, NaN, NaN), c(NA, NA, 1, 1.125, 1.25, NaN))

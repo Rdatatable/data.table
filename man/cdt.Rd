@@ -2,6 +2,7 @@
 \alias{cdatatable}
 \title{ data.table exported C routines }
 \description{
+  Note that this interface is going to be changed in next release.
   Some of internally used C routines are now exported. This interface should be considered experimental. List of exported C routines and their signatures are provided below in the usage section.
 }
 \usage{
