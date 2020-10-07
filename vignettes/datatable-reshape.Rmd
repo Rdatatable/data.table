@@ -198,6 +198,12 @@ DT.m2
 str(DT.m2) ## col type is preserved
 ```
 
+#### {.bs-callout .bs-callout-info}
+
+* We can remove the `variable` column if necessary.
+
+* The functionality is implemented entirely in C, and is therefore both *fast* and *memory efficient* in addition to being *straightforward*.
+
 #### - Using `patterns()`
 
 Usually in these problems, the columns we'd like to melt can be distinguished by a common pattern. We can use the function `patterns()`, implemented for convenience, to provide regular expressions for the columns to be combined together. The above operation can be rewritten as:
@@ -207,12 +213,50 @@ DT.m2 = melt(DT, measure = patterns("^dob", "^gender"), value.name = c("dob", "g
 print(DT.m2, class=TRUE)
 ```
 
-#### - Using `measure()`
+#### - Using `measure()` to specify `measure.vars` via separator or pattern
 
 If, as in the data above, the input columns to melt have regular
-names, then we can use `measure`. The `sep` argument is used with
-`strsplit` on each column name, and the measured columns are defined
-by the maximum number of items after the split:
+names, then we can use `measure`, which allows specifying the columns
+to melt via a separator or a regex. For example consider the iris
+data,
+
+```{r}
+(two.iris = data.table(datasets::iris)[c(1,150)])
+```
+
+The iris data has four numeric columns with a regular structure: first
+the flower part, then a period, then the measurement dimension. To
+specify that we want to melt those four columns, we can use `measure`
+with `sep="."` which means to use `strsplit` on all column names; the
+columns which result in the maximum number of items after splitting
+will be used as `measure.vars`:
+
+```r
+melt(two.iris, measure.vars = measure(part, dim, sep="."))
+```
+
+The first two arguments to `measure` in the code above (`part` and
+`dim`) are used to name the output columns; the number of arguments
+must equal the number of groups after splitting with `sep`.
+
+If we want two value columns, one for each part, we can use the
+special `value.name` keyword, which means to output a value column
+for each unique name found in that group:
+
+```{r}
+melt(two.iris, measure.vars = measure(value.name, dim, sep="."))
+```
+
+Using the code above we get one value column per flower part. If we
+instead want a value column for each measurement dimension, we can do
+
+```{r}
+melt(two.iris, measure.vars = measure(part, value.name, sep="."))
+```
+
+Going back to the example of the data with families and children, we
+can see a more complex usage of `measure`, involving a function which
+is used to convert the `child` string values to integers:
 
 ```{r}
 DT.m3 = melt(DT, measure = measure(value.name, child=as.integer, sep="_child"))
@@ -221,38 +265,10 @@ print(DT.m3, class=TRUE)
 
 In the code above we used `sep="_child"` which results in melting only
 the columns which contain that string (six column names split into two
-groups). The other arguments are used to name each group; these names
-define the output variable column names. The special sentinel
-`value.name` is used to indicate that unique values of the first group
-should be used to define multiple value columns (one for each unique
-value). The `child=as.integer` argument means the second group will
-result in an output column named `child` with values defined by
-plugging the groups into the function `as.integer`.
-
-Another example is the iris data,
-
-```{r}
-(two.iris = data.table(datasets::iris)[c(1,150)])
-```
-
-To melt the iris data into a single value column, we simply avoid
-using `value.name` in the group names below,
-
-```{r}
-melt(two.iris, measure.vars = measure(part, dim, sep="."))
-```
-
-If we want two value columns, one for each part, we can do
-
-```{r}
-melt(two.iris, measure.vars = measure(value.name, dim, sep="."))
-```
-
-If we want two value columns, one for each dim, we can do
-
-```{r}
-melt(two.iris, measure.vars = measure(part, value.name, sep="."))
-```
+groups each). The `child=as.integer` argument means the second group
+will result in an output column named `child` with values defined by
+plugging the character strings from that group into the function
+`as.integer`.
 
 Finally we consider an example (borrowed from tidyr package) where we
 need to define the groups using a regular expression rather than a
@@ -260,14 +276,15 @@ separator.
 
 ```{r}
 (who <- data.table(id=1, new_sp_m5564=2, newrel_f65=3))
-melt(who, measure.vars = measure(diagnosis, gender, ages, pattern="new_?(.*)_(.)(.*)"))
+melt(who, measure.vars = measure(
+  diagnosis, gender, ages, pattern="new_?(.*)_(.)(.*)"))
 ```
 
 When using the `pattern` argument, it must be a Perl-compatible
 regular expression containing the same number of capture groups
 (parenthesized sub-expressions) as the number other arguments (group
 names). The code below shows how to use a more complex regex with five
-groups, two numeric output columns, and a custom type conversion
+groups, two numeric output columns, and an anonymous type conversion
 function,
 
 ```{r}
@@ -278,12 +295,6 @@ print(melt(who, measure.vars = measure(
   pattern="new_?(.*)_(.)(([0-9]{2})([0-9]{0,2}))"
 )), class=TRUE)
 ```
-
-#### {.bs-callout .bs-callout-info}
-
-* We can remove the `variable` column if necessary.
-
-* The functionality is implemented entirely in C, and is therefore both *fast* and *memory efficient* in addition to being *straightforward*.
 
 ### b) Enhanced `dcast`
 
