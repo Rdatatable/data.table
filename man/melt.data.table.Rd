@@ -142,6 +142,12 @@ melt(DT, id=1:2, measure=patterns("l_", "c_"), na.rm=TRUE)
 DT.missing.cols <- DT[, .(d_1, d_2, c_1, f_2)]
 melt(DT.missing.cols, measure=list(d=1:2, c="c_1", f=c(NA, "f_2")))
 
+# specifying columns to melt via separator.
+melt(DT.missing.cols, measure=measure(value.name, number=as.integer, sep="_"))
+
+# specifying columns to melt via regex.
+melt(DT.missing.cols, measure=measure(value.name, number=as.integer, pattern="(.)_(.)"))
+
 }
 \seealso{
   \code{\link{dcast}}, \url{https://cran.r-project.org/package=reshape}
