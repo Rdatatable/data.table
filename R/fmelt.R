@@ -104,7 +104,7 @@ measure = function(..., sep="_", pattern, cols, multiple.keyword="value.name") {
   # 5. compute measure.vars list or vector.
   if (multiple.keyword %in% names(fun.list)) {# multiple output columns.
     is.other = names(group.dt) != multiple.keyword
-    other.values = lapply(group.dt[, ..is.other], unique)
+    other.values = lapply(group.dt[, is.other, with=FALSE], unique)
     other.values$stringsAsFactors = FALSE
     other.dt = data.table(do.call(expand.grid, other.values))
     measure.list = structure(list(), variable_table=other.dt)
