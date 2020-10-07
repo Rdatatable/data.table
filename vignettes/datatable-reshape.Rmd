@@ -231,7 +231,7 @@ with `sep="."` which means to use `strsplit` on all column names; the
 columns which result in the maximum number of items after splitting
 will be used as `measure.vars`:
 
-```r
+```{r}
 melt(two.iris, measure.vars = measure(part, dim, sep="."))
 ```
 
