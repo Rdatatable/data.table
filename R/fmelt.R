@@ -22,7 +22,7 @@ melt = function(data, ..., na.rm = FALSE, value.name = "value") {
 patterns = function(..., cols=character(0L)) {
   # if ... has no names, names(list(...)) will be "";
   #   this assures they'll be NULL instead
-  L <- list(...)
+  L = list(...)
   p = unlist(L, use.names = any(nzchar(names(L))))
   if (!is.character(p))
     stop("Input patterns must be of type character.")
@@ -52,6 +52,12 @@ measure = function(..., sep="_", pattern, cols, multiple.keyword="value.name") {
     stop("each ... argument to measure must be either a symbol without argument name, or a function with argument name, problems: ", paste(bad.i, collapse=","))
   }
   names(fun.list)[!user.named] = sapply(fun.list[!user.named], paste)
+  name.tab = table(names(fun.list))
+  bad.counts = name.tab[1 < name.tab]
+  if(length(bad.counts)){
+    bad.str = paste(names(bad.counts), collapse=",")
+    stop("measure group names should be unique, problems: ", bad.str)
+  }
   # 3. compute initial group data table, used as variable_table attribute.
   group.mat = if (!missing(pattern)) {
     match.vec = regexpr(pattern, cols, perl=TRUE)

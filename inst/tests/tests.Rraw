@@ -17209,6 +17209,7 @@ test(2156.32, melt(DTid, measure.vars=measure(value.name, istr=function(x)1, pat
 test(2156.33, melt(iris.dt, measure.vars=measure(value.name, dim, baz, pattern="(.*)[.](.*)")), error="number of ... arguments to measure =3 must be same as number of capture groups in pattern =2")
 test(2156.34, melt(iris.dt, measure.vars=measure(function(x)factor(x), dim, pattern="(.*)[.](.*)")), error="each ... argument to measure must be either a symbol without argument name, or a function with argument name, problems: 1")
 test(2156.35, melt(iris.dt, measure.vars=measure(function(x)factor(x), pattern="(.*)[.](.*)")), error="each ... argument to measure must be either a symbol without argument name, or a function with argument name, problems: 1")
+test(2156.36, melt(iris.dt, measure.vars=measure(value.name, value.name, sep=".")), error="measure group names should be unique, problems: value.name")
 # measure with factor conversion.
 myfac = function(x)factor(x)#user-defined conversion function.
 test(2156.40, melt(DTid, measure.vars=measure(letter=myfac, value.name, pattern="([ab])([12])")), data.table(id=1, letter=factor(c("a","b")), "2"=c(2,2), "1"=c(NA,1)))
