@@ -1028,7 +1028,10 @@ replace_dot_alias = function(e) {
       suppPrint = identity
       if (length(av) && av[1L] == ":=") {
         if (.Call(C_islocked, x)) stop(".SD is locked. Using := in .SD's j is reserved for possible future use; a tortuously flexible way to modify by group. Use := in j directly to modify by group by reference.")
-        suppPrint = function(x) { .global$print=address(x); x }
+        suppPrint = function(x) { 
+          if (identical(parent.frame(2L), .GlobalEnv)) .global$print=address(x)
+          x
+        }
         # Suppress print when returns ok not on error, bug #2376. Thanks to: http://stackoverflow.com/a/13606880/403310
         # All appropriate returns following this point are wrapped; i.e. return(suppPrint(x)).
 
@@ -1080,8 +1083,7 @@ replace_dot_alias = function(e) {
               cat("Assigning to 0 row subset of",nrow(x),"rows\n")
             }
             .Call(Cassign, x, irows, NULL, NULL, NULL) # only purpose is to write 0 to .Last.updated
-            .global$print = address(x)
-            return(invisible(x))
+            return(invisible(suppPrint(x)))
           }
         } else {
           # Adding new column(s). TO DO: move after the first eval in case the jsub has an error.
