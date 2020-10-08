@@ -104,7 +104,7 @@ else
   sed -e "s|@openmp_cflags@|\$(SHLIB_OPENMP_CFLAGS)|" src/Makevars.in > src/Makevars
 fi
 # retain user supplied PKG_ env variables, #4664. See comments in Makevars.in too.
-sed -i "s|@PKG_CFLAGS@|$PKG_CFLAGS|" src/Makevars
-sed -i "s|@PKG_LIBS@|$PKG_LIBS|" src/Makevars
+sed -i "" "s|@PKG_CFLAGS@|$PKG_CFLAGS|" src/Makevars
+sed -i "" "s|@PKG_LIBS@|$PKG_LIBS|" src/Makevars
 
 exit 0
