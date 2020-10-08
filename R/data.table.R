@@ -463,7 +463,7 @@ replace_dot_alias = function(e) {
       allLen1 = ans$allLen1
       f__ = ans$starts
       len__ = ans$lens
-      allGrp1 = FALSE # was previously 'ans$allGrp1'. Fixing #1991. TODO: Revisit about allGrp1 possibility for speedups in certain cases when I find some time.
+      allGrp1 = all(ops==1L) # was previously 'ans$allGrp1'. Fixing #1991. TODO: Revisit about allGrp1 possibility for speedups in certain cases when I find some time.
       indices__ = if (length(ans$indices)) ans$indices else seq_along(f__) # also for #1991 fix
       # length of input nomatch (single 0 or NA) is 1 in both cases.
       # When no match, len__ is 0 for nomatch=0 and 1 for nomatch=NA, so len__ isn't .N
@@ -1541,10 +1541,10 @@ replace_dot_alias = function(e) {
         jvnames = sdvars
       }
     } else if (length(as.character(jsub[[1L]])) == 1L) {  # Else expect problems with <jsub[[1L]] == >
-      # g[[ only applies to atomic input, for now, was causing #4159
+      # g[[ only applies to atomic input, for now, was causing #4159. be sure to eval with enclos=parent.frame() for #4612
       subopt = length(jsub) == 3L &&
         (jsub[[1L]] == "[" ||
-           (jsub[[1L]] == "[[" && is.name(jsub[[2L]]) && eval(call('is.atomic', jsub[[2L]]), envir = x))) &&
+           (jsub[[1L]] == "[[" && is.name(jsub[[2L]]) && eval(call('is.atomic', jsub[[2L]]), x, parent.frame()))) &&
         (is.numeric(jsub[[3L]]) || jsub[[3L]] == ".N")
       headopt = jsub[[1L]] == "head" || jsub[[1L]] == "tail"
       firstopt = jsub[[1L]] == "first" || jsub[[1L]] == "last" # fix for #2030
@@ -2263,8 +2263,8 @@ is.na.data.table = function (x) {
 Ops.data.table = function(e1, e2 = NULL)
 {
   ans = NextMethod()
-  if (cedta() && is.data.frame(ans))
-    ans = as.data.table(ans)
+  if (cedta() && is.data.frame(ans)) ans = as.data.table(ans)
+  else if (is.matrix(ans)) colnames(ans) = copy(colnames(ans))
   ans
 }
 
@@ -2360,7 +2360,10 @@ copy = function(x) {
       .Call(C_unlock, y)
       setalloccol(y)
     } else if (is.list(y)) {
+      oldClass = class(y)
+      setattr(y, 'class', NULL)  # otherwise [[.person method (which returns itself) results in infinite recursion, #4620
       y[] = lapply(y, reallocate)
+      if (!identical(oldClass, 'list')) setattr(y, 'class', oldClass)
     }
     y
   }
@@ -2927,7 +2930,7 @@ isReallyReal = function(x) {
     RHS = eval(stub[[3L]], x, enclos)
     if (is.list(RHS)) RHS = as.character(RHS)  # fix for #961
     if (length(RHS) != 1L && !operator %chin% c("%in%", "%chin%")){
-      if (length(RHS) != nrow(x)) stop("RHS of ", operator, " is length ",length(RHS)," which is not 1 or nrow (",nrow(x),"). For robustness, no recycling is allowed (other than of length 1 RHS). Consider %in% instead.")
+      if (length(RHS) != nrow(x)) stop(gettextf("RHS of %s is length %d which is not 1 or nrow (%d). For robustness, no recycling is allowed (other than of length 1 RHS). Consider %%in%% instead.", operator, length(RHS), nrow(x), domain="R-data.table"), domain=NA)
       return(NULL) # DT[colA == colB] regular element-wise vector scan
     }
     if ( mode(x[[col]]) != mode(RHS) ||                # mode() so that doubleLHS/integerRHS and integerLHS/doubleRHS!isReallyReal are optimized (both sides mode 'numeric')

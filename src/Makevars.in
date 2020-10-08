@@ -1,5 +1,10 @@
-PKG_CFLAGS = @openmp_cflags@
-PKG_LIBS = @openmp_cflags@ -lz
+PKG_CFLAGS = @PKG_CFLAGS@ @openmp_cflags@
+PKG_LIBS = @PKG_LIBS@ @openmp_cflags@ -lz
+# See WRE $1.2.1.1. But retain user supplied PKG_* too, #4664.
+# WRE states ($1.6) that += isn't portable and that we aren't allowed to use it.
+# Otherwise we could use the much simpler PKG_LIBS += @openmp_cflags@ -lz.
+# Can't do PKG_LIBS = $(PKG_LIBS)...  either because that's a 'recursive variable reference' error in make
+# Hence the onerous @...@ substitution. Is it still appropriate in 2020 that we can't use +=?
 
 all: $(SHLIB)
 	if [ "$(SHLIB)" != "datatable$(SHLIB_EXT)" ]; then mv $(SHLIB) datatable$(SHLIB_EXT); fi

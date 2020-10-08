@@ -103,7 +103,9 @@ grep omp_set_nested ./src/*.c
 grep --exclude="./src/openmp-utils.c" omp_get_max_threads ./src/*
 
 # Ensure all #pragama omp parallel directives include a num_threads() clause
-grep "pragma omp parallel" ./src/*.c | grep -v getDTthreads
+grep -i "pragma.*omp parallel" ./src/*.c | grep -v getDTthreads
+# for each num_threads(nth) above, ensure for Solaris that the variable is not declared const, #4638
+grep -i "const.*int.*nth" ./src/*.c
 
 # Update documented list of places where openMP parallelism is used: c.f. ?openmp
 grep -Elr "[pP]ragma.*omp" src | sort
@@ -208,22 +210,22 @@ grep asCharacter *.c | grep -v PROTECT | grep -v SET_VECTOR_ELT | grep -v setAtt
 
 cd ..
 R
-cc(test=TRUE, clean=TRUE, CC="gcc-8")  # to compile with -pedandic -Wall, latest gcc as CRAN: https://cran.r-project.org/web/checks/check_flavors.html
+cc(test=TRUE, clean=TRUE, CC="gcc-10")  # to compile with -pedandic -Wall, latest gcc as CRAN: https://cran.r-project.org/web/checks/check_flavors.html
 saf = options()$stringsAsFactors
 options(stringsAsFactors=!saf)    # check tests (that might be run by user) are insensitive to option, #2718
 test.data.table()
 install.packages("xml2")   # to check the 150 URLs in NEWS.md under --as-cran below
 q("no")
 R CMD build .
-R CMD check data.table_1.12.9.tar.gz --as-cran
-R CMD INSTALL data.table_1.12.9.tar.gz --html
+R CMD check data.table_1.13.1.tar.gz --as-cran
+R CMD INSTALL data.table_1.13.1.tar.gz --html
 
 # Test C locale doesn't break test suite (#2771)
 echo LC_ALL=C > ~/.Renviron
 R
 Sys.getlocale()=="C"
 q("no")
-R CMD check data.table_1.12.9.tar.gz
+R CMD check data.table_1.13.1.tar.gz
 rm ~/.Renviron
 
 # Test non-English does not break test.data.table() due to translation of messages; #3039, #630
@@ -231,6 +233,18 @@ LANGUAGE=de R
 require(data.table)
 test.data.table()
 q("no")
+
+# passes under non-English LC_TIME, #2350
+LC_TIME=fr_FR.UTF-8 R
+require(data.table)
+test.data.table()
+q("no")
+
+# User supplied PKG_CFLAGS and PKG_LIBS passed through, #4664
+# Next line from https://mac.r-project.org/openmp/. Should see the arguments passed through and then fail with gcc on linux.
+PKG_CFLAGS='-Xclang -fopenmp' PKG_LIBS=-lomp R CMD INSTALL data.table_1.13.1.tar.gz
+# Next line should work on Linux, just using superfluous and duplicate but valid parameters here to see them retained and work 
+PKG_CFLAGS='-fopenmp' PKG_LIBS=-lz R CMD INSTALL data.table_1.13.1.tar.gz
 
 R
 remove.packages("xml2")    # we checked the URLs; don't need to do it again (many minutes)
@@ -262,7 +276,7 @@ alias R310=~/build/R-3.1.0/bin/R
 ### END ONE TIME BUILD
 
 cd ~/GitHub/data.table
-R310 CMD INSTALL ./data.table_1.12.9.tar.gz
+R310 CMD INSTALL ./data.table_1.13.1.tar.gz
 R310
 require(data.table)
 test.data.table(script="*.Rraw")
@@ -274,7 +288,7 @@ test.data.table(script="*.Rraw")
 vi ~/.R/Makevars
 # Make line SHLIB_OPENMP_CFLAGS= active to remove -fopenmp
 R CMD build .
-R CMD INSTALL data.table_1.12.9.tar.gz   # ensure that -fopenmp is missing and there are no warnings
+R CMD INSTALL data.table_1.13.1.tar.gz   # ensure that -fopenmp is missing and there are no warnings
 R
 require(data.table)   # observe startup message about no OpenMP detected
 test.data.table()
@@ -282,7 +296,7 @@ q("no")
 vi ~/.R/Makevars
 # revert change above
 R CMD build .
-R CMD check data.table_1.12.9.tar.gz
+R CMD check data.table_1.13.1.tar.gz
 
 
 #####################################################
@@ -332,8 +346,8 @@ alias Rdevel-strict-gcc='~/build/R-devel-strict-gcc/bin/R --vanilla'
 alias Rdevel-strict-clang='~/build/R-devel-strict-clang/bin/R --vanilla'
 
 cd ~/GitHub/data.table
-Rdevel-strict-gcc CMD INSTALL data.table_1.12.9.tar.gz
-Rdevel-strict-clang CMD INSTALL data.table_1.12.9.tar.gz
+Rdevel-strict-gcc CMD INSTALL data.table_1.13.1.tar.gz
+Rdevel-strict-clang CMD INSTALL data.table_1.13.1.tar.gz
 # Check UBSAN and ASAN flags appear in compiler output above. Rdevel was compiled with them so should be passed through to here
 Rdevel-strict-gcc
 Rdevel-strict-clang  # repeat below with clang and gcc
@@ -366,29 +380,29 @@ print(Sys.time()); started.at<-proc.time(); try(test.data.table()); print(Sys.ti
 ###############################################
 
 cd ~/build
-rm -rf R-devel    # easiest way to remove ASAN from compiled packages in R-devel/library
-                  # to avoid "ASan runtime does not come first in initial library list" error; no need for LD_PRELOAD
-tar xvf R-devel.tar.gz
-cd R-devel
-./configure --without-recommended-packages --disable-byte-compiled-packages --disable-openmp --with-valgrind-instrumentation=1 CC="gcc" CFLAGS="-O0 -g -Wall -pedantic" LIBS="-lpthread"
+mkdir R-devel-valgrind  # separate build to avoid differences in installed packages, and
+                        # to avoid "ASan runtime does not come first in initial library list" error; no need for LD_PRELOAD
+tar xvf R-devel.tar.gz -C R-devel-valgrind --strip-components 1
+cd R-devel-valgrind
+./configure --without-recommended-packages --with-valgrind-instrumentation=2 --with-system-valgrind-headers CC="gcc" CFLAGS="-O2 -g -Wall -pedantic"
 make
 cd ~/GitHub/data.table
-vi ~/.R/Makevars  # make the -O0 -g line active, for info on source lines with any problems
-Rdevel CMD INSTALL data.table_1.12.9.tar.gz
-Rdevel -d "valgrind --tool=memcheck --leak-check=full --track-origins=yes --show-leak-kinds=definite"
+vi ~/.R/Makevars  # make the -O2 -g line active, for info on source lines with any problems
+Rdevel-valgrind CMD INSTALL data.table_1.13.1.tar.gz
+R_DONT_USE_TK=true Rdevel-valgrind -d "valgrind --tool=memcheck --leak-check=full --track-origins=yes --show-leak-kinds=definite,possible --gen-suppressions=all --suppressions=./.dev/valgrind.supp -s"
+# the default for --show-leak-kinds is 'definite,possible' which we're setting explicitly here as a reminder. CRAN uses the default too.
+#   including 'reachable' (as 'all' does) generates too much output from R itself about by-design permanent blocks
 # gctorture(TRUE)      # very slow, many days
 # gctorture2(step=100)
-print(Sys.time()); require(data.table); print(Sys.time()); started.at<-proc.time(); try(test.data.table()); print(Sys.time()); print(timetaken(started.at))
-# 3m require; 62m test
+print(Sys.time()); require(data.table); print(Sys.time()); started.at<-proc.time(); try(test.data.table(script="*.Rraw")); print(Sys.time()); print(timetaken(started.at))
+# 3m require; 62m test  # level 1 -O0
+# 1m require; 33m test  # level 2 -O2
+q() # valgrind output printed after q()
 
-# Investigated and ignore :
-# Tests 648 and 1262 (see their comments) have single precision issues under valgrind that don't occur on CRAN, even Solaris.
-# Old comment from gsumm.c ...  // long double usage here used to result in test 648 failing when run under valgrind
-                                // http://valgrind.org/docs/manual/manual-core.html#manual-core.limits"
+# Precision issues under valgrind are now avoided using test_longdouble in tests.Rraw, and exact_NaN in froll.Rraw
 # Ignore all "set address range perms" warnings :
 #   http://stackoverflow.com/questions/13558067/what-does-this-valgrind-warning-mean-warning-set-address-range-perms
 # Ignore heap summaries around test 1705 and 1707/1708 due to the fork() test opening/closing, I guess.
-# Tests 1729.4, 1729.8, 1729.11, 1729.13 again have precision issues under valgrind only.
 # Leaks for tests 1738.5, 1739.3 but no data.table .c lines are flagged, rather libcairo.so
 #   and libfontconfig.so via GEMetricInfo and GEStrWidth in libR.so
 
@@ -412,7 +426,7 @@ cd ~/build/rchk/trunk
 . ../scripts/config.inc
 . ../scripts/cmpconfig.inc
 vi ~/.R/Makevars   # set CFLAGS=-O0 -g so that rchk can provide source line numbers
-echo 'install.packages("~/GitHub/data.table/data.table_1.12.9.tar.gz",repos=NULL)' | ./bin/R --slave
+echo 'install.packages("~/GitHub/data.table/data.table_1.13.1.tar.gz",repos=NULL)' | ./bin/R --slave
 # objcopy warnings (if any) can be ignored: https://github.com/kalibera/rchk/issues/17#issuecomment-497312504
 . ../scripts/check_package.sh data.table
 cat packages/lib/data.table/libs/*check
@@ -558,14 +572,14 @@ ls -1 *.tar.gz | grep -E 'Chicago|dada2|flowWorkspace|LymphoSeq' | TZ='UTC' para
 
 Bump version to even release number in 3 places :
   1) DESCRIPTION
-  2) NEWS (without 'on CRAN date' text as that's not yet known)
+  2) NEWS; add ?closed=1 to the milestone link, don't add date yet as that published-on-CRAN date isn't yet known
   3) dllVersion() at the end of init.c
 DO NOT push to GitHub. Prevents even a slim possibility of user getting premature version. Even release numbers must have been obtained from CRAN and only CRAN. There were too many support problems in the past before this procedure was brought in.
 du -k inst/tests                # 1.5MB before
 bzip2 inst/tests/*.Rraw         # compress *.Rraw just for release to CRAN; do not commit compressed *.Rraw to git
 du -k inst/tests                # 0.75MB after
 R CMD build .
-R CMD check data.table_1.12.8.tar.gz --as-cran
+R CMD check data.table_1.13.0.tar.gz --as-cran
 #
 bunzip2 inst/tests/*.Rraw.bz2  # decompress *.Rraw again so as not to commit compressed *.Rraw to git
 #
@@ -573,30 +587,31 @@ Resubmit to winbuilder (R-release, R-devel and R-oldrelease)
 Submit to CRAN. Message template :
 ------------------------------------------------------------
 Hello,
-779 CRAN revdeps checked. No status changes.
-All R-devel issues resolved.
-New gcc10 warnings resolved.
-Solaris is not resolved but this release will write more output upon that error so I can trace the problem.
+870 CRAN revdeps checked.
+The following 3 are impacted and we have communicated with their maintainers:
+  expss nc memochange
+All known issues resolved including clang-UBSAN additional issue.
+Solaris is not resolved but this release will write more output upon that error so I can continue to trace that problem.
 Many thanks!
 Best, Matt
 ------------------------------------------------------------
 DO NOT commit or push to GitHub. Leave 4 files (.dev/CRAN_Release.cmd, DESCRIPTION, NEWS and init.c) edited and not committed. Include these in a single and final bump commit below.
 DO NOT even use a PR. Because PRs build binaries and we don't want any binary versions of even release numbers available from anywhere other than CRAN.
-Leave milestone open with a 'final checks' issue open. Keep updating status there.
+Leave milestone open with a 'release checks' issue open. Keep updating status there.
 ** If on EC2, shutdown instance. Otherwise get charged for potentially many days/weeks idle time with no alerts **
 If it's evening, SLEEP.
 It can take a few days for CRAN's checks to run. If any issues arise, backport locally. Resubmit the same even version to CRAN.
 CRAN's first check is automatic and usually received within an hour. WAIT FOR THAT EMAIL.
 When CRAN's email contains "Pretest results OK pending a manual inspection" (or similar), or if not and it is known why not and ok, then bump dev.
 ###### Bump dev
-0. Close milestone to prevent new issues being tagged with it. The final 'release checks' issue can be left open in a closed milestone.
+0. Close milestone to prevent new issues being tagged with it. Update its name to the even release. The final 'release checks' issue can be left open in a closed milestone.
 1. Check that 'git status' shows 4 files in modified and uncommitted state: DESCRIPTION, NEWS.md, init.c and this .dev/CRAN_Release.cmd
 2. Bump version in DESCRIPTION to next odd number. Note that DESCRIPTION was in edited and uncommitted state so even number never appears in git.
 3. Add new heading in NEWS for the next dev version. Add "(submitted to CRAN on <today>)" on the released heading.
 4. Bump dllVersion() in init.c
 5. Bump 3 version numbers in Makefile
-6. Search and replace this .dev/CRAN_Release.cmd to update 1.12.7 to 1.12.9, and 1.12.6 to 1.12.8 (e.g. in step 8 and 9 below)
+6. Search and replace this .dev/CRAN_Release.cmd to update 1.12.9 to 1.13.1, and 1.12.8 to 1.13.0 (e.g. in step 8 and 9 below)
 7. Another final gd to view all diffs using meld. (I have `alias gd='git difftool &> /dev/null'` and difftool meld: http://meldmerge.org/)
-8. Push to master with this consistent commit message: "1.12.8 on CRAN. Bump to 1.12.9"
-9. Take sha from step 8 and run `git tag 1.12.8 34796cd1524828df9bf13a174265cb68a09fcd77` then `git push origin 1.12.8` (not `git push --tags` according to https://stackoverflow.com/a/5195913/403310)
+8. Push to master with this consistent commit message: "1.13.0 on CRAN. Bump to 1.13.1"
+9. Take sha from step 8 and run `git tag 1.13.0 34796cd1524828df9bf13a174265cb68a09fcd77` then `git push origin 1.13.0` (not `git push --tags` according to https://stackoverflow.com/a/5195913/403310)
 ######

@@ -61,7 +61,7 @@ package.index <- function(package, lib.loc, repodir="bus/integration/cran") {
     images = c("r-release","r-devel","r-release-builder")
     images.title = c("Base R release", "Base R development", "R release package builder")
     tags = rep("latest", 3)
-    docker.dl = sprintf("<tr><td> %s: </td><td> <pre><code>docker pull %s/%s/%s/%s:%s</code></pre> </td></tr>", images.title, registry, namespace, project, images, tags)
+    docker.dl = sprintf("<tr><td> %s: </td><td> <pre><code>docker pull %s/%s/%s/%s:%s</code></pre> </td></tr>", images.title, tolower(registry), tolower(namespace), tolower(project), tolower(images), tags)
   }
   index.file = file.path(repodir, "web/packages", pkg, "index.html")
   if (!dir.exists(dirname(index.file))) dir.create(dirname(index.file), recursive=TRUE)

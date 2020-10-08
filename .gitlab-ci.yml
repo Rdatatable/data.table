@@ -2,6 +2,10 @@ variables:
   CRAN_MIRROR: "https://cloud.r-project.org"
   _R_CHECK_FORCE_SUGGESTS_: "false"
   _R_CHECK_NO_STOP_ON_TEST_ERROR_: "true"
+  _R_CHECK_SYSTEM_CLOCK_: "false"  ## https://stackoverflow.com/questions/63613301/r-cmd-check-note-unable-to-verify-current-time
+  TZ: "UTC"  ## to avoid 'Failed to create bus connection' from timedatectl via Sys.timezone() on Docker with R 3.4.
+             ## Setting TZ for all GLCI jobs to isolate them from timezone. We could have a new GLCI job to test under
+             ## a non-UTC timezone, although, that's what we do routinely in dev.
 
 stages:
   - dependencies
@@ -79,7 +83,7 @@ build: ## build data.table sources as tar.gz archive
   - mkdir.exe -p cran/bin/windows/contrib/$R_BIN_VERSION; mv.exe $(ls.exe -1t data.table_*.zip | head.exe -n 1) cran/bin/windows/contrib/$R_BIN_VERSION
 
 .test-install-r-rel-win: &install-r-rel-win
-  - curl.exe -s -o ../R-win.exe https://cloud.r-project.org/bin/windows/base/R-4.0.0-win.exe; Start-Process -FilePath ..\R-win.exe -ArgumentList "/VERYSILENT /DIR=C:\R" -NoNewWindow -Wait
+  - curl.exe -s -o ../R-win.exe https://cloud.r-project.org/bin/windows/base/old/4.0.0/R-4.0.0-win.exe; Start-Process -FilePath ..\R-win.exe -ArgumentList "/VERYSILENT /DIR=C:\R" -NoNewWindow -Wait
 .test-install-r-dev-win: &install-r-dev-win
   - curl.exe -s -o ../R-devel.exe https://cloud.r-project.org/bin/windows/base/R-devel-win.exe; Start-Process -FilePath ..\R-devel.exe -ArgumentList "/VERYSILENT /DIR=C:\R" -NoNewWindow -Wait
 .test-install-rtools-win: &install-rtools-win
@@ -170,7 +174,7 @@ test-rel-cran-lin: ## R-release on Linux, extra NOTEs check and build pdf manual
   variables:
     _R_CHECK_CRAN_INCOMING_: "TRUE"           ## stricter --as-cran checks should run in dev pipelines continuously (not sure what they are though)
     _R_CHECK_CRAN_INCOMING_REMOTE_: "FALSE"   ## Other than no URL checking (takes many minutes) or 'Days since last update 0' NOTEs needed, #3284
-    _R_CHECK_CRAN_INCOMING_TARBALL_THRESHOLD_: "7500000" ## effective from R 4.1.0, then 00check.log can be checked for "OK" rather than "1 NOTE"
+    _R_CHECK_CRAN_INCOMING_TARBALL_THRESHOLD_: "7500000" ## effective from R 4.1.0, then 00check.log can be checked for "OK" rather than "2 NOTEs"
   before_script:
     - *install-deps
     - *cp-src
@@ -184,11 +188,27 @@ test-rel-cran-lin: ## R-release on Linux, extra NOTEs check and build pdf manual
     - R CMD check --as-cran $(ls -1t data.table_*.tar.gz | head -n 1)
     - *rm-src
     - >-
-        Rscript -e 'l=tail(readLines("data.table.Rcheck/00check.log"), 1L); if (!identical(l, "Status: 1 NOTE")) stop("Last line of ", shQuote("00check.log"), " is not ", shQuote("Status: 1 NOTE"), " (size of tarball) but ", shQuote(l)) else q("no")'
+        Rscript -e 'l=tail(readLines("data.table.Rcheck/00check.log"), 1L); if (!identical(l, "Status: 2 NOTEs")) stop("Last line of ", shQuote("00check.log"), " is not ", shQuote("Status: 2 NOTEs"), " (size of tarball) but ", shQuote(l)) else q("no")'
 
-test-dev-cran-lin: ## R-devel on Linux, --enable-strict-barrier --disable-long-double
-  <<: *test-cran-lin
+test-dev-cran-lin: ## R-devel on Linux, --enable-strict-barrier --disable-long-double, check for new notes and compilation warnings, thus allow_failure
+  <<: *test-lin
   image: registry.gitlab.com/jangorecki/dockerfiles/r-devel
+  allow_failure: true
+  variables:
+    _R_CHECK_CRAN_INCOMING_: "TRUE"
+    _R_CHECK_CRAN_INCOMING_REMOTE_: "FALSE"
+  before_script:
+    - *install-deps
+    - *cp-src
+    - rm -r bus
+  script:
+    - *mv-src
+    - cd bus/$CI_BUILD_NAME
+    - R CMD check --as-cran --no-manual $(ls -1t data.table_*.tar.gz | head -n 1)
+    - *rm-src
+    - (! grep "warning:" data.table.Rcheck/00install.out)
+    - >-
+        Rscript -e 'l=tail(readLines("data.table.Rcheck/00check.log"), 1L); if (!identical(l, "Status: 3 NOTEs")) stop("Last line of ", shQuote("00check.log"), " is not ", shQuote("Status: 3 NOTEs"), " (size of tarball, installed package size, top-level files) but ", shQuote(l)) else q("no")'
 
 test-310-cran-lin: ## R-3.1.0 on Linux, stated dependency of R
   <<: *test-cran-lin
@@ -258,7 +278,7 @@ test-dev-win: ## R-devel on Windows
 
 integration: ## merging all artifacts to produce single R repository, documentation and website
   stage: integration
-  image: registry.gitlab.com/jangorecki/dockerfiles/r-builder
+  image: registry.gitlab.com/jangorecki/dockerfiles/r-pkgdown
   tags:
     - linux
   only:
@@ -280,10 +300,7 @@ integration: ## merging all artifacts to produce single R repository, documentat
     R_BIN_VERSION: "4.0"
     R_DEVEL_BIN_VERSION: "4.1"
   script:
-    ## pkgdown installs pkgs from "." so run at start to have clean root dir
-    - apt-get update -qq && apt-get install -y libxml2-dev
-    - mkdir -p /tmp/pkgdown/library
-    - R_LIBS_USER=/tmp/pkgdown/library Rscript -e 'install.packages("pkgdown", repos=Sys.getenv("CRAN_MIRROR"), quiet=TRUE); pkgdown::build_site(override=list(destination="./pkgdown"))'
+    - Rscript -e 'pkgdown::build_site(override=list(destination="./pkgdown"))'
     ## html manual, vignettes, repos, cran_web, cran_checks
     - echo 'source(".ci/ci.R"); source(".ci/publish.R")' >> .Rprofile
     ## list of available test-* jobs dynamically based on bus/test-* directories
