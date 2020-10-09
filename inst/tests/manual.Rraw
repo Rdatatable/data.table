@@ -1,0 +1,60 @@
+# tests in manual.Rraw needs to be run and verified manually
+
+if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
+  if ((tt<-compiler::enableJIT(-1))>0)
+    cat("This is dev mode and JIT is enabled (level ", tt, ") so there will be a brief pause around the first test.\n", sep="")
+} else {
+  require(data.table)
+  benchmark = data.table:::benchmark
+}
+# warm-up #2912
+d = data.table(a=1)
+d[1L] -> nul
+rm(d, nul)
+
+# fwrite showProgress test 1735. Turned off as too long/big for CRAN.
+N = 6e8  # apx 6GB
+DT = data.table(C1=sample(100000,N,replace=TRUE), C2=sample(paste0(LETTERS,LETTERS,LETTERS), N, replace=TRUE))
+gc()
+d = "/dev/shm/"
+#d = "/tmp/"
+f = paste0(d,"test.txt")
+system.time(fwrite(DT, f, nThread=1))
+file.info(f)$size/1024^3
+unlink(f)
+# ensure progress meter itself isn't taking time; e.g. too many calls to time() or clock()
+system.time(fwrite(DT, f, showProgress=FALSE, nThread=1))
+unlink(f)
+system.time(fwrite(DT, f, nThread=2))
+unlink(f)
+system.time(fwrite(DT, f, nThread=4))
+unlink(f)
+system.time(fwrite(DT, f, verbose=TRUE))
+f2 = paste0(d,"test2.txt")
+system.time(fwrite(DT, f2, verbose=TRUE))  # test 'No space left on device'
+unlink(f)
+unlink(f2)
+system.time(fwrite(DT, f2))  # try again, should work now space free'd
+file.info(f2)$size/1024^3
+unlink(f2)
+rm(DT)
+
+# fwrite crash on very large number of columns (say 100k)
+set.seed(123)
+DT = as.data.table(matrix(runif(3*100000), nrow = 3))
+f = tempfile()
+system.time(fwrite(DT, f, eol='\n', quote=TRUE))  # eol fixed so size test passes on Windows
+system.time(fwrite(DT, f, eol='\n', quote=TRUE))  # run again to force seg fault
+test(1664, abs(file.info(f)$size %/% 100000 - 62) <= 1.5)  # file size appears to be 34 bytes bigger on Windows (6288931 vs 6288965)
+unlink(f)
+rm(DT)
+
+# 1e6 columns (there used to be VLAs at C level that caused stack overflow), #1903
+set.seed(1) ## this seed is probably invalid due to R change
+L = lapply(1:1e6, sample, x=100, size=2)
+x = capture.output(fwrite(L))
+test(1742.1, nchar(x), c(2919861L, 2919774L))   # tests 2 very long lines, too
+test(1742.2, substring(x,1,10), c("27,58,21,9","38,91,90,6"))
+test(1742.3, L[[1L]], c(27L,38L))
+test(1742.4, L[[1000000L]], c(76L, 40L))
+test(1742.5, substring(x,nchar(x)-10,nchar(x)), c("50,28,95,76","62,87,23,40"))

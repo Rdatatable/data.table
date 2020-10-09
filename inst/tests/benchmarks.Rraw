@@ -1,0 +1,120 @@
+if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
+  if ((tt<-compiler::enableJIT(-1))>0)
+    cat("This is dev mode and JIT is enabled (level ", tt, ") so there will be a brief pause around the first test.\n", sep="")
+} else {
+  require(data.table)
+  benchmark = data.table:::benchmark
+}
+# warm-up #2912
+d = data.table(a=1)
+d[1L] -> nul
+rm(d, nul)
+
+n=1e4
+grp1=sample(1:50,n,replace=TRUE)
+grp2=sample(1:50,n,replace=TRUE)
+dt=data.table(x=rnorm(n),y=rnorm(n),grp1=grp1,grp2=grp2)
+benchmark(120, tolerance=I(0.05), #verbose=TRUE,
+  ans <- dt[,list(.Internal(mean(x)),.Internal(mean(y))),by=c("grp1","grp2")],
+  limit = 0.05)
+i = sample(nrow(ans),1)
+stopifnot(all.equal(ans[i,c(V1,V2)], dt[grp1==ans[i,grp1] & grp2==ans[i,grp2], c(mean(x),mean(y))]))
+# To DO: add a data.frame aggregate method here and check data.table is faster
+rm(grp1, grp2, dt, i)
+
+# Test character and list columns in tables with many small groups
+N = 1000L   # the version in tests.Rraw has 100L
+DT = data.table(grp=1:(2*N),char=sample(as.hexmode(1:N),4*N,replace=TRUE),int=sample(1:N,4*N,replace=TRUE))
+benchmark(476, ans <- DT[,list(p=paste(unique(char),collapse=","), i=list(unique(int))), by=grp], limit=0.1)
+stopifnot(nrow(as.matrix(ans))==2L*N)
+rm(DT, ans)
+
+# Speed test of chmatch vs match.
+# sortedmatch was 40 times slower and the wrong approach, removed in v1.8.0.
+# Example from Tom in Jan 2011 who first found and raised the issue with sortedmatch.
+n = 1e6
+a = as.character(as.hexmode(sample(n,replace=TRUE)))
+b = as.character(as.hexmode(sample(n,replace=TRUE)))
+benchmark(529, ans2<-chmatch(a,b), limit = ans1<-match(a,b))
+stopifnot(all.equal(ans1, ans2))
+# sorting a and b no longer makes a difference since both match and chmatch work via hash in some way or another
+rm(a, b)
+
+# Test that as.list.data.table no longer copies via unclass, so speeding up sapply(DT,class) and lapply(.SD,...) etc, #2000
+N = 1e7
+DT = data.table(a=1:N,b=1:N,c=1:N,d=1:N)   # 150MB
+l = as.list(DT)
+benchmark(603, sapply(DT,class), limit=sapply(l,class), tolerance=I(0.025))
+rm(l)
+
+# Tests on loopability, i.e. that overhead of [.data.table isn't huge, as in speed example in example(":=")
+# These are just to catch slow down regressions where instead of 1s it takes 40s
+benchmark(604, for (i in 1:1000) nrow(DT), limit=0.5)
+benchmark(605, for (i in 1:1000) ncol(DT), limit=0.5)
+benchmark(606, for (i in 1:1000) length(DT[[1L]]), limit=0.5) # much faster than nrow, TO DO: replace internally
+rm(DT)
+
+DT = as.data.table(matrix(1L,nrow=100000,ncol=100))
+benchmark(607, for (i in 1:1000) DT[i,V1:=i], limit=1)
+stopifnot(all.equal(DT[1:1000,V1], 1:1000))
+rm(DT)
+
+# Test faster mean.  Example from (now not needed as much) data.table wiki point 3.
+# Example is a lot of very small groups.
+set.seed(100)
+n=1e5
+DT=data.table(grp1=sample(1:750, n, replace=TRUE),
+              grp2=sample(1:750, n, replace=TRUE),
+              x=rnorm(n),
+              y=rnorm(n))
+DT[c(2,5),x:=NA]  # seed chosen to get a group of size 2 and 3 in the first 5 to easily inspect.
+DT[c(3,4),y:=NA]
+basemean = base::mean  # to isolate time of `::` itself
+benchmark(650,
+  expr =  ans1<-DT[,list(mean(x),mean(y)),by=list(grp1,grp2)],
+  limit = ans3<-DT[,list(basemean(x),basemean(y)),by=list(grp1,grp2)])
+ans2<-DT[,list(.Internal(mean(x)),.Internal(mean(y))),by=list(grp1,grp2)]
+stopifnot(all.equal(ans1, ans2), all.equal(ans1, ans3),
+          any(is.na(ans1$V1)) && !any(is.nan(ans1$V1)))
+benchmark(653,
+  expr =  ans1<-DT[,list(mean(x,na.rm=TRUE),mean(y,na.rm=TRUE)),by=list(grp1,grp2)],
+  limit = ans2<-DT[,list(mean.default(x,na.rm=TRUE),mean.default(y,na.rm=TRUE)),by=list(grp1,grp2)])
+stopifnot(all.equal(ans1, ans2), any(is.nan(ans1$V1)))
+# See FR#2067. Here we're just testing the optimization of mean and lapply, should be comparable to above
+benchmark(655, tolerance = c(-0.2, 0.2),
+  expr =  ans1<-DT[,list(mean(x,na.rm=TRUE),mean(y,na.rm=TRUE)),by=list(grp1,grp2)],
+  limit = ans2<-DT[,lapply(.SD,mean,na.rm=TRUE),by=list(grp1,grp2)])
+setnames(ans2,c("x","y"),c("V1","V2"))
+stopifnot(all.equal(ans1, ans2))
+rm(DT, ans1, ans2, ans3)
+
+# test the speed of simple comparison
+DT = data.table(a = 1:1e7)
+options(datatable.auto.index=FALSE)
+benchmark(1110, tolerance=I(0.1),
+  #verbose=TRUE, ## it is not always within 30% difference, warm up seems to be an imporant factor here, there was a comment before "should pass most of the time" which is still valid
+  expr = DT[a == 100],
+  limit = DT[which(a == 100)])
+options(datatable.auto.index=TRUE)  
+rm(DT)
+
+# Fix for bug #76 - DT[, .N, by=y] was slow when "y" is not a column in DT
+DT = data.table(x=sample.int(10, 1e6, replace=TRUE))
+y = DT$x
+benchmark(1143.2, tolerance=I(c(-0.1,0.1)),
+  #verbose=TRUE, ## it was abs(te1-te2)<1 before but 1s is so much here so changing to +/- 0.1s
+  expr = ans1 <- DT[, .N, by=x],
+  limit = ans2 <- DT[, .N, by=y])
+setnames(ans2,"y","x")
+stopifnot(all.equal(ans1, ans2))
+rm(DT, ans1, ans2)
+
+# Test for optimisation of 'order' to 'forder'.
+set.seed(45L)
+DT = data.table(x=sample(1e2, 1e6,TRUE), y=sample(1e2, 1e6,TRUE))
+base_order = base::order ## base R is DT's order since R 3.3, but recent DT is still faster
+benchmark(1241.2, tolerance=I(0.1),
+  expr = ans1<-DT[order(x,-y)],
+  limit = ans2<-DT[base_order(x,-y)])
+stopifnot(all.equal(ans1, ans2))
+rm(DT, ans1, ans2, base_order)

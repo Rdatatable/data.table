@@ -21,7 +21,7 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
   if (identical(script,"*.Rraw")) {
     # nocov start
     scripts = dir(fulldir, "*.Rraw.*")
-    scripts = scripts[!grepl("bench|other", scripts)]
+    scripts = scripts[!grepl("bench|other|manual", scripts)]
     scripts = gsub("[.]bz2$","",scripts)
     return(sapply(scripts, function(fn) {
       err = try(test.data.table(script=fn, verbose=verbose, pkg=pkg, silent=silent, showProgress=showProgress))
@@ -459,3 +459,89 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
   invisible(!fail)
 }
 
+is.AsIs = function(x) inherits(x, "AsIs")
+
+# nocov start
+benchmark = function(num, expr, limit, tolerance=0.025, verbose=FALSE) {
+  
+  .test.data.table = exists("nfail", parent.frame()) # test() can be used inside functions defined in tests.Rraw, so inherits=TRUE (default) here
+  numStr = sprintf("%.8g", num)
+  if (.test.data.table) {
+    prevtest = get("prevtest", parent.frame())
+    nfail = get("nfail", parent.frame())
+    whichfail = get("whichfail", parent.frame())
+    assign("ntest", get("ntest", parent.frame()) + 1L, parent.frame(), inherits=TRUE)   # bump number of tests run
+    lasttime = get("lasttime", parent.frame())
+    timings = get("timings", parent.frame())
+    #memtest = get("memtest", parent.frame())
+    inittime = get("inittime", parent.frame())
+    filename = get("filename", parent.frame())
+    foreign = get("foreign", parent.frame())
+    showProgress = get("showProgress", parent.frame())
+    time = nTest = NULL  # to avoid 'no visible binding' note
+    on.exit( {
+      now = proc.time()[3L]
+      took = now-lasttime  # so that prep time between tests is attributed to the following test
+      assign("lasttime", now, parent.frame(), inherits=TRUE)
+      timings[ as.integer(num), `:=`(time=time+took, nTest=nTest+1L), verbose=FALSE ]
+    } )
+    if (showProgress)
+      cat("\rRunning benchmark id", numStr, "     ")
+  } else {
+    # not `test.data.table` but developer running tests manually; i.e. `cc(F); test(...)`
+    memtest = FALSE
+    filename = NA_character_
+    foreign = FALSE
+    showProgress = FALSE
+  }
+
+  sub.expr = substitute(expr)
+  stopifnot(is.call(sub.expr))
+  l = if (limit.call<-is.call(sub.limit<-substitute(limit))) system.time(limit)[["elapsed"]]
+  else if (is.numeric(limit)) limit
+  else stop("limit must be constant numeric or a call to time it")
+  
+  t = system.time(expr)[["elapsed"]]
+
+  fail = FALSE
+  if (.test.data.table) {
+    if (num<prevtest+0.0000005) {
+      cat("Test id", numStr, "is not in increasing order\n")
+      fail = TRUE
+    }
+    assign("prevtest", num, parent.frame(), inherits=TRUE)
+  }
+  if (!fail) {
+    if (length(tolerance)==1L) {
+      fail = if (is.AsIs(tolerance)) {
+        t > l+tolerance
+      } else {
+        t > l*(1+tolerance)
+      }
+    } else if (length(tolerance)==2L) { ## absolute difference, test 655
+      if (tolerance[1] >= tolerance[2])
+        stop("invalid use of tolerance argument, first element must be smaller than second one, first usually being negative and second positive")
+      fail = if (is.AsIs(tolerance)) {
+        t < l+tolerance[1] || t > l+tolerance[2]
+      } else {
+        t < l*(1+tolerance[1L]) || t > l*(1+tolerance[2])
+      }
+    } else stop("tolerance must be length 1 or 2")
+    if (fail || verbose) {
+      cat(sprintf("Benchmark %s %scheck that expression:\n> ",
+                  numStr, if (fail) "failed to " else ""))
+      print(sub.expr)
+      cat("# elapsed: ", t, "\n", sep="")
+      cat(sprintf("computes within given limit and tolerance (%s):\n> ",
+                  paste(sprintf("%.3f%s", tolerance, if (is.AsIs(tolerance)) "s" else ""), collapse=",")))
+      if (limit.call) print(sub.limit) else cat(limit, "\n", sep="")
+      cat("# elapsed: ", l, "\n", sep="")
+    }
+  }
+  if (fail && .test.data.table) {
+    assign("nfail", nfail+1L, parent.frame(), inherits=TRUE)
+    assign("whichfail", c(whichfail, numStr), parent.frame(), inherits=TRUE)
+  }
+  invisible(!fail)
+}
+# nocov end
