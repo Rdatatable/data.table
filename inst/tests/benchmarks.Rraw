@@ -118,3 +118,10 @@ benchmark(1241.2, tolerance=I(0.1),
   limit = ans2<-DT[base_order(x,-y)])
 stopifnot(all.equal(ans1, ans2))
 rm(DT, ans1, ans2, base_order)
+
+# add timing test for many .SD cols #3797
+# [[ on a list column by group #4646
+# joining in a loop, order of different types #3928
+# simple access DT[10L], DT[, 3L] #3735
+# calling setDT in a loop #4476
+# multithreaded function calls by group DT[, uniqueN(a), by=b], should stress new throttle feature #4484
