@@ -473,7 +473,7 @@ benchmark = function(num, expr, limit, tolerance=0.025, verbose=FALSE) {
     assign("ntest", get("ntest", parent.frame()) + 1L, parent.frame(), inherits=TRUE)   # bump number of tests run
     lasttime = get("lasttime", parent.frame())
     timings = get("timings", parent.frame())
-    #memtest = get("memtest", parent.frame())
+    memtest = get("memtest", parent.frame())
     inittime = get("inittime", parent.frame())
     filename = get("filename", parent.frame())
     foreign = get("foreign", parent.frame())
