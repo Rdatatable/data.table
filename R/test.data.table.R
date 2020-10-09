@@ -459,9 +459,8 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
   invisible(!fail)
 }
 
-is.AsIs = function(x) inherits(x, "AsIs")
-
 # nocov start
+is.AsIs = function(x) inherits(x, "AsIs")
 benchmark = function(num, expr, limit, tolerance=0.025, verbose=FALSE) {
   
   .test.data.table = exists("nfail", parent.frame()) # test() can be used inside functions defined in tests.Rraw, so inherits=TRUE (default) here
