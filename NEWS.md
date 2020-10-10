@@ -105,7 +105,7 @@ unit = "s")
 
 4. `fifelse` and `fcase` notify users that S4 objects (except `nanotime`) are not supported [#4135](https://github.com/Rdatatable/data.table/issues/4135). Thanks to @torema-ed for bringing it to our attention and Morgan Jacob for the PR.
 
-5. Added documentation for the `stringsAsFactors` argument to address [#4706](https://github.com/Rdatatable/data.table/issues/4706). Thanks to @MichaelChirico for reporting and @markderry for the documentation.
+5. Added documentation to describe a previously added feature to `stringsAsFactors` argument when it is set to a decimal value between 0 and 1. For example where `stringsAsFactors = 0.2` would mean that any character columns where `uniqueN(column)/nrow < 0.2` will be converted to factors. This addresses [#4706](https://github.com/Rdatatable/data.table/issues/4706). Thanks to @MichaelChirico for reporting and @markderry for the documentation.
 
 
 # data.table [v1.12.8](https://github.com/Rdatatable/data.table/milestone/15?closed=1)  (09 Dec 2019)
