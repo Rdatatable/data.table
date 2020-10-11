@@ -11,7 +11,8 @@
 #else
   #include "freadR.h"
   extern cetype_t ienc;
-  // must convert the error message char to native encoding first in order to correctly display in R
+  // R's message functions only take C's char pointer not SEXP, where encoding info can't be stored
+  // so must convert the error message char to native encoding first in order to correctly display in R
   #define ENC2NATIVE(s) translateChar(mkCharCE(s, ienc))
 #endif
 
