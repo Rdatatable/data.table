@@ -7,8 +7,12 @@
 #include "myomp.h"
 #ifdef DTPY
   #include "py_fread.h"
+  #define ENC2NATIVE(s) (s)
 #else
   #include "freadR.h"
+  extern cetype_t ienc;
+  // must convert the error message char to native encoding first in order to correctly display in R
+  #define ENC2NATIVE(s) translateChar(mkCharCE(s, ienc))
 #endif
 
 // Ordered hierarchy of types
