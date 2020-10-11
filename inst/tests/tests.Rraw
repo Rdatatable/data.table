@@ -7308,7 +7308,7 @@ test(1532.9, x %flike% '()', c(FALSE, FALSE, TRUE))
 ## %like% test for ordered factor with NA
 x = c("A", "B", "C", NA_character_)
 x = ordered(x, levels = rev(x)[-1L])
-test(1532.10, x %like% "B", c(FALSE, TRUE, FALSE, FALSE))
+test(1532.10, x %like% "A", c(TRUE, FALSE, FALSE, FALSE))
 
 # coverage for setkey() to 100%
 dt1 = data.table(x=sample(5), y=1:5, key="y")
