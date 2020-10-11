@@ -32,6 +32,8 @@
     `PKG_CPPFLAGS='-Xclang -fopenmp' PKG_LIBS=-lomp R CMD INSTALL data.table_<ver>.tar.gz`
 has a better chance of working on Mac.
 
+5. `%like%` for large factors is now faster, [#4748](https://github.com/Rdatatable/data.table/issues/4748). We subset the result using indexing by factors, which is equivalent to indexing by the numeric codes. Thanks to @statquant for reporting.
+
 
 # data.table [v1.13.0](https://github.com/Rdatatable/data.table/milestone/17?closed=1)  (24 Jul 2020)
 
