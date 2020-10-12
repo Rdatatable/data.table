@@ -21,11 +21,14 @@ extern "C" {
 /* provided the interface for the function exported in
    ../src/init.c via R_RegisterCCallable()		*/
 
+// subsetDT #3751
 inline SEXP attribute_hidden DT_subsetDT(SEXP x, SEXP rows, SEXP cols) {
      static SEXP(*fun)(SEXP, SEXP, SEXP) =
-       (SEXP(*)(SEXP,SEXP,SEXP)) R_GetCCallable("data.table", "CsubsetDT");
+       (SEXP(*)(SEXP,SEXP,SEXP)) R_GetCCallable("data.table", "DT_subsetDT");
      return fun(x,rows,cols);
 }
+// forder #4015
+// setalloccol alloccolwrapper setDT #4439
 
 /* permit opt-in to redefine shorter identifiers */
 #if defined(DATATABLE_REMAP_API)
