@@ -40,7 +40,7 @@ SEXP dt_na(SEXP x, SEXP cols) {
       break;
     case REALSXP: {
       const double *dv = REAL(v);
-      if (INHERITS(v, char_integer64)) {
+      if (INHERITS(v, char_integer64) || INHERITS(v, char_nanotime)) {
         for (int j=0; j<n; ++j) {
           ians[j] |= (DtoLL(dv[j]) == NA_INT64_LL);   // TODO: can be == NA_INT64_D directly
         }

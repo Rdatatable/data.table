@@ -17150,3 +17150,9 @@ test(2154.1, fread("0.0\n", colClasses="integer"), data.table(V1=0.0),
 test(2154.2, fread("A\n0.0\n", colClasses="integer"), data.table(A=0.0),
              warning="Attempt to override column 1 <<A>> of inherent type 'float64' down to 'int32' ignored.*please")
 
+# na.omit works for nanotime, #4744
+if (test_nanotime) {
+  DT = data.table(time=nanotime(1:3))
+  DT[2:3, timeNA := time]
+  test(2155, na.omit(DT), DT[2:3])
+}
