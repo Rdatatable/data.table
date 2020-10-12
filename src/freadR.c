@@ -24,9 +24,9 @@ Secondary separator for list() columns, such as columns 11 and 12 in BED (no nee
 
 #define NUT  NUMTYPE+2  // +1 for "numeric" alias for "double"; +1 for CLASS fallback using as.class() at R level afterwards
 
-static int  typeSxp[NUT] =     {NILSXP,  LGLSXP,     LGLSXP,     LGLSXP,     LGLSXP,     INTSXP,    REALSXP,     REALSXP,    REALSXP,        REALSXP,        STRSXP,      REALSXP,    STRSXP   };
-static char typeRName[NUT][10]={"NULL",  "logical",  "logical",  "logical",  "logical",  "integer", "integer64", "double",   "double",       "double",       "character", "numeric",  "CLASS"  };
-static int  typeEnum[NUT] =    {CT_DROP, CT_BOOL8_N, CT_BOOL8_U, CT_BOOL8_T, CT_BOOL8_L, CT_INT32,  CT_INT64,    CT_FLOAT64, CT_FLOAT64_HEX, CT_FLOAT64_EXT, CT_STRING,   CT_FLOAT64, CT_STRING};
+static int  typeSxp[NUT] =     {NILSXP,  LGLSXP,     LGLSXP,     LGLSXP,     LGLSXP,     INTSXP,    REALSXP,     REALSXP,    REALSXP,        REALSXP,        INTSXP,          REALSXP,         STRSXP,      REALSXP,    STRSXP   };
+static char typeRName[NUT][10]={"NULL",  "logical",  "logical",  "logical",  "logical",  "integer", "integer64", "double",   "double",       "double",       "IDate",         "POSIXct",       "character", "numeric",  "CLASS"  };
+static int  typeEnum[NUT] =    {CT_DROP, CT_BOOL8_N, CT_BOOL8_U, CT_BOOL8_T, CT_BOOL8_L, CT_INT32,  CT_INT64,    CT_FLOAT64, CT_FLOAT64_HEX, CT_FLOAT64_EXT, CT_ISO8601_DATE, CT_ISO8601_TIME, CT_STRING,   CT_FLOAT64, CT_STRING};
 static colType readInt64As=CT_INT64;
 static SEXP selectSxp;
 static SEXP dropSxp;
@@ -44,6 +44,7 @@ static int ncol = 0;
 static int64_t dtnrows = 0;
 static bool verbose = false;
 static bool warningsAreErrors = false;
+static bool oldNoDateTime = false;
 
 
 SEXP freadR(
@@ -71,7 +72,8 @@ SEXP freadR(
   SEXP colClassesArg,
   SEXP integer64Arg,
   SEXP encodingArg,
-  SEXP keepLeadingZerosArgs
+  SEXP keepLeadingZerosArgs,
+  SEXP noTZasUTC
 ) {
   verbose = LOGICAL(verboseArg)[0];
   warningsAreErrors = LOGICAL(warnings2errorsArg)[0];
@@ -128,6 +130,11 @@ SEXP freadR(
   }
 
   args.logical01 = LOGICAL(logical01Arg)[0];
+  {
+    SEXP tt = PROTECT(GetOption(sym_old_fread_datetime_character, R_NilValue));
+    args.oldNoDateTime = oldNoDateTime = isLogical(tt) && LENGTH(tt)==1 && LOGICAL(tt)[0]==TRUE;
+    UNPROTECT(1);
+  }
   args.skipNrow=-1;
   args.skipString=NULL;
   if (isString(skipArg)) {
@@ -155,6 +162,7 @@ SEXP freadR(
   args.verbose = verbose;
   args.warningsAreErrors = warningsAreErrors;
   args.keepLeadingZeros = LOGICAL(keepLeadingZerosArgs)[0];
+  args.noTZasUTC = LOGICAL(noTZasUTC)[0];
 
   // === extras used for callbacks ===
   if (!isString(integer64Arg) || LENGTH(integer64Arg)!=1) error(_("'integer64' must be a single character string"));
@@ -252,7 +260,7 @@ bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, const int 
     SEXP elem;
     if (colNames==NULL || colNames[i].len<=0) {
       char buff[12];
-      sprintf(buff,"V%d",i+1);
+      snprintf(buff,12,"V%d",i+1);
       elem = mkChar(buff);  // no PROTECT as passed immediately to SET_STRING_ELT
     } else {
       elem = mkCharLenCE(anchor+colNames[i].off, colNames[i].len, ienc);  // no PROTECT as passed immediately to SET_STRING_ELT
@@ -305,6 +313,11 @@ bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, const int 
   if (length(colClassesSxp)) {
     SEXP typeRName_sxp = PROTECT(allocVector(STRSXP, NUT));
     for (int i=0; i<NUT; i++) SET_STRING_ELT(typeRName_sxp, i, mkChar(typeRName[i]));
+    if (oldNoDateTime) {
+      // prevent colClasses="IDate"/"POSIXct" being recognized so that colClassesAs is assigned here ready for type massage after reading at R level; test 2150.14
+      SET_STRING_ELT(typeRName_sxp, CT_ISO8601_DATE, R_BlankString);
+      SET_STRING_ELT(typeRName_sxp, CT_ISO8601_TIME, R_BlankString);
+    }
     SET_VECTOR_ELT(RCHK, 2, colClassesAs=allocVector(STRSXP, ncol));  // if any, this attached to the DT for R level to call as_ methods on
     if (isString(colClassesSxp)) {
       SEXP typeEnum_idx = PROTECT(chmatch(colClassesSxp, typeRName_sxp, NUT));
@@ -318,8 +331,16 @@ bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, const int 
           const SEXP tt = STRING_ELT(colClassesSxp, i&mask); // mask recycles colClassesSxp when it's length-1
           if (tt==NA_STRING || tt==R_BlankString) continue;  // user is ok with inherent type for this column
           int w = INTEGER(typeEnum_idx)[i&mask];
-          type[i] = typeEnum[w-1];                           // freadMain checks bump up only not down
-          if (w==NUT) SET_STRING_ELT(colClassesAs, i, tt);
+          if (tt==char_POSIXct) {
+            // from v1.13.0, POSIXct is a built in type, but if the built-in doesn't support (e.g. test 1743.25 has missing tzone) then we still dispatch to as.POSIXct afterwards
+            if (type[i]!=CT_ISO8601_TIME) {
+              type[i]=CT_STRING; // e.g. CT_ISO8601_DATE changed to character here so that as.POSIXct treats the date-only as local time in tests 1743.122 and 2150.11
+              SET_STRING_ELT(colClassesAs, i, tt);
+            }
+          } else { 
+            type[i] = typeEnum[w-1];                           // freadMain checks bump up only not down
+            if (w==NUT) SET_STRING_ELT(colClassesAs, i, tt);
+          }
         }
       } else { // selectColClasses==true
         if (!selectInts) STOP(_("Internal error: selectInts is NULL but selectColClasses is true"));
@@ -331,8 +352,15 @@ bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, const int 
           int w = INTEGER(typeEnum_idx)[i];
           int y = selectInts[i];
           if (y==NA_INTEGER) continue;
-          type[y-1] = typeEnum[w-1];
-          if (w==NUT) SET_STRING_ELT(colClassesAs, y-1, tt);
+          if (tt==char_POSIXct) {
+            if (type[y-1]!=CT_ISO8601_TIME) {
+              type[y-1]=CT_STRING;
+              SET_STRING_ELT(colClassesAs, y-1, tt);
+            }
+          } else {
+            type[y-1] = typeEnum[w-1];
+            if (w==NUT) SET_STRING_ELT(colClassesAs, y-1, tt);
+          }
         }
       }
       UNPROTECT(1); // typeEnum_idx
@@ -369,8 +397,13 @@ bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, const int 
               if (type[k-1]<0)
                 DTWARN(_("Column %d ('%s') appears more than once in colClasses. The second time is colClasses[[%d]][%d]."), k, CHAR(STRING_ELT(colNamesSxp,k-1)), i+1, j+1);
               else if (type[k-1]!=CT_DROP) {
-                type[k-1] = -thisType;     // freadMain checks bump up only not down.  Deliberately don't catch here to test freadMain; e.g. test 959
-                if (w==NUT) SET_STRING_ELT(colClassesAs, k-1, STRING_ELT(listNames,i));
+                if (thisType==CT_ISO8601_TIME && type[k-1]!=CT_ISO8601_TIME) {
+                  type[k-1] = -CT_STRING; // don't use in-built UTC parser, defer to character and as.POSIXct afterwards which reads in local time
+                  SET_STRING_ELT(colClassesAs, k-1, STRING_ELT(listNames,i));
+                } else {
+                  type[k-1] = -thisType;     // freadMain checks bump up only not down.  Deliberately don't catch here to test freadMain; e.g. test 959
+                  if (w==NUT) SET_STRING_ELT(colClassesAs, k-1, STRING_ELT(listNames,i));
+                }
                 if (selectRankD) selectRankD[k-1] = rank++;
               }
             } else {
@@ -463,6 +496,20 @@ size_t allocateDT(int8_t *typeArg, int8_t *sizeArg, int ncolArg, int ndrop, size
         SEXP tt = PROTECT(ScalarString(char_integer64));
         setAttrib(thiscol, R_ClassSymbol, tt);
         UNPROTECT(1);
+      } else if (type[i] == CT_ISO8601_DATE) {
+        SEXP tt = PROTECT(allocVector(STRSXP, 2));
+        SET_STRING_ELT(tt, 0, char_IDate);
+        SET_STRING_ELT(tt, 1, char_Date);
+        setAttrib(thiscol, R_ClassSymbol, tt);
+        UNPROTECT(1);
+      } else if (type[i] == CT_ISO8601_TIME) {
+        SEXP tt = PROTECT(allocVector(STRSXP, 2));
+        SET_STRING_ELT(tt, 0, char_POSIXct);
+        SET_STRING_ELT(tt, 1, char_POSIXt);
+        setAttrib(thiscol, R_ClassSymbol, tt);
+        UNPROTECT(1);
+
+        setAttrib(thiscol, sym_tzone, ScalarString(char_UTC)); // see news for v1.13.0
       }
       SET_TRUELENGTH(thiscol, allocNrow);
       DTbytes += SIZEOF(thiscol)*allocNrow;
