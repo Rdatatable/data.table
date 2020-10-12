@@ -17151,11 +17151,10 @@ test(2154.2, fread("A\n0.0\n", colClasses="integer"), data.table(A=0.0),
              warning="Attempt to override column 1 <<A>> of inherent type 'float64' down to 'int32' ignored.*please")
 
 # fread message display non-ASCII messages correctly, #4747
-x = "fa\xE7ile"; Encoding(x) = "latin1"
+x = "fa\u00e7ile"; Encoding(x) = "UTF-8"
 # should only run this test if the native encoding can represent latin1 correctly
 if (identical(x, enc2native(x))) {
-  txt = sprintf("A,B\n%s,%s\n%s", x, x, x)
-  Encoding(txt) = "UTF-8"
+  txt = enc2utf8(sprintf("A,B\n%s,%s\n%s", x, x, x))
   txt2 = iconv(txt, "UTF-8", "latin1")
   out = data.table(A = x, B = x)
   test(2155.1, fread(text = txt, encoding = 'UTF-8'), out,
