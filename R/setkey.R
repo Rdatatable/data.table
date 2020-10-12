@@ -155,20 +155,15 @@ setreordervec = function(x, order) .Call(Creorder, x, order)
 # The others (order, sort.int etc) are turned off to protect ourselves from using them internally, for speed and for
 # consistency; e.g., consistent twiddling of numeric/integer64, NA at the beginning of integer, locale ordering of character vectors.
 
-is.sorted = function(x, by=seq_along(x)) {
+is.sorted = function(x, by=NULL) {
   if (is.list(x)) {
-    warning("Use 'if (length(o <- forderv(DT,by))) ...' for efficiency in one step, so you have o as well if not sorted.")
-    # could pass through a flag for forderv to return early on first FALSE. But we don't need that internally
-    # since internally we always then need ordering, an it's better in one step. Don't want inefficiency to creep in.
-    # This is only here for user/debugging use to check/test valid keys; e.g. data.table:::is.sorted(DT,by)
-    0L == length(forderv(x,by,retGrp=FALSE,sort=TRUE))
+    if (missing(by)) by = seq_along(x)   # wouldn't make sense when x is a vector; hence by=seq_along(x) is not the argument default
+    if (is.character(by)) by = chmatch(by, names(x))
   } else {
     if (!missing(by)) stop("x is vector but 'by' is supplied")
-    .Call(Cfsorted, x)
   }
-  # Cfsorted could be named CfIsSorted, but since "sorted" is an adjective not verb, it's clear; e.g., Cfsort would sort it ("sort" is verb).
+  .Call(Cissorted, x, as.integer(by))
   # Return value of TRUE/FALSE is relied on in [.data.table quite a bit on vectors. Simple. Stick with that (rather than -1/0/+1)
-  # Important to call forder.c::fsorted here, for consistent character ordering and numeric/integer64 twiddling.
 }
 
 ORDERING_TYPES = c('logical', 'integer', 'double', 'complex', 'character')
@@ -200,8 +195,8 @@ forder = function(..., na.last=TRUE, decreasing=FALSE)
   # We intercept the unevaluated expressions and massage them before evaluating in with(DT) scope or not depending on the first item.
   for (i in seq.int(2L, length(sub))) {
     v = sub[[i]]
-    while (is.call(v) && length(v)==2L && ((s<-v[[1L]])=="-" || s=="+")) {
-      if (s=="-") asc[i-1L] = -asc[i-1L]
+    while (v %iscall% c('-', '+') && length(v)==2L) {
+      if (v[[1L]] == "-") asc[i-1L] = -asc[i-1L]
       sub[[i]] = v = v[[2L]]  # remove the leading +/- which is the 2nd item since length(v)==2; i.e. monadic +/-
     }
   }

@@ -9,7 +9,7 @@
 }
 \arguments{
 \item{x}{xts to convert to data.table}
-\item{keep.rownames}{keep xts index as \emph{index} column in result data.table}
+\item{keep.rownames}{Default is \code{TRUE}. If \code{TRUE}, adds the xts input's index as a separate column named \code{"index"}. \code{keep.rownames = "id"} names the index column \code{"id"} instead.}
 \item{key}{ Character vector of one or more column names which is passed to \code{\link{setkeyv}}. }
 \item{\dots}{ignored, just for consistency with \code{as.data.table}}
 }

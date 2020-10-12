@@ -585,7 +585,7 @@ void print_z_stream(const z_stream *s)   // temporary tracing function for #4099
 {
   const unsigned char *byte = (unsigned char *)s;
   for (int i=0; i<sizeof(z_stream); ++i) {
-    DTPRINT("%02x ", byte[i]);
+    DTPRINT("%02x ", *byte++);  // not byte[i] is attempt to avoid valgrind's use-of-uninitialized, #4639, and z_stream={0} now too
   }
   DTPRINT("\n");
 }
@@ -629,7 +629,7 @@ void fwriteMain(fwriteMainArgs args)
       for (int j=args.ncol-10; j<args.ncol; j++) DTPRINT(_("%d "), args.whichFun[j]);
     }
     DTPRINT(_("\nargs.doRowNames=%d args.rowNames=%d doQuote=%d args.nrow=%"PRId64" args.ncol=%d eolLen=%d\n"),
-          args.doRowNames, args.rowNames, doQuote, (int64_t)args.nrow, args.ncol, eolLen);
+          args.doRowNames, args.rowNames, doQuote, args.nrow, args.ncol, eolLen);
   }
 
   // Calculate upper bound for line length. Numbers use a fixed maximum (e.g. 12 for integer) while strings find the longest
@@ -735,7 +735,7 @@ void fwriteMain(fwriteMainArgs args)
     } else {
       int ret1=0, ret2=0;
       if (args.is_gzip) {
-        z_stream stream;
+        z_stream stream = {0};
         if(init_stream(&stream)) {
           free(buff);                                    // # nocov
           STOP(_("Can't allocate gzip stream structure"));  // # nocov
@@ -788,7 +788,7 @@ void fwriteMain(fwriteMainArgs args)
   if (numBatches < nth) nth = numBatches;
   if (verbose) {
     DTPRINT(_("Writing %"PRId64" rows in %d batches of %d rows (each buffer size %dMB, showProgress=%d, nth=%d)\n"),
-            (int64_t)args.nrow, numBatches, rowsPerBatch, args.buffMB, args.showProgress, nth);
+            args.nrow, numBatches, rowsPerBatch, args.buffMB, args.showProgress, nth);
   }
   t0 = wallclock();
 
@@ -798,7 +798,7 @@ void fwriteMain(fwriteMainArgs args)
   // compute zbuffSize which is the same for each thread
   size_t zbuffSize = 0;
   if(args.is_gzip){
-    z_stream stream;
+    z_stream stream = {0};
     if(init_stream(&stream))
       STOP(_("Can't allocate gzip stream structure")); // # nocov
     zbuffSize = deflateBound(&stream, buffSize);
@@ -841,7 +841,7 @@ void fwriteMain(fwriteMainArgs args)
 
     void *myzBuff = NULL;
     size_t myzbuffUsed = 0;
-    z_stream mystream;
+    z_stream mystream = {0};
     if (args.is_gzip) {
       myzBuff = zbuffPool + me*zbuffSize;
       if (init_stream(&mystream)) { // this should be thread safe according to zlib documentation
@@ -921,7 +921,7 @@ void fwriteMain(fwriteMainArgs args)
               if (verbose && !hasPrinted) DTPRINT("\n");
               DTPRINT("\rWritten %.1f%% of %"PRId64" rows in %d secs using %d thread%s. "
                       "maxBuffUsed=%d%%. ETA %d secs.      ",
-                       (100.0*end)/args.nrow, (int64_t)args.nrow, (int)(now-startTime), nth, nth==1?"":"s",
+                       (100.0*end)/args.nrow, args.nrow, (int)(now-startTime), nth, nth==1?"":"s",
                        maxBuffUsedPC, ETA);
               // TODO: use progress() as in fread
               nextTime = now+1;

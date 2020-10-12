@@ -8,10 +8,12 @@ On each Pull Request opened in GitHub we run Travis CI and Appveyor to provide p
 
 Test jobs:
 - `test-rel-lin` - `r-release` on Linux, most comprehensive test environment, `-O3 -flto -fno-common -Wunused-result`, extra check for no compilation warnings, includes testing [_with other packages_](./../inst/tests/other.Rraw) ([extended suggests](./../inst/tests/tests-DESCRIPTION))
-- `test-rel-cran-lin` - `--as-cran` on Linux, `-g0`, extra check for `Status: OK` in `R CMD check`
-- `test-dev-cran-lin` - `r-devel` and `--as-cran` on Linux, `--enable-strict-barrier --disable-long-double`
+- `test-rel-cran-lin` - `--as-cran` on Linux, `-g0`, extra check for final status of `R CMD check` where we allow one NOTE (_size of tarball_).
+- `test-dev-cran-lin` - `r-devel` and `--as-cran` on Linux, `--with-recommended-packages --enable-strict-barrier --disable-long-double`, tests for compilation warnings in pkg install and new NOTEs/Warnings in pkg check, and because it is R-devel it is marked as allow_failure
 - `test-rel-vanilla-lin` - `r-release` on Linux, no suggested deps, no OpenMP, `-O0`, tracks memory usage during tests
 - `test-310-cran-lin` - R 3.1.0 on Linux
+- `test-344-cran-lin` - R 3.4.4 on Linux
+- `test-350-cran-lin` - R 3.5.0 on Linux, no `r-recommended`
 - `test-rel-win` - `r-release` on Windows
 - `test-dev-win` - `r-devel` on Windows
 - `test-rel-osx` - MacOSX build not yet deployed, see [#3326](https://github.com/Rdatatable/data.table/issues/3326) for status
@@ -25,7 +27,7 @@ Artifacts:
   - sources
   - Windows binaries for `r-release` and `r-devel`
 - [CRAN-like homepage](https://rdatatable.gitlab.io/data.table/web/packages/data.table/index.html)
-- [CRAN-like checks results](https://rdatatable.gitlab.io/data.table/web/checks/check_results_data.table.html) - note that all artifacts, including this page, are being published only when all test jobs successfully pass, thus one will not see an _ERROR_ status there (unless `allow_failure` option has been used in a job).
+- [CRAN-like checks results](https://rdatatable.gitlab.io/data.table/web/checks/check_results_data.table.html) - note that all artifacts, including check results page, are being published only when all test jobs successfully pass, thus one will not see an _ERROR_ status there (unless error happened on a job marked as `allow_failure`).
 - [docker images](https://gitlab.com/Rdatatable/data.table/container_registry) - copy/paste-able `docker pull` commands can be found at the bottom of our [CRAN-like homepage](https://rdatatable.gitlab.io/data.table/web/packages/data.table/index.html)
 
 ### [Travis CI](./../.travis.yml)
@@ -62,7 +64,7 @@ Base R implemented helper script to orchestrate generation of most artifacts. It
 Template file to produce `Dockerfile` for, as of now, three docker images. Docker images are being built and published in [_deploy_ stage in GitLab CI pipeline](./../.gitlab-ci.yml).
 - `r-base-dev` using `r-release`: publish docker image of `data.table` on R-release
 - `r-builder` using `r-release`: publish on R-release and OS dependencies for building Rmarkdown vignettes
-- `r-devel`: publish docker image of `data.table` on R-devel
+- `r-devel`: publish docker image of `data.table` on R-devel built with `--with-recommended-packages --enable-strict-barrier --disable-long-double`
 
 ### [`deploy.sh`](./deploy.sh)
 

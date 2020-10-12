@@ -1,5 +1,5 @@
 Package: data.table
-Version: 1.12.9
+Version: 1.13.1
 Title: Extension of `data.frame`
 Authors@R: c(
   person("Matt","Dowle",           role=c("aut","cre"), email="mattjdowle@gmail.com"),
@@ -28,6 +28,10 @@ Authors@R: c(
   person("Francois","Cocquemas",   role="ctb"),
   person("Matthieu","Gomez",       role="ctb"),
   person("Philippe","Chataignon",  role="ctb"),
+  person("Nello","Blaser",         role="ctb"),
+  person("Dmitry","Selivanov",     role="ctb"),
+  person("Andrey","Riabushenko",   role="ctb"),
+  person("Cheng","Lee",            role="ctb"),
   person("Declan","Groves",        role="ctb"),
   person("Daniel","Possenriede",   role="ctb"),
   person("Felipe","Parages",       role="ctb"),
@@ -50,10 +54,16 @@ Authors@R: c(
   person("Jim","Hester",           role="ctb"),
   person("Anthony","Damico",       role="ctb"),
   person("Sebastian","Freundt",    role="ctb"),
-  person("David","Simons",         role="ctb"))
+  person("David","Simons",         role="ctb"),
+  person("Elliott","Sales de Andrade", role="ctb"),
+  person("Cole","Miller",          role="ctb"),
+  person("Jens Peder","Meldgaard", role="ctb"),
+  person("Vaclav","Tlapak",        role="ctb"),
+  person("Kevin","Ushey",          role="ctb"),
+  person("Dirk","Eddelbuettel",    role="ctb"))
 Depends: R (>= 3.1.0)
 Imports: methods
-Suggests: bit64, curl, R.utils, knitr, xts, nanotime, zoo, yaml
+Suggests: bit64, curl, R.utils, xts, nanotime, zoo, yaml, knitr, rmarkdown
 SystemRequirements: zlib
 Description: Fast aggregation of large data (e.g. 100GB in RAM), fast ordered joins, fast add/modify/delete of columns by group using no copies at all, list columns, friendly and fast character-separated-value read/write. Offers a natural and flexible syntax, for faster development.
 License: MPL-2.0 | file LICENSE

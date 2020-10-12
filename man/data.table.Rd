@@ -84,7 +84,7 @@ data.table(\dots, keep.rownames=FALSE, check.names=FALSE, key=NULL, stringsAsFac
 
     When \code{j} is a vector of column names or positions to select (as in \code{data.frame}). There is no need to use \code{with=FALSE} anymore. Note that \code{with=FALSE} is still necessary when using a logical vector with length \code{ncol(x)} to include/exclude columns. Note: if a logical vector with length \code{k < ncol(x)} is passed, it will be filled to length \code{ncol(x)} with \code{FALSE}, which is different from \code{data.frame}, where the vector is recycled.
 
-    \emph{Advanced:} \code{j} also allows the use of special \emph{read-only} symbols: \code{\link{.SD}}, \code{\link{.N}}, \code{\link{.I}}, \code{\link{.GRP}}, \code{\link{.BY}}.
+    \emph{Advanced:} \code{j} also allows the use of special \emph{read-only} symbols: \code{\link{.SD}}, \code{\link{.N}}, \code{\link{.I}}, \code{\link{.GRP}}, \code{\link{.BY}}. See \code{\link{special-symbols}} and the Examples below for more.
 
     \emph{Advanced:} When \code{i} is a \code{data.table}, the columns of \code{i} can be referred to in \code{j} by using the prefix \code{i.}, e.g., \code{X[Y, .(val, i.val)]}. Here \code{val} refers to \code{X}'s column and \code{i.val} \code{Y}'s.
 
@@ -374,7 +374,13 @@ DT[, .SD[1], by=x]                      # first row of 'y' and 'v' for each grou
 DT[, c(.N, lapply(.SD, sum)), by=x]     # get rows *and* sum columns 'v' and 'y' by group
 DT[, .I[1], by=x]                       # row number in DT corresponding to each group
 DT[, grp := .GRP, by=x]                 # add a group counter column
+DT[ , dput(.BY), by=.(x,y)]             # .BY is a list of singletons for each group
 X[, DT[.BY, y, on="x"], by=x]           # join within each group
+DT[, {
+  # write each group to a different file
+  fwrite(.SD, file.path(tempdir(), paste0('x=', .BY$x, '.csv')))
+}, by=x]
+dir(tempdir())
 
 # add/update/delete by reference (see ?assign)
 print(DT[, z:=42L])                   # add new column by reference

@@ -141,7 +141,7 @@ if (loaded[["bit64"]]) {
 }
 
 if (loaded[["gdata"]]) {
-  # fix for bug #5069
+  # fix for bug #81
   DT <- data.table(a = c('asdfasdf','asdf','asdgasdgasdgasdg','sdg'), b = runif(4,0,1))
   test(10, write.fwf(DT, f<-tempfile()), NULL)
   unlink(f)

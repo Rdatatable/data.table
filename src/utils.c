@@ -62,6 +62,13 @@ bool allNA(SEXP x, bool errorForBadType) {
       }
     }
     return true;
+  case CPLXSXP: {
+    const Rcomplex *xd = COMPLEX(x);
+    for (int i=0; i<n; ++i) if (!ISNAN_COMPLEX(xd[i])) { 
+      return false;
+    }
+    return true;
+  }
   case STRSXP: {
     const SEXP *xd = STRING_PTR(x);
     for (int i=0; i<n; ++i)    if (xd[i]!=NA_STRING) {

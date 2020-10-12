@@ -132,6 +132,9 @@ is_utc = function(tz) {
   return(tz %chin% utc_tz)
 }
 
+# very nice idea from Michael to avoid expression repetition (risk) in internal code, #4226
+"%iscall%" = function(e, f) { is.call(e) && e[[1L]] %chin% f }
+
 # nocov start #593 always return a data.table
 edit.data.table = function(name, ...) {
   setDT(NextMethod('edit', name))[]

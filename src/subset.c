@@ -11,23 +11,41 @@ void subsetVectorRaw(SEXP ans, SEXP source, SEXP idx, const bool anyNA)
   // negatives, zeros and out-of-bounds have already been dealt with in convertNegAndZero so we can rely
   // here on idx in range [1,length(ans)].
 
+  int nth = getDTthreads(n, /*throttle=*/true);   // not const for Solaris, #4638
+  // For small n such as 2,3,4 etc we had hoped OpenMP would be sensible inside it and not create a team
+  // with each thread doing just one item. Otherwise, call overhead would be too high for highly iterated
+  // calls on very small subsets. Timings were tested in #3175. However, the overhead does seem to add up
+  // significantly. Hence the throttle was introduced, #4484. And not having the OpenMP region at all here
+  // when nth==1 (the ifs below in PARLOOP) seems to help too, #4200.
+  // To stress test the code for correctness by forcing multi-threading on for small data, the throttle can
+  // be turned off using setDThreads() or R_DATATABLE_THROTTLE environment variable.
+
   #define PARLOOP(_NAVAL_)                                        \
   if (anyNA) {                                                    \
-    _Pragma("omp parallel for num_threads(getDTthreads())")       \
-    for (int i=0; i<n; i++) {                                     \
-      int elem = idxp[i];                                         \
-      ap[i] = elem==NA_INTEGER ? _NAVAL_ : sp[elem-1];            \
+    if (nth>1) {                                                  \
+      _Pragma("omp parallel for num_threads(nth)")                \
+      for (int i=0; i<n; ++i) {                                   \
+        int elem = idxp[i];                                       \
+        ap[i] = elem==NA_INTEGER ? _NAVAL_ : sp[elem-1];          \
+      }                                                           \
+    } else {                                                      \
+      for (int i=0; i<n; ++i) {                                   \
+        int elem = idxp[i];                                       \
+        ap[i] = elem==NA_INTEGER ? _NAVAL_ : sp[elem-1];          \
+      }                                                           \
     }                                                             \
   } else {                                                        \
-    _Pragma("omp parallel for num_threads(getDTthreads())")       \
-    for (int i=0; i<n; i++) {                                     \
-      ap[i] = sp[idxp[i]-1];                                      \
+    if (nth>1) {                                                  \
+      _Pragma("omp parallel for num_threads(nth)")                \
+      for (int i=0; i<n; ++i) {                                   \
+        ap[i] = sp[idxp[i]-1];                                    \
+      }                                                           \
+    } else {                                                      \
+      for (int i=0; i<n; ++i) {                                   \
+        ap[i] = sp[idxp[i]-1];                                    \
+      }                                                           \
     }                                                             \
   }
-  // For small n such as 2,3,4 etc we hope OpenMP will be sensible inside it and not create a team with each thread doing just one item. Otherwise,
-  // call overhead would be too high for highly iterated calls on very small subests. Timings were tested in #3175
-  // Futher, we desire (currently at least) to stress-test the threaded code (especially in latest R-devel) on small data to reduce chance that bugs
-  // arise only over a threshold of n.
 
   switch(TYPEOF(source)) {
   case INTSXP: case LGLSXP: {
@@ -121,7 +139,7 @@ SEXP convertNegAndZeroIdx(SEXP idx, SEXP maxArg, SEXP allowOverMax)
   int *idxp = INTEGER(idx);
 
   bool stop = false;
-  #pragma omp parallel for num_threads(getDTthreads())
+  #pragma omp parallel for num_threads(getDTthreads(n, true))
   for (int i=0; i<n; i++) {
     if (stop) continue;
     int elem = idxp[i];
@@ -265,7 +283,7 @@ SEXP subsetDT(SEXP x, SEXP rows, SEXP cols) { // API change needs update NEWS.md
   copyMostAttrib(x, ans);
   // most means all except R_NamesSymbol, R_DimSymbol and R_DimNamesSymbol
   // includes row.names (oddly, given other dims aren't) and "sorted" dealt with below
-  // class is also copied here which retains superclass name in class vector as has been the case for many years; e.g. tests 1228.* for #5296
+  // class is also copied here which retains superclass name in class vector as has been the case for many years; e.g. tests 1228.* for #64
 
   SET_TRUELENGTH(ans, LENGTH(ans));
   SETLENGTH(ans, LENGTH(cols));

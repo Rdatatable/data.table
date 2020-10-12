@@ -35,7 +35,7 @@ melt.data.table = function(data, id.vars, measure.vars, variable.name = "variabl
   if (missing(id.vars)) id.vars=NULL
   if (missing(measure.vars)) measure.vars = NULL
   measure.sub = substitute(measure.vars)
-  if (is.call(measure.sub) && measure.sub[[1L]] == "patterns") {
+  if (measure.sub %iscall% "patterns") {
     measure.vars = do_patterns(measure.sub, names(data))
   }
   if (is.list(measure.vars) && length(measure.vars) > 1L) {

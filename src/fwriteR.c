@@ -26,7 +26,7 @@ int getStringLen(SEXP *col, int64_t row) {
 int getMaxStringLen(const SEXP *col, const int64_t n) {
   int max=0;
   SEXP last=NULL;
-  for (int i=0; i<n; ++i) {
+  for (int64_t i=0; i<n; ++i) {
     SEXP this = *col++;
     if (this==last) continue; // no point calling LENGTH() again on the same string; LENGTH is unlikely as fast as single pointer compare
     int thisnchar = LENGTH(this);
@@ -90,17 +90,17 @@ void writeList(SEXP *col, int64_t row, char **pch) {
 int getMaxListItemLen(const SEXP *col, const int64_t n) {
   int max=0;
   SEXP last=NULL;
-  for (int i=0; i<n; ++i) {
+  for (int64_t i=0; i<n; ++i) {
     SEXP this = *col++;
     if (this==last) continue; // no point calling LENGTH() again on the same string; LENGTH is unlikely as fast as single pointer compare
     int32_t wf = whichWriter(this);
     if (TYPEOF(this)==VECSXP || wf==INT32_MIN || isFactor(this)) {
-      error(_("Row %d of list column is type '%s' - not yet implemented. fwrite() can write list columns containing items which are atomic vectors of type logical, integer, integer64, double, complex and character."),
+      error(_("Row %"PRId64" of list column is type '%s' - not yet implemented. fwrite() can write list columns containing items which are atomic vectors of type logical, integer, integer64, double, complex and character."),
             i+1, isFactor(this) ? "factor" : type2char(TYPEOF(this)));
     }
     int width = writerMaxLen[wf];
     if (width==0) {
-      if (wf!=WF_String) STOP(_("Internal error: row %d of list column has no max length method implemented"), i+1); // # nocov
+      if (wf!=WF_String) STOP(_("Internal error: row %"PRId64" of list column has no max length method implemented"), i+1); // # nocov
       const int l = LENGTH(this);
       for (int j=0; j<l; ++j) width+=LENGTH(STRING_ELT(this, j));
     } else {
@@ -168,7 +168,7 @@ SEXP fwriteR(
   )
 {
   if (!isNewList(DF)) error(_("fwrite must be passed an object of type list; e.g. data.frame, data.table"));
-  fwriteMainArgs args;
+  fwriteMainArgs args = {0};  // {0} to quieten valgrind's uninitialized, #4639
   args.is_gzip = LOGICAL(is_gzip_Arg)[0];
   args.bom = LOGICAL(bom_Arg)[0];
   args.yaml = CHAR(STRING_ELT(yaml_Arg, 0));
@@ -228,8 +228,9 @@ SEXP fwriteR(
   int firstListColumn = 0;
   for (int j=0; j<args.ncol; j++) {
     SEXP column = VECTOR_ELT(DFcoerced, j);
-    if (args.nrow != length(column))
-      error(_("Column %d's length (%d) is not the same as column 1's length (%d)"), j+1, length(column), args.nrow);
+    if (args.nrow != length(column)) {
+      error(_("Column %d's length (%d) is not the same as column 1's length (%"PRId64")"), j+1, length(column), args.nrow);
+    }
     int32_t wf = whichWriter(column);
     if (wf<0) {
       error(_("Column %d's type is '%s' - not yet implemented in fwrite."), j+1, type2char(TYPEOF(column)));

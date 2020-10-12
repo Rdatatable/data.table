@@ -10,6 +10,8 @@ SEXP char_ITime;
 SEXP char_IDate;
 SEXP char_Date;
 SEXP char_POSIXct;
+SEXP char_POSIXt;
+SEXP char_UTC;
 SEXP char_nanotime;
 SEXP char_lens;
 SEXP char_indices;
@@ -30,11 +32,13 @@ SEXP sym_verbose;
 SEXP SelfRefSymbol;
 SEXP sym_inherits;
 SEXP sym_datatable_locked;
+SEXP sym_tzone;
+SEXP sym_old_fread_datetime_character;
 double NA_INT64_D;
 long long NA_INT64_LL;
 Rcomplex NA_CPLX;
-size_t sizes[100];
-size_t typeorder[100];
+size_t __sizes[100];
+size_t __typeorder[100];
 
 // .Calls
 SEXP setattrib();
@@ -66,7 +70,7 @@ SEXP fcast();
 SEXP uniqlist();
 SEXP uniqlengths();
 SEXP forder();
-SEXP fsorted();
+SEXP issorted();
 SEXP gforce();
 SEXP gsum();
 SEXP gmean();
@@ -119,6 +123,7 @@ SEXP lock();
 SEXP unlock();
 SEXP islockedR();
 SEXP allNAR();
+SEXP test_dt_win_snprintf();
 
 // .Externals
 SEXP fastmean();
@@ -152,7 +157,7 @@ R_CallMethodDef callMethods[] = {
 {"Cuniqlist", (DL_FUNC) &uniqlist, -1},
 {"Cuniqlengths", (DL_FUNC) &uniqlengths, -1},
 {"Cforder", (DL_FUNC) &forder, -1},
-{"Cfsorted", (DL_FUNC) &fsorted, -1},
+{"Cissorted", (DL_FUNC) &issorted, -1},
 {"Cgforce", (DL_FUNC) &gforce, -1},
 {"Cgsum", (DL_FUNC) &gsum, -1},
 {"Cgmean", (DL_FUNC) &gmean, -1},
@@ -211,6 +216,7 @@ R_CallMethodDef callMethods[] = {
 {"CfrollapplyR", (DL_FUNC) &frollapplyR, -1},
 {"CtestMsgR", (DL_FUNC) &testMsgR, -1},
 {"C_allNAR", (DL_FUNC) &allNAR, -1},
+{"Ctest_dt_win_snprintf", (DL_FUNC)&test_dt_win_snprintf, -1},
 {NULL, NULL, 0}
 };
 
@@ -221,15 +227,15 @@ R_ExternalMethodDef externalMethods[] = {
 };
 
 static void setSizes() {
-  for (int i=0; i<100; ++i) { sizes[i]=0; typeorder[i]=0; }
+  for (int i=0; i<100; ++i) { __sizes[i]=0; __typeorder[i]=0; }
   // only these types are currently allowed as column types :
-  sizes[LGLSXP] =  sizeof(int);       typeorder[LGLSXP] =  0;
-  sizes[RAWSXP] =  sizeof(Rbyte);     typeorder[RAWSXP] =  1;
-  sizes[INTSXP] =  sizeof(int);       typeorder[INTSXP] =  2;   // integer and factor
-  sizes[REALSXP] = sizeof(double);    typeorder[REALSXP] = 3;   // numeric and integer64
-  sizes[CPLXSXP] = sizeof(Rcomplex);  typeorder[CPLXSXP] = 4;
-  sizes[STRSXP] =  sizeof(SEXP *);    typeorder[STRSXP] =  5;
-  sizes[VECSXP] =  sizeof(SEXP *);    typeorder[VECSXP] =  6;   // list column
+  __sizes[LGLSXP] =  sizeof(int);       __typeorder[LGLSXP] =  0;
+  __sizes[RAWSXP] =  sizeof(Rbyte);     __typeorder[RAWSXP] =  1;
+  __sizes[INTSXP] =  sizeof(int);       __typeorder[INTSXP] =  2;   // integer and factor
+  __sizes[REALSXP] = sizeof(double);    __typeorder[REALSXP] = 3;   // numeric and integer64
+  __sizes[CPLXSXP] = sizeof(Rcomplex);  __typeorder[CPLXSXP] = 4;
+  __sizes[STRSXP] =  sizeof(SEXP *);    __typeorder[STRSXP] =  5;
+  __sizes[VECSXP] =  sizeof(SEXP *);    __typeorder[VECSXP] =  6;   // list column
   if (sizeof(char *)>8) error(_("Pointers are %d bytes, greater than 8. We have not tested on any architecture greater than 64bit yet."), sizeof(char *));
   // One place we need the largest sizeof is the working memory malloc in reorder.c
 }
@@ -309,8 +315,11 @@ void attribute_visible R_init_datatable(DllInfo *info)
   // either use PRINTNAME(install()) or R_PreserveObject(mkChar()) here.
   char_integer64 = PRINTNAME(install("integer64"));
   char_ITime =     PRINTNAME(install("ITime"));
+  char_IDate =     PRINTNAME(install("IDate"));
   char_Date =      PRINTNAME(install("Date"));   // used for IDate too since IDate inherits from Date
   char_POSIXct =   PRINTNAME(install("POSIXct"));
+  char_POSIXt =    PRINTNAME(install("POSIXt"));
+  char_UTC =       PRINTNAME(install("UTC"));
   char_nanotime =  PRINTNAME(install("nanotime"));
   char_starts =    PRINTNAME(sym_starts = install("starts"));
   char_lens =      PRINTNAME(install("lens"));
@@ -344,6 +353,8 @@ void attribute_visible R_init_datatable(DllInfo *info)
   SelfRefSymbol = install(".internal.selfref");
   sym_inherits = install("inherits");
   sym_datatable_locked = install(".data.table.locked");
+  sym_tzone = install("tzone");
+  sym_old_fread_datetime_character = install("datatable.old.fread.datetime.character");
 
   initDTthreads();
   avoid_openmp_hang_within_fork();
@@ -401,6 +412,6 @@ SEXP initLastUpdated(SEXP var) {
 
 SEXP dllVersion() {
   // .onLoad calls this and checks the same as packageVersion() to ensure no R/C version mismatch, #3056
-  return(ScalarString(mkChar("1.12.9")));
+  return(ScalarString(mkChar("1.13.1")));
 }
 
