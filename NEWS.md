@@ -32,6 +32,8 @@
     `PKG_CPPFLAGS='-Xclang -fopenmp' PKG_LIBS=-lomp R CMD INSTALL data.table_<ver>.tar.gz`
 has a better chance of working on Mac.
 
+5. In v1.12.4, we added support for fractional `stringsAsFactors` in `fread` -- for example, if `stringsAsFactors=.2`, any character column with fewer than 20% unique strings would be cast as `factor`. This is now reflected in `?fread` as well, [#4706](https://github.com/Rdatatable/data.table/issues/4706). Thanks to @markderry for the PR.
+
 
 # data.table [v1.13.0](https://github.com/Rdatatable/data.table/milestone/17?closed=1)  (24 Jul 2020)
 
@@ -214,8 +216,6 @@ has a better chance of working on Mac.
 11. Internal function `shallow()` no longer makes a deep copy of secondary indices. This eliminates a relatively small time and memory overhead when indices are present that added up significantly when performing many operations, such as joins, in a loop or when joining in `j` by group, [#4311](https://github.com/Rdatatable/data.table/issues/4311). Many thanks to @renkun-ken for the report, and @tlapak for the investigation and PR.
 
 12. The `datatable.old.unique.by.key` option has been removed as per the 4 year schedule detailed in note 10 of v1.12.4 (Oct 2019), note 10 of v1.11.0 (May 2018), and note 1 of v1.9.8 (Nov 2016). It has been generating a helpful warning for 2 years, and helpful error for 1 year.
-
-5. Added documentation to describe a previously added feature to `stringsAsFactors` argument when it is set to a decimal value between 0 and 1. For example where `stringsAsFactors = 0.2` would mean that any character columns where `uniqueN(column)/nrow < 0.2` will be converted to factors. This addresses [#4706](https://github.com/Rdatatable/data.table/issues/4706). Thanks to @MichaelChirico for reporting and @markderry for the documentation.
 
 
 # data.table [v1.12.8](https://github.com/Rdatatable/data.table/milestone/15?closed=1)  (09 Dec 2019)
