@@ -125,14 +125,14 @@ static int _selfrefok(SEXP x, Rboolean checkNames, Rboolean verbose) {
   tag = R_ExternalPtrTag(v);
   if (!(isNull(tag) || isString(tag))) error(_("Internal error: .internal.selfref tag isn't NULL or a character vector")); // # nocov
   names = getAttrib(x, R_NamesSymbol);
-  if (names != tag && isString(names))
+  if (names!=tag && isString(names) && !ALTREP(names))  // !ALTREP for #4734
     SET_TRUELENGTH(names, LENGTH(names));
     // R copied this vector not data.table; it's not actually over-allocated. It looks over-allocated
     // because R copies the original vector's tl over despite allocating length.
   prot = R_ExternalPtrProtected(v);
   if (TYPEOF(prot) != EXTPTRSXP)   // Very rare. Was error(_(".internal.selfref prot is not itself an extptr")).
     return 0;                      // # nocov ; see http://stackoverflow.com/questions/15342227/getting-a-random-internal-selfref-error-in-data-table-for-r
-  if (x != R_ExternalPtrAddr(prot))
+  if (x!=R_ExternalPtrAddr(prot) && !ALTREP(x))
     SET_TRUELENGTH(x, LENGTH(x));  // R copied this vector not data.table, it's not actually over-allocated
   return checkNames ? names==tag : x==R_ExternalPtrAddr(prot);
 }
