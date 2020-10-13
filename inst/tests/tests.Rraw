@@ -17150,6 +17150,14 @@ test(2154.1, fread("0.0\n", colClasses="integer"), data.table(V1=0.0),
 test(2154.2, fread("A\n0.0\n", colClasses="integer"), data.table(A=0.0),
              warning="Attempt to override column 1 <<A>> of inherent type 'float64' down to 'int32' ignored.*please")
 
+# asan heap-use-after-free on list columns with attributes on each item, #4746
+DT = data.table(A=INT(1,1,2,3,3,4,5,5,6,7),
+                B=lapply(1:10, function(x) structure(rnorm(90), foo=c(42,12,36))))
+for (i in 0:4) test(2155+i/10,
+  { gctorture2(step=20); ans=DT[, .(attr(B[[1L]],"foo")[1L]), by=A]; gctorture2(step=0); gc(); ans },
+  data.table(A=1:7, V1=42)
+)
+
 # fread message display non-ASCII messages correctly, #4747
 x = "fa\u00e7ile"; Encoding(x) = "UTF-8"
 # should only run this test if the native encoding can represent latin1 correctly
@@ -17157,8 +17165,8 @@ if (identical(x, enc2native(x))) {
   txt = enc2utf8(sprintf("A,B\n%s,%s\n%s", x, x, x))
   txt2 = iconv(txt, "UTF-8", "latin1")
   out = data.table(A = x, B = x)
-  test(2155.1, fread(text = txt, encoding = 'UTF-8'), out,
+  test(2156.1, fread(text = txt, encoding = 'UTF-8'), out,
                warning="Discarded single-line footer: <<fa\u00e7ile>>")
-  test(2155.2, fread(text = txt2, encoding = 'Latin-1'), out,
+  test(2156.2, fread(text = txt2, encoding = 'Latin-1'), out,
                warning="Discarded single-line footer: <<fa\u00e7ile>>")
 }
