@@ -360,8 +360,8 @@ test.data.table(script="*.Rraw") # 7 mins (vs 1min normally) under UBSAN, ASAN a
                                  # without the fix in PR#3515, the --disable-long-double lumped into this build does now work and correctly reproduces the noLD problem
 # If any problems, edit ~/.R/Makevars and activate "CFLAGS=-O0 -g" to trace. Rerun 'Rdevel-strict CMD INSTALL' and rerun tests.
 for (i in 1:10) if (!test.data.table()) break  # try several runs maybe even 100; e.g a few tests generate data with a non-fixed random seed
-# gctorture(TRUE)      # very slow, many days
-gctorture2(step=100)   # [12-18hrs] under ASAN, UBSAN and --strict-barrier
+# gctorture(TRUE)      # very slow, many days maybe weeks
+gctorture2(step=100)   # [12-18hrs (TODO: UPDATE, checkbox in #4637)] under ASAN, UBSAN and --strict-barrier
 print(Sys.time()); started.at<-proc.time(); try(test.data.table()); print(Sys.time()); print(timetaken(started.at))
 
 ## In case want to ever try again with 32bit on 64bit Ubuntu for tracing any 32bit-only problems

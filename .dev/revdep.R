@@ -144,7 +144,7 @@ run = function(pkgs=NULL) {
   if (length(pkgs)==1) pkgs = strsplit(pkgs, split="[, ]")[[1]]
   if (anyDuplicated(pkgs)) stop("pkgs contains dups")
   if (!length(pkgs)) {
-    opts = c("not.started","cran.fail","bioc.fail","both.fail","rerun.all")
+    opts = c("not.started","cran.fail","bioc.fail","both.fail","rerun.cran","rerun.bioc","rerun.all")
     cat(paste0(1:length(opts),": ",opts)  , sep="\n")
     w = suppressWarnings(as.integer(readline("Enter option: ")))
     if (is.na(w) || !w %in% seq_along(opts)) stop(w," is invalid")
@@ -158,6 +158,10 @@ run = function(pkgs=NULL) {
       cat("Proceed? (ctrl-c or enter)\n")
       scan(quiet=TRUE)
       system(cmd)
+    } else if (which=="rerun.cran") {
+      pkgs = deps[ !grepl("bioconductor", avail[deps,"Repository"]) ]
+    } else if (which=="rerun.bioc") {
+      pkgs = deps[ grepl("bioconductor", avail[deps,"Repository"]) ]
     } else {
       pkgs = NULL
       if (which=="not.started") pkgs = deps[!file.exists(paste0("./",deps,".Rcheck"))]  # those that haven't run
