@@ -64,7 +64,17 @@ cat("New downloaded:",new," Already had latest:", old, " TOTAL:", length(deps), 
 update.packages(repos=BiocManager::repositories(), checkBuilt=TRUE)  # double-check all dependencies are latest too
 cat("This is R ",R.version$major,".",R.version$minor,"; ",R.version.string,"\n",sep="")
 cat("Installed packages built using:\n")
-drop(table(installed.packages()[,"Built"]))  # ensure all built with this major release of R
+x = installed.packages()
+drop(table(x[,"Built"]))  # manually inspect to ensure all built with this x.y release of R
+if (FALSE) {  # if not, run this manually replacing "4.0.0" appropriately 
+  for (p in rownames(x)[x[,"Built"]=="4.0.0"]) {
+    install.packages(p, repos=BiocManager::repositories())
+  }
+  # warnings may suggest many of them were removed from CRAN, so remove the remaining from revdeplib to be clean
+  x = installed.packages()
+  remove.packages(rownames(x)[x[,"Built"]=="4.0.0"])
+  drop(table(installed.packages()[,"Built"]))  # check again to make sure all built in current R-devel x.y version
+}
 
 # Remove the tar.gz no longer needed :
 for (p in deps) {
