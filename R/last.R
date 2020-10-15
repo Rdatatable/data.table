@@ -13,8 +13,8 @@ last = function(x, n=1L, na.rm=FALSE, ...) {
       x = x[!is.na(x)]
     } else if (is.data.frame(x)) {
       if (verbose) 
-        cat("last: using last(x[complete.cases(x),]): na.rm=T\n")
-      x = x[complete.cases(x),]
+        cat("last: using last(na.omit(x)): na.rm=T\n")
+      x = na.omit(x)
     }
   }
 
@@ -69,8 +69,8 @@ first = function(x, n=1L, na.rm=FALSE, ...) {
       x = x[!is.na(x)]
     } else if (is.data.frame(x)) {
       if (verbose) 
-        cat("first: using first(x[complete.cases(x),]): na.rm=T\n")
-      x = x[complete.cases(x),]
+        cat("first: using first(na.omit(x)): na.rm=T\n")
+      x = na.omit(x)
     }
   }
 
