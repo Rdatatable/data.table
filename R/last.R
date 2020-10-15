@@ -6,13 +6,14 @@ last = function(x, n=1L, na.rm=FALSE, ...) {
 
   stopifnot(isTRUEorFALSE(na.rm))
 
-  if (na.rm) {
-    if (verbose) 
-      cat("last: na.rm=TRUE\n")
-    
+  if (na.rm) {    
     if (is.vector(x) && length(x)) {
-      x = x[complete.cases(x)]
+      if (verbose) 
+        cat("last: using last(x[!is.na(x)]): na.rm=T\n")
+      x = x[!is.na(x)]
     } else if (is.data.frame(x)) {
+      if (verbose) 
+        cat("last: using last(x[complete.cases(x),]): na.rm=T\n")
       x = x[complete.cases(x),]
     }
   }
@@ -61,13 +62,14 @@ first = function(x, n=1L, na.rm=FALSE, ...) {
 
   stopifnot(isTRUEorFALSE(na.rm))
 
-  if (na.rm) {
-    if (verbose) 
-      cat("first: na.rm=TRUE\n")
-    
+  if (na.rm) {    
     if (is.vector(x) && length(x)) {
-      x = x[complete.cases(x)]
+      if (verbose) 
+        cat("first: using first(x[!is.na(x)]): na.rm=T\n")
+      x = x[!is.na(x)]
     } else if (is.data.frame(x)) {
+      if (verbose) 
+        cat("first: using first(x[complete.cases(x),]): na.rm=T\n")
       x = x[complete.cases(x),]
     }
   }

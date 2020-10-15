@@ -1020,16 +1020,13 @@ SEXP glast(SEXP x, SEXP narmArg) {
       if (narm){
         j = 0;
         while(j < grpsize[i]){
-          if (ix[k-j] != NA_LOGICAL){
-            ians[i] = ix[k-j];
-            break;
-          }
-          j++;
+          if (ix[k-j] == NA_LOGICAL){j++; continue;}
+          ians[i] = ix[k-j];
+          break;
         }
       }
     }
-  }
-    break;
+  } break;
   case INTSXP: {
     const int *ix = INTEGER(x);
     ans = PROTECT(allocVector(INTSXP, ngrp));
@@ -1042,16 +1039,13 @@ SEXP glast(SEXP x, SEXP narmArg) {
       if (narm){
         j = 0;
         while(j < grpsize[i]){
-          if (ix[k-j] != NA_INTEGER){
-            ians[i] = ix[k-j];
-            break;
-          }
-          j++;
+          if (ix[k-j] == NA_INTEGER){j++; continue;}
+          ians[i] = ix[k-j];
+          break;
         }
       }
     }
-  }
-    break;
+  } break;
   case REALSXP: {
     const double *dx = REAL(x);
     ans = PROTECT(allocVector(REALSXP, ngrp));
@@ -1064,16 +1058,13 @@ SEXP glast(SEXP x, SEXP narmArg) {
       if (narm){
         j = 0;
         while(j < grpsize[i]){
-          if (dx[k-j] != NA_REAL){
-            dans[i] = dx[k-j];
-            break;
-          }
-          j++;
+          if (ISNAN(dx[k-j])){j++; continue;}
+          dans[i] = dx[k-j];
+          break;
         }
       }
     }
-  }
-    break;
+  } break;
   case CPLXSXP: {
     const Rcomplex *dx = COMPLEX(x);
     ans = PROTECT(allocVector(CPLXSXP, ngrp));
@@ -1086,17 +1077,14 @@ SEXP glast(SEXP x, SEXP narmArg) {
       if (narm){
         j = 0;
         while(j < grpsize[i]){
-          const Rcomplex elem = dx[k-j];
-          if (!(ISNAN(elem.i) && ISNAN(elem.r))){
-            dans[i] = dx[k-j];
-            break;
-          }
-          j++;
+          if (ISNAN(dx[k-j].i) || ISNAN(dx[k-j].r)){j++; continue;}
+          dans[i] = dx[k-j];
+          break;
         }
       }
     }
   } break;
-  case STRSXP:
+  case STRSXP: {
     ans = PROTECT(allocVector(STRSXP, ngrp));
     for (i=0; i<ngrp; i++) {
       k = ff[i]+grpsize[i]-2;
@@ -1106,16 +1094,14 @@ SEXP glast(SEXP x, SEXP narmArg) {
       if (narm){
         j = 0;
         while(j < grpsize[i]){
-          if (STRING_ELT(x, k-j) != NA_STRING){
-            SET_STRING_ELT(ans, i, STRING_ELT(x, k-j));
-            break;
-          }
-          j++;
+          if (STRING_ELT(x, k-j) == NA_STRING){j++; continue;}
+          SET_STRING_ELT(ans, i, STRING_ELT(x, k-j));
+          break;
         }
       }
     }
-    break;
-  case VECSXP:
+  } break;
+  case VECSXP: {
     ans = PROTECT(allocVector(VECSXP, ngrp));
     for (i=0; i<ngrp; i++) {
       k = ff[i]+grpsize[i]-2;
@@ -1123,17 +1109,15 @@ SEXP glast(SEXP x, SEXP narmArg) {
       k = (irowslen == -1) ? k : irows[k]-1;
       SET_VECTOR_ELT(ans, i, VECTOR_ELT(x, k));
       if (narm){
-        j = 1;
+        j = 0;
         while(j < grpsize[i]){
-          if (VECTOR_ELT(x, k-j) != R_NilValue){
-            SET_VECTOR_ELT(ans, i, VECTOR_ELT(x, k-j));
-            break;
-          }
-          j++;
+          if (VECTOR_ELT(x, k-j) == R_NilValue){j++; continue;}
+          SET_VECTOR_ELT(ans, i, VECTOR_ELT(x, k-j));
+          break;
         }
       }
     }
-    break;
+  } break;
   default:
     error(_("Type '%s' not supported by GForce tail (gtail). Either add the prefix utils::tail(.) or turn off GForce optimization using options(datatable.optimize=1)"), type2char(TYPEOF(x)));
   }
@@ -1165,16 +1149,13 @@ SEXP gfirst(SEXP x, SEXP narmArg) {
       if (narm){
         j = 0;
         while(j < grpsize[i]){
-          if (ix[k+j] != NA_LOGICAL){
-            ians[i] = ix[k+j];
-            break;
-          }
-          j++;
+          if (ix[k+j] == NA_LOGICAL){j++; continue;}
+          ians[i] = ix[k+j];
+          break;
         }
       }
     }
-  }
-    break;
+  } break;
   case INTSXP: {
     const int *ix = INTEGER(x);
     ans = PROTECT(allocVector(INTSXP, ngrp));
@@ -1187,16 +1168,13 @@ SEXP gfirst(SEXP x, SEXP narmArg) {
       if (narm){
         j = 0;
         while(j < grpsize[i]){
-          if (ix[k+j] != NA_INTEGER){
-            ians[i] = ix[k+j];
-            break;
-          }
-          j++;
+          if (ix[k+j] == NA_INTEGER){j++; continue;}
+          ians[i] = ix[k+j];
+          break;
         }
       }
     }
-  }
-    break;
+  } break;
   case REALSXP: {
     const double *dx = REAL(x);
     ans = PROTECT(allocVector(REALSXP, ngrp));
@@ -1209,16 +1187,13 @@ SEXP gfirst(SEXP x, SEXP narmArg) {
       if (narm){
         j = 0;
         while(j < grpsize[i]){
-          if (dx[k+j] != NA_REAL){
-            dans[i] = dx[k+j];
-            break;
-          }
-          j++;
+          if (ISNAN(dx[k+j])){j++; continue;}
+          dans[i] = dx[k+j];
+          break;
         }
       }
     }
-  }
-    break;
+  } break;
   case CPLXSXP: {
     const Rcomplex *dx = COMPLEX(x);
     ans = PROTECT(allocVector(CPLXSXP, ngrp));
@@ -1231,17 +1206,14 @@ SEXP gfirst(SEXP x, SEXP narmArg) {
       if (narm){
         j = 0;
         while(j < grpsize[i]){
-          const Rcomplex elem = dx[k+j];
-          if (!(ISNAN(elem.i) && ISNAN(elem.r))){
-            dans[i] = dx[k+j];
-            break;
-          }
-          j++;
+          if (ISNAN(dx[k+j].i) || ISNAN(dx[k+j].r)){j++; continue;}
+          dans[i] = dx[k+j];
+          break;
         }
       }
     }
   } break;
-  case STRSXP:
+  case STRSXP: {
     ans = PROTECT(allocVector(STRSXP, ngrp));
     for (i=0; i<ngrp; i++) {
       k = ff[i]-1;
@@ -1251,16 +1223,14 @@ SEXP gfirst(SEXP x, SEXP narmArg) {
       if (narm){
         j = 0;
         while(j < grpsize[i]){
-          if (STRING_ELT(x, k+j) != NA_STRING){
-            SET_STRING_ELT(ans, i, STRING_ELT(x, k+j));
-            break;
-          }
-          j++;
+          if (STRING_ELT(x, k+j) == NA_STRING){j++; continue;}
+          SET_STRING_ELT(ans, i, STRING_ELT(x, k+j));
+          break;
         }
       }
     }
-    break;
-  case VECSXP:
+  } break;
+  case VECSXP: {
     ans = PROTECT(allocVector(VECSXP, ngrp));
     for (i=0; i<ngrp; i++) {
       k = ff[i]-1;
@@ -1268,17 +1238,15 @@ SEXP gfirst(SEXP x, SEXP narmArg) {
       k = (irowslen == -1) ? k : irows[k]-1;
       SET_VECTOR_ELT(ans, i, VECTOR_ELT(x, k));
       if (narm){
-        j = 1;
+        j = 0;
         while(j < grpsize[i]){
-          if (VECTOR_ELT(x, k+j) != R_NilValue){
-            SET_VECTOR_ELT(ans, i, VECTOR_ELT(x, k+j));
-            break;
-          }
-          j++;
+          if (VECTOR_ELT(x, k+j) == R_NilValue){j++; continue;}
+          SET_VECTOR_ELT(ans, i, VECTOR_ELT(x, k+j));
+          break;
         }
       }
     }
-    break;
+  } break;
   default:
     error(_("Type '%s' not supported by GForce head (ghead). Either add the prefix utils::head(.) or turn off GForce optimization using options(datatable.optimize=1)"), type2char(TYPEOF(x)));
   }
