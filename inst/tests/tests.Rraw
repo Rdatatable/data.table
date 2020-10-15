@@ -17164,6 +17164,7 @@ for (i in 0:4) test(2155+i/10,
 # length(value)>=64, R creates an ALTREP REF wrapper. Which dogroups.c now catches.
 # Hence this test needs to be at least 128 rows, 2 groups of 64 each.
 DT = data.table(series=c("ts1","ts2"), value=rnorm(128))
-test(2156, DT[,list(list({attr(value,"class")<-"newclass";value})),by=series]$V1[[1L]][1L],
-           DT[1,value])
+test(2156.1, DT[,list(list({attr(value,"class")<-"newclass";value})),by=series]$V1[[1L]][1L],
+             DT[1,value])
+test(2156.2, truelength(DT[,list(list(value)),by=series]$V1[[1L]])>=0L)  # not -64 carried over by duplicate() of the .SD column
 
