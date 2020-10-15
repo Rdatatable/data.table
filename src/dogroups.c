@@ -3,7 +3,7 @@
 #include <fcntl.h>
 #include <time.h>
 
-static bool anySpecialStatic(SEXP x) {
+static SEXP copySpecialStaticAndAltrep(SEXP x) {
   // Special refers to special symbols .BY, .I, .N, and .GRP; see special-symbols.Rd
   // Static because these are like C static arrays which are the same memory for each group; e.g., dogroups
   // creates .SD for the largest group once up front, overwriting the contents for each group. Their
@@ -42,15 +42,16 @@ static bool anySpecialStatic(SEXP x) {
   const int n = length(x);
   // use length() not LENGTH() because LENGTH() on NULL is segfault in R<3.5 where we still define USE_RINTERNALS
   // (see data.table.h), and isNewList() is true for NULL
-  if (n==0)
-    return false;
-  if (isVectorAtomic(x))
-    return TRUELENGTH(x)<0;
-  if (isNewList(x)) for (int i=0; i<n; ++i) {  
-    if (anySpecialStatic(VECTOR_ELT(x,i)))
-      return true;
+  if ((isVectorAtomic(x) && n>0 && TRUELENGTH(x)<0) || ALTREP(x))
+    return copyAsPlain(x);
+  if (isNewList(x)) for (int i=0; i<n; ++i) {
+    SEXP item = VECTOR_ELT(x,i);
+    SEXP newx = PROTECT(copySpecialStaticAndAltrep(item));
+    if (newx!=item)
+      SET_VECTOR_ELT(x,i,newx);
+    UNPROTECT(1);
   }
-  return false;
+  return x;
 }
 
 SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEXP xjiscols, SEXP grporder, SEXP order, SEXP starts, SEXP lens, SEXP jexp, SEXP env, SEXP lhs, SEXP newnames, SEXP on, SEXP verboseArg)
@@ -296,14 +297,14 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
           SET_STRING_ELT(dtnames, colj, STRING_ELT(newnames, colj-origncol));
           copyMostAttrib(RHS, target); // attributes of first group dominate; e.g. initial factor levels come from first group
         }
-        bool copied = false;
-        if (isNewList(target) && anySpecialStatic(RHS)) {  // see comments in anySpecialStatic()
-          RHS = PROTECT(duplicate(RHS));
-          copied = true;
+        bool prot = false;
+        if (isNewList(target)) {
+          RHS = PROTECT(copySpecialStaticAndAltrep(RHS));
+          prot = true;
         }
         const char *warn = memrecycle(target, order, INTEGER(starts)[i]-1, grpn, RHS, 0, -1, 0, "");
         // can't error here because length mismatch already checked for all jval columns before starting to add any new columns
-        if (copied) UNPROTECT(1);
+        if (prot) UNPROTECT(1);
         if (warn)
           warning(_("Group %d column '%s': %s"), i+1, CHAR(STRING_ELT(dtnames, colj)), warn);
       }
@@ -401,13 +402,14 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
         if (thislen>1 && thislen!=maxn && grpn>0) {  // grpn>0 for grouping empty tables; test 1986
           error(_("Supplied %d items for column %d of group %d which has %d rows. The RHS length must either be 1 (single values are ok) or match the LHS length exactly. If you wish to 'recycle' the RHS please use rep() explicitly to make this intent clear to readers of your code."), thislen, j+1, i+1, maxn);
         }
-        bool copied = false;
-        if (isNewList(target) && anySpecialStatic(source)) {  // see comments in anySpecialStatic()
-          source = PROTECT(duplicate(source));
-          copied = true;
+        bool prot = false;
+        if (isNewList(target)) {
+          source = PROTECT(copySpecialStaticAndAltrep(source));
+          // mostly this protect will be unnecessary as the components will be changed; see its comments
+          prot = true;
         }
         memrecycle(target, R_NilValue, thisansloc, maxn, source, 0, -1, 0, "");
-        if (copied) UNPROTECT(1);
+        if (prot) UNPROTECT(1);
       }
     }
     ansloc += maxn;
@@ -427,7 +429,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
     }
   } else ans = R_NilValue;
   // Now reset length of .SD columns and .I to length of largest group, otherwise leak if the last group is smaller (often is).
-  // Also reset truelength on specials; see comments in anySpecialStatic().
+  // Also reset truelength on specials; see comments in anySpecialStatic().    // TODO update all comments using anySpecialStatic name
   for (int j=0; j<length(SDall); ++j) {
     SEXP this = VECTOR_ELT(SDall,j);
     SETLENGTH(this, maxGrpSize);

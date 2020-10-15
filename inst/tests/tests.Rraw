@@ -17158,3 +17158,12 @@ for (i in 0:4) test(2155+i/10,
   data.table(A=1:7, V1=42)
 )
 
+# dogroups.c eval(j) could create list columns containing altrep references to the specials, #PRNUM
+# thanks to revdep testing of 1.13.2 where package tstools revealed this via ts() creating ALTREP, #4758
+# the attr(value,"class")<-"newclass" lines mimics a line at the end of stats::ts(). When the 
+# length(value)>=64, R creates an ALTREP REF wrapper. Which dogroups.c now catches.
+# Hence this test needs to be at least 128 rows, 2 groups of 64 each.
+DT = data.table(series=c("ts1","ts2"), value=rnorm(128))
+test(2156, DT[,list(list({attr(value,"class")<-"newclass";value})),by=series]$V1[[1L]][1L],
+           DT[1,value])
+
