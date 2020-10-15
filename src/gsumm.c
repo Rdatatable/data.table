@@ -1020,7 +1020,10 @@ SEXP glast(SEXP x, SEXP narmArg) {
       if (narm){
         j = 0;
         while(j < grpsize[i]){
-          if (ix[k-j] == NA_LOGICAL){j++; continue;}
+          if (ix[k-j] == NA_LOGICAL){
+            j++;
+            continue;
+          }
           ians[i] = ix[k-j];
           break;
         }
@@ -1039,7 +1042,10 @@ SEXP glast(SEXP x, SEXP narmArg) {
       if (narm){
         j = 0;
         while(j < grpsize[i]){
-          if (ix[k-j] == NA_INTEGER){j++; continue;}
+          if (ix[k-j] == NA_INTEGER){
+            j++;
+            continue;
+          }
           ians[i] = ix[k-j];
           break;
         }
@@ -1058,7 +1064,10 @@ SEXP glast(SEXP x, SEXP narmArg) {
       if (narm){
         j = 0;
         while(j < grpsize[i]){
-          if (ISNAN(dx[k-j])){j++; continue;}
+          if (ISNAN(dx[k-j])){
+            j++;
+            continue;
+          }
           dans[i] = dx[k-j];
           break;
         }
@@ -1077,7 +1086,10 @@ SEXP glast(SEXP x, SEXP narmArg) {
       if (narm){
         j = 0;
         while(j < grpsize[i]){
-          if (ISNAN(dx[k-j].i) || ISNAN(dx[k-j].r)){j++; continue;}
+          if (ISNAN(dx[k-j].i) || ISNAN(dx[k-j].r)){
+            j++;
+            continue;
+          }
           dans[i] = dx[k-j];
           break;
         }
@@ -1094,7 +1106,10 @@ SEXP glast(SEXP x, SEXP narmArg) {
       if (narm){
         j = 0;
         while(j < grpsize[i]){
-          if (STRING_ELT(x, k-j) == NA_STRING){j++; continue;}
+          if (STRING_ELT(x, k-j) == NA_STRING){
+            j++;
+            continue;
+          }
           SET_STRING_ELT(ans, i, STRING_ELT(x, k-j));
           break;
         }
@@ -1111,7 +1126,10 @@ SEXP glast(SEXP x, SEXP narmArg) {
       if (narm){
         j = 0;
         while(j < grpsize[i]){
-          if (VECTOR_ELT(x, k-j) == R_NilValue){j++; continue;}
+          if (isNull(VECTOR_ELT(x, k-j))){
+            j++;
+            continue;
+          }
           SET_VECTOR_ELT(ans, i, VECTOR_ELT(x, k-j));
           break;
         }
@@ -1149,7 +1167,10 @@ SEXP gfirst(SEXP x, SEXP narmArg) {
       if (narm){
         j = 0;
         while(j < grpsize[i]){
-          if (ix[k+j] == NA_LOGICAL){j++; continue;}
+          if (ix[k+j] == NA_LOGICAL){
+            j++;
+            continue;
+          }
           ians[i] = ix[k+j];
           break;
         }
@@ -1168,7 +1189,10 @@ SEXP gfirst(SEXP x, SEXP narmArg) {
       if (narm){
         j = 0;
         while(j < grpsize[i]){
-          if (ix[k+j] == NA_INTEGER){j++; continue;}
+          if (ix[k+j] == NA_INTEGER){
+            j++;
+            continue;
+          }
           ians[i] = ix[k+j];
           break;
         }
@@ -1187,7 +1211,10 @@ SEXP gfirst(SEXP x, SEXP narmArg) {
       if (narm){
         j = 0;
         while(j < grpsize[i]){
-          if (ISNAN(dx[k+j])){j++; continue;}
+          if (ISNAN(dx[k+j])){
+            j++;
+            continue;
+          }
           dans[i] = dx[k+j];
           break;
         }
@@ -1206,7 +1233,10 @@ SEXP gfirst(SEXP x, SEXP narmArg) {
       if (narm){
         j = 0;
         while(j < grpsize[i]){
-          if (ISNAN(dx[k+j].i) || ISNAN(dx[k+j].r)){j++; continue;}
+          if (ISNAN(dx[k+j].i) || ISNAN(dx[k+j].r)){
+            j++;
+            continue;
+          }
           dans[i] = dx[k+j];
           break;
         }
@@ -1223,7 +1253,10 @@ SEXP gfirst(SEXP x, SEXP narmArg) {
       if (narm){
         j = 0;
         while(j < grpsize[i]){
-          if (STRING_ELT(x, k+j) == NA_STRING){j++; continue;}
+          if (STRING_ELT(x, k+j) == NA_STRING){
+            j++;
+            continue;
+          }
           SET_STRING_ELT(ans, i, STRING_ELT(x, k+j));
           break;
         }
@@ -1240,7 +1273,10 @@ SEXP gfirst(SEXP x, SEXP narmArg) {
       if (narm){
         j = 0;
         while(j < grpsize[i]){
-          if (VECTOR_ELT(x, k+j) == R_NilValue){j++; continue;}
+          if (isNull(VECTOR_ELT(x, k+j))){
+            j++;
+            continue;
+          }
           SET_VECTOR_ELT(ans, i, VECTOR_ELT(x, k+j));
           break;
         }
