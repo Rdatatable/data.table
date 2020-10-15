@@ -1017,10 +1017,10 @@ SEXP glast(SEXP x, SEXP narmArg) {
       if (isunsorted) k = oo[k]-1;
       k = (irowslen == -1) ? k : irows[k]-1;
       ians[i] = ix[k];
-      if (narm){
+      if (narm) {
         j = 0;
-        while(j < grpsize[i]){
-          if (ix[k-j] == NA_LOGICAL){
+        while (j < grpsize[i]) {
+          if (ix[k-j] == NA_LOGICAL) {
             j++;
             continue;
           }
@@ -1039,10 +1039,10 @@ SEXP glast(SEXP x, SEXP narmArg) {
       if (isunsorted) k = oo[k]-1;
       k = (irowslen == -1) ? k : irows[k]-1;
       ians[i] = ix[k];
-      if (narm){
+      if (narm) {
         j = 0;
-        while(j < grpsize[i]){
-          if (ix[k-j] == NA_INTEGER){
+        while (j < grpsize[i]) {
+          if (ix[k-j] == NA_INTEGER) {
             j++;
             continue;
           }
@@ -1061,10 +1061,10 @@ SEXP glast(SEXP x, SEXP narmArg) {
       if (isunsorted) k = oo[k]-1;
       k = (irowslen == -1) ? k : irows[k]-1;
       dans[i] = dx[k];
-      if (narm){
+      if (narm) {
         j = 0;
-        while(j < grpsize[i]){
-          if (ISNAN(dx[k-j])){
+        while (j < grpsize[i]) {
+          if (ISNAN(dx[k-j])) {
             j++;
             continue;
           }
@@ -1083,10 +1083,10 @@ SEXP glast(SEXP x, SEXP narmArg) {
       if (isunsorted) k = oo[k]-1;
       k = (irowslen == -1) ? k : irows[k]-1;
       dans[i] = dx[k];
-      if (narm){
+      if (narm) {
         j = 0;
-        while(j < grpsize[i]){
-          if (ISNAN(dx[k-j].i) || ISNAN(dx[k-j].r)){
+        while (j < grpsize[i]) {
+          if (ISNAN(dx[k-j].i) || ISNAN(dx[k-j].r)) {
             j++;
             continue;
           }
@@ -1103,10 +1103,10 @@ SEXP glast(SEXP x, SEXP narmArg) {
       if (isunsorted) k = oo[k]-1;
       k = (irowslen == -1) ? k : irows[k]-1;
       SET_STRING_ELT(ans, i, STRING_ELT(x, k));
-      if (narm){
+      if (narm) {
         j = 0;
-        while(j < grpsize[i]){
-          if (STRING_ELT(x, k-j) == NA_STRING){
+        while (j < grpsize[i]) {
+          if (STRING_ELT(x, k-j) == NA_STRING) {
             j++;
             continue;
           }
@@ -1123,10 +1123,10 @@ SEXP glast(SEXP x, SEXP narmArg) {
       if (isunsorted) k = oo[k]-1;
       k = (irowslen == -1) ? k : irows[k]-1;
       SET_VECTOR_ELT(ans, i, VECTOR_ELT(x, k));
-      if (narm){
+      if (narm) {
         j = 0;
-        while(j < grpsize[i]){
-          if (isNull(VECTOR_ELT(x, k-j))){
+        while (j < grpsize[i]) {
+          if (isNull(VECTOR_ELT(x, k-j))) {
             j++;
             continue;
           }
@@ -1164,10 +1164,10 @@ SEXP gfirst(SEXP x, SEXP narmArg) {
       if (isunsorted) k = oo[k]-1;
       k = (irowslen == -1) ? k : irows[k]-1;
       ians[i] = ix[k];
-      if (narm){
+      if (narm) {
         j = 0;
-        while(j < grpsize[i]){
-          if (ix[k+j] == NA_LOGICAL){
+        while (j < grpsize[i]) {
+          if (ix[k+j] == NA_LOGICAL) {
             j++;
             continue;
           }
@@ -1186,10 +1186,10 @@ SEXP gfirst(SEXP x, SEXP narmArg) {
       if (isunsorted) k = oo[k]-1;
       k = (irowslen == -1) ? k : irows[k]-1;
       ians[i] = ix[k];
-      if (narm){
+      if (narm) {
         j = 0;
-        while(j < grpsize[i]){
-          if (ix[k+j] == NA_INTEGER){
+        while (j < grpsize[i]) {
+          if (ix[k+j] == NA_INTEGER) {
             j++;
             continue;
           }
@@ -1208,10 +1208,10 @@ SEXP gfirst(SEXP x, SEXP narmArg) {
       if (isunsorted) k = oo[k]-1;
       k = (irowslen == -1) ? k : irows[k]-1;
       dans[i] = dx[k];
-      if (narm){
+      if (narm) {
         j = 0;
-        while(j < grpsize[i]){
-          if (ISNAN(dx[k+j])){
+        while (j < grpsize[i]) {
+          if (ISNAN(dx[k+j])) {
             j++;
             continue;
           }
@@ -1230,10 +1230,10 @@ SEXP gfirst(SEXP x, SEXP narmArg) {
       if (isunsorted) k = oo[k]-1;
       k = (irowslen == -1) ? k : irows[k]-1;
       dans[i] = dx[k];
-      if (narm){
+      if (narm) {
         j = 0;
-        while(j < grpsize[i]){
-          if (ISNAN(dx[k+j].i) || ISNAN(dx[k+j].r)){
+        while (j < grpsize[i]) {
+          if (ISNAN(dx[k+j].i) || ISNAN(dx[k+j].r)) {
             j++;
             continue;
           }
@@ -1250,10 +1250,10 @@ SEXP gfirst(SEXP x, SEXP narmArg) {
       if (isunsorted) k = oo[k]-1;
       k = (irowslen == -1) ? k : irows[k]-1;
       SET_STRING_ELT(ans, i, STRING_ELT(x, k));
-      if (narm){
+      if (narm) {
         j = 0;
-        while(j < grpsize[i]){
-          if (STRING_ELT(x, k+j) == NA_STRING){
+        while (j < grpsize[i]) {
+          if (STRING_ELT(x, k+j) == NA_STRING) {
             j++;
             continue;
           }
@@ -1270,10 +1270,10 @@ SEXP gfirst(SEXP x, SEXP narmArg) {
       if (isunsorted) k = oo[k]-1;
       k = (irowslen == -1) ? k : irows[k]-1;
       SET_VECTOR_ELT(ans, i, VECTOR_ELT(x, k));
-      if (narm){
+      if (narm) {
         j = 0;
-        while(j < grpsize[i]){
-          if (isNull(VECTOR_ELT(x, k+j))){
+        while (j < grpsize[i]) {
+          if (isNull(VECTOR_ELT(x, k+j))) {
             j++;
             continue;
           }
