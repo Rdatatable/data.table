@@ -17167,4 +17167,7 @@ DT = data.table(series=c("ts1","ts2"), value=rnorm(128))
 test(2156.1, DT[,list(list({attr(value,"class")<-"newclass";value})),by=series]$V1[[1L]][1L],
              DT[1,value])
 test(2156.2, truelength(DT[,list(list(value)),by=series]$V1[[1L]])>=0L)  # not -64 carried over by duplicate() of the .SD column
+# cover NULL case in copyAsPlain by putting a NULL alongside a dogroups .SD column. The 'if(.GRP==1L)' is just for fun.
+test(2156.3, sapply(DT[, list(if (.GRP==1L) list(value,NULL) else list(NULL,value)), by=series]$V1, length),
+             INT(64,0,0,64))
 
