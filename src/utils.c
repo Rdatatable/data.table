@@ -277,7 +277,7 @@ SEXP copyAsPlain(SEXP x) {
     const SEXP *xp=SEXPPTR_RO(x);
     for (int64_t i=0; i<n; ++i) SET_VECTOR_ELT(ans, i, copyAsPlain(xp[i]));
   } break;
-  default:
+  default:                                                                                           // # nocov
     error(_("Internal error: unsupported type '%s' passed to copyAsPlain()"), type2char(TYPEOF(x))); // # nocov
   }
   DUPLICATE_ATTRIB(ans, x);
