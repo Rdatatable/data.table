@@ -17213,3 +17213,12 @@ test(2156.36, melt(iris.dt, measure.vars=measure(value.name, value.name, sep="."
 # measure with factor conversion.
 myfac = function(x)factor(x)#user-defined conversion function.
 test(2156.40, melt(DTid, measure.vars=measure(letter=myfac, value.name, pattern="([ab])([12])")), data.table(id=1, letter=factor(c("a","b")), "2"=c(2,2), "1"=c(NA,1)))
+# measure errors.
+iris.i <- 1
+iris.num <- datasets::iris[iris.i, 1:4]
+iris.days <- data.table(
+  day1=iris.num, day2=iris.num, Species=iris$Species[iris.i])
+test(2156.50, melt(iris.days, measure.vars=measure(before=as.integer, value.name, dim, sep=".")), error="before conversion function returned vector of all NA", warning="NAs introduced by coercion")
+test(2156.51, melt(iris.days, measure.vars=measure(before=function(x)rep(4, length(x)), value.name, dim, sep=".")), error="number of unique groups after applying type conversion functions less than number of groups, change type conversion")
+test(2156.52, melt(iris.days, measure.vars=measure(before, value.name, dim, pattern="(day)[12][.](.*)[.](.*)")), error="number of unique column IDs =4 is less than number of melted columns =8; fix by changing pattern/sep")
+test(2156.53, melt(iris.days, measure.vars=measure(day=as.integer, value.name, dim, pattern="day(.)[.](.*)[.](.*)")), data.table(Species=factor("setosa"), day=as.integer(c(1,2,1,2)), dim=c("Length","Length","Width","Width"), Sepal=c(5.1,5.1,3.5,3.5), Petal=c(1.4,1.4,0.2,0.2)))

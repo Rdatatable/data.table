@@ -86,6 +86,13 @@ measure = function(..., sep="_", pattern, cols, multiple.keyword="value.name") {
     measure.vec = which(vector.lengths==n.groups)
     do.call(rbind, list.of.vectors[measure.vec])
   }
+  uniq.mat <- unique(group.mat)
+  if (nrow(uniq.mat) < nrow(group.mat)) {
+    stop(
+      "number of unique column IDs =", nrow(uniq.mat),
+      " is less than number of melted columns =", nrow(group.mat),
+      "; fix by changing pattern/sep")
+  }
   colnames(group.mat) = names(fun.list)
   group.dt = data.table(group.mat)
   # 4. apply conversion functions to group data table.
@@ -99,7 +106,14 @@ measure = function(..., sep="_", pattern, cols, multiple.keyword="value.name") {
     if (!(is.atomic(group.val) && length(group.val)==nrow(group.dt))) {
       stop("each ... argument to measure must be a function that returns an atomic vector with same length as its first argument, problem: ", group.name)
     }
+    if (all(is.na(group.val))) {
+      stop(group.name, " conversion function returned vector of all NA")
+    }
     set(group.dt, j=group.name, value=group.val)
+  }
+  group.uniq <- unique(group.dt)
+  if (nrow(group.uniq) < nrow(group.dt)) {
+    stop("number of unique groups after applying type conversion functions less than number of groups, change type conversion")
   }
   # 5. compute measure.vars list or vector.
   if (multiple.keyword %in% names(fun.list)) {# multiple output columns.
