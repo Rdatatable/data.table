@@ -243,6 +243,10 @@ SEXP copyAsPlain(SEXP x) {
   // Intended for use on columns; to either un-ALTREP them or duplicate shared memory columns; see copySharedColumns() below
   // Not intended to be called on a DT VECSXP where a concept of 'deep' might refer to whether the columns are copied
   
+  if (isNull(x)) {
+    // deal with up front because isNewList(R_NilValue) is true
+    return R_NilValue;
+  }
   if (!isVectorAtomic(x) && !isNewList(x)) {
     // e.g. defer to R the CLOSXP in test 173.3 where a list column item is the function 'mean'
     return duplicate(x);
@@ -279,7 +283,7 @@ SEXP copyAsPlain(SEXP x) {
   DUPLICATE_ATTRIB(ans, x);
   // aside: unlike R's duplicate we do not copy truelength here; important for dogroups.c which uses negative truelenth to mark its specials
   if (ALTREP(ans))
-    error(_("Internal error: copyAsPlain returning an ALTREP for type '%s'"), type2char(TYPEOF(x))); // # nocov
+    error(_("Internal error: copyAsPlain returning ALTREP for type '%s'"), type2char(TYPEOF(x))); // # nocov
   UNPROTECT(1);
   return ans;
 }
