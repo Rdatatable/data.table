@@ -34,7 +34,7 @@ The simpler usage of `.SD` is for column subsetting (i.e., when `.SDcols` is spe
 
 ## Loading and Previewing Lahman Data
 
-To give this a more real-world feel, rather than making up data, let's load some data sets about baseball from the [Lahman database](http://www.seanlahman.com/baseball-archive/statistics/). In typical R usage, we'd simply load these data sets from the `Lahman` R package; in this vignette, we've pre-downloaded them directly from the package's GitHub page instead.
+To give this a more real-world feel, rather than making up data, let's load some data sets about baseball from the [Lahman database](https://www.seanlahman.com/baseball-archive/statistics/). In typical R usage, we'd simply load these data sets from the `Lahman` R package; in this vignette, we've pre-downloaded them directly from the package's GitHub page instead.
 
 ```{r download_lahman}
 load('Teams.RData')
@@ -46,7 +46,7 @@ setDT(Pitching)
 Pitching
 ```
 
-Readers up on baseball lingo should find the tables' contents familiar; `Teams` records some statistics for a given team in a given year, while `Pitching` records statistics for a given pitcher in a given year. Please do check out the [documentation](http://www.seanlahman.com/files/database/readme2017.txt) and explore the data yourself a bit before proceeding to familiarize yourself with their structure.
+Readers up on baseball lingo should find the tables' contents familiar; `Teams` records some statistics for a given team in a given year, while `Pitching` records statistics for a given pitcher in a given year. Please do check out the [documentation](https://www.seanlahman.com/files/database/readme2017.txt) and explore the data yourself a bit before proceeding to familiarize yourself with their structure.
 
 # `.SD` on Ungrouped Data
 

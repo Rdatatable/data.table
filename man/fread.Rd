@@ -127,21 +127,21 @@ When \code{input} begins with http://, https://, ftp://, ftps://, or file://, \c
 \references{
 Background :\cr
 \url{https://cran.r-project.org/doc/manuals/R-data.html}\cr
-\url{http://stackoverflow.com/questions/1727772/quickly-reading-very-large-tables-as-dataframes-in-r}\cr
-\url{http://www.biostat.jhsph.edu/~rpeng/docs/R-large-tables.html}\cr
-\url{http://www.cerebralmastication.com/2009/11/loading-big-data-into-r/}\cr
-\url{http://stackoverflow.com/questions/9061736/faster-than-scan-with-rcpp}\cr
-\url{http://stackoverflow.com/questions/415515/how-can-i-read-and-manipulate-csv-file-data-in-c}\cr
-\url{http://stackoverflow.com/questions/9352887/strategies-for-reading-in-csv-files-in-pieces}\cr
-\url{http://stackoverflow.com/questions/11782084/reading-in-large-text-files-in-r}\cr
-\url{http://stackoverflow.com/questions/45972/mmap-vs-reading-blocks}\cr
-\url{http://stackoverflow.com/questions/258091/when-should-i-use-mmap-for-file-access}\cr
-\url{http://stackoverflow.com/a/9818473/403310}\cr
-\url{http://stackoverflow.com/questions/9608950/reading-huge-files-using-memory-mapped-files}
+\url{https://stackoverflow.com/questions/1727772/quickly-reading-very-large-tables-as-dataframes-in-r}\cr
+\url{https://www.biostat.jhsph.edu/~rpeng/docs/R-large-tables.html}\cr
+\url{https://www.cerebralmastication.com/2009/11/loading-big-data-into-r/}\cr
+\url{https://stackoverflow.com/questions/9061736/faster-than-scan-with-rcpp}\cr
+\url{https://stackoverflow.com/questions/415515/how-can-i-read-and-manipulate-csv-file-data-in-c}\cr
+\url{https://stackoverflow.com/questions/9352887/strategies-for-reading-in-csv-files-in-pieces}\cr
+\url{https://stackoverflow.com/questions/11782084/reading-in-large-text-files-in-r}\cr
+\url{https://stackoverflow.com/questions/45972/mmap-vs-reading-blocks}\cr
+\url{https://stackoverflow.com/questions/258091/when-should-i-use-mmap-for-file-access}\cr
+\url{https://stackoverflow.com/a/9818473/403310}\cr
+\url{https://stackoverflow.com/questions/9608950/reading-huge-files-using-memory-mapped-files}
 
-finagler = "to get or achieve by guile or manipulation" \url{http://dictionary.reference.com/browse/finagler}
+finagler = "to get or achieve by guile or manipulation" \url{https://dictionary.reference.com/browse/finagler}
 
-On YAML, see \url{http://yaml.org/}; on csvy, see \url{http://csvy.org/}.
+On YAML, see \url{https://yaml.org/}; on csvy, see \url{https://csvy.org/}.
 }
 \seealso{
   \code{\link[utils:read.table]{read.csv}}, \code{\link[base:connections]{url}}, \code{\link[base:locales]{Sys.setlocale}}, \code{\link{setDTthreads}}, \code{\link{fwrite}}, \href{https://CRAN.R-project.org/package=bit64}{\code{bit64::integer64}}
@@ -273,9 +273,9 @@ all(mapply(all.equal, DF, DT))
 
 
 # Real data example (Airline data)
-# http://stat-computing.org/dataexpo/2009/the-data.html
+# https://stat-computing.org/dataexpo/2009/the-data.html
 
-download.file("http://stat-computing.org/dataexpo/2009/2008.csv.bz2",
+download.file("https://stat-computing.org/dataexpo/2009/2008.csv.bz2",
               destfile="2008.csv.bz2")
 # 109MB (compressed)
 
@@ -303,10 +303,10 @@ table(sapply(DT,class))
 
 
 # Reads URLs directly :
-fread("http://www.stats.ox.ac.uk/pub/datasets/csb/ch11b.dat")
+fread("https://www.stats.ox.ac.uk/pub/datasets/csb/ch11b.dat")
 
 # Decompresses .gz and .bz2 automatically :
-fread("http://stat-computing.org/dataexpo/2009/1987.csv.bz2")
+fread("https://stat-computing.org/dataexpo/2009/1987.csv.bz2")
 
 }
 }
