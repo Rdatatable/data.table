@@ -234,31 +234,28 @@ bool Rinherits(SEXP x, SEXP char_) {
 }
 
 SEXP copyAsPlain(SEXP x) {
-  // v1.12.2 and before used standard R duplicate() to do this. But that's not guaranteed to not return an ALTREP.
+  // v1.12.2 and before used standard R duplicate() to do this. But duplicate() is not guaranteed to not return an ALTREP.
   // e.g. ALTREP 'wrapper' on factor column (with materialized INTSXP) in package VIM under example(hotdeck)
   //      .Internal(inspect(x[[5]]))
   //      @558adf4d9508 13 INTSXP g0c0 [OBJ,NAM(7),ATT]  wrapper [srt=-2147483648,no_na=0]
-  // 'AsPlain' is intended to convey unALTREP-ing; i.e. materializing and removing any ALTREP attributes too
-  // For non-ALTREP this should do the same as R's duplicate(); but doesn't quite currently, so has to divert to duplicated() for now
+  // 'AsPlain' is intended to convey unALTREP-ing; i.e. materializing and removing any ALTREP wrappers/attributes
+  // For non-ALTREP this should do the same as R's duplicate().
   // Intended for use on columns; to either un-ALTREP them or duplicate shared memory columns; see copySharedColumns() below
   // Not intended to be called on a DT VECSXP where a concept of 'deep' might refer to whether the columns are copied
-
-  if (!ALTREP(x)) return duplicate(x);
-  // would prefer not to have this line, but without it test 1639.064 fails :
-  //   Running test id 1639.064      Error in `[.data.table`(r, -ii) :
-  //   Item 2 of i is -1 and item 1 is NA. Cannot mix negatives and NA.
-  //   Calls: test.data.table ... FUN -> make.levels -> rbindlist -> [ -> [.data.table
-  // Perhaps related to row names and the copyMostAttrib() below is not quite sufficient
-
-  size_t n = XLENGTH(x);
-  SEXP ans = PROTECT(allocVector(TYPEOF(x), XLENGTH(x)));
-  switch (TYPEOF(ans)) {
+  
+  if (!isVectorAtomic(x) && !isNewList(x)) {
+    // e.g. defer to R the CLOSXP in test 173.3 where a list column item is the function 'mean'
+    return duplicate(x);
+  }
+  const int64_t n = XLENGTH(x);
+  SEXP ans = PROTECT(allocVector(TYPEOF(x), n));
+  switch (TYPEOF(x)) {
   case RAWSXP:
-    memcpy(RAW(ans),     RAW(x),     n*sizeof(Rbyte));           // # nocov; add coverage when ALTREP is turned on for all types
-    break;                                                       // # nocov
+    memcpy(RAW(ans),     RAW(x),     n*sizeof(Rbyte));
+    break;
   case LGLSXP:
-    memcpy(LOGICAL(ans), LOGICAL(x), n*sizeof(Rboolean));        // # nocov
-    break;                                                       // # nocov
+    memcpy(LOGICAL(ans), LOGICAL(x), n*sizeof(Rboolean));
+    break;
   case INTSXP:
     memcpy(INTEGER(ans), INTEGER(x), n*sizeof(int));             // covered by 10:1 after test 178
     break;
@@ -266,22 +263,23 @@ SEXP copyAsPlain(SEXP x) {
     memcpy(REAL(ans),    REAL(x),    n*sizeof(double));          // covered by as.Date("2013-01-01")+seq(1,1000,by=10) after test 1075
     break;
   case CPLXSXP:
-    memcpy(COMPLEX(ans), COMPLEX(x), n*sizeof(Rcomplex));        // # nocov
-    break;                                                       // # nocov
+    memcpy(COMPLEX(ans), COMPLEX(x), n*sizeof(Rcomplex));
+    break;
   case STRSXP: {
     const SEXP *xp=STRING_PTR(x);                                // covered by as.character(as.hexmode(1:500)) after test 642
-    for (R_xlen_t i=0; i<n; ++i) SET_STRING_ELT(ans, i, xp[i]);
+    for (int64_t i=0; i<n; ++i) SET_STRING_ELT(ans, i, xp[i]);
   } break;
   case VECSXP: {
-    const SEXP *xp=SEXPPTR_RO(x);                                // # nocov
-    for (R_xlen_t i=0; i<n; ++i) SET_VECTOR_ELT(ans, i, xp[i]);  // # nocov
-  } break;                                                       // # nocov
+    const SEXP *xp=SEXPPTR_RO(x);
+    for (int64_t i=0; i<n; ++i) SET_VECTOR_ELT(ans, i, copyAsPlain(xp[i]));
+  } break;
   default:
     error(_("Internal error: unsupported type '%s' passed to copyAsPlain()"), type2char(TYPEOF(x))); // # nocov
   }
-  copyMostAttrib(x, ans); // e.g. factor levels, class etc, but not names, dim or dimnames
+  DUPLICATE_ATTRIB(ans, x);
+  // aside: unlike R's duplicate we do not copy truelength here; important for dogroups.c which uses negative truelenth to mark its specials
   if (ALTREP(ans))
-    error(_("Internal error: type '%s' passed to copyAsPlain() but it seems copyMostAttrib() retains ALTREP attributes"), type2char(TYPEOF(x))); // # nocov
+    error(_("Internal error: copyAsPlain returning an ALTREP for type '%s'"), type2char(TYPEOF(x))); // # nocov
   UNPROTECT(1);
   return ans;
 }

@@ -298,7 +298,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
         }
         bool copied = false;
         if (isNewList(target) && anySpecialStatic(RHS)) {  // see comments in anySpecialStatic()
-          RHS = PROTECT(duplicate(RHS));
+          RHS = PROTECT(copyAsPlain(RHS));
           copied = true;
         }
         const char *warn = memrecycle(target, order, INTEGER(starts)[i]-1, grpn, RHS, 0, -1, 0, "");
@@ -403,7 +403,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
         }
         bool copied = false;
         if (isNewList(target) && anySpecialStatic(source)) {  // see comments in anySpecialStatic()
-          source = PROTECT(duplicate(source));
+          source = PROTECT(copyAsPlain(source));
           copied = true;
         }
         memrecycle(target, R_NilValue, thisansloc, maxn, source, 0, -1, 0, "");
