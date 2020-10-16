@@ -293,30 +293,39 @@ void copySharedColumns(SEXP x) {
   if (!isNewList(x) || ncol==1) return;
   bool *shared = (bool *)R_alloc(ncol, sizeof(bool)); // on R heap in case alloc fails
   int *savetl = (int *)R_alloc(ncol, sizeof(int));  // on R heap for convenience but could be a calloc
-  int nShared=0, thistl=0;
   const SEXP *xp = SEXPPTR_RO(x);
+  // first save the truelength, which may be negative on specials in dogroups, and set to zero; test 2157
+  // the savetl() function elsewhere is for CHARSXP. Here, we are using truelength on atomic vectors.
+  for (int i=0; i<ncol; ++i) {
+    const SEXP thiscol = xp[i];
+    savetl[i] = ALTREP(thiscol) ? 0 : TRUELENGTH(thiscol);
+    SET_TRUELENGTH(thiscol, 0);
+  } 
+  int nShared=0;
   for (int i=0; i<ncol; ++i) {
     SEXP thiscol = xp[i];
-    if (ALTREP(thiscol) || (thistl=TRUELENGTH(thiscol))<0) {
-      shared[i] = true;
+    if (ALTREP(thiscol) || TRUELENGTH(thiscol)<0) {
+      shared[i] = true;  // we mark ALTREP as 'shared' too, whereas 'tocopy' would be better word to use for ALTREP
       nShared++;
-      // do not copyAsPlain() here as the alloc might fail: careful to restore tl first to all columns.
-      // Aside: thistl is which column shares the same address as this one in case that's ever useful in future.
+      // do not copyAsPlain() here yet, as its alloc might fail. Must restore tl first to all columns before attempting any copies.
     } else {
-      shared[i] = false;
-      savetl[i] = thistl;  // these are vectors which are all expected to have tl, unlike CHARSXP which often don't (savetl() has CHARSXP in mind)
-      SET_TRUELENGTH(thiscol, -i-1);  // just on plain vectors, not on ALTREP
+      shared[i] = false;              // so the first column will never be shared (unless it is an altrep) even it is shared
+                                      // 'shared' means a later column shares an earlier column
+      SET_TRUELENGTH(thiscol, -i-1);  // -i-1 so that if, for example, column 3 shares column 1, in iteration 3 we'll know not
+                                      // only that the 3rd column is shared with an earlier column, but which one too. Although
+                                      // we don't use that information currently, we could do in future.  
     }
   }
-  // now we know nShared and which ones they are (if any), restore original tl back to all columns
+  // now we know nShared and which ones they are (if any), restore original tl back to the unique set of columns
   for (int i=0; i<ncol; ++i) {
-    if (!shared[i]) SET_TRUELENGTH(VECTOR_ELT(x, i), savetl[i]);
+    if (!shared[i]) SET_TRUELENGTH(xp[i], savetl[i]);
+    //  ^^^^^^^^^^ important because if there are shared columns, the dup will have savetl==0 but we want the first restore to stand
   }
   // now that truelength has been restored for all columns, we can finally call copyAsPlain()
   if (nShared) {
     for (int i=0; i<ncol; ++i) {
       if (shared[i])
-        SET_VECTOR_ELT(x, i, copyAsPlain(VECTOR_ELT(x, i)));
+        SET_VECTOR_ELT(x, i, copyAsPlain(xp[i]));
     }
     if (GetVerbose()) Rprintf(_("Found and copied %d column%s with a shared memory address\n"), nShared, nShared>1?"s":"");
     // GetVerbose() (slightly expensive call of all options) called here only when needed

@@ -45,7 +45,7 @@ static bool anySpecialStatic(SEXP x) {
   if (n==0)
     return false;
   if (isVectorAtomic(x))
-    return TRUELENGTH(x)<0 || ALTREP(x);
+    return ALTREP(x) || TRUELENGTH(x)<0;
   if (isNewList(x)) for (int i=0; i<n; ++i) {  
     if (anySpecialStatic(VECTOR_ELT(x,i)))
       return true;
