@@ -17171,3 +17171,10 @@ test(2156.2, truelength(DT[,list(list(value)),by=series]$V1[[1L]])>=0L)  # not -
 test(2156.3, sapply(DT[, list(if (.GRP==1L) list(value,NULL) else list(NULL,value)), by=series]$V1, length),
              INT(64,0,0,64))
 
+# CornerstoneR usage revealed copySharedColumns needed work afer PR#4655
+# this example fails reliably under Rdevel-strict ASAN before the fix in PR#4760
+set.seed(123)
+DT = data.table(A=rnorm(100), B=rep(c("a","b"),c(47,53)), C=rnorm(20), D=1:20)
+test(2157, DT[, head(setorderv(.SD, "A")), by=B]$D,
+           INT(18,6,3,8,9,6,12,17,18,5,20,4))
+
