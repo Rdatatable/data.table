@@ -740,7 +740,7 @@ void fwriteMain(fwriteMainArgs args)
           free(buff);                                    // # nocov
           STOP(_("Can't allocate gzip stream structure"));  // # nocov
         }
-        if (verbose) {DTPRINT(_("z_stream for header (1): ")); print_z_stream(&stream);}
+        if (verbose) {DTPRINT(_("z_stream for header (%d): "), 1); print_z_stream(&stream);}
         size_t zbuffSize = deflateBound(&stream, headerLen);
         char *zbuff = malloc(zbuffSize);
         if (!zbuff) {
@@ -749,7 +749,7 @@ void fwriteMain(fwriteMainArgs args)
         }
         size_t zbuffUsed = zbuffSize;
         ret1 = compressbuff(&stream, zbuff, &zbuffUsed, buff, (size_t)(ch-buff));
-        if (verbose) {DTPRINT(_("z_stream for header (2): ")); print_z_stream(&stream);}
+        if (verbose) {DTPRINT(_("z_stream for header (%d): "), 2); print_z_stream(&stream);}
         if (ret1==Z_OK) ret2 = WRITE(f, zbuff, (int)zbuffUsed);
         deflateEnd(&stream);
         free(zbuff);
@@ -848,7 +848,7 @@ void fwriteMain(fwriteMainArgs args)
         failed = true;              // # nocov
         my_failed_compress = -998;  // # nocov
       }
-      if (verbose) {DTPRINT(_("z_stream for data (1): ")); print_z_stream(&mystream);}
+      if (verbose) {DTPRINT(_("z_stream for data (%d): "), 1); print_z_stream(&mystream);}
     }
 
     #pragma omp for ordered schedule(dynamic)
@@ -880,9 +880,9 @@ void fwriteMain(fwriteMainArgs args)
       // compress buffer if gzip
       if (args.is_gzip && !failed) {
         myzbuffUsed = zbuffSize;
-        if (verbose) {DTPRINT(_("z_stream for data (2): ")); print_z_stream(&mystream);}
+        if (verbose) {DTPRINT(_("z_stream for data (%d): "), 2); print_z_stream(&mystream);}
         int ret = compressbuff(&mystream, myzBuff, &myzbuffUsed, myBuff, (size_t)(ch-myBuff));
-        if (verbose) {DTPRINT(_("z_stream for data (3): ")); print_z_stream(&mystream);}
+        if (verbose) {DTPRINT(_("z_stream for data (%d): "), 3); print_z_stream(&mystream);}
         if (ret) { failed=true; my_failed_compress=ret; }
         else deflateReset(&mystream);
       }

@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: data.table 1.12.5\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2020-10-17 12:21-0400\n"
+"POT-Creation-Date: 2020-10-17 13:11-0400\n"
 "PO-Revision-Date: 2019-11-18 00:26-04\n"
 "Last-Translator: Yuhang Chen <yuhangchen0802@gmail.com>\n"
 "Language-Team: Mandarin\n"
@@ -1007,9 +1007,9 @@ msgid ""
 msgstr "内部错误：未能提前捕获到 .SD 中第 %2$d 列类型 %1$d size-0 的问题"
 
 #: dogroups.c:136
-#, fuzzy, c-format
+#, c-format
 msgid "Internal error: SDall %d length = %d != %d"
-msgstr "内部错误： 结束操作(finalizer)检测到l=%d, tl=%d"
+msgstr "内部错误： SDall %d 长度 = %d != %d"
 
 #: dogroups.c:144
 msgid "length(xknames)!=length(xSD)"
@@ -1302,68 +1302,65 @@ msgid ""
 msgstr ""
 
 #: fifelse.c:174
-#, fuzzy
 msgid "Length of 'default' must be 1."
-msgstr "'na'长度是%<PRId64>但必须是长度必须是1"
+msgstr "'default'长度必须是1"
 
 #: fifelse.c:181
-#, fuzzy, c-format
+#, c-format
 msgid ""
 "Resulting value is of type %s but 'default' is of type %s. Please make sure "
 "that both arguments have the same type."
-msgstr "'yes'是%s类型，但'na'是%s类型。请确认两个参数是同一类型。"
+msgstr "结果是%s类型，但'default'是%s类型。请确认两个参数是同一类型。"
 
 #: fifelse.c:185
-#, fuzzy
 msgid ""
 "Resulting value has different class than 'default'. Please make sure that "
 "both arguments have the same class."
-msgstr "'yes'的类型与'na'不同。请确认两个参数是同一类型。"
+msgstr "结果的类型与'default'不同。请确认两个参数是同一类型。"
 
 #: fifelse.c:191
-#, fuzzy
 msgid ""
 "Resulting value and 'default' are both type factor but their levels are "
 "different."
-msgstr "'yes'和'na'都是因子类型但他们的因子水平不同"
+msgstr "结果和'default'都是因子类型但他们的因子水平不同"
 
 #: fifelse.c:206
-#, fuzzy, c-format
+#, c-format
 msgid "Argument #%d must be logical."
-msgstr "参数'test'必须是逻辑类型。"
+msgstr "参数 #%d 必须是逻辑类型。"
 
 #: fifelse.c:210
-#, fuzzy, c-format
+#, c-format
 msgid ""
 "Argument #%d has a different length than argument #1. Please make sure all "
 "logical conditions have the same length."
-msgstr "'yes'的类型与'no'不同。请确认两个参数是同一类型。"
+msgstr "参数 #%d 与参数 #1 长度不同。请确认所有逻辑相等"
 
 #: fifelse.c:215
-#, fuzzy, c-format
+#, c-format
 msgid ""
 "Argument #%d is of type %s, however argument #2 is of type %s. Please make "
 "sure all output values have the same type."
-msgstr "'yes'是%s类型，但'no'是%s类型。请确认两个参数是同一类型。"
+msgstr "参数 #%d 是%s类型，但参数 #2 是%s类型。请确认所有成果是同一类型。"
 
 #: fifelse.c:220
-#, fuzzy, c-format
+#, c-format
 msgid ""
 "Argument #%d has different class than argument #2, Please make sure all "
 "output values have the same class."
-msgstr "'yes'的类型与'no'不同。请确认两个参数是同一类型。"
+msgstr "参数 #2 的类型与参数 #%d 的不同。请确认所有成果是同一类型。"
 
 #: fifelse.c:226
-#, fuzzy, c-format
+#, c-format
 msgid ""
 "Argument #2 and argument #%d are both factor but their levels are different."
-msgstr "'yes'和'no'都是因子类型但他们的因子水平不同。"
+msgstr "参数 #2 和参数 #%d 都是因子类型但他们的因子水平不同。"
 
 #: fifelse.c:233
 #, c-format
 msgid ""
 "Length of output value #%d must either be 1 or length of logical condition."
-msgstr ""
+msgstr "成果 #%d 的长度必须为 1 或其他逻辑那长度。"
 
 #: fmelt.c:18
 msgid "'x' must be an integer"
@@ -1378,20 +1375,19 @@ msgid "Argument to 'which' must be logical"
 msgstr "'which'的参数必须是逻辑值"
 
 #: fmelt.c:65
-#, fuzzy
 msgid "concat: 'vec' must be a character vector"
-msgstr "串联：'vec 必须是一个字符向量"
+msgstr "concat：'vec' 必须是一个字符向量"
 
 #: fmelt.c:66
 msgid "concat: 'idx' must be an integer vector of length >= 0"
-msgstr "串联：'idx' 必须为一个长度>= 0的整数向量"
+msgstr "concat：'idx' 必须为一个长度>= 0的整数向量"
 
 #: fmelt.c:75
-#, fuzzy, c-format
+#, c-format
 msgid ""
 "Internal error in concat: 'idx' must take values between 1 and length(vec); "
 "1 <= idx <= %d"
-msgstr "串联内部错误：'idx'必须为0到length(vec)之间的值;0 <= idx <= %d"
+msgstr "concat内部错误：'idx'必须为1到length(vec)之间的值;1 <= idx <= %d"
 
 #: fmelt.c:117
 #, c-format
@@ -1692,10 +1688,10 @@ msgstr "retGrp 和sort 的参数中，至少一个必须是 TRUE"
 msgid "na.last must be logical TRUE, FALSE or NA of length 1"
 msgstr "na.last 的参数必须是逻辑值 TRUE, FALSE 或 NA "
 
-#: forder.c:504
-#, fuzzy, c-format
-msgid "Unable to allocate %<PRId64> bytes of working memory"
-msgstr "无法分配工作内存"
+#: forder.c:504 forder.c:608
+#, c-format
+msgid "Unable to allocate %<PRIu64> bytes of working memory"
+msgstr "无法分配%<PRIu64>字节的工作内存"
 
 #: forder.c:520
 #, c-format
@@ -1718,11 +1714,6 @@ msgstr ""
 #, c-format
 msgid "Column %d passed to [f]order is type '%s', not yet supported."
 msgstr "传递给 [f]order 的第%d列为 '%s'类型，目前尚不支持。"
-
-#: forder.c:608
-#, fuzzy, c-format
-msgid "Unable to allocate %<PRIu64> bytes of working memory"
-msgstr "无法分配工作内存"
 
 #: forder.c:715
 msgid "Internal error: column not supported, not caught earlier"
@@ -2522,13 +2513,13 @@ msgid "Failed to allocate %d bytes for size array: %s"
 msgstr "无法分配 %d 字节给 size 数组：%s"
 
 #: fread.c:2067
-#, fuzzy, c-format
+#, c-format
 msgid ""
 "Attempt to override column %d%s%.*s%s of inherent type '%s' down to '%s' "
 "ignored. Only overrides to a higher type are currently supported. If this "
 "was intended, please coerce to the lower type afterwards."
 msgstr ""
-"试图覆盖第 %d 列 <<%.*s>>，将内部类型 '%s' 降级为 '%s' 的操作被忽略。只支持将"
+"试图覆盖第 %d 列 %s%.*s%s，将内部类型 '%s' 降级为 '%s' 的操作被忽略。只支持将"
 "列类型升为更高阶的类型。如果确定此操作，请完成之后再转换类型。"
 
 #: fread.c:2082
@@ -3266,13 +3257,11 @@ msgid "deflate input stream: %p %d %p %d\n"
 msgstr ""
 
 #: fwrite.c:575
-#, fuzzy, c-format
+#, c-format
 msgid ""
 "deflate returned %d with stream->total_out==%d; Z_FINISH==%d, Z_OK==%d, "
 "Z_STREAM_END==%d\n"
 msgstr ""
-"zlib %s (zlib.h %s) deflate() 返回了错误%d跟错误 z_stream->msg==\"%s\" "
-"Z_FINISH=%d Z_BLOCK=%d . %s"
 
 #: fwrite.c:613
 #, c-format
@@ -3353,18 +3342,15 @@ msgstr "无法为header: %2$s分配%1$d MiB"
 msgid "Can't allocate gzip stream structure"
 msgstr "无法分配gzip的流结构"
 
-#: fwrite.c:743
-msgid "z_stream for header (1): "
+#: fwrite.c:743 fwrite.c:752
+#, c-format
+msgid "z_stream for header (%d): "
 msgstr ""
 
 #: fwrite.c:748
 #, c-format
 msgid "Unable to allocate %d MiB for zbuffer: %s"
 msgstr "无法为zbuffer: %2$s分配%1$d MiB"
-
-#: fwrite.c:752
-msgid "z_stream for header (2): "
-msgstr ""
 
 #: fwrite.c:764
 #, c-format
@@ -3409,16 +3395,9 @@ msgid ""
 "read ?fwrite for nThread, buffMB and verbose options."
 msgstr ""
 
-#: fwrite.c:851
-msgid "z_stream for data (1): "
-msgstr ""
-
-#: fwrite.c:883
-msgid "z_stream for data (2): "
-msgstr ""
-
-#: fwrite.c:885
-msgid "z_stream for data (3): "
+#: fwrite.c:851 fwrite.c:883 fwrite.c:885
+#, c-format
+msgid "z_stream for data (%d): "
 msgstr ""
 
 #: fwrite.c:980
@@ -4143,9 +4122,8 @@ msgstr ""
 "的issue通道报告"
 
 #: nafill.c:182
-#, fuzzy
 msgid "nan_is_na must be TRUE or FALSE"
-msgstr "na.rm 必须是 TRUE 或者 FALSE"
+msgstr "nan_is_na 必须是 TRUE 或者 FALSE"
 
 #: nafill.c:206
 #, c-format
@@ -4571,7 +4549,7 @@ msgstr "不支持 '%s' 类型"
 #: snprintf.c:235 snprintf.c:238 snprintf.c:241 snprintf.c:244
 #, c-format
 msgid "dt_win_snprintf test %d failed: %s"
-msgstr ""
+msgstr "dt_win_snprintf 测试 %d 失败了: %s"
 
 #: subset.c:7
 #, c-format
@@ -4832,9 +4810,9 @@ msgid "Internal error: unsupported type '%s' passed to copyAsPlain()"
 msgstr "内部错误：copyAsPlain()不支持类型为'%s'的参数"
 
 #: utils.c:286
-#, fuzzy, c-format
+#, c-format
 msgid "Internal error: copyAsPlain returning ALTREP for type '%s'"
-msgstr "内部错误：writeNA 函数读取到了一个类型是'%s'的向量"
+msgstr "内部错误：copyAsPlain 保留了ALTREP属性为类型 '%s'"
 
 #: utils.c:330
 #, c-format
@@ -4930,38 +4908,3 @@ msgid ""
 msgstr ""
 "dim.data.table的参数必须为一个data.table（实质为一个列表），但输入参数为%s类"
 "型"
-
-#, fuzzy
-#~ msgid ""
-#~ "%s: %d:\n"
-#~ "%s"
-#~ msgstr "%s: '%s'"
-
-#, fuzzy
-#~ msgid ""
-#~ "%s: %d:\n"
-#~ "%s:"
-#~ msgstr "%s: '%s'"
-
-#, fuzzy
-#~ msgid "Resulting value has different class than 'default'. "
-#~ msgstr "元素 %d 与元素1类型不同。"
-
-#, fuzzy
-#~ msgid "Argument #%d has a different length than argument #1. "
-#~ msgstr "元素 %d 与元素1类型不同。"
-
-#, fuzzy
-#~ msgid "Argument #%d has different class than argument #2, "
-#~ msgstr "元素 %d 与元素1类型不同。"
-
-#, fuzzy
-#~ msgid "Unable to allocate %"
-#~ msgstr "无法分配工作内存"
-
-#~ msgid ""
-#~ "Internal error: type '%s' passed to copyAsPlain() but it seems "
-#~ "copyMostAttrib() retains ALTREP attributes"
-#~ msgstr ""
-#~ "内部错误：copyAsPlain()中参数为'%s'类型，但copyMostAttrib() 保留了ALTREP属"
-#~ "性"

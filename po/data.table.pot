@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: data.table 1.13.1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2020-10-17 12:21-0400\n"
+"POT-Creation-Date: 2020-10-17 13:11-0400\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -1564,9 +1564,9 @@ msgstr ""
 msgid "na.last must be logical TRUE, FALSE or NA of length 1"
 msgstr ""
 
-#: forder.c:504
+#: forder.c:504 forder.c:608
 #, c-format
-msgid "Unable to allocate %<PRId64> bytes of working memory"
+msgid "Unable to allocate %<PRIu64> bytes of working memory"
 msgstr ""
 
 #: forder.c:520
@@ -1586,11 +1586,6 @@ msgstr ""
 #: forder.c:562
 #, c-format
 msgid "Column %d passed to [f]order is type '%s', not yet supported."
-msgstr ""
-
-#: forder.c:608
-#, c-format
-msgid "Unable to allocate %<PRIu64> bytes of working memory"
 msgstr ""
 
 #: forder.c:715
@@ -3123,17 +3118,14 @@ msgstr ""
 msgid "Can't allocate gzip stream structure"
 msgstr ""
 
-#: fwrite.c:743
-msgid "z_stream for header (1): "
+#: fwrite.c:743 fwrite.c:752
+#, c-format
+msgid "z_stream for header (%d): "
 msgstr ""
 
 #: fwrite.c:748
 #, c-format
 msgid "Unable to allocate %d MiB for zbuffer: %s"
-msgstr ""
-
-#: fwrite.c:752
-msgid "z_stream for header (2): "
 msgstr ""
 
 #: fwrite.c:764
@@ -3176,16 +3168,9 @@ msgid ""
 "read ?fwrite for nThread, buffMB and verbose options."
 msgstr ""
 
-#: fwrite.c:851
-msgid "z_stream for data (1): "
-msgstr ""
-
-#: fwrite.c:883
-msgid "z_stream for data (2): "
-msgstr ""
-
-#: fwrite.c:885
-msgid "z_stream for data (3): "
+#: fwrite.c:851 fwrite.c:883 fwrite.c:885
+#, c-format
+msgid "z_stream for data (%d): "
 msgstr ""
 
 #: fwrite.c:980
