@@ -1063,7 +1063,7 @@ static void parse_iso8601_timestamp(FieldParseContext *ctx)
 
   date_only:
 
-  //Rprintf("date=%d\thour=%d\tz_hour=%d\tminute=%d\ttz_minute=%d\tsecond=%.1f\n", date, hour, tz_hour, minute, tz_minute, second);
+  //Rprintf(_("date=%d\thour=%d\tz_hour=%d\tminute=%d\ttz_minute=%d\tsecond=%.1f\n"), date, hour, tz_hour, minute, tz_minute, second);
   // cast upfront needed to prevent silent overflow
   *target = 86400*(double)date + 3600*(hour - tz_hour) + 60*(minute - tz_minute) + second;
 
@@ -2484,7 +2484,7 @@ int freadMain(freadMainArgs _args) {
 
   if (stopTeam) {
     if (internalErr[0]!='\0') {
-      STOP("%s", internalErr);  // # nocov
+      STOP(_("%s"), internalErr);  // # nocov
     }
     stopTeam = false;
 
@@ -2619,7 +2619,7 @@ int freadMain(freadMainArgs _args) {
       // if type bumps happened, it's useful to see them at the end after the timing 2 lines up showing the reread time
       // TODO - construct and output the copy and pastable colClasses argument so user can avoid the reread time if they are
       //        reading this file or files formatted like it many times (say in a production environment).
-      DTPRINT("%s", typeBumpMsg);
+      DTPRINT(_("%s"), typeBumpMsg);
       free(typeBumpMsg);  // local scope and only populated in verbose mode
     }
   }

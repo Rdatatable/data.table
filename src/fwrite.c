@@ -569,10 +569,10 @@ int compressbuff(z_stream *stream, void* dest, size_t *destLen, const void* sour
   stream->avail_out = *destLen;
   stream->next_in = (Bytef *)source; // don't use z_const anywhere; #3939
   stream->avail_in = sourceLen;
-  if (verbose) DTPRINT("deflate input stream: %p %d %p %d\n", stream->next_out, (int)(stream->avail_out), stream->next_in, (int)(stream->avail_in));
+  if (verbose) DTPRINT(_("deflate input stream: %p %d %p %d\n"), stream->next_out, (int)(stream->avail_out), stream->next_in, (int)(stream->avail_in));
 
   int err = deflate(stream, Z_FINISH);
-  if (verbose) DTPRINT("deflate returned %d with stream->total_out==%d; Z_FINISH==%d, Z_OK==%d, Z_STREAM_END==%d\n", err, (int)(stream->total_out), Z_FINISH, Z_OK, Z_STREAM_END);
+  if (verbose) DTPRINT(_("deflate returned %d with stream->total_out==%d; Z_FINISH==%d, Z_OK==%d, Z_STREAM_END==%d\n"), err, (int)(stream->total_out), Z_FINISH, Z_OK, Z_STREAM_END);
   if (err == Z_OK) {
     // with Z_FINISH, deflate must return Z_STREAM_END if correct, otherwise it's an error and we shouldn't return Z_OK (0)
     err = -9;  // # nocov
@@ -585,9 +585,9 @@ void print_z_stream(const z_stream *s)   // temporary tracing function for #4099
 {
   const unsigned char *byte = (unsigned char *)s;
   for (int i=0; i<sizeof(z_stream); ++i) {
-    DTPRINT("%02x ", *byte++);  // not byte[i] is attempt to avoid valgrind's use-of-uninitialized, #4639, and z_stream={0} now too
+    DTPRINT(_("%02x "), *byte++);  // not byte[i] is attempt to avoid valgrind's use-of-uninitialized, #4639, and z_stream={0} now too
   }
-  DTPRINT("\n");
+  DTPRINT(_("\n"));
 }
 
 void fwriteMain(fwriteMainArgs args)
@@ -740,7 +740,7 @@ void fwriteMain(fwriteMainArgs args)
           free(buff);                                    // # nocov
           STOP(_("Can't allocate gzip stream structure"));  // # nocov
         }
-        if (verbose) {DTPRINT("z_stream for header (1): "); print_z_stream(&stream);}
+        if (verbose) {DTPRINT(_("z_stream for header (1): ")); print_z_stream(&stream);}
         size_t zbuffSize = deflateBound(&stream, headerLen);
         char *zbuff = malloc(zbuffSize);
         if (!zbuff) {
@@ -749,7 +749,7 @@ void fwriteMain(fwriteMainArgs args)
         }
         size_t zbuffUsed = zbuffSize;
         ret1 = compressbuff(&stream, zbuff, &zbuffUsed, buff, (size_t)(ch-buff));
-        if (verbose) {DTPRINT("z_stream for header (2): "); print_z_stream(&stream);}
+        if (verbose) {DTPRINT(_("z_stream for header (2): ")); print_z_stream(&stream);}
         if (ret1==Z_OK) ret2 = WRITE(f, zbuff, (int)zbuffUsed);
         deflateEnd(&stream);
         free(zbuff);
@@ -809,7 +809,7 @@ void fwriteMain(fwriteMainArgs args)
   char *buffPool = malloc(nth*(size_t)buffSize);
   if (!buffPool) {
     // # nocov start
-    STOP("Unable to allocate %d MB * %d thread buffers; '%d: %s'. Please read ?fwrite for nThread, buffMB and verbose options.",
+    STOP(_("Unable to allocate %d MB * %d thread buffers; '%d: %s'. Please read ?fwrite for nThread, buffMB and verbose options."),
          (size_t)buffSize/(1024^2), nth, errno, strerror(errno));
     // # nocov end
   }
@@ -819,7 +819,7 @@ void fwriteMain(fwriteMainArgs args)
     if (!zbuffPool) {
       // # nocov start
       free(buffPool);
-      STOP("Unable to allocate %d MB * %d thread compressed buffers; '%d: %s'. Please read ?fwrite for nThread, buffMB and verbose options.",
+      STOP(_("Unable to allocate %d MB * %d thread compressed buffers; '%d: %s'. Please read ?fwrite for nThread, buffMB and verbose options."),
          (size_t)zbuffSize/(1024^2), nth, errno, strerror(errno));
       // # nocov end
     }
@@ -848,7 +848,7 @@ void fwriteMain(fwriteMainArgs args)
         failed = true;              // # nocov
         my_failed_compress = -998;  // # nocov
       }
-      if (verbose) {DTPRINT("z_stream for data (1): "); print_z_stream(&mystream);}
+      if (verbose) {DTPRINT(_("z_stream for data (1): ")); print_z_stream(&mystream);}
     }
 
     #pragma omp for ordered schedule(dynamic)
@@ -880,9 +880,9 @@ void fwriteMain(fwriteMainArgs args)
       // compress buffer if gzip
       if (args.is_gzip && !failed) {
         myzbuffUsed = zbuffSize;
-        if (verbose) {DTPRINT("z_stream for data (2): "); print_z_stream(&mystream);}
+        if (verbose) {DTPRINT(_("z_stream for data (2): ")); print_z_stream(&mystream);}
         int ret = compressbuff(&mystream, myzBuff, &myzbuffUsed, myBuff, (size_t)(ch-myBuff));
-        if (verbose) {DTPRINT("z_stream for data (3): "); print_z_stream(&mystream);}
+        if (verbose) {DTPRINT(_("z_stream for data (3): ")); print_z_stream(&mystream);}
         if (ret) { failed=true; my_failed_compress=ret; }
         else deflateReset(&mystream);
       }
@@ -918,7 +918,7 @@ void fwriteMain(fwriteMainArgs args)
             // # nocov start
             int ETA = (int)((args.nrow-end)*((now-startTime)/end));
             if (hasPrinted || ETA >= 2) {
-              if (verbose && !hasPrinted) DTPRINT("\n");
+              if (verbose && !hasPrinted) DTPRINT(_("\n"));
               DTPRINT("\rWritten %.1f%% of %"PRId64" rows in %d secs using %d thread%s. "
                       "maxBuffUsed=%d%%. ETA %d secs.      ",
                        (100.0*end)/args.nrow, args.nrow, (int)(now-startTime), nth, nth==1?"":"s",
@@ -982,7 +982,7 @@ void fwriteMain(fwriteMainArgs args)
            verbose ? _("Please include the full output above and below this message in your data.table bug report.")
                    : _("Please retry fwrite() with verbose=TRUE and include the full output with your data.table bug report."));
     if (failed_write)
-      STOP("%s: '%s'", strerror(failed_write), args.filename);
+      STOP(_("%s: '%s'"), strerror(failed_write), args.filename);
     // # nocov end
   }
 }
