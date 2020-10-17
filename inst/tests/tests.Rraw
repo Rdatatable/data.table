@@ -17178,3 +17178,11 @@ DT = data.table(A=rnorm(100), B=rep(c("a","b"),c(47,53)), C=rnorm(20), D=1:20)
 test(2157, DT[, head(setorderv(.SD, "A")), by=B]$D,
            INT(18,6,3,8,9,6,12,17,18,5,20,4))
 
+# .SD list column itself needs copy, #4761
+DT = data.table(value=as.list(1:2), index=1:2)
+test(2158.1, DT[, .(value = list(value)), index],
+             data.table(index=1:2, value=list( list(1L), list(2L) )))
+DT = data.table(value=as.list(1:6), index=rep(1:2, each=3))
+test(2158.2, DT[, by="index", list(value=list(value))],
+             data.table(index=1:2, value=list(as.list(1:3), as.list(4:6))))
+
