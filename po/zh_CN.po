@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: data.table 1.12.5\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2020-10-17 12:10-0400\n"
+"POT-Creation-Date: 2020-10-17 12:21-0400\n"
 "PO-Revision-Date: 2019-11-18 00:26-04\n"
 "Last-Translator: Yuhang Chen <yuhangchen0802@gmail.com>\n"
 "Language-Team: Mandarin\n"
@@ -2580,11 +2580,6 @@ msgid ""
 "%p, sof=%p"
 msgstr "内部错误：head 位置无效。jump=%d, headPos=%p, thisJumpStart=%p, sof=%p"
 
-#: fread.c:2487 fread.c:2622 freadR.c:703
-#, c-format
-msgid "%s"
-msgstr "%s"
-
 #: fread.c:2494
 #, c-format
 msgid ""
@@ -2933,6 +2928,11 @@ msgstr "字段大小为1，但字段类型为%d \n"
 msgid "Internal error: unexpected field of size %d\n"
 msgstr "内部错误：大小为%d 的意外字段\n"
 
+#: freadR.c:703
+#, c-format
+msgid "%s"
+msgstr "%s"
+
 #: froll.c:14 froll.c:223 froll.c:407
 #, c-format
 msgid "%s: window width longer than input vector, returning all NA vector\n"
@@ -3241,7 +3241,7 @@ msgstr "前5个MSB counts："
 msgid "%<PRId64> "
 msgstr "%<PRId64> "
 
-#: fsort.c:247 fwrite.c:590 fwrite.c:702 fwrite.c:921 fwrite.c:966
+#: fsort.c:247 fwrite.c:702
 msgid "\n"
 msgstr "\n"
 
@@ -3273,11 +3273,6 @@ msgid ""
 msgstr ""
 "zlib %s (zlib.h %s) deflate() 返回了错误%d跟错误 z_stream->msg==\"%s\" "
 "Z_FINISH=%d Z_BLOCK=%d . %s"
-
-#: fwrite.c:588
-#, c-format
-msgid "%02x "
-msgstr ""
 
 #: fwrite.c:613
 #, c-format
@@ -3376,7 +3371,7 @@ msgstr ""
 msgid "Compress gzip error: %d"
 msgstr "解压gzip错误: %d"
 
-#: fwrite.c:765 fwrite.c:773 fwrite.c:972 fwrite.c:985
+#: fwrite.c:765 fwrite.c:773
 #, c-format
 msgid "%s: '%s'"
 msgstr "%s: '%s'"
@@ -4570,99 +4565,12 @@ msgstr "n 的第 %d 项是NA"
 msgid "Unsupported type '%s'"
 msgstr "不支持 '%s' 类型"
 
-#: snprintf.c:192
+#: snprintf.c:192 snprintf.c:195 snprintf.c:198 snprintf.c:201 snprintf.c:204
+#: snprintf.c:207 snprintf.c:210 snprintf.c:213 snprintf.c:216 snprintf.c:217
+#: snprintf.c:220 snprintf.c:223 snprintf.c:226 snprintf.c:229 snprintf.c:232
+#: snprintf.c:235 snprintf.c:238 snprintf.c:241 snprintf.c:244
 #, c-format
-msgid "dt_win_snprintf test 1 failed: %s"
-msgstr ""
-
-#: snprintf.c:195
-#, c-format
-msgid "dt_win_snprintf test 2 failed: %s"
-msgstr ""
-
-#: snprintf.c:198
-#, c-format
-msgid "dt_win_snprintf test 3 failed: %s"
-msgstr ""
-
-#: snprintf.c:201
-#, c-format
-msgid "dt_win_snprintf test 4 failed: %s"
-msgstr ""
-
-#: snprintf.c:204
-#, c-format
-msgid "dt_win_snprintf test 5 failed: %s"
-msgstr ""
-
-#: snprintf.c:207
-#, c-format
-msgid "dt_win_snprintf test 6 failed: %s"
-msgstr ""
-
-#: snprintf.c:210
-#, c-format
-msgid "dt_win_snprintf test 7 failed: %s"
-msgstr ""
-
-#: snprintf.c:213
-#, c-format
-msgid "dt_win_snprintf test 8 failed: %s"
-msgstr ""
-
-#: snprintf.c:216
-#, c-format
-msgid "dt_win_snprintf test 9 failed: %s"
-msgstr ""
-
-#: snprintf.c:217
-#, c-format
-msgid "dt_win_snprintf test 10 failed: %d"
-msgstr ""
-
-#: snprintf.c:220
-#, c-format
-msgid "dt_win_snprintf test 11 failed: %s"
-msgstr ""
-
-#: snprintf.c:223
-#, c-format
-msgid "dt_win_snprintf test 12 failed: %s"
-msgstr ""
-
-#: snprintf.c:226
-#, c-format
-msgid "dt_win_snprintf test 13 failed: %s"
-msgstr ""
-
-#: snprintf.c:229
-#, c-format
-msgid "dt_win_snprintf test 14 failed: %s"
-msgstr ""
-
-#: snprintf.c:232
-#, c-format
-msgid "dt_win_snprintf test 15 failed: %s"
-msgstr ""
-
-#: snprintf.c:235
-#, c-format
-msgid "dt_win_snprintf test 16 failed: %s"
-msgstr ""
-
-#: snprintf.c:238
-#, c-format
-msgid "dt_win_snprintf test 17 failed: %s"
-msgstr ""
-
-#: snprintf.c:241
-#, c-format
-msgid "dt_win_snprintf test 18 failed: %s"
-msgstr ""
-
-#: snprintf.c:244
-#, c-format
-msgid "dt_win_snprintf test 19 failed: %s"
+msgid "dt_win_snprintf test %d failed: %s"
 msgstr ""
 
 #: subset.c:7
@@ -4795,20 +4703,6 @@ msgstr "fill 必须是长度为 1 的向量，例如默认值 NA"
 #, c-format
 msgid "Item %d of list input is not an atomic vector"
 msgstr "列表输入的第 %d 项不是原子(atomic)向量"
-
-#: types.c:17 types.c:21
-#, fuzzy, c-format
-msgid ""
-"%s: %d:\n"
-"%s"
-msgstr "%s: '%s'"
-
-#: types.c:23
-#, fuzzy, c-format
-msgid ""
-"%s: %d:\n"
-"%s:"
-msgstr "%s: '%s'"
 
 #: types.c:55
 msgid "internal error: status, nx, nk must be integer"
@@ -5036,6 +4930,18 @@ msgid ""
 msgstr ""
 "dim.data.table的参数必须为一个data.table（实质为一个列表），但输入参数为%s类"
 "型"
+
+#, fuzzy
+#~ msgid ""
+#~ "%s: %d:\n"
+#~ "%s"
+#~ msgstr "%s: '%s'"
+
+#, fuzzy
+#~ msgid ""
+#~ "%s: %d:\n"
+#~ "%s:"
+#~ msgstr "%s: '%s'"
 
 #, fuzzy
 #~ msgid "Resulting value has different class than 'default'. "

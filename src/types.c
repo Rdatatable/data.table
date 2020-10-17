@@ -14,13 +14,13 @@ char *end(char *start) {
 void ansMsg(ans_t *ans, int n, bool verbose, const char *func) {
   for (int i=0; i<n; i++) {
     if (verbose && (ans[i].message[0][0] != '\0'))
-      Rprintf(_("%s: %d:\n%s"), func, i+1, ans[i].message[0]);
+      Rprintf("%s: %d:\n%s", func, i+1, ans[i].message[0]);
     if (ans[i].message[1][0] != '\0')
       REprintf("%s: %d:\n%s", func, i+1, ans[i].message[1]);
     if (ans[i].message[2][0] != '\0')
-      warning(_("%s: %d:\n%s"), func, i+1, ans[i].message[2]);
+      warning("%s: %d:\n%s", func, i+1, ans[i].message[2]);
     if (ans[i].status == 3)
-      error(_("%s: %d:\n%s:"), func, i+1, ans[i].message[3]);
+      error("%s: %d:\n%s:", func, i+1, ans[i].message[3]);
   }
 }
 

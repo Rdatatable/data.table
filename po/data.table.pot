@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: data.table 1.13.1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2020-10-17 12:10-0400\n"
+"POT-Creation-Date: 2020-10-17 12:21-0400\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -2414,11 +2414,6 @@ msgid ""
 "%p, sof=%p"
 msgstr ""
 
-#: fread.c:2487 fread.c:2622 freadR.c:703
-#, c-format
-msgid "%s"
-msgstr ""
-
 #: fread.c:2494
 #, c-format
 msgid ""
@@ -2738,6 +2733,11 @@ msgstr ""
 msgid "Internal error: unexpected field of size %d\n"
 msgstr ""
 
+#: freadR.c:703
+#, c-format
+msgid "%s"
+msgstr ""
+
 #: froll.c:14 froll.c:223 froll.c:407
 #, c-format
 msgid "%s: window width longer than input vector, returning all NA vector\n"
@@ -3020,7 +3020,7 @@ msgstr ""
 msgid "%<PRId64> "
 msgstr ""
 
-#: fsort.c:247 fwrite.c:590 fwrite.c:702 fwrite.c:921 fwrite.c:966
+#: fsort.c:247 fwrite.c:702
 msgid "\n"
 msgstr ""
 
@@ -3049,11 +3049,6 @@ msgstr ""
 msgid ""
 "deflate returned %d with stream->total_out==%d; Z_FINISH==%d, Z_OK==%d, "
 "Z_STREAM_END==%d\n"
-msgstr ""
-
-#: fwrite.c:588
-#, c-format
-msgid "%02x "
 msgstr ""
 
 #: fwrite.c:613
@@ -3146,7 +3141,7 @@ msgstr ""
 msgid "Compress gzip error: %d"
 msgstr ""
 
-#: fwrite.c:765 fwrite.c:773 fwrite.c:972 fwrite.c:985
+#: fwrite.c:765 fwrite.c:773
 #, c-format
 msgid "%s: '%s'"
 msgstr ""
@@ -4218,99 +4213,12 @@ msgstr ""
 msgid "Unsupported type '%s'"
 msgstr ""
 
-#: snprintf.c:192
+#: snprintf.c:192 snprintf.c:195 snprintf.c:198 snprintf.c:201 snprintf.c:204
+#: snprintf.c:207 snprintf.c:210 snprintf.c:213 snprintf.c:216 snprintf.c:217
+#: snprintf.c:220 snprintf.c:223 snprintf.c:226 snprintf.c:229 snprintf.c:232
+#: snprintf.c:235 snprintf.c:238 snprintf.c:241 snprintf.c:244
 #, c-format
-msgid "dt_win_snprintf test 1 failed: %s"
-msgstr ""
-
-#: snprintf.c:195
-#, c-format
-msgid "dt_win_snprintf test 2 failed: %s"
-msgstr ""
-
-#: snprintf.c:198
-#, c-format
-msgid "dt_win_snprintf test 3 failed: %s"
-msgstr ""
-
-#: snprintf.c:201
-#, c-format
-msgid "dt_win_snprintf test 4 failed: %s"
-msgstr ""
-
-#: snprintf.c:204
-#, c-format
-msgid "dt_win_snprintf test 5 failed: %s"
-msgstr ""
-
-#: snprintf.c:207
-#, c-format
-msgid "dt_win_snprintf test 6 failed: %s"
-msgstr ""
-
-#: snprintf.c:210
-#, c-format
-msgid "dt_win_snprintf test 7 failed: %s"
-msgstr ""
-
-#: snprintf.c:213
-#, c-format
-msgid "dt_win_snprintf test 8 failed: %s"
-msgstr ""
-
-#: snprintf.c:216
-#, c-format
-msgid "dt_win_snprintf test 9 failed: %s"
-msgstr ""
-
-#: snprintf.c:217
-#, c-format
-msgid "dt_win_snprintf test 10 failed: %d"
-msgstr ""
-
-#: snprintf.c:220
-#, c-format
-msgid "dt_win_snprintf test 11 failed: %s"
-msgstr ""
-
-#: snprintf.c:223
-#, c-format
-msgid "dt_win_snprintf test 12 failed: %s"
-msgstr ""
-
-#: snprintf.c:226
-#, c-format
-msgid "dt_win_snprintf test 13 failed: %s"
-msgstr ""
-
-#: snprintf.c:229
-#, c-format
-msgid "dt_win_snprintf test 14 failed: %s"
-msgstr ""
-
-#: snprintf.c:232
-#, c-format
-msgid "dt_win_snprintf test 15 failed: %s"
-msgstr ""
-
-#: snprintf.c:235
-#, c-format
-msgid "dt_win_snprintf test 16 failed: %s"
-msgstr ""
-
-#: snprintf.c:238
-#, c-format
-msgid "dt_win_snprintf test 17 failed: %s"
-msgstr ""
-
-#: snprintf.c:241
-#, c-format
-msgid "dt_win_snprintf test 18 failed: %s"
-msgstr ""
-
-#: snprintf.c:244
-#, c-format
-msgid "dt_win_snprintf test 19 failed: %s"
+msgid "dt_win_snprintf test %d failed: %s"
 msgstr ""
 
 #: subset.c:7
@@ -4436,20 +4344,6 @@ msgstr ""
 #: transpose.c:28
 #, c-format
 msgid "Item %d of list input is not an atomic vector"
-msgstr ""
-
-#: types.c:17 types.c:21
-#, c-format
-msgid ""
-"%s: %d:\n"
-"%s"
-msgstr ""
-
-#: types.c:23
-#, c-format
-msgid ""
-"%s: %d:\n"
-"%s:"
 msgstr ""
 
 #: types.c:55

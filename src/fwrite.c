@@ -585,9 +585,9 @@ void print_z_stream(const z_stream *s)   // temporary tracing function for #4099
 {
   const unsigned char *byte = (unsigned char *)s;
   for (int i=0; i<sizeof(z_stream); ++i) {
-    DTPRINT(_("%02x "), *byte++);  // not byte[i] is attempt to avoid valgrind's use-of-uninitialized, #4639, and z_stream={0} now too
+    DTPRINT("%02x ", *byte++);  // not byte[i] is attempt to avoid valgrind's use-of-uninitialized, #4639, and z_stream={0} now too
   }
-  DTPRINT(_("\n"));
+  DTPRINT("\n");
 }
 
 void fwriteMain(fwriteMainArgs args)
@@ -918,7 +918,7 @@ void fwriteMain(fwriteMainArgs args)
             // # nocov start
             int ETA = (int)((args.nrow-end)*((now-startTime)/end));
             if (hasPrinted || ETA >= 2) {
-              if (verbose && !hasPrinted) DTPRINT(_("\n"));
+              if (verbose && !hasPrinted) DTPRINT("\n");
               DTPRINT("\rWritten %.1f%% of %"PRId64" rows in %d secs using %d thread%s. "
                       "maxBuffUsed=%d%%. ETA %d secs.      ",
                        (100.0*end)/args.nrow, args.nrow, (int)(now-startTime), nth, nth==1?"":"s",
@@ -963,13 +963,13 @@ void fwriteMain(fwriteMainArgs args)
       DTPRINT("\r                                                                       "
               "                                                              \r");
     } else {       // don't clear any potentially helpful output before error
-      DTPRINT(_("\n"));
+      DTPRINT("\n");
     }
     // # nocov end
   }
 
   if (f!=-1 && CLOSE(f) && !failed)
-    STOP(_("%s: '%s'"), strerror(errno), args.filename);  // # nocov
+    STOP("%s: '%s'", strerror(errno), args.filename);  // # nocov
   // quoted '%s' in case of trailing spaces in the filename
   // If a write failed, the line above tries close() to clean up, but that might fail as well. So the
   // '&& !failed' is to not report the error as just 'closing file' but the next line for more detail
@@ -982,7 +982,7 @@ void fwriteMain(fwriteMainArgs args)
            verbose ? _("Please include the full output above and below this message in your data.table bug report.")
                    : _("Please retry fwrite() with verbose=TRUE and include the full output with your data.table bug report."));
     if (failed_write)
-      STOP(_("%s: '%s'"), strerror(failed_write), args.filename);
+      STOP("%s: '%s'", strerror(failed_write), args.filename);
     // # nocov end
   }
 }
