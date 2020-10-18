@@ -250,6 +250,7 @@ test-dev-win: ## R-devel on Windows
   <<: *test-win
   variables:
     R_VERSION: "$R_DEVEL_VERSION"
+    TEST_DATA_TABLE_MEMTEST: "TRUE"
   before_script:
     - *install-r-devel-win
     - *install-rtools-win
