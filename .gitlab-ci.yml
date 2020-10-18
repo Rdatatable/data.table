@@ -92,7 +92,7 @@ build: ## build data.table sources as tar.gz archive
 .test-install-rtools-win: &install-rtools-win
   - curl.exe -s -o ../rtools.exe https://cloud.r-project.org/bin/windows/Rtools/rtools40-x86_64.exe; Start-Process -FilePath ..\rtools.exe -ArgumentList "/VERYSILENT /DIR=C:\rtools40" -NoNewWindow -Wait
 .test-install-rtools35-win: &install-rtools35-win
-  - curl.exe -s -o ../Rtools35.exe https://cran.r-project.org/bin/windows/Rtools/Rtools35.exe; Start-Process -FilePath ..\Rtools35.exe -ArgumentList "/VERYSILENT /DIR=C:\Rtools" -NoNewWindow -Wait
+  - curl.exe -s -o ../Rtools35.exe https://cloud.r-project.org/bin/windows/Rtools/Rtools35.exe; Start-Process -FilePath ..\Rtools35.exe -ArgumentList "/VERYSILENT /DIR=C:\Rtools" -NoNewWindow -Wait
 
 .test-template: &test
   stage: test
