@@ -1,6 +1,7 @@
 format.deps <- function(file, which) {
   deps.raw = read.dcf(file, fields=which)[[1L]]
   if (all(is.na(deps.raw))) return(character())
+  deps.raw = gsub("\n", " ", deps.raw, fixed=TRUE)
   deps.full = trimws(strsplit(deps.raw, ", ", fixed=TRUE)[[1L]])
   deps = trimws(sapply(strsplit(deps.full, "(", fixed=TRUE), `[[`, 1L))
   deps.full = gsub(">=", "&ge;", deps.full, fixed=TRUE)
@@ -30,6 +31,24 @@ format.bins <- function(ver, bin_ver, cran.home, os.type, pkg, version, repodir)
   paste(ans[fe], collapse=", ")
 }
 
+format.entry <- function(field, dcf, url=FALSE) {
+  if (field %in% colnames(dcf)) {
+    value = gsub("\n", " ", dcf[,field], fixed=TRUE)
+    if (url) {
+      urls = trimws(strsplit(value, ",", fixed=TRUE)[[1L]])
+      value = paste(sprintf("<a href=\"%s\">%s</a>", urls), collapse=", ")
+    }
+    sprintf("<tr><td>%s:</td><td>%s</td></tr>", field, value)
+  }
+}
+format.materials <- function() {
+  return(NULL) ## TODO
+  value = NA
+  #NEWS
+  #README
+  sprintf("<tr><td>Materials:</td><td>%s</td></tr>", value)
+}
+
 package.index <- function(package, lib.loc, repodir="bus/integration/cran") {
   file = system.file("DESCRIPTION", package=package, lib.loc=lib.loc)
   dcf = read.dcf(file)
@@ -44,6 +63,15 @@ package.index <- function(package, lib.loc, repodir="bus/integration/cran") {
     format.deps(file, "LinkingTo"),
     format.deps(file, "Suggests"),
     format.deps(file, "Enhances"),
+    if ("Built" %in% colnames(dcf)) sprintf("<tr><td>Built:</td><td>%s</td></tr>", substr(trimws(strsplit(dcf[,"Built"], ";", fixed=TRUE)[[1L]][[3L]]), 1L, 10L)),
+    if ("Author" %in% colnames(dcf)) sprintf("<tr><td>Author:</td><td>%s</td></tr>", dcf[,"Author"]),
+    if ("Maintainer" %in% colnames(dcf)) sprintf("<tr><td>Maintainer:</td><td>%s</td></tr>", gsub("@", " at ", dcf[,"Maintainer"], fixed=TRUE)),
+    format.entry("BugReports", dcf, url=TRUE),
+    format.entry("License", dcf),
+    format.entry("URL", dcf, url=TRUE),
+    format.entry("NeedsCompilation", dcf),
+    format.entry("SystemRequirements", dcf),
+    format.materials(), ## TODO
     if (pkg=="data.table") sprintf("<tr><td>Checks:</td><td><a href=\"../../checks/check_results_%s.html\">%s results</a></td></tr>", pkg, pkg)
   )
   vign = tools::getVignetteInfo(pkg, lib.loc=lib.loc)
@@ -59,7 +87,7 @@ package.index <- function(package, lib.loc, repodir="bus/integration/cran") {
     sprintf("<tr><td> Windows binaries: </td><td> %s </td></tr>", format.bins(ver=c("r-devel","r-release","r-oldrel"), bin_ver=c(r_devel_ver, r_rel_ver, r_oldrel_ver), cran.home=cran.home, os.type="windows", pkg=pkg, version=version, repodir=repodir)),
     sprintf("<tr><td> macOS binaries: </td><td> %s </td></tr>", format.bins(ver=c("r-release","r-oldrel"), bin_ver=c(r_rel_ver, r_oldrel_ver), cran.home=cran.home, os.type="macosx", pkg=pkg, version=version, repodir=repodir))
   )
-  if (pkg=="data.table") {
+  if (pkg=="data.table") { ## docker images
     registry = Sys.getenv("CI_REGISTRY", "registry.gitlab.com")
     namespace = Sys.getenv("CI_PROJECT_NAMESPACE", "Rdatatable")
     project = Sys.getenv("CI_PROJECT_NAME", "data.table")
@@ -79,7 +107,7 @@ package.index <- function(package, lib.loc, repodir="bus/integration/cran") {
     "<style type=\"text/css\">table td { vertical-align: top; }</style>",
     "</head>",
     "<body>",
-    sprintf("<h2>%s</h2>", dcf[,"Title"]),
+    sprintf("<h2>%s: %s</h2>", pkg, dcf[,"Title"]),
     sprintf("<p>%s</p>", dcf[,"Description"]),
     sprintf("<table summary=\"Package %s summary\">", pkg),
     tbl,
