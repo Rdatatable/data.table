@@ -127,10 +127,10 @@ build: ## build data.table sources as tar.gz archive
     - windows
     - shared-windows
 
-.test-osx-template: &test-osx
-  <<: *test
-  tags:
-    - macosx
+#.test-mac-template: &test-mac
+#  <<: *test
+#  tags:
+#    - macosx
 
 test-rel-lin: ## most comprehensive tests, force all suggests, also integration tests, using gcc -O3 -flto -fno-common -Wunused-result
   <<: *test-lin
@@ -284,7 +284,8 @@ test-old-win: ## R-oldrel on Windows
     - *rm-src-win
     - *mv-bin-win
 
-#test-rel-osx: ## R-release on MacOS, no macosx runner yet
+#test-rel-mac: ## R-release on MacOS, no macosx runner yet
+#  <<: *test-mac
 #  variables:
 #    R_VERSION: "$R_REL_VERSION"
 #  before_script:
@@ -299,7 +300,7 @@ test-old-win: ## R-oldrel on Windows
 #    - mkdir -p cran/bin/macosx/el-capitan/contrib/$R_VERSION
 #    - mv $(ls -1t data.table_*.tgz | head -n 1) cran/bin/macosx/el-capitan/contrib/$R_VERSION
 #    - *rm-src
-#    - *mv-bin-osx
+#    - *mv-bin-mac
 
 integration: ## merging all artifacts to produce single R repository, documentation and website
   stage: integration
@@ -322,7 +323,7 @@ integration: ## merging all artifacts to produce single R repository, documentat
     - test-rel-win
     - test-dev-win
     - test-old-win
-    #- test-rel-osx
+    #- test-rel-mac
   script:
     - Rscript -e 'pkgdown::build_site(override=list(destination="./pkgdown"))'
     ## html manual, vignettes, repos, cran_web, cran_checks
@@ -352,9 +353,9 @@ integration: ## merging all artifacts to produce single R repository, documentat
     - Rscript -e 'tools::write_PACKAGES(contrib.url("bus/integration/cran", type="win.binary", ver=Sys.getenv("R_REL_VERSION")), type="win.binary", fields="Revision", addFiles=TRUE)'
     - Rscript -e 'tools::write_PACKAGES(contrib.url("bus/integration/cran", type="win.binary", ver=Sys.getenv("R_DEVEL_VERSION")), type="win.binary", fields="Revision", addFiles=TRUE)'
     - Rscript -e 'tools::write_PACKAGES(contrib.url("bus/integration/cran", type="win.binary", ver=Sys.getenv("R_OLDREL_VERSION")), type="win.binary", fields="Revision", addFiles=TRUE)'
-    #- Rscript -e 'move.bin("test-rel-osx", Sys.getenv("R_REL_VERSION"), os.type="macosx")'
-    #- Rscript -e 'move.bin("test-dev-osx", Sys.getenv("R_DEVEL_VERSION"), os.type="macosx", silent=TRUE)'
-    #- Rscript -e 'move.bin("test-old-osx", Sys.getenv("R_OLDREL_VERSION"), os.type="macosx")'
+    #- Rscript -e 'move.bin("test-rel-mac", Sys.getenv("R_REL_VERSION"), os.type="macosx")'
+    #- Rscript -e 'move.bin("test-dev-mac", Sys.getenv("R_DEVEL_VERSION"), os.type="macosx", silent=TRUE)'
+    #- Rscript -e 'move.bin("test-old-mac", Sys.getenv("R_OLDREL_VERSION"), os.type="macosx")'
     #- Rscript -e 'tools::write_PACKAGES(contrib.url("bus/integration/cran", type="mac.binary.el-capitan", ver=Sys.getenv("R_REL_VERSION")), type="mac.binary.el-capitan", fields="Revision", addFiles=TRUE)'
     #- Rscript -e 'tools::write_PACKAGES(contrib.url("bus/integration/cran", type="mac.binary.el-capitan", ver=Sys.getenv("R_DEVEL_VERSION")), type="mac.binary.el-capitan", fields="Revision", addFiles=TRUE)'
     #- Rscript -e 'tools::write_PACKAGES(contrib.url("bus/integration/cran", type="mac.binary.el-capitan", ver=Sys.getenv("R_OLDREL_VERSION")), type="mac.binary.el-capitan", fields="Revision", addFiles=TRUE)'
