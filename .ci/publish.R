@@ -3,10 +3,14 @@ format.deps <- function(file, which) {
   if (all(is.na(deps.raw))) return(character())
   deps.full = trimws(strsplit(deps.raw, ", ", fixed=TRUE)[[1L]])
   deps = trimws(sapply(strsplit(deps.full, "(", fixed=TRUE), `[[`, 1L))
+  deps.full = gsub(">=", "&ge;", deps.full, fixed=TRUE)
+  deps.full = gsub("<=", "&le;", deps.full, fixed=TRUE)
+  if (any(grepl(">", deps.full, fixed=TRUE), grepl("<", deps.full, fixed=TRUE), grepl("=", deps.full, fixed=TRUE)))
+    stop("formatting dependencies version for CRAN-line package website failed because some dependencies have version defined using operators other than >= and <=")
   names(deps.full) <- deps
   base.deps = c("R", unlist(tools:::.get_standard_package_names(), use.names = FALSE))
   ans = sapply(deps, function(x) {
-    if (x %in% base.deps) deps.full[[x]]
+    if (x %in% base.deps) deps.full[[x]] ## base R packages are not linked
     else sprintf("<a href=\"../%s/index.html\">%s</a>", x, deps.full[[x]])
   })
   sprintf("<tr><td>%s:</td><td>%s</td></tr>", which, paste(ans, collapse=", "))
