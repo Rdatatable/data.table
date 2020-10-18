@@ -15,6 +15,8 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
   # trunc.cols - should only the columns be printed that can fit in the console? (FALSE)
   if (!col.names %chin% c("auto", "top", "none"))
     stop("Valid options for col.names are 'auto', 'top', and 'none'")
+  if (!is.logical(trunc.cols))
+    stop("Valid options for trunc.cols are TRUE or FALSE")
   if (col.names == "none" && class)
     warning("Column classes will be suppressed when col.names is 'none'")
   if (!shouldPrint(x)) {
