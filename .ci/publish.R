@@ -47,17 +47,17 @@ package.index <- function(package, lib.loc, repodir="bus/integration/cran") {
     if (pkg=="data.table") sprintf("<tr><td>Checks:</td><td><a href=\"../../checks/check_results_%s.html\">%s results</a></td></tr>", pkg, pkg)
   )
   vign = tools::getVignetteInfo(pkg, lib.loc=lib.loc)
-  r_bin_ver = Sys.getenv("R_BIN_VERSION")
-  r_devel_bin_ver = Sys.getenv("R_DEVEL_BIN_VERSION")
-  r_oldrel = Sys.getenv("R_OLDREL_BIN_VERSION")
-  stopifnot(nzchar(r_bin_ver), nzchar(r_devel_bin_ver), nzchar(r_oldrel_bin_ver))
+  r_rel_ver = Sys.getenv("R_REL_VERSION")
+  r_devel_ver = Sys.getenv("R_DEVEL_VERSION")
+  r_oldrel_ver = Sys.getenv("R_OLDREL_VERSION")
+  stopifnot(nzchar(r_rel_ver), nzchar(r_devel_ver), nzchar(r_oldrel_ver))
   cran.home = "../../.."
   tbl.dl = c(
     sprintf("<tr><td> Reference manual: </td><td> <a href=\"%s.pdf\">%s.pdf</a>, <a href=\"%s/library/%s/html/00Index.html\">00Index.html</a> </td></tr>", pkg, pkg, cran.home, pkg),
     if (nrow(vign)) sprintf("<tr><td>Vignettes:</td><td>%s</td></tr>", paste(sprintf("<a href=\"%s/library/data.table/doc/%s\">%s</a><br/>", cran.home, vign[,"PDF"], vign[,"Title"]), collapse="\n")), # location unline cran web/pkg/vignettes to not duplicate content, documentation is in ../../../library
     sprintf("<tr><td> Package source: </td><td> <a href=\"%s/src/contrib/%s_%s.tar.gz\"> %s_%s.tar.gz </a> </td></tr>", cran.home,pkg, version, pkg, version),
-    sprintf("<tr><td> Windows binaries: </td><td> %s </td></tr>", format.bins(ver=c("r-devel","r-release","r-oldrel"), bin_ver=c(r_devel_bin_ver, r_bin_ver, r_oldrel), cran.home=cran.home, os.type="windows", pkg=pkg, version=version, repodir=repodir)),
-    sprintf("<tr><td> macOS binaries: </td><td> %s </td></tr>", format.bins(ver=c("r-release","r-oldrel"), bin_ver=c(r_bin_ver, r_oldrel), cran.home=cran.home, os.type="macosx", pkg=pkg, version=version, repodir=repodir))
+    sprintf("<tr><td> Windows binaries: </td><td> %s </td></tr>", format.bins(ver=c("r-devel","r-release","r-oldrel"), bin_ver=c(r_devel_ver, r_rel_ver, r_oldrel_ver), cran.home=cran.home, os.type="windows", pkg=pkg, version=version, repodir=repodir)),
+    sprintf("<tr><td> macOS binaries: </td><td> %s </td></tr>", format.bins(ver=c("r-release","r-oldrel"), bin_ver=c(r_rel_ver, r_oldrel_ver), cran.home=cran.home, os.type="macosx", pkg=pkg, version=version, repodir=repodir))
   )
   if (pkg=="data.table") {
     registry = Sys.getenv("CI_REGISTRY", "registry.gitlab.com")
