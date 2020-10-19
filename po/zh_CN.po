@@ -3,7 +3,7 @@ msgstr ""
 "Project-Id-Version: data.table 1.12.5\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2020-10-17 13:11-0400\n"
-"PO-Revision-Date: 2019-11-18 00:26-04\n"
+"PO-Revision-Date: 2020-10-18 20:39-0400\n"
 "Last-Translator: Yuhang Chen <yuhangchen0802@gmail.com>\n"
 "Language-Team: Mandarin\n"
 "Language: Mandarin\n"
@@ -472,7 +472,9 @@ msgstr "因为一个主列的更新，缩短索引 '%s' 到 '%s'\n"
 msgid ""
 "Internal error: %d column numbers to delete not now in strictly increasing "
 "order. No-dups were checked earlier."
-msgstr ""
+msgstr "内部错误 memrecycle：sourceStart=%d sourceLen=%d length(source)=%d"
+"内部错误：指定删除列的序号目前并非严格升序排列。"
+"重复项已于之前检查过。"
 
 #: assign.c:688
 #, c-format
@@ -1227,7 +1229,7 @@ msgstr "参数'test'必须是逻辑类型。"
 
 #: fifelse.c:9
 msgid "S4 class objects (except nanotime) are not supported."
-msgstr ""
+msgstr "不支持的S4 类对象（nanotime 除外）。"
 
 #: fifelse.c:28
 #, c-format
@@ -1299,68 +1301,69 @@ msgstr ""
 msgid ""
 "S4 class objects (except nanotime) are not supported. Please see https://"
 "github.com/Rdatatable/data.table/issues/4131."
-msgstr ""
+msgstr "不支持的S4 类对象（nanotime 除外）。详见 https://"
+"github.com/Rdatatable/data.table/issues/4131。"
 
 #: fifelse.c:174
 msgid "Length of 'default' must be 1."
-msgstr "'default'长度必须是1"
+msgstr "'default' 长度必须是 1。"
 
 #: fifelse.c:181
 #, c-format
 msgid ""
 "Resulting value is of type %s but 'default' is of type %s. Please make sure "
 "that both arguments have the same type."
-msgstr "结果是%s类型，但'default'是%s类型。请确认两个参数是同一类型。"
+msgstr "结果为 %s 类型，然而 'default' 却为 %s 类型。请确认二者为同一类型。"
 
 #: fifelse.c:185
 msgid ""
 "Resulting value has different class than 'default'. Please make sure that "
 "both arguments have the same class."
-msgstr "结果的类型与'default'不同。请确认两个参数是同一类型。"
+msgstr "结果的类型与 'default' 的类型不同。请确认二者为同一类型。"
 
 #: fifelse.c:191
 msgid ""
 "Resulting value and 'default' are both type factor but their levels are "
 "different."
-msgstr "结果和'default'都是因子类型但他们的因子水平不同"
+msgstr "结果和 'default' 均为因子类型，但其因子水平不同。"
 
 #: fifelse.c:206
 #, c-format
 msgid "Argument #%d must be logical."
-msgstr "参数 #%d 必须是逻辑类型。"
+msgstr "参数 #%d 必须为逻辑类型。"
 
 #: fifelse.c:210
 #, c-format
 msgid ""
 "Argument #%d has a different length than argument #1. Please make sure all "
 "logical conditions have the same length."
-msgstr "参数 #%d 与参数 #1 长度不同。请确认所有逻辑相等"
+msgstr "参数 #%d 与参数 #1 长度不同。请确认所有逻辑条件的长度相等。"
 
 #: fifelse.c:215
 #, c-format
 msgid ""
 "Argument #%d is of type %s, however argument #2 is of type %s. Please make "
 "sure all output values have the same type."
-msgstr "参数 #%d 是%s类型，但参数 #2 是%s类型。请确认所有成果是同一类型。"
+msgstr "参数 #%d 为 %s 类型，但参数 #2 为 %s 类型。请确认所有输出均为同一类型。"
 
 #: fifelse.c:220
 #, c-format
 msgid ""
 "Argument #%d has different class than argument #2, Please make sure all "
 "output values have the same class."
-msgstr "参数 #2 的类型与参数 #%d 的不同。请确认所有成果是同一类型。"
+msgstr "参数 #2 的类型与参数 #%d 的不同。请确认所有输出均为同一类型。"
 
 #: fifelse.c:226
 #, c-format
 msgid ""
 "Argument #2 and argument #%d are both factor but their levels are different."
-msgstr "参数 #2 和参数 #%d 都是因子类型但他们的因子水平不同。"
+msgstr "参数 #2 和参数 #%d 均为因子类型，但其因子水平不同。"
 
 #: fifelse.c:233
 #, c-format
 msgid ""
 "Length of output value #%d must either be 1 or length of logical condition."
-msgstr "成果 #%d 的长度必须为 1 或其他逻辑那长度。"
+msgstr "#%d 输出的长度必须为 1 或与逻辑判断条件的长度相同。"
 
 #: fmelt.c:18
 msgid "'x' must be an integer"
@@ -3254,14 +3257,15 @@ msgstr "%d: %.3f (%4.1f%%)\n"
 #: fwrite.c:572
 #, c-format
 msgid "deflate input stream: %p %d %p %d\n"
-msgstr ""
+msgstr "deflate (压缩) 输入数据流：%p %d %p %d\n"
 
 #: fwrite.c:575
 #, c-format
 msgid ""
 "deflate returned %d with stream->total_out==%d; Z_FINISH==%d, Z_OK==%d, "
 "Z_STREAM_END==%d\n"
-msgstr ""
+msgstr "deflate (压缩) 返回 %d，stream->total_out==%d; Z_FINISH==%d, Z_OK==%d, "
+"Z_STREAM_END==%d\n"
 
 #: fwrite.c:613
 #, c-format
@@ -3345,7 +3349,7 @@ msgstr "无法分配gzip的流结构"
 #: fwrite.c:743 fwrite.c:752
 #, c-format
 msgid "z_stream for header (%d): "
-msgstr ""
+msgstr "header （%d） 的 z_stream："
 
 #: fwrite.c:748
 #, c-format
@@ -3386,19 +3390,21 @@ msgstr ""
 msgid ""
 "Unable to allocate %d MB * %d thread buffers; '%d: %s'. Please read ?fwrite "
 "for nThread, buffMB and verbose options."
-msgstr ""
+msgstr "无法分配 %d MB * %d 的线程缓存；'%d: %s'。请阅读 ?fwrite 中"
+"对 nThread、buffMB 和 verbose 选项的说明。"
 
 #: fwrite.c:822
 #, c-format
 msgid ""
 "Unable to allocate %d MB * %d thread compressed buffers; '%d: %s'. Please "
 "read ?fwrite for nThread, buffMB and verbose options."
-msgstr ""
+msgstr "无法分配 %d MB * %d 的线程压缩缓存；'%d: %s'。请
+阅读 ?fwrite 中对 nThread、buffMB 和 verbose 选项的说明。"
 
 #: fwrite.c:851 fwrite.c:883 fwrite.c:885
 #, c-format
 msgid "z_stream for data (%d): "
-msgstr ""
+msgstr "data （%d）的 z_stream："
 
 #: fwrite.c:980
 #, c-format
@@ -4812,7 +4818,7 @@ msgstr "内部错误：copyAsPlain()不支持类型为'%s'的参数"
 #: utils.c:286
 #, c-format
 msgid "Internal error: copyAsPlain returning ALTREP for type '%s'"
-msgstr "内部错误：copyAsPlain 保留了ALTREP属性为类型 '%s'"
+msgstr "内部错误：copyAsPlain 返回了类型为 '%s' 的 ALTREP"
 
 #: utils.c:330
 #, c-format
