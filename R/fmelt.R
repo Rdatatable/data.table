@@ -52,17 +52,29 @@ measure = function(..., sep="_", pattern, cols, multiple.keyword="value.name") {
     stop("each ... argument to measure must be either a symbol without argument name, or a function with argument name, problems: ", paste(bad.i, collapse=","))
   }
   names(fun.list)[!user.named] = sapply(fun.list[!user.named], paste)
-  name.tab = table(names(fun.list))
-  bad.counts = name.tab[1 < name.tab]
-  if(length(bad.counts)){
-    bad.str = paste(names(bad.counts), collapse=",")
-    stop("measure group names should be unique, problems: ", bad.str)
+  err.names.unique <- function(err.what, name.vec) {
+    name.tab = table(name.vec)
+    bad.counts = name.tab[1 < name.tab]
+    if (length(bad.counts)) {
+      stop(
+        err.what, " names should be unique, problems: ",
+        paste(names(bad.counts), collapse=",")      
+      )
+    }
   }
+  err.names.unique("measure group", names(fun.list))
   # 3. compute initial group data table, used as variable_table attribute.
   group.mat = if (!missing(pattern)) {
     match.vec = regexpr(pattern, cols, perl=TRUE)
     measure.vec = which(0 < match.vec)
-    start = attr(match.vec, "capture.start")[measure.vec,]
+    if (length(measure.vec) == 0L) {
+      stop(
+        "pattern did not match any cols, so nothing would be melted; fix by changing pattern")
+    }
+    start = attr(match.vec, "capture.start")[measure.vec, , drop=FALSE]
+    if (is.null(start)) {
+      stop("pattern must contain at least one capture group (parenthesized sub-pattern)")
+    }
     if (ncol(start) != length(fun.list)) {
       stop(
         "number of ... arguments to measure =", length(fun.list),
@@ -86,6 +98,7 @@ measure = function(..., sep="_", pattern, cols, multiple.keyword="value.name") {
     measure.vec = which(vector.lengths==n.groups)
     do.call(rbind, list.of.vectors[measure.vec])
   }
+  err.names.unique("measured column", cols[measure.vec])
   uniq.mat <- unique(group.mat)
   if (nrow(uniq.mat) < nrow(group.mat)) {
     stop(
@@ -117,7 +130,18 @@ measure = function(..., sep="_", pattern, cols, multiple.keyword="value.name") {
   }
   # 5. compute measure.vars list or vector.
   if (multiple.keyword %in% names(fun.list)) {# multiple output columns.
+    if (!is.character(group.dt[[multiple.keyword]])) {
+      stop(
+        multiple.keyword, " column class=",
+        class(group.dt[[multiple.keyword]])[[1L]],
+        " after applying conversion function, but must be character")
+    }
     is.other = names(group.dt) != multiple.keyword
+    if (!any(is.other)) {
+      stop(
+        multiple.keyword, " is the only group; ",
+        "fix by creating at least one more group")
+    }
     other.values = lapply(group.dt[, is.other, with=FALSE], unique)
     other.values$stringsAsFactors = FALSE
     other.dt = data.table(do.call(expand.grid, other.values))

@@ -17222,3 +17222,11 @@ test(2156.50, melt(iris.days, measure.vars=measure(before=as.integer, value.name
 test(2156.51, melt(iris.days, measure.vars=measure(before=function(x)rep(4, length(x)), value.name, dim, sep=".")), error="number of unique groups after applying type conversion functions less than number of groups, change type conversion")
 test(2156.52, melt(iris.days, measure.vars=measure(before, value.name, dim, pattern="(day)[12][.](.*)[.](.*)")), error="number of unique column IDs =4 is less than number of melted columns =8; fix by changing pattern/sep")
 test(2156.53, melt(iris.days, measure.vars=measure(day=as.integer, value.name, dim, pattern="day(.)[.](.*)[.](.*)")), data.table(Species=factor("setosa"), day=as.integer(c(1,2,1,2)), dim=c("Length","Length","Width","Width"), Sepal=c(5.1,5.1,3.5,3.5), Petal=c(1.4,1.4,0.2,0.2)))
+test(2156.54, melt(iris.days, measure.vars=measure(pattern="day")), error="pattern must contain at least one capture group (parenthesized sub-pattern)")
+test(2156.55, melt(iris.days, measure.vars=measure(value.name, pattern="(.*)")), error="value.name is the only group; fix by creating at least one more group")
+test(2156.56, melt(iris.days, measure.vars=measure(foo, bar, pattern="(foo)(bar)")), error="pattern did not match any cols, so nothing would be melted; fix by changing pattern")
+test(2156.57, melt(iris.days, measure.vars=measure(value.name, bar, pattern="(foo)(bar)")), error="pattern did not match any cols, so nothing would be melted; fix by changing pattern")
+test(2157.58, melt(data.table(ff=1, ff=2), measure.vars=measure(letter, number, pattern="(.)(.)")), error="measured column names should be unique, problems: ff")
+test(2157.59, melt(data.table(f_f=1, f_f=2), measure.vars=measure(letter, number)), error="measured column names should be unique, problems: f_f")
+test(2157.60, melt(iris.days, measure.vars=measure(value.name=as.integer, variable, pattern="day(.)[.](.*)")), error="value.name column class=integer after applying conversion function, but must be character")
+test(2157.61, melt(data.table(ff=1, ff=2, a=3, b=4), measure.vars=measure(letter, pattern="([ab])"), id.vars="ff"), data.table(ff=1, letter=c("a","b"), value=c(3,4)))#duplicate column names are fine if they are not matched by pattern.
