@@ -472,8 +472,7 @@ msgstr "因为一个主列的更新，缩短索引 '%s' 到 '%s'\n"
 msgid ""
 "Internal error: %d column numbers to delete not now in strictly increasing "
 "order. No-dups were checked earlier."
-msgstr "内部错误 memrecycle：sourceStart=%d sourceLen=%d length(source)=%d"
-"内部错误：指定删除列的序号目前并非严格升序排列。"
+msgstr "内部错误：指定 %d 删除列的序号目前并非严格升序排列。"
 "重复项已于之前检查过。"
 
 #: assign.c:688
@@ -3398,8 +3397,8 @@ msgstr "无法分配 %d MB * %d 的线程缓存；'%d: %s'。请阅读 ?fwrite �
 msgid ""
 "Unable to allocate %d MB * %d thread compressed buffers; '%d: %s'. Please "
 "read ?fwrite for nThread, buffMB and verbose options."
-msgstr "无法分配 %d MB * %d 的线程压缩缓存；'%d: %s'。请
-阅读 ?fwrite 中对 nThread、buffMB 和 verbose 选项的说明。"
+msgstr "无法分配 %d MB * %d 的线程压缩缓存；'%d: %s'。请"
+"阅读 ?fwrite 中对 nThread、buffMB 和 verbose 选项的说明。"
 
 #: fwrite.c:851 fwrite.c:883 fwrite.c:885
 #, c-format
