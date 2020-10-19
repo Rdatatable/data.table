@@ -1125,7 +1125,7 @@ msgid ""
 "to :=). This message may be upgraded to warning in future.\n"
 msgstr ""
 "j 的结果是名称列表，在每组不停重复创建相同的名称很没效率为了提高效率，当 "
-"j=list(...) 时侦测到的所有名称会被移出，待分组完成后再放回来可以使用  "
+"j=list(...) 时侦测到的所有名称会被移出，待分组完成后再放回来可以使用 "
 "j=transform() 避免这种加速此讯息可能会在未来升级为警告\n"
 
 #: dogroups.c:378
@@ -1187,12 +1187,12 @@ msgid ""
 "  %s took %.3fs for %d groups\n"
 msgstr ""
 "\n"
-" %s 花了 %.3fs 在 %d 个组\n"
+"  %s 花了 %.3fs 在 %d 个组\n"
 
 #: dogroups.c:453
 #, c-format
 msgid "  eval(j) took %.3fs for %d calls\n"
-msgstr " eval(j)取%.3fs给 %d 调用\n"
+msgstr "  eval(j)取%.3fs给 %d 调用\n"
 
 #: dogroups.c:477
 msgid "growVector passed NULL"
@@ -1785,7 +1785,7 @@ msgstr "nrow 必须为长度为1的整型向量"
 #: forder.c:1392
 #, c-format
 msgid "nrow==%d but must be >=0"
-msgstr "nrow==%d 但是必须  >=0"
+msgstr "nrow==%d 但是必须 >=0"
 
 #: forder.c:1409
 msgid "x must be type 'double'"
@@ -1811,7 +1811,7 @@ msgstr "'cols' 的 %d 项为 %d ，超出1的范围 [1,ncol(x)=%d]"
 msgid ""
 "Column %d of input list x is length %d, inconsistent with first column of "
 "that item which is length %d."
-msgstr "输入列表x的列 %d 长度为  %d，不同于第一列的该项长度为 %d"
+msgstr "输入列表x的列 %d 长度为 %d，不同于第一列的该项长度为 %d"
 
 #: frank.c:63 frank.c:211 transpose.c:88
 #, c-format
@@ -1875,7 +1875,7 @@ msgstr "可避免的 %.3f 秒。 %s 复制用时\n"
 #: fread.c:441
 #, c-format
 msgid "  File copy in RAM took %.3f seconds.\n"
-msgstr "内存上的文件复制耗时 %.3f 秒\n"
+msgstr "  内存上的文件复制耗时 %.3f 秒\n"
 
 #: fread.c:1249
 msgid ""
@@ -1890,7 +1890,7 @@ msgstr "[01] 参数检查\n"
 #: fread.c:1259
 #, c-format
 msgid "  Using %d threads (omp_get_max_threads()=%d, nth=%d)\n"
-msgstr "使用 %d 线程 (omp_get_max_threads()=%d, nth=%d)\n"
+msgstr "  使用 %d 线程 (omp_get_max_threads()=%d, nth=%d)\n"
 
 #: fread.c:1267
 msgid ""
@@ -1901,7 +1901,7 @@ msgstr "内部错误：NAstrings 自身为空值。当清空该项会指向NULL�
 #: fread.c:1285
 #, c-format
 msgid "freadMain: NAstring <<%s>> has whitespace at the beginning or end"
-msgstr "freadMain: NAstring <<%s>>  在开始或者结束处有空白"
+msgstr "freadMain: NAstring <<%s>> 在开始或者结束处有空白"
 
 #: fread.c:1290
 #, c-format
@@ -1912,7 +1912,7 @@ msgstr "freadMain: NAstring <<%s>> 被识别为布尔型，这是不允许"
 
 #: fread.c:1301
 msgid "  No NAstrings provided.\n"
-msgstr "未提供 NAstrings \n"
+msgstr "  未提供 NAstrings \n"
 
 #: fread.c:1303
 msgid "  NAstrings = ["
@@ -1924,31 +1924,31 @@ msgstr "]\n"
 
 #: fread.c:1308
 msgid "  One or more of the NAstrings looks like a number.\n"
-msgstr "一个或多个 NAstrings 类似数值\n"
+msgstr "  一个或多个 NAstrings 类似数值\n"
 
 #: fread.c:1310
 msgid "  None of the NAstrings look like numbers.\n"
-msgstr "没有 NAstrings 为数值\n"
+msgstr "  没有 NAstrings 为数值\n"
 
 #: fread.c:1312
 #, c-format
 msgid "  skip num lines = %<PRId64>\n"
-msgstr "跳过行数为 %<PRId64>\n"
+msgstr "  跳过行数为 %<PRId64>\n"
 
 #: fread.c:1313
 #, c-format
 msgid "  skip to string = <<%s>>\n"
-msgstr "跳转至 string = <<%s>>\n"
+msgstr "  跳转至 string = <<%s>>\n"
 
 #: fread.c:1314
 #, c-format
 msgid "  show progress = %d\n"
-msgstr "显示进程  %d\n"
+msgstr "  显示进程 %d\n"
 
 #: fread.c:1315
 #, c-format
 msgid "  0/1 column will be read as %s\n"
-msgstr " 0/1 列被读取为  %s\n"
+msgstr "  0/1 列被读取为 %s\n"
 
 #: fread.c:1323
 #, c-format
@@ -1971,7 +1971,7 @@ msgstr "quote == dec ('%c') 不允许"
 
 #: fread.c:1343
 msgid "[02] Opening the file\n"
-msgstr "[02]  打开文件\n"
+msgstr "[02] 打开文件\n"
 
 #: fread.c:1346
 msgid ""
@@ -1986,7 +1986,7 @@ msgstr "内部错误：字符输入的最后一个字节不是 \\0"
 #: fread.c:1353
 #, c-format
 msgid "  Opening file %s\n"
-msgstr "打开文件 %s\n"
+msgstr "  打开文件 %s\n"
 
 #: fread.c:1357
 #, c-format
@@ -2006,7 +2006,7 @@ msgstr "文件是空的：%s"
 #: fread.c:1365 fread.c:1393
 #, c-format
 msgid "  File opened, size = %s.\n"
-msgstr "文件已打开，大小为 %s.\n"
+msgstr "  文件已打开，大小为 %s.\n"
 
 #: fread.c:1382
 #, c-format
@@ -3403,7 +3403,7 @@ msgstr "无法分配 %d MB * %d 的线程压缩缓存；'%d: %s'。请"
 #: fwrite.c:851 fwrite.c:883 fwrite.c:885
 #, c-format
 msgid "z_stream for data (%d): "
-msgstr "data （%d）的 z_stream："
+msgstr "data (%d) 的 z_stream："
 
 #: fwrite.c:980
 #, c-format
@@ -3588,7 +3588,7 @@ msgid ""
 "hold so the result has been coerced to 'numeric' automatically for "
 "convenience."
 msgstr ""
-"某整数列分组求和的结果中，出现了超过了整型（interger）数值所允许最大值的情"
+"某整数列分组求和的结果中，出现了超过了整型（integer）数值所允许最大值的情"
 "况，故结果被自动转换为数值类型（numeric）"
 
 #: gsumm.c:565
