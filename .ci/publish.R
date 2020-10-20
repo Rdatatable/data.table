@@ -197,6 +197,16 @@ pkg.revision <- function(job, pkg) {
     }
   } else ""
 }
+pkg.flags <- function(job, pkg) {
+  cc = file.path("bus", job, paste(pkg, "Rcheck", sep="."), pkg, "cc") ## data.table style cc file
+  if (file.exists(cc)) {
+    d = readLines(cc)
+    w.cflags = substr(d, 1, 7)=="CFLAGS="
+    if (sum(w.cflags)==1L)
+      return(sub("CFLAGS=", "", d[w.cflags], fixed=TRUE))
+  }
+  ""
+}
 
 check.copy <- function(job, repodir="bus/integration/cran"){
   dir.create(job.checks<-file.path(repodir, "web", "checks", pkg<-"data.table", job), recursive=TRUE);
@@ -298,14 +308,15 @@ check.index <- function(pkg, jobs, repodir="bus/integration/cran") {
     }
     memouts
   })
-  th = "<th>Flavor</th><th>Version</th><th>Revision</th><th>Install</th><th>Status</th><th>Rout.fail</th><th>Memtest</th>"
+  th = "<th>Flavor</th><th>Version</th><th>Revision</th><th>Install</th><th>Status</th><th>Flags</th><th>Rout.fail</th><th>Memtest</th>"
   tbl = sprintf(
-    "<tr><td><a href=\"check_flavors.html\">%s</a></td><td>%s</td><td>%s</td><td><a href=\"%s/%s/00install.out\">out</a></td><td><a href=\"%s/%s/00check.log\">%s</a></td><td>%s</td><td>%s</td></tr>",
+    "<tr><td><a href=\"check_flavors.html\">%s</a></td><td>%s</td><td>%s</td><td><a href=\"%s/%s/00install.out\">out</a></td><td><a href=\"%s/%s/00check.log\">%s</a></td><td>%s</td><td>%s</td><td>%s</td></tr>",
     sub("test-", "", jobs, fixed=TRUE),
     sapply(jobs, pkg.version, pkg),
     sapply(jobs, pkg.revision, pkg),
-    pkg, jobs,
-    pkg, jobs, sapply(sapply(jobs, check.test, pkg="data.table"), status),
+    pkg, jobs, ## install
+    pkg, jobs, sapply(sapply(jobs, check.test, pkg="data.table"), status), ## check
+    sapply(jobs, pkg.flags, pkg),
     mapply(test.files, jobs, routs, trim.exts=2L), # 1st fail, 2nd Rout, keep just: tests_x64/main
     mapply(test.files, jobs, memouts, trim.name=TRUE)
   )
