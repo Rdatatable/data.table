@@ -2,9 +2,16 @@
 
 **Benchmarks are regularly updated: [here](https://h2oai.github.io/db-benchmark/)**
 
-# data.table [v1.13.1](https://github.com/Rdatatable/data.table/milestone/19)  (in development)
+# data.table [v1.13.3](https://github.com/Rdatatable/data.table/milestone/20)  (in development)
 
 ## NEW FEATURES
+
+## BUG FIXES
+
+## NOTES
+
+
+# data.table [v1.13.2](https://github.com/Rdatatable/data.table/milestone/19?closed=1)  (19 Oct 2020)
 
 ## BUG FIXES
 
