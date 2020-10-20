@@ -36,7 +36,7 @@ format.entry <- function(field, dcf, url=FALSE) {
     value = gsub("\n", " ", dcf[,field], fixed=TRUE)
     if (url) {
       urls = trimws(strsplit(value, ",", fixed=TRUE)[[1L]])
-      value = paste(sprintf("<a href=\"%s\">%s</a>", urls), collapse=", ")
+      value = paste(sprintf("<a href=\"%s\">%s</a>", urls, urls), collapse=", ")
     }
     sprintf("<tr><td>%s:</td><td>%s</td></tr>", field, value)
   }
