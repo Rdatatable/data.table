@@ -41,6 +41,21 @@ format.entry <- function(field, dcf, url=FALSE) {
     sprintf("<tr><td>%s:</td><td>%s</td></tr>", field, value)
   }
 }
+format.maintainer <- function(dcf) {
+  if ("Maintainer" %in% colnames(dcf)) {
+    text2html = function(x) {
+      # https://stackoverflow.com/a/64446320/2490497
+      splitted <- strsplit(x, "")[[1L]]
+      intvalues <- as.hexmode(utf8ToInt(enc2utf8(x)))
+      paste(paste0("&#x", intvalues, ";"), collapse = "")
+    }
+    tmp = gsub("@", " at ", dcf[,"Maintainer"], fixed=TRUE)
+    sep = regexpr("<", tmp, fixed=TRUE)
+    name = trimws(substr(tmp, 1L, sep-1L))
+    mail = text2html(trimws(substr(tmp, sep, nchar(tmp))))
+    sprintf("<tr><td>Maintainer:</td><td>%s  %s</td></tr>", name, mail)
+  }
+}
 format.materials <- function() {
   return(NULL) ## TODO
   value = NA
@@ -65,7 +80,7 @@ package.index <- function(package, lib.loc, repodir="bus/integration/cran") {
     format.deps(file, "Enhances"),
     if ("Built" %in% colnames(dcf)) sprintf("<tr><td>Built:</td><td>%s</td></tr>", substr(trimws(strsplit(dcf[,"Built"], ";", fixed=TRUE)[[1L]][[3L]]), 1L, 10L)),
     if ("Author" %in% colnames(dcf)) sprintf("<tr><td>Author:</td><td>%s</td></tr>", dcf[,"Author"]),
-    if ("Maintainer" %in% colnames(dcf)) sprintf("<tr><td>Maintainer:</td><td>%s</td></tr>", gsub("@", " at ", dcf[,"Maintainer"], fixed=TRUE)),
+    format.maintainer(dcf),
     format.entry("BugReports", dcf, url=TRUE),
     format.entry("License", dcf),
     format.entry("URL", dcf, url=TRUE),
@@ -165,6 +180,24 @@ r.ver <- function(x) {
   }
 }
 
+# this for now is constant but when we move to independent pipelines (commit, daily, weekly) those values can be different
+pkg.version <- function(job, pkg) {
+  dcf = read.dcf(file.path("bus", job, paste(pkg, "Rcheck", sep="."), pkg, "DESCRIPTION"))
+  dcf[,"Version"]
+}
+pkg.revision <- function(job, pkg) {
+  dcf = read.dcf(file.path("bus", job, paste(pkg, "Rcheck", sep="."), pkg, "DESCRIPTION"))
+  if ("Revision" %in% colnames(dcf)) {
+    proj.url = Sys.getenv("CI_PROJECT_URL", "")
+    if (!nzchar(proj.url)) {
+      warning("pkg.revision was designed to be run on GLCI where CI_PROJECT_URL var is set, links to commits will not be produced for checks table")
+      substr(dcf[,"Revision"], 1, 7)
+    } else {
+      sprintf("<a href=\"%s\">%s</a>", file.path(proj.url, "-", "commit", dcf[,"Revision"]), substr(dcf[,"Revision"], 1, 7))
+    }
+  } else ""
+}
+
 check.copy <- function(job, repodir="bus/integration/cran"){
   dir.create(job.checks<-file.path(repodir, "web", "checks", pkg<-"data.table", job), recursive=TRUE);
   os = plat(job)
@@ -190,6 +223,39 @@ check.copy <- function(job, repodir="bus/integration/cran"){
   inst.check.files = file.path(from, inst.check<-c("00install.out","00check.log"))
   file.copy(inst.check.files[file.exists(inst.check.files)], job.checks)
   setNames(file.exists(file.path(job.checks, c(inst.check, routs))), c(inst.check, routs))
+}
+
+check.flavors <- function(jobs, repodir="bus/integration/cran") {
+  th = "<th>Flavor</th><th>R Version</th><th>OS Type</th><th>CPU Type</th><th>OS Info</th><th>CPU Info</th><th>Compilers</th>"
+  tbl = sprintf(
+    "<tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>",
+    sub("test-", "", jobs, fixed=TRUE),
+    sapply(jobs, r.ver),
+    sapply(jobs, plat),
+    "", # "x86_64"
+    "", # "Debian GNU/Linux testing"
+    "", # "2x 8-core Intel(R) Xeon(R) CPU E5-2690 0 @ 2.90GHz"
+    "" # "GCC 10.2.0 (Debian 10.2.0-13)"
+  )
+  file = file.path(repodir, "web/checks", "check_flavors.html")
+  writeLines(c(
+    "<html>",
+    "<head>",
+    "<title>Package Check Flavors</title>",
+    "<link rel=\"stylesheet\" type=\"text/css\" href=\"../CRAN_web.css\"/>",
+    "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\"/>",
+    "</head>",
+    "<body lang=\"en\">",
+    "<h2>Package Check Flavors</h2>",
+    sprintf("<p>Last updated on %s.</p>", format(Sys.time(), usetz=TRUE)),
+    "<table border=\"1\" summary=\"CRAN check flavors.\">",
+    "<tr>",th,"</tr>",
+    tbl,
+    "</table>",
+    "</body>",
+    "</html>"
+  ), file)
+  setNames(file.exists(file), file)
 }
 
 check.index <- function(pkg, jobs, repodir="bus/integration/cran") {
@@ -232,12 +298,12 @@ check.index <- function(pkg, jobs, repodir="bus/integration/cran") {
     }
     memouts
   })
+  th = "<th>Flavor</th><th>Version</th><th>Revision</th><th>Install</th><th>Status</th><th>Rout.fail</th><th>Memtest</th>"
   tbl = sprintf(
-    "<tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td><a href=\"%s/%s/00install.out\">out</a></td><td><a href=\"%s/%s/00check.log\">%s</a></td><td>%s</td><td>%s</td></tr>",
+    "<tr><td><a href=\"check_flavors.html\">%s</a></td><td>%s</td><td>%s</td><td><a href=\"%s/%s/00install.out\">out</a></td><td><a href=\"%s/%s/00check.log\">%s</a></td><td>%s</td><td>%s</td></tr>",
     sub("test-", "", jobs, fixed=TRUE),
-    sapply(jobs, r.ver),
-    sapply(jobs, plat),
-    "",
+    sapply(jobs, pkg.version, pkg),
+    sapply(jobs, pkg.revision, pkg),
     pkg, jobs,
     pkg, jobs, sapply(sapply(jobs, check.test, pkg="data.table"), status),
     mapply(test.files, jobs, routs, trim.exts=2L), # 1st fail, 2nd Rout, keep just: tests_x64/main
@@ -255,7 +321,7 @@ check.index <- function(pkg, jobs, repodir="bus/integration/cran") {
     sprintf("<h2>Package Check Results for Package <a href=\"../packages/%s/index.html\"> %s </a> </h2>", pkg, pkg),
     sprintf("<p>Last updated on %s.</p>", format(Sys.time(), usetz=TRUE)),
     sprintf("<table border=\"1\" summary=\"CRAN check results for package %s\">", pkg),
-    "<tr><th>Test Job</th><th>R Version</th><th>OS Type</th><th>Revision</th><th>Install</th><th>Status</th><th>Rout.fail</th><th>Memtest</th></tr>",
+    "<tr>",th,"</tr>",
     tbl,
     "</table>",
     "</body>",
