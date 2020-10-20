@@ -343,8 +343,8 @@ integration: ## merging all artifacts to produce single R repository, documentat
     #- Rscript -e 'tools::write_PACKAGES(contrib.url("bus/integration/cran", type="mac.binary.el-capitan", ver=Sys.getenv("R_DEVEL_VERSION")), type="mac.binary.el-capitan", fields="Revision", addFiles=TRUE)'
     #- Rscript -e 'tools::write_PACKAGES(contrib.url("bus/integration/cran", type="mac.binary.el-capitan", ver=Sys.getenv("R_OLDREL_VERSION")), type="mac.binary.el-capitan", fields="Revision", addFiles=TRUE)'
     ## install all pkgs to render html and double check successful installation of all devel packages
-    - mkdir -p /tmp/opencran/library /tmp/opencran/doc/html
-    - Rscript -e 'install.packages("data.table", dependencies=TRUE, lib="/tmp/opencran/library", repos=file.path("file:",normalizePath("bus/integration/cran")), INSTALL_opts="--html", quiet=TRUE)'
+    - mkdir -p /tmp/opencran/library /tmp/opencran/doc/html ## reset R_LIBS_USER to re-install all with html because pkgdown image has pre installed curl knitr
+    - R_LIBS_USER="" Rscript -e 'install.packages("data.table", dependencies=TRUE, lib="/tmp/opencran/library", repos=file.path("file:",normalizePath("bus/integration/cran")), INSTALL_opts="--html", quiet=TRUE)'
     - Rscript -e 'packageVersion("data.table", lib.loc="/tmp/opencran/library")'
     ## CRAN style web/CRAN_web.css
     - wget -q -P bus/integration/cran/web https://cran.r-project.org/web/CRAN_web.css
