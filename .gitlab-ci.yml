@@ -45,8 +45,7 @@ build: ## build data.table sources as tar.gz archive
   tags:
     - linux
   image: registry.gitlab.com/jangorecki/dockerfiles/r-builder
-  dependencies:
-    - mirror-packages
+  needs: ["mirror-packages"]
   before_script:
     - Rscript -e 'install.packages("knitr", repos=file.path("file:",normalizePath("bus/mirror-packages/cran")), quiet=TRUE)'
     - rm -r bus
@@ -96,9 +95,7 @@ build: ## build data.table sources as tar.gz archive
 
 .test-template: &test
   stage: test
-  dependencies:
-    - mirror-packages
-    - build
+  needs: ["mirror-packages","build"]
   <<: *artifacts
 
 .test-lin-template: &test-lin
@@ -310,20 +307,7 @@ integration: ## merging all artifacts to produce single R repository, documentat
   only:
     - master
     - seei
-  dependencies:
-    - mirror-packages
-    - build
-    - test-rel-lin
-    - test-rel-cran-lin
-    - test-dev-cran-lin
-    - test-rel-vanilla-lin
-    - test-310-cran-lin
-    - test-344-cran-lin
-    - test-350-cran-lin
-    - test-rel-win
-    - test-dev-win
-    - test-old-win
-    #- test-rel-mac
+  needs: ["mirror-packages","build","test-rel-lin","test-rel-cran-lin","test-dev-cran-lin","test-rel-vanilla-lin","test-310-cran-lin","test-344-cran-lin","test-350-cran-lin","test-rel-win","test-dev-win","test-old-win"]
   script:
     - Rscript -e 'pkgdown::build_site(override=list(destination="./pkgdown"))'
     ## html manual, vignettes, repos, cran_web, cran_checks
@@ -399,8 +383,10 @@ integration: ## merging all artifacts to produce single R repository, documentat
   image: docker
   services:
     - docker:dind
-  dependencies:
-    - build
+  needs:
+    - job: build
+    - job: integration
+      artifacts: false
   before_script:
     - sed "s/SRC_IMAGE_NAME/$SRC_IMAGE_NAME/" < .ci/Dockerfile.in > Dockerfile
     - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY
@@ -454,8 +440,7 @@ pages: ## publish R repository, test jobs summaries, html documentation of all p
     - master
     - seei
   image: ubuntu
-  dependencies:
-    - integration
+  needs: ["integration"]
   script:
     - mkdir -p public
     - cp -r bus/integration/cran/* public
