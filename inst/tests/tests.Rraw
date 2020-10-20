@@ -16731,6 +16731,7 @@ DT = data.table(x = rnorm(10))
 test(2131.01, print(DT, trunc.cols = 5L), error=c("Valid options for trunc.cols are TRUE and FALSE"))
 test(2131.02, print(DT, trunc.cols = NA), error=c("Valid options for trunc.cols are TRUE and FALSE"))
 test(2131.03, print(DT, trunc.cols = "thing"), error=c("Valid options for trunc.cols are TRUE and FALSE"))
+test(2131.04, print(DT, trunc.cols = c(TRUE, FALSE)), error=c("Valid options for trunc.cols are TRUE and FALSE"))
 
 ########################
 #  Add new tests here  #
