@@ -152,6 +152,19 @@ doc.copy <- function(repodir="bus/integration/cran"){
 
 plat <- function(x) if (grepl("^.*win", x)) "Windows" else if (grepl("^.*mac", x)) "macOS" else "Linux"
 
+r.ver <- function(x) {
+  tmp = strsplit(x, "-", fixed=TRUE)[[1L]]
+  if (length(tmp) < 2L) stop("test job names must be test-[r.version]-...")
+  v = tmp[2L]
+  if (identical(v, "rel")) "r-release"
+  else if (identical(v, "dev")) "r-devel"
+  else if (identical(v, "old")) "r-oldrel"
+  else {
+    if (grepl("\\D", v)) stop("second word in test job name must be rel/dev/old or numbers of R version")
+    paste0("r-", paste(strsplit(v, "")[[1L]], collapse="."))
+  }
+}
+
 check.copy <- function(job, repodir="bus/integration/cran"){
   dir.create(job.checks<-file.path(repodir, "web", "checks", pkg<-"data.table", job), recursive=TRUE);
   os = plat(job)
@@ -219,30 +232,35 @@ check.index <- function(pkg, jobs, repodir="bus/integration/cran") {
     }
     memouts
   })
-  tbl = sprintf("<tr><td>%s</td><td>%s</td><td><a href=\"%s/%s/00install.out\">out</a></td><td><a href=\"%s/%s/00check.log\">%s</a></td><td>%s</td><td>%s</td></tr>",
-                sub("test-", "", jobs, fixed=TRUE),
-                sapply(jobs, plat),
-                pkg, jobs,
-                pkg, jobs, sapply(sapply(jobs, check.test, pkg="data.table"), status),
-                mapply(test.files, jobs, routs, trim.exts=2L), # 1st fail, 2nd Rout, keep just: tests_x64/main
-                mapply(test.files, jobs, memouts, trim.name=TRUE))
+  tbl = sprintf(
+    "<tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td><a href=\"%s/%s/00install.out\">out</a></td><td><a href=\"%s/%s/00check.log\">%s</a></td><td>%s</td><td>%s</td></tr>",
+    sub("test-", "", jobs, fixed=TRUE),
+    sapply(jobs, r.ver),
+    sapply(jobs, plat),
+    "",
+    pkg, jobs,
+    pkg, jobs, sapply(sapply(jobs, check.test, pkg="data.table"), status),
+    mapply(test.files, jobs, routs, trim.exts=2L), # 1st fail, 2nd Rout, keep just: tests_x64/main
+    mapply(test.files, jobs, memouts, trim.name=TRUE)
+  )
   file = file.path(repodir, "web/checks", sprintf("check_results_%s.html", pkg))
-  writeLines(c("<html>",
-               "<head>",
-               sprintf("<title>Package Check Results for Package %s</title>", pkg),
-               "<link rel=\"stylesheet\" type=\"text/css\" href=\"../CRAN_web.css\"/>",
-               "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\"/>",
-               "</head>",
-               "<body lang=\"en\">",
-               sprintf("<h2>Package Check Results for Package <a href=\"../packages/%s/index.html\"> %s </a> </h2>", pkg, pkg),
-               sprintf("<p>Last updated on %s.</p>", format(Sys.time(), usetz=TRUE)),
-               sprintf("<table border=\"1\" summary=\"CRAN check results for package %s\">", pkg),
-               "<tr><th>Test job</th><th>OS type</th><th>Install</th><th>Check</th><th>Rout.fail</th><th>Memtest</th></tr>",
-               tbl,
-               "</table>",
-               "</body>",
-               "</html>"),
-             file)
+  writeLines(c(
+    "<html>",
+    "<head>",
+    sprintf("<title>Package Check Results for Package %s</title>", pkg),
+    "<link rel=\"stylesheet\" type=\"text/css\" href=\"../CRAN_web.css\"/>",
+    "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\"/>",
+    "</head>",
+    "<body lang=\"en\">",
+    sprintf("<h2>Package Check Results for Package <a href=\"../packages/%s/index.html\"> %s </a> </h2>", pkg, pkg),
+    sprintf("<p>Last updated on %s.</p>", format(Sys.time(), usetz=TRUE)),
+    sprintf("<table border=\"1\" summary=\"CRAN check results for package %s\">", pkg),
+    "<tr><th>Test Job</th><th>R Version</th><th>OS Type</th><th>Revision</th><th>Install</th><th>Status</th><th>Rout.fail</th><th>Memtest</th></tr>",
+    tbl,
+    "</table>",
+    "</body>",
+    "</html>"
+  ), file)
   setNames(file.exists(file), file)
 }
 
