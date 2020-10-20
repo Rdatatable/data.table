@@ -16726,6 +16726,11 @@ DT = data.table(
            s4class(x=2L, y="yes", z=1)))
 test(2130.03, print(DT), output=c("   x             y", "1: 1 <ex_class[3]>",     "2: 2 <ex_class[3]>"))
 
+# error check for trunc.cols
+DT = data.table(x = rnorm(10))
+test(2131.01, print(DT, trunc.cols = 5L), error=c("Valid options for trunc.cols are TRUE and FALSE"))
+test(2131.02, print(DT, trunc.cols = NA), error=c("Valid options for trunc.cols are TRUE and FALSE"))
+test(2131.03, print(DT, trunc.cols = "thing"), error=c("Valid options for trunc.cols are TRUE and FALSE"))
 
 ########################
 #  Add new tests here  #
