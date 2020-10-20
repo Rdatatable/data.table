@@ -19,7 +19,7 @@ stages:
 
 .artifacts-template: &artifacts
   artifacts:
-    expire_in: 4 weeks
+    expire_in: 2 weeks
     when: always
     paths:
       - bus
@@ -444,6 +444,6 @@ pages: ## publish R repository, test jobs summaries, html documentation of all p
     - cp -r bus/integration/cran/* public
     - cat public/src/contrib/PACKAGES
   artifacts: ## publish only when no failure
-    expire_in: 4 weeks
+    expire_in: 2 weeks
     paths:
       - public
