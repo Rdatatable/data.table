@@ -2,13 +2,15 @@
 
 **Benchmarks are regularly updated: [here](https://h2oai.github.io/db-benchmark/)**
 
-# data.table [v1.13.3](https://github.com/Rdatatable/data.table/milestone/20)  (in development)
+# data.table [v1.13.3](https://github.com/Rdatatable/data.table/milestone/21)  (in development)
 
 ## NEW FEATURES
 
 ## BUG FIXES
 
 ## NOTES
+
+1. Within hours after 1.13.2 release to CRAN there was a change in error message of base R that broke one of our unit tests, [#4769](https://github.com/Rdatatable/data.table/issues/4769).
 
 
 # data.table [v1.13.2](https://github.com/Rdatatable/data.table/milestone/19?closed=1)  (19 Oct 2020)
