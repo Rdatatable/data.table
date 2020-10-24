@@ -13367,8 +13367,8 @@ test(1962.018, merge(DT1, DT2, by.x = 'z', by.y = 'a'),
      error = 'Elements listed in `by.x`')
 test(1962.019, merge(DT1, DT2, by.x = 'a', by.y = 'z'),
      error = 'Elements listed in `by.y`')
-test(1962.020, merge(DT1, DT2, by = character(0L)),
-     error = 'non-empty vector of column names')
+test(1962.020, merge(DT1, DT2, by = character(0L)), 
+     data.table(a = 2:3, V.x = c("a", "a"), V.y = c("b", "b"), key = 'a'))
 test(1962.021, merge(DT1, DT2, by = 'z'),
      error = 'must be valid column names in x and y')
 
@@ -17188,5 +17188,5 @@ test(2158.2, DT[, by="index", list(value=list(value))],
 
 x = data.table(a = 1:3)
 y = data.table(a = 2:4, key = "a")
-test(2159.1, merge(x,y), data.table(a = 2:3))
-test(2159.2, merge(x,y), data.table(a = 2:3))
+test(2159.1, merge(x,y), data.table(a = 2:3, key = "a"))
+test(2159.2, merge(x,y), data.table(a = 2:3, key = "a"))
