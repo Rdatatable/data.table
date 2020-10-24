@@ -32,7 +32,7 @@ merge.data.table = function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FAL
   } else {
     if (is.null(by))
       by = intersect(key(x), key(y))
-    if (is.null(by))
+    if (is.null(by) || length(by) == 0L)
       by = key(x)
     if (is.null(by))
       by = intersect(names(x), names(y))

@@ -17186,3 +17186,7 @@ DT = data.table(value=as.list(1:6), index=rep(1:2, each=3))
 test(2158.2, DT[, by="index", list(value=list(value))],
              data.table(index=1:2, value=list(as.list(1:3), as.list(4:6))))
 
+x = data.table(a = 1:3)
+y = data.table(a = 2:4, key = "a")
+test(2159.1, merge(x,y), data.table(a = 2:3))
+test(2159.2, merge(x,y), data.table(a = 2:3))
