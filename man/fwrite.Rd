@@ -61,7 +61,7 @@ fwrite(x, file = "", append = FALSE, quote = "auto",
   \item{verbose}{Be chatty and report timings?}
 }
 \details{
-\code{fwrite} began as a community contribution with \href{https://github.com/Rdatatable/data.table/pull/1613}{pull request #1613} by Otto Seiskari. This gave Matt Dowle the impetus to specialize the numeric formatting and to parallelize: \url{http://blog.h2o.ai/2016/04/fast-csv-writing-for-r/}. Final items were tracked in \href{https://github.com/Rdatatable/data.table/issues/1664}{issue #1664} such as automatic quoting, \code{bit64::integer64} support, decimal/scientific formatting exactly matching \code{write.csv} between 2.225074e-308 and 1.797693e+308 to 15 significant figures, \code{row.names}, dates (between 0000-03-01 and 9999-12-31), times and \code{sep2} for \code{list} columns where each cell can itself be a vector.
+\code{fwrite} began as a community contribution with \href{https://github.com/Rdatatable/data.table/pull/1613}{pull request #1613} by Otto Seiskari. This gave Matt Dowle the impetus to specialize the numeric formatting and to parallelize: \url{https://blog.h2o.ai/2016/04/fast-csv-writing-for-r/}. Final items were tracked in \href{https://github.com/Rdatatable/data.table/issues/1664}{issue #1664} such as automatic quoting, \code{bit64::integer64} support, decimal/scientific formatting exactly matching \code{write.csv} between 2.225074e-308 and 1.797693e+308 to 15 significant figures, \code{row.names}, dates (between 0000-03-01 and 9999-12-31), times and \code{sep2} for \code{list} columns where each cell can itself be a vector.
 
 To save space, \code{fwrite} prefers to write wide numeric values in scientific notation -- e.g. \code{10000000000} takes up much more space than \code{1e+10}. Most file readers (e.g. \code{\link{fread}}) understand scientific notation, so there's no fidelity loss. Like in base R, users can control this by specifying the \code{scipen} argument, which follows the same rules as \code{\link[base]{options}('scipen')}. \code{fwrite} will see how much space a value will take to write in scientific vs. decimal notation, and will only write in scientific notation if the latter is more than \code{scipen} characters wider. For \code{10000000000}, then, \code{1e+10} will be written whenever \code{scipen<6}.
 
@@ -88,7 +88,7 @@ The following fields will be written to the header of the file and surrounded by
   \code{\link{setDTthreads}}, \code{\link{fread}}, \code{\link[utils:write.table]{write.csv}}, \code{\link[utils:write.table]{write.table}}, \href{https://CRAN.R-project.org/package=bit64}{\code{bit64::integer64}}
 }
 \references{
-  \url{http://howardhinnant.github.io/date_algorithms.html}\cr
+  \url{https://howardhinnant.github.io/date_algorithms.html}\cr
   \url{https://en.wikipedia.org/wiki/Decimal_mark}
 }
 \examples{
