@@ -177,10 +177,6 @@ shouldPrint = function(x) {
   ret
 }
 
-# for removing the head (column names) of matrix output entirely,
-#   as opposed to printing a blank line, for excluding col.names per PR #1483
-cut_top = function(x) cat(capture.output(x)[-1L], sep = '\n')
-
 cat_matrix = function(x, rows, quote = FALSE, col.names = TRUE) {
   stopifnot(is.character(x))
   # the quote on colnames will be added by print.data.table and we
