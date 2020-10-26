@@ -108,11 +108,7 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
   if (printdots) {
     toprint = rbind(head(toprint, topn + isTRUE(class)), "---"="", tail(toprint, topn))
     rownames(toprint) = format(rownames(toprint), justify="right")
-    if (col.names == "none") {
-      cut_top(print(toprint, right=TRUE, quote=quote))
-    } else {
-      print(toprint, right=TRUE, quote=quote)
-    }
+    cat_matrix(toprint, quote=quote, col.names=(col.names!="none"))
     if (trunc.cols && length(not_printed) > 0L)
       # prints names of variables not shown in the print
       trunc_cols_message(not_printed, abbs, class, col.names)
@@ -123,11 +119,7 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
     # repeat colnames at the bottom if over 20 rows so you don't have to scroll up to see them
     #   option to shut this off per request of Oleg Bondar on SO, #1482
     toprint=rbind(toprint, matrix(if (quote) old else colnames(toprint), nrow=1L)) # fixes bug #97
-  if (col.names == "none") {
-    cut_top(print(toprint, right=TRUE, quote=quote))
-  } else {
-    print(toprint, right=TRUE, quote=quote)
-  }
+  cat_matrix(toprint, quote=quote, col.names=(col.names!="none"))
   if (trunc.cols && length(not_printed) > 0L)
     # prints names of variables not shown in the print
     trunc_cols_message(not_printed, abbs, class, col.names)
