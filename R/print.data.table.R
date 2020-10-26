@@ -108,7 +108,7 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
   if (printdots) {
     toprint = rbind(head(toprint, topn + isTRUE(class)), "---"="", tail(toprint, topn))
     rownames(toprint) = format(rownames(toprint), justify="right")
-    cat_matrix(toprint, quote=quote, col.names=(col.names!="none"))
+    cat_matrix(toprint, nrow(x), quote=quote, col.names=(col.names!="none"))
     if (trunc.cols && length(not_printed) > 0L)
       # prints names of variables not shown in the print
       trunc_cols_message(not_printed, abbs, class, col.names)
@@ -119,7 +119,7 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
     # repeat colnames at the bottom if over 20 rows so you don't have to scroll up to see them
     #   option to shut this off per request of Oleg Bondar on SO, #1482
     toprint=rbind(toprint, matrix(if (quote) old else colnames(toprint), nrow=1L)) # fixes bug #97
-  cat_matrix(toprint, quote=quote, col.names=(col.names!="none"))
+  cat_matrix(toprint, nrow(x), quote=quote, col.names=(col.names!="none"))
   if (trunc.cols && length(not_printed) > 0L)
     # prints names of variables not shown in the print
     trunc_cols_message(not_printed, abbs, class, col.names)
@@ -181,7 +181,7 @@ shouldPrint = function(x) {
 #   as opposed to printing a blank line, for excluding col.names per PR #1483
 cut_top = function(x) cat(capture.output(x)[-1L], sep = '\n')
 
-cat_matrix = function(x, quote = FALSE, col.names = TRUE) {
+cat_matrix = function(x, rows, quote = FALSE, col.names = TRUE) {
   stopifnot(is.character(x))
   # the quote on colnames will be added by print.data.table and we
   # don't need quote for rownames
@@ -202,9 +202,14 @@ cat_matrix = function(x, quote = FALSE, col.names = TRUE) {
     no_spaces = max(widths) - widths
     append_space(v, no_spaces)
   })
-  out <- apply(x, 1L, function(v) {
-    paste(v, collapse = " ")
-  })
+  out = apply(x, 1L, paste, collapse = " ")
+  max_print = getOption("max.print")
+  if (length(out) > max_print) 
+    out = c(
+      out[seq_len(max_print-1L)],
+      sprintf(' [ reached getOption("max.print") -- %d row in total]', 
+              rows)
+    )
   cat(out, sep = "\n")
 }
 
