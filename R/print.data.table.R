@@ -189,6 +189,33 @@ shouldPrint = function(x) {
 #   as opposed to printing a blank line, for excluding col.names per PR #1483
 cut_top = function(x) cat(capture.output(x)[-1L], sep = '\n')
 
+cat_matrix = function(x, quote = FALSE, col.names = TRUE) {
+  stopifnot(is.character(x))
+  # the quote on colnames will be added by print.data.table and we
+  # don't need quote for rownames
+  if (quote) x[] = apply(x, 2L, sprintf, fmt = '"%s"')
+  rn = rownames(x); cn = colnames(x)
+  x = cbind(rn, unname(x))
+  if (col.names) x = rbind(c(if (length(rn)) "", cn), x)
+  width = function(x) nchar(x, "width", keepNA = TRUE)
+  append_space = function(values, nos) {
+    prefix = vapply_1c(nos, function(no) {
+      paste0(rep(" ", no), collapse = "")
+    })
+    paste0(prefix, values)
+  }
+  # add spaces
+  x[] = apply(x, 2L, function(v) {
+    widths = width(v)
+    no_spaces = max(widths) - widths
+    append_space(v, no_spaces)
+  })
+  out <- apply(x, 1L, function(v) {
+    paste(v, collapse = " ")
+  })
+  cat(out, sep = "\n")
+}
+
 # for printing the dims for list columns #3671; used by format.data.table()
 paste_dims = function(x) {
   dims = if (isS4(x)) {
