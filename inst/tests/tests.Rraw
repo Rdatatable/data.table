@@ -17189,5 +17189,5 @@ test(2158.2, DT[, by="index", list(value=list(value))],
 # print shows the total number of rows when exceeding the max.print lines
 old = options(max.print = 5L)
 DT = as.data.table(iris)
-test(2159, print(DT), output="150 row in total")
+test(2159, print(DT), output="150 rows in total")
 options(old)

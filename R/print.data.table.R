@@ -209,7 +209,7 @@ cat_matrix = function(x, rows, quote = FALSE, col.names = TRUE) {
   if (length(out) > max_print) 
     out = c(
       out[seq_len(max_print-1L)],
-      sprintf(' [ reached getOption("max.print") -- %d row in total]', 
+      sprintf(' [ reached getOption("max.print") -- %d rows in total ]', 
               rows)
     )
   cat(out, sep = "\n")
