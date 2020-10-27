@@ -10,6 +10,8 @@
 
 ## NOTES
 
+1. `as.Date.IDate` is no longer an exported function, method dispatch should be used, [#4777](https://github.com/Rdatatable/data.table/issues/4777).
+
 
 # data.table [v1.13.2](https://github.com/Rdatatable/data.table/milestone/19?closed=1)  (19 Oct 2020)
 
