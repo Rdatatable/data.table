@@ -199,6 +199,8 @@ test-dev-cran-lin: ## R-devel on Linux, --enable-strict-barrier --disable-long-d
   variables:
     _R_CHECK_CRAN_INCOMING_: "TRUE"
     _R_CHECK_CRAN_INCOMING_REMOTE_: "FALSE"
+    _R_S3_METHOD_LOOKUP_BASEENV_AFTER_GLOBALENV_: "FALSE" ## detects S3 method lookup found on search path #4777
+    _R_S3_METHOD_LOOKUP_REPORT_SEARCH_PATH_USES_: "TRUE"
   before_script:
     - *install-deps
     - *cp-src
