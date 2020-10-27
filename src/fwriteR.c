@@ -4,6 +4,7 @@
 
 #define DATETIMEAS_EPOCH     2
 #define DATETIMEAS_WRITECSV  3
+#define ENCODED_CHAR(s) (utf8 && NEED2UTF8(s) ? translateCharUTF8(s) : CHAR(s))
 
 static char sep2;                // '\0' if there are no list columns. Otherwise, the within-column separator.
 static bool logical01=true;      // should logicals be written as 0|1 or true|false. Needed by list column writer too in case a cell is a logical vector.
@@ -11,12 +12,12 @@ static int dateTimeAs=0;         // 0=ISO(yyyy-mm-dd), 1=squash(yyyymmdd), 2=epo
 static const char *sep2start, *sep2end;
 // sep2 is in main fwrite.c so that writeString can quote other fields if sep2 is present in them
 // if there are no list columns, set sep2=='\0'
-
+static bool utf8=false;
 // Non-agnostic helpers ...
 
 const char *getString(SEXP *col, int64_t row) {   // TODO: inline for use in fwrite.c
   SEXP x = col[row];
-  return x==NA_STRING ? NULL : CHAR(x);
+  return x==NA_STRING ? NULL : ENCODED_CHAR(x);
 }
 
 int getStringLen(SEXP *col, int64_t row) {
@@ -45,7 +46,7 @@ int getMaxCategLen(SEXP col) {
 const char *getCategString(SEXP col, int64_t row) {
   // the only writer that needs to have the header of the SEXP column, to get to the levels
   int x = INTEGER(col)[row];
-  return x==NA_INTEGER ? NULL : CHAR(STRING_ELT(getAttrib(col, R_LevelsSymbol), x-1));
+  return x==NA_INTEGER ? NULL : ENCODED_CHAR(STRING_ELT(getAttrib(col, R_LevelsSymbol), x-1));
 }
 
 writer_fun_t funs[] = {
@@ -164,10 +165,12 @@ SEXP fwriteR(
   SEXP is_gzip_Arg,
   SEXP bom_Arg,
   SEXP yaml_Arg,
-  SEXP verbose_Arg
+  SEXP verbose_Arg,
+  SEXP fileEncoding_Arg
   )
 {
   if (!isNewList(DF)) error(_("fwrite must be passed an object of type list; e.g. data.frame, data.table"));
+  
   fwriteMainArgs args = {0};  // {0} to quieten valgrind's uninitialized, #4639
   args.is_gzip = LOGICAL(is_gzip_Arg)[0];
   args.bom = LOGICAL(bom_Arg)[0];
@@ -224,6 +227,7 @@ SEXP fwriteR(
   dateTimeAs = INTEGER(dateTimeAs_Arg)[0];
   logical01 = LOGICAL(logical01_Arg)[0];
   args.scipen = INTEGER(scipen_Arg)[0];
+  utf8 = !strcmp(CHAR(STRING_ELT(fileEncoding_Arg, 0)), "UTF-8");
 
   int firstListColumn = 0;
   for (int j=0; j<args.ncol; j++) {
