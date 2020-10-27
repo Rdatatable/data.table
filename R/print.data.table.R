@@ -185,7 +185,7 @@ cat_matrix = function(x, rows, quote = FALSE, col.names = TRUE) {
   rn = rownames(x); cn = colnames(x)
   x = cbind(rn, unname(x))
   if (col.names) x = rbind(c(if (length(rn)) "", cn), x)
-  width = function(x) nchar(x, "width", keepNA = TRUE)
+  width = function(x) nchar(x, "width", keepNA = FALSE)
   append_space = function(values, nos) {
     prefix = vapply_1c(nos, function(no) {
       paste0(rep(" ", no), collapse = "")
