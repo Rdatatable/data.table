@@ -8,6 +8,8 @@
 
 ## BUG FIXES
 
+1. Fix an issue that `print.data.table()` may show an incorrect number of rows omitted in the bottom, when the printing lines exceeds the value of `getOption("max.print")`. Now it displays the total number of rows of the printed data.table object, [#1421](https://github.com/Rdatatable/data.table/issues/1421). Thanks to @shrektan for investigating and fixing. 
+
 ## NOTES
 
 
