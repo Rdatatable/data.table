@@ -191,18 +191,8 @@ cat_matrix = function(x, rows, quote = FALSE, col.names = TRUE) {
   rn = rownames(x); cn = colnames(x)
   x = cbind(rn, unname(x))
   if (col.names) x = rbind(c(if (length(rn)) "", cn), x)
-  width = function(x) nchar(x, "width", keepNA = FALSE)
-  append_space = function(values, nos) {
-    prefix = vapply_1c(nos, function(no) {
-      paste0(rep(" ", no), collapse = "")
-    })
-    paste0(prefix, values)
-  }
-  # add spaces
   x[] = apply(x, 2L, function(v) {
-    widths = width(v)
-    no_spaces = max(widths) - widths
-    append_space(v, no_spaces)
+    encodeString(v, width = NA, justify = "r")
   })
   out = apply(x, 1L, paste, collapse = " ")
   max_print = getOption("max.print")
