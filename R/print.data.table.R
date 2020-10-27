@@ -179,9 +179,15 @@ shouldPrint = function(x) {
 
 cat_matrix = function(x, rows, quote = FALSE, col.names = TRUE) {
   stopifnot(is.character(x))
-  # the quote on colnames will be added by print.data.table and we
-  # don't need quote for rownames
-  if (quote) x[] = apply(x, 2L, sprintf, fmt = '"%s"')
+  if (quote) {
+    # the quote on colnames will be added by print.data.table and we
+    # don't need quote for rownames
+    x[] = apply(x, 2L, sprintf, fmt = '"%s"')
+  } else {
+    # if no quote, NA_character_ should be printed as <NA>
+    # non-character NA has been coerced to "NA" already
+    x[is.na(x)] = "<NA>"
+  }
   rn = rownames(x); cn = colnames(x)
   x = cbind(rn, unname(x))
   if (col.names) x = rbind(c(if (length(rn)) "", cn), x)
