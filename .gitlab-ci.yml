@@ -24,7 +24,7 @@ stages:
     paths:
       - bus
 
-mirror-packages: ## mirror all recursive dependencies, source and win.binary, of data.table suggests and integration suggests from inst/tests/tests-DESCRIPTION
+mirror-packages: ## mirror all recursive dependencies, source and win.binary of data.table suggests from inst/tests/tests-DESCRIPTION
   stage: dependencies
   tags:
     - linux
@@ -35,9 +35,23 @@ mirror-packages: ## mirror all recursive dependencies, source and win.binary, of
   script:
     - echo 'source(".ci/ci.R")' >> .Rprofile
     - mkdir -p bus/$CI_BUILD_NAME/cran/src/contrib
-    - Rscript -e 'mirror.packages(dcf.dependencies(c("DESCRIPTION","inst/tests/tests-DESCRIPTION"), "all"), repos=c(Sys.getenv("CRAN_MIRROR"), dcf.repos("inst/tests/tests-DESCRIPTION")), repodir="bus/mirror-packages/cran")'
+    - Rscript -e 'mirror.packages(dcf.dependencies("DESCRIPTION", "all"), repos=Sys.getenv("CRAN_MIRROR"), repodir="bus/mirror-packages/cran")'
     - rm bus/$CI_BUILD_NAME/cran/src/contrib/PACKAGES.rds ## fallback to PACKAGES dcf so available.packages:3.4.4 works
     - Rscript -e 'sapply(simplify=FALSE, setNames(nm=Sys.getenv(c("R_REL_VERSION","R_DEVEL_VERSION","R_OLDREL_VERSION"))), function(binary.ver) mirror.packages(type="win.binary", dcf.dependencies("DESCRIPTION", "all"), repos=Sys.getenv("CRAN_MIRROR"), repodir="bus/mirror-packages/cran", binary.ver=binary.ver))'
+  <<: *artifacts
+
+mirror-other-packages: ## mirror integration suggests from inst/tests/tests-DESCRIPTION
+  stage: dependencies
+  tags:
+    - linux
+  image: registry.gitlab.com/jangorecki/dockerfiles/r-base-dev
+  cache:
+    paths:
+      - bus/$CI_BUILD_NAME/cran
+  script:
+    - echo 'source(".ci/ci.R")' >> .Rprofile
+    - mkdir -p bus/$CI_BUILD_NAME/cran/src/contrib
+    - Rscript -e 'mirror.packages(dcf.dependencies("inst/tests/tests-DESCRIPTION", "all"), repos=c(Sys.getenv("CRAN_MIRROR"), dcf.repos("inst/tests/tests-DESCRIPTION")), repodir="bus/mirror-other-packages/cran")'
   <<: *artifacts
 
 build: ## build data.table sources as tar.gz archive
@@ -132,6 +146,7 @@ build: ## build data.table sources as tar.gz archive
 test-rel-lin: ## most comprehensive tests, force all suggests, also integration tests, using gcc -O3 -flto -fno-common -Wunused-result
   <<: *test-lin
   image: registry.gitlab.com/jangorecki/dockerfiles/r-builder
+  needs: ["mirror-packages","mirror-other-packages","build"]
   variables:
     _R_CHECK_CRAN_INCOMING_: "FALSE"
     _R_CHECK_CRAN_INCOMING_REMOTE_: "FALSE"
@@ -140,7 +155,7 @@ test-rel-lin: ## most comprehensive tests, force all suggests, also integration 
     OPENBLAS_MAIN_FREE: "1"
     TEST_DATA_TABLE_WITH_OTHER_PACKAGES: "TRUE"
   before_script:
-    - Rscript -e 'source(".ci/ci.R"); install.packages(dcf.dependencies(c("DESCRIPTION","inst/tests/tests-DESCRIPTION"), which="all"), quiet=TRUE)'
+    - Rscript -e 'source(".ci/ci.R"); install.packages(dcf.dependencies(c("DESCRIPTION","inst/tests/tests-DESCRIPTION"), which="all"), quiet=TRUE, repos=c(getOption("repos"), file.path("file:", normalizePath("bus/mirror-other-packages/cran", mustWork=FALSE))))'
     - *cp-src
     - rm -r bus
     - mkdir -p ~/.R
