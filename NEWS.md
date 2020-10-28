@@ -6,6 +6,8 @@
 
 ## NEW FEATURES
 
+1. `fwrite()` now is able to write UTF-8 or native csv files by specifying the `encoding` argument, [#4785](https://github.com/Rdatatable/data.table/pull/4785). Thanks to @shrektan for the PR.
+
 ## BUG FIXES
 
 ## NOTES
