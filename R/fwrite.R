@@ -12,9 +12,9 @@ fwrite = function(x, file="", append=FALSE, quote="auto",
            yaml = FALSE,
            bom = FALSE,
            verbose=getOption("datatable.verbose", FALSE),
-           fileEncoding = "") {
+           encoding = "") {
   na = as.character(na[1L]) # fix for #1725
-  if (!fileEncoding %in% c("", "UTF-8")) stop('fileEncoding must be one of "" or "UTF-8"')
+  if (!encoding %in% c("", "UTF-8")) stop('encoding must be one of "" or "UTF-8"')
   if (missing(qmethod)) qmethod = qmethod[1L]
   if (missing(compress)) compress = compress[1L]
   if (missing(dateTimeAs)) { dateTimeAs = dateTimeAs[1L] }
@@ -110,7 +110,7 @@ fwrite = function(x, file="", append=FALSE, quote="auto",
   file = enc2native(file) # CfwriteR cannot handle UTF-8 if that is not the native encoding, see #3078.
   .Call(CfwriteR, x, file, sep, sep2, eol, na, dec, quote, qmethod=="escape", append,
         row.names, col.names, logical01, scipen, dateTimeAs, buffMB, nThread,
-        showProgress, is_gzip, bom, yaml, verbose, fileEncoding)
+        showProgress, is_gzip, bom, yaml, verbose, encoding)
   invisible()
 }
 

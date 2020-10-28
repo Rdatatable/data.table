@@ -166,7 +166,7 @@ SEXP fwriteR(
   SEXP bom_Arg,
   SEXP yaml_Arg,
   SEXP verbose_Arg,
-  SEXP fileEncoding_Arg
+  SEXP encoding_Arg
   )
 {
   if (!isNewList(DF)) error(_("fwrite must be passed an object of type list; e.g. data.frame, data.table"));
@@ -227,7 +227,7 @@ SEXP fwriteR(
   dateTimeAs = INTEGER(dateTimeAs_Arg)[0];
   logical01 = LOGICAL(logical01_Arg)[0];
   args.scipen = INTEGER(scipen_Arg)[0];
-  utf8 = !strcmp(CHAR(STRING_ELT(fileEncoding_Arg, 0)), "UTF-8");
+  utf8 = !strcmp(CHAR(STRING_ELT(encoding_Arg, 0)), "UTF-8");
 
   int firstListColumn = 0;
   for (int j=0; j<args.ncol; j++) {
