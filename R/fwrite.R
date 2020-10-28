@@ -14,7 +14,9 @@ fwrite = function(x, file="", append=FALSE, quote="auto",
            verbose=getOption("datatable.verbose", FALSE),
            encoding = "") {
   na = as.character(na[1L]) # fix for #1725
-  if (!encoding %in% c("", "UTF-8")) stop('encoding must be one of "" or "UTF-8"')
+  if (length(encoding) != 1L || !encoding %chin% c("", "UTF-8", "native")) {
+    stop("Argument 'encoding' must be '', 'UTF-8' or 'native'.")
+  }
   if (missing(qmethod)) qmethod = qmethod[1L]
   if (missing(compress)) compress = compress[1L]
   if (missing(dateTimeAs)) { dateTimeAs = dateTimeAs[1L] }
