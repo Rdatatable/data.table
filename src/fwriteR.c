@@ -5,9 +5,11 @@
 #define DATETIMEAS_EPOCH     2
 #define DATETIMEAS_WRITECSV  3
 
-#define NEED2NATIVE(s) !(IS_ASCII(s) || (s)==NA_STRING)
-#define ENCODED_CHAR(s) (utf8 && NEED2UTF8(s) ? translateCharUTF8(s) : \
-  (native && NEED2NATIVE(s)) ? translateChar(s) : CHAR(s))
+static bool utf8=false;
+static bool native=false;
+#define TO_UTF8(s) (utf8 && NEED2UTF8(s))
+#define TO_NATIVE(s) (native && (s)!=NA_STRING && !IS_ASCII(s))
+#define ENCODED_CHAR(s) (TO_UTF8(s) ? translateCharUTF8(s) : TO_NATIVE(s) ? translateChar(s) : CHAR(s))
 
 static char sep2;                // '\0' if there are no list columns. Otherwise, the within-column separator.
 static bool logical01=true;      // should logicals be written as 0|1 or true|false. Needed by list column writer too in case a cell is a logical vector.
@@ -15,8 +17,6 @@ static int dateTimeAs=0;         // 0=ISO(yyyy-mm-dd), 1=squash(yyyymmdd), 2=epo
 static const char *sep2start, *sep2end;
 // sep2 is in main fwrite.c so that writeString can quote other fields if sep2 is present in them
 // if there are no list columns, set sep2=='\0'
-static bool utf8=false;
-static bool native=false;
 // Non-agnostic helpers ...
 
 const char *getString(SEXP *col, int64_t row) {   // TODO: inline for use in fwrite.c
