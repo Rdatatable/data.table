@@ -9,7 +9,7 @@ static bool utf8=false;
 static bool native=false;
 #define TO_UTF8(s) (utf8 && NEED2UTF8(s))
 #define TO_NATIVE(s) (native && (s)!=NA_STRING && !IS_ASCII(s))
-#define ENCODED_CHAR(s) (TO_UTF8(s) ? translateCharUTF8(s) : TO_NATIVE(s) ? translateChar(s) : CHAR(s))
+#define ENCODED_CHAR(s) (TO_UTF8(s) ? translateCharUTF8(s) : (TO_NATIVE(s) ? translateChar(s) : CHAR(s)))
 
 static char sep2;                // '\0' if there are no list columns. Otherwise, the within-column separator.
 static bool logical01=true;      // should logicals be written as 0|1 or true|false. Needed by list column writer too in case a cell is a logical vector.
