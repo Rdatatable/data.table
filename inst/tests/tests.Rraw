@@ -4195,7 +4195,7 @@ setNumericRounding(old_rounding)
 
 DT = data.table(id=INT(1,2,1), val1=3:1, val2=3:1, val3=list(2:3,4:6,7:10))   # 5380
 test(1199.1, DT[, sum(.SD), by=id, .SDcols=2:3], data.table(id=1:2, V1=INT(8,4)))   #875 made the .SD case work
-test(1199.2, DT[, sum(.SD), by=id], error="only defined on a data frame with all numeric")
+test(1199.2, DT[, sum(.SD), by=id], error="data.*frame.*numeric")  # this is R's error message so use flexible string pattern to insulate from minor changes in R, #4769 
 test(1199.3, DT[, sum(val3), by=id], error="Type 'list' not supported by GForce sum [(]gsum[)]. Either.*or turn off")
 
 # Selection of columns, copy column to maintain the same as R <= 3.0.2, in Rdevel, for now
