@@ -179,7 +179,7 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, S
         nafillInteger64(i64x[i], inx[i], itype, i64fill, &vans[i], verbose);
       } else {
         if (!IS_TRUE_OR_FALSE(nan_is_na_arg))
-          error("nan_is_na must be TRUE or FALSE"); // # nocov
+          error(_("nan_is_na must be TRUE or FALSE")); // # nocov
         bool nan_is_na = LOGICAL(nan_is_na_arg)[0];
         nafillDouble(dx[i], inx[i], itype, dfill, nan_is_na, &vans[i], verbose);
       }

@@ -569,10 +569,10 @@ int compressbuff(z_stream *stream, void* dest, size_t *destLen, const void* sour
   stream->avail_out = *destLen;
   stream->next_in = (Bytef *)source; // don't use z_const anywhere; #3939
   stream->avail_in = sourceLen;
-  if (verbose) DTPRINT("deflate input stream: %p %d %p %d\n", stream->next_out, (int)(stream->avail_out), stream->next_in, (int)(stream->avail_in));
+  if (verbose) DTPRINT(_("deflate input stream: %p %d %p %d\n"), stream->next_out, (int)(stream->avail_out), stream->next_in, (int)(stream->avail_in));
 
   int err = deflate(stream, Z_FINISH);
-  if (verbose) DTPRINT("deflate returned %d with stream->total_out==%d; Z_FINISH==%d, Z_OK==%d, Z_STREAM_END==%d\n", err, (int)(stream->total_out), Z_FINISH, Z_OK, Z_STREAM_END);
+  if (verbose) DTPRINT(_("deflate returned %d with stream->total_out==%d; Z_FINISH==%d, Z_OK==%d, Z_STREAM_END==%d\n"), err, (int)(stream->total_out), Z_FINISH, Z_OK, Z_STREAM_END);
   if (err == Z_OK) {
     // with Z_FINISH, deflate must return Z_STREAM_END if correct, otherwise it's an error and we shouldn't return Z_OK (0)
     err = -9;  // # nocov
@@ -740,7 +740,7 @@ void fwriteMain(fwriteMainArgs args)
           free(buff);                                    // # nocov
           STOP(_("Can't allocate gzip stream structure"));  // # nocov
         }
-        if (verbose) {DTPRINT("z_stream for header (1): "); print_z_stream(&stream);}
+        if (verbose) {DTPRINT(_("z_stream for header (%d): "), 1); print_z_stream(&stream);}
         size_t zbuffSize = deflateBound(&stream, headerLen);
         char *zbuff = malloc(zbuffSize);
         if (!zbuff) {
@@ -749,7 +749,7 @@ void fwriteMain(fwriteMainArgs args)
         }
         size_t zbuffUsed = zbuffSize;
         ret1 = compressbuff(&stream, zbuff, &zbuffUsed, buff, (size_t)(ch-buff));
-        if (verbose) {DTPRINT("z_stream for header (2): "); print_z_stream(&stream);}
+        if (verbose) {DTPRINT(_("z_stream for header (%d): "), 2); print_z_stream(&stream);}
         if (ret1==Z_OK) ret2 = WRITE(f, zbuff, (int)zbuffUsed);
         deflateEnd(&stream);
         free(zbuff);
@@ -809,7 +809,7 @@ void fwriteMain(fwriteMainArgs args)
   char *buffPool = malloc(nth*(size_t)buffSize);
   if (!buffPool) {
     // # nocov start
-    STOP("Unable to allocate %d MB * %d thread buffers; '%d: %s'. Please read ?fwrite for nThread, buffMB and verbose options.",
+    STOP(_("Unable to allocate %d MB * %d thread buffers; '%d: %s'. Please read ?fwrite for nThread, buffMB and verbose options."),
          (size_t)buffSize/(1024^2), nth, errno, strerror(errno));
     // # nocov end
   }
@@ -819,7 +819,7 @@ void fwriteMain(fwriteMainArgs args)
     if (!zbuffPool) {
       // # nocov start
       free(buffPool);
-      STOP("Unable to allocate %d MB * %d thread compressed buffers; '%d: %s'. Please read ?fwrite for nThread, buffMB and verbose options.",
+      STOP(_("Unable to allocate %d MB * %d thread compressed buffers; '%d: %s'. Please read ?fwrite for nThread, buffMB and verbose options."),
          (size_t)zbuffSize/(1024^2), nth, errno, strerror(errno));
       // # nocov end
     }
@@ -848,7 +848,7 @@ void fwriteMain(fwriteMainArgs args)
         failed = true;              // # nocov
         my_failed_compress = -998;  // # nocov
       }
-      if (verbose) {DTPRINT("z_stream for data (1): "); print_z_stream(&mystream);}
+      if (verbose) {DTPRINT(_("z_stream for data (%d): "), 1); print_z_stream(&mystream);}
     }
 
     #pragma omp for ordered schedule(dynamic)
@@ -880,9 +880,9 @@ void fwriteMain(fwriteMainArgs args)
       // compress buffer if gzip
       if (args.is_gzip && !failed) {
         myzbuffUsed = zbuffSize;
-        if (verbose) {DTPRINT("z_stream for data (2): "); print_z_stream(&mystream);}
+        if (verbose) {DTPRINT(_("z_stream for data (%d): "), 2); print_z_stream(&mystream);}
         int ret = compressbuff(&mystream, myzBuff, &myzbuffUsed, myBuff, (size_t)(ch-myBuff));
-        if (verbose) {DTPRINT("z_stream for data (3): "); print_z_stream(&mystream);}
+        if (verbose) {DTPRINT(_("z_stream for data (%d): "), 3); print_z_stream(&mystream);}
         if (ret) { failed=true; my_failed_compress=ret; }
         else deflateReset(&mystream);
       }
@@ -963,13 +963,13 @@ void fwriteMain(fwriteMainArgs args)
       DTPRINT("\r                                                                       "
               "                                                              \r");
     } else {       // don't clear any potentially helpful output before error
-      DTPRINT(_("\n"));
+      DTPRINT("\n");
     }
     // # nocov end
   }
 
   if (f!=-1 && CLOSE(f) && !failed)
-    STOP(_("%s: '%s'"), strerror(errno), args.filename);  // # nocov
+    STOP("%s: '%s'", strerror(errno), args.filename);  // # nocov
   // quoted '%s' in case of trailing spaces in the filename
   // If a write failed, the line above tries close() to clean up, but that might fail as well. So the
   // '&& !failed' is to not report the error as just 'closing file' but the next line for more detail
