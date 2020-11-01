@@ -1925,8 +1925,6 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
     cn = names(x)
     X = x
   }
-  if (any(dm == 0L))
-    return(array(NA, dim = dm, dimnames = list(rownames.value, cn)))
   p = dm[2L]
   n = dm[1L]
   collabs = as.list(cn)
@@ -1973,6 +1971,12 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
     }
   }
   X = unlist(X, recursive = FALSE, use.names = FALSE)
+  if (any(dm==0L)) {
+    # retain highest type of input for empty output, #4762
+    if (length(X)!=0L)
+      stop("Internal error: as.matrix.data.table length(X)==", length(X), " but a dimension is zero")  # nocov
+    return(array(if (is.null(X)) NA else X, dim = dm, dimnames = list(rownames.value, cn)))
+  }
   dim(X) <- c(n, length(X)/n)
   dimnames(X) <- list(rownames.value, unlist(collabs, use.names = FALSE))
   X
