@@ -17212,3 +17212,26 @@ test(2159.14, typeof(as.matrix(DT)), "character")
 test(2159.15, typeof(as.matrix(DT[0L])), "character")
 test(2159.16, min(DT[0L]), error="only.*numeric")
 
+# fcase tests from dev 1.12.9 fixed before 1.13.0 was released, #4378 #4401
+# Matt tested that the smaller 100 size still fails in 1.12.9 under gctorture2(step=100)
+set.seed(123)
+x = structure(rnorm(100L), class='abc')
+test(2160.1, fcase(x <= -100, structure(x*1.0, class='abc'),
+                   x <=  -10, structure(x*1.0, class='abc'),
+                   x <=    0, structure(x*1.0, class='abc'),
+                   x <=  100, structure(x*1.0, class='abc'),
+                   x <= 1000, structure(x*1.0, class='abc'),
+                   x >= 1000, structure(x*1.0, class='abc')),
+             structure(x, class='abc'))
+x = data.table(rnorm(100L), rnorm(100L), rnorm(100L))
+test(2160.2, x[, v0 := fcase(
+  V1 > 0 & V2 <= 1 & V3 > 1,    V2 * 100L,
+  V1 > 1 & V2 <= 0 & V3 > 0,    V3 * 100L,
+  V1 > -1 & V2 <= 2 & V3 > 1,   V1 * 100L,
+  V1 > 1 & V2 <= 0 & V3 > 2,    300,
+  V1 > 0 & V2 <= 1 & V3 > 1,    100,
+  V1 > -1 & V2 <= 0 & V3 > -1,  V1 * 100L,
+  default = 0
+)][c(1,3,74,96,100), round(v0,1)], c(0, -24.7, 82.5, 6.7, 0))
+rm(x)
+
