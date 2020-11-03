@@ -4195,7 +4195,7 @@ setNumericRounding(old_rounding)
 
 DT = data.table(id=INT(1,2,1), val1=3:1, val2=3:1, val3=list(2:3,4:6,7:10))   # 5380
 test(1199.1, DT[, sum(.SD), by=id, .SDcols=2:3], data.table(id=1:2, V1=INT(8,4)))   #875 made the .SD case work
-test(1199.2, DT[, sum(.SD), by=id], error="only defined on a data frame with all numeric variables")
+test(1199.2, DT[, sum(.SD), by=id], error="data.*frame.*numeric")  # this is R's error message so use flexible string pattern to insulate from minor changes in R, #4769 
 test(1199.3, DT[, sum(val3), by=id], error="Type 'list' not supported by GForce sum [(]gsum[)]. Either.*or turn off")
 
 # Selection of columns, copy column to maintain the same as R <= 3.0.2, in Rdevel, for now
@@ -13777,10 +13777,8 @@ test(1967.524, x[1:2, keyby=a], x[1:2,], warning="Ignoring keyby= because j= is 
 test(1967.525, x[, keyby=a],    x,       warning=c("Ignoring keyby= because j= is not supplied","i and j are both missing.*upgraded to error in future"))
 test(1967.526, x[keyby=a],      x,       warning=c("Ignoring keyby= because j= is not supplied","i and j are both missing.*upgraded to error in future"))
 
-test(1967.53, as.matrix(x, rownames = 2:3),
-     error = 'length(rownames)==2 but')
-test(1967.54, as.matrix(x[0L]),
-     structure(logical(0), .Dim = c(0L, 2L), .Dimnames = list(NULL, c("a", "b"))))
+test(1967.53, as.matrix(x, rownames = 2:3), error='length(rownames)==2 but')
+test(1967.54, as.matrix(x[0L]), structure(integer(0), .Dim = c(0L, 2L), .Dimnames = list(NULL, c("a", "b"))))
 
 test(1967.55, subset(x, 5L), error = "'subset' must evaluate to logical")
 
@@ -17185,4 +17183,32 @@ test(2158.1, DT[, .(value = list(value)), index],
 DT = data.table(value=as.list(1:6), index=rep(1:2, each=3))
 test(2158.2, DT[, by="index", list(value=list(value))],
              data.table(index=1:2, value=list(as.list(1:3), as.list(4:6))))
+             
+# type consistency of empty input to as.matrix.data.table, #4762
+DT = data.table(x = 1)
+test(2159.01, typeof(as.matrix(DT)), "double")
+test(2159.02, typeof(as.matrix(DT[0L])), "double")
+test(2159.03, min(DT[0L]), Inf, warning="missing")  # R's warning message; use one word 'missing' to insulate from possible future changes to R's message
+DT = data.table(x = 1L)
+test(2159.04, typeof(as.matrix(DT)), "integer")
+test(2159.05, typeof(as.matrix(DT[0L])), "integer")
+test(2159.06, min(DT[0L]), Inf, warning="missing")
+DT = data.table(x = TRUE)
+test(2159.07, typeof(as.matrix(DT)), "logical")
+test(2159.08, typeof(as.matrix(DT[0L])), "logical")
+x = try(min(data.frame(X=c(TRUE,FALSE))), silent=TRUE)
+if (inherits(x,"try-error")) {
+  # this version of R doesn't have the fix linked to from #4762. That fix was made to R-devel in Oct 2020 when R-release was 4.0.3
+  test(2159.09, min(DT[0L]), error="only.*numeric")
+} else {
+  test(2159.10, min(DT[0L]), Inf, warning="missing")
+}
+DT = data.table(x = c("a","b"))
+test(2159.11, typeof(as.matrix(DT)), "character")
+test(2159.12, typeof(as.matrix(DT[0L])), "character")
+test(2159.13, min(DT[0L]), error="only.*numeric")   # R's message 'only defined on a data frame with all numeric[-alike] variables'
+DT = data.table(x=1, y="a")
+test(2159.14, typeof(as.matrix(DT)), "character")
+test(2159.15, typeof(as.matrix(DT[0L])), "character")
+test(2159.16, min(DT[0L]), error="only.*numeric")
 
