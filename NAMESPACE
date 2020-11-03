@@ -151,11 +151,7 @@ S3method("+", IDate)
 S3method("-", IDate)
 S3method(as.character, ITime)
 S3method(as.data.frame, ITime)
-if (getRversion() >= "3.6.0") {
-  S3method(as.Date, IDate)
-} else {
-  export(as.Date.IDate)
-}
+S3method(as.Date, IDate)   # note that base::as.Date is masked by zoo::as.Date, #1500 #4777
 S3method(as.IDate, Date)
 S3method(as.IDate, POSIXct)
 S3method(as.IDate, default)
