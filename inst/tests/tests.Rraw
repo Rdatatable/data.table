@@ -12699,7 +12699,7 @@ test(1904.2, fread(txt, na.strings=c("NA", " ")), ans, warning='na.strings\\[2\\
 test(1904.3, fread(txt, na.strings=c("NA", "")), ans)
 test(1904.4, fread(txt, na.strings=c("NA", "", " ")), ans, warning='na.strings\\[3\\]==" ".*only.*whitespace.*will already be read as <NA>')
 test(1904.5, fread(txt, na.strings=c("NA", " "), strip.white=FALSE), error='na.strings\\[2\\]==" ".*only.*whitespace.*But strip.white=FALSE')
-setnames(ans, c("A","   B","    C"))
+#setnames(ans, c("A","   B","    C"))
 test(1904.6, fread(txt, na.strings="NA", strip.white=FALSE), ans)  # whitespace around NA strings is always stripped regardless of strip.white; just column names affected here
 
 # should respect sep= when it is supplied, #2666
