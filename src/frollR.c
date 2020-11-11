@@ -95,7 +95,7 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
       }
     }
   }
-  int* ikl[nk];                                                 // pointers to adaptive window width
+  int **ikl = (int**)R_alloc(nk, sizeof(int*));                 // to not recalculate `length(x[[i]])` we store it in extra array
   if (badaptive) {
     for (int j=0; j<nk; j++) ikl[j] = INTEGER(VECTOR_ELT(kl, j));
   }
@@ -125,8 +125,8 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
   if (verbose)
     Rprintf(_("%s: allocating memory for results %dx%d\n"), __func__, nx, nk);
   ans_t *dans = (ans_t *)R_alloc(nx*nk, sizeof(ans_t));         // answer columns as array of ans_t struct
-  double* dx[nx];                                               // pointers to source columns
-  uint64_t inx[nx];                                             // to not recalculate `length(x[[i]])` we store it in extra array
+  double** dx = (double**)R_alloc(nx, sizeof(double*));         // pointers to source columns
+  uint64_t* inx = (uint64_t*)R_alloc(nx, sizeof(uint64_t));     // to not recalculate `length(x[[i]])` we store it in extra array
   for (R_len_t i=0; i<nx; i++) {
     inx[i] = xlength(VECTOR_ELT(x, i));                         // for list input each vector can have different length
     for (R_len_t j=0; j<nk; j++) {
@@ -199,7 +199,7 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
     else if (ialgo==1)
       Rprintf(_("%s: %d column(s) and %d window(s), not entering parallel execution here because algo='exact' will compute results in parallel\n"), __func__, nx, nk);
   }
-  #pragma omp parallel for if (ialgo==0 && nx*nk>1) schedule(auto) collapse(2) num_threads(getDTthreads())
+  #pragma omp parallel for if (ialgo==0) schedule(dynamic) collapse(2) num_threads(getDTthreads(nx*nk, false))
   for (R_len_t i=0; i<nx; i++) {                                // loop over multiple columns
     for (R_len_t j=0; j<nk; j++) {                              // loop over multiple windows
       switch (sfun) {

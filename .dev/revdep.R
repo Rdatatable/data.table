@@ -64,7 +64,17 @@ cat("New downloaded:",new," Already had latest:", old, " TOTAL:", length(deps), 
 update.packages(repos=BiocManager::repositories(), checkBuilt=TRUE)  # double-check all dependencies are latest too
 cat("This is R ",R.version$major,".",R.version$minor,"; ",R.version.string,"\n",sep="")
 cat("Installed packages built using:\n")
-drop(table(installed.packages()[,"Built"]))  # ensure all built with this major release of R
+x = installed.packages()
+drop(table(x[,"Built"]))  # manually inspect to ensure all built with this x.y release of R
+if (FALSE) {  # if not, run this manually replacing "4.0.0" appropriately 
+  for (p in rownames(x)[x[,"Built"]=="4.0.0"]) {
+    install.packages(p, repos=BiocManager::repositories())
+  }
+  # warnings may suggest many of them were removed from CRAN, so remove the remaining from revdeplib to be clean
+  x = installed.packages()
+  remove.packages(rownames(x)[x[,"Built"]=="4.0.0"])
+  drop(table(installed.packages()[,"Built"]))  # check again to make sure all built in current R-devel x.y version
+}
 
 # Remove the tar.gz no longer needed :
 for (p in deps) {
@@ -144,7 +154,7 @@ run = function(pkgs=NULL) {
   if (length(pkgs)==1) pkgs = strsplit(pkgs, split="[, ]")[[1]]
   if (anyDuplicated(pkgs)) stop("pkgs contains dups")
   if (!length(pkgs)) {
-    opts = c("not.started","cran.fail","bioc.fail","both.fail","rerun.all")
+    opts = c("not.started","cran.fail","bioc.fail","both.fail","rerun.cran","rerun.bioc","rerun.all")
     cat(paste0(1:length(opts),": ",opts)  , sep="\n")
     w = suppressWarnings(as.integer(readline("Enter option: ")))
     if (is.na(w) || !w %in% seq_along(opts)) stop(w," is invalid")
@@ -158,6 +168,10 @@ run = function(pkgs=NULL) {
       cat("Proceed? (ctrl-c or enter)\n")
       scan(quiet=TRUE)
       system(cmd)
+    } else if (which=="rerun.cran") {
+      pkgs = deps[ !grepl("bioconductor", avail[deps,"Repository"]) ]
+    } else if (which=="rerun.bioc") {
+      pkgs = deps[ grepl("bioconductor", avail[deps,"Repository"]) ]
     } else {
       pkgs = NULL
       if (which=="not.started") pkgs = deps[!file.exists(paste0("./",deps,".Rcheck"))]  # those that haven't run

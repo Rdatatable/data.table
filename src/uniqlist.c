@@ -114,6 +114,7 @@ SEXP uniqlist(SEXP l, SEXP order)
           // fix for #469, when key is set, duplicated calls uniqlist, where encoding
           // needs to be taken care of.
           b=ENC2UTF8(STRING_ELT(v,thisi))==ENC2UTF8(STRING_ELT(v,previ)); break;  // marked non-utf8 encodings are converted to utf8 so as to match properly when inputs are of different encodings.
+          // TODO: surely faster way than this two deep STRING_ELT()
         case REALSXP :
           ulv = (unsigned long long *)REAL(v);
           b = ulv[thisi] == ulv[previ]; // (gives >=2x speedup)
