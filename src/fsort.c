@@ -16,10 +16,6 @@ static void dinsert(double *x, const int n) {   // TODO: if and when twiddled, d
   }
 }
 
-static union {
-  double d;
-  uint64_t ull;
-} u;
 static uint64_t minULL;
 
 static void dradix_r(  // single-threaded recursive worker
@@ -158,10 +154,9 @@ SEXP fsort(SEXP x, SEXP verboseArg) {
   // TODO: -0ULL should allow negatives
   //       avoid twiddle function call as expensive in recent tests (0.34 vs 2.7)
   //       possibly twiddle once to *ans, then untwiddle at the end in a fast parallel sweep
-  u.d = max;
-  uint64_t maxULL = u.ull;
-  u.d = min;
-  minULL = u.ull;  // set static global for use by dradix_r
+ 
+  uint64_t maxULL = *(uint64_t *)&max;
+  minULL = *(uint64_t *)&min;  // set static global for use by dradix_r
 
   int maxBit = floor(log(maxULL-minULL) / log(2));  // 0 is the least significant bit
   int MSBNbits = maxBit > 15 ? 16 : maxBit+1;       // how many bits make up the MSB
