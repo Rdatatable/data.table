@@ -7,5 +7,7 @@ PKG_LIBS = @PKG_LIBS@ @openmp_cflags@ -lz
 # Hence the onerous @...@ substitution. Is it still appropriate in 2020 that we can't use +=?
 
 all: $(SHLIB)
+	@echo PKG_CFLAGS = $(PKG_CFLAGS)
+	@echo PKG_LIBS = $(PKG_LIBS)
 	if [ "$(SHLIB)" != "datatable$(SHLIB_EXT)" ]; then mv $(SHLIB) datatable$(SHLIB_EXT); fi
 	if [ "$(OS)" != "Windows_NT" ] && [ `uname -s` = 'Darwin' ]; then install_name_tool -id datatable$(SHLIB_EXT) datatable$(SHLIB_EXT); fi
