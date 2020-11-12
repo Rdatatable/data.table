@@ -2,15 +2,15 @@
 
 #define INSERT_THRESH 200  // TODO: expose via api and test
 
-static void dinsert(double *x, int n) {   // TODO: if and when twiddled, double => ull
+static void dinsert(double *x, const int n) {   // TODO: if and when twiddled, double => ull
   if (n<2) return;
-  for (int i=1; i<n; i++) {
+  for (int i=1; i<n; ++i) {
     double xtmp = x[i];
     int j = i-1;
     if (xtmp<x[j]) {
       x[j+1] = x[j];
       j--;
-      while (j>=0 && xtmp<x[j]) { x[j+1] = x[j]; j--; }
+      while (j>=0 && xtmp<x[j]) { x[j+1] = x[j]; --j; }
       x[j+1] = xtmp;
     }
   }
@@ -34,7 +34,7 @@ static void dradix_r(  // single-threaded recursive worker
   unsigned long long mask = width-1;
 
   const double *tmp=in;
-  for (R_xlen_t i=0; i<n; i++) {
+  for (R_xlen_t i=0; i<n; ++i) {
     counts[(*(unsigned long long *)tmp - minULL) >> fromBit & mask]++;
     tmp++;
   }
@@ -48,7 +48,7 @@ static void dradix_r(  // single-threaded recursive worker
   }
 
   R_xlen_t cumSum=0;
-  for (R_xlen_t i=0; cumSum<n; i++) { // cumSum<n better than i<width as may return early
+  for (R_xlen_t i=0; cumSum<n; ++i) { // cumSum<n better than i<width as may return early
     unsigned long long tmp;
     if ((tmp=counts[i])) {  // don't cumulate through 0s, important below to save a wasteful memset to zero
       counts[i] = cumSum;
@@ -57,7 +57,7 @@ static void dradix_r(  // single-threaded recursive worker
   } // leaves cumSum==n && 0<i && i<=width
 
   tmp=in;
-  for (R_xlen_t i=0; i<n; i++) {  // go forwards not backwards to give cpu pipeline better chance
+  for (R_xlen_t i=0; i<n; ++i) {  // go forwards not backwards to give cpu pipeline better chance
     int thisx = (*(unsigned long long *)tmp - minULL) >> fromBit & mask;
     working[ counts[thisx]++ ] = *tmp;
     tmp++;
@@ -71,12 +71,12 @@ static void dradix_r(  // single-threaded recursive worker
     // Also this way, we don't need to know how big thisCounts is and therefore no possibility of getting that wrong.
     // wasteful thisCounts[i]=0 even when already 0 is better than a branch. We are highly recursive at this point
     // so avoiding memset() is known to be worth it.
-    for (int i=0; counts[i]<n; i++) counts[i]=0;
+    for (int i=0; counts[i]<n; ++i) counts[i]=0;
     return;
   }
 
   cumSum=0;
-  for (int i=0; cumSum<n; i++) {   // again, cumSum<n better than i<width as it can return early
+  for (int i=0; cumSum<n; ++i) {   // again, cumSum<n better than i<width as it can return early
     if (counts[i] == 0) continue;
     R_xlen_t thisN = counts[i] - cumSum;  // undo cummulate; i.e. diff
     if (thisN <= INSERT_THRESH) {
@@ -132,12 +132,12 @@ SEXP fsort(SEXP x, SEXP verboseArg) {
   double mins[nBatch], maxs[nBatch];
   const double *restrict xp = REAL(x);
   #pragma omp parallel for schedule(dynamic) num_threads(getDTthreads(nBatch, false))
-  for (int batch=0; batch<nBatch; batch++) {
+  for (int batch=0; batch<nBatch; ++batch) {
     R_xlen_t thisLen = (batch==nBatch-1) ? lastBatchSize : batchSize;
     const double *restrict d = xp + batchSize*batch;
     double myMin=*d, myMax=*d;
     d++;
-    for (R_xlen_t j=1; j<thisLen; j++) {
+    for (R_xlen_t j=1; j<thisLen; ++j) {
       // TODO: test for sortedness here as well.
       if (*d<myMin) myMin=*d;
       else if (*d>myMax) myMax=*d;
@@ -148,7 +148,7 @@ SEXP fsort(SEXP x, SEXP verboseArg) {
   }
   t[2] = wallclock();
   double min=mins[0], max=maxs[0];
-  for (int i=1; i<nBatch; i++) {
+  for (int i=1; i<nBatch; ++i) {
     // TODO: if boundaries are sorted then we only need sort the unsorted batches known above
     if (mins[i]<min) min=mins[i];
     if (maxs[i]>max) max=maxs[i];
@@ -180,11 +180,11 @@ SEXP fsort(SEXP x, SEXP verboseArg) {
                        nBatch, (uint64_t)batchSize, (uint64_t)lastBatchSize);
   t[3] = wallclock();
   #pragma omp parallel for num_threads(nth)
-  for (int batch=0; batch<nBatch; batch++) {
+  for (int batch=0; batch<nBatch; ++batch) {
     R_xlen_t thisLen = (batch==nBatch-1) ? lastBatchSize : batchSize;
     const uint64_t *restrict tmp = (uint64_t *)(xp + batchSize*batch);
     R_xlen_t *restrict thisCounts = counts + batch*MSBsize;
-    for (R_xlen_t j=0; j<thisLen; j++) {
+    for (R_xlen_t j=0; j<thisLen; ++j) {
       thisCounts[(*tmp - minULL) >> shift]++;
       tmp++;
     }
@@ -192,9 +192,9 @@ SEXP fsort(SEXP x, SEXP verboseArg) {
 
   // cumulate columnwise; parallel histogram; small so no need to parallelize
   R_xlen_t rollSum=0;
-  for (int msb=0; msb<MSBsize; msb++) {
+  for (int msb=0; msb<MSBsize; ++msb) {
     int j = msb;
-    for (int batch=0; batch<nBatch; batch++) {
+    for (int batch=0; batch<nBatch; ++batch) {
       R_xlen_t tmp = counts[j];
       counts[j] = rollSum;
       rollSum += tmp;
@@ -205,11 +205,11 @@ SEXP fsort(SEXP x, SEXP verboseArg) {
   t[4] = wallclock();
   uint64_t *restrict ansi64 = (uint64_t *)ans;
   #pragma omp parallel for num_threads(nth)
-  for (int batch=0; batch<nBatch; batch++) {
+  for (int batch=0; batch<nBatch; ++batch) {
     R_xlen_t thisLen = (batch==nBatch-1) ? lastBatchSize : batchSize;
     const uint64_t *restrict source = (uint64_t *)(xp + batchSize*batch);
     R_xlen_t *restrict thisCounts = counts + batch*MSBsize;
-    for (R_xlen_t j=0; j<thisLen; j++) {
+    for (R_xlen_t j=0; j<thisLen; ++j) {
       ansi64[ thisCounts[(*source - minULL) >> shift]++ ] = *source;
       // This assignment to ans is not random access as it may seem, but cache efficient by
       // design since target pages are written to contiguously. MSBsize * 4k < cache.
@@ -232,7 +232,7 @@ SEXP fsort(SEXP x, SEXP verboseArg) {
     R_xlen_t *msbFrom = malloc(MSBsize*sizeof(R_xlen_t));
     int *order = malloc(MSBsize*sizeof(int));
     R_xlen_t cumSum = 0;
-    for (int i=0; i<MSBsize; i++) {
+    for (int i=0; i<MSBsize; ++i) {
       msbFrom[i] = cumSum;
       msbCounts[i] = msbCounts[i] - cumSum;
       cumSum += msbCounts[i];
@@ -267,7 +267,7 @@ SEXP fsort(SEXP x, SEXP verboseArg) {
       // All we assume here is that a thread can never be assigned to an earlier iteration; i.e. threads 0:(nth-1)
       // get iterations 0:(nth-1) possibly out of order, then first-come-first-served in order after that.
       // If a thread deals with an msb lower than the first one it dealt with, then its *working will be too small.
-      for (int msb=0; msb<MSBsize; msb++) {
+      for (int msb=0; msb<MSBsize; ++msb) {
 
         R_xlen_t from= msbFrom[order[msb]];
         R_xlen_t thisN = msbCounts[order[msb]];
@@ -305,7 +305,7 @@ SEXP fsort(SEXP x, SEXP verboseArg) {
   //       It's a perfectly contiguous and cache efficient parallel scan so should be relatively negligible.
 
   double tot = t[7]-t[0];
-  if (verbose) for (int i=1; i<=7; i++) {
+  if (verbose) for (int i=1; i<=7; ++i) {
     Rprintf(_("%d: %.3f (%4.1f%%)\n"), i, t[i]-t[i-1], 100.*(t[i]-t[i-1])/tot);
   }
 
