@@ -155,8 +155,11 @@ SEXP fsort(SEXP x, SEXP verboseArg) {
   //       avoid twiddle function call as expensive in recent tests (0.34 vs 2.7)
   //       possibly twiddle once to *ans, then untwiddle at the end in a fast parallel sweep
  
-  uint64_t maxULL = *(uint64_t *)&max;
-  minULL = *(uint64_t *)&min;  // set static global for use by dradix_r
+  union {double d; uint64_t u64;} u;
+  u.d = max;
+  uint64_t maxULL = u.u64;
+  u.d = min;
+  minULL = u.u64;  // set static global for use by dradix_r
 
   int maxBit = floor(log(maxULL-minULL) / log(2));  // 0 is the least significant bit
   int MSBNbits = maxBit > 15 ? 16 : maxBit+1;       // how many bits make up the MSB
