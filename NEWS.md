@@ -6,6 +6,8 @@
 
 ## NEW FEATURES
 
+1. `DT[,j]` now drops the `"AsIs"` class when `j` returns an object with class `"AsIs"`. Thanks to @ChHaeni for the report and @jangorecki @shrektan for the PR.
+
 ## BUG FIXES
 
 1. `as.matrix(<empty DT>)` now retains the column type for the empty matrix result, [#4762](https://github.com/Rdatatable/data.table/issues/4762). Thus, for example, `min(DT[0])` where DT's columns are numeric, is now consistent with non-empty all-NA input and returns `Inf` with R's warning `no non-missing arguments to min; returning Inf` rather than R's error `only defined on a data frame with all numeric[-alike] variables`. Thanks to @mb706 for reporting.

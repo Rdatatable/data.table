@@ -1344,6 +1344,11 @@ replace_dot_alias = function(e) {
         setattr(jval, 'sorted', key(x))
       if (any(sapply(jval, is.null))) stop("Internal error: j has created a data.table result containing a NULL column") # nocov
     }
+    
+    # should drop the AsIs class #4326
+    if (inherits(jval, "AsIs")) 
+      setattr(jval, "class", setdiff(class(jval), "AsIs"))
+    
     return(jval)
   }
 

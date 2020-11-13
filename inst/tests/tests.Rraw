@@ -17235,3 +17235,35 @@ test(2160.2, x[, v0 := fcase(
 )][c(1,3,74,96,100), round(v0,1)], c(0, -24.7, 82.5, 6.7, 0))
 rm(x)
 
+# allow 'raw' output #4326
+DT = data.table(x = 1:10, y = 1:10 + rnorm(10), grp = rep(1:2, length.out = 10))
+out = DT[, lm.fit(cbind(x), y)]
+test(2161.01, class(out), c("data.table","data.frame"))
+out = DT[, list(lm.fit(cbind(x), y))][["V1"]]
+test(2161.02, class(out), "list")
+out = DT[, I(lm.fit(cbind(x), y))]
+test(2161.03, class(out), "list") ## AsIs class should be removed
+test(2161.04, out, lm.fit(cbind(x = DT$x), DT$y)) # should be eactly the same
+# group by
+out = DT[, .(V=I(1:3)), keyby = grp]
+test(2161.05, nrow(out), 2L)
+test(2161.06, class(out$V), "list")
+test(2161.07, out$V[[1L]], 1:3)
+out = DT[, .(V=I(1:2), V2=I(2:5)), keyby = grp]
+test(2161.08, nrow(out), 2L)
+test(2161.09, class(out$V), "list")
+test(2161.10, class(out$V2), "list")
+test(2161.11, out$V, list(1:2, 1:2))
+test(2161.12, out$V2, list(2:5, 2:5))
+DT[, V := I(1:3), keyby = grp]
+test(2161.13, DT$V, rep(list(1:3), 10L))
+DT[, V2 := I(lm.fit(cbind(x), y)), keyby = grp]
+test(2161.14, length(DT$V2), 10L)
+test(2161.15, DT$V2[[1L]], lm.fit(cbind(x = DT[grp==1L,x]), DT[grp==1L,y]))
+out = DT[, .(V=I(lm.fit(cbind(x), y))), keyby = grp]
+test(2161.16, class(out$V), "list")
+test(2161.17, class(out$V[[1L]]), "list")
+test(2161.18, length(out$V), 2L)
+test(2161.19, out$V[[1L]], lm.fit(cbind(x = DT[grp==1L,x]), DT[grp==1L,y]))
+out = DT[, .(V=I(data.frame(A = 1:3))), keyby = grp]
+test(2161.20, class(out$V[[1L]]), "data.frame") # old class preserved
