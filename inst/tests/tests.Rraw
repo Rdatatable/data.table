@@ -12512,7 +12512,7 @@ x <- as.integer(x)
 test(1888.5, fsort(x), base::sort(x, na.last = FALSE),
              warning = "Input is not a vector of type double. New parallel sort has only been done for double vectors so far.*Using one thread")
 x = runif(1e6)
-test(1888.6, y<-fsort(x,verbose=TRUE), output="nth=.*Top 5 MSB counts")
+test(1888.6, y<-fsort(x,verbose=TRUE), output="nth=.*Top 20 MSB counts")
 test(1888.7, !base::is.unsorted(y))
 test(1888.8, fsort(x,verbose=1), error="verbose must be TRUE or FALSE")
 rm(x)
