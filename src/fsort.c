@@ -164,10 +164,9 @@ SEXP fsort(SEXP x, SEXP verboseArg) {
   size_t MSBsize = 1LL<<MSBNbits;                   // the number of possible MSB values (16 bits => 65,536)
   if (verbose) Rprintf(_("maxBit=%d; MSBNbits=%d; shift=%d; MSBsize=%d\n"), maxBit, MSBNbits, shift, MSBsize);
 
-  uint64_t *counts = calloc(nBatch*MSBsize, sizeof(uint64_t));
-  if (counts==NULL) error(_("Unable to allocate working memory"));
+  uint64_t *counts = (uint64_t *)R_alloc(nBatch*MSBsize, sizeof(uint64_t));
+  memset(counts, 0, nBatch*MSBsize*sizeof(uint64_t));
   // provided MSBsize>=9, each batch is a multiple of at least one 4k page, so no page overlap
-  // TODO: change all calloc, malloc and free to Calloc and Free to be robust to error() and catch ooms.
 
   if (verbose) Rprintf(_("counts is %dMB (%d pages per nBatch=%d, batchSize=%"PRIu64", lastBatchSize=%"PRIu64")\n"),
                        (int)(nBatch*MSBsize*sizeof(uint64_t)/(1024*1024)),
@@ -224,8 +223,8 @@ SEXP fsort(SEXP x, SEXP verboseArg) {
     uint64_t *msbCounts = counts + (nBatch-1)*MSBsize;
     // msbCounts currently contains the ending position of each MSB (the starting location of the next) even across empty
     if (msbCounts[MSBsize-1] != xlength(x)) error(_("Internal error: counts[nBatch-1][MSBsize-1] != length(x)")); // # nocov
-    uint64_t *msbFrom = malloc(MSBsize*sizeof(uint64_t));
-    int *order = malloc(MSBsize*sizeof(int));
+    uint64_t *msbFrom = (uint64_t *)R_alloc(MSBsize, sizeof(uint64_t));
+    int *order = (int *)R_alloc(MSBsize, sizeof(int));
     uint64_t cumSum = 0;
     for (int i=0; i<MSBsize; ++i) {
       msbFrom[i] = cumSum;
@@ -239,7 +238,7 @@ SEXP fsort(SEXP x, SEXP verboseArg) {
     // TODO: time this qsort but likely insignificant.
 
     if (verbose) {
-      Rprintf(_("Top 5 MSB counts: ")); for(int i=0; i<5; i++) Rprintf(_("%"PRId64" "), (int64_t)msbCounts[order[i]]); Rprintf(_("\n"));
+      Rprintf(_("Top 20 MSB counts: ")); for(int i=0; i<MIN(MSBsize,20); i++) Rprintf(_("%"PRId64" "), (int64_t)msbCounts[order[i]]); Rprintf(_("\n"));
       Rprintf(_("Reduced MSBsize from %d to "), MSBsize);
     }
     while (MSBsize>0 && msbCounts[order[MSBsize-1]] < 2) MSBsize--;
@@ -247,54 +246,75 @@ SEXP fsort(SEXP x, SEXP verboseArg) {
       Rprintf(_("%d by excluding 0 and 1 counts\n"), MSBsize);
     }
 
+    bool failed=false, alloc_fail=false, non_monotonic=false; // shared bools only ever assigned true; no need for atomic or critical assign
     t[6] = wallclock();
     #pragma omp parallel num_threads(getDTthreads(MSBsize, false))
     {
-      uint64_t *counts = calloc((toBit/8 + 1)*256, sizeof(uint64_t));
-      // each thread has its own (small) stack of counts
+      // each thread has its own small stack of counts
       // don't use VLAs here: perhaps too big for stack yes but more that VLAs apparently fail with schedule(dynamic)
-
-      double *working=NULL;
-      // the working memory (for the largest groups) is allocated the first time the thread is assigned to
-      // an iteration.
-
-      #pragma omp for schedule(dynamic,1)
-      // All we assume here is that a thread can never be assigned to an earlier iteration; i.e. threads 0:(nth-1)
-      // get iterations 0:(nth-1) possibly out of order, then first-come-first-served in order after that.
-      // If a thread deals with an msb lower than the first one it dealt with, then its *working will be too small.
+      uint64_t *restrict mycounts = calloc((toBit/8 + 1)*256, sizeof(uint64_t));
+      if (mycounts==NULL) {
+        failed=true; alloc_fail=true;  // # nocov
+      }
+      double *restrict myworking = NULL;
+      // the working memory for the largest group per thread is allocated when the thread receives its first iteration
+      int myfirstmsb = -1;  // for the monotonicity check
+      
+      #pragma omp for schedule(monotonic_dynamic,1)
+      // We require here that a thread can never be assigned to an earlier iteration; e.g. threads 0:(nth-1)
+      // get iterations 0:(nth-1), possibly out of order, then first-come-first-served in order after that.
+      // If a thread deals with an msb earlier than the first one it dealt with, then its *working will be too small.
+      // This is not true in clang-11 using OpenMP 5.0 (_OPENMP==201811); #4786. But the monotonic: modifier (OpenMP 4.5+)
+      // makes it true. To continue support of OpenMP<4.5:
+      //      i) myomp.h defines monotonic_dynamic since macro name cannot contain colon
+      // and ii) we now check monotonicity is true, otherwise halt with helpful error. It's likely true anyway in older implementations
+      //         since that's the simplest implementation and what we thought was the case anyway. I guess that clang-11 is doing
+      //         some new advanced dynamic optimizations; e.g. allocating threads to iterations based on knowledge of data locality rather
+      //         than simple monotonic first-come-first-served. However, we have arranged for the iterations to be in size order, so
+      //         monotonic:dynamic is the right schedule here.
       for (int msb=0; msb<MSBsize; ++msb) {
+        if (failed) continue;
 
-        uint64_t from= msbFrom[order[msb]];
+        uint64_t from = msbFrom[order[msb]];
         uint64_t thisN = msbCounts[order[msb]];
 
-        if (working==NULL) working = malloc(thisN * sizeof(double)); // TODO: check succeeded otherwise exit gracefully
+        if (myworking==NULL) {
+          myworking = malloc(thisN * sizeof(double));
+          if (myworking==NULL) {
+            failed=true; alloc_fail=true; continue;  // # nocov
+          }
+          myfirstmsb = msb;
+        }
+        if (myfirstmsb==-1 || msb<myfirstmsb) {
+          failed=true; non_monotonic=true; continue;  // # nocov
+        }
+        
         // Depends on msbCounts being sorted largest first before this parallel loop
         // Could be significant RAM saving if the largest msb is
         // a lot larger than the 2nd largest msb, especially as nth grows to perhaps 128 on X1.
         // However, the initial split is so large (16bits => 65,536) that the largest MSB should be
         // relatively small anyway (n/65,536 if uniformly distributed).
-        // For msb>=nth, that thread's *working will already be big
-        // enough because the smallest *working (for thread nth-1) is big enough for all iterations following.
+        // For msb>=nth, that thread's *myworking will already be big enough because
+        // the smallest *myworking (for thread nth-1) is big enough for all iterations following.
         // Progressively, less and less of the working will be needed by the thread (just the first thisN will be
-        // used) and the unused pages will simply not be cached.
-        // TODO: Calloc isn't thread-safe. But this deep malloc should be ok here as no possible error() points
-        //       before free. Just need to add the check and exit thread safely somehow.
+        // used) and the unused lines will simply not be cached.
 
         if (thisN <= INSERT_THRESH) {
           dinsert(ans+from, thisN);
         } else {
-          dradix_r(ans+from, working, thisN, fromBit, toBit, counts);
+          dradix_r(ans+from, myworking, thisN, fromBit, toBit, mycounts);
         }
       }
-      free(counts);
-      free(working);
+      free(mycounts);
+      free(myworking);
     }
-    free(msbFrom);
-    free(order);
+    if (non_monotonic)
+      error("OpenMP %d did not assign threads to iterations monotonically. Please search Stack Overflow for this message.", MY_OPENMP); // # nocov; #4786 in v1.13.4
+    if (alloc_fail)
+      error(_("Unable to allocate working memory")); // # nocov
   }
   t[7] = wallclock();
-  free(counts);
-
+  
   // TODO: parallel sweep to check sorted using <= on original input. Feasible that twiddling messed up.
   //       After a few years of heavy use remove this check for speed, and move into unit tests.
   //       It's a perfectly contiguous and cache efficient parallel scan so should be relatively negligible.
@@ -303,7 +323,6 @@ SEXP fsort(SEXP x, SEXP verboseArg) {
   if (verbose) for (int i=1; i<=7; ++i) {
     Rprintf(_("%d: %.3f (%4.1f%%)\n"), i, t[i]-t[i-1], 100.*(t[i]-t[i-1])/tot);
   }
-
   UNPROTECT(nprotect);
   return(ansVec);
 }

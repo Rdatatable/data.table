@@ -393,11 +393,11 @@ SEXP hasOpenMP() {
   // Just for use by onAttach (hence nocov) to avoid an RPRINTF from C level which isn't suppressable by CRAN
   // There is now a 'grep' in CRAN_Release.cmd to detect any use of RPRINTF in init.c, which is
   // why RPRINTF is capitalized in this comment to avoid that grep.
-  // TODO: perhaps .Platform or .Machine in R itself could contain whether OpenMP is available.
+  // .Platform or .Machine in R itself does not contain whether OpenMP is available because compiler and flags are per-package.
   #ifdef _OPENMP
-  return ScalarLogical(TRUE);
+  return ScalarInteger(_OPENMP); // return the version; e.g. 201511 (i.e. 4.5)
   #else
-  return ScalarLogical(FALSE);
+  return ScalarInteger(0);       // 0 rather than NA so that if() can be used on the result
   #endif
 }
 // # nocov end
