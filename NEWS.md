@@ -6,6 +6,8 @@
 
 ## NEW FEATURES
 
+1. Group-wise queries like `x[.N]` or `.SD[.N-1L]` (i.e. an offset of `k>=0` from the end of the group at index `.N`) are now optimized, [#4809](https://github.com/Rdatatable/data.table/issues/4809) and part of [#735](https://github.com/Rdatatable/data.table/issues/4809). Previously only fixed positive offsets like `x[1L]` or `.SD[2L]` were optimized. Thanks to @matthewgson for the report.
+
 ## BUG FIXES
 
 1. `as.matrix(<empty DT>)` now retains the column type for the empty matrix result, [#4762](https://github.com/Rdatatable/data.table/issues/4762). Thus, for example, `min(DT[0])` where DT's columns are numeric, is now consistent with non-empty all-NA input and returns `Inf` with R's warning `no non-missing arguments to min; returning Inf` rather than R's error `only defined on a data frame with all numeric[-alike] variables`. Thanks to @mb706 for reporting.

@@ -8114,6 +8114,33 @@ fun = function (DT, tag = c("A", "B")) DT[, var := tag[[.GRP]], by = "id"]
 fun(DT)
 test(1581.19, DT, DT0[ , var := c('A', 'A', 'B')])
 
+# #4809 g[ with fromLast=TRUE (i.e. on queries like x[.N-k])
+DT = data.table(id = c(1, 1, 2), value = c(FALSE, TRUE, FALSE))
+options(datatable.optimize=1L)
+test(1581.20, ans1 <- DT[ , value[.N], by=id, verbose=TRUE], output="GForce FALSE")
+test(1581.21, ans2 <- DT[ , value[.N-1L], by=id, verbose=TRUE], output="GForce FALSE")
+options(datatable.optimize=Inf)
+test(1581.22, ans3 <- DT[ , value[.N], by=id, verbose=TRUE], output="GForce TRUE")
+test(1581.23, ans4 <- DT[ , value[.N-1L], by=id, verbose=TRUE], output="GForce TRUE")
+test(1581.24, ans1, ans3)
+#test(1581.25, ans2, ans4)
+
+idx = c(2L, 3L)
+DT[ , value := 0:2]
+test(1581.26, DT[ , value[.N], by=id], DT[idx, .(id, V1 = value)])
+
+DT[ , value := value + .1]
+test(1581.27, DT[ , value[.N], by=id], DT[idx, .(id, V1 = value)])
+
+DT[ , value := value + 1i]
+test(1581.28, DT[ , value[.N], by=id], DT[idx, .(id, V1 = value)])
+
+DT[ , value := letters[1:3]]
+test(1581.29, DT[ , value[.N], by=id], DT[idx, .(id, V1 = value)])
+
+DT[ , value := .(list(1, 1:2, 1:3))]
+test(1581.30, DT[ , value[.N], by=id], DT[idx, .(id, V1 = value)])
+
 # handle NULL value correctly #1429
 test(1582, uniqueN(NULL), 0L)
 

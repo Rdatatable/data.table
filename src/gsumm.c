@@ -1167,24 +1167,39 @@ SEXP ghead(SEXP x, SEXP valArg) {
   return (gfirst(x));
 }
 
-SEXP gnthvalue(SEXP x, SEXP valArg) {
+SEXP gnthvalue(SEXP x, SEXP valArg, SEXP fromLastArg) {
 
-  if (!isInteger(valArg) || LENGTH(valArg)!=1 || INTEGER(valArg)[0]<=0) error(_("Internal error, `g[` (gnthvalue) is only implemented single value subsets with positive index, e.g., .SD[2]. This should have been caught before. please report to data.table issue tracker.")); // # nocov
-  R_len_t i,k, val=INTEGER(valArg)[0];
+  if (!isInteger(valArg) || LENGTH(valArg)!=1 || INTEGER(valArg)[0]<0 || (!LOGICAL(fromLastArg)[0] && INTEGER(valArg)[0] == 0)) {
+    error(_("Internal error, `g[` (gnthvalue) is only implemented single-value subsets with positive index, e.g., .SD[2], or single-value tail subsets with non-negative index, e.g. .SD[.N-2]. This should have been caught before. please report to data.table issue tracker.")); // # nocov
+  }
+  R_len_t i,k;
+  const R_len_t val = INTEGER(valArg)[0];
+  const Rboolean fromLast = LOGICAL(fromLastArg)[0];
   int n = (irowslen == -1) ? length(x) : irowslen;
   SEXP ans;
-  if (nrow != n) error(_("nrow [%d] != length(x) [%d] in %s"), nrow, n, "ghead");
+  if (nrow != n) error(_("nrow [%d] != length(x) [%d] in %s"), nrow, n, "gnthvalue");
   switch(TYPEOF(x)) {
   case LGLSXP: {
     const int *ix = LOGICAL(x);
     ans = PROTECT(allocVector(LGLSXP, ngrp));
     int *ians = LOGICAL(ans);
-    for (i=0; i<ngrp; i++) {
-      if (val > grpsize[i]) { LOGICAL(ans)[i] = NA_LOGICAL; continue; }
-      k = ff[i]+val-2;
-      if (isunsorted) k = oo[k]-1;
-      k = (irowslen == -1) ? k : irows[k]-1;
-      ians[i] = ix[k];
+    if (fromLast) {
+      for (i=0; i<ngrp; i++) {
+        if (val > grpsize[i]-1) { LOGICAL(ans)[i] = NA_LOGICAL; continue; }
+        k = ff[i]+grpsize[i]-val-2; // = (ff[i]-1) + (grpsize[i]-1) - val
+        if (isunsorted) k = oo[k]-1;
+        k = (irowslen == -1) ? k : irows[k]-1;
+        ians[i] = ix[k];
+      }
+    } else {
+      for (i=0; i<ngrp; i++) {
+        if (val > grpsize[i]) { LOGICAL(ans)[i] = NA_LOGICAL; continue; }
+        Rprintf("i=%d, ff[i]=%d\n", i, ff[i]);
+        k = ff[i]+val-2; // = (ff[i]-1) + (val-1)
+        if (isunsorted) k = oo[k]-1;
+        k = (irowslen == -1) ? k : irows[k]-1;
+        ians[i] = ix[k];
+      }
     }
   }
     break;
@@ -1192,12 +1207,22 @@ SEXP gnthvalue(SEXP x, SEXP valArg) {
     const int *ix = INTEGER(x);
     ans = PROTECT(allocVector(INTSXP, ngrp));
     int *ians = INTEGER(ans);
-    for (i=0; i<ngrp; i++) {
-      if (val > grpsize[i]) { INTEGER(ans)[i] = NA_INTEGER; continue; }
-      k = ff[i]+val-2;
-      if (isunsorted) k = oo[k]-1;
-      k = (irowslen == -1) ? k : irows[k]-1;
-      ians[i] = ix[k];
+    if (fromLast) {
+      for (i=0; i<ngrp; i++) {
+        if (val > grpsize[i]-1) { INTEGER(ans)[i] = NA_INTEGER; continue; }
+        k = ff[i]+grpsize[i]-val-2;
+        if (isunsorted) k = oo[k]-1;
+        k = (irowslen == -1) ? k : irows[k]-1;
+        ians[i] = ix[k];
+      }
+    } else {
+      for (i=0; i<ngrp; i++) {
+        if (val > grpsize[i]) { INTEGER(ans)[i] = NA_INTEGER; continue; }
+        k = ff[i]+val-2;
+        if (isunsorted) k = oo[k]-1;
+        k = (irowslen == -1) ? k : irows[k]-1;
+        ians[i] = ix[k];
+      }
     }
   }
     break;
@@ -1205,12 +1230,22 @@ SEXP gnthvalue(SEXP x, SEXP valArg) {
     const double *dx = REAL(x);
     ans = PROTECT(allocVector(REALSXP, ngrp));
     double *dans = REAL(ans);
-    for (i=0; i<ngrp; i++) {
-      if (val > grpsize[i]) { REAL(ans)[i] = NA_REAL; continue; }
-      k = ff[i]+val-2;
-      if (isunsorted) k = oo[k]-1;
-      k = (irowslen == -1) ? k : irows[k]-1;
-      dans[i] = dx[k];
+    if (fromLast) {
+      for (i=0; i<ngrp; i++) {
+        if (val > grpsize[i]-1) { REAL(ans)[i] = NA_REAL; continue; }
+        k = ff[i]+grpsize[i]-val-2;
+        if (isunsorted) k = oo[k]-1;
+        k = (irowslen == -1) ? k : irows[k]-1;
+        dans[i] = dx[k];
+      }
+    } else {
+      for (i=0; i<ngrp; i++) {
+        if (val > grpsize[i]) { REAL(ans)[i] = NA_REAL; continue; }
+        k = ff[i]+val-2;
+        if (isunsorted) k = oo[k]-1;
+        k = (irowslen == -1) ? k : irows[k]-1;
+        dans[i] = dx[k];
+      }
     }
   }
     break;
@@ -1218,32 +1253,62 @@ SEXP gnthvalue(SEXP x, SEXP valArg) {
     const Rcomplex *dx = COMPLEX(x);
     ans = PROTECT(allocVector(CPLXSXP, ngrp));
     Rcomplex *dans = COMPLEX(ans);
-    for (i=0; i<ngrp; i++) {
-      if (val > grpsize[i]) { dans[i].r = NA_REAL; dans[i].i = NA_REAL; continue; }
-      k = ff[i]+val-2;
-      if (isunsorted) k = oo[k]-1;
-      k = (irowslen == -1) ? k : irows[k]-1;
-      dans[i] = dx[k];
+    if (fromLast) {
+      for (i=0; i<ngrp; i++) {
+        if (val > grpsize[i]-1) { dans[i].r = NA_REAL; dans[i].i = NA_REAL; continue; }
+        k = ff[i]+grpsize[i]-val-2;
+        if (isunsorted) k = oo[k]-1;
+        k = (irowslen == -1) ? k : irows[k]-1;
+        dans[i] = dx[k];
+      }
+    } else {
+      for (i=0; i<ngrp; i++) {
+        if (val > grpsize[i]) { dans[i].r = NA_REAL; dans[i].i = NA_REAL; continue; }
+        k = ff[i]+val-2;
+        if (isunsorted) k = oo[k]-1;
+        k = (irowslen == -1) ? k : irows[k]-1;
+        dans[i] = dx[k];
+      }
     }
   } break;
   case STRSXP:
     ans = PROTECT(allocVector(STRSXP, ngrp));
-    for (i=0; i<ngrp; i++) {
-      if (val > grpsize[i]) { SET_STRING_ELT(ans, i, NA_STRING); continue; }
-      k = ff[i]+val-2;
-      if (isunsorted) k = oo[k]-1;
-      k = (irowslen == -1) ? k : irows[k]-1;
-      SET_STRING_ELT(ans, i, STRING_ELT(x, k));
+    if (fromLast) {
+      for (i=0; i<ngrp; i++) {
+        if (val > grpsize[i]-1) { SET_STRING_ELT(ans, i, NA_STRING); continue; }
+        k = ff[i]+grpsize[i]-val-2;
+        if (isunsorted) k = oo[k]-1;
+        k = (irowslen == -1) ? k : irows[k]-1;
+        SET_STRING_ELT(ans, i, STRING_ELT(x, k));
+      }
+    } else {
+      for (i=0; i<ngrp; i++) {
+        if (val > grpsize[i]) { SET_STRING_ELT(ans, i, NA_STRING); continue; }
+        k = ff[i]+val-2;
+        if (isunsorted) k = oo[k]-1;
+        k = (irowslen == -1) ? k : irows[k]-1;
+        SET_STRING_ELT(ans, i, STRING_ELT(x, k));
+      }
     }
     break;
   case VECSXP:
     ans = PROTECT(allocVector(VECSXP, ngrp));
-    for (i=0; i<ngrp; i++) {
-      if (val > grpsize[i]) { SET_VECTOR_ELT(ans, i, R_NilValue); continue; }
-      k = ff[i]+val-2;
-      if (isunsorted) k = oo[k]-1;
-      k = (irowslen == -1) ? k : irows[k]-1;
-      SET_VECTOR_ELT(ans, i, VECTOR_ELT(x, k));
+    if (fromLast) {
+      for (i=0; i<ngrp; i++) {
+        if (val > grpsize[i]-1) { SET_VECTOR_ELT(ans, i, R_NilValue); continue; }
+        k = ff[i]+grpsize[i]-val-2;
+        if (isunsorted) k = oo[k]-1;
+        k = (irowslen == -1) ? k : irows[k]-1;
+        SET_VECTOR_ELT(ans, i, VECTOR_ELT(x, k));
+      }      
+    } else {
+      for (i=0; i<ngrp; i++) {
+        if (val > grpsize[i]) { SET_VECTOR_ELT(ans, i, R_NilValue); continue; }
+        k = ff[i]+val-2;
+        if (isunsorted) k = oo[k]-1;
+        k = (irowslen == -1) ? k : irows[k]-1;
+        SET_VECTOR_ELT(ans, i, VECTOR_ELT(x, k));
+      }
     }
     break;
   default:

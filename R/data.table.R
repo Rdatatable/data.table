@@ -1667,10 +1667,25 @@ replace_dot_alias = function(e) {
           if (!(q2 <- q[[2L]]) %chin% names(SDenv$.SDall) && q2 != ".I") return(FALSE)  # 875
           if ((length(q)==2L || identical("na",substring(names(q)[3L], 1L, 2L))) && (!q1 %chin% c("head","tail"))) return(TRUE)
           # ... head-tail uses default value n=6 which as of now should not go gforce ^^
-          # otherwise there must be three arguments, and only in two cases:
-          #   1) head/tail(x, 1) or 2) x[n], n>0
-          length(q)==3L && length(q3 <- q[[3L]])==1L && is.numeric(q3) &&
-            ( (q1 %chin% c("head", "tail") && q3==1L) || ((q1 == "[" || (q1 == "[[" && eval(call('is.atomic', q[[2L]]), envir=x))) && q3>0L) )
+          # otherwise there must be three arguments, and only in these cases:
+          #   1) head/tail(x, 1); 2) x[n], n>0; 3) x[.N-k], k>=0; 4) x[[n]], n>0, is.atomic(x)
+          if (length(q) != 3L) return(FALSE)
+          q3 = q[[3L]]
+          switch(
+            as.character(q[[1L]]),
+            head = , tail = {
+              length(q3) == 1L && is.numeric(q3) && q3 == 1L
+            },
+            "[" = {
+              if (length(q3) == 1L) (is.numeric(q3) && q3 > 0L) || (is.name(q3) && q3 == ".N")
+              else if (length(q3) == 3L) q3 %iscall% "-" && is.name(q3[[2L]]) && q3[[2L]] == ".N" && is.numeric(q3[[3L]]) && q3[[3L]] >= 0L
+              else FALSE
+            },
+            "[[" = {
+              length(q3) == 1L && is.numeric(q3) && q3 > 0L && eval(call('is.atomic', q[[2L]]), envir=x)
+            },
+            FALSE
+          )
         }
         if (jsub[[1L]]=="list") {
           GForce = TRUE
@@ -1681,11 +1696,21 @@ replace_dot_alias = function(e) {
         if (GForce) {
           if (jsub[[1L]]=="list")
             for (ii in seq_along(jsub)[-1L]) {
-              if (dotN(jsub[[ii]])) next; # For #334
-              jsub[[ii]][[1L]] = as.name(paste0("g", jsub[[ii]][[1L]]))
+              ji <- jsub[[ii]]
+              if (dotN(ji)) next; # For #334
+              jsub[[ii]][[1L]] = as.name(paste0("g", ji[[1L]]))
+              if (ji[[1L]] == "[" && (ji[[3L]] == ".N" || (length(ji[[3L]]) == 3L && ji[[3L]][[2L]] == ".N"))) {
+                # `[`(x, .N-k) becomes `g[`(x, k, fromLast=TRUE)
+                jsub[[ii]][[3L]] = if (ji[[3L]] == ".N") 0L else ji[[3L]][[3L]]
+                jsub[[ii]][[4L]] = TRUE
+              }
               if (length(jsub[[ii]])==3L) jsub[[ii]][[3L]] = eval(jsub[[ii]][[3L]], parent.frame())  # tests 1187.2 & 1187.4
             }
           else {
+            if (jsub[[1L]] == "[" && (jsub[[3L]] == ".N" || (length(jsub[[3L]]) == 3L && jsub[[3L]][[2L]] == ".N"))) {
+              jsub[[3L]] = if (jsub[[3L]] == ".N") 0L else jsub[[3L]][[3L]]
+              jsub[[4L]] = TRUE
+            }
             jsub[[1L]] = as.name(paste0("g", jsub[[1L]]))
             if (length(jsub)==3L) jsub[[3L]] = eval(jsub[[3L]], parent.frame())   # tests 1187.3 & 1187.5
           }
@@ -2850,7 +2875,7 @@ rleidv = function(x, cols=seq_along(x), prefix=NULL) {
 #     (3) define the gfun = function() R wrapper
 gfuns = c("[", "[[", "head", "tail", "first", "last", "sum", "mean", "prod",
           "median", "min", "max", "var", "sd", ".N") # added .N for #334
-`g[` = `g[[` = function(x, n) .Call(Cgnthvalue, x, as.integer(n)) # n is of length=1 here.
+`g[` = `g[[` = function(x, n, fromLast=FALSE) .Call(Cgnthvalue, x, as.integer(n), as.logical(fromLast)) # n is of length=1 here.
 ghead = function(x, n) .Call(Cghead, x, as.integer(n)) # n is not used at the moment
 gtail = function(x, n) .Call(Cgtail, x, as.integer(n)) # n is not used at the moment
 gfirst = function(x) .Call(Cgfirst, x)
