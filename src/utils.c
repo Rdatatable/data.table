@@ -374,37 +374,39 @@ SEXP coerceUtf8IfNeeded(SEXP x) {
   return(ans);
 }
 
-// Convert a character vector into a single string, e.g. for printing error messages
+// Concatenate a character vector into a single string, e.g. for printing error messages
 // adapted from https://stackoverflow.com/a/58163237
 // make sure to *free* the returned string after use
-char *joinCharVec (SEXP x, const char *sep)
+// # nocov start
+char *concatCharVec (SEXP x, const char *sep)
 {
-    char *joined = NULL;                /* pointer to joined string w/sep */
-    size_t lensep = strlen (sep),       /* length of separator */
-        sz = 0;                         /* current stored size */
-    int first = 1;                      /* flag whether first term */
+  char *concatenated = NULL;                /* pointer to concatenated string w/sep */
+  size_t lensep = strlen (sep),       /* length of separator */
+    sz = 0;                           /* current stored size */
+  int first = 1;                      /* flag whether first term */
 
-    /* check that a character vector has been passed */
-    if (TYPEOF(x) != STRSXP)
-      error(_("Internal error: unsupported type '%s' passed to joinCharVec()"), type2char(TYPEOF(x)));
+  /* check that a character vector has been passed */
+  if (TYPEOF(x) != STRSXP)
+    error(_("Internal error: unsupported type '%s' passed to joinCharVec()"), type2char(TYPEOF(x)));
 
-    for (R_xlen_t i=0; i<xlength(x); i++) {                        /* for each string in s */
-        size_t len = strlen (CHAR(STRING_ELT(x, i)));
-        /* allocate/reallocate joined */
-        void *tmp = realloc (joined, sz + len + (first ? 0 : lensep) + 1);
-        if (!tmp) {                     /* validate allocation */
-          error(_("Internal error: memory allocation failure in joinCharVec()"));
-          return joined;
-        }
-        joined = tmp;                   /* assign allocated block to joined */
-        if (!first) {                   /* if not first string */
-            strcpy (joined + sz, sep);  /* copy separator */
-            sz += lensep;               /* update stored size */
-        }
-        strcpy (joined + sz, CHAR(STRING_ELT(x, i)));     /* copy string to joined */
-        first = 0;                      /* unset first flag */
-        sz += len;                      /* update stored size */
+  for (R_xlen_t i=0; i<xlength(x); i++) {                        /* for each string in s */
+    size_t len = strlen (CHAR(STRING_ELT(x, i)));
+    /* allocate/reallocate concatenated */
+    void *tmp = realloc (concatenated, sz + len + (first ? 0 : lensep) + 1);
+    if (!tmp) {                     /* validate allocation */
+      error(_("Internal error: memory allocation failure in joinCharVec()"));
+      return concatenated;
     }
+    concatenated = tmp;                   /* assign allocated block to concatenated */
+    if (!first) {                   /* if not first string */
+      strcpy (concatenated + sz, sep);    /* copy separator */
+      sz += lensep;                 /* update stored size */
+    }
+    strcpy (concatenated + sz, CHAR(STRING_ELT(x, i)));     /* copy string to concatenated */
+    first = 0;                      /* unset first flag */
+    sz += len;                      /* update stored size */
+  }
 
-    return joined;      /* return joined string */
+  return concatenated;      /* return concatenated string */
 }
+// # nocov end

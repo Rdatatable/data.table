@@ -270,8 +270,6 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
   }
 
   SEXP coercedForFactor = NULL;
-  SEXP thisClass = R_NilValue;
-  SEXP firstClass = R_NilValue;
   for(int j=0; j<ncol; ++j) {
     int maxType=LGLSXP;  // initialize with LGLSXP for test 2002.3 which has col x NULL in both lists to be filled with NA for #1871
     bool factor=false, orderedFactor=false;     // ordered factor is class c("ordered","factor"). isFactor() is true when isOrdered() is true.
@@ -312,14 +310,21 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
       if (firsti==-1) { firsti=i; firstw=w; firstCol=thisCol; }
       else {
         if (!factor && !int64) {
-          thisClass = PROTECT(getAttrib(thisCol, R_ClassSymbol));
-          firstClass = PROTECT(getAttrib(firstCol, R_ClassSymbol));
+          SEXP thisClass = PROTECT(getAttrib(thisCol, R_ClassSymbol));
+          SEXP firstClass = PROTECT(getAttrib(firstCol, R_ClassSymbol));
           if (!R_compute_identical(thisClass, firstClass, 0)) {
-            char* thisClassStr = joinCharVec(thisClass, ", ");
-            char* firstClassStr = joinCharVec(firstClass, ", ");
-            error(_("Class attribute on column %d (%s) of item %d does not match with column %d (%s) of item %d."), w+1, thisClassStr, i+1, firstw+1, firstClassStr, firsti+1);
+            #define BUFSIZE 1024 // 'error' function length limit in R's errors.c is 8192
+            char thisClassBuf[BUFSIZE];
+            char* thisClassStr = concatCharVec(thisClass, ", ");
+            strncpy(thisClassBuf, thisClassStr, BUFSIZE);
+            thisClassBuf[BUFSIZE-1] = '\0';
             free(thisClassStr);
+            char firstClassBuf[BUFSIZE];
+            char* firstClassStr = concatCharVec(firstClass, ", ");
+            strncpy(firstClassBuf, firstClassStr, BUFSIZE);
+            firstClassBuf[BUFSIZE-1] = '\0';
             free(firstClassStr);
+            error(_("Class attribute on column %d (%s) of item %d does not match with column %d (%s) of item %d."), w+1, thisClassBuf, i+1, firstw+1, firstClassBuf, firsti+1);
           }
           UNPROTECT(2);
         }
