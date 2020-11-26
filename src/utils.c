@@ -389,7 +389,7 @@ char *joinCharVec (SEXP x, const char *sep)
       error(_("Internal error: unsupported type '%s' passed to joinCharVec()"), type2char(TYPEOF(x)));
 
     for (R_xlen_t i=0; i<xlength(x); i++) {                        /* for each string in s */
-        size_t len = strlen CHAR(STRING_ELT(x, i));
+        size_t len = strlen (CHAR(STRING_ELT(x, i)));
         /* allocate/reallocate joined */
         void *tmp = realloc (joined, sz + len + (first ? 0 : lensep) + 1);
         if (!tmp) {                     /* validate allocation */
