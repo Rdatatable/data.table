@@ -6995,6 +6995,8 @@ DT1 = data.table(date=as.POSIXct("2014-06-22", format="%Y-%m-%d", tz="GMT"))
 DT2 = data.table(date=as.Date("2014-06-23"))
 test(1494.1, rbind(DT1, DT2), error="Class attribute on column")
 test(1494.2, rbind(DT2, DT1), error="Class attribute on column")
+test(1494.3, rbind(DT1, DT2), error="Class attribute on column 1 (Date) of item 2 does not match with column 1 (POSIXct, POSIXt) of item 1")
+test(1494.4, rbind(DT2, DT1), error="Class attribute on column 1 (POSIXct, POSIXt) of item 2 does not match with column 1 (Date) of item 1")
 
 # test 1495 has been added to melt's test section (fix for #1055)
 

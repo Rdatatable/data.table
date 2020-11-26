@@ -270,6 +270,8 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
   }
 
   SEXP coercedForFactor = NULL;
+  SEXP thisClass = R_NilValue;
+  SEXP firstClass = R_NilValue;
   for(int j=0; j<ncol; ++j) {
     int maxType=LGLSXP;  // initialize with LGLSXP for test 2002.3 which has col x NULL in both lists to be filled with NA for #1871
     bool factor=false, orderedFactor=false;     // ordered factor is class c("ordered","factor"). isFactor() is true when isOrdered() is true.
@@ -310,10 +312,14 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
       if (firsti==-1) { firsti=i; firstw=w; firstCol=thisCol; }
       else {
         if (!factor && !int64) {
-          if (!R_compute_identical(PROTECT(getAttrib(thisCol, R_ClassSymbol)),
-                                   PROTECT(getAttrib(firstCol, R_ClassSymbol)),
-                                   0)) {
-            error(_("Class attribute on column %d of item %d does not match with column %d of item %d."), w+1, i+1, firstw+1, firsti+1);
+          thisClass = PROTECT(getAttrib(thisCol, R_ClassSymbol));
+          firstClass = PROTECT(getAttrib(firstCol, R_ClassSymbol));
+          if (!R_compute_identical(thisClass, firstClass, 0)) {
+            char* thisClassStr = joinCharVec(thisClass, ", ");
+            char* firstClassStr = joinCharVec(firstClass, ", ");
+            error(_("Class attribute on column %d (%s) of item %d does not match with column %d (%s) of item %d."), w+1, thisClassStr, i+1, firstw+1, firstClassStr, firsti+1);
+            free(thisClassStr);
+            free(firstClassStr);
           }
           UNPROTECT(2);
         }

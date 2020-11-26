@@ -4066,34 +4066,34 @@ msgid ""
 "'message'|'warning'|'error'|'none'. See news item 5 in v1.12.2."
 msgstr ""
 
-#: rbindlist.c:298
+#: rbindlist.c:300
 #, c-format
 msgid ""
 "Column %d of item %d has type 'factor' but has no levels; i.e. malformed."
 msgstr ""
 
-#: rbindlist.c:316
+#: rbindlist.c:320
 #, c-format
 msgid ""
-"Class attribute on column %d of item %d does not match with column %d of "
-"item %d."
+"Class attribute on column %d (%s) of item %d does not match with column %d "
+"(%s) of item %d."
 msgstr ""
 
-#: rbindlist.c:326
+#: rbindlist.c:332
 #, c-format
 msgid ""
 "Internal error: column %d of result is determined to be integer64 but "
 "maxType=='%s' != REALSXP"
 msgstr ""
 
-#: rbindlist.c:362
+#: rbindlist.c:368
 #, c-format
 msgid ""
 "Failed to allocate working memory for %d ordered factor levels of result "
 "column %d"
 msgstr ""
 
-#: rbindlist.c:383
+#: rbindlist.c:389
 #, c-format
 msgid ""
 "Column %d of item %d is an ordered factor but level %d ['%s'] is missing "
@@ -4102,7 +4102,7 @@ msgid ""
 "factor will be created for this column."
 msgstr ""
 
-#: rbindlist.c:388
+#: rbindlist.c:394
 #, c-format
 msgid ""
 "Column %d of item %d is an ordered factor with '%s'<'%s' in its levels. But "
@@ -4110,14 +4110,14 @@ msgid ""
 "will be created for this column due to this ambiguity."
 msgstr ""
 
-#: rbindlist.c:433
+#: rbindlist.c:439
 #, c-format
 msgid ""
 "Failed to allocate working memory for %d factor levels of result column %d "
 "when reading item %d of item %d"
 msgstr ""
 
-#: rbindlist.c:523
+#: rbindlist.c:529
 #, c-format
 msgid "Column %d of item %d: %s"
 msgstr ""

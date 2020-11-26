@@ -14,6 +14,10 @@ src/Makevars
 .emacs.desktop
 .emacs.desktop.lock
 
+# Sublime Text IDE files
+*.sublime-project
+*.sublime-workspace
+
 # RStudio IDE files
 .Rproj.user
 data.table.Rproj

@@ -4397,7 +4397,7 @@ msgstr ""
 "options()$datatable.rbindlist.check=='%s' 不"
 "是'message'|'warning'|'error'|'none'。参见 v1.12.2 更新信息中的第 5 项。"
 
-#: rbindlist.c:298
+#: rbindlist.c:300
 #, c-format
 msgid ""
 "Column %d of item %d has type 'factor' but has no levels; i.e. malformed."
@@ -4405,14 +4405,15 @@ msgstr ""
 "第%2$d 项的第 %1$d 列为因子（'factor'）类型却没有因子水平（levels），格式错"
 "误。"
 
-#: rbindlist.c:316
+#: rbindlist.c:320
 #, c-format
 msgid ""
-"Class attribute on column %d of item %d does not match with column %d of "
-"item %d."
-msgstr "第 %2$d 项的第 %1$d 列的类属性与第 %4$d 项的第 %3$d列的不匹配。"
+"Class attribute on column %d (%s) of item %d does not match with column %d "
+"(%s) of item %d."
+msgstr "第 %3$d 项的第 %1$d (%2$s) 列的类属性与第 %6$d 项的第 %4$d (%5$d) "
+"列的不匹配。"
 
-#: rbindlist.c:326
+#: rbindlist.c:332
 #, c-format
 msgid ""
 "Internal error: column %d of result is determined to be integer64 but "
@@ -4420,14 +4421,14 @@ msgid ""
 msgstr ""
 "内部错误：结果中的第 %d 列应为 integer64 类型，但maxType=='%s' != REALSXP"
 
-#: rbindlist.c:362
+#: rbindlist.c:368
 #, c-format
 msgid ""
 "Failed to allocate working memory for %d ordered factor levels of result "
 "column %d"
 msgstr "未能为结果中第 %d 列的 %d 个有序因子水平分配工作内存"
 
-#: rbindlist.c:383
+#: rbindlist.c:389
 #, c-format
 msgid ""
 "Column %d of item %d is an ordered factor but level %d ['%s'] is missing "
@@ -4439,7 +4440,7 @@ msgstr ""
 "（level）['%4$s']在第 %6$d 项第 %5$d 列的有序因子水平中缺失。每组有序因子水平"
 "应为其中最长有序因子水平的子集。该列将被创建为一非有序因子列。"
 
-#: rbindlist.c:388
+#: rbindlist.c:394
 #, c-format
 msgid ""
 "Column %d of item %d is an ordered factor with '%s'<'%s' in its levels. But "
@@ -4450,7 +4451,7 @@ msgstr ""
 "的有序因子水平中却 '%5$s'<'%6$s'。由于这种模糊性，该列将被创建为一非有序因子"
 "列。"
 
-#: rbindlist.c:433
+#: rbindlist.c:439
 #, c-format
 msgid ""
 "Failed to allocate working memory for %d factor levels of result column %d "
@@ -4458,7 +4459,7 @@ msgid ""
 msgstr ""
 "当读取第%4$d项的第%3$d个子项时，无法为第%2$d列的%1$d个因素水平分配工作内存"
 
-#: rbindlist.c:523
+#: rbindlist.c:529
 #, c-format
 msgid "Column %d of item %d: %s"
 msgstr "第 %2$d 项的第 %1$d 列: %3$s"
