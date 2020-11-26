@@ -377,7 +377,6 @@ SEXP coerceUtf8IfNeeded(SEXP x) {
 // Concatenate a character vector into a single string, e.g. for printing error messages
 // adapted from https://stackoverflow.com/a/58163237
 // make sure to *free* the returned string after use
-// # nocov start
 char *concatCharVec (SEXP x, const char *sep)
 {
   char *concatenated = NULL;                /* pointer to concatenated string w/sep */
@@ -387,14 +386,14 @@ char *concatCharVec (SEXP x, const char *sep)
 
   /* check that a character vector has been passed */
   if (TYPEOF(x) != STRSXP)
-    error(_("Internal error: unsupported type '%s' passed to joinCharVec()"), type2char(TYPEOF(x)));
+    error(_("Internal error: unsupported type '%s' passed to concatCharVec()"), type2char(TYPEOF(x))); // # nocov
 
   for (R_xlen_t i=0; i<xlength(x); i++) {                        /* for each string in s */
     size_t len = strlen (CHAR(STRING_ELT(x, i)));
     /* allocate/reallocate concatenated */
     void *tmp = realloc (concatenated, sz + len + (first ? 0 : lensep) + 1);
     if (!tmp) {                     /* validate allocation */
-      error(_("Internal error: memory allocation failure in joinCharVec()"));
+      error(_("Internal error: memory allocation failure in concatCharVec()")); // # nocov
       return concatenated;
     }
     concatenated = tmp;                   /* assign allocated block to concatenated */
@@ -409,4 +408,3 @@ char *concatCharVec (SEXP x, const char *sep)
 
   return concatenated;      /* return concatenated string */
 }
-// # nocov end
