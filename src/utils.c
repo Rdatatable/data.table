@@ -374,3 +374,10 @@ SEXP coerceUtf8IfNeeded(SEXP x) {
   return(ans);
 }
 
+#include <zlib.h>
+SEXP dt_zlib_version() {
+  char out[51];
+  snprintf(out, 50, "zlibVersion()==%s ZLIB_VERSION==%s", zlibVersion(), ZLIB_VERSION);
+  return ScalarString(mkChar(out));
+}
+

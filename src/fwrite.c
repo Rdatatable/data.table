@@ -563,31 +563,47 @@ int init_stream(z_stream *stream) {
   return err;  // # nocov
 }
 
+void print_z_stream(const z_stream *s)   // temporary tracing function for #4099
+{
+  const char *byte = (char *)s;
+  for (int i=0; i<sizeof(z_stream); ++i) {
+    DTPRINT("%02x ", *(unsigned char *)byte++);  // not byte[i] is attempt to avoid valgrind's use-of-uninitialized, #4639, and z_stream={0} now too
+  }
+  if (sizeof(z_stream)==56 || sizeof(z_stream)==112) {
+    // 56 on 32bit solaris. trace z_stream->state->status which zlib:deflateStateCheck checks
+    // this structure is not exposed, so we'll get to it via memory offsets using the trace output we put in to show on CRAN's Solaris output 
+    const char *pos = (char *)s + (sizeof(z_stream)==56 ? 28 : 56);  // ->state just happens to be halfway in the structure.
+    byte = *(char **)pos;
+    DTPRINT("state: ");
+    for (int i=0; i<(sizeof(z_stream)==56 ? 8 : 12); ++i) {
+      DTPRINT("%02x ", *(unsigned char *)byte++);  // not byte[i] is attempt to avoid valgrind's use-of-uninitialized, #4639, and z_stream={0} now too
+    }
+    DTPRINT("strm: %p state->status==%d", s, *(int *)(byte-4));  // check state->strm == strm as zlib:deflateStateCheck does
+  }
+  DTPRINT("\n");
+}
+
 int compressbuff(z_stream *stream, void* dest, size_t *destLen, const void* source, size_t sourceLen)
 {
   stream->next_out = dest;
   stream->avail_out = *destLen;
   stream->next_in = (Bytef *)source; // don't use z_const anywhere; #3939
   stream->avail_in = sourceLen;
-  if (verbose) DTPRINT(_("deflate input stream: %p %d %p %d\n"), stream->next_out, (int)(stream->avail_out), stream->next_in, (int)(stream->avail_in));
-
+  if (verbose) {
+    DTPRINT(_("deflate input stream: %p %d %p %d z_stream: "), stream->next_out, (int)(stream->avail_out), stream->next_in, (int)(stream->avail_in));
+    print_z_stream(stream);
+  }
   int err = deflate(stream, Z_FINISH);
-  if (verbose) DTPRINT(_("deflate returned %d with stream->total_out==%d; Z_FINISH==%d, Z_OK==%d, Z_STREAM_END==%d\n"), err, (int)(stream->total_out), Z_FINISH, Z_OK, Z_STREAM_END);
+  if (verbose) {
+    DTPRINT(_("deflate returned %d with stream->total_out==%d; Z_FINISH==%d, Z_OK==%d, Z_STREAM_END==%d z_stream: "), err, (int)(stream->total_out), Z_FINISH, Z_OK, Z_STREAM_END);
+    print_z_stream(stream);
+  }
   if (err == Z_OK) {
     // with Z_FINISH, deflate must return Z_STREAM_END if correct, otherwise it's an error and we shouldn't return Z_OK (0)
     err = -9;  // # nocov
   }
   *destLen = stream->total_out;
   return err == Z_STREAM_END ? Z_OK : err;
-}
-
-void print_z_stream(const z_stream *s)   // temporary tracing function for #4099
-{
-  const unsigned char *byte = (unsigned char *)s;
-  for (int i=0; i<sizeof(z_stream); ++i) {
-    DTPRINT("%02x ", *byte++);  // not byte[i] is attempt to avoid valgrind's use-of-uninitialized, #4639, and z_stream={0} now too
-  }
-  DTPRINT("\n");
 }
 
 void fwriteMain(fwriteMainArgs args)
@@ -986,3 +1002,5 @@ void fwriteMain(fwriteMainArgs args)
     // # nocov end
   }
 }
+
+

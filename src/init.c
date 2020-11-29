@@ -124,6 +124,7 @@ SEXP unlock();
 SEXP islockedR();
 SEXP allNAR();
 SEXP test_dt_win_snprintf();
+SEXP dt_zlib_version();
 
 // .Externals
 SEXP fastmean();
@@ -217,6 +218,7 @@ R_CallMethodDef callMethods[] = {
 {"CtestMsgR", (DL_FUNC) &testMsgR, -1},
 {"C_allNAR", (DL_FUNC) &allNAR, -1},
 {"Ctest_dt_win_snprintf", (DL_FUNC)&test_dt_win_snprintf, -1},
+{"Cdt_zlib_version", (DL_FUNC)&dt_zlib_version, -1},
 {NULL, NULL, 0}
 };
 
