@@ -241,7 +241,7 @@ bool islocked(SEXP x);
 SEXP islockedR(SEXP x);
 bool need2utf8(SEXP x);
 SEXP coerceUtf8IfNeeded(SEXP x);
-char *concatCharVec(SEXP x, const char *sep);
+SEXP concatCharVec(SEXP x, const char *sep);
 
 // types.c
 char *end(char *start);

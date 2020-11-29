@@ -313,18 +313,8 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
           SEXP thisClass = PROTECT(getAttrib(thisCol, R_ClassSymbol));
           SEXP firstClass = PROTECT(getAttrib(firstCol, R_ClassSymbol));
           if (!R_compute_identical(thisClass, firstClass, 0)) {
-            #define BUFSIZE 1024 // 'error' function length limit in R's errors.c is 8192
-            char thisClassBuf[BUFSIZE];
-            char* thisClassStr = concatCharVec(thisClass, ", ");
-            strncpy(thisClassBuf, thisClassStr, BUFSIZE);
-            thisClassBuf[BUFSIZE-1] = '\0';
-            free(thisClassStr);
-            char firstClassBuf[BUFSIZE];
-            char* firstClassStr = concatCharVec(firstClass, ", ");
-            strncpy(firstClassBuf, firstClassStr, BUFSIZE);
-            firstClassBuf[BUFSIZE-1] = '\0';
-            free(firstClassStr);
-            error(_("Class attribute on column %d (%s) of item %d does not match with column %d (%s) of item %d."), w+1, thisClassBuf, i+1, firstw+1, firstClassBuf, firsti+1);
+            error(_("Class attribute on column %d (%s) of item %d does not match with column %d (%s) of item %d."),
+                  w+1, CHAR(concatCharVec(thisClass, ", ")), i+1, firstw+1, CHAR(concatCharVec(firstClass, ", ")), firsti+1);
           }
           UNPROTECT(2);
         }
