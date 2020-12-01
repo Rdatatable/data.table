@@ -1774,9 +1774,7 @@ replace_dot_alias = function(e) {
   #   TODO: is there an efficient way to get around this MAX_DEPTH limit?
   MAX_DEPTH = 5L
   runlock = function(x, current_depth = 1L) {
-    # functions are recursive; lapply normally works well because of as.list.function,
-    #   but if a function has a different class, as.list might fail, #4814
-    if (is.recursive(x) && !is.function(x) && current_depth <= MAX_DEPTH) {
+    if (is.list(x) && current_depth <= MAX_DEPTH) {  # is.list() used to be is.recursive(), #4814
       if (inherits(x, 'data.table')) .Call(C_unlock, x)
       else return(lapply(x, runlock, current_depth = current_depth + 1L))
     }
