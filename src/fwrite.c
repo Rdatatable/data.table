@@ -573,12 +573,23 @@ void print_z_stream(const z_stream *s)   // temporary tracing function for #4099
     // 56 on 32bit solaris. trace z_stream->state->status which zlib:deflateStateCheck checks
     // this structure is not exposed, so we'll get to it via memory offsets using the trace output we put in to show on CRAN's Solaris output 
     const char *pos = (char *)s + (sizeof(z_stream)==56 ? 28 : 56);  // ->state just happens to be halfway in the structure.
-    byte = *(char **)pos;
+    byte = *(char **)pos;  // byte now at start of internal_state pointed to by s->state
+    char *strm = *(char **)byte; // first 8 bytes (or 4 on 32bit) is strm labeled 'pointer back to this zlib stream'
     DTPRINT("state: ");
     for (int i=0; i<(sizeof(z_stream)==56 ? 8 : 12); ++i) {
-      DTPRINT("%02x ", *(unsigned char *)byte++);  // not byte[i] is attempt to avoid valgrind's use-of-uninitialized, #4639, and z_stream={0} now too
+      DTPRINT("%02x ", *(unsigned char *)byte++);
     }
-    DTPRINT("strm: %p state->status==%d", s, *(int *)(byte-4));  // check state->strm == strm as zlib:deflateStateCheck does
+    int status = *(int *)(byte-4);
+    DTPRINT("strm==%p state->strm==%p state->status==%d", s, strm, status);  // two pointer values should be the same
+    DTPRINT(" zalloc==%p zfree==%p", s->zalloc, s->zfree); // checked to be !=0 by deflate.c:deflateStateCheck
+    DTPRINT(" (s->strm==strm)==%d", (char *)s==strm);     // mimics the s->strm==strm check in deflate.c:deflateStateCheck
+    DTPRINT(" s->next_out==%p s->avail_in=%d s->next_in=%p", s->next_out, s->avail_in, s->next_in); // top of deflate.c:deflate() after the call to deflateStateCheck
+    DTPRINT(" deflates()'s checks would %s here",
+      (s->zalloc==(alloc_func)0 || s->zfree==(free_func)0 || s==Z_NULL || (char *)s!=strm ||
+        s->next_out==Z_NULL || (s->avail_in!=0 && s->next_in==Z_NULL)) ?
+      "return -2" : "be ok");
+  } else {
+    STOP("sizeof(z_stream)==%d not 56 or 112", sizeof(z_stream)); // # nocov
   }
   DTPRINT("\n");
 }
@@ -818,6 +829,7 @@ void fwriteMain(fwriteMainArgs args)
     if(init_stream(&stream))
       STOP(_("Can't allocate gzip stream structure")); // # nocov
     zbuffSize = deflateBound(&stream, buffSize);
+    if (verbose) DTPRINT("zbuffSize=%d returned from deflateBound\n", (int)zbuffSize);
     deflateEnd(&stream);
   }
 
