@@ -566,31 +566,29 @@ int init_stream(z_stream *stream) {
 void print_z_stream(const z_stream *s)   // temporary tracing function for #4099
 {
   const char *byte = (char *)s;
+  DTPRINT("sizeof(z_stream)==%d: ", sizeof(z_stream));
   for (int i=0; i<sizeof(z_stream); ++i) {
     DTPRINT("%02x ", *(unsigned char *)byte++);  // not byte[i] is attempt to avoid valgrind's use-of-uninitialized, #4639, and z_stream={0} now too
   }
-  if (sizeof(z_stream)==56 || sizeof(z_stream)==112) {
-    // 56 on 32bit solaris. trace z_stream->state->status which zlib:deflateStateCheck checks
-    // this structure is not exposed, so we'll get to it via memory offsets using the trace output we put in to show on CRAN's Solaris output 
-    const char *pos = (char *)s + (sizeof(z_stream)==56 ? 28 : 56);  // ->state just happens to be halfway in the structure.
-    byte = *(char **)pos;  // byte now at start of internal_state pointed to by s->state
-    char *strm = *(char **)byte; // first 8 bytes (or 4 on 32bit) is strm labeled 'pointer back to this zlib stream'
-    DTPRINT("state: ");
-    for (int i=0; i<(sizeof(z_stream)==56 ? 8 : 12); ++i) {
-      DTPRINT("%02x ", *(unsigned char *)byte++);
-    }
-    int status = *(int *)(byte-4);
-    DTPRINT("strm==%p state->strm==%p state->status==%d", s, strm, status);  // two pointer values should be the same
-    DTPRINT(" zalloc==%p zfree==%p", s->zalloc, s->zfree); // checked to be !=0 by deflate.c:deflateStateCheck
-    DTPRINT(" (s->strm==strm)==%d", (char *)s==strm);     // mimics the s->strm==strm check in deflate.c:deflateStateCheck
-    DTPRINT(" s->next_out==%p s->avail_in=%d s->next_in=%p", s->next_out, s->avail_in, s->next_in); // top of deflate.c:deflate() after the call to deflateStateCheck
-    DTPRINT(" deflates()'s checks would %s here",
-      (s->zalloc==(alloc_func)0 || s->zfree==(free_func)0 || s==Z_NULL || (char *)s!=strm ||
-        s->next_out==Z_NULL || (s->avail_in!=0 && s->next_in==Z_NULL)) ?
-      "return -2" : "be ok");
-  } else {
-    STOP("sizeof(z_stream)==%d not 56 or 112", sizeof(z_stream)); // # nocov
+  // e.g. sizeof(z_stream)==56 on CRAN Solaris, 88 on Windows 64bit, and 112 on 64bit Linux
+  // trace z_stream->state->status which zlib:deflateStateCheck checks, #4826
+  // this structure is not exposed, so we'll get to it via memory offsets using the trace output we put in to show on CRAN's Solaris output
+  const char *pos = (char *)&s->msg + sizeof(char *); // the field after *msg (exposed) is internal_state *state (not exposed)
+  byte = *(char **)pos;  // byte now at start of internal_state pointed to by s->state
+  char *strm = *(char **)byte; // first 8 bytes (or 4 on 32bit) is strm labeled 'pointer back to this zlib stream'
+  DTPRINT("state: ");
+  for (int i=0; i<(sizeof(char *) + sizeof(int)); ++i) {
+    DTPRINT("%02x ", *(unsigned char *)byte++);
   }
+  int status = *(int *)(byte-sizeof(int));
+  DTPRINT("strm==%p state->strm==%p state->status==%d", s, strm, status);  // two pointer values should be the same
+  DTPRINT(" zalloc==%p zfree==%p", s->zalloc, s->zfree); // checked to be !=0 by deflate.c:deflateStateCheck
+  DTPRINT(" (s->strm==strm)==%d", (char *)s==strm);     // mimics the s->strm==strm check in deflate.c:deflateStateCheck
+  DTPRINT(" s->next_out==%p s->avail_in=%d s->next_in=%p", s->next_out, s->avail_in, s->next_in); // top of deflate.c:deflate() after the call to deflateStateCheck
+  DTPRINT(" deflates()'s checks (excluding status) would %s here",
+    (s->zalloc==(alloc_func)0 || s->zfree==(free_func)0 || s==Z_NULL || (char *)s!=strm ||
+      s->next_out==Z_NULL || (s->avail_in!=0 && s->next_in==Z_NULL)) ?
+    "return -2" : "be ok");
   DTPRINT("\n");
 }
 
