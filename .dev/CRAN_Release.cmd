@@ -524,6 +524,7 @@ sudo apt-get -y install libzmq3-dev   # for rzmq
 sudo apt-get -y install libimage-exiftool-perl   # for camtrapR
 sudo apt-get -y install parallel   # for revdepr.R
 sudo apt-get -y install pandoc-citeproc   # for basecallQC
+sudo apt-get -y install libquantlib0-dev  # for RQuantLib
 sudo R CMD javareconf
 # ENDIF
 
@@ -567,7 +568,7 @@ du -k inst/tests                # 1.5MB before
 bzip2 inst/tests/*.Rraw         # compress *.Rraw just for release to CRAN; do not commit compressed *.Rraw to git
 du -k inst/tests                # 0.75MB after
 R CMD build .
-R CMD check data.table_1.13.2.tar.gz --as-cran
+R CMD check data.table_1.13.4.tar.gz --as-cran
 #
 bunzip2 inst/tests/*.Rraw.bz2  # decompress *.Rraw again so as not to commit compressed *.Rraw to git
 #
