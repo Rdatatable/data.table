@@ -308,7 +308,7 @@ make
 
 # use latest available `apt-cache search gcc-` or `clang-`
 cd ~/build/R-devel-strict-clang
-./configure --without-recommended-packages --disable-byte-compiled-packages --disable-openmp --enable-strict-barrier --disable-long-double CC="clang-10 -fsanitize=undefined,address -fno-sanitize=float-divide-by-zero -fno-omit-frame-pointer"
+./configure --without-recommended-packages --disable-byte-compiled-packages --enable-strict-barrier --disable-long-double CC="clang-11 -fsanitize=undefined,address -fno-sanitize=float-divide-by-zero -fno-omit-frame-pointer"
 make
 
 cd ~/build/R-devel-strict-gcc

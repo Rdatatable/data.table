@@ -1,25 +1,44 @@
-# Run by package maintainer via these entries in ~/.bash_aliases :
-#   alias revdepsh='cd ~/build/revdeplib/ && export TZ=UTC && export R_LIBS_SITE=none && export R_LIBS=~/build/revdeplib/ && export _R_CHECK_FORCE_SUGGESTS_=false'
-#   alias revdepr='revdepsh; R_PROFILE_USER=~/GitHub/data.table/.dev/revdep.R ~/build/R-devel/bin/R'
-# revdep = reverse first-order dependency; i.e. the CRAN and Bioconductor packages which directly use data.table (765 at the time of writing)
+# Run by package maintainer via aliases revdepsh and revdepr in .dev/.bash_aliases. See
+# that file for comments.
+# revdep = reverse first-order dependency; i.e. the CRAN and Bioconductor packages which directly use data.table
 
 # Check that env variables have been set correctly:
 #   export R_LIBS_SITE=none
 #   export R_LIBS=~/build/revdeplib/
 #   export _R_CHECK_FORCE_SUGGESTS_=false
 stopifnot(identical(length(.libPaths()), 2L))     # revdeplib (writeable by me) and the pre-installed recommended R library (sudo writeable)
-stopifnot(identical(file.info(.libPaths())[,"uname"], rep(as.vector(Sys.info()["user"]), 2)))  # 2nd one is root when using default R rather than Rdevel
+tt = file.info(.libPaths())[,"uname"]
+stopifnot(identical(length(tt), 2L))
+stopifnot(tt[1L]==Sys.info()["user"])
+stopifnot(tt[2L] %in% c("root",Sys.info()["user"])) # root when using default R-release, user when using R-devel
 stopifnot(identical(.libPaths()[1], getwd()))
 stopifnot(identical(Sys.getenv("_R_CHECK_FORCE_SUGGESTS_"),"false"))
+
+cflags = system("grep \"^[^#]*CFLAGS\" ~/.R/Makevars", intern=TRUE)
+cat("~/.R/Makevars contains", cflags, "\n")
+if (!grepl("^CFLAGS=-O[0-3]$", cflags)) {
+  stop("Some packages have failed to install in the past (e.g. processx and RGtk2) when CFLAGS contains -pedandic, -Wall, and similar. ",
+  "So for revdepr keep CFLAGS simple; i.e. -O[0-3] only.")
+}
+
 options(repos = c("CRAN"=c("http://cloud.r-project.org")))
-R = "~/build/R-devel/bin/R"  # alias doesn't work from system()
 
 # The alias sets R_PROFILE_USER so that this script runs on R starting up, leaving prompt running.
 # But if we don't unset it now, anything else from now on that does something like system("R CMD INSTALL") (e.g. update.packages()
 # and BiocManager::install()) will call this script again recursively.
 Sys.unsetenv("R_PROFILE_USER")
 
-system(paste0(R," -e \"utils::update.packages('",.libPaths()[2],"', ask=FALSE, checkBuilt=TRUE)\""))
+if (is.null(utils::old.packages(.libPaths()[2]))) {
+  cat("All", length(dir(.libPaths()[2])), "recommended packages supplied with R in", .libPaths()[2], "are the latest version\n")
+} else {
+  cat("Some recommended packages supplied with R need to be updated ...\n")
+  if (tt[2L]=="root") {
+    system(paste0("sudo R -e \"utils::update.packages('",.libPaths()[2],"', ask=TRUE, checkBuilt=TRUE)\""))
+  } else {
+    system(paste0("~/build/R-devel/bin/R -e \"utils::update.packages('",.libPaths()[2],"', ask=TRUE, checkBuilt=TRUE)\""))
+    # the Rdevel bash alias doesn't work from system()
+  }
+}
 
 require(utils)  # only base is loaded when R_PROFILE_USER runs
 update.packages(ask=FALSE, checkBuilt=TRUE)
@@ -29,14 +48,20 @@ update.packages(ask=FALSE, checkBuilt=TRUE)
 
 # Follow: https://bioconductor.org/install
 # Ensure no library() call in .Rprofile, such as library(bit64)
-require(BiocManager)
-BiocManager::install(ask=FALSE, version="devel", checkBuilt=TRUE)
-BiocManager::valid()
+# As from October 2020, Matt no longer checks Bioconductor revdeps. After many years of trying, and repeated
+# emails to Bioconductor maintainers, there were still too many issues not fixed for too long. The packages
+# are big in size and have many warnings which make it hard to find the true problems. The way the Bioc
+# devel and release repositories are set up require more work and confuses communication. That doesn't need
+# to be done in the better and simpler way that CRAN is setup. 
+# require(BiocManager)
+# BiocManager::install(ask=FALSE, version="devel", checkBuilt=TRUE)
+# BiocManager::valid()
+# avail = available.packages(repos=BiocManager::repositories())  # includes CRAN at the end from getOption("repos"). And ensure latest Bioc version is in repo path here.
 
-avail = available.packages(repos=BiocManager::repositories())  # includes CRAN at the end from getOption("repos"). And ensure latest Bioc version is in repo path here.
+avail = available.packages()  # uses getOption("repos") which was set above
 deps = tools::package_dependencies("data.table", db=avail, which="all", reverse=TRUE, recursive=FALSE)[[1]]
-exclude = c("TCGAbiolinks")  # too long (>30mins): https://github.com/BioinformaticsFMRP/TCGAbiolinks/issues/240
-deps = deps[-match(exclude, deps)]
+# exclude = c("TCGAbiolinks")  # too long (>30mins): https://github.com/BioinformaticsFMRP/TCGAbiolinks/issues/240
+# deps = deps[-match(exclude, deps)]
 table(avail[deps,"Repository"])
 old = 0
 new = 0
@@ -48,7 +73,7 @@ for (p in deps) {
       packageVersion(p) != avail[p,"Version"]) {
     system(paste0("rm -rf ", p, ".Rcheck"))  # Remove last check (of previous version) to move its status() to not yet run
 
-    install.packages(p, repos=BiocManager::repositories(), dependencies=TRUE)    # again, bioc repos includes CRAN here
+    install.packages(p, dependencies=TRUE)    # repos=BiocManager::repositories() used to be here which includes CRAN too
     # To install its dependencies. The package itsef is installed superfluously here because the tar.gz will be passed to R CMD check.
     # If we did download.packages() first and then passed that tar.gz to install.packages(), repos= is set to NULL when installing from
     # local file, so dependencies=TRUE wouldn't know where to get the dependencies. Hence usig install.packages first with repos= set.
@@ -61,14 +86,14 @@ for (p in deps) {
   }
 }
 cat("New downloaded:",new," Already had latest:", old, " TOTAL:", length(deps), "\n")
-update.packages(repos=BiocManager::repositories(), checkBuilt=TRUE)  # double-check all dependencies are latest too
+update.packages(checkBuilt=TRUE)  # double-check all dependencies are latest too; again repos=BiocManager::repositories() used to be here
 cat("This is R ",R.version$major,".",R.version$minor,"; ",R.version.string,"\n",sep="")
 cat("Installed packages built using:\n")
 x = installed.packages()
 drop(table(x[,"Built"]))  # manually inspect to ensure all built with this x.y release of R
 if (FALSE) {  # if not, run this manually replacing "4.0.0" appropriately 
   for (p in rownames(x)[x[,"Built"]=="4.0.0"]) {
-    install.packages(p, repos=BiocManager::repositories())
+    install.packages(p)  # repos=BiocManager::repositories()
   }
   # warnings may suggest many of them were removed from CRAN, so remove the remaining from revdeplib to be clean
   x = installed.packages()
@@ -88,38 +113,15 @@ for (p in deps) {
   all = system("ls *.tar.gz", intern=TRUE)
   all = sapply(strsplit(all, split="_"),'[',1)
   for (i in all[!all %in% deps]) {
-    cat("Removing",i,"because it", if (!i %in% rownames(avail)) "has been removed from CRAN/Bioconductor\n" else "no longer uses data.table\n")
+    cat("Removing",i,"because it", if (!i %in% rownames(avail)) "has been removed from CRAN\n" else "no longer uses data.table\n")
     system(paste0("rm ",i,"_*.tar.gz"))
   }
 }
 num_tar.gz = as.integer(system("ls *.tar.gz | wc -l", intern=TRUE))
 if (length(deps) != num_tar.gz) stop("num_tar.gz==",num_tar.gz," but length(deps)==",length(deps))
 
-status = function(which="both") {
-  if (which=="both") {
-    cat("Installed data.table to be tested against:",
-         as.character(packageVersion("data.table")),
-         format(as.POSIXct(packageDescription("data.table")$Packaged, tz="UTC"), tz=""),  # local time
-         "\n")
-    cat("CRAN:\n"); status("cran")
-    cat("BIOC:\n"); status("bioc")
-    cat("TOTAL          :", length(deps), "\n\n")
-    cat("Oldest 00check.log (to check no old stale ones somehow missed):\n")
-    system("find . -name '00check.log' | xargs ls -lt | tail -1")
-    cat("\n")
-    tt = length(system('ps -aux | grep "parallel.*R.* CMD check"', intern=TRUE))>2L
-    cat("parallel R CMD check is ", if(tt)"" else "not ", "running\n",sep="")
-    if (file.exists("/tmp/started.flag")) {
-      # system("ls -lrt /tmp/*.flag")
-      tt = as.POSIXct(file.info(c("/tmp/started.flag","/tmp/finished.flag"))$ctime)
-      if (is.na(tt[2])) { tt[2] = Sys.time(); cat("Has been running for "); }
-      else cat("Ran for ");
-      cat(round(diff(as.numeric(tt))/60, 1), "mins\n")
-    }
-    return(invisible())
-  }
-  if (which=="cran") deps = deps[-grep("bioc",avail[deps,"Repository"])]
-  if (which=="bioc") deps = deps[grep("bioc",avail[deps,"Repository"])]
+status0 = function(bioc=FALSE) {
+  deps = deps[grep("bioc", avail[deps,"Repository"], invert=!bioc)]
   x = unlist(sapply(deps, function(x) {
     fn = paste0("./",x,".Rcheck/00check.log")
     if (file.exists(fn)) {
@@ -145,7 +147,32 @@ status = function(which="both") {
       if (length(ns)) paste0("NOT STARTED   : ",paste(sort(names(x)[head(ns,20)]),collapse=" "), if(length(ns)>20)paste(" +",length(ns)-20,"more"), "\n"),
       "\n"
       )
-  assign(paste0(".fail.",which), c(sort(names(x)[e]), sort(names(x)[w])), envir=.GlobalEnv)
+  assign(if (bioc) ".fail.bioc" else ".fail.cran", c(sort(names(x)[e]), sort(names(x)[w])), envir=.GlobalEnv)
+  invisible()
+}
+
+status = function(bioc=FALSE) {
+  cat("Installed data.table to be tested against:",
+    as.character(packageVersion("data.table")),
+    format(as.POSIXct(packageDescription("data.table")$Packaged, tz="UTC"), tz=""),  # local time
+    "\nCRAN:\n")
+  status0()
+  if (bioc) {
+    cat("BIOC:\n"); status0(bioc=TRUE)
+    cat("TOTAL          :", length(deps), "\n\n")
+  }
+  cat("Oldest 00check.log (to check no old stale ones somehow missed):\n")
+  system("find . -name '00check.log' | xargs ls -lt | tail -1")
+  cat("\n")
+  tt = length(system('ps -aux | grep "parallel.*R.* CMD check"', intern=TRUE))>2L
+  cat("parallel R CMD check is ", if(tt)"" else "not ", "running\n",sep="")
+  if (file.exists("/tmp/started.flag")) {
+    # system("ls -lrt /tmp/*.flag")
+    tt = as.POSIXct(file.info(c("/tmp/started.flag","/tmp/finished.flag"))$ctime)
+    if (is.na(tt[2])) { tt[2] = Sys.time(); cat("Has been running for "); }
+    else cat("Ran for ");
+    cat(round(diff(as.numeric(tt))/60, 1), "mins\n")
+  }
   invisible()
 }
 
@@ -175,7 +202,7 @@ run = function(pkgs=NULL) {
     } else {
       pkgs = NULL
       if (which=="not.started") pkgs = deps[!file.exists(paste0("./",deps,".Rcheck"))]  # those that haven't run
-      if (which %in% c("cran.fail","both.fail")) pkgs = union(pkgs, .fail.cran)  # .fail.* were written to .GlobalEnv by status()
+      if (which %in% c("cran.fail","both.fail")) pkgs = union(pkgs, .fail.cran)  # .fail.* were written to .GlobalEnv by status0()
       if (which %in% c("bioc.fail","both.fail")) pkgs = union(pkgs, .fail.bioc)
     }
   }

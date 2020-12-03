@@ -16,7 +16,12 @@ alias Rdevel32='~/build/32bit/R-devel/bin/R --vanilla'
 alias R310='~/build/R-3.1.0/bin/R --vanilla'
 
 alias revdepsh='cd ~/build/revdeplib/ && export TZ=UTC && export R_LIBS_SITE=none && export R_LIBS=~/build/revdeplib/ && export _R_CHECK_FORCE_SUGGESTS_=false && export R_DEFAULT_INTERNET_TIMEOUT=300'
-alias revdepr='revdepsh; R_PROFILE_USER=~/GitHub/data.table/.dev/revdep.R ~/build/R-devel/bin/R'
+alias revdepr='revdepsh; R_PROFILE_USER=~/GitHub/data.table/.dev/revdep.R R'
+# use ~/build/R-devel/bin/R at the end of revdepr to use R-devel instead of R-release.
+# If so, doing a `rm -rf *` in revdeplib first to rebuild everything is easiest way to avoid potential problems later. A full rebuild is a good idea periodically anyway. Packages in
+# revdeplib may have been compiled many months ago, but the .so libraries they link to may have been updated in the meantime, or multiple packages may use the same .so libary, or
+# switches inside the package's code may behave differently when R-devel is used instead of R-release, etc. I use R-release for revdepr, unless R-devel contains significant changes
+# that we really need to test revdeps under.
 
 export R_PROFILE_USER='~/.Rprofile'
 # there's a .Rprofile in ~/GitHub/data.table/ so Matt sets R_PROFILE_USER here to always use ~/.Rprofile

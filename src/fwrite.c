@@ -563,31 +563,56 @@ int init_stream(z_stream *stream) {
   return err;  // # nocov
 }
 
+void print_z_stream(const z_stream *s)   // temporary tracing function for #4099
+{
+  const char *byte = (char *)s;
+  DTPRINT("sizeof(z_stream)==%d: ", sizeof(z_stream));
+  for (int i=0; i<sizeof(z_stream); ++i) {
+    DTPRINT("%02x ", *(unsigned char *)byte++);  // not byte[i] is attempt to avoid valgrind's use-of-uninitialized, #4639, and z_stream={0} now too
+  }
+  // e.g. sizeof(z_stream)==56 on CRAN Solaris, 88 on Windows 64bit, and 112 on 64bit Linux
+  // trace z_stream->state->status which zlib:deflateStateCheck checks, #4826
+  // this structure is not exposed, so we'll get to it via memory offsets using the trace output we put in to show on CRAN's Solaris output
+  const char *pos = (char *)&s->msg + sizeof(char *); // the field after *msg (exposed) is internal_state *state (not exposed)
+  byte = *(char **)pos;  // byte now at start of internal_state pointed to by s->state
+  char *strm = *(char **)byte; // first 8 bytes (or 4 on 32bit) is strm labeled 'pointer back to this zlib stream'
+  DTPRINT("state: ");
+  for (int i=0; i<(sizeof(char *) + sizeof(int)); ++i) {
+    DTPRINT("%02x ", *(unsigned char *)byte++);
+  }
+  int status = *(int *)(byte-sizeof(int));
+  DTPRINT("strm==%p state->strm==%p state->status==%d", s, strm, status);  // two pointer values should be the same
+  DTPRINT(" zalloc==%p zfree==%p", s->zalloc, s->zfree); // checked to be !=0 by deflate.c:deflateStateCheck
+  DTPRINT(" (s->strm==strm)==%d", (char *)s==strm);     // mimics the s->strm==strm check in deflate.c:deflateStateCheck
+  DTPRINT(" s->next_out==%p s->avail_in=%d s->next_in=%p", s->next_out, s->avail_in, s->next_in); // top of deflate.c:deflate() after the call to deflateStateCheck
+  DTPRINT(" deflates()'s checks (excluding status) would %s here",
+    (s->zalloc==(alloc_func)0 || s->zfree==(free_func)0 || s==Z_NULL || (char *)s!=strm ||
+      s->next_out==Z_NULL || (s->avail_in!=0 && s->next_in==Z_NULL)) ?
+    "return -2" : "be ok");
+  DTPRINT("\n");
+}
+
 int compressbuff(z_stream *stream, void* dest, size_t *destLen, const void* source, size_t sourceLen)
 {
   stream->next_out = dest;
   stream->avail_out = *destLen;
   stream->next_in = (Bytef *)source; // don't use z_const anywhere; #3939
   stream->avail_in = sourceLen;
-  if (verbose) DTPRINT(_("deflate input stream: %p %d %p %d\n"), stream->next_out, (int)(stream->avail_out), stream->next_in, (int)(stream->avail_in));
-
+  if (verbose) {
+    DTPRINT(_("deflate input stream: %p %d %p %d z_stream: "), stream->next_out, (int)(stream->avail_out), stream->next_in, (int)(stream->avail_in));
+    print_z_stream(stream);
+  }
   int err = deflate(stream, Z_FINISH);
-  if (verbose) DTPRINT(_("deflate returned %d with stream->total_out==%d; Z_FINISH==%d, Z_OK==%d, Z_STREAM_END==%d\n"), err, (int)(stream->total_out), Z_FINISH, Z_OK, Z_STREAM_END);
+  if (verbose) {
+    DTPRINT(_("deflate returned %d with stream->total_out==%d; Z_FINISH==%d, Z_OK==%d, Z_STREAM_END==%d z_stream: "), err, (int)(stream->total_out), Z_FINISH, Z_OK, Z_STREAM_END);
+    print_z_stream(stream);
+  }
   if (err == Z_OK) {
     // with Z_FINISH, deflate must return Z_STREAM_END if correct, otherwise it's an error and we shouldn't return Z_OK (0)
     err = -9;  // # nocov
   }
   *destLen = stream->total_out;
   return err == Z_STREAM_END ? Z_OK : err;
-}
-
-void print_z_stream(const z_stream *s)   // temporary tracing function for #4099
-{
-  const unsigned char *byte = (unsigned char *)s;
-  for (int i=0; i<sizeof(z_stream); ++i) {
-    DTPRINT("%02x ", *byte++);  // not byte[i] is attempt to avoid valgrind's use-of-uninitialized, #4639, and z_stream={0} now too
-  }
-  DTPRINT("\n");
 }
 
 void fwriteMain(fwriteMainArgs args)
@@ -802,6 +827,7 @@ void fwriteMain(fwriteMainArgs args)
     if(init_stream(&stream))
       STOP(_("Can't allocate gzip stream structure")); // # nocov
     zbuffSize = deflateBound(&stream, buffSize);
+    if (verbose) DTPRINT("zbuffSize=%d returned from deflateBound\n", (int)zbuffSize);
     deflateEnd(&stream);
   }
 
@@ -986,3 +1012,5 @@ void fwriteMain(fwriteMainArgs args)
     // # nocov end
   }
 }
+
+

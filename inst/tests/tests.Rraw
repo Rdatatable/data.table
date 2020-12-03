@@ -12512,7 +12512,7 @@ x <- as.integer(x)
 test(1888.5, fsort(x), base::sort(x, na.last = FALSE),
              warning = "Input is not a vector of type double. New parallel sort has only been done for double vectors so far.*Using one thread")
 x = runif(1e6)
-test(1888.6, y<-fsort(x,verbose=TRUE), output="nth=.*Top 5 MSB counts")
+test(1888.6, y<-fsort(x,verbose=TRUE), output="nth=.*Top 20 MSB counts")
 test(1888.7, !base::is.unsorted(y))
 test(1888.8, fsort(x,verbose=1), error="verbose must be TRUE or FALSE")
 rm(x)
@@ -17235,8 +17235,18 @@ test(2160.2, x[, v0 := fcase(
 )][c(1,3,74,96,100), round(v0,1)], c(0, -24.7, 82.5, 6.7, 0))
 rm(x)
 
+# runlock failed for "masked" functions (function storage but !inherits('function')), #4814
+f <- function(x) x
+class(f) <- "fn"
+dt <- data.table(id=1, f)
+test(2161.1, dt[, .(f), by=id], dt)
+e = environment()
+class(e) = "foo"
+dt = data.table(id=1, funs=list(e))
+test(2161.2, dt[, .(funs), by=id], dt)
+
 # all-na-vector (not scalar) assigned to a factor column should be ok, #4824
 dt = data.table(FACTOR = factor(rep("a", 3L)))
 set(dt, i = 1:2, j = "FACTOR", value = rep(NA, 2L))
-test(2161, dt$FACTOR, factor(c(NA, NA, "a")))
+test(2162, dt$FACTOR, factor(c(NA, NA, "a")))
 rm(dt)
