@@ -15,7 +15,7 @@ alias Rdevel-valgrind='~/build/R-devel-valgrind/bin/R --vanilla'
 alias Rdevel32='~/build/32bit/R-devel/bin/R --vanilla'
 alias R310='~/build/R-3.1.0/bin/R --vanilla'
 
-alias revdepsh='cd ~/build/revdeplib/ && export TZ=UTC && export R_LIBS_SITE=none && export R_LIBS=~/build/revdeplib/ && export _R_CHECK_FORCE_SUGGESTS_=false && export R_DEFAULT_INTERNET_TIMEOUT=300'
+alias revdepsh='cd ~/build/revdeplib/ && export TZ=UTC && export R_LIBS_SITE=none && export R_LIBS=~/build/revdeplib/ && export _R_CHECK_FORCE_SUGGESTS_=true && export R_DEFAULT_INTERNET_TIMEOUT=3600'
 alias revdepr='revdepsh; R_PROFILE_USER=~/GitHub/data.table/.dev/revdep.R R'
 # use ~/build/R-devel/bin/R at the end of revdepr to use R-devel instead of R-release.
 # If so, doing a `rm -rf *` in revdeplib first to rebuild everything is easiest way to avoid potential problems later. A full rebuild is a good idea periodically anyway. Packages in

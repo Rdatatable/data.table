@@ -2,11 +2,17 @@
 # that file for comments.
 # revdep = reverse first-order dependency; i.e. the CRAN and Bioconductor packages which directly use data.table
 
+Sys.unsetenv("R_PROFILE_USER")
+# The alias sets R_PROFILE_USER so that this script runs on R starting up, and leaves the R prompt running.
+# But if we don't unset it now, anything else from now on that does something like system("R CMD INSTALL"), e.g. update.packages()
+# and BiocManager::install(), will call this script again recursively.
+
 # Check that env variables have been set correctly:
 #   export R_LIBS_SITE=none
 #   export R_LIBS=~/build/revdeplib/
 #   export _R_CHECK_FORCE_SUGGESTS_=false
-stopifnot(identical(length(.libPaths()), 2L))     # revdeplib (writeable by me) and the pre-installed recommended R library (sudo writeable)
+stopifnot(identical(length(.libPaths()), 2L))  # revdeplib writeable by me, and the pre-installed recommended R library (sudo writeable)
+stopifnot(identical(.libPaths()[1L], getwd()))
 tt = file.info(.libPaths())[,"uname"]
 stopifnot(identical(length(tt), 2L))
 stopifnot(tt[1L]==Sys.info()["user"])
@@ -17,9 +23,12 @@ if (grepl("devel", .libPaths()[2L])) {
   stopifnot(tt[2L]=="root")
   R = "R"  # R-release
 }
-stopifnot(tt[2L] %in% c("root",Sys.info()["user"])) # root when using default R-release, user when using R-devel
-stopifnot(identical(.libPaths()[1], getwd()))
-stopifnot(identical(Sys.getenv("_R_CHECK_FORCE_SUGGESTS_"),"false"))
+
+stopifnot(identical(Sys.getenv("_R_CHECK_FORCE_SUGGESTS_"),"true"))
+# _R_CHECK_FORCE_SUGGESTS_=true explicitly in .dev/.bash_aliases
+# All suggests should be installed for revdep checking. This avoids problems for some packages for which the attempt to run
+# run R CMD check without all suggests can fail due to changed behaviour when some of the suggests aren't available;
+# e.g. https://github.com/reimandlab/ActivePathways/issues/14
 
 cflags = system("grep \"^[^#]*CFLAGS\" ~/.R/Makevars", intern=TRUE)
 cat("~/.R/Makevars contains", cflags, "\n")
@@ -30,12 +39,9 @@ if (!grepl("^CFLAGS=-O[0-3]$", cflags)) {
 
 options(repos = c("CRAN"=c("http://cloud.r-project.org")))
 options(warn=2)  # stop on any warnings. Otherwise difficult to trace knock-on effects can build up. Keep improving this script so that no warnings occur.
-options(timeout=3600) # to download BSgenome.Hsapiens.UCSC.hg19 (677GB) which is suggested (so needed by R CMD check) by CRAN package CNVScope which imports data.table
-
-# The alias sets R_PROFILE_USER so that this script runs on R starting up, leaving prompt running.
-# But if we don't unset it now, anything else from now on that does something like system("R CMD INSTALL") (e.g. update.packages()
-# and BiocManager::install()) will call this script again recursively.
-Sys.unsetenv("R_PROFILE_USER")
+cat("options()$timeout==", options()$timeout," set by R_DEFAULT_INTERNET_TIMEOUT in .dev/.bash_aliases revdepsh\n",sep="")
+# R's default is 60. Before Dec 2020, we used 300 but that wasn't enough to download Bioc package BSgenome.Hsapiens.UCSC.hg19 (677GB) which is
+# suggested by CRAN package CNVScope which imports data.table. From Dec 2020 we use 3600.
 
 if (is.null(utils::old.packages(.libPaths()[2]))) {
   cat("All", length(dir(.libPaths()[2])), "recommended packages supplied with R in", .libPaths()[2], "are the latest version\n")
@@ -243,8 +249,8 @@ log = function(bioc=FALSE, fnam="~/fail.log") {
   require(BiocManager)  # to ensure Bioc version is included in attached packages sessionInfo. It includes the minor version this way; e.g. 1.30.4
   cat(capture.output(sessionInfo()), "\n", file=fnam, sep="\n")
   for (i in x) {
-    system(paste0("ls | grep '",i,".*tar.gz' >> ",fnam))
-    if (i %in% .fail.bioc) {
+    system(paste0("ls | grep '",i,"_.*tar.gz' >> ",fnam))
+    if (bioc && i %in% .fail.bioc) {
       # for Bioconductor only, now include the git commit and date. Although Bioc dev check status online may show OK :
       #   https://bioconductor.org/checkResults/devel/bioc-LATEST/
       # the Bioc package maintainer has to remember to bump the version number otherwise Bioc will not propogate it,
