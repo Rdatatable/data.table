@@ -17245,3 +17245,6 @@ class(e) = "foo"
 dt = data.table(id=1, funs=list(e))
 test(2161.2, dt[, .(funs), by=id], dt)
 
+# in case of duplicated column names deleting column removes only first
+d = data.table(a=1, b=2, a=3)
+test(2162.1, d[, "a":=NULL], data.table(b=2, a=3))
