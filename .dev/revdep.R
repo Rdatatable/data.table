@@ -10,7 +10,7 @@ Sys.unsetenv("R_PROFILE_USER")
 # Check that env variables have been set correctly:
 #   export R_LIBS_SITE=none
 #   export R_LIBS=~/build/revdeplib/
-#   export _R_CHECK_FORCE_SUGGESTS_=false
+#   export _R_CHECK_FORCE_SUGGESTS_=true
 stopifnot(identical(length(.libPaths()), 2L))  # revdeplib writeable by me, and the pre-installed recommended R library (sudo writeable)
 stopifnot(identical(.libPaths()[1L], getwd()))
 tt = file.info(.libPaths())[,"uname"]
@@ -31,14 +31,19 @@ stopifnot(identical(Sys.getenv("_R_CHECK_FORCE_SUGGESTS_"),"true"))
 # e.g. https://github.com/reimandlab/ActivePathways/issues/14
 
 cflags = system("grep \"^[^#]*CFLAGS\" ~/.R/Makevars", intern=TRUE)
-cat("~/.R/Makevars contains", cflags, "\n")
+cat("~/.R/Makevars contains", cflags, "ok\n")
 if (!grepl("^CFLAGS=-O[0-3]$", cflags)) {
   stop("Some packages have failed to install in the past (e.g. processx and RGtk2) when CFLAGS contains -pedandic, -Wall, and similar. ",
   "So for revdepr keep CFLAGS simple; i.e. -O[0-3] only.")
 }
 
 options(repos = c("CRAN"=c("http://cloud.r-project.org")))
-options(warn=2)  # stop on any warnings. Otherwise difficult to trace knock-on effects can build up. Keep improving this script so that no warnings occur.
+options(repos = BiocManager::repositories())
+# Some CRAN packages import Bioc packages; e.g. wilson imports DESeq2. So we need to install DESeq2 from Bioc.
+# BiocManager::repositories() includes CRAN in its result (it appends to getOption("repos"). Using the Bioc function
+# ensures the latest Bioc version is in the repo path here (their repos have the version number in the path).
+
+options(warn=1)  # warning at the time so we can more easily see what's going on package by package when we scroll through output
 cat("options()$timeout==", options()$timeout," set by R_DEFAULT_INTERNET_TIMEOUT in .dev/.bash_aliases revdepsh\n",sep="")
 # R's default is 60. Before Dec 2020, we used 300 but that wasn't enough to download Bioc package BSgenome.Hsapiens.UCSC.hg19 (677GB) which is
 # suggested by CRAN package CNVScope which imports data.table. From Dec 2020 we use 3600.
@@ -67,10 +72,16 @@ update.packages(ask=FALSE, checkBuilt=TRUE)
 # require(BiocManager)
 # BiocManager::install(ask=FALSE, version="devel", checkBuilt=TRUE)
 # BiocManager::valid()
-# avail = available.packages(repos=BiocManager::repositories())  # includes CRAN at the end from getOption("repos"). And ensure latest Bioc version is in repo path here.
 
-avail = available.packages()  # uses getOption("repos") which was set above to CRAN
-deps = tools::package_dependencies("data.table", db=avail, which="all", reverse=TRUE, recursive=FALSE)[[1]]
+avail = available.packages()  # includes CRAN and Bioc, from getOption("repos") set above
+
+avail = avail[-match("cplexAPI",rownames(avail)),]
+# cplexAPI is suggested by revdeps ivmte and prioritizr. I haven't succeeded to install IBM ILOG CPLEX which requires a license,
+# so consider cplexAPI not available when resolving missing suggests at the end of status().
+
+deps = tools::package_dependencies("data.table",
+  db = available.packages(repos=getOption("repos")["CRAN"]),  # just CRAN revdeps though (not Bioc) from October 2020
+  which="all", reverse=TRUE, recursive=FALSE)[[1]]
 # exclude = c("TCGAbiolinks")  # too long (>30mins): https://github.com/BioinformaticsFMRP/TCGAbiolinks/issues/240
 # deps = deps[-match(exclude, deps)]
 table(avail[deps,"Repository"], dnn=NULL)
@@ -85,7 +96,7 @@ for (p in deps) {
     cat("\n**** Installing revdep:", p, "\n")
     system(paste0("rm -rf ", p, ".Rcheck"))  # Remove last check (of previous version) to move its status() to not yet run
 
-    install.packages(p, dependencies=TRUE, repos=BiocManager::repositories())  # some CRAN packages import Bioc packages; e.g. wilson imports DESeq2
+    install.packages(p, dependencies=TRUE)
     # To install its dependencies. The package itsef is installed superfluously here because the tar.gz will be passed to R CMD check.
     # If we did download.packages() first and then passed that tar.gz to install.packages(), repos= is set to NULL when installing from
     # local file, so dependencies=TRUE wouldn't know where to get the dependencies. Hence usig install.packages first with repos= set.
@@ -98,14 +109,14 @@ for (p in deps) {
   }
 }
 cat("New downloaded:",new," Already had latest:", old, " TOTAL:", length(deps), "\n")
-update.packages(checkBuilt=TRUE, repos=BiocManager::repositories())  # include bioc for CRAN packages which import Bioc packages; e.g. wilson imports DESeq2
+update.packages(checkBuilt=TRUE)
 cat("This is R ",R.version$major,".",R.version$minor,"; ",R.version.string,"\n",sep="")
 cat("Previously installed packages were built using:\n")
 x = installed.packages()
 table(x[,"Built"], dnn=NULL)  # manually inspect to ensure all built with this x.y release of R
 if (FALSE) {  # if not, run this manually replacing "4.0.0" appropriately 
   for (p in rownames(x)[x[,"Built"]=="4.0.0"]) {
-    install.packages(p, repos=BiocManager::repositories())
+    install.packages(p)
   }
   # warnings may suggest many of them were removed from CRAN, so remove the remaining from revdeplib to be clean
   x = installed.packages()
@@ -185,10 +196,40 @@ status = function(bioc=FALSE) {
     else cat("Ran for ");
     cat(round(diff(as.numeric(tt))/60, 1), "mins\n")
   }
+  
+  # Now deal with Suggests that are not available. Could have been removed from CRAN/Bioc, or are not installing for some reason like system library not installed.
+  tt = system("find . -name '00check.log' -exec grep -zl 'ERROR.Packages* suggested but not available' {} \\;", intern=TRUE)
+  if (length(tt)) {
+    tt = sort(substring(tt, 3L, nchar(tt)-nchar(".Rcheck/00check.log")))
+    cat("\n", length(tt), " packages with unavailable suggests. The missing suggests might have been removed from CRAN/Bioc, or they might be failing to install.\n", sep="")
+    cat(paste(tt,collapse=", "),"\n")
+    installed = installed.packages()
+    all_sugg_unavail = c()
+    for (pkg in tt) {
+      sugg = strsplit(gsub("\n","",avail[pkg,"Suggests"]), split=",")[[1L]]
+      sugg = gsub("^ ","",sugg)
+      sugg = gsub(" [(].+[)]","",sugg)
+      miss = sugg[!sugg %in% rownames(installed)]
+      if (!length(miss)) stop("00check.log for ",pkg," states that some of its suggests are not installed, but they all appear to be.")
+      cat("\n", pkg, " is missing ",paste(miss,collapse=","), sep="")
+      if (any(tt <- miss %in% rownames(avail))) {
+        cat("; some are available, installing ...\n")
+        install.packages(miss[which(tt)])  # careful not to ask for unavailable packages here, to avoid the warnings we already know they aren't available
+      } else {
+        cat("; all unavailable on CRAN/Bioc\n")
+        all_sugg_unavail = c(all_sugg_unavail, pkg)
+      }
+    }
+    if (length(all_sugg_unavail)) {
+      cat('\nPackages for which all their missing suggests are not available, try:\n',
+          '  run("',paste(all_sugg_unavail,collapse=" "),'", R_CHECK_FORCE_SUGGESTS=FALSE)\n', sep="")
+    }
+    # Otherwise, inspect manually each result in fail.log written by log()
+  }
   invisible()
 }
 
-run = function(pkgs=NULL) {
+run = function(pkgs=NULL, R_CHECK_FORCE_SUGGESTS=TRUE) {
   cat("Installed data.table to be tested against:",as.character(packageVersion("data.table")),"\n")
   if (length(pkgs)==1) pkgs = strsplit(pkgs, split="[, ]")[[1]]
   if (anyDuplicated(pkgs)) stop("pkgs contains dups")
@@ -229,7 +270,8 @@ run = function(pkgs=NULL) {
   cat("Proceed? (ctrl-c or enter)\n")
   scan(quiet=TRUE)
   if (!identical(pkgs,"_ALL_")) for (i in pkgs) system(paste0("rm -rf ./",i,".Rcheck"))
-  cmd = paste0("ls -1 *.tar.gz ", filter, "| TZ='UTC' OMP_THREAD_LIMIT=2 parallel --max-procs 50% ",R," CMD check")
+  SUGG = paste0("_R_CHECK_FORCE_SUGGESTS_=",tolower(R_CHECK_FORCE_SUGGESTS))
+  cmd = paste0("ls -1 *.tar.gz ", filter, "| TZ='UTC' OMP_THREAD_LIMIT=2 ",SUGG," parallel --max-procs 50% ",R," CMD check")
   # TZ='UTC' because some packages have failed locally for me but not on CRAN or for their maintainer, due to sensitivity of tests to timezone
   if (as.integer(system("ps -e | grep perfbar | wc -l", intern=TRUE)) < 1) system("perfbar",wait=FALSE)
   system("touch /tmp/started.flag ; rm -f /tmp/finished.flag")

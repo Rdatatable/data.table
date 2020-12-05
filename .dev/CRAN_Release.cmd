@@ -525,6 +525,7 @@ sudo apt-get -y install libimage-exiftool-perl   # for camtrapR
 sudo apt-get -y install parallel   # for revdepr.R
 sudo apt-get -y install pandoc-citeproc   # for basecallQC
 sudo apt-get -y install libquantlib0-dev  # for RQuantLib
+sudo apt-get -y install cargo  # for gifski, a suggest of nasoi
 sudo R CMD javareconf
 # ENDIF
 
