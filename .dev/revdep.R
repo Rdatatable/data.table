@@ -208,8 +208,12 @@ status = function(bioc=FALSE) {
       sugg = gsub("^ ","",sugg)
       sugg = gsub(" [(].+[)]","",sugg)
       miss = sugg[!sugg %in% rownames(installed)]
-      if (!length(miss)) stop("00check.log for ",pkg," states that some of its suggests are not installed, but they all appear to be.")
-      cat("\n", pkg, " is missing ",paste(miss,collapse=","), sep="")
+      cat("\n",pkg,sep="")
+      if (!length(miss)) {
+        cat(" 00check.log states that some of its suggests are not installed, but they all appear to be. Inspect and rerun.\n")
+        next
+      }
+      cat(" is missing",paste(miss,collapse=","))
       if (any(tt <- miss %in% rownames(avail))) {
         cat("; some are available, installing ...\n")
         install.packages(miss[which(tt)])  # careful not to ask for unavailable packages here, to avoid the warnings we already know they aren't available
