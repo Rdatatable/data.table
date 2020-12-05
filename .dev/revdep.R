@@ -201,8 +201,6 @@ status = function(bioc=FALSE) {
   tt = system("find . -name '00check.log' -exec grep -zl 'ERROR.Packages* suggested but not available' {} \\;", intern=TRUE)
   if (length(tt)) {
     tt = sort(substring(tt, 3L, nchar(tt)-nchar(".Rcheck/00check.log")))
-    cat("\n", length(tt), " packages with unavailable suggests. The missing suggests might have been removed from CRAN/Bioc, or they might be failing to install.\n", sep="")
-    cat(paste(tt,collapse=", "),"\n")
     installed = installed.packages()
     all_sugg_unavail = c()
     for (pkg in tt) {
