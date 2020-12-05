@@ -426,7 +426,7 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
         setattr(yc,"index",NULL)
         if (identical(xc,yc) && identical(key(x),key(y))) return(invisible(TRUE))  # check key on original x and y because := above might have cleared it on xc or yc
         if (isTRUE(all.equal.result<-all.equal(xc,yc,check.environments=FALSE)) && identical(key(x),key(y)) &&
-                                                     # ^^ to pass tests 2022.[1-4] in R-devel from 5 Dec 2020
+                                                     # ^^ to pass tests 2022.[1-4] in R-devel from 5 Dec 2020, #4835
           identical(vapply_1c(xc,typeof), vapply_1c(yc,typeof))) return(invisible(TRUE))
       }
     }
