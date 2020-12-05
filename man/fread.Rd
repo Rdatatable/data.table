@@ -128,7 +128,7 @@ When \code{input} begins with http://, https://, ftp://, ftps://, or file://, \c
 Background :\cr
 \url{https://cran.r-project.org/doc/manuals/R-data.html}\cr
 \url{https://stackoverflow.com/questions/1727772/quickly-reading-very-large-tables-as-dataframes-in-r}\cr
-\url{https://cerebralmastication.com/2009/11/loading-big-data-into-r/)}\cr
+\url{https://cerebralmastication.com/2009/11/loading-big-data-into-r/}\cr
 \url{https://stackoverflow.com/questions/9061736/faster-than-scan-with-rcpp}\cr
 \url{https://stackoverflow.com/questions/415515/how-can-i-read-and-manipulate-csv-file-data-in-c}\cr
 \url{https://stackoverflow.com/questions/9352887/strategies-for-reading-in-csv-files-in-pieces}\cr
