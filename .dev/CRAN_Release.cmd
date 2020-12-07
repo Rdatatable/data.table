@@ -205,6 +205,9 @@ test.data.table()
 install.packages("xml2")   # to check the 150 URLs in NEWS.md under --as-cran below
 q("no")
 R CMD build .
+export GITHUB_PAT="f1c.. github personal access token ..7ad"
+# avoids many too-many-requests in --as-cran's ping-all-URLs step (20 mins) inside the `checking CRAN incoming feasibility...` step.
+# Many thanks to Dirk for the tipoff that setting this env variable solves the problem, #4832.
 R CMD check data.table_1.13.3.tar.gz --as-cran
 R CMD INSTALL data.table_1.13.3.tar.gz --html
 
