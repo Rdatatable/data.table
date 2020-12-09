@@ -6,6 +6,8 @@
 
 ## BUG FIXES
 
+1. `gforce()` now allocates the correct amount of memory for the data.table with more than 1e9 rows, [#4295](https://github.com/Rdatatable/data.table/issues/4295) and [#4818](https://github.com/Rdatatable/data.table/issues/4818). Before the fixing, data.table could throw an error "Failed to allocate counts or TMP when assigning g in gforce", due to an integer overflow when `malloc()` memories. Thanks to @renkun-ken and @jangorecki for reporting and @shrektan for fixing.
+
 ## NOTES
 
 
