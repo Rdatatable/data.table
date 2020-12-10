@@ -140,3 +140,8 @@ edit.data.table = function(name, ...) {
   setDT(NextMethod('edit', name))[]
 }
 # nocov end
+
+# convert char to factor retaining order #4837
+fctr = function(x, levels=unique(x), ...) {
+  factor(x, levels=levels, ...)
+}

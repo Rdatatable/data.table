@@ -17246,3 +17246,6 @@ class(e) = "foo"
 dt = data.table(id=1, funs=list(e))
 test(2161.2, dt[, .(funs), by=id], dt)
 
+# convert char to factor retaining order #4837
+test(2162.1, levels(fctr(c("b","a","c"))), c("b","a","c"))
+test(2162.2, levels(fctr(c(3,1,2))), c("3","1","2"))

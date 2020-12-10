@@ -56,6 +56,7 @@ export(nafill)
 export(setnafill)
 export(.Last.updated)
 export(fcoalesce)
+export(fctr)
 
 S3method("[", data.table)
 S3method("[<-", data.table)

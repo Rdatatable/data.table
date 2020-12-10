@@ -4,6 +4,22 @@
 
 # data.table [v1.13.5](https://github.com/Rdatatable/data.table/milestone/22)  (in development)
 
+## NEW FEATURES
+
+1. New helper function `fctr` has been added, [#4837](https://github.com/Rdatatable/data.table/issues/4837). It is wrapper around base R `factor` using default arguments adjusted to retained original order. It has been added for convenience in case when order of elements needs be preserved, for example when using `dcast` or adding legend to plot.
+
+```r
+d = data.table(id1=1:2, id2=letters[c(4:3,3:4)], v1=1:4)
+dcast(d, id1 ~ id2)
+#     id1     c     d
+#1:     1     3     1
+#2:     2     2     4
+dcast(d, id1 ~ fctr(id2))
+#     id1     d     c
+#1:     1     1     3
+#2:     2     4     2
+```
+
 ## BUG FIXES
 
 1. `gforce()` now allocates the correct amount of memory for the data.table with more than 1e9 rows, [#4295](https://github.com/Rdatatable/data.table/issues/4295) and [#4818](https://github.com/Rdatatable/data.table/issues/4818). Before the fixing, data.table could throw an error "Failed to allocate counts or TMP when assigning g in gforce", due to an integer overflow when `malloc()` memories. Thanks to @renkun-ken and @jangorecki for reporting and @shrektan for fixing.
