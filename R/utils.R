@@ -142,6 +142,8 @@ edit.data.table = function(name, ...) {
 # nocov end
 
 # convert char to factor retaining order #4837
-fctr = function(x, levels=unique(x), ...) {
-  factor(x, levels=levels, ...)
+fctr = function(x, levels=unique(x), ..., rev=FALSE) {
+  if (!isTRUEorFALSE(rev))
+    stop("argument 'rev' must be TRUE or FALSE")
+  factor(x, levels=if (rev) rev(levels) else levels, ...)
 }
