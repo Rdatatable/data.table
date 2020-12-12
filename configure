@@ -114,8 +114,10 @@ sed -e "s|@PKG_LIBS@|$PKG_LIBS|" src/Makevars > src/Makevars.tmp && mv src/Makev
 # optional zlib dependency
 if [ "$NOZLIB" = "1" ]; then
   echo "*** Compilation without compression support in fwrite"
+  sed -e "s|@zlib_cflags@|-DNOZLIB|" src/Makevars > src/Makevars.tmp && mv src/Makevars.tmp src/Makevars
   sed -e "s|@zlib_libs@||" src/Makevars > src/Makevars.tmp && mv src/Makevars.tmp src/Makevars
 else
+  sed -e "s|@zlib_cflags@||" src/Makevars > src/Makevars.tmp && mv src/Makevars.tmp src/Makevars
   sed -e "s|@zlib_libs@|-lz|" src/Makevars > src/Makevars.tmp && mv src/Makevars.tmp src/Makevars
 fi
 
