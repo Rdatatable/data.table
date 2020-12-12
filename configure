@@ -60,6 +60,8 @@ if [ $msg -ne 0 ]; then
   echo "***   1) 'pkg-config --exists zlib' succeeds (i.e. \$? -eq 0)"
   echo "***   2) 'pkg-config --libs zlib' contains -lz"
   echo "*** Compilation will now be attempted ..."
+  ## add some meaningful output here
+  PKG_CFLAGS="$PKG_CFLAGS -DNOZLIB"
 else
   version=`pkg-config --modversion zlib`
   echo "zlib ${version} is available ok"
