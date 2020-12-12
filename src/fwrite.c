@@ -728,7 +728,7 @@ void fwriteMain(fwriteMainArgs args)
   }
 #ifdef NOZLIB
   if (args.is_gzip)
-    STOP(_("fwrite compression requires zlib which is not present")); // # nocov
+    STOP(_("Compression in fwrite uses zlib library which was not installed at the time when data.table was compiled. To enable compression support in fwrite one must install zlib and re-install data.table.")); // # nocov
 #endif
 
   int yamlLen = strlen(args.yaml);

@@ -5,6 +5,7 @@ PKG_LIBS = @PKG_LIBS@ @openmp_cflags@ @zlib_libs@
 # Otherwise we could use the much simpler PKG_LIBS += @openmp_cflags@ -lz.
 # Can't do PKG_LIBS = $(PKG_LIBS)...  either because that's a 'recursive variable reference' error in make
 # Hence the onerous @...@ substitution. Is it still appropriate in 2020 that we can't use +=?
+# Note that -lz is now escaped via @zlib_libs@ when zlib is not installed
 
 all: $(SHLIB)
 	@echo PKG_CFLAGS = $(PKG_CFLAGS)
