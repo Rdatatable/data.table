@@ -125,14 +125,14 @@ static int _selfrefok(SEXP x, Rboolean checkNames, Rboolean verbose) {
   tag = R_ExternalPtrTag(v);
   if (!(isNull(tag) || isString(tag))) error(_("Internal error: .internal.selfref tag isn't NULL or a character vector")); // # nocov
   names = getAttrib(x, R_NamesSymbol);
-  if (names != tag && isString(names))
+  if (names!=tag && isString(names) && !ALTREP(names))  // !ALTREP for #4734
     SET_TRUELENGTH(names, LENGTH(names));
     // R copied this vector not data.table; it's not actually over-allocated. It looks over-allocated
     // because R copies the original vector's tl over despite allocating length.
   prot = R_ExternalPtrProtected(v);
   if (TYPEOF(prot) != EXTPTRSXP)   // Very rare. Was error(_(".internal.selfref prot is not itself an extptr")).
     return 0;                      // # nocov ; see http://stackoverflow.com/questions/15342227/getting-a-random-internal-selfref-error-in-data-table-for-r
-  if (x != R_ExternalPtrAddr(prot))
+  if (x!=R_ExternalPtrAddr(prot) && !ALTREP(x))
     SET_TRUELENGTH(x, LENGTH(x));  // R copied this vector not data.table, it's not actually over-allocated
   return checkNames ? names==tag : x==R_ExternalPtrAddr(prot);
 }
@@ -647,7 +647,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
     R_isort(tt, ndelete);  // sort the column-numbers-to-delete into ascending order
     for (int i=0; i<ndelete-1; ++i) {
       if (tt[i]>=tt[i+1])
-        error("Internal error: %d column numbers to delete not now in strictly increasing order. No-dups were checked earlier."); // # nocov
+        error(_("Internal error: %d column numbers to delete not now in strictly increasing order. No-dups were checked earlier.")); // # nocov
     }
     for (int i=tt[0], j=1, k=tt[0]+1;  i<ndt-ndelete;  ++i, ++k) {  // i moves up from the first non-deleted column and is the target of write
       while (j<ndelete && k==tt[j]) { j++; k++; }                   // move k up to the next non-deleted column; j is the next position in tt
@@ -668,13 +668,6 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
   }
   UNPROTECT(protecti);
   return(dt);  // needed for `*tmp*` mechanism (when := isn't used), and to return the new object after a := for compound syntax.
-}
-
-static bool anyNamed(SEXP x) {
-  if (MAYBE_REFERENCED(x)) return true;
-  if (isNewList(x)) for (int i=0; i<LENGTH(x); i++)
-    if (anyNamed(VECTOR_ELT(x,i))) return true;
-  return false;
 }
 
 #define MSGSIZE 1000
@@ -704,23 +697,6 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
     error(_("Internal error: memrecycle has received NULL colname")); // # nocov
   *memrecycle_message = '\0';
   int protecti=0;
-  if (isNewList(source)) {
-    // A list() column; i.e. target is a column of pointers to SEXPs rather than the more common case of numbers in an atomic vector.
-    // If any item within the list is NAMED then take a fresh copy. So far this has occurred from dogroups.c when
-    // j returns .BY or similar specials as-is within a list(). Those specials are static inside
-    // dogroups so if we don't copy now the last value written to them by dogroups becomes repeated in the result;
-    // i.e. the wrong result.
-    // If source is itself recycled later (many list() column items pointing to the same object) we are ok with that
-    // since we now have a fresh copy and := will not assign with a list() column's cell value; := only changes the
-    // SEXP pointed to.
-    // If source is already not named (because j already created a fresh unnamed vector within a list()) we don't want to
-    // duplicate unnecessarily, hence checking for named rather than duplicating always.
-    // See #481, #1270 and tests 1341.* fail without this copy.
-    // ********** This might go away now that we copy properly in dogroups.c **********
-    if (anyNamed(source)) {
-      source = PROTECT(copyAsPlain(source)); protecti++;
-    }
-  }
   const bool sourceIsFactor=isFactor(source), targetIsFactor=isFactor(target);
   const bool sourceIsI64=isReal(source) && Rinherits(source, char_integer64);
   const bool targetIsI64=isReal(target) && Rinherits(target, char_integer64);

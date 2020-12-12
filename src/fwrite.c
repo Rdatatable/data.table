@@ -569,31 +569,56 @@ int init_stream(z_stream *stream) {
   return err;  // # nocov
 }
 
+void print_z_stream(const z_stream *s)   // temporary tracing function for #4099
+{
+  const char *byte = (char *)s;
+  DTPRINT("sizeof(z_stream)==%d: ", sizeof(z_stream));
+  for (int i=0; i<sizeof(z_stream); ++i) {
+    DTPRINT("%02x ", *(unsigned char *)byte++);  // not byte[i] is attempt to avoid valgrind's use-of-uninitialized, #4639, and z_stream={0} now too
+  }
+  // e.g. sizeof(z_stream)==56 on CRAN Solaris, 88 on Windows 64bit, and 112 on 64bit Linux
+  // trace z_stream->state->status which zlib:deflateStateCheck checks, #4826
+  // this structure is not exposed, so we'll get to it via memory offsets using the trace output we put in to show on CRAN's Solaris output
+  const char *pos = (char *)&s->msg + sizeof(char *); // the field after *msg (exposed) is internal_state *state (not exposed)
+  byte = *(char **)pos;  // byte now at start of internal_state pointed to by s->state
+  char *strm = *(char **)byte; // first 8 bytes (or 4 on 32bit) is strm labeled 'pointer back to this zlib stream'
+  DTPRINT("state: ");
+  for (int i=0; i<(sizeof(char *) + sizeof(int)); ++i) {
+    DTPRINT("%02x ", *(unsigned char *)byte++);
+  }
+  int status = *(int *)(byte-sizeof(int));
+  DTPRINT("strm==%p state->strm==%p state->status==%d", s, strm, status);  // two pointer values should be the same
+  DTPRINT(" zalloc==%p zfree==%p", s->zalloc, s->zfree); // checked to be !=0 by deflate.c:deflateStateCheck
+  DTPRINT(" (s->strm==strm)==%d", (char *)s==strm);     // mimics the s->strm==strm check in deflate.c:deflateStateCheck
+  DTPRINT(" s->next_out==%p s->avail_in=%d s->next_in=%p", s->next_out, s->avail_in, s->next_in); // top of deflate.c:deflate() after the call to deflateStateCheck
+  DTPRINT(" deflates()'s checks (excluding status) would %s here",
+    (s->zalloc==(alloc_func)0 || s->zfree==(free_func)0 || s==Z_NULL || (char *)s!=strm ||
+      s->next_out==Z_NULL || (s->avail_in!=0 && s->next_in==Z_NULL)) ?
+    "return -2" : "be ok");
+  DTPRINT("\n");
+}
+
 int compressbuff(z_stream *stream, void* dest, size_t *destLen, const void* source, size_t sourceLen)
 {
   stream->next_out = dest;
   stream->avail_out = *destLen;
   stream->next_in = (Bytef *)source; // don't use z_const anywhere; #3939
   stream->avail_in = sourceLen;
-  if (verbose) DTPRINT("deflate input stream: %p %d %p %d\n", stream->next_out, (int)(stream->avail_out), stream->next_in, (int)(stream->avail_in));
-
+  if (verbose) {
+    DTPRINT(_("deflate input stream: %p %d %p %d z_stream: "), stream->next_out, (int)(stream->avail_out), stream->next_in, (int)(stream->avail_in));
+    print_z_stream(stream);
+  }
   int err = deflate(stream, Z_FINISH);
-  if (verbose) DTPRINT("deflate returned %d with stream->total_out==%d; Z_FINISH==%d, Z_OK==%d, Z_STREAM_END==%d\n", err, (int)(stream->total_out), Z_FINISH, Z_OK, Z_STREAM_END);
+  if (verbose) {
+    DTPRINT(_("deflate returned %d with stream->total_out==%d; Z_FINISH==%d, Z_OK==%d, Z_STREAM_END==%d z_stream: "), err, (int)(stream->total_out), Z_FINISH, Z_OK, Z_STREAM_END);
+    print_z_stream(stream);
+  }
   if (err == Z_OK) {
     // with Z_FINISH, deflate must return Z_STREAM_END if correct, otherwise it's an error and we shouldn't return Z_OK (0)
     err = -9;  // # nocov
   }
   *destLen = stream->total_out;
   return err == Z_STREAM_END ? Z_OK : err;
-}
-
-void print_z_stream(const z_stream *s)   // temporary tracing function for #4099
-{
-  const unsigned char *byte = (unsigned char *)s;
-  for (int i=0; i<sizeof(z_stream); ++i) {
-    DTPRINT("%02x ", byte[i]);
-  }
-  DTPRINT("\n");
 }
 #endif
 
@@ -701,10 +726,10 @@ void fwriteMain(fwriteMainArgs args)
       // # nocov end
     }
   }
-  #ifdef NOZLIB
+#ifdef NOZLIB
   if (args.is_gzip)
     STOP(_("fwrite compression requires zlib which is not present")); // # nocov
-  #endif
+#endif
 
   int yamlLen = strlen(args.yaml);
   if (verbose) {
@@ -746,13 +771,13 @@ void fwriteMain(fwriteMainArgs args)
     } else {
       int ret1=0, ret2=0;
       if (args.is_gzip) {
-        #ifndef NOZLIB
-        z_stream stream;
+#ifndef NOZLIB
+        z_stream stream = {0};
         if(init_stream(&stream)) {
           free(buff);                                    // # nocov
           STOP(_("Can't allocate gzip stream structure"));  // # nocov
         }
-        if (verbose) {DTPRINT("z_stream for header (1): "); print_z_stream(&stream);}
+        if (verbose) {DTPRINT(_("z_stream for header (%d): "), 1); print_z_stream(&stream);}
         size_t zbuffSize = deflateBound(&stream, headerLen);
         char *zbuff = malloc(zbuffSize);
         if (!zbuff) {
@@ -761,11 +786,11 @@ void fwriteMain(fwriteMainArgs args)
         }
         size_t zbuffUsed = zbuffSize;
         ret1 = compressbuff(&stream, zbuff, &zbuffUsed, buff, (size_t)(ch-buff));
-        if (verbose) {DTPRINT("z_stream for header (2): "); print_z_stream(&stream);}
+        if (verbose) {DTPRINT(_("z_stream for header (%d): "), 2); print_z_stream(&stream);}
         if (ret1==Z_OK) ret2 = WRITE(f, zbuff, (int)zbuffUsed);
         deflateEnd(&stream);
         free(zbuff);
-        #endif
+#endif
       } else {
         ret2 = WRITE(f,  buff, (int)(ch-buff));
       }
@@ -811,42 +836,43 @@ void fwriteMain(fwriteMainArgs args)
   // compute zbuffSize which is the same for each thread
   size_t zbuffSize = 0;
   if(args.is_gzip){
-    #ifndef NOZLIB
-    z_stream stream;
+#ifndef NOZLIB
+    z_stream stream = {0};
     if(init_stream(&stream))
       STOP(_("Can't allocate gzip stream structure")); // # nocov
     zbuffSize = deflateBound(&stream, buffSize);
+    if (verbose) DTPRINT("zbuffSize=%d returned from deflateBound\n", (int)zbuffSize);
     deflateEnd(&stream);
-    #endif
+#endif
   }
 
   errno=0;
   char *buffPool = malloc(nth*(size_t)buffSize);
   if (!buffPool) {
     // # nocov start
-    STOP("Unable to allocate %d MB * %d thread buffers; '%d: %s'. Please read ?fwrite for nThread, buffMB and verbose options.",
+    STOP(_("Unable to allocate %d MB * %d thread buffers; '%d: %s'. Please read ?fwrite for nThread, buffMB and verbose options."),
          (size_t)buffSize/(1024^2), nth, errno, strerror(errno));
     // # nocov end
   }
   char *zbuffPool = NULL;
   if (args.is_gzip) {
     zbuffPool = malloc(nth*(size_t)zbuffSize);
-    #ifndef NOZLIB
+#ifndef NOZLIB
     if (!zbuffPool) {
       // # nocov start
       free(buffPool);
-      STOP("Unable to allocate %d MB * %d thread compressed buffers; '%d: %s'. Please read ?fwrite for nThread, buffMB and verbose options.",
+      STOP(_("Unable to allocate %d MB * %d thread compressed buffers; '%d: %s'. Please read ?fwrite for nThread, buffMB and verbose options."),
          (size_t)zbuffSize/(1024^2), nth, errno, strerror(errno));
       // # nocov end
     }
-    #endif
+#endif
   }
 
   bool failed = false;   // naked (unprotected by atomic) write to bool ok because only ever write true in this special paradigm
   int failed_compress = 0; // the first thread to fail writes their reason here when they first get to ordered section
-  #ifndef NOZLIB
+#ifndef NOZLIB
   char failed_msg[1001] = "";  // to hold zlib's msg; copied out of zlib in ordered section just in case the msg is allocated within zlib
-  #endif
+#endif
   int failed_write = 0;    // same. could use +ve and -ve in the same code but separate it out to trace Solaris problem, #3931
 
   if (nth>1) verbose=false; // printing isn't thread safe (there's a temporary print in compressbuff for tracing solaris; #4099)
@@ -860,17 +886,17 @@ void fwriteMain(fwriteMainArgs args)
 
     void *myzBuff = NULL;
     size_t myzbuffUsed = 0;
-    #ifndef NOZLIB
-    z_stream mystream;
+#ifndef NOZLIB
+    z_stream mystream = {0};
     if (args.is_gzip) {
       myzBuff = zbuffPool + me*zbuffSize;
       if (init_stream(&mystream)) { // this should be thread safe according to zlib documentation
         failed = true;              // # nocov
         my_failed_compress = -998;  // # nocov
       }
-      if (verbose) {DTPRINT("z_stream for data (1): "); print_z_stream(&mystream);}
+      if (verbose) {DTPRINT(_("z_stream for data (%d): "), 1); print_z_stream(&mystream);}
     }
-    #endif
+#endif
 
     #pragma omp for ordered schedule(dynamic)
     for(int64_t start=0; start<args.nrow; start+=rowsPerBatch) {
@@ -899,25 +925,25 @@ void fwriteMain(fwriteMainArgs args)
         write_chars(args.eol, &ch);  // overwrite last sep with eol instead
       }
       // compress buffer if gzip
-      #ifndef NOZLIB
+#ifndef NOZLIB
       if (args.is_gzip && !failed) {
         myzbuffUsed = zbuffSize;
-        if (verbose) {DTPRINT("z_stream for data (2): "); print_z_stream(&mystream);}
+        if (verbose) {DTPRINT(_("z_stream for data (%d): "), 2); print_z_stream(&mystream);}
         int ret = compressbuff(&mystream, myzBuff, &myzbuffUsed, myBuff, (size_t)(ch-myBuff));
-        if (verbose) {DTPRINT("z_stream for data (3): "); print_z_stream(&mystream);}
+        if (verbose) {DTPRINT(_("z_stream for data (%d): "), 3); print_z_stream(&mystream);}
         if (ret) { failed=true; my_failed_compress=ret; }
         else deflateReset(&mystream);
       }
-      #endif
+#endif
       #pragma omp ordered
       {
         if (failed) {
           // # nocov start
           if (failed_compress==0 && my_failed_compress!=0) {
             failed_compress = my_failed_compress;
-            #ifndef NOZLIB
+#ifndef NOZLIB
             if (mystream.msg!=NULL) strncpy(failed_msg, mystream.msg, 1000); // copy zlib's msg for safe use after deflateEnd just in case zlib allocated the message
-            #endif
+#endif
           }
           // else another thread could have failed below while I was working or waiting above; their reason got here first
           // # nocov end
@@ -975,9 +1001,9 @@ void fwriteMain(fwriteMainArgs args)
     // all threads will call this free on their buffer, even if one or more threads had malloc
     // or realloc fail. If the initial malloc failed, free(NULL) is ok and does nothing.
     if (args.is_gzip) {
-      #ifndef NOZLIB
+#ifndef NOZLIB
       deflateEnd(&mystream);
-      #endif
+#endif
     }
   }
   free(buffPool);
@@ -990,28 +1016,30 @@ void fwriteMain(fwriteMainArgs args)
       DTPRINT("\r                                                                       "
               "                                                              \r");
     } else {       // don't clear any potentially helpful output before error
-      DTPRINT(_("\n"));
+      DTPRINT("\n");
     }
     // # nocov end
   }
 
   if (f!=-1 && CLOSE(f) && !failed)
-    STOP(_("%s: '%s'"), strerror(errno), args.filename);  // # nocov
+    STOP("%s: '%s'", strerror(errno), args.filename);  // # nocov
   // quoted '%s' in case of trailing spaces in the filename
   // If a write failed, the line above tries close() to clean up, but that might fail as well. So the
   // '&& !failed' is to not report the error as just 'closing file' but the next line for more detail
   // from the original error.
   if (failed) {
     // # nocov start
-    #ifndef NOZLIB
+#ifndef NOZLIB
     if (failed_compress)
       STOP(_("zlib %s (zlib.h %s) deflate() returned error %d with z_stream->msg==\"%s\" Z_FINISH=%d Z_BLOCK=%d. %s"),
            zlibVersion(), ZLIB_VERSION, failed_compress, failed_msg, Z_FINISH, Z_BLOCK,
            verbose ? _("Please include the full output above and below this message in your data.table bug report.")
                    : _("Please retry fwrite() with verbose=TRUE and include the full output with your data.table bug report."));
-    #endif
+#endif
     if (failed_write)
       STOP("%s: '%s'", strerror(failed_write), args.filename);
     // # nocov end
   }
 }
+
+

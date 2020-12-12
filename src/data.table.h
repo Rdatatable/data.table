@@ -77,6 +77,8 @@ extern SEXP char_ITime;
 extern SEXP char_IDate;
 extern SEXP char_Date;
 extern SEXP char_POSIXct;
+extern SEXP char_POSIXt;
+extern SEXP char_UTC;
 extern SEXP char_nanotime;
 extern SEXP char_lens;
 extern SEXP char_indices;
@@ -97,6 +99,8 @@ extern SEXP sym_verbose;
 extern SEXP SelfRefSymbol;
 extern SEXP sym_inherits;
 extern SEXP sym_datatable_locked;
+extern SEXP sym_tzone;
+extern SEXP sym_old_fread_datetime_character;
 extern double NA_INT64_D;
 extern long long NA_INT64_LL;
 extern Rcomplex NA_CPLX;  // initialized in init.c; see there for comments
@@ -162,7 +166,7 @@ SEXP dt_na(SEXP x, SEXP cols);
 
 // assign.c
 SEXP alloccol(SEXP dt, R_len_t n, Rboolean verbose);
-const char *memrecycle(const SEXP target, const SEXP where, const int r, const int len, SEXP source, const int sourceStart, const int sourceLen, const int coln, const char *colname);
+const char *memrecycle(const SEXP target, const SEXP where, const int start, const int len, SEXP source, const int sourceStart, const int sourceLen, const int colnum, const char *colname);
 SEXP shallowwrapper(SEXP dt, SEXP cols);
 
 SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols,
