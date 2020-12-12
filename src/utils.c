@@ -387,4 +387,3 @@ SEXP dt_zlib_version() {
   return ScalarString(mkChar(out));
 }
 
-

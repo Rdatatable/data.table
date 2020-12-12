@@ -18,6 +18,7 @@ esac
 # "[pkg-config] is available on the machines used to produce the CRAN binary packages"
 # This script should pass `checkbashisms` for portability; e.g. CRAN's Solaris 10,
 # and R-exts note 24 now suggests 'checkbashisms' as we proposed.
+
 msg=0
 NOZLIB=1 # if pkg-config is not available then zlib will be disabled for higher chance of compilation success
 pkg-config --version >/dev/null 2>&1

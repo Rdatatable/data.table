@@ -7,7 +7,6 @@
 #include <math.h>      // isfinite, isnan
 #include <stdlib.h>    // abs
 #include <string.h>    // strlen, strerror
-
 #ifndef NOZLIB
 #include <zlib.h>      // for compression to .gz
 #else
