@@ -18,7 +18,7 @@ esac
 # "[pkg-config] is available on the machines used to produce the CRAN binary packages"
 # This script should pass `checkbashisms` for portability; e.g. CRAN's Solaris 10,
 # and R-exts note 24 now suggests 'checkbashisms' as we proposed.
-
+NOZLIB=0
 msg=0
 pkg-config --version >/dev/null 2>&1
 if [ $? -ne 0 ]; then
@@ -28,6 +28,7 @@ else
   pkg-config --exists zlib
   if [ $? -ne 0 ]; then
     echo "*** pkg-config is installed but 'pkg-config --exists zlib' did not return 0."
+    NOZLIB=1
     msg=1
   else
     lib=`pkg-config --libs zlib`
@@ -60,8 +61,6 @@ if [ $msg -ne 0 ]; then
   echo "***   1) 'pkg-config --exists zlib' succeeds (i.e. \$? -eq 0)"
   echo "***   2) 'pkg-config --libs zlib' contains -lz"
   echo "*** Compilation will now be attempted ..."
-  ## add some meaningful output here
-  PKG_CFLAGS="$PKG_CFLAGS -DNOZLIB"
 else
   version=`pkg-config --modversion zlib`
   echo "zlib ${version} is available ok"
@@ -111,5 +110,13 @@ fi
 # retain user supplied PKG_ env variables, #4664. See comments in Makevars.in too.
 sed -e "s|@PKG_CFLAGS@|$PKG_CFLAGS|" src/Makevars > src/Makevars.tmp && mv src/Makevars.tmp src/Makevars
 sed -e "s|@PKG_LIBS@|$PKG_LIBS|" src/Makevars > src/Makevars.tmp && mv src/Makevars.tmp src/Makevars
+
+# optional zlib dependency
+if [ "$NOZLIB" = "1" ]; then
+  echo "*** Compilation without compression support in fwrite"
+  sed -e "s|@zlib_libs@||" src/Makevars > src/Makevars.tmp && mv src/Makevars.tmp src/Makevars
+else
+  sed -e "s|@zlib_libs@|-lz|" src/Makevars > src/Makevars.tmp && mv src/Makevars.tmp src/Makevars
+fi
 
 exit 0
