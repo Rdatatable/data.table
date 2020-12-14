@@ -409,3 +409,10 @@ SEXP concatCharVec (SEXP x, const char *sep)
   free(concatenated);
   return concatenatedCharVec;      /* return concatenated string */
 }
+
+#include <zlib.h>
+SEXP dt_zlib_version() {
+  char out[51];
+  snprintf(out, 50, "zlibVersion()==%s ZLIB_VERSION==%s", zlibVersion(), ZLIB_VERSION);
+  return ScalarString(mkChar(out));
+}

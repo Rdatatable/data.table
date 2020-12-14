@@ -5154,10 +5154,11 @@ test(1318.2, DT[, eval(meanExpr), by = aa], DT[, mean(bb, na.rm=TRUE), by=aa])
 test(1318.3, DT[, list(mySum = eval(sumExpr), myMean = eval(meanExpr)), by = aa], DT[, list(mySum=sum(bb, na.rm=TRUE), myMean=mean(bb, na.rm=TRUE)), by=aa])
 
 # get DT[order(.)] to make sense. In v1.12.4 these tests were changed to not be 100% consistent with base in
-# cases where the base R behaviour doesn't make sense, #696
+# cases where the base R behaviour doesn't make sense, #696. In v1.13.4, more y values here were made
+# independent of base R's order on data.frame when that was made an error in R-devel, #4838.
 DT <- data.table(a = 1:4, b = 8:5, c=letters[4:1])
-test(1319.1, DT[order(DT[, "b", with=FALSE])], DT[base::order(DT[, "b", with=FALSE])])
-test(1319.2, DT[order(DT[, "c", with=FALSE])], DT[base::order(DT[, "c", with=FALSE])])
+test(1319.1, DT[order(DT[, "b", with=FALSE])],        DT[4:1])    #  DT[base::order(DT[, "b", with=FALSE])])
+test(1319.2, DT[order(DT[, "c", with=FALSE])],        DT[4:1])    #  DT[base::order(DT[, "c", with=FALSE])])
 test(1319.3, DT[order(DT[, c("b","c"), with=FALSE])], DT[4:1])    #  DT[base::order(DT[, c("b","c"), with=FALSE])])
 test(1319.4, DT[order(DT[, c("c","b"), with=FALSE])], DT[4:1])    #  DT[base::order(DT[, c("c","b"), with=FALSE])])
 test(1319.5, DT[order(DT[, "b", with=FALSE], DT[, "a", with=FALSE])], error="Column 1 passed to [f]order is type 'list', not yet supported")
@@ -17236,4 +17237,14 @@ test(2160.2, x[, v0 := fcase(
   default = 0
 )][c(1,3,74,96,100), round(v0,1)], c(0, -24.7, 82.5, 6.7, 0))
 rm(x)
+
+# runlock failed for "masked" functions (function storage but !inherits('function')), #4814
+f <- function(x) x
+class(f) <- "fn"
+dt <- data.table(id=1, f)
+test(2161.1, dt[, .(f), by=id], dt)
+e = environment()
+class(e) = "foo"
+dt = data.table(id=1, funs=list(e))
+test(2161.2, dt[, .(funs), by=id], dt)
 
