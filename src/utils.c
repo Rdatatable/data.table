@@ -374,45 +374,10 @@ SEXP coerceUtf8IfNeeded(SEXP x) {
   return(ans);
 }
 
-// Concatenate a character vector into a single CHARSXP, e.g. for printing error messages
-// adapted from https://stackoverflow.com/a/58163237
-// make sure to *UNPROTECT* the returned CHARSXP after use
-SEXP concatCharVec (SEXP x, const char *sep)
-{
-  char *concatenated = NULL;                /* pointer to concatenated string w/sep */
-  size_t lensep = strlen (sep),       /* length of separator */
-    sz = 0;                           /* current stored size */
-  int first = 1;                      /* flag whether first term */
-
-  /* check that a character vector has been passed */
-  if (TYPEOF(x) != STRSXP)
-    error(_("Internal error: unsupported type '%s' passed to concatCharVec()"), type2char(TYPEOF(x))); // # nocov
-
-  for (R_xlen_t i=0; i<xlength(x); i++) {                        /* for each string in s */
-    size_t len = strlen (Rf_translateChar(STRING_ELT(x, i)));
-    /* allocate/reallocate concatenated */
-    void *tmp = realloc (concatenated, sz + len + (first ? 0 : lensep) + 1);
-    if (!tmp) {                     /* validate allocation */
-      error(_("Internal error: memory allocation failure in concatCharVec()")); // # nocov
-    }
-    concatenated = tmp;                   /* assign allocated block to concatenated */
-    if (!first) {                   /* if not first string */
-      strcpy (concatenated + sz, sep);    /* copy separator */
-      sz += lensep;                 /* update stored size */
-    }
-    strcpy (concatenated + sz, Rf_translateChar(STRING_ELT(x, i)));     /* copy string to concatenated */
-    first = 0;                      /* unset first flag */
-    sz += len;                      /* update stored size */
-  }
-
-  SEXP concatenatedCharVec = PROTECT(mkChar(concatenated));
-  free(concatenated);
-  return concatenatedCharVec;      /* return concatenated string */
-}
-
 #include <zlib.h>
 SEXP dt_zlib_version() {
   char out[51];
   snprintf(out, 50, "zlibVersion()==%s ZLIB_VERSION==%s", zlibVersion(), ZLIB_VERSION);
   return ScalarString(mkChar(out));
 }
+
