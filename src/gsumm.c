@@ -726,22 +726,26 @@ SEXP gmin(SEXP x, SEXP narm)
     break;
   case STRSXP:
     ans = PROTECT(allocVector(STRSXP, ngrp)); protecti++;
+    for (i=0; i<ngrp; i++) SET_STRING_ELT(ans, i, NA_STRING);
     if (!LOGICAL(narm)[0]) {
-      for (i=0; i<ngrp; i++) SET_STRING_ELT(ans, i, R_BlankString);
+      Rboolean *upd = calloc(ngrp, sizeof(Rboolean));
+      if (!upd) error(_("Unable to allocate %d * %d bytes for the update mask in gmin na.rm=FALSE"), ngrp, sizeof(Rboolean));
       for (i=0; i<n; i++) {
         thisgrp = grp[i];
         ix = (irowslen == -1) ? i : irows[i]-1;
         if (STRING_ELT(x, ix) == NA_STRING) {
           SET_STRING_ELT(ans, thisgrp, NA_STRING);
+          upd[thisgrp] = TRUE;
         } else {
-          if (STRING_ELT(ans, thisgrp) == R_BlankString ||
+          if (!upd[thisgrp] ||
             (STRING_ELT(ans, thisgrp) != NA_STRING && strcmp(CHAR(STRING_ELT(x, ix)), CHAR(STRING_ELT(ans, thisgrp))) < 0 )) {
             SET_STRING_ELT(ans, thisgrp, STRING_ELT(x, ix));
+            upd[thisgrp] = TRUE;
           }
         }
       }
+      free(upd);
     } else {
-      for (i=0; i<ngrp; i++) SET_STRING_ELT(ans, i, NA_STRING);
       for (i=0; i<n; i++) {
         thisgrp = grp[i];
         ix = (irowslen == -1) ? i : irows[i]-1;
