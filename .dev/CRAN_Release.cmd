@@ -247,8 +247,7 @@ gctorture2(step=50)
 system.time(test.data.table(script="*.Rraw"))  # apx 8h = froll 3h + nafill 1m + main 5h
 
 # Upload to win-builder: release, dev & old-release
-# Turn on Travis OSX; it's off in dev until it's added to GLCI (#3326) as it adds 17min after 11min Linux.
-# Turn on r-devel in Appveyor; it may be off in dev for similar dev cycle speed reasons
+# Turn on Travis OSX until it's added to GLCI (#3326). If it's off it's because as it adds 17min after 11min Linux.
 
 
 ###############################################
