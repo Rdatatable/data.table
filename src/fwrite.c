@@ -558,6 +558,7 @@ void writeCategString(const void *col, int64_t row, char **pch)
 
 #ifndef NOZLIB
 int init_stream(z_stream *stream) {
+  memset(stream, 0, sizeof(z_stream)); // shouldn't be needed, done as part of #4099 to be sure
   stream->next_in = Z_NULL;
   stream->zalloc = Z_NULL;
   stream->zfree = Z_NULL;
@@ -875,6 +876,12 @@ void fwriteMain(fwriteMainArgs args)
   int failed_write = 0;    // same. could use +ve and -ve in the same code but separate it out to trace Solaris problem, #3931
 
   if (nth>1) verbose=false; // printing isn't thread safe (there's a temporary print in compressbuff for tracing solaris; #4099)
+  
+  z_stream thread_streams[nth];
+  // VLA on stack should be fine for nth structs; in zlib v1.2.11 sizeof(struct)==112 on 64bit
+  // not declared inside the parallel region because solaris appears to move the struct in
+  // memory when the #pragma omp for is entered, which causes zlib's internal self reference
+  // pointer to mismatch, #4099
 
   #pragma omp parallel num_threads(nth)
   {
@@ -886,20 +893,21 @@ void fwriteMain(fwriteMainArgs args)
     void *myzBuff = NULL;
     size_t myzbuffUsed = 0;
 #ifndef NOZLIB
-    z_stream mystream = {0};
+    z_stream *mystream = &thread_streams[me];
     if (args.is_gzip) {
       myzBuff = zbuffPool + me*zbuffSize;
-      if (init_stream(&mystream)) { // this should be thread safe according to zlib documentation
+      if (init_stream(mystream)) { // this should be thread safe according to zlib documentation
         failed = true;              // # nocov
         my_failed_compress = -998;  // # nocov
       }
-      if (verbose) {DTPRINT(_("z_stream for data (%d): "), 1); print_z_stream(&mystream);}
+      if (verbose) {DTPRINT(_("z_stream for data (%d): "), 1); print_z_stream(mystream);}
     }
 #endif
 
     #pragma omp for ordered schedule(dynamic)
     for(int64_t start=0; start<args.nrow; start+=rowsPerBatch) {
       if (failed) continue;  // Not break. Because we don't use #omp cancel yet.
+      if (verbose && args.is_gzip) {DTPRINT(_("z_stream for data (%d): "), 2); print_z_stream(mystream);}  // extra trace point referred to in #4099
       int64_t end = ((args.nrow - start)<rowsPerBatch) ? args.nrow : start + rowsPerBatch;
       for (int64_t i=start; i<end; i++) {
         // Tepid starts here (once at beginning of each per line)
@@ -927,11 +935,11 @@ void fwriteMain(fwriteMainArgs args)
 #ifndef NOZLIB
       if (args.is_gzip && !failed) {
         myzbuffUsed = zbuffSize;
-        if (verbose) {DTPRINT(_("z_stream for data (%d): "), 2); print_z_stream(&mystream);}
-        int ret = compressbuff(&mystream, myzBuff, &myzbuffUsed, myBuff, (size_t)(ch-myBuff));
-        if (verbose) {DTPRINT(_("z_stream for data (%d): "), 3); print_z_stream(&mystream);}
+        if (verbose) {DTPRINT(_("z_stream for data (%d): "), 3); print_z_stream(mystream);}
+        int ret = compressbuff(mystream, myzBuff, &myzbuffUsed, myBuff, (size_t)(ch-myBuff));
+        if (verbose) {DTPRINT(_("z_stream for data (%d): "), 4); print_z_stream(mystream);}
         if (ret) { failed=true; my_failed_compress=ret; }
-        else deflateReset(&mystream);
+        else deflateReset(mystream);
       }
 #endif
       #pragma omp ordered
@@ -941,7 +949,7 @@ void fwriteMain(fwriteMainArgs args)
           if (failed_compress==0 && my_failed_compress!=0) {
             failed_compress = my_failed_compress;
 #ifndef NOZLIB
-            if (mystream.msg!=NULL) strncpy(failed_msg, mystream.msg, 1000); // copy zlib's msg for safe use after deflateEnd just in case zlib allocated the message
+            if (mystream->msg!=NULL) strncpy(failed_msg, mystream->msg, 1000); // copy zlib's msg for safe use after deflateEnd just in case zlib allocated the message
 #endif
           }
           // else another thread could have failed below while I was working or waiting above; their reason got here first
@@ -1001,7 +1009,7 @@ void fwriteMain(fwriteMainArgs args)
     // or realloc fail. If the initial malloc failed, free(NULL) is ok and does nothing.
     if (args.is_gzip) {
 #ifndef NOZLIB
-      deflateEnd(&mystream);
+      deflateEnd(mystream);
 #endif
     }
   }
