@@ -728,23 +728,23 @@ SEXP gmin(SEXP x, SEXP narm)
     ans = PROTECT(allocVector(STRSXP, ngrp)); protecti++;
     for (i=0; i<ngrp; i++) SET_STRING_ELT(ans, i, NA_STRING);
     if (!LOGICAL(narm)[0]) {
-      Rboolean *upd = calloc(ngrp, sizeof(Rboolean));
-      if (!upd) error(_("Unable to allocate %d * %d bytes for the update mask in gmin na.rm=FALSE"), ngrp, sizeof(Rboolean));
+      bool *updated = calloc(ngrp, sizeof(bool));
+      if (!updated) error(_("Unable to allocate %d * %d bytes for the update mask in gmin na.rm=FALSE"), ngrp, sizeof(bool));
       for (i=0; i<n; i++) {
         thisgrp = grp[i];
         ix = (irowslen == -1) ? i : irows[i]-1;
         if (STRING_ELT(x, ix) == NA_STRING) {
           SET_STRING_ELT(ans, thisgrp, NA_STRING);
-          upd[thisgrp] = TRUE;
+          updated[thisgrp] = true;
         } else {
-          if (!upd[thisgrp] ||
+          if (!updated[thisgrp] ||
             (STRING_ELT(ans, thisgrp) != NA_STRING && strcmp(CHAR(STRING_ELT(x, ix)), CHAR(STRING_ELT(ans, thisgrp))) < 0 )) {
             SET_STRING_ELT(ans, thisgrp, STRING_ELT(x, ix));
-            upd[thisgrp] = TRUE;
+            updated[thisgrp] = true;
           }
         }
       }
-      free(upd);
+      free(updated);
     } else {
       for (i=0; i<n; i++) {
         thisgrp = grp[i];
