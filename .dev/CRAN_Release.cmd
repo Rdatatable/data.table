@@ -305,7 +305,7 @@ tar xvf R-devel.tar.gz
 
 cd R-devel  # may be used for revdep testing: .dev/revdep.R.
 # important to change directory name before building not after because the path is baked into the build, iiuc
-./configure CFLAGS="-O2 -Wall -pedantic"
+./configure CFLAGS="-O0 -Wall -pedantic"
 make
 
 # use latest available `apt-cache search gcc-` or `clang-`
@@ -528,6 +528,7 @@ sudo apt-get -y install parallel   # for revdepr.R
 sudo apt-get -y install pandoc-citeproc   # for basecallQC
 sudo apt-get -y install libquantlib0-dev  # for RQuantLib
 sudo apt-get -y install cargo  # for gifski, a suggest of nasoi
+sudo apt-get -y install libgit2-dev  # for gert
 sudo R CMD javareconf
 # ENDIF
 
@@ -571,7 +572,9 @@ du -k inst/tests                # 1.5MB before
 bzip2 inst/tests/*.Rraw         # compress *.Rraw just for release to CRAN; do not commit compressed *.Rraw to git
 du -k inst/tests                # 0.75MB after
 R CMD build .
-R CMD check data.table_1.13.4.tar.gz --as-cran
+export GITHUB_PAT="f1c.. github personal access token ..7ad"
+Rdevel -q -e "packageVersion('xml2')"   # ensure installed
+Rdevel CMD check data.table_1.13.6.tar.gz --as-cran  # use latest Rdevel as it may have extra checks
 #
 bunzip2 inst/tests/*.Rraw.bz2  # decompress *.Rraw again so as not to commit compressed *.Rraw to git
 #
