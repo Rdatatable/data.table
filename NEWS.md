@@ -9,7 +9,7 @@
 ## NOTES
 
 
-# data.table [v1.13.6](https://github.com/Rdatatable/data.table/milestone/22?closed=1)  (submitted to CRAN on 14 Dec 2020)
+# data.table [v1.13.6](https://github.com/Rdatatable/data.table/milestone/22?closed=1)  (30 Dec 2020)
 
 ## BUG FIXES
 
