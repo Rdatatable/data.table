@@ -2,13 +2,45 @@
 
 **Benchmarks are regularly updated: [here](https://h2oai.github.io/db-benchmark/)**
 
-# data.table [v1.13.3](https://github.com/Rdatatable/data.table/milestone/20)  (in development)
-
-## NEW FEATURES
+# data.table [v1.13.7](https://github.com/Rdatatable/data.table/milestone/20)  (in development)
 
 ## BUG FIXES
 
 ## NOTES
+
+
+# data.table [v1.13.6](https://github.com/Rdatatable/data.table/milestone/22?closed=1)  (30 Dec 2020)
+
+## BUG FIXES
+
+1. Grouping could throw an error `Failed to allocate counts or TMP` with more than 1e9 rows even with sufficient RAM due to an integer overflow, [#4295](https://github.com/Rdatatable/data.table/issues/4295) [#4818](https://github.com/Rdatatable/data.table/issues/4818). Thanks to @renkun-ken and @jangorecki for reporting, and @shrektan for fixing.
+
+2. `fwrite()`'s mutithreaded `gzip` compression failed on Solaris with Z_STREAM_ERROR, [#4099](https://github.com/Rdatatable/data.table/issues/4099). Since this feature was released in Oct 2019 (see item 3 in v1.12.4 below in this news file) there have been no known problems with it on Linux, Windows or Mac. For Solaris, we have been successively adding more and more detailed tracing to the output in each release, culminating in tracing `zlib` internals at byte level by reading `zlib`'s source. The problem did not manifest itself on [R-hub](https://builder.r-hub.io/)'s Solaris instances, so we had to work via CRAN output. If `zlib`'s `z_stream` structure is declared inside a parallel region but before a parallel for, it appears that the particular OpenMP implementation used by CRAN's Solaris moves the structure to a new address on entering the parallel for. Ordinarily this memory move would not matter, however, `zlib` internals have a self reference pointer to the parent, and check that the pointers match. This mismatch caused the -2 (Z_STREAM_ERROR). Allocating an array of structures, one for each thread, before the parallel region avoids the memory move with no cost.
+
+    It should be carefully noted that we cannot be sure it really is a problem unique to CRAN's Solaris. Even if it seems that way after one year of observations. For example, it could be compiler flags, or particular memory circumstances, either of which could occur on other operating systems too. However, we are unaware of why it would make sense for the OpenMP implementation to move the structure at that point. Any optimizations such as aligning the set of structures to cache line boundaries could be performed at the start of the parallel region, not after the parallel for. If anyone reading this knows more, please let us know. 
+
+## NOTES
+
+1. The last release took place at the same time as several breaking changes were made to R-devel. The CRAN submissions process runs against latest daily R-devel so we had to keep up with those latest changes by making several resubmissions. Then each resubmission reruns against the new latest R-devel again. Overall it took 7 days. For example, we added the new `environments=FALSE` to our `all.equal` call. Then about 4 hours after 1.13.4 was accepted, the `s` was dropped and we now need to resubmit with `environment=FALSE`. In any case, we have suggested that the default should be FALSE first to give packages some notice, as opposed to generating errors in the CRAN submissions process within hours. Then the default for `environment=` could be TRUE in 6 months time after packages have had some time to update in advance of the default change. Readers of this NEWS file will be familiar with `data.table`'s approach to change control and know that we do this ourselves.
+
+
+# data.table [v1.13.4](https://github.com/Rdatatable/data.table/milestone/21?closed=1)  (08 Dec 2020)
+
+## BUG FIXES
+
+1. `as.matrix(<empty DT>)` now retains the column type for the empty matrix result, [#4762](https://github.com/Rdatatable/data.table/issues/4762). Thus, for example, `min(DT[0])` where DT's columns are numeric, is now consistent with non-empty all-NA input and returns `Inf` with R's warning `no non-missing arguments to min; returning Inf` rather than R's error `only defined on a data frame with all numeric[-alike] variables`. Thanks to @mb706 for reporting.
+
+2. `fsort()` could crash when compiled using `clang-11` (Oct 2020), [#4786](https://github.com/Rdatatable/data.table/issues/4786). Multithreaded debugging revealed that threads are no longer assigned iterations monotonically by the dynamic schedule. Although never guaranteed by the OpenMP standard, in practice monotonicity could be relied on as far as we knew, until now. We rely on monotonicity in the `fsort` implementation. Happily, a schedule modifier `monotonic:dynamic` was added in OpenMP 4.5 (Nov 2015) which we now use if available (e.g. gcc 6+, clang 3.9+). If you have an old compiler which does not support OpenMP 4.5, it's probably the case that the unmodified dynamic schedule is monotonic anyway, so `fsort` now checks that threads are receiving iterations monotonically and emits a graceful error if not. It may be that `clang` prior to version 11, and `gcc` too, exhibit the same crash. It was just that `clang-11` was the first report. To know which version of OpenMP `data.table` is using, `getDTthreads(verbose=TRUE)` now reports the `YYYYMM` value `_OPENMP`; e.g. 201511 corresponds to v4.5, and 201811 corresponds to v5.0. Oddly, the `x.y` version number is not provided by the OpenMP API. OpenMP 4.5 may be enabled in some compilers using `-fopenmp-version=45`. Otherwise, if you need to upgrade compiler, https://www.openmp.org/resources/openmp-compilers-tools/ may be helpful.
+
+3. Columns containing functions that don't inherit the class `'function'` would fail to group, [#4814](https://github.com/Rdatatable/data.table/issues/4814). Thanks @mb706 for reporting, @ecoRoland2 for helping investigate, and @Coorsaa for a follow-up example involving environments.
+
+## NOTES
+
+1. Continuous daily testing by CRAN using latest daily R-devel revealed, within one day of the change to R-devel, that a future version of R would break one of our tests, [#4769](https://github.com/Rdatatable/data.table/issues/4769). The characters "-alike" were added into one of R's error messages, so our too-strict test which expected the error `only defined on a data frame with all numeric variables` will fail when it sees the new error message `only defined on a data frame with all numeric-alike variables`. We have relaxed the pattern the test looks for to `data.*frame.*numeric` well in advance of the future version of R being released. Readers are reminded that CRAN is not just a host for packages. It is also a giant test suite for R-devel. For more information, [behind the scenes of cran, 2016](https://www.h2o.ai/blog/behind-the-scenes-of-cran/).
+
+2. `as.Date.IDate` is no longer exported as a function to solve a new error in R-devel `S3 method lookup found 'as.Date.IDate' on search path`, [#4777](https://github.com/Rdatatable/data.table/issues/4777). The S3 method is still exported; i.e. `as.Date(x)` will still invoke the `as.Date.IDate` method when `x` is class `IDate`. The function had been exported, in addition to exporting the method, to solve a compatibility issue with `zoo` (and `xts` which uses `zoo`) because `zoo` exports `as.Date` which masks `base::as.Date`. Happily, since zoo 1.8-1 (Jan 2018) made a change to its `as.IDate`, the workaround is no longer needed.
+
+3. Thanks to @fredguinog for testing `fcase` in development before 1.13.0 was released and finding a segfault, [#4378](https://github.com/Rdatatable/data.table/issues/4378). It was found separately by the `rchk` tool (which uses static code analysis) in release procedures and fixed before `fcase` was released, but the reproducible example has now been added to the test suite for completeness. Thanks also to @shrektan for investigating, proposing a very similar fix at C level, and a different reproducible example which has also been added to the test suite.
 
 
 # data.table [v1.13.2](https://github.com/Rdatatable/data.table/milestone/19?closed=1)  (19 Oct 2020)
@@ -850,7 +882,7 @@ has a better chance of working on Mac.
 
 12. `DT[..., .SDcols=integer()]` failed with `.SDcols is numeric but has both +ve and -ve indices`, [#1789](https://github.com/Rdatatable/data.table/issues/1789) and [#3185](https://github.com/Rdatatable/data.table/issues/3185). It now functions as `.SDcols=character()` has done and creates an empty `.SD`. Thanks to Gabor Grothendieck and Hugh Parsonage for reporting. A related issue with empty `.SDcols` was fixed in development before release thanks to Kun Ren's testing, [#3211](https://github.com/Rdatatable/data.table/issues/3211).
 
-13. Multithreaded stability should be much improved with R 3.5+. Many thanks to Luke Tierney for pinpointing a memory issue with package `constellation` caused by `data.table` and his advice, [#3165](https://github.com/Rdatatable/data.table/issues/3165). Luke also added an extra check to R-devel when compiled with `--enable-strict-barrier`. The test suite is run through latest daily R-devel after every commit as usual, but now with `--enable-strict-barrier` on too via GitLab Pipelines ("Extra" badge at the top of the data.table [homepage](http://r-datatable.com)) thanks to Jan Gorecki.
+13. Multithreaded stability should be much improved with R 3.5+. Many thanks to Luke Tierney for pinpointing a memory issue with package `constellation` caused by `data.table` and his advice, [#3165](https://github.com/Rdatatable/data.table/issues/3165). Luke also added an extra check to R-devel when compiled with `--enable-strict-barrier`. The test suite is run through latest daily R-devel after every commit as usual, but now with `--enable-strict-barrier` on too via GitLab CI ("Extra" badge on the `data.table` homepage) thanks to Jan Gorecki.
 
 14. Fixed an edge-case bug of platform-dependent output of `strtoi("", base = 2L)` on which `groupingsets` had relied, [#3267](https://github.com/Rdatatable/data.table/issues/3267).
 

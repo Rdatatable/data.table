@@ -16,6 +16,7 @@ Test jobs:
 - `test-350-cran-lin` - R 3.5.0 on Linux, no `r-recommended`
 - `test-rel-win` - `r-release` on Windows
 - `test-dev-win` - `r-devel` on Windows
+- `test-old-win` - `r-oldrel` on Windows
 - `test-rel-osx` - MacOSX build not yet deployed, see [#3326](https://github.com/Rdatatable/data.table/issues/3326) for status
 
 Artifacts:
@@ -25,7 +26,7 @@ Artifacts:
 - [html vignettes](https://rdatatable.gitlab.io/data.table/library/data.table/doc/index.html)
 - R packages repository for `data.table` and all _Suggests_ dependencies, url: `https://Rdatatable.gitlab.io/data.table`
   - sources
-  - Windows binaries for `r-release` and `r-devel`
+  - Windows binaries for `r-release`, `r-devel` and `r-oldrel`
 - [CRAN-like homepage](https://rdatatable.gitlab.io/data.table/web/packages/data.table/index.html)
 - [CRAN-like checks results](https://rdatatable.gitlab.io/data.table/web/checks/check_results_data.table.html) - note that all artifacts, including check results page, are being published only when all test jobs successfully pass, thus one will not see an _ERROR_ status there (unless error happened on a job marked as `allow_failure`).
 - [docker images](https://gitlab.com/Rdatatable/data.table/container_registry) - copy/paste-able `docker pull` commands can be found at the bottom of our [CRAN-like homepage](https://rdatatable.gitlab.io/data.table/web/packages/data.table/index.html)

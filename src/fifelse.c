@@ -6,7 +6,7 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b, SEXP na) {
   }
   if (  (isS4(a) && !INHERITS(a, char_nanotime))
      || (isS4(b) && !INHERITS(b, char_nanotime)) ) {
-    error("S4 class objects (except nanotime) are not supported.");
+    error(_("S4 class objects (except nanotime) are not supported."));
   }
   const int64_t len0 = xlength(l);
   const int64_t len1 = xlength(a);
@@ -160,7 +160,7 @@ SEXP fcaseR(SEXP na, SEXP rho, SEXP args) {
   SEXPTYPE type0 = TYPEOF(value0);
   int64_t len0=xlength(cons0), len2=len0;
   if (isS4(value0) && !INHERITS(value0, char_nanotime)) {
-    error("S4 class objects (except nanotime) are not supported. Please see https://github.com/Rdatatable/data.table/issues/4131.");
+    error(_("S4 class objects (except nanotime) are not supported. Please see https://github.com/Rdatatable/data.table/issues/4131."));
     // otherwise 'invalid type/length (S4/1) in vector allocation' from test 2132.3
   }
   SEXP ans = PROTECT(allocVector(type0, len0));
@@ -171,24 +171,24 @@ SEXP fcaseR(SEXP na, SEXP rho, SEXP args) {
   bool nonna=!isNull(na);
   if (nonna) {
     if (xlength(na) != 1) {
-      error("Length of 'default' must be 1.");
+      error(_("Length of 'default' must be 1."));
     }
     SEXPTYPE tn = TYPEOF(na);
     if (tn==LGLSXP && LOGICAL(na)[0]==NA_LOGICAL) {
       nonna = false;
     } else {
       if (tn != type0) {
-        error("Resulting value is of type %s but 'default' is of type %s. "
-              "Please make sure that both arguments have the same type.", type2char(type0), type2char(tn));
+        error(_("Resulting value is of type %s but 'default' is of type %s. "
+                "Please make sure that both arguments have the same type."), type2char(type0), type2char(tn));
       }
       if (!R_compute_identical(PROTECT(getAttrib(value0,R_ClassSymbol)),  PROTECT(getAttrib(na,R_ClassSymbol)), 0)) {
-        error("Resulting value has different class than 'default'. "
-              "Please make sure that both arguments have the same class.");
+        error(_("Resulting value has different class than 'default'. "
+                "Please make sure that both arguments have the same class."));
       }
       UNPROTECT(2);
       if (isFactor(value0)) {
         if (!R_compute_identical(PROTECT(getAttrib(value0,R_LevelsSymbol)),  PROTECT(getAttrib(na,R_LevelsSymbol)), 0)) {
-          error("Resulting value and 'default' are both type factor but their levels are different.");
+          error(_("Resulting value and 'default' are both type factor but their levels are different."));
         }
         UNPROTECT(2);
       }
@@ -200,37 +200,37 @@ SEXP fcaseR(SEXP na, SEXP rho, SEXP args) {
     SEXP cons = PROTECT(i==0 ? cons0 : eval(SEXPPTR_RO(args)[2*i], rho)); // protect cons0 again for easy unprotect at the end of this loop
     SEXP outs = PROTECT(i==0 ? value0 : eval(SEXPPTR_RO(args)[2*i+1], rho));
     if (isS4(outs) && !INHERITS(outs, char_nanotime)) {
-      error("S4 class objects (except nanotime) are not supported. Please see https://github.com/Rdatatable/data.table/issues/4131.");
+      error(_("S4 class objects (except nanotime) are not supported. Please see https://github.com/Rdatatable/data.table/issues/4131."));
     }
     if (!isLogical(cons)) {
-      error("Argument #%d must be logical.", 2*i+1);
+      error(_("Argument #%d must be logical."), 2*i+1);
     }
     if (i>0) {
       if (xlength(cons) != len0) {
-        error("Argument #%d has a different length than argument #1. "
-                 "Please make sure all logical conditions have the same length.",
-                 i*2+1);
+        error(_("Argument #%d has a different length than argument #1. "
+                "Please make sure all logical conditions have the same length."),
+                i*2+1);
       }
       if (TYPEOF(outs) != type0) {
-        error("Argument #%d is of type %s, however argument #2 is of type %s. "
-                 "Please make sure all output values have the same type.",
-                 i*2+2, type2char(TYPEOF(outs)), type2char(type0));
+        error(_("Argument #%d is of type %s, however argument #2 is of type %s. "
+                "Please make sure all output values have the same type."),
+                i*2+2, type2char(TYPEOF(outs)), type2char(type0));
       }
       if (!R_compute_identical(PROTECT(getAttrib(value0,R_ClassSymbol)),  PROTECT(getAttrib(outs,R_ClassSymbol)), 0)) {
-        error("Argument #%d has different class than argument #2, "
-                 "Please make sure all output values have the same class.", i*2+2);
+        error(_("Argument #%d has different class than argument #2, "
+                "Please make sure all output values have the same class."), i*2+2);
       }
       UNPROTECT(2);
       if (isFactor(value0)) {
         if (!R_compute_identical(PROTECT(getAttrib(value0,R_LevelsSymbol)),  PROTECT(getAttrib(outs,R_LevelsSymbol)), 0)) {
-          error("Argument #2 and argument #%d are both factor but their levels are different.", i*2+2);
+          error(_("Argument #2 and argument #%d are both factor but their levels are different."), i*2+2);
         }
         UNPROTECT(2);
       }
     }
     int64_t len1 = xlength(outs);
     if (len1!=len0 && len1!=1) {
-      error("Length of output value #%d must either be 1 or length of logical condition.", i*2+2);
+      error(_("Length of output value #%d must either be 1 or length of logical condition."), i*2+2);
     }
     int64_t amask = len1>1 ? INT64_MAX : 0;
     const int *restrict pcons = LOGICAL(cons);
@@ -333,7 +333,7 @@ SEXP fcaseR(SEXP na, SEXP rho, SEXP args) {
       }
     } break;
     default:
-      error("Type %s is not supported.", type2char(TYPEOF(outs)));
+      error(_("Type %s is not supported."), type2char(TYPEOF(outs)));
     }
     UNPROTECT(2); // this cons and outs
     if (l==0) {

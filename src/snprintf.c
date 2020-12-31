@@ -189,60 +189,59 @@ SEXP test_dt_win_snprintf()
   char buff[50];
 
   dt_win_snprintf(buff, 50, "No pos %d%%%d ok", 42, -84);
-  if (strcmp(buff, "No pos 42%-84 ok"))                                             error("dt_win_snprintf test 1 failed: %s", buff);
+  if (strcmp(buff, "No pos 42%-84 ok"))                                             error(_("dt_win_snprintf test %d failed: %s"), 1, buff);
 
   dt_win_snprintf(buff, 50, "With pos %1$d%%%2$d ok", 42, -84);
-  if (strcmp(buff, "With pos 42%-84 ok"))                                           error("dt_win_snprintf test 2 failed: %s", buff);
+  if (strcmp(buff, "With pos 42%-84 ok"))                                           error(_("dt_win_snprintf test %d failed: %s"), 2, buff);
 
   dt_win_snprintf(buff, 50, "With pos %2$d%%%1$d ok", 42, -84);
-  if (strcmp(buff, "With pos -84%42 ok"))                                           error("dt_win_snprintf test 3 failed: %s", buff);
+  if (strcmp(buff, "With pos -84%42 ok"))                                           error(_("dt_win_snprintf test %d failed: %s"), 3, buff);
 
   dt_win_snprintf(buff, 50, "%3$s %1$d %4$10s %2$03d$", -99, 12, "hello%2$d", "short");
-  if (strcmp(buff, "hello%2$d -99      short 012$"))                                error("dt_win_snprintf test 4 failed: %s", buff);
+  if (strcmp(buff, "hello%2$d -99      short 012$"))                                error(_("dt_win_snprintf test %d failed: %s"), 4, buff);
 
   dt_win_snprintf(buff, 50, "%1$d %s", 9, "foo");
-  if (strcmp(buff, "3 some %n$ but not all"))                                       error("dt_win_snprintf test 5 failed: %s", buff);
+  if (strcmp(buff, "3 some %n$ but not all"))                                       error(_("dt_win_snprintf test %d failed: %s"), 5, buff);
   
   dt_win_snprintf(buff, 50, "%%1$foo%d", 9);  // The %1$f is not a specifier because % is doubled
-  if (strcmp(buff, "%1$foo9"))                                                      error("dt_win_snprintf test 6 failed: %s", buff);
+  if (strcmp(buff, "%1$foo9"))                                                      error(_("dt_win_snprintf test %d failed: %s"), 6, buff);
   
   dt_win_snprintf(buff, 40, "long format string more than n==%d chopped", 40); // regular library (no %n$) chops to 39 chars + '/0'
-  if (strlen(buff)!=39 || strcmp(buff, "long format string more than n==40 chop"))  error("dt_win_snprintf test 7 failed: %s", buff);
+  if (strlen(buff)!=39 || strcmp(buff, "long format string more than n==40 chop"))  error(_("dt_win_snprintf test %d failed: %s"), 7, buff);
   
   dt_win_snprintf(buff, 40, "long %3$s %2$s more than n==%1$d chopped", 40, "string", "format"); // same with dt_win_snprintf
-  if (strlen(buff)!=39 || strcmp(buff, "long format string more than n==40 chop"))  error("dt_win_snprintf test 8 failed: %s", buff);
+  if (strlen(buff)!=39 || strcmp(buff, "long format string more than n==40 chop"))  error(_("dt_win_snprintf test %d failed: %s"), 8, buff);
   
   int res = dt_win_snprintf(buff, 10, "%4$d%2$d%3$d%5$d%1$d", 111, 222, 33, 44, 555); // fmt longer than n
-  if (strlen(buff)!=9 || strcmp(buff, "442223355"))                                 error("dt_win_snprintf test 9 failed: %s", buff);
-  if (res!=13) /* should return what would have been written if not chopped */      error("dt_win_snprintf test 10 failed: %d", res);
+  if (strlen(buff)!=9 || strcmp(buff, "442223355"))                                 error(_("dt_win_snprintf test %d failed: %s"), 9, buff);
+  if (res!=13) /* should return what would have been written if not chopped */      error(_("dt_win_snprintf test %d failed: %s"), 10, res);
   
   dt_win_snprintf(buff, 39, "%l", 3);
-  if (strlen(buff)!=38 || strcmp(buff, "0 %l    does not end with recognized t"))   error("dt_win_snprintf test 11 failed: %s", buff);
+  if (strlen(buff)!=38 || strcmp(buff, "0 %l    does not end with recognized t"))   error(_("dt_win_snprintf test %d failed: %s"), 11, buff);
   
   dt_win_snprintf(buff, 19, "%l", 3);
-  if (strlen(buff)!=18 || strcmp(buff, "0 %l    does not e"))                       error("dt_win_snprintf test 12 failed: %s", buff);
+  if (strlen(buff)!=18 || strcmp(buff, "0 %l    does not e"))                       error(_("dt_win_snprintf test %d failed: %s"), 12, buff);
   
   dt_win_snprintf(buff, 50, "%1$d == %0$d", 1, 2);
-  if (strcmp(buff, "1 %0$ outside range [1,99]"))                                   error("dt_win_snprintf test 13 failed: %s", buff);
+  if (strcmp(buff, "1 %0$ outside range [1,99]"))                                   error(_("dt_win_snprintf test %d failed: %s"), 13, buff);
   
   dt_win_snprintf(buff, 50, "%1$d == %$d", 1, 2);
-  if (strcmp(buff, "1 %$ outside range [1,99]"))                                    error("dt_win_snprintf test 14 failed: %s", buff);
+  if (strcmp(buff, "1 %$ outside range [1,99]"))                                    error(_("dt_win_snprintf test %d failed: %s"), 14, buff);
   
   dt_win_snprintf(buff, 50, "%1$d == %100$d", 1, 2);
-  if (strcmp(buff, "1 %100$ outside range [1,99]"))                                 error("dt_win_snprintf test 15 failed: %s", buff);
+  if (strcmp(buff, "1 %100$ outside range [1,99]"))                                 error(_("dt_win_snprintf test %d failed: %s"), 15, buff);
   
   dt_win_snprintf(buff, 50, "%1$d == %-1$d", 1, 2);
-  if (strcmp(buff, "1 %-1$ outside range [1,99]"))                                  error("dt_win_snprintf test 16 failed: %s", buff);
+  if (strcmp(buff, "1 %-1$ outside range [1,99]"))                                  error(_("dt_win_snprintf test %d failed: %s"), 16, buff);
   
   dt_win_snprintf(buff, 50, "%1$d == %3$d", 1, 2, 3);
-  if (strcmp(buff, "5 %2$ missing"))                                                error("dt_win_snprintf test 17 failed: %s", buff);
+  if (strcmp(buff, "5 %2$ missing"))                                                error(_("dt_win_snprintf test %d failed: %s"), 17, buff);
   
   dt_win_snprintf(buff, 50, "%1$d == %1$d", 42);
-  if (strcmp(buff, "2 %1$ appears twice"))                                          error("dt_win_snprintf test 18 failed: %s", buff);
+  if (strcmp(buff, "2 %1$ appears twice"))                                          error(_("dt_win_snprintf test %d failed: %s"), 18, buff);
   
   dt_win_snprintf(buff, 50, "%1$d + %3$d - %2$d == %3$d", 1, 1, 2);
-  if (strcmp(buff, "2 %3$ appears twice"))                                          error("dt_win_snprintf test 19 failed: %s", buff);
+  if (strcmp(buff, "2 %3$ appears twice"))                                          error(_("dt_win_snprintf test %d failed: %s"), 19, buff);
   
   return R_NilValue;
 }
-

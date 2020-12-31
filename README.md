@@ -1,5 +1,5 @@
 
-# data.table <a href="http://r-datatable.com"><img src="https://raw.githubusercontent.com/Rdatatable/data.table/master/.graphics/logo.png" align="right" height="140" /></a>
+# data.table <a href="https://Rdatatable.gitlab.io/data.table"><img src="https://raw.githubusercontent.com/Rdatatable/data.table/master/.graphics/logo.png" align="right" height="140" /></a>
 
 <!-- badges: start -->
 [![CRAN status](https://cranchecks.info/badges/flavor/release/data.table)](https://cran.r-project.org/web/checks/check_results_data.table.html)
@@ -8,7 +8,6 @@
 [![Codecov test coverage](https://codecov.io/github/Rdatatable/data.table/coverage.svg?branch=master)](https://codecov.io/github/Rdatatable/data.table?branch=master)
 [![GitLab CI build status](https://gitlab.com/Rdatatable/data.table/badges/master/pipeline.svg)](https://gitlab.com/Rdatatable/data.table/pipelines)
 [![downloads](https://cranlogs.r-pkg.org/badges/data.table)](https://www.rdocumentation.org/trends)
-[![depsy](http://depsy.org/api/package/cran/data.table/badge.svg)](http://depsy.org/package/r/data.table)
 [![CRAN usage](https://jangorecki.gitlab.io/rdeps/data.table/CRAN_usage.svg?sanitize=true)](https://gitlab.com/jangorecki/rdeps)
 [![BioC usage](https://jangorecki.gitlab.io/rdeps/data.table/BioC_usage.svg?sanitize=true)](https://gitlab.com/jangorecki/rdeps)
 [![indirect usage](https://jangorecki.gitlab.io/rdeps/data.table/indirect_usage.svg?sanitize=true)](https://gitlab.com/jangorecki/rdeps)
@@ -82,7 +81,7 @@ DT[Petal.Width > 1.0, mean(Petal.Length), by = Species]
 
 ## Community
 
-`data.table` is widely used by the R community. It is being directly used by hundreds of CRAN and Bioconductor packages, and indirectly by thousands. It is one of the [top most starred](https://www.r-pkg.org/starred) R package on GitHub. If you need help, the `data.table` community is active on [StackOverflow](https://stackoverflow.com/questions/tagged/data.table).
+`data.table` is widely used by the R community. It is being directly used by hundreds of CRAN and Bioconductor packages, and indirectly by thousands. It is one of the [top most starred](https://www.r-pkg.org/starred) R packages on GitHub, and was highly rated by the [Depsy project](http://depsy.org/package/r/data.table). If you need help, the `data.table` community is active on [StackOverflow](https://stackoverflow.com/questions/tagged/data.table).
 
 ### Stay up-to-date
 
