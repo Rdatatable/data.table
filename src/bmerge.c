@@ -245,7 +245,7 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
     const int *iic = ic.i;
     const int *ixc = xc.i;
     ival.i = isDataCol ? iic[ir] : thisgrp;
-    while(xlow < xupp-1) {
+    while (xlow < xupp-1) {
       int mid = xlow + (xupp-xlow)/2;   // Same as (xlow+xupp)/2 but without risk of overflow
       xval.i = ixc[XIND(mid)];
       if (xval.i<ival.i) {          // relies on NA_INTEGER == INT_MIN, tested in init.c
@@ -257,13 +257,13 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
         // branch mid to find start and end of this group in this column
         // TO DO?: not if mult=first|last and col<ncol-1
         int tmplow = mid;
-        while(tmplow<xupp-1) {
+        while (tmplow<xupp-1) {
           int mid = tmplow + (xupp-tmplow)/2;
           xval.i = ixc[XIND(mid)];
           if (xval.i == ival.i) tmplow=mid; else xupp=mid;
         }
         int tmpupp = mid;
-        while(xlow<tmpupp-1) {
+        while (xlow<tmpupp-1) {
           int mid = xlow + (tmpupp-xlow)/2;
           xval.i = ixc[XIND(mid)];
           if (xval.i == ival.i) tmpupp=mid; else xlow=mid;
@@ -293,14 +293,14 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
         }
       }
       int tmplow = lir;
-      while(tmplow<iupp-1) {   // TO DO: could double up from lir rather than halving from iupp
+      while (tmplow<iupp-1) {   // TO DO: could double up from lir rather than halving from iupp
         int mid = tmplow + (iupp-tmplow)/2;
         xval.i = iic[ o ? o[mid]-1 : mid ];   // reuse xval to search in i
         if (xval.i == ival.i) tmplow=mid; else iupp=mid;
         // if we could guarantee ivals to be *always* sorted for all columns independently (= max(nestedid) = 1), then we can speed this up by 2x by adding checks for GE,GT,LE,LT separately.
       }
       int tmpupp = lir;
-      while(ilow<tmpupp-1) {
+      while (ilow<tmpupp-1) {
         int mid = ilow + (tmpupp-ilow)/2;
         xval.i = iic[ o ? o[mid]-1 : mid ];
         if (xval.i == ival.i) tmpupp=mid; else ilow=mid;
@@ -311,19 +311,19 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
   case STRSXP : {
     if (op[col] != EQ) error(_("Only '==' operator is supported for columns of type %s."), type2char(t));
     ival.s = ENC2UTF8(ic.s[ir]);
-    while(xlow < xupp-1) {
+    while (xlow < xupp-1) {
       int mid = xlow + (xupp-xlow)/2;
       xval.s = ENC2UTF8(xc.s[XIND(mid)]);
       int tmp = StrCmpNE(xval.s, ival.s);  // uses pointer equality first, NA_STRING are allowed and joined to, then uses strcmp on CHAR(.), StrCmpNE does not do ENC2UTF8 again
       if (tmp == 0) {                    // TO DO: deal with mixed encodings and locale optionally
         int tmplow = mid;
-        while(tmplow<xupp-1) {
+        while (tmplow<xupp-1) {
           int mid = tmplow + (xupp-tmplow)/2;
           xval.s = ENC2UTF8(xc.s[XIND(mid)]);
           if (ival.s == xval.s) tmplow=mid; else xupp=mid;  // the == here handles encodings as well. Marked non-utf8 encodings are converted to utf-8 using ENC2UTF8.
         }
         int tmpupp = mid;
-        while(xlow<tmpupp-1) {
+        while (xlow<tmpupp-1) {
           int mid = xlow + (tmpupp-xlow)/2;
           xval.s = ENC2UTF8(xc.s[XIND(mid)]);
           if (ival.s == xval.s) tmpupp=mid; else xlow=mid;  // see above re ==
@@ -336,13 +336,13 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
       }
     }
     int tmplow = lir;
-    while(tmplow<iupp-1) {
+    while (tmplow<iupp-1) {
       int mid = tmplow + (iupp-tmplow)/2;
       xval.s = ENC2UTF8(ic.s[o ? o[mid]-1 : mid]);
       if (xval.s == ival.s) tmplow=mid; else iupp=mid;   // see above re ==
     }
     int tmpupp = lir;
-    while(ilow<tmpupp-1) {
+    while (ilow<tmpupp-1) {
       int mid = ilow + (tmpupp-ilow)/2;
       xval.s = ENC2UTF8(ic.s[o ? o[mid]-1 : mid]);
       if (xval.s == ival.s) tmpupp=mid; else ilow=mid;   // see above re ==
@@ -354,7 +354,7 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
     uint64_t (*twiddle)(const void *, int) = isInt64 ? &i64twiddle : &dtwiddle;
     // TODO: remove this last remaining use of i64twiddle.
     ival.ull = twiddle(dic, ir);
-    while(xlow < xupp-1) {
+    while (xlow < xupp-1) {
       int mid = xlow + (xupp-xlow)/2;
       xval.ull = twiddle(dxc, XIND(mid));
       if (xval.ull<ival.ull) {
@@ -363,13 +363,13 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
         xupp=mid;
       } else { // xval.ull == ival.ull)
         int tmplow = mid;
-        while(tmplow<xupp-1) {
+        while (tmplow<xupp-1) {
           int mid = tmplow + (xupp-tmplow)/2;
           xval.ull = twiddle(dxc, XIND(mid));
           if (xval.ull == ival.ull) tmplow=mid; else xupp=mid;
         }
         int tmpupp = mid;
-        while(xlow<tmpupp-1) {
+        while (xlow<tmpupp-1) {
           int mid = xlow + (tmpupp-xlow)/2;
           xval.ull = twiddle(dxc, XIND(mid));
           if (xval.ull == ival.ull) tmpupp=mid; else xlow=mid;
@@ -398,13 +398,13 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
       }
     }
     int tmplow = lir;
-    while(tmplow<iupp-1) {
+    while (tmplow<iupp-1) {
       int mid = tmplow + (iupp-tmplow)/2;
       xval.ull = twiddle(dic, o ? o[mid]-1 : mid);
       if (xval.ull == ival.ull) tmplow=mid; else iupp=mid;
     }
     int tmpupp = lir;
-    while(ilow<tmpupp-1) {
+    while (ilow<tmpupp-1) {
       int mid = ilow + (tmpupp-ilow)/2;
       xval.ull = twiddle(dic, o ? o[mid]-1 : mid);
       if (xval.ull == ival.ull) tmpupp=mid; else ilow=mid;
