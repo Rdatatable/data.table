@@ -119,8 +119,8 @@ dt_t DTPTR_RO(SEXP x, int *cols, int ncol) {
       dt.cols[i].c = (const Rcomplex*)COMPLEX(col);
       dt.int64[i] = false;
     } break;
-    case RAWSXP : {
-      dt.types[i] = RAWSXP; // # nocov start
+    case RAWSXP : { // # nocov start
+      dt.types[i] = RAWSXP;
       dt.cols[i].b = (const Rbyte*)RAW(col);
       dt.int64[i] = false;
     } break; // # nocov end
