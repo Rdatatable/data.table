@@ -12899,7 +12899,7 @@ for (col in c('b', 'c')) {
 #
 # tests-S4.R (S4 Compatability)
 #
-suppressWarnings(setClass("Data.Table", contains="data.table"))  # suppress 'Created a package name, ‘2018-05-26 06:14:43.444’, when none found'
+suppressWarnings(setClass("Data.Table", contains="data.table"))  # suppress "Created a package name, '2018-05-26 06:14:43.444', when none found"
 suppressWarnings(setClass("S4Composition", representation(data="data.table")))
 # data.table can be a parent class
 ids <- sample(letters[1:3], 10, replace=TRUE)
