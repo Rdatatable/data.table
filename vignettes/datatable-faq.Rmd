@@ -72,7 +72,7 @@ What's happening is that the `j` expression sees objects in the calling scope. T
 
 To get the column `x` from `DT`, there are a few options:
 
-```{r metaprogram_column}
+```{r metaprogram_column, eval=FALSE}
 # using .. to tell data.table the variable should be evaluated
 DT[ , ..mycol]
 # using with=FALSE to do the same
