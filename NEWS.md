@@ -4,6 +4,10 @@
 
 # data.table [v1.13.7](https://github.com/Rdatatable/data.table/milestone/20)  (in development)
 
+## NEW FEATURES
+
+1. `dcast` now supports complex values in `value.var`, [#4855](https://github.com/Rdatatable/data.table/issues/4855); this extends earlier support for complex values in `formula`. Thanks @eliocamp for the request.
+
 ## BUG FIXES
 
 ## NOTES

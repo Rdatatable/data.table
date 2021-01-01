@@ -17246,3 +17246,8 @@ class(e) = "foo"
 dt = data.table(id=1, funs=list(e))
 test(2161.2, dt[, .(funs), by=id], dt)
 
+# dcast supports complex value to cast, #4855
+DT <- CJ(x = 1:3, y = letters[1:2])
+DT[, z := complex(real = 1:6, imaginary = 6:1)]
+test(2162, dcast(DT, x ~ y, value.var  = "z"),
+     data.table(x=1:3, a=c(1+6i, 3+4i, 5+2i), b=c(2+5i, 4+3i, 6+1i), key='x'))

@@ -18,22 +18,23 @@ SEXP fcast(SEXP lhs, SEXP val, SEXP nrowArg, SEXP ncolArg, SEXP idxArg, SEXP fil
   for (int i=0; i<nval; ++i) {
     SEXP thiscol = VECTOR_ELT(val, i);
     SEXP thisfill = fill;
+    SEXPTYPE thistype = TYPEOF(thiscol);
     int nprotect = 0;
     if (isNull(fill)) {
       if (LOGICAL(is_agg)[0]) {
-        thisfill = PROTECT(allocNAVector(TYPEOF(thiscol), 1)); nprotect++;
+        thisfill = PROTECT(allocNAVector(thistype, 1)); nprotect++;
       } else thisfill = VECTOR_ELT(fill_d, i);
     }
-    if (TYPEOF(thisfill) != TYPEOF(thiscol)) {
-      thisfill = PROTECT(coerceVector(thisfill, TYPEOF(thiscol))); nprotect++;
+    if (TYPEOF(thisfill) != thistype) {
+      thisfill = PROTECT(coerceVector(thisfill, thistype)); nprotect++;
     }
-    switch (TYPEOF(thiscol)) {
+    switch (thistype) {
     case INTSXP:
     case LGLSXP: {
       const int *ithiscol = INTEGER(thiscol);
       const int *ithisfill = INTEGER(thisfill);
       for (int j=0; j<ncols; ++j) {
-        SET_VECTOR_ELT(ans, nlhs+j+i*ncols, target=allocVector(TYPEOF(thiscol), nrows) );
+        SET_VECTOR_ELT(ans, nlhs+j+i*ncols, target=allocVector(thistype, nrows) );
         int *itarget = INTEGER(target);
         copyMostAttrib(thiscol, target);
         for (int k=0; k<nrows; ++k) {
@@ -46,7 +47,7 @@ SEXP fcast(SEXP lhs, SEXP val, SEXP nrowArg, SEXP ncolArg, SEXP idxArg, SEXP fil
       const double *dthiscol = REAL(thiscol);
       const double *dthisfill = REAL(thisfill);
       for (int j=0; j<ncols; ++j) {
-        SET_VECTOR_ELT(ans, nlhs+j+i*ncols, target=allocVector(TYPEOF(thiscol), nrows) );
+        SET_VECTOR_ELT(ans, nlhs+j+i*ncols, target=allocVector(thistype, nrows) );
         double *dtarget = REAL(target);
         copyMostAttrib(thiscol, target);
         for (int k=0; k<nrows; ++k) {
@@ -55,9 +56,22 @@ SEXP fcast(SEXP lhs, SEXP val, SEXP nrowArg, SEXP ncolArg, SEXP idxArg, SEXP fil
         }
       }
     } break;
+    case CPLXSXP: {
+      const Rcomplex *zthiscol = COMPLEX(thiscol);
+      const Rcomplex *zthisfill = COMPLEX(thisfill);
+      for (int j=0; j<ncols; ++j) {
+        SET_VECTOR_ELT(ans, nlhs+j+i*ncols, target=allocVector(thistype, nrows) );
+        Rcomplex *ztarget = COMPLEX(target);
+        copyMostAttrib(thiscol, target);
+        for (int k=0; k<nrows; ++k) {
+          int thisidx = idx[k*ncols + j];
+          ztarget[k] = (thisidx == NA_INTEGER) ? zthisfill[0] : zthiscol[thisidx-1];
+        }
+      }
+    } break;
     case STRSXP:
       for (int j=0; j<ncols; ++j) {
-        SET_VECTOR_ELT(ans, nlhs+j+i*ncols, target=allocVector(TYPEOF(thiscol), nrows) );
+        SET_VECTOR_ELT(ans, nlhs+j+i*ncols, target=allocVector(thistype, nrows) );
         copyMostAttrib(thiscol, target);
         for (int k=0; k<nrows; ++k) {
           int thisidx = idx[k*ncols + j];
@@ -67,7 +81,7 @@ SEXP fcast(SEXP lhs, SEXP val, SEXP nrowArg, SEXP ncolArg, SEXP idxArg, SEXP fil
       break;
     case VECSXP:
       for (int j=0; j<ncols; ++j) {
-        SET_VECTOR_ELT(ans, nlhs+j+i*ncols, target=allocVector(TYPEOF(thiscol), nrows) );
+        SET_VECTOR_ELT(ans, nlhs+j+i*ncols, target=allocVector(thistype, nrows) );
         copyMostAttrib(thiscol, target);
         for (int k=0; k<nrows; ++k) {
           int thisidx = idx[k*ncols + j];
