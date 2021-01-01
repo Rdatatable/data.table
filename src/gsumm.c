@@ -571,7 +571,6 @@ SEXP gsum(SEXP x, SEXP narmArg)
 
 SEXP gmean(SEXP x, SEXP narmArg)
 {
-  if (!isVectorAtomic(x)) error(_("GForce mean can only be applied to columns, not .SD or similar. Likely you're looking for 'DT[,lapply(.SD,mean),by=,.SDcols=]'. See ?data.table."));
   if (inherits(x, "factor")) error(_("mean is not meaningful for factors."));
   if (!isLogical(narmArg) || LENGTH(narmArg)!=1 || LOGICAL(narmArg)[0]==NA_LOGICAL) error(_("na.rm must be TRUE or FALSE"));
   const bool narm = LOGICAL(narmArg)[0];
@@ -588,8 +587,8 @@ SEXP gmean(SEXP x, SEXP narmArg)
     x = PROTECT(coerceVector(x, REALSXP)); protecti++;
   case REALSXP: {
     if (INHERITS(x, char_integer64)) {
-      error("gmean integer64 not yet implemented");
-      // use coerceAs when ready #4491
+      error("gmean integer64 not yet implemented"); // # nocov
+      // merge #4491 and uncomment line below
       //x = PROTECT(coerceAs(x, /*as=*/ScalarReal(1), /*copyArg=*/ScalarLogical(TRUE))); protecti++;
     }
     const double *restrict gx = gather(x, &anyNA);
@@ -703,7 +702,7 @@ SEXP gmean(SEXP x, SEXP narmArg)
     }
   } break;
   default:
-    error(_("Type '%s' not supported by GForce sum (gmean). Either add the prefix base::mean(.) or turn off GForce optimization using options(datatable.optimize=1)"), type2char(TYPEOF(x)));
+    error(_("Type '%s' not supported by GForce mean (gmean). Either add the prefix base::mean(.) or turn off GForce optimization using options(datatable.optimize=1)"), type2char(TYPEOF(x)));
   }
   copyMostAttrib(x, ans);
   if (verbose) { Rprintf(_("%.3fs\n"), wallclock()-started); }
