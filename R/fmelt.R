@@ -4,9 +4,9 @@
 #   redirection as well
 
 melt <- function(data, ..., na.rm = FALSE, value.name = "value") {
-  if (is.data.table(data)) {
+  if (inherits(data, sub("melt\\.", "", as.character(methods(melt))))) {
     UseMethod("melt", data)
-    # if data is not data.table and reshape2 is installed, this won't dispatch to reshape2's method;
+    # if no method is registered for data and reshape2 is installed, this won't dispatch to reshape2's method;
     # CRAN package edarf and others fail without the else branch
   # nocov start
   } else {
