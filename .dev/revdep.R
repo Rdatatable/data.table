@@ -231,6 +231,18 @@ status = function(bioc=FALSE) {
   invisible()
 }
 
+cran = function()  # reports CRAN status of the .cran.fail packages
+{
+  require(data.table)
+  p = proc.time()
+  db = setDT(tools::CRAN_check_results())
+  cat("tools::CRAN_check_results() returned",prettyNum(nrow(db), big.mark=","),"rows in",timetaken(p),"\n")
+  ans = db[Package %chin% .fail.cran, .N, keyby=.(Package, Status)]
+  stopifnot(all(ans$Status %chin% c("ERROR","WARN","NOTE","OK")))
+  ans = dcast(ans, Package~Status, value.var="N", fill=0L)
+  ans[.fail.cran, .(Package,ERROR,WARN,"OK|NOTE"=OK+NOTE)]
+}
+
 run = function(pkgs=NULL, R_CHECK_FORCE_SUGGESTS=TRUE, choose=NULL) {
   if (length(pkgs)==1) pkgs = strsplit(pkgs, split="[, ]")[[1]]
   if (anyDuplicated(pkgs)) stop("pkgs contains dups")
