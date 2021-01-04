@@ -10,7 +10,7 @@
 
 ## NOTES
 
-1. Compiling from source no longer requires `zlib` to be available, [#4844](https://github.com/Rdatatable/data.table/pull/4844). The output suggests installing `zlib`, and how, but now proceeds with `gzip` compression disabled in `fwrite`. Upon requesting `gzip` compression from `fwrite`, an error message suggests to reinstall `data.table` with `zlib` available.
+1. Compiling from source no longer requires `zlib` header files to be available, [#4844](https://github.com/Rdatatable/data.table/pull/4844). The output suggests installing `zlib` headers, and how (e.g. `zlib1g-dev` on Ubuntu), but now proceeds with `gzip` compression disabled in `fwrite`. Upon requesting `gzip` compression from `fwrite`, an error message suggests to reinstall `data.table` with `zlib` headers available. This does not apply to users on Windows or Mac who install the pre-compiled binary package from CRAN.
 
 
 # data.table [v1.13.6](https://github.com/Rdatatable/data.table/milestone/22?closed=1)  (30 Dec 2020)
