@@ -12899,7 +12899,7 @@ for (col in c('b', 'c')) {
 #
 # tests-S4.R (S4 Compatability)
 #
-suppressWarnings(setClass("Data.Table", contains="data.table"))  # suppress 'Created a package name, ‘2018-05-26 06:14:43.444’, when none found'
+suppressWarnings(setClass("Data.Table", contains="data.table"))  # suppress "Created a package name, '2018-05-26 06:14:43.444', when none found"
 suppressWarnings(setClass("S4Composition", representation(data="data.table")))
 # data.table can be a parent class
 ids <- sample(letters[1:3], 10, replace=TRUE)
@@ -17246,3 +17246,15 @@ class(e) = "foo"
 dt = data.table(id=1, funs=list(e))
 test(2161.2, dt[, .(funs), by=id], dt)
 
+# fread message display non-ASCII messages correctly, #4747
+x = "fa\u00e7ile"; Encoding(x) = "UTF-8"
+# should only run this test if the native encoding can represent latin1 correctly
+if (identical(x, enc2native(x))) {
+  txt = enc2utf8(sprintf("A,B\n%s,%s\n%s", x, x, x))
+  txt2 = iconv(txt, "UTF-8", "latin1")
+  out = data.table(A = x, B = x)
+  test(2162.1, fread(text = txt, encoding = 'UTF-8'), out,
+               warning="Discarded single-line footer: <<fa\u00e7ile>>")
+  test(2162.2, fread(text = txt2, encoding = 'Latin-1'), out,
+               warning="Discarded single-line footer: <<fa\u00e7ile>>")
+}
