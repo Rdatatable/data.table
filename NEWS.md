@@ -6,6 +6,8 @@
 
 ## BUG FIXES
 
+1. `fread()` messages containing non-ASCII exhibits from the file now display correctly on Windows, [#4747](https://github.com/Rdatatable/data.table/issues/4747). Thanks to @shrektan for reporting and the PR.
+
 ## NOTES
 
 
@@ -56,8 +58,6 @@
 4. `fread("1.2\n", colClasses='integer')` (note no columns names in the data) would segfault when creating a warning message, [#4644](https://github.com/Rdatatable/data.table/issues/4644). It now warns with `Attempt to override column 1 of inherent type 'float64' down to 'int32' ignored.` When column names are present however, the warning message includes the name as before; i.e., `fread("A\n1.2\n", colClasses='integer')` produces `Attempt to override column 1 <<A>> of inherent type 'float64' down to 'int32' ignored.`. Thanks to Kun Ren for reporting.
 
 5. `dplyr::mutate(setDT(as.list(1:64)), V1=11)` threw error `can't set ALTREP truelength`, [#4734](https://github.com/Rdatatable/data.table/issues/4734). Thanks to @etryn for the reproducible example, and to Cole Miller for refinements.
-
-6. `fread()` now throws correct non-ASCII error messages on Windows, [#4747](https://github.com/Rdatatable/data.table/issues/4747). Thanks to @shrektan for reporting and the PR.
 
 ## NOTES
 
