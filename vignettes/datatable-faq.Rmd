@@ -82,13 +82,13 @@ This runs the `j` expression on the set of rows where the `i` expression is true
 
 As [highlighted above](#j-num), `j` in `[.data.table` is fundamentally different from `j` in `[.data.frame`. Even if something as simple as `DF[ , 1]` was changed in base R to return a data.frame rather than a vector, that would break existing code in many 1000's of CRAN packages and user code. As soon as we took the step to create a new class that inherited from data.frame, we had the opportunity to change a few things and we did. We want data.table to be slightly different and to work this way for more complicated syntax to work. There are other differences, too (see [below](#SmallerDiffs) ).
 
-Furthermore, data.table _inherits_ from `data.frame`. It _is_ a `data.frame`, too. A data.table can be passed to any package that only accepts `data.frame` and that package can use `[.data.frame` syntax on the data.table. See [this answer](http://stackoverflow.com/a/10529888/403310) for how that is achieved.
+Furthermore, data.table _inherits_ from `data.frame`. It _is_ a `data.frame`, too. A data.table can be passed to any package that only accepts `data.frame` and that package can use `[.data.frame` syntax on the data.table. See [this answer](https://stackoverflow.com/a/10529888/403310) for how that is achieved.
 
 We _have_ proposed enhancements to R wherever possible, too. One of these was accepted as a new feature in R 2.12.0 :
 
 > `unique()` and `match()` are now faster on character vectors where all elements are in the global CHARSXP cache and have unmarked encoding (ASCII).  Thanks to Matt Dowle for suggesting improvements to the way the hash code is generated in unique.c.
 
-A second proposal was to use `memcpy` in duplicate.c, which is much faster than a for loop in C. This would improve the _way_ that R copies data internally (on some measures by 13 times). The thread on r-devel is [here](http://r.789695.n4.nabble.com/suggestion-how-to-use-memcpy-in-duplicate-c-td2019184.html).
+A second proposal was to use `memcpy` in duplicate.c, which is much faster than a for loop in C. This would improve the _way_ that R copies data internally (on some measures by 13 times). The thread on r-devel is [here](https://r.789695.n4.nabble.com/suggestion-how-to-use-memcpy-in-duplicate-c-td2019184.html).
 
 A third more significant proposal that was accepted is that R now uses data.table's radix sort code as from R 3.3.0 :
 
@@ -600,5 +600,5 @@ Sure. You're more likely to get a faster answer from the Issues page or Stack Ov
 
 ## I have created a package that uses data.table. How do I ensure my package is data.table-aware so that inheritance from `data.frame` works?
 
-Please see [this answer](http://stackoverflow.com/a/10529888/403310).
+Please see [this answer](https://stackoverflow.com/a/10529888/403310).
 

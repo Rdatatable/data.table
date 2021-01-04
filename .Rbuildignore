@@ -20,7 +20,6 @@
 
 ^Makefile$
 ^NEWS\.0\.md$
-^README\.md$
 ^_pkgdown\.yml$
 ^src/Makevars$
 

@@ -647,7 +647,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
     R_isort(tt, ndelete);  // sort the column-numbers-to-delete into ascending order
     for (int i=0; i<ndelete-1; ++i) {
       if (tt[i]>=tt[i+1])
-        error("Internal error: %d column numbers to delete not now in strictly increasing order. No-dups were checked earlier."); // # nocov
+        error(_("Internal error: %d column numbers to delete not now in strictly increasing order. No-dups were checked earlier.")); // # nocov
     }
     for (int i=tt[0], j=1, k=tt[0]+1;  i<ndt-ndelete;  ++i, ++k) {  // i moves up from the first non-deleted column and is the target of write
       while (j<ndelete && k==tt[j]) { j++; k++; }                   // move k up to the next non-deleted column; j is the next position in tt
