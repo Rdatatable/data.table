@@ -6,7 +6,7 @@
 
 ## BUG FIXES
 
-1. `fread()` messages containing non-ASCII exhibits from the file now display correctly on Windows, [#4747](https://github.com/Rdatatable/data.table/issues/4747). Thanks to @shrektan for reporting and the PR.
+1. If `fread()` discards a single line footer that contains non-ASCII characters, the warning message now displays correctly on Windows, [#4747](https://github.com/Rdatatable/data.table/issues/4747). Thanks to @shrektan for reporting and the PR.
 
 ## NOTES
 
