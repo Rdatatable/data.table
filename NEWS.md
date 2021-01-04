@@ -6,7 +6,7 @@
 
 ## BUG FIXES
 
-1. If `fread()` discards a single line footer that contains non-ASCII characters, the warning message now displays correctly on Windows, [#4747](https://github.com/Rdatatable/data.table/issues/4747). Thanks to @shrektan for reporting and the PR.
+1. If `fread()` discards a single line footer, the warning message which includes the discarded text now displays any non-ASCII characters correctly on Windows, [#4747](https://github.com/Rdatatable/data.table/issues/4747). Thanks to @shrektan for reporting and the PR.
 
 ## NOTES
 
