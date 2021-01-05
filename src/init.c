@@ -124,6 +124,7 @@ SEXP unlock();
 SEXP islockedR();
 SEXP allNAR();
 SEXP test_dt_win_snprintf();
+SEXP dt_zlib_version();
 
 // .Externals
 SEXP fastmean();
@@ -217,6 +218,7 @@ R_CallMethodDef callMethods[] = {
 {"CtestMsgR", (DL_FUNC) &testMsgR, -1},
 {"C_allNAR", (DL_FUNC) &allNAR, -1},
 {"Ctest_dt_win_snprintf", (DL_FUNC)&test_dt_win_snprintf, -1},
+{"Cdt_zlib_version", (DL_FUNC)&dt_zlib_version, -1},
 {NULL, NULL, 0}
 };
 
@@ -393,11 +395,11 @@ SEXP hasOpenMP() {
   // Just for use by onAttach (hence nocov) to avoid an RPRINTF from C level which isn't suppressable by CRAN
   // There is now a 'grep' in CRAN_Release.cmd to detect any use of RPRINTF in init.c, which is
   // why RPRINTF is capitalized in this comment to avoid that grep.
-  // TODO: perhaps .Platform or .Machine in R itself could contain whether OpenMP is available.
+  // .Platform or .Machine in R itself does not contain whether OpenMP is available because compiler and flags are per-package.
   #ifdef _OPENMP
-  return ScalarLogical(TRUE);
+  return ScalarInteger(_OPENMP); // return the version; e.g. 201511 (i.e. 4.5)
   #else
-  return ScalarLogical(FALSE);
+  return ScalarInteger(0);       // 0 rather than NA so that if() can be used on the result
   #endif
 }
 // # nocov end
@@ -412,6 +414,6 @@ SEXP initLastUpdated(SEXP var) {
 
 SEXP dllVersion() {
   // .onLoad calls this and checks the same as packageVersion() to ensure no R/C version mismatch, #3056
-  return(ScalarString(mkChar("1.13.1")));
+  return(ScalarString(mkChar("1.13.7")));
 }
 
