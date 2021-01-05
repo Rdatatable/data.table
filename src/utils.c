@@ -374,10 +374,16 @@ SEXP coerceUtf8IfNeeded(SEXP x) {
   return(ans);
 }
 
+#ifndef NOZLIB
 #include <zlib.h>
+#endif
 SEXP dt_zlib_version() {
   char out[51];
+#ifndef NOZLIB
   snprintf(out, 50, "zlibVersion()==%s ZLIB_VERSION==%s", zlibVersion(), ZLIB_VERSION);
+#else
+  snprintf(out, 50, "zlib header files were not found when data.table was compiled");
+#endif
   return ScalarString(mkChar(out));
 }
 
