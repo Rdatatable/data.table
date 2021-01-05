@@ -1539,10 +1539,10 @@ replace_dot_alias = function(e) {
         jvnames = sdvars
       }
     } else if (length(as.character(jsub[[1L]])) == 1L) {  # Else expect problems with <jsub[[1L]] == >
-      # g[[ only applies to atomic input, for now, was causing #4159
+      # g[[ only applies to atomic input, for now, was causing #4159. be sure to eval with enclos=parent.frame() for #4612
       subopt = length(jsub) == 3L &&
         (jsub[[1L]] == "[" ||
-           (jsub[[1L]] == "[[" && is.name(jsub[[2L]]) && eval(call('is.atomic', jsub[[2L]]), envir = x))) &&
+           (jsub[[1L]] == "[[" && is.name(jsub[[2L]]) && eval(call('is.atomic', jsub[[2L]]), x, parent.frame()))) &&
         (is.numeric(jsub[[3L]]) || jsub[[3L]] == ".N")
       headopt = jsub[[1L]] == "head" || jsub[[1L]] == "tail"
       firstopt = jsub[[1L]] == "first" || jsub[[1L]] == "last" # fix for #2030
@@ -1774,7 +1774,7 @@ replace_dot_alias = function(e) {
   #   TODO: is there an efficient way to get around this MAX_DEPTH limit?
   MAX_DEPTH = 5L
   runlock = function(x, current_depth = 1L) {
-    if (is.recursive(x) && current_depth <= MAX_DEPTH) {
+    if (is.list(x) && current_depth <= MAX_DEPTH) {  # is.list() used to be is.recursive(), #4814
       if (inherits(x, 'data.table')) .Call(C_unlock, x)
       else return(lapply(x, runlock, current_depth = current_depth + 1L))
     }
@@ -1925,8 +1925,6 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
     cn = names(x)
     X = x
   }
-  if (any(dm == 0L))
-    return(array(NA, dim = dm, dimnames = list(rownames.value, cn)))
   p = dm[2L]
   n = dm[1L]
   collabs = as.list(cn)
@@ -1973,6 +1971,12 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
     }
   }
   X = unlist(X, recursive = FALSE, use.names = FALSE)
+  if (any(dm==0L)) {
+    # retain highest type of input for empty output, #4762
+    if (length(X)!=0L)
+      stop("Internal error: as.matrix.data.table length(X)==", length(X), " but a dimension is zero")  # nocov
+    return(array(if (is.null(X)) NA else X, dim = dm, dimnames = list(rownames.value, cn)))
+  }
   dim(X) <- c(n, length(X)/n)
   dimnames(X) <- list(rownames.value, unlist(collabs, use.names = FALSE))
   X
@@ -2261,7 +2265,7 @@ is.na.data.table = function (x) {
 Ops.data.table = function(e1, e2 = NULL)
 {
   ans = NextMethod()
-  if (cedta() && is.data.frame(ans)) ans = as.data.table(ans) 
+  if (cedta() && is.data.frame(ans)) ans = as.data.table(ans)
   else if (is.matrix(ans)) colnames(ans) = copy(colnames(ans))
   ans
 }
@@ -2358,7 +2362,10 @@ copy = function(x) {
       .Call(C_unlock, y)
       setalloccol(y)
     } else if (is.list(y)) {
+      oldClass = class(y)
+      setattr(y, 'class', NULL)  # otherwise [[.person method (which returns itself) results in infinite recursion, #4620
       y[] = lapply(y, reallocate)
+      if (!identical(oldClass, 'list')) setattr(y, 'class', oldClass)
     }
     y
   }
@@ -2925,7 +2932,7 @@ isReallyReal = function(x) {
     RHS = eval(stub[[3L]], x, enclos)
     if (is.list(RHS)) RHS = as.character(RHS)  # fix for #961
     if (length(RHS) != 1L && !operator %chin% c("%in%", "%chin%")){
-      if (length(RHS) != nrow(x)) stop("RHS of ", operator, " is length ",length(RHS)," which is not 1 or nrow (",nrow(x),"). For robustness, no recycling is allowed (other than of length 1 RHS). Consider %in% instead.")
+      if (length(RHS) != nrow(x)) stop(gettextf("RHS of %s is length %d which is not 1 or nrow (%d). For robustness, no recycling is allowed (other than of length 1 RHS). Consider %%in%% instead.", operator, length(RHS), nrow(x), domain="R-data.table"), domain=NA)
       return(NULL) # DT[colA == colB] regular element-wise vector scan
     }
     if ( mode(x[[col]]) != mode(RHS) ||                # mode() so that doubleLHS/integerRHS and integerLHS/doubleRHS!isReallyReal are optimized (both sides mode 'numeric')

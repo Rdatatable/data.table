@@ -155,7 +155,7 @@ foverlaps(x, y, by.x=c("seq", "start", "end"),
 }
 \seealso{
 \code{\link{data.table}},
-\url{http://www.bioconductor.org/packages/release/bioc/html/IRanges.html},
+\url{https://www.bioconductor.org/packages/release/bioc/html/IRanges.html},
 \code{\link{setNumericRounding}}
 }
 \keyword{ data }
