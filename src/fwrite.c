@@ -9,8 +9,6 @@
 #include <string.h>    // strlen, strerror
 #ifndef NOZLIB
 #include <zlib.h>      // for compression to .gz
-#else
-#define z_stream struct
 #endif
 
 #ifdef WIN32
@@ -691,7 +689,7 @@ void fwriteMain(fwriteMainArgs args)
   }
 #ifdef NOZLIB
   if (args.is_gzip)
-    STOP(_("Compression in fwrite uses zlib library which was not installed at the time when data.table was compiled. To enable compression support in fwrite one must install zlib and re-install data.table.")); // # nocov
+    STOP(_("Compression in fwrite uses zlib library. Its header files were not found at the time data.table was compiled. To enable fwrite compression, please reinstall data.table and study the output for further guidance.")); // # nocov
 #endif
 
   int yamlLen = strlen(args.yaml);
@@ -831,18 +829,16 @@ void fwriteMain(fwriteMainArgs args)
 
   bool failed = false;   // naked (unprotected by atomic) write to bool ok because only ever write true in this special paradigm
   int failed_compress = 0; // the first thread to fail writes their reason here when they first get to ordered section
-#ifndef NOZLIB
-  char failed_msg[1001] = "";  // to hold zlib's msg; copied out of zlib in ordered section just in case the msg is allocated within zlib
-#endif
   int failed_write = 0;    // same. could use +ve and -ve in the same code but separate it out to trace Solaris problem, #3931
 
-  if (nth>1) verbose=false; // printing isn't thread safe (there's a temporary print in compressbuff for tracing solaris; #4099)
-  
+#ifndef NOZLIB
   z_stream thread_streams[nth];
   // VLA on stack should be fine for nth structs; in zlib v1.2.11 sizeof(struct)==112 on 64bit
   // not declared inside the parallel region because solaris appears to move the struct in
   // memory when the #pragma omp for is entered, which causes zlib's internal self reference
   // pointer to mismatch, #4099
+  char failed_msg[1001] = "";  // to hold zlib's msg; copied out of zlib in ordered section just in case the msg is allocated within zlib
+#endif
 
   #pragma omp parallel num_threads(nth)
   {

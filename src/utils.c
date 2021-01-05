@@ -382,7 +382,7 @@ SEXP dt_zlib_version() {
 #ifndef NOZLIB
   snprintf(out, 50, "zlibVersion()==%s ZLIB_VERSION==%s", zlibVersion(), ZLIB_VERSION);
 #else
-  snprintf(out, 50, "zlib is not installled");
+  snprintf(out, 50, "zlib header files were not found when data.table was compiled");
 #endif
   return ScalarString(mkChar(out));
 }
