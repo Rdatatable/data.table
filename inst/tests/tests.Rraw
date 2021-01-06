@@ -17246,3 +17246,18 @@ class(e) = "foo"
 dt = data.table(id=1, funs=list(e))
 test(2161.2, dt[, .(funs), by=id], dt)
 
+# fread message display non-ASCII messages correctly, #4747
+x = "fa\u00e7ile"; Encoding(x) = "UTF-8"
+# should only run this test if the native encoding can represent latin1 correctly
+if (identical(x, enc2native(x))) {
+  txt = enc2utf8(sprintf("A,B\n%s,%s\n%s", x, x, x))
+  txt2 = iconv(txt, "UTF-8", "latin1")
+  out = data.table(A = x, B = x)
+  test(2162.1, fread(text = txt, encoding = 'UTF-8'), out,
+               warning="Discarded single-line footer: <<fa\u00e7ile>>")
+  test(2162.2, fread(text = txt2, encoding = 'Latin-1'), out,
+               warning="Discarded single-line footer: <<fa\u00e7ile>>")
+}
+
+# fintersect now preserves order of first argument like intersect, #4716
+test(2163, fintersect(data.table(x=c("b", "c", "a")), data.table(x=c("a","c")))$x, c("c", "a"))

@@ -231,6 +231,20 @@ status = function(bioc=FALSE) {
   invisible()
 }
 
+cran = function()  # reports CRAN status of the .cran.fail packages
+{
+  require(data.table)
+  p = proc.time()
+  db = setDT(tools::CRAN_check_results())
+  cat("tools::CRAN_check_results() returned",prettyNum(nrow(db), big.mark=","),"rows in",timetaken(p),"\n")
+  rel = unique(db$Flavor)
+  rel = sort(rel[grep("release",rel)])
+  stopifnot(identical(rel, c("r-release-linux-x86_64", "r-release-macos-x86_64", "r-release-windows-ix86+x86_64")))
+  cat("R-release is used for revdep checking so comparing to CRAN results for R-release\n")
+  ans = db[Package %chin% .fail.cran & Flavor %chin% rel, Status, keyby=.(Package, Flavor)]
+  dcast(ans, Package~Flavor, value.var="Status", fill="")[.fail.cran,]
+}
+
 run = function(pkgs=NULL, R_CHECK_FORCE_SUGGESTS=TRUE, choose=NULL) {
   if (length(pkgs)==1) pkgs = strsplit(pkgs, split="[, ]")[[1]]
   if (anyDuplicated(pkgs)) stop("pkgs contains dups")

@@ -323,6 +323,7 @@ integration: ## merging all artifacts to produce single R repository, documentat
     - linux
   only:
     - master
+    - tags
   needs: ["mirror-packages","build","test-rel-lin","test-rel-cran-lin","test-dev-cran-lin","test-rel-vanilla-lin","test-310-cran-lin","test-344-cran-lin","test-350-cran-lin","test-rel-win","test-dev-win","test-old-win"]
   script:
     - Rscript -e 'pkgdown::build_site(override=list(destination="./pkgdown"))'
