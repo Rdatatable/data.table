@@ -229,7 +229,8 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
   const bool isDataCol = col>-1; // check once for non nq join grp id internal technical, non-data, field
   const SEXPTYPE t = isDataCol ? idt.types[col] : INTSXP;
   const bool isInt64 = isDataCol && idt.int64[col];
-  const bool isLastCol = isDataCol && col==ncol-1;
+  const bool isLastCol = isDataCol && col==ncol-1;  // col==ncol-1 implies col>-1 so isDataCol is not needed here
+  const bool isRollCol = roll!=0.0 && col==ncol-1;
   column_t ic, xc;
   if (isDataCol) {
     if (idt.types[col] != xdt.types[col])
@@ -469,7 +470,7 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
         }
       }
     }
-  } else if (roll!=0.0 && isLastCol) {
+  } else if (isRollCol) {
     // runs once per i row (not each search test), so not hugely time critical
     if (xlow != xupp-1 || xlow<xlowIn || xupp>xuppIn) error(_("Internal error: xlow!=xupp-1 || xlow<xlowIn || xupp>xuppIn")); // # nocov
     if (rollToNearest) {   // value of roll ignored currently when nearest
@@ -534,9 +535,9 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
   }
   switch (op[col]) {
   case EQ:
-    if (ilow>ilowIn && (xlow>xlowIn || (roll!=0.0 && isLastCol)))
+    if (ilow>ilowIn && (xlow>xlowIn || isRollCol))
       bmerge_r(xlowIn, xlow+1, ilowIn, ilow+1, col, 1, lowmax, uppmax && xlow+1==xuppIn);
-    if (iupp<iuppIn && (xupp<xuppIn || (roll!=0.0 && isLastCol)))
+    if (iupp<iuppIn && (xupp<xuppIn || isRollCol))
       bmerge_r(xupp-1, xuppIn, iupp-1, iuppIn, col, 1, lowmax && xupp-1==xlowIn, uppmax);
     break;
   case LE: case LT:
