@@ -229,8 +229,7 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
   const bool isDataCol = col>-1; // check once for non nq join grp id internal technical, non-data, field
   const SEXPTYPE t = isDataCol ? idt.types[col] : INTSXP;
   const bool isInt64 = isDataCol && idt.int64[col];
-  const bool isLastCol = isDataCol && col==ncol-1;  // col==ncol-1 implies col>-1 so isDataCol is not needed here
-  const bool isRollCol = roll!=0.0 && col==ncol-1;
+  const bool isRollCol = roll!=0.0 && col==ncol-1;  // col==ncol-1 implies col>-1
   column_t ic, xc;
   if (isDataCol) {
     if (idt.types[col] != xdt.types[col])
@@ -417,7 +416,7 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
   }
   }
   if (xlow<xupp-1) { // if value found, low and upp surround it, unlike standard binary search where low falls on it
-    if (!isLastCol) {
+    if (col<ncol-1) {  // could include col==-1 here (a non-equi non-data column)
       bmerge_r(xlow, xupp, ilow, iupp, col+1, thisgrp, 1, 1);
       // final two 1's are lowmax and uppmax
     } else {
