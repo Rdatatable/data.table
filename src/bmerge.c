@@ -6,15 +6,15 @@ http://en.wikipedia.org/wiki/Binary_search
 http://www.tbray.org/ongoing/When/200x/2003/03/22/Binary
 http://googleresearch.blogspot.com/2006/06/extra-extra-read-all-about-it-nearly.html
 Differences over standard binary search (e.g. bsearch in stdlib.h) :
-  * list of vectors (key of many columns) of different types
-  * ties (groups)
-  * NA,NAN,-Inf,+Inf are distinct values and can be joined to
-  * type double is joined within tolerance (apx 11 s.f.) -- is this info up to date?
-  * join to prevailing value (roll join a.k.a locf), forwards or backwards
-  * join to nearest
-  * roll the beginning and end optionally
-  * limit the roll distance to a user provided value
-  * non equi joins (no != yet) since 1.9.8
+  o list of vectors (key of many columns) of different types
+  o ties (groups)
+  o NA,NAN,-Inf,+Inf are distinct values and can be joined to
+  o type double is joined within tolerance (apx 11 s.f.) -- is this info up to date?
+  o join to prevailing value (roll join a.k.a locf), forwards or backwards
+  o join to nearest
+  o roll the beginning and end optionally
+  o limit the roll distance to a user provided value
+  o non equi joins (no != yet) since 1.9.8
 */
 
 #define ENC_KNOWN(x) (LEVELS(x) & 12)
@@ -272,39 +272,39 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
         break;
       }
     }
-    if (isDataCol) {
-      if (op[col] != EQ) {
-        switch (op[col]) {
-        case LE : xlow = xlowIn; break;
-        case LT : xupp = xlow + 1; xlow = xlowIn; break;
-        case GE : if (ival.i != NA_INTEGER) xupp = xuppIn; break;
-        case GT : xlow = xupp - 1; if (ival.i != NA_INTEGER) xupp = xuppIn; break;
-        default : error(_("Internal error in bmerge_r for '%s' column. Unrecognized value op[col]=%d"), type2char(t), op[col]); // #nocov
+    if (!isDataCol)
+      break;
+    if (op[col] != EQ) {
+      switch (op[col]) {
+      case LE : xlow = xlowIn; break;
+      case LT : xupp = xlow + 1; xlow = xlowIn; break;
+      case GE : if (ival.i != NA_INTEGER) xupp = xuppIn; break;
+      case GT : xlow = xupp - 1; if (ival.i != NA_INTEGER) xupp = xuppIn; break;
+      default : error(_("Internal error in bmerge_r for '%s' column. Unrecognized value op[col]=%d"), type2char(t), op[col]); // #nocov
+      }
+      // for LE/LT cases, we need to ensure xlow excludes NA indices, != EQ is checked above already
+      if (op[col] <= 3 && xlow<xupp-1 && ival.i != NA_INTEGER && xc.i[XIND(xlow+1)] == NA_INTEGER) {
+        int tmplow = xlow, tmpupp = xupp;
+        while (tmplow < tmpupp-1) {
+          int mid = tmplow + (tmpupp-tmplow)/2;
+          xval.i = ixc[XIND(mid)];
+          if (xval.i == NA_INTEGER) tmplow = mid; else tmpupp = mid;
         }
-        // for LE/LT cases, we need to ensure xlow excludes NA indices, != EQ is checked above already
-        if (op[col] <= 3 && xlow<xupp-1 && ival.i != NA_INTEGER && xc.i[XIND(xlow+1)] == NA_INTEGER) {
-          int tmplow = xlow, tmpupp = xupp;
-          while (tmplow < tmpupp-1) {
-            int mid = tmplow + (tmpupp-tmplow)/2;
-            xval.i = ixc[XIND(mid)];
-            if (xval.i == NA_INTEGER) tmplow = mid; else tmpupp = mid;
-          }
-          xlow = tmplow; // tmplow is the index of last NA value
-        }
+        xlow = tmplow; // tmplow is the index of last NA value
       }
-      int tmplow = lir;
-      while (tmplow<iupp-1) {   // TO DO: could double up from lir rather than halving from iupp
-        int mid = tmplow + (iupp-tmplow)/2;
-        xval.i = iic[ o ? o[mid]-1 : mid ];   // reuse xval to search in i
-        if (xval.i == ival.i) tmplow=mid; else iupp=mid;
-        // if we could guarantee ivals to be *always* sorted for all columns independently (= max(nestedid) = 1), then we can speed this up by 2x by adding checks for GE,GT,LE,LT separately.
-      }
-      int tmpupp = lir;
-      while (ilow<tmpupp-1) {
-        int mid = ilow + (tmpupp-ilow)/2;
-        xval.i = iic[ o ? o[mid]-1 : mid ];
-        if (xval.i == ival.i) tmpupp=mid; else ilow=mid;
-      }
+    }
+    int tmplow = lir;
+    while (tmplow<iupp-1) {   // TO DO: could double up from lir rather than halving from iupp
+      int mid = tmplow + (iupp-tmplow)/2;
+      xval.i = iic[ o ? o[mid]-1 : mid ];   // reuse xval to search in i
+      if (xval.i == ival.i) tmplow=mid; else iupp=mid;
+      // if we could guarantee ivals to be *always* sorted for all columns independently (= max(nestedid) = 1), then we can speed this up by 2x by adding checks for GE,GT,LE,LT separately.
+    }
+    int tmpupp = lir;
+    while (ilow<tmpupp-1) {
+      int mid = ilow + (tmpupp-ilow)/2;
+      xval.i = iic[ o ? o[mid]-1 : mid ];
+      if (xval.i == ival.i) tmpupp=mid; else ilow=mid;
     }
     // ilow and iupp now surround the group in ic, too
   } break;
