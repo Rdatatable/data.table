@@ -455,10 +455,12 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
       int len = xupp-xlow-1;
       if (mult==ALL && len>1) allLen1[0] = FALSE;
       if (nqmaxgrp == 1) {
+        const int rf = (mult!=LAST) ? xlow+2 : xupp; // extra +1 for 1-based indexing at R level
+        const int rl = (mult==ALL) ? len : 1;
         for (int j=ilow+1; j<iupp; j++) {   // usually iterates once only for j=ir
           const int k = o ? o[j]-1 : j;
-          retFirst[k] = (mult != LAST) ? xlow+2 : xupp; // extra +1 for 1-based indexing at R level
-          retLength[k]= (mult == ALL) ? len : 1;
+          retFirst[k] = rf;
+          retLength[k]= rl;
           // retIndex initialisation is taken care of in bmerge and doesn't change for thisgrp=1
         }
       } else {
