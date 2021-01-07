@@ -9,7 +9,7 @@ Differences over standard binary search (e.g. bsearch in stdlib.h) :
   o list of vectors (key of many columns) of different types
   o ties (groups)
   o NA,NAN,-Inf,+Inf are distinct values and can be joined to
-  o type double is joined within tolerance (apx 11 s.f.) -- is this info up to date?
+  o type double is joined within tolerance (apx 11 s.f.) according to setNumericRounding (default off)
   o join to prevailing value (roll join a.k.a locf), forwards or backwards
   o join to nearest
   o roll the beginning and end optionally
