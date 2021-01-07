@@ -14,22 +14,3 @@ typedef struct ans_t {
   char message[4][ANS_MSG_SIZE]; // STDOUT: output, STDERR: message, warning, error
 // implicit n_message limit discussed here: https://github.com/Rdatatable/data.table/issues/3423#issuecomment-487722586
 } ans_t;
-
-/*
- * data of a data.table to be accessible from parallel region
- */
-typedef union { // all const is fine for merge
-  const int *i; // logical and int
-  const double *d;
-  const SEXP *s; // string and list
-  const Rcomplex *c;
-  const Rbyte *b;
-} column_t;
-typedef struct dt_t { // could store pointer to SEXP itself, indices, sorted info, names, classes, alloccol
-  unsigned int ncol;
-  unsigned int nrow;
-  SEXPTYPE *types;
-  bool *int64;
-  column_t *cols;
-  const int* index;
-} dt_t;
