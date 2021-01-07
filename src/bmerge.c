@@ -46,8 +46,8 @@ SEXP bmerge(SEXP idt, SEXP xdt, SEXP icolsArg, SEXP xcolsArg, SEXP isorted, SEXP
   retFirstArg = retLengthArg = retIndexArg = R_NilValue; // suppress gcc msg
 
   // iArg, xArg, icolsArg and xcolsArg
-  idtVec = VECTOR_PTR(idt);  // set globals so bmerge_r can see them.
-  xdtVec = VECTOR_PTR(xdt);
+  idtVec = SEXPPTR_RO(idt);  // set globals so bmerge_r can see them.
+  xdtVec = SEXPPTR_RO(xdt);
   if (!isInteger(icolsArg)) error(_("Internal error: icols is not integer vector")); // # nocov
   if (!isInteger(xcolsArg)) error(_("Internal error: xcols is not integer vector")); // # nocov
   if ((LENGTH(icolsArg)==0 || LENGTH(xcolsArg)==0) && LENGTH(idt)>0) // We let through LENGTH(i) == 0 for tests 2126.*
@@ -232,6 +232,7 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
     ic = R_NilValue;
     xc = nqgrp;
   }
+  bool rollLow=false, rollUpp=false;
   switch (TYPEOF(xc)) {
   case LGLSXP : case INTSXP : {  // including factors
     const int *icv = isDataCol ? INTEGER(ic) : NULL;
@@ -264,6 +265,32 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
     }
     if (!isDataCol)
       break;
+    if (isRollCol && xlow==xupp-1) {
+      // no match found in last column, now roll
+      if (rollToNearest) {   // value of roll ignored currently when nearest
+        if ( (!lowmax || xlow>xlowIn) && (!uppmax || xupp<xuppIn) ) {
+          if ( ival-xcv[XIND(xlow)] <= xcv[XIND(xupp)]-ival)
+            rollLow=true;
+          else
+            rollUpp=true;
+        }
+        else if (uppmax && xupp==xuppIn && rollends[1])
+          rollLow=true;
+        else if (lowmax && xlow==xlowIn && rollends[0])
+          rollUpp=true;
+      } else {
+        // Regular roll=TRUE|+ve|-ve
+        if ((( roll>0.0 && (!lowmax || xlow>xlowIn) && (xupp<xuppIn || !uppmax || rollends[1]))
+          || ( roll<0.0 && xupp==xuppIn && uppmax && rollends[1]) )
+          && ( isinf(rollabs) || (ival-xcv[XIND(xlow)]-(int)rollabs <= 0) ))
+          rollLow=true;
+        else
+        if ((( roll<0.0 && (!uppmax || xupp<xuppIn) && (xlow>xlowIn || !lowmax || rollends[0]))
+          || ( roll>0.0 && xlow==xlowIn && lowmax && rollends[0]) )
+          && ( isinf(rollabs) || (xcv[XIND(xupp)]-ival-(int)rollabs <= 0 ) ))
+          rollUpp=true;
+      }
+    }
     if (op[col] != EQ) {
       switch (op[col]) {
       case LE : xlow = xlowIn; break;
@@ -323,6 +350,16 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
         xupp=mid;
       }
     }
+    if (isRollCol && xlow==xupp-1) {
+      // rollToNearest not yet supported for STRSXP, neither is limited staleness
+      if (( roll>0.0 && (!lowmax || xlow>xlowIn) && (xupp<xuppIn || !uppmax || rollends[1]))
+        || ( roll<0.0 && xupp==xuppIn && uppmax && rollends[1] ))
+        rollLow=true;
+      else
+      if ((  roll<0.0 && (!uppmax || xupp<xuppIn) && (xlow>xlowIn || !lowmax || rollends[0]))
+        || ( roll>0.0 && xlow==xlowIn && lowmax && rollends[0] ))
+        rollUpp=true;
+    }
     int tmplow = lir;
     while (tmplow<iupp-1) {
       int mid = tmplow + (iupp-tmplow)/2;
@@ -358,6 +395,31 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
             if (xcv[XIND(mid)] == ival) tmpupp=mid; else xlow=mid;
           }
           break;
+        }
+      }
+      if (isRollCol && xlow==xupp-1) {
+        if (rollToNearest) {   // value of roll ignored currently when nearest
+          if ( (!lowmax || xlow>xlowIn) && (!uppmax || xupp<xuppIn) ) {
+            if ( ival-xcv[XIND(xlow)] <= xcv[XIND(xupp)]-ival)
+              rollLow=true;
+            else
+              rollUpp=true;
+          }
+          else if (uppmax && xupp==xuppIn && rollends[1])
+            rollLow=true;
+          else if (lowmax && xlow==xlowIn && rollends[0])
+            rollUpp=true;
+        } else {
+          // Regular roll=TRUE|+ve|-ve
+          if ((( roll>0.0 && (!lowmax || xlow>xlowIn) && (xupp<xuppIn || !uppmax || rollends[1]))
+            || ( roll<0.0 && xupp==xuppIn && uppmax && rollends[1]) )
+            && ( isinf(rollabs) || (ival-xcv[XIND(xlow)]-(int64_t)rollabs <= 0) ))
+            rollLow=true;
+          else
+          if ((( roll<0.0 && (!uppmax || xupp<xuppIn) && (xlow>xlowIn || !lowmax || rollends[0]))
+            || ( roll>0.0 && xlow==xlowIn && lowmax && rollends[0]) )
+            && ( isinf(rollabs) || (xcv[XIND(xupp)]-ival-(int64_t)rollabs <= 0 ) ))
+            rollUpp=true;
         }
       }
       if (op[col] != EQ) {
@@ -414,6 +476,33 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
           break;
         }
       }
+      if (isRollCol && xlow==xupp-1) {
+        if (rollToNearest) {   // value of roll ignored currently when nearest
+          if ( (!lowmax || xlow>xlowIn) && (!uppmax || xupp<xuppIn) ) {
+            if ( icv[ir]-xcv[XIND(xlow)] <= xcv[XIND(xupp)]-icv[ir] )
+              rollLow=true;
+            else
+              rollUpp=true;
+          }
+          else if (uppmax && xupp==xuppIn && rollends[1])
+            rollLow=true;
+          else if (lowmax && xlow==xlowIn && rollends[0])
+            rollUpp=true;
+        } else {
+          // Regular roll=TRUE|+ve|-ve
+          if ((( roll>0.0 && (!lowmax || xlow>xlowIn) && (xupp<xuppIn || !uppmax || rollends[1]))
+            || ( roll<0.0 && xupp==xuppIn && uppmax && rollends[1]) )
+            && ( icv[ir]-xcv[XIND(xlow)]-rollabs < 1e-6 ||
+                 icv[ir]-xcv[XIND(xlow)] == rollabs ))   // #1007
+            rollLow=true;
+          else
+          if ((( roll<0.0 && (!uppmax || xupp<xuppIn) && (xlow>xlowIn || !lowmax || rollends[0]))
+            || ( roll>0.0 && xlow==xlowIn && lowmax && rollends[0]) )
+            && ( xcv[XIND(xupp)]-icv[ir]-rollabs < 1e-6 ||
+                 xcv[XIND(xupp)]-icv[ir] == rollabs ))   // #1007
+            rollUpp=true;
+        }
+      }
       if (op[col] != EQ) {
         bool isivalNA = ISNAN(icv[ir]);
         switch (op[col]) {
@@ -447,15 +536,15 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
   } break;
   // supported types were checked up front to avoid handling an error here in (future) parallel region
   }
-  if (xlow<xupp-1) { // if value found, low and upp surround it, unlike standard binary search where low falls on it
+  if (xlow<xupp-1 || rollLow || rollUpp) { // if value found, xlow and xupp surround it, unlike standard binary search where low falls on it
     if (col<ncol-1) {  // could include col==-1 here (a non-equi non-data column)
       bmerge_r(xlow, xupp, ilow, iupp, col+1, thisgrp, 1, 1);
       // final two 1's are lowmax and uppmax
     } else {
-      int len = xupp-xlow-1;
+      int len = xupp-xlow-1+rollLow+rollUpp; // rollLow and rollUpp cannot both be true
       if (mult==ALL && len>1) allLen1[0] = FALSE;
       if (nqmaxgrp == 1) {
-        const int rf = (mult!=LAST) ? xlow+2 : xupp; // extra +1 for 1-based indexing at R level
+        const int rf = (mult!=LAST) ? xlow+2-rollLow : xupp+rollUpp; // extra +1 for 1-based indexing at R level
         const int rl = (mult==ALL) ? len : 1;
         for (int j=ilow+1; j<iupp; j++) {   // usually iterates once only for j=ir
           const int k = o ? o[j]-1 : j;
@@ -503,69 +592,7 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
         }
       }
     }
-  } else if (isRollCol) {
-    // runs once per i row (not each search test), so not hugely time critical
-    if (xlow != xupp-1 || xlow<xlowIn || xupp>xuppIn) error(_("Internal error: xlow!=xupp-1 || xlow<xlowIn || xupp>xuppIn")); // # nocov
-    if (rollToNearest) {   // value of roll ignored currently when nearest
-      if ( (!lowmax || xlow>xlowIn) && (!uppmax || xupp<xuppIn) ) {
-        if (  ( TYPEOF(ic)==REALSXP && REAL(ic)[ir]-REAL(xc)[XIND(xlow)] <= REAL(xc)[XIND(xupp)]-REAL(ic)[ir] ) // TODO remove macro here requires bigger rewrite
-           || ( TYPEOF(ic)<=INTSXP && INTEGER(ic)[ir]-INTEGER(xc)[XIND(xlow)] <= INTEGER(xc)[XIND(xupp)]-INTEGER(ic)[ir] )) {
-          retFirst[ir] = xlow+1;
-          retLength[ir] = 1;
-        } else {
-          retFirst[ir] = xupp+1;
-          retLength[ir] = 1;
-        }
-      } else if (uppmax && xupp==xuppIn && rollends[1]) {
-        retFirst[ir] = xlow+1;
-        retLength[ir] = 1;
-      } else if (lowmax && xlow==xlowIn && rollends[0]) {
-        retFirst[ir] = xupp+1;
-        retLength[ir] = 1;
-      }
-    } else {
-      // Regular roll=TRUE|+ve|-ve
-      // Fixed issues: #1405, #1650, #1007
-      // TODO: incorporate the twiddle logic for roll as well instead of tolerance?
-      if ( (   (roll>0.0 && (!lowmax || xlow>xlowIn) && (xupp<xuppIn || !uppmax || rollends[1]))
-            || (roll<0.0 && xupp==xuppIn && uppmax && rollends[1]) )
-        && ( (TYPEOF(ic)==REALSXP &&
-             (ival.d = REAL(ic)[ir], xval.d = REAL(xc)[XIND(xlow)], 1) &&  // TODO remove macro here requires bigger rewrite
-             (( !isInt64 &&
-                (ival.d-xval.d-rollabs < 1e-6 ||
-                 ival.d-xval.d == rollabs /*#1007*/))
-              || ( isInt64 &&
-                  (double)(ival.ll-xval.ll)-rollabs < 1e-6 ) ))  // cast to double for when rollabs==Inf
-              || (TYPEOF(ic)<=INTSXP && (double)(INTEGER(ic)[ir]-INTEGER(xc)[XIND(xlow)])-rollabs < 1e-6 )
-              || (TYPEOF(ic)==STRSXP)   )) {
-        retFirst[ir] = xlow+1;
-        retLength[ir] = 1;
-      } else if
-         (  (  (roll<0.0 && (!uppmax || xupp<xuppIn) && (xlow>xlowIn || !lowmax || rollends[0]))
-            || (roll>0.0 && xlow==xlowIn && lowmax && rollends[0]) )
-        && (   (TYPEOF(ic)==REALSXP &&
-               (ival.d = REAL(ic)[ir], xval.d = REAL(xc)[XIND(xupp)], 1) &&
-               (( !isInt64 &&
-                  (xval.d-ival.d-rollabs < 1e-6 ||
-                   xval.d-ival.d == rollabs /*#1007*/))
-                || ( isInt64 &&
-                     (double)(xval.ll-ival.ll)-rollabs < 1e-6 ) ))
-                || (TYPEOF(ic)<=INTSXP && (double)(INTEGER(xc)[XIND(xupp)]-INTEGER(ic)[ir])-rollabs < 1e-6 )
-                || (TYPEOF(ic)==STRSXP)   )) {
-        retFirst[ir] = xupp+1;   // == xlow+2
-        retLength[ir] = 1;
-      }
-    }
-    if (iupp-ilow > 2 && retFirst[ir]!=NA_INTEGER) {
-      // >=2 equal values in the last column being rolling to the same point.
-      for (int j=ilow+1; j<iupp; j++) {
-        // will rewrite retFirst[ir] to itself, but that's ok
-        const int k = o ? o[j]-1 : j;
-        retFirst[k] = retFirst[ir];
-        retLength[k]= retLength[ir];
-      }
-    }
-  }
+  } 
   switch (op[col]) {
   case EQ:
     if (ilow>ilowIn && (xlow>xlowIn || isRollCol))
@@ -587,6 +614,6 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
     if (iupp<iuppIn)
       bmerge_r(xlowIn, xuppIn, iupp-1, iuppIn, col, 1, lowmax && xupp-1==xlowIn, uppmax);
     break;
-  default : break;  // do nothing
+  default : break;  // one of 5 valid cases checked up front
   }
 }
