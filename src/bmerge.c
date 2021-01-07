@@ -330,9 +330,8 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
     const SEXP ival = ENC2UTF8(icv[ir]);
     while (xlow < xupp-1) {
       int mid = xlow + (xupp-xlow)/2;
-      SEXP xval = ENC2UTF8(xcv[XIND(mid)]);
-      int tmp = StrCmpNE(xval, ival);  // uses pointer equality first, NA_STRING are allowed and joined to, then uses strcmp on CHAR(.), StrCmpNE does not do ENC2UTF8 again
-      if (tmp == 0) {                    // TO DO: deal with mixed encodings and locale optionally
+      int tmp = StrCmp(ENC2UTF8(xcv[XIND(mid)]), ival);  // NA_STRING are allowed and joined to; does not do ENC2UTF8 again inside StrCmp
+      if (tmp == 0) {                // TO DO: deal with mixed encodings and locale optionally
         int tmplow = mid;
         while (tmplow<xupp-1) {
           int mid = tmplow + (xupp-tmplow)/2;

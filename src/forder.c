@@ -210,31 +210,13 @@ static void range_d(double *x, int n, uint64_t *out_min, uint64_t *out_max, int 
   *out_max = max;
 }
 
-// non-critical function also used by bmerge and chmatch
-// UPDATE: is not being used anymore, chmatch uses coerceUtf8IfNeeded and bmerge StrCmpNE
-/*int StrCmp(SEXP x, SEXP y)
+// used by bmerge only; chmatch uses coerceUtf8IfNeeded
+int StrCmp(SEXP x, SEXP y)
 {
   if (x == y) return 0;             // same cached pointer (including NA_STRING==NA_STRING)
   if (x == NA_STRING) return -1;    // x<y
   if (y == NA_STRING) return 1;     // x>y
-  return strcmp(CHAR(ENC2UTF8(x)), CHAR(ENC2UTF8(y)));  // TODO: always calling ENC2UTF8 here could be expensive 
-}*/
-/* ENC2UTF8 handles encoding issues by converting all marked non-utf8 encodings alone to utf8 first. The function could be wrapped
-   in the first if-statement already instead of at the last stage, but this is to ensure that all-ascii cases are handled with maximum efficiency.
-   This seems to fix the issues as far as I've checked. Will revisit if necessary.
-   OLD COMMENT: can return 0 here for the same string in known and unknown encodings, good if the unknown string is in that encoding but not if not ordering is ascii only (C locale).
-   TO DO: revisit and allow user to change to strcoll, and take account of Encoding. see comments in bmerge().  10k calls of strcmp = 0.37s, 10k calls of strcoll = 4.7s. See ?Comparison, ?Encoding, Scollate in R internals.
-   TO DO: check that all unknown encodings are ascii; i.e. no non-ascii unknowns are present, and that either Latin1
-          or UTF-8 is used by user, not both. Then error if not. If ok, then can proceed with byte level. ascii is never marked known by R, but
-          non-ascii (i.e. knowable encoding) could be marked unknown. Does R API provide is_ascii?
-*/
-// same but NoEncoding version, to be used when we already made ENC2UTF8 on x and y, used in bmerge
-int StrCmpNE(SEXP x, SEXP y)
-{
-  if (x == y) return 0;
-  if (x == NA_STRING) return -1;
-  if (y == NA_STRING) return 1;
-  return strcmp(CHAR(x), CHAR(y));
+  return strcmp(CHAR(x), CHAR(y));  // bmerge calls ENC2UTF8 on x and y before passing here 
 }
 
 static void cradix_r(SEXP *xsub, int n, int radix)
