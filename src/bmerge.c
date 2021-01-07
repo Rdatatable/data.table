@@ -233,94 +233,101 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
     xc = nqgrp;
   }
   bool rollLow=false, rollUpp=false;
+  
+  #define DO(TYPE)                                                                                \
+    while (xlow < xupp-1) {                                                                       \
+      int mid = xlow + (xupp-xlow)/2;                                                             \
+      TYPE xval = xcv[XIND(mid)];                                                                 \
+      if (xval<ival) {   /* relies on NA_INTEGER==INT_MIN, tested in init.c */                    \
+        xlow=mid;                                                                                 \
+      } else if (xval>ival) {   /* TO DO: switch(sign(xval-ival)) ? */                            \
+        xupp=mid;                                                                                 \
+      } else {                                                                                    \
+        /* xval == ival  including NA_INTEGER==NA_INTEGER                                         \
+           branch mid to find start and end of this group in this column                          \
+           TO DO?: not if mult=first|last and col<ncol-1 */                                       \
+        int tmplow = mid;                                                                         \
+        while (tmplow<xupp-1) {                                                                   \
+          int mid = tmplow + (xupp-tmplow)/2;                                                     \
+          if (xcv[XIND(mid)] == ival) tmplow=mid; else xupp=mid;                                  \
+        }                                                                                         \
+        int tmpupp = mid;                                                                         \
+        while (xlow<tmpupp-1) {                                                                   \
+          int mid = xlow + (tmpupp-xlow)/2;                                                       \
+          if (xcv[XIND(mid)] == ival) tmpupp=mid; else xlow=mid;                                  \
+        }                                                                                         \
+        /* xlow and xupp now surround the group in xc */                                          \
+        break;                                                                                    \
+      }                                                                                           \
+    }                                                                                             \
+    if (!isDataCol)                                                                               \
+      break;                                                                                      \
+    if (isRollCol && xlow==xupp-1) {  /* no match found in last column */                         \
+      if (rollToNearest) {                                                                        \
+        /* when rollToNearest you can't limit the distance currently */                           \
+        if ( (!lowmax || xlow>xlowIn) && (!uppmax || xupp<xuppIn) ) {                             \
+          if ( ival-xcv[XIND(xlow)] <= xcv[XIND(xupp)]-ival)                                      \
+            rollLow=true;                                                                         \
+          else                                                                                    \
+            rollUpp=true;                                                                         \
+        }                                                                                         \
+        else if (uppmax && xupp==xuppIn && rollends[1])                                           \
+          rollLow=true;                                                                           \
+        else if (lowmax && xlow==xlowIn && rollends[0])                                           \
+          rollUpp=true;                                                                           \
+      } else {                                                                                    \
+        /* Regular roll=TRUE|+ve|-ve */                                                           \
+        if ((( roll>0.0 && (!lowmax || xlow>xlowIn) && (xupp<xuppIn || !uppmax || rollends[1]))   \
+          || ( roll<0.0 && xupp==xuppIn && uppmax && rollends[1]) )                               \
+          && ( isinf(rollabs) || (ival-xcv[XIND(xlow)]-(TYPE)rollabs <= 0) ))                     \
+          rollLow=true;                                                                           \
+        else                                                                                      \
+        if ((( roll<0.0 && (!uppmax || xupp<xuppIn) && (xlow>xlowIn || !lowmax || rollends[0]))   \
+          || ( roll>0.0 && xlow==xlowIn && lowmax && rollends[0]) )                               \
+          && ( isinf(rollabs) || (xcv[XIND(xupp)]-ival-(TYPE)rollabs <= 0 ) ))                    \
+          rollUpp=true;                                                                           \
+      }                                                                                           \
+    }                                                                                             \
+    if (op[col] != EQ) {                                                                          \
+      const bool isivalNNA = !ISNA_TYPE(ival);                                                    \
+      switch (op[col]) {                                                                          \
+      case LE : xlow = xlowIn; break;                                                             \
+      case LT : xupp = xlow + 1; xlow = xlowIn; break;                                            \
+      case GE : if (isivalNNA) xupp = xuppIn; break;                                              \
+      case GT : xlow = xupp - 1; if (isivalNNA) xupp = xuppIn; break;                             \
+      /* no other cases; checked up front to avoid handling error in parallel region */           \
+      }                                                                                           \
+      /* for LE/LT cases, ensure xlow excludes NA indices, != EQ is checked above already */      \
+      if (op[col]<=3 && xlow<xupp-1 && isivalNNA && ISNA_TYPE(xcv[XIND(xlow+1)])) {               \
+        int tmplow = xlow, tmpupp = xupp;                                                         \
+        while (tmplow < tmpupp-1) {                                                               \
+          int mid = tmplow + (tmpupp-tmplow)/2;                                                   \
+          if (ISNA_TYPE(xcv[XIND(mid)])) tmplow = mid; else tmpupp = mid;                         \
+        }                                                                                         \
+        xlow = tmplow; /* tmplow is the index of last NA value */                                 \
+      }                                                                                           \
+    }                                                                                             \
+    int tmplow = lir;                                                                             \
+    while (tmplow<iupp-1) { /* TO DO: could double up from lir rather than halving from iupp */   \
+      int mid = tmplow + (iupp-tmplow)/2;                                                         \
+      if (icv[ o ? o[mid]-1 : mid ] == ival) tmplow=mid; else iupp=mid;                           \
+      /* if we could guarantee ivals to be *always* sorted for all columns independently          \
+         (= max(nestedid) = 1), could speed this up 2x by checking GE,GT,LE,LT separately */      \
+    }                                                                                             \
+    int tmpupp = lir;                                                                             \
+    while (ilow<tmpupp-1) {                                                                       \
+      int mid = ilow + (tmpupp-ilow)/2;                                                           \
+      if (icv[ o ? o[mid]-1 : mid ] == ival) tmpupp=mid; else ilow=mid;                           \
+    }                                                                                             \
+    /* ilow and iupp now surround the group in ic, too */                                         
+  
   switch (TYPEOF(xc)) {
   case LGLSXP : case INTSXP : {  // including factors
     const int *icv = isDataCol ? INTEGER(ic) : NULL;
     const int *xcv = INTEGER(xc);
     const int ival = isDataCol ? icv[ir] : thisgrp;
-    while (xlow < xupp-1) {
-      int mid = xlow + (xupp-xlow)/2;   // Same as (xlow+xupp)/2 but without risk of overflow
-      int xval = xcv[XIND(mid)];
-      if (xval<ival) {          // relies on NA_INTEGER == INT_MIN, tested in init.c
-        xlow=mid;
-      } else if (xval>ival) {   // TO DO: is *(&xlow, &xupp)[0|1]=mid more efficient than branch?
-        xupp=mid;
-      } else {
-        // xval == ival  including NA_INTEGER==NA_INTEGER
-        // branch mid to find start and end of this group in this column
-        // TO DO?: not if mult=first|last and col<ncol-1
-        int tmplow = mid;
-        while (tmplow<xupp-1) {
-          int mid = tmplow + (xupp-tmplow)/2;
-          if (xcv[XIND(mid)] == ival) tmplow=mid; else xupp=mid;
-        }
-        int tmpupp = mid;
-        while (xlow<tmpupp-1) {
-          int mid = xlow + (tmpupp-xlow)/2;
-          if (xcv[XIND(mid)] == ival) tmpupp=mid; else xlow=mid;
-        }
-        // xlow and xupp now surround the group in xc, we only need this range for the next column
-        break;
-      }
-    }
-    if (!isDataCol)
-      break;
-    if (isRollCol && xlow==xupp-1) {
-      // no match found in last column, now roll
-      if (rollToNearest) {   // value of roll ignored currently when nearest
-        if ( (!lowmax || xlow>xlowIn) && (!uppmax || xupp<xuppIn) ) {
-          if ( ival-xcv[XIND(xlow)] <= xcv[XIND(xupp)]-ival)
-            rollLow=true;
-          else
-            rollUpp=true;
-        }
-        else if (uppmax && xupp==xuppIn && rollends[1])
-          rollLow=true;
-        else if (lowmax && xlow==xlowIn && rollends[0])
-          rollUpp=true;
-      } else {
-        // Regular roll=TRUE|+ve|-ve
-        if ((( roll>0.0 && (!lowmax || xlow>xlowIn) && (xupp<xuppIn || !uppmax || rollends[1]))
-          || ( roll<0.0 && xupp==xuppIn && uppmax && rollends[1]) )
-          && ( isinf(rollabs) || (ival-xcv[XIND(xlow)]-(int)rollabs <= 0) ))
-          rollLow=true;
-        else
-        if ((( roll<0.0 && (!uppmax || xupp<xuppIn) && (xlow>xlowIn || !lowmax || rollends[0]))
-          || ( roll>0.0 && xlow==xlowIn && lowmax && rollends[0]) )
-          && ( isinf(rollabs) || (xcv[XIND(xupp)]-ival-(int)rollabs <= 0 ) ))
-          rollUpp=true;
-      }
-    }
-    if (op[col] != EQ) {
-      switch (op[col]) {
-      case LE : xlow = xlowIn; break;
-      case LT : xupp = xlow + 1; xlow = xlowIn; break;
-      case GE : if (ival != NA_INTEGER) xupp = xuppIn; break;
-      case GT : xlow = xupp - 1; if (ival != NA_INTEGER) xupp = xuppIn; break;
-      // no other cases checked up front to avoid handling error when this is in parallel region
-      }
-      // for LE/LT cases, we need to ensure xlow excludes NA indices, != EQ is checked above already
-      if (op[col]<=3 && xlow<xupp-1 && ival!=NA_INTEGER && xcv[XIND(xlow+1)]==NA_INTEGER) {
-        int tmplow = xlow, tmpupp = xupp;
-        while (tmplow < tmpupp-1) {
-          int mid = tmplow + (tmpupp-tmplow)/2;
-          if (xcv[XIND(mid)]==NA_INTEGER) tmplow = mid; else tmpupp = mid;
-        }
-        xlow = tmplow; // tmplow is the index of last NA value
-      }
-    }
-    int tmplow = lir;
-    while (tmplow<iupp-1) {   // TO DO: could double up from lir rather than halving from iupp
-      int mid = tmplow + (iupp-tmplow)/2;
-      if (icv[ o ? o[mid]-1 : mid ] == ival) tmplow=mid; else iupp=mid;
-      // if we could guarantee ivals to be *always* sorted for all columns independently (= max(nestedid) = 1), then we can speed this up by 2x by adding checks for GE,GT,LE,LT separately.
-    }
-    int tmpupp = lir;
-    while (ilow<tmpupp-1) {
-      int mid = ilow + (tmpupp-ilow)/2;
-      if (icv[ o ? o[mid]-1 : mid ] == ival) tmpupp=mid; else ilow=mid;
-    }
-    // ilow and iupp now surround the group in ic, too
+    #define ISNA_TYPE(x) ((x)==NA_INTEGER)
+    DO(int)
   } break;
   case STRSXP : {
     // op[col]==EQ checked up front to avoid an if() here and non-thread-safe error()
