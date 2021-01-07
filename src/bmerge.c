@@ -66,6 +66,8 @@ SEXP bmerge(SEXP idt, SEXP xdt, SEXP icolsArg, SEXP xcolsArg, SEXP isorted, SEXP
     int it = TYPEOF(VECTOR_ELT(idt, icols[col]-1));
     int xt = TYPEOF(VECTOR_ELT(xdt, xcols[col]-1));
     if (iN && it!=xt) error(_("typeof x.%s (%s) != typeof i.%s (%s)"), CHAR(STRING_ELT(getAttrib(xdt,R_NamesSymbol),xcols[col]-1)), type2char(xt), CHAR(STRING_ELT(getAttrib(idt,R_NamesSymbol),icols[col]-1)), type2char(it));
+    if (iN && it!=LGLSXP && it!=INTSXP && it!=REALSXP && it!=STRSXP)
+      error(_("Type '%s' not supported for joining/merging"), type2char(it));
   }
 
   // rollArg, rollendsArg
@@ -210,12 +212,6 @@ SEXP bmerge(SEXP idt, SEXP xdt, SEXP icolsArg, SEXP xcolsArg, SEXP isorted, SEXP
   return (ans);
 }
 
-static uint64_t i64twiddle(const void *p, int i)
-{
-  return ((uint64_t *)p)[i] ^ 0x8000000000000000;
-  // Always ascending and NA first (0) when used by bmerge
-}
-
 void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisgrp, int lowmax, int uppmax)
 // col is >0 and <=ncol-1 if this range of [xlow,xupp] and [ilow,iupp] match up to but not including that column
 // lowmax=1 if xlowIn is the lower bound of this group (needed for roll)
@@ -339,69 +335,117 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
     }
   } break;
   case REALSXP : {
-    const double *icv = REAL(ic);
-    const double *xcv = REAL(xc);
-    const bool isInt64 = INHERITS(xc, char_integer64);
-    uint64_t (*twiddle)(const void *, int) = isInt64 ? &i64twiddle : &dtwiddle;
-    // TODO: remove this last remaining use of i64twiddle.
-    const unsigned long long ival = twiddle(icv, ir);
-    while (xlow < xupp-1) {
-      int mid = xlow + (xupp-xlow)/2;
-      const unsigned long long xval = twiddle(xcv, XIND(mid));
-      if (xval<ival) {
-        xlow=mid;
-      } else if (xval>ival) {
-        xupp=mid;
-      } else { // xval == ival)
-        int tmplow = mid;
-        while (tmplow<xupp-1) {
-          const int mid = tmplow + (xupp-tmplow)/2;
-          if (twiddle(xcv, XIND(mid)) == ival) tmplow=mid; else xupp=mid;
+    if (INHERITS(xc, char_integer64)) {
+      const int64_t *icv = (const int64_t *)REAL(ic);
+      const int64_t *xcv = (const int64_t *)REAL(xc);
+      const int64_t ival = icv[ir];
+      while (xlow < xupp-1) {
+        int mid = xlow + (xupp-xlow)/2;
+        const int64_t xval = xcv[XIND(mid)];
+        if (xval<ival) {
+          xlow=mid;
+        } else if (xval>ival) {
+          xupp=mid;
+        } else { // xval == ival)
+          int tmplow = mid;
+          while (tmplow<xupp-1) {
+            const int mid = tmplow + (xupp-tmplow)/2;
+            if (xcv[XIND(mid)] == ival) tmplow=mid; else xupp=mid;
+          }
+          int tmpupp = mid;
+          while (xlow<tmpupp-1) {
+            const int mid = xlow + (tmpupp-xlow)/2;
+            if (xcv[XIND(mid)] == ival) tmpupp=mid; else xlow=mid;
+          }
+          break;
         }
-        int tmpupp = mid;
-        while (xlow<tmpupp-1) {
-          const int mid = xlow + (tmpupp-xlow)/2;
-          if (twiddle(xcv, XIND(mid)) == ival) tmpupp=mid; else xlow=mid;
+      }
+      if (op[col] != EQ) {
+        const bool isivalNA = ival==NA_INTEGER64;
+        switch (op[col]) {
+        case LE : if (!isivalNA) xlow = xlowIn; break;
+        case LT : xupp = xlow + 1; if (!isivalNA) xlow = xlowIn; break;
+        case GE : if (!isivalNA) xupp = xuppIn; break;
+        case GT : xlow = xupp - 1; if (!isivalNA) xupp = xuppIn; break;
         }
-        break;
-      }
-    }
-    if (op[col] != EQ) {
-      bool isivalNA = !isInt64 ? ISNAN(icv[ir]) : (DtoLL(icv[ir]) == NA_INT64_LL);
-      switch (op[col]) {
-      case LE : if (!isivalNA) xlow = xlowIn; break;
-      case LT : xupp = xlow + 1; if (!isivalNA) xlow = xlowIn; break;
-      case GE : if (!isivalNA) xupp = xuppIn; break;
-      case GT : xlow = xupp - 1; if (!isivalNA) xupp = xuppIn; break;
-      }
-      // for LE/LT cases, we need to ensure xlow excludes NA indices, != EQ is checked above already
-      if (op[col] <= 3 && xlow<xupp-1 && !isivalNA && (!isInt64 ? ISNAN(xcv[XIND(xlow+1)]) : (DtoLL(xcv[XIND(xlow+1)]) == NA_INT64_LL))) {
-        int tmplow = xlow, tmpupp = xupp;
-        while (tmplow < tmpupp-1) {
-          int mid = tmplow + (tmpupp-tmplow)/2;
-          double xval = xcv[XIND(mid)];
-          if (!isInt64 ? ISNAN(xval) : xval.ll == NA_INT64_LL) tmplow = mid; else tmpupp = mid;
+        // for LE/LT cases, we need to ensure xlow excludes NA indices, != EQ is checked above already
+        if (op[col] <= 3 && xlow<xupp-1 && !isivalNA && xcv[XIND(xlow+1)] == NA_INTEGER64) {
+          int tmplow = xlow, tmpupp = xupp;
+          while (tmplow < tmpupp-1) {
+            int mid = tmplow + (tmpupp-tmplow)/2;
+            if (xcv[XIND(mid)] == NA_INTEGER64) tmplow = mid; else tmpupp = mid;
+          }
+          xlow = tmplow; // tmplow is the index of last NA value
         }
-        xlow = tmplow; // tmplow is the index of last NA value
       }
-    }
-    int tmplow = lir;
-    while (tmplow<iupp-1) {
-      int mid = tmplow + (iupp-tmplow)/2;
-      xval.ull = twiddle(dic, o ? o[mid]-1 : mid);
-      if (xval.ull == ival.ull) tmplow=mid; else iupp=mid;
-    }
-    int tmpupp = lir;
-    while (ilow<tmpupp-1) {
-      int mid = ilow + (tmpupp-ilow)/2;
-      xval.ull = twiddle(dic, o ? o[mid]-1 : mid);
-      if (xval.ull == ival.ull) tmpupp=mid; else ilow=mid;
+      int tmplow = lir;
+      while (tmplow<iupp-1) {
+        const int mid = tmplow + (iupp-tmplow)/2;
+        if (icv[ o ? o[mid]-1 : mid ] == ival) tmplow=mid; else iupp=mid;
+      }
+      int tmpupp = lir;
+      while (ilow<tmpupp-1) {
+        const int mid = ilow + (tmpupp-ilow)/2;
+        if (icv[ o ? o[mid]-1 : mid ] == ival) tmpupp=mid; else ilow=mid;
+      }
+      // ilow and iupp now surround the group in ic, too
+    } else {
+      const double *icv = REAL(ic);
+      const double *xcv = REAL(xc);
+      const uint64_t ival = dtwiddle(icv, ir);
+      while (xlow < xupp-1) {
+        int mid = xlow + (xupp-xlow)/2;
+        const uint64_t xval = dtwiddle(xcv, XIND(mid));
+        if (xval<ival) {
+          xlow=mid;
+        } else if (xval>ival) {
+          xupp=mid;
+        } else { // xval == ival)
+          int tmplow = mid;
+          while (tmplow<xupp-1) {
+            const int mid = tmplow + (xupp-tmplow)/2;
+            if (dtwiddle(xcv, XIND(mid)) == ival) tmplow=mid; else xupp=mid;
+          }
+          int tmpupp = mid;
+          while (xlow<tmpupp-1) {
+            const int mid = xlow + (tmpupp-xlow)/2;
+            if (dtwiddle(xcv, XIND(mid)) == ival) tmpupp=mid; else xlow=mid;
+          }
+          break;
+        }
+      }
+      if (op[col] != EQ) {
+        bool isivalNA = ISNAN(icv[ir]);
+        switch (op[col]) {
+        case LE : if (!isivalNA) xlow = xlowIn; break;
+        case LT : xupp = xlow + 1; if (!isivalNA) xlow = xlowIn; break;
+        case GE : if (!isivalNA) xupp = xuppIn; break;
+        case GT : xlow = xupp - 1; if (!isivalNA) xupp = xuppIn; break;
+        }
+        // for LE/LT cases, we need to ensure xlow excludes NA indices, != EQ is checked above already
+        if (op[col] <= 3 && xlow<xupp-1 && !isivalNA && ISNAN(xcv[XIND(xlow+1)])) {
+          int tmplow = xlow, tmpupp = xupp;
+          while (tmplow < tmpupp-1) {
+            const int mid = tmplow + (tmpupp-tmplow)/2;
+            if (ISNAN(xcv[XIND(mid)])) tmplow = mid; else tmpupp = mid;
+          }
+          xlow = tmplow; // tmplow is the index of last NA value
+        }
+      }
+      int tmplow = lir;
+      while (tmplow<iupp-1) {
+        const int mid = tmplow + (iupp-tmplow)/2;
+        if (dtwiddle(icv, o ? o[mid]-1 : mid) == ival) tmplow=mid; else iupp=mid;
+      }
+      int tmpupp = lir;
+      while (ilow<tmpupp-1) {
+        const int mid = ilow + (tmpupp-ilow)/2;
+        if (dtwiddle(icv, o ? o[mid]-1 : mid) == ival) tmpupp=mid; else ilow=mid;
+      }
     }
     // ilow and iupp now surround the group in ic, too
   } break;
-  default: {
-    error(_("Type '%s' not supported for joining/merging"), type2char(t));
-  }
+  // supported types were checked up front to avoid handling an error here in (future) parallel region
   }
   if (xlow<xupp-1) { // if value found, low and upp surround it, unlike standard binary search where low falls on it
     if (col<ncol-1) {  // could include col==-1 here (a non-equi non-data column)
