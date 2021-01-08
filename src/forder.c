@@ -197,10 +197,10 @@ static void range_d(double *x, int n, uint64_t *out_min, uint64_t *out_max, int 
   int na_count=0, infnan_count=0;
   int i=0;
   while(i<n && !R_FINITE(x[i])) { ISNA(x[i++]) ? na_count++ : infnan_count++; }
-  if (i<n) { max = min = dtwiddle(x, i++);}
+  if (i<n) { max = min = dtwiddle(x[i++]); }
   for(; i<n; i++) {
     if (!R_FINITE(x[i])) { ISNA(x[i]) ? na_count++ : infnan_count++; continue; }
-    uint64_t tmp = dtwiddle(x, i);
+    uint64_t tmp = dtwiddle(x[i]);
     if (tmp>max) max=tmp;
     else if (tmp<min) min=tmp;
   }
@@ -386,13 +386,13 @@ int getNumericRounding_C()
 
 // for signed integers it's easy: flip sign bit to swap positives and negatives; the resulting unsigned is in the right order with INT_MIN ending up as 0
 // for floating point finite you have to flip the other bits too if it was signed: http://stereopsis.com/radix.html
-uint64_t dtwiddle(const void *p, int i)
+uint64_t dtwiddle(double x) //const void *p, int i)
 {
   union {
     double d;
     uint64_t u64;
   } u;  // local for thread safety
-  u.d = ((double *)p)[i];
+  u.d = x; //((double *)p)[i];
   if (R_FINITE(u.d)) {
     if (u.d==0) u.d=0; // changes -0.0 to 0.0,  issue #743
     u.u64 ^= (u.u64 & 0x8000000000000000) ? 0xffffffffffffffff : 0x8000000000000000; // always flip sign bit and if negative (sign bit was set) flip other bits too
@@ -680,7 +680,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
               elem = ISNA(xd[i]) ? naval : nanval;
             }
           } else {
-            elem = dtwiddle(xd, i);  // TODO: could avoid twiddle() if all positive finite which could be known from range_d.
+            elem = dtwiddle(xd[i]);  // TODO: could avoid twiddle() if all positive finite which could be known from range_d.
                                      //       also R_FINITE is repeated within dtwiddle() currently, wastefully given the if() above
           }
           WRITE_KEY
@@ -1280,7 +1280,7 @@ SEXP issorted(SEXP x, SEXP by)
         while (i<n && xd[i]>=xd[i-1]) i++;
       } else {
         double *xd = REAL(x);
-        while (i<n && dtwiddle(xd,i)>=dtwiddle(xd,i-1)) i++;  // TODO: change to loop over any NA or -Inf at the beginning and then proceed without dtwiddle() (but rounding)
+        while (i<n && dtwiddle(xd[i])>=dtwiddle(xd[i-1])) i++;  // TODO: change to loop over any NA or -Inf at the beginning and then proceed without dtwiddle() (but rounding)
       }
       break;
     case STRSXP : {
@@ -1346,7 +1346,7 @@ SEXP issorted(SEXP x, SEXP by)
       } break;
       case 1: {   // regular double in REALSXP
         const double *p = (const double *)colp;
-        ok = dtwiddle(p,0)>dtwiddle(p,-1);  // TODO: avoid dtwiddle by looping over any NA at the beginning, and remove NumericRounding.
+        ok = dtwiddle(p[0])>dtwiddle(p[-1]);  // TODO: avoid dtwiddle by looping over any NA at the beginning, and remove NumericRounding.
       } break;
       case 2: {  // integer64 in REALSXP
         const int64_t *p = (const int64_t *)colp;
