@@ -330,7 +330,7 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
     const int ival = isDataCol ? icv[ir] : thisgrp;
     #define ISNAT(x) ((x)==NA_INTEGER)
     #define WRAP(x) (x)  // wrap not needed for int
-    DO(int xval = xcv[XIND(mid)], xval<ival, xval>ival, int, ival-xcv[XIND(xlow)], xcv[XIND(xupp)]-ival)
+    DO(const int xval = xcv[XIND(mid)], xval<ival, xval>ival, int, ival-xcv[XIND(xlow)], xcv[XIND(xupp)]-ival)
   } break;
   case STRSXP : {
     // op[col]==EQ checked up front to avoid an if() here and non-thread-safe error()
@@ -351,81 +351,11 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
       const int64_t *icv = (const int64_t *)REAL(ic);
       const int64_t *xcv = (const int64_t *)REAL(xc);
       const int64_t ival = icv[ir];
-      while (xlow < xupp-1) {
-        int mid = xlow + (xupp-xlow)/2;
-        const int64_t xval = xcv[XIND(mid)];
-        if (xval<ival) {
-          xlow=mid;
-        } else if (xval>ival) {
-          xupp=mid;
-        } else { // xval == ival)
-          int tmplow = mid;
-          while (tmplow<xupp-1) {
-            const int mid = tmplow + (xupp-tmplow)/2;
-            if (xcv[XIND(mid)] == ival) tmplow=mid; else xupp=mid;
-          }
-          int tmpupp = mid;
-          while (xlow<tmpupp-1) {
-            const int mid = xlow + (tmpupp-xlow)/2;
-            if (xcv[XIND(mid)] == ival) tmpupp=mid; else xlow=mid;
-          }
-          break;
-        }
-      }
-      if (isRollCol && xlow==xupp-1) {
-        if (rollToNearest) {   // value of roll ignored currently when nearest
-          if ( (!lowmax || xlow>xlowIn) && (!uppmax || xupp<xuppIn) ) {
-            if ( ival-xcv[XIND(xlow)] <= xcv[XIND(xupp)]-ival)
-              rollLow=true;
-            else
-              rollUpp=true;
-          }
-          else if (uppmax && xupp==xuppIn && rollends[1])
-            rollLow=true;
-          else if (lowmax && xlow==xlowIn && rollends[0])
-            rollUpp=true;
-        } else {
-          // Regular roll=TRUE|+ve|-ve
-          if ((( roll>0.0 && (!lowmax || xlow>xlowIn) && (xupp<xuppIn || !uppmax || rollends[1]))
-            || ( roll<0.0 && xupp==xuppIn && uppmax && rollends[1]) )
-            && ( isinf(rollabs) || (ival-xcv[XIND(xlow)]-(int64_t)rollabs <= 0) ))
-            rollLow=true;
-          else
-          if ((( roll<0.0 && (!uppmax || xupp<xuppIn) && (xlow>xlowIn || !lowmax || rollends[0]))
-            || ( roll>0.0 && xlow==xlowIn && lowmax && rollends[0]) )
-            && ( isinf(rollabs) || (xcv[XIND(xupp)]-ival-(int64_t)rollabs <= 0 ) ))
-            rollUpp=true;
-        }
-      }
-      if (op[col] != EQ) {
-        const bool isivalNA = ival==NA_INTEGER64;
-        switch (op[col]) {
-        case LE : if (!isivalNA) xlow = xlowIn; break;
-        case LT : xupp = xlow + 1; if (!isivalNA) xlow = xlowIn; break;
-        case GE : if (!isivalNA) xupp = xuppIn; break;
-        case GT : xlow = xupp - 1; if (!isivalNA) xupp = xuppIn; break;
-        }
-        // for LE/LT cases, we need to ensure xlow excludes NA indices, != EQ is checked above already
-        if (op[col] <= 3 && xlow<xupp-1 && !isivalNA && xcv[XIND(xlow+1)] == NA_INTEGER64) {
-          int tmplow = xlow, tmpupp = xupp;
-          while (tmplow < tmpupp-1) {
-            int mid = tmplow + (tmpupp-tmplow)/2;
-            if (xcv[XIND(mid)] == NA_INTEGER64) tmplow = mid; else tmpupp = mid;
-          }
-          xlow = tmplow; // tmplow is the index of last NA value
-        }
-      }
-      int tmplow = lir;
-      while (tmplow<iupp-1) {
-        const int mid = tmplow + (iupp-tmplow)/2;
-        if (icv[ o ? o[mid]-1 : mid ] == ival) tmplow=mid; else iupp=mid;
-      }
-      int tmpupp = lir;
-      while (ilow<tmpupp-1) {
-        const int mid = ilow + (tmpupp-ilow)/2;
-        if (icv[ o ? o[mid]-1 : mid ] == ival) tmpupp=mid; else ilow=mid;
-      }
-      // ilow and iupp now surround the group in ic, too
+      #undef ISNAT
+      #undef WRAP
+      #define ISNAT(x) ((x)==NA_INTEGER64)
+      #define WRAP(x) (x)
+      DO(const int64_t xval=xcv[XIND(mid)], xval<ival, xval>ival, int64_t, ival-xcv[XIND(xlow)], xcv[XIND(xupp)]-ival)
     } else {
       const double *icv = REAL(ic);
       const double *xcv = REAL(xc);
