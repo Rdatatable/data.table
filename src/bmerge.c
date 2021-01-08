@@ -234,7 +234,7 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
   }
   bool rollLow=false, rollUpp=false;
 
-  #define DO(XVAL, CMP1, CMP2, TYPE, LOWDIST, UPPDIST, IVAL)                                            \
+  #define DO(XVAL, CMP1, CMP2, TYPE, LOWDIST, UPPDIST, IVAL)                                      \
     while (xlow < xupp-1) {                                                                       \
       int mid = xlow + (xupp-xlow)/2;                                                             \
       XVAL;                                                                                       \
@@ -293,8 +293,8 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
     if (op[col] != EQ) {                                                                          \
       /* never true for STRSXP checked up front */                                                \
       switch (op[col]) {                                                                          \
-      case LE : if (!ISNAT(ival)) xlow = xlowIn; break;                                                             \
-      case LT : xupp = xlow + 1; if (!ISNAT(ival)) xlow = xlowIn; break;                                            \
+      case LE : if (!ISNAT(ival)) xlow = xlowIn; break;                                           \
+      case LT : xupp = xlow + 1; if (!ISNAT(ival)) xlow = xlowIn; break;                          \
       case GE : if (!ISNAT(ival)) xupp = xuppIn; break;                                           \
       case GT : xlow = xupp - 1; if (!ISNAT(ival)) xupp = xuppIn; break;                          \
       /* no other cases; checked up front to avoid handling error in parallel region */           \
