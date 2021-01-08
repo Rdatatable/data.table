@@ -26,6 +26,7 @@
 \alias{rep.IDate}
 \alias{rep.ITime}
 \alias{round.IDate}
+\alias{trunc.IDate}
 \alias{round.ITime}
 \alias{trunc.ITime}
 \alias{seq.IDate}
