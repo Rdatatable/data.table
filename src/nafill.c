@@ -125,10 +125,10 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, S
   }
   R_len_t nx = length(x);
 
-  double* dx[nx];
-  int32_t* ix[nx];
-  int64_t* i64x[nx];
-  uint_fast64_t inx[nx];
+  double **dx = (double**)R_alloc(nx, sizeof(double*));
+  int32_t **ix = (int32_t**)R_alloc(nx, sizeof(int32_t*));
+  int64_t **i64x = (int64_t**)R_alloc(nx, sizeof(int64_t*));
+  uint_fast64_t *inx = (uint_fast64_t*)R_alloc(nx, sizeof(uint_fast64_t));
   SEXP ans = R_NilValue;
   ans_t *vans = (ans_t *)R_alloc(nx, sizeof(ans_t));
   for (R_len_t i=0; i<nx; i++) {
