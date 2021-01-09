@@ -127,7 +127,7 @@ int checkOverAlloc(SEXP x);
 
 // forder.c
 int StrCmp(SEXP x, SEXP y);
-uint64_t dtwiddle(const void *p, int i);
+uint64_t dtwiddle(double x);
 SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP naArg);
 int getNumericRounding_C();
 
