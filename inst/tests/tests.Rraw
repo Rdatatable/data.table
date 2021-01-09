@@ -12224,7 +12224,7 @@ test_dates = c(
 )
 test_dates = as.IDate(test_dates)
 test(1872.03, round(test_dates, 'weeks'),
-     structure(c(17167L, 17377L, 17321L, 17265L, 17328L,
+     structure(c(17167L, 17377L, 17321L, 17272L, 17328L,
                  17440L, 17272L, 17174L, 17230L, 17447L),
                class = c("IDate", "Date")))
 test(1872.04, round(test_dates, 'months'),
