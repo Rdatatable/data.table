@@ -319,30 +319,32 @@ SEXP coerceUtf8IfNeeded(SEXP x) {
   return(ans);
 }
 
-SEXP class1(SEXP x) {
+// class1 is used by coerseAs only, which is used by frollR.c and nafill.c only
+const char *class1(SEXP x) {
   SEXP cl = getAttrib(x, R_ClassSymbol);
   if (length(cl))
-    return(STRING_ELT(cl, 0));
+    return(CHAR(STRING_ELT(cl, 0)));
   SEXP d = getAttrib(x, R_DimSymbol);
   int nd = length(d);
   if (nd) {
     if (nd==2)
-      return(mkChar("matrix"));
+      return "matrix";
     else
-      return(mkChar("array"));
+      return "array";
   }
   SEXPTYPE t = TYPEOF(x);
+  // see TypeTable in src/main/utils.c to compare to the differences here vs type2char
   switch(t) {
   case CLOSXP: case SPECIALSXP: case BUILTINSXP:
-    return(mkChar("function")); // # nocov
+    return "function";
   case REALSXP:
-    return(mkChar("numeric"));
+    return "numeric";
   case SYMSXP:
-    return(mkChar("name")); // # nocov
+    return "name";
   case LANGSXP:
-    return(mkChar("call")); // # nocov
+    return "call";
   default:
-    return(type2str(t));
+    return type2char(t);
   }
 }
 
@@ -359,14 +361,14 @@ SEXP coerceAs(SEXP x, SEXP as, SEXP copyArg) {
   bool verbose = GetVerbose()>=2; // verbose level 2 required
   if (!LOGICAL(copyArg)[0] && TYPEOF(x)==TYPEOF(as) && class1(x)==class1(as)) {
     if (verbose)
-      Rprintf("copy=false and input already of expected type and class %s[%s]\n", type2char(TYPEOF(x)), CHAR(class1(x)));
+      Rprintf("copy=false and input already of expected type and class %s[%s]\n", type2char(TYPEOF(x)), class1(x));
     copyMostAttrib(as, x); // so attrs like factor levels are same for copy=T|F
     return(x);
   }
   int len = LENGTH(x);
   SEXP ans = PROTECT(allocNAVectorLike(as, len));
   if (verbose)
-    Rprintf("Coercing %s[%s] into %s[%s]\n", type2char(TYPEOF(x)), CHAR(class1(x)), type2char(TYPEOF(as)), CHAR(class1(as)));
+    Rprintf("Coercing %s[%s] into %s[%s]\n", type2char(TYPEOF(x)), class1(x), type2char(TYPEOF(as)), class1(as));
   const char *ret = memrecycle(/*target=*/ans, /*where=*/R_NilValue, /*start=*/0, /*len=*/LENGTH(x), /*source=*/x, /*sourceStart=*/0, /*sourceLen=*/-1, /*colnum=*/0, /*colname=*/"");
   if (ret)
     warning(_("%s"), ret);
