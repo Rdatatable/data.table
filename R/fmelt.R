@@ -37,9 +37,7 @@ patterns = function(..., cols=character(0L)) {
 measure = function(..., sep="_", pattern, cols, multiple.keyword="value.name") {
   # 1. basic error checking.
   if (!missing(sep) && !missing(pattern)) {
-    stop(
-      "both sep and pattern arguments used in measure; ",
-      "must use either sep or pattern (not both)")
+    stop("both sep and pattern arguments used in measure; must use either sep or pattern (not both)")
   }
   if (!(is.character(multiple.keyword) && length(multiple.keyword)==1 && !is.na(multiple.keyword) && nchar(multiple.keyword)>0)) {
     stop("multiple.keyword must be a character string with nchar>0")
@@ -51,8 +49,8 @@ measure = function(..., sep="_", pattern, cols, multiple.keyword="value.name") {
   mcall = match.call()
   L = as.list(mcall)[-1]
   formal.names <- names(formals())
-  fun.list = L[-which(names(L)%in%formal.names)]
-  user.named = names(fun.list)!=""
+  fun.list = L[-which(names(L) %in% formal.names)]
+  user.named = names(fun.list) != ""
   is.symb = sapply(fun.list, is.symbol)
   bad.i = which((!user.named) & (!is.symb))
   if (length(bad.i)) {
@@ -63,27 +61,18 @@ measure = function(..., sep="_", pattern, cols, multiple.keyword="value.name") {
   group.is.formal <- names(fun.list) %in% formal.names
   if (any(group.is.formal)) {
     bad.names <- names(fun.list)[group.is.formal]
-    stop(
-      "group names specified in ... conflict with measure argument names;",
-      " please fix by changing group names: ",
-      paste(bad.names, collapse=","))
+    stop("group names specified in ... conflict with measure argument names; please fix by changing group names: ", paste(bad.names, collapse=","))
   }
   err.names.unique <- function(err.what, name.vec) {
     name.tab = table(name.vec)
     bad.counts = name.tab[1 < name.tab]
     if (length(bad.counts)) {
-      stop(
-        err.what, " names should be unique, problems: ",
-        paste(names(bad.counts), collapse=",")
-      )
+      stop(err.what, " names should be unique, problems: ", paste(names(bad.counts), collapse=","))
     }
   }
   err.args.groups <- function(type, N){
     if (N != length(fun.list)) {
-      stop(
-        "number of ... arguments to measure =", length(fun.list),
-        " must be same as number of ", type,
-        " =", N)
+      stop("number of ... arguments to measure =", length(fun.list), " must be same as ", type, " =", N)
     }
   }
   err.names.unique("measure group", names(fun.list))
@@ -101,7 +90,7 @@ measure = function(..., sep="_", pattern, cols, multiple.keyword="value.name") {
     if (is.null(start)) {
       stop("pattern must contain at least one capture group (parenthesized sub-pattern)")
     }
-    err.args.groups("capture groups in pattern", ncol(start))
+    err.args.groups("number of capture groups in pattern", ncol(start))
     end = attr(match.vec, "capture.length")[measure.vec,]+start-1L
     names.mat = matrix(cols[measure.vec], nrow(start), ncol(start))
     substr(names.mat, start, end)
@@ -115,17 +104,14 @@ measure = function(..., sep="_", pattern, cols, multiple.keyword="value.name") {
     if (n.groups == 1) {
       stop("each column name results in only one item after splitting using sep, which means that all columns would be melted; to fix please either specify melt on all columns directly without using measure, or use a different sep/pattern specification")
     }
-    err.args.groups("items after splitting column names", n.groups)
+    err.args.groups("max number of items after splitting column names", n.groups)
     measure.vec = which(vector.lengths==n.groups)
     do.call(rbind, list.of.vectors[measure.vec])
   }
   err.names.unique("measured column", cols[measure.vec])
   uniq.mat <- unique(group.mat)
   if (nrow(uniq.mat) < nrow(group.mat)) {
-    stop(
-      "number of unique column IDs =", nrow(uniq.mat),
-      " is less than number of melted columns =", nrow(group.mat),
-      "; fix by changing pattern/sep")
+    stop("number of unique column IDs =", nrow(uniq.mat), " is less than number of melted columns =", nrow(group.mat), "; fix by changing pattern/sep")
   }
   colnames(group.mat) = names(fun.list)
   group.dt = data.table(group.mat)
@@ -152,16 +138,11 @@ measure = function(..., sep="_", pattern, cols, multiple.keyword="value.name") {
   # 5. compute measure.vars list or vector.
   if (multiple.keyword %in% names(fun.list)) {# multiple output columns.
     if (!is.character(group.dt[[multiple.keyword]])) {
-      stop(
-        multiple.keyword, " column class=",
-        class(group.dt[[multiple.keyword]])[[1L]],
-        " after applying conversion function, but must be character")
+      stop(multiple.keyword, " column class=", class(group.dt[[multiple.keyword]])[[1L]], " after applying conversion function, but must be character")
     }
     is.other = names(group.dt) != multiple.keyword
     if (!any(is.other)) {
-      stop(
-        multiple.keyword, " is the only group; ",
-        "fix by creating at least one more group")
+      stop(multiple.keyword, " is the only group; fix by creating at least one more group")
     }
     other.values = lapply(group.dt[, is.other, with=FALSE], unique)
     other.values$stringsAsFactors = FALSE
