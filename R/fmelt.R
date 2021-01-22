@@ -62,24 +62,27 @@ measure = function(..., sep="_", pattern, cols, multiple.keyword="value.name") {
       )
     }
   }
+  err.args.groups <- function(type, N){
+    if (N != length(fun.list)) {
+      stop(
+        "number of ... arguments to measure =", length(fun.list),
+        " must be same as number of ", type,
+        " =", N)
+    }
+  }
   err.names.unique("measure group", names(fun.list))
   # 3. compute initial group data table, used as variable_table attribute.
   group.mat = if (!missing(pattern)) {
     match.vec = regexpr(pattern, cols, perl=TRUE)
     measure.vec = which(0 < match.vec)
     if (length(measure.vec) == 0L) {
-      stop(
-        "pattern did not match any cols, so nothing would be melted; fix by changing pattern")
+      stop("pattern did not match any cols, so nothing would be melted; fix by changing pattern")
     }
     start = attr(match.vec, "capture.start")[measure.vec, , drop=FALSE]
     if (is.null(start)) {
       stop("pattern must contain at least one capture group (parenthesized sub-pattern)")
     }
-    if (ncol(start) != length(fun.list)) {
-      stop(
-        "number of ... arguments to measure =", length(fun.list),
-        " must be same as number of capture groups in pattern =", ncol(start))
-    }
+    err.args.groups("capture groups in pattern", ncol(start))
     end = attr(match.vec, "capture.length")[measure.vec,]+start-1L
     names.mat = matrix(cols[measure.vec], nrow(start), ncol(start))
     substr(names.mat, start, end)
@@ -90,11 +93,7 @@ measure = function(..., sep="_", pattern, cols, multiple.keyword="value.name") {
     if (n.groups == 1) {
       stop("each column name results in only one item after splitting using sep, which means that all columns would be melted; to fix please either specify melt on all columns directly without using measure, or use a different sep/pattern specification")
     }
-    if (n.groups != length(fun.list)) {
-      stop(
-        "number of ... arguments to measure =", length(fun.list),
-        " must be same as max number of items after splitting column names =", n.groups)
-    }
+    err.args.groups("items after splitting column names", n.groups)
     measure.vec = which(vector.lengths==n.groups)
     do.call(rbind, list.of.vectors[measure.vec])
   }
