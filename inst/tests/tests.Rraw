@@ -10444,7 +10444,7 @@ test(1728.12, DT[order(x,na.last=NA)], DT[2])  # was randomly wrong
 if (test_longdouble) {  #3258
 
   old = options(datatable.verbose=FALSE)  # capture.output() exact tests must not be polluted with verbosity
-  
+
   test(1729.01, fwrite(data.table(V1=c(1), V2=c(9.9999999999999982236431605997495353221893310546875))),
                 output="V1,V2\n1,10")
   test(1729.02, fwrite(data.table(V2=c(9.9999999999999982236431605997495353221893310546875), V1=c(1))),
@@ -10524,8 +10524,8 @@ if (test_longdouble) {  #3258
   #  2.220446e-16   1.110223e-16  2.225074e-308  1.797693e+308
   test(1729.12, typeof(DT[[1L]]), "double")
   test(1729.13, capture.output(fwrite(DT)), capture.output(write.csv(DT,row.names=FALSE,quote=FALSE)))
-  
-  options(old)  # restore the previous datatable.verbose value, for example for the CRAN_Release test with verbose on 
+
+  options(old)  # restore the previous datatable.verbose value, for example for the CRAN_Release test with verbose on
 }
 
 if (test_bit64) {
@@ -17145,7 +17145,7 @@ test(2153.2, DT[, .(list(.GRP)), by=x], data.table(x=1:2, V1=as.list(1:2)))
 test(2153.3, ans<-DT[, .(list(.NGRP)), by=x], data.table(x=1:2, V1=list(2L,2L)))
 test(2153.4, address(ans$V1[[1L]]), address(ans$V1[[2L]]))  # .NGRP doesn't change group to group so the same object can be referenced many times unlike .N and .GRP
 test(2153.5, DT[, .(list(c(0L,.N,0L))), by=x],  # c() here will create new object so this is ok anyway; i.e. address(.N) is not present in j's result
-             data.table(x=1:2, V1=list(c(0L,1L,0L), c(0L,2L,0L)))) 
+             data.table(x=1:2, V1=list(c(0L,1L,0L), c(0L,2L,0L))))
 
 # warning message segfault when no column names present, #4644
 test(2154.1, fread("0.0\n", colClasses="integer"), data.table(V1=0.0),
@@ -17183,7 +17183,7 @@ test(2156.08, melt(iris.dt, measure.vars=measure(value.name, dim, sep=".", patte
 schools.wide <- data.table(
   school = c("A","B"),
   read_1 = c(1.1,2.1), read_1_sp = c(T,T),
-  read_2 = c(1.2,2.2), 
+  read_2 = c(1.2,2.2),
   math_1 = c(10.1,20.1), math_1_sp = c(T,T),
   math_2 = c(NA,20.2), math_2_sp = c(NA,F))
 schools.tall <- melt(schools.wide, na.rm=TRUE, measure.vars=measure(subject, number=as.integer, value.name=function(x)ifelse(x=="", "score", "sp"), pattern="([^_]+)_([12])(.*)"))
@@ -17230,3 +17230,13 @@ test(2157.58, melt(data.table(ff=1, ff=2), measure.vars=measure(letter, number, 
 test(2157.59, melt(data.table(f_f=1, f_f=2), measure.vars=measure(letter, number)), error="measured column names should be unique, problems: f_f")
 test(2157.60, melt(iris.days, measure.vars=measure(value.name=as.integer, variable, pattern="day(.)[.](.*)")), error="value.name column class=integer after applying conversion function, but must be character")
 test(2157.61, melt(data.table(ff=1, ff=2, a=3, b=4), measure.vars=measure(letter, pattern="([ab])"), id.vars="ff"), data.table(ff=1, letter=c("a","b"), value=c(3,4)))#duplicate column names are fine if they are not matched by pattern.
+test(2157.62, melt(DTid, measure.vars=measure(letter, multiple.keyword, pattern="([ab])([12])")), error="group names specified in ... conflict with measure argument names; please fix by changing group names: multiple.keyword")
+test(2157.63, melt(DTid, measure.vars=measure(letter, number, multiple.keyword=as.integer, pattern="([ab])([12])")), error="multiple.keyword must be a character string")
+test(2157.64, melt(DTid, measure.vars=measure(letter, number, multiple.keyword=NA_character_, pattern="([ab])([12])")), error="multiple.keyword must be a character string")
+test(2157.65, melt(DTid, measure.vars=measure(letter, number, multiple.keyword="", pattern="([ab])([12])")), error="multiple.keyword must be a character string with nchar>0")
+test(2157.66, melt(DTid, measure.vars=measure(letter, cols, pattern="([ab])([12])")), error="group names specified in ... conflict with measure argument names; please fix by changing group names: cols")
+test(2157.67, melt(DTid, measure.vars=measure(letter, cols=as.integer, pattern="([ab])([12])")), error="cols must be a character vector of column names")
+test(2157.68, melt(DTid, measure.vars=measure(letter, number, pattern=as.integer)), error="pattern must be character string")
+test(2157.69, melt(DTid, measure.vars=measure(letter, number, sep=as.integer)), error="sep must be character string")
+##melt(DTid, measure.vars=measure(letter, number, sep=NA_character_)
+##melt(DTid, measure.vars=measure(letter, number, sep=character())
