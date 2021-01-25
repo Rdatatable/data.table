@@ -1,5 +1,5 @@
 
-# data.table <a href="https://Rdatatable.gitlab.io/data.table"><img src="https://raw.githubusercontent.com/Rdatatable/data.table/master/.graphics/logo.png" align="right" height="140" /></a>
+# data.table <a href="https://r-datatable.com"><img src="https://raw.githubusercontent.com/Rdatatable/data.table/master/.graphics/logo.png" align="right" height="140" /></a>
 
 <!-- badges: start -->
 [![CRAN status](https://cranchecks.info/badges/flavor/release/data.table)](https://cran.r-project.org/web/checks/check_results_data.table.html)
