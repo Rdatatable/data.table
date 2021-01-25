@@ -14,6 +14,10 @@
 
 1. Compiling from source no longer requires `zlib` header files to be available, [#4844](https://github.com/Rdatatable/data.table/pull/4844). The output suggests installing `zlib` headers, and how (e.g. `zlib1g-dev` on Ubuntu) as before, but now proceeds with `gzip` compression disabled in `fwrite`. Upon calling `fwrite(DT, "file.csv.gz")` at runtime, an error message suggests to reinstall `data.table` with `zlib` headers available. This does not apply to users on Windows or Mac who install the pre-compiled binary package from CRAN.
 
+2. `r-datatable.com` continues to be the short, canonical and long-standing URL which forwards to the current homepage. The homepage host has changed a few times over the years but those using `r-datatable.com` did not need to change their links. For example, we use `r-datatable.com` in messages (and translated messages) in preference to the word 'homepage' to save users time in searching for the current homepage. The web forwarding was provided by Domain Monster but they do not support `https://r-datatable.com`, only `http://r-datatable.com`. Despite the homepage being forwarded to being `https:` for many years. The domain has now been transferred to [gandi.net](https://gandi.net) who do support `https:` web forwarding and so `https://r-datatable.com` now works. Thanks to Dirk Eddelbuettel for suggesting Gandi.
+    
+    Sadly, the URL `https://r-datatable.com` cannot appear as a link in our DESCRIPTION, README, NEWS, manual pages, etc. This is because CRAN submission checks now reject URL forwards. The URL in the package has to be replaced with where the URL points to, and the package resubmitted. But the very point of `https://r-datatable.com` is to be a forward. This is why you'll see us using `r-datatable.com` in plain text, because we're prevented from linking to it.
+
 
 # data.table [v1.13.6](https://github.com/Rdatatable/data.table/milestone/22?closed=1)  (30 Dec 2020)
 
