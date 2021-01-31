@@ -10,6 +10,8 @@
 
 2. `fintersect()` now retains the order of the first argument as reasonably expected, rather than retaining the order of the second argument, [#4716](https://github.com/Rdatatable/data.table/issues/4716). Thanks to Michel Lang for reporting, and Ben Schwen for the PR.
 
+3. Tagged/named arguments in j=c() calls would not always result in correctly named columns. #2311 Tagging/naming an lapply(.SD, FUN) call as an argument of c() in j will now always cause those tags to get prepended (with a single dot separator) to the resulting column names, e.g. x[, c(mean=lapply(.SD, mean)), by="z"]. Previously, prepending these tags was applied inconsistently. They were omitted in the presence of a by statement.  This change also applies to tagging/naming a list() call as an argument of c() in j. Previously tags/names were omitted when there was both a by statement and the presence of a lapply(.SD, FUN) call as another argument of c(),  e.g. x[, c(tag1=list(var1, b=var2), lapply(.SD, FUN)), by="z"].  Naming when j=c() should now more closely follow base R conventions for concatenating named lists. Thanks to @franknarf1 for reporting and Michael T Young for the PR.
+
 ## NOTES
 
 1. Compiling from source no longer requires `zlib` header files to be available, [#4844](https://github.com/Rdatatable/data.table/pull/4844). The output suggests installing `zlib` headers, and how (e.g. `zlib1g-dev` on Ubuntu) as before, but now proceeds with `gzip` compression disabled in `fwrite`. Upon calling `fwrite(DT, "file.csv.gz")` at runtime, an error message suggests to reinstall `data.table` with `zlib` headers available. This does not apply to users on Windows or Mac who install the pre-compiled binary package from CRAN.

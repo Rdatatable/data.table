@@ -17266,12 +17266,12 @@ test(2163, fintersect(data.table(x=c("b", "c", "a")), data.table(x=c("a","c")))$
 M <- as.data.table(mtcars)
 
 dt1 = M[, c(m=lapply(.SD, mean)),by="cyl"]
-test(2164.1, names(dt1), c("cyl", "m.mpg", "m.disp", "m.hp", "m.drat", "m.wt", "m.qsec", 
-                                        "m.vs", "m.am", "m.gear", "m.carb"))
+test(2164.1, names(dt1), c("cyl", "m.mpg", "m.disp", "m.hp", "m.drat", "m.wt", "m.qsec", "m.vs", "m.am", "m.gear", "m.carb"))
 
 dt2 = M[, c(m=lapply(.SD, mean), s=lapply(.SD, sum)),by="cyl", .SDcols=c("vs", "am")]
 test(2164.2, names(dt2), c("cyl", "m.vs", "m.am", "s.vs", "s.am"))
 
+#naming a list() argument as well as an lapply() argument
 dt3 = M[, c(Mpg=list(mpg), m=lapply(.SD, mean), s=lapply(.SD, sum)),by="cyl", .SDcols=c("vs", "am")]
 test(2164.3, names(dt3), c("cyl", "Mpg", "m.vs", "m.am", "s.vs", "s.am"))
 
@@ -17281,3 +17281,27 @@ dt4 = M[, c(Mpg=list(mpg), list(mpg), maxwt=max(wt), max(wt), min_qsec=min(qsec)
 test(2164.4, names(dt4), c("cyl", "Mpg", "V2", "maxwt", "V4", "min_qsec", "mean.disp", "mean.hp", 
                                      "mean.drat", "q..disp", "q..hp", "q..drat"))
                                      
+#now for the c(name=list(name1=value,name2=value2)) construct:
+#for reference, here's what happens in base R, and has been working previously:
+dt5 = M[, c(A=list(a=mpg,b=hp),lapply(.SD, mean)), .SDcols=c("vs", "am")]
+test(2164.5, names(dt5), c("A.a","A.b", "vs","am"))
+
+#previously broken:
+dt6 = M[, c(A=list(a=mpg,b=hp),lapply(.SD, mean)), by="cyl", .SDcols=c("vs", "am")]
+test(2164.6, names(dt6), c("cyl", "A.a","A.b", "vs", "am"))
+
+#base R, previously working:
+dt7 = M[, c(A=list(mpg, hp),lapply(.SD, mean)), .SDcols=c("vs", "am")]
+test(2164.7, names(dt7), c("A1","A2", "vs","am")) #A1 and A2 is consistent with base R c(A=list(0,0))
+
+#previously broken
+dt8 = M[, c(A=list(mpg, hp),lapply(.SD, mean)), by="cyl", .SDcols=c("vs", "am")]
+test(2164.8, names(dt8), c("cyl","A1","A2", "vs","am"))
+
+#previously working:
+dt9 = M[, c(A=list(mpg, b=hp, wt),lapply(.SD, mean)), .SDcols=c("vs", "am")]
+test(2164.9, names(dt9), c("A1","A.b","A3", "vs","am")) #A1, A.b, A3 is consistent with base R c(A=list(0,b=0,0))
+
+#previously broken:
+dt10 = M[, c(A=list(mpg, b=hp, wt),lapply(.SD, mean)), by="cyl", .SDcols=c("vs", "am")]
+test(2164.10, names(dt10), c("cyl", "A1","A.b","A3", "vs","am")) #A1, A.b, A3 is consistent with base R c(A=list(0,b=0,0))

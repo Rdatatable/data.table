@@ -1607,7 +1607,21 @@ replace_dot_alias = function(e) {
               # also handle c(lapply(.SD, sum), list()) - silly, yes, but can happen
               if (length(this) > 1L) {
                 jl__ = as.list(jsubl[[i_]])[-1L] # just keep the '.' from list(.)
-                jn__ = if (is.null(names(jl__))) rep("", length(jl__)) else names(jl__)
+                if (!is.null(names(jsubl)[i_]) && names(jsubl)[i_] != "") {
+                  # Fix for #2311, prepend named list arguments of c() to that list's names:
+                  #e.g. x[, c(A=list(<something>), lapply(.SD, mean)),by="z"]
+                  #now consider:
+                  #x[, c(A=list(x,y), lapply(.SD, mean)),by="z"] #--> names A1 A2
+                  #x[, c(A=list(x,b=y), lapply(.SD, mean)),by="z"] #--> names A1 A.b
+                  #x[, c(A=list(a=x,b=y), lapply(.SD, mean)),by="z"] #--> names A.a A.b
+                  #these all follow base R. e.g. c(A=list(0,b=0))
+                  njl__ = if (is.null(names(jl__))) rep("", length(jl__)) else names(jl__)
+                  njl__nonblank = names(jl__) != ""
+                  jn__ = paste0(names(jsubl)[i_], seq_along(jl__))
+                  jn__[njl__nonblank] = paste(names(jsubl)[i_], njl__[njl__nonblank], sep=".")
+                } else {
+                  jn__ = if (is.null(names(jl__))) rep("", length(jl__)) else names(jl__)
+                }
                 idx  = unlist(lapply(jl__, function(x) is.name(x) && x == ".I"))
                 if (any(idx)) jn__[idx & (jn__ == "")] = "I"
                 jvnames = c(jvnames, jn__)
