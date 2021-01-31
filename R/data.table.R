@@ -1614,10 +1614,15 @@ replace_dot_alias = function(e) {
                   #x[, c(A=list(x,y), lapply(.SD, mean)),by="z"] #--> names A1 A2
                   #x[, c(A=list(x,b=y), lapply(.SD, mean)),by="z"] #--> names A1 A.b
                   #x[, c(A=list(a=x,b=y), lapply(.SD, mean)),by="z"] #--> names A.a A.b
+                  #x[, c(A=list(x), lapply(.SD, mean)),by="z"] #--> names A (note length-1 doesn't get integer suffix)
                   #these all follow base R. e.g. c(A=list(0,b=0))
                   njl__ = if (is.null(names(jl__))) rep("", length(jl__)) else names(jl__)
                   njl__nonblank = names(jl__) != ""
-                  jn__ = paste0(names(jsubl)[i_], seq_along(jl__))
+                  if(length(jl__)>1L){
+                    jn__ = paste0(names(jsubl)[i_], seq_along(jl__))
+                  } else {
+                    jn__ = names(jsubl)[i_]
+                  }
                   jn__[njl__nonblank] = paste(names(jsubl)[i_], njl__[njl__nonblank], sep=".")
                 } else {
                   jn__ = if (is.null(names(jl__))) rep("", length(jl__)) else names(jl__)
