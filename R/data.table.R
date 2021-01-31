@@ -1596,7 +1596,7 @@ replace_dot_alias = function(e) {
               funi = funi + 1L # Fix for #985
               jsubl[[i_]] = as.list(deparse_ans[[1L]][-1L]) # just keep the '.' from list(.)
               jn__ = deparse_ans[[2L]]
-              if (!is.null(names(jsubl)[i_])) {
+              if (!is.null(names(jsubl)[i_]) && names(jsubl)[i_] != "") {
                 # Fix for #2311, prepend named arguments of c() to column names of .SD
                 # e.g. c(mean=lapply(.SD, mean))
                 jn__ = paste(names(jsubl)[i_], jn__, sep=".") 
