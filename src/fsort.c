@@ -312,7 +312,7 @@ SEXP fsort(SEXP x, SEXP verboseArg) {
       free(myworking);
     }
     if (non_monotonic)
-      error("OpenMP %d did not assign threads to iterations monotonically. Please search Stack Overflow for this message.", MY_OPENMP); // # nocov; #4786 in v1.13.4
+      error(_("OpenMP %d did not assign threads to iterations monotonically. Please search Stack Overflow for this message."), MY_OPENMP); // # nocov; #4786 in v1.13.4
     if (alloc_fail)
       error(_("Unable to allocate working memory")); // # nocov
   }
