@@ -3,7 +3,7 @@ Version: 1.13.7
 Title: Extension of `data.frame`
 Authors@R: c(
   person("Matt","Dowle",           role=c("aut","cre"), email="mattjdowle@gmail.com"),
-  person("Arun","Srinivasan",      role="aut",          email="arunkumar.sriniv@gmail.com"),
+  person("Arun","Srinivasan",      role="aut",          email="asrini@pm.me"),
   person("Jan","Gorecki",          role="ctb"),
   person("Michael","Chirico",      role="ctb"),
   person("Pasha","Stetsenko",      role="ctb"),
