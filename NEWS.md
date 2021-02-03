@@ -10,6 +10,8 @@
 
 2. `fintersect()` now retains the order of the first argument as reasonably expected, rather than retaining the order of the second argument, [#4716](https://github.com/Rdatatable/data.table/issues/4716). Thanks to Michel Lang for reporting, and Ben Schwen for the PR.
 
+3. `dt[, col]` now returns a copy of `col` also when it is a list column, as in any other case, [#4877](https://github.com/Rdatatable/data.table/issues/4877). Thanks to @tlapak for reporting and the PR.
+
 ## NOTES
 
 1. Compiling from source no longer requires `zlib` header files to be available, [#4844](https://github.com/Rdatatable/data.table/pull/4844). The output suggests installing `zlib` headers, and how (e.g. `zlib1g-dev` on Ubuntu) as before, but now proceeds with `gzip` compression disabled in `fwrite`. Upon calling `fwrite(DT, "file.csv.gz")` at runtime, an error message suggests to reinstall `data.table` with `zlib` headers available. This does not apply to users on Windows or Mac who install the pre-compiled binary package from CRAN.
