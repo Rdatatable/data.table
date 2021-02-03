@@ -64,7 +64,7 @@ static void *mmp_copy = NULL;
 static size_t fileSize;
 static int8_t *type = NULL, *tmpType = NULL, *size = NULL;
 static lenOff *colNames = NULL;
-static freadMainArgs args;  // global for use by DTPRINT
+static freadMainArgs args = {0};  // global for use by DTPRINT; static implies ={0} but include the ={0} anyway just in case for valgrind #4639
 
 const char typeName[NUMTYPE][10] = {"drop", "bool8", "bool8", "bool8", "bool8", "int32", "int64", "float64", "float64", "float64", "int32", "float64", "string"};
 int8_t     typeSize[NUMTYPE]     = { 0,      1,       1,       1,       1,       4,       8,       8,         8,         8,         4,       8       ,  8      };
@@ -954,7 +954,7 @@ static void parse_iso8601_date_core(const char **pch, int32_t *target)
 {
   const char *ch = *pch;
 
-  int32_t year, month, day;
+  int32_t year=0, month=0, day=0;
 
   str_to_i32_core(&ch, &year);
 
@@ -2064,8 +2064,9 @@ int freadMain(freadMainArgs _args) {
     if (type[j]==CT_DROP) { size[j]=0; ndrop++; continue; }
     if (type[j]<tmpType[j]) {
       if (strcmp(typeName[tmpType[j]], typeName[type[j]]) != 0) {
-        DTWARN(_("Attempt to override column %d <<%.*s>> of inherent type '%s' down to '%s' ignored. Only overrides to a higher type are currently supported. If this was intended, please coerce to the lower type afterwards."),
-               j+1, colNames[j].len, colNamesAnchor+colNames[j].off, typeName[tmpType[j]], typeName[type[j]]);
+        DTWARN(_("Attempt to override column %d%s%.*s%s of inherent type '%s' down to '%s' ignored. Only overrides to a higher type are currently supported. If this was intended, please coerce to the lower type afterwards."),
+               j+1, colNames?" <<":"", colNames?(colNames[j].len):0, colNames?(colNamesAnchor+colNames[j].off):"", colNames?">>":"", // #4644
+               typeName[tmpType[j]], typeName[type[j]]);
       }
       type[j] = tmpType[j];
       // TODO: apply overrides to lower type afterwards and warn about the loss of accuracy then (if any); e.g. "4.0" would be fine to coerce to integer with no warning since
@@ -2574,7 +2575,7 @@ int freadMain(freadMainArgs _args) {
     if (ch==eof) {
       // whitespace at the end of the file is always skipped ok
     } else {
-      const char *skippedFooter = ch;
+      const char *skippedFooter = ENC2NATIVE(ch);
       // detect if it's a single line footer. Commonly the row count from SQL queries.
       while (ch<eof && *ch!='\n' && *ch!='\r') ch++;
       while (ch<eof && isspace(*ch)) ch++;

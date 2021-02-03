@@ -23,8 +23,11 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
     scripts = dir(fulldir, "*.Rraw.*")
     scripts = scripts[!grepl("bench|other", scripts)]
     scripts = gsub("[.]bz2$","",scripts)
-    for (fn in scripts) {test.data.table(script=fn, verbose=verbose, pkg=pkg, silent=silent, showProgress=showProgress); cat("\n");}
-    return(invisible())
+    return(sapply(scripts, function(fn) {
+      err = try(test.data.table(script=fn, verbose=verbose, pkg=pkg, silent=silent, showProgress=showProgress))
+      cat("\n");
+      identical(err, TRUE)
+    }))
     # nocov end
   }
 
@@ -137,12 +140,14 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
   cat("\n", date(),   # so we can tell exactly when these tests ran on CRAN to double-check the result is up to date
     "  endian==", .Platform$endian,
     ", sizeof(long double)==", .Machine$sizeof.longdouble,
+    ", longdouble.digits==", .Machine$longdouble.digits, # 64 normally, 53 for example under valgrind where some high accuracy tests need turning off, #4639
     ", sizeof(pointer)==", .Machine$sizeof.pointer,
     ", TZ==", if (is.na(tz)) "unset" else paste0("'",tz,"'"),
     ", Sys.timezone()=='", suppressWarnings(Sys.timezone()), "'",
     ", Sys.getlocale()=='", Sys.getlocale(), "'",
     ", l10n_info()=='", paste0(names(l10n_info()), "=", l10n_info(), collapse="; "), "'",
     ", getDTthreads()=='", paste0(gsub("[ ][ ]+","==",gsub("^[ ]+","",capture.output(invisible(getDTthreads(verbose=TRUE))))), collapse="; "), "'",
+    ", ", .Call(Cdt_zlib_version),
     "\n", sep="")
 
   if (inherits(err,"try-error")) {
@@ -172,7 +177,7 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
   cat("10 longest running tests took ", as.integer(tt<-DT[, sum(time)]), "s (", as.integer(100*tt/(ss<-timings[,sum(time)])), "% of ", as.integer(ss), "s)\n", sep="")
   print(DT, class=FALSE)
 
-  cat("All ",ntest," tests in ",names(fn)," completed ok in ",timetaken(env$started.at),"\n",sep="")
+  cat("All ",ntest," tests (last ",env$prevtest,") in ",names(fn)," completed ok in ",timetaken(env$started.at),"\n",sep="")
 
   ## this chunk requires to include new suggested deps: graphics, grDevices
   #memtest.plot = function(.inittime) {
@@ -420,7 +425,8 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
         setattr(xc,"index",NULL)   # too onerous to create test RHS with the correct index as well, just check result
         setattr(yc,"index",NULL)
         if (identical(xc,yc) && identical(key(x),key(y))) return(invisible(TRUE))  # check key on original x and y because := above might have cleared it on xc or yc
-        if (isTRUE(all.equal.result<-all.equal(xc,yc)) && identical(key(x),key(y)) &&
+        if (isTRUE(all.equal.result<-all.equal(xc,yc,check.environment=FALSE)) && identical(key(x),key(y)) &&
+                                                     # ^^ to pass tests 2022.[1-4] in R-devel from 5 Dec 2020, #4835
           identical(vapply_1c(xc,typeof), vapply_1c(yc,typeof))) return(invisible(TRUE))
       }
     }
