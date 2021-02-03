@@ -1618,7 +1618,7 @@ replace_dot_alias = function(e) {
                   #these all follow base R. e.g. c(A=list(0,b=0))
                   njl__ = if (is.null(names(jl__))) rep("", length(jl__)) else names(jl__)
                   njl__nonblank = names(jl__) != ""
-                  if(length(jl__)>1L){
+                  if (length(jl__)>1L) {
                     jn__ = paste0(names(jsubl)[i_], seq_along(jl__))
                   } else {
                     jn__ = names(jsubl)[i_]
