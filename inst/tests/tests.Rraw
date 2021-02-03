@@ -17261,3 +17261,6 @@ if (identical(x, enc2native(x))) {
 
 # fintersect now preserves order of first argument like intersect, #4716
 test(2163, fintersect(data.table(x=c("b", "c", "a")), data.table(x=c("a","c")))$x, c("c", "a"))
+
+# Always return a copy of columns, even when returning a single list column, #4788
+test(2164, address(dt[, A]) != address(dt[, A]))
