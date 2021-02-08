@@ -1308,8 +1308,8 @@ replace_dot_alias = function(e) {
       } else if (address(jval) == address(SDenv$.SD)) {
         jval = copy(jval)
       } else {
-        sd_addresses <- vapply_1c(SDenv, address)
-        jcpy <- which(vapply_1c(jval, address) %chin% sd_addresses)
+        sd_addresses = vapply_1c(SDenv, address)
+        jcpy = which(vapply_1c(jval, address) %chin% sd_addresses)
         if (length(jcpy)) {
           for (jidx in jcpy) jval[[jidx]] = copy(jval[[jidx]])
         } else if (address(jval) %chin% sd_addresses) {
