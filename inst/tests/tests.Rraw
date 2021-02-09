@@ -17268,4 +17268,4 @@ invisible(d[a == 50])
 setDF(d)
 d[1:50, "a"] <- d[51:100, "a"]
 setDT(d)
-test(2164, nrow(d[a==99]), 2)
+test(2164, nrow(d[a==99]), as.integer(2))
