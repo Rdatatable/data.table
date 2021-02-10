@@ -17264,7 +17264,7 @@ test(2163, fintersect(data.table(x=c("b", "c", "a")), data.table(x=c("a","c")))$
 
 # setDF now drops index attributes, #4889
 d <- data.table(a=1:100, b=1:100)
-invisible(d[a == 50])   
+setindex(d, a)
 setDF(d)
 d[1:50, "a"] <- d[51:100, "a"]
 setDT(d)
