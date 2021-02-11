@@ -17261,3 +17261,9 @@ if (identical(x, enc2native(x))) {
 
 # fintersect now preserves order of first argument like intersect, #4716
 test(2163, fintersect(data.table(x=c("b", "c", "a")), data.table(x=c("a","c")))$x, c("c", "a"))
+
+# setDT no longer leaks class modification to origin copy, #4784
+d1 <- data.frame(a=1)
+d2 <- d1
+setDT(d2)
+test(2165, !is.data.table(d1))
