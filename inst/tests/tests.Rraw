@@ -17269,3 +17269,9 @@ setDF(d)
 d[1:50, "a"] <- d[51:100, "a"]
 setDT(d)
 test(2164, nrow(d[a==99]), as.integer(2))
+
+# setDT no longer leaks class modification to origin copy, #4784
+d1 <- data.frame(a=1)
+d2 <- d1
+setDT(d2)
+test(2165, !is.data.table(d1))
