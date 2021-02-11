@@ -8,7 +8,8 @@ as.data.table.xts = function(x, keep.rownames = TRUE, key=NULL, ...) {
   if (identical(keep.rownames, FALSE)) return(r[])
   index_nm = if (is.character(keep.rownames)) keep.rownames else "index"
   if (index_nm %chin% names(x)) stop(gettextf("Input xts object should not have '%s' column because it would result in duplicate column names. Rename '%s' column in xts or use `keep.rownames` to change the index column name.", index_nm, index_nm, domain="R-data.table"), domain=NA)
-  r[, c(index_nm) := zoo::index(x)]
+  `__idx__` = zoo::index(x)
+  r[, c(index_nm) := `__idx__`]
   setcolorder(r, c(index_nm, setdiff(names(r), index_nm)))
   # save to end to allow for key=index_nm
   setkeyv(r, key)
