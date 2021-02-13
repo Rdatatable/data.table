@@ -503,7 +503,9 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
       continue;
     }
 
-    if (coln+1 > oldncol) {  // new column
+    const bool colReferencedExternally = !isNull(getAttrib(thisvalue, sym_referenced_externally)); // Fix #4783
+//    if (coln+1 > oldncol || colReferencedExternally) {  // new column
+   if (coln+1 > oldncol) {  // new column
       SET_VECTOR_ELT(dt, coln, targetcol=allocNAVectorLike(thisvalue, nrow));
       // initialize with NAs for when 'rows' is a subset and it doesn't touch
       // do not try to save the time to NA fill (contiguous branch free assign anyway) since being

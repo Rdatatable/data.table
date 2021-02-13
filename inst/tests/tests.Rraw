@@ -17261,3 +17261,10 @@ if (identical(x, enc2native(x))) {
 
 # fintersect now preserves order of first argument like intersect, #4716
 test(2163, fintersect(data.table(x=c("b", "c", "a")), data.table(x=c("a","c")))$x, c("c", "a"))
+
+# Avoid leakage of data changes after setDT to origin DF, #4783
+d1 <- data.frame(a=1)
+d2 <- d1
+setDT(d2)
+d2[!is.na(a), a:=2] # used to leak into d1
+test(2164, d1[["a"]], 2)

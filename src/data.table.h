@@ -99,6 +99,7 @@ extern SEXP sym_verbose;
 extern SEXP SelfRefSymbol;
 extern SEXP sym_inherits;
 extern SEXP sym_datatable_locked;
+extern SEXP sym_referenced_externally;
 extern SEXP sym_tzone;
 extern SEXP sym_old_fread_datetime_character;
 extern double NA_INT64_D;

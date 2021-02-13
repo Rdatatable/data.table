@@ -2637,6 +2637,12 @@ address = function(x) .Call(Caddress, eval(substitute(x), parent.frame()))
   stop('Check that is.data.table(DT) == TRUE. Otherwise, := and `:=`(...) are defined for use in j, once only and in particular ways. See help(":=").')
 }
 
+mark.external.ref.cols <- function(x, val=TRUE) {
+  lapply(names(x), function(nm) {
+    setattr(x[[nm]], "referenced.externally", val)
+  })  
+}
+
 setDF = function(x, rownames=NULL) {
   if (!is.list(x)) stop("setDF only accepts data.table, data.frame or list of equal length as input")
   if (anyDuplicated(rownames)) stop("rownames contains duplicates")
@@ -2653,6 +2659,7 @@ setDF = function(x, rownames=NULL) {
     setattr(x, "class", "data.frame")
     setattr(x, "sorted", NULL)
     setattr(x, ".internal.selfref", NULL)
+    mark.external.ref.cols(x, NULL)
   } else if (is.data.frame(x)) {
     if (!is.null(rownames)) {
       if (length(rownames) != nrow(x))
@@ -2721,6 +2728,7 @@ setDT = function(x, keep.rownames=FALSE, key=NULL, check.names=FALSE) {
     if (check.names) setattr(x, "names", make.names(names(x), unique=TRUE))
     # fix for #1078 and #1128, see .resetclass() for explanation.
     setattr(x, "class", .resetclass(x, 'data.frame'))
+    mark.external.ref.cols(x)
     setalloccol(x)
     if (!is.null(rn)) {
       nm = c(if (is.character(keep.rownames)) keep.rownames[1L] else "rn", names(x))
@@ -2761,6 +2769,7 @@ setDT = function(x, keep.rownames=FALSE, key=NULL, check.names=FALSE) {
     }
     setattr(x,"row.names",.set_row_names(n_range[2L]))
     setattr(x,"class",c("data.table","data.frame"))
+    # mark.external.ref.cols(x)
     setalloccol(x)
   } else {
     stop("Argument 'x' to 'setDT' should be a 'list', 'data.frame' or 'data.table'")

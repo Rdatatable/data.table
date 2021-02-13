@@ -32,6 +32,7 @@ SEXP sym_verbose;
 SEXP SelfRefSymbol;
 SEXP sym_inherits;
 SEXP sym_datatable_locked;
+SEXP sym_referenced_externally;
 SEXP sym_tzone;
 SEXP sym_old_fread_datetime_character;
 double NA_INT64_D;
@@ -355,6 +356,7 @@ void attribute_visible R_init_datatable(DllInfo *info)
   SelfRefSymbol = install(".internal.selfref");
   sym_inherits = install("inherits");
   sym_datatable_locked = install(".data.table.locked");
+  sym_referenced_externally = install("referenced.externally");
   sym_tzone = install("tzone");
   sym_old_fread_datetime_character = install("datatable.old.fread.datetime.character");
 
