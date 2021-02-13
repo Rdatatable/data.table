@@ -119,7 +119,7 @@ measure = function(..., sep="_", pattern, cols, multiple.keyword="value.name") {
   for (group.i in which(user.named)) {
     group.name = names(fun.list)[[group.i]]
     fun = eval(fun.list[[group.name]], parent.frame(1L))
-    if (!is.function(fun) || (!is.primitive(fun) && length(formals(fun))==0)) {
+    if (!is.function(fun) || length(formals(args(fun)))==0) {
       stop("each ... argument to measure must be a function with at least one argument, problem: ", group.name)
     }
     group.val = fun(group.dt[[group.name]])
