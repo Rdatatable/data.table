@@ -22,7 +22,7 @@ cedta.pkgEvalsUserCode = c("gWidgetsWWW","statET","FastRWeb","slidify","rmarkdow
 # cedta = Calling Environment Data.Table-Aware
 cedta = function(n=2L) {
   # Calling Environment Data Table Aware
-  env <- parent.frame(n)
+  env = parent.frame(n)
   if (isTRUE(ns$.datatable.aware)) {
     return(TRUE)
   }
@@ -53,4 +53,4 @@ cedta = function(n=2L) {
   ans
 }
 
-.datatable.aware <- TRUE
+.datatable.aware = TRUE
