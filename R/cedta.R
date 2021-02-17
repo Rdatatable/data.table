@@ -22,7 +22,12 @@ cedta.pkgEvalsUserCode = c("gWidgetsWWW","statET","FastRWeb","slidify","rmarkdow
 # cedta = Calling Environment Data.Table-Aware
 cedta = function(n=2L) {
   # Calling Environment Data Table Aware
-  ns = topenv(parent.frame(n))
+  env <- parent.frame(n)
+  if (isTRUE(ns$.datatable.aware)) {
+    return(TRUE)
+  }
+
+  ns = topenv(env)
   if (!isNamespace(ns)) {
     # e.g. DT queries at the prompt (.GlobalEnv) and knitr's eval(,envir=globalenv()) but not DF[...] inside knitr::kable v1.6
     return(TRUE)
@@ -48,3 +53,4 @@ cedta = function(n=2L) {
   ans
 }
 
+.datatable.aware <- TRUE
