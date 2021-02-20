@@ -1851,7 +1851,10 @@ replace_dot_alias = function(e) {
     if (any(ww)) jvnames[ww] = paste0("V",ww)
     setattr(ans, "names", c(bynames, jvnames))
   } else {
-    setnames(ans,seq_along(bynames),bynames)   # TO DO: reinvestigate bynames flowing from dogroups here and simplify
+    nonbynames <- names(ans)[-seq_along(bynames)] #related to 2311. make naming of empty columns names more consistent
+    ww = which(nonbynames=="")
+    if (any(ww)) nonbynames[ww] = paste0("V",ww)
+    setattr(ans, "names", c(bynames, nonbynames))   # TO DO: reinvestigate bynames flowing from dogroups here and simplify
   }
   if (byjoin && keyby && !bysameorder) {
     if (verbose) {last.started.at=proc.time();cat("setkey() afterwards for keyby=.EACHI ... ");flush.console()}
