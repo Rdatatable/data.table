@@ -17290,6 +17290,7 @@ dt15 = M[, c(" "=list(" "=hp, "."=disp, mpg),    lapply(.SD, mean)), by="cyl"]
 dt16 = M[, c("."=list(" "=hp, "."=disp, mpg),    lapply(.SD, mean)), by="cyl"]
 dt17 = M[, c(list(mpg,b=hp),lapply(.SD, mean)), by="cyl", .SDcols=c("vs", "am")]
 dt18 = M[, c(list(mpg,b=hp),c(lapply(.SD, mean))), by="cyl", .SDcols=c("vs", "am")]
+dt19 = M[, c(mpg[1], list(mpg,b=hp),c(lapply(.SD, mean))), by="cyl", .SDcols=c("vs", "am")]
 
 test(2164.001,  names(dt01), c("cyl", names(c(m=sdlist))))
 test(2164.002,  names(dt02), c("cyl", "Mpg", sdnames))
@@ -17309,6 +17310,8 @@ test(2164.015,  names(dt15), c("cyl", names(c(" "=list(" "=0, "."=0, 0))), sdnam
 test(2164.016,  names(dt16), c("cyl", names(c("."=list(" "=0, "."=0, 0))), sdnames  ))
 test(2164.017,  names(dt17), c("cyl", "V1","b", "vs", "am"))
 test(2164.018,  names(dt18), c("cyl", "V1","b", "vs", "am"))
+test(2164.019,  names(dt19), c("cyl", "V1","V2","b", "vs", "am"))
+
 
 old=options(datatable.optimize = 0)
 dt01 = M[, c(                          m=lapply(.SD, mean)), by="cyl"] 
@@ -17329,6 +17332,7 @@ dt15 = M[, c(" "=list(" "=hp, "."=disp, mpg),    lapply(.SD, mean)), by="cyl"]
 dt16 = M[, c("."=list(" "=hp, "."=disp, mpg),    lapply(.SD, mean)), by="cyl"]
 dt17 = M[, c(list(mpg,b=hp),lapply(.SD, mean)), by="cyl", .SDcols=c("vs", "am")]
 dt18 = M[, c(list(mpg,b=hp),c(lapply(.SD, mean))), by="cyl", .SDcols=c("vs", "am")]
+dt19 = M[, c(mpg[1], list(mpg,b=hp),c(lapply(.SD, mean))), by="cyl", .SDcols=c("vs", "am")]
 
 test(2164.101,  names(dt01), c("cyl", names(c(m=sdlist))))
 test(2164.102,  names(dt02), c("cyl", "Mpg", sdnames))
@@ -17348,4 +17352,5 @@ test(2164.115,  names(dt15), c("cyl", names(c(" "=list(" "=0, "."=0, 0))), sdnam
 test(2164.116,  names(dt16), c("cyl", names(c("."=list(" "=0, "."=0, 0))), sdnames  ))
 test(2164.117,  names(dt17), c("cyl", "V1","b", "vs", "am"))
 test(2164.118,  names(dt18), c("cyl", "V1","b", "vs", "am"))
+test(2164.119,  names(dt19), c("cyl", "V1","V2","b", "vs", "am"))
 options(old)
