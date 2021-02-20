@@ -17264,38 +17264,80 @@ test(2163, fintersect(data.table(x=c("b", "c", "a")), data.table(x=c("a","c")))$
 
 # named arguments of c() in j get prepended to lapply(.SD, FUN) #2311
 
-#duplicated .SDcols?
-#by variable in .SD
-
 M <- as.data.table(mtcars)
-dt1  = M[, c(m=lapply(.SD, mean)), by="cyl"]
-dt2  = M[, c(m=lapply(.SD, mean), s=lapply(.SD, sum)), by="cyl", .SDcols=c("vs", "am")]
-dt3  = M[, c(m=lapply(.SD, mean), lapply(.SD, sum)), by="cyl", .SDcols=c("vs", "am")]
-dt4  = M[, c(m=lapply(.SD, mean), lapply(.SD, sum)), by="cyl", .SDcols=c("vs", "am", "am")]
-dt5  = M[, c(m=lapply(.SD, mean), lapply(.SD, sum)), by="cyl", .SDcols=c("vs", "am", "cyl")]
-dt6  = M[, c(m=lapply(.SD, mean), s=lapply(.SD, sum)), by="cyl"]
-dt7  = M[, c(m=lapply(.SD, mean), m=lapply(.SD, sum)), by="cyl"]
-dt8  = M[, c(Mpg=list(mpg), m=lapply(.SD, mean), s=lapply(.SD, sum)), by="cyl", .SDcols=c("vs", "am")]
-dt9  = M[, c(Mpg=list(mpg), list(mpg), maxwt=max(wt), max(wt), min_qsec=min(qsec), mean=lapply(.SD,mean), q.=lapply(.SD, function(x){sum(x)/carb[1]})),by="cyl", .SDcols=c("disp","hp","drat")]
-dt10 = M[, c(A=list(a=mpg,b=hp),lapply(.SD, mean)), .SDcols=c("vs", "am")]
-dt11 = M[, c(A=list(a=mpg,b=hp),lapply(.SD, mean)), by="cyl", .SDcols=c("vs", "am")]
-dt12 = M[, c(A=list(mpg, hp),lapply(.SD, mean)), .SDcols=c("vs", "am")]
-dt13 = M[, c(A=list(mpg, hp),lapply(.SD, mean)), by="cyl", .SDcols=c("vs", "am")]
-dt14 = M[, c(A=list(mpg, b=hp, wt), lapply(.SD, mean)), .SDcols=c("vs", "am")]
-dt15 = M[, c(A=list(mpg, b=hp, wt), lapply(.SD, mean)), by="cyl", .SDcols=c("vs", "am")]
+M[, " ":= hp]
+M[, ".":= hp]
 
-test(2164.01,  names(dt1), c("cyl", "m.mpg", "m.disp", "m.hp", "m.drat", "m.wt", "m.qsec", "m.vs", "m.am", "m.gear", "m.carb"))
-test(2164.02,  names(dt2), c("cyl", "m.vs", "m.am", "s.vs", "s.am"))
-test(2164.03,  names(dt3), c("cyl", "m.vs", "m.am", "vs", "am"))
-test(2164.04,  names(dt4), c("cyl", "m.vs", "m.am", "m.am", "vs", "am", "am"))
-test(2164.05,  names(dt5), c("cyl", "m.vs", "m.am", "m.cyl", "vs", "am", "cyl"))
-test(2164.06,  names(dt6), c("cyl", paste0("m.", setdiff(names(M), "cyl")), paste0("s.", setdiff(names(M), "cyl"))))
-test(2164.07,  names(dt7), c("cyl", paste0("m.", setdiff(names(M), "cyl")), paste0("m.", setdiff(names(M), "cyl"))))
-test(2164.08,  names(dt8), c("cyl", "Mpg", "m.vs", "m.am", "s.vs", "s.am"))
-test(2164.09,  names(dt9), c("cyl", "Mpg", "V2", "maxwt", "V4", "min_qsec", "mean.disp", "mean.hp", "mean.drat", "q..disp", "q..hp", "q..drat"))
-test(2164.10,  names(dt10), c("A.a","A.b", "vs","am"))
-test(2164.11,  names(dt11), c("cyl", "A.a","A.b", "vs", "am"))
-test(2164.12,  names(dt12), c("A1","A2", "vs","am")) #A1 and A2 is consistent with base R c(A=list(0,0))
-test(2164.13,  names(dt13), c("cyl","A1","A2", "vs","am"))
-test(2164.14,  names(dt14), c("A1","A.b","A3", "vs","am")) #A1, A.b, A3 is consistent with base R c(A=list(0,b=0,0))
-test(2164.15,  names(dt15), c("cyl", "A1","A.b","A3", "vs","am")) #A1, A.b, A3 is consistent with base R c(A=list(0,b=0,0))
+sdnames <- setdiff(names(M), "cyl")
+sdlist <- as.list(rep(NA,length(sdnames)))
+names(sdlist) <- sdnames
+
+dt01 = M[, c(                          m=lapply(.SD, mean)), by="cyl"] 
+dt02 = M[, c( Mpg=list(mpg),             lapply(.SD, mean)), by="cyl"]
+dt03 = M[, c( Mpg=list(mpg),           m=lapply(.SD, mean)), by="cyl"]
+dt04 = M[, c( mpg=list(mpg),         mpg=lapply(.SD, mean)), by="cyl"]
+dt05 = M[, c(     list(mpg),             lapply(.SD, mean)), by="cyl"]
+dt06 = M[, c(     lapply(.SD, mean),     list(mpg)        ), by="cyl"]
+dt07 = M[, c(     lapply(.SD, mean),     lapply(.SD,  sum)), by="cyl"]
+dt08 = M[, c(mean=lapply(.SD, mean), sum=lapply(.SD,  sum)), by="cyl"]
+dt09 = M[, c(     lapply(.SD, mean), sum=lapply(.SD,  sum)), by="cyl"]
+dt10 = M[, c( " "=lapply(.SD, mean), "."=lapply(.SD,  sum)), by="cyl"]
+dt11 = M[, c(A=list(a=mpg,b=hp),         lapply(.SD, mean)), by="cyl"]
+dt12 = M[, c(A=list(mpg, hp),            lapply(.SD, mean)), by="cyl"]
+dt13 = M[, c(A=list(mpg, b=hp, wt),      lapply(.SD, mean)), by="cyl"]
+dt14 = M[, c(A=list(mpg),                lapply(.SD, mean)), by="cyl"]
+dt15 = M[, c(" "=list(" "=hp, "."=disp, mpg),    lapply(.SD, mean)), by="cyl"]
+dt16 = M[, c("."=list(" "=hp, "."=disp, mpg),    lapply(.SD, mean)), by="cyl"]
+
+test(2164.001,  names(dt01), c("cyl", names(c(m=sdlist))))
+test(2164.002,  names(dt02), c("cyl", "Mpg", sdnames))
+test(2164.003,  names(dt03), c("cyl", "Mpg", names(c(m=sdlist))))
+test(2164.004,  names(dt04), c("cyl", "mpg", names(c(mpg=sdlist))))
+test(2164.005,  names(dt05), c("cyl", "V1", sdnames))
+test(2164.006,  names(dt06), c("cyl", sdnames, "V13") )
+test(2164.007,  names(dt07), c("cyl", sdnames,sdnames))
+test(2164.008,  names(dt08), c("cyl", names(c(mean=sdlist, sum=sdlist))))
+test(2164.009,  names(dt09), c("cyl", sdnames, names(c(sum=sdlist))) )
+test(2164.010,  names(dt10), c("cyl", names(c(" "=sdlist, "."=sdlist))))
+test(2164.011,  names(dt11), c("cyl", names(c(A=list(a=0, b=0))), sdnames  ))
+test(2164.012,  names(dt12), c("cyl", names(c(A=list(0, 0))), sdnames  ))
+test(2164.013,  names(dt13), c("cyl", names(c(A=list(0, b=0,0))), sdnames  ))
+test(2164.014,  names(dt14), c("cyl", names(c(A=list(0))), sdnames  ))
+test(2164.015,  names(dt15), c("cyl", names(c(" "=list(" "=0, "."=0, 0))), sdnames  ))
+test(2164.016,  names(dt16), c("cyl", names(c("."=list(" "=0, "."=0, 0))), sdnames  ))
+
+old=options(datatable.optimize = 0)
+dt01 = M[, c(                          m=lapply(.SD, mean)), by="cyl"] 
+dt02 = M[, c( Mpg=list(mpg),             lapply(.SD, mean)), by="cyl"]
+dt03 = M[, c( Mpg=list(mpg),           m=lapply(.SD, mean)), by="cyl"]
+dt04 = M[, c( mpg=list(mpg),         mpg=lapply(.SD, mean)), by="cyl"]
+dt05 = M[, c(     list(mpg),             lapply(.SD, mean)), by="cyl"]
+dt06 = M[, c(     lapply(.SD, mean),     list(mpg)        ), by="cyl"]
+dt07 = M[, c(     lapply(.SD, mean),     lapply(.SD,  sum)), by="cyl"]
+dt08 = M[, c(mean=lapply(.SD, mean), sum=lapply(.SD,  sum)), by="cyl"]
+dt09 = M[, c(     lapply(.SD, mean), sum=lapply(.SD,  sum)), by="cyl"]
+dt10 = M[, c( " "=lapply(.SD, mean), "."=lapply(.SD,  sum)), by="cyl"]
+dt11 = M[, c(A=list(a=mpg,b=hp),         lapply(.SD, mean)), by="cyl"]
+dt12 = M[, c(A=list(mpg, hp),            lapply(.SD, mean)), by="cyl"]
+dt13 = M[, c(A=list(mpg, b=hp, wt),      lapply(.SD, mean)), by="cyl"]
+dt14 = M[, c(A=list(mpg),                lapply(.SD, mean)), by="cyl"]
+dt15 = M[, c(" "=list(" "=hp, "."=disp, mpg),    lapply(.SD, mean)), by="cyl"]
+dt16 = M[, c("."=list(" "=hp, "."=disp, mpg),    lapply(.SD, mean)), by="cyl"]
+
+test(2164.101,  names(dt01), c("cyl", names(c(m=sdlist))))
+test(2164.102,  names(dt02), c("cyl", "Mpg", sdnames))
+test(2164.103,  names(dt03), c("cyl", "Mpg", names(c(m=sdlist))))
+test(2164.104,  names(dt04), c("cyl", "mpg", names(c(mpg=sdlist))))
+test(2164.105,  names(dt05), c("cyl", "V1", sdnames))
+test(2164.106,  names(dt06), c("cyl", sdnames, "V13") )
+test(2164.107,  names(dt07), c("cyl", sdnames,sdnames))
+test(2164.108,  names(dt08), c("cyl", names(c(mean=sdlist, sum=sdlist))))
+test(2164.109,  names(dt09), c("cyl", sdnames, names(c(sum=sdlist))) )
+test(2164.110,  names(dt10), c("cyl", names(c(" "=sdlist, "."=sdlist))))
+test(2164.111,  names(dt11), c("cyl", names(c(A=list(a=0, b=0))), sdnames  ))
+test(2164.112,  names(dt12), c("cyl", names(c(A=list(0, 0))), sdnames  ))
+test(2164.113,  names(dt13), c("cyl", names(c(A=list(0, b=0,0))), sdnames  ))
+test(2164.114,  names(dt14), c("cyl", names(c(A=list(0))), sdnames  ))
+test(2164.115,  names(dt15), c("cyl", names(c(" "=list(" "=0, "."=0, 0))), sdnames  ))
+test(2164.116,  names(dt16), c("cyl", names(c("."=list(" "=0, "."=0, 0))), sdnames  ))
+options(old)
