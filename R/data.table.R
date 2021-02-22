@@ -207,7 +207,7 @@ replace_dot_alias = function(e) {
   if (!with && missing(j)) stop("j must be provided when with=FALSE")
   irows = NULL  # Meaning all rows. We avoid creating 1:nrow(x) for efficiency.
   notjoin = FALSE
-  rightcols = leftcols = integer()
+  rightcols = leftcols = byeachi_key_cols = integer()
   optimizedSubset = FALSE ## flag: tells whether a normal query was optimized into a join.
   ..syms = NULL
   av = NULL
@@ -434,6 +434,12 @@ replace_dot_alias = function(e) {
         # TODO: collect all '==' ops first to speeden up Cnestedid
         rightcols = colnamesInt(x, names(on), check_dups=FALSE)
         leftcols  = colnamesInt(i, unname(on), check_dups=FALSE)
+        if (byjoin) {
+          if (haskey(i))
+            byeachi_key_cols = chmatch(key(i), unname(on), nomatch = 0L) 
+          else if (haskey(x))
+            byeachi_key_cols = chmatch(key(x), name(on), nomatch = 0L)     
+        }
       } else {
         ## missing on
         rightcols = chmatch(key(x), names_x)   # NAs here (i.e. invalid data.table) checked in bmerge()
@@ -442,6 +448,7 @@ replace_dot_alias = function(e) {
         else
           seq_len(min(length(i),length(rightcols)))
         rightcols = head(rightcols,length(leftcols))
+        if (byjoin) byeachi_key_cols = seq_along(rightcols)
         ops = rep(1L, length(leftcols))
       }
       # Implementation for not-join along with by=.EACHI, #604
@@ -1832,7 +1839,10 @@ replace_dot_alias = function(e) {
     setkeyv(ans,names(ans)[seq_along(byval)])
     if (verbose) {cat(timetaken(last.started.at),"\n"); flush.console()}
   } else if (keyby || (haskey(x) && bysameorder && (byjoin || (length(allbyvars) && identical(allbyvars,head(key(x),length(allbyvars))))))) {
-    setattr(ans,"sorted",names(ans)[seq_along(grpcols)])
+    if (byjoin) 
+      setattr(ans,"sorted", names(ans)[byeachi_key_cols]) ##fix 4603 
+    else 
+      setattr(ans,"sorted",names(ans)[seq_along(grpcols)])
   }
   setalloccol(ans)   # TODO: overallocate in dogroups in the first place and remove this line
 }
