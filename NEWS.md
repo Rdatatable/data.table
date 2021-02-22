@@ -6,10 +6,11 @@
 
 ## NEW FEATURES
 
+1. `like` (and operator-style wrappers `%like%`, `%flike%`, and `%ilike%`) uses a smarter approach to make evaluation on `factor` input even faster.
+
 ## BUG FIXES
 
 ## NOTES
-
 
 # data.table [v1.14.0](https://github.com/Rdatatable/data.table/milestone/23?closed=1)  (submitted to CRAN on 20 Feb 2021)
 
