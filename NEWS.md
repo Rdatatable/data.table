@@ -8,6 +8,8 @@
 
 ## BUG FIXES
 
+1. During `by = .EACHI` joins, keys could be inaccurately assigned if `i` had a pre-existing key. Closes [#4603](https://github.com/Rdatatable/data.table/issues/4603) and [#4911](https://github.com/Rdatatable/data.table/issues/4911). Thanks to @myoung3 and @adamaltmejd for reporting the issue and @ColeMiller1 for the FR.
+
 ## NOTES
 
 
