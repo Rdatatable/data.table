@@ -17263,3 +17263,18 @@ if (identical(x, enc2native(x))) {
 
 # fintersect now preserves order of first argument like intersect, #4716
 test(2163, fintersect(data.table(x=c("b", "c", "a")), data.table(x=c("a","c")))$x, c("c", "a"))
+
+# key could be incorrectly assigned during by = .EACHI #4603
+
+X <- data.table(id = c(6456372L, 6456372L, 6456372L, 6456372L,6456372L, 6456372L, 6456372L, 6456372L, 6456372L, 6456372L, 6456372L, 6456372L, 6456372L, 6456372L),
+                id_round = c(197801L, 199405L, 199501L, 197901L, 197905L, 198001L, 198005L, 198101L, 198105L, 198201L, 198205L, 198301L, 198305L, 198401L), 
+                field = c(NA, NA, NA, "medicine", "medicine", "medicine", "medicine", "medicine", "medicine", "medicine", "medicine", "medicine", "medicine", "medicine"),
+                key = "id")
+
+Y <- data.table(id = c(6456372L, 6456345L, 6456356L), 
+                id_round = c(197705L, 197905L, 201705L), 
+                field = c("medicine", "teaching", "health"), 
+                prio = c(6L, 1L, 10L),
+                key = c("id_round", "id", "prio", "field" ))
+                
+test(2164.1, X[Y, on = .(id, id_round > id_round, field), .(x.id_round[1], i.id_round[1]), by = .EACHI][id == 6456372L], data.table(id = 6456372L, id_round = 197705L, field = 'medicine', V1 = 197901L, V2 = 197705L, key = c('id_round', 'id', 'field')))
