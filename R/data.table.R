@@ -434,12 +434,7 @@ replace_dot_alias = function(e) {
         # TODO: collect all '==' ops first to speeden up Cnestedid
         rightcols = colnamesInt(x, names(on), check_dups=FALSE)
         leftcols  = colnamesInt(i, unname(on), check_dups=FALSE)
-        if (byjoin) {
-          if (haskey(i))
-            byeachi_key_cols = chmatch(key(i), unname(on), nomatch = 0L) 
-          else if (haskey(x))
-            byeachi_key_cols = chmatch(key(x), name(on), nomatch = 0L)     
-        }
+        if (byjoin && haskey(i))  byeachi_key_cols = chmatch(key(i), unname(on), nomatch = 0L) 
       } else {
         ## missing on
         rightcols = chmatch(key(x), names_x)   # NAs here (i.e. invalid data.table) checked in bmerge()
