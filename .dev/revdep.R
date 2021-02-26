@@ -7,6 +7,11 @@ Sys.unsetenv("R_PROFILE_USER")
 # But if we don't unset it now, anything else from now on that does something like system("R CMD INSTALL"), e.g. update.packages()
 # and BiocManager::install(), will call this script again recursively.
 
+# options copied from .dev/.Rprofile that aren't run due to the way this script is started via a profile
+options(help_type="html")
+options(error=quote(dump.frames()))
+options(width=200)      # for cran() output not to wrap
+
 # Check that env variables have been set correctly:
 #   export R_LIBS_SITE=none
 #   export R_LIBS=~/build/revdeplib/
@@ -233,6 +238,10 @@ status = function(bioc=FALSE) {
 
 cran = function()  # reports CRAN status of the .cran.fail packages
 {
+  if (!length(.fail.cran)) {
+    cat("No CRAN revdeps in error or warning status\n")
+    return(invisible())
+  }
   require(data.table)
   p = proc.time()
   db = setDT(tools::CRAN_check_results())
