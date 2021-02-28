@@ -310,10 +310,11 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
       if (firsti==-1) { firsti=i; firstw=w; firstCol=thisCol; }
       else {
         if (!factor && !int64) {
-          if (!R_compute_identical(PROTECT(getAttrib(thisCol, R_ClassSymbol)),
-                                   PROTECT(getAttrib(firstCol, R_ClassSymbol)),
-                                   0)) {
-            error(_("Class attribute on column %d of item %d does not match with column %d of item %d."), w+1, i+1, firstw+1, firsti+1);
+          SEXP thisClass = PROTECT(getAttrib(thisCol, R_ClassSymbol));
+          SEXP firstClass = PROTECT(getAttrib(firstCol, R_ClassSymbol));
+          if (!R_compute_identical(thisClass, firstClass, 0)) {
+            error(_("Class attribute on column %d (%s) of item %d does not match with column %d (%s) of item %d."),
+                  w+1, CHAR(concatCharVec(thisClass, ", ")), i+1, firstw+1, CHAR(concatCharVec(firstClass, ", ")), firsti+1);
           }
           UNPROTECT(2);
         }
