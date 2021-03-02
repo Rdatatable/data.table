@@ -6,6 +6,8 @@
 
 ## NEW FEATURES
 
+1. `nafill` now accepts `type="locf|nocb"` together with `fill=`, [#3594](https://github.com/Rdatatable/data.table/issues/3594). Thanks to @ben519 for the feature request. It also now returns a named object based on the input names.
+
 ## BUG FIXES
 
 ## NOTES
@@ -22,10 +24,6 @@
     `tz=`'s default is now changed from `""` to `"UTC"`. If you have been using `tz=` explicitly then there should be no change. The change to read UTC-marked datetime as POSIXct rather than character already happened in v1.13.0. The change now is that unmarked datetimes are now read as UTC too by default without needing to set `tz="UTC"`. None of the 1,017 CRAN packages directly using `data.table` are affected. As before, the migration option `datatable.old.fread.datetime.character` can still be set to TRUE to revert to the old character behavior. This migration option is temporary and will be removed in the near future.
 
     The community was consulted in [this tweet](https://twitter.com/MattDowle/status/1358011599336931328) before release.
-
-## NEW FEATURES
-
-1. `nafill` now accepts `type="locf|nocb"` together with `fill`, [#3594](https://github.com/Rdatatable/data.table/issues/3594). Thanks to @ben519 for feature request. It will also now return a named object based on the input names.
 
 ## BUG FIXES
 
