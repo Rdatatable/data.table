@@ -6,6 +6,8 @@
 
 ## NEW FEATURES
 
+1. Group-wise queries like `x[.N]` or `.SD[.N-1L]` (i.e. an offset of `k>=0` from the end of the group at index `.N`) are now optimized, [#4809](https://github.com/Rdatatable/data.table/issues/4809) and part of [#735](https://github.com/Rdatatable/data.table/issues/4809). Previously only fixed positive offsets like `x[1L]` or `.SD[2L]` were optimized. Thanks to @matthewgson for the report.
+
 ## BUG FIXES
 
 ## NOTES
