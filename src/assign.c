@@ -695,8 +695,9 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
   // for 5647 this used to limit slen to len, but no longer
   if (colname==NULL)
     error(_("Internal error: memrecycle has received NULL colname")); // # nocov
-  bool nocol = colnum==0;
   *memrecycle_message = '\0';
+  static char targetDesc[501];  // from 1.14.1 coerceAs reuses memrecycle for a target vector, PR#4491
+  snprintf(targetDesc, 500, colnum==0 ? _("target vector") : _("column %d named '%s'"), colnum, colname);
   int protecti=0;
   const bool sourceIsFactor=isFactor(source), targetIsFactor=isFactor(target);
   const bool sourceIsI64=isReal(source) && Rinherits(source, char_integer64);
@@ -718,10 +719,7 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
           for (int i=0; i<slen; ++i) {
             const int val = sd[i+soff];
             if ((val<1 && val!=NA_INTEGER) || val>nlevel) {
-              if (nocol)
-                error(_("Assigning factor numbers. But %d is outside the level range [1,%d]"), val, nlevel);
-              else 
-                error(_("Assigning factor numbers to column %d named '%s'. But %d is outside the level range [1,%d]"), colnum, colname, val, nlevel);
+              error(_("Assigning factor numbers to %s. But %d is outside the level range [1,%d]"), targetDesc, val, nlevel);
             }
           }
         } else {
@@ -729,10 +727,7 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
           for (int i=0; i<slen; ++i) {
             const double val = sd[i+soff];
             if (!ISNAN(val) && (!R_FINITE(val) || val!=(int)val || (int)val<1 || (int)val>nlevel)) {
-              if (nocol)
-                error(_("Assigning factor numbers. But %f is outside the level range [1,%d], or is not a whole number."), val, nlevel);
-              else
-                error(_("Assigning factor numbers to column %d named '%s'. But %f is outside the level range [1,%d], or is not a whole number."), colnum, colname, val, nlevel);
+              error(_("Assigning factor numbers to %s. But %f is outside the level range [1,%d], or is not a whole number."), targetDesc, val, nlevel);
             }
           }
         }
@@ -824,37 +819,26 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
       }
     }
   } else if (isString(source) && !isString(target) && !isNewList(target)) {
-    if (!nocol)
-      warning(_("Coercing 'character' RHS to '%s' to match the type of the target column (column %d named '%s')."),
-                type2char(TYPEOF(target)), colnum, colname);
+    if (colnum>0)  // no warning when called by coerceAs
+      warning(_("Coercing 'character' RHS to '%s' to match the type of %s."), type2char(TYPEOF(target)), targetDesc);
     // this "Coercing ..." warning first to give context in case coerceVector warns 'NAs introduced by coercion'
     source = PROTECT(coerceVector(source, TYPEOF(target))); protecti++;
   } else if (isNewList(source) && !isNewList(target)) {
     if (targetIsI64) {
-      if (nocol)
-        error(_("Cannot coerce 'list' RHS to 'integer64' to match the target type.")); // # nocov because coerceAs does not accept lists
-      else
-        error(_("Cannot coerce 'list' RHS to 'integer64' to match the type of the target column (column %d named '%s')."), colnum, colname);
+      error(_("Cannot coerce 'list' RHS to 'integer64' to match the type of %s."), targetDesc);
       // because R's coerceVector doesn't know about integer64
     }
     // as in base R; e.g. let as.double(list(1,2,3)) work but not as.double(list(1,c(2,4),3))
     // relied on by NNS, simstudy and table.express; tests 1294.*
-    if (!nocol)
-      warning(_("Coercing 'list' RHS to '%s' to match the type of the target column (column %d named '%s')."),
-              type2char(TYPEOF(target)), colnum, colname);
+    warning(_("Coercing 'list' RHS to '%s' to match the type of %s."), type2char(TYPEOF(target)), targetDesc);
     source = PROTECT(coerceVector(source, TYPEOF(target))); protecti++;
   } else if ((TYPEOF(target)!=TYPEOF(source) || targetIsI64!=sourceIsI64) && !isNewList(target)) {
     if (GetVerbose()>=3) {
       // only take the (small) cost of GetVerbose() (search of options() list) when types don't match
-      if (nocol)
-        Rprintf(_("Zero-copy coerce when assigning '%s' to '%s'.\n"),
-                sourceIsI64 ? "integer64" : type2char(TYPEOF(source)),
-                targetIsI64 ? "integer64" : type2char(TYPEOF(target)));
-      else
-        Rprintf(_("Zero-copy coerce when assigning '%s' to '%s' column %d named '%s'.\n"),
-                sourceIsI64 ? "integer64" : type2char(TYPEOF(source)),
-                targetIsI64 ? "integer64" : type2char(TYPEOF(target)),
-                colnum, colname);
+      Rprintf(_("Zero-copy coerce when assigning '%s' to '%s' %s.\n"),
+              sourceIsI64 ? "integer64" : type2char(TYPEOF(source)),
+              targetIsI64 ? "integer64" : type2char(TYPEOF(target)),
+              targetDesc);
     }
     // The following checks are up front here, otherwise we'd need them twice in the two branches
     //   inside BODY that cater for 'where' or not. Maybe there's a way to merge the two macros in future.
@@ -867,10 +851,9 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
     if (COND) {                                                                                                         \
       const char *sType = sourceIsI64 ? "integer64" : type2char(TYPEOF(source));                                        \
       const char *tType = targetIsI64 ? "integer64" : type2char(TYPEOF(target));                                        \
-      int n = snprintf(memrecycle_message, MSGSIZE,                                                                     \
-            "%"FMT" (type '%s') at RHS position %d "TO" when assigning to type '%s'", val, sType, i+1, tType);          \
-      if (!nocol && n>0 && n<MSGSIZE)                                                                                   \
-        snprintf(memrecycle_message+n, MSGSIZE-n, " (column %d named '%s')", colnum, colname);                          \
+      snprintf(memrecycle_message, MSGSIZE,                                                                             \
+        "%"FMT" (type '%s') at RHS position %d "TO" when assigning to type '%s' (%s)",                                  \
+        val, sType, i+1, tType, targetDesc);                                                                            \
       /* string returned so that rbindlist/dogroups can prefix it with which item of its list this refers to  */        \
       break;                                                                                                            \
     }                                                                                                                   \
@@ -1066,7 +1049,7 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
           break;
         }
         if (sourceIsI64)
-          error(_("To assign integer64 to a character, please use as.character() for clarity.")); // TODO: handle that here as well
+          error(_("To assign integer64 to a target of type character, please use as.character() for clarity.")); // TODO: handle that here as well
         source = PROTECT(coerceVector(source, STRSXP)); protecti++;
       }
       BODY(SEXP, STRING_PTR, SEXP, val,  SET_STRING_ELT(target, off+i, cval))
