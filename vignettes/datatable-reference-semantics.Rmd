@@ -98,8 +98,8 @@ It can be used in `j` in two ways:
 
     ```{r eval = FALSE}
     DT[, `:=`(colA = valA, # valA is assigned to colA
-    colB = valB, # valB is assigned to colB
-    ...
+              colB = valB, # valB is assigned to colB
+              ...
     )]
     ```
 
