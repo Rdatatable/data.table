@@ -295,7 +295,7 @@ setorderv = function(x, cols = colnames(x), order=1L, na.last=FALSE)
   o = forderv(x, cols, sort=TRUE, retGrp=FALSE, order=order, na.last=na.last)
   if (length(o)) {
     .Call(Creorder, x, o)
-    if (is.data.frame(x) & !is.data.table(x)) {
+    if (is.data.frame(x) && !is.data.table(x)) {
       setattr(x, 'row.names', rownames(x)[o])
     }
     k = key(x)
