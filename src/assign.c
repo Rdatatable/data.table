@@ -819,9 +819,10 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
       }
     }
   } else if (isString(source) && !isString(target) && !isNewList(target)) {
-    if (colnum>0)  // no warning when called by coerceAs
-      warning(_("Coercing 'character' RHS to '%s' to match the type of %s."), type2char(TYPEOF(target)), targetDesc);
+    warning(_("Coercing 'character' RHS to '%s' to match the type of %s."), type2char(TYPEOF(target)), targetDesc);
     // this "Coercing ..." warning first to give context in case coerceVector warns 'NAs introduced by coercion'
+    // and also because 'character' to integer/double coercion is often a user mistake (e.g. wrong target column, or wrong
+    // variable on RHS) which they are more likely to appreciate than find inconvenient
     source = PROTECT(coerceVector(source, TYPEOF(target))); protecti++;
   } else if (isNewList(source) && !isNewList(target)) {
     if (targetIsI64) {
