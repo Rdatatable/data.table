@@ -6,6 +6,8 @@
 
 ## NEW FEATURES
 
+1. %notin% added to compute opposite of %in%, [#4152](https://github.com/Rdatatable/data.table/issues/4152). Thanks to Jan Gorecki for suggesting and Michael Czekanski for the PR.
+
 ## BUG FIXES
 
 ## NOTES
