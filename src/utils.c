@@ -141,61 +141,6 @@ SEXP colnamesInt(SEXP x, SEXP cols, SEXP check_dups) {
   return ricols;
 }
 
-void coerceFill(SEXP fill, double *dfill, int32_t *ifill, int64_t *i64fill) {
-  if (xlength(fill) != 1) error(_("%s: fill argument must be length 1"), __func__);
-  if (isInteger(fill)) {
-    if (INTEGER(fill)[0]==NA_INTEGER) {
-      ifill[0] = NA_INTEGER; dfill[0] = NA_REAL; i64fill[0] = NA_INTEGER64;
-    } else {
-      ifill[0] = INTEGER(fill)[0];
-      dfill[0] = (double)(INTEGER(fill)[0]);
-      i64fill[0] = (int64_t)(INTEGER(fill)[0]);
-    }
-  } else if (isReal(fill)) {
-    if (Rinherits(fill,char_integer64)) {  // Rinherits true for nanotime
-      int64_t rfill = ((int64_t *)REAL(fill))[0];
-      if (rfill==NA_INTEGER64) {
-        ifill[0] = NA_INTEGER; dfill[0] = NA_REAL; i64fill[0] = NA_INTEGER64;
-      } else {
-        ifill[0] = (rfill>INT32_MAX || rfill<=INT32_MIN) ? NA_INTEGER : (int32_t)rfill;
-        dfill[0] = (double)rfill;
-        i64fill[0] = rfill;
-      }
-    } else {
-      double rfill = REAL(fill)[0];
-      if (ISNAN(rfill)) {
-        // NA -> NA, NaN -> NaN
-        ifill[0] = NA_INTEGER; dfill[0] = rfill; i64fill[0] = NA_INTEGER64;
-      } else {
-        ifill[0] = (!R_FINITE(rfill) || rfill>INT32_MAX || rfill<=INT32_MIN) ? NA_INTEGER : (int32_t)rfill;
-        dfill[0] = rfill;
-        i64fill[0] = (!R_FINITE(rfill) || rfill>(double)INT64_MAX || rfill<=(double)INT64_MIN) ? NA_INTEGER64 : (int64_t)rfill;
-      }
-    }
-  } else if (isLogical(fill) && LOGICAL(fill)[0]==NA_LOGICAL) {
-    ifill[0] = NA_INTEGER; dfill[0] = NA_REAL; i64fill[0] = NA_INTEGER64;
-  } else {
-    error(_("%s: fill argument must be numeric"), __func__);
-  }
-}
-SEXP coerceFillR(SEXP fill) {
-  int protecti=0;
-  double dfill=NA_REAL;
-  int32_t ifill=NA_INTEGER;
-  int64_t i64fill=NA_INTEGER64;
-  coerceFill(fill, &dfill, &ifill, &i64fill);
-  SEXP ans = PROTECT(allocVector(VECSXP, 3)); protecti++;
-  SET_VECTOR_ELT(ans, 0, allocVector(INTSXP, 1));
-  SET_VECTOR_ELT(ans, 1, allocVector(REALSXP, 1));
-  SET_VECTOR_ELT(ans, 2, allocVector(REALSXP, 1));
-  INTEGER(VECTOR_ELT(ans, 0))[0] = ifill;
-  REAL(VECTOR_ELT(ans, 1))[0] = dfill;
-  ((int64_t *)REAL(VECTOR_ELT(ans, 2)))[0] = i64fill;
-  setAttrib(VECTOR_ELT(ans, 2), R_ClassSymbol, ScalarString(char_integer64));
-  UNPROTECT(protecti);
-  return ans;
-}
-
 inline bool INHERITS(SEXP x, SEXP char_) {
   // Thread safe inherits() by pre-calling install() in init.c and then
   // passing those char_* in here for simple and fast non-API pointer compare.
@@ -374,6 +319,64 @@ SEXP coerceUtf8IfNeeded(SEXP x) {
   return(ans);
 }
 
+// class1 is used by coerseAs only, which is used by frollR.c and nafill.c only
+const char *class1(SEXP x) {
+  SEXP cl = getAttrib(x, R_ClassSymbol);
+  if (length(cl))
+    return(CHAR(STRING_ELT(cl, 0)));
+  SEXP d = getAttrib(x, R_DimSymbol);
+  int nd = length(d);
+  if (nd) {
+    if (nd==2)
+      return "matrix";
+    else
+      return "array";
+  }
+  SEXPTYPE t = TYPEOF(x);
+  // see TypeTable in src/main/utils.c to compare to the differences here vs type2char
+  switch(t) {
+  case CLOSXP: case SPECIALSXP: case BUILTINSXP:
+    return "function";
+  case REALSXP:
+    return "numeric";
+  case SYMSXP:
+    return "name";
+  case LANGSXP:
+    return "call";
+  default:
+    return type2char(t);
+  }
+}
+
+// main motivation for this function is to have coercion helper that is aware of int64 NAs, unline base R coerce #3913
+SEXP coerceAs(SEXP x, SEXP as, SEXP copyArg) {
+  // copyArg does not update in place, but only IF an object is of the same type-class as class to be coerced, it will return with no copy
+  if (!isVectorAtomic(x))
+    error("'x' is not atomic");
+  if (!isVectorAtomic(as))
+    error("'as' is not atomic");
+  if (!isNull(getAttrib(x, R_DimSymbol)))
+    error("'x' must not be matrix or array");
+  if (!isNull(getAttrib(as, R_DimSymbol)))
+    error("'as' must not be matrix or array");
+  bool verbose = GetVerbose()>=2; // verbose level 2 required
+  if (!LOGICAL(copyArg)[0] && TYPEOF(x)==TYPEOF(as) && class1(x)==class1(as)) {
+    if (verbose)
+      Rprintf("copy=false and input already of expected type and class %s[%s]\n", type2char(TYPEOF(x)), class1(x));
+    copyMostAttrib(as, x); // so attrs like factor levels are same for copy=T|F
+    return(x);
+  }
+  int len = LENGTH(x);
+  SEXP ans = PROTECT(allocNAVectorLike(as, len));
+  if (verbose)
+    Rprintf("Coercing %s[%s] into %s[%s]\n", type2char(TYPEOF(x)), class1(x), type2char(TYPEOF(as)), class1(as));
+  const char *ret = memrecycle(/*target=*/ans, /*where=*/R_NilValue, /*start=*/0, /*len=*/LENGTH(x), /*source=*/x, /*sourceStart=*/0, /*sourceLen=*/-1, /*colnum=*/0, /*colname=*/"");
+  if (ret)
+    warning(_("%s"), ret);
+  UNPROTECT(1);
+  return ans;
+}
+
 #ifndef NOZLIB
 #include <zlib.h>
 #endif
@@ -386,4 +389,3 @@ SEXP dt_zlib_version() {
 #endif
   return ScalarString(mkChar(out));
 }
-
