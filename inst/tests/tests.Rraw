@@ -17264,7 +17264,7 @@ if (identical(x, enc2native(x))) {
 # fintersect now preserves order of first argument like intersect, #4716
 test(2163, fintersect(data.table(x=c("b", "c", "a")), data.table(x=c("a","c")))$x, c("c", "a"))
 
-# mean na.rm=TRUE fully GForce, #4849 #4851
+# mean na.rm=TRUE fully GForce, #4849
 d = data.table(a=1, b=list(1,2))
 test(2164, d[, mean(b), a], error="not supported by GForce mean")
 
