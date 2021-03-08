@@ -109,7 +109,7 @@ extern size_t __typeorder[100]; // __ prefix otherwise if we use these names dir
 
 long long DtoLL(double x);
 double LLtoD(long long x);
-bool GetVerbose();
+int GetVerbose();
 
 // cj.c
 SEXP cj(SEXP base_list);
@@ -127,7 +127,7 @@ int checkOverAlloc(SEXP x);
 
 // forder.c
 int StrCmp(SEXP x, SEXP y);
-uint64_t dtwiddle(const void *p, int i);
+uint64_t dtwiddle(double x);
 SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP naArg);
 int getNumericRounding_C();
 
@@ -229,8 +229,6 @@ bool isRealReallyInt(SEXP x);
 SEXP isReallyReal(SEXP x);
 bool allNA(SEXP x, bool errorForBadType);
 SEXP colnamesInt(SEXP x, SEXP cols, SEXP check_dups);
-void coerceFill(SEXP fill, double *dfill, int32_t *ifill, int64_t *i64fill);
-SEXP coerceFillR(SEXP fill);
 bool INHERITS(SEXP x, SEXP char_);
 bool Rinherits(SEXP x, SEXP char_);
 SEXP copyAsPlain(SEXP x);
@@ -241,6 +239,7 @@ bool islocked(SEXP x);
 SEXP islockedR(SEXP x);
 bool need2utf8(SEXP x);
 SEXP coerceUtf8IfNeeded(SEXP x);
+SEXP coerceAs(SEXP x, SEXP as, SEXP copyArg);
 
 // types.c
 char *end(char *start);
