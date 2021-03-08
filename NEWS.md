@@ -22,7 +22,7 @@
     nafill(x, fill=as.integer(3.14))  # no warning; the as.<type> conveys intent
     ```
 
-# data.table [v1.14.0](https://github.com/Rdatatable/data.table/milestone/23?closed=1)  (submitted to CRAN on 20 Feb 2021)
+# data.table [v1.14.0](https://github.com/Rdatatable/data.table/milestone/23?closed=1)  (21 Feb 2021)
 
 ## POTENTIALLY BREAKING CHANGES
 
