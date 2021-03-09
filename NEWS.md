@@ -22,7 +22,7 @@
     nafill(x, fill=as.integer(3.14))  # no warning; the as.<type> conveys intent
     ```
     
-2. `mean(na.rm=TRUE)` by group will now fully use _GForce_ optimization, [#4849](https://github.com/Rdatatable/data.table/issues/4849). Thanks to [h2oai/db-benchmark](https://github.com/h2oai/db-benchmark) project for spotting this issue.
+2. `mean(na.rm=TRUE)` by group will now use _GForce_ optimization, [#4849](https://github.com/Rdatatable/data.table/issues/4849). Thanks to [h2oai/db-benchmark](https://github.com/h2oai/db-benchmark) project for spotting this issue.
 
 
 # data.table [v1.14.0](https://github.com/Rdatatable/data.table/milestone/23?closed=1)  (21 Feb 2021)
