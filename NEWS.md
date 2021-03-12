@@ -8,6 +8,8 @@
 
 1. `nafill()` now applies `fill=` to the front/back of the vector when `type="locf|nocb"`, [#3594](https://github.com/Rdatatable/data.table/issues/3594). Thanks to @ben519 for the feature request. It also now returns a named object based on the input names. Note that if you are considering joining and then using `nafill(...,type='locf|nocb')` afterwards, please review `roll=`/`rollends=` which should achieve the same result in one step more efficiently. `nafill()` is for when filling-while-joining (i.e. `roll=`/`rollends=`/`nomatch=`) cannot be applied.
 
+2. `mean(na.rm=TRUE)` by group is now _GForce_ optimized, [#4849](https://github.com/Rdatatable/data.table/issues/4849). Thanks to the [h2oai/db-benchmark](https://github.com/h2oai/db-benchmark) project for spotting this issue. The 1 billion row example in the issue shows 48s reduced to 14s. The optimization also applies to type `integer64` resulting in a difference to the `bit64::mean.integer64` method: `data.table` returns a `double` result whereas `bit64` rounds the mean to the nearest integer.
+
 ## BUG FIXES
 
 ## NOTES
@@ -21,9 +23,6 @@
     nafill(x, fill=3.14)              # warns that precision has been lost
     nafill(x, fill=as.integer(3.14))  # no warning; the as.<type> conveys intent
     ```
-    
-2. `mean(na.rm=TRUE)` by group will now use _GForce_ optimization, [#4849](https://github.com/Rdatatable/data.table/issues/4849). Thanks to [h2oai/db-benchmark](https://github.com/h2oai/db-benchmark) project for spotting this issue.
-
 
 # data.table [v1.14.0](https://github.com/Rdatatable/data.table/milestone/23?closed=1)  (21 Feb 2021)
 
