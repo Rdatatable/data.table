@@ -634,6 +634,7 @@ SEXP gmean(SEXP x, SEXP narmArg)
         }
       #pragma omp parallel for num_threads(getDTthreads(ngrp, true))
       for (int i=0; i<ngrp; i++) ansp[i] /= cntp[i];
+      free(cntp);
     }
   } break;
   case CPLXSXP: {
@@ -667,7 +668,10 @@ SEXP gmean(SEXP x, SEXP narmArg)
       if (!cnt_rp) error(_("Unable to allocate %d * %d bytes for non-NA counts in gmean na.rm=TRUE"), ngrp, sizeof(int));
       memset(cnt_rp, 0, ngrp*sizeof(int));
       int *restrict cnt_ip = malloc(ngrp*sizeof(int));
-      if (!cnt_ip) error(_("Unable to allocate %d * %d bytes for non-NA counts in gmean na.rm=TRUE"), ngrp, sizeof(int));
+      if (!cnt_ip) {
+        free(cnt_rp);
+        error(_("Unable to allocate %d * %d bytes for non-NA counts in gmean na.rm=TRUE"), ngrp, sizeof(int));
+      }
       memset(cnt_ip, 0, ngrp*sizeof(int));
       #pragma omp parallel for num_threads(getDTthreads(highSize, false))
       for (int h=0; h<highSize; h++) {
@@ -697,6 +701,8 @@ SEXP gmean(SEXP x, SEXP narmArg)
         ansp[i].i /= cnt_ip[i];
         ansp[i].r /= cnt_rp[i];
       }
+      free(cnt_rp);
+      free(cnt_ip);
     }
   } break;
   default:
