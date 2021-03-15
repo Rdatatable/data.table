@@ -666,9 +666,11 @@ SEXP gmean(SEXP x, SEXP narmArg)
       int *restrict nna_counts_r = calloc(ngrp, sizeof(int));
       int *restrict nna_counts_i = calloc(ngrp, sizeof(int));
       if (!nna_counts_r || !nna_counts_i) {
+        // # nocov start
         free(nna_counts_r);  // free(NULL) is allowed and does nothing. Avoids repeating the error() call here.
         free(nna_counts_i);
         error(_("Unable to allocate %d * %d bytes for non-NA counts in gmean na.rm=TRUE"), ngrp, sizeof(int));
+        // # nocov end
       }
       #pragma omp parallel for num_threads(getDTthreads(highSize, false))
       for (int h=0; h<highSize; h++) {
