@@ -1,7 +1,7 @@
-"%notin%" = function(example, elements) {
+"%notin%" = function(x, table) {
   if (is.character(example)) {
-    return(.Call(Cchin, example, elements, TRUE))
+    return(.Call(Cchin, x, table, TRUE))
   } else {
-    return(!match(example, elements, nomatch = 0))
+    return(!match(x, table, nomatch = 0))
   }
 }

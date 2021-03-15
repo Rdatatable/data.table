@@ -2,33 +2,32 @@
 \alias{\%notin\%}
 
 \title{
-Convenience for checking if an example is in a set of elements
+Convenience for checking if an example is not in a set of elements
 }
 
 \description{
-Intended to behave opposite to  \code{\link[=base]{in}}
+Check whether an object is absent from a table, i.e., the logical inverse of \code{\link[=base]{in}}.
 }
 
 \usage{
-example \%notin\% elements
+x \%notin\% table
 }
 
 \arguments{
-   \item{example}{ vector or \code{NULL}: value to be matched }
-   \item{elements}{ vector or \code{NULL}: values to check for a match }
+   \item{x}{ vector or \code{NULL}: value to be matched }
+   \item{table}{ vector or \code{NULL}: values to check for a match }
 }
 
-\details{
- Internally, \code{\%notin\%} is a wrapper around \code{\link[=base]{match}} and \code{\link[=data.table]{chmatch}}.
-}
 
 \value{
-    Logical vector, \code{TRUE} for each element of \code{example} \emph{absent} from \code{elements}, and \code{FALSE} for each element of \code{example} \emph{present} in \code{elements}.
+    Logical vector, \code{TRUE} for each element of \code{x} \emph{absent} from \code{table}, and \code{FALSE} for each element of \code{x} \emph{present} in \code{table}.
 }
 
-\seealso{ \code{\link[base]{match}} }
+\seealso{ \code{\link[base]{match}}, \code{\link[data.table]{chmatch}}  }
+
 
 \examples{
-  11 \%notin\% 1:10
+  11 \%notin\% 1:10 # TRUE
+  "a" \%notin\% c("a", "b") # FALSE
 }
 
