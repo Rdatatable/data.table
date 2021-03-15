@@ -611,9 +611,8 @@ SEXP gmean(SEXP x, SEXP narmArg)
       for (int i=0; i<ngrp; i++) ansp[i] /= grpsize[i];
     } else {
       // narm==true and anyNA==true
-      int *restrict cntp = malloc(ngrp*sizeof(int));
+      int *restrict cntp = calloc(ngrp, sizeof(int));
       if (!cntp) error(_("Unable to allocate %d * %d bytes for non-NA counts in gmean na.rm=TRUE"), ngrp, sizeof(int));
-      memset(cntp, 0, ngrp*sizeof(int));
       #pragma omp parallel for num_threads(getDTthreads(highSize, false))
       for (int h=0; h<highSize; h++) {
           double *restrict _ans = ansp + (h<<shift);
@@ -664,15 +663,13 @@ SEXP gmean(SEXP x, SEXP narmArg)
       }
     } else {
       // narm==true and anyNA==true
-      int *restrict cnt_rp = malloc(ngrp*sizeof(int));
+      int *restrict cnt_rp = calloc(ngrp, sizeof(int));
       if (!cnt_rp) error(_("Unable to allocate %d * %d bytes for non-NA counts in gmean na.rm=TRUE"), ngrp, sizeof(int));
-      memset(cnt_rp, 0, ngrp*sizeof(int));
-      int *restrict cnt_ip = malloc(ngrp*sizeof(int));
+      int *restrict cnt_ip = calloc(ngrp, sizeof(int));
       if (!cnt_ip) {
         free(cnt_rp);
         error(_("Unable to allocate %d * %d bytes for non-NA counts in gmean na.rm=TRUE"), ngrp, sizeof(int));
       }
-      memset(cnt_ip, 0, ngrp*sizeof(int));
       #pragma omp parallel for num_threads(getDTthreads(highSize, false))
       for (int h=0; h<highSize; h++) {
         Rcomplex *restrict _ans = ansp + (h<<shift);
