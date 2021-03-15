@@ -21,9 +21,9 @@ static SEXP chmatchMain(SEXP x, SEXP table, int nomatch, bool chin, bool chmatch
   }
   
   // negate inputs if needed
-  int chinNoMatch = negate?1:0;
-  int match = negate?0:1;
-  nomatch = negate?1:nomatch;
+  int chinNoMatch = negate ? 1 : 0;
+  int match = negate ? 0 : 1;
+  nomatch = negate ? 1 : nomatch;
   
   // allocations up front before savetl starts in case allocs fail
   int nprotect=0;
