@@ -23,7 +23,7 @@ example \%notin\% elements
 }
 
 \value{
-    Logical vector, \code{TRUE} indicating whether each \code{example} was not found in \code{elements}.
+    Logical vector, \code{TRUE} for each element of \code{example} \emph{absent} from \code{elements}, and \code{FALSE} for each element of \code{example} \emph{present} in \code{elements}.
 }
 
 \seealso{ \code{\link[base]{match}} }
