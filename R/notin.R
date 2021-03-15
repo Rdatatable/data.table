@@ -1,4 +1,3 @@
-# Intended to be used to create %notin% operator
 "%notin%" = function(example, elements) {
   if (is.character(example)) {
     return(.Call(Cchin, example, elements, TRUE))
