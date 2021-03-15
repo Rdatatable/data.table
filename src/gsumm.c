@@ -611,12 +611,12 @@ SEXP gmean(SEXP x, SEXP narmArg)
       for (int i=0; i<ngrp; i++) ansp[i] /= grpsize[i];
     } else {
       // narm==true and anyNA==true
-      int *restrict cntp = calloc(ngrp, sizeof(int));
-      if (!cntp) error(_("Unable to allocate %d * %d bytes for non-NA counts in gmean na.rm=TRUE"), ngrp, sizeof(int));
+      int *restrict nna_counts = calloc(ngrp, sizeof(int));
+      if (!nna_counts) error(_("Unable to allocate %d * %d bytes for non-NA counts in gmean na.rm=TRUE"), ngrp, sizeof(int));
       #pragma omp parallel for num_threads(getDTthreads(highSize, false))
       for (int h=0; h<highSize; h++) {
           double *restrict _ans = ansp + (h<<shift);
-          int *restrict _cnt = cntp + (h<<shift);
+          int *restrict _nna = nna_counts + (h<<shift);
           for (int b=0; b<nBatch; b++) {
             const int pos = counts[ b*highSize + h ];
             const int howMany = ((h==highSize-1) ? (b==nBatch-1?lastBatchSize:batchSize) : counts[ b*highSize + h + 1 ]) - pos;
@@ -626,14 +626,14 @@ SEXP gmean(SEXP x, SEXP narmArg)
               const double elem = my_gx[i];
               if (!ISNAN(elem)) {
                 _ans[my_low[i]] += elem;
-                _cnt[my_low[i]]++;
+                _nna[my_low[i]]++;
               }
             }
           }
         }
       #pragma omp parallel for num_threads(getDTthreads(ngrp, true))
-      for (int i=0; i<ngrp; i++) ansp[i] /= cntp[i];
-      free(cntp);
+      for (int i=0; i<ngrp; i++) ansp[i] /= nna_counts[i];
+      free(nna_counts);
     }
   } break;
   case CPLXSXP: {
@@ -663,18 +663,18 @@ SEXP gmean(SEXP x, SEXP narmArg)
       }
     } else {
       // narm==true and anyNA==true
-      int *restrict cnt_rp = calloc(ngrp, sizeof(int));
-      if (!cnt_rp) error(_("Unable to allocate %d * %d bytes for non-NA counts in gmean na.rm=TRUE"), ngrp, sizeof(int));
-      int *restrict cnt_ip = calloc(ngrp, sizeof(int));
-      if (!cnt_ip) {
-        free(cnt_rp);
+      int *restrict nna_counts_r = calloc(ngrp, sizeof(int));
+      int *restrict nna_counts_i = calloc(ngrp, sizeof(int));
+      if (!nna_counts_r || !nna_counts_i) {
+        free(nna_counts_r);  // free(NULL) is allowed and does nothing. Avoids repeating the error() call here.
+        free(nna_counts_i);
         error(_("Unable to allocate %d * %d bytes for non-NA counts in gmean na.rm=TRUE"), ngrp, sizeof(int));
       }
       #pragma omp parallel for num_threads(getDTthreads(highSize, false))
       for (int h=0; h<highSize; h++) {
         Rcomplex *restrict _ans = ansp + (h<<shift);
-        int *restrict _cnt_r = cnt_rp + (h<<shift);
-        int *restrict _cnt_i = cnt_ip + (h<<shift);
+        int *restrict _nna_r = nna_counts_r + (h<<shift);
+        int *restrict _nna_i = nna_counts_i + (h<<shift);
         for (int b=0; b<nBatch; b++) {
           const int pos = counts[ b*highSize + h ];
           const int howMany = ((h==highSize-1) ? (b==nBatch-1?lastBatchSize:batchSize) : counts[ b*highSize + h + 1 ]) - pos;
@@ -684,22 +684,22 @@ SEXP gmean(SEXP x, SEXP narmArg)
             const Rcomplex elem = my_gx[i];
             if (!ISNAN(elem.r)) {
               _ans[my_low[i]].r += elem.r;
-              _cnt_r[my_low[i]]++;
+              _nna_r[my_low[i]]++;
             }
             if (!ISNAN(elem.i)) {
               _ans[my_low[i]].i += elem.i;
-              _cnt_i[my_low[i]]++;
+              _nna_i[my_low[i]]++;
             }
           }
         }
       }
       #pragma omp parallel for num_threads(getDTthreads(ngrp, true))
       for (int i=0; i<ngrp; i++) {
-        ansp[i].i /= cnt_ip[i];
-        ansp[i].r /= cnt_rp[i];
+        ansp[i].r /= nna_counts_r[i];
+        ansp[i].i /= nna_counts_i[i];
       }
-      free(cnt_rp);
-      free(cnt_ip);
+      free(nna_counts_r);
+      free(nna_counts_i);
     }
   } break;
   default:
