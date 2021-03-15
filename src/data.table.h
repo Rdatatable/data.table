@@ -151,7 +151,7 @@ SEXP uniqlengths(SEXP x, SEXP n);
 
 // chmatch.c
 SEXP chmatch(SEXP x, SEXP table, int nomatch);
-SEXP chin(SEXP x, SEXP table);
+SEXP chin(SEXP x, SEXP table, bool negate);
 
 SEXP isOrderedSubset(SEXP, SEXP);
 void setselfref(SEXP);

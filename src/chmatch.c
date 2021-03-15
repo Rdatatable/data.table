@@ -1,6 +1,6 @@
 #include "data.table.h"
 
-static SEXP chmatchMain(SEXP x, SEXP table, int nomatch, bool chin, bool chmatchdup) {
+static SEXP chmatchMain(SEXP x, SEXP table, int nomatch, bool chin, bool chmatchdup, bool negate) {
   if (!isString(table) && !isNull(table))
     error(_("table is type '%s' (must be 'character' or NULL)"), type2char(TYPEOF(table)));
   if (chin && chmatchdup)
@@ -19,6 +19,12 @@ static SEXP chmatchMain(SEXP x, SEXP table, int nomatch, bool chin, bool chmatch
       error(_("x is type '%s' (must be 'character' or NULL)"), type2char(TYPEOF(x)));
     }
   }
+  
+  // negate inputs if needed
+  int chinNoMatch = negate?1:0;
+  int match = negate?0:1;
+  nomatch = negate?1:nomatch;
+  
   // allocations up front before savetl starts in case allocs fail
   int nprotect=0;
   SEXP ans = PROTECT(allocVector(chin?LGLSXP:INTSXP, xlen)); nprotect++;
@@ -29,7 +35,7 @@ static SEXP chmatchMain(SEXP x, SEXP table, int nomatch, bool chin, bool chmatch
   int *ansd = INTEGER(ans);
   const int tablelen = length(table);
   if (tablelen==0) {
-    const int val=(chin?0:nomatch), n=xlen;
+    const int val=(chin?chinNoMatch:nomatch), n=xlen;
     for (int i=0; i<n; ++i) ansd[i]=val;
     UNPROTECT(nprotect);
     return ans;
@@ -47,7 +53,7 @@ static SEXP chmatchMain(SEXP x, SEXP table, int nomatch, bool chin, bool chmatch
     ansd[0] = nomatch;
     for (int i=0; i<tablelen; ++i) {
       if (td[i]==xd[0]) {
-        ansd[0] = chin ? 1 : i+1;
+        ansd[0] = chin ? match : i+1;
         break; // short-circuit early; if there are dups in table the first is returned
       }
     }
@@ -117,9 +123,16 @@ static SEXP chmatchMain(SEXP x, SEXP table, int nomatch, bool chin, bool chmatch
     free(counts);
     free(map);
   } else if (chin) {
-    for (int i=0; i<xlen; i++) {
-      ansd[i] = TRUELENGTH(xd[i])<0;
+    if (negate){
+      for (int i=0; i<xlen; i++) {
+        ansd[i] = TRUELENGTH(xd[i])>=0;
+      }
+    } else {
+      for (int i=0; i<xlen; i++) {
+        ansd[i] = TRUELENGTH(xd[i])<0;
+      }
     }
+    
   } else {
     for (int i=0; i<xlen; i++) {
       int m = TRUELENGTH(xd[i]);
@@ -135,21 +148,21 @@ static SEXP chmatchMain(SEXP x, SEXP table, int nomatch, bool chin, bool chmatch
 
 // for internal use from C :
 SEXP chmatch(SEXP x, SEXP table, int nomatch) {  // chin=  chmatchdup=
-  return chmatchMain(x, table, nomatch,             false, false);
+  return chmatchMain(x, table, nomatch,             false, false, false);
 }
-SEXP chin(SEXP x, SEXP table) {
-  return chmatchMain(x, table, 0,                   true,  false);
+SEXP chin(SEXP x, SEXP table, bool negate) {
+  return chmatchMain(x, table, 0,                   true,  false, negate);
 }
 
 // for use from internals at R level; chmatch and chin are exported too but not chmatchdup yet
 SEXP chmatch_R(SEXP x, SEXP table, SEXP nomatch) {
-  return chmatchMain(x, table, INTEGER(nomatch)[0], false, false);
+  return chmatchMain(x, table, INTEGER(nomatch)[0], false, false, false);
 }
-SEXP chin_R(SEXP x, SEXP table) {
-  return chmatchMain(x, table, 0,                   true,  false);
+SEXP chin_R(SEXP x, SEXP table, SEXP negate) {
+  return chmatchMain(x, table, 0,                   true,  false, LOGICAL(negate)[0]);
 }
 SEXP chmatchdup_R(SEXP x, SEXP table, SEXP nomatch) {
-  return chmatchMain(x, table, INTEGER(nomatch)[0], false, true);
+  return chmatchMain(x, table, INTEGER(nomatch)[0], false, true, false);
 }
 
 /*

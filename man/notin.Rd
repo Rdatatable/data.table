@@ -1,5 +1,4 @@
 \name{notin}
-\alias{notin}
 \alias{\%notin\%}
 
 \title{
@@ -11,7 +10,6 @@ Intended to behave opposite to  \code{\link[=base]{in}}
 }
 
 \usage{
-notin(example, elements)
 example \%notin\% elements
 }
 
@@ -21,11 +19,11 @@ example \%notin\% elements
 }
 
 \details{
- Internally, \code{\%notin\%} is a wrapper around \code{\link[=base]{match}}, much like \code{\%in\%}.
+ Internally, \code{\%notin\%} is a wrapper around \code{\link[=base]{match}} and \code{\link[=data.table]{chmatch}}.
 }
 
 \value{
-    Logical vector, \code{TRUE} indicating whether each \code{example} was found in \code{elements}.
+    Logical vector, \code{TRUE} indicating whether each \code{example} was not found in \code{elements}.
 }
 
 \seealso{ \code{\link[base]{match}} }
