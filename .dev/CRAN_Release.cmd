@@ -529,6 +529,7 @@ sudo apt-get -y install pandoc-citeproc   # for basecallQC
 sudo apt-get -y install libquantlib0-dev  # for RQuantLib
 sudo apt-get -y install cargo  # for gifski, a suggest of nasoi
 sudo apt-get -y install libgit2-dev  # for gert
+sudo apt-get -y install cmake  # for symengine for RxODE
 sudo R CMD javareconf
 # ENDIF
 
