@@ -17273,3 +17273,8 @@ if (test_bit64) {
   test(2164.3, d[, mean(b, na.rm=TRUE), by=a], data.table(a=INT(1,2), V1=c(2.5, 4)))
 }
 
+# Don't segfault, #4892
+x = data.table(id = 1:4, key = 'id')
+y = data.table(id = 2:5, key = 'id')
+z = data.table(c=c(2L, 2L, 1L, 1L), id=c(2L, 4L, 3L, NA))
+test(2165, x[y, by = .(c(2L, 1L, 2L, 1L)), .SD], z)
