@@ -12,6 +12,8 @@
 
 3. `setDF()` now clears existing indices, as it does for other `data.table`-only attributes. Doing so prevents some errors that could happen if the `setDT()` is later applied after the indices are mutated; see [#4889](https://github.com/Rdatatable/data.table/issues/4889). Thanks @OfekShilon for the report and the fix.
 
+4. New option added - "datatable.assign.inplace". When set to FALSE, it overrides the default behavior of assigning column data in place, thereby solving [#4783](https://github.com/Rdatatable/data.table/issues/4783) and indirectly also [#3215](https://github.com/Rdatatable/data.table/issues/3215). The extra allocation overhead is typically negligible. Thanks @OfekShilon for the report and the fix.
+
 ## NOTES
 
 1. Compiling from source no longer requires `zlib` header files to be available, [#4844](https://github.com/Rdatatable/data.table/pull/4844). The output suggests installing `zlib` headers, and how (e.g. `zlib1g-dev` on Ubuntu) as before, but now proceeds with `gzip` compression disabled in `fwrite`. Upon calling `fwrite(DT, "file.csv.gz")` at runtime, an error message suggests to reinstall `data.table` with `zlib` headers available. This does not apply to users on Windows or Mac who install the pre-compiled binary package from CRAN.

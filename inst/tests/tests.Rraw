@@ -7484,15 +7484,22 @@ test(1542.04, key(DT1), "id")
 DT1[,newCol:=6:10]
 test(1542.05, DT, data.table(id=1:5, key="id"))
 test(1542.06, DT1, data.table(id=1:5, newCol=6:10, key="id"))
+
+orig.opt <- options(datatable.assign.inplace=TRUE)
 DT1[3, id:=6L]
 test(1542.07, DT1, data.table(id=INT(1,2,6,4,5), newCol=6:10))
-
-# current wrong behaviour (invalid key, #3215); root cause is the shallow exposed uniquely via DT[TRUE]
+# wrong behaviour (invalid key, #3215); root cause is the shallow exposed uniquely via DT[TRUE]
 test(1542.08, DT$id, INT(1,2,6,4,5))
 test(1542.09, key(DT), "id")
-# future correct behaviour :
-# test(1542.10, DT$id, 1:5)
-# test(1542.11, key(DT), "id")
+# correct behaviour after disabling inplace:
+options(datatable.assign.inplace=FALSE)
+DT = data.table(id = 1:5, key="id")
+DT1 = DT[TRUE]
+DT1[,newCol:=6:10]
+DT1[3, id:=6L]
+test(1542.10, DT$id, 1:5)
+test(1542.11, key(DT), "id")
+options(orig.opt)
 
 # rest of #1130 - merge doesn't copy, instead uses joins without keys.
 set.seed(1L)
@@ -17269,3 +17276,23 @@ setDF(d)
 d[1:50, "a"] <- d[51:100, "a"]
 setDT(d)
 test(2164, nrow(d[a==99]), as.integer(2))
+
+# In-place assignment can leak to origin DF, #4783
+ orig.opt <- options(datatable.assign.inplace=TRUE)
+ d <- data.frame(a=c(1,2), b=c(1,2))
+ df <- d
+ setDT(d)
+ d[, a:=c(10, 11)]  # not leaking to df
+ test(2165, df$a[1], 1)
+ d[!is.na(a), b:=c(20,21)]  # leaks to df
+ test(2166, df$b[1], 20)
+
+# With option to fix the behaviour:
+ options(datatable.assign.inplace=FALSE)
+ d <- data.frame(a=c(1,2), b=c(1,2))
+ df <- d
+ setDT(d)
+ d[!is.na(a), b:=c(20, 21)]  # stop the leak to df
+ test(2167, df$b[1], 1)
+
+ options(orig.opt)
