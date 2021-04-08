@@ -23,6 +23,8 @@
     nafill(x, fill=3.14)              # warns that precision has been lost
     nafill(x, fill=as.integer(3.14))  # no warning; the as.<type> conveys intent
     ```
+    
+2. `melt` is now a generic function and will dispatch to `melt.data.table` for `data.table` objects [#3594](https://github.com/Rdatatable/data.table/pull/4864). For non-`data.table` object, the default method attempts to redirect towards `reshape2` methods. This change has no effect for users but enable the development of `melt` methods in other packages. Thanks to @odelmarcelle for suggesting the change.
 
 # data.table [v1.14.0](https://github.com/Rdatatable/data.table/milestone/23?closed=1)  (21 Feb 2021)
 
