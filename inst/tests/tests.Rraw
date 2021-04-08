@@ -3190,6 +3190,10 @@ Sep,33.5,19.4,15.7,11.9,0,100.8,100.8,0,12.7,12.7,0,174.1")
   x[ , r := as.raw(c(0, 1))]
   test(1037.414, melt(x, id.vars='x1', measure.vars='r'),
        error="Unknown column type 'raw' for column 'r'")
+       
+   # test dispatch for non-data.table objects. See #4864
+   test(1038.001, melt(as.data.frame(DT), id.vars=1:2, measure.vars=5:6), as.data.frame(melt(DT, id.vars=1:2, measure.vars=5:6)),
+       warning="The melt generic in data.table has been passed a data.frame")
 }
 
 # sorting and grouping of Inf, -Inf, NA and NaN,  #117, #112 & #105
