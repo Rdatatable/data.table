@@ -141,7 +141,8 @@ replace_dot_alias = function(e) {
     return(ans)
   }
   if (!missing(verbose)) {
-    stopifnot(isTRUEorFALSE(verbose))
+    if (!is.integer(verbose) && !is.logical(verbose)) stop("verbose must be logical or integer")
+    if (length(verbose)!=1 || anyNA(verbose)) stop("verbose must be length 1 non-NA")
     # set the global verbose option because that is fetched from C code without having to pass it through
     oldverbose = options(datatable.verbose=verbose)
     on.exit(options(oldverbose))
@@ -2855,7 +2856,7 @@ ghead = function(x, n) .Call(Cghead, x, as.integer(n)) # n is not used at the mo
 gtail = function(x, n) .Call(Cgtail, x, as.integer(n)) # n is not used at the moment
 gfirst = function(x) .Call(Cgfirst, x)
 glast = function(x) .Call(Cglast, x)
-gsum = function(x, na.rm=FALSE) .Call(Cgsum, x, na.rm, TRUE)  # warnOverflow=TRUE, #986
+gsum = function(x, na.rm=FALSE) .Call(Cgsum, x, na.rm)
 gmean = function(x, na.rm=FALSE) .Call(Cgmean, x, na.rm)
 gprod = function(x, na.rm=FALSE) .Call(Cgprod, x, na.rm)
 gmedian = function(x, na.rm=FALSE) .Call(Cgmedian, x, na.rm)

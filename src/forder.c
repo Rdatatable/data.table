@@ -197,10 +197,10 @@ static void range_d(double *x, int n, uint64_t *out_min, uint64_t *out_max, int 
   int na_count=0, infnan_count=0;
   int i=0;
   while(i<n && !R_FINITE(x[i])) { ISNA(x[i++]) ? na_count++ : infnan_count++; }
-  if (i<n) { max = min = dtwiddle(x, i++);}
+  if (i<n) { max = min = dtwiddle(x[i++]); }
   for(; i<n; i++) {
     if (!R_FINITE(x[i])) { ISNA(x[i]) ? na_count++ : infnan_count++; continue; }
-    uint64_t tmp = dtwiddle(x, i);
+    uint64_t tmp = dtwiddle(x[i]);
     if (tmp>max) max=tmp;
     else if (tmp<min) min=tmp;
   }
@@ -210,23 +210,14 @@ static void range_d(double *x, int n, uint64_t *out_min, uint64_t *out_max, int 
   *out_max = max;
 }
 
-// non-critical function also used by bmerge and chmatch
+// used by bmerge only; chmatch uses coerceUtf8IfNeeded
 int StrCmp(SEXP x, SEXP y)
 {
   if (x == y) return 0;             // same cached pointer (including NA_STRING==NA_STRING)
   if (x == NA_STRING) return -1;    // x<y
   if (y == NA_STRING) return 1;     // x>y
-  return strcmp(CHAR(ENC2UTF8(x)), CHAR(ENC2UTF8(y)));  // TODO: always calling ENC2UTF8 here could be expensive 
+  return strcmp(CHAR(x), CHAR(y));  // bmerge calls ENC2UTF8 on x and y before passing here 
 }
-/* ENC2UTF8 handles encoding issues by converting all marked non-utf8 encodings alone to utf8 first. The function could be wrapped
-   in the first if-statement already instead of at the last stage, but this is to ensure that all-ascii cases are handled with maximum efficiency.
-   This seems to fix the issues as far as I've checked. Will revisit if necessary.
-   OLD COMMENT: can return 0 here for the same string in known and unknown encodings, good if the unknown string is in that encoding but not if not ordering is ascii only (C locale).
-   TO DO: revisit and allow user to change to strcoll, and take account of Encoding. see comments in bmerge().  10k calls of strcmp = 0.37s, 10k calls of strcoll = 4.7s. See ?Comparison, ?Encoding, Scollate in R internals.
-   TO DO: check that all unknown encodings are ascii; i.e. no non-ascii unknowns are present, and that either Latin1
-          or UTF-8 is used by user, not both. Then error if not. If ok, then can proceed with byte level. ascii is never marked known by R, but
-          non-ascii (i.e. knowable encoding) could be marked unknown. Does R API provide is_ascii?
-*/
 
 static void cradix_r(SEXP *xsub, int n, int radix)
 // xsub is a unique set of CHARSXP, to be ordered by reference
@@ -395,13 +386,13 @@ int getNumericRounding_C()
 
 // for signed integers it's easy: flip sign bit to swap positives and negatives; the resulting unsigned is in the right order with INT_MIN ending up as 0
 // for floating point finite you have to flip the other bits too if it was signed: http://stereopsis.com/radix.html
-uint64_t dtwiddle(const void *p, int i)
+uint64_t dtwiddle(double x) //const void *p, int i)
 {
   union {
     double d;
     uint64_t u64;
   } u;  // local for thread safety
-  u.d = ((double *)p)[i];
+  u.d = x; //((double *)p)[i];
   if (R_FINITE(u.d)) {
     if (u.d==0) u.d=0; // changes -0.0 to 0.0,  issue #743
     u.u64 ^= (u.u64 & 0x8000000000000000) ? 0xffffffffffffffff : 0x8000000000000000; // always flip sign bit and if negative (sign bit was set) flip other bits too
@@ -689,7 +680,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
               elem = ISNA(xd[i]) ? naval : nanval;
             }
           } else {
-            elem = dtwiddle(xd, i);  // TODO: could avoid twiddle() if all positive finite which could be known from range_d.
+            elem = dtwiddle(xd[i]);  // TODO: could avoid twiddle() if all positive finite which could be known from range_d.
                                      //       also R_FINITE is repeated within dtwiddle() currently, wastefully given the if() above
           }
           WRITE_KEY
@@ -1289,7 +1280,7 @@ SEXP issorted(SEXP x, SEXP by)
         while (i<n && xd[i]>=xd[i-1]) i++;
       } else {
         double *xd = REAL(x);
-        while (i<n && dtwiddle(xd,i)>=dtwiddle(xd,i-1)) i++;  // TODO: change to loop over any NA or -Inf at the beginning and then proceed without dtwiddle() (but rounding)
+        while (i<n && dtwiddle(xd[i])>=dtwiddle(xd[i-1])) i++;  // TODO: change to loop over any NA or -Inf at the beginning and then proceed without dtwiddle() (but rounding)
       }
       break;
     case STRSXP : {
@@ -1355,7 +1346,7 @@ SEXP issorted(SEXP x, SEXP by)
       } break;
       case 1: {   // regular double in REALSXP
         const double *p = (const double *)colp;
-        ok = dtwiddle(p,0)>dtwiddle(p,-1);  // TODO: avoid dtwiddle by looping over any NA at the beginning, and remove NumericRounding.
+        ok = dtwiddle(p[0])>dtwiddle(p[-1]);  // TODO: avoid dtwiddle by looping over any NA at the beginning, and remove NumericRounding.
       } break;
       case 2: {  // integer64 in REALSXP
         const int64_t *p = (const int64_t *)colp;

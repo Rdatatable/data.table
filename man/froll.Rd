@@ -25,7 +25,7 @@ frollapply(x, n, FUN, \dots, fill=NA, align=c("right", "left", "center"))
   \item{x}{ vector, list, data.frame or data.table of numeric or logical columns. }
   \item{n}{ integer vector, for adaptive rolling function also list of
     integer vectors, rolling window size. }
-  \item{fill}{ numeric, value to pad by. Defaults to \code{NA}. }
+  \item{fill}{ numeric or logical, value to pad by. Defaults to \code{NA}. }
   \item{algo}{ character, default \code{"fast"}. When set to \code{"exact"},
     then slower algorithm is used. It suffers less from floating point
     rounding error, performs extra pass to adjust rounding error

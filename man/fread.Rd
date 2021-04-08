@@ -24,7 +24,7 @@ data.table=getOption("datatable.fread.datatable", TRUE),
 nThread=getDTthreads(verbose),
 logical01=getOption("datatable.logical01", FALSE),  # due to change to TRUE; see NEWS
 keepLeadingZeros = getOption("datatable.keepLeadingZeros", FALSE),
-yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz=""
+yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC"
 )
 }
 \arguments{
@@ -64,7 +64,7 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz=""
   \item{yaml}{ If \code{TRUE}, \code{fread} will attempt to parse (using \code{\link[yaml]{yaml.load}}) the top of the input as YAML, and further to glean parameters relevant to improving the performance of \code{fread} on the data itself. The entire YAML section is returned as parsed into a \code{list} in the \code{yaml_metadata} attribute. See \code{Details}. }
   \item{autostart}{ Deprecated and ignored with warning. Please use \code{skip} instead. }
   \item{tmpdir}{ Directory to use as the \code{tmpdir} argument for any \code{tempfile} calls, e.g. when the input is a URL or a shell command. The default is \code{tempdir()} which can be controlled by setting \code{TMPDIR} before starting the R session; see \code{\link[base:tempfile]{base::tempdir}}. }
-  \item{tz}{ Relevant to datetime values which have no Z or UTC-offset at the end, i.e. \emph{unmarked} datetime, as written by \code{\link[utils:write.table]{utils::write.csv}}. The default \code{tz=""} means interpet unmarked datetime in the timezone of the R session, for consistency with R's \code{as.POSIXct()} and backwards compatibility. Set \code{tz="UTC"} to read unmarked datetime in UTC. Note that \code{fwrite()} by default writes datetime in UTC including the final Z (i.e. UTC-marked datetime) and \code{fwrite}'s output will be read by \code{fread} consistently and quickly without needing to use \code{tz=} or \code{colClasses=}. If the TZ environment variable is set to \code{"UTC"} (or \code{""} on non-Windows where unset vs `""` is significant) then R's timezone is already UTC, the default \code{tz=""} means UTC, and unmarked datetime will be read as UTC. The TZ environment variable being unset, however, means local time, in both C and R, and is quite different from the TZ environment variable being set to \code{""} on non-Windows which means UTC not local. You can use \code{Sys.setenv(TZ="UTC")}, and \code{Sys.unsetenv("TZ")}, too, and \code{fread} will use the latest value. }
+  \item{tz}{ Relevant to datetime values which have no Z or UTC-offset at the end, i.e. \emph{unmarked} datetime, as written by \code{\link[utils:write.table]{utils::write.csv}}. The default \code{tz="UTC"} reads unmarked datetime as UTC POSIXct efficiently. \code{tz=""} reads unmarked datetime as type character (slowly) so that \code{as.POSIXct} can interpret (slowly) the character datetimes in local timezone; e.g. by using \code{"POSIXct"} in \code{colClasses=}. Note that \code{fwrite()} by default writes datetime in UTC including the final Z and therefore \code{fwrite}'s output will be read by \code{fread} consistently and quickly without needing to use \code{tz=} or \code{colClasses=}. If the \code{TZ} environment variable is set to \code{"UTC"} (or \code{""} on non-Windows where unset vs `""` is significant) then the R session's timezone is already UTC and \code{tz=""} will result in unmarked datetimes being read as UTC POSIXct. For more information, please see the news items from v1.13.0 and v1.14.0. }
 }
 \details{
 

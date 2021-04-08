@@ -2,11 +2,51 @@
 
 **Benchmarks are regularly updated: [here](https://h2oai.github.io/db-benchmark/)**
 
-# data.table [v1.13.7](https://github.com/Rdatatable/data.table/milestone/20)  (in development)
+# data.table [v1.14.1](https://github.com/Rdatatable/data.table/milestone/20)  (in development)
+
+## NEW FEATURES
+
+1. `nafill()` now applies `fill=` to the front/back of the vector when `type="locf|nocb"`, [#3594](https://github.com/Rdatatable/data.table/issues/3594). Thanks to @ben519 for the feature request. It also now returns a named object based on the input names. Note that if you are considering joining and then using `nafill(...,type='locf|nocb')` afterwards, please review `roll=`/`rollends=` which should achieve the same result in one step more efficiently. `nafill()` is for when filling-while-joining (i.e. `roll=`/`rollends=`/`nomatch=`) cannot be applied.
+
+2. `mean(na.rm=TRUE)` by group is now GForce optimized, [#4849](https://github.com/Rdatatable/data.table/issues/4849). Thanks to the [h2oai/db-benchmark](https://github.com/h2oai/db-benchmark) project for spotting this issue. The 1 billion row example in the issue shows 48s reduced to 14s. The optimization also applies to type `integer64` resulting in a difference to the `bit64::mean.integer64` method: `data.table` returns a `double` result whereas `bit64` rounds the mean to the nearest integer.
 
 ## BUG FIXES
 
 ## NOTES
+
+1. New feature 29 in v1.12.4 (Oct 2019) introduced zero-copy coercion. Our thinking is that requiring you to get the type right in the case of `0` (type double) vs `0L` (type integer) is too inconvenient for you the user. So such coercions happen in `data.table` automatically without warning. Thanks to zero-copy coercion there is no speed penalty, even when calling `set()` many times in a loop, so there's no speed penalty to warn you about either. However, we believe that assigning a character value such as `"2"` into an integer column is more likely to be a user mistake that you would like to be warned about. The type difference (character vs integer) may be the only clue that you have selected the wrong column, or typed the wrong variable to be assigned to that column. For this reason we view character to numeric-like coercion differently and will warn about it. If it is correct, then the warning is intended to nudge you to wrap the RHS with `as.<type>()` so that it is clear to readers of your code that a coercion from character to that type is intended. For example :
+
+    ```R
+    x = c(2L,NA,4L,5L)
+    nafill(x, fill=3)                 # no warning; requiring 3L too inconvenient
+    nafill(x, fill="3")               # warns in case either x or "3" was a mistake
+    nafill(x, fill=3.14)              # warns that precision has been lost
+    nafill(x, fill=as.integer(3.14))  # no warning; the as.<type> conveys intent
+    ```
+
+# data.table [v1.14.0](https://github.com/Rdatatable/data.table/milestone/23?closed=1)  (21 Feb 2021)
+
+## POTENTIALLY BREAKING CHANGES
+
+1. In v1.13.0 (July 2020) native parsing of datetime was added to `fread` by Michael Chirico which dramatically improved performance. Before then datetime was read as type character by default which was slow. Since v1.13.0, UTC-marked datetime (e.g. `2020-07-24T10:11:12.134Z` where the final `Z` is present) has been read automatically as POSIXct and quickly. We provided the migration option `datatable.old.fread.datetime.character` to revert to the previous slow character behavior. We also added the `tz=` argument to control unmarked datetime; i.e. where the `Z` (or equivalent UTC postfix) is missing in the data. The default `tz=""` reads unmarked datetime as character as before, slowly. We gave you the ability to set `tz="UTC"` to turn on the new behavior and read unmarked datetime as UTC, quickly. R sessions that are running in UTC by setting the TZ environment variable, as is good practice and common in production, have also been reading unmarked datetime as UTC since v1.13.0, much faster. Note 1 of v1.13.0 (below in this file) ended `In addition to convenience, fread is now significantly faster in the presence of dates, UTC-marked datetimes, and unmarked datetime when tz="UTC" is provided.`.
+
+    At `rstudio::global(2021)`, Neal Richardson, Director of Engineering at Ursa Labs, compared Arrow CSV performance to `data.table` CSV performance, [Bigger Data With Ease Using Apache Arrow](https://rstudio.com/resources/rstudioglobal-2021/bigger-data-with-ease-using-apache-arrow/). He opened by comparing to `data.table` as his main point. Arrow was presented as 3 times faster than `data.table`. He talked at length about this result. However, no reproducible code was provided and we were not contacted in advance in case we had any comments. He mentioned New York Taxi data in his talk which is a dataset known to us as containing unmarked datetime. [Rebuttal](https://twitter.com/MattDowle/status/1360073970498875394).
+
+    `tz=`'s default is now changed from `""` to `"UTC"`. If you have been using `tz=` explicitly then there should be no change. The change to read UTC-marked datetime as POSIXct rather than character already happened in v1.13.0. The change now is that unmarked datetimes are now read as UTC too by default without needing to set `tz="UTC"`. None of the 1,017 CRAN packages directly using `data.table` are affected. As before, the migration option `datatable.old.fread.datetime.character` can still be set to TRUE to revert to the old character behavior. This migration option is temporary and will be removed in the near future.
+
+    The community was consulted in [this tweet](https://twitter.com/MattDowle/status/1358011599336931328) before release.
+
+## BUG FIXES
+
+1. If `fread()` discards a single line footer, the warning message which includes the discarded text now displays any non-ASCII characters correctly on Windows, [#4747](https://github.com/Rdatatable/data.table/issues/4747). Thanks to @shrektan for reporting and the PR.
+
+2. `fintersect()` now retains the order of the first argument as reasonably expected, rather than retaining the order of the second argument, [#4716](https://github.com/Rdatatable/data.table/issues/4716). Thanks to Michel Lang for reporting, and Ben Schwen for the PR.
+
+## NOTES
+
+1. Compiling from source no longer requires `zlib` header files to be available, [#4844](https://github.com/Rdatatable/data.table/pull/4844). The output suggests installing `zlib` headers, and how (e.g. `zlib1g-dev` on Ubuntu) as before, but now proceeds with `gzip` compression disabled in `fwrite`. Upon calling `fwrite(DT, "file.csv.gz")` at runtime, an error message suggests to reinstall `data.table` with `zlib` headers available. This does not apply to users on Windows or Mac who install the pre-compiled binary package from CRAN.
+
+2. `r-datatable.com` continues to be the short, canonical and long-standing URL which forwards to the current homepage. The homepage domain has changed a few times over the years but those using `r-datatable.com` did not need to change their links. For example, we use `r-datatable.com` in messages (and translated messages) in preference to the word 'homepage' to save users time in searching for the current homepage. The web forwarding was provided by Domain Monster but they do not support `https://r-datatable.com`, only `http://r-datatable.com`, despite the homepage being forwarded to being `https:` for many years. Meanwhile, CRAN submission checks now require all URLs to be `https:`, rejecting `http:`. Therefore we have moved to [gandi.net](https://www.gandi.net) who do support `https:` web forwarding and so [https://r-datatable.com](https://r-datatable.com) now forwards correctly. Thanks to Dirk Eddelbuettel for suggesting Gandi. Further, Gandi allows the web-forward to be marked 301 (permanent) or 302 (temporary). Since the very point of `https://r-datatable.com` is to be a forward, 302 is appropriate in this case. This enables us to link to it in DESCRIPTION, README, and this NEWS item. Otherwise, CRAN submission checks would require the 301 forward to be followed; i.e. the forward replaced with where it points to and the package resubmitted. Thanks to Uwe Ligges for explaining this distinction.
 
 
 # data.table [v1.13.6](https://github.com/Rdatatable/data.table/milestone/22?closed=1)  (30 Dec 2020)
@@ -659,7 +699,7 @@ has a better chance of working on Mac.
 
 7. Added a note to `?frank` clarifying that ranking is being done according to C sorting (i.e., like `forder`), [#2328](https://github.com/Rdatatable/data.table/issues/2328). Thanks to @cguill95 for the request.
 
-8. Historically, `dcast` and `melt` were built as enhancements to `reshape2`'s own `dcast`/`melt`. We removed dependency on `reshape2` in v1.9.6 but maintained some backward compatibility. As that package has been deprecated since December 2017, we will begin to formally complete the split from `reshape2` by removing some last vestiges. In particular we now warn when redirecting to `reshape2` methods and will later error before ultimately completing the split; see [#3549](https://github.com/Rdatatable/data.table/issues/3549) and [#3633](https://github.com/Rdatatable/data.table/issues/3633). We thank the `reshape2` authors for their original inspiration for these functions, and @ProfFancyPants for testing and reporting regressions in dev which have been fixed before release.
+8. Historically, `dcast` and `melt` were built as enhancements to `reshape2`'s own `dcast`/`melt`. We removed dependency on `reshape2` in v1.9.6 but maintained some backward compatibility. As that package has been superseded since December 2017, we will begin to formally complete the split from `reshape2` by removing some last vestiges. In particular we now warn when redirecting to `reshape2` methods and will later error before ultimately completing the split; see [#3549](https://github.com/Rdatatable/data.table/issues/3549) and [#3633](https://github.com/Rdatatable/data.table/issues/3633). We thank the `reshape2` authors for their original inspiration for these functions, and @ProfFancyPants for testing and reporting regressions in dev which have been fixed before release.
 
 9. `DT[col]` where `col` is a column containing row numbers of itself to select, now suggests the correct syntax (`DT[(col)]` or `DT[DT$col]`), [#697](https://github.com/Rdatatable/data.table/issues/697). This expands the message introduced in [#1884](https://github.com/Rdatatable/data.table/issues/1884) for the case where `col` is type `logical` and `DT[col==TRUE]` is suggested.
 
@@ -981,7 +1021,7 @@ has a better chance of working on Mac.
 
 ## NOTES
 
-1. The type coercion warning message has been improved, [#2989](https://github.com/Rdatatable/data.table/pull/2989). Thanks to @sarahbeeysian on [Twitter](https://twitter.com/sarahbeeysian/status/1021359529789775872) for highlighting. For example, given the follow statements:
+1. The type coercion warning message has been improved, [#2989](https://github.com/Rdatatable/data.table/pull/2989). Thanks to @sarahbeeysian on Twitter for highlighting. For example, given the follow statements:
 
     ```R
     DT = data.table(id=1:3)
@@ -1435,7 +1475,7 @@ When `j` is a symbol (as in the quanteda and xgboost examples above) it will con
 
 2. Just to state explicitly: data.table does not now depend on or require OpenMP. If you don't have it (as on CRAN's Mac it appears but not in general on Mac) then data.table should build, run and pass all tests just fine.
 
-3. There are now 5,910 raw tests as reported by `test.data.table()`. Tests cover 91% of the 4k lines of R and 89% of the 7k lines of C. These stats are now known thanks to Jim Hester's [Covr](https://CRAN.R-project.org/package=covr) package and [Codecov.io](https://codecov.io/). If anyone is looking for something to help with, creating tests to hit the missed lines shown by clicking the `R` and `src` folders at the bottom [here](https://codecov.io/github/Rdatatable/data.table?branch=master) would be very much appreciated.
+3. There are now 5,910 raw tests as reported by `test.data.table()`. Tests cover 91% of the 4k lines of R and 89% of the 7k lines of C. These stats are now known thanks to Jim Hester's [Covr](https://CRAN.R-project.org/package=covr) package and [Codecov.io](https://about.codecov.io/). If anyone is looking for something to help with, creating tests to hit the missed lines shown by clicking the `R` and `src` folders at the bottom [here](https://codecov.io/github/Rdatatable/data.table?branch=master) would be very much appreciated.
 
 4. The FAQ vignette has been revised given the changes in v1.9.8. In particular, the very first FAQ.
 

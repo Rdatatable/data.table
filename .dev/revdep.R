@@ -7,6 +7,11 @@ Sys.unsetenv("R_PROFILE_USER")
 # But if we don't unset it now, anything else from now on that does something like system("R CMD INSTALL"), e.g. update.packages()
 # and BiocManager::install(), will call this script again recursively.
 
+# options copied from .dev/.Rprofile that aren't run due to the way this script is started via a profile
+options(help_type="html")
+options(error=quote(dump.frames()))
+options(width=200)      # for cran() output not to wrap
+
 # Check that env variables have been set correctly:
 #   export R_LIBS_SITE=none
 #   export R_LIBS=~/build/revdeplib/
@@ -229,6 +234,24 @@ status = function(bioc=FALSE) {
     # Otherwise, inspect manually each result in fail.log written by log()
   }
   invisible()
+}
+
+cran = function()  # reports CRAN status of the .cran.fail packages
+{
+  if (!length(.fail.cran)) {
+    cat("No CRAN revdeps in error or warning status\n")
+    return(invisible())
+  }
+  require(data.table)
+  p = proc.time()
+  db = setDT(tools::CRAN_check_results())
+  cat("tools::CRAN_check_results() returned",prettyNum(nrow(db), big.mark=","),"rows in",timetaken(p),"\n")
+  rel = unique(db$Flavor)
+  rel = sort(rel[grep("release",rel)])
+  stopifnot(identical(rel, c("r-release-linux-x86_64", "r-release-macos-x86_64", "r-release-windows-ix86+x86_64")))
+  cat("R-release is used for revdep checking so comparing to CRAN results for R-release\n")
+  ans = db[Package %chin% .fail.cran & Flavor %chin% rel, Status, keyby=.(Package, Flavor)]
+  dcast(ans, Package~Flavor, value.var="Status", fill="")[.fail.cran,]
 }
 
 run = function(pkgs=NULL, R_CHECK_FORCE_SUGGESTS=TRUE, choose=NULL) {

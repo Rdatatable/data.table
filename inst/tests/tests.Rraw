@@ -10845,10 +10845,12 @@ TZnotUTC = !identical(tt,"") && !is_utc(tt)
 if (TZnotUTC) {
   # from v1.13.0 these tests work when running under non-UTC because they compare to as.POSIXct which reads these unmarked datetime in local
   # the new tests 2150.* cover more cases
-  test(1743.25, fread("a,b,c\n2015-06-01 11:00:00,1,ae", colClasses=c("POSIXct","integer","character")), data.table(a=as.POSIXct("2015-06-01 11:00:00"),b=1L,c="ae"))
-  test(1743.26, fread("a,b,c,d,e,f,g,h\n1,k,2015-06-01 11:00:00,a,1.5,M,9,0", colClasses=list(POSIXct="c", character="b"), drop=c("a","b"), logical01=TRUE),
+  # from v1.14.0, the tz="" is needed
+  test(1743.25, fread("a,b,c\n2015-06-01 11:00:00,1,ae", colClasses=c("POSIXct","integer","character"), tz=""), 
+                data.table(a=as.POSIXct("2015-06-01 11:00:00"),b=1L,c="ae"))
+  test(1743.26, fread("a,b,c,d,e,f,g,h\n1,k,2015-06-01 11:00:00,a,1.5,M,9,0", colClasses=list(POSIXct="c", character="b"), drop=c("a","b"), logical01=TRUE, tz=""),
               ans<-data.table(c=as.POSIXct("2015-06-01 11:00:00"), d="a", e=1.5, f="M", g=9L, h=FALSE))
-  test(1743.27, fread("a,b,c,d,e,f,g,h\n1,k,2015-06-01 11:00:00,a,1.5,M,9,0", colClasses=list(POSIXct="c", character=2), drop=c("a","b"), logical01=TRUE),
+  test(1743.27, fread("a,b,c,d,e,f,g,h\n1,k,2015-06-01 11:00:00,a,1.5,M,9,0", colClasses=list(POSIXct="c", character=2), drop=c("a","b"), logical01=TRUE, tz=""),
               ans)
 }
 
@@ -14350,7 +14352,7 @@ test(2005.09, set(DT, 1L, "c", expression(x+2)), error="type 'expression' cannot
 test(2005.10, set(DT, 1L, "d", expression(x+2)), error="type 'expression' cannot be coerced to 'logical'")
 test(2005.11, set(DT, 1L, "e", expression(x+2)), error="type 'expression' cannot be coerced to 'double'")
 test(2005.12, set(DT, 1L, "f", expression(x+2)), error="type 'expression' cannot be coerced to 'complex'")
-test(2005.30, DT[2:3,c:=c(TRUE,FALSE), verbose=TRUE]$c, as.raw(INT(7,1,0)),
+test(2005.30, DT[2:3,c:=c(TRUE,FALSE), verbose=3L]$c, as.raw(INT(7,1,0)), ## note verbose=3L for more deeper verbose output due to memrecycle messages when it is being re-used internally #4491
               output="Zero-copy coerce when assigning 'logical' to 'raw' column 3 named 'c'")
 test(2005.31, set(DT,1L,"c",NA)$c, as.raw(INT(0,1,0)))
 test(2005.32, set(DT,1:2,"c",INT(-1,255))$c, as.raw(INT(0,255,0)),
@@ -14386,7 +14388,7 @@ if (test_bit64) {
                 warning="-1.*integer64.*position 1 taken as 0 when assigning.*raw.*column 3 named 'c'")
   test(2005.66, DT[2:3, f:=as.integer64(c(NA,"2147483648"))]$f, as.complex(c(-42,NA,2147483648)))
   DT[,h:=LETTERS[1:3]]
-  test(2005.67, DT[2:3, h:=as.integer64(1:2)], error="To assign integer64 to a character column, please use as.character.")
+  test(2005.67, DT[2:3, h:=as.integer64(1:2)], error="To assign integer64 to.*type character, please use as.character.")
 }
 
 # rbindlist raw type, #2819
@@ -17062,7 +17064,7 @@ test(2150.01, fread(tmp), DT)   # defaults for fwrite/fread simple and preservin
 fwrite(DT, tmp, dateTimeAs='write.csv')  # as write.csv, writes the UTC times as-is not local because the time column has tzone=="UTC", but without the Z marker
 oldtz = Sys.getenv("TZ", unset=NA)
 Sys.unsetenv("TZ")
-test(2150.021, sapply(fread(tmp), typeof), c(dates="integer", times="character"))  # as before v1.13.0, datetime with missing timezone read as character
+test(2150.021, sapply(fread(tmp,tz=""), typeof), c(dates="integer", times="character"))  # from v1.14.0 tz="" needed to read datetime as character
 test(2150.022, fread(tmp,tz="UTC"), DT)  # user can tell fread to interpet the unmarked datetimes as UTC
 Sys.setenv(TZ="UTC")
 test(2150.023, fread(tmp), DT)  # TZ environment variable is also recognized
@@ -17072,7 +17074,7 @@ if (.Platform$OS.type!="windows") {
   # blank TZ env variable on non-Windows is recognized as UTC consistent with C and R; but R's tz= argument is the opposite and uses "" for local
 }
 Sys.unsetenv("TZ")
-tt = fread(tmp, colClasses=list(POSIXct="times"))
+tt = fread(tmp, colClasses=list(POSIXct="times"), tz="")   # from v1.14.0 tz="" needed
 test(2150.025, attr(tt$times, "tzone"), "") # as.POSIXct puts "" on the result (testing the write.csv version here with missing tzone)
 # the times will be different though here because as.POSIXct read them as local time.
 if (is.na(oldtz)) Sys.unsetenv("TZ") else Sys.setenv(TZ=oldtz)
@@ -17098,7 +17100,7 @@ test(2150.11,fread("a,b\n2015-01-01,2015-01-01", colClasses="POSIXct"),  # local
      data.table(a=as.POSIXct("2015-01-01"), b=as.POSIXct("2015-01-01")))
 test(2150.12,fread("a,b\n2015-01-01,2015-01-01", select=c(a="Date",b="POSIXct")),  # select colClasses form, for coverage
      data.table(a=as.Date("2015-01-01"), b=as.POSIXct("2015-01-01")))
-test(2150.13, fread("a,b\n2015-01-01,1.1\n2015-01-02 01:02:03,1.2"), # no Z so as character as before v1.13.0
+test(2150.13, fread("a,b\n2015-01-01,1.1\n2015-01-02 01:02:03,1.2", tz=""), # no Z, tz="" needed for this test from v1.14.0
      if (TZnotUTC) data.table(a=c("2015-01-01","2015-01-02 01:02:03"), b=c(1.1, 1.2))
      else          data.table(a=setattr(c(as.POSIXct("2015-01-01",tz="UTC"), as.POSIXct("2015-01-02 01:02:03",tz="UTC")),"tzone","UTC"), b=c(1.1, 1.2)))
 # some rows are date-only, some rows UTC-timestamp --> read the date-only in UTC too
@@ -17112,9 +17114,9 @@ test(2150.16, fread("a,b,c\n2015-01-01,2015-01-02,2015-01-03 01:02:03", colClass
 ans_print = capture.output(print(ans))
 options(datatable.old.fread.datetime.character=NULL)
 if (TZnotUTC) {
-  test(2150.17, fread("a,b,c\n2015-01-01,2015-01-02,2015-01-03 01:02:03", colClasses=c("Date","IDate","POSIXct")),
+  test(2150.17, fread("a,b,c\n2015-01-01,2015-01-02,2015-01-03 01:02:03", colClasses=c("Date","IDate","POSIXct"), tz=""),
               ans, output=ans_print)
-  test(2150.18, fread("a,b,c\n2015-01-01,2015-01-02,2015-01-03 01:02:03", colClasses=c("Date",NA,NA)),
+  test(2150.18, fread("a,b,c\n2015-01-01,2015-01-02,2015-01-03 01:02:03", colClasses=c("Date",NA,NA), tz=""),
               data.table(a=as.Date("2015-01-01"), b=as.IDate("2015-01-02"), c="2015-01-03 01:02:03"), output=ans_print)
 } else {
   test(2150.19, fread("a,b,c\n2015-01-01,2015-01-02,2015-01-03 01:02:03", colClasses=c("Date","IDate","POSIXct")),
@@ -17245,4 +17247,29 @@ e = environment()
 class(e) = "foo"
 dt = data.table(id=1, funs=list(e))
 test(2161.2, dt[, .(funs), by=id], dt)
+
+# fread message display non-ASCII messages correctly, #4747
+x = "fa\u00e7ile"; Encoding(x) = "UTF-8"
+# should only run this test if the native encoding can represent latin1 correctly
+if (identical(x, enc2native(x))) {
+  txt = enc2utf8(sprintf("A,B\n%s,%s\n%s", x, x, x))
+  txt2 = iconv(txt, "UTF-8", "latin1")
+  out = data.table(A = x, B = x)
+  test(2162.1, fread(text = txt, encoding = 'UTF-8'), out,
+               warning="Discarded single-line footer: <<fa\u00e7ile>>")
+  test(2162.2, fread(text = txt2, encoding = 'Latin-1'), out,
+               warning="Discarded single-line footer: <<fa\u00e7ile>>")
+}
+
+# fintersect now preserves order of first argument like intersect, #4716
+test(2163, fintersect(data.table(x=c("b", "c", "a")), data.table(x=c("a","c")))$x, c("c", "a"))
+
+# mean na.rm=TRUE GForce, #4849
+d = data.table(a=1, b=list(1,2))
+test(2164.1, d[, mean(b), by=a], error="not supported by GForce mean")
+if (test_bit64) {
+  d = data.table(a=INT(1,1,2,2), b=as.integer64(c(2,3,4,NA)))
+  test(2164.2, d[, mean(b), by=a], data.table(a=INT(1,2), V1=c(2.5, NA)))
+  test(2164.3, d[, mean(b, na.rm=TRUE), by=a], data.table(a=INT(1,2), V1=c(2.5, 4)))
+}
 
