@@ -358,7 +358,7 @@ void attribute_visible R_init_datatable(DllInfo *info)
   sym_datatable_locked = install(".data.table.locked");
   sym_tzone = install("tzone");
   sym_old_fread_datetime_character = install("datatable.old.fread.datetime.character");
-  sym_assign_inplace = install("datatable.assign.inplace");
+  sym_assign_inplace = install("allow.assign.inplace");
 
   initDTthreads();
   avoid_openmp_hang_within_fork();

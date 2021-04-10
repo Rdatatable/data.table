@@ -86,8 +86,7 @@
        "datatable.alloccol"="1024L",           # argument 'n' of alloc.col. Over-allocate 1024 spare column slots
        "datatable.auto.index"="TRUE",          # DT[col=="val"] to auto add index so 2nd time faster
        "datatable.use.index"="TRUE",           # global switch to address #1422
-       "datatable.prettyprint.char" = NULL,     # FR #1091
-       "datatable.assign.inplace" = TRUE
+       "datatable.prettyprint.char" = NULL     # FR #1091
        )
   for (i in setdiff(names(opts),names(options()))) {
     eval(parse(text=paste0("options(",i,"=",opts[i],")")))

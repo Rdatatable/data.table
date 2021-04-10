@@ -17280,23 +17280,12 @@ d[1:50, "a"] <- d[51:100, "a"]
 setDT(d)
 test(2164.1, nrow(d[a==99]), as.integer(2))
 
-# In-place assignment can leak to origin DF, #4783
- orig.opt <- options(datatable.assign.inplace=TRUE)
- d <- data.frame(a=c(1,2), b=c(1,2))
- df <- d
- setDT(d)
- d[, a:=c(10, 11)]  # not leaking to df
- test(2164.2, df$a[1], 1)
- d[!is.na(a), b:=c(20,21)]  # leaks to df
- test(2166, df$b[1], 20)
-
-# With option to fix the behaviour:
- options(datatable.assign.inplace=FALSE)
- d <- data.frame(a=c(1,2), b=c(1,2))
- df <- d
- setDT(d)
- d[!is.na(a), b:=c(20, 21)]  # stop the leak to df
- test(2164.3, df$b[1], 1)
+# Fix: In-place assignment can leak to origin DF, #4783
+d <- data.frame(a=c(1,2), b=c(1,2))
+df <- d
+setDT(d)
+d[!is.na(a), b:=c(20, 21)]  # stop the leak to df
+test(2164, df$b[1], 1)
 
  options(orig.opt)
 

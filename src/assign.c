@@ -474,6 +474,10 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
       SET_STRING_ELT(names,oldncol+i,STRING_ELT(newcolnames,i));
     // truelengths of both already set by alloccol
   }
+  
+  SEXP attrib = getAttrib(dt, sym_assign_inplace);
+  Rboolean allow_assign_in_place =  isLogical(attrib) && LENGTH(attrib)==1 && LOGICAL(attrib)[0]==1;
+  
   for (i=0; i<length(cols); i++) {
     coln = INTEGER(cols)[i]-1;
     SEXP thisvalue = RHS_list_of_columns ? VECTOR_ELT(values, i) : values;
@@ -502,9 +506,6 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
       setAttrib(thisvalue, R_DimNamesSymbol, R_NilValue);  // the 3rd of the 3 attribs not copied by copyMostAttrib, for consistency.
       continue;
     }
-
-    SEXP opt = GetOption(sym_assign_inplace, R_NilValue);
-    Rboolean allow_assign_in_place =  isLogical(opt) && LENGTH(opt)==1 && LOGICAL(opt)[0]==1;
 
     if (coln+1 > oldncol) {  // new column
       SET_VECTOR_ELT(dt, coln, targetcol=allocNAVectorLike(thisvalue, nrow));
