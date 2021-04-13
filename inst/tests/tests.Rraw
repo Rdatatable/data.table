@@ -17288,4 +17288,10 @@ test(2165.1, X[Y, on = .(id, id_round > id_round, field), .(x.id_round[1], i.id_
 # Y$id_round happens to be sorted, so in 2165.2 we test Y$field which is not sorted 
 test(2165.2, X[Y, on="field", .(x.id_round[1]), by=.EACHI][field=="health"],
              data.table(field="health", V1=NA_integer_))
+# a minimal example too ...
+X = data.table(A=c(4L,2L,3L), B=1:3, key="A")
+Y = data.table(A=2:1, B=2:3, key=c("B","A"))
+test(2165.3, X[Y],                          data.table(A=2:3, B=2:3, i.A=2:1, key="A"))  # keyed
+test(2165.4, X[Y, on=.(A)],                 data.table(A=2:1, B=c(2L,NA), i.B=2:3))      # no key
+test(2165.5, X[Y, on=.(A), x.B, by=.EACHI], data.table(A=2:1, x.B=c(2L,NA)))             # no key
 
