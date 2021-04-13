@@ -17279,9 +17279,13 @@ X = data.table(id = c(6456372L, 6456372L, 6456372L, 6456372L,6456372L, 6456372L,
                field = c(NA, NA, NA, "medicine", "medicine", "medicine", "medicine", "medicine", "medicine", "medicine", "medicine", "medicine", "medicine", "medicine"),
                key = "id")
 Y = data.table(id = c(6456372L, 6456345L, 6456356L), 
-               id_round = c(197705L, 197905L, 201705L), 
+               id_round = c(197705L, 197905L, 201705L),
                field = c("medicine", "teaching", "health"), 
                prio = c(6L, 1L, 10L),
                key = c("id_round", "id", "prio", "field" ))
-test(2165, X[Y, on = .(id, id_round > id_round, field), .(x.id_round[1], i.id_round[1]), by=.EACHI][id==6456372L],
-           data.table(id=6456372L, id_round=197705L, field='medicine', V1=197901L, V2=197705L, key=c('id_round','id','field')))
+test(2165.1, X[Y, on = .(id, id_round > id_round, field), .(x.id_round[1], i.id_round[1]), by=.EACHI][id==6456372L],
+             data.table(id=6456372L, id_round=197705L, field='medicine', V1=197901L, V2=197705L, key=c('id_round','id','field')))
+# Y$id_round happens to be sorted, so in 2165.2 we test Y$field which is not sorted 
+test(2165.2, X[Y, on="field", .(x.id_round[1]), by=.EACHI][field=="health"],
+             data.table(field="health", V1=NA_integer_))
+
