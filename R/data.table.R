@@ -208,7 +208,7 @@ replace_dot_alias = function(e) {
   if (!with && missing(j)) stop("j must be provided when with=FALSE")
   irows = NULL  # Meaning all rows. We avoid creating 1:nrow(x) for efficiency.
   notjoin = FALSE
-  rightcols = leftcols = byeachi_key_cols = integer()
+  rightcols = leftcols = integer()
   optimizedSubset = FALSE ## flag: tells whether a normal query was optimized into a join.
   ..syms = NULL
   av = NULL
@@ -435,7 +435,6 @@ replace_dot_alias = function(e) {
         # TODO: collect all '==' ops first to speeden up Cnestedid
         rightcols = colnamesInt(x, names(on), check_dups=FALSE)
         leftcols  = colnamesInt(i, unname(on), check_dups=FALSE)
-        if (byjoin && haskey(i))  byeachi_key_cols = chmatch(key(i), unname(on), nomatch = 0L) 
       } else {
         ## missing on
         rightcols = chmatch(key(x), names_x)   # NAs here (i.e. invalid data.table) checked in bmerge()
@@ -444,7 +443,6 @@ replace_dot_alias = function(e) {
         else
           seq_len(min(length(i),length(rightcols)))
         rightcols = head(rightcols,length(leftcols))
-        if (byjoin) byeachi_key_cols = seq_along(rightcols)
         ops = rep(1L, length(leftcols))
       }
       # Implementation for not-join along with by=.EACHI, #604
@@ -1387,7 +1385,8 @@ replace_dot_alias = function(e) {
     byval = i
     bynames = if (missing(on)) head(key(x),length(leftcols)) else names(on)
     allbyvars = NULL
-    bysameorder = haskey(i) || (is.sorted(f__) && ((roll == FALSE) || length(f__) == 1L)) # Fix for #1010
+    bysameorder = (haskey(i) && identical(leftcols, head(match(key(i),names(i)), length(leftcols)))) || # leftcols leading subset of key(i); see #4917
+                  (roll==FALSE && is.sorted(f__)) # roll==FALSE is fix for #1010
     ##  'av' correct here ??  *** TO DO ***
     xjisvars = intersect(av, names_x[rightcols])  # no "x." for xvars.
     # if 'get' is in 'av' use all cols in 'i', fix for bug #34
@@ -1835,9 +1834,6 @@ replace_dot_alias = function(e) {
     setkeyv(ans,names(ans)[seq_along(byval)])
     if (verbose) {cat(timetaken(last.started.at),"\n"); flush.console()}
   } else if (keyby || (haskey(x) && bysameorder && (byjoin || (length(allbyvars) && identical(allbyvars,head(key(x),length(allbyvars))))))) {
-    if (byjoin) 
-      setattr(ans,"sorted", names(ans)[byeachi_key_cols]) ##fix 4603 
-    else 
       setattr(ans,"sorted",names(ans)[seq_along(grpcols)])
   }
   setalloccol(ans)   # TODO: overallocate in dogroups in the first place and remove this line
