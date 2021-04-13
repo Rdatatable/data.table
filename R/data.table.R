@@ -1385,7 +1385,7 @@ replace_dot_alias = function(e) {
     byval = i
     bynames = if (missing(on)) head(key(x),length(leftcols)) else names(on)
     allbyvars = NULL
-    bysameorder = (haskey(i) && identical(leftcols, head(match(key(i),names(i)), length(leftcols)))) || # leftcols leading subset of key(i); see #4917
+    bysameorder = (haskey(i) && identical(leftcols, match(head(key(i),length(leftcols)), names(i)))) || # leftcols leading subset of key(i); see #4917
                   (roll==FALSE && is.sorted(f__)) # roll==FALSE is fix for #1010
     ##  'av' correct here ??  *** TO DO ***
     xjisvars = intersect(av, names_x[rightcols])  # no "x." for xvars.
