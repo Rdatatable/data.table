@@ -24,14 +24,14 @@ data.table=getOption("datatable.fread.datatable", TRUE),
 nThread=getDTthreads(verbose),
 logical01=getOption("datatable.logical01", FALSE),  # due to change to TRUE; see NEWS
 keepLeadingZeros = getOption("datatable.keepLeadingZeros", FALSE),
-yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz=""
+yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC"
 )
 }
 \arguments{
   \item{input}{ A single character string. The value is inspected and deferred to either \code{file=} (if no \\n present), \code{text=} (if at least one \\n is present) or \code{cmd=} (if no \\n is present, at least one space is present, and it isn't a file name). Exactly one of \code{input=}, \code{file=}, \code{text=}, or \code{cmd=} should be used in the same call. }
   \item{file}{ File name in working directory, path to file (passed through \code{\link[base]{path.expand}} for convenience), or a URL starting http://, file://, etc. Compressed files with extension \file{.gz} and \file{.bz2} are supported if the \code{R.utils} package is installed. }
   \item{text}{ The input data itself as a character vector of one or more lines, for example as returned by \code{readLines()}. }
-  \item{cmd}{ A shell command that pre-processes the file; e.g. \code{fread(cmd=paste("grep",word,"filename")}. See Details. }
+  \item{cmd}{ A shell command that pre-processes the file; e.g. \code{fread(cmd=paste("grep",word,"filename"))}. See Details. }
   \item{sep}{ The separator between columns. Defaults to the character in the set \code{[,\\t |;:]} that separates the sample of rows into the most number of lines with the same number of fields. Use \code{NULL} or \code{""} to specify no separator; i.e. each line a single character column like \code{base::readLines} does.}
   \item{sep2}{ The separator \emph{within} columns. A \code{list} column will be returned where each cell is a vector of values. This is much faster using less working memory than \code{strsplit} afterwards or similar techniques. For each column \code{sep2} can be different and is the first character in the same set above [\code{,\\t |;}], other than \code{sep}, that exists inside each field outside quoted regions in the sample. NB: \code{sep2} is not yet implemented. }
   \item{nrows}{ The maximum number of rows to read. Unlike \code{read.table}, you do not need to set this to an estimate of the number of rows in the file for better speed because that is already automatically determined by \code{fread} almost instantly using the large sample of lines. \code{nrows=0} returns the column names and typed empty columns determined by the large sample; useful for a dry run of a large file or to quickly check format consistency of a set of files before starting to read any of them. }
@@ -64,7 +64,7 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz=""
   \item{yaml}{ If \code{TRUE}, \code{fread} will attempt to parse (using \code{\link[yaml]{yaml.load}}) the top of the input as YAML, and further to glean parameters relevant to improving the performance of \code{fread} on the data itself. The entire YAML section is returned as parsed into a \code{list} in the \code{yaml_metadata} attribute. See \code{Details}. }
   \item{autostart}{ Deprecated and ignored with warning. Please use \code{skip} instead. }
   \item{tmpdir}{ Directory to use as the \code{tmpdir} argument for any \code{tempfile} calls, e.g. when the input is a URL or a shell command. The default is \code{tempdir()} which can be controlled by setting \code{TMPDIR} before starting the R session; see \code{\link[base:tempfile]{base::tempdir}}. }
-  \item{tz}{ Relevant to datetime values which have no Z or UTC-offset at the end, i.e. \emph{unmarked} datetime, as written by \code{\link[utils:write.table]{utils::write.csv}}. The default \code{tz=""} means interpet unmarked datetime in the timezone of the R session, for consistency with R's \code{as.POSIXct()} and backwards compatibility. Set \code{tz="UTC"} to read unmarked datetime in UTC. Note that \code{fwrite()} by default writes datetime in UTC including the final Z (i.e. UTC-marked datetime) and \code{fwrite}'s output will be read by \code{fread} consistently and quickly without needing to use \code{tz=} or \code{colClasses=}. If the TZ environment variable is set to \code{"UTC"} (or \code{""} on non-Windows where unset vs `""` is significant) then R's timezone is already UTC, the default \code{tz=""} means UTC, and unmarked datetime will be read as UTC. The TZ environment variable being unset, however, means local time, in both C and R, and is quite different from the TZ environment variable being set to \code{""} on non-Windows which means UTC not local. You can use \code{Sys.setenv(TZ="UTC")}, and \code{Sys.unsetenv("TZ")}, too, and \code{fread} will use the latest value. }
+  \item{tz}{ Relevant to datetime values which have no Z or UTC-offset at the end, i.e. \emph{unmarked} datetime, as written by \code{\link[utils:write.table]{utils::write.csv}}. The default \code{tz="UTC"} reads unmarked datetime as UTC POSIXct efficiently. \code{tz=""} reads unmarked datetime as type character (slowly) so that \code{as.POSIXct} can interpret (slowly) the character datetimes in local timezone; e.g. by using \code{"POSIXct"} in \code{colClasses=}. Note that \code{fwrite()} by default writes datetime in UTC including the final Z and therefore \code{fwrite}'s output will be read by \code{fread} consistently and quickly without needing to use \code{tz=} or \code{colClasses=}. If the \code{TZ} environment variable is set to \code{"UTC"} (or \code{""} on non-Windows where unset vs `""` is significant) then the R session's timezone is already UTC and \code{tz=""} will result in unmarked datetimes being read as UTC POSIXct. For more information, please see the news items from v1.13.0 and v1.14.0. }
 }
 \details{
 
@@ -127,21 +127,20 @@ When \code{input} begins with http://, https://, ftp://, ftps://, or file://, \c
 \references{
 Background :\cr
 \url{https://cran.r-project.org/doc/manuals/R-data.html}\cr
-\url{http://stackoverflow.com/questions/1727772/quickly-reading-very-large-tables-as-dataframes-in-r}\cr
-\url{http://www.biostat.jhsph.edu/~rpeng/docs/R-large-tables.html}\cr
-\url{http://www.cerebralmastication.com/2009/11/loading-big-data-into-r/}\cr
-\url{http://stackoverflow.com/questions/9061736/faster-than-scan-with-rcpp}\cr
-\url{http://stackoverflow.com/questions/415515/how-can-i-read-and-manipulate-csv-file-data-in-c}\cr
-\url{http://stackoverflow.com/questions/9352887/strategies-for-reading-in-csv-files-in-pieces}\cr
-\url{http://stackoverflow.com/questions/11782084/reading-in-large-text-files-in-r}\cr
-\url{http://stackoverflow.com/questions/45972/mmap-vs-reading-blocks}\cr
-\url{http://stackoverflow.com/questions/258091/when-should-i-use-mmap-for-file-access}\cr
-\url{http://stackoverflow.com/a/9818473/403310}\cr
-\url{http://stackoverflow.com/questions/9608950/reading-huge-files-using-memory-mapped-files}
+\url{https://stackoverflow.com/questions/1727772/quickly-reading-very-large-tables-as-dataframes-in-r}\cr
+\url{https://cerebralmastication.com/2009/11/loading-big-data-into-r/}\cr
+\url{https://stackoverflow.com/questions/9061736/faster-than-scan-with-rcpp}\cr
+\url{https://stackoverflow.com/questions/415515/how-can-i-read-and-manipulate-csv-file-data-in-c}\cr
+\url{https://stackoverflow.com/questions/9352887/strategies-for-reading-in-csv-files-in-pieces}\cr
+\url{https://stackoverflow.com/questions/11782084/reading-in-large-text-files-in-r}\cr
+\url{https://stackoverflow.com/questions/45972/mmap-vs-reading-blocks}\cr
+\url{https://stackoverflow.com/questions/258091/when-should-i-use-mmap-for-file-access}\cr
+\url{https://stackoverflow.com/a/9818473/403310}\cr
+\url{https://stackoverflow.com/questions/9608950/reading-huge-files-using-memory-mapped-files}
 
-finagler = "to get or achieve by guile or manipulation" \url{http://dictionary.reference.com/browse/finagler}
+finagler = "to get or achieve by guile or manipulation" \url{https://dictionary.reference.com/browse/finagler}
 
-On YAML, see \url{http://yaml.org/}; on csvy, see \url{http://csvy.org/}.
+On YAML, see \url{https://yaml.org/}; on csvy, see \url{https://csvy.org/}.
 }
 \seealso{
   \code{\link[utils:read.table]{read.csv}}, \code{\link[base:connections]{url}}, \code{\link[base:locales]{Sys.setlocale}}, \code{\link{setDTthreads}}, \code{\link{fwrite}}, \href{https://CRAN.R-project.org/package=bit64}{\code{bit64::integer64}}
@@ -273,9 +272,9 @@ all(mapply(all.equal, DF, DT))
 
 
 # Real data example (Airline data)
-# http://stat-computing.org/dataexpo/2009/the-data.html
+# https://stat-computing.org/dataexpo/2009/the-data.html
 
-download.file("http://stat-computing.org/dataexpo/2009/2008.csv.bz2",
+download.file("https://stat-computing.org/dataexpo/2009/2008.csv.bz2",
               destfile="2008.csv.bz2")
 # 109MB (compressed)
 
@@ -303,10 +302,10 @@ table(sapply(DT,class))
 
 
 # Reads URLs directly :
-fread("http://www.stats.ox.ac.uk/pub/datasets/csb/ch11b.dat")
+fread("https://www.stats.ox.ac.uk/pub/datasets/csb/ch11b.dat")
 
 # Decompresses .gz and .bz2 automatically :
-fread("http://stat-computing.org/dataexpo/2009/1987.csv.bz2")
+fread("https://stat-computing.org/dataexpo/2009/1987.csv.bz2")
 
 }
 }
