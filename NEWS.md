@@ -118,6 +118,8 @@
     `PKG_CPPFLAGS='-Xclang -fopenmp' PKG_LIBS=-lomp R CMD INSTALL data.table_<ver>.tar.gz`
 has a better chance of working on Mac.
 
+5. In v1.12.4, we added support for fractional `stringsAsFactors` in `fread` -- for example, if `stringsAsFactors=.2`, any character column with fewer than 20% unique strings would be cast as `factor`. This is now reflected in `?fread` as well, [#4706](https://github.com/Rdatatable/data.table/issues/4706). Thanks to @markderry for the PR.
+
 
 # data.table [v1.13.0](https://github.com/Rdatatable/data.table/milestone/17?closed=1)  (24 Jul 2020)
 
