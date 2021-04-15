@@ -62,11 +62,12 @@ fintersect = function(x, y, all=FALSE) {
   if (all) {
     x = shallow(x)[, ".seqn" := rowidv(x)]
     y = shallow(y)[, ".seqn" := rowidv(y)]
-    jn.on = c(".seqn",setdiff(names(x),".seqn"))
-    x[y, .SD, .SDcols=setdiff(names(x),".seqn"), nomatch=NULL, on=jn.on]
+    jn.on = c(".seqn",setdiff(names(y),".seqn"))
+    # fixes #4716 by preserving order of 1st (uses y[x] join) argument instead of 2nd (uses x[y] join) 
+    y[x, .SD, .SDcols=setdiff(names(y),".seqn"), nomatch=NULL, on=jn.on]
   } else {
-    z = funique(y)  # fixes #3034. When .. prefix in i= is implemented (TODO), this can be x[funique(..y), on=, multi=]
-    x[z, nomatch=NULL, on=names(x), mult="first"]
+    z = funique(x)  # fixes #3034. When .. prefix in i= is implemented (TODO), this can be x[funique(..y), on=, multi=]
+    y[z, nomatch=NULL, on=names(y), mult="first"]
   }
 }
 

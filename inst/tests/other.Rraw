@@ -10,7 +10,7 @@ if (!"package:data.table" %in% search()) stop("data.table should be already atta
 test = data.table:::test
 INT = data.table:::INT
 
-pkgs = c("ggplot2", "hexbin", "plyr", "caret", "xts", "gdata", "zoo", "nlme", "bit64", "knitr", "plm", "parallel")
+pkgs = c("ggplot2", "hexbin", "plyr", "caret", "xts", "gdata", "zoo", "nlme", "bit64", "knitr", "parallel")
 if (any(duplicated(pkgs))) stop("Packages defined to be loaded for integration tests in 'inst/tests/other.Rraw' contains duplicates.")
 
 is.require = function(pkg) suppressWarnings(suppressMessages(isTRUE(require(pkg, character.only=TRUE, quietly=TRUE, warn.conflicts=FALSE))))
@@ -155,15 +155,6 @@ if (loaded[["knitr"]]) {
   test(11, kable(DT), output="x.*y.*1.*2")
 }
 
-# for plm package
-if (loaded[["plm"]]) {
-  set.seed(45L)
-  x  = data.table(V1=c(1L,2L), V2=LETTERS[1:3], V3=round(rnorm(4),4), V4=1:12)
-  px = pdata.frame(x, index=c("V2", "V4"), drop.index=FALSE, row.names=TRUE)
-  test(12.1, class(as.data.table(px)), class(x))
-  test(12.2, class(setDT(px)), class(x))
-}
-
 if (loaded[["parallel"]]) {
   #1745 and #1727
   if (.Platform$OS.type=="windows") {
@@ -200,7 +191,3 @@ test(14.1, !inherits(res, 'error'))
 res = tryCatch(example('CJ', package='data.table', local=TRUE))
 test(14.2, !inherits(res, 'error'))
 
-
-###################################
-#  Add new tests above this line  #
-###################################

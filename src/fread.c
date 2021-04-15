@@ -2575,7 +2575,7 @@ int freadMain(freadMainArgs _args) {
     if (ch==eof) {
       // whitespace at the end of the file is always skipped ok
     } else {
-      const char *skippedFooter = ch;
+      const char *skippedFooter = ENC2NATIVE(ch);
       // detect if it's a single line footer. Commonly the row count from SQL queries.
       while (ch<eof && *ch!='\n' && *ch!='\r') ch++;
       while (ch<eof && isspace(*ch)) ch++;
