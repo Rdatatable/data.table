@@ -7,25 +7,32 @@
 #include "myomp.h"
 #ifdef DTPY
   #include "py_fread.h"
+  #define ENC2NATIVE(s) (s)
 #else
   #include "freadR.h"
+  extern cetype_t ienc;
+  // R's message functions only take C's char pointer not SEXP, where encoding info can't be stored
+  // so must convert the error message char to native encoding first in order to correctly display in R
+  #define ENC2NATIVE(s) translateChar(mkCharCE(s, ienc))
 #endif
 
 // Ordered hierarchy of types
 typedef enum {
-  NEG = -1,       // dummy to force signed type; sign bit used for out-of-sample type bump management
-  CT_DROP = 0,    // skip column requested by user; it is navigated as a string column with the prevailing quoteRule
-  CT_BOOL8_N,     // int8_t; first enum value must be 1 not 0(=CT_DROP) so that it can be negated to -1.
+  NEG = -1,        // dummy to force signed type; sign bit used for out-of-sample type bump management
+  CT_DROP = 0,     // skip column requested by user; it is navigated as a string column with the prevailing quoteRule
+  CT_BOOL8_N,      // int8_t; first enum value must be 1 not 0(=CT_DROP) so that it can be negated to -1.
   CT_BOOL8_U,
   CT_BOOL8_T,
   CT_BOOL8_L,
-  CT_INT32,       // int32_t
-  CT_INT64,       // int64_t
-  CT_FLOAT64,     // double (64-bit IEEE 754 float)
-  CT_FLOAT64_EXT, // double, with NAN/INF literals
-  CT_FLOAT64_HEX, // double, in hexadecimal format
-  CT_STRING,      // lenOff struct below
-  NUMTYPE         // placeholder for the number of types including drop; used for allocation and loop bounds
+  CT_INT32,        // int32_t
+  CT_INT64,        // int64_t
+  CT_FLOAT64,      // double (64-bit IEEE 754 float)
+  CT_FLOAT64_EXT,  // double, with NAN/INF literals
+  CT_FLOAT64_HEX,  // double, in hexadecimal format
+  CT_ISO8601_DATE, // integer, as read from a date in ISO-8601 format
+  CT_ISO8601_TIME, // double, as read from a timestamp in ISO-8601 time
+  CT_STRING,       // lenOff struct below
+  NUMTYPE          // placeholder for the number of types including drop; used for allocation and loop bounds
 } colType;
 
 extern int8_t typeSize[NUMTYPE];
@@ -138,6 +145,9 @@ typedef struct freadMainArgs
   bool logical01;
 
   bool keepLeadingZeros;
+  
+  // should datetime with no Z or UTZ-offset be read as UTC?
+  bool noTZasUTC;
 
   char _padding[1];
 
