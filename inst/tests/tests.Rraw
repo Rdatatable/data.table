@@ -17319,3 +17319,10 @@ if (identical(text, enc2native(text))) { # ensure native encoding can represent 
 }
 test(2167.3, fwrite(dt, csvfile, encoding="nativ"), error="Argument 'encoding' must be")
 unlink(csvfile)
+
+# check valid trunc.cols=, #4766
+DT = data.table(x = rnorm(10))
+test(2168.01, print(DT, trunc.cols = 5L), error=c("Valid options for trunc.cols are TRUE and FALSE"))
+test(2168.02, print(DT, trunc.cols = NA), error=c("Valid options for trunc.cols are TRUE and FALSE"))
+test(2168.03, print(DT, trunc.cols = "thing"), error=c("Valid options for trunc.cols are TRUE and FALSE"))
+test(2168.04, print(DT, trunc.cols = c(TRUE, FALSE)), error=c("Valid options for trunc.cols are TRUE and FALSE"))
