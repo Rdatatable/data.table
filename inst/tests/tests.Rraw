@@ -16654,17 +16654,17 @@ if (is.na(oldtz)) Sys.unsetenv("TZ") else Sys.setenv(TZ=oldtz)
 # careful to unset because TZ="" means UTC whereas unset TZ means local
 
 # trunc.cols in print.data.table, #4074
-old_width = options("width" = 40)
+old_width = options("width" = 40L)
 # Single row printing (to check issue with losing attributes)
 DT = data.table(a = "aaaaaaaaaaaaa",
                 b = "bbbbbbbbbbbbb",
                 c = "ccccccccccccc",
                 d = "ddddddddddddd")
 test(2125.01,
-     capture.output(print(DT, trunc.cols=TRUE))[3],
+     capture.output(print(DT, trunc.cols=TRUE))[3L],
      "2 variables not shown: [c, d]")
 # Printing with dots
-DT = data.table(a = vector("integer", 102),
+DT = data.table(a = vector("integer", 102L),
                 b = "bbbbbbbbbbbbb",
                 c = "ccccccccccccc",
                 d = c("ddddddddddddd", "d"))
@@ -16696,8 +16696,12 @@ test(2125.03, capture.output(print(DT, trunc.cols=TRUE, row.names=FALSE)),
        "    0 bbbbbbbbbbbbb ccccccccccccc",
        "    0 bbbbbbbbbbbbb ccccccccccccc",
        "1 variable not shown: [d]" ))
-test(2125.04, capture.output(print(DT, trunc.cols=TRUE, class=TRUE))[14],
-     "1 variable not shown: [d <char>]")
+# also testing #4266 -- getting width of row #s register right
+#   TODO: understand why 2 variables truncated here. a,b,c combined have width
+#     _exactly_ 40, but still wraps. If we set options(width=41) it won't truncate.
+#     seems to be an issue with print.default.
+test(2125.04, capture.output(print(DT, trunc.cols=TRUE, class=TRUE))[14L],
+     "2 variables not shown: [c <char>, d <char>]")
 test(2125.05, capture.output(print(DT, trunc.cols=TRUE, class=TRUE, row.names=FALSE))[c(1,14)],
      c("        a             b             c",
        "1 variable not shown: [d <char>]" ))
@@ -16705,8 +16709,8 @@ test(2125.06, capture.output(print(DT, trunc.cols=TRUE, col.names="none"))[c(1,1
      c("  1: 0 bbbbbbbbbbbbb ccccccccccccc",
        "1 variable not shown: [d]" ))
 test(2125.07, capture.output(print(DT, trunc.cols=TRUE, class=TRUE, col.names="none"))[c(1,13)],
-     c("  1: 0 bbbbbbbbbbbbb ccccccccccccc",
-       "1 variable not shown: [d]" ),
+     c("  1: 0 bbbbbbbbbbbbb",
+       "2 variables not shown: [c, d]" ),
      warning = "Column classes will be suppressed when col.names is 'none'")
 options("width" = 20)
 DT = data.table(a = vector("integer", 2),
