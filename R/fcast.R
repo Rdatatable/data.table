@@ -17,8 +17,8 @@ dcast <- function(
   else {
     data_name = deparse(substitute(data))
     ns = tryCatch(getNamespace("reshape2"), error=function(e)
-      stop("The dcast generic in data.table has been passed a ",class(data)[1L],", but data.table::dcast currently only has a method for data.tables. Please confirm your input is a data.table, with setDT(", data_name, ") or as.data.table(", data_name, "). If you intend to use a reshape2::dcast, try installing that package first, but do note that reshape2 is deprecated and you should be migrating your code away from using it."))
-    warning("The dcast generic in data.table has been passed a ", class(data)[1L], " and will attempt to redirect to the reshape2::dcast; please note that reshape2 is deprecated, and this redirection is now deprecated as well. Please do this redirection yourself like reshape2::dcast(", data_name, "). In the next version, this warning will become an error.")
+      stop("The dcast generic in data.table has been passed a ",class(data)[1L],", but data.table::dcast currently only has a method for data.tables. Please confirm your input is a data.table, with setDT(", data_name, ") or as.data.table(", data_name, "). If you intend to use a reshape2::dcast, try installing that package first, but do note that reshape2 is superseded and is no longer actively developed."))
+    warning("The dcast generic in data.table has been passed a ", class(data)[1L], " and will attempt to redirect to the reshape2::dcast; please note that reshape2 is superseded and is no longer actively developed, and this redirection is now deprecated. Please do this redirection yourself like reshape2::dcast(", data_name, "). In the next version, this warning will become an error.")
     ns$dcast(data, formula, fun.aggregate = fun.aggregate, ..., margins = margins,
              subset = subset, fill = fill, value.var = value.var)
   }
@@ -39,12 +39,13 @@ check_formula = function(formula, varnames, valnames) {
 
 deparse_formula = function(expr, varnames, allvars) {
   lvars = lapply(expr, function(this) {
-    if (this %iscall% '+') {
-      unlist(deparse_formula(as.list(this)[-1L], varnames, allvars))
-    } else if (is.name(this) && this==quote(`...`)) {
+    if (!is.language(this)) return(NULL)
+    if (this %iscall% '+') return(unlist(deparse_formula(this[-1L], varnames, allvars)))
+    if (is.name(this) && this == quote(`...`)) {
       subvars = setdiff(varnames, allvars)
-      lapply(subvars, as.name)
-    } else this
+      return(lapply(subvars, as.name))
+    }
+    this
   })
   lvars = lapply(lvars, function(x) if (length(x) && !is.list(x)) list(x) else x)
 }
