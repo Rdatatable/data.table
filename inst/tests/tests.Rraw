@@ -17317,4 +17317,5 @@ if (identical(text, enc2native(text))) { # ensure native encoding can represent 
   fwrite(dt, csvfile, encoding = "native")
   test(2167.2, fread(csvfile), dt2)
 }
+test(2167.3, fwrite(dt, csvfile, encoding="nativ"), error="Argument 'encoding' must be")
 unlink(csvfile)
