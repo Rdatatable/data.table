@@ -59,7 +59,7 @@
     if (class(ss)[1L]!="{") ss = as.call(c(as.name("{"), ss))
     if (!length(grep("data.table", ss[[2L]], fixed = TRUE))) {
       ss = ss[c(1L, NA, 2L:length(ss))]
-      ss[[2L]] = parse(text=paste0("for (x in list(...)) { if (inherits(x,'data.table')) return(",prefix,".rbind.data.table(...)) }"))[[1L]] # fix for #4995
+      ss[[2L]] = parse(text=paste0("for (x in list(...)) { if (inherits(x,'data.table')) return(",prefix,".rbind.data.table(...)) }"))[[1L]] # fix for #89
       body(tt)=ss
       (unlockBinding)("rbind.data.frame",baseenv())
       assign("rbind.data.frame",tt,envir=asNamespace("base"),inherits=FALSE)
@@ -86,8 +86,7 @@
        "datatable.alloccol"="1024L",           # argument 'n' of alloc.col. Over-allocate 1024 spare column slots
        "datatable.auto.index"="TRUE",          # DT[col=="val"] to auto add index so 2nd time faster
        "datatable.use.index"="TRUE",           # global switch to address #1422
-       "datatable.prettyprint.char" = NULL,     # FR #1091
-       "datatable.old.unique.by.key" = "FALSE"  # TODO: remove in May 2020
+       "datatable.prettyprint.char" = NULL     # FR #1091
        )
   for (i in setdiff(names(opts),names(options()))) {
     eval(parse(text=paste0("options(",i,"=",opts[i],")")))
@@ -95,6 +94,8 @@
 
   if (!is.null(getOption("datatable.old.bywithoutby")))
     warning("Option 'datatable.old.bywithoutby' has been removed as warned for 2 years. It is now ignored. Please use by=.EACHI instead and stop using this option.")
+  if (!is.null(getOption("datatable.old.unique.by.key")))
+    warning("Option 'datatable.old.unique.by.key' has been removed as warned for 4 years. It is now ignored. Please use by=key(DT) instead and stop using this option.")
 
   # Test R behaviour that changed in v3.1 and is now depended on
   x = 1L:3L

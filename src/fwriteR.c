@@ -5,18 +5,23 @@
 #define DATETIMEAS_EPOCH     2
 #define DATETIMEAS_WRITECSV  3
 
+static bool utf8=false;
+static bool native=false;
+#define TO_UTF8(s) (utf8 && NEED2UTF8(s))
+#define TO_NATIVE(s) (native && (s)!=NA_STRING && !IS_ASCII(s))
+#define ENCODED_CHAR(s) (TO_UTF8(s) ? translateCharUTF8(s) : (TO_NATIVE(s) ? translateChar(s) : CHAR(s)))
+
 static char sep2;                // '\0' if there are no list columns. Otherwise, the within-column separator.
 static bool logical01=true;      // should logicals be written as 0|1 or true|false. Needed by list column writer too in case a cell is a logical vector.
 static int dateTimeAs=0;         // 0=ISO(yyyy-mm-dd), 1=squash(yyyymmdd), 2=epoch, 3=write.csv
 static const char *sep2start, *sep2end;
 // sep2 is in main fwrite.c so that writeString can quote other fields if sep2 is present in them
 // if there are no list columns, set sep2=='\0'
-
 // Non-agnostic helpers ...
 
 const char *getString(SEXP *col, int64_t row) {   // TODO: inline for use in fwrite.c
   SEXP x = col[row];
-  return x==NA_STRING ? NULL : CHAR(x);
+  return x==NA_STRING ? NULL : ENCODED_CHAR(x);
 }
 
 int getStringLen(SEXP *col, int64_t row) {
@@ -26,7 +31,7 @@ int getStringLen(SEXP *col, int64_t row) {
 int getMaxStringLen(const SEXP *col, const int64_t n) {
   int max=0;
   SEXP last=NULL;
-  for (int i=0; i<n; ++i) {
+  for (int64_t i=0; i<n; ++i) {
     SEXP this = *col++;
     if (this==last) continue; // no point calling LENGTH() again on the same string; LENGTH is unlikely as fast as single pointer compare
     int thisnchar = LENGTH(this);
@@ -45,7 +50,7 @@ int getMaxCategLen(SEXP col) {
 const char *getCategString(SEXP col, int64_t row) {
   // the only writer that needs to have the header of the SEXP column, to get to the levels
   int x = INTEGER(col)[row];
-  return x==NA_INTEGER ? NULL : CHAR(STRING_ELT(getAttrib(col, R_LevelsSymbol), x-1));
+  return x==NA_INTEGER ? NULL : ENCODED_CHAR(STRING_ELT(getAttrib(col, R_LevelsSymbol), x-1));
 }
 
 writer_fun_t funs[] = {
@@ -76,7 +81,7 @@ void writeList(SEXP *col, int64_t row, char **pch) {
   }
   char *ch = *pch;
   write_chars(sep2start, &ch);
-  void *data = (void *)DATAPTR(v);
+  const void *data = DATAPTR_RO(v);
   writer_fun_t fun = funs[wf];
   for (int j=0; j<LENGTH(v); j++) {
     (*fun)(data, j, &ch);
@@ -90,17 +95,17 @@ void writeList(SEXP *col, int64_t row, char **pch) {
 int getMaxListItemLen(const SEXP *col, const int64_t n) {
   int max=0;
   SEXP last=NULL;
-  for (int i=0; i<n; ++i) {
+  for (int64_t i=0; i<n; ++i) {
     SEXP this = *col++;
     if (this==last) continue; // no point calling LENGTH() again on the same string; LENGTH is unlikely as fast as single pointer compare
     int32_t wf = whichWriter(this);
     if (TYPEOF(this)==VECSXP || wf==INT32_MIN || isFactor(this)) {
-      error(_("Row %d of list column is type '%s' - not yet implemented. fwrite() can write list columns containing items which are atomic vectors of type logical, integer, integer64, double, complex and character."),
+      error(_("Row %"PRId64" of list column is type '%s' - not yet implemented. fwrite() can write list columns containing items which are atomic vectors of type logical, integer, integer64, double, complex and character."),
             i+1, isFactor(this) ? "factor" : type2char(TYPEOF(this)));
     }
     int width = writerMaxLen[wf];
     if (width==0) {
-      if (wf!=WF_String) STOP(_("Internal error: row %d of list column has no max length method implemented"), i+1); // # nocov
+      if (wf!=WF_String) STOP(_("Internal error: row %"PRId64" of list column has no max length method implemented"), i+1); // # nocov
       const int l = LENGTH(this);
       for (int j=0; j<l; ++j) width+=LENGTH(STRING_ELT(this, j));
     } else {
@@ -164,11 +169,13 @@ SEXP fwriteR(
   SEXP is_gzip_Arg,
   SEXP bom_Arg,
   SEXP yaml_Arg,
-  SEXP verbose_Arg
+  SEXP verbose_Arg,
+  SEXP encoding_Arg
   )
 {
   if (!isNewList(DF)) error(_("fwrite must be passed an object of type list; e.g. data.frame, data.table"));
-  fwriteMainArgs args;
+  
+  fwriteMainArgs args = {0};  // {0} to quieten valgrind's uninitialized, #4639
   args.is_gzip = LOGICAL(is_gzip_Arg)[0];
   args.bom = LOGICAL(bom_Arg)[0];
   args.yaml = CHAR(STRING_ELT(yaml_Arg, 0));
@@ -209,12 +216,10 @@ SEXP fwriteR(
     }
   }
 
-  // allocate new `columns` vector. Although this could be DATAPTR(DFcoerced) directly, it can't
-  // because there's an offset on each column that points to (DATAPTR for each column) which fread.c
-  // would need to know. Rather than have the complication of a new offset variable, we just alloc a
-  // new vetcors of pointers directly. It won't make a difference to speed because only this new
-  // vector need be used by fread.c.  It just uses a tiny bit more memory (ncol * 8 bytes).
-  args.columns = (void *)R_alloc(args.ncol, sizeof(SEXP));
+  // allocate new `columns` vector and fetch the DATAPTR_RO() offset once up front here to reduce the complexity
+  // in fread.c needing to know about the size of R's header, or calling R API. It won't be slower because only
+  // this new vector of pointers is used by fread.c, but it does use a tiny bit more memory (ncol * 8 bytes).
+  args.columns = (void *)R_alloc(args.ncol, sizeof(const void *));
 
   args.funs = funs;  // funs declared statically at the top of this file
 
@@ -226,23 +231,26 @@ SEXP fwriteR(
   dateTimeAs = INTEGER(dateTimeAs_Arg)[0];
   logical01 = LOGICAL(logical01_Arg)[0];
   args.scipen = INTEGER(scipen_Arg)[0];
+  utf8 = !strcmp(CHAR(STRING_ELT(encoding_Arg, 0)), "UTF-8");
+  native = !strcmp(CHAR(STRING_ELT(encoding_Arg, 0)), "native");
 
   int firstListColumn = 0;
   for (int j=0; j<args.ncol; j++) {
     SEXP column = VECTOR_ELT(DFcoerced, j);
-    if (args.nrow != length(column))
-      error(_("Column %d's length (%d) is not the same as column 1's length (%d)"), j+1, length(column), args.nrow);
+    if (args.nrow != length(column)) {
+      error(_("Column %d's length (%d) is not the same as column 1's length (%"PRId64")"), j+1, length(column), args.nrow);
+    }
     int32_t wf = whichWriter(column);
     if (wf<0) {
       error(_("Column %d's type is '%s' - not yet implemented in fwrite."), j+1, type2char(TYPEOF(column)));
     }
-    args.columns[j] = (wf==WF_CategString ? column : (void *)DATAPTR(column));
+    args.columns[j] = (wf==WF_CategString ? column : DATAPTR_RO(column));
     args.whichFun[j] = (uint8_t)wf;
     if (TYPEOF(column)==VECSXP && firstListColumn==0) firstListColumn = j+1;
   }
 
   SEXP cn = getAttrib(DF, R_NamesSymbol);
-  args.colNames = (LOGICAL(colNames_Arg)[0] && isString(cn)) ? (void *)DATAPTR(cn) : NULL;
+  args.colNames = (LOGICAL(colNames_Arg)[0] && isString(cn)) ? DATAPTR_RO(cn) : NULL;
 
   // user may want row names even when they don't exist (implied row numbers as row names)
   // so we need a separate boolean flag as well as the row names should they exist (rare)
@@ -251,7 +259,7 @@ SEXP fwriteR(
   if (args.doRowNames) {
     SEXP rn = PROTECT(getAttrib(DF, R_RowNamesSymbol));
     protecti++;
-    args.rowNames = isString(rn) ? (void *)DATAPTR(rn) : NULL;
+    args.rowNames = isString(rn) ? DATAPTR_RO(rn) : NULL;
   }
 
   args.sep = *CHAR(STRING_ELT(sep_Arg, 0));  // DO NOT DO: allow multichar separator (bad idea)

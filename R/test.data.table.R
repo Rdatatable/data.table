@@ -23,8 +23,11 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
     scripts = dir(fulldir, "*.Rraw.*")
     scripts = scripts[!grepl("bench|other", scripts)]
     scripts = gsub("[.]bz2$","",scripts)
-    for (fn in scripts) {test.data.table(script=fn, verbose=verbose, pkg=pkg, silent=silent, showProgress=showProgress); cat("\n");}
-    return(invisible())
+    return(sapply(scripts, function(fn) {
+      err = try(test.data.table(script=fn, verbose=verbose, pkg=pkg, silent=silent, showProgress=showProgress))
+      cat("\n");
+      identical(err, TRUE)
+    }))
     # nocov end
   }
 
@@ -50,11 +53,13 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
   }
   fn = setNames(file.path(fulldir, fn), file.path(subdir, fn))
 
+  # These environment variables are restored to their previous state (including not defined) after sourcing test script
+  oldEnv = Sys.getenv(c("_R_CHECK_LENGTH_1_LOGIC2_", "TZ"), unset=NA_character_)
   # From R 3.6.0 onwards, we can check that && and || are using only length-1 logicals (in the test suite)
   # rather than relying on x && y being equivalent to x[[1L]] && y[[1L]]  silently.
-  orig__R_CHECK_LENGTH_1_LOGIC2_ = Sys.getenv("_R_CHECK_LENGTH_1_LOGIC2_", unset = NA_character_)
   Sys.setenv("_R_CHECK_LENGTH_1_LOGIC2_" = TRUE)
-  # This environment variable is restored to its previous state (including not defined) after sourcing test script
+  # TZ is not changed here so that tests run under the user's timezone. But we save and restore it here anyway just in case
+  # the test script stops early during a test that changes TZ (e.g. 2124 referred to in PR #4464).
 
   oldRNG = suppressWarnings(RNGversion("3.5.0"))
   # sample method changed in R 3.6 to remove bias; see #3431 for links and notes
@@ -75,12 +80,14 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
     datatable.optimize = Inf,
     datatable.alloccol = 1024L,
     datatable.print.class = FALSE,  # this is TRUE in cc.R and we like TRUE. But output= tests need to be updated (they assume FALSE currently)
+    datatable.print.trunc.cols = FALSE, #4552
     datatable.rbindlist.check = NULL,
     datatable.integer64 = "integer64",
     warnPartialMatchArgs = base::getRversion()>="3.6.0", # ensure we don't rely on partial argument matching in internal code, #3664; >=3.6.0 for #3865
     warnPartialMatchAttr = TRUE,
     warnPartialMatchDollar = TRUE,
-    width = max(getOption('width'), 80L) # some tests (e.g. 1066, 1293) rely on capturing output that will be garbled with small width
+    width = max(getOption('width'), 80L), # some tests (e.g. 1066, 1293) rely on capturing output that will be garbled with small width
+    datatable.old.fread.datetime.character = FALSE
   )
 
   cat("getDTthreads(verbose=TRUE):\n")         # for tracing on CRAN; output to log before anything is attempted
@@ -114,10 +121,11 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
   err = try(sys.source(fn, envir=env), silent=silent)
 
   options(oldOptions)
-  if (is.na(orig__R_CHECK_LENGTH_1_LOGIC2_)) {
-    Sys.unsetenv("_R_CHECK_LENGTH_1_LOGIC2_")
-  } else {
-    Sys.setenv("_R_CHECK_LENGTH_1_LOGIC2_" = orig__R_CHECK_LENGTH_1_LOGIC2_) # nocov
+  for (i in oldEnv) {
+    if (is.na(oldEnv[i]))
+      Sys.unsetenv(names(oldEnv)[i])
+    else
+      do.call("Sys.setenv", as.list(oldEnv[i])) # nocov
   }
   # Sys.setlocale("LC_CTYPE", oldlocale)
   suppressWarnings(do.call("RNGkind",as.list(oldRNG)))
@@ -128,14 +136,18 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
   # of those 13 line and give a better chance of seeing more of the output before it. Having said that, CRAN
   # does show the full file output these days, so the 13 line limit no longer bites so much. It still bit recently
   # when receiving output of R CMD check sent over email, though.
+  tz = Sys.getenv("TZ", unset=NA)
   cat("\n", date(),   # so we can tell exactly when these tests ran on CRAN to double-check the result is up to date
     "  endian==", .Platform$endian,
     ", sizeof(long double)==", .Machine$sizeof.longdouble,
+    ", longdouble.digits==", .Machine$longdouble.digits, # 64 normally, 53 for example under valgrind where some high accuracy tests need turning off, #4639
     ", sizeof(pointer)==", .Machine$sizeof.pointer,
-    ", TZ=", suppressWarnings(Sys.timezone()),
-    ", locale='", Sys.getlocale(), "'",
-    ", l10n_info()='", paste0(names(l10n_info()), "=", l10n_info(), collapse="; "), "'",
-    ", getDTthreads()='", paste0(gsub("[ ][ ]+","==",gsub("^[ ]+","",capture.output(invisible(getDTthreads(verbose=TRUE))))), collapse="; "), "'",
+    ", TZ==", if (is.na(tz)) "unset" else paste0("'",tz,"'"),
+    ", Sys.timezone()=='", suppressWarnings(Sys.timezone()), "'",
+    ", Sys.getlocale()=='", Sys.getlocale(), "'",
+    ", l10n_info()=='", paste0(names(l10n_info()), "=", l10n_info(), collapse="; "), "'",
+    ", getDTthreads()=='", paste0(gsub("[ ][ ]+","==",gsub("^[ ]+","",capture.output(invisible(getDTthreads(verbose=TRUE))))), collapse="; "), "'",
+    ", ", .Call(Cdt_zlib_version),
     "\n", sep="")
 
   if (inherits(err,"try-error")) {
@@ -165,7 +177,7 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
   cat("10 longest running tests took ", as.integer(tt<-DT[, sum(time)]), "s (", as.integer(100*tt/(ss<-timings[,sum(time)])), "% of ", as.integer(ss), "s)\n", sep="")
   print(DT, class=FALSE)
 
-  cat("All ",ntest," tests in ",names(fn)," completed ok in ",timetaken(env$started.at),"\n",sep="")
+  cat("All ",ntest," tests (last ",env$prevtest,") in ",names(fn)," completed ok in ",timetaken(env$started.at),"\n",sep="")
 
   ## this chunk requires to include new suggested deps: graphics, grDevices
   #memtest.plot = function(.inittime) {
@@ -235,7 +247,7 @@ gc_mem = function() {
   # nocov end
 }
 
-test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,notOutput=NULL) {
+test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,notOutput=NULL,ignore.warning=NULL) {
   # Usage:
   # i) tests that x equals y when both x and y are supplied, the most common usage
   # ii) tests that x is TRUE when y isn't supplied
@@ -338,6 +350,12 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
   if (!fail) for (type in c("warning","error","message")) {
     observed = actual[[type]]
     expected = get(type)
+    if (type=="warning" && length(observed) && !is.null(ignore.warning)) {
+      # if a warning containing this string occurs, ignore it. First need for #4182 where warning about 'timedatectl' only
+      # occurs in R 3.4, and maybe only on docker too not for users running test.data.table().
+      stopifnot(length(ignore.warning)==1L, is.character(ignore.warning), !is.na(ignore.warning), nchar(ignore.warning)>=1L)
+      observed = grep(ignore.warning, observed, value=TRUE, invert=TRUE)
+    }
     if (length(expected) != length(observed)) {
       # nocov start
       cat("Test ",numStr," produced ",length(observed)," ",type,"s but expected ",length(expected),"\n",sep="")
@@ -407,7 +425,8 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
         setattr(xc,"index",NULL)   # too onerous to create test RHS with the correct index as well, just check result
         setattr(yc,"index",NULL)
         if (identical(xc,yc) && identical(key(x),key(y))) return(invisible(TRUE))  # check key on original x and y because := above might have cleared it on xc or yc
-        if (isTRUE(all.equal.result<-all.equal(xc,yc)) && identical(key(x),key(y)) &&
+        if (isTRUE(all.equal.result<-all.equal(xc,yc,check.environment=FALSE)) && identical(key(x),key(y)) &&
+                                                     # ^^ to pass tests 2022.[1-4] in R-devel from 5 Dec 2020, #4835
           identical(vapply_1c(xc,typeof), vapply_1c(yc,typeof))) return(invisible(TRUE))
       }
     }
