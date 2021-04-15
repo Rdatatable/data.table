@@ -13184,7 +13184,7 @@ test(1948.09, DT[i, on = eval(eval("id<=idi"))], DT[i, on = "id<=idi"])
 test(1948.10, DT[i, on = ""], error = "'on' contains no column name: . Each 'on' clause must contain one or two column names.")
 test(1948.11, DT[i, on = "id>=idi>=1"], error = "Found more than one operator in one 'on' statement: id>=idi>=1. Please specify a single operator.")
 test(1948.12, DT[i, on = "`id``idi`<=id"], error = "'on' contains more than 2 column names: `id``idi`<=id. Each 'on' clause must contain one or two column names.")
-test(1948.13, DT[i, on = "id != idi"], error = "Invalid operators !=. Only allowed operators are ==<=<>=>.")
+test(1948.13, DT[i, on = "id != idi"], error = "Invalid join operators [!=]. Only allowed operators are [==, <=, <, >=, >].")
 test(1948.14, DT[i, on = 1L], error = "'on' argument should be a named atomic vector of column names indicating which columns in 'i' should be joined with which columns in 'x'.")
 
 # helpful error when on= is provided but not i, rather than silently ignoring on=
