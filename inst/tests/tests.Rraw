@@ -17295,3 +17295,6 @@ test(2165.3, X[Y],                          data.table(A=2:3, B=2:3, i.A=2:1, ke
 test(2165.4, X[Y, on=.(A)],                 data.table(A=2:1, B=c(2L,NA), i.B=2:3))      # no key
 test(2165.5, X[Y, on=.(A), x.B, by=.EACHI], data.table(A=2:1, x.B=c(2L,NA)))             # no key
 
+# missing j was caught in groupingsets but not cube, leading to unexpected error message, #4282
+DT = data.table(a=1)
+test(2166, cube(DT, by='a'), error="Argument 'j' is required")
