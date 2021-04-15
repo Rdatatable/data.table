@@ -17302,3 +17302,20 @@ test(2165.5, X[Y, on=.(A), x.B, by=.EACHI], data.table(A=2:1, x.B=c(2L,NA)))    
 # missing j was caught in groupingsets but not cube, leading to unexpected error message, #4282
 DT = data.table(a=1)
 test(2166, cube(DT, by='a'), error="Argument 'j' is required")
+
+# fwrite support encoding "native" and "UTF-8", #1770
+latin1 = "fa\xE7ile"
+Encoding(latin1) = "latin1"
+utf8 = iconv(latin1, "latin1", "UTF-8")
+text = c(latin1, utf8, "aaaaaaaa")
+dt = data.table(A = text, B = as.factor(text))
+dt2 = data.table(A = text, B = text)
+csvfile = tempfile(fileext = ".csv")
+fwrite(dt, csvfile, encoding = "UTF-8", bom = TRUE)
+test(2167.1, fread(csvfile, encoding = "UTF-8"), dt2)
+if (identical(text, enc2native(text))) { # ensure native encoding can represent latin1 strings
+  fwrite(dt, csvfile, encoding = "native")
+  test(2167.2, fread(csvfile), dt2)
+}
+test(2167.3, fwrite(dt, csvfile, encoding="nativ"), error="Argument 'encoding' must be")
+unlink(csvfile)
