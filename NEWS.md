@@ -18,7 +18,7 @@
 
 2. `print(DT, trunc.cols=TRUE)` and the corresponding `datatable.print.trunc.cols` option (new feature 3 in v1.13.0) could display an extra `diff.prev` column, [#4266](https://github.com/Rdatatable/data.table/issues/4266). Thanks to @tdhock for the PR.
 
-3. According to documentation of `fread`, using it with parameter `nrows=0` returns the column names and typed empty columns determined by the large sample. However, this only worked for `0` and was treating `0L` like `nrows=Inf`. Thanks to @hongyuanjia for pointing this out and thanks to Benjamin Schwendinger for fixing it.
+3. `fread(..., nrows=0L)` now works as intended and the same as `nrows=0`; i.e. returning the column names and typed empty columns determined by the large sample, [#4686](https://github.com/Rdatatable/data.table/issues/4686). Thanks to @hongyuanjia for reporting, and Benjamin Schwendinger for the PR.
 
 ## NOTES
 
