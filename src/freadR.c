@@ -32,7 +32,7 @@ static SEXP selectSxp;
 static SEXP dropSxp;
 static SEXP colClassesSxp;
 static bool selectColClasses = false;
-static cetype_t ienc = CE_NATIVE;
+cetype_t ienc = CE_NATIVE;
 static SEXP RCHK;
 static SEXP DT;
 static SEXP colNamesSxp;
