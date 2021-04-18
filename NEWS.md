@@ -10,11 +10,17 @@
 
 2. `mean(na.rm=TRUE)` by group is now GForce optimized, [#4849](https://github.com/Rdatatable/data.table/issues/4849). Thanks to the [h2oai/db-benchmark](https://github.com/h2oai/db-benchmark) project for spotting this issue. The 1 billion row example in the issue shows 48s reduced to 14s. The optimization also applies to type `integer64` resulting in a difference to the `bit64::mean.integer64` method: `data.table` returns a `double` result whereas `bit64` rounds the mean to the nearest integer.
 
+3. `fwrite()` now writes UTF-8 or native csv files by specifying the `encoding=` argument, [#1770](https://github.com/Rdatatable/data.table/pull/1770). Thanks to @shrektan for the request and the PR.
+
 ## BUG FIXES
 
 1. `by=.EACHI` when `i` is keyed but `on=` different columns than `i`'s key could create an invalidly keyed result, [#4603](https://github.com/Rdatatable/data.table/issues/4603) [#4911](https://github.com/Rdatatable/data.table/issues/4911). Thanks to @myoung3 and @adamaltmejd for reporting, and @ColeMiller1 for the PR. An invalid key is where a `data.table` is marked as sorted by the key columns but the data is not sorted by those columns, leading to incorrect results from subsequent queries.
 
-2. When `j` returns an object whose class inherits from `data.table`, e.g. your own class `"myclass"` you have defined, or the class from package `X` whose class is `c("X", "data.table", "data.frame")`, the derived class (`"myclass"` or `"X"` in those examples) is no longer incorrectly dropped from the class of the `data.table` returned, [#4324](https://github.com/Rdatatable/data.table/issues/4324). Thanks to @HJAllen for reporting and @shrektan for the PR.
+2. `print(DT, trunc.cols=TRUE)` and the corresponding `datatable.print.trunc.cols` option (new feature 3 in v1.13.0) could display an extra `diff.prev` column, [#4266](https://github.com/Rdatatable/data.table/issues/4266). Thanks to @tdhock for the PR.
+
+3. `fread(..., nrows=0L)` now works as intended and the same as `nrows=0`; i.e. returning the column names and typed empty columns determined by the large sample, [#4686](https://github.com/Rdatatable/data.table/issues/4686). Thanks to @hongyuanjia for reporting, and Benjamin Schwendinger for the PR.
+
+4. When `j` returns an object whose class inherits from `data.table`, e.g. your own class `"myclass"` you have defined, or the class from package `X` whose class is `c("X", "data.table", "data.frame")`, the derived class (`"myclass"` or `"X"` in those examples) is no longer incorrectly dropped from the class of the `data.table` returned, [#4324](https://github.com/Rdatatable/data.table/issues/4324). Thanks to @HJAllen for reporting and @shrektan for the PR.
 
 ## NOTES
 
@@ -31,6 +37,8 @@
 2. `CsubsetDT` exported C function has been renamed to `DT_subsetDT`. This requires `R_GetCCallable("data.table", "CsubsetDT")` to be updated to `R_GetCCallable("data.table", "DT_subsetDT")`. Additionally there is now a dedicated header file for data.table C exports `include/datatableAPI.h`, [#4643](https://github.com/Rdatatable/data.table/issues/4643), thanks to @eddelbuettel, which makes it easier to _import_ data.table C functions.
 
 3. In v1.12.4, fractional `fread(..., stringsAsFactors=)` was added. For example if `stringsAsFactors=0.2`, any character column with fewer than 20% unique strings would be cast as `factor`. This is now documented in `?fread` as well, [#4706](https://github.com/Rdatatable/data.table/issues/4706). Thanks to @markderry for the PR.
+
+4. `cube(DT, by="a")` now gives a more helpful error that `j` is missing, [#4282](https://github.com/Rdatatable/data.table/pull/4282).
 
 
 # data.table [v1.14.0](https://github.com/Rdatatable/data.table/milestone/23?closed=1)  (21 Feb 2021)
