@@ -17129,8 +17129,8 @@ test(2152, copy(y), y)
 
 # setcolorder with new arguments before and after, #4358
 DT = data.table(a=1, b=2, c=3)
-test(2153.1, setcolorder(DT, "a", after="c"), data.table(b=2, c=3, a=1))
-test(2153.2, setcolorder(DT, "a", before="b"), data.table(a=1, b=2, c=3))
-test(2153.3, setcolorder(DT, 1, after=3), data.table(b=2, c=3, a=1))
-test(2153.4, setcolorder(DT, 3, before=1), data.table(a=1, b=2, c=3))
-test(2153.5, setcolorder(DT, 1, before=1, after=1), error="Provide either before= or after= or none but not both.")
+test(2169.1, setcolorder(DT, "a", after="c"), data.table(b=2, c=3, a=1))
+test(2169.2, setcolorder(DT, "a", before="b"), data.table(a=1, b=2, c=3))
+test(2169.3, setcolorder(DT, 1, after=3), data.table(b=2, c=3, a=1))
+test(2169.4, setcolorder(DT, 3, before=1), data.table(a=1, b=2, c=3))
+test(2169.5, setcolorder(DT, 1, before=1, after=1), error="Provide either before= or after= or none but not both.")
