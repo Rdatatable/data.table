@@ -17329,3 +17329,15 @@ test(2168.01, print(DT, trunc.cols = 5L), error=c("Valid options for trunc.cols 
 test(2168.02, print(DT, trunc.cols = NA), error=c("Valid options for trunc.cols are TRUE and FALSE"))
 test(2168.03, print(DT, trunc.cols = "thing"), error=c("Valid options for trunc.cols are TRUE and FALSE"))
 test(2168.04, print(DT, trunc.cols = c(TRUE, FALSE)), error=c("Valid options for trunc.cols are TRUE and FALSE"))
+
+# check fwrite output using new default separator option
+DT = data.table(a=1, b=2)
+options(datatable.fwrite.sep='\t')
+ans = 'a\tb\n1\t2'
+test(2169.01, fwrite(DT), output=ans)
+options(datatable.fwrite.sep=';')
+ans = 'a;b\n1;2'
+test(2169.02, fwrite(DT), output=ans)
+options(datatable.fwrite.sep=NULL)
+ans = 'a,b\n1,2'
+test(2169.03, fwrite(DT), output=ans)
