@@ -151,8 +151,7 @@ S3method("+", IDate)
 S3method("-", IDate)
 S3method(as.character, ITime)
 S3method(as.data.frame, ITime)
-S3method(as.Date, IDate)   # note that zoo::as.Date masks base::as.Date. Both generic.
-export(as.Date.IDate)      # workaround for zoo bug, see #1500. Removing this export causes CI pipeline to fail on others.Rraw test 6, but I can't reproduce locally.
+S3method(as.Date, IDate)   # note that base::as.Date is masked by zoo::as.Date, #1500 #4777
 S3method(as.IDate, Date)
 S3method(as.IDate, POSIXct)
 S3method(as.IDate, default)
@@ -186,11 +185,4 @@ S3method(unique, IDate)
 S3method(unique, ITime)
 S3method('[<-', IDate)
 S3method(edit, data.table)
-
-# duplist
-# getdots
-# NCOL
-# NROW
-# which.first
-# which.last
 
