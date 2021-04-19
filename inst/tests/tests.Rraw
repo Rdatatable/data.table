@@ -17329,3 +17329,12 @@ test(2168.01, print(DT, trunc.cols = 5L), error=c("Valid options for trunc.cols 
 test(2168.02, print(DT, trunc.cols = NA), error=c("Valid options for trunc.cols are TRUE and FALSE"))
 test(2168.03, print(DT, trunc.cols = "thing"), error=c("Valid options for trunc.cols are TRUE and FALSE"))
 test(2168.04, print(DT, trunc.cols = c(TRUE, FALSE)), error=c("Valid options for trunc.cols are TRUE and FALSE"))
+
+# shallow copy of .SD must be unlocked for frank using na.last=NA or ties.method='random', #4429
+DT = data.table(a=1:10)
+test(2169.1, DT[ , frankv(.SD, ties.method='average', na.last=NA)], as.double(1:10))
+test(2169.2, DT[ , frankv(.SD, ties.method='random')], 1:10)
+# coverage tests for some issues discovered on the way
+DT[, c('..na_prefix..', '..stats_runif..') := 1L]
+test(2169.3, DT[ , frankv(.SD, ties.method='average', na.last=NA)], error="Input column '..na_prefix..' conflicts")
+test(2169.4, DT[ , frankv(.SD, ties.method='random')],              error="Input column '..stats_runif..' conflicts")
