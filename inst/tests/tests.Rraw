@@ -17338,3 +17338,11 @@ test(2169.2, DT[ , frankv(.SD, ties.method='random')], 1:10)
 DT[, c('..na_prefix..', '..stats_runif..') := 1L]
 test(2169.3, DT[ , frankv(.SD, ties.method='average', na.last=NA)], error="Input column '..na_prefix..' conflicts")
 test(2169.4, DT[ , frankv(.SD, ties.method='random')],              error="Input column '..stats_runif..' conflicts")
+
+# which=NA inconsistent with ?data.table, #4411
+DT = data.table(A = c(NA, 3, 5, 0, 1, 2), B = c("foo", "foo", "foo", "bar", "bar", "bar"))
+test(2170.1, DT[A > 1, which = NA], c(1L,4:5))
+test(2170.2, DT[A > -1, which = NA], 1L)
+test(2170.3, DT[A > -1 | is.na(A), which = NA], integer())
+test(2170.4, DT[A > 10, which = NA], seq_len(nrow(DT)))
+test(2170.5, DT[!(A > 1), which = NA], c(1:3,6L)) # matches DT[A <= 1, which = NA]
