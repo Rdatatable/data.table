@@ -17349,9 +17349,9 @@ test(2170.5, DT[!(A > 1), which = NA], c(1:3,6L)) # matches DT[A <= 1, which = N
 
 # setcolorder with new arguments before and after, #4358
 DT = data.table(a=1, b=2, c=3)
-test(2169.1, setcolorder(DT, "a", after="c"), data.table(b=2, c=3, a=1))
-test(2169.2, setcolorder(DT, "a", before="b"), data.table(a=1, b=2, c=3))
-test(2169.3, setcolorder(DT, 1, after=3), data.table(b=2, c=3, a=1))
-test(2169.4, setcolorder(DT, 3, before=1), data.table(a=1, b=2, c=3))
-test(2169.5, setcolorder(DT, 1, before=1, after=1), error="Provide either before= or after= or none but not both.")
+test(2171.1, setcolorder(DT, "a", after="c"), data.table(b=2, c=3, a=1))
+test(2171.2, setcolorder(DT, "a", before="b"), data.table(a=1, b=2, c=3))
+test(2171.3, setcolorder(DT, 1, after=3), data.table(b=2, c=3, a=1))
+test(2171.4, setcolorder(DT, 3, before=1), data.table(a=1, b=2, c=3))
+test(2171.5, setcolorder(DT, 1, before=1, after=1), error="Provide either before= or after= or none but not both.")
 
