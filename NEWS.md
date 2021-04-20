@@ -10,11 +10,21 @@
 
 2. `mean(na.rm=TRUE)` by group is now GForce optimized, [#4849](https://github.com/Rdatatable/data.table/issues/4849). Thanks to the [h2oai/db-benchmark](https://github.com/h2oai/db-benchmark) project for spotting this issue. The 1 billion row example in the issue shows 48s reduced to 14s. The optimization also applies to type `integer64` resulting in a difference to the `bit64::mean.integer64` method: `data.table` returns a `double` result whereas `bit64` rounds the mean to the nearest integer.
 
+3. `fwrite()` now writes UTF-8 or native csv files by specifying the `encoding=` argument, [#1770](https://github.com/Rdatatable/data.table/pull/1770). Thanks to @shrektan for the request and the PR.
+
 ## BUG FIXES
 
 1. `by=.EACHI` when `i` is keyed but `on=` different columns than `i`'s key could create an invalidly keyed result, [#4603](https://github.com/Rdatatable/data.table/issues/4603) [#4911](https://github.com/Rdatatable/data.table/issues/4911). Thanks to @myoung3 and @adamaltmejd for reporting, and @ColeMiller1 for the PR. An invalid key is where a `data.table` is marked as sorted by the key columns but the data is not sorted by those columns, leading to incorrect results from subsequent queries.
 
-2. `as.data.table()` more robust to unrecognized subclasses of `data.frame`, [#4526](https://github.com/Rdatatable/data.table/issues/4526). Thanks @RicoDiel for the report.
+2. `print(DT, trunc.cols=TRUE)` and the corresponding `datatable.print.trunc.cols` option (new feature 3 in v1.13.0) could display an extra `diff.prev` column, [#4266](https://github.com/Rdatatable/data.table/issues/4266). Thanks to @tdhock for the PR.
+
+3. `fread(..., nrows=0L)` now works as intended and the same as `nrows=0`; i.e. returning the column names and typed empty columns determined by the large sample, [#4686](https://github.com/Rdatatable/data.table/issues/4686). Thanks to @hongyuanjia for reporting, and Benjamin Schwendinger for the PR.
+
+4. Passing `.SD` to `frankv()` with `ties.method='random'` or with `na.last=NA` failed with `.SD is locked`, [#4429](https://github.com/Rdatatable/data.table/issues/4429). Thanks @smarches for the report.
+
+5. Filtering data.table using `which=NA` to return non-matching indices will now properly work for non-optimized subsetting as well, closes [#4411](https://github.com/Rdatatable/data.table/issues/4411).
+
+6. `as.data.table()` is more robust to subclasses of `data.frame` which may have different `[[` methods, leading to errors, [#4526](https://github.com/Rdatatable/data.table/issues/4526). Thanks @RicoDiel for the report.
 
 ## NOTES
 
@@ -31,6 +41,8 @@
 2. `CsubsetDT` exported C function has been renamed to `DT_subsetDT`. This requires `R_GetCCallable("data.table", "CsubsetDT")` to be updated to `R_GetCCallable("data.table", "DT_subsetDT")`. Additionally there is now a dedicated header file for data.table C exports `include/datatableAPI.h`, [#4643](https://github.com/Rdatatable/data.table/issues/4643), thanks to @eddelbuettel, which makes it easier to _import_ data.table C functions.
 
 3. In v1.12.4, fractional `fread(..., stringsAsFactors=)` was added. For example if `stringsAsFactors=0.2`, any character column with fewer than 20% unique strings would be cast as `factor`. This is now documented in `?fread` as well, [#4706](https://github.com/Rdatatable/data.table/issues/4706). Thanks to @markderry for the PR.
+
+4. `cube(DT, by="a")` now gives a more helpful error that `j` is missing, [#4282](https://github.com/Rdatatable/data.table/pull/4282).
 
 
 # data.table [v1.14.0](https://github.com/Rdatatable/data.table/milestone/23?closed=1)  (21 Feb 2021)

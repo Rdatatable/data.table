@@ -13259,14 +13259,17 @@ test(1957.3, fread("A,B\na,b\nc,d\n", stringsAsFactors=TRUE, verbose=TRUE), data
              output="stringsAsFactors=TRUE converted 2 column(s): [A, B]")
 
 # misc. coverage tests in fread
-test(1958.1, fread('\U0001f64d', encoding = 'UTF-16'), error = "Argument 'encoding' must be")
-test(1958.2, fread('a,b\n1,2', nrows = NA_real_),      data.table(a = 1L, b = 2L))
-test(1958.3, fread('a,b\n1,2', nrows = -1),            data.table(a = 1L, b = 2L))
-test(1958.4, fread('a,b\n1,2', key = 1),               error = 'must be a character vector naming columns')
-test(1958.5, fread("A,B,C\n1,2,3\n3,4,5\n0,0,0\n",   nrows=0),          data.table(A=logical(), B=logical(), C=logical()))  #2747
-test(1958.6, fread("A,B,C\n1,2,3\n3,4,5\n0,0,100\n", nrows=0, sep=','), data.table(A=logical(), B=logical(), C=logical()))
-test(1958.7, fread('A,B,C,D\n"a,b",4,5,6\n"c,d",6,7\n', fill=TRUE), data.table(A=c("a,b","c,d"), B=INT(4,6), C=INT(5,7), D=INT(6,NA)))  # 2547
-test(1958.8, fread('A,B,C,D\n"a,b",4,5\n"c,d",6,7,8\n', fill=TRUE), data.table(A=c("a,b","c,d"), B=INT(4,6), C=INT(5,7), D=INT(NA,8)))
+test(1958.01, fread('\U0001f64d', encoding = 'UTF-16'), error = "Argument 'encoding' must be")
+test(1958.02, fread('a,b\n1,2', nrows = NA_real_),      data.table(a = 1L, b = 2L))
+test(1958.03, fread('a,b\n1,2', nrows = -1),            data.table(a = 1L, b = 2L))
+test(1958.04, fread('a,b\n1,2', key = 1),               error = 'must be a character vector naming columns')
+test(1958.05, fread("A,B,C\n1,2,3\n3,4,5\n0,0,0\n",   nrows=0),          data.table(A=logical(), B=logical(), C=logical()))  #2747
+test(1958.06, fread("A,B,C\n1,2,3\n3,4,5\n0,0,100\n", nrows=0, sep=','), data.table(A=logical(), B=logical(), C=logical()))
+test(1958.07, fread('A,B,C,D\n"a,b",4,5,6\n"c,d",6,7\n', fill=TRUE), data.table(A=c("a,b","c,d"), B=INT(4,6), C=INT(5,7), D=INT(6,NA)))  # 2547
+test(1958.08, fread('A,B,C,D\n"a,b",4,5\n"c,d",6,7,8\n', fill=TRUE), data.table(A=c("a,b","c,d"), B=INT(4,6), C=INT(5,7), D=INT(NA,8)))
+# 4686
+test(1958.09, fread("A,B,C\n1,2,3\n3,4,5\n0,0,0\n",   nrows=0L),          data.table(A=logical(), B=logical(), C=logical())) 
+test(1958.10, fread("A,B,C\n1,2,3\n3,4,5\n0,0,100\n", nrows=0L, sep=','), data.table(A=logical(), B=logical(), C=logical()))
 
 # Skip should work with all types of newlines #3006
 eols = c("\n", "\r\n", "\r", "\n\r")
@@ -16654,17 +16657,17 @@ if (is.na(oldtz)) Sys.unsetenv("TZ") else Sys.setenv(TZ=oldtz)
 # careful to unset because TZ="" means UTC whereas unset TZ means local
 
 # trunc.cols in print.data.table, #4074
-old_width = options("width" = 40)
+old_width = options("width" = 40L)
 # Single row printing (to check issue with losing attributes)
 DT = data.table(a = "aaaaaaaaaaaaa",
                 b = "bbbbbbbbbbbbb",
                 c = "ccccccccccccc",
                 d = "ddddddddddddd")
 test(2125.01,
-     capture.output(print(DT, trunc.cols=TRUE))[3],
+     capture.output(print(DT, trunc.cols=TRUE))[3L],
      "2 variables not shown: [c, d]")
 # Printing with dots
-DT = data.table(a = vector("integer", 102),
+DT = data.table(a = vector("integer", 102L),
                 b = "bbbbbbbbbbbbb",
                 c = "ccccccccccccc",
                 d = c("ddddddddddddd", "d"))
@@ -16696,8 +16699,12 @@ test(2125.03, capture.output(print(DT, trunc.cols=TRUE, row.names=FALSE)),
        "    0 bbbbbbbbbbbbb ccccccccccccc",
        "    0 bbbbbbbbbbbbb ccccccccccccc",
        "1 variable not shown: [d]" ))
-test(2125.04, capture.output(print(DT, trunc.cols=TRUE, class=TRUE))[14],
-     "1 variable not shown: [d <char>]")
+# also testing #4266 -- getting width of row #s register right
+#   TODO: understand why 2 variables truncated here. a,b,c combined have width
+#     _exactly_ 40, but still wraps. If we set options(width=41) it won't truncate.
+#     seems to be an issue with print.default.
+test(2125.04, capture.output(print(DT, trunc.cols=TRUE, class=TRUE))[14L],
+     "2 variables not shown: [c <char>, d <char>]")
 test(2125.05, capture.output(print(DT, trunc.cols=TRUE, class=TRUE, row.names=FALSE))[c(1,14)],
      c("        a             b             c",
        "1 variable not shown: [d <char>]" ))
@@ -16705,8 +16712,8 @@ test(2125.06, capture.output(print(DT, trunc.cols=TRUE, col.names="none"))[c(1,1
      c("  1: 0 bbbbbbbbbbbbb ccccccccccccc",
        "1 variable not shown: [d]" ))
 test(2125.07, capture.output(print(DT, trunc.cols=TRUE, class=TRUE, col.names="none"))[c(1,13)],
-     c("  1: 0 bbbbbbbbbbbbb ccccccccccccc",
-       "1 variable not shown: [d]" ),
+     c("  1: 0 bbbbbbbbbbbbb",
+       "2 variables not shown: [c, d]" ),
      warning = "Column classes will be suppressed when col.names is 'none'")
 options("width" = 20)
 DT = data.table(a = vector("integer", 2),
@@ -17295,6 +17302,51 @@ test(2165.3, X[Y],                          data.table(A=2:3, B=2:3, i.A=2:1, ke
 test(2165.4, X[Y, on=.(A)],                 data.table(A=2:1, B=c(2L,NA), i.B=2:3))      # no key
 test(2165.5, X[Y, on=.(A), x.B, by=.EACHI], data.table(A=2:1, x.B=c(2L,NA)))             # no key
 
+# missing j was caught in groupingsets but not cube, leading to unexpected error message, #4282
+DT = data.table(a=1)
+test(2166, cube(DT, by='a'), error="Argument 'j' is required")
+
+# fwrite support encoding "native" and "UTF-8", #1770
+latin1 = "fa\xE7ile"
+Encoding(latin1) = "latin1"
+utf8 = iconv(latin1, "latin1", "UTF-8")
+text = c(latin1, utf8, "aaaaaaaa")
+dt = data.table(A = text, B = as.factor(text))
+dt2 = data.table(A = text, B = text)
+csvfile = tempfile(fileext = ".csv")
+fwrite(dt, csvfile, encoding = "UTF-8", bom = TRUE)
+test(2167.1, fread(csvfile, encoding = "UTF-8"), dt2)
+if (identical(text, enc2native(text))) { # ensure native encoding can represent latin1 strings
+  fwrite(dt, csvfile, encoding = "native")
+  test(2167.2, fread(csvfile), dt2)
+}
+test(2167.3, fwrite(dt, csvfile, encoding="nativ"), error="Argument 'encoding' must be")
+unlink(csvfile)
+
+# check valid trunc.cols=, #4766
+DT = data.table(x = rnorm(10))
+test(2168.01, print(DT, trunc.cols = 5L), error=c("Valid options for trunc.cols are TRUE and FALSE"))
+test(2168.02, print(DT, trunc.cols = NA), error=c("Valid options for trunc.cols are TRUE and FALSE"))
+test(2168.03, print(DT, trunc.cols = "thing"), error=c("Valid options for trunc.cols are TRUE and FALSE"))
+test(2168.04, print(DT, trunc.cols = c(TRUE, FALSE)), error=c("Valid options for trunc.cols are TRUE and FALSE"))
+
+# shallow copy of .SD must be unlocked for frank using na.last=NA or ties.method='random', #4429
+DT = data.table(a=1:10)
+test(2169.1, DT[ , frankv(.SD, ties.method='average', na.last=NA)], as.double(1:10))
+test(2169.2, DT[ , frankv(.SD, ties.method='random')], 1:10)
+# coverage tests for some issues discovered on the way
+DT[, c('..na_prefix..', '..stats_runif..') := 1L]
+test(2169.3, DT[ , frankv(.SD, ties.method='average', na.last=NA)], error="Input column '..na_prefix..' conflicts")
+test(2169.4, DT[ , frankv(.SD, ties.method='random')],              error="Input column '..stats_runif..' conflicts")
+
+# which=NA inconsistent with ?data.table, #4411
+DT = data.table(A = c(NA, 3, 5, 0, 1, 2), B = c("foo", "foo", "foo", "bar", "bar", "bar"))
+test(2170.1, DT[A > 1, which = NA], c(1L,4:5))
+test(2170.2, DT[A > -1, which = NA], 1L)
+test(2170.3, DT[A > -1 | is.na(A), which = NA], integer())
+test(2170.4, DT[A > 10, which = NA], seq_len(nrow(DT)))
+test(2170.5, DT[!(A > 1), which = NA], c(1:3,6L)) # matches DT[A <= 1, which = NA]
+
 # as.data.table.list edits list elements, so must be sure x does not use some other `[[` method, #4526
 x = data.frame(a = 1:5)
 x$b = matrix(6:15, ncol=2L)
@@ -17303,4 +17355,4 @@ class(x) = c('foo', 'data.frame')
   if (any(sapply(x, inherits, 'data.table'))) stop('failure')
   as.list(x)[[i]]
 }
-test(2166, as.data.table(x), data.table(a=1:5, b.V1=6:10, b.V2=11:15))
+test(2171, as.data.table(x), data.table(a=1:5, b.V1=6:10, b.V2=11:15))

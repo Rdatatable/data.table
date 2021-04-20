@@ -219,7 +219,7 @@ as.data.table.data.frame = function(x, keep.rownames=FALSE, key=NULL, ...) {
   }
   if (any(vapply_1i(x, function(xi) length(dim(xi))))) { # not is.atomic because is.atomic(matrix) is true
     # a data.frame with a column that is data.frame needs to be expanded; test 2013.4
-    # x may class with [[ method that behaves differently, so as.list to for default [[, #4526
+    # x may be a class with [[ method that behaves differently, so as.list first for default [[, #4526
     return(as.data.table.list(as.list(x), keep.rownames=keep.rownames, ...))
   }
   ans = copy(x)  # TO DO: change this deep copy to be shallow.
