@@ -262,6 +262,7 @@ test-rel-win: ## R-release on Windows, test and build binaries
 
 test-dev-win: ## R-devel on Windows
   <<: *test-win
+  allow_failure: true
   variables:
     R_VERSION: "$R_DEVEL_VERSION"
   before_script:
