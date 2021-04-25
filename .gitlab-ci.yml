@@ -7,7 +7,7 @@ variables:
              ## Setting TZ for all GLCI jobs to isolate them from timezone. We could have a new GLCI job to test under
              ## a non-UTC timezone, although, that's what we do routinely in dev.
   R_REL_VERSION: "4.0"
-  R_DEVEL_VERSION: "4.1"
+  R_DEVEL_VERSION: "4.2"
   R_OLDREL_VERSION: "3.6"
 
 stages:
@@ -262,7 +262,6 @@ test-rel-win: ## R-release on Windows, test and build binaries
 
 test-dev-win: ## R-devel on Windows
   <<: *test-win
-  allow_failure: true
   variables:
     R_VERSION: "$R_DEVEL_VERSION"
   before_script:
