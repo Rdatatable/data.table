@@ -13754,8 +13754,7 @@ test(1967.34, data.table(1:5, NULL), data.table(V1=1:5))
 ###   if (novname[i]) vnames[[i]] = namesi
 ### but, on pause for now pending #3193
 ### test(1967.35, data.table(1:5, matrix(6:15, nrow = 5L))
-# We no longer recycle zero-length vector after PR#4262
-test(1967.35, data.table(1:5, integer(0L)), data.table(integer(0L), integer(0L)))
+test(1967.35, data.table(1:5, integer(0L)), data.table(integer(0L), integer(0L)))  # no longer NA-fill zero-length, PR#4262
 test(1967.36, data.table(1:5, key = 5L), error = 'must be character')
 
 x = data.table(a = 1:5)
