@@ -129,6 +129,7 @@ as.data.table.list = function(x,
   eachncol = integer(n)
   missing.check.names = missing(check.names)
   origListNames = if (missing(.named)) names(x) else NULL  # as.data.table called directly, not from inside data.table() which provides .named, #3854
+  empty_atomic = FALSE  
   for (i in seq_len(n)) {
     xi = x[[i]]
     if (is.null(xi)) next    # eachncol already initialized to 0 by integer() above
@@ -148,10 +149,13 @@ as.data.table.list = function(x,
     }
     eachnrow[i] = NROW(xi)    # for a vector (including list() columns) returns the length
     eachncol[i] = NCOL(xi)    # for a vector returns 1
+    if (is.atomic(xi) && length(xi)==0L && !is.null(xi)) {
+      empty_atomic = TRUE  # any empty atomic (not empty list()) should result in nrows=0L, #3727
+    }
   }
   ncol = sum(eachncol)  # hence removes NULL items silently (no error or warning), #842.
   if (ncol==0L) return(null.data.table())
-  nrow = max(eachnrow)
+  nrow = if (empty_atomic) 0L else max(eachnrow)
   ans = vector("list",ncol)  # always return a new VECSXP
   recycle = function(x, nrow) {
     if (length(x)==nrow) {
@@ -173,8 +177,6 @@ as.data.table.list = function(x,
     if (is.null(xi)) { n_null = n_null+1L; next }
     if (eachnrow[i]>1L && nrow%%eachnrow[i]!=0L)   # in future: eachnrow[i]!=nrow
       warning("Item ", i, " has ", eachnrow[i], " rows but longest item has ", nrow, "; recycled with remainder.")
-    if (eachnrow[i]==0L && nrow>0L && is.atomic(xi))   # is.atomic to ignore list() since list() is a common way to initialize; let's not insist on list(NULL)
-      warning("Item ", i, " has 0 rows but longest item has ", nrow, "; filled with NA")  # the rep() in recycle() above creates the NA vector
     if (is.data.table(xi)) {   # matrix and data.frame were coerced to data.table above
       prefix = if (!isFALSE(.named[i]) && isTRUE(nchar(names(x)[i])>0L)) paste0(names(x)[i],".") else ""  # test 2058.12
       for (j in seq_along(xi)) {
