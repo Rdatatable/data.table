@@ -17297,5 +17297,5 @@ test(2165.5, X[Y, on=.(A), x.B, by=.EACHI], data.table(A=2:1, x.B=c(2L,NA)))    
 
 # `keyby`=TRUE/FALSE together with by=, #4307
 DT = data.table(a=2:1, b=3:2, d=4:3)
-test(2166.1, DT[, .SD, by="a"], DT[, .SD, by="a", keyby=FALSE])
-test(2166.2, DT[, .SD, keyby="a"], DT[, .SD, by="a", keyby=TRUE])
+test(2166.1, DT[, .SD, by="a", keyby=FALSE], data.table(a=2:1,b=3:2,d=4:3))
+test(2166.2, DT[, .SD, by="a", keyby=TRUE], data.table(a=1:2,b=2:3,d=3:4, key="a"))
