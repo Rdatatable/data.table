@@ -12,17 +12,14 @@
 
 3. `fwrite()` now writes UTF-8 or native csv files by specifying the `encoding=` argument, [#1770](https://github.com/Rdatatable/data.table/pull/1770). Thanks to @shrektan for the request and the PR.
 
-4. `data.table()` no longer fills empty vectors with `NA` with warning. Instead a 0-row `data.table` is returned, [#3727](https://github.com/Rdatatable/data.table/issues/3727). Since `data.table()` is used internally by `J()` and `.()`, this brings the following examples in line with expectations in most cases. Thanks to @shrektan for the suggestion and PR.
+4. `data.table()` no longer fills empty vectors with `NA` with warning. Instead a 0-row `data.table` is returned, [#3727](https://github.com/Rdatatable/data.table/issues/3727). Since `data.table()` is used internally by `.()`, this brings the following examples in line with expectations in most cases. Thanks to @shrektan for the suggestion and PR.
 
     ```R
     DT = data.table(A=1:3, B=letters[1:3])
-
     DT[A>3,   .(ITEM='A>3', A, B)]  # (1)
     DT[A>3][, .(ITEM='A>3', A, B)]  # (2)
-
     # the above are now equivalent as expected and return:  
     Empty data.table (0 rows and 3 cols): ITEM,A,B
-    
     # Previously, (2) returned :
           ITEM     A      B
        <char> <int> <char>
@@ -36,12 +33,10 @@
     
     ```R
     DT = data.table(A=1:3, B=letters[1:3], key="A")
-    DT[J(1:3, double()), B]
-    
+    DT[.(1:3, double()), B]
     # new result :
     character(0)   
-    
-    # old result:
+    # old result :
     [1] "a" "b" "c"
     Warning message:
     In as.data.table.list(i) :
