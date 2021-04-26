@@ -129,6 +129,7 @@ as.data.table.list = function(x,
   eachncol = integer(n)
   missing.check.names = missing(check.names)
   origListNames = if (missing(.named)) names(x) else NULL  # as.data.table called directly, not from inside data.table() which provides .named, #3854
+  empty_atomic = FALSE  
   for (i in seq_len(n)) {
     xi = x[[i]]
     if (is.null(xi)) next    # eachncol already initialized to 0 by integer() above
@@ -148,14 +149,13 @@ as.data.table.list = function(x,
     }
     eachnrow[i] = NROW(xi)    # for a vector (including list() columns) returns the length
     eachncol[i] = NCOL(xi)    # for a vector returns 1
+    if (is.atomic(xi) && length(xi)==0L && !is.null(xi)) {
+      empty_atomic = TRUE  # any empty atomic (not empty list()) should result in nrows=0L, #3727
+    }
   }
   ncol = sum(eachncol)  # hence removes NULL items silently (no error or warning), #842.
   if (ncol==0L) return(null.data.table())
-  nrow = max(eachnrow)
-  # only check the atomic and nonNULL type because NULL will be ignored while non-atomic (e.g., list) is always recycled
-  atomic_nonnull = vapply_1b(x, function(xi) is.atomic(xi) && !is.null(xi))
-  # #3727 if any atomic and nonnull element is length-zero, the output should be zero
-  if (any(eachnrow[atomic_nonnull]==0L)) nrow = 0L
+  nrow = if (empty_atomic) 0L else max(eachnrow)
   ans = vector("list",ncol)  # always return a new VECSXP
   recycle = function(x, nrow) {
     if (length(x)==nrow) {
