@@ -1345,7 +1345,9 @@ replace_dot_alias = function(e) {
     }
 
     if (is.data.table(jval)) {
-      setattr(jval, 'class', class(x)) # fix for #64
+      # should set the parent class only when jval is a plain data.table #4324
+      if (identical(class(jval), c('data.table', 'data.frame'))) 
+        setattr(jval, 'class', class(x)) # fix for #64
       if (haskey(x) && all(key(x) %chin% names(jval)) && is.sorted(jval, by=key(x)))
         setattr(jval, 'sorted', key(x))
       if (any(sapply(jval, is.null))) stop("Internal error: j has created a data.table result containing a NULL column") # nocov

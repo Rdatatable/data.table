@@ -55,7 +55,9 @@
 
 5. Filtering data.table using `which=NA` to return non-matching indices will now properly work for non-optimized subsetting as well, closes [#4411](https://github.com/Rdatatable/data.table/issues/4411).
 
-6. `as.data.table()` is more robust to subclasses of `data.frame` which may have different `[[` methods, leading to errors, [#4526](https://github.com/Rdatatable/data.table/issues/4526). Thanks @RicoDiel for the report.
+6. When `j` returns an object whose class `"X"` inherits from `data.table`; i.e. class `c("X", "data.table", "data.frame")`, the derived class `"X"` is no longer incorrectly dropped from the class of the `data.table` returned, [#4324](https://github.com/Rdatatable/data.table/issues/4324). Thanks to @HJAllen for reporting and @shrektan for the PR.
+
+7. `as.data.table()` is more robust to subclasses of `data.frame` which may have different `[[` methods, leading to errors, [#4526](https://github.com/Rdatatable/data.table/issues/4526). Thanks @RicoDiel for the report.
 
 ## NOTES
 
@@ -109,7 +111,7 @@
 
 2. `fwrite()`'s mutithreaded `gzip` compression failed on Solaris with Z_STREAM_ERROR, [#4099](https://github.com/Rdatatable/data.table/issues/4099). Since this feature was released in Oct 2019 (see item 3 in v1.12.4 below in this news file) there have been no known problems with it on Linux, Windows or Mac. For Solaris, we have been successively adding more and more detailed tracing to the output in each release, culminating in tracing `zlib` internals at byte level by reading `zlib`'s source. The problem did not manifest itself on [R-hub](https://builder.r-hub.io/)'s Solaris instances, so we had to work via CRAN output. If `zlib`'s `z_stream` structure is declared inside a parallel region but before a parallel for, it appears that the particular OpenMP implementation used by CRAN's Solaris moves the structure to a new address on entering the parallel for. Ordinarily this memory move would not matter, however, `zlib` internals have a self reference pointer to the parent, and check that the pointers match. This mismatch caused the -2 (Z_STREAM_ERROR). Allocating an array of structures, one for each thread, before the parallel region avoids the memory move with no cost.
 
-    It should be carefully noted that we cannot be sure it really is a problem unique to CRAN's Solaris. Even if it seems that way after one year of observations. For example, it could be compiler flags, or particular memory circumstances, either of which could occur on other operating systems too. However, we are unaware of why it would make sense for the OpenMP implementation to move the structure at that point. Any optimizations such as aligning the set of structures to cache line boundaries could be performed at the start of the parallel region, not after the parallel for. If anyone reading this knows more, please let us know. 
+    It should be carefully noted that we cannot be sure it really is a problem unique to CRAN's Solaris. Even if it seems that way after one year of observations. For example, it could be compiler flags, or particular memory circumstances, either of which could occur on other operating systems too. However, we are unaware of why it would make sense for the OpenMP implementation to move the structure at that point. Any optimizations such as aligning the set of structures to cache line boundaries could be performed at the start of the parallel region, not after the parallel for. If anyone reading this knows more, please let us know.
 
 ## NOTES
 
@@ -154,7 +156,7 @@
 1. `bit64` v4.0.2 and `bit` v4.0.3, both released on 30th July, correctly broke `data.table`'s tests. Like other packages on our `Suggest` list, we check `data.table` works with `bit64` in our tests. The first break was because `all.equal` always returned `TRUE` in previous versions of `bit64`. Now that `all.equal` works for `integer64`, the incorrect test comparison was revealed. If you use `bit64`, or `nanotime` which uses `bit64`, it is highly recommended to upgrade to the latest `bit64` version. Thanks to Cole Miller for the PR to accommodate `bit64`'s update.
 
     The second break caused by `bit` was the addition of a `copy` function. We did not ask, but the `bit` package kindly offered to change to a different name since `data.table::copy` is long standing. `bit` v4.0.4 released 4th August renamed `copy` to `copy_vector`. Otherwise, users of `data.table` would have needed to prefix every occurrence of `copy` with `data.table::copy` if they use `bit64` too, since `bit64` depends on (rather than importing) `bit`. Again, this impacted `data.table`'s tests which mimic a user's environment; not `data.table` itself per se.
-    
+
     We have requested that CRAN policy be modified to require that reverse dependency testing include packages which `Suggest` the package. Had this been the case, reverse dependency testing of `bit64` would have caught the impact on `data.table` before release.
 
 2. `?.NGRP` now displays the help page as intended, [#4946](https://github.com/Rdatatable/data.table/issues/4649). Thanks to @KyleHaynes for posting the issue, and Cole Miller for the fix. `.NGRP` is a symbol new in v1.13.0; see below in this file.
@@ -173,7 +175,7 @@ has a better chance of working on Mac.
 1. `fread` now supports native parsing of `%Y-%m-%d`, and [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601) `%Y-%m-%dT%H:%M:%OS%z`, [#4464](https://github.com/Rdatatable/data.table/pull/4464). Dates are returned as `data.table`'s `integer`-backed `IDate` class (see `?IDate`), and datetimes are returned as `POSIXct` provided either `Z` or the offset from `UTC` is present; e.g. `fwrite()` outputs UTC by default including the final `Z`. Reminder that `IDate` inherits from R's `Date` and is identical other than it uses the `integer` type where (oddly) R uses the `double` type for dates (8 bytes instead of 4). `fread()` gains a `tz` argument to control datetime values that are missing a Z or UTC-offset (now referred to as *unmarked* datetimes); e.g. as written by `write.csv`. By default `tz=""` means, as in R, read the unmarked datetime in local time. Unless the timezone of the R session is UTC (e.g. the TZ environment variable is set to `"UTC"`, or `""` on non-Windows), unmarked datetime will then by read by `fread` as character, as before. If you have been using `colClasses="POSIXct"` that will still work using R's `as.POSIXct()` which will interpret the unmarked datetime in local time, as before, and still slowly. You can tell `fread` to read unmarked datetime as UTC, and quickly, by passing `tz="UTC"` which may be appropriate in many circumstances. Note that the default behaviour of R to read and write csv using unmarked datetime can lead to different research results when the csv file has been saved in one timezone and read in another due to observations being shifted to a different date. If you have been using `colClasses="POSIXct"` for UTC-marked datetime (e.g. as written by `fwrite` including the final `Z`) then it will automatically speed up with no changes needed.
 
     Since this is a potentially breaking change, i.e. existing code may depend on dates and datetimes being read as type character as before, a temporary option is provided to restore the old behaviour: `options(datatable.old.fread.datetime.character=TRUE)`. However, in most cases, we expect existing code to still work with no changes.
-    
+
     The minor version number is bumped from 12 to 13, i.e. `v1.13.0`, where the `.0` conveys 'be-aware' as is common practice. As with any new feature, there may be bugs to fix and changes to defaults required in future. In addition to convenience, `fread` is now significantly faster in the presence of dates, UTC-marked datetimes, and unmarked datetime when tz="UTC" is provided.
 
 ## NEW FEATURES
@@ -1535,4 +1537,3 @@ When `j` is a symbol (as in the quanteda and xgboost examples above) it will con
 
 
 # data.table v1.9.8 (Nov 2016) back to v1.2 (Aug 2008) has been moved to [NEWS.0.md](https://github.com/Rdatatable/data.table/blob/master/NEWS.0.md)
-
