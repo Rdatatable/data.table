@@ -17363,3 +17363,13 @@ A = data.table(COL = 'dt')
 class(A) = c('newclass', class(A))
 DT = data.table(LIST_COL = list(A, A))
 test(2172, class(DT[1, LIST_COL[[1]]]), class(A))
+
+# as.data.table.list edits list elements, so must be sure x does not use some other `[[` method, #4526
+x = data.frame(a = 1:5)
+x$b = matrix(6:15, ncol=2L)
+class(x) = c('foo', 'data.frame')
+`[[.foo` = function(x, i) {
+  if (any(sapply(x, inherits, 'data.table'))) stop('failure')
+  as.list(x)[[i]]
+}
+test(2173, as.data.table(x), data.table(a=1:5, b.V1=6:10, b.V2=11:15))
