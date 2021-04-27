@@ -57,7 +57,7 @@
 
 6. When `j` returns an object whose class `"X"` inherits from `data.table`; i.e. class `c("X", "data.table", "data.frame")`, the derived class `"X"` is no longer incorrectly dropped from the class of the `data.table` returned, [#4324](https://github.com/Rdatatable/data.table/issues/4324). Thanks to @HJAllen for reporting and @shrektan for the PR.
 
-7. `as.data.table()` is more robust to subclasses of `data.frame` which may have different `[[` methods, leading to errors, [#4526](https://github.com/Rdatatable/data.table/issues/4526). Thanks @RicoDiel for the report.
+7. `as.data.table()` failed with `.subset2(x, i, exact = exact): attempt to select less than one element in get1index` when passed an object inheriting from `data.table` with a different `[[` method, such as the class `dfidx` from the `dfidx` package, [#4526](https://github.com/Rdatatable/data.table/issues/4526). Thanks @RicoDiel for the report, and Michael Chirico for the PR.
 
 ## NOTES
 
