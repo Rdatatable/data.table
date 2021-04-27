@@ -4195,7 +4195,7 @@ setNumericRounding(old_rounding)
 
 DT = data.table(id=INT(1,2,1), val1=3:1, val2=3:1, val3=list(2:3,4:6,7:10))   # 5380
 test(1199.1, DT[, sum(.SD), by=id, .SDcols=2:3], data.table(id=1:2, V1=INT(8,4)))   #875 made the .SD case work
-test(1199.2, DT[, sum(.SD), by=id], error="data.*frame.*numeric")  # this is R's error message so use flexible string pattern to insulate from minor changes in R, #4769 
+test(1199.2, DT[, sum(.SD), by=id], error="data.*frame.*numeric")  # this is R's error message so use flexible string pattern to insulate from minor changes in R, #4769
 test(1199.3, DT[, sum(val3), by=id], error="Type 'list' not supported by GForce sum [(]gsum[)]. Either.*or turn off")
 
 # Selection of columns, copy column to maintain the same as R <= 3.0.2, in Rdevel, for now
@@ -10442,7 +10442,7 @@ test(1728.12, DT[order(x,na.last=NA)], DT[2])  # was randomly wrong
 if (test_longdouble) {  #3258
 
   old = options(datatable.verbose=FALSE)  # capture.output() exact tests must not be polluted with verbosity
-  
+
   test(1729.01, fwrite(data.table(V1=c(1), V2=c(9.9999999999999982236431605997495353221893310546875))),
                 output="V1,V2\n1,10")
   test(1729.02, fwrite(data.table(V2=c(9.9999999999999982236431605997495353221893310546875), V1=c(1))),
@@ -10522,8 +10522,8 @@ if (test_longdouble) {  #3258
   #  2.220446e-16   1.110223e-16  2.225074e-308  1.797693e+308
   test(1729.12, typeof(DT[[1L]]), "double")
   test(1729.13, capture.output(fwrite(DT)), capture.output(write.csv(DT,row.names=FALSE,quote=FALSE)))
-  
-  options(old)  # restore the previous datatable.verbose value, for example for the CRAN_Release test with verbose on 
+
+  options(old)  # restore the previous datatable.verbose value, for example for the CRAN_Release test with verbose on
 }
 
 if (test_bit64) {
@@ -10846,7 +10846,7 @@ if (TZnotUTC) {
   # from v1.13.0 these tests work when running under non-UTC because they compare to as.POSIXct which reads these unmarked datetime in local
   # the new tests 2150.* cover more cases
   # from v1.14.0, the tz="" is needed
-  test(1743.25, fread("a,b,c\n2015-06-01 11:00:00,1,ae", colClasses=c("POSIXct","integer","character"), tz=""), 
+  test(1743.25, fread("a,b,c\n2015-06-01 11:00:00,1,ae", colClasses=c("POSIXct","integer","character"), tz=""),
                 data.table(a=as.POSIXct("2015-06-01 11:00:00"),b=1L,c="ae"))
   test(1743.26, fread("a,b,c,d,e,f,g,h\n1,k,2015-06-01 11:00:00,a,1.5,M,9,0", colClasses=list(POSIXct="c", character="b"), drop=c("a","b"), logical01=TRUE, tz=""),
               ans<-data.table(c=as.POSIXct("2015-06-01 11:00:00"), d="a", e=1.5, f="M", g=9L, h=FALSE))
@@ -13268,7 +13268,7 @@ test(1958.06, fread("A,B,C\n1,2,3\n3,4,5\n0,0,100\n", nrows=0, sep=','), data.ta
 test(1958.07, fread('A,B,C,D\n"a,b",4,5,6\n"c,d",6,7\n', fill=TRUE), data.table(A=c("a,b","c,d"), B=INT(4,6), C=INT(5,7), D=INT(6,NA)))  # 2547
 test(1958.08, fread('A,B,C,D\n"a,b",4,5\n"c,d",6,7,8\n', fill=TRUE), data.table(A=c("a,b","c,d"), B=INT(4,6), C=INT(5,7), D=INT(NA,8)))
 # 4686
-test(1958.09, fread("A,B,C\n1,2,3\n3,4,5\n0,0,0\n",   nrows=0L),          data.table(A=logical(), B=logical(), C=logical())) 
+test(1958.09, fread("A,B,C\n1,2,3\n3,4,5\n0,0,0\n",   nrows=0L),          data.table(A=logical(), B=logical(), C=logical()))
 test(1958.10, fread("A,B,C\n1,2,3\n3,4,5\n0,0,100\n", nrows=0L, sep=','), data.table(A=logical(), B=logical(), C=logical()))
 
 # Skip should work with all types of newlines #3006
@@ -17150,7 +17150,7 @@ test(2153.2, DT[, .(list(.GRP)), by=x], data.table(x=1:2, V1=as.list(1:2)))
 test(2153.3, ans<-DT[, .(list(.NGRP)), by=x], data.table(x=1:2, V1=list(2L,2L)))
 test(2153.4, address(ans$V1[[1L]]), address(ans$V1[[2L]]))  # .NGRP doesn't change group to group so the same object can be referenced many times unlike .N and .GRP
 test(2153.5, DT[, .(list(c(0L,.N,0L))), by=x],  # c() here will create new object so this is ok anyway; i.e. address(.N) is not present in j's result
-             data.table(x=1:2, V1=list(c(0L,1L,0L), c(0L,2L,0L)))) 
+             data.table(x=1:2, V1=list(c(0L,1L,0L), c(0L,2L,0L))))
 
 # warning message segfault when no column names present, #4644
 test(2154.1, fread("0.0\n", colClasses="integer"), data.table(V1=0.0),
@@ -17168,7 +17168,7 @@ for (i in 0:4) test(2155+i/10,
 
 # dogroups.c eval(j) could create list columns containing altrep references to the specials, #4759
 # thanks to revdep testing of 1.13.2 where package tstools revealed this via ts() creating ALTREP, #4758
-# the attr(value,"class")<-"newclass" lines mimics a line at the end of stats::ts(). When the 
+# the attr(value,"class")<-"newclass" lines mimics a line at the end of stats::ts(). When the
 # length(value)>=64, R creates an ALTREP REF wrapper. Which dogroups.c now catches.
 # Hence this test needs to be at least 128 rows, 2 groups of 64 each.
 DT = data.table(series=c("ts1","ts2"), value=rnorm(128))
@@ -17193,7 +17193,7 @@ test(2158.1, DT[, .(value = list(value)), index],
 DT = data.table(value=as.list(1:6), index=rep(1:2, each=3))
 test(2158.2, DT[, by="index", list(value=list(value))],
              data.table(index=1:2, value=list(as.list(1:3), as.list(4:6))))
-             
+
 # type consistency of empty input to as.matrix.data.table, #4762
 DT = data.table(x = 1)
 test(2159.01, typeof(as.matrix(DT)), "double")
@@ -17282,17 +17282,17 @@ if (test_bit64) {
 
 # invalid key when by=.EACHI, haskey(i) but on= non-leading-subset of i's key, #4603 #4911
 X = data.table(id = c(6456372L, 6456372L, 6456372L, 6456372L,6456372L, 6456372L, 6456372L, 6456372L, 6456372L, 6456372L, 6456372L, 6456372L, 6456372L, 6456372L),
-               id_round = c(197801L, 199405L, 199501L, 197901L, 197905L, 198001L, 198005L, 198101L, 198105L, 198201L, 198205L, 198301L, 198305L, 198401L), 
+               id_round = c(197801L, 199405L, 199501L, 197901L, 197905L, 198001L, 198005L, 198101L, 198105L, 198201L, 198205L, 198301L, 198305L, 198401L),
                field = c(NA, NA, NA, "medicine", "medicine", "medicine", "medicine", "medicine", "medicine", "medicine", "medicine", "medicine", "medicine", "medicine"),
                key = "id")
-Y = data.table(id = c(6456372L, 6456345L, 6456356L), 
+Y = data.table(id = c(6456372L, 6456345L, 6456356L),
                id_round = c(197705L, 197905L, 201705L),
-               field = c("medicine", "teaching", "health"), 
+               field = c("medicine", "teaching", "health"),
                prio = c(6L, 1L, 10L),
                key = c("id_round", "id", "prio", "field" ))
 test(2165.1, X[Y, on = .(id, id_round > id_round, field), .(x.id_round[1], i.id_round[1]), by=.EACHI][id==6456372L],
              data.table(id=6456372L, id_round=197705L, field='medicine', V1=197901L, V2=197705L))
-# Y$id_round happens to be sorted, so in 2165.2 we test Y$field which is not sorted 
+# Y$id_round happens to be sorted, so in 2165.2 we test Y$field which is not sorted
 test(2165.2, X[Y, on="field", .(x.id_round[1]), by=.EACHI][field=="health"],
              data.table(field="health", V1=NA_integer_))
 # a minimal example too ...
@@ -17357,3 +17357,9 @@ DT = data.table(A=1:3, B=letters[1:3])
 test(2171.5, ans <- DT[A>3,   .(ITEM='A>3', A, B)],  # now identical as expected
                     DT[A>3][, .(ITEM='A>3', A, B)])
 test(2171.6, ans, data.table(ITEM=character(), A=integer(), B=character())) # not just identical to each other, but correct too
+
+# don't remove 'newclass' from jval's result, #4324
+A = data.table(COL = 'dt')
+class(A) = c('newclass', class(A))
+DT = data.table(LIST_COL = list(A, A))
+test(2172, class(DT[1, LIST_COL[[1]]]), class(A))
