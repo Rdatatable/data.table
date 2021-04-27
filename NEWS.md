@@ -12,6 +12,37 @@
 
 3. `fwrite()` now writes UTF-8 or native csv files by specifying the `encoding=` argument, [#1770](https://github.com/Rdatatable/data.table/pull/1770). Thanks to @shrektan for the request and the PR.
 
+4. `data.table()` no longer fills empty vectors with `NA` with warning. Instead a 0-row `data.table` is returned, [#3727](https://github.com/Rdatatable/data.table/issues/3727). Since `data.table()` is used internally by `.()`, this brings the following examples in line with expectations in most cases. Thanks to @shrektan for the suggestion and PR.
+
+    ```R
+    DT = data.table(A=1:3, B=letters[1:3])
+    DT[A>3,   .(ITEM='A>3', A, B)]  # (1)
+    DT[A>3][, .(ITEM='A>3', A, B)]  # (2)
+    # the above are now equivalent as expected and return:  
+    Empty data.table (0 rows and 3 cols): ITEM,A,B
+    # Previously, (2) returned :
+          ITEM     A      B
+       <char> <int> <char>
+    1:    A>3    NA   <NA>
+    Warning messages:
+    1: In as.data.table.list(jval, .named = NULL) :
+      Item 2 has 0 rows but longest item has 1; filled with NA
+    2: In as.data.table.list(jval, .named = NULL) :
+      Item 3 has 0 rows but longest item has 1; filled with NA
+    ```
+    
+    ```R
+    DT = data.table(A=1:3, B=letters[1:3], key="A")
+    DT[.(1:3, double()), B]
+    # new result :
+    character(0)   
+    # old result :
+    [1] "a" "b" "c"
+    Warning message:
+    In as.data.table.list(i) :
+      Item 2 has 0 rows but longest item has 3; filled with NA
+    ```
+
 ## BUG FIXES
 
 1. `by=.EACHI` when `i` is keyed but `on=` different columns than `i`'s key could create an invalidly keyed result, [#4603](https://github.com/Rdatatable/data.table/issues/4603) [#4911](https://github.com/Rdatatable/data.table/issues/4911). Thanks to @myoung3 and @adamaltmejd for reporting, and @ColeMiller1 for the PR. An invalid key is where a `data.table` is marked as sorted by the key columns but the data is not sorted by those columns, leading to incorrect results from subsequent queries.
@@ -20,7 +51,11 @@
 
 3. `fread(..., nrows=0L)` now works as intended and the same as `nrows=0`; i.e. returning the column names and typed empty columns determined by the large sample, [#4686](https://github.com/Rdatatable/data.table/issues/4686). Thanks to @hongyuanjia for reporting, and Benjamin Schwendinger for the PR.
 
-4. When `j` returns an object whose class inherits from `data.table`, e.g. your own class `"myclass"` you have defined, or the class from package `X` whose class is `c("X", "data.table", "data.frame")`, the derived class (`"myclass"` or `"X"` in those examples) is no longer incorrectly dropped from the class of the `data.table` returned, [#4324](https://github.com/Rdatatable/data.table/issues/4324). Thanks to @HJAllen for reporting and @shrektan for the PR.
+4. Passing `.SD` to `frankv()` with `ties.method='random'` or with `na.last=NA` failed with `.SD is locked`, [#4429](https://github.com/Rdatatable/data.table/issues/4429). Thanks @smarches for the report.
+
+5. Filtering data.table using `which=NA` to return non-matching indices will now properly work for non-optimized subsetting as well, closes [#4411](https://github.com/Rdatatable/data.table/issues/4411).
+
+6. When `j` returns an object whose class `"X"` inherits from `data.table`; i.e. class `c("X", "data.table", "data.frame")`, the derived class `"X"` is no longer incorrectly dropped from the class of the `data.table` returned, [#4324](https://github.com/Rdatatable/data.table/issues/4324). Thanks to @HJAllen for reporting and @shrektan for the PR.
 
 ## NOTES
 

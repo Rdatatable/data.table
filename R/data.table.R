@@ -553,6 +553,11 @@ replace_dot_alias = function(e) {
       # i is not a data.table
       if (!is.logical(i) && !is.numeric(i)) stop("i has evaluated to type ", typeof(i), ". Expecting logical, integer or double.")
       if (is.logical(i)) {
+        if (is.na(which)) { # #4411 i filter not optimized to join: DT[A > 1, which = NA]
+          ## we need this branch here, not below next to which=TRUE because irows=i=which(i) will filter out NAs: DT[A > 10, which = NA] will be incorrect
+          if (notjoin) stop("internal error: notjoin and which=NA (non-matches), huh? please provide reproducible example to issue tracker") # nocov
+          return(which(is.na(i) | !i))
+        }
         if (length(i)==1L  # to avoid unname copy when length(i)==nrow (normal case we don't want to slow down)
           && isTRUE(unname(i))) { irows=i=NULL }  # unname() for #2152 - length 1 named logical vector.
         # NULL is efficient signal to avoid creating 1:nrow(x) but still return all rows, fixes #1249
