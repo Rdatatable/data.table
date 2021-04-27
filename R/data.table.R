@@ -148,22 +148,19 @@ replace_dot_alias = function(e) {
     on.exit(options(oldverbose))
   }
   .global$print=""
+  missingby = missing(by) && missing(keyby)  # for tests 359 & 590 where passing by=NULL results in data.table not vector
   if (!missing(by) && missing(keyby)) { # by alone
     by = bysub = substitute(by)
     keyby = FALSE
-    missingby = FALSE
   } else if (missing(by) && !missing(keyby)) { # keyby alone
     by = bysub = substitute(keyby)
     keyby = TRUE
-    missingby = FALSE
   } else if (!missing(by) && !missing(keyby)) { # by + logical keyby
     by = bysub = substitute(by)
     if (!isTRUEorFALSE(keyby))
       stop("When by and keyby are both provided, keyby must be TRUE or FALSE")
-    missingby = FALSE
   } else { # no by/keyby
     by = bysub = NULL
-    missingby = TRUE # for tests 359 & 590 where passing by=NULL results in data.table not vector
   }
   if (!missingby && missing(j)) {
     warning("Ignoring by/keyby because 'j' is not supplied");
