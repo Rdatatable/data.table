@@ -6019,20 +6019,20 @@ test(1419.11, key(thisDT), NULL)
 ## same tests for empty DT
 ## forderv tests can be skipped for empty DT
 DT <- DT[0]
-thisDT <- copy(DT)[, x3 := numeric()]
+thisDT <- copy(DT)[, x3 := 3]
 test(1419.12, key(thisDT), NULL)
 setkeyv(DT, c("x1", "x2", "x3"))
-thisDT <- copy(DT)[, x1 := numeric()]
+thisDT <- copy(DT)[, x1 := 3]
 test(1419.13, key(thisDT), NULL)
-thisDT <- copy(DT)[, x2 := numeric()]
+thisDT <- copy(DT)[, x2 := 3]
 test(1419.14, key(thisDT), "x1")
-thisDT <- copy(DT)[, x2 := numeric()]
+thisDT <- copy(DT)[, x2 := 3]
 test(1419.15, key(thisDT), "x1")
-thisDT <- copy(DT)[, x3 := numeric()]
+thisDT <- copy(DT)[, x3 := 3]
 test(1419.16, key(thisDT), c("x1", "x2"))
-thisDT <- copy(DT)[, c("x1", "x3") := .(numeric(), numeric())]
+thisDT <- copy(DT)[, c("x1", "x3") := .(3,3)]
 test(1419.17, key(thisDT), NULL)
-thisDT <- copy(DT)[, c("x2", "x3") := .(numeric(),numeric())]
+thisDT <- copy(DT)[, c("x2", "x3") := .(3,3)]
 test(1419.18, key(thisDT), "x1")
 
 ## testing secondary index retainment on assign (#2372)
@@ -6113,25 +6113,25 @@ test(1419.46, allIndicesValid(thisDT), TRUE)
 ## on empty DT
 DT <- DT[0]
 setindex(DT, NULL)
-test(1419.47, indices(copy(DT)[, a:=numeric()]), NULL)
+test(1419.47, indices(copy(DT)[, a:=1]), NULL)
 setindex(DT, a)
 setindex(DT, a, aaa)
 setindex(DT, ab, aaa)
 setindex(DT)
 test(1419.48, allIndicesValid(DT), TRUE)
-thisDT <- copy(DT)[, a:=numeric()][, aaa := numeric()][, ab := numeric()]
+thisDT <- copy(DT)[, a:=1][, aaa := 1][, ab := 1]
 test(1419.49, indices(thisDT), NULL)
 test(1419.51, allIndicesValid(thisDT), TRUE)
-thisDT <- copy(DT)[, b := numeric()]
+thisDT <- copy(DT)[, b := 2]
 test(1419.52, indices(thisDT), c("a", "a__aaa", "ab__aaa"))
 test(1419.53, allIndicesValid(thisDT), TRUE)
-thisDT <- copy(DT)[, ab := numeric()]
+thisDT <- copy(DT)[, ab := 2]
 test(1419.54, indices(thisDT), c("a", "a__aaa", "a__aaa__b"))
 test(1419.55, allIndicesValid(thisDT), TRUE)
-thisDT <- copy(DT)[, aaa := numeric()]
+thisDT <- copy(DT)[, aaa := 2]
 test(1419.56, indices(thisDT), c("a", "ab"))
 test(1419.57, allIndicesValid(thisDT), TRUE)
-thisDT <- copy(DT)[, c("aaa", "b") := numeric()]
+thisDT <- copy(DT)[, c("aaa", "b") := 2]
 test(1419.58, indices(thisDT), c("a", "ab"))
 test(1419.59, allIndicesValid(thisDT), TRUE)
 
@@ -17389,4 +17389,5 @@ DT = data.table()
 set(DT, j=c("v1","v2"), value=list(1:6, 2:7))
 test(2175.2, attr(DT, "row.names"), 1:6)
 DT = data.table(x=integer())
-test(2175.3, DT[, y:=3L], data.table(x=integer(), y=integer()), warning="has 0 rows but.*1.*being assigned")
+test(2175.3, DT[, y:=3L], data.table(x=integer(), y=integer())) # in keeping with recent #4262, view as recycling the length-1 3L to match the length-0 data
+

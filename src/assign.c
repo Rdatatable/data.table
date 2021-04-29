@@ -318,13 +318,9 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
     error(_("data.table is NULL; malformed. A null data.table should be an empty list. typeof() should always return 'list' for data.table.")); // # nocov
     // Not possible to test because R won't permit attributes be attached to NULL (which is good and we like); warning from R 3.4.0+ tested by 944.5
   }
-  const int RHS_row = isNewList(values) && length(values) ? length(VECTOR_ELT(values, 0)) : length(values);
-  const bool is_null_dt = LENGTH(dt) == 0; // fix for #4597; null.data.table needs row names
-  const int nrow = !is_null_dt ? length(VECTOR_ELT(dt,0)) :
+  const int nrow = LENGTH(dt) ? length(VECTOR_ELT(dt,0)) :
                                 (isNewList(values) && length(values) ? length(VECTOR_ELT(values,0)) : length(values));
   //                            ^ when null data.table the new nrow becomes the fist column added
-  if (!is_null_dt && nrow == 0 && RHS_row > 0) // related to #4597; groupingsets relies on this so right now only a warning
-    warning(_("The data.table has 0 rows but there are %d row(s) being assigned. The value will be ignored but new column(s) will be added. This warning will be upgraded to error in the next release"), RHS_row);
   if (isNull(rows)) {
     numToDo = nrow;
     targetlen = nrow;
@@ -477,6 +473,14 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
     for (i=0; i<LENGTH(newcolnames); i++)
       SET_STRING_ELT(names,oldncol+i,STRING_ELT(newcolnames,i));
     // truelengths of both already set by alloccol
+    if (oldncol==0) {
+      // adding columns to null data.table needs row.names set, #4597
+      SEXP rn;
+      PROTECT(rn = allocVector(INTSXP, 2)); protecti++;
+      INTEGER(rn)[0] = NA_INTEGER;
+      INTEGER(rn)[1] = -nrow;
+      setAttrib(dt, R_RowNamesSymbol, rn);
+    }
   }
   for (i=0; i<length(cols); i++) {
     coln = INTEGER(cols)[i]-1;
@@ -669,12 +673,6 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
       PROTECT(nullint=allocVector(INTSXP, 0)); protecti++;
       setAttrib(dt, R_RowNamesSymbol, nullint);  // i.e. .set_row_names(0)
     }
-  } else if (is_null_dt) { // fix for #4597; null.data.table needs row names
-    SEXP rn;
-    PROTECT(rn = allocVector(INTSXP, 2)); protecti++;
-    INTEGER(rn)[0] = NA_INTEGER;
-    INTEGER(rn)[1] = -nrow;
-    setAttrib(dt, R_RowNamesSymbol, rn);
   }
   UNPROTECT(protecti);
   return(dt);  // needed for `*tmp*` mechanism (when := isn't used), and to return the new object after a := for compound syntax.

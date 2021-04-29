@@ -93,7 +93,7 @@ groupingsets.data.table = function(x, j, by, sets, .SDcols, id = FALSE, jj, ...)
   # aggregate function called for each grouping set
   aggregate.set = function(by.set) {
     r = if (length(.SDcols)) x[, eval(jj), by.set, .SDcols=.SDcols] else x[, eval(jj), by.set]
-    if (id && nrow(r) > 0L) { # #4597 ; warning when using set on nrow(dt) == 0L
+    if (id) {
       # integer bit mask of aggregation levels: http://www.postgresql.org/docs/9.5/static/functions-aggregate.html#FUNCTIONS-GROUPING-TABLE
       # 3267: strtoi("", base = 2L) output apparently unstable across platforms
       i_str = paste(c("1", "0")[by %chin% by.set + 1L], collapse="")
