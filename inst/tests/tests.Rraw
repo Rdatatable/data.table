@@ -17381,3 +17381,13 @@ test(2173, as.data.table(x), data.table(a=1:5, b.V1=6:10, b.V2=11:15))
 # rbind two length-0 ordered factors, #4795
 DT = data.table(A = ordered(character()))
 test(2174, rbind(DT, DT), DT)
+
+## set row.names when a null data.table has a column assigned for the first time, #4597
+DT = data.table()
+test(2175.1, attr(DT[, x:=1:5], "row.names"), 1:5)
+DT = data.table()
+set(DT, j=c("v1","v2"), value=list(1:6, 2:7))
+test(2175.2, attr(DT, "row.names"), 1:6)
+DT = data.table(x=integer())
+test(2175.3, DT[, y:=3L], data.table(x=integer(), y=integer())) # in keeping with recent #4262, view as recycling the length-1 3L to match the length-0 data
+

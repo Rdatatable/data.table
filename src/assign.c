@@ -473,6 +473,14 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
     for (i=0; i<LENGTH(newcolnames); i++)
       SET_STRING_ELT(names,oldncol+i,STRING_ELT(newcolnames,i));
     // truelengths of both already set by alloccol
+    if (oldncol==0) {
+      // adding columns to null data.table needs row.names set, #4597
+      SEXP rn;
+      PROTECT(rn = allocVector(INTSXP, 2)); protecti++;
+      INTEGER(rn)[0] = NA_INTEGER;
+      INTEGER(rn)[1] = -nrow;
+      setAttrib(dt, R_RowNamesSymbol, rn);
+    }
   }
   for (i=0; i<length(cols); i++) {
     coln = INTEGER(cols)[i]-1;
