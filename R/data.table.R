@@ -141,7 +141,8 @@ replace_dot_alias = function(e) {
     return(ans)
   }
   if (!missing(verbose)) {
-    stopifnot(isTRUEorFALSE(verbose))
+    if (!is.integer(verbose) && !is.logical(verbose)) stop("verbose must be logical or integer")
+    if (length(verbose)!=1 || anyNA(verbose)) stop("verbose must be length 1 non-NA")
     # set the global verbose option because that is fetched from C code without having to pass it through
     oldverbose = options(datatable.verbose=verbose)
     on.exit(options(oldverbose))
@@ -552,6 +553,11 @@ replace_dot_alias = function(e) {
       # i is not a data.table
       if (!is.logical(i) && !is.numeric(i)) stop("i has evaluated to type ", typeof(i), ". Expecting logical, integer or double.")
       if (is.logical(i)) {
+        if (is.na(which)) { # #4411 i filter not optimized to join: DT[A > 1, which = NA]
+          ## we need this branch here, not below next to which=TRUE because irows=i=which(i) will filter out NAs: DT[A > 10, which = NA] will be incorrect
+          if (notjoin) stop("internal error: notjoin and which=NA (non-matches), huh? please provide reproducible example to issue tracker") # nocov
+          return(which(is.na(i) | !i))
+        }
         if (length(i)==1L  # to avoid unname copy when length(i)==nrow (normal case we don't want to slow down)
           && isTRUE(unname(i))) { irows=i=NULL }  # unname() for #2152 - length 1 named logical vector.
         # NULL is efficient signal to avoid creating 1:nrow(x) but still return all rows, fixes #1249
@@ -1339,7 +1345,9 @@ replace_dot_alias = function(e) {
     }
 
     if (is.data.table(jval)) {
-      setattr(jval, 'class', class(x)) # fix for #64
+      # should set the parent class only when jval is a plain data.table #4324
+      if (identical(class(jval), c('data.table', 'data.frame'))) 
+        setattr(jval, 'class', class(x)) # fix for #64
       if (haskey(x) && all(key(x) %chin% names(jval)) && is.sorted(jval, by=key(x)))
         setattr(jval, 'sorted', key(x))
       if (any(sapply(jval, is.null))) stop("Internal error: j has created a data.table result containing a NULL column") # nocov
@@ -1384,7 +1392,8 @@ replace_dot_alias = function(e) {
     byval = i
     bynames = if (missing(on)) head(key(x),length(leftcols)) else names(on)
     allbyvars = NULL
-    bysameorder = haskey(i) || (is.sorted(f__) && ((roll == FALSE) || length(f__) == 1L)) # Fix for #1010
+    bysameorder = (haskey(i) && identical(leftcols, chmatch(head(key(i),length(leftcols)), names(i)))) || # leftcols leading subset of key(i); see #4917
+                  (roll==FALSE && is.sorted(f__)) # roll==FALSE is fix for #1010
     ##  'av' correct here ??  *** TO DO ***
     xjisvars = intersect(av, names_x[rightcols])  # no "x." for xvars.
     # if 'get' is in 'av' use all cols in 'i', fix for bug #34
@@ -2855,7 +2864,7 @@ ghead = function(x, n) .Call(Cghead, x, as.integer(n)) # n is not used at the mo
 gtail = function(x, n) .Call(Cgtail, x, as.integer(n)) # n is not used at the moment
 gfirst = function(x) .Call(Cgfirst, x)
 glast = function(x) .Call(Cglast, x)
-gsum = function(x, na.rm=FALSE) .Call(Cgsum, x, na.rm, TRUE)  # warnOverflow=TRUE, #986
+gsum = function(x, na.rm=FALSE) .Call(Cgsum, x, na.rm)
 gmean = function(x, na.rm=FALSE) .Call(Cgmean, x, na.rm)
 gprod = function(x, na.rm=FALSE) .Call(Cgprod, x, na.rm)
 gmedian = function(x, na.rm=FALSE) .Call(Cgmedian, x, na.rm)
@@ -3117,7 +3126,7 @@ isReallyReal = function(x) {
   }
   idx_op = match(operators, ops, nomatch=0L)
   if (any(idx_op %in% c(0L, 6L)))
-    stop("Invalid operators ", paste(operators[idx_op %in% c(0L, 6L)], collapse=","), ". Only allowed operators are ", paste(ops[1:5], collapse=""), ".")
+    stop(gettextf("Invalid join operators %s. Only allowed operators are %s.", brackify(operators[idx_op %in% c(0L, 6L)]), brackify(ops[1:5]), domain="R-data.table"), domain=NA)
   ## the final on will contain the xCol as name, the iCol as value
   on = iCols
   names(on) = xCols
