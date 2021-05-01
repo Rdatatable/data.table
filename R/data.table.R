@@ -1123,7 +1123,7 @@ replace_dot_alias = function(e) {
               if (is.list(k)) {
                 origj = j = if (name[[1L]] == "$") as.character(name[[3L]]) else eval(name[[3L]], parent.frame(), parent.frame())
                 if (is.character(j)) {
-                  if (length(j)!=1L) stop(gettextf(
+                  if (length(j)!=1L) stop(domain = NA, gettextf(
                     "Cannot assign to an under-allocated recursively indexed list -- L[[i]][,:=] syntax is only valid when j is length 1, but its length is %d",
                     length(j), domain = "R-data.table"
                   ))
