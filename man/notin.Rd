@@ -2,7 +2,7 @@
 \alias{\%notin\%}
 
 \title{
-Convenience for checking if an example is not in a set of elements
+Convenience operator for checking if an example is not in a set of elements
 }
 
 \description{
@@ -14,8 +14,8 @@ x \%notin\% table
 }
 
 \arguments{
-   \item{x}{ vector or \code{NULL}: value to be matched }
-   \item{table}{ vector or \code{NULL}: values to check for a match }
+   \item{x}{ Vector or \code{NULL}: the values to be matched. }
+   \item{table}{ Vector or \code{NULL}: the values to be matched against. }
 }
 
 
