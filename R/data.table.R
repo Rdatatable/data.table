@@ -1125,7 +1125,7 @@ replace_dot_alias = function(e) {
                 if (is.character(j)) {
                   if (length(j)!=1L) stop(domain=NA, gettextf(
                     "Cannot assign to an under-allocated recursively indexed list -- L[[i]][,:=] syntax is only valid when j is length 1, but its length is %d",
-                    length(j), domain="R-data.table"
+                    length(j)
                   ))
                   j = match(j, names(k))
                   if (is.na(j)) stop("Internal error -- item '", origj, "' not found in names of list") # nocov
