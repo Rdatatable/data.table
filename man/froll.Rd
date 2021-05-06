@@ -113,7 +113,7 @@ frollapply(x, n, FUN, \dots, fill=NA, align=c("right", "left", "center"))
     \item{ when \code{adaptive=TRUE}, then \code{n} must be vector of
       length equal to \code{nrow(x)}, or list of such vectors. }
     \item{ \code{partial} window feature is not supported, although it can
-      be accomplished by using \code{adaptive=TRUE}, see examples. }
+      be accomplished by using \code{adaptive=TRUE}, see examples. \code{NA} is always returned for incomplete windows. }
   }
 
   Be aware that rolling functions operates on the physical order of input.

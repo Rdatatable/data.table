@@ -1588,7 +1588,7 @@ test(534, names(transform(data.table('a b'=1), `c d`=`a b`)), c("a b","c d"))
 
 # Test keyby, new in v1.8.0
 DT = data.table(a=INT(1,3,1,2,3,2),b=1:2,c=1:3,v=1:6)
-test(535, DT[,sum(v),by=a, keyby=a], error="not both")
+test(535, DT[,sum(v),by=a, keyby=a], error="When.*both.*keyby must be TRUE or FALSE") # updated after #4307
 test(536, DT[,sum(v),by=a], data.table(a=c(1L,3L,2L),V1=c(4L,7L,10L)))  # retains appearance order
 ans = data.table(a=1:3,V1=c(4L,10L,7L),key="a")
 test(537, DT[,sum(v),keyby=a], ans)
@@ -4195,7 +4195,7 @@ setNumericRounding(old_rounding)
 
 DT = data.table(id=INT(1,2,1), val1=3:1, val2=3:1, val3=list(2:3,4:6,7:10))   # 5380
 test(1199.1, DT[, sum(.SD), by=id, .SDcols=2:3], data.table(id=1:2, V1=INT(8,4)))   #875 made the .SD case work
-test(1199.2, DT[, sum(.SD), by=id], error="data.*frame.*numeric")  # this is R's error message so use flexible string pattern to insulate from minor changes in R, #4769 
+test(1199.2, DT[, sum(.SD), by=id], error="data.*frame.*numeric")  # this is R's error message so use flexible string pattern to insulate from minor changes in R, #4769
 test(1199.3, DT[, sum(val3), by=id], error="Type 'list' not supported by GForce sum [(]gsum[)]. Either.*or turn off")
 
 # Selection of columns, copy column to maintain the same as R <= 3.0.2, in Rdevel, for now
@@ -5839,7 +5839,7 @@ test(1380, DT[a==TRUE], DT[3:4])
 # Fix #847, as.data.table.list and character(0) issue
 x <- data.table(a=character(0), b=character(0), c=numeric(0))
 setkey(x, a, b)
-test(1381, x[J("foo", character(0)), nomatch=0L], x, warning="Item 2 has 0 rows but longest item has 1; filled with NA")
+test(1381, x[J("foo", character(0)), nomatch=0L], x)
 
 # Fix for #813 and #758
 DT = data.table(x = 1:2)
@@ -7295,17 +7295,21 @@ set.seed(2L)
 x = apply(matrix(sample(letters, 12), nrow=2), 1, paste, collapse="")
 y = factor(sample(c(letters[1:5], x), 20, TRUE))
 xsub = substring(x, 1L, 1L)
-test(1532.1, y %like% xsub[1L], grepl(xsub[1L], y))
-test(1532.2, y %like% xsub[2L], grepl(xsub[2L], y))
-test(1532.3, like(y, xsub[1L]), grepl(xsub[1L], y))
-test(1532.4, like(y, xsub[2L]), grepl(xsub[2L], y))
+test(1532.01, y %like% xsub[1L], grepl(xsub[1L], y))
+test(1532.02, y %like% xsub[2L], grepl(xsub[2L], y))
+test(1532.03, like(y, xsub[1L]), grepl(xsub[1L], y))
+test(1532.04, like(y, xsub[2L]), grepl(xsub[2L], y))
 ## %ilike% and %flike% for #3333
 x = c('HEY', 'hey', '()')
-test(1532.5, like(x, 'hey', ignore.case = TRUE), c(TRUE, TRUE, FALSE))
-test(1532.6, like(x, '()'), c(TRUE, TRUE, TRUE))
-test(1532.7, like(x, '()', fixed = TRUE), c(FALSE, FALSE, TRUE))
-test(1532.8, x %ilike% 'hey', c(TRUE, TRUE, FALSE))
-test(1532.9, x %flike% '()', c(FALSE, FALSE, TRUE))
+test(1532.05, like(x, 'hey', ignore.case = TRUE), c(TRUE, TRUE, FALSE))
+test(1532.06, like(x, '()'), c(TRUE, TRUE, TRUE))
+test(1532.07, like(x, '()', fixed = TRUE), c(FALSE, FALSE, TRUE))
+test(1532.08, x %ilike% 'hey', c(TRUE, TRUE, FALSE))
+test(1532.09, x %flike% '()', c(FALSE, FALSE, TRUE))
+## %like% test for ordered factor with NA
+x = c("A", "B", "C", NA_character_)
+x = ordered(x, levels = rev(x)[-1L])
+test(1532.10, x %like% "A", c(TRUE, FALSE, FALSE, FALSE))
 
 # coverage for setkey() to 100%
 dt1 = data.table(x=sample(5), y=1:5, key="y")
@@ -10442,7 +10446,7 @@ test(1728.12, DT[order(x,na.last=NA)], DT[2])  # was randomly wrong
 if (test_longdouble) {  #3258
 
   old = options(datatable.verbose=FALSE)  # capture.output() exact tests must not be polluted with verbosity
-  
+
   test(1729.01, fwrite(data.table(V1=c(1), V2=c(9.9999999999999982236431605997495353221893310546875))),
                 output="V1,V2\n1,10")
   test(1729.02, fwrite(data.table(V2=c(9.9999999999999982236431605997495353221893310546875), V1=c(1))),
@@ -10522,8 +10526,8 @@ if (test_longdouble) {  #3258
   #  2.220446e-16   1.110223e-16  2.225074e-308  1.797693e+308
   test(1729.12, typeof(DT[[1L]]), "double")
   test(1729.13, capture.output(fwrite(DT)), capture.output(write.csv(DT,row.names=FALSE,quote=FALSE)))
-  
-  options(old)  # restore the previous datatable.verbose value, for example for the CRAN_Release test with verbose on 
+
+  options(old)  # restore the previous datatable.verbose value, for example for the CRAN_Release test with verbose on
 }
 
 if (test_bit64) {
@@ -10846,7 +10850,7 @@ if (TZnotUTC) {
   # from v1.13.0 these tests work when running under non-UTC because they compare to as.POSIXct which reads these unmarked datetime in local
   # the new tests 2150.* cover more cases
   # from v1.14.0, the tz="" is needed
-  test(1743.25, fread("a,b,c\n2015-06-01 11:00:00,1,ae", colClasses=c("POSIXct","integer","character"), tz=""), 
+  test(1743.25, fread("a,b,c\n2015-06-01 11:00:00,1,ae", colClasses=c("POSIXct","integer","character"), tz=""),
                 data.table(a=as.POSIXct("2015-06-01 11:00:00"),b=1L,c="ae"))
   test(1743.26, fread("a,b,c,d,e,f,g,h\n1,k,2015-06-01 11:00:00,a,1.5,M,9,0", colClasses=list(POSIXct="c", character="b"), drop=c("a","b"), logical01=TRUE, tz=""),
               ans<-data.table(c=as.POSIXct("2015-06-01 11:00:00"), d="a", e=1.5, f="M", g=9L, h=FALSE))
@@ -13184,7 +13188,7 @@ test(1948.09, DT[i, on = eval(eval("id<=idi"))], DT[i, on = "id<=idi"])
 test(1948.10, DT[i, on = ""], error = "'on' contains no column name: . Each 'on' clause must contain one or two column names.")
 test(1948.11, DT[i, on = "id>=idi>=1"], error = "Found more than one operator in one 'on' statement: id>=idi>=1. Please specify a single operator.")
 test(1948.12, DT[i, on = "`id``idi`<=id"], error = "'on' contains more than 2 column names: `id``idi`<=id. Each 'on' clause must contain one or two column names.")
-test(1948.13, DT[i, on = "id != idi"], error = "Invalid operators !=. Only allowed operators are ==<=<>=>.")
+test(1948.13, DT[i, on = "id != idi"], error = "Invalid join operators [!=]. Only allowed operators are [==, <=, <, >=, >].")
 test(1948.14, DT[i, on = 1L], error = "'on' argument should be a named atomic vector of column names indicating which columns in 'i' should be joined with which columns in 'x'.")
 
 # helpful error when on= is provided but not i, rather than silently ignoring on=
@@ -13259,14 +13263,17 @@ test(1957.3, fread("A,B\na,b\nc,d\n", stringsAsFactors=TRUE, verbose=TRUE), data
              output="stringsAsFactors=TRUE converted 2 column(s): [A, B]")
 
 # misc. coverage tests in fread
-test(1958.1, fread('\U0001f64d', encoding = 'UTF-16'), error = "Argument 'encoding' must be")
-test(1958.2, fread('a,b\n1,2', nrows = NA_real_),      data.table(a = 1L, b = 2L))
-test(1958.3, fread('a,b\n1,2', nrows = -1),            data.table(a = 1L, b = 2L))
-test(1958.4, fread('a,b\n1,2', key = 1),               error = 'must be a character vector naming columns')
-test(1958.5, fread("A,B,C\n1,2,3\n3,4,5\n0,0,0\n",   nrows=0),          data.table(A=logical(), B=logical(), C=logical()))  #2747
-test(1958.6, fread("A,B,C\n1,2,3\n3,4,5\n0,0,100\n", nrows=0, sep=','), data.table(A=logical(), B=logical(), C=logical()))
-test(1958.7, fread('A,B,C,D\n"a,b",4,5,6\n"c,d",6,7\n', fill=TRUE), data.table(A=c("a,b","c,d"), B=INT(4,6), C=INT(5,7), D=INT(6,NA)))  # 2547
-test(1958.8, fread('A,B,C,D\n"a,b",4,5\n"c,d",6,7,8\n', fill=TRUE), data.table(A=c("a,b","c,d"), B=INT(4,6), C=INT(5,7), D=INT(NA,8)))
+test(1958.01, fread('\U0001f64d', encoding = 'UTF-16'), error = "Argument 'encoding' must be")
+test(1958.02, fread('a,b\n1,2', nrows = NA_real_),      data.table(a = 1L, b = 2L))
+test(1958.03, fread('a,b\n1,2', nrows = -1),            data.table(a = 1L, b = 2L))
+test(1958.04, fread('a,b\n1,2', key = 1),               error = 'must be a character vector naming columns')
+test(1958.05, fread("A,B,C\n1,2,3\n3,4,5\n0,0,0\n",   nrows=0),          data.table(A=logical(), B=logical(), C=logical()))  #2747
+test(1958.06, fread("A,B,C\n1,2,3\n3,4,5\n0,0,100\n", nrows=0, sep=','), data.table(A=logical(), B=logical(), C=logical()))
+test(1958.07, fread('A,B,C,D\n"a,b",4,5,6\n"c,d",6,7\n', fill=TRUE), data.table(A=c("a,b","c,d"), B=INT(4,6), C=INT(5,7), D=INT(6,NA)))  # 2547
+test(1958.08, fread('A,B,C,D\n"a,b",4,5\n"c,d",6,7,8\n', fill=TRUE), data.table(A=c("a,b","c,d"), B=INT(4,6), C=INT(5,7), D=INT(NA,8)))
+# 4686
+test(1958.09, fread("A,B,C\n1,2,3\n3,4,5\n0,0,0\n",   nrows=0L),          data.table(A=logical(), B=logical(), C=logical()))
+test(1958.10, fread("A,B,C\n1,2,3\n3,4,5\n0,0,100\n", nrows=0L, sep=','), data.table(A=logical(), B=logical(), C=logical()))
 
 # Skip should work with all types of newlines #3006
 eols = c("\n", "\r\n", "\r", "\n\r")
@@ -13751,7 +13758,7 @@ test(1967.34, data.table(1:5, NULL), data.table(V1=1:5))
 ###   if (novname[i]) vnames[[i]] = namesi
 ### but, on pause for now pending #3193
 ### test(1967.35, data.table(1:5, matrix(6:15, nrow = 5L))
-test(1967.35, data.table(1:5, integer(0L)), data.table(1:5, NA_integer_), warning="Item 2 has 0 rows but longest item has 5; filled with NA")
+test(1967.35, data.table(1:5, integer(0L)), data.table(integer(0L), integer(0L)))  # no longer NA-fill zero-length, PR#4262
 test(1967.36, data.table(1:5, key = 5L), error = 'must be character')
 
 x = data.table(a = 1:5)
@@ -13773,12 +13780,12 @@ test(1967.49, x[ , list(5) := 6], error = 'LHS of := must be a symbol')
 test(1967.50, x[ , 1 + 3i := 6], error = "LHS of := isn't column names")
 test(1967.511, x[ , .(5L), by = .EACHI, mult = 'all'], error='logical error. i is not data.table')
 test(1967.512, x[1+3i], error='i has evaluated to type complex. Expecting logical, integer or double')
-test(1967.521, x[1:2, by=a], x[1:2,], warning="Ignoring by= because j= is not supplied")
-test(1967.522, x[, by=a],    x,       warning=c("Ignoring by= because j= is not supplied","i and j are both missing.*upgraded to error in future"))
-test(1967.523, x[by=a],      x,       warning=c("Ignoring by= because j= is not supplied","i and j are both missing.*upgraded to error in future"))
-test(1967.524, x[1:2, keyby=a], x[1:2,], warning="Ignoring keyby= because j= is not supplied")
-test(1967.525, x[, keyby=a],    x,       warning=c("Ignoring keyby= because j= is not supplied","i and j are both missing.*upgraded to error in future"))
-test(1967.526, x[keyby=a],      x,       warning=c("Ignoring keyby= because j= is not supplied","i and j are both missing.*upgraded to error in future"))
+test(1967.521, x[1:2, by=a], x[1:2,], warning="Ignoring by/keyby because 'j' is not supplied")
+test(1967.522, x[, by=a],    x,       warning=c("Ignoring by/keyby because 'j' is not supplied","i and j are both missing.*upgraded to error in future"))
+test(1967.523, x[by=a],      x,       warning=c("Ignoring by/keyby because 'j' is not supplied","i and j are both missing.*upgraded to error in future"))
+test(1967.524, x[1:2, keyby=a], x[1:2,], warning="Ignoring by/keyby because 'j' is not supplied")
+test(1967.525, x[, keyby=a],    x,       warning=c("Ignoring by/keyby because 'j' is not supplied","i and j are both missing.*upgraded to error in future"))
+test(1967.526, x[keyby=a],      x,       warning=c("Ignoring by/keyby because 'j' is not supplied","i and j are both missing.*upgraded to error in future"))
 
 test(1967.53, as.matrix(x, rownames = 2:3), error='length(rownames)==2 but')
 test(1967.54, as.matrix(x[0L]), structure(integer(0), .Dim = c(0L, 2L), .Dimnames = list(NULL, c("a", "b"))))
@@ -16654,17 +16661,17 @@ if (is.na(oldtz)) Sys.unsetenv("TZ") else Sys.setenv(TZ=oldtz)
 # careful to unset because TZ="" means UTC whereas unset TZ means local
 
 # trunc.cols in print.data.table, #4074
-old_width = options("width" = 40)
+old_width = options("width" = 40L)
 # Single row printing (to check issue with losing attributes)
 DT = data.table(a = "aaaaaaaaaaaaa",
                 b = "bbbbbbbbbbbbb",
                 c = "ccccccccccccc",
                 d = "ddddddddddddd")
 test(2125.01,
-     capture.output(print(DT, trunc.cols=TRUE))[3],
+     capture.output(print(DT, trunc.cols=TRUE))[3L],
      "2 variables not shown: [c, d]")
 # Printing with dots
-DT = data.table(a = vector("integer", 102),
+DT = data.table(a = vector("integer", 102L),
                 b = "bbbbbbbbbbbbb",
                 c = "ccccccccccccc",
                 d = c("ddddddddddddd", "d"))
@@ -16696,8 +16703,12 @@ test(2125.03, capture.output(print(DT, trunc.cols=TRUE, row.names=FALSE)),
        "    0 bbbbbbbbbbbbb ccccccccccccc",
        "    0 bbbbbbbbbbbbb ccccccccccccc",
        "1 variable not shown: [d]" ))
-test(2125.04, capture.output(print(DT, trunc.cols=TRUE, class=TRUE))[14],
-     "1 variable not shown: [d <char>]")
+# also testing #4266 -- getting width of row #s register right
+#   TODO: understand why 2 variables truncated here. a,b,c combined have width
+#     _exactly_ 40, but still wraps. If we set options(width=41) it won't truncate.
+#     seems to be an issue with print.default.
+test(2125.04, capture.output(print(DT, trunc.cols=TRUE, class=TRUE))[14L],
+     "2 variables not shown: [c <char>, d <char>]")
 test(2125.05, capture.output(print(DT, trunc.cols=TRUE, class=TRUE, row.names=FALSE))[c(1,14)],
      c("        a             b             c",
        "1 variable not shown: [d <char>]" ))
@@ -16705,8 +16716,8 @@ test(2125.06, capture.output(print(DT, trunc.cols=TRUE, col.names="none"))[c(1,1
      c("  1: 0 bbbbbbbbbbbbb ccccccccccccc",
        "1 variable not shown: [d]" ))
 test(2125.07, capture.output(print(DT, trunc.cols=TRUE, class=TRUE, col.names="none"))[c(1,13)],
-     c("  1: 0 bbbbbbbbbbbbb ccccccccccccc",
-       "1 variable not shown: [d]" ),
+     c("  1: 0 bbbbbbbbbbbbb",
+       "2 variables not shown: [c, d]" ),
      warning = "Column classes will be suppressed when col.names is 'none'")
 options("width" = 20)
 DT = data.table(a = vector("integer", 2),
@@ -17143,7 +17154,7 @@ test(2153.2, DT[, .(list(.GRP)), by=x], data.table(x=1:2, V1=as.list(1:2)))
 test(2153.3, ans<-DT[, .(list(.NGRP)), by=x], data.table(x=1:2, V1=list(2L,2L)))
 test(2153.4, address(ans$V1[[1L]]), address(ans$V1[[2L]]))  # .NGRP doesn't change group to group so the same object can be referenced many times unlike .N and .GRP
 test(2153.5, DT[, .(list(c(0L,.N,0L))), by=x],  # c() here will create new object so this is ok anyway; i.e. address(.N) is not present in j's result
-             data.table(x=1:2, V1=list(c(0L,1L,0L), c(0L,2L,0L)))) 
+             data.table(x=1:2, V1=list(c(0L,1L,0L), c(0L,2L,0L))))
 
 # warning message segfault when no column names present, #4644
 test(2154.1, fread("0.0\n", colClasses="integer"), data.table(V1=0.0),
@@ -17161,7 +17172,7 @@ for (i in 0:4) test(2155+i/10,
 
 # dogroups.c eval(j) could create list columns containing altrep references to the specials, #4759
 # thanks to revdep testing of 1.13.2 where package tstools revealed this via ts() creating ALTREP, #4758
-# the attr(value,"class")<-"newclass" lines mimics a line at the end of stats::ts(). When the 
+# the attr(value,"class")<-"newclass" lines mimics a line at the end of stats::ts(). When the
 # length(value)>=64, R creates an ALTREP REF wrapper. Which dogroups.c now catches.
 # Hence this test needs to be at least 128 rows, 2 groups of 64 each.
 DT = data.table(series=c("ts1","ts2"), value=rnorm(128))
@@ -17186,7 +17197,7 @@ test(2158.1, DT[, .(value = list(value)), index],
 DT = data.table(value=as.list(1:6), index=rep(1:2, each=3))
 test(2158.2, DT[, by="index", list(value=list(value))],
              data.table(index=1:2, value=list(as.list(1:3), as.list(4:6))))
-             
+
 # type consistency of empty input to as.matrix.data.table, #4762
 DT = data.table(x = 1)
 test(2159.01, typeof(as.matrix(DT)), "double")
@@ -17273,8 +17284,129 @@ if (test_bit64) {
   test(2164.3, d[, mean(b, na.rm=TRUE), by=a], data.table(a=INT(1,2), V1=c(2.5, 4)))
 }
 
-# Don't segfault, #4892
+# invalid key when by=.EACHI, haskey(i) but on= non-leading-subset of i's key, #4603 #4911
+X = data.table(id = c(6456372L, 6456372L, 6456372L, 6456372L,6456372L, 6456372L, 6456372L, 6456372L, 6456372L, 6456372L, 6456372L, 6456372L, 6456372L, 6456372L),
+               id_round = c(197801L, 199405L, 199501L, 197901L, 197905L, 198001L, 198005L, 198101L, 198105L, 198201L, 198205L, 198301L, 198305L, 198401L),
+               field = c(NA, NA, NA, "medicine", "medicine", "medicine", "medicine", "medicine", "medicine", "medicine", "medicine", "medicine", "medicine", "medicine"),
+               key = "id")
+Y = data.table(id = c(6456372L, 6456345L, 6456356L),
+               id_round = c(197705L, 197905L, 201705L),
+               field = c("medicine", "teaching", "health"),
+               prio = c(6L, 1L, 10L),
+               key = c("id_round", "id", "prio", "field" ))
+test(2165.1, X[Y, on = .(id, id_round > id_round, field), .(x.id_round[1], i.id_round[1]), by=.EACHI][id==6456372L],
+             data.table(id=6456372L, id_round=197705L, field='medicine', V1=197901L, V2=197705L))
+# Y$id_round happens to be sorted, so in 2165.2 we test Y$field which is not sorted
+test(2165.2, X[Y, on="field", .(x.id_round[1]), by=.EACHI][field=="health"],
+             data.table(field="health", V1=NA_integer_))
+# a minimal example too ...
+X = data.table(A=c(4L,2L,3L), B=1:3, key="A")
+Y = data.table(A=2:1, B=2:3, key=c("B","A"))
+test(2165.3, X[Y],                          data.table(A=2:3, B=2:3, i.A=2:1, key="A"))  # keyed
+test(2165.4, X[Y, on=.(A)],                 data.table(A=2:1, B=c(2L,NA), i.B=2:3))      # no key
+test(2165.5, X[Y, on=.(A), x.B, by=.EACHI], data.table(A=2:1, x.B=c(2L,NA)))             # no key
+
+# missing j was caught in groupingsets but not cube, leading to unexpected error message, #4282
+DT = data.table(a=1)
+test(2166, cube(DT, by='a'), error="Argument 'j' is required")
+
+# fwrite support encoding "native" and "UTF-8", #1770
+latin1 = "fa\xE7ile"
+Encoding(latin1) = "latin1"
+utf8 = iconv(latin1, "latin1", "UTF-8")
+text = c(latin1, utf8, "aaaaaaaa")
+dt = data.table(A = text, B = as.factor(text))
+dt2 = data.table(A = text, B = text)
+csvfile = tempfile(fileext = ".csv")
+fwrite(dt, csvfile, encoding = "UTF-8", bom = TRUE)
+test(2167.1, fread(csvfile, encoding = "UTF-8"), dt2)
+if (identical(text, enc2native(text))) { # ensure native encoding can represent latin1 strings
+  fwrite(dt, csvfile, encoding = "native")
+  test(2167.2, fread(csvfile), dt2)
+}
+test(2167.3, fwrite(dt, csvfile, encoding="nativ"), error="Argument 'encoding' must be")
+unlink(csvfile)
+
+# check valid trunc.cols=, #4766
+DT = data.table(x = rnorm(10))
+test(2168.01, print(DT, trunc.cols = 5L), error=c("Valid options for trunc.cols are TRUE and FALSE"))
+test(2168.02, print(DT, trunc.cols = NA), error=c("Valid options for trunc.cols are TRUE and FALSE"))
+test(2168.03, print(DT, trunc.cols = "thing"), error=c("Valid options for trunc.cols are TRUE and FALSE"))
+test(2168.04, print(DT, trunc.cols = c(TRUE, FALSE)), error=c("Valid options for trunc.cols are TRUE and FALSE"))
+
+# shallow copy of .SD must be unlocked for frank using na.last=NA or ties.method='random', #4429
+DT = data.table(a=1:10)
+test(2169.1, DT[ , frankv(.SD, ties.method='average', na.last=NA)], as.double(1:10))
+test(2169.2, DT[ , frankv(.SD, ties.method='random')], 1:10)
+# coverage tests for some issues discovered on the way
+DT[, c('..na_prefix..', '..stats_runif..') := 1L]
+test(2169.3, DT[ , frankv(.SD, ties.method='average', na.last=NA)], error="Input column '..na_prefix..' conflicts")
+test(2169.4, DT[ , frankv(.SD, ties.method='random')],              error="Input column '..stats_runif..' conflicts")
+
+# which=NA inconsistent with ?data.table, #4411
+DT = data.table(A = c(NA, 3, 5, 0, 1, 2), B = c("foo", "foo", "foo", "bar", "bar", "bar"))
+test(2170.1, DT[A > 1, which = NA], c(1L,4:5))
+test(2170.2, DT[A > -1, which = NA], 1L)
+test(2170.3, DT[A > -1 | is.na(A), which = NA], integer())
+test(2170.4, DT[A > 10, which = NA], seq_len(nrow(DT)))
+test(2170.5, DT[!(A > 1), which = NA], c(1:3,6L)) # matches DT[A <= 1, which = NA]
+
+# data.table() zero-nrow result if any non-null & atomic element is length 0, #3727
+test(2171.1, data.table(A=double(), B=1:2), data.table(A=double(), B=integer()))
+DT = data.table(CODE=c('a','b'), DATE=1:2, VALUE=c(1.3, 1.5), key=c('CODE','DATE'))
+test(2171.2, DT[J(character(), 1), VALUE], double()) # because "J" is a wrapper of list()
+test(2171.3, data.table(A=NULL, B=1.0), data.table(B=1.0)) # NULL is omited
+test(2171.4, NROW(data.table(A=list(), B=1.0)), 1L) # empty list() regarded as `list(list())` which is length 1, and recycled
+DT = data.table(A=1:3, B=letters[1:3])
+test(2171.5, ans <- DT[A>3,   .(ITEM='A>3', A, B)],  # now identical as expected
+                    DT[A>3][, .(ITEM='A>3', A, B)])
+test(2171.6, ans, data.table(ITEM=character(), A=integer(), B=character())) # not just identical to each other, but correct too
+
+# don't remove 'newclass' from jval's result, #4324
+A = data.table(COL = 'dt')
+class(A) = c('newclass', class(A))
+DT = data.table(LIST_COL = list(A, A))
+test(2172, class(DT[1, LIST_COL[[1]]]), class(A))
+
+# as.data.table.list edits list elements, so must be sure x does not use some other `[[` method, #4526
+x = data.frame(a = 1:5)
+x$b = matrix(6:15, ncol=2L)
+class(x) = c('foo', 'data.frame')
+`[[.foo` = function(x, i) {
+  if (any(sapply(x, inherits, 'data.table'))) stop('failure')
+  as.list(x)[[i]]
+}
+test(2173, as.data.table(x), data.table(a=1:5, b.V1=6:10, b.V2=11:15))
+
+# rbind two length-0 ordered factors, #4795
+DT = data.table(A = ordered(character()))
+test(2174, rbind(DT, DT), DT)
+
+## set row.names when a null data.table has a column assigned for the first time, #4597
+DT = data.table()
+test(2175.1, attr(DT[, x:=1:5], "row.names"), 1:5)
+DT = data.table()
+set(DT, j=c("v1","v2"), value=list(1:6, 2:7))
+test(2175.2, attr(DT, "row.names"), 1:6)
+DT = data.table(x=integer())
+test(2175.3, DT[, y:=3L], data.table(x=integer(), y=integer())) # in keeping with recent #4262, view as recycling the length-1 3L to match the length-0 data
+
+# `keyby`=TRUE/FALSE together with by=, #4307
+DT = data.table(a=2:1, b=3:2, d=4:3)
+test(2176.1, DT[, .SD, by="a", keyby=FALSE], data.table(a=2:1,b=3:2,d=4:3))
+test(2176.2, DT[, .SD, by="a", keyby=TRUE], data.table(a=1:2,b=2:3,d=3:4, key="a"))
+
+# check fwrite output using new default separator option, #4956
+DT = data.table(a=1, b=2)
+options(datatable.fwrite.sep='\t')
+test(2177.01, fwrite(DT), output='a\tb\n1\t2')
+options(datatable.fwrite.sep=';')
+test(2177.02, fwrite(DT), output='a;b\n1;2')
+options(datatable.fwrite.sep=NULL)
+test(2177.03, fwrite(DT), output='a,b\n1,2')
+
+# segfault when joining and grouping and some rows don't match, #4892
 x = data.table(id = 1:4, key = 'id')
 y = data.table(id = 2:5, key = 'id')
 z = data.table(c=c(2L, 2L, 1L, 1L), id=c(2L, 4L, 3L, NA))
-test(2165, x[y, by = .(c(2L, 1L, 2L, 1L)), .SD], z)
+test(2178, x[y, .SD, by=.(c(2L, 1L, 2L, 1L))], z)
