@@ -51,6 +51,8 @@
     DT[, sum(colB), keyby="colA"]
     DT[, sum(colB), by="colA", keyby=TRUE]   # same
     ```
+    
+7. `fwrite()` gains a new `datatable.fwrite.sep` option to change the default separator, still `","` by default. Thanks to Tony Fischetti for the PR. As is good practice in R in general, we usually resist new global options for the reason that a user changing the option for their own code can inadvertently change the behaviour of any package using `data.table` too. However, in this case, the global option affects file output rather than code behaviour. In fact, the very reason the user may wish to change the default separator is that they know a different separator is more appropriate for their data being passed to the package using `fwrite` but cannot otherwise change the `fwrite` call within that package.
 
 ## BUG FIXES
 

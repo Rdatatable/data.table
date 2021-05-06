@@ -17395,3 +17395,12 @@ test(2175.3, DT[, y:=3L], data.table(x=integer(), y=integer())) # in keeping wit
 DT = data.table(a=2:1, b=3:2, d=4:3)
 test(2176.1, DT[, .SD, by="a", keyby=FALSE], data.table(a=2:1,b=3:2,d=4:3))
 test(2176.2, DT[, .SD, by="a", keyby=TRUE], data.table(a=1:2,b=2:3,d=3:4, key="a"))
+
+# check fwrite output using new default separator option, #4956
+DT = data.table(a=1, b=2)
+options(datatable.fwrite.sep='\t')
+test(2177.01, fwrite(DT), output='a\tb\n1\t2')
+options(datatable.fwrite.sep=';')
+test(2177.02, fwrite(DT), output='a;b\n1;2')
+options(datatable.fwrite.sep=NULL)
+test(2177.03, fwrite(DT), output='a,b\n1,2')
