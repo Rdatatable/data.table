@@ -45,6 +45,15 @@
 
 5. `%like%` on factors with a large number of levels is now faster, [#4748](https://github.com/Rdatatable/data.table/issues/4748). The example in the PR shows 2.37s reduced to 0.86s on a factor lengh 100 million containing 1 million unique 10-character strings. Thanks to @statquant for reporting, and @shrektan for implementing.
 
+6. `keyby=` now accepts `TRUE`/`FALSE` together with `by=`, [#4307](https://github.com/Rdatatable/data.table/issues/4307). The primary motivation is benchmarking where `by=` vs `keyby=` is varied across a set of queries. Thanks to Jan Gorecki for the request and the PR.
+
+    ```R
+    DT[, sum(colB), keyby="colA"]
+    DT[, sum(colB), by="colA", keyby=TRUE]   # same
+    ```
+    
+7. `fwrite()` gains a new `datatable.fwrite.sep` option to change the default separator, still `","` by default. Thanks to Tony Fischetti for the PR. As is good practice in R in general, we usually resist new global options for the reason that a user changing the option for their own code can inadvertently change the behaviour of any package using `data.table` too. However, in this case, the global option affects file output rather than code behaviour. In fact, the very reason the user may wish to change the default separator is that they know a different separator is more appropriate for their data being passed to the package using `fwrite` but cannot otherwise change the `fwrite` call within that package.
+
 ## BUG FIXES
 
 1. `by=.EACHI` when `i` is keyed but `on=` different columns than `i`'s key could create an invalidly keyed result, [#4603](https://github.com/Rdatatable/data.table/issues/4603) [#4911](https://github.com/Rdatatable/data.table/issues/4911). Thanks to @myoung3 and @adamaltmejd for reporting, and @ColeMiller1 for the PR. An invalid key is where a `data.table` is marked as sorted by the key columns but the data is not sorted by those columns, leading to incorrect results from subsequent queries.
