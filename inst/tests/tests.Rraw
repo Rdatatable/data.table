@@ -17404,3 +17404,9 @@ options(datatable.fwrite.sep=';')
 test(2177.02, fwrite(DT), output='a;b\n1;2')
 options(datatable.fwrite.sep=NULL)
 test(2177.03, fwrite(DT), output='a,b\n1,2')
+
+# segfault when joining and grouping and some rows don't match, #4892
+x = data.table(id = 1:4, key = 'id')
+y = data.table(id = 2:5, key = 'id')
+z = data.table(c=c(2L, 2L, 1L, 1L), id=c(2L, 4L, 3L, NA))
+test(2178, x[y, .SD, by=.(c(2L, 1L, 2L, 1L))], z)
