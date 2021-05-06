@@ -112,13 +112,9 @@ replace_dot_alias = function(e) {
     used = gsub(".*object '([^']+)'.*", "\\1", err$message)
     found = agrep(used, ref, value=TRUE, ignore.case=TRUE, fixed=TRUE)
     if (length(found)) {
-      stop("Object '", used, "' not found. Perhaps you intended ",
-           paste(head(found, 5L), collapse=", "),
-           if (length(found)<=5L) "" else paste(" or",length(found)-5L, "more"))
+      stop("Object '", used, "' not found. Perhaps you intended ", brackify(found))
     } else {
-      stop("Object '", used, "' not found amongst ",
-           paste(head(ref, 5L), collapse=', '),
-           if (length(ref)<=5L) "" else paste(" and", length(ref)-5L, "more"))
+      stop("Object '", used, "' not found amongst ", brackify(ref))
     }
   } else {
     stop(err$message, call.=FALSE)
@@ -691,7 +687,7 @@ replace_dot_alias = function(e) {
         if (!length(ansvals)) return(null.data.table())
         if (!length(leftcols)) {
           if (!anyNA(ansvals)) return(.Call(CsubsetDT, x, irows, ansvals))
-          else stop("column(s) not found: ", paste(ansvars[is.na(ansvals)],collapse=", "))
+          else stop("column(s) not found: ", brackify(ansvars[is.na(ansvals)]))
         }
         # else the NA in ansvals are for join inherited scope (test 1973), and NA could be in irows from join and data in i should be returned (test 1977)
         #   in both cases leave to the R-level subsetting of i and x together further below
@@ -1164,7 +1160,7 @@ replace_dot_alias = function(e) {
         xcolsAns = seq_along(ansvars)
         icols = icolsAns = integer()
       } else {
-        if (!length(leftcols)) stop("Internal error -- column(s) not found: ", paste(ansvars[wna],collapse=", ")) # nocov
+        if (!length(leftcols)) stop("Internal error -- column(s) not found: ", brackify(ansvars[wna])) # nocov
         xcols = w[!wna]
         xcolsAns = which(!wna)
         map = c(seq_along(i), leftcols)   # this map is to handle dups in leftcols, #3635
@@ -2994,10 +2990,11 @@ isReallyReal = function(x) {
   if(is.null(idx)){
       ## check whether key fits the columns in i.
       ## order of key columns makes no difference, as long as they are all upfront in the key, I believe.
-      if (all(names(i) %chin% head(key(x), length(i)))){
-          if (verbose) {cat("Optimized subsetting with key '", paste0( head(key(x), length(i)), collapse = ", "),"'\n",sep="");flush.console()}
+      key_head = head(key(x), length(i))
+      if (all(names(i) %chin% key_head)){
+          if (verbose) {cat("Optimized subsetting with key '", brackify(key_head),"'\n",sep="");flush.console()}
           idx = integer(0L) ## integer(0L) not NULL! Indicates that x is ordered correctly.
-          idxCols = head(key(x), length(i)) ## in correct order!
+          idxCols = key_head ## in correct order!
       }
   }
   if (is.null(idx)){
