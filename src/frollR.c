@@ -4,28 +4,18 @@
 SEXP coerceToRealListR(SEXP obj) {
   // accept atomic/list of integer/logical/real returns list of real
   int protecti = 0;
-  SEXP x = R_NilValue;
   if (isVectorAtomic(obj)) {
-    x = PROTECT(allocVector(VECSXP, 1)); protecti++;
-    if (isReal(obj)) {
-      SET_VECTOR_ELT(x, 0, obj);
-    } else if (isInteger(obj) || isLogical(obj)) {
-      SET_VECTOR_ELT(x, 0, coerceVector(obj, REALSXP));
-    } else {
-      error(_("x must be of type numeric or logical"));
-    }
-  } else {
-    R_len_t nobj = length(obj);
-    x = PROTECT(allocVector(VECSXP, nobj)); protecti++;
-    for (R_len_t i=0; i<nobj; i++) {
-      if (isReal(VECTOR_ELT(obj, i))) {
-        SET_VECTOR_ELT(x, i, VECTOR_ELT(obj, i));
-      } else if (isInteger(VECTOR_ELT(obj, i)) || isLogical(VECTOR_ELT(obj, i))) {
-        SET_VECTOR_ELT(x, i, coerceVector(VECTOR_ELT(obj, i), REALSXP));
-      } else {
-        error(_("x must be list, data.frame or data.table of numeric or logical types"));
-      }
-    }
+    SEXP obj1 = obj;
+    obj = PROTECT(allocVector(VECSXP, 1)); protecti++;
+    SET_VECTOR_ELT(obj, 0, obj1);
+  }
+  R_len_t nobj = length(obj);
+  SEXP x = PROTECT(allocVector(VECSXP, nobj)); protecti++;
+  for (R_len_t i=0; i<nobj; i++) {
+    SEXP this_obj = VECTOR_ELT(obj, i);
+    if (!(isReal(this_obj) || isInteger(this_obj) || isLogical(this_obj)))
+      error(_("x must be of type numeric or logical, or a list, data.frame or data.table of such"));
+    SET_VECTOR_ELT(x, i, coerceAs(this_obj, ScalarReal(NA_REAL), /*copyArg=*/ScalarLogical(false))); // copyArg=false will make type-class match to return as-is, no copy
   }
   UNPROTECT(protecti);
   return x;
@@ -153,21 +143,9 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
 
   if (length(fill) != 1)
     error(_("fill must be a vector of length 1"));
-
-  double dfill;
-  if (isInteger(fill)) {
-    if (INTEGER(fill)[0]==NA_LOGICAL) {
-      dfill = NA_REAL;
-    } else {
-      dfill = (double)INTEGER(fill)[0];
-    }
-  } else if (isReal(fill)) {
-    dfill = REAL(fill)[0];
-  } else if (isLogical(fill) && LOGICAL(fill)[0]==NA_LOGICAL){
-    dfill = NA_REAL;
-  } else {
-    error(_("fill must be numeric"));
-  }
+  if (!isInteger(fill) && !isReal(fill) && !isLogical(fill))
+    error(_("fill must be numeric or logical"));
+  double dfill = REAL(PROTECT(coerceAs(fill, ScalarReal(NA_REAL), ScalarLogical(true))))[0]; protecti++;
 
   bool bnarm = LOGICAL(narm)[0];
 
@@ -277,20 +255,9 @@ SEXP frollapplyR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP align, SEXP rho) {
 
   if (length(fill) != 1)
     error(_("fill must be a vector of length 1"));
-  double dfill;
-  if (isInteger(fill)) {
-    if (INTEGER(fill)[0]==NA_LOGICAL) {
-      dfill = NA_REAL;
-    } else {
-      dfill = (double)INTEGER(fill)[0];
-    }
-  } else if (isReal(fill)) {
-    dfill = REAL(fill)[0];
-  } else if (isLogical(fill) && LOGICAL(fill)[0]==NA_LOGICAL){
-    dfill = NA_REAL;
-  } else {
-    error(_("fill must be numeric"));
-  }
+  if (!isInteger(fill) && !isReal(fill) && !isLogical(fill))
+    error(_("fill must be numeric or logical"));
+  double dfill = REAL(PROTECT(coerceAs(fill, ScalarReal(NA_REAL), ScalarLogical(true))))[0]; protecti++;
 
   SEXP ans = PROTECT(allocVector(VECSXP, nk * nx)); protecti++;
   if (verbose)

@@ -25,7 +25,8 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
              isTRUEorFALSE(verbose), isTRUEorFALSE(check.names), isTRUEorFALSE(logical01), isTRUEorFALSE(keepLeadingZeros), isTRUEorFALSE(yaml) )
   stopifnot( isTRUEorFALSE(stringsAsFactors) || (is.double(stringsAsFactors) && length(stringsAsFactors)==1L && 0.0<=stringsAsFactors && stringsAsFactors<=1.0))
   stopifnot( is.numeric(nrows), length(nrows)==1L )
-  if (is.na(nrows) || nrows<0L) nrows=Inf   # accept -1 to mean Inf, as read.table does
+  nrows=as.double(nrows) #4686
+  if (is.na(nrows) || nrows<0) nrows=Inf   # accept -1 to mean Inf, as read.table does
   if (identical(header,"auto")) header=NA
   stopifnot(is.logical(header) && length(header)==1L)  # TRUE, FALSE or NA
   stopifnot(is.numeric(nThread) && length(nThread)==1L)
