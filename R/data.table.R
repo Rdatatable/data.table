@@ -2946,7 +2946,7 @@ isReallyReal = function(x) {
     RHS = eval(stub[[3L]], x, enclos)
     if (is.list(RHS)) RHS = as.character(RHS)  # fix for #961
     if (length(RHS) != 1L && !operator %chin% c("%in%", "%chin%")){
-      if (length(RHS) != nrow(x)) stop(gettextf("RHS of %s is length %d which is not 1 or nrow (%d). For robustness, no recycling is allowed (other than of length 1 RHS). Consider %%in%% instead.", operator, length(RHS), nrow(x)), domain=NA)
+      if (length(RHS) != nrow(x)) stop(domain=NA, gettextf("RHS of %s is length %d which is not 1 or nrow (%d). For robustness, no recycling is allowed (other than of length 1 RHS). Consider %%in%% instead.", operator, length(RHS), nrow(x)))
       return(NULL) # DT[colA == colB] regular element-wise vector scan
     }
     if ( mode(x[[col]]) != mode(RHS) ||                # mode() so that doubleLHS/integerRHS and integerLHS/doubleRHS!isReallyReal are optimized (both sides mode 'numeric')
@@ -3131,7 +3131,7 @@ isReallyReal = function(x) {
   }
   idx_op = match(operators, ops, nomatch=0L)
   if (any(idx_op %in% c(0L, 6L)))
-    stop(gettextf("Invalid join operators %s. Only allowed operators are %s.", brackify(operators[idx_op %in% c(0L, 6L)]), brackify(ops[1:5])), domain=NA)
+    stop(domain=NA, gettextf("Invalid join operators %s. Only allowed operators are %s.", brackify(operators[idx_op %in% c(0L, 6L)]), brackify(ops[1:5])))
   ## the final on will contain the xCol as name, the iCol as value
   on = iCols
   names(on) = xCols
