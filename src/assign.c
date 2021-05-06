@@ -511,6 +511,9 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
       continue;
     }
 
+    SEXP attrib = PROTECT(getAttrib(dt, sym_allow_assign_inplace)); protecti++;
+    Rboolean allow_assign_in_place =  isLogical(attrib) && LENGTH(attrib)==1 && LOGICAL(attrib)[0]==1;
+    
     if (coln+1 > oldncol) {  // new column
       SET_VECTOR_ELT(dt, coln, targetcol=allocNAVectorLike(thisvalue, nrow));
       // initialize with NAs for when 'rows' is a subset and it doesn't touch
@@ -519,9 +522,13 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
       if (isVectorAtomic(thisvalue)) copyMostAttrib(thisvalue,targetcol);  // class etc but not names
       // else for lists (such as data.frame and data.table) treat them as raw lists and drop attribs
       if (vlen<1) continue;   // e.g. DT[,newcol:=integer()] (adding new empty column)
-    } else {                 // existing column
+    } else if (allow_assign_in_place) {  
+      // overwrite rows in existing column - risking data leakage, #4784
       targetcol = VECTOR_ELT(dt,coln);
+    }  else { // #4783: ensure regular "copy on modify" R semantics for an existing column
+      SET_VECTOR_ELT(dt, coln, targetcol=duplicate(VECTOR_ELT(dt, coln)));
     }
+    
     const char *ret = memrecycle(targetcol, rows, 0, targetlen, thisvalue, 0, -1, coln+1, CHAR(STRING_ELT(names, coln)));
     if (ret) warning(ret);
   }
