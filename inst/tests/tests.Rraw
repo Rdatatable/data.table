@@ -8319,9 +8319,9 @@ test(1600.2, names(DT1[DT2, .(id1=id1, val=val, bla=sum(z1, na.rm=TRUE)), on="id
 
 # warn when merge empty data.table #597
 test(1601.1, merge(data.table(a=1),data.table(a=1), by="a"), data.table(a=1, key="a"))
-test(1601.2, tryCatch(merge(data.table(a=1),data.table(NULL), by="a"), warning = function(w) w$message), "You are trying to join data.tables where 'y' argument is 0 columns data.table.")
-test(1601.3, tryCatch(merge(data.table(NULL),data.table(a=1), by="a"), warning = function(w) w$message), "You are trying to join data.tables where 'x' argument is 0 columns data.table.")
-test(1601.4, tryCatch(merge(data.table(NULL),data.table(NULL), by="a"), warning = function(w) w$message), "You are trying to join data.tables where 'x' and 'y' arguments are 0 columns data.table.")
+test(1601.2, tryCatch(merge(data.table(a=1),data.table(NULL), by="a"), warning = function(w) w$message), "You are trying to join data.tables where argument 'y' has no columns.")
+test(1601.3, tryCatch(merge(data.table(NULL),data.table(a=1), by="a"), warning = function(w) w$message), "You are trying to join data.tables where argument 'x' has no columns.")
+test(1601.4, tryCatch(merge(data.table(NULL),data.table(NULL), by="a"), warning = function(w) w$message), "You are trying to join data.tables where arguments 'x' and 'y' have no columns.")
 
 # fix for #1549
 d1 <- data.table(v1=1:2,x=x)
