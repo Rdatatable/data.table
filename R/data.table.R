@@ -149,25 +149,22 @@ replace_dot_alias = function(e) {
   }
   .global$print=""
   missingby = missing(by) && missing(keyby)  # for tests 359 & 590 where passing by=NULL results in data.table not vector
-  if (!missing(by) && missing(keyby)) { # by alone
-    by = bysub = substitute(by)
-    keyby = FALSE
-  } else if (missing(by) && !missing(keyby)) { # keyby alone
-    by = bysub = substitute(keyby)
-    keyby = TRUE
-  } else if (!missing(by) && !missing(keyby)) { # by + logical keyby
-    by = bysub = substitute(by)
-    if (!isTRUEorFALSE(keyby))
-      stop("When by and keyby are both provided, keyby must be TRUE or FALSE")
-  } else { # no by/keyby
-    keyby = FALSE
+  if (missingby || missing(j)) {
+    if (!missingby) warning("Ignoring by/keyby because 'j' is not supplied")
     by = bysub = NULL
-  }
-  if (!missingby && missing(j)) {
-    warning("Ignoring by/keyby because 'j' is not supplied");
-    by = NULL
     keyby = FALSE
-  }
+  } else {
+    if (missing(by)) {
+      by = bysub = substitute(keyby)
+      keyby = TRUE
+    } else {
+      by = bysub = substitute(by)
+      if (missing(keyby))
+        keyby = FALSE
+      else if (!isTRUEorFALSE(keyby))
+        stop("When by and keyby are both provided, keyby must be TRUE or FALSE")
+    }
+  }      
   bynull = !missingby && is.null(by) #3530
   byjoin = !is.null(by) && is.symbol(bysub) && bysub==".EACHI"
   naturaljoin = FALSE
