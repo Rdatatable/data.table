@@ -149,17 +149,22 @@ replace_dot_alias = function(e) {
   }
   .global$print=""
   missingby = missing(by) && missing(keyby)  # for tests 359 & 590 where passing by=NULL results in data.table not vector
-  if (!missing(keyby)) {
-    if (!missing(by)) stop("Provide either by= or keyby= but not both")
-    if (missing(j)) { warning("Ignoring keyby= because j= is not supplied"); keyby=NULL; }
-    by=bysub=substitute(keyby)
-    keyby=TRUE
-    # Assign to 'by' so that by is no longer missing and we can proceed as if there were one by
+  if (missingby || missing(j)) {
+    if (!missingby) warning("Ignoring by/keyby because 'j' is not supplied")
+    by = bysub = NULL
+    keyby = FALSE
   } else {
-    if (!missing(by) && missing(j)) { warning("Ignoring by= because j= is not supplied"); by=NULL; }
-    by=bysub= if (missing(by)) NULL else substitute(by)
-    keyby=FALSE
-  }
+    if (missing(by)) {
+      by = bysub = substitute(keyby)
+      keyby = TRUE
+    } else {
+      by = bysub = substitute(by)
+      if (missing(keyby))
+        keyby = FALSE
+      else if (!isTRUEorFALSE(keyby))
+        stop("When by and keyby are both provided, keyby must be TRUE or FALSE")
+    }
+  }      
   bynull = !missingby && is.null(by) #3530
   byjoin = !is.null(by) && is.symbol(bysub) && bysub==".EACHI"
   naturaljoin = FALSE
@@ -2333,11 +2338,11 @@ split.data.table = function(x, f, drop = FALSE, by, sorted = FALSE, keep.by = TR
     list(.ll.tech.split=list(.expr)),
     list(.expr = if (join) quote(if(.N == 0L) .SD[0L] else .SD) else as.name(".SD")) # simplify when `nomatch` accept NULL #857 ?
   )
-  by.or.keyby = if (join) "by" else c("by"[!sorted], "keyby"[sorted])[1L]
-  dtq[[by.or.keyby]] = substitute( # retain order, for `join` and `sorted` it will use order of `i` data.table instead of `keyby`.
+  dtq[["by"]] = substitute( # retain order, for `join` and `sorted` it will use order of `i` data.table instead of `keyby`.
     .expr,
-    list(.expr = if(join) {as.name(".EACHI")} else if (flatten) by else .by)
+    list(.expr = if (join) as.name(".EACHI") else if (flatten) by else .by)
   )
+  dtq[["keyby"]] = if (join) FALSE else sorted
   dtq[[".SDcols"]] = if (keep.by) names(x) else setdiff(names(x), if (flatten) by else .by)
   if (join) dtq[["on"]] = if (flatten) by else .by
   dtq = as.call(dtq)
