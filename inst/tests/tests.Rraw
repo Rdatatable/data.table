@@ -3014,6 +3014,9 @@ test(1034, as.data.table(x<-as.character(sample(letters, 5))), data.table(V1=x))
        error="Unknown 'id.vars' type raw")
   test(1035.012, melt(DT, id.vars=1:3, measure.vars=as.raw(0)),
        error="Unknown 'measure.vars' type raw")
+  test(1035.013, melt(data.table(a=1, b=1), id.vars=c(1,1)), data.table(a=1, a.1=1, variable=factor("b"), value=1))
+  test(1035.014, melt(data.table(a1=1, b1=1, b2=2), na.rm=TRUE, measure.vars=list(a="a1", b=c("b1","b2"))), data.table(variable=factor(1,c("1","2")), a=1, b=1))
+  test(1035.015, melt(data.table(a=1+2i, b=1), id.vars="a"), error="Unknown column type 'complex' for column 'a' in 'data'")
 
   ans1 = cbind(DT[, c(1,2,8), with=FALSE], variable=factor("l_1"))
   ans1[, value := DT$l_1]
@@ -3175,9 +3178,9 @@ Sep,33.5,19.4,15.7,11.9,0,100.8,100.8,0,12.7,12.7,0,174.1")
   x[, c("y1","z1"):=NA]
   test(1037.405, dim(melt(x, measure.vars=patterns("^y", "^z"))), INT(4,5))
   test(1037.406, dim(ans<-melt(x, measure.vars=patterns("^y", "^z"), na.rm=TRUE)), INT(2,5))
-  test(1037.407, ans$variable, factor(c("1","1")))
+  test(1037.407, ans$variable, factor(c("2","2"), c("1", "2")))
   test(1037.408, dim(ans<-melt(x, measure.vars=patterns("^y", "^z"), na.rm=TRUE, variable.factor=FALSE)), INT(2,5))
-  test(1037.409, ans$variable, c("1","1"))
+  test(1037.409, ans$variable, c("2","2"))
 
   test(1037.410, melt(data.table(NULL), verbose=TRUE), data.table(NULL),
        output="ncol(data) is 0. Nothing to melt")
