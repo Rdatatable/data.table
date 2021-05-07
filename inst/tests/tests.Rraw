@@ -17415,3 +17415,7 @@ test(2178, x[y, .SD, by=.(c(2L, 1L, 2L, 1L))], z)
 DT = data.table(FACTOR = factor(rep("a", 3L)))
 set(DT, i=1:2, j="FACTOR", value=rep(NA, 2L))
 test(2179, DT$FACTOR, factor(c(NA, NA, "a")))
+
+# deleting duplicated column name removes only first
+DT = data.table(a=1, b=2, a=3)
+test(2180, DT[, a:=NULL], data.table(b=2, a=3))
