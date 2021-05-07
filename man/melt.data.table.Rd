@@ -75,7 +75,7 @@ be coerced to \code{character} type. To get a \code{factor} column, set
 \code{value.factor = TRUE}. \code{melt.data.table} also preserves
 \code{ordered} factors.
 
-Historical note: \code{melt.data.table} was originally designed as an enhancement to \code{reshape2::melt} in terms of computing and memory efficiency. \code{reshape2} has since been deprecated, and \code{melt} has had a generic defined within \code{data.table} since \code{v1.9.6} in 2015, at which point the dependency between the packages became more etymological than programmatic. We thank the \code{reshape2} authors for the inspiration.
+Historical note: \code{melt.data.table} was originally designed as an enhancement to \code{reshape2::melt} in terms of computing and memory efficiency. \code{reshape2} has since been superseded in favour of \code{tidyr}, and \code{melt} has had a generic defined within \code{data.table} since \code{v1.9.6} in 2015, at which point the dependency between the packages became more etymological than programmatic. We thank the \code{reshape2} authors for the inspiration.
 
 }
 
