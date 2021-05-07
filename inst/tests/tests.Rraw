@@ -16910,7 +16910,6 @@ test(2132.2, fifelse(TRUE, 1, s2),       error = "S4 class objects (except nanot
 test(2132.3, fcase(TRUE, s1, FALSE, s2), error = "S4 class objects (except nanotime) are not supported. Please see")
 test(2132.4, fcase(FALSE, 1, TRUE, s1),  error = "S4 class objects (except nanotime) are not supported. Please see")
 rm(s1, s2, class2132)
-
 if (test_xts) {
   # keep.rownames in as.data.table.xts() supports a string, #4232
   xts = xts::xts(1:10, structure(1:10, class = "Date"))
@@ -17422,3 +17421,6 @@ test(2179, DT$FACTOR, factor(c(NA, NA, "a")))
 # deleting duplicated column name removes only first
 DT = data.table(a=1, b=2, a=3)
 test(2180, DT[, a:=NULL], data.table(b=2, a=3))
+
+# as.data.table(table(NULL)) was error, #4179
+test(2181, as.data.table(table(NULL)), data.table(NULL))
