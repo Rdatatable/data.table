@@ -7,6 +7,11 @@ Sys.unsetenv("R_PROFILE_USER")
 # But if we don't unset it now, anything else from now on that does something like system("R CMD INSTALL"), e.g. update.packages()
 # and BiocManager::install(), will call this script again recursively.
 
+# options copied from .dev/.Rprofile that aren't run due to the way this script is started via a profile
+options(help_type="html")
+options(error=quote(dump.frames()))
+options(width=200)      # for cran() output not to wrap
+
 # Check that env variables have been set correctly:
 #   export R_LIBS_SITE=none
 #   export R_LIBS=~/build/revdeplib/
@@ -175,7 +180,7 @@ status0 = function(bioc=FALSE) {
 }
 
 status = function(bioc=FALSE) {
-  cat("Installed data.table to be tested against:",
+  cat("\nInstalled data.table to be tested against:",
     as.character(packageVersion("data.table")),
     format(as.POSIXct(packageDescription("data.table")$Packaged, tz="UTC"), tz=""),  # local time
     "\n\nCRAN:\n")
@@ -231,14 +236,33 @@ status = function(bioc=FALSE) {
   invisible()
 }
 
-run = function(pkgs=NULL, R_CHECK_FORCE_SUGGESTS=TRUE) {
-  cat("Installed data.table to be tested against:",as.character(packageVersion("data.table")),"\n")
+cran = function()  # reports CRAN status of the .cran.fail packages
+{
+  if (!length(.fail.cran)) {
+    cat("No CRAN revdeps in error or warning status\n")
+    return(invisible())
+  }
+  require(data.table)
+  p = proc.time()
+  db = setDT(tools::CRAN_check_results())
+  cat("tools::CRAN_check_results() returned",prettyNum(nrow(db), big.mark=","),"rows in",timetaken(p),"\n")
+  rel = unique(db$Flavor)
+  rel = sort(rel[grep("release",rel)])
+  stopifnot(identical(rel, c("r-release-linux-x86_64", "r-release-macos-x86_64", "r-release-windows-ix86+x86_64")))
+  cat("R-release is used for revdep checking so comparing to CRAN results for R-release\n")
+  ans = db[Package %chin% .fail.cran & Flavor %chin% rel, Status, keyby=.(Package, Flavor)]
+  dcast(ans, Package~Flavor, value.var="Status", fill="")[.fail.cran,]
+}
+
+run = function(pkgs=NULL, R_CHECK_FORCE_SUGGESTS=TRUE, choose=NULL) {
   if (length(pkgs)==1) pkgs = strsplit(pkgs, split="[, ]")[[1]]
   if (anyDuplicated(pkgs)) stop("pkgs contains dups")
   if (!length(pkgs)) {
     opts = c("not.started","cran.fail","bioc.fail","both.fail","rerun.cran","rerun.bioc","rerun.all")
-    cat(paste0(1:length(opts),": ",opts)  , sep="\n")
-    w = suppressWarnings(as.integer(readline("Enter option: ")))
+    w = if (is.null(choose)) {
+      cat(paste0(1:length(opts),": ",opts)  , sep="\n")
+      suppressWarnings(as.integer(readline("Enter option: ")))
+    } else choose
     if (is.na(w) || !w %in% seq_along(opts)) stop(w," is invalid")
     which = opts[w]
     numtgz = as.integer(system("ls -1 *.tar.gz | wc -l", intern=TRUE))
@@ -269,8 +293,10 @@ run = function(pkgs=NULL, R_CHECK_FORCE_SUGGESTS=TRUE) {
     cat("Running",length(pkgs),"packages:", paste(pkgs), "\n")
     filter = paste0("| grep -E '", paste0(paste0(pkgs,"_"),collapse="|"), "' ")
   }
-  cat("Proceed? (ctrl-c or enter)\n")
-  scan(quiet=TRUE)
+  if (is.null(choose)) {
+    cat("Proceed? (ctrl-c or enter)\n")
+    scan(quiet=TRUE)
+  }
   if (!identical(pkgs,"_ALL_")) for (i in pkgs) system(paste0("rm -rf ./",i,".Rcheck"))
   SUGG = paste0("_R_CHECK_FORCE_SUGGESTS_=",tolower(R_CHECK_FORCE_SUGGESTS))
   cmd = paste0("ls -1 *.tar.gz ", filter, "| TZ='UTC' OMP_THREAD_LIMIT=2 ",SUGG," parallel --max-procs 50% ",R," CMD check")
@@ -312,7 +338,9 @@ log = function(bioc=FALSE, fnam="~/fail.log") {
   }
 }
 
+inst()
 status()
+run(choose=1)  # run not-started (i.e. updates to and new revdeps) automatically on revdep startup
 
 # Now R prompt is ready to fix any problems with CRAN or Bioconductor updates.
 # Then run run(), status() and log() as per section in CRAN_Release.cmd
