@@ -17410,3 +17410,8 @@ x = data.table(id = 1:4, key = 'id')
 y = data.table(id = 2:5, key = 'id')
 z = data.table(c=c(2L, 2L, 1L, 1L), id=c(2L, 4L, 3L, NA))
 test(2178, x[y, .SD, by=.(c(2L, 1L, 2L, 1L))], z)
+
+# assigning all-na length>1 to a factor column was segfault, #4824
+DT = data.table(FACTOR = factor(rep("a", 3L)))
+set(DT, i=1:2, j="FACTOR", value=rep(NA, 2L))
+test(2179, DT$FACTOR, factor(c(NA, NA, "a")))
