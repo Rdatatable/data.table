@@ -78,6 +78,8 @@
 
 11. Assigning a set of 2 or more all-NA values to a factor column could segfault, [#4824](https://github.com/Rdatatable/data.table/issues/4824). Thanks to @clerousset for reporting and @shrektan for fixing.
 
+12. `as.data.table(table(NULL))` now returns `data.table(NULL)` rather than error `attempt to set an attribute on NULL`, [#4179](https://github.com/Rdatatable/data.table/issues/4179). The result differs slightly to `as.data.frame(table(NULL))` (0-row, 1-column) because 0-column works better with other `data.table` functions like `rbindlist()`. Thanks to Michael Chirico for the report and fix.
+
 ## NOTES
 
 1. New feature 29 in v1.12.4 (Oct 2019) introduced zero-copy coercion. Our thinking is that requiring you to get the type right in the case of `0` (type double) vs `0L` (type integer) is too inconvenient for you the user. So such coercions happen in `data.table` automatically without warning. Thanks to zero-copy coercion there is no speed penalty, even when calling `set()` many times in a loop, so there's no speed penalty to warn you about either. However, we believe that assigning a character value such as `"2"` into an integer column is more likely to be a user mistake that you would like to be warned about. The type difference (character vs integer) may be the only clue that you have selected the wrong column, or typed the wrong variable to be assigned to that column. For this reason we view character to numeric-like coercion differently and will warn about it. If it is correct, then the warning is intended to nudge you to wrap the RHS with `as.<type>()` so that it is clear to readers of your code that a coercion from character to that type is intended. For example :
