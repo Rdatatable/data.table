@@ -108,8 +108,8 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, S
   if (obj_scalar) {
     if (binplace)
       error(_("'x' argument is atomic vector, in-place update is supported only for list/data.table"));
-    else if (!isReal(obj) && !isInteger(obj))
-      error(_("'x' argument must be numeric type, or list/data.table of numeric types"));
+    else if (!isReal(obj) && !isInteger(obj) && !isLogical(obj) && !isFactor(obj) && !isString(obj))
+      error(_("'x' argument must be numeric/integer/logical/factor/character/integer64, or list/data.table of such types"));
     SEXP obj1 = obj;
     obj = PROTECT(allocVector(VECSXP, 1)); protecti++; // wrap into list
     SET_VECTOR_ELT(obj, 0, obj1);
@@ -117,17 +117,31 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, S
   SEXP ricols = PROTECT(colnamesInt(obj, cols, ScalarLogical(TRUE))); protecti++; // nafill cols=NULL which turns into seq_along(obj)
   x = PROTECT(allocVector(VECSXP, length(ricols))); protecti++;
   int *icols = INTEGER(ricols);
+  bool hadChar = false;
+  bool* wasChar = (bool*)R_alloc(length(ricols), sizeof(bool));
   for (int i=0; i<length(ricols); i++) {
     SEXP this_col = VECTOR_ELT(obj, icols[i]-1);
-    if (!isReal(this_col) && !isInteger(this_col))
-      error(_("'x' argument must be numeric type, or list/data.table of numeric types"));
-    SET_VECTOR_ELT(x, i, this_col);
+    if (isString(this_col)) { // character handling via factor
+      if (binplace)
+        error(_("filling NAs in-place for character types is unsupported"));
+      hadChar = true;
+      wasChar[i] = true;
+      SET_VECTOR_ELT(x, i, eval(PROTECT(lang2(install("factor"), this_col)), R_GlobalEnv));
+      UNPROTECT(1); // factor(this_cols) language call
+    } else {
+      wasChar[i] = false;
+      if (!isReal(this_col) && !isInteger(this_col) && !isLogical(this_col) && !isFactor(this_col))
+        error(_("'x' argument must be numeric/integer/logical/factor/character/integer64, or list/data.table of such types"));
+      SET_VECTOR_ELT(x, i, this_col);
+    }
   }
   R_len_t nx = length(x);
 
+  // data pointers
   double **dx = (double**)R_alloc(nx, sizeof(double*));
-  int32_t **ix = (int32_t**)R_alloc(nx, sizeof(int32_t*));
+  int32_t **ix = (int32_t**)R_alloc(nx, sizeof(int32_t*)); // also logical factor and character (via factor)
   int64_t **i64x = (int64_t**)R_alloc(nx, sizeof(int64_t*));
+  // nrows of columns
   uint_fast64_t *inx = (uint_fast64_t*)R_alloc(nx, sizeof(uint_fast64_t));
   SEXP ans = R_NilValue;
   ans_t *vans = (ans_t *)R_alloc(nx, sizeof(ans_t));
@@ -139,10 +153,14 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, S
       dx[i] = REAL(xi);
       i64x[i] = (int64_t *)REAL(xi);
       ix[i] = NULL;
-    } else {
+    } else if (isInteger(xi) || isLogical(xi) || isFactor(xi)) {
       ix[i] = INTEGER(xi);
       dx[i] = NULL;
       i64x[i] = NULL;
+    } else if (isString(xi)) {
+      error(_("internal error: character columns should have been coerced to factor by now, please report")); // # nocov
+    } else {
+      error(_("internal error: unknown column type, should have been caught by now, please report")); // # nocov
     }
   }
   if (!binplace) {
@@ -200,14 +218,14 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, S
         nafillDouble(dx[i], inx[i], itype, hasFill ? ((double *)fillp[i])[0] : NA_REAL, nan_is_na, &vans[i], verbose);
       }
     } break;
-    case INTSXP : {
+    case LGLSXP: case INTSXP : {
       nafillInteger(ix[i], inx[i], itype, hasFill ? ((int32_t *)fillp[i])[0] : NA_INTEGER, &vans[i], verbose);
     } break;
     }
   }
 
   if (!binplace) {
-    for (R_len_t i=0; i<nx; i++) {
+    for (int i=0; i<nx; i++) {
       if (!isNull(ATTRIB(VECTOR_ELT(x, i))))
         copyMostAttrib(VECTOR_ELT(x, i), VECTOR_ELT(ans, i));
     }
@@ -217,6 +235,13 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, S
       for (int i=0; i<length(ricols); i++)
         SET_STRING_ELT(ans_names, i, STRING_ELT(obj_names, icols[i]-1));
       setAttrib(ans, R_NamesSymbol, ans_names);
+    }
+  }
+  // recover character from factor
+  if (hadChar) {
+    for (int i=0; i<nx; i++) {
+      if (wasChar[i])
+        SET_VECTOR_ELT(ans, i, asCharacterFactor(VECTOR_ELT(ans, i)));
     }
   }
 
