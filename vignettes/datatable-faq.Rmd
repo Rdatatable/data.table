@@ -68,9 +68,20 @@ The `j` expression is the 2nd argument. Try `DT[ , c("x","y","z")]` or `DT[ , .(
 
 ## I assigned a variable `mycol = "x"` but then `DT[ , mycol]` returns `"x"`. How do I get it to look up the column name contained in the `mycol` variable?
 
-In v1.9.8 released Nov 2016 there is an ability to turn on new behaviour: `options(datatable.WhenJisSymbolThenCallingScope=TRUE)`. It will then work as you expected, just like data.frame. If you are a new user of data.table, you should probably do this. You can place this command in your .Rprofile file so you don't have to remember again. See the long item in release notes about this. The release notes are linked at the top of the data.table homepage: [NEWS](https://github.com/Rdatatable/data.table/blob/master/NEWS.md).
+What's happening is that the `j` expression sees objects in the calling scope. The variable `mycol` does not exist as a column name of `DT` so `data.table` then looked in the calling scope and found `mycol` there and returned its value `"x"`. This is correct behaviour currently. Had `mycol` been a column name, then that column's data would have been returned.
 
-Without turning on that new behaviour, what's happening is that the `j` expression sees objects in the calling scope. The variable `mycol` does not exist as a column name of `DT` so data.table then looked in the calling scope and found `mycol` there and returned its value `"x"`. This is correct behaviour currently. Had `mycol` been a column name, then that column's data would have been returned. What has been done to date has been `DT[ , mycol, with = FALSE]` which will return the `x` column's data as required. That will still work in the future, too. Alternatively, since a data.table _is_ a `list`, too, you have been and still will be able to write and rely on `DT[[mycol]]`.
+To get the column `x` from `DT`, there are a few options:
+
+```r
+# using .. to tell data.table the variable should be evaluated
+DT[ , ..mycol]
+# using with=FALSE to do the same
+DT[ , mycol, with=FALSE]
+# treating DT as a list and using [[
+DT[[mycol]]
+```
+
+The `with` argument refers to the `base` function `with` -- when `with=TRUE`, `data.table` operates similar to `with`, i.e. `DT[ , mycol]` behaves like `with(DT, mycol)`. When `with=FALSE`, the standard `data.frame` evaluation rules apply.
 
 ## What are the benefits of being able to use column names as if they are variables inside `DT[...]`?
 
