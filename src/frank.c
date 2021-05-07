@@ -69,14 +69,16 @@ SEXP dt_na(SEXP x, SEXP cols) {
 
 SEXP frank(SEXP xorderArg, SEXP xstartArg, SEXP xlenArg, SEXP ties_method) {
   const int *xstart = INTEGER(xstartArg), *xlen = INTEGER(xlenArg), *xorder = INTEGER(xorderArg);
-  enum {MEAN, MAX, MIN, DENSE, SEQUENCE} ties = MEAN; // RUNLENGTH
+  enum {MEAN, MAX, MIN, DENSE, SEQUENCE, LAST} ties; // RUNLENGTH
 
-  if (!strcmp(CHAR(STRING_ELT(ties_method, 0)), "average"))  ties = MEAN;
-  else if (!strcmp(CHAR(STRING_ELT(ties_method, 0)), "max")) ties = MAX;
-  else if (!strcmp(CHAR(STRING_ELT(ties_method, 0)), "min")) ties = MIN;
-  else if (!strcmp(CHAR(STRING_ELT(ties_method, 0)), "dense")) ties = DENSE;
-  else if (!strcmp(CHAR(STRING_ELT(ties_method, 0)), "sequence")) ties = SEQUENCE;
-  // else if (!strcmp(CHAR(STRING_ELT(ties_method, 0)), "runlength")) ties = RUNLENGTH;
+  const char *pties = CHAR(STRING_ELT(ties_method, 0));
+  if (!strcmp(pties, "average"))  ties = MEAN;
+  else if (!strcmp(pties, "max")) ties = MAX;
+  else if (!strcmp(pties, "min")) ties = MIN;
+  else if (!strcmp(pties, "dense")) ties = DENSE;
+  else if (!strcmp(pties, "sequence")) ties = SEQUENCE;
+  else if (!strcmp(pties, "last")) ties = LAST;
+  // else if (!strcmp(pties, "runlength")) ties = RUNLENGTH;
   else error(_("Internal error: invalid ties.method for frankv(), should have been caught before. please report to data.table issue tracker")); // # nocov
   const int n = length(xorderArg);
   SEXP ans = PROTECT(allocVector(ties==MEAN ? REALSXP : INTSXP, n));
@@ -116,6 +118,15 @@ SEXP frank(SEXP xorderArg, SEXP xstartArg, SEXP xlenArg, SEXP ties_method) {
         int k=1;
         for (int j=xstart[i]-1; j<xstart[i]+xlen[i]-1; ++j)
           ians[xorder[j]-1] = k++;
+      }
+      break;
+    case LAST :
+      for (int i=0; i<length(xstartArg); ++i) {
+        // alternatively, also loop k from xstart[i]+xlen[i]-1 and decrement
+        int offset = 2*xstart[i]+xlen[i]-2;
+        for (int j=xstart[i]-1; j<xstart[i]+xlen[i]-1; ++j) {
+          ians[xorder[j]-1] = offset-j;
+        }
       }
       break;
     // case RUNLENGTH :

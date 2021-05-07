@@ -126,7 +126,7 @@ t2 = system.time(DT[which(a == 100)])[3]
 # make sure we're at most 30% slower than "which" (should pass most of the time)
 test(1110, (t1 - t2)/t2 < 0.3)
 
-# Fix for bug #5106 - DT[, .N, by=y] was slow when "y" is not a column in DT
+# Fix for bug #76 - DT[, .N, by=y] was slow when "y" is not a column in DT
 DT <- data.table(x=sample.int(10, 1e6, replace=TRUE))
 y <- DT$x
 te1 <- system.time(ans1 <- DT[, .N, by=x])[["elapsed"]]

@@ -1,21 +1,48 @@
 #include "data.table.h"
 
 static SEXP chmatchMain(SEXP x, SEXP table, int nomatch, bool chin, bool chmatchdup) {
-  if (!isString(x) && !isNull(x)) error(_("x is type '%s' (must be 'character' or NULL)"), type2char(TYPEOF(x)));
-  if (!isString(table) && !isNull(table)) error(_("table is type '%s' (must be 'character' or NULL)"), type2char(TYPEOF(table)));
-  if (chin && chmatchdup) error(_("Internal error: either chin or chmatchdup should be true not both"));  // # nocov
+  if (!isString(table) && !isNull(table))
+    error(_("table is type '%s' (must be 'character' or NULL)"), type2char(TYPEOF(table)));
+  if (chin && chmatchdup)
+    error(_("Internal error: either chin or chmatchdup should be true not both"));  // # nocov
+  SEXP sym = NULL;
   const int xlen = length(x);
-  const int tablelen = length(table);
+  if (TYPEOF(x) == SYMSXP) {
+    if (xlen!=1)
+      error(_("Internal error: length of SYMSXP is %d not 1"), xlen); // # nocov
+    sym = PRINTNAME(x);  // so we can do &sym to get a length 1 (const SEXP *)STRING_PTR(x) and save an alloc for coerce to STRSXP
+  } else if (!isString(x) && !isSymbol(x) && !isNull(x)) {
+    if (chin && !isVectorAtomic(x)) {
+      return ScalarLogical(FALSE);
+      // commonly type 'language' returns FALSE here, to make %iscall% simpler; e.g. #1369 results in (function(x) sum(x)) as jsub[[.]] from dcast.data.table
+    } else {
+      error(_("x is type '%s' (must be 'character' or NULL)"), type2char(TYPEOF(x)));
+    }
+  }
   // allocations up front before savetl starts in case allocs fail
-  SEXP ans = PROTECT(allocVector(chin?LGLSXP:INTSXP, xlen));
-  if (xlen==0) { UNPROTECT(1); return ans; }  // no need to look at table when x is empty
+  int nprotect=0;
+  SEXP ans = PROTECT(allocVector(chin?LGLSXP:INTSXP, xlen)); nprotect++;
+  if (xlen==0) { // no need to look at table when x is empty (including null)
+    UNPROTECT(nprotect);
+    return ans;
+  }
   int *ansd = INTEGER(ans);
-  if (tablelen==0) { const int val=(chin?0:nomatch), n=xlen; for (int i=0; i<n; ++i) ansd[i]=val; UNPROTECT(1); return ans; }
+  const int tablelen = length(table);
+  if (tablelen==0) {
+    const int val=(chin?0:nomatch), n=xlen;
+    for (int i=0; i<n; ++i) ansd[i]=val;
+    UNPROTECT(nprotect);
+    return ans;
+  }
   // Since non-ASCII strings may be marked with different encodings, it only make sense to compare
   // the bytes under a same encoding (UTF-8) #3844 #3850
-  const SEXP *xd = STRING_PTR(PROTECT(coerceUtf8IfNeeded(x)));
-  const SEXP *td = STRING_PTR(PROTECT(coerceUtf8IfNeeded(table)));
-  const int nprotect = 3; // ans, xd, td
+  SEXP *xd;
+  if (isSymbol(x)) {
+    xd = &sym;
+  } else {
+    xd = STRING_PTR(PROTECT(coerceUtf8IfNeeded(x))); nprotect++;
+  }
+  const SEXP *td = STRING_PTR(PROTECT(coerceUtf8IfNeeded(table))); nprotect++;
   if (xlen==1) {
     ansd[0] = nomatch;
     for (int i=0; i<tablelen; ++i) {

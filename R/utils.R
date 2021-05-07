@@ -101,7 +101,7 @@ brackify = function(x, quote=FALSE) {
   # keep one more than needed to trigger dots if needed
   if (quote && is.character(x)) x = paste0("'",head(x,CUTOFF+1L),"'")
   if (length(x) > CUTOFF) x = c(x[1:CUTOFF], '...')
-  sprintf('[%s]', paste(x, collapse = ', '))
+  sprintf('[%s]', toString(x))
 }
 
 # patterns done via NSE in melt.data.table and .SDcols in `[.data.table`
@@ -118,8 +118,7 @@ do_patterns = function(pat_sub, all_cols) {
   matched = patterns(pats, cols=cols)
   # replace with lengths when R 3.2.0 dependency arrives
   if (length(idx <- which(sapply(matched, length) == 0L)))
-    stop('Pattern', if (length(idx) > 1L) 's', ' not found: [',
-         paste(pats[idx], collapse = ', '), ']')
+    stop('Pattern', if (length(idx) > 1L) 's', ' not found: ', brackify(pats[idx]))
 
   return(matched)
 }
@@ -131,6 +130,9 @@ is_utc = function(tz) {
   if (is.null(tz)) tz = Sys.timezone()
   return(tz %chin% utc_tz)
 }
+
+# very nice idea from Michael to avoid expression repetition (risk) in internal code, #4226
+"%iscall%" = function(e, f) { is.call(e) && e[[1L]] %chin% f }
 
 # nocov start #593 always return a data.table
 edit.data.table = function(name, ...) {

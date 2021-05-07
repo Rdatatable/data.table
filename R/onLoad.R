@@ -25,11 +25,12 @@
     if (dllV != RV) {
       dll = if (.Platform$OS.type=="windows") "dll" else "so"
       # https://bugs.r-project.org/bugzilla/show_bug.cgi?id=17478
-      stop(gettextf("The datatable.%s version (%s) does not match the package (%s). Please close all R sessions to release the old %s and reinstall data.table in a fresh R session. The root cause is that R's package installer can in some unconfirmed circumstances leave a package in a state that is apparently functional but where new R code is calling old C code silently: https://bugs.r-project.org/bugzilla/show_bug.cgi?id=17478. Once a package is in this mismatch state it may produce wrong results silently until you next upgrade the package. Please help by adding precise circumstances to 17478 to move the status to confirmed. This mismatch between R and C code can happen with any package not just data.table. It is just that data.table has added this check.", dll, dllV, RV, toupper(dll), domain="R-data.table"))
+      # NB: domain= is necessary in .onAttach and .onLoad, see ?gettext and https://bugs.r-project.org/bugzilla/show_bug.cgi?id=18092.
+      stop(domain="R-data.table", "The datatable.",dll," version (",dllV,") does not match the package (",RV,"). Please close all R sessions to release the old ",toupper(dll)," and reinstall data.table in a fresh R session. The root cause is that R's package installer can in some unconfirmed circumstances leave a package in a state that is apparently functional but where new R code is calling old C code silently: https://bugs.r-project.org/bugzilla/show_bug.cgi?id=17478. Once a package is in this mismatch state it may produce wrong results silently until you next upgrade the package. Please help by adding precise circumstances to 17478 to move the status to confirmed. This mismatch between R and C code can happen with any package not just data.table. It is just that data.table has added this check.")
     }
     builtUsing = readRDS(system.file("Meta/package.rds",package="data.table"))$Built$R
     if (!identical(base::getRversion()>="4.0.0", builtUsing>="4.0.0")) {
-      stop("This is R ", base::getRversion(), " but data.table has been installed using R ",builtUsing,". The major version must match. Please reinstall data.table.")
+      stop(domain="R-data.table", "This is R ", base::getRversion(), " but data.table has been installed using R ",builtUsing,". The major version must match. Please reinstall data.table.")
       # the if(R>=4.0.0) in NAMESPACE when registering S3 methods rbind.data.table and cbind.data.table happens on install; #3968
     }
   }
@@ -59,7 +60,7 @@
     if (class(ss)[1L]!="{") ss = as.call(c(as.name("{"), ss))
     if (!length(grep("data.table", ss[[2L]], fixed = TRUE))) {
       ss = ss[c(1L, NA, 2L:length(ss))]
-      ss[[2L]] = parse(text=paste0("for (x in list(...)) { if (inherits(x,'data.table')) return(",prefix,".rbind.data.table(...)) }"))[[1L]] # fix for #4995
+      ss[[2L]] = parse(text=paste0("for (x in list(...)) { if (inherits(x,'data.table')) return(",prefix,".rbind.data.table(...)) }"))[[1L]] # fix for #89
       body(tt)=ss
       (unlockBinding)("rbind.data.frame",baseenv())
       assign("rbind.data.frame",tt,envir=asNamespace("base"),inherits=FALSE)
@@ -86,20 +87,21 @@
        "datatable.alloccol"="1024L",           # argument 'n' of alloc.col. Over-allocate 1024 spare column slots
        "datatable.auto.index"="TRUE",          # DT[col=="val"] to auto add index so 2nd time faster
        "datatable.use.index"="TRUE",           # global switch to address #1422
-       "datatable.prettyprint.char" = NULL,     # FR #1091
-       "datatable.old.unique.by.key" = "FALSE"  # TODO: remove in May 2020
+       "datatable.prettyprint.char" = NULL     # FR #1091
        )
   for (i in setdiff(names(opts),names(options()))) {
     eval(parse(text=paste0("options(",i,"=",opts[i],")")))
   }
 
   if (!is.null(getOption("datatable.old.bywithoutby")))
-    warning("Option 'datatable.old.bywithoutby' has been removed as warned for 2 years. It is now ignored. Please use by=.EACHI instead and stop using this option.")
+    warning(domain="R-data.table", "Option 'datatable.old.bywithoutby' has been removed as warned for 2 years. It is now ignored. Please use by=.EACHI instead and stop using this option.")
+  if (!is.null(getOption("datatable.old.unique.by.key")))
+    warning(domain="R-data.table", "Option 'datatable.old.unique.by.key' has been removed as warned for 4 years. It is now ignored. Please use by=key(DT) instead and stop using this option.")
 
   # Test R behaviour that changed in v3.1 and is now depended on
   x = 1L:3L
   y = list(x)
-  if (address(x) != address(y[[1L]])) stop("Unexpected base R behaviour: list(x) has copied x")
+  if (address(x) != address(y[[1L]])) stop(domain="R-data.table", "Unexpected base R behaviour: list(x) has copied x")
 
   DF = data.frame(a=1:3, b=4:6)
   add1 = address(DF$a)
@@ -107,7 +109,7 @@
   names(DF) = c("A","B")
   add3 = address(DF$A)
   add4 = address(DF$B)
-  if (add1!=add3 || add2!=add4) stop("Unexpected base R behaviour: names<- has copied column contents")
+  if (add1!=add3 || add2!=add4) stop(domain="R-data.table", "Unexpected base R behaviour: names<- has copied column contents")
 
   DF = data.frame(a=1:3, b=4:6)
   add1 = address(DF$a)
@@ -117,10 +119,10 @@
   add4 = address(DF$a)
   add5 = address(DF$b)
   add6 = address(DF)
-  if (add2==add5) stop("Unexpected base R behaviour: DF[2,2]<- did not copy column 2 which was assigned to")
-  if (add1!=add4) stop("Unexpected base R behaviour: DF[2,2]<- copied the first column which was not assigned to, too")
+  if (add2==add5) stop(domain="R-data.table", "Unexpected base R behaviour: DF[2,2]<- did not copy column 2 which was assigned to")
+  if (add1!=add4) stop(domain="R-data.table", "Unexpected base R behaviour: DF[2,2]<- copied the first column which was not assigned to, too")
 
-  if (add3==add6) warning("Unexpected base R behaviour: DF[2,2]<- has not copied address(DF)")
+  if (add3==add6) warning(domain="R-data.table", "Unexpected base R behaviour: DF[2,2]<- has not copied address(DF)")
   # R could feasibly in future not copy DF's vecsxp in this case. If that changes in R, we'd like to know via the warning
   # because tests will likely break too. The warning will quickly tell R-core and us why, so we can then update.
 

@@ -11,7 +11,8 @@ merge.data.table = function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FAL
       by = key(x)
     }
   }
-  if ((x0 <- length(x)==0L) | (y0 <- length(y)==0L)) warning("You are trying to join data.tables where ", if(x0 & y0) "'x' and 'y' arguments are" else if(x0 & !y0) "'x' argument is" else if(!x0 & y0) "'y' argument is", " 0 columns data.table.")
+  x0 = length(x)==0L; y0 = length(y)==0L
+  if (x0 || y0) warning("You are trying to join data.tables where ", if(x0 && y0) "arguments 'x' and 'y' have" else if(x0) "argument 'x' has" else "argument 'y' has", " no columns.")
   if (any(duplicated(names(x)))) stop("x has some duplicated column name(s): ",paste(names(x)[duplicated(names(x))],collapse=","),". Please remove or rename the duplicate(s) and try again.")
   if (any(duplicated(names(y)))) stop("y has some duplicated column name(s): ",paste(names(y)[duplicated(names(y))],collapse=","),". Please remove or rename the duplicate(s) and try again.")
 
@@ -21,8 +22,8 @@ merge.data.table = function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FAL
   if (!missing(by) && !missing(by.x))
     warning("Supplied both `by` and `by.x/by.y`. `by` argument will be ignored.")
   if (!is.null(by.x)) {
-    if ( !is.character(by.x) || !is.character(by.y))
-      stop("A non-empty vector of column names are required for `by.x` and `by.y`.")
+    if (length(by.x) == 0L || !is.character(by.x) || !is.character(by.y))
+      stop("A non-empty vector of column names is required for `by.x` and `by.y`.")
     if (!all(by.x %chin% names(x)))
       stop("Elements listed in `by.x` must be valid column names in x.")
     if (!all(by.y %chin% names(y)))
@@ -75,7 +76,7 @@ merge.data.table = function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FAL
         yy = cbind(yy, x[tmp, othercolsx, with = FALSE])
       }
       # empty data.tables (nrow =0, ncol>0) doesn't skip names anymore in new rbindlist
-      # takes care of #5672 without having to save names. This is how it should be, IMHO.
+      # takes care of #24 without having to save names. This is how it should be, IMHO.
       dt = rbind(dt, yy, use.names=FALSE)
     }
   }

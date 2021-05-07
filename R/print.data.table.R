@@ -15,6 +15,8 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
   # trunc.cols - should only the columns be printed that can fit in the console? (FALSE)
   if (!col.names %chin% c("auto", "top", "none"))
     stop("Valid options for col.names are 'auto', 'top', and 'none'")
+  if (length(trunc.cols) != 1L || !is.logical(trunc.cols) || is.na(trunc.cols))
+    stop("Valid options for trunc.cols are TRUE and FALSE")
   if (col.names == "none" && class)
     warning("Column classes will be suppressed when col.names is 'none'")
   if (!shouldPrint(x)) {
@@ -41,12 +43,14 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
   if (!is.numeric(topn)) topn = 5L
   topnmiss = missing(topn)
   topn = max(as.integer(topn),1L)
-  if (print.keys){
+  if (print.keys) {
     if (!is.null(ky <- key(x)))
-    cat(gettextf("Key: <%s>\n", paste(ky, collapse=", "), domain="R-data.table"))
+    cat(gettextf("Key: <%s>\n", toString(ky)))
     if (!is.null(ixs <- indices(x)))
-    cat(ngettext(length(ixs), "Index: ", "Indices: ", domain="R-data.table"), "<",
-      paste(ixs, collapse=">, <"), ">\n", sep="")
+    cat(sprintf(
+      ngettext(length(ixs), "Index: %s\n", "Indices: %s\n"),
+      paste0("<", ixs, ">", collapse = ", ")
+    ))
   }
   if (any(dim(x)==0L)) {
     class = if (is.data.table(x)) "table" else "frame"  # a data.frame could be passed to print.data.table() directly, #3363
@@ -59,22 +63,23 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
     }
     return(invisible(x))
   }
-  if ((topn*2L+1L)<nrow(x) && (nrow(x)>nrows || !topnmiss)) {
+  n_x = nrow(x)
+  if ((topn*2L+1L)<n_x && (n_x>nrows || !topnmiss)) {
     toprint = rbindlist(list(head(x, topn), tail(x, topn)), use.names=FALSE)  # no need to match names because head and tail of same x, and #3306
-    rn = c(seq_len(topn), seq.int(to=nrow(x), length.out=topn))
+    rn = c(seq_len(topn), seq.int(to=n_x, length.out=topn))
     printdots = TRUE
   } else {
     toprint = x
-    rn = seq_len(nrow(x))
+    rn = seq_len(n_x)
     printdots = FALSE
   }
   toprint=format.data.table(toprint, na.encode=FALSE, timezone = timezone, ...)  # na.encode=FALSE so that NA in character cols print as <NA>
   require_bit64_if_needed(x)
 
-  # FR #5020 - add row.names = logical argument to print.data.table
+  # FR #353 - add row.names = logical argument to print.data.table
   if (isTRUE(row.names)) rownames(toprint)=paste0(format(rn,right=TRUE,scientific=FALSE),":") else rownames(toprint)=rep.int("", nrow(toprint))
   if (is.null(names(x)) || all(names(x) == ""))
-    # fixes bug #97 (RF#4934) and #545 (RF#5253)
+    # fixes bug #97 and #545
     colnames(toprint)=rep("", ncol(toprint))
   if (isTRUE(class) && col.names != "none") {
     #Matching table for most common types & their abbreviations
@@ -93,7 +98,7 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
   if (quote) colnames(toprint) <- paste0('"', old <- colnames(toprint), '"')
   if (isTRUE(trunc.cols)) {
     # allow truncation of columns to print only what will fit in console PR #4074
-    widths = dt_width(toprint, class, row.names, col.names)
+    widths = dt_width(toprint, n_x, class, row.names, col.names)
     cons_width = getOption("width")
     cols_to_print = widths < cons_width
     not_printed = colnames(toprint)[!cols_to_print]
@@ -122,7 +127,7 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
   if (nrow(toprint)>20L && col.names == "auto")
     # repeat colnames at the bottom if over 20 rows so you don't have to scroll up to see them
     #   option to shut this off per request of Oleg Bondar on SO, #1482
-    toprint=rbind(toprint, matrix(if (quote) old else colnames(toprint), nrow=1L)) # fixes bug #4934
+    toprint=rbind(toprint, matrix(if (quote) old else colnames(toprint), nrow=1L)) # fixes bug #97
   if (col.names == "none") {
     cut_top(print(toprint, right=TRUE, quote=quote))
   } else {
@@ -143,7 +148,7 @@ format.data.table = function (x, ..., justify="none", timezone = FALSE) {
     if (is.null(x))  # NULL item in a list column
       ""
     else if (is.atomic(x) || inherits(x,"formula")) # FR #2591 - format.data.table issue with columns of class "formula"
-      paste(c(format(head(x, 6L), justify=justify, ...), if (length(x) > 6L) "..."), collapse=",")  # fix for #5435 - format has to be added here...
+      paste(c(format(head(x, 6L), justify=justify, ...), if (length(x) > 6L) "..."), collapse=",")  # fix for #37 - format has to be added here...
     else
       paste0("<", class(x)[1L], paste_dims(x), ">")
   }
@@ -170,7 +175,7 @@ format.data.table = function (x, ..., justify="none", timezone = FALSE) {
     if (!is.null(dim(col))) return("<multi-column>")
     if(timezone) col = format.timezone(col)
     if (is.list(col)) col = vapply_1c(col, format.item)
-    else col = format(char.trunc(col), justify=justify, ...) # added an else here to fix #5435
+    else col = format(char.trunc(col), justify=justify, ...) # added an else here to fix #37
     col
   },...))
 }
@@ -202,12 +207,13 @@ paste_dims = function(x) {
 # to calculate widths of data.table for PR #4074
 # gets the width of the data.table at each column
 #   and compares it to the console width
-dt_width = function(x, class, row.names, col.names) {
+# pass nrow because x is the head/tail only so nrow(x) is wrong, #4266
+dt_width = function(x, nrow, class, row.names, col.names) {
   widths = apply(nchar(x, type='width'), 2L, max)
   if (class) widths = pmax(widths, 6L)
-  if (col.names != "none") names = sapply(colnames(x), nchar, type = "width") else names = 0L
+  if (col.names != "none") names = sapply(colnames(x), nchar, type="width") else names = 0L
   dt_widths = pmax(widths, names)
-  rownum_width = if (row.names) as.integer(ceiling(log10(nrow(x)))+2) else 0L
+  rownum_width = if (row.names) as.integer(ceiling(log10(nrow))+2) else 0L
   cumsum(dt_widths + 1L) + rownum_width
 }
 # keeps the dim and dimnames attributes

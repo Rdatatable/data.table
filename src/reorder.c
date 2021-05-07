@@ -60,11 +60,11 @@ SEXP reorder(SEXP x, SEXP order)
 
   for (int i=0; i<ncol; ++i) {
     const SEXP v = isNewList(x) ? VECTOR_ELT(x,i) : x;
-    const size_t size = SIZEOF(v);    // size_t, otherwise #5305 (integer overflow in memcpy)
+    const size_t size = SIZEOF(v);    // size_t, otherwise #61 (integer overflow in memcpy)
     if (size==4) {
       const int *restrict vd = DATAPTR_RO(v);
       int *restrict tmp = (int *)TMP;
-      #pragma omp parallel for num_threads(getDTthreads())
+      #pragma omp parallel for num_threads(getDTthreads(end, true))
       for (int i=start; i<=end; ++i) {
         tmp[i-start] = vd[idx[i]-1];  // copies 4 bytes; e.g. INTSXP and also SEXP pointers on 32bit (STRSXP and VECSXP)
       }
@@ -75,14 +75,14 @@ SEXP reorder(SEXP x, SEXP order)
     } else if (size==8) {
       const double *restrict vd = DATAPTR_RO(v);
       double *restrict tmp = (double *)TMP;
-      #pragma omp parallel for num_threads(getDTthreads())
+      #pragma omp parallel for num_threads(getDTthreads(end, true))
       for (int i=start; i<=end; ++i) {
         tmp[i-start] = vd[idx[i]-1];  // copies 8 bytes; e.g. REALSXP and also SEXP pointers on 64bit (STRSXP and VECSXP)
       }
     } else { // size 16; checked up front
       const Rcomplex *restrict vd = DATAPTR_RO(v);
       Rcomplex *restrict tmp = (Rcomplex *)TMP;
-      #pragma omp parallel for num_threads(getDTthreads())
+      #pragma omp parallel for num_threads(getDTthreads(end, true))
       for (int i=start; i<=end; ++i) {
         tmp[i-start] = vd[idx[i]-1];
       }

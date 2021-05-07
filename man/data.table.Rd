@@ -84,7 +84,7 @@ data.table(\dots, keep.rownames=FALSE, check.names=FALSE, key=NULL, stringsAsFac
 
     When \code{j} is a vector of column names or positions to select (as in \code{data.frame}). There is no need to use \code{with=FALSE} anymore. Note that \code{with=FALSE} is still necessary when using a logical vector with length \code{ncol(x)} to include/exclude columns. Note: if a logical vector with length \code{k < ncol(x)} is passed, it will be filled to length \code{ncol(x)} with \code{FALSE}, which is different from \code{data.frame}, where the vector is recycled.
 
-    \emph{Advanced:} \code{j} also allows the use of special \emph{read-only} symbols: \code{\link{.SD}}, \code{\link{.N}}, \code{\link{.I}}, \code{\link{.GRP}}, \code{\link{.BY}}.
+    \emph{Advanced:} \code{j} also allows the use of special \emph{read-only} symbols: \code{\link{.SD}}, \code{\link{.N}}, \code{\link{.I}}, \code{\link{.GRP}}, \code{\link{.BY}}. See \code{\link{special-symbols}} and the Examples below for more.
 
     \emph{Advanced:} When \code{i} is a \code{data.table}, the columns of \code{i} can be referred to in \code{j} by using the prefix \code{i.}, e.g., \code{X[Y, .(val, i.val)]}. Here \code{val} refers to \code{X}'s column and \code{i.val} \code{Y}'s.
 
@@ -106,11 +106,11 @@ data.table(\dots, keep.rownames=FALSE, check.names=FALSE, key=NULL, stringsAsFac
         \item{or of the form \code{startcol:endcol}: e.g., \code{DT[, sum(a), by=x:z]}}
     }
 
-    \emph{Advanced:} When \code{i} is a \code{list} (or \code{data.frame} or \code{data.table}), \code{DT[i, j, by=.EACHI]} evaluates \code{j} for the groups in `DT` that each row in \code{i} joins to. That is, you can join (in \code{i}) and aggregate (in \code{j}) simultaneously. We call this \emph{grouping by each i}. See \href{http://stackoverflow.com/a/27004566/559784}{this StackOverflow answer} for a more detailed explanation until we \href{https://github.com/Rdatatable/data.table/issues/944}{roll out vignettes}.
+    \emph{Advanced:} When \code{i} is a \code{list} (or \code{data.frame} or \code{data.table}), \code{DT[i, j, by=.EACHI]} evaluates \code{j} for the groups in `DT` that each row in \code{i} joins to. That is, you can join (in \code{i}) and aggregate (in \code{j}) simultaneously. We call this \emph{grouping by each i}. See \href{https://stackoverflow.com/a/27004566/559784}{this StackOverflow answer} for a more detailed explanation until we \href{https://github.com/Rdatatable/data.table/issues/944}{roll out vignettes}.
 
     \emph{Advanced:} In the \code{X[Y, j]} form of grouping, the \code{j} expression sees variables in \code{X} first, then \code{Y}. We call this \emph{join inherited scope}. If the variable is not in \code{X} or \code{Y} then the calling frame is searched, its calling frame, and so on in the usual way up to and including the global environment.}
 
-    \item{keyby}{ Same as \code{by}, but with an additional \code{setkey()} run on the \code{by} columns of the result, for convenience. It is common practice to use `keyby=` routinely when you wish the result to be sorted.}
+    \item{keyby}{ Same as \code{by}, but with an additional \code{setkey()} run on the \code{by} columns of the result, for convenience. It is common practice to use `keyby=` routinely when you wish the result to be sorted. May also be \code{TRUE} or \code{FALSE} when \code{by} is provided as an alternative way to accomplish the same operation.}
 
     \item{with}{ By default \code{with=TRUE} and \code{j} is evaluated within the frame of \code{x}; column names can be used as variables. In case of overlapping variables names inside dataset and in parent scope you can use double dot prefix \code{..cols} to explicitly refer to `\code{cols} variable parent scope and not from your dataset.
 
@@ -200,6 +200,7 @@ The way to read this out loud is: "Take \code{DT}, subset rows by \code{i}, \emp
     X[, sum(a), by=c:f]         # get sum(a) grouped by all columns in between 'c' and 'f' (both inclusive)
 
     X[, sum(a), keyby=b]        # get sum(a) grouped by 'b', and sort that result by the grouping column 'b'
+    X[, sum(a), by=b, keyby=TRUE] # same order as above, but using sorting flag
     X[, sum(a), by=b][order(b)] # same order as above, but by chaining compound expressions
     X[c>1, sum(a), by=c]        # get rows where c>1 is TRUE, and on those rows, get sum(a) grouped by 'c'
     X[Y, .(a, b), on="c"]       # get rows where Y$c == X$c, and select columns 'X$a' and 'X$b' for those rows
@@ -220,11 +221,11 @@ See the \code{see also} section for the several other \emph{methods} that are av
 
 }
 \references{
-\url{https://github.com/Rdatatable/data.table/wiki} (\code{data.table} homepage)\cr
-\url{http://en.wikipedia.org/wiki/Binary_search}
+\url{https://r-datatable.com} (\code{data.table} homepage)\cr
+\url{https://en.wikipedia.org/wiki/Binary_search}
 }
-\note{ If \code{keep.rownames} or \code{check.names} are supplied they must be written in full because \R does not allow partial argument names after `\code{\dots}`. For example, \code{data.table(DF, keep=TRUE)} will create a
-column called \code{"keep"} containing \code{TRUE} and this is correct behaviour; \code{data.table(DF, keep.rownames=TRUE)} was intended.
+\note{ If \code{keep.rownames} or \code{check.names} are supplied they must be written in full because \R does not allow partial argument names after \code{\dots}. For example, \code{data.table(DF, keep=TRUE)} will create a
+column called \code{keep} containing \code{TRUE} and this is correct behaviour; \code{data.table(DF, keep.rownames=TRUE)} was intended.
 
 \code{POSIXlt} is not supported as a column type because it uses 40 bytes to store a single datetime. They are implicitly converted to \code{POSIXct} type with \emph{warning}. You may also be interested in \code{\link{IDateTime}} instead; it has methods to convert to and from \code{POSIXlt}.
 }
@@ -280,6 +281,7 @@ DT[["v"]]                      # same as DT[, v] but much faster
 # grouping operations - j and by
 DT[, sum(v), by=x]             # ad hoc by, order of groups preserved in result
 DT[, sum(v), keyby=x]          # same, but order the result on by cols
+DT[, sum(v), by=x, keyby=TRUE] # same, but using sorting flag
 DT[, sum(v), by=x][order(x)]   # same but by chaining expressions together
 
 # fast ad hoc row subsets (subsets as joins)
@@ -374,7 +376,13 @@ DT[, .SD[1], by=x]                      # first row of 'y' and 'v' for each grou
 DT[, c(.N, lapply(.SD, sum)), by=x]     # get rows *and* sum columns 'v' and 'y' by group
 DT[, .I[1], by=x]                       # row number in DT corresponding to each group
 DT[, grp := .GRP, by=x]                 # add a group counter column
+DT[ , dput(.BY), by=.(x,y)]             # .BY is a list of singletons for each group
 X[, DT[.BY, y, on="x"], by=x]           # join within each group
+DT[, {
+  # write each group to a different file
+  fwrite(.SD, file.path(tempdir(), paste0('x=', .BY$x, '.csv')))
+}, by=x]
+dir(tempdir())
 
 # add/update/delete by reference (see ?assign)
 print(DT[, z:=42L])                   # add new column by reference
