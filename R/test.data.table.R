@@ -46,7 +46,7 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
     # nocov start
     fn2 = paste0(fn,".bz2")
     if (!file.exists(file.path(fulldir, fn2)))
-      stop(gettextf("Neither %s nor %s exist in %s",fn, fn2, fulldir, domain="R-data.table"))
+      stop(domain=NA, gettextf("Neither %s nor %s exist in %s",fn, fn2, fulldir))
     fn = fn2
     # nocov end
     # sys.source() below accepts .bz2 directly.
@@ -163,7 +163,7 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
   if (nfail > 0L) {
     # nocov start
     if (nfail > 1L) {s1="s";s2="s: "} else {s1="";s2=" "}
-    stop(nfail," error",s1," out of ",ntest,". Search ",names(fn)," for test number",s2,paste(env$whichfail,collapse=", "),".")
+    stop(nfail," error",s1," out of ",ntest,". Search ",names(fn)," for test number",s2,toString(env$whichfail),".")
     # important to stop() here, so that 'R CMD check' fails
     # nocov end
   }
@@ -177,7 +177,7 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
   cat("10 longest running tests took ", as.integer(tt<-DT[, sum(time)]), "s (", as.integer(100*tt/(ss<-timings[,sum(time)])), "% of ", as.integer(ss), "s)\n", sep="")
   print(DT, class=FALSE)
 
-  cat("All ",ntest," tests in ",names(fn)," completed ok in ",timetaken(env$started.at),"\n",sep="")
+  cat("All ",ntest," tests (last ",env$prevtest,") in ",names(fn)," completed ok in ",timetaken(env$started.at),"\n",sep="")
 
   ## this chunk requires to include new suggested deps: graphics, grDevices
   #memtest.plot = function(.inittime) {
@@ -390,16 +390,16 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
     if (length(output) && !string_match(output, out)) {
       # nocov start
       cat("Test",numStr,"did not produce correct output:\n")
-      cat("Expected: <<",gsub("\n","\\\\n",output),">>\n",sep="")  # \n printed as '\\n' so the two lines of output can be compared vertically
-      cat("Observed: <<",gsub("\n","\\\\n",out),">>\n",sep="")
+      cat("Expected: <<",encodeString(output),">>\n",sep="")  # \n printed as '\\n' so the two lines of output can be compared vertically
+      cat("Observed: <<",encodeString(out),">>\n",sep="")
       fail = TRUE
       # nocov end
     }
     if (length(notOutput) && string_match(notOutput, out, ignore.case=TRUE)) {
       # nocov start
       cat("Test",numStr,"produced output but should not have:\n")
-      cat("Expected absent (case insensitive): <<",gsub("\n","\\\\n",notOutput),">>\n",sep="")
-      cat("Observed: <<",gsub("\n","\\\\n",out),">>\n",sep="")
+      cat("Expected absent (case insensitive): <<",encodeString(notOutput),">>\n",sep="")
+      cat("Observed: <<",encodeString(out),">>\n",sep="")
       fail = TRUE
       # nocov end
     }
@@ -425,7 +425,8 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
         setattr(xc,"index",NULL)   # too onerous to create test RHS with the correct index as well, just check result
         setattr(yc,"index",NULL)
         if (identical(xc,yc) && identical(key(x),key(y))) return(invisible(TRUE))  # check key on original x and y because := above might have cleared it on xc or yc
-        if (isTRUE(all.equal.result<-all.equal(xc,yc)) && identical(key(x),key(y)) &&
+        if (isTRUE(all.equal.result<-all.equal(xc,yc,check.environment=FALSE)) && identical(key(x),key(y)) &&
+                                                     # ^^ to pass tests 2022.[1-4] in R-devel from 5 Dec 2020, #4835
           identical(vapply_1c(xc,typeof), vapply_1c(yc,typeof))) return(invisible(TRUE))
       }
     }

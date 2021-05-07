@@ -7,7 +7,7 @@ variables:
              ## Setting TZ for all GLCI jobs to isolate them from timezone. We could have a new GLCI job to test under
              ## a non-UTC timezone, although, that's what we do routinely in dev.
   R_REL_VERSION: "4.0"
-  R_DEVEL_VERSION: "4.1"
+  R_DEVEL_VERSION: "4.2"
   R_OLDREL_VERSION: "3.6"
 
 stages:
@@ -61,7 +61,7 @@ build: ## build data.table sources as tar.gz archive
   image: registry.gitlab.com/jangorecki/dockerfiles/r-builder
   needs: ["mirror-packages"]
   before_script:
-    - Rscript -e 'install.packages("knitr", repos=file.path("file:",normalizePath("bus/mirror-packages/cran")), quiet=TRUE)'
+    - Rscript -e 'install.packages(c("knitr","rmarkdown"), repos=file.path("file:",normalizePath("bus/mirror-packages/cran")), quiet=TRUE)'
     - rm -r bus
     - echo "Revision:" $CI_BUILD_REF >> ./DESCRIPTION
   script:
@@ -323,6 +323,7 @@ integration: ## merging all artifacts to produce single R repository, documentat
     - linux
   only:
     - master
+    - tags
   needs: ["mirror-packages","build","test-rel-lin","test-rel-cran-lin","test-dev-cran-lin","test-rel-vanilla-lin","test-310-cran-lin","test-344-cran-lin","test-350-cran-lin","test-rel-win","test-dev-win","test-old-win"]
   script:
     - Rscript -e 'pkgdown::build_site(override=list(destination="./pkgdown"))'
