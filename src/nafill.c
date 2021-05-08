@@ -86,6 +86,28 @@ void nafillInteger64(int64_t *x, uint_fast64_t nx, unsigned int type, int64_t fi
   if (verbose)
     snprintf(ans->message[0], 500, "%s: took %.3fs\n", __func__, omp_get_wtime()-tic);
 }
+void nafillString(const SEXP *x, uint_fast64_t nx, unsigned int type, SEXP fill, ans_t *ans, bool verbose) {
+  double tic=0.0;
+  if (verbose)
+    tic = omp_get_wtime();
+  if (type==0) { // const
+    for (uint_fast64_t i=0; i<nx; i++) {
+      ((SEXP*)ans->char_v)[i] = x[i]==NA_STRING ? fill : x[i];
+    }
+  } else if (type==1) { // locf
+    ((SEXP*)ans->char_v)[0] = x[0]==NA_STRING ? fill : x[0];
+    for (uint_fast64_t i=1; i<nx; i++) {
+      ((SEXP*)ans->char_v)[i] = x[i]==NA_STRING ? ((SEXP*)ans->char_v)[i-1] : x[i];
+    }
+  } else if (type==2) { // nocb
+    ((SEXP*)ans->char_v)[nx-1] = x[nx-1]==NA_STRING ? fill : x[nx-1];
+    for (int_fast64_t i=nx-2; i>=0; i--) {
+      ((SEXP*)ans->char_v)[i] = x[i]==NA_STRING ? ((SEXP*)ans->char_v)[i+1] : x[i];
+    }
+  }
+  if (verbose)
+    snprintf(ans->message[0], 500, "%s: took %.3fs\n", __func__, omp_get_wtime()-tic);
+}
 
 SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, SEXP cols) {
   int protecti=0;
@@ -118,28 +140,25 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, S
   x = PROTECT(allocVector(VECSXP, length(ricols))); protecti++;
   int *icols = INTEGER(ricols);
   bool hadChar = false;
-  bool* wasChar = (bool*)R_alloc(length(ricols), sizeof(bool));
+  bool* wasChar = (bool*)R_alloc(length(ricols), sizeof(bool)); // this is not yet used but can be used to run alll non-char columns in parallel region and char in single threaded
   for (int i=0; i<length(ricols); i++) {
     SEXP this_col = VECTOR_ELT(obj, icols[i]-1);
-    if (isString(this_col)) { // character handling via factor
-      if (binplace)
-        error(_("filling NAs in-place for character types is unsupported"));
+    if (isString(this_col)) {
       hadChar = true;
       wasChar[i] = true;
-      SET_VECTOR_ELT(x, i, eval(PROTECT(lang2(install("factor"), this_col)), R_GlobalEnv));
-      UNPROTECT(1); // factor(this_cols) language call
     } else {
       wasChar[i] = false;
       if (!isReal(this_col) && !isInteger(this_col) && !isLogical(this_col) && !isFactor(this_col))
         error(_("'x' argument must be numeric/integer/logical/factor/character/integer64, or list/data.table of such types"));
-      SET_VECTOR_ELT(x, i, this_col);
     }
+    SET_VECTOR_ELT(x, i, this_col);
   }
   R_len_t nx = length(x);
 
   // data pointers
   double **dx = (double**)R_alloc(nx, sizeof(double*));
-  int32_t **ix = (int32_t**)R_alloc(nx, sizeof(int32_t*)); // also logical factor and character (via factor)
+  int32_t **ix = (int32_t**)R_alloc(nx, sizeof(int32_t*)); // also logical and factor
+  const SEXP **sx = (const SEXP**)R_alloc(nx, sizeof(SEXP*)); // character
   int64_t **i64x = (int64_t**)R_alloc(nx, sizeof(int64_t*));
   // nrows of columns
   uint_fast64_t *inx = (uint_fast64_t*)R_alloc(nx, sizeof(uint_fast64_t));
@@ -153,12 +172,17 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, S
       dx[i] = REAL(xi);
       i64x[i] = (int64_t *)REAL(xi);
       ix[i] = NULL;
+      sx[i] = NULL;
     } else if (isInteger(xi) || isLogical(xi) || isFactor(xi)) {
       ix[i] = INTEGER(xi);
       dx[i] = NULL;
       i64x[i] = NULL;
+      sx[i] = NULL;
     } else if (isString(xi)) {
-      error(_("internal error: character columns should have been coerced to factor by now, please report")); // # nocov
+      ix[i] = NULL;
+      dx[i] = NULL;
+      i64x[i] = NULL;
+      sx[i] = SEXPPTR_RO(xi);
     } else {
       error(_("internal error: unknown column type, should have been caught by now, please report")); // # nocov
     }
@@ -168,12 +192,12 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, S
     for (R_len_t i=0; i<nx; i++) {
       SET_VECTOR_ELT(ans, i, allocVector(TYPEOF(VECTOR_ELT(x, i)), inx[i]));
       const SEXP ansi = VECTOR_ELT(ans, i);
-      const void *p = isReal(ansi) ? (void *)REAL(ansi) : (void *)INTEGER(ansi);
-      vans[i] = ((ans_t) { .dbl_v=(double *)p, .int_v=(int *)p, .int64_v=(int64_t *)p, .status=0, .message={"\0","\0","\0","\0"} });
+      const void *p = isReal(ansi) ? (void *)REAL(ansi) : (isInteger(ansi) ? (void *)INTEGER(ansi) : (void*) SEXPPTR_RO(ansi));
+      vans[i] = ((ans_t) { .dbl_v=(double *)p, .int_v=(int *)p, .int64_v=(int64_t *)p, .char_v=(void*)p, .status=0, .message={"\0","\0","\0","\0"} });
     }
   } else {
     for (R_len_t i=0; i<nx; i++) {
-      vans[i] = ((ans_t) { .dbl_v=dx[i], .int_v=ix[i], .int64_v=i64x[i], .status=0, .message={"\0","\0","\0","\0"} });
+      vans[i] = ((ans_t) { .dbl_v=dx[i], .int_v=ix[i], .int64_v=i64x[i], .char_v=(void*)sx[i], .status=0, .message={"\0","\0","\0","\0"} });
     }
   }
 
@@ -208,7 +232,7 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, S
       fillp[i] = SEXPPTR_RO(VECTOR_ELT(fill, i)); // do like this so we can use in parallel region
     }
   }
-  #pragma omp parallel for if (nx>1) num_threads(getDTthreads(nx, true))
+  #pragma omp parallel for if (nx>1 && !hadChar) num_threads(getDTthreads(nx, true))
   for (R_len_t i=0; i<nx; i++) {
     switch (TYPEOF(VECTOR_ELT(x, i))) {
     case REALSXP : {
@@ -220,6 +244,9 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, S
     } break;
     case LGLSXP: case INTSXP : {
       nafillInteger(ix[i], inx[i], itype, hasFill ? ((int32_t *)fillp[i])[0] : NA_INTEGER, &vans[i], verbose);
+    } break;
+    case STRSXP : {
+      nafillString(sx[i], inx[i], itype, hasFill ? ((SEXP *)fillp[i])[0] : NA_STRING, &vans[i], verbose);
     } break;
     }
   }
@@ -235,13 +262,6 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, S
       for (int i=0; i<length(ricols); i++)
         SET_STRING_ELT(ans_names, i, STRING_ELT(obj_names, icols[i]-1));
       setAttrib(ans, R_NamesSymbol, ans_names);
-    }
-  }
-  // recover character from factor
-  if (hadChar) {
-    for (int i=0; i<nx; i++) {
-      if (wasChar[i])
-        SET_VECTOR_ELT(ans, i, asCharacterFactor(VECTOR_ELT(ans, i)));
     }
   }
 
