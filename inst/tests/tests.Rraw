@@ -17281,4 +17281,6 @@ test(2165.4, c(1, 2) %notin% c(1,2,3), c(FALSE, FALSE))
 test(2165.5, "a" %notin% character(), TRUE)
 test(2165.6, "a" %notin% integer(), TRUE)
 test(2165.7, "a" %notin% NULL, TRUE)
+test(2165.8, NA %notin% 1:5, TRUE)
+test(2165.9, NA %notin% c(1:5, NA), FALSE)
 
