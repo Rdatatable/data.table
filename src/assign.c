@@ -698,7 +698,7 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
 //   having to use length(source) (repeating source expression) in each call
 {
   if (len<1) return NULL;
-  const int slen = sourceLen>=0 ? sourceLen : length(source);
+  int slen = sourceLen>=0 ? sourceLen : length(source); // since source may get reassigned to a scalar, we should not mark it as const
   if (slen==0) return NULL;
   if (sourceStart<0 || sourceStart+slen>length(source))
     error(_("Internal error memrecycle: sourceStart=%d sourceLen=%d length(source)=%d"), sourceStart, sourceLen, length(source)); // # nocov
@@ -726,7 +726,7 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
     } else if (!sourceIsFactor && !isString(source)) {
       // target is factor
       if (allNA(source, false)) {  // return false for list and other types that allNA does not support
-        source = ScalarLogical(NA_LOGICAL); // a global constant in R and won't allocate; fall through to regular zero-copy coerce
+        source = ScalarLogical(NA_LOGICAL); slen = 1; // a global constant in R and won't allocate; fall through to regular zero-copy coerce
       } else if (isInteger(source) || isReal(source)) {
         // allow assigning level numbers to factor columns; test 425, 426, 429 and 1945
         const int nlevel = length(getAttrib(target, R_LevelsSymbol));

@@ -76,7 +76,13 @@
 
 10. `X[Y, .SD, by=]` (joining and grouping in the same query) could segfault if i) `by=` is supplied custom data (i.e. not simple expressions of columns), and ii) some rows of `Y` do not match to any rows in `X`, [#4892](https://github.com/Rdatatable/data.table/issues/4892). Thanks to @Kodiologist for reporting, @ColeMiller1 for investigating, and @tlapak for the PR.
 
-11. If a data.table was generated from an existing data.frame, as in `df2 <- df1; dt <- setDT(df1)`, some (but not all!) modifications to `dt` would leak to `df2`,  [#4783](https://github.com/Rdatatable/data.table/issues/4783). Thanks to @OfekShilon for investigating and the PR.
+11. Assigning a set of 2 or more all-NA values to a factor column could segfault, [#4824](https://github.com/Rdatatable/data.table/issues/4824). Thanks to @clerousset for reporting and @shrektan for fixing.
+
+12. `as.data.table(table(NULL))` now returns `data.table(NULL)` rather than error `attempt to set an attribute on NULL`, [#4179](https://github.com/Rdatatable/data.table/issues/4179). The result differs slightly to `as.data.frame(table(NULL))` (0-row, 1-column) because 0-column works better with other `data.table` functions like `rbindlist()`. Thanks to Michael Chirico for the report and fix.
+
+13. `melt` with a list for `measure.vars` would output `variable` inconsistently between `na.rm=TRUE` and `FALSE`, [#4455](https://github.com/Rdatatable/data.table/issues/4455). Thanks to @tdhock for reporting and fixing.
+
+14. If a data.table was generated from an existing data.frame, as in `df2 <- df1; dt <- setDT(df1)`, some (but not all!) modifications to `dt` would leak to `df2`,  [#4783](https://github.com/Rdatatable/data.table/issues/4783). Thanks to @OfekShilon for investigating and the PR.
 
 ## NOTES
 

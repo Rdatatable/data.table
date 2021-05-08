@@ -390,16 +390,16 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
     if (length(output) && !string_match(output, out)) {
       # nocov start
       cat("Test",numStr,"did not produce correct output:\n")
-      cat("Expected: <<",gsub("\n","\\\\n",output),">>\n",sep="")  # \n printed as '\\n' so the two lines of output can be compared vertically
-      cat("Observed: <<",gsub("\n","\\\\n",out),">>\n",sep="")
+      cat("Expected: <<",encodeString(output),">>\n",sep="")  # \n printed as '\\n' so the two lines of output can be compared vertically
+      cat("Observed: <<",encodeString(out),">>\n",sep="")
       fail = TRUE
       # nocov end
     }
     if (length(notOutput) && string_match(notOutput, out, ignore.case=TRUE)) {
       # nocov start
       cat("Test",numStr,"produced output but should not have:\n")
-      cat("Expected absent (case insensitive): <<",gsub("\n","\\\\n",notOutput),">>\n",sep="")
-      cat("Observed: <<",gsub("\n","\\\\n",out),">>\n",sep="")
+      cat("Expected absent (case insensitive): <<",encodeString(notOutput),">>\n",sep="")
+      cat("Observed: <<",encodeString(out),">>\n",sep="")
       fail = TRUE
       # nocov end
     }

@@ -33,6 +33,8 @@ as.data.table.Date = as.data.table.ITime = function(x, keep.rownames=FALSE, key=
 
 # as.data.table.table - FR #361
 as.data.table.table = function(x, keep.rownames=FALSE, key=NULL, ...) {
+  # prevent #4179 & just cut out here
+  if (any(dim(x) == 0L)) return(null.data.table())
   # Fix for bug #43 - order of columns are different when doing as.data.table(with(DT, table(x, y)))
   val = rev(dimnames(provideDimnames(x)))
   if (is.null(names(val)) || !any(nzchar(names(val))))
