@@ -205,7 +205,6 @@ R_CallMethodDef callMethods[] = {
 {"CdllVersion", (DL_FUNC) &dllVersion, -1},
 {"CnafillR", (DL_FUNC) &nafillR, -1},
 {"CcolnamesInt", (DL_FUNC) &colnamesInt, -1},
-{"CcoerceFillR", (DL_FUNC) &coerceFillR, -1},
 {"CinitLastUpdated", (DL_FUNC) &initLastUpdated, -1},
 {"Ccj", (DL_FUNC) &cj, -1},
 {"Ccoalesce", (DL_FUNC) &coalesce, -1},
@@ -217,6 +216,7 @@ R_CallMethodDef callMethods[] = {
 {"CfrollapplyR", (DL_FUNC) &frollapplyR, -1},
 {"CtestMsgR", (DL_FUNC) &testMsgR, -1},
 {"C_allNAR", (DL_FUNC) &allNAR, -1},
+{"CcoerceAs", (DL_FUNC) &coerceAs, -1},
 {"Ctest_dt_win_snprintf", (DL_FUNC)&test_dt_win_snprintf, -1},
 {"Cdt_zlib_version", (DL_FUNC)&dt_zlib_version, -1},
 {NULL, NULL, 0}
@@ -245,8 +245,10 @@ static void setSizes() {
 void attribute_visible R_init_datatable(DllInfo *info)
 // relies on pkg/src/Makevars to mv data.table.so to datatable.so
 {
-  // C exported routines, see ?cdt for details
-  R_RegisterCCallable("data.table", "CsubsetDT", (DL_FUNC) &subsetDT);
+  // C exported routines
+  // must be also listed in inst/include/datatableAPI.h
+  // for end user documentation see ?cdt
+  R_RegisterCCallable("data.table", "DT_subsetDT", (DL_FUNC) &subsetDT);
 
   R_registerRoutines(info, NULL, callMethods, NULL, externalMethods);
   R_useDynamicSymbols(info, FALSE);
@@ -384,10 +386,12 @@ inline double LLtoD(long long x) {
   return u.d;
 }
 
-bool GetVerbose() {
+int GetVerbose() {
   // don't call repetitively; save first in that case
   SEXP opt = GetOption(sym_verbose, R_NilValue);
-  return isLogical(opt) && LENGTH(opt)==1 && LOGICAL(opt)[0]==1;
+  if ((!isLogical(opt) && !isInteger(opt)) || LENGTH(opt)!=1 || INTEGER(opt)[0]==NA_INTEGER)
+    error("verbose option must be length 1 non-NA logical or integer");
+  return INTEGER(opt)[0];
 }
 
 // # nocov start
@@ -414,6 +418,6 @@ SEXP initLastUpdated(SEXP var) {
 
 SEXP dllVersion() {
   // .onLoad calls this and checks the same as packageVersion() to ensure no R/C version mismatch, #3056
-  return(ScalarString(mkChar("1.13.7")));
+  return(ScalarString(mkChar("1.14.1")));
 }
 
