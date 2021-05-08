@@ -452,7 +452,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
     if (by_i < 1 || by_i > length(DT))
       STOP(_("internal error: 'by' value %d out of range [1,%d]"), by_i, length(DT)); // # nocov # R forderv already catch that using C colnamesInt
     if ( nrow != length(VECTOR_ELT(DT, by_i-1)) )
-      STOP(_("Column %d is length %d which differs from length of column 1 (%d)\n"), INTEGER(by)[i], length(VECTOR_ELT(DT, INTEGER(by)[i]-1)), nrow);
+      STOP(_("Column %d is length %d which differs from length of column 1 (%d), are you attempting to order by a list column?\n"), INTEGER(by)[i], length(VECTOR_ELT(DT, INTEGER(by)[i]-1)), nrow);
     if (TYPEOF(VECTOR_ELT(DT, by_i-1)) == CPLXSXP) n_cplx++;
   }
   if (!isLogical(retGrpArg) || LENGTH(retGrpArg)!=1 || INTEGER(retGrpArg)[0]==NA_LOGICAL)
