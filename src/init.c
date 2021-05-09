@@ -10,6 +10,8 @@ SEXP char_ITime;
 SEXP char_IDate;
 SEXP char_Date;
 SEXP char_POSIXct;
+SEXP char_POSIXt;
+SEXP char_UTC;
 SEXP char_nanotime;
 SEXP char_lens;
 SEXP char_indices;
@@ -30,6 +32,8 @@ SEXP sym_verbose;
 SEXP SelfRefSymbol;
 SEXP sym_inherits;
 SEXP sym_datatable_locked;
+SEXP sym_tzone;
+SEXP sym_old_fread_datetime_character;
 double NA_INT64_D;
 long long NA_INT64_LL;
 Rcomplex NA_CPLX;
@@ -120,6 +124,7 @@ SEXP unlock();
 SEXP islockedR();
 SEXP allNAR();
 SEXP test_dt_win_snprintf();
+SEXP dt_zlib_version();
 
 // .Externals
 SEXP fastmean();
@@ -200,7 +205,6 @@ R_CallMethodDef callMethods[] = {
 {"CdllVersion", (DL_FUNC) &dllVersion, -1},
 {"CnafillR", (DL_FUNC) &nafillR, -1},
 {"CcolnamesInt", (DL_FUNC) &colnamesInt, -1},
-{"CcoerceFillR", (DL_FUNC) &coerceFillR, -1},
 {"CinitLastUpdated", (DL_FUNC) &initLastUpdated, -1},
 {"Ccj", (DL_FUNC) &cj, -1},
 {"Ccoalesce", (DL_FUNC) &coalesce, -1},
@@ -212,7 +216,9 @@ R_CallMethodDef callMethods[] = {
 {"CfrollapplyR", (DL_FUNC) &frollapplyR, -1},
 {"CtestMsgR", (DL_FUNC) &testMsgR, -1},
 {"C_allNAR", (DL_FUNC) &allNAR, -1},
+{"CcoerceAs", (DL_FUNC) &coerceAs, -1},
 {"Ctest_dt_win_snprintf", (DL_FUNC)&test_dt_win_snprintf, -1},
+{"Cdt_zlib_version", (DL_FUNC)&dt_zlib_version, -1},
 {NULL, NULL, 0}
 };
 
@@ -239,8 +245,10 @@ static void setSizes() {
 void attribute_visible R_init_datatable(DllInfo *info)
 // relies on pkg/src/Makevars to mv data.table.so to datatable.so
 {
-  // C exported routines, see ?cdt for details
-  R_RegisterCCallable("data.table", "CsubsetDT", (DL_FUNC) &subsetDT);
+  // C exported routines
+  // must be also listed in inst/include/datatableAPI.h
+  // for end user documentation see ?cdt
+  R_RegisterCCallable("data.table", "DT_subsetDT", (DL_FUNC) &subsetDT);
 
   R_registerRoutines(info, NULL, callMethods, NULL, externalMethods);
   R_useDynamicSymbols(info, FALSE);
@@ -311,8 +319,11 @@ void attribute_visible R_init_datatable(DllInfo *info)
   // either use PRINTNAME(install()) or R_PreserveObject(mkChar()) here.
   char_integer64 = PRINTNAME(install("integer64"));
   char_ITime =     PRINTNAME(install("ITime"));
+  char_IDate =     PRINTNAME(install("IDate"));
   char_Date =      PRINTNAME(install("Date"));   // used for IDate too since IDate inherits from Date
   char_POSIXct =   PRINTNAME(install("POSIXct"));
+  char_POSIXt =    PRINTNAME(install("POSIXt"));
+  char_UTC =       PRINTNAME(install("UTC"));
   char_nanotime =  PRINTNAME(install("nanotime"));
   char_starts =    PRINTNAME(sym_starts = install("starts"));
   char_lens =      PRINTNAME(install("lens"));
@@ -346,6 +357,8 @@ void attribute_visible R_init_datatable(DllInfo *info)
   SelfRefSymbol = install(".internal.selfref");
   sym_inherits = install("inherits");
   sym_datatable_locked = install(".data.table.locked");
+  sym_tzone = install("tzone");
+  sym_old_fread_datetime_character = install("datatable.old.fread.datetime.character");
 
   initDTthreads();
   avoid_openmp_hang_within_fork();
@@ -373,10 +386,12 @@ inline double LLtoD(long long x) {
   return u.d;
 }
 
-bool GetVerbose() {
+int GetVerbose() {
   // don't call repetitively; save first in that case
   SEXP opt = GetOption(sym_verbose, R_NilValue);
-  return isLogical(opt) && LENGTH(opt)==1 && LOGICAL(opt)[0]==1;
+  if ((!isLogical(opt) && !isInteger(opt)) || LENGTH(opt)!=1 || INTEGER(opt)[0]==NA_INTEGER)
+    error("verbose option must be length 1 non-NA logical or integer");
+  return INTEGER(opt)[0];
 }
 
 // # nocov start
@@ -384,11 +399,11 @@ SEXP hasOpenMP() {
   // Just for use by onAttach (hence nocov) to avoid an RPRINTF from C level which isn't suppressable by CRAN
   // There is now a 'grep' in CRAN_Release.cmd to detect any use of RPRINTF in init.c, which is
   // why RPRINTF is capitalized in this comment to avoid that grep.
-  // TODO: perhaps .Platform or .Machine in R itself could contain whether OpenMP is available.
+  // .Platform or .Machine in R itself does not contain whether OpenMP is available because compiler and flags are per-package.
   #ifdef _OPENMP
-  return ScalarLogical(TRUE);
+  return ScalarInteger(_OPENMP); // return the version; e.g. 201511 (i.e. 4.5)
   #else
-  return ScalarLogical(FALSE);
+  return ScalarInteger(0);       // 0 rather than NA so that if() can be used on the result
   #endif
 }
 // # nocov end
@@ -403,6 +418,6 @@ SEXP initLastUpdated(SEXP var) {
 
 SEXP dllVersion() {
   // .onLoad calls this and checks the same as packageVersion() to ensure no R/C version mismatch, #3056
-  return(ScalarString(mkChar("1.12.9")));
+  return(ScalarString(mkChar("1.14.1")));
 }
 

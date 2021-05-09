@@ -6,7 +6,7 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b, SEXP na) {
   }
   if (  (isS4(a) && !INHERITS(a, char_nanotime))
      || (isS4(b) && !INHERITS(b, char_nanotime)) ) {
-    error("S4 class objects (except nanotime) are not supported.");
+    error(_("S4 class objects (except nanotime) are not supported."));
   }
   const int64_t len0 = xlength(l);
   const int64_t len1 = xlength(a);
@@ -147,103 +147,102 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b, SEXP na) {
 }
 
 SEXP fcaseR(SEXP na, SEXP rho, SEXP args) {
-  int n=length(args);
-  if (n % 2) {
+  const int narg=length(args);
+  if (narg % 2) {
     error(_("Received %d inputs; please supply an even number of arguments in ..., "
             "consisting of logical condition, resulting value pairs (in that order). "
-            "Note that the default argument must be named explicitly, e.g., default=0"), n);
+            "Note that the default argument must be named explicitly, e.g., default=0"), narg);
   }
-  int nprotect = 0, l = 0;
-  int64_t len0=0, len1=0, len2=0, idx=0;
-  SEXP ans = R_NilValue, value0 = R_NilValue, tracker = R_NilValue, cons = R_NilValue, outs = R_NilValue;
-  PROTECT_INDEX Icons, Iouts;
-  PROTECT_WITH_INDEX(cons, &Icons); nprotect++;
-  PROTECT_WITH_INDEX(outs, &Iouts); nprotect++;
-  SEXPTYPE type0;
-  bool nonna = !isNull(na), imask = true;
-  int *restrict p = NULL;
-  n = n/2;
-  for (int i=0; i<n; ++i) {
-    REPROTECT(cons = eval(SEXPPTR_RO(args)[2*i], rho), Icons);
-    REPROTECT(outs = eval(SEXPPTR_RO(args)[2*i+1], rho), Iouts);
-    if (isS4(outs) && !INHERITS(outs, char_nanotime)) {
-      error("S4 class objects (except nanotime) are not supported. Please see https://github.com/Rdatatable/data.table/issues/4131.");
+  if (narg==0) return R_NilValue;
+  
+  SEXP cons0 = PROTECT(eval(SEXPPTR_RO(args)[0], rho));
+  SEXP value0 = PROTECT(eval(SEXPPTR_RO(args)[1], rho)); // value0 will be compared to from loop so leave it protected throughout
+  SEXPTYPE type0 = TYPEOF(value0);
+  int64_t len0=xlength(cons0), len2=len0;
+  if (isS4(value0) && !INHERITS(value0, char_nanotime)) {
+    error(_("S4 class objects (except nanotime) are not supported. Please see https://github.com/Rdatatable/data.table/issues/4131."));
+    // otherwise 'invalid type/length (S4/1) in vector allocation' from test 2132.3
+  }
+  SEXP ans = PROTECT(allocVector(type0, len0));
+  SEXP tracker = PROTECT(allocVector(INTSXP, len0));
+  int *restrict p = INTEGER(tracker);
+  copyMostAttrib(value0, ans);
+  
+  bool nonna=!isNull(na);
+  if (nonna) {
+    if (xlength(na) != 1) {
+      error(_("Length of 'default' must be 1."));
     }
-    if (!isLogical(cons)) {
-      error("Argument #%d must be logical.", 2*i+1);
-    }
-    const int *restrict pcons = LOGICAL(cons);
-    if (i == 0) {
-      len0 = xlength(cons);
-      len2 = len0;
-      type0 = TYPEOF(outs);
-      value0 = outs;
-      if (nonna) {
-        if (xlength(na) != 1) {
-          error("Length of 'default' must be 1.");
-        }
-        SEXPTYPE tn = TYPEOF(na);
-        if (tn == LGLSXP && LOGICAL(na)[0]==NA_LOGICAL) {
-          nonna = false;
-        } else {
-          if (tn != type0) {
-            error("Resulting value is of type %s but 'default' is of type %s. "
-                     "Please make sure that both arguments have the same type.", type2char(type0), type2char(tn));
-          }
-          if (!R_compute_identical(PROTECT(getAttrib(outs,R_ClassSymbol)),  PROTECT(getAttrib(na,R_ClassSymbol)), 0)) {
-            error("Resulting value has different class than 'default'. "
-                     "Please make sure that both arguments have the same class.");
-          }
-          UNPROTECT(2);
-          if (isFactor(outs)) {
-            if (!R_compute_identical(PROTECT(getAttrib(outs,R_LevelsSymbol)),  PROTECT(getAttrib(na,R_LevelsSymbol)), 0)) {
-              error("Resulting value and 'default' are both type factor but their levels are different.");
-            }
-            UNPROTECT(2);
-          }
-        }
-      }
-      ans = PROTECT(allocVector(type0, len0)); nprotect++;
-      tracker = PROTECT(allocVector(INTSXP, len0)); nprotect++;
-      p = INTEGER(tracker);
-      copyMostAttrib(outs, ans);
+    SEXPTYPE tn = TYPEOF(na);
+    if (tn==LGLSXP && LOGICAL(na)[0]==NA_LOGICAL) {
+      nonna = false;
     } else {
-      imask = false;
-      l = 0;
-      if (xlength(cons) != len0) {
-        error("Argument #%d has a different length than argument #1. "
-                 "Please make sure all logical conditions have the same length.",
-                 i*2+1);
+      if (tn != type0) {
+        error(_("Resulting value is of type %s but 'default' is of type %s. "
+                "Please make sure that both arguments have the same type."), type2char(type0), type2char(tn));
       }
-      if (TYPEOF(outs) != type0) {
-        error("Argument #%d is of type %s, however argument #2 is of type %s. "
-                 "Please make sure all output values have the same type.",
-                 i*2+2, type2char(TYPEOF(outs)), type2char(type0));
-      }
-      if (!R_compute_identical(PROTECT(getAttrib(value0,R_ClassSymbol)),  PROTECT(getAttrib(outs,R_ClassSymbol)), 0)) {
-        error("Argument #%d has different class than argument #2, "
-                 "Please make sure all output values have the same class.", i*2+2);
+      if (!R_compute_identical(PROTECT(getAttrib(value0,R_ClassSymbol)),  PROTECT(getAttrib(na,R_ClassSymbol)), 0)) {
+        error(_("Resulting value has different class than 'default'. "
+                "Please make sure that both arguments have the same class."));
       }
       UNPROTECT(2);
       if (isFactor(value0)) {
-        if (!R_compute_identical(PROTECT(getAttrib(value0,R_LevelsSymbol)),  PROTECT(getAttrib(outs,R_LevelsSymbol)), 0)) {
-          error("Argument #2 and argument #%d are both factor but their levels are different.", i*2+2);
+        if (!R_compute_identical(PROTECT(getAttrib(value0,R_LevelsSymbol)),  PROTECT(getAttrib(na,R_LevelsSymbol)), 0)) {
+          error(_("Resulting value and 'default' are both type factor but their levels are different."));
         }
         UNPROTECT(2);
       }
     }
-    len1 = xlength(outs);
-    if (len1 != len0 && len1 != 1) {
-      error("Length of output value #%d must either be 1 or length of logical condition.", i*2+2);
+  }
+  
+  const int n = narg/2;
+  for (int i=0; i<n; ++i) {
+    SEXP cons = PROTECT(i==0 ? cons0 : eval(SEXPPTR_RO(args)[2*i], rho)); // protect cons0 again for easy unprotect at the end of this loop
+    SEXP outs = PROTECT(i==0 ? value0 : eval(SEXPPTR_RO(args)[2*i+1], rho));
+    if (isS4(outs) && !INHERITS(outs, char_nanotime)) {
+      error(_("S4 class objects (except nanotime) are not supported. Please see https://github.com/Rdatatable/data.table/issues/4131."));
+    }
+    if (!isLogical(cons)) {
+      error(_("Argument #%d must be logical."), 2*i+1);
+    }
+    if (i>0) {
+      if (xlength(cons) != len0) {
+        error(_("Argument #%d has a different length than argument #1. "
+                "Please make sure all logical conditions have the same length."),
+                i*2+1);
+      }
+      if (TYPEOF(outs) != type0) {
+        error(_("Argument #%d is of type %s, however argument #2 is of type %s. "
+                "Please make sure all output values have the same type."),
+                i*2+2, type2char(TYPEOF(outs)), type2char(type0));
+      }
+      if (!R_compute_identical(PROTECT(getAttrib(value0,R_ClassSymbol)),  PROTECT(getAttrib(outs,R_ClassSymbol)), 0)) {
+        error(_("Argument #%d has different class than argument #2, "
+                "Please make sure all output values have the same class."), i*2+2);
+      }
+      UNPROTECT(2);
+      if (isFactor(value0)) {
+        if (!R_compute_identical(PROTECT(getAttrib(value0,R_LevelsSymbol)),  PROTECT(getAttrib(outs,R_LevelsSymbol)), 0)) {
+          error(_("Argument #2 and argument #%d are both factor but their levels are different."), i*2+2);
+        }
+        UNPROTECT(2);
+      }
+    }
+    int64_t len1 = xlength(outs);
+    if (len1!=len0 && len1!=1) {
+      error(_("Length of output value #%d must either be 1 or length of logical condition."), i*2+2);
     }
     int64_t amask = len1>1 ? INT64_MAX : 0;
+    const int *restrict pcons = LOGICAL(cons);
+    const bool imask = i==0;
+    int64_t l=0; // how many this case didn't satisfy; i.e. left for next case
     switch(TYPEOF(outs)) {
     case LGLSXP: {
       const int *restrict pouts = LOGICAL(outs);
       int *restrict pans = LOGICAL(ans);
       const int pna = nonna ? LOGICAL(na)[0] : NA_LOGICAL;
       for (int64_t j=0; j<len2; ++j) {
-        idx = imask ? j : p[j];
+        const int64_t idx = imask ? j : p[j];
         if (pcons[idx]==1) {
           pans[idx] = pouts[idx & amask];
         } else {
@@ -259,7 +258,7 @@ SEXP fcaseR(SEXP na, SEXP rho, SEXP args) {
       int *restrict pans = INTEGER(ans);
       const int pna = nonna ? INTEGER(na)[0] : NA_INTEGER;
       for (int64_t j=0; j<len2; ++j) {
-        idx = imask ? j : p[j];
+        const int64_t idx = imask ? j : p[j];
         if (pcons[idx]==1) {
           pans[idx] = pouts[idx & amask];
         } else {
@@ -276,7 +275,7 @@ SEXP fcaseR(SEXP na, SEXP rho, SEXP args) {
       const double na_double = Rinherits(outs, char_integer64) ? NA_INT64_D : NA_REAL;
       const double pna = nonna ? REAL(na)[0] : na_double;
       for (int64_t j=0; j<len2; ++j) {
-        idx = imask ? j : p[j];
+        const int64_t idx = imask ? j : p[j];
         if (pcons[idx]==1) {
           pans[idx] = pouts[idx & amask];
         } else {
@@ -292,7 +291,7 @@ SEXP fcaseR(SEXP na, SEXP rho, SEXP args) {
       Rcomplex *restrict pans = COMPLEX(ans);
       const Rcomplex pna = nonna ? COMPLEX(na)[0] : NA_CPLX;
       for (int64_t j=0; j<len2; ++j) {
-        idx = imask ? j : p[j];
+        const int64_t idx = imask ? j : p[j];
         if (pcons[idx]==1) {
           pans[idx] = pouts[idx & amask];
         } else {
@@ -307,7 +306,7 @@ SEXP fcaseR(SEXP na, SEXP rho, SEXP args) {
       const SEXP *restrict pouts = STRING_PTR(outs);
       const SEXP pna = nonna ? STRING_PTR(na)[0] : NA_STRING;
       for (int64_t j=0; j<len2; ++j) {
-        idx = imask ? j : p[j];
+        const int64_t idx = imask ? j : p[j];
         if (pcons[idx]==1) {
           SET_STRING_ELT(ans, idx, pouts[idx & amask]);
         } else {
@@ -322,7 +321,7 @@ SEXP fcaseR(SEXP na, SEXP rho, SEXP args) {
       const SEXP *restrict pouts = SEXPPTR_RO(outs);
       const SEXP pna = SEXPPTR_RO(na)[0];
       for (int64_t j=0; j<len2; ++j) {
-        idx = imask ? j : p[j];
+        const int64_t idx = imask ? j : p[j];
         if (pcons[idx]==1) {
           SET_VECTOR_ELT(ans, idx, pouts[idx & amask]);
         } else {
@@ -334,13 +333,14 @@ SEXP fcaseR(SEXP na, SEXP rho, SEXP args) {
       }
     } break;
     default:
-      error("Type %s is not supported.", type2char(TYPEOF(outs)));
+      error(_("Type %s is not supported."), type2char(TYPEOF(outs)));
     }
+    UNPROTECT(2); // this cons and outs
     if (l==0) {
-      break;
+      break;  // stop early as nothing left to do
     }
     len2 = l;
   }
-  UNPROTECT(nprotect);
+  UNPROTECT(4); // cons0, value0, ans, tracker
   return ans;
 }
