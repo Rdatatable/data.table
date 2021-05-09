@@ -17410,3 +17410,14 @@ x = data.table(id = 1:4, key = 'id')
 y = data.table(id = 2:5, key = 'id')
 z = data.table(c=c(2L, 2L, 1L, 1L), id=c(2L, 4L, 3L, NA))
 test(2178, x[y, .SD, by=.(c(2L, 1L, 2L, 1L))], z)
+
+# `keyby` allows mixing eval/get with direct columns, #4981
+dt <- data.table(a=c(1,2), b=c(3,4), c=c(1,0))
+dt2 <- dt[,.(suma=sum(a)), keyby=.(b=get("b"),c)]
+test(2179.1, dt2[1, suma], 1)
+dt2 <- dt[2,.(suma=sum(a)), keyby=.(b=b,c)]
+test(2179.2, dt2[1, suma], 2)
+dt2 <- dt[2,.(suma=sum(a)), keyby=.(b=get("b"))]
+test(2179.3, dt2[1, suma], 2)
+dt2 <- dt[2,.(suma=sum(a)), keyby=.(b=get("b"),c)]
+test(2179.4, dt2[1, suma], 2)
