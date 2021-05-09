@@ -13,7 +13,7 @@ dcf.repo = function(pkg, repo, field, type) {
   idx = file(file.path(contrib.url(repo, type=type),"PACKAGES"))
   on.exit(close(idx))
   dcf = read.dcf(idx, fields=c("Package",field))
-  if (!pkg %in% dcf[,"Package"]) stop(gettextf("There is no package %s in provided repository.", pkg, domain='R-data.table'))
+  if (!pkg %in% dcf[,"Package"]) stop(domain=NA, gettextf("There is no package %s in provided repository.", pkg))
   dcf[dcf[,"Package"]==pkg, field][[1L]]
 }
 

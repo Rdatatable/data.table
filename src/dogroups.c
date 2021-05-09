@@ -49,7 +49,7 @@ static bool anySpecialStatic(SEXP x) {
   if (isNewList(x)) {
     if (TRUELENGTH(x)<0)
       return true;  // test 2158
-    for (int i=0; i<n; ++i) {  
+    for (int i=0; i<n; ++i) {
       if (anySpecialStatic(VECTOR_ELT(x,i)))
         return true;
     }
@@ -127,7 +127,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
   SEXP names = PROTECT(getAttrib(SDall, R_NamesSymbol)); nprotect++;
   if (length(names) != length(SDall)) error(_("length(names)!=length(SD)"));
   SEXP *nameSyms = (SEXP *)R_alloc(length(names), sizeof(SEXP));
-  
+
   for(int i=0; i<length(SDall); ++i) {
     SEXP this = VECTOR_ELT(SDall, i);
     if (SIZEOF(this)==0)
@@ -158,6 +158,12 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
   ansloc = 0;
   const int *istarts = INTEGER(starts);
   const int *iorder = INTEGER(order);
+
+  // We just want to set anyNA for later. We do it only once for the whole operation
+  // because it is a rare edge case for it to be true. See #4892.
+  bool anyNA=false, orderedSubset=false;
+  check_idx(order, length(VECTOR_ELT(dt, 0)), &anyNA, &orderedSubset);
+
   for(int i=0; i<ngrp; ++i) {   // even for an empty i table, ngroup is length 1 (starts is value 0), for consistency of empty cases
 
     if (istarts[i]==0 && (i<ngrp-1 || estn>-1)) continue;
@@ -233,7 +239,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
         for (int k=0; k<grpn; ++k) iI[k] = iorder[rownum+k];
         for (int j=0; j<length(SDall); ++j) {
           // this is the main non-contiguous gather, and is parallel (within-column) for non-SEXP
-          subsetVectorRaw(VECTOR_ELT(SDall,j), VECTOR_ELT(dt,INTEGER(dtcols)[j]-1), I, /*anyNA=*/false);
+          subsetVectorRaw(VECTOR_ELT(SDall,j), VECTOR_ELT(dt,INTEGER(dtcols)[j]-1), I, anyNA);
         }
         if (verbose) { tblock[1] += clock()-tstart; nblock[1]++; }
         // The two blocks have separate timing statements to make sure which is running

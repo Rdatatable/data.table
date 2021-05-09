@@ -46,7 +46,7 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
     # nocov start
     fn2 = paste0(fn,".bz2")
     if (!file.exists(file.path(fulldir, fn2)))
-      stop(gettextf("Neither %s nor %s exist in %s",fn, fn2, fulldir, domain="R-data.table"))
+      stop(domain=NA, gettextf("Neither %s nor %s exist in %s",fn, fn2, fulldir))
     fn = fn2
     # nocov end
     # sys.source() below accepts .bz2 directly.
@@ -163,7 +163,7 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
   if (nfail > 0L) {
     # nocov start
     if (nfail > 1L) {s1="s";s2="s: "} else {s1="";s2=" "}
-    stop(nfail," error",s1," out of ",ntest,". Search ",names(fn)," for test number",s2,paste(env$whichfail,collapse=", "),".")
+    stop(nfail," error",s1," out of ",ntest,". Search ",names(fn)," for test number",s2,toString(env$whichfail),".")
     # important to stop() here, so that 'R CMD check' fails
     # nocov end
   }
@@ -391,16 +391,16 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
     if (length(output) && !string_match(output, out)) {
       # nocov start
       cat("Test",numStr,"did not produce correct output:\n")
-      cat("Expected: <<",gsub("\n","\\\\n",output),">>\n",sep="")  # \n printed as '\\n' so the two lines of output can be compared vertically
-      cat("Observed: <<",gsub("\n","\\\\n",out),">>\n",sep="")
+      cat("Expected: <<",encodeString(output),">>\n",sep="")  # \n printed as '\\n' so the two lines of output can be compared vertically
+      cat("Observed: <<",encodeString(out),">>\n",sep="")
       fail = TRUE
       # nocov end
     }
     if (length(notOutput) && string_match(notOutput, out, ignore.case=TRUE)) {
       # nocov start
       cat("Test",numStr,"produced output but should not have:\n")
-      cat("Expected absent (case insensitive): <<",gsub("\n","\\\\n",notOutput),">>\n",sep="")
-      cat("Observed: <<",gsub("\n","\\\\n",out),">>\n",sep="")
+      cat("Expected absent (case insensitive): <<",encodeString(notOutput),">>\n",sep="")
+      cat("Observed: <<",encodeString(out),">>\n",sep="")
       fail = TRUE
       # nocov end
     }
