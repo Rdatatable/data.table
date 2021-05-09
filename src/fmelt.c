@@ -3,8 +3,6 @@
 // #include <signal.h> // the debugging machinery + breakpoint aidee
 // raise(SIGINT);
 
-static SEXP VarNameSymbol = NULL;
-
 // generate from 1 to n (a simple fun for melt, vecseq is convenient from R due to SEXP inputs)
 SEXP seq_int(int n, int start) {
   if (n <= 0) return(R_NilValue);
@@ -349,8 +347,7 @@ static void preprocess(SEXP DT, SEXP id, SEXP measure, SEXP varnames, SEXP valna
     SET_VECTOR_ELT(data->RCHK, 1, data->naidx = allocVector(VECSXP, data->lmax));
   }
   // TDH 1 Oct 2020 variable table.
-  if (VarNameSymbol == NULL) VarNameSymbol = install("variable_table");
-  data->variable_table = getAttrib(measure, VarNameSymbol);
+  data->variable_table = getAttrib(measure, sym_variable_table);
   if (isNull(data->variable_table)) {
     // We need to include this check first because isNewList(NULL) ==
     // TRUE
