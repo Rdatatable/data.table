@@ -192,7 +192,7 @@ shouldPrint = function(x) {
 
 # for removing the head (column names) of matrix output entirely,
 #   as opposed to printing a blank line, for excluding col.names per PR #1483
-cut_top = function(x) cat(capture.output(x)[-1L], sep = '\n')
+cut_top = function(x) writeLines(capture.output(x)[-1L])
 
 # for printing the dims for list columns #3671; used by format.data.table()
 paste_dims = function(x) {

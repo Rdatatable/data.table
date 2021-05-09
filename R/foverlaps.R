@@ -128,7 +128,7 @@ foverlaps = function(x, y, by.x=if (!is.null(key(x))) key(x) else key(y), by.y=k
               end = yintervals[2L], any =,
               within =, equal = yintervals)
   call = construct(head(ynames, -2L), uycols, type)
-  if (verbose) {last.started.at=proc.time();cat("unique() + setkey() operations done in ...");flush.console()}
+  if (verbose) {last.started.at=proc.time();catf("unique() + setkey() operations done in ...");flush.console()}
   uy = unique(y[, eval(call)]) # this started to fail from R 4.1 due to c(POSIXct, numeric)
   setkey(uy)[, `:=`(lookup = list(list(integer(0L))), type_lookup = list(list(integer(0L))), count=0L, type_count=0L)]
   if (verbose) {cat(timetaken(last.started.at),"\n"); flush.console()}
