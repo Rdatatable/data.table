@@ -65,7 +65,7 @@
 
 9. `data.table(NULL)[, firstCol:=1L]` created `data.table(firstCol=1L)` ok but did not update the internal `row.names` attribute, causing `Error in '$<-.data.frame'(x, name, value) : replacement has 1 row, data has 0` when passed to packages like `ggplot` which use `DT` as if it is a `data.frame`, [#4597](https://github.com/Rdatatable/data.table/issues/4597). Thanks to Matthew Son for reporting, and Cole Miller for the PR.
 
-10. `as.IDate` works on character input where the first input is `''` by treating it as `NA`, [#4676](https://github.com/Rdatatable/data.table/issues/4676). This is consistent with how `''` is treated when it appears later in the input; the underlying inconsistency in `as.Date.character` was also fixed in `r-devel` revision 79119; we applied the change in `data.table` as well because we depend only on a much earlier version of R.
+10. `as.IDate` works on character input where the first input is `''` by treating it as `NA`, [#4676](https://github.com/Rdatatable/data.table/issues/4676). This is consistent with how `''` is treated when it appears later in the input; the underlying inconsistency in `as.Date.character` was fixed in R version 4.0.3; we applied the change in `data.table` as well because we depend only on a much earlier version of R.
 
 ## NOTES
 
