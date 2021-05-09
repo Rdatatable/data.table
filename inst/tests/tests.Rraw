@@ -3014,7 +3014,8 @@ test(1034, as.data.table(x<-as.character(sample(letters, 5))), data.table(V1=x))
        error="Unknown 'id.vars' type raw")
   test(1035.012, melt(DT, id.vars=1:3, measure.vars=as.raw(0)),
        error="Unknown 'measure.vars' type raw")
-  test(1035.013, melt(data.table(a=1, b=1), id.vars=c(1,1)), data.table(a=1, a.1=1, variable=factor("b"), value=1))
+  test(1035.013, melt(data.table(a=1, b=1), id.vars=c(1,1)), data.table(a=1, a.1=1, variable=factor("b"), value=1),
+                 output="Duplicate column names found")
   test(1035.014, melt(data.table(a1=1, b1=1, b2=2), na.rm=TRUE, measure.vars=list(a="a1", b=c("b1","b2"))), data.table(variable=factor(1,c("1","2")), a=1, b=1))
   test(1035.015, melt(data.table(a=1+2i, b=1), id.vars="a"), error="Unknown column type 'complex' for column 'a' in 'data'")
 
