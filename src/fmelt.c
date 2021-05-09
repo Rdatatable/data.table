@@ -255,7 +255,7 @@ SEXP checkVars(SEXP DT, SEXP id, SEXP measure, Rboolean verbose) {
       tmp = PROTECT(unlist_(tmp2)); protecti++;
     }
     for (int i=0; i<length(tmp); ++i) {
-      if (invalid_measure(INTEGER(tmp)[i], ncol)) 
+      if (invalid_measure(INTEGER(tmp)[i], ncol))
         error(_("One or more values in 'measure.vars' is invalid."));
     }
     if (isNewList(measure)) valuecols = tmp2;
@@ -276,7 +276,7 @@ struct processData {
   SEXP idcols,    // convenience pointers into RCHK[0][0], RCHK[0][1] and RCHK[1] respectively
     variable_table, // NULL or data for variable column(s).
     valuecols,    // list with one element per output/value column, each element is an integer vector.
-    naidx; 
+    naidx;
   int *isfactor,
     *leach,       // length of each element of the valuecols(measure.vars) list.
     *isidentical; // are all inputs for this value column the same type?
@@ -444,7 +444,7 @@ SEXP input_col_or_na(SEXP DT, struct processData* data, SEXP thisvaluecols, int 
     }
   }
   return allocNAVector(data->maxtype[out_col], data->nrow);
-}  
+}
 
 SEXP getvaluecols(SEXP DT, SEXP dtnames, Rboolean valfactor, Rboolean verbose, struct processData *data) {
   for (int i=0; i<data->lvalues; ++i) {
@@ -572,7 +572,7 @@ SEXP getvarcols(SEXP DT, SEXP dtnames, Rboolean varfactor, Rboolean verbose, str
   // data->nrow * data->lmax == data->totlen
   int protecti=0;
   SEXP ansvars=PROTECT(allocVector(VECSXP, data->lvars)); protecti++;
-  SEXP target;  
+  SEXP target;
   if (data->lvalues==1 && length(VECTOR_ELT(data->valuecols, 0)) != data->lmax)
     error(_("Internal error: fmelt.c:getvarcols %d %d"), length(VECTOR_ELT(data->valuecols, 0)), data->lmax);  // # nocov
   if (isNull(data->variable_table)) {
@@ -647,12 +647,12 @@ SEXP getvarcols(SEXP DT, SEXP dtnames, Rboolean varfactor, Rboolean verbose, str
           for (int k=0; k<thislen; ++k)
             SET_STRING_ELT(target, ansloc++, STRING_ELT(out_col, j));
           break;
-        case REALSXP : 
+        case REALSXP :
           for (int k=0; k<thislen; ++k)
             REAL(target)[ansloc++] = REAL(out_col)[j];
           break;
         case INTSXP :
-        case LGLSXP : 
+        case LGLSXP :
           for (int k=0; k<thislen; ++k)
             INTEGER(target)[ansloc++] = INTEGER(out_col)[j];
           if (isFactor(out_col)) {
