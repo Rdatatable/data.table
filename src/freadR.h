@@ -2,6 +2,7 @@
 #define dt_FREAD_R_H
 #define STRICT_R_HEADERS   // https://cran.r-project.org/doc/manuals/r-devel/R-exts.html#Error-handling
 #include <R.h>
+#include <Rinternals.h>
 #include "po.h"
 
 #define FREAD_MAIN_ARGS_EXTRA_FIELDS \
