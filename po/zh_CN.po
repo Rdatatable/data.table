@@ -2,13 +2,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: data.table 1.12.5\n"
 "Report-Msgid-Bugs-To: \n"
-<<<<<<< HEAD
-"POT-Creation-Date: 2020-01-31 17:27+0800\n"
-"PO-Revision-Date: 2019-11-18 00:26-04\n"
-=======
 "POT-Creation-Date: 2020-10-17 13:11-0400\n"
 "PO-Revision-Date: 2020-10-18 20:39-0400\n"
->>>>>>> master
 "Last-Translator: Yuhang Chen <yuhangchen0802@gmail.com>\n"
 "Language-Team: Mandarin\n"
 "Language: Mandarin\n"
@@ -472,20 +467,6 @@ msgstr " 因为一个键(key)列的更新，丢掉索引(index) '%s'\n"
 msgid "Shortening index '%s' to '%s' due to an update on a key column\n"
 msgstr "因为一个键(key)列的更新，缩短索引(index) '%s' 到 '%s'\n"
 
-<<<<<<< HEAD
-#: assign.c:683
-#, c-format
-msgid ""
-"Internal error memrecycle: sourceStart=%d sourceLen=%d length(source)=%d"
-msgstr "内部错误 memrecycle: sourceStart=%d sourceLen=%d length(source)=%d"
-
-#: assign.c:685
-#, c-format
-msgid "Internal error memrecycle: start=%d len=%d length(target)=%d"
-msgstr "内部错误 memrecycle: start=%d len=%d length(target)=%d"
-
-#: assign.c:688
-=======
 #: assign.c:650
 #, c-format
 msgid ""
@@ -506,24 +487,15 @@ msgid "Internal error memrecycle: start=%d len=%d length(target)=%d"
 msgstr "memrecycle 内部错误：start=%d len=%d length(target)=%d"
 
 #: assign.c:693
->>>>>>> master
 #, c-format
 msgid "Internal error: recycle length error not caught earlier. slen=%d len=%d"
 msgstr "内部错误: 早期未被发现的循环长度错误 slen=%d len=%d"
 
-<<<<<<< HEAD
-#: assign.c:692
-msgid "Internal error: memrecycle has received NULL colname"
-msgstr "内部错误: memrecycle 接受到的列名为 NULL "
-
-#: assign.c:718
-=======
 #: assign.c:697
 msgid "Internal error: memrecycle has received NULL colname"
 msgstr "内部错误: memrecycle 接受到的列名为 NULL "
 
 #: assign.c:706
->>>>>>> master
 #, c-format
 msgid ""
 "Cannot assign 'factor' to '%s'. Factors can only be assigned to factor, "
@@ -531,22 +503,14 @@ msgid ""
 msgstr ""
 "不能将 'factor' 赋值为 '%s' 。因子类型只能赋值为因子，字符或者列表其中的列"
 
-<<<<<<< HEAD
-#: assign.c:732
-=======
 #: assign.c:720
->>>>>>> master
 #, c-format
 msgid ""
 "Assigning factor numbers to column %d named '%s'. But %d is outside the "
 "level range [1,%d]"
 msgstr "将列 %d 名称为 '%s' 赋值为因子。但是 %d 在层次范围[1,%d]之外"
 
-<<<<<<< HEAD
-#: assign.c:740
-=======
 #: assign.c:728
->>>>>>> master
 #, c-format
 msgid ""
 "Assigning factor numbers to column %d named '%s'. But %f is outside the "
@@ -555,11 +519,7 @@ msgstr ""
 "将列 %d 名称为 '%s' 赋值为因子。但是 %f 在层次范围[1,%d]之外，或者不是一个完"
 "整的数字"
 
-<<<<<<< HEAD
-#: assign.c:746
-=======
 #: assign.c:734
->>>>>>> master
 #, c-format
 msgid ""
 "Cannot assign '%s' to 'factor'. Factor columns can be assigned factor, "
@@ -567,48 +527,28 @@ msgid ""
 msgstr ""
 "不能将 'factor' 赋值为 '%s' 。 因子列可被赋值为因子，字符 ，NA 或者 层次数值"
 
-<<<<<<< HEAD
-#: assign.c:767
-=======
 #: assign.c:755
->>>>>>> master
 msgid ""
 "Internal error: levels of target are either not unique or have truelength<0"
 msgstr "内部错误: 目标的层次不是唯一或者长度<0"
 
-<<<<<<< HEAD
-#: assign.c:806
-=======
 #: assign.c:794
->>>>>>> master
 #, c-format
 msgid "Unable to allocate working memory of %d bytes to combine factor levels"
 msgstr "不能分配 %d 字节的工作内存来组合因子层次"
 
-<<<<<<< HEAD
-#: assign.c:813
-msgid "Internal error: extra level check sum failed"
-msgstr "内部错误: 额外的层次校验和失败"
-
-#: assign.c:832
-=======
 #: assign.c:801
 msgid "Internal error: extra level check sum failed"
 msgstr "内部错误: 额外的层次校验和失败"
 
 #: assign.c:820
->>>>>>> master
 #, c-format
 msgid ""
 "Coercing 'character' RHS to '%s' to match the type of the target column "
 "(column %d named '%s')."
 msgstr "将'character' RHS 强制转换成 '%s' 来匹配目标列的类型(列 %d 名称 '%s')"
 
-<<<<<<< HEAD
-#: assign.c:838
-=======
 #: assign.c:826
->>>>>>> master
 #, c-format
 msgid ""
 "Cannot coerce 'list' RHS to 'integer64' to match the type of the target "
@@ -616,68 +556,40 @@ msgid ""
 msgstr ""
 "不能将'list' RHS 强制转换成 'integer64' 来匹配目标列的类型(列 %d 名称 '%s')"
 
-<<<<<<< HEAD
-#: assign.c:843
-=======
 #: assign.c:831
->>>>>>> master
 #, c-format
 msgid ""
 "Coercing 'list' RHS to '%s' to match the type of the target column (column "
 "%d named '%s')."
 msgstr "将'list' RHS 强制转换成 '%s' 来匹配目标列的类型(列 %d 名称 '%s')"
 
-<<<<<<< HEAD
-#: assign.c:849
-=======
 #: assign.c:837
->>>>>>> master
 #, c-format
 msgid "Zero-copy coerce when assigning '%s' to '%s' column %d named '%s'.\n"
 msgstr "当 '%s' 赋值成 '%s' 列 %d 名称 '%s'，进行Zero-copy强制转换。\n"
 
-<<<<<<< HEAD
-#: assign.c:944
-=======
 #: assign.c:932
->>>>>>> master
 #, c-format
 msgid "type '%s' cannot be coerced to '%s'"
 msgstr "类型 '%s' 不能强制转换成 '%s'"
 
-<<<<<<< HEAD
-#: assign.c:1064
-=======
 #: assign.c:1052
->>>>>>> master
 msgid ""
 "To assign integer64 to a character column, please use as.character() for "
 "clarity."
 msgstr "请使用 as.character() 把 integer64 类型的数值赋值给字符列"
 
-<<<<<<< HEAD
-#: assign.c:1076
-=======
 #: assign.c:1064
->>>>>>> master
 #, c-format
 msgid "Unsupported column type in assign.c:memrecycle '%s'"
 msgstr "assign.c:memrecycle '%s' 里有不支持的列的类型"
 
-<<<<<<< HEAD
-#: assign.c:1123
-=======
 #: assign.c:1111
->>>>>>> master
 #, c-format
 msgid "Internal error: writeNA passed a vector of type '%s'"
 msgstr "内部错误：writeNA 函数读取到了一个类型是'%s'的向量"
 
-<<<<<<< HEAD
-#: assign.c:1154
-=======
 #: assign.c:1142
->>>>>>> master
 #, c-format
 msgid ""
 "Internal error: savetl_init checks failed (%d %d %p %p). please report to "
@@ -686,20 +598,12 @@ msgstr ""
 "内部错误：savetl_init的校验失败 (%d %d %p %p)，请将此问题汇报给data.table 问"
 "题追踪器。"
 
-<<<<<<< HEAD
-#: assign.c:1162
-=======
 #: assign.c:1150
->>>>>>> master
 #, c-format
 msgid "Failed to allocate initial %d items in savetl_init"
 msgstr "不能为 savetl_init 最开始的 %d 个项分配空间"
 
-<<<<<<< HEAD
-#: assign.c:1171
-=======
 #: assign.c:1159
->>>>>>> master
 #, c-format
 msgid ""
 "Internal error: reached maximum %d items for savetl. Please report to data."
@@ -708,39 +612,16 @@ msgstr ""
 "内部错误：已经达到了 savetl 能处理的子项上限 %d。请将此问题汇报给data.table问"
 "题追踪器。"
 
-<<<<<<< HEAD
-#: assign.c:1178
-=======
 #: assign.c:1166
->>>>>>> master
 #, c-format
 msgid "Failed to realloc saveds to %d items in savetl"
 msgstr "不能给 savetl 里的 %d 个项重新分配 saveds"
 
-<<<<<<< HEAD
-#: assign.c:1184
-=======
 #: assign.c:1172
->>>>>>> master
 #, c-format
 msgid "Failed to realloc savedtl to %d items in savetl"
 msgstr "不能给savetl里的 %d 个项提供 savetl"
 
-<<<<<<< HEAD
-#: assign.c:1207
-msgid "x must be a character vector"
-msgstr "x 必须是一个字符向量"
-
-#: assign.c:1208
-msgid "'which' must be an integer vector"
-msgstr "'which' 必须是一个整数向量"
-
-#: assign.c:1209
-msgid "'new' must be a character vector"
-msgstr "'new' 必须是一个字符向量"
-
-#: assign.c:1210
-=======
 #: assign.c:1195
 msgid "x must be a character vector"
 msgstr "x 必须是一个字符向量"
@@ -754,16 +635,11 @@ msgid "'new' must be a character vector"
 msgstr "'new' 必须是一个字符向量"
 
 #: assign.c:1198
->>>>>>> master
 #, c-format
 msgid "'new' is length %d. Should be the same as length of 'which' (%d)"
 msgstr "'new' 的长度是 %d。 它的长度必须和'which' (%d)的长度一致。"
 
-<<<<<<< HEAD
-#: assign.c:1213
-=======
 #: assign.c:1201
->>>>>>> master
 #, c-format
 msgid ""
 "Item %d of 'which' is %d which is outside range of the length %d character "
@@ -1070,33 +946,6 @@ msgstr "coalesce 复制了第一项 (inplace=FALSE)\n"
 msgid "Unsupported type: %s"
 msgstr "不支持的类型：%s"
 
-<<<<<<< HEAD
-#: dogroups.c:15
-msgid "Internal error: order not integer vector"
-msgstr "内部错误：order 不是整型向量"
-
-#: dogroups.c:16
-msgid "Internal error: starts not integer"
-msgstr "内部错误：starts 不是整型"
-
-#: dogroups.c:17
-msgid "Internal error: lens not integer"
-msgstr "内部错误：lens 不是整型"
-
-#: dogroups.c:19
-msgid "Internal error: jiscols not NULL but o__ has length"
-msgstr "内部错误：jiscols 非 NULL，但 o__ 长度不为0"
-
-#: dogroups.c:20
-msgid "Internal error: xjiscols not NULL but o__ has length"
-msgstr "内部错误：jiscols 非 NULL，但 o__ 长度不为0"
-
-#: dogroups.c:21
-msgid "'env' should be an environment"
-msgstr "'env' 应该是一个环境"
-
-#: dogroups.c:40
-=======
 #: dogroups.c:69
 msgid "Internal error: order not integer vector"
 msgstr "内部错误：order 不是整型向量"
@@ -1122,7 +971,6 @@ msgid "'env' should be an environment"
 msgstr "'env' 应该是一个环境"
 
 #: dogroups.c:94
->>>>>>> master
 #, c-format
 msgid ""
 "Internal error: unsupported size-0 type '%s' in column %d of 'by' should "
@@ -1130,28 +978,16 @@ msgid ""
 msgstr ""
 "内部错误：未能被提前捕获到 'by' 中第 %2$d 列不支持类型 '%1$s' 且size-0 的问题"
 
-<<<<<<< HEAD
-#: dogroups.c:44
-=======
 #: dogroups.c:99
->>>>>>> master
 #, c-format
 msgid "!length(bynames)[%d]==length(groups)[%d]==length(grpcols)[%d]"
 msgstr "!length(bynames)[%d]==length(groups)[%d]==length(grpcols)[%d]"
 
-<<<<<<< HEAD
-#: dogroups.c:63
-msgid "row.names attribute of .SD not found"
-msgstr ".SD 的行名属性不存在"
-
-#: dogroups.c:65
-=======
 #: dogroups.c:121
 msgid "row.names attribute of .SD not found"
 msgstr ".SD 的行名属性不存在"
 
 #: dogroups.c:123
->>>>>>> master
 #, c-format
 msgid ""
 "row.names of .SD isn't integer length 2 with NA as first item; i.e., ."
@@ -1160,32 +996,17 @@ msgstr ""
 ".SD 的行名不是长度为2且首个元素为 NA 的整型；例如：set_row_names(). [%s %d "
 "%d]"
 
-<<<<<<< HEAD
-#: dogroups.c:70
-msgid "length(names)!=length(SD)"
-msgstr "length(names)!=length(SD)"
-
-#: dogroups.c:74
-=======
 #: dogroups.c:128
 msgid "length(names)!=length(SD)"
 msgstr "length(names)!=length(SD)"
 
 #: dogroups.c:134
->>>>>>> master
 #, c-format
 msgid ""
 "Internal error: size-0 type %d in .SD column %d should have been caught "
 "earlier"
 msgstr "内部错误：未能提前捕获到 .SD 中第 %2$d 列类型 %1$d size-0 的问题"
 
-<<<<<<< HEAD
-#: dogroups.c:84
-msgid "length(xknames)!=length(xSD)"
-msgstr "length(xknames)!=length(xSD)"
-
-#: dogroups.c:88
-=======
 #: dogroups.c:136
 #, c-format
 msgid "Internal error: SDall %d length = %d != %d"
@@ -1196,44 +1017,27 @@ msgid "length(xknames)!=length(xSD)"
 msgstr "length(xknames)!=length(xSD)"
 
 #: dogroups.c:148
->>>>>>> master
 #, c-format
 msgid ""
 "Internal error: type %d in .xSD column %d should have been caught by now"
 msgstr "内部错误：当前未能捕获到 .xSD 中第 %2$d 列类型 %1$d 的问题"
 
-<<<<<<< HEAD
-#: dogroups.c:92
-=======
 #: dogroups.c:152
->>>>>>> master
 #, c-format
 msgid "length(iSD)[%d] != length(jiscols)[%d]"
 msgstr "length(iSD)[%d] != length(jiscols)[%d]"
 
-<<<<<<< HEAD
-#: dogroups.c:93
-=======
 #: dogroups.c:153
->>>>>>> master
 #, c-format
 msgid "length(xSD)[%d] != length(xjiscols)[%d]"
 msgstr "length(xSD)[%d] != length(xjiscols)[%d]"
 
-<<<<<<< HEAD
-#: dogroups.c:198
-=======
 #: dogroups.c:259
->>>>>>> master
 #, c-format
 msgid "j evaluates to type '%s'. Must evaluate to atomic vector or list."
 msgstr "j的运算结果为'%s'类型。其运算结果必须为原子向量或列表。"
 
-<<<<<<< HEAD
-#: dogroups.c:206
-=======
 #: dogroups.c:267
->>>>>>> master
 msgid ""
 "All items in j=list(...) should be atomic vectors or lists. If you are "
 "trying something like j=list(.SD,newcol=mean(colA)) then use := by group "
@@ -1243,21 +1047,13 @@ msgstr ""
 "newcol=mean(colA)) 之类的操作请使用 := by group 代替(更快速)，或事后使用 "
 "cbind()、merge()"
 
-<<<<<<< HEAD
-#: dogroups.c:215
-=======
 #: dogroups.c:276
->>>>>>> master
 msgid ""
 "RHS of := is NULL during grouped assignment, but it's not possible to delete "
 "parts of a column."
 msgstr "用 := 分组时 RHS 为 NULL但無法刪除部分列"
 
-<<<<<<< HEAD
-#: dogroups.c:219
-=======
 #: dogroups.c:280
->>>>>>> master
 #, c-format
 msgid ""
 "Supplied %d items to be assigned to group %d of size %d in column '%s'. The "
@@ -1269,11 +1065,7 @@ msgstr ""
 "须是 1(可以是单个值) 或完全符合 LHS 的长度如果您想回收(recycle) RHS，请使用 "
 "rep() 向你的代码读者明确表达你的意图"
 
-<<<<<<< HEAD
-#: dogroups.c:230
-=======
 #: dogroups.c:291
->>>>>>> master
 msgid ""
 "Internal error: Trying to add new column by reference but tl is full; "
 "setalloccol should have run first at R level before getting to this point in "
@@ -1282,28 +1074,16 @@ msgstr ""
 "内部错误 : 尝试依照引用增加新列但 tl 已满在进入 dogroups 之前，setalloccol 应"
 "该先在 R 运行"
 
-<<<<<<< HEAD
-#: dogroups.c:245
-=======
 #: dogroups.c:312
->>>>>>> master
 #, c-format
 msgid "Group %d column '%s': %s"
 msgstr "列 '%2$s' 第 %1$d 组 : %3$s"
 
-<<<<<<< HEAD
-#: dogroups.c:252
-msgid "j doesn't evaluate to the same number of columns for each group"
-msgstr "j 估算出的每组的列数不同"
-
-#: dogroups.c:286
-=======
 #: dogroups.c:319
 msgid "j doesn't evaluate to the same number of columns for each group"
 msgstr "j 估算出的每组的列数不同"
 
 #: dogroups.c:353
->>>>>>> master
 #, c-format
 msgid ""
 "Column %d of j's result for the first group is NULL. We rely on the column "
@@ -1317,11 +1097,7 @@ msgstr ""
 "(需要一致性)空 (NULL) 列可以出现在后面的组(适当的以 NA 取代并回收)但不能是第 "
 "1 组请输入空向量代替，例如 integer() 或 numeric()"
 
-<<<<<<< HEAD
-#: dogroups.c:289
-=======
 #: dogroups.c:356
->>>>>>> master
 msgid ""
 "j appears to be a named vector. The same names will likely be created over "
 "and over again for each group and slow things down. Try and pass a named "
@@ -1330,11 +1106,7 @@ msgstr ""
 "j 是名称向量，这可能使相同的名称不停重复创建导致速度变慢请尝试输入名称列表(较"
 "适合 data.table)或是非名称列表代替\n"
 
-<<<<<<< HEAD
-#: dogroups.c:291
-=======
 #: dogroups.c:358
->>>>>>> master
 #, c-format
 msgid ""
 "Column %d of j is a named vector (each item down the rows is named, "
@@ -1344,11 +1116,7 @@ msgstr ""
 "j 的第 %d 列是名称向量(整行的项都是名称)为了效率请移除这些名称(避免在每组重复"
 "创建这些名称)总之他们被忽略了\n"
 
-<<<<<<< HEAD
-#: dogroups.c:299
-=======
 #: dogroups.c:366
->>>>>>> master
 msgid ""
 "The result of j is a named list. It's very inefficient to create the same "
 "names over and over again for each group. When j=list(...), any names are "
@@ -1360,29 +1128,17 @@ msgstr ""
 "j=list(...) 时侦测到的所有名称会被移出，待分组完成后再放回来可以使用 "
 "j=transform() 避免这种加速此讯息可能会在未来升级为警告\n"
 
-<<<<<<< HEAD
-#: dogroups.c:311
-=======
 #: dogroups.c:378
->>>>>>> master
 #, c-format
 msgid "dogroups: growing from %d to %d rows\n"
 msgstr "dogroups: 从 %d 列增加至 %d 列\n"
 
-<<<<<<< HEAD
-#: dogroups.c:312
-=======
 #: dogroups.c:379
->>>>>>> master
 #, c-format
 msgid "dogroups: length(ans)[%d]!=ngrpcols[%d]+njval[%d]"
 msgstr "dogroups: length(ans)[%d]!=ngrpcols[%d]+njval[%d]"
 
-<<<<<<< HEAD
-#: dogroups.c:330
-=======
 #: dogroups.c:397
->>>>>>> master
 #, c-format
 msgid ""
 "Item %d of j's result for group %d is zero length. This will be filled with "
@@ -1393,11 +1149,7 @@ msgstr ""
 "j 的结果第 %d 项在第 %d 组中为零长度(zero length)将使用 %d 个 NA 填入以符合结"
 "果中最长列的长度后面的分组也有相同问题，但只回报第一组以避免过多警告"
 
-<<<<<<< HEAD
-#: dogroups.c:337
-=======
 #: dogroups.c:404
->>>>>>> master
 #, c-format
 msgid ""
 "Column %d of result for group %d is type '%s' but expecting type '%s'. "
@@ -1406,11 +1158,7 @@ msgstr ""
 "结果的第 %d 列在第 %d 组中是 '%s' 类别而非预期的 '%s' 类别所有组的列类别必须"
 "一致"
 
-<<<<<<< HEAD
-#: dogroups.c:339
-=======
 #: dogroups.c:406
->>>>>>> master
 #, c-format
 msgid ""
 "Supplied %d items for column %d of group %d which has %d rows. The RHS "
@@ -1422,29 +1170,17 @@ msgstr ""
 "單個值) 或與 LHS 長度完全匹配如果您想回收(recycle) RHS，请使用 rep() 向你的代"
 "码读者明确表达你的意图"
 
-<<<<<<< HEAD
-#: dogroups.c:354
-=======
 #: dogroups.c:427
->>>>>>> master
 #, c-format
 msgid "Wrote less rows (%d) than allocated (%d).\n"
 msgstr "写入的行 (%d) 少于分配的 (%d)\n"
 
-<<<<<<< HEAD
-#: dogroups.c:364
-=======
 #: dogroups.c:449
->>>>>>> master
 #, c-format
 msgid "Internal error: block 0 [%d] and block 1 [%d] have both run"
 msgstr "内部错误 : 区块 0 [%d] 与区块 1 [%d] 都运行了"
 
-<<<<<<< HEAD
-#: dogroups.c:366
-=======
 #: dogroups.c:451
->>>>>>> master
 #, c-format
 msgid ""
 "\n"
@@ -1453,25 +1189,11 @@ msgstr ""
 "\n"
 "  %s 花了 %.3fs 在 %d 个组\n"
 
-<<<<<<< HEAD
-#: dogroups.c:368
-=======
 #: dogroups.c:453
->>>>>>> master
 #, c-format
 msgid "  eval(j) took %.3fs for %d calls\n"
 msgstr "  eval(j)取%.3fs给 %d 调用\n"
 
-<<<<<<< HEAD
-#: dogroups.c:392
-msgid "growVector passed NULL"
-msgstr "growVector通过NULL"
-
-#: dogroups.c:412
-#, c-format
-msgid "Internal error: growVector doesn't support type '%s'"
-msgstr "内部错误：growVector 不支持的列类型 '%s'"
-=======
 #: dogroups.c:477
 msgid "growVector passed NULL"
 msgstr "growVector通过NULL"
@@ -1480,7 +1202,6 @@ msgstr "growVector通过NULL"
 #, c-format
 msgid "Internal error: growVector doesn't support type '%s'"
 msgstr "内部错误：growVector 不支持 '%s' 类型"
->>>>>>> master
 
 #: fastmean.c:39
 msgid "narm should be TRUE or FALSE"
@@ -1505,13 +1226,10 @@ msgstr "fcast val不支持的列类型：'%s'"
 msgid "Argument 'test' must be logical."
 msgstr "参数'test'必须是逻辑类型。"
 
-<<<<<<< HEAD
-=======
 #: fifelse.c:9
 msgid "S4 class objects (except nanotime) are not supported."
 msgstr "不支持的S4 类对象（nanotime 除外）。"
 
->>>>>>> master
 #: fifelse.c:28
 #, c-format
 msgid ""
@@ -1563,11 +1281,7 @@ msgstr "'yes'的类型与'na'不同。请确认两个参数是同一类型。"
 msgid "'yes' and 'na' are both type factor but their levels are different."
 msgstr "'yes'和'na'都是因子类型但他们的因子水平不同"
 
-<<<<<<< HEAD
-#: fifelse.c:138
-=======
 #: fifelse.c:138 fifelse.c:336
->>>>>>> master
 #, c-format
 msgid "Type %s is not supported."
 msgstr "不支持类型 %s"
@@ -2087,40 +1801,24 @@ msgstr "内部错误：参数 'x' 关于 Cdt_na 是 '%s' 类型而不是 'list' 
 msgid "Internal error. Argument 'cols' to Cdt_na is type '%s' not 'integer'"
 msgstr "内部错误：参数 'cols' 关于 Cdt_na 是 '%s' 类型而不是 'integer' 类型"
 
-<<<<<<< HEAD
-#: frank.c:14 frank.c:144 subset.c:258
-=======
 #: frank.c:14 frank.c:155 subset.c:276
->>>>>>> master
 #, c-format
 msgid "Item %d of 'cols' is %d which is outside 1-based range [1,ncol(x)=%d]"
 msgstr "'cols' 的 %d 项为 %d ，超出1的范围 [1,ncol(x)=%d]"
 
-<<<<<<< HEAD
-#: frank.c:24 frank.c:153
-=======
 #: frank.c:24 frank.c:164
->>>>>>> master
 #, c-format
 msgid ""
 "Column %d of input list x is length %d, inconsistent with first column of "
 "that item which is length %d."
 msgstr "输入列表x的列 %d 长度为 %d，不同于第一列的该项长度为 %d"
 
-<<<<<<< HEAD
-#: frank.c:63 frank.c:200 transpose.c:88
-=======
 #: frank.c:63 frank.c:211 transpose.c:88
->>>>>>> master
 #, c-format
 msgid "Unsupported column type '%s'"
 msgstr "不支持的列类型 '%s'"
 
-<<<<<<< HEAD
-#: frank.c:80
-=======
 #: frank.c:82
->>>>>>> master
 msgid ""
 "Internal error: invalid ties.method for frankv(), should have been caught "
 "before. please report to data.table issue tracker"
@@ -2128,29 +1826,17 @@ msgstr ""
 "内部错误：对于 frankv()的无效值ties.method，应在之前被捕获。请报告给 data."
 "table issue tracker"
 
-<<<<<<< HEAD
-#: frank.c:128
-=======
 #: frank.c:139
->>>>>>> master
 #, c-format
 msgid "Internal error: unknown ties value in frank: %d"
 msgstr "内部错误：frank中有未知的ties值 %d"
 
-<<<<<<< HEAD
-#: frank.c:139
-=======
 #: frank.c:150
->>>>>>> master
 #, c-format
 msgid "Internal error. Argument 'x' to CanyNA is type '%s' not 'list'"
 msgstr "内部错误：参数 'x' 关于 CanyNA 是 '%s' 类型而不是'list'类型"
 
-<<<<<<< HEAD
-#: frank.c:140
-=======
 #: frank.c:151
->>>>>>> master
 #, c-format
 msgid "Internal error. Argument 'cols' to CanyNA is type '%s' not 'integer'"
 msgstr "内部错误：参数 'cols' 关于 CanyNA 是 '%s' 类型而不是'integer'类型"
@@ -3424,11 +3110,7 @@ msgstr ""
 "内部错误: 在 rolling 函数中无效的 fun 参数, 理应在更早阶段排除请向data.table "
 "issue tracker报告"
 
-<<<<<<< HEAD
-#: frollR.c:155 frollR.c:279 nafill.c:162 shift.c:21
-=======
 #: frollR.c:155 frollR.c:279 nafill.c:162 shift.c:19
->>>>>>> master
 msgid "fill must be a vector of length 1"
 msgstr "fill 必须是长度为1的向量"
 
@@ -3785,20 +3467,12 @@ msgid ""
 "Column %d's length (%d) is not the same as column 1's length (%<PRId64>)"
 msgstr "列%d的长度(%d)和列1的长度(%<PRId64>)不一致"
 
-<<<<<<< HEAD
-#: fwriteR.c:235
-=======
 #: fwriteR.c:236
->>>>>>> master
 #, c-format
 msgid "Column %d's type is '%s' - not yet implemented in fwrite."
 msgstr "列%d的类型是'%s' - 尚未在fwrite中实施"
 
-<<<<<<< HEAD
-#: fwriteR.c:260
-=======
 #: fwriteR.c:261
->>>>>>> master
 msgid ""
 "No list columns are present. Setting sep2='' otherwise quote='auto' would "
 "quote fields containing sep2.\n"
@@ -3806,11 +3480,7 @@ msgstr ""
 "当前没有列表页. 设置sep2=''否则quote='auto'会自动为所有包含sep2的字段加上引"
 "号.\n"
 
-<<<<<<< HEAD
-#: fwriteR.c:264
-=======
 #: fwriteR.c:265
->>>>>>> master
 #, c-format
 msgid ""
 "If quote='auto', fields will be quoted if the field contains either sep "
@@ -3820,11 +3490,7 @@ msgstr ""
 "that host lists)，所有包含sep('%1$c') 或 sep2 ('%2$c')的字段将会被自动加上引"
 "号。\n"
 
-<<<<<<< HEAD
-#: fwriteR.c:268
-=======
 #: fwriteR.c:269
->>>>>>> master
 #, c-format
 msgid ""
 "sep ('%c'), sep2 ('%c') and dec ('%c') must all be different. Column %d is a "
@@ -4460,13 +4126,10 @@ msgstr ""
 "内部错误：函数 nafillR 中有无效类型的参数, 该错误理应已被捕获，请向data.table"
 "的issue通道报告"
 
-<<<<<<< HEAD
-=======
 #: nafill.c:182
 msgid "nan_is_na must be TRUE or FALSE"
 msgstr "nan_is_na 必须是 TRUE 或者 FALSE"
 
->>>>>>> master
 #: nafill.c:206
 #, c-format
 msgid "%s: parallel processing of %d column(s) took %.3fs\n"
@@ -4844,11 +4507,8 @@ msgid ""
 "Item %d of order (%d) is either NA, out of range [1,%d], or is duplicated. "
 "The new order must be a strict permutation of 1:n"
 msgstr ""
-<<<<<<< HEAD
-=======
 "排序（%2$d）的 %1$d 项为 NA，超出范围 [1,%3$d]，或与其他项重复。新的排序必须"
 "为 1:n 的排列"
->>>>>>> master
 
 #: reorder.c:105
 msgid "dt passed to setcolorder has no names"
@@ -4901,11 +4561,7 @@ msgstr "dt_win_snprintf 测试 %d 失败了: %s"
 msgid "Internal error: subsetVectorRaw length(ans)==%d n=%d"
 msgstr "内部错误： subsetVectorRaw ans length(ans)==%d n=%d"
 
-<<<<<<< HEAD
-#: subset.c:83
-=======
 #: subset.c:101
->>>>>>> master
 #, c-format
 msgid ""
 "Internal error: column type '%s' not supported by data.table subset. All "
@@ -4914,76 +4570,44 @@ msgstr ""
 "内部错误：data.table 子集不支持列类型 '%s' 。已知所有类型均被支持，因此请提交"
 "此BUG。"
 
-<<<<<<< HEAD
-#: subset.c:92 subset.c:116
-=======
 #: subset.c:110 subset.c:134
->>>>>>> master
 #, c-format
 msgid "Internal error. 'idx' is type '%s' not 'integer'"
 msgstr "内部错误：'idx' 是 '%s' 类型，而非 '整数'"
 
-<<<<<<< HEAD
-#: subset.c:117
-=======
 #: subset.c:135
->>>>>>> master
 #, c-format
 msgid ""
 "Internal error. 'maxArg' is type '%s' and length %d, should be an integer "
 "singleton"
 msgstr "内部错误：'maxArg' 是 '%s' 类型，长度为 %d ，应该是单一整数"
 
-<<<<<<< HEAD
-#: subset.c:118
-msgid "Internal error: allowOverMax must be TRUE/FALSE"
-msgstr "内部错误：allowOverMax 必须是 TRUE 或 FALSE"
-
-#: subset.c:120
-=======
 #: subset.c:136
 msgid "Internal error: allowOverMax must be TRUE/FALSE"
 msgstr "内部错误：allowOverMax 必须是 TRUE 或 FALSE"
 
 #: subset.c:138
->>>>>>> master
 #, c-format
 msgid "Internal error. max is %d, must be >= 0."
 msgstr "内部错误。最大值是 %d ，且必须 >= 0。"
 
-<<<<<<< HEAD
-#: subset.c:144
-=======
 #: subset.c:162
->>>>>>> master
 #, c-format
 msgid "i[%d] is %d which is out of range [1,nrow=%d]"
 msgstr "i[%d] 是 %d ，超出 [1,nrow=%d] 的范围"
 
-<<<<<<< HEAD
-#: subset.c:156
-=======
 #: subset.c:174
->>>>>>> master
 #, c-format
 msgid ""
 "Item %d of i is %d and item %d is %d. Cannot mix positives and negatives."
 msgstr "i 的第 %d 项是 %d ，第 %d 项是 %d 。正负不能混用。"
 
-<<<<<<< HEAD
-#: subset.c:166
-=======
 #: subset.c:184
->>>>>>> master
 #, c-format
 msgid "Item %d of i is %d and item %d is NA. Cannot mix negatives and NA."
 msgstr "i 的第 %d 项是 %d ，第 %d 项是 NA 。负值和 NA 不能混用。"
 
-<<<<<<< HEAD
-#: subset.c:202
-=======
 #: subset.c:220
->>>>>>> master
 #, c-format
 msgid ""
 "Item %d of i is %d but there are only %d rows. Ignoring this and %d more "
@@ -4991,11 +4615,7 @@ msgid ""
 msgstr ""
 "i 的第 %d 项是 %d ，但只有 %d 行。忽略这项以及其他相似的 %d 项（共 %d 项）。"
 
-<<<<<<< HEAD
-#: subset.c:204
-=======
 #: subset.c:222
->>>>>>> master
 #, c-format
 msgid ""
 "Item %d of i is %d which removes that item but that has occurred before. "
@@ -5004,68 +4624,40 @@ msgstr ""
 "i 的第 %d 项是 %d ，它删除了这项但此操作之前发生过。忽略该重复以及其他 %d 个"
 "重复。"
 
-<<<<<<< HEAD
-#: subset.c:218
-=======
 #: subset.c:236
->>>>>>> master
 #, c-format
 msgid "Column %d is NULL; malformed data.table."
 msgstr "%d 列为空（NULL）；data.table 格式错误。"
 
-<<<<<<< HEAD
-#: subset.c:221
-=======
 #: subset.c:239
->>>>>>> master
 #, c-format
 msgid "Column %d ['%s'] is a data.frame or data.table; malformed data.table."
 msgstr "%d ['%s'] 列是 data.frame 或 data.table; data.table 格式错误。"
 
-<<<<<<< HEAD
-#: subset.c:226
-=======
 #: subset.c:244
->>>>>>> master
 #, c-format
 msgid ""
 "Column %d ['%s'] is length %d but column 1 is length %d; malformed data."
 "table."
 msgstr "%d ['%s'] 长度为 %d ，而列 1 的长度为 %d ；data.table 格式错误。"
 
-<<<<<<< HEAD
-#: subset.c:242
-=======
 #: subset.c:260
->>>>>>> master
 #, c-format
 msgid "Internal error. Argument 'x' to CsubsetDT is type '%s' not 'list'"
 msgstr "内部错误：CsubsetDT 的参数 'x' 是 '%s' 类型而非列表"
 
-<<<<<<< HEAD
-#: subset.c:255
-=======
 #: subset.c:273
->>>>>>> master
 #, c-format
 msgid "Internal error. Argument 'cols' to Csubset is type '%s' not 'integer'"
 msgstr "内部错误：CsubsetDT 的参数 'cols' 是 '%s' 类型而非整数"
 
-<<<<<<< HEAD
-#: subset.c:332
-=======
 #: subset.c:350
->>>>>>> master
 msgid ""
 "Internal error: NULL can not be subset. It is invalid for a data.table to "
 "contain a NULL column."
 msgstr "内部错误：空集（NULL）不能作为子集。data.table 包含空列是无效的。"
 
-<<<<<<< HEAD
-#: subset.c:334
-=======
 #: subset.c:352
->>>>>>> master
 msgid ""
 "Internal error: CsubsetVector is internal-use-only but has received "
 "negatives, zeros or out-of-range"

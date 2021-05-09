@@ -8,11 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: data.table 1.13.1\n"
 "Report-Msgid-Bugs-To: \n"
-<<<<<<< HEAD
-"POT-Creation-Date: 2020-01-31 17:27+0800\n"
-=======
 "POT-Creation-Date: 2020-10-17 13:11-0400\n"
->>>>>>> master
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -414,9 +410,6 @@ msgstr ""
 msgid "Shortening index '%s' to '%s' due to an update on a key column\n"
 msgstr ""
 
-<<<<<<< HEAD
-#: assign.c:683
-=======
 #: assign.c:650
 #, c-format
 msgid ""
@@ -425,251 +418,143 @@ msgid ""
 msgstr ""
 
 #: assign.c:688
->>>>>>> master
 #, c-format
 msgid ""
 "Internal error memrecycle: sourceStart=%d sourceLen=%d length(source)=%d"
 msgstr ""
 
-<<<<<<< HEAD
-#: assign.c:685
-=======
 #: assign.c:690
->>>>>>> master
 #, c-format
 msgid "Internal error memrecycle: start=%d len=%d length(target)=%d"
 msgstr ""
 
-<<<<<<< HEAD
-#: assign.c:688
-=======
 #: assign.c:693
->>>>>>> master
 #, c-format
 msgid "Internal error: recycle length error not caught earlier. slen=%d len=%d"
 msgstr ""
 
-<<<<<<< HEAD
-#: assign.c:692
-msgid "Internal error: memrecycle has received NULL colname"
-msgstr ""
-
-#: assign.c:718
-=======
 #: assign.c:697
 msgid "Internal error: memrecycle has received NULL colname"
 msgstr ""
 
 #: assign.c:706
->>>>>>> master
 #, c-format
 msgid ""
 "Cannot assign 'factor' to '%s'. Factors can only be assigned to factor, "
 "character or list columns."
 msgstr ""
 
-<<<<<<< HEAD
-#: assign.c:732
-=======
 #: assign.c:720
->>>>>>> master
 #, c-format
 msgid ""
 "Assigning factor numbers to column %d named '%s'. But %d is outside the "
 "level range [1,%d]"
 msgstr ""
 
-<<<<<<< HEAD
-#: assign.c:740
-=======
 #: assign.c:728
->>>>>>> master
 #, c-format
 msgid ""
 "Assigning factor numbers to column %d named '%s'. But %f is outside the "
 "level range [1,%d], or is not a whole number."
 msgstr ""
 
-<<<<<<< HEAD
-#: assign.c:746
-=======
 #: assign.c:734
->>>>>>> master
 #, c-format
 msgid ""
 "Cannot assign '%s' to 'factor'. Factor columns can be assigned factor, "
 "character, NA in any type, or level numbers."
 msgstr ""
 
-<<<<<<< HEAD
-#: assign.c:767
-=======
 #: assign.c:755
->>>>>>> master
 msgid ""
 "Internal error: levels of target are either not unique or have truelength<0"
 msgstr ""
 
-<<<<<<< HEAD
-#: assign.c:806
-=======
 #: assign.c:794
->>>>>>> master
 #, c-format
 msgid "Unable to allocate working memory of %d bytes to combine factor levels"
 msgstr ""
 
-<<<<<<< HEAD
-#: assign.c:813
-msgid "Internal error: extra level check sum failed"
-msgstr ""
-
-#: assign.c:832
-=======
 #: assign.c:801
 msgid "Internal error: extra level check sum failed"
 msgstr ""
 
 #: assign.c:820
->>>>>>> master
 #, c-format
 msgid ""
 "Coercing 'character' RHS to '%s' to match the type of the target column "
 "(column %d named '%s')."
 msgstr ""
 
-<<<<<<< HEAD
-#: assign.c:838
-=======
 #: assign.c:826
->>>>>>> master
 #, c-format
 msgid ""
 "Cannot coerce 'list' RHS to 'integer64' to match the type of the target "
 "column (column %d named '%s')."
 msgstr ""
 
-<<<<<<< HEAD
-#: assign.c:843
-=======
 #: assign.c:831
->>>>>>> master
 #, c-format
 msgid ""
 "Coercing 'list' RHS to '%s' to match the type of the target column (column "
 "%d named '%s')."
 msgstr ""
 
-<<<<<<< HEAD
-#: assign.c:849
-=======
 #: assign.c:837
->>>>>>> master
 #, c-format
 msgid "Zero-copy coerce when assigning '%s' to '%s' column %d named '%s'.\n"
 msgstr ""
 
-<<<<<<< HEAD
-#: assign.c:944
-=======
 #: assign.c:932
->>>>>>> master
 #, c-format
 msgid "type '%s' cannot be coerced to '%s'"
 msgstr ""
 
-<<<<<<< HEAD
-#: assign.c:1064
-=======
 #: assign.c:1052
->>>>>>> master
 msgid ""
 "To assign integer64 to a character column, please use as.character() for "
 "clarity."
 msgstr ""
 
-<<<<<<< HEAD
-#: assign.c:1076
-=======
 #: assign.c:1064
->>>>>>> master
 #, c-format
 msgid "Unsupported column type in assign.c:memrecycle '%s'"
 msgstr ""
 
-<<<<<<< HEAD
-#: assign.c:1123
-=======
 #: assign.c:1111
->>>>>>> master
 #, c-format
 msgid "Internal error: writeNA passed a vector of type '%s'"
 msgstr ""
 
-<<<<<<< HEAD
-#: assign.c:1154
-=======
 #: assign.c:1142
->>>>>>> master
 #, c-format
 msgid ""
 "Internal error: savetl_init checks failed (%d %d %p %p). please report to "
 "data.table issue tracker."
 msgstr ""
 
-<<<<<<< HEAD
-#: assign.c:1162
-=======
 #: assign.c:1150
->>>>>>> master
 #, c-format
 msgid "Failed to allocate initial %d items in savetl_init"
 msgstr ""
 
-<<<<<<< HEAD
-#: assign.c:1171
-=======
 #: assign.c:1159
->>>>>>> master
 #, c-format
 msgid ""
 "Internal error: reached maximum %d items for savetl. Please report to data."
 "table issue tracker."
 msgstr ""
 
-<<<<<<< HEAD
-#: assign.c:1178
-=======
 #: assign.c:1166
->>>>>>> master
 #, c-format
 msgid "Failed to realloc saveds to %d items in savetl"
 msgstr ""
 
-<<<<<<< HEAD
-#: assign.c:1184
-=======
 #: assign.c:1172
->>>>>>> master
 #, c-format
 msgid "Failed to realloc savedtl to %d items in savetl"
 msgstr ""
 
-<<<<<<< HEAD
-#: assign.c:1207
-msgid "x must be a character vector"
-msgstr ""
-
-#: assign.c:1208
-msgid "'which' must be an integer vector"
-msgstr ""
-
-#: assign.c:1209
-msgid "'new' must be a character vector"
-msgstr ""
-
-#: assign.c:1210
-=======
 #: assign.c:1195
 msgid "x must be a character vector"
 msgstr ""
@@ -683,16 +568,11 @@ msgid "'new' must be a character vector"
 msgstr ""
 
 #: assign.c:1198
->>>>>>> master
 #, c-format
 msgid "'new' is length %d. Should be the same as length of 'which' (%d)"
 msgstr ""
 
-<<<<<<< HEAD
-#: assign.c:1213
-=======
 #: assign.c:1201
->>>>>>> master
 #, c-format
 msgid ""
 "Item %d of 'which' is %d which is outside range of the length %d character "
@@ -987,33 +867,6 @@ msgstr ""
 msgid "Unsupported type: %s"
 msgstr ""
 
-<<<<<<< HEAD
-#: dogroups.c:15
-msgid "Internal error: order not integer vector"
-msgstr ""
-
-#: dogroups.c:16
-msgid "Internal error: starts not integer"
-msgstr ""
-
-#: dogroups.c:17
-msgid "Internal error: lens not integer"
-msgstr ""
-
-#: dogroups.c:19
-msgid "Internal error: jiscols not NULL but o__ has length"
-msgstr ""
-
-#: dogroups.c:20
-msgid "Internal error: xjiscols not NULL but o__ has length"
-msgstr ""
-
-#: dogroups.c:21
-msgid "'env' should be an environment"
-msgstr ""
-
-#: dogroups.c:40
-=======
 #: dogroups.c:69
 msgid "Internal error: order not integer vector"
 msgstr ""
@@ -1039,67 +892,39 @@ msgid "'env' should be an environment"
 msgstr ""
 
 #: dogroups.c:94
->>>>>>> master
 #, c-format
 msgid ""
 "Internal error: unsupported size-0 type '%s' in column %d of 'by' should "
 "have been caught earlier"
 msgstr ""
 
-<<<<<<< HEAD
-#: dogroups.c:44
-=======
 #: dogroups.c:99
->>>>>>> master
 #, c-format
 msgid "!length(bynames)[%d]==length(groups)[%d]==length(grpcols)[%d]"
 msgstr ""
 
-<<<<<<< HEAD
-#: dogroups.c:63
-msgid "row.names attribute of .SD not found"
-msgstr ""
-
-#: dogroups.c:65
-=======
 #: dogroups.c:121
 msgid "row.names attribute of .SD not found"
 msgstr ""
 
 #: dogroups.c:123
->>>>>>> master
 #, c-format
 msgid ""
 "row.names of .SD isn't integer length 2 with NA as first item; i.e., ."
 "set_row_names(). [%s %d %d]"
 msgstr ""
 
-<<<<<<< HEAD
-#: dogroups.c:70
-msgid "length(names)!=length(SD)"
-msgstr ""
-
-#: dogroups.c:74
-=======
 #: dogroups.c:128
 msgid "length(names)!=length(SD)"
 msgstr ""
 
 #: dogroups.c:134
->>>>>>> master
 #, c-format
 msgid ""
 "Internal error: size-0 type %d in .SD column %d should have been caught "
 "earlier"
 msgstr ""
 
-<<<<<<< HEAD
-#: dogroups.c:84
-msgid "length(xknames)!=length(xSD)"
-msgstr ""
-
-#: dogroups.c:88
-=======
 #: dogroups.c:136
 #, c-format
 msgid "Internal error: SDall %d length = %d != %d"
@@ -1110,65 +935,40 @@ msgid "length(xknames)!=length(xSD)"
 msgstr ""
 
 #: dogroups.c:148
->>>>>>> master
 #, c-format
 msgid ""
 "Internal error: type %d in .xSD column %d should have been caught by now"
 msgstr ""
 
-<<<<<<< HEAD
-#: dogroups.c:92
-=======
 #: dogroups.c:152
->>>>>>> master
 #, c-format
 msgid "length(iSD)[%d] != length(jiscols)[%d]"
 msgstr ""
 
-<<<<<<< HEAD
-#: dogroups.c:93
-=======
 #: dogroups.c:153
->>>>>>> master
 #, c-format
 msgid "length(xSD)[%d] != length(xjiscols)[%d]"
 msgstr ""
 
-<<<<<<< HEAD
-#: dogroups.c:198
-=======
 #: dogroups.c:259
->>>>>>> master
 #, c-format
 msgid "j evaluates to type '%s'. Must evaluate to atomic vector or list."
 msgstr ""
 
-<<<<<<< HEAD
-#: dogroups.c:206
-=======
 #: dogroups.c:267
->>>>>>> master
 msgid ""
 "All items in j=list(...) should be atomic vectors or lists. If you are "
 "trying something like j=list(.SD,newcol=mean(colA)) then use := by group "
 "instead (much quicker), or cbind or merge afterwards."
 msgstr ""
 
-<<<<<<< HEAD
-#: dogroups.c:215
-=======
 #: dogroups.c:276
->>>>>>> master
 msgid ""
 "RHS of := is NULL during grouped assignment, but it's not possible to delete "
 "parts of a column."
 msgstr ""
 
-<<<<<<< HEAD
-#: dogroups.c:219
-=======
 #: dogroups.c:280
->>>>>>> master
 #, c-format
 msgid ""
 "Supplied %d items to be assigned to group %d of size %d in column '%s'. The "
@@ -1177,39 +977,23 @@ msgid ""
 "make this intent clear to readers of your code."
 msgstr ""
 
-<<<<<<< HEAD
-#: dogroups.c:230
-=======
 #: dogroups.c:291
->>>>>>> master
 msgid ""
 "Internal error: Trying to add new column by reference but tl is full; "
 "setalloccol should have run first at R level before getting to this point in "
 "dogroups"
 msgstr ""
 
-<<<<<<< HEAD
-#: dogroups.c:245
-=======
 #: dogroups.c:312
->>>>>>> master
 #, c-format
 msgid "Group %d column '%s': %s"
 msgstr ""
 
-<<<<<<< HEAD
-#: dogroups.c:252
-msgid "j doesn't evaluate to the same number of columns for each group"
-msgstr ""
-
-#: dogroups.c:286
-=======
 #: dogroups.c:319
 msgid "j doesn't evaluate to the same number of columns for each group"
 msgstr ""
 
 #: dogroups.c:353
->>>>>>> master
 #, c-format
 msgid ""
 "Column %d of j's result for the first group is NULL. We rely on the column "
@@ -1220,22 +1004,14 @@ msgid ""
 "integer() or numeric()."
 msgstr ""
 
-<<<<<<< HEAD
-#: dogroups.c:289
-=======
 #: dogroups.c:356
->>>>>>> master
 msgid ""
 "j appears to be a named vector. The same names will likely be created over "
 "and over again for each group and slow things down. Try and pass a named "
 "list (which data.table optimizes) or an unnamed list() instead.\n"
 msgstr ""
 
-<<<<<<< HEAD
-#: dogroups.c:291
-=======
 #: dogroups.c:358
->>>>>>> master
 #, c-format
 msgid ""
 "Column %d of j is a named vector (each item down the rows is named, "
@@ -1243,11 +1019,7 @@ msgid ""
 "over and over for each group). They are ignored anyway.\n"
 msgstr ""
 
-<<<<<<< HEAD
-#: dogroups.c:299
-=======
 #: dogroups.c:366
->>>>>>> master
 msgid ""
 "The result of j is a named list. It's very inefficient to create the same "
 "names over and over again for each group. When j=list(...), any names are "
@@ -1256,29 +1028,17 @@ msgid ""
 "to :=). This message may be upgraded to warning in future.\n"
 msgstr ""
 
-<<<<<<< HEAD
-#: dogroups.c:311
-=======
 #: dogroups.c:378
->>>>>>> master
 #, c-format
 msgid "dogroups: growing from %d to %d rows\n"
 msgstr ""
 
-<<<<<<< HEAD
-#: dogroups.c:312
-=======
 #: dogroups.c:379
->>>>>>> master
 #, c-format
 msgid "dogroups: length(ans)[%d]!=ngrpcols[%d]+njval[%d]"
 msgstr ""
 
-<<<<<<< HEAD
-#: dogroups.c:330
-=======
 #: dogroups.c:397
->>>>>>> master
 #, c-format
 msgid ""
 "Item %d of j's result for group %d is zero length. This will be filled with "
@@ -1287,22 +1047,14 @@ msgid ""
 "buffer."
 msgstr ""
 
-<<<<<<< HEAD
-#: dogroups.c:337
-=======
 #: dogroups.c:404
->>>>>>> master
 #, c-format
 msgid ""
 "Column %d of result for group %d is type '%s' but expecting type '%s'. "
 "Column types must be consistent for each group."
 msgstr ""
 
-<<<<<<< HEAD
-#: dogroups.c:339
-=======
 #: dogroups.c:406
->>>>>>> master
 #, c-format
 msgid ""
 "Supplied %d items for column %d of group %d which has %d rows. The RHS "
@@ -1311,57 +1063,33 @@ msgid ""
 "make this intent clear to readers of your code."
 msgstr ""
 
-<<<<<<< HEAD
-#: dogroups.c:354
-=======
 #: dogroups.c:427
->>>>>>> master
 #, c-format
 msgid "Wrote less rows (%d) than allocated (%d).\n"
 msgstr ""
 
-<<<<<<< HEAD
-#: dogroups.c:364
-=======
 #: dogroups.c:449
->>>>>>> master
 #, c-format
 msgid "Internal error: block 0 [%d] and block 1 [%d] have both run"
 msgstr ""
 
-<<<<<<< HEAD
-#: dogroups.c:366
-=======
 #: dogroups.c:451
->>>>>>> master
 #, c-format
 msgid ""
 "\n"
 "  %s took %.3fs for %d groups\n"
 msgstr ""
 
-<<<<<<< HEAD
-#: dogroups.c:368
-=======
 #: dogroups.c:453
->>>>>>> master
 #, c-format
 msgid "  eval(j) took %.3fs for %d calls\n"
 msgstr ""
 
-<<<<<<< HEAD
-#: dogroups.c:392
-msgid "growVector passed NULL"
-msgstr ""
-
-#: dogroups.c:412
-=======
 #: dogroups.c:477
 msgid "growVector passed NULL"
 msgstr ""
 
 #: dogroups.c:497
->>>>>>> master
 #, c-format
 msgid "Internal error: growVector doesn't support type '%s'"
 msgstr ""
@@ -1389,13 +1117,10 @@ msgstr ""
 msgid "Argument 'test' must be logical."
 msgstr ""
 
-<<<<<<< HEAD
-=======
 #: fifelse.c:9
 msgid "S4 class objects (except nanotime) are not supported."
 msgstr ""
 
->>>>>>> master
 #: fifelse.c:28
 #, c-format
 msgid ""
@@ -1447,11 +1172,7 @@ msgstr ""
 msgid "'yes' and 'na' are both type factor but their levels are different."
 msgstr ""
 
-<<<<<<< HEAD
-#: fifelse.c:138
-=======
 #: fifelse.c:138 fifelse.c:336
->>>>>>> master
 #, c-format
 msgid "Type %s is not supported."
 msgstr ""
@@ -1951,68 +1672,40 @@ msgstr ""
 msgid "Internal error. Argument 'cols' to Cdt_na is type '%s' not 'integer'"
 msgstr ""
 
-<<<<<<< HEAD
-#: frank.c:14 frank.c:144 subset.c:258
-=======
 #: frank.c:14 frank.c:155 subset.c:276
->>>>>>> master
 #, c-format
 msgid "Item %d of 'cols' is %d which is outside 1-based range [1,ncol(x)=%d]"
 msgstr ""
 
-<<<<<<< HEAD
-#: frank.c:24 frank.c:153
-=======
 #: frank.c:24 frank.c:164
->>>>>>> master
 #, c-format
 msgid ""
 "Column %d of input list x is length %d, inconsistent with first column of "
 "that item which is length %d."
 msgstr ""
 
-<<<<<<< HEAD
-#: frank.c:63 frank.c:200 transpose.c:88
-=======
 #: frank.c:63 frank.c:211 transpose.c:88
->>>>>>> master
 #, c-format
 msgid "Unsupported column type '%s'"
 msgstr ""
 
-<<<<<<< HEAD
-#: frank.c:80
-=======
 #: frank.c:82
->>>>>>> master
 msgid ""
 "Internal error: invalid ties.method for frankv(), should have been caught "
 "before. please report to data.table issue tracker"
 msgstr ""
 
-<<<<<<< HEAD
-#: frank.c:128
-=======
 #: frank.c:139
->>>>>>> master
 #, c-format
 msgid "Internal error: unknown ties value in frank: %d"
 msgstr ""
 
-<<<<<<< HEAD
-#: frank.c:139
-=======
 #: frank.c:150
->>>>>>> master
 #, c-format
 msgid "Internal error. Argument 'x' to CanyNA is type '%s' not 'list'"
 msgstr ""
 
-<<<<<<< HEAD
-#: frank.c:140
-=======
 #: frank.c:151
->>>>>>> master
 #, c-format
 msgid "Internal error. Argument 'cols' to CanyNA is type '%s' not 'integer'"
 msgstr ""
@@ -3204,11 +2897,7 @@ msgid ""
 "caught before. please report to data.table issue tracker."
 msgstr ""
 
-<<<<<<< HEAD
-#: frollR.c:155 frollR.c:279 nafill.c:162 shift.c:21
-=======
 #: frollR.c:155 frollR.c:279 nafill.c:162 shift.c:19
->>>>>>> master
 msgid "fill must be a vector of length 1"
 msgstr ""
 
@@ -3541,41 +3230,25 @@ msgid ""
 "Column %d's length (%d) is not the same as column 1's length (%<PRId64>)"
 msgstr ""
 
-<<<<<<< HEAD
-#: fwriteR.c:235
-=======
 #: fwriteR.c:236
->>>>>>> master
 #, c-format
 msgid "Column %d's type is '%s' - not yet implemented in fwrite."
 msgstr ""
 
-<<<<<<< HEAD
-#: fwriteR.c:260
-=======
 #: fwriteR.c:261
->>>>>>> master
 msgid ""
 "No list columns are present. Setting sep2='' otherwise quote='auto' would "
 "quote fields containing sep2.\n"
 msgstr ""
 
-<<<<<<< HEAD
-#: fwriteR.c:264
-=======
 #: fwriteR.c:265
->>>>>>> master
 #, c-format
 msgid ""
 "If quote='auto', fields will be quoted if the field contains either sep "
 "('%c') or sep2 ('%c') because column %d is a list column.\n"
 msgstr ""
 
-<<<<<<< HEAD
-#: fwriteR.c:268
-=======
 #: fwriteR.c:269
->>>>>>> master
 #, c-format
 msgid ""
 "sep ('%c'), sep2 ('%c') and dec ('%c') must all be different. Column %d is a "
@@ -4149,13 +3822,10 @@ msgid ""
 "caught before. Please report to data.table issue tracker."
 msgstr ""
 
-<<<<<<< HEAD
-=======
 #: nafill.c:182
 msgid "nan_is_na must be TRUE or FALSE"
 msgstr ""
 
->>>>>>> master
 #: nafill.c:206
 #, c-format
 msgid "%s: parallel processing of %d column(s) took %.3fs\n"
@@ -4491,21 +4161,12 @@ msgstr ""
 msgid ""
 "Item %d of order (%d) is either NA, out of range [1,%d], or is duplicated. "
 "The new order must be a strict permutation of 1:n"
-<<<<<<< HEAD
 msgstr ""
 
 #: reorder.c:105
 msgid "dt passed to setcolorder has no names"
 msgstr ""
 
-=======
-msgstr ""
-
-#: reorder.c:105
-msgid "dt passed to setcolorder has no names"
-msgstr ""
-
->>>>>>> master
 #: reorder.c:107
 #, c-format
 msgid "Internal error: dt passed to setcolorder has %d columns but %d names"
@@ -4550,166 +4211,98 @@ msgstr ""
 msgid "Internal error: subsetVectorRaw length(ans)==%d n=%d"
 msgstr ""
 
-<<<<<<< HEAD
-#: subset.c:83
-=======
 #: subset.c:101
->>>>>>> master
 #, c-format
 msgid ""
 "Internal error: column type '%s' not supported by data.table subset. All "
 "known types are supported so please report as bug."
 msgstr ""
 
-<<<<<<< HEAD
-#: subset.c:92 subset.c:116
-=======
 #: subset.c:110 subset.c:134
->>>>>>> master
 #, c-format
 msgid "Internal error. 'idx' is type '%s' not 'integer'"
 msgstr ""
 
-<<<<<<< HEAD
-#: subset.c:117
-=======
 #: subset.c:135
->>>>>>> master
 #, c-format
 msgid ""
 "Internal error. 'maxArg' is type '%s' and length %d, should be an integer "
 "singleton"
 msgstr ""
 
-<<<<<<< HEAD
-#: subset.c:118
-msgid "Internal error: allowOverMax must be TRUE/FALSE"
-msgstr ""
-
-#: subset.c:120
-=======
 #: subset.c:136
 msgid "Internal error: allowOverMax must be TRUE/FALSE"
 msgstr ""
 
 #: subset.c:138
->>>>>>> master
 #, c-format
 msgid "Internal error. max is %d, must be >= 0."
 msgstr ""
 
-<<<<<<< HEAD
-#: subset.c:144
-=======
 #: subset.c:162
->>>>>>> master
 #, c-format
 msgid "i[%d] is %d which is out of range [1,nrow=%d]"
 msgstr ""
 
-<<<<<<< HEAD
-#: subset.c:156
-=======
 #: subset.c:174
->>>>>>> master
 #, c-format
 msgid ""
 "Item %d of i is %d and item %d is %d. Cannot mix positives and negatives."
 msgstr ""
 
-<<<<<<< HEAD
-#: subset.c:166
-=======
 #: subset.c:184
->>>>>>> master
 #, c-format
 msgid "Item %d of i is %d and item %d is NA. Cannot mix negatives and NA."
 msgstr ""
 
-<<<<<<< HEAD
-#: subset.c:202
-=======
 #: subset.c:220
->>>>>>> master
 #, c-format
 msgid ""
 "Item %d of i is %d but there are only %d rows. Ignoring this and %d more "
 "like it out of %d."
 msgstr ""
 
-<<<<<<< HEAD
-#: subset.c:204
-=======
 #: subset.c:222
->>>>>>> master
 #, c-format
 msgid ""
 "Item %d of i is %d which removes that item but that has occurred before. "
 "Ignoring this dup and %d other dups."
 msgstr ""
 
-<<<<<<< HEAD
-#: subset.c:218
-=======
 #: subset.c:236
->>>>>>> master
 #, c-format
 msgid "Column %d is NULL; malformed data.table."
 msgstr ""
 
-<<<<<<< HEAD
-#: subset.c:221
-=======
 #: subset.c:239
->>>>>>> master
 #, c-format
 msgid "Column %d ['%s'] is a data.frame or data.table; malformed data.table."
 msgstr ""
 
-<<<<<<< HEAD
-#: subset.c:226
-=======
 #: subset.c:244
->>>>>>> master
 #, c-format
 msgid ""
 "Column %d ['%s'] is length %d but column 1 is length %d; malformed data."
 "table."
 msgstr ""
 
-<<<<<<< HEAD
-#: subset.c:242
-=======
 #: subset.c:260
->>>>>>> master
 #, c-format
 msgid "Internal error. Argument 'x' to CsubsetDT is type '%s' not 'list'"
 msgstr ""
 
-<<<<<<< HEAD
-#: subset.c:255
-=======
 #: subset.c:273
->>>>>>> master
 #, c-format
 msgid "Internal error. Argument 'cols' to Csubset is type '%s' not 'integer'"
 msgstr ""
 
-<<<<<<< HEAD
-#: subset.c:332
-=======
 #: subset.c:350
->>>>>>> master
 msgid ""
 "Internal error: NULL can not be subset. It is invalid for a data.table to "
 "contain a NULL column."
 msgstr ""
 
-<<<<<<< HEAD
-#: subset.c:334
-=======
 #: subset.c:352
->>>>>>> master
 msgid ""
 "Internal error: CsubsetVector is internal-use-only but has received "
 "negatives, zeros or out-of-range"

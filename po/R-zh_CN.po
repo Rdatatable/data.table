@@ -1,11 +1,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: data.table 1.12.5\n"
-<<<<<<< HEAD
-"POT-Creation-Date: 2020-01-31 17:27\n"
-=======
 "POT-Creation-Date: 2020-07-17 14:38\n"
->>>>>>> master
 "PO-Revision-Date: 2019-11-16 18:37+0800\n"
 "Last-Translator: Xianying Tan <shrektan@126.com>\n"
 "Language-Team: Mandarin\n"
@@ -2742,13 +2738,8 @@ msgid ""
 "duplicate column names. Rename '%s' column in xts or use `keep.rownames` to "
 "change the index column name."
 msgstr ""
-<<<<<<< HEAD
-"输入的xts对象不能含有'index'列，因这会导致出现重复的列名。请尝试重新命名xts中"
-"的'index'列或者使用`keep.rownames=FALSE`并手动添加索引(index)为另外的列"
-=======
 "输入的xts对象不能含有'%s'列，因这会导致出现重复的列名。请尝试重新命名xts中"
 "的'%s'列或者使用`keep.rownames`并手动添加index为另外的列"
->>>>>>> master
 
 msgid ""
 "data.table must have a time based column in first position, use "
