@@ -58,6 +58,35 @@
 
 9. `melt()` now supports multiple output variable columns via the `variable_table` attribute of `measure.vars`, [#3396](https://github.com/Rdatatable/data.table/issues/3396) [#2575](https://github.com/Rdatatable/data.table/issues/2575) [#2551](https://github.com/Rdatatable/data.table/issues/2551). It should be a `data.table` with one row that describes each element of the `measure.vars` vector(s). These data/columns are copied to the output instead of the usual variable column. This is backwards compatible since the previous behavior (one output variable column) is used when there is no `variable_table`. New function `measure()` which uses either a separator or a regex to create a `measure.vars` list/vector with `variable_table` attribute; useful for melting data that has several distinct pieces of information encoded in each column name. See new `?measure` and new section in reshape vignette. Thanks to Matthias Gomolka, Ananda Mahto, Hugh Parsonage for reporting, and to @tdhock for implementing.
 
+10. A new interface for _programming on data.table_ has been added, [#2655](https://github.com/Rdatatable/data.table/issues/2655) any many other linked issues. It is built using base R's `substitute`-like interface via a new `env` argument to `[.data.table`. For details see the new vignette *programming on data.table*, and the new `?substitute2` manual page. Thanks to numerous users for filing requests, and Jan Gorecki for implementing.
+
+    ```R
+    DT = data.table(x = 1:5, y = 5:1)
+
+    # parameters
+    in_col_name = "x"
+    fun = "sum"
+    fun_arg1 = "na.rm"
+    fun_arg1val = TRUE
+    out_col_name = "sum_x"
+
+    # parameterized query
+    #DT[, .(out_col_name = fun(in_col_name, fun_arg1=fun_arg1val))]
+
+    # desired query
+    DT[, .(sum_x = sum(x, na.rm=TRUE))]
+
+    # new interface
+    DT[, .(out_col_name = fun(in_col_name, fun_arg1=fun_arg1val)),
+      env = list(
+        in_col_name = "x",
+        fun = "sum",
+        fun_arg1 = "na.rm",
+        fun_arg1val = TRUE,
+        out_col_name = "sum_x"
+      )]
+    ```
+
 ## BUG FIXES
 
 1. `by=.EACHI` when `i` is keyed but `on=` different columns than `i`'s key could create an invalidly keyed result, [#4603](https://github.com/Rdatatable/data.table/issues/4603) [#4911](https://github.com/Rdatatable/data.table/issues/4911). Thanks to @myoung3 and @adamaltmejd for reporting, and @ColeMiller1 for the PR. An invalid key is where a `data.table` is marked as sorted by the key columns but the data is not sorted by those columns, leading to incorrect results from subsequent queries.
@@ -118,39 +147,6 @@
     `tz=`'s default is now changed from `""` to `"UTC"`. If you have been using `tz=` explicitly then there should be no change. The change to read UTC-marked datetime as POSIXct rather than character already happened in v1.13.0. The change now is that unmarked datetimes are now read as UTC too by default without needing to set `tz="UTC"`. None of the 1,017 CRAN packages directly using `data.table` are affected. As before, the migration option `datatable.old.fread.datetime.character` can still be set to TRUE to revert to the old character behavior. This migration option is temporary and will be removed in the near future.
 
     The community was consulted in [this tweet](https://twitter.com/MattDowle/status/1358011599336931328) before release.
-
-## NEW FEATURES
-
-1. New interface for _programming on data.table_ has been added. It is built using base R `substitute`-like interface via new `env` argument to `[.data.table`. For details of substitution see new vignette *programming on data.table* and `?substitute2` manual.
-
-```r
-DT = data.table(x = 1:5, y = 5:1)
-
-# parameters
-in_col_name = "x"
-fun = "sum"
-fun_arg1 = "na.rm"
-fun_arg1val = TRUE
-out_col_name = "sum_x"
-
-# parameterized query
-#DT[, .(out_col_name = fun(in_col_name, fun_arg1=fun_arg1val))]
-
-# desired query
-DT[, .(sum_x = sum(x, na.rm=TRUE))]
-
-# new interface
-DT[, .(out_col_name = fun(in_col_name, fun_arg1=fun_arg1val)),
-  env = list(
-    in_col_name = "x",
-    fun = "sum",
-    fun_arg1 = "na.rm",
-    fun_arg1val = TRUE,
-    out_col_name = "sum_x"
-  )]
-```
-
-Addresses [#2655](https://github.com/Rdatatable/data.table/issues/2655) any many other linked issues. Thanks to numerous users for filling requests for a better flexibility in parameterizing data.table queries.
 
 ## BUG FIXES
 
