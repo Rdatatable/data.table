@@ -125,14 +125,14 @@ static int _selfrefok(SEXP x, Rboolean checkNames, Rboolean verbose) {
   tag = R_ExternalPtrTag(v);
   if (!(isNull(tag) || isString(tag))) error(_("Internal error: .internal.selfref tag isn't NULL or a character vector")); // # nocov
   names = getAttrib(x, R_NamesSymbol);
-  if (names != tag && isString(names))
+  if (names!=tag && isString(names) && !ALTREP(names))  // !ALTREP for #4734
     SET_TRUELENGTH(names, LENGTH(names));
     // R copied this vector not data.table; it's not actually over-allocated. It looks over-allocated
     // because R copies the original vector's tl over despite allocating length.
   prot = R_ExternalPtrProtected(v);
   if (TYPEOF(prot) != EXTPTRSXP)   // Very rare. Was error(_(".internal.selfref prot is not itself an extptr")).
     return 0;                      // # nocov ; see http://stackoverflow.com/questions/15342227/getting-a-random-internal-selfref-error-in-data-table-for-r
-  if (x != R_ExternalPtrAddr(prot))
+  if (x!=R_ExternalPtrAddr(prot) && !ALTREP(x))
     SET_TRUELENGTH(x, LENGTH(x));  // R copied this vector not data.table, it's not actually over-allocated
   return checkNames ? names==tag : x==R_ExternalPtrAddr(prot);
 }
@@ -473,6 +473,14 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
     for (i=0; i<LENGTH(newcolnames); i++)
       SET_STRING_ELT(names,oldncol+i,STRING_ELT(newcolnames,i));
     // truelengths of both already set by alloccol
+    if (oldncol==0) {
+      // adding columns to null data.table needs row.names set, #4597
+      SEXP rn;
+      PROTECT(rn = allocVector(INTSXP, 2)); protecti++;
+      INTEGER(rn)[0] = NA_INTEGER;
+      INTEGER(rn)[1] = -nrow;
+      setAttrib(dt, R_RowNamesSymbol, rn);
+    }
   }
   for (i=0; i<length(cols); i++) {
     coln = INTEGER(cols)[i]-1;
@@ -647,7 +655,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
     R_isort(tt, ndelete);  // sort the column-numbers-to-delete into ascending order
     for (int i=0; i<ndelete-1; ++i) {
       if (tt[i]>=tt[i+1])
-        error("Internal error: %d column numbers to delete not now in strictly increasing order. No-dups were checked earlier."); // # nocov
+        error(_("Internal error: %d column numbers to delete not now in strictly increasing order. No-dups were checked earlier.")); // # nocov
     }
     for (int i=tt[0], j=1, k=tt[0]+1;  i<ndt-ndelete;  ++i, ++k) {  // i moves up from the first non-deleted column and is the target of write
       while (j<ndelete && k==tt[j]) { j++; k++; }                   // move k up to the next non-deleted column; j is the next position in tt
@@ -670,13 +678,6 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
   return(dt);  // needed for `*tmp*` mechanism (when := isn't used), and to return the new object after a := for compound syntax.
 }
 
-static bool anyNamed(SEXP x) {
-  if (MAYBE_REFERENCED(x)) return true;
-  if (isNewList(x)) for (int i=0; i<LENGTH(x); i++)
-    if (anyNamed(VECTOR_ELT(x,i))) return true;
-  return false;
-}
-
 #define MSGSIZE 1000
 static char memrecycle_message[MSGSIZE+1]; // returned to rbindlist so it can prefix with which one of the list of data.table-like objects
 
@@ -689,7 +690,7 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
 // sourceLen==1 is used in dogroups to recycle the group values into ans to match the nrow of each group's result; sourceStart is set to each group value row.
 {
   if (len<1) return NULL;
-  const int slen = sourceLen>=0 ? sourceLen : length(source);
+  int slen = sourceLen>=0 ? sourceLen : length(source); // since source may get reassigned to a scalar, we should not mark it as const
   if (slen==0) return NULL;
   if (sourceStart<0 || sourceStart+slen>length(source))
     error(_("Internal error memrecycle: sourceStart=%d sourceLen=%d length(source)=%d"), sourceStart, sourceLen, length(source)); // # nocov
@@ -703,24 +704,9 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
   if (colname==NULL)
     error(_("Internal error: memrecycle has received NULL colname")); // # nocov
   *memrecycle_message = '\0';
+  static char targetDesc[501];  // from 1.14.1 coerceAs reuses memrecycle for a target vector, PR#4491
+  snprintf(targetDesc, 500, colnum==0 ? _("target vector") : _("column %d named '%s'"), colnum, colname);
   int protecti=0;
-  if (isNewList(source)) {
-    // A list() column; i.e. target is a column of pointers to SEXPs rather than the more common case of numbers in an atomic vector.
-    // If any item within the list is NAMED then take a fresh copy. So far this has occurred from dogroups.c when
-    // j returns .BY or similar specials as-is within a list(). Those specials are static inside
-    // dogroups so if we don't copy now the last value written to them by dogroups becomes repeated in the result;
-    // i.e. the wrong result.
-    // If source is itself recycled later (many list() column items pointing to the same object) we are ok with that
-    // since we now have a fresh copy and := will not assign with a list() column's cell value; := only changes the
-    // SEXP pointed to.
-    // If source is already not named (because j already created a fresh unnamed vector within a list()) we don't want to
-    // duplicate unnecessarily, hence checking for named rather than duplicating always.
-    // See #481, #1270 and tests 1341.* fail without this copy.
-    // ********** This might go away now that we copy properly in dogroups.c **********
-    if (anyNamed(source)) {
-      source = PROTECT(copyAsPlain(source)); protecti++;
-    }
-  }
   const bool sourceIsFactor=isFactor(source), targetIsFactor=isFactor(target);
   const bool sourceIsI64=isReal(source) && Rinherits(source, char_integer64);
   const bool targetIsI64=isReal(target) && Rinherits(target, char_integer64);
@@ -732,7 +718,7 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
     } else if (!sourceIsFactor && !isString(source)) {
       // target is factor
       if (allNA(source, false)) {  // return false for list and other types that allNA does not support
-        source = ScalarLogical(NA_LOGICAL); // a global constant in R and won't allocate; fall through to regular zero-copy coerce
+        source = ScalarLogical(NA_LOGICAL); slen = 1; // a global constant in R and won't allocate; fall through to regular zero-copy coerce
       } else if (isInteger(source) || isReal(source)) {
         // allow assigning level numbers to factor columns; test 425, 426, 429 and 1945
         const int nlevel = length(getAttrib(target, R_LevelsSymbol));
@@ -741,7 +727,7 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
           for (int i=0; i<slen; ++i) {
             const int val = sd[i+soff];
             if ((val<1 && val!=NA_INTEGER) || val>nlevel) {
-              error(_("Assigning factor numbers to column %d named '%s'. But %d is outside the level range [1,%d]"), colnum, colname, val, nlevel);
+              error(_("Assigning factor numbers to %s. But %d is outside the level range [1,%d]"), targetDesc, val, nlevel);
             }
           }
         } else {
@@ -749,7 +735,7 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
           for (int i=0; i<slen; ++i) {
             const double val = sd[i+soff];
             if (!ISNAN(val) && (!R_FINITE(val) || val!=(int)val || (int)val<1 || (int)val>nlevel)) {
-              error(_("Assigning factor numbers to column %d named '%s'. But %f is outside the level range [1,%d], or is not a whole number."), colnum, colname, val, nlevel);
+              error(_("Assigning factor numbers to %s. But %f is outside the level range [1,%d], or is not a whole number."), targetDesc, val, nlevel);
             }
           }
         }
@@ -841,27 +827,27 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
       }
     }
   } else if (isString(source) && !isString(target) && !isNewList(target)) {
-    warning(_("Coercing 'character' RHS to '%s' to match the type of the target column (column %d named '%s')."),
-            type2char(TYPEOF(target)), colnum, colname);
+    warning(_("Coercing 'character' RHS to '%s' to match the type of %s."), type2char(TYPEOF(target)), targetDesc);
     // this "Coercing ..." warning first to give context in case coerceVector warns 'NAs introduced by coercion'
+    // and also because 'character' to integer/double coercion is often a user mistake (e.g. wrong target column, or wrong
+    // variable on RHS) which they are more likely to appreciate than find inconvenient
     source = PROTECT(coerceVector(source, TYPEOF(target))); protecti++;
   } else if (isNewList(source) && !isNewList(target)) {
     if (targetIsI64) {
-      error(_("Cannot coerce 'list' RHS to 'integer64' to match the type of the target column (column %d named '%s')."), colnum, colname);
+      error(_("Cannot coerce 'list' RHS to 'integer64' to match the type of %s."), targetDesc);
       // because R's coerceVector doesn't know about integer64
     }
     // as in base R; e.g. let as.double(list(1,2,3)) work but not as.double(list(1,c(2,4),3))
     // relied on by NNS, simstudy and table.express; tests 1294.*
-    warning(_("Coercing 'list' RHS to '%s' to match the type of the target column (column %d named '%s')."),
-            type2char(TYPEOF(target)), colnum, colname);
+    warning(_("Coercing 'list' RHS to '%s' to match the type of %s."), type2char(TYPEOF(target)), targetDesc);
     source = PROTECT(coerceVector(source, TYPEOF(target))); protecti++;
   } else if ((TYPEOF(target)!=TYPEOF(source) || targetIsI64!=sourceIsI64) && !isNewList(target)) {
-    if (GetVerbose()) {
+    if (GetVerbose()>=3) {
       // only take the (small) cost of GetVerbose() (search of options() list) when types don't match
-      Rprintf(_("Zero-copy coerce when assigning '%s' to '%s' column %d named '%s'.\n"),
+      Rprintf(_("Zero-copy coerce when assigning '%s' to '%s' %s.\n"),
               sourceIsI64 ? "integer64" : type2char(TYPEOF(source)),
               targetIsI64 ? "integer64" : type2char(TYPEOF(target)),
-              colnum, colname);
+              targetDesc);
     }
     // The following checks are up front here, otherwise we'd need them twice in the two branches
     //   inside BODY that cater for 'where' or not. Maybe there's a way to merge the two macros in future.
@@ -874,10 +860,9 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
     if (COND) {                                                                                                         \
       const char *sType = sourceIsI64 ? "integer64" : type2char(TYPEOF(source));                                        \
       const char *tType = targetIsI64 ? "integer64" : type2char(TYPEOF(target));                                        \
-      int n = snprintf(memrecycle_message, MSGSIZE,                                                                     \
-            "%"FMT" (type '%s') at RHS position %d "TO" when assigning to type '%s'", val, sType, i+1, tType);          \
-      if (colnum>0 && n>0 && n<MSGSIZE)                                                                                 \
-        snprintf(memrecycle_message+n, MSGSIZE-n, " (column %d named '%s')", colnum, colname);                          \
+      snprintf(memrecycle_message, MSGSIZE,                                                                             \
+        "%"FMT" (type '%s') at RHS position %d "TO" when assigning to type '%s' (%s)",                                  \
+        val, sType, i+1, tType, targetDesc);                                                                            \
       /* string returned so that rbindlist/dogroups can prefix it with which item of its list this refers to  */        \
       break;                                                                                                            \
     }                                                                                                                   \
@@ -1073,7 +1058,7 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
           break;
         }
         if (sourceIsI64)
-          error(_("To assign integer64 to a character column, please use as.character() for clarity."));
+          error(_("To assign integer64 to a target of type character, please use as.character() for clarity.")); // TODO: handle that here as well
         source = PROTECT(coerceVector(source, STRSXP)); protecti++;
       }
       BODY(SEXP, STRING_PTR, SEXP, val,  SET_STRING_ELT(target, off+i, cval))
