@@ -3019,9 +3019,9 @@ test(1034, as.data.table(x<-as.character(sample(letters, 5))), data.table(V1=x))
   test(1035.014, melt(data.table(a1=1, b1=1, b2=2), na.rm=TRUE, measure.vars=list(a="a1", b=c("b1","b2"))), data.table(variable=factor(1,c("1","2")), a=1, b=1))
   test(1035.015, melt(data.table(a=1+2i, b=1), id.vars="a"), error="Unknown column type 'complex' for column 'a' in 'data'")
 
-  # PR#TODO, na.rm=TRUE with list column value.
-  test(1035.013, melt(data.table(a1=1, b1=list(1:2), b2=list(c('foo','bar'))), na.rm=TRUE, measure.vars=list(a="a1", b=c("b1","b2"))), data.table(variable=factor(1), a=1, b=list(1:2)))
-  test(1035.014, melt(data.table(a1=1, b1=1, b2=2), na.rm=TRUE, measure.vars=list(a="a1", b=c("b1","b2"))), data.table(variable=factor(1), a=1, b=1))#this worked even before the PR.
+  # na.rm=TRUE with list column value, PR#4737
+  test(1035.016, melt(data.table(a1=1, b1=list(1:2), b2=list(c('foo','bar'))), na.rm=TRUE, measure.vars=list(a="a1", b=c("b1","b2"))), data.table(variable=factor(1), a=1, b=list(1:2)))
+  test(1035.017, melt(data.table(a1=1, b1=1, b2=2), na.rm=TRUE, measure.vars=list(a="a1", b=c("b1","b2"))), data.table(variable=factor(1), a=1, b=1))#this worked even before the PR.
   
   ans1 = cbind(DT[, c(1,2,8), with=FALSE], variable=factor("l_1"))
   ans1[, value := DT$l_1]
