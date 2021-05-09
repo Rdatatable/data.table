@@ -948,7 +948,7 @@ replace_dot_alias = function(e) {
           } else {
             if (colsub %iscall% 'patterns') {
               # each pattern gives a new filter condition, intersect the end result
-              .SDcols = Reduce(intersect, do_patterns(colsub, names_x))
+              .SDcols = Reduce(intersect, eval_with_cols(colsub, names_x))
             } else {
               .SDcols = eval(colsub, parent.frame(), parent.frame())
               # allow filtering via function in .SDcols, #3950
