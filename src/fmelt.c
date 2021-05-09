@@ -97,21 +97,6 @@ static const char *concat(SEXP vec, SEXP idx) {
   return ans;
 }
 
-// input: character vector of column names (maybe missing), output:
-// integer vector of column indices with NA_INTEGER in the positions
-// with missing inputs.
-SEXP chmatch_na(SEXP x, SEXP table){
-  SEXP ans;
-  PROTECT(ans = chmatch(x, table, 0));
-  for(int i=0; i<length(ans); i++){
-    if(STRING_ELT(x, i) == NA_STRING){
-      INTEGER(ans)[i] = NA_INTEGER;
-    }
-  }
-  UNPROTECT(1);
-  return ans;
-}
-
 // deal with measure.vars of type VECSXP
 SEXP measurelist(SEXP measure, SEXP dtnames) {
   const int n=length(measure);
@@ -120,7 +105,7 @@ SEXP measurelist(SEXP measure, SEXP dtnames) {
     SEXP x = VECTOR_ELT(measure, i);
     switch(TYPEOF(x)) {
       case STRSXP  :
-        SET_VECTOR_ELT(ans, i, chmatch_na(x, dtnames));
+        SET_VECTOR_ELT(ans, i, chmatch(x, dtnames, NA_INTEGER));
         break;
       case REALSXP :
         SET_VECTOR_ELT(ans, i, coerceVector(x, INTSXP));
