@@ -17531,3 +17531,9 @@ dt2 <- dt[2,.(suma=sum(a)), keyby=.(b=get("b"))]
 test(2184.3, dt2[1, suma], 2)
 dt2 <- dt[2,.(suma=sum(a)), keyby=.(b=get("b"),c)]
 test(2184.4, dt2[1, suma], 2)
+# #4873
+IDT = as.data.table(iris)
+vr = "Species"
+IDT[, virginca := get(vr) == "virginica"]
+ans = data.table(round = c(3, 3, 3, 2, 2, 4, 2, 4), k = c(6, 7, 8, 5, 7, 7, 6, 8), kar = structure(c(3L, 3L, 3L, 3L, 3L, 3L, 3L, 3L), .Label = c("setosa", "versicolor", "virginica"), class = "factor"), N = c(24L, 14L, 4L, 1L, 1L, 1L, 3L, 2L))
+test(2184.5, IDT[(virginca), .N, by = .(round(Sepal.Width), k = round(Sepal.Length), kar = get(vr))] , ans)
