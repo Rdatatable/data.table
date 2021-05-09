@@ -17520,3 +17520,14 @@ test(2183.79, melt(DTid, measure.vars=measure(letter, number, pattern=as.integer
 test(2183.80, melt(DTid, measure.vars=measure(letter, number, sep=as.integer)), error="sep must be character string")
 ##melt(DTid, measure.vars=measure(letter, number, sep=NA_character_)
 ##melt(DTid, measure.vars=measure(letter, number, sep=character())
+
+# `keyby` allows mixing eval/get with direct columns, #4981
+dt <- data.table(a=c(1,2), b=c(3,4), c=c(1,0))
+dt2 <- dt[,.(suma=sum(a)), keyby=.(b=get("b"),c)]
+test(2184.1, dt2[1, suma], 1)
+dt2 <- dt[2,.(suma=sum(a)), keyby=.(b=b,c)]
+test(2184.2, dt2[1, suma], 2)
+dt2 <- dt[2,.(suma=sum(a)), keyby=.(b=get("b"))]
+test(2184.3, dt2[1, suma], 2)
+dt2 <- dt[2,.(suma=sum(a)), keyby=.(b=get("b"),c)]
+test(2184.4, dt2[1, suma], 2)

@@ -756,7 +756,14 @@ replace_dot_alias = function(e) {
           bysub = parse(text=paste0("list(",paste(bysub,collapse=","),")"))[[1L]]
           bysubl = as.list.default(bysub)
         }
-        allbyvars = intersect(all.vars(bysub), names_x)
+        # Fix 4981: when the 'by' expression includes get/mget/eval, all.vars
+        # cannot be trusted to infer all used columns
+        bysub.elems <- rapply(as.list(bysub), as.character)
+        if (any(c("eval","evalq","eval.parent","local","get","mget","dynGet") %chin% bysub.elems)) 
+          allbyvars = NULL
+        else
+          allbyvars = intersect(all.vars(bysub), names_x)  
+        
         orderedirows = .Call(CisOrderedSubset, irows, nrow(x))  # TRUE when irows is NULL (i.e. no i clause). Similar but better than is.sorted(f__)
         bysameorder = byindex = FALSE
         if (!bysub %iscall% ":" && ##Fix #4285
