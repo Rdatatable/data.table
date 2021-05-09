@@ -756,10 +756,8 @@ replace_dot_alias = function(e) {
           bysub = parse(text=paste0("list(",paste(bysub,collapse=","),")"))[[1L]]
           bysubl = as.list.default(bysub)
         }
-        # Fix 4981: when the 'by' expression includes get/mget/eval, all.vars
-        # cannot be trusted to infer all used columns
-        bysub.elems <- rapply(as.list(bysub), as.character)
-        if (any(c("eval","evalq","eval.parent","local","get","mget","dynGet") %chin% bysub.elems)) 
+        if (any(c("eval","evalq","eval.parent","local","get","mget","dynGet") %chin% all.names(bysub)))
+          # when the 'by' expression includes get/mget/eval, all.vars cannot be trusted to infer all used columns, #4981
           allbyvars = NULL
         else
           allbyvars = intersect(all.vars(bysub), names_x)  
