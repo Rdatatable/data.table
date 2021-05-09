@@ -31,7 +31,7 @@ non-measure columns will be assigned to it. If integer, must be positive; see De
   }
 
     For convenience/clarity in the case of multiple \code{melt}ed columns, resulting column names can be supplied as names to the elements \code{measure.vars} (in the \code{list} and \code{patterns} usages). See also \code{Examples}. }
-\item{variable.name}{name for the measured variable names column. The default name is \code{'variable'}.}
+\item{variable.name}{name (default \code{'variable'}) of output column containing information about which input column(s) were melted. If \code{measure.vars} is an integer/character vector, then each entry of this column contains the name of a melted column from \code{data}. If \code{measure.vars} is a list of integer/character vectors, then each entry of this column contains an integer indicating an index/position in each of those vectors. If \code{measure.vars} has attribute \code{variable_table} then it must be a data table with nrow = length of \code{measure.vars} vector(s), each row describing the corresponding measured variables(s), (typically created via \code{measure}) and its columns will be output instead of the \code{variable.name} column.}
 \item{value.name}{name for the molten data values column(s). The default name is \code{'value'}. Multiple names can be provided here for the case when \code{measure.vars} is a \code{list}, though note well that the names provided in \code{measure.vars} take precedence. }
 \item{na.rm}{If \code{TRUE}, \code{NA} values will be removed from the molten
 data.}
@@ -64,7 +64,11 @@ effect.
 
 From version \code{1.9.6}, \code{melt} gains a feature with \code{measure.vars}
 accepting a list of \code{character} or \code{integer} vectors as well to melt
-into multiple columns in a single function call efficiently. The function
+into multiple columns in a single function call efficiently.
+If a vector in the list contains missing values, or is shorter than the
+max length of the list elements, then the output will include runs of
+missing values at the specified position, or at the end.
+The function
 \code{\link{patterns}} can be used to provide regular expression patterns. When
 used along with \code{melt}, if \code{cols} argument is not provided, the
 patterns will be matched against \code{names(data)}, for convenience.
@@ -75,7 +79,7 @@ be coerced to \code{character} type. To get a \code{factor} column, set
 \code{value.factor = TRUE}. \code{melt.data.table} also preserves
 \code{ordered} factors.
 
-Historical note: \code{melt.data.table} was originally designed as an enhancement to \code{reshape2::melt} in terms of computing and memory efficiency. \code{reshape2} has since been deprecated, and \code{melt} has had a generic defined within \code{data.table} since \code{v1.9.6} in 2015, at which point the dependency between the packages became more etymological than programmatic. We thank the \code{reshape2} authors for the inspiration.
+Historical note: \code{melt.data.table} was originally designed as an enhancement to \code{reshape2::melt} in terms of computing and memory efficiency. \code{reshape2} has since been superseded in favour of \code{tidyr}, and \code{melt} has had a generic defined within \code{data.table} since \code{v1.9.6} in 2015, at which point the dependency between the packages became more etymological than programmatic. We thank the \code{reshape2} authors for the inspiration.
 
 }
 
@@ -134,6 +138,15 @@ melt(DT, id=1:2, measure=patterns("f_", "d_"), value.factor=TRUE, na.rm=TRUE)
 # return 'NA' for missing columns, 'na.rm=TRUE' ignored due to list column
 melt(DT, id=1:2, measure=patterns("l_", "c_"), na.rm=TRUE)
 
+# measure list with missing/short entries results in output with runs of NA
+DT.missing.cols <- DT[, .(d_1, d_2, c_1, f_2)]
+melt(DT.missing.cols, measure=list(d=1:2, c="c_1", f=c(NA, "f_2")))
+
+# specifying columns to melt via separator.
+melt(DT.missing.cols, measure=measure(value.name, number=as.integer, sep="_"))
+
+# specifying columns to melt via regex.
+melt(DT.missing.cols, measure=measure(value.name, number=as.integer, pattern="(.)_(.)"))
 }
 \seealso{
   \code{\link{dcast}}, \url{https://cran.r-project.org/package=reshape}
