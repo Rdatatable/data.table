@@ -419,9 +419,11 @@ replace_dot_alias = function(e) {
         len_common_names = length(common_names)
         if (!len_common_names) stop("Attempting to do natural join but no common columns in provided tables")
         if (verbose) {
-          which_cols_msg = if (len_common_names == length(x)) gettext("natural join using all 'x' columns")
-          else gettextf("natural join using %s", paste(":", brackify(common_names)))
-          catf("Joining but 'x' has no key, natural join using %s\n", which_cols_msg)
+          which_cols_msg = if (len_common_names == length(x)) {
+            catf("Joining but 'x' has no key, natural join using all 'x' columns")
+          } else {
+            catf("Joining but 'x' has no key, natural join using %s", paste(":", brackify(common_names)))
+          }
         }
         on = common_names
       }
