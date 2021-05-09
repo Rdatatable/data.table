@@ -155,20 +155,15 @@ setreordervec = function(x, order) .Call(Creorder, x, order)
 # The others (order, sort.int etc) are turned off to protect ourselves from using them internally, for speed and for
 # consistency; e.g., consistent twiddling of numeric/integer64, NA at the beginning of integer, locale ordering of character vectors.
 
-is.sorted = function(x, by=seq_along(x)) {
+is.sorted = function(x, by=NULL) {
   if (is.list(x)) {
-    warning("Use 'if (length(o <- forderv(DT,by))) ...' for efficiency in one step, so you have o as well if not sorted.")
-    # could pass through a flag for forderv to return early on first FALSE. But we don't need that internally
-    # since internally we always then need ordering, an it's better in one step. Don't want inefficiency to creep in.
-    # This is only here for user/debugging use to check/test valid keys; e.g. data.table:::is.sorted(DT,by)
-    0L == length(forderv(x,by,retGrp=FALSE,sort=TRUE))
+    if (missing(by)) by = seq_along(x)   # wouldn't make sense when x is a vector; hence by=seq_along(x) is not the argument default
+    if (is.character(by)) by = chmatch(by, names(x))
   } else {
     if (!missing(by)) stop("x is vector but 'by' is supplied")
-    .Call(Cfsorted, x)
   }
-  # Cfsorted could be named CfIsSorted, but since "sorted" is an adjective not verb, it's clear; e.g., Cfsort would sort it ("sort" is verb).
+  .Call(Cissorted, x, as.integer(by))
   # Return value of TRUE/FALSE is relied on in [.data.table quite a bit on vectors. Simple. Stick with that (rather than -1/0/+1)
-  # Important to call forder.c::fsorted here, for consistent character ordering and numeric/integer64 twiddling.
 }
 
 ORDERING_TYPES = c('logical', 'integer', 'double', 'complex', 'character')
@@ -300,7 +295,7 @@ setorderv = function(x, cols = colnames(x), order=1L, na.last=FALSE)
   o = forderv(x, cols, sort=TRUE, retGrp=FALSE, order=order, na.last=na.last)
   if (length(o)) {
     .Call(Creorder, x, o)
-    if (is.data.frame(x) & !is.data.table(x)) {
+    if (is.data.frame(x) && !is.data.table(x)) {
       setattr(x, 'row.names', rownames(x)[o])
     }
     k = key(x)
@@ -357,7 +352,7 @@ CJ = function(..., sorted = TRUE, unique = FALSE)
     }
   }
   nrow = prod( vapply_1i(l, length) )  # lengths(l) will work from R 3.2.0
-  if (nrow > .Machine$integer.max) stop(gettextf("Cross product of elements provided to CJ() would result in %.0f rows which exceeds .Machine$integer.max == %d", nrow, .Machine$integer.max, domain='R-data.table'))
+  if (nrow > .Machine$integer.max) stop(domain=NA, gettextf("Cross product of elements provided to CJ() would result in %.0f rows which exceeds .Machine$integer.max == %d", nrow, .Machine$integer.max))
   l = .Call(Ccj, l)
   setDT(l)
   l = setalloccol(l)  # a tiny bit wasteful to over-allocate a fixed join table (column slots only), doing it anyway for consistency since
