@@ -160,7 +160,7 @@ replace_dot_alias = function(e) {
       else if (!isTRUEorFALSE(keyby))
         stop("When by and keyby are both provided, keyby must be TRUE or FALSE")
     }
-  }      
+  }
   bynull = !missingby && is.null(by) #3530
   byjoin = !is.null(by) && is.symbol(bysub) && bysub==".EACHI"
   naturaljoin = FALSE
@@ -1347,7 +1347,7 @@ replace_dot_alias = function(e) {
 
     if (is.data.table(jval)) {
       # should set the parent class only when jval is a plain data.table #4324
-      if (identical(class(jval), c('data.table', 'data.frame'))) 
+      if (identical(class(jval), c('data.table', 'data.frame')))
         setattr(jval, 'class', class(x)) # fix for #64
       if (haskey(x) && all(key(x) %chin% names(jval)) && is.sorted(jval, by=key(x)))
         setattr(jval, 'sorted', key(x))
