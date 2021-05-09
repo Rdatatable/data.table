@@ -422,7 +422,7 @@ replace_dot_alias = function(e) {
           which_cols_msg = if (len_common_names == length(x)) {
             catf("Joining but 'x' has no key, natural join using all 'x' columns")
           } else {
-            catf("Joining but 'x' has no key, natural join using %s", paste(":", brackify(common_names)))
+            catf("Joining but 'x' has no key, natural join using: %s", brackify(common_names))
           }
         }
         on = common_names
@@ -1022,7 +1022,7 @@ replace_dot_alias = function(e) {
         if (!missing(.SDcols)) warning("This j doesn't use .SD but .SDcols has been supplied. Ignoring .SDcols. See ?data.table.")
         allcols = c(names_x, xdotprefix, names_i, idotprefix)
         ansvars = sdvars = setdiff(intersect(av, allcols), bynames)
-        if (verbose) catf("Detected that j uses these columns: %s\n",if (!length(ansvars)) "<none>" else brackfiy(ansvars))
+        if (verbose) catf("Detected that j uses these columns: %s\n",if (!length(ansvars)) "<none>" else brackify(ansvars))
         # using a few named columns will be faster
         # Consider:   DT[,max(diff(date)),by=list(month=month(date))]
         # and:        DT[,lapply(.SD,sum),by=month(date)]
@@ -3018,7 +3018,7 @@ isReallyReal = function(x) {
     ## if nothing else helped, auto create a new index that can be used
     if (!getOption("datatable.auto.index")) return(NULL)
     if (verbose) {catf("Creating new index '%s'\n", paste0(names(i), collapse = "__"));flush.console()}
-    if (verbose) {last.started.at=proc.time();catf("Creating index %s done in ... %s\n", paste0(names(i), collapse = "__"));flush.console()}
+    if (verbose) {last.started.at=proc.time();catf("Creating index %s done in ...", paste0(names(i), collapse = "__"));flush.console()}
     setindexv(x, names(i))
     if (verbose) {cat(timetaken(last.started.at),"\n");flush.console()}
     if (verbose) {catf("Optimized subsetting with index '%s'\n", paste0(names(i), collapse = "__"));flush.console()}

@@ -92,7 +92,7 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
 
   cat("getDTthreads(verbose=TRUE):\n")         # for tracing on CRAN; output to log before anything is attempted
   getDTthreads(verbose=TRUE)                   # includes the returned value in the verbose output (rather than dangling '[1] 4'); e.g. "data.table is using 4 threads"
-  catf("test.data.table() running: %s\n")  # print fn to log before attempting anything on it (in case it is missing); on same line for slightly easier grep
+  catf("test.data.table() running: %s\n", fn)  # print fn to log before attempting anything on it (in case it is missing); on same line for slightly easier grep
   env = new.env(parent=.GlobalEnv)
   assign("testDir", function(x) file.path(fulldir, x), envir=env)
 
@@ -290,8 +290,7 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
     } )
     if (showProgress)
       # \r can't be in gettextf msg
-      cat("\r") # nocov
-      catf("Running test id %s      ", numStr)   # nocov.
+      cat("\rRunning test id", numStr, "         ")   # nocov.
     # See PR #4090 for comments about change here in Dec 2019.
     # If a segfault error occurs in future and we'd like to know after which test, then arrange for the
     # try(sys.source()) in test.data.table() to be run in a separate R process. That process could write out
@@ -365,7 +364,7 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
     }
     if (length(expected) != length(observed)) {
       # nocov start
-      catf("Test %s produced %d %ss but expected %d\n%s\n%s\n", numStr, length(observed), length(expected), paste("Expected:", expected), paste("Observed:", observed))
+      catf("Test %s produced %d %ss but expected %d\n%s\n%s\n", numStr, length(observed), type, length(expected), paste("Expected:", expected), paste("Observed:", observed))
       fail = TRUE
       # nocov end
     } else {
