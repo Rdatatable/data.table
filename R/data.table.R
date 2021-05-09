@@ -162,7 +162,8 @@ replace_dot_alias = function(e) {
       else if (!isTRUEorFALSE(keyby))
         stop("When by and keyby are both provided, keyby must be TRUE or FALSE")
     }
-    if (verbose) cat("Argument 'by' after substitute: ", paste(deparse(bysub, width.cutoff=500L), collapse=" "), "\n", sep="")
+    if (missing(by)) { missingby=TRUE; by=bysub=NULL }  # possible when env is used, PR#4304
+    else if (verbose) cat("Argument 'by' after substitute: ", paste(deparse(bysub, width.cutoff=500L), collapse=" "), "\n", sep="")
   }
   bynull = !missingby && is.null(by) #3530
   byjoin = !is.null(by) && is.symbol(bysub) && bysub==".EACHI"
