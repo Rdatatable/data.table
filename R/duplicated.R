@@ -30,10 +30,6 @@ unique.data.table = function(x, incomparables=FALSE, fromLast=FALSE, by=seq_alon
     .NotYetUsed("incomparables != FALSE")
   }
   if (nrow(x) <= 1L) return(x)
-  if (missing(by) && isTRUE(getOption("datatable.old.unique.by.key"))) {
-    by = key(x)
-    stop(error_oldUniqueByKey)
-  }
   # by=character() is the same as by=NULL
   if (!length(by)) by = NULL
   o = forderv(x, by=by, sort=FALSE, retGrp=TRUE)
