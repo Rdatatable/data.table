@@ -1,3 +1,4 @@
+.dir-locals.el
 ^\.Rprofile$
 ^data\.table_.*\.tar\.gz$
 ^vignettes/plots/figures$

@@ -64,7 +64,7 @@ bool allNA(SEXP x, bool errorForBadType) {
     return true;
   case CPLXSXP: {
     const Rcomplex *xd = COMPLEX(x);
-    for (int i=0; i<n; ++i) if (!ISNAN_COMPLEX(xd[i])) { 
+    for (int i=0; i<n; ++i) if (!ISNAN_COMPLEX(xd[i])) {
       return false;
     }
     return true;
@@ -187,7 +187,7 @@ SEXP copyAsPlain(SEXP x) {
   // For non-ALTREP this should do the same as R's duplicate().
   // Intended for use on columns; to either un-ALTREP them or duplicate shared memory columns; see copySharedColumns() below
   // Not intended to be called on a DT VECSXP where a concept of 'deep' might refer to whether the columns are copied
-  
+
   if (isNull(x)) {
     // deal with up front because isNewList(R_NilValue) is true
     return R_NilValue;
@@ -245,7 +245,7 @@ void copySharedColumns(SEXP x) {
     const SEXP thiscol = xp[i];
     savetl[i] = ALTREP(thiscol) ? 0 : TRUELENGTH(thiscol);
     SET_TRUELENGTH(thiscol, 0);
-  } 
+  }
   int nShared=0;
   for (int i=0; i<ncol; ++i) {
     SEXP thiscol = xp[i];
@@ -258,7 +258,7 @@ void copySharedColumns(SEXP x) {
                                       // 'shared' means a later column shares an earlier column
       SET_TRUELENGTH(thiscol, -i-1);  // -i-1 so that if, for example, column 3 shares column 1, in iteration 3 we'll know not
                                       // only that the 3rd column is shared with an earlier column, but which one too. Although
-                                      // we don't use that information currently, we could do in future.  
+                                      // we don't use that information currently, we could do in future.
     }
   }
   // now we know nShared and which ones they are (if any), restore original tl back to the unique set of columns
