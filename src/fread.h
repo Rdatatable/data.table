@@ -145,7 +145,7 @@ typedef struct freadMainArgs
   bool logical01;
 
   bool keepLeadingZeros;
-  
+
   // should datetime with no Z or UTZ-offset be read as UTC?
   bool noTZasUTC;
 
