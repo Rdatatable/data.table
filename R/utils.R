@@ -105,6 +105,7 @@ brackify = function(x, quote=FALSE) {
 }
 
 # patterns done via NSE in melt.data.table and .SDcols in `[.data.table`
+# was called do_patterns() before PR#4731
 eval_with_cols = function(orig_call, all_cols) {
   parent = parent.frame(2L)
   fun_uneval = orig_call[[1L]]
@@ -126,22 +127,6 @@ eval_with_cols = function(orig_call, all_cols) {
     named_call[[1L]] = fun
     eval(named_call, parent)
   }
-}
-do_patterns = function(pat_sub, all_cols) {
-  # received as substitute(patterns(...))
-  pat_sub = as.list(pat_sub)[-1L]
-  # identify cols = argument if present
-  idx = which(names(pat_sub) == "cols")
-  if (length(idx)) {
-    cols = eval(pat_sub[["cols"]], parent.frame(2L))
-    pat_sub = pat_sub[-idx]
-  } else cols = all_cols
-  pats = lapply(pat_sub, eval, parent.frame(2L))
-  matched = patterns(pats, cols=cols)
-  # replace with lengths when R 3.2.0 dependency arrives
-  if (length(idx <- which(sapply(matched, length) == 0L)))
-    stop('Pattern', if (length(idx) > 1L) 's', ' not found: ', brackify(pats[idx]))
-  return(matched)
 }
 
 # check UTC status
