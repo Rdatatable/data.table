@@ -56,7 +56,7 @@
 
 8. `melt()` now supports `NA` entries when specifying a list of `measure.vars`, which translate into runs of missing values in the output. Useful for melting wide data with some missing columns, [#4027](https://github.com/Rdatatable/data.table/issues/4027). Thanks to @vspinu for reporting, and @tdhock for implementing.
 
-9. `melt()` now supports multiple output variable columns via the `variable_table` attribute of `measure.vars`. It should be a `data.table` with one row that describes each element of the `measure.vars` vector(s). These data/columns are copied to the output instead of the usual variable column. This is backwards compatible since the previous behavior (one output variable column) is used when there is no `variable_table`. New function `measure()` which uses either a separator or a regex to create a `measure.vars` list/vector with `variable_table` attribute; useful for melting data that has several distinct pieces of information encoded in each column name. See new `?measure` and new section in reshape vignette. Thanks to TODO for reporting, #TODO, and to @tdhock for implementing.
+9. `melt()` now supports multiple output variable columns via the `variable_table` attribute of `measure.vars`, [#3396](https://github.com/Rdatatable/data.table/issues/3396) [#2575](https://github.com/Rdatatable/data.table/issues/2575) [#2551](https://github.com/Rdatatable/data.table/issues/2551). It should be a `data.table` with one row that describes each element of the `measure.vars` vector(s). These data/columns are copied to the output instead of the usual variable column. This is backwards compatible since the previous behavior (one output variable column) is used when there is no `variable_table`. New function `measure()` which uses either a separator or a regex to create a `measure.vars` list/vector with `variable_table` attribute; useful for melting data that has several distinct pieces of information encoded in each column name. See new `?measure` and new section in reshape vignette. Thanks to Matthias Gomolka, Ananda Mahto, Hugh Parsonage for reporting, and to @tdhock for implementing.
 
 ## BUG FIXES
 
@@ -177,8 +177,6 @@
 4. `fread("1.2\n", colClasses='integer')` (note no columns names in the data) would segfault when creating a warning message, [#4644](https://github.com/Rdatatable/data.table/issues/4644). It now warns with `Attempt to override column 1 of inherent type 'float64' down to 'int32' ignored.` When column names are present however, the warning message includes the name as before; i.e., `fread("A\n1.2\n", colClasses='integer')` produces `Attempt to override column 1 <<A>> of inherent type 'float64' down to 'int32' ignored.`. Thanks to Kun Ren for reporting.
 
 5. `dplyr::mutate(setDT(as.list(1:64)), V1=11)` threw error `can't set ALTREP truelength`, [#4734](https://github.com/Rdatatable/data.table/issues/4734). Thanks to @etryn for the reproducible example, and to Cole Miller for refinements.
-
-4. `melt` with a list for `measure.vars` would output `variable` inconsistently between `na.rm=TRUE` and `FALSE`, [#4455](https://github.com/Rdatatable/data.table/issues/4455). Thanks to @tdhock for reporting and fixing.
 
 ## NOTES
 
