@@ -375,7 +375,7 @@ static void preprocess(SEXP DT, SEXP id, SEXP measure, SEXP varnames, SEXP valna
     if (data->lvars == 0) {
       error(_("variable_table attribute of measure.vars should be a data table with at least one column"));
     }
-    for (i=0; i<length(data->variable_table); i++) {
+    for (int i=0; i<length(data->variable_table); ++i) {
       int nrow = length(VECTOR_ELT(data->variable_table, i));
       if (data->lmax != nrow) {
 	error(_("variable_table attribute of measure.vars should be a data table with same number of rows as max length of measure.vars vectors =%d"), data->lmax);
@@ -670,11 +670,11 @@ SEXP getvarcols(SEXP DT, SEXP dtnames, Rboolean varfactor, Rboolean verbose, str
         case LGLSXP : 
           for (int k=0; k<thislen; ++k)
             INTEGER(target)[ansloc++] = INTEGER(out_col)[j];
-            if (isFactor(out_col)) {
-              // Do we need a copy here?
-              setAttrib(target, R_LevelsSymbol, getAttrib(out_col, R_LevelsSymbol));
-              setAttrib(target, R_ClassSymbol, ScalarString(char_factor));
-            }
+          if (isFactor(out_col)) {
+            // Do we need a copy here?
+            setAttrib(target, R_LevelsSymbol, getAttrib(out_col, R_LevelsSymbol));
+            setAttrib(target, R_ClassSymbol, ScalarString(char_factor));
+          }
           break;
         default :
           error(_("variable_table does not support column type '%s' for column '%s'."), type2char(TYPEOF(out_col)), CHAR(STRING_ELT(getAttrib(data->variable_table, R_NamesSymbol), out_col_i)));
