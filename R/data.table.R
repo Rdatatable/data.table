@@ -112,13 +112,9 @@ replace_dot_alias = function(e) {
     used = gsub(".*object '([^']+)'.*", "\\1", err$message)
     found = agrep(used, ref, value=TRUE, ignore.case=TRUE, fixed=TRUE)
     if (length(found)) {
-      stop("Object '", used, "' not found. Perhaps you intended ",
-           paste(head(found, 5L), collapse=", "),
-           if (length(found)<=5L) "" else paste(" or",length(found)-5L, "more"))
+      stop("Object '", used, "' not found. Perhaps you intended ", brackify(found))
     } else {
-      stop("Object '", used, "' not found amongst ",
-           paste(head(ref, 5L), collapse=', '),
-           if (length(ref)<=5L) "" else paste(" and", length(ref)-5L, "more"))
+      stop("Object '", used, "' not found amongst ", brackify(ref))
     }
   } else {
     stop(err$message, call.=FALSE)
@@ -137,7 +133,7 @@ replace_dot_alias = function(e) {
         else if (missing(drop)) `[.data.frame`(x,i,j)
         else `[.data.frame`(x,i,j,drop)
     # added is.data.table(ans) check to fix bug #81
-    if (!missing(i) & is.data.table(ans)) setkey(ans,NULL)  # See test 304
+    if (!missing(i) && is.data.table(ans)) setkey(ans, NULL)  # See test 304
     return(ans)
   }
   if (!missing(verbose)) {
@@ -149,17 +145,22 @@ replace_dot_alias = function(e) {
   }
   .global$print=""
   missingby = missing(by) && missing(keyby)  # for tests 359 & 590 where passing by=NULL results in data.table not vector
-  if (!missing(keyby)) {
-    if (!missing(by)) stop("Provide either by= or keyby= but not both")
-    if (missing(j)) { warning("Ignoring keyby= because j= is not supplied"); keyby=NULL; }
-    by=bysub=substitute(keyby)
-    keyby=TRUE
-    # Assign to 'by' so that by is no longer missing and we can proceed as if there were one by
+  if (missingby || missing(j)) {
+    if (!missingby) warning("Ignoring by/keyby because 'j' is not supplied")
+    by = bysub = NULL
+    keyby = FALSE
   } else {
-    if (!missing(by) && missing(j)) { warning("Ignoring by= because j= is not supplied"); by=NULL; }
-    by=bysub= if (missing(by)) NULL else substitute(by)
-    keyby=FALSE
-  }
+    if (missing(by)) {
+      by = bysub = substitute(keyby)
+      keyby = TRUE
+    } else {
+      by = bysub = substitute(by)
+      if (missing(keyby))
+        keyby = FALSE
+      else if (!isTRUEorFALSE(keyby))
+        stop("When by and keyby are both provided, keyby must be TRUE or FALSE")
+    }
+  }      
   bynull = !missingby && is.null(by) #3530
   byjoin = !is.null(by) && is.symbol(bysub) && bysub==".EACHI"
   naturaljoin = FALSE
@@ -686,7 +687,7 @@ replace_dot_alias = function(e) {
         if (!length(ansvals)) return(null.data.table())
         if (!length(leftcols)) {
           if (!anyNA(ansvals)) return(.Call(CsubsetDT, x, irows, ansvals))
-          else stop("column(s) not found: ", paste(ansvars[is.na(ansvals)],collapse=", "))
+          else stop("column(s) not found: ", brackify(ansvars[is.na(ansvals)]))
         }
         # else the NA in ansvals are for join inherited scope (test 1973), and NA could be in irows from join and data in i should be returned (test 1977)
         #   in both cases leave to the R-level subsetting of i and x together further below
@@ -835,7 +836,7 @@ replace_dot_alias = function(e) {
           if (!typeof(byval[[jj]]) %chin% ORDERING_TYPES) stop("column or expression ",jj," of 'by' or 'keyby' is type ",typeof(byval[[jj]]),". Do not quote column names. Usage: DT[,sum(colC),by=list(colA,month(colB))]")
         }
         tt = vapply_1i(byval,length)
-        if (any(tt!=xnrow)) stop(gettextf("The items in the 'by' or 'keyby' list are length(s) (%s). Each must be length %d; the same length as there are rows in x (after subsetting if i is provided).", paste(tt, collapse=","), xnrow, domain='R-data.table'))
+        if (any(tt!=xnrow)) stop(domain=NA, gettextf("The items in the 'by' or 'keyby' list are length(s) (%s). Each must be length %d; the same length as there are rows in x (after subsetting if i is provided).", paste(tt, collapse=","), xnrow))
         if (is.null(bynames)) bynames = rep.int("",length(byval))
         if (length(idx <- which(!nzchar(bynames))) && !bynull) {
           # TODO: improve this and unify auto-naming of jsub and bysub
@@ -889,7 +890,7 @@ replace_dot_alias = function(e) {
             # attempt to auto-name unnamed columns
             for (jj in which(nm=="")) {
               thisq = q[[jj + 1L]]
-              if (missing(thisq)) stop(gettextf("Item %d of the .() or list() passed to j is missing", jj, domain="R-data.table")) #3507
+              if (missing(thisq)) stop(domain=NA, gettextf("Item %d of the .() or list() passed to j is missing", jj)) #3507
               if (is.name(thisq)) nm[jj] = drop_dot(thisq)
               # TO DO: if call to a[1] for example, then call it 'a' too
             }
@@ -988,7 +989,7 @@ replace_dot_alias = function(e) {
         # added 'mget' - fix for #994
         if (any(c("get", "mget") %chin% av)){
           if (verbose)
-            cat(gettextf("'(m)get' found in j. ansvars being set to all columns. Use .SDcols or a single j=eval(macro) instead. Both will detect the columns used which is important for efficiency.\nOld ansvars: %s \n", brackify(ansvars), domain = "R-data.table"))
+            cat(gettextf("'(m)get' found in j. ansvars being set to all columns. Use .SDcols or a single j=eval(macro) instead. Both will detect the columns used which is important for efficiency.\nOld ansvars: %s \n", brackify(ansvars)))
             # get('varname') is too difficult to detect which columns are used in general
             # eval(macro) column names are detected via the  if jsub[[1]]==eval switch earlier above.
 
@@ -1008,7 +1009,7 @@ replace_dot_alias = function(e) {
           }
           non_sdvars = setdiff(ansvars, sdvars)
           ansvals = chmatch(ansvars, names_x)
-          if (verbose) cat(gettextf("New ansvars: %s \n", brackify(ansvars), domain = "R-data.table"))
+          if (verbose) cat(gettextf("New ansvars: %s \n", brackify(ansvars)))
         } else if (length(non_sdvars)) {
           # we've a situation like DT[, c(sum(V1), lapply(.SD, mean)), by=., .SDcols=...] or
           # DT[, lapply(.SD, function(x) x *v1), by=, .SDcols=...] etc.,
@@ -1128,7 +1129,7 @@ replace_dot_alias = function(e) {
               if (is.list(k)) {
                 origj = j = if (name[[1L]] == "$") as.character(name[[3L]]) else eval(name[[3L]], parent.frame(), parent.frame())
                 if (is.character(j)) {
-                  if (length(j)!=1L) stop("Cannot assign to an under-allocated recursively indexed list -- L[[i]][,:=] syntax is only valid when i is length 1, but it's length ", length(j))
+                  if (length(j)!=1L) stop("Cannot assign to an under-allocated recursively indexed list -- L[[i]][,:=] syntax is only valid when i is length 1, but its length is ", length(j))
                   j = match(j, names(k))
                   if (is.na(j)) stop("Internal error -- item '", origj, "' not found in names of list") # nocov
                 }
@@ -1159,7 +1160,7 @@ replace_dot_alias = function(e) {
         xcolsAns = seq_along(ansvars)
         icols = icolsAns = integer()
       } else {
-        if (!length(leftcols)) stop("Internal error -- column(s) not found: ", paste(ansvars[wna],collapse=", ")) # nocov
+        if (!length(leftcols)) stop("Internal error -- column(s) not found: ", brackify(ansvars[wna])) # nocov
         xcols = w[!wna]
         xcolsAns = which(!wna)
         map = c(seq_along(i), leftcols)   # this map is to handle dups in leftcols, #3635
@@ -2333,11 +2334,11 @@ split.data.table = function(x, f, drop = FALSE, by, sorted = FALSE, keep.by = TR
     list(.ll.tech.split=list(.expr)),
     list(.expr = if (join) quote(if(.N == 0L) .SD[0L] else .SD) else as.name(".SD")) # simplify when `nomatch` accept NULL #857 ?
   )
-  by.or.keyby = if (join) "by" else c("by"[!sorted], "keyby"[sorted])[1L]
-  dtq[[by.or.keyby]] = substitute( # retain order, for `join` and `sorted` it will use order of `i` data.table instead of `keyby`.
+  dtq[["by"]] = substitute( # retain order, for `join` and `sorted` it will use order of `i` data.table instead of `keyby`.
     .expr,
-    list(.expr = if(join) {as.name(".EACHI")} else if (flatten) by else .by)
+    list(.expr = if (join) as.name(".EACHI") else if (flatten) by else .by)
   )
+  dtq[["keyby"]] = if (join) FALSE else sorted
   dtq[[".SDcols"]] = if (keep.by) names(x) else setdiff(names(x), if (flatten) by else .by)
   if (join) dtq[["on"]] = if (flatten) by else .by
   dtq = as.call(dtq)
@@ -2941,7 +2942,7 @@ isReallyReal = function(x) {
     RHS = eval(stub[[3L]], x, enclos)
     if (is.list(RHS)) RHS = as.character(RHS)  # fix for #961
     if (length(RHS) != 1L && !operator %chin% c("%in%", "%chin%")){
-      if (length(RHS) != nrow(x)) stop(gettextf("RHS of %s is length %d which is not 1 or nrow (%d). For robustness, no recycling is allowed (other than of length 1 RHS). Consider %%in%% instead.", operator, length(RHS), nrow(x), domain="R-data.table"), domain=NA)
+      if (length(RHS) != nrow(x)) stop(domain=NA, gettextf("RHS of %s is length %d which is not 1 or nrow (%d). For robustness, no recycling is allowed (other than of length 1 RHS). Consider %%in%% instead.", operator, length(RHS), nrow(x)))
       return(NULL) # DT[colA == colB] regular element-wise vector scan
     }
     if ( mode(x[[col]]) != mode(RHS) ||                # mode() so that doubleLHS/integerRHS and integerLHS/doubleRHS!isReallyReal are optimized (both sides mode 'numeric')
@@ -2989,10 +2990,11 @@ isReallyReal = function(x) {
   if(is.null(idx)){
       ## check whether key fits the columns in i.
       ## order of key columns makes no difference, as long as they are all upfront in the key, I believe.
-      if (all(names(i) %chin% head(key(x), length(i)))){
-          if (verbose) {cat("Optimized subsetting with key '", paste0( head(key(x), length(i)), collapse = ", "),"'\n",sep="");flush.console()}
+      key_head = head(key(x), length(i))
+      if (all(names(i) %chin% key_head)){
+          if (verbose) {cat("Optimized subsetting with key '", brackify(key_head),"'\n",sep="");flush.console()}
           idx = integer(0L) ## integer(0L) not NULL! Indicates that x is ordered correctly.
-          idxCols = head(key(x), length(i)) ## in correct order!
+          idxCols = key_head ## in correct order!
       }
   }
   if (is.null(idx)){
@@ -3126,7 +3128,7 @@ isReallyReal = function(x) {
   }
   idx_op = match(operators, ops, nomatch=0L)
   if (any(idx_op %in% c(0L, 6L)))
-    stop(gettextf("Invalid join operators %s. Only allowed operators are %s.", brackify(operators[idx_op %in% c(0L, 6L)]), brackify(ops[1:5]), domain="R-data.table"), domain=NA)
+    stop(domain=NA, gettextf("Invalid join operators %s. Only allowed operators are %s.", brackify(operators[idx_op %in% c(0L, 6L)]), brackify(ops[1:5])))
   ## the final on will contain the xCol as name, the iCol as value
   on = iCols
   names(on) = xCols

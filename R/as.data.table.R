@@ -20,7 +20,7 @@ as.data.table.Date = as.data.table.ITime = function(x, keep.rownames=FALSE, key=
   tt = deparse(substitute(x))[1L]
   nm = names(x)
   # FR #2356 - transfer names of named vector as "rn" column if required
-  if (!identical(keep.rownames, FALSE) & !is.null(nm))
+  if (!identical(keep.rownames, FALSE) && !is.null(nm))
     x = list(nm, unname(x))
   else x = list(x)
   if (tt == make.names(tt)) {
@@ -33,6 +33,8 @@ as.data.table.Date = as.data.table.ITime = function(x, keep.rownames=FALSE, key=
 
 # as.data.table.table - FR #361
 as.data.table.table = function(x, keep.rownames=FALSE, key=NULL, ...) {
+  # prevent #4179 & just cut out here
+  if (any(dim(x) == 0L)) return(null.data.table())
   # Fix for bug #43 - order of columns are different when doing as.data.table(with(DT, table(x, y)))
   val = rev(dimnames(provideDimnames(x)))
   if (is.null(names(val)) || !any(nzchar(names(val))))

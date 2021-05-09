@@ -122,7 +122,7 @@ SEXP measurelist(SEXP measure, SEXP dtnames) {
     SEXP x = VECTOR_ELT(measure, i);
     switch(TYPEOF(x)) {
     case STRSXP  :
-      SET_VECTOR_ELT(ans, i, chmatch_na(x, dtnames));
+      SET_VECTOR_ELT(ans, i, chmatch(x, dtnames, NA_INTEGER));
       break;
     case REALSXP :
       SET_VECTOR_ELT(ans, i, coerceVector(x, INTSXP));
@@ -156,22 +156,22 @@ static SEXP unlist_(SEXP xint) {
 }
 
 bool invalid_measure(int i, int ncol) {
-  return i != NA_INTEGER && (i <= 0 || i > ncol);
+  return (i<=0 && i!=NA_INTEGER) || i>ncol;
 }
 
 SEXP checkVars(SEXP DT, SEXP id, SEXP measure, Rboolean verbose) {
-  int i, ncol=LENGTH(DT), targetcols=0, protecti=0, u=0, v=0;
+  int ncol=LENGTH(DT), targetcols=0, protecti=0, u=0, v=0;
   SEXP thiscol, idcols = R_NilValue, valuecols = R_NilValue, tmp, tmp2, booltmp, unqtmp, ans;
   SEXP dtnames = PROTECT(getAttrib(DT, R_NamesSymbol)); protecti++;
 
   if (isNull(id) && isNull(measure)) {
-    for (i=0; i<ncol; i++) {
+    for (int i=0; i<ncol; ++i) {
       thiscol = VECTOR_ELT(DT, i);
       if ((isInteger(thiscol) || isNumeric(thiscol) || isLogical(thiscol)) && !isFactor(thiscol)) targetcols++;
     }
     idcols = PROTECT(allocVector(INTSXP, ncol-targetcols)); protecti++;
     tmp = PROTECT(allocVector(INTSXP, targetcols)); protecti++;
-    for (i=0; i<ncol; i++) {
+    for (int i=0; i<ncol; ++i) {
       thiscol = VECTOR_ELT(DT, i);
       if ((isInteger(thiscol) || isNumeric(thiscol) || isLogical(thiscol)) && !isFactor(thiscol)) {
         INTEGER(tmp)[u++] = i+1;
@@ -189,7 +189,7 @@ SEXP checkVars(SEXP DT, SEXP id, SEXP measure, Rboolean verbose) {
     default : error(_("Unknown 'id.vars' type %s, must be character or integer vector"), type2char(TYPEOF(id)));
     }
     booltmp = PROTECT(duplicated(tmp, FALSE)); protecti++;
-    for (i=0; i<length(tmp); i++) {
+    for (int i=0; i<length(tmp); ++i) {
       if (INTEGER(tmp)[i] <= 0 || INTEGER(tmp)[i] > ncol)
         error(_("One or more values in 'id.vars' is invalid."));
       else if (!LOGICAL(booltmp)[i]) targetcols++;
@@ -197,7 +197,7 @@ SEXP checkVars(SEXP DT, SEXP id, SEXP measure, Rboolean verbose) {
     }
     unqtmp = PROTECT(allocVector(INTSXP, targetcols)); protecti++;
     u = 0;
-    for (i=0; i<length(booltmp); i++) {
+    for (int i=0; i<length(booltmp); ++i) {
       if (!LOGICAL(booltmp)[i]) {
         INTEGER(unqtmp)[u++] = INTEGER(tmp)[i];
       }
@@ -223,7 +223,7 @@ SEXP checkVars(SEXP DT, SEXP id, SEXP measure, Rboolean verbose) {
       tmp = PROTECT(unlist_(tmp2)); protecti++;
     }
     booltmp = PROTECT(duplicated(tmp, FALSE)); protecti++;
-    for (i=0; i<length(tmp); i++) {
+    for (int i=0; i<length(tmp); ++i) {
       if (invalid_measure(INTEGER(tmp)[i], ncol))
         error(_("One or more values in 'measure.vars' is invalid."));
       else if (!LOGICAL(booltmp)[i]) targetcols++;
@@ -231,7 +231,7 @@ SEXP checkVars(SEXP DT, SEXP id, SEXP measure, Rboolean verbose) {
     }
     unqtmp = PROTECT(allocVector(INTSXP, targetcols)); protecti++;
     u = 0;
-    for (i=0; i<length(booltmp); i++) {
+    for (int i=0; i<length(booltmp); ++i) {
       if (!LOGICAL(booltmp)[i]) {
         INTEGER(unqtmp)[u++] = INTEGER(tmp)[i];
       }
@@ -253,7 +253,7 @@ SEXP checkVars(SEXP DT, SEXP id, SEXP measure, Rboolean verbose) {
     case INTSXP  : tmp = id; break;
     default : error(_("Unknown 'id.vars' type %s, must be character or integer vector"), type2char(TYPEOF(id)));
     }
-    for (i=0; i<length(tmp); i++) {
+    for (int i=0; i<length(tmp); ++i) {
       if (INTEGER(tmp)[i] <= 0 || INTEGER(tmp)[i] > ncol)
         error(_("One or more values in 'id.vars' is invalid."));
     }
@@ -269,7 +269,7 @@ SEXP checkVars(SEXP DT, SEXP id, SEXP measure, Rboolean verbose) {
     if (isNewList(measure)) {
       tmp = PROTECT(unlist_(tmp2)); protecti++;
     }
-    for (i=0; i<length(tmp); i++) {
+    for (int i=0; i<length(tmp); ++i) {
       if (invalid_measure(INTEGER(tmp)[i], ncol)) 
         error(_("One or more values in 'measure.vars' is invalid."));
     }
@@ -287,30 +287,28 @@ SEXP checkVars(SEXP DT, SEXP id, SEXP measure, Rboolean verbose) {
 }
 
 struct processData {
-  SEXP RCHK;  // a 2 item list holding vars (result of checkVars) and naidx. PROTECTed up in fmelt so that preprocess() doesn't need to PROTECT. To pass rchk, #2865
-  SEXP idcols,
+  SEXP RCHK;      // a 2 item list holding vars (result of checkVars) and naidx. PROTECTed up in fmelt so that preprocess() doesn't need to PROTECT. To pass rchk, #2865
+  SEXP idcols,    // convenience pointers into RCHK[0][0], RCHK[0][1] and RCHK[1] respectively
     variable_table, // NULL or data for variable column(s).
-    valuecols, // list with one element per output/value column, each
-  // element is an integer vector.
-    naidx; // convenience pointers into RCHK[0][0], RCHK[0][1] and RCHK[1] respectively
+    valuecols,    // list with one element per output/value column, each element is an integer vector.
+    naidx; 
   int *isfactor,
-    *leach, // length of each element of the valuecols(measure.vars) list.
+    *leach,       // length of each element of the valuecols(measure.vars) list.
     *isidentical; // are all inputs for this value column the same type?
-  int lids, // number of id columns.
-    lvars, // number of variable columns.
-    lvalues, // number of value columns.
-    lmax,  //max length of valuecols elements / number of times to repeat ids.
-    totlen, // of output/long DT result of melt operation.
-    nrow; // of input/wide DT to be melted.
+  int lids,       // number of id columns.
+    lvars,        // number of variable columns.
+    lvalues,      // number of value columns.
+    lmax,         // max length of valuecols elements / number of times to repeat ids.
+    totlen,       // of output/long DT result of melt operation.
+    nrow;         // of input/wide DT to be melted.
   SEXPTYPE *maxtype;
-  Rboolean narm; // remove missing values?
+  Rboolean narm;  // remove missing values?
 };
 
 static void preprocess(SEXP DT, SEXP id, SEXP measure, SEXP varnames, SEXP valnames, Rboolean narm, Rboolean verbose, struct processData *data) {
 
   SEXP vars,tmp,thiscol;
   SEXPTYPE type;
-  int i,j;
   data->lmax = 0; data->totlen = 0; data->nrow = length(VECTOR_ELT(DT, 0));
   SET_VECTOR_ELT(data->RCHK, 0, vars = checkVars(DT, id, measure, verbose));
   data->idcols = VECTOR_ELT(vars, 0);
@@ -328,15 +326,15 @@ static void preprocess(SEXP DT, SEXP id, SEXP measure, SEXP varnames, SEXP valna
   data->isidentical = (int *)R_alloc(data->lvalues, sizeof(int));
   data->isfactor = (int *)R_alloc(data->lvalues, sizeof(int));
   data->maxtype = (SEXPTYPE *)R_alloc(data->lvalues, sizeof(SEXPTYPE));
-  for (i=0; i<data->lvalues; i++) { // for each output column.
+  // first find max type of each output column.
+  for (int i=0; i<data->lvalues; ++i) { // for each output column.
     tmp = VECTOR_ELT(data->valuecols, i);
     data->leach[i] = length(tmp);
     data->isidentical[i] = 1;  // TODO - why 1 and not Rboolean TRUE?
     data->isfactor[i] = 0;  // seems to hold 2 below, so not an Rboolean FALSE here. TODO - better name for variable?
     data->maxtype[i] = 0;   // R_alloc doesn't initialize so careful to here, relied on below
     data->lmax = (data->lmax > data->leach[i]) ? data->lmax : data->leach[i];
-    // first find max type of this output column.
-    for (j=0; j<data->leach[i]; j++) { // for each input column.
+    for (int j=0; j<data->leach[i]; ++j) { // for each input column.
       int this_col_num = INTEGER(tmp)[j];
       if(this_col_num != NA_INTEGER){
         thiscol = VECTOR_ELT(DT, this_col_num-1);
@@ -350,7 +348,7 @@ static void preprocess(SEXP DT, SEXP id, SEXP measure, SEXP varnames, SEXP valna
       }
     }
     // then compute isidentical for this output column.
-    for (j=0; j<data->leach[i]; j++) {
+    for (int j=0; j<data->leach[i]; ++j) {
       int this_col_num = INTEGER(tmp)[j];
       if(this_col_num != NA_INTEGER){
         thiscol = VECTOR_ELT(DT, this_col_num-1);
@@ -654,7 +652,7 @@ SEXP getvarcols(SEXP DT, SEXP dtnames, Rboolean varfactor, Rboolean verbose, str
       setAttrib(target, R_ClassSymbol, ScalarString(char_factor));
     }
   } else { //variable_table specified
-    for (int out_col_i=0; out_col_i<data->lvars; out_col_i++) {
+    for (int out_col_i=0; out_col_i<data->lvars; ++out_col_i) {
       SEXP out_col = VECTOR_ELT(data->variable_table, out_col_i);
       SET_VECTOR_ELT(ansvars, out_col_i, target=allocVector(TYPEOF(out_col), data->totlen));
       for (int j=0, ansloc=0; j<data->lmax; ++j) {
@@ -672,11 +670,11 @@ SEXP getvarcols(SEXP DT, SEXP dtnames, Rboolean varfactor, Rboolean verbose, str
         case LGLSXP : 
           for (int k=0; k<thislen; ++k)
             INTEGER(target)[ansloc++] = INTEGER(out_col)[j];
-	  if (isFactor(out_col)) {
-	    // Do we need a copy here?
-	    setAttrib(target, R_LevelsSymbol, getAttrib(out_col, R_LevelsSymbol));
-	    setAttrib(target, R_ClassSymbol, ScalarString(char_factor));
-	  }
+            if (isFactor(out_col)) {
+              // Do we need a copy here?
+              setAttrib(target, R_LevelsSymbol, getAttrib(out_col, R_LevelsSymbol));
+              setAttrib(target, R_ClassSymbol, ScalarString(char_factor));
+            }
           break;
         default :
           error(_("variable_table does not support column type '%s' for column '%s'."), type2char(TYPEOF(out_col)), CHAR(STRING_ELT(getAttrib(data->variable_table, R_NamesSymbol), out_col_i)));

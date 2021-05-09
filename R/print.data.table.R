@@ -45,10 +45,12 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
   topn = max(as.integer(topn),1L)
   if (print.keys){
     if (!is.null(ky <- key(x)))
-    cat("Key: <", paste(ky, collapse=", "), ">\n", sep="")
+    cat("Key: <", toString(ky), ">\n", sep="")
     if (!is.null(ixs <- indices(x)))
-    cat("Ind", if (length(ixs) > 1L) "ices" else "ex", ": <",
-      paste(ixs, collapse=">, <"), ">\n", sep="")
+    cat(sprintf(
+      ngettext(length(ixs), "Index: %s\n", "Indices: %s\n", domain="R-data.table"),
+      paste0("<", ixs, ">", collapse = ", ")
+    ))
   }
   if (any(dim(x)==0L)) {
     class = if (is.data.table(x)) "table" else "frame"  # a data.frame could be passed to print.data.table() directly, #3363

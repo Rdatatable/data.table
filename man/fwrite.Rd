@@ -6,7 +6,8 @@ As \code{write.csv} but much faster (e.g. 2 seconds versus 1 minute) and just as
 }
 \usage{
 fwrite(x, file = "", append = FALSE, quote = "auto",
-  sep = ",", sep2 = c("","|",""),
+  sep=getOption("datatable.fwrite.sep", ","),
+  sep2 = c("","|",""),
   eol = if (.Platform$OS.type=="windows") "\r\n" else "\n",
   na = "", dec = ".", row.names = FALSE, col.names = TRUE,
   qmethod = c("double","escape"),

@@ -57,7 +57,7 @@ value_vars = function(value.var, varnames) {
   valnames = unique(unlist(value.var))
   iswrong = which(!valnames %chin% varnames)
   if (length(iswrong))
-    stop("value.var values [", paste(value.var[iswrong], collapse=", "), "] are not found in 'data'.")
+    stop("value.var values ", brackify(value.var[iswrong]), " are not found in 'data'.")
   value.var
 }
 
