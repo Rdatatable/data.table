@@ -154,7 +154,7 @@ foverlaps = function(x, y, by.x=if (!is.null(key(x))) key(x) else key(y), by.y=k
   .Call(Clookup, uy, nrow(y), indices(uy, y, yintervals, nomatch=0L, roll=roll), maxgap, minoverlap, mult, type, verbose)
   if (maxgap == 0L && minoverlap == 1L) {
     # iintervals = tail(names(x), 2L)    # iintervals not yet used so commented out for now
-    if (verbose) {last.started.at=proc.time();cat(gettext("binary search(es) done in ...", domain="R-data.table"));flush.console()}
+    if (verbose) {last.started.at=proc.time();catf("binary search(es) done in ...");flush.console()}
     xmatches = indices(uy, x, xintervals, nomatch=0L, roll=roll)
     if (verbose) {cat(timetaken(last.started.at),"\n");flush.console()}
     olaps = .Call(Coverlaps, uy, xmatches, mult, type, nomatch, verbose)

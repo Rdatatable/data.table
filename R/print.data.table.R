@@ -45,7 +45,7 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
   topn = max(as.integer(topn),1L)
   if (print.keys) {
     if (!is.null(ky <- key(x)))
-    cat(gettextf("Key: <%s>\n", toString(ky)))
+    catf("Key: <%s>\n", toString(ky))
     if (!is.null(ixs <- indices(x)))
     cat(sprintf(
       ngettext(length(ixs), "Index: %s\n", "Indices: %s\n"),
@@ -55,9 +55,9 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
   if (any(dim(x)==0L)) {
     class = if (is.data.table(x)) "table" else "frame"  # a data.frame could be passed to print.data.table() directly, #3363
     if (all(dim(x)==0L)) {
-      cat(gettextf("Null data.%s (0 rows and 0 cols)\n", class, domain="R-data.table"))  # See FAQ 2.5 and NEWS item in v1.8.9
+      catf("Null data.%s (0 rows and 0 cols)\n", class)  # See FAQ 2.5 and NEWS item in v1.8.9
     } else {
-      cat(gettextf("Empty data.%s (%d rows and %d cols)", class, NROW(x), NCOL(x), domain="R-data.table"))
+      catf("Empty data.%s (%d rows and %d cols)", class, NROW(x), NCOL(x))
       if (length(x)>0L) cat(": ",paste(head(names(x),6L),collapse=","),if(length(x)>6L)"...",sep="")
       cat("\n")
     }
@@ -234,7 +234,7 @@ trunc_cols_message = function(not_printed, abbs, class, col.names){
   n = length(not_printed)
   if (class && col.names != "none") classes = paste0(" ", tail(abbs, n)) else classes = ""
   cat(sprintf(
-    ngettext(n, domain="R-data.table",
+    ngettext(n,
              "%d variable not shown: %s\n",
              "%d variables not shown: %s\n"),
     n, brackify(paste0(not_printed, classes))

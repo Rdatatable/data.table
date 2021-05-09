@@ -139,3 +139,7 @@ edit.data.table = function(name, ...) {
   setDT(NextMethod('edit', name))[]
 }
 # nocov end
+
+catf = function(fmt, ...) {
+  if (...length()) cat(gettextf(fmt, ...)) else cat(gettext(fmt))
+}

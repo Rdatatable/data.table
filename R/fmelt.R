@@ -63,7 +63,7 @@ melt.data.table = function(data, id.vars, measure.vars, variable.name = "variabl
       as.logical(verbose))
   setDT(ans)
   if (any(duplicated(names(ans)))) {
-    cat(gettext("Duplicate column names found in molten data.table. Setting unique names using 'make.names'\n", domain="R-data.table"))
+    catf("Duplicate column names found in molten data.table. Setting unique names using 'make.names'\n")
     setnames(ans, make.unique(names(ans)))
   }
   setattr(ans, 'sorted', NULL)

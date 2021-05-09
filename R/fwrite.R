@@ -63,7 +63,7 @@ fwrite = function(x, file="", append=FALSE, quote="auto",
   file = path.expand(file)  # "~/foo/bar"
   if (append && (file=="" || file.exists(file))) {
     if (missing(col.names)) col.names = FALSE
-    if (verbose) cat(gettext("Appending to existing file so setting bom=FALSE and yaml=FALSE\n", domain="R-data.table"))
+    if (verbose) catf("Appending to existing file so setting bom=FALSE and yaml=FALSE\n")
     bom = FALSE
     yaml = FALSE
   }

@@ -50,7 +50,7 @@ update.dev.pkg = function(object="data.table", repo="https://Rdatatable.gitlab.i
 .git = function(quiet=FALSE, lib.loc=NULL) {
   ans = unname(read.dcf(system.file("DESCRIPTION", package="data.table", lib.loc=lib.loc, mustWork=TRUE), fields="Revision")[, "Revision"])
   if (!quiet && is.na(ans))
-    cat(gettext("Git revision is not available. Most likely data.table was installed from CRAN or local archive.\nGit revision is available when installing from our repositories 'https://Rdatatable.gitlab.io/data.table' and 'https://Rdatatable.github.io/data.table'.\n", domain="R-data.table"))
+    catf("Git revision is not available. Most likely data.table was installed from CRAN or local archive.\nGit revision is available when installing from our repositories 'https://Rdatatable.gitlab.io/data.table' and 'https://Rdatatable.github.io/data.table'.\n")
   ans
 }
 
