@@ -17,7 +17,7 @@ Sometimes useful in determining whether a value has been copied or not, programm
     A character vector length 1.
 }
 \references{
-\url{http://stackoverflow.com/a/10913296/403310} (but implemented in C without using \code{.Internal(inspect())})
+\url{https://stackoverflow.com/a/10913296/403310} (but implemented in C without using \code{.Internal(inspect())})
 }
 \keyword{ data }
 

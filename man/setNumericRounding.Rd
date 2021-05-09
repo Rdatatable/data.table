@@ -37,9 +37,9 @@ precision).
 }
 \seealso{
 \code{\link{datatable-optimize}}\cr
-\url{http://en.wikipedia.org/wiki/Double-precision_floating-point_format}\cr
-\url{http://en.wikipedia.org/wiki/Floating_point}\cr
-\url{http://docs.oracle.com/cd/E19957-01/806-3568/ncg_goldberg.html}
+\url{https://en.wikipedia.org/wiki/Double-precision_floating-point_format}\cr
+\url{https://en.wikipedia.org/wiki/Floating_point}\cr
+\url{https://docs.oracle.com/cd/E19957-01/806-3568/ncg_goldberg.html}
 }
 \examples{
 DT = data.table(a=seq(0,1,by=0.2),b=1:2, key="a")

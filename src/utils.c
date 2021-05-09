@@ -141,61 +141,6 @@ SEXP colnamesInt(SEXP x, SEXP cols, SEXP check_dups) {
   return ricols;
 }
 
-void coerceFill(SEXP fill, double *dfill, int32_t *ifill, int64_t *i64fill) {
-  if (xlength(fill) != 1) error(_("%s: fill argument must be length 1"), __func__);
-  if (isInteger(fill)) {
-    if (INTEGER(fill)[0]==NA_INTEGER) {
-      ifill[0] = NA_INTEGER; dfill[0] = NA_REAL; i64fill[0] = NA_INTEGER64;
-    } else {
-      ifill[0] = INTEGER(fill)[0];
-      dfill[0] = (double)(INTEGER(fill)[0]);
-      i64fill[0] = (int64_t)(INTEGER(fill)[0]);
-    }
-  } else if (isReal(fill)) {
-    if (Rinherits(fill,char_integer64)) {  // Rinherits true for nanotime
-      int64_t rfill = ((int64_t *)REAL(fill))[0];
-      if (rfill==NA_INTEGER64) {
-        ifill[0] = NA_INTEGER; dfill[0] = NA_REAL; i64fill[0] = NA_INTEGER64;
-      } else {
-        ifill[0] = (rfill>INT32_MAX || rfill<=INT32_MIN) ? NA_INTEGER : (int32_t)rfill;
-        dfill[0] = (double)rfill;
-        i64fill[0] = rfill;
-      }
-    } else {
-      double rfill = REAL(fill)[0];
-      if (ISNAN(rfill)) {
-        // NA -> NA, NaN -> NaN
-        ifill[0] = NA_INTEGER; dfill[0] = rfill; i64fill[0] = NA_INTEGER64;
-      } else {
-        ifill[0] = (!R_FINITE(rfill) || rfill>INT32_MAX || rfill<=INT32_MIN) ? NA_INTEGER : (int32_t)rfill;
-        dfill[0] = rfill;
-        i64fill[0] = (!R_FINITE(rfill) || rfill>(double)INT64_MAX || rfill<=(double)INT64_MIN) ? NA_INTEGER64 : (int64_t)rfill;
-      }
-    }
-  } else if (isLogical(fill) && LOGICAL(fill)[0]==NA_LOGICAL) {
-    ifill[0] = NA_INTEGER; dfill[0] = NA_REAL; i64fill[0] = NA_INTEGER64;
-  } else {
-    error(_("%s: fill argument must be numeric"), __func__);
-  }
-}
-SEXP coerceFillR(SEXP fill) {
-  int protecti=0;
-  double dfill=NA_REAL;
-  int32_t ifill=NA_INTEGER;
-  int64_t i64fill=NA_INTEGER64;
-  coerceFill(fill, &dfill, &ifill, &i64fill);
-  SEXP ans = PROTECT(allocVector(VECSXP, 3)); protecti++;
-  SET_VECTOR_ELT(ans, 0, allocVector(INTSXP, 1));
-  SET_VECTOR_ELT(ans, 1, allocVector(REALSXP, 1));
-  SET_VECTOR_ELT(ans, 2, allocVector(REALSXP, 1));
-  INTEGER(VECTOR_ELT(ans, 0))[0] = ifill;
-  REAL(VECTOR_ELT(ans, 1))[0] = dfill;
-  ((int64_t *)REAL(VECTOR_ELT(ans, 2)))[0] = i64fill;
-  setAttrib(VECTOR_ELT(ans, 2), R_ClassSymbol, ScalarString(char_integer64));
-  UNPROTECT(protecti);
-  return ans;
-}
-
 inline bool INHERITS(SEXP x, SEXP char_) {
   // Thread safe inherits() by pre-calling install() in init.c and then
   // passing those char_* in here for simple and fast non-API pointer compare.
@@ -234,31 +179,32 @@ bool Rinherits(SEXP x, SEXP char_) {
 }
 
 SEXP copyAsPlain(SEXP x) {
-  // v1.12.2 and before used standard R duplicate() to do this. But that's not guaranteed to not return an ALTREP.
+  // v1.12.2 and before used standard R duplicate() to do this. But duplicate() is not guaranteed to not return an ALTREP.
   // e.g. ALTREP 'wrapper' on factor column (with materialized INTSXP) in package VIM under example(hotdeck)
   //      .Internal(inspect(x[[5]]))
   //      @558adf4d9508 13 INTSXP g0c0 [OBJ,NAM(7),ATT]  wrapper [srt=-2147483648,no_na=0]
-  // 'AsPlain' is intended to convey unALTREP-ing; i.e. materializing and removing any ALTREP attributes too
-  // For non-ALTREP this should do the same as R's duplicate(); but doesn't quite currently, so has to divert to duplicated() for now
+  // 'AsPlain' is intended to convey unALTREP-ing; i.e. materializing and removing any ALTREP wrappers/attributes
+  // For non-ALTREP this should do the same as R's duplicate().
   // Intended for use on columns; to either un-ALTREP them or duplicate shared memory columns; see copySharedColumns() below
   // Not intended to be called on a DT VECSXP where a concept of 'deep' might refer to whether the columns are copied
-
-  if (!ALTREP(x)) return duplicate(x);
-  // would prefer not to have this line, but without it test 1639.064 fails :
-  //   Running test id 1639.064      Error in `[.data.table`(r, -ii) :
-  //   Item 2 of i is -1 and item 1 is NA. Cannot mix negatives and NA.
-  //   Calls: test.data.table ... FUN -> make.levels -> rbindlist -> [ -> [.data.table
-  // Perhaps related to row names and the copyMostAttrib() below is not quite sufficient
-
-  size_t n = XLENGTH(x);
-  SEXP ans = PROTECT(allocVector(TYPEOF(x), XLENGTH(x)));
-  switch (TYPEOF(ans)) {
+  
+  if (isNull(x)) {
+    // deal with up front because isNewList(R_NilValue) is true
+    return R_NilValue;
+  }
+  if (!isVectorAtomic(x) && !isNewList(x)) {
+    // e.g. defer to R the CLOSXP in test 173.3 where a list column item is the function 'mean'
+    return duplicate(x);
+  }
+  const int64_t n = XLENGTH(x);
+  SEXP ans = PROTECT(allocVector(TYPEOF(x), n));
+  switch (TYPEOF(x)) {
   case RAWSXP:
-    memcpy(RAW(ans),     RAW(x),     n*sizeof(Rbyte));           // # nocov; add coverage when ALTREP is turned on for all types
-    break;                                                       // # nocov
+    memcpy(RAW(ans),     RAW(x),     n*sizeof(Rbyte));
+    break;
   case LGLSXP:
-    memcpy(LOGICAL(ans), LOGICAL(x), n*sizeof(Rboolean));        // # nocov
-    break;                                                       // # nocov
+    memcpy(LOGICAL(ans), LOGICAL(x), n*sizeof(Rboolean));
+    break;
   case INTSXP:
     memcpy(INTEGER(ans), INTEGER(x), n*sizeof(int));             // covered by 10:1 after test 178
     break;
@@ -266,22 +212,23 @@ SEXP copyAsPlain(SEXP x) {
     memcpy(REAL(ans),    REAL(x),    n*sizeof(double));          // covered by as.Date("2013-01-01")+seq(1,1000,by=10) after test 1075
     break;
   case CPLXSXP:
-    memcpy(COMPLEX(ans), COMPLEX(x), n*sizeof(Rcomplex));        // # nocov
-    break;                                                       // # nocov
+    memcpy(COMPLEX(ans), COMPLEX(x), n*sizeof(Rcomplex));
+    break;
   case STRSXP: {
     const SEXP *xp=STRING_PTR(x);                                // covered by as.character(as.hexmode(1:500)) after test 642
-    for (R_xlen_t i=0; i<n; ++i) SET_STRING_ELT(ans, i, xp[i]);
+    for (int64_t i=0; i<n; ++i) SET_STRING_ELT(ans, i, xp[i]);
   } break;
   case VECSXP: {
-    const SEXP *xp=SEXPPTR_RO(x);                                // # nocov
-    for (R_xlen_t i=0; i<n; ++i) SET_VECTOR_ELT(ans, i, xp[i]);  // # nocov
-  } break;                                                       // # nocov
-  default:
+    const SEXP *xp=SEXPPTR_RO(x);
+    for (int64_t i=0; i<n; ++i) SET_VECTOR_ELT(ans, i, copyAsPlain(xp[i]));
+  } break;
+  default:                                                                                           // # nocov
     error(_("Internal error: unsupported type '%s' passed to copyAsPlain()"), type2char(TYPEOF(x))); // # nocov
   }
-  copyMostAttrib(x, ans); // e.g. factor levels, class etc, but not names, dim or dimnames
+  DUPLICATE_ATTRIB(ans, x);
+  // aside: unlike R's duplicate we do not copy truelength here; important for dogroups.c which uses negative truelenth to mark its specials
   if (ALTREP(ans))
-    error(_("Internal error: type '%s' passed to copyAsPlain() but it seems copyMostAttrib() retains ALTREP attributes"), type2char(TYPEOF(x))); // # nocov
+    error(_("Internal error: copyAsPlain returning ALTREP for type '%s'"), type2char(TYPEOF(x))); // # nocov
   UNPROTECT(1);
   return ans;
 }
@@ -291,30 +238,39 @@ void copySharedColumns(SEXP x) {
   if (!isNewList(x) || ncol==1) return;
   bool *shared = (bool *)R_alloc(ncol, sizeof(bool)); // on R heap in case alloc fails
   int *savetl = (int *)R_alloc(ncol, sizeof(int));  // on R heap for convenience but could be a calloc
-  int nShared=0, thistl=0;
   const SEXP *xp = SEXPPTR_RO(x);
+  // first save the truelength, which may be negative on specials in dogroups, and set to zero; test 2157
+  // the savetl() function elsewhere is for CHARSXP. Here, we are using truelength on atomic vectors.
+  for (int i=0; i<ncol; ++i) {
+    const SEXP thiscol = xp[i];
+    savetl[i] = ALTREP(thiscol) ? 0 : TRUELENGTH(thiscol);
+    SET_TRUELENGTH(thiscol, 0);
+  } 
+  int nShared=0;
   for (int i=0; i<ncol; ++i) {
     SEXP thiscol = xp[i];
-    if (ALTREP(thiscol) || (thistl=TRUELENGTH(thiscol))<0) {
-      shared[i] = true;
+    if (ALTREP(thiscol) || TRUELENGTH(thiscol)<0) {
+      shared[i] = true;  // we mark ALTREP as 'shared' too, whereas 'tocopy' would be better word to use for ALTREP
       nShared++;
-      // do not copyAsPlain() here as the alloc might fail: careful to restore tl first to all columns.
-      // Aside: thistl is which column shares the same address as this one in case that's ever useful in future.
+      // do not copyAsPlain() here yet, as its alloc might fail. Must restore tl first to all columns before attempting any copies.
     } else {
-      shared[i] = false;
-      savetl[i] = thistl;  // these are vectors which are all expected to have tl, unlike CHARSXP which often don't (savetl() has CHARSXP in mind)
-      SET_TRUELENGTH(thiscol, -i-1);  // just on plain vectors, not on ALTREP
+      shared[i] = false;              // so the first column will never be shared (unless it is an altrep) even it is shared
+                                      // 'shared' means a later column shares an earlier column
+      SET_TRUELENGTH(thiscol, -i-1);  // -i-1 so that if, for example, column 3 shares column 1, in iteration 3 we'll know not
+                                      // only that the 3rd column is shared with an earlier column, but which one too. Although
+                                      // we don't use that information currently, we could do in future.  
     }
   }
-  // now we know nShared and which ones they are (if any), restore original tl back to all columns
+  // now we know nShared and which ones they are (if any), restore original tl back to the unique set of columns
   for (int i=0; i<ncol; ++i) {
-    if (!shared[i]) SET_TRUELENGTH(VECTOR_ELT(x, i), savetl[i]);
+    if (!shared[i]) SET_TRUELENGTH(xp[i], savetl[i]);
+    //  ^^^^^^^^^^ important because if there are shared columns, the dup will have savetl==0 but we want the first restore to stand
   }
   // now that truelength has been restored for all columns, we can finally call copyAsPlain()
   if (nShared) {
     for (int i=0; i<ncol; ++i) {
       if (shared[i])
-        SET_VECTOR_ELT(x, i, copyAsPlain(VECTOR_ELT(x, i)));
+        SET_VECTOR_ELT(x, i, copyAsPlain(xp[i]));
     }
     if (GetVerbose()) Rprintf(_("Found and copied %d column%s with a shared memory address\n"), nShared, nShared>1?"s":"");
     // GetVerbose() (slightly expensive call of all options) called here only when needed
@@ -363,3 +319,73 @@ SEXP coerceUtf8IfNeeded(SEXP x) {
   return(ans);
 }
 
+// class1 is used by coerseAs only, which is used by frollR.c and nafill.c only
+const char *class1(SEXP x) {
+  SEXP cl = getAttrib(x, R_ClassSymbol);
+  if (length(cl))
+    return(CHAR(STRING_ELT(cl, 0)));
+  SEXP d = getAttrib(x, R_DimSymbol);
+  int nd = length(d);
+  if (nd) {
+    if (nd==2)
+      return "matrix";
+    else
+      return "array";
+  }
+  SEXPTYPE t = TYPEOF(x);
+  // see TypeTable in src/main/utils.c to compare to the differences here vs type2char
+  switch(t) {
+  case CLOSXP: case SPECIALSXP: case BUILTINSXP:
+    return "function";
+  case REALSXP:
+    return "numeric";
+  case SYMSXP:
+    return "name";
+  case LANGSXP:
+    return "call";
+  default:
+    return type2char(t);
+  }
+}
+
+// main motivation for this function is to have coercion helper that is aware of int64 NAs, unline base R coerce #3913
+SEXP coerceAs(SEXP x, SEXP as, SEXP copyArg) {
+  // copyArg does not update in place, but only IF an object is of the same type-class as class to be coerced, it will return with no copy
+  if (!isVectorAtomic(x))
+    error("'x' is not atomic");
+  if (!isVectorAtomic(as))
+    error("'as' is not atomic");
+  if (!isNull(getAttrib(x, R_DimSymbol)))
+    error("'x' must not be matrix or array");
+  if (!isNull(getAttrib(as, R_DimSymbol)))
+    error("'as' must not be matrix or array");
+  bool verbose = GetVerbose()>=2; // verbose level 2 required
+  if (!LOGICAL(copyArg)[0] && TYPEOF(x)==TYPEOF(as) && class1(x)==class1(as)) {
+    if (verbose)
+      Rprintf("copy=false and input already of expected type and class %s[%s]\n", type2char(TYPEOF(x)), class1(x));
+    copyMostAttrib(as, x); // so attrs like factor levels are same for copy=T|F
+    return(x);
+  }
+  int len = LENGTH(x);
+  SEXP ans = PROTECT(allocNAVectorLike(as, len));
+  if (verbose)
+    Rprintf("Coercing %s[%s] into %s[%s]\n", type2char(TYPEOF(x)), class1(x), type2char(TYPEOF(as)), class1(as));
+  const char *ret = memrecycle(/*target=*/ans, /*where=*/R_NilValue, /*start=*/0, /*len=*/LENGTH(x), /*source=*/x, /*sourceStart=*/0, /*sourceLen=*/-1, /*colnum=*/0, /*colname=*/"");
+  if (ret)
+    warning(_("%s"), ret);
+  UNPROTECT(1);
+  return ans;
+}
+
+#ifndef NOZLIB
+#include <zlib.h>
+#endif
+SEXP dt_zlib_version() {
+  char out[51];
+#ifndef NOZLIB
+  snprintf(out, 50, "zlibVersion()==%s ZLIB_VERSION==%s", zlibVersion(), ZLIB_VERSION);
+#else
+  snprintf(out, 50, "zlib header files were not found when data.table was compiled");
+#endif
+  return ScalarString(mkChar(out));
+}

@@ -20,7 +20,7 @@ SEXP cj(SEXP base_list) {
     case INTSXP: {
       const int *restrict sourceP = INTEGER(source);
       int *restrict targetP = INTEGER(target);
-      #pragma omp parallel for num_threads(getDTthreads())
+      #pragma omp parallel for num_threads(getDTthreads(thislen*eachrep, true))
       // default static schedule so two threads won't write to same cache line in last column
       // if they did write to same cache line (and will when last column's thislen is small) there's no correctness issue
       for (int i=0; i<thislen; ++i) {
@@ -28,7 +28,7 @@ SEXP cj(SEXP base_list) {
         const int end = (i+1)*eachrep;
         for (int j=i*eachrep; j<end; ++j) targetP[j] = item;  // no div, mod or read ops inside loop; just rep a const contiguous write
       }
-      #pragma omp parallel for num_threads(getDTthreads())
+      #pragma omp parallel for num_threads(getDTthreads(ncopy*blocklen, true))
       for (int i=1; i<ncopy; ++i) {
         memcpy(targetP + i*blocklen, targetP, blocklen*sizeof(int));
       }
@@ -36,13 +36,13 @@ SEXP cj(SEXP base_list) {
     case REALSXP: {
       const double *restrict sourceP = REAL(source);
       double *restrict targetP = REAL(target);
-      #pragma omp parallel for num_threads(getDTthreads())
+      #pragma omp parallel for num_threads(getDTthreads(thislen*eachrep, true))
       for (int i=0; i<thislen; ++i) {
         const double item = sourceP[i];
         const int end=(i+1)*eachrep;
         for (int j=i*eachrep; j<end; ++j) targetP[j] = item;
       }
-      #pragma omp parallel for num_threads(getDTthreads())
+      #pragma omp parallel for num_threads(getDTthreads(ncopy*blocklen, true))
       for (int i=1; i<ncopy; ++i) {
         memcpy(targetP + i*blocklen, targetP, blocklen*sizeof(double));
       }
@@ -50,13 +50,13 @@ SEXP cj(SEXP base_list) {
     case CPLXSXP: {
       const Rcomplex *restrict sourceP = COMPLEX(source);
       Rcomplex *restrict targetP = COMPLEX(target);
-      #pragma omp parallel for num_threads(getDTthreads())
+      #pragma omp parallel for num_threads(getDTthreads(thislen*eachrep, true))
       for (int i=0; i<thislen; ++i) {
         const Rcomplex item = sourceP[i];
         const int end=(i+1)*eachrep;
         for (int j=i*eachrep; j<end; ++j) targetP[j] = item;
       }
-      #pragma omp parallel for num_threads(getDTthreads())
+      #pragma omp parallel for num_threads(getDTthreads(ncopy*blocklen, true))
       for (int i=1; i<ncopy; ++i) {
         memcpy(targetP + i*blocklen, targetP, blocklen*sizeof(Rcomplex));
       }
