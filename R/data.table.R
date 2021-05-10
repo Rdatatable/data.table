@@ -419,9 +419,11 @@ replace_dot_alias = function(e) {
         len_common_names = length(common_names)
         if (!len_common_names) stop("Attempting to do natural join but no common columns in provided tables")
         if (verbose) {
-          which_cols_msg = if (len_common_names == length(x)) " all 'x' columns"
-          else paste(":", brackify(common_names))
-          cat("Joining but 'x' has no key, natural join using", which_cols_msg, "\n", sep = "")
+          which_cols_msg = if (len_common_names == length(x)) {
+            catf("Joining but 'x' has no key, natural join using all 'x' columns")
+          } else {
+            catf("Joining but 'x' has no key, natural join using: %s", brackify(common_names))
+          }
         }
         on = common_names
       }
@@ -449,10 +451,10 @@ replace_dot_alias = function(e) {
       # Implementation for not-join along with by=.EACHI, #604
       if (notjoin && (byjoin || mult != "all")) { # mult != "all" needed for #1571
         notjoin = FALSE
-        if (verbose) {last.started.at=proc.time();cat("not-join called with 'by=.EACHI'; Replacing !i with i=setdiff_(x,i) ...");flush.console()}
+        if (verbose) {last.started.at=proc.time();catf("not-join called with 'by=.EACHI'; Replacing !i with i=setdiff_(x,i) ...");flush.console()}
         orignames = copy(names(i))
         i = setdiff_(x, i, rightcols, leftcols) # part of #547
-        if (verbose) {cat("done in",timetaken(last.started.at),"\n"); flush.console()}
+        if (verbose) {catf("done in %s\n",timetaken(last.started.at)); flush.console()}
         setnames(i, orignames[leftcols])
         setattr(i, 'sorted', names(i)) # since 'x' has key set, this'll always be sorted
       }
@@ -480,7 +482,7 @@ replace_dot_alias = function(e) {
         if (!byjoin || nqbyjoin) {
           # Really, `anyDuplicated` in base is AWESOME!
           # allow.cartesian shouldn't error if a) not-join, b) 'i' has no duplicates
-          if (verbose) {last.started.at=proc.time();cat("Constructing irows for '!byjoin || nqbyjoin' ... ");flush.console()}
+          if (verbose) {last.started.at=proc.time();catf("Constructing irows for '!byjoin || nqbyjoin' ... ");flush.console()}
           irows = if (allLen1) f__ else vecseq(f__,len__,
             if (allow.cartesian ||
                 notjoin || # #698. When notjoin=TRUE, ignore allow.cartesian. Rows in answer will never be > nrow(x).
@@ -494,7 +496,7 @@ replace_dot_alias = function(e) {
           if (identical(nomatch, 0L) && allLen1) irows = irows[irows != 0L]
         } else {
           if (length(xo) && missing(on))
-            stop("Internal error. Cannot by=.EACHI when joining to a secondary key, yet") # nocov
+            stop("Internal error. Cannot by=.EACHI when joining to an index, yet") # nocov
           # since f__ refers to xo later in grouping, so xo needs to be passed through to dogroups too.
           if (length(irows))
             stop("Internal error. irows has length in by=.EACHI") # nocov
@@ -519,7 +521,7 @@ replace_dot_alias = function(e) {
       if (length(xo) && length(irows)) {
         irows = xo[irows]   # TO DO: fsort here?
         if (mult=="all" && !allGrp1) { # following #1991 fix, !allGrp1 will always be TRUE. TODO: revisit.
-          if (verbose) {last.started.at=proc.time();cat("Reorder irows for 'mult==\"all\" && !allGrp1' ... ");flush.console()}
+          if (verbose) {last.started.at=proc.time();catf("Reorder irows for 'mult==\"all\" && !allGrp1' ... ");flush.console()}
           irows = setorder(setDT(list(indices=rep.int(indices__, len__), irows=irows)))[["irows"]]
           if (verbose) {cat(timetaken(last.started.at),"\n"); flush.console()}
         }
@@ -531,13 +533,13 @@ replace_dot_alias = function(e) {
           ## restore original order. This is a very expensive operation.
           ## benchmarks have shown that starting with 1e6 irows, a tweak can significantly reduce time
           ## (see #2366)
-          if (verbose) {last.started.at=proc.time()[3L];cat("Reordering", length(irows), "rows after bmerge done in ... ");flush.console()}
+          if (verbose) {last.started.at=proc.time();catf("Reordering %d rows after bmerge done in ... ", length(irows));flush.console()}
           if(length(irows) < 1e6){
             irows = fsort(irows, internal=TRUE) ## internally, fsort on integer falls back to forderv
             } else {
               irows = as.integer(fsort(as.numeric(irows))) ## nocov; parallelized for numeric, but overhead of type conversion
             }
-          if (verbose) {cat(round(proc.time()[3L]-last.started.at,3L),"secs\n");flush.console()}
+          if (verbose) {cat(timetaken(last.started.at), "\n");flush.console()}
         }
         ## make sure, all columns are taken from x and not from i.
         ## This is done by simply telling data.table to continue as if there was a simple subset
@@ -588,9 +590,9 @@ replace_dot_alias = function(e) {
     if (notjoin) {
       if (byjoin || !is.integer(irows) || is.na(nomatch)) stop("Internal error: notjoin but byjoin or !integer or nomatch==NA") # nocov
       irows = irows[irows!=0L]
-      if (verbose) {last.started.at=proc.time()[3L];cat("Inverting irows for notjoin done in ... ");flush.console()}
+      if (verbose) {last.started.at=proc.time();catf("Inverting irows for notjoin done in ... ");flush.console()}
       i = irows = if (length(irows)) seq_len(nrow(x))[-irows] else NULL  # NULL meaning all rows i.e. seq_len(nrow(x))
-      if (verbose) cat(round(proc.time()[3L]-last.started.at, 3L), "sec\n")
+      if (verbose) cat(timetaken(last.started.at), "\n")
       leftcols = integer()  # proceed as if row subset from now on, length(leftcols) is switched on later
       rightcols = integer()
       # Doing this once here, helps speed later when repeatedly subsetting each column. R's [irows] would do this for each
@@ -776,7 +778,7 @@ replace_dot_alias = function(e) {
             if (!is.na(w)) {
               byindex = indices(x)[w]
               if (!length(getindex(x, byindex))) {
-                if (verbose) cat("by index '", byindex, "' but that index has 0 length. Ignoring.\n", sep="")
+                if (verbose) catf("by index '%s' but that index has 0 length. Ignoring.\n", byindex)
                 byindex=FALSE
               }
             }
@@ -799,10 +801,10 @@ replace_dot_alias = function(e) {
           # TO DO: Make xss directly, rather than recursive call.
           if (!is.na(nomatch)) irows = irows[irows!=0L]   # TO DO: can be removed now we have CisSortedSubset
           if (length(allbyvars)) {    ###############  TO DO  TO DO  TO DO  ###############
-            if (verbose) cat("i clause present and columns used in by detected, only these subset:",paste(allbyvars,collapse=","),"\n")
+            if (verbose) catf("i clause present and columns used in by detected, only these subset: %s\n", brackify(allbyvars))
             xss = x[irows,allbyvars,with=FALSE,nomatch=nomatch,mult=mult,roll=roll,rollends=rollends]
           } else {
-            if (verbose) cat("i clause present but columns used in by not detected. Having to subset all columns before evaluating 'by': '",deparse(by),"'\n",sep="")
+            if (verbose) catf("i clause present but columns used in by not detected. Having to subset all columns before evaluating 'by': '%s'\n", deparse(by))
             xss = x[irows,nomatch=nomatch,mult=mult,roll=roll,rollends=rollends]
           }
           if (bysub %iscall% ':' && length(bysub)==3L) {
@@ -860,8 +862,7 @@ replace_dot_alias = function(e) {
             if (length(byvars) > 1L && tt %chin% all.vars(jsub, FALSE)) {
               bynames[jj] = deparse(bysubl[[jj+1L]])
               if (verbose)
-                cat("by-expression '", bynames[jj], "' is not named, and the auto-generated name '", tt,
-                    "' clashed with variable(s) in j. Therefore assigning the entire by-expression as name.\n", sep="")
+                catf("by-expression '%s' is not named, and the auto-generated name '%s' clashed with variable(s) in j. Therefore assigning the entire by-expression as name.\n", bynames[jj], tt)
             }
             else bynames[jj] = tt
             # if user doesn't like this inferred name, user has to use by=list() to name the column
@@ -1014,7 +1015,7 @@ replace_dot_alias = function(e) {
           }
           non_sdvars = setdiff(ansvars, sdvars)
           ansvals = chmatch(ansvars, names_x)
-          if (verbose) cat(gettextf("New ansvars: %s \n", brackify(ansvars)))
+          if (verbose) catf("New ansvars: %s \n", brackify(ansvars))
         } else if (length(non_sdvars)) {
           # we've a situation like DT[, c(sum(V1), lapply(.SD, mean)), by=., .SDcols=...] or
           # DT[, lapply(.SD, function(x) x *v1), by=, .SDcols=...] etc.,
@@ -1026,7 +1027,7 @@ replace_dot_alias = function(e) {
         if (!missing(.SDcols)) warning("This j doesn't use .SD but .SDcols has been supplied. Ignoring .SDcols. See ?data.table.")
         allcols = c(names_x, xdotprefix, names_i, idotprefix)
         ansvars = sdvars = setdiff(intersect(av, allcols), bynames)
-        if (verbose) cat("Detected that j uses these columns:",if (!length(ansvars)) "<none>" else paste(ansvars,collapse=","),"\n")
+        if (verbose) catf("Detected that j uses these columns: %s\n",if (!length(ansvars)) "<none>" else brackify(ansvars))
         # using a few named columns will be faster
         # Consider:   DT[,max(diff(date)),by=list(month=month(date))]
         # and:        DT[,lapply(.SD,sum),by=month(date)]
@@ -1088,8 +1089,7 @@ replace_dot_alias = function(e) {
             # fix errors in their RHS when called on empty edge cases, even when the result won't be
             # used anyway (so it would be annoying to have to fix it.)
             if (verbose) {
-              cat("No rows match i. No new columns to add so not evaluating RHS of :=\n")
-              cat("Assigning to 0 row subset of",nrow(x),"rows\n")
+              catf("No rows match i. No new columns to add so not evaluating RHS of :=\nAssigning to 0 row subset of %d rows\n", nrow(x))
             }
             .Call(Cassign, x, irows, NULL, NULL, NULL) # only purpose is to write 0 to .Last.updated
             .global$print = address(x)
@@ -1111,9 +1111,9 @@ replace_dot_alias = function(e) {
             # i.e. reallocate at the size as if the new columns were added followed by setalloccol().
             name = substitute(x)
             if (is.name(name) && ok && verbose) { # && NAMED(x)>0 (TO DO)    # ok here includes -1 (loaded from disk)
-              cat("Growing vector of column pointers from truelength ", truelength(x), " to ", n, ". A shallow copy has been taken, see ?setalloccol. Only a potential issue if two variables point to the same data (we can't yet detect that well) and if not you can safely ignore this. To avoid this message you could setalloccol() first, deep copy first using copy(), wrap with suppressWarnings() or increase the 'datatable.alloccol' option.\n")
+              catf("Growing vector of column pointers from truelength %d to %d. A shallow copy has been taken, see ?setalloccol. Only a potential issue if two variables point to the same data (we can't yet detect that well) and if not you can safely ignore this. To avoid this message you could setalloccol() first, deep copy first using copy(), wrap with suppressWarnings() or increase the 'datatable.alloccol' option.\n", truelength(x), n)
               # #1729 -- copying to the wrong environment here can cause some confusion
-              if (ok == -1L) cat("Note that the shallow copy will assign to the environment from which := was called. That means for example that if := was called within a function, the original table may be unaffected.\n")
+              if (ok == -1L) catf("Note that the shallow copy will assign to the environment from which := was called. That means for example that if := was called within a function, the original table may be unaffected.\n")
 
               # Verbosity should not issue warnings, so cat rather than warning.
               # TO DO: Add option 'datatable.pedantic' to turn on warnings like this.
@@ -1384,7 +1384,7 @@ replace_dot_alias = function(e) {
   SDenv$`-.POSIXt` = function(e1, e2) {
     if (inherits(e2, 'POSIXt')) {
       if (verbose && !exists('done_units_report', parent.frame())) {
-        cat('\nNote: forcing units="secs" on implicit difftime by group; call difftime explicitly to choose custom units')
+        catf('\nNote: forcing units="secs" on implicit difftime by group; call difftime explicitly to choose custom units\n')
         assign('done_units_report', TRUE, parent.frame())
       }
       return(difftime(e1, e2, units='secs'))
@@ -1421,7 +1421,7 @@ replace_dot_alias = function(e) {
 
     if (length(byval) && length(byval[[1L]])) {
       if (!bysameorder && isFALSE(byindex)) {
-        if (verbose) {last.started.at=proc.time();cat("Finding groups using forderv ... ");flush.console()}
+        if (verbose) {last.started.at=proc.time();catf("Finding groups using forderv ... ");flush.console()}
         o__ = forderv(byval, sort=keyby, retGrp=TRUE)
         # The sort= argument is called sortGroups at C level. It's primarily for saving the sort of unique strings at
         # C level for efficiency when by= not keyby=. Other types also retain appearance order, but at byte level to
@@ -1435,7 +1435,7 @@ replace_dot_alias = function(e) {
         if (verbose) {
           cat(timetaken(last.started.at),"\n")
           last.started.at=proc.time()
-          cat("Finding group sizes from the positions (can be avoided to save RAM) ... ")
+          catf("Finding group sizes from the positions (can be avoided to save RAM) ... ")
           flush.console()  # for windows
         }
         f__ = attr(o__, "starts", exact=TRUE)
@@ -1443,7 +1443,7 @@ replace_dot_alias = function(e) {
         if (verbose) {cat(timetaken(last.started.at),"\n"); flush.console()}
         if (!bysameorder && !keyby) {
           # TO DO: lower this into forder.c
-          if (verbose) {last.started.at=proc.time();cat("Getting back original order ... ");flush.console()}
+          if (verbose) {last.started.at=proc.time();catf("Getting back original order ... ");flush.console()}
           firstofeachgroup = o__[f__]
           if (length(origorder <- forderv(firstofeachgroup))) {
             f__ = f__[origorder]
@@ -1455,11 +1455,11 @@ replace_dot_alias = function(e) {
       } else {
         if (verbose) last.started.at=proc.time();
         if (bysameorder) {
-          if (verbose) {cat("Finding groups using uniqlist on key ... ");flush.console()}
+          if (verbose) {catf("Finding groups using uniqlist on key ... ");flush.console()}
           f__ = uniqlist(byval)
         } else {
           if (!is.character(byindex) || length(byindex)!=1L) stop("Internal error: byindex not the index name")  # nocov
-          if (verbose) {cat("Finding groups using uniqlist on index '", byindex, "' ... ", sep="");flush.console()}
+          if (verbose) {catf("Finding groups using uniqlist on index '%s' ... ", byindex);flush.console()}
           o__ = getindex(x, byindex)
           if (is.null(o__)) stop("Internal error: byindex not found")  # nocov
           f__ = uniqlist(byval, order=o__)
@@ -1467,7 +1467,7 @@ replace_dot_alias = function(e) {
         if (verbose) {
           cat(timetaken(last.started.at),"\n")
           last.started.at=proc.time()
-          cat("Finding group sizes from the positions (can be avoided to save RAM) ... ")
+          catf("Finding group sizes from the positions (can be avoided to save RAM) ... ")
           flush.console()  # for windows
         }
         len__ = uniqlengths(f__, xnrow)
@@ -1658,9 +1658,9 @@ replace_dot_alias = function(e) {
     }
     if (verbose) {
       if (!identical(oldjsub, jsub))
-        cat("lapply optimization changed j from '",deparse(oldjsub),"' to '",deparse(jsub,width.cutoff=200L, nlines=1L),"'\n",sep="")
+        catf("lapply optimization changed j from '%s' to '%s'\n", deparse(oldjsub), deparse(jsub,width.cutoff=200L, nlines=1L))
       else
-        cat("lapply optimization is on, j unchanged as '",deparse(jsub,width.cutoff=200L, nlines=1L),"'\n",sep="")
+        catf("lapply optimization is on, j unchanged as '%s'\n", deparse(jsub,width.cutoff=200L, nlines=1L))
     }
     dotN = function(x) is.name(x) && x==".N" # For #334. TODO: Rprof() showed dotN() may be the culprit if iterated (#1470)?; avoid the == which converts each x to character?
     # FR #971, GForce kicks in on all subsets, no joins yet. Although joins could work with
@@ -1670,7 +1670,7 @@ replace_dot_alias = function(e) {
         GForce = FALSE
         if ( (is.name(jsub) && jsub==".N") || (jsub %iscall% 'list' && length(jsub)==2L && jsub[[2L]]==".N") ) {
           GForce = TRUE
-          if (verbose) cat("GForce optimized j to '",deparse(jsub, width.cutoff=200L, nlines=1L),"'\n",sep="")
+          if (verbose) catf("GForce optimized j to '%s'\n",deparse(jsub, width.cutoff=200L, nlines=1L))
         }
       } else {
         # Apply GForce
@@ -1704,8 +1704,8 @@ replace_dot_alias = function(e) {
             jsub[[1L]] = as.name(paste0("g", jsub[[1L]]))
             if (length(jsub)==3L) jsub[[3L]] = eval(jsub[[3L]], parent.frame())   # tests 1187.3 & 1187.5
           }
-          if (verbose) cat("GForce optimized j to '",deparse(jsub, width.cutoff=200L, nlines=1L),"'\n",sep="")
-        } else if (verbose) cat("GForce is on, left j unchanged\n");
+          if (verbose) catf("GForce optimized j to '%s'\n", deparse(jsub, width.cutoff=200L, nlines=1L))
+        } else if (verbose) catf("GForce is on, left j unchanged\n");
       }
     }
     if (!GForce && !is.name(jsub)) {
@@ -1728,9 +1728,9 @@ replace_dot_alias = function(e) {
       }
       if (verbose) {
         if (!identical(oldjsub, jsub))
-          cat("Old mean optimization changed j from '",deparse(oldjsub),"' to '",deparse(jsub, width.cutoff=200L, nlines=1L),"'\n",sep="")
+          catf("Old mean optimization changed j from '%s' to '%s'\n", deparse(oldjsub), deparse(jsub, width.cutoff=200L, nlines=1L))
         else
-          cat("Old mean optimization is on, left j unchanged.\n")
+          catf("Old mean optimization is on, left j unchanged.\n")
       }
       assign("Cfastmean", Cfastmean, SDenv)
       # Old comments still here for now ...
@@ -1740,8 +1740,8 @@ replace_dot_alias = function(e) {
       # when fastmean can do trim.
     }
   } else if (verbose) {
-    if (getOption("datatable.optimize")<1L) cat("All optimizations are turned off\n")
-    else cat("Optimization is on but left j unchanged (single plain symbol): '",deparse(jsub, width.cutoff=200L, nlines=1L),"'\n",sep="")
+    if (getOption("datatable.optimize")<1L) catf("All optimizations are turned off\n")
+    else catf("Optimization is on but left j unchanged (single plain symbol): '%s'\n", deparse(jsub, width.cutoff=200L, nlines=1L))
   }
   if (byjoin) {
     groups = i
@@ -1770,7 +1770,7 @@ replace_dot_alias = function(e) {
     # for consistency of empty case in test 184
     f__=len__=0L
   }
-  if (verbose) {last.started.at=proc.time();cat("Making each group and running j (GForce ",GForce,") ... ",sep="");flush.console()}
+  if (verbose) {last.started.at=proc.time();catf("Making each group and running j (GForce %s) ... ", GForce);flush.console()}
   if (GForce) {
     thisEnv = new.env()  # not parent=parent.frame() so that gsum is found
     for (ii in ansvars) assign(ii, x[[ii]], thisEnv)
@@ -1816,7 +1816,7 @@ replace_dot_alias = function(e) {
       cnames = as.character(bysubl)[-1L]
       cnames = gsub('^`|`$', '', cnames)  # the wrapping backticks that were added above can be removed now, #3378
       if (all(cnames %chin% names_x)) {
-        if (verbose) {last.started.at=proc.time();cat("setkey() after the := with keyby= ... ");flush.console()}
+        if (verbose) {last.started.at=proc.time();catf("setkey() after the := with keyby= ... ");flush.console()}
         setkeyv(x,cnames)  # TO DO: setkey before grouping to get memcpy benefit.
         if (verbose) {cat(timetaken(last.started.at),"\n"); flush.console()}
       }
@@ -1843,7 +1843,7 @@ replace_dot_alias = function(e) {
     setnames(ans,seq_along(bynames),bynames)   # TO DO: reinvestigate bynames flowing from dogroups here and simplify
   }
   if (byjoin && keyby && !bysameorder) {
-    if (verbose) {last.started.at=proc.time();cat("setkey() afterwards for keyby=.EACHI ... ");flush.console()}
+    if (verbose) {last.started.at=proc.time();catf("setkey() afterwards for keyby=.EACHI ... ");flush.console()}
     setkeyv(ans,names(ans)[seq_along(byval)])
     if (verbose) {cat(timetaken(last.started.at),"\n"); flush.console()}
   } else if (keyby || (haskey(x) && bysameorder && (byjoin || (length(allbyvars) && identical(allbyvars,head(key(x),length(allbyvars))))))) {
@@ -2347,7 +2347,7 @@ split.data.table = function(x, f, drop = FALSE, by, sorted = FALSE, keep.by = TR
   dtq[[".SDcols"]] = if (keep.by) names(x) else setdiff(names(x), if (flatten) by else .by)
   if (join) dtq[["on"]] = if (flatten) by else .by
   dtq = as.call(dtq)
-  if (isTRUE(verbose)) cat("Processing split.data.table with: ", deparse(dtq, width.cutoff=500L), "\n", sep="")
+  if (isTRUE(verbose)) catf("Processing split.data.table with: %s\n", deparse(dtq, width.cutoff=500L))
   tmp = eval(dtq)
   # add names on list
   setattr(ll <- tmp$.ll.tech.split,
@@ -2979,7 +2979,7 @@ isReallyReal = function(x) {
   ## convert i to data.table with all combinations in rows.
   if(length(i) > 1L && prod(vapply_1i(i, length)) > 1e4){
     ## CJ would result in more than 1e4 rows. This would be inefficient, especially memory-wise #2635
-    if (verbose) {cat("Subsetting optimization disabled because the cross-product of RHS values exceeds 1e4, causing memory problems.\n");flush.console()}
+    if (verbose) {catf("Subsetting optimization disabled because the cross-product of RHS values exceeds 1e4, causing memory problems.\n");flush.console()}
     return(NULL)
   }
   ## Care is needed with names as we construct i
@@ -2992,15 +2992,15 @@ isReallyReal = function(x) {
   i = do.call(CJ, i)
   setnames(i, colNames)
   idx = NULL
-  if(is.null(idx)){
-      ## check whether key fits the columns in i.
-      ## order of key columns makes no difference, as long as they are all upfront in the key, I believe.
-      key_head = head(key(x), length(i))
-      if (all(names(i) %chin% key_head)){
-          if (verbose) {cat("Optimized subsetting with key '", brackify(key_head),"'\n",sep="");flush.console()}
-          idx = integer(0L) ## integer(0L) not NULL! Indicates that x is ordered correctly.
-          idxCols = key_head ## in correct order!
-      }
+  if (is.null(idx)) {
+    ## check whether key fits the columns in i.
+    ## order of key columns makes no difference, as long as they are all upfront in the key, I believe.
+    key_head = head(key(x), length(i))
+    if (all(names(i) %chin% key_head)) {
+      if (verbose) {catf("Optimized subsetting with key %s", brackify(key_head)); flush.console()}
+      idx = integer(0L) ## integer(0L) not NULL! Indicates that x is ordered correctly.
+      idxCols = key_head ## in correct order!
+    }
   }
   if (is.null(idx)){
     if (!getOption("datatable.use.index")) return(NULL) # #1422
@@ -3016,17 +3016,17 @@ isReallyReal = function(x) {
       }
     }
     if (!is.null(idx)){
-      if (verbose) {cat("Optimized subsetting with index '", paste0( idxCols, collapse = "__"),"'\n",sep="");flush.console()}
+      if (verbose) {catf("Optimized subsetting with index '%s'\n", paste0( idxCols, collapse = "__"));flush.console()}
     }
   }
   if (is.null(idx)){
     ## if nothing else helped, auto create a new index that can be used
     if (!getOption("datatable.auto.index")) return(NULL)
-    if (verbose) {cat("Creating new index '", paste0(names(i), collapse = "__"),"'\n",sep="");flush.console()}
-    if (verbose) {last.started.at=proc.time();cat("Creating index", paste0(names(i), collapse = "__"), "done in ... ");flush.console()}
+    if (verbose) {catf("Creating new index '%s'\n", paste0(names(i), collapse = "__"));flush.console()}
+    if (verbose) {last.started.at=proc.time();catf("Creating index %s done in ...", paste0(names(i), collapse = "__"));flush.console()}
     setindexv(x, names(i))
     if (verbose) {cat(timetaken(last.started.at),"\n");flush.console()}
-    if (verbose) {cat("Optimized subsetting with index '", paste0(names(i), collapse = "__"),"'\n",sep="");flush.console()}
+    if (verbose) {catf("Optimized subsetting with index '%s'\n", paste0(names(i), collapse = "__"));flush.console()}
     idx = attr(attr(x, "index", exact=TRUE), paste0("__", names(i), collapse = ""), exact=TRUE)
     idxCols = names(i)
   }

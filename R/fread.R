@@ -194,7 +194,7 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
 
     yaml_header = yaml::yaml.load(yaml_string)
     yaml_names = names(yaml_header)
-    if (verbose) cat('Processed', n_read, 'lines of YAML metadata with the following top-level fields:', brackify(yaml_names), '\n')
+    if (verbose) catf('Processed %d lines of YAML metadata with the following top-level fields: %s\n', n_read, brackify(yaml_names))
     # process header first since it impacts how to handle colClasses
     if ('header' %chin% yaml_names) {
       if ('header' %chin% call_args) message("User-supplied 'header' will override that found in metadata.")
@@ -326,7 +326,7 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
     } else {
       cols_to_factor = which(vapply_1b(ans, is.character))
     }
-    if (verbose) cat("stringsAsFactors=", stringsAsFactors, " converted ", length(cols_to_factor), " column(s): ", brackify(names(ans)[cols_to_factor]), "\n", sep="")
+    if (verbose) catf("stringsAsFactors=%s converted %d column(s): %s\n", stringsAsFactors, length(cols_to_factor), brackify(names(ans)[cols_to_factor]))
     for (j in cols_to_factor) set(ans, j=j, value=as_factor(.subset2(ans, j)))
   }
 

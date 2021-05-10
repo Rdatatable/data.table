@@ -13854,7 +13854,7 @@ test(1967.75, x[!y, sum(i4), on = 'i1', by = .EACHI, verbose = TRUE],
      data.table(i1 = c(169L, 369L), V1 = c(270L, 179L)),
      output = "not-join called with 'by=.EACHI'.*done")
 test(1967.76, x[!y, sum(i4), on = 'i1', verbose = TRUE], 510L,
-     output = 'Inverting irows for notjoin.*sec')
+     output = 'Inverting irows for notjoin.*[0-9]s')
 x[ , v := 0]
 ### hitting by = A:B branch
 test(1967.77, x[ , .(v = sum(v)), by = i1:i4], x[-10L])
