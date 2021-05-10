@@ -308,7 +308,7 @@ For more detailed explanation on that matter, please see the examples in the [`s
 
 ### Substitution of a complex query
 
-Let's take, as an example of a  more complex function, calculating root mean square.
+Let's take, as an example of a more complex function, calculating root mean square.
 
 ${\displaystyle x_{\text{RMS}}={\sqrt{{\frac{1}{n}}\left(x_{1}^{2}+x_{2}^{2}+\cdots +x_{n}^{2}\right)}}}$
 
