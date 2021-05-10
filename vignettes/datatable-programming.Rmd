@@ -193,7 +193,7 @@ DT[filter_col %in% filter_val,
 
 ### Substitute variables and character values
 
-In the above example we have seen the convenience feature of `substitute2` to automatically convert characters to names/symbols. The obvious question that arises, is:  what if we actually want to substitute the parameter with a character value, so as to have a base R `substitute` behaviour? We provide a mechanism to escape this automatic conversion by wrapping elements into base R `I()` call. The `I` function marks an object as *AsIs*, preventing conversion from taking place; read `?AsIs` for more details. If base R behaviour is desired for a whole `env` argument, then best to wrap `env` argument into `I()`, otherwise each list element can be wrapped into `I()` individually, see both use cases below.
+In the above example we have seen the convenience feature of `substitute2` to automatically convert characters to names/symbols. The obvious question that arises, is:  what if we actually want to substitute the parameter with a character value, so as to have a base R `substitute` behaviour? We provide a mechanism to escape this automatic conversion by wrapping elements into base R `I()` call. The `I` function marks an object as *AsIs*, preventing conversion from taking place; read ?`AsIs` for more details. If base R behaviour is desired for a whole `env` argument, then best to wrap `env` argument into `I()`, otherwise each list element can be wrapped into `I()` individually, see both use cases below.
 
 ```{r rank}
 substitute(    # base R
