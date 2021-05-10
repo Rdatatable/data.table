@@ -127,7 +127,7 @@ quote(
 )
 ```
 
-The goal is to make every name in the above function call to be passable as a *parameter*.
+The goal is to make every name in the above function call passable as a *parameter*.
 
 ```{r hypotenuse_substitute2}
 substitute2(
