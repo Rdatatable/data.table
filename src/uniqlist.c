@@ -75,20 +75,22 @@ SEXP uniqlist(SEXP l, SEXP order)
       }
     } break;
     case REALSXP : {
-      const uint64_t *vd=(const uint64_t *)REAL(v);
-      uint64_t prev, elem;
       // grouping by integer64 makes sense (ids). grouping by float supported but a good use-case for that is harder to imagine
       if (getNumericRounding_C()==0 /*default*/ || inherits(v, "integer64")) {
+        const uint64_t *vd=(const uint64_t *)REAL(v);
+        uint64_t prev, elem;
         if (via_order) {
           COMPARE1_VIA_ORDER COMPARE2
         } else {
           COMPARE1           COMPARE2
         }
       } else {
+        const double *vd=(const double *)REAL(v);
+        double prev, elem;
         if (via_order) {
-          COMPARE1_VIA_ORDER && dtwiddle(&elem, 0)!=dtwiddle(&prev, 0) COMPARE2
+          COMPARE1_VIA_ORDER && dtwiddle(elem)!=dtwiddle(prev) COMPARE2
         } else {
-          COMPARE1           && dtwiddle(&elem, 0)!=dtwiddle(&prev, 0) COMPARE2
+          COMPARE1           && dtwiddle(elem)!=dtwiddle(prev) COMPARE2
         }
       }
     } break;
@@ -119,7 +121,7 @@ SEXP uniqlist(SEXP l, SEXP order)
           ulv = (unsigned long long *)REAL(v);
           b = ulv[thisi] == ulv[previ]; // (gives >=2x speedup)
           if (!b && !i64[j]) {
-            b = dtwiddle(ulv, thisi) == dtwiddle(ulv, previ);
+            b = dtwiddle(REAL(v)[thisi]) == dtwiddle(REAL(v)[previ]);
             // could store LHS for use next time as RHS (to save calling dtwiddle twice). However: i) there could be multiple double columns so vector of RHS would need
             // to be stored, ii) many short-circuit early before the if (!b) anyway (negating benefit) and iii) we may not have needed LHS this time so logic would be complex.
           }
@@ -313,7 +315,7 @@ SEXP nestedid(SEXP l, SEXP cols, SEXP order, SEXP grps, SEXP resetvals, SEXP mul
         case REALSXP: {
           double *xd = REAL(v);
           b = i64[j] ? ((int64_t *)xd)[thisi] >= ((int64_t *)xd)[previ] :
-                       dtwiddle(xd, thisi) >= dtwiddle(xd, previ);
+                       dtwiddle(xd[thisi]) >= dtwiddle(xd[previ]);
         } break;
         default:
           error(_("Type '%s' not supported"), type2char(TYPEOF(v)));  // # nocov

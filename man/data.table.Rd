@@ -31,7 +31,7 @@ data.table(\dots, keep.rownames=FALSE, check.names=FALSE, key=NULL, stringsAsFac
   .SDcols,
   verbose = getOption("datatable.verbose"),                   # default: FALSE
   allow.cartesian = getOption("datatable.allow.cartesian"),   # default: FALSE
-  drop = NULL, on = NULL)
+  drop = NULL, on = NULL, env = NULL)
 }
 \arguments{
     \item{\dots}{ Just as \code{\dots} in \code{\link{data.frame}}. Usual recycling rules are applied to vectors of different lengths to create a list of equal length vectors.}
@@ -110,7 +110,7 @@ data.table(\dots, keep.rownames=FALSE, check.names=FALSE, key=NULL, stringsAsFac
 
     \emph{Advanced:} In the \code{X[Y, j]} form of grouping, the \code{j} expression sees variables in \code{X} first, then \code{Y}. We call this \emph{join inherited scope}. If the variable is not in \code{X} or \code{Y} then the calling frame is searched, its calling frame, and so on in the usual way up to and including the global environment.}
 
-    \item{keyby}{ Same as \code{by}, but with an additional \code{setkey()} run on the \code{by} columns of the result, for convenience. It is common practice to use `keyby=` routinely when you wish the result to be sorted.}
+    \item{keyby}{ Same as \code{by}, but with an additional \code{setkey()} run on the \code{by} columns of the result, for convenience. It is common practice to use `keyby=` routinely when you wish the result to be sorted. May also be \code{TRUE} or \code{FALSE} when \code{by} is provided as an alternative way to accomplish the same operation.}
 
     \item{with}{ By default \code{with=TRUE} and \code{j} is evaluated within the frame of \code{x}; column names can be used as variables. In case of overlapping variables names inside dataset and in parent scope you can use double dot prefix \code{..cols} to explicitly refer to `\code{cols} variable parent scope and not from your dataset.
 
@@ -170,6 +170,8 @@ data.table(\dots, keep.rownames=FALSE, check.names=FALSE, key=NULL, stringsAsFac
         }
         See examples as well as \href{../doc/datatable-secondary-indices-and-auto-indexing.html}{\code{vignette("datatable-secondary-indices-and-auto-indexing")}}.
     }
+
+  \item{env}{ List or an environment, passed to \code{\link{substitute2}} for substitution of parameters in \code{i}, \code{j} and \code{by} (or \code{keyby}). Use \code{verbose} to preview constructed expressions. }
 }
 \details{
 \code{data.table} builds on base \R functionality to reduce 2 types of time:\cr
@@ -200,6 +202,7 @@ The way to read this out loud is: "Take \code{DT}, subset rows by \code{i}, \emp
     X[, sum(a), by=c:f]         # get sum(a) grouped by all columns in between 'c' and 'f' (both inclusive)
 
     X[, sum(a), keyby=b]        # get sum(a) grouped by 'b', and sort that result by the grouping column 'b'
+    X[, sum(a), by=b, keyby=TRUE] # same order as above, but using sorting flag
     X[, sum(a), by=b][order(b)] # same order as above, but by chaining compound expressions
     X[c>1, sum(a), by=c]        # get rows where c>1 is TRUE, and on those rows, get sum(a) grouped by 'c'
     X[Y, .(a, b), on="c"]       # get rows where Y$c == X$c, and select columns 'X$a' and 'X$b' for those rows
@@ -220,11 +223,11 @@ See the \code{see also} section for the several other \emph{methods} that are av
 
 }
 \references{
-\url{https://github.com/Rdatatable/data.table/wiki} (\code{data.table} homepage)\cr
+\url{https://r-datatable.com} (\code{data.table} homepage)\cr
 \url{https://en.wikipedia.org/wiki/Binary_search}
 }
-\note{ If \code{keep.rownames} or \code{check.names} are supplied they must be written in full because \R does not allow partial argument names after `\code{\dots}`. For example, \code{data.table(DF, keep=TRUE)} will create a
-column called \code{"keep"} containing \code{TRUE} and this is correct behaviour; \code{data.table(DF, keep.rownames=TRUE)} was intended.
+\note{ If \code{keep.rownames} or \code{check.names} are supplied they must be written in full because \R does not allow partial argument names after \code{\dots}. For example, \code{data.table(DF, keep=TRUE)} will create a
+column called \code{keep} containing \code{TRUE} and this is correct behaviour; \code{data.table(DF, keep.rownames=TRUE)} was intended.
 
 \code{POSIXlt} is not supported as a column type because it uses 40 bytes to store a single datetime. They are implicitly converted to \code{POSIXct} type with \emph{warning}. You may also be interested in \code{\link{IDateTime}} instead; it has methods to convert to and from \code{POSIXlt}.
 }
@@ -280,6 +283,7 @@ DT[["v"]]                      # same as DT[, v] but much faster
 # grouping operations - j and by
 DT[, sum(v), by=x]             # ad hoc by, order of groups preserved in result
 DT[, sum(v), keyby=x]          # same, but order the result on by cols
+DT[, sum(v), by=x, keyby=TRUE] # same, but using sorting flag
 DT[, sum(v), by=x][order(x)]   # same but by chaining expressions together
 
 # fast ad hoc row subsets (subsets as joins)
