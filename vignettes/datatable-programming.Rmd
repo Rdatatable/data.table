@@ -289,7 +289,7 @@ DT[, j,  # again the proper way, enlist list to list call automatically
    verbose = TRUE]
 ```
 
-While both the expressions vare visually similar, they are not identical:
+While both the expressions are visually similar, they are not identical:
 
 ```{r splice_substitute2_not}
 str(substitute2(j, env = I(list(j = lapply(cols, as.name)))))
