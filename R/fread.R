@@ -5,7 +5,7 @@ skip="__auto__", select=NULL, drop=NULL, colClasses=NULL, integer64=getOption("d
 col.names, check.names=FALSE, encoding="unknown", strip.white=TRUE, fill=FALSE, blank.lines.skip=FALSE, key=NULL, index=NULL,
 showProgress=getOption("datatable.showProgress",interactive()), data.table=getOption("datatable.fread.datatable",TRUE),
 nThread=getDTthreads(verbose), logical01=getOption("datatable.logical01",FALSE), keepLeadingZeros=getOption("datatable.keepLeadingZeros",FALSE),
-yaml=FALSE, autostart=NA, tmpdir=tempdir())
+yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
 {
   if (missing(input)+is.null(file)+is.null(text)+is.null(cmd) < 3L) stop("Used more than one of the arguments input=, file=, text= and cmd=.")
   input_has_vars = length(all.vars(substitute(input)))>0L  # see news for v1.11.6
@@ -25,7 +25,8 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir())
              isTRUEorFALSE(verbose), isTRUEorFALSE(check.names), isTRUEorFALSE(logical01), isTRUEorFALSE(keepLeadingZeros), isTRUEorFALSE(yaml) )
   stopifnot( isTRUEorFALSE(stringsAsFactors) || (is.double(stringsAsFactors) && length(stringsAsFactors)==1L && 0.0<=stringsAsFactors && stringsAsFactors<=1.0))
   stopifnot( is.numeric(nrows), length(nrows)==1L )
-  if (is.na(nrows) || nrows<0L) nrows=Inf   # accept -1 to mean Inf, as read.table does
+  nrows=as.double(nrows) #4686
+  if (is.na(nrows) || nrows<0) nrows=Inf   # accept -1 to mean Inf, as read.table does
   if (identical(header,"auto")) header=NA
   stopifnot(is.logical(header) && length(header)==1L)  # TRUE, FALSE or NA
   stopifnot(is.numeric(nThread) && length(nThread)==1L)
@@ -193,7 +194,7 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir())
 
     yaml_header = yaml::yaml.load(yaml_string)
     yaml_names = names(yaml_header)
-    if (verbose) cat('Processed', n_read, 'lines of YAML metadata with the following top-level fields:', brackify(yaml_names), '\n')
+    if (verbose) catf('Processed %d lines of YAML metadata with the following top-level fields: %s\n', n_read, brackify(yaml_names))
     # process header first since it impacts how to handle colClasses
     if ('header' %chin% yaml_names) {
       if ('header' %chin% call_args) message("User-supplied 'header' will override that found in metadata.")
@@ -267,8 +268,14 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir())
     if (is.integer(skip)) skip = skip + n_read
   }
   warnings2errors = getOption("warn") >= 2
+  stopifnot(identical(tz,"UTC") || identical(tz,""))
+  if (tz=="") {
+    tt = Sys.getenv("TZ", unset=NA_character_)
+    if (identical(tt,"") || is_utc(tt)) # empty TZ env variable ("") means UTC in C library, unlike R; _unset_ TZ means local
+      tz="UTC"
+  }
   ans = .Call(CfreadR,input,sep,dec,quote,header,nrows,skip,na.strings,strip.white,blank.lines.skip,
-              fill,showProgress,nThread,verbose,warnings2errors,logical01,select,drop,colClasses,integer64,encoding,keepLeadingZeros)
+              fill,showProgress,nThread,verbose,warnings2errors,logical01,select,drop,colClasses,integer64,encoding,keepLeadingZeros,tz=="UTC")
   if (!length(ans)) return(null.data.table())  # test 1743.308 drops all columns
   nr = length(ans[[1L]])
   require_bit64_if_needed(ans)
@@ -295,7 +302,10 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir())
              "complex" = as.complex(v),
              "raw" = as_raw(v),  # Internal implementation
              "Date" = as.Date(v),
-             "POSIXct" = as.POSIXct(v),
+             "POSIXct" = as.POSIXct(v),  # test 2150.14 covers this by setting the option to restore old behaviour. Otherwise types that
+             # are recognized by freadR.c (e.g. POSIXct; #4464) result in user-override-bump at C level before reading so do not reach this switch
+             # see https://github.com/Rdatatable/data.table/pull/4464#discussion_r447275278.
+             # Aside: as(v,"POSIXct") fails with error in R so has to be caught explicitly above
              # finally:
              methods::as(v, new_class))
       },
@@ -316,7 +326,7 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir())
     } else {
       cols_to_factor = which(vapply_1b(ans, is.character))
     }
-    if (verbose) cat("stringsAsFactors=", stringsAsFactors, " converted ", length(cols_to_factor), " column(s): ", brackify(names(ans)[cols_to_factor]), "\n", sep="")
+    if (verbose) catf("stringsAsFactors=%s converted %d column(s): %s\n", stringsAsFactors, length(cols_to_factor), brackify(names(ans)[cols_to_factor]))
     for (j in cols_to_factor) set(ans, j=j, value=as_factor(.subset2(ans, j)))
   }
 
