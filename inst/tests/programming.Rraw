@@ -27,7 +27,7 @@ test(1.16, is.AsIs(I(list(1L))), TRUE)
 test(1.17, is.AsIs(structure(list(NULL), class="an_S3")), FALSE) ## S3
 test(1.18, is.AsIs(I(structure(list(NULL), class="an_S3"))), TRUE)
 test(1.19, is.AsIs(getClass("MethodDefinition")), FALSE) ## S4
-test(1.20, is.AsIs(I(getClass("MethodDefinition"))), TRUE)
+test(1.20, is.AsIs(suppressWarnings(I(getClass("MethodDefinition")))), TRUE) ## suppressWarnings due new warning in R 4.1
 test(1.21, is.AsIs(rm.AsIs(1L)), FALSE)
 test(1.22, is.AsIs(rm.AsIs(I(1L))), FALSE)
 test(1.23, is.AsIs(rm.AsIs(list(1L))), FALSE)
