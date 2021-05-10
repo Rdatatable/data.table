@@ -154,7 +154,7 @@ SEXP fcaseR(SEXP na, SEXP rho, SEXP args) {
             "Note that the default argument must be named explicitly, e.g., default=0"), narg);
   }
   if (narg==0) return R_NilValue;
-  
+
   SEXP cons0 = PROTECT(eval(SEXPPTR_RO(args)[0], rho));
   SEXP value0 = PROTECT(eval(SEXPPTR_RO(args)[1], rho)); // value0 will be compared to from loop so leave it protected throughout
   SEXPTYPE type0 = TYPEOF(value0);
@@ -167,7 +167,7 @@ SEXP fcaseR(SEXP na, SEXP rho, SEXP args) {
   SEXP tracker = PROTECT(allocVector(INTSXP, len0));
   int *restrict p = INTEGER(tracker);
   copyMostAttrib(value0, ans);
-  
+
   bool nonna=!isNull(na);
   if (nonna) {
     if (xlength(na) != 1) {
@@ -194,7 +194,7 @@ SEXP fcaseR(SEXP na, SEXP rho, SEXP args) {
       }
     }
   }
-  
+
   const int n = narg/2;
   for (int i=0; i<n; ++i) {
     SEXP cons = PROTECT(i==0 ? cons0 : eval(SEXPPTR_RO(args)[2*i], rho)); // protect cons0 again for easy unprotect at the end of this loop

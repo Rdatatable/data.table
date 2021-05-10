@@ -156,21 +156,21 @@ static SEXP shallow(SEXP dt, SEXP cols, R_len_t n)
   SET_OBJECT(newdt, OBJECT(dt));
   IS_S4_OBJECT(dt) ? SET_S4_OBJECT(newdt) : UNSET_S4_OBJECT(newdt);  // To support S4 objects that incude data.table
   //SHALLOW_DUPLICATE_ATTRIB(newdt, dt);  // SHALLOW_DUPLICATE_ATTRIB would be a bit neater but is only available from R 3.3.0
-  
+
   // TO DO: keepattr() would be faster, but can't because shallow isn't merely a shallow copy. It
   //        also increases truelength. Perhaps make that distinction, then, and split out, but marked
   //        so that the next change knows to duplicate.
   //        keepattr() also merely points to the entire attrbutes list and thus doesn't allow replacing
   //        some of its elements.
-  
+
   // We copy all attributes that refer to column names so that calling setnames on either
   // the original or the shallow copy doesn't break anything.
   SEXP index = PROTECT(getAttrib(dt, sym_index)); protecti++;
   setAttrib(newdt, sym_index, shallow_duplicate(index));
-  
+
   SEXP sorted = PROTECT(getAttrib(dt, sym_sorted)); protecti++;
   setAttrib(newdt, sym_sorted, duplicate(sorted));
-  
+
   SEXP names = PROTECT(getAttrib(dt, R_NamesSymbol)); protecti++;
   SEXP newnames = PROTECT(allocVector(STRSXP, n)); protecti++;
   if (isNull(cols)) {
@@ -698,7 +698,7 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
 //   having to use length(source) (repeating source expression) in each call
 {
   if (len<1) return NULL;
-  const int slen = sourceLen>=0 ? sourceLen : length(source);
+  int slen = sourceLen>=0 ? sourceLen : length(source); // since source may get reassigned to a scalar, we should not mark it as const
   if (slen==0) return NULL;
   if (sourceStart<0 || sourceStart+slen>length(source))
     error(_("Internal error memrecycle: sourceStart=%d sourceLen=%d length(source)=%d"), sourceStart, sourceLen, length(source)); // # nocov
@@ -726,7 +726,7 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
     } else if (!sourceIsFactor && !isString(source)) {
       // target is factor
       if (allNA(source, false)) {  // return false for list and other types that allNA does not support
-        source = ScalarLogical(NA_LOGICAL); // a global constant in R and won't allocate; fall through to regular zero-copy coerce
+        source = ScalarLogical(NA_LOGICAL); slen = 1; // a global constant in R and won't allocate; fall through to regular zero-copy coerce
       } else if (isInteger(source) || isReal(source)) {
         // allow assigning level numbers to factor columns; test 425, 426, 429 and 1945
         const int nlevel = length(getAttrib(target, R_LevelsSymbol));

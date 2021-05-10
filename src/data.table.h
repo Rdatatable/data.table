@@ -102,6 +102,7 @@ extern SEXP sym_datatable_locked;
 extern SEXP sym_tzone;
 extern SEXP sym_old_fread_datetime_character;
 extern SEXP sym_allow_assign_inplace;
+extern SEXP sym_variable_table;
 extern double NA_INT64_D;
 extern long long NA_INT64_LL;
 extern Rcomplex NA_CPLX;  // initialized in init.c; see there for comments
@@ -129,7 +130,7 @@ int checkOverAlloc(SEXP x);
 // forder.c
 int StrCmp(SEXP x, SEXP y);
 uint64_t dtwiddle(double x);
-SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP naArg);
+SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, SEXP naArg);
 int getNumericRounding_C();
 
 // reorder.c

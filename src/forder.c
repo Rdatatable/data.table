@@ -216,7 +216,7 @@ int StrCmp(SEXP x, SEXP y)
   if (x == y) return 0;             // same cached pointer (including NA_STRING==NA_STRING)
   if (x == NA_STRING) return -1;    // x<y
   if (y == NA_STRING) return 1;     // x>y
-  return strcmp(CHAR(x), CHAR(y));  // bmerge calls ENC2UTF8 on x and y before passing here 
+  return strcmp(CHAR(x), CHAR(y));  // bmerge calls ENC2UTF8 on x and y before passing here
 }
 
 static void cradix_r(SEXP *xsub, int n, int radix)
@@ -1257,7 +1257,7 @@ SEXP issorted(SEXP x, SEXP by)
   // returning NA when NA present, and is multi-column.
   // TODO: test in big steps first to return faster if unsortedness is at the end (a common case of rbind'ing data to end)
   // These are all sequential access to x, so quick and cache efficient. Could be parallel by checking continuity at batch boundaries.
-  
+
   if (!isNull(by) && !isInteger(by)) STOP(_("Internal error: issorted 'by' must be NULL or integer vector"));
   if (isVectorAtomic(x) || length(by)==1) {
     // one-column special case is very common so specialize it by avoiding column-type switches inside the row-loop later
