@@ -2093,6 +2093,7 @@ as.data.frame.data.table = function(x, ...)
   setattr(ans,"class","data.frame")
   setattr(ans,"sorted",NULL)  # remove so if you convert to df, do something, and convert back, it is not sorted
   setattr(ans,".internal.selfref",NULL)
+  setattr(ans, "index", NULL)  # bug 4883
   # leave tl intact, no harm,
   ans
 }
@@ -2109,6 +2110,7 @@ as.list.data.table = function(x, ...) {
   setattr(ans, "row.names", NULL)
   setattr(ans, "sorted", NULL)
   setattr(ans,".internal.selfref", NULL)   # needed to pass S4 tests for example
+  setattr(ans, "index", NULL)  # bug 4883
   ans
 }
 
