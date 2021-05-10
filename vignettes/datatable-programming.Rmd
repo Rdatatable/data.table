@@ -23,7 +23,7 @@ knitr::opts_chunk$set(
 
 ## Introduction
 
-`data.table` from the very first releases enabled interface of `subset` and `with` (or `within`) functions to be used inside `[.data.frame` by defining `[.data.table` method. `subset` and `with` are base R functions that are useful to reduce repetition in code, to make it more easily readable, and usually reduce number of total characters user has to type. Those functions are possible in R because of its quite unique feature called *lazy evaluation*. Feature that allows for a function to catch its arguments before they are evaluated, and for example to evaluate them in a scope different than scope in which they were called. Let's recap interface of `subset` function.
+`data.table` from the very first releases enabled interface of `subset` and `with` (or `within`) functions to be used inside `[.data.frame` by defining `[.data.table` method. `subset` and `with` are base R functions that are useful to reduce repetition in code, to make it more easily readable, and usually reduce the number of total characters user has to type. Those functions are possible in R because of its quite unique feature called *lazy evaluation* that allows for a function to catch its arguments before they are evaluated, and for example to evaluate them in a scope different than scope in which they were called. Let's recap interface of `subset` function.
 
 ```{r opt_max_print_10, include = FALSE}
 options(max.print = 10L) # 2 rows
@@ -91,9 +91,9 @@ Martin Machler, R Project Core Developer, [once said](https://stackoverflow.com/
 > Sorry but I don't understand why too many people even think a string was something that could be evaluated. You must change your mindset, really. Forget all connections between strings on one side and expressions, calls, evaluation on the other side.  
 The (possibly) only connection is via `parse(text = ....)` and all good R programmers should know that this is rarely an efficient or safe means to construct expressions (or calls). Rather learn more about `substitute()`, `quote()`, and possibly the power of using `do.call(substitute, ......)`.
 
-#### Use *computing one the language*
+#### Use *computing on the language*
 
-Mentioned functions, along with some others (including `as.call`, `as.name`/`as.symbol`, `bquote`, `eval`), can be categorized as functions to *compute on the language*, as they operate on language objects (`call`, `name`/`symbol`).
+The aforementioned functions, along with some others (including `as.call`, `as.name`/`as.symbol`, `bquote`, `eval`), can be categorized as functions to *compute on the language*, as they operate on language objects (`call`, `name`/`symbol`).
 
 ```{r subset_substitute}
 my_subset = function(data, col, val) {
@@ -112,11 +112,11 @@ There are third party packages that can achieve what base R computing on the lan
 
 Now, once we established the proper way to parameterize code that uses *lazy evaluation*, we can move on to the main discussion of this vignette, *programming on data.table*.
 
-Starting from version 1.12.10 data.table provides robust mechanism for parameterizing expressions passed to `i`, `j` and `by` (or `keyby`) arguments of `[.data.table`. It is built upon base R `substitute` function, and mimics its interface. For that purpose `substitute2` has been added as a more robust, and more user-friendly, version of base R `substitute`. For a complete list of differences between `base::substitute` and `data.table::substitute2` please read [`substitute2` manual](https://rdatatable.gitlab.io/data.table/library/data.table/html/substitute2.html).
+Starting from version 1.14.1 data.table provides a robust mechanism for parameterizing expressions passed to `i`, `j` and `by` (or `keyby`) arguments of `[.data.table`. It is built upon base R `substitute` function, and mimics its interface. For that purpose `substitute2` has been added as a more robust, and more user-friendly, version of base R `substitute`. For a complete list of differences between `base::substitute` and `data.table::substitute2` please read [`substitute2` manual](https://rdatatable.gitlab.io/data.table/library/data.table/html/substitute2.html).
 
 ### Substitute variables and names
 
-Let's assume we want to have a general function that applies a function to sum of two arguments that has been applied another function. Code of the particular example function will make this example clearer. Below we have a function to compute length of hypotenuse in a right-angled triangle, knowing length of its legs.
+Let's assume we want to have a general function that applies a function to find the sum of two arguments that have had another function applied over them. Code of the particular example function will make this example clearer. Below we have a function to compute length of hypotenuse in a right-angled triangle, knowing length of its legs.
 
 ${\displaystyle c = \sqrt{a^2 + b^2}}$
 
@@ -127,7 +127,7 @@ quote(
 )
 ```
 
-The goal is the make every name in the above call to be able to be passed as parameter.
+The goal is to make every name in the above function call to be passable as a *parameter*.
 
 ```{r hypotenuse_substitute2}
 substitute2(
@@ -141,7 +141,7 @@ substitute2(
 )
 ```
 
-We can see that both functions names has been replaced, as well names of the variables passed to functions. We used `substitute2` for convenience. In this simple case, base R `substitute` could be used as well, although it requires extra `lapply(env, as.name)`.
+We can see that both functions names, as well as names of the variables passed to the functions have been *parameterized*. We used `substitute2` for convenience. In this simple case, base R `substitute` could be used as well, although it requires extra `lapply(env, as.name)`.
 
 Now, to use substitution inside `[.data.table` we don't need to call `substitute2` function. It is being used internally, all we have to do is to provide `env` argument, the same way as we provide it to `substitute2` function. Substitution is applied to `i`, `j` and `by` (or `keyby`) arguments of `[.data.table` method. Note that `verbose = TRUE` argument can be used to print expressions after substitution is applied.
 
@@ -193,7 +193,7 @@ DT[filter_col %in% filter_val,
 
 ### Substitute variables and character values
 
-In the above example we have seen convenient feature of `substitute2` to automatically converts character to names/symbols. Obvious question arises, what if we actually want to substitute parameter with a character value, so to have base R `substitute` behaviour. We provide mechanism to escape automatic conversion by wrapping elements into base R `I()` call. The `I` function marks an object as *AsIs*, preventing conversion to take place, read `?AsIs` for more details. If base R behaviour is desired for a whole `env` argument, then best to wrap `env` argument into `I()`, otherwise each list element can be wrapped into `I()` individually, see both use cases below.
+In the above example we have seen the convenience feature of `substitute2` to automatically convert characters to names/symbols. The obvious question that arises, what if we actually want to substitute parameter with a character value, so to have base R `substitute` behaviour. We provide a mechanism to escape automatic conversion by wrapping elements into base R `I()` call. The `I` function marks an object as *AsIs*, preventing conversion from taking place; read `?AsIs` for more details. If base R behaviour is desired for a whole `env` argument, then best to wrap `env` argument into `I()`, otherwise each list element can be wrapped into `I()` individually, see both use cases below.
 
 ```{r rank}
 substitute(    # base R
@@ -240,7 +240,7 @@ cols = c("Sepal.Length", "Sepal.Width")
 DT[, .SD, .SDcols = cols]
 ```
 
-Having `cols` parameter we want to splice it into a `list` call making `j` argument look like below.
+We want the `cols` parameter above to be *spliced* into a `list` call making `j` argument look like below:
 
 ```{r splice_tobe}
 DT[, list(Sepal.Length, Sepal.Width)]
@@ -289,7 +289,7 @@ DT[, j,  # again the proper way, enlist list to list call automatically
    verbose = TRUE]
 ```
 
-Note that both expressions visually look the same, although they are not identical.
+While both the expressions vare visually similar, they are not identical:
 
 ```{r splice_substitute2_not}
 str(substitute2(j, env = I(list(j = lapply(cols, as.name)))))
@@ -297,11 +297,11 @@ str(substitute2(j, env = I(list(j = lapply(cols, as.name)))))
 str(substitute2(j, env = list(j = as.list(cols))))
 ```
 
-For more detailed explanation on that matter please see examples in [`substitute2` manual](https://rdatatable.gitlab.io/data.table/library/data.table/html/substitute2.html).
+For more detailed explanation, please see examples in [`substitute2` manual](https://rdatatable.gitlab.io/data.table/library/data.table/html/substitute2.html).
 
 ### Substitution of a complex query
 
-Let's take as an example more complex function that calculates root mean square.
+Let's take as an example a more complex function that calculates root mean square.
 
 ${\displaystyle x_{\text{RMS}}={\sqrt{{\frac{1}{n}}\left(x_{1}^{2}+x_{2}^{2}+\cdots +x_{n}^{2}\right)}}}$
 
