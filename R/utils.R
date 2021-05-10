@@ -141,5 +141,6 @@ edit.data.table = function(name, ...) {
 # nocov end
 
 catf = function(fmt, ...) {
-  if (...length()) cat(gettextf(fmt, ...)) else cat(gettext(fmt))
+  cat(gettextf(fmt, ...))
 }
+
