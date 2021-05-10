@@ -32,7 +32,7 @@ static SEXP selectSxp;
 static SEXP dropSxp;
 static SEXP colClassesSxp;
 static bool selectColClasses = false;
-static cetype_t ienc = CE_NATIVE;
+cetype_t ienc = CE_NATIVE;
 static SEXP RCHK;
 static SEXP DT;
 static SEXP colNamesSxp;
@@ -122,12 +122,10 @@ SEXP freadR(
   else if (LOGICAL(headerArg)[0]==TRUE) args.header = true;
 
   args.nrowLimit = INT64_MAX;
-  // checked at R level
-  if (isReal(nrowLimitArg)) {
-    if (R_FINITE(REAL(nrowLimitArg)[0]) && REAL(nrowLimitArg)[0]>=0.0) args.nrowLimit = (int64_t)(REAL(nrowLimitArg)[0]);
-  } else {
-    if (INTEGER(nrowLimitArg)[0]>=1) args.nrowLimit = (int64_t)INTEGER(nrowLimitArg)[0];
-  }
+  if (!isReal(nrowLimitArg) || length(nrowLimitArg)!=1)
+    error(_("Internal error: freadR nrows not a single real. R level catches this."));  // # nocov
+  if (R_FINITE(REAL(nrowLimitArg)[0]) && REAL(nrowLimitArg)[0]>=0.0)
+    args.nrowLimit = (int64_t)(REAL(nrowLimitArg)[0]);
 
   args.logical01 = LOGICAL(logical01Arg)[0];
   {
@@ -337,7 +335,7 @@ bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, const int 
               type[i]=CT_STRING; // e.g. CT_ISO8601_DATE changed to character here so that as.POSIXct treats the date-only as local time in tests 1743.122 and 2150.11
               SET_STRING_ELT(colClassesAs, i, tt);
             }
-          } else { 
+          } else {
             type[i] = typeEnum[w-1];                           // freadMain checks bump up only not down
             if (w==NUT) SET_STRING_ELT(colClassesAs, i, tt);
           }

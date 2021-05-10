@@ -19,13 +19,14 @@
   dev = as.integer(v[1L, 3L]) %% 2L == 1L  # version number odd => dev
   if (!isTRUE(getOption("datatable.quiet"))) {   # new option in v1.12.4, #3489
     packageStartupMessage("data.table ", v, if(dev)paste0(" IN DEVELOPMENT built ",d,g),
-                          " using ", getDTthreads(verbose=FALSE), " threads (see ?getDTthreads).  Latest news: r-datatable.com")
-    if (gettext("TRANSLATION CHECK", domain='R-data.table') != "TRANSLATION CHECK")
-      packageStartupMessage(gettext("**********\nRunning data.table in English; package support is available in English only. When searching for online help, be sure to also check for the English error message. This can be obtained by looking at the po/R-<locale>.po and po/<locale>.po files in the package source, where the native language and English error messages can be found side-by-side\n**********", domain="R-data.table"))
+                          " using ", getDTthreads(verbose=FALSE), " threads (see ?getDTthreads).  Latest news: r-datatable.com", domain="R-data.table")
+    # NB: domain= is necessary in .onAttach and .onLoad, see ?gettext and https://bugs.r-project.org/bugzilla/show_bug.cgi?id=18092.
+    if (gettext(domain="R-data.table", "TRANSLATION CHECK") != "TRANSLATION CHECK")
+      packageStartupMessage(domain="R-data.table", "**********\nRunning data.table in English; package support is available in English only. When searching for online help, be sure to also check for the English error message. This can be obtained by looking at the po/R-<locale>.po and po/<locale>.po files in the package source, where the native language and English error messages can be found side-by-side\n**********")
     if (dev && (Sys.Date() - as.Date(d))>28L)
-      packageStartupMessage("**********\nThis development version of data.table was built more than 4 weeks ago. Please update: data.table::update.dev.pkg()\n**********")
+      packageStartupMessage(domain="R-data.table", "**********\nThis development version of data.table was built more than 4 weeks ago. Please update: data.table::update.dev.pkg()\n**********")
     if (!.Call(ChasOpenMP))
-      packageStartupMessage("**********\n",
+      packageStartupMessage(domain="R-data.table", "**********\n",
         "This installation of data.table has not detected OpenMP support. It should still work but in single-threaded mode.\n",
         if (Sys.info()["sysname"]=="Darwin")
           "This is a Mac. Please read https://mac.r-project.org/openmp/. Please engage with Apple and ask them for support. Check r-datatable.com for updates, and our Mac instructions here: https://github.com/Rdatatable/data.table/wiki/Installation. After several years of many reports of installation problems on Mac, it's time to gingerly point out that there have been no similar problems on Windows or Linux."

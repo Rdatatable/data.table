@@ -15,6 +15,8 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
   # trunc.cols - should only the columns be printed that can fit in the console? (FALSE)
   if (!col.names %chin% c("auto", "top", "none"))
     stop("Valid options for col.names are 'auto', 'top', and 'none'")
+  if (length(trunc.cols) != 1L || !is.logical(trunc.cols) || is.na(trunc.cols))
+    stop("Valid options for trunc.cols are TRUE and FALSE")
   if (col.names == "none" && class)
     warning("Column classes will be suppressed when col.names is 'none'")
   if (!shouldPrint(x)) {
@@ -41,31 +43,34 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
   if (!is.numeric(topn)) topn = 5L
   topnmiss = missing(topn)
   topn = max(as.integer(topn),1L)
-  if (print.keys){
+  if (print.keys) {
     if (!is.null(ky <- key(x)))
-    cat("Key: <", paste(ky, collapse=", "), ">\n", sep="")
+    catf("Key: <%s>\n", toString(ky))
     if (!is.null(ixs <- indices(x)))
-    cat("Ind", if (length(ixs) > 1L) "ices" else "ex", ": <",
-      paste(ixs, collapse=">, <"), ">\n", sep="")
+    cat(sprintf(
+      ngettext(length(ixs), "Index: %s\n", "Indices: %s\n"),
+      paste0("<", ixs, ">", collapse = ", ")
+    ))
   }
   if (any(dim(x)==0L)) {
     class = if (is.data.table(x)) "table" else "frame"  # a data.frame could be passed to print.data.table() directly, #3363
     if (all(dim(x)==0L)) {
-      cat("Null data.",class," (0 rows and 0 cols)\n", sep="")  # See FAQ 2.5 and NEWS item in v1.8.9
+      catf("Null data.%s (0 rows and 0 cols)\n", class)  # See FAQ 2.5 and NEWS item in v1.8.9
     } else {
-      cat("Empty data.",class," (", dim(x)[1L], " rows and ",length(x)," cols)", sep="")
+      catf("Empty data.%s (%d rows and %d cols)", class, NROW(x), NCOL(x))
       if (length(x)>0L) cat(": ",paste(head(names(x),6L),collapse=","),if(length(x)>6L)"...",sep="")
       cat("\n")
     }
     return(invisible(x))
   }
-  if ((topn*2L+1L)<nrow(x) && (nrow(x)>nrows || !topnmiss)) {
+  n_x = nrow(x)
+  if ((topn*2L+1L)<n_x && (n_x>nrows || !topnmiss)) {
     toprint = rbindlist(list(head(x, topn), tail(x, topn)), use.names=FALSE)  # no need to match names because head and tail of same x, and #3306
-    rn = c(seq_len(topn), seq.int(to=nrow(x), length.out=topn))
+    rn = c(seq_len(topn), seq.int(to=n_x, length.out=topn))
     printdots = TRUE
   } else {
     toprint = x
-    rn = seq_len(nrow(x))
+    rn = seq_len(n_x)
     printdots = FALSE
   }
   toprint=format.data.table(toprint, na.encode=FALSE, timezone = timezone, ...)  # na.encode=FALSE so that NA in character cols print as <NA>
@@ -93,7 +98,7 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
   if (quote) colnames(toprint) <- paste0('"', old <- colnames(toprint), '"')
   if (isTRUE(trunc.cols)) {
     # allow truncation of columns to print only what will fit in console PR #4074
-    widths = dt_width(toprint, class, row.names, col.names)
+    widths = dt_width(toprint, n_x, class, row.names, col.names)
     cons_width = getOption("width")
     cols_to_print = widths < cons_width
     not_printed = colnames(toprint)[!cols_to_print]
@@ -187,7 +192,7 @@ shouldPrint = function(x) {
 
 # for removing the head (column names) of matrix output entirely,
 #   as opposed to printing a blank line, for excluding col.names per PR #1483
-cut_top = function(x) cat(capture.output(x)[-1L], sep = '\n')
+cut_top = function(x) writeLines(capture.output(x)[-1L])
 
 # for printing the dims for list columns #3671; used by format.data.table()
 paste_dims = function(x) {
@@ -202,12 +207,13 @@ paste_dims = function(x) {
 # to calculate widths of data.table for PR #4074
 # gets the width of the data.table at each column
 #   and compares it to the console width
-dt_width = function(x, class, row.names, col.names) {
+# pass nrow because x is the head/tail only so nrow(x) is wrong, #4266
+dt_width = function(x, nrow, class, row.names, col.names) {
   widths = apply(nchar(x, type='width'), 2L, max)
   if (class) widths = pmax(widths, 6L)
-  if (col.names != "none") names = sapply(colnames(x), nchar, type = "width") else names = 0L
+  if (col.names != "none") names = sapply(colnames(x), nchar, type="width") else names = 0L
   dt_widths = pmax(widths, names)
-  rownum_width = if (row.names) as.integer(ceiling(log10(nrow(x)))+2) else 0L
+  rownum_width = if (row.names) as.integer(ceiling(log10(nrow))+2) else 0L
   cumsum(dt_widths + 1L) + rownum_width
 }
 # keeps the dim and dimnames attributes
