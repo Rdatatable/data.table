@@ -7491,12 +7491,12 @@ test(1542.06, DT1, data.table(id=1:5, newCol=6:10, key="id"))
 DT1[3, id:=6L]
 test(1542.07, DT1, data.table(id=INT(1,2,6,4,5), newCol=6:10))
 
-# past wrong behaviour (invalid key, #3215); root cause is the shallow exposed uniquely via DT[TRUE]
-# test(1542.08, DT$id, INT(1,2,6,4,5))
-# test(1542.09, key(DT), "id")
-# current correct behaviour :
-test(1542.10, DT$id, 1:5)
-test(1542.11, key(DT), "id")
+# current wrong behaviour (invalid key, #3215); root cause is the shallow exposed uniquely via DT[TRUE]
+test(1542.08, DT$id, INT(1,2,6,4,5))
+test(1542.09, key(DT), "id")
+# future correct behaviour :
+# test(1542.10, DT$id, 1:5)
+# test(1542.11, key(DT), "id")
 
 # rest of #1130 - merge doesn't copy, instead uses joins without keys.
 set.seed(1L)
