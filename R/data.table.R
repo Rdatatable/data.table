@@ -121,7 +121,7 @@ replace_dot_alias = function(e) {
   }
 }
 
-"[.data.table" = function (x, i, j, by, keyby, with=TRUE, nomatch=getOption("datatable.nomatch", NA), mult="all", roll=FALSE, rollends=if (roll=="nearest") c(TRUE,TRUE) else if (roll>=0) c(FALSE,TRUE) else c(TRUE,FALSE), which=FALSE, .SDcols, verbose=getOption("datatable.verbose"), allow.cartesian=getOption("datatable.allow.cartesian"), drop=NULL, on=NULL)
+"[.data.table" = function (x, i, j, by, keyby, with=TRUE, nomatch=getOption("datatable.nomatch", NA), mult="all", roll=FALSE, rollends=if (roll=="nearest") c(TRUE,TRUE) else if (roll>=0) c(FALSE,TRUE) else c(TRUE,FALSE), which=FALSE, .SDcols, verbose=getOption("datatable.verbose"), allow.cartesian=getOption("datatable.allow.cartesian"), drop=NULL, on=NULL, env=NULL)
 {
   # ..selfcount <<- ..selfcount+1  # in dev, we check no self calls, each of which doubles overhead, or could
   # test explicitly if the caller is [.data.table (even stronger test. TO DO.)
@@ -151,15 +151,19 @@ replace_dot_alias = function(e) {
     keyby = FALSE
   } else {
     if (missing(by)) {
-      by = bysub = substitute(keyby)
+      by = bysub = if (is.null(env)) substitute(keyby)
+                                else eval(substitute(substitute2(.keyby, env), list(.keyby = substitute(keyby))))
       keyby = TRUE
     } else {
-      by = bysub = substitute(by)
+      by = bysub = if (is.null(env)) substitute(by)
+                               else  eval(substitute(substitute2(.by, env), list(.by = substitute(by))))
       if (missing(keyby))
         keyby = FALSE
       else if (!isTRUEorFALSE(keyby))
         stop("When by and keyby are both provided, keyby must be TRUE or FALSE")
     }
+    if (missing(by)) { missingby=TRUE; by=bysub=NULL }  # possible when env is used, PR#4304
+    else if (verbose) cat("Argument 'by' after substitute: ", paste(deparse(bysub, width.cutoff=500L), collapse=" "), "\n", sep="")
   }
   bynull = !missingby && is.null(by) #3530
   byjoin = !is.null(by) && is.symbol(bysub) && bysub==".EACHI"
@@ -215,7 +219,16 @@ replace_dot_alias = function(e) {
   av = NULL
   jsub = NULL
   if (!missing(j)) {
-    jsub = replace_dot_alias(substitute(j))
+    if (is.null(env)) jsub = substitute(j) else {
+      jsub = eval(substitute(
+        substitute2(.j, env),
+        list(.j = substitute(j))
+      ))
+      if (missing(jsub)) {j = substitute(); jsub=NULL} else if (verbose) cat("Argument 'j'  after substitute: ", paste(deparse(jsub, width.cutoff=500L), collapse=" "), "\n", sep="")
+    }
+  }
+  if (!missing(j)) {
+    jsub = replace_dot_alias(jsub)
     root = if (is.call(jsub)) as.character(jsub[[1L]])[1L] else ""
     if (root == ":" ||
         (root %chin% c("-","!") && jsub[[2L]] %iscall% '(' && jsub[[2L]][[2L]] %iscall% ':') ||
@@ -291,10 +304,18 @@ replace_dot_alias = function(e) {
 
   # setdiff removes duplicate entries, which'll create issues with duplicated names. Use %chin% instead.
   dupdiff = function(x, y) x[!x %chin% y]
-
+  isub = NULL
+  if (!missing(i)) {
+    if (is.null(env)) isub = substitute(i) else {
+      isub = eval(substitute(
+        substitute2(.i, env),
+        list(.i = substitute(i))
+      ))
+      if (missing(isub)) {i = substitute(); isub=NULL} else if (verbose) cat("Argument 'i'  after substitute: ", paste(deparse(isub, width.cutoff=500L), collapse=" "), "\n", sep="")
+    }
+  }
   if (!missing(i)) {
     xo = NULL
-    isub = substitute(i)
     if (identical(isub, NA)) {
       # only possibility *isub* can be NA (logical) is the symbol NA itself; i.e. DT[NA]
       # replace NA in this case with NA_integer_ as that's almost surely what user intended to

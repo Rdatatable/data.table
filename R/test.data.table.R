@@ -177,7 +177,7 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
   timings = env$timings
   DT = head(timings[-1L][order(-time)], 10L)   # exclude id 1 as in dev that includes JIT
   if ((x<-sum(timings[["nTest"]])) != ntest) {
-    warning("Timings count mismatch:",x,"vs",ntest)  # nocov
+    warning("Timings count mismatch: ",x," vs ",ntest)  # nocov
   }
   catf("10 longest running tests took %ds (%d%% of %ds)\n", as.integer(tt<-DT[, sum(time)]), as.integer(100*tt/(ss<-timings[,sum(time)])), as.integer(ss))
   print(DT, class=FALSE)
@@ -260,6 +260,7 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
   # iv) if warning is supplied, y is checked to equal x, and x should result in a warning message matching the pattern
   # v) if output is supplied, x is evaluated and printed and the output is checked to match the pattern
   # num just needs to be numeric and unique. We normally increment integers at the end, but inserts can be made using decimals e.g. 10,11,11.1,11.2,12,13,...
+  # num=0 to escape global failure tracking so we can test behaviour of test function itself: test(1.1, test(0, TRUE, FALSE), FALSE, output="1 element mismatch")
   # Motivations:
   # 1) we'd like to know all tests that fail not just stop at the first. This often helps by revealing a common feature across a set of
   #    failing tests
@@ -273,7 +274,7 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
     prevtest = get("prevtest", parent.frame())
     nfail = get("nfail", parent.frame())   # to cater for both test.data.table() and stepping through tests in dev
     whichfail = get("whichfail", parent.frame())
-    assign("ntest", get("ntest", parent.frame()) + 1L, parent.frame(), inherits=TRUE)   # bump number of tests run
+    assign("ntest", get("ntest", parent.frame()) + if (num>0) 1L else 0L, parent.frame(), inherits=TRUE)   # bump number of tests run
     lasttime = get("lasttime", parent.frame())
     timings = get("timings", parent.frame())
     memtest = get("memtest", parent.frame())
@@ -282,7 +283,7 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
     foreign = get("foreign", parent.frame())
     showProgress = get("showProgress", parent.frame())
     time = nTest = NULL  # to avoid 'no visible binding' note
-    on.exit( {
+    if (num>0) on.exit( {
        now = proc.time()[3L]
        took = now-lasttime  # so that prep time between tests is attributed to the following test
        assign("lasttime", now, parent.frame(), inherits=TRUE)
@@ -344,7 +345,7 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
     fwrite(mem, "memtest.csv", append=TRUE, verbose=FALSE)                                                                             # nocov
   }
   fail = FALSE
-  if (.test.data.table) {
+  if (.test.data.table && num>0) {
     if (num<prevtest+0.0000005) {
       # nocov start
       catf("Test id %s is not in increasing order\n", numStr)
@@ -454,7 +455,7 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
     }
     # nocov end
   }
-  if (fail && .test.data.table) {
+  if (fail && .test.data.table && num>0) {
     # nocov start
     assign("nfail", nfail+1L, parent.frame(), inherits=TRUE)
     assign("whichfail", c(whichfail, numStr), parent.frame(), inherits=TRUE)

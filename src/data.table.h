@@ -255,3 +255,5 @@ SEXP fcaseR(SEXP na, SEXP rho, SEXP args);
 //snprintf.c
 int dt_win_snprintf(char *dest, size_t n, const char *fmt, ...);
 
+// programming.c
+SEXP substitute_call_arg_namesR(SEXP expr, SEXP env);

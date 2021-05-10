@@ -58,6 +58,35 @@
 
 9. `melt()` now supports multiple output variable columns via the `variable_table` attribute of `measure.vars`, [#3396](https://github.com/Rdatatable/data.table/issues/3396) [#2575](https://github.com/Rdatatable/data.table/issues/2575) [#2551](https://github.com/Rdatatable/data.table/issues/2551). It should be a `data.table` with one row that describes each element of the `measure.vars` vector(s). These data/columns are copied to the output instead of the usual variable column. This is backwards compatible since the previous behavior (one output variable column) is used when there is no `variable_table`. New function `measure()` which uses either a separator or a regex to create a `measure.vars` list/vector with `variable_table` attribute; useful for melting data that has several distinct pieces of information encoded in each column name. See new `?measure` and new section in reshape vignette. Thanks to Matthias Gomolka, Ananda Mahto, Hugh Parsonage for reporting, and to @tdhock for implementing.
 
+10. A new interface for _programming on data.table_ has been added, [#2655](https://github.com/Rdatatable/data.table/issues/2655) any many other linked issues. It is built using base R's `substitute`-like interface via a new `env` argument to `[.data.table`. For details see the new vignette *programming on data.table*, and the new `?substitute2` manual page. Thanks to numerous users for filing requests, and Jan Gorecki for implementing.
+
+    ```R
+    DT = data.table(x = 1:5, y = 5:1)
+
+    # parameters
+    in_col_name = "x"
+    fun = "sum"
+    fun_arg1 = "na.rm"
+    fun_arg1val = TRUE
+    out_col_name = "sum_x"
+
+    # parameterized query
+    #DT[, .(out_col_name = fun(in_col_name, fun_arg1=fun_arg1val))]
+
+    # desired query
+    DT[, .(sum_x = sum(x, na.rm=TRUE))]
+
+    # new interface
+    DT[, .(out_col_name = fun(in_col_name, fun_arg1=fun_arg1val)),
+      env = list(
+        in_col_name = "x",
+        fun = "sum",
+        fun_arg1 = "na.rm",
+        fun_arg1val = TRUE,
+        out_col_name = "sum_x"
+      )]
+    ```
+
 ## BUG FIXES
 
 1. `by=.EACHI` when `i` is keyed but `on=` different columns than `i`'s key could create an invalidly keyed result, [#4603](https://github.com/Rdatatable/data.table/issues/4603) [#4911](https://github.com/Rdatatable/data.table/issues/4911). Thanks to @myoung3 and @adamaltmejd for reporting, and @ColeMiller1 for the PR. An invalid key is where a `data.table` is marked as sorted by the key columns but the data is not sorted by those columns, leading to incorrect results from subsequent queries.
