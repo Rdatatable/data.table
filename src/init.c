@@ -34,6 +34,7 @@ SEXP sym_inherits;
 SEXP sym_datatable_locked;
 SEXP sym_tzone;
 SEXP sym_old_fread_datetime_character;
+SEXP sym_variable_table;
 double NA_INT64_D;
 long long NA_INT64_LL;
 Rcomplex NA_CPLX;
@@ -359,6 +360,7 @@ void attribute_visible R_init_datatable(DllInfo *info)
   sym_datatable_locked = install(".data.table.locked");
   sym_tzone = install("tzone");
   sym_old_fread_datetime_character = install("datatable.old.fread.datetime.character");
+  sym_variable_table = install("variable_table");
 
   initDTthreads();
   avoid_openmp_hang_within_fork();

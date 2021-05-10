@@ -96,12 +96,12 @@ It can be used in `j` in two ways:
 
 (b) The functional form
 
-	```{r eval = FALSE}
-	DT[, `:=`(colA = valA, # valA is assigned to colA
-	          colB = valB, # valB is assigned to colB
-	          ...
-	)]
-	```
+    ```{r eval = FALSE}
+    DT[, `:=`(colA = valA, # valA is assigned to colA
+              colB = valB, # valB is assigned to colB
+              ...
+    )]
+    ```
 
 #### {.bs-callout .bs-callout-warning}
 
