@@ -88,12 +88,12 @@ setkeyv = function(x, cols, verbose=getOption("datatable.verbose"), physical=TRU
     if (verbose) {
       tt = suppressMessages(system.time(o <- forderv(x, cols, sort=TRUE, retGrp=FALSE)))  # system.time does a gc, so we don't want this always on, until refcnt is on by default in R
       # suppress needed for tests 644 and 645 in verbose mode
-      cat("forder took", tt["user.self"]+tt["sys.self"], "sec\n")
+      catf("forder took %.03f sec\n", tt["user.self"]+tt["sys.self"])
     } else {
       o = forderv(x, cols, sort=TRUE, retGrp=FALSE)
     }
   } else {
-    if (verbose) cat("setkey on columns ", brackify(cols), " using existing index '", newkey, "'\n", sep="")
+    if (verbose) catf("setkey on columns %s using existing index '%s'\n", brackify(cols), newkey)
     o = getindex(x, newkey)
   }
   if (!physical) {
@@ -105,9 +105,9 @@ setkeyv = function(x, cols, verbose=getOption("datatable.verbose"), physical=TRU
   if (length(o)) {
     if (verbose) { last.started.at = proc.time() }
     .Call(Creorder,x,o)
-    if (verbose) { cat("reorder took", timetaken(last.started.at), "\n"); flush.console() }
+    if (verbose) { catf("reorder took %s\n", timetaken(last.started.at)); flush.console() }
   } else {
-    if (verbose) cat("x is already ordered by these columns, no need to call reorder\n")
+    if (verbose) catf("x is already ordered by these columns, no need to call reorder\n")
   } # else empty integer() from forderv means x is already ordered by those cols, nothing to do.
   setattr(x,"sorted",cols)
   invisible(x)

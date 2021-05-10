@@ -44,7 +44,7 @@ between = function(x, lower, upper, incbounds=TRUE, NAbounds=TRUE, check=FALSE) 
     # length(upper) can be 1 or length(x) independently of lower
     .Call(Cbetween, x, lower, upper, incbounds, NAbounds, check)
   } else {
-    if (isTRUE(getOption("datatable.verbose"))) cat("optimised between not available for this data type, fallback to slow R routine\n")
+    if (isTRUE(getOption("datatable.verbose"))) catf("optimised between not available for this data type, fallback to slow R routine\n")
     if (isTRUE(NAbounds) && (anyNA(lower) || anyNA(upper))) stop("Not yet implemented NAbounds=TRUE for this non-numeric and non-character type")
     if (check && any(lower>upper, na.rm=TRUE)) stop("Some lower>upper for this non-numeric and non-character type")
     if (incbounds) x>=lower & x<=upper
@@ -78,7 +78,7 @@ inrange = function(x,lower,upper,incbounds=TRUE) {
   subject = setDT(list(l=lower, u=upper))
   ops = if (incbounds) c(4L, 2L) else c(5L, 3L) # >=,<= and >,<
   verbose = isTRUE(getOption("datatable.verbose"))
-  if (verbose) {last.started.at=proc.time();cat("forderv(query) took ... ");flush.console()}
+  if (verbose) {last.started.at=proc.time();catf("forderv(query) took ... ");flush.console()}
   if (verbose) {cat(timetaken(last.started.at),"\n"); flush.console()}
   ans = bmerge(shallow(subject), query, 1L:2L, c(1L,1L),
       0, c(FALSE, TRUE), 0L, "all", ops, verbose) # fix for #1819, turn on verbose messages
@@ -86,9 +86,9 @@ inrange = function(x,lower,upper,incbounds=TRUE) {
   options(datatable.verbose=FALSE)
   setDT(ans[c("starts", "lens")], key=c("starts", "lens"))
   options(datatable.verbose=verbose)
-  if (verbose) {last.started.at=proc.time();cat("Generating final logical vector ... ");flush.console()}
+  if (verbose) {last.started.at=proc.time();catf("Generating final logical vector ... ");flush.console()}
   .Call(Cinrange, idx <- vector("logical", length(x)), xo, ans[["starts"]], ans[["lens"]])
-  if (verbose) {cat("done in",timetaken(last.started.at),"\n"); flush.console}
+  if (verbose) {catf("done in %s\n",timetaken(last.started.at)); flush.console}
   idx
 }
 
