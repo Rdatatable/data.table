@@ -160,7 +160,7 @@ replace_dot_alias = function(e) {
       else if (!isTRUEorFALSE(keyby))
         stop("When by and keyby are both provided, keyby must be TRUE or FALSE")
     }
-  }      
+  }
   bynull = !missingby && is.null(by) #3530
   byjoin = !is.null(by) && is.symbol(bysub) && bysub==".EACHI"
   naturaljoin = FALSE
@@ -756,7 +756,12 @@ replace_dot_alias = function(e) {
           bysub = parse(text=paste0("list(",paste(bysub,collapse=","),")"))[[1L]]
           bysubl = as.list.default(bysub)
         }
-        allbyvars = intersect(all.vars(bysub), names_x)
+        if (any(c("eval","evalq","eval.parent","local","get","mget","dynGet") %chin% all.names(bysub)))
+          # when the 'by' expression includes get/mget/eval, all.vars cannot be trusted to infer all used columns, #4981
+          allbyvars = NULL
+        else
+          allbyvars = intersect(all.vars(bysub), names_x)  
+        
         orderedirows = .Call(CisOrderedSubset, irows, nrow(x))  # TRUE when irows is NULL (i.e. no i clause). Similar but better than is.sorted(f__)
         bysameorder = byindex = FALSE
         if (!bysub %iscall% ":" && ##Fix #4285
@@ -948,7 +953,7 @@ replace_dot_alias = function(e) {
           } else {
             if (colsub %iscall% 'patterns') {
               # each pattern gives a new filter condition, intersect the end result
-              .SDcols = Reduce(intersect, do_patterns(colsub, names_x))
+              .SDcols = Reduce(intersect, eval_with_cols(colsub, names_x))
             } else {
               .SDcols = eval(colsub, parent.frame(), parent.frame())
               # allow filtering via function in .SDcols, #3950
@@ -1347,7 +1352,7 @@ replace_dot_alias = function(e) {
 
     if (is.data.table(jval)) {
       # should set the parent class only when jval is a plain data.table #4324
-      if (identical(class(jval), c('data.table', 'data.frame'))) 
+      if (identical(class(jval), c('data.table', 'data.frame')))
         setattr(jval, 'class', class(x)) # fix for #64
       if (haskey(x) && all(key(x) %chin% names(jval)) && is.sorted(jval, by=key(x)))
         setattr(jval, 'sorted', key(x))

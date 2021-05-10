@@ -1056,7 +1056,7 @@ static void parse_iso8601_timestamp(FieldParseContext *ctx)
       if (!args.noTZasUTC)
         goto fail;
       // if neither Z nor UTC offset is present, then it's local time and that's not directly supported yet; see news for v1.13.0
-      // but user can specify that the unmarked datetimes are UTC by passing tz="UTC" 
+      // but user can specify that the unmarked datetimes are UTC by passing tz="UTC"
       // if local time is UTC (env variable TZ is "" or "UTC", not unset) then local time is UTC, and that's caught by fread at R level too
     }
   }
@@ -2271,7 +2271,7 @@ int freadMain(freadMainArgs _args) {
             fun[abs(thisType)](&fctx);
             if (*tch!=sep) break;
             int8_t thisSize = size[j];
-            if (thisSize) ((char **) targets)[thisSize] += thisSize;  // 'if' for when rereading to avoid undefined NULL+0 
+            if (thisSize) ((char **) targets)[thisSize] += thisSize;  // 'if' for when rereading to avoid undefined NULL+0
             tch++;
             j++;
           }
