@@ -124,6 +124,7 @@ base_messages = list(
   missing_object = get_msg(`__dt_test_missing_` + 1, "'", fmt=TRUE),
   missing_function = get_msg(`__dt_test_missing_`(), '"', fmt=TRUE),
   invalid_arg_unary_operator = get_msg(-'a'),
+  invalid_arg_binary_operator = get_msg(1 + 'a'),
   invalid_arg_sum = get_msg(sum('a'), c("\\(", "\\)"), fmt=TRUE),
   arg_length_mismatch = get_msg(base::order(1, 1:2)),
   empty_max = get_msg(max(numeric())),
@@ -12738,7 +12739,7 @@ test(1904.2, fread(txt, na.strings=c("NA", " ")), ans, warning='na.strings\\[2\\
 test(1904.3, fread(txt, na.strings=c("NA", "")), ans)
 test(1904.4, fread(txt, na.strings=c("NA", "", " ")), ans, warning='na.strings\\[3\\]==" ".*only.*whitespace.*will already be read as <NA>')
 test(1904.5, fread(txt, na.strings=c("NA", " "), strip.white=FALSE), error='na.strings\\[2\\]==" ".*only.*whitespace.*But strip.white=FALSE')
-#setnames(ans, c("A","   B","    C"))
+setnames(ans, c("A","   B","    C"))
 test(1904.6, fread(txt, na.strings="NA", strip.white=FALSE), ans)  # whitespace around NA strings is always stripped regardless of strip.white; just column names affected here
 
 # should respect sep= when it is supplied, #2666
@@ -13077,7 +13078,7 @@ test(1923.2, indices(DT, vectors=TRUE), list(c("V1")))
 DT = data.table(varname = 1)
 test(1924.1, DT[var_name==1], error='not found\\. Perhaps you intended.*varname')
 test(1924.2, DT[variable==1], error='Object.*not found among')
-test(1924.3, DT[varname+'a'], error='non-numeric argument')
+test(1924.3, DT[varname+'a'], error=base_messages$invalid_arg_binary_operator)
 DT[, VAR_NAME:=2]
 test(1924.4, DT[var_name==1], error="Object 'var_name' not found. Perhaps you intended [varname, VAR_NAME]")
 DT = setDT(lapply(integer(50), function(...) numeric(1L)))
