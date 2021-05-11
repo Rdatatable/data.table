@@ -135,6 +135,8 @@
 
 4. `cube(DT, by="a")` now gives a more helpful error that `j` is missing, [#4282](https://github.com/Rdatatable/data.table/pull/4282).
 
+5. Typo checking in `i` available since 1.11.4 is extended to work in non-English sessions.
+
 
 # data.table [v1.14.0](https://github.com/Rdatatable/data.table/milestone/23?closed=1)  (21 Feb 2021)
 
