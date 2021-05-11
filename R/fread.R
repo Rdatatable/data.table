@@ -36,7 +36,7 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
     if (!is.character(text)) stop("'text=' is type ", typeof(text), " but must be character.")
     if (!length(text)) return(data.table())
     if (length(text) > 1L) {
-      cat(text, file=(tmpFile<-tempfile(tmpdir=tmpdir)), sep="\n")  # avoid paste0() which could create a new very long single string in R's memory
+      writeLines(text, tmpFile<-tempfile(tmpdir=tmpdir))  # avoid paste0() which could create a new very long single string in R's memory
       file = tmpFile
       on.exit(unlink(tmpFile), add=TRUE)
     } else {
