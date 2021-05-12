@@ -598,3 +598,233 @@ dt_fill(nadt, c("x1", "x2", "x3"), is.na, 0)
 test(103.01, nadt, data.table(x1 = c(1, 2, 0, Inf), x2 = c(2, 0, 3, Inf), x3 = c(0, 1, 2, 0)))
 dt_fill(nadt, c("x1", "x2", "x3"), is.infinite, 0)
 test(103.02, nadt, data.table(x1 = c(1, 2, 0, 0), x2 = c(2, 0, 3, 0), x3 = c(0, 1, 2, 0)))
+
+## repeat of some above tests with the dot alias
+# substitute2 simple
+test(104.01, substitute2(list(var = val), env = .(var="my_var", val=5L)), quote(list(my_var = 5L)))
+# substitute2 + I to handle char and symbol
+test(104.02, substitute2(list(var = val), env = .(var="my_var", val=I("my_val"))), quote(list(my_var="my_val")))
+test(104.03, substitute2(list(var = val), env = I(.(var=as.name("my_var"), val="my_val"))), quote(list(my_var="my_val")))
+# substitute2 handle symbol anyway
+test(104.04, substitute2(list(var = val), env = .(var=as.name("my_var"), val=I("my_val"))), quote(list(my_var="my_val")))
+test(104.05, substitute2(
+  .(fun_ans_var = fun(farg1, farg2=farg2val), timestamp=Sys.time(), col_head = head(head_arg, n=1L)),
+  .(
+    fun_ans_var = "my_mean_res",
+    fun = "mean",
+    farg1 = "my_x_col",
+    farg2 = "na.rm",
+    farg2val = TRUE,
+    col_head = "first_y",
+    head_arg = "y"
+  )
+), quote(.(my_mean_res=mean(my_x_col, na.rm=TRUE), timestamp=Sys.time(), first_y=head(y, n=1L))))
+# substitute2 PR example
+test(104.06, substitute2(
+  .(out_col_name = fun(in_col_name, fun_arg1=fun_arg1val)),
+  env = .(
+    in_col_name = "x",
+    fun = "sum",
+    fun_arg1 = "na.rm",
+    fun_arg1val = TRUE,
+    out_col_name = "sum_x"
+  )
+), quote(.(sum_x = sum(x, na.rm=TRUE))))
+# substitute2 nested calls argument names substitute
+test(104.07, substitute2(
+  f1(a1 = f2(a2 = f3(a3 = f4(a4 = v1, extra=v2), v3, a3b = v4)), a1b=c("a","b")),
+  .(f1="fun1", f2="fun2", f3="fun3", f4="fun4", a1="arg1", a2="arg2", a3="arg3", a4="arg4", v1="col1", extra="n", v2=6L, v3="col2", a3b="arg3b", v4=c(3.5,4.5), a1b="arg1b")
+), substitute(
+  fun1(arg1 = fun2(arg2 = fun3(arg3 = fun4(arg4 = col1, n=6L), col2, arg3b = v4)), arg1b=c("a","b")),
+  list(v4=c(3.5,4.5))
+))
+test(104.08, substitute2(list(nm = fun()), env=.(a="b", fun="const1", nm="int1")), quote(list(int1=const1())))
+test(104.09, substitute2(.(), env=.(a="b", fun="const1", nm="int1")), quote(.()))
+# substitute2 AsIs class properly removed or kept
+test(104.10, class(substitute2(var3%in%values, .(var3="a", values=I(c("a","b","c"))))[[3L]]), "character")
+test(104.11, class(substitute2(var3%in%values, I(.(var3=as.name("a"), values=c("a","b","c"))))[[3L]]), "character")
+test(104.12, class(substitute2(var3%in%values, .(var3="a", values=I(1:3)))[[3L]]), "integer")
+test(104.13, class(substitute2(var3%in%values, I(.(var3=as.name("a"), values=c(1:3))))[[3L]]), "integer")
+cl = substitute2(var3%in%values, I(.(var3=as.name("a"), values=I(c("a","b","c"))))) ## keeping AsIs by extra I on whole env arg
+test(104.14, cl, substitute(a %in% .v, list(.v=I(c("a","b","c")))))
+test(104.15, class(cl[[3L]]), "AsIs")
+cl = substitute2(var3%in%values, I(.(var3="a", values=I(1:3))))
+test(104.16, cl, substitute("a" %in% .v, list(.v=I(1:3))))
+test(104.17, class(cl[[3L]]), "AsIs")
+# substitute2 non-scalar char as name
+test(104.18, substitute2(list(var = val), env = .(var="my_var", val=c("a","b"))), error="are not scalar")
+test(104.19, substitute2(list(var = val), env = .(var="my_var", val=I(c("a","b")))), substitute(list(my_var=.v), list(.v=c("a","b")))) ## note that quote(list(my_var=c("a","b")))) will not work because 'c("a","b")' will be a 'language' class (a 'c()' call), but we need to have it as 'character' class instead
+test(104.20, substitute2(list(var = val), env = I(.(var=as.name("my_var"), val=c("a","b")))), substitute(list(my_var=.v), list(.v=c("a","b"))))
+# substitute2 non-symbol
+test(104.21, substitute2(list(var = val), env = .(var=I("my_var"), val="my_val")), error="type 'character' but it has to be 'symbol'")
+test(104.22, substitute2(list(var = val), env = I(.(var="my_var", val="my_val"))), error="type 'character' but it has to be 'symbol'")
+test(104.23, substitute2(.(v1=v2), .(v1=1L, v2=2L)), error="type 'integer' but it has to be 'symbol'")
+test(104.24, substitute2(.(v1=v2), .(v1=FALSE, v2=2L)), error="type 'logical' but it has to be 'symbol'")
+# substitute2 NA_character_ becomes valid 'NA' name
+test(104.25, substitute2(.(v1 = v2), .(v1 = NA_character_, v2 = NA_character_, "." = "list")), quote(list(`NA` = `NA`)))
+cl = substitute2(.(v1 = v2), .(v1 = NA_character_, v2 = I(NA_character_), "." = "list"))
+test(104.26, cl, quote(list(`NA` = NA_character_)))
+test(104.27, eval(cl), list("NA" = NA_character_))
+# substitute2 duplicate matches
+test(104.28, substitute2(list(v1=v2, v1=v2), env=.(v1="nm",v2=2L,v3=3L)), quote(list(nm = 2L, nm = 2L)))
+test(104.29, substitute2(list(v1=v2, v1=v3), env=.(v1="nm",v2=2L,v3=3L)), quote(list(nm = 2L, nm = 3L)))
+# substitute2 nested unnamed call
+test(104.30, substitute2(c(list(v1=v2, v1=v2)), env=.(v1="nm",v2=2L,v3=3L)), quote(c(list(nm = 2L, nm = 2L))))
+test(104.31, substitute2(c(list(v1=v2, v1=v3)), env=.(v1="nm",v2=2L,v3=3L)), quote(c(list(nm = 2L, nm = 3L))))
+
+# documentation examples
+test(105.01, substitute2(list(var1 = var2), .(var1 = "c1", var2 = 5L)), quote(list(c1 = 5L))) ## works also on names
+test(105.02, substitute2(var1, .(var1 = I("c1"))), "c1") ## enforce character with I
+test(105.03, substitute2(var1, .(var1 = "c1")), quote(c1)) ## turn character into symbol, for convenience
+test(105.04, substitute2(list(var1 = var2), .(var1 = "c1", var2 = I("some_character"))), quote(list(c1 = "some_character"))) ## mix symbols and characters
+test(105.05, substitute2(list(var1 = var2), I(.(var1 = as.name("c1"), var2 = "some_character"))), quote(list(c1 = "some_character")))
+test(105.06, substitute2(f(lst), I(.(lst = .(1L, 2L)))), substitute(f(lst), list(lst=list(1L,2L)))) ## list elements are enlist'ed into list calls
+test(105.07, substitute2(f(lst), .(lst = I(.(1L, 2L)))), substitute(f(lst), list(lst=list(1L,2L))))
+test(105.08, substitute2(f(lst), .(lst = call("list", 1L, 2L))), quote(f(list(1L, 2L))))
+test(105.09, substitute2(f(lst), .(lst = .(1L, 2L))), quote(f(list(1L, 2L))))
+test(105.10, substitute2(f(lst), .(lst = .(1L, .(2L)))), quote(f(list(1L, list(2L))))) ## character to name and list into list calls works recursively
+test(105.11, substitute2(f(lst), I(.(lst = .(1L, .(2L))))), substitute(f(lst), list(lst=list(1L, list(2L)))))
+
+# data.table i, j, by
+d = data.table(a = 2:1, b = 1:4)
+test(106.01, d[var3%in%values, .(var1 = f(var2)), by=var3,
+  env=.(var1="res", var2="b", f="sum", var3="a", values=0:3),
+  verbose=TRUE], data.table(a=c(2L,1L), res=c(4L,6L)), output=c("Argument 'by' after substitute: a","Argument 'j'  after substitute: .(res = sum(b))","Argument 'i'  after substitute: a %in% 0:3"))
+# data.table symbols and chars
+d = data.table(a = c("b","a"), b = 1:4)
+out = capture.output(ans <- d[var3%in%values, .(var1 = f(var2)), keyby=var3,
+  env=.(var1="res", var2="b", f="sum", var3="a", values=I(c("a","b","c"))),
+  verbose=TRUE]) # could not use output arg in test, so test it manually
+test(106.02, ans, data.table(a=c("a","b"), res=c(6L,4L), key="a"))
+out = grep("Argument.*substitute", out, value=TRUE)
+test(106.021, length(out), 3L) # we expect i, j, by only here, ensure about that
+test(106.022, "Argument 'by' after substitute: a" %in% out, TRUE)
+test(106.023, "Argument 'j'  after substitute: .(res = sum(b))" %in% out, TRUE)
+test(106.024, "Argument 'i'  after substitute: a %in% c(\"a\", \"b\", \"c\")" %in% out, TRUE)
+out = capture.output(ans <- d[var3%in%values, .(var1 = f(var2)), keyby=var3,
+  env=I(.(var1=as.name("res"), var2=as.name("b"), f=as.name("sum"), var3=as.name("a"), values=c("b","c"))),
+  verbose=TRUE])
+test(106.03, ans, data.table(a=c("b"), res=c(4L), key="a"))
+out = grep("Argument.*substitute", out, value=TRUE)
+test(106.031, length(out), 3L)
+test(106.032, "Argument 'by' after substitute: a" %in% out, TRUE)
+test(106.033, "Argument 'j'  after substitute: .(res = sum(b))" %in% out, TRUE)
+test(106.034, "Argument 'i'  after substitute: a %in% c(\"b\", \"c\")" %in% out, TRUE)
+# substitute2 during join
+d1 = data.table(id1=1:4, v1=5)
+d2 = data.table(id1=c(0L,2:3), v1=6)
+out = capture.output(ans <- d1[d2, on="id1<=id1", .(c1, c2, c3, c4), env=.(c1="x.id1", c2="i.id1", c3="x.v1", c4="i.v1"), verbose=TRUE])
+test(106.041, ans, data.table(x.id1=c(NA,1:2,1:3), i.id1=c(0L,2L,2L,3L,3L,3L), x.v1=c(NA,rep(5,5)), i.v1=rep(6,6)))
+out = grep("Argument.*substitute", out, value=TRUE)
+test(106.042, length(out), 2L) ## 2L because i is non-missing attempt to substitute is made
+test(106.043, "Argument 'j'  after substitute: .(x.id1, i.id1, x.v1, i.v1)" %in% out, TRUE)
+d1 = data.table(id1=c(2L,4L,2L,4L), v1=5)
+d2 = data.table(id1=c(0L,2:3), v1=6)
+out = capture.output(ans <- d1[dd, on="id1<=id1", .(sum(c3), sum(c4)), by=by, env=.(dd="d2", c3="x.v1", c4="i.v1", by=".EACHI"), verbose=TRUE])
+test(106.044, ans, data.table(id1=c(0L,2L,3L), V1=c(NA,10,10), V2=c(6,6,6)))
+out = grep("Argument.*substitute", out, value=TRUE)
+test(106.045, length(out), 3L)
+test(106.046, "Argument 'by' after substitute: .EACHI" %in% out, TRUE)
+test(106.047, "Argument 'j'  after substitute: .(sum(x.v1), sum(i.v1))" %in% out, TRUE)
+test(106.048, "Argument 'i'  after substitute: d2" %in% out, TRUE)
+dt1 = data.table(x = letters[1:5], y = 1:5)
+dt2 = data.table(x = letters[1:3], y = 11:13)
+target_v = "y"
+source_v = paste0("i.", target_v)
+on_v = "x"
+out = capture.output(invisible(dt1[dt2, target_v := source_v, on = on_v, env = .(target_v = target_v, source_v = source_v), verbose=TRUE]))
+out = grep("Argument.*substitute", out, value=TRUE)
+test(106.049, length(out), 2L)
+test(106.050, dt1, data.table(x = c("a", "b", "c", "d", "e"), y = c(11L, 12L, 13L, 4L, 5L)))
+# substitute special symbols
+d = data.table(V1=1:2, V2=1:4)
+test(106.051, d[, j, by, env=.(j=".N", by="V1")], data.table(V1=c(1L,2L), N=c(2L,2L)))
+test(106.052, d[, j, by, env=.(j=".SD", by="V1")], data.table(V1=c(1L,1L,2L,2L), V2=c(1L,3L,2L,4L)))
+test(106.053, d[, j, env=I(.(j=as.name(".N")))], 4L)
+test(106.054, d[, .(op, fun(col)), by=by, env=.(op=".N", fun="sum", col="V2", by="V1")], data.table(V1=1:2, N=c(2L,2L), V2=c(4L,6L)))
+
+# vignette examples
+square = function(x) x^2
+test(107.01,
+     substitute2(outer(inner(var1) + inner(var2)), env = .(outer = "sqrt", inner = "square", var1 = "a", var2 = "b")),
+     quote(sqrt(square(a) + square(b))))
+DT = as.data.table(iris)
+test(107.02,
+     DT[, outer(inner(var1) + inner(var2)), env = .(outer = "sqrt", inner = "square", var1 = "Sepal.Length", var2 = "Sepal.Width")],
+     DT[, sqrt(square(Sepal.Length) + square(Sepal.Width))])
+test(107.03, # return as data.table, substitute call argument name
+     DT[, .(Species, var1, var2, out = outer(inner(var1) + inner(var2))), env = .(outer = "sqrt", inner = "square", var1 = "Sepal.Length", var2 = "Sepal.Width", out = "Sepal.Hypotenuse")],
+     DT[, .(Species, Sepal.Length, Sepal.Width, Sepal.Hypotenuse = sqrt(square(Sepal.Length) + square(Sepal.Width)))])
+test(107.04, # i, j, by
+     DT[filter_col %in% filter_val, .(var1, var2, out = outer(inner(var1) + inner(var2))), by = by_col, env = .(outer = "sqrt", inner = "square", var1 = "Sepal.Length", var2 = "Sepal.Width", out = "Sepal.Hypotenuse", filter_col = "Species", filter_val = I(c("versicolor", "virginica")), by_col =  "Species")],
+     DT[Species %in% c("versicolor","virginica"), .(Sepal.Length, Sepal.Width, Sepal.Hypotenuse = sqrt(square(Sepal.Length) + square(Sepal.Width))), by = Species])
+test(107.05, # like base R, env AsIs class
+     substitute2(rank(input, ties.method = ties), env = I(.(input = as.name("Sepal.Width"), ties = "first"))),
+     quote(rank(Sepal.Width, ties.method = "first")))
+test(107.06, # only particular elements of env are AsIs class
+     substitute2(rank(input, ties.method = ties), env = .(input = "Sepal.Width", ties = I("first"))),
+     quote(rank(Sepal.Width, ties.method = "first")))
+test(107.07, # all are symbols
+     substitute2(f(v1, v2), .(v1 = "a", v2 = list("b", list("c", "d")))),
+     quote(f(a, list(b, list(c, d)))))
+test(107.08, # 'a' and 'd' should stay as character
+     substitute2(f(v1, v2), .(v1 = I("a"), v2 = list("b", list("c", I("d"))))),
+     quote(f("a", list(b, list(c, "d")))))
+cols = c("Sepal.Length", "Sepal.Width")
+test(107.09, # data.table automatically enlist nested lists into list calls
+     DT[, j, env = .(j = as.list(cols))],
+     DT[, list(Sepal.Length, Sepal.Width)])
+test(107.10, # turning above 'j' list into a list call
+     DT[, j, env = .(j = quote(list(Sepal.Length, Sepal.Width)))],
+     DT[, list(Sepal.Length, Sepal.Width)])
+test(107.11, # the same as above but accepts character vector
+     DT[, j, env = .(j = as.call(c(quote(list), lapply(cols, as.name))))],
+     DT[, list(Sepal.Length, Sepal.Width)])
+test(107.12, # list of symbols
+     DT[, j, env = I(.(j = lapply(cols, as.name))), verbose = TRUE],
+     error = "j-argument should be",
+     output = "list(Sepal.Length, Sepal.Width)")
+test(107.13, substitute2(j, env = I(.(j = lapply(cols, as.name)))), lapply(cols, as.name))
+test(107.14, substitute2(j, env = .(j = as.list(cols))), as.call(c(quote(list), lapply(cols, as.name))))
+outer = "sqrt"; inner = "square"; vars = c("Sepal.Length", "Sepal.Width", "Petal.Length", "Petal.Width")
+syms = lapply(vars, as.name)
+to_inner_call = function(var, fun) call(fun, var)
+inner_calls = lapply(syms, to_inner_call, inner)
+to_add_call = function(x, y) call("+", x, y)
+add_calls = Reduce(to_add_call, inner_calls)
+rms = substitute2(expr = outer((add_calls) / len), env = .(outer = outer, add_calls = add_calls, len = length(vars)))
+test(107.15, rms, quote(sqrt((square(Sepal.Length) + square(Sepal.Width) + square(Petal.Length) + square(Petal.Width))/4L)))
+test(107.16,
+     DT[, j, env = .(j = rms)],
+     DT[, sqrt((square(Sepal.Length) + square(Sepal.Width) + square(Petal.Length) + square(Petal.Width))/4L)])
+test(107.17, # same but skipping last substitute2 call and using add_calls directly
+     DT[, outer((add_calls) / len), env = .(outer = outer, add_calls = add_calls, len = length(vars))],
+     DT[, sqrt((square(Sepal.Length) + square(Sepal.Width) + square(Petal.Length) + square(Petal.Width))/4L)])
+j = substitute2(j, .(j = as.list(setNames(nm = c(vars, "Species", "rms"))))) # return as data.table
+j[["rms"]] = rms
+test(107.18,
+     DT[, j, env = .(j = j)],
+     DT[, .(Sepal.Length=Sepal.Length, Sepal.Width=Sepal.Width, Petal.Length=Petal.Length, Petal.Width=Petal.Width, Species, rms = sqrt((square(Sepal.Length) + square(Sepal.Width) + square(Petal.Length) + square(Petal.Width))/4L))])
+j = as.call(c( # alternatively
+  quote(list),
+  lapply(setNames(nm = vars), as.name),
+  list(Species = as.name("Species")),
+  list(rms = rms)
+))
+test(107.19,
+     DT[, j, env = .(j = j)],
+     DT[, .(Sepal.Length=Sepal.Length, Sepal.Width=Sepal.Width, Petal.Length=Petal.Length, Petal.Width=Petal.Width, Species, rms = sqrt((square(Sepal.Length) + square(Sepal.Width) + square(Petal.Length) + square(Petal.Width))/4L))])
+v1 = "Petal.Width" # get
+v2 = "Sepal.Width"
+test(107.20,
+     DT[, .(total = sum(v1, v2)), env = .(v1 = v1, v2 = v2)],
+     DT[, .(total = sum(get(v1), get(v2)))])
+v = c("Petal.Width", "Sepal.Width") # mget
+test(107.21,
+     DT[, lapply(v, mean), env = .(v = as.list(v))],
+     DT[, lapply(list(Petal.Width, Sepal.Width), mean)])
+test(107.22,
+     DT[, lapply(v, mean), env = .(v = as.list(setNames(nm = v)))],
+     DT[, lapply(mget(v), mean)])
+cl = quote(.(Petal.Width = mean(Petal.Width), Sepal.Width = mean(Sepal.Width)))
+test(107.23, DT[, cl, env = .(cl = cl)], DT[, eval(cl)])
