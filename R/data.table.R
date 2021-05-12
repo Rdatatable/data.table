@@ -87,18 +87,6 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL, str
   setalloccol(ans)  # returns a NAMED==0 object, unlike data.frame()
 }
 
-replace_dot_alias = function(e) {
-  # we don't just simply alias .=list because i) list is a primitive (faster to iterate) and ii) we test for use
-  # of "list" in several places so it saves having to remember to write "." || "list" in those places
-  if (is.call(e) && !is.function(e[[1L]])) {
-    # . alias also used within bquote, #1912
-    if (e[[1L]] == 'bquote') return(e)
-    if (e[[1L]] == ".") e[[1L]] = quote(list)
-    for (i in seq_along(e)[-1L]) if (!is.null(e[[i]])) e[[i]] = replace_dot_alias(e[[i]])
-  }
-  e
-}
-
 .massagei = function(x) {
   # J alias for list as well in i, just if the first symbol
   # if x = substitute(base::order) then as.character(x[[1L]]) == c("::", "base", "order")
@@ -783,8 +771,8 @@ replace_dot_alias = function(e) {
           # when the 'by' expression includes get/mget/eval, all.vars cannot be trusted to infer all used columns, #4981
           allbyvars = NULL
         else
-          allbyvars = intersect(all.vars(bysub), names_x)  
-        
+          allbyvars = intersect(all.vars(bysub), names_x)
+
         orderedirows = .Call(CisOrderedSubset, irows, nrow(x))  # TRUE when irows is NULL (i.e. no i clause). Similar but better than is.sorted(f__)
         bysameorder = byindex = FALSE
         if (!bysub %iscall% ":" && ##Fix #4285

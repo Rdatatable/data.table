@@ -93,6 +93,18 @@ name_dots = function(...) {
   list(vnames=vnames, .named=!notnamed)
 }
 
+replace_dot_alias = function(e) {
+  # we don't just simply alias .=list because i) list is a primitive (faster to iterate) and ii) we test for use
+  # of "list" in several places so it saves having to remember to write "." || "list" in those places
+  if (is.call(e) && !is.function(e[[1L]])) {
+    # . alias also used within bquote, #1912
+    if (e[[1L]] == 'bquote') return(e)
+    if (e[[1L]] == ".") e[[1L]] = quote(list)
+    for (i in seq_along(e)[-1L]) if (!is.null(e[[i]])) e[[i]] = replace_dot_alias(e[[i]])
+  }
+  e
+}
+
 # convert a vector like c(1, 4, 3, 2) into a string like [1, 4, 3, 2]
 #   (common aggregation method for error messages)
 brackify = function(x, quote=FALSE) {
