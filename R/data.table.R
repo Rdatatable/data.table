@@ -132,6 +132,7 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL, str
     on.exit(options(oldverbose))
   }
   .global$print=""
+  env = eval.parent(replace_dot_alias(substitute(env)))
   missingby = missing(by) && missing(keyby)  # for tests 359 & 590 where passing by=NULL results in data.table not vector
   if (missingby || missing(j)) {
     if (!missingby) warning("Ignoring by/keyby because 'j' is not supplied")

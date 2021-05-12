@@ -46,7 +46,9 @@ substitute2 = function(expr, env) {
     return(substitute())
   if (missing(env)) {
     stop("'env' must not be missing")
-  } else if (is.null(env)) {
+  }
+  env = eval.parent(replace_dot_alias(substitute(env)))
+  if (is.null(env)) {
     # null is fine, will be escaped few lines below
   } else if (is.environment(env)) {
     env = as.list(env, all.names=TRUE, sorted=TRUE)
