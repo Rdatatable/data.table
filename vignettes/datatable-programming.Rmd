@@ -114,7 +114,7 @@ Though these can be helpful, we will be discussing a `data.table`-unique approac
 
 Now that we've established the proper way to parameterize code that uses *lazy evaluation*, we can move on to the main subject of this vignette, *programming on data.table*.
 
-Starting from version 1.12.10, data.table provides a robust mechanism for parameterizing expressions passed to the `i`, `j`, and `by` (or `keyby`) arguments of `[.data.table`. It is built upon the base R `substitute` function, and mimics its interface. Here, we introduce `substitute2` as a more robust and more user-friendly version of base R's `substitute`. For a complete list of differences between `base::substitute` and `data.table::substitute2` please read the [`substitute2` manual](https://rdatatable.gitlab.io/data.table/library/data.table/html/substitute2.html).
+Starting from version 1.14.1, data.table provides a robust mechanism for parameterizing expressions passed to the `i`, `j`, and `by` (or `keyby`) arguments of `[.data.table`. It is built upon the base R `substitute` function, and mimics its interface. Here, we introduce `substitute2` as a more robust and more user-friendly version of base R's `substitute`. For a complete list of differences between `base::substitute` and `data.table::substitute2` please read the [`substitute2` manual](https://rdatatable.gitlab.io/data.table/library/data.table/html/substitute2.html).
 
 ### Substituting variables and names
 
@@ -195,6 +195,27 @@ DT[filter_col %in% filter_val,
   )]
 ```
 
+For convenience, in both `substitute2` and the `env` argument to `[.data.table`, you use the `.()` function as an alias to `list()`--just like you can with the `i`, `j`, and `by` arguments. Let's see the equivalent to the above snippet below.
+
+```{r hypotenuse_datatable_i_j_by_with_dot}
+DT[filter_col %in% filter_val,
+   .(var1, var2, out = outer(inner(var1) + inner(var2))),
+   by = by_col,
+   env = .(
+     outer = "sqrt",
+     inner = "square",
+     var1 = "Sepal.Length",
+     var2 = "Sepal.Width",
+     out = "Sepal.Hypotenuse",
+     filter_col = "Species",
+     filter_val = I(c("versicolor", "virginica")),
+     by_col =  "Species"
+  )]
+```
+
+We'll use both `list()` and `.()` in this vignette. Note that you can't use the `.()` alias if you are using `substitute2` from within another function. However, for all the examples in this vignette, `.()` and `list()` are equivalent.
+
+
 ### Substitute variables and character values
 
 In the above example, we have seen a convenient feature of `substitute2`: automatic conversion from strings into names/symbols. An obvious question arises: what if we actually want to substitute a parameter with a *character* value, so as to have base R `substitute` behaviour. We provide a mechanism to escape automatic conversion by wrapping the elements into base R `I()` call. The `I` function marks an object as *AsIs*, preventing its arguments from substitution. (Read the `?AsIs` documentation for more details.) If base R behaviour is desired for the whole `env` argument, then it's best to wrap the whole argument in `I()`. Alternatively, each list element can be wrapped in `I()` individually. Let's explore both cases below.
@@ -212,7 +233,7 @@ substitute2(   # mimicking base R's "substitute" using "I"
 
 substitute2(   # only particular elements of env are used "AsIs"
   rank(input, ties.method = ties),
-  env = list(input = "Sepal.Width", ties = I("first"))
+  env = .(input = "Sepal.Width", ties = I("first"))
 )
 ```
 
@@ -258,7 +279,7 @@ In data.table, we make it easier by automatically _enlist_-ing a list of objects
 ```{r splice_datatable}
 # this works
 DT[, j,
-   env = list(j = as.list(cols)),
+   env = .(j = as.list(cols)),
    verbose = TRUE]
 
 # this will not work
@@ -272,15 +293,15 @@ Let's explore _enlist_-ing in more detail.
 
 ```{r splice_enlist}
 DT[, j,  # data.table automatically enlists nested lists into list calls
-   env = list(j = as.list(cols)),
+   env = .(j = as.list(cols)),
    verbose = TRUE]
 
 DT[, j,  # turning the above 'j' list into a list call
-   env = list(j = quote(list(Sepal.Length, Sepal.Width))),
+   env = .(j = quote(list(Sepal.Length, Sepal.Width))),
    verbose = TRUE]
 
 DT[, j,  # the same as above but accepts character vector
-   env = list(j = as.call(c(quote(list), lapply(cols, as.name)))),
+   env = .(j = as.call(c(quote(list), lapply(cols, as.name)))),
    verbose = TRUE]
 ```
 
@@ -336,7 +357,7 @@ print(add_calls)
 
 rms = substitute2(
   expr = outer((add_calls) / len),
-  env = list(
+  env = .(
     outer = outer,
     add_calls = add_calls,
     len = length(vars)
@@ -344,21 +365,21 @@ rms = substitute2(
 )
 print(rms)
 
-DT[, j, env = list(j = rms)]
+DT[, j, env = .(j = rms)]
 
 # same, but skipping last substitute2 call and using add_calls directly
 DT[, outer((add_calls) / len),
-   env = list(
+   env = .(
      outer = outer,
      add_calls = add_calls,
      len = length(vars)
   )]
 
 # return as data.table
-j = substitute2(j, list(j = as.list(setNames(nm = c(vars, "Species", "rms")))))
+j = substitute2(j, .(j = as.list(setNames(nm = c(vars, "Species", "rms")))))
 j[["rms"]] = rms
 print(j)
-DT[, j, env = list(j = j)]
+DT[, j, env = .(j = j)]
 
 # alternatively
 j = as.call(c(
@@ -368,7 +389,7 @@ j = as.call(c(
   list(rms = rms)
 ))
 print(j)
-DT[, j, env = list(j = j)]
+DT[, j, env = .(j = j)]
 ```
 
 ## Retired interfaces

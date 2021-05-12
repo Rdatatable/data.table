@@ -18,7 +18,7 @@
     DT = data.table(A=1:3, B=letters[1:3])
     DT[A>3,   .(ITEM='A>3', A, B)]  # (1)
     DT[A>3][, .(ITEM='A>3', A, B)]  # (2)
-    # the above are now equivalent as expected and return:  
+    # the above are now equivalent as expected and return:
     Empty data.table (0 rows and 3 cols): ITEM,A,B
     # Previously, (2) returned :
           ITEM     A      B
@@ -30,7 +30,7 @@
     2: In as.data.table.list(jval, .named = NULL) :
       Item 3 has 0 rows but longest item has 1; filled with NA
     ```
-    
+
     ```R
     DT = data.table(A=1:3, B=letters[1:3], key="A")
     DT[.(1:3, double()), B]
@@ -79,6 +79,16 @@
     # new interface
     DT[, .(out_col_name = fun(in_col_name, fun_arg1=fun_arg1val)),
       env = list(
+        in_col_name = "x",
+        fun = "sum",
+        fun_arg1 = "na.rm",
+        fun_arg1val = TRUE,
+        out_col_name = "sum_x"
+      )]
+
+    # you can also use a dot alias the the environment list
+    DT[, .(out_col_name = fun(in_col_name, fun_arg1=fun_arg1val)),
+      env = .(
         in_col_name = "x",
         fun = "sum",
         fun_arg1 = "na.rm",
