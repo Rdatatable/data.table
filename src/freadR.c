@@ -335,7 +335,7 @@ bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, const int 
               type[i]=CT_STRING; // e.g. CT_ISO8601_DATE changed to character here so that as.POSIXct treats the date-only as local time in tests 1743.122 and 2150.11
               SET_STRING_ELT(colClassesAs, i, tt);
             }
-          } else { 
+          } else {
             type[i] = typeEnum[w-1];                           // freadMain checks bump up only not down
             if (w==NUT) SET_STRING_ELT(colClassesAs, i, tt);
           }

@@ -106,6 +106,9 @@ msgstr ""
 msgid "trying to use integer64 class when 'bit64' package is not installed"
 msgstr ""
 
+msgid "optimised between not available for this data type, fallback to slow R routine"
+msgstr ""
+
 msgid "Not yet implemented NAbounds=TRUE for this non-numeric and non-character type"
 msgstr ""
 
@@ -130,55 +133,97 @@ msgstr ""
 msgid "the second element should be the upper bound(s)."
 msgstr ""
 
-msgid "x."
+msgid "forderv(query) took ..."
 msgstr ""
 
-msgid "is type"
+msgid "Generating final logical vector ..."
 msgstr ""
 
-msgid "which is not supported by data.table join"
+msgid "done in"
 msgstr ""
 
-msgid "i."
+msgid "%s is type %s which is not supported by data.table join"
 msgstr ""
 
-msgid "Attempting roll join on factor column when joining x."
+msgid "Attempting roll join on factor column when joining %s to %s. Only integer, double or character columns may be roll joined."
 msgstr ""
 
-msgid "to i."
+msgid "Matching %s factor levels to %s factor levels."
 msgstr ""
 
-msgid ". Only integer, double or character columns may be roll joined."
+msgid "Coercing factor column %s to type character to match type of %s."
 msgstr ""
 
-msgid "Incompatible join types: x."
+msgid "Matching character column %s to factor levels in %s."
 msgstr ""
 
-msgid "("
+msgid "Incompatible join types: %s (%s) and %s (%s). Factor columns must join to factor or character columns."
 msgstr ""
 
-msgid ") and i."
+msgid "%s has same type (%s) as %s. No coercion needed."
 msgstr ""
 
-msgid "). Factor columns must join to factor or character columns."
+msgid "Coercing all-NA %s (%s) to type %s to match type of %s."
 msgstr ""
 
-msgid ")"
+msgid "Incompatible join types: %s (%s) and %s (%s)"
 msgstr ""
 
-msgid "Incompatible join types:"
+msgid "Coercing %s column %s%s to type integer64 to match type of %s."
 msgstr ""
 
-msgid "is type integer64 but"
+msgid "Incompatible join types: %s is type integer64 but %s is type double and contains fractions"
 msgstr ""
 
-msgid "is type double and contains fractions"
+msgid "Coercing double column %s (which contains no fractions) to type integer to match type of %s"
+msgstr ""
+
+msgid "Coercing integer column %s to type double to match type of %s which contains fractions."
+msgstr ""
+
+msgid "Coercing integer column %s to type double for join to match type of %s."
+msgstr ""
+
+msgid "on= matches existing key, using key"
+msgstr ""
+
+msgid "on= matches existing index, using index"
+msgstr ""
+
+msgid "Calculated ad hoc index in %s"
+msgstr ""
+
+msgid "Non-equi join operators detected ..."
 msgstr ""
 
 msgid "roll is not implemented for non-equi joins yet."
 msgstr ""
 
+msgid "forder took ..."
+msgstr ""
+
+msgid "Generating group lengths ..."
+msgstr ""
+
+msgid "Generating non-equi group ids ..."
+msgstr ""
+
 msgid "Column name '_nqgrp_' is reserved for non-equi joins."
+msgstr ""
+
+msgid "Recomputing forder with non-equi ids ..."
+msgstr ""
+
+msgid "Found %d non-equi group(s) ..."
+msgstr ""
+
+msgid "Starting bmerge ..."
+msgstr ""
+
+msgid "bmerge done in"
+msgstr ""
+
+msgid "cedta decided '%s' wasn't data.table aware. Here is call stack with [[1L]] applied:"
 msgstr ""
 
 msgid "key argument of data.table() must be character"
@@ -322,10 +367,25 @@ msgstr ""
 msgid "Attempting to do natural join but no common columns in provided tables"
 msgstr ""
 
-msgid "Internal error. Cannot by=.EACHI when joining to a secondary key, yet"
+msgid "Joining but 'x' has no key, natural join using"
+msgstr ""
+
+msgid "not-join called with 'by=.EACHI'; Replacing !i with i=setdiff_(x,i) ..."
+msgstr ""
+
+msgid "Constructing irows for '!byjoin || nqbyjoin' ..."
+msgstr ""
+
+msgid "Internal error. Cannot by=.EACHI when joining to an index, yet"
 msgstr ""
 
 msgid "Internal error. irows has length in by=.EACHI"
+msgstr ""
+
+msgid "Reorder irows for 'mult==\"all\" && !allGrp1' ..."
+msgstr ""
+
+msgid "Reordering %d rows after bmerge done in ..."
 msgstr ""
 
 msgid "logical error. i is not a data.table, but 'on' argument is provided."
@@ -347,6 +407,9 @@ msgid "rows. Recycling of logical i is no longer allowed as it hides more bugs t
 msgstr ""
 
 msgid "Internal error: notjoin but byjoin or !integer or nomatch==NA"
+msgstr ""
+
+msgid "Inverting irows for notjoin done in ..."
 msgstr ""
 
 msgid "with=FALSE together with := was deprecated in v1.9.4 released Oct 2014. Please wrap the LHS of := with parentheses; e.g., DT[,(myVar):=sum(b),by=a] to assign to column name(s) held in variable myVar. See ?':=' for other examples. As warned in 2014, this is now a warning."
@@ -385,7 +448,16 @@ msgstr ""
 msgid "but one or more items include a comma. Either pass a vector of column names (which can contain spaces, but no commas), or pass a vector length 1 containing comma separated column names. See ?data.table for other possibilities."
 msgstr ""
 
+msgid "by index '%s' but that index has 0 length. Ignoring."
+msgstr ""
+
 msgid "Internal error: irows isn't integer"
+msgstr ""
+
+msgid "i clause present and columns used in by detected, only these subset:"
+msgstr ""
+
+msgid "i clause present but columns used in by not detected. Having to subset all columns before evaluating 'by': '"
 msgstr ""
 
 msgid "'by' appears to evaluate to column names but isn't c() or key(). Use by=list(...) if you can. Otherwise, by=eval"
@@ -407,6 +479,9 @@ msgid ". Do not quote column names. Usage: DT[,sum(colC),by=list(colA,month(colB
 msgstr ""
 
 msgid "The items in the 'by' or 'keyby' list are length(s) (%s). Each must be length %d; the same length as there are rows in x (after subsetting if i is provided)."
+msgstr ""
+
+msgid "by-expression '%s' is not named, and the auto-generated name '%s' clashed with variable(s) in j. Therefore assigning the entire by-expression as name."
 msgstr ""
 
 msgid "Internal error: drop_dot passed"
@@ -457,6 +532,15 @@ msgstr ""
 msgid "This j doesn't use .SD but .SDcols has been supplied. Ignoring .SDcols. See ?data.table."
 msgstr ""
 
+msgid "Detected that j uses these columns:"
+msgstr ""
+
+msgid "'(m)get' found in j. ansvars being set to all columns. Use .SDcols or a single j=eval(macro) instead. Both will detect the columns used which is important for efficiency.\nOld:"
+msgstr ""
+
+msgid "New:"
+msgstr ""
+
 msgid ".SD is locked. Using := in .SD's j is reserved for possible future use; a tortuously flexible way to modify by group. Use := in j directly to modify by group by reference."
 msgstr ""
 
@@ -472,7 +556,16 @@ msgstr ""
 msgid "LHS of := isn't column names ('character') or positions ('integer' or 'numeric')"
 msgstr ""
 
+msgid "No rows match i. No new columns to add so not evaluating RHS of :=\nAssigning to 0 row subset of %d rows"
+msgstr ""
+
 msgid "Invalid .internal.selfref detected and fixed by taking a (shallow) copy of the data.table so that := can add this new column by reference. At an earlier point, this data.table has been copied by R (or was created manually using structure() or similar). Avoid names<- and attr<- which in R currently (and oddly) may copy the whole data.table. Use set* syntax instead to avoid copying: ?set, ?setnames and ?setattr. If this message doesn't help, please report your use case to the data.table issue tracker so the root cause can be fixed or this message improved."
+msgstr ""
+
+msgid "Growing vector of column pointers from truelength %d to %d. A shallow copy has been taken, see ?setalloccol. Only a potential issue if two variables point to the same data (we can't yet detect that well) and if not you can safely ignore this. To avoid this message you could setalloccol() first, deep copy first using copy(), wrap with suppressWarnings() or increase the 'datatable.alloccol' option."
+msgstr ""
+
+msgid "Note that the shallow copy will assign to the environment from which := was called. That means for example that if := was called within a function, the original table may be unaffected."
 msgstr ""
 
 msgid "Cannot assign to an under-allocated recursively indexed list -- L[[i]][,:=] syntax is only valid when i is length 1, but it's length"
@@ -517,22 +610,70 @@ msgstr ""
 msgid "The column '.I' can't be grouped because it conflicts with the special .I variable. Try setnames(DT,'.I','I') first."
 msgstr ""
 
+msgid "Note: forcing units=\"secs\" on implicit difftime by group; call difftime explicitly to choose custom units"
+msgstr ""
+
 msgid "logical error. i is not data.table, but mult='all' and 'by'=.EACHI"
 msgstr ""
 
 msgid "Internal error: by= is missing"
 msgstr ""
 
+msgid "Finding groups using forderv ..."
+msgstr ""
+
+msgid "Finding group sizes from the positions (can be avoided to save RAM) ..."
+msgstr ""
+
+msgid "Getting back original order ..."
+msgstr ""
+
+msgid "Finding groups using uniqlist on key ..."
+msgstr ""
+
 msgid "Internal error: byindex not the index name"
+msgstr ""
+
+msgid "Finding groups using uniqlist on index '%s' ..."
 msgstr ""
 
 msgid "Internal error: byindex not found"
 msgstr ""
 
+msgid "lapply optimization changed j from '%s' to '%s'"
+msgstr ""
+
+msgid "lapply optimization is on, j unchanged as '%s'"
+msgstr ""
+
+msgid "GForce optimized j to '"
+msgstr ""
+
+msgid "GForce is on, left j unchanged"
+msgstr ""
+
 msgid "Unable to optimize call to mean() and could be very slow. You must name 'na.rm' like that otherwise if you do mean(x,TRUE) the TRUE is taken to mean 'trim' which is the 2nd argument of mean. 'trim' is not yet optimized."
 msgstr ""
 
+msgid "Old mean optimization changed j from '%s' to '%s'"
+msgstr ""
+
+msgid "Old mean optimization is on, left j unchanged."
+msgstr ""
+
+msgid "All optimizations are turned off"
+msgstr ""
+
+msgid "Optimization is on but left j unchanged (single plain symbol): '%s'"
+msgstr ""
+
 msgid "Internal error: length(irows)!=length(o__)"
+msgstr ""
+
+msgid "Making each group and running j (GForce %s) ..."
+msgstr ""
+
+msgid "setkey() after the := with keyby= ..."
 msgstr ""
 
 msgid "The setkey() normally performed by keyby= has been skipped (as if by= was used) because := is being used together with keyby= but the keyby= contains some expressions. To avoid this warning, use by= instead, or provide existing column names to keyby=."
@@ -545,6 +686,9 @@ msgid "but ans is"
 msgstr ""
 
 msgid "and bynames is"
+msgstr ""
+
+msgid "setkey() afterwards for keyby=.EACHI ..."
 msgstr ""
 
 msgid "rownames and rownames.value cannot both be used at the same time"
@@ -647,6 +791,9 @@ msgid "Argument 'by' must refer to column names in x"
 msgstr ""
 
 msgid "Argument 'by' must refer only to atomic-type columns, but the following columns are non-atomic:"
+msgstr ""
+
+msgid "Processing split.data.table with:"
 msgstr ""
 
 msgid "x is not a data.table. Shallow copy is a copy of the vector of column pointers (only), so is only meaningful for data.table"
@@ -820,6 +967,21 @@ msgstr ""
 msgid "Internal error in .isFastSubsettable. Please report to data.table developers"
 msgstr ""
 
+msgid "Subsetting optimization disabled because the cross-product of RHS values exceeds 1e4, causing memory problems."
+msgstr ""
+
+msgid "Optimized subsetting with key '"
+msgstr ""
+
+msgid "Optimized subsetting with index '"
+msgstr ""
+
+msgid "Creating new index '"
+msgstr ""
+
+msgid "Creating index %s done in ..."
+msgstr ""
+
 msgid "'on' argument should be a named atomic vector of column names indicating which columns in 'i' should be joined with which columns in 'x'."
 msgstr ""
 
@@ -848,6 +1010,9 @@ msgid "."
 msgstr ""
 
 msgid "There is no package %s in provided repository."
+msgstr ""
+
+msgid "Git revision is not available. Most likely data.table was installed from CRAN or local archive.\nGit revision is available when installing from our repositories 'https://Rdatatable.gitlab.io/data.table' and 'https://Rdatatable.github.io/data.table'."
 msgstr ""
 
 msgid "'fromLast' must be TRUE or FALSE"
@@ -949,6 +1114,9 @@ msgstr ""
 msgid "Please provide a name to each element of 'measure.vars'."
 msgstr ""
 
+msgid "Duplicate column names found in molten data.table. Setting unique names using 'make.names'"
+msgstr ""
+
 msgid "y and x must both be data.tables. Use `setDT()` to convert list/data.frames to data.tables by reference or as.data.table() to convert to data.tables by copying."
 msgstr ""
 
@@ -1040,6 +1208,12 @@ msgid "Some interval cols are of type POSIXct while others are not. Please ensur
 msgstr ""
 
 msgid "POSIXct interval cols have mixed timezones. Overlaps are performed on the internal numerical representation of POSIXct objects (always in UTC epoch time), therefore printed values may give the impression that values don't overlap but their internal representations do Please ensure that POSIXct type interval cols have identical 'tzone' attributes to avoid confusion."
+msgstr ""
+
+msgid "unique() + setkey() operations done in ..."
+msgstr ""
+
+msgid "binary search(es) done in ..."
 msgstr ""
 
 msgid "Not yet implemented"
@@ -1171,6 +1345,9 @@ msgstr ""
 msgid "\". Please double check the input file is a valid csvy."
 msgstr ""
 
+msgid "Processed %d lines of YAML metadata with the following top-level fields: %s"
+msgstr ""
+
 msgid "User-supplied 'header' will override that found in metadata."
 msgstr ""
 
@@ -1231,6 +1408,9 @@ msgstr ""
 msgid "so the column has been left as type '"
 msgstr ""
 
+msgid "stringsAsFactors=%s converted %d column(s): %s"
+msgstr ""
+
 msgid "key argument of data.table() must be a character vector naming columns (NB: col.names are applied before this)"
 msgstr ""
 
@@ -1247,6 +1427,9 @@ msgid "logicalAsInt has been renamed logical01. Use logical01 only, not both."
 msgstr ""
 
 msgid "x being coerced from class: matrix to data.table"
+msgstr ""
+
+msgid "Appending to existing file so setting bom=FALSE and yaml=FALSE"
 msgstr ""
 
 msgid "Input has no columns; doing nothing."
@@ -1313,6 +1496,9 @@ msgid "There exists duplicated column names in the results, ensure the column pa
 msgstr ""
 
 msgid "Using integer64 class columns require to have 'bit64' package installed."
+msgstr ""
+
+msgid "%s: using %s: %s"
 msgstr ""
 
 msgid "'xts' class passed to %s function but 'xts' is not available, you should have 'xts' installed already"
@@ -1408,19 +1594,7 @@ msgstr ""
 msgid "The option 'datatable.nomatch' is being used and is not set to the default NA. This option is still honored for now but will be deprecated in future. Please see NEWS for 1.12.4 for detailed information and motivation. To specify inner join, please specify `nomatch=NULL` explicitly in your calls rather than changing the default using this option."
 msgstr ""
 
-msgid "The datatable."
-msgstr ""
-
-msgid "version ("
-msgstr ""
-
-msgid ") does not match the package ("
-msgstr ""
-
-msgid "). Please close all R sessions to release the old"
-msgstr ""
-
-msgid "and reinstall data.table in a fresh R session. The root cause is that R's package installer can in some unconfirmed circumstances leave a package in a state that is apparently functional but where new R code is calling old C code silently: https://bugs.r-project.org/bugzilla/show_bug.cgi?id=17478. Once a package is in this mismatch state it may produce wrong results silently until you next upgrade the package. Please help by adding precise circumstances to 17478 to move the status to confirmed. This mismatch between R and C code can happen with any package not just data.table. It is just that data.table has added this check."
+msgid "The datatable.%s version (%s) does not match the package (%s). Please close all R sessions to release the old %s and reinstall data.table in a fresh R session. The root cause is that R's package installer can in some unconfirmed circumstances leave a package in a state that is apparently functional but where new R code is calling old C code silently: https://bugs.r-project.org/bugzilla/show_bug.cgi?id=17478. Once a package is in this mismatch state it may produce wrong results silently until you next upgrade the package. Please help by adding precise circumstances to 17478 to move the status to confirmed. This mismatch between R and C code can happen with any package not just data.table. It is just that data.table has added this check."
 msgstr ""
 
 msgid "This is R"
@@ -1474,6 +1648,15 @@ msgstr ""
 msgid "Column classes will be suppressed when col.names is 'none'"
 msgstr ""
 
+msgid "Key: <%s>"
+msgstr ""
+
+msgid "Null data.%s (0 rows and 0 cols)"
+msgstr ""
+
+msgid "Empty data.%s (%d rows and %d cols)"
+msgstr ""
+
 msgid "Internal structure doesn't seem to be a list. Possibly corrupt data.table."
 msgstr ""
 
@@ -1514,6 +1697,18 @@ msgid "' which is not supported as a key column type, currently."
 msgstr ""
 
 msgid "Internal error. 'cols' should be character at this point in setkey; please report."
+msgstr ""
+
+msgid "forder took"
+msgstr ""
+
+msgid "setkey on columns %s using existing index '%s'"
+msgstr ""
+
+msgid "reorder took"
+msgstr ""
+
+msgid "x is already ordered by these columns, no need to call reorder"
 msgstr ""
 
 msgid "Internal error: index '"
@@ -1576,25 +1771,13 @@ msgstr ""
 msgid "length(by.x) != length(by.y)"
 msgstr ""
 
-msgid "When x's column ('"
+msgid "When x's column ('%s') is character, the corresponding column in y ('%s') should be factor or character, but found incompatible type '%s'."
 msgstr ""
 
-msgid "') is character, the corresponding column in y ('"
+msgid "When x's column ('%s') is factor, the corresponding column in y ('%s') should be character or factor, but found incompatible type '%s'."
 msgstr ""
 
-msgid "') should be factor or character, but found incompatible type '"
-msgstr ""
-
-msgid "') is factor, the corresponding column in y ('"
-msgstr ""
-
-msgid "') should be character or factor, but found incompatible type '"
-msgstr ""
-
-msgid "') is integer or numeric, the corresponding column in y ('"
-msgstr ""
-
-msgid "') can not be character or logical types, but found incompatible type '"
+msgid "When x's column ('%s') is integer or numeric, the corresponding column in y ('%s') can not be character or logical types, but found incompatible type '%s'."
 msgstr ""
 
 msgid "argument 'all' should be logical of length one"
@@ -1645,10 +1828,16 @@ msgstr ""
 msgid "argument 'fill' ignored, only make sense for type='const'"
 msgstr ""
 
+msgid "No objects of class data.table exist in %s"
+msgstr ""
+
 msgid "order.col='"
 msgstr ""
 
 msgid "' not a column name of info"
+msgstr ""
+
+msgid "Total:"
 msgstr ""
 
 msgid "data.table package is loaded. Unload or start a fresh R session."
@@ -1660,19 +1849,16 @@ msgstr ""
 msgid "Neither %s nor %s exist in %s"
 msgstr ""
 
+msgid "test.data.table() running:"
+msgstr ""
+
+msgid "**** This R session's language is not English. Each test will still check that the correct number of errors and/or\n**** warnings are produced. However, to test the text of each error/warning too, please restart R with LANGUAGE=en"
+msgstr ""
+
 msgid "Failed after test"
 msgstr ""
 
 msgid "before the next test() call in"
-msgstr ""
-
-msgid "out of"
-msgstr ""
-
-msgid ". Search"
-msgstr ""
-
-msgid "for test number"
 msgstr ""
 
 msgid "Timings count mismatch:"
@@ -1681,10 +1867,46 @@ msgstr ""
 msgid "vs"
 msgstr ""
 
+msgid "10 longest running tests took"
+msgstr ""
+
+msgid "All %d tests in %s completed ok in %s"
+msgstr ""
+
+msgid "Running test id %s"
+msgstr ""
+
 msgid "Test"
 msgstr ""
 
 msgid "is invalid: when error= is provided it does not make sense to pass y as well"
+msgstr ""
+
+msgid "Test id %s is not in increasing order"
+msgstr ""
+
+msgid "Test %s produced %d %ss but expected %d"
+msgstr ""
+
+msgid "Test %s didn't produce the correct %s:\nExpected: %s\nObserved: %s"
+msgstr ""
+
+msgid "Output captured before unexpected warning/error/message:"
+msgstr ""
+
+msgid "Test %s did not produce the correct output:\nExpected: <<%s>>\nObserved <<%s>>"
+msgstr ""
+
+msgid "Test %s produced output but should not have:\nExpected absent (case insensitive): <<%s>>\nObserved: <<%s>>"
+msgstr ""
+
+msgid "Test %s ran without errors but selfrefok(%s) is FALSE"
+msgstr ""
+
+msgid "Test %s ran without errors but failed check that x equals y:"
+msgstr ""
+
+msgid "First %d of %d (type '%s'):"
 msgstr ""
 
 msgid "Use started.at=proc.time() not Sys.time() (POSIXt and slow)"
@@ -1756,7 +1978,17 @@ msgstr ""
 msgid "Following columns are not numeric and will be omitted:"
 msgstr ""
 
+msgid        "Index: "
+msgid_plural "Indices: "
+msgstr[0]    ""
+msgstr[1]    ""
+
 msgid        "%d variable not shown: %s\n"
 msgid_plural "%d variables not shown: %s\n"
+msgstr[0]    ""
+msgstr[1]    ""
+
+msgid        "%d error out of %d. Search %s for test number %s"
+msgid_plural "%d errors out of %d. Search %s for test numbers %s"
 msgstr[0]    ""
 msgstr[1]    ""

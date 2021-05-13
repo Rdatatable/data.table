@@ -43,21 +43,21 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
   if (!is.numeric(topn)) topn = 5L
   topnmiss = missing(topn)
   topn = max(as.integer(topn),1L)
-  if (print.keys){
+  if (print.keys) {
     if (!is.null(ky <- key(x)))
-    cat("Key: <", toString(ky), ">\n", sep="")
+    catf("Key: <%s>\n", toString(ky))
     if (!is.null(ixs <- indices(x)))
     cat(sprintf(
-      ngettext(length(ixs), "Index: %s\n", "Indices: %s\n", domain="R-data.table"),
+      ngettext(length(ixs), "Index: %s\n", "Indices: %s\n"),
       paste0("<", ixs, ">", collapse = ", ")
     ))
   }
   if (any(dim(x)==0L)) {
     class = if (is.data.table(x)) "table" else "frame"  # a data.frame could be passed to print.data.table() directly, #3363
     if (all(dim(x)==0L)) {
-      cat("Null data.",class," (0 rows and 0 cols)\n", sep="")  # See FAQ 2.5 and NEWS item in v1.8.9
+      catf("Null data.%s (0 rows and 0 cols)\n", class)  # See FAQ 2.5 and NEWS item in v1.8.9
     } else {
-      cat("Empty data.",class," (", dim(x)[1L], " rows and ",length(x)," cols)", sep="")
+      catf("Empty data.%s (%d rows and %d cols)", class, NROW(x), NCOL(x))
       if (length(x)>0L) cat(": ",paste(head(names(x),6L),collapse=","),if(length(x)>6L)"...",sep="")
       cat("\n")
     }
@@ -192,7 +192,7 @@ shouldPrint = function(x) {
 
 # for removing the head (column names) of matrix output entirely,
 #   as opposed to printing a blank line, for excluding col.names per PR #1483
-cut_top = function(x) cat(capture.output(x)[-1L], sep = '\n')
+cut_top = function(x) writeLines(capture.output(x)[-1L])
 
 # for printing the dims for list columns #3671; used by format.data.table()
 paste_dims = function(x) {
