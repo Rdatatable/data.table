@@ -97,8 +97,7 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
   assign("testDir", function(x) file.path(fulldir, x), envir=env)
 
   # are R's messages being translated to a foreign language? #3039, #630
-  txt = eval(parse(text="tryCatch(mean(not__exist__), error = function(e) e$message)"), envir=.GlobalEnv)
-  foreign = txt != "object 'not__exist__' not found"
+  foreign = gettext("object '%s' not found", domain="R") != "object '%s' not found"
   if (foreign) {
     # nocov start
     catf("\n**** This R session's language is not English. Each test will still check that the correct number of errors and/or\n**** warnings are produced. However, to test the text of each error/warning too, please restart R with LANGUAGE=en\n\n")
