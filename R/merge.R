@@ -13,19 +13,15 @@ merge.data.table = function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FAL
   }
   x0 = length(x)==0L
   y0 = length(y)==0L
-  if (x0 || y0) warning(sprintf(
-    ngettext(
-      x0 + y0, domain="R-data.table",
-      "You are trying to join data.tables where %s has 0 columns.",
-      "You are trying to join data.tables where %s have 0 columns."
-    ),
-    if(x0 && y0) "'x' and 'y'" else if(x0) "'x'" else "'y'"
+  if (x0 || y0) warning(sprintf(ngettext(x0+y0,
+    "You are trying to join data.tables where %s has 0 columns.",
+    "You are trying to join data.tables where %s have 0 columns."),
+    if (x0 && y0) "'x' and 'y'" else if (x0) "'x'" else "'y'"
   ))
-
   nm_x = names(x)
   nm_y = names(y)
-  if (anyDuplicated(nm_x)) stop(gettextf("%s has some duplicated column name(s): %s. Please remove or rename the duplicate(s) and try again.", "x", brackify(nm_x[duplicated(nm_x)]), domain="R-data.table"))
-  if (anyDuplicated(nm_y)) stop(gettextf("%s has some duplicated column name(s): %s. Please remove or rename the duplicate(s) and try again.", "y", brackify(nm_y[duplicated(nm_y)]), domain="R-data.table"))
+  if (anyDuplicated(nm_x)) stop(gettextf("%s has some duplicated column name(s): %s. Please remove or rename the duplicate(s) and try again.", "x", brackify(nm_x[duplicated(nm_x)])))
+  if (anyDuplicated(nm_y)) stop(gettextf("%s has some duplicated column name(s): %s. Please remove or rename the duplicate(s) and try again.", "y", brackify(nm_y[duplicated(nm_y)])))
 
   ## set up 'by'/'by.x'/'by.y'
   if ( (!is.null(by.x) || !is.null(by.y)) && length(by.x)!=length(by.y) )
@@ -33,8 +29,8 @@ merge.data.table = function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FAL
   if (!missing(by) && !missing(by.x))
     warning("Supplied both `by` and `by.x/by.y`. `by` argument will be ignored.")
   if (!is.null(by.x)) {
-    if ( !is.character(by.x) || !is.character(by.y))
-      stop("A non-empty vector of column names are required for `by.x` and `by.y`.")
+    if (length(by.x)==0L || !is.character(by.x) || !is.character(by.y))
+      stop("A non-empty vector of column names is required for `by.x` and `by.y`.")
     if (!all(by.x %chin% nm_x))
       stop("Elements listed in `by.x` must be valid column names in x.")
     if (!all(by.y %chin% nm_y))
