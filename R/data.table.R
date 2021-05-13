@@ -1639,7 +1639,7 @@ replace_dot_alias = function(e) {
                 jn__ = if (is.null(names(jl__))) rep("", length(jl__)) else names(jl__)
                 idx  = unlist(lapply(jl__, function(x) is.name(x) && x == ".I"))
                 if (any(idx))
-                  jn__[idx & !nzchar(jn__)] = "I"
+                  jn__[idx & !nzchar(jn__)] = "I"  # this & is correct not &&
                 jvnames = c(jvnames, jn__)
                 jsubl[[i_]] = jl__
               }
