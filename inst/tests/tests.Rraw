@@ -17579,8 +17579,8 @@ ans = data.table(round = c(3, 3, 3, 2, 2, 4, 2, 4), k = c(6, 7, 8, 5, 7, 7, 6, 8
 test(2184.5, IDT[(virginca), .N, by = .(round(Sepal.Width), k = round(Sepal.Length), kar = get(vr))] , ans)
 
 # type mismatch in fun.aggregate used to segfault (#2394), now appears fixed; test against regression
-agg <- function(x) if(length(x) > 0) min(x) else NA
-d <- data.table(id = c(1,1,2,2), x = c('y','y','y','z'), v = c('a','b','c','d'))
-dcast(d, formula = id ~ x, fun.aggregate = agg, value.var = 'v')
-test(2185, dcast(d, formula = id ~ x, fun.aggregate = agg, value.var = 'v'),
-     data.table(num = c(1, 2), y = c('a', 'c'), z = c(NA, 'd')))
+agg = function(x) if(length(x) > 0) min(x) else NA
+DT = data.table(id=c(1,1,2,2), x=c('y','y','y','z'), v=c('a','b','c','d'))
+test(2185, dcast(DT, formula=id~x, fun.aggregate=agg, value.var='v'),
+           data.table(id=c(1,2), y=c('a','c'), z=c(NA,'d'), key="id"))
+
