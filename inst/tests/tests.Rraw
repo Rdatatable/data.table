@@ -9011,19 +9011,20 @@ set.seed(123)
 dt = data.table(x1 = rep(letters[1:2], 6), x2 = rep(letters[3:5], 4), x3 = rep(letters[5:8], 3), y = rnorm(12))
 dt = dt[sample(.N)]
 df = as.data.frame(dt)
-setDT_noattr = function(x) setDT(x, set.allow.inplace.attrib=FALSE)
+options(data.table.prevent.inplace=FALSE)   # By default setDT sets uses TRUE
+
 # - [x] split by factor the same as `split.data.frame` - `f` argument ----
-test(1639.001, lapply(split(df, as.factor(1:2)), setDT_noattr), split(dt, as.factor(1:2))) # drop=FALSE on same factor
-test(1639.002, lapply(split(df, as.factor(1:2), drop=TRUE), setDT_noattr), split(dt, as.factor(1:2), drop=TRUE)) # drop=TRUE on same factor
-test(1639.003, lapply(split(df, as.factor(1:4)[3:2]), setDT_noattr), split(dt, as.factor(1:4)[3:2])) # drop=FALSE on same factor with empty levels
-test(1639.004, lapply(split(df, as.factor(1:4)[3:2], drop=TRUE), setDT_noattr), split(dt, as.factor(1:4)[3:2], drop=TRUE)) # drop=TRUE on same factor with empty levels
-test(1639.005, lapply(split(df, as.factor(1:12)), setDT_noattr), split(dt, as.factor(1:12))) # drop=FALSE factor length of nrow
-test(1639.006, lapply(split(df, as.factor(1:12), drop=TRUE), setDT_noattr), split(dt, as.factor(1:12), drop=TRUE)) # drop=TRUE factor length of nrow
+test(1639.001, lapply(split(df, as.factor(1:2)), setDT), split(dt, as.factor(1:2))) # drop=FALSE on same factor
+test(1639.002, lapply(split(df, as.factor(1:2), drop=TRUE), setDT), split(dt, as.factor(1:2), drop=TRUE)) # drop=TRUE on same factor
+test(1639.003, lapply(split(df, as.factor(1:4)[3:2]), setDT), split(dt, as.factor(1:4)[3:2])) # drop=FALSE on same factor with empty levels
+test(1639.004, lapply(split(df, as.factor(1:4)[3:2], drop=TRUE), setDT), split(dt, as.factor(1:4)[3:2], drop=TRUE)) # drop=TRUE on same factor with empty levels
+test(1639.005, lapply(split(df, as.factor(1:12)), setDT), split(dt, as.factor(1:12))) # drop=FALSE factor length of nrow
+test(1639.006, lapply(split(df, as.factor(1:12), drop=TRUE), setDT), split(dt, as.factor(1:12), drop=TRUE)) # drop=TRUE factor length of nrow
 ord = sample(2:13)
-test(1639.007, lapply(split(df, as.factor(1:14)[ord]), setDT_noattr), split(dt, as.factor(1:14)[ord])) # drop=FALSE factor length of nrow with empty levels
-test(1639.008, lapply(split(df, as.factor(1:14)[ord], drop=TRUE), setDT_noattr), split(dt, as.factor(1:14)[ord], drop=TRUE)) # drop=TRUE factor length of nrow with empty levels
-test(1639.009, lapply(split(df, list(as.factor(1:2), as.factor(3:2))), setDT_noattr), split(dt, list(as.factor(1:2), as.factor(3:2)))) # `f` list object drop=FALSE
-test(1639.010, lapply(split(df, list(as.factor(1:2), as.factor(3:2)), drop=TRUE), setDT_noattr), split(dt, list(as.factor(1:2), as.factor(3:2)), drop=TRUE)) # `f` list object drop=TRUE
+test(1639.007, lapply(split(df, as.factor(1:14)[ord]), setDT), split(dt, as.factor(1:14)[ord])) # drop=FALSE factor length of nrow with empty levels
+test(1639.008, lapply(split(df, as.factor(1:14)[ord], drop=TRUE), setDT), split(dt, as.factor(1:14)[ord], drop=TRUE)) # drop=TRUE factor length of nrow with empty levels
+test(1639.009, lapply(split(df, list(as.factor(1:2), as.factor(3:2))), setDT), split(dt, list(as.factor(1:2), as.factor(3:2)))) # `f` list object drop=FALSE
+test(1639.010, lapply(split(df, list(as.factor(1:2), as.factor(3:2)), drop=TRUE), setDT), split(dt, list(as.factor(1:2), as.factor(3:2)), drop=TRUE)) # `f` list object drop=TRUE
 test(1639.011, split(dt, as.factor(integer())), error = "group length is 0 but data nrow > 0") # factor length 0L
 test(1639.012, split(dt, as.factor(integer()), drop=TRUE), error = "group length is 0 but data nrow > 0")
 test(1639.013, split(dt, as.factor(1:2)[0L]), error = "group length is 0 but data nrow > 0") # factor length 0L with empty levels
@@ -9031,40 +9032,40 @@ test(1639.014, split(dt, as.factor(1:2)[0L], drop=TRUE), error = "group length i
 # - [x] edge cases for `f` argument ----
 test(1639.015, split(df, as.factor(NA)), split(dt, as.factor(NA))) # factor NA
 test(1639.016, split(df, as.factor(NA), drop=TRUE), split(dt, as.factor(NA), drop=TRUE))
-test(1639.017, lapply(split(df, as.factor(1:2)[0L][1L]), setDT_noattr), split(dt, as.factor(1:2)[0L][1L])) # factor NA with empty levels
+test(1639.017, lapply(split(df, as.factor(1:2)[0L][1L]), setDT), split(dt, as.factor(1:2)[0L][1L])) # factor NA with empty levels
 test(1639.018, split(df, as.factor(1:2)[0L][1L], drop=TRUE), split(dt, as.factor(1:2)[0L][1L], drop=TRUE))
-test(1639.019, lapply(split(df, as.factor(c(1L,NA,2L))), setDT_noattr), split(dt, as.factor(c(1L,NA,2L)))) # factor has NA
-test(1639.020, lapply(split(df, as.factor(c(1L,NA,2L)), drop=TRUE), setDT_noattr), split(dt, as.factor(c(1L,NA,2L)), drop=TRUE))
-test(1639.021, lapply(split(df, as.factor(c(1L,NA,2:4))[1:3]), setDT_noattr), split(dt, as.factor(c(1L,NA,2:4))[1:3])) # factor has NA with empty levels
-test(1639.022, lapply(split(df, as.factor(c(1L,NA,2:4))[1:3], drop=TRUE), setDT_noattr), split(dt, as.factor(c(1L,NA,2:4))[1:3], drop=TRUE))
-test(1639.023, lapply(split(df, letters[c(1L,NA,2L)]), setDT_noattr), split(dt, letters[c(1L,NA,2L)])) # character as `f` arg
-test(1639.024, lapply(split(df, letters[c(1L,NA,2L)], drop=TRUE), setDT_noattr), split(dt, letters[c(1L,NA,2L)], drop=TRUE))
-test(1639.025, lapply(split(df, "z"), setDT_noattr), split(dt, "z")) # character as `f` arg, length 1L
-test(1639.026, lapply(split(df, "z", drop=TRUE), setDT_noattr), split(dt, "z", drop=TRUE))
-test(1639.027, lapply(split(df, letters[c(1L,NA)]), setDT_noattr), split(dt, letters[c(1L,NA)])) # character as `f` arg, length 1L of non-NA
-test(1639.028, lapply(split(df, letters[c(1L,NA)], drop=TRUE), setDT_noattr), split(dt, letters[c(1L,NA)], drop=TRUE))
-test(1639.029, lapply(split(df[0L,], "z"), setDT_noattr), split(dt[0L], "z")) # nrow 0, f length 1-2
-test(1639.030, lapply(split(df[0L,], c("z1","z2")), setDT_noattr), split(dt[0L], c("z1","z2")))
-test(1639.031, lapply(split(df[0L,], "z", drop=TRUE), setDT_noattr), split(dt[0L], "z", drop=TRUE))
-test(1639.032, lapply(split(df[0L,], c("z1","z2"), drop=TRUE), setDT_noattr), split(dt[0L], c("z1","z2"), drop=TRUE))
-test(1639.033, lapply(split(df[1L,], "z"), setDT_noattr), split(dt[1L], "z")) # nrow 1, f length 1-2
-test(1639.034, lapply(suppressWarnings(split(df[1L,], c("z1","z2"))), setDT_noattr), suppressWarnings(split(dt[1L], c("z1","z2"))))
-test(1639.035, lapply(split(df[1L,], "z", drop=TRUE), setDT_noattr), split(dt[1L], "z", drop=TRUE) )
-test(1639.036, lapply(suppressWarnings(split(df[1L,], c("z1","z2"), drop=TRUE)), setDT_noattr), suppressWarnings(split(dt[1L], c("z1","z2"), drop=TRUE)))
-test(1639.037, lapply(split(df[0L,], as.factor(NA_character_)), setDT_noattr), split(dt[0L], as.factor(NA_character_))) # nrow 0, f factor length 1L NA
-test(1639.038, lapply(split(df[0L,], as.factor(NA_character_), drop=TRUE), setDT_noattr), split(dt[0L], as.factor(NA_character_), drop=TRUE))
-test(1639.039, lapply(split(df[0L,], as.factor(1:2)[0L][1L]), setDT_noattr), split(dt[0L], as.factor(1:2)[0L][1L])) # nrow 0, f factor length 1L NA with empty levels
-test(1639.040, lapply(split(df[0L,], as.factor(1:2)[0L][1L], drop=TRUE), setDT_noattr), split(dt[0L], as.factor(1:2)[0L][1L], drop=TRUE))
-test(1639.041, lapply(split(df[0L,], as.factor(integer())), setDT_noattr), split(dt[0L], as.factor(integer()))) # nrow 0, f factor length 0L
-test(1639.042, lapply(split(df[0L,], as.factor(integer()), drop=TRUE), setDT_noattr), split(dt[0L], as.factor(integer()), drop=TRUE))
-test(1639.043, lapply(split(df[0L,], as.factor(1:2)[0L]), setDT_noattr), split(dt[0L], as.factor(1:2)[0L])) # nrow 0, f factor length 0L with empty levels
-test(1639.044, lapply(split(df[0L,], as.factor(1:2)[0L], drop=TRUE), setDT_noattr), split(dt[0L], as.factor(1:2)[0L], drop=TRUE))
-test(1639.045, lapply(split(df[0L,], as.factor(1:3)[c(2L,NA,3L)]), setDT_noattr), split(dt[0L], as.factor(1:3)[c(2L,NA,3L)])) # nrow 0, f factor with empty levels and NA
-test(1639.046, lapply(split(df[0L,], as.factor(1:3)[c(2L,NA,3L)], drop=TRUE), setDT_noattr), split(dt[0L], as.factor(1:3)[c(2L,NA,3L)], drop=TRUE)) # nrow 0, f character length 1L NA
-test(1639.047, lapply(split(df[0L,], NA_character_), setDT_noattr), split(dt[0L], NA_character_))
-test(1639.048, lapply(split(df[0L,], NA_character_, drop=TRUE), setDT_noattr), split(dt[0L], NA_character_, drop=TRUE))
-test(1639.049, lapply(split(df[0L,], letters[c(NA,1:3)]), setDT_noattr), split(dt[0L], letters[c(NA,1:3)])) # nrow 0, f length > 1L, with NA
-test(1639.050, lapply(split(df[0L,], letters[c(NA,1:3)], drop=TRUE), setDT_noattr), split(dt[0L], letters[c(NA,1:3)], drop=TRUE))
+test(1639.019, lapply(split(df, as.factor(c(1L,NA,2L))), setDT), split(dt, as.factor(c(1L,NA,2L)))) # factor has NA
+test(1639.020, lapply(split(df, as.factor(c(1L,NA,2L)), drop=TRUE), setDT), split(dt, as.factor(c(1L,NA,2L)), drop=TRUE))
+test(1639.021, lapply(split(df, as.factor(c(1L,NA,2:4))[1:3]), setDT), split(dt, as.factor(c(1L,NA,2:4))[1:3])) # factor has NA with empty levels
+test(1639.022, lapply(split(df, as.factor(c(1L,NA,2:4))[1:3], drop=TRUE), setDT), split(dt, as.factor(c(1L,NA,2:4))[1:3], drop=TRUE))
+test(1639.023, lapply(split(df, letters[c(1L,NA,2L)]), setDT), split(dt, letters[c(1L,NA,2L)])) # character as `f` arg
+test(1639.024, lapply(split(df, letters[c(1L,NA,2L)], drop=TRUE), setDT), split(dt, letters[c(1L,NA,2L)], drop=TRUE))
+test(1639.025, lapply(split(df, "z"), setDT), split(dt, "z")) # character as `f` arg, length 1L
+test(1639.026, lapply(split(df, "z", drop=TRUE), setDT), split(dt, "z", drop=TRUE))
+test(1639.027, lapply(split(df, letters[c(1L,NA)]), setDT), split(dt, letters[c(1L,NA)])) # character as `f` arg, length 1L of non-NA
+test(1639.028, lapply(split(df, letters[c(1L,NA)], drop=TRUE), setDT), split(dt, letters[c(1L,NA)], drop=TRUE))
+test(1639.029, lapply(split(df[0L,], "z"), setDT), split(dt[0L], "z")) # nrow 0, f length 1-2
+test(1639.030, lapply(split(df[0L,], c("z1","z2")), setDT), split(dt[0L], c("z1","z2")))
+test(1639.031, lapply(split(df[0L,], "z", drop=TRUE), setDT), split(dt[0L], "z", drop=TRUE))
+test(1639.032, lapply(split(df[0L,], c("z1","z2"), drop=TRUE), setDT), split(dt[0L], c("z1","z2"), drop=TRUE))
+test(1639.033, lapply(split(df[1L,], "z"), setDT), split(dt[1L], "z")) # nrow 1, f length 1-2
+test(1639.034, lapply(suppressWarnings(split(df[1L,], c("z1","z2"))), setDT), suppressWarnings(split(dt[1L], c("z1","z2"))))
+test(1639.035, lapply(split(df[1L,], "z", drop=TRUE), setDT), split(dt[1L], "z", drop=TRUE) )
+test(1639.036, lapply(suppressWarnings(split(df[1L,], c("z1","z2"), drop=TRUE)), setDT), suppressWarnings(split(dt[1L], c("z1","z2"), drop=TRUE)))
+test(1639.037, lapply(split(df[0L,], as.factor(NA_character_)), setDT), split(dt[0L], as.factor(NA_character_))) # nrow 0, f factor length 1L NA
+test(1639.038, lapply(split(df[0L,], as.factor(NA_character_), drop=TRUE), setDT), split(dt[0L], as.factor(NA_character_), drop=TRUE))
+test(1639.039, lapply(split(df[0L,], as.factor(1:2)[0L][1L]), setDT), split(dt[0L], as.factor(1:2)[0L][1L])) # nrow 0, f factor length 1L NA with empty levels
+test(1639.040, lapply(split(df[0L,], as.factor(1:2)[0L][1L], drop=TRUE), setDT), split(dt[0L], as.factor(1:2)[0L][1L], drop=TRUE))
+test(1639.041, lapply(split(df[0L,], as.factor(integer())), setDT), split(dt[0L], as.factor(integer()))) # nrow 0, f factor length 0L
+test(1639.042, lapply(split(df[0L,], as.factor(integer()), drop=TRUE), setDT), split(dt[0L], as.factor(integer()), drop=TRUE))
+test(1639.043, lapply(split(df[0L,], as.factor(1:2)[0L]), setDT), split(dt[0L], as.factor(1:2)[0L])) # nrow 0, f factor length 0L with empty levels
+test(1639.044, lapply(split(df[0L,], as.factor(1:2)[0L], drop=TRUE), setDT), split(dt[0L], as.factor(1:2)[0L], drop=TRUE))
+test(1639.045, lapply(split(df[0L,], as.factor(1:3)[c(2L,NA,3L)]), setDT), split(dt[0L], as.factor(1:3)[c(2L,NA,3L)])) # nrow 0, f factor with empty levels and NA
+test(1639.046, lapply(split(df[0L,], as.factor(1:3)[c(2L,NA,3L)], drop=TRUE), setDT), split(dt[0L], as.factor(1:3)[c(2L,NA,3L)], drop=TRUE)) # nrow 0, f character length 1L NA
+test(1639.047, lapply(split(df[0L,], NA_character_), setDT), split(dt[0L], NA_character_))
+test(1639.048, lapply(split(df[0L,], NA_character_, drop=TRUE), setDT), split(dt[0L], NA_character_, drop=TRUE))
+test(1639.049, lapply(split(df[0L,], letters[c(NA,1:3)]), setDT), split(dt[0L], letters[c(NA,1:3)])) # nrow 0, f length > 1L, with NA
+test(1639.050, lapply(split(df[0L,], letters[c(NA,1:3)], drop=TRUE), setDT), split(dt[0L], letters[c(NA,1:3)], drop=TRUE))
 # - [x] split by reference to column names - `by` - for factor column ----
 fdt = dt[, c(lapply(.SD, as.factor), list(y=y)), .SDcols=x1:x3]
 l = split(fdt, by = "x1", flatten=FALSE) # single col
@@ -9132,9 +9133,9 @@ test(1639.060, TRUE, all(
   sapply(l, sapply, sapply, ncol) == rep(4L, 12)
 ))
 sdf = split(as.data.frame(fdt), f=list(fdt$x1, fdt$x3)) # split.data.frame match
-test(1639.061, unlist(split(fdt, by = c("x1","x3"), sorted = TRUE, flatten=FALSE), recursive = FALSE), lapply(sdf[sort(names(sdf))], setDT_noattr)) # vs split.data.frame by 2L drop=FALSE
+test(1639.061, unlist(split(fdt, by = c("x1","x3"), sorted = TRUE, flatten=FALSE), recursive = FALSE), lapply(sdf[sort(names(sdf))], setDT)) # vs split.data.frame by 2L drop=FALSE
 sdf = split(as.data.frame(fdt), f=list(fdt$x1, fdt$x3), drop=TRUE)
-test(1639.062, unlist(split(fdt, by = c("x1","x3"), sorted = TRUE, drop=TRUE, flatten=FALSE), recursive = FALSE), lapply(sdf[sort(names(sdf))], setDT_noattr)) # vs split.data.frame by 2L drop=TRUE
+test(1639.062, unlist(split(fdt, by = c("x1","x3"), sorted = TRUE, drop=TRUE, flatten=FALSE), recursive = FALSE), lapply(sdf[sort(names(sdf))], setDT)) # vs split.data.frame by 2L drop=TRUE
 fdt = dt[, .(x1 = as.factor(c(as.character(x1), "c"))[-13L], # empty levels in factor and drop=FALSE
              x2 = as.factor(c("a", as.character(x2)))[-1L],
              x3 = as.factor(c("a", as.character(x3), "z"))[c(-1L,-14L)],
@@ -9180,9 +9181,9 @@ test(1639.070, TRUE, all(
   sapply(l, sapply, ncol) == rep(4L, 4)
 ))
 sdf = split(as.data.frame(fdt), list(fdt$x3, fdt$x1)) # split.data.frame match on by = 2L and empty levels, drop=FALSE
-test(1639.071, unlist(split(fdt, by = c("x3","x1"), sorted=TRUE, flatten=FALSE), recursive = FALSE), lapply(sdf[sort(names(sdf))], setDT_noattr))
+test(1639.071, unlist(split(fdt, by = c("x3","x1"), sorted=TRUE, flatten=FALSE), recursive = FALSE), lapply(sdf[sort(names(sdf))], setDT))
 sdf = split(as.data.frame(fdt), list(fdt$x3, fdt$x1), drop=TRUE) # split.data.frame match on by = 2L and empty levels, drop=TRUE
-test(1639.072, unlist(split(fdt, by = c("x3","x1"), sorted=TRUE, drop=TRUE, flatten=FALSE), recursive = FALSE), lapply(sdf[sort(names(sdf))], setDT_noattr))
+test(1639.072, unlist(split(fdt, by = c("x3","x1"), sorted=TRUE, drop=TRUE, flatten=FALSE), recursive = FALSE), lapply(sdf[sort(names(sdf))], setDT))
 # - [x] split by reference to column names - `by` - factor and character column ----
 fdt = dt[, .(x1 = x1,
              x2 = x2,
@@ -9395,47 +9396,47 @@ test(1639.107, unlist(split(fdt, by = c("x1","x2"), sorted = TRUE, flatten = FAL
 test(1639.108, unlist(split(fdt, by = c("x1","x2"), sorted = FALSE, flatten = FALSE), recursive = FALSE), split(fdt, by = c("x1","x2"), sorted = FALSE)) # sorted=FALSE
 test(1639.109, unlist(split(fdt, by = c("x1","x2"), sorted = TRUE, keep.by = FALSE, flatten = FALSE), recursive = FALSE), split(fdt, by = c("x1","x2"), sorted = TRUE, keep.by = FALSE)) # drop.by=TRUE
 sdf = split(as.data.frame(fdt), f=list(fdt$x1, fdt$x2)) # vs split.data.frame by 2L # this will dispatch to `interaction(x1, x2)` which results into different order, see: levels(interaction(1:2,1:2)) vs CJ(1:2,1:2)
-test(1639.110, split(fdt, by = c("x1","x2"), sorted = TRUE), lapply(sdf[sort(names(sdf))], setDT_noattr))# vs split.data.frame by 2L drop=FALSE
-test(1639.111, unlist(split(fdt, by = c("x1","x2"), flatten = FALSE, sorted = TRUE), recursive = FALSE), lapply(sdf[sort(names(sdf))], setDT_noattr))# vs split.data.frame by 2L drop=FALSE, flatten=FALSE + unlist
+test(1639.110, split(fdt, by = c("x1","x2"), sorted = TRUE), lapply(sdf[sort(names(sdf))], setDT))# vs split.data.frame by 2L drop=FALSE
+test(1639.111, unlist(split(fdt, by = c("x1","x2"), flatten = FALSE, sorted = TRUE), recursive = FALSE), lapply(sdf[sort(names(sdf))], setDT))# vs split.data.frame by 2L drop=FALSE, flatten=FALSE + unlist
 sdf = split(as.data.frame(fdt), f=list(fdt$x1, fdt$x2), drop=TRUE)
-test(1639.112, split(fdt, by = c("x1","x2"), sorted = TRUE, drop=TRUE), lapply(sdf[sort(names(sdf))], setDT_noattr)) # vs split.data.frame by 2L drop=TRUE
+test(1639.112, split(fdt, by = c("x1","x2"), sorted = TRUE, drop=TRUE), lapply(sdf[sort(names(sdf))], setDT)) # vs split.data.frame by 2L drop=TRUE
 sdf = split(as.data.frame(fdt), f=list(fdt$x1, fdt$x2, fdt$x3)) # vs split.data.frame by 3L
-test(1639.113, split(fdt, by = c("x1","x2","x3"), flatten = TRUE, sorted = TRUE), lapply(sdf[sort(names(sdf))], setDT_noattr)) # vs split.data.frame by 3L drop=FALSE
+test(1639.113, split(fdt, by = c("x1","x2","x3"), flatten = TRUE, sorted = TRUE), lapply(sdf[sort(names(sdf))], setDT)) # vs split.data.frame by 3L drop=FALSE
 sdf = split(as.data.frame(fdt), f=list(fdt$x1, fdt$x2, fdt$x3), drop=TRUE)
-test(1639.114, split(fdt, by = c("x1","x2","x3"), flatten = TRUE, sorted = TRUE, drop=TRUE), lapply(sdf[sort(names(sdf))], setDT_noattr)) # vs split.data.frame by 3L drop=TRUE
+test(1639.114, split(fdt, by = c("x1","x2","x3"), flatten = TRUE, sorted = TRUE, drop=TRUE), lapply(sdf[sort(names(sdf))], setDT)) # vs split.data.frame by 3L drop=TRUE
 fdt = dt[, .(x1 = as.factor(c(as.character(x1), "c"))[-13L], # empty levels in factors
              x2 = as.factor(c("a", as.character(x2)))[-1L],
              x3 = as.factor(c("a", as.character(x3), "z"))[c(-1L,-14L)],
              y = y)]
 sdf = split(as.data.frame(fdt), f=list(fdt$x1, fdt$x2)) # vs split.data.frame by 2L # this will dispatch to `interaction(x1, x2)` which results into different order, see: levels(interaction(1:2,1:2)) vs CJ(1:2,1:2)
-test(1639.115, split(fdt, by = c("x1","x2"), sorted = TRUE), lapply(sdf[sort(names(sdf))], setDT_noattr)) # vs split.data.frame by 2L drop=FALSE
-test(1639.116, unlist(split(fdt, by = c("x1","x2"), flatten = FALSE, sorted = TRUE), recursive = FALSE), lapply(sdf[sort(names(sdf))], setDT_noattr)) # vs split.data.frame by 2L drop=FALSE, flatten=FALSE + unlist
+test(1639.115, split(fdt, by = c("x1","x2"), sorted = TRUE), lapply(sdf[sort(names(sdf))], setDT)) # vs split.data.frame by 2L drop=FALSE
+test(1639.116, unlist(split(fdt, by = c("x1","x2"), flatten = FALSE, sorted = TRUE), recursive = FALSE), lapply(sdf[sort(names(sdf))], setDT)) # vs split.data.frame by 2L drop=FALSE, flatten=FALSE + unlist
 sdf = split(as.data.frame(fdt), f=list(fdt$x1, fdt$x2), drop=TRUE)
-test(1639.117, split(fdt, by = c("x1","x2"), sorted = TRUE, drop=TRUE), lapply(sdf[sort(names(sdf))], setDT_noattr)) # vs split.data.frame by 2L drop=TRUE
+test(1639.117, split(fdt, by = c("x1","x2"), sorted = TRUE, drop=TRUE), lapply(sdf[sort(names(sdf))], setDT)) # vs split.data.frame by 2L drop=TRUE
 sdf = split(as.data.frame(fdt), f=list(fdt$x1, fdt$x2, fdt$x3)) # vs split.data.frame by 3L
-test(1639.118, split(fdt, by = c("x1","x2","x3"), flatten = TRUE, sorted = TRUE), lapply(sdf[sort(names(sdf))], setDT_noattr)) # vs split.data.frame by 3L drop=FALSE
+test(1639.118, split(fdt, by = c("x1","x2","x3"), flatten = TRUE, sorted = TRUE), lapply(sdf[sort(names(sdf))], setDT)) # vs split.data.frame by 3L drop=FALSE
 sdf = split(as.data.frame(fdt), f=list(fdt$x1, fdt$x2, fdt$x3), drop=TRUE)
-test(1639.119, split(fdt, by = c("x1","x2","x3"), flatten = TRUE, sorted = TRUE, drop=TRUE), lapply(sdf[sort(names(sdf))], setDT_noattr)) # vs split.data.frame by 3L drop=TRUE
+test(1639.119, split(fdt, by = c("x1","x2","x3"), flatten = TRUE, sorted = TRUE, drop=TRUE), lapply(sdf[sort(names(sdf))], setDT)) # vs split.data.frame by 3L drop=TRUE
 sdf = split(as.data.frame(fdt[, .SD, .SDcols=c("x3","y")]), f=list(fdt$x1, fdt$x2)) # flatten drop.by and empty lists # this will dispatch to `interaction(x1, x2)` which results into different order, see: levels(interaction(1:2,1:2)) vs CJ(1:2,1:2)
-test(1639.120, split(fdt, by = c("x1","x2"), sorted = TRUE, keep.by = FALSE), lapply(sdf[sort(names(sdf))], setDT_noattr)) # vs split.data.frame by 2L drop=FALSE
-test(1639.121, unlist(split(fdt, by = c("x1","x2"), flatten = FALSE, sorted = TRUE, keep.by = FALSE), recursive = FALSE), lapply(sdf[sort(names(sdf))], setDT_noattr)) # vs split.data.frame by 2L drop=FALSE, flatten=FALSE + unlist
+test(1639.120, split(fdt, by = c("x1","x2"), sorted = TRUE, keep.by = FALSE), lapply(sdf[sort(names(sdf))], setDT)) # vs split.data.frame by 2L drop=FALSE
+test(1639.121, unlist(split(fdt, by = c("x1","x2"), flatten = FALSE, sorted = TRUE, keep.by = FALSE), recursive = FALSE), lapply(sdf[sort(names(sdf))], setDT)) # vs split.data.frame by 2L drop=FALSE, flatten=FALSE + unlist
 sdf = split(as.data.frame(fdt[, .SD, .SDcols=c("x3","y")]), f=list(fdt$x1, fdt$x2), drop=TRUE)
-test(1639.122, split(fdt, by = c("x1","x2"), sorted = TRUE, drop=TRUE, keep.by = FALSE), lapply(sdf[sort(names(sdf))], setDT_noattr)) # vs split.data.frame by 2L drop=TRUE
+test(1639.122, split(fdt, by = c("x1","x2"), sorted = TRUE, drop=TRUE, keep.by = FALSE), lapply(sdf[sort(names(sdf))], setDT)) # vs split.data.frame by 2L drop=TRUE
 # - [x] edge cases for `by` and `sorted`, 0 rows, 1 unique value in cols, drop ----
 test(1639.123, length(split(dt[0L], by = "x1")), 0L) # drop=FALSE vs split.data.frame expand list with empty levels won't work on characters, use factor with defined levels, included those unused.
 test(1639.124, length(split(as.data.frame(dt[0L]), df$x1)), 2L) # unlike data.frame because character != factor
 fdt = dt[, c(lapply(.SD, as.factor), list(y=y)), .SDcols=x1:x3] # factors no empty levels
 test(1639.125, length(split(fdt[0L], by = "x1")), 2L)
 test(1639.126, length(split(as.data.frame(fdt[0L]), df$x1)), 2L) # match on factors work
-test(1639.127, split(fdt[0L], by = "x1"), lapply(split(as.data.frame(fdt[0L]), df$x1), setDT_noattr)) # we match also on complete structure
+test(1639.127, split(fdt[0L], by = "x1"), lapply(split(as.data.frame(fdt[0L]), df$x1), setDT)) # we match also on complete structure
 fdt = dt[, .(x1 = as.factor(c(as.character(x1), "c"))[-13L], # factors empty levels
              x2 = as.factor(c("a", as.character(x2)))[-1L],
              x3 = as.factor(c("a", as.character(x3), "z"))[c(-1L,-14L)],
              y = y)]
 sdf = split(as.data.frame(fdt), f=list(fdt$x1, fdt$x2)) # vs split.data.frame by 2L# this will dispatch to `interaction(x1, x2)` which results into different order, see: levels(interaction(1:2,1:2)) vs CJ(1:2,1:2)
-test(1639.128, split(fdt, by = c("x1","x2"), sorted = TRUE), lapply(sdf[sort(names(sdf))], setDT_noattr)) # vs split.data.frame by 2L drop=FALSE
+test(1639.128, split(fdt, by = c("x1","x2"), sorted = TRUE), lapply(sdf[sort(names(sdf))], setDT)) # vs split.data.frame by 2L drop=FALSE
 sdf = split(as.data.frame(fdt), f=list(fdt$x1, fdt$x2), drop=TRUE)
-test(1639.129, split(fdt, by = c("x1","x2"), sorted = TRUE, drop=TRUE), lapply(sdf[sort(names(sdf))], setDT_noattr)) # vs split.data.frame by 2L drop=TRUE
+test(1639.129, split(fdt, by = c("x1","x2"), sorted = TRUE, drop=TRUE), lapply(sdf[sort(names(sdf))], setDT)) # vs split.data.frame by 2L drop=TRUE
 test(1639.130, split(dt[0L], by = "x1"), structure(list(), .Names = character(0))) # 0 nrow character/factor with empty levels # no empty levels
 test(1639.131, split(fdt[0L], by = "x1"), lapply(c(a=1L,b=2L,c=3L), function(i) data.table(x1=factor(levels = c("a","b","c")),x2=factor(levels = c("a","c","d","e")),x3=factor(levels = c("a","e","f","g","h","z")),y=numeric()))) # expand empty levels
 test(1639.132, split(dt[0L], by = "x1", sorted = TRUE), structure(list(), .Names = character(0)))
@@ -9458,7 +9459,7 @@ test(1639.135, o2, ans)
 lapply(ans, setattr, ".data.table.locked", NULL)
 sort.by.names = function(x) x[sort(names(x))]
 test(1639.136, sort.by.names(ans), sort.by.names(split(as.data.table(df), f=list(df$product, df$year))))
-test(1639.137, sort.by.names(ans), sort.by.names(unlist(split(setDT_noattr(df), by=c("product","year"), flatten = FALSE), recursive = FALSE)))
+test(1639.137, sort.by.names(ans), sort.by.names(unlist(split(setDT(df), by=c("product","year"), flatten = FALSE), recursive = FALSE)))
 test(1639.138, ans, split(as.data.table(df), by=c("product","year")))
 test(1639.139, sort.by.names(ans), sort.by.names(unlist(split(as.data.table(df), by=c("product","year"), flatten=FALSE), recursive = FALSE)))
 # test if split preallocate columns in results #1908
@@ -9470,6 +9471,7 @@ test(1639.141, all(sapply(dtL, truelength) > 1000))
 dt <- data.table(x = factor("a"), y = 1)
 test(1639.142, x = split(dt, by = "x"), y = list(a = dt))
 test(1639.143, x = split(dt, by = "y"), y = list(`1` = dt))
+options(data.table.prevent.inplace=NULL)
 
 # allow x's cols (specifically x's join cols) to be referred to using 'x.' syntax
 # patch for #1615. Note that I specifically have not implemented x[y, aa, on=c(aa="bb")]
@@ -17543,11 +17545,13 @@ test(2184.5, IDT[(virginca), .N, by = .(round(Sepal.Width), k = round(Sepal.Leng
 d <- data.frame(a=c(1,2), b=c(1,2))
 df <- d
 setDT(d)
+orig.address <- address(d$b)
 d[!is.na(a), b:=c(3, 4)]  # Change shouldn't leak to df
 test(2185.1, df$b[1], 1)
+test(2185.2, (orig.address != address(d$b)))
 
 d <- data.table(a=c(1,2), b=c(1,2))
 orig.address <- address(d$b)
 d[!is.na(a), b:=c(3, 4)]
-test(2185.2, d$b[1], 3)  # For Codecov: go over the case where assign-inplace is allowed
-test(2185.3, orig.address, address(d$b))
+test(2185.3, d$b[1], 3)  # For Codecov: go over the case where assign-inplace is allowed
+test(2185.4, orig.address, address(d$b))

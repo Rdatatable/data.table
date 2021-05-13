@@ -66,7 +66,11 @@ as.data.table.matrix = function(x, keep.rownames=FALSE, key=NULL, ...) {
     for (i in ic) value[[i]] <- as.vector(x[, i])       # to drop any row.names that would otherwise be retained inside every column of the data.table
   }
   col_labels = dimnames(x)[[2L]]
-  setDT(value, set.allow.inplace.attrib=FALSE)
+  
+  orig.opt <- options(data.table.prevent.inplace=TRUE)
+  on.exit(options(orig.opt))
+  setDT(value)
+  
   if (length(col_labels) == ncols) {
     if (any(empty <- !nzchar(col_labels)))
       col_labels[empty] = paste0("V", ic[empty])
@@ -196,7 +200,13 @@ as.data.table.list = function(x,
   if (any(vnames==".SD")) stop("A column may not be called .SD. That has special meaning.")
   if (check.names) vnames = make.names(vnames, unique=TRUE)
   setattr(ans, "names", vnames)
-  setDT(ans, key=key, set.allow.inplace.attrib=FALSE) # copy ensured above; also, setDT handles naming
+  
+  if (is.null(getOption("data.table.allow.inplace"))) { # not an internal call 
+    orig.opt <- options(data.table.prevent.inplace=FALSE)
+    on.exit(options(orig.opt))
+  }
+
+  setDT(ans, key=key) # copy ensured above; also, setDT handles naming
   if (length(origListNames)==length(ans)) setattr(ans, "names", origListNames)  # PR 3854 and tests 2058.15-17
   ans
 }
