@@ -16707,13 +16707,13 @@ dt = data.table(SomeNumberA=c(1,1,1),SomeNumberB=c(1,1,1))
 test(2123, dt[, .(.N, TotalA=sum(SomeNumberA), TotalB=sum(SomeNumberB)), by=SomeNumberA], data.table(SomeNumberA=1, N=3L, TotalA=1, TotalB=3))
 
 # system timezone is not usually UTC, so as.ITime.POSIXct shouldn't assume so, #4085
-oldtz = Sys.getenv('TZ', unset=NA)
+oldtz=Sys.getenv('TZ', unset=NA)
 Sys.setenv(TZ='Asia/Jakarta') # UTC+7
 t0 = as.POSIXct('2019-10-01')
 test(2124.1, format(as.ITime(t0)), '00:00:00')
 test(2124.2, format(as.IDate(t0)), '2019-10-01')
 if (is.na(oldtz)) Sys.unsetenv("TZ") else Sys.setenv(TZ=oldtz)
-# careful to unset because TZ="" means UTC whereas unset TZ means local. #4261 needed this too.
+# careful to unset because TZ="" means UTC whereas unset TZ means local
 
 # trunc.cols in print.data.table, #4074
 old_width = options("width" = 40L)
