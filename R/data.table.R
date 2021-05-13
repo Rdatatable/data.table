@@ -2555,7 +2555,7 @@ setnames = function(x,old,new,skip_absent=FALSE) {
         }
       }
     }
-    if (any(w <- new==names(x)[i] & Encoding(new)==Encoding(names(x)[i]))) {
+    if (any(w <- new==names(x)[i] & Encoding(new)==Encoding(names(x)[i]))) {  # this & is correct not &&
       w = which(!w)
       new = new[w]
       i = i[w]
