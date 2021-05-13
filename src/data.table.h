@@ -101,6 +101,7 @@ extern SEXP sym_inherits;
 extern SEXP sym_datatable_locked;
 extern SEXP sym_tzone;
 extern SEXP sym_old_fread_datetime_character;
+extern SEXP sym_variable_table;
 extern double NA_INT64_D;
 extern long long NA_INT64_LL;
 extern Rcomplex NA_CPLX;  // initialized in init.c; see there for comments
@@ -254,3 +255,5 @@ SEXP fcaseR(SEXP na, SEXP rho, SEXP args);
 //snprintf.c
 int dt_win_snprintf(char *dest, size_t n, const char *fmt, ...);
 
+// programming.c
+SEXP substitute_call_arg_namesR(SEXP expr, SEXP env);
