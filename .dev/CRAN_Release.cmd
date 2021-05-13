@@ -167,7 +167,7 @@ grep -n "[^\]%" ./man/*.Rd
 
 # if (a & b) is either invalid or inefficient (ditto for replace & with |);
 #   if(any(a [&|] b)) is appropriate b/c of collapsing the logical vector to scalar
-rep -nr "^[^#]*if[^&#]*[^&#\"][&][^&]" R | grep -Ev "if\s*[(](?:any|all)"
+grep -nr "^[^#]*if[^&#]*[^&#\"][&][^&]" R | grep -Ev "if\s*[(](?:any|all)"
 
 # seal leak potential where two unprotected API calls are passed to the same
 # function call, usually involving install() or mkChar()
