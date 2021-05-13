@@ -8364,13 +8364,13 @@ DT0 = data.table(NULL)
 DT1 = data.table(a=1)
 test(1601.1, merge(DT1, DT1, by="a"), data.table(a=1, key="a"))
 test(1601.2, merge(DT1, DT0, by="a"),
-     warning="You are trying to join data.tables where argument 'y' has 0 columns.",
+     warning="You are trying to join data.tables where 'y' has 0 columns.",
      error="Elements listed in `by`")
 test(1601.3, merge(DT0, DT1, by="a"),
-     warning="You are trying to join data.tables where argument 'x' has 0 columns.",
+     warning="You are trying to join data.tables where 'x' has 0 columns.",
      error="Elements listed in `by`")
 test(1601.4, merge(DT0, DT0, by="a"),
-     warning="You are trying to join data.tables where arguments 'x' and 'y' have no columns.",
+     warning="You are trying to join data.tables where 'x' and 'y' have 0 columns.",
      error="Elements listed in `by`")
 
 # fix for #1549
