@@ -4,28 +4,18 @@
 SEXP coerceToRealListR(SEXP obj) {
   // accept atomic/list of integer/logical/real returns list of real
   int protecti = 0;
-  SEXP x = R_NilValue;
   if (isVectorAtomic(obj)) {
-    x = PROTECT(allocVector(VECSXP, 1)); protecti++;
-    if (isReal(obj)) {
-      SET_VECTOR_ELT(x, 0, obj);
-    } else if (isInteger(obj) || isLogical(obj)) {
-      SET_VECTOR_ELT(x, 0, coerceVector(obj, REALSXP));
-    } else {
-      error(_("x must be of type numeric or logical"));
-    }
-  } else {
-    R_len_t nobj = length(obj);
-    x = PROTECT(allocVector(VECSXP, nobj)); protecti++;
-    for (R_len_t i=0; i<nobj; i++) {
-      if (isReal(VECTOR_ELT(obj, i))) {
-        SET_VECTOR_ELT(x, i, VECTOR_ELT(obj, i));
-      } else if (isInteger(VECTOR_ELT(obj, i)) || isLogical(VECTOR_ELT(obj, i))) {
-        SET_VECTOR_ELT(x, i, coerceVector(VECTOR_ELT(obj, i), REALSXP));
-      } else {
-        error(_("x must be list, data.frame or data.table of numeric or logical types"));
-      }
-    }
+    SEXP obj1 = obj;
+    obj = PROTECT(allocVector(VECSXP, 1)); protecti++;
+    SET_VECTOR_ELT(obj, 0, obj1);
+  }
+  R_len_t nobj = length(obj);
+  SEXP x = PROTECT(allocVector(VECSXP, nobj)); protecti++;
+  for (R_len_t i=0; i<nobj; i++) {
+    SEXP this_obj = VECTOR_ELT(obj, i);
+    if (!(isReal(this_obj) || isInteger(this_obj) || isLogical(this_obj)))
+      error(_("x must be of type numeric or logical, or a list, data.frame or data.table of such"));
+    SET_VECTOR_ELT(x, i, coerceAs(this_obj, ScalarReal(NA_REAL), /*copyArg=*/ScalarLogical(false))); // copyArg=false will make type-class match to return as-is, no copy
   }
   UNPROTECT(protecti);
   return x;
@@ -95,7 +85,7 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
       }
     }
   }
-  int* ikl[nk];                                                 // pointers to adaptive window width
+  int **ikl = (int**)R_alloc(nk, sizeof(int*));                 // to not recalculate `length(x[[i]])` we store it in extra array
   if (badaptive) {
     for (int j=0; j<nk; j++) ikl[j] = INTEGER(VECTOR_ELT(kl, j));
   }
@@ -125,8 +115,8 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
   if (verbose)
     Rprintf(_("%s: allocating memory for results %dx%d\n"), __func__, nx, nk);
   ans_t *dans = (ans_t *)R_alloc(nx*nk, sizeof(ans_t));         // answer columns as array of ans_t struct
-  double* dx[nx];                                               // pointers to source columns
-  uint64_t inx[nx];                                             // to not recalculate `length(x[[i]])` we store it in extra array
+  double** dx = (double**)R_alloc(nx, sizeof(double*));         // pointers to source columns
+  uint64_t* inx = (uint64_t*)R_alloc(nx, sizeof(uint64_t));     // to not recalculate `length(x[[i]])` we store it in extra array
   for (R_len_t i=0; i<nx; i++) {
     inx[i] = xlength(VECTOR_ELT(x, i));                         // for list input each vector can have different length
     for (R_len_t j=0; j<nk; j++) {
@@ -153,21 +143,9 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
 
   if (length(fill) != 1)
     error(_("fill must be a vector of length 1"));
-
-  double dfill;
-  if (isInteger(fill)) {
-    if (INTEGER(fill)[0]==NA_LOGICAL) {
-      dfill = NA_REAL;
-    } else {
-      dfill = (double)INTEGER(fill)[0];
-    }
-  } else if (isReal(fill)) {
-    dfill = REAL(fill)[0];
-  } else if (isLogical(fill) && LOGICAL(fill)[0]==NA_LOGICAL){
-    dfill = NA_REAL;
-  } else {
-    error(_("fill must be numeric"));
-  }
+  if (!isInteger(fill) && !isReal(fill) && !isLogical(fill))
+    error(_("fill must be numeric or logical"));
+  double dfill = REAL(PROTECT(coerceAs(fill, ScalarReal(NA_REAL), ScalarLogical(true))))[0]; protecti++;
 
   bool bnarm = LOGICAL(narm)[0];
 
@@ -199,7 +177,7 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
     else if (ialgo==1)
       Rprintf(_("%s: %d column(s) and %d window(s), not entering parallel execution here because algo='exact' will compute results in parallel\n"), __func__, nx, nk);
   }
-  #pragma omp parallel for if (ialgo==0 && nx*nk>1) schedule(auto) collapse(2) num_threads(getDTthreads())
+  #pragma omp parallel for if (ialgo==0) schedule(dynamic) collapse(2) num_threads(getDTthreads(nx*nk, false))
   for (R_len_t i=0; i<nx; i++) {                                // loop over multiple columns
     for (R_len_t j=0; j<nk; j++) {                              // loop over multiple windows
       switch (sfun) {
@@ -277,20 +255,9 @@ SEXP frollapplyR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP align, SEXP rho) {
 
   if (length(fill) != 1)
     error(_("fill must be a vector of length 1"));
-  double dfill;
-  if (isInteger(fill)) {
-    if (INTEGER(fill)[0]==NA_LOGICAL) {
-      dfill = NA_REAL;
-    } else {
-      dfill = (double)INTEGER(fill)[0];
-    }
-  } else if (isReal(fill)) {
-    dfill = REAL(fill)[0];
-  } else if (isLogical(fill) && LOGICAL(fill)[0]==NA_LOGICAL){
-    dfill = NA_REAL;
-  } else {
-    error(_("fill must be numeric"));
-  }
+  if (!isInteger(fill) && !isReal(fill) && !isLogical(fill))
+    error(_("fill must be numeric or logical"));
+  double dfill = REAL(PROTECT(coerceAs(fill, ScalarReal(NA_REAL), ScalarLogical(true))))[0]; protecti++;
 
   SEXP ans = PROTECT(allocVector(VECSXP, nk * nx)); protecti++;
   if (verbose)

@@ -79,7 +79,7 @@ SEXP gforce(SEXP env, SEXP jsub, SEXP o, SEXP f, SEXP l, SEXP irowsArg) {
                                              // maybe better to malloc to avoid R's heap. This grp isn't global, so it doesn't need to be R_alloc
   const int *restrict fp = INTEGER(f);
 
-  nBatch = MIN((nrow+1)/2, getDTthreads()*2);  // *2 to reduce last-thread-home. TODO: experiment. The higher this is though, the bigger is counts[]
+  nBatch = MIN((nrow+1)/2, getDTthreads(nrow, true)*2);  // *2 to reduce last-thread-home. TODO: experiment. The higher this is though, the bigger is counts[]
   batchSize = MAX(1, (nrow-1)/nBatch);
   lastBatchSize = nrow - (nBatch-1)*batchSize;
   // We deliberate use, for example, 40 batches of just 14 rows, to stress-test tests. This strategy proved to be a good one as #3204 immediately came to light.
@@ -89,7 +89,7 @@ SEXP gforce(SEXP env, SEXP jsub, SEXP o, SEXP f, SEXP l, SEXP irowsArg) {
     INTERNAL_ERROR("nrow=%d  ngrp=%d  nbit=%d  shift=%d  highSize=%"PRIu64"  nBatch=%"PRIu64"  batchSize=%"PRIu64"  lastBatchSize=%"PRIu64, nrow, ngrp, nb, shift, (uint64_t)highSize, (uint64_t)nBatch, (uint64_t)batchSize, (uint64_t)lastBatchSize); // # nocov                                            // # nocov
   }
   // initial population of g:
-  #pragma omp parallel for num_threads(getDTthreads())
+  #pragma omp parallel for num_threads(getDTthreads(ngrp, false))
   for (int g=0; g<ngrp; g++) {
     int *elem = grp + fp[g]-1;
     for (int j=0; j<grpsize[g]; j++)  elem[j] = g;
@@ -111,9 +111,9 @@ SEXP gforce(SEXP env, SEXP jsub, SEXP o, SEXP f, SEXP l, SEXP irowsArg) {
     int highSize = ((nrow-1)>>shift) + 1;
     //Rprintf(_("When assigning grp[o] = g, highSize=%d  nb=%d  shift=%d  nBatch=%d\n"), highSize, nb, shift, nBatch);
     int *counts = calloc(nBatch*highSize, sizeof(int));  // TODO: cache-line align and make highSize a multiple of 64
-    int *TMP   = malloc(nrow*2*sizeof(int));
+    int *TMP   = malloc(nrow*2l*sizeof(int)); // must multiple the long int otherwise overflow may happen, #4295
     if (!counts || !TMP ) INTERNAL_ERROR("Failed to allocate counts or TMP when assigning g"); // # nocov
-    #pragma omp parallel for num_threads(getDTthreads())   // schedule(dynamic,1)
+    #pragma omp parallel for num_threads(getDTthreads(nBatch, false))   // schedule(dynamic,1)
     for (int b=0; b<nBatch; b++) {
       const int howMany = b==nBatch-1 ? lastBatchSize : batchSize;
       const int *my_o = op + b*batchSize;
@@ -137,7 +137,7 @@ SEXP gforce(SEXP env, SEXP jsub, SEXP o, SEXP f, SEXP l, SEXP irowsArg) {
       }
     }
     //Rprintf(_("gforce assign TMP (o,g) pairs took %.3f\n"), wallclock()-started); started=wallclock();
-    #pragma omp parallel for num_threads(getDTthreads())
+    #pragma omp parallel for num_threads(getDTthreads(highSize, false))
     for (int h=0; h<highSize; h++) {  // very important that high is first loop here
       for (int b=0; b<nBatch; b++) {
         const int start = h==0 ? 0 : counts[ b*highSize + h - 1 ];
@@ -161,10 +161,10 @@ SEXP gforce(SEXP env, SEXP jsub, SEXP o, SEXP f, SEXP l, SEXP irowsArg) {
   // TODO: reduce to the largest type present; won't be faster (untouched RAM won't be fetched) but it will increase the largest size that works.
 
   counts = (int *)S_alloc(nBatch*highSize, sizeof(int));  // (S_ zeros) TODO: cache-line align and make highSize a multiple of 64
-  tmpcounts = (int *)R_alloc(getDTthreads()*highSize, sizeof(int));
+  tmpcounts = (int *)R_alloc(getDTthreads(nBatch, false)*highSize, sizeof(int));
 
   const int *restrict gp = grp;
-  #pragma omp parallel for num_threads(getDTthreads())   // schedule(dynamic,1)
+  #pragma omp parallel for num_threads(getDTthreads(nBatch, false))   // schedule(dynamic,1)
   for (int b=0; b<nBatch; b++) {
     int *restrict my_counts = counts + b*highSize;
     uint16_t *restrict my_high = high + b*batchSize;
@@ -216,7 +216,7 @@ void *gather(SEXP x, bool *anyNA)
   switch (TYPEOF(x)) {
   case LGLSXP: case INTSXP: {
     const int *restrict thisx = INTEGER(x);
-    #pragma omp parallel for num_threads(getDTthreads())
+    #pragma omp parallel for num_threads(getDTthreads(nBatch, false))
     for (int b=0; b<nBatch; b++) {
       int *restrict my_tmpcounts = tmpcounts + omp_get_thread_num()*highSize;
       memcpy(my_tmpcounts, counts + b*highSize, highSize*sizeof(int));   // original cumulated   // already cumulated for this batch
@@ -245,7 +245,7 @@ void *gather(SEXP x, bool *anyNA)
   case REALSXP: {
     if (!INHERITS(x, char_integer64)) {
       const double *restrict thisx = REAL(x);
-      #pragma omp parallel for num_threads(getDTthreads())
+      #pragma omp parallel for num_threads(getDTthreads(nBatch, false))
       for (int b=0; b<nBatch; b++) {
         int *restrict my_tmpcounts = tmpcounts + omp_get_thread_num()*highSize;
         memcpy(my_tmpcounts, counts + b*highSize, highSize*sizeof(int));
@@ -272,7 +272,7 @@ void *gather(SEXP x, bool *anyNA)
       }
     } else {
       const int64_t *restrict thisx = (int64_t *)REAL(x);
-      #pragma omp parallel for num_threads(getDTthreads())
+      #pragma omp parallel for num_threads(getDTthreads(nBatch, false))
       for (int b=0; b<nBatch; b++) {
         int *restrict my_tmpcounts = tmpcounts + omp_get_thread_num()*highSize;
         memcpy(my_tmpcounts, counts + b*highSize, highSize*sizeof(int));
@@ -301,7 +301,7 @@ void *gather(SEXP x, bool *anyNA)
   } break;
   case CPLXSXP: {
     const Rcomplex *restrict thisx = COMPLEX(x);
-    #pragma omp parallel for num_threads(getDTthreads())
+    #pragma omp parallel for num_threads(getDTthreads(nBatch, false))
     for (int b=0; b<nBatch; b++) {
       int *restrict my_tmpcounts = tmpcounts + omp_get_thread_num()*highSize;
       memcpy(my_tmpcounts, counts + b*highSize, highSize*sizeof(int));
@@ -336,11 +336,10 @@ void *gather(SEXP x, bool *anyNA)
   return gx;
 }
 
-SEXP gsum(SEXP x, SEXP narmArg, SEXP warnOverflowArg)
+SEXP gsum(SEXP x, SEXP narmArg)
 {
   if (!isLogical(narmArg) || LENGTH(narmArg)!=1 || LOGICAL(narmArg)[0]==NA_LOGICAL) error(_("na.rm must be TRUE or FALSE"));
   const bool narm = LOGICAL(narmArg)[0];
-  const bool warnOverflow = LOGICAL(warnOverflowArg)[0];
   if (inherits(x, "factor")) error(_("sum is not meaningful for factors."));
   const int n = (irowslen == -1) ? length(x) : irowslen;
   double started = wallclock();
@@ -358,7 +357,7 @@ SEXP gsum(SEXP x, SEXP narmArg, SEXP warnOverflowArg)
     bool overflow=false;
     //double started = wallclock();
     if (!anyNA) {
-      #pragma omp parallel for num_threads(getDTthreads()) //schedule(dynamic,1)
+      #pragma omp parallel for num_threads(getDTthreads(highSize, false)) //schedule(dynamic,1)
       for (int h=0; h<highSize; h++) {   // very important that high is first loop here
         int *restrict _ans = ansp + (h<<shift);
         for (int b=0; b<nBatch; b++) {
@@ -375,7 +374,7 @@ SEXP gsum(SEXP x, SEXP narmArg, SEXP warnOverflowArg)
         }
       }
     } else {
-      #pragma omp parallel for num_threads(getDTthreads())
+      #pragma omp parallel for num_threads(getDTthreads(highSize, false))
       for (int h=0; h<highSize; h++) {
         int *restrict _ans = ansp + (h<<shift);
         for (int b=0; b<nBatch; b++) {
@@ -400,11 +399,11 @@ SEXP gsum(SEXP x, SEXP narmArg, SEXP warnOverflowArg)
     //Rprintf(_("gsum int took %.3f\n"), wallclock()-started);
     if (overflow) {
       UNPROTECT(1); // discard the result with overflow
-      if (warnOverflow) warning(_("The sum of an integer column for a group was more than type 'integer' can hold so the result has been coerced to 'numeric' automatically for convenience."));
+      warning(_("The sum of an integer column for a group was more than type 'integer' can hold so the result has been coerced to 'numeric' automatically for convenience."));
       ans = PROTECT(allocVector(REALSXP, ngrp));
       double *restrict ansp = REAL(ans);
       memset(ansp, 0, ngrp*sizeof(double));
-      #pragma omp parallel for num_threads(getDTthreads())
+      #pragma omp parallel for num_threads(getDTthreads(highSize, false))
       for (int h=0; h<highSize; h++) {
         double *restrict _ans = ansp + (h<<shift);
         for (int b=0; b<nBatch; b++) {
@@ -432,7 +431,7 @@ SEXP gsum(SEXP x, SEXP narmArg, SEXP warnOverflowArg)
       double *restrict ansp = REAL(ans);
       memset(ansp, 0, ngrp*sizeof(double));
       if (!narm || !anyNA) {
-        #pragma omp parallel for num_threads(getDTthreads())
+        #pragma omp parallel for num_threads(getDTthreads(highSize, false))
         for (int h=0; h<highSize; h++) {
           double *restrict _ans = ansp + (h<<shift);
           for (int b=0; b<nBatch; b++) {
@@ -447,7 +446,7 @@ SEXP gsum(SEXP x, SEXP narmArg, SEXP warnOverflowArg)
         }
       } else {
         // narm==true and anyNA==true
-        #pragma omp parallel for num_threads(getDTthreads())
+        #pragma omp parallel for num_threads(getDTthreads(highSize, false))
         for (int h=0; h<highSize; h++) {
           double *restrict _ans = ansp + (h<<shift);
           for (int b=0; b<nBatch; b++) {
@@ -468,7 +467,7 @@ SEXP gsum(SEXP x, SEXP narmArg, SEXP warnOverflowArg)
       int64_t *restrict ansp = (int64_t *)REAL(ans);
       memset(ansp, 0, ngrp*sizeof(int64_t));
       if (!anyNA) {
-        #pragma omp parallel for num_threads(getDTthreads())
+        #pragma omp parallel for num_threads(getDTthreads(highSize, false))
         for (int h=0; h<highSize; h++) {
           int64_t *restrict _ans = ansp + (h<<shift);
           for (int b=0; b<nBatch; b++) {
@@ -483,7 +482,7 @@ SEXP gsum(SEXP x, SEXP narmArg, SEXP warnOverflowArg)
         }
       } else { // narm==true/false and anyNA==true
         if (!narm) {
-          #pragma omp parallel for num_threads(getDTthreads())
+          #pragma omp parallel for num_threads(getDTthreads(highSize, false))
           for (int h=0; h<highSize; h++) {
             int64_t *restrict _ans = ansp + (h<<shift);
             for (int b=0; b<nBatch; b++) {
@@ -503,7 +502,7 @@ SEXP gsum(SEXP x, SEXP narmArg, SEXP warnOverflowArg)
             }
           }
         } else {
-          #pragma omp parallel for num_threads(getDTthreads())
+          #pragma omp parallel for num_threads(getDTthreads(highSize, false))
           for (int h=0; h<highSize; h++) {
             int64_t *restrict _ans = ansp + (h<<shift);
             for (int b=0; b<nBatch; b++) {
@@ -527,7 +526,7 @@ SEXP gsum(SEXP x, SEXP narmArg, SEXP warnOverflowArg)
     Rcomplex *restrict ansp = COMPLEX(ans);
     memset(ansp, 0, ngrp*sizeof(Rcomplex));
     if (!narm || !anyNA) {
-      #pragma omp parallel for num_threads(getDTthreads())
+      #pragma omp parallel for num_threads(getDTthreads(highSize, false))
       for (int h=0; h<highSize; h++) {
         Rcomplex *restrict _ans = ansp + (h<<shift);
         for (int b=0; b<nBatch; b++) {
@@ -543,7 +542,7 @@ SEXP gsum(SEXP x, SEXP narmArg, SEXP warnOverflowArg)
       }
     } else {
       // narm==true and anyNA==true
-      #pragma omp parallel for num_threads(getDTthreads())
+      #pragma omp parallel for num_threads(getDTthreads(highSize, false))
       for (int h=0; h<highSize; h++) {
         Rcomplex *restrict _ans = ansp + (h<<shift);
         for (int b=0; b<nBatch; b++) {
@@ -569,113 +568,147 @@ SEXP gsum(SEXP x, SEXP narmArg, SEXP warnOverflowArg)
   return(ans);
 }
 
-SEXP gmean(SEXP x, SEXP narm)
+SEXP gmean(SEXP x, SEXP narmArg)
 {
-  SEXP ans=R_NilValue;
-  //clock_t start = clock();
-  if (!isLogical(narm) || LENGTH(narm)!=1 || LOGICAL(narm)[0]==NA_LOGICAL) error(_("na.rm must be TRUE or FALSE"));
-  if (!isVectorAtomic(x)) error(_("GForce mean can only be applied to columns, not .SD or similar. Likely you're looking for 'DT[,lapply(.SD,mean),by=,.SDcols=]'. See ?data.table."));
   if (inherits(x, "factor")) error(_("mean is not meaningful for factors."));
-  if (!LOGICAL(narm)[0]) {
-    int protecti=0;
-    ans = PROTECT(gsum(x, narm, /*#986, warnOverflow=*/ScalarLogical(FALSE))); protecti++;
-    switch(TYPEOF(ans)) {
-    case LGLSXP: case INTSXP:
-      ans = PROTECT(coerceVector(ans, REALSXP)); protecti++;
-    case REALSXP: {
-      double *xd = REAL(ans);
-      for (int i=0; i<ngrp; i++) *xd++ /= grpsize[i];  // let NA propogate
-    } break;
-    case CPLXSXP: {
-      Rcomplex *xd = COMPLEX(ans);
-      for (int i=0; i<ngrp; i++) {
-        xd->i /= grpsize[i];
-        xd->r /= grpsize[i];
-        xd++;
-      }
-    } break;
-    default :
-      INTERNAL_ERROR("returned type '%s', but typeof(x) is '%s'", type2char(TYPEOF(ans)), type2char(TYPEOF(x))); // # nocov
-    }
-    UNPROTECT(protecti);
-    return(ans);
-  }
-  // na.rm=TRUE.  Similar to gsum, but we need to count the non-NA as well for the divisor
+  if (!isLogical(narmArg) || LENGTH(narmArg)!=1 || LOGICAL(narmArg)[0]==NA_LOGICAL) error(_("na.rm must be TRUE or FALSE"));
+  const bool narm = LOGICAL(narmArg)[0];
   const int n = (irowslen == -1) ? length(x) : irowslen;
-  if (nrow != n) error(_("nrow [%d] != length(x) [%d] in %s"), nrow, n, "gsum");
-
-  long double *s = calloc(ngrp, sizeof(long double)), *si=NULL;  // s = sum; si = sum imaginary just for complex
-  if (!s) error(_("Unable to allocate %d * %d bytes for sum in gmean na.rm=TRUE"), ngrp, sizeof(long double));
-
-  int *c = calloc(ngrp, sizeof(int));
-  if (!c) error(_("Unable to allocate %d * %d bytes for counts in gmean na.rm=TRUE"), ngrp, sizeof(int));
-
+  double started = wallclock();
+  const bool verbose=GetVerbose();
+  if (verbose) Rprintf(_("This gmean took (narm=%s) ... "), narm?"TRUE":"FALSE"); // narm=TRUE only at this point
+  if (nrow != n) error(_("nrow [%d] != length(x) [%d] in %s"), nrow, n, "gmean");
+  bool anyNA=false;
+  SEXP ans=R_NilValue;
+  int protecti=0;
   switch(TYPEOF(x)) {
-  case LGLSXP: case INTSXP: {
-    const int *xd = INTEGER(x);
-    for (int i=0; i<n; i++) {
-      int thisgrp = grp[i];
-      int ix = (irowslen == -1) ? i : irows[i]-1;
-      if (xd[ix] == NA_INTEGER) continue;
-      s[thisgrp] += xd[ix];  // no under/overflow here, s is long double
-      c[thisgrp]++;
-    }
-  } break;
+  case LGLSXP: case INTSXP:
+    x = PROTECT(coerceVector(x, REALSXP)); protecti++;
   case REALSXP: {
-    const double *xd = REAL(x);
-    for (int i=0; i<n; i++) {
-      int thisgrp = grp[i];
-      int ix = (irowslen == -1) ? i : irows[i]-1;
-      if (ISNAN(xd[ix])) continue;
-      s[thisgrp] += xd[ix];
-      c[thisgrp]++;
+    if (INHERITS(x, char_integer64)) {
+      x = PROTECT(coerceAs(x, /*as=*/ScalarReal(1), /*copyArg=*/ScalarLogical(TRUE))); protecti++;
+    }
+    const double *restrict gx = gather(x, &anyNA);
+    ans = PROTECT(allocVector(REALSXP, ngrp)); protecti++;
+    double *restrict ansp = REAL(ans);
+    memset(ansp, 0, ngrp*sizeof(double));
+    if (!narm || !anyNA) {
+      #pragma omp parallel for num_threads(getDTthreads(highSize, false))
+      for (int h=0; h<highSize; h++) {
+        double *restrict _ans = ansp + (h<<shift);
+        for (int b=0; b<nBatch; b++) {
+          const int pos = counts[ b*highSize + h ];
+          const int howMany = ((h==highSize-1) ? (b==nBatch-1?lastBatchSize:batchSize) : counts[ b*highSize + h + 1 ]) - pos;
+          const double *my_gx = gx + b*batchSize + pos;
+          const uint16_t *my_low = low + b*batchSize + pos;
+          for (int i=0; i<howMany; i++) {
+            _ans[my_low[i]] += my_gx[i];  // let NA propagate when !narm
+          }
+        }
+      }
+      #pragma omp parallel for num_threads(getDTthreads(ngrp, true))
+      for (int i=0; i<ngrp; i++) ansp[i] /= grpsize[i];
+    } else {
+      // narm==true and anyNA==true
+      int *restrict nna_counts = calloc(ngrp, sizeof(int));
+      if (!nna_counts) error(_("Unable to allocate %d * %d bytes for non-NA counts in gmean na.rm=TRUE"), ngrp, sizeof(int));
+      #pragma omp parallel for num_threads(getDTthreads(highSize, false))
+      for (int h=0; h<highSize; h++) {
+          double *restrict _ans = ansp + (h<<shift);
+          int *restrict _nna = nna_counts + (h<<shift);
+          for (int b=0; b<nBatch; b++) {
+            const int pos = counts[ b*highSize + h ];
+            const int howMany = ((h==highSize-1) ? (b==nBatch-1?lastBatchSize:batchSize) : counts[ b*highSize + h + 1 ]) - pos;
+            const double *my_gx = gx + b*batchSize + pos;
+            const uint16_t *my_low = low + b*batchSize + pos;
+            for (int i=0; i<howMany; i++) {
+              const double elem = my_gx[i];
+              if (!ISNAN(elem)) {
+                _ans[my_low[i]] += elem;
+                _nna[my_low[i]]++;
+              }
+            }
+          }
+        }
+      #pragma omp parallel for num_threads(getDTthreads(ngrp, true))
+      for (int i=0; i<ngrp; i++) ansp[i] /= nna_counts[i];
+      free(nna_counts);
     }
   } break;
   case CPLXSXP: {
-    const Rcomplex *xd = COMPLEX(x);
-    si = calloc(ngrp, sizeof(long double));
-    if (!si) error(_("Unable to allocate %d * %d bytes for si in gmean na.rm=TRUE"), ngrp, sizeof(long double));
-    for (int i=0; i<n; i++) {
-      int thisgrp = grp[i];
-      int ix = (irowslen == -1) ? i : irows[i]-1;
-      if (ISNAN(xd[ix].r) || ISNAN(xd[ix].i)) continue;  // || otherwise we'll need two counts in two c's too?
-      s[thisgrp] += xd[ix].r;
-      si[thisgrp] += xd[ix].i;
-      c[thisgrp]++;
+    const Rcomplex *restrict gx = gather(x, &anyNA);
+    ans = PROTECT(allocVector(CPLXSXP, ngrp)); protecti++;
+    Rcomplex *restrict ansp = COMPLEX(ans);
+    memset(ansp, 0, ngrp*sizeof(Rcomplex));
+    if (!narm || !anyNA) {
+      #pragma omp parallel for num_threads(getDTthreads(highSize, false))
+      for (int h=0; h<highSize; h++) {
+        Rcomplex *restrict _ans = ansp + (h<<shift);
+        for (int b=0; b<nBatch; b++) {
+          const int pos = counts[ b*highSize + h ];
+          const int howMany = ((h==highSize-1) ? (b==nBatch-1?lastBatchSize:batchSize) : counts[ b*highSize + h + 1 ]) - pos;
+          const Rcomplex *my_gx = gx + b*batchSize + pos;
+          const uint16_t *my_low = low + b*batchSize + pos;
+          for (int i=0; i<howMany; i++) {
+            _ans[my_low[i]].r += my_gx[i].r;  // let NA propagate when !narm
+            _ans[my_low[i]].i += my_gx[i].i;
+          }
+        }
+      }
+      #pragma omp parallel for num_threads(getDTthreads(ngrp, true))
+      for (int i=0; i<ngrp; i++) {
+        ansp[i].i /= grpsize[i];
+        ansp[i].r /= grpsize[i];
+      }
+    } else {
+      // narm==true and anyNA==true
+      int *restrict nna_counts_r = calloc(ngrp, sizeof(int));
+      int *restrict nna_counts_i = calloc(ngrp, sizeof(int));
+      if (!nna_counts_r || !nna_counts_i) {
+        // # nocov start
+        free(nna_counts_r);  // free(NULL) is allowed and does nothing. Avoids repeating the error() call here.
+        free(nna_counts_i);
+        error(_("Unable to allocate %d * %d bytes for non-NA counts in gmean na.rm=TRUE"), ngrp, sizeof(int));
+        // # nocov end
+      }
+      #pragma omp parallel for num_threads(getDTthreads(highSize, false))
+      for (int h=0; h<highSize; h++) {
+        Rcomplex *restrict _ans = ansp + (h<<shift);
+        int *restrict _nna_r = nna_counts_r + (h<<shift);
+        int *restrict _nna_i = nna_counts_i + (h<<shift);
+        for (int b=0; b<nBatch; b++) {
+          const int pos = counts[ b*highSize + h ];
+          const int howMany = ((h==highSize-1) ? (b==nBatch-1?lastBatchSize:batchSize) : counts[ b*highSize + h + 1 ]) - pos;
+          const Rcomplex *my_gx = gx + b*batchSize + pos;
+          const uint16_t *my_low = low + b*batchSize + pos;
+          for (int i=0; i<howMany; i++) {
+            const Rcomplex elem = my_gx[i];
+            if (!ISNAN(elem.r)) {
+              _ans[my_low[i]].r += elem.r;
+              _nna_r[my_low[i]]++;
+            }
+            if (!ISNAN(elem.i)) {
+              _ans[my_low[i]].i += elem.i;
+              _nna_i[my_low[i]]++;
+            }
+          }
+        }
+      }
+      #pragma omp parallel for num_threads(getDTthreads(ngrp, true))
+      for (int i=0; i<ngrp; i++) {
+        ansp[i].r /= nna_counts_r[i];
+        ansp[i].i /= nna_counts_i[i];
+      }
+      free(nna_counts_r);
+      free(nna_counts_i);
     }
   } break;
   default:
-    free(s); free(c); // # nocov because it already stops at gsum, remove nocov if gmean will support a type that gsum wont
-    error(_("Type '%s' not supported by GForce mean (gmean) na.rm=TRUE. Either add the prefix base::mean(.) or turn off GForce optimization using options(datatable.optimize=1)"), type2char(TYPEOF(x))); // # nocov
+    error(_("Type '%s' not supported by GForce mean (gmean). Either add the prefix base::mean(.) or turn off GForce optimization using options(datatable.optimize=1)"), type2char(TYPEOF(x)));
   }
-  switch(TYPEOF(x)) {
-  case LGLSXP: case INTSXP: case REALSXP: {
-    ans = PROTECT(allocVector(REALSXP, ngrp));
-    double *ansd = REAL(ans);
-    for (int i=0; i<ngrp; i++) {
-      if (c[i]==0) { ansd[i] = R_NaN; continue; }  // NaN to follow base::mean
-      s[i] /= c[i];
-      ansd[i] = s[i]>DBL_MAX ? R_PosInf : (s[i] < -DBL_MAX ? R_NegInf : (double)s[i]);
-    }
-  } break;
-  case CPLXSXP: {
-    ans = PROTECT(allocVector(CPLXSXP, ngrp));
-    Rcomplex *ansd = COMPLEX(ans);
-    for (int i=0; i<ngrp; i++) {
-      if (c[i]==0) { ansd[i].r = R_NaN; ansd[i].i = R_NaN; continue; }
-      s[i] /= c[i];
-      si[i] /= c[i];
-      ansd[i].r = s[i] >DBL_MAX ? R_PosInf : (s[i] < -DBL_MAX ? R_NegInf : (double)s[i]);
-      ansd[i].i = si[i]>DBL_MAX ? R_PosInf : (si[i]< -DBL_MAX ? R_NegInf : (double)si[i]);
-    }
-  } break;
-  default:
-    INTERNAL_ERROR("unsupported type at the end of gmean"); // # nocov
-  }
-  free(s); free(si); free(c);
   copyMostAttrib(x, ans);
-  // Rprintf(_("this gmean na.rm=TRUE took %8.3f\n"), 1.0*(clock()-start)/CLOCKS_PER_SEC);
-  UNPROTECT(1);
+  if (verbose) { Rprintf(_("%.3fs\n"), wallclock()-started); }
+  UNPROTECT(protecti);
   return(ans);
 }
 

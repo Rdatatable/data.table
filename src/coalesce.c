@@ -63,7 +63,7 @@ SEXP coalesce(SEXP x, SEXP inplaceArg) {
       valP[k++] = INTEGER(item);
     }
     const bool final=(finalVal!=NA_INTEGER);
-    #pragma omp parallel for num_threads(getDTthreads())
+    #pragma omp parallel for num_threads(getDTthreads(nrow, true))
     for (int i=0; i<nrow; ++i) {
       int val = xP[i];
       if (val!=NA_INTEGER) continue;
@@ -86,7 +86,7 @@ SEXP coalesce(SEXP x, SEXP inplaceArg) {
         valP[k++] = REAL(item);
       }
       const bool final = (finalVal!=NA_INTEGER64);
-      #pragma omp parallel for num_threads(getDTthreads())
+      #pragma omp parallel for num_threads(getDTthreads(nrow, true))
       for (int i=0; i<nrow; ++i) {
         int64_t val=xP[i];
         if (val!=NA_INTEGER64) continue;
@@ -107,7 +107,7 @@ SEXP coalesce(SEXP x, SEXP inplaceArg) {
         valP[k++] = REAL(item);
       }
       const bool final = !ISNAN(finalVal);
-      #pragma omp parallel for num_threads(getDTthreads())
+      #pragma omp parallel for num_threads(getDTthreads(nrow, true))
       for (int i=0; i<nrow; ++i) {
         double val=xP[i];
         if (!ISNAN(val)) continue;
@@ -130,7 +130,7 @@ SEXP coalesce(SEXP x, SEXP inplaceArg) {
       valP[k++] = COMPLEX(item);
     }
     const bool final = !ISNAN(finalVal.r) && !ISNAN(finalVal.i);
-    #pragma omp parallel for num_threads(getDTthreads())
+    #pragma omp parallel for num_threads(getDTthreads(nrow, true))
     for (int i=0; i<nrow; ++i) {
       Rcomplex val=xP[i];
       if (!ISNAN(val.r) && !ISNAN(val.i)) continue;

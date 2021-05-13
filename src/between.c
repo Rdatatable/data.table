@@ -64,14 +64,14 @@ SEXP between(SEXP x, SEXP lower, SEXP upper, SEXP incbounds, SEXP NAboundsArg, S
         error(_("Item %d of lower (%d) is greater than item %d of upper (%d)"), (i&lowMask)+1, l, (i&uppMask)+1, u);
     }
     if (NAbounds) {  // default NAbounds==TRUE => NA bound means TRUE; i.e. asif lower=-Inf or upper==Inf)
-      #pragma omp parallel for num_threads(getDTthreads())
+      #pragma omp parallel for num_threads(getDTthreads(longest, true))
       for (int i=0; i<longest; ++i) {
         const int elem=xp[i & xMask], l=lp[i & lowMask], u=up[i & uppMask];
         ansp[i] = elem==NA_INTEGER ? NA_LOGICAL : (l==NA_INTEGER || l+open<=elem) && (u==NA_INTEGER || elem<=u-open);
         // +open so we can always use >= and <=.  NA_INTEGER+1 == -INT_MAX == INT_MIN+1 (so NA limit handled by this too)
       }
     } else {
-      #pragma omp parallel for num_threads(getDTthreads())
+      #pragma omp parallel for num_threads(getDTthreads(longest, true))
       for (int i=0; i<longest; ++i) {
         const int elem=xp[i & xMask], l=lp[i & lowMask], u=up[i & uppMask];
         if (elem==NA_INTEGER) { ansp[i]=NA_LOGICAL; continue; }
@@ -95,13 +95,13 @@ SEXP between(SEXP x, SEXP lower, SEXP upper, SEXP incbounds, SEXP NAboundsArg, S
           error(_("Item %d of lower (%"PRId64") is greater than item %d of upper (%"PRId64")"), (i&lowMask)+1, l, (i&uppMask)+1, u);
       }
       if (NAbounds) {
-        #pragma omp parallel for num_threads(getDTthreads())
+        #pragma omp parallel for num_threads(getDTthreads(longest, true))
         for (int i=0; i<longest; ++i) {
           const int64_t elem=xp[i & xMask], l=lp[i & lowMask], u=up[i & uppMask];
           ansp[i] = elem==NA_INTEGER64 ? NA_LOGICAL : (l==NA_INTEGER64 || l+open<=elem) && (u==NA_INTEGER64 || elem<=u-open);
         }
       } else {
-        #pragma omp parallel for num_threads(getDTthreads())
+        #pragma omp parallel for num_threads(getDTthreads(longest, true))
         for (int i=0; i<longest; ++i) {
           const int64_t elem=xp[i & xMask], l=lp[i & lowMask], u=up[i & uppMask];
           if (elem==NA_INTEGER64) { ansp[i]=NA_LOGICAL; continue; }
@@ -123,13 +123,13 @@ SEXP between(SEXP x, SEXP lower, SEXP upper, SEXP incbounds, SEXP NAboundsArg, S
       }
       if (open) {
         if (NAbounds) {
-          #pragma omp parallel for num_threads(getDTthreads())
+          #pragma omp parallel for num_threads(getDTthreads(longest, true))
           for (int i=0; i<longest; ++i) {
             const double elem=xp[i & xMask], l=lp[i & lowMask], u=up[i & uppMask];
             ansp[i] = isnan(elem) ? NA_LOGICAL : (isnan(l) || l<elem) && (isnan(u) || elem<u);
           }
         } else {
-          #pragma omp parallel for num_threads(getDTthreads())
+          #pragma omp parallel for num_threads(getDTthreads(longest, true))
           for (int i=0; i<longest; ++i) {
             const double elem=xp[i & xMask], l=lp[i & lowMask], u=up[i & uppMask];
             if (isnan(elem)) { ansp[i]=NA_LOGICAL; continue; }
@@ -140,13 +140,13 @@ SEXP between(SEXP x, SEXP lower, SEXP upper, SEXP incbounds, SEXP NAboundsArg, S
         if (verbose) Rprintf(_("between parallel processing of double with open bounds took %8.3fs\n"), omp_get_wtime()-tic);
       } else {
         if (NAbounds) {
-          #pragma omp parallel for num_threads(getDTthreads())
+          #pragma omp parallel for num_threads(getDTthreads(longest, true))
           for (int i=0; i<longest; ++i) {
             const double elem=xp[i & xMask], l=lp[i & lowMask], u=up[i & uppMask];
             ansp[i] = isnan(elem) ? NA_LOGICAL : (isnan(l) || l<=elem) && (isnan(u) || elem<=u);
           }
         } else {
-          #pragma omp parallel for num_threads(getDTthreads())
+          #pragma omp parallel for num_threads(getDTthreads(longest, true))
           for (int i=0; i<longest; ++i) {
             const double elem=xp[i & xMask], l=lp[i & lowMask], u=up[i & uppMask];
             if (isnan(elem)) { ansp[i]=NA_LOGICAL; continue; }
