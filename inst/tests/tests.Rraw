@@ -2361,8 +2361,8 @@ test(827.1, names(a[b]), c("User ID","Blah Blah","Yadda Yadda"))
 # setcolorder and merge check for dup column names, #2193(ii)
 setnames(DT2,"b","a")
 test(828, setcolorder(DT2,c("a","b")), error="x has some duplicated column name(s): a. Please remove or rename")
-test(829, merge(DT1,DT2), error="y has some duplicated column name(s): a. Please remove or rename")
-test(830, merge(DT2,DT1), error="x has some duplicated column name(s): a. Please remove or rename")
+test(829, merge(DT1,DT2), error="y has some duplicated column name(s): [a]. Please remove or rename")
+test(830, merge(DT2,DT1), error="x has some duplicated column name(s): [a]. Please remove or rename")
 
 # attribs such as "comments" should be retained, #2270
 DT1 <- data.table(id = seq.int(1, 10), A = LETTERS[1:10], key = "id")
@@ -6937,13 +6937,12 @@ test(1486.1, as.data.frame(ans1.1), as.data.frame(ans1.2))
 test(1486.2, as.data.frame(ans2.1), as.data.frame(ans2.1))
 
 # Fix for #832
-x <- matrix(1:9, ncol=3)
-setattr(x, "names", paste("V", seq_len(length(x)), sep = ""))
+x <- matrix(1:9, ncol=3L)
+setattr(x, "names", paste0("V", seq_along(x)))
 test(1487.1, setattr(x, "class", c("data.table", "data.frame")), error="Internal structure doesn't seem to be a list")
-x <- matrix(1:9, ncol=3)
+x <- matrix(1:9, ncol=3L)
 class(x) = c("data.table", "data.frame")
-# not sure how to test this one, so using `tryCatch`
-test(1487.2, tryCatch(print(x), error=function(k) "bla"), "bla")
+test(1487.2, print(x), error="dim.data.table expects a data.table as input")
 
 # Fix for #1043
 DT = data.table(grp=LETTERS[1:2], categ=rep(c("X","Y"), each=2L), condition=rep(c("P","Q"), each=4L), value=sample(8))
@@ -8361,10 +8360,18 @@ DT2 = data.table(id1=c("c", "w", "b"), val=50:52)
 test(1600.2, names(DT1[DT2, .(id1=id1, val=val, bla=sum(z1, na.rm=TRUE)), on="id1"]), c("id1", "val", "bla"))
 
 # warn when merge empty data.table #597
-test(1601.1, merge(data.table(a=1),data.table(a=1), by="a"), data.table(a=1, key="a"))
-test(1601.2, tryCatch(merge(data.table(a=1),data.table(NULL), by="a"), warning = function(w) w$message), "You are trying to join data.tables where argument 'y' has no columns.")
-test(1601.3, tryCatch(merge(data.table(NULL),data.table(a=1), by="a"), warning = function(w) w$message), "You are trying to join data.tables where argument 'x' has no columns.")
-test(1601.4, tryCatch(merge(data.table(NULL),data.table(NULL), by="a"), warning = function(w) w$message), "You are trying to join data.tables where arguments 'x' and 'y' have no columns.")
+DT0 = data.table(NULL)
+DT1 = data.table(a=1)
+test(1601.1, merge(DT1, DT1, by="a"), data.table(a=1, key="a"))
+test(1601.2, merge(DT1, DT0, by="a"),
+     warning="You are trying to join data.tables where 'y' has 0 columns.",
+     error="Elements listed in `by`")
+test(1601.3, merge(DT0, DT1, by="a"),
+     warning="You are trying to join data.tables where 'x' has 0 columns.",
+     error="Elements listed in `by`")
+test(1601.4, merge(DT0, DT0, by="a"),
+     warning="You are trying to join data.tables where 'x' and 'y' have 0 columns.",
+     error="Elements listed in `by`")
 
 # fix for #1549
 d1 <- data.table(v1=1:2,x=x)
@@ -10338,7 +10345,7 @@ if (.Platform$OS.type=="unix") {
   options(datatable.fread.input.cmd.message = NULL)  # when option is missing as it is by default, then TRUE
   test(1703.02, fread(cmd), ans, message="security concern")
   options(datatable.fread.input.cmd.message = FALSE)
-  test(1703.03, tryCatch(fread(cmd), message=stop), ans)
+  test(1703.03, fread(cmd), ans)
   options(datatable.fread.input.cmd.message = NULL)
   test(1703.04, fread(cmd=cmd), ans)
   test(1703.05, fread(file=cmd), error=sprintf("File '%s' does not exist", cmd))
