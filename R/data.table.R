@@ -516,12 +516,8 @@ replace_dot_alias = function(e) {
           # unnecessary construction of logical vectors
           if (identical(nomatch, 0L) && allLen1) irows = irows[irows != 0L]
         } else {
-<<<<<<< HEAD
-          if (length(xo) && missing(on)) internal_error("Cannot by=.EACHI when joining to a secondary key, yet") # nocov
-=======
           if (length(xo) && missing(on))
-            stop("Internal error. Cannot by=.EACHI when joining to an index, yet") # nocov
->>>>>>> master
+            internal_error("Cannot by=.EACHI when joining to a secondary key, yet") # nocov
           # since f__ refers to xo later in grouping, so xo needs to be passed through to dogroups too.
           if (length(irows)) internal_error("irows has length in by=.EACHI") # nocov
         }
@@ -1482,15 +1478,10 @@ replace_dot_alias = function(e) {
           if (verbose) {catf("Finding groups using uniqlist on key ... ");flush.console()}
           f__ = uniqlist(byval)
         } else {
-<<<<<<< HEAD
           if (!is.character(byindex) || length(byindex)!=1L) internal_error("byindex not the index name")  # nocov
-          if (verbose) {cat("Finding groups using uniqlist on index '", byindex, "' ... ", sep="");flush.console()}
-=======
-          if (!is.character(byindex) || length(byindex)!=1L) stop("Internal error: byindex not the index name")  # nocov
           if (verbose) {catf("Finding groups using uniqlist on index '%s' ... ", byindex);flush.console()}
->>>>>>> master
           o__ = getindex(x, byindex)
-          if (is.null(o__)) internal_reror("byindex not found")  # nocov
+          if (is.null(o__)) internal_error("byindex not found")  # nocov
           f__ = uniqlist(byval, order=o__)
         }
         if (verbose) {

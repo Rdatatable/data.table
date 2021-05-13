@@ -7,8 +7,8 @@
   #define STOP     error
   #define DTPRINT  Rprintf
 
-  static char internal_error_buff[128];
-  #define INTERNAL_ERROR(...) error("%s %s: %s. %s", _("Internal error in"), __func__, snprintf(internal_error_buff, 127, __VA_ARGS__), _("Please report to the data.table issues tracker"))
+  static char internal_error_buff[256];
+  #define INTERNAL_ERROR(...) error("%s %s: %s. %s", _("Internal error in"), __func__, snprintf(internal_error_buff, 255, __VA_ARGS__), _("Please report to the data.table issues tracker"))
 #endif
 
 typedef void (*writer_fun_t)(const void *, int64_t, char **);
