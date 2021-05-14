@@ -123,7 +123,7 @@
 
 15. `print(x, col.names='none')` now removes the column names as intended for wide `data.table`s whose column names don't fit on a single line, [#4270](https://github.com/Rdatatable/data.table/issues/4270). Thanks to @tdhock for the report, and Michael Chirico for fixing.
 
-16. `options(max.print=5L); print(DT)` printed in the footer "omitted 11 rows" where the 11 was incorrect. The footer now states `<nrow(DT)> rows in total`, [#1421](https://github.com/Rdatatable/data.table/issues/1421). Thanks to Jan Gorecki for reporting, and Xianying Tan for fixing.
+16. `options(max.print=5L); print(DT)` printed in the footer `omitted 11 rows` where the 11 was incorrect. The footer now states `nrow(DT) rows in total`, [#1421](https://github.com/Rdatatable/data.table/issues/1421). Thanks to Jan Gorecki for reporting, and Xianying Tan for fixing.
 
 ## NOTES
 
