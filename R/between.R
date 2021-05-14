@@ -47,8 +47,8 @@ between = function(x, lower, upper, incbounds=TRUE, NAbounds=TRUE, check=FALSE) 
     if (isTRUE(getOption("datatable.verbose"))) catf("optimised between not available for this data type, fallback to slow R routine\n")
     if (isTRUE(NAbounds) && (anyNA(lower) || anyNA(upper))) stop("Not yet implemented NAbounds=TRUE for this non-numeric and non-character type")
     if (check && any(lower>upper, na.rm=TRUE)) stop("Some lower>upper for this non-numeric and non-character type")
-    if (incbounds) x>=lower & x<=upper
-    else x>lower & x<upper
+    if (incbounds) x>=lower & x<=upper  # this & is correct not &&
+    else           x> lower & x< upper
   }
 }
 
