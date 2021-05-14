@@ -8,7 +8,7 @@ tables = function(mb=TRUE, order.col="NAME", width=80,
   all_obj = objects(envir=env, all.names=TRUE)
   is_DT = which(vapply_1b(all_obj, function(x) is.data.table(get(x, envir=env))))
   if (!length(is_DT)) {
-    if (!silent) cat("No objects of class data.table exist in", if (identical(env,.GlobalEnv)) ".GlobalEnv" else format(env), "\n")
+    if (!silent) catf("No objects of class data.table exist in %s\n", if (identical(env, .GlobalEnv)) ".GlobalEnv" else format(env))
     return(invisible(data.table(NULL)))
   }
   DT_names = all_obj[is_DT]
@@ -36,7 +36,7 @@ tables = function(mb=TRUE, order.col="NAME", width=80,
     tt[ , NCOL := pretty_format(NCOL, width=4L)]
     if (mb) tt[ , MB := pretty_format(MB, width=2L)]
     print(tt, class=FALSE, nrows=Inf)
-    if (mb) cat("Total: ", prettyNum(sum(info$MB), big.mark=","), "MB\n", sep="")
+    if (mb) catf("Total: %sMB\n", prettyNum(sum(info$MB), big.mark=","))
   }
   invisible(info)
 }

@@ -6,7 +6,8 @@ As \code{write.csv} but much faster (e.g. 2 seconds versus 1 minute) and just as
 }
 \usage{
 fwrite(x, file = "", append = FALSE, quote = "auto",
-  sep = ",", sep2 = c("","|",""),
+  sep=getOption("datatable.fwrite.sep", ","),
+  sep2 = c("","|",""),
   eol = if (.Platform$OS.type=="windows") "\r\n" else "\n",
   na = "", dec = ".", row.names = FALSE, col.names = TRUE,
   qmethod = c("double","escape"),
@@ -19,7 +20,8 @@ fwrite(x, file = "", append = FALSE, quote = "auto",
   compress = c("auto", "none", "gzip"),
   yaml = FALSE,
   bom = FALSE,
-  verbose = getOption("datatable.verbose", FALSE))
+  verbose = getOption("datatable.verbose", FALSE),
+  encoding = "")
 }
 \arguments{
   \item{x}{Any \code{list} of same length vectors; e.g. \code{data.frame} and \code{data.table}. If \code{matrix}, it gets internally coerced to \code{data.table} preserving col names but not row names}
@@ -59,6 +61,7 @@ fwrite(x, file = "", append = FALSE, quote = "auto",
   \item{yaml}{If \code{TRUE}, \code{fwrite} will output a CSVY file, that is, a CSV file with metadata stored as a YAML header, using \code{\link[yaml]{as.yaml}}. See \code{Details}. }
   \item{bom}{If \code{TRUE} a BOM (Byte Order Mark) sequence (EF BB BF) is added at the beginning of the file; format 'UTF-8 with BOM'.}
   \item{verbose}{Be chatty and report timings?}
+  \item{encoding}{ The encoding of the strings written to the CSV file. Default is \code{""}, which means writting raw bytes without considering the encoding. Other possible options are \code{"UTF-8"} and \code{"native"}. }
 }
 \details{
 \code{fwrite} began as a community contribution with \href{https://github.com/Rdatatable/data.table/pull/1613}{pull request #1613} by Otto Seiskari. This gave Matt Dowle the impetus to specialize the numeric formatting and to parallelize: \url{https://www.h2o.ai/blog/fast-csv-writing-for-r/}. Final items were tracked in \href{https://github.com/Rdatatable/data.table/issues/1664}{issue #1664} such as automatic quoting, \code{bit64::integer64} support, decimal/scientific formatting exactly matching \code{write.csv} between 2.225074e-308 and 1.797693e+308 to 15 significant figures, \code{row.names}, dates (between 0000-03-01 and 9999-12-31), times and \code{sep2} for \code{list} columns where each cell can itself be a vector.

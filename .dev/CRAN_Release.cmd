@@ -157,10 +157,17 @@ grep -Enr "^[^#]*(?:\[|==|>|<|>=|<=|,|\(|\+)\s*[-]?[0-9]+[^0-9L:.e]" R | grep -E
  grep -Enr "\bifelse" R
 
 # No system.time in main tests.Rraw. Timings should be in benchmark.Rraw
-grep -n "system[.]time" ./inst/tests/tests.Rraw
+grep -Fn "system.time" ./inst/tests/*.Rraw | grep -Fv "benchmark.Rraw" | grep -Fv "this system.time usage ok"
+
+# No tryCatch in *.Rraw -- tryCatch should be handled only in test() itself to avoid silently missed warnings/errors/output
+grep -Fn "tryCatch" ./inst/tests/*.Rraw
 
 # All % in *.Rd should be escaped otherwise text gets silently chopped
 grep -n "[^\]%" ./man/*.Rd
+
+# if (a & b) is either invalid or inefficient (ditto for replace & with |);
+#   if(any(a [&|] b)) is appropriate b/c of collapsing the logical vector to scalar
+grep -nr "^[^#]*if[^&#]*[^&#\"][&][^&]" R | grep -Ev "if\s*[(](?:any|all)"
 
 # seal leak potential where two unprotected API calls are passed to the same
 # function call, usually involving install() or mkChar()
@@ -208,15 +215,15 @@ R CMD build .
 export GITHUB_PAT="f1c.. github personal access token ..7ad"
 # avoids many too-many-requests in --as-cran's ping-all-URLs step (20 mins) inside the `checking CRAN incoming feasibility...` step.
 # Many thanks to Dirk for the tipoff that setting this env variable solves the problem, #4832.
-R CMD check data.table_1.13.5.tar.gz --as-cran
-R CMD INSTALL data.table_1.13.5.tar.gz --html
+R CMD check data.table_1.14.1.tar.gz --as-cran
+R CMD INSTALL data.table_1.14.1.tar.gz --html
 
 # Test C locale doesn't break test suite (#2771)
 echo LC_ALL=C > ~/.Renviron
 R
 Sys.getlocale()=="C"
 q("no")
-R CMD check data.table_1.13.5.tar.gz
+R CMD check data.table_1.14.1.tar.gz
 rm ~/.Renviron
 
 # Test non-English does not break test.data.table() due to translation of messages; #3039, #630
@@ -233,9 +240,9 @@ q("no")
 
 # User supplied PKG_CFLAGS and PKG_LIBS passed through, #4664
 # Next line from https://mac.r-project.org/openmp/. Should see the arguments passed through and then fail with gcc on linux.
-PKG_CFLAGS='-Xclang -fopenmp' PKG_LIBS=-lomp R CMD INSTALL data.table_1.13.5.tar.gz
+PKG_CFLAGS='-Xclang -fopenmp' PKG_LIBS=-lomp R CMD INSTALL data.table_1.14.1.tar.gz
 # Next line should work on Linux, just using superfluous and duplicate but valid parameters here to see them retained and work 
-PKG_CFLAGS='-fopenmp' PKG_LIBS=-lz R CMD INSTALL data.table_1.13.5.tar.gz
+PKG_CFLAGS='-fopenmp' PKG_LIBS=-lz R CMD INSTALL data.table_1.14.1.tar.gz
 
 R
 remove.packages("xml2")    # we checked the URLs; don't need to do it again (many minutes)
@@ -266,7 +273,7 @@ alias R310=~/build/R-3.1.0/bin/R
 ### END ONE TIME BUILD
 
 cd ~/GitHub/data.table
-R310 CMD INSTALL ./data.table_1.13.5.tar.gz
+R310 CMD INSTALL ./data.table_1.14.1.tar.gz
 R310
 require(data.table)
 test.data.table(script="*.Rraw")
@@ -278,7 +285,7 @@ test.data.table(script="*.Rraw")
 vi ~/.R/Makevars
 # Make line SHLIB_OPENMP_CFLAGS= active to remove -fopenmp
 R CMD build .
-R CMD INSTALL data.table_1.13.5.tar.gz   # ensure that -fopenmp is missing and there are no warnings
+R CMD INSTALL data.table_1.14.1.tar.gz   # ensure that -fopenmp is missing and there are no warnings
 R
 require(data.table)   # observe startup message about no OpenMP detected
 test.data.table()
@@ -286,7 +293,7 @@ q("no")
 vi ~/.R/Makevars
 # revert change above
 R CMD build .
-R CMD check data.table_1.13.5.tar.gz
+R CMD check data.table_1.14.1.tar.gz
 
 
 #####################################################
@@ -305,7 +312,7 @@ tar xvf R-devel.tar.gz
 
 cd R-devel  # may be used for revdep testing: .dev/revdep.R.
 # important to change directory name before building not after because the path is baked into the build, iiuc
-./configure CFLAGS="-O2 -Wall -pedantic"
+./configure CFLAGS="-O0 -Wall -pedantic"
 make
 
 # use latest available `apt-cache search gcc-` or `clang-`
@@ -336,8 +343,8 @@ alias Rdevel-strict-gcc='~/build/R-devel-strict-gcc/bin/R --vanilla'
 alias Rdevel-strict-clang='~/build/R-devel-strict-clang/bin/R --vanilla'
 
 cd ~/GitHub/data.table
-Rdevel-strict-gcc CMD INSTALL data.table_1.13.5.tar.gz
-Rdevel-strict-clang CMD INSTALL data.table_1.13.5.tar.gz
+Rdevel-strict-gcc CMD INSTALL data.table_1.14.1.tar.gz
+Rdevel-strict-clang CMD INSTALL data.table_1.14.1.tar.gz
 # Check UBSAN and ASAN flags appear in compiler output above. Rdevel was compiled with them so should be passed through to here
 Rdevel-strict-gcc
 Rdevel-strict-clang  # repeat below with clang and gcc
@@ -378,7 +385,7 @@ cd R-devel-valgrind
 make
 cd ~/GitHub/data.table
 vi ~/.R/Makevars  # make the -O2 -g line active, for info on source lines with any problems
-Rdevel-valgrind CMD INSTALL data.table_1.13.5.tar.gz
+Rdevel-valgrind CMD INSTALL data.table_1.14.1.tar.gz
 R_DONT_USE_TK=true Rdevel-valgrind -d "valgrind --tool=memcheck --leak-check=full --track-origins=yes --show-leak-kinds=definite,possible --gen-suppressions=all --suppressions=./.dev/valgrind.supp -s"
 # the default for --show-leak-kinds is 'definite,possible' which we're setting explicitly here as a reminder. CRAN uses the default too.
 #   including 'reachable' (as 'all' does) generates too much output from R itself about by-design permanent blocks
@@ -416,7 +423,7 @@ cd ~/build/rchk/trunk
 . ../scripts/config.inc
 . ../scripts/cmpconfig.inc
 vi ~/.R/Makevars   # set CFLAGS=-O0 -g so that rchk can provide source line numbers
-echo 'install.packages("~/GitHub/data.table/data.table_1.13.5.tar.gz",repos=NULL)' | ./bin/R --slave
+echo 'install.packages("~/GitHub/data.table/data.table_1.14.1.tar.gz",repos=NULL)' | ./bin/R --slave
 # objcopy warnings (if any) can be ignored: https://github.com/kalibera/rchk/issues/17#issuecomment-497312504
 . ../scripts/check_package.sh data.table
 cat packages/lib/data.table/libs/*check
@@ -528,6 +535,9 @@ sudo apt-get -y install parallel   # for revdepr.R
 sudo apt-get -y install pandoc-citeproc   # for basecallQC
 sudo apt-get -y install libquantlib0-dev  # for RQuantLib
 sudo apt-get -y install cargo  # for gifski, a suggest of nasoi
+sudo apt-get -y install libgit2-dev  # for gert
+sudo apt-get -y install cmake  # for symengine for RxODE
+sudo apt-get -y install libxslt1-dev  # for xslt
 sudo R CMD javareconf
 # ENDIF
 
@@ -571,7 +581,9 @@ du -k inst/tests                # 1.5MB before
 bzip2 inst/tests/*.Rraw         # compress *.Rraw just for release to CRAN; do not commit compressed *.Rraw to git
 du -k inst/tests                # 0.75MB after
 R CMD build .
-R CMD check data.table_1.13.4.tar.gz --as-cran
+export GITHUB_PAT="f1c.. github personal access token ..7ad"
+Rdevel -q -e "packageVersion('xml2')"   # ensure installed
+Rdevel CMD check data.table_1.14.0.tar.gz --as-cran  # use latest Rdevel as it may have extra checks
 #
 bunzip2 inst/tests/*.Rraw.bz2  # decompress *.Rraw again so as not to commit compressed *.Rraw to git
 #
@@ -579,10 +591,7 @@ Resubmit to winbuilder (R-release, R-devel and R-oldrelease)
 Submit to CRAN. Message template :
 ------------------------------------------------------------
 Hello,
-921 CRAN revdeps checked. None are impacted.
-valgrind 'additional check' fixed.
-Solaris not yet resolved.
-POUMM's gcc-ASAN error resolved by this data.table update.
+1,016 CRAN revdeps checked. None are impacted.
 Many thanks!
 Best, Matt
 ------------------------------------------------------------
@@ -601,8 +610,8 @@ When CRAN's email contains "Pretest results OK pending a manual inspection" (or 
 3. Add new heading in NEWS for the next dev version. Add "(submitted to CRAN on <today>)" on the released heading.
 4. Bump dllVersion() in init.c
 5. Bump 3 version numbers in Makefile
-6. Search and replace this .dev/CRAN_Release.cmd to update 1.13.3 to 1.13.5, and 1.13.2 to 1.13.4 (e.g. in step 8 and 9 below)
+6. Search and replace this .dev/CRAN_Release.cmd to update 1.13.7 to 1.14.1, and 1.13.6 to 1.14.0 (e.g. in step 8 and 9 below)
 7. Another final gd to view all diffs using meld. (I have `alias gd='git difftool &> /dev/null'` and difftool meld: http://meldmerge.org/)
-8. Push to master with this consistent commit message: "1.13.4 on CRAN. Bump to 1.13.5"
-9. Take sha from step 8 and run `git tag 1.13.4 34796cd1524828df9bf13a174265cb68a09fcd77` then `git push origin 1.13.4` (not `git push --tags` according to https://stackoverflow.com/a/5195913/403310)
+8. Push to master with this consistent commit message: "1.14.0 on CRAN. Bump to 1.14.1"
+9. Take sha from step 8 and run `git tag 1.14.0 96c..sha..d77` then `git push origin 1.14.0` (not `git push --tags` according to https://stackoverflow.com/a/5195913/403310)
 ######

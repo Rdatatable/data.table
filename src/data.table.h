@@ -101,6 +101,7 @@ extern SEXP sym_inherits;
 extern SEXP sym_datatable_locked;
 extern SEXP sym_tzone;
 extern SEXP sym_old_fread_datetime_character;
+extern SEXP sym_variable_table;
 extern double NA_INT64_D;
 extern long long NA_INT64_LL;
 extern Rcomplex NA_CPLX;  // initialized in init.c; see there for comments
@@ -109,7 +110,7 @@ extern size_t __typeorder[100]; // __ prefix otherwise if we use these names dir
 
 long long DtoLL(double x);
 double LLtoD(long long x);
-bool GetVerbose();
+int GetVerbose();
 
 // cj.c
 SEXP cj(SEXP base_list);
@@ -127,8 +128,8 @@ int checkOverAlloc(SEXP x);
 
 // forder.c
 int StrCmp(SEXP x, SEXP y);
-uint64_t dtwiddle(const void *p, int i);
-SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP naArg);
+uint64_t dtwiddle(double x);
+SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, SEXP naArg);
 int getNumericRounding_C();
 
 // reorder.c
@@ -138,6 +139,7 @@ SEXP setcolorder(SEXP x, SEXP o);
 // subset.c
 void subsetVectorRaw(SEXP ans, SEXP source, SEXP idx, const bool anyNA);
 SEXP subsetVector(SEXP x, SEXP idx);
+const char *check_idx(SEXP idx, int max, bool *anyNA_out, bool *orderedSubset_out);
 
 // fcast.c
 SEXP int_vec_init(R_len_t n, int val);
@@ -229,8 +231,6 @@ bool isRealReallyInt(SEXP x);
 SEXP isReallyReal(SEXP x);
 bool allNA(SEXP x, bool errorForBadType);
 SEXP colnamesInt(SEXP x, SEXP cols, SEXP check_dups);
-void coerceFill(SEXP fill, double *dfill, int32_t *ifill, int64_t *i64fill);
-SEXP coerceFillR(SEXP fill);
 bool INHERITS(SEXP x, SEXP char_);
 bool Rinherits(SEXP x, SEXP char_);
 SEXP copyAsPlain(SEXP x);
@@ -241,6 +241,7 @@ bool islocked(SEXP x);
 SEXP islockedR(SEXP x);
 bool need2utf8(SEXP x);
 SEXP coerceUtf8IfNeeded(SEXP x);
+SEXP coerceAs(SEXP x, SEXP as, SEXP copyArg);
 
 // types.c
 char *end(char *start);
@@ -254,3 +255,5 @@ SEXP fcaseR(SEXP na, SEXP rho, SEXP args);
 //snprintf.c
 int dt_win_snprintf(char *dest, size_t n, const char *fmt, ...);
 
+// programming.c
+SEXP substitute_call_arg_namesR(SEXP expr, SEXP env);
