@@ -17198,5 +17198,5 @@ utf8 = iconv(latin1, "latin1", "UTF-8")
 text <- c(latin1, utf8, "aaaaaaaa")
 Encoding(text)[1] = c('UTF-8')
 test(2159.2, print(data.table(A = text)), output=c(
-  "           A", "1: fa\\xe7ile", "2:    façile", "3:  aaaaaaaa")
+  "           A", "      <char>", "1: fa\\xe7ile", "2:    fa\u00e7ile", "3:  aaaaaaaa")
 )
