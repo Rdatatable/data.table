@@ -1372,8 +1372,7 @@ replace_dot_alias = function(e) {
         jval = list(jval)
       }
       if (!is.null(jvnames) && any(nzchar(jvnames))) {
-        # see test 2139
-        if (length(jvnames) > length(jval)) jvnames = jvnames[seq_along(jval)]
+        if (length(jvnames) > length(jval)) jvnames = jvnames[seq_along(jval)]  #4274
         setattr(jval, 'names', jvnames[seq_along(jval)])  # e.g. jvnames=="N" for DT[,.N,]
       }
       jval = as.data.table.list(jval, .named=NULL)
