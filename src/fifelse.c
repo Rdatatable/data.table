@@ -19,6 +19,13 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b, SEXP na) {
   bool na_a = len1==1 && ta==LGLSXP && LOGICAL(a)[0]==NA_LOGICAL;
   bool na_b = len2==1 && tb==LGLSXP && LOGICAL(b)[0]==NA_LOGICAL;
   bool na_n = isNull(na) || (len3==1 && tn==LGLSXP && LOGICAL(na)[0]==NA_LOGICAL);
+
+  if (!na_a && len1!=1 && len1!=len0)
+    error(_("Length of 'yes' is %"PRId64" but must be 1 or length of 'test' (%"PRId64")."), len1, len0);
+  if (!na_b && len2!=1 && len2!=len0)
+    error(_("Length of 'no' is %"PRId64" but must be 1 or length of 'test' (%"PRId64")."), len2, len0);
+  if (!na_n && len3!=1 && len3!=len0)
+    error(_("Length of 'na' is %"PRId64" but must be 1 or length of 'test' (%"PRId64")."), len3, len0);
   
   int nprotect = 0;
   SEXPTYPE tans = !na_a ? ta : !na_b ? tb : !na_n ? tn : LGLSXP;
@@ -79,12 +86,6 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b, SEXP na) {
     }
   }
 
-  if (!na_a && len1!=1 && len1!=len0)
-    error(_("Length of 'yes' is %"PRId64" but must be 1 or length of 'test' (%"PRId64")."), len1, len0);
-  if (!na_b && len2!=1 && len2!=len0)
-    error(_("Length of 'no' is %"PRId64" but must be 1 or length of 'test' (%"PRId64")."), len2, len0);
-  if (!na_n && len3!=1 && len3!=len0)
-    error(_("Length of 'na' is %"PRId64" but must be 1 or length of 'test' (%"PRId64")."), len3, len0);
   const int64_t amask = len1>1 ? INT64_MAX : 0; // for scalar 'a' bitwise AND will reset iterator to first element: pa[i & amask] -> pa[0]
   const int64_t bmask = len2>1 ? INT64_MAX : 0;
   const int64_t nmask = len3>1 ? INT64_MAX : 0;
