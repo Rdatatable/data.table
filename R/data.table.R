@@ -921,8 +921,12 @@ replace_dot_alias = function(e) {
               if (is.name(thisq)) nm[jj] = drop_dot(thisq)
               # TO DO: if call to a[1] for example, then call it 'a' too
             }
-            if (!is.null(jvnames) && any(idx <- nm != jvnames))
-              warning("Different branches of j expression produced different auto-named columns: ", brackify(sprintf('%s!=%s', nm[idx], jvnames[idx])), '; using the most "last" names', call. = FALSE)
+            if (!is.null(jvnames)) {
+              if (length(nm) != length(jvnames))
+                warning("j may not evaluate to the same number of columns for each group; if you're sure this warning is in error, please put the branching logic outside of [ for efficiency")
+              else if (any(idx <- nm != jvnames))
+                warning("Different branches of j expression produced different auto-named columns: ", brackify(sprintf('%s!=%s', nm[idx], jvnames[idx])), '; using the most "last" names', call. = FALSE)
+            }
             jvnames <<- nm # TODO: handle if() list(a, b) else list(b, a) better
             setattr(q, "names", NULL)  # drops the names from the list so it's faster to eval the j for each group; reinstated at the end on the result.
           }
@@ -1367,7 +1371,10 @@ replace_dot_alias = function(e) {
         setattr(jval,"names",NULL)  # discard names of named vectors otherwise each cell in the column would have a name
         jval = list(jval)
       }
-      if (!is.null(jvnames) && !all(jvnames=="")) setattr(jval, 'names', jvnames)  # e.g. jvnames=="N" for DT[,.N,]
+      if (!is.null(jvnames) && any(nzchar(jvnames))) {
+        if (length(jvnames) > length(jval)) jvnames = jvnames[seq_along(jval)]  #4274
+        setattr(jval, 'names', jvnames[seq_along(jval)])  # e.g. jvnames=="N" for DT[,.N,]
+      }
       jval = as.data.table.list(jval, .named=NULL)
     }
 

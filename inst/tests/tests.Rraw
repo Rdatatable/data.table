@@ -3058,7 +3058,7 @@ test(1034, as.data.table(x<-as.character(sample(letters, 5))), data.table(V1=x))
   # na.rm=TRUE with list column value, PR#4737
   test(1035.016, melt(data.table(a1=1, b1=list(1:2), b2=list(c('foo','bar'))), na.rm=TRUE, measure.vars=list(a="a1", b=c("b1","b2"))), data.table(variable=factor(1), a=1, b=list(1:2)))
   test(1035.017, melt(data.table(a1=1, b1=1, b2=2), na.rm=TRUE, measure.vars=list(a="a1", b=c("b1","b2"))), data.table(variable=factor(1), a=1, b=1))#this worked even before the PR.
-  
+
   ans1 = cbind(DT[, c(1,2,8), with=FALSE], variable=factor("l_1"))
   ans1[, value := DT$l_1]
   test(1035.02, melt(DT, id.vars=c("i_1", "i_2", "l_2"), measure.vars=c("l_1")), ans1)
@@ -10890,7 +10890,7 @@ test(1743.217, sapply(fread("a,b,c,d,e,f\na,b,c,d,e,f", colClasses = list(factor
 test(1743.218, sapply(fread("a,b,c,d,e,f\na,b,c,d,e,f", colClasses = list(factor = c(1, 2, 4), factor = 3), select = c(5, 4, 2, 3)), class), y = c(e = "character", d = "factor", b = "factor", c = "factor"))
 
 test(1743.22, fread("a,b,c\n1999/01/01,2,f", colClasses=list(Date=1L), drop="a"), data.table(b=2L, c="f"))
-test(1743.231, fread("a,b,c\n2,1,4i", colClasses=list(complex="c", integer=2L), drop="a"), data.table(b=1L, c="4i"), 
+test(1743.231, fread("a,b,c\n2,1,4i", colClasses=list(complex="c", integer=2L), drop="a"), data.table(b=1L, c="4i"),
      warning=paste0(base_messages$coerce_na, ".*left as type 'character'"))
 test(1743.232, fread("a,b,c\n2,1,3+4i", colClasses=list(complex="c", integer=2L), drop="a"), data.table(b=1L, c=3+4i))
 test(1743.241, fread("a,b,c\n2,2,f", colClasses = list(character="c", integer="b"), drop="a"), data.table(b=2L, c="f"))
@@ -17531,7 +17531,7 @@ test(2183.40, names(melt(iris.dt, measure.vars=patterns("[.]"))), c("Species", "
 # measure with pattern=
 test(2183.41, melt(DTid, measure.vars=measure(value.name, istr="bar", pattern="([ab])([12])")), error="each ... argument to measure must be a function with at least one argument, problem: istr")
 test(2183.42, melt(DTid, measure.vars=measure(value.name, istr=function()1, pattern="([ab])([12])")), error="each ... argument to measure must be a function with at least one argument, problem: istr")
-test(2183.43, melt(DTid, measure.vars=measure(value.name, istr=interactive, pattern="([ab])([12])")), error="each ... argument to measure must be a function with at least one argument, problem: istr")    
+test(2183.43, melt(DTid, measure.vars=measure(value.name, istr=interactive, pattern="([ab])([12])")), error="each ... argument to measure must be a function with at least one argument, problem: istr")
 test(2183.44, melt(DTid, measure.vars=measure(value.name, istr=function(x)1, pattern="([ab])([12])")), error="each ... argument to measure must be a function that returns an atomic vector with same length as its first argument, problem: istr")
 test(2183.45, melt(iris.dt, measure.vars=measure(value.name, dim, baz, pattern="(.*)[.](.*)")), error="number of ... arguments to measure =3 must be same as number of capture groups in pattern =2")
 test(2183.46, melt(iris.dt, measure.vars=measure(function(x)factor(x), dim, pattern="(.*)[.](.*)")), error="each ... argument to measure must be either a symbol without argument name, or a function with argument name, problems: 1")
@@ -17590,4 +17590,9 @@ agg = function(x) if(length(x) > 0) min(x) else NA
 DT = data.table(id=c(1,1,2,2), x=c('y','y','y','z'), v=c('a','b','c','d'))
 test(2185, dcast(DT, formula=id~x, fun.aggregate=agg, value.var='v'),
            data.table(id=c(1,2), y=c('a','c'), z=c(NA,'d'), key="id"))
+
+# compatible branches might seem incompatible if the condition is global, #4274
+DT = data.table(a=1L)
+test(2186, DT[, if (TRUE) .(a=1L) else .(a=1L, b=2L)], DT,
+     warning='j may not evaluate to the same number of columns for each group')
 
