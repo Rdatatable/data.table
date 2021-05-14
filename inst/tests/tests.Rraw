@@ -2362,8 +2362,8 @@ test(827.1, names(a[b]), c("User ID","Blah Blah","Yadda Yadda"))
 # setcolorder and merge check for dup column names, #2193(ii)
 setnames(DT2,"b","a")
 test(828, setcolorder(DT2,c("a","b")), error="x has some duplicated column name(s): a. Please remove or rename")
-test(829, merge(DT1,DT2), error="y has some duplicated column name(s): a. Please remove or rename")
-test(830, merge(DT2,DT1), error="x has some duplicated column name(s): a. Please remove or rename")
+test(829, merge(DT1,DT2), error="y has some duplicated column name(s): [a]. Please remove or rename")
+test(830, merge(DT2,DT1), error="x has some duplicated column name(s): [a]. Please remove or rename")
 
 # attribs such as "comments" should be retained, #2270
 DT1 <- data.table(id = seq.int(1, 10), A = LETTERS[1:10], key = "id")
@@ -3059,7 +3059,7 @@ test(1034, as.data.table(x<-as.character(sample(letters, 5))), data.table(V1=x))
   # na.rm=TRUE with list column value, PR#4737
   test(1035.016, melt(data.table(a1=1, b1=list(1:2), b2=list(c('foo','bar'))), na.rm=TRUE, measure.vars=list(a="a1", b=c("b1","b2"))), data.table(variable=factor(1), a=1, b=list(1:2)))
   test(1035.017, melt(data.table(a1=1, b1=1, b2=2), na.rm=TRUE, measure.vars=list(a="a1", b=c("b1","b2"))), data.table(variable=factor(1), a=1, b=1))#this worked even before the PR.
-  
+
   ans1 = cbind(DT[, c(1,2,8), with=FALSE], variable=factor("l_1"))
   ans1[, value := DT$l_1]
   test(1035.02, melt(DT, id.vars=c("i_1", "i_2", "l_2"), measure.vars=c("l_1")), ans1)
@@ -6938,13 +6938,12 @@ test(1486.1, as.data.frame(ans1.1), as.data.frame(ans1.2))
 test(1486.2, as.data.frame(ans2.1), as.data.frame(ans2.1))
 
 # Fix for #832
-x <- matrix(1:9, ncol=3)
-setattr(x, "names", paste("V", seq_len(length(x)), sep = ""))
+x <- matrix(1:9, ncol=3L)
+setattr(x, "names", paste0("V", seq_along(x)))
 test(1487.1, setattr(x, "class", c("data.table", "data.frame")), error="Internal structure doesn't seem to be a list")
-x <- matrix(1:9, ncol=3)
+x <- matrix(1:9, ncol=3L)
 class(x) = c("data.table", "data.frame")
-# not sure how to test this one, so using `tryCatch`
-test(1487.2, tryCatch(print(x), error=function(k) "bla"), "bla")
+test(1487.2, print(x), error="dim.data.table expects a data.table as input")
 
 # Fix for #1043
 DT = data.table(grp=LETTERS[1:2], categ=rep(c("X","Y"), each=2L), condition=rep(c("P","Q"), each=4L), value=sample(8))
@@ -8362,10 +8361,18 @@ DT2 = data.table(id1=c("c", "w", "b"), val=50:52)
 test(1600.2, names(DT1[DT2, .(id1=id1, val=val, bla=sum(z1, na.rm=TRUE)), on="id1"]), c("id1", "val", "bla"))
 
 # warn when merge empty data.table #597
-test(1601.1, merge(data.table(a=1),data.table(a=1), by="a"), data.table(a=1, key="a"))
-test(1601.2, tryCatch(merge(data.table(a=1),data.table(NULL), by="a"), warning = function(w) w$message), "You are trying to join data.tables where argument 'y' has no columns.")
-test(1601.3, tryCatch(merge(data.table(NULL),data.table(a=1), by="a"), warning = function(w) w$message), "You are trying to join data.tables where argument 'x' has no columns.")
-test(1601.4, tryCatch(merge(data.table(NULL),data.table(NULL), by="a"), warning = function(w) w$message), "You are trying to join data.tables where arguments 'x' and 'y' have no columns.")
+DT0 = data.table(NULL)
+DT1 = data.table(a=1)
+test(1601.1, merge(DT1, DT1, by="a"), data.table(a=1, key="a"))
+test(1601.2, merge(DT1, DT0, by="a"),
+     warning="You are trying to join data.tables where 'y' has 0 columns.",
+     error="Elements listed in `by`")
+test(1601.3, merge(DT0, DT1, by="a"),
+     warning="You are trying to join data.tables where 'x' has 0 columns.",
+     error="Elements listed in `by`")
+test(1601.4, merge(DT0, DT0, by="a"),
+     warning="You are trying to join data.tables where 'x' and 'y' have 0 columns.",
+     error="Elements listed in `by`")
 
 # fix for #1549
 d1 <- data.table(v1=1:2,x=x)
@@ -10339,7 +10346,7 @@ if (.Platform$OS.type=="unix") {
   options(datatable.fread.input.cmd.message = NULL)  # when option is missing as it is by default, then TRUE
   test(1703.02, fread(cmd), ans, message="security concern")
   options(datatable.fread.input.cmd.message = FALSE)
-  test(1703.03, tryCatch(fread(cmd), message=stop), ans)
+  test(1703.03, fread(cmd), ans)
   options(datatable.fread.input.cmd.message = NULL)
   test(1703.04, fread(cmd=cmd), ans)
   test(1703.05, fread(file=cmd), error=sprintf("File '%s' does not exist", cmd))
@@ -10884,7 +10891,7 @@ test(1743.217, sapply(fread("a,b,c,d,e,f\na,b,c,d,e,f", colClasses = list(factor
 test(1743.218, sapply(fread("a,b,c,d,e,f\na,b,c,d,e,f", colClasses = list(factor = c(1, 2, 4), factor = 3), select = c(5, 4, 2, 3)), class), y = c(e = "character", d = "factor", b = "factor", c = "factor"))
 
 test(1743.22, fread("a,b,c\n1999/01/01,2,f", colClasses=list(Date=1L), drop="a"), data.table(b=2L, c="f"))
-test(1743.231, fread("a,b,c\n2,1,4i", colClasses=list(complex="c", integer=2L), drop="a"), data.table(b=1L, c="4i"), 
+test(1743.231, fread("a,b,c\n2,1,4i", colClasses=list(complex="c", integer=2L), drop="a"), data.table(b=1L, c="4i"),
      warning=paste0(base_messages$coerce_na, ".*left as type 'character'"))
 test(1743.232, fread("a,b,c\n2,1,3+4i", colClasses=list(complex="c", integer=2L), drop="a"), data.table(b=1L, c=3+4i))
 test(1743.241, fread("a,b,c\n2,2,f", colClasses = list(character="c", integer="b"), drop="a"), data.table(b=2L, c="f"))
@@ -16707,7 +16714,7 @@ t0 = as.POSIXct('2019-10-01')
 test(2124.1, format(as.ITime(t0)), '00:00:00')
 test(2124.2, format(as.IDate(t0)), '2019-10-01')
 if (is.na(oldtz)) Sys.unsetenv("TZ") else Sys.setenv(TZ=oldtz)
-# careful to unset because TZ="" means UTC whereas unset TZ means local
+# careful to unset because TZ="" means UTC whereas unset TZ means local, #4261 and #4464
 
 # trunc.cols in print.data.table, #4074
 old_width = options("width" = 40L)
@@ -17525,7 +17532,7 @@ test(2183.40, names(melt(iris.dt, measure.vars=patterns("[.]"))), c("Species", "
 # measure with pattern=
 test(2183.41, melt(DTid, measure.vars=measure(value.name, istr="bar", pattern="([ab])([12])")), error="each ... argument to measure must be a function with at least one argument, problem: istr")
 test(2183.42, melt(DTid, measure.vars=measure(value.name, istr=function()1, pattern="([ab])([12])")), error="each ... argument to measure must be a function with at least one argument, problem: istr")
-test(2183.43, melt(DTid, measure.vars=measure(value.name, istr=interactive, pattern="([ab])([12])")), error="each ... argument to measure must be a function with at least one argument, problem: istr")    
+test(2183.43, melt(DTid, measure.vars=measure(value.name, istr=interactive, pattern="([ab])([12])")), error="each ... argument to measure must be a function with at least one argument, problem: istr")
 test(2183.44, melt(DTid, measure.vars=measure(value.name, istr=function(x)1, pattern="([ab])([12])")), error="each ... argument to measure must be a function that returns an atomic vector with same length as its first argument, problem: istr")
 test(2183.45, melt(iris.dt, measure.vars=measure(value.name, dim, baz, pattern="(.*)[.](.*)")), error="number of ... arguments to measure =3 must be same as number of capture groups in pattern =2")
 test(2183.46, melt(iris.dt, measure.vars=measure(function(x)factor(x), dim, pattern="(.*)[.](.*)")), error="each ... argument to measure must be either a symbol without argument name, or a function with argument name, problems: 1")
@@ -17579,8 +17586,19 @@ IDT[, virginca := get(vr) == "virginica"]
 ans = data.table(round = c(3, 3, 3, 2, 2, 4, 2, 4), k = c(6, 7, 8, 5, 7, 7, 6, 8), kar = structure(c(3L, 3L, 3L, 3L, 3L, 3L, 3L, 3L), .Label = c("setosa", "versicolor", "virginica"), class = "factor"), N = c(24L, 14L, 4L, 1L, 1L, 1L, 3L, 2L))
 test(2184.5, IDT[(virginca), .N, by = .(round(Sepal.Width), k = round(Sepal.Length), kar = get(vr))] , ans)
 
+# dcast() segfault or 'STRING_ELT() can only be applied to character not logical' fixed in v1.13.0, #2394
+agg = function(x) if(length(x) > 0) min(x) else NA
+DT = data.table(id=c(1,1,2,2), x=c('y','y','y','z'), v=c('a','b','c','d'))
+test(2185, dcast(DT, formula=id~x, fun.aggregate=agg, value.var='v'),
+           data.table(id=c(1,2), y=c('a','c'), z=c(NA,'d'), key="id"))
+
+# compatible branches might seem incompatible if the condition is global, #4274
+DT = data.table(a=1L)
+test(2186, DT[, if (TRUE) .(a=1L) else .(a=1L, b=2L)], DT,
+     warning='j may not evaluate to the same number of columns for each group')
+
 # coverage for internal_error wrapper
-test(2185.1, internal_error("broken"), error="Internal error.*broken")
-test(2185.2, internal_error("broken %d%s", 1, "2"), error="Internal error.*broken 12")
+test(2187.1, internal_error("broken"), error="Internal error.*broken")
+test(2187.2, internal_error("broken %d%s", 1, "2"), error="Internal error.*broken 12")
 foo = function(...) internal_error("broken")
-test(2185.3, foo(), error="Internal error in foo: broken")
+test(2187.3, foo(), error="Internal error in foo: broken")

@@ -108,8 +108,25 @@ replace_dot_alias = function(e) {
 }
 
 .checkTypos = function(err, ref) {
-  if (grepl('object.*not found', err$message)) {
-    used = gsub(".*object '([^']+)'.*", "\\1", err$message)
+  # a slightly wonky workaround so that this still works in non-English sessions, #4989
+  # generate this at run time (as opposed to e.g. onAttach) since session language is
+  #   technically OK to update (though this should be rare), and since it's low-cost
+  #   to do so here because we're about to error anyway.
+  missing_obj_fmt = gsub(
+    "'missing_datatable_variable____'",
+    "'(?<obj_name>[^']+)'",
+    tryCatch(eval(parse(text="missing_datatable_variable____")), error=identity)$message
+    # eval(parse()) to avoid "no visible binding for global variable" note from R CMD check
+    # names starting with _ don't parse, so no leading _ in the name
+  )
+  idx <- regexpr(missing_obj_fmt, err$message, perl=TRUE)
+  if (idx > 0L) {
+    start = attr(idx, "capture.start", exact=TRUE)[ , "obj_name"]
+    used = substr(
+      err$message,
+      start,
+      start + attr(idx, "capture.length", exact=TRUE)[ , "obj_name"] - 1L
+    )
     found = agrep(used, ref, value=TRUE, ignore.case=TRUE, fixed=TRUE)
     if (length(found)) {
       stop("Object '", used, "' not found. Perhaps you intended ", brackify(found))
@@ -920,8 +937,12 @@ replace_dot_alias = function(e) {
               if (is.name(thisq)) nm[jj] = drop_dot(thisq)
               # TO DO: if call to a[1] for example, then call it 'a' too
             }
-            if (!is.null(jvnames) && any(idx <- nm != jvnames))
-              warning("Different branches of j expression produced different auto-named columns: ", brackify(sprintf('%s!=%s', nm[idx], jvnames[idx])), '; using the most "last" names', call. = FALSE)
+            if (!is.null(jvnames)) {
+              if (length(nm) != length(jvnames))
+                warning("j may not evaluate to the same number of columns for each group; if you're sure this warning is in error, please put the branching logic outside of [ for efficiency")
+              else if (any(idx <- nm != jvnames))
+                warning("Different branches of j expression produced different auto-named columns: ", brackify(sprintf('%s!=%s', nm[idx], jvnames[idx])), '; using the most "last" names', call. = FALSE)
+            }
             jvnames <<- nm # TODO: handle if() list(a, b) else list(b, a) better
             setattr(q, "names", NULL)  # drops the names from the list so it's faster to eval the j for each group; reinstated at the end on the result.
           }
@@ -1366,7 +1387,10 @@ replace_dot_alias = function(e) {
         setattr(jval,"names",NULL)  # discard names of named vectors otherwise each cell in the column would have a name
         jval = list(jval)
       }
-      if (!is.null(jvnames) && !all(jvnames=="")) setattr(jval, 'names', jvnames)  # e.g. jvnames=="N" for DT[,.N,]
+      if (!is.null(jvnames) && any(nzchar(jvnames))) {
+        if (length(jvnames) > length(jval)) jvnames = jvnames[seq_along(jval)]  #4274
+        setattr(jval, 'names', jvnames[seq_along(jval)])  # e.g. jvnames=="N" for DT[,.N,]
+      }
       jval = as.data.table.list(jval, .named=NULL)
     }
 
@@ -1637,7 +1661,8 @@ replace_dot_alias = function(e) {
                 jl__ = as.list(jsubl[[i_]])[-1L] # just keep the '.' from list(.)
                 jn__ = if (is.null(names(jl__))) rep("", length(jl__)) else names(jl__)
                 idx  = unlist(lapply(jl__, function(x) is.name(x) && x == ".I"))
-                if (any(idx)) jn__[idx & (jn__ == "")] = "I"
+                if (any(idx))
+                  jn__[idx & !nzchar(jn__)] = "I"  # this & is correct not &&
                 jvnames = c(jvnames, jn__)
                 jsubl[[i_]] = jl__
               }
@@ -2355,8 +2380,8 @@ split.data.table = function(x, f, drop = FALSE, by, sorted = FALSE, keep.by = TR
     join = TRUE
   }
   dtq[["j"]] = substitute(
-    list(.ll.tech.split=list(.expr)),
-    list(.expr = if (join) quote(if(.N == 0L) .SD[0L] else .SD) else as.name(".SD")) # simplify when `nomatch` accept NULL #857 ?
+    list(.ll.tech.split=list(.expr), .ll.tech.split.names=paste(lapply(.BY, as.character), collapse=".")),
+    list(.expr = if (join) quote(if(.N == 0L) .SD[0L] else .SD) else as.name(".SD"))
   )
   dtq[["by"]] = substitute( # retain order, for `join` and `sorted` it will use order of `i` data.table instead of `keyby`.
     .expr,
@@ -2369,11 +2394,9 @@ split.data.table = function(x, f, drop = FALSE, by, sorted = FALSE, keep.by = TR
   if (isTRUE(verbose)) catf("Processing split.data.table with: %s\n", deparse(dtq, width.cutoff=500L))
   tmp = eval(dtq)
   # add names on list
-  setattr(ll <- tmp$.ll.tech.split,
-      "names",
-      as.character(
-        if (!flatten) tmp[[.by]] else tmp[, list(.nm.tech.split=paste(unlist(lapply(.SD, as.character)), collapse = ".")), by=by, .SDcols=by]$.nm.tech.split
-      ))
+  ll = tmp$.ll.tech.split
+  nm = tmp$.ll.tech.split.names
+  setattr(ll, "names", nm)
   # handle nested split
   if (flatten || length(by) == 1L) {
     for (x in ll) .Call(C_unlock, x)
@@ -2554,7 +2577,7 @@ setnames = function(x,old,new,skip_absent=FALSE) {
         }
       }
     }
-    if (any(w <- new==names(x)[i] & Encoding(new)==Encoding(names(x)[i]))) {
+    if (any(w <- new==names(x)[i] & Encoding(new)==Encoding(names(x)[i]))) {  # this & is correct not &&
       w = which(!w)
       new = new[w]
       i = i[w]
