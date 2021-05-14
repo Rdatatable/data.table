@@ -1,5 +1,6 @@
 fwrite = function(x, file="", append=FALSE, quote="auto",
-           sep=",", sep2=c("","|",""), eol=if (.Platform$OS.type=="windows") "\r\n" else "\n",
+           sep=getOption("datatable.fwrite.sep", ","),
+           sep2=c("","|",""), eol=if (.Platform$OS.type=="windows") "\r\n" else "\n",
            na="", dec=".", row.names=FALSE, col.names=TRUE,
            qmethod=c("double","escape"),
            logical01=getOption("datatable.logical01", FALSE), # due to change to TRUE; see NEWS
@@ -11,8 +12,12 @@ fwrite = function(x, file="", append=FALSE, quote="auto",
            compress = c("auto", "none", "gzip"),
            yaml = FALSE,
            bom = FALSE,
-           verbose=getOption("datatable.verbose", FALSE)) {
+           verbose=getOption("datatable.verbose", FALSE),
+           encoding = "") {
   na = as.character(na[1L]) # fix for #1725
+  if (length(encoding) != 1L || !encoding %chin% c("", "UTF-8", "native")) {
+    stop("Argument 'encoding' must be '', 'UTF-8' or 'native'.")
+  }
   if (missing(qmethod)) qmethod = qmethod[1L]
   if (missing(compress)) compress = compress[1L]
   if (missing(dateTimeAs)) { dateTimeAs = dateTimeAs[1L] }
@@ -58,7 +63,7 @@ fwrite = function(x, file="", append=FALSE, quote="auto",
   file = path.expand(file)  # "~/foo/bar"
   if (append && (file=="" || file.exists(file))) {
     if (missing(col.names)) col.names = FALSE
-    if (verbose) cat("Appending to existing file so setting bom=FALSE and yaml=FALSE\n")
+    if (verbose) catf("Appending to existing file so setting bom=FALSE and yaml=FALSE\n")
     bom = FALSE
     yaml = FALSE
   }
@@ -108,7 +113,7 @@ fwrite = function(x, file="", append=FALSE, quote="auto",
   file = enc2native(file) # CfwriteR cannot handle UTF-8 if that is not the native encoding, see #3078.
   .Call(CfwriteR, x, file, sep, sep2, eol, na, dec, quote, qmethod=="escape", append,
         row.names, col.names, logical01, scipen, dateTimeAs, buffMB, nThread,
-        showProgress, is_gzip, bom, yaml, verbose)
+        showProgress, is_gzip, bom, yaml, verbose, encoding)
   invisible()
 }
 
