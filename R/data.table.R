@@ -108,8 +108,25 @@ replace_dot_alias = function(e) {
 }
 
 .checkTypos = function(err, ref) {
-  if (grepl('object.*not found', err$message)) {
-    used = gsub(".*object '([^']+)'.*", "\\1", err$message)
+  # a slightly wonky workaround so that this still works in non-English sessions, #4989
+  # generate this at run time (as opposed to e.g. onAttach) since session language is
+  #   technically OK to update (though this should be rare), and since it's low-cost
+  #   to do so here because we're about to error anyway.
+  missing_obj_fmt = gsub(
+    "'missing_datatable_variable____'",
+    "'(?<obj_name>[^']+)'",
+    tryCatch(eval(parse(text="missing_datatable_variable____")), error=identity)$message
+    # eval(parse()) to avoid "no visible binding for global variable" note from R CMD check
+    # names starting with _ don't parse, so no leading _ in the name
+  )
+  idx <- regexpr(missing_obj_fmt, err$message, perl=TRUE)
+  if (idx > 0L) {
+    start = attr(idx, "capture.start", exact=TRUE)[ , "obj_name"]
+    used = substr(
+      err$message,
+      start,
+      start + attr(idx, "capture.length", exact=TRUE)[ , "obj_name"] - 1L
+    )
     found = agrep(used, ref, value=TRUE, ignore.case=TRUE, fixed=TRUE)
     if (length(found)) {
       stop("Object '", used, "' not found. Perhaps you intended ", brackify(found))
