@@ -15,9 +15,10 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b, SEXP na) {
   SEXPTYPE ta = TYPEOF(a);
   SEXPTYPE tb = TYPEOF(b);
   SEXPTYPE tn = TYPEOF(na);
-  bool na_a = len1 && ta==LGLSXP && LOGICAL(a)[0]==NA_LOGICAL;
-  bool na_b = len2 && tb==LGLSXP && LOGICAL(b)[0]==NA_LOGICAL;
-  bool na_n = isNull(na) || (len3 && tn==LGLSXP && LOGICAL(na)[0]==NA_LOGICAL);
+  // na_a/b/n means a scalar NA (or NULL for the na argument), which is considered to be coerced into other types
+  bool na_a = len1==1 && ta==LGLSXP && LOGICAL(a)[0]==NA_LOGICAL;
+  bool na_b = len2==1 && tb==LGLSXP && LOGICAL(b)[0]==NA_LOGICAL;
+  bool na_n = isNull(na) || (len3==1 && tn==LGLSXP && LOGICAL(na)[0]==NA_LOGICAL);
   
   int nprotect = 0;
   SEXPTYPE tans = !na_a ? ta : !na_b ? tb : !na_n ? tn : LGLSXP;
