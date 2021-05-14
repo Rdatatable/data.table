@@ -113,9 +113,11 @@ replace_dot_alias = function(e) {
   #   technically OK to update (though this should be rare), and since it's low-cost
   #   to do so here because we're about to error anyway.
   missing_obj_fmt = gsub(
-    "'____missing_datatable_variable____'",
+    "'missing_datatable_variable____'",
     "'(?<obj_name>[^']+)'",
-    tryCatch(`____missing_datatable_variable____`, error=identity)$message
+    tryCatch(eval(parse(text="missing_datatable_variable____")), error=identity)$message
+    # eval(parse()) to avoid "no visible binding for global variable" note from R CMD check
+    # names starting with _ don't parse, so no leading _ in the name
   )
   idx <- regexpr(missing_obj_fmt, err$message, perl=TRUE)
   if (idx > 0L) {
