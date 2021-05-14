@@ -16713,7 +16713,7 @@ t0 = as.POSIXct('2019-10-01')
 test(2124.1, format(as.ITime(t0)), '00:00:00')
 test(2124.2, format(as.IDate(t0)), '2019-10-01')
 if (is.na(oldtz)) Sys.unsetenv("TZ") else Sys.setenv(TZ=oldtz)
-# careful to unset because TZ="" means UTC whereas unset TZ means local
+# careful to unset because TZ="" means UTC whereas unset TZ means local, #4261 and #4464
 
 # trunc.cols in print.data.table, #4074
 old_width = options("width" = 40L)
