@@ -125,7 +125,7 @@
 
 15. `print(x, col.names='none')` now removes the column names as intended for wide `data.table`s whose column names don't fit on a single line, [#4270](https://github.com/Rdatatable/data.table/issues/4270). Thanks to @tdhock for the report, and Michael Chirico for fixing.
 
-16. `DT[, min(colB), by=colA]` when `colB` is type `character` would miss blank strings (`""`) if they are only present in that column at the top of the table and return the smallest non-blank incorrectly (instead of blank), [#4848](https://github.com/Rdatatable/data.table/issues/4848). Thanks to Vadim Khotilovich for reporting and for the PR fixing it.
+16. `DT[, min(colB), by=colA]` when `colB` is type `character` would miss blank strings (`""`) if they are only present in that column at the top of the table and return the smallest non-blank incorrectly (instead of blank), [#4848](https://github.com/Rdatatable/data.table/issues/4848). Similarly for `max()` too. Thanks to Vadim Khotilovich for reporting and for the PR fixing it.
 
 ## NOTES
 
