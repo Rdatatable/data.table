@@ -17598,5 +17598,5 @@ test(2186, DT[, if (TRUE) .(a=1L) else .(a=1L, b=2L)], DT,
 
 # col.names='none' should apply when wrapping too, #4270
 DT = setDT(replicate(getOption('width'), 1, simplify = FALSE))
-test(2187, {print(DT, col.names='none'); TRUE}, notOutput="v")
+test(2187, {print(DT, col.names='none'); TRUE}, notOutput="V")
 
