@@ -114,7 +114,7 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
     toprint = rbind(head(toprint, topn + isTRUE(class)), "---"="", tail(toprint, topn))
     rownames(toprint) = format(rownames(toprint), justify="right")
     if (col.names == "none") {
-      cut_top(print(toprint, right=TRUE, quote=quote))
+      cut_colnames(print(toprint, right=TRUE, quote=quote))
     } else {
       print(toprint, right=TRUE, quote=quote)
     }
@@ -129,7 +129,7 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
     #   option to shut this off per request of Oleg Bondar on SO, #1482
     toprint=rbind(toprint, matrix(if (quote) old else colnames(toprint), nrow=1L)) # fixes bug #97
   if (col.names == "none") {
-    cut_top(print(toprint, right=TRUE, quote=quote))
+    cut_colnames(print(toprint, right=TRUE, quote=quote))
   } else {
     print(toprint, right=TRUE, quote=quote)
   }
@@ -192,7 +192,8 @@ shouldPrint = function(x) {
 
 # for removing the head (column names) of matrix output entirely,
 #   as opposed to printing a blank line, for excluding col.names per PR #1483
-cut_top = function(x) writeLines(capture.output(x)[-1L])
+# be sure to remove colnames from any row where they exist, #4270
+cut_colnames = function(x) writeLines(grep("^\\s*(?:[0-9]+:|---)", capture.output(x), value=TRUE))
 
 # for printing the dims for list columns #3671; used by format.data.table()
 paste_dims = function(x) {

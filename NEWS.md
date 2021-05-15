@@ -91,6 +91,8 @@
 
 12. Typo checking in `i` available since 1.11.4 is extended to work in non-English sessions, [#4989](https://github.com/Rdatatable/data.table/issues/4989). Thanks to Michael Chirico for the PR.
 
+13. `fifelse()` now coerces logical `NA` to other types and the `na` argument supports vectorized input, [#4277](https://github.com/Rdatatable/data.table/issues/4277) [#4286](https://github.com/Rdatatable/data.table/issues/4286) [#4287](https://github.com/Rdatatable/data.table/issues/4287). Thanks to @michaelchirico and @shrektan for reporting, and @shrektan for implementing.
+
 ## BUG FIXES
 
 1. `by=.EACHI` when `i` is keyed but `on=` different columns than `i`'s key could create an invalidly keyed result, [#4603](https://github.com/Rdatatable/data.table/issues/4603) [#4911](https://github.com/Rdatatable/data.table/issues/4911). Thanks to @myoung3 and @adamaltmejd for reporting, and @ColeMiller1 for the PR. An invalid key is where a `data.table` is marked as sorted by the key columns but the data is not sorted by those columns, leading to incorrect results from subsequent queries.
@@ -120,6 +122,10 @@
 13. `melt` with a list for `measure.vars` would output `variable` inconsistently between `na.rm=TRUE` and `FALSE`, [#4455](https://github.com/Rdatatable/data.table/issues/4455). Thanks to @tdhock for reporting and fixing.
 
 14. `by=...get()...` could fail with `object not found`, [#4873](https://github.com/Rdatatable/data.table/issues/4873) [#4981](https://github.com/Rdatatable/data.table/issues/4981). Thanks to @sindribaldur for reporting, and @OfekShilon for fixing.
+
+15. `print(x, col.names='none')` now removes the column names as intended for wide `data.table`s whose column names don't fit on a single line, [#4270](https://github.com/Rdatatable/data.table/issues/4270). Thanks to @tdhock for the report, and Michael Chirico for fixing.
+
+16. `DT[, min(colB), by=colA]` when `colB` is type `character` would miss blank strings (`""`) at the beginning of a group and return the smallest non-blank instead of blank, [#4848](https://github.com/Rdatatable/data.table/issues/4848). Thanks to Vadim Khotilovich for reporting and for the PR fixing it.
 
 ## NOTES
 
