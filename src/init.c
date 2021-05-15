@@ -22,6 +22,7 @@ SEXP char_ordered;
 SEXP char_datatable;
 SEXP char_dataframe;
 SEXP char_NULL;
+SEXP char_maxString;
 SEXP sym_sorted;
 SEXP sym_index;
 SEXP sym_BY;
@@ -337,6 +338,7 @@ void attribute_visible R_init_datatable(DllInfo *info)
   char_datatable = PRINTNAME(install("data.table"));
   char_dataframe = PRINTNAME(install("data.frame"));
   char_NULL =      PRINTNAME(install("NULL"));
+  char_maxString = PRINTNAME(install("\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF"));
 
   if (TYPEOF(char_integer64) != CHARSXP) {
     // checking one is enough in case of any R-devel changes

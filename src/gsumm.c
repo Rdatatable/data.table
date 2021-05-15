@@ -759,26 +759,22 @@ SEXP gmin(SEXP x, SEXP narm)
     break;
   case STRSXP:
     ans = PROTECT(allocVector(STRSXP, ngrp)); protecti++;
-    for (i=0; i<ngrp; i++) SET_STRING_ELT(ans, i, NA_STRING);
     if (!LOGICAL(narm)[0]) {
-      bool *updated = calloc(ngrp, sizeof(bool));
-      if (!updated) error(_("Unable to allocate %d * %d bytes for the update mask in gmin na.rm=FALSE"), ngrp, sizeof(bool));
+      for (i=0; i<ngrp; i++) SET_STRING_ELT(ans, i, char_maxString); // char_maxString == "\xFF\xFF..." in init.c
       for (i=0; i<n; i++) {
         thisgrp = grp[i];
         ix = (irowslen == -1) ? i : irows[i]-1;
         if (STRING_ELT(x, ix) == NA_STRING) {
           SET_STRING_ELT(ans, thisgrp, NA_STRING);
-          updated[thisgrp] = true;
         } else {
-          if (!updated[thisgrp] ||
-            (STRING_ELT(ans, thisgrp) != NA_STRING && strcmp(CHAR(STRING_ELT(x, ix)), CHAR(STRING_ELT(ans, thisgrp))) < 0 )) {
+          if (STRING_ELT(ans, thisgrp)==char_maxString || 
+             (STRING_ELT(ans, thisgrp)!=NA_STRING && strcmp(CHAR(STRING_ELT(x, ix)), CHAR(STRING_ELT(ans, thisgrp))) < 0)) {
             SET_STRING_ELT(ans, thisgrp, STRING_ELT(x, ix));
-            updated[thisgrp] = true;
           }
         }
       }
-      free(updated);
     } else {
+      for (i=0; i<ngrp; i++) SET_STRING_ELT(ans, i, NA_STRING);
       for (i=0; i<n; i++) {
         thisgrp = grp[i];
         ix = (irowslen == -1) ? i : irows[i]-1;
