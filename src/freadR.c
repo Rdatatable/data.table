@@ -83,7 +83,7 @@ SEXP freadR(
   dtnrows = 0;
   const char *ch, *ch2;
   if (!isString(inputArg) || LENGTH(inputArg)!=1)
-    INTERNAL_STOP("input not a single character string: a filename or the data itself. Should have been caught at R level.");  // # nocov
+    INTERNAL_ERROR("input not a single character string: a filename or the data itself. Should have been caught at R level.");  // # nocov
   ch = ch2 = (const char *)CHAR(STRING_ELT(inputArg,0));
   while (*ch2!='\n' && *ch2!='\r' && *ch2!='\0') ch2++;
   args.input = (*ch2=='\0') ? R_ExpandFileName(ch) : ch; // for convenience so user doesn't have to call path.expand()
@@ -100,11 +100,11 @@ SEXP freadR(
   }
 
   if (!isString(sepArg) || LENGTH(sepArg)!=1 || strlen(CHAR(STRING_ELT(sepArg,0)))>1)
-    INTERNAL_STOP("sep not a single character. R level catches this.");  // # nocov
+    INTERNAL_ERROR("sep not a single character. R level catches this.");  // # nocov
   args.sep = CHAR(STRING_ELT(sepArg,0))[0];   // '\0' when default "auto" was replaced by "" at R level
 
   if (!(isString(decArg) && LENGTH(decArg)==1 && strlen(CHAR(STRING_ELT(decArg,0)))==1))
-    INTERNAL_STOP("dec not a single character. R level catches this.");  // # nocov
+    INTERNAL_ERROR("dec not a single character. R level catches this.");  // # nocov
   args.dec = CHAR(STRING_ELT(decArg,0))[0];
 
   if (IS_FALSE(quoteArg)) {
@@ -139,10 +139,10 @@ SEXP freadR(
     args.skipString = CHAR(STRING_ELT(skipArg,0));  // LENGTH==1 was checked at R level
   } else if (isInteger(skipArg)) {
     args.skipNrow = (int64_t)INTEGER(skipArg)[0];
-  } else INTERNAL_STOP("skip not integer or string"); // # nocov
+  } else INTERNAL_ERROR("skip not integer or string"); // # nocov
 
   if (!isNull(NAstringsArg) && !isString(NAstringsArg))
-    INTERNAL_STOP("NAstringsArg is type '%s'. R level catches this", type2char(TYPEOF(NAstringsArg)));  // # nocov
+    INTERNAL_ERROR("NAstringsArg is type '%s'. R level catches this", type2char(TYPEOF(NAstringsArg)));  // # nocov
   int nnas = length(NAstringsArg);
   const char **NAstrings = (const char **)R_alloc((nnas + 1), sizeof(char*));  // +1 for the final NULL to save a separate nna variable
   for (int i=0; i<nnas; i++)
@@ -250,8 +250,8 @@ static void applyDrop(SEXP items, int8_t *type, int ncol, int dropSource) {
 bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, const int ncol)
 {
   // use typeSize superfluously to avoid not-used warning; otherwise could move typeSize from fread.h into fread.c
-  if (typeSize[CT_BOOL8_N]!=1) INTERNAL_STOP("typeSize[CT_BOOL8_N] != 1"); // # nocov
-  if (typeSize[CT_STRING]!=8) INTERNAL_STOP("typeSize[CT_STRING] != 1"); // # nocov
+  if (typeSize[CT_BOOL8_N]!=1) INTERNAL_ERROR("typeSize[CT_BOOL8_N] != 1"); // # nocov
+  if (typeSize[CT_STRING]!=8) INTERNAL_ERROR("typeSize[CT_STRING] != 1"); // # nocov
   colNamesSxp = R_NilValue;
   SET_VECTOR_ELT(RCHK, 1, colNamesSxp=allocVector(STRSXP, ncol));
   for (int i=0; i<ncol; i++) {
@@ -341,9 +341,9 @@ bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, const int 
           }
         }
       } else { // selectColClasses==true
-        if (!selectInts) INTERNAL_STOP("selectInts is NULL but selectColClasses is true"); // # nocov
+        if (!selectInts) INTERNAL_ERROR("selectInts is NULL but selectColClasses is true"); // # nocov
         const int n = length(colClassesSxp);
-        if (length(selectSxp)!=n) INTERNAL_STOP("length(selectSxp)!=length(colClassesSxp) but selectColClasses is true"); // # nocov
+        if (length(selectSxp)!=n) INTERNAL_ERROR("length(selectSxp)!=length(colClassesSxp) but selectColClasses is true"); // # nocov
         for (int i=0; i<n; ++i) {
           SEXP tt = STRING_ELT(colClassesSxp,i);
           if (tt==NA_STRING || tt==R_BlankString) continue;
@@ -630,7 +630,7 @@ void pushBuffer(ThreadLocalFreadParsingContext *ctx)
           src1 += rowSize1;
           dest++;
         }
-      } else INTERNAL_STOP("unexpected field of size %d\n", thisSize);  // # nocov
+      } else INTERNAL_ERROR("unexpected field of size %d\n", thisSize);  // # nocov
       done++;
     }
     off8 += (size[j] & 8);
