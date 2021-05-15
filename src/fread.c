@@ -1259,7 +1259,7 @@ int freadMain(freadMainArgs _args) {
 
   int64_t nrowLimit = args.nrowLimit;
   NAstrings = args.NAstrings;
-  if (NAstrings==NULL) INTERNAL_ERROR("NAstrings is itself NULL. When empty it should be pointer to NULL."); // # nocov
+  if (NAstrings==NULL) INTERNAL_ERROR("NAstrings is itself NULL. When empty it should be pointer to NULL"); // # nocov
   any_number_like_NAstrings = false;
   blank_is_a_NAstring = false;
   // if we know there are no nastrings which are numbers (like -999999) then in the number
@@ -1400,7 +1400,7 @@ int freadMain(freadMainArgs _args) {
     sof = (const char*) mmp;
     if (verbose) DTPRINT(_("  Memory mapped ok\n"));
   } else {
-    INTERNAL_ERROR("neither `input` nor `filename` are given, nothing to read."); // # nocov
+    INTERNAL_ERROR("neither `input` nor `filename` are given, nothing to read"); // # nocov
   }
   eof = sof + fileSize;
   tMap = wallclock();
@@ -1890,15 +1890,15 @@ int freadMain(freadMainArgs _args) {
     // Maybe previous line (if there is one, prevStart!=NULL) contains column names but there are too few (which is why it didn't become the first data row).
     ch = prevStart;
     int tt = countfields(&ch);
-    if (tt==ncol) INTERNAL_ERROR("row before first data row has the same number of fields but we're not using it."); // # nocov
-    if (ch!=pos)  INTERNAL_ERROR("ch!=pos after counting fields in the line before the first data row."); // # nocov
+    if (tt==ncol) INTERNAL_ERROR("row before first data row has the same number of fields but we're not using it"); // # nocov
+    if (ch!=pos)  INTERNAL_ERROR("ch!=pos after counting fields in the line before the first data row"); // # nocov
     if (verbose) DTPRINT(_("Types in 1st data row match types in 2nd data row but previous row has %d fields. Taking previous row as column names."), tt);
     if (tt<ncol) {
       autoFirstColName = (tt==ncol-1);
       DTWARN(_("Detected %d column names but the data has %d columns (i.e. invalid file). Added %d extra default column name%s\n"), tt, ncol, ncol-tt,
              autoFirstColName ? _(" for the first column which is guessed to be row names or an index. Use setnames() afterwards if this guess is not correct, or fix the file write command that created the file to create a valid file.") : _("s at the end."));
     } else if (tt>ncol) {
-      if (fill) INTERNAL_ERROR("fill=true but there is a previous row which should already have been filled."); // # nocov
+      if (fill) INTERNAL_ERROR("fill=true but there is a previous row which should already have been filled"); // # nocov
       DTWARN(_("Detected %d column names but the data has %d columns. Filling rows automatically. Set fill=TRUE explicitly to avoid this warning.\n"), tt, ncol);
       fill = true;
       type =    (int8_t *)realloc(type,    (size_t)tt * sizeof(int8_t));

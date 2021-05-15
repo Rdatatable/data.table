@@ -222,8 +222,8 @@ SEXP alloccol(SEXP dt, R_len_t n, Rboolean verbose)
 
   tl = TRUELENGTH(dt);
   // R <= 2.13.2 and we didn't catch uninitialized tl somehow
-  if (tl<0) INTERNAL_ERROR("tl of class is marked but tl<0."); // # nocov
-  if (tl>0 && tl<l) INTERNAL_ERROR("tl (%d) < l (%d) but tl of class is marked.", tl, l); // # nocov
+  if (tl<0) INTERNAL_ERROR("tl of class is marked but tl<0"); // # nocov
+  if (tl>0 && tl<l) INTERNAL_ERROR("tl (%d) < l (%d) but tl of class is marked", tl, l); // # nocov
   if (tl>l+10000) warning(_("tl (%d) is greater than 10,000 items over-allocated (l = %d). If you didn't set the datatable.alloccol option to be very large, please report to data.table issue tracker including the result of sessionInfo()."),tl,l);
   if (n>tl) return(shallow(dt,R_NilValue,n)); // usual case (increasing alloc)
   if (n<tl && verbose) Rprintf(_("Attempt to reduce allocation from %d to %d ignored. Can only increase allocation via shallow copy. Please do not use DT[...]<- or DT$someCol<-. Use := inside DT[...] instead."),tl,n);
@@ -487,7 +487,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
     coln = INTEGER(cols)[i]-1;
     SEXP thisvalue = RHS_list_of_columns ? VECTOR_ELT(values, i) : values;
     if (TYPEOF(thisvalue)==NILSXP) {
-      if (!isNull(rows)) INTERNAL_ERROR("earlier error 'When deleting columns, i should not be provided' did not happen."); // # nocov
+      if (!isNull(rows)) INTERNAL_ERROR("earlier error 'When deleting columns, i should not be provided' did not happen"); // # nocov
       ndelete++;
       continue;   // delete column(s) afterwards, below this loop
     }
@@ -585,7 +585,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
       // the new index will be truncated to this position.
       char *s4 = (char*) malloc(strlen(c1) + 3);
       if(s4 == NULL){
-        INTERNAL_ERROR("Couldn't allocate memory for s4."); // # nocov
+        INTERNAL_ERROR("Couldn't allocate memory for s4"); // # nocov
       }
       memcpy(s4, c1, strlen(c1));
       memset(s4 + strlen(c1), '\0', 1);
@@ -596,7 +596,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
         char *s5 = (char*) malloc(strlen(tc2) + 5); //4 * '_' + \0
         if(s5 == NULL){
           free(s4);                                                  // # nocov
-          INTERNAL_ERROR("Couldn't allocate memory for s5."); // # nocov
+          INTERNAL_ERROR("Couldn't allocate memory for s5"); // # nocov
         }
         memset(s5, '_', 2);
         memset(s5 + 2, '\0', 1);
@@ -656,7 +656,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
     R_isort(tt, ndelete);  // sort the column-numbers-to-delete into ascending order
     for (int i=0; i<ndelete-1; ++i) {
       if (tt[i]>=tt[i+1])
-        INTERNAL_ERROR("%d column numbers to delete not now in strictly increasing order. No-dups were checked earlier.", ndelete); // # nocov
+        INTERNAL_ERROR("%d column numbers to delete not now in strictly increasing order. No-dups were checked earlier", ndelete); // # nocov
     }
     for (int i=tt[0], j=1, k=tt[0]+1;  i<ndt-ndelete;  ++i, ++k) {  // i moves up from the first non-deleted column and is the target of write
       while (j<ndelete && k==tt[j]) { j++; k++; }                   // move k up to the next non-deleted column; j is the next position in tt

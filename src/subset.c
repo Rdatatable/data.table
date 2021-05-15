@@ -135,7 +135,7 @@ SEXP convertNegAndZeroIdx(SEXP idx, SEXP maxArg, SEXP allowOverMax)
   if (!isInteger(maxArg) || length(maxArg)!=1) INTERNAL_ERROR("'maxArg' is type '%s' and length %d, should be an integer singleton", type2char(TYPEOF(maxArg)), length(maxArg)); // # nocov
   if (!isLogical(allowOverMax) || LENGTH(allowOverMax)!=1 || LOGICAL(allowOverMax)[0]==NA_LOGICAL) INTERNAL_ERROR("allowOverMax must be TRUE/FALSE");  // # nocov
   int max = INTEGER(maxArg)[0], n=LENGTH(idx);
-  if (max<0) INTERNAL_ERROR("max is %d, must be >= 0.", max); // # nocov    includes NA which will print as INT_MIN
+  if (max<0) INTERNAL_ERROR("max is %d, must be >= 0", max); // # nocov    includes NA which will print as INT_MIN
   int *idxp = INTEGER(idx);
 
   bool stop = false;
@@ -347,7 +347,7 @@ SEXP subsetVector(SEXP x, SEXP idx) { // idx is 1-based passed from R level
   bool anyNA=false, orderedSubset=false;
   int nprotect=0;
   if (isNull(x))
-    INTERNAL_ERROR("NULL can not be subset. It is invalid for a data.table to contain a NULL column.");      // # nocov
+    INTERNAL_ERROR("NULL can not be subset. It is invalid for a data.table to contain a NULL column");      // # nocov
   if (check_idx(idx, length(x), &anyNA, &orderedSubset) != NULL)
     INTERNAL_ERROR("idx values negatives, zeros or out-of-range");  // # nocov
   SEXP ans = PROTECT(allocVector(TYPEOF(x), length(idx))); nprotect++;

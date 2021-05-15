@@ -83,7 +83,7 @@ SEXP freadR(
   dtnrows = 0;
   const char *ch, *ch2;
   if (!isString(inputArg) || LENGTH(inputArg)!=1)
-    INTERNAL_ERROR("input not a single character string: a filename or the data itself. Should have been caught at R level.");  // # nocov
+    INTERNAL_ERROR("input not a single character string: a filename or the data itself. Should have been caught at R level");  // # nocov
   ch = ch2 = (const char *)CHAR(STRING_ELT(inputArg,0));
   while (*ch2!='\n' && *ch2!='\r' && *ch2!='\0') ch2++;
   args.input = (*ch2=='\0') ? R_ExpandFileName(ch) : ch; // for convenience so user doesn't have to call path.expand()
@@ -100,11 +100,11 @@ SEXP freadR(
   }
 
   if (!isString(sepArg) || LENGTH(sepArg)!=1 || strlen(CHAR(STRING_ELT(sepArg,0)))>1)
-    INTERNAL_ERROR("sep not a single character. R level catches this.");  // # nocov
+    INTERNAL_ERROR("sep not a single character. R level catches this");  // # nocov
   args.sep = CHAR(STRING_ELT(sepArg,0))[0];   // '\0' when default "auto" was replaced by "" at R level
 
   if (!(isString(decArg) && LENGTH(decArg)==1 && strlen(CHAR(STRING_ELT(decArg,0)))==1))
-    INTERNAL_ERROR("dec not a single character. R level catches this.");  // # nocov
+    INTERNAL_ERROR("dec not a single character. R level catches this");  // # nocov
   args.dec = CHAR(STRING_ELT(decArg,0))[0];
 
   if (IS_FALSE(quoteArg)) {
