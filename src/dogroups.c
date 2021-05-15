@@ -372,7 +372,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
           if (verbose) Rprintf(_("The result of j is a named list. It's very inefficient to create the same names over and over again for each group. When j=list(...), any names are detected, removed and put back after grouping has completed, for efficiency. Using j=transform(), for example, prevents that speedup (consider changing to :=). This message may be upgraded to warning in future.\n"));  // e.g. test 104 has j=transform().
           // names of result come from the first group and the names of remaining groups are ignored (all that matters for them is that the number of columns (and their types) match the first group.
           SEXP names2 = PROTECT(allocVector(STRSXP,ngrpcols+njval));
-          //  for (j=0; j<ngrpcols; j++) SET_STRING_ELT(names2, j, STRING_ELT(bynames,j));  // These get set back up in R
+          //  for (int j=0; j<ngrpcols; ++j) SET_STRING_ELT(names2, j, STRING_ELT(bynames,j));  // These get set back up in R
           for (int j=0; j<njval; ++j) SET_STRING_ELT(names2, ngrpcols+j, STRING_ELT(jvalnames,j));
           setAttrib(ans, R_NamesSymbol, names2);
           UNPROTECT(1); // names2
