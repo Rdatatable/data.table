@@ -72,7 +72,7 @@ static const char *concat(SEXP vec, SEXP idx) {
   const int *iidx = INTEGER(idx);
   for (int i=0; i<nidx; ++i) {
     if (iidx[i]<1 || iidx[i]>nvec)
-      INTERNAL_ERROR("'idx' must take values between 0 and length(vec); 0 <= idx <= %d", length(vec)); // # nocov
+      INTERNAL_ERROR("'idx' must take values between 1 and length(vec); 1 <= idx <= %d", nvec); // # nocov
   }
   if (nidx>4) nidx=4;  // first 4 following by ... if there are more than 4
   int remaining=1018;  // leaving space for ", ...\0" at the end of the 1024, potentially

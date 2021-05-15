@@ -14,6 +14,13 @@
   // R's message functions only take C's char pointer not SEXP, where encoding info can't be stored
   // so must convert the error message char to native encoding first in order to correctly display in R
   #define ENC2NATIVE(s) translateChar(mkCharCE(s, ienc))
+  
+  static char internal_error_buff[256];
+  #ifdef INTERNAL_ERROR
+  #undef INTERNAL_ERROR
+  #endif
+  #define INTERNAL_ERROR(...) do {snprintf(internal_error_buff, 255, __VA_ARGS__); error("%s %s: %s. %s", _("Internal error in"), __func__, internal_error_buff, _("Please report to the data.table issues tracker"));} while (0)
+
 #endif
 
 // Ordered hierarchy of types
