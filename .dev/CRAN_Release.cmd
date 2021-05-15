@@ -203,6 +203,10 @@ grep allocVector *.c | grep -v PROTECT | grep -v SET_VECTOR_ELT | grep -v setAtt
 grep coerceVector *.c | grep -v PROTECT | grep -v SET_VECTOR_ELT | grep -v setAttrib | grep -v return
 grep asCharacter *.c | grep -v PROTECT | grep -v SET_VECTOR_ELT | grep -v setAttrib | grep -v return
 
+# Enforce local scope for loop index (`for (int i=0; ...)` instead of `int i; for (i=0; ...)`)
+#   exceptions are tagged with #skip_loop_scope
+grep -En "for\s*[(]\s*[a-zA-Z0-9_]+\s*=.*[+][+]" src/*.c | grep -Fv "#skip_loop_scope"
+
 cd ..
 R
 cc(test=TRUE, clean=TRUE, CC="gcc-10")  # to compile with -pedandic -Wall, latest gcc as CRAN: https://cran.r-project.org/web/checks/check_flavors.html
