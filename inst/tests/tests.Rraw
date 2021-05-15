@@ -17621,7 +17621,7 @@ test(2188.15, fifelse(TRUE, NA, factor('a'), factor('a', levels = c('a','b'))), 
 test(2188.16, fifelse(c(NA, NA), 1L, 2L, NULL), c(NA_integer_, NA_integer_)) # NULL `na` is treated as NA 
 
 # coverage for internal_error wrapper
-test(2187.1, internal_error("broken"), error="Internal error.*broken")
-test(2187.2, internal_error("broken %d%s", 1, "2"), error="Internal error.*broken 12")
+test(2189.1, internal_error("broken"), error="Internal error.*broken")
+test(2189.2, internal_error("broken %d%s", 1, "2"), error="Internal error.*broken 12")
 foo = function(...) internal_error("broken")
-test(2187.3, foo(), error="Internal error in foo: broken")
+test(2189.3, foo(), error="Internal error in foo: broken")
