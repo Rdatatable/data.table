@@ -102,9 +102,9 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b, SEXP na) {
   switch(tans) {
   case LGLSXP: {
     int *restrict pans = LOGICAL(ans);
-    const int *restrict pa;  if (!na_a) pa  = LOGICAL(a);
-    const int *restrict pb;  if (!na_b) pb  = LOGICAL(b);
-    const int *restrict pna; if (!na_n) pna = LOGICAL(na);
+    const int *restrict pa = na_a ? NULL : LOGICAL(a);
+    const int *restrict pb = na_b ? NULL : LOGICAL(b);
+    const int *restrict pna = na_n ? NULL : LOGICAL(na);
     const int na = NA_LOGICAL;
     #pragma omp parallel for num_threads(getDTthreads(len0, true))
     for (int64_t i=0; i<len0; ++i) {
@@ -117,9 +117,9 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b, SEXP na) {
   } break;
   case INTSXP: {
     int *restrict pans = INTEGER(ans);
-    const int *restrict pa;  if (!na_a) pa  = INTEGER(a);
-    const int *restrict pb;  if (!na_b) pb  = INTEGER(b);
-    const int *restrict pna; if (!na_n) pna = INTEGER(na);
+    const int *restrict pa = na_a ? NULL : INTEGER(a);
+    const int *restrict pb = na_b ? NULL : INTEGER(b);
+    const int *restrict pna = na_n ? NULL : INTEGER(na);
     const int na = NA_INTEGER;
     #pragma omp parallel for num_threads(getDTthreads(len0, true))
     for (int64_t i=0; i<len0; ++i) {
@@ -132,9 +132,9 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b, SEXP na) {
   } break;
   case REALSXP: {
     double *restrict pans = REAL(ans);
-    const double *restrict pa;  if (!na_a) pa  = REAL(a);
-    const double *restrict pb;  if (!na_b) pb  = REAL(b);
-    const double *restrict pna; if (!na_n) pna = REAL(na);
+    const double *restrict pa = na_a ? NULL : REAL(a);
+    const double *restrict pb = na_b ? NULL : REAL(b);
+    const double *restrict pna = na_n ? NULL : REAL(na);
     const double na = Rinherits(a, char_integer64) ? NA_INT64_D : NA_REAL; // Rinherits() is true for nanotime
     #pragma omp parallel for num_threads(getDTthreads(len0, true))
     for (int64_t i=0; i<len0; ++i) {
@@ -146,9 +146,9 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b, SEXP na) {
     }
   } break;
   case STRSXP : {
-    const SEXP *restrict pa;  if (!na_a) pa  = STRING_PTR(a);
-    const SEXP *restrict pb;  if (!na_b) pb  = STRING_PTR(b);
-    const SEXP *restrict pna; if (!na_n) pna = STRING_PTR(na);
+    const SEXP *restrict pa = na_a ? NULL : STRING_PTR(a);
+    const SEXP *restrict pb = na_b ? NULL : STRING_PTR(b);
+    const SEXP *restrict pna = na_n ? NULL : STRING_PTR(na);
     const SEXP na = NA_STRING;
     for (int64_t i=0; i<len0; ++i) {
       SET_STRING_ELT(
@@ -162,9 +162,9 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b, SEXP na) {
   } break;
   case CPLXSXP : {
     Rcomplex *restrict pans = COMPLEX(ans);
-    const Rcomplex *restrict pa;  if (!na_a) pa  = COMPLEX(a);
-    const Rcomplex *restrict pb;  if (!na_b) pb  = COMPLEX(b);
-    const Rcomplex *restrict pna; if (!na_n) pna = COMPLEX(na);
+    const Rcomplex *restrict pa = na_a ? NULL : COMPLEX(a);
+    const Rcomplex *restrict pb = na_b ? NULL : COMPLEX(b);
+    const Rcomplex *restrict pna = na_n ? NULL : COMPLEX(na);
     const Rcomplex na = NA_CPLX;
     #pragma omp parallel for num_threads(getDTthreads(len0, true))
     for (int64_t i=0; i<len0; ++i) {
@@ -176,9 +176,9 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b, SEXP na) {
     }
   } break;
   case VECSXP : {
-    const SEXP *restrict pa;  if (!na_a) pa  = SEXPPTR_RO(a);
-    const SEXP *restrict pb;  if (!na_b) pb  = SEXPPTR_RO(b);
-    const SEXP *restrict pna; if (!na_n) pna = SEXPPTR_RO(na);
+    const SEXP *restrict pa = na_a ? NULL : SEXPPTR_RO(a);
+    const SEXP *restrict pb = na_b ? NULL : SEXPPTR_RO(b);
+    const SEXP *restrict pna = na_n ? NULL : SEXPPTR_RO(na);
     for (int64_t i=0; i<len0; ++i) {
       if (pl[i] == NA_LOGICAL) {
         if (!na_n) SET_VECTOR_ELT(ans, i, pna[i & nmask]);
