@@ -50,8 +50,11 @@ SEXP bmerge(SEXP idt, SEXP xdt, SEXP icolsArg, SEXP xcolsArg, SEXP isorted, SEXP
   xdtVec = SEXPPTR_RO(xdt);
   if (!isInteger(icolsArg)) INTERNAL_ERROR("icols is not integer vector"); // # nocov
   if (!isInteger(xcolsArg)) INTERNAL_ERROR("xcols is not integer vector"); // # nocov
-  if ((LENGTH(icolsArg)==0 || LENGTH(xcolsArg)==0) && LENGTH(idt)>0) // We let through LENGTH(i) == 0 for tests 2126.*
-    INTERNAL_ERROR("icols and xcols must be non-empty integer vectors.");
+  if ((LENGTH(icolsArg)==0 || LENGTH(xcolsArg)==0) && LENGTH(idt)>0) {// We let through LENGTH(i) == 0 for tests 2126.*
+    char internal_error_buff[256];
+    error("%s %s: %s. %s", _("Internal error in"), "bmerge", snprintf(internal_error_buff, 256, "%d", 1), _("Please report to the data.table issues tracker"));
+    // INTERNAL_ERROR("icols and xcols must be non-empty integer vectors.");
+  }
   if (LENGTH(icolsArg) > LENGTH(xcolsArg)) INTERNAL_ERROR("length(icols) [%d] > length(xcols) [%d]", LENGTH(icolsArg), LENGTH(xcolsArg)); // # nocov
   icols = INTEGER(icolsArg);
   xcols = INTEGER(xcolsArg);
