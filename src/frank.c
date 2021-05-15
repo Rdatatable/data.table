@@ -154,7 +154,7 @@ SEXP anyNA(SEXP x, SEXP cols) {
       error(_("Item %d of 'cols' is %d which is outside 1-based range [1,ncol(x)=%d]"), i+1, elem, LENGTH(x));
     if (!n) n = length(VECTOR_ELT(x, elem-1));
   }
-  int j; // did we get to the end of the column without finding any NA in it?
+  int j=0; // did we get to the end of the column without finding any NA in it?
   for (int i=0; i<LENGTH(cols); ++i) {
     SEXP v = VECTOR_ELT(x, INTEGER(cols)[i]-1);
     if (!length(v) || isNewList(v) || isList(v)) continue; // like stats:::na.omit.data.frame, skip list/pairlist columns
