@@ -760,15 +760,15 @@ SEXP gmin(SEXP x, SEXP narm)
   case STRSXP:
     ans = PROTECT(allocVector(STRSXP, ngrp)); protecti++;
     if (!LOGICAL(narm)[0]) {
-      for (i=0; i<ngrp; i++) SET_STRING_ELT(ans, i, R_BlankString);
+      for (i=0; i<ngrp; i++) SET_STRING_ELT(ans, i, char_maxString); // char_maxString == "\xFF\xFF..." in init.c
       for (i=0; i<n; i++) {
         thisgrp = grp[i];
         ix = (irowslen == -1) ? i : irows[i]-1;
         if (STRING_ELT(x, ix) == NA_STRING) {
           SET_STRING_ELT(ans, thisgrp, NA_STRING);
         } else {
-          if (STRING_ELT(ans, thisgrp) == R_BlankString ||
-            (STRING_ELT(ans, thisgrp) != NA_STRING && strcmp(CHAR(STRING_ELT(x, ix)), CHAR(STRING_ELT(ans, thisgrp))) < 0 )) {
+          if (STRING_ELT(ans, thisgrp)==char_maxString || 
+             (STRING_ELT(ans, thisgrp)!=NA_STRING && strcmp(CHAR(STRING_ELT(x, ix)), CHAR(STRING_ELT(ans, thisgrp))) < 0)) {
             SET_STRING_ELT(ans, thisgrp, STRING_ELT(x, ix));
           }
         }

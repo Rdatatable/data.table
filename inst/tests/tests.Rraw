@@ -5164,7 +5164,8 @@ test(1313.22, DT[, list(y=max(y, na.rm=TRUE)), by=x], DT[c(5,10)])
 
 # for character
 set.seed(1L)
-DT <- data.table(x=rep(1:6, each=3), y=sample(c("", letters[1:3], NA), 18, TRUE))
+DT <- data.table(x=rep(1:7, each=3), y=sample(c("", letters[1:3], NA), 21, TRUE))
+DT[x==7, y := c("","b","c")]
 test(1313.23, DT[, min(y), by=x], DT[, base::min(y), by=x])
 test(1313.24, DT[, max(y), by=x], DT[, base::max(y), by=x])
 test(1313.25, DT[, min(y, na.rm=TRUE), by=x], DT[, base::min(y, na.rm=TRUE), by=x])
@@ -5172,8 +5173,8 @@ test(1313.26, DT[, max(y, na.rm=TRUE), by=x], DT[, base::max(y, na.rm=TRUE), by=
 DT[x==6, y := NA_character_]
 test(1313.27, DT[, min(y), by=x], DT[, base::min(y), by=x])
 test(1313.28, DT[, max(y), by=x], DT[, base::max(y), by=x])
-test(1313.29, DT[, min(y, na.rm=TRUE), by=x], data.table(x=1:6, V1=c("a","a","c","","a",NA)), warning="No non-missing")
-test(1313.30, DT[, max(y, na.rm=TRUE), by=x], data.table(x=1:6, V1=c("b","a","c","a","c",NA)), warning="No non-missing")
+test(1313.29, DT[, min(y, na.rm=TRUE), by=x], data.table(x=1:7, V1=c("a","a","c","","a",NA,"")), warning="No non-missing")
+test(1313.30, DT[, max(y, na.rm=TRUE), by=x], data.table(x=1:7, V1=c("b","a","c","a","c",NA,"c")), warning="No non-missing")
 
 # bug 700 - bmerge, roll=TRUE and nomatch=0L when i's key group occurs more than once
 dt1 <- data.table(structure(list(x = c(7L, 33L), y = structure(c(15912, 15912), class = "Date"), z = c(626550.35284, 7766.385)), .Names =
