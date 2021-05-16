@@ -654,7 +654,7 @@ void fwriteMain(fwriteMainArgs args)
         width = getMaxListItemLen(args.columns[j], args.nrow);
         break;
       default:
-        INTERNAL_ERROR("type %d has no max length method implemented", args.whichFun[j]);  // # nocov
+        INTERNAL_STOP("type %d has no max length method implemented", args.whichFun[j]);  // # nocov
       }
     }
     if (args.whichFun[j]==WF_Float64 && args.scipen>0) width+=MIN(args.scipen,350); // clamp width to IEEE754 max to avoid scipen=99999 allocating buffer larger than can ever be written
