@@ -17619,3 +17619,11 @@ test(2188.14, fifelse(TRUE, NA, 2, as.Date("2019-07-07")),  error="'no' has diff
 test(2188.15, fifelse(TRUE, NA, factor('a'), factor('a', levels = c('a','b'))), error="'no' and 'na' are both type factor but their levels are different")
 test(2188.16, fifelse(c(NA, NA), 1L, 2L, NULL), c(NA_integer_, NA_integer_)) # NULL `na` is treated as NA 
 
+# rolling join expected output on non-matching join column has been fixed #1913
+dt = data.table(ID=1:5, A=c(1.3, 1.7, 2.4, 0.9, 0.6))
+buckets = data.table(BucketID=1:4, BinA=1:4)
+dt[, A.copy := A]
+test(2189.1, buckets[dt, on=c("BinA"="A"), roll=-Inf], data.table(BucketID = c(2L, 2L, 3L, 1L, 1L), BinA = c(1.3, 1.7, 2.4, 0.9, 0.6), ID = 1:5, A.copy = c(1.3, 1.7, 2.4, 0.9, 0.6)))
+buckets[, BinA := as.numeric(BinA)]
+test(2189.2, buckets[dt, on=c("BinA"="A"), roll=-Inf], data.table(BucketID = c(2L, 2L, 3L, 1L, 1L), BinA = c(1.3, 1.7, 2.4, 0.9, 0.6), ID = 1:5, A.copy = c(1.3, 1.7, 2.4, 0.9, 0.6)))
+
