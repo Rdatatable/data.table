@@ -92,17 +92,19 @@ void nafillString(const SEXP *x, uint_fast64_t nx, unsigned int type, SEXP fill,
     tic = omp_get_wtime();
   if (type==0) { // const
     for (uint_fast64_t i=0; i<nx; i++) {
-      ((SEXP*)ans->char_v)[i] = x[i]==NA_STRING ? fill : x[i];
+      SET_STRING_ELT(ans->char_v, i, x[i]==NA_STRING ? fill : x[i]);
     }
   } else if (type==1) { // locf
-    ((SEXP*)ans->char_v)[0] = x[0]==NA_STRING ? fill : x[0];
+    SET_STRING_ELT(ans->char_v, 0, x[0]==NA_STRING ? fill : x[0]);
+    const SEXP* thisans = SEXPPTR_RO(ans->char_v); // takes out STRING_ELT from loop
     for (uint_fast64_t i=1; i<nx; i++) {
-      ((SEXP*)ans->char_v)[i] = x[i]==NA_STRING ? ((SEXP*)ans->char_v)[i-1] : x[i];
+      SET_STRING_ELT(ans->char_v, i, x[i]==NA_STRING ? thisans[i-1] : x[i]);
     }
   } else if (type==2) { // nocb
-    ((SEXP*)ans->char_v)[nx-1] = x[nx-1]==NA_STRING ? fill : x[nx-1];
+    SET_STRING_ELT(ans->char_v, nx-1, x[nx-1]==NA_STRING ? fill : x[nx-1]);
+    const SEXP* thisans = SEXPPTR_RO(ans->char_v); // takes out STRING_ELT from loop
     for (int_fast64_t i=nx-2; i>=0; i--) {
-      ((SEXP*)ans->char_v)[i] = x[i]==NA_STRING ? ((SEXP*)ans->char_v)[i+1] : x[i];
+      SET_STRING_ELT(ans->char_v, i, x[i]==NA_STRING ? thisans[i+1] : x[i]);
     }
   }
   if (verbose)
@@ -171,18 +173,13 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, S
     if (isReal(xi)) {
       dx[i] = REAL(xi);
       i64x[i] = (int64_t *)REAL(xi);
-      ix[i] = NULL;
-      sx[i] = NULL;
+      ix[i] = NULL; sx[i] = NULL;
     } else if (isInteger(xi) || isLogical(xi) || isFactor(xi)) {
       ix[i] = INTEGER(xi);
-      dx[i] = NULL;
-      i64x[i] = NULL;
-      sx[i] = NULL;
+      dx[i] = NULL; i64x[i] = NULL; sx[i] = NULL;
     } else if (isString(xi)) {
-      ix[i] = NULL;
-      dx[i] = NULL;
-      i64x[i] = NULL;
-      sx[i] = SEXPPTR_RO(xi);
+      ix[i] = NULL; dx[i] = NULL; i64x[i] = NULL;
+      sx[i] = STRING_PTR(xi);
     } else {
       error(_("internal error: unknown column type, should have been caught by now, please report")); // # nocov
     }
@@ -192,8 +189,8 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, S
     for (R_len_t i=0; i<nx; i++) {
       SET_VECTOR_ELT(ans, i, allocVector(TYPEOF(VECTOR_ELT(x, i)), inx[i]));
       const SEXP ansi = VECTOR_ELT(ans, i);
-      const void *p = isReal(ansi) ? (void *)REAL(ansi) : (isInteger(ansi) ? (void *)INTEGER(ansi) : (void*) SEXPPTR_RO(ansi));
-      vans[i] = ((ans_t) { .dbl_v=(double *)p, .int_v=(int *)p, .int64_v=(int64_t *)p, .char_v=(void*)p, .status=0, .message={"\0","\0","\0","\0"} });
+      const void *p = isReal(ansi) ? (void *)REAL(ansi) : (isInteger(ansi) ? (void *)INTEGER(ansi) : (void *)ansi);
+      vans[i] = ((ans_t) { .dbl_v=(double *)p, .int_v=(int *)p, .int64_v=(int64_t *)p, .char_v=(SEXP)p, .status=0, .message={"\0","\0","\0","\0"} });
     }
   } else {
     for (R_len_t i=0; i<nx; i++) {
