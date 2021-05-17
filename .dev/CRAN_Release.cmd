@@ -204,8 +204,8 @@ grep coerceVector *.c | grep -v PROTECT | grep -v SET_VECTOR_ELT | grep -v setAt
 grep asCharacter *.c | grep -v PROTECT | grep -v SET_VECTOR_ELT | grep -v setAttrib | grep -v return
 
 # Enforce local scope for loop index (`for (int i=0; ...)` instead of `int i; for (i=0; ...)`)
-#   exceptions are tagged with #skip_loop_scope
-grep -En "for\s*[(]\s*[a-zA-Z0-9_]+\s*=.*[+][+]" src/*.c | grep -Fv "#skip_loop_scope"
+#   exceptions are tagged with #loop_counter_not_local_scope_ok
+grep -En "for\s*[(]\s*[a-zA-Z0-9_]+\s*=" src/*.c | grep -Fv "#loop_counter_not_local_scope_ok"
 
 cd ..
 R
