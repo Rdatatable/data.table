@@ -69,7 +69,7 @@ SEXP testMsgR(SEXP status, SEXP x, SEXP k) {
     }
   }
 
-  #pragma omp parallel for if (nx*nk>1) schedule(auto) collapse(2) num_threads(getDTthreads())
+  #pragma omp parallel for schedule(dynamic) collapse(2) num_threads(getDTthreads(nx*nk, false))
   for (R_len_t i=0; i<nx; i++) {
     for (R_len_t j=0; j<nk; j++) {
       testRaiseMsg(&vans[i*nk+j], istatus, verbose);

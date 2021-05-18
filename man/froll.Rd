@@ -25,7 +25,7 @@ frollapply(x, n, FUN, \dots, fill=NA, align=c("right", "left", "center"))
   \item{x}{ vector, list, data.frame or data.table of numeric or logical columns. }
   \item{n}{ integer vector, for adaptive rolling function also list of
     integer vectors, rolling window size. }
-  \item{fill}{ numeric, value to pad by. Defaults to \code{NA}. }
+  \item{fill}{ numeric or logical, value to pad by. Defaults to \code{NA}. }
   \item{algo}{ character, default \code{"fast"}. When set to \code{"exact"},
     then slower algorithm is used. It suffers less from floating point
     rounding error, performs extra pass to adjust rounding error
@@ -113,7 +113,7 @@ frollapply(x, n, FUN, \dots, fill=NA, align=c("right", "left", "center"))
     \item{ when \code{adaptive=TRUE}, then \code{n} must be vector of
       length equal to \code{nrow(x)}, or list of such vectors. }
     \item{ \code{partial} window feature is not supported, although it can
-      be accomplished by using \code{adaptive=TRUE}, see examples. }
+      be accomplished by using \code{adaptive=TRUE}, see examples. \code{NA} is always returned for incomplete windows. }
   }
 
   Be aware that rolling functions operates on the physical order of input.

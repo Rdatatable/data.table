@@ -9,7 +9,7 @@
 SEXP lookup(SEXP ux, SEXP xlen, SEXP indices, SEXP gaps, SEXP overlaps, SEXP multArg, SEXP typeArg, SEXP verbose) {
 
   SEXP vv, tt, lookup, type_lookup;
-  R_len_t i,j,k,*idx,*count,*type_count,xrows=INTEGER(xlen)[0],uxrows=LENGTH(VECTOR_ELT(ux, 0)),uxcols=LENGTH(ux);
+  R_len_t *idx,*count,*type_count,xrows=INTEGER(xlen)[0],uxrows=LENGTH(VECTOR_ELT(ux, 0)),uxcols=LENGTH(ux);
   int *from = (int *)INTEGER(VECTOR_ELT(indices, 0));
   int *to   = (int *)INTEGER(VECTOR_ELT(indices, 1));
   clock_t pass1, pass2, pass3, start;
@@ -37,19 +37,19 @@ SEXP lookup(SEXP ux, SEXP xlen, SEXP indices, SEXP gaps, SEXP overlaps, SEXP mul
   case FIRST:
     switch(type) {
     case EQUAL:
-      for (i=0; i<xrows; i++) {
+      for (int i=0; i<xrows; ++i) {
         count[from[i]-1]++; count[to[i]-1]++;
         type_count[from[i]-1]++; type_count[to[i]-1]++;
       }
       break;
     case START: case END: case ANY: case WITHIN:
-      for (i=0; i<xrows; i++) {
-        for (j=from[i]; j<=to[i]; j++) {
+      for (int i=0; i<xrows; ++i) {
+        for (int j=from[i]; j<=to[i]; ++j) {
           count[j-1]++;
         }
       }
       if (type != WITHIN) {
-        for (i=0; i<uxrows; i++)                      // TODO: this allocation can be avoided if we take care of FIRST/LAST accordingly in 'overlaps'
+        for (int i=0; i<uxrows; ++i)                      // TODO: this allocation can be avoided if we take care of FIRST/LAST accordingly in 'overlaps'
           if (count[i]) type_count[i] = 1;
       }
       break;
@@ -60,27 +60,27 @@ SEXP lookup(SEXP ux, SEXP xlen, SEXP indices, SEXP gaps, SEXP overlaps, SEXP mul
   case LAST :
     switch (type) {
     case ANY:
-      for (i=0; i<xrows; i++) {
-        for (j=from[i]; j<=to[i]; j++) {
+      for (int i=0; i<xrows; ++i) {
+        for (int j=from[i]; j<=to[i]; ++j) {
           count[j-1]++;
           if (from[i]==j && !type_count[j-1]) type_count[j-1]++;
         }
       }
       break;
     case EQUAL:
-      for (i=0; i<xrows; i++) {
+      for (int i=0; i<xrows; ++i) {
         count[from[i]-1]++; count[to[i]-1]++;
         type_count[from[i]-1]++; type_count[to[i]-1]++;
       }
       break;
     case START: case END: case WITHIN:
-      for (i=0; i<xrows; i++) {
-        for (j=from[i]; j<=to[i]; j++) {
+      for (int i=0; i<xrows; ++i) {
+        for (int j=from[i]; j<=to[i]; ++j) {
           count[j-1]++;
         }
       }
       if (type != WITHIN) {
-        for (i=0; i<uxrows; i++)              // TODO: this allocation can be avoided if we take care of FIRST/LAST accordingly in 'overlaps'
+        for (int i=0; i<uxrows; ++i)              // TODO: this allocation can be avoided if we take care of FIRST/LAST accordingly in 'overlaps'
           if (count[i]) type_count[i] = 1;
       }
       break;
@@ -90,30 +90,30 @@ SEXP lookup(SEXP ux, SEXP xlen, SEXP indices, SEXP gaps, SEXP overlaps, SEXP mul
   case ALL :
     switch (type) {
     case START: case END:
-      for (i=0; i<xrows; i++) {
-        for (j=from[i]; j<=to[i]; j++) {
+      for (int i=0; i<xrows; ++i) {
+        for (int j=from[i]; j<=to[i]; ++j) {
           count[j-1]++; type_count[j-1]++;       // alternatively, we could simply do with type_count=count ?
         }
       }
       break;
     case EQUAL:
-      for (i=0; i<xrows; i++) {
+      for (int i=0; i<xrows; ++i) {
         count[from[i]-1]++; count[to[i]-1]++;
         type_count[from[i]-1]++; type_count[to[i]-1]++;
       }
       break;
     case ANY :
-      for (i=0; i<xrows; i++) {
-        k = from[i];
-        for (j=from[i]; j<=to[i]; j++) {
+      for (int i=0; i<xrows; ++i) {
+        const int k = from[i];
+        for (int j=from[i]; j<=to[i]; ++j) {
           count[j-1]++;
           if (k==j) type_count[j-1]++;
         }
       }
       break;
     case WITHIN :
-      for (i=0; i<xrows; i++) {
-        for (j=from[i]; j<=to[i]; j++) {
+      for (int i=0; i<xrows; ++i) {
+        for (int j=from[i]; j<=to[i]; ++j) {
           count[j-1]++;
         }
       }
@@ -130,7 +130,7 @@ SEXP lookup(SEXP ux, SEXP xlen, SEXP indices, SEXP gaps, SEXP overlaps, SEXP mul
   start = clock();
   lookup = VECTOR_ELT(ux, uxcols-4);
   type_lookup = VECTOR_ELT(ux, uxcols-3);
-  for (i=0; i<uxrows; i++) {
+  for (int i=0; i<uxrows; ++i) {
     SET_VECTOR_ELT(lookup, i, vv=allocVector(INTSXP, count[i]));
     if (type != WITHIN) {
       SET_VECTOR_ELT(type_lookup, i, vv=allocVector(INTSXP, type_count[i]));
@@ -144,15 +144,15 @@ SEXP lookup(SEXP ux, SEXP xlen, SEXP indices, SEXP gaps, SEXP overlaps, SEXP mul
   idx = Calloc(uxrows, R_len_t); // resets bits, =0
   switch (type) {
   case ANY: case START: case END: case WITHIN:
-    for (i=0; i<xrows; i++) {
-      for (j=from[i]; j<=to[i]; j++) {
+    for (int i=0; i<xrows; ++i) {
+      for (int j=from[i]; j<=to[i]; ++j) {
         vv = VECTOR_ELT(lookup, j-1);  // cache misses - memory efficiency? but 'lookups' are tiny - takes 0.036s on A.thaliana GFF for entire process)
         INTEGER(vv)[idx[j-1]++] = i+1;
       }
     }
     break;
   case EQUAL:
-    for (i=0; i<xrows; i++) {
+    for (int i=0; i<xrows; ++i) {
       INTEGER(VECTOR_ELT(lookup, from[i]-1))[idx[from[i]-1]++] = i+1;
       INTEGER(VECTOR_ELT(lookup, to[i]-1))[idx[to[i]-1]++] = i+1;
     }
@@ -164,7 +164,7 @@ SEXP lookup(SEXP ux, SEXP xlen, SEXP indices, SEXP gaps, SEXP overlaps, SEXP mul
   if (type != WITHIN) {
     switch (mult) {
     case FIRST :
-      for (i=0; i<uxrows; i++) {
+      for (int i=0; i<uxrows; ++i) {
         if (!count[i]) continue;
         vv = VECTOR_ELT(lookup, i);
         tt = VECTOR_ELT(type_lookup, i);
@@ -175,7 +175,7 @@ SEXP lookup(SEXP ux, SEXP xlen, SEXP indices, SEXP gaps, SEXP overlaps, SEXP mul
       break;
 
     case LAST :
-      for (i=0; i<uxrows; i++) {
+      for (int i=0; i<uxrows; ++i) {
         if (!count[i]) continue;
         vv = VECTOR_ELT(lookup, i);
         tt = VECTOR_ELT(type_lookup, i);
@@ -187,26 +187,26 @@ SEXP lookup(SEXP ux, SEXP xlen, SEXP indices, SEXP gaps, SEXP overlaps, SEXP mul
     case ALL :
       switch (type) {
       case START: case END: case EQUAL:
-        for (i=0; i<uxrows; i++)
+        for (int i=0; i<uxrows; ++i)
           SET_VECTOR_ELT(type_lookup, i, VECTOR_ELT(lookup, i));
         break;
 
       case ANY :
-        for (i=0; i<uxrows; i++) {
+        for (int i=0; i<uxrows; ++i) {
           vv = VECTOR_ELT(lookup, i);
           tt = VECTOR_ELT(type_lookup, i);
-          k=0;
-          for (j=count[i]-type_count[i]; j<count[i]; j++)
+          int k=0;
+          for (int j=count[i]-type_count[i]; j<count[i]; ++j)
             INTEGER(tt)[k++] = INTEGER(vv)[j];
         }
         break;
 
       case WITHIN :
-        // for (i=0; i<uxrows; i++) {
-        //     vv = VECTOR_ELT(lookup, i);
-        //     tt = VECTOR_ELT(type_lookup, i);
-        //     for (j=0; j<type_count[i]; j++)
-        //         INTEGER(tt)[j] = INTEGER(vv)[j];
+        // for (int i=0; i<uxrows; ++i) {
+        //   vv = VECTOR_ELT(lookup, i);
+        //   tt = VECTOR_ELT(type_lookup, i);
+        //   for (int j=0; j<type_count[i]; ++j)
+        //     INTEGER(tt)[j] = INTEGER(vv)[j];
         // }
         break; // #nocov
       default: error(_("Internal error: unknown type in mult=%d in lookup should have been caught earlier: %d"), mult, type); // #nocov
@@ -223,8 +223,8 @@ SEXP lookup(SEXP ux, SEXP xlen, SEXP indices, SEXP gaps, SEXP overlaps, SEXP mul
 
 SEXP overlaps(SEXP ux, SEXP imatches, SEXP multArg, SEXP typeArg, SEXP nomatchArg, SEXP verbose) {
 
-  R_len_t i,j,k,m,uxcols=LENGTH(ux),rows=length(VECTOR_ELT(imatches,0));
-  int nomatch = INTEGER(nomatchArg)[0], totlen=0, len, thislen, wlen=0;
+  R_len_t uxcols=LENGTH(ux),rows=length(VECTOR_ELT(imatches,0));
+  int nomatch = INTEGER(nomatchArg)[0], totlen=0, thislen;
   int *from   = (int *)INTEGER(VECTOR_ELT(imatches, 0));
   int *to     = (int *)INTEGER(VECTOR_ELT(imatches, 1));
   int *count   = (int *)INTEGER(VECTOR_ELT(ux, uxcols-2));
@@ -256,14 +256,15 @@ SEXP overlaps(SEXP ux, SEXP imatches, SEXP multArg, SEXP typeArg, SEXP nomatchAr
     totlen=0;
     switch (type) {
     case START: case END:
-      for (i=0; i<rows; i++)
+      for (int i=0; i<rows; ++i)
         totlen += (from[i] > 0 && type_count[from[i]-1]) ? type_count[from[i]-1] : 1;
       break;
 
     case EQUAL:
-      for (i=0; i<rows; i++) {
-        len = totlen; wlen=0, j=0, m=0;
-        k = (from[i]>0) ? from[i] : 1;
+      for (int i=0; i<rows; ++i) {
+        const int len=totlen;
+        int wlen=0, j=0, m=0;
+        const int k = (from[i]>0) ? from[i] : 1;
         if (k == to[i]) {
           wlen = count[k-1];
         } else if (k < to[i]) {
@@ -284,13 +285,13 @@ SEXP overlaps(SEXP ux, SEXP imatches, SEXP multArg, SEXP typeArg, SEXP nomatchAr
       break;
 
     case ANY:
-      for (i=0; i<rows; i++) {
-        len = totlen;
+      for (int i=0; i<rows; ++i) {
+        const int len = totlen;
         // k = (from[i] > 0) ? from[i] : 1;
-        k = from[i];
+        const int k = from[i];
         if (k<=to[i])
           totlen += count[k-1];
-        for (j=k+1; j<=to[i]; j++)
+        for (int j=k+1; j<=to[i]; ++j)
           totlen += type_count[j-1];
         if (len == totlen)
           ++totlen;
@@ -298,9 +299,10 @@ SEXP overlaps(SEXP ux, SEXP imatches, SEXP multArg, SEXP typeArg, SEXP nomatchAr
       break;
 
     case WITHIN:
-      for (i=0; i<rows; i++) {
-        len = totlen; j=0; m=0;
-        k = from[i];
+      for (int i=0; i<rows; ++i) {
+        const int len=totlen;
+        int j=0, m=0;
+        const int k = from[i];
         if (k > 0) {
           if (k == to[i]) {
             totlen += count[k-1];
@@ -342,12 +344,12 @@ SEXP overlaps(SEXP ux, SEXP imatches, SEXP multArg, SEXP typeArg, SEXP nomatchAr
   case ALL:
     switch (type) {
     case START : case END :
-      for (i=0; i<rows; i++) {
-        len = thislen;
+      for (int i=0; i<rows; ++i) {
+        const int len = thislen;
         if (from[i] > 0) {
-          k = from[i];
+          const int k = from[i];
           tmp2 = VECTOR_ELT(type_lookup, k-1);
-          for (j=0; j<type_count[k-1]; j++) {
+          for (int j=0; j<type_count[k-1]; ++j) {
             INTEGER(f1__)[thislen] = i+1;
             INTEGER(f2__)[thislen] = INTEGER(tmp2)[j];
             ++thislen;
@@ -362,20 +364,20 @@ SEXP overlaps(SEXP ux, SEXP imatches, SEXP multArg, SEXP typeArg, SEXP nomatchAr
       break;
 
     case EQUAL :
-      for (i=0; i<rows; i++) {
-        len = thislen;
+      for (int i=0; i<rows; ++i) {
+        const int len = thislen;
         if (from[i] > 0 && to[i] > 0) {
-          k = from[i];
+          const int k = from[i];
           if (k == to[i]) {
             tmp1 = VECTOR_ELT(lookup, k-1);
             tmp2 = VECTOR_ELT(type_lookup, to[i]-1);
-            for (j=0; j<count[k-1]; j++) {
+            for (int j=0; j<count[k-1]; ++j) {
               INTEGER(f1__)[thislen] = i+1;
               INTEGER(f2__)[thislen] = INTEGER(tmp1)[j];
               ++thislen;
             }
           } else if (k < to[i]) {
-            j=0; m=0;
+            int j=0, m=0;
             tmp1 = VECTOR_ELT(lookup, k-1);
             tmp2 = VECTOR_ELT(type_lookup, to[i]-1);
             while (j<count[k-1] && m<type_count[to[i]-1]) {
@@ -398,21 +400,21 @@ SEXP overlaps(SEXP ux, SEXP imatches, SEXP multArg, SEXP typeArg, SEXP nomatchAr
       break;
 
     case ANY :
-      for (i=0; i<rows; i++) {
-        len = thislen;
+      for (int i=0; i<rows; ++i) {
+        const int len = thislen;
         // k = (from[i]>0) ? from[i] : 1;
-        k = from[i];
+        const int k = from[i];
         if (k<=to[i]) {
           tmp1 = VECTOR_ELT(lookup, k-1);
-          for (m=0; m<count[k-1]; m++) {
+          for (int m=0; m<count[k-1]; ++m) {
             INTEGER(f1__)[thislen] = i+1;
             INTEGER(f2__)[thislen] = INTEGER(tmp1)[m];
             ++thislen;
           }
         }
-        for (j=k+1; j<=to[i]; j++) {
+        for (int j=k+1; j<=to[i]; ++j) {
           tmp2 = VECTOR_ELT(type_lookup, j-1);
-          for (m=0; m<type_count[j-1]; m++) {
+          for (int m=0; m<type_count[j-1]; ++m) {
             INTEGER(f1__)[thislen] = i+1;
             INTEGER(f2__)[thislen] = INTEGER(tmp2)[m];
             ++thislen;
@@ -428,19 +430,19 @@ SEXP overlaps(SEXP ux, SEXP imatches, SEXP multArg, SEXP typeArg, SEXP nomatchAr
       break;
 
     case WITHIN :
-      for (i=0; i<rows; i++) {
-        len = thislen;
-        k=from[i];
+      for (int i=0; i<rows; ++i) {
+        const int len = thislen;
+        const int k=from[i];
         if (k > 0) {
           if (k == to[i]) {
             tmp1 = VECTOR_ELT(lookup, k-1);
-            for (j=0; j<count[k-1]; j++) {
+            for (int j=0; j<count[k-1]; ++j) {
               INTEGER(f1__)[thislen] = i+1;
               INTEGER(f2__)[thislen] = INTEGER(tmp1)[j];
               ++thislen;
             }
           } else if (k < to[i]) {
-            j=0; m=0;
+            int j=0, m=0;
             tmp1 = VECTOR_ELT(lookup, k-1);
             tmp2 = VECTOR_ELT(lookup, to[i]-1);
             while (j<count[k-1] && m<count[to[i]-1]) {
@@ -468,10 +470,10 @@ SEXP overlaps(SEXP ux, SEXP imatches, SEXP multArg, SEXP typeArg, SEXP nomatchAr
   case FIRST:
     switch (type) {
     case START: case END:
-      for (i=0; i<rows; i++) {
-        len = thislen;
+      for (int i=0; i<rows; ++i) {
+        const int len = thislen;
         INTEGER(f1__)[thislen] = i+1;
-        k = (from[i]>0) ? from[i] : 1;
+        const int k = (from[i]>0) ? from[i] : 1;
         if (k <= to[i]) { // count[k-1] is equal to type_count[k-1] and will always be >0, so no length check necessary.
           tmp1 = VECTOR_ELT(lookup, k-1);
           INTEGER(f2__)[thislen] = INTEGER(tmp1)[0];
@@ -485,17 +487,17 @@ SEXP overlaps(SEXP ux, SEXP imatches, SEXP multArg, SEXP typeArg, SEXP nomatchAr
       break;
 
     case EQUAL :
-      for (i=0; i<rows; i++) {
-        len = thislen;
+      for (int i=0; i<rows; ++i) {
+        const int len = thislen;
         INTEGER(f1__)[thislen] = i+1;
         if (from[i] > 0 && to[i] > 0) {
-          k = from[i];
+          const int k = from[i];
           if (k == to[i]) {
             tmp1 = VECTOR_ELT(lookup, k-1);
             INTEGER(f2__)[thislen] = INTEGER(tmp1)[0];
             ++thislen;
           } else if (k < to[i]) {
-            j=0; m=0;
+            int j=0, m=0;
             tmp1 = VECTOR_ELT(lookup, k-1);
             tmp2 = VECTOR_ELT(type_lookup, to[i]-1);
             while (j<count[k-1] && m<type_count[to[i]-1]) {
@@ -517,12 +519,12 @@ SEXP overlaps(SEXP ux, SEXP imatches, SEXP multArg, SEXP typeArg, SEXP nomatchAr
       break;
 
     case ANY:
-      for (i=0; i<rows; i++) {
-        len = thislen;
+      for (int i=0; i<rows; ++i) {
+        const int len = thislen;
         INTEGER(f1__)[thislen] = i+1;
         // k = (from[i]>0) ? from[i] : 1;
-        k = from[i];
-        for (j=k; j<=to[i]; j++) {
+        const int k = from[i];
+        for (int j=k; j<=to[i]; ++j) {
           if (type_count[j-1]) {
             tmp2 = VECTOR_ELT(type_lookup, j-1);
             INTEGER(f2__)[thislen] = INTEGER(tmp2)[0];
@@ -538,17 +540,17 @@ SEXP overlaps(SEXP ux, SEXP imatches, SEXP multArg, SEXP typeArg, SEXP nomatchAr
       break;
 
     case WITHIN:
-      for (i=0; i<rows; i++) {
-        len = thislen;
+      for (int i=0; i<rows; ++i) {
+        const int len = thislen;
         INTEGER(f1__)[thislen] = i+1;
-        k = from[i];
+        const int k = from[i];
         if (k > 0) {
           if (k == to[i] && count[k-1]) {
             tmp1 = VECTOR_ELT(lookup, k-1);
             INTEGER(f2__)[thislen] = INTEGER(tmp1)[0];
             ++thislen;
           } else if (k < to[i]) {
-            j=0; m=0;
+            int j=0, m=0;
             tmp1 = VECTOR_ELT(lookup, k-1);
             tmp2 = VECTOR_ELT(lookup, to[i]-1);
             while (j<count[k-1] && m<count[to[i]-1]) {
@@ -575,10 +577,10 @@ SEXP overlaps(SEXP ux, SEXP imatches, SEXP multArg, SEXP typeArg, SEXP nomatchAr
   case LAST:
     switch (type) {
     case START: case END:
-      for (i=0; i<rows; i++) {
-        len = thislen;
+      for (int i=0; i<rows; ++i) {
+        const int len = thislen;
         INTEGER(f1__)[thislen] = i+1;
-        k = (from[i]>0) ? from[i] : 1;
+        const int k = (from[i]>0) ? from[i] : 1;
         if (k <= to[i]) { // count[k-1] is equal to type_count[k-1] and will always be >0, so no length check necessary.
           tmp1 = VECTOR_ELT(lookup, k-1);
           INTEGER(f2__)[thislen] = INTEGER(tmp1)[count[k-1]-1];
@@ -600,11 +602,11 @@ SEXP overlaps(SEXP ux, SEXP imatches, SEXP multArg, SEXP typeArg, SEXP nomatchAr
       // n (next line)
       // p val # for native C objects
       // call Rf_PrintValue(val) # for SEXP objects, to print whole vector/vals
-      for (i=0; i<rows; i++) {
-        len = thislen;
+      for (int i=0; i<rows; ++i) {
+        const int len = thislen;
         INTEGER(f1__)[thislen] = i+1;
         if (from[i] > 0 && to[i] > 0) {
-          k = from[i];
+          const int k = from[i];
           if (k == to[i]) {
             tmp1 = VECTOR_ELT(lookup, k-1);
             INTEGER(f2__)[thislen] = INTEGER(tmp1)[count[k-1]-1];
@@ -612,7 +614,7 @@ SEXP overlaps(SEXP ux, SEXP imatches, SEXP multArg, SEXP typeArg, SEXP nomatchAr
           } else if (k < to[i]) {
             tmp1 = VECTOR_ELT(lookup, k-1);
             tmp2 = VECTOR_ELT(type_lookup, to[i]-1);
-            j=count[k-1]-1; m=type_count[to[i]-1]-1; // bug fix, k=from[i] but should be to[i]
+            int j=count[k-1]-1, m=type_count[to[i]-1]-1; // bug fix, k=from[i] but should be to[i]
             while (j>=0 && m>=0) {
               if ( INTEGER(tmp1)[j] == INTEGER(tmp2)[m] ) {
                 INTEGER(f2__)[thislen] = INTEGER(tmp1)[j];
@@ -635,37 +637,37 @@ SEXP overlaps(SEXP ux, SEXP imatches, SEXP multArg, SEXP typeArg, SEXP nomatchAr
       // for 'first' we need to just get the minimum of first non-zero-length element, but not the same case for 'last'.
       // We've to loop over from[i]:to[i] and get maximum of all tmp2 values (each is of length 1 already conveniently set uo) in that range
       // case ANY:
-      // for (i=0; i<rows; i++) {
-      //     len = thislen;
-      //     INTEGER(f1__)[thislen] = i+1;
-      //     INTEGER(f2__)[thislen] = 0;
-      //     // k = (from[i]>0) ? from[i] : 1;
-      //     k = from[i];
-      //     for (j=k; j<=to[i]; j++) {
-      //         if (type_count[j-1]) {
-      //             tmp2 = VECTOR_ELT(type_lookup, j-1);
-      //             INTEGER(f2__)[thislen] = (INTEGER(f2__)[thislen] < INTEGER(tmp2)[type_count[j-1]-1]) ? INTEGER(tmp2)[type_count[j-1]-1] : INTEGER(f2__)[thislen];
-      //         }
+      // for (int i=0; i<rows; ++i) {
+      //   len = thislen;
+      //   INTEGER(f1__)[thislen] = i+1;
+      //   INTEGER(f2__)[thislen] = 0;
+      //   // k = (from[i]>0) ? from[i] : 1;
+      //   k = from[i];
+      //   for (int j=k; j<=to[i]; ++j) {
+      //     if (type_count[j-1]) {
+      //       tmp2 = VECTOR_ELT(type_lookup, j-1);
+      //       INTEGER(f2__)[thislen] = (INTEGER(f2__)[thislen] < INTEGER(tmp2)[type_count[j-1]-1]) ? INTEGER(tmp2)[type_count[j-1]-1] : INTEGER(f2__)[thislen];
       //     }
-      //     if (INTEGER(f2__)[thislen] == 0)
-      //         INTEGER(f2__)[thislen] = nomatch;
-      //     ++thislen;
+      //   }
+      //   if (INTEGER(f2__)[thislen] == 0)
+      //     INTEGER(f2__)[thislen] = nomatch;
+      //   ++thislen;
       // }
       // break;
 
     case ANY:
-      for (i=0; i<rows; i++) {
-        len = thislen;
+      for (int i=0; i<rows; ++i) {
+        const int len = thislen;
         INTEGER(f1__)[thislen] = i+1;
         // k = (from[i]>0) ? from[i] : 1;
-        k = from[i];
+        const int k = from[i];
         if (k <= to[i]) {
           if (k==to[i] && count[k-1]) {
             tmp1 = VECTOR_ELT(lookup, k-1);
             INTEGER(f2__)[thislen] = INTEGER(tmp1)[count[k-1]-1];
             ++thislen;
           } else {
-            for (j=to[i]; j>k; j--) {
+            for (int j=to[i]; j>k; --j) {
               if (type_count[j-1]) {
                 tmp2 = VECTOR_ELT(type_lookup, j-1);
                 INTEGER(f2__)[thislen] = INTEGER(tmp2)[0]; // tmp2 will be length 1
@@ -687,10 +689,10 @@ SEXP overlaps(SEXP ux, SEXP imatches, SEXP multArg, SEXP typeArg, SEXP nomatchAr
       break;
 
     case WITHIN:
-      for (i=0; i<rows; i++) {
-        len = thislen;
+      for (int i=0; i<rows; ++i) {
+        const int len = thislen;
         INTEGER(f1__)[thislen] = i+1;
-        k = from[i];
+        const int k = from[i];
         if (k > 0) {
           if (k == to[i] && count[k-1]) {
             tmp1 = VECTOR_ELT(lookup, k-1);
@@ -699,7 +701,7 @@ SEXP overlaps(SEXP ux, SEXP imatches, SEXP multArg, SEXP typeArg, SEXP nomatchAr
           } else if (k < to[i]) {
             tmp1 = VECTOR_ELT(lookup, k-1);
             tmp2 = VECTOR_ELT(lookup, to[i]-1);
-            j=count[k-1]-1; m=count[to[i]-1]-1;
+            int j=count[k-1]-1, m=count[to[i]-1]-1;
             while (j>=0 && m>=0) {
               if ( INTEGER(tmp1)[j] == INTEGER(tmp2)[m] ) {
                 INTEGER(f2__)[thislen] = INTEGER(tmp1)[j];
