@@ -88,12 +88,12 @@ setkeyv = function(x, cols, verbose=getOption("datatable.verbose"), physical=TRU
     if (verbose) {
       tt = suppressMessages(system.time(o <- forderv(x, cols, sort=TRUE, retGrp=FALSE)))  # system.time does a gc, so we don't want this always on, until refcnt is on by default in R
       # suppress needed for tests 644 and 645 in verbose mode
-      cat("forder took", tt["user.self"]+tt["sys.self"], "sec\n")
+      catf("forder took %.03f sec\n", tt["user.self"]+tt["sys.self"])
     } else {
       o = forderv(x, cols, sort=TRUE, retGrp=FALSE)
     }
   } else {
-    if (verbose) cat("setkey on columns ", brackify(cols), " using existing index '", newkey, "'\n", sep="")
+    if (verbose) catf("setkey on columns %s using existing index '%s'\n", brackify(cols), newkey)
     o = getindex(x, newkey)
   }
   if (!physical) {
@@ -105,9 +105,9 @@ setkeyv = function(x, cols, verbose=getOption("datatable.verbose"), physical=TRU
   if (length(o)) {
     if (verbose) { last.started.at = proc.time() }
     .Call(Creorder,x,o)
-    if (verbose) { cat("reorder took", timetaken(last.started.at), "\n"); flush.console() }
+    if (verbose) { catf("reorder took %s\n", timetaken(last.started.at)); flush.console() }
   } else {
-    if (verbose) cat("x is already ordered by these columns, no need to call reorder\n")
+    if (verbose) catf("x is already ordered by these columns, no need to call reorder\n")
   } # else empty integer() from forderv means x is already ordered by those cols, nothing to do.
   setattr(x,"sorted",cols)
   invisible(x)
@@ -155,20 +155,15 @@ setreordervec = function(x, order) .Call(Creorder, x, order)
 # The others (order, sort.int etc) are turned off to protect ourselves from using them internally, for speed and for
 # consistency; e.g., consistent twiddling of numeric/integer64, NA at the beginning of integer, locale ordering of character vectors.
 
-is.sorted = function(x, by=seq_along(x)) {
+is.sorted = function(x, by=NULL) {
   if (is.list(x)) {
-    warning("Use 'if (length(o <- forderv(DT,by))) ...' for efficiency in one step, so you have o as well if not sorted.")
-    # could pass through a flag for forderv to return early on first FALSE. But we don't need that internally
-    # since internally we always then need ordering, an it's better in one step. Don't want inefficiency to creep in.
-    # This is only here for user/debugging use to check/test valid keys; e.g. data.table:::is.sorted(DT,by)
-    0L == length(forderv(x,by,retGrp=FALSE,sort=TRUE))
+    if (missing(by)) by = seq_along(x)   # wouldn't make sense when x is a vector; hence by=seq_along(x) is not the argument default
+    if (is.character(by)) by = chmatch(by, names(x))
   } else {
     if (!missing(by)) stop("x is vector but 'by' is supplied")
-    .Call(Cfsorted, x)
   }
-  # Cfsorted could be named CfIsSorted, but since "sorted" is an adjective not verb, it's clear; e.g., Cfsort would sort it ("sort" is verb).
+  .Call(Cissorted, x, as.integer(by))
   # Return value of TRUE/FALSE is relied on in [.data.table quite a bit on vectors. Simple. Stick with that (rather than -1/0/+1)
-  # Important to call forder.c::fsorted here, for consistent character ordering and numeric/integer64 twiddling.
 }
 
 ORDERING_TYPES = c('logical', 'integer', 'double', 'complex', 'character')
@@ -200,8 +195,8 @@ forder = function(..., na.last=TRUE, decreasing=FALSE)
   # We intercept the unevaluated expressions and massage them before evaluating in with(DT) scope or not depending on the first item.
   for (i in seq.int(2L, length(sub))) {
     v = sub[[i]]
-    while (is.call(v) && length(v)==2L && ((s<-v[[1L]])=="-" || s=="+")) {
-      if (s=="-") asc[i-1L] = -asc[i-1L]
+    while (v %iscall% c('-', '+') && length(v)==2L) {
+      if (v[[1L]] == "-") asc[i-1L] = -asc[i-1L]
       sub[[i]] = v = v[[2L]]  # remove the leading +/- which is the 2nd item since length(v)==2; i.e. monadic +/-
     }
   }
@@ -300,7 +295,7 @@ setorderv = function(x, cols = colnames(x), order=1L, na.last=FALSE)
   o = forderv(x, cols, sort=TRUE, retGrp=FALSE, order=order, na.last=na.last)
   if (length(o)) {
     .Call(Creorder, x, o)
-    if (is.data.frame(x) & !is.data.table(x)) {
+    if (is.data.frame(x) && !is.data.table(x)) {
       setattr(x, 'row.names', rownames(x)[o])
     }
     k = key(x)
@@ -357,7 +352,7 @@ CJ = function(..., sorted = TRUE, unique = FALSE)
     }
   }
   nrow = prod( vapply_1i(l, length) )  # lengths(l) will work from R 3.2.0
-  if (nrow > .Machine$integer.max) stop(gettextf("Cross product of elements provided to CJ() would result in %.0f rows which exceeds .Machine$integer.max == %d", nrow, .Machine$integer.max, domain='R-data.table'))
+  if (nrow > .Machine$integer.max) stop(domain=NA, gettextf("Cross product of elements provided to CJ() would result in %.0f rows which exceeds .Machine$integer.max == %d", nrow, .Machine$integer.max))
   l = .Call(Ccj, l)
   setDT(l)
   l = setalloccol(l)  # a tiny bit wasteful to over-allocate a fixed join table (column slots only), doing it anyway for consistency since

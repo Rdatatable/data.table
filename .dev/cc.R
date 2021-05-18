@@ -5,11 +5,12 @@
 # > cc()
 # # change some files
 # > cc()
-# # compile, reload but not test
-# > cc(F)
-# # clean, compile, reload but not test
+# # run your tests
+# # to compile, reload and run main test script
+# > cc(T)
+# # clean, compile, reload
 # > cc(F, T)
-# # clean, compile using specific version, reload but not test
+# # clean, compile using specific version, reload
 # > cc(F, T, CC="gcc-8")
 #
 # To debug C level :
@@ -23,7 +24,7 @@
 
 options(datatable.print.class = TRUE)
 
-sourceDir <- function(path=getwd(), trace = TRUE, ...) {
+sourceDir = function(path=getwd(), trace = TRUE, ...) {
   # copied verbatim from example(source) in base R
   for (nm in list.files(path, pattern = "\\.[RrSsQq]$")) {
     if(trace) cat(nm," ")
@@ -32,7 +33,7 @@ sourceDir <- function(path=getwd(), trace = TRUE, ...) {
   if(trace) cat("\n")
 }
 
-cc = function(test=TRUE, clean=FALSE, debug=FALSE, omp=!debug, cc_dir, path=Sys.getenv("PROJ_PATH"), CC="gcc") {
+cc = function(test=FALSE, clean=FALSE, debug=FALSE, omp=!debug, cc_dir, path=Sys.getenv("PROJ_PATH"), CC="gcc") {
   if (!missing(cc_dir)) {
     warning("'cc_dir' arg is deprecated, use 'path' argument or 'PROJ_PATH' env var instead")
     path = cc_dir
@@ -87,5 +88,5 @@ cc = function(test=TRUE, clean=FALSE, debug=FALSE, omp=!debug, cc_dir, path=Sys.
   invisible()
 }
 
-dd = function(omp=FALSE)cc(FALSE,debug=TRUE,omp=omp,clean=TRUE)
+dd = function(omp=FALSE)cc(test=FALSE,debug=TRUE,omp=omp,clean=TRUE)
 
