@@ -127,6 +127,8 @@
 
 16. `DT[, min(colB), by=colA]` when `colB` is type `character` would miss blank strings (`""`) at the beginning of a group and return the smallest non-blank instead of blank, [#4848](https://github.com/Rdatatable/data.table/issues/4848). Thanks to Vadim Khotilovich for reporting and for the PR fixing it.
 
+17. Assigning a wrong-length or non-list vector to a list column could segfault, [#4166](https://github.com/Rdatatable/data.table/issues/4166). Thanks to @fklirono for reporting, and to @tlapak for the PR.
+
 ## NOTES
 
 1. New feature 29 in v1.12.4 (Oct 2019) introduced zero-copy coercion. Our thinking is that requiring you to get the type right in the case of `0` (type double) vs `0L` (type integer) is too inconvenient for you the user. So such coercions happen in `data.table` automatically without warning. Thanks to zero-copy coercion there is no speed penalty, even when calling `set()` many times in a loop, so there's no speed penalty to warn you about either. However, we believe that assigning a character value such as `"2"` into an integer column is more likely to be a user mistake that you would like to be warned about. The type difference (character vs integer) may be the only clue that you have selected the wrong column, or typed the wrong variable to be assigned to that column. For this reason we view character to numeric-like coercion differently and will warn about it. If it is correct, then the warning is intended to nudge you to wrap the RHS with `as.<type>()` so that it is clear to readers of your code that a coercion from character to that type is intended. For example :
@@ -367,8 +369,6 @@ has a better chance of working on Mac.
 19. Matrices resulting from logical operators or comparisons on `data.table`s, e.g. in `dta == dtb`, can no longer have their colnames changed by reference later, [#4323](https://github.com/Rdatatable/data.table/issues/4323). Thanks to @eyherabh for reporting and @tlapak for the PR.
 
 20. The environment variable `R_DATATABLE_NUM_THREADS` was being limited by `R_DATATABLE_NUM_PROCS_PERCENT` (by default 50%), [#4514](https://github.com/Rdatatable/data.table/issues/4514). It is now consistent with `setDTthreads()` and only limited by the full number of logical CPUs. For example, on a machine with 8 logical CPUs, `R_DATATABLE_NUM_THREADS=6` now results in 6 threads rather than 4 (50% of 8).r
-
-13. Attempting to replace an existing list column with a vector of the wrong length no longer leads to a segfault later, [#4166](https://github.com/Rdatatable/data.table/issues/4166). Subassigning a non-list vector would also lead to a segfault. The elements are now 'coerced' by individually wrapping them in `list()`. Thanks to @fklirono for the initial report and to @tlapak for the PR.
 
 ## NOTES
 
