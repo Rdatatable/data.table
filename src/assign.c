@@ -434,7 +434,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
       }
       // RHS of assignment to new column is zero length but we'll use its type to create all-NA column of that type
     }
-    { 
+    {
       int j;
       if (isMatrix(thisvalue) && (j=INTEGER(getAttrib(thisvalue, R_DimSymbol))[1]) > 1)  // matrix passes above (considered atomic vector)
         warning(_("%d column matrix RHS of := will be treated as one vector"), j);
@@ -1066,35 +1066,24 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
       BODY(SEXP, STRING_PTR, SEXP, val,  SET_STRING_ELT(target, off+i, cval))
     }
   case VECSXP :
-  case EXPRSXP : {  // #546
+  case EXPRSXP : {  // #546 #4350
     if (len == 1 && TYPEOF(source)!=VECSXP && TYPEOF(source)!=EXPRSXP) {
         BODY(SEXP, &, SEXP, val, SET_VECTOR_ELT(target, off+i, cval))
     } else {
       switch (TYPEOF(source)) {
-      case  RAWSXP:  BODY(Rbyte, RAW, SEXP, PROTECT(ScalarRaw(val)); protecti++,
-                            copyMostAttrib(source, cval);
-                            SET_VECTOR_ELT(target, off+i, cval))
-      case  LGLSXP:  BODY(int, INTEGER, SEXP, PROTECT(ScalarLogical(val)); protecti++,
-                            copyMostAttrib(source, cval);
-                            SET_VECTOR_ELT(target, off+i, cval))
-      case  INTSXP:  BODY(int, INTEGER, SEXP, PROTECT(ScalarInteger(val)); protecti++,
-                            copyMostAttrib(source, cval);
-                            SET_VECTOR_ELT(target, off+i, cval))
-      case REALSXP:  BODY(double, REAL, SEXP, PROTECT(ScalarReal(val)); protecti++,
-                            copyMostAttrib(source, cval);
-                            SET_VECTOR_ELT(target, off+i, cval))
-      case CPLXSXP:  BODY(Rcomplex, COMPLEX, SEXP, PROTECT(ScalarComplex(val)); protecti++,
-                            copyMostAttrib(source, cval);
-                            SET_VECTOR_ELT(target, off+i, cval))
-      case STRSXP:   BODY(SEXP, STRING_PTR, SEXP, PROTECT(ScalarString(val)); protecti++,
-                            copyMostAttrib(source, cval);
-                            SET_VECTOR_ELT(target, off+i, cval))
+      // no protect of CAST needed because SET_VECTOR_ELT protects it, and it can't get released by copyMostAttrib or anything else inside BODY
+      // copyMostAttrib is appended to CAST so as to be outside loop
+      case RAWSXP:  BODY(Rbyte,    RAW,        SEXP, ScalarRaw(val);    copyMostAttrib(source,cval), SET_VECTOR_ELT(target,off+i,cval))
+      case LGLSXP:  BODY(int,      INTEGER,    SEXP, ScalarLogical(val);copyMostAttrib(source,cval), SET_VECTOR_ELT(target,off+i,cval))
+      case INTSXP:  BODY(int,      INTEGER,    SEXP, ScalarInteger(val);copyMostAttrib(source,cval), SET_VECTOR_ELT(target,off+i,cval))
+      case REALSXP: BODY(double,   REAL,       SEXP, ScalarReal(val);   copyMostAttrib(source,cval), SET_VECTOR_ELT(target,off+i,cval))
+      case CPLXSXP: BODY(Rcomplex, COMPLEX,    SEXP, ScalarComplex(val);copyMostAttrib(source,cval), SET_VECTOR_ELT(target,off+i,cval))
+      case STRSXP:  BODY(SEXP,     STRING_PTR, SEXP, ScalarString(val); copyMostAttrib(source,cval), SET_VECTOR_ELT(target,off+i,cval))
       case VECSXP:
-      case EXPRSXP:  BODY(SEXP, SEXPPTR_RO, SEXP, val,  
-                            SET_VECTOR_ELT(target, off+i, cval))
+      case EXPRSXP: BODY(SEXP,     SEXPPTR_RO, SEXP, val,                                            SET_VECTOR_ELT(target,off+i,cval))
       default: COERCE_ERROR("list");
       }
-    } 
+    }
   } break;
   default :
     error(_("Unsupported column type in assign.c:memrecycle '%s'"), type2char(TYPEOF(target)));  // # nocov
