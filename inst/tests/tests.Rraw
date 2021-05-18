@@ -17634,10 +17634,24 @@ test(2188.15, fifelse(TRUE, NA, factor('a'), factor('a', levels = c('a','b'))), 
 test(2188.16, fifelse(c(NA, NA), 1L, 2L, NULL), c(NA_integer_, NA_integer_)) # NULL `na` is treated as NA 
 
 # rolling join expected output on non-matching join column has been fixed #1913
-dt = data.table(ID=1:5, A=c(1.3, 1.7, 2.4, 0.9, 0.6))
+DT = data.table(ID=1:5, A=c(1.3, 1.7, 2.4, 0.9, 0.6))
 buckets = data.table(BucketID=1:4, BinA=1:4)
-dt[, A.copy := A]
-test(2189.1, buckets[dt, on=c("BinA"="A"), roll=-Inf], data.table(BucketID = c(2L, 2L, 3L, 1L, 1L), BinA = c(1.3, 1.7, 2.4, 0.9, 0.6), ID = 1:5, A.copy = c(1.3, 1.7, 2.4, 0.9, 0.6)))
+DT[, A.copy := A]
+test(2189.1, buckets[DT, on=c("BinA"="A"), roll=-Inf], data.table(BucketID = c(2L, 2L, 3L, 1L, 1L), BinA = c(1.3, 1.7, 2.4, 0.9, 0.6), ID = 1:5, A.copy = c(1.3, 1.7, 2.4, 0.9, 0.6)))
 buckets[, BinA := as.numeric(BinA)]
-test(2189.2, buckets[dt, on=c("BinA"="A"), roll=-Inf], data.table(BucketID = c(2L, 2L, 3L, 1L, 1L), BinA = c(1.3, 1.7, 2.4, 0.9, 0.6), ID = 1:5, A.copy = c(1.3, 1.7, 2.4, 0.9, 0.6)))
+test(2189.2, buckets[DT, on=c("BinA"="A"), roll=-Inf], data.table(BucketID = c(2L, 2L, 3L, 1L, 1L), BinA = c(1.3, 1.7, 2.4, 0.9, 0.6), ID = 1:5, A.copy = c(1.3, 1.7, 2.4, 0.9, 0.6)))
+
+# segfault subassigning non-list type to list column, #4166
+DT = data.table(a=list(1:2, 3, 4))
+test(2190.1, DT[, a:=1:4], error="Supplied 4 items to be assigned to 3 items of column 'a'.*please use rep")
+test(2190.2, DT[1:2, a:=structure(c(1L, 2L), att='t')          ]$a, list(structure(1L, att='t'),            structure(2L, att='t'),            4))
+test(2190.3, DT[1:2, a:=structure(c(1, 2), att='t')            ]$a, list(structure(1, att='t'),             structure(2, att='t'),             4))
+test(2190.4, DT[1:2, a:=structure(as.raw(c(1, 2)), att='t')    ]$a, list(structure(as.raw(1), att='t'),     structure(as.raw(2), att='t'),     4))
+test(2190.5, DT[1:2, a:=structure(as.complex(c(1, 2)), att='t')]$a, list(structure(as.complex(1), att='t'), structure(as.complex(2), att='t'), 4))
+test(2190.6, DT[1:2, a:=structure(c(TRUE, FALSE), att='t')     ]$a, list(structure(TRUE, att='t'),          structure(FALSE, att='t'),         4))
+test(2190.7, DT[1:2, a:=structure(c('a', 'b'), att='t')        ]$a, list(structure('a', att='t'),           structure('b', att='t'),           4))
+if (test_bit64) {
+  test(2190.8, DT[1:2, a:=as.integer64(1:2)                    ]$a, list(as.integer64(1),                   as.integer64(2),                   4))
+}
+test(2190.9, DT[1:2, a:=call('sum', 1)], error="type 'language' cannot be coerced to 'list'")
 

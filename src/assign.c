@@ -434,7 +434,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
       }
       // RHS of assignment to new column is zero length but we'll use its type to create all-NA column of that type
     }
-    { 
+    {
       int j;
       if (isMatrix(thisvalue) && (j=INTEGER(getAttrib(thisvalue, R_DimSymbol))[1]) > 1)  // matrix passes above (considered atomic vector)
         warning(_("%d column matrix RHS of := will be treated as one vector"), j);
@@ -445,8 +445,9 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
       error(_("Can't assign to column '%s' (type 'factor') a value of type '%s' (not character, factor, integer or numeric)"),
             CHAR(STRING_ELT(names,coln)),type2char(TYPEOF(thisvalue)));
     }
-    if (nrow>0 && targetlen>0 && vlen>1 && vlen!=targetlen && (TYPEOF(existing)!=VECSXP || TYPEOF(thisvalue)==VECSXP)) {
-      // note that isNewList(R_NilValue) is true so it needs to be TYPEOF(existing)!=VECSXP above
+    if (nrow>0 && targetlen>0 && vlen>1 && vlen!=targetlen && !(TYPEOF(existing)==VECSXP && targetlen==1)) {
+      // We allow assigning objects of arbitrary to single items of list columns for convenience.
+      // Note that isNewList(R_NilValue) is true so it needs to be !(TYPEOF(existing)==VECSXP) above
       error(_("Supplied %d items to be assigned to %d items of column '%s'. If you wish to 'recycle' the RHS please use rep() to make this intent clear to readers of your code."), vlen, targetlen, CHAR(colnam));
     }
   }
@@ -1065,11 +1066,25 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
       BODY(SEXP, STRING_PTR, SEXP, val,  SET_STRING_ELT(target, off+i, cval))
     }
   case VECSXP :
-  case EXPRSXP :  // #546
-    if (TYPEOF(source)!=VECSXP && TYPEOF(source)!=EXPRSXP)
-      BODY(SEXP, &, SEXP, val,           SET_VECTOR_ELT(target, off+i, cval))
-    else
-      BODY(SEXP, SEXPPTR_RO, SEXP, val,  SET_VECTOR_ELT(target, off+i, cval))
+  case EXPRSXP : {  // #546 #4350
+    if (len == 1 && TYPEOF(source)!=VECSXP && TYPEOF(source)!=EXPRSXP) {
+        BODY(SEXP, &, SEXP, val, SET_VECTOR_ELT(target, off+i, cval))
+    } else {
+      switch (TYPEOF(source)) {
+      // no protect of CAST needed because SET_VECTOR_ELT protects it, and it can't get released by copyMostAttrib or anything else inside BODY
+      // copyMostAttrib is appended to CAST so as to be outside loop
+      case RAWSXP:  BODY(Rbyte,    RAW,        SEXP, ScalarRaw(val);    copyMostAttrib(source,cval), SET_VECTOR_ELT(target,off+i,cval))
+      case LGLSXP:  BODY(int,      INTEGER,    SEXP, ScalarLogical(val);copyMostAttrib(source,cval), SET_VECTOR_ELT(target,off+i,cval))
+      case INTSXP:  BODY(int,      INTEGER,    SEXP, ScalarInteger(val);copyMostAttrib(source,cval), SET_VECTOR_ELT(target,off+i,cval))
+      case REALSXP: BODY(double,   REAL,       SEXP, ScalarReal(val);   copyMostAttrib(source,cval), SET_VECTOR_ELT(target,off+i,cval))
+      case CPLXSXP: BODY(Rcomplex, COMPLEX,    SEXP, ScalarComplex(val);copyMostAttrib(source,cval), SET_VECTOR_ELT(target,off+i,cval))
+      case STRSXP:  BODY(SEXP,     STRING_PTR, SEXP, ScalarString(val); copyMostAttrib(source,cval), SET_VECTOR_ELT(target,off+i,cval))
+      case VECSXP:
+      case EXPRSXP: BODY(SEXP,     SEXPPTR_RO, SEXP, val,                                            SET_VECTOR_ELT(target,off+i,cval))
+      default: COERCE_ERROR("list");
+      }
+    }
+  } break;
   default :
     error(_("Unsupported column type in assign.c:memrecycle '%s'"), type2char(TYPEOF(target)));  // # nocov
   }
