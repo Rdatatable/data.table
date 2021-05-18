@@ -39,7 +39,7 @@ navbar:
       - text: "Efficient reshaping using data.table"
         href: articles/datatable-reshape.html
       - text: "Programming on data.table"
-        href: datatable-programming.html
+        href: articles/datatable-programming.html
       - text: "Frequently asked questions"
         href: articles/datatable-faq.html
       - text: "Importing data.table"
