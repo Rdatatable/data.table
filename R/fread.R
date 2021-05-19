@@ -36,7 +36,7 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
     if (!is.character(text)) stop("'text=' is type ", typeof(text), " but must be character.")
     if (!length(text)) return(data.table())
     if (length(text) > 1L) {
-      cat(text, file=(tmpFile<-tempfile(tmpdir=tmpdir)), sep="\n")  # avoid paste0() which could create a new very long single string in R's memory
+      writeLines(text, tmpFile<-tempfile(tmpdir=tmpdir))  # avoid paste0() which could create a new very long single string in R's memory
       file = tmpFile
       on.exit(unlink(tmpFile), add=TRUE)
     } else {
@@ -81,7 +81,7 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
       else if (length(grep(' ', input, fixed = TRUE)) && !file.exists(input)) {  # file name or path containing spaces is not a command
         cmd = input
         if (input_has_vars && getOption("datatable.fread.input.cmd.message", TRUE)) {
-          message("Taking input= as a system command ('",cmd,"') and a variable has been used in the expression passed to `input=`. Please use fread(cmd=...). There is a security concern if you are creating an app, and the app could have a malicious user, and the app is not running in a secure environment; e.g. the app is running as root. Please read item 5 in the NEWS file for v1.11.6 for more information and for the option to suppress this message.")
+          message("Taking input= as a system command because it contains a space ('",cmd,"'). If it's a filename please remove the space, or use file= explicitly. A variable is being passed to input= and when this is taken as a system command there is a security concern if you are creating an app, the app could have a malicious user, and the app is not running in a secure environment; e.g. the app is running as root. Please read item 5 in the NEWS file for v1.11.6 for more information and for the option to suppress this message.")
         }
       }
       else {
@@ -194,7 +194,7 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
 
     yaml_header = yaml::yaml.load(yaml_string)
     yaml_names = names(yaml_header)
-    if (verbose) cat('Processed', n_read, 'lines of YAML metadata with the following top-level fields:', brackify(yaml_names), '\n')
+    if (verbose) catf('Processed %d lines of YAML metadata with the following top-level fields: %s\n', n_read, brackify(yaml_names))
     # process header first since it impacts how to handle colClasses
     if ('header' %chin% yaml_names) {
       if ('header' %chin% call_args) message("User-supplied 'header' will override that found in metadata.")
@@ -326,7 +326,7 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
     } else {
       cols_to_factor = which(vapply_1b(ans, is.character))
     }
-    if (verbose) cat("stringsAsFactors=", stringsAsFactors, " converted ", length(cols_to_factor), " column(s): ", brackify(names(ans)[cols_to_factor]), "\n", sep="")
+    if (verbose) catf("stringsAsFactors=%s converted %d column(s): %s\n", stringsAsFactors, length(cols_to_factor), brackify(names(ans)[cols_to_factor]))
     for (j in cols_to_factor) set(ans, j=j, value=as_factor(.subset2(ans, j)))
   }
 
