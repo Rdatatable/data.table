@@ -102,7 +102,7 @@ as.data.table.array = function(x, keep.rownames=FALSE, key=NULL, sorted=TRUE, va
     dnx
   } else dnx
   val = rev(val)
-  if (is.null(names(val)) || all(!nzchar(names(val))))
+  if (is.null(names(val)) || !any(nzchar(names(val))))
     setattr(val, 'names', paste0("V", rev(seq_along(val))))
   if (value.name %chin% names(val))
     stop("Argument 'value.name' should not overlap with column names in result: ", brackify(rev(names(val))))
