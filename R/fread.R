@@ -21,15 +21,19 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
   if (length(encoding) != 1L || !encoding %chin% c("unknown", "UTF-8", "Latin-1")) {
     stop("Argument 'encoding' must be 'unknown', 'UTF-8' or 'Latin-1'.")
   }
-  stopifnot( isTRUEorFALSE(strip.white), isTRUEorFALSE(blank.lines.skip), isTRUEorFALSE(fill), isTRUEorFALSE(showProgress),
-             isTRUEorFALSE(verbose), isTRUEorFALSE(check.names), isTRUEorFALSE(logical01), isTRUEorFALSE(keepLeadingZeros), isTRUEorFALSE(yaml) )
-  stopifnot( isTRUEorFALSE(stringsAsFactors) || (is.double(stringsAsFactors) && length(stringsAsFactors)==1L && 0.0<=stringsAsFactors && stringsAsFactors<=1.0))
-  stopifnot( is.numeric(nrows), length(nrows)==1L )
+  stopifnot(
+    isTRUEorFALSE(strip.white), isTRUEorFALSE(blank.lines.skip), isTRUEorFALSE(fill), isTRUEorFALSE(showProgress),
+    isTRUEorFALSE(verbose), isTRUEorFALSE(check.names), isTRUEorFALSE(logical01), isTRUEorFALSE(keepLeadingZeros), isTRUEorFALSE(yaml),
+    isTRUEorFALSE(stringsAsFactors) || (is.double(stringsAsFactors) && length(stringsAsFactors)==1L && 0.0<=stringsAsFactors && stringsAsFactors<=1.0),
+    is.numeric(nrows), length(nrows)==1L
+  )
   nrows=as.double(nrows) #4686
   if (is.na(nrows) || nrows<0) nrows=Inf   # accept -1 to mean Inf, as read.table does
   if (identical(header,"auto")) header=NA
-  stopifnot(is.logical(header) && length(header)==1L)  # TRUE, FALSE or NA
-  stopifnot(is.numeric(nThread) && length(nThread)==1L)
+  stopifnot(
+    is.logical(header) && length(header)==1L,  # TRUE, FALSE or NA
+    is.numeric(nThread) && length(nThread)==1L
+  )
   nThread=as.integer(nThread)
   stopifnot(nThread>=1L)
   if (!is.null(text)) {
