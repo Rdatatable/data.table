@@ -906,7 +906,7 @@ replace_dot_alias = function(e) {
             # if user doesn't like this inferred name, user has to use by=list() to name the column
           }
           # Fix for #1334
-          if (any(duplicated(bynames))) {
+          if (anyDuplicated(bynames)) {
             bynames = make.unique(bynames)
           }
         }

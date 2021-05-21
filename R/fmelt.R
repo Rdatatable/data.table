@@ -199,7 +199,7 @@ melt.data.table = function(data, id.vars, measure.vars, variable.name = "variabl
       variable.name, value.name, as.logical(na.rm),
       as.logical(verbose))
   setDT(ans)
-  if (any(duplicated(names(ans)))) {
+  if (anyDuplicated(names(ans))) {
     catf("Duplicate column names found in molten data.table. Setting unique names using 'make.names'\n")
     setnames(ans, make.unique(names(ans)))
   }
