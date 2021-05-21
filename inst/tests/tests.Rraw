@@ -5929,7 +5929,11 @@ test(1388, as.character(x), c("00:00:01", "-00:00:01", "-01:01:40"))
 # Fix for #880. Another eval(parse(.)) issue.
 DT <- as.data.table(iris)
 DT[, foo := "Species"]
-test(1389, copy(DT)[,bar := eval(parse(text=foo[1]), envir=.SD)], copy(DT)[, bar := Species])
+test(1389.1, copy(DT)[,bar := eval(parse(text=foo[1]), envir=.SD)], copy(DT)[, bar := Species])
+# another test from #1181 for completeness
+DT1 = data.table(a = 1, key = 'a')
+DT2 = data.table(c = 1, fn = list(quote(5*a)), key = 'c')
+test(1389.2, DT1[, n:=eval(DT2[a]$fn[[1]], .SD)], data.table(a=1, n=5, key="a"))
 
 # Fix for foverlaps() floating point interval (double) types. Should increment them by machine tolerance, not by 1L
 DT1 = data.table(start=c(0.88), end=c(0.88))
