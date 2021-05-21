@@ -15,14 +15,14 @@
 
   1. `fwrite()` - parallel .csv writer:
     * Thanks to Otto Seiskari for the initial pull request [#580](https://github.com/Rdatatable/data.table/issues/580) that provided C code, R wrapper, manual page and extensive tests.
-    * From there Matt parallelized and specialized C functions for writing integer/numeric exactly matching `write.csv` between 2.225074e-308 and 1.797693e+308 to 15 significant figures, dates (between 0000-03-01 and 9999-12-31), times down to microseconds in POSIXct, automatic quoting, `bit64::integer64`, `row.names` and `sep2` for `list` columns where each cell can itself be a vector. See [this blog post](http://blog.h2o.ai/2016/04/fast-csv-writing-for-r/) for implementation details and benchmarks.
+    * From there Matt parallelized and specialized C functions for writing integer/numeric exactly matching `write.csv` between 2.225074e-308 and 1.797693e+308 to 15 significant figures, dates (between 0000-03-01 and 9999-12-31), times down to microseconds in POSIXct, automatic quoting, `bit64::integer64`, `row.names` and `sep2` for `list` columns where each cell can itself be a vector. See [this blog post](https://blog.h2o.ai/2016/04/fast-csv-writing-for-r/) for implementation details and benchmarks.
     * Accepts any `list` of same length vectors; e.g. `data.frame` and `data.table`.
     * Caught in development before release to CRAN: thanks to Francesco Grossetti for [#1725](https://github.com/Rdatatable/data.table/issues/1725) (NA handling), Torsten Betz for [#1847](https://github.com/Rdatatable/data.table/issues/1847) (rounding of 9.999999999999998) and @ambils for [#1903](https://github.com/Rdatatable/data.table/issues/1903) (> 1 million columns).
     * `fwrite` status was tracked here: [#1664](https://github.com/Rdatatable/data.table/issues/1664)
 
   2. `fread()`:
     * gains `quote` argument. `quote = ""` disables quoting altogether which reads each field *as is*, [#1367](https://github.com/Rdatatable/data.table/issues/1367). Thanks @manimal.
-    * With [#1462](https://github.com/Rdatatable/data.table/issues/1462) fix, quotes are handled slightly better. Thanks  @Pascal for [posting on SO](http://stackoverflow.com/q/34144314/559784).
+    * With [#1462](https://github.com/Rdatatable/data.table/issues/1462) fix, quotes are handled slightly better. Thanks  @Pascal for [posting on SO](https://stackoverflow.com/q/34144314/559784).
     * gains `blank.lines.skip` argument that continues reading by skipping empty lines. Default is `FALSE` for backwards compatibility, [#530](https://github.com/Rdatatable/data.table/issues/530). Thanks @DirkJonker. Also closes [#1575](https://github.com/Rdatatable/data.table/issues/1575).
     * gains `fill` argument with default `FALSE` for backwards compatibility. Closes [#536](https://github.com/Rdatatable/data.table/issues/536). Also, `fill=TRUE` prioritises maximum cols instead of longest run with identical columns when `fill=TRUE` which allows handle missing columns slightly more robustly, [#1573](https://github.com/Rdatatable/data.table/issues/1573).
     * gains `key` argument, [#590](https://github.com/Rdatatable/data.table/issues/590).
@@ -53,7 +53,7 @@
     * `var`, `sd` and `prod` are all GForce optimised for speed and memory. Partly addresses [#523](https://github.com/Rdatatable/data.table/issues/523). See that post for benchmarks.
 
   8. Reshaping:
-    * `dcast.data.table` now allows `drop = c(FALSE, TRUE)` and `drop = c(TRUE, FALSE)`. The former only fills all missing combinations of formula LHS, where as the latter fills only all missing combinations of formula RHS. Thanks to Ananda Mahto for [this SO post](http://stackoverflow.com/q/34830908/559784) and to Jaap for filing [#1512](https://github.com/Rdatatable/data.table/issues/1512).
+    * `dcast.data.table` now allows `drop = c(FALSE, TRUE)` and `drop = c(TRUE, FALSE)`. The former only fills all missing combinations of formula LHS, where as the latter fills only all missing combinations of formula RHS. Thanks to Ananda Mahto for [this SO post](https://stackoverflow.com/q/34830908/559784) and to Jaap for filing [#1512](https://github.com/Rdatatable/data.table/issues/1512).
     * `melt.data.table` finds variables provided to `patterns()` when called from within user defined functions, [#1749](https://github.com/Rdatatable/data.table/issues/1749). Thanks to @kendonB for the report.
 
   9. We can now refer to the columns that are not mentioned in `.SD` / `.SDcols` in `j` as well. For example, `DT[, .(sum(v1), lapply(.SD, mean)), by=grp, .SDcols=v2:v3]` works as expected, [#495](https://github.com/Rdatatable/data.table/issues/495). Thanks to @MattWeller for report and to others for linking various SO posts to be updated. Also closes [#484](https://github.com/Rdatatable/data.table/issues/484).
@@ -74,7 +74,7 @@
 
   17. `rleid()` gains `prefix` argument, similar to `rowid()`.
 
-  18. `shift()` understands and operates on list-of-list inputs as well, [#1595](https://github.com/Rdatatable/data.table/issues/1595). Thanks to @enfascination and to @chris for [asking on SO](http://stackoverflow.com/q/38900293/559784).
+  18. `shift()` understands and operates on list-of-list inputs as well, [#1595](https://github.com/Rdatatable/data.table/issues/1595). Thanks to @enfascination and to @chris for [asking on SO](https://stackoverflow.com/q/38900293/559784).
 
   19. `uniqueN` gains `na.rm` argument, [#1455](https://github.com/Rdatatable/data.table/issues/1455).
 
@@ -137,7 +137,7 @@
 
   17. `uniqueN()` now handles NULL properly, [#1429](https://github.com/Rdatatable/data.table/issues/1429). Thanks @JanGorecki.
 
-  18. GForce `min` and `max` functions handle `NaN` correctly, [#1461](https://github.com/Rdatatable/data.table/issues/1461). Thanks to @LyssBucks for [asking on SO](http://stackoverflow.com/q/34081848/559784).
+  18. GForce `min` and `max` functions handle `NaN` correctly, [#1461](https://github.com/Rdatatable/data.table/issues/1461). Thanks to @LyssBucks for [asking on SO](https://stackoverflow.com/q/34081848/559784).
 
   19. Warnings on unable to detect column types from middle/last 5 lines are now moved to messages when `verbose=TRUE`. Closes [#1124](https://github.com/Rdatatable/data.table/issues/1124).
 
@@ -163,7 +163,7 @@
 
   30. `rbindlist` (and `rbind`) works as expected when `fill = TRUE` and the first element of input list doesn't have columns present in other elements of the list, [#1549](https://github.com/Rdatatable/data.table/issues/1549). Thanks to @alexkowa.
 
-  31. `DT[, .(col), with=FALSE]` now returns a meaningful error message, [#1440](https://github.com/Rdatatable/data.table/issues/1440). Thanks to @VasilyA for [posting on SO](http://stackoverflow.com/q/33851742/559784).
+  31. `DT[, .(col), with=FALSE]` now returns a meaningful error message, [#1440](https://github.com/Rdatatable/data.table/issues/1440). Thanks to @VasilyA for [posting on SO](https://stackoverflow.com/q/33851742/559784).
 
   32. Fixed a segault in `forder` when elements of input list are not of same length, [#1531](https://github.com/Rdatatable/data.table/issues/1531). Thanks to @MichaelChirico.
 
@@ -201,7 +201,7 @@
 
   49. UTF8 BOM header is excluded properly in `fread()`, [#1087](https://github.com/Rdatatable/data.table/issues/1087) and [#1465](https://github.com/Rdatatable/data.table/issues/1465). Thanks to @nigmastar and @MichaelChirico.
 
-  50. Joins using `on=` retains (and discards) keys properly, [#1268](https://github.com/Rdatatable/data.table/issues/1268). Thanks @DouglasClark for [this SO post](http://stackoverflow.com/q/29918595/559784) that helped discover the issue.
+  50. Joins using `on=` retains (and discards) keys properly, [#1268](https://github.com/Rdatatable/data.table/issues/1268). Thanks @DouglasClark for [this SO post](https://stackoverflow.com/q/29918595/559784) that helped discover the issue.
 
   51. Secondary keys are properly removed when those columns get updated, [#1479](https://github.com/Rdatatable/data.table/issues/1479). Thanks @fabiangehring for the report, and also @ChristK for the MRE.
 
@@ -245,7 +245,7 @@
 
   70. Retaining / removing keys is handled better when join is performed on non-key columns using `on` argument, [#1766](https://github.com/Rdatatable/data.table/issues/1766), [#1704](https://github.com/Rdatatable/data.table/issues/1704) and [#1823](https://github.com/Rdatatable/data.table/issues/1823). Thanks @mllg, @DavidArenburg and @mllg.
 
-  71. `rbind` for data.tables now coerces non-list inputs to data.tables first before calling `rbindlist` so that binding list of data.tables and matrices work as expected to be consistent with base's rbind, [#1626](https://github.com/Rdatatable/data.table/issues/1626). Thanks @ems for reporting [here](http://stackoverflow.com/q/34426957/559784) on SO.
+  71. `rbind` for data.tables now coerces non-list inputs to data.tables first before calling `rbindlist` so that binding list of data.tables and matrices work as expected to be consistent with base's rbind, [#1626](https://github.com/Rdatatable/data.table/issues/1626). Thanks @ems for reporting [here](https://stackoverflow.com/q/34426957/559784) on SO.
 
   72. Subassigning a factor column with `NA` works as expected. Also, the warning message on coercion is suppressed when RHS is singleton NA, [#1740](https://github.com/Rdatatable/data.table/issues/1740). Thanks @Zus.
 
@@ -357,7 +357,7 @@
   1. `fread`
       * passes `showProgress=FALSE` through to `download.file()` (as `quiet=TRUE`). Thanks to a pull request from Karl Broman and Richard Scriven for filing the issue, [#741](https://github.com/Rdatatable/data.table/issues/741).
       * accepts `dec=','` (and other non-'.' decimal separators), [#917](https://github.com/Rdatatable/data.table/issues/917). A new paragraph has been added to `?fread`. On Windows this should just-work. On Unix it may just-work but if not you will need to read the paragraph for an extra step. In case it somehow breaks `dec='.'`, this new feature can be turned off with `options(datatable.fread.dec.experiment=FALSE)`.
-      * Implemented `stringsAsFactors` argument for `fread()`. When `TRUE`, character columns are converted to factors. Default is `FALSE`. Thanks to Artem Klevtsov for filing [#501](https://github.com/Rdatatable/data.table/issues/501), and to @hmi2015 for [this SO post](http://stackoverflow.com/q/31350209/559784).
+      * Implemented `stringsAsFactors` argument for `fread()`. When `TRUE`, character columns are converted to factors. Default is `FALSE`. Thanks to Artem Klevtsov for filing [#501](https://github.com/Rdatatable/data.table/issues/501), and to @hmi2015 for [this SO post](https://stackoverflow.com/q/31350209/559784).
       * gains `check.names` argument, with default value `FALSE`. When `TRUE`, it uses the base function `make.unique()` to ensure that the column names of the data.table read in are all unique. Thanks to David Arenburg for filing [#1027](https://github.com/Rdatatable/data.table/issues/1027).
       * gains `encoding` argument. Acceptable values are "unknown", "UTF-8" and "Latin-1" with default value of "unknown". Closes [#563](https://github.com/Rdatatable/data.table/issues/563). Thanks to @BenMarwick for the original report and to the many requests from others, and Q on SO.
       * gains `col.names` argument, and is similar to `base::read.table()`. Closes [#768](https://github.com/Rdatatable/data.table/issues/768). Thanks to @dardesta for filing the FR.
@@ -393,7 +393,7 @@
   13. `dcast` can now:
       * cast multiple `value.var` columns simultaneously. Closes [#739](https://github.com/Rdatatable/data.table/issues/739).
       * accept multiple functions under `fun.aggregate`. Closes [#716](https://github.com/Rdatatable/data.table/issues/716).
-      * supports optional column prefixes as mentioned under [this SO post](http://stackoverflow.com/q/26225206/559784). Closes [#862](https://github.com/Rdatatable/data.table/issues/862). Thanks to @JohnAndrews.
+      * supports optional column prefixes as mentioned under [this SO post](https://stackoverflow.com/q/26225206/559784). Closes [#862](https://github.com/Rdatatable/data.table/issues/862). Thanks to @JohnAndrews.
       * works with undefined variables directly in formula. Closes [#1037](https://github.com/Rdatatable/data.table/issues/1037). Thanks to @DavidArenburg for the MRE.
       * Naming conventions on multiple columns changed according to [#1153](https://github.com/Rdatatable/data.table/issues/1153). Thanks to @MichaelChirico for the FR.
       * also has a `sep` argument with default `_` for backwards compatibility. [#1210](https://github.com/Rdatatable/data.table/issues/1210). Thanks to @dbetebenner for the FR.
@@ -465,7 +465,7 @@
       * Works fine when RHS is of `list` type - quite unusual operation but could happen. Closes [#961](https://github.com/Rdatatable/data.table/issues/961). Thanks to @Gsee for the minimal report.
       * Auto indexing errored in some cases when LHS and RHS were not of same type. This is fixed now. Closes [#957](https://github.com/Rdatatable/data.table/issues/957). Thanks to @GSee for the minimal report.
       * `DT[x == 2.5]` where `x` is integer type resulted in `val` being coerced to integer (for binary search) and therefore returned incorrect result. This is now identified using the function `isReallyReal()` and if so, auto indexing is turned off. Closes [#1050](https://github.com/Rdatatable/data.table/issues/1050).
-      * Auto indexing errored during `DT[x %in% val]` when `val` has some values not present in `x`. Closes [#1072](https://github.com/Rdatatable/data.table/issues/1072). Thanks to @CarlosCinelli for asking on [StackOverflow](http://stackoverflow.com/q/28932742/559784).
+      * Auto indexing errored during `DT[x %in% val]` when `val` has some values not present in `x`. Closes [#1072](https://github.com/Rdatatable/data.table/issues/1072). Thanks to @CarlosCinelli for asking on [StackOverflow](https://stackoverflow.com/q/28932742/559784).
 
   7. `as.data.table.list` with list input having 0-length items, e.g. `x = list(a=integer(0), b=3:4)`. `as.data.table(x)` recycles item `a` with `NA`s to fit the length of the longer column `b` (length=2), as before now, but with an additional warning message that the item has been recycled with `NA`. Closes [#847](https://github.com/Rdatatable/data.table/issues/847). Thanks to @tvinodr for the report. This was a regression from 1.9.2.
 
@@ -477,7 +477,7 @@
 
   In both these cases (and during a `not-join` which was already fixed in [1.9.4](https://github.com/Rdatatable/data.table/blob/master/README.md#bug-fixes-1)), `allow.cartesian` can be safely ignored.
 
-  10. `names<-.data.table` works as intended on data.table unaware packages with Rv3.1.0+. Closes [#476](https://github.com/Rdatatable/data.table/issues/476) and [#825](https://github.com/Rdatatable/data.table/issues/825). Thanks to ezbentley for reporting [here](http://stackoverflow.com/q/23256177/559784) on SO and to @narrenfrei.
+  10. `names<-.data.table` works as intended on data.table unaware packages with Rv3.1.0+. Closes [#476](https://github.com/Rdatatable/data.table/issues/476) and [#825](https://github.com/Rdatatable/data.table/issues/825). Thanks to ezbentley for reporting [here](https://stackoverflow.com/q/23256177/559784) on SO and to @narrenfrei.
 
   11. `.EACHI` is now an exported symbol (just like `.SD`,`.N`,`.I`,`.GRP` and `.BY` already were) so that packages using `data.table` and `.EACHI` pass `R CMD check` with no NOTE that this symbol is undefined. Thanks to Matt Bannert for highlighting.
 
@@ -487,7 +487,7 @@
 
   14. `format.ITime` now handles negative values properly. Closes [#811](https://github.com/Rdatatable/data.table/issues/811). Thanks to @StefanFritsch for the report along with the fix!
 
-  15. Compatibility with big endian machines (e.g., SPARC and PowerPC) is restored. Most Windows, Linux and Mac systems are little endian; type `.Platform$endian` to confirm. Thanks to Gerhard Nachtmann for reporting and the [QEMU project](http://qemu.org/) for their PowerPC emulator.
+  15. Compatibility with big endian machines (e.g., SPARC and PowerPC) is restored. Most Windows, Linux and Mac systems are little endian; type `.Platform$endian` to confirm. Thanks to Gerhard Nachtmann for reporting and the [QEMU project](https://qemu.org/) for their PowerPC emulator.
 
   16. `DT[, LHS := RHS]` with RHS is of the form `eval(parse(text = foo[1]))` referring to columns in `DT` is now handled properly. Closes [#880](https://github.com/Rdatatable/data.table/issues/880). Thanks to tyner.
 
@@ -497,13 +497,13 @@
 
   19. Updating `.SD` by reference using `set` also errors appropriately now; similar to `:=`. Closes [#927](https://github.com/Rdatatable/data.table/issues/927). Thanks to @jrowen for the minimal example.
 
-  20. `X[Y, .N]` returned the same result as `X[Y, .N, nomatch=0L]`) when `Y` contained rows that has no matches in `X`. Fixed now. Closes [#963](https://github.com/Rdatatable/data.table/issues/963). Thanks to [this SO post](http://stackoverflow.com/q/27004002/559784) from @Alex which helped discover the bug.
+  20. `X[Y, .N]` returned the same result as `X[Y, .N, nomatch=0L]`) when `Y` contained rows that has no matches in `X`. Fixed now. Closes [#963](https://github.com/Rdatatable/data.table/issues/963). Thanks to [this SO post](https://stackoverflow.com/q/27004002/559784) from @Alex which helped discover the bug.
 
   21. `data.table::dcast` handles levels in factor columns properly when `drop = FALSE`. Closes [#893](https://github.com/Rdatatable/data.table/issues/893). Thanks to @matthieugomez for the great minimal example.
 
   22. `[.data.table` subsets complex and raw type objects again. Thanks to @richierocks for the nice minimal example. Closes [#982](https://github.com/Rdatatable/data.table/issues/982).
 
-  23. Fixed a bug in the internal optimisation of `j-expression` with more than one `lapply(.SD, function(..) ..)` as illustrated [here on SO](http://stackoverflow.com/a/27495844/559784). Closes #985. Thanks to @jadaliha for the report and to @BrodieG for the debugging on SO.
+  23. Fixed a bug in the internal optimisation of `j-expression` with more than one `lapply(.SD, function(..) ..)` as illustrated [here on SO](https://stackoverflow.com/a/27495844/559784). Closes #985. Thanks to @jadaliha for the report and to @BrodieG for the debugging on SO.
 
   24. `mget` fetches columns from the default environment `.SD` when called from within the frame of `DT`. That is, `DT[, mget(cols)]`, `DT[, lapply(mget(cols), sum), by=.]` etc.. work as intended. Thanks to @Roland for filing this issue. Closes [#994](https://github.com/Rdatatable/data.table/issues/994).
 
@@ -537,7 +537,7 @@
 
   39. `setattr` now returns an error when trying to set `data.table` and/or `data.frame` as class to a *non-list* type object (ex: `matrix`). Closes [#832](https://github.com/Rdatatable/data.table/issues/832). Thanks to @Rick for the minimal example.
 
-  40. data.table(table) works as expected. Closes [#1043](https://github.com/Rdatatable/data.table/issues/1043). Thanks to @rnso for the [SO post](http://stackoverflow.com/q/28499359/559784).
+  40. data.table(table) works as expected. Closes [#1043](https://github.com/Rdatatable/data.table/issues/1043). Thanks to @rnso for the [SO post](https://stackoverflow.com/q/28499359/559784).
 
   41. Joins and binary search based subsets of the form `x[i]` where `x`'s key column is integer and `i` a logical column threw an error before. This is now fixed by converting the logical column to integer type and then performing the join, so that it works as expected.
 
@@ -551,14 +551,14 @@
 
   46. `DT[rows, newcol := NULL]` resulted in a segfault on the next assignment by reference. Closes [#1082](https://github.com/Rdatatable/data.table/issues/1082). Thanks to @stevenbagley for the MRE.
 
-  47. `as.matrix(DT)` handles cases where `DT` contains both numeric and logical columns correctly (doesn't coerce to character columns anymore). Closes [#1083](https://github.com/Rdatatable/data.table/issues/1083). Thanks to @bramvisser for the [SO post](http://stackoverflow.com/questions/29068328/correlation-between-numeric-and-logical-variable-gives-intended-error).
+  47. `as.matrix(DT)` handles cases where `DT` contains both numeric and logical columns correctly (doesn't coerce to character columns anymore). Closes [#1083](https://github.com/Rdatatable/data.table/issues/1083). Thanks to @bramvisser for the [SO post](https://stackoverflow.com/questions/29068328/correlation-between-numeric-and-logical-variable-gives-intended-error).
 
   48. Coercion is handled properly on subsets/joins on `integer64` key columns. Closes [#1108](https://github.com/Rdatatable/data.table/issues/1108). Thanks to @vspinu.
 
   49. `setDT()` and `as.data.table()` both strip *all classes* preceding *data.table*/*data.frame*, to be consistent with base R. Closes [#1078](https://github.com/Rdatatable/data.table/issues/1078) and [#1128](https://github.com/Rdatatable/data.table/issues/1128). Thanks to Jan and @helix123 for the reports.
 
   50. `setattr(x, 'levels', value)` handles duplicate levels in `value`
- appropriately. Thanks to Jeffrey Horner for pointing it out [here](http://jeffreyhorner.tumblr.com/post/118297392563/tidyr-challenge-help-me-do-my-job). Closes [#1142](https://github.com/Rdatatable/data.table/issues/1142).
+ appropriately. Thanks to Jeffrey Horner for pointing it out [here](https://jeffreyhorner.tumblr.com/post/118297392563/tidyr-challenge-help-me-do-my-job). Closes [#1142](https://github.com/Rdatatable/data.table/issues/1142).
 
   51. `x[J(vals), .N, nomatch=0L]` also included no matches in result, [#1074](https://github.com/Rdatatable/data.table/issues/1074). And `x[J(...), col := val, nomatch=0L]` returned a warning with incorrect results when join resulted in no matches as well, even though `nomatch=0L` should have no effect in `:=`, [#1092](https://github.com/Rdatatable/data.table/issues/1092). Both issues are fixed now. Thanks to @riabusan and @cguill95 for #1092.
 
@@ -658,15 +658,15 @@
     ```
     where `top` is a non-join column in `Y`; i.e., join inherited column. Thanks to many, especially eddi, Sadao Milberg and Gabor Grothendieck for extended discussions. Closes [#538](https://github.com/Rdatatable/data.table/issues/538).
 
-2. Accordingly, `X[Y, j]` now does what `X[Y][, j]` did. To return the old behaviour: `options(datatable.old.bywithoutby=TRUE)`. This is a temporary option to aid migration and will be removed in future. See [this](http://stackoverflow.com/questions/16093289/data-table-join-and-j-expression-unexpected-behavior) and [this](http://stackoverflow.com/a/16222108/403310) post for discussions and motivation.
+2. Accordingly, `X[Y, j]` now does what `X[Y][, j]` did. To return the old behaviour: `options(datatable.old.bywithoutby=TRUE)`. This is a temporary option to aid migration and will be removed in future. See [this](https://stackoverflow.com/questions/16093289/data-table-join-and-j-expression-unexpected-behavior) and [this](https://stackoverflow.com/a/16222108/403310) post for discussions and motivation.
 
   3. `Overlap joins` ([#528](https://github.com/Rdatatable/data.table/issues/528)) is now here, finally!! Except for `type="equal"` and `maxgap` and `minoverlap` arguments, everything else is implemented. Check out `?foverlaps` and the examples there on its usage. This is a major feature addition to `data.table`.
 
   4. `DT[column==value]` and `DT[column %in% values]` are now optimized to use `DT`'s key when `key(DT)[1]=="column"`, otherwise a secondary key (a.k.a. _index_) is automatically added so the next `DT[column==value]` is much faster. No code changes are needed; existing code should automatically benefit. Secondary keys can be added manually using `set2key()` and existence checked using `key2()`. These optimizations and function names/arguments are experimental and may be turned off with `options(datatable.auto.index=FALSE)`.
 
   5. `fread()`:
-      * accepts line breaks inside quoted fields. Thanks to Clayton Stanley for highlighting [here](http://stackoverflow.com/questions/21006661/fread-and-a-quoted-multi-line-column-value).
-      * accepts trailing backslash in quoted fields. Thanks to user2970844 for highlighting [here](http://stackoverflow.com/questions/24375832/fread-and-column-with-a-trailing-backslash).
+      * accepts line breaks inside quoted fields. Thanks to Clayton Stanley for highlighting [here](https://stackoverflow.com/questions/21006661/fread-and-a-quoted-multi-line-column-value).
+      * accepts trailing backslash in quoted fields. Thanks to user2970844 for highlighting [here](https://stackoverflow.com/questions/24375832/fread-and-column-with-a-trailing-backslash).
       * Blank and `"NA"` values in logical columns (`T`,`True`,`TRUE`) no longer cause them to be read as character, [#567](https://github.com/Rdatatable/data.table/issues/567). Thanks to Adam November for reporting.
       * URLs now work on Windows. R's `download.file()` converts `\r\n` to `\r\r\n` on Windows. Now avoided by downloading in binary mode. Thanks to Steve Miller and Dean MacGregor for reporting, [#492](https://github.com/Rdatatable/data.table/issues/492).
       * Fixed segfault in sparse data files when bumping to character, [#796](https://github.com/Rdatatable/data.table/issues/796) and [#722](https://github.com/Rdatatable/data.table/issues/722). Thanks to Adam Kennedy and Richard Cotton for the detailed reproducible reports.
@@ -693,7 +693,7 @@
       * And incredibly fast ;).
       * Documentation updated in much detail. Closes [#333](https://github.com/Rdatatable/data.table/issues/333).
 
-  8. `bit64::integer64` now works in grouping and joins, [#342](https://github.com/Rdatatable/data.table/issues/342). Thanks to James Sams for highlighting UPCs and Clayton Stanley for [this SO post](http://stackoverflow.com/questions/22273321/large-integers-in-data-table-grouping-results-different-in-1-9-2-compared-to-1). `fread()` has been detecting and reading `integer64` for a while.
+  8. `bit64::integer64` now works in grouping and joins, [#342](https://github.com/Rdatatable/data.table/issues/342). Thanks to James Sams for highlighting UPCs and Clayton Stanley for [this SO post](https://stackoverflow.com/questions/22273321/large-integers-in-data-table-grouping-results-different-in-1-9-2-compared-to-1). `fread()` has been detecting and reading `integer64` for a while.
 
   9. `setNumericRounding()` may be used to reduce to 1 byte or 0 byte rounding when joining to or grouping columns of type 'numeric', [#342](https://github.com/Rdatatable/data.table/issues/342). See example in `?setNumericRounding` and NEWS item below for v1.9.2. `getNumericRounding()` returns the current setting.
 
@@ -773,7 +773,7 @@
 
   29. `setorder()` and `setorderv()` gain `na.last = TRUE/FALSE`. Closes [#706](https://github.com/Rdatatable/data.table/issues/706).
 
-  30. `.N` is now available in `i`, [FR#724](https://github.com/Rdatatable/data.table/issues/724). Thanks to newbie indirectly [here](http://stackoverflow.com/a/24649115/403310) and Farrel directly [here](http://stackoverflow.com/questions/24685421/how-do-you-extract-a-few-random-rows-from-a-data-table-on-the-fly).
+  30. `.N` is now available in `i`, [FR#724](https://github.com/Rdatatable/data.table/issues/724). Thanks to newbie indirectly [here](https://stackoverflow.com/a/24649115/403310) and Farrel directly [here](https://stackoverflow.com/questions/24685421/how-do-you-extract-a-few-random-rows-from-a-data-table-on-the-fly).
 
   31. `by=.EACHI` is now implemented for *not-joins* as well. Closes [#604](https://github.com/Rdatatable/data.table/issues/604). Thanks to Garrett See for filing the FR. As an example:
     ```R
@@ -791,7 +791,7 @@
     DT[.(1), list(b,...)]    # correct result again (joining just to a not b but using b)
     ```
 
-  2.  `setkey` works again when a non-key column is type list (e.g. each cell can itself be a vector), [#54](https://github.com/Rdatatable/data.table/issues/54). Test added. Thanks to James Sams, Michael Nelson and Musx [for the reproducible examples](http://stackoverflow.com/questions/22186798/r-data-table-1-9-2-issue-on-setkey).
+  2.  `setkey` works again when a non-key column is type list (e.g. each cell can itself be a vector), [#54](https://github.com/Rdatatable/data.table/issues/54). Test added. Thanks to James Sams, Michael Nelson and Musx [for the reproducible examples](https://stackoverflow.com/questions/22186798/r-data-table-1-9-2-issue-on-setkey).
 
   3.  The warning "internal TRUE value has been modified" with recently released R 3.1 when grouping a table containing a logical column *and* where all groups are just 1 row is now fixed and tests added. Thanks to James Sams for the reproducible example. The warning is issued by R and we have asked if it can be upgraded to error (UPDATE: change now made for R 3.1.1 thanks to Luke Tierney).
 
@@ -799,19 +799,19 @@
 
   5.  `unique(<NULL data.table>)` now returns a null data.table, [#44](https://github.com/Rdatatable/data.table/issues/44). Thanks to agstudy for reporting.
 
-  6.  `data.table()` converted POSIXlt to POSIXct, consistent with `base:::data.frame()`, but now also provides a helpful warning instead of coercing silently, [#59](https://github.com/Rdatatable/data.table/issues/59). Thanks to Brodie Gaslam, Patrick and Ragy Isaac for reporting [here](http://stackoverflow.com/questions/21487614/error-creating-r-data-table-with-date-time-posixlt) and [here](http://stackoverflow.com/questions/21320215/converting-from-data-frame-to-data-table-i-get-an-error-with-head).
+  6.  `data.table()` converted POSIXlt to POSIXct, consistent with `base:::data.frame()`, but now also provides a helpful warning instead of coercing silently, [#59](https://github.com/Rdatatable/data.table/issues/59). Thanks to Brodie Gaslam, Patrick and Ragy Isaac for reporting [here](https://stackoverflow.com/questions/21487614/error-creating-r-data-table-with-date-time-posixlt) and [here](https://stackoverflow.com/questions/21320215/converting-from-data-frame-to-data-table-i-get-an-error-with-head).
 
   7.  If another class inherits from data.table; e.g. `class(DT) == c("UserClass","data.table","data.frame")` then `DT[...]` now retains `UserClass` in the result. Thanks to Daniel Krizian for reporting, [#64](https://github.com/Rdatatable/data.table/issues/44). Test added.
 
-  8.  An error `object '<name>' not found` could occur in some circumstances, particularly after a previous error. [Reported on SO](http://stackoverflow.com/questions/22128047/how-to-avoid-weird-umlaute-error-when-using-data-table) with non-ASCII characters in a column name, a red herring we hope since non-ASCII characters are fully supported in data.table including in column names. Fix implemented and tests added.
+  8.  An error `object '<name>' not found` could occur in some circumstances, particularly after a previous error. [Reported on SO](https://stackoverflow.com/questions/22128047/how-to-avoid-weird-umlaute-error-when-using-data-table) with non-ASCII characters in a column name, a red herring we hope since non-ASCII characters are fully supported in data.table including in column names. Fix implemented and tests added.
 
   9.  Column order was reversed in some cases by `as.data.table.table()`, [#43](https://github.com/Rdatatable/data.table/issues/43). Test added. Thanks to Benjamin Barnes for reporting.
 
   10.  `DT[, !"missingcol", with=FALSE]` now returns `DT` (rather than a NULL data.table) with warning that "missingcol" is not present.
 
-  11.  `DT[,y := y * eval(parse(text="1*2"))]` resulted in error unless `eval()` was wrapped with paranthesis. That is, `DT[,y := y * (eval(parse(text="1*2")))]`, **#5423**. Thanks to Wet Feet for reporting and to Simon O'Hanlon for identifying the issue [here on SO](http://stackoverflow.com/questions/22375404/unable-to-use-evalparse-in-data-table-function/22375557#22375557).
+  11.  `DT[,y := y * eval(parse(text="1*2"))]` resulted in error unless `eval()` was wrapped with paranthesis. That is, `DT[,y := y * (eval(parse(text="1*2")))]`, **#5423**. Thanks to Wet Feet for reporting and to Simon O'Hanlon for identifying the issue [here on SO](https://stackoverflow.com/questions/22375404/unable-to-use-evalparse-in-data-table-function/22375557#22375557).
 
-  12.  Using `by` columns with attributes (ex: factor, Date) in `j` did not retain the attributes, also in case of `:=`. This was partially a regression from an earlier fix ([#155](https://github.com/Rdatatable/data.table/issues/155)) due to recent changes for R3.1.0. Now fixed and clearer tests added. Thanks to Christophe Dervieux for reporting and to Adam B for reporting [here on SO](http://stackoverflow.com/questions/22536586/by-seems-to-not-retain-attribute-of-date-type-columns-in-data-table-possibl). Closes [#36](https://github.com/Rdatatable/data.table/issues/36).
+  12.  Using `by` columns with attributes (ex: factor, Date) in `j` did not retain the attributes, also in case of `:=`. This was partially a regression from an earlier fix ([#155](https://github.com/Rdatatable/data.table/issues/155)) due to recent changes for R3.1.0. Now fixed and clearer tests added. Thanks to Christophe Dervieux for reporting and to Adam B for reporting [here on SO](https://stackoverflow.com/questions/22536586/by-seems-to-not-retain-attribute-of-date-type-columns-in-data-table-possibl). Closes [#36](https://github.com/Rdatatable/data.table/issues/36).
 
   13.  `.BY` special variable did not retain names of the grouping columns which resulted in not being able to access `.BY$grpcol` in `j`. Ex: `DT[, .BY$x, by=x]`. This is now fixed. Closes **#5415**. Thanks to Stephane Vernede for the bug report.
 
@@ -825,7 +825,7 @@
 
   18.  `merge(x, y, all=TRUE)` error when `x` is empty data.table is now fixed. Closes [#24](https://github.com/Rdatatable/data.table/issues/24). Thanks to Garrett See for filing the report.
 
-  19.  Implementing #5249 closes bug [#26](https://github.com/Rdatatable/data.table/issues/26), a case where rbind gave error when binding with empty data.tables. Thanks to Roger for [reporting on SO](http://stackoverflow.com/q/23216033/559784).
+  19.  Implementing #5249 closes bug [#26](https://github.com/Rdatatable/data.table/issues/26), a case where rbind gave error when binding with empty data.tables. Thanks to Roger for [reporting on SO](https://stackoverflow.com/q/23216033/559784).
 
   20.  Fixed a segfault during grouping with assignment by reference, ex: `DT[, LHS := RHS, by=.]`, where length(RHS) > group size (.N). Closes [#25](https://github.com/Rdatatable/data.table/issues/25). Thanks to Zachary Long for reporting on datatable-help mailing list.
 
@@ -841,11 +841,11 @@
 
   25.  FR # 2551 implemented leniance in warning messages when columns are coerced with `DT[, LHS := RHS]`, when `length(RHS)==1`. But this was very lenient; e.g., `DT[, a := "bla"]`, where `a` is a logical column should get a warning. This is now fixed such that only very obvious cases coerces silently; e.g., `DT[, a := 1]` where `a` is `integer`. Closes [#35](https://github.com/Rdatatable/data.table/issues/35). Thanks to Michele Carriero and John Laing for reporting.
 
-  26.  `dcast.data.table` provides better error message when `fun.aggregate` is specified but it returns length != 1. Closes [#693](https://github.com/Rdatatable/data.table/issues/693). Thanks to Trevor Alexander for reporting [here on SO](http://stackoverflow.com/questions/24152733/undocumented-error-in-dcast-data-table).
+  26.  `dcast.data.table` provides better error message when `fun.aggregate` is specified but it returns length != 1. Closes [#693](https://github.com/Rdatatable/data.table/issues/693). Thanks to Trevor Alexander for reporting [here on SO](https://stackoverflow.com/questions/24152733/undocumented-error-in-dcast-data-table).
 
   27.  `dcast.data.table` tries to preserve attributes wherever possible, except when `value.var` is a `factor` (or ordered factor). For `factor` types, the casted columns will be coerced to type `character` thereby losing the `levels` attribute. Closes [#688](https://github.com/Rdatatable/data.table/issues/688). Thanks to juancentro for reporting.
 
-  28.  `melt` now returns friendly error when `meaure.vars` are not in data instead of segfault. Closes [#699](https://github.com/Rdatatable/data.table/issues/688). Thanks to vsalmendra for [this post on SO](http://stackoverflow.com/q/24326797/559784) and the subsequent bug report.
+  28.  `melt` now returns friendly error when `meaure.vars` are not in data instead of segfault. Closes [#699](https://github.com/Rdatatable/data.table/issues/688). Thanks to vsalmendra for [this post on SO](https://stackoverflow.com/q/24326797/559784) and the subsequent bug report.
 
   29.  `DT[, list(m1 = eval(expr1), m2=eval(expr2)), by=val]` where `expr1` and `expr2` are constructed using `parse(text=.)` now works instead of resulting in error. Closes [#472](https://github.com/Rdatatable/data.table/issues/472). Thanks to Benjamin Barnes for reporting with a nice reproducible example.
 
@@ -855,17 +855,17 @@
 
   32.  `DT[, list(list(.)), by=.]` and `DT[, col := list(list(.)), by=.]` now return correct results in R >= 3.1.0. The bug was due to a welcome change in R 3.1.0 where `list(.)` no longer copies. Closes [#481](https://github.com/Rdatatable/data.table/issues/481). Also thanks to KrishnaPG for filing [#728](https://github.com/Rdatatable/data.table/issues/728).
 
-  33.  `dcast.data.table` handles `fun.aggregate` argument properly when called from within a function that accepts `fun.aggregate` argument and passes to `dcast.data.table()`. Closes [#713](https://github.com/Rdatatable/data.table/issues/713). Thanks to mathematicalcoffee for reporting [here](http://stackoverflow.com/q/24542976/559784) on SO.
+  33.  `dcast.data.table` handles `fun.aggregate` argument properly when called from within a function that accepts `fun.aggregate` argument and passes to `dcast.data.table()`. Closes [#713](https://github.com/Rdatatable/data.table/issues/713). Thanks to mathematicalcoffee for reporting [here](https://stackoverflow.com/q/24542976/559784) on SO.
 
   34.  `dcast.data.table` now returns a friendly error when fun.aggregate value for missing combinations is 0-length, and 'fill' argument is not provided. Closes [#715](https://github.com/Rdatatable/data.table/issues/715)
 
   35.  `rbind/rbindlist` binds in the same order of occurrence also when binding tables with duplicate names along with 'fill=TRUE' (previously, it grouped all duplicate columns together). This was the underlying reason for [#725](https://github.com/Rdatatable/data.table/issues/715). Thanks to Stefan Fritsch for the report with a nice reproducible example and discussion.
 
-  36.  `setDT` now provides a friendly error when attempted to change a variable to data.table by reference whose binding is locked (usually when the variable is within a package, ex: CO2). Closes [#475](https://github.com/Rdatatable/data.table/issues/475). Thanks to David Arenburg for filing the report [here](http://stackoverflow.com/questions/23361080/error-in-setdt-from-data-table-package) on SO.
+  36.  `setDT` now provides a friendly error when attempted to change a variable to data.table by reference whose binding is locked (usually when the variable is within a package, ex: CO2). Closes [#475](https://github.com/Rdatatable/data.table/issues/475). Thanks to David Arenburg for filing the report [here](https://stackoverflow.com/questions/23361080/error-in-setdt-from-data-table-package) on SO.
 
   37.  `X[!Y]` where `X` and `Y` are both data.tables ignores 'allow.cartesian' argument, and rightly so because a not-join (or anti-join) cannot exceed nrow(x). Thanks to @fedyakov for spotting this. Closes [#698](https://github.com/Rdatatable/data.table/issues/698).
 
-  38.  `as.data.table.matrix` does not convert strings to factors by default. `data.table` likes and prefers using character vectors to factors. Closes [#745](https://github.com/Rdatatable/data.table/issues/698). Thanks to @fpinter for reporting the issue on the github issue tracker and to vijay for reporting [here](http://stackoverflow.com/questions/17691050/data-table-still-converts-strings-to-factors) on SO.
+  38.  `as.data.table.matrix` does not convert strings to factors by default. `data.table` likes and prefers using character vectors to factors. Closes [#745](https://github.com/Rdatatable/data.table/issues/698). Thanks to @fpinter for reporting the issue on the github issue tracker and to vijay for reporting [here](https://stackoverflow.com/questions/17691050/data-table-still-converts-strings-to-factors) on SO.
 
   39.  Joins of the form `x[y[z]]` resulted in duplicate names when all `x`, `y` and `z` had the same column names as non-key columns. This is now fixed. Closes [#471](https://github.com/Rdatatable/data.table/issues/471). Thanks to Christian Sigg for the nice reproducible example.
 
@@ -900,7 +900,7 @@
 
   3.  `?duplicated.data.table` explained that `by=NULL` or `by=FALSE` would use all columns, however `by=FALSE` resulted in error. `by=FALSE` is removed from help and `duplicated` returns an error when `by=TRUE/FALSE` now. Closes [#38](https://github.com/Rdatatable/data.table/issues/38).
 
-  4.  More info about distinguishing small numbers from 0.0 in v1.9.2+ is [here](http://stackoverflow.com/questions/22290544/grouping-very-small-numbers-e-g-1e-28-and-0-0-in-data-table-v1-8-10-vs-v1-9-2).
+  4.  More info about distinguishing small numbers from 0.0 in v1.9.2+ is [here](https://stackoverflow.com/questions/22290544/grouping-very-small-numbers-e-g-1e-28-and-0-0-in-data-table-v1-8-10-vs-v1-9-2).
 
   5.  `?dcast.data.table` now explains how the names are generated for the columns that are being casted. Closes **#5676**.
 
@@ -910,9 +910,9 @@
      `?setorder` (with alias `?order` and `?forder`). Closes [#478](https://github.com/Rdatatable/data.table/issues/478) and
      also [#704](https://github.com/Rdatatable/data.table/issues/704). Thanks to Christian Wolf for the report.
 
-  8.  Added tests (1351.1 and 1351.2) to catch any future regressions on particular case of binary search based subset reported [here](http://stackoverflow.com/q/24729001/559784) on SO. Thanks to Scott for the post. The regression was contained to v1.9.2 AFAICT. Closes [#734](https://github.com/Rdatatable/data.table/issues/704).
+  8.  Added tests (1351.1 and 1351.2) to catch any future regressions on particular case of binary search based subset reported [here](https://stackoverflow.com/q/24729001/559784) on SO. Thanks to Scott for the post. The regression was contained to v1.9.2 AFAICT. Closes [#734](https://github.com/Rdatatable/data.table/issues/704).
 
-  9.  Added an `.onUnload` method to unload `data.table`'s shared object properly. Since the name of the shared object is 'datatable.so' and not 'data.table.so', 'detach' fails to unload correctly. This was the reason for the issue reported [here](http://stackoverflow.com/questions/23498804/load-detach-re-load-anomaly) on SO. Closes [#474](https://github.com/Rdatatable/data.table/issues/474). Thanks to Matthew Plourde for reporting.
+  9.  Added an `.onUnload` method to unload `data.table`'s shared object properly. Since the name of the shared object is 'datatable.so' and not 'data.table.so', 'detach' fails to unload correctly. This was the reason for the issue reported [here](https://stackoverflow.com/questions/23498804/load-detach-re-load-anomaly) on SO. Closes [#474](https://github.com/Rdatatable/data.table/issues/474). Thanks to Matthew Plourde for reporting.
 
   10.  Updated `BugReports` link in DESCRIPTION. Thanks to @chrsigg for reporting. Closes [#754](https://github.com/Rdatatable/data.table/issues/754).
 
@@ -922,7 +922,7 @@
 
   13. Clarified `.I` in `?data.table`. Closes [#510](https://github.com/Rdatatable/data.table/issues/510). Thanks to Gabor for reporting.
 
-  14. Moved `?copy` to its own help page, and documented that `dt_names <- copy(names(DT))` is necessary for `dt_names` to be not modified by reference as a result of updating `DT` by reference (e.g. adding a new column by reference). Closes [#512](https://github.com/Rdatatable/data.table/issues/512). Thanks to Zach for [this SO question](http://stackoverflow.com/q/15913417/559784) and user1971988 for [this SO question](http://stackoverflow.com/q/18662715/559784).
+  14. Moved `?copy` to its own help page, and documented that `dt_names <- copy(names(DT))` is necessary for `dt_names` to be not modified by reference as a result of updating `DT` by reference (e.g. adding a new column by reference). Closes [#512](https://github.com/Rdatatable/data.table/issues/512). Thanks to Zach for [this SO question](https://stackoverflow.com/q/15913417/559784) and user1971988 for [this SO question](https://stackoverflow.com/q/18662715/559784).
 
   15. `address(x)` doesn't increment `NAM()` value when `x` is a vector. Using the object as argument to a non-primitive function is sufficient to increment its reference. Closes #824. Thanks to @tarakc02 for the [question on twitter](https://twitter.com/tarakc02/status/513796515026837504) and hint from Hadley.
 
@@ -947,7 +947,7 @@
 
     > Reminder: bmerge allows the rolling join feature: forwards, backwards, limited and nearest.
 
-  3.  Sorting (`setkey` and ad-hoc `by=`) is faster and scales better on randomly ordered data and now also adapts to almost sorted data. The remaining comparison sorts have been removed. We use a combination of counting sort and forwards radix (MSD) for all types including double, character and integers with range>100,000; forwards not backwards through columns. This was inspired by [Terdiman](http://codercorner.com/RadixSortRevisited.htm) and [Herf's](http://stereopsis.com/radix.html) (LSD) radix approach for floating point :
+  3.  Sorting (`setkey` and ad-hoc `by=`) is faster and scales better on randomly ordered data and now also adapts to almost sorted data. The remaining comparison sorts have been removed. We use a combination of counting sort and forwards radix (MSD) for all types including double, character and integers with range>100,000; forwards not backwards through columns. This was inspired by [Terdiman](https://codercorner.com/RadixSortRevisited.htm) and [Herf's](http://stereopsis.com/radix.html) (LSD) radix approach for floating point :
 
   4.  `unique` and `duplicated` methods for `data.table` are significantly faster especially for type numeric (i.e. double), and type integer where range > 100,000 or contains negatives.
 
@@ -978,7 +978,7 @@
 
   14.  fread now understand system commands; e.g., `fread("grep blah file.txt")`.
 
-  15.  `as.data.table` method for `table()` implemented, #4848. Thanks to Frank Pinter for suggesting [here on SO](http://stackoverflow.com/questions/18390947/data-table-of-table-is-very-different-from-data-frame-of-table).
+  15.  `as.data.table` method for `table()` implemented, #4848. Thanks to Frank Pinter for suggesting [here on SO](https://stackoverflow.com/questions/18390947/data-table-of-table-is-very-different-from-data-frame-of-table).
 
   16.  `as.data.table` methods added for integer, numeric, character, logical, factor, ordered and Date.
 
@@ -990,7 +990,7 @@
     set(DT, i=3:5, j="newCol", 5L)   # same
     ```
 
-  19.  eval will now be evaluated anywhere in a `j`-expression as long as it has just one argument, #4677. Will still need to use `.SD` as environment in complex cases. Also fixes bug [here on SO](http://stackoverflow.com/a/19054962/817778).
+  19.  eval will now be evaluated anywhere in a `j`-expression as long as it has just one argument, #4677. Will still need to use `.SD` as environment in complex cases. Also fixes bug [here on SO](https://stackoverflow.com/a/19054962/817778).
 
   20.  `!` at the head of the expression will no longer trigger a not-join if the expression is logical, #4650. Thanks to Arunkumar Srinivasan for reporting.
 
@@ -1006,7 +1006,7 @@
 
   26.  `rbind` now relies exclusively on `rbindlist` to bind `data.tables` together. This makes rbind'ing factors faster, #2115.
 
-  27.  `DT[, as.factor('x'), with=FALSE]` where `x` is a column in `DT` is now equivalent to `DT[, "x", with=FALSE]` instead of ending up with an error, #4867. Thanks to tresbot for reporting [here on SO](http://stackoverflow.com/questions/18525976/converting-multiple-data-table-columns-to-factors-in-r).
+  27.  `DT[, as.factor('x'), with=FALSE]` where `x` is a column in `DT` is now equivalent to `DT[, "x", with=FALSE]` instead of ending up with an error, #4867. Thanks to tresbot for reporting [here on SO](https://stackoverflow.com/questions/18525976/converting-multiple-data-table-columns-to-factors-in-r).
 
   28.  `format.data.table` now understands 'formula' and displays embedded formulas as expected, FR #2591.
 
@@ -1015,7 +1015,7 @@
     DT[, { `:=`(...)}]             # now works
     DT[, {`:=`(...)}, by=(...)]    # now works
     ```
-    Thanks to Alex for reporting [here on SO](http://stackoverflow.com/questions/14541959/expression-syntax-for-data-table-in-r).
+    Thanks to Alex for reporting [here on SO](https://stackoverflow.com/questions/14541959/expression-syntax-for-data-table-in-r).
 
   30.  `x[J(2), a]`, where `a` is the key column sees `a` in `j`, #2693 and FAQ 2.8. Also, `x[J(2)]` automatically names the columns from `i` using the key columns of `x`. In cases where the key columns of `x` and `i` are identical, i's columns can be referred to by using `i.name`; e.g., `x[J(2), i.a]`. Thanks to mnel and Gabor for the discussion on datatable-help.
 
@@ -1044,9 +1044,9 @@
 
   36.  `X[Y, col:=value]` when no match exists in the join is now caught early and X is simply returned. Also a message when `datatable.verbose` is TRUE is provided. In addition, if `col` is an existing column, since no update actually takes place, the key is now retained. Thanks to Frank Erickson for suggesting, #4996.
 
-  37.  New function `setDT()` takes a `list` (named and/or unnamed) or `data.frame` and changes its type by reference to `data.table`, *without any copy*. It also has a logical argument `giveNames` which is used for a list inputs. See `?setDT` examples for more. Based on [this FR on SO](http://stackoverflow.com/questions/20345022/convert-a-data-frame-to-a-data-table-without-copy/20346697#20346697).
+  37.  New function `setDT()` takes a `list` (named and/or unnamed) or `data.frame` and changes its type by reference to `data.table`, *without any copy*. It also has a logical argument `giveNames` which is used for a list inputs. See `?setDT` examples for more. Based on [this FR on SO](https://stackoverflow.com/questions/20345022/convert-a-data-frame-to-a-data-table-without-copy/20346697#20346697).
 
-  38.  `setnames(DT,"oldname","newname")` no longer complains about any duplicated column names in `DT` so long as oldname is unique and unambiguous. Thanks to Wet Feet for highlighting [here on SO](http://stackoverflow.com/questions/20942905/ignore-safety-check-when-using-setnames).
+  38.  `setnames(DT,"oldname","newname")` no longer complains about any duplicated column names in `DT` so long as oldname is unique and unambiguous. Thanks to Wet Feet for highlighting [here on SO](https://stackoverflow.com/questions/20942905/ignore-safety-check-when-using-setnames).
 
   39.  `last(x)` where `length(x)=0` now returns 'x' instead of an error, #5152. Thanks to Garrett See for reporting.
 
@@ -1069,18 +1069,18 @@
 ## BUG FIXES
 
   1.  Long outstanding (usually small) memory leak in grouping fixed, #2648. When the last group is smaller than the largest group, the difference in those sizes was not being released. Also evident in non-trivial aggregations where each group returns a different number of rows. Most users run a grouping
-     query once and will never have noticed these, but anyone looping calls to grouping (such as when running in parallel, or benchmarking) may have suffered. Tests added. Thanks to many including vc273 and Y T for reporting [here](http://stackoverflow.com/questions/20349159/memory-leak-in-data-table-grouped-assignment-by-reference) and [here](http://stackoverflow.com/questions/15651515/slow-memory-leak-in-data-table-when-returning-named-lists-in-j-trying-to-reshap) on SO.
+     query once and will never have noticed these, but anyone looping calls to grouping (such as when running in parallel, or benchmarking) may have suffered. Tests added. Thanks to many including vc273 and Y T for reporting [here](https://stackoverflow.com/questions/20349159/memory-leak-in-data-table-grouped-assignment-by-reference) and [here](https://stackoverflow.com/questions/15651515/slow-memory-leak-in-data-table-when-returning-named-lists-in-j-trying-to-reshap) on SO.
 
-  2.  In long running computations where data.table is called many times repetitively the following error could sometimes occur, #2647: *"Internal error: .internal.selfref prot is not itself an extptr"*. Now fixed. Thanks to theEricStone, StevieP and JasonB for (difficult) reproducible examples [here](http://stackoverflow.com/questions/15342227/getting-a-random-internal-selfref-error-in-data-table-for-r).
+  2.  In long running computations where data.table is called many times repetitively the following error could sometimes occur, #2647: *"Internal error: .internal.selfref prot is not itself an extptr"*. Now fixed. Thanks to theEricStone, StevieP and JasonB for (difficult) reproducible examples [here](https://stackoverflow.com/questions/15342227/getting-a-random-internal-selfref-error-in-data-table-for-r).
 
   3.  If `fread` returns a data error (such as no closing quote on a quoted field) it now closes the file first rather than holding a lock open, a Windows only problem.
-     Thanks to nigmastar for reporting [here](http://stackoverflow.com/questions/18597123/fread-data-table-locks-files) and Carl Witthoft for the hint. Tests added.
+     Thanks to nigmastar for reporting [here](https://stackoverflow.com/questions/18597123/fread-data-table-locks-files) and Carl Witthoft for the hint. Tests added.
 
   4.  `DT[0,col:=value]` is now a helpful error rather than crash, #2754. Thanks to Ricardo Saporta for reporting. `DT[NA,col:=value]`'s error message has also been improved. Tests added.
 
-  5.  Assigning to the same column twice in the same query is now an error rather than a crash in some circumstances; e.g., `DT[,c("B","B"):=NULL]` (delete by reference the same column twice). Thanks to Ricardo (#2751) and matt_k (#2791) for reporting [here](http://stackoverflow.com/questions/16638484/remove-multiple-columns-from-data-table). Tests added.
+  5.  Assigning to the same column twice in the same query is now an error rather than a crash in some circumstances; e.g., `DT[,c("B","B"):=NULL]` (delete by reference the same column twice). Thanks to Ricardo (#2751) and matt_k (#2791) for reporting [here](https://stackoverflow.com/questions/16638484/remove-multiple-columns-from-data-table). Tests added.
 
-  6.  Crash and/or incorrect aggregate results with negative indexing in `i` is fixed, with a warning when the `abs(negative index) > nrow(DT)`, #2697. Thanks to Eduard Antonyan (eddi) for reporting [here](http://stackoverflow.com/questions/16046696/data-table-bug-causing-a-segfault-in-r). Tests added.
+  6.  Crash and/or incorrect aggregate results with negative indexing in `i` is fixed, with a warning when the `abs(negative index) > nrow(DT)`, #2697. Thanks to Eduard Antonyan (eddi) for reporting [here](https://stackoverflow.com/questions/16046696/data-table-bug-causing-a-segfault-in-r). Tests added.
 
   7.  `head()` and `tail()` handle negative `n` values correctly now, #2375. Thanks to Garrett See for reporting. Also it results in an error when `length(n) != 1`. Tests added.
 
@@ -1108,7 +1108,7 @@
 
   17.  Cartesian Join (`allow.cartesian = TRUE`) when both `x` and `i` are keyed and `length(key(x)) > length(key(i))` set resulting key incorrectly. This is now fixed, #2677. Tests added. Thanks to Shir Levkowitz for reporting.
 
-  18.  `:=` (assignment by reference) loses POSIXct or ITime attribute *while grouping* is now fixed, #2531. Tests added. Thanks to stat quant for reporting [here](http://stackoverflow.com/questions/14604820/why-does-this-posixct-or-itime-loses-its-format-attribute) and to Paul Murray for reporting [here](http://stackoverflow.com/questions/15996692/cannot-assign-columns-as-date-by-reference-in-data-table) on SO.
+  18.  `:=` (assignment by reference) loses POSIXct or ITime attribute *while grouping* is now fixed, #2531. Tests added. Thanks to stat quant for reporting [here](https://stackoverflow.com/questions/14604820/why-does-this-posixct-or-itime-loses-its-format-attribute) and to Paul Murray for reporting [here](https://stackoverflow.com/questions/15996692/cannot-assign-columns-as-date-by-reference-in-data-table) on SO.
 
   19.  `chmatch()` didn't always match non-ascii characters, #2538 and #4818. chmatch is used internally so `DT[is.na(päs), päs := 99L]` now works. Thanks to Benjamin Barnes and Stefan Fritsch for reporting. Tests added.
 
@@ -1116,7 +1116,7 @@
 
   21.  A special case of not-join and logical TRUE, `DT[!TRUE]`, gave an error whereas it should be identical to `DT[FALSE]`. Now fixed and tests added. Thanks once again to Ricardo Saporta for filing #4930.
 
-  22.  `X[Y,roll=-Inf,rollends=FALSE]` didn't roll the middle correctly if `Y` was keyed. It was ok if `Y` was unkeyed or rollends left as the default [c(TRUE,FALSE) when roll < 0]. Thanks to user338714 for reporting [here](http://stackoverflow.com/questions/18984179/roll-data-table-with-rollends). Tests added.
+  22.  `X[Y,roll=-Inf,rollends=FALSE]` didn't roll the middle correctly if `Y` was keyed. It was ok if `Y` was unkeyed or rollends left as the default [c(TRUE,FALSE) when roll < 0]. Thanks to user338714 for reporting [here](https://stackoverflow.com/questions/18984179/roll-data-table-with-rollends). Tests added.
 
   23.  Key is now retained after an order-preserving subset, #295.
 
@@ -1124,15 +1124,15 @@
 
   25.  Fixed bug #4927. Unusual column names in normal quotes, ex: `by=".Col"`, now works as expected in `by`. Thanks to Ricardo Saporta for reporting.
 
-  26.  `setkey` resulted in error when column names contained ",". This is now fixed. Thanks to Corone for reporting [here](http://stackoverflow.com/a/19166273/817778) on SO.
+  26.  `setkey` resulted in error when column names contained ",". This is now fixed. Thanks to Corone for reporting [here](https://stackoverflow.com/a/19166273/817778) on SO.
 
   27.  `rbind` when at least one argument was a data.table, but not the first, returned the rbind'd data.table with key. This is now fixed, #4995. Thanks to Frank Erickson for reporting.
 
-  28.  That `.SD` doesn't retain column's class is now fixed (#2530). Thanks to Corone for reporting [here](http://stackoverflow.com/questions/14753411/why-does-data-table-lose-class-definition-in-sd-after-group-by).
+  28.  That `.SD` doesn't retain column's class is now fixed (#2530). Thanks to Corone for reporting [here](https://stackoverflow.com/questions/14753411/why-does-data-table-lose-class-definition-in-sd-after-group-by).
 
   29.  `eval(quote())` returned error when the quoted expression is a not-join, #4994. This is now fixed. Tests added.
 
-  30.  `DT[, lapply(.SD, function(), by=]` did not see columns of DT when optimisation is "on". This is now fixed, #2381. Tests added. Thanks to David F for reporting [here](http://stackoverflow.com/questions/13441868/data-table-and-stratified-means) on SO.
+  30.  `DT[, lapply(.SD, function(), by=]` did not see columns of DT when optimisation is "on". This is now fixed, #2381. Tests added. Thanks to David F for reporting [here](https://stackoverflow.com/questions/13441868/data-table-and-stratified-means) on SO.
 
   31.  #4959 - rbind'ing empty data.tables now works
 
@@ -1140,7 +1140,7 @@
 
   33.  Fixed bug #5007, `j` did not see variables declared within a local (function) environment properly. Now, `DT[, lapply(.SD, function(x) fun_const), by=x]` where "fun_const" is a local variable within a function works as expected. Thanks to Ricardo Saporta for catching this and providing a very nice reproducible      example.
 
-  34.  Fixing #5007 also fixes #4957, where `.N` was not visible during `lapply(.SD, function(x) ...)` in `j`. Thanks to juba for noticing it [here](http://stackoverflow.com/questions/19094771/replace-values-in-each-column-based-on-conditions-according-to-groups-by-rows) on SO.
+  34.  Fixing #5007 also fixes #4957, where `.N` was not visible during `lapply(.SD, function(x) ...)` in `j`. Thanks to juba for noticing it [here](https://stackoverflow.com/questions/19094771/replace-values-in-each-column-based-on-conditions-according-to-groups-by-rows) on SO.
 
   35.  Fixed another case where function expressions were not constructed properly in `j`, while fixing #5007. `DT[, lapply(.SD, function(x) my_const), by=x]` now works as expected instead of ending up in an error.
 
@@ -1175,7 +1175,7 @@
 
   48.  Fixed a rare segfault that occurred on >250m rows (integer overflow during memory allocation); closes #5305. Thanks to Guenter J. Hitsch for reporting.
 
-  49.  `rbindlist` with at least one factor column along with the presence of at least one empty data.table resulted in segfault (or in linux/mac reported an error related to hash tables). This is now fixed, #5355. Thanks to Trevor Alexander for [reporting on SO](http://stackoverflow.com/questions/21591433/merging-really-not-that-large-data-tables-immediately-results-in-r-being-killed) (and mnel for filing the bug report):
+  49.  `rbindlist` with at least one factor column along with the presence of at least one empty data.table resulted in segfault (or in linux/mac reported an error related to hash tables). This is now fixed, #5355. Thanks to Trevor Alexander for [reporting on SO](https://stackoverflow.com/questions/21591433/merging-really-not-that-large-data-tables-immediately-results-in-r-being-killed) (and mnel for filing the bug report):
 
   50.  `CJ()` now orders character vectors in a locale consistent with `setkey`, #5375. Typically this affected whether upper case letters were ordered before lower case letters; they were by `setkey()` but not by `CJ()`. This difference started in v1.8.10 with the change "CJ() is 90% faster...", see NEWS below. Test added and avenues for differences closed off and nailed down, with no loss in performance. Many thanks to Malcolm Hawkes for reporting.
 
@@ -1198,7 +1198,7 @@
 
   7.  Gsee for reporting that `set()` and `:=` could no longer add columns by reference to an object that inherits from data.table; e.g., `class = c("myclass", data.table", "data.frame"))`, #5115.
 
-  8.  Clayton Stanley for reporting #5307 [here on SO](http://stackoverflow.com/questions/21437546/data-table-1-8-11-and-aggregation-issues). Aggregating logical types could give wrong results.
+  8.  Clayton Stanley for reporting #5307 [here on SO](https://stackoverflow.com/questions/21437546/data-table-1-8-11-and-aggregation-issues). Aggregating logical types could give wrong results.
 
   9.  New and very welcome ASAN and UBSAN checks on CRAN detected :
       * integer64 overflow in test 899 reading integers longer than apx 18 digits
@@ -1244,14 +1244,14 @@
 
      * "+" and "-" are now read as character rather than integer 0. Thanks to Alvaro Gonzalez and
        Roby Joehanes for reporting, #4814.
-       http://stackoverflow.com/questions/15388714/reading-strand-column-with-fread-data-table-package
+       https://stackoverflow.com/questions/15388714/reading-strand-column-with-fread-data-table-package
 
      * % progress console meter has been removed. The ouput was inconvenient in batch mode, log files and
        reports which don't handle \r. It was too difficult to detect where fread is being called from, plus,
        removing it speeds up fread a little by saving code inside the C for loop (which is why it wasn't
        made optional instead). Use your operating system's system monitor to confirm fread is progressing.
        Thanks to Baptiste for highlighting :
-       http://stackoverflow.com/questions/15370993/strange-output-from-fread-when-called-from-knitr
+       https://stackoverflow.com/questions/15370993/strange-output-from-fread-when-called-from-knitr
 
      * colClasses has been added. Same character vector format as read.csv (may be named or unnamed), but
        additionally may be type list. Type list enables setting ranges of columns by numeric position.
@@ -1276,12 +1276,12 @@
        such as a footer (the first line of which will be included in the warning message).
 
      * Now reads files that are open in Excel without having to close them first, #2661. And up to 5 attempts
-       are made every 250ms on Windows as recommended here : http://support.microsoft.com/kb/316609.
+       are made every 250ms on Windows as recommended here : https://support.microsoft.com/kb/316609.
 
      * "nan%" observed in output of fread(...,verbose=TRUE) timings are now 0% when fread takes 0.000 seconds.
 
      * An unintended 50,000 column limit in fread has been removed. Thanks to mpmorley for reporting. Test added.
-       http://stackoverflow.com/questions/18449997/fread-protection-stack-overflow-error
+       https://stackoverflow.com/questions/18449997/fread-protection-stack-overflow-error
 
   *  unique() and duplicated() methods gain 'by' to allow testing for uniqueness using any subset of columns,
      not just the keyed columns (if keyed) or all columns (if not). By default by=key(dt) for backwards
@@ -1298,13 +1298,13 @@
 
   *  New function address() returns the address in RAM of its argument. Sometimes useful in determining whether a value
      has been copied or not by R, programatically.
-       http://stackoverflow.com/a/10913296/403310
+       https://stackoverflow.com/a/10913296/403310
 
 ## BUG FIXES
 
   *  merge no longer returns spurious NA row(s) when y is empty and all.y=TRUE (or all=TRUE), #2633. Thanks
      to Vinicius Almendra for reporting. Test added.
-       http://stackoverflow.com/questions/15566250/merge-data-table-with-all-true-introduces-na-row-is-this-correct
+       https://stackoverflow.com/questions/15566250/merge-data-table-with-all-true-introduces-na-row-is-this-correct
 
   *  rbind'ing data.tables containing duplicate, "" or NA column names now works, #2726 & #2384.
      Thanks to Garrett See and Arun Srinivasan for reporting. This also affected the printing of data.tables
@@ -1322,11 +1322,11 @@
 
   *  Deleting a (0-length) factor column using :=NULL on an empty data.table now works, #4809. Thanks
      to Frank Pinter for reporting. Test added.
-       http://stackoverflow.com/questions/18089587/error-deleting-factor-column-in-empty-data-table
+       https://stackoverflow.com/questions/18089587/error-deleting-factor-column-in-empty-data-table
 
   *  Writing FUN= in DT[,lapply(.SD,FUN=...),] now works, #4893. Thanks to Jan Wijffels for
      reporting and Arun for suggesting and testing a fix. Committed and test added.
-       http://stackoverflow.com/questions/18314757/why-cant-i-used-fun-in-lapply-when-grouping-by-using-data-table
+       https://stackoverflow.com/questions/18314757/why-cant-i-used-fun-in-lapply-when-grouping-by-using-data-table
 
   *  The slowness of transform() on data.table has been fixed, #2599. But, please use :=.
 
@@ -1335,7 +1335,7 @@
 
   *  mean() in j has been optimized since v1.8.2 (see NEWS below) but wasn't respecting na.rm=TRUE (the default).
      Many thanks to Colin Fang for reporting. Test added.
-       http://stackoverflow.com/questions/18571774/data-table-auto-remove-na-in-by-for-mean-function
+       https://stackoverflow.com/questions/18571774/data-table-auto-remove-na-in-by-for-mean-function
 
 
 USER VISIBLE CHANGES
@@ -1352,11 +1352,11 @@ USER VISIBLE CHANGES
 
   *  data.table(NULL) now prints "Null data.table (0 rows and 0 cols)" and FAQ 2.5 has been
      improved. Thanks to:
-       http://stackoverflow.com/questions/15317536/is-null-does-not-work-on-null-data-table-in-r-possible-bug
+       https://stackoverflow.com/questions/15317536/is-null-does-not-work-on-null-data-table-in-r-possible-bug
 
   *  The braces {} have been removed from rollends's default, to solve a trace() problem. Thanks
 	 to Josh O'Brien's investigation :
-	   http://stackoverflow.com/questions/15931801/why-does-trace-edit-true-not-work-when-data-table
+	   https://stackoverflow.com/questions/15931801/why-does-trace-edit-true-not-work-when-data-table
 
 ## NOTES
 
@@ -1365,7 +1365,7 @@ USER VISIBLE CHANGES
 
   *  The default for datatable.alloccol has changed from max(100L, 2L*ncol(DT)) to max(100L, ncol(DT)+64L).
      And a pointer to ?truelength has been added to an error message as suggested and thanks to Roland :
-       http://stackoverflow.com/questions/15436356/potential-problems-from-over-allocating-truelength-more-than-1000-times
+       https://stackoverflow.com/questions/15436356/potential-problems-from-over-allocating-truelength-more-than-1000-times
 
   *  For packages wishing to use data.table optionally (e.g. according to user of that package) and therefore
      not wishing to Depend on data.table (which is the normal determination of data.table-awareness via .Depends),
@@ -1408,7 +1408,7 @@ USER VISIBLE CHANGES
         for when more than max(nrow(X),nrow(Y)) rows would be returned. The error message is
         verbose and includes advice. Thanks to a question by Nick Clark, help from user1935457
         and a detailed reproducible crash report from JR.
-          http://stackoverflow.com/questions/14231737/greatest-n-per-group-reference-with-intervals-in-r-or-sql
+          https://stackoverflow.com/questions/14231737/greatest-n-per-group-reference-with-intervals-in-r-or-sql
         If the new option affects existing code you can set :
             options(datatable.allow.cartesian=TRUE)
         to restore the previous behaviour until you have time to address.
@@ -1447,7 +1447,7 @@ USER VISIBLE CHANGES
         which should have been ISNA(x). Support for double in keyed joins is a relatively
         recent addition to data.table, but embarrassing all the same. Fixed and tests added.
         Many thanks to statquant for the thorough and reproducible report :
-        http://stackoverflow.com/questions/14076065/data-table-inner-outer-join-to-merge-with-na
+        https://stackoverflow.com/questions/14076065/data-table-inner-outer-join-to-merge-with-na
 
     *   setnames() of all column names (such as setnames(DT,toupper(names(DT)))) failed on a
         keyed table where columns 1:length(key) were not the key. Fixed and test added.
@@ -1465,7 +1465,7 @@ USER VISIBLE CHANGES
         to aid tracing root causes like this in future. Tests added. Many thanks to
         statquant for the reproducible example revealed by his interesting solution
         and to user1935457 for the assistance :
-            http://stackoverflow.com/a/14359701/403310
+            https://stackoverflow.com/a/14359701/403310
 
     *   merge(...,all.y=TRUE) was 'setcolorder' error if a y column name included a space
         and there were rows in y not in x, #2555. The non syntactically valid column names
@@ -1477,7 +1477,7 @@ USER VISIBLE CHANGES
             > DT    # now prints DT ok
             > DT    # used to have to type DT a second time to see it
         Many thanks to Charles, Joris Meys, and, Spacedman whose solution is now used
-        by data.table internally (http://stackoverflow.com/a/13606880/403310).
+        by data.table internally (https://stackoverflow.com/a/13606880/403310).
 
 ## NOTES
 
@@ -1492,7 +1492,7 @@ USER VISIBLE CHANGES
         Please use data.table() directly instead of J(), outside DT[...].
 
     *   ?merge.data.table and FAQ 1.12 have been improved (#2457), and FAQ 2.24 added.
-        Thanks to dnlbrky for highlighting : http://stackoverflow.com/a/14164411/403310.
+        Thanks to dnlbrky for highlighting : https://stackoverflow.com/a/14164411/403310.
 
     *   There are now 943 raw tests, as reported by test.data.table().
 
@@ -1578,12 +1578,12 @@ USER VISIBLE CHANGES
             colname = "newcol"
             DT[,colname:=f(),by=grp,with=FALSE]
         Thanks to Alex Chernyakov :
-            http://stackoverflow.com/questions/11745169/dynamic-column-names-in-data-table-r
-            http://stackoverflow.com/questions/11680579/assign-multiple-columns-using-in-data-table-by-group
+            https://stackoverflow.com/questions/11745169/dynamic-column-names-in-data-table-r
+            https://stackoverflow.com/questions/11680579/assign-multiple-columns-using-in-data-table-by-group
 
     *   .GRP is a new symbol available to j. Value 1 for the first group, 2 for the 2nd, etc. Thanks
         to Josh O'Brien for the suggestion :
-            http://stackoverflow.com/questions/13018696/data-table-key-indices-or-group-counter
+            https://stackoverflow.com/questions/13018696/data-table-key-indices-or-group-counter
 
     *   .I is a new symbol available to j. An integer vector length .N. It contains the group's row
         locations in DT. This implements FR#1962.
@@ -1639,7 +1639,7 @@ USER VISIBLE CHANGES
         more than one row in x. Possibly in other similar circumstances too. The workaround was
         to set mult="first" which is no longer required. Test added.
         Thanks to a question and report from Alex Chernyakov :
-            http://stackoverflow.com/questions/12042779/time-of-data-table-join
+            https://stackoverflow.com/questions/12042779/time-of-data-table-join
 
     *   Indexing columns of data.table with a logical vector and `with=FALSE` now works as
         expected, fixing #1797. Thanks to Mani Narayanan for reporting. Test added.
@@ -1702,7 +1702,7 @@ USER VISIBLE CHANGES
             data.table:::cedta.override
         by using assignInNamespace(). Thanks to Zach Waite and Yihui Xie for investigating and
         providing reproducible examples :
-            http://stackoverflow.com/questions/13106018/data-table-error-when-used-through-knitr-gwidgetswww
+            https://stackoverflow.com/questions/13106018/data-table-error-when-used-through-knitr-gwidgetswww
 
     *   Optimization of lapply when FUN is a character function name now works, #2212.
             DT[,lapply(.SD, "+", 1), by=id]  # no longer an error
@@ -1722,7 +1722,7 @@ USER VISIBLE CHANGES
     *   A matrix RHS of := is now treated as vector, with warning if it has more than 1 column, #2333.
         Thanks to Alex Chernyakov for highlighting. Tests added.
             DT[,b:=scale(a)]   # now works rather than creating an invalid column of type matrix
-        http://stackoverflow.com/questions/13076509/why-error-from-na-omit-after-running-scale-in-r-in-data-table
+        https://stackoverflow.com/questions/13076509/why-error-from-na-omit-after-running-scale-in-r-in-data-table
 
     *   last() is now S3 generic for compatibility with xts::last, #2312. Strictly speaking, for speed,
         last(x) deals with vector, list and data.table inputs directly before falling back to
@@ -1730,7 +1730,7 @@ USER VISIBLE CHANGES
 
     *   DT[,lapply(.SD,sum)] in the case of no grouping now returns a data.table for consistency, rather
         than list, #2263. Thanks to Justin and mnel for highlighting. Existing test changed.
-            http://stackoverflow.com/a/12290443/403310
+            https://stackoverflow.com/a/12290443/403310
 
     *   L[[2L]][,newcol:=] now works, where L is a list of data.table objects, #2204. Thanks to Melanie Bacou
         for reporting. Tests added. A warning is issued when the first column is added if L was created with
@@ -1766,7 +1766,7 @@ USER VISIBLE CHANGES
 
     *   DT[,LHS:=RHS,...] no longer prints DT. This implements #2128 "Try again to get
         DT[i,j:=value] to return invisibly". Thanks to discussion here :
-            http://stackoverflow.com/questions/11359553/how-to-suppress-output-when-using-in-r-data-table
+            https://stackoverflow.com/questions/11359553/how-to-suppress-output-when-using-in-r-data-table
         FAQs 2.21 and 2.22 have been updated.
 
     *   DT[] now returns DT rather than an error that either i or j must be supplied.
@@ -1781,11 +1781,11 @@ USER VISIBLE CHANGES
         changing it, #2282. This can be turned off using options(datatable.warnredundantby=FALSE)
         in case it occurs after upgrading, until those lines can be modified.
         Thanks to Ben Barnes for highlighting :
-            http://stackoverflow.com/a/12474211/403310
+            https://stackoverflow.com/a/12474211/403310
 
     *   Description of how join columns are determined in X[Y] syntax has been further clarified
         in ?data.table. Thanks to Alex :
-            http://stackoverflow.com/questions/12920803/merge-data-table-when-the-number-of-key-columns-are-different
+            https://stackoverflow.com/questions/12920803/merge-data-table-when-the-number-of-key-columns-are-different
 
     *   ?transform and example(transform) has been fixed and embelished, #2316.
         Thanks to Garrett See's suggestion.
@@ -1881,7 +1881,7 @@ USER VISIBLE CHANGES
     *   sapply(DT,class) gets a significant speed boost by avoiding a call to unclass()
         in as.list.data.table() called by lapply(DT,...), which copied the entire object.
         Thanks to a question by user1393348 on Stack Overflow, implementing #2000.
-        http://stackoverflow.com/questions/10584993/r-loop-over-columns-in-data-table
+        https://stackoverflow.com/questions/10584993/r-loop-over-columns-in-data-table
 
     *   The J() alias is now deprecated outside DT[...], but will still work inside
         DT[...], as in DT[J(...)].
@@ -1953,7 +1953,7 @@ USER VISIBLE CHANGES
 
     *   When grouping by i, if the first row of i had no match, .N was 1 rather than 0.
         Fixed and tests added. Thanks to a question by user1165199 on Stack Overflow :
-        http://stackoverflow.com/questions/10721517/count-number-of-times-data-is-in-another-dataframe-in-r
+        https://stackoverflow.com/questions/10721517/count-number-of-times-data-is-in-another-dataframe-in-r
 
     *   All object attributes are now retained by grouping; e.g., tzone of POSIXct is no
         longer lost, fixing #1704. Test added. Thanks to Karl Ove Hufthammer for reporting.
@@ -1971,11 +1971,11 @@ USER VISIBLE CHANGES
 
     *   merge() with common names, and, all.y=TRUE (or all=TRUE) no longer returns an error, #2011.
         Tests added. Thanks to a question by Ina on Stack Overflow :
-        http://stackoverflow.com/questions/10618837/joining-two-partial-data-tables-keeping-all-x-and-all-y
+        https://stackoverflow.com/questions/10618837/joining-two-partial-data-tables-keeping-all-x-and-all-y
 
     *   Removing or setting datatable.alloccol to NULL is no longer a memory leak, #2014.
         Tests added. Thanks to a question by Vanja on Stack Overflow :
-        http://stackoverflow.com/questions/10628371/r-importing-data-table-package-namespace-unexplainable-jump-in-memory-consumpt
+        https://stackoverflow.com/questions/10628371/r-importing-data-table-package-namespace-unexplainable-jump-in-memory-consumpt
 
     *   DT[,2:=someval,with=FALSE] now changes column 2 even if column 1 has the same (duplicate)
         name, #2025. Thanks to Sean Creighton for reporting. Tests added.
@@ -2116,12 +2116,12 @@ USER VISIBLE CHANGES
         (author of Python package Pandas). Matching 1 million strings of which
         of which 600,000 are unique is now reduced from 16s to 0.5s, for example.
         Background here :
-        http://stackoverflow.com/questions/8991709/why-are-pandas-merges-in-python-faster-than-data-table-merges-in-r
+        https://stackoverflow.com/questions/8991709/why-are-pandas-merges-in-python-faster-than-data-table-merges-in-r
 
     *   rbind.data.table() gains a use.names argument, by default TRUE.
         Set to FALSE to combine columns in order rather than by name. Thanks to
         a question by Zach on Stack Overflow :
-        http://stackoverflow.com/questions/9315258/aggregating-sub-totals-and-grand-totals-with-data-table
+        https://stackoverflow.com/questions/9315258/aggregating-sub-totals-and-grand-totals-with-data-table
 
     *   New argument 'keyby'. An ad hoc by just as 'by' but with an additional setkey()
         on the by columns of the result, for convenience. Not to be confused with a
