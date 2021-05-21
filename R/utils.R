@@ -101,27 +101,32 @@ brackify = function(x, quote=FALSE) {
   # keep one more than needed to trigger dots if needed
   if (quote && is.character(x)) x = paste0("'",head(x,CUTOFF+1L),"'")
   if (length(x) > CUTOFF) x = c(x[1:CUTOFF], '...')
-  sprintf('[%s]', paste(x, collapse = ', '))
+  sprintf('[%s]', toString(x))
 }
 
 # patterns done via NSE in melt.data.table and .SDcols in `[.data.table`
-do_patterns = function(pat_sub, all_cols) {
-  # received as substitute(patterns(...))
-  pat_sub = as.list(pat_sub)[-1L]
-  # identify cols = argument if present
-  idx = which(names(pat_sub) == "cols")
-  if (length(idx)) {
-    cols = eval(pat_sub[["cols"]], parent.frame(2L))
-    pat_sub = pat_sub[-idx]
-  } else cols = all_cols
-  pats = lapply(pat_sub, eval, parent.frame(2L))
-  matched = patterns(pats, cols=cols)
-  # replace with lengths when R 3.2.0 dependency arrives
-  if (length(idx <- which(sapply(matched, length) == 0L)))
-    stop('Pattern', if (length(idx) > 1L) 's', ' not found: [',
-         paste(pats[idx], collapse = ', '), ']')
-
-  return(matched)
+# was called do_patterns() before PR#4731
+eval_with_cols = function(orig_call, all_cols) {
+  parent = parent.frame(2L)
+  fun_uneval = orig_call[[1L]]
+  # take fun from either calling env (parent) or from data.table
+  fun = tryCatch({
+    maybe_fun = eval(fun_uneval, parent)
+    # parent env could have a non-function with this name, which we
+    # should ignore.
+    stopifnot(is.function(maybe_fun))
+    maybe_fun
+  }, error=function(e) {
+    eval(fun_uneval)#take function from data.table namespace.
+  })
+  if (!is.primitive(fun)) {
+    named_call = match.call(fun, orig_call)
+    if ("cols" %in% names(formals(fun)) && !"cols" %in% names(named_call)) {
+      named_call[["cols"]] = all_cols
+    }
+    named_call[[1L]] = fun
+    eval(named_call, parent)
+  }
 }
 
 # check UTC status
@@ -140,3 +145,8 @@ edit.data.table = function(name, ...) {
   setDT(NextMethod('edit', name))[]
 }
 # nocov end
+
+catf = function(fmt, ...) {
+  cat(gettextf(fmt, ...))
+}
+
