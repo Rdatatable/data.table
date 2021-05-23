@@ -11452,11 +11452,11 @@ if (exists("B")) rm(B)
 if (exists("NOTEXIST")) rm(NOTEXIST)
 if (exists("MyCol")) rm(MyCol)
 DT <- data.table(A = c(FALSE, TRUE), B = 2:1, C=c(2,3), MyCol=c(2,2))
-test(1773.01, DT[A], error = "A is not found in calling scope but it is a column of type logical.*==TRUE.*When the first argument")
-test(1773.02, DT[B], error = "B is not found in calling scope but it is a column of type integer.*DT\\[\\(col\\)\\].*When the first argument")   # 697
-test(1773.03, DT[C], error = "i has evaluated to type closure. Expecting logical, integer or double")  # C picks up stats::C in calling scope
-test(1773.04, DT[MyCol], error="MyCol is not found in calling scope but it is a column of type double.*DT\\[\\(col\\)\\].*When the first argument")
-test(1773.05, DT[NOTEXIST], error = "NOTEXIST is not found in calling scope and it is not a column name either. When the first argument")
+test(1773.01, DT[A], error = "'A' is not found in calling scope, but it is a column of type logical.*==TRUE.*When the first argument")
+test(1773.02, DT[B], error = "'B' is not found in calling scope, but it is a column of type integer.*DT\\[\\(col\\)\\].*When the first argument")   # 697
+test(1773.03, DT[C], error = "'C' is not found in calling scope, but it is a column of type double")  # C picks up stats::C in calling scope
+test(1773.04, DT[MyCol], error="'MyCol' is not found in calling scope, but it is a column of type double.*DT\\[\\(col\\)\\].*When the first argument")
+test(1773.05, DT[NOTEXIST], error = "'NOTEXIST' is not found in calling scope and it is not a column name either. When the first argument")
 test(1773.06, DT[(A)], DT[2])
 test(1773.07, DT[A==TRUE], DT[2])
 test(1773.08, DT[(B)], data.table(A=c(TRUE,FALSE), B=1:2, C=c(3,2), MyCol=2))
@@ -16690,7 +16690,7 @@ set.seed(1)
 vDT = data.table(i_id = unique(iDT$i_id))[, .(v = runif(5,0,10), p = sample(c(5,5,10,10,10))), by=i_id]
 test(2120.01, !exists("i_id"))                             # quick verify in case there's an i_id in .GlobalEnv when testing in dev
 test(2120.02, iDT[i_id, order(e_date, e_time)],            # first of all, the correct error
-              error="i_id is not found in calling scope but it is a column of type character")
+              error="'i_id' is not found in calling scope, but it is a column of type character")
 tmp = vDT[c("B","C","A"), on=.(i_id), .N, by=.EACHI]       # split long statement in 2120.05 up as per demo in #3669
 test(2120.03, tmp, data.table(i_id=c("B","C","A"), N=5L))  # just make sure the helper tmp is correct
 test(2120.04, tmp[iDT[i_id, order(e_date, e_time)]],       # i_id obtained from tmp; this is what broke in dev 1.12.3
@@ -17662,3 +17662,7 @@ test(2190.9, DT[1:2, a:=call('sum', 1)], error="type 'language' cannot be coerce
 # adding test for (since fixed) 'could not find function "."' when verbose=TRUE, #3196
 DT = data.table(i1 = c(234L, 250L, 169L, 234L, 147L, 96L, 96L, 369L, 147L, 96L), i4 = c(79L, 113L, 270L, -121L, 113L, 113L, -121L, 179L, -228L, 113L), v = 0)
 test(2191, DT[1:5, sum(v), by=.(i5 = 1:5 %% 2L), verbose=TRUE], data.table(i5=1:0, V1=c(0,0)), output="gforce")
+
+# when i evaluates to a function that's also a column name, give a friendlier message #5014
+DT = data.table(subset = (1:10)>5)
+test(2192, DT[subset], error="'subset' is not found in calling scope, but")
