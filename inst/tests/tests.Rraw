@@ -17681,5 +17681,5 @@ test(2191, DT[1:5, sum(v), by=.(i5 = 1:5 %% 2L), verbose=TRUE], data.table(i5=1:
 # initial '' doesn't crash as.IDate, #4676; also imitates base R as from 4.0.2 patched
 y = c('', '2020-01-01')
 ## consistency check -- y parses the same in either order
-test(2176.1, as.IDate(y), rev(as.IDate(rev(y))))
-test(2176.2, as.IDate(y), as.IDate(c(NA_integer_, 18262L)))
+test(2192.1, as.IDate(y), rev(as.IDate(rev(y))))
+test(2192.2, as.IDate(y), as.IDate(c(NA_integer_, 18262L)))
