@@ -5929,7 +5929,11 @@ test(1388, as.character(x), c("00:00:01", "-00:00:01", "-01:01:40"))
 # Fix for #880. Another eval(parse(.)) issue.
 DT <- as.data.table(iris)
 DT[, foo := "Species"]
-test(1389, copy(DT)[,bar := eval(parse(text=foo[1]), envir=.SD)], copy(DT)[, bar := Species])
+test(1389.1, copy(DT)[,bar := eval(parse(text=foo[1]), envir=.SD)], copy(DT)[, bar := Species])
+# another test from #1181 for completeness
+DT1 = data.table(a = 1, key = 'a')
+DT2 = data.table(c = 1, fn = list(quote(5*a)), key = 'c')
+test(1389.2, DT1[, n:=eval(DT2[a]$fn[[1]], .SD)], data.table(a=1, n=5, key="a"))
 
 # Fix for foverlaps() floating point interval (double) types. Should increment them by machine tolerance, not by 1L
 DT1 = data.table(start=c(0.88), end=c(0.88))
@@ -10342,7 +10346,7 @@ if (.Platform$OS.type=="unix") {
   cat("a,b\n4,2", file=f<-tempfile())
   cmd <- sprintf("cat %s", f)
   options(datatable.fread.input.cmd.message = TRUE)
-  test(1703.01, fread(cmd), ans<-data.table(a=4L, b=2L), message="Please use fread.cmd=.*security concern.*Please read item 5 in the NEWS file for v1.11.6")
+  test(1703.01, fread(cmd), ans<-data.table(a=4L, b=2L), message="security concern.*Please read item 5 in the NEWS file for v1.11.6")
   options(datatable.fread.input.cmd.message = NULL)  # when option is missing as it is by default, then TRUE
   test(1703.02, fread(cmd), ans, message="security concern")
   options(datatable.fread.input.cmd.message = FALSE)
@@ -11448,16 +11452,18 @@ if (exists("B")) rm(B)
 if (exists("NOTEXIST")) rm(NOTEXIST)
 if (exists("MyCol")) rm(MyCol)
 DT <- data.table(A = c(FALSE, TRUE), B = 2:1, C=c(2,3), MyCol=c(2,2))
-test(1773.01, DT[A], error = "A is not found in calling scope but it is a column of type logical.*==TRUE.*When the first argument")
-test(1773.02, DT[B], error = "B is not found in calling scope but it is a column of type integer.*DT\\[\\(col\\)\\].*When the first argument")   # 697
-test(1773.03, DT[C], error = "i has evaluated to type closure. Expecting logical, integer or double")  # C picks up stats::C in calling scope
-test(1773.04, DT[MyCol], error="MyCol is not found in calling scope but it is a column of type double.*DT\\[\\(col\\)\\].*When the first argument")
-test(1773.05, DT[NOTEXIST], error = "NOTEXIST is not found in calling scope and it is not a column name either. When the first argument")
+test(1773.01, DT[A], error = "'A' is not found in calling scope, but it is a column of type logical.*==TRUE.*When the first argument")
+test(1773.02, DT[B], error = "'B' is not found in calling scope, but it is a column of type integer.*DT\\[\\(col\\)\\].*When the first argument")   # 697
+test(1773.03, DT[C], error = "'C' is not found in calling scope, but it is a column of type double")  # C picks up stats::C in calling scope
+test(1773.04, DT[MyCol], error="'MyCol' is not found in calling scope, but it is a column of type double.*DT\\[\\(col\\)\\].*When the first argument")
+test(1773.05, DT[NOTEXIST], error = "'NOTEXIST' is not found in calling scope and it is not a column name either. When the first argument")
 test(1773.06, DT[(A)], DT[2])
 test(1773.07, DT[A==TRUE], DT[2])
 test(1773.08, DT[(B)], data.table(A=c(TRUE,FALSE), B=1:2, C=c(3,2), MyCol=2))
 test(1773.09, DT[(MyCol)], data.table(A=c(TRUE,TRUE), B=INT(1,1), C=c(3,3), MyCol=2))
 test(1773.10, DT[(C)], data.table(A=c(TRUE,NA), B=c(1L,NA), C=c(3,NA), MyCol=c(2,NA)))
+test(1773.11, data.table(subset=c(TRUE,FALSE))[subset], # i being a function name that's also a column name, #5014
+              error="'subset' is not found in calling scope, but")
 
 # New as.data.table.array method in v1.10.5
 set.seed(1L)
@@ -15387,6 +15393,19 @@ options(old)
 test(2049.2, outer$ab, list(data.table(a=1:3, b=4L)))
 test(2049.3, outer$ab[[1]][, b := 5L], data.table(a=1:3, b=5L))
 test(2049.4, outer$ab, list(data.table(a=1:3, b=5L)))
+test(2049.5, {DT=data.table(d=list(data.table(a=1))); DT$d[[1]][, new_col:=NA]; DT},  # verbatim from #1629
+             data.table(d = list(data.table(a=1, new_col=NA))))
+# extra tests on similar theme to #1629 added in PR#4366 ...
+add_col1 = function(dt) {
+  if (is.data.table(dt)) dt[, new_col:=NA]
+  if (is.list(dt)) lapply(dt, add_col1)
+  invisible()
+}
+DT = data.table(a=c(1,2), b=list(data.table(d=c("a", "b"), e=c(100, 200))))
+test(2049.6, add_col1(DT), NULL)
+test(2049.7, names(DT), c("a","b","new_col"))
+test(2049.8, names(DT$b[[1L]]), c("d","e","new_col"))
+test(2049.9, names(DT$b[[2L]]), c("d","e","new_col"))
 
 # rbindlist zero row DT should retain its (unused) levels, #3508
 DT = data.table(f = factor(c("a", "b", "c")))
@@ -16686,7 +16705,7 @@ set.seed(1)
 vDT = data.table(i_id = unique(iDT$i_id))[, .(v = runif(5,0,10), p = sample(c(5,5,10,10,10))), by=i_id]
 test(2120.01, !exists("i_id"))                             # quick verify in case there's an i_id in .GlobalEnv when testing in dev
 test(2120.02, iDT[i_id, order(e_date, e_time)],            # first of all, the correct error
-              error="i_id is not found in calling scope but it is a column of type character")
+              error="'i_id' is not found in calling scope, but it is a column of type character")
 tmp = vDT[c("B","C","A"), on=.(i_id), .N, by=.EACHI]       # split long statement in 2120.05 up as per demo in #3669
 test(2120.03, tmp, data.table(i_id=c("B","C","A"), N=5L))  # just make sure the helper tmp is correct
 test(2120.04, tmp[iDT[i_id, order(e_date, e_time)]],       # i_id obtained from tmp; this is what broke in dev 1.12.3
@@ -17654,4 +17673,8 @@ if (test_bit64) {
   test(2190.8, DT[1:2, a:=as.integer64(1:2)                    ]$a, list(as.integer64(1),                   as.integer64(2),                   4))
 }
 test(2190.9, DT[1:2, a:=call('sum', 1)], error="type 'language' cannot be coerced to 'list'")
+
+# adding test for (since fixed) 'could not find function "."' when verbose=TRUE, #3196
+DT = data.table(i1 = c(234L, 250L, 169L, 234L, 147L, 96L, 96L, 369L, 147L, 96L), i4 = c(79L, 113L, 270L, -121L, 113L, 113L, -121L, 179L, -228L, 113L), v = 0)
+test(2191, DT[1:5, sum(v), by=.(i5 = 1:5 %% 2L), verbose=TRUE], data.table(i5=1:0, V1=c(0,0)), output="gforce")
 
