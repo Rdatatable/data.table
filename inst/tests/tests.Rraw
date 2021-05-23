@@ -15391,6 +15391,19 @@ options(old)
 test(2049.2, outer$ab, list(data.table(a=1:3, b=4L)))
 test(2049.3, outer$ab[[1]][, b := 5L], data.table(a=1:3, b=5L))
 test(2049.4, outer$ab, list(data.table(a=1:3, b=5L)))
+test(2049.5, {DT=data.table(d=list(data.table(a=1))); DT$d[[1]][, new_col:=NA]; DT},  # verbatim from #1629
+             data.table(d = list(data.table(a=1, new_col=NA))))
+# extra tests on similar theme to #1629 added in PR#4366 ...
+add_col1 = function(dt) {
+  if (is.data.table(dt)) dt[, new_col:=NA]
+  if (is.list(dt)) lapply(dt, add_col1)
+  invisible()
+}
+DT = data.table(a=c(1,2), b=list(data.table(d=c("a", "b"), e=c(100, 200))))
+test(2049.6, add_col1(DT), NULL)
+test(2049.7, names(DT), c("a","b","new_col"))
+test(2049.8, names(DT$b[[1L]]), c("d","e","new_col"))
+test(2049.9, names(DT$b[[2L]]), c("d","e","new_col"))
 
 # rbindlist zero row DT should retain its (unused) levels, #3508
 DT = data.table(f = factor(c("a", "b", "c")))
@@ -17662,3 +17675,4 @@ test(2190.9, DT[1:2, a:=call('sum', 1)], error="type 'language' cannot be coerce
 # adding test for (since fixed) 'could not find function "."' when verbose=TRUE, #3196
 DT = data.table(i1 = c(234L, 250L, 169L, 234L, 147L, 96L, 96L, 369L, 147L, 96L), i4 = c(79L, 113L, 270L, -121L, 113L, 113L, -121L, 179L, -228L, 113L), v = 0)
 test(2191, DT[1:5, sum(v), by=.(i5 = 1:5 %% 2L), verbose=TRUE], data.table(i5=1:0, V1=c(0,0)), output="gforce")
+
