@@ -1,5 +1,6 @@
 fwrite = function(x, file="", append=FALSE, quote="auto",
-           sep=",", sep2=c("","|",""), eol=if (.Platform$OS.type=="windows") "\r\n" else "\n",
+           sep=getOption("datatable.fwrite.sep", ","),
+           sep2=c("","|",""), eol=if (.Platform$OS.type=="windows") "\r\n" else "\n",
            na="", dec=".", row.names=FALSE, col.names=TRUE,
            qmethod=c("double","escape"),
            logical01=getOption("datatable.logical01", FALSE), # due to change to TRUE; see NEWS
@@ -62,7 +63,7 @@ fwrite = function(x, file="", append=FALSE, quote="auto",
   file = path.expand(file)  # "~/foo/bar"
   if (append && (file=="" || file.exists(file))) {
     if (missing(col.names)) col.names = FALSE
-    if (verbose) cat("Appending to existing file so setting bom=FALSE and yaml=FALSE\n")
+    if (verbose) catf("Appending to existing file so setting bom=FALSE and yaml=FALSE\n")
     bom = FALSE
     yaml = FALSE
   }

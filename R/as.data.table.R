@@ -20,7 +20,7 @@ as.data.table.Date = as.data.table.ITime = function(x, keep.rownames=FALSE, key=
   tt = deparse(substitute(x))[1L]
   nm = names(x)
   # FR #2356 - transfer names of named vector as "rn" column if required
-  if (!identical(keep.rownames, FALSE) & !is.null(nm))
+  if (!identical(keep.rownames, FALSE) && !is.null(nm))
     x = list(nm, unname(x))
   else x = list(x)
   if (tt == make.names(tt)) {
@@ -33,6 +33,8 @@ as.data.table.Date = as.data.table.ITime = function(x, keep.rownames=FALSE, key=
 
 # as.data.table.table - FR #361
 as.data.table.table = function(x, keep.rownames=FALSE, key=NULL, ...) {
+  # prevent #4179 & just cut out here
+  if (any(dim(x) == 0L)) return(null.data.table())
   # Fix for bug #43 - order of columns are different when doing as.data.table(with(DT, table(x, y)))
   val = rev(dimnames(provideDimnames(x)))
   if (is.null(names(val)) || !any(nzchar(names(val))))
@@ -100,7 +102,7 @@ as.data.table.array = function(x, keep.rownames=FALSE, key=NULL, sorted=TRUE, va
     dnx
   } else dnx
   val = rev(val)
-  if (is.null(names(val)) || all(!nzchar(names(val))))
+  if (is.null(names(val)) || !any(nzchar(names(val))))
     setattr(val, 'names', paste0("V", rev(seq_along(val))))
   if (value.name %chin% names(val))
     stop("Argument 'value.name' should not overlap with column names in result: ", brackify(rev(names(val))))
@@ -129,7 +131,7 @@ as.data.table.list = function(x,
   eachncol = integer(n)
   missing.check.names = missing(check.names)
   origListNames = if (missing(.named)) names(x) else NULL  # as.data.table called directly, not from inside data.table() which provides .named, #3854
-  empty_atomic = FALSE  
+  empty_atomic = FALSE
   for (i in seq_len(n)) {
     xi = x[[i]]
     if (is.null(xi)) next    # eachncol already initialized to 0 by integer() above
