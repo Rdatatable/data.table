@@ -408,17 +408,13 @@ replace_dot_alias = function(e) {
       if (inherits(i,"try-error") || is.function(i)) {
         # must be "not found" since isub is a mere symbol
         col = try(eval(isub, x), silent=TRUE)  # is it a column name?
-        if (inherits(col, "try-error")) {
-          msg = gettextf(
-            "'%s' is not found in calling scope and it is not a column name either. ",
-            as.character(isub)
-          )
-        } else {
-          msg = gettextf(
-            "'%s' is not found in calling scope, but it is a column of type %s. If you wish to select rows where that column contains TRUE, or perhaps that column contains row numbers of itself to select, try DT[(col)], DT[DT$col], or DT[col==TRUE} is particularly clear and is optimized. ",
-            as.character(isub), typeof(col)
-          )
-        }
+        msg = if (inherits(col, "try-error")) gettextf(
+          "'%s' is not found in calling scope and it is not a column name either. ",
+          as.character(isub)
+        ) else gettextf(
+          "'%s' is not found in calling scope, but it is a column of type %s. If you wish to select rows where that column contains TRUE, or perhaps that column contains row numbers of itself to select, try DT[(col)], DT[DT$col], or DT[col==TRUE} is particularly clear and is optimized. ",
+          as.character(isub), typeof(col)
+        )
         stop(msg, "When the first argument inside DT[...] is a single symbol (e.g. DT[var]), data.table looks for var in calling scope.")
       }
     }

@@ -22,7 +22,7 @@ frollsum(x, n, fill=NA, algo=c("fast","exact"), align=c("right", "left",
 frollapply(x, n, FUN, \dots, fill=NA, align=c("right", "left", "center"))
 }
 \arguments{
-  \item{x}{ vector, list, data.frame or data.table of numeric or logical columns. }
+  \item{x}{ vector, data.frame or data.table of numeric or logical columns. May also be a list, in which case the rolling function is applied to each of its elements. }
   \item{n}{ integer vector, for adaptive rolling function also list of
     integer vectors, rolling window size. }
   \item{fill}{ numeric or logical, value to pad by. Defaults to \code{NA}. }

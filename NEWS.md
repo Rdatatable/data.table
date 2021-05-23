@@ -149,7 +149,7 @@
 
 5. v1.13.0 (July 2020) fixed a segfault/corruption/error (depending on version of R and circumstances) in `dcast()` when `fun.aggregate` returned `NA` (type `logical`) in an otherwise `character` result, [#2394](https://github.com/Rdatatable/data.table/issues/2394). This fix was the result of other internal rework and there was no news item at the time. A new test to cover this case has now been added. Thanks Vadim Khotilovich for reporting, and Michael Chirico for investigating, pinpointing when the fix occurred and adding the test.
 
-6. Running `DT[subset]` where `DT[(subset)]` was intended, i.e., when attempting to subset a table based on a column whose name happens to conflict with an existing function, gives a friendlier error message, [#5014](https://github.com/Rdatatable/data.table/issues/5014). Thanks @michaelchirico for the suggestion and PR and @ColeMiller1 for helping with the fix.
+6. `DT[subset]` where `DT[(subset)]` or `DT[subset==TRUE]` was intended; i.e., subsetting by a logical column whose name conflicts with an existing function, now gives a friendlier error message, [#5014](https://github.com/Rdatatable/data.table/issues/5014). Thanks @michaelchirico for the suggestion and PR, and @ColeMiller1 for helping with the fix.
 
 
 # data.table [v1.14.0](https://github.com/Rdatatable/data.table/milestone/23?closed=1)  (21 Feb 2021)
