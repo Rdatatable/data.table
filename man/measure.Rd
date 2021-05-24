@@ -3,10 +3,16 @@
 \alias{measurev}
 \title{Specify measure.vars via regex or separator}
 \description{
-\code{measure} computes an integer vector or list which can be passed as
-the \code{measure.vars} argument to \code{melt}.
-See the \code{Efficient reshaping using
-data.tables} vignette linked below to learn more.
+  These functions compute an integer vector or list for use as
+  the \code{measure.vars} argument to \code{melt}.
+  \code{measure} allows specifying group names/conversions in R code
+  (each group and conversion specified as an argument)
+  whereas \code{measurev} allows specifying group names/conversions using
+  data values
+  (each group and conversion specified as a list element).
+  See
+  \href{../doc/datatable-reshape.html}{\code{vignette("datatable-reshape")}}
+  for more info.
 }
 \usage{
 measure(\dots, sep, pattern, cols, multiple.keyword="value.name")
@@ -51,14 +57,20 @@ melt(two.iris, measure.vars=measurev(my.list, sep="."))
 melt(two.iris, measure.vars = measure(value.name, dim, sep="."))
 # melt into two value columns, one for each dim.
 melt(two.iris, measure.vars = measure(part, value.name, sep="."))
-# melt using either sep or pattern, converting child number to integer.
+# melt using sep, converting child number to integer.
 (two.families = data.table(sex_child1="M", sex_child2="F", age_child1=10, age_child2=20))
 print(melt(two.families, measure.vars = measure(
   value.name, child=as.integer,
   sep="_child"
 )), class=TRUE)
+# same melt using pattern.
 print(melt(two.families, measure.vars = measure(
   value.name, child=as.integer,
+  pattern="(.*)_child(.)"
+)), class=TRUE)
+# same melt with pattern and measurev function list.
+print(melt(two.families, measure.vars = measurev(
+  list(value.name=NULL, child=as.integer),
   pattern="(.*)_child(.)"
 )), class=TRUE)
 # inspired by data(who, package="tidyr")
