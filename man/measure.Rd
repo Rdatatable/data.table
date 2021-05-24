@@ -1,5 +1,6 @@
 \name{measure}
 \alias{measure}
+\alias{measurev}
 \title{Specify measure.vars via regex or separator}
 \description{
 \code{measure} computes an integer vector or list which can be passed as
@@ -9,6 +10,8 @@ data.tables} vignette linked below to learn more.
 }
 \usage{
 measure(\dots, sep, pattern, cols, multiple.keyword="value.name")
+measurev(fun.list, sep, pattern, cols, multiple.keyword="value.name",
+  group.desc="elements of fun.list")
 }
 \arguments{
   \item{\dots}{One or more (1) symbols (without argument name; symbol
@@ -16,6 +19,11 @@ measure(\dots, sep, pattern, cols, multiple.keyword="value.name")
     functions (with argument name that is used for output variable
     column name). Must have same number of arguments as groups that are
     specified by either \code{sep} or \code{pattern} arguments.}
+  \item{fun.list}{Named list which must have the same number of
+    elements as groups that are specified by either \code{sep} or
+    \code{pattern} arguments. Each name used for an output column
+    name, and each value must be either a function (to convert the captured
+    text) or NULL (no conversion).}
   \item{sep}{Separator to split \code{cols} into groups. Columns that
     result in the maximum number of groups are considered measure variables.}
   \item{pattern}{Perl-compatible regex with capture groups to match to
@@ -35,6 +43,9 @@ measure(\dots, sep, pattern, cols, multiple.keyword="value.name")
 (two.iris = data.table(datasets::iris)[c(1,150)])
 # melt into a single value column.
 melt(two.iris, measure.vars = measure(part, dim, sep="."))
+# do the same, programmatically with measurev
+my.list = list(part=NULL, dim=NULL)
+melt(two.iris, measure.vars=measurev(my.list, sep="."))
 # melt into two value columns, one for each part.
 melt(two.iris, measure.vars = measure(value.name, dim, sep="."))
 # melt into two value columns, one for each dim.
