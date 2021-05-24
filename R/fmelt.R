@@ -55,7 +55,7 @@ measure = function(..., sep="_", pattern, cols, multiple.keyword="value.name") {
     stop("group names specified in ... conflict with measure argument names; please fix by changing group names: ", paste(bad.names, collapse=","))
   }
   # evaluate each value in ... and stop if not function.
-  for(fun.i in which(user.named)){
+  for (fun.i in which(user.named)) {
     fun = eval(fun.list[[fun.i]], parent.frame(1L))
     if (!is.function(fun) || length(formals(args(fun)))==0) {
       stop("each ... argument to measure must be a function with at least one argument, problem: ", names(fun.list)[[fun.i]])
@@ -167,7 +167,7 @@ measurev = function(fun.list, sep="_", pattern, cols, multiple.keyword="value.na
     other.dt = data.table(do.call(expand.grid, other.values))
     measure.list = structure(list(), variable_table=other.dt)
     column.values = unique(group.dt[[multiple.keyword]])
-    for(column.val in column.values){
+    for (column.val in column.values) {
       select.dt = data.table(other.dt)
       set(select.dt, j=multiple.keyword, value=column.val)
       measure.list[[column.val]] = data.table(
