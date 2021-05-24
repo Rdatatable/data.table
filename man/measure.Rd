@@ -34,6 +34,7 @@ measurev(fun.list, sep, pattern, cols, multiple.keyword="value.name",
     value columns (with names defined by the unique values in that
     group). Otherwise if the string not used in \code{\dots}, then
     measure returns a vector and melt returns a single value column.}
+  \item{group.desc}{Internal, used in error messages.}
 }
 \seealso{
   \code{\link{melt}},
