@@ -80,6 +80,14 @@ measurev = function(fun.list, sep="_", pattern, cols, multiple.keyword="value.na
   if (!is.character(cols)) {
     stop("cols must be a character vector of column names")
   }
+  prob.i <- if (is.null(names(fun.list))) {
+    seq_along(fun.list)
+  } else {
+    which(names(fun.list) == "")
+  }
+  if (length(prob.i)) {
+    stop("in measurev, ", group.desc, " must be named, problems: ", paste(prob.i, collapse=","))
+  }
   err.names.unique = function(err.what, name.vec) {
     name.tab = table(name.vec)
     bad.counts = name.tab[1 < name.tab]
