@@ -37,8 +37,8 @@ patterns = function(..., cols=character(0L)) {
 measure = function(..., sep="_", pattern, cols, multiple.keyword="value.name") {
   mcall = match.call()
   L = as.list(mcall)[-1]
-  formal.names <- names(formals())
-  formal.i.vec <- which(names(L) %in% formal.names)
+  formal.names = names(formals())
+  formal.i.vec = which(names(L) %in% formal.names)
   fun.list = L[-formal.i.vec]
   user.named = names(fun.list) != ""
   is.symb = sapply(fun.list, is.symbol)
@@ -49,20 +49,20 @@ measure = function(..., sep="_", pattern, cols, multiple.keyword="value.name") {
   names(fun.list)[!user.named] = sapply(fun.list[!user.named], paste)
   fun.list[!user.named] = list(NULL)
   # group names error checking.
-  group.is.formal <- names(fun.list) %in% formal.names
+  group.is.formal = names(fun.list) %in% formal.names
   if (any(group.is.formal)) {
-    bad.names <- names(fun.list)[group.is.formal]
+    bad.names = names(fun.list)[group.is.formal]
     stop("group names specified in ... conflict with measure argument names; please fix by changing group names: ", paste(bad.names, collapse=","))
   }
   # evaluate each value in ... and stop if not function.
   for(fun.i in which(user.named)){
-    fun <- eval(fun.list[[fun.i]], parent.frame(1L))
+    fun = eval(fun.list[[fun.i]], parent.frame(1L))
     if (!is.function(fun) || length(formals(args(fun)))==0) {
       stop("each ... argument to measure must be a function with at least one argument, problem: ", names(fun.list)[[fun.i]])
     }
-    fun.list[[fun.i]] <- fun
+    fun.list[[fun.i]] = fun
   }  
-  measurev.args <- c(
+  measurev.args = c(
     list(fun.list),
     L[formal.i.vec],
     list(group.desc="... arguments to measure"))
@@ -80,14 +80,14 @@ measurev = function(fun.list, sep="_", pattern, cols, multiple.keyword="value.na
   if (!is.character(cols)) {
     stop("cols must be a character vector of column names")
   }
-  err.names.unique <- function(err.what, name.vec) {
+  err.names.unique = function(err.what, name.vec) {
     name.tab = table(name.vec)
     bad.counts = name.tab[1 < name.tab]
     if (length(bad.counts)) {
       stop(err.what, " should be uniquely named, problems: ", paste(names(bad.counts), collapse=","))
     }
   }
-  err.args.groups <- function(type, N){
+  err.args.groups = function(type, N){
     if (N != length(fun.list)) {
       stop("number of ", group.desc, " =", length(fun.list), " must be same as ", type, " =", N)
     }
@@ -126,14 +126,14 @@ measurev = function(fun.list, sep="_", pattern, cols, multiple.keyword="value.na
     do.call(rbind, list.of.vectors[measure.vec])
   }
   err.names.unique("measured columns", cols[measure.vec])
-  uniq.mat <- unique(group.mat)
+  uniq.mat = unique(group.mat)
   if (nrow(uniq.mat) < nrow(group.mat)) {
     stop("number of unique column IDs =", nrow(uniq.mat), " is less than number of melted columns =", nrow(group.mat), "; fix by changing pattern/sep")
   }
   colnames(group.mat) = names(fun.list)
   group.dt = data.table(group.mat)
   # 3. apply conversion functions to group data table.
-  fun.i.vec <- which(!sapply(fun.list, is.null))
+  fun.i.vec = which(!sapply(fun.list, is.null))
   for (group.i in fun.i.vec) {
     group.name = names(fun.list)[[group.i]]
     fun = fun.list[[group.i]]
@@ -149,7 +149,7 @@ measurev = function(fun.list, sep="_", pattern, cols, multiple.keyword="value.na
     }
     set(group.dt, j=group.name, value=group.val)
   }
-  group.uniq <- unique(group.dt)
+  group.uniq = unique(group.dt)
   if (nrow(group.uniq) < nrow(group.dt)) {
     stop("number of unique groups after applying type conversion functions less than number of groups, change type conversion")
   }
