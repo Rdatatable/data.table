@@ -5,6 +5,8 @@
 \description{
   These functions compute an integer vector or list for use as
   the \code{measure.vars} argument to \code{melt}.
+  Each measured variable name is converted into several groups that occupy
+  different columns in the output melted data.
   \code{measure} allows specifying group names/conversions in R code
   (each group and conversion specified as an argument)
   whereas \code{measurev} allows specifying group names/conversions using
@@ -21,24 +23,26 @@ measurev(fun.list, sep, pattern, cols, multiple.keyword="value.name",
 }
 \arguments{
   \item{\dots}{One or more (1) symbols (without argument name; symbol
-    is used for output variable column name) or (2)
-    functions (with argument name that is used for output variable
-    column name). Must have same number of arguments as groups that are
+    is used for group name) or (2) functions to convert the groups
+    (with argument name that is used for group name).
+    Must have same number of arguments as groups that are
     specified by either \code{sep} or \code{pattern} arguments.}
   \item{fun.list}{Named list which must have the same number of
     elements as groups that are specified by either \code{sep} or
-    \code{pattern} arguments. Each name used for an output column
-    name, and each value must be either a function (to convert the captured
-    text) or NULL (no conversion).}
-  \item{sep}{Separator to split \code{cols} into groups. Columns that
-    result in the maximum number of groups are considered measure variables.}
+    \code{pattern} arguments. Each name used for a group
+    name, and each value must be either a function
+    (to convert the group from a character vector to an atomic vector of the
+    same size) or NULL (no conversion).}
+  \item{sep}{Separator to split each element of \code{cols} into
+    groups. Columns that result in the maximum number of groups
+    are considered measure variables.}
   \item{pattern}{Perl-compatible regex with capture groups to match to
     \code{cols}. Columns that match the regex are considered measure variables.}
   \item{cols}{A character vector of column names.}
-  \item{multiple.keyword}{A string, if used in \code{\dots}, then
+  \item{multiple.keyword}{A string, if used as a group name, then
     measure returns a list and melt returns multiple
     value columns (with names defined by the unique values in that
-    group). Otherwise if the string not used in \code{\dots}, then
+    group). Otherwise if the string not used as a group name, then
     measure returns a vector and melt returns a single value column.}
   \item{group.desc}{Internal, used in error messages.}
 }
