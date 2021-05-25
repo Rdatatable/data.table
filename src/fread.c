@@ -1056,7 +1056,7 @@ static void parse_iso8601_timestamp(FieldParseContext *ctx)
       if (!args.noTZasUTC)
         goto fail;
       // if neither Z nor UTC offset is present, then it's local time and that's not directly supported yet; see news for v1.13.0
-      // but user can specify that the unmarked datetimes are UTC by passing tz="UTC" 
+      // but user can specify that the unmarked datetimes are UTC by passing tz="UTC"
       // if local time is UTC (env variable TZ is "" or "UTC", not unset) then local time is UTC, and that's caught by fread at R level too
     }
   }
@@ -1616,7 +1616,7 @@ int freadMain(freadMainArgs _args) {
     int topSkip=0;            // how many rows to auto-skip
     const char *topStart=NULL;
 
-    for (quoteRule=quote?0:3; quoteRule<4; quoteRule++) {
+    for (quoteRule=quote?0:3; quoteRule<4; quoteRule++) { // #loop_counter_not_local_scope_ok
       // quote rule in order of preference.
       // when top is tied the first wins, so do all seps for the first quoteRule, then all seps for the second quoteRule, etc
       for (int s=0; s<nseps; s++) {
@@ -1705,7 +1705,7 @@ int freadMain(freadMainArgs _args) {
       sep = topSep;
       // no self healing quote rules, as we don't have >1 field to disambiguate
       // choose quote rule 0 or 1 based on for which 100 rows gets furthest into file
-      for (quoteRule=0; quoteRule<=1; quoteRule++) {
+      for (quoteRule=0; quoteRule<=1; quoteRule++) { // #loop_counter_not_local_scope_ok
         int thisRow=0, thisncol=0;
         ch = pos;
         while (ch<eof && ++thisRow<jumpLines && (thisncol=countfields(&ch))>=0) {};
@@ -2271,7 +2271,7 @@ int freadMain(freadMainArgs _args) {
             fun[abs(thisType)](&fctx);
             if (*tch!=sep) break;
             int8_t thisSize = size[j];
-            if (thisSize) ((char **) targets)[thisSize] += thisSize;  // 'if' for when rereading to avoid undefined NULL+0 
+            if (thisSize) ((char **) targets)[thisSize] += thisSize;  // 'if' for when rereading to avoid undefined NULL+0
             tch++;
             j++;
           }

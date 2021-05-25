@@ -102,7 +102,7 @@ void subsetVectorRaw(SEXP ans, SEXP source, SEXP idx, const bool anyNA)
   }
 }
 
-static const char *check_idx(SEXP idx, int max, bool *anyNA_out, bool *orderedSubset_out)
+const char *check_idx(SEXP idx, int max, bool *anyNA_out, bool *orderedSubset_out)
 // set anyNA for branchless subsetVectorRaw
 // error if any negatives, zeros or >max since they should have been dealt with by convertNegAndZeroIdx() called ealier at R level.
 // single cache efficient sweep with prefetch, so very low priority to go parallel

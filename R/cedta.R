@@ -32,7 +32,7 @@ cedta = function(n=2L) {
     "data.table" %chin% names(getNamespaceImports(ns)) ||   # most common and recommended cases first for speed
     (nsname=="utils" &&
       (exists("debugger.look", parent.frame(n+1L)) ||
-      (length(sc<-sys.calls())>=8L && sc[[length(sc)-7L]][[1L]]=='example')) ) || # 'example' for #2972
+      (length(sc<-sys.calls())>=8L && sc[[length(sc)-7L]] %iscall% 'example')) ) || # 'example' for #2972
     (nsname=="base" && all(c("FUN", "X") %chin% ls(parent.frame(n)))) || # lapply
     (nsname %chin% cedta.pkgEvalsUserCode && any(sapply(sys.calls(), function(x) is.name(x[[1L]]) && (x[[1L]]=="eval" || x[[1L]]=="evalq")))) ||
     nsname %chin% cedta.override ||
@@ -40,7 +40,7 @@ cedta = function(n=2L) {
     tryCatch("data.table" %chin% get(".Depends",paste("package",nsname,sep=":"),inherits=FALSE),error=function(e)FALSE)  # both ns$.Depends and get(.Depends,ns) are not sufficient
   if (!ans && getOption("datatable.verbose")) {
     # nocov start
-    cat("cedta decided '",nsname,"' wasn't data.table aware. Here is call stack with [[1L]] applied:\n",sep="")
+    catf("cedta decided '%s' wasn't data.table aware. Here is call stack with [[1L]] applied:\n", nsname)
     print(sapply(sys.calls(), "[[", 1L))
     # nocov end
     # so we can trace the namespace name that may need to be added (very unusually)
