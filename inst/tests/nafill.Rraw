@@ -338,7 +338,6 @@ test(14.04, nafill(x, "nocb"), factor(c("a","a","b","c","d","g","g","g","h","i",
 test(14.05, nafill(x, "locf", fill=factor("unknown")), error="not yet implemented")
 #test(14.06, nafill(x, "nocb", fill=factor("unknown")), factor(c("a","a","b","c","d","g","g","g","h","i","i","unknown")))
 test(14.06, nafill(x, "nocb", fill=factor("unknown")), error="not yet implemented")
-
 ## Date
 x = as.Date(c(NA,1:4,NA,NA,5:6,NA,7L,NA), origin="1970-01-01")
 test(15.01, nafill(x, fill=as.Date("2021-05-26")), as.Date(c(18773L,1:4,18773L,18773L,5:6,18773L,7L,18773L), origin="1970-01-01"))
@@ -347,11 +346,40 @@ test(15.03, nafill(x, "locf"), as.Date(c(NA,1:4,4L,4L,5:6,6L,7L,7L), origin="197
 test(15.04, nafill(x, "nocb"), as.Date(c(1L,1:4,5L,5L,5:6,7L,7L,NA), origin="1970-01-01"))
 test(15.05, nafill(x, "locf", fill=as.Date("2021-05-26")), as.Date(c(18773L,1:4,4L,4L,5:6,6L,7L,7L), origin="1970-01-01"))
 test(15.06, nafill(x, "nocb", fill=as.Date("2021-05-26")), as.Date(c(1L,1:4,5L,5L,5:6,7L,7L,18773L), origin="1970-01-01"))
-
 ## POSIXct
+x = as.POSIXct(c(NA,1:4,NA,NA,5:6,NA,7L,NA), origin="1970-01-01")
+test(16.01, nafill(x, fill=as.POSIXct("2021-05-26 19:50:24")), as.POSIXct(c(1622051424L,1:4,1622051424L,1622051424L,5:6,1622051424L,7L,1622051424L), origin="1970-01-01"))
+test(16.02, nafill(x, fill=NA), as.POSIXct(c(NA,1:4,NA,NA,5:6,NA,7L,NA), origin="1970-01-01"))
+test(16.03, nafill(x, "locf"), as.POSIXct(c(NA,1:4,4L,4L,5:6,6L,7L,7L), origin="1970-01-01"))
+test(16.04, nafill(x, "nocb"), as.POSIXct(c(1L,1:4,5L,5L,5:6,7L,7L,NA), origin="1970-01-01"))
+test(16.05, nafill(x, "locf", fill=as.POSIXct("2021-05-26 19:50:24")), as.POSIXct(c(1622051424L,1:4,4L,4L,5:6,6L,7L,7L), origin="1970-01-01"))
+test(16.06, nafill(x, "nocb", fill=as.POSIXct("2021-05-26 19:50:24")), as.POSIXct(c(1L,1:4,5L,5L,5:6,7L,7L,1622051424L), origin="1970-01-01"))
 ## IDate
+x = as.IDate(c(NA,1:4,NA,NA,5:6,NA,7L,NA), origin="1970-01-01")
+test(17.01, nafill(x, fill=as.IDate("2021-05-26")), as.IDate(c(18773L,1:4,18773L,18773L,5:6,18773L,7L,18773L), origin="1970-01-01"))
+test(17.02, nafill(x, fill=NA), as.IDate(c(NA,1:4,NA,NA,5:6,NA,7L,NA), origin="1970-01-01"))
+test(17.03, nafill(x, "locf"), as.IDate(c(NA,1:4,4L,4L,5:6,6L,7L,7L), origin="1970-01-01"))
+test(17.04, nafill(x, "nocb"), as.IDate(c(1L,1:4,5L,5L,5:6,7L,7L,NA), origin="1970-01-01"))
+test(17.05, nafill(x, "locf", fill=as.IDate("2021-05-26")), as.IDate(c(18773L,1:4,4L,4L,5:6,6L,7L,7L), origin="1970-01-01"))
+test(17.06, nafill(x, "nocb", fill=as.IDate("2021-05-26")), as.IDate(c(1L,1:4,5L,5L,5:6,7L,7L,18773L), origin="1970-01-01"))
 ## ITime
+x = as.ITime(c(NA,1:4,NA,NA,5:6,NA,7L,NA))
+test(18.01, nafill(x, fill=as.ITime("19:59:11")), as.ITime(c(71951L,1:4,71951L,71951L,5:6,71951L,7L,71951L)))
+test(18.02, nafill(x, fill=NA), as.ITime(c(NA,1:4,NA,NA,5:6,NA,7L,NA)))
+test(18.03, nafill(x, "locf"), as.ITime(c(NA,1:4,4L,4L,5:6,6L,7L,7L)))
+test(18.04, nafill(x, "nocb"), as.ITime(c(1L,1:4,5L,5L,5:6,7L,7L,NA)))
+test(18.05, nafill(x, "locf", fill=as.ITime("19:59:11")), as.ITime(c(71951L,1:4,4L,4L,5:6,6L,7L,7L)))
+test(18.06, nafill(x, "nocb", fill=as.ITime("19:59:11")), as.ITime(c(1L,1:4,5L,5L,5:6,7L,7L,71951L)))
 ## mixed types
+if (test_bit64) {
+  d = data.table(
+    dbl=c(),
+    i64=as.integer64(c()),
+    lgl=c(NA,TRUE,FALSE,TRUE,FALSE,NA,NA,TRUE,TRUE,NA,TRUE,NA),
+    int=c(),
+    chr=c()
+  )
+}
 
 # related to !is.integer(verbose)
 test(99.1, data.table(a=1,b=2)[1,1, verbose=1], error="verbose must be logical or integer")
@@ -360,4 +388,3 @@ test(99.3, data.table(a=1,b=2)[1,1, verbose=NA], error="verbose must be length 1
 options(datatable.verbose=1)
 test(99.4, coerceAs(1, 2L), error="verbose option must be length 1 non-NA logical or integer")
 options(datatable.verbose=FALSE)
-
