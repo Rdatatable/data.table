@@ -331,12 +331,13 @@ test(13.06, nafill(x, "nocb", fill="unknown"), c("a","a","b","c","d","g","g","g"
 x = factor(c(NA,"a","b","c","d",NA,NA,"g","h",NA,"i",NA))
 #test(14.01, nafill(x, fill=factor("unknown")), factor(c("unknown","a","b","c","d","unknown","unknown","g","h","unknown","i","unknown")))
 test(14.01, nafill(x, fill=factor("unknown")), error="not yet implemented")
-test(14.02, nafill(x, "locf"), factor(c(NA,"a","b","c","d","d","d","g","h","h","i","i")))
-test(14.03, nafill(x, "nocb"), factor(c("a","a","b","c","d","g","g","g","h","i","i",NA)))
-#test(14.04, nafill(x, "locf", fill=factor("unknown")), factor(c("unknown","a","b","c","d","d","d","g","h","h","i","i")))
-test(14.04, nafill(x, "locf", fill=factor("unknown")), error="not yet implemented")
-#test(14.05, nafill(x, "nocb", fill=factor("unknown")), factor(c("a","a","b","c","d","g","g","g","h","i","i","unknown")))
-test(14.05, nafill(x, "nocb", fill=factor("unknown")), error="not yet implemented")
+test(14.02, nafill(x, fill=factor(NA)), error="not yet implemented")
+test(14.03, nafill(x, "locf"), factor(c(NA,"a","b","c","d","d","d","g","h","h","i","i")))
+test(14.04, nafill(x, "nocb"), factor(c("a","a","b","c","d","g","g","g","h","i","i",NA)))
+#test(14.05, nafill(x, "locf", fill=factor("unknown")), factor(c("unknown","a","b","c","d","d","d","g","h","h","i","i")))
+test(14.05, nafill(x, "locf", fill=factor("unknown")), error="not yet implemented")
+#test(14.06, nafill(x, "nocb", fill=factor("unknown")), factor(c("a","a","b","c","d","g","g","g","h","i","i","unknown")))
+test(14.06, nafill(x, "nocb", fill=factor("unknown")), error="not yet implemented")
 
 ## Date
 ## POSIXct
