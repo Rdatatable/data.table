@@ -405,14 +405,17 @@ replace_dot_alias = function(e) {
     } else {
       # isub is a single symbol name such as B in DT[B]
       i = try(eval(isub, parent.frame(), parent.frame()), silent=TRUE)
-      if (inherits(i,"try-error")) {
+      if (inherits(i,"try-error") || is.function(i)) {
         # must be "not found" since isub is a mere symbol
         col = try(eval(isub, x), silent=TRUE)  # is it a column name?
-        msg = if (inherits(col,"try-error")) " and it is not a column name either."
-        else paste0(" but it is a column of type ", typeof(col),". If you wish to select rows where that column contains TRUE",
-                    ", or perhaps that column contains row numbers of itself to select, try DT[(col)], DT[DT$col], or DT[col==TRUE] is particularly clear and is optimized.")
-        stop(as.character(isub), " is not found in calling scope", msg,
-             " When the first argument inside DT[...] is a single symbol (e.g. DT[var]), data.table looks for var in calling scope.")
+        msg = if (inherits(col, "try-error")) gettextf(
+          "'%s' is not found in calling scope and it is not a column name either. ",
+          as.character(isub)
+        ) else gettextf(
+          "'%s' is not found in calling scope, but it is a column of type %s. If you wish to select rows where that column contains TRUE, or perhaps that column contains row numbers of itself to select, try DT[(col)], DT[DT$col], or DT[col==TRUE} is particularly clear and is optimized. ",
+          as.character(isub), typeof(col)
+        )
+        stop(msg, "When the first argument inside DT[...] is a single symbol (e.g. DT[var]), data.table looks for var in calling scope.")
       }
     }
     if (restore.N) {
@@ -906,7 +909,7 @@ replace_dot_alias = function(e) {
             # if user doesn't like this inferred name, user has to use by=list() to name the column
           }
           # Fix for #1334
-          if (any(duplicated(bynames))) {
+          if (anyDuplicated(bynames)) {
             bynames = make.unique(bynames)
           }
         }
@@ -1116,7 +1119,7 @@ replace_dot_alias = function(e) {
           lhs = names_x[m]
         } else
           stop("LHS of := isn't column names ('character') or positions ('integer' or 'numeric')")
-        if (all(!is.na(m))) {
+        if (!anyNA(m)) {
           # updates by reference to existing columns
           cols = as.integer(m)
           newnames=NULL

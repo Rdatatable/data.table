@@ -114,7 +114,7 @@ Though these can be helpful, we will be discussing a `data.table`-unique approac
 
 Now that we've established the proper way to parameterize code that uses *lazy evaluation*, we can move on to the main subject of this vignette, *programming on data.table*.
 
-Starting from version 1.12.10, data.table provides a robust mechanism for parameterizing expressions passed to the `i`, `j`, and `by` (or `keyby`) arguments of `[.data.table`. It is built upon the base R `substitute` function, and mimics its interface. Here, we introduce `substitute2` as a more robust and more user-friendly version of base R's `substitute`. For a complete list of differences between `base::substitute` and `data.table::substitute2` please read the [`substitute2` manual](https://rdatatable.gitlab.io/data.table/library/data.table/html/substitute2.html).
+Starting from version 1.14.2, data.table provides a robust mechanism for parameterizing expressions passed to the `i`, `j`, and `by` (or `keyby`) arguments of `[.data.table`. It is built upon the base R `substitute` function, and mimics its interface. Here, we introduce `substitute2` as a more robust and more user-friendly version of base R's `substitute`. For a complete list of differences between `base::substitute` and `data.table::substitute2` please read the [`substitute2` manual](https://rdatatable.gitlab.io/data.table/library/data.table/html/substitute2.html).
 
 ### Substituting variables and names
 

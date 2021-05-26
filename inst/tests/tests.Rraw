@@ -5929,7 +5929,11 @@ test(1388, as.character(x), c("00:00:01", "-00:00:01", "-01:01:40"))
 # Fix for #880. Another eval(parse(.)) issue.
 DT <- as.data.table(iris)
 DT[, foo := "Species"]
-test(1389, copy(DT)[,bar := eval(parse(text=foo[1]), envir=.SD)], copy(DT)[, bar := Species])
+test(1389.1, copy(DT)[,bar := eval(parse(text=foo[1]), envir=.SD)], copy(DT)[, bar := Species])
+# another test from #1181 for completeness
+DT1 = data.table(a = 1, key = 'a')
+DT2 = data.table(c = 1, fn = list(quote(5*a)), key = 'c')
+test(1389.2, DT1[, n:=eval(DT2[a]$fn[[1]], .SD)], data.table(a=1, n=5, key="a"))
 
 # Fix for foverlaps() floating point interval (double) types. Should increment them by machine tolerance, not by 1L
 DT1 = data.table(start=c(0.88), end=c(0.88))
@@ -6700,6 +6704,7 @@ if (test_xts) {
   setcolorder(dt, c(2, 3, 1))
   dt[ , char_col := 'a']
   test(1465.17, as.xts(dt), xt, warning = 'columns are not numeric')
+  if (base::getRversion() < "3.6.0") rm(as.xts)
 
   # 890 -- key argument for as.data.table.xts
   x = xts(1:10, as.Date(1:10, origin = "1970-01-01"))
@@ -6710,6 +6715,10 @@ if (test_xts) {
          " 6: 1970-01-07  6", " 7: 1970-01-08  7", " 8: 1970-01-09  8",
          " 9: 1970-01-10  9", "10: 1970-01-11 10"))
   options(old)
+  
+  # as.data.table.xts(foo) had incorrect integer index with a column name called 'x', #4897
+  M = xts::as.xts(matrix(1, dimnames=list("2021-05-23", "x")))  # xts:: just to be extra robust; shouldn't be needed with rm(as.xts) above
+  test(1465.19, inherits(as.data.table(M)$index,"POSIXct"))
 
   Sys.setenv("_R_CHECK_LENGTH_1_LOGIC2_" = TRUE)
 }
@@ -11448,16 +11457,18 @@ if (exists("B")) rm(B)
 if (exists("NOTEXIST")) rm(NOTEXIST)
 if (exists("MyCol")) rm(MyCol)
 DT <- data.table(A = c(FALSE, TRUE), B = 2:1, C=c(2,3), MyCol=c(2,2))
-test(1773.01, DT[A], error = "A is not found in calling scope but it is a column of type logical.*==TRUE.*When the first argument")
-test(1773.02, DT[B], error = "B is not found in calling scope but it is a column of type integer.*DT\\[\\(col\\)\\].*When the first argument")   # 697
-test(1773.03, DT[C], error = "i has evaluated to type closure. Expecting logical, integer or double")  # C picks up stats::C in calling scope
-test(1773.04, DT[MyCol], error="MyCol is not found in calling scope but it is a column of type double.*DT\\[\\(col\\)\\].*When the first argument")
-test(1773.05, DT[NOTEXIST], error = "NOTEXIST is not found in calling scope and it is not a column name either. When the first argument")
+test(1773.01, DT[A], error = "'A' is not found in calling scope, but it is a column of type logical.*==TRUE.*When the first argument")
+test(1773.02, DT[B], error = "'B' is not found in calling scope, but it is a column of type integer.*DT\\[\\(col\\)\\].*When the first argument")   # 697
+test(1773.03, DT[C], error = "'C' is not found in calling scope, but it is a column of type double")  # C picks up stats::C in calling scope
+test(1773.04, DT[MyCol], error="'MyCol' is not found in calling scope, but it is a column of type double.*DT\\[\\(col\\)\\].*When the first argument")
+test(1773.05, DT[NOTEXIST], error = "'NOTEXIST' is not found in calling scope and it is not a column name either. When the first argument")
 test(1773.06, DT[(A)], DT[2])
 test(1773.07, DT[A==TRUE], DT[2])
 test(1773.08, DT[(B)], data.table(A=c(TRUE,FALSE), B=1:2, C=c(3,2), MyCol=2))
 test(1773.09, DT[(MyCol)], data.table(A=c(TRUE,TRUE), B=INT(1,1), C=c(3,3), MyCol=2))
 test(1773.10, DT[(C)], data.table(A=c(TRUE,NA), B=c(1L,NA), C=c(3,NA), MyCol=c(2,NA)))
+test(1773.11, data.table(subset=c(TRUE,FALSE))[subset], # i being a function name that's also a column name, #5014
+              error="'subset' is not found in calling scope, but")
 
 # New as.data.table.array method in v1.10.5
 set.seed(1L)
@@ -15387,6 +15398,19 @@ options(old)
 test(2049.2, outer$ab, list(data.table(a=1:3, b=4L)))
 test(2049.3, outer$ab[[1]][, b := 5L], data.table(a=1:3, b=5L))
 test(2049.4, outer$ab, list(data.table(a=1:3, b=5L)))
+test(2049.5, {DT=data.table(d=list(data.table(a=1))); DT$d[[1]][, new_col:=NA]; DT},  # verbatim from #1629
+             data.table(d = list(data.table(a=1, new_col=NA))))
+# extra tests on similar theme to #1629 added in PR#4366 ...
+add_col1 = function(dt) {
+  if (is.data.table(dt)) dt[, new_col:=NA]
+  if (is.list(dt)) lapply(dt, add_col1)
+  invisible()
+}
+DT = data.table(a=c(1,2), b=list(data.table(d=c("a", "b"), e=c(100, 200))))
+test(2049.6, add_col1(DT), NULL)
+test(2049.7, names(DT), c("a","b","new_col"))
+test(2049.8, names(DT$b[[1L]]), c("d","e","new_col"))
+test(2049.9, names(DT$b[[2L]]), c("d","e","new_col"))
 
 # rbindlist zero row DT should retain its (unused) levels, #3508
 DT = data.table(f = factor(c("a", "b", "c")))
@@ -16686,7 +16710,7 @@ set.seed(1)
 vDT = data.table(i_id = unique(iDT$i_id))[, .(v = runif(5,0,10), p = sample(c(5,5,10,10,10))), by=i_id]
 test(2120.01, !exists("i_id"))                             # quick verify in case there's an i_id in .GlobalEnv when testing in dev
 test(2120.02, iDT[i_id, order(e_date, e_time)],            # first of all, the correct error
-              error="i_id is not found in calling scope but it is a column of type character")
+              error="'i_id' is not found in calling scope, but it is a column of type character")
 tmp = vDT[c("B","C","A"), on=.(i_id), .N, by=.EACHI]       # split long statement in 2120.05 up as per demo in #3669
 test(2120.03, tmp, data.table(i_id=c("B","C","A"), N=5L))  # just make sure the helper tmp is correct
 test(2120.04, tmp[iDT[i_id, order(e_date, e_time)]],       # i_id obtained from tmp; this is what broke in dev 1.12.3
@@ -17503,7 +17527,31 @@ test(2182.3, melt(DTid, measure.vars=list(a=c(NA,1), b=2:3), id.vars="id"), exid
 test(2182.4, melt(DTid, measure.vars=list(a=c(NA,"a2"), b=c("b1","b2")), id.vars="id"), exid)
 test(2182.5, melt(DT.wide, measure.vars=list(a=c(NA,1), b=2:3), na.rm=TRUE)[, .(a, b)], data.table(a=2, b=2))#not testing variable because it is not computed correctly, #4455
 
-# new variable.name attribute for measure.vars, PR#4731 for multiple issues
+### First block testing measurev
+# new variable_table attribute for measure.vars, PR#4731 for multiple issues
+measurev = function(cols)cols # user-defined function for computing measure.vars, same name as data.table::measure but user-defined version should be used.
+test(2183.00001, melt(DT.wide, measure.vars=measurev()), data.table(variable=factor(c("a2","b1","b2")), value=c(2,1,2)))
+measurev = list("foo", "bar")#measurev below should not use this since it is not a function.
+test(2183.00002, melt(DTid, measure.vars=measurev(list(value.name=NULL, num=as.complex), pattern="([ab])([12])")), error="Type 'complex' not supported for joining/merging")
+test(2183.00004, melt(DTid, measure.vars=measurev(list(value.name=NULL, istr=NULL), pattern="([ab])([12])"))[order(b)], data.table(id=1, istr=paste(c(1,2)), a=c(NA, 2), b=c(1,2)))
+test(2183.00005, melt(DTid, measure.vars=measurev(list(column=NULL, istr=NULL), pattern="([ab])([12])", multiple.keyword="column"))[order(b)], data.table(id=1, istr=paste(c(1,2)), a=c(NA, 2), b=c(1,2)))#same computation but different multiple.keyword
+iris.dt = data.table(datasets::iris)
+test(2183.00020, melt(iris.dt, measure.vars=measurev(value.name, dim, sep=".", pattern="foo")), error="both sep and pattern arguments used; must use either sep or pattern (not both)")
+test(2183.000201, melt(iris.dt, measure.vars=measurev(list(NULL, dim=NULL), sep=".")), error="in measurev, elements of fun.list must be named, problems: 1")
+test(2183.000202, melt(iris.dt, measure.vars=measurev(list(NULL, NULL), sep=".")), error="in measurev, elements of fun.list must be named, problems: 1,2")
+test(2183.00027, melt(iris.dt, measure.vars=measurev(list(value.name=NULL, dim="bar"), sep=".")), error="in the measurev fun.list, each non-NULL element must be a function with at least one argument, problem: dim")
+test(2183.00028, melt(iris.dt, measure.vars=measurev(list(value.name=NULL, dim=NULL, baz=NULL), sep=".")), error="number of elements of fun.list =3 must be same as max number of items after splitting column names =2")
+test(2183.00042, melt(DTid, measure.vars=measurev(list(value.name=NULL, istr=function()1), pattern="([ab])([12])")), error="in the measurev fun.list, each non-NULL element must be a function with at least one argument, problem: istr")
+test(2183.00043, melt(DTid, measure.vars=measurev(list(value.name=NULL, istr=interactive), pattern="([ab])([12])")), error="in the measurev fun.list, each non-NULL element must be a function with at least one argument, problem: istr")
+test(2183.00044, melt(DTid, measure.vars=measurev(list(value.name=NULL, istr=function(x)1), pattern="([ab])([12])")), error="each conversion function must return an atomic vector with same length as its first argument, problem: istr")
+test(2183.00045, melt(iris.dt, measure.vars=measurev(list(value.name=NULL, dim=NULL, baz=NULL), pattern="(.*)[.](.*)")), error="number of elements of fun.list =3 must be same as number of capture groups in pattern =2")
+test(2183.00048, melt(iris.dt, measure.vars=measurev(list(value.name=NULL, value.name=NULL), sep=".")), error="elements of fun.list should be uniquely named, problems: value.name")
+# measure with factor conversion.
+myfac = function(x)factor(x)#user-defined conversion function.
+test(2183.00060, melt(DTid, measure.vars=measurev(list(letter=myfac, value.name=NULL), pattern="([ab])([12])")), data.table(id=1, letter=factor(c("a","b")), "2"=c(2,2), "1"=c(NA,1)))
+
+### Second block testing measure
+# new variable_table attribute for measure.vars, PR#4731 for multiple issues
 measure = function(cols)cols # user-defined function for computing measure.vars, same name as data.table::measure but user-defined version should be used.
 test(2183.01, melt(DT.wide, measure.vars=measure()), data.table(variable=factor(c("a2","b1","b2")), value=c(2,1,2)))
 measure = list("foo", "bar")#measure below should not use this since it is not a function.
@@ -17519,7 +17567,7 @@ test(2183.10, melt(DTid, measure.vars=structure(list(a=1, b=2:3), variable_table
 test(2183.11, melt(DTid, measure.vars=structure(list(a=1, b=2:3), variable_table=list(x=1:2, y=1))), error="variable_table attribute of measure.vars should be a data table with same number of rows as max length of measure.vars vectors =2")#make sure to check each list element, not just the first.
 # general measure errors.
 iris.dt = data.table(datasets::iris)
-test(2183.20, melt(iris.dt, measure.vars=measure(value.name, dim, sep=".", pattern="foo")), error="both sep and pattern arguments used in measure; must use either sep or pattern (not both)")
+test(2183.20, melt(iris.dt, measure.vars=measure(value.name, dim, sep=".", pattern="foo")), error="both sep and pattern arguments used; must use either sep or pattern (not both)")
 # school example.
 schools.wide <- data.table(
   school = c("A","B"),
@@ -17547,11 +17595,11 @@ test(2183.40, names(melt(iris.dt, measure.vars=patterns("[.]"))), c("Species", "
 test(2183.41, melt(DTid, measure.vars=measure(value.name, istr="bar", pattern="([ab])([12])")), error="each ... argument to measure must be a function with at least one argument, problem: istr")
 test(2183.42, melt(DTid, measure.vars=measure(value.name, istr=function()1, pattern="([ab])([12])")), error="each ... argument to measure must be a function with at least one argument, problem: istr")
 test(2183.43, melt(DTid, measure.vars=measure(value.name, istr=interactive, pattern="([ab])([12])")), error="each ... argument to measure must be a function with at least one argument, problem: istr")
-test(2183.44, melt(DTid, measure.vars=measure(value.name, istr=function(x)1, pattern="([ab])([12])")), error="each ... argument to measure must be a function that returns an atomic vector with same length as its first argument, problem: istr")
+test(2183.44, melt(DTid, measure.vars=measure(value.name, istr=function(x)1, pattern="([ab])([12])")), error="each conversion function must return an atomic vector with same length as its first argument, problem: istr")
 test(2183.45, melt(iris.dt, measure.vars=measure(value.name, dim, baz, pattern="(.*)[.](.*)")), error="number of ... arguments to measure =3 must be same as number of capture groups in pattern =2")
 test(2183.46, melt(iris.dt, measure.vars=measure(function(x)factor(x), dim, pattern="(.*)[.](.*)")), error="each ... argument to measure must be either a symbol without argument name, or a function with argument name, problems: 1")
 test(2183.47, melt(iris.dt, measure.vars=measure(function(x)factor(x), pattern="(.*)[.](.*)")), error="each ... argument to measure must be either a symbol without argument name, or a function with argument name, problems: 1")
-test(2183.48, melt(iris.dt, measure.vars=measure(value.name, value.name, sep=".")), error="measure group names should be unique, problems: value.name")
+test(2183.48, melt(iris.dt, measure.vars=measure(value.name, value.name, sep=".")), error="... arguments to measure should be uniquely named, problems: value.name")
 # measure with factor conversion.
 myfac = function(x)factor(x)#user-defined conversion function.
 test(2183.60, melt(DTid, measure.vars=measure(letter=myfac, value.name, pattern="([ab])([12])")), data.table(id=1, letter=factor(c("a","b")), "2"=c(2,2), "1"=c(NA,1)))
@@ -17568,8 +17616,8 @@ test(2183.65, melt(iris.days, measure.vars=measure(pattern="day")), error="patte
 test(2183.66, melt(iris.days, measure.vars=measure(value.name, pattern="(.*)")), error="value.name is the only group; fix by creating at least one more group")
 test(2183.67, melt(iris.days, measure.vars=measure(foo, bar, pattern="(foo)(bar)")), error="pattern did not match any cols, so nothing would be melted; fix by changing pattern")
 test(2183.68, melt(iris.days, measure.vars=measure(value.name, bar, pattern="(foo)(bar)")), error="pattern did not match any cols, so nothing would be melted; fix by changing pattern")
-test(2183.69, melt(data.table(ff=1, ff=2), measure.vars=measure(letter, number, pattern="(.)(.)")), error="measured column names should be unique, problems: ff")
-test(2183.70, melt(data.table(f_f=1, f_f=2), measure.vars=measure(letter, number)), error="measured column names should be unique, problems: f_f")
+test(2183.69, melt(data.table(ff=1, ff=2), measure.vars=measure(letter, number, pattern="(.)(.)")), error="measured columns should be uniquely named, problems: ff")
+test(2183.70, melt(data.table(f_f=1, f_f=2), measure.vars=measure(letter, number)), error="measured columns should be uniquely named, problems: f_f")
 test(2183.71, melt(iris.days, measure.vars=measure(value.name=as.integer, variable, pattern="day(.)[.](.*)")), error="value.name column class=integer after applying conversion function, but must be character")
 test(2183.72, melt(data.table(ff=1, ff=2, a=3, b=4), measure.vars=measure(letter, pattern="([ab])"), id.vars="ff"), data.table(ff=1, letter=c("a","b"), value=c(3,4)))#duplicate column names are fine if they are not matched by pattern.
 test(2183.73, melt(DTid, measure.vars=measure(letter, multiple.keyword, pattern="([ab])([12])")), error="group names specified in ... conflict with measure argument names; please fix by changing group names: multiple.keyword")
@@ -17580,8 +17628,6 @@ test(2183.77, melt(DTid, measure.vars=measure(letter, cols, pattern="([ab])([12]
 test(2183.78, melt(DTid, measure.vars=measure(letter, cols=as.integer, pattern="([ab])([12])")), error="cols must be a character vector of column names")
 test(2183.79, melt(DTid, measure.vars=measure(letter, number, pattern=as.integer)), error="pattern must be character string")
 test(2183.80, melt(DTid, measure.vars=measure(letter, number, sep=as.integer)), error="sep must be character string")
-##melt(DTid, measure.vars=measure(letter, number, sep=NA_character_)
-##melt(DTid, measure.vars=measure(letter, number, sep=character())
 
 # `keyby` allows mixing eval/get with direct columns, #4981
 dt <- data.table(a=c(1,2), b=c(3,4), c=c(1,0))
@@ -17654,4 +17700,9 @@ if (test_bit64) {
   test(2190.8, DT[1:2, a:=as.integer64(1:2)                    ]$a, list(as.integer64(1),                   as.integer64(2),                   4))
 }
 test(2190.9, DT[1:2, a:=call('sum', 1)], error="type 'language' cannot be coerced to 'list'")
+
+# adding test for (since fixed) 'could not find function "."' when verbose=TRUE, #3196
+DT = data.table(i1 = c(234L, 250L, 169L, 234L, 147L, 96L, 96L, 369L, 147L, 96L), i4 = c(79L, 113L, 270L, -121L, 113L, 113L, -121L, 179L, -228L, 113L), v = 0)
+test(2191, DT[1:5, sum(v), by=.(i5 = 1:5 %% 2L), verbose=TRUE], data.table(i5=1:0, V1=c(0,0)), output="gforce")
+
 
