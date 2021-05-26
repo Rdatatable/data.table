@@ -131,7 +131,7 @@
 
 18. `as.data.table()` on `xts` objects containing a column named `x` would return an `index` of type plain `integer` rather than `POSIXct`, [#4897](https://github.com/Rdatatable/data.table/issues/4897). Thanks to Emil Sjørup for reporting, and Jan Gorecki for the PR.
 
-19. `as.IDate` returns `NA` instead of erroring when the initial input is `''`, [#4676](https://github.com/Rdatatable/data.table/issues/4676). This is consistent with how `''` is treated when it appears later in the input. The same change was applied to `as.Date.character` in r79119 (R 4.0.3); we backported it here to continue supporting R 3.1.0.
+19. A fix to `as.Date(c("", ...))` in R 4.0.3, [17909](https://bugs.r-project.org/bugzilla3/show_bug.cgi?id=17909), has been backported to `data.table::as.IDate()` so that it too now returns `NA` for the first item when it is blank, even in older versions of R back to 3.1.0, rather than the incorrect error `character string is not in a standard unambiguous format`, [#4676](https://github.com/Rdatatable/data.table/issues/4676). Thanks to Arun Srinivasan for reporting, and Michaal Chirico both for the `data.table` PR and for submitting the patch to R that was accepted and included in R 4.0.3.
 
 ## NOTES
 
