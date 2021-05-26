@@ -340,6 +340,14 @@ test(14.05, nafill(x, "locf", fill=factor("unknown")), error="not yet implemente
 test(14.06, nafill(x, "nocb", fill=factor("unknown")), error="not yet implemented")
 
 ## Date
+x = as.Date(c(NA,1:4,NA,NA,5:6,NA,7L,NA), origin="1970-01-01")
+test(15.01, nafill(x, fill=as.Date("2021-05-26")), as.Date(c(18773L,1:4,18773L,18773L,5:6,18773L,7L,18773L), origin="1970-01-01"))
+test(15.02, nafill(x, fill=NA), as.Date(c(NA,1:4,NA,NA,5:6,NA,7L,NA), origin="1970-01-01"))
+test(15.03, nafill(x, "locf"), as.Date(c(NA,1:4,4L,4L,5:6,6L,7L,7L), origin="1970-01-01"))
+test(15.04, nafill(x, "nocb"), as.Date(c(1L,1:4,5L,5L,5:6,7L,7L,NA), origin="1970-01-01"))
+test(15.05, nafill(x, "locf", fill=as.Date("2021-05-26")), as.Date(c(18773L,1:4,4L,4L,5:6,6L,7L,7L), origin="1970-01-01"))
+test(15.06, nafill(x, "nocb", fill=as.Date("2021-05-26")), as.Date(c(1L,1:4,5L,5L,5:6,7L,7L,18773L), origin="1970-01-01"))
+
 ## POSIXct
 ## IDate
 ## ITime
