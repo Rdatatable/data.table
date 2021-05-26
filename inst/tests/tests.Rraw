@@ -17705,8 +17705,7 @@ test(2190.9, DT[1:2, a:=call('sum', 1)], error="type 'language' cannot be coerce
 DT = data.table(i1 = c(234L, 250L, 169L, 234L, 147L, 96L, 96L, 369L, 147L, 96L), i4 = c(79L, 113L, 270L, -121L, 113L, 113L, -121L, 179L, -228L, 113L), v = 0)
 test(2191, DT[1:5, sum(v), by=.(i5 = 1:5 %% 2L), verbose=TRUE], data.table(i5=1:0, V1=c(0,0)), output="gforce")
 
-# initial '' doesn't crash as.IDate, #4676; also imitates base R as from 4.0.2 patched
-y = c('', '2020-01-01')
-## consistency check -- y parses the same in either order
-test(2192.1, as.IDate(y), rev(as.IDate(rev(y))))
-test(2192.2, as.IDate(y), as.IDate(c(NA_integer_, 18262L)))
+# as.IDate was error when first item blank, #4676
+test(2192.1, as.IDate(c('', '2020-01-01')), structure(c(NA_integer_, 18262L), class=c("IDate","Date")))
+test(2192.2, as.IDate(c('2020-01-01', '')), structure(c(18262L, NA_integer_), class=c("IDate","Date")))
+
