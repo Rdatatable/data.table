@@ -6704,6 +6704,7 @@ if (test_xts) {
   setcolorder(dt, c(2, 3, 1))
   dt[ , char_col := 'a']
   test(1465.17, as.xts(dt), xt, warning = 'columns are not numeric')
+  if (base::getRversion() < "3.6.0") rm(as.xts)
 
   # 890 -- key argument for as.data.table.xts
   x = xts(1:10, as.Date(1:10, origin = "1970-01-01"))
@@ -6716,7 +6717,7 @@ if (test_xts) {
   options(old)
   
   # as.data.table.xts(foo) had incorrect integer index with a column name called 'x', #4897
-  M = as.xts(matrix(1, dimnames=list("2021-05-23", "x")))
+  M = xts::as.xts(matrix(1, dimnames=list("2021-05-23", "x")))  # xts:: just to be extra robust; shouldn't be needed with rm(as.xts) above
   test(1465.19, inherits(as.data.table(M)$index,"POSIXct"))
 
   Sys.setenv("_R_CHECK_LENGTH_1_LOGIC2_" = TRUE)
