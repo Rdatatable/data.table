@@ -224,6 +224,8 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, S
     isInt64[i] = Rinherits(VECTOR_ELT(x, i), char_integer64);
   const void **fillp = (const void **)R_alloc(nx, sizeof(void*)); // fill is (or will be) a list of length nx of matching types, scalar values for each column, this pointer points to each of those columns data pointers
   if (hasFill) {
+    //error("TODO obj scalar");
+    ///TODO obj scalar
     if (nx!=length(fill) && length(fill)!=1)
       error(_("fill must be a vector of length 1 or a list of length of x"));
     if (!isNewList(fill)) {

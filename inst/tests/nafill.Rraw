@@ -372,13 +372,31 @@ test(18.05, nafill(x, "locf", fill=as.ITime("19:59:11")), as.ITime(c(71951L,1:4,
 test(18.06, nafill(x, "nocb", fill=as.ITime("19:59:11")), as.ITime(c(1L,1:4,5L,5L,5:6,7L,7L,71951L)))
 ## mixed types
 if (test_bit64) {
-  d = data.table(
-    dbl=c(),
-    i64=as.integer64(c()),
-    lgl=c(NA,TRUE,FALSE,TRUE,FALSE,NA,NA,TRUE,TRUE,NA,TRUE,NA),
-    int=c(),
-    chr=c()
+  x = data.table(
+    dbl=c(NA,1.5,2,3,4,NA,NA,5,6,NA,7.5,NA),
+    chr=c(NA,"a","b","c","d",NA,NA,"g","h",NA,"i",NA)
   )
+  x[, "int" := as.integer(dbl)]
+  x[, "lgl" := as.logical(int%%2L)]
+  x[, "i64" := as.integer64(int)+3e9]
+  #x[, "fct" := as.factor(chr)] ## blocked by #5027
+  expected = list(
+    dbl=c(0,1.5,2,3,4,0,0,5,6,0,7.5,0),
+    chr=c("0","a","b","c","d","0","0","g","h","0","i","0"),
+    int=c(0L,1L,2L,3L,4L,0L,0L,5L,6L,0L,7L,0L),
+    lgl=c(FALSE,TRUE,FALSE,TRUE,FALSE,FALSE,FALSE,TRUE,FALSE,FALSE,TRUE,FALSE),
+    i64=as.integer64(c(0,3e9+1:4,0,0,3e9+5:6,0,3e9+7,0))
+  )
+  test(21.01, nafill(x, fill=0L), expected)
+  test(21.02, nafill(x, fill=list(0, "0", 0L, FALSE, as.integer64(0L))), expected)
+  test(21.03, nafill(x, fill=NA), as.list(x))
+  #test(21.04, nafill(x, fill=list(NA)), as.list(x))
+  test(21.05, nafill(x, fill=list(0, "0", 0L, FALSE)), error="fill must be a vector of length")
+  #test(21.06, nafill(x, fill=list(0)), expected)
+  #test(21.07, nafill(x, "locf"), )
+  #test(21.08, nafill(x, "nocb"), )
+  #test(21.09, nafill(x, "locf", fill=0L), )
+  #test(21.10, nafill(x, "nocb", fill=0L), )
 }
 
 # related to !is.integer(verbose)
