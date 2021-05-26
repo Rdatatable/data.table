@@ -22,14 +22,12 @@ frollsum(x, n, fill=NA, algo=c("fast","exact"),
 frollapply(x, n, FUN, \dots, fill=NA, align=c("right", "left", "center"))
 }
 \arguments{
-  \item{x}{ Vector, list, \code{data.frame} or \code{data.table} of integer, numeric or logical columns over which to calculate the windowed aggregations. }
+  \item{x}{ Vector, \code{data.frame} or \code{data.table} of integer, numeric or logical columns over which to calculate the windowed aggregations. May also be a list, in which case the rolling function is applied to each of its elements. }
   \item{n}{ Integer vector giving rolling window size(s). This is the \emph{total} number of included values. Adaptive rolling functions also accept a list of integer vectors. }
   \item{fill}{ Numeric; value to pad by. Defaults to \code{NA}. }
-  \item{algo}{ Character, default \code{"fast"}. When set to \code{"exact"},
-    a slower (but more accurate) algorithm is used. It suffers less from floating point
-    rounding error by performing an extra pass to adjust for rounding error
-    correction and carefully handles all non-finite values. If available
-    it will use multiple cores. See Details for more information. }
+  \item{algo}{ Character, default \code{"fast"}. When set to \code{"exact"}, a slower (but more accurate) algorithm is used. It
+    suffers less from floating point rounding errors by performing an extra pass, and carefully handles all non-finite values.
+    It will use mutiple cores where available. See Details for more information. }
   \item{align}{ Character, specifying the "alignment" of the rolling window, defaulting to \code{"right"}. \code{"right"} covers preceding rows (the window \emph{ends} on the current value); \code{"left"} covers following rows (the window \emph{starts} on the current value); \code{"center"} is halfway in between (the window is \emph{centered} on the current value, biased towards \code{"left"} when \code{n} is even). }
   \item{na.rm}{ Logical, default \code{FALSE}. Should missing values be removed when
     calculating window? For details on handling other non-finite values, see Details. }
@@ -109,7 +107,7 @@ frollapply(x, n, FUN, \dots, fill=NA, align=c("right", "left", "center"))
     \item{ when \code{adaptive=TRUE}, then \code{n} must be vector of
       length equal to \code{nrow(x)}, or list of such vectors. }
     \item{ \code{partial} window feature is not supported, although it can
-      be accomplished by using \code{adaptive=TRUE}, see examples. }
+      be accomplished by using \code{adaptive=TRUE}, see examples. \code{NA} is always returned for incomplete windows. }
   }
 
   Be aware that rolling functions operates on the physical order of input.

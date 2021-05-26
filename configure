@@ -20,6 +20,7 @@ esac
 # and R-exts note 24 now suggests 'checkbashisms' as we proposed.
 
 msg=0
+NOZLIB=1 # if pkg-config is not available then zlib will be disabled for higher chance of compilation success
 pkg-config --version >/dev/null 2>&1
 if [ $? -ne 0 ]; then
   echo "*** pkg-config is not installed."
@@ -30,10 +31,11 @@ else
     echo "*** pkg-config is installed but 'pkg-config --exists zlib' did not return 0."
     msg=1
   else
+    NOZLIB=0
     lib=`pkg-config --libs zlib`
-    expr "$lib" : ".*-lz$" >/dev/null
+    expr -- "$lib" : ".*-lz$" >/dev/null  # -- for FreeBSD, #4652
     if [ $? -ne 0 ]; then
-      expr "$lib" : ".*-lz " >/dev/null
+      expr -- "$lib" : ".*-lz " >/dev/null
       # would use \b in one expr but MacOS does not support \b
       if [ $? -ne 0 ]; then
         echo "*** pkg-config is installed and 'pkg-config --exists zlib' succeeds but"
@@ -45,12 +47,13 @@ else
 fi
 
 if [ $msg -ne 0 ]; then
-  echo "*** Compilation will now be attempted and if it works you can ignore this message. However,"
-  echo "*** if compilation fails, try 'locate zlib.h zconf.h' and ensure the zlib development library"
-  echo "*** is installed :"
+  echo "*** Compilation will now be attempted and if it works you can ignore this message. In"
+  echo "*** particular, this should be the case on Mac where zlib is built in or pkg-config"
+  echo "*** is not installed. However, if compilation fails, try 'locate zlib.h zconf.h' and"
+  echo "*** ensure the zlib development library is installed :"
   echo "***   deb: zlib1g-dev (Debian, Ubuntu, ...)"
   echo "***   rpm: zlib-devel (Fedora, EPEL, ...)"
-  echo "***   brew: zlib (OSX)"
+  echo "***   There is a zlib in brew for OSX but the built in zlib should work."
   echo "*** Note that zlib is required to compile R itself so you may find the advice in the R-admin"
   echo "*** guide helpful regarding zlib. On Debian/Ubuntu, zlib1g-dev is a dependency of r-base as"
   echo "*** shown by 'apt-cache showsrc r-base | grep ^Build-Depends | grep zlib', and therefore"
@@ -59,11 +62,10 @@ if [ $msg -ne 0 ]; then
   echo "***   1) 'pkg-config --exists zlib' succeeds (i.e. \$? -eq 0)"
   echo "***   2) 'pkg-config --libs zlib' contains -lz"
   echo "*** Compilation will now be attempted ..."
-  exit 0
+else
+  version=`pkg-config --modversion zlib`
+  echo "zlib ${version} is available ok"
 fi
-
-version=`pkg-config --modversion zlib`
-echo "zlib ${version} is available ok"
 
 # Test if we have a OPENMP compatible compiler
 # Aside: ${SHLIB_OPENMP_CFLAGS} does not appear to be defined at this point according to Matt's testing on
@@ -85,7 +87,11 @@ EOF
 
 if [ "$R_NO_OPENMP" = "1" ]; then
   # Compilation failed -- try forcing -fopenmp instead.
-  "${CC}" "${CFLAGS}" -fopenmp test-omp.c || R_NO_OPENMP=1
+  # TODO: doesn't R_NO_OPENMP need to be set to 0 before next line?
+  ${CC} ${CFLAGS} -fopenmp test-omp.c || R_NO_OPENMP=1
+  # TODO: and then nothing seems to be done with this outcome
+else
+  echo "R CMD SHLIB supports OpenMP without any extra hint"
 fi
 
 # Clean up.
@@ -100,8 +106,19 @@ if [ "$R_NO_OPENMP" = "1" ]; then
   echo "*** Continuing installation without OpenMP support..."
   sed -e "s|@openmp_cflags@||" src/Makevars.in > src/Makevars
 else
-  echo "OpenMP supported"
   sed -e "s|@openmp_cflags@|\$(SHLIB_OPENMP_CFLAGS)|" src/Makevars.in > src/Makevars
+fi
+# retain user supplied PKG_ env variables, #4664. See comments in Makevars.in too.
+sed -e "s|@PKG_CFLAGS@|$PKG_CFLAGS|" src/Makevars > src/Makevars.tmp && mv src/Makevars.tmp src/Makevars
+sed -e "s|@PKG_LIBS@|$PKG_LIBS|" src/Makevars > src/Makevars.tmp && mv src/Makevars.tmp src/Makevars
+# optional dependency on zlib
+if [ "$NOZLIB" = "1" ]; then
+  echo "*** Compilation without compression support in fwrite"
+  sed -e "s|@zlib_cflags@|-DNOZLIB|" src/Makevars > src/Makevars.tmp && mv src/Makevars.tmp src/Makevars
+  sed -e "s|@zlib_libs@||" src/Makevars > src/Makevars.tmp && mv src/Makevars.tmp src/Makevars
+else
+  sed -e "s|@zlib_cflags@||" src/Makevars > src/Makevars.tmp && mv src/Makevars.tmp src/Makevars
+  sed -e "s|@zlib_libs@|-lz|" src/Makevars > src/Makevars.tmp && mv src/Makevars.tmp src/Makevars
 fi
 
 exit 0

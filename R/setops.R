@@ -62,11 +62,12 @@ fintersect = function(x, y, all=FALSE) {
   if (all) {
     x = shallow(x)[, ".seqn" := rowidv(x)]
     y = shallow(y)[, ".seqn" := rowidv(y)]
-    jn.on = c(".seqn",setdiff(names(x),".seqn"))
-    x[y, .SD, .SDcols=setdiff(names(x),".seqn"), nomatch=NULL, on=jn.on]
+    jn.on = c(".seqn",setdiff(names(y),".seqn"))
+    # fixes #4716 by preserving order of 1st (uses y[x] join) argument instead of 2nd (uses x[y] join)
+    y[x, .SD, .SDcols=setdiff(names(y),".seqn"), nomatch=NULL, on=jn.on]
   } else {
-    z = funique(y)  # fixes #3034. When .. prefix in i= is implemented (TODO), this can be x[funique(..y), on=, multi=]
-    x[z, nomatch=NULL, on=names(x), mult="first"]
+    z = funique(x)  # fixes #3034. When .. prefix in i= is implemented (TODO), this can be x[funique(..y), on=, multi=]
+    y[z, nomatch=NULL, on=names(y), mult="first"]
   }
 }
 
@@ -153,17 +154,25 @@ all.equal.data.table = function(target, current, trim.levels=TRUE, check.attribu
     k1 = key(target)
     k2 = key(current)
     if (!identical(k1, k2)) {
-      return(sprintf("Datasets has different keys. 'target'%s. 'current'%s.",
-               if(length(k1)) paste0(": ", paste(k1, collapse=", ")) else " has no key",
-               if(length(k2)) paste0(": ", paste(k2, collapse=", ")) else " has no key"))
+      return(gettextf(
+        "Datasets have different %s. 'target': %s. 'current': %s.",
+        "keys",
+        if(length(k1)) brackify(k1) else gettextf("has no key", domain="R-data.table"),
+        if(length(k2)) brackify(k2) else gettextf("has no key", domain="R-data.table"),
+        domain="R-data.table"
+      ))
     }
     # check index
     i1 = indices(target)
     i2 = indices(current)
     if (!identical(i1, i2)) {
-      return(sprintf("Datasets has different indexes. 'target'%s. 'current'%s.",
-               if(length(i1)) paste0(": ", paste(i1, collapse=", ")) else " has no index",
-               if(length(i2)) paste0(": ", paste(i2, collapse=", ")) else " has no index"))
+      return(gettextf(
+        "Datasets have different %s. 'target': %s. 'current': %s.",
+        "indices",
+        if(length(i1)) brackify(i1) else gettextf("has no index", domain = "R-data.table"),
+        if(length(i2)) brackify(i2) else gettextf("has no index", domain = "R-data.table"),
+        domain = "R-data.table"
+      ))
     }
 
     # Trim any extra row.names attributes that came from some inheritance
@@ -172,7 +181,7 @@ all.equal.data.table = function(target, current, trim.levels=TRUE, check.attribu
     a1 = exclude.attrs(attributes(target))
     a2 = exclude.attrs(attributes(current))
     if (length(a1) != length(a2)) return(sprintf("Datasets has different number of (non-excluded) attributes: target %s, current %s", length(a1), length(a2)))
-    if (!identical(nm1 <- sort(names(a1)), nm2 <- sort(names(a2)))) return(sprintf("Datasets has attributes with different names: %s", paste(setdiff(union(names(a1), names(a2)), intersect(names(a1), names(a2))), collapse=", ")))
+    if (!identical(nm1 <- sort(names(a1)), nm2 <- sort(names(a2)))) return(sprintf("Datasets has attributes with different names: %s", brackify(setdiff(union(names(a1), names(a2)), intersect(names(a1), names(a2))))))
     attrs.r = all.equal(a1[nm1], a2[nm2], ..., check.attributes = check.attributes)
     if (is.character(attrs.r)) return(paste("Attributes: <", attrs.r, ">")) # skip further heavy processing
   }

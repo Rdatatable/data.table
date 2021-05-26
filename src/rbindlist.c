@@ -273,7 +273,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
   for(int j=0; j<ncol; ++j) {
     int maxType=LGLSXP;  // initialize with LGLSXP for test 2002.3 which has col x NULL in both lists to be filled with NA for #1871
     bool factor=false, orderedFactor=false;     // ordered factor is class c("ordered","factor"). isFactor() is true when isOrdered() is true.
-    int longestLen=0, longestW=-1, longestI=-1; // just for ordered factor
+    int longestLen=-1, longestW=-1, longestI=-1; // just for ordered factor; longestLen must be initialized as -1 so that rbind zero-length ordered factor could work #4795
     SEXP longestLevels=R_NilValue;              // just for ordered factor
     bool int64=false;
     const char *foundName=NULL;
