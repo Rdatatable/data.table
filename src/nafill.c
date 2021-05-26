@@ -47,9 +47,13 @@ void nafillInteger(int32_t *x, uint_fast64_t nx, unsigned int type, int32_t fill
   if (verbose)
     tic = omp_get_wtime();
   if (type==0) { // const
+    //Rprintf("fill=%d\n",fill);
     for (uint_fast64_t i=0; i<nx; i++) {
+      //Rprintf("before write: x[%d]=%d\n",i,x[i]);
       ans->int_v[i] = x[i]==NA_INTEGER ? fill : x[i];
+      //Rprintf("after write: ans->int_v[%d]=%d\n",i,ans->int_v[i]);
     }
+    //Rprintf("ans->int_v[nx-1]=%d\n",ans->int_v[nx-1]);
   } else if (type==1) { // locf
     ans->int_v[0] = x[0]==NA_INTEGER ? fill : x[0];
     for (uint_fast64_t i=1; i<nx; i++) {
@@ -189,7 +193,12 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, S
     for (R_len_t i=0; i<nx; i++) {
       SET_VECTOR_ELT(ans, i, allocVector(TYPEOF(VECTOR_ELT(x, i)), inx[i]));
       const SEXP ansi = VECTOR_ELT(ans, i);
-      const void *p = isReal(ansi) ? (void *)REAL(ansi) : (isInteger(ansi) ? (void *)INTEGER(ansi) : (void *)ansi);
+      const void *p =
+        isReal(ansi) ? (void *)REAL(ansi) : (
+          isInteger(ansi) ? (void *)INTEGER(ansi) : (
+            isLogical(ansi) ? (void *)LOGICAL(ansi) : (void *)ansi
+        )
+      );
       vans[i] = ((ans_t) { .dbl_v=(double *)p, .int_v=(int *)p, .int64_v=(int64_t *)p, .char_v=(SEXP)p, .status=0, .message={"\0","\0","\0","\0"} });
     }
   } else {
@@ -209,6 +218,7 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, S
     error(_("Internal error: invalid type argument in nafillR function, should have been caught before. Please report to data.table issue tracker.")); // # nocov
 
   bool hasFill = !isLogical(fill) || LOGICAL(fill)[0]!=NA_LOGICAL;
+  //Rprintf("hasFill=%d\n", hasFill);
   bool *isInt64 = (bool *)R_alloc(nx, sizeof(bool));
   for (R_len_t i=0; i<nx; i++)
     isInt64[i] = Rinherits(VECTOR_ELT(x, i), char_integer64);
@@ -226,9 +236,16 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, S
       error("internal error: 'fill' should be recycled as list already"); // # nocov
     for (R_len_t i=0; i<nx; i++) {
       SET_VECTOR_ELT(fill, i, coerceAs(VECTOR_ELT(fill, i), VECTOR_ELT(x, i), ScalarLogical(TRUE)));
+      if (isFactor(VECTOR_ELT(x, i)) && hasFill)
+        error("'fill' on factor columns is not yet implemented");
       fillp[i] = SEXPPTR_RO(VECTOR_ELT(fill, i)); // do like this so we can use in parallel region
     }
   }
+  //Rprintf("before loop\n");
+  //Rf_PrintValue(VECTOR_ELT(ans, 0));
+  //Rprintf("TYPEOF(ans)=%s\n", type2char(TYPEOF(VECTOR_ELT(ans, 0))));
+  //Rprintf("before loop fill\n");
+  //Rf_PrintValue(VECTOR_ELT(fill, 0));
   #pragma omp parallel for if (nx>1 && !hadChar) num_threads(getDTthreads(nx, true))
   for (R_len_t i=0; i<nx; i++) {
     switch (TYPEOF(VECTOR_ELT(x, i))) {
@@ -248,10 +265,18 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, S
     }
   }
 
+  //Rprintf("after loop\n");
+  //Rprintf("TYPEOF(ans)=%s\n", type2char(TYPEOF(VECTOR_ELT(ans, 0))));
+  //Rf_PrintValue(VECTOR_ELT(ans, 0));
+
   if (!binplace) {
     for (R_len_t i=0; i<nx; i++) {
-      if (!isNull(ATTRIB(VECTOR_ELT(x, i))))
+      if (!isNull(ATTRIB(VECTOR_ELT(x, i)))) {
         copyMostAttrib(VECTOR_ELT(x, i), VECTOR_ELT(ans, i));
+        if (hasFill && isFactor(VECTOR_ELT(ans, i))) {
+          error("TODO merge fill to ans factor level");
+        }
+      }
     }
     SEXP obj_names = getAttrib(obj, R_NamesSymbol); // copy names
     if (!isNull(obj_names)) {
@@ -261,16 +286,18 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, S
       setAttrib(ans, R_NamesSymbol, ans_names);
     }
   }
-
+  //Rprintf("before ansMsg\n");
   ansMsg(vans, nx, verbose, __func__);
 
   if (verbose)
     Rprintf(_("%s: parallel processing of %d column(s) took %.3fs\n"), __func__, nx, omp_get_wtime()-tic);
-
+  //Rprintf("before return\n");
   UNPROTECT(protecti);
   if (binplace) {
     return obj;
   } else {
+    //Rprintf("returning VECTOR_ELT(ans, 0)\n");
+    //Rf_PrintValue(VECTOR_ELT(ans, 0));
     return obj_scalar && length(ans) == 1 ? VECTOR_ELT(ans, 0) : ans;
   }
 }
