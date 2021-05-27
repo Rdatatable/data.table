@@ -372,6 +372,7 @@ test(18.05, nafill(x, "locf", fill=as.ITime("19:59:11")), as.ITime(c(71951L,1:4,
 test(18.06, nafill(x, "nocb", fill=as.ITime("19:59:11")), as.ITime(c(1L,1:4,5L,5L,5:6,7L,7L,71951L)))
 ## mixed types
 if (test_bit64) {
+  library(bit64)
   x = data.table(
     dbl=c(NA,1.5,2,3,4,NA,NA,5,6,NA,7.5,NA),
     chr=c(NA,"a","b","c","d",NA,NA,"g","h",NA,"i",NA)
@@ -390,9 +391,13 @@ if (test_bit64) {
   test(21.01, nafill(x, fill=0L), expected)
   test(21.02, nafill(x, fill=list(0, "0", 0L, FALSE, as.integer64(0L))), expected)
   test(21.03, nafill(x, fill=NA), as.list(x))
-  #test(21.04, nafill(x, fill=list(NA)), as.list(x))
+  test(21.04, nafill(x, fill=list(NA)), error="fill must be a vector of length")
   test(21.05, nafill(x, fill=list(0, "0", 0L, FALSE)), error="fill must be a vector of length")
-  #test(21.06, nafill(x, fill=list(0)), expected)
+  test(21.06, nafill(x, fill=list()), error="fill must be a vector of length")
+  test(21.07, nafill(x, fill=logical()), error="fill must be a vector of length")
+  test(21.08, nafill(x, fill=list(logical())), error="fill must be a vector of length")
+  test(21.09, nafill(x, fill=list(0)), error="fill must be a vector of length")
+
   #test(21.07, nafill(x, "locf"), )
   #test(21.08, nafill(x, "nocb"), )
   #test(21.09, nafill(x, "locf", fill=0L), )

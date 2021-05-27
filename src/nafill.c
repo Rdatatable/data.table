@@ -217,17 +217,36 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, S
   else
     error(_("Internal error: invalid type argument in nafillR function, should have been caught before. Please report to data.table issue tracker.")); // # nocov
 
-  bool hasFill = !isLogical(fill) || LOGICAL(fill)[0]!=NA_LOGICAL;
-  //Rprintf("hasFill=%d\n", hasFill);
   bool *isInt64 = (bool *)R_alloc(nx, sizeof(bool));
   for (R_len_t i=0; i<nx; i++)
     isInt64[i] = Rinherits(VECTOR_ELT(x, i), char_integer64);
   const void **fillp = (const void **)R_alloc(nx, sizeof(void*)); // fill is (or will be) a list of length nx of matching types, scalar values for each column, this pointer points to each of those columns data pointers
-  if (hasFill) {
-    //error("TODO obj scalar");
-    ///TODO obj scalar
-    if (nx!=length(fill) && length(fill)!=1)
-      error(_("fill must be a vector of length 1 or a list of length of x"));
+  bool hasFill = true, badFill = false;
+  if (isLogical(fill)) {
+    if (length(fill)!=1)
+      badFill = true;
+    else if (LOGICAL(fill)[0]==NA_LOGICAL) // fill=NA makes hasFill=false
+      hasFill = false;
+  }
+  if (!badFill && hasFill) {
+    //Rprintf("hasFill branch\n");
+    if (obj_scalar && isNewList(fill))
+      badFill = true;
+    if (!badFill && !isNewList(fill) && length(fill)!=1)
+      badFill = true;
+    if (!badFill && !obj_scalar && isNewList(fill) && nx!=length(fill))
+      badFill = true;
+    if (!badFill && isNewList(fill)) { // each element in fill=list(...) must be length 1
+      for (R_len_t i=0; i<length(fill) && !badFill; i++) {
+        SEXP thisFill = VECTOR_ELT(fill, i);
+        if (isNewList(thisFill) || length(thisFill)!=1)
+          badFill = true;
+      }
+    }
+  }
+  if (badFill) {
+    error(_("fill must be a vector of length 1 or, if x is a list-like, then list of length of x having length 1 elements to fill to corresponding fields"));
+  } else if (hasFill) {
     if (!isNewList(fill)) {
       SEXP fill1 = fill;
       fill = PROTECT(allocVector(VECSXP, nx)); protecti++;
@@ -236,12 +255,18 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, S
     }
     if (!isNewList(fill))
       error("internal error: 'fill' should be recycled as list already"); // # nocov
+    //Rprintf("hasFill branch2\n");
     for (R_len_t i=0; i<nx; i++) {
+      //Rprintf("coercing fill[i]=\n");
+      //Rf_PrintValue(VECTOR_ELT(fill, i));
+      //Rprintf("to match x=\n");
+      //Rf_PrintValue(VECTOR_ELT(x, i));
       SET_VECTOR_ELT(fill, i, coerceAs(VECTOR_ELT(fill, i), VECTOR_ELT(x, i), ScalarLogical(TRUE)));
       if (isFactor(VECTOR_ELT(x, i)) && hasFill)
         error("'fill' on factor columns is not yet implemented");
       fillp[i] = SEXPPTR_RO(VECTOR_ELT(fill, i)); // do like this so we can use in parallel region
     }
+    //Rprintf("hasFill branch3\n");
   }
   //Rprintf("before loop\n");
   //Rf_PrintValue(VECTOR_ELT(ans, 0));
