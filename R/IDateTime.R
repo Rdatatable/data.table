@@ -8,7 +8,7 @@ as.IDate = function(x, ...) UseMethod("as.IDate")
 as.IDate.default = function(x, ..., tz = attr(x, "tzone", exact=TRUE)) {
   if (is.null(tz)) tz = "UTC"
   if (is.character(x)) {
-    # 4676 mimics for back-compatibility a similar patch applied to as.Date.character in r79119
+    # backport of similar patch to base::as.Date.character in R 4.0.3, #4676
     is.na(x) = !nzchar(x)
   }
   as.IDate(as.Date(x, tz = tz, ...))
