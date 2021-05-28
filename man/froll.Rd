@@ -38,8 +38,8 @@ frollapply(x, n, FUN, \dots, fill=NA, align=c("right", "left", "center"))
   \item{\dots}{ Extra arguments passed to \code{FUN} in \code{frollapply}. }
 }
 \details{
-  \code{froll*} functions accept vectors, lists, \code{data.frames} or
-  \code{data.tables}. They always return a list except when the input is a
+  \code{froll*} functions accept vectors, lists, \code{data.frame}s or
+  \code{data.table}s. They always return a list except when the input is a
   \code{vector} and \code{length(n)==1}, in which case a \code{vector}
   is returned, for convenience. Thus, rolling functions can be used
   conveniently within \code{data.table} syntax.
