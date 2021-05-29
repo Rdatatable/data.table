@@ -945,7 +945,7 @@ replace_dot_alias = function(e) {
               if (length(nm) != length(jvnames))
                 warning("j may not evaluate to the same number of columns for each group; if you're sure this warning is in error, please put the branching logic outside of [ for efficiency")
               else if (any(idx <- nm != jvnames))
-                warning("Different branches of j expression produced different auto-named columns: ", brackify(sprintf('%s!=%s', nm[idx], jvnames[idx])), '; using the most "last" names. If this was intentional (e.g., you know only one branch will ever be used in a given query because the branch is controlled by a function argument), please (1) pull this branch out of the call or (2) explicitly provide missing defaults for each branch in all cases.', call. = FALSE)
+                warning("Different branches of j expression produced different auto-named columns: ", brackify(sprintf('%s!=%s', nm[idx], jvnames[idx])), '; using the most "last" names. If this was intentional (e.g., you know only one branch will ever be used in a given query because the branch is controlled by a function argument), please (1) pull this branch out of the call; (2) explicitly provide missing defaults for each branch in all cases; or (3) use the same name for each branch and re-name it in a follow-up call.', call. = FALSE)
             }
             jvnames <<- nm # TODO: handle if() list(a, b) else list(b, a) better
             setattr(q, "names", NULL)  # drops the names from the list so it's faster to eval the j for each group; reinstated at the end on the result.
