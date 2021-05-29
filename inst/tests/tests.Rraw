@@ -101,6 +101,42 @@ if (!test_longdouble) {
   # e.g. under valgrind, longdouble.digits==53; causing these to fail: 1262, 1729.04, 1729.08, 1729.09, 1729.11, 1729.13, 1830.7; #4639
 }
 
+# generate simple error messages from base that are checked against in our tests. this helps
+#   protect us against these messages evolving in base in the future, and against these messages
+#   potentially not being produced in English.
+# Three use cases:
+#   (1) match message exactly [missing delim]
+#   (2) match message pattern after dropping anything between delimeters [delim, fmt=FALSE]
+#   (3) function factory for matching messages exactly by substituting anything between delimeters [delim, fmt=TRUE]
+get_msg = function(e, delim, fmt=FALSE) {
+  msg = tryCatch(e, error=identity, warning=identity)$message
+  if (missing(delim)) return(msg)
+  if (length(delim) == 1L) delim[2L] = delim[1L]
+  msg = gsub(
+    sprintf("%1$s[^%2$s]+%2$s", delim[1L], delim[2L]),
+    sprintf("%s%s%s", delim[1L], if (fmt) "%s" else ".+", delim[2L]),
+    msg
+  )
+  if (fmt) return(function(x) sprintf(msg, x))
+  return(msg)
+}
+base_messages = list(
+  missing_object = get_msg(`__dt_test_missing_` + 1, "'", fmt=TRUE),
+  missing_function = get_msg(`__dt_test_missing_`(), '"', fmt=TRUE),
+  invalid_arg_unary_operator = get_msg(-'a'),
+  invalid_arg_binary_operator = get_msg(1 + 'a'),
+  invalid_arg_sum = get_msg(sum('a'), c("\\(", "\\)"), fmt=TRUE),
+  arg_length_mismatch = get_msg(base::order(1, 1:2)),
+  empty_max = get_msg(max(numeric())),
+  empty_min = get_msg(min(numeric())),
+  coerce_na = get_msg(as.integer('a')),
+  locked_binding = get_msg({e = new.env(); e$x = 1; lockBinding('x', e); e$x = 2}, "'", fmt=TRUE),
+  missing_file = get_msg({tmp <- tempfile(tmpdir=tempfile("xxx")); file(tmp, "w")}, "'"),
+  # gives both error & warning but tryCatch returns the warning first, so suppress
+  cant_open_file = get_msg(suppressWarnings({con<-file(tempfile()); open(con, 'r')})),
+  mixed_subscripts = get_msg(letters[-1:1])
+)
+
 ##########################
 
 test(1.1, tables(env=new.env()), null.data.table(), output = "No objects of class")
@@ -977,7 +1013,7 @@ DT = data.table(a=1:5, b=6:10, c=11:15)
 test(327, within(DT,rm(a,b)), data.table(c=11:15))
 test(328, within(DT,rm(b,c)), data.table(a=1:5))
 test(329, within(DT,rm(b,a)), data.table(c=11:15))
-test(330, within(DT,rm(b,c,d)), data.table(a=1:5), warning="object 'd' not found")
+test(330, within(DT,rm(b,c,d)), data.table(a=1:5), warning=base_messages$missing_object("d"))
 DT[,c("b","a")]=NULL
 test(332, DT, data.table(c=11:15))
 test(333, within(DT,rm(c)), data.table(NULL))
@@ -1119,8 +1155,8 @@ test(378, cbind(), NULL)
 test(379, rbind(), NULL)
 
 DT = data.table(a=rep(1:3,1:3),b=1:6)
-test(380, DT[,{.SD$b[1]=10L;.SD}, by=a], error="locked binding")  # .SD locked for 1st group
-test(381, DT[,{if (a==2) {.SD$b[1]=10L;.SD} else .SD}, by=a], error="locked binding") # .SD locked in 2nd group onwards too
+test(380, DT[,{.SD$b[1]=10L;.SD}, by=a], error=base_messages$locked_binding(".SD"))  # .SD locked for 1st group
+test(381, DT[,{if (a==2) {.SD$b[1]=10L;.SD} else .SD}, by=a], error=base_messages$locked_binding(".SD")) # .SD locked in 2nd group onwards too
 
 # test that direct := is trapped, but := within a copy of .SD is allowed (FAQ 4.5). See also tests 556-557.
 test(382, DT[,b:=.N*2L,by=a], data.table(a=rep(1:3,1:3),b=rep(2L*(1:3),1:3)))
@@ -1672,7 +1708,7 @@ test(570.1, DT[,list(.I=.I),list(a,b)][,.I,a], error="The column '.I' can't be g
 DT = data.table("a "=1:2, "b"=3:4," b"=5:6, v=1:6)
 test(571, DT[,sum(v),by="b, b"], data.table("b"=3:4, " b"=5:6, V1=c(9L,12L)))
 test(572, DT[,sum(v),by="a , b"], data.table("a "=1:2, " b"=5:6, V1=c(9L,12L)))
-test(573, DT[,sum(v),by="b, a"], error="object ' a' not found")
+test(573, DT[,sum(v),by="b, a"], error=base_messages$missing_object(" a"))
 
 # Test base::unname, used by melt, and only supported by data.table for DF compatibility for non-dtaware packages
 DT = data.table(a=1:3, b=4:6)
@@ -2036,7 +2072,7 @@ if (ncol(DT)==2L) setnames(DT,c("A","B")) # else don't stop under torture with s
 test(714, DT[,z:=6:10], data.table(A=1:5,B=5,z=6:10))
 
 # Test J alias is now removed outside DT[...] from v1.8.7 (to resolve rJava::J conflict)
-test(715, J(a=1:3,b=4), error="could not find function.*J")
+test(715, J(a=1:3,b=4), error=base_messages$missing_function("J"))
 
 # Test get in j
 DT = data.table(a=1:3,b=4:6)
@@ -2325,8 +2361,8 @@ test(827.1, names(a[b]), c("User ID","Blah Blah","Yadda Yadda"))
 # setcolorder and merge check for dup column names, #2193(ii)
 setnames(DT2,"b","a")
 test(828, setcolorder(DT2,c("a","b")), error="x has some duplicated column name(s): a. Please remove or rename")
-test(829, merge(DT1,DT2), error="y has some duplicated column name(s): a. Please remove or rename")
-test(830, merge(DT2,DT1), error="x has some duplicated column name(s): a. Please remove or rename")
+test(829, merge(DT1,DT2), error="y has some duplicated column name(s): [a]. Please remove or rename")
+test(830, merge(DT2,DT1), error="x has some duplicated column name(s): [a]. Please remove or rename")
 
 # attribs such as "comments" should be retained, #2270
 DT1 <- data.table(id = seq.int(1, 10), A = LETTERS[1:10], key = "id")
@@ -3022,7 +3058,7 @@ test(1034, as.data.table(x<-as.character(sample(letters, 5))), data.table(V1=x))
   # na.rm=TRUE with list column value, PR#4737
   test(1035.016, melt(data.table(a1=1, b1=list(1:2), b2=list(c('foo','bar'))), na.rm=TRUE, measure.vars=list(a="a1", b=c("b1","b2"))), data.table(variable=factor(1), a=1, b=list(1:2)))
   test(1035.017, melt(data.table(a1=1, b1=1, b2=2), na.rm=TRUE, measure.vars=list(a="a1", b=c("b1","b2"))), data.table(variable=factor(1), a=1, b=1))#this worked even before the PR.
-  
+
   ans1 = cbind(DT[, c(1,2,8), with=FALSE], variable=factor("l_1"))
   ans1[, value := DT$l_1]
   test(1035.02, melt(DT, id.vars=c("i_1", "i_2", "l_2"), measure.vars=c("l_1")), ans1)
@@ -3792,7 +3828,7 @@ test(1137.03, DT[, .SD, .SDcols=-"y"], DT[, c(1,3), with=FALSE])
 test(1137.04, DT[, .SD, .SDcols=-c("y", "x")], DT[, 3, with=FALSE])
 test(1137.05, DT[, .SD, .SDcols=-which(names(DT) %in% c("x", "y", "z"))], null.data.table())
 test(1137.06, DT[, .SD, .SDcols=c(1, -2)], error=".SDcols is numeric but has both")
-test(1137.07, DT[, .SD, .SDcols=c("x", -"y")], error="invalid argument to unary")
+test(1137.07, DT[, .SD, .SDcols=c("x", -"y")], error=base_messages$invalid_arg_unary_operator)
 test(1137.08, DT[, .SD, .SDcols=c(-1, "x")], error="Some items of .SDcols are")
 
 DT <- data.table(x=1:5, y=6:10, z=11:15, zz=letters[1:5])
@@ -4535,8 +4571,7 @@ ix = with(DT, order(1-DT$x, decreasing=TRUE))
 test(1251.07, DT[order(1-DT$x, decreasing=TRUE)], DT[ix])
 test(1251.08, DT[order(x, list(-y), decreasing=TRUE)],
              error = "Column 2 is length 1 which differs from length of column 1.*10")
-test(1251.09, DT[base::order(x, list(-y), decreasing=TRUE)],
-             error = "argument lengths differ")   # data.table's error is more helpful than base's
+test(1251.09, DT[base::order(x, list(-y), decreasing=TRUE)], error=base_messages$arg_length_mismatch)   # data.table's error is more helpful than base's
 # more "edge cases" to ensure we're consistent with base
 test(1251.10, DT[order("a")], DT[1L])
 test(1251.11, DT[order("b", "a")], DT[1L])
@@ -4915,7 +4950,7 @@ test(1290.34, DT[, names(DT) == "x", with=FALSE], as.data.table(ll[c(1,3,4)]))
 dt1 = data.table(a=character(0),b=numeric(0))
 ans1 = data.table(a=character(0), b=numeric(0), c=numeric(0))
 ans2 = data.table(a=character(0), b=numeric(0), c=numeric(0), d=integer(0))
-test(1291.1, dt1[, c:=max(b), by='a'], ans1, warning="no non-missing arguments to max")
+test(1291.1, dt1[, c:=max(b), by='a'], ans1, warning=base_messages$empty_max)
 test(1291.2, dt1[, d := integer(0), by=a], ans2)
 
 # Bug #21
@@ -4955,7 +4990,7 @@ test(1294.02, dt[, a := 1.5]$a, rep(1L, 3L),
 test(1294.03, dt[, a := NA]$a, rep(NA_integer_, 3L))
 test(1294.04, dt[, a := "a"]$a, rep(NA_integer_, 3L),
               warning=c("Coercing 'character' RHS to 'integer'.*column 1 named 'a'",
-                        "NAs introduced by coercion"))
+                        base_messages$coerce_na))
 test(1294.05, dt[, a := list(list(1))]$a, rep(1L, 3L),
               warning="Coercing 'list' RHS to 'integer' to match.*column 1 named 'a'")
 test(1294.06, dt[, a := list(1L)]$a, rep(1L, 3L))
@@ -4965,7 +5000,7 @@ test(1294.09, dt[, b := 1L]$b, rep(1,3))
 test(1294.10, dt[, b := NA]$b, rep(NA_real_,3))
 test(1294.11, dt[, b := "bla"]$b, rep(NA_real_, 3),
               warning=c("Coercing 'character' RHS to 'double' to match.*column 2 named 'b'",
-                        "NAs introduced by coercion"))
+                        base_messages$coerce_na))
 test(1294.12, dt[, b := list(list(1))]$b, rep(1,3),
               warning="Coercing 'list' RHS to 'double' to match.*column 2 named 'b'")
 test(1294.13, dt[, b := TRUE]$b, rep(1,3))
@@ -5129,7 +5164,8 @@ test(1313.22, DT[, list(y=max(y, na.rm=TRUE)), by=x], DT[c(5,10)])
 
 # for character
 set.seed(1L)
-DT <- data.table(x=rep(1:6, each=3), y=sample(c("", letters[1:3], NA), 18, TRUE))
+DT <- data.table(x=rep(1:7, each=3), y=sample(c("", letters[1:3], NA), 21, TRUE))
+DT[x==7, y := c("","b","c")]
 test(1313.23, DT[, min(y), by=x], DT[, base::min(y), by=x])
 test(1313.24, DT[, max(y), by=x], DT[, base::max(y), by=x])
 test(1313.25, DT[, min(y, na.rm=TRUE), by=x], DT[, base::min(y, na.rm=TRUE), by=x])
@@ -5137,8 +5173,8 @@ test(1313.26, DT[, max(y, na.rm=TRUE), by=x], DT[, base::max(y, na.rm=TRUE), by=
 DT[x==6, y := NA_character_]
 test(1313.27, DT[, min(y), by=x], DT[, base::min(y), by=x])
 test(1313.28, DT[, max(y), by=x], DT[, base::max(y), by=x])
-test(1313.29, DT[, min(y, na.rm=TRUE), by=x], data.table(x=1:6, V1=c("a","a","c","","a",NA)), warning="No non-missing")
-test(1313.30, DT[, max(y, na.rm=TRUE), by=x], data.table(x=1:6, V1=c("b","a","c","a","c",NA)), warning="No non-missing")
+test(1313.29, DT[, min(y, na.rm=TRUE), by=x], data.table(x=1:7, V1=c("a","a","c","","a",NA,"")), warning="No non-missing")
+test(1313.30, DT[, max(y, na.rm=TRUE), by=x], data.table(x=1:7, V1=c("b","a","c","a","c",NA,"c")), warning="No non-missing")
 
 # bug 700 - bmerge, roll=TRUE and nomatch=0L when i's key group occurs more than once
 dt1 <- data.table(structure(list(x = c(7L, 33L), y = structure(c(15912, 15912), class = "Date"), z = c(626550.35284, 7766.385)), .Names =
@@ -5893,7 +5929,11 @@ test(1388, as.character(x), c("00:00:01", "-00:00:01", "-01:01:40"))
 # Fix for #880. Another eval(parse(.)) issue.
 DT <- as.data.table(iris)
 DT[, foo := "Species"]
-test(1389, copy(DT)[,bar := eval(parse(text=foo[1]), envir=.SD)], copy(DT)[, bar := Species])
+test(1389.1, copy(DT)[,bar := eval(parse(text=foo[1]), envir=.SD)], copy(DT)[, bar := Species])
+# another test from #1181 for completeness
+DT1 = data.table(a = 1, key = 'a')
+DT2 = data.table(c = 1, fn = list(quote(5*a)), key = 'c')
+test(1389.2, DT1[, n:=eval(DT2[a]$fn[[1]], .SD)], data.table(a=1, n=5, key="a"))
 
 # Fix for foverlaps() floating point interval (double) types. Should increment them by machine tolerance, not by 1L
 DT1 = data.table(start=c(0.88), end=c(0.88))
@@ -6664,6 +6704,7 @@ if (test_xts) {
   setcolorder(dt, c(2, 3, 1))
   dt[ , char_col := 'a']
   test(1465.17, as.xts(dt), xt, warning = 'columns are not numeric')
+  if (base::getRversion() < "3.6.0") rm(as.xts)
 
   # 890 -- key argument for as.data.table.xts
   x = xts(1:10, as.Date(1:10, origin = "1970-01-01"))
@@ -6674,6 +6715,10 @@ if (test_xts) {
          " 6: 1970-01-07  6", " 7: 1970-01-08  7", " 8: 1970-01-09  8",
          " 9: 1970-01-10  9", "10: 1970-01-11 10"))
   options(old)
+  
+  # as.data.table.xts(foo) had incorrect integer index with a column name called 'x', #4897
+  M = xts::as.xts(matrix(1, dimnames=list("2021-05-23", "x")))  # xts:: just to be extra robust; shouldn't be needed with rm(as.xts) above
+  test(1465.19, inherits(as.data.table(M)$index,"POSIXct"))
 
   Sys.setenv("_R_CHECK_LENGTH_1_LOGIC2_" = TRUE)
 }
@@ -6902,13 +6947,12 @@ test(1486.1, as.data.frame(ans1.1), as.data.frame(ans1.2))
 test(1486.2, as.data.frame(ans2.1), as.data.frame(ans2.1))
 
 # Fix for #832
-x <- matrix(1:9, ncol=3)
-setattr(x, "names", paste("V", seq_len(length(x)), sep = ""))
+x <- matrix(1:9, ncol=3L)
+setattr(x, "names", paste0("V", seq_along(x)))
 test(1487.1, setattr(x, "class", c("data.table", "data.frame")), error="Internal structure doesn't seem to be a list")
-x <- matrix(1:9, ncol=3)
+x <- matrix(1:9, ncol=3L)
 class(x) = c("data.table", "data.frame")
-# not sure how to test this one, so using `tryCatch`
-test(1487.2, tryCatch(print(x), error=function(k) "bla"), "bla")
+test(1487.2, print(x), error="dim.data.table expects a data.table as input")
 
 # Fix for #1043
 DT = data.table(grp=LETTERS[1:2], categ=rep(c("X","Y"), each=2L), condition=rep(c("P","Q"), each=4L), value=sample(8))
@@ -8326,10 +8370,18 @@ DT2 = data.table(id1=c("c", "w", "b"), val=50:52)
 test(1600.2, names(DT1[DT2, .(id1=id1, val=val, bla=sum(z1, na.rm=TRUE)), on="id1"]), c("id1", "val", "bla"))
 
 # warn when merge empty data.table #597
-test(1601.1, merge(data.table(a=1),data.table(a=1), by="a"), data.table(a=1, key="a"))
-test(1601.2, tryCatch(merge(data.table(a=1),data.table(NULL), by="a"), warning = function(w) w$message), "You are trying to join data.tables where argument 'y' has no columns.")
-test(1601.3, tryCatch(merge(data.table(NULL),data.table(a=1), by="a"), warning = function(w) w$message), "You are trying to join data.tables where argument 'x' has no columns.")
-test(1601.4, tryCatch(merge(data.table(NULL),data.table(NULL), by="a"), warning = function(w) w$message), "You are trying to join data.tables where arguments 'x' and 'y' have no columns.")
+DT0 = data.table(NULL)
+DT1 = data.table(a=1)
+test(1601.1, merge(DT1, DT1, by="a"), data.table(a=1, key="a"))
+test(1601.2, merge(DT1, DT0, by="a"),
+     warning="You are trying to join data.tables where 'y' has 0 columns.",
+     error="Elements listed in `by`")
+test(1601.3, merge(DT0, DT1, by="a"),
+     warning="You are trying to join data.tables where 'x' has 0 columns.",
+     error="Elements listed in `by`")
+test(1601.4, merge(DT0, DT0, by="a"),
+     warning="You are trying to join data.tables where 'x' and 'y' have 0 columns.",
+     error="Elements listed in `by`")
 
 # fix for #1549
 d1 <- data.table(v1=1:2,x=x)
@@ -9960,7 +10012,8 @@ test(1670.2, class(as.data.table(x)), class(x)[2:3])
 
 # #1676, `:=` with by shouldn't add cols on supported types
 dt = data.table(x=1, y=2)
-test(1671, dt[, z := sd, by=x], error="invalid type/length (closure/1)")
+test(1671, dt[, z := sd, by=x],
+     error=gettextf("invalid type/length (%s/%d) in vector allocation", "closure", 1L, domain="R"))
 
 # 1683
 DT <- data.table(V1 = rep(1:2, 3), V2 = 1:6)
@@ -10298,11 +10351,11 @@ if (.Platform$OS.type=="unix") {
   cat("a,b\n4,2", file=f<-tempfile())
   cmd <- sprintf("cat %s", f)
   options(datatable.fread.input.cmd.message = TRUE)
-  test(1703.01, fread(cmd), ans<-data.table(a=4L, b=2L), message="Please use fread.cmd=.*security concern.*Please read item 5 in the NEWS file for v1.11.6")
+  test(1703.01, fread(cmd), ans<-data.table(a=4L, b=2L), message="security concern.*Please read item 5 in the NEWS file for v1.11.6")
   options(datatable.fread.input.cmd.message = NULL)  # when option is missing as it is by default, then TRUE
   test(1703.02, fread(cmd), ans, message="security concern")
   options(datatable.fread.input.cmd.message = FALSE)
-  test(1703.03, tryCatch(fread(cmd), message=stop), ans)
+  test(1703.03, fread(cmd), ans)
   options(datatable.fread.input.cmd.message = NULL)
   test(1703.04, fread(cmd=cmd), ans)
   test(1703.05, fread(file=cmd), error=sprintf("File '%s' does not exist", cmd))
@@ -10327,7 +10380,8 @@ if (.Platform$OS.type=="unix") {
 test(1703.15, fread("."), error="File '.' is a directory. Not yet implemented.")
 # tmpdir argument
 d = tempfile("dir")
-test(1703.16, fread(text=c('a,b','1,2'), tmpdir=d), error="cannot open the connection", warning="No such file or directory")
+test(1703.16, fread(text=c('a,b','1,2'), tmpdir=d),
+     error=base_messages$cant_open_file, warning=base_messages$missing_file)
 dir.create(d)
 test(1703.17, fread(text=c('a,b','1,2'), tmpdir=d), data.table(a=1L,b=2L))
 test(1703.18, fread(text=c('a,b','1,2')), data.table(a=1L, b=2L))
@@ -10394,8 +10448,8 @@ test(1722.2, DT[,(!is.na(as.numeric(FieldName)))], c(TRUE,TRUE,FALSE,TRUE,FALSE,
 test(1723.1, DT[removalIndex>0,rowId-(2*removalIndex-1)], c(-2,-11,-5,-14))
 test(1723.2, DT[removalIndex>0,(rowId-(2*removalIndex-1))], c(-2,-11,-5,-14))
 DT = data.table(FieldName = c("1", "2", "3", "four", "five", "6"))
-test(1724.1, DT[, is.na(as.numeric(FieldName))], c(FALSE,FALSE,FALSE,TRUE,TRUE,FALSE), warning="NAs introduced by coercion")
-test(1724.2, DT[, !is.na(as.numeric(FieldName))], c(TRUE,TRUE,TRUE,FALSE,FALSE,TRUE), warning="NAs introduced by coercion")
+test(1724.1, DT[, is.na(as.numeric(FieldName))], c(FALSE,FALSE,FALSE,TRUE,TRUE,FALSE), warning=base_messages$coerce_na)
+test(1724.2, DT[, !is.na(as.numeric(FieldName))], c(TRUE,TRUE,TRUE,FALSE,FALSE,TRUE), warning=base_messages$coerce_na)
 
 # Ensure NA's are added properly when a new column is added, not all the target rows are joined to, and the number of i
 # rows is equal or greater than the number of rows in the target table.
@@ -10846,7 +10900,8 @@ test(1743.217, sapply(fread("a,b,c,d,e,f\na,b,c,d,e,f", colClasses = list(factor
 test(1743.218, sapply(fread("a,b,c,d,e,f\na,b,c,d,e,f", colClasses = list(factor = c(1, 2, 4), factor = 3), select = c(5, 4, 2, 3)), class), y = c(e = "character", d = "factor", b = "factor", c = "factor"))
 
 test(1743.22, fread("a,b,c\n1999/01/01,2,f", colClasses=list(Date=1L), drop="a"), data.table(b=2L, c="f"))
-test(1743.231, fread("a,b,c\n2,1,4i", colClasses=list(complex="c", integer=2L), drop="a"), data.table(b=1L, c="4i"), warning="NAs introduced by coercion.*left as type 'character'")
+test(1743.231, fread("a,b,c\n2,1,4i", colClasses=list(complex="c", integer=2L), drop="a"), data.table(b=1L, c="4i"),
+     warning=paste0(base_messages$coerce_na, ".*left as type 'character'"))
 test(1743.232, fread("a,b,c\n2,1,3+4i", colClasses=list(complex="c", integer=2L), drop="a"), data.table(b=1L, c=3+4i))
 test(1743.241, fread("a,b,c\n2,2,f", colClasses = list(character="c", integer="b"), drop="a"), data.table(b=2L, c="f"))
 test(1743.242, fread("a,b,c\n2,2,f", colClasses = c("integer", "integer", "factor"), drop="a"), data.table(b=2L, c=factor("f")))
@@ -10886,7 +10941,9 @@ test(1743.308, fread(data1743, colClasses=list(NULL=c("C","D")), drop=1:2), data
 test(1743.311, fread(data1743, colClasses="NULL"), ans<-data.table(A=1:2, B=3:4, C=5:6, D=7:8), warning="colClasses.*quoted.*interpreted as colClasses.*NULL")
 test(1743.312, fread(data1743, colClasses=character()), ans)
 test(1743.32, fread("A,B\na,0+1i", colClasses="complex"), data.table(A="a", B=1i),
-              warning="Column 'A' was requested to be 'complex'.*NAs introduced by coercion.*column has been left as.*character")
+              warning=paste0("Column 'A' was requested to be 'complex'.*",
+                             base_messages$coerce_na,
+                             ".*column has been left as.*character"))
 test(1743.33, fread(data1743, colClasses=list("character"=4, "numeric"=c(2,NA,1))), data.table(A=c(1,2), B=c(3,4), C=5:6, D=c("7","8")), warning="colClasses[[2]][2] is NA")
 test(1743.34, fread(data1743, select=list("character"=4, "numeric"=c(2,NA,1))), data.table(D=c("7","8"), B=c(3,4), A=c(1,2)), warning="colClasses[[2]][2] is NA")
 old = options(warn=2)
@@ -11021,7 +11078,7 @@ test(1750.10,
 # groupingsets on aggregate using grouping col char type and sum - error
 test(1750.11,
   groupingsets(dt, j = lapply(.SD, sum), by = c("status","year"), sets=list(character()), .SDcols="color"),
-  error = "invalid 'type' (character) of argument"
+  error=base_messages$invalid_arg_sum("character")
 )
 # groupingsets on aggregate using grouping col factor type and sum - error
 test(1750.12,
@@ -11071,9 +11128,9 @@ test(1750.19, uniqueN({
 ), 1L, warning = "'sets' contains a duplicate")
 # entries in `by` / `sets` not exists in data.table
 test(1750.20, exists("notexist"), FALSE)  # https://github.com/Rdatatable/data.table/issues/3055#issuecomment-423364960
-test(1750.21, groupingsets(dt, j = c(list(cnt=.N), lapply(.SD, sum)), by = c("color","year","notexist"), sets=list(c("color"), character()), id=TRUE), error = "object 'notexist' not found")
+test(1750.21, groupingsets(dt, j = c(list(cnt=.N), lapply(.SD, sum)), by = c("color","year","notexist"), sets=list(c("color"), character()), id=TRUE), error=base_messages$missing_object("notexist"))
 test(1750.22, groupingsets(dt, j = c(list(cnt=.N), lapply(.SD, sum)), by = c("color","year","status"), sets=list(c("color"), "stat"), id=TRUE), error = "Columns used in 'sets' but not present in 'by': [stat]")
-test(1750.23, groupingsets(dt, j = .(a=sum(notexist)), by = c("color","year","status"), sets=list(c("color"), character()), id=TRUE), error = "object 'notexist' not found")
+test(1750.23, groupingsets(dt, j = .(a=sum(notexist)), by = c("color","year","status"), sets=list(c("color"), character()), id=TRUE), error=base_messages$missing_object("notexist"))
 # update by ref `:=` forbidden
 test(1750.24,
   groupingsets(dt, j = sum_value := sum(value), by = c("color","year","status"), sets=list(c("color"), character())),
@@ -11400,16 +11457,18 @@ if (exists("B")) rm(B)
 if (exists("NOTEXIST")) rm(NOTEXIST)
 if (exists("MyCol")) rm(MyCol)
 DT <- data.table(A = c(FALSE, TRUE), B = 2:1, C=c(2,3), MyCol=c(2,2))
-test(1773.01, DT[A], error = "A is not found in calling scope but it is a column of type logical.*==TRUE.*When the first argument")
-test(1773.02, DT[B], error = "B is not found in calling scope but it is a column of type integer.*DT\\[\\(col\\)\\].*When the first argument")   # 697
-test(1773.03, DT[C], error = "i has evaluated to type closure. Expecting logical, integer or double")  # C picks up stats::C in calling scope
-test(1773.04, DT[MyCol], error="MyCol is not found in calling scope but it is a column of type double.*DT\\[\\(col\\)\\].*When the first argument")
-test(1773.05, DT[NOTEXIST], error = "NOTEXIST is not found in calling scope and it is not a column name either. When the first argument")
+test(1773.01, DT[A], error = "'A' is not found in calling scope, but it is a column of type logical.*==TRUE.*When the first argument")
+test(1773.02, DT[B], error = "'B' is not found in calling scope, but it is a column of type integer.*DT\\[\\(col\\)\\].*When the first argument")   # 697
+test(1773.03, DT[C], error = "'C' is not found in calling scope, but it is a column of type double")  # C picks up stats::C in calling scope
+test(1773.04, DT[MyCol], error="'MyCol' is not found in calling scope, but it is a column of type double.*DT\\[\\(col\\)\\].*When the first argument")
+test(1773.05, DT[NOTEXIST], error = "'NOTEXIST' is not found in calling scope and it is not a column name either. When the first argument")
 test(1773.06, DT[(A)], DT[2])
 test(1773.07, DT[A==TRUE], DT[2])
 test(1773.08, DT[(B)], data.table(A=c(TRUE,FALSE), B=1:2, C=c(3,2), MyCol=2))
 test(1773.09, DT[(MyCol)], data.table(A=c(TRUE,TRUE), B=INT(1,1), C=c(3,3), MyCol=2))
 test(1773.10, DT[(C)], data.table(A=c(TRUE,NA), B=c(1L,NA), C=c(3,NA), MyCol=c(2,NA)))
+test(1773.11, data.table(subset=c(TRUE,FALSE))[subset], # i being a function name that's also a column name, #5014
+              error="'subset' is not found in calling scope, but")
 
 # New as.data.table.array method in v1.10.5
 set.seed(1L)
@@ -13038,7 +13097,7 @@ test(1923.2, indices(DT, vectors=TRUE), list(c("V1")))
 DT = data.table(varname = 1)
 test(1924.1, DT[var_name==1], error='not found\\. Perhaps you intended.*varname')
 test(1924.2, DT[variable==1], error='Object.*not found among')
-test(1924.3, DT[varname+'a'], error='non-numeric argument')
+test(1924.3, DT[varname+'a'], error=base_messages$invalid_arg_binary_operator)
 DT[, VAR_NAME:=2]
 test(1924.4, DT[var_name==1], error="Object 'var_name' not found. Perhaps you intended [varname, VAR_NAME]")
 DT = setDT(lapply(integer(50), function(...) numeric(1L)))
@@ -13201,10 +13260,10 @@ test(1948.14, DT[i, on = 1L], error = "'on' argument should be a named atomic ve
 
 # helpful error when on= is provided but not i, rather than silently ignoring on=
 DT = data.table(A=1:3)
-test(1949.1, DT[,,on=A], error="object 'A' not found") # tests .1 to .4 amended after #3621
-test(1949.2, DT[,1,on=A], error="object 'A' not found")
-test(1949.3, DT[on=A], error="object 'A' not found")
-test(1949.4, DT[,on=A], error="object 'A' not found")
+test(1949.1, DT[,,on=A], error=base_messages$missing_object("A")) # tests .1 to .4 amended after #3621
+test(1949.2, DT[,1,on=A], error=base_messages$missing_object("A"))
+test(1949.3, DT[on=A], error=base_messages$missing_object("A"))
+test(1949.4, DT[,on=A], error=base_messages$missing_object("A"))
 test(1949.5, DT[1,,with=FALSE], error="j must be provided when with=FALSE")
 test(1949.6, DT[], output="A.*1.*2.*3")   # no error
 test(1949.7, DT[,], output="A.*1.*2.*3")  # no error, #3163
@@ -13808,7 +13867,7 @@ test(1967.57, setnames(x), error = 'x has 2 columns but its names are length 0')
 names(x) = c('a', 'b')
 test(1967.58, names(setnames(x, new = c('b', 'c'))), c('b', 'c'))
 test(1967.59, setnames(x, 1:2, c(8L, 9L)), error = "'new' is not a character")
-test(1967.60, setnames(x, -1:1, c('hey', 'you')), error = "mixed.*negative")
+test(1967.60, setnames(x, -1:1, c('hey', 'you')), error = base_messages$mixed_subscripts)
 test(1967.61, setnames(x, 1+3i, 'cplx'), error = "'old' is type complex")
 test(1967.62, setnames(x, 1, c('d', 'e')), error = "'old' is length 1 but 'new'")
 test(1967.621, setnames(x, 1:2, c("a","a")), data.table(a=1:5, a=6:10))
@@ -13854,7 +13913,7 @@ test(1967.75, x[!y, sum(i4), on = 'i1', by = .EACHI, verbose = TRUE],
      data.table(i1 = c(169L, 369L), V1 = c(270L, 179L)),
      output = "not-join called with 'by=.EACHI'.*done")
 test(1967.76, x[!y, sum(i4), on = 'i1', verbose = TRUE], 510L,
-     output = 'Inverting irows for notjoin.*sec')
+     output = 'Inverting irows for notjoin.*[0-9]s')
 x[ , v := 0]
 ### hitting by = A:B branch
 test(1967.77, x[ , .(v = sum(v)), by = i1:i4], x[-10L])
@@ -15082,6 +15141,8 @@ test(2041.1, DT[, median(date), by=g], data.table(g=c("a","b"), V1=as.Date(c("20
 test(2041.2, DT[, median(time), by=g], DT[c(2,5),.(g=g, V1=time)])
 
 # 'invalid trim argument' with optimization level 1; #1876
+# these tests check via output= that level 1 is on, and also that level 2 is on (which includes level 1).
+# They could run in level 1 with level 2 off, but output= would need to be changed and there's no need.
 test(2042.1, DT[ , as.character(mean(date)), by=g, verbose=TRUE ],
              data.table(g=c("a","b"), V1=c("2018-01-04","2018-01-21")),
      output=msg<-"GForce is on, left j unchanged.*Old mean optimization is on, left j unchanged")
@@ -15090,7 +15151,19 @@ test(2042.1, DT[ , as.character(mean(date)), by=g, verbose=TRUE ],
 Jan.2018 = format(strptime("2018-01-01", "%Y-%m-%d"), "%b-%Y")
 test(2042.2, DT[ , format(mean(date),"%b-%Y")], Jan.2018)
 test(2042.3, DT[ , format(mean(date),"%b-%Y"), by=g, verbose=TRUE ],  # just this case generated the error
-     data.table(g=c("a","b"), V1=c(Jan.2018, Jan.2018)), output=msg)
+             data.table(g=c("a","b"), V1=c(Jan.2018, Jan.2018)), output=msg)
+# also incidentally fixed #2491
+DT = data.table(
+  Group = c("A", "A", "B", "B", "C", "C"),
+  Date1 = `class<-`(c(17446.0291040738, 17470.0221205444, 17445.0765226481,  # `class<-`() == .Date() to pass on R 3.1.0
+                  17456.0360002079, 17440.0230725919, 17451.0572453837), "Date"),
+  Date2 = `class<-`(c(17459.1561177987, 17451.1086757995, 17449.0820898537,
+                  17443.1175238448, 17461.0463715783, 17448.1033968224), "Date")
+)
+DT[ , DiffTime := abs(difftime(Date1, Date2, units = 'days'))]
+test(2042.4, DT[ , round(mean(DiffTime)), by=Group, verbose=TRUE],
+     data.table(Group=c("A", "B", "C"), V1=structure(c(16, 8, 12), class="difftime", units="days")),
+     output="Old mean optimization is on, left j unchanged.*GForce.*FALSE")
 
 # gforce wrongly applied to external variable; #875
 DT = data.table(x=INT(1,1,1,2,2), y=1:5)
@@ -15325,6 +15398,19 @@ options(old)
 test(2049.2, outer$ab, list(data.table(a=1:3, b=4L)))
 test(2049.3, outer$ab[[1]][, b := 5L], data.table(a=1:3, b=5L))
 test(2049.4, outer$ab, list(data.table(a=1:3, b=5L)))
+test(2049.5, {DT=data.table(d=list(data.table(a=1))); DT$d[[1]][, new_col:=NA]; DT},  # verbatim from #1629
+             data.table(d = list(data.table(a=1, new_col=NA))))
+# extra tests on similar theme to #1629 added in PR#4366 ...
+add_col1 = function(dt) {
+  if (is.data.table(dt)) dt[, new_col:=NA]
+  if (is.list(dt)) lapply(dt, add_col1)
+  invisible()
+}
+DT = data.table(a=c(1,2), b=list(data.table(d=c("a", "b"), e=c(100, 200))))
+test(2049.6, add_col1(DT), NULL)
+test(2049.7, names(DT), c("a","b","new_col"))
+test(2049.8, names(DT$b[[1L]]), c("d","e","new_col"))
+test(2049.9, names(DT$b[[2L]]), c("d","e","new_col"))
 
 # rbindlist zero row DT should retain its (unused) levels, #3508
 DT = data.table(f = factor(c("a", "b", "c")))
@@ -15812,7 +15898,7 @@ test(2072.009, fifelse(test_vec, rep(1L,11L), rep(0L,10L)),      error="Length o
 test(2072.010, fifelse(test_vec, rep(1,10L), rep(0,11L)),        error="Length of 'yes' is 10 but must be 1 or length of 'test' (11).")
 test(2072.011, fifelse(test_vec, rep(TRUE,10L), rep(FALSE,10L)), error="Length of 'yes' is 10 but must be 1 or length of 'test' (11).")
 test(2072.012, fifelse(0:1, rep(TRUE,2L), rep(FALSE,2L)),        error="Argument 'test' must be logical.")
-test(2072.013, fifelse(test_vec, TRUE, "FALSE"),                 error="'yes' is of type logical but 'no' is of type character. Please")
+test(2072.013, fifelse(test_vec, TRUE, "FALSE"),                 error="'no' is of type character but 'yes' is logical. Please")
 test(2072.014, fifelse(test_vec, list(1),list(2,4)),             error="Length of 'no' is 2 but must be 1 or length of 'test' (11).")
 test(2072.015, fifelse(test_vec, list(1,3),list(2,4)),           error="Length of 'yes' is 2 but must be 1 or length of 'test' (11).")
 test(2072.016, fifelse(test_vec, list(1), list(0)), as.list(as.numeric(out_vec)))
@@ -15838,7 +15924,7 @@ test(2072.031, fifelse(test_vec_na, "1", rep("0",12L)), as.character(out_vec_na)
 test(2072.032, fifelse(test_vec_na, rep("1",12L), "0"), as.character(out_vec_na))
 test(2072.033, fifelse(test_vec_na, rep("1",12L), rep("0",12L)), as.character(out_vec_na))
 test(2072.034, fifelse(test_vec_na, "1", "0"), as.character(out_vec_na))
-test(2072.035, fifelse(test_vec, as.Date("2011-01-01"), FALSE), error="'yes' is of type double but 'no' is of type logical. Please")
+test(2072.035, fifelse(test_vec, as.Date("2011-01-01"), FALSE), error="'no' is of type logical but 'yes' is double. Please")
 test(2072.036, fifelse(test_vec_na, 1+0i, 0+0i), as.complex(out_vec_na))
 test(2072.037, fifelse(test_vec_na, rep(1+0i,12L), 0+0i), as.complex(out_vec_na))
 test(2072.038, fifelse(test_vec_na, rep(1+0i,12L), rep(0+0i,12L)), as.complex(out_vec_na))
@@ -16275,7 +16361,7 @@ test(2100.03, fifelse(test_vec_na, TRUE, FALSE, TRUE), as.logical(out_vec_na))
 test(2100.04, fifelse(test_vec_na, "1", "0","2"), as.character(out_vec_na))
 test(2100.05, fifelse(test_vec_na, 1+0i, 0+0i, 2+0i), as.complex(out_vec_na))
 test(2100.06, fifelse(c(TRUE,FALSE,NA), list(1:5), list(5:1), list(15:11)), list(1:5,5:1,15:11))
-test(2100.07, fifelse(test_vec_na, 1, 0, 2L), error = "'yes' is of type double but 'na' is of type integer. Please make sure that both arguments have the same type.")
+test(2100.07, fifelse(test_vec_na, 1, 0, 2L), c(1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 2)) # corece na
 test(2100.08, fifelse(test_vec_na, 1, 0, c(2,3)), error = "Length of 'na' is 2 but must be 1")
 test(2100.09, fifelse(date_vec_na, as.Date("2019-08-31"), as.Date("2019-08-30"), as.Date("2019-08-29")), as.Date(c(18139, 18138, 18138, 18138, 18138, 18137), origin = '1970-01-01'))
 test(2100.10, fifelse(date_vec_na, as.Date("2019-08-31"), as.Date("2019-08-30"), 18137), error = "'yes' has different class than 'na'. Please make sure that both arguments have the same class.")
@@ -16624,7 +16710,7 @@ set.seed(1)
 vDT = data.table(i_id = unique(iDT$i_id))[, .(v = runif(5,0,10), p = sample(c(5,5,10,10,10))), by=i_id]
 test(2120.01, !exists("i_id"))                             # quick verify in case there's an i_id in .GlobalEnv when testing in dev
 test(2120.02, iDT[i_id, order(e_date, e_time)],            # first of all, the correct error
-              error="i_id is not found in calling scope but it is a column of type character")
+              error="'i_id' is not found in calling scope, but it is a column of type character")
 tmp = vDT[c("B","C","A"), on=.(i_id), .N, by=.EACHI]       # split long statement in 2120.05 up as per demo in #3669
 test(2120.03, tmp, data.table(i_id=c("B","C","A"), N=5L))  # just make sure the helper tmp is correct
 test(2120.04, tmp[iDT[i_id, order(e_date, e_time)]],       # i_id obtained from tmp; this is what broke in dev 1.12.3
@@ -16666,7 +16752,7 @@ t0 = as.POSIXct('2019-10-01')
 test(2124.1, format(as.ITime(t0)), '00:00:00')
 test(2124.2, format(as.IDate(t0)), '2019-10-01')
 if (is.na(oldtz)) Sys.unsetenv("TZ") else Sys.setenv(TZ=oldtz)
-# careful to unset because TZ="" means UTC whereas unset TZ means local
+# careful to unset because TZ="" means UTC whereas unset TZ means local, #4261 and #4464
 
 # trunc.cols in print.data.table, #4074
 old_width = options("width" = 40L)
@@ -17209,11 +17295,11 @@ test(2158.2, DT[, by="index", list(value=list(value))],
 DT = data.table(x = 1)
 test(2159.01, typeof(as.matrix(DT)), "double")
 test(2159.02, typeof(as.matrix(DT[0L])), "double")
-test(2159.03, min(DT[0L]), Inf, warning="missing")  # R's warning message; use one word 'missing' to insulate from possible future changes to R's message
+test(2159.03, min(DT[0L]), Inf, warning=base_messages$empty_min)
 DT = data.table(x = 1L)
 test(2159.04, typeof(as.matrix(DT)), "integer")
 test(2159.05, typeof(as.matrix(DT[0L])), "integer")
-test(2159.06, min(DT[0L]), Inf, warning="missing")
+test(2159.06, min(DT[0L]), Inf, warning=base_messages$empty_min)
 DT = data.table(x = TRUE)
 test(2159.07, typeof(as.matrix(DT)), "logical")
 test(2159.08, typeof(as.matrix(DT[0L])), "logical")
@@ -17441,7 +17527,31 @@ test(2182.3, melt(DTid, measure.vars=list(a=c(NA,1), b=2:3), id.vars="id"), exid
 test(2182.4, melt(DTid, measure.vars=list(a=c(NA,"a2"), b=c("b1","b2")), id.vars="id"), exid)
 test(2182.5, melt(DT.wide, measure.vars=list(a=c(NA,1), b=2:3), na.rm=TRUE)[, .(a, b)], data.table(a=2, b=2))#not testing variable because it is not computed correctly, #4455
 
-# new variable.name attribute for measure.vars, PR#4731 for multiple issues
+### First block testing measurev
+# new variable_table attribute for measure.vars, PR#4731 for multiple issues
+measurev = function(cols)cols # user-defined function for computing measure.vars, same name as data.table::measure but user-defined version should be used.
+test(2183.00001, melt(DT.wide, measure.vars=measurev()), data.table(variable=factor(c("a2","b1","b2")), value=c(2,1,2)))
+measurev = list("foo", "bar")#measurev below should not use this since it is not a function.
+test(2183.00002, melt(DTid, measure.vars=measurev(list(value.name=NULL, num=as.complex), pattern="([ab])([12])")), error="Type 'complex' not supported for joining/merging")
+test(2183.00004, melt(DTid, measure.vars=measurev(list(value.name=NULL, istr=NULL), pattern="([ab])([12])"))[order(b)], data.table(id=1, istr=paste(c(1,2)), a=c(NA, 2), b=c(1,2)))
+test(2183.00005, melt(DTid, measure.vars=measurev(list(column=NULL, istr=NULL), pattern="([ab])([12])", multiple.keyword="column"))[order(b)], data.table(id=1, istr=paste(c(1,2)), a=c(NA, 2), b=c(1,2)))#same computation but different multiple.keyword
+iris.dt = data.table(datasets::iris)
+test(2183.00020, melt(iris.dt, measure.vars=measurev(value.name, dim, sep=".", pattern="foo")), error="both sep and pattern arguments used; must use either sep or pattern (not both)")
+test(2183.000201, melt(iris.dt, measure.vars=measurev(list(NULL, dim=NULL), sep=".")), error="in measurev, elements of fun.list must be named, problems: 1")
+test(2183.000202, melt(iris.dt, measure.vars=measurev(list(NULL, NULL), sep=".")), error="in measurev, elements of fun.list must be named, problems: 1,2")
+test(2183.00027, melt(iris.dt, measure.vars=measurev(list(value.name=NULL, dim="bar"), sep=".")), error="in the measurev fun.list, each non-NULL element must be a function with at least one argument, problem: dim")
+test(2183.00028, melt(iris.dt, measure.vars=measurev(list(value.name=NULL, dim=NULL, baz=NULL), sep=".")), error="number of elements of fun.list =3 must be same as max number of items after splitting column names =2")
+test(2183.00042, melt(DTid, measure.vars=measurev(list(value.name=NULL, istr=function()1), pattern="([ab])([12])")), error="in the measurev fun.list, each non-NULL element must be a function with at least one argument, problem: istr")
+test(2183.00043, melt(DTid, measure.vars=measurev(list(value.name=NULL, istr=interactive), pattern="([ab])([12])")), error="in the measurev fun.list, each non-NULL element must be a function with at least one argument, problem: istr")
+test(2183.00044, melt(DTid, measure.vars=measurev(list(value.name=NULL, istr=function(x)1), pattern="([ab])([12])")), error="each conversion function must return an atomic vector with same length as its first argument, problem: istr")
+test(2183.00045, melt(iris.dt, measure.vars=measurev(list(value.name=NULL, dim=NULL, baz=NULL), pattern="(.*)[.](.*)")), error="number of elements of fun.list =3 must be same as number of capture groups in pattern =2")
+test(2183.00048, melt(iris.dt, measure.vars=measurev(list(value.name=NULL, value.name=NULL), sep=".")), error="elements of fun.list should be uniquely named, problems: value.name")
+# measure with factor conversion.
+myfac = function(x)factor(x)#user-defined conversion function.
+test(2183.00060, melt(DTid, measure.vars=measurev(list(letter=myfac, value.name=NULL), pattern="([ab])([12])")), data.table(id=1, letter=factor(c("a","b")), "2"=c(2,2), "1"=c(NA,1)))
+
+### Second block testing measure
+# new variable_table attribute for measure.vars, PR#4731 for multiple issues
 measure = function(cols)cols # user-defined function for computing measure.vars, same name as data.table::measure but user-defined version should be used.
 test(2183.01, melt(DT.wide, measure.vars=measure()), data.table(variable=factor(c("a2","b1","b2")), value=c(2,1,2)))
 measure = list("foo", "bar")#measure below should not use this since it is not a function.
@@ -17457,7 +17567,7 @@ test(2183.10, melt(DTid, measure.vars=structure(list(a=1, b=2:3), variable_table
 test(2183.11, melt(DTid, measure.vars=structure(list(a=1, b=2:3), variable_table=list(x=1:2, y=1))), error="variable_table attribute of measure.vars should be a data table with same number of rows as max length of measure.vars vectors =2")#make sure to check each list element, not just the first.
 # general measure errors.
 iris.dt = data.table(datasets::iris)
-test(2183.20, melt(iris.dt, measure.vars=measure(value.name, dim, sep=".", pattern="foo")), error="both sep and pattern arguments used in measure; must use either sep or pattern (not both)")
+test(2183.20, melt(iris.dt, measure.vars=measure(value.name, dim, sep=".", pattern="foo")), error="both sep and pattern arguments used; must use either sep or pattern (not both)")
 # school example.
 schools.wide <- data.table(
   school = c("A","B"),
@@ -17484,12 +17594,12 @@ test(2183.40, names(melt(iris.dt, measure.vars=patterns("[.]"))), c("Species", "
 # measure with pattern=
 test(2183.41, melt(DTid, measure.vars=measure(value.name, istr="bar", pattern="([ab])([12])")), error="each ... argument to measure must be a function with at least one argument, problem: istr")
 test(2183.42, melt(DTid, measure.vars=measure(value.name, istr=function()1, pattern="([ab])([12])")), error="each ... argument to measure must be a function with at least one argument, problem: istr")
-test(2183.43, melt(DTid, measure.vars=measure(value.name, istr=interactive, pattern="([ab])([12])")), error="each ... argument to measure must be a function with at least one argument, problem: istr")    
-test(2183.44, melt(DTid, measure.vars=measure(value.name, istr=function(x)1, pattern="([ab])([12])")), error="each ... argument to measure must be a function that returns an atomic vector with same length as its first argument, problem: istr")
+test(2183.43, melt(DTid, measure.vars=measure(value.name, istr=interactive, pattern="([ab])([12])")), error="each ... argument to measure must be a function with at least one argument, problem: istr")
+test(2183.44, melt(DTid, measure.vars=measure(value.name, istr=function(x)1, pattern="([ab])([12])")), error="each conversion function must return an atomic vector with same length as its first argument, problem: istr")
 test(2183.45, melt(iris.dt, measure.vars=measure(value.name, dim, baz, pattern="(.*)[.](.*)")), error="number of ... arguments to measure =3 must be same as number of capture groups in pattern =2")
 test(2183.46, melt(iris.dt, measure.vars=measure(function(x)factor(x), dim, pattern="(.*)[.](.*)")), error="each ... argument to measure must be either a symbol without argument name, or a function with argument name, problems: 1")
 test(2183.47, melt(iris.dt, measure.vars=measure(function(x)factor(x), pattern="(.*)[.](.*)")), error="each ... argument to measure must be either a symbol without argument name, or a function with argument name, problems: 1")
-test(2183.48, melt(iris.dt, measure.vars=measure(value.name, value.name, sep=".")), error="measure group names should be unique, problems: value.name")
+test(2183.48, melt(iris.dt, measure.vars=measure(value.name, value.name, sep=".")), error="... arguments to measure should be uniquely named, problems: value.name")
 # measure with factor conversion.
 myfac = function(x)factor(x)#user-defined conversion function.
 test(2183.60, melt(DTid, measure.vars=measure(letter=myfac, value.name, pattern="([ab])([12])")), data.table(id=1, letter=factor(c("a","b")), "2"=c(2,2), "1"=c(NA,1)))
@@ -17498,7 +17608,7 @@ iris.i <- 1
 iris.num <- datasets::iris[iris.i, 1:4]
 iris.days <- data.table(
   day1=iris.num, day2=iris.num, Species=iris$Species[iris.i])
-test(2183.61, melt(iris.days, measure.vars=measure(before=as.integer, value.name, dim, sep=".")), error="before conversion function returned vector of all NA", warning="NAs introduced by coercion")
+test(2183.61, melt(iris.days, measure.vars=measure(before=as.integer, value.name, dim, sep=".")), error="before conversion function returned vector of all NA", warning=base_messages$coerce_na)
 test(2183.62, melt(iris.days, measure.vars=measure(before=function(x)rep(4, length(x)), value.name, dim, sep=".")), error="number of unique groups after applying type conversion functions less than number of groups, change type conversion")
 test(2183.63, melt(iris.days, measure.vars=measure(before, value.name, dim, pattern="(day)[12][.](.*)[.](.*)")), error="number of unique column IDs =4 is less than number of melted columns =8; fix by changing pattern/sep")
 test(2183.64, melt(iris.days, measure.vars=measure(day=as.integer, value.name, dim, pattern="day(.)[.](.*)[.](.*)")), data.table(Species=factor("setosa"), day=as.integer(c(1,2,1,2)), dim=c("Length","Length","Width","Width"), Sepal=c(5.1,5.1,3.5,3.5), Petal=c(1.4,1.4,0.2,0.2)))
@@ -17506,8 +17616,8 @@ test(2183.65, melt(iris.days, measure.vars=measure(pattern="day")), error="patte
 test(2183.66, melt(iris.days, measure.vars=measure(value.name, pattern="(.*)")), error="value.name is the only group; fix by creating at least one more group")
 test(2183.67, melt(iris.days, measure.vars=measure(foo, bar, pattern="(foo)(bar)")), error="pattern did not match any cols, so nothing would be melted; fix by changing pattern")
 test(2183.68, melt(iris.days, measure.vars=measure(value.name, bar, pattern="(foo)(bar)")), error="pattern did not match any cols, so nothing would be melted; fix by changing pattern")
-test(2183.69, melt(data.table(ff=1, ff=2), measure.vars=measure(letter, number, pattern="(.)(.)")), error="measured column names should be unique, problems: ff")
-test(2183.70, melt(data.table(f_f=1, f_f=2), measure.vars=measure(letter, number)), error="measured column names should be unique, problems: f_f")
+test(2183.69, melt(data.table(ff=1, ff=2), measure.vars=measure(letter, number, pattern="(.)(.)")), error="measured columns should be uniquely named, problems: ff")
+test(2183.70, melt(data.table(f_f=1, f_f=2), measure.vars=measure(letter, number)), error="measured columns should be uniquely named, problems: f_f")
 test(2183.71, melt(iris.days, measure.vars=measure(value.name=as.integer, variable, pattern="day(.)[.](.*)")), error="value.name column class=integer after applying conversion function, but must be character")
 test(2183.72, melt(data.table(ff=1, ff=2, a=3, b=4), measure.vars=measure(letter, pattern="([ab])"), id.vars="ff"), data.table(ff=1, letter=c("a","b"), value=c(3,4)))#duplicate column names are fine if they are not matched by pattern.
 test(2183.73, melt(DTid, measure.vars=measure(letter, multiple.keyword, pattern="([ab])([12])")), error="group names specified in ... conflict with measure argument names; please fix by changing group names: multiple.keyword")
@@ -17518,8 +17628,6 @@ test(2183.77, melt(DTid, measure.vars=measure(letter, cols, pattern="([ab])([12]
 test(2183.78, melt(DTid, measure.vars=measure(letter, cols=as.integer, pattern="([ab])([12])")), error="cols must be a character vector of column names")
 test(2183.79, melt(DTid, measure.vars=measure(letter, number, pattern=as.integer)), error="pattern must be character string")
 test(2183.80, melt(DTid, measure.vars=measure(letter, number, sep=as.integer)), error="sep must be character string")
-##melt(DTid, measure.vars=measure(letter, number, sep=NA_character_)
-##melt(DTid, measure.vars=measure(letter, number, sep=character())
 
 # `keyby` allows mixing eval/get with direct columns, #4981
 dt <- data.table(a=c(1,2), b=c(3,4), c=c(1,0))
@@ -17538,10 +17646,73 @@ IDT[, virginca := get(vr) == "virginica"]
 ans = data.table(round = c(3, 3, 3, 2, 2, 4, 2, 4), k = c(6, 7, 8, 5, 7, 7, 6, 8), kar = structure(c(3L, 3L, 3L, 3L, 3L, 3L, 3L, 3L), .Label = c("setosa", "versicolor", "virginica"), class = "factor"), N = c(24L, 14L, 4L, 1L, 1L, 1L, 3L, 2L))
 test(2184.5, IDT[(virginca), .N, by = .(round(Sepal.Width), k = round(Sepal.Length), kar = get(vr))] , ans)
 
+# dcast() segfault or 'STRING_ELT() can only be applied to character not logical' fixed in v1.13.0, #2394
+agg = function(x) if(length(x) > 0) min(x) else NA
+DT = data.table(id=c(1,1,2,2), x=c('y','y','y','z'), v=c('a','b','c','d'))
+test(2185, dcast(DT, formula=id~x, fun.aggregate=agg, value.var='v'),
+           data.table(id=c(1,2), y=c('a','c'), z=c(NA,'d'), key="id"))
+
+# compatible branches might seem incompatible if the condition is global, #4274
+DT = data.table(a=1L)
+test(2186, DT[, if (TRUE) .(a=1L) else .(a=1L, b=2L)], DT,
+     warning='j may not evaluate to the same number of columns for each group')
+
+# col.names='none' should apply when wrapping too, #4270
+DT = setDT(replicate(getOption('width'), 1, simplify = FALSE))
+test(2187, {print(DT, col.names='none'); TRUE}, notOutput="V")
+
+# fifelse now supports vector na arguments and coerces NA to other types, PR#4289
+test(2188.01, fifelse(c(TRUE, FALSE, TRUE, NA), 1L, 2L, 1.0), c(1, 2, 1, 1))
+test(2188.02, fifelse(c(TRUE, FALSE, TRUE, NA), 1, 2, 1L), c(1, 2, 1, 1))
+test(2188.03, fifelse(c(TRUE, FALSE, TRUE, NA), 1:4, 11:14, 101:104), c(1L, 12L, 3L, 104L))
+test(2188.04, fifelse(c(TRUE, FALSE, TRUE, NA), NA, 11:14, 101:104), c(NA, 12L, NA, 104L))
+test(2188.05, fifelse(c(TRUE, FALSE, TRUE, NA), 1:4, NA, 101:104), c(1L, NA, 3L, 104L))
+test(2188.06, fifelse(c(TRUE, FALSE, TRUE, NA), 1:4, 11:14, NA), c(1L, 12L, 3L, NA))
+test(2188.07, fifelse(c(TRUE, FALSE, TRUE, NA), 1:4, NA, NA), c(1L, NA, 3L, NA))
+test(2188.08, fifelse(c(TRUE, FALSE, TRUE, NA), NA, NA, NA), c(NA, NA, NA, NA))
+test(2188.09, fifelse(c(TRUE, FALSE, TRUE, NA), NA, NA, NA_character_), rep(NA_character_, 4L))
+test(2188.10, fifelse(c(TRUE, FALSE, TRUE, NA), NA, NA, 101:104), c(NA, NA, NA, 104L))
+test(2188.11, fifelse(c(TRUE, FALSE, TRUE, NA), NA, 11:14, NA), c(NA, 12L, NA, NA))
+test(2188.12, fifelse(c(TRUE, FALSE, TRUE, NA), NA, NA, as.Date("2020-01-01")), as.Date(c(NA, NA, NA, "2020-01-01")))
+test(2188.13, fifelse(TRUE, 1L, 2.0, "a"), error="'na' is of type character but 'no' is double. Please") # smart error message
+test(2188.14, fifelse(TRUE, NA, 2, as.Date("2019-07-07")),  error="'no' has different class than 'na'. Please")
+test(2188.15, fifelse(TRUE, NA, factor('a'), factor('a', levels = c('a','b'))), error="'no' and 'na' are both type factor but their levels are different")
+test(2188.16, fifelse(c(NA, NA), 1L, 2L, NULL), c(NA_integer_, NA_integer_)) # NULL `na` is treated as NA 
+
+# rolling join expected output on non-matching join column has been fixed #1913
+DT = data.table(ID=1:5, A=c(1.3, 1.7, 2.4, 0.9, 0.6))
+buckets = data.table(BucketID=1:4, BinA=1:4)
+DT[, A.copy := A]
+test(2189.1, buckets[DT, on=c("BinA"="A"), roll=-Inf], data.table(BucketID = c(2L, 2L, 3L, 1L, 1L), BinA = c(1.3, 1.7, 2.4, 0.9, 0.6), ID = 1:5, A.copy = c(1.3, 1.7, 2.4, 0.9, 0.6)))
+buckets[, BinA := as.numeric(BinA)]
+test(2189.2, buckets[DT, on=c("BinA"="A"), roll=-Inf], data.table(BucketID = c(2L, 2L, 3L, 1L, 1L), BinA = c(1.3, 1.7, 2.4, 0.9, 0.6), ID = 1:5, A.copy = c(1.3, 1.7, 2.4, 0.9, 0.6)))
+
+# segfault subassigning non-list type to list column, #4166
+DT = data.table(a=list(1:2, 3, 4))
+test(2190.1, DT[, a:=1:4], error="Supplied 4 items to be assigned to 3 items of column 'a'.*please use rep")
+test(2190.2, DT[1:2, a:=structure(c(1L, 2L), att='t')          ]$a, list(structure(1L, att='t'),            structure(2L, att='t'),            4))
+test(2190.3, DT[1:2, a:=structure(c(1, 2), att='t')            ]$a, list(structure(1, att='t'),             structure(2, att='t'),             4))
+test(2190.4, DT[1:2, a:=structure(as.raw(c(1, 2)), att='t')    ]$a, list(structure(as.raw(1), att='t'),     structure(as.raw(2), att='t'),     4))
+test(2190.5, DT[1:2, a:=structure(as.complex(c(1, 2)), att='t')]$a, list(structure(as.complex(1), att='t'), structure(as.complex(2), att='t'), 4))
+test(2190.6, DT[1:2, a:=structure(c(TRUE, FALSE), att='t')     ]$a, list(structure(TRUE, att='t'),          structure(FALSE, att='t'),         4))
+test(2190.7, DT[1:2, a:=structure(c('a', 'b'), att='t')        ]$a, list(structure('a', att='t'),           structure('b', att='t'),           4))
+if (test_bit64) {
+  test(2190.8, DT[1:2, a:=as.integer64(1:2)                    ]$a, list(as.integer64(1),                   as.integer64(2),                   4))
+}
+test(2190.9, DT[1:2, a:=call('sum', 1)], error="type 'language' cannot be coerced to 'list'")
+
+# adding test for (since fixed) 'could not find function "."' when verbose=TRUE, #3196
+DT = data.table(i1 = c(234L, 250L, 169L, 234L, 147L, 96L, 96L, 369L, 147L, 96L), i4 = c(79L, 113L, 270L, -121L, 113L, 113L, -121L, 179L, -228L, 113L), v = 0)
+test(2191, DT[1:5, sum(v), by=.(i5 = 1:5 %% 2L), verbose=TRUE], data.table(i5=1:0, V1=c(0,0)), output="gforce")
+
+# base::as.Date was error when first item blank, affecting as.IDate, #4676
+test(2192.1, as.IDate(c('', '2020-01-01')), structure(c(NA_integer_, 18262L), class=c("IDate","Date")))
+test(2192.2, as.IDate(c('2020-01-01', '')), structure(c(18262L, NA_integer_), class=c("IDate","Date")))
+
 # setDF now drops index attributes, #4889
 d <- data.table(a=1:100, b=1:100)
 setindex(d, a)
 setDF(d)
 d[1:50, "a"] <- d[51:100, "a"]
 setDT(d)
-test(2185, nrow(d[a==99]), as.integer(2))
+test(2193, nrow(d[a==99]), as.integer(2))

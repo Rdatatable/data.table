@@ -1616,7 +1616,7 @@ int freadMain(freadMainArgs _args) {
     int topSkip=0;            // how many rows to auto-skip
     const char *topStart=NULL;
 
-    for (quoteRule=quote?0:3; quoteRule<4; quoteRule++) {
+    for (quoteRule=quote?0:3; quoteRule<4; quoteRule++) { // #loop_counter_not_local_scope_ok
       // quote rule in order of preference.
       // when top is tied the first wins, so do all seps for the first quoteRule, then all seps for the second quoteRule, etc
       for (int s=0; s<nseps; s++) {
@@ -1705,7 +1705,7 @@ int freadMain(freadMainArgs _args) {
       sep = topSep;
       // no self healing quote rules, as we don't have >1 field to disambiguate
       // choose quote rule 0 or 1 based on for which 100 rows gets furthest into file
-      for (quoteRule=0; quoteRule<=1; quoteRule++) {
+      for (quoteRule=0; quoteRule<=1; quoteRule++) { // #loop_counter_not_local_scope_ok
         int thisRow=0, thisncol=0;
         ch = pos;
         while (ch<eof && ++thisRow<jumpLines && (thisncol=countfields(&ch))>=0) {};

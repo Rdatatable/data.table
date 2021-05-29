@@ -89,6 +89,7 @@ extern SEXP char_ordered;
 extern SEXP char_datatable;
 extern SEXP char_dataframe;
 extern SEXP char_NULL;
+extern SEXP char_maxString;
 extern SEXP sym_sorted;
 extern SEXP sym_index;
 extern SEXP sym_BY;
@@ -255,3 +256,5 @@ SEXP fcaseR(SEXP na, SEXP rho, SEXP args);
 //snprintf.c
 int dt_win_snprintf(char *dest, size_t n, const char *fmt, ...);
 
+// programming.c
+SEXP substitute_call_arg_namesR(SEXP expr, SEXP env);

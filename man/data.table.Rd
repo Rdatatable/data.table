@@ -31,7 +31,7 @@ data.table(\dots, keep.rownames=FALSE, check.names=FALSE, key=NULL, stringsAsFac
   .SDcols,
   verbose = getOption("datatable.verbose"),                   # default: FALSE
   allow.cartesian = getOption("datatable.allow.cartesian"),   # default: FALSE
-  drop = NULL, on = NULL)
+  drop = NULL, on = NULL, env = NULL)
 }
 \arguments{
     \item{\dots}{ Just as \code{\dots} in \code{\link{data.frame}}. Usual recycling rules are applied to vectors of different lengths to create a list of equal length vectors.}
@@ -170,6 +170,8 @@ data.table(\dots, keep.rownames=FALSE, check.names=FALSE, key=NULL, stringsAsFac
         }
         See examples as well as \href{../doc/datatable-secondary-indices-and-auto-indexing.html}{\code{vignette("datatable-secondary-indices-and-auto-indexing")}}.
     }
+
+  \item{env}{ List or an environment, passed to \code{\link{substitute2}} for substitution of parameters in \code{i}, \code{j} and \code{by} (or \code{keyby}). Use \code{verbose} to preview constructed expressions. }
 }
 \details{
 \code{data.table} builds on base \R functionality to reduce 2 types of time:\cr

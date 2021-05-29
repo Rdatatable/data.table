@@ -442,12 +442,12 @@ msgid ""
 "Dropping index '%s' as it doesn't have '__' at the beginning of its name. It "
 "was very likely created by v1.9.4 of data.table.\n"
 msgstr ""
-"丢掉索引 '%s' 因为它的名字前面没有 '__' 。这个很可能是 data.table v1.9.4 创建"
-"的\n"
+"丢掉索引(index) '%s' 因为它的名字前面没有 '__' 。这个很可能由data.table "
+"v1.9.4 创建\n"
 
 #: assign.c:574
 msgid "Internal error: index name ends with trailing __"
-msgstr "内部错误: 索引名称以 __ 结尾"
+msgstr "内部错误: 索引(index)名称以 __ 结尾"
 
 #: assign.c:579
 msgid "Internal error: Couldn't allocate memory for s4."
@@ -460,12 +460,12 @@ msgstr "内部错误: 不能给 s5 分配内存"
 #: assign.c:611 assign.c:627
 #, c-format
 msgid "Dropping index '%s' due to an update on a key column\n"
-msgstr " 因为一个主列的更新，丢掉索引 '%s'\n"
+msgstr " 因为一个键(key)列的更新，丢掉索引(index) '%s'\n"
 
 #: assign.c:620
 #, c-format
 msgid "Shortening index '%s' to '%s' due to an update on a key column\n"
-msgstr "因为一个主列的更新，缩短索引 '%s' 到 '%s'\n"
+msgstr "因为一个键(key)列的更新，缩短索引(index) '%s' 到 '%s'\n"
 
 #: assign.c:650
 #, c-format
