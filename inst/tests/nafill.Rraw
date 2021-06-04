@@ -372,15 +372,15 @@ test(18.05, nafill(x, "locf", fill=as.ITime("19:59:11")), as.ITime(c(71951L,1:4,
 test(18.06, nafill(x, "nocb", fill=as.ITime("19:59:11")), as.ITime(c(1L,1:4,5L,5L,5:6,7L,7L,71951L)))
 ## mixed types
 if (test_bit64) {
-  library(bit64)
-  x = data.table(
+  x = list(
     dbl=c(NA,1.5,2,3,4,NA,NA,5,6,NA,7.5,NA),
-    chr=c(NA,"a","b","c","d",NA,NA,"g","h",NA,"i",NA)
+    chr=c(NA,"a","b","c","d",NA,NA,"g","h",NA,"i",NA),
+    int=c(NA,1L,2L,3L,4L,NA,NA,5L,6L,NA,7L,NA),
+    lgl=c(NA,TRUE,FALSE,TRUE,FALSE,NA,NA,TRUE,FALSE,NA,TRUE,NA),
+    i64=as.integer64(c(NA,3e9+1:4,NA,NA,3e9+5:6,NA,3e9+7,NA))
+    ## blocked by #5027
+    #,fct=as.factor(c(NA,"a","b","c","d",NA,NA,"g","h",NA,"i",NA))
   )
-  x[, "int" := as.integer(dbl)]
-  x[, "lgl" := as.logical(int%%2L)]
-  x[, "i64" := as.integer64(int)+3e9]
-  #x[, "fct" := as.factor(chr)] ## blocked by #5027
   expected = list(
     dbl=c(0,1.5,2,3,4,0,0,5,6,0,7.5,0),
     chr=c("0","a","b","c","d","0","0","g","h","0","i","0"),
@@ -397,11 +397,38 @@ if (test_bit64) {
   test(21.07, nafill(x, fill=logical()), error="fill must be a vector of length")
   test(21.08, nafill(x, fill=list(logical())), error="fill must be a vector of length")
   test(21.09, nafill(x, fill=list(0)), error="fill must be a vector of length")
-
-  #test(21.07, nafill(x, "locf"), )
-  #test(21.08, nafill(x, "nocb"), )
-  #test(21.09, nafill(x, "locf", fill=0L), )
-  #test(21.10, nafill(x, "nocb", fill=0L), )
+  expected = list(
+    dbl=c(NA,1.5,2,3,4,4,4,5,6,6,7.5,7.5),
+    chr=c(NA,"a","b","c","d","d","d","g","h","h","i","i"),
+    int=c(NA,1L,2L,3L,4L,4L,4L,5L,6L,6L,7L,7L),
+    lgl=c(NA,TRUE,FALSE,TRUE,FALSE,FALSE,FALSE,TRUE,FALSE,FALSE,TRUE,TRUE),
+    i64=as.integer64(c(NA,3e9+1:4,3e9+4,3e9+4,3e9+5:6,3e9+6,3e9+7,3e9+7))
+  )
+  test(21.21, nafill(x, "locf"), expected)
+  expected = list(
+    dbl=c(1.5,1.5,2,3,4,5,5,5,6,7.5,7.5,NA),
+    chr=c("a","a","b","c","d","g","g","g","h","i","i",NA),
+    int=c(1L,1L,2L,3L,4L,5L,5L,5L,6L,7L,7L,NA),
+    lgl=c(TRUE,TRUE,FALSE,TRUE,FALSE,TRUE,TRUE,TRUE,FALSE,TRUE,TRUE,NA),
+    i64=as.integer64(c(3e9+1,3e9+1:4,3e9+5,3e9+5,3e9+5:6,3e9+7,3e9+7,NA))
+  )
+  test(21.22, nafill(x, "nocb"), expected)
+  expected = list(
+    dbl=c(0,1.5,2,3,4,4,4,5,6,6,7.5,7.5),
+    chr=c("0","a","b","c","d","d","d","g","h","h","i","i"),
+    int=c(0L,1L,2L,3L,4L,4L,4L,5L,6L,6L,7L,7L),
+    lgl=c(FALSE,TRUE,FALSE,TRUE,FALSE,FALSE,FALSE,TRUE,FALSE,FALSE,TRUE,TRUE),
+    i64=as.integer64(c(0,3e9+1:4,3e9+4,3e9+4,3e9+5:6,3e9+6,3e9+7,3e9+7))
+  )
+  test(21.31, nafill(x, "locf", fill=0L), expected)
+  expected = list(
+    dbl=c(1.5,1.5,2,3,4,5,5,5,6,7.5,7.5,0),
+    chr=c("a","a","b","c","d","g","g","g","h","i","i","0"),
+    int=c(1L,1L,2L,3L,4L,5L,5L,5L,6L,7L,7L,0L),
+    lgl=c(TRUE,TRUE,FALSE,TRUE,FALSE,TRUE,TRUE,TRUE,FALSE,TRUE,TRUE,FALSE),
+    i64=as.integer64(c(3e9+1,3e9+1:4,3e9+5,3e9+5,3e9+5:6,3e9+7,3e9+7,0))
+  )
+  test(21.32, nafill(x, "nocb", fill=0L), expected)
 }
 
 # related to !is.integer(verbose)
