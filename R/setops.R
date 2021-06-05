@@ -157,9 +157,8 @@ all.equal.data.table = function(target, current, trim.levels=TRUE, check.attribu
       return(gettextf(
         "Datasets have different %s. 'target': %s. 'current': %s.",
         "keys",
-        if(length(k1)) brackify(k1) else gettextf("has no key", domain="R-data.table"),
-        if(length(k2)) brackify(k2) else gettextf("has no key", domain="R-data.table"),
-        domain="R-data.table"
+        if(length(k1)) brackify(k1) else gettextf("has no key"),
+        if(length(k2)) brackify(k2) else gettextf("has no key")
       ))
     }
     # check index
@@ -169,9 +168,8 @@ all.equal.data.table = function(target, current, trim.levels=TRUE, check.attribu
       return(gettextf(
         "Datasets have different %s. 'target': %s. 'current': %s.",
         "indices",
-        if(length(i1)) brackify(i1) else gettextf("has no index", domain = "R-data.table"),
-        if(length(i2)) brackify(i2) else gettextf("has no index", domain = "R-data.table"),
-        domain = "R-data.table"
+        if(length(i1)) brackify(i1) else gettextf("has no index"),
+        if(length(i2)) brackify(i2) else gettextf("has no index")
       ))
     }
 
