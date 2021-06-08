@@ -339,7 +339,14 @@ test(13.03, nafill(x, "locf"), c(NA,"a","b","c","d","d","d","g","h","h","i","i")
 test(13.04, nafill(x, "nocb"), c("a","a","b","c","d","g","g","g","h","i","i",NA))
 test(13.05, nafill(x, "locf", fill="unknown"), c("unknown","a","b","c","d","d","d","g","h","h","i","i"))
 test(13.06, nafill(x, "nocb", fill="unknown"), c("a","a","b","c","d","g","g","g","h","i","i","unknown"))
-X = data.table(x=x, y=x)
+
+# debug segfault
+if (FALSE) {
+  x = c(NA,"a","b","c","d",NA,NA,"g","h",NA,"i",NA)
+  nafill(x, fill="unknown")
+  X = data.table(x=x, y=x)
+  setnafill(X, fill="unknown", cols="x")
+}
 #segfault
 #test(13.11, setnafill(X, fill="unknown", cols="x"), data.table(x=c("unknown","a","b","c","d","unknown","unknown","g","h","unknown","i","unknown"), y=c(NA,"a","b","c","d",NA,NA,"g","h",NA,"i",NA)))
 #X = data.table(x=x, y=x)

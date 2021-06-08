@@ -95,9 +95,16 @@ void nafillString(const SEXP *x, uint_fast64_t nx, unsigned int type, SEXP fill,
   if (verbose)
     tic = omp_get_wtime();
   if (type==0) { // const
+    for (uint_fast64_t i=0; i<nx; i++) Rprintf("x[%d]=%s\n", i, CHAR(x[i]));
     for (uint_fast64_t i=0; i<nx; i++) {
       SET_STRING_ELT(ans->char_v, i, x[i]==NA_STRING ? fill : x[i]);
+      //Rprintf("x[%d]=%s  ->  ", i, CHAR(x[i]));
+      //SEXP tmp = x[i]==NA_STRING ? fill : x[i]; // setnafill handle to not update when reading
+      //Rprintf("tmp=%s  ->  ", CHAR(tmp));
+      //SET_STRING_ELT((SEXP)ans->char_v, i, tmp);
+      //Rprintf("y[%d]=%s\n", i, CHAR(STRING_ELT((SEXP)ans->char_v, i)));
     }
+    for (uint_fast64_t i=0; i<nx; i++) Rprintf("y[%d]=%s\n", i, CHAR(STRING_ELT((SEXP)ans->char_v, i)));
   } else if (type==1) { // locf
     SET_STRING_ELT(ans->char_v, 0, x[0]==NA_STRING ? fill : x[0]);
     const SEXP* thisans = SEXPPTR_RO(ans->char_v); // takes out STRING_ELT from loop
