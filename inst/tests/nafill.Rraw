@@ -339,25 +339,23 @@ test(13.03, nafill(x, "locf"), c(NA,"a","b","c","d","d","d","g","h","h","i","i")
 test(13.04, nafill(x, "nocb"), c("a","a","b","c","d","g","g","g","h","i","i",NA))
 test(13.05, nafill(x, "locf", fill="unknown"), c("unknown","a","b","c","d","d","d","g","h","h","i","i"))
 test(13.06, nafill(x, "nocb", fill="unknown"), c("a","a","b","c","d","g","g","g","h","i","i","unknown"))
-
-# debug segfault
-if (FALSE) {
-  x = c(NA,"a","b","c","d",NA,NA,"g","h",NA,"i",NA)
-  nafill(x, fill="unknown")
-  X = data.table(x=x, y=x)
-  setnafill(X, fill="unknown", cols="x")
-}
-#segfault
+X = data.table(x=x, y=x)
+test(13.11, setnafill(X, fill="unknown", cols="x"), error="not yet implemented")
 #test(13.11, setnafill(X, fill="unknown", cols="x"), data.table(x=c("unknown","a","b","c","d","unknown","unknown","g","h","unknown","i","unknown"), y=c(NA,"a","b","c","d",NA,NA,"g","h",NA,"i",NA)))
-#X = data.table(x=x, y=x)
+X = data.table(x=x, y=x)
+test(13.12, setnafill(X, fill=NA, cols="x"), error="not yet implemented")
 #test(13.12, setnafill(X, fill=NA, cols="x"), data.table(x = c(NA,"a","b","c","d",NA,NA,"g","h",NA,"i",NA), y = c(NA,"a","b","c","d",NA,NA,"g","h",NA,"i",NA)))
-#X = data.table(x=x, y=x)
+X = data.table(x=x, y=x)
+test(13.13, setnafill(X, "locf", cols="x"), error="not yet implemented")
 #test(13.13, setnafill(X, "locf", cols="x"), data.table(x = c(NA,"a","b","c","d","d","d","g","h","h","i","i"), y = c(NA,"a","b","c","d",NA,NA,"g","h",NA,"i",NA)))
-#X = data.table(x=x, y=x)
+X = data.table(x=x, y=x)
+test(13.14, setnafill(X, "nocb", cols="x"), error="not yet implemented")
 #test(13.14, setnafill(X, "nocb", cols="x"), data.table(x = c("a","a","b","c","d","g","g","g","h","i","i",NA), y = c(NA,"a","b","c","d",NA,NA,"g","h",NA,"i",NA)))
-#X = data.table(x=x, y=x)
+X = data.table(x=x, y=x)
+test(13.15, setnafill(X, "locf", fill="unknown", cols="x"), error="not yet implemented")
 #test(13.15, setnafill(X, "locf", fill="unknown", cols="x"), data.table(x = c("unknown","a","b","c","d","d","d","g","h","h","i","i"), y = c(NA,"a","b","c","d",NA,NA,"g","h",NA,"i",NA)))
-#X = data.table(x=x, y=x)
+X = data.table(x=x, y=x)
+test(13.16, setnafill(X, "nocb", fill="unknown", cols="x"), error="not yet implemented")
 #test(13.16, setnafill(X, "nocb", fill="unknown", cols="x"), data.table(x = c("a","a","b","c","d","g","g","g","h","i","i","unknown"), y = c(NA,"a","b","c","d",NA,NA,"g","h",NA,"i",NA)))
 ## factor
 x = factor(c(NA,"a","b","c","d",NA,NA,"g","h",NA,"i",NA))
@@ -370,6 +368,8 @@ test(14.04, nafill(x, "nocb"), factor(c("a","a","b","c","d","g","g","g","h","i",
 test(14.05, nafill(x, "locf", fill=factor("unknown")), error="not yet implemented")
 #test(14.06, nafill(x, "nocb", fill=factor("unknown")), factor(c("a","a","b","c","d","g","g","g","h","i","i","unknown")))
 test(14.06, nafill(x, "nocb", fill=factor("unknown")), error="not yet implemented")
+#TODO setnafill
+X = data.table(x=x, y=x)
 ## Date
 x = as.Date(c(NA,1:4,NA,NA,5:6,NA,7L,NA), origin="1970-01-01")
 test(15.01, nafill(x, fill=as.Date("2021-05-26")), as.Date(c(18773L,1:4,18773L,18773L,5:6,18773L,7L,18773L), origin="1970-01-01"))

@@ -95,7 +95,7 @@ void nafillString(const SEXP *x, uint_fast64_t nx, unsigned int type, SEXP fill,
   if (verbose)
     tic = omp_get_wtime();
   if (type==0) { // const
-    for (uint_fast64_t i=0; i<nx; i++) Rprintf("x[%d]=%s\n", i, CHAR(x[i]));
+    //for (uint_fast64_t i=0; i<nx; i++) Rprintf("x[%d]=%s\n", i, CHAR(x[i]));
     for (uint_fast64_t i=0; i<nx; i++) {
       SET_STRING_ELT(ans->char_v, i, x[i]==NA_STRING ? fill : x[i]);
       //Rprintf("x[%d]=%s  ->  ", i, CHAR(x[i]));
@@ -104,7 +104,7 @@ void nafillString(const SEXP *x, uint_fast64_t nx, unsigned int type, SEXP fill,
       //SET_STRING_ELT((SEXP)ans->char_v, i, tmp);
       //Rprintf("y[%d]=%s\n", i, CHAR(STRING_ELT((SEXP)ans->char_v, i)));
     }
-    for (uint_fast64_t i=0; i<nx; i++) Rprintf("y[%d]=%s\n", i, CHAR(STRING_ELT((SEXP)ans->char_v, i)));
+    //for (uint_fast64_t i=0; i<nx; i++) Rprintf("y[%d]=%s\n", i, CHAR(STRING_ELT((SEXP)ans->char_v, i)));
   } else if (type==1) { // locf
     SET_STRING_ELT(ans->char_v, 0, x[0]==NA_STRING ? fill : x[0]);
     const SEXP* thisans = SEXPPTR_RO(ans->char_v); // takes out STRING_ELT from loop
@@ -175,7 +175,6 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, S
   int64_t **i64x = (int64_t**)R_alloc(nx, sizeof(int64_t*));
   // nrows of columns
   uint_fast64_t *inx = (uint_fast64_t*)R_alloc(nx, sizeof(uint_fast64_t));
-  SEXP ans = R_NilValue;
   ans_t *vans = (ans_t *)R_alloc(nx, sizeof(ans_t));
   for (R_len_t i=0; i<nx; i++) {
     const SEXP xi = VECTOR_ELT(x, i);
@@ -195,6 +194,7 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, S
       error(_("internal error: unknown column type, should have been caught by now, please report")); // # nocov
     }
   }
+  SEXP ans = R_NilValue;
   if (!binplace) {
     ans = PROTECT(allocVector(VECSXP, nx)); protecti++;
     for (R_len_t i=0; i<nx; i++) {
@@ -209,8 +209,12 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, S
       vans[i] = ((ans_t) { .dbl_v=(double *)p, .int_v=(int *)p, .int64_v=(int64_t *)p, .char_v=(SEXP)p, .status=0, .message={"\0","\0","\0","\0"} });
     }
   } else {
+    //ans = x; // only for debugging
+    if (hadChar)
+      error("setnafill and character column not yet implemented");
     for (R_len_t i=0; i<nx; i++) {
-      vans[i] = ((ans_t) { .dbl_v=dx[i], .int_v=ix[i], .int64_v=i64x[i], .char_v=(void*)sx[i], .status=0, .message={"\0","\0","\0","\0"} });
+      // TODO character support, proper cast of .char_v below
+      vans[i] = ((ans_t) { .dbl_v=dx[i], .int_v=ix[i], .int64_v=i64x[i], .char_v=(SEXP)sx[i], .status=0, .message={"\0","\0","\0","\0"} });
     }
   }
 
@@ -276,6 +280,7 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, S
     //Rprintf("hasFill branch3\n");
   }
   //Rprintf("before loop\n");
+  //Rf_PrintValue(ans);
   //Rf_PrintValue(VECTOR_ELT(ans, 0));
   //Rprintf("TYPEOF(ans)=%s\n", type2char(TYPEOF(VECTOR_ELT(ans, 0))));
   //Rprintf("before loop fill\n");
