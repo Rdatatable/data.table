@@ -11,23 +11,41 @@ void subsetVectorRaw(SEXP ans, SEXP source, SEXP idx, const bool anyNA)
   // negatives, zeros and out-of-bounds have already been dealt with in convertNegAndZero so we can rely
   // here on idx in range [1,length(ans)].
 
+  int nth = getDTthreads(n, /*throttle=*/true);   // not const for Solaris, #4638
+  // For small n such as 2,3,4 etc we had hoped OpenMP would be sensible inside it and not create a team
+  // with each thread doing just one item. Otherwise, call overhead would be too high for highly iterated
+  // calls on very small subsets. Timings were tested in #3175. However, the overhead does seem to add up
+  // significantly. Hence the throttle was introduced, #4484. And not having the OpenMP region at all here
+  // when nth==1 (the ifs below in PARLOOP) seems to help too, #4200.
+  // To stress test the code for correctness by forcing multi-threading on for small data, the throttle can
+  // be turned off using setDThreads() or R_DATATABLE_THROTTLE environment variable.
+
   #define PARLOOP(_NAVAL_)                                        \
   if (anyNA) {                                                    \
-    _Pragma("omp parallel for num_threads(getDTthreads(n, true))") \
-    for (int i=0; i<n; i++) {                                     \
-      int elem = idxp[i];                                         \
-      ap[i] = elem==NA_INTEGER ? _NAVAL_ : sp[elem-1];            \
+    if (nth>1) {                                                  \
+      _Pragma("omp parallel for num_threads(nth)")                \
+      for (int i=0; i<n; ++i) {                                   \
+        int elem = idxp[i];                                       \
+        ap[i] = elem==NA_INTEGER ? _NAVAL_ : sp[elem-1];          \
+      }                                                           \
+    } else {                                                      \
+      for (int i=0; i<n; ++i) {                                   \
+        int elem = idxp[i];                                       \
+        ap[i] = elem==NA_INTEGER ? _NAVAL_ : sp[elem-1];          \
+      }                                                           \
     }                                                             \
   } else {                                                        \
-    _Pragma("omp parallel for num_threads(getDTthreads(n, true))") \
-    for (int i=0; i<n; i++) {                                     \
-      ap[i] = sp[idxp[i]-1];                                      \
+    if (nth>1) {                                                  \
+      _Pragma("omp parallel for num_threads(nth)")                \
+      for (int i=0; i<n; ++i) {                                   \
+        ap[i] = sp[idxp[i]-1];                                    \
+      }                                                           \
+    } else {                                                      \
+      for (int i=0; i<n; ++i) {                                   \
+        ap[i] = sp[idxp[i]-1];                                    \
+      }                                                           \
     }                                                             \
   }
-  // For small n such as 2,3,4 etc we hope OpenMP will be sensible inside it and not create a team with each thread doing just one item. Otherwise,
-  // call overhead would be too high for highly iterated calls on very small subests. Timings were tested in #3175
-  // Futher, we desire (currently at least) to stress-test the threaded code (especially in latest R-devel) on small data to reduce chance that bugs
-  // arise only over a threshold of n.
 
   switch(TYPEOF(source)) {
   case INTSXP: case LGLSXP: {
@@ -84,7 +102,7 @@ void subsetVectorRaw(SEXP ans, SEXP source, SEXP idx, const bool anyNA)
   }
 }
 
-static const char *check_idx(SEXP idx, int max, bool *anyNA_out, bool *orderedSubset_out)
+const char *check_idx(SEXP idx, int max, bool *anyNA_out, bool *orderedSubset_out)
 // set anyNA for branchless subsetVectorRaw
 // error if any negatives, zeros or >max since they should have been dealt with by convertNegAndZeroIdx() called ealier at R level.
 // single cache efficient sweep with prefetch, so very low priority to go parallel
