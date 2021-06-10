@@ -17709,3 +17709,10 @@ test(2191, DT[1:5, sum(v), by=.(i5 = 1:5 %% 2L), verbose=TRUE], data.table(i5=1:
 test(2192.1, as.IDate(c('', '2020-01-01')), structure(c(NA_integer_, 18262L), class=c("IDate","Date")))
 test(2192.2, as.IDate(c('2020-01-01', '')), structure(c(18262L, NA_integer_), class=c("IDate","Date")))
 
+# subassign coerce to integer64 was fixed in 1.12.4, #2530
+if (test_bit64) {
+  DT = data.table(a = as.integer64(1:10))
+  DT[a==1, a:=12]
+  DT[a==2, a:=as.integer64(13)]
+  test(2193, DT, data.table(a = as.integer64(c(12,13,3:10))))
+}
