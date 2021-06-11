@@ -62,7 +62,7 @@ groupingsets.data.table = function(x, j, by, sets, .SDcols, id = FALSE, jj, ...)
     stop("All columns used in 'sets' argument must be in 'by' too. Columns used in 'sets' but not present in 'by': ", brackify(setdiff(sets.all.by, by)))
   if (id && "grouping" %chin% names(x))
     stop("When using `id=TRUE` the 'x' data.table must not have a column named 'grouping'.")
-  if (any(vapply_1i(sets, anyDuplicated)))
+  if (any(vapply_1i(sets, anyDuplicated)))  # anyDuplicated returns index of first duplicate, otherwise 0L
     stop("Character vectors in 'sets' list must not have duplicated column names within a single grouping set.")
   if (length(sets) > 1L && (idx<-anyDuplicated(lapply(sets, sort))))
     warning("'sets' contains a duplicate (i.e., equivalent up to sorting) element at index ", idx, "; as such, there will be duplicate rows in the output -- note that grouping by A,B and B,A will produce the same aggregations. Use `sets=unique(lapply(sets, sort))` to eliminate duplicates.")
