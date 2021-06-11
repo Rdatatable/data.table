@@ -184,7 +184,7 @@ forderv = function(x, by=seq_along(x), retGrp=FALSE, sort=TRUE, order=1L, na.las
 forder = function(..., na.last=TRUE, decreasing=FALSE)
 {
   sub = substitute(list(...))
-  tt = sapply(sub, function(x) is.null(x) || (is.symbol(x) && !nzchar(x)))
+  tt = vapply_1b(sub, function(x) is.null(x) || (is.symbol(x) && !nzchar(x)))
   if (any(tt)) sub[tt] = NULL  # remove any NULL or empty arguments; e.g. test 1962.052: forder(DT, NULL) and forder(DT, )
   if (length(sub)<2L) return(NULL)  # forder() with no arguments returns NULL consistent with base::order
   asc = rep.int(1L, length(sub)-1L)  # ascending (1) or descending (-1) per column

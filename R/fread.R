@@ -206,7 +206,7 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
     }
     if ('schema' %chin% yaml_names) {
       new_types = sapply(yaml_header$schema$fields, `[[`, 'type')
-      if (any(null_idx <- sapply(new_types, is.null)))
+      if (any(null_idx <- vapply_1b(new_types, is.null)))
         new_types = do.call(c, new_types)
       synonms = rbindlist(list(
         character = list(syn = c('character', 'string')),
@@ -346,10 +346,10 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
   }
   if (yaml) setattr(ans, 'yaml_metadata', yaml_header)
   if (!is.null(index) && data.table) {
-    if (!all(sapply(index, is.character)))
+    if (!all(vapply_1b(index, is.character)))
       stop("index argument of data.table() must be a character vector naming columns (NB: col.names are applied before this)")
     if (is.list(index)) {
-      to_split = sapply(index, length) == 1L
+      to_split = vapply_1i(index, length) == 1L
       if (any(to_split))
         index[to_split] = sapply(index[to_split], strsplit, split = ",", fixed = TRUE)
     } else {

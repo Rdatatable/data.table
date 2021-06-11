@@ -97,7 +97,7 @@ as.data.table.array = function(x, keep.rownames=FALSE, key=NULL, sorted=TRUE, va
   # NULL dimnames will create integer keys, not character as in table method
   val = if (is.null(dnx)) {
     lapply(dx, seq.int)
-  } else if (any(nulldnx<-sapply(dnx, is.null))) {
+  } else if (any(nulldnx <- vapply_1b(dnx, is.null))) {
     dnx[nulldnx] = lapply(dx[nulldnx], seq.int) #3636
     dnx
   } else dnx
