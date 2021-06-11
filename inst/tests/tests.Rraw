@@ -17228,6 +17228,10 @@ if (TZnotUTC) {
   test(2150.20, fread("a,b,c\n2015-01-01,2015-01-02,2015-01-03 01:02:03", colClasses=c("Date",NA,NA)),
               ans, output=ans_print)
 }
+# fread single row single column datetime field, #2609
+test(2150.21, fread("c1\n2018-01-31 03:16:57"), data.table(V1=as.IDate("2018-01-31"), c1="03:16:57"),
+              warning="Detected 1 column names but the data has 2 columns")
+test(2150.22, fread("c1\n2018-01-31 03:16:57", sep=""), data.table(c1=as.POSIXct("2018-01-31 03:16:57", tz="UTC")))
 options(old)
 
 # 1 is treated as . in dcast formula, #4615
@@ -17721,3 +17725,4 @@ if (test_bit64) {
   Y = data.table(x=1:2, y=as.integer64(c(10,20)))
   test(2193.2, X[Y, `:=`(y=i.y), on="x", by=.EACHI], data.table(x=1:3, y=as.integer64(10L,20L,NA)))
 }
+
