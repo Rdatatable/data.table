@@ -141,8 +141,11 @@ melt(DT, id.vars=1:2, measure.vars=patterns(f="^f_", d="^d_"), value.factor=TRUE
 # na.rm=TRUE removes rows with NAs in any 'value' columns
 melt(DT, id.vars=1:2, measure.vars=patterns("f_", "d_"), value.factor=TRUE, na.rm=TRUE)
 
-# return 'NA' for missing columns, 'na.rm=TRUE' ignored due to list column
-melt(DT, id.vars=1:2, measure.vars=patterns("l_", "c_"), na.rm=TRUE)
+# 'na.rm=TRUE' also works with list column, but note that is.na only
+# returns TRUE if the list element is a length=1 vector with an NA.
+is.na(list(one.NA=NA, two.NA=c(NA,NA)))
+melt(DT, id.vars=1:2, measure.vars=patterns("l_", "d_"), na.rm=FALSE)
+melt(DT, id.vars=1:2, measure.vars=patterns("l_", "d_"), na.rm=TRUE)
 
 # measure list with missing/short entries results in output with runs of NA
 DT.missing.cols <- DT[, .(d_1, d_2, c_1, f_2)]
