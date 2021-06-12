@@ -103,7 +103,8 @@ static void Field(FieldParseContext *ctx);
 #define ASSERT(cond, msg, ...) \
   if (!(cond)) STOP(_("Internal error in line %d of fread.c, please report on data.table GitHub:  " msg), __LINE__, __VA_ARGS__) // # nocov
 
-
+#define AS_DIGIT(x) (uint_fast8_t)(x - '0')
+#define IS_DIGIT(x) AS_DIGIT(x) < 10
 
 //=================================================================================================
 //
@@ -575,7 +576,7 @@ static void str_to_i32_core(const char **pch, int32_t *target)
 {
   const char *ch = *pch;
 
-  if (*ch=='0' && args.keepLeadingZeros && (uint_fast8_t)(ch[1]-'0')<10) return;
+  if (*ch=='0' && args.keepLeadingZeros && IS_DIGIT(ch[1])) return;
   bool neg = *ch=='-';
   ch += (neg || *ch=='+');
   const char *start = ch;  // to know if at least one digit is present
@@ -590,7 +591,7 @@ static void str_to_i32_core(const char **pch, int32_t *target)
   // number significant figures = digits from the first non-zero onwards including trailing zeros
   while (*ch=='0') ch++;
   uint_fast32_t sf = 0;
-  while ( (digit=(uint_fast8_t)(ch[sf]-'0'))<10 ) {
+  while ( (digit=AS_DIGIT(ch[sf]))<10 ) {
     acc = 10*acc + digit;
     sf++;
   }
@@ -619,7 +620,7 @@ static void StrtoI64(FieldParseContext *ctx)
 {
   const char *ch = *(ctx->ch);
   int64_t *target = (int64_t*) ctx->targets[sizeof(int64_t)];
-  if (*ch=='0' && args.keepLeadingZeros && (uint_fast8_t)(ch[1]-'0')<10) return;
+  if (*ch=='0' && args.keepLeadingZeros && IS_DIGIT(ch[1])) return;
   bool neg = *ch=='-';
   ch += (neg || *ch=='+');
   const char *start = ch;
@@ -627,7 +628,7 @@ static void StrtoI64(FieldParseContext *ctx)
   uint_fast64_t acc = 0;  // important unsigned not signed here; we now need the full unsigned range
   uint_fast8_t digit;
   uint_fast32_t sf = 0;
-  while ( (digit=(uint_fast8_t)(ch[sf]-'0'))<10 ) {
+  while ( (digit=AS_DIGIT(ch[sf]))<10 ) {
     acc = 10*acc + digit;
     sf++;
   }
@@ -677,7 +678,7 @@ static void parse_double_regular_core(const char **pch, double *target)
   #define FLOAT_MAX_DIGITS 18
   const char *ch = *pch;
 
-  if (*ch=='0' && args.keepLeadingZeros && (uint_fast8_t)(ch[1]-'0')<10) return;
+  if (*ch=='0' && args.keepLeadingZeros && IS_DIGIT(ch[1])) return;
   bool neg, Eneg;
   ch += (neg = *ch=='-') + (*ch=='+');
 
@@ -691,7 +692,7 @@ static void parse_double_regular_core(const char **pch, double *target)
   // Read the first, integer part of the floating number (but no more than
   // FLOAT_MAX_DIGITS digits).
   int_fast32_t sflimit = FLOAT_MAX_DIGITS;
-  while ((digit=(uint_fast8_t)(*ch-'0'))<10 && sflimit) {
+  while ((digit=AS_DIGIT(*ch))<10 && sflimit) {
     acc = 10*acc + digit;
     sflimit--;
     ch++;
@@ -701,8 +702,8 @@ static void parse_double_regular_core(const char **pch, double *target)
   // we will read and discard those extra digits, but only if they are followed
   // by a decimal point (otherwise it's a just big integer, which should be
   // treated as a string instead of losing precision).
-  if (sflimit==0 && (uint_fast8_t)(*ch-'0')<10) {
-    while ((uint_fast8_t)(*ch-'0')<10) {
+  if (sflimit==0 && IS_DIGIT(*ch)) {
+    while (IS_DIGIT(*ch)) {
       ch++;
       e++;
     }
@@ -725,7 +726,7 @@ static void parse_double_regular_core(const char **pch, double *target)
 
     // Now read the significant digits in the fractional part of the number
     int_fast32_t k = 0;
-    while ((digit=(uint_fast8_t)(ch[k]-'0'))<10 && sflimit) {
+    while ((digit=AS_DIGIT(ch[k]))<10 && sflimit) {
       acc = 10*acc + digit;
       k++;
       sflimit--;
@@ -735,7 +736,7 @@ static void parse_double_regular_core(const char **pch, double *target)
 
     // If more digits are present, skip them
     if (sflimit==0) {
-      while ((uint_fast8_t)(*ch-'0')<10) ch++;
+      while (IS_DIGIT(*ch)) ch++;
     }
     // Check that at least 1 digit was present in either the integer or
     // fractional part ("+1" here accounts for the decimal point char).
@@ -752,13 +753,13 @@ static void parse_double_regular_core(const char **pch, double *target)
     if (ch==start) goto fail;  // something valid must be between [+|-] and E, character E alone is invalid.
     ch += 1/*E*/ + (Eneg = ch[1]=='-') + (ch[1]=='+');
     int_fast32_t E = 0;
-    if ((digit=(uint_fast8_t)(*ch-'0'))<10) {
+    if ((digit=AS_DIGIT(*ch))<10) {
       E = digit;
       ch++;
-      if ((digit=(uint_fast8_t)(*ch-'0'))<10) {
+      if ((digit=AS_DIGIT(*ch))<10) {
         E = E*10 + digit;
         ch++;
-        if ((digit=(uint_fast8_t)(*ch-'0'))<10) {
+        if ((digit=AS_DIGIT(*ch))<10) {
           E = E*10 + digit;
           ch++;
         }
@@ -825,11 +826,11 @@ static void parse_double_extended(FieldParseContext *ctx)
   }
   if (ch[0]=='N' && (ch[1]=='A' || ch[1]=='a') && ch[2]=='N' && (ch += 3)) {
     if (ch[-2]=='a' && (*ch=='%' || *ch=='Q' || *ch=='S')) ch++;
-    while ((uint_fast8_t)(*ch-'0') < 10) ch++;
+    while (IS_DIGIT(*ch)) ch++;
     goto return_nan;
   }
   if ((ch[0]=='q' || ch[0]=='s') && ch[1]=='N' && ch[2]=='a' && ch[3]=='N' && (ch += 4)) {
-    while ((uint_fast8_t)(*ch-'0') < 10) ch++;
+    while (IS_DIGIT(*ch)) ch++;
     goto return_nan;
   }
   if (ch[0]=='1' && ch[1]=='.' && ch[2]=='#') {
@@ -915,7 +916,7 @@ static void parse_double_hexadecimal(FieldParseContext *ctx)
     acc <<= (13 - ndigits) * 4;
     ch += 1 + (Eneg = ch[1]=='-') + (ch[1]=='+');
     uint64_t E = 0;
-    while ((digit = (uint8_t)(*ch-'0')) < 10) {
+    while ((digit = AS_DIGIT(*ch)) < 10) {
       E = 10*E + digit;
       ch++;
     }
@@ -1079,7 +1080,7 @@ static void parse_bool_numeric(FieldParseContext *ctx)
 {
   const char *ch = *(ctx->ch);
   int8_t *target = (int8_t*) ctx->targets[sizeof(int8_t)];
-  uint8_t d = (uint8_t)(*ch - '0');  // '0'=>0, '1'=>1, everything else > 1
+  uint_fast8_t d = AS_DIGIT(*ch);  // '0'=>0, '1'=>1, everything else > 1
   if (d <= 1) {
     *target = (int8_t) d;
     *(ctx->ch) = ch + 1;
