@@ -2139,6 +2139,7 @@ as.data.frame.data.table = function(x, ...)
   setattr(ans,"row.names",.set_row_names(nrow(x)))   # since R 2.4.0, data.frames can have non-character row names
   setattr(ans,"class","data.frame")
   setattr(ans,"sorted",NULL)  # remove so if you convert to df, do something, and convert back, it is not sorted
+  setattr(ans,"index",NULL) #5042
   setattr(ans,".internal.selfref",NULL)
   # leave tl intact, no harm,
   ans
