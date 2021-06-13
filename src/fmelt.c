@@ -729,10 +729,21 @@ SEXP getidcols(SEXP DT, SEXP dtnames, Rboolean verbose, struct processData *data
     }
       break;
     case VECSXP : {
-      for (int j=0; j<data->lmax; ++j) {
-        for (int k=0; k<data->nrow; ++k) {
-          SET_VECTOR_ELT(target, j*data->nrow + k, VECTOR_ELT(thiscol, k));
+      if (data->narm) {
+        for (int j=0; j<data->lmax; ++j) {
+          SEXP thisidx = VECTOR_ELT(data->naidx, j);
+          const int *ithisidx = INTEGER(thisidx);
+          const int thislen = length(thisidx);
+          for (int k=0; k<thislen; ++k)
+            SET_VECTOR_ELT(target, counter + k, VECTOR_ELT(thiscol, ithisidx[k]-1));
+          counter += thislen;
         }
+      } else {
+	for (int j=0; j<data->lmax; ++j) {
+	  for (int k=0; k<data->nrow; ++k) {
+	    SET_VECTOR_ELT(target, j*data->nrow + k, VECTOR_ELT(thiscol, k));
+	  }
+	}
       }
     }
       break;
