@@ -14086,7 +14086,9 @@ test(1984.05, DT[ , sum(b), keyby = c, verbose = TRUE],
 ### hitting byval = eval(bysub, setattr(as.list(seq_along(xss)), ...)
 test(1984.06, DT[1:3, sum(a), by=b:c], data.table(b=10:8, c=1:3, V1=1:3))
 test(1984.07, DT[, sum(a), by=call('sin',pi)], error='must evaluate to a vector or a list of vectors')
-test(1984.08, DT[, sum(a), by=as.raw(0)],           error='column or expression.*type raw')
+test(1984.081, DT[, sum(a), by=as.raw(0)],     error="Column or expression.*1.*type 'raw'.*not.*supported")
+test(1984.082, data.table(A=1:4, L=list(1, 1:2, 1, 1:3), V=1:4)[, sum(V), by=.(A,L)],  # better error message, 4308
+               error="Column or expression.*2.*type 'list'.*not.*supported")
 test(1984.09, DT[, sum(a), by=.(1,1:2)],       error='The items.*list are length[(]s[)] [(]1,2[)].*Each must be length 10; .*rows in x.*after subsetting')
 options('datatable.optimize' = Inf)
 test(1984.10, DT[ , 1, by = .(a %% 2), verbose = TRUE],
