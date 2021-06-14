@@ -3064,7 +3064,7 @@ test(1034, as.data.table(x<-as.character(sample(letters, 5))), data.table(V1=x))
   test(1035.0182, melt(DT.list.missing, measure.vars=c("l1","n34"), na.rm=TRUE)[["value"]], list(1,3,4), warning="are not all of the same type")
   test(1035.0183, melt(DT.list.missing, measure.vars=c("l1","NA5"), na.rm=TRUE)[["value"]], list(1,5), warning="are not all of the same type")
   test(1035.0184, melt(DT.list.missing, measure.vars=list(l=c("l1","l2"), n=c("n34","NA5")), na.rm=TRUE), data.table(variable=factor(1:2), l=list(1,2), n=c(3,5)))
-  test(1035.0185, melt(data.table(l=list(c(NA,NA), NA, NA_integer_, NA_real_, NA_complex_, NA_character_)), measure.vars="l", na.rm=TRUE)[["value"]], list(c(NA,NA)))
+  test(1035.0185, melt(data.table(l=list(c(NA,NA), NA, NA_integer_, NA_real_, NA_complex_, NA_character_, if(test_bit64)NA_integer64_)), measure.vars="l", na.rm=TRUE)[["value"]], list(c(NA,NA)))
 
   ans1 = cbind(DT[, c(1,2,8), with=FALSE], variable=factor("l_1"))
   ans1[, value := DT$l_1]
