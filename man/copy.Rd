@@ -17,7 +17,7 @@ copy(x)
 
 A \code{copy()} may be required when doing \code{dt_names = names(DT)}. Due to R's \emph{copy-on-modify}, \code{dt_names} still points to the same location in memory as \code{names(DT)}. Therefore modifying \code{DT} \emph{by reference} now, say by adding a new column, \code{dt_names} will also get updated. To avoid this, one has to \emph{explicitly} copy: \code{dt_names <- copy(names(DT))}.
 }
-note{
+\note{
   To confirm precisely whether an object is a copy of another, compare their exact memory address with \code{\link{address}}.
 }
 \value{
