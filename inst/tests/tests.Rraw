@@ -6518,7 +6518,7 @@ test(1459.12, .Call("CsubsetDT", DT, 5L, seq_along(DT)), setDT(as.data.frame(DT)
 
 # Test for na.omit with list, raw and complex types
 DT = data.table(x=c(1L,1L,NA), y=c(NA, NA, 1), z=as.raw(1:3), w=list(1,NA,2), v=c(1+5i, NA, NA))
-test(1460.1, na.omit(DT, cols="w"), DT)
+test(1460.1, na.omit(DT, cols="w"), DT[c(1,3)])
 test(1460.2, na.omit(DT, cols="v"), DT[1])
 test(1460.3, na.omit(DT, cols=c("v", "y")), DT[0])
 test(1460.4, na.omit(DT, cols=c("z", "v")), DT[1])
