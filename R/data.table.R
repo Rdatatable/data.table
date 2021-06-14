@@ -882,9 +882,7 @@ replace_dot_alias = function(e) {
         if (length(byval)==1L && is.null(byval[[1L]])) bynull=TRUE #3530 when by=(function()NULL)()
         if (!bynull) for (jj in seq_len(length(byval))) {
           if (!(this_type <- typeof(byval[[jj]])) %chin% ORDERING_TYPES) {
-            if (this_type == 'list')
-              stop(gettextf("Column or expression %d of 'by' or 'keyby' is a list. In data.table, aggregation requires sorting by the grouping key, and lists can't be sorted in general. If you don't care about sort order, you might try converting the list to a string representation which can be sorted, e.g.  by = sapply(list_col, toString).", jj, domain="R-data.table"), domain = NA)
-            stop(gettextf("Column or expression %d of 'by' or 'keyby' is type '%s'. In data.table, aggregation requires sorting by the grouping key, and our internals don't support this type. If you have a compelling use case, please file an issue to support this type; as a workaround, consider converting the column to a sortable type (e.g. character), taking care to maintain distinctness in the process.", jj, this_type, domain="R-data.table"), domain=NA)
+            stop(gettextf("Column or expression %d of 'by' or 'keyby' is type '%s' which is not currently supported. If you have a compelling use case, please add it to https://github.com/Rdatatable/data.table/issues/1597. As a workaround, consider converting the column to a supported type, e.g. by=sapply(list_col, toString), whilst taking care to maintain distinctness in the process.", jj, this_type))
           }
         }
         tt = vapply_1i(byval,length)
