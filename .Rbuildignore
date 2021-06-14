@@ -1,6 +1,14 @@
+.dir-locals.el
 ^\.Rprofile$
 ^data\.table_.*\.tar\.gz$
 ^vignettes/plots/figures$
+^\.Renviron$
+^[^/]+\.R$
+^[^/]+\.csv$
+^[^/]+\.csvy$
+^[^/]+\.RDS$
+^[^/]+\.diff$
+^[^/]+\.patch$
 
 ^\.ci$
 ^\.dev$
@@ -13,7 +21,6 @@
 
 ^Makefile$
 ^NEWS\.0\.md$
-^README\.md$
 ^_pkgdown\.yml$
 ^src/Makevars$
 
@@ -25,8 +32,11 @@
 ^.*\.Rproj$
 ^\.Rproj\.user$
 ^\.idea$
+^\.libs$
 
 ^.*\.dll$
 
 ^bus$
 ^pkgdown$
+^lib$
+^library$

@@ -7,6 +7,10 @@ as.IDate = function(x, ...) UseMethod("as.IDate")
 
 as.IDate.default = function(x, ..., tz = attr(x, "tzone", exact=TRUE)) {
   if (is.null(tz)) tz = "UTC"
+  if (is.character(x)) {
+    # backport of similar patch to base::as.Date.character in R 4.0.3, #4676
+    is.na(x) = !nzchar(x)
+  }
   as.IDate(as.Date(x, tz = tz, ...))
 }
 
@@ -240,20 +244,20 @@ rep.ITime = function (x, ...)
   class(y) = "ITime"   # unlass and rep could feasibly not copy, hence use class<- not setattr()
   y
 }
-                           
-round.ITime <- function(x, digits = c("hours", "minutes"), ...) 
+
+round.ITime <- function(x, digits = c("hours", "minutes"), ...)
 {
   (setattr(switch(match.arg(digits),
                   hours = as.integer(round(unclass(x)/3600)*3600),
-                  minutes = as.integer(round(unclass(x)/60)*60)), 
+                  minutes = as.integer(round(unclass(x)/60)*60)),
            "class", "ITime"))
-} 
+}
 
-trunc.ITime <- function(x, units = c("hours", "minutes"), ...) 
+trunc.ITime <- function(x, units = c("hours", "minutes"), ...)
 {
   (setattr(switch(match.arg(units),
                   hours = as.integer(unclass(x)%/%3600*3600),
-                  minutes = as.integer(unclass(x)%/%60*60)), 
+                  minutes = as.integer(unclass(x)%/%60*60)),
            "class", "ITime"))
 }
 
