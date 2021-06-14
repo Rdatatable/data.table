@@ -19,7 +19,7 @@ SEXP dt_na(SEXP x, SEXP cols) {
   for (int i=0; i<n; ++i) ians[i]=0;
   for (int i=0; i<LENGTH(cols); ++i) {
     SEXP v = VECTOR_ELT(x, INTEGER(cols)[i]-1);
-    if (!length(v) || isNewList(v) || isList(v)) continue; // like stats:::na.omit.data.frame, skip list/pairlist columns
+    if (!length(v) || isList(v)) continue; // like stats:::na.omit.data.frame, skip pairlist columns
     if (n != length(v))
       error(_("Column %d of input list x is length %d, inconsistent with first column of that item which is length %d."), i+1,length(v),n);
     switch (TYPEOF(v)) {
@@ -57,6 +57,39 @@ SEXP dt_na(SEXP x, SEXP cols) {
     case CPLXSXP: {
       // taken from https://github.com/wch/r-source/blob/d75f39d532819ccc8251f93b8ab10d5b83aac89a/src/main/coerce.c
       for (int j=0; j<n; ++j) ians[j] |= (ISNAN(COMPLEX(v)[j].r) || ISNAN(COMPLEX(v)[j].i));
+    }
+      break;
+    case VECSXP: {
+      // is.na(some_list) returns TRUE only for elements which are
+      // scalar NA.
+      for (int j=0; j<n; ++j) {
+	SEXP list_element = VECTOR_ELT(v, j);
+	switch (TYPEOF(list_element)) {
+	case LGLSXP: {
+	  ians[j] |= (length(list_element)==1 && LOGICAL_ELT(list_element,0) == NA_LOGICAL);
+	}
+	  break;
+	case INTSXP: {
+	  ians[j] |= (length(list_element)==1 && INTEGER_ELT(list_element,0) == NA_INTEGER);
+	}
+	  break;
+	case STRSXP: {
+	  ians[j] |= (length(list_element)==1 && STRING_ELT(list_element,0) == NA_STRING);
+	}
+	  break;
+	case REALSXP: {
+	  if(length(list_element)==1){
+	    const double first_real = REAL_ELT(list_element,0);
+	    if (INHERITS(list_element, char_integer64)) {
+	      ians[j] |= (DtoLL(first_real) == NA_INT64_LL);   // TODO: can be == NA_INT64_D directly
+	    } else {
+	      ians[j] |= ISNAN(first_real);
+	    }
+	  }
+	}
+	  break;
+	}
+      }
     }
       break;
     default:
