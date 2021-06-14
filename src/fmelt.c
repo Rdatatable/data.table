@@ -520,6 +520,7 @@ SEXP getvaluecols(SEXP DT, SEXP dtnames, Rboolean valfactor, Rboolean verbose, s
           for (int k=0; k<data->nrow; ++k) SET_STRING_ELT(target, j*data->nrow + k, STRING_ELT(thiscol, k));
         }
         break;
+	//TODO complex value type: case CPLXSXP: { } break;
       case REALSXP : {
         double *dtarget = REAL(target);
         const double *dthiscol = REAL(thiscol);
