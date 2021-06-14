@@ -20,7 +20,11 @@ Sometimes useful in determining whether a value has been copied or not, programm
   \code{\link{copy}}
 }
 \references{
-  \url{http://stackoverflow.com/a/10913296/403310} (but implemented in C without using \code{.Internal(inspect())})
+  \url{https://stackoverflow.com/a/10913296/403310} (but implemented in C without using \code{.Internal(inspect())})
+}
+\examples{
+x=1
+address(x)
 }
 \keyword{ data }
 
