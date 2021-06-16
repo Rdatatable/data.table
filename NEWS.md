@@ -135,7 +135,7 @@
 
 20. `fread(file, fill = TRUE)` could segfault if `file` contained an improperly quoted character field, [#4774](https://github.com/Rdatatable/data.table/issues/4774) [#5041](https://github.com/Rdatatable/data.table/issues/5041). Thanks to @AndeolEvain and @e-nascimento for reporting and to Václav Tlapák for the PR.
 
-21. `fread(file, fill = TRUE, verbose = TRUE)` would segfault if `file` did not contain column names and contained a column where the initial type guess turned out to be wrong, e.g. a column of mostly integers with a character field somewhere in the middle. The segfault would occur when creating the verbose output about the type bump, [](https://github.com/Rdatatable/data.table/pull/). Thanks to Václav Tlapák for the PR.
+21. `fread(file, fill = TRUE, verbose = TRUE)` would segfault if `file` did not contain column names and contained a column where the initial type guess turned out to be wrong, e.g. a column of mostly integers with a character field somewhere in the middle. The segfault would occur when creating the verbose output about the type bump, [5046](https://github.com/Rdatatable/data.table/pull/5046). Thanks to Václav Tlapák for the PR.
 
 ## NOTES
 
