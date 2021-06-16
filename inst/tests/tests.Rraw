@@ -3470,7 +3470,7 @@ test(1100, dt1[dt2,roll=-Inf,rollends=c(FALSE,TRUE)]$ind, INT(NA,NA,1,2,2,2,2,2,
   set.seed(3)
   DT = data.table(a=5:1, b=runif(5))
   ans = dcast(DT, a ~ b, value.var="b")[c(4,.N), c(2,6)]
-  setnames(ans, substring(names(ans),1,6))
+  setnames(ans, substr(names(ans), 1L, 6L))
   test(1102.06, ans, data.table("0.1680"=c(NA,DT[1,b]), "0.8075"=c(DT[2,b],NA)))
 
   # Fix for case 2 in bug report #71 - dcast didn't aggregate properly when formula RHS has "."
@@ -7346,7 +7346,7 @@ test(1530.4, which.last(x), tail(which(x), 1L))
 set.seed(2L)
 x = apply(matrix(sample(letters, 12), nrow=2), 1, paste, collapse="")
 y = factor(sample(c(letters[1:5], x), 20, TRUE))
-xsub = substring(x, 1L, 1L)
+xsub = substr(x, 1L, 1L)
 test(1532.01, y %like% xsub[1L], grepl(xsub[1L], y))
 test(1532.02, y %like% xsub[2L], grepl(xsub[2L], y))
 test(1532.03, like(y, xsub[1L]), grepl(xsub[1L], y))
@@ -9564,7 +9564,7 @@ nqjoin_test <- function(x, y, k=1L, test_no, mult="all") {
   runcmb = as.data.table(runcmb[, 1:min(100L, ncol(runcmb)), drop=FALSE]) # max 100 combinations to test
   runops = lapply(runcmb, function(cols) {
     thisops = sample(ops, k, TRUE)
-    thisops[substring(cols,1,1)=="c"] = "=="
+    thisops[startsWith(cols, "c")] = "=="
     thisops
   })
   is_only_na <- function(x) is.na(x) & !is.nan(x)
@@ -17728,3 +17728,15 @@ if (test_bit64) {
   test(2193.2, X[Y, `:=`(y=i.y), on="x", by=.EACHI], data.table(x=1:3, y=as.integer64(10L,20L,NA)))
 }
 
+# compatibility of endsWith backport with base::endsWith
+if (exists('endsWith', 'package:base', inherits=FALSE)) {
+  DTendsWith = function(x, stub) {n=nchar(x); substr(x, n-nchar(stub)+1L, n)==stub}
+  BSendsWith = base::endsWith
+  test(2194.1, DTendsWith('abcd', 'd'), BSendsWith('abcd', 'd'))
+  test(2194.2, DTendsWith(letters, 'e'), BSendsWith(letters, 'e'))
+  test(2194.3, DTendsWith(NA_character_, 'a'), BSendsWith(NA_character_, 'a'))
+  test(2194.4, DTendsWith(character(), 'a'), BSendsWith(character(), 'a'))
+  # file used in encoding tests
+  txt = readLines(testDir("issue_563_fread.txt"))
+  test(2194.5, DTendsWith(txt, 'B'), BSendsWith(txt, 'B'))
+}

@@ -157,7 +157,7 @@ status0 = function(bioc=FALSE) {
     if (file.exists(fn)) {
       v = suppressWarnings(system(paste0("grep 'Status:' ",fn), intern=TRUE))
       if (!length(v)) return("RUNNING")
-      return(substring(v,9))
+      return(substr(v, 9L, nchar(v)))
     }
     if (file.exists(paste0("./",x,".Rcheck"))) return("RUNNING")
     return("NOT STARTED")

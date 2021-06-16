@@ -55,13 +55,11 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
     if (input=="" || length(grep('\\n|\\r', input))) {
       # input is data itself containing at least one \n or \r
     } else {
-      if (substring(input,1L,1L)==" ") {
+      if (startsWith(input, " ")) {
         stop("input= contains no \\n or \\r, but starts with a space. Please remove the leading space, or use text=, file= or cmd=")
       }
-      str6 = substring(input,1L,6L)   # avoid grepl() for #2531
-      str7 = substring(input,1L,7L)
-      str8 = substring(input,1L,8L)
-      if (str7=="ftps://" || str8=="https://") {
+      str7 = substr(input, 1L, 7L) # avoid grepl() for #2531
+      if (str7=="ftps://" || startsWith(input, "https://")) {
         # nocov start
         if (!requireNamespace("curl", quietly = TRUE))
           stop("Input URL requires https:// connection for which fread() requires 'curl' package which cannot be found. Please install 'curl' using 'install.packages('curl')'.") # nocov
@@ -71,7 +69,7 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
         on.exit(unlink(tmpFile), add=TRUE)
         # nocov end
       }
-      else if (str6=="ftp://" || str7== "http://" || str7=="file://") {
+      else if (startsWith(input, "ftp://") || str7== "http://" || str7=="file://") {
         # nocov start
         method = if (str7=="file://") "internal" else getOption("download.file.method", default="auto")
         # force "auto" when file:// to ensure we don't use an invalid option (e.g. wget), #1668
@@ -107,12 +105,10 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
               if (data.table) 'data.table' else 'data.frame', ".")
       return(if (data.table) data.table(NULL) else data.frame(NULL))
     }
-    ext2 = substring(file, nchar(file)-2L, nchar(file))   # last 3 characters ".gz"
-    ext3 = substring(file, nchar(file)-3L, nchar(file))   # last 4 characters ".bz2"
-    if (ext2==".gz" || ext3==".bz2") {
+    if ((is_gz <- endsWith(file, ".gz")) || endsWith(file, ".bz2")) {
       if (!requireNamespace("R.utils", quietly = TRUE))
         stop("To read gz and bz2 files directly, fread() requires 'R.utils' package which cannot be found. Please install 'R.utils' using 'install.packages('R.utils')'.") # nocov
-      FUN = if (ext2==".gz") gzfile else bzfile
+      FUN = if (is_gz) gzfile else bzfile
       R.utils::decompressFile(file, decompFile<-tempfile(tmpdir=tmpdir), ext=NULL, FUN=FUN, remove=FALSE)   # ext is not used by decompressFile when destname is supplied, but isn't optional
       file = decompFile   # don't use 'tmpFile' symbol again, as tmpFile might be the http://domain.org/file.csv.gz download
       on.exit(unlink(decompFile), add=TRUE)
@@ -174,9 +170,10 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
     yaml_border_re = '^#?---'
     if (!grepl(yaml_border_re, first_line)) {
       close(f)
-      stop('Encountered <', substring(first_line, 1L, 50L), if (nchar(first_line) > 50L) '...', '> at the first ',
-           'unskipped line (', 1L+skip, '), which does not constitute the start to a valid YAML header ',
-           '(expecting something matching regex "', yaml_border_re, '"); please check your input and try again.')
+      stop(gettextf(
+        'Encountered <%s%s> at the first unskipped line (%d), which does not constitute the start to a valid YAML header (expecting something matching regex "%s"); please check your input and try again.',
+        substr(first_line, 1L, 50L), if (nchar(first_line) > 50L) '...' else '', 1L+skip, yaml_border_re
+      ))
     }
 
     yaml_comment_re = '^#'

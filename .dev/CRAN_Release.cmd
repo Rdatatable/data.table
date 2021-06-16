@@ -154,7 +154,10 @@ grep -n "[^A-Za-z0-9]F[^A-Za-z0-9]" ./inst/tests/tests.Rraw
 grep -Enr "^[^#]*(?:\[|==|>|<|>=|<=|,|\(|\+)\s*[-]?[0-9]+[^0-9L:.e]" R | grep -Ev "stop|warning|tolerance"
 
 # Never use ifelse. fifelse for vectors when necessary (nothing yet)
- grep -Enr "\bifelse" R
+grep -Enr "\bifelse" R
+
+# use substr() instead of substring(), #4447
+grep -Fnr "substring" R
 
 # No system.time in main tests.Rraw. Timings should be in benchmark.Rraw
 grep -Fn "system.time" ./inst/tests/*.Rraw | grep -Fv "benchmark.Rraw" | grep -Fv "this system.time usage ok"
