@@ -17728,3 +17728,14 @@ if (test_bit64) {
   test(2193.2, X[Y, `:=`(y=i.y), on="x", by=.EACHI], data.table(x=1:3, y=as.integer64(10L,20L,NA)))
 }
 
+# Improperly quoted character field with fill = TRUE would lead to segfault before, #4774 and #5041
+test(2194, 
+     fread(paste0(paste(rep(c('a; b'), 100), collapse = '\n'), c('\n"a" 2;b')), fill = TRUE, quote = '\"'),
+     data.table(a = c(rep('a', 99), '"a" 2'), b = rep('b', 100)), warning = 'Found and resolved improper quoting')
+
+# Verbose output would segfault when no header present, out-of-sample type error and fill = TRUE, similar to #4644
+# Test vaildity may depend on sampling behaviour of fread since the type bump needs to occur out of sample to trigger the segfault
+sampleText = paste0(paste(rep(c('1; 2'), 100), collapse = '\n'), c('\n"a";2\n1; 2\n'), paste(rep(c('1; 2'), 100), collapse = '\n'))
+test(2195, fread(sampleText,  fill = TRUE, quote = '\"', verbose = TRUE, header = FALSE),
+           fread(sampleText,  fill = TRUE, quote = '\"', verbose = FALSE, header = FALSE),
+           output = 'Column 1 bumped')
