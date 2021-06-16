@@ -17729,7 +17729,7 @@ if (test_bit64) {
 }
 
 # compatibility of endsWith backport with base::endsWith
-if (exists('endsWith', 'package:base')) {
+if (exists('endsWith', 'package:base', inherits=FALSE)) {
   DTendsWith = function(x, stub) {n=nchar(x); substr(x, n-nchar(stub)+1L, n)==stub}
   BSendsWith = base::endsWith
   test(2194.1, DTendsWith('abcd', 'd'), BSendsWith('abcd', 'd'))
