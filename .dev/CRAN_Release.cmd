@@ -156,7 +156,7 @@ grep -Enr "^[^#]*(?:\[|==|>|<|>=|<=|,|\(|\+)\s*[-]?[0-9]+[^0-9L:.e]" R | grep -E
 # Never use ifelse. fifelse for vectors when necessary (nothing yet)
 grep -Enr "\bifelse" R
 
-# substring is always slower than substr. use cases of substring over substr are limited
+# use substr() instead of substring(), #4447
 grep -Fnr "substring" R
 
 # No system.time in main tests.Rraw. Timings should be in benchmark.Rraw

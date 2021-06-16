@@ -170,7 +170,7 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
     yaml_border_re = '^#?---'
     if (!grepl(yaml_border_re, first_line)) {
       close(f)
-      stop(domain=NA, gettextf(domain="R-data.table",
+      stop(gettextf(
         'Encountered <%s%s> at the first unskipped line (%d), which does not constitute the start to a valid YAML header (expecting something matching regex "%s"); please check your input and try again.',
         substr(first_line, 1L, 50L), if (nchar(first_line) > 50L) '...' else '', 1L+skip, yaml_border_re
       ))
