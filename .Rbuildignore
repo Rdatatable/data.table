@@ -1,3 +1,4 @@
+.dir-locals.el
 ^\.Rprofile$
 ^data\.table_.*\.tar\.gz$
 ^vignettes/plots/figures$
@@ -31,6 +32,7 @@
 ^.*\.Rproj$
 ^\.Rproj\.user$
 ^\.idea$
+^\.libs$
 
 ^.*\.dll$
 

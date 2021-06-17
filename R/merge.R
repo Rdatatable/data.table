@@ -11,10 +11,17 @@ merge.data.table = function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FAL
       by = key(x)
     }
   }
-  x0 = length(x)==0L; y0 = length(y)==0L
-  if (x0 || y0) warning("You are trying to join data.tables where ", if(x0 && y0) "arguments 'x' and 'y' have" else if(x0) "argument 'x' has" else "argument 'y' has", " no columns.")
-  if (any(duplicated(names(x)))) stop("x has some duplicated column name(s): ",paste(names(x)[duplicated(names(x))],collapse=","),". Please remove or rename the duplicate(s) and try again.")
-  if (any(duplicated(names(y)))) stop("y has some duplicated column name(s): ",paste(names(y)[duplicated(names(y))],collapse=","),". Please remove or rename the duplicate(s) and try again.")
+  x0 = length(x)==0L
+  y0 = length(y)==0L
+  if (x0 || y0) warning(sprintf(ngettext(x0+y0,
+    "You are trying to join data.tables where %s has 0 columns.",
+    "You are trying to join data.tables where %s have 0 columns."),
+    if (x0 && y0) "'x' and 'y'" else if (x0) "'x'" else "'y'"
+  ))
+  nm_x = names(x)
+  nm_y = names(y)
+  if (anyDuplicated(nm_x)) stop(gettextf("%s has some duplicated column name(s): %s. Please remove or rename the duplicate(s) and try again.", "x", brackify(nm_x[duplicated(nm_x)])))
+  if (anyDuplicated(nm_y)) stop(gettextf("%s has some duplicated column name(s): %s. Please remove or rename the duplicate(s) and try again.", "y", brackify(nm_y[duplicated(nm_y)])))
 
   ## set up 'by'/'by.x'/'by.y'
   if ( (!is.null(by.x) || !is.null(by.y)) && length(by.x)!=length(by.y) )
@@ -22,11 +29,11 @@ merge.data.table = function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FAL
   if (!missing(by) && !missing(by.x))
     warning("Supplied both `by` and `by.x/by.y`. `by` argument will be ignored.")
   if (!is.null(by.x)) {
-    if (length(by.x) == 0L || !is.character(by.x) || !is.character(by.y))
+    if (length(by.x)==0L || !is.character(by.x) || !is.character(by.y))
       stop("A non-empty vector of column names is required for `by.x` and `by.y`.")
-    if (!all(by.x %chin% names(x)))
+    if (!all(by.x %chin% nm_x))
       stop("Elements listed in `by.x` must be valid column names in x.")
-    if (!all(by.y %chin% names(y)))
+    if (!all(by.y %chin% nm_y))
       stop("Elements listed in `by.y` must be valid column names in y.")
     by = by.x
     names(by) = by.y
@@ -36,10 +43,10 @@ merge.data.table = function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FAL
     if (is.null(by))
       by = key(x)
     if (is.null(by))
-      by = intersect(names(x), names(y))
+      by = intersect(nm_x, nm_y)
     if (length(by) == 0L || !is.character(by))
       stop("A non-empty vector of column names for `by` is required.")
-    if (!all(by %chin% intersect(colnames(x), colnames(y))))
+    if (!all(by %chin% intersect(nm_x, nm_y)))
       stop("Elements listed in `by` must be valid column names in x and y")
     by = unname(by)
     by.x = by.y = by
@@ -48,8 +55,8 @@ merge.data.table = function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FAL
   ## sidestep the auto-increment column number feature-leading-to-bug by
   ## ensuring no names end in ".1", see unit test
   ## "merge and auto-increment columns in y[x]" in test-data.frame.like.R
-  start = setdiff(names(x), by.x)
-  end = setdiff(names(y), by.y)
+  start = setdiff(nm_x, by.x)
+  end = setdiff(nm_y, by.y)
   dupnames = intersect(start, end)
   if (length(dupnames)) {
     start[chmatch(dupnames, start, 0L)] = paste0(dupnames, suffixes[1L])
@@ -69,7 +76,7 @@ merge.data.table = function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FAL
     missingyidx = y[!x, which=TRUE, on=by, allow.cartesian=allow.cartesian]
     if (length(missingyidx)) {
       yy = y[missingyidx]
-      othercolsx = setdiff(names(x), by)
+      othercolsx = setdiff(nm_x, by)
       if (length(othercolsx)) {
         tmp = rep.int(NA_integer_, length(missingyidx))
         # TO DO: use set() here instead..
@@ -81,7 +88,7 @@ merge.data.table = function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FAL
     }
   }
   # X[Y] syntax puts JIS i columns at the end, merge likes them alongside i.
-  newend = setdiff(names(y), by.y)
+  newend = setdiff(nm_y, by.y)
   # fix for #1290, make sure by.y order is set properly before naming
   setcolorder(dt, c(by.y, setdiff(names(dt), c(by.y, newend)), newend))
   setnames(dt, c(by.x, start, end))

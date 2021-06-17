@@ -22,6 +22,7 @@ SEXP char_ordered;
 SEXP char_datatable;
 SEXP char_dataframe;
 SEXP char_NULL;
+SEXP char_maxString;
 SEXP sym_sorted;
 SEXP sym_index;
 SEXP sym_BY;
@@ -34,6 +35,7 @@ SEXP sym_inherits;
 SEXP sym_datatable_locked;
 SEXP sym_tzone;
 SEXP sym_old_fread_datetime_character;
+SEXP sym_variable_table;
 double NA_INT64_D;
 long long NA_INT64_LL;
 Rcomplex NA_CPLX;
@@ -219,6 +221,7 @@ R_CallMethodDef callMethods[] = {
 {"CcoerceAs", (DL_FUNC) &coerceAs, -1},
 {"Ctest_dt_win_snprintf", (DL_FUNC)&test_dt_win_snprintf, -1},
 {"Cdt_zlib_version", (DL_FUNC)&dt_zlib_version, -1},
+{"Csubstitute_call_arg_namesR", (DL_FUNC) &substitute_call_arg_namesR, -1},
 {NULL, NULL, 0}
 };
 
@@ -335,6 +338,7 @@ void attribute_visible R_init_datatable(DllInfo *info)
   char_datatable = PRINTNAME(install("data.table"));
   char_dataframe = PRINTNAME(install("data.frame"));
   char_NULL =      PRINTNAME(install("NULL"));
+  char_maxString = PRINTNAME(install("\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF"));
 
   if (TYPEOF(char_integer64) != CHARSXP) {
     // checking one is enough in case of any R-devel changes
@@ -359,6 +363,7 @@ void attribute_visible R_init_datatable(DllInfo *info)
   sym_datatable_locked = install(".data.table.locked");
   sym_tzone = install("tzone");
   sym_old_fread_datetime_character = install("datatable.old.fread.datetime.character");
+  sym_variable_table = install("variable_table");
 
   initDTthreads();
   avoid_openmp_hang_within_fork();

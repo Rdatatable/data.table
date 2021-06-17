@@ -109,7 +109,7 @@ int dt_win_snprintf(char *dest, const size_t n, const char *fmt, ...)
     strncpy(ch2, strp[i], strl[i]); // write the reordered specifers without the n$ part
     ch2 += strl[i];
     strcpy(ch2, delim); // includes '\0'
-    ch2 += NDELIM;      // now resting on the '\0'    
+    ch2 += NDELIM;      // now resting on the '\0'
   }
   char *buff = malloc(n); // for the result of the specifiers
   if (!buff) {
@@ -202,46 +202,46 @@ SEXP test_dt_win_snprintf()
 
   dt_win_snprintf(buff, 50, "%1$d %s", 9, "foo");
   if (strcmp(buff, "3 some %n$ but not all"))                                       error(_("dt_win_snprintf test %d failed: %s"), 5, buff);
-  
+
   dt_win_snprintf(buff, 50, "%%1$foo%d", 9);  // The %1$f is not a specifier because % is doubled
   if (strcmp(buff, "%1$foo9"))                                                      error(_("dt_win_snprintf test %d failed: %s"), 6, buff);
-  
+
   dt_win_snprintf(buff, 40, "long format string more than n==%d chopped", 40); // regular library (no %n$) chops to 39 chars + '/0'
   if (strlen(buff)!=39 || strcmp(buff, "long format string more than n==40 chop"))  error(_("dt_win_snprintf test %d failed: %s"), 7, buff);
-  
+
   dt_win_snprintf(buff, 40, "long %3$s %2$s more than n==%1$d chopped", 40, "string", "format"); // same with dt_win_snprintf
   if (strlen(buff)!=39 || strcmp(buff, "long format string more than n==40 chop"))  error(_("dt_win_snprintf test %d failed: %s"), 8, buff);
-  
+
   int res = dt_win_snprintf(buff, 10, "%4$d%2$d%3$d%5$d%1$d", 111, 222, 33, 44, 555); // fmt longer than n
   if (strlen(buff)!=9 || strcmp(buff, "442223355"))                                 error(_("dt_win_snprintf test %d failed: %s"), 9, buff);
   if (res!=13) /* should return what would have been written if not chopped */      error(_("dt_win_snprintf test %d failed: %s"), 10, res);
-  
+
   dt_win_snprintf(buff, 39, "%l", 3);
   if (strlen(buff)!=38 || strcmp(buff, "0 %l    does not end with recognized t"))   error(_("dt_win_snprintf test %d failed: %s"), 11, buff);
-  
+
   dt_win_snprintf(buff, 19, "%l", 3);
   if (strlen(buff)!=18 || strcmp(buff, "0 %l    does not e"))                       error(_("dt_win_snprintf test %d failed: %s"), 12, buff);
-  
+
   dt_win_snprintf(buff, 50, "%1$d == %0$d", 1, 2);
   if (strcmp(buff, "1 %0$ outside range [1,99]"))                                   error(_("dt_win_snprintf test %d failed: %s"), 13, buff);
-  
+
   dt_win_snprintf(buff, 50, "%1$d == %$d", 1, 2);
   if (strcmp(buff, "1 %$ outside range [1,99]"))                                    error(_("dt_win_snprintf test %d failed: %s"), 14, buff);
-  
+
   dt_win_snprintf(buff, 50, "%1$d == %100$d", 1, 2);
   if (strcmp(buff, "1 %100$ outside range [1,99]"))                                 error(_("dt_win_snprintf test %d failed: %s"), 15, buff);
-  
+
   dt_win_snprintf(buff, 50, "%1$d == %-1$d", 1, 2);
   if (strcmp(buff, "1 %-1$ outside range [1,99]"))                                  error(_("dt_win_snprintf test %d failed: %s"), 16, buff);
-  
+
   dt_win_snprintf(buff, 50, "%1$d == %3$d", 1, 2, 3);
   if (strcmp(buff, "5 %2$ missing"))                                                error(_("dt_win_snprintf test %d failed: %s"), 17, buff);
-  
+
   dt_win_snprintf(buff, 50, "%1$d == %1$d", 42);
   if (strcmp(buff, "2 %1$ appears twice"))                                          error(_("dt_win_snprintf test %d failed: %s"), 18, buff);
-  
+
   dt_win_snprintf(buff, 50, "%1$d + %3$d - %2$d == %3$d", 1, 1, 2);
   if (strcmp(buff, "2 %3$ appears twice"))                                          error(_("dt_win_snprintf test %d failed: %s"), 19, buff);
-  
+
   return R_NilValue;
 }

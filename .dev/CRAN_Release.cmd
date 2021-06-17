@@ -154,13 +154,23 @@ grep -n "[^A-Za-z0-9]F[^A-Za-z0-9]" ./inst/tests/tests.Rraw
 grep -Enr "^[^#]*(?:\[|==|>|<|>=|<=|,|\(|\+)\s*[-]?[0-9]+[^0-9L:.e]" R | grep -Ev "stop|warning|tolerance"
 
 # Never use ifelse. fifelse for vectors when necessary (nothing yet)
- grep -Enr "\bifelse" R
+grep -Enr "\bifelse" R
+
+# use substr() instead of substring(), #4447
+grep -Fnr "substring" R
 
 # No system.time in main tests.Rraw. Timings should be in benchmark.Rraw
-grep -n "system[.]time" ./inst/tests/tests.Rraw
+grep -Fn "system.time" ./inst/tests/*.Rraw | grep -Fv "benchmark.Rraw" | grep -Fv "this system.time usage ok"
+
+# No tryCatch in *.Rraw -- tryCatch should be handled only in test() itself to avoid silently missed warnings/errors/output
+grep -Fn "tryCatch" ./inst/tests/*.Rraw
 
 # All % in *.Rd should be escaped otherwise text gets silently chopped
 grep -n "[^\]%" ./man/*.Rd
+
+# if (a & b) is either invalid or inefficient (ditto for replace & with |);
+#   if(any(a [&|] b)) is appropriate b/c of collapsing the logical vector to scalar
+grep -nr "^[^#]*if[^&#]*[^&#\"][&][^&]" R | grep -Ev "if\s*[(](?:any|all)"
 
 # seal leak potential where two unprotected API calls are passed to the same
 # function call, usually involving install() or mkChar()
@@ -195,6 +205,10 @@ grep ScalarLogical *.c   # Now we depend on 3.1.0+, check ScalarLogical is NOT P
 grep allocVector *.c | grep -v PROTECT | grep -v SET_VECTOR_ELT | grep -v setAttrib | grep -v return
 grep coerceVector *.c | grep -v PROTECT | grep -v SET_VECTOR_ELT | grep -v setAttrib | grep -v return
 grep asCharacter *.c | grep -v PROTECT | grep -v SET_VECTOR_ELT | grep -v setAttrib | grep -v return
+
+# Enforce local scope for loop index (`for (int i=0; ...)` instead of `int i; for (i=0; ...)`)
+#   exceptions are tagged with #loop_counter_not_local_scope_ok
+grep -En "for\s*[(]\s*[a-zA-Z0-9_]+\s*=" src/*.c | grep -Fv "#loop_counter_not_local_scope_ok"
 
 cd ..
 R
@@ -243,6 +257,11 @@ require(data.table)
 test.data.table(script="other.Rraw")
 test.data.table(script="*.Rraw")
 test.data.table(verbose=TRUE)   # since main.R no longer tests verbose mode
+
+# check example() works on every exported function, with these sticter options too, and also that all help pages have examples
+options(warn=2, warnPartialMatchArgs=TRUE, warnPartialMatchAttr=TRUE, warnPartialMatchDollar=TRUE)
+invisible(lapply(objects(pos="package:data.table"), example, character.only=TRUE, echo=FALSE, ask=FALSE))
+
 gctorture2(step=50)
 system.time(test.data.table(script="*.Rraw"))  # apx 8h = froll 3h + nafill 1m + main 5h
 

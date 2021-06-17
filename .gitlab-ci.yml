@@ -6,9 +6,9 @@ variables:
   TZ: "UTC"  ## to avoid 'Failed to create bus connection' from timedatectl via Sys.timezone() on Docker with R 3.4.
              ## Setting TZ for all GLCI jobs to isolate them from timezone. We could have a new GLCI job to test under
              ## a non-UTC timezone, although, that's what we do routinely in dev.
-  R_REL_VERSION: "4.0"
+  R_REL_VERSION: "4.1"
   R_DEVEL_VERSION: "4.2"
-  R_OLDREL_VERSION: "3.6"
+  R_OLDREL_VERSION: "4.0"
 
 stages:
   - dependencies
@@ -96,16 +96,14 @@ build: ## build data.table sources as tar.gz archive
   - mkdir.exe -p cran/bin/windows/contrib/$R_VERSION; mv.exe $(ls.exe -1t data.table_*.zip | head.exe -n 1) cran/bin/windows/contrib/$R_VERSION
 
 .test-install-r-rel-win: &install-r-rel-win
-  - curl.exe -s -o ../R-rel.exe https://cloud.r-project.org/bin/windows/base/old/4.0.3/R-4.0.3-win.exe; Start-Process -FilePath ..\R-rel.exe -ArgumentList "/VERYSILENT /DIR=C:\R" -NoNewWindow -Wait
+  - curl.exe -s -o ../R-rel.exe https://cloud.r-project.org/bin/windows/base/old/4.1.0/R-4.1.0-win.exe; Start-Process -FilePath ..\R-rel.exe -ArgumentList "/VERYSILENT /DIR=C:\R" -NoNewWindow -Wait
 .test-install-r-devel-win: &install-r-devel-win
   - curl.exe -s -o ../R-devel.exe https://cloud.r-project.org/bin/windows/base/R-devel-win.exe; Start-Process -FilePath ..\R-devel.exe -ArgumentList "/VERYSILENT /DIR=C:\R" -NoNewWindow -Wait
 .test-install-r-oldrel-win: &install-r-oldrel-win
-  - curl.exe -s -o ../R-oldrel.exe https://cloud.r-project.org/bin/windows/base/old/3.6.3/R-3.6.3-win.exe; Start-Process -FilePath ..\R-oldrel.exe -ArgumentList "/VERYSILENT /DIR=C:\R" -NoNewWindow -Wait
+  - curl.exe -s -o ../R-oldrel.exe https://cloud.r-project.org/bin/windows/base/old/4.0.5/R-4.0.5-win.exe; Start-Process -FilePath ..\R-oldrel.exe -ArgumentList "/VERYSILENT /DIR=C:\R" -NoNewWindow -Wait
 
 .test-install-rtools-win: &install-rtools-win
   - curl.exe -s -o ../rtools.exe https://cloud.r-project.org/bin/windows/Rtools/rtools40-x86_64.exe; Start-Process -FilePath ..\rtools.exe -ArgumentList "/VERYSILENT /DIR=C:\rtools40" -NoNewWindow -Wait
-.test-install-rtools35-win: &install-rtools35-win
-  - curl.exe -s -o ../Rtools35.exe https://cloud.r-project.org/bin/windows/Rtools/Rtools35.exe; Start-Process -FilePath ..\Rtools35.exe -ArgumentList "/VERYSILENT /DIR=C:\Rtools" -NoNewWindow -Wait
 
 .test-template: &test
   stage: test
@@ -191,7 +189,7 @@ test-rel-cran-lin: ## R-release on Linux, extra NOTEs check and build pdf manual
   variables:
     _R_CHECK_CRAN_INCOMING_: "TRUE"           ## stricter --as-cran checks should run in dev pipelines continuously (not sure what they are though)
     _R_CHECK_CRAN_INCOMING_REMOTE_: "FALSE"   ## Other than no URL checking (takes many minutes) or 'Days since last update 0' NOTEs needed, #3284
-    _R_CHECK_CRAN_INCOMING_TARBALL_THRESHOLD_: "7500000" ## effective from R 4.1.0, then 00check.log can be checked for "OK" rather than "2 NOTEs"
+    _R_CHECK_CRAN_INCOMING_TARBALL_THRESHOLD_: "7500000" ## effective from R 4.1.0
   before_script:
     - *install-deps
     - *cp-src
@@ -205,7 +203,7 @@ test-rel-cran-lin: ## R-release on Linux, extra NOTEs check and build pdf manual
     - R CMD check --as-cran $(ls -1t data.table_*.tar.gz | head -n 1)
     - *rm-src
     - >-
-        Rscript -e 'l=tail(readLines("data.table.Rcheck/00check.log"), 1L); if (!identical(l, "Status: 2 NOTEs")) stop("Last line of ", shQuote("00check.log"), " is not ", shQuote("Status: 2 NOTEs"), " (size of tarball) but ", shQuote(l)) else q("no")'
+        Rscript -e 'l=tail(readLines("data.table.Rcheck/00check.log"), 1L); if (!identical(l, "Status: 1 NOTE")) stop("Last line of ", shQuote("00check.log"), " is not ", shQuote("Status: 1 NOTE"), " (installed package size) but ", shQuote(l)) else q("no")'
 
 test-dev-cran-lin: ## R-devel on Linux, --enable-strict-barrier --disable-long-double, check for new notes and compilation warnings, thus allow_failure
   <<: *test-lin
@@ -285,8 +283,8 @@ test-old-win: ## R-oldrel on Windows
     R_VERSION: "$R_OLDREL_VERSION"
   before_script:
     - *install-r-oldrel-win
-    - *install-rtools35-win
-    - $ENV:PATH = "C:\R\bin;C:\Rtools\bin;$ENV:PATH"
+    - *install-rtools-win
+    - $ENV:PATH = "C:\R\bin;C:\rtools40\usr\bin;$ENV:PATH"
     - *install-deps-win
     - *cp-src-win
     - rm.exe -r bus

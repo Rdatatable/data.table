@@ -1,6 +1,11 @@
 duplicated.data.table = function(x, incomparables=FALSE, fromLast=FALSE, by=seq_along(x), ...) {
   if (!cedta()) return(NextMethod("duplicated")) #nocov
   if (!identical(incomparables, FALSE)) {
+    print(incomparables)
+    print(identical(incomparables, FALSE))
+    print(FALSE)
+    print(attributes(FALSE))
+    # browser()
     .NotYetUsed("incomparables != FALSE")
   }
   if (nrow(x) == 0L || ncol(x) == 0L) return(logical(0L)) # fix for bug #28
@@ -27,6 +32,11 @@ duplicated.data.table = function(x, incomparables=FALSE, fromLast=FALSE, by=seq_
 unique.data.table = function(x, incomparables=FALSE, fromLast=FALSE, by=seq_along(x), ...) {
   if (!cedta()) return(NextMethod("unique")) # nocov
   if (!identical(incomparables, FALSE)) {
+    print(incomparables)
+    print(identical(incomparables, FALSE))
+    print(FALSE)
+    print(attributes(FALSE))
+    # browser()
     .NotYetUsed("incomparables != FALSE")
   }
   if (nrow(x) <= 1L) return(x)
