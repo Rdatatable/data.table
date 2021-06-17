@@ -133,7 +133,7 @@
 
 19. A fix to `as.Date(c("", ...))` in R 4.0.3, [17909](https://bugs.r-project.org/bugzilla3/show_bug.cgi?id=17909), has been backported to `data.table::as.IDate()` so that it too now returns `NA` for the first item when it is blank, even in older versions of R back to 3.1.0, rather than the incorrect error `character string is not in a standard unambiguous format`, [#4676](https://github.com/Rdatatable/data.table/issues/4676). Thanks to Arun Srinivasan for reporting, and Michael Chirico both for the `data.table` PR and for submitting the patch to R that was accepted and included in R 4.0.3.
 
-20. `uniqueN(x, by=character())` is now consistent with `uniqueN(x, by=NULL)`, [#4594](https://github.com/Rdatatable/data.table/issues/4594). Thanks @mcol for the report.
+20. `uniqueN(DT, by=character())` is now equivalent to `uniqueN(DT)` rather than internal error `'by' is either not integer or is length 0`, [#4594](https://github.com/Rdatatable/data.table/issues/4594). Thanks Marco Colombo for the report, and Michael Chirico for the PR. Similarly for `unique()`, `duplicated()` and `anyDuplicated()`.
 
 ## NOTES
 
