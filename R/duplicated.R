@@ -5,8 +5,7 @@ duplicated.data.table = function(x, incomparables=FALSE, fromLast=FALSE, by=seq_
   }
   if (nrow(x) == 0L || ncol(x) == 0L) return(logical(0L)) # fix for bug #28
   if (is.na(fromLast) || !is.logical(fromLast)) stop("'fromLast' must be TRUE or FALSE")
-  # consistency of by=NULL and by=character()
-  if (!length(by)) by = NULL
+  if (!length(by)) by = NULL  #4594
   query = .duplicated.helper(x, by)
 
   if (query$use.keyprefix) {
@@ -30,8 +29,7 @@ unique.data.table = function(x, incomparables=FALSE, fromLast=FALSE, by=seq_alon
     .NotYetUsed("incomparables != FALSE")
   }
   if (nrow(x) <= 1L) return(x)
-  # by=character() is the same as by=NULL
-  if (!length(by)) by = NULL
+  if (!length(by)) by = NULL  #4594
   o = forderv(x, by=by, sort=FALSE, retGrp=TRUE)
   # if by=key(x), forderv tests for orderedness within it quickly and will short-circuit
   # there isn't any need in unique() to call uniqlist like duplicated does; uniqlist returns a new nrow(x) vector anyway and isn't
@@ -106,8 +104,7 @@ uniqueN = function(x, by = if (is.list(x)) seq_along(x) else NULL, na.rm=FALSE) 
     if (is.logical(x)) return(.Call(CuniqueNlogical, x, na.rm=na.rm))
     x = as_list(x)
   }
-  # for consistency, #4594
-  if (!length(by)) by = NULL
+  if (!length(by)) by = NULL  #4594
   o = forderv(x, by=by, retGrp=TRUE, na.last=if (!na.rm) FALSE else NA)
   starts = attr(o, 'starts', exact=TRUE)
   if (na.rm) {
