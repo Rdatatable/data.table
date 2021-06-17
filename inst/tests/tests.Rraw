@@ -17754,4 +17754,3 @@ test(2195.5, duplicated(DT, by=character(0L)), ans<-c(FALSE, FALSE, TRUE, FALSE)
 test(2195.6, duplicated(DT, by=NULL), ans)
 test(2195.7, anyDuplicated(DT, by=character(0L)), 3L)
 test(2195.8, anyDuplicated(DT, by=NULL), 3L)
-
