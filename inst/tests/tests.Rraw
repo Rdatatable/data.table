@@ -30,6 +30,7 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
   compactprint = data.table:::compactprint
   cube.data.table = data.table:::cube.data.table
   dcast.data.table = data.table:::dcast.data.table
+  if (!exists('endsWith', 'package:base', inherits=FALSE)) endsWith = data.table:::endsWith
   forder = data.table:::forder
   forderv = data.table:::forderv
   format.data.table = data.table:::format.data.table
@@ -53,6 +54,7 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
   shallow = data.table:::shallow # until exported
   .shallow = data.table:::.shallow
   split.data.table = data.table:::split.data.table
+  if (!exists('startsWith', 'package:base', inherits=FALSE)) startsWith = data.table:::startsWith
   test = data.table:::test
   uniqlengths = data.table:::uniqlengths
   uniqlist = data.table:::uniqlist
