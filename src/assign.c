@@ -536,8 +536,8 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
     // if assigning to at least one key column, the key is truncated to one position before the first changed column.
     //any() and subsetVector() don't seem to be exposed by R API at C level, so this is done here long hand.
     PROTECT(tmp = chin(key, assignedNames, false)); protecti++;
-    int newKeyLength = xlength(key);
-    for (int i=0;i<LENGTH(tmp);i++) if (LOGICAL(tmp)[i]) {
+    int newKeyLength = length(key);
+    for (int i=0; i<LENGTH(tmp); ++i) if (LOGICAL(tmp)[i]) {
       // If a key column is being assigned to, set newKeyLength to the key element before since everything after that may have changed in order.
       newKeyLength = i;
       break;

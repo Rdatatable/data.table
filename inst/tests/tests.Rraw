@@ -17384,7 +17384,6 @@ if (test_bit64) {
   test(2164.3, d[, mean(b, na.rm=TRUE), by=a], data.table(a=INT(1,2), V1=c(2.5, 4)))
 }
 
-
 # invalid key when by=.EACHI, haskey(i) but on= non-leading-subset of i's key, #4603 #4911
 X = data.table(id = c(6456372L, 6456372L, 6456372L, 6456372L,6456372L, 6456372L, 6456372L, 6456372L, 6456372L, 6456372L, 6456372L, 6456372L, 6456372L, 6456372L),
                id_round = c(197801L, 199405L, 199501L, 197901L, 197905L, 198001L, 198005L, 198101L, 198105L, 198201L, 198205L, 198301L, 198305L, 198401L),
@@ -17757,7 +17756,6 @@ test(2195.5, duplicated(DT, by=character(0L)), ans<-c(FALSE, FALSE, TRUE, FALSE)
 test(2195.6, duplicated(DT, by=NULL), ans)
 test(2195.7, anyDuplicated(DT, by=character(0L)), 3L)
 test(2195.8, anyDuplicated(DT, by=NULL), 3L)
-
 
 # Test new feature %notin%, #4152
 test(2196.1, 11 %notin% 1:10, TRUE)
