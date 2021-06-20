@@ -800,7 +800,7 @@ void fwriteMain(fwriteMainArgs args)
     if(init_stream(&stream))
       STOP(_("Can't allocate gzip stream structure")); // # nocov
     zbuffSize = deflateBound(&stream, buffSize);
-    if (verbose) DTPRINT("zbuffSize=%d returned from deflateBound\n", (int)zbuffSize);
+    if (verbose) DTPRINT(_("zbuffSize=%d returned from deflateBound\n"), (int)zbuffSize);
     deflateEnd(&stream);
 #endif
   }

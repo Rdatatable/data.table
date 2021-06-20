@@ -352,24 +352,24 @@ const char *class1(SEXP x) {
 SEXP coerceAs(SEXP x, SEXP as, SEXP copyArg) {
   // copyArg does not update in place, but only IF an object is of the same type-class as class to be coerced, it will return with no copy
   if (!isVectorAtomic(x))
-    error("'x' is not atomic");
+    error(_("'x' is not atomic"));
   if (!isVectorAtomic(as))
-    error("'as' is not atomic");
+    error(_("'as' is not atomic"));
   if (!isNull(getAttrib(x, R_DimSymbol)))
-    error("'x' must not be matrix or array");
+    error(_("'x' must not be matrix or array"));
   if (!isNull(getAttrib(as, R_DimSymbol)))
-    error("'as' must not be matrix or array");
+    error(_("'as' must not be matrix or array"));
   bool verbose = GetVerbose()>=2; // verbose level 2 required
   if (!LOGICAL(copyArg)[0] && TYPEOF(x)==TYPEOF(as) && class1(x)==class1(as)) {
     if (verbose)
-      Rprintf("copy=false and input already of expected type and class %s[%s]\n", type2char(TYPEOF(x)), class1(x));
+      Rprintf(_("copy=false and input already of expected type and class %s[%s]\n"), type2char(TYPEOF(x)), class1(x));
     copyMostAttrib(as, x); // so attrs like factor levels are same for copy=T|F
     return(x);
   }
   int len = LENGTH(x);
   SEXP ans = PROTECT(allocNAVectorLike(as, len));
   if (verbose)
-    Rprintf("Coercing %s[%s] into %s[%s]\n", type2char(TYPEOF(x)), class1(x), type2char(TYPEOF(as)), class1(as));
+    Rprintf(_("Coercing %s[%s] into %s[%s]\n"), type2char(TYPEOF(x)), class1(x), type2char(TYPEOF(as)), class1(as));
   const char *ret = memrecycle(/*target=*/ans, /*where=*/R_NilValue, /*start=*/0, /*len=*/LENGTH(x), /*source=*/x, /*sourceStart=*/0, /*sourceLen=*/-1, /*colnum=*/0, /*colname=*/"");
   if (ret)
     warning(_("%s"), ret);
@@ -385,7 +385,7 @@ SEXP dt_zlib_version() {
 #ifndef NOZLIB
   snprintf(out, 50, "zlibVersion()==%s ZLIB_VERSION==%s", zlibVersion(), ZLIB_VERSION);
 #else
-  snprintf(out, 50, "zlib header files were not found when data.table was compiled");
+  snprintf(out, 50, _("zlib header files were not found when data.table was compiled"));
 #endif
   return ScalarString(mkChar(out));
 }
