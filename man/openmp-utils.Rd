@@ -5,7 +5,7 @@
 \alias{openmp}
 \title{ Set or get number of threads that data.table should use }
 \description{
-  Set and get number of threads to be used in \code{data.table} functions that are parallelized with OpenMP. The number of threads is initialized when \code{data.table} is first loaded in the R session using optional envioronment variables. Thereafter, the number of threads may be changed by calling \code{setDTthreads}. If you change an environment variable using \code{Sys.setenv} you will need to call \code{setDTthreads} again to reread the environment variables.
+  Set and get number of threads to be used in \code{data.table} functions that are parallelized with OpenMP. The number of threads is initialized when \code{data.table} is first loaded in the R session using optional environment variables. Thereafter, the number of threads may be changed by calling \code{setDTthreads}. If you change an environment variable using \code{Sys.setenv} you will need to call \code{setDTthreads} again to reread the environment variables.
 }
 \usage{
   setDTthreads(threads = NULL, restore_after_fork = NULL, percent = NULL, throttle = NULL)
@@ -50,5 +50,8 @@
     \item{\file{subset.c} - Used in \code{\link[=data.table]{[.data.table}} subsetting}
     \item{\file{types.c} - Internal testing usage}
   }
+}
+\examples{
+  getDTthreads(verbose=TRUE)
 }
 \keyword{ data }

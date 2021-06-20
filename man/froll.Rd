@@ -12,71 +12,65 @@
 \alias{frollapply}
 \title{Rolling functions}
 \description{
-  Fast rolling functions to calculate aggregates on sliding window. Function name and arguments are experimental.
+  Fast rolling functions to calculate aggregates on sliding windows. Function name and arguments are experimental.
 }
 \usage{
-frollmean(x, n, fill=NA, algo=c("fast", "exact"), align=c("right",
-  "left", "center"), na.rm=FALSE, hasNA=NA, adaptive=FALSE)
-frollsum(x, n, fill=NA, algo=c("fast","exact"), align=c("right", "left",
-  "center"), na.rm=FALSE, hasNA=NA, adaptive=FALSE)
+frollmean(x, n, fill=NA, algo=c("fast", "exact"),
+          align=c("right", "left", "center"), na.rm=FALSE, hasNA=NA, adaptive=FALSE)
+frollsum(x, n, fill=NA, algo=c("fast","exact"),
+         align=c("right", "left", "center"), na.rm=FALSE, hasNA=NA, adaptive=FALSE)
 frollapply(x, n, FUN, \dots, fill=NA, align=c("right", "left", "center"))
 }
 \arguments{
-  \item{x}{ vector, list, data.frame or data.table of numeric or logical columns. }
-  \item{n}{ integer vector, for adaptive rolling function also list of
-    integer vectors, rolling window size. }
-  \item{fill}{ numeric or logical, value to pad by. Defaults to \code{NA}. }
-  \item{algo}{ character, default \code{"fast"}. When set to \code{"exact"},
-    then slower algorithm is used. It suffers less from floating point
-    rounding error, performs extra pass to adjust rounding error
-    correction and carefully handles all non-finite values. If available
-    it will use multiple cores. See details for more information. }
-  \item{align}{ character, define if rolling window covers preceding rows
-    (\code{"right"}), following rows (\code{"left"}) or centered
-    (\code{"center"}). Defaults to \code{"right"}. }
-  \item{na.rm}{ logical. Should missing values be removed when
-    calculating window? Defaults to \code{FALSE}. For details on handling
-    other non-finite values, see details below. }
-  \item{hasNA}{ logical. If it is known that \code{x} contains \code{NA}
-    then setting to \code{TRUE} will speed up. Defaults to \code{NA}. }
-  \item{adaptive}{ logical, should adaptive rolling function be
-    calculated, default \code{FALSE}. See details below. }
-  \item{FUN}{ the function to be applied in rolling fashion; see Details for restrictions }
-  \item{\dots}{ extra arguments passed to \code{FUN} in \code{frollapply}. }
+  \item{x}{ Vector, \code{data.frame} or \code{data.table} of integer, numeric or logical columns over which to calculate the windowed aggregations. May also be a list, in which case the rolling function is applied to each of its elements. }
+  \item{n}{ Integer vector giving rolling window size(s). This is the \emph{total} number of included values. Adaptive rolling functions also accept a list of integer vectors. }
+  \item{fill}{ Numeric; value to pad by. Defaults to \code{NA}. }
+  \item{algo}{ Character, default \code{"fast"}. When set to \code{"exact"}, a slower (but more accurate) algorithm is used. It
+    suffers less from floating point rounding errors by performing an extra pass, and carefully handles all non-finite values.
+    It will use mutiple cores where available. See Details for more information. }
+  \item{align}{ Character, specifying the "alignment" of the rolling window, defaulting to \code{"right"}. \code{"right"} covers preceding rows (the window \emph{ends} on the current value); \code{"left"} covers following rows (the window \emph{starts} on the current value); \code{"center"} is halfway in between (the window is \emph{centered} on the current value, biased towards \code{"left"} when \code{n} is even). }
+  \item{na.rm}{ Logical, default \code{FALSE}. Should missing values be removed when
+    calculating window? For details on handling other non-finite values, see Details. }
+  \item{hasNA}{ Logical. If it is known that \code{x} contains \code{NA}
+    then setting this to \code{TRUE} will speed up calculation. Defaults to \code{NA}. }
+  \item{adaptive}{ Logical, default \code{FALSE}. Should the rolling function be calculated adaptively? See Details below. }
+  \item{FUN}{ The function to be applied to the rolling window; see Details for restrictions. }
+  \item{\dots}{ Extra arguments passed to \code{FUN} in \code{frollapply}. }
 }
 \details{
-  \code{froll*} functions accepts vectors, lists, data.frames or
-  data.tables. They always return a list except when the input is a
-  \code{vector} and \code{length(n)==1} in which case a \code{vector}
-  is returned, for convenience. Thus rolling functions can be used
-  conveniently within data.table syntax.
+  \code{froll*} functions accept vectors, lists, \code{data.frame}s or
+  \code{data.table}s. They always return a list except when the input is a
+  \code{vector} and \code{length(n)==1}, in which case a \code{vector}
+  is returned, for convenience. Thus, rolling functions can be used
+  conveniently within \code{data.table} syntax.
 
   Argument \code{n} allows multiple values to apply rolling functions on
-  multiple window sizes. If \code{adaptive=TRUE}, then it expects a list.
+  multiple window sizes. If \code{adaptive=TRUE}, then \code{n} must be a list.
   Each list element must be integer vector of window sizes corresponding
-  to every single observation in each column.
+  to every single observation in each column; see Examples.
 
-  When \code{algo="fast"} then \emph{on-line} algorithm is used, also
-  any \code{NaN, +Inf, -Inf} is treated as \code{NA}.
-  Setting \code{algo="exact"} will make rolling functions to use
-  compute-intensive algorithm that suffers less from floating point
-  rounding error. It also handles \code{NaN, +Inf, -Inf} consistently to
+  When \code{algo="fast"} an \emph{"on-line"} algorithm is used, and
+  all of \code{NaN, +Inf, -Inf} are treated as \code{NA}.
+  Setting \code{algo="exact"} will make rolling functions to use a more
+  computationally-intensive algorithm that suffers less from floating point
+  rounding error (the same consideration applies to \code{\link[base]{mean}}).
+  \code{algo="exact"} also handles \code{NaN, +Inf, -Inf} consistently to
   base R. In case of some functions (like \emph{mean}), it will additionally
   make extra pass to perform floating point error correction. Error
   corrections might not be truly exact on some platforms (like Windows)
   when using multiple threads.
 
-  Adaptive rolling functions are special cases where for each single
-  observation has own corresponding rolling window width. Due to the logic
-  of adaptive rolling functions, following restrictions apply:
+  Adaptive rolling functions are a special case where each
+  observation has its own corresponding rolling window width. Due to the logic
+  of adaptive rolling functions, the following restrictions apply:
   \itemize{
     \item{ \code{align} only \code{"right"}. }
     \item{ if list of vectors is passed to \code{x}, then all
-      list vectors must have equal length. }
+      vectors within it must have equal length. }
   }
 
   When multiple columns or multiple windows width are provided, then they
-  are run in parallel. Except for the \code{algo="exact"} which runs in
+  are run in parallel. The exception is for \code{algo="exact"}, which runs in
   parallel already.
 
   \code{frollapply} computes rolling aggregate on arbitrary R functions.
@@ -113,7 +107,7 @@ frollapply(x, n, FUN, \dots, fill=NA, align=c("right", "left", "center"))
     \item{ when \code{adaptive=TRUE}, then \code{n} must be vector of
       length equal to \code{nrow(x)}, or list of such vectors. }
     \item{ \code{partial} window feature is not supported, although it can
-      be accomplished by using \code{adaptive=TRUE}, see examples. }
+      be accomplished by using \code{adaptive=TRUE}, see examples. \code{NA} is always returned for incomplete windows. }
   }
 
   Be aware that rolling functions operates on the physical order of input.
