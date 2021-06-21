@@ -25,6 +25,13 @@ if (base::getRversion() < "3.2.0") {  # Apr 2015
   isNamespaceLoaded = function(x) x %chin% loadedNamespaces()
 }
 
+if (!exists('startsWith', 'package:base', inherits=FALSE)) {  # R 3.3.0; Apr 2016
+  startsWith = function(x, stub) substr(x, 1L, nchar(stub))==stub
+}
+if (!exists('endsWith', 'package:base', inherits=FALSE)) {
+  endsWith = function(x, stub) {n=nchar(x); substr(x, n-nchar(stub)+1L, n)==stub}
+}
+
 # which.first
 which.first = function(x)
 {

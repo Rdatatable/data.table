@@ -1071,16 +1071,21 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
         BODY(SEXP, &, SEXP, val, SET_VECTOR_ELT(target, off+i, cval))
     } else {
       switch (TYPEOF(source)) {
-      // no protect of CAST needed because SET_VECTOR_ELT protects it, and it can't get released by copyMostAttrib or anything else inside BODY
-      // copyMostAttrib is appended to CAST so as to be outside loop
-      case RAWSXP:  BODY(Rbyte,    RAW,        SEXP, ScalarRaw(val);    copyMostAttrib(source,cval), SET_VECTOR_ELT(target,off+i,cval))
-      case LGLSXP:  BODY(int,      INTEGER,    SEXP, ScalarLogical(val);copyMostAttrib(source,cval), SET_VECTOR_ELT(target,off+i,cval))
-      case INTSXP:  BODY(int,      INTEGER,    SEXP, ScalarInteger(val);copyMostAttrib(source,cval), SET_VECTOR_ELT(target,off+i,cval))
-      case REALSXP: BODY(double,   REAL,       SEXP, ScalarReal(val);   copyMostAttrib(source,cval), SET_VECTOR_ELT(target,off+i,cval))
-      case CPLXSXP: BODY(Rcomplex, COMPLEX,    SEXP, ScalarComplex(val);copyMostAttrib(source,cval), SET_VECTOR_ELT(target,off+i,cval))
-      case STRSXP:  BODY(SEXP,     STRING_PTR, SEXP, ScalarString(val); copyMostAttrib(source,cval), SET_VECTOR_ELT(target,off+i,cval))
+      // allocVector instead of ScalarLogical to avoid copyMostAttrib on R's internal global TRUE/FALSE values; #4595. Then because
+      //   ScalarInteger may now or in future R also return R internal global small integer constants, the same for that. Then
+      //   because we do that here for logical and integer, use allocVeector too for the other types to follow the same pattern and possibly
+      //   in future R will also have some global constants for those types too.
+      // the UNPROTECT can be at the end of the CAST before the SET_VECTOR_ELT, because SET_VECTOR_ELT will protect it and there's no other code inbetween
+      // the PROTECT is now needed because of the call to LOGICAL() which could feasibly gc inside it.
+      // copyMostAttrib is inside CAST so as to be outside loop.  See the history in #4350 and its follow up
+      case RAWSXP:  BODY(Rbyte,    RAW,        SEXP, PROTECT(allocVector(RAWSXP, 1));RAW(cval)[0]=val;copyMostAttrib(source,cval);UNPROTECT(1),             SET_VECTOR_ELT(target,off+i,cval))
+      case LGLSXP:  BODY(int,      LOGICAL,    SEXP, PROTECT(allocVector(LGLSXP, 1));LOGICAL(cval)[0]=val;copyMostAttrib(source,cval);UNPROTECT(1),         SET_VECTOR_ELT(target,off+i,cval))
+      case INTSXP:  BODY(int,      INTEGER,    SEXP, PROTECT(allocVector(INTSXP, 1));INTEGER(cval)[0]=val;copyMostAttrib(source,cval);UNPROTECT(1),         SET_VECTOR_ELT(target,off+i,cval))
+      case REALSXP: BODY(double,   REAL,       SEXP, PROTECT(allocVector(REALSXP, 1));REAL(cval)[0]=val;copyMostAttrib(source,cval);UNPROTECT(1),           SET_VECTOR_ELT(target,off+i,cval))
+      case CPLXSXP: BODY(Rcomplex, COMPLEX,    SEXP, PROTECT(allocVector(CPLXSXP, 1));COMPLEX(cval)[0]=val;copyMostAttrib(source,cval);UNPROTECT(1),        SET_VECTOR_ELT(target,off+i,cval))
+      case STRSXP:  BODY(SEXP,     STRING_PTR, SEXP, PROTECT(allocVector(STRSXP, 1));SET_STRING_ELT(cval, 0, val);copyMostAttrib(source,cval);UNPROTECT(1), SET_VECTOR_ELT(target,off+i,cval))
       case VECSXP:
-      case EXPRSXP: BODY(SEXP,     SEXPPTR_RO, SEXP, val,                                            SET_VECTOR_ELT(target,off+i,cval))
+      case EXPRSXP: BODY(SEXP,     SEXPPTR_RO, SEXP, val,                                                                                                   SET_VECTOR_ELT(target,off+i,cval))
       default: COERCE_ERROR("list");
       }
     }

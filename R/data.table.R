@@ -249,7 +249,7 @@ replace_dot_alias = function(e) {
     root = if (is.call(jsub)) as.character(jsub[[1L]])[1L] else ""
     if (root == ":" ||
         (root %chin% c("-","!") && jsub[[2L]] %iscall% '(' && jsub[[2L]][[2L]] %iscall% ':') ||
-        ( (!length(av<-all.vars(jsub)) || all(substring(av,1L,2L)=="..")) &&
+        ( (!length(av<-all.vars(jsub)) || all(startsWith(av, ".."))) &&
           root %chin% c("","c","paste","paste0","-","!") &&
           missingby )) {   # test 763. TODO: likely that !missingby iff with==TRUE (so, with can be removed)
       # When no variable names (i.e. symbols) occur in j, scope doesn't matter because there are no symbols to find.
@@ -266,8 +266,8 @@ replace_dot_alias = function(e) {
       with=FALSE
       if (length(av)) {
         for (..name in av) {
-          name = substring(..name, 3L)
-          if (name=="") stop("The symbol .. is invalid. The .. prefix must be followed by at least one character.")
+          name = substr(..name, 3L, nchar(..name))
+          if (!nzchar(name)) stop("The symbol .. is invalid. The .. prefix must be followed by at least one character.")
           if (!exists(name, where=parent.frame())) {
             stop("Variable '",name,"' is not found in calling scope. Looking in calling scope because you used the .. prefix.",
               if (exists(..name, where=parent.frame()))
@@ -283,7 +283,7 @@ replace_dot_alias = function(e) {
         ..syms = av
       }
     } else if (is.name(jsub)) {
-      if (substring(jsub, 1L, 2L) == "..") stop("Internal error:  DT[, ..var] should be dealt with by the branch above now.") # nocov
+      if (startsWith(as.character(jsub), "..")) stop("Internal error:  DT[, ..var] should be dealt with by the branch above now.") # nocov
       if (!with && !exists(as.character(jsub), where=parent.frame()))
         stop("Variable '",jsub,"' is not found in calling scope. Looking in calling scope because you set with=FALSE. Also, please use .. symbol prefix and remove with=FALSE.")
     }
@@ -709,7 +709,7 @@ replace_dot_alias = function(e) {
         j = eval(jsub, setattr(as.list(seq_along(x)), 'names', names_x), parent.frame()) # else j will be evaluated for the first time on next line
       } else {
         names(..syms) = ..syms
-        j = eval(jsub, lapply(substring(..syms,3L), get, pos=parent.frame()), parent.frame())
+        j = eval(jsub, lapply(substr(..syms, 3L, nchar(..syms)), get, pos=parent.frame()), parent.frame())
       }
       if (is.logical(j)) j <- which(j)
       if (!length(j) && !notj) return( null.data.table() )
@@ -815,7 +815,7 @@ replace_dot_alias = function(e) {
             # TODO: could be allowed if length(irows)>1 but then the index would need to be squashed for use by uniqlist, #3062
             # find if allbyvars is leading subset of any of the indices; add a trailing "__" to fix #3498 where a longer column name starts with a shorter column name
             tt = paste0(c(allbyvars,""), collapse="__")
-            w = which.first(substring(paste0(indices(x),"__"),1L,nchar(tt)) == tt)
+            w = which.first(startsWith(paste0(indices(x), "__"), tt))
             if (!is.na(w)) {
               byindex = indices(x)[w]
               if (!length(getindex(x, byindex))) {
@@ -881,7 +881,9 @@ replace_dot_alias = function(e) {
         if (!is.list(byval)) stop("'by' or 'keyby' must evaluate to a vector or a list of vectors (where 'list' includes data.table and data.frame which are lists, too)")
         if (length(byval)==1L && is.null(byval[[1L]])) bynull=TRUE #3530 when by=(function()NULL)()
         if (!bynull) for (jj in seq_len(length(byval))) {
-          if (!typeof(byval[[jj]]) %chin% ORDERING_TYPES) stop("column or expression ",jj," of 'by' or 'keyby' is type ",typeof(byval[[jj]]),". Do not quote column names. Usage: DT[,sum(colC),by=list(colA,month(colB))]")
+          if (!(this_type <- typeof(byval[[jj]])) %chin% ORDERING_TYPES) {
+            stop(gettextf("Column or expression %d of 'by' or 'keyby' is type '%s' which is not currently supported. If you have a compelling use case, please add it to https://github.com/Rdatatable/data.table/issues/1597. As a workaround, consider converting the column to a supported type, e.g. by=sapply(list_col, toString), whilst taking care to maintain distinctness in the process.", jj, this_type))
+          }
         }
         tt = vapply_1i(byval,length)
         if (any(tt!=xnrow)) stop(domain=NA, gettextf("The items in the 'by' or 'keyby' list are length(s) (%s). Each must be length %d; the same length as there are rows in x (after subsetting if i is provided).", paste(tt, collapse=","), xnrow))
@@ -919,8 +921,8 @@ replace_dot_alias = function(e) {
       jvnames = NULL
       drop_dot = function(x) {
         if (length(x)!=1L) stop("Internal error: drop_dot passed ",length(x)," items")  # nocov
-        if (identical(substring(x<-as.character(x), 1L, 1L), ".") && x %chin% c(".N", ".I", ".GRP", ".NGRP", ".BY"))
-          substring(x, 2L)
+        if (startsWith(x<-as.character(x), ".") && x %chin% c(".N", ".I", ".GRP", ".NGRP", ".BY"))
+          substr(x, 2L, nchar(x))
         else
           x
       }
@@ -1240,8 +1242,8 @@ replace_dot_alias = function(e) {
   }
 
   syms = all.vars(jsub)
-  syms = syms[ substring(syms,1L,2L)==".." ]
-  syms = syms[ substring(syms,3L,3L)!="." ]  # exclude ellipsis
+  syms = syms[ startsWith(syms, "..") ]
+  syms = syms[ substr(syms, 3L, 3L) != "." ]  # exclude ellipsis
   for (sym in syms) {
     if (sym %chin% names_x) {
       # if "..x" exists as column name, use column, for backwards compatibility; e.g. package socialmixr in rev dep checks #2779
@@ -1249,7 +1251,7 @@ replace_dot_alias = function(e) {
       # TODO in future, as warned in NEWS item for v1.11.0 :
       # warning(sym," in j is looking for ",getName," in calling scope, but a column '", sym, "' exists. Column names should not start with ..")
     }
-    getName = substring(sym, 3L)
+    getName = substr(sym, 3L, nchar(sym))
     if (!exists(getName, parent.frame())) {
       if (exists(sym, parent.frame())) next  # user did 'manual' prefix; i.e. variable in calling scope has .. prefix
       stop("Variable '",getName,"' is not found in calling scope. Looking in calling scope because this symbol was prefixed with .. in the j= parameter.")
@@ -1729,8 +1731,9 @@ replace_dot_alias = function(e) {
           # is.symbol() is for #1369, #1974 and #2949
           if (!(is.call(q) && is.symbol(q[[1L]]) && is.symbol(q[[2L]]) && (q1 <- q[[1L]]) %chin% gfuns)) return(FALSE)
           if (!(q2 <- q[[2L]]) %chin% names(SDenv$.SDall) && q2 != ".I") return(FALSE)  # 875
-          if ((length(q)==2L || identical("na",substring(names(q)[3L], 1L, 2L))) && (!q1 %chin% c("head","tail"))) return(TRUE)
-          # ... head-tail uses default value n=6 which as of now should not go gforce ^^
+          if ((length(q)==2L || (!is.null(names(q)) && startsWith(names(q)[3L], "na"))) && (!q1 %chin% c("head","tail"))) return(TRUE)
+          #                       ^^ base::startWith errors on NULL unfortunately
+          #        head-tail uses default value n=6 which as of now should not go gforce ... ^^
           # otherwise there must be three arguments, and only in two cases:
           #   1) head/tail(x, 1) or 2) x[n], n>0
           length(q)==3L && length(q3 <- q[[3L]])==1L && is.numeric(q3) &&
@@ -1905,7 +1908,7 @@ replace_dot_alias = function(e) {
   if (length(expr)==2L)  # no parameters passed to mean, so defaults of trim=0 and na.rm=FALSE
     return(call(".External",quote(Cfastmean),expr[[2L]], FALSE))
     # return(call(".Internal",expr))  # slightly faster than .External, but R now blocks .Internal in coerce.c from apx Sep 2012
-  if (length(expr)==3L && identical("na",substring(names(expr)[3L], 1L, 2L)))   # one parameter passed to mean()
+  if (length(expr)==3L && startsWith(names(expr)[3L], "na"))   # one parameter passed to mean()
     return(call(".External",quote(Cfastmean),expr[[2L]], expr[[3L]]))  # faster than .Call
   assign("nomeanopt",TRUE,parent.frame())
   expr  # e.g. trim is not optimized, just na.rm
