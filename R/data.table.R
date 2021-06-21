@@ -1351,7 +1351,7 @@ replace_dot_alias = function(e) {
     # There isn't a copy of the columns here, the xvar symbols point to the SD columns (copy-on-write).
 
     if (is.name(jsub) && is.null(lhs) && !exists(jsubChar<-as.character(jsub), SDenv, inherits=FALSE)) {
-      stop("j (the 2nd argument inside [...]) is a single symbol but column name '",jsubChar,"' is not found. Perhaps you intended DT[, ..",jsubChar,"]. This difference to data.frame is deliberate and explained in FAQ 1.1.")
+      stop("j (the 2nd argument inside [...]) is a single symbol but column name '",jsubChar,"' is not found. If you intended to select columns using a variable in calling scope, please try DT[, ..",jsubChar,"]. The .. prefix conveys one-level-up similar to a file system path.")
     }
 
     jval = eval(jsub, SDenv, parent.frame())
