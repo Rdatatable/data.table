@@ -84,7 +84,7 @@ void nafillInteger64(int64_t *x, uint_fast64_t nx, unsigned int type, int64_t fi
     }
   }
   if (verbose)
-    snprintf(ans->message[0], 500, "%s: took %.3fs\n", __func__, omp_get_wtime()-tic);
+    snprintf(ans->message[0], 500, _("%s: took %.3fs\n"), __func__, omp_get_wtime()-tic);
 }
 
 SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, SEXP cols) {
@@ -100,7 +100,7 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, S
 
   bool binplace = LOGICAL(inplace)[0];
   if (!IS_TRUE_OR_FALSE(nan_is_na_arg))
-    error("nan_is_na must be TRUE or FALSE"); // # nocov
+    error(_("nan_is_na must be TRUE or FALSE")); // # nocov
   bool nan_is_na = LOGICAL(nan_is_na_arg)[0];
 
   SEXP x = R_NilValue;
@@ -184,7 +184,7 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, S
         SET_VECTOR_ELT(fill, i, fill1);
     }
     if (!isNewList(fill))
-      error("internal error: 'fill' should be recycled as list already"); // # nocov
+      error(_("internal error: 'fill' should be recycled as list already")); // # nocov
     for (R_len_t i=0; i<nx; i++) {
       SET_VECTOR_ELT(fill, i, coerceAs(VECTOR_ELT(fill, i), VECTOR_ELT(x, i), ScalarLogical(TRUE)));
       fillp[i] = SEXPPTR_RO(VECTOR_ELT(fill, i)); // do like this so we can use in parallel region

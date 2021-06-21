@@ -104,17 +104,17 @@ SEXP measurelist(SEXP measure, SEXP dtnames) {
   for (int i=0; i<n; ++i) {
     SEXP x = VECTOR_ELT(measure, i);
     switch(TYPEOF(x)) {
-      case STRSXP  :
-        SET_VECTOR_ELT(ans, i, chmatch(x, dtnames, NA_INTEGER));
-        break;
-      case REALSXP :
-        SET_VECTOR_ELT(ans, i, coerceVector(x, INTSXP));
-        break;
-      case INTSXP  :
-        SET_VECTOR_ELT(ans, i, x);
-        break;
-      default :
-        error(_("Unknown 'measure.vars' type %s at index %d of list"), type2char(TYPEOF(x)), i+1);
+    case STRSXP  :
+      SET_VECTOR_ELT(ans, i, chmatch(x, dtnames, NA_INTEGER));
+      break;
+    case REALSXP :
+      SET_VECTOR_ELT(ans, i, coerceVector(x, INTSXP));
+      break;
+    case INTSXP  :
+      SET_VECTOR_ELT(ans, i, x);
+      break;
+    default :
+      error(_("Unknown 'measure.vars' type %s at index %d of list"), type2char(TYPEOF(x)), i+1);
     }
   }
   UNPROTECT(1);
@@ -166,10 +166,10 @@ SEXP checkVars(SEXP DT, SEXP id, SEXP measure, Rboolean verbose) {
     warning(_("id.vars and measure.vars are internally guessed when both are 'NULL'. All non-numeric/integer/logical type columns are considered id.vars, which in this case are columns [%s]. Consider providing at least one of 'id' or 'measure' vars in future."), concat(dtnames, idcols));
   } else if (!isNull(id) && isNull(measure)) {
     switch(TYPEOF(id)) {
-      case STRSXP  : PROTECT(tmp = chmatch(id, dtnames, 0)); protecti++; break;
-      case REALSXP : PROTECT(tmp = coerceVector(id, INTSXP)); protecti++; break;
-      case INTSXP  : tmp = id; break;
-      default : error(_("Unknown 'id.vars' type %s, must be character or integer vector"), type2char(TYPEOF(id)));
+    case STRSXP  : PROTECT(tmp = chmatch(id, dtnames, 0)); protecti++; break;
+    case REALSXP : PROTECT(tmp = coerceVector(id, INTSXP)); protecti++; break;
+    case INTSXP  : tmp = id; break;
+    default : error(_("Unknown 'id.vars' type %s, must be character or integer vector"), type2char(TYPEOF(id)));
     }
     booltmp = PROTECT(duplicated(tmp, FALSE)); protecti++;
     for (int i=0; i<length(tmp); ++i) {
@@ -195,11 +195,11 @@ SEXP checkVars(SEXP DT, SEXP id, SEXP measure, Rboolean verbose) {
     }
   } else if (isNull(id) && !isNull(measure)) {
     switch(TYPEOF(measure)) {
-      case STRSXP  : tmp2 = PROTECT(chmatch(measure, dtnames, 0)); protecti++; break;
-      case REALSXP : tmp2 = PROTECT(coerceVector(measure, INTSXP)); protecti++; break;
-      case INTSXP  : tmp2 = measure; break;
-      case VECSXP  : tmp2 = PROTECT(measurelist(measure, dtnames)); protecti++; break;
-      default : error(_("Unknown 'measure.vars' type %s, must be character or integer vector/list"), type2char(TYPEOF(measure)));
+    case STRSXP  : tmp2 = PROTECT(chmatch(measure, dtnames, 0)); protecti++; break;
+    case REALSXP : tmp2 = PROTECT(coerceVector(measure, INTSXP)); protecti++; break;
+    case INTSXP  : tmp2 = measure; break;
+    case VECSXP  : tmp2 = PROTECT(measurelist(measure, dtnames)); protecti++; break;
+    default : error(_("Unknown 'measure.vars' type %s, must be character or integer vector/list"), type2char(TYPEOF(measure)));
     }
     tmp = tmp2;
     if (isNewList(measure)) {
@@ -231,10 +231,10 @@ SEXP checkVars(SEXP DT, SEXP id, SEXP measure, Rboolean verbose) {
     }
   } else if (!isNull(id) && !isNull(measure)) {
     switch(TYPEOF(id)) {
-      case STRSXP  : tmp = PROTECT(chmatch(id, dtnames, 0)); protecti++; break;
-      case REALSXP : tmp = PROTECT(coerceVector(id, INTSXP)); protecti++; break;
-      case INTSXP  : tmp = id; break;
-      default : error(_("Unknown 'id.vars' type %s, must be character or integer vector"), type2char(TYPEOF(id)));
+    case STRSXP  : tmp = PROTECT(chmatch(id, dtnames, 0)); protecti++; break;
+    case REALSXP : tmp = PROTECT(coerceVector(id, INTSXP)); protecti++; break;
+    case INTSXP  : tmp = id; break;
+    default : error(_("Unknown 'id.vars' type %s, must be character or integer vector"), type2char(TYPEOF(id)));
     }
     for (int i=0; i<length(tmp); ++i) {
       if (INTEGER(tmp)[i] <= 0 || INTEGER(tmp)[i] > ncol)
@@ -242,18 +242,18 @@ SEXP checkVars(SEXP DT, SEXP id, SEXP measure, Rboolean verbose) {
     }
     idcols = PROTECT(tmp); protecti++;
     switch(TYPEOF(measure)) {
-      case STRSXP  : tmp2 = PROTECT(chmatch(measure, dtnames, 0)); protecti++; break;
-      case REALSXP : tmp2 = PROTECT(coerceVector(measure, INTSXP)); protecti++; break;
-      case INTSXP  : tmp2 = measure; break;
-      case VECSXP  : tmp2 = PROTECT(measurelist(measure, dtnames)); protecti++; break;
-      default : error(_("Unknown 'measure.vars' type %s, must be character or integer vector"), type2char(TYPEOF(measure)));
+    case STRSXP  : tmp2 = PROTECT(chmatch(measure, dtnames, 0)); protecti++; break;
+    case REALSXP : tmp2 = PROTECT(coerceVector(measure, INTSXP)); protecti++; break;
+    case INTSXP  : tmp2 = measure; break;
+    case VECSXP  : tmp2 = PROTECT(measurelist(measure, dtnames)); protecti++; break;
+    default : error(_("Unknown 'measure.vars' type %s, must be character or integer vector"), type2char(TYPEOF(measure)));
     }
     tmp = tmp2;
     if (isNewList(measure)) {
       tmp = PROTECT(unlist_(tmp2)); protecti++;
     }
     for (int i=0; i<length(tmp); ++i) {
-      if (invalid_measure(INTEGER(tmp)[i], ncol)) 
+      if (invalid_measure(INTEGER(tmp)[i], ncol))
         error(_("One or more values in 'measure.vars' is invalid."));
     }
     if (isNewList(measure)) valuecols = tmp2;
@@ -272,12 +272,14 @@ SEXP checkVars(SEXP DT, SEXP id, SEXP measure, Rboolean verbose) {
 struct processData {
   SEXP RCHK;      // a 2 item list holding vars (result of checkVars) and naidx. PROTECTed up in fmelt so that preprocess() doesn't need to PROTECT. To pass rchk, #2865
   SEXP idcols,    // convenience pointers into RCHK[0][0], RCHK[0][1] and RCHK[1] respectively
+    variable_table, // NULL or data for variable column(s).
     valuecols,    // list with one element per output/value column, each element is an integer vector.
-    naidx; 
+    naidx;
   int *isfactor,
     *leach,       // length of each element of the valuecols(measure.vars) list.
     *isidentical; // are all inputs for this value column the same type?
   int lids,       // number of id columns.
+    lvars,        // number of variable columns.
     lvalues,      // number of value columns.
     lmax,         // max length of valuecols elements / number of times to repeat ids.
     totlen,       // of output/long DT result of melt operation.
@@ -328,6 +330,7 @@ static void preprocess(SEXP DT, SEXP id, SEXP measure, SEXP varnames, SEXP valna
         }
       }
     }
+    // then compute isidentical for this output column.
     for (int j=0; j<data->leach[i]; ++j) {
       int this_col_num = INTEGER(tmp)[j];
       if(this_col_num != NA_INTEGER){
@@ -342,6 +345,26 @@ static void preprocess(SEXP DT, SEXP id, SEXP measure, SEXP varnames, SEXP valna
   }
   if (data->narm) {
     SET_VECTOR_ELT(data->RCHK, 1, data->naidx = allocVector(VECSXP, data->lmax));
+  }
+  // TDH 1 Oct 2020 variable table.
+  data->variable_table = getAttrib(measure, sym_variable_table);
+  if (isNull(data->variable_table)) {
+    // We need to include this check first because isNewList(NULL) ==
+    // TRUE
+    data->lvars = 1;
+  } else if (isNewList(data->variable_table)) {
+    data->lvars = length(data->variable_table);
+    if (data->lvars == 0) {
+      error(_("variable_table attribute of measure.vars should be a data table with at least one column"));
+    }
+    for (int i=0; i<length(data->variable_table); ++i) {
+      int nrow = length(VECTOR_ELT(data->variable_table, i));
+      if (data->lmax != nrow) {
+	error(_("variable_table attribute of measure.vars should be a data table with same number of rows as max length of measure.vars vectors =%d"), data->lmax);
+      }
+    }
+  } else {//neither NULL nor DT.
+    error(_("variable_table attribute of measure.vars should be either NULL or a data table"));
   }
 }
 
@@ -418,17 +441,13 @@ SEXP input_col_or_na(SEXP DT, struct processData* data, SEXP thisvaluecols, int 
     }
   }
   return allocNAVector(data->maxtype[out_col], data->nrow);
-}  
+}
 
 SEXP getvaluecols(SEXP DT, SEXP dtnames, Rboolean valfactor, Rboolean verbose, struct processData *data) {
   for (int i=0; i<data->lvalues; ++i) {
     SEXP thisvaluecols = VECTOR_ELT(data->valuecols, i);
     if (!data->isidentical[i])
       warning(_("'measure.vars' [%s] are not all of the same type. By order of hierarchy, the molten data value column will be of type '%s'. All measure variables not of type '%s' will be coerced too. Check DETAILS in ?melt.data.table for more on coercion.\n"), concat(dtnames, thisvaluecols), type2char(data->maxtype[i]), type2char(data->maxtype[i]));
-    if (data->maxtype[i] == VECSXP && data->narm) {
-      if (verbose) Rprintf(_("The molten data value type is a list at item %d. 'na.rm=TRUE' is ignored.\n"), i+1);
-      data->narm = FALSE;
-    }
   }
   if (data->narm) {
     SEXP seqcols = PROTECT(seq_int(data->lvalues, 1));
@@ -501,6 +520,7 @@ SEXP getvaluecols(SEXP DT, SEXP dtnames, Rboolean valfactor, Rboolean verbose, s
           for (int k=0; k<data->nrow; ++k) SET_STRING_ELT(target, j*data->nrow + k, STRING_ELT(thiscol, k));
         }
         break;
+	//TODO complex value type: case CPLXSXP: { } break;
       case REALSXP : {
         double *dtarget = REAL(target);
         const double *dthiscol = REAL(thiscol);
@@ -545,69 +565,99 @@ SEXP getvarcols(SEXP DT, SEXP dtnames, Rboolean varfactor, Rboolean verbose, str
   // reworked in PR#3455 to create character/factor directly for efficiency, and handle duplicates (#1754)
   // data->nrow * data->lmax == data->totlen
   int protecti=0;
-  SEXP ansvars=PROTECT(allocVector(VECSXP, 1)); protecti++;
+  SEXP ansvars=PROTECT(allocVector(VECSXP, data->lvars)); protecti++;
   SEXP target;
   if (data->lvalues==1 && length(VECTOR_ELT(data->valuecols, 0)) != data->lmax)
     error(_("Internal error: fmelt.c:getvarcols %d %d"), length(VECTOR_ELT(data->valuecols, 0)), data->lmax);  // # nocov
-  if (!varfactor) {
-    SET_VECTOR_ELT(ansvars, 0, target=allocVector(STRSXP, data->totlen));
-    if (data->lvalues == 1) {
-      const int *thisvaluecols = INTEGER(VECTOR_ELT(data->valuecols, 0));
+  if (isNull(data->variable_table)) {
+    if (!varfactor) {
+      SET_VECTOR_ELT(ansvars, 0, target=allocVector(STRSXP, data->totlen));
+      if (data->lvalues == 1) {//one value column to output.
+        const int *thisvaluecols = INTEGER(VECTOR_ELT(data->valuecols, 0));
+        for (int j=0, ansloc=0; j<data->lmax; ++j) {
+          const int thislen = data->narm ? length(VECTOR_ELT(data->naidx, j)) : data->nrow;
+          SEXP str = STRING_ELT(dtnames, thisvaluecols[j]-1);
+          for (int k=0; k<thislen; ++k) SET_STRING_ELT(target, ansloc++, str);
+        }
+      } else {//multiple value columns to output.
+        for (int j=0, ansloc=0, level=1; j<data->lmax; ++j) {
+          const int thislen = data->narm ? length(VECTOR_ELT(data->naidx, j)) : data->nrow;
+          char buff[20];
+          snprintf(buff, 20, "%d", level++);
+          for (int k=0; k<thislen; ++k) SET_STRING_ELT(target, ansloc++, mkChar(buff));
+        }
+      }
+    } else {// varfactor==TRUE
+      SET_VECTOR_ELT(ansvars, 0, target=allocVector(INTSXP, data->totlen));
+      SEXP levels;
+      int *td = INTEGER(target);
+      if (data->lvalues == 1) {//one value column to output.
+        SEXP thisvaluecols = VECTOR_ELT(data->valuecols, 0);
+        int len = length(thisvaluecols);
+        levels = PROTECT(allocVector(STRSXP, len)); protecti++;
+        const int *vd = INTEGER(thisvaluecols);
+        for (int j=0; j<len; ++j) SET_STRING_ELT(levels, j, STRING_ELT(dtnames, vd[j]-1));
+        SEXP m = PROTECT(chmatch(levels, levels, 0)); protecti++;  // do we have any dups?
+        int numRemove = 0;  // remove dups and any for which narm and all-NA
+        int *md = INTEGER(m);
+        for (int j=0; j<len; ++j) {
+          if (md[j]!=j+1 /*dup*/ || (data->narm && length(VECTOR_ELT(data->naidx, j))==0)) { numRemove++; md[j]=0; }
+        }
+        if (numRemove) {
+          SEXP newlevels = PROTECT(allocVector(STRSXP, len-numRemove)); protecti++;
+          for (int i=0, loc=0; i<len; ++i) if (md[i]!=0) { SET_STRING_ELT(newlevels, loc++, STRING_ELT(levels, i)); }
+          m = PROTECT(chmatch(levels, newlevels, 0)); protecti++;  // budge up the gaps
+          md = INTEGER(m);
+          levels = newlevels;
+        }
+        for (int j=0, ansloc=0; j<data->lmax; ++j) {
+          const int thislen = data->narm ? length(VECTOR_ELT(data->naidx, j)) : data->nrow;
+          for (int k=0; k<thislen; ++k) td[ansloc++] = md[j];
+        }
+      } else {//multiple output columns.
+        int nlevel=0;
+        levels = PROTECT(allocVector(STRSXP, data->lmax)); protecti++;
+        for (int j=0, ansloc=0; j<data->lmax; ++j) {
+          const int thislen = data->narm ? length(VECTOR_ELT(data->naidx, j)) : data->nrow;
+          char buff[20];
+          snprintf(buff, 20, "%d", nlevel+1);
+          SET_STRING_ELT(levels, nlevel++, mkChar(buff));  // generate levels = 1:nlevels
+          for (int k=0; k<thislen; ++k) td[ansloc++] = nlevel;
+        }
+      }
+      setAttrib(target, R_LevelsSymbol, levels);
+      setAttrib(target, R_ClassSymbol, ScalarString(char_factor));
+    }
+  } else { //variable_table specified
+    for (int out_col_i=0; out_col_i<data->lvars; ++out_col_i) {
+      SEXP out_col = VECTOR_ELT(data->variable_table, out_col_i);
+      SET_VECTOR_ELT(ansvars, out_col_i, target=allocVector(TYPEOF(out_col), data->totlen));
       for (int j=0, ansloc=0; j<data->lmax; ++j) {
         const int thislen = data->narm ? length(VECTOR_ELT(data->naidx, j)) : data->nrow;
-        SEXP str = STRING_ELT(dtnames, thisvaluecols[j]-1);
-        for (int k=0; k<thislen; ++k) SET_STRING_ELT(target, ansloc++, str);
-      }
-    } else {
-      for (int j=0, ansloc=0, level=1; j<data->lmax; ++j) {
-        const int thislen = data->narm ? length(VECTOR_ELT(data->naidx, j)) : data->nrow;
-        char buff[20];
-        snprintf(buff, 20, "%d", level++);
-        SEXP str = PROTECT(mkChar(buff));
-        for (int k=0; k<thislen; ++k) SET_STRING_ELT(target, ansloc++, str);
-        UNPROTECT(1);
+        switch (TYPEOF(target)) {
+        case STRSXP :
+          for (int k=0; k<thislen; ++k)
+            SET_STRING_ELT(target, ansloc++, STRING_ELT(out_col, j));
+          break;
+        case REALSXP :
+          for (int k=0; k<thislen; ++k)
+            REAL(target)[ansloc++] = REAL(out_col)[j];
+          break;
+        case INTSXP :
+        case LGLSXP :
+          for (int k=0; k<thislen; ++k)
+            INTEGER(target)[ansloc++] = INTEGER(out_col)[j];
+          if (isFactor(out_col)) {
+            // Do we need a copy here?
+            setAttrib(target, R_LevelsSymbol, getAttrib(out_col, R_LevelsSymbol));
+            setAttrib(target, R_ClassSymbol, ScalarString(char_factor));
+          }
+          break;
+        default :
+          error(_("variable_table does not support column type '%s' for column '%s'."), type2char(TYPEOF(out_col)), CHAR(STRING_ELT(getAttrib(data->variable_table, R_NamesSymbol), out_col_i)));
+        }
       }
     }
-  } else {// varfactor==TRUE
-    SET_VECTOR_ELT(ansvars, 0, target=allocVector(INTSXP, data->totlen));
-    SEXP levels;
-    int *td = INTEGER(target);
-    if (data->lvalues == 1) {//single output column.
-      SEXP thisvaluecols = VECTOR_ELT(data->valuecols, 0);
-      int len = length(thisvaluecols);
-      levels = PROTECT(allocVector(STRSXP, len)); protecti++;
-      const int *vd = INTEGER(thisvaluecols);
-      for (int j=0; j<len; ++j) SET_STRING_ELT(levels, j, STRING_ELT(dtnames, vd[j]-1));
-      SEXP m = PROTECT(chmatch(levels, levels, 0)); protecti++;  // do we have any dups?
-      int numRemove = 0;  // remove dups and any for which narm and all-NA
-      int *md = INTEGER(m);
-      for (int j=0; j<len; ++j) {
-        if (md[j]!=j+1 /*dup*/ || (data->narm && length(VECTOR_ELT(data->naidx, j))==0)) { numRemove++; md[j]=0; }
-      }
-      if (numRemove) {
-        SEXP newlevels = PROTECT(allocVector(STRSXP, len-numRemove)); protecti++;
-        for (int i=0, loc=0; i<len; ++i) if (md[i]!=0) { SET_STRING_ELT(newlevels, loc++, STRING_ELT(levels, i)); }
-        m = PROTECT(chmatch(levels, newlevels, 0)); protecti++;  // budge up the gaps
-        md = INTEGER(m);
-        levels = newlevels;
-      }
-      for (int j=0, ansloc=0; j<data->lmax; ++j) {
-        const int thislen = data->narm ? length(VECTOR_ELT(data->naidx, j)) : data->nrow;
-        for (int k=0; k<thislen; ++k) td[ansloc++] = md[j];
-      }
-    } else {//multiple output columns.
-      int nlevel=0;
-      levels = PROTECT(allocVector(STRSXP, data->lmax)); protecti++;
-      for (int j=0, ansloc=0; j<data->lmax; ++j) {
-        const int thislen = data->narm ? length(VECTOR_ELT(data->naidx, j)) : data->nrow;
-        char buff[20];
-        snprintf(buff, 20, "%d", nlevel+1);
-        SET_STRING_ELT(levels, nlevel++, mkChar(buff));  // generate levels = 1:nlevels
-        for (int k=0; k<thislen; ++k) td[ansloc++] = nlevel;
-      }
-    }
-    setAttrib(target, R_LevelsSymbol, levels);
-    setAttrib(target, R_ClassSymbol, ScalarString(char_factor));
   }
   UNPROTECT(protecti);
   return(ansvars);
@@ -680,10 +730,21 @@ SEXP getidcols(SEXP DT, SEXP dtnames, Rboolean verbose, struct processData *data
     }
       break;
     case VECSXP : {
-      for (int j=0; j<data->lmax; ++j) {
-        for (int k=0; k<data->nrow; ++k) {
-          SET_VECTOR_ELT(target, j*data->nrow + k, VECTOR_ELT(thiscol, k));
+      if (data->narm) {
+        for (int j=0; j<data->lmax; ++j) {
+          SEXP thisidx = VECTOR_ELT(data->naidx, j);
+          const int *ithisidx = INTEGER(thisidx);
+          const int thislen = length(thisidx);
+          for (int k=0; k<thislen; ++k)
+            SET_VECTOR_ELT(target, counter + k, VECTOR_ELT(thiscol, ithisidx[k]-1));
+          counter += thislen;
         }
+      } else {
+	for (int j=0; j<data->lmax; ++j) {
+	  for (int k=0; k<data->nrow; ++k) {
+	    SET_VECTOR_ELT(target, j*data->nrow + k, VECTOR_ELT(thiscol, k));
+	  }
+	}
       }
     }
       break;
@@ -729,22 +790,31 @@ SEXP fmelt(SEXP DT, SEXP id, SEXP measure, SEXP varfactor, SEXP valfactor, SEXP 
     ansids  = PROTECT(getidcols(DT, dtnames, verbose, &data)); protecti++;
 
     // populate 'ans'
-    ans = PROTECT(allocVector(VECSXP, data.lids+1+data.lvalues)); protecti++; // 1 is for variable column
+    int ncol_ans = data.lids+data.lvars+data.lvalues;
+    ans = PROTECT(allocVector(VECSXP, ncol_ans)); protecti++; // 1 is for variable column
     for (int i=0; i<data.lids; i++) {
       SET_VECTOR_ELT(ans, i, VECTOR_ELT(ansids, i));
     }
-    SET_VECTOR_ELT(ans, data.lids, VECTOR_ELT(ansvars, 0));
+    for (int i=0; i<data.lvars; i++) {
+      SET_VECTOR_ELT(ans, data.lids+i, VECTOR_ELT(ansvars, i));
+    }
     for (int i=0; i<data.lvalues; i++) {
-      SET_VECTOR_ELT(ans, data.lids+1+i, VECTOR_ELT(ansvals, i));
+      SET_VECTOR_ELT(ans, data.lids+data.lvars+i, VECTOR_ELT(ansvals, i));
     }
     // fill in 'ansnames'
-    ansnames = PROTECT(allocVector(STRSXP, data.lids+1+data.lvalues)); protecti++;
+    ansnames = PROTECT(allocVector(STRSXP, ncol_ans)); protecti++;
     for (int i=0; i<data.lids; i++) {
       SET_STRING_ELT(ansnames, i, STRING_ELT(dtnames, INTEGER(data.idcols)[i]-1));
     }
-    SET_STRING_ELT(ansnames, data.lids, STRING_ELT(varnames, 0));
+    if (isNull(data.variable_table)) {
+      SET_STRING_ELT(ansnames, data.lids, STRING_ELT(varnames, 0));
+    } else {
+      for (int i=0; i<data.lvars; i++) {
+        SET_STRING_ELT(ansnames, data.lids+i, STRING_ELT(getAttrib(data.variable_table, R_NamesSymbol), i));
+      }
+    }
     for (int i=0; i<data.lvalues; i++) {
-      SET_STRING_ELT(ansnames, data.lids+1+i, STRING_ELT(valnames, i));
+      SET_STRING_ELT(ansnames, data.lids+data.lvars+i, STRING_ELT(valnames, i));
     }
     setAttrib(ans, R_NamesSymbol, ansnames);
   }

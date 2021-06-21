@@ -63,7 +63,7 @@ fintersect = function(x, y, all=FALSE) {
     x = shallow(x)[, ".seqn" := rowidv(x)]
     y = shallow(y)[, ".seqn" := rowidv(y)]
     jn.on = c(".seqn",setdiff(names(y),".seqn"))
-    # fixes #4716 by preserving order of 1st (uses y[x] join) argument instead of 2nd (uses x[y] join) 
+    # fixes #4716 by preserving order of 1st (uses y[x] join) argument instead of 2nd (uses x[y] join)
     y[x, .SD, .SDcols=setdiff(names(y),".seqn"), nomatch=NULL, on=jn.on]
   } else {
     z = funique(x)  # fixes #3034. When .. prefix in i= is implemented (TODO), this can be x[funique(..y), on=, multi=]
@@ -157,9 +157,8 @@ all.equal.data.table = function(target, current, trim.levels=TRUE, check.attribu
       return(gettextf(
         "Datasets have different %s. 'target': %s. 'current': %s.",
         "keys",
-        if(length(k1)) brackify(k1) else gettextf("has no key", domain="R-data.table"),
-        if(length(k2)) brackify(k2) else gettextf("has no key", domain="R-data.table"),
-        domain="R-data.table"
+        if(length(k1)) brackify(k1) else gettextf("has no key"),
+        if(length(k2)) brackify(k2) else gettextf("has no key")
       ))
     }
     # check index
@@ -169,9 +168,8 @@ all.equal.data.table = function(target, current, trim.levels=TRUE, check.attribu
       return(gettextf(
         "Datasets have different %s. 'target': %s. 'current': %s.",
         "indices",
-        if(length(i1)) brackify(i1) else gettextf("has no index", domain = "R-data.table"),
-        if(length(i2)) brackify(i2) else gettextf("has no index", domain = "R-data.table"),
-        domain = "R-data.table"
+        if(length(i1)) brackify(i1) else gettextf("has no index"),
+        if(length(i2)) brackify(i2) else gettextf("has no index")
       ))
     }
 

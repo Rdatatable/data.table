@@ -9,7 +9,7 @@ Sys.unsetenv("R_PROFILE_USER")
 
 # options copied from .dev/.Rprofile that aren't run due to the way this script is started via a profile
 options(help_type="html")
-options(error=quote(dump.frames()))
+options(error=quote(utils::dump.frames()))
 options(width=200)      # for cran() output not to wrap
 
 # Check that env variables have been set correctly:
@@ -36,10 +36,12 @@ stopifnot(identical(Sys.getenv("_R_CHECK_FORCE_SUGGESTS_"),"true"))
 # e.g. https://github.com/reimandlab/ActivePathways/issues/14
 
 cflags = system("grep \"^[^#]*CFLAGS\" ~/.R/Makevars", intern=TRUE)
-cat("~/.R/Makevars contains", cflags, "ok\n")
-if (!grepl("^CFLAGS=-O[0-3]$", cflags)) {
+cat("~/.R/Makevars contains", cflags)
+if (!grepl("^CFLAGS=-O[0-3] *$", cflags)) {
   stop("Some packages have failed to install in the past (e.g. processx and RGtk2) when CFLAGS contains -pedandic, -Wall, and similar. ",
-  "So for revdepr keep CFLAGS simple; i.e. -O[0-3] only.")
+  "So for revdepr keep CFLAGS simple; i.e. -O[0-3] only. Check ~/.R/Makevars.")
+} else {
+  cat(" ok\n")
 }
 
 options(repos = c("CRAN"=c("http://cloud.r-project.org")))
@@ -155,7 +157,7 @@ status0 = function(bioc=FALSE) {
     if (file.exists(fn)) {
       v = suppressWarnings(system(paste0("grep 'Status:' ",fn), intern=TRUE))
       if (!length(v)) return("RUNNING")
-      return(substring(v,9))
+      return(substr(v, 9L, nchar(v)))
     }
     if (file.exists(paste0("./",x,".Rcheck"))) return("RUNNING")
     return("NOT STARTED")
@@ -248,7 +250,6 @@ cran = function()  # reports CRAN status of the .cran.fail packages
   cat("tools::CRAN_check_results() returned",prettyNum(nrow(db), big.mark=","),"rows in",timetaken(p),"\n")
   rel = unique(db$Flavor)
   rel = sort(rel[grep("release",rel)])
-  stopifnot(identical(rel, c("r-release-linux-x86_64", "r-release-macos-x86_64", "r-release-windows-ix86+x86_64")))
   cat("R-release is used for revdep checking so comparing to CRAN results for R-release\n")
   ans = db[Package %chin% .fail.cran & Flavor %chin% rel, Status, keyby=.(Package, Flavor)]
   dcast(ans, Package~Flavor, value.var="Status", fill="")[.fail.cran,]

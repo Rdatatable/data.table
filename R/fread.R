@@ -21,22 +21,26 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
   if (length(encoding) != 1L || !encoding %chin% c("unknown", "UTF-8", "Latin-1")) {
     stop("Argument 'encoding' must be 'unknown', 'UTF-8' or 'Latin-1'.")
   }
-  stopifnot( isTRUEorFALSE(strip.white), isTRUEorFALSE(blank.lines.skip), isTRUEorFALSE(fill), isTRUEorFALSE(showProgress),
-             isTRUEorFALSE(verbose), isTRUEorFALSE(check.names), isTRUEorFALSE(logical01), isTRUEorFALSE(keepLeadingZeros), isTRUEorFALSE(yaml) )
-  stopifnot( isTRUEorFALSE(stringsAsFactors) || (is.double(stringsAsFactors) && length(stringsAsFactors)==1L && 0.0<=stringsAsFactors && stringsAsFactors<=1.0))
-  stopifnot( is.numeric(nrows), length(nrows)==1L )
+  stopifnot(
+    isTRUEorFALSE(strip.white), isTRUEorFALSE(blank.lines.skip), isTRUEorFALSE(fill), isTRUEorFALSE(showProgress),
+    isTRUEorFALSE(verbose), isTRUEorFALSE(check.names), isTRUEorFALSE(logical01), isTRUEorFALSE(keepLeadingZeros), isTRUEorFALSE(yaml),
+    isTRUEorFALSE(stringsAsFactors) || (is.double(stringsAsFactors) && length(stringsAsFactors)==1L && 0.0<=stringsAsFactors && stringsAsFactors<=1.0),
+    is.numeric(nrows), length(nrows)==1L
+  )
   nrows=as.double(nrows) #4686
   if (is.na(nrows) || nrows<0) nrows=Inf   # accept -1 to mean Inf, as read.table does
   if (identical(header,"auto")) header=NA
-  stopifnot(is.logical(header) && length(header)==1L)  # TRUE, FALSE or NA
-  stopifnot(is.numeric(nThread) && length(nThread)==1L)
+  stopifnot(
+    is.logical(header) && length(header)==1L,  # TRUE, FALSE or NA
+    is.numeric(nThread) && length(nThread)==1L
+  )
   nThread=as.integer(nThread)
   stopifnot(nThread>=1L)
   if (!is.null(text)) {
     if (!is.character(text)) stop("'text=' is type ", typeof(text), " but must be character.")
     if (!length(text)) return(data.table())
     if (length(text) > 1L) {
-      cat(text, file=(tmpFile<-tempfile(tmpdir=tmpdir)), sep="\n")  # avoid paste0() which could create a new very long single string in R's memory
+      writeLines(text, tmpFile<-tempfile(tmpdir=tmpdir))  # avoid paste0() which could create a new very long single string in R's memory
       file = tmpFile
       on.exit(unlink(tmpFile), add=TRUE)
     } else {
@@ -51,13 +55,11 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
     if (input=="" || length(grep('\\n|\\r', input))) {
       # input is data itself containing at least one \n or \r
     } else {
-      if (substring(input,1L,1L)==" ") {
+      if (startsWith(input, " ")) {
         stop("input= contains no \\n or \\r, but starts with a space. Please remove the leading space, or use text=, file= or cmd=")
       }
-      str6 = substring(input,1L,6L)   # avoid grepl() for #2531
-      str7 = substring(input,1L,7L)
-      str8 = substring(input,1L,8L)
-      if (str7=="ftps://" || str8=="https://") {
+      str7 = substr(input, 1L, 7L) # avoid grepl() for #2531
+      if (str7=="ftps://" || startsWith(input, "https://")) {
         # nocov start
         if (!requireNamespace("curl", quietly = TRUE))
           stop("Input URL requires https:// connection for which fread() requires 'curl' package which cannot be found. Please install 'curl' using 'install.packages('curl')'.") # nocov
@@ -67,7 +69,7 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
         on.exit(unlink(tmpFile), add=TRUE)
         # nocov end
       }
-      else if (str6=="ftp://" || str7== "http://" || str7=="file://") {
+      else if (startsWith(input, "ftp://") || str7== "http://" || str7=="file://") {
         # nocov start
         method = if (str7=="file://") "internal" else getOption("download.file.method", default="auto")
         # force "auto" when file:// to ensure we don't use an invalid option (e.g. wget), #1668
@@ -81,7 +83,7 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
       else if (length(grep(' ', input, fixed = TRUE)) && !file.exists(input)) {  # file name or path containing spaces is not a command
         cmd = input
         if (input_has_vars && getOption("datatable.fread.input.cmd.message", TRUE)) {
-          message("Taking input= as a system command ('",cmd,"') and a variable has been used in the expression passed to `input=`. Please use fread(cmd=...). There is a security concern if you are creating an app, and the app could have a malicious user, and the app is not running in a secure environment; e.g. the app is running as root. Please read item 5 in the NEWS file for v1.11.6 for more information and for the option to suppress this message.")
+          message("Taking input= as a system command because it contains a space ('",cmd,"'). If it's a filename please remove the space, or use file= explicitly. A variable is being passed to input= and when this is taken as a system command there is a security concern if you are creating an app, the app could have a malicious user, and the app is not running in a secure environment; e.g. the app is running as root. Please read item 5 in the NEWS file for v1.11.6 for more information and for the option to suppress this message.")
         }
       }
       else {
@@ -103,12 +105,10 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
               if (data.table) 'data.table' else 'data.frame', ".")
       return(if (data.table) data.table(NULL) else data.frame(NULL))
     }
-    ext2 = substring(file, nchar(file)-2L, nchar(file))   # last 3 characters ".gz"
-    ext3 = substring(file, nchar(file)-3L, nchar(file))   # last 4 characters ".bz2"
-    if (ext2==".gz" || ext3==".bz2") {
+    if ((is_gz <- endsWith(file, ".gz")) || endsWith(file, ".bz2")) {
       if (!requireNamespace("R.utils", quietly = TRUE))
         stop("To read gz and bz2 files directly, fread() requires 'R.utils' package which cannot be found. Please install 'R.utils' using 'install.packages('R.utils')'.") # nocov
-      FUN = if (ext2==".gz") gzfile else bzfile
+      FUN = if (is_gz) gzfile else bzfile
       R.utils::decompressFile(file, decompFile<-tempfile(tmpdir=tmpdir), ext=NULL, FUN=FUN, remove=FALSE)   # ext is not used by decompressFile when destname is supplied, but isn't optional
       file = decompFile   # don't use 'tmpFile' symbol again, as tmpFile might be the http://domain.org/file.csv.gz download
       on.exit(unlink(decompFile), add=TRUE)
@@ -170,9 +170,10 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
     yaml_border_re = '^#?---'
     if (!grepl(yaml_border_re, first_line)) {
       close(f)
-      stop('Encountered <', substring(first_line, 1L, 50L), if (nchar(first_line) > 50L) '...', '> at the first ',
-           'unskipped line (', 1L+skip, '), which does not constitute the start to a valid YAML header ',
-           '(expecting something matching regex "', yaml_border_re, '"); please check your input and try again.')
+      stop(gettextf(
+        'Encountered <%s%s> at the first unskipped line (%d), which does not constitute the start to a valid YAML header (expecting something matching regex "%s"); please check your input and try again.',
+        substr(first_line, 1L, 50L), if (nchar(first_line) > 50L) '...' else '', 1L+skip, yaml_border_re
+      ))
     }
 
     yaml_comment_re = '^#'
@@ -194,7 +195,7 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
 
     yaml_header = yaml::yaml.load(yaml_string)
     yaml_names = names(yaml_header)
-    if (verbose) cat('Processed', n_read, 'lines of YAML metadata with the following top-level fields:', brackify(yaml_names), '\n')
+    if (verbose) catf('Processed %d lines of YAML metadata with the following top-level fields: %s\n', n_read, brackify(yaml_names))
     # process header first since it impacts how to handle colClasses
     if ('header' %chin% yaml_names) {
       if ('header' %chin% call_args) message("User-supplied 'header' will override that found in metadata.")
@@ -202,7 +203,7 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
     }
     if ('schema' %chin% yaml_names) {
       new_types = sapply(yaml_header$schema$fields, `[[`, 'type')
-      if (any(null_idx <- sapply(new_types, is.null)))
+      if (any(null_idx <- vapply_1b(new_types, is.null)))
         new_types = do.call(c, new_types)
       synonms = rbindlist(list(
         character = list(syn = c('character', 'string')),
@@ -326,7 +327,7 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
     } else {
       cols_to_factor = which(vapply_1b(ans, is.character))
     }
-    if (verbose) cat("stringsAsFactors=", stringsAsFactors, " converted ", length(cols_to_factor), " column(s): ", brackify(names(ans)[cols_to_factor]), "\n", sep="")
+    if (verbose) catf("stringsAsFactors=%s converted %d column(s): %s\n", stringsAsFactors, length(cols_to_factor), brackify(names(ans)[cols_to_factor]))
     for (j in cols_to_factor) set(ans, j=j, value=as_factor(.subset2(ans, j)))
   }
 
@@ -342,10 +343,10 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
   }
   if (yaml) setattr(ans, 'yaml_metadata', yaml_header)
   if (!is.null(index) && data.table) {
-    if (!all(sapply(index, is.character)))
+    if (!all(vapply_1b(index, is.character)))
       stop("index argument of data.table() must be a character vector naming columns (NB: col.names are applied before this)")
     if (is.list(index)) {
-      to_split = sapply(index, length) == 1L
+      to_split = vapply_1i(index, length) == 1L
       if (any(to_split))
         index[to_split] = sapply(index[to_split], strsplit, split = ",", fixed = TRUE)
     } else {
