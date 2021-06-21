@@ -3060,6 +3060,13 @@ test(1034, as.data.table(x<-as.character(sample(letters, 5))), data.table(V1=x))
   # na.rm=TRUE with list column value, PR#4737
   test(1035.016, melt(data.table(a1=1, b1=list(1:2), b2=list(c('foo','bar'))), na.rm=TRUE, measure.vars=list(a="a1", b=c("b1","b2"))), data.table(variable=factor(1), a=1, b=list(1:2)))
   test(1035.017, melt(data.table(a1=1, b1=1, b2=2), na.rm=TRUE, measure.vars=list(a="a1", b=c("b1","b2"))), data.table(variable=factor(1), a=1, b=1))#this worked even before the PR.
+  DT.list.missing = data.table(l1=list(1,NA), l2=list(NA,2), n34=c(3,4), NA5=c(NA,5))
+  test(1035.0180, melt(DT.list.missing, measure.vars=c("n34","NA5"), na.rm=TRUE)[["value"]], c(3,4,5))
+  test(1035.0181, melt(DT.list.missing, measure.vars=c("l1","l2"), na.rm=TRUE)[["value"]], list(1,2))
+  test(1035.0182, melt(DT.list.missing, measure.vars=c("l1","n34"), na.rm=TRUE)[["value"]], list(1,3,4), warning="are not all of the same type")
+  test(1035.0183, melt(DT.list.missing, measure.vars=c("l1","NA5"), na.rm=TRUE)[["value"]], list(1,5), warning="are not all of the same type")
+  test(1035.0184, melt(DT.list.missing, measure.vars=list(l=c("l1","l2"), n=c("n34","NA5")), na.rm=TRUE), data.table(variable=factor(1:2), l=list(1,2), n=c(3,5)))
+  test(1035.0185, melt(data.table(l=list(c(NA,NA), NA, NA_integer_, NA_real_, NA_complex_, NA_character_, if(test_bit64)NA_integer64_)), measure.vars="l", na.rm=TRUE)[["value"]], list(c(NA,NA)))
 
   ans1 = cbind(DT[, c(1,2,8), with=FALSE], variable=factor("l_1"))
   ans1[, value := DT$l_1]
@@ -6514,7 +6521,7 @@ test(1459.12, .Call("CsubsetDT", DT, 5L, seq_along(DT)), setDT(as.data.frame(DT)
 
 # Test for na.omit with list, raw and complex types
 DT = data.table(x=c(1L,1L,NA), y=c(NA, NA, 1), z=as.raw(1:3), w=list(1,NA,2), v=c(1+5i, NA, NA))
-test(1460.1, na.omit(DT, cols="w"), DT)
+test(1460.1, na.omit(DT, cols="w"), DT[c(1,3)])
 test(1460.2, na.omit(DT, cols="v"), DT[1])
 test(1460.3, na.omit(DT, cols=c("v", "y")), DT[0])
 test(1460.4, na.omit(DT, cols=c("z", "v")), DT[1])
