@@ -215,10 +215,10 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
 compactprint = function(DT, topn=2L) {
   tt = vapply_1c(DT,function(x)class(x)[1L])
   tt[tt=="integer64"] = "i64"
-  tt = substring(tt, 1L, 3L)
+  tt = substr(tt, 1L, 3L)
   makeString = function(x) paste(x, collapse = ",")  # essentially toString.default
   cn = paste0(" [Key=",makeString(key(DT)),
-             " Types=", makeString(substring(sapply(DT, typeof), 1L, 3L)),
+             " Types=", makeString(substr(sapply(DT, typeof), 1L, 3L)),
              " Classes=", makeString(tt), "]")
   if (nrow(DT)) {
     print(copy(DT)[,(cn):="",verbose=FALSE], topn=topn, class=FALSE)

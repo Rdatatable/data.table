@@ -395,7 +395,7 @@ int GetVerbose() {
   // don't call repetitively; save first in that case
   SEXP opt = GetOption(sym_verbose, R_NilValue);
   if ((!isLogical(opt) && !isInteger(opt)) || LENGTH(opt)!=1 || INTEGER(opt)[0]==NA_INTEGER)
-    error("verbose option must be length 1 non-NA logical or integer");
+    error(_("verbose option must be length 1 non-NA logical or integer"));
   return INTEGER(opt)[0];
 }
 
