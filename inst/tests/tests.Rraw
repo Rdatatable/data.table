@@ -17763,3 +17763,15 @@ test(2195.5, duplicated(DT, by=character(0L)), ans<-c(FALSE, FALSE, TRUE, FALSE)
 test(2195.6, duplicated(DT, by=NULL), ans)
 test(2195.7, anyDuplicated(DT, by=character(0L)), 3L)
 test(2195.8, anyDuplicated(DT, by=NULL), 3L)
+
+# Improperly quoted character field with fill=TRUE would segfault, #4774 and #5041
+test(2196,
+     fread(paste0(paste(rep(c('a; b'), 100), collapse='\n'), c('\n"a" 2;b')), fill=TRUE, quote='\"'),
+     data.table(a=c(rep('a', 99), '"a" 2'), b=rep('b', 100)), warning='Found and resolved improper quoting')
+
+# Verbose output would segfault when no header present, out-of-sample type error and fill=TRUE, similar to #4644
+# Test vaildity may depend on sampling behaviour of fread since the type bump needs to occur out of sample to trigger the segfault
+sampleText = paste0(paste(rep(c('1; 2'), 100), collapse='\n'), c('\n"a";2\n1; 2\n'), paste(rep(c('1; 2'), 100), collapse='\n'))
+test(2197, fread(sampleText, fill=TRUE, quote='\"', verbose=TRUE, header=FALSE),
+           data.table(rep(c("1","a","1"),c(100,1,101)), 2L),
+           output='Column 1 bumped')

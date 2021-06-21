@@ -2361,6 +2361,9 @@ int freadMain(freadMainArgs _args) {
               if (j+fieldsRemaining != ncol) break;
               checkedNumberOfFields = true;
             }
+            if (thisType <= -NUMTYPE) {
+              break;  // Improperly quoted char field needs to be healed below, other columns will be filled #5041 and #4774
+            }
             #pragma omp critical
             {
               joldType = type[j];  // fetch shared value again in case another thread bumped it while I was waiting.
@@ -2369,8 +2372,8 @@ int freadMain(freadMainArgs _args) {
                 if (verbose) {
                   char temp[1001];
                   int len = snprintf(temp, 1000,
-                    _("Column %d (\"%.*s\") bumped from '%s' to '%s' due to <<%.*s>> on row %"PRIu64"\n"),
-                    j+1, colNames[j].len, colNamesAnchor + colNames[j].off,
+                    _("Column %d%s%.*s%s bumped from '%s' to '%s' due to <<%.*s>> on row %"PRIu64"\n"),
+                    j+1, colNames?" <<":"", colNames?(colNames[j].len):0, colNames?(colNamesAnchor+colNames[j].off):"", colNames?">>":"",
                     typeName[abs(joldType)], typeName[abs(thisType)],
                     (int)(tch-fieldStart), fieldStart, (uint64_t)(ctx.DTi+myNrow));
                   if (len > 1000) len = 1000;
