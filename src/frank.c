@@ -41,8 +41,7 @@ SEXP dt_na(SEXP x, SEXP cols) {
     case REALSXP: {
       const double *dv = REAL(v);
       if (INHERITS(v, char_integer64)) {
-        for (int j=0; j<n; ++j) {
-          ians[j] |= (DtoLL(dv[j]) == NA_INT64_LL);   // TODO: can be == NA_INT64_D directly
+        for (int j=0; j<n; ++j) ians[j] |= ((int64_t *)dv)[j] == NA_INTEGER64;
         }
       } else {
         for (int j=0; j<n; ++j) ians[j] |= ISNAN(dv[j]);
@@ -86,11 +85,10 @@ SEXP dt_na(SEXP x, SEXP cols) {
 	  break;					  
 	case REALSXP: {
 	  if (length(list_element)==1) {
-	    const double first_real = REAL(list_element)[0];
 	    if (INHERITS(list_element, char_integer64)) {
-	      ians[j] |= (DtoLL(first_real) == NA_INT64_LL);   // TODO: can be == NA_INT64_D directly
+	      ians[j] |= ((int64_t *)REAL(list_element))[0] == NA_INTEGER64;
 	    } else {
-	      ians[j] |= ISNAN(first_real);
+	      ians[j] |= ISNAN(REAL(list_element)[0]);
 	    }
 	  }
 	}
