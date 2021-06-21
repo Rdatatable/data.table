@@ -738,7 +738,9 @@ void fwriteMain(fwriteMainArgs args)
           free(buff);                                    // # nocov
           STOP(_("Can't allocate gzip stream structure"));  // # nocov
         }
-        size_t zbuffSize = deflateBound(&stream, headerLen);
+        // by default, buffsize is the same used for writing rows (#5048 old openbsd zlib)
+        // takes the max with headerLen size in case of very long header
+        size_t zbuffSize = deflateBound(&stream, headerLen > buffSize ? headerLen : buffSize);
         char *zbuff = malloc(zbuffSize);
         if (!zbuff) {
           free(buff);                                                                                   // # nocov
