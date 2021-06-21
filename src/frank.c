@@ -66,11 +66,11 @@ SEXP dt_na(SEXP x, SEXP cols) {
 	SEXP list_element = VECTOR_ELT(v, j);
 	switch (TYPEOF(list_element)) {
 	case LGLSXP: {
-	  ians[j] |= (length(list_element)==1 && LOGICAL_ELT(list_element,0) == NA_LOGICAL);
+	  ians[j] |= (length(list_element)==1 && LOGICAL(list_element)[0] == NA_LOGICAL);
 	}
 	  break;
 	case INTSXP: {
-	  ians[j] |= (length(list_element)==1 && INTEGER_ELT(list_element,0) == NA_INTEGER);
+	  ians[j] |= (length(list_element)==1 && INTEGER(list_element)[0] == NA_INTEGER);
 	}
 	  break;
 	case STRSXP: {
@@ -79,14 +79,14 @@ SEXP dt_na(SEXP x, SEXP cols) {
 	  break;
 	case CPLXSXP: {
 	  if (length(list_element)==1) {
-	    Rcomplex first_complex = COMPLEX_ELT(list_element, 0);
+	    Rcomplex first_complex = COMPLEX(list_element)[0];
 	    ians[j] |= (ISNAN(first_complex.r) || ISNAN(first_complex.i));
 	  }
 	}
 	  break;					  
 	case REALSXP: {
 	  if (length(list_element)==1) {
-	    const double first_real = REAL_ELT(list_element,0);
+	    const double first_real = REAL(list_element)[0];
 	    if (INHERITS(list_element, char_integer64)) {
 	      ians[j] |= (DtoLL(first_real) == NA_INT64_LL);   // TODO: can be == NA_INT64_D directly
 	    } else {
