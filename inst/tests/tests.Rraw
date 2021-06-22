@@ -17778,3 +17778,10 @@ sampleText = paste0(paste(rep(c('1; 2'), 100), collapse='\n'), c('\n"a";2\n1; 2\
 test(2197, fread(sampleText, fill=TRUE, quote='\"', verbose=TRUE, header=FALSE),
            data.table(rep(c("1","a","1"),c(100,1,101)), 2L),
            output='Column 1 bumped')
+
+# Need an easier way to in-place merge multiple columns #3184
+d1 = data.table(id = 1:5, x1=5:1, x2=5:1/2)
+d2 = data.table(id = 2:4, y1=4:2, y2=4:2/2)
+test(2198.1, d1[d2, paste0("z", 1:2) := Y, on = "id", env = list(Y = as.list(paste0("i.y", 1:2)))], data.table(id=1:5, x1=5:1, x2=5:1/2, z1=c(NA,4:2,NA), z2=c(NA,4:2/2,NA))) ## using i. prefix
+test(2198.2, d1[d2, paste0("z", 1:2) := Y, on = "id", env = list(Y = as.list(paste0("y", 1:2)))], data.table(id=1:5, x1=5:1, x2=5:1/2, z1=c(NA,4:2,NA), z2=c(NA,4:2/2,NA))) ## no i. prefix should still work
+
