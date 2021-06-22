@@ -7,6 +7,10 @@ as.IDate = function(x, ...) UseMethod("as.IDate")
 
 as.IDate.default = function(x, ..., tz = attr(x, "tzone", exact=TRUE)) {
   if (is.null(tz)) tz = "UTC"
+  if (is.character(x)) {
+    # backport of similar patch to base::as.Date.character in R 4.0.3, #4676
+    is.na(x) = !nzchar(x)
+  }
   as.IDate(as.Date(x, tz = tz, ...))
 }
 
@@ -142,13 +146,8 @@ as.ITime.POSIXct = function(x, tz = attr(x, "tzone", exact=TRUE), ...) {
 }
 
 as.ITime.numeric = function(x, ms = 'truncate', ...) {
-  secs = switch(ms,
-                'truncate' = as.integer(x),
-                'nearest' = as.integer(round(x)),
-                'ceil' = as.integer(ceiling(x)),
-                stop("Valid options for ms are 'truncate', ",
-                     "'nearest', and 'ceil'.")) %% 86400L
-  (setattr(secs, "class", "ITime")) # the %% here ^^ ensures a local copy is obtained; the truncate as.integer() may not copy
+  secs = clip_msec(x, ms) %% 86400L # the %% here ensures a local copy is obtained; the truncate as.integer() may not copy
+  (setattr(secs, "class", "ITime"))
 }
 
 as.ITime.character = function(x, format, ...) {
@@ -177,23 +176,13 @@ as.ITime.character = function(x, format, ...) {
 }
 
 as.ITime.POSIXlt = function(x, ms = 'truncate', ...) {
-  secs = switch(ms,
-                'truncate' = as.integer(x$sec),
-                'nearest' = as.integer(round(x$sec)),
-                'ceil' = as.integer(ceiling(x$sec)),
-                stop("Valid options for ms are 'truncate', ",
-                     "'nearest', and 'ceil'."))
+  secs = clip_msec(x$sec, ms)
   (setattr(with(x, secs + min * 60L + hour * 3600L), "class", "ITime"))  # () wrap to return visibly
 }
 
 as.ITime.times = function(x, ms = 'truncate', ...) {
   secs = 86400 * (unclass(x) %% 1)
-  secs = switch(ms,
-                'truncate' = as.integer(secs),
-                'nearest' = as.integer(round(secs)),
-                'ceil' = as.integer(ceiling(secs)),
-                stop("Valid options for ms are 'truncate', ",
-                     "'nearest', and 'ceil'."))
+  secs = clip_msec(secs, ms)
   (setattr(secs, "class", "ITime"))  # the first line that creates sec will create a local copy so we can use setattr() to avoid potential copy of class()<-
 }
 
@@ -240,20 +229,20 @@ rep.ITime = function (x, ...)
   class(y) = "ITime"   # unlass and rep could feasibly not copy, hence use class<- not setattr()
   y
 }
-                           
-round.ITime <- function(x, digits = c("hours", "minutes"), ...) 
+
+round.ITime <- function(x, digits = c("hours", "minutes"), ...)
 {
   (setattr(switch(match.arg(digits),
                   hours = as.integer(round(unclass(x)/3600)*3600),
-                  minutes = as.integer(round(unclass(x)/60)*60)), 
+                  minutes = as.integer(round(unclass(x)/60)*60)),
            "class", "ITime"))
-} 
+}
 
-trunc.ITime <- function(x, units = c("hours", "minutes"), ...) 
+trunc.ITime <- function(x, units = c("hours", "minutes"), ...)
 {
   (setattr(switch(match.arg(units),
                   hours = as.integer(unclass(x)%/%3600*3600),
-                  minutes = as.integer(unclass(x)%/%60*60)), 
+                  minutes = as.integer(unclass(x)%/%60*60)),
            "class", "ITime"))
 }
 
@@ -307,6 +296,15 @@ as.POSIXlt.ITime = function(x, ...) {
   as.POSIXlt(as.POSIXct(x, ...))
 }
 
+clip_msec = function(secs, action) {
+  switch(action,
+     truncate = as.integer(secs),
+     nearest = as.integer(round(secs)),
+     ceil = as.integer(ceiling(secs)),
+     stop("Valid options for ms are 'truncate', 'nearest', and 'ceil'.")
+  )
+}
+                           
 ###################################################################
 # Date - time extraction functions
 #   Adapted from Hadley Wickham's routines cited below to ensure
