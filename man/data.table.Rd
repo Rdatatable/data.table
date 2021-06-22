@@ -280,9 +280,9 @@ DT[2:5, cat(v, "\n")]          # just for j's side effect
 
 # select columns the data.frame way
 DT[, 2]                        # 2nd column, returns a data.table always
-colNum = 2                     # to refer vars in `j` from the outside of data use `..` prefix
-DT[, ..colNum]                 # same, equivalent to DT[, .SD, .SDcols=colNum]
-DT[["v"]]                      # same as DT[, v] but much faster
+colNum = 2
+DT[, ..colNum]                 # same, .. prefix conveys to look for colNum one-level-up in calling scope
+DT[["v"]]                      # same as DT[, v] but faster if called in a loop
 
 # grouping operations - j and by
 DT[, sum(v), by=x]             # ad hoc by, order of groups preserved in result
