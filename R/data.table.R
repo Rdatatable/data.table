@@ -988,6 +988,8 @@ replace_dot_alias = function(e) {
         } else {
           # FR #355 - negative numeric and character indices for SDcols
           colsub = substitute(.SDcols)
+          # peel from parentheses before negation so (-1L) works as well: as.data.table(as.list(1:3))[, .SD,.SDcols=(-1L)] #4231
+          while(colsub %iscall% "(") colsub = as.list(colsub)[[-1L]]
           # fix for R-Forge #5190. colsub[[1L]] gave error when it's a symbol.
           if (colsub %iscall% c("!", "-")) {
             negate_sdcols = TRUE
@@ -995,8 +997,8 @@ replace_dot_alias = function(e) {
           } else negate_sdcols = FALSE
           # fix for #1216, make sure the parentheses are peeled from expr of the form (((1:4)))
           while(colsub %iscall% "(") colsub = as.list(colsub)[[-1L]]
-          if (colsub %iscall% ':' && length(colsub)==3L) {
-            # .SDcols is of the format a:b
+          if (colsub %iscall% ':' && length(colsub)==3L && !is.call(colsub[[2L]]) && !is.call(colsub[[3]])) {
+            # .SDcols is of the format a:b, ensure none of : arguments is a call data.table(V1=-1L, V2=-2L, V3=-3L)[,.SD,.SDcols=-V2:-V1] #4231
             .SDcols = eval(colsub, setattr(as.list(seq_along(x)), 'names', names_x), parent.frame())
           } else {
             if (colsub %iscall% 'patterns') {
@@ -1016,7 +1018,8 @@ replace_dot_alias = function(e) {
           if (anyNA(.SDcols))
             stop(".SDcols missing at the following indices: ", brackify(which(is.na(.SDcols))))
           if (is.logical(.SDcols)) {
-            ansvals = which_(rep(.SDcols, length.out=length(x)), !negate_sdcols)
+            if (length(.SDcols)!=length(x)) stop(gettextf(".SDcols is a logical vector length %d but there are %d columns", length(.SDcols), length(x)))
+            ansvals = which_(.SDcols, !negate_sdcols)
             ansvars = sdvars = names_x[ansvals]
           } else if (is.numeric(.SDcols)) {
             .SDcols = as.integer(.SDcols)

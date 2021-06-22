@@ -7080,8 +7080,10 @@ test(1497, DT[, .SD, .SDcols = !c("a", "c")], DT[, !c("a", "c"), with=FALSE])
 
 # Fix for #1060
 DT = data.table(x=1, y=2, z=3, a=4, b=5, c=6)
-test(1498.1, DT[, .SD, .SDcols=c(TRUE,FALSE)], DT[, c("x", "z", "b"), with=FALSE])
-test(1498.2, DT[, .SD, .SDcols=!c(TRUE,FALSE)], DT[, !c("x", "z", "b"), with=FALSE])
+test(1498.1, DT[, .SD, .SDcols=c(TRUE,FALSE)], error="logical.*length 2 but.*6 columns") # #4115 #4470
+test(1498.2, DT[, .SD, .SDcols=!c(TRUE,FALSE)], error="logical.*length 2 but.*6 columns")
+test(1498.3, DT[, .SD, .SDcols=c(TRUE,FALSE,TRUE,FALSE,TRUE,FALSE)], data.table(x=1, z=3, b=5))
+test(1498.4, DT[, .SD, .SDcols=!c(TRUE,FALSE,TRUE,FALSE,TRUE,FALSE)], data.table(y=2, a=4, c=6))
 
 # Fix for #1072
 dt <- data.table(group1 = "a", group2 = "z", value  = 1)
@@ -17792,3 +17794,8 @@ d2 = data.table(id = 2:4, y1=4:2, y2=4:2/2)
 test(2198.1, d1[d2, paste0("z", 1:2) := Y, on = "id", env = list(Y = as.list(paste0("i.y", 1:2)))], data.table(id=1:5, x1=5:1, x2=5:1/2, z1=c(NA,4:2,NA), z2=c(NA,4:2/2,NA))) ## using i. prefix
 test(2198.2, d1[d2, paste0("z", 1:2) := Y, on = "id", env = list(Y = as.list(paste0("y", 1:2)))], data.table(id=1:5, x1=5:1, x2=5:1/2, z1=c(NA,4:2,NA), z2=c(NA,4:2/2,NA))) ## no i. prefix should still work
 
+# internal error when specifying .SDcols, #4231
+test(2199.1, as.data.table(as.list(1:2))[, .SD,.SDcols=(-1L)],   data.table(V2=2L))
+test(2199.2, as.data.table(as.list(1:2))[, .SD,.SDcols=(-(1L))], data.table(V2=2L))
+test(2199.3, as.data.table(as.list(1:3))[, .SD,.SDcols=(-1L)],   data.table(V2=2L, V3=3L))
+test(2199.4, data.table(V1=-1L, V2=-2L, V3=-3L)[,.SD,.SDcols=-V2:-V1], error="not found")
