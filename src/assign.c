@@ -352,7 +352,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
     }
   }
   if (!length(cols)) {
-    warning(_("length(LHS)==0; no columns to delete or assign RHS to."));   // test 1295 covers
+    if (verbose) Rprintf(_("length(LHS)==0; no columns to delete or assign RHS to."));   // test 1295 covers
     *_Last_updated = 0;
     UNPROTECT(protecti);
     return(dt);

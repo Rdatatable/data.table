@@ -3066,7 +3066,10 @@ test(1034, as.data.table(x<-as.character(sample(letters, 5))), data.table(V1=x))
   test(1035.0182, melt(DT.list.missing, measure.vars=c("l1","n34"), na.rm=TRUE)[["value"]], list(1,3,4), warning="are not all of the same type")
   test(1035.0183, melt(DT.list.missing, measure.vars=c("l1","NA5"), na.rm=TRUE)[["value"]], list(1,5), warning="are not all of the same type")
   test(1035.0184, melt(DT.list.missing, measure.vars=list(l=c("l1","l2"), n=c("n34","NA5")), na.rm=TRUE), data.table(variable=factor(1:2), l=list(1,2), n=c(3,5)))
-  test(1035.0185, melt(data.table(l=list(c(NA,NA), NA, NA_integer_, NA_real_, NA_complex_, NA_character_, if(test_bit64)NA_integer64_)), measure.vars="l", na.rm=TRUE)[["value"]], list(c(NA,NA)))
+  test(1035.0185, melt(data.table(l=list(c(NA,NA), NA, NA_integer_, NA_real_, NA_complex_, NA_character_,
+                    if (test_bit64) NA_integer64_ else NA)), # 'else NA' otherwise NULL is not removed when test_bit64 is FALSE
+                    measure.vars="l", na.rm=TRUE)[["value"]],
+                  list(c(NA,NA)))
 
   ans1 = cbind(DT[, c(1,2,8), with=FALSE], variable=factor("l_1"))
   ans1[, value := DT$l_1]
@@ -5042,9 +5045,16 @@ if (test_bit64) {
                 error="Cannot coerce 'list' RHS to 'integer64' to match.*column 6 named 'f'")
 }
 
-# FR #343, when LHS evaluates to integer(0), provide warning and return dt, not an error.
+# FR #343, when LHS evaluates to integer(0), provide warning and return dt, not an error... but then... #4086 set could allow empty input without warning
 dt = data.table(a = 1:5, b1 = 1:5, b2 = 1:5)
-test(1295, dt[, grep("c", names(dt)) := NULL], dt, warning="length(LHS)==0; no columns to delete or assign RHS to")
+test(1295.1, dt[, grep("c", names(dt)) := NULL], dt)
+test(1295.2, set(dt, NULL, character(), 1L), dt)
+test(1295.3, set(dt, 1L, character(), 1L), dt)
+op = options(datatable.verbose=TRUE)
+test(1295.4, dt[, grep("c", names(dt)) := NULL], dt, output="length(LHS)==0; no columns to delete or assign RHS to")
+test(1295.5, set(dt, NULL, character(), 1L), dt, output="length(LHS)==0; no columns to delete or assign RHS to")
+test(1295.6, set(dt, 1L, character(), 1L), dt, output="length(LHS)==0; no columns to delete or assign RHS to")
+options(op)
 
 # Updating logical column in one-row DT (corruption of new R 3.1 internal globals for TRUE, FALSE and NA)
 DT = data.table(a=1:6, b=c(TRUE,FALSE))
@@ -17778,8 +17788,14 @@ test(2197, fread(sampleText, fill=TRUE, quote='\"', verbose=TRUE, header=FALSE),
            data.table(rep(c("1","a","1"),c(100,1,101)), 2L),
            output='Column 1 bumped')
 
+# Need an easier way to in-place merge multiple columns #3184
+d1 = data.table(id = 1:5, x1=5:1, x2=5:1/2)
+d2 = data.table(id = 2:4, y1=4:2, y2=4:2/2)
+test(2198.1, d1[d2, paste0("z", 1:2) := Y, on = "id", env = list(Y = as.list(paste0("i.y", 1:2)))], data.table(id=1:5, x1=5:1, x2=5:1/2, z1=c(NA,4:2,NA), z2=c(NA,4:2/2,NA))) ## using i. prefix
+test(2198.2, d1[d2, paste0("z", 1:2) := Y, on = "id", env = list(Y = as.list(paste0("y", 1:2)))], data.table(id=1:5, x1=5:1, x2=5:1/2, z1=c(NA,4:2,NA), z2=c(NA,4:2/2,NA))) ## no i. prefix should still work
+
 # internal error when specifying .SDcols, #4231
-test(2198.1, as.data.table(as.list(1:2))[, .SD,.SDcols=(-1L)],   data.table(V2=2L))
-test(2198.2, as.data.table(as.list(1:2))[, .SD,.SDcols=(-(1L))], data.table(V2=2L))
-test(2198.3, as.data.table(as.list(1:3))[, .SD,.SDcols=(-1L)],   data.table(V2=2L, V3=3L))
-test(2198.4, data.table(V1=-1L, V2=-2L, V3=-3L)[,.SD,.SDcols=-V2:-V1], error="not found")
+test(2199.1, as.data.table(as.list(1:2))[, .SD,.SDcols=(-1L)],   data.table(V2=2L))
+test(2199.2, as.data.table(as.list(1:2))[, .SD,.SDcols=(-(1L))], data.table(V2=2L))
+test(2199.3, as.data.table(as.list(1:3))[, .SD,.SDcols=(-1L)],   data.table(V2=2L, V3=3L))
+test(2199.4, data.table(V1=-1L, V2=-2L, V3=-3L)[,.SD,.SDcols=-V2:-V1], error="not found")
