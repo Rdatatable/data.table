@@ -143,7 +143,7 @@
 
 24. `.SDcols=-V2:-V1` and `.SDcols=(-1)` could error with `xcolAns does not pass checks` and `argument specifying columns specify non existing column(s)`, [#4231](https://github.com/Rdatatable/data.table/issues/4231). Thanks to Jan Gorecki for reporting and the PR.
 
-25. `.SDcols=<logical vector>` is now documented in `?data.table`, [#4115](https://github.com/Rdatatable/data.table/issues/4115). It is now an error if the logical vector is not equal to the number of columns (consistent with `data.table`'s no-recycling policy; see new feature 1 in v1.12.2 Apr 2019).
+25. `.SDcols=<logical vector>` is now documented in `?data.table` and it is now an error if the logical vector's length is not equal to the number of columns (consistent with `data.table`'s no-recycling policy; see new feature 1 in v1.12.2 Apr 2019), [#4115](https://github.com/Rdatatable/data.table/issues/4115). Thanks to @Henrik-P for reporting and Jan Gorecki for the PR.
 
 ## NOTES
 

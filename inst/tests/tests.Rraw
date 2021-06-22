@@ -7080,10 +7080,10 @@ test(1497, DT[, .SD, .SDcols = !c("a", "c")], DT[, !c("a", "c"), with=FALSE])
 
 # Fix for #1060
 DT = data.table(x=1, y=2, z=3, a=4, b=5, c=6)
-test(1498.1, DT[, .SD, .SDcols=c(TRUE,FALSE)], DT[, c("x", "z", "b"), with=FALSE], warning="should have equal length to number of columns") # warnings as per #4115
-test(1498.2, DT[, .SD, .SDcols=!c(TRUE,FALSE)], DT[, !c("x", "z", "b"), with=FALSE], warning="should have equal length to number of columns")
-test(1498.3, DT[, .SD, .SDcols=c(TRUE,FALSE,TRUE,FALSE,TRUE,FALSE)], DT[, c("x", "z", "b"), with=FALSE])
-test(1498.4, DT[, .SD, .SDcols=!c(TRUE,FALSE,TRUE,FALSE,TRUE,FALSE)], DT[, !c("x", "z", "b"), with=FALSE])
+test(1498.1, DT[, .SD, .SDcols=c(TRUE,FALSE)], error="logical.*length 2 but.*6 columns") # #4115 #4470
+test(1498.2, DT[, .SD, .SDcols=!c(TRUE,FALSE)], error="logical.*length 2 but.*6 columns")
+test(1498.3, DT[, .SD, .SDcols=c(TRUE,FALSE,TRUE,FALSE,TRUE,FALSE)], data.table(x=1, z=3, b=5))
+test(1498.4, DT[, .SD, .SDcols=!c(TRUE,FALSE,TRUE,FALSE,TRUE,FALSE)], data.table(y=2, a=4, c=6))
 
 # Fix for #1072
 dt <- data.table(group1 = "a", group2 = "z", value  = 1)
