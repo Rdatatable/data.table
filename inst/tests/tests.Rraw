@@ -5045,9 +5045,16 @@ if (test_bit64) {
                 error="Cannot coerce 'list' RHS to 'integer64' to match.*column 6 named 'f'")
 }
 
-# FR #343, when LHS evaluates to integer(0), provide warning and return dt, not an error.
+# FR #343, when LHS evaluates to integer(0), provide warning and return dt, not an error... but then... #4086 set could allow empty input without warning
 dt = data.table(a = 1:5, b1 = 1:5, b2 = 1:5)
-test(1295, dt[, grep("c", names(dt)) := NULL], dt, warning="length(LHS)==0; no columns to delete or assign RHS to")
+test(1295.1, dt[, grep("c", names(dt)) := NULL], dt)
+test(1295.2, set(dt, NULL, character(), 1L), dt)
+test(1295.3, set(dt, 1L, character(), 1L), dt)
+op = options(datatable.verbose=TRUE)
+test(1295.4, dt[, grep("c", names(dt)) := NULL], dt, output="length(LHS)==0; no columns to delete or assign RHS to")
+test(1295.5, set(dt, NULL, character(), 1L), dt, output="length(LHS)==0; no columns to delete or assign RHS to")
+test(1295.6, set(dt, 1L, character(), 1L), dt, output="length(LHS)==0; no columns to delete or assign RHS to")
+options(op)
 
 # Updating logical column in one-row DT (corruption of new R 3.1 internal globals for TRUE, FALSE and NA)
 DT = data.table(a=1:6, b=c(TRUE,FALSE))
