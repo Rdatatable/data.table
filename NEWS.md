@@ -141,18 +141,9 @@
 
 23. `fread(fill=TRUE, verbose=TRUE)` would segfault on the out-of-sample type bump verbose output if the input did not contain column names, [5046](https://github.com/Rdatatable/data.table/pull/5046). Thanks to Václav Tlapák for the PR.
 
-24. Columns selection with `.SDcols` provided via `:` now peels outer parentheses when using negation `!` or `-` inside of it. One other use case reached internal error has been caught more early, closes [#4231](https://github.com/Rdatatable/data.table/issues/4231). Additionally logical vector in `.SDcols` of length different than number of columns will now raise warning, [#4115](https://github.com/Rdatatable/data.table/issues/4115). Below are examples errors:
-```r
-data.table(1,2)[, .SD,.SDcols=(-1L)]
-#Error in colnamesInt(x, cols, check_dups = FALSE) :
-#  argument specifying columns specify non existing column(s): cols[1]=-1
-data.table(1,2,3)[, .SD,.SDcols=(-1L)]
-#Error in `[.data.table`(as.data.table(as.list(1:3)), , .SD, .SDcols = (-1L)) :
-#  Internal error: xcolAns does not pass checks: 2211,2
+24. `.SDcols=-V2:-V1` and `.SDcols=(-1)` could error with `xcolAns does not pass checks` and `argument specifying columns specify non existing column(s)`, [#4231](https://github.com/Rdatatable/data.table/issues/4231). Thanks to Jan Gorecki for reporting and the PR.
 
-data.table(1,2,3)[, .SD,.SDcols=-V2:-V1]
-#Internal error: xcolAns does not pass checks: 1121
-```
+25. `.SDcols=<logical vector>` is now documented in `?data.table`, [#4115](https://github.com/Rdatatable/data.table/issues/4115). It is now an error if the logical vector is not equal to the number of columns (consistent with `data.table`'s no-recycling policy; see new feature 1 in v1.12.2 Apr 2019).
 
 ## NOTES
 
