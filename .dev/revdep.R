@@ -28,6 +28,20 @@ if (grepl("devel", .libPaths()[2L])) {
   stopifnot(tt[2L]=="root")
   R = "R"  # R-release
 }
+if (length(dup_pkgs <- intersect(dir(.libPaths()[1]), dir(.libPaths()[2])))) {
+  stop("Package(s) installed in both paths: ", paste(dup_pkgs, collapse=" "))
+  # S4 issues are frustrating as it seems that dependencies need to be reinstalled to reset the nobody-knows-how-it-works S4 cache?
+  # For example, to fix prioritizr's error in its examples :
+  #  error in evaluating the argument 'x' in selecting a method for function 'print':
+  #  error in evaluating the argument 'y' in selecting a method for function 'intersecting_units':
+  #  package slot missing from signature for generic ‘raster’
+  # I reinstalled raster. But that didn't help. Then raster's depend sp but that didn't help. Then sp followed by raster
+  # again but that didn't help. Then all dependencies but that didn't help. Then lattice too but that didn't help.
+  # Then after a few hours, I stumbled on the realization when I reinstalled lattice it got installed in revdeplib rather
+  # than R's base library where the recommended packages are; lattice was in two places on .libPaths(). Removing it from
+  # revdeplib didn't help. But reinstalling lattice (using sudo R) in /usr/lib/R/library did appear to finally fix prioritizr.
+  # Why it was lattice that needed to be reinstalled just beats me, and why do S4 packages need to be reinstalled anyway?
+} 
 
 stopifnot(identical(Sys.getenv("_R_CHECK_FORCE_SUGGESTS_"),"true"))
 # _R_CHECK_FORCE_SUGGESTS_=true explicitly in .dev/.bash_aliases
