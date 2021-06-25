@@ -1133,8 +1133,14 @@ void writeNA(SEXP v, const int from, const int n)
     // If there's ever a way added to R API to pass NA_STRING to allocVector() to tell it to initialize with NA not "", would be great
     for (int i=from; i<=to; ++i) SET_STRING_ELT(v, i, NA_STRING);
     break;
-  case VECSXP: case EXPRSXP :
-    // although allocVector already initializes to R_NilValue, we use writeNA() in other places too, so we shouldn't skip this assign
+  case VECSXP:
+    for (int i=from; i<=to; ++i) {
+      SEXP na_scalar = allocVector(LGLSXP, 1);
+      LOGICAL(na_scalar)[0] = NA_LOGICAL;
+      SET_VECTOR_ELT(v, i, na_scalar);
+    }
+    break;
+  case EXPRSXP :
     for (int i=from; i<=to; ++i) SET_VECTOR_ELT(v, i, R_NilValue);
     break;
   default :
