@@ -362,7 +362,7 @@ static void preprocess(SEXP DT, SEXP id, SEXP measure, SEXP varnames, SEXP valna
     for (int i=0; i<length(data->variable_table); ++i) {
       int nrow = length(VECTOR_ELT(data->variable_table, i));
       if (data->lmax != nrow) {
-	error(_("variable_table attribute of measure.vars should be a data table with same number of rows as max length of measure.vars vectors =%d"), data->lmax);
+        error(_("variable_table attribute of measure.vars should be a data table with same number of rows as max length of measure.vars vectors =%d"), data->lmax);
       }
     }
   } else {//neither NULL nor DT.
@@ -458,20 +458,20 @@ SEXP getvaluecols(SEXP DT, SEXP dtnames, Rboolean valfactor, Rboolean verbose, s
       int N_missing_columns = 0;
       for (int j=0; j<data->lvalues; ++j) {//which measure vector/output col.
         SEXP thisvaluecols = VECTOR_ELT(data->valuecols, j);
-	SEXP vec_or_NULL = input_col_or_NULL(DT, data, thisvaluecols, j, i);
-	if (vec_or_NULL == R_NilValue) {
-	  N_missing_columns++;
-	}
+        SEXP vec_or_NULL = input_col_or_NULL(DT, data, thisvaluecols, j, i);
+        if (vec_or_NULL == R_NilValue) {
+          N_missing_columns++;
+        }
         SET_VECTOR_ELT(subtable_to_melt, j, vec_or_NULL);
       }
       if (N_missing_columns==0) {
-	SEXP any_missing = PROTECT(dt_na(subtable_to_melt, seqcols));
-	SEXP missing_indices;
-	SET_VECTOR_ELT(data->not_NA_indices, i, missing_indices=which(any_missing, FALSE));
-	data->totlen += length(missing_indices);
-	UNPROTECT(1); // any_missing
+        SEXP any_missing = PROTECT(dt_na(subtable_to_melt, seqcols));
+        SEXP missing_indices;
+        SET_VECTOR_ELT(data->not_NA_indices, i, missing_indices=which(any_missing, FALSE));
+        data->totlen += length(missing_indices);
+        UNPROTECT(1); // any_missing
       } else {
-	SET_VECTOR_ELT(data->not_NA_indices, i, allocVector(INTSXP, 0));
+        SET_VECTOR_ELT(data->not_NA_indices, i, allocVector(INTSXP, 0));
       }
       UNPROTECT(1); // some_input_cols
     }
@@ -494,76 +494,76 @@ SEXP getvaluecols(SEXP DT, SEXP dtnames, Rboolean valfactor, Rboolean verbose, s
       int thisprotecti = 0;
       SEXP thiscol = input_col_or_NULL(DT, data, thisvaluecols, i, j);
       if (thiscol == R_NilValue) {
-	if (!data->narm) {
-	  writeNA(target, j*data->nrow, data->nrow); 
-	}
+        if (!data->narm) {
+          writeNA(target, j*data->nrow, data->nrow); 
+        }
       }else{
-	if (!copyattr && data->isidentical[i] && !data->isfactor[i]) {
-	  copyMostAttrib(thiscol, target);
-	  copyattr = true;
-	}
-	if (TYPEOF(thiscol) != TYPEOF(target) && (data->maxtype[i] == VECSXP || !isFactor(thiscol))) {
-	  thiscol = PROTECT(coerceVector(thiscol, TYPEOF(target)));  thisprotecti++;
-	}
-	const int *ithisidx = NULL;
-	int thislen = 0;
-	if (data->narm) {
-	  SEXP thisidx = VECTOR_ELT(data->not_NA_indices, j);
-	  ithisidx = INTEGER(thisidx);
-	  thislen = length(thisidx);
-	}
-	size_t size = SIZEOF(thiscol);
-	switch (TYPEOF(target)) {
-	case VECSXP :
-	  if (data->narm) {
-	    for (int k=0; k<thislen; ++k)
-	      SET_VECTOR_ELT(target, counter + k, VECTOR_ELT(thiscol, ithisidx[k]-1));
-	  } else {
-	    for (int k=0; k<data->nrow; ++k) SET_VECTOR_ELT(target, j*data->nrow + k, VECTOR_ELT(thiscol, k));
-	  }
-	  break;
-	case STRSXP :
-	  if (data->isfactor[i]) {
-	    if (isFactor(thiscol)) {
-	      SET_VECTOR_ELT(flevels, j, getAttrib(thiscol, R_LevelsSymbol));
-	      thiscol = PROTECT(asCharacterFactor(thiscol));  thisprotecti++;
-	      isordered[j] = isOrdered(thiscol);
-	    } else SET_VECTOR_ELT(flevels, j, thiscol);
-	  }
-	  if (data->narm) {
-	    for (int k=0; k<thislen; ++k)
-	      SET_STRING_ELT(target, counter + k, STRING_ELT(thiscol, ithisidx[k]-1));
-	  } else {
-	    for (int k=0; k<data->nrow; ++k) SET_STRING_ELT(target, j*data->nrow + k, STRING_ELT(thiscol, k));
-	  }
-	  break;
-	  //TODO complex value type: case CPLXSXP: { } break;
-	case REALSXP : {
-	  double *dtarget = REAL(target);
-	  const double *dthiscol = REAL(thiscol);
-	  if (data->narm) {
-	    for (int k=0; k<thislen; ++k)
-	      dtarget[counter + k] = dthiscol[ithisidx[k]-1];
-	  } else {
-	    memcpy(dtarget + j*data->nrow, dthiscol, data->nrow*size);
-	  }
-	}
-	  break;
-	case INTSXP :
-	case LGLSXP : {
-	  int *itarget = INTEGER(target);
-	  const int *ithiscol = INTEGER(thiscol);
-	  if (data->narm) {
-	    for (int k=0; k<thislen; ++k)
-	      itarget[counter + k] = ithiscol[ithisidx[k]-1];
-	  } else {
-	    memcpy(itarget + j*data->nrow, ithiscol, data->nrow*size);
-	  }
-	} break;
-	default :
-	  error(_("Unknown column type '%s' for column '%s'."), type2char(TYPEOF(thiscol)), CHAR(STRING_ELT(dtnames, INTEGER(thisvaluecols)[i]-1)));
-	}
-	if (data->narm) counter += thislen;
+        if (!copyattr && data->isidentical[i] && !data->isfactor[i]) {
+          copyMostAttrib(thiscol, target);
+          copyattr = true;
+        }
+        if (TYPEOF(thiscol) != TYPEOF(target) && (data->maxtype[i] == VECSXP || !isFactor(thiscol))) {
+          thiscol = PROTECT(coerceVector(thiscol, TYPEOF(target)));  thisprotecti++;
+        }
+        const int *ithisidx = NULL;
+        int thislen = 0;
+        if (data->narm) {
+          SEXP thisidx = VECTOR_ELT(data->not_NA_indices, j);
+          ithisidx = INTEGER(thisidx);
+          thislen = length(thisidx);
+        }
+        size_t size = SIZEOF(thiscol);
+        switch (TYPEOF(target)) {
+        case VECSXP :
+          if (data->narm) {
+            for (int k=0; k<thislen; ++k)
+              SET_VECTOR_ELT(target, counter + k, VECTOR_ELT(thiscol, ithisidx[k]-1));
+          } else {
+            for (int k=0; k<data->nrow; ++k) SET_VECTOR_ELT(target, j*data->nrow + k, VECTOR_ELT(thiscol, k));
+          }
+          break;
+        case STRSXP :
+          if (data->isfactor[i]) {
+            if (isFactor(thiscol)) {
+              SET_VECTOR_ELT(flevels, j, getAttrib(thiscol, R_LevelsSymbol));
+              thiscol = PROTECT(asCharacterFactor(thiscol));  thisprotecti++;
+              isordered[j] = isOrdered(thiscol);
+            } else SET_VECTOR_ELT(flevels, j, thiscol);
+          }
+          if (data->narm) {
+            for (int k=0; k<thislen; ++k)
+              SET_STRING_ELT(target, counter + k, STRING_ELT(thiscol, ithisidx[k]-1));
+          } else {
+            for (int k=0; k<data->nrow; ++k) SET_STRING_ELT(target, j*data->nrow + k, STRING_ELT(thiscol, k));
+          }
+          break;
+          //TODO complex value type: case CPLXSXP: { } break;
+        case REALSXP : {
+          double *dtarget = REAL(target);
+          const double *dthiscol = REAL(thiscol);
+          if (data->narm) {
+            for (int k=0; k<thislen; ++k)
+              dtarget[counter + k] = dthiscol[ithisidx[k]-1];
+          } else {
+            memcpy(dtarget + j*data->nrow, dthiscol, data->nrow*size);
+          }
+        }
+          break;
+        case INTSXP :
+        case LGLSXP : {
+          int *itarget = INTEGER(target);
+          const int *ithiscol = INTEGER(thiscol);
+          if (data->narm) {
+            for (int k=0; k<thislen; ++k)
+              itarget[counter + k] = ithiscol[ithisidx[k]-1];
+          } else {
+            memcpy(itarget + j*data->nrow, ithiscol, data->nrow*size);
+          }
+        } break;
+        default :
+          error(_("Unknown column type '%s' for column '%s'."), type2char(TYPEOF(thiscol)), CHAR(STRING_ELT(dtnames, INTEGER(thisvaluecols)[i]-1)));
+        }
+        if (data->narm) counter += thislen;
       }
       UNPROTECT(thisprotecti);  // inside inner loop (note that it's double loop) so as to limit use of protection stack
     }
@@ -754,11 +754,11 @@ SEXP getidcols(SEXP DT, SEXP dtnames, Rboolean verbose, struct processData *data
           counter += thislen;
         }
       } else {
-	for (int j=0; j<data->lmax; ++j) {
-	  for (int k=0; k<data->nrow; ++k) {
-	    SET_VECTOR_ELT(target, j*data->nrow + k, VECTOR_ELT(thiscol, k));
-	  }
-	}
+        for (int j=0; j<data->lmax; ++j) {
+          for (int k=0; k<data->nrow; ++k) {
+            SET_VECTOR_ELT(target, j*data->nrow + k, VECTOR_ELT(thiscol, k));
+          }
+        }
       }
     }
       break;
