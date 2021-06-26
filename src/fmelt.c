@@ -454,7 +454,7 @@ SEXP getvaluecols(SEXP DT, SEXP dtnames, Rboolean valfactor, Rboolean verbose, s
   if (data->narm) {
     SEXP seqcols = PROTECT(seq_int(data->lvalues, 1));
     for (int i=0; i<data->lmax; ++i) {//element in measure vector.
-      SEXP subtable_to_melt = PROTECT(allocVector(VECSXP, data->lvalues));
+      SEXP valuecols_data = PROTECT(allocVector(VECSXP, data->lvalues));
       int N_missing_columns = 0;
       for (int j=0; j<data->lvalues; ++j) {//which measure vector/output col.
         SEXP thisvaluecols = VECTOR_ELT(data->valuecols, j);
@@ -462,10 +462,10 @@ SEXP getvaluecols(SEXP DT, SEXP dtnames, Rboolean valfactor, Rboolean verbose, s
         if (vec_or_NULL == R_NilValue) {
           N_missing_columns++;
         }
-        SET_VECTOR_ELT(subtable_to_melt, j, vec_or_NULL);
+        SET_VECTOR_ELT(valuecols_data, j, vec_or_NULL);
       }
       if (N_missing_columns==0) {
-        SEXP any_missing = PROTECT(dt_na(subtable_to_melt, seqcols));
+        SEXP any_missing = PROTECT(dt_na(valuecols_data, seqcols));
         SEXP missing_indices;
         SET_VECTOR_ELT(data->not_NA_indices, i, missing_indices=which(any_missing, FALSE));
         data->totlen += length(missing_indices);
@@ -473,7 +473,7 @@ SEXP getvaluecols(SEXP DT, SEXP dtnames, Rboolean valfactor, Rboolean verbose, s
       } else {
         SET_VECTOR_ELT(data->not_NA_indices, i, allocVector(INTSXP, 0));
       }
-      UNPROTECT(1); // some_input_cols
+      UNPROTECT(1); // valuecols_data
     }
     UNPROTECT(1);  // seqcols
   } else {
