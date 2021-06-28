@@ -3070,7 +3070,9 @@ test(1034, as.data.table(x<-as.character(sample(letters, 5))), data.table(V1=x))
                     if (test_bit64) NA_integer64_ else NA)), # 'else NA' otherwise NULL is not removed when test_bit64 is FALSE
                     measure.vars="l", na.rm=TRUE)[["value"]],
                   list(c(NA,NA)))
-  test(1035.0186, melt(data.table(list_1=list(1), list_3=list(3), num_1=1, num_2=2), measure.vars=measure(value.name, char, sep="_"), na.rm=TRUE), data.table(char="1", list=list(1), num=1))
+  DT_missing_l_2 = data.table(num_1=1, num_2=2, list_1=list(1), list_3=list(3))
+  test(1035.0186, melt(DT_missing_l_2, measure.vars=measure(value.name, char, sep="_"), na.rm=TRUE), data.table(char="1", num=1, list=list(1)))
+  test(1035.0187, melt(DT_missing_l_2, measure.vars=measure(value.name, char, sep="_"), na.rm=FALSE), data.table(char=c("1","2","3"), num=c(1,2,NA), list=list(1,NA,3)))
 
   ans1 = cbind(DT[, c(1,2,8), with=FALSE], variable=factor("l_1"))
   ans1[, value := DT$l_1]
