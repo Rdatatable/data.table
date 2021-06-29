@@ -4,7 +4,7 @@ guess = function(x) {
   if ("(all)" %chin% names(x))
     return("(all)")
   var = names(x)[ncol(x)]
-  message("Using '", var, "' as value column. Use 'value.var' to override")
+  messagef("Using '%s' as value column. Use 'value.var' to override", var)
   return(var)
 }
 
@@ -17,8 +17,8 @@ dcast <- function(
   else {
     data_name = deparse(substitute(data))
     ns = tryCatch(getNamespace("reshape2"), error=function(e)
-      stop("The dcast generic in data.table has been passed a ",class(data)[1L],", but data.table::dcast currently only has a method for data.tables. Please confirm your input is a data.table, with setDT(", data_name, ") or as.data.table(", data_name, "). If you intend to use a reshape2::dcast, try installing that package first, but do note that reshape2 is superseded and is no longer actively developed."))
-    warning("The dcast generic in data.table has been passed a ", class(data)[1L], " and will attempt to redirect to the reshape2::dcast; please note that reshape2 is superseded and is no longer actively developed, and this redirection is now deprecated. Please do this redirection yourself like reshape2::dcast(", data_name, "). In the next version, this warning will become an error.")
+      stopf("The %1$s generic in data.table has been passed a %2$s, but data.table::%1$s currently only has a method for data.tables. Please confirm your input is a data.table, with setDT(%3$s) or as.data.table(%3$s). If you intend to use a method from reshape2, try installing that package first, but do note that reshape2 is superseded and is no longer actively developed.", "dcast", class(data)[1L], data_name))
+    warningf("The %1$s generic in data.table has been passed a %2$s and will attempt to redirect to the relevant reshape2 method; please note that reshape2 is superseded and is no longer actively developed, and this redirection is now deprecated. Please do this redirection yourself like reshape2::%1$s(%3$s). In the next version, this warning will become an error.", "dcast", class(data)[1L], data_name)
     ns$dcast(data, formula, fun.aggregate = fun.aggregate, ..., margins = margins,
              subset = subset, fill = fill, value.var = value.var)
   }
@@ -57,7 +57,7 @@ value_vars = function(value.var, varnames) {
   valnames = unique(unlist(value.var))
   iswrong = which(!valnames %chin% varnames)
   if (length(iswrong))
-    stop("value.var values ", brackify(value.var[iswrong]), " are not found in 'data'.")
+    stopf("value.var values %s are not found in 'data'.", brackify(value.var[iswrong]))
   value.var
 }
 
@@ -125,7 +125,7 @@ dcast.data.table = function(data, formula, fun.aggregate = NULL, sep = "_", ...,
     x = allcols[[i]]
     dat[[i]] = if (identical(x, quote(`.`))) rep(".", nrow(data)) else eval(x, data, parent.frame())
     if (is.function(dat[[i]]))
-      stop("Column [", deparse(x), "] not found or of unknown type.")
+      stopf("Column [%s] not found or of unknown type.", deparse(x))
   }
   setattr(lvars, 'names', c("lhs", "rhs"))
   # Have to take care of duplicate names, and provide names for expression columns properly.

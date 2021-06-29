@@ -54,7 +54,7 @@ setkeyv = function(x, cols, verbose=getOption("datatable.verbose"), physical=TRU
   if (!all(nzchar(cols))) stop("cols contains some blanks.")
   cols = gsub("`", "", cols, fixed = TRUE)
   miss = !(cols %chin% colnames(x))
-  if (any(miss)) stop("some columns are not in the data.table: ", paste(cols[miss], collapse=","))
+  if (any(miss)) stopf("some columns are not in the data.table: %s", brackify(cols[miss]))
 
   ## determine, whether key is already present:
   if (identical(key(x),cols)) {
@@ -79,7 +79,7 @@ setkeyv = function(x, cols, verbose=getOption("datatable.verbose"), physical=TRU
   if (".xi" %chin% names(x)) stop("x contains a column called '.xi'. Conflicts with internal use by data.table.")
   for (i in cols) {
     .xi = x[[i]]  # [[ is copy on write, otherwise checking type would be copying each column
-    if (!typeof(.xi) %chin% ORDERING_TYPES) stop("Column '",i,"' is type '",typeof(.xi),"' which is not supported as a key column type, currently.")
+    if (!typeof(.xi) %chin% ORDERING_TYPES) stopf("Column '%s' is type '%s' which is not supported as a key column type, currently.", i, typeof(.xi))
   }
   if (!is.character(cols) || length(cols)<1L) stop("Internal error. 'cols' should be character at this point in setkey; please report.") # nocov
 
@@ -128,7 +128,7 @@ getindex = function(x, name) {
   # name can be "col", or "col1__col2", or c("col1","col2")
   ans = attr(attr(x, 'index', exact=TRUE), paste0("__",name,collapse=""), exact=TRUE)
   if (!is.null(ans) && (!is.integer(ans) || (length(ans)!=nrow(x) && length(ans)!=0L))) {
-    stop("Internal error: index '",name,"' exists but is invalid")   # nocov
+    stopf("Internal error: index '%s' exists but is invalid", name)   # nocov
   }
   ans
 }
@@ -284,11 +284,11 @@ setorderv = function(x, cols = colnames(x), order=1L, na.last=FALSE)
   # remove backticks from cols
   cols = gsub("`", "", cols, fixed = TRUE)
   miss = !(cols %chin% colnames(x))
-  if (any(miss)) stop("some columns are not in the data.table: ", paste(cols[miss], collapse=","))
+  if (any(miss)) stopf("some columns are not in the data.table: %s", brackify(cols[miss]))
   if (".xi" %chin% colnames(x)) stop("x contains a column called '.xi'. Conflicts with internal use by data.table.")
   for (i in cols) {
     .xi = x[[i]]  # [[ is copy on write, otherwise checking type would be copying each column
-    if (!typeof(.xi) %chin% ORDERING_TYPES) stop("Column '",i,"' is type '",typeof(.xi),"' which is not supported for ordering currently.")
+    if (!typeof(.xi) %chin% ORDERING_TYPES) stopf("Column '%s' is type '%s' which is not supported for ordering currently.", i, typeof(.xi))
   }
   if (!is.character(cols) || length(cols)<1L) stop("Internal error. 'cols' should be character at this point in setkey; please report.") # nocov
 
@@ -337,7 +337,7 @@ CJ = function(..., sorted = TRUE, unique = FALSE)
     y = l[[i]]
     if (!length(y)) next
     if (sorted) {
-      if (!is.atomic(y)) stop("'sorted' is TRUE but element ", i, " is non-atomic, which can't be sorted; try setting sorted = FALSE")
+      if (!is.atomic(y)) stopf("'sorted' is TRUE but element %d is non-atomic, which can't be sorted; try setting sorted = FALSE", i)
       o = forderv(y, retGrp=TRUE)
       thisdups = attr(o, 'maxgrpn', exact=TRUE)>1L
       if (thisdups) {

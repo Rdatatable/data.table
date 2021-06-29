@@ -151,7 +151,7 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
   if (inherits(err,"try-error")) {
     # nocov start
     if (silent) return(FALSE)
-    stop("Failed after test ", env$prevtest, " before the next test() call in ",fn)
+    stopf("Failed after test %s before the next test() call in %s", env$prevtest, fn)
     # the try() above with silent=FALSE will have already printed the error itself
     # nocov end
   }
@@ -176,7 +176,7 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
   timings = env$timings
   DT = head(timings[-1L][order(-time)], 10L)   # exclude id 1 as in dev that includes JIT
   if ((x<-sum(timings[["nTest"]])) != ntest) {
-    warning("Timings count mismatch: ",x," vs ",ntest)  # nocov
+    warningf("Timings count mismatch: %d vs %d", x, ntest)  # nocov
   }
   catf("10 longest running tests took %ds (%d%% of %ds)\n", as.integer(tt<-DT[, sum(time)]), as.integer(100*tt/(ss<-timings[,sum(time)])), as.integer(ss))
   print(DT, class=FALSE)
@@ -305,7 +305,7 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
     showProgress = FALSE     # nocov
   }
   if (!missing(error) && !missing(y))
-    stop("Test ",numStr," is invalid: when error= is provided it does not make sense to pass y as well")  # nocov
+    stopf("Test %s is invalid: when error= is provided it does not make sense to pass y as well", numStr)  # nocov
 
   string_match = function(x, y, ignore.case=FALSE) {
     length(grep(x, y, fixed=TRUE)) ||  # try treating x as literal first; useful for most messages containing ()[]+ characters

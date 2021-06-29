@@ -152,8 +152,3 @@ edit.data.table = function(name, ...) {
   setDT(NextMethod('edit', name))[]
 }
 # nocov end
-
-catf = function(fmt, ...) {
-  cat(gettextf(fmt, ...))
-}
-

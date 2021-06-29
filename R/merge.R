@@ -100,8 +100,7 @@ merge.data.table = function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FAL
   # `suffixes=c("","")`, to match behaviour in base:::merge.data.frame)
   resultdupnames = names(dt)[duplicated(names(dt))]
   if (length(resultdupnames)) {
-    warning("column names ", paste0("'", resultdupnames, "'", collapse=", "),
-            " are duplicated in the result")
+    warningf("column names %s are duplicated in the result", brackify(resultdupnames))
   }
 
   # retain custom classes of first argument that resulted in dispatch to this method, #1378
