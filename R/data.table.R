@@ -284,7 +284,7 @@ replace_dot_alias = function(e) {
     } else if (is.name(jsub)) {
       if (startsWith(as.character(jsub), "..")) stop("Internal error:  DT[, ..var] should be dealt with by the branch above now.") # nocov
       if (!with && !exists(as.character(jsub), where=parent.frame()))
-        stopf("Variable '%s' is not found in calling scope. Looking in calling scope because you set with=FALSE. Also, please use .. symbol prefix and remove with=FALSE.", jsub)
+        stopf("Variable '%s' is not found in calling scope. Looking in calling scope because you set with=FALSE. Also, please use .. symbol prefix and remove with=FALSE.", as.character(jsub))
     }
     if (root=="{") {
       if (length(jsub) == 2L) {
@@ -866,7 +866,7 @@ replace_dot_alias = function(e) {
         } else bynames = names(byval)
         if (is.atomic(byval)) {
           if (is.character(byval) && length(byval)<=ncol(x) && !(is.name(bysub) && bysub %chin% names_x) ) {
-            stopf("'by' appears to evaluate to column names but isn't c() or key(). Use by=list(...) if you can. Otherwise, by=eval(%s) should work. This is for efficiency so data.table can detect which columns are needed.", deparse(bysub))
+            stopf("'by' appears to evaluate to column names but isn't c() or key(). Use by=list(...) if you can. Otherwise, by=eval%s should work. This is for efficiency so data.table can detect which columns are needed.", deparse(bysub))
           } else {
             # by may be a single unquoted column name but it must evaluate to list so this is a convenience to users. Could also be a single expression here such as DT[,sum(v),by=colA%%2]
             byval = list(byval)
@@ -2568,7 +2568,7 @@ setnames = function(x,old,new,skip_absent=FALSE) {
     if (anyDuplicated(old)) stopf("Some duplicates exist in 'old': %s", brackify(old[duplicated(old)]))
     if (is.numeric(old)) i = old = seq_along(x)[old]  # leave it to standard R to manipulate bounds and negative numbers
     else if (!is.character(old)) stopf("'old' is type %s but should be integer, double or character", typeof(old))
-    if (length(new)!=length(old)) stopf("'old' is length %d but 'new' is length ", length(old), length(new))
+    if (length(new)!=length(old)) stopf("'old' is length %d but 'new' is length %d", length(old), length(new))
     if (anyNA(old)) stopf("NA (or out of bounds) in 'old' at positions %s", brackify(which(is.na(old))))
     if (is.character(old)) {
       i = chmatchdup(c(old,old), names(x))  # chmatchdup returns the second of any duplicates matched to in names(x) (if any)
@@ -2743,7 +2743,7 @@ setDF = function(x, rownames=NULL) {
       rn = .set_row_names(mn)
     } else {
       if (length(rownames) != mn)
-      stopf("rownames incorrect length; expected %d names, got %d", nm, length(rownames))
+      stopf("rownames incorrect length; expected %d names, got %d", mn, length(rownames))
       rn = rownames
     }
     setattr(x,"row.names", rn)

@@ -2362,7 +2362,7 @@ test(827.1, names(a[b]), c("User ID","Blah Blah","Yadda Yadda"))
 
 # setcolorder and merge check for dup column names, #2193(ii)
 setnames(DT2,"b","a")
-test(828, setcolorder(DT2,c("a","b")), error="x has some duplicated column name(s): a. Please remove or rename")
+test(828, setcolorder(DT2,c("a","b")), error="x has some duplicated column name(s): [a]. Please remove or rename")
 test(829, merge(DT1,DT2), error="y has some duplicated column name(s): [a]. Please remove or rename")
 test(830, merge(DT2,DT1), error="x has some duplicated column name(s): [a]. Please remove or rename")
 
@@ -5678,7 +5678,7 @@ for (i in seq_along(dt)) {
 x = data.table(chr=c("Chr1", "Chr1", "Chr2", "Chr2", "Chr2"), start=c(5,10, 1, 25, 50), end=c(11,20,4,52,60))
 y = data.table(chr=c("Chr1", "Chr1", "Chr2"), start=c(1, 15,1), end=c(4, 18, 55), val=1:3)
 # no by.x and by.y error
-test(1371.1, foverlaps(x, y, type="any"), error="'y' must be keyed (i.e., sorted, and, marked as sorted).")
+test(1371.1, foverlaps(x, y, type="any"), error="y must be keyed (i.e., sorted, and, marked as sorted).")
 setkey(y, chr, end, start)
 test(1371.2, foverlaps(x, y, by.y=1:3, type="any"), error="The first 3 columns of y's key must be identical to the columns specified in by.y.")
 setkey(y, chr, start, end)
@@ -13827,7 +13827,7 @@ test(1967.30, foverlaps(x, y),
      error = 'must be integer/numeric type')
 x[ , end := as.integer(end)]
 test(1967.31, foverlaps(x, y, by.x = c('end', 'start')),
-     error = 'All entries in column end should be <= corresponding entries')
+     error = "All entries in column 'end' should be <= corresponding entries")
 y[ , end := as.character(end)]
 setkey(y, start, end)
 test(1967.32, foverlaps(x, y),
@@ -13835,7 +13835,7 @@ test(1967.32, foverlaps(x, y),
 y[ , end := as.integer(end)]
 setkey(y, end, start)
 test(1967.33, foverlaps(x, y, by.x = c('start', 'end'), by.y = c('end', 'start')),
-     error = 'All entries in column end should be <= corresponding entries')
+     error = "All entries in column 'end' should be <= corresponding entries")
 
 ## data.table.R
 test(1967.34, data.table(1:5, NULL), data.table(V1=1:5))
@@ -16058,12 +16058,12 @@ test(2074.23, capture.output(print(DT2, topn=1L, col.names='none')),
 # foverlaps
 x = data.table(start=NA_integer_, end=1L, key='start,end')
 y = copy(x)
-test(2074.24, foverlaps(x, y), error="NA values in data.table 'x' start column")
+test(2074.24, foverlaps(x, y), error="NA values in data.table x 'start' column")
 x[ , start := 0L]
 setkey(x, start, end)
-test(2074.25, foverlaps(x, y), error="NA values in data.table 'y' start column")
+test(2074.25, foverlaps(x, y), error="NA values in data.table y 'start' column")
 setkey(y, end, start)
-test(2074.26, foverlaps(x, y), error="NA values in data.table 'y' end column")
+test(2074.26, foverlaps(x, y), error="NA values in data.table y 'end' column")
 
 # cube
 test(2074.27, cube(DT, by=1L), error="Argument 'by' must be a character")
@@ -17563,15 +17563,15 @@ test(2183.00004, melt(DTid, measure.vars=measurev(list(value.name=NULL, istr=NUL
 test(2183.00005, melt(DTid, measure.vars=measurev(list(column=NULL, istr=NULL), pattern="([ab])([12])", multiple.keyword="column"))[order(b)], data.table(id=1, istr=paste(c(1,2)), a=c(NA, 2), b=c(1,2)))#same computation but different multiple.keyword
 iris.dt = data.table(datasets::iris)
 test(2183.00020, melt(iris.dt, measure.vars=measurev(value.name, dim, sep=".", pattern="foo")), error="both sep and pattern arguments used; must use either sep or pattern (not both)")
-test(2183.000201, melt(iris.dt, measure.vars=measurev(list(NULL, dim=NULL), sep=".")), error="in measurev, elements of fun.list must be named, problems: 1")
-test(2183.000202, melt(iris.dt, measure.vars=measurev(list(NULL, NULL), sep=".")), error="in measurev, elements of fun.list must be named, problems: 1,2")
+test(2183.000201, melt(iris.dt, measure.vars=measurev(list(NULL, dim=NULL), sep=".")), error="in measurev, elements of fun.list must be named, problems: [1]")
+test(2183.000202, melt(iris.dt, measure.vars=measurev(list(NULL, NULL), sep=".")), error="in measurev, elements of fun.list must be named, problems: [1, 2]")
 test(2183.00027, melt(iris.dt, measure.vars=measurev(list(value.name=NULL, dim="bar"), sep=".")), error="in the measurev fun.list, each non-NULL element must be a function with at least one argument, problem: dim")
 test(2183.00028, melt(iris.dt, measure.vars=measurev(list(value.name=NULL, dim=NULL, baz=NULL), sep=".")), error="number of elements of fun.list =3 must be same as max number of items after splitting column names =2")
 test(2183.00042, melt(DTid, measure.vars=measurev(list(value.name=NULL, istr=function()1), pattern="([ab])([12])")), error="in the measurev fun.list, each non-NULL element must be a function with at least one argument, problem: istr")
 test(2183.00043, melt(DTid, measure.vars=measurev(list(value.name=NULL, istr=interactive), pattern="([ab])([12])")), error="in the measurev fun.list, each non-NULL element must be a function with at least one argument, problem: istr")
 test(2183.00044, melt(DTid, measure.vars=measurev(list(value.name=NULL, istr=function(x)1), pattern="([ab])([12])")), error="each conversion function must return an atomic vector with same length as its first argument, problem: istr")
 test(2183.00045, melt(iris.dt, measure.vars=measurev(list(value.name=NULL, dim=NULL, baz=NULL), pattern="(.*)[.](.*)")), error="number of elements of fun.list =3 must be same as number of capture groups in pattern =2")
-test(2183.00048, melt(iris.dt, measure.vars=measurev(list(value.name=NULL, value.name=NULL), sep=".")), error="elements of fun.list should be uniquely named, problems: value.name")
+test(2183.00048, melt(iris.dt, measure.vars=measurev(list(value.name=NULL, value.name=NULL), sep=".")), error="elements of fun.list should be uniquely named, problems: [value.name]")
 # measure with factor conversion.
 myfac = function(x)factor(x)#user-defined conversion function.
 test(2183.00060, melt(DTid, measure.vars=measurev(list(letter=myfac, value.name=NULL), pattern="([ab])([12])")), data.table(id=1, letter=factor(c("a","b")), "2"=c(2,2), "1"=c(NA,1)))
@@ -17623,9 +17623,9 @@ test(2183.42, melt(DTid, measure.vars=measure(value.name, istr=function()1, patt
 test(2183.43, melt(DTid, measure.vars=measure(value.name, istr=interactive, pattern="([ab])([12])")), error="each ... argument to measure must be a function with at least one argument, problem: istr")
 test(2183.44, melt(DTid, measure.vars=measure(value.name, istr=function(x)1, pattern="([ab])([12])")), error="each conversion function must return an atomic vector with same length as its first argument, problem: istr")
 test(2183.45, melt(iris.dt, measure.vars=measure(value.name, dim, baz, pattern="(.*)[.](.*)")), error="number of ... arguments to measure =3 must be same as number of capture groups in pattern =2")
-test(2183.46, melt(iris.dt, measure.vars=measure(function(x)factor(x), dim, pattern="(.*)[.](.*)")), error="each ... argument to measure must be either a symbol without argument name, or a function with argument name, problems: 1")
-test(2183.47, melt(iris.dt, measure.vars=measure(function(x)factor(x), pattern="(.*)[.](.*)")), error="each ... argument to measure must be either a symbol without argument name, or a function with argument name, problems: 1")
-test(2183.48, melt(iris.dt, measure.vars=measure(value.name, value.name, sep=".")), error="... arguments to measure should be uniquely named, problems: value.name")
+test(2183.46, melt(iris.dt, measure.vars=measure(function(x)factor(x), dim, pattern="(.*)[.](.*)")), error="each ... argument to measure must be either a symbol without argument name, or a function with argument name, problems: [1]")
+test(2183.47, melt(iris.dt, measure.vars=measure(function(x)factor(x), pattern="(.*)[.](.*)")), error="each ... argument to measure must be either a symbol without argument name, or a function with argument name, problems: [1]")
+test(2183.48, melt(iris.dt, measure.vars=measure(value.name, value.name, sep=".")), error="... arguments to measure should be uniquely named, problems: [value.name]")
 # measure with factor conversion.
 myfac = function(x)factor(x)#user-defined conversion function.
 test(2183.60, melt(DTid, measure.vars=measure(letter=myfac, value.name, pattern="([ab])([12])")), data.table(id=1, letter=factor(c("a","b")), "2"=c(2,2), "1"=c(NA,1)))
@@ -17642,15 +17642,15 @@ test(2183.65, melt(iris.days, measure.vars=measure(pattern="day")), error="patte
 test(2183.66, melt(iris.days, measure.vars=measure(value.name, pattern="(.*)")), error="value.name is the only group; fix by creating at least one more group")
 test(2183.67, melt(iris.days, measure.vars=measure(foo, bar, pattern="(foo)(bar)")), error="pattern did not match any cols, so nothing would be melted; fix by changing pattern")
 test(2183.68, melt(iris.days, measure.vars=measure(value.name, bar, pattern="(foo)(bar)")), error="pattern did not match any cols, so nothing would be melted; fix by changing pattern")
-test(2183.69, melt(data.table(ff=1, ff=2), measure.vars=measure(letter, number, pattern="(.)(.)")), error="measured columns should be uniquely named, problems: ff")
-test(2183.70, melt(data.table(f_f=1, f_f=2), measure.vars=measure(letter, number)), error="measured columns should be uniquely named, problems: f_f")
+test(2183.69, melt(data.table(ff=1, ff=2), measure.vars=measure(letter, number, pattern="(.)(.)")), error="measured columns should be uniquely named, problems: [ff]")
+test(2183.70, melt(data.table(f_f=1, f_f=2), measure.vars=measure(letter, number)), error="measured columns should be uniquely named, problems: [f_f]")
 test(2183.71, melt(iris.days, measure.vars=measure(value.name=as.integer, variable, pattern="day(.)[.](.*)")), error="value.name column class=integer after applying conversion function, but must be character")
 test(2183.72, melt(data.table(ff=1, ff=2, a=3, b=4), measure.vars=measure(letter, pattern="([ab])"), id.vars="ff"), data.table(ff=1, letter=c("a","b"), value=c(3,4)))#duplicate column names are fine if they are not matched by pattern.
-test(2183.73, melt(DTid, measure.vars=measure(letter, multiple.keyword, pattern="([ab])([12])")), error="group names specified in ... conflict with measure argument names; please fix by changing group names: multiple.keyword")
+test(2183.73, melt(DTid, measure.vars=measure(letter, multiple.keyword, pattern="([ab])([12])")), error="group names specified in ... conflict with measure argument names; please fix by changing group names: [multiple.keyword]")
 test(2183.74, melt(DTid, measure.vars=measure(letter, number, multiple.keyword=as.integer, pattern="([ab])([12])")), error="multiple.keyword must be a character string")
 test(2183.75, melt(DTid, measure.vars=measure(letter, number, multiple.keyword=NA_character_, pattern="([ab])([12])")), error="multiple.keyword must be a character string")
 test(2183.76, melt(DTid, measure.vars=measure(letter, number, multiple.keyword="", pattern="([ab])([12])")), error="multiple.keyword must be a character string with nchar>0")
-test(2183.77, melt(DTid, measure.vars=measure(letter, cols, pattern="([ab])([12])")), error="group names specified in ... conflict with measure argument names; please fix by changing group names: cols")
+test(2183.77, melt(DTid, measure.vars=measure(letter, cols, pattern="([ab])([12])")), error="group names specified in ... conflict with measure argument names; please fix by changing group names: [cols]")
 test(2183.78, melt(DTid, measure.vars=measure(letter, cols=as.integer, pattern="([ab])([12])")), error="cols must be a character vector of column names")
 test(2183.79, melt(DTid, measure.vars=measure(letter, number, pattern=as.integer)), error="pattern must be character string")
 test(2183.80, melt(DTid, measure.vars=measure(letter, number, sep=as.integer)), error="sep must be character string")

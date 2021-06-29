@@ -96,7 +96,7 @@ measurev = function(fun.list, sep="_", pattern, cols, multiple.keyword="value.na
   }
   err.args.groups = function(type, N){
     if (N != length(fun.list)) {
-      stopf("number of %s = %d must be same as %s = %s", length(fun.list), type, N)
+      stopf("number of %s =%d must be same as %s =%d", group.desc, length(fun.list), type, N)
     }
   }
   err.names.unique(group.desc, names(fun.list))
@@ -135,7 +135,7 @@ measurev = function(fun.list, sep="_", pattern, cols, multiple.keyword="value.na
   err.names.unique("measured columns", cols[measure.vec])
   uniq.mat = unique(group.mat)
   if (nrow(uniq.mat) < nrow(group.mat)) {
-    stopf("number of unique column IDs = %d is less than number of melted columns = %d; fix by changing pattern/sep", nrow(uniq.mat), nrow(group.mat))
+    stopf("number of unique column IDs =%d is less than number of melted columns =%d; fix by changing pattern/sep", nrow(uniq.mat), nrow(group.mat))
   }
   colnames(group.mat) = names(fun.list)
   group.dt = data.table(group.mat)
