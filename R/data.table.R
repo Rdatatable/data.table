@@ -885,7 +885,7 @@ replace_dot_alias = function(e) {
           }
         }
         tt = vapply_1i(byval,length)
-        if (any(tt!=xnrow)) stop(domain=NA, gettextf("The items in the 'by' or 'keyby' list are length(s) (%s). Each must be length %d; the same length as there are rows in x (after subsetting if i is provided).", paste(tt, collapse=","), xnrow))
+        if (any(tt!=xnrow)) stopf("The items in the 'by' or 'keyby' list are length(s) (%s). Each must be length %d; the same length as there are rows in x (after subsetting if i is provided).", brackify(tt), xnrow)
         if (is.null(bynames)) bynames = rep.int("",length(byval))
         if (length(idx <- which(!nzchar(bynames))) && !bynull) {
           # TODO: improve this and unify auto-naming of jsub and bysub
@@ -938,7 +938,7 @@ replace_dot_alias = function(e) {
             # attempt to auto-name unnamed columns
             for (jj in which(nm=="")) {
               thisq = q[[jj + 1L]]
-              if (missing(thisq)) stop(domain=NA, gettextf("Item %d of the .() or list() passed to j is missing", jj)) #3507
+              if (missing(thisq)) stopf("Item %d of the .() or list() passed to j is missing", jj) #3507
               if (is.name(thisq)) nm[jj] = drop_dot(thisq)
               # TO DO: if call to a[1] for example, then call it 'a' too
             }
@@ -2995,7 +2995,7 @@ isReallyReal = function(x) {
     RHS = eval(stub[[3L]], x, enclos)
     if (is.list(RHS)) RHS = as.character(RHS)  # fix for #961
     if (length(RHS) != 1L && !operator %chin% c("%in%", "%chin%")){
-      if (length(RHS) != nrow(x)) stop(domain=NA, gettextf("RHS of %s is length %d which is not 1 or nrow (%d). For robustness, no recycling is allowed (other than of length 1 RHS). Consider %%in%% instead.", operator, length(RHS), nrow(x)))
+      if (length(RHS) != nrow(x)) stopf("RHS of %s is length %d which is not 1 or nrow (%d). For robustness, no recycling is allowed (other than of length 1 RHS). Consider %%in%% instead.", operator, length(RHS), nrow(x))
       return(NULL) # DT[colA == colB] regular element-wise vector scan
     }
     if ( mode(x[[col]]) != mode(RHS) ||                # mode() so that doubleLHS/integerRHS and integerLHS/doubleRHS!isReallyReal are optimized (both sides mode 'numeric')

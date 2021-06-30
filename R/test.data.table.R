@@ -46,7 +46,7 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
     # nocov start
     fn2 = paste0(fn,".bz2")
     if (!file.exists(file.path(fulldir, fn2)))
-      stop(domain=NA, gettextf("Neither %s nor %s exist in %s",fn, fn2, fulldir))
+      stopf("Neither %s nor %s exist in %s",fn, fn2, fulldir)
     fn = fn2
     # nocov end
     # sys.source() below accepts .bz2 directly.
@@ -166,7 +166,8 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
         nfail,
         "%d error out of %d. Search %s for test number %s",
         "%d errors out of %d. Search %s for test numbers %s"
-      ), nfail, ntest, names(fn), paste(env$whichfail, collapse=", ")
+      ),
+      nfail, ntest, names(fn), toString(env$whichfail)
     ))
     # important to stop() here, so that 'R CMD check' fails
     # nocov end
