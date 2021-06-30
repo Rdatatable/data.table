@@ -13,9 +13,12 @@ merge.data.table = function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FAL
   }
   x0 = length(x)==0L
   y0 = length(y)==0L
-  if (x0 || y0) warning(sprintf(ngettext(x0+y0,
-    "You are trying to join data.tables where %s has 0 columns.",
-    "You are trying to join data.tables where %s have 0 columns."),
+  if (x0 || y0) warning(domain=NA, sprintf(
+    ngettext(
+      x0+y0,
+      "You are trying to join data.tables where %s has 0 columns.",
+      "You are trying to join data.tables where %s have 0 columns."
+    ),
     if (x0 && y0) "'x' and 'y'" else if (x0) "'x'" else "'y'"
   ))
   nm_x = names(x)

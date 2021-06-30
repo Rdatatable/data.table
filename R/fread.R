@@ -222,17 +222,14 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
             new_names[ii] %chin% colClasses[[ new_types[ii] ]]
           }))) {
             plural = sum(idx_type) > 1L
-            message(
-              domain = NA,
-              sprintf(
-                ngettext(
-                  sum(idx_type),
-                  'colClasses dictated by user input and those read from YAML header are in conflict (specifically, for column [%s]); the proceeding assumes the user input was an intentional override and will ignore the types implied by the YAML header; please exclude this column from colClasses if this was unintentional.',
-                  'colClasses dictated by user input and those read from YAML header are in conflict (specifically, for columns [%s]); the proceeding assumes the user input was an intentional override and will ignore the types implied by the YAML header; please exclude these columns from colClasses if this was unintentional.'
-                ),
-                brackify(new_names[matched_name_idx[!idx_type]])
-              )
-            )
+            message(domain = NA, sprintf(
+              ngettext(
+                sum(idx_type),
+                'colClasses dictated by user input and those read from YAML header are in conflict (specifically, for column [%s]); the proceeding assumes the user input was an intentional override and will ignore the types implied by the YAML header; please exclude this column from colClasses if this was unintentional.',
+                'colClasses dictated by user input and those read from YAML header are in conflict (specifically, for columns [%s]); the proceeding assumes the user input was an intentional override and will ignore the types implied by the YAML header; please exclude these columns from colClasses if this was unintentional.'
+              ),
+              brackify(new_names[matched_name_idx[!idx_type]])
+            ))
           }
         }
         # only add unmentioned columns
