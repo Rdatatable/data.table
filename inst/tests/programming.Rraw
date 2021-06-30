@@ -598,3 +598,8 @@ dt_fill(nadt, c("x1", "x2", "x3"), is.na, 0)
 test(103.01, nadt, data.table(x1 = c(1, 2, 0, Inf), x2 = c(2, 0, 3, Inf), x3 = c(0, 1, 2, 0)))
 dt_fill(nadt, c("x1", "x2", "x3"), is.infinite, 0)
 test(103.02, nadt, data.table(x1 = c(1, 2, 0, 0), x2 = c(2, 0, 3, 0), x3 = c(0, 1, 2, 0)))
+
+# providing data.table with character column to env = list(...) gives error? #5057
+test(201.1, substitute2(dt, env=list(dt = data.table(a=1:9, b=1:9))), data.table(a=1:9, b=1:9))
+test(201.2, substitute2(dt, env=list(dt = data.table(a=1:9, b=as.character(1:9)))), data.table(a=1:9, b=as.character(1:9)))
+test(201.3, substitute2(dt, env=list(dt = data.table(a=1:2, b=as.character(1:2)))), data.table(a=1:2, b=as.character(1:2)))
