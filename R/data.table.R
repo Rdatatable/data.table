@@ -885,7 +885,7 @@ replace_dot_alias = function(e) {
           }
         }
         tt = vapply_1i(byval,length)
-        if (any(tt!=xnrow)) stopf("The items in the 'by' or 'keyby' list are length(s) (%s). Each must be length %d; the same length as there are rows in x (after subsetting if i is provided).", brackify(tt), xnrow)
+        if (any(tt!=xnrow)) stopf("The items in the 'by' or 'keyby' list are length(s) %s. Each must be length %d; the same length as there are rows in x (after subsetting if i is provided).", brackify(tt), xnrow)
         if (is.null(bynames)) bynames = rep.int("",length(byval))
         if (length(idx <- which(!nzchar(bynames))) && !bynull) {
           # TODO: improve this and unify auto-naming of jsub and bysub

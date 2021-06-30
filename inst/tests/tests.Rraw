@@ -14109,7 +14109,7 @@ test(1984.07, DT[, sum(a), by=call('sin',pi)], error='must evaluate to a vector 
 test(1984.081, DT[, sum(a), by=as.raw(0)],     error="Column or expression.*1.*type 'raw'.*not.*supported")
 test(1984.082, data.table(A=1:4, L=list(1, 1:2, 1, 1:3), V=1:4)[, sum(V), by=.(A,L)],  # better error message, 4308
                error="Column or expression.*2.*type 'list'.*not.*supported")
-test(1984.09, DT[, sum(a), by=.(1,1:2)],       error='The items.*list are length[(]s[)] [(]1,2[)].*Each must be length 10; .*rows in x.*after subsetting')
+test(1984.09, DT[, sum(a), by=.(1,1:2)],       error="The items in the 'by' or 'keyby' list are length(s) [1, 2]. Each must be length 10; the same length as there are rows in x (after subsetting if i is provided).")
 options('datatable.optimize' = Inf)
 test(1984.10, DT[ , 1, by = .(a %% 2), verbose = TRUE],
      data.table(a = c(1, 0), V1 = c(1, 1)),
@@ -14124,7 +14124,7 @@ test(1984.16, DT[1, 1+3i] <- 4, error='j must be vector of')
 test(1984.17, dimnames(DT) <- 5, error = 'attempting to assign invalid object')
 test(1984.18, dimnames(DT) <- list(5, 5, 5), error = 'attempting to assign invalid object')
 test(1984.19, dimnames(DT) <- list(5, 5), error = 'data.tables do not have rownames')
-test(1984.20, dimnames(DT) <- list(NULL, 5), error = "Can't assign 1 colnames")
+test(1984.20, dimnames(DT) <- list(NULL, 5), error = "Can't assign 1 names")
 dimnames(DT) <- list(NULL, 1:5)
 test(1984.21, names(DT), paste0(1:5))
 DT = data.table(a = 1:10)
