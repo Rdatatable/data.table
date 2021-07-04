@@ -144,7 +144,7 @@ eval_with_cols = function(orig_call, all_cols) {
     }
     named_call[[1L]] = fun
     ans = eval(named_call, parent)
-    if (fun_uneval %in% c('measure', 'measurev') & is.integer(ans)) {  # the original measure/v
+    if (as.character(fun_uneval) %in% c('measure', 'measurev') & is.integer(ans)) {  # the original measure/v
       ans = setattr(offsets[ans], "variable_table", attributes(ans)[["variable_table"]])
     }
     return(ans)
