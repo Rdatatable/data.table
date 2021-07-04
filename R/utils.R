@@ -135,7 +135,7 @@ eval_with_cols = function(orig_call, all_cols) {
       } else if (is.language(named_call[["cols"]])) {
         named_call[["cols"]] = eval(named_call[["cols"]], parent)
       }
-      if (!all(named_call[["cols"]] %in% all_cols)) {
+      if (!is.character(named_call[["cols"]]) & !all(named_call[["cols"]] %in% all_cols)) {
         stop("cols must be a subset of the column names of data")
       }
       # not strictly needed when cols == all_cols, which is probably the most common case,
@@ -144,8 +144,8 @@ eval_with_cols = function(orig_call, all_cols) {
     }
     named_call[[1L]] = fun
     ans = eval(named_call, parent)
-    if (!is.null(offsets)) {
-      ans = setattr(offsets[ans], "variable_table", attr(ans, "variable_table"))
+    if (fun_uneval %in% c('measure', 'measurev') & is.integer(ans)) {  # the original measure/v
+      ans = setattr(offsets[ans], "variable_table", attributes(ans)[["variable_table"]])
     }
     return(ans)
   }
