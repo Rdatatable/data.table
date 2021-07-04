@@ -130,6 +130,8 @@ eval_with_cols = function(orig_call, all_cols) {
     named_call = match.call(fun, orig_call)
     if ("cols" %in% names(formals(fun)) && !"cols" %in% names(named_call)) {
       named_call[["cols"]] = all_cols
+    } else if (is.call(named_call[["cols"]])) {
+      named_call[["cols"]] = eval(named_call[["cols"]], parent.frame(2L))
     }
     named_call[[1L]] = fun
     eval(named_call, parent)
