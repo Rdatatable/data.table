@@ -133,11 +133,14 @@ eval_with_cols = function(orig_call, all_cols) {
       if (!"cols" %in% names(named_call)) {
         named_call[["cols"]] = all_cols
       } else if (is.language(named_call[["cols"]])) {
-        named_call[["cols"]] = eval(named_call[["cols"]], parent)
+        cols = named_call[["cols"]] = eval(named_call[["cols"]], parent)
+      }
+      if (!all(cols %in% all_cols)) {
+        stop("cols must be a subset of the column names of data")
       }
       # not strictly needed when cols == all_cols, which is probably the most common case
       # but overhead is minimal and this simplifies control flow
-      offsets = which(all_cols %in% named_call[["cols"]])
+      offsets = which(all_cols %in% cols)
     }
     named_call[[1L]] = fun
     ans = eval(named_call, parent)
