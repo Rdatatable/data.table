@@ -25,11 +25,11 @@ patterns = function(..., cols=character(0L)) {
   L = list(...)
   p = unlist(L, use.names = any(nzchar(names(L))))
   if (!is.character(p))
-    stop("Input patterns must be of type character.")
+    stopf("Input patterns must be of type character.")
   matched = lapply(p, grep, cols)
   # replace with lengths when R 3.2.0 dependency arrives
   if (length(idx <- which(sapply(matched, length) == 0L)))
-    stop(domain = NA, sprintf(ngettext(length(idx), 'Pattern not found: [%s]', 'Patterns not found: [%s]'), brackify(p[idx])))
+    stopf('Pattern(s) not found: [%s]', brackify(p[idx]))
   matched
 }
 
@@ -71,13 +71,13 @@ measure = function(..., sep="_", pattern, cols, multiple.keyword="value.name") {
 measurev = function(fun.list, sep="_", pattern, cols, multiple.keyword="value.name", group.desc="elements of fun.list"){
   # 1. basic error checking.
   if (!missing(sep) && !missing(pattern)) {
-    stop("both sep and pattern arguments used; must use either sep or pattern (not both)")
+    stopf("both sep and pattern arguments used; must use either sep or pattern (not both)")
   }
   if (!(is.character(multiple.keyword) && length(multiple.keyword)==1 && !is.na(multiple.keyword) && nchar(multiple.keyword)>0)) {
-    stop("multiple.keyword must be a character string with nchar>0")
+    stopf("multiple.keyword must be a character string with nchar>0")
   }
   if (!is.character(cols)) {
-    stop("cols must be a character vector of column names")
+    stopf("cols must be a character vector of column names")
   }
   prob.i <- if (is.null(names(fun.list))) {
     seq_along(fun.list)
@@ -103,16 +103,16 @@ measurev = function(fun.list, sep="_", pattern, cols, multiple.keyword="value.na
   # 2. compute initial group data table, used as variable_table attribute.
   group.mat = if (!missing(pattern)) {
     if (!is.character(pattern)) {
-      stop("pattern must be character string")
+      stopf("pattern must be character string")
     }
     match.vec = regexpr(pattern, cols, perl=TRUE)
     measure.vec = which(0 < match.vec)
     if (length(measure.vec) == 0L) {
-      stop("pattern did not match any cols, so nothing would be melted; fix by changing pattern")
+      stopf("pattern did not match any cols, so nothing would be melted; fix by changing pattern")
     }
     start = attr(match.vec, "capture.start")[measure.vec, , drop=FALSE]
     if (is.null(start)) {
-      stop("pattern must contain at least one capture group (parenthesized sub-pattern)")
+      stopf("pattern must contain at least one capture group (parenthesized sub-pattern)")
     }
     err.args.groups("number of capture groups in pattern", ncol(start))
     end = attr(match.vec, "capture.length")[measure.vec,]+start-1L
@@ -120,13 +120,13 @@ measurev = function(fun.list, sep="_", pattern, cols, multiple.keyword="value.na
     substr(names.mat, start, end)
   } else { #pattern not specified, so split using sep.
     if (!is.character(sep)) {
-      stop("sep must be character string")
+      stopf("sep must be character string")
     }
     list.of.vectors = strsplit(cols, sep, fixed=TRUE)
     vector.lengths = sapply(list.of.vectors, length)
     n.groups = max(vector.lengths)
     if (n.groups == 1) {
-      stop("each column name results in only one item after splitting using sep, which means that all columns would be melted; to fix please either specify melt on all columns directly without using measure, or use a different sep/pattern specification")
+      stopf("each column name results in only one item after splitting using sep, which means that all columns would be melted; to fix please either specify melt on all columns directly without using measure, or use a different sep/pattern specification")
     }
     err.args.groups("max number of items after splitting column names", n.groups)
     measure.vec = which(vector.lengths==n.groups)
@@ -158,7 +158,7 @@ measurev = function(fun.list, sep="_", pattern, cols, multiple.keyword="value.na
   }
   group.uniq = unique(group.dt)
   if (nrow(group.uniq) < nrow(group.dt)) {
-    stop("number of unique groups after applying type conversion functions less than number of groups, change type conversion")
+    stopf("number of unique groups after applying type conversion functions less than number of groups, change type conversion")
   }
   # 4. compute measure.vars list or vector.
   if (multiple.keyword %in% names(fun.list)) {# multiple output columns.
@@ -190,7 +190,7 @@ measurev = function(fun.list, sep="_", pattern, cols, multiple.keyword="value.na
 melt.data.table = function(data, id.vars, measure.vars, variable.name = "variable",
        value.name = "value", ..., na.rm = FALSE, variable.factor = TRUE, value.factor = FALSE,
        verbose = getOption("datatable.verbose")) {
-  if (!is.data.table(data)) stop("'data' must be a data.table")
+  if (!is.data.table(data)) stopf("'data' must be a data.table")
   if (missing(id.vars)) id.vars=NULL
   if (missing(measure.vars)) measure.vars = NULL
   measure.sub = substitute(measure.vars)
@@ -209,10 +209,10 @@ melt.data.table = function(data, id.vars, measure.vars, variable.name = "variabl
       }
     } else {
       if (length(value.name) > 1L) {
-        warning("'value.name' provided in both 'measure.vars' and 'value.name argument'; value provided in 'measure.vars' is given precedence.")
+        warningf("'value.name' provided in both 'measure.vars' and 'value.name argument'; value provided in 'measure.vars' is given precedence.")
       }
       if (anyNA(meas.nm) || !all(nzchar(meas.nm))) {
-        stop("Please provide a name to each element of 'measure.vars'.")
+        stopf("Please provide a name to each element of 'measure.vars'.")
       }
       value.name = meas.nm
     }

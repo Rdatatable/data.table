@@ -150,7 +150,7 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
     nqgrp = integer(0L)
     nqmaxgrp = 1L
     if (verbose) catf("Non-equi join operators detected ... \n")
-    if (roll != FALSE) stop("roll is not implemented for non-equi joins yet.")
+    if (roll != FALSE) stopf("roll is not implemented for non-equi joins yet.")
     if (verbose) {last.started.at=proc.time();catf("  forder took ... ");flush.console()}
     # TODO: could check/reuse secondary indices, but we need 'starts' attribute as well!
     xo = forderv(x, xcols, retGrp=TRUE)
@@ -170,7 +170,7 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
     if (verbose) {catf("done in %s\n",timetaken(last.started.at)); flush.console()}
     if (length(nqgrp)) nqmaxgrp = max(nqgrp) # fix for #1986, when 'x' is 0-row table max(.) returns -Inf.
     if (nqmaxgrp > 1L) { # got some non-equi join work to do
-      if ("_nqgrp_" %in% names(x)) stop("Column name '_nqgrp_' is reserved for non-equi joins.")
+      if ("_nqgrp_" %in% names(x)) stopf("Column name '_nqgrp_' is reserved for non-equi joins.")
       if (verbose) {last.started.at=proc.time();catf("  Recomputing forder with non-equi ids ... ");flush.console()}
       set(nqx<-shallow(x), j="_nqgrp_", value=nqgrp)
       xo = forderv(nqx, c(ncol(nqx), xcols))
