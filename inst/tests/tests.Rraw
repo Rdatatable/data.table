@@ -8395,13 +8395,13 @@ DT0 = data.table(NULL)
 DT1 = data.table(a=1)
 test(1601.1, merge(DT1, DT1, by="a"), data.table(a=1, key="a"))
 test(1601.2, merge(DT1, DT0, by="a"),
-     warning="You are trying to join data.tables where 'y' has 0 columns.",
+     warning="Input data.table 'y' has no columns.",
      error="Elements listed in `by`")
 test(1601.3, merge(DT0, DT1, by="a"),
-     warning="You are trying to join data.tables where 'x' has 0 columns.",
+     warning="Input data.table 'x' has no columns.",
      error="Elements listed in `by`")
 test(1601.4, merge(DT0, DT0, by="a"),
-     warning="You are trying to join data.tables where 'x' and 'y' have 0 columns.",
+     warning="Neither of the input data.tables to join have columns.",
      error="Elements listed in `by`")
 
 # fix for #1549
@@ -8845,26 +8845,26 @@ test(1626.45, nrow(fsetdiff(dt[rep(1L,4)], dt[rep(1L,5)], all=TRUE)), 0L)
 dt = data.table(V1 = 1:4, V2 = letters[1:4], V3 = lapply(1:4, function(x) new.env()))
 x = dt[c(2:4,2L,2L)]
 y = dt[c(1:3,2L)]
-test(1626.46, fintersect(x, y), error = "unsupported column type found in x or y: [list]")
-test(1626.47, fintersect(x, y, all=TRUE), error = "unsupported column type found in x or y: [list]")
-test(1626.48, fsetdiff(x, y), error = "unsupported column type found in x or y: [list]")
-test(1626.49, fsetdiff(x, y, all=TRUE), error = "unsupported column type found in x or y: [list]")
-test(1626.50, funion(x, y), error = "unsupported column type found in x or y: [list]")
+test(1626.46, fintersect(x, y), error = "unsupported column type(s) found in x or y: [list]")
+test(1626.47, fintersect(x, y, all=TRUE), error = "unsupported column type(s) found in x or y: [list]")
+test(1626.48, fsetdiff(x, y), error = "unsupported column type(s) found in x or y: [list]")
+test(1626.49, fsetdiff(x, y, all=TRUE), error = "unsupported column type(s) found in x or y: [list]")
+test(1626.50, funion(x, y), error = "unsupported column type(s) found in x or y: [list]")
 test(1626.51, funion(x, y, all=TRUE), dt[c(2:4,2L,2L,1:3,2L)])
-test(1626.52, fsetequal(x, y), error = "unsupported column type found in x or y: [list]")
-test(1626.53, fsetequal(dt[c(1:2,2L)], dt[c(1:2,2L)]), error = "unsupported column type found in x or y: [list]")
+test(1626.52, fsetequal(x, y), error = "unsupported column type(s) found in x or y: [list]")
+test(1626.53, fsetequal(dt[c(1:2,2L)], dt[c(1:2,2L)]), error = "unsupported column type(s) found in x or y: [list]")
 # unsupported type in set-ops: complex, raw
 dt = data.table(V1 = 1:4, V2 = letters[1:4], V3 = as.complex(1:4), V4 = as.raw(1:4), V5 = lapply(1:4, function(x) NULL))
 x = dt[c(2:4,2L,2L)]
 y = dt[c(1:3,2L)]
-test(1626.54, fintersect(x, y), error = "unsupported column types found in x or y: [raw, complex, list]")
-test(1626.55, fintersect(x, y, all=TRUE), error = "unsupported column types found in x or y: [raw, complex, list]")
-test(1626.56, fsetdiff(x, y), error = "unsupported column types found in x or y: [raw, complex, list]")
-test(1626.57, fsetdiff(x, y, all=TRUE), error = "unsupported column types found in x or y: [raw, complex, list]")
-test(1626.58, funion(x, y), error = "unsupported column types found in x or y: [raw, complex, list]")
-test(1626.59, funion(x, y, all=TRUE), error = "unsupported column types found in x or y: [raw, complex]") # no 'list' here which is supported for `all=TRUE`
-test(1626.60, fsetequal(x, y), error = "unsupported column types found in x or y: [raw, complex, list]")
-test(1626.61, fsetequal(dt[c(1:2,2L)], dt[c(1:2,2L)]), error = "unsupported column types found in x or y: [raw, complex, list]")
+test(1626.54, fintersect(x, y), error = "unsupported column type(s) found in x or y: [raw, complex, list]")
+test(1626.55, fintersect(x, y, all=TRUE), error = "unsupported column type(s) found in x or y: [raw, complex, list]")
+test(1626.56, fsetdiff(x, y), error = "unsupported column type(s) found in x or y: [raw, complex, list]")
+test(1626.57, fsetdiff(x, y, all=TRUE), error = "unsupported column type(s) found in x or y: [raw, complex, list]")
+test(1626.58, funion(x, y), error = "unsupported column type(s) found in x or y: [raw, complex, list]")
+test(1626.59, funion(x, y, all=TRUE), error = "unsupported column type(s) found in x or y: [raw, complex]") # no 'list' here which is supported for `all=TRUE`
+test(1626.60, fsetequal(x, y), error = "unsupported column type(s) found in x or y: [raw, complex, list]")
+test(1626.61, fsetequal(dt[c(1:2,2L)], dt[c(1:2,2L)]), error = "unsupported column type(s) found in x or y: [raw, complex, list]")
 # supported types multi column test
 dt = data.table(
   V1 = 1:4,
@@ -13310,9 +13310,9 @@ test(1952.2, d1[a==2, 2, which=TRUE], error="which==TRUE.*but j is also supplied
 # 3106 -- melt patterns don't match any columns (and more coverage tests)
 DT = data.table(id = 1:3, a1 = rnorm(3), a2 = rnorm(3))
 test(1953.1, melt(DT, id.vars = 'id', measure.vars = patterns(a = 'a', b = 'b')),
-             error = 'Pattern not found')
+             error = 'Pattern(s) not found')
 test(1953.2, melt(DT, id.vars = 'id', measure.vars = patterns(a = 'a', b = 'b', c = 'c')),
-             error = 'Patterns not found')
+             error = 'Pattern(s) not found')
 test(1953.3, melt(DT, id.vars = 'id', measure.vars = patterns(1L)),
              error = 'Input patterns must be of type character')
 setDF(DT)
@@ -16785,7 +16785,7 @@ DT = data.table(a = "aaaaaaaaaaaaa",
                 d = "ddddddddddddd")
 test(2125.01,
      capture.output(print(DT, trunc.cols=TRUE))[3L],
-     "2 variables not shown: [c, d]")
+     "2 variable(s) not shown: [c, d]")
 # Printing with dots
 DT = data.table(a = vector("integer", 102L),
                 b = "bbbbbbbbbbbbb",
@@ -16804,7 +16804,7 @@ test(2125.02, capture.output(print(DT, trunc.cols=TRUE)),
        "100: 0 bbbbbbbbbbbbb ccccccccccccc",
        "101: 0 bbbbbbbbbbbbb ccccccccccccc",
        "102: 0 bbbbbbbbbbbbb ccccccccccccc",
-       "1 variable not shown: [d]"))
+       "1 variable(s) not shown: [d]"))
 test(2125.03, capture.output(print(DT, trunc.cols=TRUE, row.names=FALSE)),
      c("    a             b             c",
        "    0 bbbbbbbbbbbbb ccccccccccccc",
@@ -16818,22 +16818,22 @@ test(2125.03, capture.output(print(DT, trunc.cols=TRUE, row.names=FALSE)),
        "    0 bbbbbbbbbbbbb ccccccccccccc",
        "    0 bbbbbbbbbbbbb ccccccccccccc",
        "    0 bbbbbbbbbbbbb ccccccccccccc",
-       "1 variable not shown: [d]" ))
+       "1 variable(s) not shown: [d]" ))
 # also testing #4266 -- getting width of row #s register right
 #   TODO: understand why 2 variables truncated here. a,b,c combined have width
 #     _exactly_ 40, but still wraps. If we set options(width=41) it won't truncate.
 #     seems to be an issue with print.default.
 test(2125.04, capture.output(print(DT, trunc.cols=TRUE, class=TRUE))[14L],
-     "2 variables not shown: [c <char>, d <char>]")
+     "2 variable(s) not shown: [c <char>, d <char>]")
 test(2125.05, capture.output(print(DT, trunc.cols=TRUE, class=TRUE, row.names=FALSE))[c(1,14)],
      c("        a             b             c",
-       "1 variable not shown: [d <char>]" ))
+       "1 variable(s) not shown: [d <char>]" ))
 test(2125.06, capture.output(print(DT, trunc.cols=TRUE, col.names="none"))[c(1,12)],
      c("  1: 0 bbbbbbbbbbbbb ccccccccccccc",
-       "1 variable not shown: [d]" ))
+       "1 variable(s) not shown: [d]" ))
 test(2125.07, capture.output(print(DT, trunc.cols=TRUE, class=TRUE, col.names="none"))[c(1,13)],
      c("  1: 0 bbbbbbbbbbbbb",
-       "2 variables not shown: [c, d]" ),
+       "2 variable(s) not shown: [c, d]" ),
      warning = "Column classes will be suppressed when col.names is 'none'")
 options("width" = 20)
 DT = data.table(a = vector("integer", 2),
@@ -16844,16 +16844,16 @@ test(2125.08, capture.output(print(DT, trunc.cols=TRUE)),
      c("   a             b",
        "1: 0 bbbbbbbbbbbbb",
        "2: 0 bbbbbbbbbbbbb",
-       "2 variables not shown: [c, d]"))
+       "2 variable(s) not shown: [c, d]"))
 options("width" = 10)
 DT = data.table(a = "aaaaaaaaaaaaa",
                 b = "bbbbbbbbbbbbb",
                 c = "ccccccccccccc",
                 d = "ddddddddddddd")
 test(2125.09, capture.output(print(DT, trunc.cols=TRUE)),
-     "4 variables not shown: [a, b, c, d]")
+     "4 variable(s) not shown: [a, b, c, d]")
 test(2125.10, capture.output(print(DT, trunc.cols=TRUE, class=TRUE)),
-     "4 variables not shown: [a <char>, b <char>, c <char>, d <char>]")
+     "4 variable(s) not shown: [a <char>, b <char>, c <char>, d <char>]")
 options(old_width)
 
 # segfault when i is NULL or zero-column, #4060
