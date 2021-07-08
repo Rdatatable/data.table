@@ -16,18 +16,18 @@ fwrite = function(x, file="", append=FALSE, quote="auto",
            encoding = "") {
   na = as.character(na[1L]) # fix for #1725
   if (length(encoding) != 1L || !encoding %chin% c("", "UTF-8", "native")) {
-    stop("Argument 'encoding' must be '', 'UTF-8' or 'native'.")
+    stopf("Argument 'encoding' must be '', 'UTF-8' or 'native'.")
   }
   if (missing(qmethod)) qmethod = qmethod[1L]
   if (missing(compress)) compress = compress[1L]
   if (missing(dateTimeAs)) { dateTimeAs = dateTimeAs[1L] }
-  else if (length(dateTimeAs)>1L) stop("dateTimeAs must be a single string")
+  else if (length(dateTimeAs)>1L) stopf("dateTimeAs must be a single string")
   dateTimeAs = chmatch(dateTimeAs, c("ISO","squash","epoch","write.csv"))-1L
-  if (is.na(dateTimeAs)) stop("dateTimeAs must be 'ISO','squash','epoch' or 'write.csv'")
+  if (is.na(dateTimeAs)) stopf("dateTimeAs must be 'ISO','squash','epoch' or 'write.csv'")
   if (!missing(logical01) && !missing(logicalAsInt))
-    stop("logicalAsInt has been renamed logical01. Use logical01 only, not both.")
+    stopf("logicalAsInt has been renamed logical01. Use logical01 only, not both.")
   if (!missing(logicalAsInt)) {
-    # TODO: warning("logicalAsInt has been renamed logical01 for consistency with fread. It will work fine but please change to logical01 at your convenience so we can remove logicalAsInt in future.")
+    # TODO: warningf("logicalAsInt has been renamed logical01 for consistency with fread. It will work fine but please change to logical01 at your convenience so we can remove logicalAsInt in future.")
     logical01 = logicalAsInt
     logicalAsInt=NULL
   }
@@ -37,7 +37,7 @@ fwrite = function(x, file="", append=FALSE, quote="auto",
   # write.csv default is 'double' so fwrite follows suit. write.table's default is 'escape'
   # validate arguments
   if (is.matrix(x)) { # coerce to data.table if input object is matrix
-    message("x being coerced from class: matrix to data.table")
+    messagef("x being coerced from class: matrix to data.table")
     x = as.data.table(x)
   }
   stopifnot(is.list(x),
@@ -76,20 +76,18 @@ fwrite = function(x, file="", append=FALSE, quote="auto",
   }
   if (NCOL(x)==0L && file!="") {
     if (file.exists(file)) {
-      warning("Input has no columns; doing nothing.",
-              if (!append)
-                paste("\nIf you intended to overwrite the file at",
-                      file, "with an empty one, please use file.remove first."))
+      suggested <- if (append) "" else gettextf("\nIf you intended to overwrite the file at %s with an empty one, please use file.remove first.", file)
+      warningf("Input has no columns; doing nothing.%s", suggested)
       return(invisible())
     } else {
-      warning("Input has no columns; creating an empty file at '", file, "' and exiting.")
+      warningf("Input has no columns; creating an empty file at '%s' and exiting.", file)
       file.create(file)
       return(invisible())
     }
   }
   yaml = if (!yaml) "" else {
     if (!requireNamespace('yaml', quietly=TRUE))
-      stop("'data.table' relies on the package 'yaml' to write the file header; please add this to your library with install.packages('yaml') and try again.") # nocov
+      stopf("'data.table' relies on the package 'yaml' to write the file header; please add this to your library with install.packages('yaml') and try again.") # nocov
     schema_vec = sapply(x, class)
     # multi-class objects reduced to first class
     if (is.list(schema_vec)) schema_vec = sapply(schema_vec, `[`, 1L)

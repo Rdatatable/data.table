@@ -93,27 +93,27 @@ round.IDate = function (x, digits=c("weeks", "months", "quarters", "years"), ...
     return(e1)
   # TODO: investigate Ops.IDate method a la Ops.difftime
   if (inherits(e1, "difftime") || inherits(e2, "difftime"))
-    stop("Internal error -- difftime objects may not be added to IDate, but Ops dispatch should have intervened to prevent this") # nocov
+    stopf("Internal error -- difftime objects may not be added to IDate, but Ops dispatch should have intervened to prevent this") # nocov
   if (isReallyReal(e1) || isReallyReal(e2)) {
     return(`+.Date`(e1, e2))
     # IDate doesn't support fractional days; revert to base Date
   }
   if (inherits(e1, "Date") && inherits(e2, "Date"))
-    stop("binary + is not defined for \"IDate\" objects")
+    stopf("binary + is not defined for \"IDate\" objects")
   (setattr(as.integer(unclass(e1) + unclass(e2)), "class", c("IDate", "Date")))  # () wrap to return visibly
 }
 
 `-.IDate` = function (e1, e2) {
   if (!inherits(e1, "IDate")) {
     if (inherits(e1, 'Date')) return(base::`-.Date`(e1, e2))
-    stop("can only subtract from \"IDate\" objects")
+    stopf("can only subtract from \"IDate\" objects")
   }
   if (storage.mode(e1) != "integer")
-    stop("Internal error: storage mode of IDate is somehow no longer integer") # nocov
+    stopf("Internal error: storage mode of IDate is somehow no longer integer") # nocov
   if (nargs() == 1L)
-    stop("unary - is not defined for \"IDate\" objects")
+    stopf("unary - is not defined for \"IDate\" objects")
   if (inherits(e2, "difftime"))
-    stop("Internal error -- difftime objects may not be subtracted from IDate, but Ops dispatch should have intervened to prevent this") # nocov
+    stopf("Internal error -- difftime objects may not be subtracted from IDate, but Ops dispatch should have intervened to prevent this") # nocov
 
   if ( isReallyReal(e2) ) {
     # IDate deliberately doesn't support fractional days so revert to base Date
@@ -301,7 +301,7 @@ clip_msec = function(secs, action) {
      truncate = as.integer(secs),
      nearest = as.integer(round(secs)),
      ceil = as.integer(ceiling(secs)),
-     stop("Valid options for ms are 'truncate', 'nearest', and 'ceil'.")
+     stopf("Valid options for ms are 'truncate', 'nearest', and 'ceil'.")
   )
 }
                            

@@ -83,15 +83,15 @@ as.data.table.matrix = function(x, keep.rownames=FALSE, key=NULL, ...) {
 as.data.table.array = function(x, keep.rownames=FALSE, key=NULL, sorted=TRUE, value.name="value", na.rm=TRUE, ...) {
   dx = dim(x)
   if (length(dx) <= 2L)
-    stop("as.data.table.array method should only be called for arrays with 3+ dimensions; use the matrix method for 2-dimensional arrays")
+    stopf("as.data.table.array method should only be called for arrays with 3+ dimensions; use the matrix method for 2-dimensional arrays")
   if (!is.character(value.name) || length(value.name)!=1L || is.na(value.name) || !nzchar(value.name))
-    stop("Argument 'value.name' must be scalar character, non-NA and at least one character")
+    stopf("Argument 'value.name' must be scalar character, non-NA and at least one character")
   if (!is.logical(sorted) || length(sorted)!=1L || is.na(sorted))
-    stop("Argument 'sorted' must be scalar logical and non-NA")
+    stopf("Argument 'sorted' must be scalar logical and non-NA")
   if (!is.logical(na.rm) || length(na.rm)!=1L || is.na(na.rm))
-    stop("Argument 'na.rm' must be scalar logical and non-NA")
+    stopf("Argument 'na.rm' must be scalar logical and non-NA")
   if (!missing(sorted) && !is.null(key))
-    stop("Please provide either 'key' or 'sorted', but not both.")
+    stopf("Please provide either 'key' or 'sorted', but not both.")
 
   dnx = dimnames(x)
   # NULL dimnames will create integer keys, not character as in table method
@@ -105,7 +105,7 @@ as.data.table.array = function(x, keep.rownames=FALSE, key=NULL, sorted=TRUE, va
   if (is.null(names(val)) || !any(nzchar(names(val))))
     setattr(val, 'names', paste0("V", rev(seq_along(val))))
   if (value.name %chin% names(val))
-    stop("Argument 'value.name' should not overlap with column names in result: ", brackify(rev(names(val))))
+    stopf("Argument 'value.name' should not overlap with column names in result: %s", brackify(rev(names(val))))
   N = NULL
   ans = data.table(do.call(CJ, c(val, sorted=FALSE)), N=as.vector(x))
   if (isTRUE(na.rm))
@@ -137,7 +137,7 @@ as.data.table.list = function(x,
     if (is.null(xi)) next    # eachncol already initialized to 0 by integer() above
     if (!is.null(dim(xi)) && missing.check.names) check.names=TRUE
     if ("POSIXlt" %chin% class(xi)) {
-      warning("POSIXlt column type detected and converted to POSIXct. We do not recommend use of POSIXlt at all because it uses 40 bytes to store one date.")
+      warningf("POSIXlt column type detected and converted to POSIXct. We do not recommend use of POSIXlt at all because it uses 40 bytes to store one date.")
       xi = x[[i]] = as.POSIXct(xi)
     } else if (is.matrix(xi) || is.data.frame(xi)) {
       if (!is.data.table(xi)) {
@@ -178,7 +178,7 @@ as.data.table.list = function(x,
     xi = x[[i]]
     if (is.null(xi)) { n_null = n_null+1L; next }
     if (eachnrow[i]>1L && nrow%%eachnrow[i]!=0L)   # in future: eachnrow[i]!=nrow
-      warning("Item ", i, " has ", eachnrow[i], " rows but longest item has ", nrow, "; recycled with remainder.")
+      warningf("Item %d has %d rows but longest item has %d; recycled with remainder.", i, eachnrow[i], nrow)
     if (is.data.table(xi)) {   # matrix and data.frame were coerced to data.table above
       prefix = if (!isFALSE(.named[i]) && isTRUE(nchar(names(x)[i])>0L)) paste0(names(x)[i],".") else ""  # test 2058.12
       for (j in seq_along(xi)) {
@@ -193,7 +193,7 @@ as.data.table.list = function(x,
       k = k+1L
     }
   }
-  if (any(vnames==".SD")) stop("A column may not be called .SD. That has special meaning.")
+  if (any(vnames==".SD")) stopf("A column may not be called .SD. That has special meaning.")
   if (check.names) vnames = make.names(vnames, unique=TRUE)
   setattr(ans, "names", vnames)
   setDT(ans, key=key) # copy ensured above; also, setDT handles naming
@@ -207,7 +207,7 @@ as.data.table.list = function(x,
 # for now. This addresses #1078 and #1128
 .resetclass = function(x, class) {
   if (length(class)!=1L)
-    stop("class must be length 1") # nocov
+    stopf("class must be length 1") # nocov
   cx = class(x)
   n  = chmatch(class, cx)   # chmatch accepts length(class)>1 but next line requires length(n)==1
   unique( c("data.table", "data.frame", tail(cx, length(cx)-n)) )

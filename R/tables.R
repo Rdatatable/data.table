@@ -23,7 +23,7 @@ tables = function(mb=TRUE, order.col="NAME", width=80,
       KEY = list(key(DT)),
       INDICES = if (index) list(indices(DT)))
   }))
-  if (!order.col %chin% names(info)) stop("order.col='",order.col,"' not a column name of info")
+  if (!order.col %chin% names(info)) stopf("order.col='%s' not a column name of info", order.col)
   info = info[base::order(info[[order.col]])]  # base::order to maintain locale ordering of table names
   if (!silent) {
     # prettier printing on console
