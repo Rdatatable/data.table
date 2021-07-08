@@ -163,11 +163,11 @@ dcast.data.table = function(data, formula, fun.aggregate = NULL, sep = "_", ...,
   }
   if (!is.null(fun.call)) {
     fun.call = aggregate_funs(fun.call, lvals, sep, ...)
-    errmsg = "Aggregating function(s) should take vector inputs and return a single value (length=1). However, function(s) returns length!=1. This value will have to be used to fill any missing combinations, and therefore must be length=1. Either override by setting the 'fill' argument explicitly or modify your function to handle this case appropriately."
+    errmsg = gettext("Aggregating function(s) should take vector inputs and return a single value (length=1). However, function(s) returns length!=1. This value will have to be used to fill any missing combinations, and therefore must be length=1. Either override by setting the 'fill' argument explicitly or modify your function to handle this case appropriately.")
     if (is.null(fill)) {
       fill.default = suppressWarnings(dat[0L][, eval(fun.call)])
-      # tryCatch(fill.default <- dat[0L][, eval(fun.call)], error = function(x) stopf(errmsg, call.=FALSE))
-      if (nrow(fill.default) != 1L) stopf(errmsg, call.=FALSE)
+      # tryCatch(fill.default <- dat[0L][, eval(fun.call)], error = function(x) stopf(errmsg))
+      if (nrow(fill.default) != 1L) stopf(errmsg)
     }
     dat = dat[, eval(fun.call), by=c(varnames)]
   }

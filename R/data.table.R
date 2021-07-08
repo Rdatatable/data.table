@@ -134,7 +134,7 @@ replace_dot_alias = function(e) {
       stopf("Object '%s' not found amongst %s", used, brackify(ref))
     }
   } else {
-    stopf(err$message, call.=FALSE)
+    stopf(err$message)
   }
 }
 
