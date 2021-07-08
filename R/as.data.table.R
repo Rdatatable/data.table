@@ -105,7 +105,7 @@ as.data.table.array = function(x, keep.rownames=FALSE, key=NULL, sorted=TRUE, va
   if (is.null(names(val)) || !any(nzchar(names(val))))
     setattr(val, 'names', paste0("V", rev(seq_along(val))))
   if (value.name %chin% names(val))
-    stop("Argument 'value.name' should not overlap with column names in result: ", brackify(rev(names(val))))
+    stopf("Argument 'value.name' should not overlap with column names in result: %s", brackify(rev(names(val))))
   N = NULL
   ans = data.table(do.call(CJ, c(val, sorted=FALSE)), N=as.vector(x))
   if (isTRUE(na.rm))
@@ -178,7 +178,7 @@ as.data.table.list = function(x,
     xi = x[[i]]
     if (is.null(xi)) { n_null = n_null+1L; next }
     if (eachnrow[i]>1L && nrow%%eachnrow[i]!=0L)   # in future: eachnrow[i]!=nrow
-      warning("Item ", i, " has ", eachnrow[i], " rows but longest item has ", nrow, "; recycled with remainder.")
+      warningf("Item %d has %d rows but longest item has %d; recycled with remainder.", i, eachnrow[i], nrow)
     if (is.data.table(xi)) {   # matrix and data.frame were coerced to data.table above
       prefix = if (!isFALSE(.named[i]) && isTRUE(nchar(names(x)[i])>0L)) paste0(names(x)[i],".") else ""  # test 2058.12
       for (j in seq_along(xi)) {

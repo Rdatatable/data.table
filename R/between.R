@@ -9,10 +9,10 @@ between = function(x, lower, upper, incbounds=TRUE, NAbounds=TRUE, check=FALSE) 
   if (is.px(x) && (is.character(lower) || is.character(upper))) {
     tz = attr(x, "tzone", exact=TRUE)
     if (is.null(tz)) tz = ""
-    if (is.character(lower)) lower = tryCatch(as.POSIXct(lower, tz=tz), error=function(e)stop(
-      "'between' function the 'x' argument is a POSIX class while 'lower' was not, coercion to POSIX failed with: ", e$message))
-    if (is.character(upper)) upper = tryCatch(as.POSIXct(upper, tz=tz), error=function(e)stop(
-      "'between' function the 'x' argument is a POSIX class while 'upper' was not, coercion to POSIX failed with: ", e$message))
+    if (is.character(lower)) lower = tryCatch(as.POSIXct(lower, tz=tz), error=function(e)stopf(
+      "'between' function the 'x' argument is a POSIX class while '%s' was not, coercion to POSIX failed with: %s", 'lower', e$message))
+    if (is.character(upper)) upper = tryCatch(as.POSIXct(upper, tz=tz), error=function(e)stopf(
+      "'between' function the 'x' argument is a POSIX class while '%s' was not, coercion to POSIX failed with: %s", 'upper', e$message))
     stopifnot(is.px(x), is.px(lower), is.px(upper)) # nocov # internal
   }
   # POSIX check timezone match
@@ -24,11 +24,11 @@ between = function(x, lower, upper, incbounds=TRUE, NAbounds=TRUE, check=FALSE) 
     # lower/upper should be more tightly linked than x/lower, so error
     #   if the former don't match but only inform if they latter don't
     if (tzs[2L]!=tzs[3L]) {
-      stop("'between' lower= and upper= are both POSIXct but have different tzone attributes: ", brackify(tzs[2:3],quote=TRUE), ". Please align their time zones.")
+      stopf("'between' lower= and upper= are both POSIXct but have different tzone attributes: %s. Please align their time zones.", brackify(tzs[2:3], quote=TRUE))
       # otherwise the check in between.c that lower<=upper can (correctly) fail for this reason
     }
     if (tzs[1L]!=tzs[2L]) {
-      message("'between' arguments are all POSIXct but have mismatched tzone attributes: ", brackify(tzs,quote=TRUE),". The UTC times will be compared.")
+      messagef("'between' arguments are all POSIXct but have mismatched tzone attributes: %s. The UTC times will be compared.", brackify(tzs, quote=TRUE))
       # the underlying numeric is always UTC anyway in POSIXct so no coerce is needed; just compare as-is. As done by CoSMoS::example(analyzeTS), #3581
     }
   }
@@ -60,12 +60,8 @@ between = function(x, lower, upper, incbounds=TRUE, NAbounds=TRUE, check=FALSE) 
     y = eval.parent(ysub)
   }
   if ((l <- length(y)) != 2L) {
-    stop("RHS has length() ", l, "; expecting length 2. ",
-         if (ysub %iscall% 'c')
-           sprintf("Perhaps you meant %s? ",
-                   capture.output(print(`[[<-`(ysub, 1L, quote(list))))),
-         "The first element should be the lower bound(s); ",
-         "the second element should be the upper bound(s).")
+    suggestion <- if (ysub %iscall% 'c') gettextf("Perhaps you meant %s? ", capture.output(print(`[[<-`(ysub, 1L, quote(list))))) else ""
+    stopf("RHS has length() %d; expecting length 2. %sThe first element should be the lower bound(s); the second element should be the upper bound(s).", l, suggestion)
   }
   between(x, y[[1L]], y[[2L]], incbounds=TRUE)
 }

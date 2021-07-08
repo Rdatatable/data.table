@@ -76,13 +76,11 @@ fwrite = function(x, file="", append=FALSE, quote="auto",
   }
   if (NCOL(x)==0L && file!="") {
     if (file.exists(file)) {
-      warning("Input has no columns; doing nothing.",
-              if (!append)
-                paste("\nIf you intended to overwrite the file at",
-                      file, "with an empty one, please use file.remove first."))
+      suggested <- if (append) "" else gettextf("\nIf you intended to overwrite the file at %s with an empty one, please use file.remove first.", file)
+      warningf("Input has no columns; doing nothing.%s", suggested)
       return(invisible())
     } else {
-      warning("Input has no columns; creating an empty file at '", file, "' and exiting.")
+      warningf("Input has no columns; creating an empty file at '%s' and exiting.", file)
       file.create(file)
       return(invisible())
     }

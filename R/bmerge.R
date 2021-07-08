@@ -45,11 +45,11 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
     iclass = getClass(i[[ic]])
     xname = paste0("x.", names(x)[xc])
     iname = paste0("i.", names(i)[ic])
-    if (!xclass %chin% supported) stop("x.", names(x)[xc]," is type ", xclass, " which is not supported by data.table join")
-    if (!iclass %chin% supported) stop("i.", names(i)[ic]," is type ", iclass, " which is not supported by data.table join")
+    if (!xclass %chin% supported) stopf("%s is type %s which is not supported by data.table join", xname, xclass)
+    if (!iclass %chin% supported) stopf("%s is type %s which is not supported by data.table join", iname, iclass)
     if (xclass=="factor" || iclass=="factor") {
       if (roll!=0.0 && a==length(icols))
-        stop("Attempting roll join on factor column when joining x.",names(x)[xc]," to i.",names(i)[ic],". Only integer, double or character columns may be roll joined.")
+        stopf("Attempting roll join on factor column when joining %s to %s. Only integer, double or character columns may be roll joined.", xname, iname)
       if (xclass=="factor" && iclass=="factor") {
         if (verbose) catf("Matching %s factor levels to %s factor levels.\n", iname, xname)
         set(i, j=ic, value=chmatch(levels(i[[ic]]), levels(x[[xc]]), nomatch=0L)[i[[ic]]])  # nomatch=0L otherwise a level that is missing would match to NA values
@@ -68,7 +68,7 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
           next
         }
       }
-      stop("Incompatible join types: x.", names(x)[xc], " (",xclass,") and i.", names(i)[ic], " (",iclass,"). Factor columns must join to factor or character columns.")
+      stopf("Incompatible join types: %s (%s) and %s (%s). Factor columns must join to factor or character columns.", xname, xclass, iname, iclass)
     }
     if (xclass == iclass) {
       if (verbose) catf("%s has same type (%s) as %s. No coercion needed.\n", iname, xclass, xname)
@@ -87,7 +87,7 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
         set(x, j=xc, value=match.fun(paste0("as.", iclass))(x[[xc]]))
         next
       }
-      stop("Incompatible join types: x.", names(x)[xc], " (",xclass,") and i.", names(i)[ic], " (",iclass,")")
+      stopf("Incompatible join types: %s (%s) and %s (%s)", xname, xclass, iname, iclass)
     }
     if (xclass=="integer64" || iclass=="integer64") {
       nm = c(iname, xname)
@@ -95,7 +95,7 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
       if (wclass=="integer" || (wclass=="double" && !isReallyReal(w[[wc]]))) {
         if (verbose) catf("Coercing %s column %s%s to type integer64 to match type of %s.\n", wclass, nm[1L], if (wclass=="double") " (which contains no fractions)" else "", nm[2L])
         set(w, j=wc, value=bit64::as.integer64(w[[wc]]))
-      } else stop("Incompatible join types: ", nm[2L], " is type integer64 but ", nm[1L], " is type double and contains fractions")
+      } else stopf("Incompatible join types: %s is type integer64 but %s is type double and contains fractions", nm[2L], nm[1L])
     } else {
       # just integer and double left
       if (iclass=="double") {

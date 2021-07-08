@@ -14,11 +14,11 @@ setdiff_ = function(x, y, by.x=seq_along(x), by.y=seq_along(y), use.names=FALSE)
     icnam = names(y)[lc]
     xcnam = names(x)[rc]
     if ( is.character(x[[rc]]) && !(is.character(y[[lc]]) || is.factor(y[[lc]])) ) {
-      stop("When x's column ('",xcnam,"') is character, the corresponding column in y ('",icnam,"') should be factor or character, but found incompatible type '",typeof(y[[lc]]),"'.")
+      stopf("When x's column ('%s') is character, the corresponding column in y ('%s') should be factor or character, but found incompatible type '%s'.", xcnam, icnam, typeof(y[[lc]]))
     } else if ( is.factor(x[[rc]]) && !(is.character(y[[lc]]) || is.factor(y[[lc]])) ) {
-      stop("When x's column ('",xcnam,"') is factor, the corresponding column in y ('",icnam,"') should be character or factor, but found incompatible type '",typeof(y[[lc]]),"'.")
+      stopf("When x's column ('%s') is factor, the corresponding column in y ('%s') should be character or factor, but found incompatible type '%s'.", xcnam, icnam, typeof(y[[lc]]))
     } else if ( (is.integer(x[[rc]]) || is.double(x[[rc]])) && (is.logical(y[[lc]]) || is.character(y[[lc]])) ) {
-      stop("When x's column ('",xcnam,"') is integer or numeric, the corresponding column in y ('",icnam,"') can not be character or logical types, but found incompatible type '",typeof(y[[lc]]),"'.")
+      stopf("When x's column ('%s') is integer or numeric, the corresponding column in y ('%s') can not be character or logical types, but found incompatible type '%s'.", xcnam, icnam, typeof(y[[lc]]))
     }
   }
   ux = unique(shallow(x, by.x))
@@ -42,8 +42,7 @@ funique = function(x) {
   if (!identical(names(x), names(y))) stop("x and y must have the same column order")
   bad_types = c("raw", "complex", if (block_list) "list")
   found = bad_types %chin% c(vapply_1c(x, typeof), vapply_1c(y, typeof))
-  if (any(found)) stop("unsupported column type", if (sum(found) > 1L) "s" else "",
-                       " found in x or y: ", brackify(bad_types[found]))
+  if (any(found)) stop(domain=NA, sprintf(ngettext(sum(found), "unsupported column type found in x or y: %s", "unsupported column types found in x or y: %s"), brackify(bad_types[found])))
   super = function(x) {
     # allow character->factor and integer->numeric because from v1.12.4 i's type is retained by joins, #3820
     ans = class(x)[1L]
@@ -51,7 +50,7 @@ funique = function(x) {
   }
   if (!identical(sx<-sapply(x, super), sy<-sapply(y, super))) {
     w = which.first(sx!=sy)
-    stop("Item ",w," of x is '",class(x[[w]])[1L],"' but the corresponding item of y is '", class(y[[w]])[1L], "'.")
+    stopf("Item %d of x is '%s' but the corresponding item of y is '%s'.", w, class(x[[w]])[1L], class(y[[w]])[1L])
   }
   if (.seqn && ".seqn" %chin% names(x)) stop("None of the datasets should contain a column named '.seqn'")
 }
@@ -189,9 +188,9 @@ all.equal.data.table = function(target, current, trim.levels=TRUE, check.attribu
       stop("None of the datasets to compare should contain a column named '.seqn'")
     bad.type = setNames(c("raw","complex","list") %chin% c(vapply_1c(current, typeof), vapply_1c(target, typeof)), c("raw","complex","list"))
     if (any(bad.type))
-      stop("Datasets to compare with 'ignore.row.order' must not have unsupported column types: ", brackify(names(bad.type)[bad.type]))
+      stopf("Datasets to compare with 'ignore.row.order' must not have unsupported column types: %s", brackify(names(bad.type)[bad.type]))
     if (between(tolerance, 0, sqrt(.Machine$double.eps), incbounds=FALSE)) {
-      warning("Argument 'tolerance' was forced to lowest accepted value `sqrt(.Machine$double.eps)` from provided ", format(tolerance, scientific=FALSE))
+      warningf("Argument 'tolerance' was forced to lowest accepted value `sqrt(.Machine$double.eps)` from provided %s", format(tolerance, scientific=FALSE))
       tolerance = sqrt(.Machine$double.eps)
     }
     target_dup = as.logical(anyDuplicated(target))

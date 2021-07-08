@@ -19,7 +19,7 @@ foverlaps = function(x, y, by.x=if (!is.null(key(x))) key(x) else key(y), by.y=k
   if (maxgap != 0L || minoverlap != 1L)
     stop("maxgap and minoverlap arguments are not yet implemented.")
   if (is.null(by.y))
-    stop("'y' must be keyed (i.e., sorted, and, marked as sorted). Call setkey(y, ...) first, see ?setkey. Also check the examples in ?foverlaps.")
+    stop("y must be keyed (i.e., sorted, and, marked as sorted). Call setkey(y, ...) first, see ?setkey. Also check the examples in ?foverlaps.")
   if (length(by.x) < 2L || length(by.y) < 2L)
     stop("'by.x' and 'by.y' should contain at least two column names (or numbers) each - corresponding to 'start' and 'end' points of intervals. Please see ?foverlaps and examples for more info.")
   if (is.numeric(by.x)) {
@@ -37,39 +37,39 @@ foverlaps = function(x, y, by.x=if (!is.null(key(x))) key(x) else key(y), by.y=k
   if (!is.character(by.y))
     stop("A non-empty vector of column names or numbers is required for by.y")
   if (!identical(by.y, key(y)[seq_along(by.y)]))
-    stop("The first ", length(by.y), " columns of y's key must be identical to the columns specified in by.y.")
+    stopf("The first %d columns of y's key must be identical to the columns specified in by.y.", length(by.y))
   if (anyNA(chmatch(by.x, names(x))))
-    stop("Elements listed in 'by.x' must be valid names in data.table 'x'")
+    stop("Elements listed in 'by.x' must be valid names in data.table x")
   if (anyDuplicated(by.x) || anyDuplicated(by.y))
     stop("Duplicate columns are not allowed in overlap joins. This may change in the future.")
   if (length(by.x) != length(by.y))
     stop("length(by.x) != length(by.y). Columns specified in by.x should correspond to columns specified in by.y and should be of same lengths.")
   if (any(dup.x<-duplicated(names(x)))) #1730 - handling join possible but would require workarounds on setcolorder further, it is really better just to rename dup column
-    stop("x has some duplicated column name(s): ",paste(unique(names(x)[dup.x]),collapse=","),". Please remove or rename the duplicate(s) and try again.")
+    stopf("%s has some duplicated column name(s): %s. Please remove or rename the duplicate(s) and try again.", "x", brackify(unique(names(x)[dup.x])))
   if (any(dup.y<-duplicated(names(y))))
-    stop("y has some duplicated column name(s): ",paste(unique(names(y)[dup.y]),collapse=","),". Please remove or rename the duplicate(s) and try again.")
+    stopf("%s has some duplicated column name(s): %s. Please remove or rename the duplicate(s) and try again.", "y", brackify(unique(names(y)[dup.y])))
   xnames = by.x; xintervals = tail(xnames, 2L)
   ynames = by.y; yintervals = tail(ynames, 2L)
   xval1 = x[[xintervals[1L]]]; xval2 = x[[xintervals[2L]]]
   yval1 = y[[yintervals[1L]]]; yval2 = y[[yintervals[2L]]]
   if (!storage.mode(xval1) %chin% c("double", "integer") || !storage.mode(xval2) %chin% c("double", "integer") || is.factor(xval1) || is.factor(xval2)) # adding factors to the bunch, #2645
-    stop("The last two columns in by.x should correspond to the 'start' and 'end' intervals in data.table 'x' and must be integer/numeric type.")
+    stop("The last two columns in by.x should correspond to the 'start' and 'end' intervals in data.table x and must be integer/numeric type.")
   if ( isTRUEorNA(any(xval2 - xval1 < 0L)) ) {
     # better error messages as suggested by @msummersgill in #3007. Thanks for the code too. Placing this inside so that it only runs if the general condition is satisfied. Should error anyway here.. So doesn't matter even if runs all if-statements; takes about 0.2s for anyNA check on 200 million elements .. acceptable speed for stoppage, I think, at least for now.
     if ( anyNA(xval1) ) {
-      stop("NA values in data.table 'x' start column: '", xintervals[1L],"'. All rows with NA values in the range columns must be removed for foverlaps() to work.")
+      stopf("NA values in data.table %s '%s' column: '%s'. All rows with NA values in the range columns must be removed for foverlaps() to work.", "x", "start", xintervals[1L])
     } else if ( anyNA(xval2) ) {
-      stop("NA values in data.table 'x' end column: '", xintervals[2L],"'. All rows with NA values in the range columns must be removed for foverlaps() to work.")
-    } else stop("All entries in column ", xintervals[1L], " should be <= corresponding entries in column ", xintervals[2L], " in data.table 'x'.")
+      stopf("NA values in data.table %s '%s' column: '%s'. All rows with NA values in the range columns must be removed for foverlaps() to work.", "x", "end", xintervals[2L])
+    } else stopf("All entries in column '%s' should be <= corresponding entries in column '%s' in data.table x.", xintervals[1L], xintervals[2L])
   }
   if (!storage.mode(yval1) %chin% c("double", "integer") || !storage.mode(yval2) %chin% c("double", "integer") || is.factor(yval1) || is.factor(yval2)) # adding factors to the bunch, #2645
-    stop("The last two columns in by.y should correspond to the 'start' and 'end' intervals in data.table 'y' and must be integer/numeric type.")
+    stop("The last two columns in by.y should correspond to the 'start' and 'end' intervals in data.table y and must be integer/numeric type.")
   if ( isTRUEorNA(any(yval2 - yval1 < 0L) )) {
     if ( anyNA(yval1) ) {
-      stop("NA values in data.table 'y' start column: '", yintervals[1L],"'. All rows with NA values in the range columns must be removed for foverlaps() to work.")
+      stopf("NA values in data.table %s '%s' column: '%s'. All rows with NA values in the range columns must be removed for foverlaps() to work.", "y", "start", yintervals[1L])
     } else if ( anyNA(yval2) ) {
-      stop("NA values in data.table 'y' end column: '", yintervals[2L],"'. All rows with NA values in the range columns must be removed for foverlaps() to work.")
-    } else stop("All entries in column ", yintervals[1L], " should be <= corresponding entries in column ", yintervals[2L], " in data.table 'y'.")
+      stopf("NA values in data.table %s '%s' column: '%s'. All rows with NA values in the range columns must be removed for foverlaps() to work.", "y", "end", yintervals[2L])
+    } else stopf("All entries in column '%s' should be <= corresponding entries in column '%s' in data.table y.", yintervals[1L], yintervals[2L])
   }
   # POSIXct interval cols error check
   posx_chk = sapply(list(xval1, xval2, yval1, yval2), inherits, 'POSIXct')

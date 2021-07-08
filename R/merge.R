@@ -13,9 +13,12 @@ merge.data.table = function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FAL
   }
   x0 = length(x)==0L
   y0 = length(y)==0L
-  if (x0 || y0) warning(sprintf(ngettext(x0+y0,
-    "You are trying to join data.tables where %s has 0 columns.",
-    "You are trying to join data.tables where %s have 0 columns."),
+  if (x0 || y0) warning(domain=NA, sprintf(
+    ngettext(
+      x0+y0,
+      "You are trying to join data.tables where %s has 0 columns.",
+      "You are trying to join data.tables where %s have 0 columns."
+    ),
     if (x0 && y0) "'x' and 'y'" else if (x0) "'x'" else "'y'"
   ))
   nm_x = names(x)
@@ -100,8 +103,7 @@ merge.data.table = function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FAL
   # `suffixes=c("","")`, to match behaviour in base:::merge.data.frame)
   resultdupnames = names(dt)[duplicated(names(dt))]
   if (length(resultdupnames)) {
-    warning("column names ", paste0("'", resultdupnames, "'", collapse=", "),
-            " are duplicated in the result")
+    warningf("column names %s are duplicated in the result", brackify(resultdupnames))
   }
 
   # retain custom classes of first argument that resulted in dispatch to this method, #1378

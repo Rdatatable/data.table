@@ -37,7 +37,7 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
   nThread=as.integer(nThread)
   stopifnot(nThread>=1L)
   if (!is.null(text)) {
-    if (!is.character(text)) stop("'text=' is type ", typeof(text), " but must be character.")
+    if (!is.character(text)) stopf("'text=' is type %s but must be character.", typeof(text))
     if (!length(text)) return(data.table())
     if (length(text) > 1L) {
       writeLines(text, tmpFile<-tempfile(tmpdir=tmpdir))  # avoid paste0() which could create a new very long single string in R's memory
@@ -83,7 +83,7 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
       else if (length(grep(' ', input, fixed = TRUE)) && !file.exists(input)) {  # file name or path containing spaces is not a command
         cmd = input
         if (input_has_vars && getOption("datatable.fread.input.cmd.message", TRUE)) {
-          message("Taking input= as a system command because it contains a space ('",cmd,"'). If it's a filename please remove the space, or use file= explicitly. A variable is being passed to input= and when this is taken as a system command there is a security concern if you are creating an app, the app could have a malicious user, and the app is not running in a secure environment; e.g. the app is running as root. Please read item 5 in the NEWS file for v1.11.6 for more information and for the option to suppress this message.")
+          messagef("Taking input= as a system command because it contains a space ('%s'). If it's a filename please remove the space, or use file= explicitly. A variable is being passed to input= and when this is taken as a system command there is a security concern if you are creating an app, the app could have a malicious user, and the app is not running in a secure environment; e.g. the app is running as root. Please read item 5 in the NEWS file for v1.11.6 for more information and for the option to suppress this message.", cmd)
         }
       }
       else {
@@ -98,11 +98,10 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
   }
   if (!is.null(file)) {
     file_info = file.info(file)
-    if (is.na(file_info$size)) stop("File '",file,"' does not exist or is non-readable. getwd()=='", getwd(), "'")
-    if (isTRUE(file_info$isdir)) stop("File '",file,"' is a directory. Not yet implemented.") # dir.exists() requires R v3.2+, #989
+    if (is.na(file_info$size)) stopf("File '%s' does not exist or is non-readable. getwd()=='%s'", file, getwd())
+    if (isTRUE(file_info$isdir)) stopf("File '%s' is a directory. Not yet implemented.", file) # dir.exists() requires R v3.2+, #989
     if (!file_info$size) {
-      warning("File '", file, "' has size 0. Returning a NULL ",
-              if (data.table) 'data.table' else 'data.frame', ".")
+      warningf("File '%s' has size 0. Returning a NULL %s.", file, if (data.table) 'data.table' else 'data.frame')
       return(if (data.table) data.table(NULL) else data.frame(NULL))
     }
     if ((is_gz <- endsWith(file, ".gz")) || endsWith(file, ".bz2")) {
@@ -140,16 +139,16 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
   stopifnot(is.null(na.strings) || is.character(na.strings))
   tt = grep("^\\s+$", na.strings)
   if (length(tt)) {
-    msg = paste0('na.strings[', tt[1L], ']=="',na.strings[tt[1L]],'" consists only of whitespace, ignoring. ')
+    msg = gettextf('na.strings[%d]=="%s" consists only of whitespace, ignoring', tt[1L], na.strings[tt[1L]])
     if (strip.white) {
       if (any(na.strings=="")) {
-        warning(msg, 'strip.white==TRUE (default) and "" is present in na.strings, so any number of spaces in string columns will already be read as <NA>.')
+        warningf('%s. strip.white==TRUE (default) and "" is present in na.strings, so any number of spaces in string columns will already be read as <NA>.', msg)
       } else {
-        warning(msg, 'Since strip.white=TRUE (default), use na.strings="" to specify that any number of spaces in a string column should be read as <NA>.')
+        warningf('%s. Since strip.white=TRUE (default), use na.strings="" to specify that any number of spaces in a string column should be read as <NA>.', msg)
       }
       na.strings = na.strings[-tt]
     } else {
-      stop(msg, 'But strip.white=FALSE. Use strip.white=TRUE (default) together with na.strings="" to turn any number of spaces in string columns into <NA>')
+      stopf('%s. But strip.white=FALSE. Use strip.white=TRUE (default) together with na.strings="" to turn any number of spaces in string columns into <NA>', msg)
     }
     # whitespace at the beginning or end of na.strings is checked at C level and is an error there; test 1804
   }
@@ -159,9 +158,7 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
     # for tracking which YAML elements may be overridden by being declared explicitly
     call_args = names(match.call())
     if (is.character(skip))
-      warning("Combining a search string as 'skip' and reading a YAML header may not work as expected -- currently, ",
-              "reading will proceed to search for 'skip' from the beginning of the file, NOT from the end of ",
-              "the metadata; please file an issue on GitHub if you'd like to see more intuitive behavior supported.")
+      warning("Combining a search string as 'skip' and reading a YAML header may not work as expected -- currently, reading will proceed to search for 'skip' from the beginning of the file, NOT from the end of the metadata; please file an issue on GitHub if you'd like to see more intuitive behavior supported.")
     # create connection to stream header lines from file:
     #   https://stackoverflow.com/questions/9871307
     f = base::file(input, 'r')
@@ -170,10 +167,10 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
     yaml_border_re = '^#?---'
     if (!grepl(yaml_border_re, first_line)) {
       close(f)
-      stop(gettextf(
+      stopf(
         'Encountered <%s%s> at the first unskipped line (%d), which does not constitute the start to a valid YAML header (expecting something matching regex "%s"); please check your input and try again.',
         substr(first_line, 1L, 50L), if (nchar(first_line) > 50L) '...' else '', 1L+skip, yaml_border_re
-      ))
+      )
     }
 
     yaml_comment_re = '^#'
@@ -183,8 +180,7 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
       n_read = n_read + 1L
       if (!length(this_line)){
         close(f)
-        stop('Reached the end of the file before finding a completion to the YAML header. A valid YAML header is bookended by lines matching ',
-             'the regex "', yaml_border_re, '". Please double check the input file is a valid csvy.')
+        stopf('Reached the end of the file before finding a completion to the YAML header. A valid YAML header is bookended by lines matching the regex "%s". Please double check the input file is a valid csvy.', yaml_border_re)
       }
       if (grepl(yaml_border_re, this_line)) break
       if (grepl(yaml_comment_re, this_line))
@@ -225,11 +221,8 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
           if (!all(idx_type <- sapply(matched_name_idx, function(ii) {
             new_names[ii] %chin% colClasses[[ new_types[ii] ]]
           }))) {
-            plural = sum(idx_type) > 1L
-            message('colClasses dictated by user input and those read from YAML header are in conflict (specifically, for column', if (plural) 's',
-                    ' [', paste(new_names[matched_name_idx[!idx_type]], collapse = ','), ']); the proceeding assumes the user input was ',
-                    'an intentional override and will ignore the types implied by the YAML header; please exclude ',
-                    if (plural) 'these columns' else 'this column from colClasses if this was unintentional.')
+            messagef('colClasses dictated by user input and those read from YAML header are in conflict (specifically, for column(s) [%s]); the proceeding assumes the user input was an intentional override and will ignore the type(s) implied by the YAML header; please exclude the column(s) from colClasses if this was unintentional.',
+              brackify(new_names[matched_name_idx[!idx_type]]))
           }
         }
         # only add unmentioned columns
@@ -311,8 +304,7 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
              methods::as(v, new_class))
       },
       warning = fun <- function(e) {
-        warning("Column '", names(ans)[j], "' was requested to be '", new_class, "' but fread encountered the following ",
-                if (inherits(e, "error")) "error" else "warning", ":\n\t", e$message, "\nso the column has been left as type '", typeof(v), "'", call.=FALSE)
+        warningf("Column '%s' was requested to be '%s' but fread encountered the following %s:\n\t%s\nso the column has been left as type '%s'", names(ans)[j], new_class, if (inherits(e, "error")) "error" else "warning", e$message, typeof(v))
         return(v)
       },
       error = fun)
