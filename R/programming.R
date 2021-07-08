@@ -8,7 +8,7 @@ rm.AsIs = function(x) {
 }
 list2lang = function(x) {
   if (!is.list(x))
-    stop("'x' must be a list")
+    stopf("'x' must be a list")
   if (is.AsIs(x))
     return(rm.AsIs(x))
   asis = vapply(x, is.AsIs, FALSE)
@@ -34,7 +34,7 @@ list2lang = function(x) {
 }
 enlist = function(x) {
   if (!is.list(x))
-    stop("'x' must be a list")
+    stopf("'x' must be a list")
   if (is.AsIs(x))
     return(rm.AsIs(x))
   as.call(c(quote(list), list2lang(x)))
@@ -44,26 +44,26 @@ substitute2 = function(expr, env) {
   if (missing(expr))
     return(substitute())
   if (missing(env)) {
-    stop("'env' must not be missing")
+    stopf("'env' must not be missing")
   } else if (is.null(env)) {
     # null is fine, will be escaped few lines below
   } else if (is.environment(env)) {
     env = as.list(env, all.names=TRUE, sorted=TRUE)
   } else if (!is.list(env)) {
-    stop("'env' must be a list or an environment")
+    stopf("'env' must be a list or an environment")
   }
   if (!length(env)) {
     return(substitute(expr))
   }
   env.names = names(env)
   if (is.null(env.names)) {
-    stop("'env' argument does not have names")
+    stopf("'env' argument does not have names")
   } else if (!all(nzchar(env.names))) {
-    stop("'env' argument has zero char names")
+    stopf("'env' argument has zero char names")
   } else if (anyNA(env.names)) {
-    stop("'env' argument has NA names")
+    stopf("'env' argument has NA names")
   } else if (anyDuplicated(env.names)) {
-    stop("'env' argument has duplicated names")
+    stopf("'env' argument has duplicated names")
   }
   # character to name/symbol, and list to list call
   env = list2lang(env)

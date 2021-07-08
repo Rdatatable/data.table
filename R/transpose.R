@@ -25,7 +25,7 @@ transpose = function(l, fill=NA, ignore.empty=FALSE, keep.names=NULL, make.names
 
 tstrsplit = function(x, ..., fill=NA, type.convert=FALSE, keep, names=FALSE) {
   if (!isTRUEorFALSE(names) && !is.character(names))
-    stop("'names' must be TRUE/FALSE or a character vector.")
+    stopf("'names' must be TRUE/FALSE or a character vector.")
   ans = transpose(strsplit(as.character(x), ...), fill=fill, ignore.empty=FALSE)
   if (!missing(keep)) {
     keep = suppressWarnings(as.integer(keep))

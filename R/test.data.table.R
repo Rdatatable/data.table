@@ -3,7 +3,7 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
   if (exists("test.data.table", .GlobalEnv,inherits=FALSE)) {
     # package developer
     # nocov start
-    if ("package:data.table" %chin% search()) stop("data.table package is loaded. Unload or start a fresh R session.")
+    if ("package:data.table" %chin% search()) stopf("data.table package is loaded. Unload or start a fresh R session.")
     rootdir = if (pkg!="." && pkg %chin% dir()) file.path(getwd(), pkg) else Sys.getenv("PROJ_PATH")
     subdir = file.path("inst","tests")
     # nocov end
@@ -16,7 +16,7 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
 
   stopifnot(is.character(script), length(script)==1L, !is.na(script), nzchar(script))
   if (!grepl(".Rraw$", script))
-    stop("script must end with '.Rraw'. If a file ending '.Rraw.bz2' exists, that will be found and used.") # nocov
+    stopf("script must end with '.Rraw'. If a file ending '.Rraw.bz2' exists, that will be found and used.") # nocov
 
   if (identical(script,"*.Rraw")) {
     # nocov start
@@ -160,16 +160,11 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
   ntest = env$ntest
   if (nfail > 0L) {
     # nocov start
-    # domain=NA since it's already translated by then
-    stop(domain = NA, sprintf(
-      ngettext(
-        nfail,
-        "%d error out of %d. Search %s for test number %s",
-        "%d errors out of %d. Search %s for test numbers %s"
-      ),
+    stopf(
+      "%d error(s) out of %d. Search %s for test number(s) %s",
       nfail, ntest, names(fn), toString(env$whichfail)
-    ))
-    # important to stop() here, so that 'R CMD check' fails
+    )
+    # important to stopf() here, so that 'R CMD check' fails
     # nocov end
   }
 
@@ -204,7 +199,7 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
   #    graphics::par(p)
   #    grDevices::dev.off()
   #  } else {
-  #    warning("test.data.table runs with memory testing but did not collect any memory statistics.")
+  #    warningf("test.data.table runs with memory testing but did not collect any memory statistics.")
   #  }
   #}
   #if (memtest<-get("memtest", envir=env)) memtest.plot(get("inittime", envir=env))

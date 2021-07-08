@@ -7,7 +7,7 @@ showProgress=getOption("datatable.showProgress",interactive()), data.table=getOp
 nThread=getDTthreads(verbose), logical01=getOption("datatable.logical01",FALSE), keepLeadingZeros=getOption("datatable.keepLeadingZeros",FALSE),
 yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
 {
-  if (missing(input)+is.null(file)+is.null(text)+is.null(cmd) < 3L) stop("Used more than one of the arguments input=, file=, text= and cmd=.")
+  if (missing(input)+is.null(file)+is.null(text)+is.null(cmd) < 3L) stopf("Used more than one of the arguments input=, file=, text= and cmd=.")
   input_has_vars = length(all.vars(substitute(input)))>0L  # see news for v1.11.6
   if (is.null(sep)) sep="\n"         # C level knows that \n means \r\n on Windows, for example
   else {
@@ -19,7 +19,7 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
   stopifnot( is.character(dec), length(dec)==1L, nchar(dec)==1L )
   # handle encoding, #563
   if (length(encoding) != 1L || !encoding %chin% c("unknown", "UTF-8", "Latin-1")) {
-    stop("Argument 'encoding' must be 'unknown', 'UTF-8' or 'Latin-1'.")
+    stopf("Argument 'encoding' must be 'unknown', 'UTF-8' or 'Latin-1'.")
   }
   stopifnot(
     isTRUEorFALSE(strip.white), isTRUEorFALSE(blank.lines.skip), isTRUEorFALSE(fill), isTRUEorFALSE(showProgress),
@@ -50,19 +50,19 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
   }
   else if (is.null(cmd)) {
     if (!is.character(input) || length(input)!=1L) {
-      stop("input= must be a single character string containing a file name, a system command containing at least one space, a URL starting 'http[s]://', 'ftp[s]://' or 'file://', or, the input data itself containing at least one \\n or \\r")
+      stopf("input= must be a single character string containing a file name, a system command containing at least one space, a URL starting 'http[s]://', 'ftp[s]://' or 'file://', or, the input data itself containing at least one \\n or \\r")
     }
     if (input=="" || length(grep('\\n|\\r', input))) {
       # input is data itself containing at least one \n or \r
     } else {
       if (startsWith(input, " ")) {
-        stop("input= contains no \\n or \\r, but starts with a space. Please remove the leading space, or use text=, file= or cmd=")
+        stopf("input= contains no \\n or \\r, but starts with a space. Please remove the leading space, or use text=, file= or cmd=")
       }
       str7 = substr(input, 1L, 7L) # avoid grepl() for #2531
       if (str7=="ftps://" || startsWith(input, "https://")) {
         # nocov start
         if (!requireNamespace("curl", quietly = TRUE))
-          stop("Input URL requires https:// connection for which fread() requires 'curl' package which cannot be found. Please install 'curl' using 'install.packages('curl')'.") # nocov
+          stopf("Input URL requires https:// connection for which fread() requires 'curl' package which cannot be found. Please install 'curl' using 'install.packages('curl')'.") # nocov
         tmpFile = tempfile(fileext = paste0(".",tools::file_ext(input)), tmpdir=tmpdir)  # retain .gz extension in temp filename so it knows to be decompressed further below
         curl::curl_download(input, tmpFile, mode="wb", quiet = !showProgress)
         file = tmpFile
@@ -106,7 +106,7 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
     }
     if ((is_gz <- endsWith(file, ".gz")) || endsWith(file, ".bz2")) {
       if (!requireNamespace("R.utils", quietly = TRUE))
-        stop("To read gz and bz2 files directly, fread() requires 'R.utils' package which cannot be found. Please install 'R.utils' using 'install.packages('R.utils')'.") # nocov
+        stopf("To read gz and bz2 files directly, fread() requires 'R.utils' package which cannot be found. Please install 'R.utils' using 'install.packages('R.utils')'.") # nocov
       FUN = if (is_gz) gzfile else bzfile
       R.utils::decompressFile(file, decompFile<-tempfile(tmpdir=tmpdir), ext=NULL, FUN=FUN, remove=FALSE)   # ext is not used by decompressFile when destname is supplied, but isn't optional
       file = decompFile   # don't use 'tmpFile' symbol again, as tmpFile might be the http://domain.org/file.csv.gz download
@@ -116,18 +116,18 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
 
     input = file
   }
-  if (!missing(autostart)) warning("'autostart' is now deprecated and ignored. Consider skip='string' or skip=n");
+  if (!missing(autostart)) warningf("'autostart' is now deprecated and ignored. Consider skip='string' or skip=n");
   if (is.logical(colClasses)) {
-    if (!allNA(colClasses)) stop("colClasses is type 'logical' which is ok if all NA but it has some TRUE or FALSE values in it which is not allowed. Please consider the drop= or select= argument instead. See ?fread.")
+    if (!allNA(colClasses)) stopf("colClasses is type 'logical' which is ok if all NA but it has some TRUE or FALSE values in it which is not allowed. Please consider the drop= or select= argument instead. See ?fread.")
     colClasses = NULL
   }
   if (!is.null(colClasses) && is.atomic(colClasses)) {
-    if (!is.character(colClasses)) stop("colClasses is not type list or character vector")
+    if (!is.character(colClasses)) stopf("colClasses is not type list or character vector")
     if (!length(colClasses)) {
       colClasses=NULL;
     } else if (identical(colClasses, "NULL")) {
       colClasses = NULL
-      warning('colClasses="NULL" (quoted) is interpreted as colClasses=NULL (the default) as opposed to dropping every column.')
+      warningf('colClasses="NULL" (quoted) is interpreted as colClasses=NULL (the default) as opposed to dropping every column.')
     } else if (!is.null(names(colClasses))) {   # names are column names; convert to list approach
       colClasses = tapply(names(colClasses), colClasses, c, simplify=FALSE)
     }
@@ -154,11 +154,11 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
   }
   if (yaml) {
     if (!requireNamespace('yaml', quietly = TRUE))
-      stop("'data.table' relies on the package 'yaml' to parse the file header; please add this to your library with install.packages('yaml') and try again.") # nocov
+      stopf("'data.table' relies on the package 'yaml' to parse the file header; please add this to your library with install.packages('yaml') and try again.") # nocov
     # for tracking which YAML elements may be overridden by being declared explicitly
     call_args = names(match.call())
     if (is.character(skip))
-      warning("Combining a search string as 'skip' and reading a YAML header may not work as expected -- currently, reading will proceed to search for 'skip' from the beginning of the file, NOT from the end of the metadata; please file an issue on GitHub if you'd like to see more intuitive behavior supported.")
+      warningf("Combining a search string as 'skip' and reading a YAML header may not work as expected -- currently, reading will proceed to search for 'skip' from the beginning of the file, NOT from the end of the metadata; please file an issue on GitHub if you'd like to see more intuitive behavior supported.")
     # create connection to stream header lines from file:
     #   https://stackoverflow.com/questions/9871307
     f = base::file(input, 'r')
@@ -194,7 +194,7 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
     if (verbose) catf('Processed %d lines of YAML metadata with the following top-level fields: %s\n', n_read, brackify(yaml_names))
     # process header first since it impacts how to handle colClasses
     if ('header' %chin% yaml_names) {
-      if ('header' %chin% call_args) message("User-supplied 'header' will override that found in metadata.")
+      if ('header' %chin% call_args) messagef("User-supplied 'header' will override that found in metadata.")
       else header = as.logical(yaml_header$header)
     }
     if ('schema' %chin% yaml_names) {
@@ -212,7 +212,7 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
       new_types = synonms[list(new_types)]$r_type
       new_names = sapply(yaml_header$schema$fields[!null_idx], `[[`, 'name')
 
-      if ('col.names' %chin% call_args) message("User-supplied column names in 'col.names' will override those found in YAML metadata.")
+      if ('col.names' %chin% call_args) messagef("User-supplied column names in 'col.names' will override those found in YAML metadata.")
       # resolve any conflicts with colClasses, if supplied;
       #   colClasses (if present) is already in list form by now
       if ('colClasses' %chin% call_args) {
@@ -242,21 +242,21 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
     }
     sep_syn = c('sep', 'delimiter')
     if (any(sep_idx <- sep_syn %chin% yaml_names)) {
-      if ('sep' %chin% call_args) message("User-supplied 'sep' will override that found in metadata.")
+      if ('sep' %chin% call_args) messagef("User-supplied 'sep' will override that found in metadata.")
       else sep = yaml_header[[ sep_syn[sep_idx][1L] ]]
     }
     quote_syn = c('quote', 'quoteChar', 'quote_char')
     if (any(quote_idx <- quote_syn %chin% yaml_names)) {
-      if ('quote' %chin% call_args) message("User-supplied 'quote' will override that found in metadata.")
+      if ('quote' %chin% call_args) messagef("User-supplied 'quote' will override that found in metadata.")
       else quote = yaml_header[[ quote_syn[quote_idx][1L] ]]
     }
     dec_syn = c('dec', 'decimal')
     if (any(dec_idx <- dec_syn %chin% yaml_names)) {
-      if ('dec' %chin% call_args) message("User-supplied 'dec' will override that found in metadata.")
+      if ('dec' %chin% call_args) messagef("User-supplied 'dec' will override that found in metadata.")
       else dec = yaml_header[[ dec_syn[dec_idx][1L] ]]
     }
     if ('na.strings' %chin% yaml_names) {
-      if ('na.strings' %chin% call_args) message("User-supplied 'na.strings' will override that found in metadata.")
+      if ('na.strings' %chin% call_args) messagef("User-supplied 'na.strings' will override that found in metadata.")
       else na.strings = yaml_header$na.strings
     }
     if (is.integer(skip)) skip = skip + n_read
@@ -327,7 +327,7 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
     setnames(ans, col.names) # setnames checks and errors automatically
   if (!is.null(key) && data.table) {
     if (!is.character(key))
-      stop("key argument of data.table() must be a character vector naming columns (NB: col.names are applied before this)")
+      stopf("key argument of data.table() must be a character vector naming columns (NB: col.names are applied before this)")
     if (length(key) == 1L) {
       key = strsplit(key, split = ",", fixed = TRUE)[[1L]]
     }
@@ -336,7 +336,7 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
   if (yaml) setattr(ans, 'yaml_metadata', yaml_header)
   if (!is.null(index) && data.table) {
     if (!all(vapply_1b(index, is.character)))
-      stop("index argument of data.table() must be a character vector naming columns (NB: col.names are applied before this)")
+      stopf("index argument of data.table() must be a character vector naming columns (NB: col.names are applied before this)")
     if (is.list(index)) {
       to_split = vapply_1i(index, length) == 1L
       if (any(to_split))
