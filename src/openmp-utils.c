@@ -79,6 +79,8 @@ SEXP getDTthreads_R(SEXP verbose) {
   if (LOGICAL(verbose)[0]) {
     #ifndef _OPENMP
       Rprintf(_("This installation of data.table has not been compiled with OpenMP support.\n"));
+    #else
+      Rprintf(_("  OpenMP version (_OPENMP)       %d\n"), _OPENMP); // user can use Google to map 201511 to 4.5; it's odd that OpenMP API does not provide 4.5
     #endif
     // this output is captured, paste0(collapse="; ")'d, and placed at the end of test.data.table() for display in the last 13 lines of CRAN check logs
     // it is also printed at the start of test.data.table() so that we can trace any Killed events on CRAN before the end is reached

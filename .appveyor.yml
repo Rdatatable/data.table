@@ -32,7 +32,7 @@ environment:
 
   - R_VERSION: release  # the single Windows.zip binary (both 32bit/64bit) that users following dev version of installation instructions should click
 
-  - R_VERSION: devel   # When off it's to speed up dev cycle; R-devel is still checked but by GLCI on a roughly hourly cycle. CRAN_Release.cmd has a reminder to turn back on.
+#  - R_VERSION: devel   # Never turn back on. GLCI after merge covers latest daily R-devel very well, so we shouldn't confuse and slow down PR dev cycle by measuring PRs against daily R-devel too. If a change in R-devel yesterday breaks the PR, it's very unlikely to be due to something in the PR. So we should accept the PR if it passes R-release and fix separately anything related to R-devel which we'll see from GLCI.
 
 before_build:
   - cmd: ECHO no Revision metadata added to DESCRIPTION
