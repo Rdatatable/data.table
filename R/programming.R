@@ -6,6 +6,9 @@ rm.AsIs = function(x) {
   oldClass(x) = cl[cl!="AsIs"]
   x
 }
+only.list = function(x) {
+  identical(class(x), "list")
+}
 list2lang = function(x) {
   if (!is.list(x))
     stopf("'x' must be a list")
@@ -21,7 +24,7 @@ list2lang = function(x) {
     x[to.name] = lapply(x[to.name], as.name)
   }
   if (isTRUE(getOption("datatable.enlist", TRUE))) { ## recursively enlist for nested lists, see note section in substitute2 manual
-    islt = vapply(x, is.list, FALSE)
+    islt = vapply(x, only.list, FALSE) #5057 nested DT that inherits from a list must not be turned into list call
     to.enlist = !asis & islt
     if (any(to.enlist)) {
       x[to.enlist] = lapply(x[to.enlist], enlist)
@@ -49,7 +52,7 @@ substitute2 = function(expr, env) {
     # null is fine, will be escaped few lines below
   } else if (is.environment(env)) {
     env = as.list(env, all.names=TRUE, sorted=TRUE)
-  } else if (!is.list(env)) {
+  } else if (!only.list(env) && !(is.AsIs(env) && only.list(rm.AsIs(env)))) {
     stopf("'env' must be a list or an environment")
   }
   if (!length(env)) {
