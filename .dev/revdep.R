@@ -327,7 +327,7 @@ inst = function() {
   system(paste0(R," CMD INSTALL ",last))
 }
 
-log = function(bioc=FALSE, fnam="~/fail.log") {
+log = function(bioc=FALSE, fnam="~/fail.log", app="gedit") {
   x = c(.fail.cran, if (bioc) .fail.bioc)
   cat("Writing 00check.log for",length(x),"packages to",fnam,":\n")
   cat(paste(x,collapse=" "), "\n")
@@ -351,6 +351,8 @@ log = function(bioc=FALSE, fnam="~/fail.log") {
     system(paste0("grep -H . ./",i,".Rcheck/00check.log >> ",fnam))  # the fail messages
     cat("\n\n", file=fnam, append=TRUE)
   }
+  system(paste(app, fnam))
+  invisible()
 }
 
 inst()
