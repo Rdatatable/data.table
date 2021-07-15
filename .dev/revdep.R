@@ -130,7 +130,7 @@ for (p in deps) {
   }
 }
 cat("New downloaded:",new," Already had latest:", old, " TOTAL:", length(deps), "\n")
-update.packages(checkBuilt=TRUE)
+update.packages(checkBuilt=TRUE, ask=FALSE)
 cat("This is R ",R.version$major,".",R.version$minor,"; ",R.version.string,"\n",sep="")
 cat("Previously installed packages were built using:\n")
 x = installed.packages()
