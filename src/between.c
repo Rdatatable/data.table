@@ -12,14 +12,14 @@ SEXP between(SEXP x, SEXP lower, SEXP upper, SEXP incbounds, SEXP NAboundsArg, S
     error(_("Incompatible vector lengths: length(x)==%d length(lower)==%d length(upper)==%d. Each should be either length 1 or the length of the longest."), nx, nl, nu);
   }
   const int longestBound = MAX(nl, nu);  // just for when check=TRUE
-  if (!isLogical(incbounds) || LOGICAL(incbounds)[0]==NA_LOGICAL)
-    error(_("incbounds must be TRUE or FALSE"));
+  if (!IS_TRUE_OR_FALSE(incbounds))
+    error(_("%s must be TRUE or FALSE"), "incbounds");
   const bool open = !LOGICAL(incbounds)[0];
   if (!isLogical(NAboundsArg) || LOGICAL(NAboundsArg)[0]==FALSE)
     error(_("NAbounds must be TRUE or NA"));
   const bool NAbounds = LOGICAL(NAboundsArg)[0]==TRUE;
-  if (!isLogical(checkArg) || LOGICAL(checkArg)[0]==NA_LOGICAL)
-    error(_("check must be TRUE or FALSE"));
+  if (!IS_TRUE_OR_FALSE(checkArg))
+    error(_("%s must be TRUE or FALSE"), "check");
   const bool check = LOGICAL(checkArg)[0];
   const bool verbose = GetVerbose();
 

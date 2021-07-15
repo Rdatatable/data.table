@@ -67,7 +67,7 @@ SEXP bmerge(SEXP idt, SEXP xdt, SEXP icolsArg, SEXP xcolsArg, SEXP isorted, SEXP
     int xt = TYPEOF(VECTOR_ELT(xdt, xcols[col]-1));
     if (iN && it!=xt) error(_("typeof x.%s (%s) != typeof i.%s (%s)"), CHAR(STRING_ELT(getAttrib(xdt,R_NamesSymbol),xcols[col]-1)), type2char(xt), CHAR(STRING_ELT(getAttrib(idt,R_NamesSymbol),icols[col]-1)), type2char(it));
     if (iN && it!=LGLSXP && it!=INTSXP && it!=REALSXP && it!=STRSXP)
-      error(_("Type '%s' not supported for joining/merging"), type2char(it));
+      error(_("Type '%s' is not supported for joining/merging"), type2char(it));
   }
 
   // rollArg, rollendsArg
@@ -369,6 +369,8 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
     }
     break;
   // supported types were checked up front to avoid handling an error here in (future) parallel region
+  default:
+    error(_("Type '%s' is not supported for joining/merging"), type2char(TYPEOF(xc)));
   }
 
   if (xlow<xupp-1 || rollLow || rollUpp) { // if value found, xlow and xupp surround it, unlike standard binary search where low falls on it

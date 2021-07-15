@@ -75,7 +75,8 @@ static const char *mygetenv(const char *name, const char *unset) {
 }
 
 SEXP getDTthreads_R(SEXP verbose) {
-  if (!isLogical(verbose) || LENGTH(verbose)!=1 || INTEGER(verbose)[0]==NA_LOGICAL) error(_("'verbose' must be TRUE or FALSE"));
+  if(!IS_TRUE_OR_FALSE(verbose))
+    error(_("%s must be TRUE or FALSE"), "verbose");
   if (LOGICAL(verbose)[0]) {
     #ifndef _OPENMP
       Rprintf(_("This installation of data.table has not been compiled with OpenMP support.\n"));

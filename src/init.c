@@ -256,22 +256,22 @@ void attribute_visible R_init_datatable(DllInfo *info)
   R_registerRoutines(info, NULL, callMethods, NULL, externalMethods);
   R_useDynamicSymbols(info, FALSE);
   setSizes();
-  const char *msg = "... failed. Please forward this message to maintainer('data.table').";
+  const char *msg = _("... failed. Please forward this message to maintainer('data.table').");
   if ((int)NA_INTEGER != (int)INT_MIN) error(_("Checking NA_INTEGER [%d] == INT_MIN [%d] %s"), NA_INTEGER, INT_MIN, msg);
   if ((int)NA_INTEGER != (int)NA_LOGICAL) error(_("Checking NA_INTEGER [%d] == NA_LOGICAL [%d] %s"), NA_INTEGER, NA_LOGICAL, msg);
-  if (sizeof(int) != 4) error(_("Checking sizeof(int) [%d] is 4 %s"), sizeof(int), msg);
-  if (sizeof(double) != 8) error(_("Checking sizeof(double) [%d] is 8 %s"), sizeof(double), msg);     // 8 on both 32bit and 64bit
+  if (sizeof(int) != 4)       error(_("Checking sizeof(%s) [%d] is %d %s"), "int", sizeof(int), 4, msg);
+  if (sizeof(double) != 8)    error(_("Checking sizeof(%s) [%d] is %d %s"), "double", sizeof(double), 8, msg);     // 8 on both 32bit and 64bit
   // alignof not available in C99: if (alignof(double) != 8) error(_("Checking alignof(double) [%d] is 8 %s"), alignof(double), msg);  // 8 on both 32bit and 64bit
-  if (sizeof(long long) != 8) error(_("Checking sizeof(long long) [%d] is 8 %s"), sizeof(long long), msg);
+  if (sizeof(long long) != 8) error(_("Checking sizeof(%s) [%d] is %d %s"), "long long", sizeof(long long), 8, msg);
   if (sizeof(char *) != 4 && sizeof(char *) != 8) error(_("Checking sizeof(pointer) [%d] is 4 or 8 %s"), sizeof(char *), msg);
   if (sizeof(SEXP) != sizeof(char *)) error(_("Checking sizeof(SEXP) [%d] == sizeof(pointer) [%d] %s"), sizeof(SEXP), sizeof(char *), msg);
-  if (sizeof(uint64_t) != 8) error(_("Checking sizeof(uint64_t) [%d] is 8 %s"), sizeof(uint64_t), msg);
-  if (sizeof(int64_t) != 8) error(_("Checking sizeof(int64_t) [%d] is 8 %s"), sizeof(int64_t), msg);
-  if (sizeof(signed char) != 1) error(_("Checking sizeof(signed char) [%d] is 1 %s"), sizeof(signed char), msg);
-  if (sizeof(int8_t) != 1) error(_("Checking sizeof(int8_t) [%d] is 1 %s"), sizeof(int8_t), msg);
-  if (sizeof(uint8_t) != 1) error(_("Checking sizeof(uint8_t) [%d] is 1 %s"), sizeof(uint8_t), msg);
-  if (sizeof(int16_t) != 2) error(_("Checking sizeof(int16_t) [%d] is 2 %s"), sizeof(int16_t), msg);
-  if (sizeof(uint16_t) != 2) error(_("Checking sizeof(uint16_t) [%d] is 2 %s"), sizeof(uint16_t), msg);
+  if (sizeof(uint64_t) != 8) error(_("Checking sizeof(%s) [%d] is %d %s"), "uint64_t", sizeof(uint64_t), 8, msg);
+  if (sizeof(int64_t) != 8)  error(_("Checking sizeof(%s) [%d] is %d %s"), "int64_t", sizeof(int64_t), 8, msg);
+  if (sizeof(signed char) != 1) error(_("Checking sizeof(%s) [%d] is %d %s"), "signed char", sizeof(signed char), 1, msg);
+  if (sizeof(int8_t) != 1)   error(_("Checking sizeof(%s) [%d] is %d %s"), "int8_t", sizeof(int8_t), 1, msg);
+  if (sizeof(uint8_t) != 1)  error(_("Checking sizeof(%s) [%d] is %d %s"), "uint8_t", sizeof(uint8_t), 1, msg);
+  if (sizeof(int16_t) != 2)  error(_("Checking sizeof(%s) [%d] is %d %s"), "int16_t", sizeof(int16_t), 2, msg);
+  if (sizeof(uint16_t) != 2) error(_("Checking sizeof(%s) [%d] is %d %s"), "uint16_t", sizeof(uint16_t), 2 ,msg);
 
   SEXP tmp = PROTECT(allocVector(INTSXP,2));
   if (LENGTH(tmp)!=2) error(_("Checking LENGTH(allocVector(INTSXP,2)) [%d] is 2 %s"), LENGTH(tmp), msg);

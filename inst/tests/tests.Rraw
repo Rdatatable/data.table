@@ -1522,11 +1522,11 @@ DT = data.table(a=1:2,b=3:4,c=5:6)
 test(495.1, setcolorder(DT,c(2,1,3)), data.table(b=3:4,a=1:2,c=5:6))
 test(495.2, setcolorder(DT,c(2,1,3)), data.table(a=1:2,b=3:4,c=5:6))
 test(496, setcolorder(DT,c("c","a","b")), data.table(c=5:6,a=1:2,b=3:4))
-test(497, setcolorder(DT,c("d","a","b")), error="specify non existing column*.*d")
+test(497, setcolorder(DT,c("d","a","b")), error="received non-existing column*.*d")
 DT = data.table(a = 1:3, b = 2:4, c = 3:5)
 test(498.1, names(setcolorder(DT, "b")), c("b", "a", "c"))
 test(498.2, names(setcolorder(DT, c(2, 3))), c("a", "c", "b"))
-test(498.3, setcolorder(DT, 1:4), error = "specify non existing column*.*4")
+test(498.3, setcolorder(DT, 1:4), error = "received non-existing column*.*4")
 # Test where neworder=NULL, thus ordered by key and index columns
 DT = data.table(a = 1:3, b = 2:4, c = 3:5, d = 4:6, key="b")
 test(498.4, names(setcolorder(DT)), c("b", "a", "c", "d"))
@@ -2850,10 +2850,10 @@ test(988, unique(dt, by='B'), dt[!duplicated(df[, 'B'])])
 test(989, unique(dt, by='C'), dt[!duplicated(df[, 'C'])])
 test(990, unique(dt, by=c('B', 'C')), dt[!duplicated(df[, c('B', 'C')])])
 test(991, unique(dt, by=NULL), dt[!duplicated(df)])
-test(991.1, unique(dt, by=4), error="specify non existing column*.*4")
+test(991.1, unique(dt, by=4), error="received non-existing column*.*4")
 test(991.2, unique(dt, by=c(1,3.1)), error="is type 'double' and one or more items in it are not whole integers")
 test(991.3, unique(dt, by=2:3), dt[!duplicated(df[,c('B','C')])])
-test(991.4, unique(dt, by=c('C','D','E')), error="specify non existing column*.*D")
+test(991.4, unique(dt, by=c('C','D','E')), error="received non-existing column*.*D")
 
 # :=NULL on factor column in empty data.table, #114
 DT = data.table(A = integer(), B = factor())
@@ -2899,7 +2899,7 @@ test(996.07, CJ(1:2, list(1:2, 3), 4:5, sorted = FALSE),
      data.table(V1 = rep(1:2, each = 4L), V2 = rep(rep(list(1:2, 3), each = 2L), 2L), V3 = rep(4:5, 4L)))
 
 test(996.08, CJ(expression(1)), error = "element 1 is non-atomic")
-test(996.09, CJ(expression(2), 3, sorted = FALSE), error = "Type 'expression' not supported")
+test(996.09, CJ(expression(2), 3, sorted = FALSE), error = "Type 'expression' is not supported")
 ## complex input support (can't handle sorted yet)
 test(996.10, CJ(z = 0:1 + (0:1)*1i, b = 1:3, sorted = FALSE),
      data.table(z = rep(0:1, each=3L) + rep(0:1, each=3L)*1i, b = rep(1:3, 2)))
@@ -4252,7 +4252,7 @@ setNumericRounding(old_rounding)
 DT = data.table(id=INT(1,2,1), val1=3:1, val2=3:1, val3=list(2:3,4:6,7:10))   # 5380
 test(1199.1, DT[, sum(.SD), by=id, .SDcols=2:3], data.table(id=1:2, V1=INT(8,4)))   #875 made the .SD case work
 test(1199.2, DT[, sum(.SD), by=id], error="data.*frame.*numeric")  # this is R's error message so use flexible string pattern to insulate from minor changes in R, #4769
-test(1199.3, DT[, sum(val3), by=id], error="Type 'list' not supported by GForce sum [(]gsum[)]. Either.*or turn off")
+test(1199.3, DT[, sum(val3), by=id], error="Type 'list' is not supported by GForce sum [(]gsum[)]. Either.*or turn off")
 
 # Selection of columns, copy column to maintain the same as R <= 3.0.2, in Rdevel, for now
 # Otherwise e.g. setkey changes the original columns too.  TO DO: could allow shallow copy, perhaps.
@@ -5538,7 +5538,7 @@ setDF(Y)
 test(1364.18, setdiff_(X, Y), error = 'x and y must both be data.tables')
 setDT(Y)
 test(1364.19, setdiff_(X[0L], Y), X[0L])
-test(1364.20, setdiff_(X, Y, by.x = 'f'), error = 'specify non existing column*.*f')
+test(1364.20, setdiff_(X, Y, by.x = 'f'), error = 'received non-existing column*.*f')
 #test(1364.21, setdiff_(X, Y, by.x = c('f', 'g')), error = 'by.x values [f, g] not present') # now only first no existing column is printed for efficiency
 test(1364.22, setdiff_(X, Y[0L], by.x = 'a'),
      data.table(a = c(1, 3, 2), b = factor(c(1L, 3L, 2L)),
@@ -6635,13 +6635,13 @@ test(1464.03, rleidv(DT, "b"), c(1L, 1L, 2L, 2L, 3L, 3L, 3L, 4L, 5L, 5L))
 test(1464.04, rleid(DT$b), c(1L, 1L, 2L, 2L, 3L, 3L, 3L, 4L, 5L, 5L))
 test(1464.05, rleidv(DT, "c"), c(1L, 1L, 2L, 2L, 3L, 3L, 3L, 4L, 5L, 5L))
 test(1464.06, rleid(DT$c), c(1L, 1L, 2L, 2L, 3L, 3L, 3L, 4L, 5L, 5L))
-test(1464.07, rleid(as.raw(c(3L, 1L, 2L))), error="Type 'raw' not supported")
-test(1464.08, rleidv(DT, 0), error="specify non existing column*.*0")
-test(1464.09, rleidv(DT, 5), error="specify non existing column*.*5")
+test(1464.07, rleid(as.raw(c(3L, 1L, 2L))), error="Type 'raw' is not supported")
+test(1464.08, rleidv(DT, 0), error="received non-existing column*.*0")
+test(1464.09, rleidv(DT, 5), error="received non-existing column*.*5")
 test(1464.10, rleidv(DT, 1:4), 1:nrow(DT))
 set.seed(1)
 DT = data.table( sample(1:2,20,replace=TRUE), sample(1:2,20,replace=TRUE), sample(1:2,20, replace=TRUE))
-test(1464.11, rleidv(DT, 1:4), error="specify non existing column*.*4")
+test(1464.11, rleidv(DT, 1:4), error="received non-existing column*.*4")
 test(1464.12, rleidv(DT, 1:2), ans<-INT(1,2,3,4,5,6,6,6,7,8,8,9,10,11,12,13,14,15,16,17))
 test(1464.13, rleidv(DT, 2:1), ans)
 test(1464.14, rleidv(DT, c(3,1)), INT(1,1,2,2,3,4,5,5,6,7,8,9,10,11,12,13,14,15,16,17))
@@ -8003,8 +8003,8 @@ test(1574.4, X["bar", on="c"], X[2L]) # missed previously
 # fix for #1376
 X = data.table(a=1:3,b=4:6,c=c("foo","bar","baz"))
 Y = data.table(A=2:4, B=5:7)
-test(1575.1, X[Y, on=c(A="a")], error="specify non existing column*.*A") # does not report 'x' or 'i' anymore after switch to colnamesInt
-test(1575.2, X[Y, on=c(a="a")], error="specify non existing column*.*a")
+test(1575.1, X[Y, on=c(A="a")], error="received non-existing column*.*A") # does not report 'x' or 'i' anymore after switch to colnamesInt
+test(1575.2, X[Y, on=c(a="a")], error="received non-existing column*.*a")
 
 # work around for issue introduced in v1.9.4, #1396
 X = data.table(x=5:1, y=6:10)
@@ -13424,10 +13424,11 @@ DT = data.table(x = c(1, 1, 3, 2), key = 'x')
 test(1962.003, duplicated(DT, fromLast = NA),
      error = 'must be TRUE or FALSE')
 test(1962.004, duplicated(DT, by = -1L),
-     error = 'specify non existing column*.*-1')
+     error = 'received non-existing column*.*-1')
 test(1962.005, duplicated(DT, by = 'y'),
-     error = 'specify non existing column*.*y')
-test(1962.006, duplicated(data.table(NULL)), logical(0L))
+     error = 'received non-existing column*.*y')
+test(1962.0061, duplicated(data.table(NULL)), logical(0L))
+test(1962.0062, duplicated(data.table(a = 1L), by = character()), FALSE)
 
 test(1962.007, unique(DT, incomparables = TRUE),
      error = 'not used (yet)')
@@ -13696,7 +13697,7 @@ test(1963.07, shift(DT, -1:1),
           c(NA, 10L, 9L, 8L, 7L, 6L, 5L, 4L, 3L, 2L)))
 ## some coverage tests for good measure
 test(1963.08, shift(DT$x, type = 'some_other_type'), error='should be one of.*lag.*lead')
-test(1963.09, shift(as.raw(0:1)), error = 'Unsupported type')
+test(1963.09, shift(as.raw(0:1)), error = "Type 'raw' is not supported")
 test(1963.10, shift(DT, -1:1, type="shift", give.names = TRUE), # new type="shift" #3223
      ans <- list(`x_shift_-1` = c(2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L, 10L, NA),
           x_shift_0 = 1:10,
@@ -13894,7 +13895,7 @@ test(1967.621, setnames(x, 1:2, c("a","a")), data.table(a=1:5, a=6:10))
 test(1967.622, setnames(x, 1:2, c("a",NA)), error = "NA in 'new' at positions [2]")
 test(1967.63, setcolorder(x, c(1, 1)), error = 'Item 2 of order (1) is either NA, out of range [1,2], or is duplicated. The new order must be a strict permutation of 1:n')
 test(1967.64, setcolorder(x, 1+3i), error = 'must be character or numeric')
-test(1967.65, setcolorder(x, 300), error = 'specify non existing column*.*300')
+test(1967.65, setcolorder(x, 300), error = 'received non-existing column*.*300')
 
 test(1967.66, rbindlist(list(x), idcol = FALSE), rbindlist(list(x)))
 test(1967.67, rbindlist(list(x), idcol = 1+3i), error = 'idcol must be a logical')
@@ -14129,7 +14130,7 @@ dimnames(DT) <- list(NULL, 1:5)
 test(1984.21, names(DT), paste0(1:5))
 DT = data.table(a = 1:10)
 test(1984.22, na.omit(DT, invert = 'a'), error="'invert' must be logical")
-test(1984.23, na.omit(DT, cols = 'b'), error="specify non existing column*.*b")
+test(1984.23, na.omit(DT, cols = 'b'), error="received non-existing column*.*b")
 #test(1984.24, na.omit(DT, cols = c('b', 'c')), error="Columns [b, c] don't") # only first non-existing col is now reported for efficiency
 ### idcol = TRUE behavior of rbindlist
 test(1984.25, rbindlist(list(DT[1L], DT[2L]), idcol = TRUE), data.table(.id=1:2, a=1:2))
@@ -14664,15 +14665,15 @@ if (test_bit64) {
   test(2019, DT[2:6, sum(v), id], data.table(id=1:2, V1=bit64::as.integer64(c(5L,15L)))) # gather, case of int64 and irows
 }
 DT = data.table(id = c(1L,1L,2L), v = as.raw(0:2))
-test(2020.01, DT[, min(v), by=id], error="'raw' not supported by GForce min")
-test(2020.02, DT[, max(v), by=id], error="'raw' not supported by GForce max")
-test(2020.03, DT[, median(v), by=id], error="'raw' not supported by GForce median")
-test(2020.04, DT[, head(v, 1), by=id], error="'raw' not supported by GForce head")
-test(2020.05, DT[, tail(v, 1), by=id], error="'raw' not supported by GForce tail")
-test(2020.06, DT[, v[1], by=id], error="'raw' not supported by GForce subset")
-test(2020.07, DT[, sd(v), by=id], error="'raw' not supported by GForce sd")
-test(2020.08, DT[, var(v), by=id], error="'raw' not supported by GForce var")
-test(2020.09, DT[, prod(v), by=id], error="'raw' not supported by GForce prod")
+test(2020.01, DT[, min(v), by=id], error="'raw' is not supported by GForce min")
+test(2020.02, DT[, max(v), by=id], error="'raw' is not supported by GForce max")
+test(2020.03, DT[, median(v), by=id], error="'raw' is not supported by GForce median")
+test(2020.04, DT[, head(v, 1), by=id], error="'raw' is not supported by GForce head")
+test(2020.05, DT[, tail(v, 1), by=id], error="'raw' is not supported by GForce tail")
+test(2020.06, DT[, v[1], by=id], error="'raw' is not supported by GForce subset")
+test(2020.07, DT[, sd(v), by=id], error="'raw' is not supported by GForce sd")
+test(2020.08, DT[, var(v), by=id], error="'raw' is not supported by GForce var")
+test(2020.09, DT[, prod(v), by=id], error="'raw' is not supported by GForce prod")
 DT = data.table(id = c(1L,1L,2L,2L), v = c(1L, 2L, NA, NA))
 test(2020.10, DT[, median(v), id], data.table(id=1:2, V1=c(1.5, NA))) # median whole group has NAs
 
@@ -15654,7 +15655,7 @@ test(2060.208, fcoalesce(fkt, 'b'), error='Item 1 is a factor but item 2 is not 
 test(2060.209, fcoalesce(str, factor('b')), error='Item 2 is a factor but item 1 is not a factor. When factors are involved, all items must be factor')
 test(2060.212, fcoalesce(list(1), list(2)), error="The first argument is a list, data.table or data.frame. In this case there should be no other arguments provided.")
 test(2060.213, fcoalesce(bool, c(TRUE, FALSE)), error="Item 2 is length 2 but the first item is length 3. Only singletons are recycled")
-test(2060.214, fcoalesce(as.raw(0), as.raw(1)), error="Unsupported type: raw")
+test(2060.214, fcoalesce(as.raw(0), as.raw(1)), error="Type 'raw' is not supported")
 test(2060.215, fcoalesce(bool, list()), bool)
 test(2060.216, fcoalesce(structure(c(1:2,NA,4L), class=c("a")), c(NA,NA,3L,4L)),, error="Item 2 has a different class than item 1")
 # different classes of x arg #3660
@@ -15881,7 +15882,7 @@ DT1 = data.table(a = sample(3L, 15L, TRUE) + .1, b=sample(c(TRUE, FALSE, NA), 15
 DT2 = data.table(a = sample(3L, 6L, TRUE) + .1, b=sample(c(TRUE, FALSE, NA), 6L, TRUE))
 test(2069.32, DT1[DT2, .(y = sum(b, na.rm=TRUE)), by=.EACHI, on=c(a = 'a', b="b")]$y, rep(0L, 6L))
 DT = data.table(z = 1i)
-test(2069.33, DT[DT, on = 'z'], error = "Type 'complex' not supported for joining/merging")
+test(2069.33, DT[DT, on = 'z'], error = "Type 'complex' is not supported for joining/merging")
 
 # forder verbose message when !isReallyReal Date, #1738
 DT = data.table(d=sample(seq(as.Date("2015-01-01"), as.Date("2015-01-05"), by="days"), 20, replace=TRUE))
@@ -15951,7 +15952,7 @@ test(2072.036, fifelse(test_vec_na, 1+0i, 0+0i), as.complex(out_vec_na))
 test(2072.037, fifelse(test_vec_na, rep(1+0i,12L), 0+0i), as.complex(out_vec_na))
 test(2072.038, fifelse(test_vec_na, rep(1+0i,12L), rep(0+0i,12L)), as.complex(out_vec_na))
 test(2072.039, fifelse(test_vec_na, 1+0i, rep(0+0i,12L)), as.complex(out_vec_na))
-test(2072.040, fifelse(test_vec, as.raw(0), as.raw(1)), error="Type raw is not supported.")
+test(2072.040, fifelse(test_vec, as.raw(0), as.raw(1)), error="Type 'raw' is not supported")
 test(2072.041, fifelse(TRUE,1,as.Date("2019-07-07")),   error="'yes' has different class than 'no'. Please")
 test(2072.042, fifelse(TRUE,1L,factor(letters[1])),     error="'yes' has different class than 'no'. Please")
 test(2072.043, fifelse(TRUE, list(1:5), list(5:1)), list(1:5))
@@ -16890,7 +16891,7 @@ test(2127.13, fcase(test_vec1, 1+0i, test_vec2, 0+0i, default=2+0i), as.complex(
 test(2127.14, fcase(test_vec1, list(1), test_vec2, list(0),default=list(2)), list(1,1,1,1,1, 2, 0, 0, 0, 0, 0))
 test(2127.15, fcase(test_vec1, as.Date("2019-10-11"), test_vec2, as.Date("2019-10-14"),default=as.Date("2019-10-15")), c(rep(as.Date("2019-10-11"),5),as.Date("2019-10-15"),rep(as.Date("2019-10-14"),5)))
 test(2127.16, fcase(test_vec1, factor("a", levels=letters[1:3]), test_vec2, factor("b", levels=letters[1:3]),default=factor("c", levels=letters[1:3])), factor(c(rep("a",5),"c",rep("b",5)), levels=letters[1:3]))
-test(2127.17, fcase(test_vec1, as.raw(1), test_vec2, as.raw(0)), error="Type raw is not supported.")
+test(2127.17, fcase(test_vec1, as.raw(1), test_vec2, as.raw(0)), error="Type 'raw' is not supported")
 test(2127.18, fcase(test_vec1, factor("a", levels=letters[1]), test_vec2, factor("b", levels=letters[1:3])), error="Argument #2 and argument #4 are both factor but their levels are different.")
 test(2127.19, fcase(test_vec1, factor("a", levels=letters[1:2]), test_vec2, factor("b", levels=letters[1:2]),default=factor("c", levels=letters[1:3])), error="Resulting value and 'default' are both type factor but their levels are different.")
 test(2127.20, fcase(test_vec1, 1L:10L, test_vec2, 3L:12L, test_vec2), error="Received 5 inputs; please supply an even number of arguments in ..., consisting of logical condition, resulting value pairs (in that order). Note that the default argument must be named explicitly, e.g., default=0")
@@ -17558,7 +17559,7 @@ test(2182.5, melt(DT.wide, measure.vars=list(a=c(NA,1), b=2:3), na.rm=TRUE)[, .(
 measurev = function(cols)cols # user-defined function for computing measure.vars, same name as data.table::measure but user-defined version should be used.
 test(2183.00001, melt(DT.wide, measure.vars=measurev()), data.table(variable=factor(c("a2","b1","b2")), value=c(2,1,2)))
 measurev = list("foo", "bar")#measurev below should not use this since it is not a function.
-test(2183.00002, melt(DTid, measure.vars=measurev(list(value.name=NULL, num=as.complex), pattern="([ab])([12])")), error="Type 'complex' not supported for joining/merging")
+test(2183.00002, melt(DTid, measure.vars=measurev(list(value.name=NULL, num=as.complex), pattern="([ab])([12])")), error="Type 'complex' is not supported for joining/merging")
 test(2183.00004, melt(DTid, measure.vars=measurev(list(value.name=NULL, istr=NULL), pattern="([ab])([12])"))[order(b)], data.table(id=1, istr=paste(c(1,2)), a=c(NA, 2), b=c(1,2)))
 test(2183.00005, melt(DTid, measure.vars=measurev(list(column=NULL, istr=NULL), pattern="([ab])([12])", multiple.keyword="column"))[order(b)], data.table(id=1, istr=paste(c(1,2)), a=c(NA, 2), b=c(1,2)))#same computation but different multiple.keyword
 iris.dt = data.table(datasets::iris)
@@ -17581,7 +17582,7 @@ test(2183.00060, melt(DTid, measure.vars=measurev(list(letter=myfac, value.name=
 measure = function(cols)cols # user-defined function for computing measure.vars, same name as data.table::measure but user-defined version should be used.
 test(2183.01, melt(DT.wide, measure.vars=measure()), data.table(variable=factor(c("a2","b1","b2")), value=c(2,1,2)))
 measure = list("foo", "bar")#measure below should not use this since it is not a function.
-test(2183.02, melt(DTid, measure.vars=measure(value.name, num=as.complex, pattern="([ab])([12])")), error="Type 'complex' not supported for joining/merging")
+test(2183.02, melt(DTid, measure.vars=measure(value.name, num=as.complex, pattern="([ab])([12])")), error="Type 'complex' is not supported for joining/merging")
 test(2183.03, melt(DTid, measure.vars=structure(list(a=c(NA,"a2"),b=c("b1","b2")), variable_table=data.table(number=as.complex(1:2)))), error="variable_table does not support column type 'complex' for column 'number'")
 test(2183.04, melt(DTid, measure.vars=measure(value.name, istr, pattern="([ab])([12])"))[order(b)], data.table(id=1, istr=paste(c(1,2)), a=c(NA, 2), b=c(1,2)))
 test(2183.05, melt(DTid, measure.vars=measure(column, istr, pattern="([ab])([12])", multiple.keyword="column"))[order(b)], data.table(id=1, istr=paste(c(1,2)), a=c(NA, 2), b=c(1,2)))#same computation but different multiple.keyword

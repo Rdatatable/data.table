@@ -107,7 +107,7 @@ const char *check_idx(SEXP idx, int max, bool *anyNA_out, bool *orderedSubset_ou
 // error if any negatives, zeros or >max since they should have been dealt with by convertNegAndZeroIdx() called ealier at R level.
 // single cache efficient sweep with prefetch, so very low priority to go parallel
 {
-  if (!isInteger(idx)) error(_("Internal error. 'idx' is type '%s' not 'integer'"), type2char(TYPEOF(idx))); // # nocov
+  if (!isInteger(idx)) error(_("Internal error. Argument '%s' to %s is type '%s' not '%s'"), "idx", "check_idx", type2char(TYPEOF(idx)), "integer"); // # nocov
   bool anyLess=false, anyNA=false;
   int last = INT32_MIN;
   int *idxp = INTEGER(idx), n=LENGTH(idx);
@@ -257,7 +257,7 @@ static void checkCol(SEXP col, int colNum, int nrow, SEXP x)
 
 SEXP subsetDT(SEXP x, SEXP rows, SEXP cols) { // API change needs update NEWS.md and man/cdt.Rd
   int nprotect=0;
-  if (!isNewList(x)) error(_("Internal error. Argument 'x' to CsubsetDT is type '%s' not 'list'"), type2char(TYPEOF(rows))); // # nocov
+  if (!isNewList(x)) error(_("Internal error. Argument '%s' to %s is type '%s' not '%s'"), "x", "CsubsetDT", type2char(TYPEOF(rows)), "list"); // # nocov
   if (!length(x)) return(x);  // return empty list
 
   const int nrow = length(VECTOR_ELT(x,0));
@@ -270,10 +270,10 @@ SEXP subsetDT(SEXP x, SEXP rows, SEXP cols) { // API change needs update NEWS.md
     if (err!=NULL) error(err);
   }
 
-  if (!isInteger(cols)) error(_("Internal error. Argument 'cols' to Csubset is type '%s' not 'integer'"), type2char(TYPEOF(cols))); // # nocov
+  if (!isInteger(cols)) error(_("Internal error. Argument '%s' to %s is type '%s' not '%s'"), "cols", "Csubset", type2char(TYPEOF(cols)), "integer"); // # nocov
   for (int i=0; i<LENGTH(cols); i++) {
     int this = INTEGER(cols)[i];
-    if (this<1 || this>LENGTH(x)) error(_("Item %d of 'cols' is %d which is outside 1-based range [1,ncol(x)=%d]"), i+1, this, LENGTH(x));
+    if (this<1 || this>LENGTH(x)) error(_("Item %d of cols is %d which is outside the range [1,ncol(x)=%d]"), i+1, this, LENGTH(x));
   }
 
   int overAlloc = checkOverAlloc(GetOption(install("datatable.alloccol"), R_NilValue));

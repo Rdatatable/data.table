@@ -98,7 +98,7 @@ SEXP colnamesInt(SEXP x, SEXP cols, SEXP check_dups) {
   if (!isNewList(x))
     error(_("'x' argument must be data.table compatible"));
   if (!IS_TRUE_OR_FALSE(check_dups))
-    error(_("'check_dups' argument must be TRUE or FALSE"));
+    error(_("%s must be TRUE or FALSE"), "check_dups");
   int protecti = 0;
   R_len_t nx = length(x);
   R_len_t nc = length(cols);
@@ -120,7 +120,7 @@ SEXP colnamesInt(SEXP x, SEXP cols, SEXP check_dups) {
     int *icols = INTEGER(ricols);
     for (int i=0; i<nc; i++) {
       if ((icols[i]>nx) || (icols[i]<1))
-        error(_("argument specifying columns specify non existing column(s): cols[%d]=%d"), i+1, icols[i]); // handles NAs also
+        error(_("argument specifying columns received non-existing column(s): cols[%d]=%d"), i+1, icols[i]); // handles NAs also
     }
   } else if (isString(cols)) {
     SEXP xnames = PROTECT(getAttrib(x, R_NamesSymbol)); protecti++;
@@ -130,13 +130,13 @@ SEXP colnamesInt(SEXP x, SEXP cols, SEXP check_dups) {
     int *icols = INTEGER(ricols);
     for (int i=0; i<nc; i++) {
       if (icols[i]==0)
-        error(_("argument specifying columns specify non existing column(s): cols[%d]='%s'"), i+1, CHAR(STRING_ELT(cols, i))); // handles NAs also
+        error(_("argument specifying columns received non-existing column(s): cols[%d]='%s'"), i+1, CHAR(STRING_ELT(cols, i))); // handles NAs also
     }
   } else {
     error(_("argument specifying columns must be character or numeric"));
   }
   if (LOGICAL(check_dups)[0] && any_duplicated(ricols, FALSE))
-    error(_("argument specifying columns specify duplicated column(s)"));
+    error(_("argument specifying columns received duplicate column(s)"));
   UNPROTECT(protecti);
   return ricols;
 }
@@ -223,7 +223,7 @@ SEXP copyAsPlain(SEXP x) {
     for (int64_t i=0; i<n; ++i) SET_VECTOR_ELT(ans, i, copyAsPlain(xp[i]));
   } break;
   default:                                                                                           // # nocov
-    error(_("Internal error: unsupported type '%s' passed to copyAsPlain()"), type2char(TYPEOF(x))); // # nocov
+    error(_("Internal error: type '%s' not supported in %s"), type2char(TYPEOF(x)), "copyAsPlain()"); // # nocov
   }
   DUPLICATE_ATTRIB(ans, x);
   // aside: unlike R's duplicate we do not copy truelength here; important for dogroups.c which uses negative truelenth to mark its specials

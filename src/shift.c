@@ -167,7 +167,7 @@ SEXP shift(SEXP obj, SEXP k, SEXP fill, SEXP type)
     } break;
 
     default :
-      error(_("Unsupported type '%s'"), type2char(TYPEOF(elem)));
+      error(_("Type '%s' is not supported"), type2char(TYPEOF(elem)));
     }
   }
 

@@ -86,7 +86,7 @@ SEXP cj(SEXP base_list) {
       }
     } break;
     default:
-      error(_("Type '%s' not supported by CJ."), type2char(TYPEOF(source)));
+      error(_("Type '%s' is not supported by CJ."), type2char(TYPEOF(source)));
     }
     eachrep *= thislen;
   }

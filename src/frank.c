@@ -6,8 +6,8 @@
 SEXP dt_na(SEXP x, SEXP cols) {
   int n=0, elem;
 
-  if (!isNewList(x)) error(_("Internal error. Argument 'x' to Cdt_na is type '%s' not 'list'"), type2char(TYPEOF(x))); // # nocov
-  if (!isInteger(cols)) error(_("Internal error. Argument 'cols' to Cdt_na is type '%s' not 'integer'"), type2char(TYPEOF(cols))); // # nocov
+  if (!isNewList(x)) error(_("Internal error. Argument '%s' to %s is type '%s' not '%s'"), "x", "Cdt_na", type2char(TYPEOF(x)), "list"); // # nocov
+  if (!isInteger(cols)) error(_("Internal error. Argument '%s' to %s is type '%s' not '%s'"), "cols", "Cdt_na", type2char(TYPEOF(cols)), "integer"); // # nocov
   for (int i=0; i<LENGTH(cols); ++i) {
     elem = INTEGER(cols)[i];
     if (elem<1 || elem>LENGTH(x))
@@ -184,8 +184,8 @@ SEXP frank(SEXP xorderArg, SEXP xstartArg, SEXP xlenArg, SEXP ties_method) {
 // internal version of anyNA for data.tables
 SEXP anyNA(SEXP x, SEXP cols) {
   int n=0;
-  if (!isNewList(x)) error(_("Internal error. Argument 'x' to CanyNA is type '%s' not 'list'"), type2char(TYPEOF(x))); // #nocov
-  if (!isInteger(cols)) error(_("Internal error. Argument 'cols' to CanyNA is type '%s' not 'integer'"), type2char(TYPEOF(cols))); // # nocov
+  if (!isNewList(x)) error(_("Internal error. Argument '%s' to %s is type '%s' not '%s'"), "x", "CanyNA", type2char(TYPEOF(x)), "list"); // #nocov
+  if (!isInteger(cols)) error(_("Internal error. Argument '%s' to %s is type '%s' not '%s'"), "cols", "CanyNA", type2char(TYPEOF(cols)), "integer"); // # nocov
   for (int i=0; i<LENGTH(cols); ++i) {
     const int elem = INTEGER(cols)[i];
     if (elem<1 || elem>LENGTH(x))

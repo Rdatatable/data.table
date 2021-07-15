@@ -304,7 +304,7 @@ static void preprocess(SEXP DT, SEXP id, SEXP measure, SEXP varnames, SEXP valna
     else error(_("When 'measure.vars' is either not specified or a character/integer vector, 'value.name' must be a character vector of length =1."));
   }
   if (length(varnames) != 1)
-    error(_("'variable.name' must be a character/integer vector of length=1."));
+    error(_("'variable.name' must be a character/integer vector of length 1."));
   data->leach = (int *)R_alloc(data->lvalues, sizeof(int));
   data->isidentical = (int *)R_alloc(data->lvalues, sizeof(int));
   data->isfactor = (int *)R_alloc(data->lvalues, sizeof(int));

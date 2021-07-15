@@ -121,9 +121,9 @@ static int _selfrefok(SEXP x, Rboolean checkNames, Rboolean verbose) {
     if (verbose) Rprintf(_(".internal.selfref ptr is NULL. This is expected and normal for a data.table loaded from disk. Please remember to always setDT() immediately after loading to prevent unexpected behavior. If this table was not loaded from disk or you've already run setDT(), please report to data.table issue tracker.\n"));
     return -1;
   }
-  if (!isNull(p)) error(_("Internal error: .internal.selfref ptr is not NULL or R_NilValue")); // # nocov
+  if (!isNull(p)) error(_("Internal error: .internal.selfref ptr is neither NULL nor R_NilValue")); // # nocov
   tag = R_ExternalPtrTag(v);
-  if (!(isNull(tag) || isString(tag))) error(_("Internal error: .internal.selfref tag isn't NULL or a character vector")); // # nocov
+  if (!(isNull(tag) || isString(tag))) error(_("Internal error: .internal.selfref tag is neither NULL nor a character vector")); // # nocov
   names = getAttrib(x, R_NamesSymbol);
   if (names!=tag && isString(names) && !ALTREP(names))  // !ALTREP for #4734
     SET_TRUELENGTH(names, LENGTH(names));
@@ -246,7 +246,8 @@ int checkOverAlloc(SEXP x)
 }
 
 SEXP alloccolwrapper(SEXP dt, SEXP overAllocArg, SEXP verbose) {
-  if (!isLogical(verbose) || length(verbose)!=1) error(_("verbose must be TRUE or FALSE"));
+  if (!IS_TRUE_OR_FALSE(verbose))
+    error(_("%s must be TRUE or FALSE"), "verbose");
   int overAlloc = checkOverAlloc(overAllocArg);
   SEXP ans = PROTECT(alloccol(dt, length(dt)+overAlloc, LOGICAL(verbose)[0]));
 
@@ -311,7 +312,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
   SEXP names = PROTECT(getAttrib(dt, R_NamesSymbol)); protecti++;
   if (isNull(names)) error(_("dt passed to assign has no names"));
   if (length(names)!=oldncol)
-    error(_("Internal error in assign: length of names (%d) is not length of dt (%d)"),length(names),oldncol); // # nocov
+    error(_("Internal error: length of names (%d) is not length of dt (%d)"), length(names), oldncol); // # nocov
   if (isNull(dt)) {
     error(_("data.table is NULL; malformed. A null data.table should be an empty list. typeof() should always return 'list' for data.table.")); // # nocov
     // Not possible to test because R won't permit attributes be attached to NULL (which is good and we like); warning from R 3.4.0+ tested by 944.5
@@ -336,7 +337,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
     const int *rowsd = INTEGER(rows);
     for (int i=0; i<targetlen; ++i) {
       if ((rowsd[i]<0 && rowsd[i]!=NA_INTEGER) || rowsd[i]>nrow)
-        error(_("i[%d] is %d which is out of range [1,nrow=%d]."),i+1,rowsd[i],nrow);  // set() reaches here (test 2005.2); := reaches the same error in subset.c first
+        error(_("i[%d] is %d which is out of range [1,nrow=%d]"), i+1, rowsd[i], nrow);  // set() reaches here (test 2005.2); := reaches the same error in subset.c first
       if (rowsd[i]>=1) numToDo++;
     }
     if (verbose) Rprintf(_("Assigning to %d row subset of %d rows\n"), numToDo, nrow);
