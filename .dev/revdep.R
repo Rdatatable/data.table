@@ -130,20 +130,29 @@ for (p in deps) {
   }
 }
 cat("New downloaded:",new," Already had latest:", old, " TOTAL:", length(deps), "\n")
-update.packages(checkBuilt=TRUE, ask=FALSE)
+update.packages(checkBuilt=TRUE, ask=FALSE)  # won't rebuild packages which are no longer available on CRAN
+
+# The presence of packages here in revdeplib which no longer exist on CRAN could explain differences to CRAN. A revdep
+# could be running tests using that package when available and failing which may be the very reason that package was removed from CRAN.
+# When it is removed from revdeplib to match CRAN, then the revdep might then pass as it will skip its tests using that package.
+x = installed.packages()
+tt = match(rownames(x), rownames(avail))
+removed = rownames(x)[is.na(tt) & is.na(x[,"Priority"])]
+cat("Removing",length(removed),"packages which are no longer available on CRAN/Bioc:", paste(removed, collapse=","), "\n")
+stopifnot(all(x[removed,"LibPath"] == .libPaths()[1]))
+oldn = nrow(x)
+remove.packages(removed, .libPaths()[1])
+x = installed.packages()
+stopifnot(nrow(x) == oldn-length(removed))
+
+# Ensure all installed packages were built with this x.y release of R
 cat("This is R ",R.version$major,".",R.version$minor,"; ",R.version.string,"\n",sep="")
 cat("Previously installed packages were built using:\n")
-x = installed.packages()
-table(x[,"Built"], dnn=NULL)  # manually inspect to ensure all built with this x.y release of R
-if (FALSE) {  # if not, run this manually replacing "4.0.0" appropriately 
-  for (p in rownames(x)[x[,"Built"]=="4.0.0"]) {
-    install.packages(p)
-  }
-  # warnings may suggest many of them were removed from CRAN, so remove the remaining from revdeplib to be clean
-  x = installed.packages()
-  remove.packages(rownames(x)[x[,"Built"]=="4.0.0"])
-  table(installed.packages()[,"Built"], dnn=NULL)  # check again to make sure all built in current R-devel x.y version
-}
+print(tt <- table(x[,"Built"], dnn=NULL))
+minorR = paste(strsplit(as.character(getRversion()), split="[.]")[[1]][c(1,2)], collapse=".")
+stopifnot(all(substring(names(tt),1,nchar(minorR)) == minorR))
+# if not (e.g. when using R-devel for revdep testing) perhaps run the following manually replacing "4.0.0" as appropriate 
+# for (p in rownames(x)[x[,"Built"]=="4.0.0"]) install.packages(p)
 
 # Remove the tar.gz no longer needed :
 for (p in deps) {
