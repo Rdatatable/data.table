@@ -523,6 +523,7 @@ sudo apt-get -y install cargo  # for gifski, a suggest of nasoi
 sudo apt-get -y install libgit2-dev  # for gert
 sudo apt-get -y install cmake  # for symengine for RxODE
 sudo apt-get -y install libxslt1-dev  # for xslt
+sudo apt-get -y install flex  # for RcppCWB
 sudo R CMD javareconf
 # ENDIF
 
