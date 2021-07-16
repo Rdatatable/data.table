@@ -14,11 +14,11 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
   # class - should column class be printed underneath column name? (FALSE)
   # trunc.cols - should only the columns be printed that can fit in the console? (FALSE)
   if (!col.names %chin% c("auto", "top", "none"))
-    stop("Valid options for col.names are 'auto', 'top', and 'none'")
+    stopf("Valid options for col.names are 'auto', 'top', and 'none'")
   if (length(trunc.cols) != 1L || !is.logical(trunc.cols) || is.na(trunc.cols))
-    stop("Valid options for trunc.cols are TRUE and FALSE")
+    stopf("Valid options for trunc.cols are TRUE and FALSE")
   if (col.names == "none" && class)
-    warning("Column classes will be suppressed when col.names is 'none'")
+    warningf("Column classes will be suppressed when col.names is 'none'")
   if (!shouldPrint(x)) {
     #  := in [.data.table sets .global$print=address(x) to suppress the next print i.e., like <- does. See FAQ 2.22 and README item in v1.9.5
     # The issue is distinguishing "> DT" (after a previous := in a function) from "> DT[,foo:=1]". To print.data.table(), there
@@ -142,7 +142,7 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
 
 format.data.table = function (x, ..., justify="none", timezone = FALSE) {
   if (is.atomic(x) && !is.null(x)) {
-    stop("Internal structure doesn't seem to be a list. Possibly corrupt data.table.")
+    stopf("Internal structure doesn't seem to be a list. Possibly corrupt data.table.")
   }
   format.item = function(x) {
     if (is.null(x))  # NULL item in a list column
@@ -234,11 +234,9 @@ toprint_subset = function(x, cols_to_print) {
 trunc_cols_message = function(not_printed, abbs, class, col.names){
   n = length(not_printed)
   if (class && col.names != "none") classes = paste0(" ", tail(abbs, n)) else classes = ""
-  cat(sprintf(
-    ngettext(n,
-             "%d variable not shown: %s\n",
-             "%d variables not shown: %s\n"),
+  catf(
+    "%d variable(s) not shown: %s\n",
     n, brackify(paste0(not_printed, classes))
-  ))
+  )
 }
 
