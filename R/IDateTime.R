@@ -87,6 +87,21 @@ round.IDate = function (x, digits=c("weeks", "months", "quarters", "years"), ...
           years = ISOdate(year(x), 1L, 1L)))
 }
 
+trunc.IDate = function (x, units = c("weeks", "months", "quarters", "years"), start.on.monday = TRUE, ...) {
+  units = match.arg(units)
+  offset = if (isTRUE(start.on.monday)) 4L else 3L
+  as.IDate(switch(units,
+                  weeks = 7L * ((unclass(x) - offset) %/% 7L) + offset,
+                  months = unclass(x) - as.POSIXlt(x)$mday + 1L,
+                  quarters = {
+                    l = as.POSIXlt(x)
+                    l$mon = (l$mon %/% 3L) * 3L # trunc to quarter start month
+                    l$mday = 1L # trunc month day
+                    l
+                  },
+                  years = unclass(x) - as.POSIXlt(x)$yday))
+}
+
 #Adapted from `+.Date`
 `+.IDate` = function (e1, e2) {
   if (nargs() == 1L)

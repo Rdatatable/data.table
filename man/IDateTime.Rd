@@ -26,6 +26,7 @@
 \alias{rep.IDate}
 \alias{rep.ITime}
 \alias{round.IDate}
+\alias{trunc.IDate}
 \alias{round.ITime}
 \alias{trunc.ITime}
 \alias{seq.IDate}
@@ -56,6 +57,7 @@ as.IDate(x, \dots)
 \method{as.Date}{IDate}(x, \dots)
 \method{as.POSIXct}{IDate}(x, tz = "UTC", time = 0, \dots)
 \method{round}{IDate}(x, digits = c("weeks", "months", "quarters","years"), \ldots)
+\method{trunc}{IDate}(x, units = c("weeks", "months", "quarters", "years"), start.on.monday = TRUE, \ldots)
 
 as.ITime(x, \dots)
 \method{as.ITime}{default}(x, \dots)
@@ -95,6 +97,7 @@ year(x)
   \item{digits}{really \code{units}; one of the units listed for rounding. May be abbreviated.}
   \item{units}{one of the units listed for truncating. May be abbreviated.}
   \item{ms}{ For \code{as.ITime} methods, what should be done with sub-second fractions of input? Valid values are \code{'truncate'} (floor), \code{'nearest'} (round), and \code{'ceil'} (ceiling). See Details. }
+  \item{start.on.monday}{if units = "weeks", should the week start on Mondays or Sundays?}
 }
 \details{
 \code{IDate} is a date class derived from \code{Date}. It has the same
@@ -145,11 +148,11 @@ functions \code{weekdays}, \code{months}, and \code{quarters} can also
 be used, but these return character values, so they must be converted to
 factors for use with data.table. \code{isoweek} is ISO 8601-consistent.
 
-The \code{round} method for IDate's is useful for grouping and plotting. 
+The \code{round} method for IDate's is useful for grouping and plotting.
 It can round to weeks, months, quarters, and years. Similarly, the \code{round}
 and \code{trunc} methods for ITime's are useful for grouping and plotting.
-They can round or truncate to hours and minutes. 
-Note for ITime's with 30 seconds, rounding is inconsistent due to rounding off a 5. 
+They can round or truncate to hours and minutes.
+Note for ITime's with 30 seconds, rounding is inconsistent due to rounding off a 5.
 See 'Details' in \code{\link{round}} for more information.
 
 }
@@ -170,8 +173,8 @@ See 'Details' in \code{\link{round}} for more information.
    for second, minute, hour, day of year, day of week,
    day of month, week, month, quarter, and year, respectively.
 
-   These values are all taken directly from the \code{POSIXlt} representation 
-   of \code{x}, with the notable difference that while \code{yday}, \code{wday}, 
+   These values are all taken directly from the \code{POSIXlt} representation
+   of \code{x}, with the notable difference that while \code{yday}, \code{wday},
    and \code{mon} are all 0-based, here they are 1-based.
 
 }
@@ -234,7 +237,7 @@ round(seqdates, "months")
 (seqtimes <- seq(as.ITime("07:00"), as.ITime("08:00"), by = 20))
 round(seqtimes, "hours")
 trunc(seqtimes, "hours")
-   
+
 }
 \keyword{utilities}
 
