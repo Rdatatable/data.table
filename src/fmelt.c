@@ -495,7 +495,7 @@ SEXP getvaluecols(SEXP DT, SEXP dtnames, Rboolean valfactor, Rboolean verbose, s
       SEXP thiscol = input_col_or_NULL(DT, data, thisvaluecols, i, j);
       if (thiscol == R_NilValue) {
         if (!data->narm) {
-          writeNA(target, j*data->nrow, data->nrow); 
+          writeNA(target, j*data->nrow, data->nrow, true);  // listNA=true #5053 
         }
       }else{
         if (!copyattr && data->isidentical[i] && !data->isfactor[i]) {

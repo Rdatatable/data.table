@@ -1097,8 +1097,9 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
   return memrecycle_message[0] ? memrecycle_message : NULL;
 }
 
-void writeNA(SEXP v, const int from, const int n)
+void writeNA(SEXP v, const int from, const int n, const bool listNA)
 // e.g. for use after allocVector() which does not initialize its result.
+// listNA for #5503
 {
   const int to = from-1+n;  // writing to position 2147483647 in mind, 'i<=to' in loop conditions
   switch(TYPEOF(v)) {
@@ -1133,13 +1134,13 @@ void writeNA(SEXP v, const int from, const int n)
     // If there's ever a way added to R API to pass NA_STRING to allocVector() to tell it to initialize with NA not "", would be great
     for (int i=from; i<=to; ++i) SET_STRING_ELT(v, i, NA_STRING);
     break;
-  case VECSXP:
-    for (int i=from; i<=to; ++i) {
-      SEXP na_scalar = allocVector(LGLSXP, 1);
-      LOGICAL(na_scalar)[0] = NA_LOGICAL;
-      SET_VECTOR_ELT(v, i, na_scalar);
-    }
-    break;
+  case VECSXP: {
+    // See #5053 for comments and dicussion re listNA
+    // although allocVector initializes to R_NilValue, we use writeNA() in other places too, so we shouldn't skip the R_NilValue assign
+    // ScalarLogical(NA_LOGICAL) returns R's internal constant R_LogicalNAValue (no alloc and no protect needed)
+    const SEXP na = listNA ? ScalarLogical(NA_LOGICAL) : R_NilValue;
+    for (int i=from; i<=to; ++i) SET_VECTOR_ELT(v, i, na);
+  } break;
   case EXPRSXP :
     for (int i=from; i<=to; ++i) SET_VECTOR_ELT(v, i, R_NilValue);
     break;
@@ -1155,7 +1156,7 @@ SEXP allocNAVector(SEXPTYPE type, R_len_t n)
   // We guess that author of allocVector would have liked to initialize with NA but was prevented since memset
   // is restricted to one byte.
   SEXP v = PROTECT(allocVector(type, n));
-  writeNA(v, 0, n);
+  writeNA(v, 0, n, false);
   UNPROTECT(1);
   return(v);
 }
@@ -1165,7 +1166,7 @@ SEXP allocNAVectorLike(SEXP x, R_len_t n) {
   // TODO: remove allocNAVector above when usage in fastmean.c, fcast.c and fmelt.c can be adjusted; see comments in PR3724
   SEXP v = PROTECT(allocVector(TYPEOF(x), n));
   copyMostAttrib(x, v);
-  writeNA(v, 0, n);
+  writeNA(v, 0, n, false);
   UNPROTECT(1);
   return(v);
 }
