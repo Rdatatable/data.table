@@ -360,7 +360,7 @@ log = function(bioc=FALSE, fnam="~/fail.log", app="gedit") {
     system(paste0("grep -H . ./",i,".Rcheck/00check.log >> ",fnam))  # the fail messages
     cat("\n\n", file=fnam, append=TRUE)
   }
-  system(paste(app, fnam))
+  system(paste(app, fnam), wait=FALSE)
   invisible()
 }
 
