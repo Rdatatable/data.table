@@ -18,6 +18,9 @@ cedta.pkgEvalsUserCode = c("gWidgetsWWW","statET","FastRWeb","slidify","rmarkdow
 #   .datatable.aware = TRUE
 # which makes them data.table-aware optionally and possibly variably.
 # http://stackoverflow.com/a/13131555/403310
+# .datatable.aware is not in data.table's namespace and it is not intended to ever be added here. Otherwise
+#   package authors could set it using assignInNamespace and then not revert its value properly which would
+#   cause subsequent calls from other packages to fail.
 
 # cedta = Calling Environment Data.Table-Aware
 cedta = function(n=2L) {
@@ -51,5 +54,3 @@ cedta = function(n=2L) {
   }
   ans
 }
-
-.datatable.aware = TRUE
