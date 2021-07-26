@@ -93,6 +93,8 @@
 
 13. `fifelse()` now coerces logical `NA` to other types and the `na` argument supports vectorized input, [#4277](https://github.com/Rdatatable/data.table/issues/4277) [#4286](https://github.com/Rdatatable/data.table/issues/4286) [#4287](https://github.com/Rdatatable/data.table/issues/4287). Thanks to @michaelchirico and @shrektan for reporting, and @shrektan for implementing.
 
+14. `.datatable.aware` is now recognized in the calling environment in addition to the namespace of the calling package, [dtplyr#184](https://github.com/tidyverse/dtplyr/issues/184). Thanks to Hadley Wickham for the idea and PR.
+
 ## BUG FIXES
 
 1. `by=.EACHI` when `i` is keyed but `on=` different columns than `i`'s key could create an invalidly keyed result, [#4603](https://github.com/Rdatatable/data.table/issues/4603) [#4911](https://github.com/Rdatatable/data.table/issues/4911). Thanks to @myoung3 and @adamaltmejd for reporting, and @ColeMiller1 for the PR. An invalid key is where a `data.table` is marked as sorted by the key columns but the data is not sorted by those columns, leading to incorrect results from subsequent queries.
