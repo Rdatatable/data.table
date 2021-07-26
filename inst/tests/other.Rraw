@@ -186,8 +186,6 @@ if (loaded[["parallel"]]) {
 }
 
 # example(":=", local=TRUE) triggered cedta==FALSE and then error, #2972
-res = tryCatch(example(':=', package='data.table', local=TRUE))
-test(14.1, !inherits(res, 'error'))
-res = tryCatch(example('CJ', package='data.table', local=TRUE))
-test(14.2, !inherits(res, 'error'))
+test(14.1, {example(':=', package='data.table', local=TRUE); TRUE})
+test(14.2, {example('CJ', package='data.table', local=TRUE); TRUE})
 

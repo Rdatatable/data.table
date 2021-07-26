@@ -74,11 +74,14 @@ static SEXP chmatchMain(SEXP x, SEXP table, int nomatch, bool chin, bool chmatch
   }
   int nuniq=0;
   for (int i=0; i<tablelen; ++i) {
-    SEXP s = td[i];
+    const SEXP s = td[i];
     int tl = TRUELENGTH(s);
     if (tl>0) { savetl(s); tl=0; }
     if (tl==0) SET_TRUELENGTH(s, chmatchdup ? -(++nuniq) : -i-1); // first time seen this string in table
   }
+  // in future if we need NAs in x not to be matched to NAs in table ...
+  // if (!matchNAtoNA && TRUELENGTH(NA_STRING)<0)
+  //   SET_TRUELENGTH(NA_STRING, 0);
   if (chmatchdup) {
     // chmatchdup() is basically base::pmatch() but without the partial matching part. For example :
     //   chmatchdup(c("a", "a"), c("a", "a"))   # 1,2  - the second 'a' in 'x' has a 2nd match in 'table'
@@ -107,7 +110,7 @@ static SEXP chmatchMain(SEXP x, SEXP table, int nomatch, bool chin, bool chmatch
     for (int i=0; i<xlen; ++i) {
       int u = TRUELENGTH(xd[i]);
       if (u<0) {
-        int w = counts[-u-1]++;
+        const int w = counts[-u-1]++;
         if (map[w]) { ansd[i]=map[w]; continue; }
         SET_TRUELENGTH(xd[i],0); // w falls on ending 0 marker: dups used up; any more dups should return nomatch
         // we still need the 0-setting loop at the end of this function because often there will be some values in table that are not matched to at all.
@@ -122,7 +125,7 @@ static SEXP chmatchMain(SEXP x, SEXP table, int nomatch, bool chin, bool chmatch
     }
   } else {
     for (int i=0; i<xlen; i++) {
-      int m = TRUELENGTH(xd[i]);
+      const int m = TRUELENGTH(xd[i]);
       ansd[i] = (m<0) ? -m : nomatch;
     }
   }
