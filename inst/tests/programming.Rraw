@@ -251,7 +251,7 @@ test(7.12, f(list(var1 = var2), list(var1 = "c1", var2 = 5L)), quote(list(c1 = 5
 d = data.table(a = 2:1, b = 1:4)
 test(11.01, d[var3%in%values, .(var1 = f(var2)), by=var3,
   env=list(var1="res", var2="b", f="sum", var3="a", values=0:3),
-  verbose=TRUE], data.table(a=c(2L,1L), res=c(4L,6L)), output=c("Argument 'by' after substitute: a","Argument 'j'  after substitute: .(res = sum(b))","Argument 'i'  after substitute: a %in% 0:3"))
+  verbose=TRUE], data.table(a=c(2L,1L), res=c(4L,6L)), output=c("Argument 'by' after substitute: a","Argument 'j' after substitute: .(res = sum(b))","Argument 'i' after substitute: a %in% 0:3"))
 # data.table symbols and chars
 d = data.table(a = c("b","a"), b = 1:4)
 out = capture.output(ans <- d[var3%in%values, .(var1 = f(var2)), keyby=var3,
@@ -261,8 +261,8 @@ test(11.02, ans, data.table(a=c("a","b"), res=c(6L,4L), key="a"))
 out = grep("Argument.*substitute", out, value=TRUE)
 test(11.021, length(out), 3L) # we expect i, j, by only here, ensure about that
 test(11.022, "Argument 'by' after substitute: a" %in% out, TRUE)
-test(11.023, "Argument 'j'  after substitute: .(res = sum(b))" %in% out, TRUE)
-test(11.024, "Argument 'i'  after substitute: a %in% c(\"a\", \"b\", \"c\")" %in% out, TRUE)
+test(11.023, "Argument 'j' after substitute: .(res = sum(b))" %in% out, TRUE)
+test(11.024, "Argument 'i' after substitute: a %in% c(\"a\", \"b\", \"c\")" %in% out, TRUE)
 out = capture.output(ans <- d[var3%in%values, .(var1 = f(var2)), keyby=var3,
   env=I(list(var1=as.name("res"), var2=as.name("b"), f=as.name("sum"), var3=as.name("a"), values=c("b","c"))),
   verbose=TRUE])
@@ -270,8 +270,8 @@ test(11.03, ans, data.table(a=c("b"), res=c(4L), key="a"))
 out = grep("Argument.*substitute", out, value=TRUE)
 test(11.031, length(out), 3L)
 test(11.032, "Argument 'by' after substitute: a" %in% out, TRUE)
-test(11.033, "Argument 'j'  after substitute: .(res = sum(b))" %in% out, TRUE)
-test(11.034, "Argument 'i'  after substitute: a %in% c(\"b\", \"c\")" %in% out, TRUE)
+test(11.033, "Argument 'j' after substitute: .(res = sum(b))" %in% out, TRUE)
+test(11.034, "Argument 'i' after substitute: a %in% c(\"b\", \"c\")" %in% out, TRUE)
 # substitute2 during join
 d1 = data.table(id1=1:4, v1=5)
 d2 = data.table(id1=c(0L,2:3), v1=6)
@@ -279,7 +279,7 @@ out = capture.output(ans <- d1[d2, on="id1<=id1", .(c1, c2, c3, c4), env=list(c1
 test(11.041, ans, data.table(x.id1=c(NA,1:2,1:3), i.id1=c(0L,2L,2L,3L,3L,3L), x.v1=c(NA,rep(5,5)), i.v1=rep(6,6)))
 out = grep("Argument.*substitute", out, value=TRUE)
 test(11.042, length(out), 2L) ## 2L because i is non-missing attempt to substitute is made
-test(11.043, "Argument 'j'  after substitute: .(x.id1, i.id1, x.v1, i.v1)" %in% out, TRUE)
+test(11.043, "Argument 'j' after substitute: .(x.id1, i.id1, x.v1, i.v1)" %in% out, TRUE)
 d1 = data.table(id1=c(2L,4L,2L,4L), v1=5)
 d2 = data.table(id1=c(0L,2:3), v1=6)
 out = capture.output(ans <- d1[dd, on="id1<=id1", .(sum(c3), sum(c4)), by=by, env=list(dd="d2", c3="x.v1", c4="i.v1", by=".EACHI"), verbose=TRUE])
@@ -287,8 +287,8 @@ test(11.044, ans, data.table(id1=c(0L,2L,3L), V1=c(NA,10,10), V2=c(6,6,6)))
 out = grep("Argument.*substitute", out, value=TRUE)
 test(11.045, length(out), 3L)
 test(11.046, "Argument 'by' after substitute: .EACHI" %in% out, TRUE)
-test(11.047, "Argument 'j'  after substitute: .(sum(x.v1), sum(i.v1))" %in% out, TRUE)
-test(11.048, "Argument 'i'  after substitute: d2" %in% out, TRUE)
+test(11.047, "Argument 'j' after substitute: .(sum(x.v1), sum(i.v1))" %in% out, TRUE)
+test(11.048, "Argument 'i' after substitute: d2" %in% out, TRUE)
 dt1 = data.table(x = letters[1:5], y = 1:5)
 dt2 = data.table(x = letters[1:3], y = 11:13)
 target_v = "y"
@@ -326,9 +326,9 @@ f = function(x, i, j, by) {
   x[.i, .j, .by, env=list(.i=substitute(i), .j=substitute(j), .by=substitute(by)), verbose=TRUE]
 }
 test(11.083, f(d), d)
-test(11.084, f(d, 1), d[1], output="Argument 'i'  after substitute", notOutput="Argument 'j'  after substitute")
-test(11.085, f(d,, 1), d[,1], output="Argument 'j'  after substitute", notOutput="Argument 'i'  after substitute")
-test(11.086, f(d, 1, 1), d[1, 1], output="Argument 'j'  after substitute.*Argument 'i'  after substitute")
+test(11.084, f(d, 1), d[1], output="Argument 'i' after substitute", notOutput="Argument 'j' after substitute")
+test(11.085, f(d,, 1), d[,1], output="Argument 'j' after substitute", notOutput="Argument 'i' after substitute")
+test(11.086, f(d, 1, 1), d[1, 1], output="Argument 'j' after substitute.*Argument 'i' after substitute")
 
 #1985 weird exception when by contains get
 tb = data.table(x=c(1,2), y=c(3,4), z=c(5,6), w=c("a","b"))
@@ -362,7 +362,7 @@ test(11.107, ans, data.table(Type=factor(c("Quebec","Mississippi"), levels=c("Qu
 out = grep("Argument.*substitute", out, value=TRUE)
 test(11.108, length(out), 2L)
 test(11.109, "Argument 'by' after substitute: Type" %in% out, TRUE)
-test(11.110, "Argument 'j'  after substitute: list(max(conc), round(mean(conc)))" %in% out, TRUE)
+test(11.110, "Argument 'j' after substitute: list(max(conc), round(mean(conc)))" %in% out, TRUE)
 #628 Change j=list(xout=eval(...))'s eval to eval within scope of DT
 dat = data.table(x_one=1:10, x_two=1:10, y_one=1:10, y_two=1:10)
 f = function(vars) as.call(c(quote(list), lapply(setNames(vars, paste(vars,"out",sep="_")), function(var) substitute2(one-two, list(one=paste(var,"one",sep="_"), two=paste(var,"two",sep="_"))))))
@@ -488,8 +488,8 @@ test(101.01, dt$x_ratio, x_rat)
 test(101.02, dt$y_ratio, y_rat)
 test(101.03, length(grep("Argument.*substitute", out[["x"]], value=TRUE)), 1L)
 test(101.04, length(grep("Argument.*substitute", out[["y"]], value=TRUE)), 1L)
-test(101.05, "Argument 'j'  after substitute: `:=`(x_ratio, (x3 - x2) * (x2 - x1) * (x3 - x1)/sqrt(x1^2 + x2^2 + x3^2))" %in% out[["x"]], TRUE)
-test(101.06, "Argument 'j'  after substitute: `:=`(y_ratio, (y3 - y2) * (y2 - y1) * (y3 - y1)/sqrt(y1^2 + y2^2 + y3^2))" %in% out[["y"]], TRUE)
+test(101.05, "Argument 'j' after substitute: `:=`(x_ratio, (x3 - x2) * (x2 - x1) * (x3 - x1)/sqrt(x1^2 + x2^2 + x3^2))" %in% out[["x"]], TRUE)
+test(101.06, "Argument 'j' after substitute: `:=`(y_ratio, (y3 - y2) * (y2 - y1) * (y3 - y1)/sqrt(y1^2 + y2^2 + y3^2))" %in% out[["y"]], TRUE)
 daily_cor = function(data, x, y) { ## daily correlation of user input features
   data[, .(cor = cor(x, y)),
     keyby = date,
@@ -499,7 +499,7 @@ daily_cor = function(data, x, y) { ## daily correlation of user input features
 out = capture.output(ans <- daily_cor(dt, "x0", "y2"))
 test(101.07, length(grep("Argument.*substitute", out, value=TRUE)), 2L) ## 'by' (or 'keyby') is not substituted here but it still goes via substitute2 because it is non-missing
 test(101.08, "Argument 'by' after substitute: date" %in% out, TRUE)
-test(101.09, "Argument 'j'  after substitute: .(cor = cor(x0, y2))" %in% out, TRUE)
+test(101.09, "Argument 'j' after substitute: .(cor = cor(x0, y2))" %in% out, TRUE)
 group_cor = function(data, x, y, g) { ## group cor comparison of user input features
   cor_dt = data[, lapply(.SD, function(x) cor(x, Y)),
     keyby = .(group = GROUP),
@@ -511,11 +511,11 @@ group_cor = function(data, x, y, g) { ## group cor comparison of user input feat
 out = capture.output(dt1 <- group_cor(dt, c("x0", "x1", "x2"), "y1", "grp1"))
 test(101.10, length(grep("Argument.*substitute", out, value=TRUE)), 2L)
 test(101.11, "Argument 'by' after substitute: .(group = grp1)" %in% out, TRUE)
-test(101.12, "Argument 'j'  after substitute: lapply(.SD, function(x) cor(x, y1))" %in% out, TRUE)
+test(101.12, "Argument 'j' after substitute: lapply(.SD, function(x) cor(x, y1))" %in% out, TRUE)
 out = capture.output(dt2 <- group_cor(dt, c("x0", "x1", "x2"), "y1", "grp2"))
 test(101.13, length(grep("Argument.*substitute", out, value=TRUE)), 2L)
 test(101.14, "Argument 'by' after substitute: .(group = grp2)" %in% out, TRUE)
-test(101.15, "Argument 'j'  after substitute: lapply(.SD, function(x) cor(x, y1))" %in% out, TRUE)
+test(101.15, "Argument 'j' after substitute: lapply(.SD, function(x) cor(x, y1))" %in% out, TRUE)
 stats_dt1 = as.data.table(list(
   x = c("x0", "x1", "x2"),
   min = c(-0.325967794724422, -0.126026585686073, -0.398950077203113),
@@ -551,8 +551,8 @@ out = capture.output(ans <- cor_xy(xdt, ydt, c("x1", "x2"), "y10"))
 exp = as.data.table(list(symbol = 1:2, x1 = c(0.529292252112253, 0.0301956035638738), x2 = c(0.287076866252898, -0.335969587268599)), key="symbol")
 test(102.01, ans, exp)
 test(102.02, length(grep("Argument.*substitute", out, value=TRUE)), 2L)
-test(102.03, "Argument 'j'  after substitute: `:=`(y, y10)" %in% out, TRUE)
-test(102.04, "Argument 'i'  after substitute: ydt" %in% out, TRUE)
+test(102.03, "Argument 'j' after substitute: `:=`(y, y10)" %in% out, TRUE)
+test(102.04, "Argument 'i' after substitute: ydt" %in% out, TRUE)
 cor_xy2 = function(xdt, ydt, x, y) { ## cor between each pair of x and y
   rbindlist(lapply(y, function(yi) {
     xdt[ydt, y := Y, on = .(symbol, date),
@@ -598,3 +598,8 @@ dt_fill(nadt, c("x1", "x2", "x3"), is.na, 0)
 test(103.01, nadt, data.table(x1 = c(1, 2, 0, Inf), x2 = c(2, 0, 3, Inf), x3 = c(0, 1, 2, 0)))
 dt_fill(nadt, c("x1", "x2", "x3"), is.infinite, 0)
 test(103.02, nadt, data.table(x1 = c(1, 2, 0, 0), x2 = c(2, 0, 3, 0), x3 = c(0, 1, 2, 0)))
+
+# providing data.table with character column to env = list(...) gives error? #5057
+test(201.1, substitute2(dt, env=list(dt = data.table(a=1:9, b=1:9))), data.table(a=1:9, b=1:9))
+test(201.2, substitute2(dt, env=list(dt = data.table(a=1:9, b=as.character(1:9)))), data.table(a=1:9, b=as.character(1:9)))
+test(201.3, substitute2(dt, env=list(dt = data.table(a=1:2, b=as.character(1:2)))), data.table(a=1:2, b=as.character(1:2)))

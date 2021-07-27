@@ -93,27 +93,27 @@ round.IDate = function (x, digits=c("weeks", "months", "quarters", "years"), ...
     return(e1)
   # TODO: investigate Ops.IDate method a la Ops.difftime
   if (inherits(e1, "difftime") || inherits(e2, "difftime"))
-    stop("Internal error -- difftime objects may not be added to IDate, but Ops dispatch should have intervened to prevent this") # nocov
+    stopf("Internal error -- difftime objects may not be added to IDate, but Ops dispatch should have intervened to prevent this") # nocov
   if (isReallyReal(e1) || isReallyReal(e2)) {
     return(`+.Date`(e1, e2))
     # IDate doesn't support fractional days; revert to base Date
   }
   if (inherits(e1, "Date") && inherits(e2, "Date"))
-    stop("binary + is not defined for \"IDate\" objects")
+    stopf("binary + is not defined for \"IDate\" objects")
   (setattr(as.integer(unclass(e1) + unclass(e2)), "class", c("IDate", "Date")))  # () wrap to return visibly
 }
 
 `-.IDate` = function (e1, e2) {
   if (!inherits(e1, "IDate")) {
     if (inherits(e1, 'Date')) return(base::`-.Date`(e1, e2))
-    stop("can only subtract from \"IDate\" objects")
+    stopf("can only subtract from \"IDate\" objects")
   }
   if (storage.mode(e1) != "integer")
-    stop("Internal error: storage mode of IDate is somehow no longer integer") # nocov
+    stopf("Internal error: storage mode of IDate is somehow no longer integer") # nocov
   if (nargs() == 1L)
-    stop("unary - is not defined for \"IDate\" objects")
+    stopf("unary - is not defined for \"IDate\" objects")
   if (inherits(e2, "difftime"))
-    stop("Internal error -- difftime objects may not be subtracted from IDate, but Ops dispatch should have intervened to prevent this") # nocov
+    stopf("Internal error -- difftime objects may not be subtracted from IDate, but Ops dispatch should have intervened to prevent this") # nocov
 
   if ( isReallyReal(e2) ) {
     # IDate deliberately doesn't support fractional days so revert to base Date
@@ -146,13 +146,8 @@ as.ITime.POSIXct = function(x, tz = attr(x, "tzone", exact=TRUE), ...) {
 }
 
 as.ITime.numeric = function(x, ms = 'truncate', ...) {
-  secs = switch(ms,
-                'truncate' = as.integer(x),
-                'nearest' = as.integer(round(x)),
-                'ceil' = as.integer(ceiling(x)),
-                stop("Valid options for ms are 'truncate', ",
-                     "'nearest', and 'ceil'.")) %% 86400L
-  (setattr(secs, "class", "ITime")) # the %% here ^^ ensures a local copy is obtained; the truncate as.integer() may not copy
+  secs = clip_msec(x, ms) %% 86400L # the %% here ensures a local copy is obtained; the truncate as.integer() may not copy
+  (setattr(secs, "class", "ITime"))
 }
 
 as.ITime.character = function(x, format, ...) {
@@ -181,23 +176,13 @@ as.ITime.character = function(x, format, ...) {
 }
 
 as.ITime.POSIXlt = function(x, ms = 'truncate', ...) {
-  secs = switch(ms,
-                'truncate' = as.integer(x$sec),
-                'nearest' = as.integer(round(x$sec)),
-                'ceil' = as.integer(ceiling(x$sec)),
-                stop("Valid options for ms are 'truncate', ",
-                     "'nearest', and 'ceil'."))
+  secs = clip_msec(x$sec, ms)
   (setattr(with(x, secs + min * 60L + hour * 3600L), "class", "ITime"))  # () wrap to return visibly
 }
 
 as.ITime.times = function(x, ms = 'truncate', ...) {
   secs = 86400 * (unclass(x) %% 1)
-  secs = switch(ms,
-                'truncate' = as.integer(secs),
-                'nearest' = as.integer(round(secs)),
-                'ceil' = as.integer(ceiling(secs)),
-                stop("Valid options for ms are 'truncate', ",
-                     "'nearest', and 'ceil'."))
+  secs = clip_msec(secs, ms)
   (setattr(secs, "class", "ITime"))  # the first line that creates sec will create a local copy so we can use setattr() to avoid potential copy of class()<-
 }
 
@@ -311,6 +296,15 @@ as.POSIXlt.ITime = function(x, ...) {
   as.POSIXlt(as.POSIXct(x, ...))
 }
 
+clip_msec = function(secs, action) {
+  switch(action,
+     truncate = as.integer(secs),
+     nearest = as.integer(round(secs)),
+     ceil = as.integer(ceiling(secs)),
+     stopf("Valid options for ms are 'truncate', 'nearest', and 'ceil'.")
+  )
+}
+                           
 ###################################################################
 # Date - time extraction functions
 #   Adapted from Hadley Wickham's routines cited below to ensure

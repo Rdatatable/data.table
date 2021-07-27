@@ -3,7 +3,7 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
   if (exists("test.data.table", .GlobalEnv,inherits=FALSE)) {
     # package developer
     # nocov start
-    if ("package:data.table" %chin% search()) stop("data.table package is loaded. Unload or start a fresh R session.")
+    if ("package:data.table" %chin% search()) stopf("data.table package is loaded. Unload or start a fresh R session.")
     rootdir = if (pkg!="." && pkg %chin% dir()) file.path(getwd(), pkg) else Sys.getenv("PROJ_PATH")
     subdir = file.path("inst","tests")
     # nocov end
@@ -16,7 +16,7 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
 
   stopifnot(is.character(script), length(script)==1L, !is.na(script), nzchar(script))
   if (!grepl(".Rraw$", script))
-    stop("script must end with '.Rraw'. If a file ending '.Rraw.bz2' exists, that will be found and used.") # nocov
+    stopf("script must end with '.Rraw'. If a file ending '.Rraw.bz2' exists, that will be found and used.") # nocov
 
   if (identical(script,"*.Rraw")) {
     # nocov start
@@ -46,7 +46,7 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
     # nocov start
     fn2 = paste0(fn,".bz2")
     if (!file.exists(file.path(fulldir, fn2)))
-      stop(domain=NA, gettextf("Neither %s nor %s exist in %s",fn, fn2, fulldir))
+      stopf("Neither %s nor %s exist in %s",fn, fn2, fulldir)
     fn = fn2
     # nocov end
     # sys.source() below accepts .bz2 directly.
@@ -151,7 +151,7 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
   if (inherits(err,"try-error")) {
     # nocov start
     if (silent) return(FALSE)
-    stop("Failed after test ", env$prevtest, " before the next test() call in ",fn)
+    stopf("Failed after test %s before the next test() call in %s", env$prevtest, fn)
     # the try() above with silent=FALSE will have already printed the error itself
     # nocov end
   }
@@ -160,15 +160,11 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
   ntest = env$ntest
   if (nfail > 0L) {
     # nocov start
-    # domain=NA since it's already translated by then
-    stop(domain = NA, sprintf(
-      ngettext(
-        nfail,
-        "%d error out of %d. Search %s for test number %s",
-        "%d errors out of %d. Search %s for test numbers %s"
-      ), nfail, ntest, names(fn), paste(env$whichfail, collapse=", ")
-    ))
-    # important to stop() here, so that 'R CMD check' fails
+    stopf(
+      "%d error(s) out of %d. Search %s for test number(s) %s",
+      nfail, ntest, names(fn), toString(env$whichfail)
+    )
+    # important to stopf() here, so that 'R CMD check' fails
     # nocov end
   }
 
@@ -176,7 +172,7 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
   timings = env$timings
   DT = head(timings[-1L][order(-time)], 10L)   # exclude id 1 as in dev that includes JIT
   if ((x<-sum(timings[["nTest"]])) != ntest) {
-    warning("Timings count mismatch: ",x," vs ",ntest)  # nocov
+    warningf("Timings count mismatch: %d vs %d", x, ntest)  # nocov
   }
   catf("10 longest running tests took %ds (%d%% of %ds)\n", as.integer(tt<-DT[, sum(time)]), as.integer(100*tt/(ss<-timings[,sum(time)])), as.integer(ss))
   print(DT, class=FALSE)
@@ -203,7 +199,7 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
   #    graphics::par(p)
   #    grDevices::dev.off()
   #  } else {
-  #    warning("test.data.table runs with memory testing but did not collect any memory statistics.")
+  #    warningf("test.data.table runs with memory testing but did not collect any memory statistics.")
   #  }
   #}
   #if (memtest<-get("memtest", envir=env)) memtest.plot(get("inittime", envir=env))
@@ -215,10 +211,10 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
 compactprint = function(DT, topn=2L) {
   tt = vapply_1c(DT,function(x)class(x)[1L])
   tt[tt=="integer64"] = "i64"
-  tt = substring(tt, 1L, 3L)
+  tt = substr(tt, 1L, 3L)
   makeString = function(x) paste(x, collapse = ",")  # essentially toString.default
   cn = paste0(" [Key=",makeString(key(DT)),
-             " Types=", makeString(substring(sapply(DT, typeof), 1L, 3L)),
+             " Types=", makeString(substr(sapply(DT, typeof), 1L, 3L)),
              " Classes=", makeString(tt), "]")
   if (nrow(DT)) {
     print(copy(DT)[,(cn):="",verbose=FALSE], topn=topn, class=FALSE)
@@ -305,7 +301,7 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
     showProgress = FALSE     # nocov
   }
   if (!missing(error) && !missing(y))
-    stop("Test ",numStr," is invalid: when error= is provided it does not make sense to pass y as well")  # nocov
+    stopf("Test %s is invalid: when error= is provided it does not make sense to pass y as well", numStr)  # nocov
 
   string_match = function(x, y, ignore.case=FALSE) {
     length(grep(x, y, fixed=TRUE)) ||  # try treating x as literal first; useful for most messages containing ()[]+ characters

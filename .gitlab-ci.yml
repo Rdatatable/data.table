@@ -203,7 +203,7 @@ test-rel-cran-lin: ## R-release on Linux, extra NOTEs check and build pdf manual
     - R CMD check --as-cran $(ls -1t data.table_*.tar.gz | head -n 1)
     - *rm-src
     - >-
-        Rscript -e 'l=tail(readLines("data.table.Rcheck/00check.log"), 1L); if (!identical(l, "Status: 1 NOTE")) stop("Last line of ", shQuote("00check.log"), " is not ", shQuote("Status: 1 NOTE"), " (installed package size) but ", shQuote(l)) else q("no")'
+        Rscript -e 'l=tail(readLines("data.table.Rcheck/00check.log"), 1L); if (!identical(l, "Status: OK")) stop("Last line of ", shQuote("00check.log"), " is not ", shQuote("Status: OK"), " (installed package size) but ", shQuote(l)) else q("no")'
 
 test-dev-cran-lin: ## R-devel on Linux, --enable-strict-barrier --disable-long-double, check for new notes and compilation warnings, thus allow_failure
   <<: *test-lin
