@@ -149,7 +149,7 @@
 
 26. `melt()` now outputs scalar logical `NA` instead of `NULL` in rows corresponding to missing list columns, for consistency with non-list columns when using `na.rm=TRUE`, [#5053](https://github.com/Rdatatable/data.table/pull/5053). Thanks to Toby Dylan Hocking for the PR.
 
-27. `as.data.frame(DT)` now removes any indices in addition to removing any key, [#5042](https://github.com/Rdatatable/data.table/issues/5042). When indices were left intact, a subsequent subset or reorder of the `data.frame` would not update the indices since they are treated just like any other `data.frame` attribute, causing incorrect results if the result is later converted back to `data.table` again.
+27. `as.data.frame(DT)`, `setDF(DT)` and `as.list(DT)` now remove the `"index"` attribute which contains any indices (a.k.a. secondary keys), as they already did for other `data.table`-only attributes such as the primary key stored in the `"sorted"` attribute. When indices were left intact, a subsequent subset or reorder of the `data.frame` by `data.frame`-code in base R or other packages would not update the indices, causing incorrect results if then converted back to `data.table`, [#4889](https://github.com/Rdatatable/data.table/issues/4889) [#5042](https://github.com/Rdatatable/data.table/issues/5042). Thanks @OfekShilon for the report and the PR.
 
 ## NOTES
 
