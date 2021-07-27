@@ -2140,9 +2140,8 @@ as.data.frame.data.table = function(x, ...)
   setattr(ans,"row.names",.set_row_names(nrow(x)))   # since R 2.4.0, data.frames can have non-character row names
   setattr(ans,"class","data.frame")
   setattr(ans,"sorted",NULL)  # remove so if you convert to df, do something, and convert back, it is not sorted
-  setattr(ans,"index",NULL) #5042
+  setattr(ans,"index",NULL)  #4883 #5042
   setattr(ans,".internal.selfref",NULL)
-  setattr(ans, "index", NULL)  # bug 4883
   # leave tl intact, no harm,
   ans
 }
@@ -2158,8 +2157,8 @@ as.list.data.table = function(x, ...) {
   setattr(ans, "class", NULL)
   setattr(ans, "row.names", NULL)
   setattr(ans, "sorted", NULL)
+  setattr(ans, "index", NULL)  #4883 #5042
   setattr(ans,".internal.selfref", NULL)   # needed to pass S4 tests for example
-  setattr(ans, "index", NULL)  # bug 4883
   ans
 }
 
@@ -2718,8 +2717,8 @@ setDF = function(x, rownames=NULL) {
     setattr(x, "row.names", rn)
     setattr(x, "class", "data.frame")
     setattr(x, "sorted", NULL)
+    setattr(x, "index", NULL)  #4883 #5042
     setattr(x, ".internal.selfref", NULL)
-    setattr(x, "index", NULL)  # bug 4883
   } else if (is.data.frame(x)) {
     if (!is.null(rownames)) {
       if (length(rownames) != nrow(x))
