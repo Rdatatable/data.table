@@ -150,7 +150,7 @@ replace_dot_alias = function(e) {
         else if (missing(drop)) `[.data.frame`(x,i,j)
         else `[.data.frame`(x,i,j,drop)
     # added is.data.table(ans) check to fix bug #81
-    if (!missing(i) && is.data.table(ans)) setkey(ans, NULL)  # See test 304
+    if (!missing(i) && is.data.table(ans)) setkey(ans, NULL)  # drops index too; tested by plyr::arrange test in other.Rraw
     return(ans)
   }
   if (!missing(verbose)) {
