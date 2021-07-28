@@ -2484,7 +2484,7 @@ copy = function(x) {
 shallow = function(x, cols=NULL) {
   if (!is.data.table(x))
     stopf("x is not a data.table. Shallow copy is a copy of the vector of column pointers (only), so is only meaningful for data.table")
-  ans = .shallow(x, cols=cols, retain.key = TRUE)
+  ans = .shallow(x, cols=cols, retain.key=selfrefok(x))  # selfrefok for #5042
   ans
 }
 
