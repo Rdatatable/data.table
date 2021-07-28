@@ -958,7 +958,7 @@ test(302, DT, data.table(a=c(1L,2L,2L,3L),b=c(4L,42L,6L,7L),key="a"))
 DT[J(2),b:=84L]
 test(303, DT, data.table(a=c(1L,2L,2L,3L),b=c(4L,84L,84L,7L),key="a"))
 
-# Test 304 was testing compatibility with package:plyr. Moved to the ggplot2 block above to be moved to a separate test package.
+# Test 304 was testing compatibility with package:plyr. #2671 moved it to other.Rraw.
 
 # Test that changing colnames keep key in sync.
 # TO DO: will have to do this for secondary keys, too, when implemented.
