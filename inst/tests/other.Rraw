@@ -1,3 +1,9 @@
+pkgs = c("ggplot2", "hexbin", "plyr", "dplyr", "caret", "xts", "gdata", "zoo", "nlme", "bit64", "knitr", "parallel")
+# First expression of this file must be as above: .gitlab-ci.yml uses parse(,n=1L) to read one expression from this file and installs pkgs.
+# So that these dependencies of other.Rraw are maintained in a single place.
+# TEST_DATA_TABLE_WITH_OTHER_PACKAGES is off by default so this other.Rraw doesn't run on CRAN. It is run by GLCI, locally in dev, and by
+# users running test.data.table("other.Rraw").
+
 if (exists("test.data.table",.GlobalEnv,inherits=FALSE) ||
     !"package:data.table" %in% search()) {
   stop("Usage: R CMD INSTALL; require(data.table); test.data.table('other.Rraw')")
@@ -7,18 +13,16 @@ if (exists("test.data.table",.GlobalEnv,inherits=FALSE) ||
 test = data.table:::test
 INT = data.table:::INT
 
-pkgs = c("ggplot2", "hexbin", "plyr", "dplyr", "caret", "xts", "gdata", "zoo", "nlme", "bit64", "knitr", "parallel")
 if (any(duplicated(pkgs))) stop("Packages defined to be loaded for integration tests in 'inst/tests/other.Rraw' contains duplicates.")
 
-is.require = function(pkg) suppressWarnings(suppressMessages(isTRUE(require(pkg, character.only=TRUE, quietly=TRUE, warn.conflicts=FALSE))))
-loaded = sapply(pkgs, is.require)
-
-if (sum(!loaded)) {
-  if (as.logical(Sys.getenv("_R_CHECK_FORCE_SUGGESTS_", "TRUE"))) {
-    stop(sprintf("Package (extended) suggested but not available: %s\n\nThe (extended) suggested packages are required for a complete check of data.table integration tests.\nChecking can be attempted without them by setting the environment variable _R_CHECK_FORCE_SUGGESTS_ to a false value.\nList of extended suggested packages used for integration tests can be found in `system.file(file.path('tests','tests-DESCRIPTION'), package='data.table')`.", paste("'", names(loaded)[!loaded], "'", sep="", collapse=", ")))
-  } else {
-    invisible(sapply(names(loaded)[!loaded], function(s) cat("\n**** Other package",s,"is not installed. Tests using it will be skipped.\n")))
-  }
+f = function(pkg) suppressMessages(isTRUE(require(pkg, character.only=TRUE, quietly=TRUE, warn.conflicts=FALSE)))
+loaded = sapply(pkgs, f)
+if (any(!loaded)) {
+  stop("test.data.table('other.Rraw') is missing required package(s): ", paste(names(loaded)[!loaded], collapse=", "), ". If you can't install them and this is R CMD check, please set environment variable TEST_DATA_TABLE_WITH_OTHER_PACKAGES back to the default, false.")
+  # Would like to install them now for convenience but gitlab-ci.yml seems to install to bus/mirror-other-packages/cran.
+  # If that's a cache, that's nice, but we don't know at this point whether this script is being run by GLCI or by a user or in dev.
+  # We don't allow skipping (e.g. if _R_CHECK_FORCE_SUGGESTS_ is FALSE) to keep things simple and to keep things strict; i.e.
+  # if this script runs then we want to be sure it has fully passed.
 }
 
 cat("\n")
