@@ -1186,13 +1186,263 @@ SEXP gfirst(SEXP x) {
 }
 
 SEXP gtail(SEXP x, SEXP valArg) {
-  if (!isInteger(valArg) || LENGTH(valArg)!=1 || INTEGER(valArg)[0]!=1) error(_("Internal error, gtail is only implemented for n=1. This should have been caught before. please report to data.table issue tracker.")); // # nocov
-  return (glast(x));
+  if (!isInteger(valArg) || LENGTH(valArg)!=1) error(_("Internal error, gtail is only implemented for n>0. This should have been caught before. please report to data.table issue tracker.")); // # nocov
+  const int val=INTEGER(valArg)[0];
+  if (val == 1) return (glast(x));
+
+  const int n = (irowslen == -1) ? length(x) : irowslen;
+  if (nrow != n) error(_("nrow [%d] != length(x) [%d] in %s"), nrow, n, "gtail");
+
+  int anslen = 0;
+  for (int i=0; i<ngrp; ++i){
+    if (val > grpsize[i]) anslen += grpsize[i]; else anslen += val;
+  }
+  SEXP ans;
+  switch(TYPEOF(x)) {
+  case LGLSXP: {
+    const int *ix = LOGICAL(x);
+    ans = PROTECT(allocVector(LGLSXP, anslen));
+    int *ians = LOGICAL(ans);
+    int offset = 0;
+    for (int i=0; i<ngrp; ++i) {
+      const int thisgrpsize = grpsize[i];
+      const int rev = (val > thisgrpsize ? thisgrpsize : val);
+      for (int j=0; j<val; ++j) {
+        if (j > thisgrpsize-1) break;
+        int k = ff[i]+thisgrpsize-2-j;
+        if (isunsorted) k = oo[k]-1;
+        k = (irowslen == -1) ? k : irows[k]-1;
+        ians[offset+(rev-1-j)] = ix[k];
+      }
+      if (val > thisgrpsize) offset += thisgrpsize; else offset += val;
+    }
+  }
+    break;
+  case INTSXP: {
+    const int *ix = INTEGER(x);
+    ans = PROTECT(allocVector(INTSXP, anslen));
+    int *ians = INTEGER(ans);
+    int offset = 0;
+    for (int i=0; i<ngrp; ++i) {
+      const int thisgrpsize = grpsize[i];
+      const int rev = (val > thisgrpsize ? thisgrpsize : val);
+      for (int j=0; j<val; ++j) {
+        if (j > thisgrpsize-1) break;
+        int k = ff[i]+thisgrpsize-2-j;
+        if (isunsorted) k = oo[k]-1;
+        k = (irowslen == -1) ? k : irows[k]-1;
+        ians[offset+(rev-1-j)] = ix[k];
+      }
+      if (val > thisgrpsize) offset += thisgrpsize; else offset += val;
+    }
+  }
+    break;
+  case REALSXP: {
+    const double *dx = REAL(x);
+    ans = PROTECT(allocVector(REALSXP, anslen));
+    double *dans = REAL(ans);
+    int offset = 0;
+    for (int i=0; i<ngrp; ++i) {
+      const int thisgrpsize = grpsize[i];
+      const int rev = (val > thisgrpsize ? thisgrpsize : val);
+      for (int j=0; j<val; ++j) {
+        if (j > thisgrpsize-1) break;
+        int k = ff[i]+thisgrpsize-2-j;
+        if (isunsorted) k = oo[k]-1;
+        k = (irowslen == -1) ? k : irows[k]-1;
+        dans[offset+(rev-1-j)] = dx[k];
+      }
+      if (val > thisgrpsize) offset += thisgrpsize; else offset += val;
+    }
+  }
+    break;
+  case CPLXSXP: {
+    const Rcomplex *dx = COMPLEX(x);
+    ans = PROTECT(allocVector(CPLXSXP, anslen));
+    Rcomplex *dans = COMPLEX(ans);
+    int offset = 0;
+    for (int i=0; i<ngrp; ++i) {
+      const int thisgrpsize = grpsize[i];
+      const int rev = (val > thisgrpsize ? thisgrpsize : val);
+      for (int j=0; j<val; ++j) {
+        if (j > thisgrpsize-1) break;
+        int k = ff[i]+thisgrpsize-2-j;
+        if (isunsorted) k = oo[k]-1;
+        k = (irowslen == -1) ? k : irows[k]-1;
+        dans[offset+(rev-1-j)] = dx[k];
+      }
+      if (val > thisgrpsize) offset += thisgrpsize; else offset += val;
+    }
+  }
+    break;
+  case STRSXP: {
+    ans = PROTECT(allocVector(STRSXP, anslen));
+    int offset = 0;
+    for (int i=0; i<ngrp; ++i) {
+      const int thisgrpsize = grpsize[i];
+      const int rev = (val > thisgrpsize ? thisgrpsize : val);
+      for (int j=0; j<val; ++j) {
+        if (j > thisgrpsize-1) break;
+        int k = ff[i]+thisgrpsize-2-j;
+        if (isunsorted) k = oo[k]-1;
+        k = (irowslen == -1) ? k : irows[k]-1;
+        SET_STRING_ELT(ans, offset+(rev-1-j), STRING_ELT(x, k));
+      }
+      if (val > thisgrpsize) offset += thisgrpsize; else offset += val;
+    }
+  }
+    break;
+  case VECSXP: {
+    ans = PROTECT(allocVector(VECSXP, anslen));
+    int offset = 0;
+    for (int i=0; i<ngrp; ++i) {
+      const int thisgrpsize = grpsize[i];
+      const int rev = (val > thisgrpsize ? thisgrpsize : val);
+      for (int j=0; j<val; ++j) {
+        if (j > thisgrpsize-1) break;
+        int k = ff[i]+thisgrpsize-2-j;
+        if (isunsorted) k = oo[k]-1;
+        k = (irowslen == -1) ? k : irows[k]-1;
+        SET_VECTOR_ELT(ans, offset+(rev-1-j), VECTOR_ELT(x, k));
+      }
+      if (val > thisgrpsize) offset += thisgrpsize; else offset += val;
+    }
+  }
+    break;
+  default:
+    error(_("Type '%s' not supported by GForce gtail. Either add the prefix utils::tail(.) or turn off GForce optimization using options(datatable.optimize=1)"), type2char(TYPEOF(x)));
+  }
+  copyMostAttrib(x, ans);
+  UNPROTECT(1);
+  return(ans);
+
 }
 
 SEXP ghead(SEXP x, SEXP valArg) {
-  if (!isInteger(valArg) || LENGTH(valArg)!=1 || INTEGER(valArg)[0]!=1) error(_("Internal error, ghead is only implemented for n=1. This should have been caught before. please report to data.table issue tracker.")); // # nocov
-  return (gfirst(x));
+  if (!isInteger(valArg) || LENGTH(valArg)!=1) error(_("Internal error, ghead is only implemented for n>0. This should have been caught before. please report to data.table issue tracker.")); // # nocov
+  const int val=INTEGER(valArg)[0];
+  if (val == 1) return (gfirst(x));
+
+  const int n = (irowslen == -1) ? length(x) : irowslen;
+  if (nrow != n) error(_("nrow [%d] != length(x) [%d] in %s"), nrow, n, "ghead");
+
+  int anslen = 0;
+  for (int i=0; i<ngrp; ++i){
+    const int thisgrpsize = grpsize[i];
+    if (val > thisgrpsize) anslen += thisgrpsize; else anslen += val;
+  }
+  SEXP ans;
+  switch(TYPEOF(x)) {
+  case LGLSXP: {
+    const int *ix = LOGICAL(x);
+    ans = PROTECT(allocVector(LGLSXP, anslen));
+    int *ians = LOGICAL(ans);
+    int offset = 0;
+    for (int i=0; i<ngrp; ++i) {
+      const int thisgrpsize = grpsize[i];
+      for (int j=0; j<val; ++j) {
+        if (j > thisgrpsize-1) break;
+        int k = ff[i]+j-1;
+        if (isunsorted) k = oo[k]-1;
+        k = (irowslen == -1) ? k : irows[k]-1;
+        ians[offset+j] = ix[k];
+      }
+      if (val > thisgrpsize) offset += thisgrpsize; else offset += val;
+    }
+  }
+    break;
+  case INTSXP: {
+    const int *ix = INTEGER(x);
+    ans = PROTECT(allocVector(INTSXP, anslen));
+    int *ians = INTEGER(ans);
+    int offset = 0;
+    for (int i=0; i<ngrp; ++i) {
+      const int thisgrpsize = grpsize[i];
+      for (int j=0; j<val; ++j) {
+        if (j > thisgrpsize-1) break;
+        int k = ff[i]+j-1;
+        if (isunsorted) k = oo[k]-1;
+        k = (irowslen == -1) ? k : irows[k]-1;
+        ians[offset+j] = ix[k];
+      }
+      if (val > thisgrpsize) offset += thisgrpsize; else offset += val;
+    }
+  }
+    break;
+  case REALSXP: {
+    const double *dx = REAL(x);
+    ans = PROTECT(allocVector(REALSXP, anslen));
+    double *dans = REAL(ans);
+    int offset = 0;
+    for (int i=0; i<ngrp; ++i) {
+      const int thisgrpsize = grpsize[i];
+      for (int j=0; j<val; ++j) {
+        if (j > thisgrpsize-1) break;
+        int k = ff[i]+j-1;
+        if (isunsorted) k = oo[k]-1;
+        k = (irowslen == -1) ? k : irows[k]-1;
+        dans[offset+j] = dx[k];
+      }
+      if (val > thisgrpsize) offset += thisgrpsize; else offset += val;
+    }
+  }
+    break;
+  case CPLXSXP: {
+    const Rcomplex *dx = COMPLEX(x);
+    ans = PROTECT(allocVector(CPLXSXP, anslen));
+    Rcomplex *dans = COMPLEX(ans);
+    int offset = 0;
+    for (int i=0; i<ngrp; ++i) {
+      const int thisgrpsize = grpsize[i];
+      for (int j=0; j<val; ++j) {
+        if (j > thisgrpsize-1) break;
+        int k = ff[i]+j-1;
+        if (isunsorted) k = oo[k]-1;
+        k = (irowslen == -1) ? k : irows[k]-1;
+        dans[offset+j] = dx[k];
+      }
+      if (val > thisgrpsize) offset += thisgrpsize; else offset += val;
+    }
+  }
+    break;
+  case STRSXP: {
+    ans = PROTECT(allocVector(STRSXP, anslen));
+    int offset = 0;
+    for (int i=0; i<ngrp; ++i) {
+      const int thisgrpsize = grpsize[i];
+      for (int j=0; j<val; ++j) {
+        if (j > thisgrpsize-1) break;
+        int k = ff[i]+j-1;
+        if (isunsorted) k = oo[k]-1;
+        k = (irowslen == -1) ? k : irows[k]-1;
+        SET_STRING_ELT(ans, offset+j, STRING_ELT(x, k));
+      }
+      if (val > thisgrpsize) offset += thisgrpsize; else offset += val;
+    }
+  }
+    break;
+  case VECSXP: {
+    ans = PROTECT(allocVector(VECSXP, anslen));
+    int offset = 0;
+    for (int i=0; i<ngrp; ++i) {
+      const int thisgrpsize = grpsize[i];
+      for (int j=0; j<val; ++j) {
+        if (j > thisgrpsize-1) break;
+        int k = ff[i]+j-1;
+        if (isunsorted) k = oo[k]-1;
+        k = (irowslen == -1) ? k : irows[k]-1;
+        SET_VECTOR_ELT(ans, offset+j, VECTOR_ELT(x, k));
+      }
+      if (val > thisgrpsize) offset += thisgrpsize; else offset += val;
+    }
+  }
+    break;
+  default:
+    error(_("Type '%s' not supported by GForce ghead. Either add the prefix utils::head(.) or turn off GForce optimization using options(datatable.optimize=1)"), type2char(TYPEOF(x)));
+  }
+  copyMostAttrib(x, ans);
+  UNPROTECT(1);
+  return(ans);
 }
 
 SEXP gnthvalue(SEXP x, SEXP valArg) {

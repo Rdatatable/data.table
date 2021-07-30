@@ -1733,13 +1733,13 @@ replace_dot_alias = function(e) {
           # is.symbol() is for #1369, #1974 and #2949
           if (!(is.call(q) && is.symbol(q[[1L]]) && is.symbol(q[[2L]]) && (q1 <- q[[1L]]) %chin% gfuns)) return(FALSE)
           if (!(q2 <- q[[2L]]) %chin% names(SDenv$.SDall) && q2 != ".I") return(FALSE)  # 875
-          if ((length(q)==2L || (!is.null(names(q)) && startsWith(names(q)[3L], "na"))) && (!q1 %chin% c("head","tail"))) return(TRUE)
+          if ((length(q)==2L || (!is.null(names(q)) && startsWith(names(q)[3L], "na")))) return(TRUE)
           #                       ^^ base::startWith errors on NULL unfortunately
           #        head-tail uses default value n=6 which as of now should not go gforce ... ^^
           # otherwise there must be three arguments, and only in two cases:
           #   1) head/tail(x, 1) or 2) x[n], n>0
           length(q)==3L && length(q3 <- q[[3L]])==1L && is.numeric(q3) &&
-            ( (q1 %chin% c("head", "tail") && q3==1L) || ((q1 == "[" || (q1 == "[[" && eval(call('is.atomic', q[[2L]]), envir=x))) && q3>0L) )
+            ( (q1 %chin% c("head", "tail")) || ((q1 == "[" || (q1 == "[[" && eval(call('is.atomic', q[[2L]]), envir=x))) && q3>0L) )
         }
         if (jsub[[1L]]=="list") {
           GForce = TRUE
@@ -1755,6 +1755,8 @@ replace_dot_alias = function(e) {
               if (length(jsub[[ii]])==3L) jsub[[ii]][[3L]] = eval(jsub[[ii]][[3L]], parent.frame())  # tests 1187.2 & 1187.4
             }
           else {
+            # adding argument to ghead/gtail if none is supplied to g-optimized head/tail
+            if (length(jsub) == 2L && jsub[[1L]] %chin% c("head", "tail")) jsub[["n"]] = 6L
             jsub[[1L]] = as.name(paste0("g", jsub[[1L]]))
             if (length(jsub)==3L) jsub[[3L]] = eval(jsub[[3L]], parent.frame())   # tests 1187.3 & 1187.5
           }
@@ -1834,6 +1836,26 @@ replace_dot_alias = function(e) {
     ans = gforce(thisEnv, jsub, o__, f__, len__, irows) # irows needed for #971.
     gi = if (length(o__)) o__[f__] else f__
     g = lapply(grpcols, function(i) groups[[i]][gi])
+
+    # adding ghead/gtail(n) support for n > 1 #5060 #523
+    q3 = 0
+    if (!is.symbol(jsub)) {
+      headTail_arg = function(q) {
+        if (length(q)==3L && length(q3 <- q[[3L]])==1L && is.numeric(q3) &&
+         (q1 <- q[[1L]]) %chin% c("ghead", "gtail") && q3!=1) q3
+        else 0
+      }
+
+      if (jsub[[1L]] == "list"){
+        q3 = max(sapply(jsub, headTail_arg))
+      } else if (length(jsub)==3L) {
+        q3 = headTail_arg(jsub)
+      }
+    }
+    if (q3 > 0) {
+      grplens = pmin.int(q3, len__)
+      g = list(rep(unlist(g), grplens))
+    }
     ans = c(g, ans)
   } else {
     ans = .Call(Cdogroups, x, xcols, groups, grpcols, jiscols, xjiscols, grporder, o__, f__, len__, jsub, SDenv, cols, newnames, !missing(on), verbose)

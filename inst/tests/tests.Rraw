@@ -8094,7 +8094,8 @@ test(1579.19, dt[, tail(.SD,1L), by=x],    dt[, utils::tail(.SD,1L), by=x])
 test(1579.20, dt[, tail(.SD,1L), keyby=x], dt[, utils::tail(.SD,1L), keyby=x])
 test(1579.21, dt[, tail(.SD,1L), keyby=x], dt[, utils::tail(.SD,1L), keyby=x])
 # GForce _doesn't_ work when n > 1
-test(1579.22, dt[ , tail(.SD, 2), by = x, verbose = TRUE], output = 'GForce FALSE')
+# removed test since GForce now works for head/tail with n > 1
+# test(1579.22, dt[ , tail(.SD, 2), by = x, verbose = TRUE], output = 'GForce FALSE')
 
 mysub <- function(x, n) x[n]
 test(1579.23, dt[, .SD[2],  by=x],    dt[, mysub(.SD,2),  by=x])
@@ -14654,11 +14655,11 @@ DT = data.table(a=c(rep(1L, 7L), rep(2L, 5L)), b=1:12, d=12:1)
 test(2018.1, DT[, head(.SD), a, verbose=TRUE],
              data.table(a=c(rep(1L, 6L), rep(2L, 5L)), b=c(1:6, 8:12), d=c(12:7, 5:1)),
              output=c("lapply optimization changed j from 'head(.SD)' to 'list(head(b, n = 6L), head(d, n = 6L))'",
-                      "GForce is on, left j unchanged"))
+                      "GForce optimized j to 'list(ghead(b, n = 6L), ghead(d, n = 6L))'"))
 test(2018.2, DT[, head(b), a, verbose=TRUE],
              data.table(a=c(rep(1L, 6L), rep(2L, 5L)), V1=c(1:6, 8:12)),
              output=c("lapply optimization is on, j unchanged as 'head(b)'",
-                      "GForce is on, left j unchanged"))
+                      "GForce optimized j to 'ghead(b, n = 6L)'"))
 test(2018.3, DT[, tail(.SD), a], data.table(a=c(rep(1L, 6L), rep(2L, 5L)), b=c(2:7, 8:12), d=c(11:6, 5:1)))
 test(2018.4, DT[, tail(b), a], data.table(a=c(rep(1L, 6L), rep(2L, 5L)), V1=c(2:7, 8:12)))
 # gforce tests coverage
@@ -17802,3 +17803,26 @@ test(2199.1, as.data.table(as.list(1:2))[, .SD,.SDcols=(-1L)],   data.table(V2=2
 test(2199.2, as.data.table(as.list(1:2))[, .SD,.SDcols=(-(1L))], data.table(V2=2L))
 test(2199.3, as.data.table(as.list(1:3))[, .SD,.SDcols=(-1L)],   data.table(V2=2L, V3=3L))
 test(2199.4, data.table(V1=-1L, V2=-2L, V3=-3L)[,.SD,.SDcols=-V2:-V1], error="not found")
+
+# gforce head/tail for n > 1
+dt = data.table(x  = sample(letters[1:5], 20, TRUE),
+                i1 = sample(-10:10, 20, TRUE),
+                i2 = sample(c(-10:10, NA), 20, TRUE),
+                d1 = as.numeric(sample(-10:10, 20, TRUE)),
+                d2 = as.numeric(sample(c(-10:10, NA), 20, TRUE)))
+test(2200.01, dt[, head(.SD,2),    by=x], dt[, utils::head(.SD,2),    by=x])
+test(2200.02, dt[, head(.SD,2),    by=x], dt[, utils::head(.SD,2),    by=x])
+test(2200.03, dt[, head(.SD,2), keyby=x], dt[, utils::head(.SD,2), keyby=x])
+test(2200.04, dt[, head(.SD,2), keyby=x], dt[, utils::head(.SD,2), keyby=x])
+test(2200.05, dt[, head(.SD,5),    by=x], dt[, utils::head(.SD,5),    by=x])
+test(2200.06, dt[, head(.SD,5),    by=x], dt[, utils::head(.SD,5),    by=x])
+test(2200.07, dt[, head(.SD,5), keyby=x], dt[, utils::head(.SD,5), keyby=x])
+test(2200.08, dt[, head(.SD,5), keyby=x], dt[, utils::head(.SD,5), keyby=x])
+test(2200.11, dt[, tail(.SD,2),    by=x], dt[, utils::tail(.SD,2),    by=x])
+test(2200.12, dt[, tail(.SD,2),    by=x], dt[, utils::tail(.SD,2),    by=x])
+test(2200.13, dt[, tail(.SD,2), keyby=x], dt[, utils::tail(.SD,2), keyby=x])
+test(2200.14, dt[, tail(.SD,2), keyby=x], dt[, utils::tail(.SD,2), keyby=x])
+test(2200.15, dt[, tail(.SD,5),    by=x], dt[, utils::tail(.SD,5),    by=x])
+test(2200.16, dt[, tail(.SD,5),    by=x], dt[, utils::tail(.SD,5),    by=x])
+test(2200.17, dt[, tail(.SD,5), keyby=x], dt[, utils::tail(.SD,5), keyby=x])
+test(2200.18, dt[, tail(.SD,5), keyby=x], dt[, utils::tail(.SD,5), keyby=x])
