@@ -39,7 +39,7 @@ static int gs_n = 0;                // the number of groups found so far (how mu
 static int **gs_thread=NULL;        // each thread has a private buffer which gets flushed to the final gs appropriately
 static int *gs_thread_alloc=NULL;
 static int *gs_thread_n=NULL;
-static int *TMP=NULL;               // UINT16_MAX*sizeof(int) for each thread; used by counting sort in radix_r()
+static int *global_TMP=NULL;               // UINT16_MAX*sizeof(int) for each thread; used by counting sort in radix_r()
 static uint8_t *UGRP=NULL;          // 256 bytes for each thread; used by counting sort in radix_r() when sortType==0 (byte appearance order)
 
 static int  *cradix_counts = NULL;
@@ -85,7 +85,7 @@ static void cleanup() {
   free(gs_thread_alloc); gs_thread_alloc=NULL;
   free(gs_thread_n);     gs_thread_n=NULL;
 
-  free(TMP); TMP=NULL;
+  free(global_TMP); global_TMP=NULL;
   free(UGRP); UGRP=NULL;
 
   nrow = 0;
@@ -714,10 +714,15 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
   Rprintf(_("nradix=%d\n"), nradix);
   #endif
 
-  nth = getDTthreads(nrow, true);  // this nth is relied on in cleanup()
-  TMP =  (int *)malloc(nth*UINT16_MAX*sizeof(int)); // used by counting sort (my_n<=65536) in radix_r()
-  UGRP = (uint8_t *)malloc(nth*256);                // TODO: align TMP and UGRP to cache lines (and do the same for stack allocations too)
-  if (!TMP || !UGRP /*|| TMP%64 || UGRP%64*/) STOP(_("Failed to allocate TMP or UGRP or they weren't cache line aligned: nth=%d"), nth);
+  //global nth
+  nth = getDTthreads(nrow, false);  // this nth is relied on in cleanup()
+  global_TMP =  (int *)malloc(nth * UINT16_MAX * sizeof(int)); // used by counting sort (my_n<=65536) in radix_r()
+  // we don't throttle here to be safe, that each thread that could ever be start has memory to work on
+  // without running into a buffer overflow. Which would happen because the thread calculation in radix_r()
+  // will in most cases start one more thread than we would calculate here.
+
+  UGRP = (uint8_t *)malloc(nth*256);                // TODO: align global_TMP and UGRP to cache lines (and do the same for stack allocations too)
+  if (!global_TMP || !UGRP /*|| global_TMP%64 || UGRP%64*/) STOP(_("Failed to allocate TMP or UGRP or they weren't cache line aligned: nth=%d"), nth);
   if (retgrp) {
     gs_thread = calloc(nth, sizeof(int *));     // thread private group size buffers
     gs_thread_alloc = calloc(nth, sizeof(int));
@@ -984,7 +989,7 @@ void radix_r(const int from, const int to, const int radix) {
         for (int i=0, sum=0; i<ngrp; i++) { uint8_t w=my_ugrp[i]; int tmp=my_counts[w]; my_starts[w]=my_starts_copy[w]=sum; sum+=tmp; }  // cumulate in ugrp appearance order
       }
 
-      int *restrict my_TMP = TMP + omp_get_thread_num()*UINT16_MAX; // Allocated up front to save malloc calls which i) block internally and ii) could fail
+      int *restrict my_TMP = global_TMP + omp_get_thread_num() * UINT16_MAX; // Allocated up front to save malloc calls which i) block internally and ii) could fail
       if (radix==0 && nalast!=-1) {
         // anso contains 1:n so skip reading and copying it. Only happens when nrow<65535. Saving worth the branch (untested) when user repeatedly calls a small-n small-cardinality order.
         for (int i=0; i<my_n; i++) anso[my_starts[my_key[i]]++] = i+1;  // +1 as R is 1-based.
@@ -1222,8 +1227,14 @@ void radix_r(const int from, const int to, const int radix) {
     } else {
       // all groups are <=65535 and radix_r() will handle each one single-threaded. Therefore, this time
       // it does make sense to start a parallel team and there will be no nestedness here either.
+
+      int threads_to_run = MIN(nth, getDTthreads(ngrp, false));  // the parallel regions blow might reach code
+                                                                    // that uses global_TMP and nth contains the
+                                                                    // number of threads we anticipated during
+                                                                    // allocation of this buffer. So we don't want to
+                                                                    // start more thread than that.
       if (retgrp) {
-        #pragma omp parallel for ordered schedule(dynamic) num_threads(getDTthreads(ngrp, false))
+        #pragma omp parallel for ordered schedule(dynamic) num_threads(threads_to_run)
         for (int i=0; i<ngrp; i++) {
           int start = from + starts[ugrp[i]];
           radix_r(start, start+my_gs[i]-1, radix+1);
@@ -1232,7 +1243,7 @@ void radix_r(const int from, const int to, const int radix) {
         }
       } else {
         // flush() is only relevant when retgrp==true so save the redundant ordered clause
-        #pragma omp parallel for schedule(dynamic) num_threads(getDTthreads(ngrp, true))
+        #pragma omp parallel for schedule(dynamic) num_threads(threads_to_run)
         for (int i=0; i<ngrp; i++) {
           int start = from + starts[ugrp[i]];
           radix_r(start, start+my_gs[i]-1, radix+1);
