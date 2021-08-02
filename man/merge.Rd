@@ -4,7 +4,8 @@
 \title{Merge two data.tables}
 \description{
 Fast merge of two \code{data.table}s. The \code{data.table} method behaves
-very similarly to that of \code{data.frame}s except that, by default, it attempts to merge
+very similarly to that of \code{data.frame}s except that, by default, it chooses
+the columns to merge on:
 
 \itemize{
   \item at first based on the shared key columns, and if there are none,
@@ -13,7 +14,7 @@ very similarly to that of \code{data.frame}s except that, by default, it attempt
   \item then based on the common columns between the two \code{data.table}s.
 }
 
-Set the \code{by}, or \code{by.x} and \code{by.y} arguments explicitly to override this default.
+Use the \code{by}, \code{by.x} and \code{by.y} arguments explicitly to override this default.
 }
 
 \usage{
@@ -33,7 +34,7 @@ If \code{y} has no key columns, this defaults to the key of \code{x}.}
 \item{all}{logical; \code{all = TRUE} is shorthand to save setting both
 \code{all.x = TRUE} and \code{all.y = TRUE}.}
 \item{all.x}{logical; if \code{TRUE}, rows from \code{x} which have no matching row
-in \code{y} are included. These rows will have 'NA's in those columns that are usually
+in \code{y} are included. These rows will have 'NA's in the columns that are usually
 filled with values from \code{y}. The default is \code{FALSE} so that only rows with
 data from both \code{x} and \code{y} are included in the output.}
 \item{all.y}{logical; analogous to \code{all.x} above.}
@@ -77,7 +78,7 @@ set to \code{TRUE}.
 }
 
 \seealso{
-\code{\link{data.table}}, \code{\link{as.data.table}}, \code{\link{[.data.table}},
+\code{\link{data.table}}, \code{\link{setkey}}, \code{\link{[.data.table}},
 \code{\link{merge.data.frame}}
 }
 
