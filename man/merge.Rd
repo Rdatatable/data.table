@@ -4,8 +4,8 @@
 \title{Merge two data.tables}
 \description{
 Fast merge of two \code{data.table}s. The \code{data.table} method behaves
-very similarly to that of \code{data.frame}s except that, by default, it chooses
-the columns to merge on:
+similarly to \code{data.frame} except that row order is specified, and by
+default the columns to merge on are chosen:
 
 \itemize{
   \item at first based on the shared key columns, and if there are none,
