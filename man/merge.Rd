@@ -38,10 +38,11 @@ These rows will have 'NA's in those columns that are usually filled with values
 from \code{y}.  The default is \code{FALSE}, so that only rows with data from both
 \code{x} and \code{y} are included in the output.}
 \item{all.y}{logical; analogous to \code{all.x} above.}
-\item{sort}{logical. If \code{TRUE} (default), then rows of merged
+\item{sort}{logical. If \code{TRUE} (default), the rows of the merged
 \code{data.table} are sorted by setting the key to the \code{by / by.x} columns.
-Note that \code{NA}s are placed in front, unlike base R sort. If \code{FALSE},
-then rows are in an unspecified order.}
+Note that \code{NA}s are placed in front, unlike base R sort (**add why**). If
+\code{FALSE}, unlike base R's merge for which row order is unspecified, the row
+order in `x` is retained, followed by `y` rows that don't match `x` (when \code{all.y=TRUE}) in the order they appear in `y`.}
 \item{suffixes}{A \code{character(2)} specifying the suffixes to be used for
 making non-\code{by} column names unique. The suffix behaviour works in a similar
 fashion as the \code{\link{merge.data.frame}} method does.}
