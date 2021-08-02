@@ -118,14 +118,14 @@ merge(d4, d1)
 merge(d1, d4, all=TRUE)
 merge(d4, d1, all=TRUE)
 
-# new feature, no need to set keys anymore
+# setkey is automatic by default
 set.seed(1L)
 d1 <- data.table(a=sample(rep(1:3,each=2)), z=1:6)
 d2 <- data.table(a=2:0, z=10:12)
 merge(d1, d2, by="a")
 merge(d1, d2, by="a", all=TRUE)
 
-# new feature, using by.x and by.y arguments
+# using by.x and by.y
 setnames(d2, "a", "b")
 merge(d1, d2, by.x="a", by.y="b")
 merge(d1, d2, by.x="a", by.y="b", all=TRUE)
