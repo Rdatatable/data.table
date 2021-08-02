@@ -24,7 +24,7 @@ There are three reasons \code{setkey} is desirable:
 \code{NA}s are always first because:
 \itemize{
   \item \code{NA} is internally \code{INT_MIN} (a large negative number) in R. Keys and indexes are always in increasing order so if \code{NA}s are first, no special treatment or branch is needed in many \code{data.table} internals involving binary search. It is not optional to place \code{NA}s last for speed, simplicity and rubustness of internals at C level.
-  \item if any \code{NA}s are present then we believe it is better to display them up front rather than hiding them at the end to reduce the risk of not realizing \code{NA}s are present.
+  \item if any \code{NA}s are present then we believe it is better to display them up front (rather than hiding them at the end) to reduce the risk of not realizing \code{NA}s are present.
 }
 
 In \code{data.table} parlance, all \code{set*} functions change their input
