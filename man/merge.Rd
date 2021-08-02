@@ -40,9 +40,10 @@ from \code{y}.  The default is \code{FALSE}, so that only rows with data from bo
 \item{all.y}{logical; analogous to \code{all.x} above.}
 \item{sort}{logical. If \code{TRUE} (default), the rows of the merged
 \code{data.table} are sorted by setting the key to the \code{by / by.x} columns. If
-\code{FALSE}, unlike base R's \code{merge} for which row order is unspecified, the row order
-in `x` is retained, followed by `y` rows that don't match `x` (when \code{all.y=TRUE})
-retaining the order those appear in `y`.}
+\code{FALSE}, unlike base R's \code{merge} for which row order is unspecified, the
+row order in \code{x} is retained (including retaining the position of missings when
+\code{all.x=TRUE}), followed by \code{y} rows that don't match \code{x} (when \code{all.y=TRUE})
+retaining the order those appear in \code{y}.}
 \item{suffixes}{A \code{character(2)} specifying the suffixes to be used for
 making non-\code{by} column names unique. The suffix behaviour works in a similar
 fashion as the \code{\link{merge.data.frame}} method does.}
