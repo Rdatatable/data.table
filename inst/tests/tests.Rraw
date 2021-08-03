@@ -17810,3 +17810,17 @@ setDF(d)
 d[1:50, "a"] = d[51:100, "a"]
 setDT(d)
 test(2200, nrow(d[a==99]), 2L)
+
+# segfault in forder when nrow/throttle<nth && ngrp>=255 && nrow>=65536; #5077
+# Matt ran these on clang's ASAN+OpenMP which correctly faulted v1.14.0; these tests segfault consistently without ASAN too
+set.seed(1)
+DT = data.table(grp=sample(255L, 65536L ,replace=TRUE))  # >=255 && >=65536 necessary
+setDTthreads(throttle=nrow(DT))      # increase throttle to reduce threads to 1 for this nrow
+test(2201.1, nrow(DT[, .N, by=grp]), 255L)
+test(2201.2, nrow(setkey(DT, grp)), 65536L)
+set.seed(1)
+DT = data.table(grp=sample(65536L))  # extra case with all size 1 groups too just for fun
+test(2201.3, nrow(DT[, .N, by=grp]), 65536L)
+test(2201.4, nrow(setkey(DT, grp)), 65536L)
+setDTthreads()    # restore default throttle
+
