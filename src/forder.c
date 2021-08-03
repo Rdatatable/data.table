@@ -715,11 +715,12 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
   #endif
 
   //global nth & TMP
-  nth = getDTthreads(nrow, false);  // this nth is relied on in cleanup()
-  TMP =  (int *)malloc(nth * UINT16_MAX * sizeof(int)); // used by counting sort (my_n<=65536) in radix_r()
+  nth = getDTthreads(nrow, false);  // this nth is relied on in cleanup(); false for #5077
   // we don't throttle here to be safe, that each thread that could ever be start has memory to work on
   // without running into a buffer overflow. Which would happen because the thread calculation in radix_r()
   // will in most cases start one more thread than we would calculate here.
+  TMP =  (int *)malloc(nth*UINT16_MAX*sizeof(int)); // used by counting sort (my_n<=65536) in radix_r()
+  
 
   UGRP = (uint8_t *)malloc(nth*256);                // TODO: align TMP and UGRP to cache lines (and do the same for stack allocations too)
   if (!TMP || !UGRP /*|| TMP%64 || UGRP%64*/) STOP(_("Failed to allocate TMP or UGRP or they weren't cache line aligned: nth=%d"), nth);
