@@ -716,13 +716,13 @@ void fwriteMain(fwriteMainArgs args)
       if (args.doRowNames) {
         // Unusual: the extra blank column name when row_names are added as the first column
         if (doQuote!=0/*'auto'(NA) or true*/) { *ch++='"'; *ch++='"'; } // to match write.csv
-        *ch++ = sep;
+        if (sep != '\0') *ch++ = sep;
       }
       for (int j=0; j<args.ncol; j++) {
         writeString(args.colNames, j, &ch);
-        *ch++ = sep;
+        if (sep != '\0') *ch++ = sep;
       }
-      ch--; // backup over the last sep
+      if (sep != '\0') ch--; // backup over the last sep
       write_chars(args.eol, &ch);
     }
     if (f==-1) {
@@ -877,15 +877,15 @@ void fwriteMain(fwriteMainArgs args)
           } else {
             writeString(args.rowNames, i, &ch);
           }
-          *ch++=sep;
+          if (sep != '\0') *ch++=sep;
         }
         // Hot loop
         for (int j=0; j<args.ncol; j++) {
           (args.funs[args.whichFun[j]])(args.columns[j], i, &ch);
-          *ch++ = sep;
+          if (sep != '\0') *ch++ = sep;
         }
         // Tepid again (once at the end of each line)
-        ch--;  // backup onto the last sep after the last column. ncol>=1 because 0-columns was caught earlier.
+        if (sep != '\0') ch--;  // backup onto the last sep after the last column. ncol>=1 because 0-columns was caught earlier.
         write_chars(args.eol, &ch);  // overwrite last sep with eol instead
       }
       // compress buffer if gzip

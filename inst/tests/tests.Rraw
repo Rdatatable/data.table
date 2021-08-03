@@ -17810,3 +17810,11 @@ setDF(d)
 d[1:50, "a"] = d[51:100, "a"]
 setDT(d)
 test(2200, nrow(d[a==99]), 2L)
+
+# fwrite now allows sep="", #4817
+test(2201.1, fwrite(data.frame(a="id", b=letters[1:5], c=1:5), sep=""),
+            output = c("abc", paste0("id", letters[1:5], 1:5)))
+test(2201.2, fwrite(data.frame(a="id", b=1:1e2), sep=""), 
+            output = c("ab", paste0("id", 1:1e2)))
+test(2201.3, fwrite(data.table(a=c(NA, 2, 3.01), b=c('foo', NA, 'bar')), sep=""),
+             output=c("ab", "foo", "2", "3.01bar"))
