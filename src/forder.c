@@ -1228,13 +1228,8 @@ void radix_r(const int from, const int to, const int radix) {
       // all groups are <=65535 and radix_r() will handle each one single-threaded. Therefore, this time
       // it does make sense to start a parallel team and there will be no nestedness here either.
 
-      int threads_to_run = MIN(nth, getDTthreads(ngrp, false));  // the parallel regions below might reach code
-                                                                    // that uses TMP and nth contains the
-                                                                    // number of threads we anticipated during
-                                                                    // allocation of this buffer. So we don't want to
-                                                                    // start more thread than that.
       if (retgrp) {
-        #pragma omp parallel for ordered schedule(dynamic) num_threads(threads_to_run)
+        #pragma omp parallel for ordered schedule(dynamic) num_threads(MIN(nth, ngrp))  // #5077
         for (int i=0; i<ngrp; i++) {
           int start = from + starts[ugrp[i]];
           radix_r(start, start+my_gs[i]-1, radix+1);
@@ -1243,7 +1238,7 @@ void radix_r(const int from, const int to, const int radix) {
         }
       } else {
         // flush() is only relevant when retgrp==true so save the redundant ordered clause
-        #pragma omp parallel for schedule(dynamic) num_threads(threads_to_run)
+        #pragma omp parallel for schedule(dynamic) num_threads(MIN(nth, ngrp))  // #5077
         for (int i=0; i<ngrp; i++) {
           int start = from + starts[ugrp[i]];
           radix_r(start, start+my_gs[i]-1, radix+1);
