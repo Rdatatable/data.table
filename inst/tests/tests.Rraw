@@ -958,7 +958,7 @@ test(302, DT, data.table(a=c(1L,2L,2L,3L),b=c(4L,42L,6L,7L),key="a"))
 DT[J(2),b:=84L]
 test(303, DT, data.table(a=c(1L,2L,2L,3L),b=c(4L,84L,84L,7L),key="a"))
 
-# Test 304 was testing compatibility with package:plyr. Moved to the ggplot2 block above to be moved to a separate test package.
+# Test 304 was testing compatibility with package:plyr. #2671 moved it to other.Rraw.
 
 # Test that changing colnames keep key in sync.
 # TO DO: will have to do this for secondary keys, too, when implemented.
@@ -17802,3 +17802,11 @@ test(2199.1, as.data.table(as.list(1:2))[, .SD,.SDcols=(-1L)],   data.table(V2=2
 test(2199.2, as.data.table(as.list(1:2))[, .SD,.SDcols=(-(1L))], data.table(V2=2L))
 test(2199.3, as.data.table(as.list(1:3))[, .SD,.SDcols=(-1L)],   data.table(V2=2L, V3=3L))
 test(2199.4, data.table(V1=-1L, V2=-2L, V3=-3L)[,.SD,.SDcols=-V2:-V1], error="not found")
+
+# setDF now drops index attributes, #4889
+d = data.table(a=1:100, b=1:100)
+setindex(d, a)
+setDF(d)
+d[1:50, "a"] = d[51:100, "a"]
+setDT(d)
+test(2200, nrow(d[a==99]), 2L)

@@ -271,11 +271,15 @@ cran = function()  # reports CRAN status of the .cran.fail packages
   p = proc.time()
   db = setDT(tools::CRAN_check_results())
   cat("tools::CRAN_check_results() returned",prettyNum(nrow(db), big.mark=","),"rows in",timetaken(p),"\n")
-  rel = unique(db$Flavor)
-  rel = sort(rel[grep("release",rel)])
-  cat("R-release is used for revdep checking so comparing to CRAN results for R-release\n")
-  ans = db[Package %chin% .fail.cran & Flavor %chin% rel, Status, keyby=.(Package, Flavor)]
-  dcast(ans, Package~Flavor, value.var="Status", fill="")[.fail.cran,]
+  ans = db[Package %chin% .fail.cran,
+    .(ERROR=sum(Status=="ERROR"),
+      WARN =sum(Status=="WARN"),
+      cran =paste(unique(Version),collapse=";"),
+      local=as.character(packageVersion(.BY[[1]]))),
+    keyby=Package]
+  ans[local==cran, c("cran","local"):=""]
+  ans[, "right_click_in_bash":=paste0("https://cran.r-project.org/web/checks/check_results_",Package,".html")]
+  ans[]
 }
 
 run = function(pkgs=NULL, R_CHECK_FORCE_SUGGESTS=TRUE, choose=NULL) {

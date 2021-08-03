@@ -381,11 +381,11 @@ SEXP coerceAs(SEXP x, SEXP as, SEXP copyArg) {
 #include <zlib.h>
 #endif
 SEXP dt_zlib_version() {
-  char out[51];
+  char out[71];
 #ifndef NOZLIB
-  snprintf(out, 50, "zlibVersion()==%s ZLIB_VERSION==%s", zlibVersion(), ZLIB_VERSION);
+  snprintf(out, 70, "zlibVersion()==%s ZLIB_VERSION==%s", zlibVersion(), ZLIB_VERSION);
 #else
-  snprintf(out, 50, _("zlib header files were not found when data.table was compiled"));
+  snprintf(out, 70, _("zlib header files were not found when data.table was compiled"));
 #endif
   return ScalarString(mkChar(out));
 }
