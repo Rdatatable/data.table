@@ -95,7 +95,7 @@
 
 14. `.datatable.aware` is now recognized in the calling environment in addition to the namespace of the calling package, [dtplyr#184](https://github.com/tidyverse/dtplyr/issues/184). Thanks to Hadley Wickham for the idea and PR.
 
-15. New convenience function `%plike%` maps to the existing `like()` argument `perl`, [#3702](https://github.com/Rdatatable/data.table/issues/3702). `%plike%` uses Perl-compatible regular expression (PCRE) which extends on TRE and is computationally more efficient. Thanks @KyleHaynes for the suggestion and PR.
+15. New convenience function `%plike%` maps to `like(..., perl=TRUE)`, [#3702](https://github.com/Rdatatable/data.table/issues/3702). `%plike%` uses Perl-compatible regular expressions (PCRE) which extend TRE, and may be more efficient in some cases. Thanks @KyleHaynes for the suggestion and PR.
 
 ## BUG FIXES
 
