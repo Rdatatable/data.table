@@ -7382,15 +7382,11 @@ test(1532.06, like(x, '()'), c(TRUE, TRUE, TRUE))
 test(1532.07, like(x, '()', fixed = TRUE), c(FALSE, FALSE, TRUE))
 test(1532.08, x %ilike% 'hey', c(TRUE, TRUE, FALSE))
 test(1532.09, x %flike% '()', c(FALSE, FALSE, TRUE))
-
-## %like% test for ordered factor with NA
-x = c("A", "B", "C", NA_character_)
+test(1532.10, like(x, "(?=h)(?=.*y)", perl = TRUE), c(FALSE, TRUE, FALSE))
+test(1532.11, x %plike% "(?=h)(?=.*y)", c(FALSE, TRUE, FALSE)) #3702
+x = c("A", "B", "C", NA_character_)  # ordered factor with NA
 x = ordered(x, levels = rev(x)[-1L])
-test(1532.10, x %like% "A", c(TRUE, FALSE, FALSE, FALSE))
-
-## %plike% for #3702
-test(1532.11, like(x, "(?=h)(?=.*y)", perl = TRUE), c(FALSE, TRUE, FALSE))
-test(1532.12, x %plike% "(?=h)(?=.*y)", c(FALSE, TRUE, FALSE))
+test(1532.12, x %like% "A", c(TRUE, FALSE, FALSE, FALSE))
 
 # coverage for setkey() to 100%
 dt1 = data.table(x=sample(5), y=1:5, key="y")
