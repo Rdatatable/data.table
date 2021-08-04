@@ -97,6 +97,8 @@
 
 15. New convenience function `%plike%` maps to `like(..., perl=TRUE)`, [#3702](https://github.com/Rdatatable/data.table/issues/3702). `%plike%` uses Perl-compatible regular expressions (PCRE) which extend TRE, and may be more efficient in some cases. Thanks @KyleHaynes for the suggestion and PR.
 
+16. `fwrite()` now accepts `sep=""`, [#4817](https://github.com/Rdatatable/data.table/issues/4817). The motivation is an example where the result of `paste0()` needs to be written to file but `paste0()` takes 40 minutes due to constructing a very large number of unique long strings in R's global character cache. Allowing `fwrite(, sep="")` avoids the `paste0` and saves 40 mins. Thanks to Jan Gorecki for the request, and Ben Schwen for the PR.
+
 ## BUG FIXES
 
 1. `by=.EACHI` when `i` is keyed but `on=` different columns than `i`'s key could create an invalidly keyed result, [#4603](https://github.com/Rdatatable/data.table/issues/4603) [#4911](https://github.com/Rdatatable/data.table/issues/4911). Thanks to @myoung3 and @adamaltmejd for reporting, and @ColeMiller1 for the PR. An invalid key is where a `data.table` is marked as sorted by the key columns but the data is not sorted by those columns, leading to incorrect results from subsequent queries.
