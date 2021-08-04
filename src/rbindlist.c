@@ -273,7 +273,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
   for(int j=0; j<ncol; ++j) {
     int maxType=LGLSXP;  // initialize with LGLSXP for test 2002.3 which has col x NULL in both lists to be filled with NA for #1871
     bool factor=false, orderedFactor=false;     // ordered factor is class c("ordered","factor"). isFactor() is true when isOrdered() is true.
-    int longestLen=0, longestW=-1, longestI=-1; // just for ordered factor
+    int longestLen=-1, longestW=-1, longestI=-1; // just for ordered factor; longestLen must be initialized as -1 so that rbind zero-length ordered factor could work #4795
     SEXP longestLevels=R_NilValue;              // just for ordered factor
     bool int64=false;
     const char *foundName=NULL;
@@ -406,7 +406,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
         if (!length(li)) continue;  // NULL items in the list() of DT/DF; not if thisnrow==0 because we need to retain (unused) factor levels (#3508)
         int w = usenames ? colMap[i*ncol + j] : j;
         if (w==-1) {
-          writeNA(target, ansloc, thisnrow);
+          writeNA(target, ansloc, thisnrow, false);
         } else {
           SEXP thisCol = VECTOR_ELT(li, w);
           SEXP thisColStr = isFactor(thisCol) ? getAttrib(thisCol, R_LevelsSymbol) : (isString(thisCol) ? thisCol : VECTOR_ELT(coercedForFactor, i));
@@ -512,7 +512,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
         int w = usenames ? colMap[i*ncol + j] : j;
         SEXP thisCol;
         if (w==-1 || !length(thisCol=VECTOR_ELT(li, w))) {  // !length for zeroCol warning above; #1871
-          writeNA(target, ansloc, thisnrow);  // writeNA is integer64 aware and writes INT64_MIN
+          writeNA(target, ansloc, thisnrow, false);  // writeNA is integer64 aware and writes INT64_MIN
         } else {
           if ((TYPEOF(target)==VECSXP || TYPEOF(target)==EXPRSXP) && TYPEOF(thisCol)!=TYPEOF(target)) {
             // do an as.list() on the atomic column; #3528
