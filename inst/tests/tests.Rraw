@@ -7366,7 +7366,7 @@ test(1530.2, which.first(x), which(x)[1L])
 test(1530.3, which.last(1:5), error = "x not boolean")
 test(1530.4, which.last(x), tail(which(x), 1L))
 
-# test for like, %like%, %ilike%, %flike%
+# test for like, %like%, %ilike%, %flike%, %plike%
 set.seed(2L)
 x = apply(matrix(sample(letters, 12), nrow=2), 1, paste, collapse="")
 y = factor(sample(c(letters[1:5], x), 20, TRUE))
@@ -7382,10 +7382,11 @@ test(1532.06, like(x, '()'), c(TRUE, TRUE, TRUE))
 test(1532.07, like(x, '()', fixed = TRUE), c(FALSE, FALSE, TRUE))
 test(1532.08, x %ilike% 'hey', c(TRUE, TRUE, FALSE))
 test(1532.09, x %flike% '()', c(FALSE, FALSE, TRUE))
-## %like% test for ordered factor with NA
-x = c("A", "B", "C", NA_character_)
+test(1532.10, like(x, "(?=h)(?=.*y)", perl = TRUE), c(FALSE, TRUE, FALSE))
+test(1532.11, x %plike% "(?=h)(?=.*y)", c(FALSE, TRUE, FALSE)) #3702
+x = c("A", "B", "C", NA_character_)  # ordered factor with NA
 x = ordered(x, levels = rev(x)[-1L])
-test(1532.10, x %like% "A", c(TRUE, FALSE, FALSE, FALSE))
+test(1532.12, x %like% "A", c(TRUE, FALSE, FALSE, FALSE))
 
 # coverage for setkey() to 100%
 dt1 = data.table(x=sample(5), y=1:5, key="y")
