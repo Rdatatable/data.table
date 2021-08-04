@@ -153,8 +153,7 @@ static void setSizes(void) {
   // One place we need the largest sizeof is the working memory malloc in reorder.c
 }
 
-void attribute_visible R_init_datatable(DllInfo *info)
-// relies on pkg/src/Makevars to mv data.table.so to datatable.so
+void attribute_visible R_init_data_table(DllInfo *info)
 {
   // C exported routines, see ?cdt for details
   R_RegisterCCallable("data.table", "CsubsetDT", (DL_FUNC) &subsetDT);
@@ -280,7 +279,7 @@ inline long long DtoLL(double x) {
   // under clang 3.9.1 -O3 and solaris-sparc but not solaris-x86 or gcc.
   // There is now a grep in CRAN_Release.cmd; use this union method instead.
   // int64_t may help rather than 'long long' (TODO: replace all long long with int64_t)
-  // The two types must be the same size. That is checked in R_init_datatable (above)
+  // The two types must be the same size. That is checked in R_init_data_table (above)
   // where sizeof(int64_t)==sizeof(double)==8 is checked.
   // Endianness should not matter because whether big or little, endianness is the same
   // inside this process, and the two types are the same size.
