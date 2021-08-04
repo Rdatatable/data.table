@@ -8,7 +8,8 @@ PKG_LIBS = @PKG_LIBS@ @openmp_cflags@ @zlib_libs@
 # Note that -lz is now escaped via @zlib_libs@ when zlib is not installed
 
 all: $(SHLIB)
-  @echo PKG_CFLAGS = $(PKG_CFLAGS)
+	@echo PKG_CFLAGS = $(PKG_CFLAGS)
 	@echo PKG_LIBS = $(PKG_LIBS)
 	if [ "$(SHLIB)" != "data_table$(SHLIB_EXT)" ]; then mv $(SHLIB) data_table$(SHLIB_EXT); fi
 	if [ "$(OS)" != "Windows_NT" ] && [ `uname -s` = 'Darwin' ]; then install_name_tool -id data_table$(SHLIB_EXT) data_table$(SHLIB_EXT); fi
+
