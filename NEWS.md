@@ -95,6 +95,8 @@
 
 14. `.datatable.aware` is now recognized in the calling environment in addition to the namespace of the calling package, [dtplyr#184](https://github.com/tidyverse/dtplyr/issues/184). Thanks to Hadley Wickham for the idea and PR.
 
+15. New convenience function `%plike%` maps to `like(..., perl=TRUE)`, [#3702](https://github.com/Rdatatable/data.table/issues/3702). `%plike%` uses Perl-compatible regular expressions (PCRE) which extend TRE, and may be more efficient in some cases. Thanks @KyleHaynes for the suggestion and PR.
+
 ## BUG FIXES
 
 1. `by=.EACHI` when `i` is keyed but `on=` different columns than `i`'s key could create an invalidly keyed result, [#4603](https://github.com/Rdatatable/data.table/issues/4603) [#4911](https://github.com/Rdatatable/data.table/issues/4911). Thanks to @myoung3 and @adamaltmejd for reporting, and @ColeMiller1 for the PR. An invalid key is where a `data.table` is marked as sorted by the key columns but the data is not sorted by those columns, leading to incorrect results from subsequent queries.
@@ -153,6 +155,8 @@
 
 28. `dplyr::arrange(DT)` uses `vctrs::vec_slice` which retains `data.table`'s class but uses C to bypass `[` method dispatch and does not adjust `data.table`'s attributes containing the index row numbers, [#5042](https://github.com/Rdatatable/data.table/issues/5042). `data.table`'s long-standing `.internal.selfref` mechanism to detect such operations by other packages was not being checked by `data.table` when using indexes, causing `data.table` filters and joins to use invalid indexes and return incorrect results after a `dplyr::arrange(DT)`. Thanks to @Waldi73 for reporting; @avimallu, @tlapak, @MichaelChirico, @jangorecki and @hadley for investigating and suggestions; and @mattdowle for the PR. The intended way to use `data.table` is `data.table::setkey(DT, col1, col2, ...)` which reorders `DT` by reference in parallel, sets the primary key for automatic use by subsequent `data.table` queries, and permits rowname-like usage such as `DT["foo",]` which returns the now-contiguous-in-memory block of rows where the first column of `DT`'s key contains `"foo"`. Multi-column-rownames (i.e. a primary key of more than one column) can be looked up using `DT[.("foo",20210728L), ]`. Using `==` in `i` is also optimized to use the key or indices, if you prefer using column names explicitly and `==`. An alternative to `setkey(DT)` is returning a new ordered result using `DT[order(col1, col2, ...), ]`.
 
+29. A segfault occurred when `nrow/throttle < nthread`, [#5077](https://github.com/Rdatatable/data.table/issues/5077). With the default throttle of 1024 rows (see `?setDTthreads`), at least 64 threads would be needed to trigger the segfault since there needed to be more than 65,535 rows too. It occurred on a server with 256 logical cores where `data.table` uses 128 threads by default. Thanks to Bennet Becker for reporting, debugging at C level, and fixing. It also occurred when the throttle was increased so as to use fewer threads; e.g. at the limit `setDTthreads(throttle=nrow(DT))`.
+
 ## NOTES
 
 1. New feature 29 in v1.12.4 (Oct 2019) introduced zero-copy coercion. Our thinking is that requiring you to get the type right in the case of `0` (type double) vs `0L` (type integer) is too inconvenient for you the user. So such coercions happen in `data.table` automatically without warning. Thanks to zero-copy coercion there is no speed penalty, even when calling `set()` many times in a loop, so there's no speed penalty to warn you about either. However, we believe that assigning a character value such as `"2"` into an integer column is more likely to be a user mistake that you would like to be warned about. The type difference (character vs integer) may be the only clue that you have selected the wrong column, or typed the wrong variable to be assigned to that column. For this reason we view character to numeric-like coercion differently and will warn about it. If it is correct, then the warning is intended to nudge you to wrap the RHS with `as.<type>()` so that it is clear to readers of your code that a coercion from character to that type is intended. For example :
@@ -186,6 +190,10 @@
 11. `melt()`'s internal C code is now more memory efficient, [#5054](https://github.com/Rdatatable/data.table/pull/5054). Thanks to Toby Dylan Hocking for the PR.
 
 12. `?merge` and `?setkey` have been updated to clarify that the row order is retained when `sort=FALSE`, and why `NA`s are always first when `sort=TRUE`, [#2574](https://github.com/Rdatatable/data.table/issues/2574) [#2594](https://github.com/Rdatatable/data.table/issues/2594). Thanks to Davor Josipovic and Markus Bonsch for the reports, and Jan Gorecki for the PR.
+
+13. `datatable.[dll|so]` has changed name to `data_table.[dll|so]`, [#4442](https://github.com/Rdatatable/data.table/pull/4442). Thanks to Jan Gorecki for the PR. We had previously removed the `.` since `.` is not allowed by the following paragraph in the Writing-R-Extensions manual. Replacing `.` with `_` instead now seems more consistent with the last sentence.
+
+    > ... the basename of the DLL needs to be both a valid file name and valid as part of a C entry point (e.g. it cannot contain ‘.’): for portable code it is best to confine DLL names to be ASCII alphanumeric plus underscore. If entry point R_init_lib is not found it is also looked for with ‘.’ replaced by ‘_’.
 
 
 # data.table [v1.14.0](https://github.com/Rdatatable/data.table/milestone/23?closed=1)  (21 Feb 2021)

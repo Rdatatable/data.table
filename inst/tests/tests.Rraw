@@ -7366,7 +7366,7 @@ test(1530.2, which.first(x), which(x)[1L])
 test(1530.3, which.last(1:5), error = "x not boolean")
 test(1530.4, which.last(x), tail(which(x), 1L))
 
-# test for like, %like%, %ilike%, %flike%
+# test for like, %like%, %ilike%, %flike%, %plike%
 set.seed(2L)
 x = apply(matrix(sample(letters, 12), nrow=2), 1, paste, collapse="")
 y = factor(sample(c(letters[1:5], x), 20, TRUE))
@@ -7382,10 +7382,11 @@ test(1532.06, like(x, '()'), c(TRUE, TRUE, TRUE))
 test(1532.07, like(x, '()', fixed = TRUE), c(FALSE, FALSE, TRUE))
 test(1532.08, x %ilike% 'hey', c(TRUE, TRUE, FALSE))
 test(1532.09, x %flike% '()', c(FALSE, FALSE, TRUE))
-## %like% test for ordered factor with NA
-x = c("A", "B", "C", NA_character_)
+test(1532.10, like(x, "(?=h)(?=.*y)", perl = TRUE), c(FALSE, TRUE, FALSE))
+test(1532.11, x %plike% "(?=h)(?=.*y)", c(FALSE, TRUE, FALSE)) #3702
+x = c("A", "B", "C", NA_character_)  # ordered factor with NA
 x = ordered(x, levels = rev(x)[-1L])
-test(1532.10, x %like% "A", c(TRUE, FALSE, FALSE, FALSE))
+test(1532.12, x %like% "A", c(TRUE, FALSE, FALSE, FALSE))
 
 # coverage for setkey() to 100%
 dt1 = data.table(x=sample(5), y=1:5, key="y")
@@ -17811,10 +17812,23 @@ d[1:50, "a"] = d[51:100, "a"]
 setDT(d)
 test(2200, nrow(d[a==99]), 2L)
 
+# segfault in forder when nrow/throttle<nth && ngrp>=255 && nrow>=65536; #5077
+# Matt ran these on clang's ASAN+OpenMP which correctly faulted v1.14.0; these tests segfault consistently without ASAN too
+set.seed(1)
+DT = data.table(grp=sample(255L, 65536L ,replace=TRUE))  # >=255 && >=65536 necessary
+setDTthreads(throttle=nrow(DT))      # increase throttle to reduce threads to 1 for this nrow
+test(2201.1, nrow(DT[, .N, by=grp]), 255L)
+test(2201.2, nrow(setkey(DT, grp)), 65536L)
+set.seed(1)
+DT = data.table(grp=sample(65536L))  # extra case with all size 1 groups too just for fun
+test(2201.3, nrow(DT[, .N, by=grp]), 65536L)
+test(2201.4, nrow(setkey(DT, grp)), 65536L)
+setDTthreads()    # restore default throttle
+
 # fwrite now allows sep="", #4817
-test(2201.1, fwrite(data.frame(a="id", b=letters[1:5], c=1:5), sep=""),
+test(2202.1, fwrite(data.frame(a="id", b=letters[1:5], c=1:5), sep=""),
             output = c("abc", paste0("id", letters[1:5], 1:5)))
-test(2201.2, fwrite(data.frame(a="id", b=1:1e2), sep=""), 
+test(2202.2, fwrite(data.frame(a="id", b=1:1e2), sep=""), 
             output = c("ab", paste0("id", 1:1e2)))
-test(2201.3, fwrite(data.table(a=c(NA, 2, 3.01), b=c('foo', NA, 'bar')), sep=""),
+test(2202.3, fwrite(data.table(a=c(NA, 2, 3.01), b=c('foo', NA, 'bar')), sep=""),
              output=c("ab", "foo", "2", "3.01bar"))
