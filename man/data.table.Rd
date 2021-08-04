@@ -5,6 +5,10 @@
 \alias{Ops.data.table}
 \alias{is.na.data.table}
 \alias{[.data.table}
+\alias{.}
+\alias{.(}
+\alias{.()}
+\alias{..}
 \title{ Enhanced data.frame }
 \description{
    \code{data.table} \emph{inherits} from \code{data.frame}. It offers fast and memory efficient: file reader and writer, aggregations, updates, equi, non-equi, rolling, range and interval joins, in a short and flexible syntax, for faster development.
@@ -141,7 +145,7 @@ data.table(\dots, keep.rownames=FALSE, check.names=FALSE, key=NULL, stringsAsFac
 
     \item{which}{\code{TRUE} returns the row numbers of \code{x} that \code{i} matches to. If \code{NA}, returns the row numbers of \code{i} that have no match in \code{x}. By default \code{FALSE} and the rows in \code{x} that match are returned.}
 
-    \item{.SDcols}{ Specifies the columns of \code{x} to be included in the special symbol \code{\link{.SD}} which stands for \code{Subset of data.table}. May be character column names or numeric positions. This is useful for speed when applying a function through a subset of (possible very many) columns; e.g., \code{DT[, lapply(.SD, sum), by="x,y", .SDcols=301:350]}.
+    \item{.SDcols}{ Specifies the columns of \code{x} to be included in the special symbol \code{\link{.SD}} which stands for \code{Subset of data.table}. May be character column names, numeric positions, logical, a function name such as `is.numeric`, or a function call such as `patterns()`. `.SDcols` is particularly useful for speed when applying a function through a subset of (possible very many) columns by group; e.g., \code{DT[, lapply(.SD, sum), by="x,y", .SDcols=301:350]}.
 
     For convenient interactive use, the form \code{startcol:endcol} is also allowed (as in \code{by}), e.g., \code{DT[, lapply(.SD, sum), by=x:y, .SDcols=a:f]}.
 
@@ -276,9 +280,9 @@ DT[2:5, cat(v, "\n")]          # just for j's side effect
 
 # select columns the data.frame way
 DT[, 2]                        # 2nd column, returns a data.table always
-colNum = 2                     # to refer vars in `j` from the outside of data use `..` prefix
-DT[, ..colNum]                 # same, equivalent to DT[, .SD, .SDcols=colNum]
-DT[["v"]]                      # same as DT[, v] but much faster
+colNum = 2
+DT[, ..colNum]                 # same, .. prefix conveys one-level-up in calling scope
+DT[["v"]]                      # same as DT[, v] but faster if called in a loop
 
 # grouping operations - j and by
 DT[, sum(v), by=x]             # ad hoc by, order of groups preserved in result

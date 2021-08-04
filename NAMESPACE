@@ -1,4 +1,4 @@
-useDynLib(datatable, .registration=TRUE)
+useDynLib("data_table", .registration=TRUE)
 
 ## For S4-ization
 import(methods)

@@ -22,6 +22,7 @@ SEXP char_ordered;
 SEXP char_datatable;
 SEXP char_dataframe;
 SEXP char_NULL;
+SEXP char_maxString;
 SEXP sym_sorted;
 SEXP sym_index;
 SEXP sym_BY;
@@ -244,8 +245,7 @@ static void setSizes() {
   // One place we need the largest sizeof is the working memory malloc in reorder.c
 }
 
-void attribute_visible R_init_datatable(DllInfo *info)
-// relies on pkg/src/Makevars to mv data.table.so to datatable.so
+void attribute_visible R_init_data_table(DllInfo *info)
 {
   // C exported routines
   // must be also listed in inst/include/datatableAPI.h
@@ -337,6 +337,7 @@ void attribute_visible R_init_datatable(DllInfo *info)
   char_datatable = PRINTNAME(install("data.table"));
   char_dataframe = PRINTNAME(install("data.frame"));
   char_NULL =      PRINTNAME(install("NULL"));
+  char_maxString = PRINTNAME(install("\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF"));
 
   if (TYPEOF(char_integer64) != CHARSXP) {
     // checking one is enough in case of any R-devel changes
@@ -374,7 +375,7 @@ inline long long DtoLL(double x) {
   // under clang 3.9.1 -O3 and solaris-sparc but not solaris-x86 or gcc.
   // There is now a grep in CRAN_Release.cmd; use this union method instead.
   // int64_t may help rather than 'long long' (TODO: replace all long long with int64_t)
-  // The two types must be the same size. That is checked in R_init_datatable (above)
+  // The two types must be the same size. That is checked in R_init_data_table (above)
   // where sizeof(int64_t)==sizeof(double)==8 is checked.
   // Endianness should not matter because whether big or little, endianness is the same
   // inside this process, and the two types are the same size.
@@ -393,7 +394,7 @@ int GetVerbose() {
   // don't call repetitively; save first in that case
   SEXP opt = GetOption(sym_verbose, R_NilValue);
   if ((!isLogical(opt) && !isInteger(opt)) || LENGTH(opt)!=1 || INTEGER(opt)[0]==NA_INTEGER)
-    error("verbose option must be length 1 non-NA logical or integer");
+    error(_("verbose option must be length 1 non-NA logical or integer"));
   return INTEGER(opt)[0];
 }
 

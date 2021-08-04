@@ -88,8 +88,6 @@ You can also convert existing objects to a `data.table` using `setDT()` (for `da
 
 #### Note that: {.bs-callout .bs-callout-info}
 
-* Unlike `data.frame`s, columns of `character` type are *never* converted to `factors` by default.
-
 * Row numbers are printed with a `:` in order to visually separate the row number from the first column.
 
 * When the number of rows to print exceeds the global option `datatable.print.nrows` (default = `r getOption("datatable.print.nrows")`), it automatically prints only the top 5 and bottom 5 rows (as can be seen in the [Data](#data) section). If you've had a lot of experience with `data.frame`s, you may have found yourself waiting around while larger tables print-and-page, sometimes seemingly endlessly. You can query the default number like so:
