@@ -41,7 +41,7 @@ cc = function(test=FALSE, clean=FALSE, debug=FALSE, omp=!debug, cc_dir, path=Sys
   stopifnot(is.character(CC), length(CC)==1L, !is.na(CC), nzchar(CC))
   gc()
 
-  xx = try(getDLLRegisteredRoutines("datatable",TRUE), silent=TRUE)
+  xx = try(getDLLRegisteredRoutines("data_table",TRUE), silent=TRUE)
   if (!inherits(xx, "try-error")) {
     remove(list=sapply(xx$.Call,'[[',"name"), pos=.GlobalEnv)
     remove(list=sapply(xx$.External,'[[',"name"), pos=.GlobalEnv)
@@ -74,7 +74,7 @@ cc = function(test=FALSE, clean=FALSE, debug=FALSE, omp=!debug, cc_dir, path=Sys
   }
   dyn.load("data_table.so")
   setwd(old)
-  xx = getDLLRegisteredRoutines("datatable",TRUE)
+  xx = getDLLRegisteredRoutines("data_table",TRUE)
   for (i in seq_along(xx$.Call))
     assign(xx$.Call[[i]]$name,  xx$.Call[[i]]$address, envir=.GlobalEnv)
   for (i in seq_along(xx$.External))
