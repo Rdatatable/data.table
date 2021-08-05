@@ -17008,7 +17008,8 @@ DT = data.table(
   t1 = as.POSIXct('2018-05-01 12:34:56', tz = 'UTC'),
   t2 = as.POSIXct('2018-05-01 12:34:56', tz = 'Asia/Singapore')
 )
-test(2130.10, DT, output = 'UTC.*\\+08')
+test(2130.101, print(DT, timezone=TRUE), output='UTC')
+test(2130.102, print(DT, timezone=FALSE), notOutput='UTC')
 
 # default expression printing can break format_col.default, #3011
 test(2130.11, print(data.table(e = expression(1 + 2 + 3 + 4 + 5 + 6 + 7 + 8 + 9 + 10 + 11 + 12 + 13))), output = '1 + 2 + 3')

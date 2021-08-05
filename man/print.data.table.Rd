@@ -28,11 +28,11 @@
 
   format_col(x, \dots)
   \method{format_col}{default}(x, \dots)
-  \method{format_col}{POSIXct}(x, \dots)
+  \method{format_col}{POSIXct}(x, \dots, timezone=FALSE)
   \method{format_col}{expression}(x, \dots)
 
   format_list_item(x, \dots)
-  \method{format_list_item}{default}(x, \dots)
+  \method{format_list_item}{default}(x, \dots, justify='none')
 }
 \arguments{
   \item{x}{ A \code{data.table}. }
@@ -45,6 +45,7 @@
   \item{trunc.cols}{ If \code{TRUE}, only the columns that can be printed in the console without wrapping the columns to new lines will be printed (similar to \code{tibbles}). }
   \item{quote}{ If \code{TRUE}, all output will appear in quotes, as in \code{print.default}. }
   \item{timezone}{ If \code{TRUE}, time columns of class POSIXct or POSIXlt will be printed with their timezones (if attribute is available). }
+  \item{justify}{ Passed on to \code{format}. }
   \item{\dots}{ Other arguments ultimately passed to \code{format}. }
 }
 \value{
