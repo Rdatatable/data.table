@@ -34,6 +34,8 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
   forder = data.table:::forder
   forderv = data.table:::forderv
   format.data.table = data.table:::format.data.table
+  format_col.default = data.table:::format_col.default
+  format_list_item.default = data.table:::format_list_item.default
   getdots = data.table:::getdots
   groupingsets.data.table = data.table:::groupingsets.data.table
   guess = data.table:::guess
@@ -17017,14 +17019,22 @@ test(2130.11, print(data.table(e = expression(1 + 2 + 3 + 4 + 5 + 6 + 7 + 8 + 9 
 # format_col generic is used
 format_col.complex = function(x, ...) sprintf('(%.1f, %.1fi)', Re(x), Im(x))
 registerS3method("format_col", "complex", format_col.complex)
+# this registerS3method does seem to be necessary to work within the test.data.table() environment
+# assigning the method using <<- probably works too, but we don't want to write to user's environment at all
 x = data.table(z = c(1 + 3i, 2 - 1i, pi + 2.718i))
 test(2130.12, x, output = '(1.0, 3.0i)')
+rm(format_col.complex)
+registerS3method("format_col", "complex", format_col.default) 
+# otherwise it remains registered after test.data.table() and causes test 1610.1 to fail on the next run for example, and user display if they have complex data
+# haven't found a way to unregister an S3 method (tried registering NULL but there's an error that NULL isn't a function)
 
 # format_list_item() generic is used
 format_list_item.myclass <- function(x, ...) paste0("<", class(x)[1L], ":", x$id, ">")
 registerS3method("format_list_item", "myclass", format_list_item.myclass)
 DT = data.table(row = 1:2, objs = list(structure(list(id = "foo"), class = "myclass"),  structure(list(id = "bar"), class = "myclass")))
 test(2130.13, print(DT), output = "myclass:foo.*myclass:bar")
+rm(format_list_item.myclass)
+registerS3method("format_list_item", "myclass", format_list_item.default)
 
 # .SD from grouping should be unlocked, part of #4159
 x = data.table(a=1:3, b=4:6)
