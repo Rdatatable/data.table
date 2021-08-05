@@ -168,3 +168,4 @@ SEXP coalesce(SEXP x, SEXP inplaceArg) {
   UNPROTECT(nprotect);
   return first;
 }
+

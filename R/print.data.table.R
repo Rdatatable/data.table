@@ -282,3 +282,4 @@ trunc_cols_message = function(not_printed, abbs, class, col.names){
     n, brackify(paste0(not_printed, classes))
   )
 }
+

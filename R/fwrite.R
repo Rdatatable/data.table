@@ -114,3 +114,4 @@ fwrite = function(x, file="", append=FALSE, quote="auto",
         showProgress, is_gzip, bom, yaml, verbose, encoding)
   invisible()
 }
+

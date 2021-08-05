@@ -195,9 +195,3 @@ S3method(format_col, expression)
 export(format_list_item)
 S3method(format_list_item, default)
 
-# duplist
-# getdots
-# NCOL
-# NROW
-# which.first
-# which.last
