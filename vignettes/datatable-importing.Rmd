@@ -118,7 +118,7 @@ aggr = function (x) {
 }
 ```
 
-The case for `data.table`'s special symbols (`.SD`, `.BY`, `.N`, `.I`, `.GRP`, and `.EACHI`; see `?.N`) and assignment operator (`:=`) is slightly different. You should import whichever of these values you use from `data.table`'s namespace to protect against any issues arising from the unlikely scenario that we change the exported value of these in the future, e.g. if you want to use `.N`, `.I`, and `:=`, a minimal `NAMESPACE` would have:
+The case for `data.table`'s special symbols (`.SD`, `.BY`, `.N`, `.I`, `.GRP`, `.NGRP`, and `.EACHI`; see `?.N`) and assignment operator (`:=`) is slightly different. You should import whichever of these values you use from `data.table`'s namespace to protect against any issues arising from the unlikely scenario that we change the exported value of these in the future, e.g. if you want to use `.N`, `.I`, and `:=`, a minimal `NAMESPACE` would have:
 
 ```r
 importFrom(data.table, .N, .I, ':=')

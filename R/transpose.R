@@ -4,12 +4,12 @@ transpose = function(l, fill=NA, ignore.empty=FALSE, keep.names=NULL, make.names
     if (is.character(make.names)) {
       m = chmatch(make.names, names(l))
       if (is.na(m))
-        stop("make.names='",make.names,"' not found in names of input")
+        stopf("make.names='%s' not found in names of input", make.names)
       make.names = m
     } else {
       make.names = as.integer(make.names)
       if (is.na(make.names) || make.names<1L || make.names>length(l))
-        stop("make.names=",make.names," is out of range [1,ncol=",length(l),"]")
+        stopf("make.names=%d is out of range [1,ncol=%d]", make.names, length(l))
     }
     colnames = as.character(l[[make.names]])
     l = if (is.data.table(l)) l[,-make.names,with=FALSE] else l[-make.names]
@@ -25,14 +25,13 @@ transpose = function(l, fill=NA, ignore.empty=FALSE, keep.names=NULL, make.names
 
 tstrsplit = function(x, ..., fill=NA, type.convert=FALSE, keep, names=FALSE) {
   if (!isTRUEorFALSE(names) && !is.character(names))
-    stop("'names' must be TRUE/FALSE or a character vector.")
+    stopf("'names' must be TRUE/FALSE or a character vector.")
   ans = transpose(strsplit(as.character(x), ...), fill=fill, ignore.empty=FALSE)
   if (!missing(keep)) {
     keep = suppressWarnings(as.integer(keep))
     chk = min(keep) >= min(1L, length(ans)) & max(keep) <= length(ans)
     if (!isTRUE(chk)) # handles NA case too
-      stop("'keep' should contain integer values between ",
-        min(1L, length(ans)), " and ", length(ans), ".")
+      stopf("'keep' should contain integer values between %d and %d.", min(1L, length(ans)), length(ans))
     ans = ans[keep]
   }
   # Implementing #1094, but default FALSE
@@ -41,8 +40,7 @@ tstrsplit = function(x, ..., fill=NA, type.convert=FALSE, keep, names=FALSE) {
   else if (isTRUE(names)) names = paste0("V", seq_along(ans))
   if (length(names) != length(ans)) {
     str = if (missing(keep)) "ans" else "keep"
-    stop("length(names) (= ", length(names),
-      ") is not equal to length(", str, ") (= ", length(ans), ").")
+    stopf("length(names) (= %d) is not equal to length(%s) (= %d).", length(names), str, length(ans))
   }
   setattr(ans, 'names', names)
   ans

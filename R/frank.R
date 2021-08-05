@@ -1,8 +1,8 @@
-frankv = function(x, cols=seq_along(x), order=1L, na.last=TRUE, ties.method=c("average", "first", "random", "max", "min", "dense")) {
+frankv = function(x, cols=seq_along(x), order=1L, na.last=TRUE, ties.method=c("average", "first", "last", "random", "max", "min", "dense")) {
   ties.method = match.arg(ties.method)
-  if (!length(na.last)) stop('length(na.last) = 0')
+  if (!length(na.last)) stopf('length(na.last) = 0')
   if (length(na.last) != 1L) {
-    warning("length(na.last) > 1, only the first element will be used")
+    warningf("length(na.last) > 1, only the first element will be used")
     na.last = na.last[1L]
   }
   keep = (na.last == "keep")
@@ -14,29 +14,37 @@ frankv = function(x, cols=seq_along(x), order=1L, na.last=TRUE, ties.method=c("a
   }
   if (is.atomic(x)) {
     if (!missing(cols) && !is.null(cols))
-      stop("x is a single vector, non-NULL 'cols' doesn't make sense")
+      stopf("x is a single vector, non-NULL 'cols' doesn't make sense")
     cols = 1L
     x = as_list(x)
   } else {
     cols = colnamesInt(x, cols, check_dups=TRUE)
     if (!length(cols))
-      stop("x is a list, 'cols' can not be 0-length")
+      stopf("x is a list, 'cols' can not be 0-length")
   }
-  x = .shallow(x, cols) # shallow copy even if list..
+  # need to unlock for #4429
+  x = .shallow(x, cols, unlock = TRUE) # shallow copy even if list..
   setDT(x)
   cols = seq_along(cols)
   if (is.na(na.last)) {
+    if ("..na_prefix.." %chin% names(x))
+      stopf("Input column '..na_prefix..' conflicts with data.table internal usage; please rename")
     set(x, j = "..na_prefix..", value = is_na(x, cols))
     order = if (length(order) == 1L) c(1L, rep(order, length(cols))) else c(1L, order)
     cols = c(ncol(x), cols)
     nas  = x[[ncol(x)]]
   }
   if (ties.method == "random") {
-    v = stats::runif(nrow(x))
     if (is.na(na.last)) {
       idx = which_(nas, FALSE)
-      set(x, idx, '..stats_runif..', v[idx])
-    } else set(x, NULL, '..stats_runif..', v)
+      n = length(idx)  # changed in #4243 to match base R to pass test 1369
+    } else {
+      idx = NULL
+      n = nrow(x)
+    }
+    if ('..stats_runif..' %chin% names(x))
+      stopf("Input column '..stats_runif..' conflicts with data.table internal usage; please rename")
+    set(x, idx, '..stats_runif..', stats::runif(n))
     order = if (length(order) == 1L) c(rep(order, length(cols)), 1L) else c(order, 1L)
     cols = c(cols, ncol(x))
   }
@@ -48,7 +56,7 @@ frankv = function(x, cols=seq_along(x), order=1L, na.last=TRUE, ties.method=c("a
     xorder  = seq_along(x[[1L]])
   }
   ans = switch(ties.method,
-    average = , min = , max =, dense = {
+    average = , min = , max =, dense =, last = {
       rank = .Call(Cfrank, xorder, xstart, uniqlengths(xstart, length(xorder)), ties.method)
     },
     first = , random = {
@@ -65,7 +73,7 @@ frankv = function(x, cols=seq_along(x), order=1L, na.last=TRUE, ties.method=c("a
   ans
 }
 
-frank = function(x, ..., na.last=TRUE, ties.method=c("average", "first", "random", "max", "min", "dense")) {
+frank = function(x, ..., na.last=TRUE, ties.method=c("average", "first", "last", "random", "max", "min", "dense")) {
   cols = substitute(list(...))[-1L]
   if (identical(as.character(cols), "NULL")) {
     cols  = NULL

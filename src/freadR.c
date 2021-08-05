@@ -24,15 +24,15 @@ Secondary separator for list() columns, such as columns 11 and 12 in BED (no nee
 
 #define NUT  NUMTYPE+2  // +1 for "numeric" alias for "double"; +1 for CLASS fallback using as.class() at R level afterwards
 
-static int  typeSxp[NUT] =     {NILSXP,  LGLSXP,     LGLSXP,     LGLSXP,     LGLSXP,     INTSXP,    REALSXP,     REALSXP,    REALSXP,        REALSXP,        STRSXP,      REALSXP,    STRSXP   };
-static char typeRName[NUT][10]={"NULL",  "logical",  "logical",  "logical",  "logical",  "integer", "integer64", "double",   "double",       "double",       "character", "numeric",  "CLASS"  };
-static int  typeEnum[NUT] =    {CT_DROP, CT_BOOL8_N, CT_BOOL8_U, CT_BOOL8_T, CT_BOOL8_L, CT_INT32,  CT_INT64,    CT_FLOAT64, CT_FLOAT64_HEX, CT_FLOAT64_EXT, CT_STRING,   CT_FLOAT64, CT_STRING};
+static int  typeSxp[NUT] =     {NILSXP,  LGLSXP,     LGLSXP,     LGLSXP,     LGLSXP,     INTSXP,    REALSXP,     REALSXP,    REALSXP,        REALSXP,        INTSXP,          REALSXP,         STRSXP,      REALSXP,    STRSXP   };
+static char typeRName[NUT][10]={"NULL",  "logical",  "logical",  "logical",  "logical",  "integer", "integer64", "double",   "double",       "double",       "IDate",         "POSIXct",       "character", "numeric",  "CLASS"  };
+static int  typeEnum[NUT] =    {CT_DROP, CT_BOOL8_N, CT_BOOL8_U, CT_BOOL8_T, CT_BOOL8_L, CT_INT32,  CT_INT64,    CT_FLOAT64, CT_FLOAT64_HEX, CT_FLOAT64_EXT, CT_ISO8601_DATE, CT_ISO8601_TIME, CT_STRING,   CT_FLOAT64, CT_STRING};
 static colType readInt64As=CT_INT64;
 static SEXP selectSxp;
 static SEXP dropSxp;
 static SEXP colClassesSxp;
 static bool selectColClasses = false;
-static cetype_t ienc = CE_NATIVE;
+cetype_t ienc = CE_NATIVE;
 static SEXP RCHK;
 static SEXP DT;
 static SEXP colNamesSxp;
@@ -44,6 +44,7 @@ static int ncol = 0;
 static int64_t dtnrows = 0;
 static bool verbose = false;
 static bool warningsAreErrors = false;
+static bool oldNoDateTime = false;
 
 
 SEXP freadR(
@@ -71,7 +72,8 @@ SEXP freadR(
   SEXP colClassesArg,
   SEXP integer64Arg,
   SEXP encodingArg,
-  SEXP keepLeadingZerosArgs
+  SEXP keepLeadingZerosArgs,
+  SEXP noTZasUTC
 ) {
   verbose = LOGICAL(verboseArg)[0];
   warningsAreErrors = LOGICAL(warnings2errorsArg)[0];
@@ -120,14 +122,17 @@ SEXP freadR(
   else if (LOGICAL(headerArg)[0]==TRUE) args.header = true;
 
   args.nrowLimit = INT64_MAX;
-  // checked at R level
-  if (isReal(nrowLimitArg)) {
-    if (R_FINITE(REAL(nrowLimitArg)[0]) && REAL(nrowLimitArg)[0]>=0.0) args.nrowLimit = (int64_t)(REAL(nrowLimitArg)[0]);
-  } else {
-    if (INTEGER(nrowLimitArg)[0]>=1) args.nrowLimit = (int64_t)INTEGER(nrowLimitArg)[0];
-  }
+  if (!isReal(nrowLimitArg) || length(nrowLimitArg)!=1)
+    error(_("Internal error: freadR nrows not a single real. R level catches this."));  // # nocov
+  if (R_FINITE(REAL(nrowLimitArg)[0]) && REAL(nrowLimitArg)[0]>=0.0)
+    args.nrowLimit = (int64_t)(REAL(nrowLimitArg)[0]);
 
   args.logical01 = LOGICAL(logical01Arg)[0];
+  {
+    SEXP tt = PROTECT(GetOption(sym_old_fread_datetime_character, R_NilValue));
+    args.oldNoDateTime = oldNoDateTime = isLogical(tt) && LENGTH(tt)==1 && LOGICAL(tt)[0]==TRUE;
+    UNPROTECT(1);
+  }
   args.skipNrow=-1;
   args.skipString=NULL;
   if (isString(skipArg)) {
@@ -155,6 +160,7 @@ SEXP freadR(
   args.verbose = verbose;
   args.warningsAreErrors = warningsAreErrors;
   args.keepLeadingZeros = LOGICAL(keepLeadingZerosArgs)[0];
+  args.noTZasUTC = LOGICAL(noTZasUTC)[0];
 
   // === extras used for callbacks ===
   if (!isString(integer64Arg) || LENGTH(integer64Arg)!=1) error(_("'integer64' must be a single character string"));
@@ -241,7 +247,7 @@ static void applyDrop(SEXP items, int8_t *type, int ncol, int dropSource) {
   UNPROTECT(1);
 }
 
-bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, int ncol)
+bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, const int ncol)
 {
   // use typeSize superfluously to avoid not-used warning; otherwise could move typeSize from fread.h into fread.c
   if (typeSize[CT_BOOL8_N]!=1) STOP(_("Internal error: typeSize[CT_BOOL8_N] != 1")); // # nocov
@@ -252,7 +258,7 @@ bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, int ncol)
     SEXP elem;
     if (colNames==NULL || colNames[i].len<=0) {
       char buff[12];
-      sprintf(buff,"V%d",i+1);
+      snprintf(buff,12,"V%d",i+1);
       elem = mkChar(buff);  // no PROTECT as passed immediately to SET_STRING_ELT
     } else {
       elem = mkCharLenCE(anchor+colNames[i].off, colNames[i].len, ienc);  // no PROTECT as passed immediately to SET_STRING_ELT
@@ -305,38 +311,54 @@ bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, int ncol)
   if (length(colClassesSxp)) {
     SEXP typeRName_sxp = PROTECT(allocVector(STRSXP, NUT));
     for (int i=0; i<NUT; i++) SET_STRING_ELT(typeRName_sxp, i, mkChar(typeRName[i]));
+    if (oldNoDateTime) {
+      // prevent colClasses="IDate"/"POSIXct" being recognized so that colClassesAs is assigned here ready for type massage after reading at R level; test 2150.14
+      SET_STRING_ELT(typeRName_sxp, CT_ISO8601_DATE, R_BlankString);
+      SET_STRING_ELT(typeRName_sxp, CT_ISO8601_TIME, R_BlankString);
+    }
     SET_VECTOR_ELT(RCHK, 2, colClassesAs=allocVector(STRSXP, ncol));  // if any, this attached to the DT for R level to call as_ methods on
     if (isString(colClassesSxp)) {
       SEXP typeEnum_idx = PROTECT(chmatch(colClassesSxp, typeRName_sxp, NUT));
-      if (LENGTH(colClassesSxp)==1) {
-        signed char newType = typeEnum[INTEGER(typeEnum_idx)[0]-1];
-        if (newType == CT_DROP) STOP(_("colClasses='NULL' is not permitted; i.e. to drop all columns and load nothing"));
-        for (int i=0; i<ncol; i++) if (type[i]!=CT_DROP) type[i]=newType;   // freadMain checks bump up only not down
-        if (INTEGER(typeEnum_idx)[0]==NUT) for (int i=0; i<ncol; i++) SET_STRING_ELT(colClassesAs, i, STRING_ELT(colClassesSxp,0));
-      } else if (selectColClasses==false) {
-        if (LENGTH(colClassesSxp)!=ncol)
+      if (selectColClasses==false) {
+        if (LENGTH(colClassesSxp)!=ncol && LENGTH(colClassesSxp)!=1)
           STOP(_("colClasses= is an unnamed vector of types, length %d, but there are %d columns in the input. To specify types for a subset of columns, you can use "
                  "a named vector, list format, or specify types using select= instead of colClasses=. Please see examples in ?fread."), LENGTH(colClassesSxp), ncol);
+        const int mask = LENGTH(colClassesSxp)==1 ? 0 : INT_MAX;  // to have one consistent loop/logic for the length-1 recycling case too; #4237
         for (int i=0; i<ncol; ++i) {
           if (type[i]==CT_DROP) continue;                    // user might have specified the type of all columns including those dropped with drop=
-          SEXP tt = STRING_ELT(colClassesSxp,i);
+          const SEXP tt = STRING_ELT(colClassesSxp, i&mask); // mask recycles colClassesSxp when it's length-1
           if (tt==NA_STRING || tt==R_BlankString) continue;  // user is ok with inherent type for this column
-          int w = INTEGER(typeEnum_idx)[i];
-          type[i] = typeEnum[w-1];
-          if (w==NUT) SET_STRING_ELT(colClassesAs, i, STRING_ELT(colClassesSxp,i));
+          int w = INTEGER(typeEnum_idx)[i&mask];
+          if (tt==char_POSIXct) {
+            // from v1.13.0, POSIXct is a built in type, but if the built-in doesn't support (e.g. test 1743.25 has missing tzone) then we still dispatch to as.POSIXct afterwards
+            if (type[i]!=CT_ISO8601_TIME) {
+              type[i]=CT_STRING; // e.g. CT_ISO8601_DATE changed to character here so that as.POSIXct treats the date-only as local time in tests 1743.122 and 2150.11
+              SET_STRING_ELT(colClassesAs, i, tt);
+            }
+          } else {
+            type[i] = typeEnum[w-1];                           // freadMain checks bump up only not down
+            if (w==NUT) SET_STRING_ELT(colClassesAs, i, tt);
+          }
         }
       } else { // selectColClasses==true
         if (!selectInts) STOP(_("Internal error: selectInts is NULL but selectColClasses is true"));
-        if (length(selectSxp)!=length(colClassesSxp)) STOP(_("Internal error: length(selectSxp)!=length(colClassesSxp) but selectColClasses is true"));
         const int n = length(colClassesSxp);
+        if (length(selectSxp)!=n) STOP(_("Internal error: length(selectSxp)!=length(colClassesSxp) but selectColClasses is true"));
         for (int i=0; i<n; ++i) {
           SEXP tt = STRING_ELT(colClassesSxp,i);
           if (tt==NA_STRING || tt==R_BlankString) continue;
           int w = INTEGER(typeEnum_idx)[i];
           int y = selectInts[i];
           if (y==NA_INTEGER) continue;
-          type[y-1] = typeEnum[w-1];
-          if (w==NUT) SET_STRING_ELT(colClassesAs, y-1, tt);
+          if (tt==char_POSIXct) {
+            if (type[y-1]!=CT_ISO8601_TIME) {
+              type[y-1]=CT_STRING;
+              SET_STRING_ELT(colClassesAs, y-1, tt);
+            }
+          } else {
+            type[y-1] = typeEnum[w-1];
+            if (w==NUT) SET_STRING_ELT(colClassesAs, y-1, tt);
+          }
         }
       }
       UNPROTECT(1); // typeEnum_idx
@@ -373,8 +395,13 @@ bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, int ncol)
               if (type[k-1]<0)
                 DTWARN(_("Column %d ('%s') appears more than once in colClasses. The second time is colClasses[[%d]][%d]."), k, CHAR(STRING_ELT(colNamesSxp,k-1)), i+1, j+1);
               else if (type[k-1]!=CT_DROP) {
-                type[k-1] = -thisType;     // freadMain checks bump up only not down.  Deliberately don't catch here to test freadMain; e.g. test 959
-                if (w==NUT) SET_STRING_ELT(colClassesAs, k-1, STRING_ELT(listNames,i));
+                if (thisType==CT_ISO8601_TIME && type[k-1]!=CT_ISO8601_TIME) {
+                  type[k-1] = -CT_STRING; // don't use in-built UTC parser, defer to character and as.POSIXct afterwards which reads in local time
+                  SET_STRING_ELT(colClassesAs, k-1, STRING_ELT(listNames,i));
+                } else {
+                  type[k-1] = -thisType;     // freadMain checks bump up only not down.  Deliberately don't catch here to test freadMain; e.g. test 959
+                  if (w==NUT) SET_STRING_ELT(colClassesAs, k-1, STRING_ELT(listNames,i));
+                }
                 if (selectRankD) selectRankD[k-1] = rank++;
               }
             } else {
@@ -467,6 +494,20 @@ size_t allocateDT(int8_t *typeArg, int8_t *sizeArg, int ncolArg, int ndrop, size
         SEXP tt = PROTECT(ScalarString(char_integer64));
         setAttrib(thiscol, R_ClassSymbol, tt);
         UNPROTECT(1);
+      } else if (type[i] == CT_ISO8601_DATE) {
+        SEXP tt = PROTECT(allocVector(STRSXP, 2));
+        SET_STRING_ELT(tt, 0, char_IDate);
+        SET_STRING_ELT(tt, 1, char_Date);
+        setAttrib(thiscol, R_ClassSymbol, tt);
+        UNPROTECT(1);
+      } else if (type[i] == CT_ISO8601_TIME) {
+        SEXP tt = PROTECT(allocVector(STRSXP, 2));
+        SET_STRING_ELT(tt, 0, char_POSIXct);
+        SET_STRING_ELT(tt, 1, char_POSIXt);
+        setAttrib(thiscol, R_ClassSymbol, tt);
+        UNPROTECT(1);
+
+        setAttrib(thiscol, sym_tzone, ScalarString(char_UTC)); // see news for v1.13.0
       }
       SET_TRUELENGTH(thiscol, allocNrow);
       DTbytes += SIZEOF(thiscol)*allocNrow;
@@ -510,7 +551,7 @@ void pushBuffer(ThreadLocalFreadParsingContext *ctx)
   // While the string columns are happening other threads before me can be copying their non-string buffers to the
   // final DT and other threads after me can be filling their buffers too.
   // rowSize is passed in because it will be different (much smaller) on the reread covering any type exception columns
-  // locals passed in on stack so openmp knows that no synchonization is required
+  // locals passed in on stack so openmp knows that no synchronization is required
 
   // the byte position of this column in the first row of the row-major buffer
   if (nStringCols) {
@@ -561,29 +602,29 @@ void pushBuffer(ThreadLocalFreadParsingContext *ctx)
     resj++;
     if (type[j]!=CT_STRING && type[j]>0) {
       if (thisSize == 8) {
-        char *dest = (char *)DATAPTR(VECTOR_ELT(DT, resj)) + DTi*8;
-        char *src8 = (char*)buff8 + off8;
-        for (int i=0; i<nRows; i++) {
-          memcpy(dest, src8, 8);
+        double *dest = (double *)REAL(VECTOR_ELT(DT, resj)) + DTi;
+        const char *src8 = (char*)buff8 + off8;
+        for (int i=0; i<nRows; ++i) {
+          *dest = *(double *)src8;
           src8 += rowSize8;
-          dest += 8;
+          dest++;
         }
       } else
       if (thisSize == 4) {
-        char *dest = (char *)DATAPTR(VECTOR_ELT(DT, resj)) + DTi*4;
-        char *src4 = (char*)buff4 + off4;
+        int *dest = (int *)INTEGER(VECTOR_ELT(DT, resj)) + DTi;
+        const char *src4 = (char*)buff4 + off4;
         // debug line for #3369 ... if (DTi>2638000) printf("freadR.c:460: thisSize==4, resj=%d, %"PRIu64", %d, %d, j=%d, done=%d\n", resj, (uint64_t)DTi, off4, rowSize4, j, done);
-        for (int i=0; i<nRows; i++) {
-          memcpy(dest, src4, 4);
+        for (int i=0; i<nRows; ++i) {
+          *dest = *(int *)src4;
           src4 += rowSize4;
-          dest += 4;
+          dest++;
         }
       } else
       if (thisSize == 1) {
         if (type[j] > CT_BOOL8_L) STOP(_("Field size is 1 but the field is of type %d\n"), type[j]);
-        Rboolean *dest = (Rboolean *)((char *)DATAPTR(VECTOR_ELT(DT, resj)) + DTi*sizeof(Rboolean));
-        char *src1 = (char*)buff1 + off1;
-        for (int i=0; i<nRows; i++) {
+        Rboolean *dest = (Rboolean *)LOGICAL(VECTOR_ELT(DT, resj)) + DTi;
+        const char *src1 = (char*)buff1 + off1;
+        for (int i=0; i<nRows; ++i) {
           int8_t v = *(int8_t *)src1;
           *dest = (v==INT8_MIN ? NA_INTEGER : v);
           src1 += rowSize1;

@@ -1,21 +1,28 @@
 #include "dt_stdio.h"  // PRId64 and PRIu64
 #include <R.h>
-#define USE_RINTERNALS
+#include <Rversion.h>
+#if !defined(R_VERSION) || R_VERSION < R_Version(3, 5, 0)  // R-exts$6.14
+#  define ALTREP(x) 0     // #2866
+#  define USE_RINTERNALS  // #3301
+#  define DATAPTR_RO(x) ((const void *)DATAPTR(x))
+#endif
 #include <Rinternals.h>
-// #include <signal.h> // the debugging machinery + breakpoint aidee
-// raise(SIGINT);
+#define SEXPPTR_RO(x) ((const SEXP *)DATAPTR_RO(x))  // to avoid overhead of looped STRING_ELT and VECTOR_ELT
 #include <stdint.h>    // for uint64_t rather than unsigned long long
 #include <stdbool.h>
 #include "myomp.h"
 #include "types.h"
 #include "po.h"
+#ifdef WIN32  // positional specifiers (%n$) used in translations; #4402
+#  define snprintf dt_win_snprintf  // see our snprintf.c; tried and failed to link to _sprintf_p on Windows
+#endif
+#ifdef sprintf
+#undef sprintf
+#endif
+#define sprintf USE_SNPRINTF_NOT_SPRINTF  // prevent use of sprintf in data.table source; force us to use n always
 
-// data.table depends on R>=3.0.0 when R_xlen_t was introduced
-// Before R 3.0.0, RLEN used to be switched to R_len_t as R_xlen_t wasn't available.
-// We could now replace all RLEN with R_xlen_t directly. Or keep RLEN for the shorter
-// name so as not to have to check closely one letter difference R_xlen_t/R_len_t. We
-// might also undefine R_len_t to ensure not to use it.
-typedef R_xlen_t RLEN;
+// #include <signal.h> // the debugging machinery + breakpoint aidee
+// raise(SIGINT);
 
 #define IS_UTF8(x)  (LEVELS(x) & 8)
 #define IS_ASCII(x) (LEVELS(x) & 64)
@@ -24,16 +31,16 @@ typedef R_xlen_t RLEN;
 #define IS_FALSE(x) (TYPEOF(x)==LGLSXP && LENGTH(x)==1 && LOGICAL(x)[0]==FALSE)
 #define IS_TRUE_OR_FALSE(x) (TYPEOF(x)==LGLSXP && LENGTH(x)==1 && LOGICAL(x)[0]!=NA_LOGICAL)
 
-#define SIZEOF(x) sizes[TYPEOF(x)]
-#define TYPEORDER(x) typeorder[x]
+#define SIZEOF(x) __sizes[TYPEOF(x)]
+#define TYPEORDER(x) __typeorder[x]
 
 #ifdef MIN
-#undef MIN
+#  undef MIN
 #endif
 #define MIN(a,b) (((a)<(b))?(a):(b))
 
 #ifdef MAX
-#undef MAX
+#  undef MAX
 #endif
 #define MAX(a,b) (((a)>(b))?(a):(b))
 
@@ -41,12 +48,15 @@ typedef R_xlen_t RLEN;
 #define NA_INTEGER64  INT64_MIN
 #define MAX_INTEGER64 INT64_MAX
 
+// for use with CPLXSXP, no macro provided by R internals
+#define ISNAN_COMPLEX(x) (ISNAN((x).r) || ISNAN((x).i)) // TRUE if either real or imaginary component is NA or NaN
+
 // Backport macros added to R in 2017 so we don't need to update dependency from R 3.0.0
 #ifndef MAYBE_SHARED
-# define MAYBE_SHARED(x) (NAMED(x) > 1)
+#  define MAYBE_SHARED(x) (NAMED(x) > 1)
 #endif
 #ifndef MAYBE_REFERENCED
-# define MAYBE_REFERENCED(x) ( NAMED(x) > 0 )
+#  define MAYBE_REFERENCED(x) ( NAMED(x) > 0 )
 #endif
 
 // If we find a non-ASCII, non-NA, non-UTF8 encoding, we try to convert it to UTF8. That is, marked non-ascii/non-UTF8 encodings will
@@ -61,16 +71,14 @@ typedef R_xlen_t RLEN;
 #define NEED2UTF8(s) !(IS_ASCII(s) || (s)==NA_STRING || IS_UTF8(s))
 #define ENC2UTF8(s) (!NEED2UTF8(s) ? (s) : mkCharCE(translateCharUTF8(s), CE_UTF8))
 
-#ifndef ALTREP
-#define ALTREP(x) 0  // for R<3.5.0, see issue #2866 and grep for "ALTREP" to see comments where it's used
-#endif
-
 // init.c
 extern SEXP char_integer64;
 extern SEXP char_ITime;
 extern SEXP char_IDate;
 extern SEXP char_Date;
 extern SEXP char_POSIXct;
+extern SEXP char_POSIXt;
+extern SEXP char_UTC;
 extern SEXP char_nanotime;
 extern SEXP char_lens;
 extern SEXP char_indices;
@@ -81,6 +89,7 @@ extern SEXP char_ordered;
 extern SEXP char_datatable;
 extern SEXP char_dataframe;
 extern SEXP char_NULL;
+extern SEXP char_maxString;
 extern SEXP sym_sorted;
 extern SEXP sym_index;
 extern SEXP sym_BY;
@@ -91,15 +100,18 @@ extern SEXP sym_verbose;
 extern SEXP SelfRefSymbol;
 extern SEXP sym_inherits;
 extern SEXP sym_datatable_locked;
+extern SEXP sym_tzone;
+extern SEXP sym_old_fread_datetime_character;
+extern SEXP sym_variable_table;
 extern double NA_INT64_D;
 extern long long NA_INT64_LL;
 extern Rcomplex NA_CPLX;  // initialized in init.c; see there for comments
-extern size_t sizes[100];  // max appears to be FUNSXP = 99, see Rinternals.h
-extern size_t typeorder[100];
+extern size_t __sizes[100];     // max appears to be FUNSXP = 99, see Rinternals.h
+extern size_t __typeorder[100]; // __ prefix otherwise if we use these names directly, the SIZEOF define ends up using the local one
 
 long long DtoLL(double x);
 double LLtoD(long long x);
-bool GetVerbose();
+int GetVerbose();
 
 // cj.c
 SEXP cj(SEXP base_list);
@@ -111,22 +123,24 @@ SEXP growVector(SEXP x, R_len_t newlen);
 // assign.c
 SEXP allocNAVector(SEXPTYPE type, R_len_t n);
 SEXP allocNAVectorLike(SEXP x, R_len_t n);
-void writeNA(SEXP v, const int from, const int n);
+void writeNA(SEXP v, const int from, const int n, const bool listNA);
 void savetl_init(), savetl(SEXP s), savetl_end();
 int checkOverAlloc(SEXP x);
-SEXP setcolorder(SEXP x, SEXP o);
 
 // forder.c
 int StrCmp(SEXP x, SEXP y);
-uint64_t dtwiddle(void *p, int i);
-SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP naArg);
+uint64_t dtwiddle(double x);
+SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, SEXP naArg);
 int getNumericRounding_C();
 
 // reorder.c
 SEXP reorder(SEXP x, SEXP order);
+SEXP setcolorder(SEXP x, SEXP o);
 
 // subset.c
+void subsetVectorRaw(SEXP ans, SEXP source, SEXP idx, const bool anyNA);
 SEXP subsetVector(SEXP x, SEXP idx);
+const char *check_idx(SEXP idx, int max, bool *anyNA_out, bool *orderedSubset_out);
 
 // fcast.c
 SEXP int_vec_init(R_len_t n, int val);
@@ -155,7 +169,7 @@ SEXP dt_na(SEXP x, SEXP cols);
 
 // assign.c
 SEXP alloccol(SEXP dt, R_len_t n, Rboolean verbose);
-const char *memrecycle(SEXP target, SEXP where, int r, int len, SEXP source, int coln, const char *colname);
+const char *memrecycle(const SEXP target, const SEXP where, const int start, const int len, SEXP source, const int sourceStart, const int sourceLen, const int colnum, const char *colname);
 SEXP shallowwrapper(SEXP dt, SEXP cols);
 
 SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols,
@@ -178,7 +192,7 @@ double wallclock();
 
 // openmp-utils.c
 void initDTthreads();
-int getDTthreads();
+int getDTthreads(const int64_t n, const bool throttle);
 void avoid_openmp_hang_within_fork();
 
 // froll.c
@@ -218,8 +232,6 @@ bool isRealReallyInt(SEXP x);
 SEXP isReallyReal(SEXP x);
 bool allNA(SEXP x, bool errorForBadType);
 SEXP colnamesInt(SEXP x, SEXP cols, SEXP check_dups);
-void coerceFill(SEXP fill, double *dfill, int32_t *ifill, int64_t *i64fill);
-SEXP coerceFillR(SEXP fill);
 bool INHERITS(SEXP x, SEXP char_);
 bool Rinherits(SEXP x, SEXP char_);
 SEXP copyAsPlain(SEXP x);
@@ -230,6 +242,7 @@ bool islocked(SEXP x);
 SEXP islockedR(SEXP x);
 bool need2utf8(SEXP x);
 SEXP coerceUtf8IfNeeded(SEXP x);
+SEXP coerceAs(SEXP x, SEXP as, SEXP copyArg);
 
 // types.c
 char *end(char *start);
@@ -239,3 +252,9 @@ SEXP testMsgR(SEXP status, SEXP x, SEXP k);
 //fifelse.c
 SEXP fifelseR(SEXP l, SEXP a, SEXP b, SEXP na);
 SEXP fcaseR(SEXP na, SEXP rho, SEXP args);
+
+//snprintf.c
+int dt_win_snprintf(char *dest, size_t n, const char *fmt, ...);
+
+// programming.c
+SEXP substitute_call_arg_namesR(SEXP expr, SEXP env);
