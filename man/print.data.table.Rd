@@ -100,14 +100,12 @@
 
   # Formatting customization
   format_col.complex = function(x, ...) sprintf('(\%.1f, \%.1fi)', Re(x), Im(x))
-  registerS3method("format_col", "complex", format_col.complex)
   x = data.table(z = c(1 + 3i, 2 - 1i, pi + 2.718i))
   print(x)
 
   iris = as.data.table(iris)
   iris_agg = iris[ , .(reg = list(lm(Sepal.Length ~ Petal.Length))), by = Species]
-  format_list_item.lm = function(x) sprintf('<lm:\%s>', format(x$call$formula))
-  registerS3method("format_list_item", "lm", format_list_item.lm)
+  format_list_item.lm = function(x, ...) sprintf('<lm:\%s>', format(x$call$formula))
   print(iris_agg)
 }
 
