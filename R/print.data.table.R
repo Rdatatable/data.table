@@ -8,7 +8,7 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
                print.keys=getOption("datatable.print.keys"),
                trunc.cols=getOption("datatable.print.trunc.cols"),
                quote=FALSE,
-               ...) {
+               timezone=FALSE, ...) {
   # topn  - print the top topn and bottom topn rows with '---' inbetween (5)
   # nrows - under this the whole (small) table is printed, unless topn is provided (100)
   # class - should column class be printed underneath column name? (FALSE)
@@ -73,8 +73,7 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
     rn = seq_len(n_x)
     printdots = FALSE
   }
-  toprint=format.data.table(toprint, na.encode=FALSE, ...)  # na.encode=FALSE so that NA in character cols print as <NA>
-
+  toprint=format.data.table(toprint, na.encode=FALSE, timezone = timezone, ...)  # na.encode=FALSE so that NA in character cols print as <NA>
   require_bit64_if_needed(x)
 
   # FR #353 - add row.names = logical argument to print.data.table
@@ -141,7 +140,7 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
   invisible(x)
 }
 
-format.data.table <- function (x, ..., justify="none") {
+format.data.table = function (x, ..., justify="none", timezone = FALSE) {
   if (is.atomic(x) && !is.null(x)) {
     stopf("Internal structure doesn't seem to be a list. Possibly corrupt data.table.")
   }

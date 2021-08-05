@@ -4989,7 +4989,7 @@ c(2497.94263862333,
 "fr", "fg", "fsal", "mr", "mg", "msal"), class = c("data.table",
 "data.frame"), row.names = c(NA, -2L))
 
-ans1 = capture.output(print(DT, digits=4L, row.names=FALSE))
+ans1 = capture.output(print(DT, digits=4, row.names=FALSE))
 ans2 = c(" fisyr  er      eg      esal  fr      fg      fsal    mr      mg      msal",
          "  1995 1,3 0.01973 2330,2424 4,4 0.03931 2521,2521  5,30 0.01978 2572,4216",
          "  1996 1,3 0.01973 2263,2354 4,4 0.03931 2449,2449  5,30 0.01978 2498,4095")
@@ -14745,13 +14745,12 @@ test(2025.52, fread(f), data.table(A=1:2, B=c("foobar","baz"), C=3:4))
 
 # printing timezone, #2842
 DT = data.table(t1 = as.POSIXct("1982-04-26 13:34:56", tz = "Europe/Madrid"),t2 = as.POSIXct("2019-01-01 19:00:01",tz = "UTC"))
-test(2026.1, capture.output(print(DT))[2L], "1: 1982-04-26 13:34:56 CEST 2019-01-01 19:00:01 UTC")
-DT = data.table(v1 = c(1, as.numeric(NA)))
-DT[2L, t:= as.POSIXct("2019-01-01 19:00:01", tz = "UTC")]
-test(2026.2, capture.output(print(DT)),
-     c("   v1                       t",
-       "1:  1                    <NA>",
-       "2: NA 2019-01-01 19:00:01 UTC"))
+test(2026.1, capture.output(print(DT))[2], "1: 1982-04-26 13:34:56 2019-01-01 19:00:01")
+test(2026.2, capture.output(print(DT,timezone = TRUE))[2], "1: 1982-04-26 13:34:56 Europe/Madrid 2019-01-01 19:00:01 UTC")
+DT = data.table(v1 = c(1,as.numeric(NA)))
+DT[2,t:= as.POSIXct("2019-01-01 19:00:01",tz = "UTC")]
+test(2026.3, capture.output(print(DT)), c("   v1                   t","1:  1                <NA>", "2: NA 2019-01-01 19:00:01"))
+test(2026.4, capture.output(print(DT, timezone = TRUE)), c("   v1                       t","1:  1                    <NA>","2: NA 2019-01-01 19:00:01 UTC"))
 
 # empty item in j=list(x, ) errors gracefully, #3507
 DT = data.table(a = 1:5)

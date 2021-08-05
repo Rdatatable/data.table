@@ -23,7 +23,8 @@
     col.names=getOption("datatable.print.colnames"),    # default: "auto"
     print.keys=getOption("datatable.print.keys"),       # default: FALSE
     trunc.cols=getOption("datatable.print.trunc.cols"), # default: FALSE
-    quote=FALSE, \dots)
+    quote=FALSE,
+    timezone=FALSE, \dots)
 
   format_col(x, \dots)
   \method{format_col}{default}(x, \dots)
@@ -43,6 +44,7 @@
   \item{print.keys}{ If \code{TRUE}, any \code{\link{key}} and/or \code{\link[=indices]{index}} currently assigned to \code{x} will be printed prior to the preview of the data. }
   \item{trunc.cols}{ If \code{TRUE}, only the columns that can be printed in the console without wrapping the columns to new lines will be printed (similar to \code{tibbles}). }
   \item{quote}{ If \code{TRUE}, all output will appear in quotes, as in \code{print.default}. }
+  \item{timezone}{ If \code{TRUE}, time columns of class POSIXct or POSIXlt will be printed with their timezones (if attribute is available). }
   \item{\dots}{ Other arguments ultimately passed to \code{format}. }
 }
 \value{
@@ -107,5 +109,5 @@
   format_list_item.lm = function(x) sprintf('<lm:\%s>', format(x$call$formula))
   registerS3method("format_list_item", "lm", format_list_item.lm)
   print(iris_agg)
-
 }
+
