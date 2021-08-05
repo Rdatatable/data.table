@@ -140,11 +140,11 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
   invisible(x)
 }
 
-format.data.table = function (x, ..., justify="none", timezone=FALSE) {
+format.data.table = function (x, ..., justify="none") {
   if (is.atomic(x) && !is.null(x)) {
     stopf("Internal structure doesn't seem to be a list. Possibly corrupt data.table.")
   }
-  do.call("cbind", lapply(x, format_col, ..., justify=justify, timezone=timezone))
+  do.call("cbind", lapply(x, format_col, ..., justify=justify))
 }
 
 mimicsAutoPrint = c("knit_print.default")
@@ -202,11 +202,11 @@ format_col.POSIXct = function(x, ..., timezone=FALSE) {
 # #3011 -- expression columns can wrap to newlines which breaks printing
 format_col.expression = function(x, ...) format(char.trunc(as.character(x)), ...)
 
-format_list_item.default = function(x, ..., justify='none') {
+format_list_item.default = function(x, ...) {
   if (is.null(x))  # NULL item in a list column
     ""
   else if (is.atomic(x) || inherits(x, "formula")) # FR #2591 - format.data.table issue with columns of class "formula"
-    paste(c(format(head(x, 6L), justify=justify, ...), if (length(x) > 6L) "..."), collapse=",")  # fix for #5435 and #37 - format has to be added here...
+    paste(c(format(head(x, 6L), ...), if (length(x) > 6L) "..."), collapse=",")  # fix for #5435 and #37 - format has to be added here...
   else
     paste0("<", class(x)[1L], paste_dims(x), ">")
 }
