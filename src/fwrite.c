@@ -35,6 +35,7 @@
 // Globals for this file only. Written once to hold parameters passed from R level.
 static const char *na;                 // by default "" or if set (not recommended) then usually "NA"
 static char sep;                       // comma in .csv files
+static int sepLen;                     // 0 when sep="" for #4817, otherwise 1
 static char sep2;                      // '|' within list columns. Used here to know if field should be quoted and in freadR.c to write sep2 in list columns
 static char dec;                       // the '.' in the number 3.1416. In Europe often: 3,1416
 static int8_t doQuote=INT8_MIN;        // whether to surround fields with double quote ". NA means 'auto' (default)
@@ -590,6 +591,7 @@ void fwriteMain(fwriteMainArgs args)
 
   na = args.na;
   sep = args.sep;
+  sepLen = sep=='\0' ? 0 : 1;
   sep2 = args.sep2;
   dec = args.dec;
   scipen = args.scipen;
@@ -635,10 +637,10 @@ void fwriteMain(fwriteMainArgs args)
   // could be console output) and writing column names to it.
 
   double t0 = wallclock();
-  size_t maxLineLen = eolLen + args.ncol*(2*(doQuote!=0) + 1/*sep*/);
+  size_t maxLineLen = eolLen + args.ncol*(2*(doQuote!=0) + sepLen);
   if (args.doRowNames) {
     maxLineLen += args.rowNames ? getMaxStringLen(args.rowNames, args.nrow)*2 : 1+(int)log10(args.nrow);  // the width of the row number
-    maxLineLen += 2*(doQuote!=0/*NA('auto') or true*/) + 1/*sep*/;
+    maxLineLen += 2*(doQuote!=0/*NA('auto') or true*/) + sepLen;
   }
   for (int j=0; j<args.ncol; j++) {
     int width = writerMaxLen[args.whichFun[j]];
@@ -703,7 +705,7 @@ void fwriteMain(fwriteMainArgs args)
   headerLen += yamlLen;
   if (args.colNames) {
     for (int j=0; j<args.ncol; j++) headerLen += getStringLen(args.colNames, j)*2;  // *2 in case quotes are escaped or doubled
-    headerLen += args.ncol*(1/*sep*/+(doQuote!=0)*2) + eolLen + 3;  // 3 in case doRowNames and doQuote (the first blank <<"",>> column name)
+    headerLen += args.ncol*(sepLen+(doQuote!=0)*2) + eolLen + 3;  // 3 in case doRowNames and doQuote (the first blank <<"",>> column name)
   }
   if (headerLen) {
     char *buff = malloc(headerLen);
@@ -716,13 +718,15 @@ void fwriteMain(fwriteMainArgs args)
       if (args.doRowNames) {
         // Unusual: the extra blank column name when row_names are added as the first column
         if (doQuote!=0/*'auto'(NA) or true*/) { *ch++='"'; *ch++='"'; } // to match write.csv
-        if (sep != '\0') *ch++ = sep;
+        *ch = sep;
+        ch += sepLen;
       }
       for (int j=0; j<args.ncol; j++) {
         writeString(args.colNames, j, &ch);
-        if (sep != '\0') *ch++ = sep;
+        *ch = sep;
+        ch += sepLen;
       }
-      if (sep != '\0') ch--; // backup over the last sep
+      ch -= sepLen; // backup over the last sep
       write_chars(args.eol, &ch);
     }
     if (f==-1) {
@@ -877,15 +881,17 @@ void fwriteMain(fwriteMainArgs args)
           } else {
             writeString(args.rowNames, i, &ch);
           }
-          if (sep != '\0') *ch++=sep;
+          *ch = sep;
+          ch += sepLen;
         }
         // Hot loop
         for (int j=0; j<args.ncol; j++) {
           (args.funs[args.whichFun[j]])(args.columns[j], i, &ch);
-          if (sep != '\0') *ch++ = sep;
+          *ch = sep;
+          ch += sepLen;
         }
         // Tepid again (once at the end of each line)
-        if (sep != '\0') ch--;  // backup onto the last sep after the last column. ncol>=1 because 0-columns was caught earlier.
+        ch -= sepLen;  // backup onto the last sep after the last column. ncol>=1 because 0-columns was caught earlier.
         write_chars(args.eol, &ch);  // overwrite last sep with eol instead
       }
       // compress buffer if gzip
