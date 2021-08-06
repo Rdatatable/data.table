@@ -183,7 +183,7 @@ format_list_item = function(x, ...) {
 format_col.default = function(x, ...) {
   if (!is.null(dim(x))) return("<multi-column>")
   if (is.list(x)) return(vapply_1c(x, format_list_item, ...))
-  format(char.trunc(x), ...) # added an else here to fix #5435
+  format(char.trunc(x), ...) # relevant to #37
 }
 
 # #2842 -- different columns can have different tzone, so force usage in output
