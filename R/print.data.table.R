@@ -192,7 +192,7 @@ format_col.POSIXct = function(x, ..., timezone=FALSE) {
     tz = attr(x,'tzone',exact=TRUE)
     nas = is.na(x)
     x = paste0(as.character(x)," ",tz)
-    x[nas] = NA_character_
+    is.na(x) = nas
   } else {
     x = format(x, usetz=FALSE)
   }
