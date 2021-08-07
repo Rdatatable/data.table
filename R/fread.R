@@ -55,11 +55,11 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
       download.file(input, tmpFile, method=method, mode="wb", quiet=!showProgress)
       # In text mode on Windows-only, R doubles up \r to make \r\r\n line endings. mode="wb" avoids that. See ?connections:"CRLF"
     }
-    assign("file", tmpFile, envir=parent.env(environment()))
     do.call(
       on.exit, list(substitute(unlink(tmpFile)), add = TRUE),
       envir = parent.frame()
     )
+    return(tmpFile)
     # nocov end
   }
 
@@ -86,7 +86,7 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
         stopf("input= contains no \\n or \\r, but starts with a space. Please remove the leading space, or use text=, file= or cmd=")
       }
       if (is_url(input)) {
-        download_file(input)
+        file = download_file(input)
       }
       else if (length(grep(' ', input, fixed = TRUE)) && !file.exists(input)) {  # file name or path containing spaces is not a command
         cmd = input
@@ -105,7 +105,7 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
     on.exit(unlink(tmpFile), add=TRUE)
   }
   if (!is.null(file)) {
-    if (is.character(file) && is_url(file)) download_file(file) # use URL as input for argument file #4952
+    if (is.character(file) && is_url(file)) file = download_file(file) # use URL as input for argument file #4952
 
     file_info = file.info(file)
     if (is.na(file_info$size)) stopf("File '%s' does not exist or is non-readable. getwd()=='%s'", file, getwd())
