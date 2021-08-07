@@ -161,7 +161,7 @@
 
 29. A segfault occurred when `nrow/throttle < nthread`, [#5077](https://github.com/Rdatatable/data.table/issues/5077). With the default throttle of 1024 rows (see `?setDTthreads`), at least 64 threads would be needed to trigger the segfault since there needed to be more than 65,535 rows too. It occurred on a server with 256 logical cores where `data.table` uses 128 threads by default. Thanks to Bennet Becker for reporting, debugging at C level, and fixing. It also occurred when the throttle was increased so as to use fewer threads; e.g. at the limit `setDTthreads(throttle=nrow(DT))`.
 
-30. `fread(file = URL)` now works as intended. Previously reading files from URLs did only work for `fread(input = URL)` and `fread(file = URL)` resulted in an error [#4952](https://github.com/Rdatatable/data.table/issues/4952). Thanks to @pnacht for reporting and @ben-schwen for the PR.
+30. `fread(file=URL)` now works rather than error `does not exist or is non-readable`, [#4952](https://github.com/Rdatatable/data.table/issues/4952). `fread(URL)` and `fread(input=URL)` worked before and continue to work. Thanks to @pnacht for reporting and @ben-schwen for the PR.
 
 ## NOTES
 
