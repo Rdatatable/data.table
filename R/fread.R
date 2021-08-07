@@ -37,7 +37,9 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
   nThread=as.integer(nThread)
   stopifnot(nThread>=1L)
 
-  is_url = function(x) any(startsWith(x, c("http://", "https://", "ftp://", "ftps://", "file://")))
+  is_url = function(x) startsWith(x, "http://") || startsWith(x, "https://") ||
+                       startsWith(x, "ftp://")  || startsWith(x, "ftps://") ||
+                       startsWith(x, "file://")
 
   download_file = function(input) {
     str7 = substr(input, 1L, 7L) # avoid grepl() for #2531
