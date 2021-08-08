@@ -170,7 +170,8 @@ SEXP fwriteR(
   SEXP bom_Arg,
   SEXP yaml_Arg,
   SEXP verbose_Arg,
-  SEXP encoding_Arg
+  SEXP encoding_Arg,
+  SEXP rn_Arg               // the actual row.names to be used #4957
   )
 {
   if (!isNewList(DF)) error(_("fwrite must be passed an object of type list; e.g. data.frame, data.table"));
@@ -257,9 +258,7 @@ SEXP fwriteR(
   args.doRowNames = LOGICAL(rowNames_Arg)[0];
   args.rowNames = NULL;
   if (args.doRowNames) {
-    SEXP rn = PROTECT(getAttrib(DF, R_RowNamesSymbol));
-    protecti++;
-    args.rowNames = isString(rn) ? DATAPTR_RO(rn) : NULL;
+    args.rowNames = DATAPTR_RO(rn_Arg);
   }
 
   args.sep = *CHAR(STRING_ELT(sep_Arg, 0));  // DO NOT DO: allow multichar separator (bad idea)
