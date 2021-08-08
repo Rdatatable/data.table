@@ -10709,7 +10709,7 @@ test(1734.1, capture.output(fwrite(DT,row.names=TRUE,quote=FALSE)),
 test(1734.2, capture.output(fwrite(DT,row.names=TRUE,quote=TRUE)),
              capture.output(write.csv(DT)))
 test(1734.3, fwrite(DT,row.names=TRUE,quote='auto'),   # same other than 'foo' and 'bar' column names not quoted
-             output="\"\",foo,bar\n\"1\",1,1.2\n\"2\",2,9.8\n\"3\",3,-6")
+             output="\"\",foo,bar\n1,1,1.2\n2,2,9.8\n3,3,-6")
 DF = as.data.frame(DT)
 test(1734.4, capture.output(fwrite(DF,row.names=TRUE,quote=FALSE)),
              capture.output(write.csv(DF,quote=FALSE)))
@@ -10720,6 +10720,9 @@ rownames(DF)[3] = "another"
 test(1734.6, capture.output(fwrite(DF,row.names=TRUE,quote=FALSE)),
              capture.output(write.csv(DF,quote=FALSE)))
 test(1734.7, capture.output(fwrite(DF,row.names=TRUE,quote=TRUE)),
+             capture.output(write.csv(DF)))
+rownames(DF) = c(10L, 20L, 30L) ## test for 4957
+test(1734.8, capture.output(fwrite(DF, row.names = TRUE, quote = TRUE)),
              capture.output(write.csv(DF)))
 
 # list columns and sep2
