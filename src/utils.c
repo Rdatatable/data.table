@@ -389,3 +389,30 @@ SEXP dt_zlib_version() {
 #endif
   return ScalarString(mkChar(out));
 }
+
+SEXP startsWithAny(const SEXP x, const SEXP y, SEXP start) {
+  // for is_url in fread.R added in #5097
+  // startsWith was added to R in 3.3.0 so we need something to support R 3.1.0
+  // short and simple ascii-only
+  if (!isString(x) || !isString(y) || length(x)!=1 || length(y)<1 || !isLogical(start) || length(start)!=1 || LOGICAL(start)[0]==NA_LOGICAL)
+    error("Internal error: data.table's internal startsWithAny types or lengths incorrect");
+  const char *xd = CHAR(STRING_ELT(x, 0));
+  const int n=length(y);
+  if (LOGICAL(start)[0]) {
+    for (int i=0; i<n; ++i) {
+      const char *yd = CHAR(STRING_ELT(y, i));
+      if (strncmp(xd, yd, strlen(yd))==0)
+        return ScalarInteger(i+1);
+    }
+  } else {
+    const int xlen = strlen(xd);
+    for (int i=0; i<n; ++i) {
+      const char *yd = CHAR(STRING_ELT(y, i));
+      const int ylen=strlen(yd);
+      if (xlen>=ylen && strncmp(xd+xlen-ylen, yd, ylen)==0)
+        return ScalarInteger(i+1);
+    }
+  }
+  return ScalarLogical(false);
+}
+

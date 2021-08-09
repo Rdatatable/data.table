@@ -37,21 +37,19 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
   nThread=as.integer(nThread)
   stopifnot(nThread>=1L)
 
-  is_url = function(x) startsWith(x, "http://") || startsWith(x, "https://") ||
-                       startsWith(x, "ftp://")  || startsWith(x, "ftps://") ||
-                       startsWith(x, "file://")
+  is_url = function(x) startsWithAny(x, c("https://", "http://", "file://", "ftps://", "ftp://"))
 
   download_file = function(input) {
-    str7 = substr(input, 1L, 7L) # avoid grepl() for #2531
     # nocov start
-    if (str7=="ftps://" || startsWith(input, "https://")) {
+    if (startsWithAny(input, c("https://", "ftps://"))) {  # avoid grepl() for #2531
       if (!requireNamespace("curl", quietly = TRUE))
         stopf("Input URL requires https:// connection for which fread() requires 'curl' package which cannot be found. Please install 'curl' using 'install.packages('curl')'.") # nocov
       tmpFile = tempfile(fileext = paste0(".",tools::file_ext(input)), tmpdir=tmpdir)  # retain .gz extension in temp filename so it knows to be decompressed further below
       curl::curl_download(input, tmpFile, mode="wb", quiet = !showProgress)
     }
-    else { #if (startsWith(input, "ftp://") || str7== "http://" || str7=="file://") {
-      method = if (str7=="file://") "internal" else getOption("download.file.method", default="auto")
+    else {
+      method = if (startsWith(input, "file://")) "internal"
+               else getOption("download.file.method", default="auto")  # ftp:// or http://
       # force "auto" when file:// to ensure we don't use an invalid option (e.g. wget), #1668
       tmpFile = tempfile(fileext = paste0(".",tools::file_ext(input)), tmpdir=tmpdir)
       download.file(input, tmpFile, method=method, mode="wb", quiet=!showProgress)
@@ -116,10 +114,10 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
       warningf("File '%s' has size 0. Returning a NULL %s.", file, if (data.table) 'data.table' else 'data.frame')
       return(if (data.table) data.table(NULL) else data.frame(NULL))
     }
-    if ((is_gz <- endsWith(file, ".gz")) || endsWith(file, ".bz2")) {
+    if (w <- endsWithAny(file, c(".gz",".bz2"))) {
       if (!requireNamespace("R.utils", quietly = TRUE))
         stopf("To read gz and bz2 files directly, fread() requires 'R.utils' package which cannot be found. Please install 'R.utils' using 'install.packages('R.utils')'.") # nocov
-      FUN = if (is_gz) gzfile else bzfile
+      FUN = if (w==1L) gzfile else bzfile
       R.utils::decompressFile(file, decompFile<-tempfile(tmpdir=tmpdir), ext=NULL, FUN=FUN, remove=FALSE)   # ext is not used by decompressFile when destname is supplied, but isn't optional
       file = decompFile   # don't use 'tmpFile' symbol again, as tmpFile might be the http://domain.org/file.csv.gz download
       on.exit(unlink(decompFile), add=TRUE)
