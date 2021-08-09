@@ -54,41 +54,15 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
     }
     if (input=="" || length(grep('\\n|\\r', input))) {
       # input is data itself containing at least one \n or \r
+    } else if (startsWith(input, " ")) {
+      stopf("input= contains no \\n or \\r, but starts with a space. Please remove the leading space, or use text=, file= or cmd=")
+    } else if (length(grep(' ', input, fixed=TRUE)) && !file.exists(input)) {  # file name or path containing spaces is not a command
+      cmd = input
+      if (input_has_vars && getOption("datatable.fread.input.cmd.message", TRUE)) {
+        messagef("Taking input= as a system command because it contains a space ('%s'). If it's a filename please remove the space, or use file= explicitly. A variable is being passed to input= and when this is taken as a system command there is a security concern if you are creating an app, the app could have a malicious user, and the app is not running in a secure environment; e.g. the app is running as root. Please read item 5 in the NEWS file for v1.11.6 for more information and for the option to suppress this message.", cmd)
+      }
     } else {
-      if (startsWith(input, " ")) {
-        stopf("input= contains no \\n or \\r, but starts with a space. Please remove the leading space, or use text=, file= or cmd=")
-      }
-      str7 = substr(input, 1L, 7L) # avoid grepl() for #2531
-      if (str7=="ftps://" || startsWith(input, "https://")) {
-        # nocov start
-        if (!requireNamespace("curl", quietly = TRUE))
-          stopf("Input URL requires https:// connection for which fread() requires 'curl' package which cannot be found. Please install 'curl' using 'install.packages('curl')'.") # nocov
-        tmpFile = tempfile(fileext = paste0(".",tools::file_ext(input)), tmpdir=tmpdir)  # retain .gz extension in temp filename so it knows to be decompressed further below
-        curl::curl_download(input, tmpFile, mode="wb", quiet = !showProgress)
-        file = tmpFile
-        on.exit(unlink(tmpFile), add=TRUE)
-        # nocov end
-      }
-      else if (startsWith(input, "ftp://") || str7== "http://" || str7=="file://") {
-        # nocov start
-        method = if (str7=="file://") "internal" else getOption("download.file.method", default="auto")
-        # force "auto" when file:// to ensure we don't use an invalid option (e.g. wget), #1668
-        tmpFile = tempfile(fileext = paste0(".",tools::file_ext(input)), tmpdir=tmpdir)
-        download.file(input, tmpFile, method=method, mode="wb", quiet=!showProgress)
-        # In text mode on Windows-only, R doubles up \r to make \r\r\n line endings. mode="wb" avoids that. See ?connections:"CRLF"
-        file = tmpFile
-        on.exit(unlink(tmpFile), add=TRUE)
-        # nocov end
-      }
-      else if (length(grep(' ', input, fixed = TRUE)) && !file.exists(input)) {  # file name or path containing spaces is not a command
-        cmd = input
-        if (input_has_vars && getOption("datatable.fread.input.cmd.message", TRUE)) {
-          messagef("Taking input= as a system command because it contains a space ('%s'). If it's a filename please remove the space, or use file= explicitly. A variable is being passed to input= and when this is taken as a system command there is a security concern if you are creating an app, the app could have a malicious user, and the app is not running in a secure environment; e.g. the app is running as root. Please read item 5 in the NEWS file for v1.11.6 for more information and for the option to suppress this message.", cmd)
-        }
-      }
-      else {
-        file = input   # filename
-      }
+      file = input   # filename, including URLS
     }
   }
   if (!is.null(cmd)) {
@@ -97,6 +71,26 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
     on.exit(unlink(tmpFile), add=TRUE)
   }
   if (!is.null(file)) {
+    if (!is.character(file) || length(file)!=1L)
+      stopf("file= must be a single character string containing a filename, or URL starting 'http[s]://', 'ftp[s]://' or 'file://'")
+    if (w <- startsWithAny(file, c("https://", "ftps://", "http://", "ftp://", "file://"))) {  # avoid grepl() for #2531
+      # nocov start
+      tmpFile = tempfile(fileext = paste0(".",tools::file_ext(file)), tmpdir=tmpdir)  # retain .gz extension in temp filename so it knows to be decompressed further below
+      if (w<=2L) { # https: or ftps:
+        if (!requireNamespace("curl", quietly = TRUE))
+          stopf("URL requires https:// connection for which fread() requires 'curl' package which cannot be found. Please install 'curl' using 'install.packages('curl')'.") # nocov
+        
+        curl::curl_download(file, tmpFile, mode="wb", quiet = !showProgress)
+      } else {
+        method = if (w==5L) "internal"  # force 'auto' when file: to ensure we don't use an invalid option (e.g. wget), #1668
+                 else getOption("download.file.method", default="auto")  # http: or ftp:
+        download.file(file, tmpFile, method=method, mode="wb", quiet=!showProgress)
+        # In text mode on Windows-only, R doubles up \r to make \r\r\n line endings. mode="wb" avoids that. See ?connections:"CRLF"
+      }
+      file = tmpFile
+      on.exit(unlink(tmpFile), add=TRUE)
+      # nocov end
+    }
     file_info = file.info(file)
     if (is.na(file_info$size)) stopf("File '%s' does not exist or is non-readable. getwd()=='%s'", file, getwd())
     if (isTRUE(file_info$isdir)) stopf("File '%s' is a directory. Not yet implemented.", file) # dir.exists() requires R v3.2+, #989
@@ -104,10 +98,10 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
       warningf("File '%s' has size 0. Returning a NULL %s.", file, if (data.table) 'data.table' else 'data.frame')
       return(if (data.table) data.table(NULL) else data.frame(NULL))
     }
-    if ((is_gz <- endsWith(file, ".gz")) || endsWith(file, ".bz2")) {
+    if (w <- endsWithAny(file, c(".gz",".bz2"))) {
       if (!requireNamespace("R.utils", quietly = TRUE))
         stopf("To read gz and bz2 files directly, fread() requires 'R.utils' package which cannot be found. Please install 'R.utils' using 'install.packages('R.utils')'.") # nocov
-      FUN = if (is_gz) gzfile else bzfile
+      FUN = if (w==1L) gzfile else bzfile
       R.utils::decompressFile(file, decompFile<-tempfile(tmpdir=tmpdir), ext=NULL, FUN=FUN, remove=FALSE)   # ext is not used by decompressFile when destname is supplied, but isn't optional
       file = decompFile   # don't use 'tmpFile' symbol again, as tmpFile might be the http://domain.org/file.csv.gz download
       on.exit(unlink(decompFile), add=TRUE)
