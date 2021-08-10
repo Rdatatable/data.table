@@ -30,7 +30,8 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
   compactprint = data.table:::compactprint
   cube.data.table = data.table:::cube.data.table
   dcast.data.table = data.table:::dcast.data.table
-  if (!exists('endsWith', 'package:base', inherits=FALSE)) endsWith = data.table:::endsWith
+  endsWith = data.table:::endsWith
+  endsWithAny = data.table:::endsWithAny
   forder = data.table:::forder
   forderv = data.table:::forderv
   format.data.table = data.table:::format.data.table
@@ -5887,10 +5888,11 @@ f = paste0("file://",testDir("russellCRLF.csv"))
 # simulates a http:// request as far as file.download() and unlink() goes, without internet
 # download.file() in fread() changes the input data from \r\n to \n, on Windows.
 test(1378.2, fread(f, showProgress=FALSE)[19,`Value With Dividends`], 357.97)
-
+test(1378.25, fread(file = f, showProgress=FALSE)[19,`Value With Dividends`], 357.97)
 f = paste("file://",testDir("russellCRCRLF.csv"),sep="")
 # actually has 3 \r in the file, download.file() from file:// changes that to \r\r\n, so we can simulate download.file from http: in text mode.
 test(1378.3, fread(f, showProgress=FALSE)[19,`Value With Dividends`], 357.97)
+test(1378.35, fread(file = f, showProgress=FALSE)[19,`Value With Dividends`], 357.97)
 #====================================
 
 options(datatable.fread.datatable = FALSE)
@@ -13097,12 +13099,15 @@ test(1921.2, as.IDate(1000), as.IDate("1972-09-27"))
 f = tempfile()
 file.create(f)
 test(1922.1, fread(f), data.table(NULL), warning = 'File.*size 0')
-test(1922.2, fread(file = f), data.table(NULL), warning = 'File.*size 0')
+test(1922.21, fread(file = f), data.table(NULL), warning = 'File.*size 0')
+test(1922.22, fread(file = 2L), error="file= must be a single character string containing")
 # trigger download for last instance of warning
 test(1922.3, fread(paste0('file://', f)), data.table(NULL), warning = 'File.*size 0')
+test(1922.35, fread(file = paste0('file://', f)), data.table(NULL), warning = 'File.*size 0')
 test(1922.4, fread(f, data.table = FALSE), data.frame(NULL), warning = 'File.*size 0')
 test(1922.5, fread(file = f, data.table = FALSE), data.frame(NULL), warning = 'File.*size 0')
 test(1922.6, fread(paste0('file://', f), data.table = FALSE), data.frame(NULL), warning = 'File.*size 0')
+test(1922.65, fread(file = paste0('file://', f), data.table = FALSE), data.frame(NULL), warning = 'File.*size 0')
 unlink(f)
 
 #fwrite creates a file or does nothing, as appropriate, also #2898
@@ -17793,18 +17798,17 @@ if (test_bit64) {
   test(2193.2, X[Y, `:=`(y=i.y), on="x", by=.EACHI], data.table(x=1:3, y=as.integer64(10L,20L,NA)))
 }
 
-# compatibility of endsWith backport with base::endsWith
-if (exists('endsWith', 'package:base', inherits=FALSE)) {
-  DTendsWith = function(x, stub) {n=nchar(x); substr(x, n-nchar(stub)+1L, n)==stub}
-  BSendsWith = base::endsWith
-  test(2194.1, DTendsWith('abcd', 'd'), BSendsWith('abcd', 'd'))
-  test(2194.2, DTendsWith(letters, 'e'), BSendsWith(letters, 'e'))
-  test(2194.3, DTendsWith(NA_character_, 'a'), BSendsWith(NA_character_, 'a'))
-  test(2194.4, DTendsWith(character(), 'a'), BSendsWith(character(), 'a'))
-  # file used in encoding tests
-  txt = readLines(testDir("issue_563_fread.txt"))
-  test(2194.5, DTendsWith(txt, 'B'), BSendsWith(txt, 'B'))
-}
+# endsWithAny added in #5097 for internal use replacing one use of base::endsWith (in fread.R)
+test(2194.1, endsWithAny('abcd', 'd'), 1L)
+test(2194.2, endsWithAny('ab.bz2', c('.gz','.bz2')), 2L)
+test(2194.3, endsWithAny('ab.bz', c('.gz','.bz2')), FALSE)
+test(2194.4, endsWithAny(letters, 'e'), error="Internal error.*types or lengths incorrect")
+test(2194.5, endsWithAny(NA_character_, 'a'), FALSE)
+test(2194.6, endsWithAny(character(), 'a'), error="Internal error.*types or lengths incorrect")
+# file used in encoding tests
+txt = readLines(testDir("issue_563_fread.txt"))
+test(2194.7, endsWithAny(txt, 'B'), error="Internal error.*types or lengths incorrect") # txt is length 5
+test(2194.8, endsWith('abcd', 'd'), error="Internal error.*use endsWithAny")
 
 # uniqueN(x, by=character()) was internal error, #4594
 DT = data.table(idx=c(1L,2L,1L,3L), value="val")
