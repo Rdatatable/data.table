@@ -163,7 +163,7 @@
 
 30. `fread(file=URL)` now works rather than error `does not exist or is non-readable`, [#4952](https://github.com/Rdatatable/data.table/issues/4952). `fread(URL)` and `fread(input=URL)` worked before and continue to work. Thanks to @pnacht for reporting and @ben-schwen for the PR.
 
-31. Writing row names with `fwrite()` with integer row names would incorrectly write the row number instead of the user assigned row names. For example, instead of writing `row.names(DT) <- c(10L, 20L, 30L)`, using the vector of `c(10L, 20L, 30L)`, the `fwrite(..., row.names = TRUE)` output would be the row numbers of 1, 2, and 3. This PR change also affected the beviour of auto quote for default row names and integer row names. Before the PR, `quote = 'auto'` would return the default row names in double quotes (e.g., `"1"`). Now the change aligns with how `fwrite()` handles character row names where `quote = 'auto'` does not include double quotes. Thanks to @dgarrimar for the bug report [#4957](https://github.com/Rdatatable/data.table/issues/4957) and @ColeMiller1 for the PR.
+31. `fwrite(DF, row.names=TRUE)` where `DF` has specific integer rownames (e.g. using `rownames(DF) <- c(10L,20L,30L)`) would incorrectly ignore the integer rowname and write the row number instead, [#4957](https://github.com/Rdatatable/data.table/issues/4957). Thanks to @dgarrimar for reporting and @ColeMiller1 for the PR. Further, when quote='auto' and the rownames are integers, they are no longer quoted.
 
 ## NOTES
 
