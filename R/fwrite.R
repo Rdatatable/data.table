@@ -36,7 +36,6 @@ fwrite = function(x, file="", append=FALSE, quote="auto",
   nThread = as.integer(nThread)
   # write.csv default is 'double' so fwrite follows suit. write.table's default is 'escape'
   # validate arguments
-  rn = if (row.names) row.names(x) else NULL # allocate row.names in R to address integer row.names #4957
   if (is.matrix(x)) { # coerce to data.table if input object is matrix
     messagef("x being coerced from class: matrix to data.table")
     x = as.data.table(x)
@@ -112,7 +111,7 @@ fwrite = function(x, file="", append=FALSE, quote="auto",
   file = enc2native(file) # CfwriteR cannot handle UTF-8 if that is not the native encoding, see #3078.
   .Call(CfwriteR, x, file, sep, sep2, eol, na, dec, quote, qmethod=="escape", append,
         row.names, col.names, logical01, scipen, dateTimeAs, buffMB, nThread,
-        showProgress, is_gzip, bom, yaml, verbose, encoding, rn)
+        showProgress, is_gzip, bom, yaml, verbose, encoding)
   invisible()
 }
 

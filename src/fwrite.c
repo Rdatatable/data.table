@@ -623,8 +623,8 @@ void fwriteMain(fwriteMainArgs args)
       DTPRINT(_("... "));
       for (int j=args.ncol-10; j<args.ncol; j++) DTPRINT(_("%d "), args.whichFun[j]);
     }
-    DTPRINT(_("\nargs.doRowNames=%d args.rowNames=%d doQuote=%d args.nrow=%"PRId64" args.ncol=%d eolLen=%d\n"),
-          args.doRowNames, args.rowNames, doQuote, args.nrow, args.ncol, eolLen);
+    DTPRINT(_("\nargs.doRowNames=%d args.rowNames=%p args.rowNameFun=%d doQuote=%d args.nrow=%"PRId64" args.ncol=%d eolLen=%d\n"),
+          args.doRowNames, args.rowNames, args.rowNameFun, doQuote, args.nrow, args.ncol, eolLen);
   }
 
   // Calculate upper bound for line length. Numbers use a fixed maximum (e.g. 12 for integer) while strings find the longest
@@ -639,8 +639,10 @@ void fwriteMain(fwriteMainArgs args)
   double t0 = wallclock();
   size_t maxLineLen = eolLen + args.ncol*(2*(doQuote!=0) + sepLen);
   if (args.doRowNames) {
-    maxLineLen += args.rowNames ? getMaxStringLen(args.rowNames, args.nrow)*2 : 1+(int)log10(args.nrow);  // the width of the row number
-    maxLineLen += 2*(doQuote!=0/*NA('auto') or true*/) + sepLen;
+    maxLineLen += args.rowNames==NULL ? 1+(int)log10(args.nrow)   // the width of the row number
+                  : (args.rowNameFun==WF_String ? getMaxStringLen(args.rowNames, args.nrow)*2  // *2 in case longest row name is all quotes (!) and all get escaped
+                  : 11); // specific integer names could be MAX_INT 2147483647 (10 chars) even on a 5 row table, and data.frame allows negative integer rownames hence 11 for the sign
+    maxLineLen += 2/*possible quotes*/ + sepLen;
   }
   for (int j=0; j<args.ncol; j++) {
     int width = writerMaxLen[args.whichFun[j]];
@@ -871,15 +873,17 @@ void fwriteMain(fwriteMainArgs args)
       if (failed) continue;  // Not break. Because we don't use #omp cancel yet.
       int64_t end = ((args.nrow - start)<rowsPerBatch) ? args.nrow : start + rowsPerBatch;
       for (int64_t i=start; i<end; i++) {
-        // Tepid starts here (once at beginning of each per line)
+        // Tepid starts here (once at beginning of each line)
         if (args.doRowNames) {
           if (args.rowNames==NULL) {
-            if (doQuote!=0/*NA'auto' or true*/) *ch++='"';
+            if (doQuote==1) *ch++='"';
             int64_t rn = i+1;
             writeInt64(&rn, 0, &ch);
-            if (doQuote!=0) *ch++='"';
+            if (doQuote==1) *ch++='"';
           } else {
-            writeString(args.rowNames, i, &ch);
+            if (args.rowNameFun != WF_String && doQuote==1) *ch++='"';
+            (args.funs[args.rowNameFun])(args.rowNames, i, &ch);  // #5098
+            if (args.rowNameFun != WF_String && doQuote==1) *ch++='"';
           }
           *ch = sep;
           ch += sepLen;
