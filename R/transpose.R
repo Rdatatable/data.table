@@ -23,7 +23,7 @@ transpose = function(l, fill=NA, ignore.empty=FALSE, keep.names=NULL, make.names
   ans[]
 }
 
-tstrsplit = function (x, ..., fill=NA, type.convert=FALSE, keep, names=FALSE) {
+tstrsplit = function(x, ..., fill=NA, type.convert=FALSE, keep, names=FALSE) {
   if (!isTRUEorFALSE(names) && !is.character(names))
     stopf("'names' must be TRUE/FALSE or a character vector.")
   ans = transpose(strsplit(as.character(x), ...), fill=fill,
@@ -57,7 +57,6 @@ tstrsplit = function (x, ..., fill=NA, type.convert=FALSE, keep, names=FALSE) {
 
       n = length(type.convert)
       if(!n) stopf("The argument 'type.convert' does not support empty list.")
-
       is_named = nzchar(names(type.convert))
       all_is_named = length(is_named) && all(is_named)             # because all(is_named)=TRUE if is_named=NULL <-- names(type.convert)=NULL
       last_item = deparse1(substitute(type.convert)[[n + 1L]])
@@ -70,7 +69,6 @@ tstrsplit = function (x, ..., fill=NA, type.convert=FALSE, keep, names=FALSE) {
           type.convert = type.convert[-n]
         }
       }
-
       indxs = unlist(type.convert, recursive=FALSE, use.names=FALSE)
       bad_indxs = setdiff(indxs, keep)
 
@@ -92,7 +90,6 @@ tstrsplit = function (x, ..., fill=NA, type.convert=FALSE, keep, names=FALSE) {
         idx = type.convert[[fn]]
         ans[idx] = lapply(ans[idx], function(x) match.fun(fn)(x))
       }
-
       ans = ans[keep]
     }
   } else
