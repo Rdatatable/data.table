@@ -23,7 +23,7 @@ transpose = function(l, fill=NA, ignore.empty=FALSE, keep.names=NULL, make.names
   ans[]
 }
 
-tstrsplit <- function (x, ..., fill=NA, type.convert=FALSE, keep, names=FALSE) {
+tstrsplit = function (x, ..., fill=NA, type.convert=FALSE, keep, names=FALSE) {
   if (!isTRUEorFALSE(names) && !is.character(names))
     stopf("'names' must be TRUE/FALSE or a character vector.")
   ans = transpose(strsplit(as.character(x), ...), fill=fill,
