@@ -101,6 +101,8 @@
 
 17. `data.table` printing now supports customizable methods for both columns and list column row items, part of [#1523](https://github.com/Rdatatable/data.table/issues/1523). `format_col` is S3-generic for customizing how to print whole columns; `format_list_item` is S3-generic for customizing how to print each row of a list column. Thanks to @mllg who initially filed [#3338](https://github.com/Rdatatable/data.table/pulls/3338) with the seed of the idea, @franknarf1 who earlier suggested the idea of providing custom formatters, @fparages who submitted a patch to improve the printing of timezones for [#2842](https://github.com/Rdatatable/data.table/issues/2842), @RichardRedding for pointing out an error relating to printing wide `expression` columns in [#3011](https://github.com/Rdatatable/data.table/issues/3011), and @MichaelChirico for implementing. See `?print.data.table` for examples.
 
+18. `tstrsplit(,type.convert=)` now accepts a named list of functions to apply to each part, [#5094](https://github.com/Rdatatable/data.table/issues/5094). Thanks to @Kamgang-B for the request and implementing.
+
 ## BUG FIXES
 
 1. `by=.EACHI` when `i` is keyed but `on=` different columns than `i`'s key could create an invalidly keyed result, [#4603](https://github.com/Rdatatable/data.table/issues/4603) [#4911](https://github.com/Rdatatable/data.table/issues/4911). Thanks to @myoung3 and @adamaltmejd for reporting, and @ColeMiller1 for the PR. An invalid key is where a `data.table` is marked as sorted by the key columns but the data is not sorted by those columns, leading to incorrect results from subsequent queries.
