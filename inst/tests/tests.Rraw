@@ -17878,12 +17878,11 @@ test(2202.2, fwrite(data.frame(a="id", b=1:1e2), sep=""),
 test(2202.3, fwrite(data.table(a=c(NA, 2, 3.01), b=c('foo', NA, 'bar')), sep=""),
              output=c("ab", "foo", "2", "3.01bar"))
 
-# Implementing and extending #5094
+# tstrsplit(,type.convert=) now accepts functions, #5094
 w = c("Yes/F", "No/M")
 x = c("Yes 2000-03-01 A/T", "No 2000-04-01 E/R")
 y = c("1/1/2", "2/5/2.5")
 z = c("Yes/1/2", "No/5/3.5")
-
 test(2203.01, tstrsplit(z, "/"), list(c("Yes", "No"), c("1", "5"), c("2", "3.5")))
 test(2203.02, tstrsplit(z, "/", type.convert=TRUE), list(c("Yes", "No"), c(1L, 5L), c(2, 3.5)))
 test(2203.03, tstrsplit(y, "/", type.convert=as.numeric), list(c(1, 2), c(1, 5), c(2, 2.5)))
