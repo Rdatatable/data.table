@@ -39,8 +39,8 @@ tstrsplit = function(x, ..., fill=NA, type.convert=FALSE, keep, names=FALSE) {
     ans = ans[keep]
   # Implementing #1094, but default FALSE
   else if (isTRUE(type.convert))
-  # Implementing and extending #5094
     ans = lapply(ans[keep], type.convert, as.is=TRUE)
+  # Implementing and extending #5094
   else if (is.function(type.convert))
     ans = lapply(ans[keep], type.convert)
   else if (is.list(type.convert)) {
