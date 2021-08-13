@@ -14,7 +14,7 @@ tstrsplit(x, \dots, fill=NA, type.convert=FALSE, keep, names=FALSE)
 	\item{x}{The vector to split (and transpose).}
   \item{\dots}{ All the arguments to be passed to \code{\link[base]{strsplit}}. }
   \item{fill}{ Default is \code{NA}. It is used to fill shorter list elements so as to return each element of the transposed result of equal lengths. }
-  \item{type.convert}{\code{TRUE} calls \code{\link{type.convert}} with \code{as.is=TRUE} on the columns. May also be a function, list of function, or named list of functions to apply to each part; see examples. }
+  \item{type.convert}{\code{TRUE} calls \code{\link{type.convert}} with \code{as.is=TRUE} on the columns. May also be a function, list of functions, or named list of functions to apply to each part; see examples. }
   \item{keep}{Specify indices corresponding to just those list elements to retain in the transposed result. Default is to return all.}
   \item{names}{\code{TRUE} auto names the list with \code{V1, V2} etc. Default (\code{FALSE}) is to return an unnamed list.}
 }
