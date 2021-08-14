@@ -54,17 +54,17 @@ DT = data.table(
 # convert each element in the transpose list to type factor
 DT[, tstrsplit(w, "/", type.convert=as.factor)]
 
-# convert part (some elements) of the transpose list and leave another part (if there is any) unchanged.
+# convert part and leave any others
 DT[, tstrsplit(z, "/", type.convert=list(as.numeric=2:3))]
 
-# convert some elements to the corresponding specified types and the remaining elements to a given type
+# convert part with one function and any others with another
 DT[, tstrsplit(z, "/", type.convert=list(as.factor=1L, as.numeric))]
 
-# convert given elements to specific types and convert the remaining elements using 'type.convert' function.
-DT[, tstrsplit(v, " ", type.convert=list(as.factor=1L, as.IDate=4L, function(x) type.convert(x, as.is=TRUE)))]
+# convert the remaining using 'type.convert(x, as.is=TRUE)' (i.e. what type.convert=TRUE does)
+DT[, tstrsplit(v, " ", type.convert=list(as.IDate=4L, function(x) type.convert(x, as.is=TRUE)))]
 }
 \seealso{
-  \code{\link{data.table}}, \code{\link{transpose}}
+  \code{\link{data.table}}, \code{\link{transpose}}, \code{\link[utils]{type.convert}}
 }
 \keyword{ data }
 
