@@ -51,7 +51,7 @@ tstrsplit = function(x, ..., fill=NA, type.convert=FALSE, keep, names=FALSE) {
       if(!n) stopf("The argument 'type.convert' does not support empty list.")
       is_named = nzchar(names(type.convert))
       all_is_named = length(is_named) && all(is_named)                  # because all(is_named)=TRUE if is_named=NULL <-- names(type.convert)=NULL
-      last_item = deparse1(substitute(type.convert)[[n + 1L]])
+      last_item = paste(deparse(substitute(type.convert)[[n + 1L]], width.cutoff=500L), collapse=" ")
       if (!all_is_named) {
         if (!(sum(!is_named) == 1L && !is_named[n] && is.function(type.convert[[n]])))
           stopf("When the argument 'type.convert' contains an unnamed element, it is expected to be the last element and should be a function. More than one unnamed element is not allowed unless all elements are functions with length equal to %d (the length of the transpose list or 'keep' argument if it is specified).", length(keep))
