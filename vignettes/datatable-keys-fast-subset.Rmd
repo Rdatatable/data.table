@@ -242,7 +242,7 @@ flights[.(unique(origin), "MIA")]
 
 * *"MIA"* is automatically recycled to fit the length of `unique(origin)` which is *3*.
 
-## 2) Combining keys with `j` and `by`
+## 2. Combining keys with `j` and `by`
 
 All we have seen so far is the same concept -- obtaining *row indices* in `i`, but just using a different method -- using `keys`. It shouldn't be surprising that we can do exactly the same things in `j` and `by` as seen from the previous vignettes. We will highlight this with a few examples.
 
@@ -340,7 +340,7 @@ key(ans)
 
 * We use `keyby` to automatically key that result by *month*. Now we understand what that means. In addition to ordering, it also sets *month* as the `key` column.
 
-## 3) Additional arguments - `mult` and `nomatch`
+## 3. Additional arguments - `mult` and `nomatch`
 
 ### a) The *mult* argument
 
@@ -376,7 +376,7 @@ flights[.(c("LGA", "JFK", "EWR"), "XNA"), mult = "last", nomatch = NULL]
 
 * The query “JFK”, “XNA” doesn’t match any rows in flights and therefore is skipped.
 
-## 4) binary search vs vector scans
+## 4. binary search vs vector scans
 
 We have seen so far how we can set and use keys to subset. But what's the advantage? For example, instead of doing:
 

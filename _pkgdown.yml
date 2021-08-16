@@ -36,8 +36,10 @@ navbar:
         href: articles/datatable-keys-fast-subset.html
       - text: "Secondary indices and auto indexing"
         href: articles/datatable-secondary-indices-and-auto-indexing.html
-      - text: "Efficient reshaping using data.tables"
+      - text: "Efficient reshaping using data.table"
         href: articles/datatable-reshape.html
+      - text: "Programming on data.table"
+        href: articles/datatable-programming.html
       - text: "Frequently asked questions"
         href: articles/datatable-faq.html
       - text: "Importing data.table"
