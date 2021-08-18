@@ -1,8 +1,9 @@
-pkgs = c("ggplot2", "hexbin", "plyr", "dplyr", "caret", "xts", "gdata", "zoo", "nlme", "bit64", "knitr", "parallel")
+pkgs = c("ggplot2", "hexbin", "plyr", "dplyr", "caret", "zoo", "xts", "gdata", "nlme", "bit64", "knitr", "parallel")
 # First expression of this file must be as above: .gitlab-ci.yml uses parse(,n=1L) to read one expression from this file and installs pkgs.
 # So that these dependencies of other.Rraw are maintained in a single place.
 # TEST_DATA_TABLE_WITH_OTHER_PACKAGES is off by default so this other.Rraw doesn't run on CRAN. It is run by GLCI, locally in dev, and by
 # users running test.data.table("other.Rraw").
+# zoo needs to be before xts for #5101 otherwise xts's dependency zoo gets attached at position 2 if xts is loaded first
 
 if (exists("test.data.table",.GlobalEnv,inherits=FALSE) ||
     !"package:data.table" %in% search()) {
