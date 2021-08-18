@@ -24,11 +24,11 @@ jobs:
         config:
           # Rdatatable has full-strength GLCI which runs after merge. So we just need
           # a few jobs (mainly test-coverage) to run in PRs so as to not slow down dev.
-          - {os: windows-latest, r: 'release'}    # don't need both AppVeyor and this but leave in place for now
-          # - {os: macOS-latest, r: 'release'}    # test-coverage.yaml uses macOS
+          # - {os: windows-latest, r: 'release'}  # use AppVeyor in PRs since it runs concurrently to save elapsed time on each commit
+          # - {os: macOS-latest, r: 'release'}    # test-coverage.yaml uses macOS which covers macOS and runs concurrently
           - {os: ubuntu-20.04, r: 'release', rspm: "https://packagemanager.rstudio.com/cran/__linux__/focal/latest"}
           # - {os: ubuntu-20.04,   r: 'devel', rspm: "https://packagemanager.rstudio.com/cran/__linux__/focal/latest", http-user-agent: "R/4.1.0 (ubuntu-20.04) R (4.1.0 x86_64-pc-linux-gnu x86_64 linux-gnu) on GitHub Actions" }
-                                                  # GLCI covers R-devel; no need to delay PR dev in case of changes in R-devel in recent days
+                                                  # GLCI covers R-devel; no need to delay contributors in dev due to changes in R-devel in recent days
 
     env:
       R_REMOTES_NO_ERRORS_FROM_WARNINGS: true
