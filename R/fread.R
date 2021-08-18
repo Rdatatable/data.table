@@ -46,9 +46,6 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
     } else {
       # avoid creating a tempfile() for single strings, which can be done a lot; e.g. in the test suite.
       input = text
-      # adds a newline to single strings without \n or \r to be recognized as text and not as file #4689
-      if (!length(grep("\\n|\\r", input)))
-        input = paste0(input, "\n")
     }
   }
   else if (is.null(cmd)) {
@@ -265,7 +262,7 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
     if (identical(tt,"") || is_utc(tt)) # empty TZ env variable ("") means UTC in C library, unlike R; _unset_ TZ means local
       tz="UTC"
   }
-  ans = .Call(CfreadR,input,sep,dec,quote,header,nrows,skip,na.strings,strip.white,blank.lines.skip,
+  ans = .Call(CfreadR,input,identical(input,file),sep,dec,quote,header,nrows,skip,na.strings,strip.white,blank.lines.skip,
               fill,showProgress,nThread,verbose,warnings2errors,logical01,select,drop,colClasses,integer64,encoding,keepLeadingZeros,tz=="UTC")
   if (!length(ans)) return(null.data.table())  # test 1743.308 drops all columns
   nr = length(ans[[1L]])
