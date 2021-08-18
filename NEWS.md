@@ -174,6 +174,8 @@
 
 33. `fread(text="a,b,c")` (where input data contains no `\n` but `text=` has been used) now works instead of error `file not found: a,b,c`, [#4689](https://github.com/Rdatatable/data.table/issues/4689). Thanks to @trainormg for reporting, and @ben-schwen for the PR.
 
+34. `na.omit(DT)` did not remove `NA` in `nanotime` columns, [#4744](https://github.com/Rdatatable/data.table/issues/4744). Thanks Jean-Mathieu Vermosen for reporting, and Michael Chirico for the PR.
+
 ## NOTES
 
 1. New feature 29 in v1.12.4 (Oct 2019) introduced zero-copy coercion. Our thinking is that requiring you to get the type right in the case of `0` (type double) vs `0L` (type integer) is too inconvenient for you the user. So such coercions happen in `data.table` automatically without warning. Thanks to zero-copy coercion there is no speed penalty, even when calling `set()` many times in a loop, so there's no speed penalty to warn you about either. However, we believe that assigning a character value such as `"2"` into an integer column is more likely to be a user mistake that you would like to be warned about. The type difference (character vs integer) may be the only clue that you have selected the wrong column, or typed the wrong variable to be assigned to that column. For this reason we view character to numeric-like coercion differently and will warn about it. If it is correct, then the warning is intended to nudge you to wrap the RHS with `as.<type>()` so that it is clear to readers of your code that a coercion from character to that type is intended. For example :
@@ -285,8 +287,6 @@
 4. `fread("1.2\n", colClasses='integer')` (note no columns names in the data) would segfault when creating a warning message, [#4644](https://github.com/Rdatatable/data.table/issues/4644). It now warns with `Attempt to override column 1 of inherent type 'float64' down to 'int32' ignored.` When column names are present however, the warning message includes the name as before; i.e., `fread("A\n1.2\n", colClasses='integer')` produces `Attempt to override column 1 <<A>> of inherent type 'float64' down to 'int32' ignored.`. Thanks to Kun Ren for reporting.
 
 5. `dplyr::mutate(setDT(as.list(1:64)), V1=11)` threw error `can't set ALTREP truelength`, [#4734](https://github.com/Rdatatable/data.table/issues/4734). Thanks to @etryn for the reproducible example, and to Cole Miller for refinements.
-
-5. `na.omit`'s `data.table` method now works to detect missing values in `nanotime` columns as well, [#4744](https://github.com/Rdatatable/data.table/issues/4744). Thanks @vermosen for a related report.
 
 ## NOTES
 
