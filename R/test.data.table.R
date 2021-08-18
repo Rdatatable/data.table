@@ -6,11 +6,13 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
     if ("package:data.table" %chin% search()) stopf("data.table package is loaded. Unload or start a fresh R session.")
     rootdir = if (pkg!="." && pkg %chin% dir()) file.path(getwd(), pkg) else Sys.getenv("PROJ_PATH")
     subdir = file.path("inst","tests")
+    env = new.env(parent=.GlobalEnv)  # in dev cc() sources all functions in .GlobalEnv
     # nocov end
   } else {
     # i) R CMD check and ii) user running test.data.table()
     rootdir = getNamespaceInfo("data.table","path")
     subdir = "tests"
+    env = new.env(parent=parent.env(.GlobalEnv))  # when user runs test.data.table() we don't want their variables in .GlobalEnv affecting tests, #3705
   }
   fulldir = file.path(rootdir, subdir)
 
@@ -93,7 +95,6 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
   cat("getDTthreads(verbose=TRUE):\n")         # for tracing on CRAN; output to log before anything is attempted
   getDTthreads(verbose=TRUE)                   # includes the returned value in the verbose output (rather than dangling '[1] 4'); e.g. "data.table is using 4 threads"
   catf("test.data.table() running: %s\n", fn)  # print fn to log before attempting anything on it (in case it is missing); on same line for slightly easier grep
-  env = new.env(parent=.GlobalEnv)
   assign("testDir", function(x) file.path(fulldir, x), envir=env)
 
   # are R's messages being translated to a foreign language? #3039, #630
