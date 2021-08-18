@@ -252,7 +252,7 @@ cd ~/build
 wget http://cran.stat.ucla.edu/src/base/R-3/R-3.1.0.tar.gz
 tar xvf R-3.1.0.tar.gz
 cd R-3.1.0
-./configure --without-recommended-packages
+CFLAGS="-fcommon" FFLAGS="-fallow-argument-mismatch" ./configure --without-recommended-packages
 make
 alias R310=~/build/R-3.1.0/bin/R
 ### END ONE TIME BUILD
