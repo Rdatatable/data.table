@@ -15,7 +15,9 @@ INT = data.table:::INT
 
 if (any(duplicated(pkgs))) stop("Packages defined to be loaded for integration tests in 'inst/tests/other.Rraw' contains duplicates.")
 
-f = function(pkg) suppressMessages(isTRUE(require(pkg, character.only=TRUE, quietly=TRUE, warn.conflicts=FALSE)))
+f = function(pkg) suppressWarnings(suppressMessages(isTRUE(
+  library(pkg, character.only=TRUE, logical.return=TRUE, quietly=TRUE, warn.conflicts=FALSE, pos="package:base")  # attach at the end for #5101
+)))
 loaded = sapply(pkgs, f)
 if (any(!loaded)) {
   stop("test.data.table('other.Rraw') is missing required package(s): ", paste(names(loaded)[!loaded], collapse=", "), ". If you can't install them and this is R CMD check, please set environment variable TEST_DATA_TABLE_WITH_OTHER_PACKAGES back to the default, false.")

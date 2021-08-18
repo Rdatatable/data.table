@@ -15,8 +15,10 @@ sugg = c(
   "nanotime"
 )
 for (s in sugg) {
-  assign(paste0("test_",s), loaded<-suppressWarnings(suppressMessages(require(s, character.only=TRUE))))
-  if (!loaded) cat("\n**** Suggested package",s,"is not installed. Tests using it will be skipped.\n\n")
+  assign(paste0("test_",s), loaded<-suppressWarnings(suppressMessages(
+    library(s, character.only=TRUE, logical.return=TRUE, quietly=TRUE, warn.conflicts=FALSE, pos="package:base")  # attach at the end for #5101
+  )))
+  if (!loaded) cat("\n**** Suggested package",s,"is not installed or has dependencies missing. Tests using it will be skipped.\n\n")
 }
 
 x = 1:10
