@@ -10417,6 +10417,7 @@ dir.create(d)
 test(1703.17, fread(text=c('a,b','1,2'), tmpdir=d), data.table(a=1L,b=2L))
 test(1703.18, fread(text=c('a,b','1,2')), data.table(a=1L, b=2L))
 unlink(d)
+test(1703.19, fread(text="a b c"), data.table(a=logical(), b=logical(), c=logical()))  # text= with no \n, #4689
 
 # Ensure all.equal respects 'check.attributes' w.r.t. column names. As testthat::check_equivalent relies on this
 # as used by package popEpi in its tests
@@ -17909,3 +17910,4 @@ test(2203.20, tstrsplit(w, "/", type.convert=list()), error="not support empty l
 # set rownames as key directly in as.data.table, #4468
 test(2204, as.data.table(mtcars, keep.rownames='model', key='model'),
            setnames(setkey(as.data.table(mtcars, keep.rownames = TRUE), rn), 'rn', 'model'))
+
