@@ -28,9 +28,13 @@ if (base::getRversion() < "3.2.0") {  # Apr 2015
 if (!exists('startsWith', 'package:base', inherits=FALSE)) {  # R 3.3.0; Apr 2016
   startsWith = function(x, stub) substr(x, 1L, nchar(stub))==stub
 }
-if (!exists('endsWith', 'package:base', inherits=FALSE)) {
-  endsWith = function(x, stub) {n=nchar(x); substr(x, n-nchar(stub)+1L, n)==stub}
-}
+# endsWith no longer used from #5097 so no need to backport; prevent usage to avoid dev delay until GLCI's R 3.1.0 test
+endsWith = function(...) stop("Internal error: use endsWithAny instead of base::endsWith")
+
+startsWithAny = function(x,y) .Call(CstartsWithAny, x, y, TRUE)
+endsWithAny = function(x,y) .Call(CstartsWithAny, x, y, FALSE)
+# For fread.R #5097 we need if any of the prefixes match, which one, and can return early on the first match
+# Hence short and simple ascii-only at C level
 
 # which.first
 which.first = function(x)

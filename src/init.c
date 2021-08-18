@@ -127,6 +127,7 @@ SEXP islockedR();
 SEXP allNAR();
 SEXP test_dt_win_snprintf();
 SEXP dt_zlib_version();
+SEXP startsWithAny();
 
 // .Externals
 SEXP fastmean();
@@ -222,6 +223,7 @@ R_CallMethodDef callMethods[] = {
 {"Ctest_dt_win_snprintf", (DL_FUNC)&test_dt_win_snprintf, -1},
 {"Cdt_zlib_version", (DL_FUNC)&dt_zlib_version, -1},
 {"Csubstitute_call_arg_namesR", (DL_FUNC) &substitute_call_arg_namesR, -1},
+{"CstartsWithAny", (DL_FUNC)&startsWithAny, -1},
 {NULL, NULL, 0}
 };
 
@@ -245,8 +247,7 @@ static void setSizes() {
   // One place we need the largest sizeof is the working memory malloc in reorder.c
 }
 
-void attribute_visible R_init_datatable(DllInfo *info)
-// relies on pkg/src/Makevars to mv data.table.so to datatable.so
+void attribute_visible R_init_data_table(DllInfo *info)
 {
   // C exported routines
   // must be also listed in inst/include/datatableAPI.h
@@ -376,7 +377,7 @@ inline long long DtoLL(double x) {
   // under clang 3.9.1 -O3 and solaris-sparc but not solaris-x86 or gcc.
   // There is now a grep in CRAN_Release.cmd; use this union method instead.
   // int64_t may help rather than 'long long' (TODO: replace all long long with int64_t)
-  // The two types must be the same size. That is checked in R_init_datatable (above)
+  // The two types must be the same size. That is checked in R_init_data_table (above)
   // where sizeof(int64_t)==sizeof(double)==8 is checked.
   // Endianness should not matter because whether big or little, endianness is the same
   // inside this process, and the two types are the same size.

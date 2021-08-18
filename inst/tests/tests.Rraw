@@ -30,10 +30,13 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
   compactprint = data.table:::compactprint
   cube.data.table = data.table:::cube.data.table
   dcast.data.table = data.table:::dcast.data.table
-  if (!exists('endsWith', 'package:base', inherits=FALSE)) endsWith = data.table:::endsWith
+  endsWith = data.table:::endsWith
+  endsWithAny = data.table:::endsWithAny
   forder = data.table:::forder
   forderv = data.table:::forderv
   format.data.table = data.table:::format.data.table
+  format_col.default = data.table:::format_col.default
+  format_list_item.default = data.table:::format_list_item.default
   getdots = data.table:::getdots
   groupingsets.data.table = data.table:::groupingsets.data.table
   guess = data.table:::guess
@@ -93,8 +96,10 @@ sugg = c(
   # zoo             # In DESCRIPTION:Suggests otherwise R CMD check warning: '::' or ':::' import not declared from: 'zoo'; it is tested in other.Rraw though
 )
 for (s in sugg) {
-  assign(paste0("test_",s), loaded<-suppressWarnings(suppressMessages(require(s, character.only=TRUE))))
-  if (!loaded) cat("\n**** Suggested package",s,"is not installed. Tests using it will be skipped.\n\n")
+  assign(paste0("test_",s), loaded<-suppressWarnings(suppressMessages(
+    library(s, character.only=TRUE, logical.return=TRUE, quietly=TRUE, warn.conflicts=FALSE, pos="package:base")  # attach at the end for #5101
+  )))
+  if (!loaded) cat("\n**** Suggested package",s,"is not installed or has dependencies missing. Tests using it will be skipped.\n\n")
 }
 
 test_longdouble = isTRUE(capabilities()["long.double"]) && identical(as.integer(.Machine$longdouble.digits), 64L)
@@ -958,7 +963,7 @@ test(302, DT, data.table(a=c(1L,2L,2L,3L),b=c(4L,42L,6L,7L),key="a"))
 DT[J(2),b:=84L]
 test(303, DT, data.table(a=c(1L,2L,2L,3L),b=c(4L,84L,84L,7L),key="a"))
 
-# Test 304 was testing compatibility with package:plyr. Moved to the ggplot2 block above to be moved to a separate test package.
+# Test 304 was testing compatibility with package:plyr. #2671 moved it to other.Rraw.
 
 # Test that changing colnames keep key in sync.
 # TO DO: will have to do this for secondary keys, too, when implemented.
@@ -3070,6 +3075,9 @@ test(1034, as.data.table(x<-as.character(sample(letters, 5))), data.table(V1=x))
                     if (test_bit64) NA_integer64_ else NA)), # 'else NA' otherwise NULL is not removed when test_bit64 is FALSE
                     measure.vars="l", na.rm=TRUE)[["value"]],
                   list(c(NA,NA)))
+  DT_missing_l_2 = data.table(num_1=1, num_2=2, list_1=list(1), list_3=list(3))
+  test(1035.0186, melt(DT_missing_l_2, measure.vars=measure(value.name, char, sep="_"), na.rm=TRUE), data.table(char="1", num=1, list=list(1)))
+  test(1035.0187, melt(DT_missing_l_2, measure.vars=measure(value.name, char, sep="_"), na.rm=FALSE), data.table(char=c("1","2","3"), num=c(1,2,NA), list=list(1,NA,3)))
 
   ans1 = cbind(DT[, c(1,2,8), with=FALSE], variable=factor("l_1"))
   ans1[, value := DT$l_1]
@@ -5882,10 +5890,11 @@ f = paste0("file://",testDir("russellCRLF.csv"))
 # simulates a http:// request as far as file.download() and unlink() goes, without internet
 # download.file() in fread() changes the input data from \r\n to \n, on Windows.
 test(1378.2, fread(f, showProgress=FALSE)[19,`Value With Dividends`], 357.97)
-
+test(1378.25, fread(file = f, showProgress=FALSE)[19,`Value With Dividends`], 357.97)
 f = paste("file://",testDir("russellCRCRLF.csv"),sep="")
 # actually has 3 \r in the file, download.file() from file:// changes that to \r\r\n, so we can simulate download.file from http: in text mode.
 test(1378.3, fread(f, showProgress=FALSE)[19,`Value With Dividends`], 357.97)
+test(1378.35, fread(file = f, showProgress=FALSE)[19,`Value With Dividends`], 357.97)
 #====================================
 
 options(datatable.fread.datatable = FALSE)
@@ -7363,7 +7372,7 @@ test(1530.2, which.first(x), which(x)[1L])
 test(1530.3, which.last(1:5), error = "x not boolean")
 test(1530.4, which.last(x), tail(which(x), 1L))
 
-# test for like, %like%, %ilike%, %flike%
+# test for like, %like%, %ilike%, %flike%, %plike%
 set.seed(2L)
 x = apply(matrix(sample(letters, 12), nrow=2), 1, paste, collapse="")
 y = factor(sample(c(letters[1:5], x), 20, TRUE))
@@ -7379,10 +7388,11 @@ test(1532.06, like(x, '()'), c(TRUE, TRUE, TRUE))
 test(1532.07, like(x, '()', fixed = TRUE), c(FALSE, FALSE, TRUE))
 test(1532.08, x %ilike% 'hey', c(TRUE, TRUE, FALSE))
 test(1532.09, x %flike% '()', c(FALSE, FALSE, TRUE))
-## %like% test for ordered factor with NA
-x = c("A", "B", "C", NA_character_)
+test(1532.10, like(x, "(?=h)(?=.*y)", perl = TRUE), c(FALSE, TRUE, FALSE))
+test(1532.11, x %plike% "(?=h)(?=.*y)", c(FALSE, TRUE, FALSE)) #3702
+x = c("A", "B", "C", NA_character_)  # ordered factor with NA
 x = ordered(x, levels = rev(x)[-1L])
-test(1532.10, x %like% "A", c(TRUE, FALSE, FALSE, FALSE))
+test(1532.12, x %like% "A", c(TRUE, FALSE, FALSE, FALSE))
 
 # coverage for setkey() to 100%
 dt1 = data.table(x=sample(5), y=1:5, key="y")
@@ -10698,23 +10708,30 @@ test(1733.2, fwrite(data.table(c(1.2,-8.0,pi,67.99),1:4),dec=",",sep=";"),
 
 # fwrite implied and actual row.names
 DT = data.table(foo=1:3,bar=c(1.2,9.8,-6.0))
-test(1734.1, capture.output(fwrite(DT,row.names=TRUE,quote=FALSE)),
-             capture.output(write.csv(DT,quote=FALSE)))
-test(1734.2, capture.output(fwrite(DT,row.names=TRUE,quote=TRUE)),
-             capture.output(write.csv(DT)))
-test(1734.3, fwrite(DT,row.names=TRUE,quote='auto'),   # same other than 'foo' and 'bar' column names not quoted
-             output="\"\",foo,bar\n\"1\",1,1.2\n\"2\",2,9.8\n\"3\",3,-6")
+test(1734.01, capture.output(fwrite(DT,row.names=TRUE,quote=FALSE)),
+              capture.output(write.csv(DT,quote=FALSE)))
+test(1734.02, capture.output(fwrite(DT,row.names=TRUE,quote=TRUE)),
+              capture.output(write.csv(DT)))
+test(1734.03, fwrite(DT,row.names=TRUE,quote='auto'),   # same other than 'foo' and 'bar' column names not quoted
+              output="\"\",foo,bar\n1,1,1.2\n2,2,9.8\n3,3,-6")
 DF = as.data.frame(DT)
-test(1734.4, capture.output(fwrite(DF,row.names=TRUE,quote=FALSE)),
-             capture.output(write.csv(DF,quote=FALSE)))
-test(1734.5, capture.output(fwrite(DF,row.names=TRUE,quote=TRUE)),
-             capture.output(write.csv(DF)))
+test(1734.04, capture.output(fwrite(DF,row.names=TRUE,quote=FALSE)),
+              capture.output(write.csv(DF,quote=FALSE)))
+test(1734.05, capture.output(fwrite(DF,row.names=TRUE,quote=TRUE)),
+              capture.output(write.csv(DF)))
 rownames(DF)[2] = "someName"
 rownames(DF)[3] = "another"
-test(1734.6, capture.output(fwrite(DF,row.names=TRUE,quote=FALSE)),
-             capture.output(write.csv(DF,quote=FALSE)))
-test(1734.7, capture.output(fwrite(DF,row.names=TRUE,quote=TRUE)),
-             capture.output(write.csv(DF)))
+test(1734.06, capture.output(fwrite(DF,row.names=TRUE,quote=FALSE)),
+              capture.output(write.csv(DF,quote=FALSE)))
+test(1734.07, capture.output(fwrite(DF,row.names=TRUE,quote=TRUE)),
+              capture.output(write.csv(DF)))
+rownames(DF) = c(10L, -20L, 30L) ## test for #4957
+test(1734.08, capture.output(fwrite(DF, row.names=TRUE, quote=TRUE)),
+              capture.output(write.csv(DF)))
+test(1734.09, capture.output(fwrite(DF, row.names=TRUE, quote=FALSE)),
+              capture.output(write.csv(DF, quote=FALSE)))
+test(1734.10, fwrite(DF, row.names=TRUE, quote='auto'),
+              output=c('"",foo,bar','10,1,1.2','-20,2,9.8','30,3,-6'))
 
 # list columns and sep2
 set.seed(1)
@@ -13088,12 +13105,15 @@ test(1921.2, as.IDate(1000), as.IDate("1972-09-27"))
 f = tempfile()
 file.create(f)
 test(1922.1, fread(f), data.table(NULL), warning = 'File.*size 0')
-test(1922.2, fread(file = f), data.table(NULL), warning = 'File.*size 0')
+test(1922.21, fread(file = f), data.table(NULL), warning = 'File.*size 0')
+test(1922.22, fread(file = 2L), error="file= must be a single character string containing")
 # trigger download for last instance of warning
 test(1922.3, fread(paste0('file://', f)), data.table(NULL), warning = 'File.*size 0')
+test(1922.35, fread(file = paste0('file://', f)), data.table(NULL), warning = 'File.*size 0')
 test(1922.4, fread(f, data.table = FALSE), data.frame(NULL), warning = 'File.*size 0')
 test(1922.5, fread(file = f, data.table = FALSE), data.frame(NULL), warning = 'File.*size 0')
 test(1922.6, fread(paste0('file://', f), data.table = FALSE), data.frame(NULL), warning = 'File.*size 0')
+test(1922.65, fread(file = paste0('file://', f), data.table = FALSE), data.frame(NULL), warning = 'File.*size 0')
 unlink(f)
 
 #fwrite creates a file or does nothing, as appropriate, also #2898
@@ -16998,6 +17018,38 @@ DT = data.table(
            s4class(x=2L, y="yes", z=1)))
 test(2130.03, print(DT), output=c("   x             y", "1: 1 <ex_class[3]>",     "2: 2 <ex_class[3]>"))
 
+# format_col and format_list_item printing helpers/generics
+## Use case: solve #2842 by defining format_col.POSIXct to have usetz = TRUE
+DT = data.table(
+  t1 = as.POSIXct('2018-05-01 12:34:56', tz = 'UTC'),
+  t2 = as.POSIXct('2018-05-01 12:34:56', tz = 'Asia/Singapore')
+)
+test(2130.101, print(DT, timezone=TRUE), output='UTC')
+test(2130.102, print(DT, timezone=FALSE), notOutput='UTC')
+
+# default expression printing can break format_col.default, #3011
+test(2130.11, print(data.table(e = expression(1 + 2 + 3 + 4 + 5 + 6 + 7 + 8 + 9 + 10 + 11 + 12 + 13))), output = '1 + 2 + 3')
+
+# format_col generic is used
+format_col.complex = function(x, ...) sprintf('(%.1f, %.1fi)', Re(x), Im(x))
+registerS3method("format_col", "complex", format_col.complex)
+# this registerS3method does seem to be necessary to work within the test.data.table() environment
+# assigning the method using <<- probably works too, but we don't want to write to user's environment at all
+x = data.table(z = c(1 + 3i, 2 - 1i, pi + 2.718i))
+test(2130.12, x, output = '(1.0, 3.0i)')
+rm(format_col.complex)
+registerS3method("format_col", "complex", format_col.default) 
+# otherwise it remains registered after test.data.table() and causes test 1610.1 to fail on the next run for example, and user display if they have complex data
+# haven't found a way to unregister an S3 method (tried registering NULL but there's an error that NULL isn't a function)
+
+# format_list_item() generic is used
+format_list_item.myclass <- function(x, ...) paste0("<", class(x)[1L], ":", x$id, ">")
+registerS3method("format_list_item", "myclass", format_list_item.myclass)
+DT = data.table(row = 1:2, objs = list(structure(list(id = "foo"), class = "myclass"),  structure(list(id = "bar"), class = "myclass")))
+test(2130.13, print(DT), output = "myclass:foo.*myclass:bar")
+rm(format_list_item.myclass)
+registerS3method("format_list_item", "myclass", format_list_item.default)
+
 # .SD from grouping should be unlocked, part of #4159
 x = data.table(a=1:3, b=4:6)
 test(2131.1, lapply(x[ , list(dt = list(.SD)), by = a]$dt, attr, '.data.table.locked'),
@@ -17752,18 +17804,17 @@ if (test_bit64) {
   test(2193.2, X[Y, `:=`(y=i.y), on="x", by=.EACHI], data.table(x=1:3, y=as.integer64(10L,20L,NA)))
 }
 
-# compatibility of endsWith backport with base::endsWith
-if (exists('endsWith', 'package:base', inherits=FALSE)) {
-  DTendsWith = function(x, stub) {n=nchar(x); substr(x, n-nchar(stub)+1L, n)==stub}
-  BSendsWith = base::endsWith
-  test(2194.1, DTendsWith('abcd', 'd'), BSendsWith('abcd', 'd'))
-  test(2194.2, DTendsWith(letters, 'e'), BSendsWith(letters, 'e'))
-  test(2194.3, DTendsWith(NA_character_, 'a'), BSendsWith(NA_character_, 'a'))
-  test(2194.4, DTendsWith(character(), 'a'), BSendsWith(character(), 'a'))
-  # file used in encoding tests
-  txt = readLines(testDir("issue_563_fread.txt"))
-  test(2194.5, DTendsWith(txt, 'B'), BSendsWith(txt, 'B'))
-}
+# endsWithAny added in #5097 for internal use replacing one use of base::endsWith (in fread.R)
+test(2194.1, endsWithAny('abcd', 'd'), 1L)
+test(2194.2, endsWithAny('ab.bz2', c('.gz','.bz2')), 2L)
+test(2194.3, endsWithAny('ab.bz', c('.gz','.bz2')), FALSE)
+test(2194.4, endsWithAny(letters, 'e'), error="Internal error.*types or lengths incorrect")
+test(2194.5, endsWithAny(NA_character_, 'a'), FALSE)
+test(2194.6, endsWithAny(character(), 'a'), error="Internal error.*types or lengths incorrect")
+# file used in encoding tests
+txt = readLines(testDir("issue_563_fread.txt"))
+test(2194.7, endsWithAny(txt, 'B'), error="Internal error.*types or lengths incorrect") # txt is length 5
+test(2194.8, endsWith('abcd', 'd'), error="Internal error.*use endsWithAny")
 
 # uniqueN(x, by=character()) was internal error, #4594
 DT = data.table(idx=c(1L,2L,1L,3L), value="val")
@@ -17800,8 +17851,61 @@ test(2199.2, as.data.table(as.list(1:2))[, .SD,.SDcols=(-(1L))], data.table(V2=2
 test(2199.3, as.data.table(as.list(1:3))[, .SD,.SDcols=(-1L)],   data.table(V2=2L, V3=3L))
 test(2199.4, data.table(V1=-1L, V2=-2L, V3=-3L)[,.SD,.SDcols=-V2:-V1], error="not found")
 
+# setDF now drops index attributes, #4889
+d = data.table(a=1:100, b=1:100)
+setindex(d, a)
+setDF(d)
+d[1:50, "a"] = d[51:100, "a"]
+setDT(d)
+test(2200, nrow(d[a==99]), 2L)
+
+# segfault in forder when nrow/throttle<nth && ngrp>=255 && nrow>=65536; #5077
+# Matt ran these on clang's ASAN+OpenMP which correctly faulted v1.14.0; these tests segfault consistently without ASAN too
+set.seed(1)
+DT = data.table(grp=sample(255L, 65536L ,replace=TRUE))  # >=255 && >=65536 necessary
+setDTthreads(throttle=nrow(DT))      # increase throttle to reduce threads to 1 for this nrow
+test(2201.1, nrow(DT[, .N, by=grp]), 255L)
+test(2201.2, nrow(setkey(DT, grp)), 65536L)
+set.seed(1)
+DT = data.table(grp=sample(65536L))  # extra case with all size 1 groups too just for fun
+test(2201.3, nrow(DT[, .N, by=grp]), 65536L)
+test(2201.4, nrow(setkey(DT, grp)), 65536L)
+setDTthreads()    # restore default throttle
+
+# fwrite now allows sep="", #4817
+test(2202.1, fwrite(data.frame(a="id", b=letters[1:5], c=1:5), sep=""),
+            output = c("abc", paste0("id", letters[1:5], 1:5)))
+test(2202.2, fwrite(data.frame(a="id", b=1:1e2), sep=""), 
+            output = c("ab", paste0("id", 1:1e2)))
+test(2202.3, fwrite(data.table(a=c(NA, 2, 3.01), b=c('foo', NA, 'bar')), sep=""),
+             output=c("ab", "foo", "2", "3.01bar"))
+
+# tstrsplit(,type.convert=) now accepts functions, #5094
+w = c("Yes/F", "No/M")
+x = c("Yes 2000-03-01 A/T", "No 2000-04-01 E/R")
+y = c("1/1/2", "2/5/2.5")
+z = c("Yes/1/2", "No/5/3.5")
+test(2203.01, tstrsplit(z, "/"), list(c("Yes", "No"), c("1", "5"), c("2", "3.5")))
+test(2203.02, tstrsplit(z, "/", type.convert=TRUE), list(c("Yes", "No"), c(1L, 5L), c(2, 3.5)))
+test(2203.03, tstrsplit(y, "/", type.convert=as.numeric), list(c(1, 2), c(1, 5), c(2, 2.5)))
+test(2203.04, tstrsplit(w, "/", type.convert=as.factor), list(factor(c("Yes", "No")), factor(c("F", "M"))))
+test(2203.05, tstrsplit(w, "/", type.convert=list(as.factor)), list(factor(c("Yes", "No")), factor(c("F", "M"))))
+test(2203.06, tstrsplit(z, "/", type.convert=list(as.numeric=2:3)), list(c("Yes", "No"), c(1, 5), c(2, 3.5)))
+test(2203.07, tstrsplit(x, " ", type.convert=as.IDate.default, keep=2L), list(c(as.IDate.default("2000-03-01"), as.IDate.default("2000-04-01"))))
+test(2203.08, tstrsplit(z, "/", type.convert=list(as.factor=1L, as.integer=2L, as.numeric=3L)), list(factor(c("Yes", "No")), c(1L, 5L), c(2, 3.5)))
+test(2203.09, tstrsplit(z, "/", type.convert=list(as.factor, as.integer, as.numeric)), list(factor(c("Yes", "No")), c(1L, 5L), c(2, 3.5)))
+test(2203.10, tstrsplit(w, "/", type.convert=function(x) type.convert(x, as.is=FALSE)), list(factor(c("Yes", "No")), factor(c("F", "M"))))
+test(2203.11, tstrsplit(z, "/", type.convert=TRUE, names=TRUE), list(V1=c("Yes", "No"), V2=c(1L, 5L), V3=c(2, 3.5)))
+test(2203.12, tstrsplit(z, "/", type.convert=TRUE, names=c("A", "B", "C")), list(A=c("Yes", "No"), B=c(1L, 5L), C=c(2, 3.5)))
+test(2203.13, tstrsplit(x, "[- ]", type.convert=list(as.integer=2L), keep=c(1:2, 5L), names=c("bin", "yr", "tz")), list(bin=c("Yes", "No"), yr=c(2000L, 2000L), tz=c("A/T", "E/R")))
+test(2203.14, tstrsplit(w, "/", type.convert=list(as.factor=1:2, as.numeric)), list(factor(c("Yes", "No")), factor(c("F", "M"))), warning="type.convert.+was ignored")
+test(2203.15, tstrsplit(z, "/", type.convert=list(as.factor, as.numeric)), error="unnamed.+all.+functions.+transpose list or 'keep' argument")
+test(2203.16, tstrsplit(z, "/", type.convert=list(as.integer=2L), keep=5L), error="keep.+contain integer.+between")
+test(2203.17, tstrsplit(w, "/", type.convert="4"), error="TRUE/FALSE.+function.+named list")
+test(2203.18, tstrsplit(w, "/", type.convert=c(TRUE, FALSE)), error="TRUE/FALSE.+function.+named list")
+test(2203.19, tstrsplit(w, "/", keep=integer()), error="keep.+contain integer.+between", ignore.warning="no non-missing")
+test(2203.20, tstrsplit(w, "/", type.convert=list()), error="not support empty list")
 
 # set rownames as key directly in as.data.table, #4468
-test(2200,
-     as.data.table(mtcars, keep.rownames='model', key='model'),
-     setnames(setkey(as.data.table(mtcars, keep.rownames = TRUE), rn), 'rn', 'model'))
+test(2204, as.data.table(mtcars, keep.rownames='model', key='model'),
+           setnames(setkey(as.data.table(mtcars, keep.rownames = TRUE), rn), 'rn', 'model'))

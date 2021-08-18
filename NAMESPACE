@@ -1,4 +1,4 @@
-useDynLib(datatable, .registration=TRUE)
+useDynLib("data_table", .registration=TRUE)
 
 ## For S4-ization
 import(methods)
@@ -8,7 +8,7 @@ exportClasses(data.table, IDate, ITime)
 export(data.table, tables, setkey, setkeyv, key, "key<-", haskey, CJ, SJ, copy)
 export(setindex, setindexv, indices)
 export(as.data.table,is.data.table,test.data.table)
-export(last,first,like,"%like%","%ilike%","%flike%",between,"%between%",inrange,"%inrange%")
+export(last,first,like,"%like%","%ilike%","%flike%","%plike%",between,"%between%",inrange,"%inrange%")
 export(timetaken)
 export(truelength, setalloccol, alloc.col, ":=")
 export(setattr, setnames, setcolorder, set, setDT, setDF)
@@ -186,4 +186,12 @@ S3method(unique, IDate)
 S3method(unique, ITime)
 S3method('[<-', IDate)
 S3method(edit, data.table)
+
+# generics to support custom column formatters
+export(format_col)
+S3method(format_col, default)
+S3method(format_col, POSIXct)
+S3method(format_col, expression)
+export(format_list_item)
+S3method(format_list_item, default)
 

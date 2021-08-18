@@ -58,9 +58,7 @@ variables.
 When all \code{measure.vars} are not of the same type, they'll be coerced
 according to the hierarchy \code{list} > \code{character} > \code{numeric >
 integer > logical}. For example, if any of the measure variables is a
-\code{list}, then entire value column will be coerced to a list. Note that,
-if the type of \code{value} column is a list, \code{na.rm = TRUE} will have no
-effect.
+\code{list}, then entire value column will be coerced to a list. 
 
 From version \code{1.9.6}, \code{melt} gains a feature with \code{measure.vars}
 accepting a list of \code{character} or \code{integer} vectors as well to melt

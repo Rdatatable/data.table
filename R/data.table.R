@@ -150,7 +150,7 @@ replace_dot_alias = function(e) {
         else if (missing(drop)) `[.data.frame`(x,i,j)
         else `[.data.frame`(x,i,j,drop)
     # added is.data.table(ans) check to fix bug #81
-    if (!missing(i) && is.data.table(ans)) setkey(ans, NULL)  # See test 304
+    if (!missing(i) && is.data.table(ans)) setkey(ans, NULL)  # drops index too; tested by plyr::arrange test in other.Rraw
     return(ans)
   }
   if (!missing(verbose)) {
@@ -2140,7 +2140,7 @@ as.data.frame.data.table = function(x, ...)
   setattr(ans,"row.names",.set_row_names(nrow(x)))   # since R 2.4.0, data.frames can have non-character row names
   setattr(ans,"class","data.frame")
   setattr(ans,"sorted",NULL)  # remove so if you convert to df, do something, and convert back, it is not sorted
-  setattr(ans,"index",NULL) #5042
+  setattr(ans,"index",NULL)  #4889 #5042
   setattr(ans,".internal.selfref",NULL)
   # leave tl intact, no harm,
   ans
@@ -2157,6 +2157,7 @@ as.list.data.table = function(x, ...) {
   setattr(ans, "class", NULL)
   setattr(ans, "row.names", NULL)
   setattr(ans, "sorted", NULL)
+  setattr(ans, "index", NULL)  #4889 #5042
   setattr(ans,".internal.selfref", NULL)   # needed to pass S4 tests for example
   ans
 }
@@ -2483,7 +2484,7 @@ copy = function(x) {
 shallow = function(x, cols=NULL) {
   if (!is.data.table(x))
     stopf("x is not a data.table. Shallow copy is a copy of the vector of column pointers (only), so is only meaningful for data.table")
-  ans = .shallow(x, cols=cols, retain.key = TRUE)
+  ans = .shallow(x, cols=cols, retain.key=selfrefok(x))  # selfrefok for #5042
   ans
 }
 
@@ -2716,6 +2717,7 @@ setDF = function(x, rownames=NULL) {
     setattr(x, "row.names", rn)
     setattr(x, "class", "data.frame")
     setattr(x, "sorted", NULL)
+    setattr(x, "index", NULL)  #4889 #5042
     setattr(x, ".internal.selfref", NULL)
   } else if (is.data.frame(x)) {
     if (!is.null(rownames)) {
