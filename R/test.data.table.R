@@ -1,6 +1,6 @@
 test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=FALSE, showProgress=interactive()&&!silent) {
   stopifnot(isTRUEorFALSE(verbose), isTRUEorFALSE(silent), isTRUEorFALSE(showProgress))
-  if (exists("test.data.table", .GlobalEnv,inherits=FALSE)) {
+  if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
     # package developer
     # nocov start
     if ("package:data.table" %chin% search()) stopf("data.table package is loaded. Unload or start a fresh R session.")
