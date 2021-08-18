@@ -1,3 +1,4 @@
+.dir-locals.el
 ^\.Rprofile$
 ^data\.table_.*\.tar\.gz$
 ^vignettes/plots/figures$
@@ -14,13 +15,11 @@
 ^\.graphics$
 ^\.github$
 
-^\.travis\.yml$
 ^\.appveyor\.yml$
 ^\.gitlab-ci\.yml$
 
 ^Makefile$
 ^NEWS\.0\.md$
-^README\.md$
 ^_pkgdown\.yml$
 ^src/Makevars$
 
@@ -32,6 +31,7 @@
 ^.*\.Rproj$
 ^\.Rproj\.user$
 ^\.idea$
+^\.libs$
 
 ^.*\.dll$
 

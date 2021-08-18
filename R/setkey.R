@@ -1,6 +1,6 @@
 setkey = function(x, ..., verbose=getOption("datatable.verbose"), physical=TRUE)
 {
-  if (is.character(x)) stop("x may no longer be the character name of the data.table. The possibility was undocumented and has been removed.")
+  if (is.character(x)) stopf("x may no longer be the character name of the data.table. The possibility was undocumented and has been removed.")
   cols = as.character(substitute(list(...))[-1L])
   if (!length(cols)) { cols=colnames(x) }
   else if (identical(cols,"NULL")) cols=NULL
@@ -20,7 +20,7 @@ setindexv = function(x, cols, verbose=getOption("datatable.verbose")) {
 
 # upgrade to error after Mar 2020. Has already been warning since 2012, and stronger warning in Mar 2019 (note in news for 1.12.2); #3399
 "key<-" = function(x,value) {
-  warning("key(x)<-value is deprecated and not supported. Please change to use setkey() with perhaps copy(). Has been warning since 2012 and will be an error in future.")
+  warningf("key(x)<-value is deprecated and not supported. Please change to use setkey() with perhaps copy(). Has been warning since 2012 and will be an error in future.")
   setkeyv(x,value)
   # The returned value here from key<- is then copied by R before assigning to x, it seems. That's
   # why we can't do anything about it without a change in R itself. If we return NULL (or invisible()) from this key<-
@@ -42,19 +42,19 @@ setkeyv = function(x, cols, verbose=getOption("datatable.verbose"), physical=TRU
     oldverbose = options(datatable.verbose=verbose)
     on.exit(options(oldverbose))
   }
-  if (!is.data.table(x)) stop("x is not a data.table")
-  if (!is.character(cols)) stop("cols is not a character vector. Please see further information in ?setkey.")
-  if (physical && .Call(C_islocked, x)) stop("Setting a physical key on .SD is reserved for possible future use; to modify the original data's order by group. Try setindex() instead. Or, set*(copy(.SD)) as a (slow) last resort.")
+  if (!is.data.table(x)) stopf("x is not a data.table")
+  if (!is.character(cols)) stopf("cols is not a character vector. Please see further information in ?setkey.")
+  if (physical && .Call(C_islocked, x)) stopf("Setting a physical key on .SD is reserved for possible future use; to modify the original data's order by group. Try setindex() instead. Or, set*(copy(.SD)) as a (slow) last resort.")
   if (!length(cols)) {
-    warning("cols is a character vector of zero length. Removed the key, but use NULL instead, or wrap with suppressWarnings() to avoid this warning.")
+    warningf("cols is a character vector of zero length. Removed the key, but use NULL instead, or wrap with suppressWarnings() to avoid this warning.")
     setattr(x,"sorted",NULL)
     return(invisible(x))
   }
-  if (identical(cols,"")) stop("cols is the empty string. Use NULL to remove the key.")
-  if (!all(nzchar(cols))) stop("cols contains some blanks.")
+  if (identical(cols,"")) stopf("cols is the empty string. Use NULL to remove the key.")
+  if (!all(nzchar(cols))) stopf("cols contains some blanks.")
   cols = gsub("`", "", cols, fixed = TRUE)
   miss = !(cols %chin% colnames(x))
-  if (any(miss)) stop("some columns are not in the data.table: ", paste(cols[miss], collapse=","))
+  if (any(miss)) stopf("some columns are not in the data.table: %s", brackify(cols[miss]))
 
   ## determine, whether key is already present:
   if (identical(key(x),cols)) {
@@ -76,24 +76,24 @@ setkeyv = function(x, cols, verbose=getOption("datatable.verbose"), physical=TRU
     return(invisible(x))
   }
 
-  if (".xi" %chin% names(x)) stop("x contains a column called '.xi'. Conflicts with internal use by data.table.")
+  if (".xi" %chin% names(x)) stopf("x contains a column called '.xi'. Conflicts with internal use by data.table.")
   for (i in cols) {
     .xi = x[[i]]  # [[ is copy on write, otherwise checking type would be copying each column
-    if (!typeof(.xi) %chin% ORDERING_TYPES) stop("Column '",i,"' is type '",typeof(.xi),"' which is not supported as a key column type, currently.")
+    if (!typeof(.xi) %chin% ORDERING_TYPES) stopf("Column '%s' is type '%s' which is not supported as a key column type, currently.", i, typeof(.xi))
   }
-  if (!is.character(cols) || length(cols)<1L) stop("Internal error. 'cols' should be character at this point in setkey; please report.") # nocov
+  if (!is.character(cols) || length(cols)<1L) stopf("Internal error. 'cols' should be character at this point in setkey; please report.") # nocov
 
   newkey = paste0(cols, collapse="__")
   if (!any(indices(x) == newkey)) {
     if (verbose) {
       tt = suppressMessages(system.time(o <- forderv(x, cols, sort=TRUE, retGrp=FALSE)))  # system.time does a gc, so we don't want this always on, until refcnt is on by default in R
       # suppress needed for tests 644 and 645 in verbose mode
-      cat("forder took", tt["user.self"]+tt["sys.self"], "sec\n")
+      catf("forder took %.03f sec\n", tt["user.self"]+tt["sys.self"])
     } else {
       o = forderv(x, cols, sort=TRUE, retGrp=FALSE)
     }
   } else {
-    if (verbose) cat("setkey on columns ", brackify(cols), " using existing index '", newkey, "'\n", sep="")
+    if (verbose) catf("setkey on columns %s using existing index '%s'\n", brackify(cols), newkey)
     o = getindex(x, newkey)
   }
   if (!physical) {
@@ -105,9 +105,9 @@ setkeyv = function(x, cols, verbose=getOption("datatable.verbose"), physical=TRU
   if (length(o)) {
     if (verbose) { last.started.at = proc.time() }
     .Call(Creorder,x,o)
-    if (verbose) { cat("reorder took", timetaken(last.started.at), "\n"); flush.console() }
+    if (verbose) { catf("reorder took %s\n", timetaken(last.started.at)); flush.console() }
   } else {
-    if (verbose) cat("x is already ordered by these columns, no need to call reorder\n")
+    if (verbose) catf("x is already ordered by these columns, no need to call reorder\n")
   } # else empty integer() from forderv means x is already ordered by those cols, nothing to do.
   setattr(x,"sorted",cols)
   invisible(x)
@@ -128,7 +128,7 @@ getindex = function(x, name) {
   # name can be "col", or "col1__col2", or c("col1","col2")
   ans = attr(attr(x, 'index', exact=TRUE), paste0("__",name,collapse=""), exact=TRUE)
   if (!is.null(ans) && (!is.integer(ans) || (length(ans)!=nrow(x) && length(ans)!=0L))) {
-    stop("Internal error: index '",name,"' exists but is invalid")   # nocov
+    stopf("Internal error: index '%s' exists but is invalid", name)   # nocov
   }
   ans
 }
@@ -142,7 +142,7 @@ haskey = function(x) !is.null(key(x))
 setreordervec = function(x, order) .Call(Creorder, x, order)
 
 # sort = sort.int = sort.list = order = is.unsorted = function(...)
-#    stop("Should never be called by data.table internals. Use is.sorted() on vectors, or forder() for lists and vectors.")
+#    stopf("Should never be called by data.table internals. Use is.sorted() on vectors, or forder() for lists and vectors.")
 # Nice idea, but users might use these in i or j e.g. blocking order caused tests 304 to fail.
 # Maybe just a grep through *.R for use of these function internally would be better (TO DO).
 
@@ -160,7 +160,7 @@ is.sorted = function(x, by=NULL) {
     if (missing(by)) by = seq_along(x)   # wouldn't make sense when x is a vector; hence by=seq_along(x) is not the argument default
     if (is.character(by)) by = chmatch(by, names(x))
   } else {
-    if (!missing(by)) stop("x is vector but 'by' is supplied")
+    if (!missing(by)) stopf("x is vector but 'by' is supplied")
   }
   .Call(Cissorted, x, as.integer(by))
   # Return value of TRUE/FALSE is relied on in [.data.table quite a bit on vectors. Simple. Stick with that (rather than -1/0/+1)
@@ -170,7 +170,7 @@ ORDERING_TYPES = c('logical', 'integer', 'double', 'complex', 'character')
 forderv = function(x, by=seq_along(x), retGrp=FALSE, sort=TRUE, order=1L, na.last=FALSE)
 {
   if (is.atomic(x)) {  # including forderv(NULL) which returns error consistent with base::order(NULL),
-    if (!missing(by) && !is.null(by)) stop("x is a single vector, non-NULL 'by' doesn't make sense")
+    if (!missing(by) && !is.null(by)) stopf("x is a single vector, non-NULL 'by' doesn't make sense")
     by = NULL
   } else {
     if (!length(x)) return(integer(0L)) # e.g. forderv(data.table(NULL)) and forderv(list()) return integer(0L))
@@ -184,7 +184,7 @@ forderv = function(x, by=seq_along(x), retGrp=FALSE, sort=TRUE, order=1L, na.las
 forder = function(..., na.last=TRUE, decreasing=FALSE)
 {
   sub = substitute(list(...))
-  tt = sapply(sub, function(x) is.null(x) || (is.symbol(x) && !nzchar(x)))
+  tt = vapply_1b(sub, function(x) is.null(x) || (is.symbol(x) && !nzchar(x)))
   if (any(tt)) sub[tt] = NULL  # remove any NULL or empty arguments; e.g. test 1962.052: forder(DT, NULL) and forder(DT, )
   if (length(sub)<2L) return(NULL)  # forder() with no arguments returns NULL consistent with base::order
   asc = rep.int(1L, length(sub)-1L)  # ascending (1) or descending (-1) per column
@@ -202,12 +202,12 @@ forder = function(..., na.last=TRUE, decreasing=FALSE)
   }
   x = eval(sub[[2L]], parent.frame(), parent.frame())
   if (is.list(x)) {
-    if (length(x)==0L && is.data.frame(x)) stop("Attempting to order a 0-column data.table or data.frame.")
+    if (length(x)==0L && is.data.frame(x)) stopf("Attempting to order a 0-column data.table or data.frame.")
     sub[2L] = NULL  # change list(DT, ...) to list(...)
     if (length(sub)==1L) {
       data = x
     } else {
-      if (!is.data.frame(x)) stop("The first item passed to [f]order is a plain list but there are more items. It should be a data.table or data.frame.")
+      if (!is.data.frame(x)) stopf("The first item passed to [f]order is a plain list but there are more items. It should be a data.table or data.frame.")
       asc = asc[-1L]
       data = eval(sub, x, parent.frame())
     }
@@ -224,7 +224,7 @@ fsort = function(x, decreasing=FALSE, na.last=FALSE, internal=FALSE, verbose=FAL
 {
   containsNAs = FALSE
   if (typeof(x)=="double" && !decreasing && !(containsNAs <- anyNA(x))) {
-      if (internal) stop("Internal code should not be being called on type double")
+      if (internal) stopf("Internal code should not be being called on type double")
       return(.Call(Cfsort, x, verbose))
   }
   else {
@@ -232,9 +232,9 @@ fsort = function(x, decreasing=FALSE, na.last=FALSE, internal=FALSE, verbose=FAL
     # The only places internally we use fsort internally (3 calls, all on integer) have had internal=TRUE added for now.
     # TODO: implement integer and character in Cfsort and remove this branch and warning
     if (!internal){
-      if (typeof(x)!="double") warning("Input is not a vector of type double. New parallel sort has only been done for double vectors so far. Using one thread.")
-      if (decreasing)  warning("New parallel sort has not been implemented for decreasing=TRUE so far. Using one thread.")
-      if (containsNAs) warning("New parallel sort has not been implemented for vectors containing NA values so far. Using one thread.")
+      if (typeof(x)!="double") warningf("Input is not a vector of type double. New parallel sort has only been done for double vectors so far. Using one thread.")
+      if (decreasing)  warningf("New parallel sort has not been implemented for decreasing=TRUE so far. Using one thread.")
+      if (containsNAs) warningf("New parallel sort has not been implemented for vectors containing NA values so far. Using one thread.")
     }
     orderArg = if (decreasing) -1 else 1
     o = forderv(x, order=orderArg, na.last=na.last)
@@ -246,7 +246,7 @@ setorder = function(x, ..., na.last=FALSE)
 # na.last=FALSE here, to be consistent with data.table's default
 # as opposed to DT[order(.)] where na.last=TRUE, to be consistent with base
 {
-  if (!is.data.frame(x)) stop("x must be a data.frame or data.table")
+  if (!is.data.frame(x)) stopf("x must be a data.frame or data.table")
   cols = substitute(list(...))[-1L]
   if (identical(as.character(cols),"NULL")) return(x)
   if (length(cols)) {
@@ -272,30 +272,30 @@ setorder = function(x, ..., na.last=FALSE)
 setorderv = function(x, cols = colnames(x), order=1L, na.last=FALSE)
 {
   if (is.null(cols)) return(x)
-  if (!is.data.frame(x)) stop("x must be a data.frame or data.table")
+  if (!is.data.frame(x)) stopf("x must be a data.frame or data.table")
   na.last = as.logical(na.last)
-  if (is.na(na.last) || !length(na.last)) stop('na.last must be logical TRUE/FALSE')
-  if (!is.character(cols)) stop("cols is not a character vector. Please see further information in ?setorder.")
+  if (is.na(na.last) || !length(na.last)) stopf('na.last must be logical TRUE/FALSE')
+  if (!is.character(cols)) stopf("cols is not a character vector. Please see further information in ?setorder.")
   if (!length(cols)) {
-    warning("cols is a character vector of zero length. Use NULL instead, or wrap with suppressWarnings() to avoid this warning.")
+    warningf("cols is a character vector of zero length. Use NULL instead, or wrap with suppressWarnings() to avoid this warning.")
     return(x)
   }
-  if (!all(nzchar(cols))) stop("cols contains some blanks.")     # TODO: probably I'm checking more than necessary here.. there are checks in 'forderv' as well
+  if (!all(nzchar(cols))) stopf("cols contains some blanks.")     # TODO: probably I'm checking more than necessary here.. there are checks in 'forderv' as well
   # remove backticks from cols
   cols = gsub("`", "", cols, fixed = TRUE)
   miss = !(cols %chin% colnames(x))
-  if (any(miss)) stop("some columns are not in the data.table: ", paste(cols[miss], collapse=","))
-  if (".xi" %chin% colnames(x)) stop("x contains a column called '.xi'. Conflicts with internal use by data.table.")
+  if (any(miss)) stopf("some columns are not in the data.table: %s", brackify(cols[miss]))
+  if (".xi" %chin% colnames(x)) stopf("x contains a column called '.xi'. Conflicts with internal use by data.table.")
   for (i in cols) {
     .xi = x[[i]]  # [[ is copy on write, otherwise checking type would be copying each column
-    if (!typeof(.xi) %chin% ORDERING_TYPES) stop("Column '",i,"' is type '",typeof(.xi),"' which is not supported for ordering currently.")
+    if (!typeof(.xi) %chin% ORDERING_TYPES) stopf("Column '%s' is type '%s' which is not supported for ordering currently.", i, typeof(.xi))
   }
-  if (!is.character(cols) || length(cols)<1L) stop("Internal error. 'cols' should be character at this point in setkey; please report.") # nocov
+  if (!is.character(cols) || length(cols)<1L) stopf("Internal error. 'cols' should be character at this point in setkey; please report.") # nocov
 
   o = forderv(x, cols, sort=TRUE, retGrp=FALSE, order=order, na.last=na.last)
   if (length(o)) {
     .Call(Creorder, x, o)
-    if (is.data.frame(x) & !is.data.table(x)) {
+    if (is.data.frame(x) && !is.data.table(x)) {
       setattr(x, 'row.names', rownames(x)[o])
     }
     k = key(x)
@@ -337,7 +337,7 @@ CJ = function(..., sorted = TRUE, unique = FALSE)
     y = l[[i]]
     if (!length(y)) next
     if (sorted) {
-      if (!is.atomic(y)) stop("'sorted' is TRUE but element ", i, " is non-atomic, which can't be sorted; try setting sorted = FALSE")
+      if (!is.atomic(y)) stopf("'sorted' is TRUE but element %d is non-atomic, which can't be sorted; try setting sorted = FALSE", i)
       o = forderv(y, retGrp=TRUE)
       thisdups = attr(o, 'maxgrpn', exact=TRUE)>1L
       if (thisdups) {
@@ -352,7 +352,7 @@ CJ = function(..., sorted = TRUE, unique = FALSE)
     }
   }
   nrow = prod( vapply_1i(l, length) )  # lengths(l) will work from R 3.2.0
-  if (nrow > .Machine$integer.max) stop(gettextf("Cross product of elements provided to CJ() would result in %.0f rows which exceeds .Machine$integer.max == %d", nrow, .Machine$integer.max, domain='R-data.table'))
+  if (nrow > .Machine$integer.max) stopf("Cross product of elements provided to CJ() would result in %.0f rows which exceeds .Machine$integer.max == %d", nrow, .Machine$integer.max)
   l = .Call(Ccj, l)
   setDT(l)
   l = setalloccol(l)  # a tiny bit wasteful to over-allocate a fixed join table (column slots only), doing it anyway for consistency since
