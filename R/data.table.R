@@ -787,15 +787,19 @@ replace_dot_alias = function(e) {
         } else if (bysub %iscall% ".") bysub[[1L]] = quote(list)
 
         if (mode(bysub) == "character") {
-          if (length(grep(",", bysub, fixed = TRUE))) {
+          if (any(grepl(",", bysub, fixed = TRUE))) {
             if (length(bysub)>1L) stopf("'by' is a character vector length %d but one or more items include a comma. Either pass a vector of column names (which can contain spaces, but no commas), or pass a vector length 1 containing comma separated column names. See ?data.table for other possibilities.", length(bysub))
-            bysub = strsplit(bysub,split=",")[[1L]]
+            bysub = strsplit(bysub, split=",", fixed=TRUE)[[1L]]
           }
-          backtick_idx = grep("^[^`]+$",bysub)
-          if (length(backtick_idx)) bysub[backtick_idx] = paste0("`",bysub[backtick_idx],"`")
-          backslash_idx = grep("\\", bysub, fixed = TRUE)
-          if (length(backslash_idx)) bysub[backslash_idx] = gsub('\\', '\\\\', bysub[backslash_idx], fixed = TRUE)
-          bysub = parse(text=paste0("list(",paste(bysub,collapse=","),")"))[[1L]]
+          bysub = gsub("^`(.*)`$", "\\1", bysub) # see test 138
+          nzidx = nzchar(bysub)
+          # by='' means by=NULL, tests 592&596
+          if (!all(nzidx)) {
+            if (length(bysub) > 1L) stop("At least one entry of by is empty")
+            bysub = NULL
+          } else {
+            bysub = as.call(c(list(quote(list)), lapply(bysub, as.name)))
+          }
           bysubl = as.list.default(bysub)
         }
         if (any(c("eval","evalq","eval.parent","local","get","mget","dynGet") %chin% all.names(bysub)))
