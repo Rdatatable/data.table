@@ -17905,3 +17905,7 @@ test(2203.17, tstrsplit(w, "/", type.convert="4"), error="TRUE/FALSE.+function.+
 test(2203.18, tstrsplit(w, "/", type.convert=c(TRUE, FALSE)), error="TRUE/FALSE.+function.+named list")
 test(2203.19, tstrsplit(w, "/", keep=integer()), error="keep.+contain integer.+between", ignore.warning="no non-missing")
 test(2203.20, tstrsplit(w, "/", type.convert=list()), error="not support empty list")
+
+# set rownames as key directly in as.data.table, #4468
+test(2204, as.data.table(mtcars, keep.rownames='model', key='model'),
+           setnames(setkey(as.data.table(mtcars, keep.rownames = TRUE), rn), 'rn', 'model'))
