@@ -64,7 +64,7 @@ bool allNA(SEXP x, bool errorForBadType) {
     return true;
   case CPLXSXP: {
     const Rcomplex *xd = COMPLEX(x);
-    for (int i=0; i<n; ++i) if (!ISNAN_COMPLEX(xd[i])) { 
+    for (int i=0; i<n; ++i) if (!ISNAN_COMPLEX(xd[i])) {
       return false;
     }
     return true;
@@ -187,7 +187,7 @@ SEXP copyAsPlain(SEXP x) {
   // For non-ALTREP this should do the same as R's duplicate().
   // Intended for use on columns; to either un-ALTREP them or duplicate shared memory columns; see copySharedColumns() below
   // Not intended to be called on a DT VECSXP where a concept of 'deep' might refer to whether the columns are copied
-  
+
   if (isNull(x)) {
     // deal with up front because isNewList(R_NilValue) is true
     return R_NilValue;
@@ -245,7 +245,7 @@ void copySharedColumns(SEXP x) {
     const SEXP thiscol = xp[i];
     savetl[i] = ALTREP(thiscol) ? 0 : TRUELENGTH(thiscol);
     SET_TRUELENGTH(thiscol, 0);
-  } 
+  }
   int nShared=0;
   for (int i=0; i<ncol; ++i) {
     SEXP thiscol = xp[i];
@@ -258,7 +258,7 @@ void copySharedColumns(SEXP x) {
                                       // 'shared' means a later column shares an earlier column
       SET_TRUELENGTH(thiscol, -i-1);  // -i-1 so that if, for example, column 3 shares column 1, in iteration 3 we'll know not
                                       // only that the 3rd column is shared with an earlier column, but which one too. Although
-                                      // we don't use that information currently, we could do in future.  
+                                      // we don't use that information currently, we could do in future.
     }
   }
   // now we know nShared and which ones they are (if any), restore original tl back to the unique set of columns
@@ -352,24 +352,24 @@ const char *class1(SEXP x) {
 SEXP coerceAs(SEXP x, SEXP as, SEXP copyArg) {
   // copyArg does not update in place, but only IF an object is of the same type-class as class to be coerced, it will return with no copy
   if (!isVectorAtomic(x))
-    error("'x' is not atomic");
+    error(_("'x' is not atomic"));
   if (!isVectorAtomic(as))
-    error("'as' is not atomic");
+    error(_("'as' is not atomic"));
   if (!isNull(getAttrib(x, R_DimSymbol)))
-    error("'x' must not be matrix or array");
+    error(_("'x' must not be matrix or array"));
   if (!isNull(getAttrib(as, R_DimSymbol)))
-    error("'as' must not be matrix or array");
+    error(_("'as' must not be matrix or array"));
   bool verbose = GetVerbose()>=2; // verbose level 2 required
   if (!LOGICAL(copyArg)[0] && TYPEOF(x)==TYPEOF(as) && class1(x)==class1(as)) {
     if (verbose)
-      Rprintf("copy=false and input already of expected type and class %s[%s]\n", type2char(TYPEOF(x)), class1(x));
+      Rprintf(_("copy=false and input already of expected type and class %s[%s]\n"), type2char(TYPEOF(x)), class1(x));
     copyMostAttrib(as, x); // so attrs like factor levels are same for copy=T|F
     return(x);
   }
   int len = LENGTH(x);
   SEXP ans = PROTECT(allocNAVectorLike(as, len));
   if (verbose)
-    Rprintf("Coercing %s[%s] into %s[%s]\n", type2char(TYPEOF(x)), class1(x), type2char(TYPEOF(as)), class1(as));
+    Rprintf(_("Coercing %s[%s] into %s[%s]\n"), type2char(TYPEOF(x)), class1(x), type2char(TYPEOF(as)), class1(as));
   const char *ret = memrecycle(/*target=*/ans, /*where=*/R_NilValue, /*start=*/0, /*len=*/LENGTH(x), /*source=*/x, /*sourceStart=*/0, /*sourceLen=*/-1, /*colnum=*/0, /*colname=*/"");
   if (ret)
     warning(_("%s"), ret);
@@ -381,11 +381,38 @@ SEXP coerceAs(SEXP x, SEXP as, SEXP copyArg) {
 #include <zlib.h>
 #endif
 SEXP dt_zlib_version() {
-  char out[51];
+  char out[71];
 #ifndef NOZLIB
-  snprintf(out, 50, "zlibVersion()==%s ZLIB_VERSION==%s", zlibVersion(), ZLIB_VERSION);
+  snprintf(out, 70, "zlibVersion()==%s ZLIB_VERSION==%s", zlibVersion(), ZLIB_VERSION);
 #else
-  snprintf(out, 50, "zlib header files were not found when data.table was compiled");
+  snprintf(out, 70, _("zlib header files were not found when data.table was compiled"));
 #endif
   return ScalarString(mkChar(out));
 }
+
+SEXP startsWithAny(const SEXP x, const SEXP y, SEXP start) {
+  // for is_url in fread.R added in #5097
+  // startsWith was added to R in 3.3.0 so we need something to support R 3.1.0
+  // short and simple ascii-only
+  if (!isString(x) || !isString(y) || length(x)!=1 || length(y)<1 || !isLogical(start) || length(start)!=1 || LOGICAL(start)[0]==NA_LOGICAL)
+    error("Internal error: data.table's internal startsWithAny types or lengths incorrect");
+  const char *xd = CHAR(STRING_ELT(x, 0));
+  const int n=length(y);
+  if (LOGICAL(start)[0]) {
+    for (int i=0; i<n; ++i) {
+      const char *yd = CHAR(STRING_ELT(y, i));
+      if (strncmp(xd, yd, strlen(yd))==0)
+        return ScalarInteger(i+1);
+    }
+  } else {
+    const int xlen = strlen(xd);
+    for (int i=0; i<n; ++i) {
+      const char *yd = CHAR(STRING_ELT(y, i));
+      const int ylen=strlen(yd);
+      if (xlen>=ylen && strncmp(xd+xlen-ylen, yd, ylen)==0)
+        return ScalarInteger(i+1);
+    }
+  }
+  return ScalarLogical(false);
+}
+
