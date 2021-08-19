@@ -50,7 +50,7 @@ bool allNA(SEXP x, bool errorForBadType) {
     return true;
   }
   case REALSXP:
-    if (Rinherits(x,char_integer64)) {
+    if (INHERITS(x, char_integer64)) {
       const int64_t *xd = (int64_t *)REAL(x);
       for (int i=0; i<n; ++i)  if (xd[i]!=NA_INTEGER64) {
         return false;
@@ -152,30 +152,28 @@ inline bool INHERITS(SEXP x, SEXP char_) {
   // ii) no attrib writes must be possible in other threads.
   SEXP klass;
   if (isString(klass = getAttrib(x, R_ClassSymbol))) {
-    for (int i=0; i<LENGTH(klass); i++) {
+    for (int i=0; i<LENGTH(klass); ++i) {
       if (STRING_ELT(klass, i) == char_) return true;
+    }
+    if (char_==char_integer64) {
+      // package:nanotime is S4 and inherits from integer64 via S3 extends; i.e. integer64 does not appear in its R_ClassSymbol
+      // R's C API inherits() does not cover S4 and returns FALSE for nanotime
+      // R's R-level inherits() calls objects.c:inherits2 which calls attrib.c:R_data_class2 and
+      // then attrib.c:S4_extends which itself calls R level methods:::.extendsForS3 which then calls R level methods::extends.
+      // Since that chain of calls is so complicated and involves evaluating R level (not thread-safe) we
+      // special case nanotime here. We used to have Rinherits() as well which did call R level but couldn't be called from
+      // parallel regions. That became too hard to reason about two functions, #4752.
+      // If any other classes come to light that, like nanotime, S4 inherit from integer64, we can i) encourage them to change
+      // to regular S3, or ii) state we simply don't support that; i.e. nanotime was an exception, or iii) add a function that
+      // gets called on C entry points which loops through columns and if any are S4 calls the old Rinherits() to see if they S4
+      // inherit from integer64, and if so add that class to a vector that gets looped through here. That way we isolate the
+      // non-TS call into argument massage header code, and we can continue to use INHERITS() throughout the code base.
+      for (int i=0; i<LENGTH(klass); ++i) {
+        if (STRING_ELT(klass, i) == char_nanotime) return true;
+      }
     }
   }
   return false;
-}
-
-bool Rinherits(SEXP x, SEXP char_) {
-  // motivation was nanotime which is S4 and inherits from integer64 via S3 extends
-  // R's C API inherits() does not cover S4 and returns FALSE for nanotime, as does our own INHERITS above.
-  // R's R-level inherits() calls objects.c:inherits2 which calls attrib.c:R_data_class2 and
-  // then attrib.c:S4_extends which itself calls R level methods:::.extendsForS3 which then calls R level methods::extends.
-  // Since that chain of calls is so complicated and involves evaluating R level anyway, let's just reuse it.
-  // Rinherits prefix with 'R' to signify i) it may call R level and is therefore not thread safe, and ii) includes R level inherits which covers S4.
-  bool ans = INHERITS(x, char_);        // try standard S3 class character vector first
-  if (!ans && char_==char_integer64)    // save the eval() for known S4 classes that inherit from integer64
-    ans = INHERITS(x, char_nanotime);   // comment this out to test the eval() works for nanotime
-  if (!ans && IS_S4_OBJECT(x)) {        // if it's not S4 we can save the overhead of R eval()
-    SEXP vec = PROTECT(ScalarString(char_));           // TODO: cover this branch by making two new test S4 classes: one that
-    SEXP call = PROTECT(lang3(sym_inherits, x, vec));  //       does inherit from integer64 and one that doesn't
-    ans = LOGICAL(eval(call, R_GlobalEnv))[0]==1;
-    UNPROTECT(2);
-  }
-  return ans;
 }
 
 SEXP copyAsPlain(SEXP x) {

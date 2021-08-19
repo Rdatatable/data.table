@@ -233,7 +233,6 @@ SEXP isReallyReal(SEXP x);
 bool allNA(SEXP x, bool errorForBadType);
 SEXP colnamesInt(SEXP x, SEXP cols, SEXP check_dups);
 bool INHERITS(SEXP x, SEXP char_);
-bool Rinherits(SEXP x, SEXP char_);
 SEXP copyAsPlain(SEXP x);
 void copySharedColumns(SEXP x);
 SEXP lock(SEXP x);

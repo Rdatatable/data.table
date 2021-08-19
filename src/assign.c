@@ -710,8 +710,8 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
   snprintf(targetDesc, 500, colnum==0 ? _("target vector") : _("column %d named '%s'"), colnum, colname);
   int protecti=0;
   const bool sourceIsFactor=isFactor(source), targetIsFactor=isFactor(target);
-  const bool sourceIsI64=isReal(source) && Rinherits(source, char_integer64);
-  const bool targetIsI64=isReal(target) && Rinherits(target, char_integer64);
+  const bool sourceIsI64=isReal(source) && INHERITS(source, char_integer64);
+  const bool targetIsI64=isReal(target) && INHERITS(target, char_integer64);
   if (sourceIsFactor || targetIsFactor) {
     if (!targetIsFactor) {
       if (!isString(target) && !isNewList(target))
@@ -1116,7 +1116,7 @@ void writeNA(SEXP v, const int from, const int n, const bool listNA)
     for (int i=from; i<=to; ++i) vd[i] = NA_INTEGER;
   } break;
   case REALSXP: {
-    if (Rinherits(v, char_integer64)) {  // Rinherits covers nanotime too which inherits from integer64 via S4 extends
+    if (INHERITS(v, char_integer64)) {
       int64_t *vd = (int64_t *)REAL(v);
       for (int i=from; i<=to; ++i) vd[i] = NA_INTEGER64;
     } else {

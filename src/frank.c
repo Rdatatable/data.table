@@ -39,7 +39,7 @@ SEXP dt_na(SEXP x, SEXP cols) {
     }
       break;
     case REALSXP: {
-      if (INHERITS(v, char_integer64) || INHERITS(v, char_nanotime)) {
+      if (INHERITS(v, char_integer64)) {
         const int64_t *dv = (int64_t *)REAL(v);
         for (int j=0; j<n; ++j) ians[j] |= (dv[j] == NA_INTEGER64);
       } else {
