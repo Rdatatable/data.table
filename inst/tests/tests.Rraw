@@ -17912,3 +17912,8 @@ test(2203.20, tstrsplit(w, "/", type.convert=list()), error="not support empty l
 test(2204, as.data.table(mtcars, keep.rownames='model', key='model'),
            setnames(setkey(as.data.table(mtcars, keep.rownames = TRUE), rn), 'rn', 'model'))
 
+# na.omit works for nanotime, #4744
+if (test_nanotime) {
+  DT = data.table(time=nanotime(c(1,NA,3)))
+  test(2205, na.omit(DT), DT[c(1,3)])
+}
