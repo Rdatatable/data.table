@@ -57,6 +57,7 @@ export(setnafill)
 export(.Last.updated)
 export(fcoalesce)
 export(substitute2)
+export(DT)  # mtcars |> DT(i,j,by)  #4872
 
 S3method("[", data.table)
 S3method("[<-", data.table)
