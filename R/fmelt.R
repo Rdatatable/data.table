@@ -4,18 +4,18 @@
 #   redirection as well
 
 melt = function(data, ..., na.rm = FALSE, value.name = "value") {
-  if (is.data.table(data)) {
-    UseMethod("melt", data)
-    # if data is not data.table and reshape2 is installed, this won't dispatch to reshape2's method;
-    # CRAN package edarf and others fail without the else branch
+  UseMethod("melt", data)
+}
+
+melt.default = function(data, ..., na.rm = FALSE, value.name = "value") {
+  # if no registered method exists for data, attempts to redirect data to reshape2::melt;
+  # CRAN package edarf and others fail without the redirection
   # nocov start
-  } else {
-    data_name = deparse(substitute(data))
-    ns = tryCatch(getNamespace("reshape2"), error=function(e)
-      stopf("The %1$s generic in data.table has been passed a %2$s, but data.table::%1$s currently only has a method for data.tables. Please confirm your input is a data.table, with setDT(%3$s) or as.data.table(%3$s). If you intend to use a method from reshape2, try installing that package first, but do note that reshape2 is superseded and is no longer actively developed.", "melt", class(data)[1L], data_name))
-    warningf("The %1$s generic in data.table has been passed a %2$s and will attempt to redirect to the relevant reshape2 method; please note that reshape2 is superseded and is no longer actively developed, and this redirection is now deprecated. Please do this redirection yourself like reshape2::%1$s(%3$s). In the next version, this warning will become an error.", "melt", class(data)[1L], data_name)
-    ns$melt(data, ..., na.rm=na.rm, value.name=value.name)
-  }
+  data_name = deparse(substitute(data))
+  ns = tryCatch(getNamespace("reshape2"), error=function(e)
+    stopf("The %1$s generic in data.table has been passed a %2$s, but data.table::%1$s currently only has a method for data.tables. Please confirm your input is a data.table, with setDT(%3$s) or as.data.table(%3$s). If you intend to use a method from reshape2, try installing that package first, but do note that reshape2 is superseded and is no longer actively developed.", "melt", class(data)[1L], data_name))
+  warningf("The %1$s generic in data.table has been passed a %2$s and will attempt to redirect to the relevant reshape2 method; please note that reshape2 is superseded and is no longer actively developed, and this redirection is now deprecated. To continue using melt methods from reshape2 while both libraries are attached, e.g. melt.list, you can prepend the namespace, i.e. reshape2::%1$s(%3$s). In the next version, this warning will become an error.", "melt", class(data)[1L], data_name)
+  ns$melt(data, ..., na.rm=na.rm, value.name=value.name)
   # nocov end
 }
 
