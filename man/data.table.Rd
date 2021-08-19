@@ -5,6 +5,7 @@
 \alias{Ops.data.table}
 \alias{is.na.data.table}
 \alias{[.data.table}
+\alias{DT}
 \alias{.}
 \alias{.(}
 \alias{.()}
@@ -216,6 +217,8 @@ The way to read this out loud is: "Take \code{DT}, subset rows by \code{i}, \emp
     X[, plot(a, b), by=c]       # j accepts any expression, generates plot for each group and returns no data
     # see ?assign to add/update/delete columns by reference using the same consistent interface
 }
+
+A \code{data.table} query may be invoked on a \code{data.frame} using functional form \code{DT(...)}, see examples. The class of the input is retained.
 
 A \code{data.table} is a \code{list} of vectors, just like a \code{data.frame}. However :
 \enumerate{
@@ -430,6 +433,11 @@ dev.off()
 
 # using rleid, get max(y) and min of all cols in .SDcols for each consecutive run of 'v'
 DT[, c(.(y=max(y)), lapply(.SD, min)), by=rleid(v), .SDcols=v:b]
+
+# functional query DT(...)
+if (getRversion() >= "4.1.0") {       # native pipe |> new in R 4.1.0
+  mtcars |> DT(mpg>20, .(mean_hp=mean(hp)), by=cyl)
+}
 
 # Support guide and links:
 # https://github.com/Rdatatable/data.table/wiki/Support

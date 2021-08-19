@@ -846,10 +846,10 @@ replace_dot_alias = function(e) {
           if (!is.na(nomatch)) irows = irows[irows!=0L]   # TO DO: can be removed now we have CisSortedSubset
           if (length(allbyvars)) {    ###############  TO DO  TO DO  TO DO  ###############
             if (verbose) catf("i clause present and columns used in by detected, only these subset: %s\n", brackify(allbyvars))
-            xss = x[irows,allbyvars,with=FALSE,nomatch=nomatch,mult=mult,roll=roll,rollends=rollends]
+            xss = `[.data.table`(x,irows,allbyvars,with=FALSE,nomatch=nomatch,mult=mult,roll=roll,rollends=rollends)
           } else {
             if (verbose) catf("i clause present but columns used in by not detected. Having to subset all columns before evaluating 'by': '%s'\n", deparse(by))
-            xss = x[irows,nomatch=nomatch,mult=mult,roll=roll,rollends=rollends]
+            xss = `[.data.table`(x,irows,nomatch=nomatch,mult=mult,roll=roll,rollends=rollends)
           }
           if (bysub %iscall% ':' && length(bysub)==3L) {
             byval = eval(bysub, setattr(as.list(seq_along(xss)), 'names', names(xss)), parent.frame())
@@ -1909,6 +1909,8 @@ replace_dot_alias = function(e) {
   }
   setalloccol(ans)   # TODO: overallocate in dogroups in the first place and remove this line
 }
+
+DT = `[.data.table` #4872
 
 .optmean = function(expr) {   # called by optimization of j inside [.data.table only. Outside for a small speed advantage.
   if (length(expr)==2L)  # no parameters passed to mean, so defaults of trim=0 and na.rm=FALSE
