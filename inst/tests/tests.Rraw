@@ -17920,22 +17920,16 @@ if (test_nanotime) {
 }
 
 # isRealReallyInt, #3966
-x = as.numeric(sample(10))
-test(2206.01, isRealReallyInt(x), TRUE)
-x = as.numeric(sample(c(1:5, NA)))
-test(2206.02, isRealReallyInt(x), TRUE)
-x = c(1:2, NaN, NA)
-test(2206.03, isRealReallyInt(x), FALSE)
-x = c(1:2, Inf, NA)
-test(2206.04, isRealReallyInt(x), FALSE)
-x = c(1:2, -Inf, NA)
-test(2206.05, isRealReallyInt(x), FALSE)
-x = 1:2/4
-test(2206.06, isRealReallyInt(x), FALSE)
-x = numeric()
-test(2206.07, isRealReallyInt(x), TRUE)
-test(2206.08, isRealReallyInt(9L), FALSE) # does not satisfy isReal
-x = c(1, .Machine$integer.max+1)
-test(2206.09, isRealReallyInt(x), FALSE)
-x = c(1, as.numeric(.Machine$integer.max))
-test(2206.10, isRealReallyInt(x), TRUE)
+test(2206.01, isRealReallyInt(c(-2147483647.0, NA, 0.0, 2147483647.0)), TRUE)
+test(2206.02, isRealReallyInt(2147483648.0), FALSE) # >INT_MAX
+test(2206.03, isRealReallyInt(-2147483648.0), FALSE) # <=INT_MIN since INT_MIN==NA_integer_
+test(2206.04, isRealReallyInt(c(5,-5,2147483648)), FALSE)  # test real last position
+test(2206.05, isRealReallyInt(NaN), FALSE)
+test(2206.06, isRealReallyInt(+Inf), FALSE)
+test(2206.07, isRealReallyInt(-Inf), FALSE)
+test(2206.08, isRealReallyInt(0.1), FALSE)
+test(2206.09, isRealReallyInt(numeric()), TRUE)
+test(2206.10, isRealReallyInt(9L), FALSE) # must be type double
+test(2206.11, isRealReallyInt(integer()), FALSE)
+
+

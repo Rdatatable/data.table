@@ -1,42 +1,29 @@
 #include "data.table.h"
 
-bool isRealReallyInt(SEXP x) {
-  if (!isReal(x)) return(false);
+static R_xlen_t firstNonInt(SEXP x) {
   R_xlen_t n=xlength(x), i=0;
-  double *dx = REAL(x);
+  const double *dx = REAL(x);
   while (i<n &&
          ( ISNA(dx[i]) ||
-         ( R_FINITE(dx[i]) && dx[i] == (int)(dx[i])))) {
+         ( R_FINITE(dx[i]) && dx[i]==(int)(dx[i]) && (int)(dx[i])!=NA_INTEGER))) {  // NA_INTEGER == INT_MIN == -2147483648
     i++;
   }
-  return i==n;
+  return i==n ? 0 : i+1;
+}
+
+bool isRealReallyInt(SEXP x) {
+  return isReal(x) ? firstNonInt(x)==0 : false;
+  // used to error if not passed type double but this needed extra is.double() calls in calling R code
+  // which needed a repeat of the argument. Hence simpler and more robust to return false when not type double.
 }
 
 SEXP isRealReallyIntR(SEXP x) {
-  SEXP ans = PROTECT(allocVector(LGLSXP, 1));
-  LOGICAL(ans)[0] = (int)isRealReallyInt(x);
-  UNPROTECT(1);
-  return ans;
+  return ScalarLogical(isRealReallyInt(x));
 }
 
 SEXP isReallyReal(SEXP x) {
-  SEXP ans = PROTECT(allocVector(INTSXP, 1));
-  INTEGER(ans)[0] = 0;
-  // return 0 (FALSE) when not type double, or is type double but contains integers
-  // used to error if not passed type double but this needed extra is.double() calls in calling R code
-  // which needed a repeat of the argument. Hence simpler and more robust to return 0 when not type double.
-  if (isReal(x)) {
-    int n=length(x), i=0;
-    double *dx = REAL(x);
-    while (i<n &&
-        ( ISNA(dx[i]) ||
-        ( R_FINITE(dx[i]) && dx[i] == (int)(dx[i])))) {
-      i++;
-    }
-    if (i<n) INTEGER(ans)[0] = i+1;  // return the location of first element which is really real; i.e. not an integer
-  }
-  UNPROTECT(1);
-  return ans;
+  return ScalarInteger(isReal(x) ? firstNonInt(x) : 0);
+  // return the 1-based location of first element which is really real (i.e. not an integer) otherwise 0 (false)
 }
 
 bool allNA(SEXP x, bool errorForBadType) {
