@@ -74,7 +74,7 @@ SEXP coalesce(SEXP x, SEXP inplaceArg) {
     }
   } break;
   case REALSXP: {
-    if (Rinherits(first, char_integer64)) { // Rinherits() is true for nanotime
+    if (INHERITS(first, char_integer64)) {
       int64_t *xP=(int64_t *)REAL(first), finalVal=NA_INTEGER64;
       int k=0;
       for (int j=0; j<nval; ++j) {

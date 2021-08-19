@@ -66,11 +66,21 @@ Also continue reading and see the FAQ after next. Skim whole documents before ge
 
 The `j` expression is the 2nd argument. Try `DT[ , c("x","y","z")]` or `DT[ , .(x,y,z)]`.
 
-## I assigned a variable `mycol = "x"` but then `DT[ , mycol]` returns `"x"`. How do I get it to look up the column name contained in the `mycol` variable?
+## I assigned a variable `mycol="x"` but then `DT[, mycol]` returns an error. How do I get it to look up the column name contained in the `mycol` variable?
 
-In v1.9.8 released Nov 2016 there is an ability to turn on new behaviour: `options(datatable.WhenJisSymbolThenCallingScope=TRUE)`. It will then work as you expected, just like data.frame. If you are a new user of data.table, you should probably do this. You can place this command in your .Rprofile file so you don't have to remember again. See the long item in release notes about this. The release notes are linked at the top of the data.table homepage: [NEWS](https://github.com/Rdatatable/data.table/blob/master/NEWS.md).
+The error is that column named `"mycol"` cannot be found, and this error is correct. `data.table`'s scoping is different to `data.frame` in that you can use column names as if they are variables directly inside `DT[...]` without prefixing each column name with `DT$`; see FAQ 1.1 above.
 
-Without turning on that new behaviour, what's happening is that the `j` expression sees objects in the calling scope. The variable `mycol` does not exist as a column name of `DT` so data.table then looked in the calling scope and found `mycol` there and returned its value `"x"`. This is correct behaviour currently. Had `mycol` been a column name, then that column's data would have been returned. What has been done to date has been `DT[ , mycol, with = FALSE]` which will return the `x` column's data as required. That will still work in the future, too. Alternatively, since a data.table _is_ a `list`, too, you have been and still will be able to write and rely on `DT[[mycol]]`.
+To use `mycol` to select the column `x` from `DT`, there are a few options:
+
+```r
+DT[, ..mycol]            # .. prefix conveys to look for the mycol one level up in calling scope
+DT[, mycol, with=FALSE]  # revert to data.frame behavior
+DT[[mycol]]               # treat DT as a list and use [[ from base R
+```
+
+See `?data.table` for more details about the `..` prefix.
+
+The `with` argument takes its name from the `base` function `with()`. When `with=TRUE` (default), `data.table` operates similar to `with()`, i.e. `DT[, mycol]` behaves like `with(DT, mycol)`. When `with=FALSE`, the standard `data.frame` evaluation rules apply to all variables in `j` and you can no longer use column names directly.
 
 ## What are the benefits of being able to use column names as if they are variables inside `DT[...]`?
 
@@ -384,7 +394,7 @@ A key advantage of column vectors in R is that they are _ordered_, unlike SQL[^2
  - `DT[ColA == ColB]` is simpler than `DF[!is.na(ColA) & !is.na(ColB) & ColA == ColB, ]`
  - `data.frame(list(1:2, "k", 1:4))` creates 3 columns, data.table creates one `list` column.
  - `check.names` is by default `TRUE` in `data.frame` but `FALSE` in data.table, for convenience.
- - `stringsAsFactors` is by default `TRUE` in `data.frame` but `FALSE` in data.table, for efficiency. Since a global string cache was added to R, characters items are a pointer to the single cached string and there is no longer a performance benefit of converting to `factor`.
+ - `data.table` has always set `stringsAsFactors=FALSE` by default. In R 4.0.0 (Apr 2020), `data.frame`'s default was changed from `TRUE` to `FALSE` and there is no longer a difference in this regard; see [stringsAsFactors, Kurt Hornik, Feb 2020](https://developer.r-project.org/Blog/public/2020/02/16/stringsasfactors/).
  - Atomic vectors in `list` columns are collapsed when printed using `", "` in `data.frame`, but `","` in data.table with a trailing comma after the 6th item to avoid accidental printing of large embedded objects.
 
 In `[.data.frame` we very often set `drop = FALSE`. When we forget, bugs can arise in edge cases where single columns are selected and all of a sudden a vector is returned rather than a single column `data.frame`. In `[.data.table` we took the opportunity to make it consistent and dropped `drop`.

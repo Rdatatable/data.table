@@ -31,3 +31,6 @@ export R_PROFILE_USER='~/.Rprofile'
 export R_DEFAULT_INTERNET_TIMEOUT=3600
 # increase from R's default 60, always not just in revdep testing, to help --as-cran
 
+export TEST_DATA_TABLE_WITH_OTHER_PACKAGES=true
+# R CMD check in dev should always run other.Rraw
+

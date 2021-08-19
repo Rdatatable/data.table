@@ -7,6 +7,11 @@ Sys.unsetenv("R_PROFILE_USER")
 # But if we don't unset it now, anything else from now on that does something like system("R CMD INSTALL"), e.g. update.packages()
 # and BiocManager::install(), will call this script again recursively.
 
+# options copied from .dev/.Rprofile that aren't run due to the way this script is started via a profile
+options(help_type="html")
+options(error=quote(utils::dump.frames()))
+options(width=200)      # for cran() output not to wrap
+
 # Check that env variables have been set correctly:
 #   export R_LIBS_SITE=none
 #   export R_LIBS=~/build/revdeplib/
@@ -23,6 +28,20 @@ if (grepl("devel", .libPaths()[2L])) {
   stopifnot(tt[2L]=="root")
   R = "R"  # R-release
 }
+if (length(dup_pkgs <- intersect(dir(.libPaths()[1]), dir(.libPaths()[2])))) {
+  stop("Package(s) installed in both paths: ", paste(dup_pkgs, collapse=" "))
+  # S4 issues are frustrating as it seems that dependencies need to be reinstalled to reset the nobody-knows-how-it-works S4 cache?
+  # For example, to fix prioritizr's error in its examples :
+  #  error in evaluating the argument 'x' in selecting a method for function 'print':
+  #  error in evaluating the argument 'y' in selecting a method for function 'intersecting_units':
+  #  package slot missing from signature for generic ‘raster’
+  # I reinstalled raster. But that didn't help. Then raster's depend sp but that didn't help. Then sp followed by raster
+  # again but that didn't help. Then all dependencies but that didn't help. Then lattice too but that didn't help.
+  # Then after a few hours, I stumbled on the realization when I reinstalled lattice it got installed in revdeplib rather
+  # than R's base library where the recommended packages are; lattice was in two places on .libPaths(). Removing it from
+  # revdeplib didn't help. But reinstalling lattice (using sudo R) in /usr/lib/R/library did appear to finally fix prioritizr.
+  # Why it was lattice that needed to be reinstalled just beats me, and why do S4 packages need to be reinstalled anyway?
+} 
 
 stopifnot(identical(Sys.getenv("_R_CHECK_FORCE_SUGGESTS_"),"true"))
 # _R_CHECK_FORCE_SUGGESTS_=true explicitly in .dev/.bash_aliases
@@ -31,10 +50,12 @@ stopifnot(identical(Sys.getenv("_R_CHECK_FORCE_SUGGESTS_"),"true"))
 # e.g. https://github.com/reimandlab/ActivePathways/issues/14
 
 cflags = system("grep \"^[^#]*CFLAGS\" ~/.R/Makevars", intern=TRUE)
-cat("~/.R/Makevars contains", cflags, "ok\n")
-if (!grepl("^CFLAGS=-O[0-3]$", cflags)) {
+cat("~/.R/Makevars contains", cflags)
+if (!grepl("^CFLAGS=-O[0-3] *$", cflags)) {
   stop("Some packages have failed to install in the past (e.g. processx and RGtk2) when CFLAGS contains -pedandic, -Wall, and similar. ",
-  "So for revdepr keep CFLAGS simple; i.e. -O[0-3] only.")
+  "So for revdepr keep CFLAGS simple; i.e. -O[0-3] only. Check ~/.R/Makevars.")
+} else {
+  cat(" ok\n")
 }
 
 options(repos = c("CRAN"=c("http://cloud.r-project.org")))
@@ -109,20 +130,29 @@ for (p in deps) {
   }
 }
 cat("New downloaded:",new," Already had latest:", old, " TOTAL:", length(deps), "\n")
-update.packages(checkBuilt=TRUE)
+update.packages(checkBuilt=TRUE, ask=FALSE)  # won't rebuild packages which are no longer available on CRAN
+
+# The presence of packages here in revdeplib which no longer exist on CRAN could explain differences to CRAN. A revdep
+# could be running tests using that package when available and failing which may be the very reason that package was removed from CRAN.
+# When it is removed from revdeplib to match CRAN, then the revdep might then pass as it will skip its tests using that package.
+x = installed.packages()
+tt = match(rownames(x), rownames(avail))
+removed = rownames(x)[is.na(tt) & is.na(x[,"Priority"])]
+cat("Removing",length(removed),"packages which are no longer available on CRAN/Bioc:", paste(removed, collapse=","), "\n")
+stopifnot(all(x[removed,"LibPath"] == .libPaths()[1]))
+oldn = nrow(x)
+remove.packages(removed, .libPaths()[1])
+x = installed.packages()
+stopifnot(nrow(x) == oldn-length(removed))
+
+# Ensure all installed packages were built with this x.y release of R
 cat("This is R ",R.version$major,".",R.version$minor,"; ",R.version.string,"\n",sep="")
 cat("Previously installed packages were built using:\n")
-x = installed.packages()
-table(x[,"Built"], dnn=NULL)  # manually inspect to ensure all built with this x.y release of R
-if (FALSE) {  # if not, run this manually replacing "4.0.0" appropriately 
-  for (p in rownames(x)[x[,"Built"]=="4.0.0"]) {
-    install.packages(p)
-  }
-  # warnings may suggest many of them were removed from CRAN, so remove the remaining from revdeplib to be clean
-  x = installed.packages()
-  remove.packages(rownames(x)[x[,"Built"]=="4.0.0"])
-  table(installed.packages()[,"Built"], dnn=NULL)  # check again to make sure all built in current R-devel x.y version
-}
+print(tt <- table(x[,"Built"], dnn=NULL))
+minorR = paste(strsplit(as.character(getRversion()), split="[.]")[[1]][c(1,2)], collapse=".")
+stopifnot(all(substring(names(tt),1,nchar(minorR)) == minorR))
+# if not (e.g. when using R-devel for revdep testing) perhaps run the following manually replacing "4.0.0" as appropriate 
+# for (p in rownames(x)[x[,"Built"]=="4.0.0"]) install.packages(p)
 
 # Remove the tar.gz no longer needed :
 for (p in deps) {
@@ -150,7 +180,7 @@ status0 = function(bioc=FALSE) {
     if (file.exists(fn)) {
       v = suppressWarnings(system(paste0("grep 'Status:' ",fn), intern=TRUE))
       if (!length(v)) return("RUNNING")
-      return(substring(v,9))
+      return(substr(v, 9L, nchar(v)))
     }
     if (file.exists(paste0("./",x,".Rcheck"))) return("RUNNING")
     return("NOT STARTED")
@@ -231,6 +261,27 @@ status = function(bioc=FALSE) {
   invisible()
 }
 
+cran = function()  # reports CRAN status of the .cran.fail packages
+{
+  if (!length(.fail.cran)) {
+    cat("No CRAN revdeps in error or warning status\n")
+    return(invisible())
+  }
+  require(data.table)
+  p = proc.time()
+  db = setDT(tools::CRAN_check_results())
+  cat("tools::CRAN_check_results() returned",prettyNum(nrow(db), big.mark=","),"rows in",timetaken(p),"\n")
+  ans = db[Package %chin% .fail.cran,
+    .(ERROR=sum(Status=="ERROR"),
+      WARN =sum(Status=="WARN"),
+      cran =paste(unique(Version),collapse=";"),
+      local=as.character(packageVersion(.BY[[1]]))),
+    keyby=Package]
+  ans[local==cran, c("cran","local"):=""]
+  ans[, "right_click_in_bash":=paste0("https://cran.r-project.org/web/checks/check_results_",Package,".html")]
+  ans[]
+}
+
 run = function(pkgs=NULL, R_CHECK_FORCE_SUGGESTS=TRUE, choose=NULL) {
   if (length(pkgs)==1) pkgs = strsplit(pkgs, split="[, ]")[[1]]
   if (anyDuplicated(pkgs)) stop("pkgs contains dups")
@@ -289,7 +340,7 @@ inst = function() {
   system(paste0(R," CMD INSTALL ",last))
 }
 
-log = function(bioc=FALSE, fnam="~/fail.log") {
+log = function(bioc=FALSE, fnam="~/fail.log", app="gedit") {
   x = c(.fail.cran, if (bioc) .fail.bioc)
   cat("Writing 00check.log for",length(x),"packages to",fnam,":\n")
   cat(paste(x,collapse=" "), "\n")
@@ -313,6 +364,8 @@ log = function(bioc=FALSE, fnam="~/fail.log") {
     system(paste0("grep -H . ./",i,".Rcheck/00check.log >> ",fnam))  # the fail messages
     cat("\n\n", file=fnam, append=TRUE)
   }
+  system(paste(app, fnam), wait=FALSE)
+  invisible()
 }
 
 inst()

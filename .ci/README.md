@@ -7,7 +7,7 @@ On each Pull Request opened in GitHub we run Travis CI and Appveyor to provide p
 ### [GitLab CI](./../.gitlab-ci.yml)
 
 Test jobs:
-- `test-rel-lin` - `r-release` on Linux, most comprehensive test environment, `-O3 -flto -fno-common -Wunused-result`, extra check for no compilation warnings, includes testing [_with other packages_](./../inst/tests/other.Rraw) ([extended suggests](./../inst/tests/tests-DESCRIPTION))
+- `test-rel-lin` - `r-release` on Linux, most comprehensive test environment, `-O3 -flto -fno-common -Wunused-result`, extra check for no compilation warnings, includes testing [_with other packages_](./../inst/tests/other.Rraw)
 - `test-rel-cran-lin` - `--as-cran` on Linux, `-g0`, extra check for final status of `R CMD check` where we allow one NOTE (_size of tarball_).
 - `test-dev-cran-lin` - `r-devel` and `--as-cran` on Linux, `--with-recommended-packages --enable-strict-barrier --disable-long-double`, tests for compilation warnings in pkg install and new NOTEs/Warnings in pkg check, and because it is R-devel it is marked as allow_failure
 - `test-rel-vanilla-lin` - `r-release` on Linux, no suggested deps, no OpenMP, `-O0`, tracks memory usage during tests

@@ -51,7 +51,7 @@ From \code{v1.9.4}, \code{dcast} tries to preserve attributes wherever possible.
 
 From \code{v1.9.6}, it is possible to cast multiple \code{value.var} columns and also cast by providing multiple \code{fun.aggregate} functions. Multiple \code{fun.aggregate} functions should be provided as a \code{list}, for e.g., \code{list(mean, sum, function(x) paste(x, collapse="")}. \code{value.var} can be either a character vector or list of length one, or a list of length equal to \code{length(fun.aggregate)}. When \code{value.var} is a character vector or a list of length one, each function mentioned under \code{fun.aggregate} is applied to every column specified under \code{value.var} column. When \code{value.var} is a list of length equal to \code{length(fun.aggregate)} each element of \code{fun.aggregate} is applied to each element of \code{value.var} column.
 
-Historical note: \code{dcast.data.table} was originally designed as an enhancement to \code{reshape2::dcast} in terms of computing and memory efficiency. \code{reshape2} has since been deprecated, and \code{dcast} has had a generic defined within \code{data.table} since \code{v1.9.6} in 2015, at which point the dependency between the packages became more etymological than programmatic. We thank the \code{reshape2} authors for the inspiration.
+Historical note: \code{dcast.data.table} was originally designed as an enhancement to \code{reshape2::dcast} in terms of computing and memory efficiency. \code{reshape2} has since been superseded in favour of \code{tidyr}, and \code{dcast} has had a generic defined within \code{data.table} since \code{v1.9.6} in 2015, at which point the dependency between the packages became more etymological than programmatic. We thank the \code{reshape2} authors for the inspiration.
 
 }
 \value{
@@ -61,16 +61,16 @@ Historical note: \code{dcast.data.table} was originally designed as an enhanceme
 \examples{
 ChickWeight = as.data.table(ChickWeight)
 setnames(ChickWeight, tolower(names(ChickWeight)))
-DT <- melt(as.data.table(ChickWeight), id=2:4) # calls melt.data.table
+DT <- melt(as.data.table(ChickWeight), id.vars=2:4) # calls melt.data.table
 
 # dcast is an S3 method in data.table from v1.9.6
-dcast(DT, time ~ variable, fun=mean) # using partial matching of argument
-dcast(DT, diet ~ variable, fun=mean)
+dcast(DT, time ~ variable, fun.aggregate=mean)
+dcast(DT, diet ~ variable, fun.aggregate=mean)
 dcast(DT, diet+chick ~ time, drop=FALSE)
 dcast(DT, diet+chick ~ time, drop=FALSE, fill=0)
 
 # using subset
-dcast(DT, chick ~ time, fun=mean, subset=.(time < 10 & chick < 20))
+dcast(DT, chick ~ time, fun.aggregate=mean, subset=.(time < 10 & chick < 20))
 
 # drop argument, #1512
 DT <- data.table(v1 = c(1.1, 1.1, 1.1, 2.2, 2.2, 2.2),
@@ -78,37 +78,37 @@ DT <- data.table(v1 = c(1.1, 1.1, 1.1, 2.2, 2.2, 2.2),
                  v3 = factor(c(2L, 3L, 5L, 1L, 2L, 6L), levels=1:6),
                  v4 = c(3L, 2L, 2L, 5L, 4L, 3L))
 # drop=TRUE
-dcast(DT, v1 + v2 ~ v3)                      # default is drop=TRUE
-dcast(DT, v1 + v2 ~ v3, drop=FALSE)          # all missing combinations of both LHS and RHS
-dcast(DT, v1 + v2 ~ v3, drop=c(FALSE, TRUE)) # all missing combinations of only LHS
-dcast(DT, v1 + v2 ~ v3, drop=c(TRUE, FALSE)) # all missing combinations of only RHS
+dcast(DT, v1+v2~v3, value.var='v4')                      # default is drop=TRUE
+dcast(DT, v1+v2~v3, value.var='v4', drop=FALSE)          # all missing combinations of LHS and RHS
+dcast(DT, v1+v2~v3, value.var='v4', drop=c(FALSE, TRUE)) # all missing combinations of LHS only
+dcast(DT, v1+v2~v3, value.var='v4', drop=c(TRUE, FALSE)) # all missing combinations of RHS only
 
 # using . and ...
 DT <- data.table(v1 = rep(1:2, each = 6),
                  v2 = rep(rep(1:3, 2), each = 2),
                  v3 = rep(1:2, 6),
                  v4 = rnorm(6))
-dcast(DT, \dots ~ v3, value.var = "v4") #same as v1 + v2 ~ v3, value.var = "v4"
-dcast(DT, v1 + v2 + v3 ~ ., value.var = "v4")
+dcast(DT, \dots ~ v3, value.var="v4") # same as v1+v2 ~ v3, value.var="v4"
+dcast(DT, v1+v2+v3 ~ ., value.var="v4")
 
 ## for each combination of (v1, v2), add up all values of v4
-dcast(DT, v1 + v2 ~ ., value.var = "v4", fun.aggregate = sum)
+dcast(DT, v1+v2 ~ ., value.var="v4", fun.aggregate=sum)
 
 # fill and types
-dcast(DT, v2 ~ v3, value.var = 'v1', fill = 0L)  #  0L --> 0
-dcast(DT, v2 ~ v3, value.var = 'v4', fill = 1.1) # 1.1 --> 1L
+dcast(DT, v2~v3, value.var='v1', fun.aggregate=length, fill=0L)  #  0L --> 0
+dcast(DT, v2~v3, value.var='v4', fun.aggregate=length, fill=1.1) # 1.1 --> 1L
 
 # multiple value.var and multiple fun.aggregate
 DT = data.table(x=sample(5,20,TRUE), y=sample(2,20,TRUE),
-                z=sample(letters[1:2], 20,TRUE), d1 = runif(20), d2=1L)
+                z=sample(letters[1:2], 20,TRUE), d1=runif(20), d2=1L)
 # multiple value.var
-dcast(DT, x + y ~ z, fun=sum, value.var=c("d1","d2"))
+dcast(DT, x+y ~ z, fun.aggregate=sum, value.var=c("d1","d2"))
 # multiple fun.aggregate
-dcast(DT, x + y ~ z, fun=list(sum, mean), value.var="d1")
+dcast(DT, x+y ~ z, fun.aggregate=list(sum, mean), value.var="d1")
 # multiple fun.agg and value.var (all combinations)
-dcast(DT, x + y ~ z, fun=list(sum, mean), value.var=c("d1", "d2"))
+dcast(DT, x+y ~ z, fun.aggregate=list(sum, mean), value.var=c("d1", "d2"))
 # multiple fun.agg and value.var (one-to-one)
-dcast(DT, x + y ~ z, fun=list(sum, mean), value.var=list("d1", "d2"))
+dcast(DT, x+y ~ z, fun.aggregate=list(sum, mean), value.var=list("d1", "d2"))
 }
 \seealso{
   \code{\link{melt.data.table}}, \code{\link{rowid}}, \url{https://cran.r-project.org/package=reshape}

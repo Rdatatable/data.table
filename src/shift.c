@@ -62,7 +62,7 @@ SEXP shift(SEXP obj, SEXP k, SEXP fill, SEXP type)
 
     case REALSXP : {
       SEXP thisfill;
-      if (Rinherits(elem, char_integer64)) {
+      if (INHERITS(elem, char_integer64)) {
         thisfill = PROTECT(allocVector(REALSXP, 1));
         unsigned long long *dthisfill = (unsigned long long *)REAL(thisfill);
         if (INTEGER(fill)[0] == NA_INTEGER)
