@@ -173,8 +173,8 @@ my.write = function (x) {
 }
 ```
 
-When using a package as a suggested dependency, you should not `import` it in the `NAMESPACE` file. Just mention it in the `DESCRIPTION` file. 
-When using `data.table` functions in package code (R/* files) you need to use the `data.table::` prefix because none of them are imported. 
+When using a package as a suggested dependency, you should not `import` it in the `NAMESPACE` file. Just mention it in the `DESCRIPTION` file.
+When using `data.table` functions in package code (R/* files) you need to use the `data.table::` prefix because none of them are imported.
 When using `data.table` in package tests (e.g. tests/testthat/test* files), you need to declare `.datatable.aware=TRUE` in one of the R/* files.
 
 ## `data.table` in `Imports` but nothing imported
