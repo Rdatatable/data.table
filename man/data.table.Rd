@@ -435,8 +435,10 @@ dev.off()
 DT[, c(.(y=max(y)), lapply(.SD, min)), by=rleid(v), .SDcols=v:b]
 
 # functional query DT(...)
-if (getRversion() >= "4.1.0") {       # native pipe |> new in R 4.1.0
-  mtcars |> DT(mpg>20, .(mean_hp=mean(hp)), by=cyl)
+\dontshow{ #dontrun to pass R CMD check prior to R 4.1.0 when |> was added
+           # an if getRVersion()>"4.1.0" still has its code parsed }
+\dontrun{
+mtcars |> DT(mpg>20, .(mean_hp=mean(hp)), by=cyl)
 }
 
 # Support guide and links:
