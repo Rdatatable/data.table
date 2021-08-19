@@ -183,6 +183,7 @@ R_CallMethodDef callMethods[] = {
 {"Ctranspose", (DL_FUNC) &transpose, -1},
 {"CanyNA", (DL_FUNC) &anyNA, -1},
 {"CisReallyReal", (DL_FUNC) &isReallyReal, -1},
+{"CisRealReallyIntR", (DL_FUNC) &isRealReallyIntR, -1},
 {"Csetlevels", (DL_FUNC) &setlevels, -1},
 {"Crleid", (DL_FUNC) &rleid, -1},
 {"Cgmedian", (DL_FUNC) &gmedian, -1},

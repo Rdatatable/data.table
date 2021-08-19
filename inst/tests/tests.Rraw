@@ -44,6 +44,7 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
   is_na = data.table:::is_na
   is.sorted = data.table:::is.sorted
   isReallyReal = data.table:::isReallyReal
+  isRealReallyInt = data.table:::isRealReallyInt
   is_utc = data.table:::is_utc
   melt.data.table = data.table:::melt.data.table  # for test 1953.4
   null.data.table = data.table:::null.data.table
@@ -17917,3 +17918,18 @@ if (test_nanotime) {
   DT = data.table(time=nanotime(c(1,NA,3)))
   test(2205, na.omit(DT), DT[c(1,3)])
 }
+
+# isRealReallyInt, #3966
+test(2206.01, isRealReallyInt(c(-2147483647.0, NA, 0.0, 2147483647.0)), TRUE)
+test(2206.02, isRealReallyInt(2147483648.0), FALSE) # >INT_MAX
+test(2206.03, isRealReallyInt(-2147483648.0), FALSE) # <=INT_MIN since INT_MIN==NA_integer_
+test(2206.04, isRealReallyInt(c(5,-5,2147483648)), FALSE)  # test real last position
+test(2206.05, isRealReallyInt(NaN), FALSE)
+test(2206.06, isRealReallyInt(+Inf), FALSE)
+test(2206.07, isRealReallyInt(-Inf), FALSE)
+test(2206.08, isRealReallyInt(0.1), FALSE)
+test(2206.09, isRealReallyInt(numeric()), TRUE)
+test(2206.10, isRealReallyInt(9L), FALSE) # must be type double
+test(2206.11, isRealReallyInt(integer()), FALSE)
+
+
