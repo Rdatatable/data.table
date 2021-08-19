@@ -13,7 +13,7 @@ melt.default = function(data, ..., na.rm = FALSE, value.name = "value") {
   # nocov start
   data_name = deparse(substitute(data))
   ns = tryCatch(getNamespace("reshape2"), error=function(e)
-    stopf("The %1$s generic in data.table has been passed a %2$s, but data.table::%1$s currently only has a method for data.tables. Please confirm your input is a data.table, with setDT(%3$s) or as.data.table(%3$s). If you intend to use a method from reshape2, try installing that package first, but do note that reshape2 is superseded and is no longer actively developed.", "melt", class(data)[1L], data_name)
+    stopf("The %1$s generic in data.table has been passed a %2$s, but data.table::%1$s currently only has a method for data.tables. Please confirm your input is a data.table, with setDT(%3$s) or as.data.table(%3$s). If you intend to use a method from reshape2, try installing that package first, but do note that reshape2 is superseded and is no longer actively developed.", "melt", class(data)[1L], data_name))
   warningf("The %1$s generic in data.table has been passed a %2$s and will attempt to redirect to the relevant reshape2 method; please note that reshape2 is superseded and is no longer actively developed, and this redirection is now deprecated. To continue using melt methods from reshape2 while both libraries are attached, e.g. melt.list, you can prepend the namespace, i.e. reshape2::%1$s(%3$s). In the next version, this warning will become an error.", "melt", class(data)[1L], data_name)
   ns$melt(data, ..., na.rm=na.rm, value.name=value.name)
   # nocov end
