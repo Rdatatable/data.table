@@ -15,21 +15,32 @@ isTRUEorFALSE = function(x) is.logical(x) && length(x)==1L && !is.na(x)
 allNA = function(x) .Call(C_allNAR, x)
 # helper for nan argument (e.g. nafill): TRUE -> treat NaN as NA
 nan_is_na = function(x) {
-  if (length(x) != 1L) stop("Argument 'nan' must be length 1")
+  if (length(x) != 1L) stopf("Argument 'nan' must be length 1")
   if (identical(x, NA) || identical(x, NA_real_)) return(TRUE)
   if (identical(x, NaN)) return(FALSE)
-  stop("Argument 'nan' must be NA or NaN")
+  stopf("Argument 'nan' must be NA or NaN")
 }
 
 if (base::getRversion() < "3.2.0") {  # Apr 2015
   isNamespaceLoaded = function(x) x %chin% loadedNamespaces()
 }
 
+if (!exists('startsWith', 'package:base', inherits=FALSE)) {  # R 3.3.0; Apr 2016
+  startsWith = function(x, stub) substr(x, 1L, nchar(stub))==stub
+}
+# endsWith no longer used from #5097 so no need to backport; prevent usage to avoid dev delay until GLCI's R 3.1.0 test
+endsWith = function(...) stop("Internal error: use endsWithAny instead of base::endsWith")
+
+startsWithAny = function(x,y) .Call(CstartsWithAny, x, y, TRUE)
+endsWithAny = function(x,y) .Call(CstartsWithAny, x, y, FALSE)
+# For fread.R #5097 we need if any of the prefixes match, which one, and can return early on the first match
+# Hence short and simple ascii-only at C level
+
 # which.first
 which.first = function(x)
 {
   if (!is.logical(x)) {
-    stop("x not boolean")
+    stopf("x not boolean")
   }
   match(TRUE, x)
 }
@@ -38,18 +49,18 @@ which.first = function(x)
 which.last = function(x)
 {
   if (!is.logical(x)) {
-    stop("x not boolean")
+    stopf("x not boolean")
   }
   length(x) - match(TRUE, rev(x)) + 1L
 }
 
 require_bit64_if_needed = function(DT) {
   # called in fread and print.data.table
-  if (!isNamespaceLoaded("bit64") && any(sapply(DT,inherits,"integer64"))) {
+  if (!isNamespaceLoaded("bit64") && any(vapply_1b(DT, inherits, "integer64"))) {
     # nocov start
     # a test was attempted to cover the requireNamespace() by using unloadNamespace() first, but that fails when nanotime is loaded because nanotime also uses bit64
     if (!requireNamespace("bit64",quietly=TRUE)) {
-      warning("Some columns are type 'integer64' but package bit64 is not installed. Those columns will print as strange looking floating point data. There is no need to reload the data. Simply install.packages('bit64') to obtain the integer64 print method and print the data again.")
+      warningf("Some columns are type 'integer64' but package bit64 is not installed. Those columns will print as strange looking floating point data. There is no need to reload the data. Simply install.packages('bit64') to obtain the integer64 print method and print the data again.")
     }
     # nocov end
   }
@@ -84,7 +95,7 @@ name_dots = function(...) {
   }
   notnamed = vnames==""
   if (any(notnamed)) {
-    syms = sapply(dot_sub, is.symbol)  # save the deparse() in most cases of plain symbol
+    syms = vapply_1b(dot_sub, is.symbol)  # save the deparse() in most cases of plain symbol
     for (i in which(notnamed)) {
       tmp = if (syms[i]) as.character(dot_sub[[i]]) else deparse(dot_sub[[i]])[1L]
       if (tmp == make.names(tmp)) vnames[i]=tmp

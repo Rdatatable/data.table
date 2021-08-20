@@ -51,4 +51,7 @@
     \item{\file{types.c} - Internal testing usage}
   }
 }
+\examples{
+  getDTthreads(verbose=TRUE)
+}
 \keyword{ data }

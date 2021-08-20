@@ -89,6 +89,7 @@ extern SEXP char_ordered;
 extern SEXP char_datatable;
 extern SEXP char_dataframe;
 extern SEXP char_NULL;
+extern SEXP char_maxString;
 extern SEXP sym_sorted;
 extern SEXP sym_index;
 extern SEXP sym_BY;
@@ -122,7 +123,7 @@ SEXP growVector(SEXP x, R_len_t newlen);
 // assign.c
 SEXP allocNAVector(SEXPTYPE type, R_len_t n);
 SEXP allocNAVectorLike(SEXP x, R_len_t n);
-void writeNA(SEXP v, const int from, const int n);
+void writeNA(SEXP v, const int from, const int n, const bool listNA);
 void savetl_init(), savetl(SEXP s), savetl_end();
 int checkOverAlloc(SEXP x);
 
@@ -228,11 +229,11 @@ SEXP coalesce(SEXP x, SEXP inplace);
 
 // utils.c
 bool isRealReallyInt(SEXP x);
+SEXP isRealReallyIntR(SEXP x);
 SEXP isReallyReal(SEXP x);
 bool allNA(SEXP x, bool errorForBadType);
 SEXP colnamesInt(SEXP x, SEXP cols, SEXP check_dups);
 bool INHERITS(SEXP x, SEXP char_);
-bool Rinherits(SEXP x, SEXP char_);
 SEXP copyAsPlain(SEXP x);
 void copySharedColumns(SEXP x);
 SEXP lock(SEXP x);
@@ -255,3 +256,5 @@ SEXP fcaseR(SEXP na, SEXP rho, SEXP args);
 //snprintf.c
 int dt_win_snprintf(char *dest, size_t n, const char *fmt, ...);
 
+// programming.c
+SEXP substitute_call_arg_namesR(SEXP expr, SEXP env);
