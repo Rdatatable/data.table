@@ -185,7 +185,7 @@
 
 34. `na.omit(DT)` did not remove `NA` in `nanotime` columns, [#4744](https://github.com/Rdatatable/data.table/issues/4744). Thanks Jean-Mathieu Vermosen for reporting, and Michael Chirico for the PR.
 
-35. `DT[, min(intCol, na.rm=TRUE), by=grp]` would return `Inf` for any groups containing all NAs, with a type change from `integer` to `numeric` to hold the `Inf`, and with warning. Now `NA` is returned for such all-NA groups, without warning or type change. This is almost-surely less surprising, more convenient, consistent, and efficient. There was no user request for this, likely because our desire to be consistent with base R in this regard was known (base R's `min(x, na.rm=TRUE)` returns `Inf` with warning for all-NA input). Matt Dowle made this change when reworking internals, [#5105](https://github.com/Rdatatable/data.table/pull/5105). The old behavior seemed so bad, and since there was a warning too, it seemed more appropriate to treat it as a bug.
+35. `DT[, min(intCol, na.rm=TRUE), by=grp]` would return `Inf` for any groups containing all NAs, with a type change from `integer` to `numeric` to hold the `Inf`, and with warning. Similarly `max` would return `-Inf`. Now `NA` is returned for such all-NA groups, without warning or type change. This is almost-surely less surprising, more convenient, consistent, and efficient. There was no user request for this, likely because our desire to be consistent with base R in this regard was known (`base::min(x, na.rm=TRUE)` returns `Inf` with warning for all-NA input). Matt Dowle made this change when reworking internals, [#5105](https://github.com/Rdatatable/data.table/pull/5105). The old behavior seemed so bad, and since there was a warning too, it seemed appropriate to treat it as a bug.
 
     ```R
     DT
@@ -228,6 +228,8 @@
     # 2:      b    NA              # NA because there are no non-NA, naturally
                                    # no inconvenient warning
     ```
+    
+36. `DT[, min(int64Col), by=grp]` (and `max`) would return incorrect results for `bit64::integer64` columns, [#4444](https://github.com/Rdatatable/data.table/issues/4444). Thanks to @go-see for reporting, and Michael Chirico for the PR.
 
 ## NOTES
 

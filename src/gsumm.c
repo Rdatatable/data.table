@@ -742,7 +742,7 @@ static SEXP gminmax(SEXP x, SEXP narm, const bool min)
       for (int i=0; i<ngrp; ++i) ansd[i] = NA_INTEGER;  // in the all-NA case we now return NA for type consistency 
       for (int i=0; i<n; ++i) {
         const int ix = (irowslen == -1) ? i : irows[i]-1;
-        if (xd[ix] == NA_INTEGER) continue;
+        if (xd[ix]==NA_INTEGER) continue;
         const int thisgrp = grp[i];
         if (ansd[thisgrp]==NA_INTEGER || (xd[ix]<ansd[thisgrp])==min)
           ansd[thisgrp] = xd[ix];
@@ -776,26 +776,51 @@ static SEXP gminmax(SEXP x, SEXP narm, const bool min)
     break;
   case REALSXP: {
     ans = PROTECT(allocVector(REALSXP, ngrp));
-    double *ansd = REAL(ans);
-    const double *xd = REAL(x);
-    if (!LOGICAL(narm)[0]) {
-      const double init = min ? R_PosInf : R_NegInf;
-      for (int i=0; i<ngrp; ++i) ansd[i] = init;
-      for (int i=0; i<n; ++i) {
-        const int thisgrp = grp[i];
-        if (ISNAN(ansd[thisgrp])) continue;
-        const int ix = (irowslen == -1) ? i : irows[i]-1;
-        if (ISNAN(xd[ix]) || (xd[ix]<ansd[thisgrp])==min)
-          ansd[thisgrp] = xd[ix];
+    if (INHERITS(x, char_integer64)) {
+      int64_t *ansd = (int64_t *)REAL(ans);
+      const int64_t *xd = (const int64_t *)REAL(x);
+      if (!LOGICAL(narm)[0]) {
+        const int64_t init = min ? INT64_MAX : INT64_MIN+1;
+        for (int i=0; i<ngrp; ++i) ansd[i] = init;
+        for (int i=0; i<n; ++i) {
+          const int thisgrp = grp[i];
+          if (ansd[thisgrp]==NA_INTEGER64) continue;
+          const int ix = (irowslen == -1) ? i : irows[i]-1;
+          if (xd[ix]==NA_INTEGER64 || (xd[ix]<ansd[thisgrp])==min)
+            ansd[thisgrp] = xd[ix];
+        }
+      } else {
+        for (int i=0; i<ngrp; ++i) ansd[i] = NA_INTEGER64;
+        for (int i=0; i<n; ++i) {
+          const int ix = (irowslen == -1) ? i : irows[i]-1;
+          if (xd[ix]==NA_INTEGER64) continue;
+          const int thisgrp = grp[i];  
+          if (ansd[thisgrp]==NA_INTEGER64 || (xd[ix]<ansd[thisgrp])==min)
+            ansd[thisgrp] = xd[ix];
+        }
       }
     } else {
-      for (int i=0; i<ngrp; ++i) ansd[i] = NA_REAL;
-      for (int i=0; i<n; ++i) {
-        const int ix = (irowslen == -1) ? i : irows[i]-1;
-        if (ISNAN(xd[ix])) continue;
-        const int thisgrp = grp[i];  
-        if (ISNAN(ansd[thisgrp]) || (xd[ix]<ansd[thisgrp])==min)
-          ansd[thisgrp] = xd[ix];
+      double *ansd = REAL(ans);
+      const double *xd = REAL(x);
+      if (!LOGICAL(narm)[0]) {
+        const double init = min ? R_PosInf : R_NegInf;
+        for (int i=0; i<ngrp; ++i) ansd[i] = init;
+        for (int i=0; i<n; ++i) {
+          const int thisgrp = grp[i];
+          if (ISNAN(ansd[thisgrp])) continue;
+          const int ix = (irowslen == -1) ? i : irows[i]-1;
+          if (ISNAN(xd[ix]) || (xd[ix]<ansd[thisgrp])==min)
+            ansd[thisgrp] = xd[ix];
+        }
+      } else {
+        for (int i=0; i<ngrp; ++i) ansd[i] = NA_REAL;
+        for (int i=0; i<n; ++i) {
+          const int ix = (irowslen == -1) ? i : irows[i]-1;
+          if (ISNAN(xd[ix])) continue;
+          const int thisgrp = grp[i];  
+          if (ISNAN(ansd[thisgrp]) || (xd[ix]<ansd[thisgrp])==min)
+            ansd[thisgrp] = xd[ix];
+        }
       }
     }}
     break;
