@@ -231,7 +231,28 @@
     
 36. `DT[, min(int64Col), by=grp]` (and `max`) would return incorrect results for `bit64::integer64` columns, [#4444](https://github.com/Rdatatable/data.table/issues/4444). Thanks to @go-see for reporting, and Michael Chirico for the PR.
 
-37. When `sep='auto'` and `dec=','` is set manually in `fread`, the auto-`sep` logic is prevented from finding `sep=','`, [#4483](https://github.com/Rdatatable/data.table/issues/4483). It continues to be an error to provide both `sep=','` and `dec=','` manually.
+37. `fread(dec=',')` was able to guess `sep=','` and return an incorrect result, [#4483](https://github.com/Rdatatable/data.table/issues/4483). Thanks to Michael Chirico for reporting and fixing. It was already an error to provide both `sep=','` and `dec=','` manually.
+
+    ```R
+    fread('A|B|C\n1|0,4|a\n2|0,5|b\n', dec=',')  # no problem
+    
+    #        A     B      C
+    #    <int> <num> <char>
+    # 1:     1   0.4      a
+    # 2:     2   0.5      b
+
+    fread('A|B,C\n1|0,4\n2|0,5\n', dec=',')
+    
+    #       A|B     C    # old result guessed sep=',' despite dec=','
+    #    <char> <int>
+    # 1:    1|0     4
+    # 2:    2|0     5
+    
+    #        A   B,C     # new result guesses sep='|'
+    #    <int> <num>
+    # 1:     1   0.4
+    # 2:     2   0.5
+    ```
 
 ## NOTES
 

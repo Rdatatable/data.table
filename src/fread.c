@@ -1598,12 +1598,8 @@ int freadMain(freadMainArgs _args) {
     ch = pos;
   } else {
     int nseps;
-    char seps[]=",|;\t ";  // default seps in order of preference. See ?fread.
-                           // seps[] not *seps for writeability (http://stackoverflow.com/a/164258/403310)
-    if (dec == ',') {
-      // Remove , if user specifies dec=',', #4483
-      for (int i=0; i<strlen(seps); i++) seps[i] = seps[i+1];
-    }
+    char seps__[] = ",|;\t ";  // default seps in order of preference; writeable http://stackoverflow.com/a/164258/403310
+    char *seps = dec!=',' ? seps__ : seps__+1;  // prevent guessing sep=',' when dec=',' #4483
     char topSep=127;       // which sep 'wins' top place (see top* below). By default 127 (ascii del) means no sep i.e. single-column input (1 field)
     if (args.sep == '\0') {
       if (verbose) DTPRINT(_("  Detecting sep automatically ...\n"));
