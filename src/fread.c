@@ -64,10 +64,10 @@ static void *mmp_copy = NULL;
 static size_t fileSize;
 static int8_t *type = NULL, *tmpType = NULL, *size = NULL;
 static lenOff *colNames = NULL;
-static freadMainArgs args;  // global for use by DTPRINT
+static freadMainArgs args = {0};  // global for use by DTPRINT; static implies ={0} but include the ={0} anyway just in case for valgrind #4639
 
-const char typeName[NUMTYPE][10] = {"drop", "bool8", "bool8", "bool8", "bool8", "int32", "int64", "float64", "float64", "float64", "string"};
-int8_t     typeSize[NUMTYPE]     = { 0,      1,       1,       1,       1,       4,       8,       8,         8,         8,         8      };
+const char typeName[NUMTYPE][10] = {"drop", "bool8", "bool8", "bool8", "bool8", "int32", "int64", "float64", "float64", "float64", "int32", "float64", "string"};
+int8_t     typeSize[NUMTYPE]     = { 0,      1,       1,       1,       1,       4,       8,       8,         8,         8,         4,       8       ,  8      };
 
 // In AIX, NAN and INFINITY don't qualify as constant literals. Refer: PR #3043
 // So we assign them through below init function.
@@ -103,7 +103,8 @@ static void Field(FieldParseContext *ctx);
 #define ASSERT(cond, msg, ...) \
   if (!(cond)) STOP(_("Internal error in line %d of fread.c, please report on data.table GitHub:  " msg), __LINE__, __VA_ARGS__) // # nocov
 
-
+#define AS_DIGIT(x) (uint_fast8_t)(x - '0')
+#define IS_DIGIT(x) AS_DIGIT(x) < 10
 
 //=================================================================================================
 //
@@ -571,13 +572,11 @@ static void Field(FieldParseContext *ctx)
   }
 }
 
-
-static void StrtoI32(FieldParseContext *ctx)
+static void str_to_i32_core(const char **pch, int32_t *target)
 {
-  const char *ch = *(ctx->ch);
-  int32_t *target = (int32_t*) ctx->targets[sizeof(int32_t)];
+  const char *ch = *pch;
 
-  if (*ch=='0' && args.keepLeadingZeros && (uint_fast8_t)(ch[1]-'0')<10) return;
+  if (*ch=='0' && args.keepLeadingZeros && IS_DIGIT(ch[1])) return;
   bool neg = *ch=='-';
   ch += (neg || *ch=='+');
   const char *start = ch;  // to know if at least one digit is present
@@ -592,7 +591,7 @@ static void StrtoI32(FieldParseContext *ctx)
   // number significant figures = digits from the first non-zero onwards including trailing zeros
   while (*ch=='0') ch++;
   uint_fast32_t sf = 0;
-  while ( (digit=(uint_fast8_t)(ch[sf]-'0'))<10 ) {
+  while ( (digit=AS_DIGIT(ch[sf]))<10 ) {
     acc = 10*acc + digit;
     sf++;
   }
@@ -605,10 +604,15 @@ static void StrtoI32(FieldParseContext *ctx)
   //     (acc==0 && ch-start==1) ) {
   if ((sf || ch>start) && sf<=10 && acc<=INT32_MAX) {
     *target = neg ? -(int32_t)acc : (int32_t)acc;
-    *(ctx->ch) = ch;
+    *pch = ch;
   } else {
     *target = NA_INT32;  // empty field ideally, contains NA and fall through to check if NA (in which case this write is important), or just plain invalid
   }
+}
+
+static void StrtoI32(FieldParseContext *ctx)
+{
+  str_to_i32_core(ctx->ch, (int32_t*) ctx->targets[sizeof(int32_t)]);
 }
 
 
@@ -616,7 +620,7 @@ static void StrtoI64(FieldParseContext *ctx)
 {
   const char *ch = *(ctx->ch);
   int64_t *target = (int64_t*) ctx->targets[sizeof(int64_t)];
-  if (*ch=='0' && args.keepLeadingZeros && (uint_fast8_t)(ch[1]-'0')<10) return;
+  if (*ch=='0' && args.keepLeadingZeros && IS_DIGIT(ch[1])) return;
   bool neg = *ch=='-';
   ch += (neg || *ch=='+');
   const char *start = ch;
@@ -624,7 +628,7 @@ static void StrtoI64(FieldParseContext *ctx)
   uint_fast64_t acc = 0;  // important unsigned not signed here; we now need the full unsigned range
   uint_fast8_t digit;
   uint_fast32_t sf = 0;
-  while ( (digit=(uint_fast8_t)(ch[sf]-'0'))<10 ) {
+  while ( (digit=AS_DIGIT(ch[sf]))<10 ) {
     acc = 10*acc + digit;
     sf++;
   }
@@ -669,13 +673,12 @@ cat("1.0E300L\n};\n", file=f, append=TRUE)
  * of precision, for example `1.2439827340958723094785103` will not be parsed
  * as a double.
  */
-static void parse_double_regular(FieldParseContext *ctx)
+static void parse_double_regular_core(const char **pch, double *target)
 {
   #define FLOAT_MAX_DIGITS 18
-  const char *ch = *(ctx->ch);
-  double *target = (double*) ctx->targets[sizeof(double)];
+  const char *ch = *pch;
 
-  if (*ch=='0' && args.keepLeadingZeros && (uint_fast8_t)(ch[1]-'0')<10) return;
+  if (*ch=='0' && args.keepLeadingZeros && IS_DIGIT(ch[1])) return;
   bool neg, Eneg;
   ch += (neg = *ch=='-') + (*ch=='+');
 
@@ -689,7 +692,7 @@ static void parse_double_regular(FieldParseContext *ctx)
   // Read the first, integer part of the floating number (but no more than
   // FLOAT_MAX_DIGITS digits).
   int_fast32_t sflimit = FLOAT_MAX_DIGITS;
-  while ((digit=(uint_fast8_t)(*ch-'0'))<10 && sflimit) {
+  while ((digit=AS_DIGIT(*ch))<10 && sflimit) {
     acc = 10*acc + digit;
     sflimit--;
     ch++;
@@ -699,8 +702,8 @@ static void parse_double_regular(FieldParseContext *ctx)
   // we will read and discard those extra digits, but only if they are followed
   // by a decimal point (otherwise it's a just big integer, which should be
   // treated as a string instead of losing precision).
-  if (sflimit==0 && (uint_fast8_t)(*ch-'0')<10) {
-    while ((uint_fast8_t)(*ch-'0')<10) {
+  if (sflimit==0 && IS_DIGIT(*ch)) {
+    while (IS_DIGIT(*ch)) {
       ch++;
       e++;
     }
@@ -723,7 +726,7 @@ static void parse_double_regular(FieldParseContext *ctx)
 
     // Now read the significant digits in the fractional part of the number
     int_fast32_t k = 0;
-    while ((digit=(uint_fast8_t)(ch[k]-'0'))<10 && sflimit) {
+    while ((digit=AS_DIGIT(ch[k]))<10 && sflimit) {
       acc = 10*acc + digit;
       k++;
       sflimit--;
@@ -733,7 +736,7 @@ static void parse_double_regular(FieldParseContext *ctx)
 
     // If more digits are present, skip them
     if (sflimit==0) {
-      while ((uint_fast8_t)(*ch-'0')<10) ch++;
+      while (IS_DIGIT(*ch)) ch++;
     }
     // Check that at least 1 digit was present in either the integer or
     // fractional part ("+1" here accounts for the decimal point char).
@@ -750,13 +753,13 @@ static void parse_double_regular(FieldParseContext *ctx)
     if (ch==start) goto fail;  // something valid must be between [+|-] and E, character E alone is invalid.
     ch += 1/*E*/ + (Eneg = ch[1]=='-') + (ch[1]=='+');
     int_fast32_t E = 0;
-    if ((digit=(uint_fast8_t)(*ch-'0'))<10) {
+    if ((digit=AS_DIGIT(*ch))<10) {
       E = digit;
       ch++;
-      if ((digit=(uint_fast8_t)(*ch-'0'))<10) {
+      if ((digit=AS_DIGIT(*ch))<10) {
         E = E*10 + digit;
         ch++;
-        if ((digit=(uint_fast8_t)(*ch-'0'))<10) {
+        if ((digit=AS_DIGIT(*ch))<10) {
           E = E*10 + digit;
           ch++;
         }
@@ -784,13 +787,16 @@ static void parse_double_regular(FieldParseContext *ctx)
 
   r *= pow10lookup[e];
   *target = (double)(neg? -r : r);
-  *(ctx->ch) = ch;
+  *pch = ch;
   return;
 
   fail:
     *target = NA_FLOAT64;
 }
 
+static void parse_double_regular(FieldParseContext *ctx) {
+  parse_double_regular_core(ctx->ch, (double*) ctx->targets[sizeof(double)]);
+}
 
 
 /**
@@ -820,11 +826,11 @@ static void parse_double_extended(FieldParseContext *ctx)
   }
   if (ch[0]=='N' && (ch[1]=='A' || ch[1]=='a') && ch[2]=='N' && (ch += 3)) {
     if (ch[-2]=='a' && (*ch=='%' || *ch=='Q' || *ch=='S')) ch++;
-    while ((uint_fast8_t)(*ch-'0') < 10) ch++;
+    while (IS_DIGIT(*ch)) ch++;
     goto return_nan;
   }
   if ((ch[0]=='q' || ch[0]=='s') && ch[1]=='N' && ch[2]=='a' && ch[3]=='N' && (ch += 4)) {
-    while ((uint_fast8_t)(*ch-'0') < 10) ch++;
+    while (IS_DIGIT(*ch)) ch++;
     goto return_nan;
   }
   if (ch[0]=='1' && ch[1]=='.' && ch[2]=='#') {
@@ -910,7 +916,7 @@ static void parse_double_hexadecimal(FieldParseContext *ctx)
     acc <<= (13 - ndigits) * 4;
     ch += 1 + (Eneg = ch[1]=='-') + (ch[1]=='+');
     uint64_t E = 0;
-    while ((digit = (uint8_t)(*ch-'0')) < 10) {
+    while ((digit = AS_DIGIT(*ch)) < 10) {
       E = 10*E + digit;
       ch++;
     }
@@ -937,13 +943,144 @@ static void parse_double_hexadecimal(FieldParseContext *ctx)
     *target = NA_FLOAT64;
 }
 
+/*
+f = 'src/freadLookups.h'
+cat('const uint8_t cumDaysCycleYears[401] = {\n', file=f, append=TRUE)
+t = format(as.double(difftime(as.Date(sprintf('%04d-01-01', 1600:1999)), .Date(0), units='days')))
+rows = paste0(apply(matrix(t, ncol = 4L, byrow = TRUE), 1L, paste, collapse = ', '), ',\n')
+cat(rows, sep='', file=f, append=TRUE)
+cat(146097, '// total days in 400 years\n};\n', sep = '', file=f, append=TRUE)
+*/
+static void parse_iso8601_date_core(const char **pch, int32_t *target)
+{
+  const char *ch = *pch;
+
+  int32_t year=0, month=0, day=0;
+
+  str_to_i32_core(&ch, &year);
+
+  // .Date(.Machine$integer.max*c(-1, 1)):
+  //  -5877641-06-24 -- 5881580-07-11
+  //  rather than fiddle with dates within those terminal years (unlikely
+  //  to be showing up in data sets any time soon), just truncate towards 0
+  if (year == NA_INT32 || year < -5877640 || year > 5881579 || *ch != '-')
+    goto fail;
+
+  // Multiples of 4, excluding 3/4 of centuries
+  bool isLeapYear = year % 4 == 0 && (year % 100 != 0 || year/100 % 4 == 0);
+  ch++;
+
+  str_to_i32_core(&ch, &month);
+  if (month == NA_INT32 || month < 1 || month > 12 || *ch != '-')
+    goto fail;
+  ch++;
+
+  str_to_i32_core(&ch, &day);
+  if (day == NA_INT32 || day < 1 ||
+      (day > (isLeapYear ? leapYearDays[month-1] : normYearDays[month-1])))
+    goto fail;
+
+  *target =
+    (year/400 - 4)*cumDaysCycleYears[400] + // days to beginning of 400-year cycle
+    cumDaysCycleYears[year % 400] + // days to beginning of year within 400-year cycle
+    (isLeapYear ? cumDaysCycleMonthsLeap[month-1] : cumDaysCycleMonthsNorm[month-1]) + // days to beginning of month within year
+    day-1; // day within month (subtract 1: 1970-01-01 -> 0)
+
+  *pch = ch;
+  return;
+
+  fail:
+    *target = NA_INT32;
+}
+
+static void parse_iso8601_date(FieldParseContext *ctx) {
+  parse_iso8601_date_core(ctx->ch, (int32_t*) ctx->targets[sizeof(int32_t)]);
+}
+
+static void parse_iso8601_timestamp(FieldParseContext *ctx)
+{
+  const char *ch = *(ctx->ch);
+  double *target = (double*) ctx->targets[sizeof(double)];
+
+  int32_t date, hour=0, minute=0, tz_hour=0, tz_minute=0;
+  double second=0;
+
+  parse_iso8601_date_core(&ch, &date);
+  if (date == NA_INT32)
+    goto fail;
+  if (*ch != ' ' && *ch != 'T')
+    goto date_only;
+    // allows date-only field in a column with UTC-marked datetimes to be parsed as UTC too; test 2150.13
+  ch++;
+
+  str_to_i32_core(&ch, &hour);
+  if (hour == NA_INT32 || hour < 0 || hour > 23 || *ch != ':')
+    goto fail;
+  ch++;
+
+  str_to_i32_core(&ch, &minute);
+  if (minute == NA_INT32 || minute < 0 || minute > 59 || *ch != ':')
+    goto fail;
+  ch++;
+
+  parse_double_regular_core(&ch, &second);
+  if (second == NA_FLOAT64 || second < 0 || second >= 60)
+    goto fail;
+
+  if (*ch == 'Z') {
+    ch++; // "Zulu time"=UTC
+  } else {
+    if (*ch == ' ')
+      ch++;
+    if (*ch == '+' || *ch == '-') {
+      const char *start = ch; // facilitates distinguishing +04, +0004, +0000, +00:00
+      // three recognized formats: [+-]AA:BB, [+-]AABB, and [+-]AA
+      str_to_i32_core(&ch, &tz_hour);
+      if (tz_hour == NA_INT32)
+        goto fail;
+      if (ch - start == 5 && tz_hour != 0) { // +AABB
+        if (abs(tz_hour) > 2400)
+          goto fail;
+        tz_minute = tz_hour % 100;
+        tz_hour /= 100;
+      } else if (ch - start == 3) {
+        if (abs(tz_hour) > 24)
+          goto fail;
+        if (*ch == ':') {
+          ch++;
+          str_to_i32_core(&ch, &tz_minute);
+          if (tz_minute == NA_INT32)
+            goto fail;
+        }
+      }
+    } else {
+      if (!args.noTZasUTC)
+        goto fail;
+      // if neither Z nor UTC offset is present, then it's local time and that's not directly supported yet; see news for v1.13.0
+      // but user can specify that the unmarked datetimes are UTC by passing tz="UTC"
+      // if local time is UTC (env variable TZ is "" or "UTC", not unset) then local time is UTC, and that's caught by fread at R level too
+    }
+  }
+
+  date_only:
+
+  //Rprintf("date=%d\thour=%d\tz_hour=%d\tminute=%d\ttz_minute=%d\tsecond=%.1f\n", date, hour, tz_hour, minute, tz_minute, second);
+  // cast upfront needed to prevent silent overflow
+  *target = 86400*(double)date + 3600*(hour - tz_hour) + 60*(minute - tz_minute) + second;
+
+  *(ctx->ch) = ch;
+  return;
+
+  fail:
+    *target = NA_FLOAT64;
+}
 
 /* Parse numbers 0 | 1 as boolean and ,, as NA (fwrite's default) */
 static void parse_bool_numeric(FieldParseContext *ctx)
 {
   const char *ch = *(ctx->ch);
   int8_t *target = (int8_t*) ctx->targets[sizeof(int8_t)];
-  uint8_t d = (uint8_t)(*ch - '0');  // '0'=>0, '1'=>1, everything else > 1
+  uint_fast8_t d = AS_DIGIT(*ch);  // '0'=>0, '1'=>1, everything else > 1
   if (d <= 1) {
     *target = (int8_t) d;
     *(ctx->ch) = ch + 1;
@@ -1005,7 +1142,13 @@ static void parse_bool_lowercase(FieldParseContext *ctx)
 }
 
 
-
+/* How to register a new parser
+ *  (1) Write the parser
+ *  (2) Add it to fun array here
+ *  (3) Extend disabled_parsers, typeName, and typeSize here as appropriate
+ *  (4) Extend colType typdef in fread.h as appropriate
+ *  (5) Extend typeSxp, typeRName, typeEnum in freadR.c as appropriate
+ */
 typedef void (*reader_fun_t)(FieldParseContext *ctx);
 static reader_fun_t fun[NUMTYPE] = {
   (reader_fun_t) &Field,
@@ -1018,10 +1161,12 @@ static reader_fun_t fun[NUMTYPE] = {
   (reader_fun_t) &parse_double_regular,
   (reader_fun_t) &parse_double_extended,
   (reader_fun_t) &parse_double_hexadecimal,
+  (reader_fun_t) &parse_iso8601_date,
+  (reader_fun_t) &parse_iso8601_timestamp,
   (reader_fun_t) &Field
 };
 
-static int disabled_parsers[NUMTYPE] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+static int disabled_parsers[NUMTYPE] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
 static int detect_types( const char **pch, int8_t type[], int ncol, bool *bumped) {
   // used in sampling column types and whether column names are present
@@ -1151,6 +1296,7 @@ int freadMain(freadMainArgs _args) {
     nastr++;
   }
   disabled_parsers[CT_BOOL8_N] = !args.logical01;
+  disabled_parsers[CT_ISO8601_DATE] = disabled_parsers[CT_ISO8601_TIME] = args.oldNoDateTime; // temporary new option in v1.13.0; see NEWS
   if (verbose) {
     if (*NAstrings == NULL) {
       DTPRINT(_("  No NAstrings provided.\n"));
@@ -1475,7 +1621,7 @@ int freadMain(freadMainArgs _args) {
     int topSkip=0;            // how many rows to auto-skip
     const char *topStart=NULL;
 
-    for (quoteRule=quote?0:3; quoteRule<4; quoteRule++) {
+    for (quoteRule=quote?0:3; quoteRule<4; quoteRule++) { // #loop_counter_not_local_scope_ok
       // quote rule in order of preference.
       // when top is tied the first wins, so do all seps for the first quoteRule, then all seps for the second quoteRule, etc
       for (int s=0; s<nseps; s++) {
@@ -1564,7 +1710,7 @@ int freadMain(freadMainArgs _args) {
       sep = topSep;
       // no self healing quote rules, as we don't have >1 field to disambiguate
       // choose quote rule 0 or 1 based on for which 100 rows gets furthest into file
-      for (quoteRule=0; quoteRule<=1; quoteRule++) {
+      for (quoteRule=0; quoteRule<=1; quoteRule++) { // #loop_counter_not_local_scope_ok
         int thisRow=0, thisncol=0;
         ch = pos;
         while (ch<eof && ++thisRow<jumpLines && (thisncol=countfields(&ch))>=0) {};
@@ -1923,8 +2069,9 @@ int freadMain(freadMainArgs _args) {
     if (type[j]==CT_DROP) { size[j]=0; ndrop++; continue; }
     if (type[j]<tmpType[j]) {
       if (strcmp(typeName[tmpType[j]], typeName[type[j]]) != 0) {
-        DTWARN(_("Attempt to override column %d <<%.*s>> of inherent type '%s' down to '%s' ignored. Only overrides to a higher type are currently supported. If this was intended, please coerce to the lower type afterwards."),
-               j+1, colNames[j].len, colNamesAnchor+colNames[j].off, typeName[tmpType[j]], typeName[type[j]]);
+        DTWARN(_("Attempt to override column %d%s%.*s%s of inherent type '%s' down to '%s' ignored. Only overrides to a higher type are currently supported. If this was intended, please coerce to the lower type afterwards."),
+               j+1, colNames?" <<":"", colNames?(colNames[j].len):0, colNames?(colNamesAnchor+colNames[j].off):"", colNames?">>":"", // #4644
+               typeName[tmpType[j]], typeName[type[j]]);
       }
       type[j] = tmpType[j];
       // TODO: apply overrides to lower type afterwards and warn about the loss of accuracy then (if any); e.g. "4.0" would be fine to coerce to integer with no warning since
@@ -2126,10 +2273,10 @@ int freadMain(freadMainArgs _args) {
             // DTPRINT(_("Field %d: '%.10s' as type %d  (tch=%p)\n"), j+1, tch, type[j], tch);
             fieldStart = tch;
             int8_t thisType = type[j];  // fetch shared type once. Cannot read half-written byte is one reason type's type is single byte to avoid atomic read here.
-            int8_t thisSize = size[j];
             fun[abs(thisType)](&fctx);
             if (*tch!=sep) break;
-            ((char **) targets)[thisSize] += thisSize;
+            int8_t thisSize = size[j];
+            if (thisSize) ((char **) targets)[thisSize] += thisSize;  // 'if' for when rereading to avoid undefined NULL+0
             tch++;
             j++;
           }
@@ -2142,7 +2289,7 @@ int freadMain(freadMainArgs _args) {
           }
           else if (eol(&tch) && j<ncol) {   // j<ncol needed for #2523 (erroneous extra comma after last field)
             int8_t thisSize = size[j];
-            ((char **) targets)[thisSize] += thisSize;
+            if (thisSize) ((char **) targets)[thisSize] += thisSize;
             j++;
             if (j==ncol) { tch++; myNrow++; continue; }  // next line. Back up to while (tch<nextJumpStart). Usually happens, fastest path
           }
@@ -2218,6 +2365,9 @@ int freadMain(freadMainArgs _args) {
               if (j+fieldsRemaining != ncol) break;
               checkedNumberOfFields = true;
             }
+            if (thisType <= -NUMTYPE) {
+              break;  // Improperly quoted char field needs to be healed below, other columns will be filled #5041 and #4774
+            }
             #pragma omp critical
             {
               joldType = type[j];  // fetch shared value again in case another thread bumped it while I was waiting.
@@ -2226,8 +2376,8 @@ int freadMain(freadMainArgs _args) {
                 if (verbose) {
                   char temp[1001];
                   int len = snprintf(temp, 1000,
-                    _("Column %d (\"%.*s\") bumped from '%s' to '%s' due to <<%.*s>> on row %"PRIu64"\n"),
-                    j+1, colNames[j].len, colNamesAnchor + colNames[j].off,
+                    _("Column %d%s%.*s%s bumped from '%s' to '%s' due to <<%.*s>> on row %"PRIu64"\n"),
+                    j+1, colNames?" <<":"", colNames?(colNames[j].len):0, colNames?(colNamesAnchor+colNames[j].off):"", colNames?">>":"",
                     typeName[abs(joldType)], typeName[abs(thisType)],
                     (int)(tch-fieldStart), fieldStart, (uint64_t)(ctx.DTi+myNrow));
                   if (len > 1000) len = 1000;
@@ -2243,7 +2393,8 @@ int freadMain(freadMainArgs _args) {
               } // else another thread just bumped to a (negative) higher or equal type while I was waiting, so do nothing
             }
           }
-          ((char**) targets)[size[j]] += size[j];
+          int8_t thisSize = size[j];
+          if (thisSize) ((char**) targets)[size[j]] += size[j];  // 'if' to avoid undefined NULL+=0 when rereading
           j++;
           if (*tch==sep) { tch++; continue; }
           if (fill && (*tch=='\n' || *tch=='\r' || tch==eof) && j<ncol) continue;  // reuse processors to write appropriate NA to target; saves maintenance of a type switch down here
@@ -2432,7 +2583,7 @@ int freadMain(freadMainArgs _args) {
     if (ch==eof) {
       // whitespace at the end of the file is always skipped ok
     } else {
-      const char *skippedFooter = ch;
+      const char *skippedFooter = ENC2NATIVE(ch);
       // detect if it's a single line footer. Commonly the row count from SQL queries.
       while (ch<eof && *ch!='\n' && *ch!='\r') ch++;
       while (ch<eof && isspace(*ch)) ch++;
