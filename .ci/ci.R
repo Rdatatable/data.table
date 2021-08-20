@@ -5,10 +5,10 @@
 ## added ver argument to produce R version independent urls
 ## https://bugs.r-project.org/bugzilla3/show_bug.cgi?id=17420
 contrib.url <-
-function (repos, type = getOption("pkgType"), ver) 
+function (repos, type = getOption("pkgType"), ver)
 {
   type <- utils:::resolvePkgType(type)
-  if (is.null(repos)) 
+  if (is.null(repos))
     return(NULL)
   if ("@CRAN@" %in% repos && interactive()) {
     cat(gettext("--- Please select a CRAN mirror for use in this session ---"), "\n", sep = "")
@@ -17,12 +17,12 @@ function (repos, type = getOption("pkgType"), ver)
     m <- match("@CRAN@", repos)
     nm <- names(repos)
     repos[m] <- getOption("repos")["CRAN"]
-    if (is.null(nm)) 
+    if (is.null(nm))
       nm <- rep("", length(repos))
     nm[m] <- "CRAN"
     names(repos) <- nm
   }
-  if ("@CRAN@" %in% repos) 
+  if ("@CRAN@" %in% repos)
     stop("trying to use CRAN without setting a mirror")
   if(missing(ver)) {
     ver <- paste(R.version$major, strsplit(R.version$minor, ".", fixed=TRUE)[[1L]][1L], sep = ".")
@@ -37,7 +37,7 @@ function (repos, type = getOption("pkgType"), ver)
   res <- switch(
     type,
     source = paste(gsub("/$", "", repos), "src", "contrib", sep = "/"),
-    mac.binary = paste(gsub("/$", "", repos), "bin", mac.path, "contrib", ver, sep = "/"), 
+    mac.binary = paste(gsub("/$", "", repos), "bin", mac.path, "contrib", ver, sep = "/"),
     win.binary = paste(gsub("/$", "", repos), "bin", "windows", "contrib", ver, sep = "/")
   )
   res
@@ -45,7 +45,7 @@ function (repos, type = getOption("pkgType"), ver)
 
 ## returns dependencies for a package based on its DESCRIPTION file
 dcf.dependencies <-
-function(file = "DESCRIPTION", 
+function(file = "DESCRIPTION",
          which = NA,
          except.priority = "base") {
   if (!is.character(file) || !length(file) || !all(file.exists(file)))
@@ -71,7 +71,7 @@ function(file = "DESCRIPTION",
   }, which = which), use.names = FALSE)
   local.extract_dependency_package_names = function (x) {
     ## do not filter out R like tools:::.extract_dependency_package_names, used for web/$pkg/index.html
-    if (is.na(x)) 
+    if (is.na(x))
       return(character())
     x <- unlist(strsplit(x, ",[[:space:]]*"))
     x <- sub("[[:space:]]*([[:alnum:].]+).*", "\\1", x)
@@ -101,13 +101,13 @@ function(file = "DESCRIPTION") {
 ## download dependencies recursively for provided packages
 ## put all downloaded packages into local repository
 mirror.packages <-
-function(pkgs, 
-         which = c("Depends", "Imports", "LinkingTo"), 
-         repos = getOption("repos"), 
-         type = c("source", "mac.binary", "win.binary"), 
-         repodir, 
-         except.repodir = repodir, 
-         except.priority = "base", 
+function(pkgs,
+         which = c("Depends", "Imports", "LinkingTo"),
+         repos = getOption("repos"),
+         type = c("source", "mac.binary", "win.binary"),
+         repodir,
+         except.repodir = repodir,
+         except.priority = "base",
          method,
          quiet = TRUE,
          binary.ver,
@@ -161,7 +161,7 @@ function(pkgs,
     warning(sprintf("Packages binaries could not be found in provided reposistories for R version %s: %s", binary.ver, paste(newpkgs[!availpkgs], collapse = ", ")))
     newpkgs <- newpkgs[availpkgs]
   }
-  
+
   pkgsext <- switch(type,
                     "source" = "tar.gz",
                     "mac.binary" = "tgz",
@@ -171,8 +171,8 @@ function(pkgs,
   unlink(dlfiles[file.exists(dlfiles)])
   ## repos argument is not used in download.packages, only as default for contriburl argument
   ## we provide contriburl to avoid interactive CRAN menu popup twice in mirror.packages
-  dp <- utils::download.packages(pkgs = newpkgs, destdir = destdir, 
-                                 available = db, contriburl = repos.url, 
+  dp <- utils::download.packages(pkgs = newpkgs, destdir = destdir,
+                                 available = db, contriburl = repos.url,
                                  type = type, method = method, quiet = quiet)
   tools::write_PACKAGES(dir = destdir, type = type, ...)
   dp
