@@ -231,6 +231,29 @@
     
 36. `DT[, min(int64Col), by=grp]` (and `max`) would return incorrect results for `bit64::integer64` columns, [#4444](https://github.com/Rdatatable/data.table/issues/4444). Thanks to @go-see for reporting, and Michael Chirico for the PR.
 
+37. `fread(dec=',')` was able to guess `sep=','` and return an incorrect result, [#4483](https://github.com/Rdatatable/data.table/issues/4483). Thanks to Michael Chirico for reporting and fixing. It was already an error to provide both `sep=','` and `dec=','` manually.
+
+    ```R
+    fread('A|B|C\n1|0,4|a\n2|0,5|b\n', dec=',')  # no problem
+    
+    #        A     B      C
+    #    <int> <num> <char>
+    # 1:     1   0.4      a
+    # 2:     2   0.5      b
+
+    fread('A|B,C\n1|0,4\n2|0,5\n', dec=',')
+    
+    #       A|B     C    # old result guessed sep=',' despite dec=','
+    #    <char> <int>
+    # 1:    1|0     4
+    # 2:    2|0     5
+    
+    #        A   B,C     # now detects sep='|' correctly
+    #    <int> <num>
+    # 1:     1   0.4
+    # 2:     2   0.5
+    ```
+
 ## NOTES
 
 1. New feature 29 in v1.12.4 (Oct 2019) introduced zero-copy coercion. Our thinking is that requiring you to get the type right in the case of `0` (type double) vs `0L` (type integer) is too inconvenient for you the user. So such coercions happen in `data.table` automatically without warning. Thanks to zero-copy coercion there is no speed penalty, even when calling `set()` many times in a loop, so there's no speed penalty to warn you about either. However, we believe that assigning a character value such as `"2"` into an integer column is more likely to be a user mistake that you would like to be warned about. The type difference (character vs integer) may be the only clue that you have selected the wrong column, or typed the wrong variable to be assigned to that column. For this reason we view character to numeric-like coercion differently and will warn about it. If it is correct, then the warning is intended to nudge you to wrap the RHS with `as.<type>()` so that it is clear to readers of your code that a coercion from character to that type is intended. For example :
