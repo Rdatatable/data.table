@@ -248,7 +248,7 @@
     # 1:    1|0     4
     # 2:    2|0     5
     
-    #        A   B,C     # new result guesses sep='|'
+    #        A   B,C     # now detects sep='|' correctly
     #    <int> <num>
     # 1:     1   0.4
     # 2:     2   0.5
