@@ -14172,6 +14172,7 @@ DT = data.table(a = 1:10)
 test(1984.22, na.omit(DT, invert = 'a'), error="'invert' must be logical")
 test(1984.23, na.omit(DT, cols = 'b'), error="specify non existing column*.*b")
 #test(1984.24, na.omit(DT, cols = c('b', 'c')), error="Columns [b, c] don't") # only first non-existing col is now reported for efficiency
+test(1984.242, na.omit(data.table(A=c(1,NA,2)), cols=character()), data.table(A=c(1,NA,2)))  #2514
 ### idcol = TRUE behavior of rbindlist
 test(1984.25, rbindlist(list(DT[1L], DT[2L]), idcol = TRUE), data.table(.id=1:2, a=1:2))
 test(1984.26, setalloccol(`*tmp*`), error='setalloccol attempting to modify `*tmp*`')
