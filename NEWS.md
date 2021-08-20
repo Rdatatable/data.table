@@ -292,7 +292,6 @@
 
     > ... the basename of the DLL needs to be both a valid file name and valid as part of a C entry point (e.g. it cannot contain ‘.’): for portable code it is best to confine DLL names to be ASCII alphanumeric plus underscore. If entry point R_init_lib is not found it is also looked for with ‘.’ replaced by ‘_’.
 
-14. `na.omit(DT, cols=character())`, i.e. length-0 `cols`, now returns its input, [#2514](https://github.com/Rdatatable/data.table/issues/2514). Thanks to @tdeenes for reporting.
 
 # data.table [v1.14.0](https://github.com/Rdatatable/data.table/milestone/23?closed=1)  (21 Feb 2021)
 
