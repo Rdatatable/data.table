@@ -185,6 +185,50 @@
 
 34. `na.omit(DT)` did not remove `NA` in `nanotime` columns, [#4744](https://github.com/Rdatatable/data.table/issues/4744). Thanks Jean-Mathieu Vermosen for reporting, and Michael Chirico for the PR.
 
+35. `DT[, min(intCol, na.rm=TRUE), by=grp]` would return `Inf` for any groups containing all NAs, with a type change from `integer` to `numeric` to hold the `Inf`, and with warning. Now `NA` is returned for such all-NA groups, without warning or type change. This is almost-surely less surprising, more convenient, consistent, and efficient. There was no user request for this, likely because our desire to be consistent with base R in this regard was known (base R's `min(x, na.rm=TRUE)` returns `Inf` with warning for all-NA input). Matt Dowle made this change when reworking internals, [#5105](https://github.com/Rdatatable/data.table/pull/5105). The old behavior seemed so bad, and since there was a warning too, it seemed more appropriate to treat it as a bug.
+
+    ```R
+    DT
+    #         A     B
+    #    <char> <int>
+    # 1:      a     1
+    # 2:      a    NA
+    # 3:      b     2
+    # 4:      b    NA
+
+    DT[, min(B,na.rm=TRUE), by=A]  # no change in behavior (no all-NA groups yet)
+    #         A    V1
+    #    <char> <int>
+    # 1:      a     1
+    # 2:      b     2
+
+    DT[3, B:=NA]                   # make an all-NA group
+    DT
+    #         A     B
+    #    <char> <int>
+    # 1:      a     1
+    # 2:      a    NA
+    # 3:      b    NA
+    # 4:      b    NA
+
+    DT[, min(B,na.rm=TRUE), by=A]  # old result
+    #         A    V1
+    #    <char> <num>              # V1's type changed to numeric (inconsistent)
+    # 1:      a     1
+    # 2:      b   Inf              # Inf surprising
+    # Warning message:             # warning inconvenient
+    # In gmin(B, na.rm = TRUE) :
+    #   No non-missing values found in at least one group. Coercing to numeric
+    #   type and returning 'Inf' for such groups to be consistent with base
+
+    DT[, min(B,na.rm=TRUE), by=A]  # new result
+    #         A    V1
+    #    <char> <int>              # V1's type remains integer (consistent)
+    # 1:      a     1
+    # 2:      b    NA              # NA because there are no non-NA, naturally
+                                   # no inconvenient warning
+    ```
+
 ## NOTES
 
 1. New feature 29 in v1.12.4 (Oct 2019) introduced zero-copy coercion. Our thinking is that requiring you to get the type right in the case of `0` (type double) vs `0L` (type integer) is too inconvenient for you the user. So such coercions happen in `data.table` automatically without warning. Thanks to zero-copy coercion there is no speed penalty, even when calling `set()` many times in a loop, so there's no speed penalty to warn you about either. However, we believe that assigning a character value such as `"2"` into an integer column is more likely to be a user mistake that you would like to be warned about. The type difference (character vs integer) may be the only clue that you have selected the wrong column, or typed the wrong variable to be assigned to that column. For this reason we view character to numeric-like coercion differently and will warn about it. If it is correct, then the warning is intended to nudge you to wrap the RHS with `as.<type>()` so that it is clear to readers of your code that a coercion from character to that type is intended. For example :
