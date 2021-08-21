@@ -25,4 +25,9 @@ test.data.table(script = "tests.Rraw", verbose = FALSE, pkg = ".",
   If all tests were successful, \code{TRUE} is returned. Otherwise, see the \code{silent} argument above. \code{silent=TRUE} is intended for use at the start of production scripts; e.g. \code{stopifnot(test.data.table(silent=TRUE))} to check \code{data.table} is passing its own tests before proceeding.
 }
 \seealso{ \code{\link{data.table}}, \code{\link{test}} }
+\examples{
+  \dontrun{
+  test.data.table()
+  }
+}
 \keyword{ data }
