@@ -84,7 +84,8 @@ typedef struct fwriteMainArgs
 
   const void *colNames;   // NULL means no header, otherwise ncol strings
   bool doRowNames;        // optional, likely false
-  const void *rowNames;   // if doRowNames is true and rowNames is not NULL then they're used, otherwise row numbers are output.
+  const void *rowNames;   // if doRowNames is true and rowNames is NULL then row numbers are output
+  uint8_t rowNameFun;     // when rowNames is not NULL, which writer to use for them
   char sep;
   char sep2;
   char dec;

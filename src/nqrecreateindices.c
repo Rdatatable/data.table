@@ -9,7 +9,7 @@ SEXP nqRecreateIndices(SEXP xo, SEXP len, SEXP indices, SEXP nArg, SEXP nomatch)
   ans = PROTECT(allocVector(VECSXP, 2));
   SET_VECTOR_ELT(ans, 0, (newstarts = allocVector(INTSXP, n)));
   SET_VECTOR_ELT(ans, 1, (newlen = allocVector(INTSXP, n)));
-  
+
   int *inewlen = INTEGER(newlen);
   const int *iindices = INTEGER(indices);
   const int *ilen = INTEGER(len);

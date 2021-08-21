@@ -7,52 +7,13 @@
 ##     ideally, we are including _() wrapping in
 ##     new PRs throughout dev cycle, and this step
 ##     becomes about tying up loose ends
-## Appending _() char array wrapping to all messages
-##   that might be shown to the user. This step is slightly
-##   too greedy, as it includes too many msg, some of which
-##   need not be translated [more work to do here to make
-##   this less manual] some things to watch out for:
-##     * quote embedded (and escaped) within message [could be fixed with smarter regex]
-##     * multi-line implicit-concat arrays (in C, `"a" "b"` is the same as `"ab"`) should be wrapped "on the outside" not individually
-##     * `data.table` shares some of its `src` with `pydatatable`, so the requirement to `#include <R.h>` before the `#define _` macro meant we need to be careful about including this macro only in the R headers for these files (hence I created `po.h`)
-##     * Can't use `_()` _inside_ another functional macro. Only wrap the string passed to the macro later.
-for MSG in error warning DTWARN DTPRINT Rprintf STOP Error;
-  do for SRC_FILE in src/*.c;
-    # no inplace -i in default mac sed
-    do sed -E "s/$MSG[(]("[^"]*")/$MSG(_(\1)/g" $SRC_FILE > out;
-    mv out $SRC_FILE;
-  done
-done
-
-## checking for other lines calling these that didn't get _()-wrapped
-for MSG in error warning DTWARN DTPRINT Rprintf STOP Error;
-  do grep -Er "\b$MSG[(]" src --include=*.c | grep -v _ | grep -Ev "(?://|[*]).*$MSG[(]"
-
-## similar, but a bit more manual to check snprintf usage
-
-## look for char array that haven't been covered yet
-grep -Er '"[^"]+"' src --include=*.c | grep -Fv '_("' | grep -v "#include" | grep -v '//.*".*"'
-
-## look for lines starting with a char array (likely continued from prev line & can be combined)
-grep -Er '^\s*"' src/*.c
-
-## Now extract these messages with xgettext
-cd src
-xgettext --keyword=_ -o data.table.pot *.c
-cd ..
+## Check the output here for translatable messages
+xgettext -o /dev/stdout ./*.c \
+  --keyword=Rprintf --keyword=error --keyword=warning --keyword=STOP --keyword=DTWARN --keyword=Error --keyword=DTPRINT --keyword=snprintf:3
 
 ## (b) Update R template file: src/R-data.table.pot
-## much easier, once the update_pkg_po bug is fixed
-R --no-save
-## a bug fix in R still hadn't made the 2019-12-12 release,
-##   so run the following to source the corrected function manually
-STEM='https://raw.githubusercontent.com/wch/r-source/trunk/src/library/tools/R'
-source(file.path(STEM, 'utils.R'))
-source(file.path(STEM, 'xgettext.R'))
-source(file.path(STEM, 'translations.R'))
-## shouldn't be any errors from this...
-update_pkg_po('.')
-q()
+##  NB: this relies on R >= 4.0 to remove a bug in update_pkg_po
+Rscript -e "tools::update_pkg_po('.')"
 
 # 2) Open a PR with the new templates & contact the translators
 #   * zh_CN:
@@ -166,13 +127,23 @@ grep -n "[^A-Za-z0-9]F[^A-Za-z0-9]" ./inst/tests/tests.Rraw
 grep -Enr "^[^#]*(?:\[|==|>|<|>=|<=|,|\(|\+)\s*[-]?[0-9]+[^0-9L:.e]" R | grep -Ev "stop|warning|tolerance"
 
 # Never use ifelse. fifelse for vectors when necessary (nothing yet)
- grep -Enr "\bifelse" R
+grep -Enr "\bifelse" R
+
+# use substr() instead of substring(), #4447
+grep -Fnr "substring" R
 
 # No system.time in main tests.Rraw. Timings should be in benchmark.Rraw
-grep -n "system[.]time" ./inst/tests/tests.Rraw
+grep -Fn "system.time" ./inst/tests/*.Rraw | grep -Fv "benchmark.Rraw" | grep -Fv "this system.time usage ok"
+
+# No tryCatch in *.Rraw -- tryCatch should be handled only in test() itself to avoid silently missed warnings/errors/output
+grep -Fn "tryCatch" ./inst/tests/*.Rraw
 
 # All % in *.Rd should be escaped otherwise text gets silently chopped
 grep -n "[^\]%" ./man/*.Rd
+
+# if (a & b) is either invalid or inefficient (ditto for replace & with |);
+#   if(any(a [&|] b)) is appropriate b/c of collapsing the logical vector to scalar
+grep -nr "^[^#]*if[^&#]*[^&#\"][&][^&]" R | grep -Ev "if\s*[(](?:any|all)"
 
 # seal leak potential where two unprotected API calls are passed to the same
 # function call, usually involving install() or mkChar()
@@ -208,6 +179,10 @@ grep allocVector *.c | grep -v PROTECT | grep -v SET_VECTOR_ELT | grep -v setAtt
 grep coerceVector *.c | grep -v PROTECT | grep -v SET_VECTOR_ELT | grep -v setAttrib | grep -v return
 grep asCharacter *.c | grep -v PROTECT | grep -v SET_VECTOR_ELT | grep -v setAttrib | grep -v return
 
+# Enforce local scope for loop index (`for (int i=0; ...)` instead of `int i; for (i=0; ...)`)
+#   exceptions are tagged with #loop_counter_not_local_scope_ok
+grep -En "for\s*[(]\s*[a-zA-Z0-9_]+\s*=" src/*.c | grep -Fv "#loop_counter_not_local_scope_ok"
+
 cd ..
 R
 cc(test=TRUE, clean=TRUE, CC="gcc-10")  # to compile with -pedandic -Wall, latest gcc as CRAN: https://cran.r-project.org/web/checks/check_flavors.html
@@ -217,15 +192,18 @@ test.data.table()
 install.packages("xml2")   # to check the 150 URLs in NEWS.md under --as-cran below
 q("no")
 R CMD build .
-R CMD check data.table_1.13.1.tar.gz --as-cran
-R CMD INSTALL data.table_1.13.1.tar.gz --html
+export GITHUB_PAT="f1c.. github personal access token ..7ad"
+# avoids many too-many-requests in --as-cran's ping-all-URLs step (20 mins) inside the `checking CRAN incoming feasibility...` step.
+# Many thanks to Dirk for the tipoff that setting this env variable solves the problem, #4832.
+R CMD check data.table_1.14.1.tar.gz --as-cran
+R CMD INSTALL data.table_1.14.1.tar.gz --html
 
 # Test C locale doesn't break test suite (#2771)
 echo LC_ALL=C > ~/.Renviron
 R
 Sys.getlocale()=="C"
 q("no")
-R CMD check data.table_1.13.1.tar.gz
+R CMD check data.table_1.14.1.tar.gz
 rm ~/.Renviron
 
 # Test non-English does not break test.data.table() due to translation of messages; #3039, #630
@@ -234,18 +212,34 @@ require(data.table)
 test.data.table()
 q("no")
 
+# passes under non-English LC_TIME, #2350
+LC_TIME=fr_FR.UTF-8 R
+require(data.table)
+test.data.table()
+q("no")
+
+# User supplied PKG_CFLAGS and PKG_LIBS passed through, #4664
+# Next line from https://mac.r-project.org/openmp/. Should see the arguments passed through and then fail with gcc on linux.
+PKG_CFLAGS='-Xclang -fopenmp' PKG_LIBS=-lomp R CMD INSTALL data.table_1.14.1.tar.gz
+# Next line should work on Linux, just using superfluous and duplicate but valid parameters here to see them retained and work 
+PKG_CFLAGS='-fopenmp' PKG_LIBS=-lz R CMD INSTALL data.table_1.14.1.tar.gz
+
 R
 remove.packages("xml2")    # we checked the URLs; don't need to do it again (many minutes)
 require(data.table)
 test.data.table(script="other.Rraw")
 test.data.table(script="*.Rraw")
 test.data.table(verbose=TRUE)   # since main.R no longer tests verbose mode
+
+# check example() works on every exported function, with these sticter options too, and also that all help pages have examples
+options(warn=2, warnPartialMatchArgs=TRUE, warnPartialMatchAttr=TRUE, warnPartialMatchDollar=TRUE)
+invisible(lapply(objects(pos="package:data.table"), example, character.only=TRUE, echo=FALSE, ask=FALSE))
+
 gctorture2(step=50)
 system.time(test.data.table(script="*.Rraw"))  # apx 8h = froll 3h + nafill 1m + main 5h
 
 # Upload to win-builder: release, dev & old-release
-# Turn on Travis OSX; it's off in dev until it's added to GLCI (#3326) as it adds 17min after 11min Linux.
-# Turn on r-devel in Appveyor; it may be off in dev for similar dev cycle speed reasons
+# Turn on Travis OSX until it's added to GLCI (#3326). If it's off it's because as it adds 17min after 11min Linux.
 
 
 ###############################################
@@ -258,13 +252,13 @@ cd ~/build
 wget http://cran.stat.ucla.edu/src/base/R-3/R-3.1.0.tar.gz
 tar xvf R-3.1.0.tar.gz
 cd R-3.1.0
-./configure --without-recommended-packages
+CFLAGS="-fcommon" FFLAGS="-fallow-argument-mismatch" ./configure --without-recommended-packages
 make
 alias R310=~/build/R-3.1.0/bin/R
 ### END ONE TIME BUILD
 
 cd ~/GitHub/data.table
-R310 CMD INSTALL ./data.table_1.13.1.tar.gz
+R310 CMD INSTALL ./data.table_1.14.1.tar.gz
 R310
 require(data.table)
 test.data.table(script="*.Rraw")
@@ -276,7 +270,7 @@ test.data.table(script="*.Rraw")
 vi ~/.R/Makevars
 # Make line SHLIB_OPENMP_CFLAGS= active to remove -fopenmp
 R CMD build .
-R CMD INSTALL data.table_1.13.1.tar.gz   # ensure that -fopenmp is missing and there are no warnings
+R CMD INSTALL data.table_1.14.1.tar.gz   # ensure that -fopenmp is missing and there are no warnings
 R
 require(data.table)   # observe startup message about no OpenMP detected
 test.data.table()
@@ -284,7 +278,7 @@ q("no")
 vi ~/.R/Makevars
 # revert change above
 R CMD build .
-R CMD check data.table_1.13.1.tar.gz
+R CMD check data.table_1.14.1.tar.gz
 
 
 #####################################################
@@ -301,14 +295,14 @@ tar xvf R-devel.tar.gz
 mv R-devel R-devel-strict-clang
 tar xvf R-devel.tar.gz
 
-cd R-devel  # used for revdep testing: .dev/revdep.R.
+cd R-devel  # may be used for revdep testing: .dev/revdep.R.
 # important to change directory name before building not after because the path is baked into the build, iiuc
-./configure CFLAGS="-O2 -Wall -pedantic"
+./configure CFLAGS="-O0 -Wall -pedantic"
 make
 
 # use latest available `apt-cache search gcc-` or `clang-`
 cd ~/build/R-devel-strict-clang
-./configure --without-recommended-packages --disable-byte-compiled-packages --disable-openmp --enable-strict-barrier --disable-long-double CC="clang-10 -fsanitize=undefined,address -fno-sanitize=float-divide-by-zero -fno-omit-frame-pointer"
+./configure --without-recommended-packages --disable-byte-compiled-packages --enable-strict-barrier --disable-long-double CC="clang-11 -fsanitize=undefined,address -fno-sanitize=float-divide-by-zero -fno-omit-frame-pointer"
 make
 
 cd ~/build/R-devel-strict-gcc
@@ -334,8 +328,8 @@ alias Rdevel-strict-gcc='~/build/R-devel-strict-gcc/bin/R --vanilla'
 alias Rdevel-strict-clang='~/build/R-devel-strict-clang/bin/R --vanilla'
 
 cd ~/GitHub/data.table
-Rdevel-strict-gcc CMD INSTALL data.table_1.13.1.tar.gz
-Rdevel-strict-clang CMD INSTALL data.table_1.13.1.tar.gz
+Rdevel-strict-gcc CMD INSTALL data.table_1.14.1.tar.gz
+Rdevel-strict-clang CMD INSTALL data.table_1.14.1.tar.gz
 # Check UBSAN and ASAN flags appear in compiler output above. Rdevel was compiled with them so should be passed through to here
 Rdevel-strict-gcc
 Rdevel-strict-clang  # repeat below with clang and gcc
@@ -348,8 +342,8 @@ test.data.table(script="*.Rraw") # 7 mins (vs 1min normally) under UBSAN, ASAN a
                                  # without the fix in PR#3515, the --disable-long-double lumped into this build does now work and correctly reproduces the noLD problem
 # If any problems, edit ~/.R/Makevars and activate "CFLAGS=-O0 -g" to trace. Rerun 'Rdevel-strict CMD INSTALL' and rerun tests.
 for (i in 1:10) if (!test.data.table()) break  # try several runs maybe even 100; e.g a few tests generate data with a non-fixed random seed
-# gctorture(TRUE)      # very slow, many days
-gctorture2(step=100)   # [12-18hrs] under ASAN, UBSAN and --strict-barrier
+# gctorture(TRUE)      # very slow, many days maybe weeks
+gctorture2(step=100)   # 74 hours under ASAN, UBSAN and --strict-barrier
 print(Sys.time()); started.at<-proc.time(); try(test.data.table()); print(Sys.time()); print(timetaken(started.at))
 
 ## In case want to ever try again with 32bit on 64bit Ubuntu for tracing any 32bit-only problems
@@ -376,7 +370,7 @@ cd R-devel-valgrind
 make
 cd ~/GitHub/data.table
 vi ~/.R/Makevars  # make the -O2 -g line active, for info on source lines with any problems
-Rdevel-valgrind CMD INSTALL data.table_1.13.1.tar.gz
+Rdevel-valgrind CMD INSTALL data.table_1.14.1.tar.gz
 R_DONT_USE_TK=true Rdevel-valgrind -d "valgrind --tool=memcheck --leak-check=full --track-origins=yes --show-leak-kinds=definite,possible --gen-suppressions=all --suppressions=./.dev/valgrind.supp -s"
 # the default for --show-leak-kinds is 'definite,possible' which we're setting explicitly here as a reminder. CRAN uses the default too.
 #   including 'reachable' (as 'all' does) generates too much output from R itself about by-design permanent blocks
@@ -414,7 +408,7 @@ cd ~/build/rchk/trunk
 . ../scripts/config.inc
 . ../scripts/cmpconfig.inc
 vi ~/.R/Makevars   # set CFLAGS=-O0 -g so that rchk can provide source line numbers
-echo 'install.packages("~/GitHub/data.table/data.table_1.13.1.tar.gz",repos=NULL)' | ./bin/R --slave
+echo 'install.packages("~/GitHub/data.table/data.table_1.14.1.tar.gz",repos=NULL)' | ./bin/R --slave
 # objcopy warnings (if any) can be ignored: https://github.com/kalibera/rchk/issues/17#issuecomment-497312504
 . ../scripts/check_package.sh data.table
 cat packages/lib/data.table/libs/*check
@@ -524,6 +518,12 @@ sudo apt-get -y install libzmq3-dev   # for rzmq
 sudo apt-get -y install libimage-exiftool-perl   # for camtrapR
 sudo apt-get -y install parallel   # for revdepr.R
 sudo apt-get -y install pandoc-citeproc   # for basecallQC
+sudo apt-get -y install libquantlib0-dev  # for RQuantLib
+sudo apt-get -y install cargo  # for gifski, a suggest of nasoi
+sudo apt-get -y install libgit2-dev  # for gert
+sudo apt-get -y install cmake  # for symengine for RxODE
+sudo apt-get -y install libxslt1-dev  # for xslt
+sudo apt-get -y install flex  # for RcppCWB
 sudo R CMD javareconf
 # ENDIF
 
@@ -567,7 +567,9 @@ du -k inst/tests                # 1.5MB before
 bzip2 inst/tests/*.Rraw         # compress *.Rraw just for release to CRAN; do not commit compressed *.Rraw to git
 du -k inst/tests                # 0.75MB after
 R CMD build .
-R CMD check data.table_1.13.0.tar.gz --as-cran
+export GITHUB_PAT="f1c.. github personal access token ..7ad"
+Rdevel -q -e "packageVersion('xml2')"   # ensure installed
+Rdevel CMD check data.table_1.14.0.tar.gz --as-cran  # use latest Rdevel as it may have extra checks
 #
 bunzip2 inst/tests/*.Rraw.bz2  # decompress *.Rraw again so as not to commit compressed *.Rraw to git
 #
@@ -575,11 +577,7 @@ Resubmit to winbuilder (R-release, R-devel and R-oldrelease)
 Submit to CRAN. Message template :
 ------------------------------------------------------------
 Hello,
-870 CRAN revdeps checked.
-The following 3 are impacted and we have communicated with their maintainers:
-  expss nc memochange
-All known issues resolved including clang-UBSAN additional issue.
-Solaris is not resolved but this release will write more output upon that error so I can continue to trace that problem.
+1,016 CRAN revdeps checked. None are impacted.
 Many thanks!
 Best, Matt
 ------------------------------------------------------------
@@ -598,8 +596,8 @@ When CRAN's email contains "Pretest results OK pending a manual inspection" (or 
 3. Add new heading in NEWS for the next dev version. Add "(submitted to CRAN on <today>)" on the released heading.
 4. Bump dllVersion() in init.c
 5. Bump 3 version numbers in Makefile
-6. Search and replace this .dev/CRAN_Release.cmd to update 1.12.9 to 1.13.1, and 1.12.8 to 1.13.0 (e.g. in step 8 and 9 below)
+6. Search and replace this .dev/CRAN_Release.cmd to update 1.13.7 to 1.14.1, and 1.13.6 to 1.14.0 (e.g. in step 8 and 9 below)
 7. Another final gd to view all diffs using meld. (I have `alias gd='git difftool &> /dev/null'` and difftool meld: http://meldmerge.org/)
-8. Push to master with this consistent commit message: "1.13.0 on CRAN. Bump to 1.13.1"
-9. Take sha from step 8 and run `git tag 1.13.0 34796cd1524828df9bf13a174265cb68a09fcd77` then `git push origin 1.13.0` (not `git push --tags` according to https://stackoverflow.com/a/5195913/403310)
+8. Push to master with this consistent commit message: "1.14.0 on CRAN. Bump to 1.14.1"
+9. Take sha from step 8 and run `git tag 1.14.0 96c..sha..d77` then `git push origin 1.14.0` (not `git push --tags` according to https://stackoverflow.com/a/5195913/403310)
 ######
