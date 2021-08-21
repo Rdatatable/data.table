@@ -160,8 +160,7 @@ SEXP convertNegAndZeroIdx(SEXP idx, SEXP maxArg, SEXP allowOverMax, SEXP nomatch
         stop = true;
     }
   }
-  if (!stop)
-    return(idx); // most common case to return early: no 0, no negative; all idx either NA (for !nomatch) or in range [1-max]
+  if (!stop) return(idx); // most common case to return early: no 0, no negative; all idx either NA (for !nomatch) or in range [1-max]
 
   // ---------
   // else massage the input to a standard idx where all items are either NA (for !nomatch) or in range [1,max] ...
@@ -169,12 +168,9 @@ SEXP convertNegAndZeroIdx(SEXP idx, SEXP maxArg, SEXP allowOverMax, SEXP nomatch
   int countNeg=0, countZero=0, countNA=0, countOverMax=0, firstOverMax=0;
   for (int i=0; i<n; i++) {
     int elem = idxp[i];
-    if (elem==NA_INTEGER)
-      countNA++;
-    else if (elem<0)
-      countNeg++;
-    else if (elem==0)
-      countZero++;
+    if (elem==NA_INTEGER) countNA++;
+    else if (elem<0) countNeg++;
+    else if (elem==0) countZero++;
     else if (elem>max) {
       countOverMax++;
       if (firstOverMax==0)
@@ -190,10 +186,8 @@ SEXP convertNegAndZeroIdx(SEXP idx, SEXP maxArg, SEXP allowOverMax, SEXP nomatch
     int i=0, firstNeg=0, firstPos=0;
     while (i<n && (firstNeg==0 || firstPos==0)) {
       int elem = idxp[i];
-      if (firstPos==0 && elem>0)
-        firstPos=i+1;
-      if (firstNeg==0 && elem<0 && elem!=NA_INTEGER)
-        firstNeg=i+1;
+      if (firstPos==0 && elem>0) firstPos=i+1;
+      if (firstNeg==0 && elem<0 && elem!=NA_INTEGER) firstNeg=i+1;
       i++;
     }
     error(_("Item %d of i is %d and item %d is %d. Cannot mix positives and negatives."), firstNeg, idxp[firstNeg-1], firstPos, idxp[firstPos-1]);
@@ -202,10 +196,8 @@ SEXP convertNegAndZeroIdx(SEXP idx, SEXP maxArg, SEXP allowOverMax, SEXP nomatch
     int i=0, firstNeg=0, firstNA=0;
     while (i<n && (firstNeg==0 || firstNA==0)) {
       int elem = idxp[i];
-      if (firstNeg==0 && elem<0 && elem!=NA_INTEGER)
-        firstNeg=i+1;
-      if (firstNA==0 && elem==NA_INTEGER)
-        firstNA=i+1;
+      if (firstNeg==0 && elem<0 && elem!=NA_INTEGER) firstNeg=i+1;
+      if (firstNA==0 && elem==NA_INTEGER) firstNA=i+1;
       i++;
     }
     error(_("Item %d of i is %d and item %d is NA. Cannot mix negatives and NA."), firstNeg, idxp[firstNeg-1], firstNA);
@@ -236,24 +228,20 @@ SEXP convertNegAndZeroIdx(SEXP idx, SEXP maxArg, SEXP allowOverMax, SEXP nomatch
   } else {
     // idx is all negative without any NA but perhaps some zeros
     bool *keep = (bool *)R_alloc(max, sizeof(bool));    // 4 times less memory that INTSXP in src/main/subscript.c
-    for (int i=0; i<max; i++)
-      keep[i] = true;
+    for (int i=0; i<max; i++) keep[i] = true;
     int countRemoved=0, countDup=0, countBeyond=0;   // idx=c(-10,-5,-10) removing row 10 twice
     int firstBeyond=0, firstDup=0;
     for (int i=0; i<n; i++) {
       int elem = -idxp[i];
-      if (elem==0)
-        continue;
+      if (elem==0) continue;
       if (elem>max) {
         countBeyond++;
-        if (firstBeyond==0)
-          firstBeyond=i+1;
+        if (firstBeyond==0) firstBeyond=i+1;
         continue;
       }
       if (!keep[elem-1]) {
         countDup++;
-        if (firstDup==0)
-          firstDup=i+1;
+        if (firstDup==0) firstDup=i+1;
       } else {
         keep[elem-1] = false;
         countRemoved++;
@@ -267,8 +255,7 @@ SEXP convertNegAndZeroIdx(SEXP idx, SEXP maxArg, SEXP allowOverMax, SEXP nomatch
     ans = PROTECT(allocVector(INTSXP, ansn));
     int *ansp = INTEGER(ans);
     for (int i=0, ansi=0; i<max; i++) {
-      if (keep[i])
-        ansp[ansi++] = i+1;
+      if (keep[i]) ansp[ansi++] = i+1;
     }
   }
   UNPROTECT(1);
