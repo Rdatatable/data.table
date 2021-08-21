@@ -10236,6 +10236,7 @@ test(1689.2, as.IDate(date_tz), output="2016-01-13")
 date_tz = structure(1496275200.11903, class = c("POSIXct", "POSIXt"), tzone = "America/Los_Angeles")
 test(1689.3, as.character(as.IDate(date_tz)), "2017-05-31")
 test(1689.4, as.character(as.IDate(date_tz, tz="UTC")), "2017-06-01")
+test(1689.5, IDateTime("20171002095512", format="%Y%m%d%H%M%S"), data.table(idate=as.IDate("2017-10-02"), itime=as.ITime("09:55:12")))
 
 # fix for #1766 and #1704
 A = data.table(i = 1:6, j = rep(1:2, 3), x = letters[1:6], key = "i")
