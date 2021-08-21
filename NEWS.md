@@ -254,7 +254,7 @@
     # 2:     2   0.5
     ```
 
-38. `IDateTime()` ignored the `tz=` and `format=` arguments because `...` was not passed through to submethods, [#4674](https://github.com/Rdatatable/data.table/pull/4674). Thanks to Frank Narf for reporting, and Jens Peder Meldgaard for the PR.
+38. `IDateTime()` ignored the `tz=` and `format=` arguments because `...` was not passed through to submethods, [#2402](https://github.com/Rdatatable/data.table/pull/2402). Thanks to Frank Narf for reporting, and Jens Peder Meldgaard for the PR.
 
     ```
     IDateTime("20171002095500", format="%Y%m%d%H%M%S")
