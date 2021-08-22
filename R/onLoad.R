@@ -1,16 +1,15 @@
 # nocov start
 
-# used to raise message (write to STDERR but not raise warning) once per session only
-# in future this will be upgraded to warning, then error, until eventually removed after several years
 .pkg.store = new.env()
 .pkg.store$.unsafe.done = FALSE
 .unsafe.opt = function() {
   if (.pkg.store$.unsafe.done) return(invisible())
   val = getOption("datatable.nomatch")
-  if (is.null(val)) return(invisible())  # not set is ideal (it's no longer set in .onLoad)
-  if (identical(val, NA) || identical(val, NA_integer_)) return(invisible())  # set to default NA is ok for now; in future possible message/warning asking to remove
-  messagef("The option 'datatable.nomatch' is being used and is not set to the default NA. This option is still honored for now but will be deprecated in future. Please see NEWS for 1.12.4 for detailed information and motivation. To specify inner join, please specify `nomatch=NULL` explicitly in your calls rather than changing the default using this option.")
+  if (is.null(val)) return(invisible())  # not defined (it hasn't been defined in .onLoad since v1.12.4)
+  warningf("Option 'datatable.nomatch' is defined but is now ignored. Please see note 11 in v1.12.4 NEWS (Oct 2019), and note 14 in v1.14.2.")
+  # leave this as warning for a long time
   .pkg.store$.unsafe.done = TRUE
+  invisible()
 }
 
 .Last.updated = vector("integer", 1L) # exported variable; number of rows updated by the last := or set(), #1885
