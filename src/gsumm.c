@@ -735,13 +735,15 @@ static SEXP gminmax(SEXP x, SEXP narm, const bool min)
         const int thisgrp = grp[i];
         if (ansd[thisgrp]==NA_INTEGER) continue;  // once an NA has been observed in this group, it doesn't matter what the remaining values in this group are
         const int ix = (irowslen == -1) ? i : irows[i]-1;
-        if (xd[ix]==NA_INTEGER || (xd[ix]<ansd[thisgrp])==min)   
+        if (ix+1==NA_INTEGER) ansd[thisgrp] = NA_INTEGER;
+        else if (xd[ix]==NA_INTEGER || (xd[ix]<ansd[thisgrp])==min)   
           ansd[thisgrp] = xd[ix];  // always true on the first value in the group (other than if the first value is INT_MAX or INT_MIN-1 which is fine too)
       }
     } else {
       for (int i=0; i<ngrp; ++i) ansd[i] = NA_INTEGER;  // in the all-NA case we now return NA for type consistency 
       for (int i=0; i<n; ++i) {
         const int ix = (irowslen == -1) ? i : irows[i]-1;
+        if (ix+1==NA_INTEGER) continue;
         if (xd[ix]==NA_INTEGER) continue;
         const int thisgrp = grp[i];
         if (ansd[thisgrp]==NA_INTEGER || (xd[ix]<ansd[thisgrp])==min)
@@ -760,13 +762,15 @@ static SEXP gminmax(SEXP x, SEXP narm, const bool min)
         const int thisgrp = grp[i];
         if (ansd[thisgrp]==NA_STRING) continue;
         const int ix = (irowslen == -1) ? i : irows[i]-1;
-        if (xd[ix]==NA_STRING || (strcmp(CHAR(xd[ix]), CHAR(ansd[thisgrp]))<0)==min)
+        if (ix+1==NA_INTEGER) SET_STRING_ELT(ans, thisgrp, NA_STRING);
+        else if (xd[ix]==NA_STRING || (strcmp(CHAR(xd[ix]), CHAR(ansd[thisgrp]))<0)==min)
           SET_STRING_ELT(ans, thisgrp, xd[ix]);
       }
     } else {
       for (int i=0; i<ngrp; ++i) SET_STRING_ELT(ans, i, NA_STRING); // all missing returns NA consistent with base
       for (int i=0; i<n; ++i) {
         const int ix = (irowslen == -1) ? i : irows[i]-1;
+        if (ix+1==NA_INTEGER) continue;
         if (xd[ix]==NA_STRING) continue;
         const int thisgrp = grp[i];
         if (ansd[thisgrp]==NA_STRING || (strcmp(CHAR(xd[ix]), CHAR(ansd[thisgrp]))<0)==min)
@@ -786,13 +790,15 @@ static SEXP gminmax(SEXP x, SEXP narm, const bool min)
           const int thisgrp = grp[i];
           if (ansd[thisgrp]==NA_INTEGER64) continue;
           const int ix = (irowslen == -1) ? i : irows[i]-1;
-          if (xd[ix]==NA_INTEGER64 || (xd[ix]<ansd[thisgrp])==min)
+          if (ix+1==NA_INTEGER) ansd[thisgrp] = NA_INTEGER64;
+          else if (xd[ix]==NA_INTEGER64 || (xd[ix]<ansd[thisgrp])==min)
             ansd[thisgrp] = xd[ix];
         }
       } else {
         for (int i=0; i<ngrp; ++i) ansd[i] = NA_INTEGER64;
         for (int i=0; i<n; ++i) {
           const int ix = (irowslen == -1) ? i : irows[i]-1;
+          if (ix+1==NA_INTEGER) continue;
           if (xd[ix]==NA_INTEGER64) continue;
           const int thisgrp = grp[i];  
           if (ansd[thisgrp]==NA_INTEGER64 || (xd[ix]<ansd[thisgrp])==min)
@@ -809,13 +815,15 @@ static SEXP gminmax(SEXP x, SEXP narm, const bool min)
           const int thisgrp = grp[i];
           if (ISNAN(ansd[thisgrp])) continue;
           const int ix = (irowslen == -1) ? i : irows[i]-1;
-          if (ISNAN(xd[ix]) || (xd[ix]<ansd[thisgrp])==min)
+          if (ix+1==NA_INTEGER) ansd[thisgrp] = NA_REAL;
+          else if (ISNAN(xd[ix]) || (xd[ix]<ansd[thisgrp])==min)
             ansd[thisgrp] = xd[ix];
         }
       } else {
         for (int i=0; i<ngrp; ++i) ansd[i] = NA_REAL;
         for (int i=0; i<n; ++i) {
           const int ix = (irowslen == -1) ? i : irows[i]-1;
+          if (ix+1==NA_INTEGER) continue;
           if (ISNAN(xd[ix])) continue;
           const int thisgrp = grp[i];  
           if (ISNAN(ansd[thisgrp]) || (xd[ix]<ansd[thisgrp])==min)
@@ -867,7 +875,7 @@ SEXP gmedian(SEXP x, SEXP narmArg) {
         int k = ff[i]+j-1;
         if (isunsorted) k = oo[k]-1;
         k = (irowslen == -1) ? k : irows[k]-1;
-        if (k+1 == NA_INTEGER) nacount++;
+        if (k+1==NA_INTEGER) nacount++;
         else if (isInt64 ? xi64[k]==NA_INTEGER64 : ISNAN(xd[k])) nacount++;
         else subd[j-nacount] = xd[k];
       }
@@ -885,7 +893,7 @@ SEXP gmedian(SEXP x, SEXP narmArg) {
         int k = ff[i]+j-1;
         if (isunsorted) k = oo[k]-1;
         k = (irowslen == -1) ? k : irows[k]-1;
-        if (k+1 == NA_INTEGER) nacount++;
+        if (k+1==NA_INTEGER) nacount++;
         else if (xi[k]==NA_INTEGER) nacount++;
         else subi[j-nacount] = xi[k];
       }
@@ -914,7 +922,7 @@ SEXP glast(SEXP x) {
       int k = ff[i]+grpsize[i]-2;
       if (isunsorted) k = oo[k]-1;
       k = (irowslen == -1) ? k : irows[k]-1;
-      ians[i] = ix[k];
+      ians[i] = (k+1==NA_INTEGER) ? NA_LOGICAL : ix[k];
     }
   }
     break;
@@ -926,7 +934,7 @@ SEXP glast(SEXP x) {
       int k = ff[i]+grpsize[i]-2;
       if (isunsorted) k = oo[k]-1;
       k = (irowslen == -1) ? k : irows[k]-1;
-      ians[i] = ix[k];
+      ians[i] = (k+1==NA_INTEGER) ? NA_INTEGER : ix[k];
     }
   }
     break;
@@ -938,7 +946,7 @@ SEXP glast(SEXP x) {
       int k = ff[i]+grpsize[i]-2;
       if (isunsorted) k = oo[k]-1;
       k = (irowslen == -1) ? k : irows[k]-1;
-      dans[i] = dx[k];
+      dans[i] = (k+1==NA_INTEGER) ? NA_REAL : dx[k];
     }
   }
     break;
@@ -950,7 +958,7 @@ SEXP glast(SEXP x) {
       int k = ff[i]+grpsize[i]-2;
       if (isunsorted) k = oo[k]-1;
       k = (irowslen == -1) ? k : irows[k]-1;
-      dans[i] = dx[k];
+      dans[i] = (k+1==NA_INTEGER) ? NA_CPLX : dx[k];
     }
   } break;
   case STRSXP:
@@ -959,7 +967,7 @@ SEXP glast(SEXP x) {
       int k = ff[i]+grpsize[i]-2;
       if (isunsorted) k = oo[k]-1;
       k = (irowslen == -1) ? k : irows[k]-1;
-      SET_STRING_ELT(ans, i, STRING_ELT(x, k));
+      SET_STRING_ELT(ans, i, (k+1==NA_INTEGER) ? NA_STRING : STRING_ELT(x, k));
     }
     break;
   case VECSXP:
@@ -968,7 +976,7 @@ SEXP glast(SEXP x) {
       int k = ff[i]+grpsize[i]-2;
       if (isunsorted) k = oo[k]-1;
       k = (irowslen == -1) ? k : irows[k]-1;
-      SET_VECTOR_ELT(ans, i, VECTOR_ELT(x, k));
+      SET_VECTOR_ELT(ans, i, (k+1 == NA_INTEGER) ? ScalarLogical(NA_LOGICAL) : VECTOR_ELT(x, k));
     }
     break;
   default:
@@ -992,7 +1000,7 @@ SEXP gfirst(SEXP x) {
       int k = ff[i]-1;
       if (isunsorted) k = oo[k]-1;
       k = (irowslen == -1) ? k : irows[k]-1;
-      ians[i] = ix[k];
+      ians[i] = (k+1==NA_INTEGER) ? NA_LOGICAL : ix[k];
     }
   }
     break;
@@ -1004,7 +1012,7 @@ SEXP gfirst(SEXP x) {
       int k = ff[i]-1;
       if (isunsorted) k = oo[k]-1;
       k = (irowslen == -1) ? k : irows[k]-1;
-      ians[i] = ix[k];
+      ians[i] = (k+1==NA_INTEGER) ? NA_INTEGER : ix[k];
     }
   }
     break;
@@ -1016,7 +1024,7 @@ SEXP gfirst(SEXP x) {
       int k = ff[i]-1;
       if (isunsorted) k = oo[k]-1;
       k = (irowslen == -1) ? k : irows[k]-1;
-      dans[i] = dx[k];
+      dans[i] = (k+1==NA_INTEGER) ? NA_REAL : dx[k];
     }
   }
     break;
@@ -1028,7 +1036,7 @@ SEXP gfirst(SEXP x) {
       int k = ff[i]-1;
       if (isunsorted) k = oo[k]-1;
       k = (irowslen == -1) ? k : irows[k]-1;
-      dans[i] = dx[k];
+      dans[i] = (k+1==NA_INTEGER) ? NA_CPLX : dx[k];
     }
   } break;
   case STRSXP:
@@ -1037,7 +1045,7 @@ SEXP gfirst(SEXP x) {
       int k = ff[i]-1;
       if (isunsorted) k = oo[k]-1;
       k = (irowslen == -1) ? k : irows[k]-1;
-      SET_STRING_ELT(ans, i, STRING_ELT(x, k));
+      SET_STRING_ELT(ans, i, (k+1==NA_INTEGER) ? NA_STRING : STRING_ELT(x, k));
     }
     break;
   case VECSXP:
@@ -1046,7 +1054,7 @@ SEXP gfirst(SEXP x) {
       int k = ff[i]-1;
       if (isunsorted) k = oo[k]-1;
       k = (irowslen == -1) ? k : irows[k]-1;
-      SET_VECTOR_ELT(ans, i, VECTOR_ELT(x, k));
+      SET_VECTOR_ELT(ans, i, (k+1 == NA_INTEGER) ? ScalarLogical(NA_LOGICAL) : VECTOR_ELT(x, k));
     }
     break;
   default:
@@ -1178,6 +1186,7 @@ SEXP gvarsd1(SEXP x, SEXP narm, Rboolean isSD)
             int ix = ff[i]+j-1;
             if (isunsorted) ix = oo[ix]-1;
             ix = (irowslen == -1) ? ix : irows[ix]-1;
+            if (ix+1==NA_INTEGER) { ans_na=true; break; }
             if (INTEGER(x)[ix] == NA_INTEGER) { ans_na=true; break; }
             INTEGER(sub)[j] = INTEGER(x)[ix];
             m += INTEGER(sub)[j]; // sum
@@ -1203,6 +1212,7 @@ SEXP gvarsd1(SEXP x, SEXP narm, Rboolean isSD)
             int ix = ff[i]+j-1;
             if (isunsorted) ix = oo[ix]-1;
             ix = (irowslen == -1) ? ix : irows[ix]-1;
+            if (ix+1==NA_INTEGER) continue;
             if (INTEGER(x)[ix] == NA_INTEGER) continue;
             INTEGER(sub)[thisgrpsize] = INTEGER(x)[ix];
             m += INTEGER(sub)[thisgrpsize]; // sum
@@ -1235,6 +1245,7 @@ SEXP gvarsd1(SEXP x, SEXP narm, Rboolean isSD)
             int ix = ff[i]+j-1;
             if (isunsorted) ix = oo[ix]-1;
             ix = (irowslen == -1) ? ix : irows[ix]-1;
+            if (ix+1==NA_INTEGER) { ans_na=true; break; }
             if (ISNAN(REAL(x)[ix])) { ans_na=true; break; }
             REAL(sub)[j] = REAL(x)[ix];
             m += REAL(sub)[j]; // sum
@@ -1260,6 +1271,7 @@ SEXP gvarsd1(SEXP x, SEXP narm, Rboolean isSD)
             int ix = ff[i]+j-1;
             if (isunsorted) ix = oo[ix]-1;
             ix = (irowslen == -1) ? ix : irows[ix]-1;
+            if (ix+1==NA_INTEGER) continue;
             if (ISNAN(REAL(x)[ix])) continue;
             REAL(sub)[thisgrpsize] = REAL(x)[ix];
             m += REAL(sub)[thisgrpsize]; // sum
@@ -1338,10 +1350,10 @@ SEXP gprod(SEXP x, SEXP narm)
       const int thisgrp = grp[i];
       const int ix = (irowslen == -1) ? i : irows[i]-1;
       if (!LOGICAL(narm)[0]) {
-        if (ix+1 == NA_INTEGER) { s[thisgrp] = NA_REAL; continue; }
+        if (ix+1==NA_INTEGER) { s[thisgrp] = NA_REAL; continue; }
         if (ISNAN(REAL(x)[ix])) { s[thisgrp] = NA_REAL; continue; }
       } else {
-        if (ix+1 == NA_INTEGER) continue;
+        if (ix+1==NA_INTEGER) continue;
         if (ISNAN(REAL(x)[ix])) continue; // else let NA_REAL propogate from here
       }
       s[thisgrp] *= REAL(x)[ix];  // done in long double, like base

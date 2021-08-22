@@ -17980,7 +17980,7 @@ test(2209.4, fread('A|B|C\n1|0,4|a\n2|0,5|b\n', dec=','), data.table(A=1:2, B=c(
 test(2209.5, fread('A|B,C\n1|0,4\n2|0,5\n', dec=','), data.table(A=1:2, "B,C"=c(0.4,0.5)))
 
 # edge case bug in GForce #1994
-DT = data.table(a=1L, b=2, c="a")[0] # empty table
+DT = data.table(a=1L, b=2, c="a")
 # for integers
 test(2210.01, DT[rep(NA_integer_, 10), sum(a, na.rm=FALSE), by=list(vv=1:10)],
              DT[rep(NA_integer_, 10), base::sum(a, na.rm=FALSE), by=list(vv=1:10)])
@@ -17990,30 +17990,99 @@ test(2210.03, DT[rep(NA_integer_, 10), mean(a, na.rm=FALSE), by=list(vv=1:10)],
              DT[rep(NA_integer_, 10), base::mean(a, na.rm=FALSE), by=list(vv=1:10)])
 test(2210.04, DT[rep(NA_integer_, 10), mean(a, na.rm=TRUE), by=list(vv=1:10)],
              DT[rep(NA_integer_, 10), base::mean(a, na.rm=TRUE), by=list(vv=1:10)])
-test(2210.05, DT[rep(NA_integer_, 10), var(a, na.rm=FALSE), by=list(vv=1:10)],
-             DT[rep(NA_integer_, 10), stats::var(a, na.rm=FALSE), by=list(vv=1:10)])
-test(2210.06, DT[rep(NA_integer_, 10), var(a, na.rm=TRUE), by=list(vv=1:10)],
-             DT[rep(NA_integer_, 10), stats::var(a, na.rm=TRUE), by=list(vv=1:10)])
-test(2210.07, DT[rep(NA_integer_, 10), sd(a, na.rm=FALSE), by=list(vv=1:10)],
-             DT[rep(NA_integer_, 10), stats::sd(a, na.rm=FALSE), by=list(vv=1:10)])
-test(2210.08, DT[rep(NA_integer_, 10), sd(a, na.rm=TRUE), by=list(vv=1:10)],
-             DT[rep(NA_integer_, 10), stats::sd(a, na.rm=TRUE), by=list(vv=1:10)])
+test(2210.05, DT[rep(NA_integer_, 10), var(a, na.rm=FALSE), by=list(vv=rep(1:5, each=2L))],
+             DT[rep(NA_integer_, 10), stats::var(a, na.rm=FALSE), by=list(vv=rep(1:5, each=2L))])
+test(2210.06, DT[rep(NA_integer_, 10), var(a, na.rm=TRUE), by=list(vv=rep(1:5, each=2L))],
+             DT[rep(NA_integer_, 10), stats::var(a, na.rm=TRUE), by=list(vv=rep(1:5, each=2L))])
+test(2210.07, DT[rep(NA_integer_, 10), sd(a, na.rm=FALSE), by=list(vv=rep(1:5, each=2L))],
+             DT[rep(NA_integer_, 10), stats::sd(a, na.rm=FALSE), by=list(vv=rep(1:5, each=2L))])
+test(2210.08, DT[rep(NA_integer_, 10), sd(a, na.rm=TRUE), by=list(vv=rep(1:5, each=2L))],
+             DT[rep(NA_integer_, 10), stats::sd(a, na.rm=TRUE), by=list(vv=rep(1:5, each=2L))])
 test(2210.09, DT[rep(NA_integer_, 10), median(a, na.rm=FALSE), by=list(vv=1:10)],
-             DT[rep(NA_integer_, 10), stats::median(a, na.rm=FALSE), by=list(vv=1:10)])
+             data.table(vv=1:10, V1=NA_real_))
 test(2210.10, DT[rep(NA_integer_, 10), median(a, na.rm=TRUE), by=list(vv=1:10)],
-             DT[rep(NA_integer_, 10), stats::median(a, na.rm=TRUE), by=list(vv=1:10)])
+             data.table(vv=1:10, V1=NA_real_))
 test(2210.11, DT[rep(NA_integer_, 10), prod(a, na.rm=FALSE), by=list(vv=1:10)],
              DT[rep(NA_integer_, 10), base::prod(a, na.rm=FALSE), by=list(vv=1:10)])
 test(2210.12, DT[rep(NA_integer_, 10), prod(a, na.rm=TRUE), by=list(vv=1:10)],
              DT[rep(NA_integer_, 10), base::prod(a, na.rm=TRUE), by=list(vv=1:10)])
 test(2210.13, DT[rep(NA_integer_, 10), min(a, na.rm=FALSE), by=list(vv=1:10)],
-             DT[rep(NA_integer_, 10), base::min(a, na.rm=FALSE), by=list(vv=1:10)])
+             data.table(vv=1:10, V1=NA_integer_))
 test(2210.14, DT[rep(NA_integer_, 10), min(a, na.rm=TRUE), by=list(vv=1:10)],
-             DT[rep(NA_integer_, 10), base::min(a, na.rm=TRUE), by=list(vv=1:10)])
+             data.table(vv=1:10, V1=NA_integer_))
 test(2210.15, DT[rep(NA_integer_, 10), max(a, na.rm=FALSE), by=list(vv=1:10)],
-             DT[rep(NA_integer_, 10), base::max(a, na.rm=FALSE), by=list(vv=1:10)])
+             data.table(vv=1:10, V1=NA_integer_))
 test(2210.16, DT[rep(NA_integer_, 10), max(a, na.rm=TRUE), by=list(vv=1:10)],
-             DT[rep(NA_integer_, 10), base::max(a, na.rm=TRUE), by=list(vv=1:10)])
+             data.table(vv=1:10, V1=NA_integer_))
+test(2210.17, DT[rep(NA_integer_, 10), `[`(a,2), by=list(vv=1:10)],
+             DT[rep(NA_integer_, 10), base::`[`(a,2), by=list(vv=1:10)])
+test(2210.18, DT[rep(NA_integer_, 10), first(a, 1L), by=list(vv=1:10)],
+             DT[rep(NA_integer_, 10), utils::head(a, 1L), by=list(vv=1:10)])
+test(2210.19, DT[rep(NA_integer_, 10), last(a, 1L), by=list(vv=1:10)],
+             DT[rep(NA_integer_, 10), utils::tail(a, 1L), by=list(vv=1:10)])
+test(2210.20, DT[rep(NA_integer_, 10), head(a, 1L), by=list(vv=1:10)],
+             DT[rep(NA_integer_, 10), utils::head(a, 1L), by=list(vv=1:10)])
+test(2210.21, DT[rep(NA_integer_, 10), tail(a, 1L), by=list(vv=1:10)],
+             DT[rep(NA_integer_, 10), utils::tail(a, 1L), by=list(vv=1:10)])
 # for numeric
-
+test(2210.31, DT[rep(NA_integer_, 10), sum(b, na.rm=FALSE), by=list(vv=1:10)],
+             DT[rep(NA_integer_, 10), base::sum(b, na.rm=FALSE), by=list(vv=1:10)])
+test(2210.32, DT[rep(NA_integer_, 10), sum(b, na.rm=TRUE), by=list(vv=1:10)],
+             DT[rep(NA_integer_, 10), base::sum(b, na.rm=TRUE), by=list(vv=1:10)])
+test(2210.33, DT[rep(NA_integer_, 10), mean(b, na.rm=FALSE), by=list(vv=1:10)],
+             DT[rep(NA_integer_, 10), base::mean(b, na.rm=FALSE), by=list(vv=1:10)])
+test(2210.34, DT[rep(NA_integer_, 10), mean(b, na.rm=TRUE), by=list(vv=1:10)],
+             DT[rep(NA_integer_, 10), base::mean(b, na.rm=TRUE), by=list(vv=1:10)])
+test(2210.35, DT[rep(NA_integer_, 10), var(b, na.rm=FALSE), by=list(vv=rep(1:5, each=2L))],
+             DT[rep(NA_integer_, 10), stats::var(b, na.rm=FALSE), by=list(vv=rep(1:5, each=2L))])
+test(2210.36, DT[rep(NA_integer_, 10), var(b, na.rm=TRUE), by=list(vv=rep(1:5, each=2L))],
+             DT[rep(NA_integer_, 10), stats::var(b, na.rm=TRUE), by=list(vv=rep(1:5, each=2L))])
+test(2210.37, DT[rep(NA_integer_, 10), sd(b, na.rm=FALSE), by=list(vv=rep(1:5, each=2L))],
+             DT[rep(NA_integer_, 10), stats::sd(b, na.rm=FALSE), by=list(vv=rep(1:5, each=2L))])
+test(2210.38, DT[rep(NA_integer_, 10), sd(b, na.rm=TRUE), by=list(vv=rep(1:5, each=2L))],
+             DT[rep(NA_integer_, 10), stats::sd(b, na.rm=TRUE), by=list(vv=rep(1:5, each=2L))])
+test(2210.39, DT[rep(NA_integer_, 10), median(b, na.rm=FALSE), by=list(vv=1:10)],
+             data.table(vv=1:10, V1=NA_real_))
+test(2210.40, DT[rep(NA_integer_, 10), median(b, na.rm=TRUE), by=list(vv=1:10)],
+             data.table(vv=1:10, V1=NA_real_))
+test(2210.41, DT[rep(NA_integer_, 10), prod(b, na.rm=FALSE), by=list(vv=1:10)],
+             DT[rep(NA_integer_, 10), base::prod(b, na.rm=FALSE), by=list(vv=1:10)])
+test(2210.42, DT[rep(NA_integer_, 10), prod(b, na.rm=TRUE), by=list(vv=1:10)],
+             DT[rep(NA_integer_, 10), base::prod(b, na.rm=TRUE), by=list(vv=1:10)])
+test(2210.43, DT[rep(NA_integer_, 10), min(b, na.rm=FALSE), by=list(vv=1:10)],
+             data.table(vv=1:10, V1=NA_real_))
+test(2210.44, DT[rep(NA_integer_, 10), min(b, na.rm=TRUE), by=list(vv=1:10)],
+             data.table(vv=1:10, V1=NA_real_))
+test(2210.45, DT[rep(NA_integer_, 10), max(b, na.rm=FALSE), by=list(vv=1:10)],
+             data.table(vv=1:10, V1=NA_real_))
+test(2210.46, DT[rep(NA_integer_, 10), max(b, na.rm=TRUE), by=list(vv=1:10)],
+             data.table(vv=1:10, V1=NA_real_))
+test(2210.47, DT[rep(NA_integer_, 10), `[`(b,2), by=list(vv=1:10)],
+             DT[rep(NA_integer_, 10), base::`[`(b,2), by=list(vv=1:10)])
+test(2210.48, DT[rep(NA_integer_, 10), first(b, 1L), by=list(vv=1:10)],
+             DT[rep(NA_integer_, 10), utils::head(b, 1L), by=list(vv=1:10)])
+test(2210.49, DT[rep(NA_integer_, 10), last(b, 1L), by=list(vv=1:10)],
+             DT[rep(NA_integer_, 10), utils::tail(b, 1L), by=list(vv=1:10)])
+test(2210.50, DT[rep(NA_integer_, 10), head(b, 1L), by=list(vv=1:10)],
+             DT[rep(NA_integer_, 10), utils::head(b, 1L), by=list(vv=1:10)])
+test(2210.51, DT[rep(NA_integer_, 10), tail(b, 1L), by=list(vv=1:10)],
+             DT[rep(NA_integer_, 10), utils::tail(b, 1L), by=list(vv=1:10)])
 # for character
+test(2210.61, DT[rep(NA_integer_, 10), min(c, na.rm=TRUE), by=list(vv=1:10)],
+             data.table(vv=1:10, V1=NA_character_))
+test(2210.62, DT[rep(NA_integer_, 10), min(c, na.rm=FALSE), by=list(vv=1:10)],
+             data.table(vv=1:10, V1=NA_character_))
+test(2210.63, DT[rep(NA_integer_, 10), max(c, na.rm=TRUE), by=list(vv=1:10)],
+             data.table(vv=1:10, V1=NA_character_))             
+test(2210.64, DT[rep(NA_integer_, 10), max(c, na.rm=FALSE), by=list(vv=1:10)],
+             data.table(vv=1:10, V1=NA_character_))
+test(2210.65, DT[rep(NA_integer_, 10), `[`(c,2), by=list(vv=1:10)],
+             DT[rep(NA_integer_, 10), base::`[`(c,2), by=list(vv=1:10)])
+test(2210.66, DT[rep(NA_integer_, 10), first(c, 1L), by=list(vv=1:10)],
+             DT[rep(NA_integer_, 10), utils::head(c, 1L), by=list(vv=1:10)])
+test(2210.67, DT[rep(NA_integer_, 10), last(c, 1L), by=list(vv=1:10)],
+             DT[rep(NA_integer_, 10), utils::tail(c, 1L), by=list(vv=1:10)])
+test(2210.68, DT[rep(NA_integer_, 10), head(c, 1L), by=list(vv=1:10)],
+             DT[rep(NA_integer_, 10), utils::head(c, 1L), by=list(vv=1:10)])
+test(2210.69, DT[rep(NA_integer_, 10), tail(c, 1L), by=list(vv=1:10)],
+             DT[rep(NA_integer_, 10), utils::tail(c, 1L), by=list(vv=1:10)])
