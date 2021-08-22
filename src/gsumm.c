@@ -235,7 +235,7 @@ void *gather(SEXP x, bool *anyNA)
       } else {
         const int *my_x = irows + b*batchSize;
         for (int i=0; i<howMany; i++) {
-          int elem = my_x[i] == NA_INTEGER ? NA_INTEGER : thisx[ my_x[i]-1 ];
+          int elem = my_x[i]==NA_INTEGER ? NA_INTEGER : thisx[ my_x[i]-1 ];
           my_gx[ my_tmpcounts[my_high[i]]++ ] = elem;
           if (elem==NA_INTEGER) my_anyNA = true;
         }
@@ -264,7 +264,7 @@ void *gather(SEXP x, bool *anyNA)
         } else {
           const int *my_x = irows + b*batchSize;
           for (int i=0; i<howMany; i++) {
-            double elem = my_x[i] == NA_INTEGER ? NA_REAL : thisx[ my_x[i]-1 ];
+            double elem = my_x[i]==NA_INTEGER ? NA_REAL : thisx[ my_x[i]-1 ];
             my_gx[ my_tmpcounts[my_high[i]]++ ] = elem;
             if (ISNAN(elem)) my_anyNA = true;
           }
@@ -291,7 +291,7 @@ void *gather(SEXP x, bool *anyNA)
         } else {
           const int *my_x = irows + b*batchSize;
           for (int i=0; i<howMany; i++) {
-            int64_t elem = my_x[i] == NA_INTEGER ? NA_INTEGER64 : thisx[ my_x[i]-1 ];
+            int64_t elem = my_x[i]==NA_INTEGER ? NA_INTEGER64 : thisx[ my_x[i]-1 ];
             my_gx[ my_tmpcounts[my_high[i]]++ ] = elem;
             if (elem==INT64_MIN) my_anyNA = true;
           }
@@ -322,7 +322,7 @@ void *gather(SEXP x, bool *anyNA)
       } else {
         const int *my_x = irows + b*batchSize;
         for (int i=0; i<howMany; i++) {
-          Rcomplex elem = my_x[i] == NA_INTEGER ? NA_CPLX : thisx[ my_x[i]-1 ];
+          Rcomplex elem = my_x[i]==NA_INTEGER ? NA_CPLX : thisx[ my_x[i]-1 ];
           my_gx[ my_tmpcounts[my_high[i]]++ ] = elem;
           if (ISNAN(elem.r) && ISNAN(elem.i)) my_anyNA = true;
         }
@@ -976,7 +976,7 @@ SEXP glast(SEXP x) {
       int k = ff[i]+grpsize[i]-2;
       if (isunsorted) k = oo[k]-1;
       k = (irowslen == -1) ? k : irows[k]-1;
-      SET_VECTOR_ELT(ans, i, (k+1 == NA_INTEGER) ? ScalarLogical(NA_LOGICAL) : VECTOR_ELT(x, k));
+      SET_VECTOR_ELT(ans, i, (k+1==NA_INTEGER) ? ScalarLogical(NA_LOGICAL) : VECTOR_ELT(x, k));
     }
     break;
   default:
@@ -1054,7 +1054,7 @@ SEXP gfirst(SEXP x) {
       int k = ff[i]-1;
       if (isunsorted) k = oo[k]-1;
       k = (irowslen == -1) ? k : irows[k]-1;
-      SET_VECTOR_ELT(ans, i, (k+1 == NA_INTEGER) ? ScalarLogical(NA_LOGICAL) : VECTOR_ELT(x, k));
+      SET_VECTOR_ELT(ans, i, (k+1==NA_INTEGER) ? ScalarLogical(NA_LOGICAL) : VECTOR_ELT(x, k));
     }
     break;
   default:
@@ -1092,7 +1092,7 @@ SEXP gnthvalue(SEXP x, SEXP valArg) {
       int k = ff[i]+val-2;
       if (isunsorted) k = oo[k]-1;
       k = (irowslen == -1) ? k : irows[k]-1;
-      ians[i] = (k+1 == NA_INTEGER) ? NA_LOGICAL : ix[k];
+      ians[i] = (k+1==NA_INTEGER) ? NA_LOGICAL : ix[k];
     }
   }
     break;
@@ -1105,7 +1105,7 @@ SEXP gnthvalue(SEXP x, SEXP valArg) {
       int k = ff[i]+val-2;
       if (isunsorted) k = oo[k]-1;
       k = (irowslen == -1) ? k : irows[k]-1;
-      ians[i] = (k+1 == NA_INTEGER) ? NA_INTEGER : ix[k];
+      ians[i] = (k+1==NA_INTEGER) ? NA_INTEGER : ix[k];
     }
   }
     break;
@@ -1118,7 +1118,7 @@ SEXP gnthvalue(SEXP x, SEXP valArg) {
       int k = ff[i]+val-2;
       if (isunsorted) k = oo[k]-1;
       k = (irowslen == -1) ? k : irows[k]-1;
-      dans[i] = (k+1 == NA_INTEGER) ? NA_REAL : dx[k];
+      dans[i] = (k+1==NA_INTEGER) ? NA_REAL : dx[k];
     }
   }
     break;
@@ -1131,7 +1131,7 @@ SEXP gnthvalue(SEXP x, SEXP valArg) {
       int k = ff[i]+val-2;
       if (isunsorted) k = oo[k]-1;
       k = (irowslen == -1) ? k : irows[k]-1;
-      dans[i] = (k+1 == NA_INTEGER) ? NA_CPLX : dx[k];
+      dans[i] = (k+1==NA_INTEGER) ? NA_CPLX : dx[k];
     }
   } break;
   case STRSXP:
@@ -1141,7 +1141,7 @@ SEXP gnthvalue(SEXP x, SEXP valArg) {
       int k = ff[i]+val-2;
       if (isunsorted) k = oo[k]-1;
       k = (irowslen == -1) ? k : irows[k]-1;
-      SET_STRING_ELT(ans, i, (k+1 == NA_INTEGER) ? NA_STRING : STRING_ELT(x, k));
+      SET_STRING_ELT(ans, i, (k+1==NA_INTEGER) ? NA_STRING : STRING_ELT(x, k));
     }
     break;
   case VECSXP:
@@ -1151,7 +1151,7 @@ SEXP gnthvalue(SEXP x, SEXP valArg) {
       int k = ff[i]+val-2;
       if (isunsorted) k = oo[k]-1;
       k = (irowslen == -1) ? k : irows[k]-1;
-      SET_VECTOR_ELT(ans, i, (k+1 == NA_INTEGER) ? ScalarLogical(NA_LOGICAL) : VECTOR_ELT(x, k));
+      SET_VECTOR_ELT(ans, i, (k+1==NA_INTEGER) ? ScalarLogical(NA_LOGICAL) : VECTOR_ELT(x, k));
     }
     break;
   default:
@@ -1331,11 +1331,11 @@ SEXP gprod(SEXP x, SEXP narm)
       const int ix = (irowslen == -1) ? i : irows[i]-1;
       if (!LOGICAL(narm)[0]) {
         // Let NA_REAL propogate from here. R_NaReal is IEEE.
-        if (ix+1 == NA_INTEGER) { s[thisgrp] = NA_REAL; continue; }
-        if (INTEGER(x)[ix] == NA_INTEGER) { s[thisgrp] = NA_REAL; continue; }
+        if (ix+1==NA_INTEGER) { s[thisgrp] = NA_REAL; continue; }
+        if (INTEGER(x)[ix]==NA_INTEGER) { s[thisgrp] = NA_REAL; continue; }
       } else {
-        if (ix+1 == NA_INTEGER) continue;
-        if (INTEGER(x)[ix] == NA_INTEGER) continue;
+        if (ix+1==NA_INTEGER) continue;
+        if (INTEGER(x)[ix]==NA_INTEGER) continue;
       }
       s[thisgrp] *= INTEGER(x)[ix];  // no under/overflow here, s is long double (like base)
     }
