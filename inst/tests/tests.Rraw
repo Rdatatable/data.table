@@ -2277,7 +2277,7 @@ test(794, DT[!"b"], DT[c("a","c")])
 test(795, DT[!0], DT)
 test(796, DT[!NULL], DT[NULL])
 test(797, DT[!integer()], DT)
-test(798, DT[!-1], DT[1]) # this passed nomatch==0 to convertNegAndZeroIdx #3109
+test(798, DT[!-1], DT[1])
 test(799, DT[--1], DT[1])
 myi = c("a","c")
 test(800, DT[!myi], DT["b"])
