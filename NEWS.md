@@ -318,6 +318,14 @@
 
     > ... the basename of the DLL needs to be both a valid file name and valid as part of a C entry point (e.g. it cannot contain ‘.’): for portable code it is best to confine DLL names to be ASCII alphanumeric plus underscore. If entry point R_init_lib is not found it is also looked for with ‘.’ replaced by ‘_’.
 
+14. For nearly two years, since v1.12.4 (Oct 2019) (note 11 below in this NEWS file), using `options(datatable.nomatch=0)` has produced the following message :
+
+    ```
+    The option 'datatable.nomatch' is being used and is not set to the default NA. This option is still honored for now but will be deprecated in future. Please see NEWS for 1.12.4 for detailed information and motivation. To specify inner join, please specify `nomatch=NULL` explicitly in your calls rather than changing the default using this option.
+    ```
+
+    The message is now upgraded to warning that the option is now ignored.
+
 
 # data.table [v1.14.0](https://github.com/Rdatatable/data.table/milestone/23?closed=1)  (21 Feb 2021)
 
