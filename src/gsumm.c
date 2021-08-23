@@ -721,7 +721,7 @@ static SEXP gminmax(SEXP x, SEXP narm, const bool min)
   const int n = (irowslen == -1) ? length(x) : irowslen;
   //clock_t start = clock();
   SEXP ans;
-  if (nrow != n) error(_("nrow [%d] != length(x) [%d] in %s"), nrow, n, "gmin");  
+  if (nrow != n) error(_("nrow [%d] != length(x) [%d] in %s"), nrow, n, "gmin");
   // GForce guarantees each group has at least one value; i.e. we don't need to consider length-0 per group here
   const bool nosubset = irowslen==-1;
   switch(TYPEOF(x)) {
@@ -736,11 +736,11 @@ static SEXP gminmax(SEXP x, SEXP narm, const bool min)
         const int thisgrp = grp[i];
         if (ansd[thisgrp]==NA_INTEGER) continue;  // once an NA has been observed in this group, it doesn't matter what the remaining values in this group are
         const int elem = nosubset ? xd[i] : (irows[i]==NA_INTEGER ? NA_INTEGER : xd[irows[i]-1]);
-        if (elem==NA_INTEGER || (elem<ansd[thisgrp])==min)   
+        if (elem==NA_INTEGER || (elem<ansd[thisgrp])==min)
           ansd[thisgrp] = elem;  // always true on the first value in the group (other than if the first value is INT_MAX or INT_MIN-1 which is fine too)
       }
     } else {
-      for (int i=0; i<ngrp; ++i) ansd[i] = NA_INTEGER;  // in the all-NA case we now return NA for type consistency 
+      for (int i=0; i<ngrp; ++i) ansd[i] = NA_INTEGER;  // in the all-NA case we now return NA for type consistency
       for (int i=0; i<n; ++i) {
         const int elem = nosubset ? xd[i] : (irows[i]==NA_INTEGER ? NA_INTEGER : xd[irows[i]-1]);
         if (elem==NA_INTEGER) continue;
@@ -756,7 +756,7 @@ static SEXP gminmax(SEXP x, SEXP narm, const bool min)
     const SEXP *xd = STRING_PTR(x);
     if (!LOGICAL(narm)[0]) {
       const SEXP init = min ? char_maxString : R_BlankString;  // char_maxString == "\xFF\xFF..." in init.c
-      for (int i=0; i<ngrp; ++i) SET_STRING_ELT(ans, i, init); 
+      for (int i=0; i<ngrp; ++i) SET_STRING_ELT(ans, i, init);
       for (int i=0; i<n; ++i) {
         const int thisgrp = grp[i];
         if (ansd[thisgrp]==NA_STRING) continue;
@@ -787,7 +787,7 @@ static SEXP gminmax(SEXP x, SEXP narm, const bool min)
           const int thisgrp = grp[i];
           if (ansd[thisgrp]==NA_INTEGER64) continue;
           const int64_t elem = nosubset ? xd[i] : (irows[i]==NA_INTEGER ? NA_INTEGER64 : xd[irows[i]-1]);
-          if (elem==NA_INTEGER64 || (elem<ansd[thisgrp])==min)   
+          if (elem==NA_INTEGER64 || (elem<ansd[thisgrp])==min)
             ansd[thisgrp] = elem;
         }
       } else {
@@ -810,7 +810,7 @@ static SEXP gminmax(SEXP x, SEXP narm, const bool min)
           const int thisgrp = grp[i];
           if (ISNAN(ansd[thisgrp])) continue;
           const double elem = nosubset ? xd[i] : (irows[i]==NA_INTEGER ? NA_REAL : xd[irows[i]-1]);
-          if (ISNAN(elem) || (elem<ansd[thisgrp])==min)   
+          if (ISNAN(elem) || (elem<ansd[thisgrp])==min)
             ansd[thisgrp] = elem;
         }
       } else {
