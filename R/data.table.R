@@ -138,7 +138,7 @@ replace_dot_alias = function(e) {
   }
 }
 
-"[.data.table" = function (x, i, j, by, keyby, with=TRUE, nomatch=getOption("datatable.nomatch", NA), mult="all", roll=FALSE, rollends=if (roll=="nearest") c(TRUE,TRUE) else if (roll>=0) c(FALSE,TRUE) else c(TRUE,FALSE), which=FALSE, .SDcols, verbose=getOption("datatable.verbose"), allow.cartesian=getOption("datatable.allow.cartesian"), drop=NULL, on=NULL, env=NULL)
+"[.data.table" = function (x, i, j, by, keyby, with=TRUE, nomatch=NA, mult="all", roll=FALSE, rollends=if (roll=="nearest") c(TRUE,TRUE) else if (roll>=0) c(FALSE,TRUE) else c(TRUE,FALSE), which=FALSE, .SDcols, verbose=getOption("datatable.verbose"), allow.cartesian=getOption("datatable.allow.cartesian"), drop=NULL, on=NULL, env=NULL)
 {
   # ..selfcount <<- ..selfcount+1  # in dev, we check no self calls, each of which doubles overhead, or could
   # test explicitly if the caller is [.data.table (even stronger test. TO DO.)
@@ -221,12 +221,12 @@ replace_dot_alias = function(e) {
   # TO DO (document/faq/example). Removed for now ... if ((roll || rolltolast) && missing(mult)) mult="last" # for when there is exact match to mult. This does not control cases where the roll is mult, that is always the last one.
   .unsafe.opt() #3585
   missingnomatch = missing(nomatch)
-  if (is.null(nomatch)) nomatch = 0L # allow nomatch=NULL API already now, part of: https://github.com/Rdatatable/data.table/issues/857
-  if (!is.na(nomatch) && nomatch!=0L) stopf("nomatch= must be either NA or NULL (or 0 for backwards compatibility which is the same as NULL)")
-  nomatch = as.integer(nomatch)
+  nomatch0 = identical(nomatch,0) || identical(nomatch,0L)  # for warning with row-numbers in i; #4353
+  if (nomatch0) nomatch=NULL  # retain nomatch=0 backwards compatibility; #857
+  if (!(is.null(nomatch) || (length(nomatch)==1L && is.na(nomatch)))) stopf("nomatch= must be either NA or NULL (or 0 for backwards compatibility which is the same as NULL but please use NULL)")
   if (!is.logical(which) || length(which)>1L) stopf("which= must be a logical vector length 1. Either FALSE, TRUE or NA.")
   if ((isTRUE(which)||is.na(which)) && !missing(j)) stopf("which==%s (meaning return row numbers) but j is also supplied. Either you need row numbers or the result of j, but only one type of result can be returned.", which)
-  if (!is.na(nomatch) && is.na(which)) stopf("which=NA with nomatch=0 would always return an empty vector. Please change or remove either which or nomatch.")
+  if (is.null(nomatch) && is.na(which)) stopf("which=NA with nomatch=0|NULL would always return an empty vector. Please change or remove either which or nomatch.")
   if (!with && missing(j)) stopf("j must be provided when with=FALSE")
   irows = NULL  # Meaning all rows. We avoid creating 1:nrow(x) for efficiency.
   notjoin = FALSE
@@ -313,7 +313,7 @@ replace_dot_alias = function(e) {
         stopf(":= with keyby is only possible when i is not supplied since you can't setkey on a subset of rows. Either change keyby to by or remove i")
       if (!missingnomatch) {
         warningf("nomatch isn't relevant together with :=, ignoring nomatch")
-        nomatch=0L
+        nomatch=NULL
       }
     }
   }
@@ -369,7 +369,7 @@ replace_dot_alias = function(e) {
     if (isub %iscall% "!") {
       notjoin = TRUE
       if (!missingnomatch) stopf("not-join '!' prefix is present on i but nomatch is provided. Please remove nomatch.");
-      nomatch = 0L
+      nomatch = NULL
       isub = isub[[2L]]
       # #932 related so that !(v1 == 1) becomes v1 == 1 instead of (v1 == 1) after removing "!"
       if (isub %iscall% "(" && !is.name(isub[[2L]]))
@@ -389,7 +389,7 @@ replace_dot_alias = function(e) {
       on = o$on
       ## the following two are ignored if i is not a data.table.
       ## Since we are converting i to data.table, it is important to set them properly.
-      nomatch = 0L
+      nomatch = NULL
       mult = "all"
     }
     else if (!is.name(isub)) {
@@ -509,8 +509,7 @@ replace_dot_alias = function(e) {
       len__ = ans$lens
       allGrp1 = all(ops==1L) # was previously 'ans$allGrp1'. Fixing #1991. TODO: Revisit about allGrp1 possibility for speedups in certain cases when I find some time.
       indices__ = if (length(ans$indices)) ans$indices else seq_along(f__) # also for #1991 fix
-      # length of input nomatch (single 0 or NA) is 1 in both cases.
-      # When no match, len__ is 0 for nomatch=0 and 1 for nomatch=NA, so len__ isn't .N
+      # When no match, len__ is 0 for nomatch=NULL and 1 for nomatch=NA, so len__ isn't .N
       # If using secondary key of x, f__ will refer to xo
       if (is.na(which)) {
         w = if (notjoin) f__!=0L else is.na(f__)
@@ -533,7 +532,7 @@ replace_dot_alias = function(e) {
           # Fix for #1092 and #1074
           # TODO: implement better version of "any"/"all"/"which" to avoid
           # unnecessary construction of logical vectors
-          if (identical(nomatch, 0L) && allLen1) irows = irows[irows != 0L]
+          if (is.null(nomatch) && allLen1) irows = irows[irows != 0L]
         } else {
           if (length(xo) && missing(on))
             stopf("Internal error. Cannot by=.EACHI when joining to an index, yet") # nocov
@@ -553,10 +552,10 @@ replace_dot_alias = function(e) {
       } else {
         if (!byjoin) { #1287 and #1271
           irows = f__ # len__ is set to 1 as well, no need for 'pmin' logic
-          if (identical(nomatch,0L)) irows = irows[len__>0L]  # 0s are len 0, so this removes -1 irows
+          if (is.null(nomatch)) irows = irows[len__>0L]  # 0s are len 0, so this removes -1 irows
         }
         # TODO: when nomatch=NA, len__ need not be allocated / set at all for mult="first"/"last"?
-        # TODO: how about when nomatch=0L, can we avoid allocating then as well?
+        # TODO: how about when nomatch=NULL, can we avoid allocating then as well?
       }
       if (length(xo) && length(irows)) {
         irows = xo[irows]   # TO DO: fsort here?
@@ -619,8 +618,12 @@ replace_dot_alias = function(e) {
         else stopf("i evaluates to a logical vector length %d but there are %d rows. Recycling of logical i is no longer allowed as it hides more bugs than is worth the rare convenience. Explicitly use rep(...,length=.N) if you really need to recycle.", length(i), nrow(x))
       } else {
         irows = as.integer(i)  # e.g. DT[c(1,3)] and DT[c(-1,-3)] ok but not DT[c(1,-3)] (caught as error)
-        irows = .Call(CconvertNegAndZeroIdx, irows, nrow(x), is.null(jsub) || root!=":=")  # last argument is allowOverMax (NA when selecting, error when assigning)
-        # simplifies logic from here on: can assume positive subscripts (no zeros)
+        if (nomatch0) warning("Please use nomatch=NULL instead of nomatch=0; see news item 5 in v1.12.0 (Jan 2019)")
+                      # warning only for this case where nomatch was ignored before v1.14.2; #3109
+        irows = .Call(CconvertNegAndZeroIdx, irows, nrow(x),
+                      is.null(jsub) || root!=":=",   # allowOverMax (NA when selecting, error when assigning)
+                      !is.null(nomatch))             # allowNA=false when nomatch=NULL #3109, true when nomatch=NA #3666
+        # simplifies logic from here on: can assume positive subscripts (no zeros), for nomatch=NULL also no NAs
         # maintains Arun's fix for #2697 (test 1042)
         # efficient in C with more detailed helpful messages when user mixes positives and negatives
         # falls through quickly (no R level allocs) if all items are within range [1,max] with no zeros or negatives
@@ -628,7 +631,7 @@ replace_dot_alias = function(e) {
       }
     }
     if (notjoin) {
-      if (byjoin || !is.integer(irows) || is.na(nomatch)) stopf("Internal error: notjoin but byjoin or !integer or nomatch==NA") # nocov
+      if (byjoin || !is.integer(irows) || !is.null(nomatch)) stopf("Internal error: notjoin but byjoin or !integer or nomatch==NA") # nocov
       irows = irows[irows!=0L]
       if (verbose) {last.started.at=proc.time();catf("Inverting irows for notjoin done in ... ");flush.console()}
       i = irows = if (length(irows)) seq_len(nrow(x))[-irows] else NULL  # NULL meaning all rows i.e. seq_len(nrow(x))
@@ -843,7 +846,7 @@ replace_dot_alias = function(e) {
           # in 1.8.3, but this failed test 876.
           # TO DO: Add a test like X[i,sum(v),by=i.x2], or where by includes a join column (both where some i don't match).
           # TO DO: Make xss directly, rather than recursive call.
-          if (!is.na(nomatch)) irows = irows[irows!=0L]   # TO DO: can be removed now we have CisSortedSubset
+          if (is.null(nomatch)) irows = irows[irows!=0L]   # TO DO: can be removed now we have CisSortedSubset
           if (length(allbyvars)) {    ###############  TO DO  TO DO  TO DO  ###############
             if (verbose) catf("i clause present and columns used in by detected, only these subset: %s\n", brackify(allbyvars))
             xss = `[.data.table`(x,irows,allbyvars,with=FALSE,nomatch=nomatch,mult=mult,roll=roll,rollends=rollends)
@@ -1290,7 +1293,7 @@ replace_dot_alias = function(e) {
         }
         ans = vector("list", length(ansvars))
         ii = rep.int(indices__, len__) # following #1991 fix
-        # TODO: if (allLen1 && allGrp1 && (is.na(nomatch) || !any(f__==0L))) then ii will be 1:nrow(i)  [nomatch=0 should drop rows in i that have no match]
+        # TODO: if (allLen1 && allGrp1 && (!is.null(nomatch) || !any(f__==0L))) then ii will be 1:nrow(i)  [nomatch=NULL should drop rows in i that have no match]
         #       But rather than that complex logic here at R level to catch that and do a shallow copy for efficiency, just do the check inside CsubsetDT
         #       to see if it passed 1:nrow(x) and then CsubsetDT should do the shallow copy safely and centrally.
         #       That R level branch was taken out in PR #3213
@@ -1721,7 +1724,7 @@ replace_dot_alias = function(e) {
     }
     dotN = function(x) is.name(x) && x==".N" # For #334. TODO: Rprof() showed dotN() may be the culprit if iterated (#1470)?; avoid the == which converts each x to character?
     # FR #971, GForce kicks in on all subsets, no joins yet. Although joins could work with
-    # nomatch=0L even now.. but not switching it on yet, will deal it separately.
+    # nomatch=NULL even now.. but not switching it on yet, will deal it separately.
     if (getOption("datatable.optimize")>=2L && !is.data.table(i) && !byjoin && length(f__) && !length(lhs)) {
       if (!length(ansvars) && !use.I) {
         GForce = FALSE
