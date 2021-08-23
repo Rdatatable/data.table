@@ -1099,12 +1099,13 @@ SEXP gsd(SEXP x, SEXP narm) {
   return (gvarsd1(x, narm, TRUE));
 }
 
-SEXP gprod(SEXP x, SEXP narm)
-{
-  if (!isLogical(narm) || LENGTH(narm)!=1 || LOGICAL(narm)[0]==NA_LOGICAL) error(_("na.rm must be TRUE or FALSE"));
+SEXP gprod(SEXP x, SEXP narmArg) {
+  if (!isLogical(narmArg) || LENGTH(narmArg)!=1 || LOGICAL(narmArg)[0]==NA_LOGICAL) error(_("na.rm must be TRUE or FALSE"));
+  const bool narm=LOGICAL(narmArg)[0];
   if (!isVectorAtomic(x)) error(_("GForce prod can only be applied to columns, not .SD or similar. To multiply all items in a list such as .SD, either add the prefix base::prod(.SD) or turn off GForce optimization using options(datatable.optimize=1). More likely, you may be looking for 'DT[,lapply(.SD,prod),by=,.SDcols=]'"));
   if (inherits(x, "factor")) error(_("prod is not meaningful for factors."));
-  const int n = (irowslen == -1) ? length(x) : irowslen;
+  const bool nosubset = irowslen==-1;
+  const int n = nosubset ? length(x) : irowslen;
   //clock_t start = clock();
   SEXP ans;
   if (nrow != n) error(_("nrow [%d] != length(x) [%d] in %s"), nrow, n, "gprod");
@@ -1112,49 +1113,40 @@ SEXP gprod(SEXP x, SEXP narm)
   if (!s) error(_("Unable to allocate %d * %d bytes for gprod"), ngrp, sizeof(long double));
   for (int i=0; i<ngrp; ++i) s[i] = 1.0;
   ans = PROTECT(allocVector(REALSXP, ngrp));
+  double *ansd = REAL(ans);
   switch(TYPEOF(x)) {
-  case LGLSXP: case INTSXP:
+  case LGLSXP: case INTSXP: {
+    const int *xd = INTEGER(x);
     for (int i=0; i<n; ++i) {
       const int thisgrp = grp[i];
-      const int ix = (irowslen == -1) ? i : irows[i]-1;
-      if (!LOGICAL(narm)[0]) {
-        // Let NA_REAL propogate from here. R_NaReal is IEEE.
-        if (ix+1==NA_INTEGER) { s[thisgrp] = NA_REAL; continue; }
-        if (INTEGER(x)[ix]==NA_INTEGER) { s[thisgrp] = NA_REAL; continue; }
-      } else {
-        if (ix+1==NA_INTEGER) continue;
-        if (INTEGER(x)[ix]==NA_INTEGER) continue;
+      const int elem = nosubset ? xd[i] : (irows[i]==NA_INTEGER ? NA_INTEGER : xd[irows[i]-1]);
+      if (elem==NA_INTEGER) {
+        if (!narm) s[thisgrp] = NA_REAL;  // Let NA_REAL propogate from here. R_NaReal is IEEE.
+        continue;
       }
-      s[thisgrp] *= INTEGER(x)[ix];  // no under/overflow here, s is long double (like base)
-    }
-    for (int i=0; i<ngrp; ++i) {
-      if (s[i] > DBL_MAX) REAL(ans)[i] = R_PosInf;
-      else if (s[i] < -DBL_MAX) REAL(ans)[i] = R_NegInf;
-      else REAL(ans)[i] = (double)s[i];
-    }
+      s[thisgrp] *= elem; // no under/overflow here, s is long double (like base)
+    }}
     break;
-  case REALSXP:
+  case REALSXP: {
+    const double *xd = REAL(x);
     for (int i=0; i<n; ++i) {
       const int thisgrp = grp[i];
-      const int ix = (irowslen == -1) ? i : irows[i]-1;
-      if (!LOGICAL(narm)[0]) {
-        if (ix+1==NA_INTEGER) { s[thisgrp] = NA_REAL; continue; }
-        if (ISNAN(REAL(x)[ix])) { s[thisgrp] = NA_REAL; continue; }
-      } else {
-        if (ix+1==NA_INTEGER) continue;
-        if (ISNAN(REAL(x)[ix])) continue; // else let NA_REAL propogate from here
+      const double elem = nosubset ? xd[i] : (irows[i]==NA_INTEGER ? NA_REAL : xd[irows[i]-1]);
+      if (ISNAN(elem)) {
+        if (!narm) s[thisgrp] = NA_REAL;
+        continue;
       }
-      s[thisgrp] *= REAL(x)[ix];  // done in long double, like base
-    }
-    for (int i=0; i<ngrp; ++i) {
-      if (s[i] > DBL_MAX) REAL(ans)[i] = R_PosInf;
-      else if (s[i] < -DBL_MAX) REAL(ans)[i] = R_NegInf;
-      else REAL(ans)[i] = (double)s[i];
-    }
+      s[thisgrp] *= elem;
+    }}
     break;
   default:
     free(s);
     error(_("Type '%s' not supported by GForce prod (gprod). Either add the prefix base::prod(.) or turn off GForce optimization using options(datatable.optimize=1)"), type2char(TYPEOF(x)));
+  }
+  for (int i=0; i<ngrp; ++i) {
+    if (s[i] > DBL_MAX) ansd[i] = R_PosInf;
+    else if (s[i] < -DBL_MAX) ansd[i] = R_NegInf;
+    else ansd[i] = (double)s[i];
   }
   free(s);
   copyMostAttrib(x, ans);
@@ -1162,3 +1154,4 @@ SEXP gprod(SEXP x, SEXP narm)
   // Rprintf(_("this gprod took %8.3f\n"), 1.0*(clock()-start)/CLOCKS_PER_SEC);
   return(ans);
 }
+
