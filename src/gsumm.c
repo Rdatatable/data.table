@@ -900,19 +900,21 @@ SEXP gmedian(SEXP x, SEXP narmArg) {
   return ans;
 }
 
-static SEXP gfirstlast(SEXP x, const bool first) {
+static SEXP gfirstlast(SEXP x, const bool first, const int w) {
+  // w: which item (1 other than for gnthvalue when could be >1)
   const bool nosubset = irowslen == -1;
   const int n = nosubset ? length(x) : irowslen;
   SEXP ans;
   if (nrow != n) error(_("nrow [%d] != length(x) [%d] in %s"), nrow, n, first?"gfirst":"glast");
-
+  const bool gnth = w>1;  // const bool to avoid fetching grpsize[i] when not needed
   switch(TYPEOF(x)) {
   case LGLSXP: {
     const int *ix = LOGICAL(x);
     ans = PROTECT(allocVector(LGLSXP, ngrp));
     int *ians = LOGICAL(ans);
     for (int i=0; i<ngrp; ++i) {
-      int k = first ? ff[i]-1 : ff[i]+grpsize[i]-2;
+      if (gnth && w>grpsize[i]) { ians[i]=NA_LOGICAL; continue; }
+      int k = first ? ff[i]+w-2 : ff[i]+grpsize[i]-w-1;
       if (isunsorted) k = oo[k]-1;
       ians[i] = nosubset ? ix[k] : (irows[k]==NA_INTEGER ? NA_LOGICAL : ix[irows[k]-1]);
     }
@@ -923,7 +925,8 @@ static SEXP gfirstlast(SEXP x, const bool first) {
     ans = PROTECT(allocVector(INTSXP, ngrp));
     int *ians = INTEGER(ans);
     for (int i=0; i<ngrp; ++i) {
-      int k = first ? ff[i]-1 : ff[i]+grpsize[i]-2;
+      if (gnth && w>grpsize[i]) { ians[i]=NA_INTEGER; continue; }
+      int k = first ? ff[i]+w-2 : ff[i]+grpsize[i]-w-1;
       if (isunsorted) k = oo[k]-1;
       ians[i] = nosubset ? ix[k] : (irows[k]==NA_INTEGER ? NA_INTEGER : ix[irows[k]-1]);
     }
@@ -934,7 +937,8 @@ static SEXP gfirstlast(SEXP x, const bool first) {
     ans = PROTECT(allocVector(REALSXP, ngrp));
     double *dans = REAL(ans);
     for (int i=0; i<ngrp; ++i) {
-      int k = first ? ff[i]-1 : ff[i]+grpsize[i]-2;
+      if (gnth && w>grpsize[i]) { dans[i]=NA_REAL; continue; }
+      int k = first ? ff[i]+w-2 : ff[i]+grpsize[i]-w-1;
       if (isunsorted) k = oo[k]-1;
       dans[i] = nosubset ? dx[k] : (irows[k]==NA_INTEGER ? NA_REAL : dx[irows[k]-1]);
     }
@@ -945,7 +949,8 @@ static SEXP gfirstlast(SEXP x, const bool first) {
     ans = PROTECT(allocVector(CPLXSXP, ngrp));
     Rcomplex *dans = COMPLEX(ans);
     for (int i=0; i<ngrp; ++i) {
-      int k = first ? ff[i]-1 : ff[i]+grpsize[i]-2;
+      if (gnth && w>grpsize[i]) { dans[i]=NA_CPLX; continue; }
+      int k = first ? ff[i]+w-2 : ff[i]+grpsize[i]-w-1;
       if (isunsorted) k = oo[k]-1;
       dans[i] = nosubset ? dx[k] : (irows[k]==NA_INTEGER ? NA_CPLX : dx[irows[k]-1]);
     }
@@ -954,7 +959,8 @@ static SEXP gfirstlast(SEXP x, const bool first) {
     const SEXP *sx = STRING_PTR(x);
     ans = PROTECT(allocVector(STRSXP, ngrp));
     for (int i=0; i<ngrp; ++i) {
-      int k = first ? ff[i]-1 : ff[i]+grpsize[i]-2;
+      if (gnth && w>grpsize[i]) { SET_STRING_ELT(ans, i, NA_STRING); continue; }
+      int k = first ? ff[i]+w-2 : ff[i]+grpsize[i]-w-1;
       if (isunsorted) k = oo[k]-1;
       SET_STRING_ELT(ans, i, nosubset ? sx[k] : (irows[k]==NA_INTEGER ? NA_STRING : sx[irows[k]-1]));
     }
@@ -963,13 +969,14 @@ static SEXP gfirstlast(SEXP x, const bool first) {
     const SEXP *vx = SEXPPTR_RO(x);
     ans = PROTECT(allocVector(VECSXP, ngrp));
     for (int i=0; i<ngrp; ++i) {
-      int k = first ? ff[i]-1 : ff[i]+grpsize[i]-2;
+      if (gnth && w>grpsize[i]) { SET_VECTOR_ELT(ans, i, ScalarLogical(NA_LOGICAL)); continue; }
+      int k = first ? ff[i]+w-2 : ff[i]+grpsize[i]-w-1;
       if (isunsorted) k = oo[k]-1;
       SET_VECTOR_ELT(ans, i, nosubset ? vx[k] : (irows[k]==NA_INTEGER ? ScalarLogical(NA_LOGICAL) : vx[irows[k]-1]));
     }
   } break;
   default:
-    error(_("Type '%s' not supported by GForce head/tail/first/last. Either add the prefix utils::head(.) or turn off GForce optimization using options(datatable.optimize=1)"), type2char(TYPEOF(x)));
+    error(_("Type '%s' not supported by GForce head/tail/first/last/`[`. Either add the prefix utils::head(.) or turn off GForce optimization using options(datatable.optimize=1)"), type2char(TYPEOF(x)));
   }
   copyMostAttrib(x, ans);
   UNPROTECT(1);
@@ -977,108 +984,26 @@ static SEXP gfirstlast(SEXP x, const bool first) {
 }
 
 SEXP glast(SEXP x) {
-  return gfirstlast(x, false);
+  return gfirstlast(x, false, 1);
 }
 
 SEXP gfirst(SEXP x) {
-  return gfirstlast(x, true);
+  return gfirstlast(x, true, 1);
 }
 
 SEXP gtail(SEXP x, SEXP valArg) {
   if (!isInteger(valArg) || LENGTH(valArg)!=1 || INTEGER(valArg)[0]!=1) error(_("Internal error, gtail is only implemented for n=1. This should have been caught before. please report to data.table issue tracker.")); // # nocov
-  return glast(x);
+  return gfirstlast(x, false, 1);
 }
 
 SEXP ghead(SEXP x, SEXP valArg) {
   if (!isInteger(valArg) || LENGTH(valArg)!=1 || INTEGER(valArg)[0]!=1) error(_("Internal error, ghead is only implemented for n=1. This should have been caught before. please report to data.table issue tracker.")); // # nocov
-  return gfirst(x);
+  return gfirstlast(x, true, 1);
 }
 
 SEXP gnthvalue(SEXP x, SEXP valArg) {
-
   if (!isInteger(valArg) || LENGTH(valArg)!=1 || INTEGER(valArg)[0]<=0) error(_("Internal error, `g[` (gnthvalue) is only implemented single value subsets with positive index, e.g., .SD[2]. This should have been caught before. please report to data.table issue tracker.")); // # nocov
-  const int val=INTEGER(valArg)[0];
-  const int n = (irowslen == -1) ? length(x) : irowslen;
-  SEXP ans;
-  if (nrow != n) error(_("nrow [%d] != length(x) [%d] in %s"), nrow, n, "ghead");
-  switch(TYPEOF(x)) {
-  case LGLSXP: {
-    const int *ix = LOGICAL(x);
-    ans = PROTECT(allocVector(LGLSXP, ngrp));
-    int *ians = LOGICAL(ans);
-    for (int i=0; i<ngrp; ++i) {
-      if (val > grpsize[i]) { LOGICAL(ans)[i] = NA_LOGICAL; continue; }
-      int k = ff[i]+val-2;
-      if (isunsorted) k = oo[k]-1;
-      k = (irowslen == -1) ? k : irows[k]-1;
-      ians[i] = (k+1==NA_INTEGER) ? NA_LOGICAL : ix[k];
-    }
-  }
-    break;
-  case INTSXP: {
-    const int *ix = INTEGER(x);
-    ans = PROTECT(allocVector(INTSXP, ngrp));
-    int *ians = INTEGER(ans);
-    for (int i=0; i<ngrp; ++i) {
-      if (val > grpsize[i]) { INTEGER(ans)[i] = NA_INTEGER; continue; }
-      int k = ff[i]+val-2;
-      if (isunsorted) k = oo[k]-1;
-      k = (irowslen == -1) ? k : irows[k]-1;
-      ians[i] = (k+1==NA_INTEGER) ? NA_INTEGER : ix[k];
-    }
-  }
-    break;
-  case REALSXP: {
-    const double *dx = REAL(x);
-    ans = PROTECT(allocVector(REALSXP, ngrp));
-    double *dans = REAL(ans);
-    for (int i=0; i<ngrp; ++i) {
-      if (val > grpsize[i]) { REAL(ans)[i] = NA_REAL; continue; }
-      int k = ff[i]+val-2;
-      if (isunsorted) k = oo[k]-1;
-      k = (irowslen == -1) ? k : irows[k]-1;
-      dans[i] = (k+1==NA_INTEGER) ? NA_REAL : dx[k];
-    }
-  }
-    break;
-  case CPLXSXP: {
-    const Rcomplex *dx = COMPLEX(x);
-    ans = PROTECT(allocVector(CPLXSXP, ngrp));
-    Rcomplex *dans = COMPLEX(ans);
-    for (int i=0; i<ngrp; ++i) {
-      if (val > grpsize[i]) { dans[i].r = NA_REAL; dans[i].i = NA_REAL; continue; }
-      int k = ff[i]+val-2;
-      if (isunsorted) k = oo[k]-1;
-      k = (irowslen == -1) ? k : irows[k]-1;
-      dans[i] = (k+1==NA_INTEGER) ? NA_CPLX : dx[k];
-    }
-  } break;
-  case STRSXP:
-    ans = PROTECT(allocVector(STRSXP, ngrp));
-    for (int i=0; i<ngrp; ++i) {
-      if (val > grpsize[i]) { SET_STRING_ELT(ans, i, NA_STRING); continue; }
-      int k = ff[i]+val-2;
-      if (isunsorted) k = oo[k]-1;
-      k = (irowslen == -1) ? k : irows[k]-1;
-      SET_STRING_ELT(ans, i, (k+1==NA_INTEGER) ? NA_STRING : STRING_ELT(x, k));
-    }
-    break;
-  case VECSXP:
-    ans = PROTECT(allocVector(VECSXP, ngrp));
-    for (int i=0; i<ngrp; ++i) {
-      if (val > grpsize[i]) { SET_VECTOR_ELT(ans, i, R_NilValue); continue; }
-      int k = ff[i]+val-2;
-      if (isunsorted) k = oo[k]-1;
-      k = (irowslen == -1) ? k : irows[k]-1;
-      SET_VECTOR_ELT(ans, i, (k+1==NA_INTEGER) ? ScalarLogical(NA_LOGICAL) : VECTOR_ELT(x, k));
-    }
-    break;
-  default:
-    error(_("Type '%s' not supported by GForce subset `[` (gnthvalue). Either add the prefix utils::head(.) or turn off GForce optimization using options(datatable.optimize=1)"), type2char(TYPEOF(x)));
-  }
-  copyMostAttrib(x, ans);
-  UNPROTECT(1);
-  return(ans);
+  return gfirstlast(x, true, INTEGER(valArg)[0]);
 }
 
 // TODO: gwhich.min, gwhich.max
