@@ -723,6 +723,7 @@ static SEXP gminmax(SEXP x, SEXP narm, const bool min)
   SEXP ans;
   if (nrow != n) error(_("nrow [%d] != length(x) [%d] in %s"), nrow, n, "gmin");  
   // GForce guarantees each group has at least one value; i.e. we don't need to consider length-0 per group here
+  const bool nosubset = irowslen==-1;
   switch(TYPEOF(x)) {
   case LGLSXP: case INTSXP: {
     ans = PROTECT(allocVector(INTSXP, ngrp));
@@ -734,20 +735,18 @@ static SEXP gminmax(SEXP x, SEXP narm, const bool min)
       for (int i=0; i<n; ++i) {
         const int thisgrp = grp[i];
         if (ansd[thisgrp]==NA_INTEGER) continue;  // once an NA has been observed in this group, it doesn't matter what the remaining values in this group are
-        const int ix = (irowslen == -1) ? i : irows[i]-1;
-        if (ix+1==NA_INTEGER) ansd[thisgrp] = NA_INTEGER;
-        else if (xd[ix]==NA_INTEGER || (xd[ix]<ansd[thisgrp])==min)   
-          ansd[thisgrp] = xd[ix];  // always true on the first value in the group (other than if the first value is INT_MAX or INT_MIN-1 which is fine too)
+        const int elem = nosubset ? xd[i] : (irows[i]==NA_INTEGER ? NA_INTEGER : xd[irows[i]-1]);
+        if (elem==NA_INTEGER || (elem<ansd[thisgrp])==min)   
+          ansd[thisgrp] = elem;  // always true on the first value in the group (other than if the first value is INT_MAX or INT_MIN-1 which is fine too)
       }
     } else {
       for (int i=0; i<ngrp; ++i) ansd[i] = NA_INTEGER;  // in the all-NA case we now return NA for type consistency 
       for (int i=0; i<n; ++i) {
-        const int ix = (irowslen == -1) ? i : irows[i]-1;
-        if (ix+1==NA_INTEGER) continue;
-        if (xd[ix]==NA_INTEGER) continue;
+        const int elem = nosubset ? xd[i] : (irows[i]==NA_INTEGER ? NA_INTEGER : xd[irows[i]-1]);
+        if (elem==NA_INTEGER) continue;
         const int thisgrp = grp[i];
-        if (ansd[thisgrp]==NA_INTEGER || (xd[ix]<ansd[thisgrp])==min)
-          ansd[thisgrp] = xd[ix];
+        if (ansd[thisgrp]==NA_INTEGER || (elem<ansd[thisgrp])==min)
+          ansd[thisgrp] = elem;
       }
     }}
     break;
@@ -761,20 +760,18 @@ static SEXP gminmax(SEXP x, SEXP narm, const bool min)
       for (int i=0; i<n; ++i) {
         const int thisgrp = grp[i];
         if (ansd[thisgrp]==NA_STRING) continue;
-        const int ix = (irowslen == -1) ? i : irows[i]-1;
-        if (ix+1==NA_INTEGER) SET_STRING_ELT(ans, thisgrp, NA_STRING);
-        else if (xd[ix]==NA_STRING || (strcmp(CHAR(xd[ix]), CHAR(ansd[thisgrp]))<0)==min)
-          SET_STRING_ELT(ans, thisgrp, xd[ix]);
+        const SEXP elem = nosubset ? xd[i] : (irows[i]==NA_INTEGER ? NA_STRING : xd[irows[i]-1]);
+        if (elem==NA_STRING || (strcmp(CHAR(elem), CHAR(ansd[thisgrp]))<0)==min)
+          SET_STRING_ELT(ans, thisgrp, elem);
       }
     } else {
       for (int i=0; i<ngrp; ++i) SET_STRING_ELT(ans, i, NA_STRING); // all missing returns NA consistent with base
       for (int i=0; i<n; ++i) {
-        const int ix = (irowslen == -1) ? i : irows[i]-1;
-        if (ix+1==NA_INTEGER) continue;
-        if (xd[ix]==NA_STRING) continue;
+        const SEXP elem = nosubset ? xd[i] : (irows[i]==NA_INTEGER ? NA_STRING : xd[irows[i]-1]);
+        if (elem==NA_STRING) continue;
         const int thisgrp = grp[i];
-        if (ansd[thisgrp]==NA_STRING || (strcmp(CHAR(xd[ix]), CHAR(ansd[thisgrp]))<0)==min)
-          SET_STRING_ELT(ans, thisgrp, xd[ix]);
+        if (ansd[thisgrp]==NA_STRING || (strcmp(CHAR(elem), CHAR(ansd[thisgrp]))<0)==min)
+          SET_STRING_ELT(ans, thisgrp, elem);
       }
     }}
     break;
@@ -789,20 +786,18 @@ static SEXP gminmax(SEXP x, SEXP narm, const bool min)
         for (int i=0; i<n; ++i) {
           const int thisgrp = grp[i];
           if (ansd[thisgrp]==NA_INTEGER64) continue;
-          const int ix = (irowslen == -1) ? i : irows[i]-1;
-          if (ix+1==NA_INTEGER) ansd[thisgrp] = NA_INTEGER64;
-          else if (xd[ix]==NA_INTEGER64 || (xd[ix]<ansd[thisgrp])==min)
-            ansd[thisgrp] = xd[ix];
+          const int64_t elem = nosubset ? xd[i] : (irows[i]==NA_INTEGER ? NA_INTEGER64 : xd[irows[i]-1]);
+          if (elem==NA_INTEGER64 || (elem<ansd[thisgrp])==min)   
+            ansd[thisgrp] = elem;
         }
       } else {
         for (int i=0; i<ngrp; ++i) ansd[i] = NA_INTEGER64;
         for (int i=0; i<n; ++i) {
-          const int ix = (irowslen == -1) ? i : irows[i]-1;
-          if (ix+1==NA_INTEGER) continue;
-          if (xd[ix]==NA_INTEGER64) continue;
-          const int thisgrp = grp[i];  
-          if (ansd[thisgrp]==NA_INTEGER64 || (xd[ix]<ansd[thisgrp])==min)
-            ansd[thisgrp] = xd[ix];
+          const int64_t elem = nosubset ? xd[i] : (irows[i]==NA_INTEGER ? NA_INTEGER64 : xd[irows[i]-1]);
+          if (elem==NA_INTEGER64) continue;
+          const int thisgrp = grp[i];
+          if (ansd[thisgrp]==NA_INTEGER64 || (elem<ansd[thisgrp])==min)
+            ansd[thisgrp] = elem;
         }
       }
     } else {
@@ -814,20 +809,18 @@ static SEXP gminmax(SEXP x, SEXP narm, const bool min)
         for (int i=0; i<n; ++i) {
           const int thisgrp = grp[i];
           if (ISNAN(ansd[thisgrp])) continue;
-          const int ix = (irowslen == -1) ? i : irows[i]-1;
-          if (ix+1==NA_INTEGER) ansd[thisgrp] = NA_REAL;
-          else if (ISNAN(xd[ix]) || (xd[ix]<ansd[thisgrp])==min)
-            ansd[thisgrp] = xd[ix];
+          const double elem = nosubset ? xd[i] : (irows[i]==NA_INTEGER ? NA_REAL : xd[irows[i]-1]);
+          if (ISNAN(elem) || (elem<ansd[thisgrp])==min)   
+            ansd[thisgrp] = elem;
         }
       } else {
         for (int i=0; i<ngrp; ++i) ansd[i] = NA_REAL;
         for (int i=0; i<n; ++i) {
-          const int ix = (irowslen == -1) ? i : irows[i]-1;
-          if (ix+1==NA_INTEGER) continue;
-          if (ISNAN(xd[ix])) continue;
-          const int thisgrp = grp[i];  
-          if (ISNAN(ansd[thisgrp]) || (xd[ix]<ansd[thisgrp])==min)
-            ansd[thisgrp] = xd[ix];
+          const double elem = nosubset ? xd[i] : (irows[i]==NA_INTEGER ? NA_REAL : xd[irows[i]-1]);
+          if (ISNAN(elem)) continue;
+          const int thisgrp = grp[i];
+          if (ISNAN(ansd[thisgrp]) || (elem<ansd[thisgrp])==min)
+            ansd[thisgrp] = elem;
         }
       }
     }}
