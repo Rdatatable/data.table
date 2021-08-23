@@ -1008,143 +1008,87 @@ SEXP gnthvalue(SEXP x, SEXP valArg) {
 
 // TODO: gwhich.min, gwhich.max
 // implemented this similar to gmedian to balance well between speed and memory usage. There's one extra allocation on maximum groups and that's it.. and that helps speed things up extremely since we don't have to collect x's values for each group for each step (mean, residuals, mean again and then variance).
-SEXP gvarsd1(SEXP x, SEXP narm, Rboolean isSD)
+static SEXP gvarsd1(SEXP x, SEXP narmArg, bool isSD)
 {
-  if (!isLogical(narm) || LENGTH(narm)!=1 || LOGICAL(narm)[0]==NA_LOGICAL) error(_("na.rm must be TRUE or FALSE"));
+  if (!isLogical(narmArg) || LENGTH(narmArg)!=1 || LOGICAL(narmArg)[0]==NA_LOGICAL) error(_("na.rm must be TRUE or FALSE"));
   if (!isVectorAtomic(x)) error(_("GForce var/sd can only be applied to columns, not .SD or similar. For the full covariance matrix of all items in a list such as .SD, either add the prefix stats::var(.SD) (or stats::sd(.SD)) or turn off GForce optimization using options(datatable.optimize=1). Alternatively, if you only need the diagonal elements, 'DT[,lapply(.SD,var),by=,.SDcols=]' is the optimized way to do this."));
   if (inherits(x, "factor")) error(_("var/sd is not meaningful for factors."));
   const int n = (irowslen == -1) ? length(x) : irowslen;
   if (nrow != n) error(_("nrow [%d] != length(x) [%d] in %s"), nrow, n, "gvar");
   SEXP sub, ans = PROTECT(allocVector(REALSXP, ngrp));
+  double *ansd = REAL(ans);
+  const bool nosubset = irowslen==-1;
+  const bool narm = LOGICAL(narmArg)[0];
   switch(TYPEOF(x)) {
-  case LGLSXP: case INTSXP:
+  case LGLSXP: case INTSXP: {
     sub = PROTECT(allocVector(INTSXP, maxgrpn)); // allocate once upfront
-    if (!LOGICAL(narm)[0]) {
-      for (int i=0; i<ngrp; ++i) {
-        long double m=0., s=0., v=0.;
-        bool ans_na = false;
-        if (grpsize[i] != 1) {
-          const int thisgrpsize = grpsize[i];
-          SETLENGTH(sub, thisgrpsize); // to gather this group's data
-          for (int j=0; j<thisgrpsize; ++j) {
-            int ix = ff[i]+j-1;
-            if (isunsorted) ix = oo[ix]-1;
-            ix = (irowslen == -1) ? ix : irows[ix]-1;
-            if (ix+1==NA_INTEGER) { ans_na=true; break; }
-            if (INTEGER(x)[ix] == NA_INTEGER) { ans_na=true; break; }
-            INTEGER(sub)[j] = INTEGER(x)[ix];
-            m += INTEGER(sub)[j]; // sum
-          }
-          if (ans_na) { REAL(ans)[i] = NA_REAL; continue; }
-          m = m/thisgrpsize; // mean, first pass
-          for (int j=0; j<thisgrpsize; ++j) s += (INTEGER(sub)[j]-m); // residuals
-          m += (s/thisgrpsize); // mean, second pass
-          for (int j=0; j<thisgrpsize; ++j) { // variance
-            v += (INTEGER(sub)[j]-(double)m) * (INTEGER(sub)[j]-(double)m);
-          }
-          REAL(ans)[i] = (double)v/(thisgrpsize-1);
-          if (isSD) REAL(ans)[i] = SQRTL(REAL(ans)[i]);
-        } else REAL(ans)[i] = NA_REAL;
-      }
-    } else {
-      for (int i=0; i<ngrp; ++i) {
-        long double m=0., s=0., v=0.;
-        int thisgrpsize = 0;
-        if (grpsize[i] != 1) {
-          SETLENGTH(sub, grpsize[i]); // to gather this group's data
-          for (int j=0; j<grpsize[i]; ++j) {
-            int ix = ff[i]+j-1;
-            if (isunsorted) ix = oo[ix]-1;
-            ix = (irowslen == -1) ? ix : irows[ix]-1;
-            if (ix+1==NA_INTEGER) continue;
-            if (INTEGER(x)[ix] == NA_INTEGER) continue;
-            INTEGER(sub)[thisgrpsize] = INTEGER(x)[ix];
-            m += INTEGER(sub)[thisgrpsize]; // sum
-            thisgrpsize++;
-          }
-          if (thisgrpsize <= 1) { REAL(ans)[i] = NA_REAL; continue; }
-          m = m/thisgrpsize; // mean, first pass
-          for (int j=0; j<thisgrpsize; ++j) s += (INTEGER(sub)[j]-m); // residuals
-          m += (s/thisgrpsize); // mean, second pass
-          for (int j=0; j<thisgrpsize; ++j) { // variance
-            v += (INTEGER(sub)[j]-(double)m) * (INTEGER(sub)[j]-(double)m);
-          }
-          REAL(ans)[i] = (double)v/(thisgrpsize-1);
-          if (isSD) REAL(ans)[i] = SQRTL(REAL(ans)[i]);
-        } else REAL(ans)[i] = NA_REAL;
-      }
-    }
-    SETLENGTH(sub, maxgrpn);
-    break;
-  case REALSXP:
-    sub = PROTECT(allocVector(REALSXP, maxgrpn)); // allocate once upfront
-    if (!LOGICAL(narm)[0]) {
-      for (int i=0; i<ngrp; ++i) {
-        long double m=0., s=0., v=0.;
-        bool ans_na=false;
-        if (grpsize[i] != 1) {
-          const int thisgrpsize = grpsize[i];
-          SETLENGTH(sub, thisgrpsize); // to gather this group's data
-          for (int j=0; j<thisgrpsize; ++j) {
-            int ix = ff[i]+j-1;
-            if (isunsorted) ix = oo[ix]-1;
-            ix = (irowslen == -1) ? ix : irows[ix]-1;
-            if (ix+1==NA_INTEGER) { ans_na=true; break; }
-            if (ISNAN(REAL(x)[ix])) { ans_na=true; break; }
-            REAL(sub)[j] = REAL(x)[ix];
-            m += REAL(sub)[j]; // sum
-          }
-          if (ans_na) { REAL(ans)[i] = NA_REAL; continue; }
-          m = m/thisgrpsize; // mean, first pass
-          for (int j=0; j<thisgrpsize; ++j) s += (REAL(sub)[j]-m); // residuals
-          m += (s/thisgrpsize); // mean, second pass
-          for (int j=0; j<thisgrpsize; ++j) { // variance
-            v += (REAL(sub)[j]-(double)m) * (REAL(sub)[j]-(double)m);
-          }
-          REAL(ans)[i] = (double)v/(thisgrpsize-1);
-          if (isSD) REAL(ans)[i] = SQRTL(REAL(ans)[i]);
-        } else REAL(ans)[i] = NA_REAL;
-      }
-    } else {
-      for (int i=0; i<ngrp; ++i) {
-        long double m=0., s=0., v=0.;
-        int thisgrpsize = 0;
-        if (grpsize[i] != 1) {
-          SETLENGTH(sub, grpsize[i]); // to gather this group's data
-          for (int j=0; j<grpsize[i]; ++j) {
-            int ix = ff[i]+j-1;
-            if (isunsorted) ix = oo[ix]-1;
-            ix = (irowslen == -1) ? ix : irows[ix]-1;
-            if (ix+1==NA_INTEGER) continue;
-            if (ISNAN(REAL(x)[ix])) continue;
-            REAL(sub)[thisgrpsize] = REAL(x)[ix];
-            m += REAL(sub)[thisgrpsize]; // sum
-            thisgrpsize++;
-          }
-          if (thisgrpsize <= 1) { REAL(ans)[i] = NA_REAL; continue; }
-          m = m/thisgrpsize; // mean, first pass
-          for (int j=0; j<thisgrpsize; ++j) s += (REAL(sub)[j]-m); // residuals
-          m += (s/thisgrpsize); // mean, second pass
-          for (int j=0; j<thisgrpsize; ++j) { // variance
-            v += (REAL(sub)[j]-(double)m) * (REAL(sub)[j]-(double)m);
-          }
-          REAL(ans)[i] = (double)v/(thisgrpsize-1);
-          if (isSD) REAL(ans)[i] = SQRTL(REAL(ans)[i]);
-        } else REAL(ans)[i] = NA_REAL;
-      }
-    }
-    SETLENGTH(sub, maxgrpn);
-    break;
-  default:
-      if (!isSD) {
-        error(_("Type '%s' not supported by GForce var (gvar). Either add the prefix stats::var(.) or turn off GForce optimization using options(datatable.optimize=1)"), type2char(TYPEOF(x)));
+    int *subd = INTEGER(sub);
+    const int *xd = INTEGER(x);
+    for (int i=0; i<ngrp; ++i) {
+      const int thisgrpsize = grpsize[i];
+      if (thisgrpsize==1) {
+        ansd[i] = NA_REAL;
       } else {
-        error(_("Type '%s' not supported by GForce sd (gsd). Either add the prefix stats::sd(.) or turn off GForce optimization using options(datatable.optimize=1)"), type2char(TYPEOF(x)));
+        int nna = 0;  // how many not-NA
+        long double m=0., s=0., v=0.;
+        for (int j=0; j<thisgrpsize; ++j) {
+          int ix = ff[i]+j-1;
+          if (isunsorted) ix = oo[ix]-1;
+          if (nosubset ? xd[ix]==NA_INTEGER : (irows[ix]==NA_INTEGER || (ix=irows[ix]-1,xd[ix]==NA_INTEGER))) {
+            if (narm) continue; else break;
+          }
+          m += (subd[nna++]=xd[ix]); // sum
+        }
+        if (nna!=thisgrpsize && (!narm || nna<=1)) { ansd[i]=NA_REAL; continue; }
+        m = m/nna; // mean, first pass
+        for (int j=0; j<nna; ++j) s += (subd[j]-m); // residuals
+        m += (s/nna); // mean, second pass
+        for (int j=0; j<nna; ++j) { // variance
+          v += (subd[j]-(double)m) * (subd[j]-(double)m);
+        }
+        ansd[i] = (double)v/(nna-1);
+        if (isSD) ansd[i] = SQRTL(ansd[i]);
       }
+    }}
+    break;
+  case REALSXP: {
+    sub = PROTECT(allocVector(REALSXP, maxgrpn)); // allocate once upfront
+    double *subd = REAL(sub);
+    const double *xd = REAL(x);
+    for (int i=0; i<ngrp; ++i) {
+      const int thisgrpsize = grpsize[i];
+      if (thisgrpsize==1) {
+        ansd[i] = NA_REAL;
+      } else {
+        int nna = 0;  // how many not-NA
+        long double m=0., s=0., v=0.;
+        for (int j=0; j<thisgrpsize; ++j) {
+          int ix = ff[i]+j-1;
+          if (isunsorted) ix = oo[ix]-1;
+          if (nosubset ? ISNAN(xd[ix]) : (irows[ix]==NA_INTEGER || (ix=irows[ix]-1,ISNAN(xd[ix])))) {
+            if (narm) continue; else break;
+          }
+          m += (subd[nna++]=xd[ix]); // sum
+        }
+        if (nna!=thisgrpsize && (!narm || nna<=1)) { ansd[i]=NA_REAL; continue; }
+        m = m/nna; // mean, first pass
+        for (int j=0; j<nna; ++j) s += (subd[j]-m); // residuals
+        m += (s/nna); // mean, second pass
+        for (int j=0; j<nna; ++j) { // variance
+          v += (subd[j]-(double)m) * (subd[j]-(double)m);
+        }
+        ansd[i] = (double)v/(nna-1);
+        if (isSD) ansd[i] = SQRTL(ansd[i]);
+      }
+    }}
+    break;
+  default:  
+    error(_("Type '%s' not supported by GForce %s. Either add the prefix stats::var(.) or turn off GForce optimization using options(datatable.optimize=1)"),
+            type2char(TYPEOF(x)), isSD?"sd (gsd)":"var (gvar)");
   }
   // no copyMostAttrib(x, ans) since class (e.g. Date) unlikely applicable to sd/var
-  UNPROTECT(2);
-  return (ans);
+  UNPROTECT(2); // ans,sub
+  return ans;
 }
 
 SEXP gvar(SEXP x, SEXP narm) {
