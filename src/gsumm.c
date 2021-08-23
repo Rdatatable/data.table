@@ -857,6 +857,7 @@ SEXP gmedian(SEXP x, SEXP narmArg) {
   if (nrow != n) error(_("nrow [%d] != length(x) [%d] in %s"), nrow, n, "gmedian");
   SEXP ans = PROTECT(allocVector(REALSXP, ngrp));
   double *ansd = REAL(ans);
+  const bool nosubset = irowslen==-1;
   switch(TYPEOF(x)) {
   case REALSXP: {
     double *subd = REAL(PROTECT(allocVector(REALSXP, maxgrpn))); // allocate once upfront and reuse
@@ -867,9 +868,8 @@ SEXP gmedian(SEXP x, SEXP narmArg) {
       for (int j=0; j<thisgrpsize; ++j) {
         int k = ff[i]+j-1;
         if (isunsorted) k = oo[k]-1;
-        k = (irowslen == -1) ? k : irows[k]-1;
-        if (k+1==NA_INTEGER) nacount++;
-        else if (isInt64 ? xi64[k]==NA_INTEGER64 : ISNAN(xd[k])) nacount++;
+        k = nosubset ? k : (irows[k]==NA_INTEGER ? NA_INTEGER : irows[k]-1);
+        if (k==NA_INTEGER || (isInt64 ? xi64[k]==NA_INTEGER64 : ISNAN(xd[k]))) nacount++;
         else subd[j-nacount] = xd[k];
       }
       thisgrpsize -= nacount;  // all-NA is returned as NA_REAL via n==0 case inside *quickselect
@@ -885,9 +885,7 @@ SEXP gmedian(SEXP x, SEXP narmArg) {
       for (int j=0; j<thisgrpsize; ++j) {
         int k = ff[i]+j-1;
         if (isunsorted) k = oo[k]-1;
-        k = (irowslen == -1) ? k : irows[k]-1;
-        if (k+1==NA_INTEGER) nacount++;
-        else if (xi[k]==NA_INTEGER) nacount++;
+        if (nosubset ? xi[k]==NA_INTEGER : (irows[k]==NA_INTEGER || (k=irows[k]-1,xi[k]==NA_INTEGER))) nacount++; 
         else subi[j-nacount] = xi[k];
       }
       ansd[i] = (nacount && !narm) ? NA_REAL : iquickselect(subi, thisgrpsize-nacount);
