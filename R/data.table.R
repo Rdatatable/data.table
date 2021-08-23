@@ -223,7 +223,7 @@ replace_dot_alias = function(e) {
   missingnomatch = missing(nomatch)
   nomatch0 = identical(nomatch,0) || identical(nomatch,0L)  # for warning with row-numbers in i; #4353
   if (nomatch0) nomatch=NULL  # retain nomatch=0 backwards compatibility; #857
-  if (!is.na(nomatch) && !is.null(nomatch)) stopf("nomatch= must be either NA or NULL (or 0 for backwards compatibility which is the same as NULL but please use NULL)")
+  if (!(is.null(nomatch) || (length(nomatch)==1L && is.na(nomatch)))) stopf("nomatch= must be either NA or NULL (or 0 for backwards compatibility which is the same as NULL but please use NULL)")
   if (!is.logical(which) || length(which)>1L) stopf("which= must be a logical vector length 1. Either FALSE, TRUE or NA.")
   if ((isTRUE(which)||is.na(which)) && !missing(j)) stopf("which==%s (meaning return row numbers) but j is also supplied. Either you need row numbers or the result of j, but only one type of result can be returned.", which)
   if (is.null(nomatch) && is.na(which)) stopf("which=NA with nomatch=0|NULL would always return an empty vector. Please change or remove either which or nomatch.")
