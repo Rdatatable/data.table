@@ -287,7 +287,7 @@
     # 1: 2017-10-02 09:55:00
     ```
 
-39. `GForce` optimization could run into a segfault when using NA values as argument for subsetting I, [#1994](https://github.com/Rdatatable/data.table/issues/1994). This happened due to out-of-bound conditions, since NA_INTEGER is internally represented by INT_MIN - 1L. Thanks to Arun Srinivasan for reporting, and Benjamin Schwendinger for the PR.
+39. `DT[i, sum(b), by=grp]` (and other optimized-by-group aggregates: `mean`, `var`, `sd`, `median`, `prod`, `min`, `max`, `first`, `last`, `head` and `tail`) could segfault if `i` contains row numbers and one or more are NA, [#1994](https://github.com/Rdatatable/data.table/issues/1994). Thanks to Arun Srinivasan for reporting, and Benjamin Schwendinger for the PR.
 
 ## NOTES
 
