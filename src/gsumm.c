@@ -1082,7 +1082,7 @@ static SEXP gvarsd1(SEXP x, SEXP narmArg, bool isSD)
       }
     }}
     break;
-  default:  
+  default:
     error(_("Type '%s' not supported by GForce %s. Either add the prefix stats::var(.) or turn off GForce optimization using options(datatable.optimize=1)"),
             type2char(TYPEOF(x)), isSD?"sd (gsd)":"var (gvar)");
   }
