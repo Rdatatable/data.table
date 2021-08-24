@@ -18,7 +18,7 @@
     DT = data.table(A=1:3, B=letters[1:3])
     DT[A>3,   .(ITEM='A>3', A, B)]  # (1)
     DT[A>3][, .(ITEM='A>3', A, B)]  # (2)
-    # the above are now equivalent as expected and return:  
+    # the above are now equivalent as expected and return:
     Empty data.table (0 rows and 3 cols): ITEM,A,B
     # Previously, (2) returned :
           ITEM     A      B
@@ -30,12 +30,12 @@
     2: In as.data.table.list(jval, .named = NULL) :
       Item 3 has 0 rows but longest item has 1; filled with NA
     ```
-    
+
     ```R
     DT = data.table(A=1:3, B=letters[1:3], key="A")
     DT[.(1:3, double()), B]
     # new result :
-    character(0)   
+    character(0)
     # old result :
     [1] "a" "b" "c"
     Warning message:
@@ -51,7 +51,7 @@
     DT[, sum(colB), keyby="colA"]
     DT[, sum(colB), by="colA", keyby=TRUE]   # same
     ```
-    
+
 7. `fwrite()` gains a new `datatable.fwrite.sep` option to change the default separator, still `","` by default. Thanks to Tony Fischetti for the PR. As is good practice in R in general, we usually resist new global options for the reason that a user changing the option for their own code can inadvertently change the behaviour of any package using `data.table` too. However, in this case, the global option affects file output rather than code behaviour. In fact, the very reason the user may wish to change the default separator is that they know a different separator is more appropriate for their data being passed to the package using `fwrite` but cannot otherwise change the `fwrite` call within that package.
 
 8. `melt()` now supports `NA` entries when specifying a list of `measure.vars`, which translate into runs of missing values in the output. Useful for melting wide data with some missing columns, [#4027](https://github.com/Rdatatable/data.table/issues/4027). Thanks to @vspinu for reporting, and @tdhock for implementing.
@@ -86,7 +86,7 @@
         out_col_name = "sum_x"
       )]
     ```
-    
+
 11. `DT[, if (...) .(a=1L) else .(a=1L, b=2L), by=group]` now returns a 1-column result with warning `j may not evaluate to the same number of columns for each group`, rather than error `'names' attribute [2] must be the same length as the vector`, [#4274](https://github.com/Rdatatable/data.table/issues/4274). Thanks to @robitalec for reporting, and Michael Chirico for the PR.
 
 12. Typo checking in `i` available since 1.11.4 is extended to work in non-English sessions, [#4989](https://github.com/Rdatatable/data.table/issues/4989). Thanks to Michael Chirico for the PR.
@@ -114,7 +114,7 @@
     ```R
     mtcars |> DT(mpg>20, .(mean_hp=mean(hp)), by=cyl)
     ```
-    
+
 23. `DT[i, nomatch=NULL]` where `i` contains row numbers now excludes `NA` and any outside the range [1,nrow], [#3109](https://github.com/Rdatatable/data.table/issues/3109) [#3666](https://github.com/Rdatatable/data.table/issues/3666). Before, `NA` rows were returned always for such values; i.e. `nomatch=0|NULL` was ignored. Thanks Michel Lang and Hadley Wickham for the requests, and Jan Gorecki for the PR. Using `nomatch=0` in this case when `i` is row numbers generates the warning `Please use nomatch=NULL instead of nomatch=0; see news item 5 in v1.12.0 (Jan 2019)`.
 
     ```R
@@ -246,26 +246,26 @@
     # 2:      b    NA              # NA because there are no non-NA, naturally
                                    # no inconvenient warning
     ```
-    
+
 36. `DT[, min(int64Col), by=grp]` (and `max`) would return incorrect results for `bit64::integer64` columns, [#4444](https://github.com/Rdatatable/data.table/issues/4444). Thanks to @go-see for reporting, and Michael Chirico for the PR.
 
 37. `fread(dec=',')` was able to guess `sep=','` and return an incorrect result, [#4483](https://github.com/Rdatatable/data.table/issues/4483). Thanks to Michael Chirico for reporting and fixing. It was already an error to provide both `sep=','` and `dec=','` manually.
 
     ```R
     fread('A|B|C\n1|0,4|a\n2|0,5|b\n', dec=',')  # no problem
-    
+
     #        A     B      C
     #    <int> <num> <char>
     # 1:     1   0.4      a
     # 2:     2   0.5      b
 
     fread('A|B,C\n1|0,4\n2|0,5\n', dec=',')
-    
+
     #       A|B     C    # old result guessed sep=',' despite dec=','
     #    <char> <int>
     # 1:    1|0     4
     # 2:    2|0     5
-    
+
     #        A   B,C     # now detects sep='|' correctly
     #    <int> <num>
     # 1:     1   0.4
@@ -276,9 +276,9 @@
 
     ```
     IDateTime("20171002095500", format="%Y%m%d%H%M%S")
-    
+
     # was :
-    # Error in charToDate(x) : 
+    # Error in charToDate(x) :
     #   character string is not in a standard unambiguous format
 
     # now :
@@ -286,6 +286,8 @@
     #        <IDat>  <ITime>
     # 1: 2017-10-02 09:55:00
     ```
+
+39. `DT[i, sum(b), by=grp]` (and other optimized-by-group aggregates: `mean`, `var`, `sd`, `median`, `prod`, `min`, `max`, `first`, `last`, `head` and `tail`) could segfault if `i` contained row numbers and one or more were NA, [#1994](https://github.com/Rdatatable/data.table/issues/1994). Thanks to Arun Srinivasan for reporting, and Benjamin Schwendinger for the PR.
 
 ## NOTES
 
