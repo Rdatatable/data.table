@@ -286,6 +286,8 @@
     #        <IDat>  <ITime>
     # 1: 2017-10-02 09:55:00
     ```
+	
+39. `melt` ignored names of measure.vars list with length=1, [#5065](https://github.com/Rdatatable/data.table/issues/5065). Thanks to @keatingw for the bug report and Toby Dylan Hocking for the PR.
 
 ## NOTES
 
