@@ -18037,17 +18037,20 @@ for (col in c("a","b","c")) {
 }
 
 # gforce head/tail for n>1, #5060
-DT = data.table(x  = sample(letters[1:5], 20, TRUE),
-                i1 = sample(-10:10, 20, TRUE),
-                i2 = sample(c(-10:10, NA), 20, TRUE),
-                d1 = as.numeric(sample(-10:10, 20, TRUE)),
-                d2 = as.numeric(sample(c(-10:10, NA), 20, TRUE)))
-test(2212.01, DT[, head(.SD,2),    by=x], DT[, utils::head(.SD,2),    by=x])
-test(2212.02, DT[, head(.SD,2), keyby=x], DT[, utils::head(.SD,2), keyby=x])
-test(2212.03, DT[, head(.SD,5),    by=x], DT[, utils::head(.SD,5),    by=x])
-test(2212.04, DT[, head(.SD,5), keyby=x], DT[, utils::head(.SD,5), keyby=x])
-test(2212.05, DT[, tail(.SD,2),    by=x], DT[, utils::tail(.SD,2),    by=x])
-test(2212.06, DT[, tail(.SD,2), keyby=x], DT[, utils::tail(.SD,2), keyby=x])
-test(2212.07, DT[, tail(.SD,5),    by=x], DT[, utils::tail(.SD,5),    by=x])
-test(2212.08, DT[, tail(.SD,5), keyby=x], DT[, utils::tail(.SD,5), keyby=x])
+set.seed(99)
+DT = data.table(x = sample(letters[1:5], 20, TRUE),
+                i = sample(c(-2L,0L,3L,NA), 20, TRUE),
+                d = sample(c(1.2,-3.4,5.6,NA), 20, TRUE))
+if (test_bit64) DT[, i64:=sample(as.integer64(c(-2200000000,+2400000000,NA)), 20, TRUE)]
+old = options(datatable.optimize=2L)
+test(2212.01, DT[, .N, by=x]$N, INT(4,6,5,2,3))   # the smallest group is 2, so n=5 tests n constrained to grpsize
+test(2212.02, DT[, head(.SD,2),    by=x, verbose=TRUE], DT[, utils::head(.SD,2),    by=x], output="optimized.*ghead")
+test(2212.03, DT[, head(.SD,2), keyby=x, verbose=TRUE], DT[, utils::head(.SD,2), keyby=x], output="optimized.*ghead")
+test(2212.04, DT[, head(.SD,5),    by=x, verbose=TRUE], DT[, utils::head(.SD,5),    by=x], output="optimized.*ghead")
+test(2212.05, DT[, head(.SD,5), keyby=x, verbose=TRUE], DT[, utils::head(.SD,5), keyby=x], output="optimized.*ghead")
+test(2212.06, DT[, tail(.SD,2),    by=x, verbose=TRUE], DT[, utils::tail(.SD,2),    by=x], output="optimized.*gtail")
+test(2212.07, DT[, tail(.SD,2), keyby=x, verbose=TRUE], DT[, utils::tail(.SD,2), keyby=x], output="optimized.*gtail")
+test(2212.08, DT[, tail(.SD,5),    by=x, verbose=TRUE], DT[, utils::tail(.SD,5),    by=x], output="optimized.*gtail")
+test(2212.09, DT[, tail(.SD,5), keyby=x, verbose=TRUE], DT[, utils::tail(.SD,5), keyby=x], output="optimized.*gtail")
+options(old)
 
