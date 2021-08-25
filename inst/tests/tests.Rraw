@@ -8121,17 +8121,10 @@ test(1579.21, dt[, tail(.SD,1L), keyby=x], dt[, utils::tail(.SD,1L), keyby=x])
 # test(1579.22, dt[ , tail(.SD, 2), by = x, verbose = TRUE], output = 'GForce FALSE')
 
 mysub <- function(x, n) x[n]
-test(1579.23, dt[, .SD[2],  by=x],    dt[, mysub(.SD,2),  by=x])
-test(1579.24, dt[, .SD[2],  by=x],    dt[, mysub(.SD,2),  by=x])
-test(1579.25, dt[, .SD[2],  keyby=x], dt[, mysub(.SD,2),  keyby=x])
-test(1579.26, dt[, .SD[2],  keyby=x], dt[, mysub(.SD,2),  keyby=x])
-test(1579.27, dt[, .SD[2L], by=x],    dt[, mysub(.SD,2L), by=x])
-test(1579.28, dt[, .SD[2L], by=x],    dt[, mysub(.SD,2L), by=x])
-test(1579.29, dt[, .SD[2L], keyby=x], dt[, mysub(.SD,2L), keyby=x])
-test(1579.30, dt[, .SD[2L], keyby=x], dt[, mysub(.SD,2L), keyby=x])
-
-ans = capture.output(dt[, .SD[2], by=x, verbose=TRUE])
-test(1579.31, any(grepl("GForce optimized", ans)), TRUE)
+test(1579.23, dt[, .SD[2],  by=x, verbose=TRUE], dt[, mysub(.SD,2),  by=x], output="GForce optimized.*g[[]")
+test(1579.24, dt[, .SD[2],  keyby=x], dt[, mysub(.SD,2),  keyby=x])
+test(1579.25, dt[, .SD[2L], by=x],    dt[, mysub(.SD,2L), by=x])
+test(1579.26, dt[, .SD[2L], keyby=x], dt[, mysub(.SD,2L), keyby=x])
 
 options(datatable.optimize = Inf)
 
