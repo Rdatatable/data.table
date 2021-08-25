@@ -407,8 +407,8 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
     y = try(y,TRUE)
     if (identical(x,y)) return(invisible(TRUE))
     all.equal.result = TRUE
-    if (is.data.table(x) && is.data.table(y)) {
-      if (!selfrefok(x) || !selfrefok(y)) {
+    if (is.data.frame(x) && is.data.frame(y)) {
+      if ((is.data.table(x) && !selfrefok(x)) || (is.data.table(y) && !selfrefok(y))) {
         # nocov start
         catf("Test %s ran without errors but selfrefok(%s) is FALSE\n", numStr, if (selfrefok(x)) "y" else "x")
         fail = TRUE
@@ -419,10 +419,12 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
         # drop unused levels in factors
         if (length(x)) for (i in which(vapply_1b(x,is.factor))) {.xi=x[[i]];xc[,(i):=factor(.xi)]}
         if (length(y)) for (i in which(vapply_1b(y,is.factor))) {.yi=y[[i]];yc[,(i):=factor(.yi)]}
-        setattr(xc,"row.names",NULL)  # for test 165+, i.e. x may have row names set from inheritance but y won't, consider these equal
-        setattr(yc,"row.names",NULL)
+        if (is.data.table(xc)) setattr(xc,"row.names",NULL)  # for test 165+, i.e. x may have row names set from inheritance but y won't, consider these equal
+        if (is.data.table(yc)) setattr(yc,"row.names",NULL)
         setattr(xc,"index",NULL)   # too onerous to create test RHS with the correct index as well, just check result
         setattr(yc,"index",NULL)
+        setattr(xc,".internal.selfref",NULL)   # test 2212
+        setattr(yc,".internal.selfref",NULL)
         if (identical(xc,yc) && identical(key(x),key(y))) return(invisible(TRUE))  # check key on original x and y because := above might have cleared it on xc or yc
         if (isTRUE(all.equal.result<-all.equal(xc,yc,check.environment=FALSE)) && identical(key(x),key(y)) &&
                                                      # ^^ to pass tests 2022.[1-4] in R-devel from 5 Dec 2020, #4835

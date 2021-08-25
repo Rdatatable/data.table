@@ -7,6 +7,7 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
   }
   if ((tt<-compiler::enableJIT(-1))>0)
     cat("This is dev mode and JIT is enabled (level ", tt, ") so there will be a brief pause around the first test.\n", sep="")
+  DTfun = DT  # just in dev-mode, DT() gets overwritten in .GlobalEnv by DT objects here in tests.Rraw; we restore DT() in test 2212
 } else {
   require(data.table)
   # Make symbols to the installed version's ::: so that we can i) test internal-only not-exposed R functions
@@ -639,7 +640,7 @@ test(211, ncol(TESTDT), 2L)
 DT = data.table(a=1:6,key="a")
 test(212, DT[J(3)]$a, 3L) # correct class c("data.table","data.frame")
 class(DT) = "data.table"  # incorrect class, but as from 1.8.1 it works. By accident when moving from colnames() to names(), it was dimnames() doing the check, but rather than add a check that identical(class(DT),c("data.frame","data.table")) at the top of [.data.table, we'll leave it flexible to user (user might not want to inherit from data.frame for some reason).
-test(213, DT[J(3)]$a, 3L)
+test(213, DT[J(3)]$a, error="x is not a data.table|frame")  # from v1.14.2, data.table must inherit from data.frame (internals are too hard to reason if a data.table may not be data.frame too)
 
 # setkey now auto coerces double and character for convenience, and
 # to solve bug #953
@@ -14194,7 +14195,7 @@ test(1984.242, na.omit(data.table(A=c(1,NA,2)), cols=character()), data.table(A=
 test(1984.25, rbindlist(list(DT[1L], DT[2L]), idcol = TRUE), data.table(.id=1:2, a=1:2))
 test(1984.26, setalloccol(`*tmp*`), error='setalloccol attempting to modify `*tmp*`')
 DF = as.data.frame(DT)
-test(1984.27, shallow(DF), error='x is not a data.table')
+test(1984.27, shallow(DF), DF)  # shallow (which is not exported) works on DF from v1.14.2
 test(1984.28, split.data.table(DF), error='argument must be a data.table')
 test(1984.29, split(DT, by='a', f='a'), error="passing 'f' argument together with 'by' is not allowed")
 test(1984.30, split(DT), error="Either 'by' or 'f' argument must be supplied")
@@ -18048,5 +18049,13 @@ for (col in c("a","b","c")) {
                     EVAL("DT[i][, ",f,"(",col,", na.rm=TRUE), by=grp]"))
     }
   }
+}
+
+# DT() functional form, #4872 #5106 #5107
+if (base::getRversion() >= "4.1.0") {
+  # we have to EVAL "|>" here too otherwise this tests.Rraw file won't parse in R<4.1.0
+  if (exists("DTfun")) DT=DTfun  # just in dev-mode restore DT() in .GlobalEnv as DT object overwrote it in tests above 
+  test(2212.01, EVAL("mtcars |> DT(mpg>20, .(mean_hp=round(mean(hp),2)), by=cyl)"),
+                data.frame(cyl=c(6,4), mean_hp=c(110.0, 82.64)))
 }
 
