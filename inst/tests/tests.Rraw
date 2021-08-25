@@ -18040,7 +18040,9 @@ for (col in c("a","b","c")) {
 set.seed(99)
 DT = data.table(x = sample(letters[1:5], 20, TRUE),
                 i = sample(c(-2L,0L,3L,NA), 20, TRUE),
-                d = sample(c(1.2,-3.4,5.6,NA), 20, TRUE))
+                d = sample(c(1.2,-3.4,5.6,NA), 20, TRUE),
+                s = sample(c("foo","bar",NA), 20, TRUE),
+                l = sample(list(1:3, mean, letters[4:5], NULL), 20, replace=TRUE))
 if (test_bit64) DT[, i64:=sample(as.integer64(c(-2200000000,+2400000000,NA)), 20, TRUE)]
 old = options(datatable.optimize=2L)
 test(2212.01, DT[, .N, by=x]$N, INT(4,6,5,2,3))   # the smallest group is 2, so n=5 tests n constrained to grpsize
