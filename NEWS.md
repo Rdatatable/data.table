@@ -109,7 +109,7 @@
 
 21. `melt()` was pseudo generic in that `melt(DT)` would dispatch to the `melt.data.table` method but `melt(not-DT)` would explicitly redirect to `reshape2`. Now `melt()` is standard generic so that methods can be developed in other packages, [#4864](https://github.com/Rdatatable/data.table/pull/4864). Thanks to @odelmarcelle for suggesting and implementing.
 
-22. `DT(i, j, by, ...)` has been added, i.e. functional form of a `data.table` query, [#641](https://github.com/Rdatatable/data.table/issues/641) [#4872](https://github.com/Rdatatable/data.table/issues/4872). Thanks to Yike Lu and Elio Campitelli for filing requests, many others for comments and suggestions, and Matt Dowle for the PR. This enables the `data.table` general form query to be invoked on a `data.frame` without converting it to a `data.table` first. The class of the input object is retained.
+22. `DT(i, j, by, ...)` has been added, i.e. functional form of a `data.table` query, [#641](https://github.com/Rdatatable/data.table/issues/641) [#4872](https://github.com/Rdatatable/data.table/issues/4872). Thanks to Yike Lu and Elio Campitelli for filing requests, many others for comments and suggestions, and Matt Dowle for the PR. This enables the `data.table` general form query to be invoked on a `data.frame` without converting it to a `data.table` first. The class of the input object is retained. Thanks to Mark Fairbanks and Boniface Kamgang for testing and reporting problems that have been fixed before release, [#5106](https://github.com/Rdatatable/data.table/issues/5106) [#5107](https://github.com/Rdatatable/data.table/issues/5107).
 
     ```R
     mtcars |> DT(mpg>20, .(mean_hp=mean(hp)), by=cyl)
