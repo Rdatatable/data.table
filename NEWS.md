@@ -133,7 +133,7 @@
     # 2:     3
     ```
 
-24. `DT[, head(.SD,n), by=grp]` (and `tail`) is now optimized when `n>1`, [#5060](https://github.com/Rdatatable/data.table/issues/5060) [#523](https://github.com/Rdatatable/data.table/issues/523#issuecomment-162934391). Thanks to Jan Gorecki and Michael Young for requesting, and Benjamin Schwendinger for the PR.
+24. `DT[, head(.SD,n), by=grp]` and `tail` are now optimized when `n>1`, [#5060](https://github.com/Rdatatable/data.table/issues/5060) [#523](https://github.com/Rdatatable/data.table/issues/523#issuecomment-162934391). `n==1` was already optimized. Thanks to Jan Gorecki and Michael Young for requesting, and Benjamin Schwendinger for the PR.
 
 ## BUG FIXES
 
