@@ -18034,6 +18034,7 @@ for (col in c("a","b","c")) {
 # gforce head/tail for n>1, #5060
 set.seed(99)
 DT = data.table(x = sample(letters[1:5], 20, TRUE),
+                y = rep.int(1:2, 10),  # to test 2 grouping columns get rep'd properly
                 i = sample(c(-2L,0L,3L,NA), 20, TRUE),
                 d = sample(c(1.2,-3.4,5.6,NA), 20, TRUE),
                 s = sample(c("foo","bar",NA), 20, TRUE),
@@ -18049,5 +18050,6 @@ test(2212.06, DT[, tail(.SD,2),    by=x, verbose=TRUE], DT[, utils::tail(.SD,2),
 test(2212.07, DT[, tail(.SD,2), keyby=x, verbose=TRUE], DT[, utils::tail(.SD,2), keyby=x], output="optimized.*gtail")
 test(2212.08, DT[, tail(.SD,5),    by=x, verbose=TRUE], DT[, utils::tail(.SD,5),    by=x], output="optimized.*gtail")
 test(2212.09, DT[, tail(.SD,5), keyby=x, verbose=TRUE], DT[, utils::tail(.SD,5), keyby=x], output="optimized.*gtail")
+test(2212.10, DT[, tail(.SD,2), by=.(x,y), verbose=TRUE], DT[, utils::tail(.SD,2), keyby=x], output="optimized.*gtail")
 options(old)
 
