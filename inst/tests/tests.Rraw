@@ -18050,6 +18050,6 @@ test(2212.06, DT[, tail(.SD,2),    by=x, verbose=TRUE], DT[, utils::tail(.SD,2),
 test(2212.07, DT[, tail(.SD,2), keyby=x, verbose=TRUE], DT[, utils::tail(.SD,2), keyby=x], output="optimized.*gtail")
 test(2212.08, DT[, tail(.SD,5),    by=x, verbose=TRUE], DT[, utils::tail(.SD,5),    by=x], output="optimized.*gtail")
 test(2212.09, DT[, tail(.SD,5), keyby=x, verbose=TRUE], DT[, utils::tail(.SD,5), keyby=x], output="optimized.*gtail")
-test(2212.10, DT[, tail(.SD,2), by=.(x,y), verbose=TRUE], DT[, utils::tail(.SD,2), keyby=x], output="optimized.*gtail")
+test(2212.10, DT[, tail(.SD,2), by=.(x,y), verbose=TRUE], DT[, utils::tail(.SD,2), by=.(x,y)], output="optimized.*gtail")
 options(old)
 
