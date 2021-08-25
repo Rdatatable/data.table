@@ -809,8 +809,8 @@ replace_dot_alias = function(e) {
           # when the 'by' expression includes get/mget/eval, all.vars cannot be trusted to infer all used columns, #4981
           allbyvars = NULL
         else
-          allbyvars = intersect(all.vars(bysub), names_x)  
-        
+          allbyvars = intersect(all.vars(bysub), names_x)
+
         orderedirows = .Call(CisOrderedSubset, irows, nrow(x))  # TRUE when irows is NULL (i.e. no i clause). Similar but better than is.sorted(f__)
         bysameorder = byindex = FALSE
         if (!bysub %iscall% ":" && ##Fix #4285
