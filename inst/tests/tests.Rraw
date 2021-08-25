@@ -8125,6 +8125,8 @@ test(1579.23, dt[, .SD[2],  by=x, verbose=TRUE], dt[, mysub(.SD,2),  by=x], outp
 test(1579.24, dt[, .SD[2],  keyby=x], dt[, mysub(.SD,2),  keyby=x])
 test(1579.25, dt[, .SD[2L], by=x],    dt[, mysub(.SD,2L), by=x])
 test(1579.26, dt[, .SD[2L], keyby=x], dt[, mysub(.SD,2L), keyby=x])
+test(1579.27, dt[, .SD[15], by=x],    dt[, mysub(.SD,2L), by=x])   # 15 tests > grpsize and that NA is correct including for integer64
+test(1579.28, dt[, .SD[15L], keyby=x],dt[, mysub(.SD,2L), keyby=x])
 
 options(datatable.optimize = Inf)
 
