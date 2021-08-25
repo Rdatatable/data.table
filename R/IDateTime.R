@@ -270,7 +270,7 @@ mean.ITime = seq.ITime = c.ITime = function(x, ...) as.ITime(NextMethod())
 
 IDateTime = function(x, ...) UseMethod("IDateTime")
 IDateTime.default = function(x, ...) {
-  data.table(idate = as.IDate(x), itime = as.ITime(x))
+  data.table(idate = as.IDate(x, ...), itime = as.ITime(x, ...))
 }
 
 # POSIXt support

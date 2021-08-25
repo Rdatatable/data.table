@@ -214,8 +214,10 @@ as.data.table.list = function(x,
 }
 
 as.data.table.data.frame = function(x, keep.rownames=FALSE, key=NULL, ...) {
-  if (!identical(keep.rownames, FALSE)) {
-    # can specify col name to keep.rownames, #575
+  if (!isFALSE(keep.rownames)) {
+    # can specify col name to keep.rownames, #575; if it's the same as key,
+    #   kludge it to 'rn' since we only apply the new name afterwards, #4468
+    if (is.character(keep.rownames) && identical(keep.rownames, key)) key='rn'
     ans = data.table(rn=rownames(x), x, keep.rownames=FALSE, key=key)
     if (is.character(keep.rownames))
       setnames(ans, 'rn', keep.rownames[1L])

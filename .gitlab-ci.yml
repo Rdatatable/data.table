@@ -24,7 +24,7 @@ stages:
     paths:
       - bus
 
-mirror-packages: ## mirror all recursive dependencies, source and win.binary of data.table suggests from inst/tests/tests-DESCRIPTION
+mirror-packages: ## mirror all recursive dependencies, source and win.binary of data.table suggests from DESCRIPTION
   stage: dependencies
   tags:
     - linux
@@ -40,7 +40,7 @@ mirror-packages: ## mirror all recursive dependencies, source and win.binary of 
     - Rscript -e 'sapply(simplify=FALSE, setNames(nm=Sys.getenv(c("R_REL_VERSION","R_DEVEL_VERSION","R_OLDREL_VERSION"))), function(binary.ver) mirror.packages(type="win.binary", dcf.dependencies("DESCRIPTION", "all"), repos=Sys.getenv("CRAN_MIRROR"), repodir="bus/mirror-packages/cran", binary.ver=binary.ver))'
   <<: *artifacts
 
-mirror-other-packages: ## mirror integration suggests from inst/tests/tests-DESCRIPTION
+mirror-other-packages: ## mirror integration suggests from pkgs at the top of inst/tests/other.Rraw
   stage: dependencies
   tags:
     - linux
@@ -51,7 +51,7 @@ mirror-other-packages: ## mirror integration suggests from inst/tests/tests-DESC
   script:
     - echo 'source(".ci/ci.R")' >> .Rprofile
     - mkdir -p bus/$CI_BUILD_NAME/cran/src/contrib
-    - Rscript -e 'mirror.packages(dcf.dependencies("inst/tests/tests-DESCRIPTION", "all"), repos=c(Sys.getenv("CRAN_MIRROR"), dcf.repos("inst/tests/tests-DESCRIPTION")), repodir="bus/mirror-other-packages/cran")'
+    - Rscript -e 'eval(parse("inst/tests/other.Rraw", n=1L)); mirror.packages(pkgs, repos=Sys.getenv("CRAN_MIRROR"), repodir="bus/mirror-other-packages/cran")'
   <<: *artifacts
 
 build: ## build data.table sources as tar.gz archive
@@ -153,7 +153,7 @@ test-rel-lin: ## most comprehensive tests, force all suggests, also integration 
     OPENBLAS_MAIN_FREE: "1"
     TEST_DATA_TABLE_WITH_OTHER_PACKAGES: "TRUE"
   before_script:
-    - Rscript -e 'source(".ci/ci.R"); install.packages(dcf.dependencies(c("DESCRIPTION","inst/tests/tests-DESCRIPTION"), which="all"), quiet=TRUE, repos=c(getOption("repos"), file.path("file:", normalizePath("bus/mirror-other-packages/cran", mustWork=FALSE))))'
+    - Rscript -e 'source(".ci/ci.R"); eval(parse("inst/tests/other.Rraw", n=1L)); install.packages(c(dcf.dependencies("DESCRIPTION", which="all"), pkgs), quiet=TRUE, repos=c(getOption("repos"), file.path("file:", normalizePath("bus/mirror-other-packages/cran", mustWork=FALSE))))'
     - *cp-src
     - rm -r bus
     - mkdir -p ~/.R
@@ -203,7 +203,7 @@ test-rel-cran-lin: ## R-release on Linux, extra NOTEs check and build pdf manual
     - R CMD check --as-cran $(ls -1t data.table_*.tar.gz | head -n 1)
     - *rm-src
     - >-
-        Rscript -e 'l=tail(readLines("data.table.Rcheck/00check.log"), 1L); if (!identical(l, "Status: 1 NOTE")) stop("Last line of ", shQuote("00check.log"), " is not ", shQuote("Status: 1 NOTE"), " (installed package size) but ", shQuote(l)) else q("no")'
+        Rscript -e 'l=tail(readLines("data.table.Rcheck/00check.log"), 1L); if (!identical(l, "Status: OK")) stop("Last line of ", shQuote("00check.log"), " is not ", shQuote("Status: OK"), " but ", shQuote(l)) else q("no")'
 
 test-dev-cran-lin: ## R-devel on Linux, --enable-strict-barrier --disable-long-double, check for new notes and compilation warnings, thus allow_failure
   <<: *test-lin
