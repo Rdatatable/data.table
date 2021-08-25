@@ -1852,7 +1852,6 @@ replace_dot_alias = function(e) {
          (q1 <- q[[1L]]) %chin% c("ghead", "gtail") && q3!=1) q3
         else 0
       }
-
       if (jsub[[1L]] == "list"){
         q3 = max(sapply(jsub, headTail_arg))
       } else if (length(jsub)==3L) {
@@ -1861,7 +1860,7 @@ replace_dot_alias = function(e) {
     }
     if (q3 > 0) {
       grplens = pmin.int(q3, len__)
-      g = list(rep(unlist(g), grplens))
+      g = lapply(g, rep.int, times=grplens)
     }
     ans = c(g, ans)
   } else {
