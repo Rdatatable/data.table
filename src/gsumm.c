@@ -900,81 +900,72 @@ SEXP gmedian(SEXP x, SEXP narmArg) {
   return ans;
 }
 
-static SEXP gfirstlast(SEXP x, const bool first, const int w) {
+static SEXP gfirstlast(SEXP x, const bool first, const int w, const bool headw) {
   // w: which item (1 other than for gnthvalue when could be >1)
+  // headw: select 1:w of each group when first=true, and (n-w+1):n when first=false (i.e. tail)
   const bool nosubset = irowslen == -1;
+  const bool issorted = !isunsorted; // make a const-bool for use inside loops
   const int n = nosubset ? length(x) : irowslen;
-  SEXP ans;
   if (nrow != n) error(_("nrow [%d] != length(x) [%d] in %s"), nrow, n, first?"gfirst":"glast");
-  const bool gnth = w>1;  // const bool to avoid fetching grpsize[i] when not needed
+  if (w==1 && headw) error(_("Internal error: gfirstlast headw should only be true when w>1"));
+  int anslen = ngrp;
+  if (headw) {
+    anslen = 0;
+    for (int i=0; i<ngrp; ++i) {
+      anslen += MIN(w, grpsize[i]);
+    }
+  }
+  SEXP ans = PROTECT(allocVector(TYPEOF(x), anslen));
+  int ansi = 0;
+  #define DO(CTYPE, RTYPE, RNA, ASSIGN) {                                                          \
+    const CTYPE *xd = (const CTYPE *)RTYPE(x);                                                     \
+    if (headw) {                                                                                   \
+      /* returning more than 1 per group; w>1 */                                                   \
+      for (int i=0; i<ngrp; ++i) {                                                                 \
+        const int grpn = grpsize[i];                                                               \
+        const int thisn = MIN(w, grpn);                                                            \
+        const int jstart = ff[i]-1+ (!first)*(grpn-thisn);                                         \
+        const int jend = jstart+thisn;                                                             \
+        for (int j=jstart; j<jend; ++j) {                                                          \
+          const int k = issorted ? j : oo[j]-1;                                                    \
+          /* ternary on const-bool assumed to be branch-predicted and ok inside loops */           \
+          const CTYPE val = nosubset ? xd[k] : (irows[k]==NA_INTEGER ? RNA : xd[irows[k]-1]);      \
+          ASSIGN;                                                                                  \
+        }                                                                                          \
+      }                                                                                            \
+    } else if (w==1) {                                                                             \
+      for (int i=0; i<ngrp; ++i) {                                                                 \
+        const int j = ff[i]-1 + (first ? 0 : grpsize[i]-1);                                        \
+        const int k = issorted ? j : oo[j]-1;                                                      \
+        const CTYPE val = nosubset ? xd[k] : (irows[k]==NA_INTEGER ? RNA : xd[irows[k]-1]);        \
+        ASSIGN;                                                                                    \
+      }                                                                                            \
+    } else if (w>1 && first) {                                                                     \
+      /* gnthvalue */                                                                              \
+      for (int i=0; i<ngrp; ++i) {                                                                 \
+        const int grpn = grpsize[i];                                                               \
+        if (w>grpn) { const CTYPE val=RNA; ASSIGN; continue; }                                     \
+        const int j = ff[i]-1+w-1;                                                                 \
+        const int k = issorted ? j : oo[j]-1;                                                      \
+        const CTYPE val = nosubset ? xd[k] : (irows[k]==NA_INTEGER ? RNA : xd[irows[k]-1]);        \
+        ASSIGN;                                                                                    \
+      }                                                                                            \
+    } else {                                                                                       \
+      /* w>1 && !first not supported because -i in R means everything-but-i and gnthvalue */       \
+      /* currently takes n>0 only. However, we could still support n'th from the end, somehow */   \
+      error(_("Internal error: unanticipated case in gfirstlast first=%d w=%d headw=%d"),          \
+              first, w, headw);                                                                    \
+    }                                                                                              \
+  }
   switch(TYPEOF(x)) {
-  case LGLSXP: {
-    const int *ix = LOGICAL(x);
-    ans = PROTECT(allocVector(LGLSXP, ngrp));
-    int *ians = LOGICAL(ans);
-    for (int i=0; i<ngrp; ++i) {
-      if (gnth && w>grpsize[i]) { ians[i]=NA_LOGICAL; continue; }
-      int k = first ? ff[i]+w-2 : ff[i]+grpsize[i]-w-1;
-      if (isunsorted) k = oo[k]-1;
-      ians[i] = nosubset ? ix[k] : (irows[k]==NA_INTEGER ? NA_LOGICAL : ix[irows[k]-1]);
-    }
-  }
-    break;
-  case INTSXP: {
-    const int *ix = INTEGER(x);
-    ans = PROTECT(allocVector(INTSXP, ngrp));
-    int *ians = INTEGER(ans);
-    for (int i=0; i<ngrp; ++i) {
-      if (gnth && w>grpsize[i]) { ians[i]=NA_INTEGER; continue; }
-      int k = first ? ff[i]+w-2 : ff[i]+grpsize[i]-w-1;
-      if (isunsorted) k = oo[k]-1;
-      ians[i] = nosubset ? ix[k] : (irows[k]==NA_INTEGER ? NA_INTEGER : ix[irows[k]-1]);
-    }
-  }
-    break;
-  case REALSXP: {
-    const double *dx = REAL(x);
-    ans = PROTECT(allocVector(REALSXP, ngrp));
-    double *dans = REAL(ans);
-    for (int i=0; i<ngrp; ++i) {
-      if (gnth && w>grpsize[i]) { dans[i]=NA_REAL; continue; }
-      int k = first ? ff[i]+w-2 : ff[i]+grpsize[i]-w-1;
-      if (isunsorted) k = oo[k]-1;
-      dans[i] = nosubset ? dx[k] : (irows[k]==NA_INTEGER ? NA_REAL : dx[irows[k]-1]);
-    }
-  }
-    break;
-  case CPLXSXP: {
-    const Rcomplex *dx = COMPLEX(x);
-    ans = PROTECT(allocVector(CPLXSXP, ngrp));
-    Rcomplex *dans = COMPLEX(ans);
-    for (int i=0; i<ngrp; ++i) {
-      if (gnth && w>grpsize[i]) { dans[i]=NA_CPLX; continue; }
-      int k = first ? ff[i]+w-2 : ff[i]+grpsize[i]-w-1;
-      if (isunsorted) k = oo[k]-1;
-      dans[i] = nosubset ? dx[k] : (irows[k]==NA_INTEGER ? NA_CPLX : dx[irows[k]-1]);
-    }
-  } break;
-  case STRSXP: {
-    const SEXP *sx = STRING_PTR(x);
-    ans = PROTECT(allocVector(STRSXP, ngrp));
-    for (int i=0; i<ngrp; ++i) {
-      if (gnth && w>grpsize[i]) { SET_STRING_ELT(ans, i, NA_STRING); continue; }
-      int k = first ? ff[i]+w-2 : ff[i]+grpsize[i]-w-1;
-      if (isunsorted) k = oo[k]-1;
-      SET_STRING_ELT(ans, i, nosubset ? sx[k] : (irows[k]==NA_INTEGER ? NA_STRING : sx[irows[k]-1]));
-    }
-  } break;
-  case VECSXP: {
-    const SEXP *vx = SEXPPTR_RO(x);
-    ans = PROTECT(allocVector(VECSXP, ngrp));
-    for (int i=0; i<ngrp; ++i) {
-      if (gnth && w>grpsize[i]) { SET_VECTOR_ELT(ans, i, ScalarLogical(NA_LOGICAL)); continue; }
-      int k = first ? ff[i]+w-2 : ff[i]+grpsize[i]-w-1;
-      if (isunsorted) k = oo[k]-1;
-      SET_VECTOR_ELT(ans, i, nosubset ? vx[k] : (irows[k]==NA_INTEGER ? ScalarLogical(NA_LOGICAL) : vx[irows[k]-1]));
-    }
-  } break;
+  case LGLSXP:  { int      *ansd=LOGICAL(ans); DO(int,      LOGICAL, NA_LOGICAL,   ansd[ansi++]=val) } break;
+  case INTSXP:  { int      *ansd=INTEGER(ans); DO(int,      INTEGER, NA_INTEGER,   ansd[ansi++]=val) } break;
+  case REALSXP: if (INHERITS(x, char_integer64)) {
+           int64_t *ansd=(int64_t *)REAL(ans); DO(int64_t,  REAL,    NA_INTEGER64, ansd[ansi++]=val) }
+           else { double      *ansd=REAL(ans); DO(double,   REAL,    NA_REAL,      ansd[ansi++]=val) } break;
+  case CPLXSXP: { Rcomplex *ansd=COMPLEX(ans); DO(Rcomplex, COMPLEX, NA_CPLX,      ansd[ansi++]=val) } break;
+  case STRSXP:  DO(SEXP, STRING_PTR, NA_STRING,                 SET_STRING_ELT(ans,ansi++,val))        break;
+  case VECSXP:  DO(SEXP, SEXPPTR_RO, ScalarLogical(NA_LOGICAL), SET_VECTOR_ELT(ans,ansi++,val))        break;
   default:
     error(_("Type '%s' not supported by GForce head/tail/first/last/`[`. Either add the prefix utils::head(.) or turn off GForce optimization using options(datatable.optimize=1)"), type2char(TYPEOF(x)));
   }
@@ -984,26 +975,28 @@ static SEXP gfirstlast(SEXP x, const bool first, const int w) {
 }
 
 SEXP glast(SEXP x) {
-  return gfirstlast(x, false, 1);
+  return gfirstlast(x, false, 1, false);
 }
 
 SEXP gfirst(SEXP x) {
-  return gfirstlast(x, true, 1);
+  return gfirstlast(x, true, 1, false);
 }
 
-SEXP gtail(SEXP x, SEXP valArg) {
-  if (!isInteger(valArg) || LENGTH(valArg)!=1 || INTEGER(valArg)[0]!=1) error(_("Internal error, gtail is only implemented for n=1. This should have been caught before. please report to data.table issue tracker.")); // # nocov
-  return gfirstlast(x, false, 1);
+SEXP gtail(SEXP x, SEXP nArg) {
+  if (!isInteger(nArg) || LENGTH(nArg)!=1 || INTEGER(nArg)[0]<1) error(_("Internal error, gtail is only implemented for n>0. This should have been caught before. please report to data.table issue tracker.")); // # nocov
+  const int n=INTEGER(nArg)[0];
+  return n==1 ? glast(x) : gfirstlast(x, false, n, true);
 }
 
-SEXP ghead(SEXP x, SEXP valArg) {
-  if (!isInteger(valArg) || LENGTH(valArg)!=1 || INTEGER(valArg)[0]!=1) error(_("Internal error, ghead is only implemented for n=1. This should have been caught before. please report to data.table issue tracker.")); // # nocov
-  return gfirstlast(x, true, 1);
+SEXP ghead(SEXP x, SEXP nArg) {
+  if (!isInteger(nArg) || LENGTH(nArg)!=1 || INTEGER(nArg)[0]<1) error(_("Internal error, gtail is only implemented for n>0. This should have been caught before. please report to data.table issue tracker.")); // # nocov
+  const int n=INTEGER(nArg)[0];
+  return n==1 ? gfirst(x) : gfirstlast(x, true, n, true);
 }
 
-SEXP gnthvalue(SEXP x, SEXP valArg) {
-  if (!isInteger(valArg) || LENGTH(valArg)!=1 || INTEGER(valArg)[0]<=0) error(_("Internal error, `g[` (gnthvalue) is only implemented single value subsets with positive index, e.g., .SD[2]. This should have been caught before. please report to data.table issue tracker.")); // # nocov
-  return gfirstlast(x, true, INTEGER(valArg)[0]);
+SEXP gnthvalue(SEXP x, SEXP nArg) {
+  if (!isInteger(nArg) || LENGTH(nArg)!=1 || INTEGER(nArg)[0]<1) error(_("Internal error, `g[` (gnthvalue) is only implemented single value subsets with positive index, e.g., .SD[2]. This should have been caught before. please report to data.table issue tracker.")); // # nocov
+  return gfirstlast(x, true, INTEGER(nArg)[0], false);
 }
 
 // TODO: gwhich.min, gwhich.max

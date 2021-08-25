@@ -8116,21 +8116,36 @@ test(1579.18, dt[, tail(.SD,1L), by=x],    dt[, utils::tail(.SD,1L), by=x])
 test(1579.19, dt[, tail(.SD,1L), by=x],    dt[, utils::tail(.SD,1L), by=x])
 test(1579.20, dt[, tail(.SD,1L), keyby=x], dt[, utils::tail(.SD,1L), keyby=x])
 test(1579.21, dt[, tail(.SD,1L), keyby=x], dt[, utils::tail(.SD,1L), keyby=x])
-# GForce _doesn't_ work when n > 1
-test(1579.22, dt[ , tail(.SD, 2), by = x, verbose = TRUE], output = 'GForce FALSE')
+# 1579.22 tested gtail with n>1; now 1579.4+ below
 
 mysub <- function(x, n) x[n]
-test(1579.23, dt[, .SD[2],  by=x],    dt[, mysub(.SD,2),  by=x])
-test(1579.24, dt[, .SD[2],  by=x],    dt[, mysub(.SD,2),  by=x])
-test(1579.25, dt[, .SD[2],  keyby=x], dt[, mysub(.SD,2),  keyby=x])
-test(1579.26, dt[, .SD[2],  keyby=x], dt[, mysub(.SD,2),  keyby=x])
-test(1579.27, dt[, .SD[2L], by=x],    dt[, mysub(.SD,2L), by=x])
-test(1579.28, dt[, .SD[2L], by=x],    dt[, mysub(.SD,2L), by=x])
-test(1579.29, dt[, .SD[2L], keyby=x], dt[, mysub(.SD,2L), keyby=x])
-test(1579.30, dt[, .SD[2L], keyby=x], dt[, mysub(.SD,2L), keyby=x])
+test(1579.23, dt[, .SD[2],  by=x, verbose=TRUE], dt[, mysub(.SD,2),  by=x], output="GForce optimized.*g[[]")
+test(1579.24, dt[, .SD[2],  keyby=x], dt[, mysub(.SD,2),  keyby=x])
+test(1579.25, dt[, .SD[2L], by=x],    dt[, mysub(.SD,2L), by=x])
+test(1579.26, dt[, .SD[2L], keyby=x], dt[, mysub(.SD,2L), keyby=x])
+test(1579.27, dt[, .SD[15], by=x],    dt[, mysub(.SD,15), by=x])   # tests 15 > grpsize and that NA is correct including for integer64
+test(1579.28, dt[, .SD[15], keyby=x], dt[, mysub(.SD,15), keyby=x])
 
-ans = capture.output(dt[, .SD[2], by=x, verbose=TRUE])
-test(1579.31, any(grepl("GForce optimized", ans)), TRUE)
+# gforce head/tail for n>1, #5060
+set.seed(99)
+DT = data.table(x = sample(letters[1:5], 20, TRUE),
+                y = rep.int(1:2, 10),  # to test 2 grouping columns get rep'd properly
+                i = sample(c(-2L,0L,3L,NA), 20, TRUE),
+                d = sample(c(1.2,-3.4,5.6,NA), 20, TRUE),
+                s = sample(c("foo","bar",NA), 20, TRUE),
+                l = sample(list(1:3, mean, letters[4:5], NULL), 20, replace=TRUE))
+if (test_bit64) DT[, i64:=sample(as.integer64(c(-2200000000,+2400000000,NA)), 20, TRUE)]
+options(datatable.optimize=2L)
+test(1579.401, DT[, .N, by=x]$N, INT(4,6,5,2,3))   # the smallest group is 2, so n=5 tests n constrained to grpsize
+test(1579.402, DT[, head(.SD,2),    by=x, verbose=TRUE], DT[, utils::head(.SD,2),    by=x], output="optimized.*ghead")
+test(1579.403, DT[, head(.SD,2), keyby=x, verbose=TRUE], DT[, utils::head(.SD,2), keyby=x], output="optimized.*ghead")
+test(1579.404, DT[, head(.SD,5),    by=x, verbose=TRUE], DT[, utils::head(.SD,5),    by=x], output="optimized.*ghead")
+test(1579.405, DT[, head(.SD,5), keyby=x, verbose=TRUE], DT[, utils::head(.SD,5), keyby=x], output="optimized.*ghead")
+test(1579.406, DT[, tail(.SD,2),    by=x, verbose=TRUE], DT[, utils::tail(.SD,2),    by=x], output="optimized.*gtail")
+test(1579.407, DT[, tail(.SD,2), keyby=x, verbose=TRUE], DT[, utils::tail(.SD,2), keyby=x], output="optimized.*gtail")
+test(1579.408, DT[, tail(.SD,5),    by=x, verbose=TRUE], DT[, utils::tail(.SD,5),    by=x], output="optimized.*gtail")
+test(1579.409, DT[, tail(.SD,5), keyby=x, verbose=TRUE], DT[, utils::tail(.SD,5), keyby=x], output="optimized.*gtail")
+test(1579.410, DT[, tail(.SD,2), by=.(x,y), verbose=TRUE], DT[, utils::tail(.SD,2), by=.(x,y)], output="optimized.*gtail")
 
 options(datatable.optimize = Inf)
 
@@ -14695,11 +14710,11 @@ DT = data.table(a=c(rep(1L, 7L), rep(2L, 5L)), b=1:12, d=12:1)
 test(2018.1, DT[, head(.SD), a, verbose=TRUE],
              data.table(a=c(rep(1L, 6L), rep(2L, 5L)), b=c(1:6, 8:12), d=c(12:7, 5:1)),
              output=c("lapply optimization changed j from 'head(.SD)' to 'list(head(b, n = 6L), head(d, n = 6L))'",
-                      "GForce is on, left j unchanged"))
+                      "GForce optimized j to 'list(ghead(b, n = 6L), ghead(d, n = 6L))'"))
 test(2018.2, DT[, head(b), a, verbose=TRUE],
              data.table(a=c(rep(1L, 6L), rep(2L, 5L)), V1=c(1:6, 8:12)),
              output=c("lapply optimization is on, j unchanged as 'head(b)'",
-                      "GForce is on, left j unchanged"))
+                      "GForce optimized j to 'ghead(b, n = 6L)'"))
 test(2018.3, DT[, tail(.SD), a], data.table(a=c(rep(1L, 6L), rep(2L, 5L)), b=c(2:7, 8:12), d=c(11:6, 5:1)))
 test(2018.4, DT[, tail(b), a], data.table(a=c(rep(1L, 6L), rep(2L, 5L)), V1=c(2:7, 8:12)))
 # gforce tests coverage
