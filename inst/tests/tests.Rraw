@@ -8116,17 +8116,36 @@ test(1579.18, dt[, tail(.SD,1L), by=x],    dt[, utils::tail(.SD,1L), by=x])
 test(1579.19, dt[, tail(.SD,1L), by=x],    dt[, utils::tail(.SD,1L), by=x])
 test(1579.20, dt[, tail(.SD,1L), keyby=x], dt[, utils::tail(.SD,1L), keyby=x])
 test(1579.21, dt[, tail(.SD,1L), keyby=x], dt[, utils::tail(.SD,1L), keyby=x])
-# GForce _doesn't_ work when n > 1
-# removed test since GForce now works for head/tail with n > 1
-# test(1579.22, dt[ , tail(.SD, 2), by = x, verbose = TRUE], output = 'GForce FALSE')
+# 1579.22 tested gtail with n>1; now 1579.4+ below
 
 mysub <- function(x, n) x[n]
 test(1579.23, dt[, .SD[2],  by=x, verbose=TRUE], dt[, mysub(.SD,2),  by=x], output="GForce optimized.*g[[]")
 test(1579.24, dt[, .SD[2],  keyby=x], dt[, mysub(.SD,2),  keyby=x])
 test(1579.25, dt[, .SD[2L], by=x],    dt[, mysub(.SD,2L), by=x])
 test(1579.26, dt[, .SD[2L], keyby=x], dt[, mysub(.SD,2L), keyby=x])
-test(1579.27, dt[, .SD[15], by=x],    dt[, mysub(.SD,15), by=x])   # 15 tests > grpsize and that NA is correct including for integer64
+test(1579.27, dt[, .SD[15], by=x],    dt[, mysub(.SD,15), by=x])   # tests 15 > grpsize and that NA is correct including for integer64
 test(1579.28, dt[, .SD[15], keyby=x], dt[, mysub(.SD,15), keyby=x])
+
+# gforce head/tail for n>1, #5060
+set.seed(99)
+DT = data.table(x = sample(letters[1:5], 20, TRUE),
+                y = rep.int(1:2, 10),  # to test 2 grouping columns get rep'd properly
+                i = sample(c(-2L,0L,3L,NA), 20, TRUE),
+                d = sample(c(1.2,-3.4,5.6,NA), 20, TRUE),
+                s = sample(c("foo","bar",NA), 20, TRUE),
+                l = sample(list(1:3, mean, letters[4:5], NULL), 20, replace=TRUE))
+if (test_bit64) DT[, i64:=sample(as.integer64(c(-2200000000,+2400000000,NA)), 20, TRUE)]
+options(datatable.optimize=2L)
+test(1579.401, DT[, .N, by=x]$N, INT(4,6,5,2,3))   # the smallest group is 2, so n=5 tests n constrained to grpsize
+test(1579.402, DT[, head(.SD,2),    by=x, verbose=TRUE], DT[, utils::head(.SD,2),    by=x], output="optimized.*ghead")
+test(1579.403, DT[, head(.SD,2), keyby=x, verbose=TRUE], DT[, utils::head(.SD,2), keyby=x], output="optimized.*ghead")
+test(1579.404, DT[, head(.SD,5),    by=x, verbose=TRUE], DT[, utils::head(.SD,5),    by=x], output="optimized.*ghead")
+test(1579.405, DT[, head(.SD,5), keyby=x, verbose=TRUE], DT[, utils::head(.SD,5), keyby=x], output="optimized.*ghead")
+test(1579.406, DT[, tail(.SD,2),    by=x, verbose=TRUE], DT[, utils::tail(.SD,2),    by=x], output="optimized.*gtail")
+test(1579.407, DT[, tail(.SD,2), keyby=x, verbose=TRUE], DT[, utils::tail(.SD,2), keyby=x], output="optimized.*gtail")
+test(1579.408, DT[, tail(.SD,5),    by=x, verbose=TRUE], DT[, utils::tail(.SD,5),    by=x], output="optimized.*gtail")
+test(1579.409, DT[, tail(.SD,5), keyby=x, verbose=TRUE], DT[, utils::tail(.SD,5), keyby=x], output="optimized.*gtail")
+test(1579.410, DT[, tail(.SD,2), by=.(x,y), verbose=TRUE], DT[, utils::tail(.SD,2), by=.(x,y)], output="optimized.*gtail")
 
 options(datatable.optimize = Inf)
 
@@ -18030,26 +18049,4 @@ for (col in c("a","b","c")) {
     }
   }
 }
-
-# gforce head/tail for n>1, #5060
-set.seed(99)
-DT = data.table(x = sample(letters[1:5], 20, TRUE),
-                y = rep.int(1:2, 10),  # to test 2 grouping columns get rep'd properly
-                i = sample(c(-2L,0L,3L,NA), 20, TRUE),
-                d = sample(c(1.2,-3.4,5.6,NA), 20, TRUE),
-                s = sample(c("foo","bar",NA), 20, TRUE),
-                l = sample(list(1:3, mean, letters[4:5], NULL), 20, replace=TRUE))
-if (test_bit64) DT[, i64:=sample(as.integer64(c(-2200000000,+2400000000,NA)), 20, TRUE)]
-old = options(datatable.optimize=2L)
-test(2212.01, DT[, .N, by=x]$N, INT(4,6,5,2,3))   # the smallest group is 2, so n=5 tests n constrained to grpsize
-test(2212.02, DT[, head(.SD,2),    by=x, verbose=TRUE], DT[, utils::head(.SD,2),    by=x], output="optimized.*ghead")
-test(2212.03, DT[, head(.SD,2), keyby=x, verbose=TRUE], DT[, utils::head(.SD,2), keyby=x], output="optimized.*ghead")
-test(2212.04, DT[, head(.SD,5),    by=x, verbose=TRUE], DT[, utils::head(.SD,5),    by=x], output="optimized.*ghead")
-test(2212.05, DT[, head(.SD,5), keyby=x, verbose=TRUE], DT[, utils::head(.SD,5), keyby=x], output="optimized.*ghead")
-test(2212.06, DT[, tail(.SD,2),    by=x, verbose=TRUE], DT[, utils::tail(.SD,2),    by=x], output="optimized.*gtail")
-test(2212.07, DT[, tail(.SD,2), keyby=x, verbose=TRUE], DT[, utils::tail(.SD,2), keyby=x], output="optimized.*gtail")
-test(2212.08, DT[, tail(.SD,5),    by=x, verbose=TRUE], DT[, utils::tail(.SD,5),    by=x], output="optimized.*gtail")
-test(2212.09, DT[, tail(.SD,5), keyby=x, verbose=TRUE], DT[, utils::tail(.SD,5), keyby=x], output="optimized.*gtail")
-test(2212.10, DT[, tail(.SD,2), by=.(x,y), verbose=TRUE], DT[, utils::tail(.SD,2), by=.(x,y)], output="optimized.*gtail")
-options(old)
 
