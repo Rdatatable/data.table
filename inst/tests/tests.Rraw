@@ -18054,14 +18054,14 @@ for (col in c("a","b","c")) {
 # DT() functional form, #4872 #5106 #5107
 if (base::getRversion() >= "4.1.0") {
   # we have to EVAL "|>" here too otherwise this tests.Rraw file won't parse in R<4.1.0
-  if (exists("DTfun")) DT=DTfun  # just in dev-mode restore DT() in .GlobalEnv as DT object overwrote it in tests above 
+  if (exists("DTfun")) DT=DTfun  # just in dev-mode restore DT() in .GlobalEnv as DT object overwrote it in tests above
   test(2212.01, EVAL("mtcars |> DT(mpg>20, .(mean_hp=round(mean(hp),2)), by=cyl)"),
-                data.frame(cyl=c(6,4), mean_hp=c(110.0, 82.64)))                
+                data.frame(cyl=c(6,4), mean_hp=c(110.0, 82.64)))
   D = copy(mtcars)
   droprn = function(df) { rownames(df)=NULL; df }  # TODO: could retain rownames where droprn is currently used below
   test(2212.02, EVAL("D |> DT(,.SD)"), D)
   test(2212.03, EVAL("D |> DT(, .SD, .SDcols=5:8)"), D[,5:8])
-  test(2212.04, EVAL("D |> DT(, 5:8)"), droprn(D[,5:8]))  
+  test(2212.04, EVAL("D |> DT(, 5:8)"), droprn(D[,5:8]))
   test(2212.05, EVAL("D |> DT(, lapply(.SD, sum))"), as.data.frame(lapply(D,sum)))
   test(2212.06, EVAL("D |> DT(, .SD, keyby=cyl) |> setkey(NULL)"), droprn(D[order(D$cyl),c(2,1,3:11)]))
   test(2212.07, EVAL("D |> DT(1:20, .SD)"), droprn(D[1:20,]))
@@ -18078,6 +18078,10 @@ if (base::getRversion() >= "4.1.0") {
   test(2212.18, EVAL("D |> DT(cyl!=4 & vs!=0)"), droprn(D[D$cyl!=4 & D$vs!=0,]))
   test(2212.19, EVAL("iris |> DT(Sepal.Length==5.0 & Species=='setosa')"), droprn(iris[iris$Sepal.Length==5.0 & iris$Species=="setosa",]))
   test(2212.20, EVAL("iris |> DT(Sepal.Length==5.0)"), droprn(iris[iris$Sepal.Length==5.0,]))
-  test(2212.21, EVAL("iris |> DT(Species=='setosa')"), droprn(iris[iris$Species=='setosa',])) 
+  test(2212.21, EVAL("iris |> DT(Species=='setosa')"), droprn(iris[iris$Species=='setosa',]))
+  test(2212.22, EVAL("D |> DT(, cyl)"), droprn(D[,"cyl"]))
+  test(2212.23, EVAL("D |> DT(1:2, cyl)"), droprn(D[1:2, "cyl"]))
+  test(2212.24, EVAL("D |> DT(, list(cyl))"), droprn(D[,"cyl",drop=FALSE]))
+  test(2212.25, EVAL("D |> DT(1:2, .(cyl))"), droprn(D[1:2, "cyl", drop=FALSE]))
 }
 
