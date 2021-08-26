@@ -1935,7 +1935,13 @@ replace_dot_alias = function(e) {
 }
 
 DT = function(x, ...) {  #4872
+  old = getOption("datatable.optimize")
+  if (!is.data.table(x) && old>2L) {
+    options(datatable.optimize=2L)
+    # GForce still on; building and storing indices in .prepareFastSubset off; see long paragraph in news item 22 of v1.14.2
+  }
   ans = `[.data.table`(x, ...)
+  options(datatable.optimize=old)
   .global$print = ""  # functional form should always print; #5106
   ans
 }
