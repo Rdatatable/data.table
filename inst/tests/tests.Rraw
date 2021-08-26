@@ -7,6 +7,7 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
   }
   if ((tt<-compiler::enableJIT(-1))>0)
     cat("This is dev mode and JIT is enabled (level ", tt, ") so there will be a brief pause around the first test.\n", sep="")
+  DTfun = DT  # just in dev-mode, DT() gets overwritten in .GlobalEnv by DT objects here in tests.Rraw; we restore DT() in test 2212
 } else {
   require(data.table)
   # Make symbols to the installed version's ::: so that we can i) test internal-only not-exposed R functions
@@ -639,7 +640,7 @@ test(211, ncol(TESTDT), 2L)
 DT = data.table(a=1:6,key="a")
 test(212, DT[J(3)]$a, 3L) # correct class c("data.table","data.frame")
 class(DT) = "data.table"  # incorrect class, but as from 1.8.1 it works. By accident when moving from colnames() to names(), it was dimnames() doing the check, but rather than add a check that identical(class(DT),c("data.frame","data.table")) at the top of [.data.table, we'll leave it flexible to user (user might not want to inherit from data.frame for some reason).
-test(213, DT[J(3)]$a, 3L)
+test(213, DT[J(3)]$a, error="x is not a data.table|frame")  # from v1.14.2, data.table must inherit from data.frame (internals are too hard to reason if a data.table may not be data.frame too)
 
 # setkey now auto coerces double and character for convenience, and
 # to solve bug #953
@@ -8116,21 +8117,36 @@ test(1579.18, dt[, tail(.SD,1L), by=x],    dt[, utils::tail(.SD,1L), by=x])
 test(1579.19, dt[, tail(.SD,1L), by=x],    dt[, utils::tail(.SD,1L), by=x])
 test(1579.20, dt[, tail(.SD,1L), keyby=x], dt[, utils::tail(.SD,1L), keyby=x])
 test(1579.21, dt[, tail(.SD,1L), keyby=x], dt[, utils::tail(.SD,1L), keyby=x])
-# GForce _doesn't_ work when n > 1
-test(1579.22, dt[ , tail(.SD, 2), by = x, verbose = TRUE], output = 'GForce FALSE')
+# 1579.22 tested gtail with n>1; now 1579.4+ below
 
 mysub <- function(x, n) x[n]
-test(1579.23, dt[, .SD[2],  by=x],    dt[, mysub(.SD,2),  by=x])
-test(1579.24, dt[, .SD[2],  by=x],    dt[, mysub(.SD,2),  by=x])
-test(1579.25, dt[, .SD[2],  keyby=x], dt[, mysub(.SD,2),  keyby=x])
-test(1579.26, dt[, .SD[2],  keyby=x], dt[, mysub(.SD,2),  keyby=x])
-test(1579.27, dt[, .SD[2L], by=x],    dt[, mysub(.SD,2L), by=x])
-test(1579.28, dt[, .SD[2L], by=x],    dt[, mysub(.SD,2L), by=x])
-test(1579.29, dt[, .SD[2L], keyby=x], dt[, mysub(.SD,2L), keyby=x])
-test(1579.30, dt[, .SD[2L], keyby=x], dt[, mysub(.SD,2L), keyby=x])
+test(1579.23, dt[, .SD[2],  by=x, verbose=TRUE], dt[, mysub(.SD,2),  by=x], output="GForce optimized.*g[[]")
+test(1579.24, dt[, .SD[2],  keyby=x], dt[, mysub(.SD,2),  keyby=x])
+test(1579.25, dt[, .SD[2L], by=x],    dt[, mysub(.SD,2L), by=x])
+test(1579.26, dt[, .SD[2L], keyby=x], dt[, mysub(.SD,2L), keyby=x])
+test(1579.27, dt[, .SD[15], by=x],    dt[, mysub(.SD,15), by=x])   # tests 15 > grpsize and that NA is correct including for integer64
+test(1579.28, dt[, .SD[15], keyby=x], dt[, mysub(.SD,15), keyby=x])
 
-ans = capture.output(dt[, .SD[2], by=x, verbose=TRUE])
-test(1579.31, any(grepl("GForce optimized", ans)), TRUE)
+# gforce head/tail for n>1, #5060
+set.seed(99)
+DT = data.table(x = sample(letters[1:5], 20, TRUE),
+                y = rep.int(1:2, 10),  # to test 2 grouping columns get rep'd properly
+                i = sample(c(-2L,0L,3L,NA), 20, TRUE),
+                d = sample(c(1.2,-3.4,5.6,NA), 20, TRUE),
+                s = sample(c("foo","bar",NA), 20, TRUE),
+                l = sample(list(1:3, mean, letters[4:5], NULL), 20, replace=TRUE))
+if (test_bit64) DT[, i64:=sample(as.integer64(c(-2200000000,+2400000000,NA)), 20, TRUE)]
+options(datatable.optimize=2L)
+test(1579.401, DT[, .N, by=x]$N, INT(4,6,5,2,3))   # the smallest group is 2, so n=5 tests n constrained to grpsize
+test(1579.402, DT[, head(.SD,2),    by=x, verbose=TRUE], DT[, utils::head(.SD,2),    by=x], output="optimized.*ghead")
+test(1579.403, DT[, head(.SD,2), keyby=x, verbose=TRUE], DT[, utils::head(.SD,2), keyby=x], output="optimized.*ghead")
+test(1579.404, DT[, head(.SD,5),    by=x, verbose=TRUE], DT[, utils::head(.SD,5),    by=x], output="optimized.*ghead")
+test(1579.405, DT[, head(.SD,5), keyby=x, verbose=TRUE], DT[, utils::head(.SD,5), keyby=x], output="optimized.*ghead")
+test(1579.406, DT[, tail(.SD,2),    by=x, verbose=TRUE], DT[, utils::tail(.SD,2),    by=x], output="optimized.*gtail")
+test(1579.407, DT[, tail(.SD,2), keyby=x, verbose=TRUE], DT[, utils::tail(.SD,2), keyby=x], output="optimized.*gtail")
+test(1579.408, DT[, tail(.SD,5),    by=x, verbose=TRUE], DT[, utils::tail(.SD,5),    by=x], output="optimized.*gtail")
+test(1579.409, DT[, tail(.SD,5), keyby=x, verbose=TRUE], DT[, utils::tail(.SD,5), keyby=x], output="optimized.*gtail")
+test(1579.410, DT[, tail(.SD,2), by=.(x,y), verbose=TRUE], DT[, utils::tail(.SD,2), by=.(x,y)], output="optimized.*gtail")
 
 options(datatable.optimize = Inf)
 
@@ -14179,7 +14195,7 @@ test(1984.242, na.omit(data.table(A=c(1,NA,2)), cols=character()), data.table(A=
 test(1984.25, rbindlist(list(DT[1L], DT[2L]), idcol = TRUE), data.table(.id=1:2, a=1:2))
 test(1984.26, setalloccol(`*tmp*`), error='setalloccol attempting to modify `*tmp*`')
 DF = as.data.frame(DT)
-test(1984.27, shallow(DF), error='x is not a data.table')
+test(1984.27, shallow(DF), DF)  # shallow (which is not exported) works on DF from v1.14.2
 test(1984.28, split.data.table(DF), error='argument must be a data.table')
 test(1984.29, split(DT, by='a', f='a'), error="passing 'f' argument together with 'by' is not allowed")
 test(1984.30, split(DT), error="Either 'by' or 'f' argument must be supplied")
@@ -14695,11 +14711,11 @@ DT = data.table(a=c(rep(1L, 7L), rep(2L, 5L)), b=1:12, d=12:1)
 test(2018.1, DT[, head(.SD), a, verbose=TRUE],
              data.table(a=c(rep(1L, 6L), rep(2L, 5L)), b=c(1:6, 8:12), d=c(12:7, 5:1)),
              output=c("lapply optimization changed j from 'head(.SD)' to 'list(head(b, n = 6L), head(d, n = 6L))'",
-                      "GForce is on, left j unchanged"))
+                      "GForce optimized j to 'list(ghead(b, n = 6L), ghead(d, n = 6L))'"))
 test(2018.2, DT[, head(b), a, verbose=TRUE],
              data.table(a=c(rep(1L, 6L), rep(2L, 5L)), V1=c(1:6, 8:12)),
              output=c("lapply optimization is on, j unchanged as 'head(b)'",
-                      "GForce is on, left j unchanged"))
+                      "GForce optimized j to 'ghead(b, n = 6L)'"))
 test(2018.3, DT[, tail(.SD), a], data.table(a=c(rep(1L, 6L), rep(2L, 5L)), b=c(2:7, 8:12), d=c(11:6, 5:1)))
 test(2018.4, DT[, tail(b), a], data.table(a=c(rep(1L, 6L), rep(2L, 5L)), V1=c(2:7, 8:12)))
 # gforce tests coverage
@@ -14711,9 +14727,9 @@ DT = data.table(id = c(1L,1L,2L), v = as.raw(0:2))
 test(2020.01, DT[, min(v), by=id], error="'raw' not supported by GForce min/max")
 test(2020.02, DT[, max(v), by=id], error="'raw' not supported by GForce min/max")
 test(2020.03, DT[, median(v), by=id], error="'raw' not supported by GForce median")
-test(2020.04, DT[, head(v, 1), by=id], error="'raw' not supported by GForce head")
-test(2020.05, DT[, tail(v, 1), by=id], error="'raw' not supported by GForce tail")
-test(2020.06, DT[, v[1], by=id], error="'raw' not supported by GForce subset")
+test(2020.04, DT[, head(v, 1), by=id], error="'raw' not supported by GForce head/tail/first/last/`[`")
+test(2020.05, DT[, tail(v, 1), by=id], error="'raw' not supported by GForce head/tail/first/last/`[`")
+test(2020.06, DT[, v[1], by=id], error="'raw' not supported by GForce head/tail/first/last/`[`")
 test(2020.07, DT[, sd(v), by=id], error="'raw' not supported by GForce sd")
 test(2020.08, DT[, var(v), by=id], error="'raw' not supported by GForce var")
 test(2020.09, DT[, prod(v), by=id], error="'raw' not supported by GForce prod")
@@ -18009,4 +18025,76 @@ test(2210.23, data.table()[-1L, nomatch=0], data.table(), warning=c("Please use 
 test(2210.24, DT[-c(1L,0L)], data.table(x=2:4)) # codecov gap, not related to nomatch
 test(2210.25, DT[-c(1L,0L), nomatch=NULL], data.table(x=2:4))
 test(2210.26, DT[-c(1L,0L), nomatch=0], data.table(x=2:4), warning="Please use nomatch=NULL")
+
+# NA in i would segfault gforce, #1994
+DT = data.table(a=1L, b=2, c="a", grp=1L)
+i = c(1L,NA,NA,NA)   # 3 NA to trigger segfault in var (min 3 obs) otherwise just c(1L,NA) is enough to trigger the others
+funs = c("sum","mean","var","sd","median","prod","min","max","`[`","first","last","head","tail")
+EVAL = function(...) {
+  e = paste0(...)
+  # cat(e,"\n")  # uncomment to check the queries tested
+  eval(parse(text=e))
+}
+testnum = 2211.0
+for (col in c("a","b","c")) {
+  testnum = testnum+0.1
+  for (fi in seq_along(funs)) {
+    if (col=="c" && fi<=6L) next  # first 6 funs don't support type character
+    f = funs[fi]
+    testnum = testnum+0.001
+    test(testnum, EVAL("DT[i,   ",f,"(",col, if(fi>8L)", 1L","), by=grp]"),  # segfault before when NA in i
+                  EVAL("DT[i][, ",f,"(",col, if(fi>8L)", 1L","), by=grp]"))  # ok before by taking DT[i] subset first
+    if (fi<=8L) {
+      testnum = testnum+0.001
+      test(testnum, EVAL("DT[i,   ",f,"(",col,", na.rm=TRUE), by=grp]"),
+                    EVAL("DT[i][, ",f,"(",col,", na.rm=TRUE), by=grp]"))
+    }
+  }
+}
+
+# DT() functional form, #4872 #5106 #5107
+if (base::getRversion() >= "4.1.0") {
+  # we have to EVAL "|>" here too otherwise this tests.Rraw file won't parse in R<4.1.0
+  if (exists("DTfun")) DT=DTfun  # just in dev-mode restore DT() in .GlobalEnv as DT object overwrote it in tests above
+  droprn = function(df) { rownames(df)=NULL; df }  # TODO: could retain rownames where droprn is currently used below
+  test(2212.011, EVAL("mtcars |> DT(mpg>20, .(mean_hp=round(mean(hp),2)), by=cyl)"),
+                 data.frame(cyl=c(6,4), mean_hp=c(110.0, 82.64)))
+  test(2212.012, EVAL("mtcars |> DT(mpg>15, .SD[hp>mean(hp)], by=cyl)"),
+                 droprn(mtcars[c(10,11,30,3,9,21,27,28,32,29), c(2,1,3:11)]))
+  test(2212.013, EVAL("mtcars |> DT(mpg>20, .SD[hp>mean(hp)])"),
+                 droprn(mtcars[ mtcars$mpg>20 & mtcars$hp>mean(mtcars$hp[mtcars$mpg>20]), ]))
+  D = copy(mtcars)
+  test(2212.02, EVAL("D |> DT(,.SD)"), D)
+  test(2212.03, EVAL("D |> DT(, .SD, .SDcols=5:8)"), D[,5:8])
+  test(2212.04, EVAL("D |> DT(, 5:8)"), droprn(D[,5:8]))
+  test(2212.05, EVAL("D |> DT(, lapply(.SD, sum))"), as.data.frame(lapply(D,sum)))
+  test(2212.06, EVAL("D |> DT(, .SD, keyby=cyl) |> setkey(NULL)"), droprn(D[order(D$cyl),c(2,1,3:11)]))
+  test(2212.07, EVAL("D |> DT(1:20, .SD)"), droprn(D[1:20,]))
+  test(2212.08, EVAL("D |> DT(, .SD, by=cyl, .SDcols=5:8)"), droprn(D[unlist(tapply(1:32, D$cyl, c)[c(2,1,3)]), c(2,5:8)]))
+  test(2212.09, EVAL("D |> DT(1:20, .SD, .SDcols=5:8)"), droprn(D[1:20, 5:8]))
+  test(2212.10, EVAL("D |> DT(1:20, .SD, by=cyl, .SDcols=5:8)"), droprn(D[unlist(tapply(1:20, D$cyl[1:20], c)[c(2,1,3)]), c(2,5:8)]))
+  test(2212.11, EVAL("D |> DT(1:20, lapply(.SD, sum))"), as.data.frame(lapply(D[1:20,],sum)))
+  test(2212.12, droprn(EVAL("D |> DT(1:20, c(N=.N, lapply(.SD, sum)), by=cyl)")[c(1,3),c("cyl","N","carb")]), data.frame(cyl=c(6,8), N=c(6L,8L), carb=c(18,27)))
+  test(2212.13, EVAL("D |> DT(cyl==4)"), droprn(D[D$cyl==4,]))
+  test(2212.14, EVAL("D |> DT(cyl==4 & vs==0)"), droprn(D[D$cyl==4 & D$vs==0,]))
+  test(2212.15, EVAL("D |> DT(cyl==4 & vs>0)"), droprn(D[D$cyl==4 & D$vs>0,]))
+  test(2212.16, EVAL("D |> DT(cyl>=4)"), droprn(D[D$cyl>=4,]))
+  test(2212.17, EVAL("D |> DT(cyl!=4)"), droprn(D[D$cyl!=4,]))
+  test(2212.18, EVAL("D |> DT(cyl!=4 & vs!=0)"), droprn(D[D$cyl!=4 & D$vs!=0,]))
+  test(2212.19, EVAL("iris |> DT(Sepal.Length==5.0 & Species=='setosa')"), droprn(iris[iris$Sepal.Length==5.0 & iris$Species=="setosa",]))
+  test(2212.20, EVAL("iris |> DT(Sepal.Length==5.0)"), droprn(iris[iris$Sepal.Length==5.0,]))
+  test(2212.21, EVAL("iris |> DT(Species=='setosa')"), droprn(iris[iris$Species=='setosa',]))
+  test(2212.22, EVAL("D |> DT(, cyl)"), droprn(D[,"cyl"]))
+  test(2212.23, EVAL("D |> DT(1:2, cyl)"), droprn(D[1:2, "cyl"]))
+  test(2212.24, EVAL("D |> DT(, list(cyl))"), droprn(D[,"cyl",drop=FALSE]))
+  test(2212.25, EVAL("D |> DT(1:2, .(cyl))"), droprn(D[1:2, "cyl", drop=FALSE]))
+  test(2212.26, EVAL("D |> DT(, z:=sum(cyl))"), cbind(D, z=sum(D$cyl)))
+  test(2212.27, EVAL("D |> DT(, z:=round(mean(mpg),2), by=cyl)"), cbind(D, z=c("6"=19.74, "4"=26.66, "8"=15.10)[as.character(D$cyl)]))
+  test(2212.28, EVAL("D |> DT(1:3, z:=5, by=cyl)"), cbind(D, z=c(5,5,5,rep(NA,nrow(D)-3))))
+  test(2212.29, EVAL("D |> DT(1:3, z:=NULL)"), error="When deleting columns, i should not be provided")
+  test(2212.30, EVAL("D |> DT(data.table(cyl=4), on='cyl')"), droprn(D[D$cyl==4,]))
+  test(2212.31, EVAL("D |> DT(data.frame(cyl=4), on='cyl')"), droprn(D[D$cyl==4,]))
+  test(2212.32, EVAL("D |> DT(.(4), on='cyl')"), droprn(D[D$cyl==4,]))
+  test(2212.33, EVAL("iris |> DT('setosa', on='Species')"), {tt=droprn(iris[iris$Species=="setosa",]); tt$Species=as.character(tt$Species); tt})
+}
 

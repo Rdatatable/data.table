@@ -178,7 +178,7 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
   catf("10 longest running tests took %ds (%d%% of %ds)\n", as.integer(tt<-DT[, sum(time)]), as.integer(100*tt/(ss<-timings[,sum(time)])), as.integer(ss))
   print(DT, class=FALSE)
 
-  catf("All %d tests (last %s) in %s completed ok in %s\n", ntest, env$prevtest, names(fn), timetaken(env$started.at))
+  catf("All %d tests (last %.8g) in %s completed ok in %s\n", ntest, env$prevtest, names(fn), timetaken(env$started.at))
 
   ## this chunk requires to include new suggested deps: graphics, grDevices
   #memtest.plot = function(.inittime) {
@@ -407,8 +407,8 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
     y = try(y,TRUE)
     if (identical(x,y)) return(invisible(TRUE))
     all.equal.result = TRUE
-    if (is.data.table(x) && is.data.table(y)) {
-      if (!selfrefok(x) || !selfrefok(y)) {
+    if (is.data.frame(x) && is.data.frame(y)) {
+      if ((is.data.table(x) && !selfrefok(x)) || (is.data.table(y) && !selfrefok(y))) {
         # nocov start
         catf("Test %s ran without errors but selfrefok(%s) is FALSE\n", numStr, if (selfrefok(x)) "y" else "x")
         fail = TRUE
@@ -417,12 +417,14 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
         xc=copy(x)
         yc=copy(y)  # so we don't affect the original data which may be used in the next test
         # drop unused levels in factors
-        if (length(x)) for (i in which(vapply_1b(x,is.factor))) {.xi=x[[i]];xc[,(i):=factor(.xi)]}
-        if (length(y)) for (i in which(vapply_1b(y,is.factor))) {.yi=y[[i]];yc[,(i):=factor(.yi)]}
-        setattr(xc,"row.names",NULL)  # for test 165+, i.e. x may have row names set from inheritance but y won't, consider these equal
-        setattr(yc,"row.names",NULL)
+        if (length(x)) for (i in which(vapply_1b(x,is.factor))) {.xi=x[[i]];xc[[i]]<-factor(.xi)}
+        if (length(y)) for (i in which(vapply_1b(y,is.factor))) {.yi=y[[i]];yc[[i]]<-factor(.yi)}
+        if (is.data.table(xc)) setattr(xc,"row.names",NULL)  # for test 165+, i.e. x may have row names set from inheritance but y won't, consider these equal
+        if (is.data.table(yc)) setattr(yc,"row.names",NULL)
         setattr(xc,"index",NULL)   # too onerous to create test RHS with the correct index as well, just check result
         setattr(yc,"index",NULL)
+        setattr(xc,".internal.selfref",NULL)   # test 2212
+        setattr(yc,".internal.selfref",NULL)
         if (identical(xc,yc) && identical(key(x),key(y))) return(invisible(TRUE))  # check key on original x and y because := above might have cleared it on xc or yc
         if (isTRUE(all.equal.result<-all.equal(xc,yc,check.environment=FALSE)) && identical(key(x),key(y)) &&
                                                      # ^^ to pass tests 2022.[1-4] in R-devel from 5 Dec 2020, #4835
