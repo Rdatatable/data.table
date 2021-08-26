@@ -18083,5 +18083,8 @@ if (base::getRversion() >= "4.1.0") {
   test(2212.23, EVAL("D |> DT(1:2, cyl)"), droprn(D[1:2, "cyl"]))
   test(2212.24, EVAL("D |> DT(, list(cyl))"), droprn(D[,"cyl",drop=FALSE]))
   test(2212.25, EVAL("D |> DT(1:2, .(cyl))"), droprn(D[1:2, "cyl", drop=FALSE]))
+  test(2212.26, EVAL("D |> DT(data.table(cyl=4), on='cyl')"), droprn(D[D$cyl==4,]))
+  test(2212.27, EVAL("D |> DT(.(4), on='cyl')"), droprn(D[D$cyl==4,]))
+  test(2212.28, EVAL("iris |> DT('setosa', on='Species')"), {tt=droprn(iris[iris$Species=="setosa",]); tt$Species=as.character(tt$Species); tt})
 }
 

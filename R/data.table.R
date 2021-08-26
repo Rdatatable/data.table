@@ -446,7 +446,7 @@ replace_dot_alias = function(e) {
       i = as.data.table(i)
     }
 
-    if (is.data.table(i)) {
+    if (is.data.frame(i)) {
       if (missing(on)) {
         if (!haskey(x)) {
           stopf("When i is a data.table (or character vector), the columns to join by must be specified using 'on=' argument (see ?data.table), by keying x (i.e. sorted, and, marked as sorted, see ?setkey), or by sharing column names between x and i (i.e., a natural join). Keyed joins might have further speed benefits on very large data due to x being sorted in RAM.")
@@ -1326,7 +1326,7 @@ replace_dot_alias = function(e) {
             setattr(ans,"sorted",head(key(x),keylen))
         }
         setattr(ans, "class", class(x)) # fix for #64
-        setattr(ans, "row.names", .set_row_names(nrow(ans)))
+        setattr(ans, "row.names", .set_row_names(length(ans[[1L]])))
         setalloccol(ans)
       }
 
