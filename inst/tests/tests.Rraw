@@ -7,6 +7,7 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
   }
   if ((tt<-compiler::enableJIT(-1))>0)
     cat("This is dev mode and JIT is enabled (level ", tt, ") so there will be a brief pause around the first test.\n", sep="")
+  DTfun = DT  # just in dev-mode, DT() gets overwritten in .GlobalEnv by DT objects here in tests.Rraw; we restore DT() in test 2212
 } else {
   require(data.table)
   # Make symbols to the installed version's ::: so that we can i) test internal-only not-exposed R functions
@@ -639,7 +640,7 @@ test(211, ncol(TESTDT), 2L)
 DT = data.table(a=1:6,key="a")
 test(212, DT[J(3)]$a, 3L) # correct class c("data.table","data.frame")
 class(DT) = "data.table"  # incorrect class, but as from 1.8.1 it works. By accident when moving from colnames() to names(), it was dimnames() doing the check, but rather than add a check that identical(class(DT),c("data.frame","data.table")) at the top of [.data.table, we'll leave it flexible to user (user might not want to inherit from data.frame for some reason).
-test(213, DT[J(3)]$a, 3L)
+test(213, DT[J(3)]$a, error="x is not a data.table|frame")  # from v1.14.2, data.table must inherit from data.frame (internals are too hard to reason if a data.table may not be data.frame too)
 
 # setkey now auto coerces double and character for convenience, and
 # to solve bug #953
@@ -14194,7 +14195,7 @@ test(1984.242, na.omit(data.table(A=c(1,NA,2)), cols=character()), data.table(A=
 test(1984.25, rbindlist(list(DT[1L], DT[2L]), idcol = TRUE), data.table(.id=1:2, a=1:2))
 test(1984.26, setalloccol(`*tmp*`), error='setalloccol attempting to modify `*tmp*`')
 DF = as.data.frame(DT)
-test(1984.27, shallow(DF), error='x is not a data.table')
+test(1984.27, shallow(DF), DF)  # shallow (which is not exported) works on DF from v1.14.2
 test(1984.28, split.data.table(DF), error='argument must be a data.table')
 test(1984.29, split(DT, by='a', f='a'), error="passing 'f' argument together with 'by' is not allowed")
 test(1984.30, split(DT), error="Either 'by' or 'f' argument must be supplied")
@@ -18048,5 +18049,51 @@ for (col in c("a","b","c")) {
                     EVAL("DT[i][, ",f,"(",col,", na.rm=TRUE), by=grp]"))
     }
   }
+}
+
+# DT() functional form, #4872 #5106 #5107
+if (base::getRversion() >= "4.1.0") {
+  # we have to EVAL "|>" here too otherwise this tests.Rraw file won't parse in R<4.1.0
+  if (exists("DTfun")) DT=DTfun  # just in dev-mode restore DT() in .GlobalEnv as DT object overwrote it in tests above
+  droprn = function(df) { rownames(df)=NULL; df }  # TODO: could retain rownames where droprn is currently used below
+  test(2212.011, EVAL("mtcars |> DT(mpg>20, .(mean_hp=round(mean(hp),2)), by=cyl)"),
+                 data.frame(cyl=c(6,4), mean_hp=c(110.0, 82.64)))
+  test(2212.012, EVAL("mtcars |> DT(mpg>15, .SD[hp>mean(hp)], by=cyl)"),
+                 droprn(mtcars[c(10,11,30,3,9,21,27,28,32,29), c(2,1,3:11)]))
+  test(2212.013, EVAL("mtcars |> DT(mpg>20, .SD[hp>mean(hp)])"),
+                 droprn(mtcars[ mtcars$mpg>20 & mtcars$hp>mean(mtcars$hp[mtcars$mpg>20]), ]))
+  D = copy(mtcars)
+  test(2212.02, EVAL("D |> DT(,.SD)"), D)
+  test(2212.03, EVAL("D |> DT(, .SD, .SDcols=5:8)"), D[,5:8])
+  test(2212.04, EVAL("D |> DT(, 5:8)"), droprn(D[,5:8]))
+  test(2212.05, EVAL("D |> DT(, lapply(.SD, sum))"), as.data.frame(lapply(D,sum)))
+  test(2212.06, EVAL("D |> DT(, .SD, keyby=cyl) |> setkey(NULL)"), droprn(D[order(D$cyl),c(2,1,3:11)]))
+  test(2212.07, EVAL("D |> DT(1:20, .SD)"), droprn(D[1:20,]))
+  test(2212.08, EVAL("D |> DT(, .SD, by=cyl, .SDcols=5:8)"), droprn(D[unlist(tapply(1:32, D$cyl, c)[c(2,1,3)]), c(2,5:8)]))
+  test(2212.09, EVAL("D |> DT(1:20, .SD, .SDcols=5:8)"), droprn(D[1:20, 5:8]))
+  test(2212.10, EVAL("D |> DT(1:20, .SD, by=cyl, .SDcols=5:8)"), droprn(D[unlist(tapply(1:20, D$cyl[1:20], c)[c(2,1,3)]), c(2,5:8)]))
+  test(2212.11, EVAL("D |> DT(1:20, lapply(.SD, sum))"), as.data.frame(lapply(D[1:20,],sum)))
+  test(2212.12, droprn(EVAL("D |> DT(1:20, c(N=.N, lapply(.SD, sum)), by=cyl)")[c(1,3),c("cyl","N","carb")]), data.frame(cyl=c(6,8), N=c(6L,8L), carb=c(18,27)))
+  test(2212.13, EVAL("D |> DT(cyl==4)"), droprn(D[D$cyl==4,]))
+  test(2212.14, EVAL("D |> DT(cyl==4 & vs==0)"), droprn(D[D$cyl==4 & D$vs==0,]))
+  test(2212.15, EVAL("D |> DT(cyl==4 & vs>0)"), droprn(D[D$cyl==4 & D$vs>0,]))
+  test(2212.16, EVAL("D |> DT(cyl>=4)"), droprn(D[D$cyl>=4,]))
+  test(2212.17, EVAL("D |> DT(cyl!=4)"), droprn(D[D$cyl!=4,]))
+  test(2212.18, EVAL("D |> DT(cyl!=4 & vs!=0)"), droprn(D[D$cyl!=4 & D$vs!=0,]))
+  test(2212.19, EVAL("iris |> DT(Sepal.Length==5.0 & Species=='setosa')"), droprn(iris[iris$Sepal.Length==5.0 & iris$Species=="setosa",]))
+  test(2212.20, EVAL("iris |> DT(Sepal.Length==5.0)"), droprn(iris[iris$Sepal.Length==5.0,]))
+  test(2212.21, EVAL("iris |> DT(Species=='setosa')"), droprn(iris[iris$Species=='setosa',]))
+  test(2212.22, EVAL("D |> DT(, cyl)"), droprn(D[,"cyl"]))
+  test(2212.23, EVAL("D |> DT(1:2, cyl)"), droprn(D[1:2, "cyl"]))
+  test(2212.24, EVAL("D |> DT(, list(cyl))"), droprn(D[,"cyl",drop=FALSE]))
+  test(2212.25, EVAL("D |> DT(1:2, .(cyl))"), droprn(D[1:2, "cyl", drop=FALSE]))
+  test(2212.26, EVAL("D |> DT(, z:=sum(cyl))"), cbind(D, z=sum(D$cyl)))
+  test(2212.27, EVAL("D |> DT(, z:=round(mean(mpg),2), by=cyl)"), cbind(D, z=c("6"=19.74, "4"=26.66, "8"=15.10)[as.character(D$cyl)]))
+  test(2212.28, EVAL("D |> DT(1:3, z:=5, by=cyl)"), cbind(D, z=c(5,5,5,rep(NA,nrow(D)-3))))
+  test(2212.29, EVAL("D |> DT(1:3, z:=NULL)"), error="When deleting columns, i should not be provided")
+  test(2212.30, EVAL("D |> DT(data.table(cyl=4), on='cyl')"), droprn(D[D$cyl==4,]))
+  test(2212.31, EVAL("D |> DT(data.frame(cyl=4), on='cyl')"), droprn(D[D$cyl==4,]))
+  test(2212.32, EVAL("D |> DT(.(4), on='cyl')"), droprn(D[D$cyl==4,]))
+  test(2212.33, EVAL("iris |> DT('setosa', on='Species')"), {tt=droprn(iris[iris$Species=="setosa",]); tt$Species=as.character(tt$Species); tt})
 }
 
