@@ -89,6 +89,7 @@ extern SEXP char_ordered;
 extern SEXP char_datatable;
 extern SEXP char_dataframe;
 extern SEXP char_NULL;
+extern SEXP char_maxString;
 extern SEXP sym_sorted;
 extern SEXP sym_index;
 extern SEXP sym_BY;
@@ -101,6 +102,7 @@ extern SEXP sym_inherits;
 extern SEXP sym_datatable_locked;
 extern SEXP sym_tzone;
 extern SEXP sym_old_fread_datetime_character;
+extern SEXP sym_variable_table;
 extern double NA_INT64_D;
 extern long long NA_INT64_LL;
 extern Rcomplex NA_CPLX;  // initialized in init.c; see there for comments
@@ -121,14 +123,14 @@ SEXP growVector(SEXP x, R_len_t newlen);
 // assign.c
 SEXP allocNAVector(SEXPTYPE type, R_len_t n);
 SEXP allocNAVectorLike(SEXP x, R_len_t n);
-void writeNA(SEXP v, const int from, const int n);
+void writeNA(SEXP v, const int from, const int n, const bool listNA);
 void savetl_init(), savetl(SEXP s), savetl_end();
 int checkOverAlloc(SEXP x);
 
 // forder.c
 int StrCmp(SEXP x, SEXP y);
 uint64_t dtwiddle(double x);
-SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP naArg);
+SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, SEXP naArg);
 int getNumericRounding_C();
 
 // reorder.c
@@ -138,6 +140,7 @@ SEXP setcolorder(SEXP x, SEXP o);
 // subset.c
 void subsetVectorRaw(SEXP ans, SEXP source, SEXP idx, const bool anyNA);
 SEXP subsetVector(SEXP x, SEXP idx);
+const char *check_idx(SEXP idx, int max, bool *anyNA_out, bool *orderedSubset_out);
 
 // fcast.c
 SEXP int_vec_init(R_len_t n, int val);
@@ -226,11 +229,11 @@ SEXP coalesce(SEXP x, SEXP inplace);
 
 // utils.c
 bool isRealReallyInt(SEXP x);
+SEXP isRealReallyIntR(SEXP x);
 SEXP isReallyReal(SEXP x);
 bool allNA(SEXP x, bool errorForBadType);
 SEXP colnamesInt(SEXP x, SEXP cols, SEXP check_dups);
 bool INHERITS(SEXP x, SEXP char_);
-bool Rinherits(SEXP x, SEXP char_);
 SEXP copyAsPlain(SEXP x);
 void copySharedColumns(SEXP x);
 SEXP lock(SEXP x);
@@ -253,3 +256,5 @@ SEXP fcaseR(SEXP na, SEXP rho, SEXP args);
 //snprintf.c
 int dt_win_snprintf(char *dest, size_t n, const char *fmt, ...);
 
+// programming.c
+SEXP substitute_call_arg_namesR(SEXP expr, SEXP env);

@@ -1,86 +1,86 @@
-foverlaps = function(x, y, by.x=if (!is.null(key(x))) key(x) else key(y), by.y=key(y), maxgap=0L, minoverlap=1L, type=c("any", "within", "start", "end", "equal"), mult=c("all", "first", "last"), nomatch=getOption("datatable.nomatch", NA), which=FALSE, verbose=getOption("datatable.verbose")) {
+foverlaps = function(x, y, by.x=if (!is.null(key(x))) key(x) else key(y), by.y=key(y), maxgap=0L, minoverlap=1L, type=c("any", "within", "start", "end", "equal"), mult=c("all", "first", "last"), nomatch=NA, which=FALSE, verbose=getOption("datatable.verbose")) {
 
-  if (!is.data.table(y) || !is.data.table(x)) stop("y and x must both be data.tables. Use `setDT()` to convert list/data.frames to data.tables by reference or as.data.table() to convert to data.tables by copying.")
+  if (!is.data.table(y) || !is.data.table(x)) stopf("y and x must both be data.tables. Use `setDT()` to convert list/data.frames to data.tables by reference or as.data.table() to convert to data.tables by copying.")
   maxgap = as.integer(maxgap); minoverlap = as.integer(minoverlap)
   which = as.logical(which)
   .unsafe.opt() #3585
   nomatch = if (is.null(nomatch)) 0L else as.integer(nomatch)
   if (!length(maxgap) || length(maxgap) != 1L || is.na(maxgap) || maxgap < 0L)
-    stop("maxgap must be a non-negative integer value of length 1")
+    stopf("maxgap must be a non-negative integer value of length 1")
   if (!length(minoverlap) || length(minoverlap) != 1L || is.na(minoverlap) || minoverlap < 1L)
-    stop("minoverlap must be a positive integer value of length 1")
+    stopf("minoverlap must be a positive integer value of length 1")
   if (!length(which) || length(which) != 1L || is.na(which))
-    stop("which must be a logical vector of length 1. Either TRUE/FALSE")
+    stopf("which must be a logical vector of length 1. Either TRUE/FALSE")
   if (!length(nomatch) || length(nomatch) != 1L || (!is.na(nomatch) && nomatch!=0L))
-    stop("nomatch must either be NA or NULL")
+    stopf("nomatch must either be NA or NULL")
   type = match.arg(type)
   mult = match.arg(mult)
   # if (maxgap > 0L || minoverlap > 1L) # for future implementation
   if (maxgap != 0L || minoverlap != 1L)
-    stop("maxgap and minoverlap arguments are not yet implemented.")
+    stopf("maxgap and minoverlap arguments are not yet implemented.")
   if (is.null(by.y))
-    stop("'y' must be keyed (i.e., sorted, and, marked as sorted). Call setkey(y, ...) first, see ?setkey. Also check the examples in ?foverlaps.")
+    stopf("y must be keyed (i.e., sorted, and, marked as sorted). Call setkey(y, ...) first, see ?setkey. Also check the examples in ?foverlaps.")
   if (length(by.x) < 2L || length(by.y) < 2L)
-    stop("'by.x' and 'by.y' should contain at least two column names (or numbers) each - corresponding to 'start' and 'end' points of intervals. Please see ?foverlaps and examples for more info.")
+    stopf("'by.x' and 'by.y' should contain at least two column names (or numbers) each - corresponding to 'start' and 'end' points of intervals. Please see ?foverlaps and examples for more info.")
   if (is.numeric(by.x)) {
     if (any(by.x < 0L) || any(by.x > length(x)))
-      stop("Invalid numeric value for 'by.x'; it should be a vector with values 1 <= by.x <= length(x)")
+      stopf("Invalid numeric value for 'by.x'; it should be a vector with values 1 <= by.x <= length(x)")
     by.x = names(x)[by.x]
   }
   if (is.numeric(by.y)) {
     if (any(by.y < 0L) || any(by.y > length(y)))
-      stop("Invalid numeric value for 'by.y'; it should be a vector with values 1 <= by.y <= length(y)")
+      stopf("Invalid numeric value for 'by.y'; it should be a vector with values 1 <= by.y <= length(y)")
     by.y = names(y)[by.y]
   }
   if (!is.character(by.x))
-    stop("A non-empty vector of column names or numbers is required for by.x")
+    stopf("A non-empty vector of column names or numbers is required for by.x")
   if (!is.character(by.y))
-    stop("A non-empty vector of column names or numbers is required for by.y")
+    stopf("A non-empty vector of column names or numbers is required for by.y")
   if (!identical(by.y, key(y)[seq_along(by.y)]))
-    stop("The first ", length(by.y), " columns of y's key must be identical to the columns specified in by.y.")
+    stopf("The first %d columns of y's key must be identical to the columns specified in by.y.", length(by.y))
   if (anyNA(chmatch(by.x, names(x))))
-    stop("Elements listed in 'by.x' must be valid names in data.table 'x'")
+    stopf("Elements listed in 'by.x' must be valid names in data.table x")
   if (anyDuplicated(by.x) || anyDuplicated(by.y))
-    stop("Duplicate columns are not allowed in overlap joins. This may change in the future.")
+    stopf("Duplicate columns are not allowed in overlap joins. This may change in the future.")
   if (length(by.x) != length(by.y))
-    stop("length(by.x) != length(by.y). Columns specified in by.x should correspond to columns specified in by.y and should be of same lengths.")
+    stopf("length(by.x) != length(by.y). Columns specified in by.x should correspond to columns specified in by.y and should be of same lengths.")
   if (any(dup.x<-duplicated(names(x)))) #1730 - handling join possible but would require workarounds on setcolorder further, it is really better just to rename dup column
-    stop("x has some duplicated column name(s): ",paste(unique(names(x)[dup.x]),collapse=","),". Please remove or rename the duplicate(s) and try again.")
+    stopf("%s has some duplicated column name(s): %s. Please remove or rename the duplicate(s) and try again.", "x", brackify(unique(names(x)[dup.x])))
   if (any(dup.y<-duplicated(names(y))))
-    stop("y has some duplicated column name(s): ",paste(unique(names(y)[dup.y]),collapse=","),". Please remove or rename the duplicate(s) and try again.")
+    stopf("%s has some duplicated column name(s): %s. Please remove or rename the duplicate(s) and try again.", "y", brackify(unique(names(y)[dup.y])))
   xnames = by.x; xintervals = tail(xnames, 2L)
   ynames = by.y; yintervals = tail(ynames, 2L)
   xval1 = x[[xintervals[1L]]]; xval2 = x[[xintervals[2L]]]
   yval1 = y[[yintervals[1L]]]; yval2 = y[[yintervals[2L]]]
   if (!storage.mode(xval1) %chin% c("double", "integer") || !storage.mode(xval2) %chin% c("double", "integer") || is.factor(xval1) || is.factor(xval2)) # adding factors to the bunch, #2645
-    stop("The last two columns in by.x should correspond to the 'start' and 'end' intervals in data.table 'x' and must be integer/numeric type.")
+    stopf("The last two columns in by.x should correspond to the 'start' and 'end' intervals in data.table x and must be integer/numeric type.")
   if ( isTRUEorNA(any(xval2 - xval1 < 0L)) ) {
     # better error messages as suggested by @msummersgill in #3007. Thanks for the code too. Placing this inside so that it only runs if the general condition is satisfied. Should error anyway here.. So doesn't matter even if runs all if-statements; takes about 0.2s for anyNA check on 200 million elements .. acceptable speed for stoppage, I think, at least for now.
     if ( anyNA(xval1) ) {
-      stop("NA values in data.table 'x' start column: '", xintervals[1L],"'. All rows with NA values in the range columns must be removed for foverlaps() to work.")
+      stopf("NA values in data.table %s '%s' column: '%s'. All rows with NA values in the range columns must be removed for foverlaps() to work.", "x", "start", xintervals[1L])
     } else if ( anyNA(xval2) ) {
-      stop("NA values in data.table 'x' end column: '", xintervals[2L],"'. All rows with NA values in the range columns must be removed for foverlaps() to work.")
-    } else stop("All entries in column ", xintervals[1L], " should be <= corresponding entries in column ", xintervals[2L], " in data.table 'x'.")
+      stopf("NA values in data.table %s '%s' column: '%s'. All rows with NA values in the range columns must be removed for foverlaps() to work.", "x", "end", xintervals[2L])
+    } else stopf("All entries in column '%s' should be <= corresponding entries in column '%s' in data.table x.", xintervals[1L], xintervals[2L])
   }
   if (!storage.mode(yval1) %chin% c("double", "integer") || !storage.mode(yval2) %chin% c("double", "integer") || is.factor(yval1) || is.factor(yval2)) # adding factors to the bunch, #2645
-    stop("The last two columns in by.y should correspond to the 'start' and 'end' intervals in data.table 'y' and must be integer/numeric type.")
+    stopf("The last two columns in by.y should correspond to the 'start' and 'end' intervals in data.table y and must be integer/numeric type.")
   if ( isTRUEorNA(any(yval2 - yval1 < 0L) )) {
     if ( anyNA(yval1) ) {
-      stop("NA values in data.table 'y' start column: '", yintervals[1L],"'. All rows with NA values in the range columns must be removed for foverlaps() to work.")
+      stopf("NA values in data.table %s '%s' column: '%s'. All rows with NA values in the range columns must be removed for foverlaps() to work.", "y", "start", yintervals[1L])
     } else if ( anyNA(yval2) ) {
-      stop("NA values in data.table 'y' end column: '", yintervals[2L],"'. All rows with NA values in the range columns must be removed for foverlaps() to work.")
-    } else stop("All entries in column ", yintervals[1L], " should be <= corresponding entries in column ", yintervals[2L], " in data.table 'y'.")
+      stopf("NA values in data.table %s '%s' column: '%s'. All rows with NA values in the range columns must be removed for foverlaps() to work.", "y", "end", yintervals[2L])
+    } else stopf("All entries in column '%s' should be <= corresponding entries in column '%s' in data.table y.", yintervals[1L], yintervals[2L])
   }
   # POSIXct interval cols error check
   posx_chk = sapply(list(xval1, xval2, yval1, yval2), inherits, 'POSIXct')
   if (any(posx_chk) && !all(posx_chk)) {
-    stop("Some interval cols are of type POSIXct while others are not. Please ensure all interval cols are (or are not) of POSIXct type")
+    stopf("Some interval cols are of type POSIXct while others are not. Please ensure all interval cols are (or are not) of POSIXct type")
   }
   # #1143, mismatched timezone
   getTZ = function(x) if (is.null(tz <- attr(x, "tzone", exact=TRUE))) "" else tz # "" == NULL AFAICT
   tzone_chk = c(getTZ(xval1), getTZ(xval2), getTZ(yval1), getTZ(yval2))
   if (length(unique(tzone_chk)) > 1L) {
-    warning("POSIXct interval cols have mixed timezones. Overlaps are performed on the internal numerical representation of POSIXct objects (always in UTC epoch time), therefore printed values may give the impression that values don't overlap but their internal representations do Please ensure that POSIXct type interval cols have identical 'tzone' attributes to avoid confusion.")
+    warningf("POSIXct interval cols have mixed timezones. Overlaps are performed on the internal numerical representation of POSIXct objects (always in UTC epoch time), therefore printed values may give the impression that values don't overlap but their internal representations do Please ensure that POSIXct type interval cols have identical 'tzone' attributes to avoid confusion.")
   }
   ## see NOTES below:
   yclass = c(class(yval1), class(yval2))
@@ -128,7 +128,7 @@ foverlaps = function(x, y, by.x=if (!is.null(key(x))) key(x) else key(y), by.y=k
               end = yintervals[2L], any =,
               within =, equal = yintervals)
   call = construct(head(ynames, -2L), uycols, type)
-  if (verbose) {last.started.at=proc.time();cat("unique() + setkey() operations done in ...");flush.console()}
+  if (verbose) {last.started.at=proc.time();catf("unique() + setkey() operations done in ...");flush.console()}
   uy = unique(y[, eval(call)]) # this started to fail from R 4.1 due to c(POSIXct, numeric)
   setkey(uy)[, `:=`(lookup = list(list(integer(0L))), type_lookup = list(list(integer(0L))), count=0L, type_count=0L)]
   if (verbose) {cat(timetaken(last.started.at),"\n"); flush.console()}
@@ -154,20 +154,20 @@ foverlaps = function(x, y, by.x=if (!is.null(key(x))) key(x) else key(y), by.y=k
   .Call(Clookup, uy, nrow(y), indices(uy, y, yintervals, nomatch=0L, roll=roll), maxgap, minoverlap, mult, type, verbose)
   if (maxgap == 0L && minoverlap == 1L) {
     # iintervals = tail(names(x), 2L)    # iintervals not yet used so commented out for now
-    if (verbose) {last.started.at=proc.time();cat("binary search(es) done in ...");flush.console()}
+    if (verbose) {last.started.at=proc.time();catf("binary search(es) done in ...");flush.console()}
     xmatches = indices(uy, x, xintervals, nomatch=0L, roll=roll)
     if (verbose) {cat(timetaken(last.started.at),"\n");flush.console()}
     olaps = .Call(Coverlaps, uy, xmatches, mult, type, nomatch, verbose)
   }
   # nocov start
   else if (maxgap == 0L && minoverlap > 1L) {
-    stop("Not yet implemented")
+    stopf("Not yet implemented")
   } else if (maxgap > 0L && minoverlap == 1L) {
-    stop("Not yet implemented")
+    stopf("Not yet implemented")
   } else if (maxgap > 0L && minoverlap > 1L) {
     if (maxgap > minoverlap)
-      warning("maxgap > minoverlap. maxgap will have no effect here.")
-    stop("Not yet implemented")
+      warningf("maxgap > minoverlap. maxgap will have no effect here.")
+    stopf("Not yet implemented")
   }
   # nocov end
 
