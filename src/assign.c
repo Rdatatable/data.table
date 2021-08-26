@@ -711,8 +711,8 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
   snprintf(targetDesc, 500, colnum==0 ? _("target vector") : _("column %d named '%s'"), colnum, colname);
   int protecti=0;
   const bool sourceIsFactor=isFactor(source), targetIsFactor=isFactor(target);
-  const bool sourceIsI64=isReal(source) && Rinherits(source, char_integer64);
-  const bool targetIsI64=isReal(target) && Rinherits(target, char_integer64);
+  const bool sourceIsI64=isReal(source) && INHERITS(source, char_integer64);
+  const bool targetIsI64=isReal(target) && INHERITS(target, char_integer64);
   if (sourceIsFactor || targetIsFactor) {
     if (!targetIsFactor) {
       if (!isString(target) && !isNewList(target))
@@ -1098,8 +1098,9 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
   return memrecycle_message[0] ? memrecycle_message : NULL;
 }
 
-void writeNA(SEXP v, const int from, const int n)
+void writeNA(SEXP v, const int from, const int n, const bool listNA)
 // e.g. for use after allocVector() which does not initialize its result.
+// listNA for #5503
 {
   const int to = from-1+n;  // writing to position 2147483647 in mind, 'i<=to' in loop conditions
   switch(TYPEOF(v)) {
@@ -1116,7 +1117,7 @@ void writeNA(SEXP v, const int from, const int n)
     for (int i=from; i<=to; ++i) vd[i] = NA_INTEGER;
   } break;
   case REALSXP: {
-    if (Rinherits(v, char_integer64)) {  // Rinherits covers nanotime too which inherits from integer64 via S4 extends
+    if (INHERITS(v, char_integer64)) {
       int64_t *vd = (int64_t *)REAL(v);
       for (int i=from; i<=to; ++i) vd[i] = NA_INTEGER64;
     } else {
@@ -1134,8 +1135,14 @@ void writeNA(SEXP v, const int from, const int n)
     // If there's ever a way added to R API to pass NA_STRING to allocVector() to tell it to initialize with NA not "", would be great
     for (int i=from; i<=to; ++i) SET_STRING_ELT(v, i, NA_STRING);
     break;
-  case VECSXP: case EXPRSXP :
-    // although allocVector already initializes to R_NilValue, we use writeNA() in other places too, so we shouldn't skip this assign
+  case VECSXP: {
+    // See #5053 for comments and dicussion re listNA
+    // although allocVector initializes to R_NilValue, we use writeNA() in other places too, so we shouldn't skip the R_NilValue assign
+    // ScalarLogical(NA_LOGICAL) returns R's internal constant R_LogicalNAValue (no alloc and no protect needed)
+    const SEXP na = listNA ? ScalarLogical(NA_LOGICAL) : R_NilValue;
+    for (int i=from; i<=to; ++i) SET_VECTOR_ELT(v, i, na);
+  } break;
+  case EXPRSXP :
     for (int i=from; i<=to; ++i) SET_VECTOR_ELT(v, i, R_NilValue);
     break;
   default :
@@ -1150,7 +1157,7 @@ SEXP allocNAVector(SEXPTYPE type, R_len_t n)
   // We guess that author of allocVector would have liked to initialize with NA but was prevented since memset
   // is restricted to one byte.
   SEXP v = PROTECT(allocVector(type, n));
-  writeNA(v, 0, n);
+  writeNA(v, 0, n, false);
   UNPROTECT(1);
   return(v);
 }
@@ -1160,7 +1167,7 @@ SEXP allocNAVectorLike(SEXP x, R_len_t n) {
   // TODO: remove allocNAVector above when usage in fastmean.c, fcast.c and fmelt.c can be adjusted; see comments in PR3724
   SEXP v = PROTECT(allocVector(TYPEOF(x), n));
   copyMostAttrib(x, v);
-  writeNA(v, 0, n);
+  writeNA(v, 0, n, false);
   UNPROTECT(1);
   return(v);
 }

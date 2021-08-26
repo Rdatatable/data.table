@@ -5,6 +5,7 @@
 \alias{Ops.data.table}
 \alias{is.na.data.table}
 \alias{[.data.table}
+\alias{DT}
 \alias{.}
 \alias{.(}
 \alias{.()}
@@ -25,7 +26,7 @@
 data.table(\dots, keep.rownames=FALSE, check.names=FALSE, key=NULL, stringsAsFactors=FALSE)
 
 \method{[}{data.table}(x, i, j, by, keyby, with = TRUE,
-  nomatch = getOption("datatable.nomatch", NA),
+  nomatch = NA,
   mult = "all",
   roll = FALSE,
   rollends = if (roll=="nearest") c(TRUE,TRUE)
@@ -120,7 +121,7 @@ data.table(\dots, keep.rownames=FALSE, check.names=FALSE, key=NULL, stringsAsFac
 
         When \code{j} is a character vector of column names, a numeric vector of column positions to select or of the form \code{startcol:endcol}, and the value returned is always a \code{data.table}. \code{with=FALSE} is not necessary anymore to select columns dynamically. Note that \code{x[, cols]} is equivalent to \code{x[, ..cols]} and to \code{x[, cols, with=FALSE]} and to \code{x[, .SD, .SDcols=cols]}.}
 
-    \item{nomatch}{ When a row in \code{i} has no match to \code{x}, \code{nomatch=NA} (default) means \code{NA} is returned. \code{NULL} (or \code{0} for backward compatibility) means no rows will be returned for that row of \code{i}. Use \code{options(datatable.nomatch=NULL)} to change the default value (used when \code{nomatch} is not supplied).}
+    \item{nomatch}{ When a row in \code{i} has no match to \code{x}, \code{nomatch=NA} (default) means \code{NA} is returned. \code{NULL} (or \code{0} for backward compatibility) means no rows will be returned for that row of \code{i}. }
 
     \item{mult}{ When \code{i} is a \code{list} (or \code{data.frame} or \code{data.table}) and \emph{multiple} rows in \code{x} match to the row in \code{i}, \code{mult} controls which are returned: \code{"all"} (default), \code{"first"} or \code{"last"}.}
 
@@ -216,6 +217,8 @@ The way to read this out loud is: "Take \code{DT}, subset rows by \code{i}, \emp
     X[, plot(a, b), by=c]       # j accepts any expression, generates plot for each group and returns no data
     # see ?assign to add/update/delete columns by reference using the same consistent interface
 }
+
+A \code{data.table} query may be invoked on a \code{data.frame} using functional form \code{DT(...)}, see examples. The class of the input is retained.
 
 A \code{data.table} is a \code{list} of vectors, just like a \code{data.frame}. However :
 \enumerate{
@@ -430,6 +433,13 @@ dev.off()
 
 # using rleid, get max(y) and min of all cols in .SDcols for each consecutive run of 'v'
 DT[, c(.(y=max(y)), lapply(.SD, min)), by=rleid(v), .SDcols=v:b]
+
+# functional query DT(...)
+\dontshow{ #dontrun to pass R CMD check prior to R 4.1.0 when |> was added
+           # an if getRVersion()>"4.1.0" still has its code parsed }
+\dontrun{
+mtcars |> DT(mpg>20, .(mean_hp=mean(hp)), by=cyl)
+}
 
 # Support guide and links:
 # https://github.com/Rdatatable/data.table/wiki/Support

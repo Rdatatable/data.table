@@ -172,7 +172,7 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, S
   bool hasFill = !isLogical(fill) || LOGICAL(fill)[0]!=NA_LOGICAL;
   bool *isInt64 = (bool *)R_alloc(nx, sizeof(bool));
   for (R_len_t i=0; i<nx; i++)
-    isInt64[i] = Rinherits(VECTOR_ELT(x, i), char_integer64);
+    isInt64[i] = INHERITS(VECTOR_ELT(x, i), char_integer64);
   const void **fillp = (const void **)R_alloc(nx, sizeof(void*)); // fill is (or will be) a list of length nx of matching types, scalar values for each column, this pointer points to each of those columns data pointers
   if (hasFill) {
     if (nx!=length(fill) && length(fill)!=1)

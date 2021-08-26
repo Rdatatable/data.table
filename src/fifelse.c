@@ -135,7 +135,7 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b, SEXP na) {
     const double *restrict pa = na_a ? NULL : REAL(a);
     const double *restrict pb = na_b ? NULL : REAL(b);
     const double *restrict pna = na_n ? NULL : REAL(na);
-    const double na = Rinherits(a, char_integer64) ? NA_INT64_D : NA_REAL; // Rinherits() is true for nanotime
+    const double na = INHERITS(a, char_integer64) ? NA_INT64_D : NA_REAL;
     #pragma omp parallel for num_threads(getDTthreads(len0, true))
     for (int64_t i=0; i<len0; ++i) {
       pans[i] = pl[i]==0 ?
@@ -327,7 +327,7 @@ SEXP fcaseR(SEXP na, SEXP rho, SEXP args) {
     case REALSXP: {
       const double *restrict pouts = REAL(outs);
       double *restrict pans = REAL(ans);
-      const double na_double = Rinherits(outs, char_integer64) ? NA_INT64_D : NA_REAL;
+      const double na_double = INHERITS(outs, char_integer64) ? NA_INT64_D : NA_REAL;
       const double pna = nonna ? REAL(na)[0] : na_double;
       for (int64_t j=0; j<len2; ++j) {
         const int64_t idx = imask ? j : p[j];

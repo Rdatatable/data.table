@@ -62,38 +62,38 @@ SEXP dt_na(SEXP x, SEXP cols) {
       // is.na(some_list) returns TRUE only for elements which are
       // scalar NA.
       for (int j=0; j<n; ++j) {
-	SEXP list_element = VECTOR_ELT(v, j);
-	switch (TYPEOF(list_element)) {
-	case LGLSXP: {
-	  ians[j] |= (length(list_element)==1 && LOGICAL(list_element)[0] == NA_LOGICAL);
-	}
-	  break;
-	case INTSXP: {
-	  ians[j] |= (length(list_element)==1 && INTEGER(list_element)[0] == NA_INTEGER);
-	}
-	  break;
-	case STRSXP: {
-	  ians[j] |= (length(list_element)==1 && STRING_ELT(list_element,0) == NA_STRING);
-	}
-	  break;
-	case CPLXSXP: {
-	  if (length(list_element)==1) {
-	    Rcomplex first_complex = COMPLEX(list_element)[0];
-	    ians[j] |= (ISNAN(first_complex.r) || ISNAN(first_complex.i));
-	  }
-	}
-	  break;					  
-	case REALSXP: {
-	  if (length(list_element)==1) {
-	    if (INHERITS(list_element, char_integer64)) {
-	      ians[j] |= ((const int64_t *)REAL(list_element))[0] == NA_INTEGER64;
-	    } else {
-	      ians[j] |= ISNAN(REAL(list_element)[0]);
-	    }
-	  }
-	}
-	  break;
-	}
+        SEXP list_element = VECTOR_ELT(v, j);
+        switch (TYPEOF(list_element)) {
+        case LGLSXP: {
+          ians[j] |= (length(list_element)==1 && LOGICAL(list_element)[0] == NA_LOGICAL);
+        }
+          break;
+        case INTSXP: {
+          ians[j] |= (length(list_element)==1 && INTEGER(list_element)[0] == NA_INTEGER);
+        }
+          break;
+        case STRSXP: {
+          ians[j] |= (length(list_element)==1 && STRING_ELT(list_element,0) == NA_STRING);
+        }
+          break;
+        case CPLXSXP: {
+          if (length(list_element)==1) {
+            Rcomplex first_complex = COMPLEX(list_element)[0];
+            ians[j] |= (ISNAN(first_complex.r) || ISNAN(first_complex.i));
+          }
+        }
+          break;
+        case REALSXP: {
+          if (length(list_element)==1) {
+            if (INHERITS(list_element, char_integer64)) {
+              ians[j] |= ((const int64_t *)REAL(list_element))[0] == NA_INTEGER64;
+            } else {
+              ians[j] |= ISNAN(REAL(list_element)[0]);
+            }
+          }
+        }
+          break;
+        }
       }
     }
       break;

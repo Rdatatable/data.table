@@ -83,8 +83,8 @@ SEXP between(SEXP x, SEXP lower, SEXP upper, SEXP incbounds, SEXP NAboundsArg, S
   } break;
 
   case REALSXP:
-    if (Rinherits(x, char_integer64)) {
-      if (!Rinherits(lower, char_integer64) || !Rinherits(upper, char_integer64))
+    if (INHERITS(x, char_integer64)) {
+      if (!INHERITS(lower, char_integer64) || !INHERITS(upper, char_integer64))
         error(_("x is integer64 but lower and/or upper are not.")); // e.g. between(int64, character, character)
       const int64_t *lp = (int64_t *)REAL(lower);
       const int64_t *up = (int64_t *)REAL(upper);
@@ -111,7 +111,7 @@ SEXP between(SEXP x, SEXP lower, SEXP upper, SEXP incbounds, SEXP NAboundsArg, S
       }
       if (verbose) Rprintf(_("between parallel processing of integer64 took %8.3fs\n"), omp_get_wtime()-tic);
     } else {
-      if (Rinherits(lower, char_integer64) || Rinherits(upper, char_integer64))
+      if (INHERITS(lower, char_integer64) || INHERITS(upper, char_integer64))
         error(_("x is not integer64 but lower and/or upper is integer64. Please align classes."));
       const double *lp = REAL(lower);
       const double *up = REAL(upper);

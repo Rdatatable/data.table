@@ -85,8 +85,7 @@ SEXP bmerge(SEXP idt, SEXP xdt, SEXP icolsArg, SEXP xcolsArg, SEXP isorted, SEXP
     error(_("rollends must be a length 2 logical vector"));
   rollends = LOGICAL(rollendsArg);
 
-  // nomatch arg
-  nomatch = INTEGER(nomatchArg)[0];
+  nomatch = isNull(nomatchArg) ? 0 : INTEGER(nomatchArg)[0];
 
   // mult arg
   if (!strcmp(CHAR(STRING_ELT(multArg, 0)), "all")) mult = ALL;

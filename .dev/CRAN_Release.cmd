@@ -252,7 +252,7 @@ cd ~/build
 wget http://cran.stat.ucla.edu/src/base/R-3/R-3.1.0.tar.gz
 tar xvf R-3.1.0.tar.gz
 cd R-3.1.0
-./configure --without-recommended-packages
+CFLAGS="-fcommon" FFLAGS="-fallow-argument-mismatch" ./configure --without-recommended-packages
 make
 alias R310=~/build/R-3.1.0/bin/R
 ### END ONE TIME BUILD
@@ -523,6 +523,7 @@ sudo apt-get -y install cargo  # for gifski, a suggest of nasoi
 sudo apt-get -y install libgit2-dev  # for gert
 sudo apt-get -y install cmake  # for symengine for RxODE
 sudo apt-get -y install libxslt1-dev  # for xslt
+sudo apt-get -y install flex  # for RcppCWB
 sudo R CMD javareconf
 # ENDIF
 
