@@ -18083,8 +18083,12 @@ if (base::getRversion() >= "4.1.0") {
   test(2212.23, EVAL("D |> DT(1:2, cyl)"), droprn(D[1:2, "cyl"]))
   test(2212.24, EVAL("D |> DT(, list(cyl))"), droprn(D[,"cyl",drop=FALSE]))
   test(2212.25, EVAL("D |> DT(1:2, .(cyl))"), droprn(D[1:2, "cyl", drop=FALSE]))
-  test(2212.26, EVAL("D |> DT(data.table(cyl=4), on='cyl')"), droprn(D[D$cyl==4,]))
-  test(2212.27, EVAL("D |> DT(.(4), on='cyl')"), droprn(D[D$cyl==4,]))
-  test(2212.28, EVAL("iris |> DT('setosa', on='Species')"), {tt=droprn(iris[iris$Species=="setosa",]); tt$Species=as.character(tt$Species); tt})
+  test(2212.26, EVAL("D |> DT(, z:=sum(cyl))"), cbind(D, z=sum(D$cyl)))
+  test(2212.27, EVAL("D |> DT(, z:=round(mean(mpg),2), by=cyl)"), cbind(D, z=c("6"=19.74, "4"=26.66, "8"=15.10)[as.character(D$cyl)]))
+  test(2212.28, EVAL("D |> DT(1:3, z:=5, by=cyl)"), cbind(D, z=c(5,5,5,rep(NA,nrow(D)-3))))
+  test(2212.29, EVAL("D |> DT(1:3, z:=NULL)"), error="When deleting columns, i should not be provided")
+  test(2212.30, EVAL("D |> DT(data.table(cyl=4), on='cyl')"), droprn(D[D$cyl==4,]))
+  test(2212.31, EVAL("D |> DT(.(4), on='cyl')"), droprn(D[D$cyl==4,]))
+  test(2212.32, EVAL("iris |> DT('setosa', on='Species')"), {tt=droprn(iris[iris$Species=="setosa",]); tt$Species=as.character(tt$Species); tt})
 }
 

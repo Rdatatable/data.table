@@ -1160,7 +1160,8 @@ replace_dot_alias = function(e) {
           #   ok=-1 which will trigger setalloccol with verbose in the next
           #   branch, which again calls _selfrefok and returns the message then
           if ((ok<-selfrefok(x, verbose=FALSE))==0L)   # ok==0 so no warning when loaded from disk (-1) [-1 considered TRUE by R]
-            warningf("Invalid .internal.selfref detected and fixed by taking a (shallow) copy of the data.table so that := can add this new column by reference. At an earlier point, this data.table has been copied by R (or was created manually using structure() or similar). Avoid names<- and attr<- which in R currently (and oddly) may copy the whole data.table. Use set* syntax instead to avoid copying: ?set, ?setnames and ?setattr. If this message doesn't help, please report your use case to the data.table issue tracker so the root cause can be fixed or this message improved.")
+            if (is.data.table(x)) warningf("Invalid .internal.selfref detected and fixed by taking a (shallow) copy of the data.table so that := can add this new column by reference. At an earlier point, this data.table has been copied by R (or was created manually using structure() or similar). Avoid names<- and attr<- which in R currently (and oddly) may copy the whole data.table. Use set* syntax instead to avoid copying: ?set, ?setnames and ?setattr. If this message doesn't help, please report your use case to the data.table issue tracker so the root cause can be fixed or this message improved.")
+            # !is.data.table for DF |> DT(,:=) tests 2212.16-19 (#5113) where a shallow copy is routine for data.frame
           if ((ok<1L) || (truelength(x) < ncol(x)+length(newnames))) {
             DT = x  # in case getOption contains "ncol(DT)" as it used to.  TODO: warn and then remove
             n = length(newnames) + eval(getOption("datatable.alloccol"))  # TODO: warn about expressions and then drop the eval()
