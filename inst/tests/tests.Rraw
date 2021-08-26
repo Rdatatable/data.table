@@ -18055,10 +18055,14 @@ for (col in c("a","b","c")) {
 if (base::getRversion() >= "4.1.0") {
   # we have to EVAL "|>" here too otherwise this tests.Rraw file won't parse in R<4.1.0
   if (exists("DTfun")) DT=DTfun  # just in dev-mode restore DT() in .GlobalEnv as DT object overwrote it in tests above
-  test(2212.01, EVAL("mtcars |> DT(mpg>20, .(mean_hp=round(mean(hp),2)), by=cyl)"),
-                data.frame(cyl=c(6,4), mean_hp=c(110.0, 82.64)))
-  D = copy(mtcars)
   droprn = function(df) { rownames(df)=NULL; df }  # TODO: could retain rownames where droprn is currently used below
+  test(2212.011, EVAL("mtcars |> DT(mpg>20, .(mean_hp=round(mean(hp),2)), by=cyl)"),
+                 data.frame(cyl=c(6,4), mean_hp=c(110.0, 82.64)))
+  test(2212.012, EVAL("mtcars |> DT(mpg>15, .SD[hp>mean(hp)], by=cyl)"),
+                 droprn(mtcars[c(10,11,30,3,9,21,27,28,32,29), c(2,1,3:11)]))
+  test(2212.013, EVAL("mtcars |> DT(mpg>20, .SD[hp>mean(hp)])"),
+                 droprn(mtcars[ mtcars$mpg>20 & mtcars$hp>mean(mtcars$hp[mtcars$mpg>20]), ]))
+  D = copy(mtcars)
   test(2212.02, EVAL("D |> DT(,.SD)"), D)
   test(2212.03, EVAL("D |> DT(, .SD, .SDcols=5:8)"), D[,5:8])
   test(2212.04, EVAL("D |> DT(, 5:8)"), droprn(D[,5:8]))
@@ -18088,7 +18092,8 @@ if (base::getRversion() >= "4.1.0") {
   test(2212.28, EVAL("D |> DT(1:3, z:=5, by=cyl)"), cbind(D, z=c(5,5,5,rep(NA,nrow(D)-3))))
   test(2212.29, EVAL("D |> DT(1:3, z:=NULL)"), error="When deleting columns, i should not be provided")
   test(2212.30, EVAL("D |> DT(data.table(cyl=4), on='cyl')"), droprn(D[D$cyl==4,]))
-  test(2212.31, EVAL("D |> DT(.(4), on='cyl')"), droprn(D[D$cyl==4,]))
-  test(2212.32, EVAL("iris |> DT('setosa', on='Species')"), {tt=droprn(iris[iris$Species=="setosa",]); tt$Species=as.character(tt$Species); tt})
+  test(2212.31, EVAL("D |> DT(data.frame(cyl=4), on='cyl')"), droprn(D[D$cyl==4,]))
+  test(2212.32, EVAL("D |> DT(.(4), on='cyl')"), droprn(D[D$cyl==4,]))
+  test(2212.33, EVAL("iris |> DT('setosa', on='Species')"), {tt=droprn(iris[iris$Species=="setosa",]); tt$Species=as.character(tt$Species); tt})
 }
 

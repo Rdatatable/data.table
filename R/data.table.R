@@ -1326,13 +1326,12 @@ replace_dot_alias = function(e) {
           if (keylen && (ichk || is.logical(i) || (.Call(CisOrderedSubset, irows, nrow(x)) && ((roll == FALSE) || length(irows) == 1L)))) # see #1010. don't set key when i has no key, but irows is ordered and roll != FALSE
             setattr(ans,"sorted",head(key(x),keylen))
         }
-        setattr(ans, "class", class(x)) # fix for #64
+        setattr(ans, "class", class(x))  # retain class that inherits from data.table, #64
         setattr(ans, "row.names", .set_row_names(length(ans[[1L]])))
         setalloccol(ans)
       }
-
       if (!with || missing(j)) return(ans)
-
+      if (!is.data.table(ans)) setattr(ans, "class", c("data.table","data.frame"))  # DF |> DT(,.SD[...]) .SD should be data.table, test 2212.013
       SDenv$.SDall = ans
       SDenv$.SD = if (length(non_sdvars)) shallow(SDenv$.SDall, sdvars) else SDenv$.SDall
       SDenv$.N = nrow(ans)
@@ -1545,6 +1544,7 @@ replace_dot_alias = function(e) {
     #  TODO add: if (max(len__)==nrow) stopf("There is no need to deep copy x in this case")
     #  TODO move down to dogroup.c, too.
     SDenv$.SDall = .Call(CsubsetDT, x, if (length(len__)) seq_len(max(len__)) else 0L, xcols)  # must be deep copy when largest group is a subset
+    if (!is.data.table(SDenv$.SDall)) setattr(SDenv$.SDall, "class", c("data.table","data.frame"))  # DF |> DT(,.SD[...],by=grp) needs .SD to be data.table, test 2022.012
     if (xdotcols) setattr(SDenv$.SDall, 'names', ansvars[xcolsAns]) # now that we allow 'x.' prefix in 'j', #2313 bug fix - [xcolsAns]
     SDenv$.SD = if (length(non_sdvars)) shallow(SDenv$.SDall, sdvars) else SDenv$.SDall
   }
