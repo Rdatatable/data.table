@@ -2658,15 +2658,21 @@ setnames = function(x,old,new,skip_absent=FALSE) {
   invisible(x)
 }
 
-setcolorder = function(x, neworder=key(x))
+setcolorder = function(x, neworder=key(x), before=NULL, after=NULL)  # before/after #4358
 {
   if (is.character(neworder) && anyDuplicated(names(x)))
     stopf("x has some duplicated column name(s): %s. Please remove or rename the duplicate(s) and try again.", brackify(unique(names(x)[duplicated(names(x))])))
-  # if (!is.data.table(x)) stopf("x is not a data.table")
+  if (!is.null(before) && !is.null(after))
+    stopf("Provide either before= or after= but not both")
+  if (length(before)>1 || length(after)>1)
+    stopf("before=/after= accept a single column name or number, not more than one")
   neworder = colnamesInt(x, neworder, check_dups=FALSE)  # dups are now checked inside Csetcolorder below
+  if (length(before))
+    neworder = c(setdiff(seq_len(colnamesInt(x, before) - 1L), neworder), neworder)
+  if (length(after))
+    neworder = c(setdiff(seq_len(colnamesInt(x, after)), neworder), neworder)
   if (length(neworder) != length(x)) {
-    #if shorter than length(x), pad by the missing
-    #  elements (checks below will catch other mistakes)
+    # pad by the missing elements (checks inside Csetcolorder catch other mistakes)
     neworder = c(neworder, setdiff(seq_along(x), neworder))
   }
   .Call(Csetcolorder, x, neworder)
