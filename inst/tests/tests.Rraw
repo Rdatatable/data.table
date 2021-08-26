@@ -1544,6 +1544,7 @@ test(498.02, setcolorder(DT, "a", before="b"), data.table(a=1, b=2, c=3))
 test(498.03, setcolorder(DT, 1, after=3), data.table(b=2, c=3, a=1))
 test(498.04, setcolorder(DT, 3, before=1), data.table(a=1, b=2, c=3))
 test(498.05, setcolorder(DT, 1, before=1, after=1), error="Provide either before= or after= but not both")
+test(498.06, setcolorder(DT, 1, before=1:2), error="before=/after= accept a single column name or number, not more than one")
 
 # test first group listens to nomatch when j uses join inherited scope.
 x <- data.table(x=c(1,3,8),x1=10:12, key="x")
