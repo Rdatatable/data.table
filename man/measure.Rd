@@ -38,7 +38,10 @@ measurev(fun.list, sep, pattern, cols, multiple.keyword="value.name",
     are considered measure variables.}
   \item{pattern}{Perl-compatible regex with capture groups to match to
     \code{cols}. Columns that match the regex are considered measure variables.}
-  \item{cols}{A character vector of column names.}
+  \item{cols}{A character vector that is automatically provided, 
+    with all of the column names of the data table input to melt. 
+    The user should NOT provide this argument; 
+    to specify the columns to be measured, use the pattern argument.}
   \item{multiple.keyword}{A string, if used as a group name, then
     measure returns a list and melt returns multiple
     value columns (with names defined by the unique values in that
