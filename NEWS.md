@@ -295,7 +295,7 @@
 
 39. `DT[i, sum(b), by=grp]` (and other optimized-by-group aggregates: `mean`, `var`, `sd`, `median`, `prod`, `min`, `max`, `first`, `last`, `head` and `tail`) could segfault if `i` contained row numbers and one or more were NA, [#1994](https://github.com/Rdatatable/data.table/issues/1994). Thanks to Arun Srinivasan for reporting, and Benjamin Schwendinger for the PR.
 
-40. In some rare cases, `fread` parsed a very small difference in numeric input as compared to `read.table`, [#4461](https://github.com/Rdatatable/data.table/issues/4461). The latter is more accurate (in that it produces the double-precision representation that's closer to the base-10 value), so this is indeed an `fread` error. Thanks @gmbecker for the report.
+40. `identical(fread(text="A\n0.8060667366\n")$A, 0.8060667366)` is now TRUE, [#4461](https://github.com/Rdatatable/data.table/issues/4461). `fread` was using `*10^-n` rather than `/10^n` resulting in `0.80606673659999994` vs `0.80606673660000006`. `fread()` now matches R's parser and `read.table` identically in this respect. Thanks to Gabe Becker for requesting consistency, and Michael Chirico for the PR.
 
 ## NOTES
 

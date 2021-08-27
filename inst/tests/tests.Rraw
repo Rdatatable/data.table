@@ -18107,8 +18107,6 @@ if (base::getRversion() >= "4.1.0") {
   test(2212.33, EVAL("iris |> DT('setosa', on='Species')"), {tt=droprn(iris[iris$Species=="setosa",]); tt$Species=as.character(tt$Species); tt})
 }
 
-# Rare precision loss owing to unrepresentability of powers of 10^(-n), #4461
-exchar = "0.8060667366"
-exnum = 0.8060667366
-test(2213, identical(fread(text = c(exchar, exchar))$V1[1L], exnum))
+# precision powers of 10^(-n), #4461
+test(2213, identical(fread(text="A\n0.8060667366\n")$A, 0.8060667366))
 
