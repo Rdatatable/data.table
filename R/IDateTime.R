@@ -71,6 +71,11 @@ unique.IDate =
   x
 }
 
+# define min and max to avoid base R's Inf with warning on empty, #2256
+min.IDate = max.IDate = function(x, ...) {
+  as.IDate(if (!length(x)) NA else NextMethod())
+}
+
 # fix for #1315
 as.list.IDate = function(x, ...) NextMethod()
 
@@ -304,7 +309,7 @@ clip_msec = function(secs, action) {
      stopf("Valid options for ms are 'truncate', 'nearest', and 'ceil'.")
   )
 }
-                           
+
 ###################################################################
 # Date - time extraction functions
 #   Adapted from Hadley Wickham's routines cited below to ensure

@@ -253,6 +253,34 @@
                                    # no inconvenient warning
     ```
 
+    On the same basis, `min` and `max` methods for empty `IDate` input now return `NA_integer_` of class `IDate`, rather than `NA_double_` of class `IDate` together with base R's warning `no non-missing arguments to min; returning Inf`, [#2256](https://github.com/Rdatatable/data.table/issues/2256]. The type change and warning would cause an error in grouping, see example below. Since `NA` was returned before it seems clear that still returning `NA` but of the correct type and with no warning is appropriate, backwards compatible, and a bug fix. Thanks to Frank Narf for reporting, and Matt Dowle for fixing.
+
+    ```R
+    DT
+    #             d      g
+    #        <IDat> <char>
+    # 1: 2020-01-01      a
+    # 2: 2020-01-02      a
+    # 3: 2019-12-31      b
+
+    DT[, min(d[d>"2020-01-01"]), by=g]
+
+    # was:
+
+    # Error in `[.data.table`(DT, , min(d[d > "2020-01-01"]), by = g) :
+    #   Column 1 of result for group 2 is type 'double' but expecting type 'integer'. Column types must be consistent for each group.
+    # In addition: Warning message:
+    # In min.default(integer(0), na.rm = FALSE) :
+    #   no non-missing arguments to min; returning Inf
+
+    # now :
+
+    #         g         V1
+    #    <char>     <IDat>
+    # 1:      a 2020-01-02
+    # 2:      b       <NA>
+    ```
+
 36. `DT[, min(int64Col), by=grp]` (and `max`) would return incorrect results for `bit64::integer64` columns, [#4444](https://github.com/Rdatatable/data.table/issues/4444). Thanks to @go-see for reporting, and Michael Chirico for the PR.
 
 37. `fread(dec=',')` was able to guess `sep=','` and return an incorrect result, [#4483](https://github.com/Rdatatable/data.table/issues/4483). Thanks to Michael Chirico for reporting and fixing. It was already an error to provide both `sep=','` and `dec=','` manually.
