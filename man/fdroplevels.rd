@@ -10,7 +10,7 @@
 \usage{
 fdroplevels(x, exclude = if (anyNA(levels(x))) NULL else NA, \dots)
 
-droplevels(x, except = NULL, exclude, in.place = FALSE, \dots)
+\method{droplevels}{data.table}(x, except = NULL, exclude, in.place = FALSE, \dots)
 }
 \arguments{
   \item{x}{ \code{factor} or \code{data.table} where unused levels should be dropped. }
