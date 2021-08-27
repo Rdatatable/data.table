@@ -5,16 +5,17 @@
 \alias{openmp}
 \title{ Set or get number of threads that data.table should use }
 \description{
-  Set and get number of threads to be used in \code{data.table} functions that are parallelized with OpenMP. The number of threads is initialized when \code{data.table} is first loaded in the R session using optional envioronment variables. Thereafter, the number of threads may be changed by calling \code{setDTthreads}. If you change an environment variable using \code{Sys.setenv} you will need to call \code{setDTthreads} again to reread the environment variables.
+  Set and get number of threads to be used in \code{data.table} functions that are parallelized with OpenMP. The number of threads is initialized when \code{data.table} is first loaded in the R session using optional environment variables. Thereafter, the number of threads may be changed by calling \code{setDTthreads}. If you change an environment variable using \code{Sys.setenv} you will need to call \code{setDTthreads} again to reread the environment variables.
 }
 \usage{
-  setDTthreads(threads = NULL, restore_after_fork = NULL, percent = NULL)
+  setDTthreads(threads = NULL, restore_after_fork = NULL, percent = NULL, throttle = NULL)
   getDTthreads(verbose = getOption("datatable.verbose"))
 }
 \arguments{
   \item{threads}{ NULL (default) rereads environment variables. 0 means to use all logical CPUs available. Otherwise a number >= 1 }
   \item{restore_after_fork}{ Should data.table be multi-threaded after a fork has completed? NULL leaves the current setting unchanged which by default is TRUE. See details below. }
   \item{percent}{ If provided it should be a number between 2 and 100; the percentage of logical CPUs to use. By default on startup, 50\%. }
+  \item{throttle}{ 1024 (default) means that, roughly speaking, a single thread will be used when nrow(DT)<=1024, 2 threads when nrow(DT)<=2048, etc. The throttle is to speed up small data tasks (especially when repeated many times) by not incurring the overhead of managing multiple threads. Hence the number of threads is throttled (restricted) for small tasks. }
   \item{verbose}{ Display the value of relevant OpenMP settings plus the \code{restore_after_fork} internal option. }
 }
 \value{
@@ -49,5 +50,8 @@
     \item{\file{subset.c} - Used in \code{\link[=data.table]{[.data.table}} subsetting}
     \item{\file{types.c} - Internal testing usage}
   }
+}
+\examples{
+  getDTthreads(verbose=TRUE)
 }
 \keyword{ data }

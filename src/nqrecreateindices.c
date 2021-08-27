@@ -9,12 +9,12 @@ SEXP nqRecreateIndices(SEXP xo, SEXP len, SEXP indices, SEXP nArg, SEXP nomatch)
   ans = PROTECT(allocVector(VECSXP, 2));
   SET_VECTOR_ELT(ans, 0, (newstarts = allocVector(INTSXP, n)));
   SET_VECTOR_ELT(ans, 1, (newlen = allocVector(INTSXP, n)));
-  
+
   int *inewlen = INTEGER(newlen);
   const int *iindices = INTEGER(indices);
   const int *ilen = INTEGER(len);
   const int *ixo = INTEGER(xo);
-  const int *inomatch = INTEGER(nomatch);
+  const int inomatch = isNull(nomatch) ? 0 : INTEGER(nomatch)[0];
   int *inewstarts = INTEGER(newstarts);
 
   for (int i=0; i<n; ++i) inewlen[i] = 0;
@@ -28,8 +28,8 @@ SEXP nqRecreateIndices(SEXP xo, SEXP len, SEXP indices, SEXP nArg, SEXP nomatch)
   for (int i=0; i<n; ++i) {
     if (ixo[j] <= 0 || j >= xn) {
       // NA_integer_ = INT_MIN is checked in init.c
-      // j >= xn needed for special nomatch=0L case, see issue#4388 (due to xo[irows] from R removing '0' value in xo)
-      inewstarts[i] = inomatch[0];
+      // j >= xn needed for special nomatch=NULL case, see issue#4388 (due to xo[irows] from R removing '0' value in xo)
+      inewstarts[i] = inomatch;
       j++; // newlen will be 1 for xo=NA and 0 for xo=0 .. but we need to increment by 1 for both
     } else {
       inewstarts[i] = tmp+1;
