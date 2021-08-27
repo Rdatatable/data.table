@@ -3422,10 +3422,22 @@ test(1083, setkeyv(ans[, list(r = .N), by=key(DT1)], key(ans)), check) # if the 
 
 # Tests for #2531. `:=` loses POSIXct or ITime attribute:
 # first test from this SO post: http://stackoverflow.com/questions/15996692/cannot-assign-columns-as-date-by-reference-in-data-table
+set.seed(1)
 dt <- data.table(date = as.IDate(sample(10000:11000, 10), origin = "1970-01-01"))
 dt[, group := rep(1:2, 5)]
 dt[, min.group.date := as.IDate(min(date)), by = group]
-test(1084, class(dt$min.group.date), c("IDate", "Date"))
+test(1084.1, class(dt$min.group.date), c("IDate", "Date"))
+
+# min.IDate on empty input NA, #2256
+# non-optimized grouping first:
+test(1084.2, dt[, min(date[date>"1999-12-01"]), by=group], data.table(group=1:2, V1=as.IDate(c("1999-12-14",NA))))
+test(1084.3, dt[, max(date[date<"1997-08-01"]), by=group], data.table(group=1:2, V1=as.IDate(c(NA,"1997-07-19"))))
+dt[group==2, date:=NA]  # make group 2 an all-NA group
+# GForce grouping with na.rm=FALSE|TRUE on the all-NA group
+test(1084.4, dt[, min(date, na.rm=TRUE), by=group], data.table(group=1:2, V1=as.IDate(c("1997-12-06",NA))))
+test(1084.5, dt[, min(date), by=group],             data.table(group=1:2, V1=as.IDate(c("1997-12-06",NA))))
+test(1084.6, dt[, max(date, na.rm=TRUE), by=group], data.table(group=1:2, V1=as.IDate(c("1999-12-14",NA))))
+test(1084.7, dt[, max(date), by=group],             data.table(group=1:2, V1=as.IDate(c("1999-12-14",NA))))
 
 dt <- data.table(date = as.IDate(sample(10000:11000, 10), origin = "1970-01-01"))
 dt[, group := rep(1:2, 5)]
