@@ -18050,3 +18050,11 @@ for (col in c("a","b","c")) {
   }
 }
 
+x = factor(letters[1:10])
+DT = data.table(a = x)[1:5]
+test(2212.1, fdroplevels(x[1:5]), droplevels(x[1:5]))
+test(2212.2, fdroplevels(x[1:5], c("b", "d")), droplevels(x[1:5], c("b", "d")))
+test(2212.3, droplevels(DT)[["a"]], droplevels(DT[1:5,a]))
+test(2212.4, droplevels(DT, exclude=c("b", "d"))[["a"]], droplevels(DT[1:5,a], c("b", "d")))
+test(2212.5, droplevels(DT, 1)[["a"]], x[1:5])
+test(2212.6, droplevels(DT, in.place=TRUE), DT)
