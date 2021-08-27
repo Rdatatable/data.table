@@ -576,7 +576,7 @@ SEXP gmean(SEXP x, SEXP narmArg)
 {
   if (inherits(x, "factor"))
     error(_("%s is not meaningful for factors."), "mean");
-  if (!isLogical(narmArg) || LENGTH(narmArg)!=1 || LOGICAL(narmArg)[0]==NA_LOGICAL)
+  if (!IS_TRUE_OR_FALSE(narmArg))
     error(_("%s must be TRUE or FALSE"), "na.rm");
   const bool narm = LOGICAL(narmArg)[0];
   const int n = (irowslen == -1) ? length(x) : irowslen;
