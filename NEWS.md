@@ -295,7 +295,33 @@
 
 39. `DT[i, sum(b), by=grp]` (and other optimized-by-group aggregates: `mean`, `var`, `sd`, `median`, `prod`, `min`, `max`, `first`, `last`, `head` and `tail`) could segfault if `i` contained row numbers and one or more were NA, [#1994](https://github.com/Rdatatable/data.table/issues/1994). Thanks to Arun Srinivasan for reporting, and Benjamin Schwendinger for the PR.
 
-40. `identical(fread(text="A\n0.8060667366\n")$A, 0.8060667366)` is now TRUE, [#4461](https://github.com/Rdatatable/data.table/issues/4461). `fread` was using `*10^-n` rather than `/10^n` resulting in `0.80606673659999994` vs `0.80606673660000006`. `fread()` now matches R's parser and `read.table` identically in this respect. Thanks to Gabe Becker for requesting consistency, and Michael Chirico for the PR.
+40. `identical(fread(text="A\n0.8060667366\n")$A, 0.8060667366)` is now TRUE, [#4461](https://github.com/Rdatatable/data.table/issues/4461). This is one of 13 numbers in the set of 100,000 between 0.80606 and 0.80607 in 0.0000000001 increments that were not already identical. In all 13 cases R's parser (same as `read.table`) vs `fread` straddled the true number by the same amount. `fread` now uses `/10^n` rather than `*10^-n` to match R identically in all cases. Thanks to Gabe Becker for requesting consistency, and Michael Chirico for the PR.
+
+    ```R
+    for (i in 0:99999) {
+      s = sprintf("0.80606%05d", i)
+      r = eval(parse(text=s)) 
+      f = fread(text=paste0("A\n",s,"\n"))$A
+      if (!identical(r, f))
+        cat(s, sprintf("%1.17f", c(r, f, r)), "\n")
+    }
+           input   eval & read.table        fread before           fread now
+    0.8060603509 0.80606035089999994 0.80606035090000006 0.80606035089999994 
+    0.8060614740 0.80606147399999994 0.80606147400000006 0.80606147399999994 
+    0.8060623757 0.80606237569999994 0.80606237570000006 0.80606237569999994 
+    0.8060629084 0.80606290839999994 0.80606290840000006 0.80606290839999994 
+    0.8060632774 0.80606327739999994 0.80606327740000006 0.80606327739999994 
+    0.8060638101 0.80606381009999994 0.80606381010000006 0.80606381009999994 
+    0.8060647118 0.80606471179999994 0.80606471180000006 0.80606471179999994 
+    0.8060658349 0.80606583489999994 0.80606583490000006 0.80606583489999994 
+    0.8060667366 0.80606673659999994 0.80606673660000006 0.80606673659999994 
+    0.8060672693 0.80606726929999994 0.80606726930000006 0.80606726929999994 
+    0.8060676383 0.80606763829999994 0.80606763830000006 0.80606763829999994 
+    0.8060681710 0.80606817099999994 0.80606817100000006 0.80606817099999994 
+    0.8060690727 0.80606907269999994 0.80606907270000006 0.80606907269999994
+    
+    # remaining 99,987 out of 100,000 were already identical
+    ```
 
 ## NOTES
 
