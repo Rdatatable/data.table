@@ -41,7 +41,7 @@ SEXP gforce(SEXP env, SEXP jsub, SEXP o, SEXP f, SEXP l, SEXP irowsArg) {
   double started = wallclock();
   const bool verbose = GetVerbose();
   if (TYPEOF(env) != ENVSXP) error(_("env is not an environment"));
-  // The type of jsub is pretty flexbile in R, so leave checking to eval() below.
+  // The type of jsub is pretty flexible in R, so leave checking to eval() below.
   if (!isInteger(o)) error(_("%s is not an integer vector"), "o");
   if (!isInteger(f)) error(_("%s is not an integer vector"), "f");
   if (!isInteger(l)) error(_("%s is not an integer vector"), "l");
@@ -339,14 +339,17 @@ void *gather(SEXP x, bool *anyNA)
 
 SEXP gsum(SEXP x, SEXP narmArg)
 {
-  if (!isLogical(narmArg) || LENGTH(narmArg)!=1 || LOGICAL(narmArg)[0]==NA_LOGICAL) error(_("na.rm must be TRUE or FALSE"));
+  if (!IS_TRUE_OR_FALSE(narmArg))
+    error(_("%s must be TRUE or FALSE"), "na.rm");
   const bool narm = LOGICAL(narmArg)[0];
-  if (inherits(x, "factor")) error(_("sum is not meaningful for factors."));
+  if (inherits(x, "factor"))
+    error(_("%s is not meaningful for factors."), "sum");
   const int n = (irowslen == -1) ? length(x) : irowslen;
   double started = wallclock();
   const bool verbose=GetVerbose();
-  if (verbose) Rprintf(_("This gsum took (narm=%s) ... "), narm?"TRUE":"FALSE");
-  if (nrow != n) error(_("nrow [%d] != length(x) [%d] in %s"), nrow, n, "gsum");
+  if (verbose) Rprintf(_("This gsum (narm=%s) took ... "), narm?"TRUE":"FALSE");
+  if (nrow != n)
+    error(_("nrow [%d] != length(x) [%d] in %s"), nrow, n, "gsum");
   bool anyNA=false;
   SEXP ans;
   switch(TYPEOF(x)) {
@@ -561,7 +564,7 @@ SEXP gsum(SEXP x, SEXP narmArg)
     }
   } break;
   default:
-    error(_("Type '%s' not supported by GForce sum (gsum). Either add the prefix base::sum(.) or turn off GForce optimization using options(datatable.optimize=1)"), type2char(TYPEOF(x)));
+    error(_("Type '%s' is not supported by GForce %s. Either add the prefix %s or turn off GForce optimization using options(datatable.optimize=1)"), type2char(TYPEOF(x)), "sum (gsum)", "base::sum(.)");
   }
   copyMostAttrib(x, ans);
   if (verbose) { Rprintf(_("%.3fs\n"), wallclock()-started); }
@@ -571,8 +574,10 @@ SEXP gsum(SEXP x, SEXP narmArg)
 
 SEXP gmean(SEXP x, SEXP narmArg)
 {
-  if (inherits(x, "factor")) error(_("mean is not meaningful for factors."));
-  if (!isLogical(narmArg) || LENGTH(narmArg)!=1 || LOGICAL(narmArg)[0]==NA_LOGICAL) error(_("na.rm must be TRUE or FALSE"));
+  if (inherits(x, "factor"))
+    error(_("%s is not meaningful for factors."), "mean");
+  if (!IS_TRUE_OR_FALSE(narmArg))
+    error(_("%s must be TRUE or FALSE"), "na.rm");
   const bool narm = LOGICAL(narmArg)[0];
   const int n = (irowslen == -1) ? length(x) : irowslen;
   double started = wallclock();
@@ -715,15 +720,18 @@ SEXP gmean(SEXP x, SEXP narmArg)
 
 static SEXP gminmax(SEXP x, SEXP narm, const bool min)
 {
-  if (!isLogical(narm) || LENGTH(narm)!=1 || LOGICAL(narm)[0]==NA_LOGICAL) error(_("na.rm must be TRUE or FALSE"));
+  if (!IS_TRUE_OR_FALSE(narm))
+    error(_("%s must be TRUE or FALSE"), "na.rm");
   if (!isVectorAtomic(x)) error(_("GForce min/max can only be applied to columns, not .SD or similar. To find min/max of all items in a list such as .SD, either add the prefix base::min(.SD) or turn off GForce optimization using options(datatable.optimize=1). More likely, you may be looking for 'DT[,lapply(.SD,min),by=,.SDcols=]'"));
-  if (inherits(x, "factor") && !inherits(x, "ordered")) error(_("min/max is not meaningful for factors."));
-  const int n = (irowslen == -1) ? length(x) : irowslen;
+  if (inherits(x, "factor") && !inherits(x, "ordered"))
+    error(_("%s is not meaningful for factors."), min?"min":"max");
+  const bool nosubset = irowslen==-1;
+  const int n = nosubset ? length(x) : irowslen;
   //clock_t start = clock();
   SEXP ans;
-  if (nrow != n) error(_("nrow [%d] != length(x) [%d] in %s"), nrow, n, "gmin");
+  if (nrow != n)
+    error(_("nrow [%d] != length(x) [%d] in %s"), nrow, n, "gminmax");
   // GForce guarantees each group has at least one value; i.e. we don't need to consider length-0 per group here
-  const bool nosubset = irowslen==-1;
   switch(TYPEOF(x)) {
   case LGLSXP: case INTSXP: {
     ans = PROTECT(allocVector(INTSXP, ngrp));
@@ -829,7 +837,8 @@ static SEXP gminmax(SEXP x, SEXP narm, const bool min)
     error(_("Type 'complex' has no well-defined min/max"));
     break;
   default:
-    error(_("Type '%s' not supported by GForce min/max. Either add the prefix base::min(.) or turn off GForce optimization using options(datatable.optimize=1)"), type2char(TYPEOF(x)));
+    error(_("Type '%s' is not supported by GForce %s. Either add the prefix %s or turn off GForce optimization using options(datatable.optimize=1)"),
+          type2char(TYPEOF(x)), min?"min (gmin)":"max (gmax)", min?"base::min(.)":"base::max(.)");
   }
   copyMostAttrib(x, ans); // all but names,dim and dimnames. And if so, we want a copy here, not keepattr's SET_ATTRIB.
   UNPROTECT(1);  // ans
@@ -849,12 +858,15 @@ SEXP gmax(SEXP x, SEXP narm)
 
 // gmedian, always returns numeric type (to avoid as.numeric() wrap..)
 SEXP gmedian(SEXP x, SEXP narmArg) {
-  if (!isLogical(narmArg) || LENGTH(narmArg)!=1 || LOGICAL(narmArg)[0]==NA_LOGICAL) error(_("na.rm must be TRUE or FALSE"));
+  if (!IS_TRUE_OR_FALSE(narmArg))
+    error(_("%s must be TRUE or FALSE"), "na.rm");
   if (!isVectorAtomic(x)) error(_("GForce median can only be applied to columns, not .SD or similar. To find median of all items in a list such as .SD, either add the prefix stats::median(.SD) or turn off GForce optimization using options(datatable.optimize=1). More likely, you may be looking for 'DT[,lapply(.SD,median),by=,.SDcols=]'"));
-  if (inherits(x, "factor")) error(_("median is not meaningful for factors."));
+  if (inherits(x, "factor"))
+    error(_("%s is not meaningful for factors."), "median");
   const bool isInt64 = INHERITS(x, char_integer64), narm = LOGICAL(narmArg)[0];
   const int n = (irowslen == -1) ? length(x) : irowslen;
-  if (nrow != n) error(_("nrow [%d] != length(x) [%d] in %s"), nrow, n, "gmedian");
+  if (nrow != n)
+    error(_("nrow [%d] != length(x) [%d] in %s"), nrow, n, "gmedian");
   SEXP ans = PROTECT(allocVector(REALSXP, ngrp));
   double *ansd = REAL(ans);
   const bool nosubset = irowslen==-1;
@@ -892,7 +904,7 @@ SEXP gmedian(SEXP x, SEXP narmArg) {
     }}
     break;
   default:
-    error(_("Type '%s' not supported by GForce median (gmedian). Either add the prefix stats::median(.) or turn off GForce optimization using options(datatable.optimize=1)"), type2char(TYPEOF(x)));
+    error(_("Type '%s' is not supported by GForce %s. Either add the prefix %s or turn off GForce optimization using options(datatable.optimize=1)"), type2char(TYPEOF(x)), "median (gmedian)", "stats::median(.)");
   }
   if (!isInt64) copyMostAttrib(x, ans);
   // else the integer64 class needs to be dropped since double is always returned by gmedian
@@ -967,7 +979,7 @@ static SEXP gfirstlast(SEXP x, const bool first, const int w, const bool headw) 
   case STRSXP:  DO(SEXP, STRING_PTR, NA_STRING,                 SET_STRING_ELT(ans,ansi++,val))        break;
   case VECSXP:  DO(SEXP, SEXPPTR_RO, ScalarLogical(NA_LOGICAL), SET_VECTOR_ELT(ans,ansi++,val))        break;
   default:
-    error(_("Type '%s' not supported by GForce head/tail/first/last/`[`. Either add the prefix utils::head(.) or turn off GForce optimization using options(datatable.optimize=1)"), type2char(TYPEOF(x)));
+    error(_("Type '%s' is not supported by GForce head/tail/first/last/`[`. Either add the namespace prefix (e.g. utils::head(.)) or turn off GForce optimization using options(datatable.optimize=1)"), type2char(TYPEOF(x)));
   }
   copyMostAttrib(x, ans);
   UNPROTECT(1);
@@ -1003,11 +1015,14 @@ SEXP gnthvalue(SEXP x, SEXP nArg) {
 // implemented this similar to gmedian to balance well between speed and memory usage. There's one extra allocation on maximum groups and that's it.. and that helps speed things up extremely since we don't have to collect x's values for each group for each step (mean, residuals, mean again and then variance).
 static SEXP gvarsd1(SEXP x, SEXP narmArg, bool isSD)
 {
-  if (!isLogical(narmArg) || LENGTH(narmArg)!=1 || LOGICAL(narmArg)[0]==NA_LOGICAL) error(_("na.rm must be TRUE or FALSE"));
+  if (!IS_TRUE_OR_FALSE(narmArg))
+    error(_("%s must be TRUE or FALSE"), "na.rm");
   if (!isVectorAtomic(x)) error(_("GForce var/sd can only be applied to columns, not .SD or similar. For the full covariance matrix of all items in a list such as .SD, either add the prefix stats::var(.SD) (or stats::sd(.SD)) or turn off GForce optimization using options(datatable.optimize=1). Alternatively, if you only need the diagonal elements, 'DT[,lapply(.SD,var),by=,.SDcols=]' is the optimized way to do this."));
-  if (inherits(x, "factor")) error(_("var/sd is not meaningful for factors."));
+  if (inherits(x, "factor"))
+    error(_("%s is not meaningful for factors."), isSD ? "sd" : "var");
   const int n = (irowslen == -1) ? length(x) : irowslen;
-  if (nrow != n) error(_("nrow [%d] != length(x) [%d] in %s"), nrow, n, "gvar");
+  if (nrow != n)
+    error(_("nrow [%d] != length(x) [%d] in %s"), nrow, n, "gvar");
   SEXP sub, ans = PROTECT(allocVector(REALSXP, ngrp));
   double *ansd = REAL(ans);
   const bool nosubset = irowslen==-1;
@@ -1076,8 +1091,8 @@ static SEXP gvarsd1(SEXP x, SEXP narmArg, bool isSD)
     }}
     break;
   default:
-    error(_("Type '%s' not supported by GForce %s. Either add the prefix stats::var(.) or turn off GForce optimization using options(datatable.optimize=1)"),
-            type2char(TYPEOF(x)), isSD?"sd (gsd)":"var (gvar)");
+    error(_("Type '%s' is not supported by GForce %s. Either add the prefix %s or turn off GForce optimization using options(datatable.optimize=1)"),
+            type2char(TYPEOF(x)), isSD?"sd (gsd)":"var (gvar)", isSD?"stats::sd(.)":"stats::var(.)");
   }
   // no copyMostAttrib(x, ans) since class (e.g. Date) unlikely applicable to sd/var
   UNPROTECT(2); // ans,sub
@@ -1093,15 +1108,19 @@ SEXP gsd(SEXP x, SEXP narm) {
 }
 
 SEXP gprod(SEXP x, SEXP narmArg) {
-  if (!isLogical(narmArg) || LENGTH(narmArg)!=1 || LOGICAL(narmArg)[0]==NA_LOGICAL) error(_("na.rm must be TRUE or FALSE"));
+  if (!IS_TRUE_OR_FALSE(narmArg))
+    error(_("%s must be TRUE or FALSE"), "na.rm");
   const bool narm=LOGICAL(narmArg)[0];
-  if (!isVectorAtomic(x)) error(_("GForce prod can only be applied to columns, not .SD or similar. To multiply all items in a list such as .SD, either add the prefix base::prod(.SD) or turn off GForce optimization using options(datatable.optimize=1). More likely, you may be looking for 'DT[,lapply(.SD,prod),by=,.SDcols=]'"));
-  if (inherits(x, "factor")) error(_("prod is not meaningful for factors."));
+  if (!isVectorAtomic(x))
+    error(_("GForce prod can only be applied to columns, not .SD or similar. To multiply all items in a list such as .SD, either add the prefix base::prod(.SD) or turn off GForce optimization using options(datatable.optimize=1). More likely, you may be looking for 'DT[,lapply(.SD,prod),by=,.SDcols=]'"));
+  if (inherits(x, "factor"))
+    error(_("%s is not meaningful for factors."), "prod");
   const bool nosubset = irowslen==-1;
   const int n = nosubset ? length(x) : irowslen;
   //clock_t start = clock();
   SEXP ans;
-  if (nrow != n) error(_("nrow [%d] != length(x) [%d] in %s"), nrow, n, "gprod");
+  if (nrow != n)
+    error(_("nrow [%d] != length(x) [%d] in %s"), nrow, n, "gprod");
   long double *s = malloc(ngrp * sizeof(long double));
   if (!s) error(_("Unable to allocate %d * %d bytes for gprod"), ngrp, sizeof(long double));
   for (int i=0; i<ngrp; ++i) s[i] = 1.0;
@@ -1134,7 +1153,7 @@ SEXP gprod(SEXP x, SEXP narmArg) {
     break;
   default:
     free(s);
-    error(_("Type '%s' not supported by GForce prod (gprod). Either add the prefix base::prod(.) or turn off GForce optimization using options(datatable.optimize=1)"), type2char(TYPEOF(x)));
+    error(_("Type '%s' is not supported by GForce %s. Either add the prefix %s or turn off GForce optimization using options(datatable.optimize=1)"), type2char(TYPEOF(x)), "prod (gprod)", "base::prod(.)");
   }
   for (int i=0; i<ngrp; ++i) {
     if (s[i] > DBL_MAX) ansd[i] = R_PosInf;
