@@ -151,7 +151,6 @@ dcast.data.table = function(data, formula, fun.aggregate = NULL, sep = "_", ...,
     idx = which(eval(subset, data, parent.frame())) # any advantage thro' secondary keys?
     dat = .Call(CsubsetDT, dat, idx, seq_along(dat))
   }
-  if (!nrow(dat) || !ncol(dat)) stopf("Can not cast an empty data.table")
   fun.call = m[["fun.aggregate"]]
   fill.default = NULL
   if (is.null(fun.call)) {

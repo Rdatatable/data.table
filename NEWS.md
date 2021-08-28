@@ -350,6 +350,8 @@
     #
     # remaining 99,987 of these 100,000 were already identical
     ```
+    
+41. `dcast(empty-DT)` now returns an empty `data.table` rather than error `Cannot cast an empty data.table`, [#1215](https://github.com/Rdatatable/data.table/issues/1215). Thanks to Damian Betebenner for reporting, and Matt Dowle for fixing.
 
 ## NOTES
 
