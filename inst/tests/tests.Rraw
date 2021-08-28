@@ -18050,6 +18050,7 @@ for (col in c("a","b","c")) {
   }
 }
 
+#fast droplevels.data.table method #647
 x = factor(letters[1:10])
 DT = data.table(a = x)[1:5]
 test(2214.0, fdroplevels(factor()), droplevels(factor()))
