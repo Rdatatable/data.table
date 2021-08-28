@@ -126,6 +126,9 @@ typedef struct freadMainArgs
   // all ragged rows will be filled with NAs on the right.
   bool fill;
 
+  // If True, then a sample will be used at fill for detecting ncol. Otherwise all rows will be used for the detection.
+  bool sampleFill;
+
   // If True, then emit progress messages during the parsing.
   bool showProgress;
 

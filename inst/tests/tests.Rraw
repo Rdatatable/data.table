@@ -18121,3 +18121,6 @@ if (base::getRversion() >= "4.1.0") {
 # precision powers of 10^(-n), #4461
 test(2213, identical(fread(text="A\n0.8060667366\n")$A, 0.8060667366))
 
+# turning off sampling for detecting the number of columns #2691 #1812 #4130 #3436 #2727
+test(2214.1, fread(text = paste(rep(c("1,2\n", "1,2,3\n"), each=100), collapse=""), fill=TRUE, sample.fill=FALSE), data.table(1L, 2L, rep(c(NA,3L), each=100)))
+test(2214.2, fread(text = paste(rep(c("1,2\n", "1,2,3\n"), each=100), collapse=""), fill=TRUE, sample.fill=FALSE, select = 1:2), data.table(1L, rep(2L, 200)))
