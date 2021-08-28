@@ -13717,7 +13717,7 @@ test(1962.086, dcast(DT, a ~ a, drop = NA),
 DT = data.table(a = c(1, 1, 2, 2), b = list(1, 2, 3, 4), c = c(4, 4, 2, 2))
 test(1962.087, dcast(DT, a ~ b, value.var = 'b'),
      error = 'Columns specified in formula can not be of type list')
-test(1962.088, dcast(DT[0L, ], a ~ c, value.var = 'b'), data.table(a=numeric())) #1215
+test(1962.088, dcast(DT[0L, ], a ~ c, value.var = 'b'), data.table(a=numeric(), key="a")) #1215
 test(1962.089, dcast(DT, a ~ c, value.var = 'b'),
      data.table(a = c(1, 2), `2` = c(0L, 2L), `4` = c(2L, 0L), key = 'a'),
      message = 'Aggregate function missing')
