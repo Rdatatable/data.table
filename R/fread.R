@@ -145,7 +145,7 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
     }
     # whitespace at the beginning or end of na.strings is checked at C level and is an error there; test 1804
   }
-  if (!sample.fill & !fill) ("sample.fill=FALSE cannot be used without fill=TRUE.")
+  if (!sample.fill & !fill) stopf("sample.fill=FALSE cannot be used without fill=TRUE.")
   if (yaml) {
     if (!requireNamespace('yaml', quietly = TRUE))
       stopf("'data.table' relies on the package 'yaml' to parse the file header; please add this to your library with install.packages('yaml') and try again.") # nocov
