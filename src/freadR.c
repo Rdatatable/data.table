@@ -61,6 +61,7 @@ SEXP freadR(
   SEXP stripWhiteArg,
   SEXP skipEmptyLinesArg,
   SEXP fillArg,
+  SEXP sampleFillArg,
   SEXP showProgressArg,
   SEXP nThreadArg,
   SEXP verboseArg,
@@ -82,7 +83,7 @@ SEXP freadR(
   freadMainArgs args;
   ncol = 0;
   dtnrows = 0;
-  
+
   if (!isString(inputArg) || LENGTH(inputArg)!=1)
     error(_("Internal error: freadR input not a single character string: a filename or the data itself. Should have been caught at R level."));  // # nocov
   const char *ch = (const char *)CHAR(STRING_ELT(inputArg,0));
@@ -153,6 +154,7 @@ SEXP freadR(
   args.stripWhite = LOGICAL(stripWhiteArg)[0];
   args.skipEmptyLines = LOGICAL(skipEmptyLinesArg)[0];
   args.fill = LOGICAL(fillArg)[0];
+  args.sampleFill = LOGICAL(sampleFillArg)[0];
   args.showProgress = LOGICAL(showProgressArg)[0];
   if (INTEGER(nThreadArg)[0]<1) error(_("nThread(%d)<1"), INTEGER(nThreadArg)[0]);
   args.nth = (uint32_t)INTEGER(nThreadArg)[0];

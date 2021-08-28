@@ -55,6 +55,7 @@ static bool any_number_like_NAstrings=false;
 static bool blank_is_a_NAstring=false;
 static bool stripWhite=true;  // only applies to character columns; numeric fields always stripped
 static bool skipEmptyLines=false, fill=false;
+static bool sampleFill=true; // turn off sampling for determining number of columns
 
 static double NA_FLOAT64;  // takes fread.h:NA_FLOAT64_VALUE
 
@@ -162,6 +163,7 @@ bool freadCleanup(void)
   skipEmptyLines = false;
   eol_one_r = false;
   fill = false;
+  sampleFill = true;
   // following are borrowed references: do not free
   sof = eof = NULL;
   NAstrings = NULL;
@@ -1328,6 +1330,7 @@ int freadMain(freadMainArgs _args) {
   if (quote == dec) STOP(_("quote == dec ('%c') is not allowed"), dec);
   // since quote=='\0' when user passed quote="", the logic in this file uses '*ch==quote && quote' otherwise
   //   the ending \0 at eof could be treated as a quote (test xxx)
+  sampleFill = args.sampleFill;
 
   // File parsing context: pointer to the start of file, and to the end of
   // the file. The `sof` pointer may be shifted in order to skip over
@@ -1578,7 +1581,8 @@ int freadMain(freadMainArgs _args) {
   int ncol;  // Detected number of columns in the file
   const char *firstJumpEnd=NULL; // remember where the winning jumpline from jump 0 ends, to know its size excluding header
   const char *prevStart = NULL;  // the start of the non-empty line before the first not-ignored row (for warning message later, or taking as column names)
-  int jumpLines = (int)umin(100,nrowLimit);   // how many lines from each jump point to use. If nrowLimit is supplied, nJumps is later set to 1 as well.
+  int jumpLines = sampleFill ? (int)umin(100,nrowLimit) : INT32_MAX;   // how many lines from each jump point to use and whether sampling should be used or not.
+  // If nrowLimit is supplied, nJumps is later set to 1 as well.
   {
   if (verbose) DTPRINT(_("[06] Detect separator, quoting rule, and ncolumns\n"));
 
@@ -2590,8 +2594,13 @@ int freadMain(freadMainArgs _args) {
       else {
         ch = headPos;
         int tt = countfields(&ch);
-        DTWARN(_("Stopped early on line %"PRIu64". Expected %d fields but found %d. Consider fill=TRUE and comment.char=. First discarded non-empty line: <<%s>>"),
+        if (fill) {
+          DTWARN(_("Stopped early on line %"PRIu64". Expected %d fields but found %d. Consider additional sample.fill=FALSE. First discarded non-empty line: <<%s>>"),
           (uint64_t)DTi+row1line, ncol, tt, strlim(skippedFooter,500));
+        } else {
+          DTWARN(_("Stopped early on line %"PRIu64". Expected %d fields but found %d. Consider fill=TRUE and comment.char=. First discarded non-empty line: <<%s>>"),
+          (uint64_t)DTi+row1line, ncol, tt, strlim(skippedFooter,500));
+        }
       }
     }
   }
