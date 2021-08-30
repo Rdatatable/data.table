@@ -352,8 +352,10 @@
     #
     # remaining 99,987 of these 100,000 were already identical
     ```
-    
+
 41. `dcast(empty-DT)` now returns an empty `data.table` rather than error `Cannot cast an empty data.table`, [#1215](https://github.com/Rdatatable/data.table/issues/1215). Thanks to Damian Betebenner for reporting, and Matt Dowle for fixing.
+
+42. `DT[factor("id")]` now works rather than error `i has evaluated to type integer. Expecting logical, integer or double`, [#1632](https://github.com/Rdatatable/data.table/issues/1632). `DT["id"]` has worked forever by automatically converting to `DT[.("id")]` for convenience, and joins have worked forever between char/fact, fact/char and fact/fact even when levels mismatch, so it was unfortunate that `DT[factor("id")]` managed to escape the simple automatic conversion to `DT[.(factor("id"))]` which is now in place. Thanks to @aushev for reporting, and Matt Dowle for the fix.
 
 ## NOTES
 
