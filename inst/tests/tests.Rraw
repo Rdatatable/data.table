@@ -18126,10 +18126,13 @@ x = factor(letters[1:10])
 DT = data.table(a = x)[1:5]
 test(2214.1, fdroplevels(factor()), droplevels(factor()))
 test(2214.2, fdroplevels(x[1:5]), droplevels(x[1:5]))
-test(2214.3, fdroplevels(x[1:5], c("b", "d")), droplevels(x[1:5], c("b", "d")))
-test(2214.4, fdroplevels(x[1:5], letters[1:5]), droplevels(x[1:5], letters[1:5]))
-test(2214.5, droplevels(DT)[["a"]], droplevels(DT[1:5,a]))
-test(2214.6, droplevels(DT, exclude=c("b", "d"))[["a"]], droplevels(DT[1:5,a], c("b", "d")))
+if (base::getRversion() >= "3.4.0") {
+  # bug fix in R 3.4.0: "droplevels(f) now keeps <NA> levels when present."
+  test(2214.3, fdroplevels(x[1:5], c("b", "d")), droplevels(x[1:5], c("b", "d")))
+  test(2214.4, fdroplevels(x[1:5], letters[1:5]), droplevels(x[1:5], letters[1:5]))
+  test(2214.5, droplevels(DT, exclude=c("b", "d"))[["a"]], droplevels(DT[1:5,a], c("b", "d")))
+}
+test(2214.6, droplevels(DT)[["a"]], droplevels(DT[1:5,a]))
 test(2214.7, droplevels(DT, 1)[["a"]], x[1:5])
 test(2214.8, droplevels(DT, in.place=TRUE), DT)
 
