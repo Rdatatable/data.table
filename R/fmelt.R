@@ -60,7 +60,7 @@ measure = function(..., sep="_", pattern, cols, multiple.keyword="value.name") {
       stopf("each ... argument to measure must be a function with at least one argument, problem: %s", names(fun.list)[[fun.i]])
     }
     fun.list[[fun.i]] = fun
-  }  
+  }
   measurev.args = c(
     list(fun.list),
     L[formal.i.vec],
@@ -185,7 +185,7 @@ measurev = function(fun.list, sep="_", pattern, cols, multiple.keyword="value.na
   } else {# single output column.
     structure(measure.vec, variable_table=group.dt)
   }
-}  
+}
 
 melt.data.table = function(data, id.vars, measure.vars, variable.name = "variable",
        value.name = "value", ..., na.rm = FALSE, variable.factor = TRUE, value.factor = FALSE,
@@ -200,11 +200,11 @@ melt.data.table = function(data, id.vars, measure.vars, variable.name = "variabl
       measure.vars = eval.result
     }
   }
-  if (is.list(measure.vars) && length(measure.vars) > 1L) {
+  if (is.list(measure.vars)) {
     meas.nm = names(measure.vars)
     if (is.null(meas.nm)) {
       # user-provided or default stub
-      if (length(value.name) == 1L) {
+      if (length(value.name) == 1L && length(measure.vars) > 1L) {
         value.name = paste0(value.name, seq_along(measure.vars))
       }
     } else {

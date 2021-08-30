@@ -163,7 +163,7 @@ SEXP coalesce(SEXP x, SEXP inplaceArg) {
     }
   } break;
   default:
-    error(_("Unsupported type: %s"), type2char(TYPEOF(first))); // e.g. raw is tested
+    error(_("Type '%s' is not supported"), type2char(TYPEOF(first))); // e.g. raw is tested
   }
   UNPROTECT(nprotect);
   return first;

@@ -446,7 +446,7 @@ replace_dot_alias = function(e) {
       i = as.data.table(i)
     }
 
-    if (is.data.table(i)) {
+    if (is.data.frame(i)) {
       if (missing(on)) {
         if (!haskey(x)) {
           stopf("When i is a data.table (or character vector), the columns to join by must be specified using 'on=' argument (see ?data.table), by keying x (i.e. sorted, and, marked as sorted, see ?setkey), or by sharing column names between x and i (i.e., a natural join). Keyed joins might have further speed benefits on very large data due to x being sorted in RAM.")
@@ -1160,7 +1160,8 @@ replace_dot_alias = function(e) {
           #   ok=-1 which will trigger setalloccol with verbose in the next
           #   branch, which again calls _selfrefok and returns the message then
           if ((ok<-selfrefok(x, verbose=FALSE))==0L)   # ok==0 so no warning when loaded from disk (-1) [-1 considered TRUE by R]
-            warningf("Invalid .internal.selfref detected and fixed by taking a (shallow) copy of the data.table so that := can add this new column by reference. At an earlier point, this data.table has been copied by R (or was created manually using structure() or similar). Avoid names<- and attr<- which in R currently (and oddly) may copy the whole data.table. Use set* syntax instead to avoid copying: ?set, ?setnames and ?setattr. If this message doesn't help, please report your use case to the data.table issue tracker so the root cause can be fixed or this message improved.")
+            if (is.data.table(x)) warningf("Invalid .internal.selfref detected and fixed by taking a (shallow) copy of the data.table so that := can add this new column by reference. At an earlier point, this data.table has been copied by R (or was created manually using structure() or similar). Avoid names<- and attr<- which in R currently (and oddly) may copy the whole data.table. Use set* syntax instead to avoid copying: ?set, ?setnames and ?setattr. If this message doesn't help, please report your use case to the data.table issue tracker so the root cause can be fixed or this message improved.")
+            # !is.data.table for DF |> DT(,:=) tests 2212.16-19 (#5113) where a shallow copy is routine for data.frame
           if ((ok<1L) || (truelength(x) < ncol(x)+length(newnames))) {
             DT = x  # in case getOption contains "ncol(DT)" as it used to.  TODO: warn and then remove
             n = length(newnames) + eval(getOption("datatable.alloccol"))  # TODO: warn about expressions and then drop the eval()
@@ -1325,13 +1326,12 @@ replace_dot_alias = function(e) {
           if (keylen && (ichk || is.logical(i) || (.Call(CisOrderedSubset, irows, nrow(x)) && ((roll == FALSE) || length(irows) == 1L)))) # see #1010. don't set key when i has no key, but irows is ordered and roll != FALSE
             setattr(ans,"sorted",head(key(x),keylen))
         }
-        setattr(ans, "class", class(x)) # fix for #64
-        setattr(ans, "row.names", .set_row_names(nrow(ans)))
+        setattr(ans, "class", class(x))  # retain class that inherits from data.table, #64
+        setattr(ans, "row.names", .set_row_names(length(ans[[1L]])))
         setalloccol(ans)
       }
-
       if (!with || missing(j)) return(ans)
-
+      if (!is.data.table(ans)) setattr(ans, "class", c("data.table","data.frame"))  # DF |> DT(,.SD[...]) .SD should be data.table, test 2212.013
       SDenv$.SDall = ans
       SDenv$.SD = if (length(non_sdvars)) shallow(SDenv$.SDall, sdvars) else SDenv$.SDall
       SDenv$.N = nrow(ans)
@@ -1544,6 +1544,7 @@ replace_dot_alias = function(e) {
     #  TODO add: if (max(len__)==nrow) stopf("There is no need to deep copy x in this case")
     #  TODO move down to dogroup.c, too.
     SDenv$.SDall = .Call(CsubsetDT, x, if (length(len__)) seq_len(max(len__)) else 0L, xcols)  # must be deep copy when largest group is a subset
+    if (!is.data.table(SDenv$.SDall)) setattr(SDenv$.SDall, "class", c("data.table","data.frame"))  # DF |> DT(,.SD[...],by=grp) needs .SD to be data.table, test 2022.012
     if (xdotcols) setattr(SDenv$.SDall, 'names', ansvars[xcolsAns]) # now that we allow 'x.' prefix in 'j', #2313 bug fix - [xcolsAns]
     SDenv$.SD = if (length(non_sdvars)) shallow(SDenv$.SDall, sdvars) else SDenv$.SDall
   }
@@ -1934,7 +1935,17 @@ replace_dot_alias = function(e) {
   setalloccol(ans)   # TODO: overallocate in dogroups in the first place and remove this line
 }
 
-DT = `[.data.table` #4872
+DT = function(x, ...) {  #4872
+  old = getOption("datatable.optimize")
+  if (!is.data.table(x) && old>2L) {
+    options(datatable.optimize=2L)
+    # GForce still on; building and storing indices in .prepareFastSubset off; see long paragraph in news item 22 of v1.14.2
+  }
+  ans = `[.data.table`(x, ...)
+  options(datatable.optimize=old)
+  .global$print = ""  # functional form should always print; #5106
+  ans
+}
 
 .optmean = function(expr) {   # called by optimization of j inside [.data.table only. Outside for a small speed advantage.
   if (length(expr)==2L)  # no parameters passed to mean, so defaults of trim=0 and na.rm=FALSE
@@ -2512,8 +2523,8 @@ copy = function(x) {
 }
 
 shallow = function(x, cols=NULL) {
-  if (!is.data.table(x))
-    stopf("x is not a data.table. Shallow copy is a copy of the vector of column pointers (only), so is only meaningful for data.table")
+  if (!is.data.frame(x))
+    stopf("x is not a data.table|frame. Shallow copy is a copy of the vector of column pointers (only), so is only meaningful for data.table|frame")
   ans = .shallow(x, cols=cols, retain.key=selfrefok(x))  # selfrefok for #5042
   ans
 }
@@ -2647,15 +2658,21 @@ setnames = function(x,old,new,skip_absent=FALSE) {
   invisible(x)
 }
 
-setcolorder = function(x, neworder=key(x))
+setcolorder = function(x, neworder=key(x), before=NULL, after=NULL)  # before/after #4358
 {
   if (is.character(neworder) && anyDuplicated(names(x)))
     stopf("x has some duplicated column name(s): %s. Please remove or rename the duplicate(s) and try again.", brackify(unique(names(x)[duplicated(names(x))])))
-  # if (!is.data.table(x)) stopf("x is not a data.table")
+  if (!is.null(before) && !is.null(after))
+    stopf("Provide either before= or after= but not both")
+  if (length(before)>1 || length(after)>1)
+    stopf("before=/after= accept a single column name or number, not more than one")
   neworder = colnamesInt(x, neworder, check_dups=FALSE)  # dups are now checked inside Csetcolorder below
+  if (length(before))
+    neworder = c(setdiff(seq_len(colnamesInt(x, before) - 1L), neworder), neworder)
+  if (length(after))
+    neworder = c(setdiff(seq_len(colnamesInt(x, after)), neworder), neworder)
   if (length(neworder) != length(x)) {
-    #if shorter than length(x), pad by the missing
-    #  elements (checks below will catch other mistakes)
+    # pad by the missing elements (checks inside Csetcolorder catch other mistakes)
     neworder = c(neworder, setdiff(seq_along(x), neworder))
   }
   .Call(Csetcolorder, x, neworder)

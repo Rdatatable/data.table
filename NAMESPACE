@@ -187,6 +187,8 @@ S3method(seq, ITime)
 S3method(unique, IDate)
 S3method(unique, ITime)
 S3method('[<-', IDate)
+S3method('min', IDate)
+S3method('max', IDate)
 S3method(edit, data.table)
 
 # generics to support custom column formatters
