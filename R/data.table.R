@@ -436,7 +436,7 @@ replace_dot_alias = function(e) {
       }
     }
     if (is.null(i)) return( null.data.table() )
-    if (is.character(i)) {
+    if (is.character(i) || is.factor(i)) {
       isnull_inames = TRUE
       i = data.table(V1=i)   # for user convenience; e.g. DT["foo"] without needing DT[.("foo")]
     } else if (identical(class(i),"list") && length(i)==1L && is.data.frame(i[[1L]])) { i = as.data.table(i[[1L]]) }
