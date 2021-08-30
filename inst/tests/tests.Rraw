@@ -18121,3 +18121,15 @@ if (base::getRversion() >= "4.1.0") {
 # precision powers of 10^(-n), #4461
 test(2213, identical(fread(text="A\n0.8060667366\n")$A, 0.8060667366))
 
+# droplevels.data.table method, and fdroplevels, #647
+x = factor(letters[1:10])
+DT = data.table(a = x)[1:5]
+test(2214.1, fdroplevels(factor()), droplevels(factor()))
+test(2214.2, fdroplevels(x[1:5]), droplevels(x[1:5]))
+test(2214.3, fdroplevels(x[1:5], c("b", "d")), droplevels(x[1:5], c("b", "d")))
+test(2214.4, fdroplevels(x[1:5], letters[1:5]), droplevels(x[1:5], letters[1:5]))
+test(2214.5, droplevels(DT)[["a"]], droplevels(DT[1:5,a]))
+test(2214.6, droplevels(DT, exclude=c("b", "d"))[["a"]], droplevels(DT[1:5,a], c("b", "d")))
+test(2214.7, droplevels(DT, 1)[["a"]], x[1:5])
+test(2214.8, droplevels(DT, in.place=TRUE), DT)
+
