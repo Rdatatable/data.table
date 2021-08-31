@@ -18142,9 +18142,9 @@ test(2215.1, DT["b", B], 5L)  # has worked forever
 test(2215.2, DT[factor("b"), B], 5L)  # now works too, joining fact/fact, char/fact and fact/char have plenty of tests
 
 # fread(...,fill) can also be used to specify a guess on the maximum number of columns #2691 #1812 #4130 #3436 #2727
-test(2216.1, fread(text = paste(rep(c("1,2\n", "1,2,3\n"), each=100), collapse=""), fill=FALSE), data.table(1L, rep(2L, 100)), warning="Stopped early on line 101.*First discarded non-empty line: <<1,2,3>>")
-test(2216.3, fread(text = paste(rep(c("1,2\n", "1,2,3\n"), each=100), collapse=""), fill=TRUE), data.table(1L, rep(2L, 100)), warning="Stopped early on line 101.*First discarded non-empty line: <<1,2,3>>")
-test(2216.3, fread(text = paste(rep(c("1,2\n", "1,2,3\n"), each=100), collapse=""), fill=2L), data.table(1L, rep(2L, 100)), warning="Stopped early on line 101.*First discarded non-empty line: <<1,2,3>>")
-test(2216.4, fread(text = paste(rep(c("1,2\n", "1,2,3\n"), each=100), collapse=""), fill=3L), data.table(1L, 2L, rep(c(NA,3L), each=100)))
-test(2216.5, fread(text = paste(rep(c("1,2\n", "1,2,3\n"), each=100), collapse=""), fill=3L), data.table(1L, 2L, rep(c(NA,3L), each=100), NA, NA)) # too optimistic bound
-test(2216.6, fread(text = paste(rep(c("1,2\n", "1,2,3\n"), each=100), collapse=""), fill=3L, select = 1:2), data.table(1L, rep(2L, 200)))
+dt_str = paste(rep(c("1,2\n", "1,2,3\n"), each=100), collapse="")
+test(2216.1, fread(text = dt_str, fill=FALSE), data.table(1L, rep(2L, 100)), warning="Stopped early on line 101.*First discarded non-empty line: <<1,2,3>>")
+test(2216.2, fread(text = dt_str, fill=TRUE), data.table(1L, rep(2L, 100)), warning="Stopped early on line 101.*First discarded non-empty line: <<1,2,3>>")
+test(2216.3, fread(text = dt_str, fill=2L), data.table(1L, rep(2L, 100)), warning="Stopped early on line 101.*First discarded non-empty line: <<1,2,3>>")
+test(2216.4, fread(text = dt_str, fill=3), data.table(1L, 2L, rep(c(NA,3L), each=100)))
+test(2216.5, fread(text = dt_str, fill=5L), data.table(1L, 2L, rep(c(NA,3L), each=100), NA, NA)) # too optimistic bound
