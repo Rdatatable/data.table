@@ -1728,7 +1728,7 @@ int freadMain(freadMainArgs _args) {
     }
     sep = topSep;
     whiteChar = (sep==' ' ? '\t' : (sep=='\t' ? ' ' : 0));
-    ncol = fill > topNumFields ? fill : topNumFields; // overwrite user guess
+    ncol = fill > topNumFields ? fill : topNumFields; // overwrite user guess if estimated number if higher
     if (fill || sep==127) {
       // leave pos on the first populated line; that is start of data
       ch = pos;
