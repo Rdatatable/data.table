@@ -61,7 +61,6 @@ SEXP freadR(
   SEXP stripWhiteArg,
   SEXP skipEmptyLinesArg,
   SEXP fillArg,
-  SEXP sampleFillArg,
   SEXP showProgressArg,
   SEXP nThreadArg,
   SEXP verboseArg,
@@ -153,8 +152,7 @@ SEXP freadR(
   // here we use bool and rely on fread at R level to check these do not contain NA_LOGICAL
   args.stripWhite = LOGICAL(stripWhiteArg)[0];
   args.skipEmptyLines = LOGICAL(skipEmptyLinesArg)[0];
-  args.fill = LOGICAL(fillArg)[0];
-  args.sampleFill = LOGICAL(sampleFillArg)[0];
+  args.fill = INTEGER(fillArg)[0];
   args.showProgress = LOGICAL(showProgressArg)[0];
   if (INTEGER(nThreadArg)[0]<1) error(_("nThread(%d)<1"), INTEGER(nThreadArg)[0]);
   args.nth = (uint32_t)INTEGER(nThreadArg)[0];
