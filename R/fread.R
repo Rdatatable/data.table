@@ -79,6 +79,7 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
       if (w<=2L) { # https: or ftps:
         if (!requireNamespace("curl", quietly = TRUE))
           stopf("URL requires https:// connection for which fread() requires 'curl' package which cannot be found. Please install 'curl' using 'install.packages('curl')'.") # nocov
+
         curl::curl_download(file, tmpFile, mode="wb", quiet = !showProgress)
       } else {
         method = if (w==5L) "internal"  # force 'auto' when file: to ensure we don't use an invalid option (e.g. wget), #1668
