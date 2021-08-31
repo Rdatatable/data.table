@@ -55,7 +55,7 @@ static bool any_number_like_NAstrings=false;
 static bool blank_is_a_NAstring=false;
 static bool stripWhite=true;  // only applies to character columns; numeric fields always stripped
 static bool skipEmptyLines=false;
-static int fill=0L;
+static int fill=0;
 
 static double NA_FLOAT64;  // takes fread.h:NA_FLOAT64_VALUE
 
@@ -162,7 +162,7 @@ bool freadCleanup(void)
   stripWhite = true;
   skipEmptyLines = false;
   eol_one_r = false;
-  fill = 0L;
+  fill = 0;
   // following are borrowed references: do not free
   sof = eof = NULL;
   NAstrings = NULL;
@@ -1596,7 +1596,7 @@ int freadMain(freadMainArgs _args) {
       if (eol(&ch)) ch++;
     }
     firstJumpEnd = ch;  // size of first 100 lines in bytes is used later for nrow estimate
-    fill = 1L;        // so that blank lines are read as empty
+    fill = 1;        // so that blank lines are read as empty
     ch = pos;
   } else {
     int nseps;
@@ -2591,7 +2591,7 @@ int freadMain(freadMainArgs _args) {
       else {
         ch = headPos;
         int tt = countfields(&ch);
-        if (fill==1L) {
+        if (fill==1) {
           DTWARN(_("Stopped early on line %"PRIu64". Expected %d fields but found %d. Consider fill=%d or higher number. First discarded non-empty line: <<%s>>"),
           (uint64_t)DTi+row1line, ncol, tt, tt, strlim(skippedFooter,500));
         } else {
