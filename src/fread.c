@@ -1747,11 +1747,7 @@ int freadMain(freadMainArgs _args) {
     DTPRINT(_("  Detected %d columns on line %d. This line is either column names or first data row. Line starts as: <<%s>>\n"),
             tt, row1line, strlim(pos, 30));
     DTPRINT(_("  Quote rule picked = %d\n"), quoteRule);
-    if (fill > 1) {
-      DTPRINT(_("  fill=%d was provided by the user and the most number of columns found is %d\n"), fill, topNumFields);
-    } else {
-      DTPRINT(_("  fill=%s and the most number of columns found is %d\n"), fill?"true":"false", ncol);
-    }
+    DTPRINT(_("  fill=%s and the most number of columns found is %d\n"), fill?"true":"false", ncol);
   }
 
   if (ncol==1 && lastEOLreplaced && (eof[-1]=='\n' || eof[-1]=='\r')) {
