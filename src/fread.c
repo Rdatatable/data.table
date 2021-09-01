@@ -103,7 +103,8 @@ static void Field(FieldParseContext *ctx);
 #define ASSERT(cond, msg, ...) \
   if (!(cond)) STOP(_("Internal error in line %d of fread.c, please report on data.table GitHub:  " msg), __LINE__, __VA_ARGS__) // # nocov
 
-
+#define AS_DIGIT(x) (uint_fast8_t)(x - '0')
+#define IS_DIGIT(x) AS_DIGIT(x) < 10
 
 //=================================================================================================
 //
@@ -575,7 +576,7 @@ static void str_to_i32_core(const char **pch, int32_t *target)
 {
   const char *ch = *pch;
 
-  if (*ch=='0' && args.keepLeadingZeros && (uint_fast8_t)(ch[1]-'0')<10) return;
+  if (*ch=='0' && args.keepLeadingZeros && IS_DIGIT(ch[1])) return;
   bool neg = *ch=='-';
   ch += (neg || *ch=='+');
   const char *start = ch;  // to know if at least one digit is present
@@ -590,7 +591,7 @@ static void str_to_i32_core(const char **pch, int32_t *target)
   // number significant figures = digits from the first non-zero onwards including trailing zeros
   while (*ch=='0') ch++;
   uint_fast32_t sf = 0;
-  while ( (digit=(uint_fast8_t)(ch[sf]-'0'))<10 ) {
+  while ( (digit=AS_DIGIT(ch[sf]))<10 ) {
     acc = 10*acc + digit;
     sf++;
   }
@@ -619,7 +620,7 @@ static void StrtoI64(FieldParseContext *ctx)
 {
   const char *ch = *(ctx->ch);
   int64_t *target = (int64_t*) ctx->targets[sizeof(int64_t)];
-  if (*ch=='0' && args.keepLeadingZeros && (uint_fast8_t)(ch[1]-'0')<10) return;
+  if (*ch=='0' && args.keepLeadingZeros && IS_DIGIT(ch[1])) return;
   bool neg = *ch=='-';
   ch += (neg || *ch=='+');
   const char *start = ch;
@@ -627,7 +628,7 @@ static void StrtoI64(FieldParseContext *ctx)
   uint_fast64_t acc = 0;  // important unsigned not signed here; we now need the full unsigned range
   uint_fast8_t digit;
   uint_fast32_t sf = 0;
-  while ( (digit=(uint_fast8_t)(ch[sf]-'0'))<10 ) {
+  while ( (digit=AS_DIGIT(ch[sf]))<10 ) {
     acc = 10*acc + digit;
     sf++;
   }
@@ -651,8 +652,8 @@ static void StrtoI64(FieldParseContext *ctx)
 // TODO: review ERANGE checks and tests; that range outside [1.7e-308,1.7e+308] coerces to [0.0,Inf]
 /*
 f = "~/data.table/src/freadLookups.h"
-cat("const long double pow10lookup[601] = {\n", file=f, append=FALSE)
-for (i in (-300):(299)) cat("1.0E",i,"L,\n", sep="", file=f, append=TRUE)
+cat("const long double pow10lookup[301] = {\n", file=f, append=FALSE)
+for (i in 0:299) cat("1.0E",i,"L,\n", sep="", file=f, append=TRUE)
 cat("1.0E300L\n};\n", file=f, append=TRUE)
 */
 
@@ -677,7 +678,7 @@ static void parse_double_regular_core(const char **pch, double *target)
   #define FLOAT_MAX_DIGITS 18
   const char *ch = *pch;
 
-  if (*ch=='0' && args.keepLeadingZeros && (uint_fast8_t)(ch[1]-'0')<10) return;
+  if (*ch=='0' && args.keepLeadingZeros && IS_DIGIT(ch[1])) return;
   bool neg, Eneg;
   ch += (neg = *ch=='-') + (*ch=='+');
 
@@ -691,7 +692,7 @@ static void parse_double_regular_core(const char **pch, double *target)
   // Read the first, integer part of the floating number (but no more than
   // FLOAT_MAX_DIGITS digits).
   int_fast32_t sflimit = FLOAT_MAX_DIGITS;
-  while ((digit=(uint_fast8_t)(*ch-'0'))<10 && sflimit) {
+  while ((digit=AS_DIGIT(*ch))<10 && sflimit) {
     acc = 10*acc + digit;
     sflimit--;
     ch++;
@@ -701,8 +702,8 @@ static void parse_double_regular_core(const char **pch, double *target)
   // we will read and discard those extra digits, but only if they are followed
   // by a decimal point (otherwise it's a just big integer, which should be
   // treated as a string instead of losing precision).
-  if (sflimit==0 && (uint_fast8_t)(*ch-'0')<10) {
-    while ((uint_fast8_t)(*ch-'0')<10) {
+  if (sflimit==0 && IS_DIGIT(*ch)) {
+    while (IS_DIGIT(*ch)) {
       ch++;
       e++;
     }
@@ -725,7 +726,7 @@ static void parse_double_regular_core(const char **pch, double *target)
 
     // Now read the significant digits in the fractional part of the number
     int_fast32_t k = 0;
-    while ((digit=(uint_fast8_t)(ch[k]-'0'))<10 && sflimit) {
+    while ((digit=AS_DIGIT(ch[k]))<10 && sflimit) {
       acc = 10*acc + digit;
       k++;
       sflimit--;
@@ -735,7 +736,7 @@ static void parse_double_regular_core(const char **pch, double *target)
 
     // If more digits are present, skip them
     if (sflimit==0) {
-      while ((uint_fast8_t)(*ch-'0')<10) ch++;
+      while (IS_DIGIT(*ch)) ch++;
     }
     // Check that at least 1 digit was present in either the integer or
     // fractional part ("+1" here accounts for the decimal point char).
@@ -752,13 +753,13 @@ static void parse_double_regular_core(const char **pch, double *target)
     if (ch==start) goto fail;  // something valid must be between [+|-] and E, character E alone is invalid.
     ch += 1/*E*/ + (Eneg = ch[1]=='-') + (ch[1]=='+');
     int_fast32_t E = 0;
-    if ((digit=(uint_fast8_t)(*ch-'0'))<10) {
+    if ((digit=AS_DIGIT(*ch))<10) {
       E = digit;
       ch++;
-      if ((digit=(uint_fast8_t)(*ch-'0'))<10) {
+      if ((digit=AS_DIGIT(*ch))<10) {
         E = E*10 + digit;
         ch++;
-        if ((digit=(uint_fast8_t)(*ch-'0'))<10) {
+        if ((digit=AS_DIGIT(*ch))<10) {
           E = E*10 + digit;
           ch++;
         }
@@ -779,12 +780,13 @@ static void parse_double_regular_core(const char **pch, double *target)
     // fail to be encoded by the compiler, even though the values can actually
     // be stored correctly.
     int_fast8_t extra = e < 0 ? e + 300 : e - 300;
-    r *= pow10lookup[extra + 300];
+    r = extra<0 ? r/pow10lookup[-extra] : r*pow10lookup[extra];
     e -= extra;
   }
-  e += 300; // lookup table is arranged from -300 (0) to +300 (600)
 
-  r *= pow10lookup[e];
+  // pow10lookup[301] contains 10^(0:300). Storing negative powers there too
+  // avoids this ternary but is slightly less accurate in some cases, #4461
+  r = e < 0 ? r/pow10lookup[-e] : r*pow10lookup[e];
   *target = (double)(neg? -r : r);
   *pch = ch;
   return;
@@ -825,11 +827,11 @@ static void parse_double_extended(FieldParseContext *ctx)
   }
   if (ch[0]=='N' && (ch[1]=='A' || ch[1]=='a') && ch[2]=='N' && (ch += 3)) {
     if (ch[-2]=='a' && (*ch=='%' || *ch=='Q' || *ch=='S')) ch++;
-    while ((uint_fast8_t)(*ch-'0') < 10) ch++;
+    while (IS_DIGIT(*ch)) ch++;
     goto return_nan;
   }
   if ((ch[0]=='q' || ch[0]=='s') && ch[1]=='N' && ch[2]=='a' && ch[3]=='N' && (ch += 4)) {
-    while ((uint_fast8_t)(*ch-'0') < 10) ch++;
+    while (IS_DIGIT(*ch)) ch++;
     goto return_nan;
   }
   if (ch[0]=='1' && ch[1]=='.' && ch[2]=='#') {
@@ -915,7 +917,7 @@ static void parse_double_hexadecimal(FieldParseContext *ctx)
     acc <<= (13 - ndigits) * 4;
     ch += 1 + (Eneg = ch[1]=='-') + (ch[1]=='+');
     uint64_t E = 0;
-    while ((digit = (uint8_t)(*ch-'0')) < 10) {
+    while ((digit = AS_DIGIT(*ch)) < 10) {
       E = 10*E + digit;
       ch++;
     }
@@ -1056,7 +1058,7 @@ static void parse_iso8601_timestamp(FieldParseContext *ctx)
       if (!args.noTZasUTC)
         goto fail;
       // if neither Z nor UTC offset is present, then it's local time and that's not directly supported yet; see news for v1.13.0
-      // but user can specify that the unmarked datetimes are UTC by passing tz="UTC" 
+      // but user can specify that the unmarked datetimes are UTC by passing tz="UTC"
       // if local time is UTC (env variable TZ is "" or "UTC", not unset) then local time is UTC, and that's caught by fread at R level too
     }
   }
@@ -1079,7 +1081,7 @@ static void parse_bool_numeric(FieldParseContext *ctx)
 {
   const char *ch = *(ctx->ch);
   int8_t *target = (int8_t*) ctx->targets[sizeof(int8_t)];
-  uint8_t d = (uint8_t)(*ch - '0');  // '0'=>0, '1'=>1, everything else > 1
+  uint_fast8_t d = AS_DIGIT(*ch);  // '0'=>0, '1'=>1, everything else > 1
   if (d <= 1) {
     *target = (int8_t) d;
     *(ctx->ch) = ch + 1;
@@ -1354,7 +1356,7 @@ int freadMain(freadMainArgs _args) {
     const char* fnam = args.filename;
     #ifndef WIN32
       int fd = open(fnam, O_RDONLY);
-      if (fd==-1) STOP(_("file not found: %s"),fnam);
+      if (fd==-1) STOP(_("File not found: %s"),fnam);
       struct stat stat_buf;
       if (fstat(fd, &stat_buf) == -1) {
         close(fd);                                                     // # nocov
@@ -1597,8 +1599,8 @@ int freadMain(freadMainArgs _args) {
     ch = pos;
   } else {
     int nseps;
-    char seps[]=",|;\t ";  // default seps in order of preference. See ?fread.
-                           // seps[] not *seps for writeability (http://stackoverflow.com/a/164258/403310)
+    char seps__[] = ",|;\t ";  // default seps in order of preference; writeable http://stackoverflow.com/a/164258/403310
+    char *seps = dec!=',' ? seps__ : seps__+1;  // prevent guessing sep=',' when dec=',' #4483
     char topSep=127;       // which sep 'wins' top place (see top* below). By default 127 (ascii del) means no sep i.e. single-column input (1 field)
     if (args.sep == '\0') {
       if (verbose) DTPRINT(_("  Detecting sep automatically ...\n"));
@@ -1616,7 +1618,7 @@ int freadMain(freadMainArgs _args) {
     int topSkip=0;            // how many rows to auto-skip
     const char *topStart=NULL;
 
-    for (quoteRule=quote?0:3; quoteRule<4; quoteRule++) {
+    for (quoteRule=quote?0:3; quoteRule<4; quoteRule++) { // #loop_counter_not_local_scope_ok
       // quote rule in order of preference.
       // when top is tied the first wins, so do all seps for the first quoteRule, then all seps for the second quoteRule, etc
       for (int s=0; s<nseps; s++) {
@@ -1705,7 +1707,7 @@ int freadMain(freadMainArgs _args) {
       sep = topSep;
       // no self healing quote rules, as we don't have >1 field to disambiguate
       // choose quote rule 0 or 1 based on for which 100 rows gets furthest into file
-      for (quoteRule=0; quoteRule<=1; quoteRule++) {
+      for (quoteRule=0; quoteRule<=1; quoteRule++) { // #loop_counter_not_local_scope_ok
         int thisRow=0, thisncol=0;
         ch = pos;
         while (ch<eof && ++thisRow<jumpLines && (thisncol=countfields(&ch))>=0) {};
@@ -2271,7 +2273,7 @@ int freadMain(freadMainArgs _args) {
             fun[abs(thisType)](&fctx);
             if (*tch!=sep) break;
             int8_t thisSize = size[j];
-            if (thisSize) ((char **) targets)[thisSize] += thisSize;  // 'if' for when rereading to avoid undefined NULL+0 
+            if (thisSize) ((char **) targets)[thisSize] += thisSize;  // 'if' for when rereading to avoid undefined NULL+0
             tch++;
             j++;
           }
@@ -2360,6 +2362,9 @@ int freadMain(freadMainArgs _args) {
               if (j+fieldsRemaining != ncol) break;
               checkedNumberOfFields = true;
             }
+            if (thisType <= -NUMTYPE) {
+              break;  // Improperly quoted char field needs to be healed below, other columns will be filled #5041 and #4774
+            }
             #pragma omp critical
             {
               joldType = type[j];  // fetch shared value again in case another thread bumped it while I was waiting.
@@ -2368,8 +2373,8 @@ int freadMain(freadMainArgs _args) {
                 if (verbose) {
                   char temp[1001];
                   int len = snprintf(temp, 1000,
-                    _("Column %d (\"%.*s\") bumped from '%s' to '%s' due to <<%.*s>> on row %"PRIu64"\n"),
-                    j+1, colNames[j].len, colNamesAnchor + colNames[j].off,
+                    _("Column %d%s%.*s%s bumped from '%s' to '%s' due to <<%.*s>> on row %"PRIu64"\n"),
+                    j+1, colNames?" <<":"", colNames?(colNames[j].len):0, colNames?(colNamesAnchor+colNames[j].off):"", colNames?">>":"",
                     typeName[abs(joldType)], typeName[abs(thisType)],
                     (int)(tch-fieldStart), fieldStart, (uint64_t)(ctx.DTi+myNrow));
                   if (len > 1000) len = 1000;

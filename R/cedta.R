@@ -18,11 +18,18 @@ cedta.pkgEvalsUserCode = c("gWidgetsWWW","statET","FastRWeb","slidify","rmarkdow
 #   .datatable.aware = TRUE
 # which makes them data.table-aware optionally and possibly variably.
 # http://stackoverflow.com/a/13131555/403310
+# .datatable.aware is not in data.table's namespace and it is not intended to ever be added here. Otherwise
+#   package authors could set it using assignInNamespace and then not revert its value properly which would
+#   cause subsequent calls from other packages to fail.
 
 # cedta = Calling Environment Data.Table-Aware
 cedta = function(n=2L) {
   # Calling Environment Data Table Aware
-  ns = topenv(parent.frame(n))
+  env = parent.frame(n)
+  if (isTRUE(env$.datatable.aware)) {  # dtplyr 184
+    return(TRUE)
+  }
+  ns = topenv(env)
   if (!isNamespace(ns)) {
     # e.g. DT queries at the prompt (.GlobalEnv) and knitr's eval(,envir=globalenv()) but not DF[...] inside knitr::kable v1.6
     return(TRUE)
@@ -32,19 +39,18 @@ cedta = function(n=2L) {
     "data.table" %chin% names(getNamespaceImports(ns)) ||   # most common and recommended cases first for speed
     (nsname=="utils" &&
       (exists("debugger.look", parent.frame(n+1L)) ||
-      (length(sc<-sys.calls())>=8L && sc[[length(sc)-7L]][[1L]]=='example')) ) || # 'example' for #2972
+      (length(sc<-sys.calls())>=8L && sc[[length(sc)-7L]] %iscall% 'example')) ) || # 'example' for #2972
     (nsname=="base" && all(c("FUN", "X") %chin% ls(parent.frame(n)))) || # lapply
-    (nsname %chin% cedta.pkgEvalsUserCode && any(sapply(sys.calls(), function(x) is.name(x[[1L]]) && (x[[1L]]=="eval" || x[[1L]]=="evalq")))) ||
+    (nsname %chin% cedta.pkgEvalsUserCode && any(vapply_1b(sys.calls(), function(x) is.name(x[[1L]]) && (x[[1L]]=="eval" || x[[1L]]=="evalq")))) ||
     nsname %chin% cedta.override ||
     isTRUE(ns$.datatable.aware) ||  # As of Sep 2018: RCAS, caretEnsemble, dtplyr, rstanarm, rbokeh, CEMiTool, rqdatatable, RImmPort, BPRMeth, rlist
     tryCatch("data.table" %chin% get(".Depends",paste("package",nsname,sep=":"),inherits=FALSE),error=function(e)FALSE)  # both ns$.Depends and get(.Depends,ns) are not sufficient
   if (!ans && getOption("datatable.verbose")) {
     # nocov start
-    cat("cedta decided '",nsname,"' wasn't data.table aware. Here is call stack with [[1L]] applied:\n",sep="")
+    catf("cedta decided '%s' wasn't data.table aware. Here is call stack with [[1L]] applied:\n", nsname)
     print(sapply(sys.calls(), "[[", 1L))
     # nocov end
     # so we can trace the namespace name that may need to be added (very unusually)
   }
   ans
 }
-

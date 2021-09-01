@@ -37,7 +37,7 @@ typedef enum {
 
 extern int8_t typeSize[NUMTYPE];
 extern const char typeName[NUMTYPE][10];
-extern const long double pow10lookup[601];
+extern const long double pow10lookup[301];
 extern const uint8_t hexdigits[256];
 
 
@@ -145,7 +145,7 @@ typedef struct freadMainArgs
   bool logical01;
 
   bool keepLeadingZeros;
-  
+
   // should datetime with no Z or UTZ-offset be read as UTC?
   bool noTZasUTC;
 

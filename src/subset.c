@@ -102,12 +102,12 @@ void subsetVectorRaw(SEXP ans, SEXP source, SEXP idx, const bool anyNA)
   }
 }
 
-static const char *check_idx(SEXP idx, int max, bool *anyNA_out, bool *orderedSubset_out)
+const char *check_idx(SEXP idx, int max, bool *anyNA_out, bool *orderedSubset_out)
 // set anyNA for branchless subsetVectorRaw
 // error if any negatives, zeros or >max since they should have been dealt with by convertNegAndZeroIdx() called ealier at R level.
 // single cache efficient sweep with prefetch, so very low priority to go parallel
 {
-  if (!isInteger(idx)) error(_("Internal error. 'idx' is type '%s' not 'integer'"), type2char(TYPEOF(idx))); // # nocov
+  if (!isInteger(idx)) error(_("Internal error. Argument '%s' to %s is type '%s' not '%s'"), "idx", "check_idx", type2char(TYPEOF(idx)), "integer"); // # nocov
   bool anyLess=false, anyNA=false;
   int last = INT32_MIN;
   int *idxp = INTEGER(idx), n=LENGTH(idx);
@@ -124,39 +124,42 @@ static const char *check_idx(SEXP idx, int max, bool *anyNA_out, bool *orderedSu
   return NULL;
 }
 
-SEXP convertNegAndZeroIdx(SEXP idx, SEXP maxArg, SEXP allowOverMax)
+SEXP convertNegAndZeroIdx(SEXP idx, SEXP maxArg, SEXP allowOverMax, SEXP allowNAArg)
 {
   // called from [.data.table to massage user input, creating a new strictly positive idx if there are any negatives or zeros
   // + more precise and helpful error messages telling user exactly where the problem is (saving user debugging time)
   // + a little more efficient than negativeSubscript in src/main/subscript.c (it's private to R so we can't call it anyway)
   // allowOverMaxArg is false when := (test 1024), otherwise true for selecting
+  // allowNAArg is false when nomatch=NULL #3109 #3666
 
   if (!isInteger(idx)) error(_("Internal error. 'idx' is type '%s' not 'integer'"), type2char(TYPEOF(idx))); // # nocov
   if (!isInteger(maxArg) || length(maxArg)!=1) error(_("Internal error. 'maxArg' is type '%s' and length %d, should be an integer singleton"), type2char(TYPEOF(maxArg)), length(maxArg)); // # nocov
   if (!isLogical(allowOverMax) || LENGTH(allowOverMax)!=1 || LOGICAL(allowOverMax)[0]==NA_LOGICAL) error(_("Internal error: allowOverMax must be TRUE/FALSE"));  // # nocov
-  int max = INTEGER(maxArg)[0], n=LENGTH(idx);
+  const int max = INTEGER(maxArg)[0], n=LENGTH(idx);
   if (max<0) error(_("Internal error. max is %d, must be >= 0."), max); // # nocov    includes NA which will print as INT_MIN
-  int *idxp = INTEGER(idx);
+  if (!isLogical(allowNAArg) || LENGTH(allowNAArg)!=1 || LOGICAL(allowNAArg)[0]==NA_LOGICAL) error(_("Internal error: allowNAArg must be TRUE/FALSE"));  // # nocov
+  const bool allowNA = LOGICAL(allowNAArg)[0];
 
+  const int *idxp = INTEGER(idx);
   bool stop = false;
   #pragma omp parallel for num_threads(getDTthreads(n, true))
-  for (int i=0; i<n; i++) {
+  for (int i=0; i<n; ++i) {
     if (stop) continue;
     int elem = idxp[i];
-    if ((elem<1 && elem!=NA_INTEGER) || elem>max) stop=true;
+    if ((elem<1 && (elem!=NA_INTEGER || !allowNA)) || elem>max) stop=true;
   }
-  if (!stop) return(idx); // most common case to return early: no 0, no negative; all idx either NA or in range [1-max]
+  if (!stop) return(idx); // most common case to return early: no 0, no negative; all idx either NA (if allowNA) or in range [1-max]
 
   // ---------
-  // else massage the input to a standard idx where all items are either NA or in range [1,max] ...
+  // else massage the input to a standard idx where all items are either in range [1,max], or NA (if allowNA)
 
-  int countNeg=0, countZero=0, countNA=0, firstOverMax=0;
-  for (int i=0; i<n; i++) {
+  int countNeg=0, countZero=0, countNA=0, firstOverMax=0, countOverMax=0;
+  for (int i=0; i<n; ++i) {
     int elem = idxp[i];
     if (elem==NA_INTEGER) countNA++;
     else if (elem<0) countNeg++;
     else if (elem==0) countZero++;
-    else if (elem>max && firstOverMax==0) firstOverMax=i+1;
+    else if (elem>max && ++countOverMax && firstOverMax==0) firstOverMax=i+1;
   }
   if (firstOverMax && LOGICAL(allowOverMax)[0]==FALSE) {
     error(_("i[%d] is %d which is out of range [1,nrow=%d]"), firstOverMax, idxp[firstOverMax-1], max);
@@ -186,13 +189,24 @@ SEXP convertNegAndZeroIdx(SEXP idx, SEXP maxArg, SEXP allowOverMax)
 
   SEXP ans;
   if (countNeg==0) {
-    // just zeros to remove, or >max to convert to NA
-    ans = PROTECT(allocVector(INTSXP, n - countZero));
-    int *ansp = INTEGER(ans);
-    for (int i=0, ansi=0; i<n; i++) {
-      int elem = idxp[i];
-      if (elem==0) continue;
-      ansp[ansi++] = elem>max ? NA_INTEGER : elem;
+    if (allowNA) {
+      // remove zeros, convert >max to NA
+      ans = PROTECT(allocVector(INTSXP, n-countZero));
+      int *ansp = INTEGER(ans);
+      for (int i=0, ansi=0; i<n; ++i) {
+        int elem = idxp[i];
+        if (elem==0) continue;
+        ansp[ansi++] = elem>max ? NA_INTEGER : elem;
+      }
+    } else {
+      // remove zeros, NA and >max
+      ans = PROTECT(allocVector(INTSXP, n-countZero-countNA-countOverMax));
+      int *ansp = INTEGER(ans);
+      for (int i=0, ansi=0; i<n; ++i) {
+        int elem = idxp[i];
+        if (elem<1 || elem>max) continue;
+        ansp[ansi++] = elem;
+      }
     }
   } else {
     // idx is all negative without any NA but perhaps some zeros
@@ -257,7 +271,7 @@ static void checkCol(SEXP col, int colNum, int nrow, SEXP x)
 
 SEXP subsetDT(SEXP x, SEXP rows, SEXP cols) { // API change needs update NEWS.md and man/cdt.Rd
   int nprotect=0;
-  if (!isNewList(x)) error(_("Internal error. Argument 'x' to CsubsetDT is type '%s' not 'list'"), type2char(TYPEOF(rows))); // # nocov
+  if (!isNewList(x)) error(_("Internal error. Argument '%s' to %s is type '%s' not '%s'"), "x", "CsubsetDT", type2char(TYPEOF(rows)), "list"); // # nocov
   if (!length(x)) return(x);  // return empty list
 
   const int nrow = length(VECTOR_ELT(x,0));
@@ -265,15 +279,15 @@ SEXP subsetDT(SEXP x, SEXP rows, SEXP cols) { // API change needs update NEWS.md
   bool anyNA=false, orderedSubset=true;   // true for when rows==null (meaning all rows)
   if (!isNull(rows) && check_idx(rows, nrow, &anyNA, &orderedSubset)!=NULL) {
     SEXP max = PROTECT(ScalarInteger(nrow)); nprotect++;
-    rows = PROTECT(convertNegAndZeroIdx(rows, max, ScalarLogical(TRUE))); nprotect++;
+    rows = PROTECT(convertNegAndZeroIdx(rows, max, ScalarLogical(TRUE), ScalarLogical(TRUE))); nprotect++;
     const char *err = check_idx(rows, nrow, &anyNA, &orderedSubset);
     if (err!=NULL) error(err);
   }
 
-  if (!isInteger(cols)) error(_("Internal error. Argument 'cols' to Csubset is type '%s' not 'integer'"), type2char(TYPEOF(cols))); // # nocov
+  if (!isInteger(cols)) error(_("Internal error. Argument '%s' to %s is type '%s' not '%s'"), "cols", "Csubset", type2char(TYPEOF(cols)), "integer"); // # nocov
   for (int i=0; i<LENGTH(cols); i++) {
     int this = INTEGER(cols)[i];
-    if (this<1 || this>LENGTH(x)) error(_("Item %d of 'cols' is %d which is outside 1-based range [1,ncol(x)=%d]"), i+1, this, LENGTH(x));
+    if (this<1 || this>LENGTH(x)) error(_("Item %d of cols is %d which is outside the range [1,ncol(x)=%d]"), i+1, this, LENGTH(x));
   }
 
   int overAlloc = checkOverAlloc(GetOption(install("datatable.alloccol"), R_NilValue));

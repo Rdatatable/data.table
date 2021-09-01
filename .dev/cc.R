@@ -41,7 +41,7 @@ cc = function(test=FALSE, clean=FALSE, debug=FALSE, omp=!debug, cc_dir, path=Sys
   stopifnot(is.character(CC), length(CC)==1L, !is.na(CC), nzchar(CC))
   gc()
 
-  xx = try(getDLLRegisteredRoutines("datatable",TRUE), silent=TRUE)
+  xx = try(getDLLRegisteredRoutines("data_table",TRUE), silent=TRUE)
   if (!inherits(xx, "try-error")) {
     remove(list=sapply(xx$.Call,'[[',"name"), pos=.GlobalEnv)
     remove(list=sapply(xx$.External,'[[',"name"), pos=.GlobalEnv)
@@ -50,7 +50,7 @@ cc = function(test=FALSE, clean=FALSE, debug=FALSE, omp=!debug, cc_dir, path=Sys
 
   # Make sure library .so is not loaded (neither installed package nor from dev)
   dll = unlist(do.call("rbind",getLoadedDLLs())[,"path"])
-  dll = grep("datatable.so",dll,value=TRUE)
+  dll = grep("data_table.so",dll,value=TRUE)
   sapply(dll, dyn.unload)
   gc()
 
@@ -61,20 +61,20 @@ cc = function(test=FALSE, clean=FALSE, debug=FALSE, omp=!debug, cc_dir, path=Sys
   if (clean) system("rm *.o *.so")
   OMP = if (omp) "" else "no-"
   if (debug) {
-    ret = system(sprintf("MAKEFLAGS='-j CC=%s PKG_CFLAGS=-f%sopenmp CFLAGS=-std=c99\\ -O0\\ -ggdb\\ -pedantic' R CMD SHLIB -d -o datatable.so *.c", CC, OMP))
+    ret = system(sprintf("MAKEFLAGS='-j CC=%s PKG_CFLAGS=-f%sopenmp CFLAGS=-std=c99\\ -O0\\ -ggdb\\ -pedantic' R CMD SHLIB -d -o data_table.so *.c", CC, OMP))
   } else {
-    ret = system(sprintf("MAKEFLAGS='-j CC=%s CFLAGS=-f%sopenmp\\ -std=c99\\ -O3\\ -pipe\\ -Wall\\ -pedantic\\ -fno-common' R CMD SHLIB -o datatable.so *.c", CC, OMP))
+    ret = system(sprintf("MAKEFLAGS='-j CC=%s CFLAGS=-f%sopenmp\\ -std=c99\\ -O3\\ -pipe\\ -Wall\\ -pedantic\\ -fno-common' R CMD SHLIB -o data_table.so *.c", CC, OMP))
     # TODO add -Wextra too?
   }
   if (ret) return()
   # clang -Weverything includes -pedantic and issues many more warnings than gcc
-  # system("R CMD SHLIB -o datatable.so *.c")
+  # system("R CMD SHLIB -o data_table.so *.c")
   if (any(sapply(objects(envir=.GlobalEnv),function(x){inherits(get(x,.GlobalEnv),"data.table")}))) {
     cat("ABOUT TO RELOAD .SO BUT THERE ARE DATA.TABLE OBJECTS IN .GLOBALENV SO FINALIZER MIGHT CRASH\n")
   }
-  dyn.load("datatable.so")
+  dyn.load("data_table.so")
   setwd(old)
-  xx = getDLLRegisteredRoutines("datatable",TRUE)
+  xx = getDLLRegisteredRoutines("data_table",TRUE)
   for (i in seq_along(xx$.Call))
     assign(xx$.Call[[i]]$name,  xx$.Call[[i]]$address, envir=.GlobalEnv)
   for (i in seq_along(xx$.External))
