@@ -1174,11 +1174,11 @@ SEXP gshift(SEXP x, SEXP nArg, SEXP fillArg, SEXP typeArg) {
   //const bool lag = LOGICAL(typeArg)[0];
   bool lag;
 
-  if (!isString(type) || length(type) != 1)
+  if (!isString(typeArg) || length(typeArg) != 1)
     error(_("Internal error: invalid type for gshift(), should have been caught before. please report to data.table issue tracker")); // # nocov
-  if (!strcmp(CHAR(STRING_ELT(type, 0)), "lag")) lag = true;
-  else if (!strcmp(CHAR(STRING_ELT(type, 0)), "lead")) lag = false;
-  else if (!strcmp(CHAR(STRING_ELT(type, 0)), "shift")) error(_("gshift() does not support type='gshift' yet.")); // # nocov
+  if (!strcmp(CHAR(STRING_ELT(typeArg, 0)), "lag")) lag = true;
+  else if (!strcmp(CHAR(STRING_ELT(typeArg, 0)), "lead")) lag = false;
+  else if (!strcmp(CHAR(STRING_ELT(typeArg, 0)), "shift")) error(_("gshift() does not support type='gshift' yet.")); // # nocov
   else error(_("Internal error: invalid type for gshift(), should have been caught before. please report to data.table issue tracker")); // # nocov
 
   const bool nosubset = irowslen == -1;
@@ -1186,34 +1186,34 @@ SEXP gshift(SEXP x, SEXP nArg, SEXP fillArg, SEXP typeArg) {
 
   SEXP ans = PROTECT(allocVector(TYPEOF(x), length(x)));
   int ansi = 0;
-  #define SHIFT(CTYPE, RTYPE, TYPE, ASSIGN) {                                                    \
-    SEXP thisfill = PROTECT(coerceVector(fillArg, TYPE));                                        \
-    const CTYPE fill = (const CTYPE)RTYPE(thisfill)[0];                                          \
-    const CTYPE *xd = (const CTYPE *)RTYPE(x);                                                   \
-    for (int i=0; i<ngrp; ++i) {                                                                 \
-      const int grpn = grpsize[i];                                                               \
-      const int thisn = MIN(n, grpn);                                                            \
-      const int jstart = ff[i]-1+ (!lag)*(thisn);                                                \
-      const int jend = jstart+ MAX(0, grpn-n); /*if n > grpn -> jend = jstart */                 \
-      if (lag) {                                                                                 \
-        for (int j=0; j<thisn; ++j) {                                                            \
-          const CTYPE val = fill;                                                                \
-          ASSIGN;                                                                                \
-        }                                                                                        \
-      }                                                                                          \
-      for (int j=jstart; j<jend; ++j) {                                                          \
-        const int k = issorted ? j : oo[j]-1;                                                    \
-        const CTYPE val = nosubset ? xd[k] : (irows[k]==NA_INTEGER ? fill : xd[irows[k]-1]);     \
-        ASSIGN;                                                                                  \
-      }                                                                                          \
-      if (!lag) {                                                                                \
-        for (int j=0; j<n; ++j) {                                                                \
-          const CTYPE val = fill;                                                                \
-          ASSIGN;                                                                                \
-        }                                                                                        \
-      }                                                                                          \
-    }                                                                                            \
-    UNPROTECT(1);                                                                                \
+  #define SHIFT(CTYPE, RTYPE, TYPE, ASSIGN) {                                                 \
+    SEXP thisfill = PROTECT(coerceVector(fillArg, TYPE));                                     \
+    const CTYPE fill = (const CTYPE)RTYPE(thisfill)[0];                                       \
+    const CTYPE *xd = (const CTYPE *)RTYPE(x);                                                \
+    for (int i=0; i<ngrp; ++i) {                                                              \
+      const int grpn = grpsize[i];                                                            \
+      const int thisn = MIN(n, grpn);                                                         \
+      const int jstart = ff[i]-1+ (!lag)*(thisn);                                             \
+      const int jend = jstart+ MAX(0, grpn-n); /*if n > grpn -> jend = jstart */              \
+      if (lag) {                                                                              \
+        for (int j=0; j<thisn; ++j) {                                                         \
+          const CTYPE val = fill;                                                             \
+          ASSIGN;                                                                             \
+        }                                                                                     \
+      }                                                                                       \
+      for (int j=jstart; j<jend; ++j) {                                                       \
+        const int k = issorted ? j : oo[j]-1;                                                 \
+        const CTYPE val = nosubset ? xd[k] : (irows[k]==NA_INTEGER ? fill : xd[irows[k]-1]);  \
+        ASSIGN;                                                                               \
+      }                                                                                        \
+      if (!lag) {                                                                             \
+        for (int j=0; j<n; ++j) {                                                             \
+          const CTYPE val = fill;                                                             \
+          ASSIGN;                                                                             \
+        }                                                                                     \
+      }                                                                                       \
+    }                                                                                         \
+    UNPROTECT(1);                                                                             \
   }
   switch(TYPEOF(x)) {
   case LGLSXP:  { int *ansd=LOGICAL(ans);             SHIFT(int,     LOGICAL,  LGLSXP,   ansd[ansi++]=val); } break;
@@ -1227,7 +1227,7 @@ SEXP gshift(SEXP x, SEXP nArg, SEXP fillArg, SEXP typeArg) {
   default:
     error(_("Type '%s' is not supported by GForce gshfit. Either add the namespace prefix (e.g. data.table::shift(.)) or turn off GForce optimization using options(datatable.optimize=1)"), type2char(TYPEOF(x)));
   }
-  copyMostAttrib(x, ans);
+  // no copyMostAttrib(x, ans); since shift does not auto-name columns compare #3905
   UNPROTECT(1);
   return(ans);
 }

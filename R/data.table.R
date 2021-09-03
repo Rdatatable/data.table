@@ -1621,8 +1621,9 @@ replace_dot_alias = function(e) {
         (is.numeric(jsub[[3L]]) || jsub[[3L]] == ".N")
       headopt = jsub[[1L]] == "head" || jsub[[1L]] == "tail"
       firstopt = jsub[[1L]] == "first" || jsub[[1L]] == "last" # fix for #2030
+      shiftopt = jsub[[1L]] == "shift"
       if ((length(jsub) >= 2L && jsub[[2L]] == ".SD") &&
-          (subopt || headopt || firstopt)) {
+          (subopt || headopt || firstopt || shiftopt)) {
         if (headopt && length(jsub)==2L) jsub[["n"]] = 6L # head-tail n=6 when missing #3462
         # optimise .SD[1] or .SD[2L]. Not sure how to test .SD[a] as to whether a is numeric/integer or a data.table, yet.
         jsub = as.call(c(quote(list), lapply(sdvars, function(x) { jsub[[2L]] = as.name(x); jsub })))
@@ -2981,7 +2982,7 @@ gsd = function(x, na.rm=FALSE) .Call(Cgsd, x, na.rm)
 gshift = function(x, n=1L, fill=NA, type=c("lag", "lead")) {
   type = match.arg(type)
   stopifnot(is.numeric(n))
-  .Call(Cgshift, x, n, fill, lag)
+  .Call(Cgshift, x, n, fill, type)
 }
 gforce = function(env, jsub, o, f, l, rows) .Call(Cgforce, env, jsub, o, f, l, rows)
 
