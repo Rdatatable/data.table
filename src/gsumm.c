@@ -1205,9 +1205,9 @@ SEXP gshift(SEXP x, SEXP nArg, SEXP fillArg, SEXP typeArg) {
         const int k = issorted ? j : oo[j]-1;                                                 \
         const CTYPE val = nosubset ? xd[k] : (irows[k]==NA_INTEGER ? fill : xd[irows[k]-1]);  \
         ASSIGN;                                                                               \
-      }                                                                                        \
+      }                                                                                       \
       if (!lag) {                                                                             \
-        for (int j=0; j<n; ++j) {                                                             \
+        for (int j=0; j<thisn; ++j) {                                                         \
           const CTYPE val = fill;                                                             \
           ASSIGN;                                                                             \
         }                                                                                     \
