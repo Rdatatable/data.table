@@ -18141,4 +18141,12 @@ DT = data.table(A=letters[1:3], B=4:6, key="A")
 test(2215.1, DT["b", B], 5L)  # has worked forever
 test(2215.2, DT[factor("b"), B], 5L)  # now works too, joining fact/fact, char/fact and fact/char have plenty of tests
 
-
+# gshift
+options(datatable.optimize = 2L)
+DT = data.table(x = sample(letters[1:5], 20, TRUE),
+                y = rep.int(1:2, 10),  # to test 2 grouping columns get rep'd properly
+                i = sample(c(-2L,0L,3L,NA), 20, TRUE),
+                d = sample(c(1.2,-3.4,5.6,NA), 20, TRUE),
+                s = sample(c("foo","bar",NA), 20, TRUE),
+                l = sample(list(1:3, mean, letters[4:5], NULL), 20, replace=TRUE))
+test(2216.1, unname(DT[, shift(.SD), by = x]), unname(DT[, data.table::shift(.SD), by = x])) # namespace to escape gforce
