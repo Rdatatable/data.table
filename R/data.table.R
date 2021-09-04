@@ -1847,6 +1847,17 @@ replace_dot_alias = function(e) {
     gi = if (length(o__)) o__[f__] else f__
     g = lapply(grpcols, function(i) groups[[i]][gi])
 
+    # returns all rows instead of one per group
+    nrow_funs = c("gshift")
+    .is_nrows = function(q) {
+      if (!is.call(q)) return(FALSE)
+      if (q[[1L]] == "list") {
+        any(vapply(q, .is_nrows, FALSE))
+      } else {
+        q[[1L]] %chin% nrow_funs
+      }
+    }
+
     # adding ghead/gtail(n) support for n > 1 #5060 #523
     q3 = 0
     if (!is.symbol(jsub)) {
@@ -1864,8 +1875,8 @@ replace_dot_alias = function(e) {
     if (q3 > 0) {
       grplens = pmin.int(q3, len__)
       g = lapply(g, rep.int, times=grplens)
-    } else if (jsub[[2L]][[1L]] == "gshift") {
-      g = lapply(g, rep.int, time=len__) # FIX ME OR PAIN
+    } else if (.is_nrows(jsub)) {
+      g = lapply(g, rep.int, times=len__)
     }
     ans = c(g, ans)
   } else {
@@ -2982,7 +2993,7 @@ gsd = function(x, na.rm=FALSE) .Call(Cgsd, x, na.rm)
 gshift = function(x, n=1L, fill=NA, type=c("lag", "lead")) {
   type = match.arg(type)
   stopifnot(is.numeric(n))
-  .Call(Cgshift, x, n, fill, type)
+  .Call(Cgshift, x, as.integer(n), fill, type)
 }
 gforce = function(env, jsub, o, f, l, rows) .Call(Cgforce, env, jsub, o, f, l, rows)
 

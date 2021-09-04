@@ -1170,8 +1170,7 @@ SEXP gprod(SEXP x, SEXP narmArg) {
 SEXP gshift(SEXP x, SEXP nArg, SEXP fillArg, SEXP typeArg) {
   //if (!isInteger(nArg) || LENGTH(nArg)!=1) error(_("Internal error. This should have been caught before. please report to data.table issue tracker.")); // # nocov
   if (length(fillArg) != 1) error(_("fill must be a vector of length 1"));
-  const int n=INTEGER(nArg)[0];
-  //const bool lag = LOGICAL(typeArg)[0];
+  int n=INTEGER(nArg)[0];
   bool lag;
 
   if (!isString(typeArg) || length(typeArg) != 1)
@@ -1183,6 +1182,11 @@ SEXP gshift(SEXP x, SEXP nArg, SEXP fillArg, SEXP typeArg) {
 
   const bool nosubset = irowslen == -1;
   const bool issorted = !isunsorted;
+
+  if (n < 0) {
+    n = n * (-1);
+    lag = !lag;
+  }
 
   SEXP ans = PROTECT(allocVector(TYPEOF(x), length(x)));
   int ansi = 0;
