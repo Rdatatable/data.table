@@ -6599,63 +6599,95 @@ test(1462.3, DT[, sum(unlist(mget(cols, as.environment(-1)))), by=x], DT[, sum(u
 # test for 'shift'
 x=1:5
 y=factor(x)
-test(1463.01,  shift(x,1L),                  as.integer(c(NA, 1:4)))
-test(1463.02,  shift(x,1:2),                 list(as.integer(c(NA, 1:4)), as.integer(c(NA, NA, 1:3))))
-test(1463.03,  shift(x,1L, 0L),              as.integer(c(0L, 1:4)))
-test(1463.04,  shift(x,1L, type="lead"),     as.integer(c(2:5, NA)))
-test(1463.05,  shift(x,1:2, type="lead"),    list(as.integer(c(2:5, NA)), as.integer(c(3:5, NA, NA))))
-test(1463.06,  shift(x,1L, 0L, type="lead"), as.integer(c(2:5, 0L)))
-test(1463.07,  shift(y,1L),                  factor(c(NA,1:4), levels=1:5))
-test(1463.08,  shift(y,1L, type="lead"),     factor(c(2:5, NA), levels=1:5))
+test(1463.01, shift(x,1L),                   as.integer(c(NA, 1:4)))
+test(1463.02, shift(x,1:2),                  list(as.integer(c(NA, 1:4)), as.integer(c(NA, NA, 1:3))))
+test(1463.03, shift(x,1L, 0L),               as.integer(c(0L, 1:4)))
+test(1463.04, shift(x,1L,    type="lead"),   as.integer(c(2:5, NA)))
+test(1463.05, shift(x,1:2,   type="lead"),   list(as.integer(c(2:5, NA)), as.integer(c(3:5, NA, NA))))
+test(1463.06, shift(x,1L, 0L,type="lead"),   as.integer(c(2:5, 0L)))
+test(1463.07, shift(y,1L),                   factor(c(NA,1:4), levels=1:5))
+test(1463.08, shift(y,1L,    type="lead"),   factor(c(2:5, NA), levels=1:5))
+test(1463.09, shift(x,1L,    type="cyclic"), as.integer(c(5, 1:4)))
+test(1463.10, shift(x,1:2,   type="cyclic"), list(as.integer(c(5, 1:4)), as.integer(c(4:5, 1:3))))
+test(1463.11, shift(x,-1L,   type="cyclic"), as.integer(c(2:5, 1)))
+test(1463.12, shift(x,-(1:2),type="cyclic"), list(as.integer(c(2:5, 1)), as.integer(c(3:5,1:2))))
 
 x=as.numeric(x)
-test(1463.09,  shift(x,1L),                  as.numeric(c(NA, 1:4)))
-test(1463.10,  shift(x,1:2),                list(as.numeric(c(NA, 1:4)), as.numeric(c(NA, NA, 1:3))))
-test(1463.11, shift(x,1L, 0L),              as.numeric(c(0L, 1:4)))
-test(1463.12, shift(x,1L, type="lead"),     as.numeric(c(2:5, NA)))
-test(1463.13, shift(x,1:2, type="lead"),    list(as.numeric(c(2:5, NA)), as.numeric(c(3:5, NA, NA))))
-test(1463.14, shift(x,1L, 0L, type="lead"), as.numeric(c(2:5, 0L)))
+test(1463.13, shift(x,1L),                   as.numeric(c(NA, 1:4)))
+test(1463.14, shift(x,1:2),                  list(as.numeric(c(NA, 1:4)), as.numeric(c(NA, NA, 1:3))))
+test(1463.15, shift(x,1L, 0L),               as.numeric(c(0L, 1:4)))
+test(1463.16, shift(x,1L,    type="lead"),   as.numeric(c(2:5, NA)))
+test(1463.17, shift(x,1:2,   type="lead"),   list(as.numeric(c(2:5, NA)), as.numeric(c(3:5, NA, NA))))
+test(1463.18, shift(x,1L, 0L,type="lead"),   as.numeric(c(2:5, 0L)))
+test(1463.19, shift(x,1L,    type="cyclic"), as.numeric(c(5, 1:4)))
+test(1463.20, shift(x,1:2,   type="cyclic"), list(as.numeric(c(5, 1:4)), as.numeric(c(4:5, 1:3))))
+test(1463.21, shift(x,-1L,   type="cyclic"), as.numeric(c(2:5, 1)))
+test(1463.22, shift(x,-(1:2),type="cyclic"), list(as.numeric(c(2:5, 1)), as.numeric(c(3:5,1:2))))
+
 
 if (test_bit64) {
   x=as.integer64(x)
-  test(1463.15, shift(x,1L),                  as.integer64(c(NA, 1:4)))
-  test(1463.16, shift(x,1:2),                 list(as.integer64(c(NA, 1:4)), as.integer64(c(NA, NA, 1:3))))
-  test(1463.17, shift(x,1L, 0L),              as.integer64(c(0L, 1:4)))
-  test(1463.18, shift(x,1L, type="lead"),     as.integer64(c(2:5, NA)))
-  test(1463.19, shift(x,1:2, type="lead"),    list(as.integer64(c(2:5, NA)), as.integer64(c(3:5, NA, NA))))
-  test(1463.20, shift(x,1L, 0L, type="lead"), as.integer64(c(2:5, 0L)))
+  test(1463.23, shift(x,1L),                    as.integer64(c(NA, 1:4)))
+  test(1463.24, shift(x,1:2),                   list(as.integer64(c(NA, 1:4)), as.integer64(c(NA, NA, 1:3))))
+  test(1463.25, shift(x,1L, 0L),                as.integer64(c(0L, 1:4)))
+  test(1463.26, shift(x,1L,     type="lead"),   as.integer64(c(2:5, NA)))
+  test(1463.27, shift(x,1:2,    type="lead"),   list(as.integer64(c(2:5, NA)), as.integer64(c(3:5, NA, NA))))
+  test(1463.28, shift(x,1L, 0L, type="lead"),   as.integer64(c(2:5, 0L)))
+  test(1463.29, shift(x,1L,     type="cyclic"), as.integer64(c(5, 1:4)))
+  test(1463.30, shift(x,1:2,    type="cyclic"), list(as.integer64(c(5, 1:4)), as.integer64(c(4:5, 1:3))))
+  test(1463.31, shift(x,-1L,    type="cyclic"), as.integer64(c(2:5, 1)))
+  test(1463.32, shift(x,-(1:2), type="cyclic"), list(as.integer64(c(2:5, 1)), as.integer64(c(3:5,1:2))))
 }
 
 x=as.character(x)
-test(1463.21, shift(x,1L),                  as.character(c(NA, 1:4)))
-test(1463.22, shift(x,1:2),                 list(as.character(c(NA, 1:4)), as.character(c(NA, NA, 1:3))))
-test(1463.23, shift(x,1L, 0L),              as.character(c(0L, 1:4)))
-test(1463.24, shift(x,1L, type="lead"),     as.character(c(2:5, NA)))
-test(1463.25, shift(x,1:2, type="lead"),    list(as.character(c(2:5, NA)), as.character(c(3:5, NA, NA))))
-test(1463.26, shift(x,1L, 0L, type="lead"), as.character(c(2:5, 0L)))
+test(1463.33, shift(x,1L),                    as.character(c(NA, 1:4)))
+test(1463.34, shift(x,1:2),                   list(as.character(c(NA, 1:4)), as.character(c(NA, NA, 1:3))))
+test(1463.35, shift(x,1L, 0L),                as.character(c(0L, 1:4)))
+test(1463.36, shift(x,1L,     type="lead"),   as.character(c(2:5, NA)))
+test(1463.37, shift(x,1:2,    type="lead"),   list(as.character(c(2:5, NA)), as.character(c(3:5, NA, NA))))
+test(1463.38, shift(x,1L, 0L, type="lead"),   as.character(c(2:5, 0L)))
+test(1463.39, shift(x,1L,     type="cyclic"), as.character(c(5, 1:4)))
+test(1463.40, shift(x,1:2,    type="cyclic"), list(as.character(c(5, 1:4)), as.character(c(4:5, 1:3))))
+test(1463.41, shift(x,-1L,    type="cyclic"), as.character(c(2:5, 1)))
+test(1463.42, shift(x,-(1:2), type="cyclic"), list(as.character(c(2:5, 1)), as.character(c(3:5,1:2))))
 
 x=c(TRUE,FALSE,TRUE,FALSE,TRUE)
-test(1463.27, shift(x,1L),                  c(NA, x[-5L]))
-test(1463.28, shift(x,1:2),                 list(c(NA, x[-5L]), c(NA, NA, x[-(4:5)])))
-test(1463.29, shift(x,1L, 0L),              c(FALSE, x[-5L]))
-test(1463.30, shift(x,1L, type="lead"),     c(x[-1L], NA))
-test(1463.31, shift(x,1:2, type="lead"),    list(c(x[-1L],NA), c(x[-(1:2)],NA,NA)))
-test(1463.32, shift(x,1L, 0L, type="lead"), c(x[-(1)], FALSE))
+test(1463.43, shift(x,1L),                    c(NA, x[-5L]))
+test(1463.44, shift(x,1:2),                   list(c(NA, x[-5L]), c(NA, NA, x[-(4:5)])))
+test(1463.45, shift(x,1L, 0L),                c(FALSE, x[-5L]))
+test(1463.46, shift(x,1L,     type="lead"),   c(x[-1L], NA))
+test(1463.47, shift(x,1:2,    type="lead"),   list(c(x[-1L],NA), c(x[-(1:2)],NA,NA)))
+test(1463.48, shift(x,1L, 0L, type="lead"),   c(x[-(1)], FALSE))
+test(1463.49, shift(x,1L,     type="cyclic"), c(x[5L], x[-5L]))
+test(1463.50, shift(x,1:2,    type="cyclic"), list(c(x[5L], x[-5L]), c(x[4L:5L], x[-4L:-5L])))
+test(1463.51, shift(x,-1L,    type="cyclic"), c(x[-1L], x[1L]))
+test(1463.52, shift(x,-(1:2), type="cyclic"), list(c(x[-1L], x[1L]), c(x[-1L:-2L], x[1L:2L])))
 
 # for list of list, #1595
 x = data.table(foo = c(list(c("a","b","c")), list(c("b","c")), list(c("a","b")), list(c("a"))), id = c(1,1,2,2))
-test(1463.33, x[, shift(list(foo)), by=id],
+test(1463.53, x[, shift(list(foo)), by=id],
     data.table(id=c(1,1,2,2), V1=list(NA, c("a", "b", "c"), NA, c("a", "b"))))
-test(1463.34, x[, shift(list(foo), type="lead", fill=NA_integer_), by=id],
+test(1463.54, x[, shift(list(foo), type="lead", fill=NA_integer_), by=id],
     data.table(id=c(1,1,2,2), V1=list(c("b", "c"), NA_integer_, c("a"), NA_integer_)))
+test(1463.55, x[, shift(list(foo), 1, type="cyclic"), by=id],
+    data.table(id=c(1,1,2,2), V1=list(c("b","c"), c("a","b","c"), c("a"), c("a","b"))))
+test(1463.56, x[, shift(list(foo), -1, type="cyclic"), by=id],
+    data.table(id=c(1,1,2,2), V1=list(c("b","c"), c("a","b","c"), c("a"), c("a","b"))))
 
 # Fix for #1009 segfault in shift
 val = runif(1)
-test(1463.35, shift(val, 2L), NA_real_)
-test(1463.36, shift(val, 2L, type="lead"), NA_real_)
+test(1463.57, shift(val, 2L), NA_real_)
+test(1463.58, shift(val, 2L, type="lead"), NA_real_)
 
-test(1463.37, shift(1:5, 1L, fill=c(1:2)), error="fill must be a vector of length")
-test(1463.38, shift(mean), error="type 'closure' passed to shift(). Must be a vector, list, data.frame or data.table")
+test(1463.59, shift(1:5, 1L, fill=c(1:2)), error="fill must be a vector of length")
+test(1463.60, shift(mean), error="type 'closure' passed to shift(). Must be a vector, list, data.frame or data.table")
+
+# shift circular
+x = 1:5
+test(1463.61, shift(x, 5, type="cyclic"), x)
+test(1463.62, shift(x, -5, type="cyclic"), x)
+test(1463.63, shift(x, 6, type="cyclic"), shift(x, 1, type="cyclic"))
+test(1463.64, shift(x, -6, type="cyclic"), shift(x, -1, type="cyclic"))
 
 # add tests for date and factor?
 
@@ -6664,11 +6696,14 @@ x = 1:10
 nm = c("x_lag_1", "x_lag_2")
 ans = list(as.integer(c(NA, 1:9)), as.integer(c(NA, NA, 1:8)))
 setattr(ans, 'names', nm)
-test(1463.39, shift(x, 1:2, give.names=TRUE), ans)
+test(1463.65, shift(x, 1:2, give.names=TRUE), ans)
 
 if (test_nanotime) {
-  test(1463.40, shift(nanotime(1:4)         ), c(nanotime::nanotime(NA), nanotime::nanotime(1:3)));
-  test(1463.41, shift(nanotime(1:4), fill=0L), c(nanotime::nanotime(0L), nanotime::nanotime(1:3)));
+  x=nanotime(1:4)
+  test(1463.66, shift(x         ),           c(nanotime::nanotime(NA), x[1:3]));
+  test(1463.67, shift(x, fill=0L),           c(nanotime::nanotime(0L), x[1:3]));
+  test(1463.68, shift(x, 1,  type="cyclic"), c(x[4L], x[-4L]));
+  test(1463.69, shift(x, -1, type="cyclic"), c(x[-1L], x[1L]));
 }
 
 # FR #686
@@ -13797,6 +13832,10 @@ test(1963.16, shift(DT, -3L, type="lag"), shift(DT, 3L, type="lead"))
 DT <- data.table(a = 1:3, b = 2:4)
 test(1963.17, DT[ , shift(.SD, 0:1, give.names = TRUE, type = "lead")],
      data.table(a_lead_0 = 1:3, a_lead_1 = c(2L, 3L, NA), b_lead_0 = 2:4, b_lead_1 = c(3L, 4L, NA)))
+test(1963.18, shift(DT, 1L,  type="cyclic"), list(c(10L, 1L:9L), c(1L, 10L:2L)))
+test(1963.19, shift(DT, -1,  type="cyclic"), list(c(2L:10L, 1L), c(9L:1L, 10L)))
+test(1963.20, shift(DT, 3L,  type="cyclic"), shift(DT, -7L, type="cyclic"))
+test(1963.20, shift(DT, -3L, type="cyclic"), shift(DT, 7L, type="cyclic"))
 
 # 0 column data.table should not have rownames, #3149
 M0 = matrix(1:6, nrow=3, ncol=2, dimnames=list(rows=paste0("id",1:3), cols=c("v1","v2")))
@@ -15885,6 +15924,10 @@ test(2067.1, shift(z), c(NA, z[1:2]))
 test(2067.2, shift(z, type = 'lead'), c(z[2:3], NA))
 test(2067.3, shift(z, fill = 1i), c(1i, z[1:2]))
 test(2067.4, shift(list(z, 1:3)), list(c(NA, z[1:2]), c(NA, 1:2)))
+test(2067.5, shift(z, n=1,  type = 'cyclic'), c(z[3], z[1:2]))
+test(2067.6, shift(z, n=-1, type = 'cyclic'), c(z[2:3], z[1]))
+test(2067.7, shift(list(z, 1L:3L), n=1, type = 'cyclic'), list(c(z[3], z[1:2]), c(3L, 1:2)))
+test(2067.8, shift(list(z, 1L:3L), n=-1, type = 'cyclic'), list(c(z[2:3], z[1]), c(2:3, 1L)))
 
 # support for ordering tables with complex columns, #1444
 DT = data.table(a = 2:1, z = complex(0, 0:1))
@@ -16169,7 +16212,9 @@ test(2074.33, merge(DT, DT, by.x = 1i, by.y=1i), error="A non-empty vector of co
 
 # shift naming
 test(2074.34, shift(list(a=1:5, b=6:10), give.names=TRUE), list(a_lag_1=c(NA, 1:4), b_lag_1=c(NA, 6:9)))
+test(2074.345, shift(list(a=1:5, b=6:10), type="cyclic", give.names=TRUE), list(a_cyclic_1=c(5L, 1:4), b_cyclic_1=c(10L, 6:9)))
 test(2074.35, shift(1:5, 1:2, give.names=TRUE), list(V1_lag_1=c(NA, 1:4), V1_lag_2=c(NA, NA, 1:3)))
+test(2074.355, shift(1:5, 1:2, type="cyclic", give.names=TRUE), list(V1_cyclic_1=c(5L, 1:4), V1_cyclic_2=c(4L:5L, 1:3)))
 
 # bmerge.c
 x = data.table(a='a')
@@ -18141,4 +18186,8 @@ DT = data.table(A=letters[1:3], B=4:6, key="A")
 test(2215.1, DT["b", B], 5L)  # has worked forever
 test(2215.2, DT[factor("b"), B], 5L)  # now works too, joining fact/fact, char/fact and fact/char have plenty of tests
 
-
+# turn off coercion warning in gsum
+INT_MAX = 2147483647L
+dt = data.table(x = rep(INT_MAX, 4L), y = rep(c(1L,2L), 2))
+test(2216.1, dt[, sum(x), y], dt[, base::sum(x), y], warning="The sum of an integer column for a group was more than type 'integer'")
+test(2216.2, dt[, sum(x, warning=FALSE), y], dt[, base::sum(x), y])
