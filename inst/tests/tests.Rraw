@@ -13832,10 +13832,11 @@ test(1963.16, shift(DT, -3L, type="lag"), shift(DT, 3L, type="lead"))
 DT <- data.table(a = 1:3, b = 2:4)
 test(1963.17, DT[ , shift(.SD, 0:1, give.names = TRUE, type = "lead")],
      data.table(a_lead_0 = 1:3, a_lead_1 = c(2L, 3L, NA), b_lead_0 = 2:4, b_lead_1 = c(3L, 4L, NA)))
+DT = data.table(x = 1:10, y = 10:1)
 test(1963.18, shift(DT, 1L,  type="cyclic"), list(c(10L, 1L:9L), c(1L, 10L:2L)))
 test(1963.19, shift(DT, -1,  type="cyclic"), list(c(2L:10L, 1L), c(9L:1L, 10L)))
 test(1963.20, shift(DT, 3L,  type="cyclic"), shift(DT, -7L, type="cyclic"))
-test(1963.20, shift(DT, -3L, type="cyclic"), shift(DT, 7L, type="cyclic"))
+test(1963.21, shift(DT, -3L, type="cyclic"), shift(DT, 7L, type="cyclic"))
 
 # 0 column data.table should not have rownames, #3149
 M0 = matrix(1:6, nrow=3, ncol=2, dimnames=list(rows=paste0("id",1:3), cols=c("v1","v2")))
