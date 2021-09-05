@@ -18186,9 +18186,3 @@ test(2214.8, droplevels(DT, in.place=TRUE), DT)
 DT = data.table(A=letters[1:3], B=4:6, key="A")
 test(2215.1, DT["b", B], 5L)  # has worked forever
 test(2215.2, DT[factor("b"), B], 5L)  # now works too, joining fact/fact, char/fact and fact/char have plenty of tests
-
-# turn off coercion warning in gsum
-INT_MAX = 2147483647L
-dt = data.table(x = rep(INT_MAX, 4L), y = rep(c(1L,2L), 2))
-test(2216.1, dt[, sum(x), y], dt[, base::sum(x), y], warning="The sum of an integer column for a group was more than type 'integer'")
-test(2216.2, dt[, sum(x, warning=FALSE), y], dt[, base::sum(x), y])
