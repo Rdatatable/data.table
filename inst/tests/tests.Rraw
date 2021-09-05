@@ -6682,13 +6682,6 @@ test(1463.58, shift(val, 2L, type="lead"), NA_real_)
 test(1463.59, shift(1:5, 1L, fill=c(1:2)), error="fill must be a vector of length")
 test(1463.60, shift(mean), error="type 'closure' passed to shift(). Must be a vector, list, data.frame or data.table")
 
-# shift circular
-x = 1:5
-test(1463.61, shift(x, 5, type="cyclic"), x)
-test(1463.62, shift(x, -5, type="cyclic"), x)
-test(1463.63, shift(x, 6, type="cyclic"), shift(x, 1, type="cyclic"))
-test(1463.64, shift(x, -6, type="cyclic"), shift(x, -1, type="cyclic"))
-
 # add tests for date and factor?
 
 # test for 'give.names=TRUE' on vectors
@@ -6696,15 +6689,25 @@ x = 1:10
 nm = c("x_lag_1", "x_lag_2")
 ans = list(as.integer(c(NA, 1:9)), as.integer(c(NA, NA, 1:8)))
 setattr(ans, 'names', nm)
-test(1463.65, shift(x, 1:2, give.names=TRUE), ans)
+test(1463.61, shift(x, 1:2, give.names=TRUE), ans)
 
 if (test_nanotime) {
   x=nanotime(1:4)
-  test(1463.66, shift(x         ),           c(nanotime::nanotime(NA), x[1:3]));
-  test(1463.67, shift(x, fill=0L),           c(nanotime::nanotime(0L), x[1:3]));
-  test(1463.68, shift(x, 1,  type="cyclic"), c(x[4L], x[-4L]));
-  test(1463.69, shift(x, -1, type="cyclic"), c(x[-1L], x[1L]));
+  test(1463.62, shift(x         ),           c(nanotime::nanotime(NA), x[1:3]));
+  test(1463.63, shift(x, fill=0L),           c(nanotime::nanotime(0L), x[1:3]));
+  test(1463.64, shift(x, 1,  type="cyclic"), c(x[4L], x[-4L]));
+  test(1463.65, shift(x, -1, type="cyclic"), c(x[-1L], x[1L]));
 }
+
+# shift circular
+x = 1:5
+test(1463.66, shift(x, 5, type="cyclic"), x)
+test(1463.67, shift(x, -5, type="cyclic"), x)
+test(1463.68, shift(x, 6, type="cyclic"), shift(x, 1, type="cyclic"))
+test(1463.69, shift(x, -6, type="cyclic"), shift(x, -1, type="cyclic"))
+# test warning
+test(1463.70, shift(x, 1, fill=1, type="cyclic"), c(5L, 1L:4L), warning="Provided argument fill=1 will be ignored since type='shift'.")
+
 
 # FR #686
 DT = data.table(a=rep(c("A", "B", "C", "A", "B"), c(2,2,3,1,2)), foo=1:10)
