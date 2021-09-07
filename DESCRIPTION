@@ -61,7 +61,7 @@ Authors@R: c(
   person("Vaclav","Tlapak",        role="ctb"),
   person("Kevin","Ushey",          role="ctb"),
   person("Dirk","Eddelbuettel",    role="ctb"),
-  person("Ben","Schwen",           role="ctb"),
+  person("Benjamin","Schwendinger", role="ctb"),
   person("Tony","Fischetti",       role="ctb"),
   person("Ofek","Shilon",          role="ctb"),
   person("Vadim","Khotilovich",    role="ctb"),
