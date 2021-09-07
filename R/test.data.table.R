@@ -404,33 +404,54 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
       # nocov end
     }
   }
+  # Returns FALSE for failure, TRUE for success (both valid and essentially equal)
+  compare.data.tables <- function(x,y) {
+    if (!selfrefok(x) || !selfrefok(y)) {
+      # nocov start
+      cat("Test ",numStr," ran without errors but selfrefok(", 
+           if(!selfrefok(x)) "x" else "y", ") is FALSE\n", sep="")
+      return(FALSE)
+      # nocov end
+    }
+    
+    xc=copy(x)
+    yc=copy(y)  # so we don't affect the original data which may be used in the next test
+    # drop unused levels in factors
+    if (length(x)) for (i in which(vapply_1b(x,is.factor))) {.xi=x[[i]];xc[,(i):=factor(.xi)]}
+    if (length(y)) for (i in which(vapply_1b(y,is.factor))) {.yi=y[[i]];yc[,(i):=factor(.yi)]}
+    setattr(xc,"row.names",NULL)  # for test 165+, i.e. x may have row names set from inheritance but y won't, consider these equal
+    setattr(yc,"row.names",NULL)
+    setattr(xc,"index",NULL)   # too onerous to create test RHS with the correct index as well, just check result
+    setattr(yc,"index",NULL)
+    setattr(xc,"allow.assign.inplace",NULL)  # Following the discussion here: https://github.com/Rdatatable/data.table/pull/4978#pullrequestreview-656062798
+    setattr(yc,"allow.assign.inplace",NULL)
+    if (identical(xc,yc) && identical(key(x),key(y))) return(TRUE)  # check key on original x and y because := above might have cleared it on xc or yc
+    if (isTRUE(all.equal.result<-all.equal(xc,yc,check.environment=FALSE)) && identical(key(x),key(y)) &&
+        # ^^ to pass tests 2022.[1-4] in R-devel from 5 Dec 2020, #4835
+        identical(vapply_1c(xc,typeof), vapply_1c(yc,typeof))) return(TRUE)
+    return(FALSE)
+  }
+  
   if (!fail && !length(error) && (!length(output) || !missing(y))) {   # TODO test y when output=, too
     y = try(y,TRUE)
     if (identical(x,y)) return(invisible(TRUE))
     all.equal.result = TRUE
     if (is.data.table(x) && is.data.table(y)) {
-      if (!selfrefok(x) || !selfrefok(y)) {
-        # nocov start
-        cat("Test ",numStr," ran without errors but selfrefok(", if(!selfrefok(x))"x"else"y", ") is FALSE\n", sep="")
-        fail = TRUE
-        # nocov end
-      } else {
-        xc=copy(x)
-        yc=copy(y)  # so we don't affect the original data which may be used in the next test
-        # drop unused levels in factors
-        if (length(x)) for (i in which(vapply_1b(x,is.factor))) {.xi=x[[i]];xc[,(i):=factor(.xi)]}
-        if (length(y)) for (i in which(vapply_1b(y,is.factor))) {.yi=y[[i]];yc[,(i):=factor(.yi)]}
-        setattr(xc,"row.names",NULL)  # for test 165+, i.e. x may have row names set from inheritance but y won't, consider these equal
-        setattr(yc,"row.names",NULL)
-        setattr(xc,"index",NULL)   # too onerous to create test RHS with the correct index as well, just check result
-        setattr(yc,"index",NULL)
-        if (identical(xc,yc) && identical(key(x),key(y))) return(invisible(TRUE))  # check key on original x and y because := above might have cleared it on xc or yc
-        if (isTRUE(all.equal.result<-all.equal(xc,yc,check.environment=FALSE)) && identical(key(x),key(y)) &&
-                                                     # ^^ to pass tests 2022.[1-4] in R-devel from 5 Dec 2020, #4835
-          identical(vapply_1c(xc,typeof), vapply_1c(yc,typeof))) return(invisible(TRUE))
-      }
+      fail = !compare.data.tables(x,y)
+      if(!fail) return(invisible(TRUE))
     }
+    
     if (is.atomic(x) && is.atomic(y) && isTRUE(all.equal.result<-all.equal(x,y,check.names=!isTRUE(y))) && typeof(x)==typeof(y)) return(invisible(TRUE))
+    
+    if(is.list(x) && is.list(y) && length(x) == length(y) &&
+       all(unlist(lapply(x, is.data.table))) &&
+       all(unlist(lapply(y, is.data.table)))) {
+      for (i in seq_along(x)) {
+        fail = fail && compare.data.tables(x[i], y[i])
+      }
+      if(!fail) return(invisible(TRUE))
+    }
+    
     # For test 617 on r-prerel-solaris-sparc on 7 Mar 2013
     # nocov start
     if (!fail) {

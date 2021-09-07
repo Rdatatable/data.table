@@ -2709,7 +2709,7 @@ setDF = function(x, rownames=NULL) {
 }
 
 setDT = function(x, keep.rownames=FALSE, key=NULL, check.names=FALSE,
-                 set.allow.inplace.attrib=TRUE) {
+                 prevent.assign.inplace=TRUE) {
   name = substitute(x)
   if (is.name(name)) {
     home = function(x, env) {
@@ -2748,7 +2748,7 @@ setDT = function(x, keep.rownames=FALSE, key=NULL, check.names=FALSE,
       x[, (nm[1L]) := rn]
       setcolorder(x, nm)
     }
-    if(set.allow.inplace.attrib)
+    if(prevent.assign.inplace)
       setattr(x, "allow.assign.inplace", FALSE)
   } else if (is.list(x) && length(x)==1L && is.matrix(x[[1L]])) {
     # a single list(matrix) is unambiguous and depended on by some revdeps, #3581
@@ -2785,7 +2785,7 @@ setDT = function(x, keep.rownames=FALSE, key=NULL, check.names=FALSE,
     setattr(x,"row.names",.set_row_names(n_range[2L]))
     setattr(x,"class",c("data.table","data.frame"))
     setalloccol(x)
-    if(set.allow.inplace.attrib)
+    if(prevent.assign.inplace)
       setattr(x, "allow.assign.inplace", FALSE)
   } else {
     stop("Argument 'x' to 'setDT' should be a 'list', 'data.frame' or 'data.table'")
