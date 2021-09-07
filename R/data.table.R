@@ -51,12 +51,6 @@ null.data.table = function() {
 
 data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL, stringsAsFactors=FALSE)
 {
-  if (is.null(getOption("data.table.prevent.inplace"))) {
-    # need to add an explicit option, for a nested call to as.list.data.table that calls setDT
-    orig.opt <- options(data.table.prevent.inplace=FALSE)
-    on.exit(options(orig.opt))
-  }
-  
   # NOTE: It may be faster in some circumstances for users to create a data.table by creating a list l
   #       first, and then setattr(l,"class",c("data.table","data.frame")) and forgo checking.
   x = list(...)   # list() doesn't copy named inputs as from R >= 3.1.0 (a very welcome change)
@@ -2714,7 +2708,8 @@ setDF = function(x, rownames=NULL) {
   invisible(x)
 }
 
-setDT = function(x, keep.rownames=FALSE, key=NULL, check.names=FALSE) {
+setDT = function(x, keep.rownames=FALSE, key=NULL, check.names=FALSE,
+                 set.allow.inplace.attrib=TRUE) {
   name = substitute(x)
   if (is.name(name)) {
     home = function(x, env) {
@@ -2753,7 +2748,7 @@ setDT = function(x, keep.rownames=FALSE, key=NULL, check.names=FALSE) {
       x[, (nm[1L]) := rn]
       setcolorder(x, nm)
     }
-    if(getOption("data.table.prevent.inplace", default=TRUE))
+    if(set.allow.inplace.attrib)
       setattr(x, "allow.assign.inplace", FALSE)
   } else if (is.list(x) && length(x)==1L && is.matrix(x[[1L]])) {
     # a single list(matrix) is unambiguous and depended on by some revdeps, #3581
@@ -2790,7 +2785,7 @@ setDT = function(x, keep.rownames=FALSE, key=NULL, check.names=FALSE) {
     setattr(x,"row.names",.set_row_names(n_range[2L]))
     setattr(x,"class",c("data.table","data.frame"))
     setalloccol(x)
-    if(getOption("data.table.prevent.inplace", default=TRUE))
+    if(set.allow.inplace.attrib)
       setattr(x, "allow.assign.inplace", FALSE)
   } else {
     stop("Argument 'x' to 'setDT' should be a 'list', 'data.frame' or 'data.table'")
