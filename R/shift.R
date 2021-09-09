@@ -1,6 +1,6 @@
 shift = function(x, n=1L, fill, type=c("lag", "lead", "shift", "cyclic"), give.names=FALSE) {
   type = match.arg(type)
-  if (type == "cyclic" && !missing(fill)) warning(sprintf("Provided argument fill=%s will be ignored since type='shift'.",fill))
+  if (type == "cyclic" && !missing(fill)) warning("Provided argument fill=", fill, " will be ignored since type='shift'.")
   if (missing(fill)) fill = NA
   stopifnot(is.numeric(n))
   ans = .Call(Cshift, x, as.integer(n), fill, type)
