@@ -258,3 +258,6 @@ int dt_win_snprintf(char *dest, size_t n, const char *fmt, ...);
 
 // programming.c
 SEXP substitute_call_arg_namesR(SEXP expr, SEXP env);
+
+// topn.c
+SEXP topn(SEXP x, SEXP nArg, SEXP ascArg, SEXP naArg);

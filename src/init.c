@@ -128,6 +128,7 @@ SEXP allNAR();
 SEXP test_dt_win_snprintf();
 SEXP dt_zlib_version();
 SEXP startsWithAny();
+SEXP topn();
 
 // .Externals
 SEXP fastmean();
@@ -225,6 +226,7 @@ R_CallMethodDef callMethods[] = {
 {"Cdt_zlib_version", (DL_FUNC)&dt_zlib_version, -1},
 {"Csubstitute_call_arg_namesR", (DL_FUNC) &substitute_call_arg_namesR, -1},
 {"CstartsWithAny", (DL_FUNC)&startsWithAny, -1},
+{"Ctopn", (DL_FUNC)&topn, -1},
 {NULL, NULL, 0}
 };
 
