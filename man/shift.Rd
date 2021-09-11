@@ -41,7 +41,7 @@ shift(x, n=1:2, fill=0, type="lag")
 shift(x, n = -1:1)
 shift(x, n = -1:1, type = "shift", give.names = TRUE)
 # cyclic shift where pad uses pushed out values
-shift(x, n = -1:1, type = "shift")
+shift(x, n = -1:1, type = "cyclic")
 
 # on data.tables
 DT = data.table(year=2010:2014, v1=runif(5), v2=1:5, v3=letters[1:5])
