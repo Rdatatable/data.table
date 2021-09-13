@@ -2,27 +2,31 @@
 
 static inline void swap(int *a, int *b) { int tmp=*a; *a=*b; *b=tmp; }
 
-static inline bool icmp(const int a, const int b, const bool min, const bool nalast) {
-  if (a==NA_INTEGER) return(nalast);
-  if (b==NA_INTEGER) return(!nalast);
-  return(min ? a < b : a > b);
+static inline bool icmp(const int *x, const int a, const int b, const bool min, const bool nalast) {
+  if (x[a]==x[b]) return(a > b);
+  if (x[a]==NA_INTEGER) return(nalast);
+  if (x[b]==NA_INTEGER) return(!nalast);
+  return(min ? x[a] < x[b] : x[a] > x[b]);
 }
-static inline bool dcmp(const double a, const double b, const bool min, const bool nalast) {
-  if (isnan(a)) return(nalast);
-  if (isnan(b)) return(!nalast);
-  return(min ? a < b : a > b);
-}
-
-static inline bool i64cmp(const int64_t a, const int64_t b, const bool min, const bool nalast) {
-  if (a==NA_INTEGER64) return(nalast);
-  if (b==NA_INTEGER64) return(!nalast);
-  return(min ? a < b : a > b);
+static inline bool dcmp(const double *x, const int a, const int b, const bool min, const bool nalast) {
+  if (x[a]==x[b] || isnan(x[a]) && isnan(x[b])) return(a > b);
+  if (isnan(x[a])) return(nalast);
+  if (isnan(x[b])) return(!nalast);
+  return(min ? x[a] < x[b] : x[a] > x[b]);
 }
 
-static inline bool scmp(SEXP a, SEXP b, const bool min, bool nalast) {
-  if (a==NA_STRING) return(nalast);
-  if (b==NA_STRING) return(!nalast);
-  return(min ? strcmp(CHAR(a),CHAR(b))<0 : strcmp(CHAR(a),CHAR(b)))>0;
+static inline bool i64cmp(const int64_t *x, const int a, const int b, const bool min, const bool nalast) {
+  if (x[a]==x[b]) return(a > b);
+  if (x[a]==NA_INTEGER64) return(nalast);
+  if (x[b]==NA_INTEGER64) return(!nalast);
+  return(min ? x[a] < x[b] : x[a] > x[b]);
+}
+
+static inline bool scmp(const SEXP *restrict x, const int a, const int b, const bool min, bool nalast) {
+  if (strcmp(CHAR(x[a]), CHAR(x[b])) == 0) return (a > b);
+  if (x[a]==NA_STRING) return(nalast);
+  if (x[b]==NA_STRING) return(!nalast);
+  return(min ? strcmp(CHAR(x[a]),CHAR(x[b]))<0 : strcmp(CHAR(x[a]),CHAR(x[b])))>0;
 }
 
 // compare value with both childs and sift value down if child value smaller
@@ -34,9 +38,9 @@ static inline bool scmp(SEXP a, SEXP b, const bool min, bool nalast) {
     smallest = k;                                                     \
     l = (k << 1) + 1;                                                 \
     r = (k << 1) + 2;                                                 \
-    if (l < len && CMP(VAL[IND[l]],VAL[IND[smallest]],min,nalast))    \
+    if (l < len && CMP(VAL,IND[l],IND[smallest],min,nalast))          \
       smallest = l;                                                   \
-    if (r < len && CMP(VAL[IND[r]],VAL[IND[smallest]],min,nalast))    \
+    if (r < len && CMP(VAL,IND[r],IND[smallest],min,nalast))    \
       smallest = r;                                                   \
     if (smallest != k) {                                              \
       swap(&IND[k], &IND[smallest]);                                  \
@@ -54,7 +58,7 @@ static inline bool scmp(SEXP a, SEXP b, const bool min, bool nalast) {
   const CTYPE *restrict VAL = (const CTYPE *)RTYPE(x);    \
   for (int i=n/2; i>=0; --i) { k=i; len=n; SIFT(CMP); }   \
   for (int i=n; i<xlen; ++i) {                            \
-    if (CMP(VAL[IND[0]],VAL[i],min,nalast)) {             \
+    if (CMP(VAL,IND[0],i,min,nalast)) {             \
       IND[0] = i;                                         \
       k=0; len=n; SIFT(CMP);                              \
     }                                                     \
