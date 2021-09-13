@@ -22,11 +22,22 @@ static inline bool i64cmp(const int64_t *x, const int a, const int b, const bool
   return(min ? x[a] < x[b] : x[a] > x[b]);
 }
 
-static inline bool scmp(const SEXP *restrict x, const int a, const int b, const bool min, bool nalast) {
+static inline bool scmp(const SEXP *restrict x, const int a, const int b, const bool min, const bool nalast) {
   if (strcmp(CHAR(x[a]), CHAR(x[b])) == 0) return (a > b);
   if (x[a]==NA_STRING) return(nalast);
   if (x[b]==NA_STRING) return(!nalast);
   return(min ? strcmp(CHAR(x[a]),CHAR(x[b]))<0 : strcmp(CHAR(x[a]),CHAR(x[b])))>0;
+}
+
+static inline bool ccmp(const Rcomplex *x, const int a, const int b, const bool min, const bool nalast) {
+  if ((isnan(x[a].r) || isnan(x[a].i)) && (isnan(x[b].r) || isnan(x[b].i))) return (a > b);
+  if (x[a].r==x[b].r) {
+    if (x[a].i==x[b].i) return(a > b);
+    return(min ? x[a].i < x[b].i : x[a].i > x[b].i);
+  }
+  if (isnan(x[a].r) || isnan(x[a].i)) return(nalast);
+  if (isnan(x[b].r) || isnan(x[b].i)) return(!nalast);
+  return(min ? x[a].r < x[b].r : x[a].r > x[b].r);
 }
 
 // compare value with both childs and sift value down if child value smaller
@@ -40,7 +51,7 @@ static inline bool scmp(const SEXP *restrict x, const int a, const int b, const 
     r = (k << 1) + 2;                                                 \
     if (l < len && CMP(VAL,IND[l],IND[smallest],min,nalast))          \
       smallest = l;                                                   \
-    if (r < len && CMP(VAL,IND[r],IND[smallest],min,nalast))    \
+    if (r < len && CMP(VAL,IND[r],IND[smallest],min,nalast))          \
       smallest = r;                                                   \
     if (smallest != k) {                                              \
       swap(&IND[k], &IND[smallest]);                                  \
@@ -90,11 +101,12 @@ SEXP topn(SEXP x, SEXP nArg, SEXP naArg, SEXP ascArg) {
   int *restrict IND = malloc(n*sizeof(int));
   for (int i=0; i<n; ++i) IND[i] = i;
   switch(TYPEOF(x)) {
-  case LGLSXP: case INTSXP: {          TOPN(int,     INTEGER,    icmp); } break;
+  case LGLSXP: case INTSXP: {          TOPN(int,      INTEGER,    icmp); } break;
   case REALSXP: {
-    if (INHERITS(x, char_integer64)) { TOPN(int64_t, REAL,       i64cmp); }
-    else {                             TOPN(double,  REAL,       dcmp); } break; }
-  case STRSXP: {                       TOPN(SEXP,    STRING_PTR, scmp); } break;
+    if (INHERITS(x, char_integer64)) { TOPN(int64_t,  REAL,       i64cmp); }
+    else {                             TOPN(double,   REAL,       dcmp); } break; }
+  case CPLXSXP: {                      TOPN(Rcomplex, COMPLEX,    ccmp); } break;
+  case STRSXP: {                       TOPN(SEXP,     STRING_PTR, scmp); } break;
   default:
     free(IND); error(_("Type '%s' not supported by topn"), type2char(TYPEOF(x)));
   }
