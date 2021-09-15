@@ -48,13 +48,13 @@ static inline bool ccmp(const Rcomplex *x, const int a, const int b, const bool 
   while(true) {                                                       \
     smallest = k;                                                     \
     l = (k << 1) + 1;                                                 \
-    r = (k << 1) + 2;                                                 \
-    if (l < len && CMP(VAL,IND[l],IND[smallest],min,nalast))          \
+    r = l+1;                                                          \
+    if (l < len && CMP(VAL,INDEX[l],INDEX[smallest],min,nalast))      \
       smallest = l;                                                   \
-    if (r < len && CMP(VAL,IND[r],IND[smallest],min,nalast))          \
+    if (r < len && CMP(VAL,INDEX[r],INDEX[smallest],min,nalast))      \
       smallest = r;                                                   \
     if (smallest != k) {                                              \
-      swap(&IND[k], &IND[smallest]);                                  \
+      swap(&INDEX[k], &INDEX[smallest]);                              \
       k = smallest;                                                   \
     } else {                                                          \
       break;                                                          \
@@ -69,17 +69,17 @@ static inline bool ccmp(const Rcomplex *x, const int a, const int b, const bool 
   const CTYPE *restrict VAL = (const CTYPE *)RTYPE(x);    \
   for (int i=n/2; i>=0; --i) { k=i; len=n; SIFT(CMP); }   \
   for (int i=n; i<xlen; ++i) {                            \
-    if (CMP(VAL,IND[0],i,min,nalast)) {             \
-      IND[0] = i;                                         \
+    if (CMP(VAL,INDEX[0],i,min,nalast)) {                 \
+      INDEX[0] = i;                                       \
       k=0; len=n; SIFT(CMP);                              \
     }                                                     \
   }                                                       \
   for (int i=0; i<n; ++i) {                               \
-    swap(&IND[0], &IND[n-1-i]);                           \
+    swap(&INDEX[0], &INDEX[n-1-i]);                       \
     k=0; len=n-1-i; SIFT(CMP);                            \
-    ians[n-1-i] = IND[n-1-i]+1;                           \
+    ians[n-1-i] = INDEX[n-1-i]+1;                         \
   }                                                       \
-  free(IND);                                              \
+  free(INDEX);                                            \
 }
 
 SEXP topn(SEXP x, SEXP nArg, SEXP naArg, SEXP ascArg) {
@@ -89,7 +89,7 @@ SEXP topn(SEXP x, SEXP nArg, SEXP naArg, SEXP ascArg) {
 
   const int xlen = LENGTH(x);
   const int n = INTEGER(nArg)[0];
-  if (n > xlen) error(_("TODO"));
+  if (n > xlen) error(_("n must be smaller or equal than length(x) but provided n=%d and length(x)=%d"), n, xlen);
 
   const bool min = LOGICAL(ascArg)[0];
   const bool nalast = LOGICAL(naArg)[0];
@@ -98,8 +98,8 @@ SEXP topn(SEXP x, SEXP nArg, SEXP naArg, SEXP ascArg) {
   int k, len;
   ans = PROTECT(allocVector(INTSXP, n));
   int *restrict ians = INTEGER(ans);
-  int *restrict IND = malloc(n*sizeof(int));
-  for (int i=0; i<n; ++i) IND[i] = i;
+  int *restrict INDEX = malloc(n*sizeof(int));
+  for (int i=0; i<n; ++i) INDEX[i] = i;
   switch(TYPEOF(x)) {
   case LGLSXP: case INTSXP: {          TOPN(int,      INTEGER,    icmp); } break;
   case REALSXP: {
@@ -108,7 +108,7 @@ SEXP topn(SEXP x, SEXP nArg, SEXP naArg, SEXP ascArg) {
   case CPLXSXP: {                      TOPN(Rcomplex, COMPLEX,    ccmp); } break;
   case STRSXP: {                       TOPN(SEXP,     STRING_PTR, scmp); } break;
   default:
-    free(IND); error(_("Type '%s' not supported by topn"), type2char(TYPEOF(x)));
+    free(INDEX); error(_("Type '%s' not supported by topn"), type2char(TYPEOF(x)));
   }
   UNPROTECT(1);
   return(ans);
