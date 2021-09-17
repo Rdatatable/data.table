@@ -61,6 +61,7 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
   split.data.table = data.table:::split.data.table
   if (!exists('startsWith', 'package:base', inherits=FALSE)) startsWith = data.table:::startsWith
   test = data.table:::test
+  topn = data.table:::topn
   uniqlengths = data.table:::uniqlengths
   uniqlist = data.table:::uniqlist
   which_ = data.table:::which_
@@ -18141,4 +18142,48 @@ DT = data.table(A=letters[1:3], B=4:6, key="A")
 test(2215.1, DT["b", B], 5L)  # has worked forever
 test(2215.2, DT[factor("b"), B], 5L)  # now works too, joining fact/fact, char/fact and fact/char have plenty of tests
 
+# topn retrieving which.max/which.min for more than 1 element #3804
+test(2216.00, topn(x, 7L, na.last=TRUE,  decreasing=FALSE), order(x, na.last=TRUE,  decreasing=FALSE)[1L:7L])
+test(2216.00, topn(x, 7L, na.last=FALSE, decreasing=FALSE), order(x, na.last=FALSE, decreasing=FALSE)[1L:7L])
+test(2216.00, topn(x, 7L, na.last=TRUE,  decreasing=TRUE),  order(x, na.last=TRUE,  decreasing=TRUE)[1L:7L])
+test(2216.00, topn(x, 7L, na.last=FALSE, decreasing=TRUE),  order(x, na.last=FALSE, decreasing=TRUE)[1L:7L])
 
+test(2216.00, topn(x, 10L, na.last=TRUE,  decreasing=FALSE), order(x, na.last=TRUE,  decreasing=FALSE))
+test(2216.00, topn(x, 10L, na.last=FALSE, decreasing=FALSE), order(x, na.last=FALSE, decreasing=FALSE))
+test(2216.00, topn(x, 10L, na.last=TRUE,  decreasing=TRUE),  order(x, na.last=TRUE,  decreasing=TRUE))
+test(2216.00, topn(x, 10L, na.last=FALSE, decreasing=TRUE),  order(x, na.last=FALSE, decreasing=TRUE))
+
+set.seed(373L)
+x=list(sample(c(-1:1, NA), 10, TRUE),
+       sample(c(rnorm(3), NA), 10, TRUE),
+       sample(c(letters[1:3],NA), 10, TRUE),
+       c(NaN, Inf, -Inf),
+       c(-Inf, 0, Inf),
+       c(-Inf, Inf),
+       c(Inf, -Inf),
+       c(0, NaN),
+       c(NaN, 0),
+       c(3+9i, 10+5i, 8+2i, 10+4i, 3+3i, 1+2i, 5+1i, 8+1i, 8+2i, 10+6i),
+       c(3, 10+5i, 8, 10+4i, NA, 3, 1+2i, 5+1i, 8+1i, 8, NA))
+testnum = 2216.0
+for (i in seq.int(x)) {
+  testnum = testnum + 0.01
+  l = length(x[[i]])
+  s = sample(l-1L, 1L)
+  test(testnum+0.001, topn(x[[i]], l, na.last=TRUE,  decreasing=FALSE), order(x[[i]], na.last=TRUE,  decreasing=FALSE))
+  test(testnum+0.002, topn(x[[i]], l, na.last=FALSE, decreasing=FALSE), order(x[[i]], na.last=FALSE, decreasing=FALSE))
+  test(testnum+0.003, topn(x[[i]], l, na.last=TRUE,  decreasing=TRUE),  order(x[[i]], na.last=TRUE,  decreasing=TRUE))
+  test(testnum+0.004, topn(x[[i]], l, na.last=FALSE, decreasing=TRUE),  order(x[[i]], na.last=FALSE, decreasing=TRUE))
+  test(testnum+0.005, topn(x[[i]], s, na.last=TRUE,  decreasing=FALSE), order(x[[i]], na.last=TRUE,  decreasing=FALSE)[1L:s])
+  test(testnum+0.006, topn(x[[i]], s, na.last=FALSE, decreasing=FALSE), order(x[[i]], na.last=FALSE, decreasing=FALSE)[1L:s])
+  test(testnum+0.007, topn(x[[i]], s, na.last=TRUE,  decreasing=TRUE),  order(x[[i]], na.last=TRUE,  decreasing=TRUE)[1L:s])
+  test(testnum+0.008, topn(x[[i]], s, na.last=FALSE, decreasing=TRUE),  order(x[[i]], na.last=FALSE, decreasing=TRUE)[1L:s])
+}
+
+if (test_bit64) {
+  x=as.integer64(c(-5, 5, 0, NA, -5, 5, 1e18, NA, 5, 1e-18))
+  test(2216.901, topn(x, 10L, na.last=TRUE,  decreasing=FALSE), order(x, na.last=TRUE,  decreasing=FALSE))
+  test(2216.902, topn(x, 10L, na.last=FALSE, decreasing=FALSE), order(x, na.last=FALSE, decreasing=FALSE))
+  test(2216.903, topn(x, 10L, na.last=TRUE,  decreasing=TRUE),  order(x, na.last=TRUE,  decreasing=TRUE))
+  test(2216.904, topn(x, 10L, na.last=FALSE, decreasing=TRUE),  order(x, na.last=FALSE, decreasing=TRUE))
+}
