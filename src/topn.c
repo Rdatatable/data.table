@@ -111,7 +111,7 @@ SEXP topn(SEXP x, SEXP nArg, SEXP naArg, SEXP ascArg) {
   case CPLXSXP: {                      TOPN(Rcomplex, COMPLEX,    ccmp); } break;
   case STRSXP: {                       TOPN(SEXP,     STRING_PTR, scmp); } break;
   default:
-    free(INDEX); error(_("Type '%s' not supported by topn"), type2char(TYPEOF(x)));
+    free(INDEX); error(_("Type '%s' not supported by topn."), type2char(TYPEOF(x)));
   }
   UNPROTECT(1);
   return(ans);
