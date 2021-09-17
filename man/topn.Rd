@@ -8,6 +8,7 @@
 
   Especially, for large vectors this method will be faster and less memory intensive than \code{order} since no full sort is performed.
 
+
   \code{bit64::integer64} type is also supported.
 }
 
@@ -39,6 +40,6 @@ topn(x, 5, na.last=FALSE)
 
 }
 \seealso{
-  \code{\link{data.table}}, \code{\link{order}}, \code{\link{which.max}, \code{\link{which.min}}}
+  \code{\link{data.table}}, \code{\link{order}}, \code{\link{which.max}}, \code{\link{which.min}}
 }
 \keyword{ data }
