@@ -18167,7 +18167,7 @@ for (i in seq.int(x)) {
     testnum = testnum + 0.01
   }
 }
-test(2216.79, topn(as.raw(1), 1), error="Type 'raw' not supported by topn."
+test(2216.79, topn(as.raw(1), 1), error="Type 'raw' not supported by topn.")
 test(2216.80, topn(1L, 2L), 1L,
   warning="n should be smaller or equal than length(x) but provided n=2 and length(x)=1.\n  Coercing n to length(x).")
 test(2216.81, topn(1L, -1L), error="topn(x,n) only implemented for n > 0.")
