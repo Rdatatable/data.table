@@ -30,13 +30,13 @@ static inline bool scmp(const SEXP *restrict x, const int a, const int b, const 
 }
 
 static inline bool ccmp(const Rcomplex *x, const int a, const int b, const bool min, const bool nalast) {
-  if ((isnan(x[a].r) || isnan(x[a].i)) && (isnan(x[b].r) || isnan(x[b].i))) return (a > b);
+  if (ISNAN_COMPLEX(x[a]) && ISNAN_COMPLEX(x[b])) return (a > b);
   if (x[a].r==x[b].r) {
     if (x[a].i==x[b].i) return(a > b);
     return(min ? x[a].i < x[b].i : x[a].i > x[b].i);
   }
-  if (isnan(x[a].r) || isnan(x[a].i)) return(nalast);
-  if (isnan(x[b].r) || isnan(x[b].i)) return(!nalast);
+  if (ISNAN_COMPLEX(x[a])) return(nalast);
+  if (ISNAN_COMPLEX(x[b])) return(!nalast);
   return(min ? x[a].r < x[b].r : x[a].r > x[b].r);
 }
 
@@ -88,8 +88,11 @@ SEXP topn(SEXP x, SEXP nArg, SEXP naArg, SEXP ascArg) {
   if (!IS_TRUE_OR_FALSE(naArg)) error(_("%s must be TRUE or FALSE"), "na.last");
 
   const int xlen = LENGTH(x);
-  const int n = INTEGER(nArg)[0];
-  if (n > xlen) error(_("n must be smaller or equal than length(x) but provided n=%d and length(x)=%d"), n, xlen);
+  int n = INTEGER(nArg)[0];
+  if (n > xlen) {
+    warning(_("n should be smaller or equal than length(x) but provided n=%d and length(x)=%d.\n  Coercing n to length(x)."), n, xlen);
+    n = xlen;
+  }
 
   const bool min = LOGICAL(ascArg)[0];
   const bool nalast = LOGICAL(naArg)[0];
