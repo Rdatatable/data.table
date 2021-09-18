@@ -7,13 +7,20 @@ last = function(x, n=1L, na.rm=FALSE, ...) {
   stopifnot(isTRUEorFALSE(na.rm))
 
   if (na.rm) {
+    if (n!=1)
+      stop("na.rm=TRUE is currently only supported for n=1.")
     if (is.vector(x) && length(x)) {
-      if (verbose) cat("last: using last(x[!is.na(x)]): na.rm=T\n")
-      x = x[!is.na(x)]
-    } else if (is.data.frame(x)) {
-      if (verbose) cat("last: using last(na.omit(x)): na.rm=T\n")
-      x = na.omit(x)
-    }
+      if (verbose) cat("last: using last(x[!is.na(x)]): na.rm=TRUE\n")
+      x_na = x[!is.na(x)]
+      if(length(x_na))
+        return(x_na[length(x_na)])
+      else
+        return(x[length(x)])
+    } else if (is.data.table(x) && nrow(x)>0) {
+      if (verbose) cat("last: using x[, lapply(.SD, last, na.rm=TRUE)]): na.rm=TRUE\n")
+      return(x[, lapply(.SD, last, na.rm=TRUE)])
+    } else
+        stop("na.rm=TRUE is currently only supported for vectors and data.tables.")
   }
 
   if (!inherits(x, "xts")) {
@@ -61,13 +68,20 @@ first = function(x, n=1L, na.rm=FALSE, ...) {
   stopifnot(isTRUEorFALSE(na.rm))
 
   if (na.rm) {
+    if (n!=1)
+      stop("na.rm=TRUE is currently only supported for n=1.")
     if (is.vector(x) && length(x)) {
-      if (verbose) cat("first: using first(x[!is.na(x)]): na.rm=T\n")
-      x = x[!is.na(x)]
-    } else if (is.data.frame(x)) {
-      if (verbose) cat("first: using first(na.omit(x)): na.rm=T\n")
-      x = na.omit(x)
-    }
+      if (verbose) cat("first: using first(x[!is.na(x)]): na.rm=TRUE\n")
+      x_na = x[!is.na(x)]
+      if (length(x_na))
+        return(x_na[1L])
+      else
+        return(x[1L])
+    } else if (is.data.table(x) && nrow(x)>0) {
+      if (verbose) cat("first: using x[, lapply(.SD, first, na.rm=TRUE)]): na.rm=TRUE\n")
+      return(x[, lapply(.SD, first, na.rm=TRUE)])
+    } else
+        stop("na.rm=TRUE is currently only supported for vectors and data.tables.")
   }
 
   if (!inherits(x, "xts")) {
