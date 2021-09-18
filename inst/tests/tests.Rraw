@@ -18182,4 +18182,8 @@ test(2216.14, first(1L:5L, -1L, na.rm=TRUE), error="na.rm=TRUE is currently only
 test(2216.15,  last(1L:5L, -1L, na.rm=TRUE), error="na.rm=TRUE is currently only supported for n=1.")
 test(2216.16, first(list(), na.rm=TRUE), error="na.rm=TRUE is currently only supported for vectors and data.tables.")
 test(2216.17,  last(list(), na.rm=TRUE), error="na.rm=TRUE is currently only supported for vectors and data.tables.")
-
+DT = data.table(a=c(1L,NA,NA,NA), b=c(1L,2L))
+test(2216.18, DT[, first(a, na.rm=TRUE), b], data.table(b=c(1L, 2L), V1=c(1L, NA)))
+test(2216.19, DT[,  last(a, na.rm=TRUE), b], data.table(b=c(1L, 2L), V1=c(1L, NA)))
+test(2216.20, first(rep(NA, 10), na.rm=TRUE), NA)
+test(2216.21,  last(rep(NA, 10), na.rm=TRUE), NA)
