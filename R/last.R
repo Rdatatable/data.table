@@ -1,8 +1,21 @@
 # data.table defined last(x) with no arguments, just for last. If you need the last 10 then use tail(x,10).
 # for xts class objects it will dispatch to xts::last
 # reworked to avoid loading xts namespace (#3857) then again to fix dispatching of xts class (#4053)
-last = function(x, n=1L, ...) {
+last = function(x, n=1L, na.rm=FALSE, ...) {
   verbose = isTRUE(getOption("datatable.verbose", FALSE))
+
+  stopifnot(isTRUEorFALSE(na.rm))
+
+  if (na.rm) {
+    if (is.vector(x) && length(x)) {
+      if (verbose) cat("last: using last(x[!is.na(x)]): na.rm=T\n")
+      x = x[!is.na(x)]
+    } else if (is.data.frame(x)) {
+      if (verbose) cat("last: using last(na.omit(x)): na.rm=T\n")
+      x = na.omit(x)
+    }
+  }
+
   if (!inherits(x, "xts")) {
     if (nargs()>1L) {
       if ("package:xts" %chin% search()) {
@@ -42,8 +55,21 @@ last = function(x, n=1L, ...) {
   }
 }
 
-first = function(x, n=1L, ...) {
+first = function(x, n=1L, na.rm=FALSE, ...) {
   verbose = isTRUE(getOption("datatable.verbose", FALSE))
+
+  stopifnot(isTRUEorFALSE(na.rm))
+
+  if (na.rm) {
+    if (is.vector(x) && length(x)) {
+      if (verbose) cat("first: using first(x[!is.na(x)]): na.rm=T\n")
+      x = x[!is.na(x)]
+    } else if (is.data.frame(x)) {
+      if (verbose) cat("first: using first(na.omit(x)): na.rm=T\n")
+      x = na.omit(x)
+    }
+  }
+
   if (!inherits(x, "xts")) {
     if (nargs()>1L) {
       if ("package:xts" %chin% search()) {

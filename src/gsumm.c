@@ -912,7 +912,10 @@ SEXP gmedian(SEXP x, SEXP narmArg) {
   return ans;
 }
 
-static SEXP gfirstlast(SEXP x, const bool first, const int w, const bool headw) {
+static SEXP gfirstlast(SEXP x, const bool first, const int w, const bool headw, SEXP narmArg) {
+  if (!IS_TRUE_OR_FALSE(narmArg))
+    error(_("%s must be TRUE or FALSE"), "na.rm");
+  const bool narm = LOGICAL(narmArg)[0];
   // w: which item (1 other than for gnthvalue when could be >1)
   // headw: select 1:w of each group when first=true, and (n-w+1):n when first=false (i.e. tail)
   const bool nosubset = irowslen == -1;
@@ -949,7 +952,16 @@ static SEXP gfirstlast(SEXP x, const bool first, const int w, const bool headw) 
       for (int i=0; i<ngrp; ++i) {                                                                 \
         const int j = ff[i]-1 + (first ? 0 : grpsize[i]-1);                                        \
         const int k = issorted ? j : oo[j]-1;                                                      \
-        const CTYPE val = nosubset ? xd[k] : (irows[k]==NA_INTEGER ? RNA : xd[irows[k]-1]);        \
+        CTYPE val = nosubset ? xd[k] : (irows[k]==NA_INTEGER ? RNA : xd[irows[k]-1]);              \
+        if (narm) {                                                                                \
+          for (int l=0; l < grpsize[i]; ++l) {                                                     \
+            const int m = first ? (issorted ? (j+l) : oo[j+l]-1) : (issorted ? (j-l) : oo[j-l]-1); \
+            if (!ISNAT(nosubset ? xd[m] : (irows[m]==NA_INTEGER ? RNA : xd[irows[m]-1]))) {        \
+              val = nosubset ? xd[m] : (xd[irows[m]-1]);                                           \
+              break;                                                                               \
+            }                                                                                      \
+          }                                                                                        \
+        }                                                                                          \
         ASSIGN;                                                                                    \
       }                                                                                            \
     } else if (w>1 && first) {                                                                     \
@@ -970,14 +982,38 @@ static SEXP gfirstlast(SEXP x, const bool first, const int w, const bool headw) 
     }                                                                                              \
   }
   switch(TYPEOF(x)) {
-  case LGLSXP:  { int      *ansd=LOGICAL(ans); DO(int,      LOGICAL, NA_LOGICAL,   ansd[ansi++]=val) } break;
-  case INTSXP:  { int      *ansd=INTEGER(ans); DO(int,      INTEGER, NA_INTEGER,   ansd[ansi++]=val) } break;
+  case LGLSXP:  {
+    #undef ISNAT
+    #define ISNAT(x) ((x)==NA_INTEGER)
+    int      *ansd=LOGICAL(ans);        DO(int,      LOGICAL, NA_LOGICAL,   ansd[ansi++]=val)
+  } break;
+  case INTSXP:  {
+    #undef ISNAT
+    #define ISNAT(x) ((x)==NA_INTEGER)
+    int      *ansd=INTEGER(ans);        DO(int,      INTEGER, NA_INTEGER,   ansd[ansi++]=val)
+  } break;
   case REALSXP: if (INHERITS(x, char_integer64)) {
-           int64_t *ansd=(int64_t *)REAL(ans); DO(int64_t,  REAL,    NA_INTEGER64, ansd[ansi++]=val) }
-           else { double      *ansd=REAL(ans); DO(double,   REAL,    NA_REAL,      ansd[ansi++]=val) } break;
-  case CPLXSXP: { Rcomplex *ansd=COMPLEX(ans); DO(Rcomplex, COMPLEX, NA_CPLX,      ansd[ansi++]=val) } break;
-  case STRSXP:  DO(SEXP, STRING_PTR, NA_STRING,                 SET_STRING_ELT(ans,ansi++,val))        break;
-  case VECSXP:  DO(SEXP, SEXPPTR_RO, ScalarLogical(NA_LOGICAL), SET_VECTOR_ELT(ans,ansi++,val))        break;
+    #undef ISNAT
+    #define ISNAT(x) ((x)==NA_INTEGER64)
+    int64_t *ansd=(int64_t *)REAL(ans); DO(int64_t,  REAL,    NA_INTEGER64, ansd[ansi++]=val)
+    } else {
+    #undef ISNAT
+    #define ISNAT(x) (ISNAN(x))
+    double      *ansd=REAL(ans);        DO(double,   REAL,    NA_REAL,      ansd[ansi++]=val)
+  } break;
+  case CPLXSXP: {
+    #undef ISNAT
+    #define ISNAT(x) (ISNAN_COMPLEX(x))
+    Rcomplex *ansd=COMPLEX(ans);        DO(Rcomplex, COMPLEX, NA_CPLX,      ansd[ansi++]=val)
+  } break;
+  case STRSXP: {
+    #undef ISNAT
+    #define ISNAT(x) ((x)==NA_STRING)
+    DO(SEXP, STRING_PTR, NA_STRING,                 SET_STRING_ELT(ans,ansi++,val)) } break;
+  case VECSXP: {
+    #undef ISNAT
+    #define ISNAT(x) (isNull(x))
+    DO(SEXP, SEXPPTR_RO, ScalarLogical(NA_LOGICAL), SET_VECTOR_ELT(ans,ansi++,val))  } break;
   default:
     error(_("Type '%s' is not supported by GForce head/tail/first/last/`[`. Either add the namespace prefix (e.g. utils::head(.)) or turn off GForce optimization using options(datatable.optimize=1)"), type2char(TYPEOF(x)));
   }
@@ -986,29 +1022,29 @@ static SEXP gfirstlast(SEXP x, const bool first, const int w, const bool headw) 
   return(ans);
 }
 
-SEXP glast(SEXP x) {
-  return gfirstlast(x, false, 1, false);
+SEXP glast(SEXP x, SEXP narmArg) {
+  return gfirstlast(x, false, 1, false, narmArg);
 }
 
-SEXP gfirst(SEXP x) {
-  return gfirstlast(x, true, 1, false);
+SEXP gfirst(SEXP x, SEXP narmArg) {
+  return gfirstlast(x, true, 1, false, narmArg);
 }
 
 SEXP gtail(SEXP x, SEXP nArg) {
   if (!isInteger(nArg) || LENGTH(nArg)!=1 || INTEGER(nArg)[0]<1) error(_("Internal error, gtail is only implemented for n>0. This should have been caught before. please report to data.table issue tracker.")); // # nocov
   const int n=INTEGER(nArg)[0];
-  return n==1 ? glast(x) : gfirstlast(x, false, n, true);
+  return n==1 ? glast(x, ScalarLogical(0)) : gfirstlast(x, false, n, true, ScalarLogical(0));
 }
 
 SEXP ghead(SEXP x, SEXP nArg) {
   if (!isInteger(nArg) || LENGTH(nArg)!=1 || INTEGER(nArg)[0]<1) error(_("Internal error, gtail is only implemented for n>0. This should have been caught before. please report to data.table issue tracker.")); // # nocov
   const int n=INTEGER(nArg)[0];
-  return n==1 ? gfirst(x) : gfirstlast(x, true, n, true);
+  return n==1 ? gfirst(x, ScalarLogical(0)) : gfirstlast(x, true, n, true, ScalarLogical(0));
 }
 
 SEXP gnthvalue(SEXP x, SEXP nArg) {
   if (!isInteger(nArg) || LENGTH(nArg)!=1 || INTEGER(nArg)[0]<1) error(_("Internal error, `g[` (gnthvalue) is only implemented single value subsets with positive index, e.g., .SD[2]. This should have been caught before. please report to data.table issue tracker.")); // # nocov
-  return gfirstlast(x, true, INTEGER(nArg)[0], false);
+  return gfirstlast(x, true, INTEGER(nArg)[0], false, ScalarLogical(0));
 }
 
 // TODO: gwhich.min, gwhich.max

@@ -141,6 +141,27 @@
 
 26. `base::droplevels()` gains a fast method for `data.table`, [#647](https://github.com/Rdatatable/data.table/issues/647). Thanks to Steve Lianoglou for requesting, and Jan Gorecki and Benjamin Schwendinger for the PR. `fdroplevels()` for use on vectors has also been added.
 
+27. `first` and `last` gain `na.rm` argument to say whether `NA` should be ignored for finding first/last, [#4446](https://github.com/Rdatatable/data.table/issues/4446). The additional argument `na.rm` is also added to the GForce optimized versions of `first` and `last` where `NA` is still returned as first/last for groups only consisting of `NA`s, [#4239](https://github.com/Rdatatable/data.table/issues/4239). Thanks to Nicolas Bennett and Michael Chirico for the request, and Benjamin Schwendinger for the PR.
+
+    ```R
+    DT = data.table(a=c(1:3,NA), b=1:2, c=c(1L, rep(NA, 3)))
+    DT
+    #       a     b     c
+    #   <int> <int> <int>
+    #1:     1     1     1
+    #2:     2     2    NA
+    #3:     3     1    NA
+    #4:    NA     2    NA
+    last(DT, na.rm=TRUE)
+    #       a     b     c
+    #   <int> <int> <int>
+    #1:     1     1     1
+    DT[, last(.SD, na.rm=TRUE), b]
+    #       b     a     c
+    #   <int> <int> <int>
+    #1:     1     3     1
+    #2:     2     2    NA
+    ```
 ## BUG FIXES
 
 1. `by=.EACHI` when `i` is keyed but `on=` different columns than `i`'s key could create an invalidly keyed result, [#4603](https://github.com/Rdatatable/data.table/issues/4603) [#4911](https://github.com/Rdatatable/data.table/issues/4911). Thanks to @myoung3 and @adamaltmejd for reporting, and @ColeMiller1 for the PR. An invalid key is where a `data.table` is marked as sorted by the key columns but the data is not sorted by those columns, leading to incorrect results from subsequent queries.
