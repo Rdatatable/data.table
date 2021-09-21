@@ -105,7 +105,7 @@ Moved out of ?setkey Details section in 1.12.2 (Mar 2019). Revisit this w.r.t. t
   \code{identical()} and \code{object.size()}.
 */
 
-static int _selfrefok(SEXP x, Rboolean checkNames, Rboolean verbose) {
+static int _selfrefok(SEXP x, bool verbose) {
   SEXP v, p, tag, prot, names;
   v = getAttrib(x, SelfRefSymbol);
   if (v==R_NilValue || TYPEOF(v)!=EXTPTRSXP) {
@@ -134,22 +134,27 @@ static int _selfrefok(SEXP x, Rboolean checkNames, Rboolean verbose) {
     return 0;                      // # nocov ; see http://stackoverflow.com/questions/15342227/getting-a-random-internal-selfref-error-in-data-table-for-r
   if (x!=R_ExternalPtrAddr(prot) && !ALTREP(x))
     SET_TRUELENGTH(x, LENGTH(x));  // R copied this vector not data.table, it's not actually over-allocated
-  return checkNames ? names==tag : x==R_ExternalPtrAddr(prot);
+  return names==tag && x==R_ExternalPtrAddr(prot);
 }
 
-static Rboolean selfrefok(SEXP x, Rboolean verbose) {   // for readability
-  return(_selfrefok(x, FALSE, verbose)==1);
-}
-static Rboolean selfrefnamesok(SEXP x, Rboolean verbose) {
-  return(_selfrefok(x, TRUE, verbose)==1);
+static bool selfrefok(SEXP x, bool verbose) {
+  return _selfrefok(x, verbose)==1;
 }
 
-static SEXP shallow(SEXP dt, SEXP cols, R_len_t n)
+SEXP selfrefokwrapper(SEXP x, SEXP verbose) {
+  if (!IS_TRUE_OR_FALSE(verbose))
+    error(_("%s must be TRUE or FALSE"), "verbose"); // # nocov
+  return ScalarInteger(_selfrefok(x, LOGICAL(verbose)[0]));
+}
+
+static SEXP _shallow(SEXP dt, SEXP cols, const int nSpare)
 {
-  // NEW: cols argument to specify the columns to shallow copy on. If NULL, all columns.
-  // called from alloccol where n is checked carefully, or from shallow() at R level
-  // where n is set to truelength (i.e. a shallow copy only with no size change)
+  // cols: the columns to shallow copy on; all if NULL
+  // nSpare: passed by user to setalloccol()/alloc.col(); otherwise <0 means the datatable.alloccol option 
+  if (TYPEOF(dt)!=VECSXP) error(_("dt passed to shallow isn't type VECSXP"));
+  if (!isNull(cols) && !isInteger(cols)) error(_("cols passed to shallow isn't NULL or integer"));
   int protecti=0;
+  const int n = (isNull(cols) ? length(dt) : length(cols)) + (nSpare<0 ? allocColOpt() : nSpare);
   SEXP newdt = PROTECT(allocVector(VECSXP, n)); protecti++;   // to do, use growVector here?
   SET_ATTRIB(newdt, shallow_duplicate(ATTRIB(dt)));
   SET_OBJECT(newdt, OBJECT(dt));
@@ -200,6 +205,16 @@ static SEXP shallow(SEXP dt, SEXP cols, R_len_t n)
   return(newdt);
 }
 
+SEXP shallow(SEXP dt, SEXP cols) {
+  return _shallow(dt, cols, -1);
+}
+
+SEXP copy(SEXP x)
+{
+  return INHERITS(x, char_datatable) ? _shallow(x, R_NilValue, -1) : duplicate(x);
+}
+
+/*
 SEXP alloccol(SEXP dt, R_len_t n, Rboolean verbose)
 {
   SEXP names, klass;   // klass not class at request of pydatatable because class is reserved word in C++, PR #3129
@@ -214,7 +229,7 @@ SEXP alloccol(SEXP dt, R_len_t n, Rboolean verbose)
   // So, careful to use length() on names, not LENGTH().
   if (length(names)!=l) error(_("Internal error: length of names (%d) is not length of dt (%d)"),length(names),l); // # nocov
   if (!selfrefok(dt,verbose))
-    return shallow(dt,R_NilValue,(n>l) ? n : l);  // e.g. test 848 and 851 in R > 3.0.2
+    return shallow(dt,R_NilValue);  // e.g. test 848 and 851 in R > 3.0.2
     // added (n>l) ? ... for #970, see test 1481.
   // TO DO:  test realloc names if selfrefnamesok (users can setattr(x,"name") themselves for example.
   // if (TRUELENGTH(getAttrib(dt,R_NamesSymbol))!=tl)
@@ -230,55 +245,50 @@ SEXP alloccol(SEXP dt, R_len_t n, Rboolean verbose)
         // otherwise the finalizer can't clear up the Large Vector heap
   return(dt);
 }
+*/
 
-int checkOverAlloc(SEXP x)
+int allocColOpt()
 {
-  if (isNull(x))
-    error(_("Has getOption('datatable.alloccol') somehow become unset? It should be a number, by default 1024."));
-  if (!isInteger(x) && !isReal(x))
-    error(_("getOption('datatable.alloccol') should be a number, by default 1024. But its type is '%s'."), type2char(TYPEOF(x)));
-  if (LENGTH(x) != 1)
-    error(_("getOption('datatable.alloc') is a numeric vector ok but its length is %d. Its length should be 1."), LENGTH(x));
+  SEXP x = GetOption(sym_alloccol, R_NilValue);
+  if (length(x)!=1 || (!isInteger(x) && !isReal(x)))
+    error(_("%s should be a single number but it is length %d and type '%s'."), "getOption('datatable.alloccol')", length(x), type2char(TYPEOF(x)));
   int ans = isInteger(x) ? INTEGER(x)[0] : (int)REAL(x)[0];
   if (ans<0)
-    error(_("getOption('datatable.alloc')==%d.  It must be >=0 and not NA."), ans);
+    error(_("%s is %d. It must be >=0 and not NA."), "getOption('datatable.alloccol')", ans);
   return ans;
 }
 
-SEXP alloccolwrapper(SEXP dt, SEXP overAllocArg, SEXP verbose) {
-  if (!IS_TRUE_OR_FALSE(verbose))
+SEXP alloccolwrapper(SEXP dt, SEXP nSpareArg, SEXP verboseArg) {
+  if (TYPEOF(dt) != VECSXP)
+    error(_("dt passed to alloccol isn't type VECSXP"));
+  if (!IS_TRUE_OR_FALSE(verboseArg))
     error(_("%s must be TRUE or FALSE"), "verbose");
-  int overAlloc = checkOverAlloc(overAllocArg);
-  SEXP ans = PROTECT(alloccol(dt, length(dt)+overAlloc, LOGICAL(verbose)[0]));
+  const bool verbose = LOGICAL(verboseArg)[0];
+  if (length(nSpareArg)!=1 || (!isInteger(nSpareArg) && !isReal(nSpareArg)))
+    error(_("%s should be a single number but it is length %d and type '%s'"), "getOption('datatable.alloccol') (or an argument with this default)", length(nSpareArg), type2char(TYPEOF(nSpareArg)));
+  int nSpare = isInteger(nSpareArg) ? INTEGER(nSpareArg)[0] : (int)REAL(nSpareArg)[0];
+  if (nSpare<0)
+    error(_("%s is %d. It must be >=0 and not NA."), "getOption('datatable.alloccol') (or an argument with this default)", nSpare);
+  int tl=TRUELENGTH(dt), l=LENGTH(dt);
+  if (tl<0 || (tl>0 && tl<l)) error(_("Internal error, tl=%d l=%d"), tl, l); // # nocov
+  if (tl>l+10000) warning(_("tl (%d) is greater than 10,000 items over-allocated (l = %d). If you didn't set the datatable.alloccol option to be very large, please report to data.table issue tracker including the result of sessionInfo()."),tl,l);
+  if (l+nSpare>tl || !selfrefok(dt,verbose))
+    return _shallow(dt, R_NilValue, nSpare);  // usual case (increasing over-alloc)
+  if (verbose && l+nSpare<tl)
+    Rprintf(_("Attempt to reduce allocation from %d to %d ignored. Can only increase allocation via shallow copy. Please do not use DT[...]<- or DT$someCol<-. Use := inside DT[...] instead."),tl,l+nSpare);
+  return dt;
 
-  for(R_len_t i = 0; i < LENGTH(ans); i++) {
-    // clear names; also excluded by copyMostAttrib(). Primarily for data.table and as.data.table, but added here centrally (see #103).
-    setAttrib(VECTOR_ELT(ans, i), R_NamesSymbol, R_NilValue);
+  // for(R_len_t i = 0; i < LENGTH(ans); i++) {
+  //   // clear names; also excluded by copyMostAttrib(). Primarily for data.table and as.data.table, but added here centrally (see #103).
+  //   setAttrib(VECTOR_ELT(ans, i), R_NamesSymbol, R_NilValue);
+  // }
 
-    // But don't clear dim and dimnames. Because as from 1.12.4 we keep the matrix column as-is and ask user to use as.data.table to
-    // unpack matrix columns when they really need to; test 2089.2
-    // setAttrib(VECTOR_ELT(ans, i), R_DimSymbol, R_NilValue);
-    // setAttrib(VECTOR_ELT(ans, i), R_DimNamesSymbol, R_NilValue);
-  }
-
-  UNPROTECT(1);
-  return ans;
-}
-
-SEXP shallowwrapper(SEXP dt, SEXP cols) {
-  // selfref will be FALSE on manually created data.table, e.g., via dput() or structure()
-  if (!selfrefok(dt, FALSE)) {
-    int n = isNull(cols) ? length(dt) : length(cols);
-    return(shallow(dt, cols, n));
-  } else return(shallow(dt, cols, TRUELENGTH(dt)));
+  //UNPROTECT(1);
+  //return ans;
 }
 
 SEXP truelength(SEXP x) {
   return ScalarInteger(isNull(x) ? 0 : TRUELENGTH(x));
-}
-
-SEXP selfrefokwrapper(SEXP x, SEXP verbose) {
-  return ScalarInteger(_selfrefok(x,FALSE,LOGICAL(verbose)[0]));
 }
 
 int *_Last_updated = NULL;
@@ -291,7 +301,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
   // rows : row numbers to assign
   R_len_t numToDo, targetlen, vlen, oldncol, oldtncol, coln, protecti=0, newcolnum, indexLength;
   SEXP targetcol, nullint, s, colnam, tmp, key, index, a, assignedNames, indexNames;
-  bool verbose=GetVerbose();
+  bool verbose=GetVerbose();  // for faster set() iteration, perhaps remove verbosity, as searching for the option takes a small amount of time
   int ndelete=0;  // how many columns are being deleted
   const char *c1, *tc1, *tc2;
   int *buf, indexNo;
@@ -307,7 +317,10 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
   bool isDataTable = INHERITS(dt, char_datatable);
   if (!isDataTable && !INHERITS(dt, char_dataframe))
     error(_("Internal error: dt passed to Cassign is not a data.table or data.frame"));  // # nocov
-
+  if (isDataTable && !selfrefok(dt, verbose)) {
+    warning(_("Invalid .internal.selfref detected; returning a shallow copy. At an earlier point this data.table was copied when using R's <- or = operator, copied by another package, or created manually using structure() or similar. Please use data.table's := and set* functions which maintain data.table's over-allocation, key and indices. Use options(datatable.warn.R.assign=TRUE) to find usage of <- and = on a data.table. See ?set, ?setnames and ?setattr. If this message doesn't help, please report your use case to the data.table issue tracker so the root cause can be fixed or this message improved."));
+    dt = copy(dt);
+  }
   oldncol = LENGTH(dt);
   SEXP names = PROTECT(getAttrib(dt, R_NamesSymbol)); protecti++;
   if (isNull(names)) error(_("dt passed to assign has no names"));
@@ -465,12 +478,8 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
     if (oldtncol>oldncol+10000L) warning(_("truelength (%d) is greater than 10,000 items over-allocated (length = %d). See ?truelength. If you didn't set the datatable.alloccol option very large, please report to data.table issue tracker including the result of sessionInfo()."),oldtncol, oldncol);
     if (oldtncol < oldncol+LENGTH(newcolnames))
       error(_("Internal error: DT passed to assign has not been allocated enough column slots. l=%d, tl=%d, adding %d"), oldncol, oldtncol, LENGTH(newcolnames));  // # nocov
-    if (!selfrefnamesok(dt,verbose))
-      error(_("It appears that at some earlier point, names of this data.table have been reassigned. Please ensure to use setnames() rather than names<- or colnames<-. Otherwise, please report to data.table issue tracker."));  // # nocov
-      // Can growVector at this point easily enough, but it shouldn't happen in first place so leave it as
-      // strong error message for now.
-    else if (TRUELENGTH(names) != oldtncol)
-      error(_("Internal error: selfrefnames is ok but tl names [%d] != tl [%d]"), TRUELENGTH(names), oldtncol);  // # nocov
+    if (TRUELENGTH(names) != oldtncol)
+      error(_("Internal error: selfref is ok but tl names [%d] != tl [%d]"), TRUELENGTH(names), oldtncol);  // # nocov
     SETLENGTH(dt, oldncol+LENGTH(newcolnames));
     SETLENGTH(names, oldncol+LENGTH(newcolnames));
     for (int i=0; i<LENGTH(newcolnames); ++i)

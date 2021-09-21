@@ -1308,6 +1308,7 @@ old = getOption("datatable.alloccol")  # Test that unsetting datatable.alloccol 
 options(datatable.alloccol=NULL) # In this =NULL case, options() in R 3.0.0 returned TRUE rather than the old value. This R bug was fixed in R 3.1.1.
                                  # This is why getOption is called first rather than just using the result of option() like elsewhere in this test file.
                                  # TODO: simplify this test if/when R dependency >= 3.1.1
+# try() outside test() otherwise test() itself fails on the timings[,:=] step which calls CsubsetDT and uses datatable.alloccol
 err1 = try(data.table(a=1:3), silent=TRUE)
 options(datatable.alloccol="1024")
 err2 = try(data.table(a=1:3), silent=TRUE)
@@ -1317,12 +1318,12 @@ options(datatable.alloccol=NA_integer_)
 err4 = try(data.table(a=1:3), silent=TRUE)
 options(datatable.alloccol=-1)
 err5 = try(data.table(a=1:3), silent=TRUE)
-options(datatable.alloccol=1024L)   # otherwise test() itself fails in its internals with the alloc.col error
-test(432.1, inherits(err1,"try-error") && grep("Has getOption[(]'datatable.alloccol'[)] somehow become unset?", err1))
-test(432.2, inherits(err2,"try-error") && grep("getOption[(]'datatable.alloccol'[)] should be a number, by default 1024. But its type is 'character'.", err2))
-test(432.3, inherits(err3,"try-error") && grep("is a numeric vector ok but its length is 2. Its length should be 1.", err3))
-test(432.4, inherits(err4,"try-error") && grep("It must be >=0 and not NA.", err4))
-test(432.5, inherits(err5,"try-error") && grep("It must be >=0 and not NA.", err5))
+options(datatable.alloccol=1024L)
+test(432.1, inherits(err1,"try-error") && grep("datatable.alloccol.*should be a single number but it is length 0 and type 'NULL'", err1))
+test(432.2, inherits(err2,"try-error") && grep("datatable.alloccol.*should be a single number but it is length 1 and type 'character'", err2))
+test(432.3, inherits(err3,"try-error") && grep("datatable.alloccol.*should be a single number but it is length 2 and type 'integer'", err3))
+test(432.4, inherits(err4,"try-error") && grep("datatable.alloccol.*is -2147483648.*must be >=0 and not NA", err4))
+test(432.5, inherits(err5,"try-error") && grep("datatable.alloccol.*is -1.*must be >=0 and not NA", err5))
 # Repeat the tests but this time with subsetting, to ensure the validity check on option happens for those too
 DT = data.table(a=1:3, b=4:6)
 options(datatable.alloccol=NULL)
@@ -1335,12 +1336,12 @@ options(datatable.alloccol=NA_integer_)
 err4 = try(DT[,"b"], silent=TRUE)
 options(datatable.alloccol=-1)
 err5 = try(DT[2,"b"], silent=TRUE)
-options(datatable.alloccol=1024L)   # otherwise test() itself fails in its internals with the alloc.col error
-test(433.1, inherits(err1,"try-error") && grep("Has getOption[(]'datatable.alloccol'[)] somehow become unset?", err1))
-test(433.2, inherits(err2,"try-error") && grep("getOption[(]'datatable.alloccol'[)] should be a number, by default 1024. But its type is 'character'.", err2))
-test(433.3, inherits(err3,"try-error") && grep("is a numeric vector ok but its length is 2. Its length should be 1.", err3))
-test(433.4, inherits(err4,"try-error") && grep("It must be >=0 and not NA.", err4))
-test(433.5, inherits(err5,"try-error") && grep("It must be >=0 and not NA.", err5))
+options(datatable.alloccol=1024L)
+test(433.1, inherits(err1,"try-error") && grep("length 0 and type 'NULL'", err1))
+test(433.2, inherits(err2,"try-error") && grep("length 1 and type 'character'", err2))
+test(433.3, inherits(err3,"try-error") && grep("length 2 and type 'integer'", err3))
+test(433.4, inherits(err4,"try-error") && grep("must be >=0 and not NA", err4))
+test(433.5, inherits(err5,"try-error") && grep("must be >=0 and not NA", err5))
 
 # simple realloc test
 DT = data.table(a=1:3,b=4:6)

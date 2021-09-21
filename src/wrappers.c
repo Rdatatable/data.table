@@ -54,11 +54,6 @@ SEXP setlevels(SEXP x, SEXP levels, SEXP ulevels) {
   return(x);
 }
 
-SEXP copy(SEXP x)
-{
-  return(duplicate(x));
-}
-
 SEXP setlistelt(SEXP l, SEXP i, SEXP value)
 {
   R_len_t i2;
