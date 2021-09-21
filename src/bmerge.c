@@ -28,6 +28,7 @@ Differences over standard binary search (e.g. bsearch in stdlib.h) :
 
 static const SEXP *idtVec, *xdtVec;
 static const int *icols, *xcols;
+static bool *isI64;
 static SEXP nqgrp;
 static int ncol, *o, *xo, *retFirst, *retLength, *retIndex, *allLen1, *allGrp1, *rollends, ilen, anslen;
 static int *op, nqmaxgrp;
@@ -58,16 +59,23 @@ SEXP bmerge(SEXP idt, SEXP xdt, SEXP icolsArg, SEXP xcolsArg, SEXP isorted, SEXP
   xN = LENGTH(xdt) ? LENGTH(VECTOR_ELT(xdt,0)) : 0;
   iN = ilen = anslen = LENGTH(idt) ? LENGTH(VECTOR_ELT(idt,0)) : 0;
   ncol = LENGTH(icolsArg);    // there may be more sorted columns in x than involved in the join
+  isI64 = (bool *)R_alloc(ncol, sizeof(bool));
   for(int col=0; col<ncol; col++) {
     if (icols[col]==NA_INTEGER) error(_("Internal error. icols[%d] is NA"), col); // # nocov
     if (xcols[col]==NA_INTEGER) error(_("Internal error. xcols[%d] is NA"), col); // # nocov
     if (icols[col]>LENGTH(idt) || icols[col]<1) error(_("icols[%d]=%d outside range [1,length(i)=%d]"), col, icols[col], LENGTH(idt));
     if (xcols[col]>LENGTH(xdt) || xcols[col]<1) error(_("xcols[%d]=%d outside range [1,length(x)=%d]"), col, xcols[col], LENGTH(xdt));
-    int it = TYPEOF(VECTOR_ELT(idt, icols[col]-1));
-    int xt = TYPEOF(VECTOR_ELT(xdt, xcols[col]-1));
+    SEXP ic = VECTOR_ELT(idt, icols[col]-1);
+    SEXP xc = VECTOR_ELT(xdt, xcols[col]-1);
+    int it = TYPEOF(ic);
+    int xt = TYPEOF(xc);
     if (iN && it!=xt) error(_("typeof x.%s (%s) != typeof i.%s (%s)"), CHAR(STRING_ELT(getAttrib(xdt,R_NamesSymbol),xcols[col]-1)), type2char(xt), CHAR(STRING_ELT(getAttrib(idt,R_NamesSymbol),icols[col]-1)), type2char(it));
     if (iN && it!=LGLSXP && it!=INTSXP && it!=REALSXP && it!=STRSXP)
       error(_("Type '%s' is not supported for joining/merging"), type2char(it));
+    isI64[col] = INHERITS(xc, char_integer64);
+    if (iN && isI64[col]!=INHERITS(ic, char_integer64))
+      error(_("typeof x.%s (%s) != typeof i.%s (%s)"), CHAR(STRING_ELT(getAttrib(xdt,R_NamesSymbol),xcols[col]-1)), isI64[col]?"integer64":"double",
+                                                       CHAR(STRING_ELT(getAttrib(idt,R_NamesSymbol),icols[col]-1)), isI64[col]?"double":"integer64");
   }
 
   // rollArg, rollendsArg
@@ -346,7 +354,7 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
     // TO DO: deal with mixed encodings and locale optionally; could StrCmp non-ascii in a thread-safe non-alloc manner
   } break;
   case REALSXP :
-    if (INHERITS(xc, char_integer64)) {
+    if (isI64[col]) {  // use pre-stored result of INHERITS, PR#xxx
       const int64_t *icv = (const int64_t *)REAL(ic);
       const int64_t *xcv = (const int64_t *)REAL(xc);
       const int64_t ival = icv[ir];
