@@ -367,12 +367,11 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
       const double *icv = REAL(ic);
       const double *xcv = REAL(xc);
       const double ival = icv[ir];
-      const uint64_t ivalt = dtwiddle(ival); // TO: remove dtwiddle by dealing with NA, NaN, -Inf, +Inf up front
       #undef ISNAT
       #undef WRAP
       #define ISNAT(x) (ISNAN(x))
-      #define WRAP(x) (dtwiddle(x))
-      DO(const uint64_t xval=dtwiddle(xcv[XIND(mid)]), xval<ivalt, xval>ivalt, double, icv[ir]-xcv[XIND(xlow)], xcv[XIND(xupp)]-icv[ir], ivalt)
+      #define WRAP(x) (x)
+      DO(const double xval=xcv[XIND(mid)], xval<ival, xval>ival, double, ival-xcv[XIND(xlow)], xcv[XIND(xupp)]-ival, ival)
     }
     break;
   // supported types were checked up front to avoid handling an error here in (future) parallel region
