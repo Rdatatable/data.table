@@ -371,7 +371,11 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
       #undef WRAP
       #define ISNAT(x) (ISNAN(x))
       #define WRAP(x) (x)
-      DO(const double xval=xcv[XIND(mid)], xval<ival, xval>ival, double, ival-xcv[XIND(xlow)], xcv[XIND(xupp)]-ival, ival)
+      if (xo) {
+        DO(const double xval=xcv[xo[mid]-1], xval<ival, xval>ival, double, ival-xcv[xo[xlow]-1], xcv[xo[xupp]-1]-ival, ival)
+      } else {
+        DO(const double xval=xcv[mid],       xval<ival, xval>ival, double, ival-xcv[xlow],       xcv[xupp]-ival,       ival)
+      }
     }
     break;
   // supported types were checked up front to avoid handling an error here in (future) parallel region
