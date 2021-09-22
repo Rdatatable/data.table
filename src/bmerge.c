@@ -399,6 +399,7 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
           retLength[k]= rl;
           // retIndex initialisation is taken care of in bmerge and doesn't change for thisgrp=1
         }
+        Rprintf("bmerge_r0 %d %d %d %d\n", xlow, xupp, ilow, iupp);
       } else {
         // non-equi join
         for (int j=ilow+1; j<iupp; j++) {
@@ -442,10 +443,14 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
   }
   switch (op[col]) {
   case EQ:
-    if (ilow>ilowIn && (xlow>xlowIn || isRollCol))
+    if (ilow>ilowIn && (xlow>xlowIn || isRollCol)) {
+      Rprintf("bmerge_r1 %d %d %d %d\n", xlowIn, xlow+1, ilowIn, ilow+1);
       bmerge_r(xlowIn, xlow+1, ilowIn, ilow+1, col, 1, lowmax, uppmax && xlow+1==xuppIn);
-    if (iupp<iuppIn && (xupp<xuppIn || isRollCol))
+    }
+    if (iupp<iuppIn && (xupp<xuppIn || isRollCol)) {
+      Rprintf("bmerge_r2 %d %d %d %d\n", xupp-1, xuppIn, iupp-1, iuppIn);
       bmerge_r(xupp-1, xuppIn, iupp-1, iuppIn, col, 1, lowmax && xupp-1==xlowIn, uppmax);
+    }
     break;
   case LE: case LT:
     // roll is not yet implemented
