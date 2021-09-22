@@ -4155,6 +4155,10 @@ DT = data.table(A=c(utf8_strings, latin1_strings), B=1:4)
 test(1162.21, is.sorted(DT), FALSE)
 setkey(DT)
 test(1162.22, is.sorted(DT), TRUE)
+# Issue #5070
+DT = data.table(x2 = rep(NA_character_, 2))
+test(1162.23, is.sorted(DT))
+test(1162.24, is.sorted(rep(NA_character_, 2)))
 
 # FR #351 - last on length=0 arguments
 x <- character(0)
@@ -18141,4 +18145,9 @@ DT = data.table(A=letters[1:3], B=4:6, key="A")
 test(2215.1, DT["b", B], 5L)  # has worked forever
 test(2215.2, DT[factor("b"), B], 5L)  # now works too, joining fact/fact, char/fact and fact/char have plenty of tests
 
+# segfault on merge keyed all-NA_character_ due to is.sorted, #5070
+DT1 = data.table(x1 = rep(letters[1:4], each=3), x2=NA_character_, key="x2")
+DT2 = data.table(x1 = letters[1:3])
+test(2216.1, DT1[DT2, on="x1"][,.(x1,x2)],        DT1[1:9])              # segfault in v1.14.0
+test(2216.2, merge(DT1, DT2, by="x1")[,.(x1,x2)], setkey(DT1[1:9], x1))  # ok before but included for completeness verbatim from issue
 
