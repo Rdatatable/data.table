@@ -1,5 +1,5 @@
-#include <Rdefines.h>
 #include "data.table.h"
+#include <Rdefines.h>
 
 /*
  * find end of a string, used to append verbose messages or warnings

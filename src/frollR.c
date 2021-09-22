@@ -1,5 +1,6 @@
-#include <Rdefines.h>
+//#include <Rdefines.h>
 #include "data.table.h"
+#include <Rdefines.h>
 
 SEXP coerceToRealListR(SEXP obj) {
   // accept atomic/list of integer/logical/real returns list of real
