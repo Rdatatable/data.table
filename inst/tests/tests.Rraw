@@ -4157,8 +4157,8 @@ setkey(DT)
 test(1162.22, is.sorted(DT), TRUE)
 # Issue #5070
 DT = data.table(x2 = rep(NA_character_, 2))
-test(1162.23, is.sorted(DT), TRUE)
-test(1162.24, is.sorted(rep(NA_character_, 2)), TRUE)
+test(1162.23, is.sorted(DT))
+test(1162.24, is.sorted(rep(NA_character_, 2)))
 
 # FR #351 - last on length=0 arguments
 x <- character(0)
