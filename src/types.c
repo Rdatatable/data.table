@@ -1,4 +1,4 @@
-#include "data.table.h"
+#include "data.table.h"  // first (before Rdefines.h) for clang-13-omp, #5122
 #include <Rdefines.h>
 
 /*

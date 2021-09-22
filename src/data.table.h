@@ -1,5 +1,4 @@
-#include "myomp.h"
-
+#include "myomp.h"     // first for clang-13-omp, #5122
 #include "dt_stdio.h"  // PRId64 and PRIu64
 #include <R.h>
 #include <Rversion.h>
