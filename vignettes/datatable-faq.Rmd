@@ -88,7 +88,7 @@ We _have_ proposed enhancements to R wherever possible, too. One of these was ac
 
 > `unique()` and `match()` are now faster on character vectors where all elements are in the global CHARSXP cache and have unmarked encoding (ASCII).  Thanks to Matt Dowle for suggesting improvements to the way the hash code is generated in unique.c.
 
-A second proposal was to use `memcpy` in duplicate.c, which is much faster than a for loop in C. This would improve the _way_ that R copies data internally (on some measures by 13 times). The thread on r-devel is [here](https://r.789695.n4.nabble.com/suggestion-how-to-use-memcpy-in-duplicate-c-td2019184.html).
+A second proposal was to use `memcpy` in duplicate.c, which is much faster than a for loop in C. This would improve the _way_ that R copies data internally (on some measures by 13 times). The thread on r-devel is [here](https://stat.ethz.ch/pipermail/r-devel/2010-April/057249.html).
 
 A third more significant proposal that was accepted is that R now uses data.table's radix sort code as from R 3.3.0 :
 
