@@ -1848,7 +1848,7 @@ test(640, capture.output(print(DT,class=FALSE)), c("    a   b    c","1:  8  xy  
 DT=data.table(a=letters,b=1:26)
 test(641, tail(capture.output(print(DT[1:20], class=FALSE)),2), c("19: s 19","20: t 20"))
 test(642, tail(capture.output(print(DT[1:21], class=FALSE, nrows=100)),2), c("21: u 21","    a  b"))
-DT=data.table(a=as.character(as.hexmode(1:500)), b=1:500)
+DT=data.table(a=format(as.hexmode(1:500)), b=1:500)
 test(643, capture.output(print(DT, class=FALSE)), c("       a   b","  1: 001   1","  2: 002   2","  3: 003   3","  4: 004   4","  5: 005   5"," ---        ","496: 1f0 496","497: 1f1 497","498: 1f2 498","499: 1f3 499","500: 1f4 500"))
 
 # Test inconsistent length of columns error.
