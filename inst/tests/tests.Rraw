@@ -1037,7 +1037,7 @@ test(353, DT[2,f:="c"], data.table(f=factor(c("a","c","a","b")),x=1:4))
 test(354, DT[3,f:=factor("foo")], data.table(f=factor(c("a","c","foo","b")),x=1:4))
 
 # Test growVector logic when adding levels  (don't need to grow levels for character cols)
-newlevels = as.character(as.hexmode(1:2000))
+newlevels = format(as.hexmode(1:2000))
 DT = data.table(f=factor("000"),x=1:2010)
 test(355, DT[11:2010,f:=newlevels], data.table(f=factor(c(rep("000",10),newlevels)),x=1:2010))
 
