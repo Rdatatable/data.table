@@ -1,5 +1,5 @@
+#include "data.table.h"  // first (before Rdefines.h) for clang-13-omp, #5122
 #include <Rdefines.h>
-#include "data.table.h"
 
 SEXP coerceToRealListR(SEXP obj) {
   // accept atomic/list of integer/logical/real returns list of real

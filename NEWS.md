@@ -2,16 +2,14 @@
 
 **Benchmarks are regularly updated: [here](https://h2oai.github.io/db-benchmark/)**
 
-# data.table [v1.14.1](https://github.com/Rdatatable/data.table/milestone/20)  (in development)
-
-## NEW FEATURES
-
-## BUG FIXES
+# data.table [v1.14.2](https://github.com/Rdatatable/data.table/milestone/24?closed=1)  (27 Sep 2021)
 
 ## NOTES
 
+1. clang 13.0.0 (Sep 2021) requires the system header `omp.h` to be included before R's headers, [#5122](https://github.com/Rdatatable/data.table/issues/5122). Many thanks to Prof Ripley for testing and providing a patch file.
 
-# data.table [v1.14.0](https://github.com/Rdatatable/data.table/milestone/23?closed=1)  (submitted to CRAN on 20 Feb 2021)
+
+# data.table [v1.14.0](https://github.com/Rdatatable/data.table/milestone/23?closed=1)  (21 Feb 2021)
 
 ## POTENTIALLY BREAKING CHANGES
 
