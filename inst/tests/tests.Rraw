@@ -18076,7 +18076,7 @@ for (col in c("a","b","c")) {
   }
 }
 
-# DT() functional form, #4872 #5106 #5107
+# DT() functional form, #4872 #5106 #5107 #5129
 if (base::getRversion() >= "4.1.0") {
   # we have to EVAL "|>" here too otherwise this tests.Rraw file won't parse in R<4.1.0
   if (exists("DTfun")) DT=DTfun  # just in dev-mode restore DT() in .GlobalEnv as DT object overwrote it in tests above
@@ -18088,38 +18088,48 @@ if (base::getRversion() >= "4.1.0") {
   test(2212.013, EVAL("mtcars |> DT(mpg>20, .SD[hp>mean(hp)])"),
                  droprn(mtcars[ mtcars$mpg>20 & mtcars$hp>mean(mtcars$hp[mtcars$mpg>20]), ]))
   D = copy(mtcars)
-  test(2212.02, EVAL("D |> DT(,.SD)"), D)
-  test(2212.03, EVAL("D |> DT(, .SD, .SDcols=5:8)"), D[,5:8])
-  test(2212.04, EVAL("D |> DT(, 5:8)"), droprn(D[,5:8]))
-  test(2212.05, EVAL("D |> DT(, lapply(.SD, sum))"), as.data.frame(lapply(D,sum)))
-  test(2212.06, EVAL("D |> DT(, .SD, keyby=cyl) |> setkey(NULL)"), droprn(D[order(D$cyl),c(2,1,3:11)]))
-  test(2212.07, EVAL("D |> DT(1:20, .SD)"), droprn(D[1:20,]))
-  test(2212.08, EVAL("D |> DT(, .SD, by=cyl, .SDcols=5:8)"), droprn(D[unlist(tapply(1:32, D$cyl, c)[c(2,1,3)]), c(2,5:8)]))
-  test(2212.09, EVAL("D |> DT(1:20, .SD, .SDcols=5:8)"), droprn(D[1:20, 5:8]))
-  test(2212.10, EVAL("D |> DT(1:20, .SD, by=cyl, .SDcols=5:8)"), droprn(D[unlist(tapply(1:20, D$cyl[1:20], c)[c(2,1,3)]), c(2,5:8)]))
-  test(2212.11, EVAL("D |> DT(1:20, lapply(.SD, sum))"), as.data.frame(lapply(D[1:20,],sum)))
+  test(2212.02, EVAL("D |> DT(,.SD)"), mtcars)
+  test(2212.03, EVAL("D |> DT(, .SD, .SDcols=5:8)"), mtcars[,5:8])
+  test(2212.04, EVAL("D |> DT(, 5:8)"), droprn(mtcars[,5:8]))
+  test(2212.05, EVAL("D |> DT(, lapply(.SD, sum))"), as.data.frame(lapply(mtcars,sum)))
+  test(2212.06, EVAL("D |> DT(, .SD, keyby=cyl) |> setkey(NULL)"), droprn(mtcars[order(mtcars$cyl),c(2,1,3:11)]))
+  test(2212.07, EVAL("D |> DT(1:20, .SD)"), droprn(mtcars[1:20,]))
+  test(2212.08, EVAL("D |> DT(, .SD, by=cyl, .SDcols=5:8)"), droprn(mtcars[unlist(tapply(1:32, mtcars$cyl, c)[c(2,1,3)]), c(2,5:8)]))
+  test(2212.09, EVAL("D |> DT(1:20, .SD, .SDcols=5:8)"), droprn(mtcars[1:20, 5:8]))
+  test(2212.10, EVAL("D |> DT(1:20, .SD, by=cyl, .SDcols=5:8)"), droprn(mtcars[unlist(tapply(1:20, mtcars$cyl[1:20], c)[c(2,1,3)]), c(2,5:8)]))
+  test(2212.11, EVAL("D |> DT(1:20, lapply(.SD, sum))"), as.data.frame(lapply(mtcars[1:20,],sum)))
   test(2212.12, droprn(EVAL("D |> DT(1:20, c(N=.N, lapply(.SD, sum)), by=cyl)")[c(1,3),c("cyl","N","carb")]), data.frame(cyl=c(6,8), N=c(6L,8L), carb=c(18,27)))
-  test(2212.13, EVAL("D |> DT(cyl==4)"), droprn(D[D$cyl==4,]))
-  test(2212.14, EVAL("D |> DT(cyl==4 & vs==0)"), droprn(D[D$cyl==4 & D$vs==0,]))
-  test(2212.15, EVAL("D |> DT(cyl==4 & vs>0)"), droprn(D[D$cyl==4 & D$vs>0,]))
-  test(2212.16, EVAL("D |> DT(cyl>=4)"), droprn(D[D$cyl>=4,]))
-  test(2212.17, EVAL("D |> DT(cyl!=4)"), droprn(D[D$cyl!=4,]))
-  test(2212.18, EVAL("D |> DT(cyl!=4 & vs!=0)"), droprn(D[D$cyl!=4 & D$vs!=0,]))
+  test(2212.13, EVAL("D |> DT(cyl==4)"), droprn(mtcars[mtcars$cyl==4,]))
+  test(2212.14, EVAL("D |> DT(cyl==4 & vs==0)"), droprn(mtcars[mtcars$cyl==4 & mtcars$vs==0,]))
+  test(2212.15, EVAL("D |> DT(cyl==4 & vs>0)"), droprn(mtcars[mtcars$cyl==4 & mtcars$vs>0,]))
+  test(2212.16, EVAL("D |> DT(cyl>=4)"), droprn(mtcars[mtcars$cyl>=4,]))
+  test(2212.17, EVAL("D |> DT(cyl!=4)"), droprn(mtcars[mtcars$cyl!=4,]))
+  test(2212.18, EVAL("D |> DT(cyl!=4 & vs!=0)"), droprn(mtcars[mtcars$cyl!=4 & mtcars$vs!=0,]))
   test(2212.19, EVAL("iris |> DT(Sepal.Length==5.0 & Species=='setosa')"), droprn(iris[iris$Sepal.Length==5.0 & iris$Species=="setosa",]))
   test(2212.20, EVAL("iris |> DT(Sepal.Length==5.0)"), droprn(iris[iris$Sepal.Length==5.0,]))
   test(2212.21, EVAL("iris |> DT(Species=='setosa')"), droprn(iris[iris$Species=='setosa',]))
-  test(2212.22, EVAL("D |> DT(, cyl)"), droprn(D[,"cyl"]))
-  test(2212.23, EVAL("D |> DT(1:2, cyl)"), droprn(D[1:2, "cyl"]))
-  test(2212.24, EVAL("D |> DT(, list(cyl))"), droprn(D[,"cyl",drop=FALSE]))
-  test(2212.25, EVAL("D |> DT(1:2, .(cyl))"), droprn(D[1:2, "cyl", drop=FALSE]))
-  test(2212.26, EVAL("D |> DT(, z:=sum(cyl))"), cbind(D, z=sum(D$cyl)))
-  test(2212.27, EVAL("D |> DT(, z:=round(mean(mpg),2), by=cyl)"), cbind(D, z=c("6"=19.74, "4"=26.66, "8"=15.10)[as.character(D$cyl)]))
-  test(2212.28, EVAL("D |> DT(1:3, z:=5, by=cyl)"), cbind(D, z=c(5,5,5,rep(NA,nrow(D)-3))))
+  test(2212.22, EVAL("D |> DT(, cyl)"), droprn(mtcars[,"cyl"]))
+  test(2212.23, EVAL("D |> DT(1:2, cyl)"), droprn(mtcars[1:2, "cyl"]))
+  test(2212.24, EVAL("D |> DT(, list(cyl))"), droprn(mtcars[,"cyl",drop=FALSE]))
+  test(2212.25, EVAL("D |> DT(1:2, .(cyl))"), droprn(mtcars[1:2, "cyl", drop=FALSE]))
+  test(2212.26, EVAL("D |> DT(, z:=sum(cyl))"), cbind(mtcars, z=sum(mtcars$cyl)))
+  D = copy(mtcars)  # D was changed by := so recopy mtcars; TODO: remove this line when #5129 is fully closed
+  test(2212.27, EVAL("D |> DT(, z:=round(mean(mpg),2), by=cyl)"), cbind(mtcars, z=c("6"=19.74, "4"=26.66, "8"=15.10)[as.character(mtcars$cyl)]))
+  D = copy(mtcars)  # D was changed by := so recopy mtcars; TODO: remove this line when #5129 is fully closed
+  test(2212.28, EVAL("D |> DT(1:3, z:=5, by=cyl)"), cbind(mtcars, z=c(5,5,5,rep(NA,nrow(mtcars)-3))))
+  D = copy(mtcars)  # D was changed by := so recopy mtcars; TODO: remove this line when #5129 is fully closed
   test(2212.29, EVAL("D |> DT(1:3, z:=NULL)"), error="When deleting columns, i should not be provided")
-  test(2212.30, EVAL("D |> DT(data.table(cyl=4), on='cyl')"), droprn(D[D$cyl==4,]))
-  test(2212.31, EVAL("D |> DT(data.frame(cyl=4), on='cyl')"), droprn(D[D$cyl==4,]))
-  test(2212.32, EVAL("D |> DT(.(4), on='cyl')"), droprn(D[D$cyl==4,]))
+  test(2212.30, EVAL("D |> DT(data.table(cyl=4), on='cyl')"), droprn(mtcars[mtcars$cyl==4,]))
+  test(2212.31, EVAL("D |> DT(data.frame(cyl=4), on='cyl')"), droprn(mtcars[mtcars$cyl==4,]))
+  test(2212.32, EVAL("D |> DT(.(4), on='cyl')"), droprn(mtcars[mtcars$cyl==4,]))
   test(2212.33, EVAL("iris |> DT('setosa', on='Species')"), {tt=droprn(iris[iris$Species=="setosa",]); tt$Species=as.character(tt$Species); tt})
+  filter = mtcars                       # mask stats::filter
+  dt = df = D = as.data.table(filter)   # mask stats::D
+  test(2212.50, EVAL("df |> DT(df[, .I[which.max(mpg)], by=cyl]$V1)"),                 ans<-dt[c(4,20,25)])
+  test(2212.51, EVAL("dt |> DT(dt[, .I[which.max(mpg)], by=cyl]$V1)"),                 ans)
+  test(2212.52, EVAL("D  |> DT(D[, .I[which.max(mpg)], by=cyl]$V1)"),                  ans)
+  test(2212.53, EVAL("filter |> DT(filter[, .I[which.max(mpg)], by=cyl]$V1)"),         error="unused.*argument.*by.*cyl")  # R's [.data.frame error on filter[...]
+  test(2212.54, EVAL("filter |> DT((filter |> DT(, .I[which.max(mpg)], by=cyl))$V1)"), as.data.frame(ans))
 }
 
 # precision powers of 10^(-n), #4461
