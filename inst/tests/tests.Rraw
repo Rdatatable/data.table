@@ -1082,7 +1082,7 @@ test(353, DT[2,f:="c"], data.table(f=factor(c("a","c","a","b")),x=1:4))
 test(354, DT[3,f:=factor("foo")], data.table(f=factor(c("a","c","foo","b")),x=1:4))
 
 # Test growVector logic when adding levels  (don't need to grow levels for character cols)
-newlevels = as.character(as.hexmode(1:2000))
+newlevels = format(as.hexmode(1:2000))
 DT = data.table(f=factor("000"),x=1:2010)
 test(355, DT[11:2010,f:=newlevels], data.table(f=factor(c(rep("000",10),newlevels)),x=1:2010))
 
@@ -1902,7 +1902,7 @@ test(640, capture.output(print(DT,class=FALSE)), c("    a   b    c","1:  8  xy  
 DT=data.table(a=letters,b=1:26)
 test(641, tail(capture.output(print(DT[1:20], class=FALSE)),2), c("19: s 19","20: t 20"))
 test(642, tail(capture.output(print(DT[1:21], class=FALSE, nrows=100)),2), c("21: u 21","    a  b"))
-DT=data.table(a=as.character(as.hexmode(1:500)), b=1:500)
+DT=data.table(a=format(as.hexmode(1:500)), b=1:500)
 test(643, capture.output(print(DT, class=FALSE)), c("       a   b","  1: 001   1","  2: 002   2","  3: 003   3","  4: 004   4","  5: 005   5"," ---        ","496: 1f0 496","497: 1f1 497","498: 1f2 498","499: 1f3 499","500: 1f4 500"))
 
 # Test inconsistent length of columns error.
@@ -4155,6 +4155,10 @@ DT = data.table(A=c(utf8_strings, latin1_strings), B=1:4)
 test(1162.21, is.sorted(DT), FALSE)
 setkey(DT)
 test(1162.22, is.sorted(DT), TRUE)
+# Issue #5070
+DT = data.table(x2 = rep(NA_character_, 2))
+test(1162.23, is.sorted(DT))
+test(1162.24, is.sorted(rep(NA_character_, 2)))
 
 # FR #351 - last on length=0 arguments
 x <- character(0)
@@ -18121,7 +18125,7 @@ for (col in c("a","b","c")) {
   }
 }
 
-# DT() functional form, #4872 #5106 #5107
+# DT() functional form, #4872 #5106 #5107 #5129
 if (base::getRversion() >= "4.1.0") {
   # we have to EVAL "|>" here too otherwise this tests.Rraw file won't parse in R<4.1.0
   if (exists("DTfun")) DT=DTfun  # just in dev-mode restore DT() in .GlobalEnv as DT object overwrote it in tests above
@@ -18133,38 +18137,48 @@ if (base::getRversion() >= "4.1.0") {
   test(2212.013, EVAL("mtcars |> DT(mpg>20, .SD[hp>mean(hp)])"),
                  droprn(mtcars[ mtcars$mpg>20 & mtcars$hp>mean(mtcars$hp[mtcars$mpg>20]), ]))
   D = copy(mtcars)
-  test(2212.02, EVAL("D |> DT(,.SD)"), D)
-  test(2212.03, EVAL("D |> DT(, .SD, .SDcols=5:8)"), D[,5:8])
-  test(2212.04, EVAL("D |> DT(, 5:8)"), droprn(D[,5:8]))
-  test(2212.05, EVAL("D |> DT(, lapply(.SD, sum))"), as.data.frame(lapply(D,sum)))
-  test(2212.06, EVAL("D |> DT(, .SD, keyby=cyl) |> setkey(NULL)"), droprn(D[order(D$cyl),c(2,1,3:11)]))
-  test(2212.07, EVAL("D |> DT(1:20, .SD)"), droprn(D[1:20,]))
-  test(2212.08, EVAL("D |> DT(, .SD, by=cyl, .SDcols=5:8)"), droprn(D[unlist(tapply(1:32, D$cyl, c)[c(2,1,3)]), c(2,5:8)]))
-  test(2212.09, EVAL("D |> DT(1:20, .SD, .SDcols=5:8)"), droprn(D[1:20, 5:8]))
-  test(2212.10, EVAL("D |> DT(1:20, .SD, by=cyl, .SDcols=5:8)"), droprn(D[unlist(tapply(1:20, D$cyl[1:20], c)[c(2,1,3)]), c(2,5:8)]))
-  test(2212.11, EVAL("D |> DT(1:20, lapply(.SD, sum))"), as.data.frame(lapply(D[1:20,],sum)))
+  test(2212.02, EVAL("D |> DT(,.SD)"), mtcars)
+  test(2212.03, EVAL("D |> DT(, .SD, .SDcols=5:8)"), mtcars[,5:8])
+  test(2212.04, EVAL("D |> DT(, 5:8)"), droprn(mtcars[,5:8]))
+  test(2212.05, EVAL("D |> DT(, lapply(.SD, sum))"), as.data.frame(lapply(mtcars,sum)))
+  test(2212.06, EVAL("D |> DT(, .SD, keyby=cyl) |> setkey(NULL)"), droprn(mtcars[order(mtcars$cyl),c(2,1,3:11)]))
+  test(2212.07, EVAL("D |> DT(1:20, .SD)"), droprn(mtcars[1:20,]))
+  test(2212.08, EVAL("D |> DT(, .SD, by=cyl, .SDcols=5:8)"), droprn(mtcars[unlist(tapply(1:32, mtcars$cyl, c)[c(2,1,3)]), c(2,5:8)]))
+  test(2212.09, EVAL("D |> DT(1:20, .SD, .SDcols=5:8)"), droprn(mtcars[1:20, 5:8]))
+  test(2212.10, EVAL("D |> DT(1:20, .SD, by=cyl, .SDcols=5:8)"), droprn(mtcars[unlist(tapply(1:20, mtcars$cyl[1:20], c)[c(2,1,3)]), c(2,5:8)]))
+  test(2212.11, EVAL("D |> DT(1:20, lapply(.SD, sum))"), as.data.frame(lapply(mtcars[1:20,],sum)))
   test(2212.12, droprn(EVAL("D |> DT(1:20, c(N=.N, lapply(.SD, sum)), by=cyl)")[c(1,3),c("cyl","N","carb")]), data.frame(cyl=c(6,8), N=c(6L,8L), carb=c(18,27)))
-  test(2212.13, EVAL("D |> DT(cyl==4)"), droprn(D[D$cyl==4,]))
-  test(2212.14, EVAL("D |> DT(cyl==4 & vs==0)"), droprn(D[D$cyl==4 & D$vs==0,]))
-  test(2212.15, EVAL("D |> DT(cyl==4 & vs>0)"), droprn(D[D$cyl==4 & D$vs>0,]))
-  test(2212.16, EVAL("D |> DT(cyl>=4)"), droprn(D[D$cyl>=4,]))
-  test(2212.17, EVAL("D |> DT(cyl!=4)"), droprn(D[D$cyl!=4,]))
-  test(2212.18, EVAL("D |> DT(cyl!=4 & vs!=0)"), droprn(D[D$cyl!=4 & D$vs!=0,]))
+  test(2212.13, EVAL("D |> DT(cyl==4)"), droprn(mtcars[mtcars$cyl==4,]))
+  test(2212.14, EVAL("D |> DT(cyl==4 & vs==0)"), droprn(mtcars[mtcars$cyl==4 & mtcars$vs==0,]))
+  test(2212.15, EVAL("D |> DT(cyl==4 & vs>0)"), droprn(mtcars[mtcars$cyl==4 & mtcars$vs>0,]))
+  test(2212.16, EVAL("D |> DT(cyl>=4)"), droprn(mtcars[mtcars$cyl>=4,]))
+  test(2212.17, EVAL("D |> DT(cyl!=4)"), droprn(mtcars[mtcars$cyl!=4,]))
+  test(2212.18, EVAL("D |> DT(cyl!=4 & vs!=0)"), droprn(mtcars[mtcars$cyl!=4 & mtcars$vs!=0,]))
   test(2212.19, EVAL("iris |> DT(Sepal.Length==5.0 & Species=='setosa')"), droprn(iris[iris$Sepal.Length==5.0 & iris$Species=="setosa",]))
   test(2212.20, EVAL("iris |> DT(Sepal.Length==5.0)"), droprn(iris[iris$Sepal.Length==5.0,]))
   test(2212.21, EVAL("iris |> DT(Species=='setosa')"), droprn(iris[iris$Species=='setosa',]))
-  test(2212.22, EVAL("D |> DT(, cyl)"), droprn(D[,"cyl"]))
-  test(2212.23, EVAL("D |> DT(1:2, cyl)"), droprn(D[1:2, "cyl"]))
-  test(2212.24, EVAL("D |> DT(, list(cyl))"), droprn(D[,"cyl",drop=FALSE]))
-  test(2212.25, EVAL("D |> DT(1:2, .(cyl))"), droprn(D[1:2, "cyl", drop=FALSE]))
-  test(2212.26, EVAL("D |> DT(, z:=sum(cyl))"), cbind(D, z=sum(D$cyl)))
-  test(2212.27, EVAL("D |> DT(, z:=round(mean(mpg),2), by=cyl)"), cbind(D, z=c("6"=19.74, "4"=26.66, "8"=15.10)[as.character(D$cyl)]))
-  test(2212.28, EVAL("D |> DT(1:3, z:=5, by=cyl)"), cbind(D, z=c(5,5,5,rep(NA,nrow(D)-3))))
+  test(2212.22, EVAL("D |> DT(, cyl)"), droprn(mtcars[,"cyl"]))
+  test(2212.23, EVAL("D |> DT(1:2, cyl)"), droprn(mtcars[1:2, "cyl"]))
+  test(2212.24, EVAL("D |> DT(, list(cyl))"), droprn(mtcars[,"cyl",drop=FALSE]))
+  test(2212.25, EVAL("D |> DT(1:2, .(cyl))"), droprn(mtcars[1:2, "cyl", drop=FALSE]))
+  test(2212.26, EVAL("D |> DT(, z:=sum(cyl))"), cbind(mtcars, z=sum(mtcars$cyl)))
+  D = copy(mtcars)  # D was changed by := so recopy mtcars; TODO: remove this line when #5129 is fully closed
+  test(2212.27, EVAL("D |> DT(, z:=round(mean(mpg),2), by=cyl)"), cbind(mtcars, z=c("6"=19.74, "4"=26.66, "8"=15.10)[as.character(mtcars$cyl)]))
+  D = copy(mtcars)  # D was changed by := so recopy mtcars; TODO: remove this line when #5129 is fully closed
+  test(2212.28, EVAL("D |> DT(1:3, z:=5, by=cyl)"), cbind(mtcars, z=c(5,5,5,rep(NA,nrow(mtcars)-3))))
+  D = copy(mtcars)  # D was changed by := so recopy mtcars; TODO: remove this line when #5129 is fully closed
   test(2212.29, EVAL("D |> DT(1:3, z:=NULL)"), error="When deleting columns, i should not be provided")
-  test(2212.30, EVAL("D |> DT(data.table(cyl=4), on='cyl')"), droprn(D[D$cyl==4,]))
-  test(2212.31, EVAL("D |> DT(data.frame(cyl=4), on='cyl')"), droprn(D[D$cyl==4,]))
-  test(2212.32, EVAL("D |> DT(.(4), on='cyl')"), droprn(D[D$cyl==4,]))
+  test(2212.30, EVAL("D |> DT(data.table(cyl=4), on='cyl')"), droprn(mtcars[mtcars$cyl==4,]))
+  test(2212.31, EVAL("D |> DT(data.frame(cyl=4), on='cyl')"), droprn(mtcars[mtcars$cyl==4,]))
+  test(2212.32, EVAL("D |> DT(.(4), on='cyl')"), droprn(mtcars[mtcars$cyl==4,]))
   test(2212.33, EVAL("iris |> DT('setosa', on='Species')"), {tt=droprn(iris[iris$Species=="setosa",]); tt$Species=as.character(tt$Species); tt})
+  filter = mtcars                       # mask stats::filter
+  dt = df = D = as.data.table(filter)   # mask stats::D
+  test(2212.50, EVAL("df |> DT(df[, .I[which.max(mpg)], by=cyl]$V1)"),                 ans<-dt[c(4,20,25)])
+  test(2212.51, EVAL("dt |> DT(dt[, .I[which.max(mpg)], by=cyl]$V1)"),                 ans)
+  test(2212.52, EVAL("D  |> DT(D[, .I[which.max(mpg)], by=cyl]$V1)"),                  ans)
+  test(2212.53, EVAL("filter |> DT(filter[, .I[which.max(mpg)], by=cyl]$V1)"),         error="unused.*argument.*by.*cyl")  # R's [.data.frame error on filter[...]
+  test(2212.54, EVAL("filter |> DT((filter |> DT(, .I[which.max(mpg)], by=cyl))$V1)"), as.data.frame(ans))
 }
 
 # precision powers of 10^(-n), #4461
@@ -18189,3 +18203,10 @@ test(2214.8, droplevels(DT, in.place=TRUE), DT)
 DT = data.table(A=letters[1:3], B=4:6, key="A")
 test(2215.1, DT["b", B], 5L)  # has worked forever
 test(2215.2, DT[factor("b"), B], 5L)  # now works too, joining fact/fact, char/fact and fact/char have plenty of tests
+
+# segfault on merge keyed all-NA_character_ due to is.sorted, #5070
+DT1 = data.table(x1 = rep(letters[1:4], each=3), x2=NA_character_, key="x2")
+DT2 = data.table(x1 = letters[1:3])
+test(2216.1, DT1[DT2, on="x1"][,.(x1,x2)],        DT1[1:9])              # segfault in v1.14.0
+test(2216.2, merge(DT1, DT2, by="x1")[,.(x1,x2)], setkey(DT1[1:9], x1))  # ok before but included for completeness verbatim from issue
+
