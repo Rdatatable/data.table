@@ -18076,7 +18076,7 @@ for (col in c("a","b","c")) {
   }
 }
 
-# DT() functional form, #4872 #5106 #5107
+# DT() functional form, #4872 #5106 #5107 #5129
 if (base::getRversion() >= "4.1.0") {
   # we have to EVAL "|>" here too otherwise this tests.Rraw file won't parse in R<4.1.0
   if (exists("DTfun")) DT=DTfun  # just in dev-mode restore DT() in .GlobalEnv as DT object overwrote it in tests above
@@ -18120,6 +18120,13 @@ if (base::getRversion() >= "4.1.0") {
   test(2212.31, EVAL("D |> DT(data.frame(cyl=4), on='cyl')"), droprn(D[D$cyl==4,]))
   test(2212.32, EVAL("D |> DT(.(4), on='cyl')"), droprn(D[D$cyl==4,]))
   test(2212.33, EVAL("iris |> DT('setosa', on='Species')"), {tt=droprn(iris[iris$Species=="setosa",]); tt$Species=as.character(tt$Species); tt})
+  filter = mtcars                       # mask stats::filter
+  dt = df = D = as.data.table(filter)   # mask stats::D
+  test(2212.50, EVAL("df |> DT(df[, .I[which.max(mpg)], by=cyl]$V1)"),                 ans<-dt[c(4,20,25)])
+  test(2212.51, EVAL("dt |> DT(dt[, .I[which.max(mpg)], by=cyl]$V1)"),                 ans)
+  test(2212.52, EVAL("D  |> DT(D[, .I[which.max(mpg)], by=cyl]$V1)"),                  ans)
+  test(2212.53, EVAL("filter |> DT(filter[, .I[which.max(mpg)], by=cyl]$V1)"),         error="unused.*argument.*by.*cyl")  # R's [.data.frame error on filter[...]
+  test(2212.54, EVAL("filter |> DT((filter |> DT(, .I[which.max(mpg)], by=cyl))$V1)"), as.data.frame(ans))
 }
 
 # precision powers of 10^(-n), #4461

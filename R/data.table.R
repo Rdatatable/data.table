@@ -1941,7 +1941,11 @@ DT = function(x, ...) {  #4872
     options(datatable.optimize=2L)
     # GForce still on; building and storing indices in .prepareFastSubset off; see long paragraph in news item 22 of v1.14.2
   }
-  ans = `[.data.table`(x, ...)
+  fun = match.call()
+  fun[[1L]] = as.name("[.data.table")
+  ans = eval(fun, envir=parent.frame(),  # for issue 2 in #5129 so that eval(.massagei(isub), x, ienv) finds objects in calling
+                                         # env, and likely other places inside [.data.table that look at the calling env
+                  enclos=parent.frame()) # including enclos= too as it has often been needed in the past
   options(datatable.optimize=old)
   .global$print = ""  # functional form should always print; #5106
   ans
