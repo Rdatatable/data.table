@@ -144,6 +144,7 @@
 27. `shift()` now also supports `type="cyclic"`, [#4451](https://github.com/Rdatatable/data.table/issues/4451). Arguments that are normally pushed out by `type="lag"` or `type="lead"` are re-introduced at this type at the first/last positions. Thanks to @RicoDiel for requesting, and Benjamin Schwendinger for the PR.
 
     ```R
+    # Usage
     shift(1:5, n=-1:1, type="cyclic")
     # [[1]]
     # [1] 2 3 4 5 1
@@ -153,6 +154,19 @@
     #
     # [[3]]
     # [1] 5 1 2 3 4
+
+    # Benchmark
+    x = seq.int(1e9) # 3.8 GB
+    microbenchmark::microbenchmark(
+      shift(x, 1, type="cyclic"),
+      c(tail(x, 1), head(x,-1)),
+      times = 10L,
+      unit = "s"
+    )
+    # Unit: seconds
+    #                          expr  min   lq mean  median   uq  max neval
+    #  shift(x, 1, type = "cyclic") 1.61 1.66 1.89    1.80 1.92 3.05    10
+    #    c(tail(x, 1), head(x, -1)) 8.94 9.08 9.18    9.13 9.30 9.53    10
     ```
 
 ## BUG FIXES
