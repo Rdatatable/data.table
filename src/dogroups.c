@@ -39,6 +39,7 @@ static bool anySpecialStatic(SEXP x) {
   // with PR#4164 started to copy input list columns too much. Hence PR#4655 in v1.13.2 moved that copy here just where it is needed.
   // Currently the marker is negative truelength. These specials are protected by us here and before we release them
   // we restore the true truelength for when R starts to use vector truelength.
+  SEXP attribs, list_el;
   const int n = length(x);
   // use length() not LENGTH() because LENGTH() on NULL is segfault in R<3.5 where we still define USE_RINTERNALS
   // (see data.table.h), and isNewList() is true for NULL
@@ -50,8 +51,13 @@ static bool anySpecialStatic(SEXP x) {
     if (TRUELENGTH(x)<0)
       return true;  // test 2158
     for (int i=0; i<n; ++i) {
-      if (anySpecialStatic(VECTOR_ELT(x,i)))
+      list_el = VECTOR_ELT(x,i);
+      if (anySpecialStatic(list_el))
         return true;
+      for(attribs = ATTRIB(list_el); attribs != R_NilValue; attribs = CDR(attribs)) {
+        if (anySpecialStatic(CAR(attribs)))
+          return true;  // #4936
+      }
     }
   }
   return false;
