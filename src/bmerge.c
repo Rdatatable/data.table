@@ -241,7 +241,7 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
   }
   bool rollLow=false, rollUpp=false;
 
-  #define DO(XVAL, CMP1, CMP2, TYPE, LOWDIST, UPPDIST, IVAL)                                      \
+  #define DO(XVAL, CMP1, CMP2, TYPE, LOWDIST, UPPDIST)                                            \
     while (xlow < xupp-1) {                                                                       \
       int mid = xlow + (xupp-xlow)/2;                                                             \
       XVAL;                                                                                       \
@@ -256,12 +256,12 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
         int tmplow = mid;                                                                         \
         while (tmplow<xupp-1) {                                                                   \
           int mid = tmplow + (xupp-tmplow)/2;                                                     \
-          if (WRAP(xcv[XIND(mid)]) == IVAL) tmplow=mid; else xupp=mid;                            \
+          if (WRAP(xcv[XIND(mid)]) == ival) tmplow=mid; else xupp=mid;                            \
         }                                                                                         \
         int tmpupp = mid;                                                                         \
         while (xlow<tmpupp-1) {                                                                   \
           int mid = xlow + (tmpupp-xlow)/2;                                                       \
-          if (WRAP(xcv[XIND(mid)]) == IVAL) tmpupp=mid; else xlow=mid;                            \
+          if (WRAP(xcv[XIND(mid)]) == ival) tmpupp=mid; else xlow=mid;                            \
         }                                                                                         \
         /* xlow and xupp now surround the group in xc */                                          \
         break;                                                                                    \
@@ -319,14 +319,14 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
     int tmplow = lir;                                                                             \
     while (tmplow<iupp-1) { /* TO DO: could double up from lir rather than halving from iupp */   \
       int mid = tmplow + (iupp-tmplow)/2;                                                         \
-      if (WRAP(icv[ o ? o[mid]-1 : mid ]) == IVAL) tmplow=mid; else iupp=mid;                     \
+      if (WRAP(icv[ o ? o[mid]-1 : mid ]) == ival) tmplow=mid; else iupp=mid;                     \
       /* if we could guarantee ivals to be *always* sorted for all columns independently          \
          (= max(nestedid) = 1), could speed this up 2x by checking GE,GT,LE,LT separately */      \
     }                                                                                             \
     int tmpupp = lir;                                                                             \
     while (ilow<tmpupp-1) {                                                                       \
       int mid = ilow + (tmpupp-ilow)/2;                                                           \
-      if (WRAP(icv[ o ? o[mid]-1 : mid ]) == IVAL) tmpupp=mid; else ilow=mid;                     \
+      if (WRAP(icv[ o ? o[mid]-1 : mid ]) == ival) tmpupp=mid; else ilow=mid;                     \
     }                                                                                             \
     /* ilow and iupp now surround the group in ic, too */
 
@@ -337,7 +337,7 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
     const int ival = isDataCol ? icv[ir] : thisgrp;
     #define ISNAT(x) ((x)==NA_INTEGER)
     #define WRAP(x) (x)  // wrap not needed for int
-    DO(const int xval = xcv[XIND(mid)], xval<ival, xval>ival, int, ival-xcv[XIND(xlow)], xcv[XIND(xupp)]-ival, ival)
+    DO(const int xval = xcv[XIND(mid)], xval<ival, xval>ival, int, ival-xcv[XIND(xlow)], xcv[XIND(xupp)]-ival)
   } break;
   case STRSXP : {
     // op[col]==EQ checked up front to avoid an if() here and non-thread-safe error()
@@ -349,7 +349,7 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
     #undef WRAP
     #define ISNAT(x) (x) // ISNAT only used for non-equi which doesn't occur for STRSXP
     #define WRAP(x) (ENC2UTF8(x))
-    DO(int tmp=StrCmp(ENC2UTF8(xcv[XIND(mid)]), ival), tmp<0, tmp>0, int, 0, 0, ival)
+    DO(int tmp=StrCmp(ENC2UTF8(xcv[XIND(mid)]), ival), tmp<0, tmp>0, int, 0, 0)
     // NA_STRING are allowed and joined to; does not do ENC2UTF8 again inside StrCmp
     // TO DO: deal with mixed encodings and locale optionally; could StrCmp non-ascii in a thread-safe non-alloc manner
   } break;
@@ -362,7 +362,7 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
       #undef WRAP
       #define ISNAT(x) ((x)==NA_INTEGER64)
       #define WRAP(x) (x)
-      DO(const int64_t xval=xcv[XIND(mid)], xval<ival, xval>ival, int64_t, ival-xcv[XIND(xlow)], xcv[XIND(xupp)]-ival, ival)
+      DO(const int64_t xval=xcv[XIND(mid)], xval<ival, xval>ival, int64_t, ival-xcv[XIND(xlow)], xcv[XIND(xupp)]-ival)
     } else {
       const double *icv = REAL(ic);
       const double *xcv = REAL(xc);
@@ -372,9 +372,9 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
       #define ISNAT(x) (ISNAN(x))
       #define WRAP(x) (x)
       if (xo) {
-        DO(const double xval=xcv[xo[mid]-1], xval<ival, xval>ival, double, ival-xcv[xo[xlow]-1], xcv[xo[xupp]-1]-ival, ival)
+        DO(const double xval=xcv[xo[mid]-1], xval<ival, xval>ival, double, ival-xcv[xo[xlow]-1], xcv[xo[xupp]-1]-ival)
       } else {
-        DO(const double xval=xcv[mid],       xval<ival, xval>ival, double, ival-xcv[xlow],       xcv[xupp]-ival,       ival)
+        DO(const double xval=xcv[mid],       xval<ival, xval>ival, double, ival-xcv[xlow],       xcv[xupp]-ival)
       }
     }
     break;
@@ -399,7 +399,7 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
           retLength[k]= rl;
           // retIndex initialisation is taken care of in bmerge and doesn't change for thisgrp=1
         }
-        Rprintf("bmerge_r0 %d %d %d %d\n", xlow, xupp, ilow, iupp);
+        // Rprintf("bmerge_r0 %d %d %d %d\n", xlow, xupp, ilow, iupp);
       } else {
         // non-equi join
         for (int j=ilow+1; j<iupp; j++) {
@@ -444,11 +444,11 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
   switch (op[col]) {
   case EQ:
     if (ilow>ilowIn && (xlow>xlowIn || isRollCol)) {
-      Rprintf("bmerge_r1 %d %d %d %d\n", xlowIn, xlow+1, ilowIn, ilow+1);
+      // Rprintf("bmerge_r1 %d %d %d %d\n", xlowIn, xlow+1, ilowIn, ilow+1);
       bmerge_r(xlowIn, xlow+1, ilowIn, ilow+1, col, 1, lowmax, uppmax && xlow+1==xuppIn);
     }
     if (iupp<iuppIn && (xupp<xuppIn || isRollCol)) {
-      Rprintf("bmerge_r2 %d %d %d %d\n", xupp-1, xuppIn, iupp-1, iuppIn);
+      // Rprintf("bmerge_r2 %d %d %d %d\n", xupp-1, xuppIn, iupp-1, iuppIn);
       bmerge_r(xupp-1, xuppIn, iupp-1, iuppIn, col, 1, lowmax && xupp-1==xlowIn, uppmax);
     }
     break;
