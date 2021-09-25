@@ -4,7 +4,7 @@
 SEXP shift(SEXP obj, SEXP k, SEXP fill, SEXP type)
 {
   int nprotect=0;
-  enum {LAG, LEAD/*, SHIFT, CYCLIC*/} stype = LAG; // currently SHIFT maps to LAG and CYCLIC is unimplemented (see comments in #1708)
+  enum {LAG, LEAD/*, SHIFT*/,CYCLIC} stype = LAG; // currently SHIFT maps to LAG (see comments in #1708)
   if (!xlength(obj)) return(obj); // NULL, list()
   SEXP x;
   if (isVectorAtomic(obj)) {
@@ -23,12 +23,15 @@ SEXP shift(SEXP obj, SEXP k, SEXP fill, SEXP type)
   if (!strcmp(CHAR(STRING_ELT(type, 0)), "lag")) stype = LAG;
   else if (!strcmp(CHAR(STRING_ELT(type, 0)), "lead")) stype = LEAD;
   else if (!strcmp(CHAR(STRING_ELT(type, 0)), "shift")) stype = LAG; // when we get rid of nested if branches we can use SHIFT, for now it maps to LAG
+  else if (!strcmp(CHAR(STRING_ELT(type, 0)), "cyclic")) stype = CYCLIC;
   else error(_("Internal error: invalid type for shift(), should have been caught before. please report to data.table issue tracker")); // # nocov
 
   int nx = length(x), nk = length(k);
   if (!isInteger(k)) error(_("Internal error: k must be integer")); // # nocov
   const int *kd = INTEGER(k);
   for (int i=0; i<nk; i++) if (kd[i]==NA_INTEGER) error(_("Item %d of n is NA"), i+1);  // NA crashed (#3354); n is called k at C level
+
+  const bool cycle = stype == CYCLIC;
 
   SEXP ans = PROTECT(allocVector(VECSXP, nk * nx)); nprotect++;
   for (int i=0; i<nx; i++) {
@@ -41,19 +44,24 @@ SEXP shift(SEXP obj, SEXP k, SEXP fill, SEXP type)
       const int ifill = INTEGER(thisfill)[0];
       UNPROTECT(1);
       for (int j=0; j<nk; j++) {
-        R_xlen_t thisk = MIN(abs(kd[j]), xrows);
         SEXP tmp;
         SET_VECTOR_ELT(ans, i*nk+j, tmp=allocVector(INTSXP, xrows) );
-        int *itmp = INTEGER(tmp);
+        const int *restrict ielem = INTEGER(elem);
+        int *restrict itmp = INTEGER(tmp);
+        size_t thisk = cycle ? abs(kd[j]) % xrows : MIN(abs(kd[j]), xrows);
         size_t tailk = xrows-thisk;
-        if ((stype == LAG && kd[j] >= 0) || (stype == LEAD && kd[j] < 0)) {
-          // LAG when type = 'lag' and n >= 0 _or_ type = 'lead' and n < 0
-          if (tailk > 0) memmove(itmp+thisk, INTEGER(elem), tailk*size);
-          for (int m=0; m<thisk; m++) itmp[m] = ifill;
+        if (((stype == LAG || stype == CYCLIC) && kd[j] >= 0) || (stype == LEAD && kd[j] < 0)) {
+          // LAG when type %in% c('lag','cyclic') and n >= 0 _or_ type = 'lead' and n < 0
+          if (tailk > 0) memmove(itmp+thisk, ielem, tailk*size);
+          if (cycle) {
+            if (thisk > 0) memmove(itmp, ielem+tailk, thisk*size);
+          } else for (int m=0; m<thisk; m++) itmp[m] = ifill;
         } else {
-          // only two possibilities left: type = 'lead', n>=0 _or_ type = 'lag', n<0
-          if (tailk > 0) memmove(itmp, INTEGER(elem)+thisk, tailk*size);
-          for (int m=xrows-thisk; m<xrows; m++) itmp[m] = ifill;
+          // only two possibilities left: type = 'lead', n>=0 _or_ type %in% c('lag','cyclic'), n<0
+          if (tailk > 0) memmove(itmp, ielem+thisk, tailk*size);
+          if (cycle) {
+            if (thisk > 0) memmove(itmp+tailk, ielem, thisk*size);
+          } else for (int m=tailk; m<xrows; m++) itmp[m] = ifill;
         }
         copyMostAttrib(elem, tmp);
         if (isFactor(elem)) setAttrib(tmp, R_LevelsSymbol, getAttrib(elem, R_LevelsSymbol));
@@ -74,17 +82,22 @@ SEXP shift(SEXP obj, SEXP k, SEXP fill, SEXP type)
       const double dfill = REAL(thisfill)[0];
       UNPROTECT(1); // thisfill
       for (int j=0; j<nk; j++) {
-        R_xlen_t thisk = MIN(abs(kd[j]), xrows);
         SEXP tmp;
         SET_VECTOR_ELT(ans, i*nk+j, tmp=allocVector(REALSXP, xrows) );
-        double *dtmp = REAL(tmp);
+        const double *restrict delem = REAL(elem);
+        double *restrict dtmp = REAL(tmp);
+        size_t thisk = cycle ? abs(kd[j]) % xrows : MIN(abs(kd[j]), xrows);
         size_t tailk = xrows-thisk;
-        if ((stype == LAG && kd[j] >= 0) || (stype == LEAD && kd[j] < 0)) {
-          if (tailk > 0) memmove(dtmp+thisk, REAL(elem), tailk*size);
-          for (int m=0; m<thisk; m++) dtmp[m] = dfill;
+        if (((stype == LAG || stype == CYCLIC) && kd[j] >= 0) || (stype == LEAD && kd[j] < 0)) {
+          if (tailk > 0) memmove(dtmp+thisk, delem, tailk*size);
+          if (cycle) {
+            if (thisk > 0) memmove(dtmp, delem+tailk, thisk*size);
+          } else for (int m=0; m<thisk; m++) dtmp[m] = dfill;
         } else {
-          if (tailk > 0) memmove(dtmp, REAL(elem)+thisk, tailk*size);
-          for (int m=tailk; m<xrows; m++) dtmp[m] = dfill;
+          if (tailk > 0) memmove(dtmp, delem+thisk, tailk*size);
+          if (cycle) {
+            if (thisk > 0) memmove(dtmp+tailk, delem, thisk*size);
+          } else for (int m=tailk; m<xrows; m++) dtmp[m] = dfill;
         }
         copyMostAttrib(elem, tmp);
       }
@@ -95,17 +108,22 @@ SEXP shift(SEXP obj, SEXP k, SEXP fill, SEXP type)
       const Rcomplex cfill = COMPLEX(thisfill)[0];
       UNPROTECT(1);
       for (int j=0; j<nk; j++) {
-        R_xlen_t thisk = MIN(abs(kd[j]), xrows);
         SEXP tmp;
         SET_VECTOR_ELT(ans, i*nk+j, tmp=allocVector(CPLXSXP, xrows) );
-        Rcomplex *ctmp = COMPLEX(tmp);
+        const Rcomplex *restrict celem = COMPLEX(elem);
+        Rcomplex *restrict ctmp = COMPLEX(tmp);
+        size_t thisk = cycle ? abs(kd[j]) % xrows : MIN(abs(kd[j]), xrows);
         size_t tailk = xrows-thisk;
-        if ((stype == LAG && kd[j] >= 0) || (stype == LEAD && kd[j] < 0)) {
-          if (tailk > 0) memmove(ctmp+thisk, COMPLEX(elem), tailk*size);
-          for (int m=0; m<thisk; m++) ctmp[m] = cfill;
+        if (((stype == LAG || stype == CYCLIC) && kd[j] >= 0) || (stype == LEAD && kd[j] < 0)) {
+          if (tailk > 0) memmove(ctmp+thisk, celem, tailk*size);
+          if (cycle) {
+            if (thisk > 0) memmove(ctmp, celem+tailk, thisk*size);
+          } else for (int m=0; m<thisk; m++) ctmp[m] = cfill;
         } else {
-          if (tailk > 0) memmove(ctmp, COMPLEX(elem)+thisk, tailk*size);
-          for (int m=tailk; m<xrows; m++) ctmp[m] = cfill;
+          if (tailk > 0) memmove(ctmp, celem+thisk, tailk*size);
+          if (cycle) {
+            if (thisk > 0) memmove(ctmp+tailk, celem, thisk*size);
+          } else for (int m=tailk; m<xrows; m++) ctmp[m] = cfill;
         }
         copyMostAttrib(elem, tmp);
       }
@@ -116,17 +134,22 @@ SEXP shift(SEXP obj, SEXP k, SEXP fill, SEXP type)
       const int lfill = LOGICAL(thisfill)[0];
       UNPROTECT(1);
       for (int j=0; j<nk; j++) {
-        R_xlen_t thisk = MIN(abs(kd[j]), xrows);
         SEXP tmp;
         SET_VECTOR_ELT(ans, i*nk+j, tmp=allocVector(LGLSXP, xrows) );
-        int *ltmp = LOGICAL(tmp);
+        const int *restrict lelem = LOGICAL(elem);
+        int *restrict ltmp = LOGICAL(tmp);
+        size_t thisk = cycle ? abs(kd[j]) % xrows : MIN(abs(kd[j]), xrows);
         size_t tailk = xrows-thisk;
-        if ((stype == LAG && kd[j] >= 0) || (stype == LEAD && kd[j] < 0)) {
-          if (tailk > 0) memmove(ltmp+thisk, LOGICAL(elem), tailk*size);
-          for (int m=0; m<thisk; m++) ltmp[m] = lfill;
+        if (((stype == LAG || stype == CYCLIC) && kd[j] >= 0) || (stype == LEAD && kd[j] < 0)) {
+          if (tailk > 0) memmove(ltmp+thisk, lelem, tailk*size);
+          if (cycle) {
+            if (thisk > 0) memmove(ltmp, lelem+tailk, thisk*size);
+          } else for (int m=0; m<thisk; m++) ltmp[m] = cycle ? lelem[m+tailk] : lfill;
         } else {
-          if (tailk > 0) memmove(ltmp, LOGICAL(elem)+thisk, tailk*size);
-          for (int m=tailk; m<xrows; m++) ltmp[m] = lfill;
+          if (tailk > 0) memmove(ltmp, lelem+thisk, tailk*size);
+          if (cycle) {
+            if (thisk > 0) memmove(ltmp+tailk, lelem, thisk*size);
+          } else for (int m=tailk; m<xrows; m++) ltmp[m] = cycle ? lelem[m-tailk] : lfill;
         }
         copyMostAttrib(elem, tmp);
       }
@@ -139,10 +162,11 @@ SEXP shift(SEXP obj, SEXP k, SEXP fill, SEXP type)
         SEXP tmp;
         SET_VECTOR_ELT(ans, i*nk+j, tmp=allocVector(STRSXP, xrows) );
         int thisk = abs(kd[j]);
-        if ((stype == LAG && kd[j] >= 0) || (stype == LEAD && kd[j] < 0)) {
-          for (int m=0; m<xrows; m++) SET_STRING_ELT(tmp, m, (m < thisk) ? sfill : STRING_ELT(elem, m - thisk));
+        if (cycle) thisk %= xrows;
+        if (((stype == LAG || stype == CYCLIC) && kd[j] >= 0) || (stype == LEAD && kd[j] < 0)) {
+          for (int m=0; m<xrows; m++) SET_STRING_ELT(tmp, m, (m < thisk) ? (cycle ? STRING_ELT(elem, m+xrows-thisk) : sfill) : STRING_ELT(elem, m - thisk));
         } else {
-          for (int m=0; m<xrows; m++) SET_STRING_ELT(tmp, m, (xrows-m <= thisk) ? sfill : STRING_ELT(elem, m + thisk));
+          for (int m=0; m<xrows; m++) SET_STRING_ELT(tmp, m, (xrows-m <= thisk) ? (cycle ? STRING_ELT(elem, m-xrows+thisk) : sfill) : STRING_ELT(elem, m + thisk));
         }
         copyMostAttrib(elem, tmp);
       }
@@ -156,10 +180,11 @@ SEXP shift(SEXP obj, SEXP k, SEXP fill, SEXP type)
         SEXP tmp;
         SET_VECTOR_ELT(ans, i*nk+j, tmp=allocVector(VECSXP, xrows) );
         int thisk = abs(kd[j]);
-        if ((stype == LAG && kd[j] >= 0) || (stype == LEAD && kd[j] < 0)) {
-          for (int m=0; m<xrows; m++) SET_VECTOR_ELT(tmp, m, (m < thisk) ? vfill : VECTOR_ELT(elem, m - thisk));
+        if (cycle) thisk %= xrows;
+        if (((stype == LAG || stype == CYCLIC) && kd[j] >= 0) || (stype == LEAD && kd[j] < 0)) {
+          for (int m=0; m<xrows; m++) SET_VECTOR_ELT(tmp, m, (m < thisk) ? (cycle ? VECTOR_ELT(elem, m+xrows-thisk) : vfill) : VECTOR_ELT(elem, m - thisk));
         } else {
-          for (int m=0; m<xrows; m++) SET_VECTOR_ELT(tmp, m, (xrows-m <= thisk) ? vfill : VECTOR_ELT(elem, m + thisk));
+          for (int m=0; m<xrows; m++) SET_VECTOR_ELT(tmp, m, (xrows-m <= thisk) ? (cycle ? VECTOR_ELT(elem, m-xrows+thisk) : vfill) : VECTOR_ELT(elem, m + thisk));
         }
         copyMostAttrib(elem, tmp);
       }
