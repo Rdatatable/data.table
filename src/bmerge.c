@@ -38,7 +38,7 @@ static double roll, rollabs;
 static Rboolean rollToNearest=FALSE;
 #define XIND(i) (xo ? xo[(i)]-1 : i)
 
-void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisgrp, int lowmax, int uppmax);
+void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisgrp);  //, int lowmax, int uppmax);
 
 SEXP bmerge(SEXP idt, SEXP xdt, SEXP icolsArg, SEXP xcolsArg, SEXP isorted, SEXP xoArg, SEXP rollarg, SEXP rollendsArg, SEXP nomatchArg, SEXP multArg, SEXP opArg, SEXP nqgrpArg, SEXP nqmaxgrpArg) {
   int xN, iN, protecti=0;
@@ -183,7 +183,7 @@ SEXP bmerge(SEXP idt, SEXP xdt, SEXP icolsArg, SEXP xcolsArg, SEXP isorted, SEXP
   if (iN) {
     // embarassingly parallel if we've storage space for nqmaxgrp*iN
     for (int kk=0; kk<nqmaxgrp; kk++) {
-      bmerge_r(-1,xN,-1,iN,scols,kk+1,1,1);
+      bmerge_r(-1,xN,-1,iN,scols,kk+1);
     }
   }
   ctr += iN;
@@ -219,7 +219,7 @@ SEXP bmerge(SEXP idt, SEXP xdt, SEXP icolsArg, SEXP xcolsArg, SEXP isorted, SEXP
   return (ans);
 }
 
-void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisgrp, int lowmax, int uppmax)
+void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisgrp)  //, bool lowmax, bool uppmax)
 // col is >0 and <=ncol-1 if this range of [xlow,xupp] and [ilow,iupp] match up to but not including that column
 // lowmax=1 if xlowIn is the lower bound of this group (needed for roll)
 // uppmax=1 if xuppIn is the upper bound of this group (needed for roll)
@@ -239,8 +239,6 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
     ic = R_NilValue;
     xc = nqgrp;
   }
-  bool rollLow=false, rollUpp=false;
-
   #define DO(XVAL, CMP1, CMP2, TYPE, LOWDIST, UPPDIST)                                            \
     while (xlow < xupp-1) {                                                                       \
       int mid = xlow + (xupp-xlow)/2;                                                             \
@@ -273,28 +271,30 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
       if (rollToNearest) {                                                                        \
         /* when rollToNearest you can't limit the distance currently */                           \
         /* rollToNearest not yet supported for STRSXP (checked up front) */                       \
-        if ( (!lowmax || xlow>xlowIn) && (!uppmax || xupp<xuppIn) ) {                             \
+        if ( xlow>xlowIn && xupp<xuppIn ) {                             \
           if ( LOWDIST <= UPPDIST )                                                               \
-            rollLow=true;                                                                         \
+            xlow--;                                                                         \
           else                                                                                    \
-            rollUpp=true;                                                                         \
+            xupp++;                                                                         \
         }                                                                                         \
-        else if (uppmax && xupp==xuppIn && rollends[1])                                           \
-          rollLow=true;                                                                           \
-        else if (lowmax && xlow==xlowIn && rollends[0])                                           \
-          rollUpp=true;                                                                           \
+        else if (xupp==xuppIn && rollends[1])                                           \
+          xlow--;                                                                         \
+        else if (xlow==xlowIn && rollends[0])                                           \
+          xupp++;                                                                            \
       } else {                                                                                    \
         /* Regular roll=TRUE|+ve|-ve */                                                           \
-        if ((( roll>0.0 && (!lowmax || xlow>xlowIn) && (xupp<xuppIn || !uppmax || rollends[1]))   \
-          || ( roll<0.0 && xupp==xuppIn && uppmax && rollends[1]) )                               \
-          && ( isinf(rollabs) || ((LOWDIST)-(TYPE)rollabs <= (TYPE)1e-6) ))                       \
-          /*   ^^^^^^^^^^^^^^ always true for STRSXP where LOWDIST is a dummy */                  \
-          rollLow=true;                                                                           \
+        /* Rprintf("xlow=%d xlowIn=%d xupp=%d xuppIn=%d\n", xlow, xlowIn, xupp, xuppIn); */                                            \
+        if (( roll>0.0 && xlow>xlowIn && (xlow<xuppIn-1 || rollends[1]))   \
+                                 /*|| ( roll<0.0 && xupp==xuppIn && rollends[1]) )  */                             \
+         && ( isinf(rollabs) || ((LOWDIST)-(TYPE)rollabs <= (TYPE)1e-6) ))                       \
+          /*   ^^^^^^^^^^^^^^ always true for STRSXP where LOWDIST is a dummy,  TODO pre-save isinf() into const bool */                  \
+          xlow--;        \
+          /* ** AND NOW EXTEND iupp too for all irows that join to this same row */               \
         else                                                                                      \
-        if ((( roll<0.0 && (!uppmax || xupp<xuppIn) && (xlow>xlowIn || !lowmax || rollends[0]))   \
-          || ( roll>0.0 && xlow==xlowIn && lowmax && rollends[0]) )                               \
+        if ((( roll<0.0 && xupp<xuppIn && (xlow>xlowIn || rollends[0]))   \
+          || ( roll>0.0 && xlow==xlowIn && rollends[0]) )                               \
           && ( isinf(rollabs) || ((UPPDIST)-(TYPE)rollabs <= (TYPE)1e-6) ))                       \
-          rollUpp=true;                                                                           \
+          xupp++;                                                                                \
       }                                                                                           \
     }                                                                                             \
     if (op[col] != EQ) {                                                                          \
@@ -383,15 +383,14 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
     error(_("Type '%s' is not supported for joining/merging"), type2char(TYPEOF(xc)));
   }
 
-  if (xlow<xupp-1 || rollLow || rollUpp) { // if value found, xlow and xupp surround it, unlike standard binary search where low falls on it
+  if (xlow<xupp-1) { // if value found, xlow and xupp surround it, unlike standard binary search where low falls on it
     if (col<ncol-1) {  // could include col==-1 here (a non-equi non-data column)
-      bmerge_r(xlow, xupp, ilow, iupp, col+1, thisgrp, 1, 1);
-      // final two 1's are lowmax and uppmax
+      bmerge_r(xlow, xupp, ilow, iupp, col+1, thisgrp);  //, 1, 1);
     } else {
-      int len = xupp-xlow-1+rollLow+rollUpp; // rollLow and rollUpp cannot both be true
+      int len = xupp-xlow-1;
       if (mult==ALL && len>1) allLen1[0] = FALSE;
       if (nqmaxgrp == 1) {
-        const int rf = (mult!=LAST) ? xlow+2-rollLow : xupp+rollUpp; // extra +1 for 1-based indexing at R level
+        const int rf = (mult!=LAST) ? xlow+2 : xupp; // extra +1 for 1-based indexing at R level
         const int rl = (mult==ALL) ? len : 1;
         for (int j=ilow+1; j<iupp; j++) {   // usually iterates once only for j=ir
           const int k = o ? o[j]-1 : j;
@@ -444,27 +443,27 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
   switch (op[col]) {
   case EQ:
     if (ilow>ilowIn && (xlow>xlowIn || isRollCol)) {
-      // Rprintf("bmerge_r1 %d %d %d %d\n", xlowIn, xlow+1, ilowIn, ilow+1);
-      bmerge_r(xlowIn, xlow+1, ilowIn, ilow+1, col, 1, lowmax, uppmax && xlow+1==xuppIn);
+      //Rprintf("bmerge_r1 %d %d %d %d\n", xlowIn, xlow+1, ilowIn, ilow+1);
+      bmerge_r(xlowIn, xlow+1+isRollCol, ilowIn, ilow+1, col, 1);  //, lowmax, uppmax && xlow+1==xuppIn);
     }
     if (iupp<iuppIn && (xupp<xuppIn || isRollCol)) {
-      // Rprintf("bmerge_r2 %d %d %d %d\n", xupp-1, xuppIn, iupp-1, iuppIn);
-      bmerge_r(xupp-1, xuppIn, iupp-1, iuppIn, col, 1, lowmax && xupp-1==xlowIn, uppmax);
+      //Rprintf("bmerge_r2 %d %d %d %d\n", xupp-1, xuppIn, iupp-1, iuppIn);
+      bmerge_r(xupp-1-isRollCol, xuppIn, iupp-1, iuppIn, col, 1);  //, lowmax && xupp-1==xlowIn, uppmax);
     }
     break;
   case LE: case LT:
     // roll is not yet implemented
     if (ilow>ilowIn)
-      bmerge_r(xlowIn, xuppIn, ilowIn, ilow+1, col, 1, lowmax, uppmax && xlow+1==xuppIn);
+      bmerge_r(xlowIn, xuppIn, ilowIn, ilow+1, col, 1);  //, lowmax, uppmax && xlow+1==xuppIn);
     if (iupp<iuppIn)
-      bmerge_r(xlowIn, xuppIn, iupp-1, iuppIn, col, 1, lowmax && xupp-1==xlowIn, uppmax);
+      bmerge_r(xlowIn, xuppIn, iupp-1, iuppIn, col, 1);  //, lowmax && xupp-1==xlowIn, uppmax);
     break;
   case GE: case GT:
     // roll is not yet implemented
     if (ilow>ilowIn)
-      bmerge_r(xlowIn, xuppIn, ilowIn, ilow+1, col, 1, lowmax, uppmax && xlow+1==xuppIn);
+      bmerge_r(xlowIn, xuppIn, ilowIn, ilow+1, col, 1);  //, lowmax, uppmax && xlow+1==xuppIn);
     if (iupp<iuppIn)
-      bmerge_r(xlowIn, xuppIn, iupp-1, iuppIn, col, 1, lowmax && xupp-1==xlowIn, uppmax);
+      bmerge_r(xlowIn, xuppIn, iupp-1, iuppIn, col, 1);  //, lowmax && xupp-1==xlowIn, uppmax);
     break;
   default : break;  // one of 5 valid cases checked up front
   }
