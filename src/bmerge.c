@@ -226,8 +226,6 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
 // new: col starts with -1 for non-equi joins, which gathers rows from nested id group counter 'thisgrp'
 {
   int xlow=xlowIn, xupp=xuppIn, ilow=ilowIn, iupp=iuppIn;
-  int lir = ilow + (iupp-ilow)/2;           // lir = logical i row.
-  int ir = o ? o[lir]-1 : lir;              // ir = the actual i row if i were ordered
   const bool isDataCol = col>-1; // check once for non nq join grp id internal technical, non-data, field
   const bool isRollCol = roll!=0.0 && col==ncol-1;  // col==ncol-1 implies col>-1
   SEXP ic, xc;
@@ -239,6 +237,41 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
     ic = R_NilValue;
     xc = nqgrp;
   }
+  if (isReal(ic) && !isI64[col]) {
+    // get NA and NaN out of the way; if any they are at the start so use that fact
+    // -Inf and +Inf don't need to be dealt with because we now use cmp ops on double (no longer dtwiddle)
+    const double *icv = REAL(ic);
+    const double *xcv = REAL(xc);
+    int xtmp=xlow, itmp=ilow;
+    while (xtmp<xupp-1 && ISNAN(xcv[XIND(xtmp+1)])) xtmp++;
+    while (itmp<iupp-1 && ISNAN(icv[o ? o[itmp+1]-1 : itmp+1])) itmp++;
+    if (xtmp>xlowIn && itmp>ilowIn) {
+      // both x and i have some NA or NaN at the beginning; NA<NaN guaranteed
+      int xtmp2=xtmp, itmp2=itmp;
+      while (xtmp2>xlowIn && !ISNA(xcv[XIND(xtmp2)])) xtmp2--;  // reverse over NaNs
+      while (itmp2>ilowIn && !ISNA(icv[o? o[itmp2]-1 : itmp2])) itmp2--;
+      if (xtmp2>xlowIn && itmp2>ilowIn) {
+        // some NA match to NA
+        xupp = xtmp2+1;
+        iupp = itmp2+1;
+        goto save;  // after save, there's a recursive call to deal with values after the NA (including NaN, if any)
+      }
+      if (xtmp2<xtmp && itmp2<itmp) {
+        // some NaN match to NaN
+        xlow = xtmp2;
+        xupp = xtmp+1;
+        ilow = itmp2;
+        iupp = itmp+1;
+        goto save;
+      }        
+    }
+    xlow = xtmp;  // skip NA/NaN at the start of this subgroup of x because they don't match to any in i
+    ilow = itmp;  // skip NA/NaN at the start of this subgroup of i because they don't match to any in x
+  }
+
+  int lir = ilow + (iupp-ilow)/2;           // lir = logical i row.
+  int ir = o ? o[lir]-1 : lir;              // ir = the actual i row if i were ordered
+  
   #define DO(XVAL, CMP1, CMP2, TYPE, LOWDIST, UPPDIST)                                            \
     while (xlow < xupp-1) {                                                                       \
       int mid = xlow + (xupp-xlow)/2;                                                             \
@@ -284,8 +317,8 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
       } else {                                                                                    \
         /* Regular roll=TRUE|+ve|-ve */                                                           \
         /* Rprintf("xlow=%d xlowIn=%d xupp=%d xuppIn=%d\n", xlow, xlowIn, xupp, xuppIn); */                                            \
-        if (( roll>0.0 && xlow>xlowIn && (xlow<xuppIn-1 || rollends[1]))   \
-                                 /*|| ( roll<0.0 && xupp==xuppIn && rollends[1]) )  */                             \
+        if ((( roll>0.0 && xlow>xlowIn && (xlow<xuppIn-1 || rollends[1]))   \
+          || ( roll<0.0 && xupp==xuppIn && rollends[1]) )  /* test 933 */                        \
          && ( isinf(rollabs) || ((LOWDIST)-(TYPE)rollabs <= (TYPE)1e-6) ))                       \
           /*   ^^^^^^^^^^^^^^ always true for STRSXP where LOWDIST is a dummy,  TODO pre-save isinf() into const bool */                  \
           xlow--;        \
@@ -383,6 +416,7 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
     error(_("Type '%s' is not supported for joining/merging"), type2char(TYPEOF(xc)));
   }
 
+  save:
   if (xlow<xupp-1) { // if value found, xlow and xupp surround it, unlike standard binary search where low falls on it
     if (col<ncol-1) {  // could include col==-1 here (a non-equi non-data column)
       bmerge_r(xlow, xupp, ilow, iupp, col+1, thisgrp);  //, 1, 1);
