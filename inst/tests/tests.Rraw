@@ -4295,7 +4295,7 @@ test(1196.1, DT[,.N,by=val]$N, INT(1,1,1,1))
 test(1196.2, DT[.(x),.N], 1L)
 setNumericRounding(2L)
 test(1197.1, DT[,.N,by=val]$N, INT(1,1,2))
-test(1197.2, DT[.(x),.N], 2L)
+# test(1197.2, DT[.(x),.N], 2L)  # setNumericRounding to be removed, and bmerge ignores it as from PR#XXX in v1.14.4
 setNumericRounding(old_rounding)
 
 DT = data.table(id=INT(1,2,1), val1=3:1, val2=3:1, val3=list(2:3,4:6,7:10))   # 5380
