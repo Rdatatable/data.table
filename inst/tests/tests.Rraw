@@ -18210,3 +18210,8 @@ DT2 = data.table(x1 = letters[1:3])
 test(2216.1, DT1[DT2, on="x1"][,.(x1,x2)],        DT1[1:9])              # segfault in v1.14.0
 test(2216.2, merge(DT1, DT2, by="x1")[,.(x1,x2)], setkey(DT1[1:9], x1))  # ok before but included for completeness verbatim from issue
 
+# copy attributes assigned to elements of list columns in grouping #4963
+DT1 = data.table(id=1:3, grp=c('a', 'a', 'b'), value=4:6)
+DT2 = data.table(grp = c('a', 'b'), agg = list(c('1' = 4, '2' = 5), c('3' = 6)))
+test(2217, DT1[, by = grp, .(agg = list(setNames(as.numeric(value), id)))], DT2)
+
