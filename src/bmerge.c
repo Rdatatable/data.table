@@ -38,7 +38,7 @@ static double roll, rollabs;
 static Rboolean rollToNearest=FALSE;
 #define XIND(i) (xo ? xo[(i)]-1 : i)
 
-void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisgrp);  //, int lowmax, int uppmax);
+void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisgrp, const bool lowmax, const bool uppmax);
 
 SEXP bmerge(SEXP idt, SEXP xdt, SEXP icolsArg, SEXP xcolsArg, SEXP isorted, SEXP xoArg, SEXP rollarg, SEXP rollendsArg, SEXP nomatchArg, SEXP multArg, SEXP opArg, SEXP nqgrpArg, SEXP nqmaxgrpArg) {
   int xN, iN, protecti=0;
@@ -183,7 +183,7 @@ SEXP bmerge(SEXP idt, SEXP xdt, SEXP icolsArg, SEXP xcolsArg, SEXP isorted, SEXP
   if (iN) {
     // embarassingly parallel if we've storage space for nqmaxgrp*iN
     for (int kk=0; kk<nqmaxgrp; kk++) {
-      bmerge_r(-1,xN,-1,iN,scols,kk+1);
+      bmerge_r(-1,xN,-1,iN,scols,kk+1,true,true);
     }
   }
   ctr += iN;
@@ -219,11 +219,11 @@ SEXP bmerge(SEXP idt, SEXP xdt, SEXP icolsArg, SEXP xcolsArg, SEXP isorted, SEXP
   return (ans);
 }
 
-void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisgrp)  //, bool lowmax, bool uppmax)
+void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisgrp, const bool lowmax, const bool uppmax)
 // col is >0 and <=ncol-1 if this range of [xlow,xupp] and [ilow,iupp] match up to but not including that column
-// lowmax=1 if xlowIn is the lower bound of this group (needed for roll)
-// uppmax=1 if xuppIn is the upper bound of this group (needed for roll)
-// new: col starts with -1 for non-equi joins, which gathers rows from nested id group counter 'thisgrp'
+// lowmax/uppmax is true if xlowIn/xuppIn is the bound of this group. Needed for roll because it recurses into the series
+// and needs to know if the current extents are at the boundaries for rollends.
+// col starts with -1 for non-equi joins, which gathers rows from nested id group counter 'thisgrp'
 {
   int xlow=xlowIn, xupp=xuppIn, ilow=ilowIn, iupp=iuppIn;
   const bool isDataCol = col>-1; // check once for non nq join grp id internal technical, non-data, field
@@ -316,16 +316,16 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
           xupp++;                                                                            \
       } else {                                                                                    \
         /* Regular roll=TRUE|+ve|-ve */                                                           \
-        /* Rprintf("xlow=%d xlowIn=%d xupp=%d xuppIn=%d\n", xlow, xlowIn, xupp, xuppIn); */                                            \
-        if ((( roll>0.0 && xlow>xlowIn && (xlow<xuppIn-1 || rollends[1]))   \
-          || ( roll<0.0 && xupp==xuppIn && rollends[1]) )  /* test 933 */                        \
-         && ( isinf(rollabs) || ((LOWDIST)-(TYPE)rollabs <= (TYPE)1e-6) ))                       \
+        /* Rprintf("xlow=%d xlowIn=%d xupp=%d xuppIn=%d\n", xlow, xlowIn, xupp, xuppIn); */       \
+        if ((( roll>0.0 && xlow>xlowIn && (xupp<xuppIn || !uppmax || rollends[1]))   \
+          || ( roll<0.0 && xupp==xuppIn && uppmax && rollends[1]) )  /* test 933 */                        \
+          && ( isinf(rollabs) || ((LOWDIST)-(TYPE)rollabs <= (TYPE)1e-6) ))                       \
           /*   ^^^^^^^^^^^^^^ always true for STRSXP where LOWDIST is a dummy,  TODO pre-save isinf() into const bool */                  \
           xlow--;        \
           /* ** AND NOW EXTEND iupp too for all irows that join to this same row */               \
         else                                                                                      \
-        if ((( roll<0.0 && xupp<xuppIn && (xlow>xlowIn || rollends[0]))   \
-          || ( roll>0.0 && xlow==xlowIn && rollends[0]) )                               \
+        if ((( roll<0.0 && xupp<xuppIn && (xlow>xlowIn || !lowmax || rollends[0]))   \
+          || ( roll>0.0 && xlow==xlowIn && lowmax && rollends[0]) )                               \
           && ( isinf(rollabs) || ((UPPDIST)-(TYPE)rollabs <= (TYPE)1e-6) ))                       \
           xupp++;                                                                                \
       }                                                                                           \
@@ -419,7 +419,7 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
   save:
   if (xlow<xupp-1) { // if value found, xlow and xupp surround it, unlike standard binary search where low falls on it
     if (col<ncol-1) {  // could include col==-1 here (a non-equi non-data column)
-      bmerge_r(xlow, xupp, ilow, iupp, col+1, thisgrp);  //, 1, 1);
+      bmerge_r(xlow, xupp, ilow, iupp, col+1, thisgrp, true, true);
     } else {
       int len = xupp-xlow-1;
       if (mult==ALL && len>1) allLen1[0] = FALSE;
@@ -478,26 +478,26 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
   case EQ:
     if (ilow>ilowIn && (xlow>xlowIn || isRollCol)) {
       //Rprintf("bmerge_r1 %d %d %d %d\n", xlowIn, xlow+1, ilowIn, ilow+1);
-      bmerge_r(xlowIn, xlow+1+isRollCol, ilowIn, ilow+1, col, 1);  //, lowmax, uppmax && xlow+1==xuppIn);
+      bmerge_r(xlowIn, xlow+1+isRollCol, ilowIn, ilow+1, col, 1, lowmax, uppmax && xlow+1+isRollCol==xuppIn);
     }
     if (iupp<iuppIn && (xupp<xuppIn || isRollCol)) {
       //Rprintf("bmerge_r2 %d %d %d %d\n", xupp-1, xuppIn, iupp-1, iuppIn);
-      bmerge_r(xupp-1-isRollCol, xuppIn, iupp-1, iuppIn, col, 1);  //, lowmax && xupp-1==xlowIn, uppmax);
+      bmerge_r(xupp-1-isRollCol, xuppIn, iupp-1, iuppIn, col, 1, lowmax && xupp-1-isRollCol==xlowIn, uppmax);
     }
     break;
   case LE: case LT:
     // roll is not yet implemented
     if (ilow>ilowIn)
-      bmerge_r(xlowIn, xuppIn, ilowIn, ilow+1, col, 1);  //, lowmax, uppmax && xlow+1==xuppIn);
+      bmerge_r(xlowIn, xuppIn, ilowIn, ilow+1, col, 1, false, false);
     if (iupp<iuppIn)
-      bmerge_r(xlowIn, xuppIn, iupp-1, iuppIn, col, 1);  //, lowmax && xupp-1==xlowIn, uppmax);
+      bmerge_r(xlowIn, xuppIn, iupp-1, iuppIn, col, 1, false, false);
     break;
   case GE: case GT:
     // roll is not yet implemented
     if (ilow>ilowIn)
-      bmerge_r(xlowIn, xuppIn, ilowIn, ilow+1, col, 1);  //, lowmax, uppmax && xlow+1==xuppIn);
+      bmerge_r(xlowIn, xuppIn, ilowIn, ilow+1, col, 1, false, false);
     if (iupp<iuppIn)
-      bmerge_r(xlowIn, xuppIn, iupp-1, iuppIn, col, 1);  //, lowmax && xupp-1==xlowIn, uppmax);
+      bmerge_r(xlowIn, xuppIn, iupp-1, iuppIn, col, 1, false, false);
     break;
   default : break;  // one of 5 valid cases checked up front
   }
