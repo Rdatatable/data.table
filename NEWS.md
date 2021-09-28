@@ -155,7 +155,7 @@
     # [1] 5 1 2 3 4
     ```
 
-28. `setkey` now supports type `raw` as value columns (not as key columns), [#5100](https://github.com/Rdatatable/data.table/issues/1444). Thanks Hugh Parsonage for requesting, and Benjamin Schwendinger for the PR.
+28. `setkey` now supports type `raw` as value columns (not as key columns), [#5100](https://github.com/Rdatatable/data.table/issues/5100). Thanks Hugh Parsonage for requesting, and Benjamin Schwendinger for the PR.
 
 ## BUG FIXES
 
