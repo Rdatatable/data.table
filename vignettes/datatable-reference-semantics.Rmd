@@ -92,7 +92,7 @@ It can be used in `j` in two ways:
     # when you have only one column to assign to you
     # can drop the quotes and list(), for convenience
     DT[, colA := valA]
-	  ```
+    ```
 
 (b) The functional form
 
@@ -283,6 +283,7 @@ ans = foo(flights)
 head(flights)
 head(ans)
 ```
+
 #### {.bs-callout .bs-callout-info}
 
 * Note that the new column `speed` has been added to `flights` *data.table*. This is because `:=` performs operations by reference. Since `DT` (the function argument) and `flights` refer to the same object in memory, modifying `DT` also reflects on `flights`.
