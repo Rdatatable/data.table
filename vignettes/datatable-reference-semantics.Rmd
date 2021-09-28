@@ -266,7 +266,7 @@ flights[, c("speed", "max_speed", "max_dep_delay", "max_arr_delay") := NULL]
 head(flights)
 ```
 
-## 3. `:=` and `copy()`
+## 3) `:=` and `copy()`
 
 `:=` modifies the input object by reference. Apart from the features we have discussed already, sometimes we might want to use the update by reference feature for its side effect. And at other times it may not be desirable to modify the original object, in which case we can use `copy()` function, as we will see in a moment.
 
@@ -283,7 +283,6 @@ ans = foo(flights)
 head(flights)
 head(ans)
 ```
-
 #### {.bs-callout .bs-callout-info}
 
 * Note that the new column `speed` has been added to `flights` *data.table*. This is because `:=` performs operations by reference. Since `DT` (the function argument) and `flights` refer to the same object in memory, modifying `DT` also reflects on `flights`.
@@ -368,4 +367,3 @@ However we could improve this functionality further by *shallow* copying instead
 So far we have seen a whole lot in `j`, and how to combine it with `by` and little of `i`. Let's turn our attention back to `i` in the next vignette *"Keys and fast binary search based subset"* to perform *blazing fast subsets* by *keying data.tables*.
 
 ***
-
