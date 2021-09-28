@@ -156,7 +156,7 @@
     # [1] 5 1 2 3 4
 
     # Benchmark
-    x = seq.int(1e9) # 3.8 GB
+    x = sample(1e9) # 3.7 GB
     microbenchmark::microbenchmark(
       shift(x, 1, type="cyclic"),
       c(tail(x, 1), head(x,-1)),
@@ -165,8 +165,8 @@
     )
     # Unit: seconds
     #                          expr  min   lq mean  median   uq  max neval
-    #  shift(x, 1, type = "cyclic") 1.61 1.66 1.89    1.80 1.92 3.05    10
-    #    c(tail(x, 1), head(x, -1)) 8.94 9.08 9.18    9.13 9.30 9.53    10
+    #  shift(x, 1, type = "cyclic") 1.57 1.67 1.71    1.68 1.70 2.03    10
+    #    c(tail(x, 1), head(x, -1)) 6.96 7.16 7.49    7.32 7.64 8.60    10
     ```
 
 ## BUG FIXES
