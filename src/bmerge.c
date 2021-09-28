@@ -249,7 +249,7 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
       // both x and i have some NA or NaN at the beginning; NA<NaN guaranteed
       int xtmp2=xtmp, itmp2=itmp;
       while (xtmp2>xlowIn && !ISNA(xcv[XIND(xtmp2)])) xtmp2--;  // reverse over NaNs
-      while (itmp2>ilowIn && !ISNA(icv[o? o[itmp2]-1 : itmp2])) itmp2--;
+      while (itmp2>ilowIn && !ISNA(icv[o ? o[itmp2]-1 : itmp2])) itmp2--;
       if (xtmp2>xlowIn && itmp2>ilowIn) {
         // some NA match to NA
         xupp = xtmp2+1;
@@ -316,7 +316,7 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
           xupp++;                                                                            \
       } else {                                                                                    \
         /* Regular roll=TRUE|+ve|-ve */                                                           \
-        /* Rprintf("xlow=%d xlowIn=%d xupp=%d xuppIn=%d\n", xlow, xlowIn, xupp, xuppIn); */       \
+        Rprintf("xlow=%d xlowIn=%d xupp=%d xuppIn=%d lowmax=%d uppmax=%d ilow=%d iupp=%d\n", xlow, xlowIn, xupp, xuppIn, lowmax, uppmax, ilow, iupp);       \
         if ((( roll>0.0 && xlow>xlowIn && (xupp<xuppIn || !uppmax || rollends[1]))   \
           || ( roll<0.0 && xupp==xuppIn && uppmax && rollends[1]) )  /* test 933 */                        \
           && ( isinf(rollabs) || ((LOWDIST)-(TYPE)rollabs <= (TYPE)1e-6) ))                       \
@@ -477,12 +477,12 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
   switch (op[col]) {
   case EQ:
     if (ilow>ilowIn && (xlow>xlowIn || isRollCol)) {
-      //Rprintf("bmerge_r1 %d %d %d %d\n", xlowIn, xlow+1, ilowIn, ilow+1);
+      Rprintf("bmerge_r1 %d %d %d %d\n", xlowIn, xlow+1+isRollCol, ilowIn, ilow+1);
       bmerge_r(xlowIn, xlow+1+isRollCol, ilowIn, ilow+1, col, 1, lowmax, uppmax && xlow+1+isRollCol==xuppIn);
     }
     if (iupp<iuppIn && (xupp<xuppIn || isRollCol)) {
-      //Rprintf("bmerge_r2 %d %d %d %d\n", xupp-1, xuppIn, iupp-1, iuppIn);
-      bmerge_r(xupp-1-isRollCol, xuppIn, iupp-1, iuppIn, col, 1, lowmax && xupp-1-isRollCol==xlowIn, uppmax);
+      Rprintf("bmerge_r2 %d %d %d %d\n", xupp-1-isRollCol, xuppIn, iupp-1, iuppIn);
+      bmerge_r(MAX(xupp-1-isRollCol, xlowIn), xuppIn, iupp-1, iuppIn, col, 1, lowmax && MAX(xupp-1-isRollCol, xlowIn)==xlowIn, uppmax);
     }
     break;
   case LE: case LT:
