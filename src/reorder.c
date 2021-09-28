@@ -13,7 +13,7 @@ SEXP reorder(SEXP x, SEXP order)
     ncol = length(x);
     for (int i=0; i<ncol; i++) {
       SEXP v = VECTOR_ELT(x,i);
-      if (SIZEOF(v)!=4 && SIZEOF(v)!=8 && SIZEOF(v)!=16)
+      if (SIZEOF(v)!=1 && SIZEOF(v)!=4 && SIZEOF(v)!=8 && SIZEOF(v)!=16)
         error(_("Item %d of list is type '%s' which isn't yet supported (SIZEOF=%d)"), i+1, type2char(TYPEOF(v)), SIZEOF(v));
       if (length(v)!=nrow)
         error(_("Column %d is length %d which differs from length of column 1 (%d). Invalid data.table."), i+1, length(v), nrow);
@@ -23,7 +23,7 @@ SEXP reorder(SEXP x, SEXP order)
     }
     copySharedColumns(x); // otherwise two columns which point to the same vector would be reordered and then re-reordered, issues linked in PR#3768
   } else {
-    if (SIZEOF(x)!=4 && SIZEOF(x)!=8 && SIZEOF(x)!=16)
+    if (SIZEOF(x)!=1 && SIZEOF(x)!=4 && SIZEOF(x)!=8 && SIZEOF(x)!=16)
       error(_("reorder accepts vectors but this non-VECSXP is type '%s' which isn't yet supported (SIZEOF=%d)"), type2char(TYPEOF(x)), SIZEOF(x));
     if (ALTREP(x)) error(_("Internal error in reorder.c: cannot reorder an ALTREP vector. Please see NEWS item 2 in v1.11.4 and report this as a bug.")); // # nocov
     maxSize = SIZEOF(x);
@@ -61,7 +61,14 @@ SEXP reorder(SEXP x, SEXP order)
   for (int i=0; i<ncol; ++i) {
     const SEXP v = isNewList(x) ? VECTOR_ELT(x,i) : x;
     const size_t size = SIZEOF(v);    // size_t, otherwise #61 (integer overflow in memcpy)
-    if (size==4) {
+    if (size==1) { // support raw as column #5100
+      const Rbyte *restrict vd = DATAPTR_RO(v);
+      Rbyte *restrict tmp = (Rbyte *)TMP;
+      #pragma omp parallel for num_threads(getDTthreads(end, true))
+      for (int i=start; i<=end; ++i) {
+        tmp[i-start] = vd[idx[i]-1];  // copies 1 bytes; e.g. RAW
+      }
+    } else if (size==4) {
       const int *restrict vd = DATAPTR_RO(v);
       int *restrict tmp = (int *)TMP;
       #pragma omp parallel for num_threads(getDTthreads(end, true))
