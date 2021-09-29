@@ -32,9 +32,9 @@ merge.data.table = function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FAL
   } else {
     if (is.null(by))
       by = intersect(key(x), key(y))
-    if (is.null(by))
+    if (!length(by))   # was is.null() before PR#5183  changed to !length()
       by = key(x)
-    if (is.null(by))
+    if (!length(by))
       by = intersect(names(x), names(y))
     if (length(by) == 0L || !is.character(by))
       stop("A non-empty vector of column names for `by` is required.")
