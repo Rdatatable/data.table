@@ -10,7 +10,7 @@ fdroplevels = function(x, exclude = if (anyNA(levels(x))) NULL else NA, ...) {
 
 droplevels.data.table = function(x, except = NULL, exclude, in.place = FALSE, ...){
     stopifnot(is.logical(in.place))
-    if (length(x)==0L) return(x)
+    if (nrow(x)==0L) return(x)
     ix = vapply(x, is.factor, NA)
     if(!is.null(except)){
         stopifnot(is.numeric(except), except <= length(x))
