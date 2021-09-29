@@ -18203,6 +18203,7 @@ o = factor(letters[1:10], ordered=TRUE)
 test(2214.09, fdroplevels(o[1:5]), droplevels(o[1:5]))
 # edge case for empty table #5184
 test(2214.10, droplevels(DT[0]), DT[0])
+test(2214.11, droplevels(datat.table()), data.table())
 
 
 # factor i should be just like character i and work, #1632
