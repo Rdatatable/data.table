@@ -13586,7 +13586,7 @@ test(1962.018, merge(DT1, DT2, by.x = 'z', by.y = 'a'),
      error = 'Elements listed in `by.x`')
 test(1962.019, merge(DT1, DT2, by.x = 'a', by.y = 'z'),
      error = 'Elements listed in `by.y`')
-test(1962.0201, merge(DT1, DT2, by=character(0L)), ans)  # was error before PR#
+test(1962.0201, merge(DT1, DT2, by=character(0L)), ans)  # was error before PR#5183
 test(1962.0202, merge(DT1, DT2, by=NULL),          ans)  # test explicit NULL too as missing() could be used inside merge()
 test(1962.021, merge(DT1, DT2, by = 'z'),
      error = 'must be valid column names in x and y')
