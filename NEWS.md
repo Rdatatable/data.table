@@ -424,6 +424,8 @@
     ```
 
     The message is now upgraded to warning that the option is now ignored.
+    
+15. Thanks to Kurt Hornik for investigating potential impact of a possible future change to `base::intersect()` on empty input, pinpointing what we need to change, and giving us plenty of notice, [#XXXX]( ... ).
 
 
 # data.table [v1.14.2](https://github.com/Rdatatable/data.table/milestone/24?closed=1)

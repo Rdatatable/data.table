@@ -13576,7 +13576,7 @@ test(1962.014, merge(DT1, DT2),
      data.table(a = integer(0), V = character(0)))
 setkey(DT1, a)
 test(1962.015, merge(DT1, DT2),
-     data.table(a = 2:3, V.x = c("a", "a"), V.y = c("b", "b"), key = 'a'))
+     ans<-data.table(a = 2:3, V.x = c("a", "a"), V.y = c("b", "b"), key = 'a'))
 test(1962.016, merge(DT1, DT2, by.x = 'a', by.y = c('a', 'V')),
      error = 'must be of same length')
 test(1962.017, merge(DT1, DT2, by = 'V', by.x = 'a', by.y = 'a'),
@@ -13586,8 +13586,8 @@ test(1962.018, merge(DT1, DT2, by.x = 'z', by.y = 'a'),
      error = 'Elements listed in `by.x`')
 test(1962.019, merge(DT1, DT2, by.x = 'a', by.y = 'z'),
      error = 'Elements listed in `by.y`')
-test(1962.020, merge(DT1, DT2, by = character(0L)),
-     error = 'non-empty vector of column names')
+test(1962.0201, merge(DT1, DT2, by=character(0L)), ans)  # was error before PR#
+test(1962.0202, merge(DT1, DT2, by=NULL),          ans)  # test explicit NULL too as missing() could be used inside merge()
 test(1962.021, merge(DT1, DT2, by = 'z'),
      error = 'must be valid column names in x and y')
 
