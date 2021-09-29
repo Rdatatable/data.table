@@ -4,12 +4,13 @@ fdroplevels = function(x, exclude = if (anyNA(levels(x))) NULL else NA, ...) {
   lev = which(tabulate(x, length(levels(x))) & (!match(levels(x), exclude, 0L)))
   ans = match(as.integer(x), lev)
   setattr(ans, 'levels', levels(x)[lev])
-  setattr(ans, 'class', 'factor')
+  setattr(ans, 'class', class(x))
   return(ans)
 }
 
 droplevels.data.table = function(x, except = NULL, exclude, in.place = FALSE, ...){
-    stopifnot(length(x) > 0L, is.logical(in.place))
+    stopifnot(is.logical(in.place))
+    if (length(x)==0L) return(x)
     ix = vapply(x, is.factor, NA)
     if(!is.null(except)){
         stopifnot(is.numeric(except), except <= length(x))
