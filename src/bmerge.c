@@ -316,7 +316,7 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
           xupp++;                                                                            \
       } else {                                                                                    \
         /* Regular roll=TRUE|+ve|-ve */                                                           \
-        Rprintf("xlow=%d xlowIn=%d xupp=%d xuppIn=%d lowmax=%d uppmax=%d ilow=%d iupp=%d\n", xlow, xlowIn, xupp, xuppIn, lowmax, uppmax, ilow, iupp);       \
+        /* Rprintf("xlow=%d xlowIn=%d xupp=%d xuppIn=%d lowmax=%d uppmax=%d ilow=%d iupp=%d\n", xlow, xlowIn, xupp, xuppIn, lowmax, uppmax, ilow, iupp); */       \
         if ((( roll>0.0 && xlow>xlowIn && (xupp<xuppIn || !uppmax || rollends[1]))   \
           || ( roll<0.0 && xupp==xuppIn && uppmax && rollends[1]) )  /* test 933 */                        \
           && ( isinf(rollabs) || ((LOWDIST)-(TYPE)rollabs <= (TYPE)1e-6) ))                       \
@@ -477,12 +477,13 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
   switch (op[col]) {
   case EQ:
     if (ilow>ilowIn && (xlow>xlowIn || isRollCol)) {
-      Rprintf("bmerge_r1 %d %d %d %d\n", xlowIn, xlow+1+isRollCol, ilowIn, ilow+1);
+      // Rprintf("bmerge_r1 %d %d %d %d\n", xlowIn, xlow+1+isRollCol, ilowIn, ilow+1);
       bmerge_r(xlowIn, xlow+1+isRollCol, ilowIn, ilow+1, col, 1, lowmax, uppmax && xlow+1+isRollCol==xuppIn);
     }
     if (iupp<iuppIn && (xupp<xuppIn || isRollCol)) {
-      Rprintf("bmerge_r2 %d %d %d %d\n", xupp-1-isRollCol, xuppIn, iupp-1, iuppIn);
+      // Rprintf("bmerge_r2 %d %d %d %d\n", xupp-1-isRollCol, xuppIn, iupp-1, iuppIn);
       bmerge_r(MAX(xupp-1-isRollCol, xlowIn), xuppIn, iupp-1, iuppIn, col, 1, lowmax && MAX(xupp-1-isRollCol, xlowIn)==xlowIn, uppmax);
+      // both MAX's needed for test 936. Just the first MAX needed for test 937. TODO: remove MAX's when too much recursion is avoided
     }
     break;
   case LE: case LT:
