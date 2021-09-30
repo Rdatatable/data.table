@@ -483,7 +483,7 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
     if (iupp<iuppIn && (xupp<xuppIn || isRollCol)) {
       // Rprintf("bmerge_r2 %d %d %d %d\n", xupp-1-isRollCol, xuppIn, iupp-1, iuppIn);
       bmerge_r(MAX(xupp-1-isRollCol, xlowIn), xuppIn, iupp-1, iuppIn, col, 1, lowmax && MAX(xupp-1-isRollCol, xlowIn)==xlowIn, uppmax);
-      // both MAX's needed for test 936. Just the first MAX needed for test 937. TODO: remove MAX's when too much recursion is avoided
+      // both MAX's needed for test 936. Just the first MAX needed for test 937. TODO: remove MAX's when too much recursion is avoided. They aren't needed for the case just above.
     }
     break;
   case LE: case LT:
