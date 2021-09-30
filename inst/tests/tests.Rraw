@@ -13582,7 +13582,7 @@ test(1962.014, merge(DT1, DT2),
      data.table(a = integer(0), V = character(0)))
 setkey(DT1, a)
 test(1962.015, merge(DT1, DT2),
-     data.table(a = 2:3, V.x = c("a", "a"), V.y = c("b", "b"), key = 'a'))
+     ans<-data.table(a = 2:3, V.x = c("a", "a"), V.y = c("b", "b"), key = 'a'))
 test(1962.016, merge(DT1, DT2, by.x = 'a', by.y = c('a', 'V')),
      error = 'must be of same length')
 test(1962.017, merge(DT1, DT2, by = 'V', by.x = 'a', by.y = 'a'),
@@ -13592,8 +13592,8 @@ test(1962.018, merge(DT1, DT2, by.x = 'z', by.y = 'a'),
      error = 'Elements listed in `by.x`')
 test(1962.019, merge(DT1, DT2, by.x = 'a', by.y = 'z'),
      error = 'Elements listed in `by.y`')
-test(1962.020, merge(DT1, DT2, by = character(0L)),
-     error = 'non-empty vector of column names')
+test(1962.0201, merge(DT1, DT2, by=character(0L)), ans)  # was error before PR#5183
+test(1962.0202, merge(DT1, DT2, by=NULL),          ans)  # test explicit NULL too as missing() could be used inside merge()
 test(1962.021, merge(DT1, DT2, by = 'z'),
      error = 'must be valid column names in x and y')
 
@@ -18215,4 +18215,9 @@ DT1 = data.table(x1 = rep(letters[1:4], each=3), x2=NA_character_, key="x2")
 DT2 = data.table(x1 = letters[1:3])
 test(2216.1, DT1[DT2, on="x1"][,.(x1,x2)],        DT1[1:9])              # segfault in v1.14.0
 test(2216.2, merge(DT1, DT2, by="x1")[,.(x1,x2)], setkey(DT1[1:9], x1))  # ok before but included for completeness verbatim from issue
+
+# copy attributes assigned to elements of list columns in grouping #4963
+DT1 = data.table(id=1:3, grp=c('a', 'a', 'b'), value=4:6)
+DT2 = data.table(grp = c('a', 'b'), agg = list(c('1' = 4, '2' = 5), c('3' = 6)))
+test(2217, DT1[, by = grp, .(agg = list(setNames(as.numeric(value), id)))], DT2)
 
