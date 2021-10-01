@@ -18215,3 +18215,25 @@ DT1 = data.table(id=1:3, grp=c('a', 'a', 'b'), value=4:6)
 DT2 = data.table(grp = c('a', 'b'), agg = list(c('1' = 4, '2' = 5), c('3' = 6)))
 test(2217, DT1[, by = grp, .(agg = list(setNames(as.numeric(value), id)))], DT2)
 
+# 4865 shift coerceAs with data
+funs = list(as.integer, as.double, as.complex, as.character)
+testnum = 2218
+for (f in funs) {
+  testnum = testnum + 0.01
+  DT = data.table(x=f(1:4))
+  test(testnum, DT[, shift(x)], f(c(NA, 1:3)))
+  testnum = testnum + 0.01
+  test(testnum, DT[, shift(x, fill=f(0))], f(0:3))
+}
+
+funs = list(as.integer, as.double)
+if (test_bit64) funs = c(funs, as.integer64)
+for (f1 in funs) {
+  DT = data.table(x=f1(1:4))
+  for (f2 in funs) {
+    testnum = testnum + 0.01
+    test(testnum, DT[, shift(x, fill=f2(NA))], f1(c(NA, 1:3)))
+    testnum = testnum + 0.01
+    test(testnum, DT[, shift(x, fill=f2(0))],  f1(0:3))
+  }
+}

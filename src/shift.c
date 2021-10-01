@@ -40,7 +40,7 @@ SEXP shift(SEXP obj, SEXP k, SEXP fill, SEXP type)
     R_xlen_t xrows = xlength(elem);
     switch (TYPEOF(elem)) {
     case INTSXP : {
-      SEXP thisfill = PROTECT(coerceVector(fill, INTSXP));
+      SEXP thisfill = PROTECT(coerceAs(fill, elem, ScalarLogical(0)));
       const int ifill = INTEGER(thisfill)[0];
       UNPROTECT(1);
       for (int j=0; j<nk; j++) {
@@ -69,16 +69,7 @@ SEXP shift(SEXP obj, SEXP k, SEXP fill, SEXP type)
     } break;
 
     case REALSXP : {
-      SEXP thisfill;
-      if (INHERITS(elem, char_integer64)) {
-        thisfill = PROTECT(allocVector(REALSXP, 1));
-        unsigned long long *dthisfill = (unsigned long long *)REAL(thisfill);
-        if (INTEGER(fill)[0] == NA_INTEGER)
-          dthisfill[0] = NA_INT64_LL;
-        else dthisfill[0] = (unsigned long long)INTEGER(fill)[0];
-      } else {
-        thisfill = PROTECT(coerceVector(fill, REALSXP));
-      }
+      SEXP thisfill = PROTECT(coerceAs(fill, elem, ScalarLogical(0))); // #4865 use coerceAs for (NA) type coercion
       const double dfill = REAL(thisfill)[0];
       UNPROTECT(1); // thisfill
       for (int j=0; j<nk; j++) {
