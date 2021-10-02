@@ -583,7 +583,8 @@ SEXP gmean(SEXP x, SEXP narmArg)
   double started = wallclock();
   const bool verbose=GetVerbose();
   if (verbose) Rprintf(_("This gmean took (narm=%s) ... "), narm?"TRUE":"FALSE"); // narm=TRUE only at this point
-  if (nrow != n) error(_("nrow [%d] != length(x) [%d] in %s"), nrow, n, "gmean");
+  if (nrow != n)
+    error(_("nrow [%d] != length(x) [%d] in %s"), nrow, n, "gmean");
   bool anyNA=false;
   SEXP ans=R_NilValue;
   int protecti=0;
@@ -918,7 +919,8 @@ static SEXP gfirstlast(SEXP x, const bool first, const int w, const bool headw) 
   const bool nosubset = irowslen == -1;
   const bool issorted = !isunsorted; // make a const-bool for use inside loops
   const int n = nosubset ? length(x) : irowslen;
-  if (nrow != n) error(_("nrow [%d] != length(x) [%d] in %s"), nrow, n, first?"gfirst":"glast");
+  if (nrow != n)
+    error(_("nrow [%d] != length(x) [%d] in %s"), nrow, n, first?"gfirst":"glast");
   if (w==1 && headw) error(_("Internal error: gfirstlast headw should only be true when w>1"));
   int anslen = ngrp;
   if (headw) {
