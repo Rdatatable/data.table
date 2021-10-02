@@ -18216,7 +18216,7 @@ DT2 = data.table(grp = c('a', 'b'), agg = list(c('1' = 4, '2' = 5), c('3' = 6)))
 test(2217, DT1[, by = grp, .(agg = list(setNames(as.numeric(value), id)))], DT2)
 
 # gforce improve coverage
-DT = data.table(g=1:2, i=c(NA, 1:4, NA), f=factor(letters[1:6]))
+DT = data.table(g=1:2, i=c(NA, 1:4, NA), f=factor(letters[1:6]), l=as.list(1:6))
 options(datatable.optimize = 2L)
 funs = c("sum", "mean", "min", "max", "median", "var", "sd", "prod")
 testnum = 2218
@@ -18226,4 +18226,4 @@ for (fun in funs) {
   testnum = testnum + 0.01
   test(testnum, EVAL("DT[,",fun,"(f), g]"), error=sprintf("%s is not meaningful for factors.", fun))
 }
-test(testnum+0.01, DT[, gprod(.SD), g], error="GForce prod can only be applied to columns, not .SD or similar.")
+test(testnum+0.01, DT[, prod(l), g], error="GForce prod can only be applied to columns, not .SD or similar.")
