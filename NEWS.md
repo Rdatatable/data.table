@@ -376,7 +376,7 @@
 
 44. In v1.13.2 a version of an old bug was reintroduced where during a grouping operation list columns could retain a pointer to the last group. This affected only attributes of list elements and only if those were updated during the grouping operation, [#4963](https://github.com/Rdatatable/data.table/issues/4963). Thanks to @fujiaxiang for reporting and @avimallu and Václav Tlapák for investigating and the PR.
 
-45. `shift(x, fill)` could error if `x` had type `bit64::integer64` and a `fill` argument of type different than `integer32` was also provided, [#4865](https://github.com/Rdatatable/data.table/issues/4865). Thanks to @peterlittlejohn for reporting and Benjamin Schwendinger for the PR.
+45. `shift(x, fill)` could error if `x` had type `bit64::integer64` and a `fill` argument of different type than `integer32` was also provided, [#4865](https://github.com/Rdatatable/data.table/issues/4865). Thanks to @peterlittlejohn for reporting and Benjamin Schwendinger for the PR.
 
 ## NOTES
 
