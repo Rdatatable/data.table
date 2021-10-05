@@ -18222,3 +18222,5 @@ DT1 = data.table(id=1:3, grp=c('a', 'a', 'b'), value=4:6)
 DT2 = data.table(grp = c('a', 'b'), agg = list(c('1' = 4, '2' = 5), c('3' = 6)))
 test(2217, DT1[, by = grp, .(agg = list(setNames(as.numeric(value), id)))], DT2)
 
+# tables() doesn't find `...`, #5197
+test(2218, (function(...) tables())(), output = "No objects of class data.table exist")
