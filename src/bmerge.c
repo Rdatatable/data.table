@@ -237,42 +237,11 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
     ic = R_NilValue;
     xc = nqgrp;
   }
-  if (isReal(ic) && !isI64[col]) {
-    // get NA and NaN out of the way; if any they are at the start so use that fact
-    // -Inf and +Inf don't need to be dealt with because we now use cmp ops on double (no longer dtwiddle)
-    const double *icv = REAL(ic);
-    const double *xcv = REAL(xc);
-    int xtmp=xlow, itmp=ilow;
-    while (xtmp<xupp-1 && ISNAN(xcv[XIND(xtmp+1)])) xtmp++;
-    while (itmp<iupp-1 && ISNAN(icv[o ? o[itmp+1]-1 : itmp+1])) itmp++;
-    if (xtmp>xlowIn && itmp>ilowIn) {
-      // both x and i have some NA or NaN at the beginning; NA<NaN guaranteed
-      int xtmp2=xtmp, itmp2=itmp;
-      while (xtmp2>xlowIn && !ISNA(xcv[XIND(xtmp2)])) xtmp2--;  // reverse over NaNs
-      while (itmp2>ilowIn && !ISNA(icv[o ? o[itmp2]-1 : itmp2])) itmp2--;
-      if (xtmp2>xlowIn && itmp2>ilowIn) {
-        // some NA match to NA
-        xupp = xtmp2+1;
-        iupp = itmp2+1;
-        goto save;  // after save, there's a recursive call to deal with values after the NA (including NaN, if any)
-      }
-      if (xtmp2<xtmp && itmp2<itmp) {
-        // some NaN match to NaN
-        xlow = xtmp2;
-        xupp = xtmp+1;
-        ilow = itmp2;
-        iupp = itmp+1;
-        goto save;
-      }        
-    }
-    xlow = xtmp;  // skip NA/NaN at the start of this subgroup of x because they don't match to any in i
-    ilow = itmp;  // skip NA/NaN at the start of this subgroup of i because they don't match to any in x
-  }
 
   int lir = ilow + (iupp-ilow)/2;           // lir = logical i row.
   int ir = o ? o[lir]-1 : lir;              // ir = the actual i row if i were ordered
   
-  #define DO(XVAL, CMP1, CMP2, TYPE, LOWDIST, UPPDIST)                                            \
+  #define BINX(XVAL, CMP1, CMP2)                                                                  \
     while (xlow < xupp-1) {                                                                       \
       int mid = xlow + (xupp-xlow)/2;                                                             \
       XVAL;                                                                                       \
@@ -281,9 +250,9 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
       } else if (CMP2)  {   /* TO DO: switch(sign(xval-ival)) ? */                                \
         xupp=mid;                                                                                 \
       } else {                                                                                    \
-        /* xval == ival  including NA_INTEGER==NA_INTEGER                                         \
-           branch mid to find start and end of this group in this column                          \
-           TO DO?: not if mult=first|last and col<ncol-1 */                                       \
+        /* xval == ival  including NA_INTEGER==NA_INTEGER */                                      \
+        /* branch mid to find start and end of this group in this column */                       \
+        /*   TO DO?: not if mult=first|last and col<ncol-1 */                                     \
         int tmplow = mid;                                                                         \
         while (tmplow<xupp-1) {                                                                   \
           int mid = tmplow + (xupp-tmplow)/2;                                                     \
@@ -297,7 +266,9 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
         /* xlow and xupp now surround the group in xc */                                          \
         break;                                                                                    \
       }                                                                                           \
-    }                                                                                             \
+    }
+  
+  #define DO(TYPE, LOWDIST, UPPDIST)                                                              \
     if (!isDataCol)                                                                               \
       break;                                                                                      \
     if (isRollCol && xlow==xupp-1) {  /* no match found in last column */                         \
@@ -370,7 +341,8 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
     const int ival = isDataCol ? icv[ir] : thisgrp;
     #define ISNAT(x) ((x)==NA_INTEGER)
     #define WRAP(x) (x)  // wrap not needed for int
-    DO(const int xval = xcv[XIND(mid)], xval<ival, xval>ival, int, ival-xcv[XIND(xlow)], xcv[XIND(xupp)]-ival)
+    BINX(const int xval = xcv[XIND(mid)], xval<ival, xval>ival)
+    DO(int, ival-xcv[XIND(xlow)], xcv[XIND(xupp)]-ival)
   } break;
   case STRSXP : {
     // op[col]==EQ checked up front to avoid an if() here and non-thread-safe error()
@@ -382,7 +354,8 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
     #undef WRAP
     #define ISNAT(x) (x) // ISNAT only used for non-equi which doesn't occur for STRSXP
     #define WRAP(x) (ENC2UTF8(x))
-    DO(int tmp=StrCmp(ENC2UTF8(xcv[XIND(mid)]), ival), tmp<0, tmp>0, int, 0, 0)
+    BINX(int tmp=StrCmp(ENC2UTF8(xcv[XIND(mid)]), ival), tmp<0, tmp>0)
+    DO(int, 0, 0)
     // NA_STRING are allowed and joined to; does not do ENC2UTF8 again inside StrCmp
     // TO DO: deal with mixed encodings and locale optionally; could StrCmp non-ascii in a thread-safe non-alloc manner
   } break;
@@ -395,19 +368,59 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
       #undef WRAP
       #define ISNAT(x) ((x)==NA_INTEGER64)
       #define WRAP(x) (x)
-      DO(const int64_t xval=xcv[XIND(mid)], xval<ival, xval>ival, int64_t, ival-xcv[XIND(xlow)], xcv[XIND(xupp)]-ival)
+      BINX(const int64_t xval=xcv[XIND(mid)], xval<ival, xval>ival)
+      DO(int64_t, ival-xcv[XIND(xlow)], xcv[XIND(xupp)]-ival)
     } else {
       const double *icv = REAL(ic);
       const double *xcv = REAL(xc);
-      const double ival = icv[ir];
+      double ival = icv[ir];
       #undef ISNAT
       #undef WRAP
       #define ISNAT(x) (ISNAN(x))
       #define WRAP(x) (x)
+
+      // get NA and NaN out of the way; if any they are at the start so use that fact
+      // -Inf and +Inf don't need to be dealt with because we now use cmp ops on double (no longer dtwiddle)
+      bool someNAmatch=false;
+      int xtmp=xlow, itmp=ilow;
+      while (xtmp<xupp-1 && ISNAN(xcv[XIND(xtmp+1)])) xtmp++;
+      while (itmp<iupp-1 && ISNAN(icv[o ? o[itmp+1]-1 : itmp+1])) itmp++;
+      if (xtmp>xlowIn && itmp>ilowIn) {
+        // both x and i have some NA or NaN at the beginning; NA<NaN guaranteed
+        int xtmp2=xtmp, itmp2=itmp;
+        while (xtmp2>xlowIn && !ISNA(xcv[XIND(xtmp2)])) xtmp2--;  // reverse over NaNs
+        while (itmp2>ilowIn && !ISNA(icv[o ? o[itmp2]-1 : itmp2])) itmp2--;
+        if (xtmp2>xlowIn && itmp2>ilowIn) {
+          // some NA match to NA
+          xupp = xtmp2+1;
+          iupp = itmp2+1;
+          someNAmatch=true;
+        }
+        else if (xtmp2<xtmp && itmp2<itmp) {
+          // some NaN match to NaN
+          xlow = xtmp2;
+          xupp = xtmp+1;
+          ilow = itmp2;
+          iupp = itmp+1;
+          someNAmatch=true;
+        }        
+      }
+      if (!someNAmatch) {
+        xlow = xtmp;  // skip NA/NaN at the start of this subgroup of x because they don't match to any in i
+        ilow = itmp;  // skip NA/NaN at the start of this subgroup of i because they don't match to any in x
+        lir = ilow + (iupp-ilow)/2;  // recompute lir and ir in case NA/NaN were skipped and ilow increased
+        ir = o ? o[lir]-1 : lir;
+        ival = icv[ir];
+        if (xo) {
+          BINX(const double xval=xcv[xo[mid]-1], xval<ival, xval>ival)
+        } else {
+          BINX(const double xval=xcv[mid],       xval<ival, xval>ival)
+        }
+      }
       if (xo) {
-        DO(const double xval=xcv[xo[mid]-1], xval<ival, xval>ival, double, ival-xcv[xo[xlow]-1], xcv[xo[xupp]-1]-ival)
+        DO(double, ival-xcv[xo[xlow]-1], xcv[xo[xupp]-1]-ival)
       } else {
-        DO(const double xval=xcv[mid],       xval<ival, xval>ival, double, ival-xcv[xlow],       xcv[xupp]-ival)
+        DO(double, ival-xcv[xlow],       xcv[xupp]-ival)
       }
     }
     break;
@@ -416,7 +429,6 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
     error(_("Type '%s' is not supported for joining/merging"), type2char(TYPEOF(xc)));
   }
 
-  save:
   if (xlow<xupp-1) { // if value found, xlow and xupp surround it, unlike standard binary search where low falls on it
     if (col<ncol-1) {  // could include col==-1 here (a non-equi non-data column)
       bmerge_r(xlow, xupp, ilow, iupp, col+1, thisgrp, true, true);
