@@ -7,7 +7,7 @@ tables = function(mb=TRUE, order.col="NAME", width=80,
   # Prints name, size and colnames of all data.tables in the calling environment by default
   # include "hidden" objects (starting with .) via all.names=TRUE, but exclude ... specifically, #5197
   all_obj = grep("...", objects(envir=env, all.names=TRUE, sorted=order.col == "NAME"), invert=TRUE, fixed=TRUE, value=TRUE)
-  is_DT = vapply_1b(all_obj, function(x) is.data.table(get(x, envir=env)))
+  is_DT = vapply_1b(mget(all_obj, envir=env), is.data.table)
   if (!any(is_DT)) {
     if (!silent) catf("No objects of class data.table exist in %s\n", if (identical(env, .GlobalEnv)) ".GlobalEnv" else format(env))
     return(invisible(data.table(NULL)))
