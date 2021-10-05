@@ -2,10 +2,11 @@
 MB = NCOL = NROW = NULL
 
 tables = function(mb=TRUE, order.col="NAME", width=80,
-                   env=parent.frame(), silent=FALSE, index=FALSE)
+                  env=parent.frame(), silent=FALSE, index=FALSE)
 {
   # Prints name, size and colnames of all data.tables in the calling environment by default
-  all_obj = objects(envir=env, all.names=TRUE)
+  # include "hidden" objects (starting with .) via all.names=TRUE, but exclude ... specifically, #5197
+  all_obj = grep("...", objects(envir=env, all.names=TRUE), invert=TRUE, fixed=TRUE, value=TRUE)
   is_DT = which(vapply_1b(all_obj, function(x) is.data.table(get(x, envir=env))))
   if (!length(is_DT)) {
     if (!silent) catf("No objects of class data.table exist in %s\n", if (identical(env, .GlobalEnv)) ".GlobalEnv" else format(env))
