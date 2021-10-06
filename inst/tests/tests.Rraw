@@ -18226,13 +18226,14 @@ for (f1 in funs) {
     testnum = testnum + 0.01
     test(testnum, DT[, shift(x)],               f1(c(NA, 1:3)))
     testnum = testnum + 0.01
-    test(testnum, DT[, shift(x, fill=f2(NA))],  f1(c(NA, 1:3)))
+    w = if (identical(f2,as.character) && (identical(f1,as.integer) || identical(f1,as.double))) "Coercing.*character.*to match the type of target vector"
+    test(testnum, DT[, shift(x, fill=f2(NA))],  f1(c(NA, 1:3)), warning=w)
     testnum = testnum + 0.01
     if (identical(f1,as.character) && identical(f2,as.complex))
       # one special case due to as.complex(0)=="0+0i"!="0"
       test(testnum, DT[, shift(x, fill="0")],   f1(0:3))
     else 
-      test(testnum, DT[, shift(x, fill=f2(0))], f1(0:3))
+      test(testnum, DT[, shift(x, fill=f2(0))], f1(0:3), warning=w)
   }
 }
 
