@@ -897,8 +897,11 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
                                                      (ISNAN(val.r) || (R_FINITE(val.r) && (int)val.r==val.r))), "f", "either imaginary part discarded or real part truncated (precision lost)", val.r)
       } break;
     case REALSXP:
-      if (targetIsI64 && isReal(source) && !sourceIsI64) {
+      switch (TYPEOF(source)) {
+      case REALSXP: if (targetIsI64 && !sourceIsI64)
                     CHECK_RANGE(double, REAL,  !ISNAN(val) && (!R_FINITE(val) || (int)val!=val),        "f",     "truncated (precision lost)", val)
+      case CPLXSXP: if (!targetIsI64)
+                    CHECK_RANGE(Rcomplex, COMPLEX, !(ISNAN(val.i) || (R_FINITE(val.i) && val.i==0.0)),  "f",     "imaginary part discarded", val.i) 
       }
     }
   }
@@ -1025,6 +1028,7 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
                     memcpy(td, (double *)REAL(source), slen*sizeof(double)); break;
           } else    BODY(double, REAL,  double, val,                                    td[i]=cval)
         } else      BODY(int64_t, REAL, double, val==NA_INTEGER64 ? NA_REAL : val,      td[i]=cval)
+      case CPLXSXP: BODY(Rcomplex, COMPLEX, double, val.r,                              td[i]=cval)
       default:      COERCE_ERROR("double");
       }
     }
