@@ -281,7 +281,7 @@ if (test_bit64) {
   x = as.integer64(1L)
   test(10.81, coerceAs(x, 1), 1, output="double[integer64] into double[numeric]")
   test(10.82, coerceAs(x, 1L), 1L, output="double[integer64] into integer[integer]")
-  test(10.83, coerceAs(x, "1"), error="please use as.character", output="double[integer64] into character[character]") # not yet implemented
+  test(10.83, coerceAs(x, "1"), "1", output="double[integer64] into character[character]")
   test(10.84, coerceAs(1, x), x, output="double[numeric] into double[integer64]")
   test(10.85, coerceAs(1L, x), x, output="integer[integer] into double[integer64]")
   test(10.86, coerceAs("1", x), x, output="character[character] into double[integer64]", warning="Coercing.*character")
@@ -301,7 +301,7 @@ if (test_nanotime) {
 }
 options(datatable.verbose=FALSE)
 test(11.01, coerceAs(list(a=1), 1), error="is not atomic")
-test(11.02, coerceAs(1, list(a=1)), error="is not atomic")
+test(11.02, coerceAs(1, list(a=1)), list(1))
 test(11.03, coerceAs(sum, 1), error="is not atomic")
 test(11.04, coerceAs(quote(1+1), 1), error="is not atomic")
 test(11.05, coerceAs(as.name("x"), 1), error="is not atomic")
