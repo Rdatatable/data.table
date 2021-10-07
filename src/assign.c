@@ -830,7 +830,7 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
       }
     }
   } else if (isString(source) && !isString(target) && !isNewList(target)) {
-    warning(_("Coercing 'character' RHS to '%s' to match the type of %s."), type2char(TYPEOF(target)), targetDesc);
+    warning(_("Coercing 'character' RHS to '%s' to match the type of %s."), targetIsI64?"integer64":type2char(TYPEOF(target)), targetDesc);
     // this "Coercing ..." warning first to give context in case coerceVector warns 'NAs introduced by coercion'
     // and also because 'character' to integer/double coercion is often a user mistake (e.g. wrong target column, or wrong
     // variable on RHS) which they are more likely to appreciate than find inconvenient
@@ -900,6 +900,7 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
       switch (TYPEOF(source)) {
       case REALSXP: if (targetIsI64 && !sourceIsI64)
                     CHECK_RANGE(double, REAL,  !ISNAN(val) && (!R_FINITE(val) || (int)val!=val),        "f",     "truncated (precision lost)", val)
+                    break;
       case CPLXSXP: if (targetIsI64)
                     CHECK_RANGE(Rcomplex, COMPLEX, !((ISNAN(val.i) || (R_FINITE(val.i) && val.i==0.0)) &&
                                                      (ISNAN(val.r) || (R_FINITE(val.r) && (int64_t)val.r==val.r))), "f", "either imaginary part discarded or real part truncated (precision lost)", val.r)

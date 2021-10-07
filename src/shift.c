@@ -95,7 +95,7 @@ SEXP shift(SEXP obj, SEXP k, SEXP fill, SEXP type)
     } break;
 
     case CPLXSXP : {
-      SEXP thisfill = PROTECT(coerceVector(fill, CPLXSXP));
+      SEXP thisfill = PROTECT(coerceAs(fill, elem, ScalarLogical(0)));  // #4865 use coerceAs too
       const Rcomplex cfill = COMPLEX(thisfill)[0];
       UNPROTECT(1);
       for (int j=0; j<nk; j++) {
@@ -147,7 +147,7 @@ SEXP shift(SEXP obj, SEXP k, SEXP fill, SEXP type)
     } break;
 
     case STRSXP : {
-      SEXP thisfill = PROTECT(coerceVector(fill, STRSXP));
+      SEXP thisfill = PROTECT(coerceAs(fill, elem, ScalarLogical(0)));
       const SEXP sfill = STRING_ELT(thisfill, 0);
       for (int j=0; j<nk; j++) {
         SEXP tmp;
