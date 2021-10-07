@@ -1071,9 +1071,13 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
           }
           break;
         }
-        if (sourceIsI64 && INHERITS(source, char_nanotime))
-          error(_("To assign nanotime to a target of type character, please use as.character() for clarity.")); // TODO: eval as.character here, perhaps instead of coerceVector too 
-        source = PROTECT(sourceIsI64 ? coerceI64toStr(source) : coerceVector(source, STRSXP)); protecti++;
+        if (OBJECT(source) && getAttrib(source, R_ClassSymbol)!=R_NilValue) {
+          // otherwise coerceVector doesn't call the as.character method for Date, integer64, nanotime, etc; PR#5189
+          // this if() is to save the overhead of the R call eval() when we know there can be no method
+          source = PROTECT(eval(PROTECT(lang2(sym_as_character, source)), R_GlobalEnv)); protecti+=2;
+        } else {
+          source = PROTECT(coerceVector(source, STRSXP)); protecti++;
+        }
       }
       BODY(SEXP, STRING_PTR, SEXP, val,  SET_STRING_ELT(target, off+i, cval))
     }

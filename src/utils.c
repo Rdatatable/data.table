@@ -406,32 +406,3 @@ SEXP startsWithAny(const SEXP x, const SEXP y, SEXP start) {
   return ScalarLogical(false);
 }
 
-SEXP coerceI64toStr(SEXP x) {
-  // similar to fwrite.c:writeInt64 but given the need to call mkChar we can avoid its reverse()
-  if (!isReal(x) || !INHERITS(x, char_integer64))
-    error(_("Internal error: coerceI64toStr not passed an integer64"));  // # nocov
-  static char s[21];  // longest int -(2^63) == -9223372036854775807\0
-  const int n = length(x);
-  const int64_t *xd = (const int64_t *)REAL(x);
-  SEXP ans = PROTECT(allocVector(STRSXP, n));
-  const SEXP *ansd = STRING_PTR(ans);
-  for (int i=0; i<n; ++i) {
-    int64_t v = xd[i];
-    if (v==NA_INTEGER64)
-      SET_STRING_ELT(ans, i, NA_STRING);
-    else if (i>0 && v==xd[i-1])
-      SET_STRING_ELT(ans, i, ansd[i-1]);
-    else {
-      bool neg=false;
-      if (v<0) { neg=true; v=-v; }
-      char *ch = s+20;
-      *ch-- = '\0';
-      do { *ch-- = '0'+v%10; v/=10; } while (v>0);
-      if (neg) *ch='-'; else ch++;
-      SET_STRING_ELT(ans, i, mkChar(ch));
-    }
-  }
-  UNPROTECT(1);
-  return ans;
-}
-

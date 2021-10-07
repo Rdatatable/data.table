@@ -103,6 +103,7 @@ extern SEXP sym_datatable_locked;
 extern SEXP sym_tzone;
 extern SEXP sym_old_fread_datetime_character;
 extern SEXP sym_variable_table;
+extern SEXP sym_as_character;
 extern double NA_INT64_D;
 extern long long NA_INT64_LL;
 extern Rcomplex NA_CPLX;  // initialized in init.c; see there for comments
@@ -243,7 +244,6 @@ SEXP islockedR(SEXP x);
 bool need2utf8(SEXP x);
 SEXP coerceUtf8IfNeeded(SEXP x);
 SEXP coerceAs(SEXP x, SEXP as, SEXP copyArg);
-SEXP coerceI64toStr(SEXP x);
 
 // types.c
 char *end(char *start);
