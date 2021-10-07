@@ -18218,8 +18218,7 @@ test(2217, DT1[, by = grp, .(agg = list(setNames(as.numeric(value), id)))], DT2)
 # shift integer64 when fill isn't integer32, #4865
 # when test_bit64==FALSE these all passed before
 testnum = 2218
-funs = list(as.integer, as.double, as.complex, as.character)
-if (test_bit64) funs = c(funs, as.integer64)
+funs = c(as.integer, as.double, as.complex, as.character, if (test_bit64) as.integer64)
 for (f1 in funs) {
   DT = data.table(x=f1(1:4))
   for (f2 in funs) {
