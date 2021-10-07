@@ -38,11 +38,10 @@ SEXP shift(SEXP obj, SEXP k, SEXP fill, SEXP type)
     SEXP elem  = VECTOR_ELT(x, i);
     size_t size  = SIZEOF(elem);
     R_xlen_t xrows = xlength(elem);
+    SEXP thisfill = PROTECT(coerceAs(fill, elem, ScalarLogical(0))); nprotect++;  // #4865 use coerceAs for type coercion
     switch (TYPEOF(elem)) {
     case INTSXP : {
-      SEXP thisfill = PROTECT(coerceAs(fill, elem, ScalarLogical(0)));
       const int ifill = INTEGER(thisfill)[0];
-      UNPROTECT(1);
       for (int j=0; j<nk; j++) {
         SEXP tmp;
         SET_VECTOR_ELT(ans, i*nk+j, tmp=allocVector(INTSXP, xrows) );
@@ -67,11 +66,8 @@ SEXP shift(SEXP obj, SEXP k, SEXP fill, SEXP type)
         if (isFactor(elem)) setAttrib(tmp, R_LevelsSymbol, getAttrib(elem, R_LevelsSymbol));
       }
     } break;
-
     case REALSXP : {
-      SEXP thisfill = PROTECT(coerceAs(fill, elem, ScalarLogical(0))); // #4865 use coerceAs for (NA) type coercion
       const double dfill = REAL(thisfill)[0];
-      UNPROTECT(1); // thisfill
       for (int j=0; j<nk; j++) {
         SEXP tmp;
         SET_VECTOR_ELT(ans, i*nk+j, tmp=allocVector(REALSXP, xrows) );
@@ -93,11 +89,8 @@ SEXP shift(SEXP obj, SEXP k, SEXP fill, SEXP type)
         copyMostAttrib(elem, tmp);
       }
     } break;
-
     case CPLXSXP : {
-      SEXP thisfill = PROTECT(coerceAs(fill, elem, ScalarLogical(0)));  // #4865 use coerceAs too
       const Rcomplex cfill = COMPLEX(thisfill)[0];
-      UNPROTECT(1);
       for (int j=0; j<nk; j++) {
         SEXP tmp;
         SET_VECTOR_ELT(ans, i*nk+j, tmp=allocVector(CPLXSXP, xrows) );
@@ -119,11 +112,8 @@ SEXP shift(SEXP obj, SEXP k, SEXP fill, SEXP type)
         copyMostAttrib(elem, tmp);
       }
     } break;
-
     case LGLSXP : {
-      SEXP thisfill = PROTECT(coerceVector(fill, LGLSXP));
       const int lfill = LOGICAL(thisfill)[0];
-      UNPROTECT(1);
       for (int j=0; j<nk; j++) {
         SEXP tmp;
         SET_VECTOR_ELT(ans, i*nk+j, tmp=allocVector(LGLSXP, xrows) );
@@ -145,9 +135,7 @@ SEXP shift(SEXP obj, SEXP k, SEXP fill, SEXP type)
         copyMostAttrib(elem, tmp);
       }
     } break;
-
     case STRSXP : {
-      SEXP thisfill = PROTECT(coerceAs(fill, elem, ScalarLogical(0)));
       const SEXP sfill = STRING_ELT(thisfill, 0);
       for (int j=0; j<nk; j++) {
         SEXP tmp;
@@ -161,11 +149,8 @@ SEXP shift(SEXP obj, SEXP k, SEXP fill, SEXP type)
         }
         copyMostAttrib(elem, tmp);
       }
-      UNPROTECT(1);
     } break;
-
     case VECSXP : {
-      SEXP thisfill = PROTECT(coerceVector(fill, VECSXP));
       const SEXP vfill = VECTOR_ELT(thisfill, 0);
       for (int j=0; j<nk; j++) {
         SEXP tmp;
@@ -179,14 +164,11 @@ SEXP shift(SEXP obj, SEXP k, SEXP fill, SEXP type)
         }
         copyMostAttrib(elem, tmp);
       }
-      UNPROTECT(1);
     } break;
-
     default :
       error(_("Type '%s' is not supported"), type2char(TYPEOF(elem)));
     }
   }
-
   UNPROTECT(nprotect);
   return isVectorAtomic(obj) && length(ans) == 1 ? VECTOR_ELT(ans, 0) : ans;
 }
