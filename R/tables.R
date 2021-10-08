@@ -6,7 +6,8 @@ tables = function(mb=TRUE, order.col="NAME", width=80,
 {
   # Prints name, size and colnames of all data.tables in the calling environment by default
   # include "hidden" objects (starting with .) via all.names=TRUE, but exclude ... specifically, #5197
-  all_obj = grep("...", objects(envir=env, all.names=TRUE, sorted=order.col == "NAME"), invert=TRUE, fixed=TRUE, value=TRUE)
+  all_obj = grep("...", ls(envir=env, all.names=TRUE), invert=TRUE, fixed=TRUE, value=TRUE)
+  if (order.col=="NAME") all_obj=sort(all_obj)  # neither ls() nor objects() had sorted arg in R 3.1.0
   is_DT = vapply_1b(mget(all_obj, envir=env), is.data.table)
   if (!any(is_DT)) {
     if (!silent) catf("No objects of class data.table exist in %s\n", if (identical(env, .GlobalEnv)) ".GlobalEnv" else format(env))
@@ -24,7 +25,6 @@ tables = function(mb=TRUE, order.col="NAME", width=80,
       KEY = list(key(DT)),
       INDICES = if (index) list(indices(DT)))
   }))
-  # objects() above handled the sorting for order.col=="NAME"
   if (order.col != "NAME") {
     if (!order.col %chin% names(info)) stopf("order.col='%s' not a column name of info", order.col)
     info = info[base::order(info[[order.col]])]  # base::order to maintain locale ordering of table names
