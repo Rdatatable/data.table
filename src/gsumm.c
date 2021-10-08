@@ -348,7 +348,8 @@ SEXP gsum(SEXP x, SEXP narmArg)
   double started = wallclock();
   const bool verbose=GetVerbose();
   if (verbose) Rprintf(_("This gsum (narm=%s) took ... "), narm?"TRUE":"FALSE");
-  if (nrow != n) error(_("nrow [%d] != length(x) [%d] in %s"), nrow, n, "gsum");
+  if (nrow != n)
+    error(_("nrow [%d] != length(x) [%d] in %s"), nrow, n, "gsum");
   bool anyNA=false;
   SEXP ans;
   switch(TYPEOF(x)) {
@@ -582,7 +583,8 @@ SEXP gmean(SEXP x, SEXP narmArg)
   double started = wallclock();
   const bool verbose=GetVerbose();
   if (verbose) Rprintf(_("This gmean took (narm=%s) ... "), narm?"TRUE":"FALSE"); // narm=TRUE only at this point
-  if (nrow != n) error(_("nrow [%d] != length(x) [%d] in %s"), nrow, n, "gmean");
+  if (nrow != n)
+    error(_("nrow [%d] != length(x) [%d] in %s"), nrow, n, "gmean");
   bool anyNA=false;
   SEXP ans=R_NilValue;
   int protecti=0;
@@ -728,7 +730,8 @@ static SEXP gminmax(SEXP x, SEXP narm, const bool min)
   const int n = nosubset ? length(x) : irowslen;
   //clock_t start = clock();
   SEXP ans;
-  if (nrow != n) error(_("nrow [%d] != length(x) [%d] in %s"), nrow, n, "gminmax");
+  if (nrow != n)
+    error(_("nrow [%d] != length(x) [%d] in %s"), nrow, n, min?"gmin":"gmax");
   // GForce guarantees each group has at least one value; i.e. we don't need to consider length-0 per group here
   switch(TYPEOF(x)) {
   case LGLSXP: case INTSXP: {
@@ -863,7 +866,8 @@ SEXP gmedian(SEXP x, SEXP narmArg) {
     error(_("%s is not meaningful for factors."), "median");
   const bool isInt64 = INHERITS(x, char_integer64), narm = LOGICAL(narmArg)[0];
   const int n = (irowslen == -1) ? length(x) : irowslen;
-  if (nrow != n) error(_("nrow [%d] != length(x) [%d] in %s"), nrow, n, "gmedian");
+  if (nrow != n)
+    error(_("nrow [%d] != length(x) [%d] in %s"), nrow, n, "gmedian");
   SEXP ans = PROTECT(allocVector(REALSXP, ngrp));
   double *ansd = REAL(ans);
   const bool nosubset = irowslen==-1;
@@ -915,7 +919,8 @@ static SEXP gfirstlast(SEXP x, const bool first, const int w, const bool headw) 
   const bool nosubset = irowslen == -1;
   const bool issorted = !isunsorted; // make a const-bool for use inside loops
   const int n = nosubset ? length(x) : irowslen;
-  if (nrow != n) error(_("nrow [%d] != length(x) [%d] in %s"), nrow, n, first?"gfirst":"glast");
+  if (nrow != n)
+    error(_("nrow [%d] != length(x) [%d] in %s"), nrow, n, first?"gfirst":"glast");
   if (w==1 && headw) error(_("Internal error: gfirstlast headw should only be true when w>1"));
   int anslen = ngrp;
   if (headw) {
@@ -1018,7 +1023,8 @@ static SEXP gvarsd1(SEXP x, SEXP narmArg, bool isSD)
   if (inherits(x, "factor"))
     error(_("%s is not meaningful for factors."), isSD ? "sd" : "var");
   const int n = (irowslen == -1) ? length(x) : irowslen;
-  if (nrow != n) error(_("nrow [%d] != length(x) [%d] in %s"), nrow, n, "gvar");
+  if (nrow != n)
+    error(_("nrow [%d] != length(x) [%d] in %s"), nrow, n, isSD?"gsd":"gvar");
   SEXP sub, ans = PROTECT(allocVector(REALSXP, ngrp));
   double *ansd = REAL(ans);
   const bool nosubset = irowslen==-1;
@@ -1115,7 +1121,8 @@ SEXP gprod(SEXP x, SEXP narmArg) {
   const int n = nosubset ? length(x) : irowslen;
   //clock_t start = clock();
   SEXP ans;
-  if (nrow != n) error(_("nrow [%d] != length(x) [%d] in %s"), nrow, n, "gprod");
+  if (nrow != n)
+    error(_("nrow [%d] != length(x) [%d] in %s"), nrow, n, "gprod");
   long double *s = malloc(ngrp * sizeof(long double));
   if (!s) error(_("Unable to allocate %d * %d bytes for gprod"), ngrp, sizeof(long double));
   for (int i=0; i<ngrp; ++i) s[i] = 1.0;

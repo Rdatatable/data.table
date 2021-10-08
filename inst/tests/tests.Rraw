@@ -67,6 +67,19 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
   which.first = data.table:::which.first
   which.last = data.table:::which.last
   `-.IDate` = data.table:::`-.IDate`
+  gsum = data.table:::gsum
+  gmean = data.table:::gmean
+  gvar = data.table:::gvar
+  gsd = data.table:::gsd
+  gmedian = data.table:::gmedian
+  gprod = data.table:::gprod
+  gmin = data.table:::gmin
+  gmax = data.table:::gmax
+  `g[` = data.table:::`g[`
+  gfirst = data.table:::gfirst
+  glast = data.table:::glast
+  ghead = data.table:::ghead
+  gtail = data.table:::gtail
 
   # Also, for functions that are masked by other packages, we need to map the data.table one. Or else,
   # the other package's function would be picked up. As above, we only need to do this because we desire
@@ -18260,6 +18273,9 @@ for (fun in funs) {
   test(testnum, EVAL("DT[,",fun,"(i, na.rm='a'), g]"), error="na.rm must be TRUE or FALSE")
   testnum = testnum + 0.01
   test(testnum, EVAL("DT[,",fun,"(f), g]"), error=sprintf("%s is not meaningful for factors.", fun))
+  # directly calling gfuns triggers the nrow != length error
+  testnum = testnum + 0.01
+  test(testnum, EVAL("DT[,g",fun,"(i), g]"), error=sprintf("nrow [6] != length(x) [3] in g%s",fun))
 }
 test(testnum+0.01, DT[, prod(l), g], error="GForce prod can only be applied to columns, not .SD or similar.")
 
