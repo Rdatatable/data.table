@@ -269,11 +269,11 @@ cran = function()  # reports CRAN status of the .cran.fail packages
   }
   require(data.table)
   p = proc.time()
-  db = setDT(tools::CRAN_check_results())
+  db <<- setDT(tools::CRAN_check_results())
   cat("tools::CRAN_check_results() returned",prettyNum(nrow(db), big.mark=","),"rows in",timetaken(p),"\n")
   ans = db[Package %chin% .fail.cran,
-    .(ERROR=sum(Status=="ERROR"),
-      WARN =sum(Status=="WARN"),
+    .(ERROR=sum(Status=="ERROR", na.rm=TRUE),
+      WARN =sum(Status=="WARN", na.rm=TRUE),
       cran =paste(unique(Version),collapse=";"),
       local=as.character(packageVersion(.BY[[1]]))),
     keyby=Package]

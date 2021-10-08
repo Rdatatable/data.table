@@ -36,6 +36,7 @@ SEXP sym_datatable_locked;
 SEXP sym_tzone;
 SEXP sym_old_fread_datetime_character;
 SEXP sym_variable_table;
+SEXP sym_as_character;
 double NA_INT64_D;
 long long NA_INT64_LL;
 Rcomplex NA_CPLX;
@@ -368,6 +369,7 @@ void attribute_visible R_init_data_table(DllInfo *info)
   sym_tzone = install("tzone");
   sym_old_fread_datetime_character = install("datatable.old.fread.datetime.character");
   sym_variable_table = install("variable_table");
+  sym_as_character = install("as.character");
 
   initDTthreads();
   avoid_openmp_hang_within_fork();
@@ -427,6 +429,6 @@ SEXP initLastUpdated(SEXP var) {
 
 SEXP dllVersion() {
   // .onLoad calls this and checks the same as packageVersion() to ensure no R/C version mismatch, #3056
-  return(ScalarString(mkChar("1.14.1")));
+  return(ScalarString(mkChar("1.14.3")));
 }
 

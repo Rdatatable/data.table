@@ -1290,6 +1290,7 @@ SEXP issorted(SEXP x, SEXP by)
       SEXP *xd = STRING_PTR(x);
       i = 0;
       while (i<n && xd[i]==NA_STRING) i++;
+      if (i==n) break; // xd consists only of NA_STRING #5070
       bool need = NEED2UTF8(xd[i]);
       i++; // pass over first non-NA_STRING
       while (i<n) {

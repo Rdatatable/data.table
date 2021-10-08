@@ -1,3 +1,4 @@
+#include "myomp.h"     // first for clang-13-omp, #5122
 #include "dt_stdio.h"  // PRId64 and PRIu64
 #include <R.h>
 #include <Rversion.h>
@@ -10,7 +11,6 @@
 #define SEXPPTR_RO(x) ((const SEXP *)DATAPTR_RO(x))  // to avoid overhead of looped STRING_ELT and VECTOR_ELT
 #include <stdint.h>    // for uint64_t rather than unsigned long long
 #include <stdbool.h>
-#include "myomp.h"
 #include "types.h"
 #include "po.h"
 #ifdef WIN32  // positional specifiers (%n$) used in translations; #4402
@@ -103,6 +103,7 @@ extern SEXP sym_datatable_locked;
 extern SEXP sym_tzone;
 extern SEXP sym_old_fread_datetime_character;
 extern SEXP sym_variable_table;
+extern SEXP sym_as_character;
 extern double NA_INT64_D;
 extern long long NA_INT64_LL;
 extern Rcomplex NA_CPLX;  // initialized in init.c; see there for comments

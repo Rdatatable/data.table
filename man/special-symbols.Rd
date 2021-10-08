@@ -43,10 +43,10 @@ X
 DT[.N]                                 # last row, only special symbol allowed in 'i'
 DT[, .N]                               # total number of rows in DT
 DT[, .N, by=x]                         # number of rows in each group
-DT[, .SD, .SDcols=x:y]                 # select columns 'x' and 'y'
+DT[, .SD, .SDcols=x:y]                 # select columns 'x' through 'y'
 DT[, .SD[1]]                           # first row of all columns
-DT[, .SD[1], by=x]                     # first row of 'y' and 'v' for each group in 'x'
-DT[, c(.N, lapply(.SD, sum)), by=x]    # get rows *and* sum columns 'v' and 'y' by group
+DT[, .SD[1], by=x]                     # first row of all columns for each group in 'x'
+DT[, c(.N, lapply(.SD, sum)), by=x]    # get rows *and* sum all columns by group
 DT[, .I[1], by=x]                      # row number in DT corresponding to each group
 DT[, .N, by=rleid(v)]                  # get count of consecutive runs of 'v'
 DT[, c(.(y=max(y)), lapply(.SD, min)),
