@@ -18277,7 +18277,9 @@ for (fun in funs) {
   testnum = testnum + 0.01
   test(testnum, EVAL("DT[,g",fun,"(i), g]"), error=sprintf("nrow [6] != length(x) [3] in g%s",fun))
 }
-test(testnum+0.01, DT[, prod(l), g], error="GForce prod can only be applied to columns, not .SD or similar.")
+# outside of loop because gfirst has no na.rm argument
+test(testnum+0.01, DT[, gfirst(i), g], error="nrow [6] != length(x) [3] in gfirst")
+test(testnum+0.02, DT[, prod(l), g], error="GForce prod can only be applied to columns, not .SD or similar.")
 
 # tables() error when called from inside a function(...), #5197
 test(2221, (function(...) tables())(), output = "No objects of class data.table exist")
