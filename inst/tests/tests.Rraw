@@ -3260,7 +3260,7 @@ Sep,33.5,19.4,15.7,11.9,0,100.8,100.8,0,12.7,12.7,0,174.1")
   test(1037.411, melt(x, id.vars=1L, measure.vars=2L, variable.name=c('a', 'b')),
        error="'variable.name' must be a character/integer")
   test(1037.412, melt(x, id.vars=1L, measure.vars=list(2L), value.name=c('a', 'b')),
-       error="When 'measure.vars' is a list, 'value.name'")
+       error="When 'measure.vars' is either not specified or a character/integer")
   test(1037.413, melt(x, id.vars=1L, measure.vars=2L, value.name=c('a', 'b')),
        error="When 'measure.vars' is either not specified or a character/integer")
   x[ , r := as.raw(c(0, 1))]
