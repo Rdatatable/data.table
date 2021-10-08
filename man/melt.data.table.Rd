@@ -26,7 +26,7 @@ non-measure columns will be assigned to it. If integer, must be positive; see De
   \itemize{
     \item{ When missing, \code{measure.vars} will become all columns outside \code{id.vars}. }
     \item{ Vector can be \code{integer} (implying column numbers) or \code{character} (column names). }
-    \item{ \code{list} is a generalization of the vector version -- each element of the list (which should be \code{integer} or \code{character} as above) will become a \code{melt}ed column. }
+    \item{ \code{list} is a generalization of the vector version -- each element of the list (which should be \code{integer} or \code{character} as above) will become a \code{melt}ed column. If the list has no attributes and each element is of `legnth=1`, it will be flattened internally. }
     \item{ Pattern-based column matching can be achieved with the regular expression-based \code{\link{patterns}} syntax; multiple patterns will produce multiple columns. }
   }
 
