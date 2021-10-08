@@ -200,7 +200,7 @@ melt.data.table = function(data, id.vars, measure.vars, variable.name = "variabl
       measure.vars = eval.result
     }
   }
-  if (length(measure.vars) == length(unlist(measure.vars))) {
+  if (all(vapply_1i(measure.vars, length) == 1L)) {
     measure.vars <- unlist(measure.vars)
   }
   if (is.list(measure.vars)) {
