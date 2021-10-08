@@ -139,7 +139,7 @@
 
 25. `setcolorder()` gains `before=` and `after=`, [#4385](https://github.com/Rdatatable/data.table/issues/4358). Thanks to Matthias Gomolka for the request, and both Benjamin Schwendinger and Xianghui Dong for implementing.
 
-26. `base::droplevels()` gains a fast method for `data.table`, [#647](https://github.com/Rdatatable/data.table/issues/647). Thanks to Steve Lianoglou for requesting, and Jan Gorecki and Benjamin Schwendinger for the PR. `fdroplevels()` for use on vectors has also been added.
+26. `base::droplevels()` gains a fast method for `data.table`, [#647](https://github.com/Rdatatable/data.table/issues/647). Thanks to Steve Lianoglou for requesting, Boniface Kamgang and Martin Binder for testing, and Jan Gorecki and Benjamin Schwendinger for the PR. `fdroplevels()` for use on vectors has also been added.
 
 27. `shift()` now also supports `type="cyclic"`, [#4451](https://github.com/Rdatatable/data.table/issues/4451). Arguments that are normally pushed out by `type="lag"` or `type="lead"` are re-introduced at this type at the first/last positions. Thanks to @RicoDiel for requesting, and Benjamin Schwendinger for the PR.
 
@@ -375,6 +375,27 @@
 43. All-NA character key columns could segfault, [#5070](https://github.com/Rdatatable/data.table/issues/5070). Thanks to @JorisChau for reporting and Benjamin Schwendinger for the fix.
 
 44. In v1.13.2 a version of an old bug was reintroduced where during a grouping operation list columns could retain a pointer to the last group. This affected only attributes of list elements and only if those were updated during the grouping operation, [#4963](https://github.com/Rdatatable/data.table/issues/4963). Thanks to @fujiaxiang for reporting and @avimallu and Václav Tlapák for investigating and the PR.
+
+45. `shift(xInt64, fill=0)` and `shift(xInt64, fill=as.integer64(0))` (but not `shift(xInt64, fill=0L)`) would error with `INTEGER() can only be applied to a 'integer', not a 'double'` where `xInt64` conveys `bit64::integer64`, `0` is type `double` and `0L` is type integer, [#4865](https://github.com/Rdatatable/data.table/issues/4865). Thanks to @peterlittlejohn for reporting and Benjamin Schwendinger for the PR.
+
+46. `DT[i, strCol:=classVal]` did not coerce using the `as.character` method for the class, resulting in either an unexpected string value or an error such as `To assign integer64 to a target of type character, please use as.character() for clarity`. Discovered during work on the previous issue, [#5189](https://github.com/Rdatatable/data.table/pull/5189).
+
+    ```R
+    DT
+    #         A
+    #    <char>
+    # 1:      a
+    # 2:      b
+    # 3:      c
+    DT[2, A:=as.IDate("2021-02-03")]
+    DT[3, A:=bit64::as.integer64("4611686018427387906")]
+    DT
+    #                      A
+    #                 <char>
+    # 1:                   a
+    # 2:          2021-02-03  # was 18661
+    # 3: 4611686018427387906  # was error 'please use as.character'
+    ```
 
 ## NOTES
 
