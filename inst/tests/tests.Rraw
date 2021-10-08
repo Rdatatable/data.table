@@ -14611,7 +14611,7 @@ if (test_bit64) {
                 warning="-1.*integer64.*position 1 taken as 0 when assigning.*raw.*column 3 named 'c'")
   test(2005.66, DT[2:3, f:=as.integer64(c(NA,"2147483648"))]$f, as.complex(c(-42,NA,2147483648)))
   DT[,h:=LETTERS[1:3]]
-  test(2005.67, DT[2:3, h:=as.integer64(1:2)], error="To assign integer64 to.*type character, please use as.character.")
+  test(2005.67, DT[2:3, h:=as.integer64(1:2)]$h, c("A","1","2"))   # PR#5189
 }
 
 # rbindlist raw type, #2819
@@ -18221,4 +18221,31 @@ test(2216.2, merge(DT1, DT2, by="x1")[,.(x1,x2)], setkey(DT1[1:9], x1))  # ok be
 DT1 = data.table(id=1:3, grp=c('a', 'a', 'b'), value=4:6)
 DT2 = data.table(grp = c('a', 'b'), agg = list(c('1' = 4, '2' = 5), c('3' = 6)))
 test(2217, DT1[, by = grp, .(agg = list(setNames(as.numeric(value), id)))], DT2)
+
+# shift integer64 when fill isn't integer32, #4865
+testnum = 2218
+funs = c(as.integer, as.double, as.complex, as.character, if (test_bit64) as.integer64)
+# when test_bit64==FALSE these all passed before; now passes with test_bit64==TRUE too
+for (f1 in funs) {
+  DT = data.table(x=f1(1:4))
+  for (f2 in funs) {
+    testnum = testnum + 0.01
+    test(testnum, DT[, shift(x)],               f1(c(NA, 1:3)))
+    testnum = testnum + 0.01
+    w = if (identical(f2,as.character) && !identical(f1,as.character)) "Coercing.*character.*to match the type of target vector"
+    test(testnum, DT[, shift(x, fill=f2(NA))],  f1(c(NA, 1:3)), warning=w)
+    testnum = testnum + 0.01
+    if (identical(f1,as.character) && identical(f2,as.complex)) {
+      # one special case due to as.complex(0)=="0+0i"!="0"
+      test(testnum, DT[, shift(x, fill="0")],   f1(0:3))
+    } else { 
+      test(testnum, DT[, shift(x, fill=f2(0))], f1(0:3), warning=w)
+    }
+  }
+}
+
+# subassign coerce a class to character, part of PR#5189
+DT = data.table(A=letters[1:3])
+test(2219.1, DT[2, A:=as.IDate("2021-02-03")],                              data.table(A=c("a","2021-02-03","c")))
+if (test_bit64) test(2219.2, DT[3, A:=as.integer64("4611686018427387906")], data.table(A=c("a","2021-02-03","4611686018427387906")))
 
