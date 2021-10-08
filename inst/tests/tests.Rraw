@@ -7490,7 +7490,8 @@ test(1536, duplicated(dt, incomparables=TRUE), error = "argument 'incomparables 
 test(1537 , names(melt(dt, id.vars=1L, variable.name = "x", value.name="x")), c("x", "x.1", "x.2"), output = "Duplicate column names")
 
 # test for tables()
-test(1538, tables(), output = "Total:")
+test(1538.1, tables(), output = "Total:")
+test(1538.2, !is.unsorted(tables(order.col="NROW")$NROW))
 
 # uniqueN not support list-of-list: reverted #1224
 d1 <- data.table(a = 1:4, l = list(list(letters[1:2]),list(Sys.time()),list(1:10),list(letters[1:2])))
@@ -18261,4 +18262,7 @@ for (fun in funs) {
   test(testnum, EVAL("DT[,",fun,"(f), g]"), error=sprintf("%s is not meaningful for factors.", fun))
 }
 test(testnum+0.01, DT[, prod(l), g], error="GForce prod can only be applied to columns, not .SD or similar.")
+
+# tables() error when called from inside a function(...), #5197
+test(2221, (function(...) tables())(), output = "No objects of class data.table exist")
 
