@@ -1163,11 +1163,18 @@ SEXP gprod(SEXP x, SEXP narmArg) {
 }
 
 SEXP gshift(SEXP x, SEXP nArg, SEXP fillArg, SEXP typeArg) {
-  //if (!isInteger(nArg) || LENGTH(nArg)!=1) error(_("Internal error. This should have been caught before. please report to data.table issue tracker.")); // # nocov
-  if (length(fillArg) != 1) error(_("fill must be a vector of length 1"));
+  const bool nosubset = irowslen == -1;
+  const bool issorted = !isunsorted;
+  const int n = nosubset ? length(x) : irowslen;
+  if (nrow != n)
+    error(_("nrow [%d] != length(x) [%d] in %s"), nrow, n, "gshift");
+
   int nprotect=0;
   enum {LAG, LEAD/*, SHIFT*/,CYCLIC} stype = LAG;
-  bool lag;
+  if (!(length(fillArg) == 1 || length(fillArg) == ngrp))
+    error(_("fill must be a vector of length 1 or length number of groups: %d"), ngrp);
+  Rprintf("fillArg length is %d\n", length(fillArg));
+  Rprintf("ngrp is %d\n", ngrp);
 
   if (!isString(typeArg) || length(typeArg) != 1)
     error(_("Internal error: invalid type for gshift(), should have been caught before. please report to data.table issue tracker")); // # nocov
@@ -1176,8 +1183,7 @@ SEXP gshift(SEXP x, SEXP nArg, SEXP fillArg, SEXP typeArg) {
   else if (!strcmp(CHAR(STRING_ELT(typeArg, 0)), "shift")) stype = LAG;
   else error(_("Internal error: invalid type for gshift(), should have been caught before. please report to data.table issue tracker")); // # nocov
 
-  const bool nosubset = irowslen == -1;
-  const bool issorted = !isunsorted;
+  bool lag;
 
   int nx = length(x), nk = length(nArg);
   if (!isInteger(nArg)) error(_("Internal error: n must be integer")); // # nocov
@@ -1188,23 +1194,24 @@ SEXP gshift(SEXP x, SEXP nArg, SEXP fillArg, SEXP typeArg) {
   SEXP thisfill = PROTECT(coerceAs(fillArg, x, ScalarLogical(0))); nprotect++;
   for (int g=0; g<nk; g++) {
     lag = stype == LAG;
-    int n = kd[g];
+    int m = kd[g];
     // switch
-    if (n < 0) {
-      n = n * (-1);
+    if (m < 0) {
+      m = m * (-1);
       lag = !lag;
     }
     int ansi = 0;
     SEXP tmp;
     SET_VECTOR_ELT(ans, g, tmp=allocVector(TYPEOF(x), nx));
     #define SHIFT(CTYPE, RTYPE, ASSIGN) {                                                       \
-      const CTYPE fill = (const CTYPE)RTYPE(thisfill)[0];                                       \
       const CTYPE *xd = (const CTYPE *)RTYPE(x);                                                \
       for (int i=0; i<ngrp; ++i) {                                                              \
+        const int fillidx = length(fillArg) == ngrp ? i : 0;                                    \
+        const CTYPE fill = (const CTYPE)RTYPE(thisfill)[fillidx];                               \
         const int grpn = grpsize[i];                                                            \
-        const int thisn = MIN(n, grpn);                                                         \
+        const int thisn = MIN(m, grpn);                                                         \
         const int jstart = ff[i]-1+ (!lag)*(thisn);                                             \
-        const int jend = jstart+ MAX(0, grpn-n); /*if n > grpn -> jend = jstart */              \
+        const int jend = jstart+ MAX(0, grpn-m); /*if m > grpn -> jend = jstart */              \
         if (lag) {                                                                              \
           for (int j=0; j<thisn; ++j) {                                                         \
             const CTYPE val = fill;                                                             \
@@ -1227,12 +1234,12 @@ SEXP gshift(SEXP x, SEXP nArg, SEXP fillArg, SEXP typeArg) {
     switch(TYPEOF(x)) {
       case LGLSXP:  { int *ansd=LOGICAL(tmp);             SHIFT(int,     LOGICAL,   ansd[ansi++]=val); } break;
       case INTSXP:  { int *ansd=INTEGER(tmp);             SHIFT(int,     INTEGER,   ansd[ansi++]=val); } break;
-      case REALSXP: if (INHERITS(x, char_integer64)) {
-                      int64_t *ansd=(int64_t *)REAL(tmp); SHIFT(int64_t, REAL,      ansd[ansi++]=val);
-        } else {      double *ansd=REAL(tmp);             SHIFT(double,  REAL,      ansd[ansi++]=val); } break;
-      case CPLXSXP: { Rcomplex *ansd=COMPLEX(tmp);        SHIFT(Rcomplex, COMPLEX,  ansd[ansi++]=val); } break;
-      case STRSXP: { SHIFT(SEXP, STRING_PTR,                          SET_STRING_ELT(tmp,ansi++,val)); } break;
-      case VECSXP: { SHIFT(SEXP, SEXPPTR_RO,                          SET_VECTOR_ELT(tmp,ansi++,val)); } break;
+      // case REALSXP: if (INHERITS(x, char_integer64)) {
+      //                 int64_t *ansd=(int64_t *)REAL(tmp); SHIFT(int64_t, REAL,      ansd[ansi++]=val);
+      //   } else {      double *ansd=REAL(tmp);             SHIFT(double,  REAL,      ansd[ansi++]=val); } break;
+      // case CPLXSXP: { Rcomplex *ansd=COMPLEX(tmp);        SHIFT(Rcomplex, COMPLEX,  ansd[ansi++]=val); } break;
+      // case STRSXP: { SHIFT(SEXP, STRING_PTR,                          SET_STRING_ELT(tmp,ansi++,val)); } break;
+      // case VECSXP: { SHIFT(SEXP, SEXPPTR_RO,                          SET_VECTOR_ELT(tmp,ansi++,val)); } break;
       default:
         error(_("Type '%s' is not supported by GForce gshift. Either add the namespace prefix (e.g. data.table::shift(.)) or turn off GForce optimization using options(datatable.optimize=1)"), type2char(TYPEOF(x)));
     }
