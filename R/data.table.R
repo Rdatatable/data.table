@@ -1621,9 +1621,8 @@ replace_dot_alias = function(e) {
         (is.numeric(jsub[[3L]]) || jsub[[3L]] == ".N")
       headopt = jsub[[1L]] == "head" || jsub[[1L]] == "tail"
       firstopt = jsub[[1L]] == "first" || jsub[[1L]] == "last" # fix for #2030
-      shiftopt = jsub[[1L]] == "shift"
       if ((length(jsub) >= 2L && jsub[[2L]] == ".SD") &&
-          (subopt || headopt || firstopt || shiftopt)) {
+          (subopt || headopt || firstopt)) {
         if (headopt && length(jsub)==2L) jsub[["n"]] = 6L # head-tail n=6 when missing #3462
         # optimise .SD[1] or .SD[2L]. Not sure how to test .SD[a] as to whether a is numeric/integer or a data.table, yet.
         jsub = as.call(c(quote(list), lapply(sdvars, function(x) { jsub[[2L]] = as.name(x); jsub })))
@@ -1642,7 +1641,7 @@ replace_dot_alias = function(e) {
         # One issue could be that these functions (e.g., mean) can be "re-defined" by the OP to produce a length > 1 output
         # Of course this is worrying too much though. If the issue comes up, we'll just remove the relevant optimisations.
         # For now, we optimise all functions mentioned in 'optfuns' below.
-        optfuns = c("max", "min", "mean", "length", "sum", "median", "sd", "var")
+        optfuns = c("max", "min", "mean", "length", "sum", "median", "sd", "var", "shift")
         is_valid = TRUE
         any_SD = FALSE
         jsubl = as.list.default(jsub)
@@ -1877,14 +1876,6 @@ replace_dot_alias = function(e) {
       g = lapply(g, rep.int, times=grplens)
     } else if (.is_nrows(jsub)) {
       g = lapply(g, rep.int, times=len__)
-      if (length(ans) > 1) ans = lapply(ans, function(x) unlist(x,FALSE)) # drop one list level
-      grplen = sum(len__)
-      maxlen = max(vapply(ans, length, 1))
-      if (maxlen > grplen) {
-        grps = rep(seq(maxlen/grplen), each=grplen)
-        ans = unlist(rbind(lapply(ans, function(x) unname(split(x, grps)))), FALSE)
-      }
-      jvnames = rep("", length(ans))
     }
     ans = c(g, ans)
   } else {

@@ -18274,25 +18274,23 @@ DT = data.table(x = sample(letters[1:5], 20, TRUE),
                 i = sample(c(-2L,0L,3L,NA), 20, TRUE),
                 d = sample(c(1.2,-3.4,5.6,NA), 20, TRUE),
                 s = sample(c("foo","bar",NA), 20, TRUE),
+                c = sample(c(0+3i,1,-1-1i,NA), 20, TRUE),
                 l = sample(list(1:3, mean, letters[4:5], NULL), 20, replace=TRUE))
-types = c("lag", "lead")
-names(types) = rev(types)
+
 nn = list(1, 5, -1, -5, c(1,2), c(-1,1))
-cols = c("y", "i", "d", "s")
+cols = c("y", "i", "d", "s", "c")
 testnum = 2222
-for (type in types) {
-  for (n in nn) {
-    for (c in cols) {
-      testnum = testnum + 0.01
-      test(testnum, DT[, shift(col, n, type=type), by=x, env=list(col=c)], DT[, esc(col, n, type=type), by=x, env=list(col=c)])
-      # check if shift with opposite type is same as shift with n*-1
-      testnum = testnum + 0.01
-      test(testnum, DT[, shift(col, n, type=type), by=x, env=list(col=c)], DT[, esc(col, -n, type=types[type]), by=x, env=list(col=c)])
-    }
-    testnum = testnum + 0.01
-    test(testnum, DT[, shift(.SD, n, type=type), by = x], DT[, esc(.SD, n, type=type), by = x])
+test(testnum, DT[, shift(i, 1, type="lag"), by=x], DT[, esc(i, 1, type="lag"), by=x])
+for (n in nn) {
+  for (c in cols) {
+    testnum = testnum + 0.001
+    test(testnum, EVAL(sprintf("DT[, shift(%s, %d, type='lag'), by=x]", c, n)),  EVAL(sprintf("DT[, esc(%s, %d, type='lag'), by=x]", c, n)))
+    testnum = testnum + 0.001
+    test(testnum, EVAL(sprintf("DT[, shift(%s, %d, type='lead'), by=x]", c, n)), EVAL(sprintf("DT[, esc(%s, %d, type='lead'), by=x]", c, n)))
     # check if shift with opposite type is same as shift with n*-1
-    testnum = testnum + 0.01
-    test(testnum, DT[, shift(.SD, n, type=type), by = x], DT[, esc(.SD, -n, type=types[type]), by = x])
+    testnum = testnum + 0.001
+    test(testnum, EVAL(sprintf("DT[, shift(%s, %d, type='lag'), by=x]", c, n)),  EVAL(sprintf("DT[, esc(%s, %d, type='lead'), by=x]", c, -n)))
+    testnum = testnum + 0.001
+    test(testnum, EVAL(sprintf("DT[, shift(%s, %d, type='lead'), by=x]", c, n)), EVAL(sprintf("DT[, esc(%s, %d, type='lag'), by=x]", c, -n)))
   }
 }
