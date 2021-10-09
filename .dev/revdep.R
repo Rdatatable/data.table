@@ -279,7 +279,7 @@ cran = function()  # reports CRAN status of the .cran.fail packages
     keyby=Package]
   ans[local==cran, c("cran","local"):=""]
   ans[, "right_click_in_bash":=paste0("https://cran.r-project.org/web/checks/check_results_",Package,".html")]
-  ans[]
+  setkey(ans, Package)[.fail.cran,]
 }
 
 run = function(pkgs=NULL, R_CHECK_FORCE_SUGGESTS=TRUE, choose=NULL) {
