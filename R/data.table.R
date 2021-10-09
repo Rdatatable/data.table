@@ -1877,6 +1877,14 @@ replace_dot_alias = function(e) {
       g = lapply(g, rep.int, times=grplens)
     } else if (.is_nrows(jsub)) {
       g = lapply(g, rep.int, times=len__)
+      if (length(ans) > 1) ans = lapply(ans, function(x) unlist(x,FALSE)) # drop one list level
+      grplen = sum(len__)
+      maxlen = max(vapply(ans, length, 1))
+      if (maxlen > grplen) {
+        grps = rep(seq(maxlen/grplen), each=grplen)
+        ans = unlist(rbind(lapply(ans, function(x) unname(split(x, grps)))), FALSE)
+      }
+      jvnames = rep("", length(ans))
     }
     ans = c(g, ans)
   } else {

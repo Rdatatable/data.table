@@ -348,7 +348,8 @@ SEXP gsum(SEXP x, SEXP narmArg)
   double started = wallclock();
   const bool verbose=GetVerbose();
   if (verbose) Rprintf(_("This gsum (narm=%s) took ... "), narm?"TRUE":"FALSE");
-  if (nrow != n) error(_("nrow [%d] != length(x) [%d] in %s"), nrow, n, "gsum");
+  if (nrow != n)
+    error(_("nrow [%d] != length(x) [%d] in %s"), nrow, n, "gsum");
   bool anyNA=false;
   SEXP ans;
   switch(TYPEOF(x)) {
@@ -728,7 +729,8 @@ static SEXP gminmax(SEXP x, SEXP narm, const bool min)
   const int n = nosubset ? length(x) : irowslen;
   //clock_t start = clock();
   SEXP ans;
-  if (nrow != n) error(_("nrow [%d] != length(x) [%d] in %s"), nrow, n, "gminmax");
+  if (nrow != n)
+    error(_("nrow [%d] != length(x) [%d] in %s"), nrow, n, "gminmax");
   // GForce guarantees each group has at least one value; i.e. we don't need to consider length-0 per group here
   switch(TYPEOF(x)) {
   case LGLSXP: case INTSXP: {
@@ -863,7 +865,8 @@ SEXP gmedian(SEXP x, SEXP narmArg) {
     error(_("%s is not meaningful for factors."), "median");
   const bool isInt64 = INHERITS(x, char_integer64), narm = LOGICAL(narmArg)[0];
   const int n = (irowslen == -1) ? length(x) : irowslen;
-  if (nrow != n) error(_("nrow [%d] != length(x) [%d] in %s"), nrow, n, "gmedian");
+  if (nrow != n)
+    error(_("nrow [%d] != length(x) [%d] in %s"), nrow, n, "gmedian");
   SEXP ans = PROTECT(allocVector(REALSXP, ngrp));
   double *ansd = REAL(ans);
   const bool nosubset = irowslen==-1;
@@ -1018,7 +1021,8 @@ static SEXP gvarsd1(SEXP x, SEXP narmArg, bool isSD)
   if (inherits(x, "factor"))
     error(_("%s is not meaningful for factors."), isSD ? "sd" : "var");
   const int n = (irowslen == -1) ? length(x) : irowslen;
-  if (nrow != n) error(_("nrow [%d] != length(x) [%d] in %s"), nrow, n, "gvar");
+  if (nrow != n)
+    error(_("nrow [%d] != length(x) [%d] in %s"), nrow, n, "gvar");
   SEXP sub, ans = PROTECT(allocVector(REALSXP, ngrp));
   double *ansd = REAL(ans);
   const bool nosubset = irowslen==-1;
@@ -1115,7 +1119,8 @@ SEXP gprod(SEXP x, SEXP narmArg) {
   const int n = nosubset ? length(x) : irowslen;
   //clock_t start = clock();
   SEXP ans;
-  if (nrow != n) error(_("nrow [%d] != length(x) [%d] in %s"), nrow, n, "gprod");
+  if (nrow != n)
+    error(_("nrow [%d] != length(x) [%d] in %s"), nrow, n, "gprod");
   long double *s = malloc(ngrp * sizeof(long double));
   if (!s) error(_("Unable to allocate %d * %d bytes for gprod"), ngrp, sizeof(long double));
   for (int i=0; i<ngrp; ++i) s[i] = 1.0;
@@ -1165,69 +1170,80 @@ SEXP gprod(SEXP x, SEXP narmArg) {
 SEXP gshift(SEXP x, SEXP nArg, SEXP fillArg, SEXP typeArg) {
   //if (!isInteger(nArg) || LENGTH(nArg)!=1) error(_("Internal error. This should have been caught before. please report to data.table issue tracker.")); // # nocov
   if (length(fillArg) != 1) error(_("fill must be a vector of length 1"));
-  int n=INTEGER(nArg)[0];
+  int nprotect=0;
+  enum {LAG, LEAD/*, SHIFT*/,CYCLIC} stype = LAG;
   bool lag;
 
   if (!isString(typeArg) || length(typeArg) != 1)
     error(_("Internal error: invalid type for gshift(), should have been caught before. please report to data.table issue tracker")); // # nocov
-  if (!strcmp(CHAR(STRING_ELT(typeArg, 0)), "lag")) lag = true;
-  else if (!strcmp(CHAR(STRING_ELT(typeArg, 0)), "lead")) lag = false;
-  else if (!strcmp(CHAR(STRING_ELT(typeArg, 0)), "shift")) error(_("gshift() does not support type='gshift' yet.")); // # nocov
+  if (!strcmp(CHAR(STRING_ELT(typeArg, 0)), "lag")) stype = LAG;
+  else if (!strcmp(CHAR(STRING_ELT(typeArg, 0)), "lead")) stype = LEAD;
+  else if (!strcmp(CHAR(STRING_ELT(typeArg, 0)), "shift")) stype = LAG;
   else error(_("Internal error: invalid type for gshift(), should have been caught before. please report to data.table issue tracker")); // # nocov
 
   const bool nosubset = irowslen == -1;
   const bool issorted = !isunsorted;
 
-  if (n < 0) {
-    n = n * (-1);
-    lag = !lag;
-  }
+  int nx = length(x), nk = length(nArg);
+  if (!isInteger(nArg)) error(_("Internal error: n must be integer")); // # nocov
+  const int *kd = INTEGER(nArg);
+  for (int i=0; i<nk; i++) if (kd[i]==NA_INTEGER) error(_("Item %d of n is NA"), i+1);
 
-  SEXP ans = PROTECT(allocVector(TYPEOF(x), length(x)));
-  int ansi = 0;
-  #define SHIFT(CTYPE, RTYPE, TYPE, ASSIGN) {                                                 \
-    SEXP thisfill = PROTECT(coerceVector(fillArg, TYPE));                                     \
-    const CTYPE fill = (const CTYPE)RTYPE(thisfill)[0];                                       \
-    const CTYPE *xd = (const CTYPE *)RTYPE(x);                                                \
-    for (int i=0; i<ngrp; ++i) {                                                              \
-      const int grpn = grpsize[i];                                                            \
-      const int thisn = MIN(n, grpn);                                                         \
-      const int jstart = ff[i]-1+ (!lag)*(thisn);                                             \
-      const int jend = jstart+ MAX(0, grpn-n); /*if n > grpn -> jend = jstart */              \
-      if (lag) {                                                                              \
-        for (int j=0; j<thisn; ++j) {                                                         \
-          const CTYPE val = fill;                                                             \
-          ASSIGN;                                                                             \
-        }                                                                                     \
-      }                                                                                       \
-      for (int j=jstart; j<jend; ++j) {                                                       \
-        const int k = issorted ? j : oo[j]-1;                                                 \
-        const CTYPE val = nosubset ? xd[k] : (irows[k]==NA_INTEGER ? fill : xd[irows[k]-1]);  \
-        ASSIGN;                                                                               \
-      }                                                                                       \
-      if (!lag) {                                                                             \
-        for (int j=0; j<thisn; ++j) {                                                         \
-          const CTYPE val = fill;                                                             \
-          ASSIGN;                                                                             \
-        }                                                                                     \
-      }                                                                                       \
-    }                                                                                         \
-    UNPROTECT(1);                                                                             \
-  }
-  switch(TYPEOF(x)) {
-  case LGLSXP:  { int *ansd=LOGICAL(ans);             SHIFT(int,     LOGICAL,  LGLSXP,   ansd[ansi++]=val); } break;
-  case INTSXP:  { int *ansd=INTEGER(ans);             SHIFT(int,     INTEGER,  INTSXP,   ansd[ansi++]=val); } break;
-  case REALSXP: if (INHERITS(x, char_integer64)) {
-                  int64_t *ansd=(int64_t *)REAL(ans); SHIFT(int64_t, REAL,     REALSXP,  ansd[ansi++]=val);
-    } else {      double *ansd=REAL(ans);             SHIFT(double,  REAL,     REALSXP,  ansd[ansi++]=val); } break;
-  case CPLXSXP: { Rcomplex *ansd=COMPLEX(ans);        SHIFT(Rcomplex, COMPLEX, CPLXSXP,  ansd[ansi++]=val); } break;
-  case STRSXP: { SHIFT(SEXP, STRING_PTR, STRSXP,                           SET_STRING_ELT(ans,ansi++,val)); } break;
-  case VECSXP: { SHIFT(SEXP, SEXPPTR_RO, VECSXP,                           SET_VECTOR_ELT(ans,ansi++,val)); } break;
-  default:
-    error(_("Type '%s' is not supported by GForce gshfit. Either add the namespace prefix (e.g. data.table::shift(.)) or turn off GForce optimization using options(datatable.optimize=1)"), type2char(TYPEOF(x)));
+  SEXP ans = PROTECT(allocVector(VECSXP, nk)); nprotect++;
+  SEXP thisfill = PROTECT(coerceAs(fillArg, x, ScalarLogical(0))); nprotect++;
+  for (int g=0; g<nk; g++) {
+    lag = stype == LAG;
+    int n = kd[g];
+    // switch
+    if (n < 0) {
+      n = n * (-1);
+      lag = !lag;
+    }
+    int ansi = 0;
+    SEXP tmp;
+    SET_VECTOR_ELT(ans, g, tmp=allocVector(TYPEOF(x), nx));
+    #define SHIFT(CTYPE, RTYPE, ASSIGN) {                                                       \
+      const CTYPE fill = (const CTYPE)RTYPE(thisfill)[0];                                       \
+      const CTYPE *xd = (const CTYPE *)RTYPE(x);                                                \
+      for (int i=0; i<ngrp; ++i) {                                                              \
+        const int grpn = grpsize[i];                                                            \
+        const int thisn = MIN(n, grpn);                                                         \
+        const int jstart = ff[i]-1+ (!lag)*(thisn);                                             \
+        const int jend = jstart+ MAX(0, grpn-n); /*if n > grpn -> jend = jstart */              \
+        if (lag) {                                                                              \
+          for (int j=0; j<thisn; ++j) {                                                         \
+            const CTYPE val = fill;                                                             \
+            ASSIGN;                                                                             \
+          }                                                                                     \
+        }                                                                                       \
+        for (int j=jstart; j<jend; ++j) {                                                       \
+          const int k = issorted ? j : oo[j]-1;                                                 \
+          const CTYPE val = nosubset ? xd[k] : (irows[k]==NA_INTEGER ? fill : xd[irows[k]-1]);  \
+          ASSIGN;                                                                               \
+        }                                                                                       \
+        if (!lag) {                                                                             \
+          for (int j=0; j<thisn; ++j) {                                                         \
+            const CTYPE val = fill;                                                             \
+            ASSIGN;                                                                             \
+          }                                                                                     \
+        }                                                                                       \
+      }                                                                                         \
+    }
+    switch(TYPEOF(x)) {
+      case LGLSXP:  { int *ansd=LOGICAL(tmp);             SHIFT(int,     LOGICAL,   ansd[ansi++]=val); } break;
+      case INTSXP:  { int *ansd=INTEGER(tmp);             SHIFT(int,     INTEGER,   ansd[ansi++]=val); } break;
+      case REALSXP: if (INHERITS(x, char_integer64)) {
+                      int64_t *ansd=(int64_t *)REAL(tmp); SHIFT(int64_t, REAL,      ansd[ansi++]=val);
+        } else {      double *ansd=REAL(tmp);             SHIFT(double,  REAL,      ansd[ansi++]=val); } break;
+      case CPLXSXP: { Rcomplex *ansd=COMPLEX(tmp);        SHIFT(Rcomplex, COMPLEX,  ansd[ansi++]=val); } break;
+      case STRSXP: { SHIFT(SEXP, STRING_PTR,                          SET_STRING_ELT(tmp,ansi++,val)); } break;
+      case VECSXP: { SHIFT(SEXP, SEXPPTR_RO,                          SET_VECTOR_ELT(tmp,ansi++,val)); } break;
+      default:
+        error(_("Type '%s' is not supported by GForce gshift. Either add the namespace prefix (e.g. data.table::shift(.)) or turn off GForce optimization using options(datatable.optimize=1)"), type2char(TYPEOF(x)));
+    }
   }
   // no copyMostAttrib(x, ans); since shift does not auto-name columns compare #3905
-  UNPROTECT(1);
+  UNPROTECT(nprotect);
   return(ans);
 }
 
