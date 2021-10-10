@@ -1641,7 +1641,7 @@ replace_dot_alias = function(e) {
         # One issue could be that these functions (e.g., mean) can be "re-defined" by the OP to produce a length > 1 output
         # Of course this is worrying too much though. If the issue comes up, we'll just remove the relevant optimisations.
         # For now, we optimise all functions mentioned in 'optfuns' below.
-        optfuns = c("max", "min", "mean", "length", "sum", "median", "sd", "var", "shift")
+        optfuns = c("max", "min", "mean", "length", "sum", "median", "sd", "var")
         is_valid = TRUE
         any_SD = FALSE
         jsubl = as.list.default(jsub)
@@ -1742,7 +1742,10 @@ replace_dot_alias = function(e) {
           if (!(is.call(q) && is.symbol(q[[1L]]) && is.symbol(q[[2L]]) && (q1 <- q[[1L]]) %chin% gfuns)) return(FALSE)
           if (!(q2 <- q[[2L]]) %chin% names(SDenv$.SDall) && q2 != ".I") return(FALSE)  # 875
           if ((length(q)==2L || (!is.null(names(q)) && startsWith(names(q)[3L], "na")))) return(TRUE)
-          if (length(q)>=2L && q[[1L]] == "shift") return(TRUE) # add gshift support
+          if (length(q)>=2L && q[[1L]] == "shift") {
+            q_named = match.call(shift, q)
+            if (!is.language(q_named[["fill"]])) return(TRUE)
+          } # add gshift support
           #                       ^^ base::startWith errors on NULL unfortunately
           #        head-tail uses default value n=6 which as of now should not go gforce ... ^^
           # otherwise there must be three arguments, and only in two cases:
