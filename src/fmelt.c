@@ -160,6 +160,17 @@ bool invalid_measure(SEXP vec, int vec_i, int ncol) {
   return (col_i<=0 && col_i!=NA_INTEGER) || col_i>ncol;
 }
 
+// convert NA in measure.vars vector input to -1 in order to trigger
+// error in invalid_measure().
+SEXP na_to_negative(SEXP vec_with_NA){
+  SEXP vec_with_negatives = PROTECT(allocVector(INTSXP, length(vec_with_NA)));
+  for (int i=0; i<length(vec_with_NA); i++) {
+    int input_i = INTEGER(vec_with_NA)[i];
+    INTEGER(vec_with_negatives)[i] = (input_i == NA_INTEGER) ? -1 : input_i;
+  }
+  return vec_with_negatives;
+}
+
 SEXP checkVars(SEXP DT, SEXP id, SEXP measure, Rboolean verbose) {
   int ncol=LENGTH(DT), targetcols=0, protecti=0, u=0, v=0;
   SEXP thiscol, idcols = R_NilValue, valuecols = R_NilValue, tmp, tmp2, booltmp, unqtmp, ans;
@@ -215,7 +226,7 @@ SEXP checkVars(SEXP DT, SEXP id, SEXP measure, Rboolean verbose) {
     switch(TYPEOF(measure)) {
     case STRSXP  : tmp2 = PROTECT(chmatch(measure, dtnames, 0)); protecti++; break;
     case REALSXP : tmp2 = PROTECT(coerceVector(measure, INTSXP)); protecti++; break;
-    case INTSXP  : tmp2 = measure; break;
+    case INTSXP  : tmp2 = PROTECT(na_to_negative(measure)); protecti++; break;
     case VECSXP  : tmp2 = PROTECT(measurelist(measure, dtnames)); protecti++; break;
     default : error(_("Unknown 'measure.vars' type %s, must be character or integer vector/list"), type2char(TYPEOF(measure)));
     }
@@ -262,7 +273,7 @@ SEXP checkVars(SEXP DT, SEXP id, SEXP measure, Rboolean verbose) {
     switch(TYPEOF(measure)) {
     case STRSXP  : tmp2 = PROTECT(chmatch(measure, dtnames, 0)); protecti++; break;
     case REALSXP : tmp2 = PROTECT(coerceVector(measure, INTSXP)); protecti++; break;
-    case INTSXP  : tmp2 = measure; break;
+    case INTSXP  : tmp2 = PROTECT(na_to_negative(measure)); protecti++; break;
     case VECSXP  : tmp2 = PROTECT(measurelist(measure, dtnames)); protecti++; break;
     default : error(_("Unknown 'measure.vars' type %s, must be character or integer vector"), type2char(TYPEOF(measure)));
     }
