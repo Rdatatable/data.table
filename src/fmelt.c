@@ -97,6 +97,23 @@ static const char *concat(SEXP vec, SEXP idx) {
   return ans;
 }
 
+// input: character vector of column names (maybe missing), output:
+// integer vector of column indices with NA_INTEGER in the positions
+// with missing inputs, and -1 in the positions with column names not
+// found. Column names not found will eventually cause error via
+// invalid_measure().
+SEXP chmatch_na(SEXP x, SEXP table){
+  SEXP ans;
+  PROTECT(ans = chmatch(x, table, -1));
+  for(int i=0; i<length(ans); i++){
+    if(STRING_ELT(x, i) == NA_STRING){
+      INTEGER(ans)[i] = NA_INTEGER;
+    }
+  }
+  UNPROTECT(1);
+  return ans;
+}
+
 // deal with measure.vars of type VECSXP
 SEXP measurelist(SEXP measure, SEXP dtnames) {
   const int n=length(measure);
@@ -105,7 +122,7 @@ SEXP measurelist(SEXP measure, SEXP dtnames) {
     SEXP x = VECTOR_ELT(measure, i);
     switch(TYPEOF(x)) {
     case STRSXP  :
-      SET_VECTOR_ELT(ans, i, chmatch(x, dtnames, NA_INTEGER));
+      SET_VECTOR_ELT(ans, i, chmatch_na(x, dtnames));
       break;
     case REALSXP :
       SET_VECTOR_ELT(ans, i, coerceVector(x, INTSXP));
@@ -138,8 +155,9 @@ static SEXP unlist_(SEXP xint) {
   return(ans);
 }
 
-bool invalid_measure(int i, int ncol) {
-  return (i<=0 && i!=NA_INTEGER) || i>ncol;
+bool invalid_measure(SEXP vec, int vec_i, int ncol) {
+  int col_i = INTEGER(vec)[vec_i];
+  return (col_i<=0 && col_i!=NA_INTEGER) || col_i>ncol;
 }
 
 SEXP checkVars(SEXP DT, SEXP id, SEXP measure, Rboolean verbose) {
@@ -207,7 +225,7 @@ SEXP checkVars(SEXP DT, SEXP id, SEXP measure, Rboolean verbose) {
     }
     booltmp = PROTECT(duplicated(tmp, FALSE)); protecti++;
     for (int i=0; i<length(tmp); ++i) {
-      if (invalid_measure(INTEGER(tmp)[i], ncol))
+      if (invalid_measure(tmp, i, ncol))
         error(_("One or more values in 'measure.vars' is invalid."));
       else if (!LOGICAL(booltmp)[i]) targetcols++;
       else continue;
@@ -253,7 +271,7 @@ SEXP checkVars(SEXP DT, SEXP id, SEXP measure, Rboolean verbose) {
       tmp = PROTECT(unlist_(tmp2)); protecti++;
     }
     for (int i=0; i<length(tmp); ++i) {
-      if (invalid_measure(INTEGER(tmp)[i], ncol))
+      if (invalid_measure(tmp, i, ncol))
         error(_("One or more values in 'measure.vars' is invalid."));
     }
     if (isNewList(measure)) valuecols = tmp2;
