@@ -2528,7 +2528,7 @@ copy = function(x) {
 
 shallow = function(x, cols=NULL) {
   if (!is.data.frame(x) && !is.data.table(x)) {
-    #                      ^^ some revdeps do class(x)="data.table" without inheriting from data.frame, PR#XXXX
+    #                      ^^ some revdeps do class(x)="data.table" without inheriting from data.frame, PR#5210
     stopf("x is not a data.table|frame. Shallow copy is a copy of the vector of column pointers (only), so is only meaningful for data.table|frame")
   }
   ans = .shallow(x, cols=cols, retain.key=selfrefok(x))  # selfrefok for #5042
