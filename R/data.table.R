@@ -2996,7 +2996,7 @@ gmin = function(x, na.rm=FALSE) .Call(Cgmin, x, na.rm)
 gmax = function(x, na.rm=FALSE) .Call(Cgmax, x, na.rm)
 gvar = function(x, na.rm=FALSE) .Call(Cgvar, x, na.rm)
 gsd = function(x, na.rm=FALSE) .Call(Cgsd, x, na.rm)
-gshift = function(x, n=1L, fill=NA, type=c("lag", "lead")) {
+gshift = function(x, n=1L, fill=NA, type=c("lag", "lead", "shift")) {
   type = match.arg(type)
   stopifnot(is.numeric(n))
   .Call(Cgshift, x, as.integer(n), fill, type)

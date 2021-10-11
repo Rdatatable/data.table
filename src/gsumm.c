@@ -1171,8 +1171,8 @@ SEXP gshift(SEXP x, SEXP nArg, SEXP fillArg, SEXP typeArg) {
 
   int nprotect=0;
   enum {LAG, LEAD/*, SHIFT*/,CYCLIC} stype = LAG;
-  if (!(length(fillArg) == 1 || length(fillArg) == ngrp))
-    error(_("fill must be a vector of length 1 or length number of groups: %d"), ngrp);
+  if (!(length(fillArg) == 1))
+    error(_("fill must be a vector of length 1"));
 
   if (!isString(typeArg) || length(typeArg) != 1)
     error(_("Internal error: invalid type for gshift(), should have been caught before. please report to data.table issue tracker")); // # nocov
@@ -1203,9 +1203,8 @@ SEXP gshift(SEXP x, SEXP nArg, SEXP fillArg, SEXP typeArg) {
     SET_VECTOR_ELT(ans, g, tmp=allocVector(TYPEOF(x), nx));
     #define SHIFT(CTYPE, RTYPE, ASSIGN) {                                                       \
       const CTYPE *xd = (const CTYPE *)RTYPE(x);                                                \
+      const CTYPE fill = (const CTYPE)RTYPE(thisfill)[0];                                       \
       for (int i=0; i<ngrp; ++i) {                                                              \
-        const int fillidx = length(fillArg) == ngrp ? i : 0;                                    \
-        const CTYPE fill = (const CTYPE)RTYPE(thisfill)[fillidx];                               \
         const int grpn = grpsize[i];                                                            \
         const int thisn = MIN(m, grpn);                                                         \
         const int jstart = ff[i]-1+ (!lag)*(thisn);                                             \
@@ -1237,7 +1236,7 @@ SEXP gshift(SEXP x, SEXP nArg, SEXP fillArg, SEXP typeArg) {
         } else {      double *ansd=REAL(tmp);             SHIFT(double,  REAL,      ansd[ansi++]=val); } break;
       case CPLXSXP: { Rcomplex *ansd=COMPLEX(tmp);        SHIFT(Rcomplex, COMPLEX,  ansd[ansi++]=val); } break;
       case STRSXP: { SHIFT(SEXP, STRING_PTR,                          SET_STRING_ELT(tmp,ansi++,val)); } break;
-      case VECSXP: { SHIFT(SEXP, SEXPPTR_RO,                          SET_VECTOR_ELT(tmp,ansi++,val)); } break;
+      //case VECSXP: { SHIFT(SEXP, SEXPPTR_RO,                          SET_VECTOR_ELT(tmp,ansi++,val)); } break;
       default:
         error(_("Type '%s' is not supported by GForce gshift. Either add the namespace prefix (e.g. data.table::shift(.)) or turn off GForce optimization using options(datatable.optimize=1)"), type2char(TYPEOF(x)));
     }
