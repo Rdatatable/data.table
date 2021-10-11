@@ -3187,6 +3187,10 @@ test(1034, as.data.table(x<-as.character(sample(letters, 5))), data.table(V1=x))
   test(1035.26, melt(dt, id.vars=5, measure.vars=-1), error="One or more values in 'id.vars'")
   test(1035.27, melt(dt, id.vars=1, measure.vars=-1), error="One or more values in 'measure.vars'")
   test(1035.28, melt(dt, measure.vars=list("a")), error="One or more values in 'measure.vars'")
+  test(1035.29, melt(dt, measure.vars=NA_integer_), error="One or more values in 'measure.vars'")
+  test(1035.30, melt(dt, id.vars=NA_integer_), error="One or more values in 'id.vars'")
+  test(1035.31, melt(dt, measure.vars=NA_character_), error="One or more values in 'measure.vars'")
+  test(1035.32, melt(dt, id.vars=NA_character_), error="One or more values in 'id.vars'")
 
   if (test_R.utils) {
     # dup names in variable used to generate malformed factor error and/or segfault, #1754;  was test 1570
