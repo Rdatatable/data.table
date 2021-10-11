@@ -110,7 +110,7 @@ DT.m1
 
 In the previous section, we saw how to get from wide form to long form. Let's see the reverse operation in this section.
 
-#### - How can we get back to the original data table `DT` from `DT.m`?
+#### - How can we get back to the original data table `DT` from `DT.m1`?
 
 That is, we'd like to collect all *child* observations corresponding to each `family_id, age_mother` together under the same row. We can accomplish it using `dcast` as follows:
 
@@ -126,7 +126,7 @@ dcast(DT.m1, family_id + age_mother ~ child, value.var = "dob")
 
 * `dcast` also tries to preserve attributes in result wherever possible.
 
-#### - Starting from `DT.m`, how can we get the number of children in each family?
+#### - Starting from `DT.m1`, how can we get the number of children in each family?
 
 You can also pass a function to aggregate by in `dcast` with the argument `fun.aggregate`. This is particularly essential when the formula provided does not identify single observation for each cell.
 
@@ -327,4 +327,3 @@ You can also provide *multiple functions* to `fun.aggregate` to `dcast` for *dat
 #
 
 ***
-
