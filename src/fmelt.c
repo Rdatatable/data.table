@@ -138,8 +138,35 @@ static SEXP unlist_(SEXP xint) {
   return(ans);
 }
 
-bool invalid_measure(int i, int ncol) {
-  return (i<=0 && i!=NA_INTEGER) || i>ncol;
+bool is_default_measure(SEXP vec) {
+  return (isInteger(vec) || isNumeric(vec) || isLogical(vec)) && !isFactor(vec);
+}
+
+// unique then set_diff.
+SEXP uniq_diff(SEXP int_vec, int ncol, bool is_measure) {
+  SEXP is_duplicated = PROTECT(duplicated(int_vec, FALSE)); 
+  int n_unique_cols = 0;
+  for (int i=0; i<length(int_vec); ++i) {
+    int col_number = INTEGER(int_vec)[i];
+    bool good_number = 0 < col_number && col_number <= ncol;
+    if (is_measure) good_number |= (col_number==NA_INTEGER);
+    if (!good_number) {
+      if (is_measure) {
+        error(_("One or more values in 'measure.vars' is invalid."));
+      } else {
+        error(_("One or more values in 'id.vars' is invalid."));
+      }
+    } else if (!LOGICAL(is_duplicated)[i]) n_unique_cols++;
+  }
+  SEXP unique_col_numbers = PROTECT(allocVector(INTSXP, n_unique_cols)); 
+  int unique_i = 0;
+  for (int i=0; i<length(is_duplicated); ++i) {
+    if (!LOGICAL(is_duplicated)[i]) {
+      INTEGER(unique_col_numbers)[unique_i++] = INTEGER(int_vec)[i];
+    }
+  }
+  UNPROTECT(2);
+  return set_diff(unique_col_numbers, ncol);
 }
 
 SEXP checkVars(SEXP DT, SEXP id, SEXP measure, Rboolean verbose) {
@@ -149,13 +176,13 @@ SEXP checkVars(SEXP DT, SEXP id, SEXP measure, Rboolean verbose) {
   if (isNull(id) && isNull(measure)) {
     for (int i=0; i<ncol; ++i) {
       thiscol = VECTOR_ELT(DT, i);
-      if ((isInteger(thiscol) || isNumeric(thiscol) || isLogical(thiscol)) && !isFactor(thiscol)) n_target_cols++;
+      if (is_default_measure(thiscol)) n_target_cols++;
     }
     idcols = PROTECT(allocVector(INTSXP, ncol-n_target_cols)); protecti++;
     SEXP target_cols = PROTECT(allocVector(INTSXP, n_target_cols)); protecti++;
     for (int i=0; i<ncol; ++i) {
       thiscol = VECTOR_ELT(DT, i);
-      if ((isInteger(thiscol) || isNumeric(thiscol) || isLogical(thiscol)) && !isFactor(thiscol)) {
+      if (is_default_measure(thiscol)) {
         INTEGER(target_cols)[target_col_i++] = i+1;
       } else
         INTEGER(idcols)[id_col_i++] = i+1;
@@ -170,25 +197,11 @@ SEXP checkVars(SEXP DT, SEXP id, SEXP measure, Rboolean verbose) {
     case INTSXP  : idcols = id; break;
     default : error(_("Unknown 'id.vars' type %s, must be character or integer vector"), type2char(TYPEOF(id)));
     }
-    SEXP id_duplicated = PROTECT(duplicated(idcols, FALSE)); protecti++;
-    for (int i=0; i<length(idcols); ++i) {
-      int id_col_element = INTEGER(idcols)[i];
-      if (id_col_element <= 0 || id_col_element > ncol)
-        error(_("One or more values in 'id.vars' is invalid."));
-      else if (!LOGICAL(id_duplicated)[i]) n_target_cols++;
-      else continue;
-    }
-    SEXP unique_ids = PROTECT(allocVector(INTSXP, n_target_cols)); protecti++;
-    for (int i=0; i<length(id_duplicated); ++i) {
-      if (!LOGICAL(id_duplicated)[i]) {
-        INTEGER(unique_ids)[id_col_i++] = INTEGER(idcols)[i];
-      }
-    }
     valuecols = PROTECT(allocVector(VECSXP, 1)); protecti++;
-    SET_VECTOR_ELT(valuecols, 0, set_diff(unique_ids, ncol));
+    SET_VECTOR_ELT(valuecols, 0, uniq_diff(idcols, ncol, false));
     if (verbose) {
       Rprintf(_("'measure.vars' is missing. Assigning all columns other than 'id.vars' columns as 'measure.vars'.\n"));
-      SEXP value_col = VECTOR_ELT(valuecols, 1);
+      SEXP value_col = VECTOR_ELT(valuecols, 0);
       if (length(value_col)) Rprintf(_("Assigned 'measure.vars' are [%s].\n"), concat(dtnames, value_col));
     }
   } else if (isNull(id) && !isNull(measure)) {
@@ -206,20 +219,7 @@ SEXP checkVars(SEXP DT, SEXP id, SEXP measure, Rboolean verbose) {
     }else{
       measure_int_vec = measure_int_or_list;
     }
-    SEXP measure_duplicated = PROTECT(duplicated(measure_int_vec, FALSE)); protecti++;
-    for (int i=0; i<length(measure_duplicated); ++i) {
-      if (invalid_measure(INTEGER(measure_int_vec)[i], ncol))
-        error(_("One or more values in 'measure.vars' is invalid."));
-      else if (!LOGICAL(measure_duplicated)[i]) n_target_cols++;
-      else continue;
-    }
-    SEXP measure_unique = PROTECT(allocVector(INTSXP, n_target_cols)); protecti++;
-    for (int i=0; i<length(measure_duplicated); ++i) {
-      if (!LOGICAL(measure_duplicated)[i]) {
-        INTEGER(measure_unique)[target_col_i++] = INTEGER(measure_int_vec)[i];
-      }
-    }
-    idcols = PROTECT(set_diff(measure_unique, ncol)); protecti++;
+    idcols = PROTECT(uniq_diff(measure_int_vec, ncol, true)); protecti++;
     if (isNewList(measure)) valuecols = measure_int_or_list;
     else {
       valuecols = PROTECT(allocVector(VECSXP, 1)); protecti++;
@@ -236,11 +236,7 @@ SEXP checkVars(SEXP DT, SEXP id, SEXP measure, Rboolean verbose) {
     case INTSXP  : idcols = id; break;
     default : error(_("Unknown 'id.vars' type %s, must be character or integer vector"), type2char(TYPEOF(id)));
     }
-    for (int i=0; i<length(idcols); ++i) {
-      int id_col_element = INTEGER(idcols)[i];
-      if (id_col_element <= 0 || id_col_element > ncol)
-        error(_("One or more values in 'id.vars' is invalid."));
-    }
+    uniq_diff(idcols, ncol, false);//for error checking.
     SEXP measure_int_or_list;
     switch(TYPEOF(measure)) {
     case STRSXP  : measure_int_or_list = PROTECT(chmatch(measure, dtnames, 0)); protecti++; break;
@@ -255,10 +251,7 @@ SEXP checkVars(SEXP DT, SEXP id, SEXP measure, Rboolean verbose) {
     }else{
       measure_int_vec = measure_int_or_list;
     }
-    for (int i=0; i<length(measure_int_vec); ++i) {
-      if (invalid_measure(INTEGER(measure_int_vec)[i], ncol))
-        error(_("One or more values in 'measure.vars' is invalid."));
-    }
+    uniq_diff(measure_int_vec, ncol, true);//error checking.
     if (isNewList(measure)) valuecols = measure_int_or_list;
     else {
       valuecols = PROTECT(allocVector(VECSXP, 1)); protecti++;
