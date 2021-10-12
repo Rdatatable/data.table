@@ -142,8 +142,9 @@ bool is_default_measure(SEXP vec) {
   return (isInteger(vec) || isNumeric(vec) || isLogical(vec)) && !isFactor(vec);
 }
 
-// unique then set_diff.
-SEXP uniq_diff(SEXP int_vec, int ncol, bool is_measure) {
+// maybe unlist, then unique, then set_diff.
+SEXP uniq_diff(SEXP int_or_list, int ncol, bool is_measure) {
+  SEXP int_vec = PROTECT(isNewList(int_or_list) ? unlist_(int_or_list) : int_or_list);
   SEXP is_duplicated = PROTECT(duplicated(int_vec, FALSE)); 
   int n_unique_cols = 0;
   for (int i=0; i<length(int_vec); ++i) {
@@ -165,8 +166,23 @@ SEXP uniq_diff(SEXP int_vec, int ncol, bool is_measure) {
       INTEGER(unique_col_numbers)[unique_i++] = INTEGER(int_vec)[i];
     }
   }
-  UNPROTECT(2);
+  UNPROTECT(3);
   return set_diff(unique_col_numbers, ncol);
+}
+
+SEXP cols_to_int_or_list(SEXP cols, SEXP dtnames, bool is_measure) {
+  switch(TYPEOF(cols)) {
+  case STRSXP  : return chmatch(cols, dtnames, 0); 
+  case REALSXP : return coerceVector(cols, INTSXP); 
+  case INTSXP  : return cols; 
+  case VECSXP  : if(is_measure)return measurelist(cols, dtnames); 
+  default : 
+    if (is_measure) {
+      error(_("Unknown 'measure.vars' type %s, must be character or integer vector/list"), type2char(TYPEOF(cols)));
+    } else {
+      error(_("Unknown 'id.vars' type %s, must be character or integer vector"), type2char(TYPEOF(cols)));
+    }
+  }
 }
 
 SEXP checkVars(SEXP DT, SEXP id, SEXP measure, Rboolean verbose) {
@@ -191,12 +207,7 @@ SEXP checkVars(SEXP DT, SEXP id, SEXP measure, Rboolean verbose) {
     SET_VECTOR_ELT(valuecols, 0, target_cols);
     warning(_("id.vars and measure.vars are internally guessed when both are 'NULL'. All non-numeric/integer/logical type columns are considered id.vars, which in this case are columns [%s]. Consider providing at least one of 'id' or 'measure' vars in future."), concat(dtnames, idcols));
   } else if (!isNull(id) && isNull(measure)) {
-    switch(TYPEOF(id)) {
-    case STRSXP  : PROTECT(idcols = chmatch(id, dtnames, 0)); protecti++; break;
-    case REALSXP : PROTECT(idcols = coerceVector(id, INTSXP)); protecti++; break;
-    case INTSXP  : idcols = id; break;
-    default : error(_("Unknown 'id.vars' type %s, must be character or integer vector"), type2char(TYPEOF(id)));
-    }
+    idcols = PROTECT(cols_to_int_or_list(id, dtnames, false)); protecti++; 
     valuecols = PROTECT(allocVector(VECSXP, 1)); protecti++;
     SET_VECTOR_ELT(valuecols, 0, uniq_diff(idcols, ncol, false));
     if (verbose) {
@@ -205,21 +216,8 @@ SEXP checkVars(SEXP DT, SEXP id, SEXP measure, Rboolean verbose) {
       if (length(value_col)) Rprintf(_("Assigned 'measure.vars' are [%s].\n"), concat(dtnames, value_col));
     }
   } else if (isNull(id) && !isNull(measure)) {
-    SEXP measure_int_or_list;
-    switch(TYPEOF(measure)) {
-    case STRSXP  : measure_int_or_list = PROTECT(chmatch(measure, dtnames, 0)); protecti++; break;
-    case REALSXP : measure_int_or_list = PROTECT(coerceVector(measure, INTSXP)); protecti++; break;
-    case INTSXP  : measure_int_or_list = measure; break;
-    case VECSXP  : measure_int_or_list = PROTECT(measurelist(measure, dtnames)); protecti++; break;
-    default : error(_("Unknown 'measure.vars' type %s, must be character or integer vector/list"), type2char(TYPEOF(measure)));
-    }
-    SEXP measure_int_vec;
-    if (isNewList(measure)) {
-      measure_int_vec = PROTECT(unlist_(measure_int_or_list)); protecti++;
-    }else{
-      measure_int_vec = measure_int_or_list;
-    }
-    idcols = PROTECT(uniq_diff(measure_int_vec, ncol, true)); protecti++;
+    SEXP measure_int_or_list = cols_to_int_or_list(measure, dtnames, true);
+    idcols = PROTECT(uniq_diff(measure_int_or_list, ncol, true)); protecti++;
     if (isNewList(measure)) valuecols = measure_int_or_list;
     else {
       valuecols = PROTECT(allocVector(VECSXP, 1)); protecti++;
@@ -230,28 +228,11 @@ SEXP checkVars(SEXP DT, SEXP id, SEXP measure, Rboolean verbose) {
       if (length(idcols)) Rprintf(_("Assigned 'id.vars' are [%s].\n"), concat(dtnames, idcols));
     }
   } else if (!isNull(id) && !isNull(measure)) {
-    switch(TYPEOF(id)) {
-    case STRSXP  : idcols = PROTECT(chmatch(id, dtnames, 0)); protecti++; break;
-    case REALSXP : idcols = PROTECT(coerceVector(id, INTSXP)); protecti++; break;
-    case INTSXP  : idcols = id; break;
-    default : error(_("Unknown 'id.vars' type %s, must be character or integer vector"), type2char(TYPEOF(id)));
-    }
+    idcols = PROTECT(cols_to_int_or_list(id, dtnames, false)); protecti++;
     uniq_diff(idcols, ncol, false);//for error checking.
-    SEXP measure_int_or_list;
-    switch(TYPEOF(measure)) {
-    case STRSXP  : measure_int_or_list = PROTECT(chmatch(measure, dtnames, 0)); protecti++; break;
-    case REALSXP : measure_int_or_list = PROTECT(coerceVector(measure, INTSXP)); protecti++; break;
-    case INTSXP  : measure_int_or_list = measure; break;
-    case VECSXP  : measure_int_or_list = PROTECT(measurelist(measure, dtnames)); protecti++; break;
-    default : error(_("Unknown 'measure.vars' type %s, must be character or integer vector"), type2char(TYPEOF(measure)));
-    }
-    SEXP measure_int_vec;
-    if (isNewList(measure)) {
-      measure_int_vec = PROTECT(unlist_(measure_int_or_list)); protecti++;
-    }else{
-      measure_int_vec = measure_int_or_list;
-    }
-    uniq_diff(measure_int_vec, ncol, true);//error checking.
+    SEXP measure_int_or_list = 
+      PROTECT(cols_to_int_or_list(measure, dtnames, true)); protecti++;
+    uniq_diff(measure_int_or_list, ncol, true);//error checking.
     if (isNewList(measure)) valuecols = measure_int_or_list;
     else {
       valuecols = PROTECT(allocVector(VECSXP, 1)); protecti++;
