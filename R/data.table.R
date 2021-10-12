@@ -225,7 +225,7 @@ replace_dot_alias = function(e) {
   if (nomatch0) nomatch=NULL  # retain nomatch=0|FALSE backwards compatibility, #857 #5214
   if (!is.null(nomatch)) {
     if (!(length(nomatch)==1L && is.na(nomatch))) stopf("nomatch= must be either NA or NULL (or 0 for backwards compatibility which is the same as NULL but please use NULL)")
-    nomatch=NA  # convert NA_character_ to NA_logical_, PR#XXXX
+    nomatch=NA  # convert NA_character_ to NA-logical, PR#5216
   }
   if (!is.logical(which) || length(which)>1L) stopf("which= must be a logical vector length 1. Either FALSE, TRUE or NA.")
   if ((isTRUE(which)||is.na(which)) && !missing(j)) stopf("which==%s (meaning return row numbers) but j is also supplied. Either you need row numbers or the result of j, but only one type of result can be returned.", which)

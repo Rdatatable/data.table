@@ -18271,7 +18271,7 @@ DT = data.table(A=1:3)
 class(DT) = "data.table"
 test(2222, print(DT), output="A.*3")
 
-# retain nomatch=FALSE backwards compatibility #5214, and nomatch=NA_character_ PR#XXXX
+# retain nomatch=FALSE backwards compatibility #5214, and nomatch=NA_character_ PR#5216
 DT = data.table(A=1:3, key="A")
 test(2223.1, DT[.(4), nomatch=FALSE], data.table(A=integer(), key="A"))
 test(2223.2, DT[.(4), nomatch=NA_character_], data.table(A=4L, key="A"))
