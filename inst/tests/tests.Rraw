@@ -640,7 +640,7 @@ test(211, ncol(TESTDT), 2L)
 DT = data.table(a=1:6,key="a")
 test(212, DT[J(3)]$a, 3L) # correct class c("data.table","data.frame")
 class(DT) = "data.table"  # incorrect class, but as from 1.8.1 it works. By accident when moving from colnames() to names(), it was dimnames() doing the check, but rather than add a check that identical(class(DT),c("data.frame","data.table")) at the top of [.data.table, we'll leave it flexible to user (user might not want to inherit from data.frame for some reason).
-test(213, DT[J(3)]$a, error="x is not a data.table|frame")  # from v1.14.2, data.table must inherit from data.frame (internals are too hard to reason if a data.table may not be data.frame too)
+test(213, DT[J(3)]$a, 3L)
 
 # setkey now auto coerces double and character for convenience, and
 # to solve bug #953
@@ -18271,4 +18271,14 @@ test(testnum+0.01, DT[, prod(l), g], error="GForce prod can only be applied to c
 
 # tables() error when called from inside a function(...), #5197
 test(2221, (function(...) tables())(), output = "No objects of class data.table exist")
+
+# some revdeps do class(x)="data.table" without inheriting from data.frame, PR#5210
+DT = data.table(A=1:3)
+class(DT) = "data.table"
+test(2222, print(DT), output="A.*3")
+
+# retain nomatch=FALSE backwards compatibility #5214, and nomatch=NA_character_ PR#5216
+DT = data.table(A=1:3, key="A")
+test(2223.1, DT[.(4), nomatch=FALSE], data.table(A=integer(), key="A"))
+test(2223.2, DT[.(4), nomatch=NA_character_], data.table(A=4L, key="A"))
 
