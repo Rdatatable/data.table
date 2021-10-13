@@ -640,7 +640,7 @@ test(211, ncol(TESTDT), 2L)
 DT = data.table(a=1:6,key="a")
 test(212, DT[J(3)]$a, 3L) # correct class c("data.table","data.frame")
 class(DT) = "data.table"  # incorrect class, but as from 1.8.1 it works. By accident when moving from colnames() to names(), it was dimnames() doing the check, but rather than add a check that identical(class(DT),c("data.frame","data.table")) at the top of [.data.table, we'll leave it flexible to user (user might not want to inherit from data.frame for some reason).
-test(213, DT[J(3)]$a, error="x is not a data.table|frame")  # from v1.14.2, data.table must inherit from data.frame (internals are too hard to reason if a data.table may not be data.frame too)
+test(213, DT[J(3)]$a, 3L)
 
 # setkey now auto coerces double and character for convenience, and
 # to solve bug #953
