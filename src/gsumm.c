@@ -1183,7 +1183,7 @@ SEXP gshift(SEXP x, SEXP nArg, SEXP fillArg, SEXP typeArg) {
 
   bool lag;
 
-  int nx = length(x), nk = length(nArg);
+  R_xlen_t nx = xlength(x), nk = length(nArg);
   if (!isInteger(nArg)) error(_("Internal error: n must be integer")); // # nocov
   const int *kd = INTEGER(nArg);
   for (int i=0; i<nk; i++) if (kd[i]==NA_INTEGER) error(_("Item %d of n is NA"), i+1);
@@ -1198,7 +1198,7 @@ SEXP gshift(SEXP x, SEXP nArg, SEXP fillArg, SEXP typeArg) {
       m = m * (-1);
       lag = !lag;
     }
-    int ansi = 0;
+    R_xlen_t ansi = 0;
     SEXP tmp;
     SET_VECTOR_ELT(ans, g, tmp=allocVector(TYPEOF(x), nx));
     #define SHIFT(CTYPE, RTYPE, ASSIGN) {                                                       \
@@ -1231,9 +1231,7 @@ SEXP gshift(SEXP x, SEXP nArg, SEXP fillArg, SEXP typeArg) {
     switch(TYPEOF(x)) {
       case LGLSXP:  { int *ansd=LOGICAL(tmp);             SHIFT(int,     LOGICAL,   ansd[ansi++]=val); } break;
       case INTSXP:  { int *ansd=INTEGER(tmp);             SHIFT(int,     INTEGER,   ansd[ansi++]=val); } break;
-      case REALSXP: if (INHERITS(x, char_integer64)) {
-                      int64_t *ansd=(int64_t *)REAL(tmp); SHIFT(int64_t, REAL,      ansd[ansi++]=val);
-        } else {      double *ansd=REAL(tmp);             SHIFT(double,  REAL,      ansd[ansi++]=val); } break;
+      case REALSXP: { double *ansd=REAL(tmp);             SHIFT(double,  REAL,      ansd[ansi++]=val); } break;
       case CPLXSXP: { Rcomplex *ansd=COMPLEX(tmp);        SHIFT(Rcomplex, COMPLEX,  ansd[ansi++]=val); } break;
       case STRSXP: { SHIFT(SEXP, STRING_PTR,                          SET_STRING_ELT(tmp,ansi++,val)); } break;
       //case VECSXP: { SHIFT(SEXP, SEXPPTR_RO,                          SET_VECTOR_ELT(tmp,ansi++,val)); } break;
