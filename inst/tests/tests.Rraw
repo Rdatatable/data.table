@@ -18304,8 +18304,8 @@ for (n in nn) {
   }
 }
 
-test(2222.51, DT[, shift(i, fill=1:10), by=x], error="fill must be a vector of length 1")
-test(2222.52, DT[, shift(i, type="shift"), by=x], DT[, esc(i, type="shift"), by=x])
+test(2224.51, DT[, shift(i, fill=1:10), by=x], error="fill must be a vector of length 1")
+test(2224.52, DT[, shift(i, type="shift"), by=x], DT[, esc(i, type="shift"), by=x])
 
 options(datatable.optimize = 0L)
 DT[, shift(l,, type="lag"), by=x]
