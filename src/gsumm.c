@@ -1162,10 +1162,6 @@ SEXP gprod(SEXP x, SEXP narmArg) {
   return(ans);
 }
 
-inline int pos_mod(int i, int n) {
-    return (i % n + n) % n;
-}
-
 SEXP gshift(SEXP x, SEXP nArg, SEXP fillArg, SEXP typeArg) {
   const bool nosubset = irowslen == -1;
   const bool issorted = !isunsorted;
