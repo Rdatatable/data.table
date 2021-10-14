@@ -1212,9 +1212,10 @@ SEXP gshift(SEXP x, SEXP nArg, SEXP fillArg, SEXP typeArg) {
       const CTYPE fill = (const CTYPE)RTYPE(thisfill)[0];                                                         \
       for (int i=0; i<ngrp; ++i) {                                                                                \
         const int grpn = grpsize[i];                                                                              \
-        const int thisn = MIN(m, grpn);                                                                           \
+        const int mg = cycle ? (((m-1) % grpn) + 1) : m;                                                          \
+        const int thisn = MIN(mg, grpn);                                                                          \
         const int jstart = ff[i]-1+ (!lag)*(thisn);                                                               \
-        const int jend = jstart+ MAX(0, grpn-m); /*if m > grpn -> jend = jstart */                                \
+        const int jend = jstart+ MAX(0, grpn-mg); /*if m > grpn -> jend = jstart */                               \
         if (lag) {                                                                                                \
           const int o = ff[i]-1+(grpn-thisn);                                                                     \
           for (int j=0; j<thisn; ++j) {                                                                           \

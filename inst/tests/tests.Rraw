@@ -18296,6 +18296,10 @@ for (n in nn) {
     test(testnum, EVAL(sprintf("DT[, shift(%s, %d, type='lag'), by=x]", c, n)),  EVAL(sprintf("DT[, esc(%s, %d, type='lag'), by=x]", c, n)))
     testnum = testnum + 0.001
     test(testnum, EVAL(sprintf("DT[, shift(%s, %d, type='lead'), by=x]", c, n)), EVAL(sprintf("DT[, esc(%s, %d, type='lead'), by=x]", c, n)))
+    testnum = testnum + 0.001
+    test(testnum, EVAL(sprintf("DT[, shift(%s, %d, type='shift'), by=x]", c, n)), EVAL(sprintf("DT[, esc(%s, %d, type='shift'), by=x]", c, n)))
+    testnum = testnum + 0.001
+    test(testnum, EVAL(sprintf("DT[, shift(%s, %d, type='cyclic'), by=x]", c, n)), EVAL(sprintf("DT[, esc(%s, %d, type='cyclic'), by=x]", c, n)))
     # check if shift with opposite type is same as shift with n*-1
     testnum = testnum + 0.001
     test(testnum, EVAL(sprintf("DT[, shift(%s, %d, type='lag'), by=x]", c, n)),  EVAL(sprintf("DT[, esc(%s, %d, type='lead'), by=x]", c, -n)))
