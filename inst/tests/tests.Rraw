@@ -18285,7 +18285,8 @@ DT = data.table(x = sample(letters[1:5], 20, TRUE),
                 d = sample(c(1.2,-3.4,5.6,NA), 20, TRUE),
                 s = sample(c("foo","bar",NA), 20, TRUE),
                 c = sample(c(0+3i,1,-1-1i,NA), 20, TRUE),
-                l = sample(c(TRUE, FALSE, NA), 20, TRUE))
+                l = sample(c(TRUE, FALSE, NA), 20, TRUE),
+                r = as.raw(sample(1:5, 20, TRUE)))
 
 nn = list(1, 5, -1, -5, c(1,2), c(-1,1))
 cols = c("y", "i", "d", "s", "c", "l")
@@ -18310,6 +18311,5 @@ for (n in nn) {
 
 test(2224.51, DT[, shift(i, fill=1:10), by=x], error="fill must be a vector of length 1")
 test(2224.52, DT[, shift(i, type="shift"), by=x], DT[, esc(i, type="shift"), by=x])
-
-options(datatable.optimize = 0L)
-DT[, shift(l,, type="lag"), by=x]
+test(2224.53, DT[, shift(r), by=x], error="Type 'raw' is not supported by GForce gshift")
+test(2224.54, DT[, shift(i, fill=1:2), by=x], error="fill must be a vector of length 1")

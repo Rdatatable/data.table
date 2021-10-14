@@ -1747,7 +1747,7 @@ replace_dot_alias = function(e) {
           if ((length(q)==2L || (!is.null(names(q)) && startsWith(names(q)[3L], "na")))) return(TRUE)
           if (length(q)>=2L && q[[1L]] == "shift") {
             q_named = match.call(shift, q)
-            if (!is.language(q_named[["fill"]])) return(TRUE)
+            if (!is.call(q_named[["fill"]])) return(TRUE)
           } # add gshift support
           #                       ^^ base::startWith errors on NULL unfortunately
           #        head-tail uses default value n=6 which as of now should not go gforce ... ^^
