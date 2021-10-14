@@ -1162,6 +1162,10 @@ SEXP gprod(SEXP x, SEXP narmArg) {
   return(ans);
 }
 
+inline int pos_mod(int i, int n) {
+    return (i % n + n) % n;
+}
+
 SEXP gshift(SEXP x, SEXP nArg, SEXP fillArg, SEXP typeArg) {
   const bool nosubset = irowslen == -1;
   const bool issorted = !isunsorted;
@@ -1179,9 +1183,11 @@ SEXP gshift(SEXP x, SEXP nArg, SEXP fillArg, SEXP typeArg) {
   if (!strcmp(CHAR(STRING_ELT(typeArg, 0)), "lag")) stype = LAG;
   else if (!strcmp(CHAR(STRING_ELT(typeArg, 0)), "lead")) stype = LEAD;
   else if (!strcmp(CHAR(STRING_ELT(typeArg, 0)), "shift")) stype = LAG;
+  else if (!strcmp(CHAR(STRING_ELT(typeArg, 0)), "cyclic")) stype = CYCLIC;
   else error(_("Internal error: invalid type for gshift(), should have been caught before. please report to data.table issue tracker")); // # nocov
 
   bool lag;
+  const bool cycle = stype == CYCLIC;
 
   R_xlen_t nx = xlength(x), nk = length(nArg);
   if (!isInteger(nArg)) error(_("Internal error: n must be integer")); // # nocov
@@ -1191,7 +1197,7 @@ SEXP gshift(SEXP x, SEXP nArg, SEXP fillArg, SEXP typeArg) {
   SEXP ans = PROTECT(allocVector(VECSXP, nk)); nprotect++;
   SEXP thisfill = PROTECT(coerceAs(fillArg, x, ScalarLogical(0))); nprotect++;
   for (int g=0; g<nk; g++) {
-    lag = stype == LAG;
+    lag = stype == LAG || stype == CYCLIC;
     int m = kd[g];
     // switch
     if (m < 0) {
@@ -1201,32 +1207,36 @@ SEXP gshift(SEXP x, SEXP nArg, SEXP fillArg, SEXP typeArg) {
     R_xlen_t ansi = 0;
     SEXP tmp;
     SET_VECTOR_ELT(ans, g, tmp=allocVector(TYPEOF(x), nx));
-    #define SHIFT(CTYPE, RTYPE, ASSIGN) {                                                       \
-      const CTYPE *xd = (const CTYPE *)RTYPE(x);                                                \
-      const CTYPE fill = (const CTYPE)RTYPE(thisfill)[0];                                       \
-      for (int i=0; i<ngrp; ++i) {                                                              \
-        const int grpn = grpsize[i];                                                            \
-        const int thisn = MIN(m, grpn);                                                         \
-        const int jstart = ff[i]-1+ (!lag)*(thisn);                                             \
-        const int jend = jstart+ MAX(0, grpn-m); /*if m > grpn -> jend = jstart */              \
-        if (lag) {                                                                              \
-          for (int j=0; j<thisn; ++j) {                                                         \
-            const CTYPE val = fill;                                                             \
-            ASSIGN;                                                                             \
-          }                                                                                     \
-        }                                                                                       \
-        for (int j=jstart; j<jend; ++j) {                                                       \
-          const int k = issorted ? j : oo[j]-1;                                                 \
-          const CTYPE val = nosubset ? xd[k] : (irows[k]==NA_INTEGER ? fill : xd[irows[k]-1]);  \
-          ASSIGN;                                                                               \
-        }                                                                                       \
-        if (!lag) {                                                                             \
-          for (int j=0; j<thisn; ++j) {                                                         \
-            const CTYPE val = fill;                                                             \
-            ASSIGN;                                                                             \
-          }                                                                                     \
-        }                                                                                       \
-      }                                                                                         \
+    #define SHIFT(CTYPE, RTYPE, ASSIGN) {                                                                         \
+      const CTYPE *xd = (const CTYPE *)RTYPE(x);                                                                  \
+      const CTYPE fill = (const CTYPE)RTYPE(thisfill)[0];                                                         \
+      for (int i=0; i<ngrp; ++i) {                                                                                \
+        const int grpn = grpsize[i];                                                                              \
+        const int thisn = MIN(m, grpn);                                                                           \
+        const int jstart = ff[i]-1+ (!lag)*(thisn);                                                               \
+        const int jend = jstart+ MAX(0, grpn-m); /*if m > grpn -> jend = jstart */                                \
+        if (lag) {                                                                                                \
+          const int o = ff[i]-1+(grpn-thisn);                                                                     \
+          for (int j=0; j<thisn; ++j) {                                                                           \
+          const int k = issorted ? (o+j) : oo[o+j]-1;                                                             \
+            const CTYPE val = cycle ? (nosubset ? xd[k] : (irows[k]==NA_INTEGER ? fill : xd[irows[k]-1])) : fill; \
+            ASSIGN;                                                                                               \
+          }                                                                                                       \
+        }                                                                                                         \
+        for (int j=jstart; j<jend; ++j) {                                                                         \
+          const int k = issorted ? j : oo[j]-1;                                                                   \
+          const CTYPE val = nosubset ? xd[k] : (irows[k]==NA_INTEGER ? fill : xd[irows[k]-1]);                    \
+          ASSIGN;                                                                                                 \
+        }                                                                                                         \
+        if (!lag) {                                                                                               \
+          const int o = ff[i]-1;                                                                                  \
+          for (int j=0; j<thisn; ++j) {                                                                           \
+            const int k = issorted ? (o+j) : oo[o+j]-1;                                                           \
+            const CTYPE val = cycle ? (nosubset ? xd[k] : (irows[k]==NA_INTEGER ? fill : xd[irows[k]-1])) : fill; \
+            ASSIGN;                                                                                               \
+          }                                                                                                       \
+        }                                                                                                         \
+      }                                                                                                           \
     }
     switch(TYPEOF(x)) {
       case LGLSXP:  { int *ansd=LOGICAL(tmp);             SHIFT(int,     LOGICAL,   ansd[ansi++]=val); } break;
