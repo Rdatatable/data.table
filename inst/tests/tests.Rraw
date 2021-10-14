@@ -18312,4 +18312,6 @@ for (n in nn) {
 test(2224.51, DT[, shift(i, fill=1:10), by=x], error="fill must be a vector of length 1")
 test(2224.52, DT[, shift(i, type="shift"), by=x], DT[, esc(i, type="shift"), by=x])
 test(2224.53, DT[, shift(r), by=x], error="Type 'raw' is not supported by GForce gshift")
-test(2224.54, DT[, shift(i, fill=1:2), by=x], error="fill must be a vector of length 1")
+# use fill argument with length > 1 which is not a call
+a=1:2
+test(2224.54, DT[, shift(i, fill=a), by=x], error="fill must be a vector of length 1")
