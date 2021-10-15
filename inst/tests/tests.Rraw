@@ -3186,6 +3186,12 @@ test(1034, as.data.table(x<-as.character(sample(letters, 5))), data.table(V1=x))
   test(1035.25, melt(dt, id.vars=NULL, measure.vars=-1), error="One or more values in 'measure.vars'")
   test(1035.26, melt(dt, id.vars=5, measure.vars=-1), error="One or more values in 'id.vars'")
   test(1035.27, melt(dt, id.vars=1, measure.vars=-1), error="One or more values in 'measure.vars'")
+  test(1035.28, melt(dt, measure.vars=list("a")), error="One or more values in 'measure.vars'")
+  test(1035.29, melt(dt, measure.vars=NA_integer_, id.vars="y"), error="One or more values in 'measure.vars'")
+  test(1035.291, melt(dt, measure.vars=NA_integer_, id.vars=NULL), error="One or more values in 'measure.vars'")
+  test(1035.30, melt(dt, id.vars=NA_integer_), error="One or more values in 'id.vars'")
+  test(1035.31, melt(dt, measure.vars=NA_character_), error="One or more values in 'measure.vars'")
+  test(1035.32, melt(dt, id.vars=NA_character_), error="One or more values in 'id.vars'")
 
   if (test_R.utils) {
     # dup names in variable used to generate malformed factor error and/or segfault, #1754;  was test 1570
@@ -7849,10 +7855,14 @@ read_table = function(str, ...) {
 test(1552.1, fread(str, na.strings="#N/A"), read_table(str, na.strings="#N/A"))
 test(1552.2, fread(str, na.strings=c("#N/A", "-999")), read_table(str, na.strings=c("#N/A", "-999")))
 test(1552.3, fread(str, na.strings=c("#N/A", "-999", "+1")), read_table(str, na.strings=c("#N/A", "-999", "+1")))
-test(1552.4, fread(str, na.strings=c("#N/A", "-999", "+1", "1")),
-             error="NAstring <<1>> is recognized as type boolean.*not permitted")
+test(1552.4, fread(str, na.strings=c("#N/A", "-999", "+1", "1")), read_table(str, na.strings=c("#N/A", "-999", "+1", "1"))) # enabled by FR #2927
 test(1552.5, fread(str, na.strings=c("#N/A", "-999", "FALSE")), error="NAstring <<FALSE>>.*boolean.*not permitted")
 test(1552.6, fread("A\n1.0\n2\n-", na.strings=c("-")), data.table(A=c(1.0, 2.0, NA)))
+test(1552.7, fread(str, na.strings=c("#N/A", "-999", "+1", "1"), logical01=TRUE),
+  error="NAstring <<1>> and logical01=TRUE.*not permitted")
+str = "a,b,c\n0,1,2\n1,0,2"
+test(1552.8, fread(str, na.strings = "0"), data.table(a=c(NA,1L), b=c(1L,NA), c=c(2L,2L)))
+test(1552.9, fread(str, na.strings = c("0","1")), data.table(a=c(NA,NA), b=c(NA,NA), c=c(2L,2L)))
 
 # FR #1177: 'quote' option of 'print.data.table'
 DT1 <- data.table(s1=paste(" ",LETTERS[1:5],sep=""),s2=LETTERS[1:5])
@@ -9950,7 +9960,7 @@ test(1658.34, fwrite(data.table(id=c("A","B","C"), v=c(1.1,0.0,9.9))), output="i
 test(1658.35, fwrite(data.table(id=1:3,bool=c(TRUE,NA,FALSE)),na="NA",logical01=TRUE), output="\"id\",\"bool\"\n1,1\n2,NA\n3,0")
 
 # POSIXct
-test(1658.36, fwrite(data.table(D = as.POSIXct(seq.Date(as.Date("2038-01-19"), as.Date("2038-01-20"), by = "day")))),
+test(1658.36, fwrite(data.table(D = as.POSIXct(seq(as.Date("2038-01-19"), as.Date("2038-01-20"), by = "day")))),
     output="D\n2038-01-19T00:00:00Z\n2038-01-20T00:00:00Z")
 
 # input is of class matrix
@@ -10877,13 +10887,13 @@ test(1738.5, as.integer(as.Date(c("0000-03-01","9999-12-31"))), c(-719468L,29328
 
 if (FALSE) {
   # Full range takes too long for CRAN.
-  dts = seq.Date(as.Date("0000-03-01"),as.Date("9999-12-31"),by="day")
+  dts = seq(as.Date("0000-03-01"), as.Date("9999-12-31"), by="day")
   dtsCh = as.character(dts)   # 36s
   dtsCh = gsub(" ","0",sprintf("%10s",dtsCh))  # R does not 0 pad years < 1000
   test(1739.1, length(dtsCh)==3652365 && identical(dtsCh[c(1,3652365)],c("0000-03-01","9999-12-31")))
 } else {
   # test on CRAN a reduced but important range
-  dts = seq.Date(as.Date("1899-12-31"),as.Date("2100-01-01"),by="day")
+  dts = seq(as.Date("1899-12-31"), as.Date("2100-01-01"), by="day")
   dtsCh = as.character(dts)
   test(1739.2, length(dtsCh)==73051 && identical(dtsCh[c(1,73051)],c("1899-12-31","2100-01-01")))
 }
@@ -15942,11 +15952,17 @@ test(2067.8, shift(list(z, 1L:3L), n=-1, type = 'cyclic'), list(c(z[2:3], z[1]),
 DT = data.table(a = 2:1, z = complex(0, 0:1))
 test(2068.1, setkey(copy(DT), a), data.table(a=1:2, z=complex(0, 1:0), key='a'))
 test(2068.2, DT[ , abs(z), by=a], data.table(a=2:1, V1=c(0, 1)))
-# raw continues not to be supported
+# support for ordering tables with raw columns, #5100
 DT = data.table(ID=2:1, r=as.raw(0:1))
-test(2068.3, setkey(DT, ID), error="Item 2 of list is type 'raw'")
+test(2068.3, setkey(copy(DT), ID), data.table(ID=1:2, r=as.raw(1:0), key='ID'))
+DT = data.table(x=c(1, 2, 1), y=raw(3))
+test(2068.4, setkey(copy(DT), x), data.table(x=c(1,1,2), y=raw(3), key='x'))
+test(2068.5, DT[, y[.N], x], data.table(x=c(1,2), V1=raw(2)))
+# expression continue to be not supported
+DT = data.table(ID=2:1, r=expression(1, 2))
+test(2068.6, setkey(DT, ID), error="Item 2 of list is type 'expression'")
 # setreordervec triggers !isNewList branch for coverage
-test(2068.4, setreordervec(DT$r, order(DT$ID)), error="reorder accepts vectors but this non-VECSXP")
+test(2068.7, setreordervec(DT$r, order(DT$ID)), error="reorder accepts vectors but this non-VECSXP")
 
 # forderv (and downstream functions) handles complex vector input, part of #3690
 DT = data.table(
@@ -18239,7 +18255,7 @@ for (f1 in funs) {
     if (identical(f1,as.character) && identical(f2,as.complex)) {
       # one special case due to as.complex(0)=="0+0i"!="0"
       test(testnum, DT[, shift(x, fill="0")],   f1(0:3))
-    } else { 
+    } else {
       test(testnum, DT[, shift(x, fill=f2(0))], f1(0:3), warning=w)
     }
   }

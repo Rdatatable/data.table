@@ -97,6 +97,23 @@ static const char *concat(SEXP vec, SEXP idx) {
   return ans;
 }
 
+// input: character vector of column names (maybe missing), output:
+// integer vector of column indices with NA_INTEGER in the positions
+// with missing inputs, and -1 in the positions with column names not
+// found. Column names not found will eventually cause error via
+// uniq_diff().
+SEXP chmatch_na(SEXP x, SEXP table){
+  SEXP ans;
+  PROTECT(ans = chmatch(x, table, -1));
+  for(int i=0; i<length(ans); i++){
+    if(STRING_ELT(x, i) == NA_STRING){
+      INTEGER(ans)[i] = NA_INTEGER;
+    }
+  }
+  UNPROTECT(1);
+  return ans;
+}
+
 // deal with measure.vars of type VECSXP
 SEXP measurelist(SEXP measure, SEXP dtnames) {
   const int n=length(measure);
@@ -105,7 +122,7 @@ SEXP measurelist(SEXP measure, SEXP dtnames) {
     SEXP x = VECTOR_ELT(measure, i);
     switch(TYPEOF(x)) {
     case STRSXP  :
-      SET_VECTOR_ELT(ans, i, chmatch(x, dtnames, NA_INTEGER));
+      SET_VECTOR_ELT(ans, i, chmatch_na(x, dtnames));
       break;
     case REALSXP :
       SET_VECTOR_ELT(ans, i, coerceVector(x, INTSXP));
@@ -138,6 +155,20 @@ static SEXP unlist_(SEXP xint) {
   return(ans);
 }
 
+// convert NA in user-supplied integer vector input to -1 in order to
+// trigger error in uniq_diff().
+SEXP na_to_negative(SEXP vec_with_NA){
+  SEXP vec_with_negatives = PROTECT(allocVector(INTSXP, length(vec_with_NA)));
+  for (int i=0; i<length(vec_with_NA); i++) {
+    int input_i = INTEGER(vec_with_NA)[i];
+    INTEGER(vec_with_negatives)[i] = (input_i == NA_INTEGER) ? -1 : input_i;
+  }
+  UNPROTECT(1);
+  return vec_with_negatives;
+}
+
+// If neither id.vars nor measure.vars is provided by user, then this
+// function decides which input columns are default measure.vars.
 bool is_default_measure(SEXP vec) {
   return (isInteger(vec) || isNumeric(vec) || isLogical(vec)) && !isFactor(vec);
 }
@@ -174,7 +205,7 @@ SEXP cols_to_int_or_list(SEXP cols, SEXP dtnames, bool is_measure) {
   switch(TYPEOF(cols)) {
   case STRSXP  : return chmatch(cols, dtnames, 0); 
   case REALSXP : return coerceVector(cols, INTSXP); 
-  case INTSXP  : return cols; 
+  case INTSXP  : return na_to_negative(cols); 
   case VECSXP  : if(is_measure)return measurelist(cols, dtnames); 
   default : 
     if (is_measure) {
