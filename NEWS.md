@@ -192,6 +192,24 @@
     #               DT[, c(NA, head(x, -1)), y]  8.7620  9.0240  9.1870  9.2800  9.3700  9.4110    10
     ```
 
+    Benchmarking example from [stackoverflow](https://stackoverflow.com/questions/35179911/shift-in-data-table-v1-9-6-is-slow-for-many-groups)
+    ```R
+    library(microbenchmark)
+    set.seed(1)
+    basic_shift = shift
+    mg <- data.table(expand.grid(year = 2012:2016, id = 1:1000),
+                     value = rnorm(5000))
+    microbenchmark(dt194 = mg[, c(value[-1], NA), by = id],
+                   dt196 = mg[, basic_shift(value, n = 1, type = "lead"), by = id],
+                   dtnow = mg[, shift(value, n = 1, type = "lead"), by = id],
+                   unit = "ms")
+    # Unit: milliseconds
+    #   expr     min      lq    mean  median      uq    max neval
+    #  dt194  3.6600  3.8250  4.4930  4.1720  4.9490 11.700   100
+    #  dt196 18.5400 19.1800 21.5100 20.6900 23.4200 29.040   100
+    #  dtnow  0.4826  0.5586  0.6586  0.6329  0.7348  1.318   100
+    ```
+
 ## BUG FIXES
 
 1. `by=.EACHI` when `i` is keyed but `on=` different columns than `i`'s key could create an invalidly keyed result, [#4603](https://github.com/Rdatatable/data.table/issues/4603) [#4911](https://github.com/Rdatatable/data.table/issues/4911). Thanks to @myoung3 and @adamaltmejd for reporting, and @ColeMiller1 for the PR. An invalid key is where a `data.table` is marked as sorted by the key columns but the data is not sorted by those columns, leading to incorrect results from subsequent queries.
