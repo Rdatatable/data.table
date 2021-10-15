@@ -92,7 +92,7 @@ It can be used in `j` in two ways:
     # when you have only one column to assign to you
     # can drop the quotes and list(), for convenience
     DT[, colA := valA]
-	  ```
+    ```
 
 (b) The functional form
 
@@ -367,4 +367,3 @@ However we could improve this functionality further by *shallow* copying instead
 So far we have seen a whole lot in `j`, and how to combine it with `by` and little of `i`. Let's turn our attention back to `i` in the next vignette *"Keys and fast binary search based subset"* to perform *blazing fast subsets* by *keying data.tables*.
 
 ***
-

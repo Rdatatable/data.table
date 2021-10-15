@@ -640,7 +640,7 @@ test(211, ncol(TESTDT), 2L)
 DT = data.table(a=1:6,key="a")
 test(212, DT[J(3)]$a, 3L) # correct class c("data.table","data.frame")
 class(DT) = "data.table"  # incorrect class, but as from 1.8.1 it works. By accident when moving from colnames() to names(), it was dimnames() doing the check, but rather than add a check that identical(class(DT),c("data.frame","data.table")) at the top of [.data.table, we'll leave it flexible to user (user might not want to inherit from data.frame for some reason).
-test(213, DT[J(3)]$a, error="x is not a data.table|frame")  # from v1.14.2, data.table must inherit from data.frame (internals are too hard to reason if a data.table may not be data.frame too)
+test(213, DT[J(3)]$a, 3L)
 
 # setkey now auto coerces double and character for convenience, and
 # to solve bug #953
@@ -3186,6 +3186,12 @@ test(1034, as.data.table(x<-as.character(sample(letters, 5))), data.table(V1=x))
   test(1035.25, melt(dt, id.vars=NULL, measure.vars=-1), error="One or more values in 'measure.vars'")
   test(1035.26, melt(dt, id.vars=5, measure.vars=-1), error="One or more values in 'id.vars'")
   test(1035.27, melt(dt, id.vars=1, measure.vars=-1), error="One or more values in 'measure.vars'")
+  test(1035.28, melt(dt, measure.vars=list("a")), error="One or more values in 'measure.vars'")
+  test(1035.29, melt(dt, measure.vars=NA_integer_, id.vars="y"), error="One or more values in 'measure.vars'")
+  test(1035.291, melt(dt, measure.vars=NA_integer_, id.vars=NULL), error="One or more values in 'measure.vars'")
+  test(1035.30, melt(dt, id.vars=NA_integer_), error="One or more values in 'id.vars'")
+  test(1035.31, melt(dt, measure.vars=NA_character_), error="One or more values in 'measure.vars'")
+  test(1035.32, melt(dt, id.vars=NA_character_), error="One or more values in 'id.vars'")
 
   if (test_R.utils) {
     # dup names in variable used to generate malformed factor error and/or segfault, #1754;  was test 1570
@@ -7490,7 +7496,8 @@ test(1536, duplicated(dt, incomparables=TRUE), error = "argument 'incomparables 
 test(1537 , names(melt(dt, id.vars=1L, variable.name = "x", value.name="x")), c("x", "x.1", "x.2"), output = "Duplicate column names")
 
 # test for tables()
-test(1538, tables(), output = "Total:")
+test(1538.1, tables(), output="Total:")
+test(1538.2, !is.unsorted(tables(order.col="NROW")$NROW), output="Total:")
 
 # uniqueN not support list-of-list: reverted #1224
 d1 <- data.table(a = 1:4, l = list(list(letters[1:2]),list(Sys.time()),list(1:10),list(letters[1:2])))
@@ -7848,10 +7855,14 @@ read_table = function(str, ...) {
 test(1552.1, fread(str, na.strings="#N/A"), read_table(str, na.strings="#N/A"))
 test(1552.2, fread(str, na.strings=c("#N/A", "-999")), read_table(str, na.strings=c("#N/A", "-999")))
 test(1552.3, fread(str, na.strings=c("#N/A", "-999", "+1")), read_table(str, na.strings=c("#N/A", "-999", "+1")))
-test(1552.4, fread(str, na.strings=c("#N/A", "-999", "+1", "1")),
-             error="NAstring <<1>> is recognized as type boolean.*not permitted")
+test(1552.4, fread(str, na.strings=c("#N/A", "-999", "+1", "1")), read_table(str, na.strings=c("#N/A", "-999", "+1", "1"))) # enabled by FR #2927
 test(1552.5, fread(str, na.strings=c("#N/A", "-999", "FALSE")), error="NAstring <<FALSE>>.*boolean.*not permitted")
 test(1552.6, fread("A\n1.0\n2\n-", na.strings=c("-")), data.table(A=c(1.0, 2.0, NA)))
+test(1552.7, fread(str, na.strings=c("#N/A", "-999", "+1", "1"), logical01=TRUE),
+  error="NAstring <<1>> and logical01=TRUE.*not permitted")
+str = "a,b,c\n0,1,2\n1,0,2"
+test(1552.8, fread(str, na.strings = "0"), data.table(a=c(NA,1L), b=c(1L,NA), c=c(2L,2L)))
+test(1552.9, fread(str, na.strings = c("0","1")), data.table(a=c(NA,NA), b=c(NA,NA), c=c(2L,2L)))
 
 # FR #1177: 'quote' option of 'print.data.table'
 DT1 <- data.table(s1=paste(" ",LETTERS[1:5],sep=""),s2=LETTERS[1:5])
@@ -9949,7 +9960,7 @@ test(1658.34, fwrite(data.table(id=c("A","B","C"), v=c(1.1,0.0,9.9))), output="i
 test(1658.35, fwrite(data.table(id=1:3,bool=c(TRUE,NA,FALSE)),na="NA",logical01=TRUE), output="\"id\",\"bool\"\n1,1\n2,NA\n3,0")
 
 # POSIXct
-test(1658.36, fwrite(data.table(D = as.POSIXct(seq.Date(as.Date("2038-01-19"), as.Date("2038-01-20"), by = "day")))),
+test(1658.36, fwrite(data.table(D = as.POSIXct(seq(as.Date("2038-01-19"), as.Date("2038-01-20"), by = "day")))),
     output="D\n2038-01-19T00:00:00Z\n2038-01-20T00:00:00Z")
 
 # input is of class matrix
@@ -10876,13 +10887,13 @@ test(1738.5, as.integer(as.Date(c("0000-03-01","9999-12-31"))), c(-719468L,29328
 
 if (FALSE) {
   # Full range takes too long for CRAN.
-  dts = seq.Date(as.Date("0000-03-01"),as.Date("9999-12-31"),by="day")
+  dts = seq(as.Date("0000-03-01"), as.Date("9999-12-31"), by="day")
   dtsCh = as.character(dts)   # 36s
   dtsCh = gsub(" ","0",sprintf("%10s",dtsCh))  # R does not 0 pad years < 1000
   test(1739.1, length(dtsCh)==3652365 && identical(dtsCh[c(1,3652365)],c("0000-03-01","9999-12-31")))
 } else {
   # test on CRAN a reduced but important range
-  dts = seq.Date(as.Date("1899-12-31"),as.Date("2100-01-01"),by="day")
+  dts = seq(as.Date("1899-12-31"), as.Date("2100-01-01"), by="day")
   dtsCh = as.character(dts)
   test(1739.2, length(dtsCh)==73051 && identical(dtsCh[c(1,73051)],c("1899-12-31","2100-01-01")))
 }
@@ -13576,7 +13587,7 @@ test(1962.014, merge(DT1, DT2),
      data.table(a = integer(0), V = character(0)))
 setkey(DT1, a)
 test(1962.015, merge(DT1, DT2),
-     data.table(a = 2:3, V.x = c("a", "a"), V.y = c("b", "b"), key = 'a'))
+     ans<-data.table(a = 2:3, V.x = c("a", "a"), V.y = c("b", "b"), key = 'a'))
 test(1962.016, merge(DT1, DT2, by.x = 'a', by.y = c('a', 'V')),
      error = 'must be of same length')
 test(1962.017, merge(DT1, DT2, by = 'V', by.x = 'a', by.y = 'a'),
@@ -13586,8 +13597,8 @@ test(1962.018, merge(DT1, DT2, by.x = 'z', by.y = 'a'),
      error = 'Elements listed in `by.x`')
 test(1962.019, merge(DT1, DT2, by.x = 'a', by.y = 'z'),
      error = 'Elements listed in `by.y`')
-test(1962.020, merge(DT1, DT2, by = character(0L)),
-     error = 'non-empty vector of column names')
+test(1962.0201, merge(DT1, DT2, by=character(0L)), ans)  # was error before PR#5183
+test(1962.0202, merge(DT1, DT2, by=NULL),          ans)  # test explicit NULL too as missing() could be used inside merge()
 test(1962.021, merge(DT1, DT2, by = 'z'),
      error = 'must be valid column names in x and y')
 
@@ -14611,7 +14622,7 @@ if (test_bit64) {
                 warning="-1.*integer64.*position 1 taken as 0 when assigning.*raw.*column 3 named 'c'")
   test(2005.66, DT[2:3, f:=as.integer64(c(NA,"2147483648"))]$f, as.complex(c(-42,NA,2147483648)))
   DT[,h:=LETTERS[1:3]]
-  test(2005.67, DT[2:3, h:=as.integer64(1:2)], error="To assign integer64 to.*type character, please use as.character.")
+  test(2005.67, DT[2:3, h:=as.integer64(1:2)]$h, c("A","1","2"))   # PR#5189
 }
 
 # rbindlist raw type, #2819
@@ -18193,17 +18204,24 @@ test(2213, identical(fread(text="A\n0.8060667366\n")$A, 0.8060667366))
 # droplevels.data.table method, and fdroplevels, #647
 x = factor(letters[1:10])
 DT = data.table(a = x)[1:5]
-test(2214.1, fdroplevels(factor()), droplevels(factor()))
-test(2214.2, fdroplevels(x[1:5]), droplevels(x[1:5]))
+test(2214.01, fdroplevels(factor()), droplevels(factor()))
+test(2214.02, fdroplevels(x[1:5]), droplevels(x[1:5]))
 if (base::getRversion() >= "3.4.0") {
   # bug fix in R 3.4.0: "droplevels(f) now keeps <NA> levels when present."
-  test(2214.3, fdroplevels(x[1:5], c("b", "d")), droplevels(x[1:5], c("b", "d")))
-  test(2214.4, fdroplevels(x[1:5], letters[1:5]), droplevels(x[1:5], letters[1:5]))
-  test(2214.5, droplevels(DT, exclude=c("b", "d"))[["a"]], droplevels(DT[1:5,a], c("b", "d")))
+  test(2214.03, fdroplevels(x[1:5], c("b", "d")), droplevels(x[1:5], c("b", "d")))
+  test(2214.04, fdroplevels(x[1:5], letters[1:5]), droplevels(x[1:5], letters[1:5]))
+  test(2214.05, droplevels(DT, exclude=c("b", "d"))[["a"]], droplevels(DT[1:5,a], c("b", "d")))
 }
-test(2214.6, droplevels(DT)[["a"]], droplevels(DT[1:5,a]))
-test(2214.7, droplevels(DT, 1)[["a"]], x[1:5])
-test(2214.8, droplevels(DT, in.place=TRUE), DT)
+test(2214.06, droplevels(DT)[["a"]], droplevels(DT[1:5,a]))
+test(2214.07, droplevels(DT, 1)[["a"]], x[1:5])
+test(2214.08, droplevels(DT, in.place=TRUE), DT)
+# support ordered factors in fdroplevels
+o = factor(letters[1:10], ordered=TRUE)
+test(2214.09, fdroplevels(o[1:5]), droplevels(o[1:5]))
+# edge case for empty table #5184
+test(2214.10, droplevels(DT[0]), DT[0])
+test(2214.11, droplevels(data.table()), data.table())
+
 
 # factor i should be just like character i and work, #1632
 DT = data.table(A=letters[1:3], B=4:6, key="A")
@@ -18215,4 +18233,62 @@ DT1 = data.table(x1 = rep(letters[1:4], each=3), x2=NA_character_, key="x2")
 DT2 = data.table(x1 = letters[1:3])
 test(2216.1, DT1[DT2, on="x1"][,.(x1,x2)],        DT1[1:9])              # segfault in v1.14.0
 test(2216.2, merge(DT1, DT2, by="x1")[,.(x1,x2)], setkey(DT1[1:9], x1))  # ok before but included for completeness verbatim from issue
+
+# copy attributes assigned to elements of list columns in grouping #4963
+DT1 = data.table(id=1:3, grp=c('a', 'a', 'b'), value=4:6)
+DT2 = data.table(grp = c('a', 'b'), agg = list(c('1' = 4, '2' = 5), c('3' = 6)))
+test(2217, DT1[, by = grp, .(agg = list(setNames(as.numeric(value), id)))], DT2)
+
+# shift integer64 when fill isn't integer32, #4865
+testnum = 2218
+funs = c(as.integer, as.double, as.complex, as.character, if (test_bit64) as.integer64)
+# when test_bit64==FALSE these all passed before; now passes with test_bit64==TRUE too
+for (f1 in funs) {
+  DT = data.table(x=f1(1:4))
+  for (f2 in funs) {
+    testnum = testnum + 0.01
+    test(testnum, DT[, shift(x)],               f1(c(NA, 1:3)))
+    testnum = testnum + 0.01
+    w = if (identical(f2,as.character) && !identical(f1,as.character)) "Coercing.*character.*to match the type of target vector"
+    test(testnum, DT[, shift(x, fill=f2(NA))],  f1(c(NA, 1:3)), warning=w)
+    testnum = testnum + 0.01
+    if (identical(f1,as.character) && identical(f2,as.complex)) {
+      # one special case due to as.complex(0)=="0+0i"!="0"
+      test(testnum, DT[, shift(x, fill="0")],   f1(0:3))
+    } else {
+      test(testnum, DT[, shift(x, fill=f2(0))], f1(0:3), warning=w)
+    }
+  }
+}
+
+# subassign coerce a class to character, part of PR#5189
+DT = data.table(A=letters[1:3])
+test(2219.1, DT[2, A:=as.IDate("2021-02-03")],                              data.table(A=c("a","2021-02-03","c")))
+if (test_bit64) test(2219.2, DT[3, A:=as.integer64("4611686018427387906")], data.table(A=c("a","2021-02-03","4611686018427387906")))
+
+# gforce improve coverage
+DT = data.table(g=1:2, i=c(NA, 1:4, NA), f=factor(letters[1:6]), l=as.list(1:6))
+options(datatable.optimize = 2L)
+funs = c("sum", "mean", "min", "max", "median", "var", "sd", "prod")
+testnum = 2220
+for (fun in funs) {
+  testnum = testnum + 0.01
+  test(testnum, EVAL("DT[,",fun,"(i, na.rm='a'), g]"), error="na.rm must be TRUE or FALSE")
+  testnum = testnum + 0.01
+  test(testnum, EVAL("DT[,",fun,"(f), g]"), error=sprintf("%s is not meaningful for factors.", fun))
+}
+test(testnum+0.01, DT[, prod(l), g], error="GForce prod can only be applied to columns, not .SD or similar.")
+
+# tables() error when called from inside a function(...), #5197
+test(2221, (function(...) tables())(), output = "No objects of class data.table exist")
+
+# some revdeps do class(x)="data.table" without inheriting from data.frame, PR#5210
+DT = data.table(A=1:3)
+class(DT) = "data.table"
+test(2222, print(DT), output="A.*3")
+
+# retain nomatch=FALSE backwards compatibility #5214, and nomatch=NA_character_ PR#5216
+DT = data.table(A=1:3, key="A")
+test(2223.1, DT[.(4), nomatch=FALSE], data.table(A=integer(), key="A"))
+test(2223.2, DT[.(4), nomatch=NA_character_], data.table(A=4L, key="A"))
 

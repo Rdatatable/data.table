@@ -1,3 +1,8 @@
+---
+name: Bug report or feature request
+about: Report a bug or describe a new requested feature
+---
+
 Click preview tab ^^^ above!
 
 By continuing to file this new issue / feature request, I confirm I have :
@@ -10,6 +15,6 @@ By continuing to file this new issue / feature request, I confirm I have :
 
 #### Thanks! Please remove the text above and include the two items below.
 
-`#` [`Minimal reproducible example`](https://stackoverflow.com/questions/5963269/how-to-make-a-great-r-reproducible-example)
+`#` [`Minimal reproducible example`](https://stackoverflow.com/questions/5963269/how-to-make-a-great-r-reproducible-example); please be sure to set `verbose=TRUE` where possible!
 
 `#` `Output of sessionInfo()`
